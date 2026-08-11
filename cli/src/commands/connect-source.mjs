@@ -139,7 +139,7 @@ function printUsage(stream = process.stderr) {
   stream.write(
     `\n${COLORS.bold}Usage:${COLORS.reset}\n`
     + `  ontology-atlas connect-source <projectSlug> [vault] [--root path] [--confirm] [--repair] [--json]\n\n`
-    + `${COLORS.bold}Default${COLORS.reset} dry-run — proposes a folder and reports how many declared\n`
+    + `${COLORS.bold}Default${COLORS.reset} dry-run: proposes a folder and reports how many declared\n`
     + `        \`path:\` claims actually exist inside it. Nothing is written.\n`
     + `${COLORS.bold}--root${COLORS.reset}    bind this folder instead of the inferred one (also replaces an existing binding)\n`
     + `${COLORS.bold}--confirm${COLORS.reset} write the binding + receipt to .ontology-atlas/project-sources.json (gitignored)\n`

@@ -137,7 +137,7 @@ function renderNextRelation(result, query) {
   process.stdout.write(
     `\n${COLORS.bold}next relation${COLORS.reset} ${COLORS.cyan}${query.from}${COLORS.reset}` +
       ` ${COLORS.dim}→${COLORS.reset} ${COLORS.cyan}${query.to}${COLORS.reset}` +
-      ` ${COLORS.dim}— explanation is evidence, not write approval; run path and preflight before changing graph${COLORS.reset}\n` +
+      ` ${COLORS.dim}· explanation is evidence, not write approval; run path and preflight before changing graph${COLORS.reset}\n` +
       `  ontology-atlas path ${query.from} ${query.to} [vault] --max-hops ${maxHops}\n` +
       `  ontology-atlas match-edges [vault] --from ${query.from} --to ${query.to} --types ${typeList} --limit 10\n` +
       `  ontology-atlas relation-check ${query.from} ${query.to} ${relationType} [vault]\n`,
@@ -154,7 +154,7 @@ function formatEdgeList(edges) {
 
 function formatNode(node) {
   if (!node?.title || node.title === node.slug) return `${COLORS.cyan}${node?.slug ?? '(unknown)'}${COLORS.reset}`;
-  return `${COLORS.cyan}${node.slug}${COLORS.reset} ${COLORS.dim}— ${node.title}${COLORS.reset}`;
+  return `${COLORS.cyan}${node.slug}${COLORS.reset} ${COLORS.dim}· ${node.title}${COLORS.reset}`;
 }
 
 function formatVerdict(verdict) {

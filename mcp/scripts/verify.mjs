@@ -266,7 +266,7 @@ export function toolsListInventoryFailure(tools) {
     typeof name === 'string' && names.indexOf(name) !== index
   )))];
   if (missing.length === 0 && extra.length === 0 && duplicates.length === 0 && invalidNameCount === 0) return null;
-  return `tools mismatch — missing: ${missing.join(',') || '(none)'}, extra: ${extra.join(',') || '(none)'}, duplicates: ${duplicates.join(',') || '(none)'}, invalidNames: ${invalidNameCount}`;
+  return `tools mismatch: missing: ${missing.join(',') || '(none)'}, extra: ${extra.join(',') || '(none)'}, duplicates: ${duplicates.join(',') || '(none)'}, invalidNames: ${invalidNameCount}`;
 }
 
 export function expectedToolTitle(name) {
@@ -3058,7 +3058,7 @@ export function structuredErrorFailure(response, label, { errorCode } = {}) {
     return `${label} structured error code missing`;
   }
   if (errorCode && structured.errorCode !== errorCode) {
-    return `${label} structured error code mismatch — expected ${errorCode}, got ${structured.errorCode}`;
+    return `${label} structured error code mismatch: expected ${errorCode}, got ${structured.errorCode}`;
   }
   return null;
 }
@@ -3736,7 +3736,7 @@ export function structuredContentFailure(response, parsed, label) {
     return `${label} structuredContent missing`;
   }
   if (status === 'mismatch') {
-    return `${label} structuredContent mismatch — ${structuredContentMismatchSummary(parsed, structured)}`;
+    return `${label} structuredContent mismatch: ${structuredContentMismatchSummary(parsed, structured)}`;
   }
   return null;
 }
@@ -3891,24 +3891,24 @@ export const FIRST_CONTACT_RESPONSE_LABELS = new Map([
 ]);
 
 export const OPTIONAL_FIRST_CONTACT_RESPONSE_IDS = [
-  30, // maintenance_resume_cursor — sent only when maintenance has an action to resume after.
-  31, // get_concept — sent only when list_concepts returns a real node.
-  33, // find_backlinks — sent only when list_concepts returns a real node.
-  35, // find_neighbors — sent only when a direct graph-read target exists.
-  36, // find_path — sent only when a direct graph-read target exists.
-  37, // query_concepts_limited — sent only when the vault has a non-trivial excluded slug.
-  43, // rename_concept_dry_run — sent only when a real writable node exists.
-  44, // merge_concepts_dry_run — sent only when two real writable nodes exist.
-  45, // delete_concept_dry_run — sent only when a real writable node exists.
-  61, // patch_concept_conflict_guard — sent only when a real writable node exists.
+  30, // maintenance_resume_cursor: sent only when maintenance has an action to resume after.
+  31, // get_concept: sent only when list_concepts returns a real node.
+  33, // find_backlinks: sent only when list_concepts returns a real node.
+  35, // find_neighbors: sent only when a direct graph-read target exists.
+  36, // find_path: sent only when a direct graph-read target exists.
+  37, // query_concepts_limited: sent only when the vault has a non-trivial excluded slug.
+  43, // rename_concept_dry_run: sent only when a real writable node exists.
+  44, // merge_concepts_dry_run: sent only when two real writable nodes exist.
+  45, // delete_concept_dry_run: sent only when a real writable node exists.
+  61, // patch_concept_conflict_guard: sent only when a real writable node exists.
 ];
 
 export const DYNAMIC_FIRST_CONTACT_RESPONSE_IDS = [
-  11, // get_concepts — sent after list_concepts returns the current sample slugs.
-  13, // neighbors — sent after graph smoke target selection.
-  14, // path — sent after graph smoke target selection.
-  15, // project_scope — sent after project probe/listing discovers a project node.
-  67, // all_paths — sent after graph smoke target selection.
+  11, // get_concepts: sent after list_concepts returns the current sample slugs.
+  13, // neighbors: sent after graph smoke target selection.
+  14, // path: sent after graph smoke target selection.
+  15, // project_scope: sent after project probe/listing discovers a project node.
+  67, // all_paths: sent after graph smoke target selection.
   ...OPTIONAL_FIRST_CONTACT_RESPONSE_IDS,
 ];
 
@@ -4176,7 +4176,7 @@ export function verifyTimeoutValueErrorMessage(value, env = process.env) {
 }
 
 export function verifySuccessMessage(toolCount = EXPECTED_TOOLS.length) {
-  return `All passed — register .mcp.json with your MCP client and restart to use the ${toolCount} tools.`;
+  return `All passed: register .mcp.json with your MCP client and restart to use the ${toolCount} tools.`;
 }
 
 export function verifyUsage() {
@@ -4200,7 +4200,7 @@ export function verifyUsage() {
     'tools/list inventory names, initialize-instruction tool inventory, schema strictness, and annotation coverage (title/read/write/destructive/idempotent/local-only),\n' +
     'batch reader/writer row isolation for non-object rows and unknown row fields with concepts[n]/relations[n] error labels, invalid add_relations type closest-value hints, and 50-row batch cap rejection,\n' +
     'destructive writer dry-runs for rename_concept/merge_concepts/delete_concept with every planned response present and no changed/postWriteMaintenance,\n' +
-    'an absorb_document dry-run against a temp fixture file (Slice 0 — never the vault under test) covering both the policy-absorb and architecture-suggest classification branches,\n' +
+    'an absorb_document dry-run against a temp fixture file (Slice 0: never the vault under test) covering both the policy-absorb and architecture-suggest classification branches,\n' +
     'structuredContent coverage summary splits direct reads, batch row-isolation writes with no write metadata, destructive dry-runs, maintenance cursor checks, and graph queries,\n' +
     'and maintenance_plan cursor handling: ready page (cursor.found=true, cursor.reason=null)\n' +
     'plus missing afterActionId (cursor.found=false, reason, empty page, nextAfterActionId=null, hasMore=false).\n' +
@@ -5284,7 +5284,7 @@ export function vaultWarningsFailure(parsed) {
   const errorCount = warnings.errorCount;
   const warningCount = warnings.warningCount;
   if (errorCount === 0 && warningCount === 0) return null;
-  return `list_concepts vaultWarnings present — errors ${errorCount}, warnings ${warningCount}. Run validate_vault for file-level diagnostics before writing.`;
+  return `list_concepts vaultWarnings present: errors ${errorCount}, warnings ${warningCount}. Run validate_vault for file-level diagnostics before writing.`;
 }
 
 export function listKindsFailure(parsed) {
@@ -5305,7 +5305,7 @@ export function listKindsFailure(parsed) {
     sum += count;
   }
   if (sum !== parsed.total) {
-    return `list_kinds response total mismatch — total ${parsed.total}, byKind ${sum}`;
+    return `list_kinds response total mismatch: total ${parsed.total}, byKind ${sum}`;
   }
   return null;
 }
@@ -5321,7 +5321,7 @@ export function listConceptsFailure(parsed) {
     return 'list_concepts response missing nodes array';
   }
   if (parsed.nodes.length > parsed.total) {
-    return `list_concepts response node count exceeds total — nodes ${parsed.nodes.length}, total ${parsed.total}`;
+    return `list_concepts response node count exceeds total: nodes ${parsed.nodes.length}, total ${parsed.total}`;
   }
   for (const [index, node] of parsed.nodes.entries()) {
     if (!node || typeof node !== 'object' || Array.isArray(node)) {
@@ -5361,7 +5361,7 @@ export function projectProbeFailure(parsed, kinds) {
     return `project probe returned non-project node: ${nonProject.slug || '(unknown)'}`;
   }
   if (Number.isInteger(kindProjectCount) && parsed.total >= 1 && parsed.total !== kindProjectCount) {
-    return `project probe count mismatch — list_kinds project ${kindProjectCount}, probe ${parsed.total}`;
+    return `project probe count mismatch: list_kinds project ${kindProjectCount}, probe ${parsed.total}`;
   }
   return null;
 }
@@ -5408,7 +5408,7 @@ export function getConceptsFailure(parsed) {
     return 'get_concepts response expected partial row to be ok:false';
   }
   if (missing.slug !== 'missing-verify-slug') {
-    return `get_concepts response partial row slug mismatch — ${missing.slug}`;
+    return `get_concepts response partial row slug mismatch: ${missing.slug}`;
   }
   if (typeof missing.error !== 'string' || !/not found/i.test(missing.error)) {
     return 'get_concepts response missing partial row error';
@@ -5421,7 +5421,7 @@ export function getConceptFailure(parsed, expectedSlug) {
     return 'get_concept response malformed';
   }
   if (parsed.slug !== expectedSlug) {
-    return `get_concept response slug mismatch — expected ${expectedSlug}, got ${parsed.slug}`;
+    return `get_concept response slug mismatch: expected ${expectedSlug}, got ${parsed.slug}`;
   }
   if (!hasNonEmptyString(parsed.uid) || !NODE_UID_RE.test(parsed.uid)) {
     return `get_concept response missing uid: ${expectedSlug}`;
@@ -5520,7 +5520,7 @@ export function findEvidenceFailure(parsed) {
 
 export function findBacklinksFailure(parsed, expectedTarget) {
   if (parsed?.target !== expectedTarget) {
-    return `find_backlinks response target mismatch — expected ${expectedTarget}, got ${parsed?.target}`;
+    return `find_backlinks response target mismatch: expected ${expectedTarget}, got ${parsed?.target}`;
   }
   if (!Number.isInteger(parsed.total) || parsed.total < 0) {
     return 'find_backlinks response missing total count';
@@ -5529,7 +5529,7 @@ export function findBacklinksFailure(parsed, expectedTarget) {
     return 'find_backlinks response missing matches array';
   }
   if (parsed.matches.length > parsed.total) {
-    return `find_backlinks response match count exceeds total — matches ${parsed.matches.length}, total ${parsed.total}`;
+    return `find_backlinks response match count exceeds total: matches ${parsed.matches.length}, total ${parsed.total}`;
   }
   for (const [index, row] of parsed.matches.entries()) {
     const failure = readMatchRowFailure('find_backlinks', row, index, { backlinks: true });
@@ -5555,10 +5555,10 @@ export function queryConceptsFailure(parsed) {
     return 'query_concepts response missing matches array';
   }
   if (parsed.matches.length > parsed.total) {
-    return `query_concepts response match count exceeds total — matches ${parsed.matches.length}, total ${parsed.total}`;
+    return `query_concepts response match count exceeds total: matches ${parsed.matches.length}, total ${parsed.total}`;
   }
   if (!parsed.limited && parsed.matches.length !== parsed.total) {
-    return `query_concepts response match count mismatch — matches ${parsed.matches.length}, total ${parsed.total}`;
+    return `query_concepts response match count mismatch: matches ${parsed.matches.length}, total ${parsed.total}`;
   }
   for (const [index, row] of parsed.matches.entries()) {
     const failure = readMatchRowFailure('query_concepts', row, index);
@@ -5571,13 +5571,13 @@ export function limitedQueryConceptsFailure(parsed, excludedSlug, expectedTotal)
   const baseFailure = queryConceptsFailure(parsed);
   if (baseFailure) return baseFailure;
   if (parsed.filter !== `slug!=${excludedSlug}`) {
-    return `query_concepts limited filter mismatch — expected slug!=${excludedSlug}, got ${parsed.filter}`;
+    return `query_concepts limited filter mismatch: expected slug!=${excludedSlug}, got ${parsed.filter}`;
   }
   if (parsed.total !== expectedTotal) {
-    return `query_concepts limited total mismatch — expected ${expectedTotal}, got ${parsed.total}`;
+    return `query_concepts limited total mismatch: expected ${expectedTotal}, got ${parsed.total}`;
   }
   if (parsed.matches.length !== 1) {
-    return `query_concepts limited match count mismatch — expected 1, got ${parsed.matches.length}`;
+    return `query_concepts limited match count mismatch: expected 1, got ${parsed.matches.length}`;
   }
   if (parsed.limited !== true) {
     return 'query_concepts limited response did not set limited=true';
@@ -5940,7 +5940,7 @@ export function indexProjectFailure(parsed) {
 
 export function findNeighborsFailure(parsed, expectedSlug) {
   if (parsed?.center !== expectedSlug) {
-    return `find_neighbors center mismatch — expected ${expectedSlug}, got ${parsed?.center}`;
+    return `find_neighbors center mismatch: expected ${expectedSlug}, got ${parsed?.center}`;
   }
   if (typeof parsed.requested !== 'string' || parsed.requested.length === 0) {
     return 'find_neighbors response missing requested slug';
@@ -5961,10 +5961,10 @@ export function findNeighborsFailure(parsed, expectedSlug) {
     return 'find_neighbors response missing edges array';
   }
   if (parsed.edges.length > parsed.totalEdges) {
-    return `find_neighbors response edge count exceeds total — edges ${parsed.edges.length}, total ${parsed.totalEdges}`;
+    return `find_neighbors response edge count exceeds total: edges ${parsed.edges.length}, total ${parsed.totalEdges}`;
   }
   if (!parsed.limited && parsed.edges.length !== parsed.totalEdges) {
-    return `find_neighbors response edge count mismatch — edges ${parsed.edges.length}, total ${parsed.totalEdges}`;
+    return `find_neighbors response edge count mismatch: edges ${parsed.edges.length}, total ${parsed.totalEdges}`;
   }
   if (!Array.isArray(parsed.nodes)) {
     return 'find_neighbors response missing nodes array';
@@ -5985,7 +5985,7 @@ export function findNeighborsFailure(parsed, expectedSlug) {
 
 export function findPathFailure(parsed, expectedFrom, expectedTo) {
   if (parsed?.from !== expectedFrom || parsed?.to !== expectedTo) {
-    return `find_path endpoint mismatch — expected ${expectedFrom}->${expectedTo}, got ${parsed?.from}->${parsed?.to}`;
+    return `find_path endpoint mismatch: expected ${expectedFrom}->${expectedTo}, got ${parsed?.from}->${parsed?.to}`;
   }
   if (typeof parsed.found !== 'boolean') {
     return 'find_path response missing found flag';
@@ -6300,7 +6300,7 @@ export function findOrphansFailure(parsed) {
     return 'find_orphans response missing orphans array';
   }
   if (parsed.orphans.length > parsed.total) {
-    return `find_orphans response orphan count exceeds total — orphans ${parsed.orphans.length}, total ${parsed.total}`;
+    return `find_orphans response orphan count exceeds total: orphans ${parsed.orphans.length}, total ${parsed.total}`;
   }
   for (const [index, node] of parsed.orphans.entries()) {
     if (!node || typeof node !== 'object' || Array.isArray(node)) {
@@ -6371,8 +6371,8 @@ export function validateVaultFailure(parsed) {
     return 'validate_vault response missing byCode entries for problem files';
   }
   const codeSummary = validationCodeSummary(summary.byCode);
-  const suffix = codeSummary ? ` — codes ${codeSummary}` : '';
-  return `validate_vault found ${formatCount(problemFiles, 'problem file')} — errors ${summary.errorFiles}, warnings ${summary.warningFiles}${suffix}`;
+  const suffix = codeSummary ? ` · codes ${codeSummary}` : '';
+  return `validate_vault found ${formatCount(problemFiles, 'problem file')}: errors ${summary.errorFiles}, warnings ${summary.warningFiles}${suffix}`;
 }
 
 export function compileSummaryFailure(parsed) {
@@ -6403,12 +6403,12 @@ export function compileSummaryFailure(parsed) {
   if (byDomainFailure) return byDomainFailure;
   const byKindTotal = Object.values(parsed.byKind).reduce((sum, count) => sum + count, 0);
   if (byKindTotal !== parsed.nodeCount) {
-    return `compile_ontology response byKind mismatch — nodeCount ${parsed.nodeCount}, byKind ${byKindTotal}`;
+    return `compile_ontology response byKind mismatch: nodeCount ${parsed.nodeCount}, byKind ${byKindTotal}`;
   }
   const edgeTotal =
     parsed.resolvedEdgeCount + parsed.externalEdgeCount + parsed.unresolvedEdgeCount;
   if (edgeTotal !== parsed.edgeCount) {
-    return `compile_ontology response edge count mismatch — edgeCount ${parsed.edgeCount}, resolved+external+unresolved ${edgeTotal}`;
+    return `compile_ontology response edge count mismatch: edgeCount ${parsed.edgeCount}, resolved+external+unresolved ${edgeTotal}`;
   }
   return null;
 }
@@ -6488,14 +6488,14 @@ export function compileFullArtifactFailure(parsed) {
   ]);
   if (fullSummaryFailure) return fullSummaryFailure;
   if (parsed.summary.nodes !== parsed.nodeCount || parsed.summary.edges !== parsed.edgeCount) {
-    return `compile_ontology full response summary mismatch — summary ${parsed.summary.nodes}/${parsed.summary.edges}, counts ${parsed.nodeCount}/${parsed.edgeCount}`;
+    return `compile_ontology full response summary mismatch: summary ${parsed.summary.nodes}/${parsed.summary.edges}, counts ${parsed.nodeCount}/${parsed.edgeCount}`;
   }
   if (
     parsed.summary.aliases !== parsed.aliasCount ||
     parsed.summary.ambiguousAliases !== parsed.ambiguousAliasCount ||
     parsed.summary.issues !== parsed.issueCount
   ) {
-    return `compile_ontology full response summary count mismatch — summary aliases/ambiguous/issues ${parsed.summary.aliases}/${parsed.summary.ambiguousAliases}/${parsed.summary.issues}, counts ${parsed.aliasCount}/${parsed.ambiguousAliasCount}/${parsed.issueCount}`;
+    return `compile_ontology full response summary count mismatch: summary aliases/ambiguous/issues ${parsed.summary.aliases}/${parsed.summary.ambiguousAliases}/${parsed.summary.issues}, counts ${parsed.aliasCount}/${parsed.ambiguousAliasCount}/${parsed.issueCount}`;
   }
   if (parsed.summary.graphHash !== parsed.graphHash) {
     return 'compile_ontology full response summary graphHash mismatch';
@@ -6556,7 +6556,7 @@ function fullArtifactArrayCountFailure(parsed) {
   ];
   for (const [arrayName, countName] of checks) {
     if (parsed[arrayName].length !== parsed[countName]) {
-      return `compile_ontology full response ${arrayName} count mismatch — ${arrayName} ${parsed[arrayName].length}, ${countName} ${parsed[countName]}`;
+      return `compile_ontology full response ${arrayName} count mismatch: ${arrayName} ${parsed[arrayName].length}, ${countName} ${parsed[countName]}`;
     }
   }
   return null;
@@ -6572,10 +6572,10 @@ function paginationMetaFailure(label, meta, total, returned) {
     }
   }
   if (meta.total !== total) {
-    return `${label} total mismatch — meta ${meta.total}, count ${total}`;
+    return `${label} total mismatch: meta ${meta.total}, count ${total}`;
   }
   if (meta.returned !== returned) {
-    return `${label} returned mismatch — meta ${meta.returned}, array ${returned}`;
+    return `${label} returned mismatch: meta ${meta.returned}, array ${returned}`;
   }
   if (typeof meta.hasMore !== 'boolean') {
     return `${label} missing hasMore`;
@@ -6627,7 +6627,7 @@ function groupedIndexCountFailure(label, value, counts) {
 function indexedEdgeMembershipCountFailure(label, value, expected, expectedLabel) {
   const actual = Object.values(value).reduce((sum, row) => sum + row.length, 0);
   if (actual !== expected) {
-    return `${label} count mismatch — index ${actual}, ${expectedLabel} ${expected}`;
+    return `${label} count mismatch: index ${actual}, ${expectedLabel} ${expected}`;
   }
   return null;
 }
@@ -6648,7 +6648,7 @@ export function compileIndexesFailure(parsed) {
   }
   const edgeIds = Object.keys(indexes.edgeById);
   if (edgeIds.length !== parsed.edgeCount) {
-    return `compile_ontology.indexes.edgeById count mismatch — index ${edgeIds.length}, edgeCount ${parsed.edgeCount}`;
+    return `compile_ontology.indexes.edgeById count mismatch: index ${edgeIds.length}, edgeCount ${parsed.edgeCount}`;
   }
   for (const [id, edge] of Object.entries(indexes.edgeById)) {
     if (
@@ -6680,7 +6680,7 @@ export function compileIndexesFailure(parsed) {
     indexedExternal !== parsed.externalEdgeCount ||
     indexedUnresolved !== parsed.unresolvedEdgeCount
   ) {
-    return `compile_ontology.indexes.edgeById edge breakdown mismatch — index ${indexedResolved}/${indexedExternal}/${indexedUnresolved}, counts ${parsed.resolvedEdgeCount}/${parsed.externalEdgeCount}/${parsed.unresolvedEdgeCount}`;
+    return `compile_ontology.indexes.edgeById edge breakdown mismatch: index ${indexedResolved}/${indexedExternal}/${indexedUnresolved}, counts ${parsed.resolvedEdgeCount}/${parsed.externalEdgeCount}/${parsed.unresolvedEdgeCount}`;
   }
   for (const [id, edge] of Object.entries(indexes.edgeById)) {
     if (!indexes.out[edge.from]?.includes(id)) {
@@ -6695,7 +6695,7 @@ export function compileIndexesFailure(parsed) {
   }
   const aliasKeys = Object.keys(indexes.aliasToSlug);
   if (aliasKeys.length !== parsed.aliasCount) {
-    return `compile_ontology.indexes.aliasToSlug count mismatch — index ${aliasKeys.length}, aliasCount ${parsed.aliasCount}`;
+    return `compile_ontology.indexes.aliasToSlug count mismatch: index ${aliasKeys.length}, aliasCount ${parsed.aliasCount}`;
   }
   for (const [alias, slug] of Object.entries(indexes.aliasToSlug)) {
     if (!alias || typeof slug !== 'string' || !slug) {
@@ -6709,10 +6709,10 @@ export function compileIndexesFailure(parsed) {
   }
   const primaryUidRows = parsed.nodes.map((node) => [node.uid, node.slug]);
   if (Object.keys(indexes.uidToSlug).length !== parsed.nodeCount) {
-    return `compile_ontology.indexes.uidToSlug count mismatch — index ${Object.keys(indexes.uidToSlug).length}, nodeCount ${parsed.nodeCount}`;
+    return `compile_ontology.indexes.uidToSlug count mismatch: index ${Object.keys(indexes.uidToSlug).length}, nodeCount ${parsed.nodeCount}`;
   }
   if (Object.keys(indexes.slugToUid).length !== parsed.nodeCount) {
-    return `compile_ontology.indexes.slugToUid count mismatch — index ${Object.keys(indexes.slugToUid).length}, nodeCount ${parsed.nodeCount}`;
+    return `compile_ontology.indexes.slugToUid count mismatch: index ${Object.keys(indexes.slugToUid).length}, nodeCount ${parsed.nodeCount}`;
   }
   for (const [uid, slug] of Object.entries(indexes.uidToSlug)) {
     if (!NODE_UID_RE.test(uid) || typeof slug !== 'string' || !slug) {
@@ -6733,7 +6733,7 @@ export function compileIndexesFailure(parsed) {
     (node.merged_uids || []).map((uid) => [uid, node.slug]),
   );
   if (parsed.nodes.length === parsed.nodeCount && Object.keys(indexes.mergedUidToSlug).length !== historicalUidRows.length) {
-    return `compile_ontology.indexes.mergedUidToSlug count mismatch — index ${Object.keys(indexes.mergedUidToSlug).length}, merged_uids ${historicalUidRows.length}`;
+    return `compile_ontology.indexes.mergedUidToSlug count mismatch: index ${Object.keys(indexes.mergedUidToSlug).length}, merged_uids ${historicalUidRows.length}`;
   }
   for (const [uid, slug] of Object.entries(indexes.mergedUidToSlug)) {
     if (!NODE_UID_RE.test(uid) || typeof slug !== 'string' || !slug) {
@@ -6817,13 +6817,13 @@ export function overviewFailure(parsed) {
   }
   const edgeTotal = graph.resolvedEdges + graph.externalEdges + graph.unresolvedEdges;
   if (edgeTotal !== graph.edges) {
-    return `overview response edge count mismatch — edges ${graph.edges}, resolved+external+unresolved ${edgeTotal}`;
+    return `overview response edge count mismatch: edges ${graph.edges}, resolved+external+unresolved ${edgeTotal}`;
   }
   const byKindFailure = countMapFailure('overview', 'byKind', parsed.byKind);
   if (byKindFailure) return byKindFailure;
   const byKindTotal = Object.values(parsed.byKind).reduce((sum, count) => sum + count, 0);
   if (byKindTotal !== graph.nodes) {
-    return `overview response byKind mismatch — nodes ${graph.nodes}, byKind ${byKindTotal}`;
+    return `overview response byKind mismatch: nodes ${graph.nodes}, byKind ${byKindTotal}`;
   }
   if (!Array.isArray(parsed.hubs)) {
     return 'overview response missing hubs array';
@@ -6902,7 +6902,7 @@ export function neighborsFailure(parsed, expectedSlug) {
     return `neighbors returned unexpected operation: ${parsed?.operation}`;
   }
   if (parsed.center !== expectedSlug) {
-    return `neighbors center mismatch — expected ${expectedSlug}, got ${parsed.center}`;
+    return `neighbors center mismatch: expected ${expectedSlug}, got ${parsed.center}`;
   }
   if (!parsed.node || parsed.node.slug !== parsed.center) {
     return 'neighbors response missing center node';
@@ -6917,10 +6917,10 @@ export function neighborsFailure(parsed, expectedSlug) {
     return 'neighbors response missing edges array';
   }
   if (parsed.edges.length > parsed.total) {
-    return `neighbors response edge count exceeds total — edges ${parsed.edges.length}, total ${parsed.total}`;
+    return `neighbors response edge count exceeds total: edges ${parsed.edges.length}, total ${parsed.total}`;
   }
   if (!parsed.limited && parsed.edges.length !== parsed.total) {
-    return `neighbors response edge count mismatch — edges ${parsed.edges.length}, total ${parsed.total}`;
+    return `neighbors response edge count mismatch: edges ${parsed.edges.length}, total ${parsed.total}`;
   }
   if (!Array.isArray(parsed.nodes)) {
     return 'neighbors response missing nodes array';
@@ -6940,7 +6940,7 @@ export function pathQueryFailure(parsed, expectedFrom, expectedTo = expectedFrom
     return `path returned unexpected operation: ${parsed?.operation}`;
   }
   if (parsed.from !== expectedFrom || parsed.to !== expectedTo) {
-    return `path endpoint mismatch — expected ${expectedFrom}->${expectedTo}, got ${parsed.from}->${parsed.to}`;
+    return `path endpoint mismatch: expected ${expectedFrom}->${expectedTo}, got ${parsed.from}->${parsed.to}`;
   }
   if (parsed.found !== true) {
     return 'path response expected found:true';
@@ -6988,7 +6988,7 @@ export function allPathsQueryFailure(parsed, expectedFrom, expectedTo = expected
     return `all_paths returned unexpected operation: ${parsed?.operation}`;
   }
   if (parsed.from !== expectedFrom || parsed.to !== expectedTo) {
-    return `all_paths endpoint mismatch — expected ${expectedFrom}->${expectedTo}, got ${parsed.from}->${parsed.to}`;
+    return `all_paths endpoint mismatch: expected ${expectedFrom}->${expectedTo}, got ${parsed.from}->${parsed.to}`;
   }
   if (typeof parsed.found !== 'boolean') {
     return 'all_paths response missing found flag';
@@ -7003,7 +7003,7 @@ export function allPathsQueryFailure(parsed, expectedFrom, expectedTo = expected
     return 'all_paths response missing expandedStates';
   }
   if (parsed.expandedStates > parsed.searchBudget) {
-    return `all_paths response exceeded searchBudget — expanded ${parsed.expandedStates}, budget ${parsed.searchBudget}`;
+    return `all_paths response exceeded searchBudget: expanded ${parsed.expandedStates}, budget ${parsed.searchBudget}`;
   }
   if (typeof parsed.exhaustive !== 'boolean') {
     return 'all_paths response missing exhaustive flag';
@@ -7027,13 +7027,13 @@ export function allPathsQueryFailure(parsed, expectedFrom, expectedTo = expected
     return 'all_paths response missing paths array';
   }
   if (parsed.paths.length > parsed.limit) {
-    return `all_paths response path count exceeds limit — paths ${parsed.paths.length}, limit ${parsed.limit}`;
+    return `all_paths response path count exceeds limit: paths ${parsed.paths.length}, limit ${parsed.limit}`;
   }
   if (parsed.paths.length > parsed.totalPaths) {
-    return `all_paths response path count exceeds total — paths ${parsed.paths.length}, total ${parsed.totalPaths}`;
+    return `all_paths response path count exceeds total: paths ${parsed.paths.length}, total ${parsed.totalPaths}`;
   }
   if (!parsed.limited && parsed.paths.length !== parsed.totalPaths) {
-    return `all_paths response total mismatch — paths ${parsed.paths.length}, total ${parsed.totalPaths}`;
+    return `all_paths response total mismatch: paths ${parsed.paths.length}, total ${parsed.totalPaths}`;
   }
   const evidenceFailure = allPathsEvidenceFailure(parsed.evidence, parsed);
   if (evidenceFailure) return evidenceFailure;
@@ -7108,7 +7108,7 @@ export function projectScopeFailure(parsed, expectedProject) {
     return `project_scope returned unexpected operation: ${parsed?.operation}`;
   }
   if (parsed.project !== expectedProject) {
-    return `project_scope project mismatch — expected ${expectedProject}, got ${parsed.project}`;
+    return `project_scope project mismatch: expected ${expectedProject}, got ${parsed.project}`;
   }
   if (!parsed.node || parsed.node.slug !== parsed.project) {
     return 'project_scope response missing project node';
@@ -7130,7 +7130,7 @@ export function projectScopeFailure(parsed, expectedProject) {
     return 'project_scope nodes missing total';
   }
   if (parsed.nodes.total !== parsed.summary.nodes) {
-    return `project_scope node total mismatch — summary ${parsed.summary.nodes}, bucket ${parsed.nodes.total}`;
+    return `project_scope node total mismatch: summary ${parsed.summary.nodes}, bucket ${parsed.nodes.total}`;
   }
   if (typeof parsed.nodes.limited !== 'boolean') {
     return 'project_scope nodes missing limited flag';
@@ -7139,14 +7139,14 @@ export function projectScopeFailure(parsed, expectedProject) {
     return 'project_scope nodes missing rows';
   }
   if (parsed.nodes.rows.length > parsed.nodes.total) {
-    return `project_scope nodes exceed total — rows ${parsed.nodes.rows.length}, total ${parsed.nodes.total}`;
+    return `project_scope nodes exceed total: rows ${parsed.nodes.rows.length}, total ${parsed.nodes.total}`;
   }
   if (!parsed.nodes.limited && parsed.nodes.rows.length !== parsed.nodes.total) {
-    return `project_scope node count mismatch — rows ${parsed.nodes.rows.length}, total ${parsed.nodes.total}`;
+    return `project_scope node count mismatch: rows ${parsed.nodes.rows.length}, total ${parsed.nodes.total}`;
   }
   const byKindTotal = Object.values(parsed.byKind).reduce((sum, count) => sum + count, 0);
   if (byKindTotal !== parsed.summary.nodes) {
-    return `project_scope byKind mismatch — nodes ${parsed.summary.nodes}, byKind ${byKindTotal}`;
+    return `project_scope byKind mismatch: nodes ${parsed.summary.nodes}, byKind ${byKindTotal}`;
   }
   if (!parsed.edges || typeof parsed.edges !== 'object' || Array.isArray(parsed.edges)) {
     return 'project_scope response missing edges';
@@ -7162,7 +7162,7 @@ export function projectScopeFailure(parsed, expectedProject) {
     const bucketFailure = scopeEdgeBucketFailure(`project_scope ${key}`, bucket);
     if (bucketFailure) return bucketFailure;
     if (bucket.total !== expectedTotal) {
-      return `project_scope ${key} edge total mismatch — summary ${expectedTotal}, bucket ${bucket.total}`;
+      return `project_scope ${key} edge total mismatch: summary ${expectedTotal}, bucket ${bucket.total}`;
     }
   }
   return null;
@@ -7194,10 +7194,10 @@ function scopeEdgeBucketFailure(label, bucket) {
     return `${label} missing edges array`;
   }
   if (bucket.edges.length > bucket.total) {
-    return `${label} edges exceed total — edges ${bucket.edges.length}, total ${bucket.total}`;
+    return `${label} edges exceed total: edges ${bucket.edges.length}, total ${bucket.total}`;
   }
   if (!bucket.limited && bucket.edges.length !== bucket.total) {
-    return `${label} edge count mismatch — edges ${bucket.edges.length}, total ${bucket.total}`;
+    return `${label} edge count mismatch: edges ${bucket.edges.length}, total ${bucket.total}`;
   }
   for (const [index, edge] of bucket.edges.entries()) {
     const edgeFailure = graphEdgeFailure(label, edge, index);
@@ -7229,7 +7229,7 @@ export function verifyCountConsistencyFailure({ kinds, list, validation, compile
   const [baseLabel, baseValue] = counts[0];
   for (const [label, value] of counts.slice(1)) {
     if (value !== baseValue) {
-      return `verify count mismatch — ${baseLabel} ${baseValue}, ${label} ${value}`;
+      return `verify count mismatch: ${baseLabel} ${baseValue}, ${label} ${value}`;
     }
   }
   if (kinds?.byKind && compiled?.byKind) {
@@ -7238,7 +7238,7 @@ export function verifyCountConsistencyFailure({ kinds, list, validation, compile
       const kindsCount = kinds.byKind[kind] ?? 0;
       const compiledCount = compiled.byKind[kind] ?? 0;
       if (kindsCount !== compiledCount) {
-        return `verify byKind mismatch — ${kind}: list_kinds ${kindsCount}, compile_ontology ${compiledCount}`;
+        return `verify byKind mismatch: ${kind}: list_kinds ${kindsCount}, compile_ontology ${compiledCount}`;
       }
     }
   }
@@ -7248,7 +7248,7 @@ export function verifyCountConsistencyFailure({ kinds, list, validation, compile
       const kindsCount = kinds.byKind[kind] ?? 0;
       const overviewCount = overview.byKind[kind] ?? 0;
       if (kindsCount !== overviewCount) {
-        return `verify byKind mismatch — ${kind}: list_kinds ${kindsCount}, overview ${overviewCount}`;
+        return `verify byKind mismatch: ${kind}: list_kinds ${kindsCount}, overview ${overviewCount}`;
       }
     }
   }
@@ -8523,7 +8523,7 @@ function agentGuardrailCallsFailure(label, calls) {
 }
 
 async function step1ParserSmoke() {
-  log('info', 'step 1 — parser smoke test');
+  log('info', 'step 1: parser smoke test');
   return new Promise((res) => {
     const proc = spawn(process.execPath, [PARSER_TEST], { stdio: ['ignore', 'pipe', 'pipe'] });
     let stdout = '';
@@ -8559,7 +8559,7 @@ async function step2BootAndCall() {
     log('fail', verifyKillGraceValueErrorMessage());
     return false;
   }
-  log('info', `step 2 — server boot + tools/list + list_concepts/project probe/get_concept/get_concepts/find_evidence/find_backlinks/query_concepts/limited query_concepts/analyze_repo_structure/infer_imports/index_project/find_neighbors/find_path/find_orphans/list_kinds/destructive dry-runs (vault=${VAULT}, timeout=${timeoutMs}ms)`);
+  log('info', `step 2: server boot + tools/list + list_concepts/project probe/get_concept/get_concepts/find_evidence/find_backlinks/query_concepts/limited query_concepts/analyze_repo_structure/infer_imports/index_project/find_neighbors/find_path/find_orphans/list_kinds/destructive dry-runs (vault=${VAULT}, timeout=${timeoutMs}ms)`);
 
   // Slice 0 — the absorb_document dry-run request (id 69, part of the
   // initial batch above) targets this temp fixture. Must exist before the
@@ -8865,7 +8865,7 @@ async function step2BootAndCall() {
           log('fail', serverStartupFailure(stderr, verifyRetryEnvForVault(VAULT)));
           return res(false);
         }
-        log('ok', `initialize OK — server ${initRes.result.serverInfo?.name}@${initRes.result.serverInfo?.version}`);
+        log('ok', `initialize OK: server ${initRes.result.serverInfo?.name}@${initRes.result.serverInfo?.version}`);
         if (!callRes || !callRes.result) {
           log('fail', 'no list_concepts response');
           return res(false);
@@ -8880,7 +8880,7 @@ async function step2BootAndCall() {
           log('fail', structuredFailure);
           return res(false);
         }
-        log('ok', `list_concepts — vault total ${earlyEmptyVaultPayload.total} nodes (vaultRoot ${earlyEmptyVaultPayload.vaultRoot})`);
+        log('ok', `list_concepts: vault total ${earlyEmptyVaultPayload.total} nodes (vaultRoot ${earlyEmptyVaultPayload.vaultRoot})`);
         log('fail', emptyVerifyVaultFailure(earlyEmptyVaultPayload));
         return res(false);
       }
@@ -8889,14 +8889,14 @@ async function step2BootAndCall() {
         log('fail', serverStartupFailure(stderr, verifyRetryEnvForVault(VAULT)));
         return res(false);
       }
-      log('ok', `initialize OK — server ${initRes.result.serverInfo?.name}@${initRes.result.serverInfo?.version}`);
+      log('ok', `initialize OK: server ${initRes.result.serverInfo?.name}@${initRes.result.serverInfo?.version}`);
 
       const instructionFailure = initializeInstructionsFailure(initRes);
       if (instructionFailure) {
         log('fail', instructionFailure);
         return res(false);
       }
-      log('ok', 'initialize instructions — tool inventory plus first-contact safety and recovery guidance present');
+      log('ok', 'initialize instructions: tool inventory plus first-contact safety and recovery guidance present');
 
       if (!listRes || !listRes.result?.tools) {
         log('fail', 'no tools/list response');
@@ -8908,44 +8908,44 @@ async function step2BootAndCall() {
         return res(false);
       }
       const toolNames = listRes.result.tools.map((t) => t.name).sort();
-      log('ok', `tools/list ${toolNames.length}/${EXPECTED_TOOLS.length} (${toolsListAnnotationSummary(listRes.result.tools)}) — ${toolNames.join(' · ')}`);
-      log('ok', 'tools/list inventory names — missing/extra/duplicate/invalid checks passed');
+      log('ok', `tools/list ${toolNames.length}/${EXPECTED_TOOLS.length} (${toolsListAnnotationSummary(listRes.result.tools)}): ${toolNames.join(' · ')}`);
+      log('ok', 'tools/list inventory names: missing/extra/duplicate/invalid checks passed');
       const schemaFailure = toolsListSchemaFailure(listRes.result.tools);
       if (schemaFailure) {
         log('fail', schemaFailure);
         return res(false);
       }
-      log('ok', `tools/list schema contract — ${TOOLS_LIST_SCHEMA_CONTRACT_SUMMARY}`);
+      log('ok', `tools/list schema contract: ${TOOLS_LIST_SCHEMA_CONTRACT_SUMMARY}`);
       const strictFailure = strictArgsFailure(strictArgsRes);
       if (strictFailure) {
         log('fail', strictFailure);
         return res(false);
       }
-      log('ok', 'strict arguments — unknown tool argument rejected at runtime');
+      log('ok', 'strict arguments: unknown tool argument rejected at runtime');
       const strictMultiFailure = strictMultiArgsFailure(strictMultiArgsRes);
       if (strictMultiFailure) {
         log('fail', strictMultiFailure);
         return res(false);
       }
-      log('ok', 'strict arguments — multiple unknown tool arguments reported together');
+      log('ok', 'strict arguments: multiple unknown tool arguments reported together');
       const strictUnknownToolFailureMessage = strictUnknownToolFailure(strictUnknownToolRes);
       if (strictUnknownToolFailureMessage) {
         log('fail', strictUnknownToolFailureMessage);
         return res(false);
       }
-      log('ok', 'strict tool names — unknown tool rejected with closest-name hint');
+      log('ok', 'strict tool names: unknown tool rejected with closest-name hint');
       const addConceptsRowIsolationFailure = batchRowIsolationFailure(addConceptsRowIsolationRes, 'concepts', 'add_concepts');
       if (addConceptsRowIsolationFailure) {
         log('fail', addConceptsRowIsolationFailure);
         return res(false);
       }
-      log('ok', 'add_concepts — non-object, single/multi unknown-field repair, Received fields, duplicate-slug rows isolated with input indexes, and invalid-only batches return no write metadata');
+      log('ok', 'add_concepts: non-object, single/multi unknown-field repair, Received fields, duplicate-slug rows isolated with input indexes, and invalid-only batches return no write metadata');
       const addRelationsRowIsolationFailure = batchRowIsolationFailure(addRelationsRowIsolationRes, 'relations', 'add_relations');
       if (addRelationsRowIsolationFailure) {
         log('fail', addRelationsRowIsolationFailure);
         return res(false);
       }
-      log('ok', 'add_relations — non-object, single/multi unknown-field repair, Received fields, invalid-type rows isolated with input indexes and closest-value hints, and invalid-only batches return no write metadata');
+      log('ok', 'add_relations: non-object, single/multi unknown-field repair, Received fields, invalid-type rows isolated with input indexes and closest-value hints, and invalid-only batches return no write metadata');
       const getConceptsBatchCapFailure = batchCapFailure(responses.find((r) => r.id === 64), 'get_concepts', 'slugs');
       if (getConceptsBatchCapFailure) {
         log('fail', getConceptsBatchCapFailure);
@@ -8961,7 +8961,7 @@ async function step2BootAndCall() {
         log('fail', addRelationsBatchCapFailure);
         return res(false);
       }
-      log('ok', 'batch caps — get_concepts/add_concepts/add_relations reject 51 rows with invalid_arguments');
+      log('ok', 'batch caps: get_concepts/add_concepts/add_relations reject 51 rows with invalid_arguments');
       const destructiveDryRunResponses = destructiveDryRunExpectedResponses.map(([toolName, id]) => [
         toolName,
         responses.find((response) => response.id === id),
@@ -8973,28 +8973,28 @@ async function step2BootAndCall() {
           return res(false);
         }
         destructiveDryRunCount = destructiveDryRunResponses.length;
-        log('ok', `destructive dry-runs — ${destructiveDryRunResponses.map(([toolName]) => toolName).join(' · ')} previewReady/canConfirm contract without write-maintenance`);
+        log('ok', `destructive dry-runs: ${destructiveDryRunResponses.map(([toolName]) => toolName).join(' · ')} previewReady/canConfirm contract without write-maintenance`);
       }
       const absorbDocumentDryRunFailureMessage = absorbDocumentDryRunFailure(absorbDocumentDryRunRes);
       if (absorbDocumentDryRunFailureMessage) {
         log('fail', absorbDocumentDryRunFailureMessage);
         return res(false);
       }
-      log('ok', 'absorb_document dry-run — outside-repo temp fixture explicitly opted in, classified (policy + architecture sections), and not written');
+      log('ok', 'absorb_document dry-run: outside-repo temp fixture explicitly opted in, classified (policy + architecture sections), and not written');
       if (patchConflictGuardRes) {
         const patchConflictFailure = patchConflictGuardFailure(patchConflictGuardRes);
         if (patchConflictFailure) {
           log('fail', patchConflictFailure);
           return res(false);
         }
-        log('ok', 'patch_concept conflict guard — stale expected_mtime rejected with vault_conflict');
+        log('ok', 'patch_concept conflict guard: stale expected_mtime rejected with vault_conflict');
       }
       const strictEnum = strictEnumFailure(strictEnumRes);
       if (strictEnum) {
         log('fail', strictEnum);
         return res(false);
       }
-      log('ok', 'strict enums — invalid query operation rejected with closest-value hint');
+      log('ok', 'strict enums: invalid query operation rejected with closest-value hint');
       const strictMaintenancePhaseFilter = strictMaintenanceFilterFailure(strictMaintenancePhaseFilterRes, 'phases');
       if (strictMaintenancePhaseFilter) {
         log('fail', strictMaintenancePhaseFilter);
@@ -9010,19 +9010,19 @@ async function step2BootAndCall() {
         log('fail', strictMaintenanceKindFilter);
         return res(false);
       }
-      log('ok', `strict maintenance filters — invalid phase/severity/kind rejected at runtime (${maintenanceFilterEnumSummary()})`);
+      log('ok', `strict maintenance filters: invalid phase/severity/kind rejected at runtime (${maintenanceFilterEnumSummary()})`);
       const strictRelationFilter = strictRelationFilterFailure(strictRelationFilterRes);
       if (strictRelationFilter) {
         log('fail', strictRelationFilter);
         return res(false);
       }
-      log('ok', 'strict relation filters — invalid dependencyTypes rejected with closest-value hint');
+      log('ok', 'strict relation filters: invalid dependencyTypes rejected with closest-value hint');
       const strictFindNeighborsTypeFilter = strictFindNeighborsTypeFailure(strictFindNeighborsTypeFilterRes);
       if (strictFindNeighborsTypeFilter) {
         log('fail', strictFindNeighborsTypeFilter);
         return res(false);
       }
-      log('ok', 'strict find_neighbors filters — invalid relation types rejected before slug resolution with closest-value hint');
+      log('ok', 'strict find_neighbors filters: invalid relation types rejected before slug resolution with closest-value hint');
       const strictFindOrphansKindFilter = strictFindOrphansKindFailure(strictFindOrphansKindFilterRes);
       if (strictFindOrphansKindFilter) {
         log('fail', strictFindOrphansKindFilter);
@@ -9033,13 +9033,13 @@ async function step2BootAndCall() {
         log('fail', strictFindOrphansExcludeKindFilter);
         return res(false);
       }
-      log('ok', 'strict find_orphans filters — invalid kind/excludeKinds rejected with closest-value hints');
+      log('ok', 'strict find_orphans filters: invalid kind/excludeKinds rejected with closest-value hints');
       const strictListConceptsKindFilter = strictListConceptsKindFailure(strictListConceptsKindFilterRes);
       if (strictListConceptsKindFilter) {
         log('fail', strictListConceptsKindFilter);
         return res(false);
       }
-      log('ok', 'strict list_concepts filters — invalid kind rejected with closest-value hint');
+      log('ok', 'strict list_concepts filters: invalid kind rejected with closest-value hint');
       const strictQueryConceptsKindFilter = strictQueryConceptsFilterFailure(strictQueryConceptsKindFilterRes);
       if (strictQueryConceptsKindFilter) {
         log('fail', strictQueryConceptsKindFilter);
@@ -9053,19 +9053,19 @@ async function step2BootAndCall() {
         log('fail', strictQueryConceptsHasKeyFilter);
         return res(false);
       }
-      log('ok', 'strict query_concepts filters — invalid kind/has-key rejected with closest-value hints');
+      log('ok', 'strict query_concepts filters: invalid kind/has-key rejected with closest-value hints');
       const strictRelationCheck = strictRelationCheckFailure(strictRelationCheckRes);
       if (strictRelationCheck) {
         log('fail', strictRelationCheck);
         return res(false);
       }
-      log('ok', 'strict relation_check — invalid type rejected before endpoint resolution with closest-value hint and structured repair');
+      log('ok', 'strict relation_check: invalid type rejected before endpoint resolution with closest-value hint and structured repair');
       const strictAddRelation = strictAddRelationFailure(strictAddRelationRes);
       if (strictAddRelation) {
         log('fail', strictAddRelation);
         return res(false);
       }
-      log('ok', 'strict add_relation — invalid type rejected before endpoint resolution with structured repair and no write metadata');
+      log('ok', 'strict add_relation: invalid type rejected before endpoint resolution with structured repair and no write metadata');
       const strictGraphKindFilter = strictGraphKindFilterFailure(strictGraphKindFilterRes);
       if (strictGraphKindFilter) {
         log('fail', strictGraphKindFilter);
@@ -9094,7 +9094,7 @@ async function step2BootAndCall() {
         log('fail', strictMatchEdgesTypeFilter);
         return res(false);
       }
-      log('ok', 'strict graph filters — invalid match_nodes.kind/sort, match_edges.type, and recommend_relations.kind rejected with narrowed diagnostics');
+      log('ok', 'strict graph filters: invalid match_nodes.kind/sort, match_edges.type, and recommend_relations.kind rejected with narrowed diagnostics');
       const strictGraphFromKindFilter = strictGraphKindFilterFailure(strictGraphFromKindFilterRes, { field: 'fromKind' });
       if (strictGraphFromKindFilter) {
         log('fail', strictGraphFromKindFilter);
@@ -9109,7 +9109,7 @@ async function step2BootAndCall() {
         log('fail', strictGraphToKindFilter);
         return res(false);
       }
-      log('ok', 'strict graph edge kind filters — invalid match_edges.fromKind/toKind rejected with closest-value hints');
+      log('ok', 'strict graph edge kind filters: invalid match_edges.fromKind/toKind rejected with closest-value hints');
 
       if (!maintenanceMissingCursorRes || !maintenanceMissingCursorRes.result) {
         log('fail', 'no query_ontology maintenance missing-cursor response');
@@ -9128,7 +9128,7 @@ async function step2BootAndCall() {
           log('fail', structuredFailure);
           return res(false);
         }
-        log('ok', `maintenance cursor — missing afterActionId reported (${parsed.cursor.reason}; ${maintenanceBucketOutputSummary(parsed)}; ${maintenanceNextActionOutputSummary(parsed)})`);
+        log('ok', `maintenance cursor: missing afterActionId reported (${parsed.cursor.reason}; ${maintenanceBucketOutputSummary(parsed)}; ${maintenanceNextActionOutputSummary(parsed)})`);
       } catch (err) {
         log('fail', `failed to parse maintenance missing-cursor response: ${err.message}`);
         return res(false);
@@ -9153,7 +9153,7 @@ async function step2BootAndCall() {
           return res(false);
         }
         maintenanceReadyCursorPayload = parsed;
-        log('ok', `maintenance cursor — ready page stable (${formatCount(parsed.summary.remainingActions, 'remaining action')}; ${maintenanceBucketOutputSummary(parsed)}; ${maintenanceNextActionOutputSummary(parsed)})`);
+        log('ok', `maintenance cursor: ready page stable (${formatCount(parsed.summary.remainingActions, 'remaining action')}; ${maintenanceBucketOutputSummary(parsed)}; ${maintenanceNextActionOutputSummary(parsed)})`);
       } catch (err) {
         log('fail', `failed to parse maintenance ready-cursor response: ${err.message}`);
         return res(false);
@@ -9180,14 +9180,14 @@ async function step2BootAndCall() {
             return res(false);
           }
           maintenanceResumeVerified = true;
-          log('ok', `maintenance cursor — resume afterActionId advanced (${resumeAfterActionId}; ${formatCount(parsed.summary.remainingActions, 'remaining action')}; ${maintenanceBucketOutputSummary(parsed)}; ${maintenanceNextActionOutputSummary(parsed)})`);
+          log('ok', `maintenance cursor: resume afterActionId advanced (${resumeAfterActionId}; ${formatCount(parsed.summary.remainingActions, 'remaining action')}; ${maintenanceBucketOutputSummary(parsed)}; ${maintenanceNextActionOutputSummary(parsed)})`);
         } catch (err) {
           log('fail', `failed to parse maintenance resume-cursor response: ${err.message}`);
           return res(false);
         }
       } else {
         maintenanceResumeSkipped = true;
-        log('info', 'maintenance cursor — resume skipped (ready page has no actions)');
+        log('info', 'maintenance cursor: resume skipped (ready page has no actions)');
       }
 
       if (!callRes || !callRes.result) {
@@ -9218,7 +9218,7 @@ async function step2BootAndCall() {
           }
         }
         graphSmokeArgs = buildGraphQuerySmokeArgs(parsed, projectProbePayloadForSmoke);
-        log('ok', `list_concepts — vault total ${parsed.total} nodes (vaultRoot ${parsed.vaultRoot})`);
+        log('ok', `list_concepts: vault total ${parsed.total} nodes (vaultRoot ${parsed.vaultRoot})`);
         const emptyVaultFailure = emptyVerifyVaultFailure(parsed);
         if (emptyVaultFailure) {
           log('fail', emptyVaultFailure);
@@ -9253,7 +9253,7 @@ async function step2BootAndCall() {
             return res(false);
           }
           getConceptVerified = true;
-          log('ok', `get_concept — ${parsed.slug} (${parsed.outgoingEdges.length} outgoing edges)`);
+          log('ok', `get_concept: ${parsed.slug} (${parsed.outgoingEdges.length} outgoing edges)`);
         } catch (err) {
           log('fail', `failed to parse get_concept response: ${err.message}`);
           return res(false);
@@ -9274,7 +9274,7 @@ async function step2BootAndCall() {
         }
         const okRows = parsed.concepts.filter((row) => row?.ok === true).length;
         const partialRows = parsed.concepts.filter((row) => row?.ok === false).length;
-        log('ok', `get_concepts — ${formatCount(okRows, 'ok row')}, ${formatCount(partialRows, 'partial row')}`);
+        log('ok', `get_concepts: ${formatCount(okRows, 'ok row')}, ${formatCount(partialRows, 'partial row')}`);
       } catch (err) {
         log('fail', `failed to parse get_concepts response: ${err.message}`);
         return res(false);
@@ -9297,7 +9297,7 @@ async function step2BootAndCall() {
           log('fail', structuredFailure);
           return res(false);
         }
-        log('ok', `find_evidence — ${formatCount(parsed.matches.length, 'evidence result')} for "${parsed.query}"`);
+        log('ok', `find_evidence: ${formatCount(parsed.matches.length, 'evidence result')} for "${parsed.query}"`);
       } catch (err) {
         log('fail', `failed to parse find_evidence response: ${err.message}`);
         return res(false);
@@ -9323,7 +9323,7 @@ async function step2BootAndCall() {
             return res(false);
           }
           findBacklinksVerified = true;
-          log('ok', `find_backlinks — ${parsed.target} (${formatCount(parsed.total, 'backlink')})`);
+          log('ok', `find_backlinks: ${parsed.target} (${formatCount(parsed.total, 'backlink')})`);
         } catch (err) {
           log('fail', `failed to parse find_backlinks response: ${err.message}`);
           return res(false);
@@ -9347,7 +9347,7 @@ async function step2BootAndCall() {
           log('fail', structuredFailure);
           return res(false);
         }
-        log('ok', `query_concepts — ${formatCount(parsed.matches.length, 'query result')} / ${formatCount(parsed.total, 'total query result')}`);
+        log('ok', `query_concepts: ${formatCount(parsed.matches.length, 'query result')} / ${formatCount(parsed.total, 'total query result')}`);
       } catch (err) {
         log('fail', `failed to parse query_concepts response: ${err.message}`);
         return res(false);
@@ -9377,7 +9377,7 @@ async function step2BootAndCall() {
             return res(false);
           }
           limitedQueryConceptsVerified = true;
-          log('ok', `query_concepts limited — ${formatCount(parsed.matches.length, 'query result')} / ${formatCount(parsed.total, 'total query result')} (limited ${parsed.limited})`);
+          log('ok', `query_concepts limited: ${formatCount(parsed.matches.length, 'query result')} / ${formatCount(parsed.total, 'total query result')} (limited ${parsed.limited})`);
         } catch (err) {
           log('fail', `failed to parse query_concepts_limited response: ${err.message}`);
           return res(false);
@@ -9401,7 +9401,7 @@ async function step2BootAndCall() {
           log('fail', structuredFailure);
           return res(false);
         }
-        log('ok', `analyze_repo_structure — ${parsed.framework} (${formatCount(parsed.domains.length, 'domain candidate')}, ${formatCount(parsed.capabilities.length, 'capability candidate')}, ${formatCount(parsed.elements.length, 'element candidate')})`);
+        log('ok', `analyze_repo_structure: ${parsed.framework} (${formatCount(parsed.domains.length, 'domain candidate')}, ${formatCount(parsed.capabilities.length, 'capability candidate')}, ${formatCount(parsed.elements.length, 'element candidate')})`);
       } catch (err) {
         log('fail', `failed to parse analyze_repo_structure response: ${err.message}`);
         return res(false);
@@ -9424,7 +9424,7 @@ async function step2BootAndCall() {
           log('fail', structuredFailure);
           return res(false);
         }
-        log('ok', `infer_imports — ${formatCount(parsed.filesScanned, 'file')} scanned, ${formatCount(parsed.moduleEdges.length, 'module edge')} (${importModuleEdgeKindOutputSummary(parsed.moduleEdges)})`);
+        log('ok', `infer_imports: ${formatCount(parsed.filesScanned, 'file')} scanned, ${formatCount(parsed.moduleEdges.length, 'module edge')} (${importModuleEdgeKindOutputSummary(parsed.moduleEdges)})`);
       } catch (err) {
         log('fail', `failed to parse infer_imports response: ${err.message}`);
         return res(false);
@@ -9447,7 +9447,7 @@ async function step2BootAndCall() {
           log('fail', structuredFailure);
           return res(false);
         }
-        log('ok', `index_project — ${formatCount(parsed.plan.concepts, 'concept candidate')}, ${formatCount(parsed.plan.importRelations, 'import relation')}, validation ${formatCount(parsed.validation.problemFiles, 'problem file')}`);
+        log('ok', `index_project: ${formatCount(parsed.plan.concepts, 'concept candidate')}, ${formatCount(parsed.plan.importRelations, 'import relation')}, validation ${formatCount(parsed.validation.problemFiles, 'problem file')}`);
       } catch (err) {
         log('fail', `failed to parse index_project response: ${err.message}`);
         return res(false);
@@ -9471,7 +9471,7 @@ async function step2BootAndCall() {
             log('fail', structuredFailure);
             return res(false);
           }
-          log('ok', `find_neighbors — ${parsed.center} (${parsed.edges.length}/${parsed.totalEdges} edges, limited ${parsed.limited})`);
+          log('ok', `find_neighbors: ${parsed.center} (${parsed.edges.length}/${parsed.totalEdges} edges, limited ${parsed.limited})`);
         } catch (err) {
           log('fail', `failed to parse find_neighbors response: ${err.message}`);
           return res(false);
@@ -9495,7 +9495,7 @@ async function step2BootAndCall() {
             return res(false);
           }
           directGraphReadsVerified = true;
-          log('ok', `find_path — ${parsed.from} → ${parsed.to} (${formatHopCount(parsed.hopCount)}, ${formatCount(parsed.edges.length, 'edge')})`);
+          log('ok', `find_path: ${parsed.from} → ${parsed.to} (${formatHopCount(parsed.hopCount)}, ${formatCount(parsed.edges.length, 'edge')})`);
         } catch (err) {
           log('fail', `failed to parse find_path response: ${err.message}`);
           return res(false);
@@ -9519,7 +9519,7 @@ async function step2BootAndCall() {
           log('fail', structuredFailure);
           return res(false);
         }
-        log('ok', `find_orphans — ${formatCount(parsed.total, 'orphan')} (root/sentinel defaults excluded)`);
+        log('ok', `find_orphans: ${formatCount(parsed.total, 'orphan')} (root/sentinel defaults excluded)`);
       } catch (err) {
         log('fail', `failed to parse find_orphans response: ${err.message}`);
         return res(false);
@@ -9547,7 +9547,7 @@ async function step2BootAndCall() {
           .sort(([a], [b]) => a.localeCompare(b))
           .map(([kind, count]) => `${kind}:${count}`)
           .join(', ');
-        log('ok', `list_kinds — ${parsed.total} nodes (${kindSummary})`);
+        log('ok', `list_kinds: ${parsed.total} nodes (${kindSummary})`);
       } catch (err) {
         log('fail', `failed to parse list_kinds response: ${err.message}`);
         return res(false);
@@ -9573,7 +9573,7 @@ async function step2BootAndCall() {
         validationPayload = parsed;
         log(
           'ok',
-          `validate_vault — ${formatCount(parsed.scanned ?? 0, 'file')}, ${formatCount(
+          `validate_vault: ${formatCount(parsed.scanned ?? 0, 'file')}, ${formatCount(
             parsed.summary?.problemFiles ?? 0,
             'problem file',
           )}`,
@@ -9600,7 +9600,7 @@ async function step2BootAndCall() {
           log('fail', structuredFailure);
           return res(false);
         }
-        log('ok', `project probe — ${formatCount(parsed.total, 'project node')}`);
+        log('ok', `project probe: ${formatCount(parsed.total, 'project node')}`);
       } catch (err) {
         log('fail', `failed to parse project probe response: ${err.message}`);
         return res(false);
@@ -9625,10 +9625,10 @@ async function step2BootAndCall() {
         }
         log(
           'ok',
-          `workspace_brief — ${parsed.status} (${workspaceBriefSummary(parsed)})`,
+          `workspace_brief: ${parsed.status} (${workspaceBriefSummary(parsed)})`,
         );
         const advisory = advisoryNextActionsSummary(parsed.nextActions);
-        if (advisory) log('info', `workspace_brief non-blocking advisory nextActions — ${advisory}`);
+        if (advisory) log('info', `workspace_brief non-blocking advisory nextActions: ${advisory}`);
       } catch (err) {
         log('fail', `failed to parse workspace_brief response: ${err.message}`);
         return res(false);
@@ -9651,7 +9651,7 @@ async function step2BootAndCall() {
           log('fail', structuredFailure);
           return res(false);
         }
-        log('ok', `agent_brief — ${parsed.status} (${agentBriefSummary(parsed)})`);
+        log('ok', `agent_brief: ${parsed.status} (${agentBriefSummary(parsed)})`);
       } catch (err) {
         log('fail', `failed to parse agent_brief response: ${err.message}`);
         return res(false);
@@ -9676,10 +9676,10 @@ async function step2BootAndCall() {
         }
         log(
           'ok',
-          `workspace_brief_tuned — ${parsed.status} (${workspaceBriefSummary(parsed)}; ${tunedWorkspaceBriefScopeOutputSummary()})`,
+          `workspace_brief_tuned: ${parsed.status} (${workspaceBriefSummary(parsed)}; ${tunedWorkspaceBriefScopeOutputSummary()})`,
         );
         const advisory = advisoryNextActionsSummary(parsed.nextActions);
-        if (advisory) log('info', `workspace_brief_tuned non-blocking advisory nextActions — ${advisory}`);
+        if (advisory) log('info', `workspace_brief_tuned non-blocking advisory nextActions: ${advisory}`);
       } catch (err) {
         log('fail', `failed to parse tuned workspace_brief response: ${err.message}`);
         return res(false);
@@ -9705,12 +9705,12 @@ async function step2BootAndCall() {
         const checksSummary = healthChecksSummary(parsed.checks);
         log(
           'ok',
-          `health — ${parsed.status} (${healthSummary(parsed)}${
+          `health: ${parsed.status} (${healthSummary(parsed)}${
             checksSummary ? `: ${checksSummary}` : ''
           })`,
         );
         const advisory = advisoryHealthChecksSummary(parsed.checks);
-        if (advisory) log('info', `health non-blocking advisory checks — ${advisory}`);
+        if (advisory) log('info', `health non-blocking advisory checks: ${advisory}`);
       } catch (err) {
         log('fail', `failed to parse health response: ${err.message}`);
         return res(false);
@@ -9736,12 +9736,12 @@ async function step2BootAndCall() {
         const checksSummary = healthChecksSummary(parsed.checks);
         log(
           'ok',
-          `health_tuned — ${parsed.status} (${healthSummary(parsed)}${
+          `health_tuned: ${parsed.status} (${healthSummary(parsed)}${
             checksSummary ? `: ${checksSummary}` : ''
           }; ${tunedHealthScopeOutputSummary()})`,
         );
         const advisory = advisoryHealthChecksSummary(parsed.checks);
-        if (advisory) log('info', `health_tuned non-blocking advisory checks — ${advisory}`);
+        if (advisory) log('info', `health_tuned non-blocking advisory checks: ${advisory}`);
       } catch (err) {
         log('fail', `failed to parse tuned health response: ${err.message}`);
         return res(false);
@@ -9765,7 +9765,7 @@ async function step2BootAndCall() {
           return res(false);
         }
         compilePayload = parsed;
-        log('ok', `compile_ontology — graph ${parsed.graphHash.slice(0, 12)} (${parsed.nodeCount} nodes, ${parsed.edgeCount} edges, issues ${parsed.issueCount})`);
+        log('ok', `compile_ontology: graph ${parsed.graphHash.slice(0, 12)} (${parsed.nodeCount} nodes, ${parsed.edgeCount} edges, issues ${parsed.issueCount})`);
       } catch (err) {
         log('fail', `failed to parse compile_ontology response: ${err.message}`);
         return res(false);
@@ -9788,7 +9788,7 @@ async function step2BootAndCall() {
           log('fail', structuredFailure);
           return res(false);
         }
-        log('ok', `compile_ontology page — ${parsed.nodes.length}/${parsed.nodeCount} nodes, ${parsed.edges.length}/${parsed.edgeCount} edges`);
+        log('ok', `compile_ontology page: ${parsed.nodes.length}/${parsed.nodeCount} nodes, ${parsed.edges.length}/${parsed.edgeCount} edges`);
       } catch (err) {
         log('fail', `failed to parse compile_ontology paginated response: ${err.message}`);
         return res(false);
@@ -9813,7 +9813,7 @@ async function step2BootAndCall() {
         }
         log(
           'ok',
-          `compile_ontology indexes — ${compileIndexesSummary(parsed)}`,
+          `compile_ontology indexes: ${compileIndexesSummary(parsed)}`,
         );
       } catch (err) {
         log('fail', `failed to parse compile_ontology indexes response: ${err.message}`);
@@ -9838,7 +9838,7 @@ async function step2BootAndCall() {
           return res(false);
         }
         overviewPayload = parsed;
-        log('ok', `overview — graph ${parsed.graph.graphHash.slice(0, 12)} (${parsed.graph.nodes} nodes, ${parsed.graph.edges} edges, hubs ${(parsed.hubs || []).length})`);
+        log('ok', `overview: graph ${parsed.graph.graphHash.slice(0, 12)} (${parsed.graph.nodes} nodes, ${parsed.graph.edges} edges, hubs ${(parsed.hubs || []).length})`);
       } catch (err) {
         log('fail', `failed to parse overview response: ${err.message}`);
         return res(false);
@@ -9861,7 +9861,7 @@ async function step2BootAndCall() {
           log('fail', structuredFailure);
           return res(false);
         }
-        log('ok', `overview query_plan — ${parsed.estimate.strategy} (${parsed.estimate.costClass}, nodes ${parsed.estimate.nodeScans}, edges ${parsed.estimate.edgeScans})`);
+        log('ok', `overview query_plan: ${parsed.estimate.strategy} (${parsed.estimate.costClass}, nodes ${parsed.estimate.nodeScans}, edges ${parsed.estimate.edgeScans})`);
       } catch (err) {
         log('fail', `failed to parse overview query_plan response: ${err.message}`);
         return res(false);
@@ -9884,7 +9884,7 @@ async function step2BootAndCall() {
           log('fail', structuredFailure);
           return res(false);
         }
-        log('ok', `project_map query_plan — ${parsed.estimate.strategy} (${parsed.estimate.costClass}, nodes ${parsed.estimate.nodeScans}, edges ${parsed.estimate.edgeScans})`);
+        log('ok', `project_map query_plan: ${parsed.estimate.strategy} (${parsed.estimate.costClass}, nodes ${parsed.estimate.nodeScans}, edges ${parsed.estimate.edgeScans})`);
       } catch (err) {
         log('fail', `failed to parse project_map query_plan response: ${err.message}`);
         return res(false);
@@ -9909,7 +9909,7 @@ async function step2BootAndCall() {
             log('fail', structuredFailure);
             return res(false);
           }
-          log('ok', `neighbors — ${parsed.center} (${parsed.edges.length}/${parsed.total} edges, limited ${parsed.limited})`);
+          log('ok', `neighbors: ${parsed.center} (${parsed.edges.length}/${parsed.total} edges, limited ${parsed.limited})`);
         } catch (err) {
           log('fail', `failed to parse neighbors response: ${err.message}`);
           return res(false);
@@ -9933,7 +9933,7 @@ async function step2BootAndCall() {
             log('fail', structuredFailure);
             return res(false);
           }
-          log('ok', `path — ${parsed.from} → ${parsed.to} (${formatHopCount(parsed.hopCount)}, ${formatCount(parsed.edges.length, 'edge')})`);
+          log('ok', `path: ${parsed.from} → ${parsed.to} (${formatHopCount(parsed.hopCount)}, ${formatCount(parsed.edges.length, 'edge')})`);
         } catch (err) {
           log('fail', `failed to parse path response: ${err.message}`);
           return res(false);
@@ -9961,14 +9961,14 @@ async function step2BootAndCall() {
           allPathsVerified = true;
           log(
             'ok',
-            `all_paths — ${parsed.from} → ${parsed.to} (${parsed.paths.length}/${parsed.totalPaths} paths, budget ${parsed.searchBudget}, expanded ${parsed.expandedStates}, exhaustive ${parsed.exhaustive}, evidence ${parsed.evidence.status})`,
+            `all_paths: ${parsed.from} → ${parsed.to} (${parsed.paths.length}/${parsed.totalPaths} paths, budget ${parsed.searchBudget}, expanded ${parsed.expandedStates}, exhaustive ${parsed.exhaustive}, evidence ${parsed.evidence.status})`,
           );
         } catch (err) {
           log('fail', `failed to parse all_paths response: ${err.message}`);
           return res(false);
         }
       } else {
-        log('info', 'neighbors/path/all_paths — skipped (vault has no nodes)');
+        log('info', 'neighbors/path/all_paths: skipped (vault has no nodes)');
       }
 
       if (graphSmokeArgs?.hasProject) {
@@ -9990,13 +9990,13 @@ async function step2BootAndCall() {
             log('fail', structuredFailure);
             return res(false);
           }
-          log('ok', `project_scope — ${parsed.project} (${parsed.summary.nodes} nodes, internalEdges ${parsed.summary.internalEdges})`);
+          log('ok', `project_scope: ${parsed.project} (${parsed.summary.nodes} nodes, internalEdges ${parsed.summary.internalEdges})`);
         } catch (err) {
           log('fail', `failed to parse project_scope response: ${err.message}`);
           return res(false);
         }
       } else {
-        log('info', 'project_scope — skipped (no project node in vault)');
+        log('info', 'project_scope: skipped (no project node in vault)');
       }
 
       const countFailure = verifyCountConsistencyFailure({
@@ -10017,11 +10017,11 @@ async function step2BootAndCall() {
         overview: overviewPayload,
       });
       if (countSummary) {
-        log('ok', `read census consistency — ${countSummary}`);
+        log('ok', `read census consistency: ${countSummary}`);
       }
       log(
         'ok',
-        `structuredContent — ${structuredContentVerifySummary({
+        `structuredContent: ${structuredContentVerifySummary({
           hasNode: Boolean(graphSmokeArgs?.hasNode),
           hasProject: Boolean(graphSmokeArgs?.hasProject),
           hasGetConcept: getConceptVerified,

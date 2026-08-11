@@ -48,11 +48,11 @@ export async function runBacklinks(args) {
   }
 
   process.stdout.write(
-    `${COLORS.bold}${slug}${COLORS.reset} ${COLORS.dim}— ${matches.length} backlink(s)${COLORS.reset}\n\n`,
+    `${COLORS.bold}${slug}${COLORS.reset} ${COLORS.dim}· ${matches.length} backlink(s)${COLORS.reset}\n\n`,
   );
   for (const bl of matches) {
     const keys = Array.isArray(bl.matchedKeys) ? bl.matchedKeys.join(', ') : '';
-    const titleText = bl.title && bl.title !== bl.slug ? ` ${COLORS.dim}— ${bl.title}${COLORS.reset}` : '';
+    const titleText = bl.title && bl.title !== bl.slug ? ` ${COLORS.dim}· ${bl.title}${COLORS.reset}` : '';
     process.stdout.write(
       `  ${COLORS.cyan}${bl.kind ?? '?'}${COLORS.reset}  ` +
         `${bl.slug}${titleText}` +

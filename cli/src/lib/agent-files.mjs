@@ -114,7 +114,7 @@ function normalizePath(path) {
   for (const part of path.split('/')) {
     if (part === '' || part === '.') continue;
     if (part === '..') {
-      if (parts.length === 0) return null; // escapes the root — never resolvable
+      if (parts.length === 0) return null; // escapes the root: never resolvable
       parts.pop();
       continue;
     }
@@ -163,7 +163,7 @@ function checkClaudeAgentsBridge(recordByPath, existingPathSet, drift) {
       check: 'claude-agents-bridge',
       code: 'missing-agents-import',
       path: 'CLAUDE.md',
-      message: 'CLAUDE.md does not import @AGENTS.md — Claude Code and AGENTS.md readers see different instructions',
+      message: 'CLAUDE.md does not import @AGENTS.md: Claude Code and AGENTS.md readers see different instructions',
       detail: { ref: 'AGENTS.md' },
     });
     claude.drift.push('missing-agents-import');
@@ -388,7 +388,7 @@ function checkCodexSizeCap(recordByPath, drift) {
       check: 'codex-size-cap',
       code: 'agents-md-over-codex-cap',
       path: 'AGENTS.md',
-      message: `AGENTS.md is ${bytes} bytes — over the Codex project_doc_max_bytes default of ${CODEX_PROJECT_DOC_CAP_BYTES}`,
+      message: `AGENTS.md is ${bytes} bytes: over the Codex project_doc_max_bytes default of ${CODEX_PROJECT_DOC_CAP_BYTES}`,
       detail: { bytes, capBytes: CODEX_PROJECT_DOC_CAP_BYTES },
     });
     agents.drift.push('agents-md-over-codex-cap');

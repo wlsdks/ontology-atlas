@@ -75,7 +75,7 @@ function assertComponentsShape(result) {
 function render(result) {
   process.stdout.write(
     `${COLORS.bold}graph components${COLORS.reset}` +
-      ` ${COLORS.dim}— ${result.totalComponents} islands · largest ${result.largestSize}` +
+      ` ${COLORS.dim}· ${result.totalComponents} islands · largest ${result.largestSize}` +
       ` · singletons ${result.singletonCount}${result.limited ? ' · limited' : ''}${COLORS.reset}\n\n`,
   );
   for (const component of result.components) {
@@ -90,7 +90,7 @@ function render(result) {
         '\n',
     );
     for (const node of Array.isArray(component.nodes) ? component.nodes : []) {
-      const title = node.title && node.title !== node.slug ? ` ${COLORS.dim}— ${node.title}${COLORS.reset}` : '';
+      const title = node.title && node.title !== node.slug ? ` ${COLORS.dim}· ${node.title}${COLORS.reset}` : '';
       process.stdout.write(`  ${COLORS.cyan}${node.slug}${COLORS.reset}${title} ${COLORS.dim}${node.kind}${COLORS.reset}\n`);
     }
     process.stdout.write('\n');

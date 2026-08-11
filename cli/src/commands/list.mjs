@@ -72,13 +72,13 @@ export function runList(args) {
 
   if (nodes.length === 0) {
     console.log(
-      `${COLORS.dim}[ontology-atlas] ${vaultPath} 에서 ontology 노드 0 — vault 가 비었거나 frontmatter \`kind:\` 가 없는 듯.${COLORS.reset}`,
+      `${COLORS.dim}[ontology-atlas] ${vaultPath} 에서 ontology 노드 0: vault 가 비었거나 frontmatter \`kind:\` 가 없는 듯.${COLORS.reset}`,
     );
     return 0;
   }
 
   console.log(
-    `${COLORS.bold}${vaultPath}${COLORS.reset} ${COLORS.dim}— ${nodes.length} ontology 노드${kindFilter ? ` (kind=${kindFilter})` : ''}${COLORS.reset}\n`,
+    `${COLORS.bold}${vaultPath}${COLORS.reset} ${COLORS.dim}· ${nodes.length} ontology 노드${kindFilter ? ` (kind=${kindFilter})` : ''}${COLORS.reset}\n`,
   );
   for (const n of nodes) {
     const color = KIND_COLORS[n.kind] || '';

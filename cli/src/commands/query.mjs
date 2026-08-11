@@ -54,7 +54,7 @@ export async function runQuery(args) {
   const limited = result?.limited === true;
   process.stdout.write(
     `${COLORS.dim}filter:${COLORS.reset} ${COLORS.bold}${filter}${COLORS.reset} ` +
-      `${COLORS.dim}— showing ${matches.length}/${total} match(es)${limited ? ' (limited)' : ''}${COLORS.reset}\n`,
+      `${COLORS.dim}· showing ${matches.length}/${total} match(es)${limited ? ' (limited)' : ''}${COLORS.reset}\n`,
   );
   if (result?.parsedAs && result.parsedAs !== filter) {
     process.stdout.write(`${COLORS.dim}parsed:${COLORS.reset} ${result.parsedAs}\n`);
@@ -65,7 +65,7 @@ export async function runQuery(args) {
     const kc = KIND_COLORS[m.kind] || COLORS.dim;
     process.stdout.write(
       `  ${kc}${(m.kind || '?').padEnd(12)}${COLORS.reset} ${m.slug}` +
-        (m.title ? ` ${COLORS.dim}— ${m.title}${COLORS.reset}` : '') +
+        (m.title ? ` ${COLORS.dim}· ${m.title}${COLORS.reset}` : '') +
         `\n`,
     );
   }

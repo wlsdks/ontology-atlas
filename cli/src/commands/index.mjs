@@ -345,7 +345,7 @@ function printPlan(payload) {
       `            report business/product domain + capability first; use code rows as implementation evidence\n\n` +
       evidenceBlock +
       reviewBlock +
-      `${COLORS.dim}side effect 0 — --apply can land analyzer concepts/containment. Import evidence always remains rationale-review-required.${COLORS.reset}\n`,
+      `${COLORS.dim}side effect 0: --apply can land analyzer concepts/containment. Import evidence always remains rationale-review-required.${COLORS.reset}\n`,
   );
 }
 

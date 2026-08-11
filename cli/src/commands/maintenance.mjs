@@ -74,7 +74,7 @@ function renderMaintenance(result) {
 
   process.stdout.write(
     `${COLORS.bold}maintenance plan${COLORS.reset}` +
-      ` ${COLORS.dim}— ${summary.remainingActions ?? 0} remaining / ${summary.filteredActions ?? 0} filtered / ${summary.totalActions ?? 0} total${COLORS.reset}\n`,
+      ` ${COLORS.dim}· ${summary.remainingActions ?? 0} remaining / ${summary.filteredActions ?? 0} filtered / ${summary.totalActions ?? 0} total${COLORS.reset}\n`,
   );
   process.stdout.write(
     `${COLORS.dim}cursor:${COLORS.reset} found=${String(cursor.found)}` +
@@ -146,7 +146,7 @@ function printNextMaintenance(result) {
   const cursor = result.cursor ?? {};
   process.stdout.write(
     `${COLORS.bold}next maintenance${COLORS.reset} ${COLORS.cyan}${pointer.id}${COLORS.reset}` +
-      ` ${COLORS.dim}— queue rows are work items, not proof; narrow the queue before acting${COLORS.reset}\n` +
+      ` ${COLORS.dim}· queue rows are work items, not proof; narrow the queue before acting${COLORS.reset}\n` +
       `  ontology-atlas maintenance [vault] --phases ${pointer.phase} --severities ${pointer.severity} --kinds ${pointer.kind} --limit 5\n`,
   );
   if (cursor.nextAfterActionId) {

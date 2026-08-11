@@ -74,7 +74,7 @@ function render(result) {
       const node = row.node ?? row;
       const slug = row.slug ?? node.slug;
       const color = KIND_COLORS[node.kind] || COLORS.cyan;
-      const title = node.title && node.title !== node.slug ? ` ${COLORS.dim}— ${node.title}${COLORS.reset}` : '';
+      const title = node.title && node.title !== node.slug ? ` ${COLORS.dim}· ${node.title}${COLORS.reset}` : '';
       process.stdout.write(`  ${color}${slug}${COLORS.reset}${title}\n`);
     }
     if (layer.limited) {
@@ -97,7 +97,7 @@ function render(result) {
     const end = focus.end ?? focus.path[focus.path.length - 1];
     process.stdout.write(
       `\n${COLORS.dim}next${COLORS.reset} containment ${COLORS.bold}${end}${COLORS.reset}` +
-        `${COLORS.dim} — pattern rows are traversal evidence; inspect the endpoint before writing${COLORS.reset}\n`,
+        `${COLORS.dim} · pattern rows are traversal evidence; inspect the endpoint before writing${COLORS.reset}\n`,
     );
     process.stdout.write(`  ${COLORS.cyan}ontology-atlas node ${end} [vault] --limit 20${COLORS.reset}\n`);
     process.stdout.write(`  ${COLORS.cyan}ontology-atlas path ${result.start} ${end} [vault] --max-hops ${result.pattern.length + 1}${COLORS.reset}\n`);

@@ -75,7 +75,7 @@ function render(result) {
   const graph = result.graph;
   process.stdout.write(
     `${COLORS.bold}graph facets${COLORS.reset}` +
-      ` ${COLORS.dim}— ${graph.nodes} nodes · ${graph.edges} edges` +
+      ` ${COLORS.dim}· ${graph.nodes} nodes · ${graph.edges} edges` +
       ` · resolved ${graph.resolvedEdges} · external ${graph.externalEdges}` +
       `${graph.unresolvedEdges ? ` · unresolved ${graph.unresolvedEdges}` : ''}${COLORS.reset}\n\n`,
   );
@@ -90,7 +90,7 @@ function render(result) {
   if (topNodes.length > 0) {
     process.stdout.write(`${COLORS.dim}top degree${COLORS.reset}\n`);
     for (const node of topNodes) {
-      const title = node.title && node.title !== node.slug ? ` ${COLORS.dim}— ${node.title}${COLORS.reset}` : '';
+      const title = node.title && node.title !== node.slug ? ` ${COLORS.dim}· ${node.title}${COLORS.reset}` : '';
       process.stdout.write(
         `  ${COLORS.cyan}${node.slug}${COLORS.reset}${title}` +
           ` ${COLORS.dim}${node.kind} · degree ${node.degree ?? ((node.inDegree ?? 0) + (node.outDegree ?? 0))}${COLORS.reset}\n`,

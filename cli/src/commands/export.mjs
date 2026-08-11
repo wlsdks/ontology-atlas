@@ -133,8 +133,8 @@ function printUsage(stream = process.stderr) {
       `  ontology-atlas export [vault] [--format jsonld|graphml|json]\n\n` +
       `Export the compiled ontology to a portable interchange format.\n\n` +
       `Options:\n` +
-      `  --format jsonld   RDF 1.1 JSON-LD — rdflib / Protégé / triplestores (default)\n` +
-      `  --format graphml  XML graph — Gephi / Cytoscape / NetworkX\n` +
+      `  --format jsonld   RDF 1.1 JSON-LD: rdflib / Protégé / triplestores (default)\n` +
+      `  --format graphml  XML graph: Gephi / Cytoscape / NetworkX\n` +
       `  --format json     raw deterministic compile artifact (nodes/edges/graphHash)\n` +
       `  --vault path      vault root (default: cwd or OATLAS_VAULT)\n\n` +
       `The payload is written to stdout (pipe-safe); status goes to stderr.\n` +

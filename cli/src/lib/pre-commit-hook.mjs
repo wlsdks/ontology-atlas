@@ -15,13 +15,13 @@
 //     hook 이 아무 것도 강제하지 않는 것으로 충분하다.
 
 export const PRE_COMMIT_MARKER_START =
-  '# >>> ontology-atlas preflight (managed block — safe to remove) >>>';
+  '# >>> ontology-atlas preflight (managed block: safe to remove) >>>';
 export const PRE_COMMIT_MARKER_END =
-  '# <<< ontology-atlas preflight (managed block — safe to remove) <<<';
+  '# <<< ontology-atlas preflight (managed block: safe to remove) <<<';
 
 const HOOK_BLOCK = [
   PRE_COMMIT_MARKER_START,
-  '# Shows which vault nodes this commit touches — informational only, never',
+  '# Shows which vault nodes this commit touches: informational only, never',
   '# blocks the commit. `git commit --no-verify` skips this like any other hook.',
   'if command -v ontology-atlas >/dev/null 2>&1; then',
   '  ontology-atlas preflight --staged',

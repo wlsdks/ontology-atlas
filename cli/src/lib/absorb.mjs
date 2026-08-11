@@ -348,7 +348,7 @@ export function buildSlimPointer(plan) {
   lines.push('');
   lines.push('> **Absorbed into the ontology-atlas vault.** The sections below were');
   lines.push('> converted into typed vault nodes. Edit the vault, not this file, for');
-  lines.push('> the sections that moved — this file is now a slim pointer.');
+  lines.push('> the sections that moved: this file is now a slim pointer.');
   lines.push('');
   if (plan.intro) {
     lines.push(plan.intro);
@@ -365,7 +365,7 @@ export function buildSlimPointer(plan) {
   }
 
   if (suggested.length > 0) {
-    lines.push('## Suggested (not written — review before adding)');
+    lines.push('## Suggested (not written: review before adding)');
     lines.push('');
     for (const s of suggested) {
       lines.push(`- **${s.heading}** → candidate \`${s.targetKind}\` \`${s.targetSlug}\``);
@@ -378,7 +378,7 @@ export function buildSlimPointer(plan) {
     lines.push('');
     for (const s of injectionSuspects) {
       const patterns = s.injection.matches.map((m) => m.pattern).join(', ');
-      lines.push(`- **${s.heading}** — matched: ${patterns}`);
+      lines.push(`- **${s.heading}**: matched: ${patterns}`);
     }
     lines.push('');
   }

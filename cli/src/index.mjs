@@ -73,7 +73,7 @@ const SUBCOMMAND = ARGS[0];
 function printHelp(stream = stdout) {
   stream.write(`${COLORS.bold}ontology-atlas${COLORS.reset} ${COLORS.dim}v${PKG.version}${COLORS.reset}
 
-AI-native codebase ontology workbench — ${CLI_COMMAND_COUNT} commands + MCP setup.
+AI-native codebase ontology workbench: ${CLI_COMMAND_COUNT} commands + MCP setup.
 
 ${COLORS.dim}Run it from an ontology-atlas source checkout: ${COLORS.reset}${COLORS.bold}node cli/src/index.mjs <command>${COLORS.reset}
 ${COLORS.dim}(The rows below shorten that to \`ontology-atlas <command>\`. There is no npm package —${COLORS.reset}
@@ -109,29 +109,29 @@ ${COLORS.bold}Usage:${COLORS.reset}
        --raw-slug --rename --dry-run          ${COLORS.dim}no folder prefix · slug rename · plan-only${COLORS.reset}
   ontology-atlas absorb <file...>             ${COLORS.green}Absorb CLAUDE.md/AGENTS.md into typed vault nodes${COLORS.reset} (Slice 0)
        --vault path --write                   ${COLORS.dim}default dry-run plan · --write lands + rewrites source as slim pointer${COLORS.reset}
-  ontology-atlas moment [vault]                ${COLORS.green}Slice 0 magic-moment readout${COLORS.reset} — init/absorb → first agent-brief elapsed
+  ontology-atlas moment [vault]                ${COLORS.green}Slice 0 magic-moment readout${COLORS.reset}: init/absorb → first agent-brief elapsed
        --mark --json                           ${COLORS.dim}manual stamp fallback · machine output${COLORS.reset}
 
-${COLORS.bold}Bootstrap${COLORS.reset} ${COLORS.dim}(R16/R17 — autonomous ingest base)${COLORS.reset}
-  ontology-atlas index [rootPath]             ${COLORS.green}project ontology index${COLORS.reset} — analyze + imports + validate plan
+${COLORS.bold}Bootstrap${COLORS.reset} ${COLORS.dim}(R16/R17: autonomous ingest base)${COLORS.reset}
+  ontology-atlas index [rootPath]             ${COLORS.green}project ontology index${COLORS.reset}: analyze + imports + validate plan
        --apply --threshold N --json           ${COLORS.dim}analyzer land · import review filter · machine output${COLORS.reset}
-  ontology-atlas bootstrap [rootPath]         ${COLORS.green}1줄 full bootstrap${COLORS.reset} — analyzer write + import review
+  ontology-atlas bootstrap [rootPath]         ${COLORS.green}1줄 full bootstrap${COLORS.reset}: analyzer write + import review
        --threshold N --skip-imports --json    ${COLORS.dim}review filter · imports skip · machine output${COLORS.reset}
   ontology-atlas analyze [rootPath]           Walk a repo, propose ontology node candidates (side effect 0)
        --apply --max-depth N --json           ${COLORS.dim}or land via batch · folder walk depth · machine output${COLORS.reset}
   ontology-atlas infer-imports [rootPath] TS/JS/Python import graph → depends_on edge candidates (side effect 0)
        --apply --threshold N --max-files N    ${COLORS.dim}apply disabled · review filter · default 5000 max${COLORS.reset}
-  ontology-atlas preflight [vault]            ${COLORS.green}Commit preflight${COLORS.reset} — staged files → vault nodes → blast-radius summary
+  ontology-atlas preflight [vault]            ${COLORS.green}Commit preflight${COLORS.reset}: staged files → vault nodes → blast-radius summary
        --staged --depth N --json              ${COLORS.dim}non-blocking, silent when nothing matches${COLORS.reset}
-  ontology-atlas snapshot [vault]             ${COLORS.green}Snapshot the vault${COLORS.reset} — vault-scoped git commit with a semantic summary
+  ontology-atlas snapshot [vault]             ${COLORS.green}Snapshot the vault${COLORS.reset}: vault-scoped git commit with a semantic summary
        --dry-run --push --message "..." --json ${COLORS.dim}local commit by default · --push sends to your existing upstream${COLORS.reset}
        --history [N] --diff --pull             ${COLORS.dim}vault commit log · uncommitted preview · graceful pull (opt-in)${COLORS.reset}
-  ontology-atlas connect-source <project>     ${COLORS.green}Connect the code${COLORS.reset} — bind a project node to the folder it describes
+  ontology-atlas connect-source <project>     ${COLORS.green}Connect the code${COLORS.reset}: bind a project node to the folder it describes
        --root path --confirm --repair --json  ${COLORS.dim}dry-run by default · folder inferred from the vault's git repo${COLORS.reset}
   ontology-atlas disconnect-source <project>  Undo that binding (dry-run by default)
        --confirm --json                       ${COLORS.dim}removes only this project's binding · no markdown changes${COLORS.reset}
 
-${COLORS.bold}Graph-level commands${COLORS.reset} ${COLORS.dim}(R15 — wraps the MCP server, same authority as an AI agent)${COLORS.reset}
+${COLORS.bold}Graph-level commands${COLORS.reset} ${COLORS.dim}(R15: wraps the MCP server, same authority as an AI agent)${COLORS.reset}
   ${COLORS.dim}Set OATLAS_CLI_MCP_TIMEOUT_MS=N when a large / slow vault needs a longer one-shot MCP call window.${COLORS.reset}
   ontology-atlas backlinks <slug>             Every node referencing the slug (--json)
   ontology-atlas orphans [vault]              Isolated nodes (어떤 다른 노드도 reference 안 함)
@@ -147,7 +147,7 @@ ${COLORS.bold}Graph-level commands${COLORS.reset} ${COLORS.dim}(R15 — wraps th
   ontology-atlas relation-check <from> <to> <type>
                                              ${COLORS.dim}schema-aware add_relation preflight${COLORS.reset}
   ontology-atlas relate <from> <to> <type>
-                                             ${COLORS.green}Write a relation${COLORS.reset} — same preflight as relation-check, then lands it
+                                             ${COLORS.green}Write a relation${COLORS.reset}: same preflight as relation-check, then lands it
        --dry-run --json                     ${COLORS.dim}preview only · machine output${COLORS.reset}
   ontology-atlas query "<filter>"             Typed filter DSL (kind=X AND has(elements))
        --limit N --json                       ${COLORS.dim}default limit 100${COLORS.reset}
@@ -155,9 +155,9 @@ ${COLORS.bold}Graph-level commands${COLORS.reset} ${COLORS.dim}(R15 — wraps th
        --kind K --min-degree N --plan --json  ${COLORS.dim}filter-preserving query_plan support${COLORS.reset}
   ontology-atlas match-edges [vault]          Graph DB-style edge scan with type/kind/external filters
        --type T --from-kind K --plan --json   ${COLORS.dim}edge pattern rows + totalMatches${COLORS.reset}
-  ontology-atlas domain-matrix [vault]        Domain coupling matrix — cross-domain edges + examples
+  ontology-atlas domain-matrix [vault]        Domain coupling matrix: cross-domain edges + examples
        --project SLUG --limit N --json         ${COLORS.dim}scope to one project containment tree${COLORS.reset}
-  ontology-atlas facets [vault]              Graph dashboard facets — buckets + top nodes/patterns
+  ontology-atlas facets [vault]              Graph dashboard facets: buckets + top nodes/patterns
        --limit N --json
   ontology-atlas schema [vault]               Relation schema patterns for traversal/write preflight
        --limit N --json
@@ -167,11 +167,11 @@ ${COLORS.bold}Graph-level commands${COLORS.reset} ${COLORS.dim}(R15 — wraps th
        --limit N --item-limit N --json
   ontology-atlas compile [vault]             Deterministic graph compile + optional reorder
        --summary --fix --json                 ${COLORS.dim}hash/counts · canonicalize relation arrays${COLORS.reset}
-  ontology-atlas export [vault]              ${COLORS.green}Interop export${COLORS.reset} — compile → standard exchange format (stdout)
+  ontology-atlas export [vault]              ${COLORS.green}Interop export${COLORS.reset}: compile → standard exchange format (stdout)
        --format jsonld|graphml|json           ${COLORS.dim}RDF JSON-LD · Gephi GraphML · raw artifact${COLORS.reset}
   ontology-atlas overview [vault]             Vault first-contact dashboard (counts + 분포 + 허브)
        --limit N --json                       ${COLORS.dim}허브 N 개 (default 10) · machine output${COLORS.reset}
-  ontology-atlas hubs [vault]                 Centrality 4 rankings — PageRank / Bridges / Authorities / Hubs
+  ontology-atlas hubs [vault]                 Centrality 4 rankings: PageRank / Bridges / Authorities / Hubs
        --limit N --json                       ${COLORS.dim}각 랭킹 N rows (default 10)${COLORS.reset}
   ontology-atlas blast-radius <slug>          선언된 의존 영향 + 근거 자격 (구조 제외)
        --depth N --direction incoming|outgoing|both --json
@@ -183,7 +183,7 @@ ${COLORS.bold}Graph-level commands${COLORS.reset} ${COLORS.dim}(R15 — wraps th
        --limit N --types A,B --include-isolated --json
   ontology-atlas health [vault]               Graph 무결성 dashboard (6 checks, 코드 경로 대조 포함)
        --json --component-types A,B          ${COLORS.dim}focused diagnosis tuning 지원${COLORS.reset}
-  ontology-atlas agent-brief [vault]          Claude Code/Codex handoff — readiness + first MCP calls
+  ontology-atlas agent-brief [vault]          Claude Code/Codex handoff: readiness + first MCP calls
        --prompt --graph-db-pack --verify-fallbacks
                                               ${COLORS.dim}pasteable handoff · shell Graph DB pack · fallback self-check${COLORS.reset}
   ontology-atlas workspace-brief [vault]      Status + hotspots + project_scope 포함 노드 + next actions 한 화면
@@ -192,14 +192,14 @@ ${COLORS.bold}Graph-level commands${COLORS.reset} ${COLORS.dim}(R15 — wraps th
        --limit N --json                       ${COLORS.dim}relations · external refs · dangling refs · ignored refs${COLORS.reset}
   ontology-atlas maintenance [vault]          Ordered graph cleanup/repair work queue
        --limit N --after-action-id ID --json  ${COLORS.dim}cursor page · filterable maintenance_plan${COLORS.reset}
-  ontology-atlas node <slug> [vault]          한 노드 deep dive — header · lineage · incoming/outgoing edges
+  ontology-atlas node <slug> [vault]          한 노드 deep dive: header · lineage · incoming/outgoing edges
        --limit N --types A,B --no-external --no-unresolved --json
                                              ${COLORS.dim}hotspot edge group + relation/ref filter${COLORS.reset}
   ontology-atlas similar "<title>" [vault] vault 에서 비슷한 노드 찾기 (duplicate 회피, /ontology-extract 짝)
        --slug X --kind K --limit N --json    ${COLORS.dim}slug 기반 / kind 필터 / 결과 N / machine${COLORS.reset}
-  ontology-atlas rename <old> <new>           Atomic rename — moves .md, redirects every backlink
+  ontology-atlas rename <old> <new>           Atomic rename: moves .md, redirects every backlink
        --confirm --overwrite                  ${COLORS.dim}default dry-run; --overwrite replaces existing target${COLORS.reset}
-  ontology-atlas merge <from> <into>          Atomic merge — redirect backlinks then delete fromSlug
+  ontology-atlas merge <from> <into>          Atomic merge: redirect backlinks then delete fromSlug
        --confirm                              ${COLORS.dim}default dry-run; --confirm to apply${COLORS.reset}
   ontology-atlas delete <slug>                Permanent delete (refuses if backlinks remain)
        --confirm --force                      ${COLORS.dim}--confirm to apply; --force to ignore backlinks${COLORS.reset}
@@ -385,7 +385,7 @@ async function runInit(targetArg, opts = {}) {
   }
   const locale = typeof opts.locale === 'string' ? opts.locale.toLowerCase() : 'en';
   if (!Object.hasOwn(TEMPLATE_ROOTS, locale)) {
-    fail(`unknown --locale "${locale}" — supported: ${Object.keys(TEMPLATE_ROOTS).join(', ')}`);
+    fail(`unknown --locale "${locale}": supported: ${Object.keys(TEMPLATE_ROOTS).join(', ')}`);
     return 2;
   }
   const templateRoot = resolveTemplateRoot(locale);
@@ -399,7 +399,7 @@ async function runInit(targetArg, opts = {}) {
   const { created, skipped } = copyTree(templateRoot, target);
 
   if (created === 0) {
-    warn(`no new files written — target already has matching files`);
+    warn(`no new files written: target already has matching files`);
   }
   if (skipped > 0) {
     warn(`${skipped} existing file(s) preserved (not overwritten)`);
@@ -434,7 +434,7 @@ async function runInit(targetArg, opts = {}) {
       ok(`  ${label}/.mcp.json (OATLAS_VAULT=${omotVault})`);
     } else {
       warn(
-        `  ${label}/.mcp.json already exists — preserved (manual merge if needed)`,
+        `  ${label}/.mcp.json already exists: preserved (manual merge if needed)`,
       );
       if (!existsSync(mcpExample)) {
         writeFileSync(mcpExample, mcpJsonText);
@@ -470,7 +470,7 @@ async function runInit(targetArg, opts = {}) {
       ok(`  ${label}/.codex/config.toml (OATLAS_VAULT=${omotVault})`);
     } else {
       warn(
-        `  ${label}/.codex/config.toml already exists — preserved (manual merge if needed)`,
+        `  ${label}/.codex/config.toml already exists: preserved (manual merge if needed)`,
       );
     }
   }
@@ -532,7 +532,7 @@ async function runInit(targetArg, opts = {}) {
   }
 
   stdout.write(`
-${COLORS.green}${COLORS.bold}done${COLORS.reset} — vault scaffolded.
+${COLORS.green}${COLORS.bold}done${COLORS.reset}: vault scaffolded.
 
 ${COLORS.bold}Next steps:${COLORS.reset}
 
@@ -542,7 +542,7 @@ ${COLORS.bold}Next steps:${COLORS.reset}
        ${COLORS.cyan}${CLI} validate${COLORS.reset}                    ${COLORS.dim}# frontmatter integrity${COLORS.reset}
        ${COLORS.cyan}${CLI} mcp-verify${COLORS.reset}                  ${COLORS.dim}# server + ${MCP_TOOL_COUNT}-tool MCP + graph smoke${COLORS.reset}
 
-  ${COLORS.dim}2.${COLORS.reset} ${COLORS.bold}Bootstrap from your codebase${COLORS.reset} (recommended — agent-less, 1 line):
+  ${COLORS.dim}2.${COLORS.reset} ${COLORS.bold}Bootstrap from your codebase${COLORS.reset} (recommended: agent-less, 1 line):
        ${COLORS.cyan}${analyzeCommand}${COLORS.reset}     ${COLORS.dim}# preview candidates only${COLORS.reset}
        ${COLORS.cyan}${bootstrapCommand}${COLORS.reset}   ${COLORS.dim}# apply nodes + edges${COLORS.reset}
        ${COLORS.dim}analyze can apply reviewed concepts + containment; infer-imports stays read-only${COLORS.reset}
@@ -553,7 +553,7 @@ ${COLORS.bold}Next steps:${COLORS.reset}
        ${COLORS.cyan}${CLI} add capability auth/token-issue --title="Token issue" --domain=auth${COLORS.reset}
        ${COLORS.cyan}${CLI} find token${COLORS.reset}                  ${COLORS.dim}# verify it shows up${COLORS.reset}
 
-  ${COLORS.dim}4.${COLORS.reset} ${COLORS.bold}Edit project.md${COLORS.reset} — set your project's real name + description.
+  ${COLORS.dim}4.${COLORS.reset} ${COLORS.bold}Edit project.md${COLORS.reset}: set your project's real name + description.
        Then add domains / capabilities / elements as you discover them.
 
   ${COLORS.dim}5.${COLORS.reset} ${COLORS.bold}Open this folder in an AI agent${COLORS.reset}:
@@ -588,15 +588,15 @@ ${COLORS.dim}AI agents and humans now share the same vault. Have fun.${COLORS.re
 // exists (approval-tier principle: never auto-absorbed, human opt-in only)
 // + a compact next-steps block (3 lines max).
 async function runQuickStart({ target, cwdVaultArg }) {
-  stdout.write(`\n${COLORS.bold}quick start${COLORS.reset} — bootstrapping from your repo...\n`);
+  stdout.write(`\n${COLORS.bold}quick start${COLORS.reset}: bootstrapping from your repo...\n`);
   const bootstrapCode = await runBootstrap(['.', '--vault', cwdVaultArg]);
 
   const repoRoot = cwd();
   const foundGuides = ['AGENTS.md', 'CLAUDE.md'].filter((name) => existsSync(join(repoRoot, name)));
   if (foundGuides.length > 0) {
     stdout.write(
-      `\n${COLORS.yellow}note${COLORS.reset}  found ${foundGuides.join(', ')} — consider absorbing ` +
-        `${foundGuides.length > 1 ? 'them' : 'it'} into the vault (never automatic — your call):\n`,
+      `\n${COLORS.yellow}note${COLORS.reset}  found ${foundGuides.join(', ')}: consider absorbing ` +
+        `${foundGuides.length > 1 ? 'them' : 'it'} into the vault (never automatic: your call):\n`,
     );
     for (const guide of foundGuides) {
       // 붙여넣어 실행하라고 청록색으로 찍는 줄 — `cliInvocation()` 을 통과해야
@@ -609,12 +609,12 @@ async function runQuickStart({ target, cwdVaultArg }) {
       stdout.write(`       ${COLORS.cyan}${absorbCommand}${COLORS.reset}\n`);
     }
     stdout.write(
-      `       ${COLORS.dim}dry-run by default — review the plan, then land it yourself by adding --write${COLORS.reset}\n`,
+      `       ${COLORS.dim}dry-run by default: review the plan, then land it yourself by adding --write${COLORS.reset}\n`,
     );
   }
 
   stdout.write(`
-${COLORS.green}${COLORS.bold}quick start done${COLORS.reset} — vault scaffolded + bootstrapped from your repo.
+${COLORS.green}${COLORS.bold}quick start done${COLORS.reset}: vault scaffolded + bootstrapped from your repo.
 
 ${COLORS.bold}Next:${COLORS.reset}
   ${COLORS.dim}1.${COLORS.reset} Open the vault        ${COLORS.cyan}cd ${target} && ${CLI} list${COLORS.reset}

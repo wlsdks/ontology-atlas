@@ -94,20 +94,20 @@ export async function runImport(args) {
       case 'kindless':
         summary.kindless += 1;
         process.stderr.write(
-          `${COLORS.yellow}skip${COLORS.reset}  ${relative(process.cwd(), src)} — no kind in frontmatter and no --kind fallback\n`,
+          `${COLORS.yellow}skip${COLORS.reset}  ${relative(process.cwd(), src)}: no kind in frontmatter and no --kind fallback\n`,
         );
         break;
       case 'conflict':
         summary.conflicts += 1;
         process.stderr.write(
-          `${COLORS.yellow}skip${COLORS.reset}  ${relative(process.cwd(), src)} — slug already exists in vault: ${result.slug} (use --rename to write under a fresh slug)\n`,
+          `${COLORS.yellow}skip${COLORS.reset}  ${relative(process.cwd(), src)}: slug already exists in vault: ${result.slug} (use --rename to write under a fresh slug)\n`,
         );
         break;
       case 'error':
         summary.skipped += 1;
         firstError = firstError ?? result.error;
         process.stderr.write(
-          `${COLORS.red}error${COLORS.reset}  ${relative(process.cwd(), src)} — ${result.error}\n`,
+          `${COLORS.red}error${COLORS.reset}  ${relative(process.cwd(), src)} · ${result.error}\n`,
         );
         break;
     }

@@ -52,7 +52,7 @@ function render(summary) {
 
   if (!summary.hasBaseline) {
     process.stdout.write(
-      `${COLORS.yellow}no init/absorb baseline yet${COLORS.reset} — run ` +
+      `${COLORS.yellow}no init/absorb baseline yet${COLORS.reset}: run ` +
         `${COLORS.cyan}${cliInvocation()} init --quick-start${COLORS.reset} or ` +
         `${COLORS.cyan}${cliInvocation()} absorb <file> --write${COLORS.reset} first.\n`,
     );
@@ -68,7 +68,7 @@ function render(summary) {
 
   if (!summary.moment) {
     process.stdout.write(
-      `\n${COLORS.yellow}moment not reached yet${COLORS.reset} — run ` +
+      `\n${COLORS.yellow}moment not reached yet${COLORS.reset}: run ` +
         `${COLORS.cyan}${cliInvocation()} agent-brief${COLORS.reset} once your agent answers citing a vault\n` +
         `node, or ${COLORS.cyan}${cliInvocation()} moment --mark${COLORS.reset} by hand if your agent calls the\n` +
         `MCP tools directly (agent_brief/get_concept are read-only and are not auto-stamped).\n`,
@@ -85,7 +85,7 @@ function render(summary) {
         : `${COLORS.dim}target unknown (no baseline)${COLORS.reset}`;
   process.stdout.write(
     `\n${COLORS.green}moment reached${COLORS.reset}        ${summary.moment.at} via ${summary.moment.source}\n` +
-      `elapsed               ${elapsedLabel} — ${withinLabel}\n`,
+      `elapsed               ${elapsedLabel} · ${withinLabel}\n`,
   );
 }
 
@@ -122,10 +122,10 @@ function printUsage(stream = process.stderr) {
       `  Prints the Slice 0 magic-moment north star (PRODUCT-PLAN-2026-07.md §4/§9):\n` +
       `  the elapsed time from ${COLORS.bold}init${COLORS.reset}/${COLORS.bold}absorb --write${COLORS.reset} to the first ` +
       `${COLORS.bold}agent-brief${COLORS.reset} run afterward,\n` +
-      `  target ≤5 minutes. All data lives in ${COLORS.dim}.ontology-atlas/telemetry.local.json${COLORS.reset} — local\n` +
+      `  target ≤5 minutes. All data lives in ${COLORS.dim}.ontology-atlas/telemetry.local.json${COLORS.reset}: local\n` +
       `  only, never transmitted.\n\n` +
       `${COLORS.bold}options:${COLORS.reset}\n` +
-      `  --mark   manually stamp the moment now — fallback for agents that call the\n` +
+      `  --mark   manually stamp the moment now: fallback for agents that call the\n` +
       `           MCP tools (agent_brief/get_concept) directly instead of this CLI;\n` +
       `           those two are read-only and are not auto-stamped\n` +
       `  --json   machine-readable momentSummary output\n` +

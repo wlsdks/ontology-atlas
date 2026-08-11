@@ -101,7 +101,7 @@ function render(result, requestedSlug) {
   const risk = result?.risk ?? 'unknown';
   const rc = RISK_COLORS[risk] || COLORS.dim;
   process.stdout.write(
-    `${COLORS.bold}${requestedSlug}${COLORS.reset} ${COLORS.dim}— blast radius${COLORS.reset}` +
+    `${COLORS.bold}${requestedSlug}${COLORS.reset} ${COLORS.dim}· blast radius${COLORS.reset}` +
       ` ${COLORS.dim}(depth ${result?.depth ?? 2}, ${result?.direction ?? 'incoming'})${COLORS.reset}\n` +
       `  risk ${rc}${risk}${COLORS.reset}` +
       ` · ${sum.affectedNodes ?? 0} 노드 · ${sum.affectedEdges ?? 0} 관계` +
@@ -139,7 +139,7 @@ function render(result, requestedSlug) {
       const kind = r.node?.kind ?? '?';
       const kc = KIND_COLORS[kind] || COLORS.dim;
       const dist = `${COLORS.dim}d${r.distance}${COLORS.reset}`;
-      const titleText = r.node?.title && r.node.title !== r.slug ? ` ${COLORS.dim}— ${r.node.title}${COLORS.reset}` : '';
+      const titleText = r.node?.title && r.node.title !== r.slug ? ` ${COLORS.dim}· ${r.node.title}${COLORS.reset}` : '';
       process.stdout.write(`  ${dist} ${kc}${r.slug}${COLORS.reset}${titleText}\n`);
     }
     printNextImpact(rows, requestedSlug, result?.depth ?? 2);
@@ -152,7 +152,7 @@ function printNextImpact(rows, requestedSlug, depth) {
   const planDepth = Math.max(0, Math.min(DEPTH_CAP, Number.isInteger(depth) ? depth : 2));
   process.stdout.write(
     `\n${COLORS.bold}next impact${COLORS.reset} ${COLORS.cyan}${focus.slug}${COLORS.reset}` +
-      ` ${COLORS.dim}— impact rows are candidates, not proof; inspect backlinks and node detail before refactor decisions${COLORS.reset}\n` +
+      ` ${COLORS.dim}· impact rows are candidates, not proof; inspect backlinks and node detail before refactor decisions${COLORS.reset}\n` +
       `  ontology-atlas node ${focus.slug} [vault] --limit 20\n` +
       `  ontology-atlas backlinks ${requestedSlug} [vault]\n` +
       `  ontology-atlas reachability ${requestedSlug} [vault] --plan --depth ${planDepth} --direction both --limit 20\n`,

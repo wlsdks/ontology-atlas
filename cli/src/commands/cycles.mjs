@@ -48,7 +48,7 @@ export async function runCycles(args) {
   const cycles = Array.isArray(result?.cycles) ? result.cycles : [];
   const total = result?.totalCycles ?? cycles.length;
   if (total === 0) {
-    process.stdout.write(`${COLORS.green}cycles 0 — dependency graph clean ✓${COLORS.reset}\n`);
+    process.stdout.write(`${COLORS.green}cycles 0: dependency graph clean ✓${COLORS.reset}\n`);
     return 0;
   }
   process.stdout.write(
@@ -80,7 +80,7 @@ function printNextCycle(cycle, maxDepth) {
   process.stdout.write(
     `${COLORS.bold}next cycle${COLORS.reset} ${COLORS.cyan}${from}${COLORS.reset}` +
       ` ${COLORS.dim}→${COLORS.reset} ${COLORS.cyan}${to}${COLORS.reset}` +
-      ` ${COLORS.dim}— cycle rows are failures, but fix the edge only after inspecting path evidence and maintenance guidance${COLORS.reset}\n` +
+      ` ${COLORS.dim}· cycle rows are failures, but fix the edge only after inspecting path evidence and maintenance guidance${COLORS.reset}\n` +
       `  ontology-atlas path ${from} ${to} [vault] --max-hops ${boundedMaxHops}\n` +
       `  ontology-atlas match-edges [vault] --from ${from} --to ${to} --types depends_on --limit 10\n` +
       `  ontology-atlas maintenance [vault] --phases repair --severities fail --kinds break_dependency_cycle --limit 3\n`,
@@ -88,7 +88,7 @@ function printNextCycle(cycle, maxDepth) {
 }
 
 function formatCycleNode(slug, summary) {
-  const title = summary?.title && summary.title !== slug ? ` ${COLORS.dim}— ${summary.title}${COLORS.reset}` : '';
+  const title = summary?.title && summary.title !== slug ? ` ${COLORS.dim}· ${summary.title}${COLORS.reset}` : '';
   return `${COLORS.yellow}${slug}${COLORS.reset}${title}`;
 }
 

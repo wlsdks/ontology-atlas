@@ -263,7 +263,7 @@ export const VAULT_KIND_SCHEMA = {
     ],
     bodyTemplate: (title) =>
       `# ${title}\n\n` +
-      `One- or two-line summary of this project — *what / for whom / why*.\n\n` +
+      `One- or two-line summary of this project: *what / for whom / why*.\n\n` +
       `## How it grows\n\n` +
       `- Fill \`domains: [...]\` in the frontmatter and the domain nodes hang\n` +
       `  off the project tree automatically.\n` +
@@ -473,7 +473,7 @@ export function flatSlugIssue(kind, slug) {
   if (!rest.includes('/') && !rest.includes('\\')) return null;
   const tail = rest.split(/[\\/]/).filter(Boolean).pop() ?? rest;
   return (
-    `slug "${slug}" nests a path under ${folder} — a slug is the node's NAME, not a location. ` +
+    `slug "${slug}" nests a path under ${folder}: a slug is the node's NAME, not a location. ` +
     `Node identity is resolved by the slug tail on three surfaces (web derivation, unique-tail lookup, deep links), ` +
     `so path-style slugs silently merge distinct nodes the moment two files share a basename. ` +
     `Use a flat slug under the kind folder (e.g. "${folder}${tail}") and record the file location in path: instead.`

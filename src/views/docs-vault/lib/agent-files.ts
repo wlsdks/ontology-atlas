@@ -32,7 +32,7 @@ export type AgentTool = 'claude-code' | 'codex' | 'cursor' | 'gemini-cli' | 'cop
 
 export type AgentDriftCheckStatus = 'ok' | 'drift' | 'not-applicable';
 
-/** Tool ids → human labels (proper nouns — not translated). */
+/** Tool ids → human labels (proper nouns: not translated). */
 export const AGENT_TOOL_LABELS: Readonly<Record<AgentTool, string>> = Object.freeze({
   'claude-code': 'Claude Code',
   codex: 'Codex',
@@ -270,7 +270,7 @@ export function analyzeAgentFiles({
         code: 'missing-agents-import',
         path: 'CLAUDE.md',
         message:
-          'CLAUDE.md does not import @AGENTS.md — Claude Code and AGENTS.md readers see different instructions',
+          'CLAUDE.md does not import @AGENTS.md: Claude Code and AGENTS.md readers see different instructions',
         detail: { ref: 'AGENTS.md' },
       });
       claude.drift.push('missing-agents-import');
@@ -493,7 +493,7 @@ export function analyzeAgentFiles({
         check: 'codex-size-cap',
         code: 'agents-md-over-codex-cap',
         path: 'AGENTS.md',
-        message: `AGENTS.md is ${bytes} bytes — over the Codex project_doc_max_bytes default of ${CODEX_PROJECT_DOC_CAP_BYTES}`,
+        message: `AGENTS.md is ${bytes} bytes: over the Codex project_doc_max_bytes default of ${CODEX_PROJECT_DOC_CAP_BYTES}`,
         detail: { bytes, capBytes: CODEX_PROJECT_DOC_CAP_BYTES },
       });
       agents.drift.push('agents-md-over-codex-cap');

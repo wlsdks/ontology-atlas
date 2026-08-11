@@ -139,7 +139,7 @@ export function writeFrontmatterKey(rootPath, slug, key, value) {
   return writeFrontmatterKeys(rootPath, slug, { [key]: value });
 }
 
-/** 복수 키를 한 번의 파일 쓰기로 — 관계+relation_notes 원자성 (P6 게이트 ③ CLI 측). */
+/** 복수 키를 한 번의 파일 쓰기로: 관계+relation_notes 원자성 (P6 게이트 ③ CLI 측). */
 export function writeFrontmatterKeys(rootPath, slug, patch) {
   const { filePath, frontmatter, body } = readDocFrontmatter(rootPath, slug);
   if ('uid' in patch && patch.uid !== frontmatter.uid) {

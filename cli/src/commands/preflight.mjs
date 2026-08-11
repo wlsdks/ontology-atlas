@@ -169,7 +169,7 @@ function render(rows, { vaultRoot, stagedFiles, truncated, depth, decisionWarnin
       `  ${stagedFiles.length} staged file(s) touch ${COLORS.bold}${rows.length}${COLORS.reset} vault node(s)` +
       ` ${COLORS.dim}(depth ${depth})${COLORS.reset}` +
       (decisionWarnings > 0
-        ? ` — ${COLORS.yellow}⚠ ${decisionWarnings} node(s) reach a kind:decision node${COLORS.reset}`
+        ? ` · ${COLORS.yellow}⚠ ${decisionWarnings} node(s) reach a kind:decision node${COLORS.reset}`
         : '') +
       '\n\n',
   );
@@ -180,7 +180,7 @@ function render(rows, { vaultRoot, stagedFiles, truncated, depth, decisionWarnin
     const slugCol = row.slug.padEnd(42);
     if (row.error) {
       process.stdout.write(
-        `  ${kindCol} ${slugCol} ${COLORS.red}blast-radius error${COLORS.reset} ${COLORS.dim}— ${row.error}${COLORS.reset}\n`,
+        `  ${kindCol} ${slugCol} ${COLORS.red}blast-radius error${COLORS.reset} ${COLORS.dim}· ${row.error}${COLORS.reset}\n`,
       );
       continue;
     }
@@ -235,7 +235,7 @@ function printUsage(stream = process.stderr) {
       `  \`path:\`/\`elements:\` frontmatter, then runs blast-radius (query_ontology)\n` +
       `  on each matched node so you see what this commit reaches before it lands.\n` +
       `  A ${COLORS.yellow}⚠${COLORS.reset} marks nodes whose blast radius includes a kind:decision node.\n\n` +
-      `  Purely informational — never blocks the commit. Silent exit 0 when there is\n` +
+      `  Purely informational: never blocks the commit. Silent exit 0 when there is\n` +
       `  no vault, no staged files, or no matching node (no disable-fatigue noise).\n` +
       `  ${COLORS.bold}--staged${COLORS.reset} is the only supported mode today (explicit form for hook scripts).\n` +
       `  ${COLORS.bold}--depth N${COLORS.reset} default ${DEFAULT_DEPTH}, range 0-${DEPTH_CAP} (forwarded to blast-radius).\n\n` +
