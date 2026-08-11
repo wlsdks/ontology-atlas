@@ -176,6 +176,13 @@ const ANCHORED = [
   { id: "studio-picker", label: "소켓 피커" },
   { id: "studio-lane-list", label: "접힘 목록" },
   { id: "studio-edit-card", label: "관계 편집 카드" },
+  /*
+   * 작업중 패널은 **초안이 하나라도 있을 때만** 트리거가 뜨고, 초안은 현재 그래프에
+   * 있는 노드로만 열린다 — 얇은 볼트에서는 열 수 없어 아래 표가 「건너뜀」으로
+   * 남긴다(조용히 통과하지 않는다). 배선은 단위 시험이 잠근다:
+   * 「작업중 패널이 앵커된 표면 문법으로 들어오고 나간다」.
+   */
+  { id: "studio-drafts-panel", label: "작업중 패널", openWith: "studio-drafts-open" },
 ] as const;
 
 test("공방 · 앵커된 임시 표면 셋이 같은 문법으로 나간다", async ({ page }) => {
@@ -241,6 +248,10 @@ test("공방 · 앵커된 임시 표면 셋이 같은 문법으로 나간다", a
       "studio-edit-card": async () => {
         const edit = page.locator('[data-testid^="studio-edit-"]').first();
         if (await edit.count()) await edit.click();
+      },
+      "studio-drafts-panel": async () => {
+        const chip = page.getByTestId("studio-drafts-open");
+        if (await chip.count()) await chip.click();
       },
     };
     // 접힘 목록은 방위마다 testid 가 다르다 — 접두사로 잡는다.

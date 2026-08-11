@@ -1359,6 +1359,31 @@ describe("StudioCompass — 작업중 목록 (drafts)", () => {
     expect(screen.getByTestId("studio-drafts-panel")).toBeInTheDocument();
   });
 
+  /**
+   * **작업중 패널도 나머지 셋과 같은 문법을 쓴다** (2026-08-12).
+   *
+   * 그 전에는 `studio-fade-in` 이 붙어 있었는데 **저장소 어디에도 정의가 없는
+   * 클래스**였다(실행 중인 앱에서 확인: 그 이름을 담은 CSS 규칙 0개). 이름이
+   * 「배어 들어온다」고 말하는데 실제로는 등장도 퇴장도 없었다.
+   *
+   * 존재하지 않는 클래스는 **코드에 아무 값도 남기지 않아서** 값을 보는 lint 도
+   * 타입 검사도 전체 테스트도 전부 통과시킨다 — 이 저장소가 `text-large` ·
+   * `text-callout` 으로 두 번 값을 치른 그 실패다. 그래서 이름을 여기서 잠근다.
+   */
+  it("작업중 패널이 앵커된 표면 문법으로 들어오고 나간다", () => {
+    renderDrafts();
+    fireEvent.click(screen.getByTestId("studio-drafts-open"));
+
+    const panel = screen.getByTestId("studio-drafts-panel");
+    expect(panel.className).toContain("studio-anchored-in");
+    expect(panel.className).not.toContain("studio-fade-in");
+    // 원점은 트리거가 있는 오른쪽 위 — 없으면 상자 가운데에서 자란다.
+    expect(panel.getAttribute("style")).toContain("--studio-anchor-origin");
+
+    fireEvent.click(screen.getByTestId("studio-drafts-open"));
+    expectAnchoredClosing("studio-drafts-panel");
+  });
+
   it("지금 무대인 노드는 '이어서 하기' 대신 '지금 무대' 로 표시한다", () => {
     renderDrafts();
     fireEvent.click(screen.getByTestId("studio-drafts-open"));
@@ -1377,7 +1402,7 @@ describe("StudioCompass — 작업중 목록 (drafts)", () => {
     fireEvent.click(screen.getByTestId("studio-draft-resume-capability:cli"));
 
     expect(onOpenDraft).toHaveBeenCalledWith("capability:cli");
-    expect(screen.queryByTestId("studio-drafts-panel")).not.toBeInTheDocument();
+    expectAnchoredClosing("studio-drafts-panel");
   });
 
   it("'버리기' 는 그 노드의 초안만 버린다 (명시적 폐기 경로)", () => {
