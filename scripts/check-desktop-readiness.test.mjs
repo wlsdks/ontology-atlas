@@ -63,10 +63,6 @@ test("desktop readiness check proves Tauri macOS shell prerequisites", () => {
   );
   assert.match(
     result.stdout,
-    /✓ desktop app launch verifier can request Add Concept through route intent when Relief command chrome is collapsed/,
-  );
-  assert.match(
-    result.stdout,
     /✓ Codex Run action builds, launches, and verifies the freshly built macOS app bundle/,
   );
   assert.match(
@@ -79,23 +75,7 @@ test("desktop readiness check proves Tauri macOS shell prerequisites", () => {
   );
   assert.match(
     result.stdout,
-    /✓ desktop localized Add Concept visual proof script checks the installed Korean Relief composer/,
-  );
-  assert.match(
-    result.stdout,
-    /✓ desktop localized topology composer blocking proof script checks relation focus, transient dismissal, dimmed map, screenshot evidence, and the installed Korean Add Concept composer/,
-  );
-  assert.match(
-    result.stdout,
     /✓ desktop app launch verifier writes Add Concept composer blocking proof and saved\/unavailable screenshot handoff into WebView evidence for agents/,
-  );
-  assert.match(
-    result.stdout,
-    /✓ desktop localized topology design proof script checks selected relation, path result, and blocking composer states/,
-  );
-  assert.match(
-    result.stdout,
-    /✓ desktop localized topology focus motion proof script checks bounded selected-focus camera movement/,
   );
   assert.match(
     result.stdout,

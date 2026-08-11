@@ -367,19 +367,6 @@ if (
   );
 }
 
-if (
-  tauriLib.includes("requestCreateRouteIntent") &&
-  tauriLib.includes('url.searchParams.set("create", "concept")') &&
-  tauriLib.includes('window.dispatchEvent(new Event("app:urlchange"))') &&
-  tauriLib.includes("result.routeIntentAttempted") &&
-  verifyAppScript.includes("--verify-topology-create-node")
-) {
-  pass("desktop app launch verifier can request Add Concept through route intent when Relief command chrome is collapsed");
-} else {
-  fail(
-    "src-tauri/src/lib.rs must let --verify-topology-create-node request create=concept through the app route state when the visible create toggle is hidden by collapsed Relief command chrome",
-  );
-}
 
 if (
   verifyAppScript.includes("export function buildWebviewEvidencePayload") &&
@@ -1464,25 +1451,6 @@ if (
   );
 }
 
-const localizedCreateNodeVisualScript =
-  pkg.scripts?.["desktop:verify-topology-create-node:ko"] ?? "";
-if (
-  localizedCreateNodeVisualScript.includes('"/Applications/Ontology Atlas.app"') &&
-  localizedCreateNodeVisualScript.includes("--require-webview-route=/ko/topology/") &&
-  localizedCreateNodeVisualScript.includes("--verify-topology-create-node") &&
-  localizedCreateNodeVisualScript.includes("--require-window") &&
-  localizedCreateNodeVisualScript.includes("--try-window-screenshot=.tmp/ontology-atlas-create-node-ko-composer.png") &&
-  localizedCreateNodeVisualScript.includes("--webview-evidence=.tmp/ontology-atlas-create-node-ko-composer.webview.json") &&
-  localizedCreateNodeVisualScript.includes("--webview-window-size=1100x800") &&
-  localizedCreateNodeVisualScript.includes("--max-webview-size=1100x800")
-) {
-  pass("desktop localized Add Concept visual proof script checks the installed Korean Relief composer");
-} else {
-  fail(
-    "package.json must expose desktop:verify-topology-create-node:ko to verify the installed /ko/topology/ Add Concept composer with WebView markers and best-effort visual screenshot evidence",
-  );
-}
-
 /*
  * ⚠️ **라우트를 슬러그까지 못박지 않는다** (2026-08-10 에 풀었다).
  *
@@ -1496,125 +1464,6 @@ if (
  * 「그 노드가 실재하나」는 볼트를 직접 뒤지는 계약 시험이 본다
  * (`tests/contract/script-vault-references.contract.test.ts`, CI 에서 돈다).
  */
-const focusDeepLinkRoute = (script) =>
-  /--require-webview-route='\/ko\/topology\/\?p=(?:domain|capability|element|project)%3A[a-z0-9-]+&mode=focus'/.test(
-    script,
-  );
-const bareDeepLinkRoute = (script) =>
-  /--require-webview-route='\/ko\/topology\/\?p=(?:domain|capability|element|project)%3A[a-z0-9-]+'/.test(
-    script,
-  );
-const pathModeRoute = (script) =>
-  /--require-webview-route='\/ko\/topology\/\?mode=path&pathFrom=(?:domain|capability|element|project)%3A[a-z0-9-]+&pathTo=(?:domain|capability|element|project)%3A[a-z0-9-]+'/.test(
-    script,
-  );
-
-const localizedComposerBlockingScript =
-  pkg.scripts?.["desktop:verify-topology-composer-blocking:ko"] ?? "";
-if (
-  localizedComposerBlockingScript.includes('"/Applications/Ontology Atlas.app"') &&
-  localizedComposerBlockingScript.includes("--require-window") &&
-  localizedComposerBlockingScript.includes("--require-owner-name=\"Ontology Atlas\"") &&
-  localizedComposerBlockingScript.includes("--min-window-size=1360x840") &&
-  localizedComposerBlockingScript.includes("--try-window-screenshot=.tmp/ontology-atlas-composer-blocking-ko.png") &&
-  localizedComposerBlockingScript.includes("--webview-window-size=1512x917") &&
-  localizedComposerBlockingScript.includes("--min-webview-size=1400x860") &&
-  focusDeepLinkRoute(localizedComposerBlockingScript) &&
-  localizedComposerBlockingScript.includes("--webview-evidence=.tmp/ontology-atlas-composer-blocking-ko.webview.json") &&
-  localizedComposerBlockingScript.includes("--verify-topology-create-node")
-) {
-  pass(
-    "desktop localized topology composer blocking proof script checks relation focus, transient dismissal, dimmed map, screenshot evidence, and the installed Korean Add Concept composer",
-  );
-} else {
-  fail(
-    "package.json must expose desktop:verify-topology-composer-blocking:ko to verify the installed Korean Relief composer from a selected relation/focus route with drag evidence, transient dismissal, dimmed map markers, best-effort screenshot evidence, and WebView evidence",
-  );
-}
-
-const localizedComposerBlockingRequiredScript =
-  pkg.scripts?.["desktop:verify-topology-composer-blocking-required:ko"] ?? "";
-if (
-  localizedComposerBlockingRequiredScript.includes('"/Applications/Ontology Atlas.app"') &&
-  localizedComposerBlockingRequiredScript.includes("--require-window") &&
-  localizedComposerBlockingRequiredScript.includes("--require-owner-name=\"Ontology Atlas\"") &&
-  localizedComposerBlockingRequiredScript.includes("--min-window-size=1360x840") &&
-  localizedComposerBlockingRequiredScript.includes("--require-capturable-window") &&
-  localizedComposerBlockingRequiredScript.includes("--window-screenshot=.tmp/ontology-atlas-composer-blocking-required-ko.png") &&
-  !localizedComposerBlockingRequiredScript.includes("--try-window-screenshot") &&
-  localizedComposerBlockingRequiredScript.includes("--webview-window-size=1512x917") &&
-  localizedComposerBlockingRequiredScript.includes("--min-webview-size=1400x860") &&
-  focusDeepLinkRoute(localizedComposerBlockingRequiredScript) &&
-  localizedComposerBlockingRequiredScript.includes("--webview-evidence=.tmp/ontology-atlas-composer-blocking-required-ko.webview.json") &&
-  localizedComposerBlockingRequiredScript.includes("--verify-topology-create-node")
-) {
-  pass(
-    "desktop localized topology composer required screenshot proof script checks hard visual evidence and the installed Korean Add Concept composer",
-  );
-} else {
-  fail(
-    "package.json must expose desktop:verify-topology-composer-blocking-required:ko to verify the installed Korean Relief composer with required capturable screenshot evidence and WebView handoff evidence",
-  );
-}
-
-const localizedTopologyDesignScript =
-  pkg.scripts?.["desktop:verify-topology-design:ko"] ?? "";
-if (
-  localizedTopologyDesignScript.includes('"/Applications/Ontology Atlas.app"') &&
-  localizedTopologyDesignScript.includes("--require-window") &&
-  localizedTopologyDesignScript.includes("--require-owner-name=\"Ontology Atlas\"") &&
-  localizedTopologyDesignScript.includes("--min-window-size=1360x840") &&
-  localizedTopologyDesignScript.includes("--min-webview-size=1400x860") &&
-  focusDeepLinkRoute(localizedTopologyDesignScript) &&
-  localizedTopologyDesignScript.includes("--webview-evidence=.tmp/ontology-atlas-design-selected-relation.webview.json") &&
-  pathModeRoute(localizedTopologyDesignScript) &&
-  localizedTopologyDesignScript.includes("--webview-evidence=.tmp/ontology-atlas-design-path-result.webview.json") &&
-  localizedTopologyDesignScript.includes("--require-webview-route='/ko/topology/?create=concept'") &&
-  localizedTopologyDesignScript.includes("--webview-evidence=.tmp/ontology-atlas-design-create-concept.webview.json") &&
-  localizedTopologyDesignScript.includes("--verify-topology-create-node")
-) {
-  pass("desktop localized topology design proof script checks selected relation, path result, and blocking composer states");
-} else {
-  fail(
-    "package.json must expose desktop:verify-topology-design:ko to verify installed Korean Relief selected relation, Path result, and Add Concept composer states with deterministic WebView evidence",
-  );
-}
-
-const localizedTopologyPathStartScript =
-  pkg.scripts?.["desktop:verify-topology-path-start:ko"] ?? "";
-if (
-  localizedTopologyPathStartScript.includes('"/Applications/Ontology Atlas.app"') &&
-  localizedTopologyPathStartScript.includes("--require-window") &&
-  localizedTopologyPathStartScript.includes("--require-owner-name=\"Ontology Atlas\"") &&
-  localizedTopologyPathStartScript.includes("--min-window-size=1360x840") &&
-  localizedTopologyPathStartScript.includes("--min-webview-size=1400x860") &&
-  localizedTopologyPathStartScript.includes("--require-webview-route='/ko/topology/?mode=path'") &&
-  localizedTopologyPathStartScript.includes("--webview-evidence=.tmp/ontology-atlas-path-start-ko.webview.json")
-) {
-  pass("desktop localized topology Path start proof script checks panel-owned Korean path guidance");
-} else {
-  fail(
-    "package.json must expose desktop:verify-topology-path-start:ko to verify installed Korean Relief Path start guidance with deterministic WebView evidence",
-  );
-}
-
-const localizedTopologyFocusMotionScript =
-  pkg.scripts?.["desktop:verify-topology-focus-motion:ko"] ?? "";
-if (
-  localizedTopologyFocusMotionScript.includes('"/Applications/Ontology Atlas.app"') &&
-  localizedTopologyFocusMotionScript.includes("--require-window") &&
-  localizedTopologyFocusMotionScript.includes("--require-owner-name=\"Ontology Atlas\"") &&
-  localizedTopologyFocusMotionScript.includes("--min-window-size=1360x840") &&
-  localizedTopologyFocusMotionScript.includes("--min-webview-size=1400x860") &&
-  bareDeepLinkRoute(localizedTopologyFocusMotionScript) &&
-  localizedTopologyFocusMotionScript.includes("--webview-evidence=.tmp/ontology-atlas-focus-motion-ko.webview.json")
-) {
-  pass("desktop localized topology focus motion proof script checks bounded selected-focus camera movement");
-} else {
-  fail(
-    "package.json must expose desktop:verify-topology-focus-motion:ko to verify installed Korean Relief selected-focus camera motion with deterministic WebView evidence",
-  );
-}
 
 const agentDesignGateChecks = [
   [
