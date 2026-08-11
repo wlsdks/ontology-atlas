@@ -4,7 +4,7 @@ import { relative } from 'node:path';
 import { walkMd } from '../lib/walk-vault.mjs';
 import { parseFrontmatter } from '../lib/parse-frontmatter.mjs';
 import { resolveVaultRoot } from '../lib/resolve-vault.mjs';
-import { validateVaultDocument } from '../lib/validate.mjs';
+import { validateVaultDocument, suppressParentedExpectedFieldIssues } from '../lib/validate.mjs';
 import {
   formatUnknownFlagError,
   parseCsvListFlag,
@@ -178,6 +178,24 @@ export function runValidate(args) {
     entries.push({ file, slug, frontmatter });
     const report = validateVaultDocument(raw);
     reportByFile.set(file, report);
+  }
+
+  /*
+   * 부모가 이미 있는 노드에 「부모가 없다」고 말하지 않는다 (2026-08-11) — MCP 쪽
+   * `validate_vault` 와 같은 좁히기다. 파일 하나만 보는 검사로는 알 수 없다.
+   */
+  const issuesBySlugForParents = new Map();
+  const fileBySlug = new Map();
+  for (const { file, slug } of entries) {
+    const report = reportByFile.get(file);
+    if (!report) continue;
+    issuesBySlugForParents.set(slug, report.issues);
+    fileBySlug.set(slug, file);
+  }
+  suppressParentedExpectedFieldIssues(issuesBySlugForParents, entries);
+  for (const [slug, issues] of issuesBySlugForParents) {
+    const report = reportByFile.get(fileBySlug.get(slug));
+    if (report) report.issues = issues;
   }
 
   for (const { file, issue } of findDuplicateSlugIssues(entries)) {
