@@ -302,6 +302,22 @@ await test('init — vault config resolves the repository through a canonical pa
   }
 });
 
+/**
+ * `mcp-verify` 에 주는 **시간 상한** (2026-08-11).
+ *
+ * ⚠️ 넷 다 3,000ms 가 박혀 있었고, 그 값이 **기계 성능을 시험 조건으로 만들었다** —
+ * 이 저장소에서 실측 4.1초(빌드가 도는 동안)라 로컬에서 세 번 연속 빨갰고 CI 에서는
+ * 초록이었다. 그건 제품 신호가 아니라 그 순간의 부하다.
+ *
+ * **상한은 대기가 아니다** — verify 는 모든 응답이 오는 즉시 끝난다(30초를 줘도 4.1초에
+ * 끝났다). 그래서 넉넉히 줘도 빠른 기계는 한 푼도 더 안 쓴다. 이 저장소가 이미 정해 둔
+ * 규율(「게이트를 밀리초로 잠그지 않는다」)을 시험에도 적용하는 것이다.
+ *
+ * 그럼 무엇이 「너무 느리다」를 잡나 — 그건 시간이 아니라 **성능 예산 게이트**의 일이고
+ * (`desktop:performance`), 여기서 재는 것은 「도구 전부가 응답하나」다.
+ */
+const MCP_VERIFY_TIMEOUT_MS = '30000';
+
 // ── init --quick-start (Slice 0 — docs/plans/PRODUCT-PLAN-2026-07.md §9) ──────
 //
 // One command = scaffold (no prompts, already the default) + bootstrap from
@@ -1159,10 +1175,12 @@ await test('mcp-verify — runs MCP package verify against a resolved vault', as
     const init = await run(['init', 'ontology'], { cwd: root });
     assert.equal(init.code, 0, `stdout: ${init.stdout}\nstderr: ${init.stderr}`);
 
-    const r = await run(['mcp-verify', 'ontology', '--timeout-ms', '3000'], { cwd: root });
+    const r = await run(['mcp-verify', 'ontology', '--timeout-ms', MCP_VERIFY_TIMEOUT_MS], { cwd: root });
     assert.equal(r.code, 0, `stdout: ${r.stdout}\nstderr: ${r.stderr}`);
     const clean = stripAnsi(r.stdout);
-    assert.match(clean, /timeout=3000ms/);
+    // 값이 아니라 **넘긴 값이 화면에 그대로 나오는가**를 잠근다 — 상한 숫자를 못박으면
+    // 그 숫자를 바꾸는 날 이 시험이 제품 결함처럼 실패한다(방금 그랬다).
+    assert.match(clean, new RegExp(`timeout=${MCP_VERIFY_TIMEOUT_MS}ms`));
     assert.match(clean, new RegExp(`tools/list ${EXPECTED_TOOL_COUNT}/${EXPECTED_TOOL_COUNT}`));
     assert.match(clean, new RegExp(escapeRegExp(expectedToolsListAnnotationSummary())));
     assert.match(clean, /get_concepts/);
@@ -1245,7 +1263,7 @@ await test('mcp-verify — verifies maintenance cursor resume when actions exist
     },
   ]);
   try {
-    const r = await run(['mcp-verify', root, '--timeout-ms', '3000']);
+    const r = await run(['mcp-verify', root, '--timeout-ms', MCP_VERIFY_TIMEOUT_MS]);
     assert.equal(r.code, 0, `stdout: ${r.stdout}\nstderr: ${r.stderr}`);
     const clean = stripAnsi(r.stdout);
     assert.match(clean, /maintenance cursor: ready page stable \(2 remaining actions/);
@@ -1277,7 +1295,7 @@ await test('mcp-verify — allows valid vaults without a project node', async ()
     },
   ]);
   try {
-    const r = await run(['mcp-verify', root, '--timeout-ms', '3000']);
+    const r = await run(['mcp-verify', root, '--timeout-ms', MCP_VERIFY_TIMEOUT_MS]);
     assert.equal(r.code, 0, `stdout: ${r.stdout}\nstderr: ${r.stderr}`);
     const clean = stripAnsi(r.stdout);
     assert.match(clean, /maintenance cursor: missing afterActionId reported/);
@@ -1293,7 +1311,7 @@ await test('mcp-verify — allows valid vaults without a project node', async ()
 await test('mcp-verify — fails an empty vault folder with a populated-vault hint', async () => {
   const root = withVault([]);
   try {
-    const r = await run(['mcp-verify', root, '--timeout-ms', '3000']);
+    const r = await run(['mcp-verify', root, '--timeout-ms', MCP_VERIFY_TIMEOUT_MS]);
     assert.equal(r.code, 1, `stdout: ${r.stdout}\nstderr: ${r.stderr}`);
     const clean = stripAnsi(r.stdout);
     assert.match(clean, /vault total 0 nodes/);
