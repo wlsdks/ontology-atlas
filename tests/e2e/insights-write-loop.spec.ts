@@ -61,7 +61,6 @@ async function filesContaining(page: import("@playwright/test").Page, needle: st
   return page.evaluate(async (text: string) => {
     const root = await navigator.storage.getDirectory();
     let vault: FileSystemDirectoryHandle | null = null;
-    // @ts-expect-error entries() 는 표준이지만 lib.dom 에 아직 없다
     for await (const [name, handle] of root.entries()) {
       if (name.startsWith("stub-vault-") && handle.kind === "directory") {
         vault = handle as FileSystemDirectoryHandle;
@@ -70,7 +69,6 @@ async function filesContaining(page: import("@playwright/test").Page, needle: st
     if (!vault) return ["(볼트를 못 찾았다)"];
     const hits: string[] = [];
     const walk = async (dir: FileSystemDirectoryHandle, prefix: string) => {
-      // @ts-expect-error entries()
       for await (const [name, handle] of dir.entries()) {
         if (handle.kind === "directory") {
           await walk(handle as FileSystemDirectoryHandle, `${prefix}${name}/`);

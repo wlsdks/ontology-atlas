@@ -50,7 +50,6 @@ test("고치면 지도가 따라온다 — 더할 때와 지울 때 모두", asy
     const root = await navigator.storage.getDirectory();
     // 스텁이 만든 볼트 폴더를 찾는다
     let vault: FileSystemDirectoryHandle | null = null;
-    // @ts-expect-error entries() 는 표준이지만 lib.dom 에 아직 없다
     for await (const [name, handle] of root.entries()) {
       if (name.startsWith("stub-vault-") && handle.kind === "directory") vault = handle as FileSystemDirectoryHandle;
     }
@@ -69,7 +68,6 @@ test("고치면 지도가 따라온다 — 더할 때와 지울 때 모두", asy
   await page.evaluate(async () => {
     const root = await navigator.storage.getDirectory();
     let vault: FileSystemDirectoryHandle | null = null;
-    // @ts-expect-error entries() 는 표준이지만 lib.dom 에 아직 없다
     for await (const [name, handle] of root.entries()) {
       if (name.startsWith("stub-vault-") && handle.kind === "directory") vault = handle as FileSystemDirectoryHandle;
     }
