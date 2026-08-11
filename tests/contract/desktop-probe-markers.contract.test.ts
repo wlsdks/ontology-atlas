@@ -30,9 +30,27 @@ import { describe, expect, it } from "vitest";
  * 은퇴 목록의 수는 **줄기만 한다**(래칫) — 그래서 남은 고고학이 눈에 보이고, 새 프로브가
  * 없는 표식을 기다리기 시작하면 그날 빨개진다.
  *
- * 왜 한 번에 다 지우지 않았나: 프로브 본문이 1,000줄이 넘는 Rust 안의 주입 JS 라
- * 지우려면 컴파일까지 묶어야 한다. 그건 별 건으로 잇는다 — 대신 **오늘 상한을 박아**
- * 되돌아가지 못하게 한다.
+ * ## 2026-08-11 2차 — 프로브와 단언은 걷어냈고, 남은 것은 «리포터»다
+ *
+ * 검증 스크립트 11개를 전부 돌려 보니 **하나도 통과하지 못했다.** 실패 이유가 셋으로
+ * 갈렸고 셋 다 게이트 쪽이 낡은 것이었다: ① 없어진 카드 DOM 을 기다림 ② 뷰포트를
+ * 기준으로 재는데 제품은 **지도**를 기준으로 함(덮개 1448 vs 1512, 가운데 31.5 = 레일
+ * 절반) ③ **한국어 문구를 그대로 못박음**(`"개념 추가"` · `"개념 이름"` · `"만들기"`)
+ * — 이 저장소가 문서 게이트에서 이미 금지한 그 병이다.
+ *
+ * 그래서 계열 전체를 은퇴시켰다: Rust 프로브 **1,154줄** · 도달 불가 계약 단언
+ * **1,962줄** · 스크립트 11개 · `desktop:check` 요구 11개.
+ *
+ * ⚠️ **같이 없어진 게이트 하나**: `script-vault-references.contract.test.ts` 는
+ * package.json 의 딥링크가 가리키는 볼트 노드가 실재하는지 봤는데, 그 딥링크를 갖고
+ * 있던 것이 바로 이 은퇴한 스크립트들이었다. 대상이 0이 되자 그 게이트의 공회전 차단
+ * 단언이 먼저 터졌다 — **설계대로 동작한 것**이고(빈 집합에 도장을 안 찍는다), 그래서
+ * 통과시키려 손대는 대신 지웠다. 대상이 없는 게이트는 이 저장소가 가장 싫어하는 모양이다.
+ *
+ * **남은 57개는 「리포터」다** — 표식을 조회해 값을 보고할 뿐, 그 값을 요구하는 단언이
+ * 하나도 없다(아래 세 번째 시험이 그 사실을 잠근다). 지우는 것이 맞지만 거대한
+ * 주입 JS 문자열 안이라 한 번에 손대면 배포 한 사이클마다 실수가 드러난다. 상한이
+ * 늘지 못하게 막아 두고 줄여 나간다.
  */
 
 const REPO_ROOT = join(import.meta.dirname, "..", "..");
@@ -93,6 +111,19 @@ describe("데스크톱 검증 프로브 표식 계약", () => {
    * **은퇴한 검증을 부르는 npm 스크립트가 없다.** 스크립트가 남아 있으면 다음 사람이
    * 그것을 돌려 보고 「앱이 깨졌다」고 읽는다 — 실제로는 검증이 깨진 것이다.
    */
+  /**
+   * **은퇴한 검증이 「단언」으로 되살아나지 않는다.** 리포터는 값을 보고할 뿐이지만
+   * 계약이 그 값을 다시 요구하기 시작하면 그 순간 유령 게이트가 돌아온다.
+   */
+  it("계약이 은퇴한 토폴로지 요구를 되살리지 않는다", () => {
+    const contract = readFileSync(join(REPO_ROOT, "scripts/lib/verify-macos/payload-contract.mjs"), "utf8");
+    const revived = [...contract.matchAll(/require(Topology\w+)/g)].map(([, name]) => name);
+    expect(
+      [...new Set(revived)],
+      `은퇴한 토폴로지 요구가 계약에 다시 나타났다: ${[...new Set(revived)].join(", ")}`,
+    ).toEqual([]);
+  });
+
   it("죽은 플래그를 넘기는 스크립트가 없다", () => {
     const pkg = readFileSync(join(REPO_ROOT, "package.json"), "utf8");
     const deadFlags = [
@@ -101,6 +132,8 @@ describe("데스크톱 검증 프로브 표식 계약", () => {
       "--verify-topology-focus-noop",
       "--verify-topology-frame-profile",
       "--verify-topology-node-popover",
+      "--verify-topology-focus-zoom",
+      "--verify-topology-create-node",
     ];
     const offenders = deadFlags.filter((flag) => pkg.includes(flag));
     expect(

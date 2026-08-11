@@ -181,13 +181,6 @@ async function verifyExecutableLaunch({
   requireWebviewContent,
   requireWebviewRoute,
   webviewFixtureVaultPath,
-  verifyTopologyDrag,
-  verifyTopologySelectedRelation,
-  verifyTopologyNodePopover,
-  verifyTopologyCreateNode,
-  verifyTopologyFocusNoop,
-  verifyTopologyFocusZoom,
-  verifyTopologyFrameProfile,
   verifyAiSettings,
   aiSettingsBaseUrl,
   requireWebviewReducedMotion,
@@ -212,13 +205,6 @@ async function verifyExecutableLaunch({
           ...webviewVerifyEnvPatch({
             requireWebviewRoute,
             webviewFixtureVaultPath,
-            verifyTopologyDrag,
-            verifyTopologySelectedRelation,
-            verifyTopologyNodePopover,
-            verifyTopologyCreateNode,
-            verifyTopologyFocusNoop,
-            verifyTopologyFocusZoom,
-            verifyTopologyFrameProfile,
             verifyAiSettings,
             aiSettingsBaseUrl,
             webviewWindowSize,
@@ -275,13 +261,6 @@ async function verifyExecutableLaunch({
       expectedFixtureVault: webviewFixtureVaultPath,
       minWebviewSize,
       maxWebviewSize,
-      requireTopologyDrag: verifyTopologyDrag,
-      requireTopologySelectedRelation: verifyTopologySelectedRelation,
-      requireTopologyNodePopover: verifyTopologyNodePopover,
-      requireTopologyCreateNode: verifyTopologyCreateNode,
-      requireTopologyFocusNoop: verifyTopologyFocusNoop,
-      requireTopologyFocusZoom: verifyTopologyFocusZoom,
-      requireTopologyFrameProfile: verifyTopologyFrameProfile,
       requireAiSettings: verifyAiSettings,
       expectedAiSettingsBaseUrl: verifyAiSettings ? aiSettingsBaseUrl : null,
       requireWebviewReducedMotion,
@@ -408,13 +387,6 @@ async function main() {
     requireWebviewContent,
     requireWebviewRoute,
     webviewFixtureVaultPath,
-    verifyTopologyDrag,
-    verifyTopologySelectedRelation,
-    verifyTopologyNodePopover,
-    verifyTopologyCreateNode,
-    verifyTopologyFocusNoop,
-    verifyTopologyFocusZoom,
-    verifyTopologyFrameProfile,
     verifyAiSettings,
     aiSettingsBaseUrl,
     requireWebviewReducedMotion,
@@ -501,27 +473,6 @@ async function main() {
   if (webviewEvidencePath && openApp) {
     fail("--webview-evidence is only supported for direct executable launch; omit --open-app.");
   }
-  if (verifyTopologyDrag && openApp) {
-    fail("--verify-topology-drag is only supported for direct executable launch; omit --open-app.");
-  }
-  if (verifyTopologySelectedRelation && openApp) {
-    fail("--verify-topology-selected-relation is only supported for direct executable launch; omit --open-app.");
-  }
-  if (verifyTopologyNodePopover && openApp) {
-    fail("--verify-topology-node-popover is only supported for direct executable launch; omit --open-app.");
-  }
-  if (verifyTopologyCreateNode && openApp) {
-    fail("--verify-topology-create-node is only supported for direct executable launch; omit --open-app.");
-  }
-  if (verifyTopologyFocusNoop && openApp) {
-    fail("--verify-topology-focus-noop is only supported for direct executable launch; omit --open-app.");
-  }
-  if (verifyTopologyFrameProfile && openApp) {
-    fail("--verify-topology-frame-profile is only supported for direct executable launch; omit --open-app.");
-  }
-  if (verifyTopologyFocusZoom && openApp) {
-    fail("--verify-topology-focus-zoom is only supported for direct executable launch; omit --open-app.");
-  }
   if (webviewWindowSize && openApp) {
     fail("--webview-window-size is only supported for direct executable launch; omit --open-app.");
   }
@@ -544,27 +495,6 @@ async function main() {
     : null;
   if (requireWebviewRoute && !normalizedWebviewRoute) {
     fail("--require-webview-route must be an absolute app path such as /en/topology/.");
-  }
-  if (verifyTopologyDrag && !normalizedWebviewRoute?.includes("/topology")) {
-    fail("--verify-topology-drag requires --require-webview-route pointing at a /topology route.");
-  }
-  if (verifyTopologySelectedRelation && !normalizedWebviewRoute?.includes("/topology")) {
-    fail("--verify-topology-selected-relation requires --require-webview-route pointing at a /topology route.");
-  }
-  if (verifyTopologyNodePopover && !normalizedWebviewRoute?.includes("/topology")) {
-    fail("--verify-topology-node-popover requires --require-webview-route pointing at a /topology route.");
-  }
-  if (verifyTopologyCreateNode && !normalizedWebviewRoute?.includes("/topology")) {
-    fail("--verify-topology-create-node requires --require-webview-route pointing at a /topology route.");
-  }
-  if (verifyTopologyFocusNoop && !normalizedWebviewRoute?.includes("/topology")) {
-    fail("--verify-topology-focus-noop requires --require-webview-route pointing at a /topology route.");
-  }
-  if (verifyTopologyFocusZoom && !normalizedWebviewRoute?.includes("/topology")) {
-    fail("--verify-topology-focus-zoom requires --require-webview-route pointing at a /topology route.");
-  }
-  if (verifyTopologyFrameProfile && !normalizedWebviewRoute?.includes("/topology")) {
-    fail("--verify-topology-frame-profile requires --require-webview-route pointing at a /topology route.");
   }
   if (!fs.existsSync(resolvedAppPath)) {
     fail(`missing app bundle at ${resolvedAppPath}; run pnpm desktop:build:app first.`);
@@ -637,13 +567,6 @@ async function main() {
         requireWebviewContent,
         requireWebviewRoute: normalizedWebviewRoute,
         webviewFixtureVaultPath,
-        verifyTopologyDrag,
-        verifyTopologySelectedRelation,
-        verifyTopologyNodePopover,
-        verifyTopologyCreateNode,
-        verifyTopologyFocusNoop,
-        verifyTopologyFocusZoom,
-        verifyTopologyFrameProfile,
         verifyAiSettings,
         aiSettingsBaseUrl,
         requireWebviewReducedMotion,
