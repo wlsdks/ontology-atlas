@@ -88,6 +88,9 @@ import {
   useStudioDrafts,
 } from "../lib/studio-draft-store";
 import { StudioCompass, type CompassBearingView, type StudioCompassLabels } from "./StudioCompass";
+
+/** 입장이 끝났다고 보는 창 — `--motion-base`(180ms) + 스태거 여유. */
+const STAGE_ENTRANCE_WINDOW_MS = 520;
 import { StudioEntryChoice } from "./StudioEntryChoice";
 import { StudioPracticeCleanup } from "./StudioPracticeCleanup";
 import { StudioPracticeRail } from "./StudioPracticeRail";
@@ -1490,6 +1493,36 @@ function StudioStage({
  * 그래서 조건부 렌더 위가 아니라 **밖**에 둔다. 분기 수가 몇이든 이 자리는 하나다.
  */
 export function OntologyStudioPage() {
+  /**
+   * **무대는 한 번만 들어온다** (2026-08-12 실측).
+   *
+   * 소유자: *"공방쪽은 2D인데 좀 움직이고 그런 모션좀 넣어달랬는데 안해주더라고"*.
+   * 재 보니 공방은 **움직인다** — 방위를 채우면 지지대가 흐르고(`studioStrutFlow`)
+   * 도착 표시가 뜬다(`studioFillArrive`). 문제는 그 반대였다: 프레임 샘플링으로
+   * 방위 하나를 채우는 순간을 재 보니 `studioStageIn` 이 **중앙 카드와 나머지 세
+   * 소켓에까지** 붙어 재생됐다. 채운 것은 아래 방위 하나인데 화면 전체가 다시
+   * 들어오는 것이다.
+   *
+   * 그게 역설적으로 「안 움직인다」로 느껴지는 이유다: **모든 것이 같이 움직이면
+   * 아무것도 도착하지 않는다.** 이 저장소의 모션 규칙이 「움직임은 무엇이 어디서
+   * 어디로 갔는지 설명해야 한다」고 정해 둔 그 지점이다.
+   *
+   * 원인은 CSS 가 아니라 정체성이다 — 관계가 landing 하면 React 가 나침 무대를 다시
+   * 마운트하고, CSS 입장 애니메이션은 마운트마다 재생된다. 구조를 뜯어 마운트를
+   * 유지하는 것이 근본이지만 그건 이 컴포넌트에서 큰 수술이라, **입장이 끝난 뒤부터
+   * 재생을 끈다**: 이 표시가 붙으면 `app/globals.css` 가 `.studio-stage-in` 을
+   * 멈춘다. 도착하는 것(위성·지지대·도착 표시)은 자기 애니메이션을 그대로 갖는다.
+   *
+   * 시간을 쓰는 이유: 입장 자체는 살려야 하므로 첫 프레임에 끄면 안 된다. 값은 입장
+   * 길이(`--motion-base` 180ms)에 스태거 여유를 더한 것이고, 늦게 켜져도 잃는 것이
+   * 없다(그동안 재마운트가 없으면 아무 일도 일어나지 않는다).
+   */
+  const [stageEntered, setStageEntered] = useState(false);
+  useEffect(() => {
+    const timer = window.setTimeout(() => setStageEntered(true), STAGE_ENTRANCE_WINDOW_MS);
+    return () => window.clearTimeout(timer);
+  }, []);
+
   const t = useTranslations("ontologyStudio");
   const toast = useToast();
   const localVault = useLocalVault();
@@ -1651,7 +1684,7 @@ export function OntologyStudioPage() {
   }, [navigateStudio]);
 
   return (
-    <div className="flex h-[100dvh] w-full overflow-hidden">
+    <div className="flex h-[100dvh] w-full overflow-hidden" data-studio-entered={stageEntered ? "true" : undefined}>
       <div className="relative min-w-0 flex-1">
         <StudioStage
           practiceSaved={practiceArtifact !== null}

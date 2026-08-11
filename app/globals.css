@@ -1258,6 +1258,22 @@
     animation-delay: var(--studio-stagger, 0ms);
   }
 
+  /*
+   * **입장은 한 번이다** (2026-08-12 실측).
+   *
+   * 방위를 하나 채우면 React 가 나침 무대를 다시 마운트하고, 그러면 이 입장이
+   * **중앙 카드와 나머지 세 소켓에까지** 다시 재생된다(프레임 샘플링으로 확인).
+   * 채운 것은 방위 하나인데 화면 전체가 다시 들어오면 무엇이 도착했는지 읽히지
+   * 않는다 — 「모든 것이 같이 움직이면 아무것도 도착하지 않는다」.
+   *
+   * 그래서 무대가 입장을 마치면 소비처가 `data-studio-entered` 를 세우고, 그때부터
+   * 이 입장은 멈춘다. **도착하는 것은 그대로 움직인다**(`studioFillArrive` ·
+   * `studioStrutFlow` · 위성 FLIP) — 끄는 것은 「이미 있던 것이 다시 들어오는 것」뿐이다.
+   */
+  [data-studio-entered="true"] .studio-stage-in {
+    animation: none;
+  }
+
   /* 2) 피커 열림 원점 스케일 — 소켓(앵커)에서 자라난다. transform-origin 은
      소비처가 --studio-picker-origin 으로 소켓의 로컬 좌표를 주입. */
   /* ── 채움 확정의 안무 (2026-07-28, 소유자 "세팅할때마다 뭔가 움직이면서") ──
@@ -2120,7 +2136,6 @@
        --topology-graph-node-dim, --topology-connector) 는 #344
        (retire-sigma-topology) 이후 consumer 0 — topology-map-v2 는 자체
        --topology-v2-edge-* 패밀리를 쓴다. */
-    --topology-card-border-selected: rgba(139, 151, 255, 0.8);
     --topology-relation-summary-surface: rgba(139, 151, 255, 0.18);
     --topology-relation-summary-border: rgba(139, 151, 255, 0.42);
     --topology-relation-summary-text: rgba(222, 225, 255, 0.94);
@@ -2226,9 +2241,6 @@
     --topology-selected-relation-action-min-width: 86px;
     --topology-selected-relation-copy-payload-min-height: 42px;
     --topology-selected-relation-route-step-min-width: 48px;
-    --topology-selected-relation-card-surface: rgba(13, 15, 21, 0.98);
-    --topology-selected-relation-card-border: rgba(139, 151, 255, 0.28);
-    --topology-selected-relation-card-shadow: 0 12px 26px rgba(0, 0, 0, 0.38);
     --topology-selected-relation-kicker-font-size: 9px;
     --topology-selected-relation-chip-font-size: 9px;
     --topology-selected-relation-route-label-font-size: 8px;
