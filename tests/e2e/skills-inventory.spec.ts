@@ -1,5 +1,6 @@
 import { expect, test } from "@playwright/test";
 
+import { stubSkillFolder } from "./skills-folder-stub";
 import { seedFirstRunSeen } from "./first-run-seed";
 
 /**
@@ -20,38 +21,6 @@ import { seedFirstRunSeen } from "./first-run-seed";
 const SKILL = (name: string, description: string, body = "") =>
   `---\nname: ${name}\ndescription: ${description}\n---\n\n${body}`;
 
-/** OPFS 에 스킬 폴더를 짓고 `showDirectoryPicker` 가 그것을 돌려주게 만든다. */
-async function stubSkillFolder(
-  page: import("@playwright/test").Page,
-  files: Record<string, string>,
-) {
-  await page.addInitScript((seed: Record<string, string>) => {
-    const build = async () => {
-      const root = await navigator.storage.getDirectory();
-      // 매 실행이 같은 상태에서 시작하도록 먼저 비운다.
-      for await (const name of (
-        root as unknown as { keys: () => AsyncIterableIterator<string> }
-      ).keys()) {
-        await root.removeEntry(name, { recursive: true }).catch(() => undefined);
-      }
-      const stage = await root.getDirectoryHandle("skills-fixture", { create: true });
-      for (const [path, text] of Object.entries(seed)) {
-        const parts = path.split("/");
-        let dir = stage;
-        for (const part of parts.slice(0, -1)) {
-          dir = await dir.getDirectoryHandle(part, { create: true });
-        }
-        const file = await dir.getFileHandle(parts[parts.length - 1], { create: true });
-        const writable = await file.createWritable();
-        await writable.write(text);
-        await writable.close();
-      }
-      return stage;
-    };
-    (window as unknown as { showDirectoryPicker: () => Promise<FileSystemDirectoryHandle> })
-      .showDirectoryPicker = build;
-  }, files);
-}
 
 test.describe("스킬 인벤토리", () => {
   /**
@@ -71,29 +40,86 @@ test.describe("스킬 인벤토리", () => {
    * 공백을 옮긴 것뿐이었다. 그래서 「한 덩어리로 끝낸다」로 바꿨고, 이 시험이 잠그는
    * 것은 그 성질이다: **좁은 칸 + 제목 바로 아래 + 눈에 보이는 면**.
    */
-  test("빈 상태는 좁은 칸에 한 덩어리로 끝난다", async ({ page }) => {
+  /**
+   * **빈 상태는 화면 가운데에 세워진다** (2026-08-12, 소유자 지적으로 두 번째 개정).
+   *
+   * 이 시험이 잠그던 성질은 원래 「제목 바로 아래」였다 — 그건 그 전 회차에 내가
+   * 내린 결론이고, **소유자가 화면을 보고 뒤집었다**: *"우측/하단 공백이 너무
+   * 심하고? … 이렇게 조립대같은 전략을 쓰던지"*.
+   *
+   * 실측이 그 지적과 같았다(1512×900, 잎 요소만 잰 잉크 상자):
+   *
+   * | | 잉크 | 좌/우 | 상/하 |
+   * |---|---|---|---|
+   * | 종전 스킬 | 1368×313 | 104 / 40 | 56 / **531** |
+   * | 조립대 입구 | 482×318 | 489 / 541 | 291 / 291 |
+   *
+   * 조립대는 **가운데에 세워져** 있고 스킬은 위에 붙어 벽까지 퍼져 있었다. 그래서
+   * 열 것이 아직 없을 때는 머리 행을 쓰지 않고 이 화면 전체가 무대가 된다.
+   *
+   * ⚠️ **잠글 것은 픽셀이 아니라 균형이다.** 좌우·상하 공백의 절대값을 못박으면
+   * 문구 한 줄이 길어지는 날 제품은 멀쩡한데 빨개진다. 그래서 「가운데에서 얼마나
+   * 벗어났나」를 뷰포트 비율로 잰다.
+   */
+  test("빈 상태는 화면 가운데에 세워진다", async ({ page }) => {
     await page.goto("/ko/skills/?guides=off", { waitUntil: "domcontentloaded" });
     const empty = page.getByTestId("skills-empty");
     await expect(empty).toBeVisible({ timeout: 20_000 });
 
-    const box = await empty.evaluate((el) => {
-      const rect = el.getBoundingClientRect();
-      const style = getComputedStyle(el);
+    const box = await page.evaluate(() => {
+      const cardEl = document.querySelector('[data-testid="skills-empty"]')!;
+      const stageEl = document.querySelector('[data-testid="skills-stage"]')!;
+      const card = cardEl.getBoundingClientRect();
+      const stage = stageEl.getBoundingClientRect();
+      const style = getComputedStyle(cardEl);
+      /*
+       * ⚠️ **세로는 카드 하나가 아니라 무대 덩어리로 잰다.** 카드 위에 제목과 한 줄
+       * 설명이 같이 서 있으므로, 카드만 기준으로 재면 위쪽 여백이 늘 더 커서
+       * 「치우쳤다」로 오판한다 — 첫 판이 215/118 로 그렇게 빨개졌고, 화면은 맞는데
+       * 계기가 틀린 것이었다. 잠글 성질은 **그 덩어리가 가운데 있는가**다.
+       *
+       * 무대의 첫 잉크(제목)와 마지막 잉크(카드 아래)를 양 끝으로 삼는다.
+       */
+      const first = stageEl.firstElementChild!.getBoundingClientRect();
       return {
-        width: Math.round(rect.width),
-        top: Math.round(rect.top),
-        right: Math.round(rect.right),
+        width: Math.round(card.width),
+        // 가로는 카드로 잰다 — 벽에 붙었는지는 카드가 말한다.
+        leftGap: Math.round(card.left - stage.left),
+        rightGap: Math.round(stage.right - card.right),
+        // 세로는 덩어리로 잰다.
+        topGap: Math.round(first.top - stage.top),
+        bottomGap: Math.round(stage.bottom - card.bottom),
+        hostW: Math.round(stage.width),
+        hostH: Math.round(stage.height),
         surfaced:
           style.borderTopWidth !== "0px" ||
           (style.backgroundColor !== "rgba(0, 0, 0, 0)" && style.backgroundColor !== "transparent"),
       };
     });
 
+    console.log(
+      `[skills-empty] 칸 ${box.width} · 좌 ${box.leftGap} 우 ${box.rightGap} · ` +
+        `상 ${box.topGap} 하 ${box.bottomGap} · 셸 ${box.hostW}×${box.hostH}`,
+    );
+
     // ① 좁은 칸 — 글 16개를 목록형 폭(1448)에 펼치지 않는다.
     expect(box.width, `빈 상태가 ${box.width}px 로 펼쳐졌다 — 글 16개에 목록형 폭이다`).toBeLessThanOrEqual(1_000);
-    // ② 제목 바로 아래 — 가운데로 밀면 제목이 위에 홀로 남는다(첫 처방의 실패).
-    expect(box.top, `빈 상태가 y=${box.top} 에서 시작한다 — 제목과 떨어져 공백이 생긴다`).toBeLessThan(250);
-    // ③ 눈에 보이는 면 — 면이 없으면 글이 아무 데도 묶이지 않아 「횡하다」로 읽힌다.
+
+    // ② 가로로 가운데 — 벽에 붙지 않는다. 셸 폭의 10% 안쪽으로 균형.
+    const xOff = Math.abs(box.leftGap - box.rightGap);
+    expect(
+      xOff,
+      `가로가 ${box.leftGap}/${box.rightGap} 로 치우쳤다 — 한쪽 벽에 붙어 있다`,
+    ).toBeLessThan(box.hostW * 0.1);
+
+    // ③ 세로로 가운데 — 아래에 구멍을 남기지 않는다. 셸 높이의 12% 안쪽.
+    const yOff = Math.abs(box.topGap - box.bottomGap);
+    expect(
+      yOff,
+      `세로가 ${box.topGap}/${box.bottomGap} 로 치우쳤다 — 남는 높이가 한쪽에 구멍으로 남는다`,
+    ).toBeLessThan(box.hostH * 0.12);
+
+    // ④ 눈에 보이는 면 — 면이 없으면 글이 아무 데도 묶이지 않아 「횡하다」로 읽힌다.
     expect(box.surfaced, "빈 상태에 면(테두리·배경)이 없다 — 글이 허공에 떠 있다").toBe(true);
   });
 
