@@ -13,7 +13,7 @@ import { dirname, join } from 'node:path';
 
 export const ACTIVITY_LOG_RELATIVE_PATH = '.ontology-atlas/activity.jsonl';
 
-/** 로테이션 상한 — 초과 시 앞 절반 절삭 (단순·결정론). */
+/** 로테이션 상한: 초과 시 앞 절반 절삭 (단순·결정론). */
 export const ACTIVITY_LOG_MAX_LINES = 4000;
 
 /**
@@ -33,7 +33,7 @@ export function buildActivityEntry({ tool, target, summary, agent = null, why = 
   };
 }
 
-/** heartbeat 파일에서 agent 이름을 읽는다 — 없거나 깨졌으면 null (조작 금지). */
+/** heartbeat 파일에서 agent 이름을 읽는다: 없거나 깨졌으면 null (조작 금지). */
 export function readHeartbeatAgent(rootPath) {
   try {
     const raw = readFileSync(join(rootPath, '.ontology-atlas/agent-activity.json'), 'utf-8');

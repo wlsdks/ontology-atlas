@@ -103,7 +103,7 @@ function graphUpdates(result) {
 
 function graphUpdateTitle(update) {
   return update?.title && update.title !== update.slug
-    ? ` ${COLORS.dim}— ${update.title}${COLORS.reset}`
+    ? ` ${COLORS.dim}· ${update.title}${COLORS.reset}`
     : '';
 }
 
@@ -152,7 +152,7 @@ function printUsage(stream = process.stderr) {
   stream.write(
     `\n${COLORS.bold}Usage:${COLORS.reset}\n` +
       `  ontology-atlas merge <fromSlug> <intoSlug> [vault] [--confirm] [--json]\n\n` +
-      `${COLORS.bold}Default${COLORS.reset} dry-run — preview the redirects.\n` +
+      `${COLORS.bold}Default${COLORS.reset} dry-run: preview the redirects.\n` +
       `${COLORS.bold}--confirm${COLORS.reset}  apply: redirect every backlink, delete fromSlug.md.\n\n` +
       `${COLORS.bold}Example:${COLORS.reset}\n` +
       `  ontology-atlas merge capabilities/dup capabilities/canonical\n` +

@@ -632,7 +632,7 @@ async function showActivityLog({ vaultRoot, json, limit }) {
     return 0;
   }
   if (entries.length === 0) {
-    process.stdout.write(`${COLORS.dim}활동 로그가 비어 있어요 — 에이전트가 vault 에 쓰면 여기 기록됩니다.${COLORS.reset}\n`);
+    process.stdout.write(`${COLORS.dim}활동 로그가 비어 있어요: 에이전트가 vault 에 쓰면 여기 기록됩니다.${COLORS.reset}\n`);
     return 0;
   }
   for (const entry of entries) {
@@ -640,6 +640,6 @@ async function showActivityLog({ vaultRoot, json, limit }) {
     const why = entry.why ? `\n      ${COLORS.dim}why: ${entry.why}${COLORS.reset}` : '';
     process.stdout.write(`${COLORS.dim}${entry.at}${COLORS.reset}  ${entry.summary}${COLORS.dim}${agent}${COLORS.reset}${why}\n`);
   }
-  process.stdout.write(`${COLORS.dim}— ${entries.length}건 (최신순 아래) · 승인은 git diff 로${COLORS.reset}\n`);
+  process.stdout.write(`${COLORS.dim}· ${entries.length}건 (최신순 아래) · 승인은 git diff 로${COLORS.reset}\n`);
   return 0;
 }

@@ -112,7 +112,7 @@ function printHuman(result) {
     : '';
   process.stdout.write(
     `${COLORS.bold}${result.from}${COLORS.reset} ${COLORS.dim}⇄${COLORS.reset} ${COLORS.bold}${result.to}${COLORS.reset}` +
-      ` ${COLORS.dim}— all_paths maxHops=${result.maxHops} limit=${result.limit} searchBudget=${result.searchBudget}${typeLabel}${COLORS.reset}\n`,
+      ` ${COLORS.dim}· all_paths maxHops=${result.maxHops} limit=${result.limit} searchBudget=${result.searchBudget}${typeLabel}${COLORS.reset}\n`,
   );
   process.stdout.write(
     `  ${COLORS.bold}evidence${COLORS.reset} ${evidenceColor}${result.evidence.status}${COLORS.reset}` +
@@ -156,7 +156,7 @@ function formatHop(node) {
   if (!node?.title || node.title === node.slug) {
     return `${COLORS.cyan}${node.slug}${COLORS.reset}`;
   }
-  return `${COLORS.cyan}${node.slug}${COLORS.reset} ${COLORS.dim}— ${node.title}${COLORS.reset}`;
+  return `${COLORS.cyan}${node.slug}${COLORS.reset} ${COLORS.dim}· ${node.title}${COLORS.reset}`;
 }
 
 function parseArgs(args) {

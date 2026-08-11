@@ -811,6 +811,9 @@
       "collapseTooltip": "Collapse hub bar",
       "collapseAriaLabel": "Collapse hub bar",
       "itemTitle": "{name} · {degree} connections"
+    },
+    "keyboardWalk": {
+      "deadEnd": "No connected node this way"
     }
   },
   "searchWidgets": {
@@ -913,6 +916,15 @@
         "docsActions": "Ontology workspace · document actions"
       },
       "rows": {
+        "walkNeighbors": "Move to a connected concept",
+        "navBlockedByOverlay": "Close the open panel first. Press Esc to close it",
+        "goTo_map": "Go to map",
+        "goTo_docs": "Go to docs",
+        "goTo_studio": "Go to studio",
+        "goTo_insights": "Go to insights",
+        "goTo_projects": "Go to projects",
+        "goTo_skills": "Go to skills",
+        "goTo_git": "Go to git history",
         "openProjectPalette": "Open the search palette",
         "openGlobalPalette": "Search concepts, docs, and projects together",
         "toggleDocsDrawer": "Toggle the ontology workspace preview drawer (with edit access)",
@@ -2469,7 +2481,7 @@
       "clickHint": "Click for details · source doc"
     },
     "canvas": {
-      "ariaLabel": "Product map: the INDEX panel lets you explore the same information by keyboard"
+      "ariaLabel": "Product map: walk connected concepts with the arrow keys. The INDEX panel shows the same information"
     },
     "cluster": {
       "hint": "Dense groups are folded into +N chips: click a chip to expand that group, click again to collapse.",

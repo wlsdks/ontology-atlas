@@ -104,7 +104,7 @@ function graphUpdates(result) {
 
 function graphUpdateTitle(update) {
   return update?.title && update.title !== update.slug
-    ? ` ${COLORS.dim}— ${update.title}${COLORS.reset}`
+    ? ` ${COLORS.dim}· ${update.title}${COLORS.reset}`
     : '';
 }
 
@@ -155,7 +155,7 @@ function printUsage(stream = process.stderr) {
   stream.write(
     `\n${COLORS.bold}Usage:${COLORS.reset}\n` +
       `  ontology-atlas rename <oldSlug> <newSlug> [vault] [--confirm] [--overwrite] [--json]\n\n` +
-      `${COLORS.bold}Default${COLORS.reset} dry-run only — preview the changes.\n` +
+      `${COLORS.bold}Default${COLORS.reset} dry-run only: preview the changes.\n` +
       `${COLORS.bold}--confirm${COLORS.reset}  apply: move .md, update slug:, rewrite every backlink.\n\n` +
       `${COLORS.bold}--overwrite${COLORS.reset} allow replacing an existing target slug.\n\n` +
       `${COLORS.bold}Example:${COLORS.reset}\n` +

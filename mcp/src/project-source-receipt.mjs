@@ -9,7 +9,7 @@ import {
 export { PROJECT_SOURCE_RECEIPT_VERSION, buildProjectSourceReceipt };
 export const PROJECT_SOURCE_STATE_RELATIVE_PATH = '.ontology-atlas/project-sources.json';
 /** Keeps the private absolute root out of git. Mirrors the app's sidecar guard. */
-const SIDECAR_IGNORE_CONTENT = '# Ontology Atlas local runtime state — not for commit.\n*\n';
+const SIDECAR_IGNORE_CONTENT = '# Ontology Atlas local runtime state: not for commit.\n*\n';
 
 const RECEIPT_STATUSES = new Set(['needs_evidence', 'review_required', 'verified_current']);
 const GAP_IDS = new Set([

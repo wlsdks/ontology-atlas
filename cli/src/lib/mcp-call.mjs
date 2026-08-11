@@ -341,7 +341,7 @@ export function parseMcpToolResponse(toolResp, { toolName } = {}) {
       throw new Error(`mcp tool structuredContent text is not JSON${toolLabel}: ${previewValue(text)}`);
     }
     if (!isDeepStrictEqual(textPayload, result.structuredContent)) {
-      throw new Error(`mcp tool structuredContent mismatch${toolLabel} — ${structuredContentMismatchSummary(textPayload, result.structuredContent)}`);
+      throw new Error(`mcp tool structuredContent mismatch${toolLabel} · ${structuredContentMismatchSummary(textPayload, result.structuredContent)}`);
     }
     return result.structuredContent;
   }

@@ -40,7 +40,7 @@ function roleForKind(kind) {
   return kind === 'capability' || kind === 'project' ? 'entrypoint' : 'implementation';
 }
 
-/** The app's graph node id for a vault doc — `${kind}:${last slug segment}`. */
+/** The app's graph node id for a vault doc: `${kind}:${last slug segment}`. */
 function graphNodeId(doc) {
   const kind = typeof doc.frontmatter?.kind === 'string' ? doc.frontmatter.kind.trim() : '';
   const fmSlug = typeof doc.frontmatter?.slug === 'string' ? doc.frontmatter.slug.trim() : '';

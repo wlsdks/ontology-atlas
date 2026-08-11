@@ -2,6 +2,10 @@
 
 import { useCallback, useState, type ReactNode } from "react";
 import { useRouter, usePathname } from "@/i18n/navigation";
+import { useDestinationShortcuts } from "@/shared/lib/use-destination-shortcuts";
+import { focusMapCanvasWhenReady } from "@/shared/lib/focus-map-canvas";
+import { useToast } from "@/shared/ui";
+import { useTranslations } from "next-intl";
 import {
   AppNavRail,
   NavRailShellProvider,
@@ -237,6 +241,40 @@ function AppNavRailSlot() {
   // 동작한다 — 데스크톱 정밀 카운트(`git_status.changedCount`)는 후속.
   const { changeset: gitChangeset } = useAtlasGitContext();
   const gitDirtyCount = gitChangeset.touchedNodeIds.size;
+
+  const toast = useToast();
+  const tShortcutRows = useTranslations("searchWidgets.shortcuts.rows");
+
+  /**
+   * 목적지 이동 단축키(`G` 다음 한 글자) — **레일과 같은 자리**에서 배선한다.
+   *
+   * 레일이 그리는 목적지와 키보드가 데려가는 목적지가 어긋나면 안 되고, 그
+   * 어긋남을 막는 가장 싼 방법은 둘이 같은 `contextHrefs` 와 같은 `gateway`
+   * 판정을 보는 것이다. 관문 화면에서는 레일이 없으므로 키도 없다 — 화면에
+   * 입구가 없는데 키보드에만 있으면, 그건 발견할 수 없는 기능이다.
+   */
+  useDestinationShortcuts({
+    navigate: (href, id) => {
+      router.push(href);
+      /*
+       * 지도는 **데려가는 것으로 끝나지 않는다** — 캔버스에 초점을 줘야 방향키로
+       * 걸을 수 있다. 실측: 키보드로 그 캔버스에 닿으려면 Tab **30번**이었다
+       * (`shared/lib/focus-map-canvas.ts` 에 이유를 적어 뒀다). 새 단축키를
+       * 만들지 않고 이미 있는 `G M` 에 이 일을 준다.
+       */
+      if (id === "map") focusMapCanvasWhenReady();
+    },
+    /*
+     * 막는 창 때문에 못 갈 때 **말해 준다.** 이것이 없던 동안 공방은 키보드
+     * 함정이었다 — 도착하면 「무엇을 할까요?」 선택 창이 뜨고, 그 뒤로는 어떤
+     * 이동 단축키도 조용히 먹지 않았다(2026-08-10 전체 검수에서 잡혔다).
+     */
+    onBlockedByOverlay: () => {
+      toast.show(tShortcutRows("navBlockedByOverlay"), "info");
+    },
+    disabled: gateway,
+    hrefOverrides: contextHrefs?.docs ? { docs: contextHrefs.docs } : undefined,
+  });
 
   // 2026-07-25 — 기록은 **목적지로 승격**됐고 이 유틸 타일은 흡수됐다. 입구가
   // 둘이면(타일 + 목적지) #65 와 같은 계열의 혼란이 재발한다. 미커밋 변경 수는

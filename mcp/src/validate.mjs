@@ -90,7 +90,7 @@ export function validateVaultDocument(raw) {
       code: 'unclosed-frontmatter',
       severity: 'error',
       message:
-        'frontmatter 시작 `---` 만 있고 끝 `---` 가 없습니다 — 노드로 인식되지 않습니다.',
+        'frontmatter 시작 `---` 만 있고 끝 `---` 가 없습니다: 노드로 인식되지 않습니다.',
     });
     return { ok: false, issues };
   }
@@ -107,7 +107,7 @@ export function validateVaultDocument(raw) {
       code: 'parse-zero-keys',
       severity: 'warning',
       message:
-        'frontmatter 블록은 있지만 key 가 하나도 추출되지 않았습니다 — 들여쓰기 또는 콜론 누락 의심.',
+        'frontmatter 블록은 있지만 key 가 하나도 추출되지 않았습니다: 들여쓰기 또는 콜론 누락 의심.',
     });
     return { ok: true, issues };
   }
@@ -120,13 +120,13 @@ export function validateVaultDocument(raw) {
       code: 'missing-kind',
       severity: 'warning',
       message:
-        'frontmatter 에 `kind:` 가 없습니다 — graph 노드가 되려면 kind 가 필요합니다.',
+        'frontmatter 에 `kind:` 가 없습니다: graph 노드가 되려면 kind 가 필요합니다.',
     });
   } else if (typeof rawKind !== 'string' || rawKind.trim() === '') {
     issues.push({
       code: 'empty-kind',
       severity: 'error',
-      message: '`kind:` 값이 비어있습니다 — graph 노드로 인식되지 않습니다.',
+      message: '`kind:` 값이 비어있습니다: graph 노드로 인식되지 않습니다.',
     });
   } else if (!KNOWN_VAULT_KINDS.includes(rawKind.trim())) {
     issues.push({
@@ -142,7 +142,7 @@ export function validateVaultDocument(raw) {
       issues.push({
         code: 'missing-expected-field',
         severity: 'warning',
-        message: `\`${key}:\` 가 비어있습니다 — kind=${trimmedKind} 노드는 ${key} 가 있어야 트리에서 부모를 찾을 수 있습니다.`,
+        message: `\`${key}:\` 가 비어있습니다: kind=${trimmedKind} 노드는 ${key} 가 있어야 트리에서 부모를 찾을 수 있습니다.`,
       });
     }
   }
@@ -165,7 +165,7 @@ function pushUidIssues(frontmatter, issues) {
     issues.push({
       code: 'missing-uid',
       severity: 'error',
-      message: '`uid:`가 없습니다 — 모든 ontology 노드는 생성 후 바뀌지 않는 lowercase UUIDv4 영구 식별자를 가져야 합니다.',
+      message: '`uid:`가 없습니다: 모든 ontology 노드는 생성 후 바뀌지 않는 lowercase UUIDv4 영구 식별자를 가져야 합니다.',
     });
     return;
   }
@@ -203,8 +203,57 @@ function pushNonCanonicalGraphArrayIssues(frontmatter, issues) {
       issues.push({
         code: 'non-canonical-graph-array',
         severity: 'warning',
-        message: `\`${key}:\` graph 배열이 정렬/중복제거된 canonical set 이 아닙니다 — add_relation 또는 patch_concept 로 다시 저장하면 정리됩니다.`,
+        message: `\`${key}:\` graph 배열이 정렬/중복제거된 canonical set 이 아닙니다: add_relation 또는 patch_concept 로 다시 저장하면 정리됩니다.`,
       });
     }
   }
+}
+
+/**
+ * **포함이 세워 준 부모** — 다른 노드가 이 슬러그를 담고 있으면 트리에서 부모가 있다.
+ *
+ * 2026-08-11: 북극성 여정을 걸어 보다 나왔다. `init --quick-start` 가 만든 볼트가
+ * 자기 검사기를 통과하지 못했는데, 경고는 하나(`missing-expected-field: domain`)였고
+ * 그 하나가 `health` · `mcp-verify` · `agent-brief` 셋을 빨갛게 만들었다. 그런데 그
+ * 경고의 문구가 *"트리에서 부모를 찾을 수 있습니다"* 이고, 정작 그 볼트의 프로젝트
+ * 노드는 이미 `contains:` 로 그 역량들을 담고 있었다 — **부모가 있는데 없다고 말한
+ * 것이다.** 검사기가 파일 하나만 보기 때문이고, 그래서 볼트 단위에서 좁힌다.
+ */
+export function parentedSlugs(docs) {
+  const parented = new Set();
+  for (const doc of docs ?? []) {
+    const frontmatter = doc?.frontmatter;
+    if (!frontmatter || typeof frontmatter !== 'object') continue;
+    for (const key of CONTAINMENT_KEYS) {
+      const value = frontmatter[key];
+      if (!Array.isArray(value)) continue;
+      for (const ref of value) {
+        if (typeof ref === 'string' && ref.trim()) parented.add(ref.trim());
+      }
+    }
+  }
+  return parented;
+}
+
+/** 포함이 부모를 세워 주는 키들 — 프로젝트/도메인이 아래를 담는 방향만 본다. */
+const CONTAINMENT_KEYS = ['contains', 'capabilities', 'elements', 'domains'];
+
+/**
+ * 부모가 이미 있는 노드에서 **`domain:` 누락 경고만** 지운다.
+ *
+ * ⚠️ 없애는 것이 아니라 **좁히는 것**이다 — 아무도 안 담은 노드에는 그대로 남고,
+ * 그때는 진짜로 부모가 없다. 다른 코드의 경고와 `domain` 이 아닌 기대 필드는
+ * 건드리지 않는다(포함이 세워 주는 것은 부모뿐이다).
+ */
+export function suppressParentedExpectedFieldIssues(issuesBySlug, docs) {
+  const parented = parentedSlugs(docs);
+  if (parented.size === 0) return issuesBySlug;
+  for (const [slug, issues] of issuesBySlug) {
+    if (!parented.has(slug) || !Array.isArray(issues)) continue;
+    const kept = issues.filter(
+      (issue) => !(issue?.code === 'missing-expected-field' && /^`domain:`/.test(issue?.message ?? '')),
+    );
+    if (kept.length !== issues.length) issuesBySlug.set(slug, kept);
+  }
+  return issuesBySlug;
 }

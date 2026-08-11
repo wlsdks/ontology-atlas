@@ -4,19 +4,9 @@ export const WEBVIEW_VERIFY_ROUTE_ENV = "ONTOLOGY_ATLAS_VERIFY_ROUTE";
 
 export const WEBVIEW_VERIFY_VAULT_ENV = "ONTOLOGY_ATLAS_VERIFY_VAULT";
 
-export const WEBVIEW_VERIFY_TOPOLOGY_DRAG_ENV = "ONTOLOGY_ATLAS_VERIFY_TOPOLOGY_DRAG";
-const WEBVIEW_VERIFY_TOPOLOGY_SELECTED_RELATION_ENV =
-  "ONTOLOGY_ATLAS_VERIFY_TOPOLOGY_SELECTED_RELATION";
-const WEBVIEW_VERIFY_TOPOLOGY_NODE_POPOVER_ENV =
-  "ONTOLOGY_ATLAS_VERIFY_TOPOLOGY_NODE_POPOVER";
 
-export const WEBVIEW_VERIFY_TOPOLOGY_CREATE_NODE_ENV = "ONTOLOGY_ATLAS_VERIFY_TOPOLOGY_CREATE_NODE";
 
-export const WEBVIEW_VERIFY_TOPOLOGY_FOCUS_NOOP_ENV = "ONTOLOGY_ATLAS_VERIFY_TOPOLOGY_FOCUS_NOOP";
 
-export const WEBVIEW_VERIFY_TOPOLOGY_FOCUS_ZOOM_ENV = "ONTOLOGY_ATLAS_VERIFY_TOPOLOGY_FOCUS_ZOOM";
-const WEBVIEW_VERIFY_TOPOLOGY_FRAME_PROFILE_ENV =
-  "ONTOLOGY_ATLAS_VERIFY_TOPOLOGY_FRAME_PROFILE";
 
 export const WEBVIEW_VERIFY_AI_SETTINGS_ENV = "ONTOLOGY_ATLAS_VERIFY_AI_SETTINGS";
 
@@ -95,13 +85,6 @@ export function topologyDragCompanionVectorTolerance(markers = {}) {
 export function webviewVerifyEnvPatch({
   requireWebviewRoute = null,
   webviewFixtureVaultPath = null,
-  verifyTopologyDrag = false,
-  verifyTopologySelectedRelation = false,
-  verifyTopologyNodePopover = false,
-  verifyTopologyCreateNode = false,
-  verifyTopologyFocusNoop = false,
-  verifyTopologyFocusZoom = false,
-  verifyTopologyFrameProfile = false,
   verifyAiSettings = false,
   aiSettingsBaseUrl = null,
   webviewWindowSize = null,
@@ -111,19 +94,6 @@ export function webviewVerifyEnvPatch({
     ...(requireWebviewRoute ? { [WEBVIEW_VERIFY_ROUTE_ENV]: requireWebviewRoute } : {}),
     ...(webviewFixtureVaultPath
       ? { [WEBVIEW_VERIFY_VAULT_ENV]: webviewFixtureVaultPath }
-      : {}),
-    ...(verifyTopologyDrag ? { [WEBVIEW_VERIFY_TOPOLOGY_DRAG_ENV]: "1" } : {}),
-    ...(verifyTopologySelectedRelation
-      ? { [WEBVIEW_VERIFY_TOPOLOGY_SELECTED_RELATION_ENV]: "1" }
-      : {}),
-    ...(verifyTopologyNodePopover
-      ? { [WEBVIEW_VERIFY_TOPOLOGY_NODE_POPOVER_ENV]: "1" }
-      : {}),
-    ...(verifyTopologyCreateNode ? { [WEBVIEW_VERIFY_TOPOLOGY_CREATE_NODE_ENV]: "1" } : {}),
-    ...(verifyTopologyFocusNoop ? { [WEBVIEW_VERIFY_TOPOLOGY_FOCUS_NOOP_ENV]: "1" } : {}),
-    ...(verifyTopologyFocusZoom ? { [WEBVIEW_VERIFY_TOPOLOGY_FOCUS_ZOOM_ENV]: "1" } : {}),
-    ...(verifyTopologyFrameProfile
-      ? { [WEBVIEW_VERIFY_TOPOLOGY_FRAME_PROFILE_ENV]: "1" }
       : {}),
     ...(verifyAiSettings ? { [WEBVIEW_VERIFY_AI_SETTINGS_ENV]: "1" } : {}),
     // 주소는 **검증기가 정한다**. 앱이 기본값으로 되메우면 "무엇을 실제로 넣고

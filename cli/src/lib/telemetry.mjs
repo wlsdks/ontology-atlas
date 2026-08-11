@@ -33,7 +33,7 @@ function telemetryPath(vaultRoot) {
 
 function defaultTelemetry() {
   return {
-    '//': 'local only, never transmitted — see AGENTS.md trust charter (PRODUCT-PLAN-2026-07.md §7)',
+    '//': 'local only, never transmitted: see AGENTS.md trust charter (PRODUCT-PLAN-2026-07.md §7)',
     initCompletedAt: null,
     absorbWriteCompletedAt: null,
     moment: null,

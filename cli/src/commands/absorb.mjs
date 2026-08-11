@@ -89,7 +89,7 @@ export function runAbsorb(args) {
     if (existsSync(backupPath)) {
       process.stderr.write(
         `${COLORS.red}error${COLORS.reset}  backup already exists, refusing to overwrite: ` +
-          `${relative(process.cwd(), backupPath)} — remove or rename it first\n`,
+          `${relative(process.cwd(), backupPath)}: remove or rename it first\n`,
       );
       exitCode = 1;
       continue;
@@ -131,7 +131,7 @@ export function runAbsorb(args) {
       `${totals.injectionSuspect} injection-suspect · ${totals.unclassified} unclassified\n`,
   );
   if (!opts.write && totals.files > 0) {
-    process.stdout.write(`${COLORS.dim}(dry-run — pass --write to actually land the plan)${COLORS.reset}\n`);
+    process.stdout.write(`${COLORS.dim}(dry-run: pass --write to actually land the plan)${COLORS.reset}\n`);
   }
 
   return exitCode;
@@ -152,7 +152,7 @@ function formatSectionLine(section) {
     const patterns = section.injection.matches.map((m) => m.pattern).join(', ');
     return (
       `${COLORS.red}⚠ injection-suspect${COLORS.reset}  ${section.heading} ` +
-      `${COLORS.dim}— matched: ${patterns} (excluded from absorption)${COLORS.reset}`
+      `${COLORS.dim}· matched: ${patterns} (excluded from absorption)${COLORS.reset}`
     );
   }
   if (section.action === 'absorb') {
@@ -167,7 +167,7 @@ function formatSectionLine(section) {
       `${COLORS.dim}→ candidate ${section.kind} · ${section.targetSlug} (not written)${COLORS.reset}`
     );
   }
-  return `${COLORS.dim}skip     ${section.heading} — ${section.reason}${COLORS.reset}`;
+  return `${COLORS.dim}skip     ${section.heading} · ${section.reason}${COLORS.reset}`;
 }
 
 function parseArgs(args) {
@@ -205,10 +205,10 @@ function printUsage(stream = process.stderr) {
       `  ontology-atlas absorb <file...> [--vault path] [--write]\n` +
       `\n` +
       `  CLAUDE.md/AGENTS.md 스타일 markdown 을 typed vault 노드로 변환. 기본값은\n` +
-      `  dry-run — 전환 계획만 출력하고 디스크는 건드리지 않는다. --write 를 주면\n` +
+      `  dry-run: 전환 계획만 출력하고 디스크는 건드리지 않는다. --write 를 주면\n` +
       `  정책/규칙 섹션은 document 노드로 실제 작성되고, 원본은 흡수 요약 + 미흡수\n` +
       `  섹션 원문을 보존한 slim pointer 로 재작성된다 (원본은 .pre-absorb.bak 로 백업).\n` +
-      `  아키텍처/컴포넌트 섹션은 후보 제안만 — 절대 자동 작성하지 않는다.\n` +
+      `  아키텍처/컴포넌트 섹션은 후보 제안만: 절대 자동 작성하지 않는다.\n` +
       `  인젝션 의심 섹션 (Tier 1) 은 흡수에서 제외되고 원문 그대로 pointer 에 남는다.\n` +
       `\n${COLORS.bold}options:${COLORS.reset}\n` +
       `  --vault path    target vault (default: cwd)\n` +

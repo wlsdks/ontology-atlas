@@ -15,6 +15,7 @@ import {
   useMemo,
   useRef,
   type PointerEvent as ReactPointerEvent,
+  type KeyboardEvent as ReactKeyboardEvent,
   type RefObject,
 } from "react";
 
@@ -36,7 +37,7 @@ import { createAnimatedBackground, type AnimatedBackground } from "../render/ani
 import { buildDustPoints, buildRealmCosmosPoints, computeStarDustCount, type DustPoint } from "../render/starfield";
 import { DEFAULT_EXPAND } from "@/shared/lib/appearance-preferences";
 import type { CanvasBackground, ExpandPreference, FootprintPreference, GlyphSet } from "@/shared/lib/appearance-preferences";
-import { computeClusterFitTarget, computeFocusCameraTarget, computeOverviewCameraTarget, computeOverviewFitScale, fitWorldTarget, hasAnyNodeOnScreen, worldToScreen } from "./topology-camera-math";
+import { centerForInsets, computeClusterFitTarget, computeFocusCameraTarget, computeOverviewCameraTarget, computeOverviewFitScale, fitWorldTarget, hasAnyNodeOnScreen, worldToScreen } from "./topology-camera-math";
 import { drawTopologyFrame } from "./topology-frame-draw";
 import { relaxNewlyVisible } from "../model/layout";
 import { computeTopologyClusterState } from "./topology-cluster-state";
@@ -78,6 +79,19 @@ import { initWardingFit, stepWardingFit, type WardingFitState } from "../model/r
 import { createTopologyPointerHandlers, type TopologyPointerHandlers } from "./topology-pointer-handlers";
 import { stepTopologyPhysics } from "./topology-physics-step";
 import { updatePulses, type Pulse } from "../render/edge-fireflies";
+import {
+  pickInitialFocus,
+  pickNeighborInDirection,
+  shouldAnnounceDeadEnd,
+  walkDirectionForKey,
+} from "../interaction/keyboard-walk";
+import {
+  collectCanvasObstacles,
+  computeFreeArea,
+  measureCanvasInsets,
+  type Rect,
+} from "../interaction/free-area";
+
 import { readTopologyV2TokensOrNull } from "./topology-read-tokens";
 import type { TopologyMapV2Props } from "./TopologyMapV2";
 import { applyForcePositions, buildTopologyWorld, recomputeWorldGeometry, type TopologyWorld, radiusForKind } from "./topology-world";
@@ -189,6 +203,12 @@ export interface UseTopologyLoopArgs {
     position: { x: number; y: number } | null,
   ) => void;
   onSelect?: (slug: string) => void;
+  /** 방향키를 눌렀는데 그 방향에 이어진 노드가 없을 때. 연타는 훅이 걸러 낸다. */
+  /**
+   * 막다른 길 — **어디서** 막혔는지까지 실어 보낸다(캔버스 지역 좌표).
+   * 자리를 아는 곳은 여기뿐이고, 안내를 노드 옆에 띄우려면 그 자리가 필요하다.
+   */
+  onWalkDeadEnd?: ((point: { x: number; y: number } | null) => void) | null;
   onPaneClick?: () => void;
   onVisibleCountChange?: (visible: number) => void;
   onGraphStatsChange?: (stats: { nodes: number; relations: number }) => void;
@@ -339,10 +359,12 @@ const EMPTY_TRAIL: readonly string[] = [];
 export type UseTopologyLoopResult = TopologyPointerHandlers & {
   canvasRef: RefObject<HTMLCanvasElement | null>;
   containerRef: RefObject<HTMLDivElement | null>;
+  /** 방향키로 이웃을 걷는다 (2026-08-09, 갈래 B) — 캔버스의 `onKeyDown`. */
+  handleKeyDown: (event: ReactKeyboardEvent<HTMLCanvasElement>) => void;
 };
 
 export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResult {
-  const { nodes, edges, focusedSlug, emphasizedNeighborSlug = null, dataSourceKey = null, fitViewToken, spotlightFitToken = 0, relayoutToken, revealToken = 0, onSelectEdge, onHoverEdge, onSelect, onPaneClick, onVisibleCountChange, onGraphStatsChange, onZoomTierChange, onContextMenuNode, onContextMenuPane, agentFocusNodeId = null, spotlightIds = null, selectedEdge = null, expandedParents = EMPTY_EXPANDED_SET, onToggleCluster, onHoverCluster, realmRootId = null, onEnterRealm, realmEnterButtonRef, realmCaption = null, visitedTrail = EMPTY_TRAIL, trailLensActiveRef, clusterBarLabels = null, trailHoverNodeIdRef, tierReveal = DEFAULT_TIER_REVEAL, tourAnchorNodeId = null, tourAnchorRef, glyphSet = "geometric", canvasBackground = "dot", footprint = null, expand = DEFAULT_EXPAND, wheelIntent = "zoom", ambientSleepDelayMs } = args;
+  const { nodes, edges, focusedSlug, emphasizedNeighborSlug = null, dataSourceKey = null, fitViewToken, spotlightFitToken = 0, relayoutToken, revealToken = 0, onSelectEdge, onHoverEdge, onSelect, onPaneClick, onVisibleCountChange, onGraphStatsChange, onZoomTierChange, onContextMenuNode, onContextMenuPane, agentFocusNodeId = null, spotlightIds = null, selectedEdge = null, expandedParents = EMPTY_EXPANDED_SET, onToggleCluster, onHoverCluster, realmRootId = null, onEnterRealm, realmEnterButtonRef, realmCaption = null, visitedTrail = EMPTY_TRAIL, trailLensActiveRef, clusterBarLabels = null, trailHoverNodeIdRef, tierReveal = DEFAULT_TIER_REVEAL, tourAnchorNodeId = null, tourAnchorRef, glyphSet = "geometric", canvasBackground = "dot", footprint = null, expand = DEFAULT_EXPAND, wheelIntent = "zoom", ambientSleepDelayMs, onWalkDeadEnd = null } = args;
 
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const containerRef = useRef<HTMLDivElement | null>(null);
@@ -804,6 +826,50 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
    * Stable identity (refs only) so listing it in the programmatic-move effects'
    * deps never re-fires them.
    */
+  /**
+   * 카메라 목표 계산에 쓸 토큰 — **좌·우 안전 인셋만 실측값으로 바꾼다.**
+   *
+   * ## 왜 (2026-08-10, 프로브가 드러낸 것)
+   *
+   * `topology-camera-math` 는 **이미** 안전 인셋으로 패널을 피한다. 그런데 그 값이
+   * CSS 토큰이라 정적이고, 실제 기하는 상태에 따라 바뀐다. 실측(1512×982):
+   * 토큰은 좌 78 · 우 120 인데, 실제는 **선택 전 좌 324 · 우 0**, **선택 후 좌 0 ·
+   * 우 384** 였다(선택하면 INDEX 가 접히고 팝오버가 열린다).
+   *
+   * 어제 나는 이 사실을 모르고 **선택 경로에만 두 번째 보정**(자유 영역 시프트)을
+   * 얹었다. 그건 같은 관심사의 둘째 체계이고, 그래서 한 번은 188px 어긋나고 한 번은
+   * 64px 과보정됐다. 옳은 처방은 시프트를 더 만드는 게 아니라 **이미 있는 인셋에
+   * 참값을 먹이는 것**이다.
+   *
+   * ## 왜 좌·우만, 왜 카메라 목표에만
+   *
+   * `safeInsetTop`(148)은 상단 도구 레인과 도킹 칩, `safeInsetBottom`(96)은 **라벨
+   * 자리 예약**이다(그 예약이 없어 최하단 라벨이 조용히 사라진 사고가 있었다) —
+   * 「덮는 패널」이 아니라 레이아웃 약속이라 측정으로 대체하면 그 사고가 돌아온다.
+   *
+   * 그리고 `safeInset*` 는 **라벨 컬링**(`topology-frame-draw`)도 읽는다. 전역으로
+   * 덮으면 카메라와 무관한 관심사를 건드리므로, 목표를 계산하는 자리에서만 갈아 끼운다.
+   *
+   * 토큰값과 **큰 쪽**을 쓴다 — 토큰이 패널 말고 다른 이유로 예약한 폭을 잃지 않는다.
+   */
+  const cameraTokens = useCallback(<T extends { safeInsetLeft: number; safeInsetRight: number }>(tokens: T): T => {
+    const canvasEl = canvasRef.current;
+    if (!canvasEl) return tokens;
+    const box = canvasEl.getBoundingClientRect();
+    if (box.width <= 0 || box.height <= 0) return tokens;
+    const measured = measureCanvasInsets(canvasEl, {
+      x: box.x,
+      y: box.y,
+      width: box.width,
+      height: box.height,
+    });
+    return {
+      ...tokens,
+      safeInsetLeft: Math.max(tokens.safeInsetLeft, measured.left),
+      safeInsetRight: Math.max(tokens.safeInsetRight, measured.right),
+    };
+  }, []);
+
   const beginCameraTween = useCallback((target: CameraTarget, durationOverrideMs?: number) => {
     if (reducedMotionRef.current) {
       cameraTweenRef.current = null;
@@ -1576,6 +1642,18 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
     // 재배치 좌표계(원점 0,0)와 어긋나 화면 밖으로 날아갔다. 영역 active 중
     // deselect 복귀 목표는 영역 콘텐츠 bbox(가시 멤버 기준) — entryCamera(영역
     // '해제' 전용)가 아니라 현재 영역 fit 이다.
+    /*
+     * ⚠️ **목표 계산 자체를 한 프레임 미룬다.**
+     *
+     * 피해야 할 팝오버는 **바로 이 선택 때문에** 열리므로, 이 effect 가 도는 시점에는
+     * DOM 에 없다. 그때 인셋을 재면 오른쪽이 0으로 나오고 보정이 사라진다 —
+     * 게이트가 정확히 그것을 잡았다(「자유 127px · 화면 64px」). 그래서 **재는 것과
+     * 계산하는 것을 같은 프레임**에 둔다.
+     *
+     * 200~420ms 이동 앞의 한 프레임(≈16ms)은 보이지 않고, 「한 사건」 게이트가 그
+     * 시차를 프레임 수로 지킨다.
+     */
+    const raf = requestAnimationFrame(() => {
     let target: CameraTarget | null;
     if (focusedSlug === null && realmActive && realmData) {
       const bounds = realmVisibleBounds(
@@ -1587,19 +1665,38 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
       target = realmCameraTarget(bounds, tokens, width, height);
     } else {
       const realmMembers = realmActive ? realmData?.memberIds ?? null : null;
-      target = computeFocusCameraTarget(world, tokens, width, height, focusedSlug, overviewEntryScale, realmMembers);
+      target = computeFocusCameraTarget(world, cameraTokens(tokens), width, height, focusedSlug, overviewEntryScale, realmMembers);
     }
     if (!target) return;
-    dampingRef.current = tokens.cameraDampingDefault;
-    cameraTargetRef.current = target;
-    userDrivenCameraRef.current = false;
-    // Dive-zoom fix — focus dive AND deselect-return are both PROGRAMMATIC
-    // camera moves (this effect fires for both directions of `focusedSlug`
-    // changing), so both ease via the cubic transition tween (reduced-motion →
-    // spring/snap).
-    cameraAngularFreqRef.current = tokens.cameraSpringAngFreqTransition;
-    beginCameraTween(target);
-  }, [focusedSlug, beginCameraTween]);
+    /*
+     * **패널에 가리지 않는 자리로 보정한다** (2026-08-10 소유자 확정:
+     * *"가려선 안되지 패널 뺀 공간 가운데로 맞춰줘"*).
+     *
+     * 노드를 고르면 오른쪽에 팝오버가 열린다. 그런데 이 목표는 **뷰포트 가운데**
+     * 기준이라, 고른 것이 그것을 설명하는 패널 뒤로 들어갈 수 있었다. 실측
+     * (1512×982): 캔버스 x64 w1448 · 팝오버 x1128 w352 → 자유 영역 가운데는 화면
+     * 가운데보다 **192px 왼쪽**이다.
+     *
+     * 개요 경로에는 이미 같은 개념이 있었다(그 아래 *"Panel-aware: … not behind the
+     * left ReaderLens panel"*) — 없던 것은 **선택 경로**다. 여기가 그 한 곳이다.
+     *
+     * 패널 폭을 상수로 박지 않고 DOM 에서 잰다: 값을 박으면 패널이 바뀌는 날 조용히
+     * 어긋난다. 선택이 바뀔 때만 도는 계산이라 프레임 예산과 무관하다.
+     */
+      const finalTarget = target;
+      dampingRef.current = tokens.cameraDampingDefault;
+      cameraTargetRef.current = finalTarget;
+      userDrivenCameraRef.current = false;
+      // Dive-zoom fix — focus dive AND deselect-return are both PROGRAMMATIC
+      // camera moves (this effect fires for both directions of `focusedSlug`
+      // changing), so both ease via the cubic transition tween (reduced-motion →
+      // spring/snap).
+      cameraAngularFreqRef.current = tokens.cameraSpringAngFreqTransition;
+      lastActiveMsRef.current = performance.now();
+      beginCameraTween(finalTarget);
+    });
+    return () => cancelAnimationFrame(raf);
+  }, [focusedSlug, beginCameraTween, cameraTokens]);
 
   // --- S4 "영역 전개" — realmRootId 변경 시 서브트리 재배치 + 전환 안무 시작.
   // 진입: 서브트리를 그 노드 임시 루트로 재배치, 안 노드는 FLIP·밖 노드는 중력
@@ -3348,8 +3445,219 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
     lastActiveMsRef.current = lastInputMsRef.current;
   }, []);
 
+  /**
+   * 막다른 길을 말해 주는 자리 — **침묵이 문제였다.**
+   *
+   * 소유자가 실제로 써 보고 *"방향키가 되긴 하는데 노드를 자유롭게 이동하진 못하네?"*
+   * 라고 했다. 그 방향에 이어진 노드가 없을 때 **아무 일도 안 하도록** 만들어 둔
+   * 것이 원인이다 — 「감싸 돌지 않는다」는 판단은 그대로 두고(반대편으로 뛰면
+   * 사용자가 자기 위치를 잃는다), 대신 **왜 안 움직이는지 말한다.** 눌렀는데 반응이
+   * 없으면 사용자는 「고장」과 「그 방향에는 없음」을 구별할 수 없다.
+   *
+   * **새 표면을 만들지 않는다** — 이 앱에는 이미 토스트가 있고 레이아웃 전체에
+   * 마운트돼 있다. 지도 위에 안내 상자를 새로 세우면 위치·토큰·모션을 다 정해야
+   * 하고, 그건 혼자 정할 규격이 아니다. 토스트는 스스로 사라지고
+   * (소유자: *"조금 보여지다 자동으로 사라지게"*) 보조기술에도 읽힌다.
+   *
+   * ⚠️ **문구와 토스트는 이 위젯의 것이 아니다.** 여기서 `useTranslations` 를
+   * 불렀다가 지도 컴포넌트 시험 5개가 깨졌다 — 그 시험은 프로바이더 없이 렌더한다.
+   * 그게 옳다: 이 위젯은 이미 `canvasLabel` 처럼 **문구를 prop 으로 받는다**.
+   * 그래서 사건만 밖으로 내보내고(`onWalkDeadEnd`), 무엇을 어떻게 보여 줄지는
+   * 페이지가 정한다.
+   */
+  const onWalkDeadEndRef = useRef(onWalkDeadEnd);
+  useEffect(() => {
+    onWalkDeadEndRef.current = onWalkDeadEnd;
+  });
+  /** 마지막으로 알린 시각 — 방향키를 누르고 있을 때 같은 말을 쏟지 않게. */
+  const deadEndAtRef = useRef<number | null>(null);
+
+  const announceDeadEnd = useCallback(() => {
+    const now = performance.now();
+    if (!shouldAnnounceDeadEnd(deadEndAtRef.current, now)) return;
+    deadEndAtRef.current = now;
+    /*
+     * **막힌 그 노드의 화면 자리**를 함께 보낸다 (2026-08-10 소유자 실사용 지적:
+     * *"그냥 이동하던 노드 바로 옆에 좀 잘보이게 나타났다가 사라지는게 좋을듯"*).
+     *
+     * 화면 좌표 식은 `nodes()` 창구와 그리는 쪽이 함께 쓰는 그것이다 — 여기서 따로
+     * 만들면 세 번째 사본이 된다. 좌표를 못 내면 `null` 을 보내고, 받는 쪽이
+     * 「자리를 모르니 안 띄운다」를 스스로 정한다.
+     */
+    const world = worldRef.current;
+    const camera = cameraRef.current;
+    const id = focusedSlugRef.current;
+    const node = world && id ? world.nodeById.get(id) : null;
+    const { width, height } = viewportRef.current;
+    const point =
+      node && camera && width > 0 && height > 0
+        ? {
+            x: (node.x - camera.x.value) * camera.scale.value + width / 2,
+            y: (node.y - camera.y.value) * camera.scale.value + height / 2,
+          }
+        : null;
+    onWalkDeadEndRef.current?.(point);
+  }, []);
+
+  /**
+   * 방향키로 **그래프 위를 걷는다** — 갈래 B (2026-08-09 소유자 확정).
+   *
+   * 방향키가 카메라를 미는 게 아니라 **이웃으로 옮겨 간다.** 어느 이웃인지
+   * 정하는 규칙은 `../interaction/keyboard-walk` 의 순수 함수에 있고(부채꼴
+   * ±60° · 투영 + 직교 벌점), 여기서는 그 결과를 이 캔버스의 상태에 잇는다.
+   *
+   * ## 왜 초점 링을 새로 만들지 않았나
+   *
+   * B 는 「초점이 움직이고 Enter 로 선택」이라고 그렸지만, **초점과 선택을
+   * 시각적으로 가르려면 인디고 마크가 하나 더 필요하다** — 그리고 이 앱에서
+   * 인디고는 이미 「선택됨」을 뜻한다. 같은 색이 두 뜻을 갖는 순간 도해가
+   * 깨지고, 그건 혼자 정할 규격이 아니다(`design.md` 「규격을 바꾸려면 「체계」를
+   * 부른다」). 그래서 방향키는 **선택을 옮긴다** — 클릭과 똑같은 뜻이고, 새 시각
+   * 언어가 0개다. 초점과 선택을 가르는 안은 규격 결정으로 남겨 둔다.
+   *
+   * ## 접힌 노드는 걷지 않는다
+   *
+   * 밀도 게이트가 접어 둔 서브트리는 화면에 없다(칩으로 대체된다). 거기로
+   * 옮기면 「눌렀는데 아무것도 안 보임」이 되므로 건너뛴다.
+   */
+  const handleKeyDown = useCallback((e: ReactKeyboardEvent<HTMLCanvasElement>) => {
+    const direction = walkDirectionForKey(e.key);
+    if (!direction) return;
+    if (e.metaKey || e.ctrlKey || e.altKey || e.shiftKey) return;
+
+    const world = worldRef.current;
+    const camera = cameraRef.current;
+    if (!world || !camera) return;
+
+    const clustered = clusteredIdsRef.current;
+    const visible = (id: string) => !clustered.has(id);
+
+    const currentId = focusedSlugRef.current;
+    let nextId: string | null = null;
+
+    if (currentId === null || !world.nodeById.has(currentId)) {
+      // 초점이 없으면 **지금 보고 있는 것**에서 시작한다. 카메라 x/y 가 곧 화면
+      // 중심의 월드 좌표다(`nodes()` 창구가 쓰는 것과 같은 식).
+      nextId = pickInitialFocus(
+        world.nodes.filter((n) => visible(n.id)).map((n) => ({ id: n.id, x: n.x, y: n.y })),
+        { x: camera.x.value, y: camera.y.value },
+      );
+    } else {
+      const from = world.nodeById.get(currentId);
+      if (!from) return;
+      /*
+       * 갈 수 있는 곳 = **이어진 이웃 + 형제**.
+       *
+       * ⚠️ 처음에는 이웃(엣지)만 후보였고, 소유자가 실물에서 막혔다 —
+       * *"1depth 에서는 자기들끼리 자유롭게 이동 가능하게는 해야할듯? 중앙에서
+       * 자유롭게 이동이 안 되던데?"*. 지도 중앙의 프로젝트를 둘러싼 도메인 아홉은
+       * **서로 엣지가 없다**(각자 프로젝트에만 붙어 있다). 그래서 상품에서 회원으로
+       * 옆걸음이 안 됐고, 링처럼 둘러선 화면에서 그건 고장으로 읽힌다.
+       *
+       * **임의 공간 점프를 허용한 것이 아니다.** 형제는 「같은 부모」라는 타입 있는
+       * 관계이고, 그것이 화면에서 링을 이루는 이유 자체다. 부모가 없는 뿌리끼리도
+       * 형제로 본다(프로젝트가 둘 이상인 볼트).
+       */
+      const candidateIds = new Set<string>(world.neighborMap.get(currentId) ?? []);
+      for (const node of world.nodes) {
+        if (node.id === currentId) continue;
+        if (node.parentId === from.parentId) candidateIds.add(node.id);
+      }
+      const candidates: { id: string; x: number; y: number }[] = [];
+      for (const id of candidateIds) {
+        if (!visible(id)) continue;
+        const node = world.nodeById.get(id);
+        if (node) candidates.push({ id: node.id, x: node.x, y: node.y });
+      }
+      if (candidates.length === 0) {
+        // 갈 곳이 아예 없는 노드. 아무 일도 안 하는 대신 왜 그런지 말한다.
+        e.preventDefault();
+        announceDeadEnd();
+        return;
+      }
+      nextId = pickNeighborInDirection({ id: from.id, x: from.x, y: from.y }, candidates, direction);
+    }
+
+    // 방향키는 우리 것이다 — 그 방향에 이웃이 없어도 페이지가 스크롤되면 안 된다.
+    e.preventDefault();
+    if (nextId === null) {
+      announceDeadEnd();
+      return;
+    }
+
+    const target = world.nodeById.get(nextId);
+    if (!target) return;
+    onSelect?.(nextId);
+
+    /*
+     * 카메라는 **따라만 온다** — 초점이 자유 영역 밖으로 나가려 할 때만. 매번
+     * 데려오면 걷는 동안 지도가 계속 미끄러져 사용자가 자기 위치를 잃는다
+     * (Shneiderman 의 overview-first 를 스스로 깨는 셈이다).
+     *
+     * **판정과 목표를 모두 「자유 영역」으로 한다** (2026-08-10 소유자 확정:
+     * *"가려선 안되지 패널 뺀 공간 가운데로 맞춰줘"*). 종전에는 뷰포트 가운데를
+     * 목표로 삼았는데, 노드를 고르면 오른쪽에 팝오버가 열리므로 **고른 것이 그것을
+     * 설명하는 패널 뒤로 들어갈 수 있었다.** 실측(1512×982): 캔버스 x64 w1448,
+     * 팝오버 x1128 w352 → 자유 영역 가운데는 화면 가운데보다 192px 왼쪽이다.
+     *
+     * 패널 폭을 상수로 박지 않고 **DOM 에서 재는** 이유: 값을 박으면 패널이 바뀌는
+     * 날 조용히 어긋난다. 이 계산은 프레임마다가 아니라 **걸을 때 한 번** 돈다.
+     */
+    const { width, height } = viewportRef.current;
+    const canvasEl = canvasRef.current;
+    if (width > 0 && height > 0 && canvasEl) {
+      const scale = camera.scale.value;
+      const canvasBox = canvasEl.getBoundingClientRect();
+      const canvasRect: Rect = {
+        x: canvasBox.x,
+        y: canvasBox.y,
+        width: canvasBox.width,
+        height: canvasBox.height,
+      };
+      const obstacles = collectCanvasObstacles(canvasEl, canvasRect);
+      const free = computeFreeArea(canvasRect, obstacles);
+
+      // 초점이 지금 자유 영역 안에 넉넉히 들어와 있나 (문서 좌표로 비교).
+      const sx = canvasBox.x + (target.x - camera.x.value) * scale + width / 2;
+      const sy = canvasBox.y + (target.y - camera.y.value) * scale + height / 2;
+      const margin = Math.min(free.width, free.height) * 0.18;
+      const outside =
+        sx < free.x + margin ||
+        sx > free.x + free.width - margin ||
+        sy < free.y + margin ||
+        sy > free.y + free.height - margin;
+      if (outside) {
+        /*
+         * 목표는 **카메라 수학의 그 식**으로 낸다(`centerForInsets`) — 여기 따로
+         * 적으면 그 식의 사본이 둘이 되고, 사본이 여럿이면 빠진 사본이 생기는 쪽이
+         * 기본값이다(초점 다이브가 실제로 그 빠진 사본이었다).
+         *
+         * 자유 영역은 목표가 아니라 **「밖으로 나갔나」 판정**에만 남는다 — 인셋은
+         * 밀 거리를 주지만 담고 있는 사각형을 주지 않으므로, 그 판정은 인셋으로
+         * 표현할 수 없는 다른 질문이다.
+         */
+        const centered = centerForInsets(target.x, target.y, { ...measureCanvasInsets(canvasEl, canvasRect), top: 0, bottom: 0 }, scale);
+        const cameraTarget = { tx: centered.tx, ty: centered.ty, tscale: scale };
+        /*
+         * ⚠️ **트윈만 세우면 안 된다** (게이트가 잡았다). 트윈이 끝나면 스프링이
+         * `cameraTargetRef` 로 이어받으므로, 그것을 갱신하지 않으면 **옛 목표로
+         * 되끌어간다** — 실측: 노드가 자유 영역 가운데에서 188px 밀려 화면 가운데에
+         * 앉았다. 다른 프로그램 경로(포커스 다이브 · 칩 전개 · 핏뷰)가 둘을 함께
+         * 세우는 이유가 이것이다.
+         */
+        cameraTargetRef.current = cameraTarget;
+        userDrivenCameraRef.current = false;
+        beginCameraTween(cameraTarget);
+      }
+    }
+  }, [onSelect, beginCameraTween, announceDeadEnd]);
+
   const wrappedHandlers = useMemo(
     () => ({
+      handleKeyDown: (e: ReactKeyboardEvent<HTMLCanvasElement>) => {
+        noteInput();
+        handleKeyDown(e);
+      },
       handlePointerDown: (e: ReactPointerEvent<HTMLCanvasElement>) => {
         noteInput();
         handlers.handlePointerDown(e);
@@ -3367,7 +3675,7 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
         handlers.handleWheel(e);
       },
     }),
-    [handlers, noteInput],
+    [handlers, noteInput, handleKeyDown],
   );
 
   /**

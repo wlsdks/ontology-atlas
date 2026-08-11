@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef } from "react";
+import { transientSurface } from "@/shared/ui/transient-surface";
 import { Copy, FileText, GitBranch, Maximize2, Route } from "lucide-react";
 import { ICON_SIZE } from "@/shared/ui/icon-size";
 import { Link } from "@/i18n/navigation";
@@ -152,6 +153,7 @@ export function TopologyV2ContextMenu({
       onExited={onExited}
       origin="top left"
       ref={menuRef}
+      {...transientSurface("menu")}
       role="menu"
       data-testid="topology-v2-context-menu"
       className="fixed z-50 flex w-[200px] flex-col gap-0.5 rounded-[var(--topology-v2-panel-row-radius)] border border-[color:var(--topology-v2-panel-border)] bg-[color:var(--topology-v2-panel-surface)] p-1 shadow-[var(--topology-v2-panel-shadow)]"

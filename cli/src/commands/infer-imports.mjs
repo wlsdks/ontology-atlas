@@ -83,7 +83,7 @@ export async function runInferImports(args) {
 
   process.stdout.write(
     `${COLORS.bold}infer-imports${COLORS.reset} ${COLORS.dim}${target}${COLORS.reset} ` +
-      `${COLORS.dim}— ${result.filesScanned} files / ${fileEdges} edges / ${ext} external / ${unres} unresolved${COLORS.reset}\n\n`,
+      `${COLORS.dim}· ${result.filesScanned} files / ${fileEdges} edges / ${ext} external / ${unres} unresolved${COLORS.reset}\n\n`,
   );
 
   if (edgeKindSummary) {
@@ -100,7 +100,7 @@ export async function runInferImports(args) {
 
   if (modEdges.length > 0) {
     process.stdout.write(
-      `  ${COLORS.bold}module edges${COLORS.reset} ${COLORS.dim}(${modEdges.length}) — rationale review required${COLORS.reset}\n`,
+      `  ${COLORS.bold}module edges${COLORS.reset} ${COLORS.dim}(${modEdges.length}): rationale review required${COLORS.reset}\n`,
     );
     for (const m of modEdges.slice(0, 16)) {
       const kindSummary = formatKindCounts(m.kindCounts);
@@ -123,7 +123,7 @@ export async function runInferImports(args) {
   }
 
   process.stdout.write(
-    `${COLORS.dim}side effect 0 — vault 변경 안 함. import는 코드 근거일 뿐 의미 관계를 자동 승인하지 않습니다. ` +
+    `${COLORS.dim}side effect 0: vault 변경 안 함. import는 코드 근거일 뿐 의미 관계를 자동 승인하지 않습니다. ` +
       `양쪽 개념과 근거를 검토하고 이유를 설명한 뒤 사용자 승인을 받아 한 건씩 기록하세요.${COLORS.reset}\n`,
   );
   return 0;
@@ -205,8 +205,8 @@ function printUsage(stream = process.stderr) {
       `  resolve relative imports, tsconfig paths, and fallback @/* aliases,\n` +
       `  classify external (npm) separately and unresolved aliases explicitly,\n` +
       `  collapse to module edges (capability A → B with import count).\n\n` +
-      `  Default: ${COLORS.bold}side effect 0${COLORS.reset} — vault 변경 안 함, moduleEdges 만 출력.\n` +
-      `  ${COLORS.bold}--apply${COLORS.reset}: disabled — import evidence cannot self-approve a semantic relation.\n` +
+      `  Default: ${COLORS.bold}side effect 0${COLORS.reset}: vault 변경 안 함, moduleEdges 만 출력.\n` +
+      `  ${COLORS.bold}--apply${COLORS.reset}: disabled: import evidence cannot self-approve a semantic relation.\n` +
       `  ${COLORS.bold}--threshold N${COLORS.reset}: count < N 인 약한 module edge 를 필터.\n` +
       `  큰 codebase 의 accidental cross-feature import 가 ontology 에\n` +
       `  들어가는 걸 차단. preview / --apply / --json 모두 적용.\n` +

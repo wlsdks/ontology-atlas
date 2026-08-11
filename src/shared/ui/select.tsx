@@ -21,6 +21,7 @@ import {
   listboxTopIsHidden,
   type ListboxGrowth,
 } from "./select-growth";
+import { transientSurface } from "@/shared/ui/transient-surface";
 
 export interface SelectOption {
   value: string;
@@ -431,7 +432,8 @@ export function Select({
         data-overflowing={growth ? String(growth.overflowing) : undefined}
         data-testid={dataTestid ? `${dataTestid}-listbox` : undefined}
         style={anchorStyle}
-        className="select-listbox fixed z-40 rounded-panel border border-[color:var(--color-border-strong)] bg-[color:var(--color-elevated)] p-1 shadow-[var(--shadow-elevation-1)]"
+        {...transientSurface("anchored")}
+      className="select-listbox fixed z-40 rounded-panel border border-[color:var(--color-border-strong)] bg-[color:var(--color-elevated)] p-1 shadow-[var(--shadow-elevation-1)]"
       >
         {options.map((option, index) => {
           const isSelected = option.value === value;

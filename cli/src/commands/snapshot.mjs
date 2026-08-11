@@ -141,7 +141,7 @@ export async function runSnapshot(args) {
       push = {
         pushed: false,
         reason: 'no-upstream',
-        message: 'push 실패 — 이 브랜치에 upstream 이 없어요. 커밋은 로컬에 기록됨.',
+        message: 'push 실패: 이 브랜치에 upstream 이 없어요. 커밋은 로컬에 기록됨.',
         guidance: `git push -u origin ${branch}`,
       };
       exitCode = 1;
@@ -201,7 +201,7 @@ function emitNotAGitRepo(json, vaultRoot) {
   }
   process.stderr.write(
     `${COLORS.red}error${COLORS.reset}  ${vaultRoot} is not inside a git repository.\n` +
-      `${COLORS.dim}  snapshot never runs 'git init' for you — run it yourself if you want version history here:${COLORS.reset}\n` +
+      `${COLORS.dim}  snapshot never runs 'git init' for you: run it yourself if you want version history here:${COLORS.reset}\n` +
       `  ${COLORS.cyan}git init${COLORS.reset}\n`,
   );
   return 1;
@@ -328,7 +328,7 @@ function emitDiff({ json, vaultRoot, repoRoot, pathspec }) {
   if (diffText.trim()) {
     process.stdout.write(`\n${diffText.replace(/\n$/, '')}\n`);
   } else {
-    process.stdout.write(`\n${COLORS.dim}추적 파일의 텍스트 diff 없음 (신규 파일만) — 위 목록 참고${COLORS.reset}\n`);
+    process.stdout.write(`\n${COLORS.dim}추적 파일의 텍스트 diff 없음 (신규 파일만): 위 목록 참고${COLORS.reset}\n`);
   }
   return 0;
 }
@@ -350,7 +350,7 @@ function runPull({ json, vaultRoot, repoRoot }) {
       return 1;
     }
     process.stderr.write(
-      `${COLORS.red}error${COLORS.reset}  이 브랜치에 연결된 원격이 없어요 — 먼저 upstream 을 설정하세요.\n` +
+      `${COLORS.red}error${COLORS.reset}  이 브랜치에 연결된 원격이 없어요: 먼저 upstream 을 설정하세요.\n` +
         `  ${COLORS.cyan}git push -u origin ${branch}${COLORS.reset}\n`,
     );
     return 1;
@@ -432,7 +432,7 @@ function render({ json, dryRun, vaultRoot, repoRoot, subject, autoSummary, messa
   }
 
   if (dryRun) {
-    process.stdout.write(`\n${COLORS.dim}no commit made — rerun without --dry-run to commit${COLORS.reset}\n`);
+    process.stdout.write(`\n${COLORS.dim}no commit made: rerun without --dry-run to commit${COLORS.reset}\n`);
     return;
   }
 
@@ -513,7 +513,7 @@ function printUsage(stream = process.stderr) {
       `  and up to 3 representative slugs, e.g.:\n` +
       `    ontology snapshot: +2 concepts, ~3 updated (capabilities/foo, elements/bar, +1)\n\n` +
       `  Exits 0 with no output change when there is nothing to snapshot. Never runs\n` +
-      `  'git init' for you — if the vault is outside a git repo it exits 1 with that\n` +
+      `  'git init' for you: if the vault is outside a git repo it exits 1 with that\n` +
       `  suggestion. Files already staged outside the vault are left untouched (git's\n` +
       `  pathspec-scoped partial commit never touches them). A rejected commit (hook /\n` +
       `  gpg / merge in progress) or a rejected push (remote ahead) prints a one-line\n` +
@@ -521,7 +521,7 @@ function printUsage(stream = process.stderr) {
       `${COLORS.bold}Flags:${COLORS.reset}\n` +
       `  ${COLORS.bold}--dry-run${COLORS.reset}   preview the summary + file list, no commit\n` +
       `  ${COLORS.bold}--push${COLORS.reset}      after committing, push to the current branch's existing\n` +
-      `              upstream. Never configures one — no upstream prints setup guidance\n` +
+      `              upstream. Never configures one: no upstream prints setup guidance\n` +
       `              and exits 1 (the commit itself still lands). Prints the remote URL\n` +
       `              on success (trust charter: transport is opt-in and explicit).\n` +
       `  ${COLORS.bold}--message "..."${COLORS.reset} use this as the commit subject instead of the auto\n` +

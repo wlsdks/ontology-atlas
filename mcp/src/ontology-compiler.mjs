@@ -519,7 +519,7 @@ function validateGraphIdentity(graphDocs) {
 const IDENTITY_REPAIR_HINT = Object.freeze({
   'missing-uid':
     'Hand-written nodes have no `uid:` yet. Any write repairs it: patch_concept(slug, {...}) mints one, ' +
-    'or add the line yourself — `uid:` must be a lowercase UUIDv4.',
+    'or add the line yourself: `uid:` must be a lowercase UUIDv4.',
   'invalid-uid': '`uid:` must be a lowercase UUIDv4. Fix the value in the file, or let patch_concept rewrite it.',
 });
 

@@ -29,7 +29,7 @@ const ROOT_FILE_CANDIDATES = Object.freeze([
   '.github/copilot-instructions.md',
 ]);
 
-/** Directories walked recursively — the only dot-dirs this command touches. */
+/** Directories walked recursively: the only dot-dirs this command touches. */
 const SCAN_DIRS = Object.freeze([
   '.claude/rules',
   '.claude/skills',
@@ -90,7 +90,7 @@ function buildAgentFilesReport(parsed) {
   };
 }
 
-/** Scan only the known agent-file patterns — never the whole disk (local-first). */
+/** Scan only the known agent-file patterns: never the whole disk (local-first). */
 function scanAgentFiles(root) {
   const entries = [];
   for (const candidate of ROOT_FILE_CANDIDATES) {
@@ -174,11 +174,11 @@ const CODEX_HEADROOM_WARN_RATIO = 0.1;
 function renderCodexHeadroom(check) {
   if (!check || check.agentsMdBytes === null || check.status === 'not-applicable') return;
   const headroom = check.capBytes - check.agentsMdBytes;
-  if (headroom <= 0) return; // 이미 drift 로 보고된다 — 두 번 말하지 않는다
+  if (headroom <= 0) return; // 이미 drift 로 보고된다: 두 번 말하지 않는다
   if (headroom > check.capBytes * CODEX_HEADROOM_WARN_RATIO) return;
   process.stdout.write(
     `${COLORS.yellow}near cap${COLORS.reset} ${COLORS.dim}AGENTS.md ${check.agentsMdBytes} / ${check.capBytes} bytes` +
-      ` — ${headroom} bytes of headroom before Codex silently truncates${COLORS.reset}\n`,
+      ` · ${headroom} bytes of headroom before Codex silently truncates${COLORS.reset}\n`,
   );
 }
 
@@ -188,7 +188,7 @@ function render(result) {
   const color = summary.driftCount === 0 ? COLORS.green : COLORS.yellow;
   process.stdout.write(
     `${color}${COLORS.bold}${status}${COLORS.reset} ${COLORS.dim}agent files${COLORS.reset}` +
-      ` — ${summary.files} file(s) · ${summary.driftCount} drift finding(s)\n`,
+      ` · ${summary.files} file(s) · ${summary.driftCount} drift finding(s)\n`,
   );
   process.stdout.write(`${COLORS.dim}root${COLORS.reset} ${result.root}\n`);
   renderCodexHeadroom(result.checks?.codexSizeCap);
@@ -249,7 +249,7 @@ function render(result) {
       );
     }
     process.stdout.write(
-      `\n${COLORS.dim}Read-only detection — fix files by hand (or with your agent); this command never rewrites them.${COLORS.reset}\n`,
+      `\n${COLORS.dim}Read-only detection: fix files by hand (or with your agent); this command never rewrites them.${COLORS.reset}\n`,
     );
   }
 }

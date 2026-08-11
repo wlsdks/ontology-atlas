@@ -93,7 +93,7 @@ export async function runAnalyze(args) {
 
   if (proj) {
     process.stdout.write(
-      `  ${KIND_COLOR.project}project${COLORS.reset}     ${proj.slug} ${COLORS.dim}— ${proj.title}${COLORS.reset}\n\n`,
+      `  ${KIND_COLOR.project}project${COLORS.reset}     ${proj.slug} ${COLORS.dim}· ${proj.title}${COLORS.reset}\n\n`,
     );
   }
 
@@ -124,7 +124,7 @@ export async function runAnalyze(args) {
   }
 
   process.stdout.write(
-    `${COLORS.dim}side effect 0 — vault 변경 안 함. 후보가 맞으면${COLORS.reset} ` +
+    `${COLORS.dim}side effect 0: vault 변경 안 함. 후보가 맞으면${COLORS.reset} ` +
       `${COLORS.bold}ontology-atlas add${COLORS.reset} ` +
       `${COLORS.dim}또는 AI agent 의 add_concept 로 명시 작성.${COLORS.reset}\n`,
   );
@@ -285,14 +285,14 @@ async function runApply(vaultRoot, result, json) {
   conceptRows.forEach((row, index) => {
     if (row.ok === false) {
       process.stdout.write(
-        `  ${COLORS.red}✗${COLORS.reset} ${formatConceptBatchFailureLabel(row, index)} ${COLORS.dim}— ${row.error}${COLORS.reset}\n`,
+        `  ${COLORS.red}✗${COLORS.reset} ${formatConceptBatchFailureLabel(row, index)} ${COLORS.dim}· ${row.error}${COLORS.reset}\n`,
       );
     }
   });
   relationRows.forEach((row, index) => {
     if (row.ok === false) {
       process.stdout.write(
-        `  ${COLORS.red}✗${COLORS.reset} ${formatRelationBatchFailureLabel(row, index)} ${COLORS.dim}— ${row.error}${COLORS.reset}\n`,
+        `  ${COLORS.red}✗${COLORS.reset} ${formatRelationBatchFailureLabel(row, index)} ${COLORS.dim}· ${row.error}${COLORS.reset}\n`,
       );
     }
   });
@@ -350,9 +350,9 @@ function printUsage(stream = process.stderr) {
       `${COLORS.bold}What it does:${COLORS.reset}\n` +
       `  Walk a code repository (default: cwd), detect package.json / README\n` +
       `  H2 sections / src/ folders, propose ontology node candidates.\n` +
-      `  Default: ${COLORS.bold}side effect 0${COLORS.reset} — vault 변경 안 함, 후보만 출력.\n` +
+      `  Default: ${COLORS.bold}side effect 0${COLORS.reset}: vault 변경 안 함, 후보만 출력.\n` +
       `  ${COLORS.bold}--apply${COLORS.reset}: 후보를 vault 에 batch land (add_concepts + add_relations).\n` +
-      `  partial result — 이미 존재하는 노드는 skip, 새 노드만 land.\n` +
+      `  partial result: 이미 존재하는 노드는 skip, 새 노드만 land.\n` +
       `  ${COLORS.bold}--max-depth N${COLORS.reset}: default 2, range 0-${MAX_DEPTH_CAP}.\n\n` +
       `${COLORS.bold}Examples:${COLORS.reset}\n` +
       `  ontology-atlas analyze                 # preview only (no writes)\n` +

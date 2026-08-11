@@ -607,7 +607,7 @@ function render(result) {
   const rc = READINESS_COLORS[readiness.status] ?? COLORS.dim;
   process.stdout.write(
     `${COLORS.bold}agent brief${COLORS.reset} ${sc}${status}${COLORS.reset}` +
-      ` ${COLORS.dim}— readiness ${rc}${readiness.status}${COLORS.reset}` +
+      ` ${COLORS.dim}· readiness ${rc}${readiness.status}${COLORS.reset}` +
       ` ${COLORS.dim}${readiness.score}/100 · ${graph.nodes ?? 0} 노드 · ${graph.edges ?? 0} 관계` +
       ` · ${readiness.healthChecks} health checks${COLORS.reset}\n\n`,
   );
@@ -654,7 +654,7 @@ function render(result) {
     for (let i = 0; i < Math.min(entrypoints.length, 5); i += 1) {
       const node = entrypoints[i];
       const kc = KIND_COLORS[node.kind] || COLORS.dim;
-      const titleText = node.title && node.title !== node.slug ? ` ${COLORS.dim}— ${node.title}${COLORS.reset}` : '';
+      const titleText = node.title && node.title !== node.slug ? ` ${COLORS.dim}· ${node.title}${COLORS.reset}` : '';
       process.stdout.write(
         `  ${String(i + 1).padStart(2)} ${kc}${node.slug.padEnd(48)}${COLORS.reset}` +
           `${titleText} ${COLORS.dim}deg ${node.degree}${COLORS.reset}\n`,
@@ -944,14 +944,14 @@ function printUsage(stream = process.stderr) {
       `${COLORS.bold}Exit code${COLORS.reset} (readiness signal, not success/failure):\n` +
       `  0 = ready and healthy. 1 = the command ran and printed valid data, but graph\n` +
       `  readiness is "needs_attention"/"needs_shape", a health check failed, or a\n` +
-      `  fail-severity nextAction is present — this is advisory graph state, NOT a\n` +
+      `  fail-severity nextAction is present: this is advisory graph state, NOT a\n` +
       `  command failure. 2 = the MCP call itself failed (parse/connection error).\n` +
       `  Naive \`agent-brief && next-step\` scripting misreads exit 1 as failure the\n` +
-      `  first time a vault has any warning — pass --exit-zero to always exit 0 and\n` +
+      `  first time a vault has any warning: pass --exit-zero to always exit 0 and\n` +
       `  read readiness/status from the JSON output instead (parse/MCP-call errors\n` +
-      `  still exit 1/2 even with --exit-zero — only the readiness-driven part is silenced).\n` +
+      `  still exit 1/2 even with --exit-zero: only the readiness-driven part is silenced).\n` +
       `  --verify-fallbacks --exit-zero still exits 1 when a generated fallback command\n` +
-      `  itself fails to run — that is a real failure, not a readiness signal.\n\n` +
+      `  itself fails to run: that is a real failure, not a readiness signal.\n\n` +
       `Tuning flags forward to query_ontology agent_brief for focused diagnostics.\n`,
   );
 }

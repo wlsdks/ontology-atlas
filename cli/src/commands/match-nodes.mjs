@@ -120,7 +120,7 @@ function render(result) {
     const node = nodes[index];
     const kc = KIND_COLORS[node.kind] || COLORS.dim;
     const rank = String(index + 1).padStart(2);
-    const title = node.title && node.title !== node.slug ? ` ${COLORS.dim}— ${node.title}${COLORS.reset}` : '';
+    const title = node.title && node.title !== node.slug ? ` ${COLORS.dim}· ${node.title}${COLORS.reset}` : '';
     const degree = `deg ${node.degree} in ${node.inDegree ?? 0} out ${node.outDegree ?? 0}`;
     process.stdout.write(
       `  ${COLORS.bold}${rank}${COLORS.reset} ${kc}${(node.kind || '?').padEnd(12)}${COLORS.reset} ` +
@@ -131,7 +131,7 @@ function render(result) {
   if (followUp?.focusSlug && Array.isArray(followUp.cliFallbackCommands) && followUp.cliFallbackCommands.length > 0) {
     process.stdout.write(
       `\n${COLORS.dim}next${COLORS.reset} focus ${COLORS.bold}${followUp.focusSlug}${COLORS.reset}` +
-        `${COLORS.dim} — scan rows are candidates, not proof; cite follow-up detail before onboarding/refactor decisions${COLORS.reset}\n`,
+        `${COLORS.dim} · scan rows are candidates, not proof; cite follow-up detail before onboarding/refactor decisions${COLORS.reset}\n`,
     );
     for (const command of followUp.cliFallbackCommands.slice(0, 4)) {
       process.stdout.write(`  ${COLORS.cyan}${command}${COLORS.reset}\n`);

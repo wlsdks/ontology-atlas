@@ -25,6 +25,7 @@ import {
   ONTOLOGY_STARTER_JSON_GATE_COMMAND,
   ONTOLOGY_POST_CHANGE_SYNC_LINES,
 } from '@/features/docs-vault-local';
+import { SETTINGS_SECTION_LABEL } from './settings-primitives';
 import { formatAgentPostChangeSyncPacket } from '@/shared/lib/ontology-tree';
 import type { VaultManifest } from '@/entities/docs-vault';
 import type { AgentClientId } from '@/features/docs-vault-local';
@@ -777,7 +778,7 @@ export function VaultAgentSetupPanel({
         있었다 — 같은 이름을 두 번 쓰는 대신 한 번만 쓴다. 이름은 region 의
         접근 이름으로 남으므로 보조기술에서도 잃지 않는다.
       */}
-      <p className="break-keep text-label text-[color:var(--color-text-tertiary)]">
+      <p className="break-keep text-body text-[color:var(--color-text-tertiary)]">
         {publicPackagesReady
           ? t('agentSetup.statusSummary', {
               ready: agentSetupReadyCount,
@@ -893,7 +894,7 @@ export function VaultAgentSetupPanel({
                         : 'var(--color-text-quaternary)',
                     }}
                   />
-                  <span className="min-w-0 flex-1 break-keep text-label text-[color:var(--color-text-secondary)]">
+                  <span className="min-w-0 flex-1 break-keep text-body text-[color:var(--color-text-secondary)]">
                     {agentSetupReady
                       ? t('agentSetup.connectionCheckReady')
                       : t('agentSetup.connectionCheckPending', {
@@ -905,10 +906,10 @@ export function VaultAgentSetupPanel({
                 <dl className="grid gap-1 px-2.5 py-2">
                   {agentSetupConnections.map(({ key, label, check }) => (
                     <div key={key} className="flex items-baseline justify-between gap-2">
-                      <dt className="min-w-0 truncate text-label text-[color:var(--color-text-secondary)]">
+                      <dt className="min-w-0 truncate text-body text-[color:var(--color-text-secondary)]">
                         {label}
                       </dt>
-                      <dd className="shrink-0 font-mono text-caption text-[color:var(--color-text-tertiary)]">
+                      <dd className="shrink-0 font-mono text-label text-[color:var(--color-text-tertiary)]">
                         {check}
                       </dd>
                     </div>
@@ -1005,14 +1006,14 @@ export function VaultAgentSetupPanel({
                     />
                   )}
                   <span className="flex min-w-0 items-baseline gap-2">
-                    <span className="shrink-0 text-label text-[color:var(--color-text-secondary)]">
+                    <span className="shrink-0 text-body text-[color:var(--color-text-secondary)]">
                       {label}
                     </span>
-                    <code className="min-w-0 flex-1 truncate font-mono text-caption text-[color:var(--color-text-quaternary)]">
+                    <code className="min-w-0 flex-1 truncate font-mono text-label text-[color:var(--color-text-quaternary)]">
                       {file.path}
                     </code>
                     <span
-                      className={`shrink-0 text-caption ${
+                      className={`shrink-0 text-label ${
                         ready
                           ? 'text-[color:var(--color-success-text-a92)]'
                           : 'text-[color:var(--color-amber-source-text-a95)]'
@@ -1092,11 +1093,11 @@ export function VaultAgentSetupPanel({
             )}
             <span className="min-w-0">
               <span className="flex items-baseline justify-between gap-2">
-                <span className="text-label font-[var(--font-weight-signature)] text-[color:var(--color-text-secondary)]">
+                <span className="text-body font-[var(--font-weight-signature)] text-[color:var(--color-text-secondary)]">
                   {t('agentSetup.validationGateTitle')}
                 </span>
                 <span
-                  className={`shrink-0 text-caption ${
+                  className={`shrink-0 text-label ${
                     validationGateTone === 'ready'
                       ? 'text-[color:var(--color-success-text-a92)]'
                       : validationGateTone === 'blocked'
@@ -1147,7 +1148,7 @@ export function VaultAgentSetupPanel({
                     className="mt-0.5 text-[color:var(--color-amber-source-text-a95)]"
                   />
                 )}
-                <dt className="truncate text-caption text-[color:var(--color-text-quaternary)]">
+                <dt className="truncate text-body text-[color:var(--color-text-quaternary)]">
                   {row.label}
                 </dt>
                 <dd className="break-keep text-label text-[color:var(--color-text-secondary)]">
@@ -1190,7 +1191,7 @@ export function VaultAgentSetupPanel({
               { term: t('agentSetup.modeGateTerm'), desc: t('agentSetup.modeGateDesc') },
             ].map((mode) => (
               <div key={mode.term} className="grid grid-cols-[84px_1fr] gap-2">
-                <dt className="text-label font-[var(--font-weight-signature)] text-[color:var(--color-text-secondary)]">
+                <dt className="text-body font-[var(--font-weight-signature)] text-[color:var(--color-text-secondary)]">
                   {mode.term}
                 </dt>
                 <dd className="break-keep text-label text-[color:var(--color-text-tertiary)]">
@@ -1200,7 +1201,7 @@ export function VaultAgentSetupPanel({
             ))}
           </dl>
           <details className="rounded-micro border border-[color:var(--color-overlay-2)] bg-[color:var(--color-overlay-recessed-a12)] px-2 py-1.5">
-            <summary className=" select-none text-label font-[var(--font-weight-signature)] text-[color:var(--color-text-secondary)] marker:text-[color:var(--color-text-quaternary)]">
+            <summary className=" select-none text-body font-[var(--font-weight-signature)] text-[color:var(--color-text-secondary)] marker:text-[color:var(--color-text-quaternary)]">
               {t('agentSetup.nextStepsSummary')}
             </summary>
             <ul aria-label={t('agentSetup.nextStepsAriaLabel')} className="mt-1.5 grid gap-1">
@@ -1219,7 +1220,7 @@ export function VaultAgentSetupPanel({
             >
               {agentFirstContactProofRows.map((row) => (
                 <div key={row.key} className="grid grid-cols-[92px_1fr] gap-2">
-                  <dt className="text-caption text-[color:var(--color-text-quaternary)]">
+                  <dt className="text-body text-[color:var(--color-text-quaternary)]">
                     {row.label}
                   </dt>
                   <dd className="break-keep text-label text-[color:var(--color-text-tertiary)]">
@@ -1270,18 +1271,18 @@ export function VaultAgentSetupPanel({
             aria-label={t('agentSetup.mcpVerifyPreviewAriaLabel')}
             className="rounded-micro border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-recessed)] px-2 py-1.5"
           >
-            <div className="text-caption text-[color:var(--color-text-quaternary)]">
+            <div className="text-body text-[color:var(--color-text-quaternary)]">
               {t('agentSetup.mcpVerifyLabel')}
             </div>
-            <code className="mt-1 block truncate font-mono text-caption text-[color:var(--color-text-tertiary)]">
+            <code className="mt-1 block truncate font-mono text-label text-[color:var(--color-text-tertiary)]">
               {agentMcpVerifyPreview}
             </code>
           </div>
           <div className="rounded-micro border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-recessed)] px-2 py-1.5">
-            <div className="text-caption text-[color:var(--color-text-quaternary)]">
+            <div className="text-body text-[color:var(--color-text-quaternary)]">
               {t('agentSetup.jsonGateLabel')}
             </div>
-            <code className="mt-1 block truncate font-mono text-caption text-[color:var(--color-text-tertiary)]">
+            <code className="mt-1 block truncate font-mono text-label text-[color:var(--color-text-tertiary)]">
               {agentJsonGatePreview}
             </code>
           </div>
@@ -1292,7 +1293,7 @@ export function VaultAgentSetupPanel({
               { term: t('agentSetup.gateReadyTerm'), desc: t('agentSetup.gateReadyDesc') },
             ].map((rule) => (
               <div key={rule.term} className="grid grid-cols-[52px_1fr] gap-2">
-                <dt className="text-label text-[color:var(--color-text-secondary)]">
+                <dt className="text-body text-[color:var(--color-text-secondary)]">
                   {rule.term}
                 </dt>
                 <dd className="break-keep text-label text-[color:var(--color-text-tertiary)]">
@@ -1307,7 +1308,7 @@ export function VaultAgentSetupPanel({
           >
             {AGENT_VERIFY_CLI_PREVIEW.map((command) => (
               <li key={command}>
-                <code className="block truncate font-mono text-caption text-[color:var(--color-text-tertiary)]">
+                <code className="block truncate font-mono text-label text-[color:var(--color-text-tertiary)]">
                   {ATLAS_CLI} {command}
                 </code>
               </li>
@@ -1346,7 +1347,7 @@ export function VaultAgentSetupPanel({
             </Chip>
           </div>
           <div className="rounded-micro border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-recessed-a12)] px-2 py-1.5">
-            <p className="text-label font-[var(--font-weight-signature)] text-[color:var(--color-text-secondary)]">
+            <p className="text-body font-[var(--font-weight-signature)] text-[color:var(--color-text-secondary)]">
               {t('agentSetup.syncAfterChangeTitle')}
             </p>
             <p className="mt-1 break-keep text-label text-[color:var(--color-text-tertiary)]">
@@ -1374,7 +1375,7 @@ export function VaultAgentSetupPanel({
               { term: t('agentSetup.rootCodebaseTerm'), desc: t('agentSetup.rootCodebaseDesc') },
             ].map((rootMode) => (
               <div key={rootMode.term} className="grid grid-cols-[92px_1fr] gap-2">
-                <dt className="text-label font-[var(--font-weight-signature)] text-[color:var(--color-text-secondary)]">
+                <dt className="text-body font-[var(--font-weight-signature)] text-[color:var(--color-text-secondary)]">
                   {rootMode.term}
                 </dt>
                 <dd className="break-keep text-label text-[color:var(--color-text-tertiary)]">
@@ -1449,16 +1450,15 @@ export function VaultAgentSetupPanel({
 }
 
 /**
- * 접기 안의 묶음 제목 — **아이브로우 한 단**.
+ * 접기 안의 묶음 제목 — 루트 시트의 그룹 헤더와 **같은 규격**을 가리킨다.
  *
- * 이 자리의 `text-caption`(9.5px)은 설정 루트 시트에서 금지된 그 쓰임이 아니다.
- * 램프 정의가 말하는 「마이크로 라벨」이고, 누르는 글자도 설명도 아니다
- * (`settings-sheet-type-dialect` 계약이 이 파일을 사정거리 밖에 두는 이유와 같다).
+ * ⚠️ 여기 있던 주석은 *"이 자리의 `text-caption`(9.5px)은 금지된 그 쓰임이 아니다 —
+ * 램프 정의가 말하는 「마이크로 라벨」이다"* 라고 적혀 있었고, **그게 틀렸다**
+ * (2026-08-09, 소유자 지적 2차). 한글에는 `uppercase` 가 아무 일도 하지 않아서
+ * 「대문자 마이크로 라벨」이라는 타이포 장치가 성립하지 않고, 남는 건 그냥 9.5px
+ * 흐린 글자다. 게다가 루트 시트가 같은 역할에 이미 11px 을 쓰고 있었다.
+ * 값은 `SETTINGS_SECTION_LABEL` 한 곳에 있다.
  */
 function SectionLabel({ children }: { children: ReactNode }) {
-  return (
-    <h4 className="text-caption font-[var(--font-weight-signature)] uppercase tracking-[var(--tracking-caps-12)] text-[color:var(--color-text-quaternary)]">
-      {children}
-    </h4>
-  );
+  return <h4 className={SETTINGS_SECTION_LABEL}>{children}</h4>;
 }

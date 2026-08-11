@@ -76,7 +76,7 @@ export async function runRelate(args) {
     if (json) {
       process.stdout.write(JSON.stringify({ ...check, written: false, dryRun, alreadyExists: true, filePath: null }, null, 2) + '\n');
     } else {
-      process.stdout.write(`\n${COLORS.green}ok${COLORS.reset}    already exists — nothing to write\n`);
+      process.stdout.write(`\n${COLORS.green}ok${COLORS.reset}    already exists: nothing to write\n`);
     }
     return 0;
   }

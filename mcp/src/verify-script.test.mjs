@@ -377,18 +377,18 @@ describe('verify.mjs first-contact gates', () => {
         ...tools,
         { name: 'list_concepts' },
       ]),
-      'tools mismatch — missing: (none), extra: (none), duplicates: list_concepts, invalidNames: 0',
+      'tools mismatch: missing: (none), extra: (none), duplicates: list_concepts, invalidNames: 0',
     );
     assert.equal(
       toolsListInventoryFailure(tools.filter((tool) => tool.name !== 'get_concept')),
-      'tools mismatch — missing: get_concept, extra: (none), duplicates: (none), invalidNames: 0',
+      'tools mismatch: missing: get_concept, extra: (none), duplicates: (none), invalidNames: 0',
     );
     assert.equal(
       toolsListInventoryFailure([
         ...tools,
         { name: 'unknown_tool' },
       ]),
-      'tools mismatch — missing: (none), extra: unknown_tool, duplicates: (none), invalidNames: 0',
+      'tools mismatch: missing: (none), extra: unknown_tool, duplicates: (none), invalidNames: 0',
     );
     assert.equal(
       toolsListInventoryFailure([
@@ -396,7 +396,7 @@ describe('verify.mjs first-contact gates', () => {
         { name: '' },
         {},
       ]),
-      'tools mismatch — missing: (none), extra: (none), duplicates: (none), invalidNames: 2',
+      'tools mismatch: missing: (none), extra: (none), duplicates: (none), invalidNames: 2',
     );
   });
 
@@ -851,12 +851,12 @@ describe('verify.mjs first-contact gates', () => {
               type: 'number',
               minimum: 0,
               description:
-                'Non-negative mtime threshold. Filter to nodes with `mtime > since` (ms). Pair with the `mtime` returned in earlier `list_concepts` / `get_concept` responses for incremental sync — "what changed since I last looked". Strict greater-than (mtime === since 는 제외) so re-passing the max from a previous response does not double-fetch.',
+                'Non-negative mtime threshold. Filter to nodes with `mtime > since` (ms). Pair with the `mtime` returned in earlier `list_concepts` / `get_concept` responses for incremental sync: "what changed since I last looked". Strict greater-than (mtime === since 는 제외) so re-passing the max from a previous response does not double-fetch.',
             },
             summary: {
               type: 'boolean',
               description:
-                'When true, each node row includes a `summary` (max 200 chars, prose-only — heading / 표 / 코드블록 / 리스트 / 인용 skip 후 첫 단락만, same `extractSummaryExcerpt` helper as `get_concept` / `find_evidence`). Useful for "scan + overview" without N follow-up `get_concept` calls. Default false to keep payload small.',
+                'When true, each node row includes a `summary` (max 200 chars, prose-only: heading / 표 / 코드블록 / 리스트 / 인용 skip 후 첫 단락만, same `extractSummaryExcerpt` helper as `get_concept` / `find_evidence`). Useful for "scan + overview" without N follow-up `get_concept` calls. Default false to keep payload small.',
             },
             limit: {
               type: 'integer',
@@ -953,7 +953,7 @@ describe('verify.mjs first-contact gates', () => {
       {
         name: 'find_orphans',
         description:
-          'List orphan nodes — docs that no other node references via any frontmatter array key. Useful as a cleanup starting point or to answer "which nodes are unused?". Same matching policy as find_backlinks (full slug or final segment). Root/sentinel kinds like project and vault-readme are excluded by default.',
+          'List orphan nodes: docs that no other node references via any frontmatter array key. Useful as a cleanup starting point or to answer "which nodes are unused?". Same matching policy as find_backlinks (full slug or final segment). Root/sentinel kinds like project and vault-readme are excluded by default.',
         inputSchema: {
           additionalProperties: false,
           properties: {
@@ -1412,7 +1412,7 @@ describe('verify.mjs first-contact gates', () => {
       {
         name: 'list_kinds',
         description:
-          'Vault kind distribution — { total, byKind: { capability: N, ... } }. A quick census so AI agents can size up the vault without paging through list_concepts.',
+          'Vault kind distribution: { total, byKind: { capability: N, ... } }. A quick census so AI agents can size up the vault without paging through list_concepts.',
         inputSchema: { additionalProperties: false, properties: {} },
         outputSchema: {
           type: 'object',
@@ -1430,7 +1430,7 @@ describe('verify.mjs first-contact gates', () => {
       {
         name: 'query_concepts',
         description:
-          'Typed filter DSL — search vault nodes by predicate.\n\n' +
+          'Typed filter DSL: search vault nodes by predicate.\n\n' +
           'Grammar (case-insensitive keywords, whitespace-tolerant):\n' +
           '  filter    := atom (AND|OR atom)*\n' +
           '  atom      := NOT? predicate\n' +
@@ -1483,7 +1483,7 @@ describe('verify.mjs first-contact gates', () => {
       {
         name: 'compile_ontology',
         description:
-          'Compile the whole markdown vault into a deterministic graph artifact. Includes a stable semantic graphHash and maxMtime for cache invalidation. side effect 0. Large vaults (100+ nodes) can exceed the MCP token cap with the default full payload — use `summary: true` for cheap polling, or `nodesLimit/nodesOffset` / `edgesLimit/edgesOffset` to slice arrays.',
+          'Compile the whole markdown vault into a deterministic graph artifact. Includes a stable semantic graphHash and maxMtime for cache invalidation. side effect 0. Large vaults (100+ nodes) can exceed the MCP token cap with the default full payload: use `summary: true` for cheap polling, or `nodesLimit/nodesOffset` / `edgesLimit/edgesOffset` to slice arrays.',
         inputSchema: {
           additionalProperties: false,
           properties: {
@@ -1742,7 +1742,7 @@ describe('verify.mjs first-contact gates', () => {
       {
         name: 'analyze_repo_structure',
         description:
-          'R16 (autonomous ingest base) — analyze a code repository and propose ontology node candidates. side effect 0 (vault frontmatter NOT modified). Returns deterministic candidates the agent must move through the construction lifecycle. First inspect the reviewPlan, then obtain an independent evaluator packet using constructionQualification:v1; only the exact writePlan is write-authorized. Use this once when a user asks "bootstrap the ontology". Single source of truth preserved — only the user writes to the vault.',
+          'R16 (autonomous ingest base): analyze a code repository and propose ontology node candidates. side effect 0 (vault frontmatter NOT modified). Returns deterministic candidates the agent must move through the construction lifecycle. First inspect the reviewPlan, then obtain an independent evaluator packet using constructionQualification:v1; only the exact writePlan is write-authorized. Use this once when a user asks "bootstrap the ontology". Single source of truth preserved: only the user writes to the vault.',
         inputSchema: {
           additionalProperties: false,
           properties: {
@@ -1871,7 +1871,7 @@ describe('verify.mjs first-contact gates', () => {
       {
         name: 'infer_imports',
         description:
-          'R17 (autonomous ingest deeper) — walk TS/JS files in a code repo and infer file-level + module-level import edges. side effect 0 (vault frontmatter NOT modified). moduleEdges are source-backed review candidates with kindCounts and a bounded exact file-edge `evidence` receipt. For approval start with reviewMode:"next": exactly one compact, non-writing `nextRelationReview:v1` packet. Missing edges are rationale_review_required. Ask the user before add_relation and include `why`. Use after analyze_repo_structure to pull real dependency edges from the code, not just suggestedRelations heuristics. Single source of truth preserved — only the user writes to the vault.',
+          'R17 (autonomous ingest deeper): walk TS/JS files in a code repo and infer file-level + module-level import edges. side effect 0 (vault frontmatter NOT modified). moduleEdges are source-backed review candidates with kindCounts and a bounded exact file-edge `evidence` receipt. For approval start with reviewMode:"next": exactly one compact, non-writing `nextRelationReview:v1` packet. Missing edges are rationale_review_required. Ask the user before add_relation and include `why`. Use after analyze_repo_structure to pull real dependency edges from the code, not just suggestedRelations heuristics. Single source of truth preserved: only the user writes to the vault.',
         inputSchema: {
           additionalProperties: false,
           properties: {
@@ -2112,7 +2112,7 @@ describe('verify.mjs first-contact gates', () => {
       {
         name: 'validate_vault',
         description:
-          'R+ (cycle 46) — validate every doc in the vault, return per-doc + per-code aggregate. side effect 0. Use when an agent needs the whole-vault health view: first-contact before writes, before / after a batch write, or surfacing issues to the user.',
+          'R+ (cycle 46): validate every doc in the vault, return per-doc + per-code aggregate. side effect 0. Use when an agent needs the whole-vault health view: first-contact before writes, before / after a batch write, or surfacing issues to the user.',
         inputSchema: { additionalProperties: false, properties: {} },
         outputSchema: {
           type: 'object',
@@ -5374,7 +5374,7 @@ describe('verify.mjs first-contact gates', () => {
         `unexpected verify stderr:\n${result.stderr}`,
       );
       assert.doesNotMatch(result.stderr, /MaxListenersExceededWarning/);
-      assert.match(result.stdout, /list_concepts — vault total 0 nodes/);
+      assert.match(result.stdout, /list_concepts: vault total 0 nodes/);
       assert.match(result.stdout, /verify vault has 0 ontology nodes/);
       assert.match(result.stdout, /Point verify at a populated ontology vault/);
       assert.doesNotMatch(result.stdout, /verify timed out/);
@@ -5645,7 +5645,7 @@ describe('verify.mjs first-contact gates', () => {
   it('keeps the verify success message MCP-client neutral', () => {
     assert.equal(
       verifySuccessMessage(24),
-      'All passed — register .mcp.json with your MCP client and restart to use the 24 tools.',
+      'All passed: register .mcp.json with your MCP client and restart to use the 24 tools.',
     );
     assert.doesNotMatch(verifySuccessMessage(24), /Claude Code/);
   });
@@ -5690,7 +5690,7 @@ describe('verify.mjs first-contact gates', () => {
     );
     assert.equal(
       strictArgsFailure({ result: { isError: true, content: [{ text: `Error: ${error}` }], structuredContent: { ok: false, errorCode: 'invalid_arguments', error } } }),
-      'strict arguments structured error code mismatch — expected unknown_argument, got invalid_arguments',
+      'strict arguments structured error code mismatch: expected unknown_argument, got invalid_arguments',
     );
     assert.equal(
       strictArgsFailure({ result: { isError: true, content: [{ text: 'different error' }], structuredContent: { ok: false, errorCode: 'unknown_argument', error: 'different error' } } }),
@@ -5838,7 +5838,7 @@ describe('verify.mjs first-contact gates', () => {
           structuredContent: { ok: false, errorCode: 'unknown_argument', error },
         },
       }),
-      'strict unknown-tool structured error code mismatch — expected unknown_tool, got unknown_argument',
+      'strict unknown-tool structured error code mismatch: expected unknown_tool, got unknown_argument',
     );
     assert.equal(
       strictUnknownToolFailure({
@@ -6260,18 +6260,18 @@ describe('verify.mjs first-contact gates', () => {
           },
         },
       }, 'concepts', 'add_concepts'),
-      'add_concepts row isolation structuredContent mismatch — $.concepts[3].error: parsed "concepts[3] duplicate slug in input batch; first seen at concepts[2]", structuredContent "concepts[3] duplicate slug in input batch; first seen at concepts[1]"',
+      'add_concepts row isolation structuredContent mismatch: $.concepts[3].error: parsed "concepts[3] duplicate slug in input batch; first seen at concepts[2]", structuredContent "concepts[3] duplicate slug in input batch; first seen at concepts[1]"',
     );
   });
 
   it('fails malformed batch cap smoke responses', () => {
     assert.equal(
       batchCapFailure(
-        strictErrorResponse('Too many concepts: 51. Max 50 per call — split into multiple add_concepts batches.', {
+        strictErrorResponse('Too many concepts: 51. Max 50 per call: split into multiple add_concepts batches.', {
           structuredContent: {
             ok: false,
             errorCode: 'invalid_arguments',
-            error: 'Too many concepts: 51. Max 50 per call — split into multiple add_concepts batches.',
+            error: 'Too many concepts: 51. Max 50 per call: split into multiple add_concepts batches.',
           },
         }),
         'add_concepts',
@@ -6299,17 +6299,17 @@ describe('verify.mjs first-contact gates', () => {
     );
     assert.equal(
       batchCapFailure(
-        strictErrorResponse('Too many relations: 51. Max 50 per call — split into multiple add_relations batches.', {
+        strictErrorResponse('Too many relations: 51. Max 50 per call: split into multiple add_relations batches.', {
           structuredContent: {
             ok: false,
             errorCode: 'tool_error',
-            error: 'Too many relations: 51. Max 50 per call — split into multiple add_relations batches.',
+            error: 'Too many relations: 51. Max 50 per call: split into multiple add_relations batches.',
           },
         }),
         'add_relations',
         'relations',
       ),
-      'add_relations batch cap structured error code mismatch — expected invalid_arguments, got tool_error',
+      'add_relations batch cap structured error code mismatch: expected invalid_arguments, got tool_error',
     );
   });
 
@@ -6325,7 +6325,7 @@ describe('verify.mjs first-contact gates', () => {
       newSlug: 'new',
       moved: false,
       backlinkUpdates: { totalUpdated: 0, updates: [] },
-      message: 'dry-run — confirm:true to apply',
+      message: 'dry-run: confirm:true to apply',
     };
     assert.equal(
       destructiveDryRunFailure({
@@ -6599,7 +6599,7 @@ describe('verify.mjs first-contact gates', () => {
             blockedReasons: [],
             slug: 'gone',
             backlinks: [],
-            message: 'dry-run — force:true to apply',
+            message: 'dry-run: force:true to apply',
           }) }],
           structuredContent: {
             ok: false,
@@ -6610,7 +6610,7 @@ describe('verify.mjs first-contact gates', () => {
             blockedReasons: [],
             slug: 'gone',
             backlinks: [],
-            message: 'dry-run — force:true to apply',
+            message: 'dry-run: force:true to apply',
           },
         },
       }, 'delete_concept'),
@@ -6630,7 +6630,7 @@ describe('verify.mjs first-contact gates', () => {
                 blockedReasons: ['1 backlink requires force:true'],
                 slug: 'gone',
                 backlinks: [{ slug: ' ref', kind: 'capability', title: 'Ref', mtime: 1 }],
-                message: 'dry-run — force:true to apply',
+                message: 'dry-run: force:true to apply',
               }),
             },
           ],
@@ -6643,7 +6643,7 @@ describe('verify.mjs first-contact gates', () => {
             blockedReasons: ['1 backlink requires force:true'],
             slug: 'gone',
             backlinks: [{ slug: ' ref', kind: 'capability', title: 'Ref', mtime: 1 }],
-            message: 'dry-run — force:true to apply',
+            message: 'dry-run: force:true to apply',
           },
         },
       }, 'delete_concept'),
@@ -6663,7 +6663,7 @@ describe('verify.mjs first-contact gates', () => {
                 blockedReasons: ['1 backlink requires force:true'],
                 slug: 'gone',
                 backlinks: [{ slug: 'ref', kind: 'capability', title: 'Ref', mtime: 1, matchedKeys: [' relates'] }],
-                message: 'dry-run — force:true to apply',
+                message: 'dry-run: force:true to apply',
               }),
             },
           ],
@@ -6676,7 +6676,7 @@ describe('verify.mjs first-contact gates', () => {
             blockedReasons: ['1 backlink requires force:true'],
             slug: 'gone',
             backlinks: [{ slug: 'ref', kind: 'capability', title: 'Ref', mtime: 1, matchedKeys: [' relates'] }],
-            message: 'dry-run — force:true to apply',
+            message: 'dry-run: force:true to apply',
           },
         },
       }, 'delete_concept'),
@@ -6694,7 +6694,7 @@ describe('verify.mjs first-contact gates', () => {
       blockedReasons: [],
       slug: 'gone',
       backlinks: [],
-      message: 'dry-run — force:true to apply',
+      message: 'dry-run: force:true to apply',
     };
     assert.equal(
       destructiveDryRunSmokeFailure([
@@ -6728,7 +6728,7 @@ describe('verify.mjs first-contact gates', () => {
   });
 
   it('fails malformed patch_concept conflict guard smoke responses', () => {
-    const error = 'VaultConflictError: expected_mtime conflict — file was modified externally';
+    const error = 'VaultConflictError: expected_mtime conflict: file was modified externally';
     assert.equal(
       patchConflictGuardFailure({
         result: {
@@ -6756,7 +6756,7 @@ describe('verify.mjs first-contact gates', () => {
           structuredContent: { ok: false, errorCode: 'conflict', error },
         },
       }),
-      'patch_concept conflict guard structured error code mismatch — expected vault_conflict, got conflict',
+      'patch_concept conflict guard structured error code mismatch: expected vault_conflict, got conflict',
     );
     assert.equal(
       patchConflictGuardFailure({
@@ -8078,7 +8078,7 @@ Continue.`;
     );
   });
 
-  it('sends an absorb_document dry-run request against the temp fixture at boot (unconditional — no vault dependency)', () => {
+  it('sends an absorb_document dry-run request against the temp fixture at boot (unconditional: no vault dependency)', () => {
     const requests = buildFirstContactRequests();
     const request = requests.find((r) => r.id === 69);
     assert.ok(request, 'expected an id:69 absorb_document request in the first-contact batch');
@@ -8152,7 +8152,7 @@ Continue.`;
               injectionMatches: [],
             },
           ],
-          message: 'dry-run — 1 section(s) would be absorbed as document/policy nodes, 1 suggested (not written), 0 injection-suspect (excluded from absorption). Pass confirm:true to write.',
+          message: 'dry-run: 1 section(s) would be absorbed as document/policy nodes, 1 suggested (not written), 0 injection-suspect (excluded from absorption). Pass confirm:true to write.',
         }),
       ),
       null,
@@ -8179,7 +8179,7 @@ Continue.`;
         injectionSuspect: false,
         injectionMatches: [],
       }],
-      message: 'dry-run — pass confirm:true to write.',
+      message: 'dry-run: pass confirm:true to write.',
     };
     const wrap = wrapAbsorbResponse;
 
@@ -8503,7 +8503,7 @@ Continue.`;
     assert.equal(findOrphansFailure({ total: 0 }), 'find_orphans response missing orphans array');
     assert.equal(
       findOrphansFailure({ total: 0, orphans: [{ slug: 'capabilities/orphan' }] }),
-      'find_orphans response orphan count exceeds total — orphans 1, total 0',
+      'find_orphans response orphan count exceeds total: orphans 1, total 0',
     );
     assert.equal(
       findOrphansFailure({
@@ -8721,7 +8721,7 @@ Continue.`;
     assert.equal(getConceptFailure(null, 'capabilities/mcp-server'), 'get_concept response malformed');
     assert.equal(
       getConceptFailure({ ...okConcept, slug: 'capabilities/other' }, 'capabilities/mcp-server'),
-      'get_concept response slug mismatch — expected capabilities/mcp-server, got capabilities/other',
+      'get_concept response slug mismatch: expected capabilities/mcp-server, got capabilities/other',
     );
     assert.equal(
       getConceptFailure({ ...okConcept, excerpt: null }, 'capabilities/mcp-server'),
@@ -8755,7 +8755,7 @@ Continue.`;
     );
     assert.equal(
       findBacklinksFailure({ target: 'other', total: 0, matches: [] }, 'project'),
-      'find_backlinks response target mismatch — expected project, got other',
+      'find_backlinks response target mismatch: expected project, got other',
     );
     assert.equal(
       findBacklinksFailure({ target: 'project', total: 1, matches: [match] }, 'project'),
@@ -8764,7 +8764,7 @@ Continue.`;
     assert.equal(queryConceptsFailure({ matches: [] }), 'query_concepts response missing filter');
     assert.equal(
       queryConceptsFailure({ filter: 'kind=project', parsedAs: 'kind = project', total: 0, matches: [match], limited: false }),
-      'query_concepts response match count exceeds total — matches 1, total 0',
+      'query_concepts response match count exceeds total: matches 1, total 0',
     );
     assert.equal(
       limitedQueryConceptsFailure({ filter: 'slug!=project', parsedAs: 'slug != project', total: 2, matches: [match], limited: true }, 'project', 2),
@@ -8788,7 +8788,7 @@ Continue.`;
         edges: [],
         nodes: [],
       }, 'project'),
-      'find_neighbors center mismatch — expected project, got other',
+      'find_neighbors center mismatch: expected project, got other',
     );
     assert.equal(
       findNeighborsFailure({
@@ -8936,7 +8936,7 @@ Continue.`;
         nodes: [],
         vaultWarnings: { errorCount: 1, warningCount: 2 },
       }),
-      'list_concepts vaultWarnings present — errors 1, warnings 2. Run validate_vault for file-level diagnostics before writing.',
+      'list_concepts vaultWarnings present: errors 1, warnings 2. Run validate_vault for file-level diagnostics before writing.',
     );
   });
 
@@ -8944,7 +8944,7 @@ Continue.`;
     assert.equal(listKindsFailure({ byKind: {} }), 'list_kinds response missing total count');
     assert.equal(listKindsFailure({ total: 0 }), 'list_kinds response missing byKind aggregate');
     assert.equal(listKindsFailure({ total: 1, byKind: { project: -1 } }), 'list_kinds response missing count for kind: project');
-    assert.equal(listKindsFailure({ total: 2, byKind: { project: 1 } }), 'list_kinds response total mismatch — total 2, byKind 1');
+    assert.equal(listKindsFailure({ total: 2, byKind: { project: 1 } }), 'list_kinds response total mismatch: total 2, byKind 1');
     assert.equal(listKindsFailure({ total: 1, byKind: { project: 1 } }), null);
   });
 
@@ -8954,7 +8954,7 @@ Continue.`;
     assert.equal(listConceptsFailure({ total: 0, vaultRoot: '/tmp/vault' }), 'list_concepts response missing nodes array');
     assert.equal(
       listConceptsFailure({ total: 0, vaultRoot: '/tmp/vault', nodes: [{ uid: TEST_UID, slug: 'project', kind: 'project', title: 'Project', mtime: 1 }] }),
-      'list_concepts response node count exceeds total — nodes 1, total 0',
+      'list_concepts response node count exceeds total: nodes 1, total 0',
     );
     assert.equal(listConceptsFailure({ total: 1, vaultRoot: '/tmp/vault', nodes: [null] }), 'list_concepts response malformed node at index 0');
     assert.equal(listConceptsFailure({ total: 1, vaultRoot: '/tmp/vault', nodes: [{}] }), 'list_concepts response missing node slug at index 0');
@@ -8988,7 +8988,7 @@ Continue.`;
         vaultRoot: '/tmp/vault',
         nodes: [{ uid: TEST_UID, slug: 'project', kind: 'project', title: 'Project', mtime: 1 }],
       }, { byKind: { project: 1 } }),
-      'project probe count mismatch — list_kinds project 1, probe 2',
+      'project probe count mismatch: list_kinds project 1, probe 2',
     );
     assert.equal(
       projectProbeFailure({
@@ -9030,7 +9030,7 @@ Continue.`;
           },
         },
       }),
-      'validate_vault found 2 problem files — errors 1, warnings 1 — codes dangling-graph-reference:warning:2, missing-kind:error:1',
+      'validate_vault found 2 problem files: errors 1, warnings 1 · codes dangling-graph-reference:warning:2, missing-kind:error:1',
     );
   });
 
@@ -9141,18 +9141,18 @@ Continue.`;
     assert.equal(compileSummaryFailure({ ...clean, nodeCount: undefined }), 'compile_ontology response missing nodeCount');
     assert.equal(compileSummaryFailure({ ...clean, byKind: null }), 'compile_ontology response missing byKind aggregate');
     assert.equal(compileSummaryFailure({ ...clean, byDomain: { '': 1 } }), 'compile_ontology response has empty byDomain key');
-    assert.equal(compileSummaryFailure({ ...clean, byKind: { project: 2 } }), 'compile_ontology response byKind mismatch — nodeCount 1, byKind 2');
+    assert.equal(compileSummaryFailure({ ...clean, byKind: { project: 2 } }), 'compile_ontology response byKind mismatch: nodeCount 1, byKind 2');
     assert.equal(
       compileSummaryFailure({ ...clean, edgeCount: 2, resolvedEdgeCount: 1, externalEdgeCount: 0, unresolvedEdgeCount: 1 }),
       null,
     );
     assert.equal(
       compileSummaryFailure({ ...clean, edgeCount: 3, resolvedEdgeCount: 1, externalEdgeCount: 1 }),
-      'compile_ontology response edge count mismatch — edgeCount 3, resolved+external+unresolved 2',
+      'compile_ontology response edge count mismatch: edgeCount 3, resolved+external+unresolved 2',
     );
     assert.equal(
       compileSummaryFailure({ ...clean, edgeCount: 1, resolvedEdgeCount: 1, externalEdgeCount: 1 }),
-      'compile_ontology response edge count mismatch — edgeCount 1, resolved+external+unresolved 2',
+      'compile_ontology response edge count mismatch: edgeCount 1, resolved+external+unresolved 2',
     );
   });
 
@@ -9248,13 +9248,13 @@ Continue.`;
     };
 
     assert.equal(compileFullArtifactFailure({ ...clean, nodes: undefined }), 'compile_ontology full response missing nodes array');
-    assert.equal(compileFullArtifactFailure({ ...clean, nodesPagination: { ...clean.nodesPagination, returned: 2 } }), 'compile_ontology.nodesPagination returned mismatch — meta 2, array 1');
+    assert.equal(compileFullArtifactFailure({ ...clean, nodesPagination: { ...clean.nodesPagination, returned: 2 } }), 'compile_ontology.nodesPagination returned mismatch: meta 2, array 1');
     assert.equal(compileFullArtifactFailure({ ...clean, nodes: [{ ...clean.nodes[0], outDegree: -1 }] }), 'compile_ontology full response malformed node row');
     assert.equal(compileFullArtifactFailure({ ...clean, edges: [{ ...clean.edges[0], resolved: 'true' }] }), 'compile_ontology full response malformed edge row');
     assert.equal(compileFullArtifactFailure({ ...clean, canonicalizationActions: null }), 'compile_ontology full response missing canonicalizationActions array');
-    assert.equal(compileFullArtifactFailure({ ...clean, aliases: [] }), 'compile_ontology full response aliases count mismatch — aliases 0, aliasCount 1');
-    assert.equal(compileFullArtifactFailure({ ...clean, summary: { ...clean.summary, aliases: 0 } }), 'compile_ontology full response summary count mismatch — summary aliases/ambiguous/issues 0/1/1, counts 1/1/1');
-    assert.equal(compileFullArtifactFailure({ ...clean, summary: { ...clean.summary, nodes: 2 } }), 'compile_ontology full response summary mismatch — summary 2/1, counts 1/1');
+    assert.equal(compileFullArtifactFailure({ ...clean, aliases: [] }), 'compile_ontology full response aliases count mismatch: aliases 0, aliasCount 1');
+    assert.equal(compileFullArtifactFailure({ ...clean, summary: { ...clean.summary, aliases: 0 } }), 'compile_ontology full response summary count mismatch: summary aliases/ambiguous/issues 0/1/1, counts 1/1/1');
+    assert.equal(compileFullArtifactFailure({ ...clean, summary: { ...clean.summary, nodes: 2 } }), 'compile_ontology full response summary mismatch: summary 2/1, counts 1/1');
   });
 
   it('accepts clean compile_ontology includeIndexes payloads', () => {
@@ -9346,12 +9346,12 @@ Continue.`;
     assert.equal(compileIndexesSummary(clean), 'out 1, in 1, edgeById 1, aliases 1, edges 1/0/0');
     assert.equal(compileIndexesFailure({ ...clean, indexes: undefined }), 'compile_ontology indexes response missing indexes');
     assert.equal(compileIndexesFailure({ ...clean, indexes: { ...clean.indexes, out: { project: edgeId } } }), 'compile_ontology.indexes.out malformed row');
-    assert.equal(compileIndexesFailure({ ...clean, indexes: { ...clean.indexes, edgeById: {} } }), 'compile_ontology.indexes.edgeById count mismatch — index 0, edgeCount 1');
-    assert.equal(compileIndexesFailure({ ...clean, indexes: { ...clean.indexes, aliasToSlug: {} } }), 'compile_ontology.indexes.aliasToSlug count mismatch — index 0, aliasCount 1');
+    assert.equal(compileIndexesFailure({ ...clean, indexes: { ...clean.indexes, edgeById: {} } }), 'compile_ontology.indexes.edgeById count mismatch: index 0, edgeCount 1');
+    assert.equal(compileIndexesFailure({ ...clean, indexes: { ...clean.indexes, aliasToSlug: {} } }), 'compile_ontology.indexes.aliasToSlug count mismatch: index 0, aliasCount 1');
     assert.equal(compileIndexesFailure({ ...clean, indexes: { ...clean.indexes, out: { project: ['missing-edge'] } } }), 'compile_ontology.indexes.out references unknown edge id');
-    assert.equal(compileIndexesFailure({ ...clean, indexes: { ...clean.indexes, out: { project: [edgeId, edgeId] } } }), 'compile_ontology.indexes.out count mismatch — index 2, edgeCount 1');
-    assert.equal(compileIndexesFailure({ ...clean, indexes: { ...clean.indexes, in: { 'domains/core': [edgeId, edgeId] } } }), 'compile_ontology.indexes.in count mismatch — index 2, resolvedEdgeCount 1');
-    assert.equal(compileIndexesFailure({ ...clean, resolvedEdgeCount: 0, unresolvedEdgeCount: 1, indexes: { ...clean.indexes, in: {} } }), 'compile_ontology.indexes.edgeById edge breakdown mismatch — index 1/0/0, counts 0/0/1');
+    assert.equal(compileIndexesFailure({ ...clean, indexes: { ...clean.indexes, out: { project: [edgeId, edgeId] } } }), 'compile_ontology.indexes.out count mismatch: index 2, edgeCount 1');
+    assert.equal(compileIndexesFailure({ ...clean, indexes: { ...clean.indexes, in: { 'domains/core': [edgeId, edgeId] } } }), 'compile_ontology.indexes.in count mismatch: index 2, resolvedEdgeCount 1');
+    assert.equal(compileIndexesFailure({ ...clean, resolvedEdgeCount: 0, unresolvedEdgeCount: 1, indexes: { ...clean.indexes, in: {} } }), 'compile_ontology.indexes.edgeById edge breakdown mismatch: index 1/0/0, counts 0/0/1');
     assert.equal(compileIndexesFailure({ ...clean, indexes: { ...clean.indexes, out: { other: [edgeId] } } }), 'compile_ontology.indexes.out missing edgeById edge');
     assert.equal(compileIndexesFailure({ ...clean, indexes: { ...clean.indexes, in: { other: [edgeId] } } }), 'compile_ontology.indexes.in missing resolved edge');
     assert.equal(compileIndexesFailure({ ...clean, indexes: { ...clean.indexes, byKind: { project: ['missing-node'] } } }), 'compile_ontology.indexes.byKind references unknown node slug');
@@ -9581,11 +9581,11 @@ Continue.`;
     assert.equal(overviewFailure({ ...cleanOverview, graph: { ...cleanOverview.graph, graphHash: '' } }), 'overview response missing graphHash');
     assert.equal(
       overviewFailure({ ...cleanOverview, graph: { ...cleanOverview.graph, edges: 3 } }),
-      'overview response edge count mismatch — edges 3, resolved+external+unresolved 2',
+      'overview response edge count mismatch: edges 3, resolved+external+unresolved 2',
     );
     assert.equal(
       overviewFailure({ ...cleanOverview, byKind: { project: 2 } }),
-      'overview response byKind mismatch — nodes 1, byKind 2',
+      'overview response byKind mismatch: nodes 1, byKind 2',
     );
     assert.equal(overviewFailure({ ...cleanOverview, hubs: null }), 'overview response missing hubs array');
 
@@ -9637,7 +9637,7 @@ Continue.`;
         edges: [],
         nodes: [],
       }, 'project'),
-      'neighbors center mismatch — expected project, got other',
+      'neighbors center mismatch: expected project, got other',
     );
     assert.equal(
       neighborsFailure({
@@ -9649,7 +9649,7 @@ Continue.`;
         edges: [{ from: 'project', to: 'domains/auth', via: 'domains', direction: 'outgoing' }],
         nodes: [],
       }, 'project'),
-      'neighbors response edge count mismatch — edges 1, total 2',
+      'neighbors response edge count mismatch: edges 1, total 2',
     );
     assert.equal(pathQueryFailure({ operation: 'neighbors' }, 'project'), 'path returned unexpected operation: neighbors');
     assert.equal(
@@ -9749,7 +9749,7 @@ Continue.`;
         limited: true,
         paths: [],
       }, 'capabilities/login', 'project'),
-      'all_paths response exceeded searchBudget — expanded 3, budget 2',
+      'all_paths response exceeded searchBudget: expanded 3, budget 2',
     );
     assert.equal(
       allPathsQueryFailure({
@@ -9794,7 +9794,7 @@ Continue.`;
         },
         paths: [],
       }, 'capabilities/login', 'project'),
-      'all_paths response total mismatch — paths 0, total 2',
+      'all_paths response total mismatch: paths 0, total 2',
     );
     assert.equal(projectScopeFailure({ operation: 'project_map' }, 'project'), 'project_scope returned unexpected operation: project_map');
     assert.equal(
@@ -9819,7 +9819,7 @@ Continue.`;
           unresolved: { total: 0, limited: false, edges: [] },
         },
       }, 'project'),
-      'project_scope node count mismatch — rows 0, total 2',
+      'project_scope node count mismatch: rows 0, total 2',
     );
   });
 
@@ -9872,12 +9872,12 @@ Continue.`;
     assert.equal(verifyCountConsistencyFailure({ kinds, list, validation, compiled, overview }), null);
     assert.equal(
       verifyCountConsistencyFailure({ kinds: { total: 2, byKind: { project: 2 } }, list, validation, compiled }),
-      'verify count mismatch — list_kinds.total 2, list_concepts.total 1',
+      'verify count mismatch: list_kinds.total 2, list_concepts.total 1',
     );
     assert.equal(verifyCountConsistencyFailure({ kinds, list, validation: { ...validation, scanned: 2 }, compiled }), null);
     assert.equal(
       verifyCountConsistencyFailure({ kinds, list, validation, compiled: { ...compiled, nodeCount: 2, byKind: { project: 2 } } }),
-      'verify count mismatch — list_kinds.total 1, compile_ontology.nodeCount 2',
+      'verify count mismatch: list_kinds.total 1, compile_ontology.nodeCount 2',
     );
     assert.equal(
       verifyCountConsistencyFailure({
@@ -9887,7 +9887,7 @@ Continue.`;
         compiled,
         overview: { ...overview, graph: { ...overview.graph, nodes: 2 }, byKind: { project: 2 } },
       }),
-      'verify count mismatch — list_kinds.total 1, overview.graph.nodes 2',
+      'verify count mismatch: list_kinds.total 1, overview.graph.nodes 2',
     );
     assert.equal(
       verifyCountConsistencyFailure({
@@ -9896,7 +9896,7 @@ Continue.`;
         validation,
         compiled,
       }),
-      'verify byKind mismatch — capability: list_kinds 1, compile_ontology 0',
+      'verify byKind mismatch: capability: list_kinds 1, compile_ontology 0',
     );
     assert.equal(
       verifyCountConsistencyFailure({
@@ -9906,7 +9906,7 @@ Continue.`;
         compiled: { ...compiled, byKind: { capability: 1 } },
         overview,
       }),
-      'verify byKind mismatch — capability: list_kinds 1, overview 0',
+      'verify byKind mismatch: capability: list_kinds 1, overview 0',
     );
   });
 
@@ -10099,7 +10099,7 @@ Continue.`;
     );
     assert.equal(
       structuredContentFailure({ result: { structuredContent: { operation: 'overview', graph: { nodes: 2 } } } }, parsed, 'overview'),
-      'overview structuredContent mismatch — $.graph.nodes: parsed 1, structuredContent 2',
+      'overview structuredContent mismatch: $.graph.nodes: parsed 1, structuredContent 2',
     );
     assert.equal(
       structuredContentFailure({ result: { structuredContent: { graph: { nodes: 1 }, operation: 'overview' } } }, parsed, 'overview'),

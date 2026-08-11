@@ -159,10 +159,10 @@ export function AiConnectionPanel({
           className="rounded-card border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-3 py-2.5"
           data-testid="ai-connection-web-degraded"
         >
-          <p className="text-label font-[var(--font-weight-signature)] text-[color:var(--color-text-secondary)]">
+          <p className="text-body font-[var(--font-weight-signature)] text-[color:var(--color-text-secondary)]">
             {t('webDegradedTitle')}
           </p>
-          <p className="mt-1 break-keep text-caption leading-label text-[color:var(--color-text-tertiary)]">
+          <p className="mt-1 break-keep text-label leading-label text-[color:var(--color-text-tertiary)]">
             {t('webDegradedBody')}
           </p>
           {/* 키 없는 갈래(주소로 연결)가 생긴 뒤로, 위 문단만 두면 강등이
@@ -170,7 +170,7 @@ export function AiConnectionPanel({
               되겠지" 로 읽히기 때문이다. 왜 그것도 안 되는지와 어디로 가면
               되는지를 같은 카드 안에서 말한다. */}
           <p
-            className="mt-1.5 break-keep text-caption leading-label text-[color:var(--color-text-tertiary)]"
+            className="mt-1.5 break-keep text-label leading-label text-[color:var(--color-text-tertiary)]"
             data-testid="ai-connection-web-degraded-local"
           >
             {t('webDegradedLocalBody')}
@@ -271,10 +271,10 @@ export function AiConnectionPanel({
             { label: t('scopeLogLabel'), value: t('scopeLogValue') },
           ].map((row) => (
             <div key={row.label} className="flex gap-3">
-              <dt className="w-12 shrink-0 text-caption leading-label text-[color:var(--color-text-tertiary)]">
+              <dt className="w-12 shrink-0 text-body leading-body text-[color:var(--color-text-tertiary)]">
                 {row.label}
               </dt>
-              <dd className="min-w-0 break-keep text-caption leading-label text-[color:var(--color-text-quaternary)]">
+              <dd className="min-w-0 break-keep text-label leading-label text-[color:var(--color-text-quaternary)]">
                 {row.value}
               </dd>
             </div>
@@ -461,7 +461,7 @@ function ProviderCard({
           <span
             key={status?.last4 ?? 'stored'}
             data-testid={`ai-stored-${provider}`}
-            className="ai-row-swap flex items-baseline gap-1.5 text-caption text-[color:var(--color-text-tertiary)]"
+            className="ai-row-swap flex items-baseline gap-1.5 text-label text-[color:var(--color-text-tertiary)]"
           >
             {t('storedLabel')}
             <span className="font-mono">···· {status?.last4 ?? ''}</span>
@@ -683,7 +683,7 @@ function LocalEndpointCard({
           <span
             key={settings.model}
             data-testid="ai-local-connected"
-            className="ai-row-swap flex min-w-0 items-baseline gap-1.5 text-caption text-[color:var(--color-text-tertiary)]"
+            className="ai-row-swap flex min-w-0 items-baseline gap-1.5 text-label text-[color:var(--color-text-tertiary)]"
           >
             {t('localConnected')}
             <span className="truncate font-mono">{settings.model}</span>
@@ -729,7 +729,7 @@ function LocalEndpointCard({
                 onKeyDown={(event) => {
                   if (event.key === 'Enter') void handleVerify();
                 }}
-                className={fieldClass({ size: "md", className: "min-w-0 flex-1 font-mono text-caption placeholder:font-sans" })}
+                className={fieldClass({ size: "md", className: "min-w-0 flex-1 font-mono placeholder:font-sans" })}
               />
               {!connected ? (
                 <Chip
@@ -788,7 +788,7 @@ function LocalEndpointCard({
               </div>
             ) : connected ? (
               <div className="flex items-center gap-2">
-                <span className="min-w-0 flex-1 truncate font-mono text-caption text-[color:var(--color-text-tertiary)]">
+                <span className="min-w-0 flex-1 truncate font-mono text-label text-[color:var(--color-text-tertiary)]">
                   {settings.model}
                 </span>
                 <Chip
@@ -837,7 +837,7 @@ function LocalCaption({
 
   if (!vaultKnown) {
     return (
-      <p className="break-keep text-caption leading-label text-[color:var(--color-text-quaternary)]">
+      <p className="break-keep text-label leading-label text-[color:var(--color-text-quaternary)]">
         {t('verifyNeedsVault')}
       </p>
     );
@@ -854,7 +854,7 @@ function LocalCaption({
     return (
       <p
         data-testid="ai-local-failure"
-        className="flex items-start gap-1.5 break-keep text-caption leading-label text-[color:var(--color-status-danger)]"
+        className="flex items-start gap-1.5 break-keep text-label leading-label text-[color:var(--color-status-danger)]"
       >
         <StatusDot tone="danger" />
         {message}
@@ -869,7 +869,7 @@ function LocalCaption({
     return (
       <p
         data-testid="ai-local-verified"
-        className="flex items-center gap-1.5 break-keep text-caption leading-label text-[color:var(--color-status-success)]"
+        className="flex items-center gap-1.5 break-keep text-label leading-label text-[color:var(--color-status-success)]"
       >
         <StatusDot tone="success" />
         {chatCount === verify.models.length
@@ -882,7 +882,7 @@ function LocalCaption({
     );
   }
   return (
-    <p className="break-keep text-caption leading-label text-[color:var(--color-text-quaternary)]">
+    <p className="break-keep text-label leading-label text-[color:var(--color-text-quaternary)]">
       {connected
         ? isLoopbackHost(host)
           ? t('localScopeLoopback', { host })
@@ -993,7 +993,7 @@ function KeyDraftForm({
         }}
         // 값은 mono(기계 문자열), 안내 문구는 본문 서체 — 한국어 placeholder 까지
         // 등폭으로 그리면 "API  키  붙여넣기" 처럼 낱말 사이가 벌어진다.
-        className={fieldClass({ size: "md", className: "min-w-0 flex-1 font-mono text-caption placeholder:font-sans" })}
+        className={fieldClass({ size: "md", className: "min-w-0 flex-1 font-mono placeholder:font-sans" })}
       />
       {/* 저장 왼쪽의 중립 컨트롤 — 눌러 보고 마음이 바뀐 사람의 출구다.
           Esc 로도 같은 일이 일어나지만 그건 보이지 않는다. 되돌릴 길이 화면에
@@ -1039,7 +1039,7 @@ function ProviderCaption({
 
   if (error) {
     return (
-      <p className="break-keep text-caption leading-label text-[color:var(--color-status-danger)]">
+      <p className="break-keep text-label leading-label text-[color:var(--color-status-danger)]">
         {error}
       </p>
     );
@@ -1048,21 +1048,21 @@ function ProviderCaption({
     // 붙여넣는 순간이 신뢰를 판단하는 순간이다 — 포커스 시에만 뜨는 툴팁이
     // 아니라 필드 아래 상시 노출.
     return (
-      <p className="break-keep text-caption leading-label text-[color:var(--color-text-quaternary)]">
+      <p className="break-keep text-label leading-label text-[color:var(--color-text-quaternary)]">
         {t('pasteSafety', { provider })}
       </p>
     );
   }
   if (!vaultKnown) {
     return (
-      <p className="break-keep text-caption leading-label text-[color:var(--color-text-quaternary)]">
+      <p className="break-keep text-label leading-label text-[color:var(--color-text-quaternary)]">
         {t('verifyNeedsVault')}
       </p>
     );
   }
   if (verify.kind === 'ok') {
     return (
-      <p className="flex items-center gap-1.5 text-caption text-[color:var(--color-status-success)]">
+      <p className="flex items-center gap-1.5 text-label text-[color:var(--color-status-success)]">
         <StatusDot tone="success" />
         {t('verified')}
       </p>
@@ -1070,7 +1070,7 @@ function ProviderCaption({
   }
   if (verify.kind === 'denied') {
     return (
-      <p className="flex items-center gap-1.5 text-caption text-[color:var(--color-status-danger)]">
+      <p className="flex items-center gap-1.5 text-label text-[color:var(--color-status-danger)]">
         <StatusDot tone="danger" />
         {t('verifyDenied', { status: verify.status ?? '' })}
       </p>
@@ -1078,14 +1078,14 @@ function ProviderCaption({
   }
   if (verify.kind === 'failed') {
     return (
-      <p className="flex items-center gap-1.5 break-keep text-caption leading-label text-[color:var(--color-status-danger)]">
+      <p className="flex items-center gap-1.5 break-keep text-label leading-label text-[color:var(--color-status-danger)]">
         <StatusDot tone="danger" />
         {t('verifyFailed', { message: verify.message })}
       </p>
     );
   }
   return (
-    <p className="break-keep text-caption leading-label text-[color:var(--color-text-quaternary)]">
+    <p className="break-keep text-label leading-label text-[color:var(--color-text-quaternary)]">
       {t('verifyScope', { host })}
     </p>
   );
@@ -1145,7 +1145,7 @@ function AuditTail({
     >
       <div className="grid gap-1">
         {entries.length === 0 ? (
-          <p className="break-keep text-caption leading-label text-[color:var(--color-text-tertiary)]">
+          <p className="break-keep text-label leading-label text-[color:var(--color-text-tertiary)]">
             {t('auditEmpty')}
           </p>
         ) : (
@@ -1155,17 +1155,17 @@ function AuditTail({
               className="flex items-center gap-2"
               data-testid="ai-audit-row"
             >
-              <span className="shrink-0 font-mono text-caption text-[color:var(--color-text-quaternary)]">
+              <span className="shrink-0 font-mono text-label text-[color:var(--color-text-quaternary)]">
                 {formatAuditTime(entry.at)}
               </span>
-              <span className="min-w-0 flex-1 truncate text-caption text-[color:var(--color-text-tertiary)]">
+              <span className="min-w-0 flex-1 truncate text-label text-[color:var(--color-text-tertiary)]">
                 {entry.provider} ·{' '}
                 {entry.purpose === 'verify' ? t('auditPurposeVerify') : t('auditPurposeAsk')}{' '}
                 · {t('auditScope', { chars: entry.scope.vaultChars })}
               </span>
               <span
                 className={cn(
-                  'shrink-0 text-caption',
+                  'shrink-0 text-label',
                   entry.outcome === 'ok'
                     ? 'text-[color:var(--color-status-success)]'
                     : entry.outcome === 'unknown'
@@ -1189,7 +1189,7 @@ function AuditTail({
           한글 낱말 사이가 벌어져 "커밋할지는  당신의  선택이에요" 처럼 읽힌다
           (등폭 글리프 폭이 한글 자간에 그대로 들어오기 때문). 파일 경로는
           기계 문자열이라 mono 가 정보지만, 그 옆 문장은 아니다. */}
-      <p className="mt-2 break-keep text-caption leading-label text-[color:var(--color-text-quaternary)]">
+      <p className="mt-2 break-keep text-label leading-label text-[color:var(--color-text-quaternary)]">
         <span className="font-mono">{LLM_AUDIT_RELATIVE_PATH}</span>
         {' · '}
         {t('auditPathNote')}

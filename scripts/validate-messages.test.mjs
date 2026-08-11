@@ -389,8 +389,38 @@ describe('i18n message catalog', () => {
     const en = await readJson(path.join(MESSAGES_DIR, 'en.json'));
     const ko = await readJson(path.join(MESSAGES_DIR, 'ko.json'));
 
-    assert.deepEqual(Object.keys(ko.topologyWidgets).sort(), ['controls', 'hubRail']);
-    assert.deepEqual(Object.keys(en.topologyWidgets).sort(), ['controls', 'hubRail']);
+    /*
+     * ⚠️ **정확한 집합으로 못박지 않는다** (2026-08-10 에 좁혔다).
+     *
+     * 종전에는 `deepEqual(keys, ['controls','hubRail'])` 였다. 그런데 이 시험이
+     * **말하는 목적**은 「은퇴한 sigma/contextMenu/edgeTooltip 이 되살아나지
+     * 못하게」다 — 정확한 집합을 박으면 **정당한 추가에도 터진다**(실제로
+     * `keyboardWalk` 를 더하다 걸렸다). 그런 게이트는 다음 사람이 게이트 대신
+     * 기능 쪽을 되돌리게 만든다(`documentation.md` · `/gate-probe`).
+     *
+     * 그래서 거부 목록으로 판정한다. 새 절은 자유롭게 늘고, 은퇴한 이름은
+     * 되돌아오지 못한다.
+     */
+    const RETIRED = ['sigma', 'contextMenu', 'edgeTooltip'];
+    for (const [locale, messages] of [['ko', ko], ['en', en]]) {
+      const keys = Object.keys(messages.topologyWidgets);
+      assert.ok(keys.length > 0, `${locale}: topologyWidgets 가 비었다 — 이 시험이 공회전한다`);
+      for (const retired of RETIRED) {
+        assert.ok(
+          !keys.includes(retired),
+          `${locale}: 은퇴한 topologyWidgets.${retired} 가 되살아났다`,
+        );
+      }
+    }
+    // 아직 소비처가 있는 둘은 사라지면 안 된다.
+    for (const [locale, messages] of [['ko', ko], ['en', en]]) {
+      for (const kept of ['controls', 'hubRail']) {
+        assert.ok(
+          Object.keys(messages.topologyWidgets).includes(kept),
+          `${locale}: topologyWidgets.${kept} 가 사라졌다 (소비처가 남아 있다)`,
+        );
+      }
+    }
   });
 
   it('keeps Korean docs vault commands understandable without source/topology jargon', async () => {

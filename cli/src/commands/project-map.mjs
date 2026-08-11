@@ -63,7 +63,7 @@ function render(result) {
     process.stdout.write(`${COLORS.dim}domains${COLORS.reset}\n`);
     for (const row of result.domains) {
       const title = row.node?.title && row.node.title !== row.slug
-        ? ` ${COLORS.dim}— ${row.node.title}${COLORS.reset}`
+        ? ` ${COLORS.dim}· ${row.node.title}${COLORS.reset}`
         : '';
       const rowSummary = row.summary ?? {};
       process.stdout.write(
@@ -99,7 +99,7 @@ function render(result) {
   if (focus) {
     process.stdout.write(
       `\n${COLORS.dim}next${COLORS.reset} domain ${COLORS.bold}${focus.slug}${COLORS.reset}` +
-        `${COLORS.dim} — map rows are placement evidence; inspect the domain and containment path before moving nodes${COLORS.reset}\n`,
+        `${COLORS.dim} · map rows are placement evidence; inspect the domain and containment path before moving nodes${COLORS.reset}\n`,
     );
     process.stdout.write(`  ${COLORS.cyan}ontology-atlas node ${focus.slug} [vault] --limit 20${COLORS.reset}\n`);
     process.stdout.write(`  ${COLORS.cyan}ontology-atlas pattern-walk ${result.project} [vault] --pattern domains,capabilities --limit 20${COLORS.reset}\n`);

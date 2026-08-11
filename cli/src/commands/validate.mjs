@@ -4,7 +4,7 @@ import { relative } from 'node:path';
 import { walkMd } from '../lib/walk-vault.mjs';
 import { parseFrontmatter } from '../lib/parse-frontmatter.mjs';
 import { resolveVaultRoot } from '../lib/resolve-vault.mjs';
-import { validateVaultDocument } from '../lib/validate.mjs';
+import { validateVaultDocument, suppressParentedExpectedFieldIssues } from '../lib/validate.mjs';
 import {
   formatUnknownFlagError,
   parseCsvListFlag,
@@ -26,22 +26,22 @@ export const KNOWN_CODES = [
   {
     code: 'unclosed-frontmatter',
     severity: 'error',
-    description: '`---` 가 닫히지 않음 — 파일 머리에 frontmatter 가 끝나지 않았습니다.',
+    description: '`---` 가 닫히지 않음: 파일 머리에 frontmatter 가 끝나지 않았습니다.',
   },
   {
     code: 'parse-zero-keys',
     severity: 'warning',
-    description: 'frontmatter 가 0 keys 로 파싱됨 — YAML syntax 깨짐 가능.',
+    description: 'frontmatter 가 0 keys 로 파싱됨: YAML syntax 깨짐 가능.',
   },
   {
     code: 'missing-kind',
     severity: 'warning',
-    description: '`kind:` 키 자체가 없음 — 그래프에서 빠짐.',
+    description: '`kind:` 키 자체가 없음: 그래프에서 빠짐.',
   },
   {
     code: 'empty-kind',
     severity: 'error',
-    description: '`kind:` 값이 비어있음 — 그래프에서 빠지고 invalid.',
+    description: '`kind:` 값이 비어있음: 그래프에서 빠지고 invalid.',
   },
   {
     code: 'unknown-kind',
@@ -88,7 +88,7 @@ export const KNOWN_CODES = [
     code: 'duplicate-slug',
     severity: 'error',
     scope: 'vault',
-    description: '두 문서가 같은 canonical slug 를 주장 — 관계가 어느 쪽인지 정할 수 없음.',
+    description: '두 문서가 같은 canonical slug 를 주장: 관계가 어느 쪽인지 정할 수 없음.',
   },
   {
     code: 'duplicate-uid',
@@ -178,6 +178,24 @@ export function runValidate(args) {
     entries.push({ file, slug, frontmatter });
     const report = validateVaultDocument(raw);
     reportByFile.set(file, report);
+  }
+
+  /*
+   * 부모가 이미 있는 노드에 「부모가 없다」고 말하지 않는다 (2026-08-11) — MCP 쪽
+   * `validate_vault` 와 같은 좁히기다. 파일 하나만 보는 검사로는 알 수 없다.
+   */
+  const issuesBySlugForParents = new Map();
+  const fileBySlug = new Map();
+  for (const { file, slug } of entries) {
+    const report = reportByFile.get(file);
+    if (!report) continue;
+    issuesBySlugForParents.set(slug, report.issues);
+    fileBySlug.set(slug, file);
+  }
+  suppressParentedExpectedFieldIssues(issuesBySlugForParents, entries);
+  for (const [slug, issues] of issuesBySlugForParents) {
+    const report = reportByFile.get(fileBySlug.get(slug));
+    if (report) report.issues = issues;
   }
 
   for (const { file, issue } of findDuplicateSlugIssues(entries)) {
@@ -277,10 +295,10 @@ export function runValidate(args) {
   // 가 열어 보지도 못한 파일까지 보증하는 문장이 된다.
   if (unreadable.length > 0) {
     console.log(
-      `\n${COLORS.yellow}[validate] 읽지 못한 파일 ${unreadable.length}건 — 아래는 검사 범위 밖입니다.${COLORS.reset}`,
+      `\n${COLORS.yellow}[validate] 읽지 못한 파일 ${unreadable.length}건: 아래는 검사 범위 밖입니다.${COLORS.reset}`,
     );
     for (const { file, message } of unreadable) {
-      console.log(`  ${COLORS.yellow}?${COLORS.reset} ${relative(vaultPath, file).replace(/\\/g, '/')} — ${message}`);
+      console.log(`  ${COLORS.yellow}?${COLORS.reset} ${relative(vaultPath, file).replace(/\\/g, '/')} · ${message}`);
     }
   }
 
@@ -293,10 +311,10 @@ export function runValidate(args) {
     // "needs_attention" 이라고 답했고 어느 쪽이 맞는지 알 방법이 없었다.
     // 검사 범위를 문장이 말하면 두 답은 모순이 아니라 서로 다른 두 검사가 된다.
     console.log(
-      `${COLORS.green}[validate] ${files.length - unreadable.length} 파일 스캔 — frontmatter · 그래프 참조 issue 0 ✓${COLORS.reset}`,
+      `${COLORS.green}[validate] ${files.length - unreadable.length} 파일 스캔: frontmatter · 그래프 참조 issue 0 ✓${COLORS.reset}`,
     );
     console.log(
-      `${COLORS.dim}          코드 경로 대조(elements:/path: 가 실재하는 파일인가)는 이 검사에 없다 — \`ontology-atlas health\` 가 본다.${COLORS.reset}`,
+      `${COLORS.dim}          코드 경로 대조(elements:/path: 가 실재하는 파일인가)는 이 검사에 없다: \`ontology-atlas health\` 가 본다.${COLORS.reset}`,
     );
     return unreadable.length > 0 ? 1 : 0;
   }
@@ -326,7 +344,7 @@ export function runValidate(args) {
       const head = g.files.slice(0, 3).join(', ');
       const tail = g.files.length > 3 ? ` (+${g.files.length - 3} more)` : '';
       console.log(
-        `  ${color}${tag}${COLORS.reset} ${g.code} — ${g.count} occurrence${g.count === 1 ? '' : 's'}` +
+        `  ${color}${tag}${COLORS.reset} ${g.code} · ${g.count} occurrence${g.count === 1 ? '' : 's'}` +
           `\n     ${COLORS.dim}${head}${tail}${COLORS.reset}`,
       );
     }
@@ -399,7 +417,7 @@ function printUsage(stream = process.stderr) {
       `  ontology-atlas validate [vault] [--json] [--strict]\n` +
       `  ontology-atlas validate [vault] [--fail-on code,...]\n` +
       `  ontology-atlas validate --list-codes [--json]\n\n` +
-      `Validate ontology vault frontmatter integrity — frontmatter shape and graph\n` +
+      `Validate ontology vault frontmatter integrity: frontmatter shape and graph\n` +
       `references only. It does NOT check whether elements:/path: point at files that\n` +
       `exist; \`ontology-atlas health\` runs that source-path check.\n`,
   );
@@ -519,7 +537,7 @@ function findDuplicateSlugIssues(entries) {
           severity: 'error',
           message:
             `\`slug: ${declared}\` 를 다른 문서도 주장합니다 (${rest.join(', ')}). ` +
-            `같은 이름을 가리키는 관계가 어느 쪽을 뜻하는지 정할 수 없습니다 — ` +
+            `같은 이름을 가리키는 관계가 어느 쪽을 뜻하는지 정할 수 없습니다: ` +
             `한쪽의 slug 를 바꾸거나 rename_concept 으로 합치세요.`,
         },
       });
@@ -628,7 +646,7 @@ function findDanglingGraphReferenceIssues(entries) {
           severity: 'warning',
           message: isNonNodeDoc
             ? `\`${key}:\` graph reference "${ref}" 는 vault 에 파일로 있지만 **node 가 아닙니다** ` +
-              '(`kind:` 없음 — 메모·회의록은 그래프 밖입니다). 노드로 올리려면 `kind:` 를 주고, ' +
+              '(`kind:` 없음: 메모·회의록은 그래프 밖입니다). 노드로 올리려면 `kind:` 를 주고, ' +
               '아니면 이 관계를 지우세요.'
             : `\`${key}:\` graph reference "${ref}" 가 vault 의 어떤 node 로도 resolve 되지 않습니다.`,
         },

@@ -1,4 +1,5 @@
 "use client";
+import { transientSurface } from "@/shared/ui/transient-surface";
 
 /**
  * S2 파트 5C — 클러스터 칩 호버 마이크로카드. 소유자 실보고 "칩에 마우스
@@ -26,6 +27,7 @@ export function TopologyV2ClusterHoverCard({ sentence, x, y }: TopologyV2Cluster
   const top = Math.min(y + OFFSET, (typeof window !== "undefined" ? window.innerHeight : 1080) - 72 - EDGE_MARGIN);
   return (
     <div
+      {...transientSurface("hint")}
       data-testid="topology-v2-cluster-hover-card"
       role="status"
       className="pointer-events-none fixed z-40 max-w-[260px] rounded-[var(--topology-v2-panel-radius)] border border-[color:var(--topology-v2-panel-border)] bg-[color:var(--topology-v2-panel-surface)] px-3 py-2 shadow-[var(--topology-v2-panel-shadow)]"

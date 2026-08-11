@@ -137,6 +137,31 @@ interface SafeInsets {
 }
 
 /**
+ * **패널을 뺀 자리 가운데에 무엇을 둘 카메라인가** — 이 식이 사는 단 하나의 곳.
+ *
+ * `worldToScreen` 은 화면의 **날 가운데**를 기준으로 그리므로, 보이는 영역의
+ * 가운데에 두려면 카메라를 좌우 인셋 차의 절반만큼 되민다. **배율로 나누는 것**이
+ * 요점이다 — 같은 화면 오프셋이 배율이 클수록 더 짧은 월드 거리다.
+ *
+ * ⚠️ 이 식은 한때 **네 곳**에 각각 적혀 있었다(개요 · 팬 목줄 · 그리고 하루 동안은
+ * 호출부의 「자유 영역」 시프트까지). 그중 초점 다이브만 이 식을 **아예 안 갖고
+ * 있어서**, 노드를 고르면 그것을 설명하는 패널 뒤로 들어갈 수 있었다. 사본이
+ * 여럿이면 빠진 사본이 생기는 쪽이 기본값이다 — 그래서 한 곳으로 모았다.
+ */
+export function centerForInsets(
+  cx: number,
+  cy: number,
+  insets: SafeInsets,
+  scale: number,
+): { tx: number; ty: number } {
+  const safeScale = Math.abs(scale) < 1e-6 ? 1 : scale;
+  return {
+    tx: cx - (insets.left - insets.right) / (2 * safeScale),
+    ty: cy - (insets.top - insets.bottom) / (2 * safeScale),
+  };
+}
+
+/**
  * 검수 Pass B 결함 1 (2026-07-23) — 오버뷰 핏은 노드 지오메트리 bounds 만
  * safe 영역에 맞춰, 최하단 스파인 노드의 라벨 anchor(= 노드 아래
  * `radius + LABEL_OFFSET`, frame-draw:794 — 컬은 폰트 높이가 아니라 anchor
@@ -225,11 +250,7 @@ export function computeOverviewCameraTarget(
   const centerY = (bounds.minY + bounds.maxY) / 2;
   // worldToScreen centers on the raw screen midpoint; offset the camera so the
   // graph center renders at the visible-area midpoint instead.
-  return {
-    tx: centerX - (insets.left - insets.right) / (2 * tscale),
-    ty: centerY - (insets.top - insets.bottom) / (2 * tscale),
-    tscale,
-  };
+  return { ...centerForInsets(centerX, centerY, insets, tscale), tscale };
 }
 
 /**
@@ -262,8 +283,12 @@ export function computeUnfocusedPanBounds(
   const leash = tokens.cameraPanLeash ?? 0;
   if (!(leash > 0) || !(cameraScale > 0)) return computePanBounds(bounds);
   const insets = readSafeInsets(tokens);
-  const anchorX = (bounds.minX + bounds.maxX) / 2 - (insets.left - insets.right) / (2 * cameraScale);
-  const anchorY = (bounds.minY + bounds.maxY) / 2 - (insets.top - insets.bottom) / (2 * cameraScale);
+  const { tx: anchorX, ty: anchorY } = centerForInsets(
+    (bounds.minX + bounds.maxX) / 2,
+    (bounds.minY + bounds.maxY) / 2,
+    insets,
+    cameraScale,
+  );
   return computePanBounds(
     { minX: anchorX, minY: anchorY, maxX: anchorX, maxY: anchorY },
     leash,
@@ -375,7 +400,24 @@ export function computeFocusCameraTarget(
   const centerY = (egoBounds.minY + egoBounds.maxY) / 2;
   const w = Math.max(1, (egoBounds.maxX - egoBounds.minX) * marginRatio);
   const h = Math.max(1, (egoBounds.maxY - egoBounds.minY) * marginRatio);
-  const fitScale = Math.min(viewportWidth / w, viewportHeight / h);
+  /*
+   * **안전 인셋을 개요 경로와 같은 방식으로 쓴다** (2026-08-10 소유자 확정:
+   * *"가려선 안되지 패널 뺀 공간 가운데로 맞춰줘"*).
+   *
+   * ⚠️ 종전에 이 함수는 인셋을 **전혀** 쓰지 않았다 — `tx: centerX` 를 그대로 돌려주고
+   * 배율도 전체 뷰포트로 맞췄다. 그래서 노드를 고르면 그 노드가 **그것을 설명하는
+   * 패널 뒤로** 들어갈 수 있었다. 실측(1512×982): 팝오버가 열리면 오른쪽 384px 이
+   * 가려지는데 목표는 여전히 화면 가운데였다.
+   *
+   * 개요 경로(`computeOverviewCameraTarget`)는 **이미** 같은 문제를 인셋으로 풀고
+   * 있었다. 그래서 처방은 새 보정 체계를 만드는 것이 아니라 이 함수를 그 기구에
+   * 맞추는 것이다 — 하루 전 나는 반대로 했고(호출부에 둘째 시프트를 얹었다) 그것이
+   * 188px 어긋남과 64px 과보정을 만들었다.
+   */
+  const insets = readSafeInsets(tokens);
+  const effW = Math.max(1, viewportWidth - insets.left - insets.right);
+  const effH = Math.max(1, viewportHeight - insets.top - insets.bottom);
+  const fitScale = Math.min(effW / w, effH / h);
   const effectiveMax = computeEffectiveCameraScaleMax(overviewEntryScale, tokens.cameraMaxZoomRatio, tokens.cameraScaleMax);
   // 소유자 실보고 (2026-07-24) — 이웃이 숨은 상태(스포트라이트 등)에선 ego
   // bbox 가 작아 fit 이 현미경 줌으로 치솟는다. 선택 프레이밍의 줌인은
@@ -384,11 +426,11 @@ export function computeFocusCameraTarget(
   const focusZoomInCeiling = overviewEntryScale * (tokens.focusMaxZoomRatio ?? Number.POSITIVE_INFINITY);
   const scale = Math.min(effectiveMax, focusZoomInCeiling, Math.max(overviewEntryScale, fitScale));
 
-  return {
-    tx: centerX,
-    ty: centerY,
-    tscale: scale,
-  };
+  /*
+   * 인셋만큼 목표를 되민다 — 개요 경로와 **같은 식**이다(`(left - right) / (2 × scale)`).
+   * 배율로 나누는 이유: 같은 화면 오프셋이 배율이 클수록 더 짧은 월드 거리다.
+   */
+  return { ...centerForInsets(centerX, centerY, insets, scale), tscale: scale };
 }
 
 /**

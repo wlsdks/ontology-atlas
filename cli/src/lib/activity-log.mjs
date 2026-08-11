@@ -76,6 +76,6 @@ export async function recordCliWrite(vaultRoot, { tool, target, summary, why = n
       }),
     );
   } catch {
-    /* 감사 로그는 부수 — 쓰기 결과 / exit code 를 절대 해치지 않는다. */
+    /* 감사 로그는 부수: 쓰기 결과 / exit code 를 절대 해치지 않는다. */
   }
 }

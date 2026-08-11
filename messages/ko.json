@@ -169,7 +169,7 @@
       },
       "sectionGroup": {
         "look": "보이는 것",
-        "connect": "이어진 것"
+        "connect": "폴더와 에이전트"
       },
       "guideAutoStartLabel": "화면 안내 자동 표시",
       "guideAutoStartCaption": "처음 여는 화면마다 안내를 저절로 띄워요. 끄면 아래 「다시 보기」나 지도의 나침반으로만 열려요",
@@ -811,6 +811,9 @@
       "collapseTooltip": "허브 바 접기",
       "collapseAriaLabel": "허브 바 접기",
       "itemTitle": "{name} · 연결 {degree}"
+    },
+    "keyboardWalk": {
+      "deadEnd": "이 방향엔 이어진 노드가 없어요"
     }
   },
   "searchWidgets": {
@@ -913,6 +916,15 @@
         "docsActions": "문서함 · 문서 액션"
       },
       "rows": {
+        "walkNeighbors": "이어진 개념으로 이동",
+        "navBlockedByOverlay": "열려 있는 창을 먼저 닫아 주세요. Esc 를 누르면 닫혀요",
+        "goTo_map": "지도로",
+        "goTo_docs": "문서함으로",
+        "goTo_studio": "공방으로",
+        "goTo_insights": "인사이트로",
+        "goTo_projects": "프로젝트로",
+        "goTo_skills": "스킬로",
+        "goTo_git": "Git 기록으로",
         "openProjectPalette": "검색 팔레트 열기",
         "openGlobalPalette": "개념 · 문서 · 프로젝트 통합 검색",
         "toggleDocsDrawer": "문서함 빠른 보기 드로어 토글 (편집 권한 시)",
@@ -2469,7 +2481,7 @@
       "clickHint": "클릭하면 상세 · 출처 문서"
     },
     "canvas": {
-      "ariaLabel": "제품 지도: INDEX 패널에서 같은 정보를 키보드로 탐색할 수 있어요"
+      "ariaLabel": "제품 지도: 방향키로 이어진 개념을 옮겨 다닐 수 있어요. INDEX 패널에서도 같은 정보를 볼 수 있어요"
     },
     "cluster": {
       "hint": "자식이 많은 그룹은 +N 칩으로 접혀 있습니다. 칩을 클릭하면 그 그룹이 펼쳐지고, 다시 클릭하면 접힙니다.",

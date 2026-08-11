@@ -1,7 +1,8 @@
 "use client";
 
-import { useEffect, useRef, type RefObject } from "react";
+import { useCallback, useEffect, useRef, useState, type RefObject } from "react";
 import { Orbit } from "lucide-react";
+import { MAP_CANVAS_SURFACE_ROLE } from "@/shared/lib/focus-map-canvas";
 import { ICON_SIZE } from "@/shared/ui/icon-size";
 import { useTopologyLoop } from "./use-topology-loop";
 import type { TierRevealConfig } from "../model/tier-visibility";
@@ -9,6 +10,24 @@ import type { ClusterBarLabels } from "../render/cluster-chips";
 import { DEFAULT_EXPAND } from "@/shared/lib/appearance-preferences";
 import type { CanvasBackground, ExpandPreference, FootprintPreference, GlyphSet } from "@/shared/lib/appearance-preferences";
 import { controlClass } from '@/shared/ui/control-class';
+import { usePanelPresence } from "@/shared/lib/use-presence";
+
+/**
+ * 안내가 화면에 머무는 시간.
+ *
+ * ⚠️ 처음 1100ms 로 뒀다가 **시험이 먼저 잡았다** — 여덟 번 누르는 동안 이미
+ * 사라져서 안내를 한 번도 못 봤다. 사람도 같은 처지다: 한 줄을 읽는 데 그보다
+ * 오래 걸린다. 1900ms 는 읽고 다음 방향을 누를 만큼이고, 여전히 스스로 사라진다.
+ *
+ * 쿨다운(`DEAD_END_NOTICE_COOLDOWN_MS` 1200ms)보다 길어도 된다 — 다시 막히면
+ * 타이머가 새로 서고 안내가 **새 노드 옆으로** 옮겨 간다.
+ */
+const WALK_NOTICE_HOLD_MS = 1900;
+
+/** 노드 중심에서 안내 아래변까지 — 노드 반지름 최대(30) + 숨 8. */
+const WALK_NOTICE_NODE_GAP = 38;
+import { useReducedMotion } from "framer-motion";
+import { transientSurface } from "@/shared/ui/transient-surface";
 
 /**
  * `TopologyMapV2` — the product's single current canvas-2D topology renderer.
@@ -111,6 +130,8 @@ export interface TopologyMapV2Props {
    */
   emphasizedNeighborSlug?: string | null;
   onSelect?: (slug: string) => void;
+  /** 방향키를 눌렀는데 그 방향에 갈 곳이 없을 때. 문구는 페이지가 정한다. */
+  onWalkDeadEnd?: ((point: { x: number; y: number } | null) => void) | null;
   onOpen?: (slug: string) => void;
   onPaneClick?: () => void;
   onVisibleCountChange?: (visible: number) => void;
@@ -201,6 +222,12 @@ export interface TopologyMapV2Props {
    * 단다(회귀 0).
    */
   canvasLabel?: string;
+  /**
+   * 막다른 길 안내 문구 — **문구는 페이지의 것이다**(`canvasLabel` 과 같은 이유:
+   * 이 위젯은 프로바이더 없이 렌더되는 시험을 가진다). 자리와 사라지는 시점은
+   * 위젯이 정한다 — 그 둘은 캔버스 좌표를 아는 쪽만 알 수 있다.
+   */
+  walkNoticeLabel?: string;
   /**
    * 발자국 트레일 (fable 설계) — 세션 동안 방문(ego 포커스)한 노드 id 목록
    * (오래된 → 최근). 각 방문 노드에 최근성 감쇠 pale 인디고 헤어라인 링을
@@ -296,7 +323,7 @@ export interface TopologyMapV2Props {
 }
 
 export function TopologyMapV2(props: TopologyMapV2Props) {
-  const { nodes, edges, focus, minimal, emphasizedNeighborSlug, dataSourceKey = null, fitViewToken, spotlightFitToken = 0, relayoutToken, revealToken, onSelectEdge, onSelect, onPaneClick, onVisibleCountChange, onGraphStatsChange, onZoomTierChange, onContextMenuNode, onContextMenuPane, agentFocusNodeId, spotlightIds = null, onHoverEdge, selectedEdge = null, expandedParents, onToggleCluster, onHoverCluster, clusterHint, realmRootId = null, onEnterRealm, realmEnterLabel, realmEnterTooltip, realmCaption = null, clusterBarLabels = null, canvasLabel, visitedTrail, trailLensActiveRef, trailHoverNodeIdRef, tierReveal, tourAnchorNodeId = null, tourAnchorRef, overlayOpen = false, glyphSet = "geometric", canvasBackground = "dot", footprint = null, expand = DEFAULT_EXPAND, wheelIntent = "zoom", ambientSleepDelayMs } = props;
+  const { nodes, edges, focus, minimal, emphasizedNeighborSlug, dataSourceKey = null, fitViewToken, spotlightFitToken = 0, relayoutToken, revealToken, onSelectEdge, onSelect, onPaneClick, onVisibleCountChange, onGraphStatsChange, onZoomTierChange, onContextMenuNode, onContextMenuPane, agentFocusNodeId, spotlightIds = null, onHoverEdge, selectedEdge = null, expandedParents, onToggleCluster, onHoverCluster, clusterHint, realmRootId = null, onEnterRealm, realmEnterLabel, realmEnterTooltip, realmCaption = null, clusterBarLabels = null, canvasLabel, walkNoticeLabel, visitedTrail, trailLensActiveRef, trailHoverNodeIdRef, tierReveal, tourAnchorNodeId = null, tourAnchorRef, overlayOpen = false, glyphSet = "geometric", canvasBackground = "dot", footprint = null, expand = DEFAULT_EXPAND, wheelIntent = "zoom", ambientSleepDelayMs, onWalkDeadEnd = null } = props;
 
   const realmEnterButtonRef = useRef<HTMLButtonElement | null>(null);
 
@@ -349,10 +376,58 @@ export function TopologyMapV2(props: TopologyMapV2Props) {
 
   // `handleWheel` is wired natively (non-passive) inside `useTopologyLoop` —
   // see its own FIX comment — not bound here as a JSX prop.
-  const { canvasRef, containerRef, handlePointerDown, handlePointerMove, handlePointerUp, handlePointerCancel, handleContextMenu } =
+  /**
+   * 막다른 길 안내 — **노드 옆에, 스스로 사라지고, 초점을 빼앗지 않는다**
+   * (2026-08-10 소유자 실사용 지적 3건).
+   *
+   * ## 왜 앱 공용 토스트를 버렸나
+   *
+   * 처음에는 토스트로 띄웠다. 「새 표면을 만들지 않는다」는 판단은 그때도 옳았지만,
+   * 실물에서 세 가지가 한꺼번에 틀렸다 — 셋 다 **한 원인**에서 나왔다:
+   *
+   * | 소유자가 본 것 | 원인 |
+   * |---|---|
+   * | *"이렇게 나오면 모르겠는데?"* | 토스트 자리는 화면 우하단이다. 막힌 노드는 화면 가운데 어딘가에 있고, 500px 떨어진 곳의 문장은 「지금 누른 것」과 이어지지 않는다 |
+   * | *"사라지지도 않고 계속떠있고"* | 닫기 버튼이 초점을 받으면 sonner 는 스스로 사라지는 시계를 멈춘다 |
+   * | *"x버튼 안누르면 아예 이동도 안됨"* | 초점이 토스트로 넘어가면 방향키가 캔버스에 도착하지 않는다 |
+   *
+   * 그래서 이 안내는 **초점을 받을 수 없는 것**이어야 한다 — 버튼이 없고
+   * `pointer-events: none` 이다. 놓쳐도 잃는 것이 없으므로(그 방향에 노드가 없다는
+   * 사실은 다시 눌러 보면 또 알 수 있다) 토스트의 규율(*"놓치면 곤란한 일은 상주
+   * 표면이 맡는다"*)과도 맞다. 보조기술에는 `aria-live` 로 읽힌다.
+   *
+   * 모션은 **이미 있는 기구**를 쓴다 — `usePanelPresence` + `overlay-spring-surface`
+   * (감속 사용자는 `overlay-fade-only`). 새 키프레임 0 · 새 토큰 0.
+   */
+  const [notice, setNotice] = useState<{ x: number; y: number; key: number } | null>(null);
+  const noticeTimerRef = useRef<number | null>(null);
+  const reducedMotion = useReducedMotion();
+  const noticePresence = usePanelPresence(notice !== null);
+  const handleWalkDeadEnd = useCallback(
+    (point: { x: number; y: number } | null) => {
+      onWalkDeadEnd?.(point);
+      if (!walkNoticeLabel || !point) return;
+      if (noticeTimerRef.current !== null) window.clearTimeout(noticeTimerRef.current);
+      setNotice({ x: point.x, y: point.y, key: performance.now() });
+      noticeTimerRef.current = window.setTimeout(() => {
+        noticeTimerRef.current = null;
+        setNotice(null);
+      }, WALK_NOTICE_HOLD_MS);
+    },
+    [onWalkDeadEnd, walkNoticeLabel],
+  );
+  useEffect(
+    () => () => {
+      if (noticeTimerRef.current !== null) window.clearTimeout(noticeTimerRef.current);
+    },
+    [],
+  );
+
+  const { canvasRef, containerRef, handlePointerDown, handlePointerMove, handlePointerUp, handlePointerCancel, handleContextMenu, handleKeyDown } =
     useTopologyLoop({
       nodes,
       edges,
+      onWalkDeadEnd: handleWalkDeadEnd,
       wheelIntent,
       ambientSleepDelayMs,
       focusedSlug: focus.selectedSlug,
@@ -409,6 +484,10 @@ export function TopologyMapV2(props: TopologyMapV2Props) {
       <canvas
         ref={canvasRef}
         data-testid="topology-map-v2-canvas"
+        /* `G M` 이 이 캔버스를 찾아 초점을 주는 표식 — 자세한 이유는
+           `shared/lib/focus-map-canvas.ts`. `data-testid` 는 시험의 것이라
+           런타임 선택자로 쓰지 않는다. */
+        data-surface-role={MAP_CANVAS_SURFACE_ROLE}
         /**
          * **끌 수 있는 것은 그림이 아니다** (2026-07-28 모션석 P3).
          *
@@ -418,10 +497,15 @@ export function TopologyMapV2(props: TopologyMapV2Props) {
          * 신호가 **0개**였다.
          *
          * `role="application"` 이 아니라 `group` 인 이유: `application` 은 AT 의
-         * 기본 키 처리를 통째로 뺏는데 이 캔버스는 자체 키보드 순회를 제공하지
-         * 않는다(대체 경로는 INDEX 패널·데이터시트). 뺏고 안 주는 것이 가장
-         * 나쁘다. `group` + 라벨 + 포커스 가능은 "여기 뭔가 있고 만질 수 있다"
-         * 까지만 정직하게 말한다.
+         * 기본 키 처리를 통째로 뺏는다. 예전 근거는 *"이 캔버스는 자체 키보드
+         * 순회를 제공하지 않으므로 뺏고 안 주는 것이 가장 나쁘다"* 였다.
+         *
+         * ⚠️ **그 전제는 2026-08-09 에 사실이 아니게 됐다** — 방향키로 이웃을 걷는
+         * 순회가 붙었다(`onKeyDown`). 그런데도 `group` 을 유지한다: 우리가 삼키는
+         * 키는 **네 방향키뿐**이고 나머지는 AT 에 그대로 남기는 것이, 키 처리
+         * 전부를 뺏는 것보다 잃는 게 적다. 스크린리더 읽기 모드가 방향키를 먼저
+         * 가져가는 환경이 관측되면 그때 `application` 을 다시 본다 — 실제 보조기술
+         * 로 재 보지 않고 미리 뺏지 않는다.
          *
          * 포커스 링은 **정지 프레임의 어포던스이기도 하다** — 모션 예산 0이다.
          */
@@ -451,6 +535,13 @@ export function TopologyMapV2(props: TopologyMapV2Props) {
         onPointerUp={handlePointerUp}
         onPointerCancel={handlePointerCancel}
         onContextMenu={handleContextMenu}
+        /**
+         * 방향키로 이웃을 걷는다 (2026-08-09, 갈래 B). 규칙은
+         * `../interaction/keyboard-walk`, 배선은 `use-topology-loop` 의
+         * `handleKeyDown`. 이것이 붙기 전까지 이 캔버스는 초점을 받을 수는 있어도
+         * **키로 할 수 있는 일이 0개**였다.
+         */
+        onKeyDown={handleKeyDown}
       />
       {/* S4 궤도 "전개" 버튼 — 캔버스 좌표 앵커(loop 가 매 프레임 transform 갱신).
           기본 숨김; 포커스 노드에 자식이 있고 영역 밖일 때만 노출. 방사형 메뉴
@@ -515,6 +606,29 @@ export function TopologyMapV2(props: TopologyMapV2Props) {
             visibility: tourAnchorNodeId ? "visible" : "hidden",
           }}
         />
+      ) : null}
+      {noticePresence.mounted && notice ? (
+        <div
+          key={notice.key}
+          data-walk-notice=""
+          {...transientSurface("notice")}
+          /* 보조기술에는 읽히고, 포인터·초점에는 존재하지 않는다. */
+          role="status"
+          aria-live="polite"
+          data-state={noticePresence.exiting ? "closed" : "open"}
+          className={[
+            reducedMotion ? "overlay-fade-only" : "overlay-spring-surface",
+            "pointer-events-none absolute z-40 max-w-[240px] -translate-x-1/2 -translate-y-full rounded-[var(--topology-v2-panel-radius)] border border-[color:var(--topology-v2-panel-border)] bg-[color:var(--topology-v2-panel-surface)] px-2.5 py-1.5 text-label text-[color:var(--topology-v2-panel-text-primary)] shadow-[var(--topology-v2-panel-shadow)]",
+          ].join(" ")}
+          style={{
+            left: notice.x,
+            // 노드 **위쪽**에 띄운다 — 아래는 라벨 자리다(`LABEL_OFFSET`).
+            top: notice.y - WALK_NOTICE_NODE_GAP,
+            ["--overlay-spring-origin" as string]: "center bottom",
+          }}
+        >
+          {walkNoticeLabel}
+        </div>
       ) : null}
       {clusterHint ? (
         <span

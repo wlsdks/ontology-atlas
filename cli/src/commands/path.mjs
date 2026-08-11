@@ -75,14 +75,14 @@ export async function runPath(args) {
   // Trivial path (from === to).
   if (hopCount === 0) {
     process.stdout.write(
-      `${formatHop(hops[0], nodesBySlug)} ${COLORS.dim}(same slug — 0 hops)${COLORS.reset}\n`,
+      `${formatHop(hops[0], nodesBySlug)} ${COLORS.dim}(same slug: 0 hops)${COLORS.reset}\n`,
     );
     return 0;
   }
 
   process.stdout.write(
     `${COLORS.bold}${from}${COLORS.reset} ${COLORS.dim}→${COLORS.reset} ${COLORS.bold}${to}${COLORS.reset}` +
-      ` ${COLORS.dim}— ${hopCount} hop${hopCount === 1 ? '' : 's'}${COLORS.reset}\n\n`,
+      ` ${COLORS.dim}· ${hopCount} hop${hopCount === 1 ? '' : 's'}${COLORS.reset}\n\n`,
   );
 
   // Render: hop i  --(via)-->  hop i+1
@@ -102,7 +102,7 @@ function formatHop(slug, nodesBySlug) {
   if (!node?.title || node.title === slug) {
     return `${COLORS.cyan}${slug}${COLORS.reset}`;
   }
-  return `${COLORS.cyan}${slug}${COLORS.reset} ${COLORS.dim}— ${node.title}${COLORS.reset}`;
+  return `${COLORS.cyan}${slug}${COLORS.reset} ${COLORS.dim}· ${node.title}${COLORS.reset}`;
 }
 
 function parseArgs(args) {

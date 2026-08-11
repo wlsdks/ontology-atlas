@@ -29,6 +29,7 @@ import {
   Map as MapIcon,
   Wand2,
 } from "lucide-react";
+import { DESTINATION_HREF } from "@/shared/config/destinations";
 import { ICON_SIZE } from "@/shared/ui/icon-size";
 import { useLocalVault } from "@/features/docs-vault-local";
 import { formatActivityAge } from "@/features/vault-ontology";
@@ -251,12 +252,15 @@ export function AppNavRail({
       : null;
   const agentTitle = [baseAgentTitle, lastActivitySuffix].filter(Boolean).join(" · ");
 
+  // 주소는 `shared/config/destinations` 가 정본이다 — 키보드 이동과 단축키 시트가
+  // 같은 표를 읽어야 해서 컴포넌트 밖으로 내렸다(사본이 둘이면 라우트가 어긋난다).
+  // 라벨과 아이콘은 화면의 것이라 여기 남는다.
   const destinations: RailDestination[] = [
-    { id: "map", href: "/topology/", label: t("map"), Icon: MapIcon },
-    { id: "docs", href: contextHrefs?.docs ?? "/docs/", label: t("docs"), Icon: BookOpen },
-    { id: "studio", href: "/ontology/studio/", label: t("studio"), Icon: Gem },
-    { id: "insights", href: "/ontology/insights/", label: t("insights"), Icon: BarChart3 },
-    { id: "projects", href: "/projects/", label: t("projects"), Icon: FolderKanban },
+    { id: "map", href: DESTINATION_HREF.map, label: t("map"), Icon: MapIcon },
+    { id: "docs", href: contextHrefs?.docs ?? DESTINATION_HREF.docs, label: t("docs"), Icon: BookOpen },
+    { id: "studio", href: DESTINATION_HREF.studio, label: t("studio"), Icon: Gem },
+    { id: "insights", href: DESTINATION_HREF.insights, label: t("insights"), Icon: BarChart3 },
+    { id: "projects", href: DESTINATION_HREF.projects, label: t("projects"), Icon: FolderKanban },
     // 발자취 — 2026-07-25 목적지 승격. 구 "레일 하단 유틸 타일 + 560px 모달"
     // 은 흡수됐다(입구가 둘이면 #65 계열 결함 재발). 아이콘은 History 유지 —
     // git 3-노드 그래프 글리프는 이 레일에서 "온톨로지 그래프" 로 읽혀 지도
@@ -264,8 +268,8 @@ export function AppNavRail({
     // 스킬 — 2026-08-09 소유자 확정으로 목적지 신설. 문서함과 나란히 두지 않고
     // 따로 세운 이유는 답하는 질문이 다르기 때문이다: 문서함은 「이 문서가 지도
     // 어디에 붙나」, 여기는 「이게 언제 뜨고 뜨면 뭐가 열리나」.
-    { id: "skills", href: "/skills/", label: t("skills"), Icon: Wand2 },
-    { id: "git", href: "/git/", label: t("git"), Icon: HistoryIcon, badgeCount: gitDirtyCount },
+    { id: "skills", href: DESTINATION_HREF.skills, label: t("skills"), Icon: Wand2 },
+    { id: "git", href: DESTINATION_HREF.git, label: t("git"), Icon: HistoryIcon, badgeCount: gitDirtyCount },
   ];
 
   return (

@@ -85,7 +85,7 @@ function assertSchemaShape(result) {
 function render(result) {
   process.stdout.write(
     `${COLORS.bold}relation schema${COLORS.reset}` +
-      ` ${COLORS.dim}— ${result.totalPatterns} patterns${result.limited ? ' · limited' : ''}${COLORS.reset}\n\n`,
+      ` ${COLORS.dim}· ${result.totalPatterns} patterns${result.limited ? ' · limited' : ''}${COLORS.reset}\n\n`,
   );
   for (const pattern of result.patterns) {
     process.stdout.write(

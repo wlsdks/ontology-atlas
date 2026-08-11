@@ -259,7 +259,7 @@ function renderArtifact(artifact) {
   }
   if (actions > 0) {
     process.stdout.write(
-      `\n${COLORS.yellow}reorder available${COLORS.reset} — run with ${COLORS.bold}--fix${COLORS.reset} to canonicalize relation arrays.\n`,
+      `\n${COLORS.yellow}reorder available${COLORS.reset}: run with ${COLORS.bold}--fix${COLORS.reset} to canonicalize relation arrays.\n`,
     );
   }
 }

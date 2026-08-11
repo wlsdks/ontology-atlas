@@ -47,13 +47,6 @@ export function parseVerifyAppLaunchArgs(argv, {
       ? normalizeAppPath(webviewFixtureVaultValue)
       : null,
     printWindowDiagnostics: argv.includes("--print-window-diagnostics"),
-    verifyTopologyDrag: argv.includes("--verify-topology-drag"),
-    verifyTopologySelectedRelation: argv.includes("--verify-topology-selected-relation"),
-    verifyTopologyNodePopover: argv.includes("--verify-topology-node-popover"),
-    verifyTopologyCreateNode: argv.includes("--verify-topology-create-node"),
-    verifyTopologyFocusNoop: argv.includes("--verify-topology-focus-noop"),
-    verifyTopologyFocusZoom: argv.includes("--verify-topology-focus-zoom"),
-    verifyTopologyFrameProfile: argv.includes("--verify-topology-frame-profile"),
     verifyAiSettings: argv.includes("--verify-ai-settings"),
     // 기본값을 여기서 채운다 — 앱이 아니라 검증기가 주소를 정해야 "필드에 이
     // 값이 들어갔다" 는 대조가 성립한다.
@@ -91,7 +84,7 @@ export function parseVerifyAppLaunchArgs(argv, {
 
 
 export function printHelp() {
-  console.log(`Usage: pnpm desktop:verify-app [path/to/${appBundleName}] [--hold-ms=5000] [--kill-existing] [--leave-running] [--open-app] [--require-window] [--require-capturable-window] [--window-screenshot=/tmp/atlas-window.png] [--try-window-screenshot=/tmp/atlas-window.png] [--webview-evidence=/tmp/atlas-webview.json] [--require-accessibility-window] [--require-frontmost] [--require-accessibility-text="개념 지도"] [--require-webview-content] [--require-webview-route=/en/topology/] [--webview-fixture-vault=docs/ontology] [--require-webview-reduced-motion] [--verify-topology-drag] [--verify-topology-selected-relation] [--verify-topology-node-popover] [--verify-topology-create-node] [--verify-topology-focus-noop] [--verify-topology-frame-profile] [--verify-ai-settings] [--ai-settings-base-url=http://localhost:11434] [--print-window-diagnostics] [--require-owner-name="Ontology Atlas"] [--min-window-size=1040x720] [--min-webview-size=1400x860] [--max-webview-size=1100x800] [--webview-window-size=1100x800]
+  console.log(`Usage: pnpm desktop:verify-app [path/to/${appBundleName}] [--hold-ms=5000] [--kill-existing] [--leave-running] [--open-app] [--require-window] [--require-capturable-window] [--window-screenshot=/tmp/atlas-window.png] [--try-window-screenshot=/tmp/atlas-window.png] [--webview-evidence=/tmp/atlas-webview.json] [--require-accessibility-window] [--require-frontmost] [--require-accessibility-text="개념 지도"] [--require-webview-content] [--require-webview-route=/en/topology/] [--webview-fixture-vault=docs/ontology] [--require-webview-reduced-motion] [--verify-ai-settings] [--ai-settings-base-url=http://localhost:11434] [--print-window-diagnostics] [--require-owner-name="Ontology Atlas"] [--min-window-size=1040x720] [--min-webview-size=1400x860] [--max-webview-size=1100x800] [--webview-window-size=1100x800]
 
 Launches the packaged macOS .app executable, waits long enough to catch early
 startup crashes, then terminates it. This is an unsigned local runtime smoke;
@@ -117,16 +110,6 @@ Options:
                     inspect the same installed app window. Direct WebView route checks can use this
                     without --open-app so the verifier returns instead of holding the process open.
   --open-app        Launch through macOS LaunchServices (open -n) instead of spawning the executable directly.
-  --verify-topology-create-node
-                    On a /topology route, click the Concept action before WebView marker capture and
-                    require the Add Concept composer backdrop proof.
-  --verify-topology-focus-noop
-                    On a selected /topology route, re-run the selected-focus camera fit after initial
-                    settle and require an already-safe no-op motion proof.
-  --verify-topology-focus-zoom
-                    On a selected /topology route, trigger zoom-in and require focus rail compaction proof.
-  --verify-topology-frame-profile
-                    On a /topology route, run a synthetic zoom/pan/hover/card-drag pass and capture rAF frame timings into the WebView evidence markers.
   --verify-ai-settings
                     Direct executable launch only. Open the settings sheet, walk into AI connection,
                     choose the local/address branch, type the base URL, press the connection check,
@@ -177,10 +160,6 @@ Options:
                     Direct executable launch only. Open PATH inside the verifier's incognito
                     WebView storage before route checks. The user's persisted vault remains
                     untouched, while the evidence payload records the exact fixture path.
-  --verify-topology-drag
-                    Direct executable launch only. On /topology routes, select the Views card,
-                    perform a short WebView-level card drag, and require the dragged card plus a
-                    companion card to settle visible, aligned, unclipped, and non-overlapping.
   --print-window-diagnostics
                     Print one JSON line with launched process ids, CoreGraphics windows, and
                     System Events accessibility rows. Use when Computer Use cannot observe

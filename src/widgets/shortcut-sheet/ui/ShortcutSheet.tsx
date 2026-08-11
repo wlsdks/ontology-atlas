@@ -4,6 +4,11 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { useTranslations } from "next-intl";
 import { X } from "lucide-react";
+import {
+  DESTINATION_IDS,
+  DESTINATION_KEY,
+  NAV_LEADER_KEY,
+} from "@/shared/config/destinations";
 import { ICON_SIZE } from "@/shared/ui/icon-size";
 import { MOTION, OVERLAY_SPRING_REDUCED } from "@/shared/motion";
 import { useBodyScrollLock } from "@/shared/lib/use-body-scroll-lock";
@@ -63,11 +68,28 @@ const GLOSSARY_TERMS = [
   "nodeNumber",
 ] as const;
 
+/**
+ * 목적지 이동 줄 — **표에서 만든다**(손으로 적지 않는다).
+ *
+ * 이 시트의 나머지 줄은 손으로 적힌 목록이고, 그것을 실제 핸들러와 맞춰 주는
+ * 검사가 없다. 그 방식이 이미 낸 값이 이 파일 아래 주석에 남아 있다 —
+ * *"the previous rows described interactions the v2 canvas never implemented"*.
+ * 즉 시트가 **없는 기능을 안내하고 있었다.**
+ *
+ * 이동 단축키는 같은 실수를 하지 않게 `DESTINATION_KEY` 에서 파생시킨다. 키를
+ * 하나 더하면 시트에 저절로 나타나고, 지우면 저절로 사라진다.
+ */
+const DESTINATION_ROWS: ShortcutRow[] = DESTINATION_IDS.map((id) => ({
+  keys: [NAV_LEADER_KEY.toUpperCase(), DESTINATION_KEY[id].toUpperCase()],
+  labelKey: `goTo_${id}`,
+}));
+
 const SECTIONS: ShortcutSection[] = [
   {
     titleKey: "navigation",
     surface: "global",
     rows: [
+      ...DESTINATION_ROWS,
       { keys: ["⌘", "K"], labelKey: "openProjectPalette" },
       { keys: ["⇧", "⌘", "K"], labelKey: "openGlobalPalette" },
       { keys: ["D"], labelKey: "toggleDocsDrawer" },
@@ -86,6 +108,14 @@ const SECTIONS: ShortcutSection[] = [
     titleKey: "topology",
     surface: "topology",
     rows: [
+      /*
+       * 방향키 걷기 — **이 줄이 없어서 사용성 검수에 걸렸다** (2026-08-10).
+       * 2026-08-09~10 에 방향키로 이웃을 걷는 기능을 넣었는데, 키보드를 가르치는
+       * 유일한 자리인 이 시트는 그것을 모른 채 클릭·드래그·스크롤만 안내했다.
+       * 「발견할 수 없는 기능은 기능이 아니다」 — 게이트:
+       * `tests/e2e/map-keyboard-walk.spec.ts` 의 「시트가 방향키 걷기를 안내한다」.
+       */
+      { keys: ["↑", "↓", "←", "→"], labelKey: "walkNeighbors" },
       { keys: [k("click")], labelKey: "clickSelect" },
       { keys: [k("drag")], labelKey: "dragPan" },
       { keys: [k("scroll")], labelKey: "wheelZoom" },
