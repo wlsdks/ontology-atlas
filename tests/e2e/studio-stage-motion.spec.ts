@@ -161,6 +161,135 @@ test("공방 · 무대가 처음 열릴 때는 입장이 재생된다", async ({
   ).toBeLessThan(0.5);
 });
 
+/**
+ * ⑤ **앵커된 임시 표면 셋이 한 문법을 쓴다** (2026-08-12).
+ *
+ * 피커에 나가는 길을 놓은 다음 나머지 둘을 재 보니 둘 다 하드컷이었다 —
+ * 접힘 목록은 `+35ms 있음/none/1.00`(등장·퇴장 둘 다) 게다가 **Esc 로도 안 닫혔고**,
+ * 관계 편집 카드는 `+33ms` 등장 · Esc 뒤 한 프레임에 소멸. 같은 무대 같은 자리의
+ * 같은 종류 표면 셋이 **서로 다른 문법**을 쓰고 있었던 것이다.
+ *
+ * 그래서 이 시험은 표면마다 따로 쓰지 않고 **표를 돌린다** — 넷째 표면이 생기면
+ * 여기 한 줄을 더하는 것이 그 표면에 문법을 붙이는 것과 같은 일이 된다.
+ */
+const ANCHORED = [
+  { id: "studio-picker", label: "소켓 피커" },
+  { id: "studio-lane-list", label: "접힘 목록" },
+  { id: "studio-edit-card", label: "관계 편집 카드" },
+] as const;
+
+test("공방 · 앵커된 임시 표면 셋이 같은 문법으로 나간다", async ({ page }) => {
+  test.setTimeout(300_000);
+  await page.setViewportSize({ width: 1512, height: 900 });
+  await seedFirstRunSeen(page);
+  await page.goto("/ko/ontology/studio/?guides=off", { waitUntil: "domcontentloaded" });
+
+  // 강화 모드 — 이미 채워진 방위가 있어야 접힘 목록·편집 카드가 존재한다.
+  const enhance = page.getByTestId("studio-entry-enhance");
+  await expect(page.getByTestId("studio-entry-create")).toBeVisible({ timeout: 30_000 });
+  await page.waitForTimeout(1_500);
+  if (await enhance.count()) await enhance.click();
+  else await page.getByTestId("studio-entry-create").click();
+  await page.waitForTimeout(2_000);
+
+  /** 열었다 Esc 로 닫으며 그 표면의 프레임을 잡는다. */
+  const trace = async (selector: string, open: () => Promise<void>) => {
+    await page.evaluate(([sel]: [string]) => {
+      const w = window as unknown as { __rec?: unknown[]; __stop?: () => void };
+      w.__rec = [];
+      let stop = false;
+      const tick = () => {
+        if (stop) return;
+        const el = document.querySelector(sel) as HTMLElement | null;
+        if (el) {
+          const cs = getComputedStyle(el);
+          (w.__rec as unknown[]).push({
+            a: cs.animationName,
+            o: Number(cs.opacity),
+            inert: el.hasAttribute("inert"),
+          });
+        }
+        requestAnimationFrame(tick);
+      };
+      requestAnimationFrame(tick);
+      w.__stop = () => {
+        stop = true;
+      };
+    }, [selector] as [string]);
+    await open();
+    await page.waitForTimeout(500);
+    await page.keyboard.press("Escape");
+    await page.waitForTimeout(500);
+    return (await page.evaluate(() => {
+      const w = window as unknown as { __rec: { a: string; o: number; inert: boolean }[]; __stop: () => void };
+      w.__stop();
+      return w.__rec;
+    })) as { a: string; o: number; inert: boolean }[];
+  };
+
+  let measured = 0;
+  for (const surface of ANCHORED) {
+    const openers: Record<string, () => Promise<void>> = {
+      "studio-picker": async () => {
+        const socket = page.locator('[data-testid^="studio-socket-"]').first();
+        if (await socket.count()) await socket.click();
+      },
+      "studio-lane-list": async () => {
+        const more = page.locator('[data-testid^="studio-lane-more-"]').first();
+        if (await more.count()) await more.click();
+      },
+      "studio-edit-card": async () => {
+        const edit = page.locator('[data-testid^="studio-edit-"]').first();
+        if (await edit.count()) await edit.click();
+      },
+    };
+    // 접힘 목록은 방위마다 testid 가 다르다 — 접두사로 잡는다.
+    const selector =
+      surface.id === "studio-lane-list"
+        ? '[data-testid^="studio-lane-list-"]'
+        : `[data-testid="${surface.id}"]`;
+
+    const rows = await trace(selector, openers[surface.id]);
+    if (rows.length === 0) {
+      console.log(`[anchored] ${surface.label}: 이 볼트에서 열 수 없어 건너뜀`);
+      continue;
+    }
+    measured += 1;
+    const entering = rows.filter((r) => r.a === "studioAnchoredIn");
+    const leaving = rows.filter((r) => r.a === "studioAnchoredOut");
+    console.log(
+      `[anchored] ${surface.label}: 등장 ${entering.length}프레임 ` +
+        `${entering.length ? `${entering[0].o.toFixed(2)}→${entering[entering.length - 1].o.toFixed(2)}` : ""} · ` +
+        `퇴장 ${leaving.length}프레임 ` +
+        `${leaving.length ? `${leaving[0].o.toFixed(2)}→${leaving[leaving.length - 1].o.toFixed(2)}` : ""}`,
+    );
+
+    expect(
+      entering.length,
+      `${surface.label}가 등장 애니메이션 없이 나타났다 — 하드컷이다: ${[...new Set(rows.map((r) => r.a))].join(", ")}`,
+    ).toBeGreaterThan(1);
+    expect(entering[0].o, `${surface.label} 등장 첫 프레임이 이미 불투명하다`).toBeLessThan(0.5);
+
+    /*
+     * 퇴장은 **Esc 로** 재는 것이 요점이다. 접힘 목록은 Esc 핸들러가 아예 없어서
+     * 「닫히지 않는다」와 「하드컷으로 닫힌다」가 여기서 같은 실패로 잡힌다.
+     */
+    expect(
+      leaving.length,
+      `${surface.label}가 Esc 로 부드럽게 나가지 않았다 — 핸들러가 없거나 하드컷이다: ${[...new Set(rows.map((r) => r.a))].join(", ")}`,
+    ).toBeGreaterThan(1);
+    expect(leaving[0].o, `${surface.label} 퇴장 첫 프레임이 이미 투명하다`).toBeGreaterThan(0.5);
+    expect(
+      leaving[leaving.length - 1].o,
+      `${surface.label} 퇴장이 배어 나가지 않고 잘렸다`,
+    ).toBeLessThan(0.5);
+    expect(leaving.every((r) => r.inert), `나가는 ${surface.label}가 여전히 조작을 받는다`).toBe(true);
+  }
+
+  // 공회전 차단: 하나도 못 열었으면 이 시험은 아무것도 재지 않았다.
+  expect(measured, "앵커된 표면을 하나도 열지 못했다").toBeGreaterThan(2);
+});
+
 test("공방 · 피커는 나가는 길을 갖는다", async ({ page }) => {
   test.setTimeout(240_000);
   await page.setViewportSize({ width: 1512, height: 900 });
@@ -206,7 +335,7 @@ test("공방 · 피커는 나가는 길을 갖는다", async ({ page }) => {
     return out;
   });
 
-  const dismissing = frames.filter((f) => f.name === "studioPickerDismiss");
+  const dismissing = frames.filter((f) => f.name === "studioAnchoredOut");
   console.log(
     `[studio-dismiss] 살아 있던 프레임 ${frames.length} · 퇴장 프레임 ${dismissing.length} · ` +
       `불투명도 ${dismissing.map((f) => f.opacity.toFixed(2)).join("→") || "(없음)"}`,
