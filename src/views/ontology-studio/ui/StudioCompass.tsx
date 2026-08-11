@@ -800,6 +800,8 @@ export function StudioCompass(props: StudioCompassProps) {
     openEdit ? `${openEdit.relation}|${openEdit.neighbor.id}` : null,
   );
   const editPresence = usePanelPresence(Boolean(openEdit));
+  /** 작업중 패널도 같은 문법 — 붙들 값은 없다(목록은 `drafts` prop 에서 온다). */
+  const draftsPresence = usePanelPresence(draftsOpen);
 
   // #62 — 무대 위 임시 표면은 서로 배타적이다. 예전엔 '+90 더 보기' 접힘
   // 목록이 열린 채 소켓 피커가 그 위에 그대로 쌓여, 아래 목록이 반쯤 가린
@@ -1547,13 +1549,38 @@ export function StudioCompass(props: StudioCompassProps) {
           우측에서 밀려나오는 비-모달 패널. 저장 전 변경이 노드별 초안으로 남는다는
           약속(#60)을 눈에 보이게 만드는 곳 — "어디에 남았지?" 를 묻지 않게 한다.
           비-모달이므로 무대를 가리지 않고, Esc 로 닫힌다. */}
-      {draftsOpen ? (
+      {draftsPresence.mounted ? (
         <div
           data-testid="studio-drafts-panel"
           role="dialog"
           aria-label={labels.draftsTitle}
-          className="studio-fade-in absolute right-3 top-[52px] z-[11] flex w-[288px] flex-col rounded-panel border border-[color:var(--color-border-strong)] bg-[color:var(--color-elevated)]"
-          style={{ boxShadow: "var(--shadow-elevation-2)", maxHeight: "min(420px, calc(100% - 96px))" }}
+          inert={draftsPresence.exiting || undefined}
+          data-exiting={draftsPresence.exiting ? "true" : undefined}
+          /*
+           * ⚠️ **여기 붙어 있던 `studio-fade-in` 은 존재하지 않는 클래스였다**
+           * (2026-08-12, 실행 중인 앱에서 확인: `.studio-fade-in` 을 담은 CSS 규칙
+           * **0개**). 이름은 「배어 들어온다」고 말하는데 정의가 저장소 어디에도
+           * 없었으니, 이 패널은 **등장도 퇴장도 없이 툭 나타나고 툭 사라졌다.**
+           *
+           * 이 저장소가 이미 두 번 값을 치른 실패다 — 존재하지 않는 클래스는
+           * 코드에 아무 값도 남기지 않아서, 값을 보는 lint 도 타입 검사도 전체
+           * 테스트도 전부 통과시킨다(`text-large` · `text-callout` 전례).
+           *
+           * 이 패널도 트리거(우측 상단 「작업중」 칩) 바로 아래에 붙는 앵커된
+           * 표면이라, 나머지 셋과 같은 문법을 쓴다. 원점은 오른쪽 위 — 그 칩이
+           * 있는 자리다.
+           */
+          className={cn(
+            "absolute right-3 top-[52px] z-[11] flex w-[288px] flex-col rounded-panel border border-[color:var(--color-border-strong)] bg-[color:var(--color-elevated)]",
+            draftsPresence.exiting ? "studio-anchored-out pointer-events-none" : "studio-anchored-in",
+          )}
+          style={
+            {
+              boxShadow: "var(--shadow-elevation-2)",
+              maxHeight: "min(420px, calc(100% - 96px))",
+              "--studio-anchor-origin": "100% 0",
+            } as React.CSSProperties
+          }
         >
           <div className="flex items-start gap-2 px-3.5 pt-3">
             <div className="min-w-0 flex-1">
