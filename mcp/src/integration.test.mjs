@@ -5755,6 +5755,40 @@ await test("add_concept/add_concepts — 하트비트가 없으면 이름만 모
   }
 });
 
+// 활동 기록(activity.jsonl)의 `agent` 는 created_by 보다 한 단계 더 안다:
+// 하트비트(의도적 등록)가 없어도 initialize 인사의 clientInfo.name 이 남는다
+// (2026-08-13 — 등록 없이 붙은 claude-code/codex 의 활동에 이름을 붙이는 조각).
+// created_by 각인은 여전히 하트비트만 믿는다 — 볼트에 영구히 박히는 값이라
+// 자동 추정을 들이지 않는다(2026-07-31 원장). 순수 우선순위 로직은
+// activity-log.test.mjs 가 맡고, 여기서는 배선 — 서버가 인사에서 받은 이름을
+// 실제로 디스크에 남기는지 — 를 잰다.
+await test("add_concept/add_concepts — 활동 기록 agent 는 하트비트 없이도 연결 인사 이름을 남긴다", async () => {
+  const noHeartbeat = makeVault([]);
+  const withHeartbeat = makeVault([]);
+  writeHeartbeat(withHeartbeat, "codex");
+  try {
+    await rpc(noHeartbeat, [
+      ...INIT_REQUESTS,
+      callTool(2, "add_concept", { slug: "capabilities/hello", kind: "capability", title: "Hello", domain: "auth" }),
+    ]);
+    const readLastAgent = (root) => {
+      const lines = readFileSync(join(root, ".ontology-atlas", "activity.jsonl"), "utf-8").trim().split("\n");
+      assert.ok(lines.length > 0, "활동 기록이 비어 있으면 이 테스트는 공회전이다");
+      return JSON.parse(lines[lines.length - 1]).agent;
+    };
+    assert.equal(readLastAgent(noHeartbeat), "test", "INIT_REQUESTS 의 clientInfo.name 이 남아야 한다");
+
+    await rpc(withHeartbeat, [
+      ...INIT_REQUESTS,
+      callTool(2, "add_concept", { slug: "capabilities/hello", kind: "capability", title: "Hello", domain: "auth" }),
+    ]);
+    assert.equal(readLastAgent(withHeartbeat), "codex", "하트비트가 있으면 인사 이름보다 우선한다");
+  } finally {
+    rmSync(noHeartbeat, { recursive: true, force: true });
+    rmSync(withHeartbeat, { recursive: true, force: true });
+  }
+});
+
 await test("patch_concept — created_by 는 보존되고 덮어쓸 수 없다", async () => {
   const root = makeVault([
     {

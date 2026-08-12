@@ -105,7 +105,7 @@ import {
   ELEMENT_NAMING_RULE_EN,
   META_MODEL_RULES_EN,
 } from './construction-rules.mjs';
-import { appendActivityEntry, buildActivityEntry, readHeartbeatAgent } from './activity-log.mjs';
+import { appendActivityEntry, buildActivityEntry, readHeartbeatAgent, resolveAgentName } from './activity-log.mjs';
 import { writeFileSync } from 'node:fs';
 import { buildMarkdown, parseFrontmatter } from './parser.mjs';
 import { analyzeRepoStructure } from './analyze.mjs';
@@ -5334,7 +5334,10 @@ function logWrite(name, args, result) {
           target: summarized.target,
           summary: summarized.summary,
           why: summarized.why ?? null,
-          agent: readHeartbeatAgent(VAULT_ROOT),
+          // 하트비트(의도적 등록) > 연결 인사의 clientInfo.name(자동) > null.
+          // 등록 없이 붙은 claude-code/codex 의 활동도 이제 이름이 남는다 —
+          // 실시간 에이전트 표시(2026-08-13 소유자 문의)의 1번 조각.
+          agent: resolveAgentName(VAULT_ROOT, server.getClientVersion?.()),
         }),
       );
     }
