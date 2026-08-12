@@ -3436,7 +3436,9 @@
     "bridgeChildren": "자식 {count}개를 데려감",
     "event": {
       "taskStart": "작업 시작",
+      "taskStartAgent": "{agent} 작업 시작",
       "taskEnd": "작업 끝",
+      "taskEndAgent": "{agent} 작업 끝",
       "domainAdded": "도메인 생김",
       "domainRemoved": "도메인 사라짐",
       "bridgeInserted": "브릿지 끼어듦",

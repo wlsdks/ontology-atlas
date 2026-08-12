@@ -81,3 +81,50 @@ test("활동 칩은 로그의 에이전트 이름으로 「작업 중」을 말�
     )
     .toEqual(["capability:pay"]);
 });
+
+/**
+ * 알림함도 같은 이름을 말한다 — 끝난 작업(마지막 쓰기 후 5분 초과)의 「작업 끝」
+ * 줄이 「claude-code 작업 끝」이 된다. 씨앗은 20분 전 쓰기 두 줄: 한 작업으로
+ * 묶이고, 이미 조용해졌으므로 끝 알림이 있다.
+ */
+test("알림함의 작업 알림이 에이전트 이름으로 말한다", async ({ page }) => {
+  test.setTimeout(120_000);
+  await page.setViewportSize({ width: 1512, height: 900 });
+
+  const at = (minAgo: number) => new Date(Date.now() - minAgo * 60_000).toISOString();
+  const line = (iso: string) =>
+    JSON.stringify({
+      v: 1,
+      at: iso,
+      tool: "add_concept",
+      target: "capabilities/pay",
+      summary: "add_concept capability:capabilities/pay",
+      agent: "claude-code",
+      why: null,
+    });
+
+  await seedFirstRunSeen(page);
+  await stubDirectoryPicker(page, {
+    "shop.md": `---\nuid: 11111111-1111-4111-8111-111111111111\nslug: shop\nkind: project\ntitle: Chip Shop\ncontains:\n  - capabilities/pay\n---\n\n# Chip Shop\n`,
+    "capabilities/pay.md": `---\nuid: 22222222-2222-4222-8222-222222222222\nslug: capabilities/pay\nkind: capability\ntitle: Pay\n---\n\n# Pay\n`,
+    ".ontology-atlas/activity.jsonl": `${line(at(21))}\n${line(at(20))}\n`,
+  });
+
+  await page.goto("/ko/topology/?e2e=1&guides=off", { waitUntil: "domcontentloaded" });
+  await page.getByTestId("first-run-starter-open").click();
+  await page.getByTestId("vault-guide-pick-existing").click();
+
+  const bell = page.getByTestId("agent-activity-bell");
+  await expect(bell, "알림 벨이 안 떴다").toBeVisible({ timeout: 30_000 });
+  // dev 서버 전용: Next 개발 배지(<nextjs-portal>, 우하단)가 벨과 같은 구석에
+  // 떠서 클릭을 가로챈다(실측 — 콘솔 에러 0, 순수 배지). 제품에는 없는
+  // 요소라 치우는 것이 화면을 왜곡하지 않는다. 정적 빌드에서는 no-op.
+  await page.evaluate(() => document.querySelector("nextjs-portal")?.remove());
+  await bell.click();
+
+  const endRow = page
+    .getByTestId("agent-activity-inbox-row")
+    .and(page.locator('[data-kind="task-end"]'));
+  await expect(endRow).toHaveCount(1);
+  await expect(endRow, "끝난 작업 줄이 이름을 잃었다").toContainText("claude-code 작업 끝");
+});
