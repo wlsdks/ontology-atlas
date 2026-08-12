@@ -105,6 +105,7 @@ function buildSkill(
   if (!parsed?.name || !parsed.description) return null;
 
   const dir = dirOf(file.relativePath);
+  const source = sourceLabelOf(file.relativePath);
   const { bundled } = classifyReferences(parsed.body);
   const invocation = buildInvocation(dir, parsed.description, parsed.body, bundled);
   const missingBundled = existingPaths
@@ -117,8 +118,13 @@ function buildSkill(
     body: parsed.body,
     origin: {
       relativePath: file.relativePath,
-      source: sourceLabelOf(file.relativePath),
-      personal: !file.relativePath.startsWith('plugins/'),
+      // 「내 것」은 연 폴더 바로 밑 skills/ 에 놓인 것뿐이다. 예전 판정
+      // (plugins/ 밖 전부)은 클론해 온 스킬 저장소들(anthropic-agent-skills 등
+      // 이름 있는 상위 폴더)까지 내 것으로 세어, 출처 네 곳이 목록에서 전부
+      // 「내 폴더」라는 같은 라벨로 뭉개졌다(2026-08-13 실측). 이름 있는 폴더는
+      // 그 이름이 곧 정직한 출처 라벨이다.
+      source,
+      personal: source === "skills",
     },
     terms: distinctiveTerms(parsed.description),
     invocation,
