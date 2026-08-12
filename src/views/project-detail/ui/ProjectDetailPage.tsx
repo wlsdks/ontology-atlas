@@ -614,15 +614,16 @@ export function ProjectDetailPage({
 
         {domainComposition.domains.length > 0 ? (
           <div className="flex flex-none flex-col border-t border-[color:var(--color-divider)] pt-4 lg:w-[380px] lg:border-t-0 lg:border-l lg:pt-0 lg:pl-6">
+            {/*
+              여기 있던 「지도에서 보기」 링크를 지웠다 (2026-08-12 실측). 같은
+              히어로 밴드의 주 액션 버튼(project-detail-topology-link)과 라벨도
+              목적지(getTopologyProjectHref)도 완전히 같아, 한 화면 같은 행에
+              같은 라벨이 두 번 있었다 — 같은 라벨 반복 금지(design.md, 「개념
+              정보」 3회 전례). 진짜 같은 일이므로 분화가 아니라 하나만 남긴다.
+            */}
             <div className="flex items-baseline gap-2 font-mono text-caption uppercase tracking-[var(--tracking-caps-14)] text-[color:var(--color-text-quaternary)]">
               <span>{t("minimapLabel")}</span>
               <span className="normal-case tracking-[var(--tracking-caption)]">{t("minimapSublabel")}</span>
-              <Link
-                href={getTopologyProjectHref(project.slug)}
-                className={controlClass({ shape: "link", tone: "muted", className: "ml-auto shrink-0 normal-case tracking-[var(--tracking-caption)] hover:text-[color:var(--color-text-secondary)]" })}
-              >
-                {t("minimapOpenInTopology")}
-              </Link>
             </div>
             <MiniDomainMap
               projectTitle={project.name}
@@ -745,8 +746,11 @@ export function ProjectDetailPage({
           </div>
           {bodyContent ? (
             // #10 — 본문은 읽기 좋은 가로폭(measure)으로 제한한다.
+            // `break-keep` — 한국어 본문이 584px 에서 「장바|구니」처럼 단어
+            // 중간에 끊겼다 (2026-08-12 실측). word-break 는 상속되므로 이
+            // 래퍼 한 곳이 마크다운 문단 전부를 덮는다.
             <div
-              className={`${storyMarkdownClassName} max-w-[var(--measure-prose)]`}
+              className={`${storyMarkdownClassName} max-w-[var(--measure-prose)] break-keep`}
               data-testid="project-detail-body-content"
             >
               <ReactMarkdown remarkPlugins={[remarkGfm]}>{dedupedBodyContent}</ReactMarkdown>
@@ -812,7 +816,12 @@ export function ProjectDetailPage({
                   size="compact"
                   icon={<Waypoints size={ICON_SIZE.lg} aria-hidden />}
                   title={t("connectedEmpty")}
-                  description={t("connectedEmptyHint")}
+                  /*
+                   * `break-keep` — 이 설명이 280px 에서 「여기 나타|납니다」로 단어
+                   * 중간에 끊겼다 (2026-08-12 실측, 같은 계기). EmptyState 의 설명
+                   * `<p>` 는 공용이라 여기서 감싼 span 으로만 좁게 건다.
+                   */
+                  description={<span className="break-keep">{t("connectedEmptyHint")}</span>}
                 />
               </div>
             )}
@@ -835,7 +844,15 @@ export function ProjectDetailPage({
                 {t("handoffTitle")}
               </span>
             </div>
-            <p className="mb-3 text-body leading-body text-[color:var(--color-text-tertiary)]">
+            {/*
+             * `break-keep` — **한국어는 단어 중간에서 끊기면 읽다가 걸린다** (2026-08-12 실측).
+             *
+             * 이 문단이 400px 레일(실폭 362px)에서 「이 프로젝|트의 지도를」로 끊겼다
+             * (계기: 글자마다 Range 를 재서 줄이 바뀐 자리의 앞뒤 글자를 본다 — 둘 다
+             * 한글이고 공백이 없으면 단어 중간이다). 원인은 `word-break: normal` 이고,
+             * 이 저장소는 이미 다른 자리에서 `break-keep` 을 쓰고 있었다.
+             */}
+            <p className="mb-3 break-keep text-body leading-body text-[color:var(--color-text-tertiary)]">
               {t("handoffDesc")}
             </p>
             <Button type="button" variant="outline" size="sm" onClick={handleCopyHandoff}>

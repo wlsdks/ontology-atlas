@@ -87,7 +87,15 @@ export default function NotFound() {
         <h1 className="mt-4 text-display tracking-[var(--tracking-section)] font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)]">
           {t.title}
         </h1>
-        <p className="mt-3 text-body leading-body text-[color:var(--color-text-secondary)]">
+        {/*
+         * `break-keep` — **한국어는 단어 중간에서 끊기면 읽다가 걸린다** (2026-08-12 실측).
+         *
+         * 이 문단이 440px 카드(실폭 382px)에서 「바뀌었|을」로 끊겼다 (계기: 글자마다
+         * Range 를 재서 줄이 바뀐 자리의 앞뒤 글자를 본다 — 둘 다 한글이고 공백이
+         * 없으면 단어 중간이다). 원인은 `word-break: normal` 이고, 이 저장소는 이미
+         * 다른 자리에서 `break-keep` 을 쓰고 있었다.
+         */}
+        <p className="mt-3 break-keep text-body leading-body text-[color:var(--color-text-secondary)]">
           {t.body}
         </p>
         <div className="mt-5 flex flex-col gap-2">

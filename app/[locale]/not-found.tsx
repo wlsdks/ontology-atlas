@@ -66,7 +66,11 @@ export default function LocaleNotFound() {
         <h1 className="mt-4 text-display tracking-[var(--tracking-section)] font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)]">
           {t("title")}
         </h1>
-        <p className="mt-3 text-body leading-body text-[color:var(--color-text-secondary)]">
+        {/*
+         * `break-keep` — 루트 not-found 와 같은 문단 · 같은 처방 (2026-08-12 실측
+         * 「바뀌었|을」, 실폭 382px). 두 404 는 쌍둥이라 한쪽만 고치면 어긋난다.
+         */}
+        <p className="mt-3 break-keep text-body leading-body text-[color:var(--color-text-secondary)]">
           {t("body")}
         </p>
         <div className="mt-5 flex flex-col gap-2">
