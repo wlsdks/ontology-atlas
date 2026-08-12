@@ -56,6 +56,11 @@ export interface AgentNotification {
    * 링크를 만들지 않으면서도 「무엇이」를 잃지 않기 위한 자리.
    */
   label?: string;
+  /**
+   * `task-start`/`task-end` — 이 작업에서 이름을 밝힌 에이전트(하트비트 또는
+   * MCP 연결 인사, 세션이 이미 나른다). 모르면 칸 자체가 없다 — 지어내지 않는다.
+   */
+  agent?: string;
   /** `task-end` 전용 요약. */
   counts?: AgentWriteCounts;
   /** `bridge-inserted` 전용 — 데려간 자식 수. */
@@ -78,6 +83,7 @@ export function deriveTaskNotifications(
       kind: "task-start",
       at: session.startAt,
       node: null,
+      ...(session.agent ? { agent: session.agent } : {}),
     });
     // 끝나지 않은 작업엔 끝 알림이 없다. 0건 요약도 내보내지 않는다 —
     // 「추가 0 · 편집 0 · 삭제 0」은 정보가 아니라 소음이다.
@@ -88,6 +94,7 @@ export function deriveTaskNotifications(
         at: session.endAt,
         node: session.lastTarget ? { slug: session.lastTarget, name: session.lastTarget } : null,
         counts: session.counts,
+        ...(session.agent ? { agent: session.agent } : {}),
       });
     }
   }

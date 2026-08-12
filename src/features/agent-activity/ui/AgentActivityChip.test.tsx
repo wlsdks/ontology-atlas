@@ -113,6 +113,21 @@ describe("AgentActivityChip", () => {
     expect(markAllRead).toHaveBeenCalledOnce();
   });
 
+  it("이름을 아는 작업 알림은 이름으로 말한다 — 「claude-code 작업 끝」", () => {
+    renderChip({
+      notifications: [
+        { id: "a", kind: "task-end", at: NOW - 1000, node: null, agent: "claude-code", counts: { added: 2, edited: 0, removed: 0 } },
+        { id: "b", kind: "task-start", at: NOW - 2000, node: null },
+      ],
+    });
+    fireEvent.click(screen.getByTestId("agent-activity-bell"));
+    const rows = screen.getAllByTestId("agent-activity-inbox-row");
+    expect(rows[0].textContent).toContain("claude-code 작업 끝");
+    // 이름 모르는 줄은 예전 문구 그대로 — 지어내지 않는다.
+    expect(rows[1].textContent).toContain("작업 시작");
+    expect(rows[1].textContent).not.toContain("claude-code");
+  });
+
   it("설정에서 알림을 끄면 벨 자체가 없다", () => {
     renderChip({ notificationsEnabled: false });
     expect(screen.queryByTestId("agent-activity-bell")).toBeNull();

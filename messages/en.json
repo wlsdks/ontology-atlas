@@ -3436,7 +3436,9 @@
     "bridgeChildren": "took {count} children",
     "event": {
       "taskStart": "Task started",
+      "taskStartAgent": "{agent} started a task",
       "taskEnd": "Task finished",
+      "taskEndAgent": "{agent} finished a task",
       "domainAdded": "Domain added",
       "domainRemoved": "Domain removed",
       "bridgeInserted": "Bridge inserted",
