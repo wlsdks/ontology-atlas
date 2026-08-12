@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { placePicker } from "./StudioCompass";
+import { placePicker } from "./StudioPicker";
 import type { StudioBearing } from "../lib/build-studio-item";
 
 /**
