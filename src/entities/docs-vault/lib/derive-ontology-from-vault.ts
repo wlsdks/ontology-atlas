@@ -549,8 +549,16 @@ function deriveOntologyFromVaultUncached(
       });
     }
 
-    // dependencies[] — depends_on edge
-    for (const dep of asStringArray(fm.dependencies)) {
+    // dependencies[] + depends_on[] — depends_on edge. 스키마 정본
+    // (mcp/src/schema.mjs)은 capability/element 의 캐논 키가 `depends_on`,
+    // project 가 `dependencies` 이고, MCP 는 alias 로 둘 다 읽는다
+    // (vault.mjs NEIGHBOR_KEY_ALIASES). 웹 derive 만 `dependencies` 하나를
+    // 읽어서 에이전트가 정본 키로 쓴 의존 관계가 지도·캡션에서 통째로
+    // 소실됐다(2026-08-12) — describes(2026-07-27)와 같은 부류의 구멍.
+    // 같은 대상이 두 키에 있으면 resolve 된 depId 기준으로 한 번만.
+    // 게이트: tests/contract/derive-relation-keys.contract.test.ts.
+    const seenDepIds = new Set<string>();
+    for (const dep of [...asStringArray(fm.dependencies), ...asStringArray(fm.depends_on)]) {
       const folderRef = resolveFolderPrefixedRef(dep);
       const depSlug = folderRef
         ? folderRef.id.split(':').at(-1)
@@ -558,6 +566,8 @@ function deriveOntologyFromVaultUncached(
       if (!depSlug) continue;
       // dependencies 는 같은 종 (project) 사이를 가리키는 게 일반적이라 추측.
       const depId = existingNodeIdFor(dep) ?? folderRef?.id ?? `${docNode.kind}:${depSlug}`;
+      if (seenDepIds.has(depId)) continue;
+      seenDepIds.add(depId);
       if (!nodes.has(depId)) {
         nodes.set(depId, {
           id: depId,
