@@ -1584,6 +1584,9 @@
       "domainCapabilityLabel": "capabilities",
       "domainElementLabel": "elements",
       "domainRowsLegendCaption": "The number on the right is how many concepts live in that domain. The bar shows how they split between capabilities and elements, and clicking a row unfolds every capability inside it.",
+      "domainRowToggleAria": "{title}: {total} concepts, {capabilities} capabilities, {elements} elements. Unfold the capabilities inside",
+      "domainRowMapLink": "Open this domain in the map",
+      "domainRowCapabilitiesEmpty": "No capability inside yet. Elements only.",
       "domainOverlapNote": "Concepts in several domains are counted once per domain, so these rows can sum higher than the counts above.",
       "bodyCardTitle": "Overview",
       "bodyCardGcap": "",
@@ -1654,11 +1657,7 @@
         "composition": "Composition"
       },
       "domainEmptyTitle": "No domains yet",
-      "domainEmptyHint": "Connect a domain to this project on the map and its composition shows up here.",
-      "minimapLabel": "Domain map",
-      "minimapSublabel": "more inside draws bigger",
-      "minimapAria": "Mini domain map: {domains} domains, {relations} relations",
-      "domainMoreLine": "{more} more capabilities"
+      "domainEmptyHint": "Connect a domain to this project on the map and its composition shows up here."
     },
     "editor": {
       "documentTitleEdit": "Edit project · Ontology Atlas",

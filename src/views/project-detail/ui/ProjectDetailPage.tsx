@@ -48,9 +48,7 @@ import { buildProjectOntologyMetrics } from "../model/project-ontology-metrics";
 import { buildProjectDomainComposition } from "../model/domain-composition";
 import { buildConnectedProjects, findRelatesGraphProjectSlugs } from "../model/connected-projects";
 import { buildAgentHandoffSnippet } from "../model/agent-handoff-snippet";
-import { shortenDomainTitle } from "../model/short-domain-title";
-import { MiniDomainMap } from "./MiniDomainMap";
-import { DomainCompositionGrid } from "./DomainCompositionGrid";
+import { DomainCompositionRows } from "./DomainCompositionRows";
 import { ConstructionReviewPanel } from "./construction-review/ConstructionReviewPanel";
 import { TabBar } from "@/shared/ui/tab-bar";
 import {
@@ -401,11 +399,6 @@ export function ProjectDetailPage({
   const relatesGraphSlugs = findRelatesGraphProjectSlugs(insightNodes, insightEdges, project.slug);
   const connectedProjects = buildConnectedProjects(project, related, relatesGraphSlugs);
   const handoffSnippet = buildAgentHandoffSnippet(project.slug);
-  const miniMapDomains = domainComposition.domains.map((domain) => ({
-    id: domain.id,
-    title: shortenDomainTitle(domain.title),
-    total: domain.total,
-  }));
 
   const canManageProject = projectMutations.canEdit;
   const projectSaveErrorMessage = (err: unknown) =>
@@ -499,9 +492,10 @@ export function ProjectDetailPage({
         census={{ concepts: insightNodes.length, relations: insightEdges.length }}
       />
 
-      {/* zone 1 — hero band: 글리프+타이틀+설명 + 음각 메트릭 스트립 + 정직한
-          미니 도메인 지도(실카운트 비례) + topology/편집 액션. */}
-      <header className="mt-6 flex flex-col gap-6 rounded-panel border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] p-[18px_20px] shadow-[inset_0_1px_0_var(--color-overlay-1)] lg:flex-row lg:items-stretch lg:gap-[30px] lg:p-[18px_26px]">
+      {/* zone 1 — hero band: 글리프+타이틀+설명 + 음각 메트릭 스트립 +
+          topology/편집 액션. **오른쪽 열은 비웠다** — 아래 「방사 지도를 내렸다」
+          주석 참고. */}
+      <header className="mt-6 flex flex-col gap-6 rounded-panel border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] p-[18px_20px] shadow-[inset_0_1px_0_var(--color-overlay-1)] lg:p-[18px_26px]">
         <div className="flex min-w-0 flex-1 flex-col">
           <div className="flex flex-wrap items-start gap-3.5 sm:flex-nowrap">
             <TopologyV2KindGlyph kind="project" size={30} className="mt-1 shrink-0" />
@@ -633,26 +627,34 @@ export function ProjectDetailPage({
           </div>
         </div>
 
-        {domainComposition.domains.length > 0 ? (
-          <div className="flex flex-none flex-col border-t border-[color:var(--color-divider)] pt-4 lg:w-[380px] lg:border-t-0 lg:border-l lg:pt-0 lg:pl-6">
-            {/*
-              여기 있던 「지도에서 보기」 링크를 지웠다 (2026-08-12 실측). 같은
-              히어로 밴드의 주 액션 버튼(project-detail-topology-link)과 라벨도
-              목적지(getTopologyProjectHref)도 완전히 같아, 한 화면 같은 행에
-              같은 라벨이 두 번 있었다 — 같은 라벨 반복 금지(design.md, 「개념
-              정보」 3회 전례). 진짜 같은 일이므로 분화가 아니라 하나만 남긴다.
-            */}
-            <div className="flex items-baseline gap-2 font-mono text-caption uppercase tracking-[var(--tracking-caps-14)] text-[color:var(--color-text-quaternary)]">
-              <span>{t("minimapLabel")}</span>
-              <span className="normal-case tracking-[var(--tracking-caption)]">{t("minimapSublabel")}</span>
-            </div>
-            <MiniDomainMap
-              projectTitle={project.name}
-              domains={miniMapDomains}
-              ariaLabel={t("minimapAria", { domains: metrics.domains, relations: metrics.relations })}
-            />
-          </div>
-        ) : null}
+        {/*
+          ## 방사 도메인 지도를 내렸다 (2026-08-12, 소유자 선택 B안)
+
+          여기에는 프로젝트 육각형 하나에서 도메인 사각형 아홉 개로 선이 뻗는
+          SVG 가 있었고, 캡션이 **「많이 담긴 도메인이 더 크게」** 라고 약속했다.
+          그 약속을 재 봤다(storefront, 1512 폭):
+
+          - 17개 도메인과 6개 도메인의 사각형 폭 차이가 **4.7px** — 17 대 16 은
+            **0.3px** 다. 「더 크게」를 눈으로 판정할 수 없었다.
+          - 방사선 2개가 **가운데 글자를 관통**했다.
+
+          못 지키는 약속은 잉크가 아니라 오해다. 그래서 같은 사실을 판정 가능한
+          형식(행 + 비율 막대 + 숫자 열)으로 옮겼고, 그 목록이 사는 자리는
+          **「구성」 탭 한 곳**이다.
+
+          ⚠️ **왜 이 자리에 그 목록을 두지 않았나 — 실측이 갈랐다.** 처음에는
+          지시대로 여기(오른쪽 열)에 9행을 넣어 보고 쟀다. 행 자체는 문제가
+          없었다(9행 전부 42.00px · 겹침 0). 그런데 밴드가 **206 → 495px**
+          (1512×982 뷰포트의 50%)로 커지면서 왼쪽 열에 **290px 짜리 빈 띠**가
+          생기고, 무엇보다 「구성」 탭을 열면 **같은 아홉 줄의 같은 숫자가 한
+          화면에 두 번** 그려졌다(마케팅 17 · 상품 16 …). 그건 이 개편이 없애려던
+          바로 그 결함이라, 목록은 **한 곳만** 갖는다. 되돌리려면
+          `DomainCompositionRows` 를 이 자리에 두면 되지만, 그때는 탭의 목록을
+          지워야 한다. 증거: `/private/tmp/guardian-b-variantA-*.png`.
+
+          (여기 있던 「지도에서 보기」 링크는 그 전에 이미 지웠다 — 히어로 주
+          액션 버튼과 라벨·목적지가 같았다.)
+        */}
       </header>
 
       {constructionReview.status === "ready" && constructionReview.review ? (
@@ -731,30 +733,30 @@ export function ProjectDetailPage({
                 섹션 헤더("도메인 구성 · 포함 · 6")를 뺐다. 탭 라벨이 이미
                 "구성 6" 이라 제목도 카운트도 중복이었고, 좌측에만 33px 짜리
                 헤더가 있으니 우측 레일 첫 카드와 시작 모서리가 어긋나 격자
-                전체가 삐뚤어 보였다. 관계 종류("포함")는 카드가 글리프와
-                계량으로 이미 말한다.
+                전체가 삐뚤어 보였다.
+
+                각주(`domainOverlapNote`)도 여기서 빼서 히어로 행 아래 한 곳으로
+                모았다 — 그 문장은 「히어로 칩 합 ≠ 행 합」을 설명하는 것이고,
+                두 수가 함께 보이는 자리는 히어로다.
               */
-              <>
-                <DomainCompositionGrid
-                  domains={domainComposition.domains}
-                  maxTotal={domainComposition.maxTotal}
-                  capabilityLabel={t("domainCapabilityLabel")}
-                  elementLabel={t("domainElementLabel")}
-                  moreLine={(more) => t("domainMoreLine", { more })}
-                />
-                {/* 히어로 칩(역량 38 · 요소 245)과 이 카드들의 합(40 · 279)이 한
-                    화면에 같이 보이는데 왜 다른지는 아무 데도 없었다. 계산은
-                    맞다 — 여러 도메인에 속한 개념을 도메인마다 세는 건 의도된
-                    설계다. 각주는 **격자 아래**에 둔다: 위에 두면 좌측 트랙의
-                    시작 모서리가 우측 레일 첫 카드와 어긋나(헤더를 뺀 이유와
-                    같은 문제) 격자가 삐뚤어 보인다. */}
-                <p
-                  data-testid="project-detail-domain-overlap-note"
-                  className="mt-3 text-caption text-[color:var(--color-text-quaternary)]"
-                >
-                  {t("domainOverlapNote")}
-                </p>
-              </>
+              <DomainCompositionRows
+                domains={domainComposition.domains}
+                labels={{
+                  capabilityUnit: t("domainCapabilityLabel"),
+                  elementUnit: t("domainElementLabel"),
+                  legendCaption: t("domainRowsLegendCaption"),
+                  overlapNote: t("domainOverlapNote"),
+                  rowToggleAria: (row) =>
+                    t("domainRowToggleAria", {
+                      title: row.title,
+                      total: row.total,
+                      capabilities: row.capabilityCount,
+                      elements: row.elementCount,
+                    }),
+                  mapLinkLabel: t("domainRowMapLink"),
+                  capabilitiesEmpty: t("domainRowCapabilitiesEmpty"),
+                }}
+              />
             ) : (
               // 도메인 0이어도 탭은 남는다(공간 기억) — 대신 여기서 다음 걸음을 준다.
               <div data-testid="project-detail-composition-empty">
