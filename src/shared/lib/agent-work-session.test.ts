@@ -121,6 +121,34 @@ describe("deriveAgentWorkSessions", () => {
     expect(session.lastTool).toBe("add_relations");
   });
 
+  it("작업은 마지막으로 이름을 밝힌 에이전트를 기억한다 (null 이 이름을 지우지 않는다)", () => {
+    const [session] = deriveAgentWorkSessions(
+      [
+        entry({ at: at(3_000), agent: "codex" }),
+        // 하트비트도 연결 인사도 없던 줄 — 이름 없음이 직전 이름을 지우면 안 된다.
+        entry({ at: at(2_000), agent: null }),
+      ],
+      NOW,
+    );
+    expect(session.agent).toBe("codex");
+  });
+
+  it("이름을 한 번도 못 들은 작업의 agent 는 null 이다 (공백은 이름이 아니다)", () => {
+    const [session] = deriveAgentWorkSessions(
+      [entry({ at: at(2_000), agent: null }), entry({ at: at(1_000), agent: "  " })],
+      NOW,
+    );
+    expect(session.agent).toBeNull();
+  });
+
+  it("나중 줄의 새 이름이 이긴다 — 한 폴더를 두 에이전트가 이어 쓰면 마지막 쪽", () => {
+    const [session] = deriveAgentWorkSessions(
+      [entry({ at: at(3_000), agent: "claude-code" }), entry({ at: at(1_000), agent: "codex" })],
+      NOW,
+    );
+    expect(session.agent).toBe("codex");
+  });
+
   it("조용해진 지 임계값이 지나야 끝난 작업이다", () => {
     const running = deriveAgentWorkSessions([entry({ at: at(1_000) })], NOW);
     const finished = deriveAgentWorkSessions([entry({ at: at(AGENT_TASK_IDLE_MS + 1) })], NOW);

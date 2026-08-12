@@ -3416,8 +3416,10 @@
   },
   "agentActivity": {
     "writing": "작업 중",
+    "writingAgent": "{agent} 작업 중",
     "quietUnknown": "조용함",
     "lastWorkedAt": "마지막 작업 {age}",
+    "lastWorkedAtAgent": "{agent} · 마지막 작업 {age}",
     "openOnMap": "지도에서 {name} 열기",
     "bellAria": "알림함 열기",
     "bellUnreadAria": "알림함 열기: 새 알림 {count}개",

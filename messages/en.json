@@ -3416,8 +3416,10 @@
   },
   "agentActivity": {
     "writing": "Working",
+    "writingAgent": "{agent} working",
     "quietUnknown": "Quiet",
     "lastWorkedAt": "Last worked {age}",
+    "lastWorkedAtAgent": "{agent} · last worked {age}",
     "openOnMap": "Open {name} on the map",
     "bellAria": "Open notifications",
     "bellUnreadAria": "Open notifications: {count} new",
