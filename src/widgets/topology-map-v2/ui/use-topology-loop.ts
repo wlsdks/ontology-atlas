@@ -3720,6 +3720,10 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
           y: (n.y - camera.y.value) * camera.scale.value + height / 2,
           /** ★ 이걸 안 봐서 여섯 번 틀렸다 — 시뮬에 없으면 끌어도 팬이 된다. */
           draggable: sim?.hasNode(n.id) ?? false,
+          /** W6 에이전트 링 — 그리는 쪽과 같은 판정(`agentFocusNodeIdRef`)을
+           *  그대로 내보낸다. 캔버스 픽셀은 e2e 가 못 읽으므로 이 typed 신호가
+           *  「링이 실제로 이 노드에 붙었나」의 관측 창구다. */
+          agentFocus: agentFocusNodeIdRef.current === n.id,
           /** 접힌 서브트리는 칩으로 대체돼 화면에 없다. */
           hidden: clustered?.has(n.id) ?? false,
           /**

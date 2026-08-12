@@ -58,4 +58,26 @@ test("활동 칩은 로그의 에이전트 이름으로 「작업 중」을 말�
   await expect(status).toHaveText(/claude-code 작업 중/);
   // 대상 링크도 같은 줄에서 산다 — 매니페스트에 실재하는 슬러그라 링크여야 한다.
   await expect(page.getByTestId("agent-activity-target")).toHaveText("Pay");
+
+  // 지도도 같은 사실을 말한다(3번 조각) — 하트비트 없이 activity.jsonl 만으로
+  // 쓰는-중 대상 노드에 W6 링이 붙는다. 캔버스 픽셀은 못 읽으므로
+  // `__atlasMap.nodes()` 의 typed 신호로 잰다(그리는 쪽과 같은 판정).
+  await expect
+    .poll(
+      () =>
+        page.evaluate(() => {
+          const map = (
+            window as unknown as {
+              __atlasMap?: { nodes: () => Array<{ id: string; agentFocus: boolean }> };
+            }
+          ).__atlasMap;
+          if (!map) return null;
+          return map
+            .nodes()
+            .filter((node) => node.agentFocus)
+            .map((node) => node.id);
+        }),
+      { timeout: 30_000, message: "쓰는-중 대상 노드에 에이전트 링이 안 붙었다" },
+    )
+    .toEqual(["capability:pay"]);
 });
