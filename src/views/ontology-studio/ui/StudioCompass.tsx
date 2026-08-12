@@ -2002,6 +2002,14 @@ function LaneRender({
   onEditNeighbor?: (neighbor: StudioSatellite) => void;
   pendingNeighborIds?: ReadonlySet<string>;
 }) {
+  const recommended = isStudioRecommendationAdmissible(
+    view.recommendation,
+    view.relation,
+  );
+  const expected = isStudioRecommendationAdmissible(
+    view.expectation,
+    view.relation,
+  );
   /**
    * 접힘 목록도 **나가는 길**을 갖는다 (2026-08-12 실측).
    *

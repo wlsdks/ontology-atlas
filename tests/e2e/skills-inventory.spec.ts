@@ -97,8 +97,8 @@ test.describe("스킬 인벤토리", () => {
       await page.getByTestId("skills-right").evaluate((element) => { element.scrollTop = element.scrollHeight; });
       expect(
         await page.getByTestId("skill-packet-copy").evaluate((element) => {
-          const value = element.getBoundingClientRect();
-          const hit = document.elementFromPoint(value.left + value.width / 2, value.top + value.height / 2);
+          const rect = element.getBoundingClientRect();
+          const hit = document.elementFromPoint(rect.left + rect.width / 2, rect.top + rect.height / 2);
           return hit === element || element.contains(hit);
         }),
         `${width}px packet action must not be covered`,

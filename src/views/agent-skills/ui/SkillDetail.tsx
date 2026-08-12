@@ -121,6 +121,10 @@ export function SkillDetail({
         {loadChainOpen ? t("detail.hideLoadChain") : t("detail.showLoadChain")}
       </button>
       {loadChainOpen ? <SkillInvocationChain skill={skill} /> : null}
+      {/* 하단에 경로 한 줄이 더 있었는데 지웠다(2026-08-12 실측) — 2단 「뜨면
+          실려요」의 경로와 **바이트 동일**한 문자열이 라벨 없이 136px 아래에 한 번
+          더, 그보다 작은 9.5px 로 떠 있었다. 같은 사실을 라벨 없이 두 번 말하는
+          것은 정보가 아니다. */}
     </article>
   );
 }
