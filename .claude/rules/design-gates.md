@@ -168,6 +168,26 @@ paths:
   조용히 건너뛰었다. **자기검증 프로브가 그 구멍에서 실패해 잡아냈다** — 심어 둔
   미달을 못 잡으면 이 게이트의 0건은 증거가 아니다.
 
+### 직계 결합자(`>`)는 삼항식을 못 본다 (2026-08-13)
+
+accent×틴트 짝 규칙이 `[name.name="tone"] > Literal[value="accent"]` 로 **직계
+리터럴만** 봤다. `tone={cond ? "accent" : …}` 는 리터럴이
+JSXExpressionContainer→ConditionalExpression 아래라 그냥 통과했고, 실사용 2곳이
+그 모양으로 살아 있었다 — 하나는 조건이 className 삼항과 **상관**이라 accent
+가지와 인디고 틴트 가지가 정확히 같이 켜졌다(VaultStartChecklist), 다른 하나는
+두 가지 모두 틴트 면이었다(DependencyPicker).
+
+확장 형태: 각 짝을 「직계 리터럴 ∪ `ConditionalExpression > Literal`」 로.
+가지 위치(consequent/alternate)만 잡히므로 `x === "accent"` 같은 **비교
+리터럴은 오탐하지 않는다**(BinaryExpression 아래라 `>` 에 안 걸림) — 프로브
+5종(직계 위반·JSX 삼항 위반·객체 삼항 위반·비교 리터럴 정상·틴트 없는 삼항
+정상)으로 확인했다.
+
+**켜기 전 census 의 함정**: 첫 전수는 `tone={` 만 grep 해서 JSX 삼항 1곳만
+찾았다 — 객체 표기(`tone: cond ? …`)를 안 봤고, 룰을 넓히자마자 두 번째
+현장이 걸렸다. 같은 규격에 표기가 둘이면 census 도 두 벌이어야 한다(위
+「클래스가 아니라 문법으로」와 같은 계열).
+
 ### 클래스가 아니라 문법으로 빠져나간 경우 (2026-08-04)
 
 위의 기하 허용목록은 `shadow-[…]` 라는 **클래스 문자열**을 본다. 그림자를 JSX

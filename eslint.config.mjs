@@ -354,18 +354,27 @@ const layerSelectors = [
   },
 ];
 
+/*
+ * ⚠️ **직계(`>`)만 보면 삼항식이 빠져나간다** (2026-08-13 실측 — design-gates.md
+ * 「정적 셀렉터는 리터럴만 본다」 계열). `tone={cond ? "accent" : …}` 는 Literal
+ * 이 JSXExpressionContainer→ConditionalExpression 아래라 종전 셀렉터에 안 걸렸고,
+ * 실제로 VaultStartChecklist 가 그 모양으로 accent+인디고 틴트를 한 원소에 얹은
+ * 채 살아 있었다. 그래서 각 짝을 「직계 리터럴 ∪ 삼항 가지의 리터럴」로 넓힌다 —
+ * `ConditionalExpression > Literal` 은 가지(consequent/alternate) 위치만 잡으므로
+ * `x === "accent"` 같은 비교 리터럴(BinaryExpression 아래)은 오탐하지 않는다.
+ */
 const accentTintPairingSelectors = [
   {
     selector:
-      'CallExpression[callee.name="controlClass"] ObjectExpression:has(Property[key.name="tone"] > Literal[value="accent"]):has(Property[key.name="className"] :matches(Literal[value=/bg-\\[color:var\\(--color-(indigo|amber)/], TemplateElement[value.raw=/bg-\\[color:var\\(--color-(indigo|amber)/]))',
+      'CallExpression[callee.name="controlClass"] ObjectExpression:has(:matches(Property[key.name="tone"] > Literal[value="accent"], Property[key.name="tone"] ConditionalExpression > Literal[value="accent"])):has(Property[key.name="className"] :matches(Literal[value=/bg-\\[color:var\\(--color-(indigo|amber)/], TemplateElement[value.raw=/bg-\\[color:var\\(--color-(indigo|amber)/]))',
     message:
-      '인디고/앰버 틴트 채움 위 잉크는 tone accent(#7170ff, 합성 대비 3.5~4.4:1 — AA 미달)가 아니라 accentOnTint 다. 근거: tests/contract/accent-ink-contrast.contract.test.ts',
+      '인디고/앰버 틴트 채움 위 잉크는 tone accent(#7170ff, 합성 대비 3.5~4.4:1 — AA 미달)가 아니라 accentOnTint 다. 삼항식 가지도 같다. 근거: tests/contract/accent-ink-contrast.contract.test.ts',
   },
   {
     selector:
-      'JSXOpeningElement:has(JSXAttribute[name.name="tone"] > Literal[value="accent"]):has(JSXAttribute[name.name="className"] :matches(Literal[value=/bg-\\[color:var\\(--color-(indigo|amber)/], TemplateElement[value.raw=/bg-\\[color:var\\(--color-(indigo|amber)/]))',
+      'JSXOpeningElement:has(:matches(JSXAttribute[name.name="tone"] > Literal[value="accent"], JSXAttribute[name.name="tone"] JSXExpressionContainer ConditionalExpression > Literal[value="accent"])):has(JSXAttribute[name.name="className"] :matches(Literal[value=/bg-\\[color:var\\(--color-(indigo|amber)/], TemplateElement[value.raw=/bg-\\[color:var\\(--color-(indigo|amber)/]))',
     message:
-      '인디고/앰버 틴트 채움 위 잉크는 tone="accent"(#7170ff, AA 미달)가 아니라 tone="accentOnTint" 다. 근거: tests/contract/accent-ink-contrast.contract.test.ts',
+      '인디고/앰버 틴트 채움 위 잉크는 tone="accent"(#7170ff, AA 미달)가 아니라 tone="accentOnTint" 다. 삼항식 가지(tone={cond ? "accent" : …})도 같다. 근거: tests/contract/accent-ink-contrast.contract.test.ts',
   },
 ];
 
