@@ -68,7 +68,12 @@ export function SkillList({
     <div className="flex flex-col gap-3" data-testid="skills-list">
       {groups.map((group) => (
         <section key={group.source}>
-          <h3 className="px-1 pb-1 text-caption text-[color:var(--color-text-tertiary)]">
+          {/* 소유자: *"스킬쪽 뭔가 내부 너무작지않음?"* (2026-08-12). 실측:
+              뭉치 머리·행 메타·경고 배지가 **전부 9.5px** 라 세 역할이 크기로
+              구분되지 않았다. 머리와 메타는 label(11)로 — 문서함 트리 카운트와
+              같은 단이다. 배지(「이름겹침」)만 caption 에 남는다(규격이 배지에
+              caption 을 허용한 자리). */}
+          <h3 className="px-1 pb-1 text-label text-[color:var(--color-text-tertiary)]">
             {group.personal ? t("group.mine") : group.source}
             <span className="ml-1.5">({group.skills.length})</span>
           </h3>
@@ -107,7 +112,7 @@ export function SkillList({
                     </span>
                     {/* 숫자 셋은 오른쪽 끝에 붙여 **세로로 줄이 맞게** 둔다 —
                         행마다 들쭉날쭉하면 훑을 때 눈이 그 줄을 못 잡는다. */}
-                    <span className="shrink-0 tabular-nums text-caption text-[color:var(--color-text-tertiary)]">
+                    <span className="shrink-0 tabular-nums text-label text-[color:var(--color-text-tertiary)]">
                       {t("row.metrics", {
                         chars: skill.invocation.steps[0].chars,
                         files: skill.invocation.steps[2].files.length,
