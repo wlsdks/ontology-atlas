@@ -74,7 +74,7 @@ export function SkillDetail({
         >
           {skill.name}
         </h2>
-        <p className="text-label text-[color:var(--color-text-tertiary)]">
+        <p className="text-body text-[color:var(--color-text-tertiary)]">
           {skill.origin.personal ? t("group.mine") : skill.origin.source}
         </p>
       </header>
@@ -138,7 +138,7 @@ function Jump({ onClick, children }: { onClick: () => void; children: React.Reac
       className={controlClass({
         shape: "link",
         size: "sm",
-        className: "text-left text-body text-[color:var(--color-amber-source-text-a80)]",
+        className: "text-left text-body-lg text-[color:var(--color-amber-source-text-a80)]",
       })}
     >
       {children}
