@@ -23,8 +23,13 @@ export interface DomainCompositionRow {
   capabilityCount: number;
   elementCount: number;
   total: number;
-  /** degree 내림차순 · 동률은 제목 오름차순. 표시용 짧은 제목(`display`) 우선. */
-  capabilities: string[];
+  /**
+   * degree 내림차순 · 동률은 제목 오름차순. 표시용 짧은 제목(`display`) 우선.
+   * `id` 는 그래프 노드 id (예: `capability:pay`) — 이름이 지도 딥링크가 되는 데
+   * 쓴다(2026-08-13: 제목만 나르던 시절 펼친 목록이 막다른 텍스트였다 — B안이
+   * 지운 「갈 곳 없는 수」와 같은 결함이 이름에 남아 있었다).
+   */
+  capabilities: { id: string; title: string }[];
 }
 
 export interface ProjectDomainComposition {
@@ -72,7 +77,7 @@ export function buildProjectDomainComposition(
         elementCount: row.elementCount,
         total: row.total,
         // 과제 ⑩ — 역량 이름도 표시용 짧은 제목.
-        capabilities: capabilities.map((cap) => cap.display ?? cap.title),
+        capabilities: capabilities.map((cap) => ({ id: cap.id, title: cap.display ?? cap.title })),
       };
     });
 

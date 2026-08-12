@@ -754,6 +754,7 @@ export function ProjectDetailPage({
                       elements: row.elementCount,
                     }),
                   mapLinkLabel: t("domainRowMapLink"),
+                  capabilityLinkAria: (title) => t("domainCapabilityLinkAria", { name: title }),
                   capabilitiesEmpty: t("domainRowCapabilitiesEmpty"),
                 }}
               />
