@@ -1651,7 +1651,6 @@
       "metricRelations": "Relations",
       "minimapLabel": "Domain map",
       "minimapSublabel": "more inside draws bigger",
-      "minimapOpenInTopology": "Open in topology",
       "minimapAria": "Mini domain map: {domains} domains, {relations} relations",
       "domainSectionTitle": "Domain composition",
       "domainSectionRelation": "Contains",

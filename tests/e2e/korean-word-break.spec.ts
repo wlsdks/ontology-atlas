@@ -38,6 +38,25 @@ const ROUTES = [
   "/ko/projects/",
   "/ko/docs/",
   "/ko/",
+  /*
+   * 프로젝트 상세 (2026-08-12 census S급). **slug 쿼리가 꼭 있어야 한다** — 맨
+   * `/ko/project/fallback/` 은 `resolveProjectFallbackRoute` 가 null 을 돌려줘
+   * `/projects` 로 리다이렉트되므로, 그대로 넣으면 이 라우트는 위 `/ko/projects/`
+   * 를 두 번 재는 공회전이 된다. `storefront` 는 볼트 없이도 항상 있는 빌드타임
+   * dogfood 데모 프로젝트다. 여기서 실측 4건: 본문 마크다운 「장바|구니」 ·
+   * 연결-빈 상태 「여기 나타|납니다」(280px) · 핸드오프 「이 프로젝|트의
+   * 지도를」(362px) 외 1.
+   */
+  "/ko/project/fallback/?slug=storefront",
+  /*
+   * 404 (census 「바뀌었|을」 382px). 실제로 404 를 그리는 주소여야 한다 —
+   * dev 는 미해결 경로에 루트 `app/not-found.tsx` 를 그리고, 정적 export 는
+   * `scripts/serve-static-export.mjs` 가 같은 컴포넌트로 빌드된 `/404.html` 을
+   * 내려 준다(locale 은 URL 첫 세그먼트로 클라이언트 감지 → ko 문구).
+   * ⚠️ `/ko/project/<없는-slug>/` 는 못 쓴다 — dev 에서 동적 [slug] 라우트가
+   * 404 대신 500 을 낸다(output:'export' + 미생성 param, 2026-08-12 실측).
+   */
+  "/ko/이런-주소는-없다/",
 ] as const;
 
 interface BreakScan {
@@ -100,7 +119,10 @@ test("한국어 문장이 단어 중간에서 끊기지 않는다", async ({ pag
   let wrappedTotal = 0;
 
   for (const route of ROUTES) {
-    await page.goto(`${route}?guides=off`, { waitUntil: "domcontentloaded" });
+    // 쿼리를 이미 가진 라우트(`?slug=`)에 `?guides=off` 를 그대로 붙이면
+    // `?…?…` 로 slug 가 깨진다 — 구분자를 라우트 모양에 따라 고른다.
+    const separator = route.includes("?") ? "&" : "?";
+    await page.goto(`${route}${separator}guides=off`, { waitUntil: "domcontentloaded" });
     await page.waitForTimeout(1_800);
     const result = await scan(page);
     wrappedTotal += result.wrappedTexts;
