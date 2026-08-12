@@ -8,6 +8,7 @@ import { Button } from "@/shared/ui";
 import { fieldClass } from "@/shared/ui/control-class";
 import { HexMark } from "@/shared/ui/hex-mark";
 import { LG_BREAKPOINT_PX, useViewportBelow } from "@/shared/lib/use-viewport-below";
+import { EntryChoiceCard } from "@/shared/ui/entry-choice-card";
 import { PAGE_COLUMN_STAGE, PAGE_FRAME, PAGE_HEADER_ROW, PAGE_TITLE_ROW } from "@/shared/ui/page-frame";
 
 import { FindingsPanel } from "./FindingsPanel";
@@ -131,13 +132,12 @@ export function AgentSkillsPage() {
           data-testid="skills-stage"
           className={`${PAGE_FRAME} flex min-h-0 flex-1 flex-col items-center justify-center gap-3 pb-4 md:pb-6`}
         >
-          <h1 className="inline-flex items-center gap-2 text-display font-[var(--font-weight-signature)] tracking-[var(--tracking-card)] text-[color:var(--color-text-primary)]">
-            <HexMark size={13} className="shrink-0 text-[color:var(--color-text-tertiary)]" />
-            {t("title")}
+          {/* 무대의 제목은 스튜디오 입구처럼 **질문**이다 (B, 2026-08-13). 목적지
+              이름(스킬)은 레일이 이미 말하고, 설명 문장은 카드 둘과 아래 캡션이
+              대신한다 — 회색 글줄을 8→3덩어리로 줄이는 것이 B의 요점이다. */}
+          <h1 className="text-title font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)] [word-break:keep-all]">
+            {t("stageTitle")}
           </h1>
-          <p className="max-w-[46em] text-center text-body leading-prose text-[color:var(--color-text-secondary)]">
-            {t("subtitle")}
-          </p>
           <EmptyState
             onOpenFolder={() => void openFolder(t("pickerTitle"))}
             onOpenSample={openSample}
@@ -297,93 +297,70 @@ export function AgentSkillsPage() {
  */
 function EmptyState({ onOpenFolder, onOpenSample }: { onOpenFolder: () => void; onOpenSample: () => void }) {
   const t = useTranslations("agentSkills");
-  const answers = [
-    { key: "answer1", q: "answerQ1" },
-    { key: "answer2", q: "answerQ2" },
-    { key: "answer3", q: "answerQ3" },
-  ] as const;
-
+  /*
+   * **셋째 판 — 스튜디오 입구와 같은 문법** (2026-08-13, 소유자 선택 B).
+   *
+   * 배치(가운데 무대)는 둘째 판이 세웠는데 미감이 남았다 — 소유자: *"아직도
+   * 이거 디자인 아쉬우니 더 세련되고 더 예쁘게"*. 실측이 정체를 밝혔다: 소유자가
+   * 직접 가리킨 스튜디오 입구와 이 화면의 차이는 딱 셋 — 48px 아이콘(여긴 0개) ·
+   * 갈림길 2장 구조 · 글의 양(3줄 vs 회색 8줄이 같은 24px 간격으로). 아쉬움의
+   * 정체는 장식이 아니라 **먼저 볼 것이 없어서**다.
+   *
+   * 그래서 그 셋을 그대로 가져온다: 버튼 둘 → `EntryChoiceCard` 2장(이 카드가
+   * 두 번째 소비처를 얻어 공용으로 승격된 바로 그 계기), 3단 약속은 카드 아래
+   * 한 줄로. 지난 두 판의 교훈(폭은 무대 칸 · 덩어리가 남는 높이를 소유)은
+   * 부모(skills-stage)가 그대로 지킨다. 새 토큰·새 값 0.
+   */
   return (
-    <section
-      data-testid="skills-empty"
-      /*
-       * **내용이 적으면 칸도 좁아진다** (2026-08-12 실측).
-       *
-       * 이 빈 상태는 글이 16개인데 목록형 칸(1448px)을 그대로 써서 세 질문이 벽까지
-       * 펼쳐져 있었고(가장 오른쪽 1472), 아래로 524px — 화면의 58% — 가 비어 있었다.
-       * 소유자: *"너무 횡하고 뭔가 벽에 다 딱 붙어있고"*. 같은 폭을 쓰는 인사이트·
-       * 프로젝트는 글이 48·80개라 정당했으니, 문제는 폭 값이 아니라 **적은 내용에
-       * 같은 폭을 쓴 것**이다.
-       *
-       * ⚠️ **첫 처방은 화면이 반박했다.** 남는 높이를 `justify-center` 로 위아래로
-       * 나눠 봤더니 숫자 하나(아래 공백 524 → 286)는 좋아졌는데, 스크린샷에서는 제목만
-       * 위에 떠 있고 그 아래 320px 공백이 생겼다 — **공백을 아래에서 위로 옮긴 것**
-       * 뿐이었다. 「횡하다」는 공백의 위치 문제가 아니라 **글이 아무 데도 묶여 있지
-       * 않은 것**이었다.
-       *
-       * 그래서 지금 처방은 둘이다: 폭은 규격의 좁은 칸(960)으로 모으고, 내용은 제목
-       * 바로 아래에서 **한 덩어리(카드)로 끝낸다.** 그러면 아래 공백은 「빈 구멍」이
-       * 아니라 페이지의 여백으로 읽힌다. 새 토큰·새 값 0개(기존 표면 조합).
-       */
-      /*
-       * ⚠️ **두 번째 처방도 화면이 반박했다** (2026-08-12, 소유자 스크린샷).
-       *
-       * 카드로 묶는 것만으로는 부족했다 — 실측(1512×900, 잎 요소만 잰 잉크 상자):
-       * `1368×313 @(104,56)` 즉 **위에 붙어 옆으로 벽까지 퍼지고 아래로 531px**
-       * (화면의 59%)이 비었다. 소유자: *"우측/하단 공백이 너무 심하고"*.
-       *
-       * 소유자가 가리킨 답은 같은 앱 안에 이미 있었다 — **조립대의 입구 화면**.
-       * 같은 뷰포트에서 그 화면의 잉크 상자는 `482×318 @(489,291)`: 좌 489 / 우 541,
-       * 상 291 / 하 291 — **가운데에 세워져 있다.** 공백의 양이 아니라 **글이
-       * 화면에 묶여 있는가**가 다른 것이다.
-       *
-       * 그래서 같은 전략을 쓴다: 남는 높이를 이 덩어리가 소유하고(`flex-1` +
-       * 가운데 정렬), 칸은 조립대와 같은 좁은 폭으로 모은다. 새 토큰·새 값 0개.
-       */
-      className={`${PAGE_COLUMN_STAGE} flex flex-col gap-6 rounded-card border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-6 py-6`}
-    >
-      {/* ⚠️ 여기 별도 헤드라인을 두지 않는다. 한 번 넣었다가 `screen-hierarchy`
-          게이트가 잡았다 — 「페이지 제목보다 크거나 같은 글자가 제목 밖에 없다」.
-          그리고 게이트가 옳았다: 그 문장("내 에이전트가 어떤 스킬을…")은 페이지
-          제목과 그 아래 한 줄이 이미 하는 말이었다. 제목은 하나다. */}
-      <p className="text-body-lg leading-prose text-[color:var(--color-text-secondary)]">
-        {t("emptyBody")}
+    <section data-testid="skills-empty" className={`${PAGE_COLUMN_STAGE} flex flex-col gap-6`}>
+      <div className="grid gap-4 sm:grid-cols-2">
+        <EntryChoiceCard
+          testId="skills-empty-open"
+          onClick={onOpenFolder}
+          title={t("openCardTitle")}
+          desc={t("openCardDesc")}
+          footnote={t("openCardNote")}
+          illustration={<FolderGlyph />}
+        />
+        <EntryChoiceCard
+          testId="skills-open-sample"
+          onClick={onOpenSample}
+          title={t("sampleCardTitle")}
+          desc={t("sampleCardDesc")}
+          footnote={null}
+          illustration={<SampleGlyph />}
+        />
+      </div>
+      <p className="text-center text-body leading-body text-[color:var(--color-text-quaternary)] [word-break:keep-all]">
+        {t("stageCaption")}
       </p>
-
-      {/* 세 질문 — 이 화면이 다른 어디서도 답하지 않는 것. 번호가 순서를 말한다. */}
-      <ol className="grid gap-y-4">
-        {answers.map((answer, index) => (
-          <li key={answer.key} className="flex flex-col gap-1.5">
-            <span className="flex items-baseline gap-2">
-              <span className="font-mono text-label text-[color:var(--color-text-quaternary)]">
-                {index + 1}
-              </span>
-              <span className="text-body-lg font-[var(--font-weight-emphasis)] text-[color:var(--color-text-primary)]">
-                {t(answer.q)}
-              </span>
-            </span>
-            <span className="text-body leading-prose text-[color:var(--color-text-tertiary)]">
-              {t(answer.key)}
-            </span>
-          </li>
-        ))}
-      </ol>
-
-      <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
-        <Button size="md" variant="primary" onClick={onOpenFolder} data-testid="skills-empty-open">
-          {t("openFolder")}
-        </Button>
-        <Button size="md" variant="outline" onClick={onOpenSample} data-testid="skills-open-sample">
-          {t("openSample")}
-        </Button>
-      </div>
-
-      <div className="flex flex-wrap gap-x-6 gap-y-1 text-body leading-prose text-[color:var(--color-text-quaternary)]">
-        <span>{t("emptyHint1")}</span>
-        <span>{t("emptyHint2")}</span>
-        <span>{t("emptyHint3")}</span>
-      </div>
     </section>
+  );
+}
+
+/** 라인아트 — 내 폴더: 폴더 + 안에서 떠오르는 SKILL 낱장. */
+function FolderGlyph() {
+  return (
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden>
+      <path
+        d="M3.5 7.5c0-1.1.9-2 2-2h4l2 2h7c1.1 0 2 .9 2 2v7c0 1.1-.9 2-2 2h-13c-1.1 0-2-.9-2-2v-9Z"
+        stroke="currentColor"
+        strokeWidth="1.4"
+        strokeLinejoin="round"
+      />
+      <path d="M8.5 13h7M8.5 15.5h4.5" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" opacity="0.6" />
+    </svg>
+  );
+}
+
+/** 라인아트 — 예시 뭉치: 겹친 낱장 + 발동 표시(우상단 점). */
+function SampleGlyph() {
+  return (
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden>
+      <rect x="7" y="4.5" width="12" height="14" rx="2" stroke="currentColor" strokeWidth="1.4" strokeDasharray="3 2.6" />
+      <rect x="4.5" y="7" width="12" height="14" rx="2" stroke="currentColor" strokeWidth="1.4" fill="var(--color-elevated)" />
+      <path d="M8 12h5M8 14.5h3.5" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" opacity="0.6" />
+    </svg>
   );
 }
 

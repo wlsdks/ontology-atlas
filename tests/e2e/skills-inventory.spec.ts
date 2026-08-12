@@ -207,9 +207,23 @@ test.describe("스킬 인벤토리", () => {
         bottomGap: Math.round(stage.bottom - card.bottom),
         hostW: Math.round(stage.width),
         hostH: Math.round(stage.height),
-        surfaced:
-          style.borderTopWidth !== "0px" ||
-          (style.backgroundColor !== "rgba(0, 0, 0, 0)" && style.backgroundColor !== "transparent"),
+        /*
+         * ④의 뜻이 셋째 판(B, 2026-08-13)에서 바뀌었다: 글을 묶는 면이 이제
+         * 래퍼 하나가 아니라 **입구 카드 두 장**이다(스튜디오 입구와 같은 문법 —
+         * 소유자 선택). 카드가 둘 다 면을 갖는지, 그리고 높이가 같은지(치수
+         * 규칙성)를 함께 잰다.
+         */
+        cards: [...document.querySelectorAll('[data-testid="skills-empty-open"],[data-testid="skills-open-sample"]')].map(
+          (card) => {
+            const cs = getComputedStyle(card);
+            return {
+              surfaced:
+                cs.borderTopWidth !== "0px" ||
+                (cs.backgroundColor !== "rgba(0, 0, 0, 0)" && cs.backgroundColor !== "transparent"),
+              height: Math.round(card.getBoundingClientRect().height),
+            };
+          },
+        ),
       };
     });
 
@@ -235,8 +249,11 @@ test.describe("스킬 인벤토리", () => {
       `세로가 ${box.topGap}/${box.bottomGap} 로 치우쳤다 — 남는 높이가 한쪽에 구멍으로 남는다`,
     ).toBeLessThan(box.hostH * 0.12);
 
-    // ④ 눈에 보이는 면 — 면이 없으면 글이 아무 데도 묶이지 않아 「횡하다」로 읽힌다.
-    expect(box.surfaced, "빈 상태에 면(테두리·배경)이 없다 — 글이 허공에 떠 있다").toBe(true);
+    // ④ 눈에 보이는 면 — 입구 카드 두 장이 글을 묶는다. 하나라도 면을 잃으면
+    //    글이 허공에 떠 「횡하다」로 되돌아간다. 높이가 갈리면 격자가 무너진다.
+    expect(box.cards.length, "입구 카드 두 장이 있어야 한다").toBe(2);
+    expect(box.cards.every((card) => card.surfaced), "면 없는 입구 카드가 있다").toBe(true);
+    expect(new Set(box.cards.map((card) => card.height)).size, `카드 높이가 갈렸다: ${box.cards.map((c) => c.height).join("/")}`).toBe(1);
   });
 
   test("폴더를 열면 스킬과 겹침을 그리고, 호출 사슬을 펼쳐 보인다", async ({ page }) => {
