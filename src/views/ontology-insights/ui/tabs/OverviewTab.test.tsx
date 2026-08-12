@@ -25,7 +25,7 @@ const LABELS = {
   domainCapacityTitle: "도메인 용량",
   noDomains: "도메인 노드가 아직 없습니다.",
   noDomainsBody: "도메인은 역량들을 묶는 영역이에요.",
-  noDomainsAction: "조립대에서 도메인 만들기",
+  noDomainsAction: "스튜디오에서 도메인 만들기",
   kindGlyphCaption: "글리프 = 지도의 노드 셰이프 그대로",
   domainCapacityCaption: "왼쪽이 역량, 오른쪽이 요소",
   capabilityUnit: "역량",
@@ -78,7 +78,7 @@ describe("OverviewTab — 도메인 용량", () => {
   it("도메인이 없으면 만들 길을 내민다 — 「없습니다」로 끝나는 것은 다음 단계가 없음이다", () => {
     render(<OverviewTab {...BASE} domainRows={[]} />);
     const action = screen.getByTestId("domain-capacity-empty-action");
-    expect(action).toHaveTextContent("조립대에서 도메인 만들기");
+    expect(action).toHaveTextContent("스튜디오에서 도메인 만들기");
     expect(action).toHaveAttribute("href", "/ontology/studio/?mode=create");
   });
 

@@ -2489,11 +2489,6 @@
      */
     --engraved-numeral-face: #8c8c94;
     --engraved-numeral-text-shadow: 0 1px 0 #08080a;
-    --kind-glyph-stroke-project: #57575f;
-    --kind-glyph-stroke-domain: #48484f;
-    --kind-glyph-fill-project: #1c1c22;
-    --kind-glyph-fill-domain: #191920;
-    --kind-glyph-edge-contains: #4a4a54;
     --topology-blocking-backdrop-surface: rgba(0, 0, 0, 0.72);
     /* 가이드 투어 (2026-07-23, `src/features/guided-tour`) — 스크림+컷아웃
        페인트. `--topology-blocking-backdrop-surface`(0.72)보다 옅다: 투어는
@@ -3678,33 +3673,9 @@
    * At short desktop heights the map's primary copy handoff must remain visible;
    * secondary notice/tool chrome moves to the accessibility tree only.
    */
-  @media (max-height: 800px) {
-    .topology-overview-low-height-sr-only {
-      position: absolute !important;
-      width: 1px !important;
-      height: 1px !important;
-      padding: 0 !important;
-      margin: -1px !important;
-      overflow: hidden !important;
-      clip: rect(0, 0, 0, 0) !important;
-      white-space: nowrap !important;
-      border-width: 0 !important;
-    }
-  }
+  
 
-  @media (max-height: 960px) {
-    .topology-overview-medium-height-sr-only {
-      position: absolute !important;
-      width: 1px !important;
-      height: 1px !important;
-      padding: 0 !important;
-      margin: -1px !important;
-      overflow: hidden !important;
-      clip: rect(0, 0, 0, 0) !important;
-      white-space: nowrap !important;
-      border-width: 0 !important;
-    }
-  }
+  
 
   /* [삭제, 2026-07-18] 구 SigmaTopology 커넥터 애니메이션
      (topology-connector-flow / topology-relation-inspector-enter keyframes,

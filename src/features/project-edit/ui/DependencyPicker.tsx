@@ -124,7 +124,13 @@ export function DependencyPicker({
               className={controlClass({
                 shape: 'pill',
                 size: 'lg',
-                tone: p.isHub ? 'accent' : 'strong',
+                /*
+                 * 두 가지 다 인디고 틴트 면(아래 a20/a12) 위라 accent 잉크는 AA
+                 * 미달이다(합성 3.5~4.4:1 — accent-ink-contrast 계약). 허브 강조는
+                 * accentOnTint 가 같은 인디고 계열로 진다. 이 줄은 객체 삼항이라
+                 * 종전 짝 규칙을 빠져나가 있었다(2026-08-13 게이트 구멍 수리).
+                 */
+                tone: p.isHub ? 'accentOnTint' : 'strong',
                 className: cn(
                   'group gap-1.5 border-[color:var(--color-indigo-brand)]',
                   p.isHub

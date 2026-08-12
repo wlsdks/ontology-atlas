@@ -117,7 +117,13 @@ export function VaultStartChecklist({
       cta: onOpenAgentConnect ? (
         <Chip
           size="md"
-          tone={hasDocs ? "secondary" : "accent"}
+          /*
+           * 인디고 틴트 면(아래 className 의 indigo-a16) 위 잉크는 accent 가
+           * 아니라 accentOnTint 다 — accent(#7170ff)는 틴트 위 합성 대비
+           * 3.5~4.4:1 로 AA 미달(accent-ink-contrast 계약). 이 줄은 삼항식이라
+           * 짝 규칙 lint 를 빠져나가 있었다(2026-08-13 게이트 구멍 수리에서 적발).
+           */
+          tone={hasDocs ? "secondary" : "accentOnTint"}
           onClick={onOpenAgentConnect}
           data-testid="checklist-cta-agent"
           /*

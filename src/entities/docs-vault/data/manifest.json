@@ -6467,6 +6467,16 @@
         },
         {
           "depth": 2,
+          "text": "2026-08-13 — 프로젝트 상세: 방사 도메인 지도를 은퇴시키고 행+비율 막대 한 문법으로 (갈래 B)",
+          "slug": "2026-08-13-프로젝트-상세-방사-도메인-지도를-은퇴시키고-행비율-막대-한-문법으로-갈래-b"
+        },
+        {
+          "depth": 2,
+          "text": "2026-08-12 — 쓰기 화면의 이름은 스튜디오다 (은퇴명 금지를 소유자가 뒤집음)",
+          "slug": "2026-08-12-쓰기-화면의-이름은-스튜디오다-은퇴명-금지를-소유자가-뒤집음"
+        },
+        {
+          "depth": 2,
           "text": "2026-08-12 — 열 것이 없을 때 **스킬 화면은 무대가 된다**, 그리고 무대 칸을 규격에 올린다",
           "slug": "2026-08-12-열-것이-없을-때-스킬-화면은-무대가-된다-그리고-무대-칸을-규격에-올린다"
         },
@@ -8562,7 +8572,7 @@
         }
       ],
       "excerpt": "이 파일은 결정과 그때 진 반대 의견을 남긴다. docs/CHANGELOG.md 는 무엇이 언제 바뀌었나를 답하고, 이 파일은 왜 그렇게 정했고, 무엇을 걸었나를 답한다. 최신이 위. 기록은 덧붙이기만 한다 — 지난 기록을 고치지 않는다. 판단이 바뀌었으면 새 기록을 쓰고 옛 기록을 뒤집힘 으로 표시한다. 틀린 기록도 자산이다. 1. 소집 전에 읽는다. 카운슬을 열기 전(그리고 단독 PO 패스를 쓰기 전) 같은 표면 · 같은 질문에 대한 선행 결정이 있는지 먼저 본다. 있으면 새 패스는 그것을 ① 여전히 유효하다고 인용하거나 ② 명시적으로 뒤집는다. 조용히 다시 결정",
-      "wordCount": 105826,
+      "wordCount": 106227,
       "updatedAt": "2026-08-13",
       "linksOut": [
         "slug"
@@ -9762,8 +9772,8 @@
         }
       ],
       "excerpt": "Maintainer-only checks live here so the public README stays readable. Use this page when you touch mcp/, cli/, package manifests, release scripts, or the dogfood ontology. Run this before pushing broad docs, package, MCP, or web changes: For user-facing UI changes, add the relevant Playwright route check. pnpm install ",
-      "wordCount": 10024,
-      "updatedAt": "2026-08-12",
+      "wordCount": 10124,
+      "updatedAt": "2026-08-13",
       "linksOut": []
     },
     {
@@ -10260,8 +10270,8 @@
         }
       ],
       "excerpt": "Complete inventory of features users can actually use right now. Last updated: 2026-08-02 (지금 있는 라우트, 설치한 앱이 지키기로 한 약속, 프로젝트가 무엇을 뜻하는지 확정한 기록(project meaning receipt)을 다시 확인했다 — /ontology 는 /topology?index=expanded 로, /ontology/edit 은 /ontology/studio 로 보내는 옛 주소 호환 redirect 이고, Insights 는 할 일 · 구성 · 연결 · 경계 · 신선도 다섯 개 ",
-      "wordCount": 19179,
-      "updatedAt": "2026-08-12",
+      "wordCount": 19204,
+      "updatedAt": "2026-08-13",
       "linksOut": [
         "slug",
         "project:slug",

@@ -28,9 +28,6 @@
 import type { AtlasGitChangeLike } from "./atlas-git-changes";
 
 /** 화면 행 하나가 필요로 하는 최소 shape — Rust `ChangeEntry` 가 만족한다. */
-export interface AtlasGitRecordEntry extends AtlasGitChangeLike {
-  path: string;
-}
 
 /**
  * 개념 변경 / 그 밖의 파일. `kind` 가 있으면 vault 노드다(Rust 가 frontmatter
