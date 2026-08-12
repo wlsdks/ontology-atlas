@@ -51,19 +51,36 @@ import { describe, expect, it } from "vitest";
  * 하나도 없다(아래 세 번째 시험이 그 사실을 잠근다). 지우는 것이 맞지만 거대한
  * 주입 JS 문자열 안이라 한 번에 손대면 배포 한 사이클마다 실수가 드러난다. 상한이
  * 늘지 못하게 막아 두고 줄여 나간다.
+ *
+ * ## 2026-08-12 3차 — 리포터를 걷어냈고, 상한은 0이다
+ *
+ * 57개 중 **56개를 실제로 지웠다** — 은퇴 표식을 조회하던 선언과, 그 선언에서만
+ * 값이 오는 마커 필드 645개(전부 상수 false/""/0/[]였다)를 함께 걷어냈다.
+ * 산 값이 섞인 표현식(`live || skeletonAttr`)은 산 쪽을 남겼다. 등가 증명:
+ * 옛/새 프로브를 같은 DOM 두 벌(빈 DOM · 라이브 표식 합성 DOM)에 돌려 남은
+ * 마커 580개 전부가 값까지 동일했다.
+ *
+ * 57번째(`ai-local-model-listbox`)는 **은퇴가 아니라 스캐너의 맹점**이었다:
+ * Select 프리미티브가 `${dataTestid}-listbox` 로 **런타임에 조립**하는
+ * 표식이라(`src/shared/ui/select.tsx`) 소스 문자열 검색에 안 걸릴 뿐,
+ * `desktop:verify-ai-settings:ko` 가 매 실행 실제로 여는 목록이다. 소스를 훑는
+ * 게이트는 표기 변종을 놓친다(design-gates.md 「스캐너가 표기 하나만 보면」) —
+ * 그래서 아래 판정이 이 조립 규칙 하나를 알고, 조립 코드가 사라지면 이 표식은
+ * 다시 「없음」으로 계산되어 래칫이 빨개진다.
  */
 
 const REPO_ROOT = join(import.meta.dirname, "..", "..");
 
 /**
- * 프로브가 찾는 표식 중 **제품에서 이미 사라진 것**의 상한. 2026-08-11 실측 **57**.
+ * 프로브가 찾는 표식 중 **제품에서 이미 사라진 것**의 상한. 2026-08-11 실측 57,
+ * 2026-08-12 정리 후 실측 **0**.
  *
  * ⚠️ 처음 손으로 셌을 때는 53이었다. 차이는 **세는 정의**다 — 그때는 `grep -rl` 로
  * 파일 종류를 안 가리고 훑었고(생성된 JSON·문구 카탈로그까지 포함), 이 스캐너는
  * `.ts/.tsx/.css` 만 본다. 상한은 **이 스캐너가 재는 값**이어야 한다. 두 숫자 중
  * 편한 쪽을 고르면 그 순간부터 게이트가 자기가 안 재는 것을 근거로 통과한다.
  */
-const RETIRED_MARKER_CAP = 57;
+const RETIRED_MARKER_CAP = 0;
 
 function walk(dir: string, out: string[] = []): string[] {
   for (const entry of readdirSync(dir)) {
@@ -84,15 +101,45 @@ const huntedMarkers = [
   ...new Set([...probeSource.matchAll(/data-testid="([a-z0-9-]+)"/g)].map(([, id]) => id)),
 ].sort();
 
-const missing = huntedMarkers.filter((id) => !productSource.includes(id));
+/**
+ * Select 프리미티브는 목록 표식을 런타임에 조립한다 —
+ * `data-testid={dataTestid ? \`${dataTestid}-listbox\` : undefined}`
+ * (`src/shared/ui/select.tsx`). 그래서 `X-listbox` 는 **조립 코드가 살아 있고**
+ * 트리거 `X` 가 소스에 실재할 때만 「있음」으로 친다. 둘 중 하나라도 사라지면
+ * 이 표식은 다시 「없음」으로 계산된다 — 규칙 자체가 죽으면 게이트가 빨개진다.
+ */
+const LISTBOX_COMPOSITION = "`${dataTestid}-listbox`";
+const presentInProduct = (id: string): boolean => {
+  if (productSource.includes(id)) return true;
+  const suffix = "-listbox";
+  return (
+    id.endsWith(suffix) &&
+    productSource.includes(LISTBOX_COMPOSITION) &&
+    productSource.includes(`data-testid="${id.slice(0, -suffix.length)}"`)
+  );
+};
+
+const missing = huntedMarkers.filter((id) => !presentInProduct(id));
 
 describe("데스크톱 검증 프로브 표식 계약", () => {
   it("프로브가 표식을 실제로 찾고 있다 — 빈손으로 통과하지 않는다", () => {
+    // 2026-08-12 정리에서 은퇴 표식 56개를 지워 실측 37이 됐다. 이 바닥은
+    // 「스캐너가 헛돌지 않는다」를 재는 것이므로 실측 아래로만 내린다.
     expect(
       huntedMarkers.length,
       `프로브가 찾는 표식을 ${huntedMarkers.length}개만 뽑았다 — 스캐너가 헛돈다`,
-    ).toBeGreaterThan(40);
+    ).toBeGreaterThan(30);
     expect(productSource.length, "제품 소스를 못 읽었다").toBeGreaterThan(100_000);
+  });
+
+  it("리스트박스 조립 규칙이 빈 집합 위에서 공회전하지 않는다", () => {
+    // 이 특례가 실제로 판정하는 대상이 오늘 존재해야 한다: 프로브가
+    // `ai-local-model-listbox` 를 찾고 있고, 그것이 소스 문자열이 아니라
+    // 조립 규칙으로만 「있음」이 된다. 둘 중 하나라도 깨지면 특례를 지우거나
+    // 다시 재야 한다.
+    expect(huntedMarkers).toContain("ai-local-model-listbox");
+    expect(productSource.includes("ai-local-model-listbox")).toBe(false);
+    expect(presentInProduct("ai-local-model-listbox")).toBe(true);
   });
 
   /**

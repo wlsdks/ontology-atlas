@@ -1727,29 +1727,9 @@ pub fn run() {
                                     return { width: rect.width, height: rect.height };
                                   })
                                 : [];
-                              const sigmaLoadingFallback = document.querySelector('[data-testid="topology-engine-loading"]');
-                              const sigmaLoadingFallbackRect = sigmaLoadingFallback?.getBoundingClientRect();
-                              const sigmaLoadingFallbackStyle = sigmaLoadingFallback ? getComputedStyle(sigmaLoadingFallback) : null;
-                              const skeletonCardsLayer = document.querySelector('[data-testid="sigma-skeleton-cards"]');
-                              const topologyDragClusterHullDomPolicy =
-                                skeletonCardsLayer?.getAttribute("data-drag-cluster-hull-dom-policy") || "";
-                              const topologyFocusClusterSize =
-                                Number(
-                                  skeletonCardsLayer?.getAttribute("data-focus-cluster-size") ||
-                                    skeletonCardsLayer?.getAttribute("data-active-drag-cluster-size") ||
-                                    "0"
-                                );
-                              const topologyFocusClusterActive =
-                                (
-                                  topologyFocusClusterSize >= 2 &&
-                                  skeletonCardsLayer?.getAttribute("data-click-focus-relationship-context") === "durable"
-                                );
-                              const topologyFocusClusterStage =
-                                topologyFocusClusterActive ? "click-focus-boxless" : "";
-                              const topologyFocusClusterAttentionLabel =
-                                topologyFocusClusterActive ? "relationship-context" : "";
+                              const sigmaLoadingFallbackStyle = (null) ? getComputedStyle((null)) : null;
                               const topologyFocusClusterConnectorCount =
-                                topologyFocusClusterActive
+                                (false)
                                   ? (
                                     document.querySelectorAll("[data-focus-cluster-connector]").length ||
                                     document.querySelectorAll("[data-drag-cluster-connector]").length
@@ -1796,8 +1776,8 @@ pub fn run() {
                                 topologyFocusRelationLabelHit?.getAttribute("data-relation-label-visible-count-policy") ||
                                 "";
                               const topologyFocusClusterTypedConnectorCount =
-                                topologyFocusClusterActive &&
-                                skeletonCardsLayer?.getAttribute("data-focus-relation-label-density-contract") === "click-focus-uses-ego-label-only"
+                                (false) &&
+                                (null)?.getAttribute("data-focus-relation-label-density-contract") === "click-focus-uses-ego-label-only"
                                   ? Array.from(document.querySelectorAll("[data-focus-cluster-connector]"))
                                     .filter((connector) => {
                                       const relationType = connector.getAttribute("data-relation-type") || "";
@@ -1805,9 +1785,9 @@ pub fn run() {
                                     }).length
                                   : 0;
                               const topologyFocusClusterRelationLabelCount =
-                                topologyFocusClusterActive
+                                (false)
                                   ? (
-                                    Number(skeletonCardsLayer?.getAttribute("data-focus-cluster-relation-label-count") || "0") ||
+                                    Number((null)?.getAttribute("data-focus-cluster-relation-label-count") || "0") ||
                                     visibleTopologyHtmlRelationLabelCount ||
                                     visibleTopologyConnectorRelationLabelCount ||
                                     topologyFocusClusterTypedConnectorCount ||
@@ -1822,14 +1802,7 @@ pub fn run() {
                                 visibleTopologyHtmlRelationLabelCount ||
                                 visibleTopologyConnectorRelationLabelCount ||
                                 topologyFocusClusterTypedConnectorCount ||
-                                Number(skeletonCardsLayer?.getAttribute("data-focus-cluster-relation-label-count") || "0");
-                              const topologyFocusClusterHullVisible =
-                                false;
-                              const topologyUiScale = Number(
-                                skeletonCardsLayer?.getAttribute("data-topology-ui-scale") || "0"
-                              );
-                              const topologyRelationLens = document.querySelector('[data-testid="topology-relation-lens"]');
-                              const topologyRelationLensText = topologyRelationLens?.textContent || "";
+                                Number((null)?.getAttribute("data-focus-cluster-relation-label-count") || "0");
                               const topologySelectedNodePopover = document.querySelector('[data-testid="topology-node-popover"]');
                               const topologySelectedNodeId =
                                 topologySelectedNodePopover?.getAttribute("data-selected-node-id") ||
@@ -1898,19 +1871,6 @@ pub fn run() {
                                 topologySelectedNodePopover?.getAttribute("data-node-popover-handoff-selected-node") ||
                                 topologySelectedNodePopover?.getAttribute("data-agent-handoff-selected-node") ||
                                 "";
-                              const topologyNodePopoverPrimaryActionButton =
-                                document.querySelector('[data-testid="topology-node-popover-compact-brief-action"]');
-                              const topologyNodePopoverPrimaryActionButtonKind =
-                                topologyNodePopoverPrimaryActionButton?.getAttribute("data-node-popover-action-kind") ||
-                                topologyNodePopoverPrimaryActionButton?.getAttribute("data-popover-action") ||
-                                "";
-                              const topologyNodePopoverPrimaryActionButtonRoute =
-                                topologyNodePopoverPrimaryActionButton?.getAttribute("data-node-popover-handoff-route") ||
-                                topologyNodePopoverPrimaryActionButton?.getAttribute("data-agent-handoff-route") ||
-                                "";
-                              const topologyNodePopoverPrimaryActionButtonFlow =
-                                topologyNodePopoverPrimaryActionButton?.getAttribute("data-agent-handoff-readable-flow") ||
-                                "";
                               const markerSummary = (element, attributeName) =>
                                 element?.getAttribute(attributeName) ||
                                 element?.getAttribute("aria-label") ||
@@ -1930,12 +1890,8 @@ pub fn run() {
                               const topologySearchActionLaneStyle = topologySearchActionLane
                                 ? getComputedStyle(topologySearchActionLane)
                                 : null;
-                              const topologySigmaControlsStack =
-                                document.querySelector('[data-testid="topology-sigma-controls-stack"]');
-                              const topologySigmaControlsStackRect =
-                                topologySigmaControlsStack?.getBoundingClientRect();
-                              const topologySigmaControlsStackStyle = topologySigmaControlsStack
-                                ? getComputedStyle(topologySigmaControlsStack)
+                              const topologySigmaControlsStackStyle = (null)
+                                ? getComputedStyle((null))
                                 : null;
                               const topologyShortcutsHelpButton =
                                 document.querySelector('[data-testid="topology-shortcuts-help-button"]');
@@ -2023,26 +1979,16 @@ pub fn run() {
                                     topologyCreateNodeBackdropRect.top <= 1 &&
                                     topologyCreateNodeBackdropRect.right >= innerWidth - 1 &&
                                     topologyCreateNodeBackdropRect.bottom >= innerHeight - 1);
-                              const topologySelectedRelationQualityLens =
-                                document.querySelector('[data-testid="topology-relation-quality-lens"]');
-                              const topologyOverviewRelationQuality =
-                                document.querySelector('[data-testid="topology-overview-relation-quality"]');
-                              const topologyRelationQualityLens =
-                                topologySelectedRelationQualityLens || topologyOverviewRelationQuality;
                               const topologySelectedRelationQualityLensText =
-                                markerSummary(topologySelectedRelationQualityLens, "data-relation-quality-summary");
+                                markerSummary((null), "data-relation-quality-summary");
                               const topologyOverviewRelationQualityText =
-                                markerSummary(topologyOverviewRelationQuality, "data-relation-quality-summary");
-                              const topologyOverviewRelationQualityDensity =
-                                topologyOverviewRelationQuality?.getAttribute("data-density") || "";
+                                markerSummary((null), "data-relation-quality-summary");
                               const topologyRelationQualityLensText =
                                 topologySelectedRelationQualityLensText || topologyOverviewRelationQualityText;
-                              const topologyOverviewAgentReadiness = document.querySelector('[data-testid="topology-overview-agent-readiness"]');
                               const topologyOverviewAgentReadinessText =
-                                markerSummary(topologyOverviewAgentReadiness, "data-agent-readiness-summary");
-                              const topologyOverviewAgentReadinessMeter = document.querySelector('[data-testid="topology-overview-agent-readiness-meter"]');
-                              const topologyOverviewAgentReadinessMeterSegments = topologyOverviewAgentReadinessMeter
-                                ? Array.from(topologyOverviewAgentReadinessMeter.querySelectorAll("[data-agent-readiness-segment]")).map((segment) => ({
+                                markerSummary((null), "data-agent-readiness-summary");
+                              const topologyOverviewAgentReadinessMeterSegments = (null)
+                                ? Array.from((null).querySelectorAll("[data-agent-readiness-segment]")).map((segment) => ({
                                     kind: segment.getAttribute("data-agent-readiness-segment") || "",
                                     count: segment.getAttribute("data-count") || ""
                                   }))
@@ -2122,22 +2068,6 @@ pub fn run() {
                                 kind: chip.getAttribute("data-route-chip") || "",
                                 text: chip.getAttribute("data-route-chip-text") || chip.textContent || ""
                               }));
-                              const topologyRelationLabelHandoffContract =
-                                skeletonCardsLayer?.getAttribute("data-relation-label-handoff-contract") || "";
-                              const topologySelectedRelationLabelHandoffState =
-                                skeletonCardsLayer?.getAttribute("data-selected-relation-label-handoff") || "";
-                              const topologySelectedRelationLabelHandoffGate =
-                                skeletonCardsLayer?.getAttribute("data-selected-relation-label-gate") || "";
-                              const topologySelectedRelationLabelHandoffPrimaryAction =
-                                skeletonCardsLayer?.getAttribute("data-selected-relation-label-primary-action") || "";
-                              const topologySelectedRelationLabelHandoffCliFallbackCommand =
-                                skeletonCardsLayer?.getAttribute("data-selected-relation-label-cli-fallback") || "";
-                              const topologySelectedRelationLabelHandoffFactRoute =
-                                skeletonCardsLayer?.getAttribute("data-selected-relation-label-fact-route") || "";
-                              const topologySelectedRelationLabelHandoffQuality =
-                                skeletonCardsLayer?.getAttribute("data-selected-relation-label-quality") || "";
-                              const topologySelectedRelationLabelHandoffEvidence =
-                                skeletonCardsLayer?.getAttribute("data-selected-relation-label-evidence") || "";
                               const topologySelectedRelationLabelGeometry =
                                 topologySelectedRelationLabelGeometryId
                                   ? document.querySelector(
@@ -2160,130 +2090,8 @@ pub fn run() {
                                 ) <= 1 &&
                                 topologySelectedRelationLabelHitRect.width >= topologySelectedRelationLabelGeometryRect.width &&
                                 topologySelectedRelationLabelHitRect.height >= topologySelectedRelationLabelGeometryRect.height;
-                              const topologySelectedRelationClaimLens = document.querySelector('[data-testid="sigma-selected-edge-claim-lens"]');
-                              const topologySelectedRelationClaimLensText = topologySelectedRelationClaimLens?.textContent || "";
-                              const topologySelectedRelationClaimLensQuality =
-                                topologySelectedRelationClaimLens?.getAttribute("data-relation-quality") ||
-                                "";
-                              const topologySelectedRelationClaimLensDotVisible =
-                                Boolean(topologySelectedRelationClaimLens?.querySelector("[data-relation-quality-dot]"));
-                              const topologySelectedRelationContract = document.querySelector('[data-testid="sigma-selected-edge-contract"]');
-                              const topologySelectedRelationContractRect =
-                                topologySelectedRelationContract?.getBoundingClientRect();
-                              const topologySelectedRelationContractKind =
-                                topologySelectedRelationContract?.getAttribute("data-relation-contract") ||
-                                "";
-                              const topologySelectedRelationContractText =
-                                topologySelectedRelationContract?.textContent ||
-                                "";
-                              const topologySelectedRelationCard = document.querySelector('[data-testid="sigma-selected-edge-card"]');
-                              const topologySelectedRelationCardRect =
-                                topologySelectedRelationCard?.getBoundingClientRect();
-                              const topologySelectedRelationProofBand = document.querySelector('[data-testid="sigma-selected-edge-proof-band"]');
-                              const topologySelectedRelationProofBandRect =
-                                topologySelectedRelationProofBand?.getBoundingClientRect();
-                              const topologySelectedRelationCardQuality =
-                                topologySelectedRelationCard?.getAttribute("data-relation-quality") ||
-                                "";
-                              const topologySelectedRelationCardEvidenceState =
-                                topologySelectedRelationCard?.getAttribute("data-relation-evidence-state") ||
-                                "";
-                              const topologySelectedRelationCardType =
-                                topologySelectedRelationCard?.getAttribute("data-relation-type") ||
-                                "";
-                              const topologySelectedRelationCardTypeLabel =
-                                topologySelectedRelationCard?.getAttribute("data-relation-type-label") ||
-                                "";
-                              const topologySelectedRelationCardLabelContextContract =
-                                topologySelectedRelationCard?.getAttribute("data-selected-relation-label-context-contract") ||
-                                "";
-                              const topologySelectedRelationCardLabelCount =
-                                Number(topologySelectedRelationCard?.getAttribute("data-selected-relation-label-count") || "0");
-                              const topologySelectedRelationCardLabelVisibleText =
-                                topologySelectedRelationCard?.getAttribute("data-selected-relation-label-visible-text") ||
-                                "";
-                              const topologySelectedRelationCardLabelReadableText =
-                                topologySelectedRelationCard?.getAttribute("data-selected-relation-label-readable-text") ||
-                                "";
-                              const topologySelectedRelationCardAgentGate =
-                                topologySelectedRelationCard?.getAttribute("data-agent-gate") ||
-                                "";
-                              const topologySelectedRelationCardAgentGateKind =
-                                topologySelectedRelationCard?.getAttribute("data-agent-gate-kind") ||
-                                "";
-                              const topologySelectedRelationCardAgentDecision =
-                                topologySelectedRelationCard?.getAttribute("data-agent-decision") ||
-                                "";
-                              const topologySelectedRelationCardHandoffContract =
-                                topologySelectedRelationCard?.getAttribute("data-agent-handoff-contract") ||
-                                "";
-                              const topologySelectedRelationCardHandoffAliasContract =
-                                topologySelectedRelationCard?.getAttribute("data-selected-relation-handoff-contract") ||
-                                "";
-                              const topologySelectedRelationCardRoute =
-                                topologySelectedRelationCard?.getAttribute("data-selected-relation-route") ||
-                                "";
-                              const topologySelectedRelationCardEndpointRoute =
-                                topologySelectedRelationCard?.getAttribute("data-selected-relation-endpoint-route") ||
-                                "";
-                              const topologySelectedRelationCardPrimaryAction =
-                                topologySelectedRelationCard?.getAttribute("data-selected-relation-primary-action") ||
-                                "";
-                              const topologySelectedRelationCardCliFallback =
-                                topologySelectedRelationCard?.getAttribute("data-selected-relation-cli-fallback") ||
-                                "";
-                              const topologySelectedRelationCardSource =
-                                topologySelectedRelationCard?.getAttribute("data-selected-relation-source") ||
-                                "";
-                              const topologySelectedRelationCardTarget =
-                                topologySelectedRelationCard?.getAttribute("data-selected-relation-target") ||
-                                "";
-                              const topologySelectedRelationCardSurfaceRole =
-                                topologySelectedRelationCard?.getAttribute("data-surface-role") ||
-                                "";
-                              const topologySelectedRelationCardDensity =
-                                topologySelectedRelationCard?.getAttribute("data-card-density") ||
-                                "";
-                              const topologySelectedRelationCardDockContract =
-                                topologySelectedRelationCard?.getAttribute("data-dock-contract") ||
-                                "";
-                              const topologySelectedRelationCardAttentionLane =
-                                topologySelectedRelationCard?.getAttribute("data-attention-lane") ||
-                                "";
-                              const topologySelectedRelationCardMapClearanceContract =
-                                topologySelectedRelationCard?.getAttribute("data-map-clearance-contract") ||
-                                "";
-                              const topologySelectedRelationCardScaleContract =
-                                topologySelectedRelationCard?.getAttribute("data-scale-contract") ||
-                                "";
-                              const topologySelectedRelationCardOverflowContract =
-                                topologySelectedRelationCard?.getAttribute("data-overflow-contract") ||
-                                "";
-                              const topologySelectedRelationCardElevationContract =
-                                topologySelectedRelationCard?.getAttribute("data-elevation-contract") ||
-                                "";
-                              const topologySelectedRelationCardMotionContract =
-                                topologySelectedRelationCard?.getAttribute("data-motion-contract") ||
-                                "";
-                              const topologySelectedRelationCardMotionDurationMs =
-                                Number(topologySelectedRelationCard?.getAttribute("data-motion-duration-ms") || "0");
-                              const topologySelectedRelationCardMotionEasing =
-                                topologySelectedRelationCard?.getAttribute("data-motion-easing") ||
-                                "";
-                              const topologySelectedRelationCardSurfaceToken =
-                                topologySelectedRelationCard?.getAttribute("data-surface-token") ||
-                                "";
-                              const topologySelectedRelationCardMaxHeightToken =
-                                topologySelectedRelationCard?.getAttribute("data-max-height-token") ||
-                                "";
-                              const topologySelectedRelationCardBorderToken =
-                                topologySelectedRelationCard?.getAttribute("data-border-token") ||
-                                "";
-                              const topologySelectedRelationCardShadowToken =
-                                topologySelectedRelationCard?.getAttribute("data-shadow-token") ||
-                                "";
-                              const topologySelectedRelationCardStyle = topologySelectedRelationCard
-                                ? getComputedStyle(topologySelectedRelationCard)
+                              const topologySelectedRelationCardStyle = (null)
+                                ? getComputedStyle((null))
                                 : null;
                               const topologySelectedRelationCardSurfaceComputed =
                                 topologySelectedRelationCardStyle?.backgroundColor || "";
@@ -2308,7 +2116,7 @@ pub fn run() {
                               const topologyCameraMotionState =
                                 sigmaViewport?.getAttribute("data-camera-motion-state") || "";
                               const topologySelectedRelationCardMotionSyncState =
-                                topologySelectedRelationCard
+                                (null)
                                   ? topologyCameraMotionState === "settled"
                                     ? "settled-with-camera"
                                     : topologyCameraMotionState === "already-safe"
@@ -2319,29 +2127,8 @@ pub fn run() {
                                         ? "reduced-motion-ready"
                                         : "camera-state-unknown"
                                   : "";
-                              const topologySelectedRelationAgentGate = document.querySelector('[data-testid="sigma-selected-edge-agent-gate"]');
-                              const topologySelectedRelationAgentGateText =
-                                topologySelectedRelationAgentGate?.getAttribute("data-metric-value") ||
-                                topologySelectedRelationAgentGate?.textContent ||
-                                "";
-                              const topologySelectedRelationAgentDecision = document.querySelector('[data-testid="sigma-selected-edge-agent-decision"]');
-                              const topologySelectedRelationAgentDecisionRect =
-                                topologySelectedRelationAgentDecision?.getBoundingClientRect();
-                              const topologySelectedRelationAgentDecisionText =
-                                topologySelectedRelationAgentDecision?.getAttribute("data-agent-decision") ||
-                                topologySelectedRelationAgentDecision?.textContent ||
-                                "";
-                              const topologySelectedRelationAgentDecisionGateKind =
-                                topologySelectedRelationAgentDecision?.getAttribute("data-agent-gate-kind") ||
-                                "";
-                              const topologySelectedRelationAgentRoute = document.querySelector('[data-testid="sigma-selected-edge-agent-route"]');
-                              const topologySelectedRelationAgentRouteRect =
-                                topologySelectedRelationAgentRoute?.getBoundingClientRect();
-                              const topologySelectedRelationAgentRouteText =
-                                topologySelectedRelationAgentRoute?.textContent ||
-                                "";
-                              const topologySelectedRelationAgentRouteSteps = topologySelectedRelationAgentRoute
-                                ? Array.from(topologySelectedRelationAgentRoute.querySelectorAll("[data-route-step]")).map((step) => {
+                              const topologySelectedRelationAgentRouteSteps = (null)
+                                ? Array.from((null).querySelectorAll("[data-route-step]")).map((step) => {
                                     const rect = step.getBoundingClientRect();
                                     const label = step.querySelector("[data-route-step-label-text]");
                                     const value = step.querySelector("[data-route-step-value-text]");
@@ -2360,26 +2147,6 @@ pub fn run() {
                                     };
                                   })
                                 : [];
-                              const topologySelectedRelationAgentRouteGateKind =
-                                topologySelectedRelationAgentRoute?.getAttribute("data-agent-gate-kind") ||
-                                "";
-                              const topologySelectedRelationAgentRouteEvidenceState =
-                                topologySelectedRelationAgentRoute?.getAttribute("data-relation-evidence-state") ||
-                                "";
-                              const topologySelectedRelationAgentRoutePrimaryAction =
-                                topologySelectedRelationAgentRoute?.getAttribute("data-primary-copy-action") ||
-                                "";
-                              const topologySelectedRelationMetricStrip = document.querySelector('[data-testid="sigma-selected-edge-metric-strip"]');
-                              const topologySelectedRelationMetricStripRect =
-                                topologySelectedRelationMetricStrip?.getBoundingClientRect();
-                              const topologySelectedRelationCopyActionRail = document.querySelector('[data-testid="sigma-selected-edge-copy-actions"]');
-                              const topologySelectedRelationCopyActionRailRect =
-                                topologySelectedRelationCopyActionRail?.getBoundingClientRect();
-                              const topologySelectedRelationNextAction = document.querySelector('[data-testid="sigma-selected-edge-next-action"]');
-                              const topologySelectedRelationCommandCue =
-                                topologySelectedRelationNextAction?.querySelector('[data-command-cue-visible="true"]');
-                              const topologySelectedRelationCommandCueRect =
-                                topologySelectedRelationCommandCue?.getBoundingClientRect();
                               const topologySelectedRelationPrimaryCopyAction = document.querySelector('[data-relation-copy-priority="primary"]');
                               const topologySelectedRelationPrimaryCopyActionKind =
                                 topologySelectedRelationPrimaryCopyAction?.getAttribute("data-relation-copy-action") ||
@@ -2412,27 +2179,6 @@ pub fn run() {
                                   height: rect.height
                                 };
                               });
-                              const topologySelectedRelationCopyPayload = document.querySelector('[data-testid="sigma-selected-edge-copy-payload"]');
-                              const topologySelectedRelationCopyPayloadRect =
-                                topologySelectedRelationCopyPayload?.getBoundingClientRect();
-                              const topologySelectedRelationCopyPayloadSummary =
-                                topologySelectedRelationCopyPayload?.querySelector("[data-copy-payload-summary]");
-                              const topologySelectedRelationCopyPayloadVisibleHandle =
-                                topologySelectedRelationCopyPayload?.querySelector("[data-copy-payload-visible-handle-summary]");
-                              const topologySelectedRelationCliFallback =
-                                topologySelectedRelationCopyPayload?.querySelector("[data-cli-fallback-summary]");
-                              const topologySelectedRelationHandleStrip = document.querySelector('[data-testid="sigma-selected-edge-handle-strip"]');
-                              const topologySelectedRelationHandleStripRect =
-                                topologySelectedRelationHandleStrip?.getBoundingClientRect();
-                              const topologySelectedRelationEndpointRoute = document.querySelector('[data-testid="sigma-selected-edge-endpoint-route"]');
-                              const topologySelectedRelationEndpointRouteRect =
-                                topologySelectedRelationEndpointRoute?.getBoundingClientRect();
-                              const topologySelectedRelationEndpointVisibilityContract =
-                                skeletonCardsLayer?.getAttribute("data-selected-relation-endpoint-visibility-contract") || "";
-                              const topologySelectedRelationEndpointReadableRoute =
-                                skeletonCardsLayer?.getAttribute("data-selected-relation-endpoint-readable-route") || "";
-                              const topologySelectedRelationEndpointExpectedCount =
-                                Number(skeletonCardsLayer?.getAttribute("data-selected-relation-endpoint-count") || "0");
                               const topologySelectedRelationEndpointCards = Array.from(
                                 document.querySelectorAll('[data-skeleton-card][data-selected-relation-endpoint="true"]')
                               ).map((card) => {
@@ -2480,55 +2226,22 @@ pub fn run() {
                                 topologySelectedRelationEndpointCards.filter((card) => card.visible).length;
                               const topologySelectedRelationEndpointHiddenCount =
                                 topologySelectedRelationEndpointCards.filter((card) => !card.visible).length;
-                              const topologyAnalysisPanel = document.querySelector('[data-testid="topology-analysis-panel"]');
-                              const topologyAnalysisPanelStyle = topologyAnalysisPanel
-                                ? getComputedStyle(topologyAnalysisPanel)
+                              const topologyAnalysisPanelStyle = (null)
+                                ? getComputedStyle((null))
                                 : null;
-                              const topologyAnalysisPanelRect =
-                                topologyAnalysisPanel?.getBoundingClientRect();
-                              const topologyHealthRepairOrder = document.querySelector('[data-testid="topology-health-repair-order"]');
-                              const topologyHealthRepairFirstAction =
-                                topologyHealthRepairOrder?.querySelector("a,button");
-                              const topologyHealthRepairFirstActionRect =
-                                topologyHealthRepairFirstAction?.getBoundingClientRect();
                               const topologyHealthRepairAuditCard =
                                 document.querySelector('[data-health-repair-audit-target="true"]');
-                              const topologyPathStartPrompt = document.querySelector('[data-testid="topology-path-start-prompt"]');
-                              const topologyPathAnchorPrompt = document.querySelector('[data-testid="topology-path-anchor-prompt"]');
-                              const topologyPathStartPromptStyle = topologyPathStartPrompt
-                                ? getComputedStyle(topologyPathStartPrompt)
+                              const topologyPathStartPromptStyle = (null)
+                                ? getComputedStyle((null))
                                 : null;
-                              const topologyPathAnchorPromptStyle = topologyPathAnchorPrompt
-                                ? getComputedStyle(topologyPathAnchorPrompt)
+                              const topologyPathAnchorPromptStyle = (null)
+                                ? getComputedStyle((null))
                                 : null;
-                              const topologyPathStartPromptRect =
-                                topologyPathStartPrompt?.getBoundingClientRect();
-                              const topologyPathAnchorPromptRect =
-                                topologyPathAnchorPrompt?.getBoundingClientRect();
-                              const topologyPathCandidateVisibility = document.querySelector('[data-testid="topology-path-candidate-visibility"]');
-                              const topologyPathVisibleRoute = document.querySelector('[data-testid="topology-path-visible-route"]');
-                              const topologyPathAgentHandoff = document.querySelector('[data-testid="topology-path-agent-handoff"]');
-                              const topologyPathRestoreProbe = document.querySelector('[data-testid="topology-path-restore-probe"]');
-                              const topologyPathResultBanner = document.querySelector('[data-testid="topology-path-result-banner"]');
-                              const topologyPathResultBannerRect =
-                                topologyPathResultBanner?.getBoundingClientRect();
-                              const topologyPathResultBannerStyle = topologyPathResultBanner
-                                ? getComputedStyle(topologyPathResultBanner)
+                              const topologyPathResultBannerStyle = (null)
+                                ? getComputedStyle((null))
                                 : null;
-                              const topologyPathResultActionRail = document.querySelector('[data-testid="topology-path-result-action-rail"]');
-                              const topologyPathResultActionRailRect =
-                                topologyPathResultActionRail?.getBoundingClientRect();
-                              const topologyPathResultSecondaryChecks =
-                                document.querySelector('[data-testid="topology-path-result-secondary-checks"]');
-                              const topologyPathResultSecondaryChecksMenu =
-                                document.querySelector('[data-testid="topology-path-result-secondary-checks-menu"]');
-                              const topologyPathResultSecondaryChecksMenuRect =
-                                topologyPathResultSecondaryChecksMenu?.getBoundingClientRect();
-                              const topologyPathResultRouteChain = document.querySelector('[data-testid="topology-path-result-route-chain"]');
-                              const topologyPathResultRouteChainRect =
-                                topologyPathResultRouteChain?.getBoundingClientRect();
-                              const topologyPathResultRelationChips = topologyPathResultRouteChain
-                                ? Array.from(topologyPathResultRouteChain.querySelectorAll("[data-path-result-relation-chip]")).map((chip) => {
+                              const topologyPathResultRelationChips = (null)
+                                ? Array.from((null).querySelectorAll("[data-path-result-relation-chip]")).map((chip) => {
                                     const rect = chip.getBoundingClientRect();
                                     return {
                                       relation: chip.getAttribute("data-path-result-relation-chip") || "",
@@ -2538,8 +2251,8 @@ pub fn run() {
                                     };
                                   })
                                 : [];
-                              const topologyPathResultActions = topologyPathResultBanner
-                                ? Array.from(topologyPathResultBanner.querySelectorAll("[data-path-result-action]")).map((action) => {
+                              const topologyPathResultActions = (null)
+                                ? Array.from((null).querySelectorAll("[data-path-result-action]")).map((action) => {
                                     const rect = action.getBoundingClientRect();
                                     const style = getComputedStyle(action);
                                     const disclosure = action.closest("[data-path-result-secondary-checks]");
@@ -2560,8 +2273,8 @@ pub fn run() {
                                     };
                                   })
                                 : [];
-                              const topologyPathResultEndpoints = topologyPathResultBanner
-                                ? Array.from(topologyPathResultBanner.querySelectorAll("[data-path-result-endpoint]")).map((endpoint) => {
+                              const topologyPathResultEndpoints = (null)
+                                ? Array.from((null).querySelectorAll("[data-path-result-endpoint]")).map((endpoint) => {
                                     const rect = endpoint.getBoundingClientRect();
                                     return {
                                       kind: endpoint.getAttribute("data-path-result-endpoint") || "",
@@ -2574,247 +2287,162 @@ pub fn run() {
                                 : [];
                               const topologyPathStartPromptVisible =
                                 Boolean(
-                                  topologyPathStartPromptRect &&
+                                  (undefined) &&
                                   topologyPathStartPromptStyle &&
                                   topologyPathStartPromptStyle.display !== "none" &&
                                   topologyPathStartPromptStyle.visibility !== "hidden" &&
                                   Number(topologyPathStartPromptStyle.opacity || "1") > 0.01 &&
-                                  topologyPathStartPromptRect.width > 0 &&
-                                  topologyPathStartPromptRect.height > 0
+                                  (undefined).width > 0 &&
+                                  (undefined).height > 0
                                 );
                               const topologyPathAnchorPromptVisible =
                                 Boolean(
-                                  topologyPathAnchorPromptRect &&
+                                  (undefined) &&
                                   topologyPathAnchorPromptStyle &&
                                   topologyPathAnchorPromptStyle.display !== "none" &&
                                   topologyPathAnchorPromptStyle.visibility !== "hidden" &&
                                   Number(topologyPathAnchorPromptStyle.opacity || "1") > 0.01 &&
-                                  topologyPathAnchorPromptRect.width > 0 &&
-                                  topologyPathAnchorPromptRect.height > 0
+                                  (undefined).width > 0 &&
+                                  (undefined).height > 0
                                 );
                               const topologyVisiblePathPromptRect = topologyPathAnchorPromptVisible
-                                ? topologyPathAnchorPromptRect
+                                ? (undefined)
                                 : topologyPathStartPromptVisible
-                                  ? topologyPathStartPromptRect
+                                  ? (undefined)
                                   : null;
                               const topologyPathPromptPanelClearancePx =
-                                topologyVisiblePathPromptRect && topologyAnalysisPanelRect
-                                  ? Math.round(topologyVisiblePathPromptRect.left - topologyAnalysisPanelRect.right)
+                                topologyVisiblePathPromptRect && (undefined)
+                                  ? Math.round(topologyVisiblePathPromptRect.left - (undefined).right)
                                   : 0;
                               const topologyPathPromptViewportRightClearancePx =
                                 topologyVisiblePathPromptRect
                                   ? Math.round(window.innerWidth - topologyVisiblePathPromptRect.right)
                                   : 0;
-                              const topologyPathResultBannerPanelClearancePx =
-                                topologyPathResultBannerRect && topologyAnalysisPanelRect
-                                  ? Math.round(topologyPathResultBannerRect.left - topologyAnalysisPanelRect.right)
-                                  : 0;
-                              const topologyPathResultBannerClearanceContract =
-                                topologyPathResultBannerRect && topologyAnalysisPanelRect
-                                  ? "analysis-rail-clear-96"
-                                  : "";
                               const topologyPathPromptClearanceContract =
                                 topologyVisiblePathPromptRect
                                   ? "analysis-rail-clear-24"
                                   : "";
                               const topologyPathResultBannerVisibleForPromptPolicy =
                                 Boolean(
-                                  topologyPathResultBannerRect &&
+                                  (undefined) &&
                                   topologyPathResultBannerStyle &&
                                   topologyPathResultBannerStyle.display !== "none" &&
                                   topologyPathResultBannerStyle.visibility !== "hidden" &&
                                   Number(topologyPathResultBannerStyle.opacity || "1") > 0.01 &&
-                                  topologyPathResultBannerRect.width > 0 &&
-                                  topologyPathResultBannerRect.height > 0
+                                  (undefined).width > 0 &&
+                                  (undefined).height > 0
                                 );
                               const topologyPathPromptSuppressionContract =
                                 !topologyVisiblePathPromptRect &&
                                 !topologyPathResultBannerVisibleForPromptPolicy &&
                                 sigmaViewport?.getAttribute("data-skeleton-cards-active") === "true" &&
-                                topologyAnalysisPanel?.getAttribute("data-path-prompt-policy") === "panel-owned-when-card-mode" &&
-                                topologyPathAgentHandoff
+                                (null)?.getAttribute("data-path-prompt-policy") === "panel-owned-when-card-mode" &&
+                                (null)
                                   ? "analysis-rail-owns-path-start"
                                   : topologyVisiblePathPromptRect
                                     ? "prompt-visible"
                                     : "";
-                              const topologyOverviewHandoffActions = document.querySelector('[data-testid="topology-overview-handoff-actions"]');
-                              const topologyOverviewPrimaryCopyButton =
-                                topologyOverviewHandoffActions?.querySelector("button");
-                              const topologyOverviewPrimaryCopyButtonRect =
-                                topologyOverviewPrimaryCopyButton?.getBoundingClientRect();
-                              const topologyFocusCommandSpine =
-                                document.querySelector('[data-testid="topology-focus-command-spine"]');
-                              const topologyFocusCommandSpineStyle = topologyFocusCommandSpine
-                                ? getComputedStyle(topologyFocusCommandSpine)
+                              const topologyFocusCommandSpineStyle = (null)
+                                ? getComputedStyle((null))
                                 : null;
-                              const topologyFocusCommandSpineRect =
-                                topologyFocusCommandSpine?.getBoundingClientRect();
-                              const topologyFocusPrimaryAction =
-                                document.querySelector('[data-testid="topology-focus-primary-action"]');
-                              const topologyFocusPrimaryActionStyle = topologyFocusPrimaryAction
-                                ? getComputedStyle(topologyFocusPrimaryAction)
+                              const topologyFocusPrimaryActionStyle = (null)
+                                ? getComputedStyle((null))
                                 : null;
-                              const topologyFocusPrimaryActionRect =
-                                topologyFocusPrimaryAction?.getBoundingClientRect();
-                              const topologyFocusReviewOrder =
-                                document.querySelector('[data-testid="topology-focus-review-order"]');
-                              const topologyFocusSecondaryActions =
-                                document.querySelector('[data-testid="topology-focus-secondary-actions"]');
-                              const topologyFocusAgentHandoff =
-                                document.querySelector('[data-testid="topology-focus-agent-handoff"]');
                               const topologyNodePopover = document.querySelector('[data-testid="topology-node-popover"]');
                               const topologyNodePopoverStyle = topologyNodePopover
                                 ? getComputedStyle(topologyNodePopover)
                                 : null;
                               const topologyNodePopoverRect = topologyNodePopover?.getBoundingClientRect();
-                              const topologyNodePopoverBody =
-                                topologyNodePopover?.querySelector('[data-testid="topology-node-popover-body"]');
-                              const topologyNodePopoverBodyRect =
-                                topologyNodePopoverBody?.getBoundingClientRect();
-                              const topologyNodePopoverBodyStyle = topologyNodePopoverBody
-                                ? getComputedStyle(topologyNodePopoverBody)
+                              const topologyNodePopoverBodyStyle = (undefined)
+                                ? getComputedStyle((undefined))
                                 : null;
-                              const topologyMinimap = document.querySelector('[data-testid="topology-minimap"]');
-                              const topologyMinimapStyle = topologyMinimap
-                                ? getComputedStyle(topologyMinimap)
+                              const topologyMinimapStyle = (null)
+                                ? getComputedStyle((null))
                                 : null;
-                              const topologyMinimapRect = topologyMinimap?.getBoundingClientRect();
-                              const topologyKindLegend = document.querySelector('[data-testid="topology-kind-legend"]');
-                              const topologyKindLegendStyle = topologyKindLegend
-                                ? getComputedStyle(topologyKindLegend)
+                              const topologyKindLegendStyle = (null)
+                                ? getComputedStyle((null))
                                 : null;
-                              const topologyKindLegendRect = topologyKindLegend?.getBoundingClientRect();
                               const topologyKindLegendVisible =
                                 Boolean(
-                                  topologyKindLegendRect &&
+                                  (undefined) &&
                                   topologyKindLegendStyle &&
                                   topologyKindLegendStyle.display !== "none" &&
                                   topologyKindLegendStyle.visibility !== "hidden" &&
                                   Number(topologyKindLegendStyle.opacity || "1") > 0.01 &&
-                                  topologyKindLegendRect.width > 0 &&
-                                  topologyKindLegendRect.height > 0
+                                  (undefined).width > 0 &&
+                                  (undefined).height > 0
                                 );
-                              const topologyAuditLegend = document.querySelector('[data-testid="topology-audit-legend"]');
-                              const topologyAuditLegendStyle = topologyAuditLegend
-                                ? getComputedStyle(topologyAuditLegend)
+                              const topologyAuditLegendStyle = (null)
+                                ? getComputedStyle((null))
                                 : null;
-                              const topologyAuditLegendRect = topologyAuditLegend?.getBoundingClientRect();
                               const topologyAuditLegendVisible =
                                 Boolean(
-                                  topologyAuditLegendRect &&
+                                  (undefined) &&
                                   topologyAuditLegendStyle &&
                                   topologyAuditLegendStyle.display !== "none" &&
                                   topologyAuditLegendStyle.visibility !== "hidden" &&
                                   Number(topologyAuditLegendStyle.opacity || "1") > 0.01 &&
-                                  topologyAuditLegendRect.width > 0 &&
-                                  topologyAuditLegendRect.height > 0
+                                  (undefined).width > 0 &&
+                                  (undefined).height > 0
                                 );
-                              const topologyMinimapViewport =
-                                topologyMinimap?.querySelector('[data-testid="topology-minimap-viewport"]');
-                              const topologyMinimapViewportRect =
-                                topologyMinimapViewport?.getBoundingClientRect();
-                              const topologyMinimapViewportFrameState =
-                                topologyMinimap?.getAttribute("data-viewport-frame-state") || "";
                               const topologyMinimapVisible =
                                 Boolean(
-                                  topologyMinimapRect &&
+                                  (undefined) &&
                                   topologyMinimapStyle &&
                                   topologyMinimapStyle.display !== "none" &&
                                   topologyMinimapStyle.visibility !== "hidden" &&
                                   Number(topologyMinimapStyle.opacity || "1") > 0.01 &&
-                                  topologyMinimapRect.width > 0 &&
-                                  topologyMinimapRect.height > 0
+                                  (undefined).width > 0 &&
+                                  (undefined).height > 0
                                 );
                               const topologyAuditLegendOverlapsAnalysisPanel =
                                 Boolean(
                                   topologyAuditLegendVisible &&
-                                  topologyAnalysisPanelRect &&
-                                  topologyAuditLegendRect &&
-                                  topologyAnalysisPanelRect.left < topologyAuditLegendRect.right + 12 &&
-                                  topologyAnalysisPanelRect.right > topologyAuditLegendRect.left - 12 &&
-                                  topologyAnalysisPanelRect.top < topologyAuditLegendRect.bottom + 12 &&
-                                  topologyAnalysisPanelRect.bottom > topologyAuditLegendRect.top - 12
+                                  (undefined) &&
+                                  (undefined) &&
+                                  (undefined).left < (undefined).right + 12 &&
+                                  (undefined).right > (undefined).left - 12 &&
+                                  (undefined).top < (undefined).bottom + 12 &&
+                                  (undefined).bottom > (undefined).top - 12
                                 );
                               const topologyAuditLegendOverlapsMinimap =
                                 Boolean(
                                   topologyAuditLegendVisible &&
                                   topologyMinimapVisible &&
-                                  topologyMinimapRect &&
-                                  topologyAuditLegendRect &&
-                                  topologyMinimapRect.left < topologyAuditLegendRect.right + 12 &&
-                                  topologyMinimapRect.right > topologyAuditLegendRect.left - 12 &&
-                                  topologyMinimapRect.top < topologyAuditLegendRect.bottom + 12 &&
-                                  topologyMinimapRect.bottom > topologyAuditLegendRect.top - 12
+                                  (undefined) &&
+                                  (undefined) &&
+                                  (undefined).left < (undefined).right + 12 &&
+                                  (undefined).right > (undefined).left - 12 &&
+                                  (undefined).top < (undefined).bottom + 12 &&
+                                  (undefined).bottom > (undefined).top - 12
                                 );
                               const topologyNodePopoverRelationRow =
                                 topologyNodePopover?.querySelector("[data-relation-row]");
                               const topologyNodePopoverRelationRowRect =
                                 topologyNodePopoverRelationRow?.getBoundingClientRect();
-                              const topologyNodePopoverConnectionsSection =
-                                topologyNodePopover?.querySelector('[data-testid="topology-connections-section"]');
-                              const topologyNodePopoverConnectionList =
-                                topologyNodePopover?.querySelector('[data-testid="topology-node-connection-list"]');
-                              const topologyNodePopoverConnectionListRect =
-                                topologyNodePopoverConnectionList?.getBoundingClientRect();
-                              const topologyNodePopoverFooter =
-                                topologyNodePopover?.querySelector('[data-testid="topology-node-popover-footer"]');
-                              const topologyNodePopoverFooterRect =
-                                topologyNodePopoverFooter?.getBoundingClientRect();
-                              const topologyNodePopoverFooterStyle = topologyNodePopoverFooter
-                                ? getComputedStyle(topologyNodePopoverFooter)
+                              const topologyNodePopoverFooterStyle = (undefined)
+                                ? getComputedStyle((undefined))
                                 : null;
-                              const topologyNodePopoverActionRail =
-                                topologyNodePopover?.querySelector('[data-testid="topology-node-popover-action-rail"]');
-                              const topologyNodePopoverActionRailRect =
-                                topologyNodePopoverActionRail?.getBoundingClientRect();
-                              const topologyNodePopoverCompactCommandRow =
-                                topologyNodePopover?.querySelector('[data-testid="topology-node-popover-compact-command-row"]');
-                              const topologyNodePopoverCompactCommandRowRect =
-                                topologyNodePopoverCompactCommandRow?.getBoundingClientRect();
-                              const topologyNodePopoverCompactActions =
-                                topologyNodePopover?.querySelector('[data-testid="topology-node-popover-compact-actions"]');
-                              const topologyNodePopoverCompactActionsRect =
-                                topologyNodePopoverCompactActions?.getBoundingClientRect();
-                              const topologyNodePopoverCompactRelationFacts =
-                                topologyNodePopover?.querySelector('[data-testid="topology-node-popover-compact-relation-facts"]');
-                              const topologyNodePopoverCompactRelationFactsRect =
-                                topologyNodePopoverCompactRelationFacts?.getBoundingClientRect();
-                              const topologyNodePopoverCompactHandoffSummary =
-                                topologyNodePopover?.querySelector('[data-testid="topology-node-popover-compact-handoff-summary"]');
-                              const topologyNodePopoverCompactHandoffSummaryRect =
-                                topologyNodePopoverCompactHandoffSummary?.getBoundingClientRect();
                               const topologyNodePopoverVisibleRelationRowHeight =
-                                topologyNodePopoverRelationRowRect && topologyNodePopoverBodyRect
+                                topologyNodePopoverRelationRowRect && (undefined)
                                   ? Math.max(
                                       0,
                                       Math.min(
                                         topologyNodePopoverRelationRowRect.bottom,
-                                        topologyNodePopoverBodyRect.bottom
+                                        (undefined).bottom
                                       ) -
                                         Math.max(
                                           topologyNodePopoverRelationRowRect.top,
-                                          topologyNodePopoverBodyRect.top
+                                          (undefined).top
                                         )
                                     )
                                   : 0;
-                              const topologyNodePopoverCompactBriefAction =
-                                topologyNodePopover?.querySelector('[data-testid="topology-node-popover-compact-brief-action"]');
-                              const topologyNodePopoverCompactBriefActionRect =
-                                topologyNodePopoverCompactBriefAction?.getBoundingClientRect();
-                              const topologyNodePopoverCompactBriefActionStyle = topologyNodePopoverCompactBriefAction
-                                ? getComputedStyle(topologyNodePopoverCompactBriefAction)
+                              const topologyNodePopoverCompactBriefActionStyle = (undefined)
+                                ? getComputedStyle((undefined))
                                 : null;
-                              const topologyNodePopoverCompactMeaning =
-                                topologyNodePopover?.querySelector('[data-testid="topology-node-popover-compact-meaning"]');
-                              const topologyNodePopoverCompactMeaningRect =
-                                topologyNodePopoverCompactMeaning?.getBoundingClientRect();
-                              const topologyNodePopoverCompactMeaningStyle = topologyNodePopoverCompactMeaning
-                                ? getComputedStyle(topologyNodePopoverCompactMeaning)
+                              const topologyNodePopoverCompactMeaningStyle = (undefined)
+                                ? getComputedStyle((undefined))
                                 : null;
-                              const topologySelectedSkeletonCardRelationSummary =
-                                document.querySelector('[data-skeleton-card][data-slug="domain:views"] [data-testid="sigma-selected-card-relation-summary"]');
-                              const topologySelectedSkeletonCardRelationSummaryRect =
-                                topologySelectedSkeletonCardRelationSummary?.getBoundingClientRect();
                               const topologyNodePopoverRelationGate =
                                 topologyNodePopoverRelationRow?.querySelector("[data-relation-row-agent-gate]");
                               const topologyNodePopoverRelationEvidenceGlyph =
@@ -2860,20 +2488,14 @@ pub fn run() {
                                       text: chip.textContent || ""
                                     }))
                                   : [];
-                              const overlapPad = 2;
-                              const fixedSurfacePad = 8;
                               const fixedTopologySurfaces = Array.from(document.querySelectorAll(
-                                '[data-testid="topology-analysis-panel"], [data-testid="topology-kind-legend"], [data-testid="topology-minimap"], [data-testid="topology-node-popover"], [data-testid="sigma-selected-edge-card"], [data-testid="topology-path-start-prompt"], [data-testid="topology-path-anchor-prompt"], [data-testid="topology-path-result-banner"]'
+                                '[data-testid="topology-node-popover"]'
                               )).map((surface) => {
                                 const style = getComputedStyle(surface);
                                 const rect = surface.getBoundingClientRect();
                                 const name = surface.getAttribute("data-testid") || surface.tagName.toLowerCase();
                                 const mountedBlockingSurface =
-                                  name === "topology-node-popover" ||
-                                  name === "sigma-selected-edge-card" ||
-                                  name === "topology-path-start-prompt" ||
-                                  name === "topology-path-anchor-prompt" ||
-                                  name === "topology-path-result-banner";
+                                  name === "topology-node-popover";
                                 return {
                                   name,
                                   visible:
@@ -2893,26 +2515,14 @@ pub fn run() {
                               );
                               const topologyTransientSurfaceNames = fixedTopologySurfaces
                                 .map((surface) => surface.name)
-                                .filter((name) =>
-                                  name === "topology-node-popover" ||
-                                  name === "sigma-selected-edge-card" ||
-                                  name === "topology-path-start-prompt" ||
-                                  name === "topology-path-anchor-prompt" ||
-                                  name === "topology-path-result-banner"
-                                );
+                                .filter((name) => name === "topology-node-popover");
                               const topologyTransientSurfaceCount = topologyTransientSurfaceNames.length;
                               const topologyTransientSurfaceContract =
                                 topologyCreateNodePanel
                                   ? "blocking-surface-wins"
                                   : topologyTransientSurfaceCount <= 1
                                       ? "single-transient"
-                                    : topologyTransientSurfaceNames.every((name) =>
-                                        name === "topology-path-start-prompt" ||
-                                        name === "topology-path-anchor-prompt" ||
-                                        name === "topology-path-result-banner"
-                                      )
-                                      ? "path-prompt-group"
-                                      : "review-stack";
+                                    : "review-stack";
                               const topologyInteractiveOverlays = Array.from(document.querySelectorAll("[data-interactive-overlay]"))
                                 .map((overlay) => {
                                   const style = getComputedStyle(overlay);
@@ -2947,10 +2557,10 @@ pub fn run() {
                                 for (let j = i + 1; j < fixedTopologySurfaces.length; j += 1) {
                                   const b = fixedTopologySurfaces[j];
                                   if (
-                                    a.left < b.right + fixedSurfacePad &&
-                                    a.right > b.left - fixedSurfacePad &&
-                                    a.top < b.bottom + fixedSurfacePad &&
-                                    a.bottom > b.top - fixedSurfacePad
+                                    a.left < b.right + (8) &&
+                                    a.right > b.left - (8) &&
+                                    a.top < b.bottom + (8) &&
+                                    a.bottom > b.top - (8)
                                   ) {
                                     topologyFixedSurfaceOverlapCount += 1;
                                     if (topologyFixedSurfaceOverlapSample.length < 5) {
@@ -3119,10 +2729,10 @@ pub fn run() {
                                 }
                                 for (const surface of fixedTopologySurfaces) {
                                   if (
-                                    card.left < surface.right + fixedSurfacePad &&
-                                    card.right > surface.left - fixedSurfacePad &&
-                                    card.top < surface.bottom + fixedSurfacePad &&
-                                    card.bottom > surface.top - fixedSurfacePad
+                                    card.left < surface.right + (8) &&
+                                    card.right > surface.left - (8) &&
+                                    card.top < surface.bottom + (8) &&
+                                    card.bottom > surface.top - (8)
                                   ) {
                                     topologyCardFixedSurfaceOverlapCount += 1;
                                     if (topologyCardFixedSurfaceOverlapSample.length < 5) {
@@ -3135,10 +2745,10 @@ pub fn run() {
                                   const a = topologyCards[i];
                                   const b = topologyCards[j];
                                   if (
-                                    a.left < b.right - overlapPad &&
-                                    a.right > b.left + overlapPad &&
-                                    a.top < b.bottom - overlapPad &&
-                                    a.bottom > b.top + overlapPad
+                                    a.left < b.right - (2) &&
+                                    a.right > b.left + (2) &&
+                                    a.top < b.bottom - (2) &&
+                                    a.bottom > b.top + (2)
                                   ) {
                                     topologyCardOverlapCount += 1;
                                     if (topologyCardOverlapSample.length < 5) {
@@ -3151,23 +2761,11 @@ pub fn run() {
                                 ? "blocking-composer"
                                 : new URLSearchParams(location.search).get("mode") === "path"
                                   ? "focus-path-state"
-                                  : topologySelectedRelationClaimLens
+                                  : (null)
                                     ? "active-relation-inspector"
                                   : topologySelectedNodePopover || topologyV2DetailPanel
                                     ? "focus-state"
                                     : "map-layer";
-                              const topologyRootAttentionWinner =
-                                skeletonCardsLayer?.getAttribute("data-topology-attention-winner") || "";
-                              const topologyAgentCurrentSurface =
-                                skeletonCardsLayer?.getAttribute("data-agent-current-surface") || "";
-                              const topologyAgentCurrentSurfaceRole =
-                                skeletonCardsLayer?.getAttribute("data-agent-current-surface-role") || "";
-                              const topologyAgentCurrentSurfaceRoute =
-                                skeletonCardsLayer?.getAttribute("data-agent-current-surface-route") || "";
-                              const topologyRootSelectedNodeId =
-                                skeletonCardsLayer?.getAttribute("data-topology-selected-node-id") || "";
-                              const topologySelectedRelationEdgeId =
-                                skeletonCardsLayer?.getAttribute("data-topology-selected-relation-edge-id") || "";
                               return JSON.stringify({
                                 href: location.href,
                                 title: document.title,
@@ -3211,12 +2809,6 @@ pub fn run() {
                                     location.pathname.includes("/topology") &&
                                     /Relief|Ontology relief map|concept cards|온톨로지 지형도|대표 카드|카드 골격|후보 \d+\/\d+개 표시|개념 \d+개 · 관계 \d+개|CONCEPTS/.test(bodyText),
                                   topologyAttentionWinner,
-                                  topologyRootAttentionWinner,
-                                  topologyAgentCurrentSurface,
-                                  topologyAgentCurrentSurfaceRole,
-                                  topologyAgentCurrentSurfaceRoute,
-                                  topologyRootSelectedNodeId,
-                                  topologySelectedRelationEdgeId,
                                   topologySigmaViewportVisible: Boolean(
                                     sigmaViewportRect &&
                                     sigmaViewportStyle &&
@@ -3317,31 +2909,12 @@ pub fn run() {
                                     Number(sigmaViewport?.getAttribute("data-camera-motion-safe-target-right-clearance") || "0"),
                                   topologyCameraMotionSelectedFanoutRows:
                                     Number(sigmaViewport?.getAttribute("data-camera-motion-selected-fanout-rows") || "0"),
-                                  topologySkeletonLayerPresent: Boolean(skeletonCardsLayer),
                                   topologyInitialRevealMotionContract:
                                     sigmaViewport?.getAttribute("data-initial-reveal-motion-contract") || "",
                                   topologyInitialRevealTransformPolicy:
                                     sigmaViewport?.getAttribute("data-initial-reveal-transform-policy") || "",
                                   topologyInitialRevealDurationMs:
                                     Number(sigmaViewport?.getAttribute("data-initial-reveal-duration-ms") || "0"),
-                                  topologySkeletonLayerModelCount:
-                                    Number(skeletonCardsLayer?.getAttribute("data-skeleton-card-model-count") || "0"),
-                                  topologySkeletonLayerResolvedCount:
-                                    Number(skeletonCardsLayer?.getAttribute("data-skeleton-card-resolved-count") || "0"),
-                                  topologySkeletonCardResolvedCount:
-                                    Number(skeletonCardsLayer?.getAttribute("data-skeleton-card-resolved-count") || "0"),
-                                  topologySkeletonVisibilityFallback:
-                                    skeletonCardsLayer?.getAttribute("data-visibility-fallback") === "true",
-                                  topologySkeletonVisibilityFallbackCount:
-                                    Number(skeletonCardsLayer?.getAttribute("data-visibility-fallback-count") || "0"),
-                                  topologyDimOpacityContract:
-                                    skeletonCardsLayer?.getAttribute("data-dim-opacity-contract") || "",
-                                  topologyDimAnchorOpacity:
-                                    Number(skeletonCardsLayer?.getAttribute("data-dim-anchor-opacity") || "0"),
-                                  topologyDimChipOpacity:
-                                    Number(skeletonCardsLayer?.getAttribute("data-dim-chip-opacity") || "0"),
-                                  topologyDimContextOpacity:
-                                    Number(skeletonCardsLayer?.getAttribute("data-dim-context-opacity") || "0"),
                                   topologyDimAnchorVisibleCount:
                                     topologyDimAnchorCards.length,
                                   topologyDimChipVisibleCount:
@@ -3350,28 +2923,6 @@ pub fn run() {
                                     topologyMinOpacity(topologyDimAnchorCards),
                                   topologyDimChipMinOpacity:
                                     topologyMinOpacity(topologyDimChipCards),
-                                  topologySelectedDockCompanionCount:
-                                    Number(skeletonCardsLayer?.getAttribute("data-selected-dock-companion-count") || "0"),
-                                  topologySelectedDockVisibleCompanionCount:
-                                    Number(skeletonCardsLayer?.getAttribute("data-selected-dock-visible-companion-count") || "0"),
-                                  topologySelectedDockCompanionVisible:
-                                    skeletonCardsLayer?.getAttribute("data-selected-dock-companion-visible") === "true",
-                                  topologySelectedDockVisibilityPolicy:
-                                    skeletonCardsLayer?.getAttribute("data-selected-dock-visibility-policy") || "",
-                                  topologyClickFocusRelationshipContext:
-                                    skeletonCardsLayer?.getAttribute("data-click-focus-relationship-context") || "",
-                                  topologyClickFocusRelationshipContextSource:
-                                    skeletonCardsLayer?.getAttribute("data-click-focus-relationship-context-source") || "",
-                                  topologyFocusClusterMode:
-                                    topologyFocusClusterActive
-                                      ? "focus"
-                                      : "",
-                                  topologyFocusClusterStage,
-                                  topologyFocusClusterAttentionLabel,
-                                  topologyDragHullRenderPolicy:
-                                    skeletonCardsLayer?.getAttribute("data-drag-hull-render-policy") || "",
-                                  topologyDragClusterHullDomPolicy:
-                                    topologyDragClusterHullDomPolicy,
                                   topologyFocusClusterBreathingRoomContract:
                                     "",
                                   topologyFocusClusterBreathingRoomPx:
@@ -3380,10 +2931,6 @@ pub fn run() {
                                     0,
                                   topologyFocusClusterBottomClearance:
                                     0,
-                                  topologyFocusClusterVisible:
-                                    topologyFocusClusterHullVisible,
-                                  topologyFocusClusterSize:
-                                    topologyFocusClusterSize,
                                   topologyFocusClusterWidth:
                                     0,
                                   topologyFocusClusterHeight:
@@ -3404,47 +2951,26 @@ pub fn run() {
                                   topologyFocusRelationLabelTypeLabel,
                                   topologyFocusRelationLabelCount,
                                   topologyFocusRelationLabelVisibleCountPolicy,
-                                  topologyUiScale,
-                                  topologyUiScaleWritePolicy:
-                                    skeletonCardsLayer?.getAttribute("data-topology-ui-scale-write-policy") || "",
-                                  topologyLayoutTransitionRepositionPolicy:
-                                    skeletonCardsLayer?.getAttribute("data-layout-transition-reposition-policy") || "",
-                                  topologyLayoutTransitionRepositionThrottleMs:
-                                    Number(skeletonCardsLayer?.getAttribute("data-layout-transition-reposition-throttle-ms") || "0"),
-                                  topologyLayoutTransitionRepositionDeferred:
-                                    skeletonCardsLayer?.getAttribute("data-layout-transition-reposition-deferred") || "",
-                                  topologyInitialLoadRepositionThrottleMs:
-                                    Number(skeletonCardsLayer?.getAttribute("data-initial-load-reposition-throttle-ms") || "0"),
-                                  topologySkeletonLayoutError:
-                                    skeletonCardsLayer?.getAttribute("data-layout-error") || "",
                                   topologySigmaCanvasCount: sigmaCanvases.length,
                                   topologySigmaCanvasSizes: sigmaCanvases,
                                   topologyStagePanClickCancelPx,
                                   topologyEngineLoadingVisible:
                                     Boolean(
-                                      sigmaLoadingFallbackRect &&
+                                      (undefined) &&
                                       sigmaLoadingFallbackStyle &&
                                       sigmaLoadingFallbackStyle.display !== "none" &&
                                       sigmaLoadingFallbackStyle.visibility !== "hidden" &&
                                       Number(sigmaLoadingFallbackStyle.opacity || "1") > 0.01 &&
-                                      sigmaLoadingFallbackRect.width > 0 &&
-                                      sigmaLoadingFallbackRect.height > 0
+                                      (undefined).width > 0 &&
+                                      (undefined).height > 0
                                     ),
-                                  topologyCardsReady:
-                                    skeletonCardsLayer?.getAttribute("data-skeleton-cards-ready") === "true",
                                   topologyCardRawCount:
                                     document.querySelectorAll("[data-skeleton-card]").length,
                                   topologyCardRawSample: topologyRawCards,
                                   topologyCardCount: topologyCards.length,
-                                  topologyVisibleCardCount:
-                                    Number(skeletonCardsLayer?.getAttribute("data-visible-card-count") || "0"),
                                   topologyPathCandidateCardCount,
                                   topologyPathSourceCardCount,
                                   topologyPathTargetCardCount,
-                                  topologyPathResultCandidateSuppressionPolicy:
-                                    skeletonCardsLayer?.getAttribute("data-path-result-candidate-suppression-policy") || "",
-                                  topologyPathResultCandidateSuppressionActive:
-                                    skeletonCardsLayer?.getAttribute("data-path-result-candidate-suppression-active") || "",
                                   topologyPathSourceCardSlug: topologyPathSourceCard?.slug || "",
                                   topologyPathSourceCardRoleContract:
                                     topologyPathSourceCard?.pathRoleContract || "",
@@ -3463,244 +2989,30 @@ pub fn run() {
                                     topologyPathTargetCard?.pathBadgeLabel || "",
                                   topologyAnalysisPanelVisible:
                                     Boolean(
-                                      topologyAnalysisPanelRect &&
+                                      (undefined) &&
                                       topologyAnalysisPanelStyle &&
                                       topologyAnalysisPanelStyle.display !== "none" &&
                                       topologyAnalysisPanelStyle.visibility !== "hidden" &&
                                       Number(topologyAnalysisPanelStyle.opacity || "1") > 0.01 &&
-                                      topologyAnalysisPanelRect.width > 0 &&
-                                      topologyAnalysisPanelRect.height > 0
+                                      (undefined).width > 0 &&
+                                      (undefined).height > 0
                                     ),
-                                  topologyAnalysisPanelLeft:
-                                    topologyAnalysisPanelRect?.left || 0,
-                                  topologyAnalysisPanelTop:
-                                    topologyAnalysisPanelRect?.top || 0,
-                                  topologyAnalysisPanelRight:
-                                    topologyAnalysisPanelRect?.right || 0,
-                                  topologyAnalysisPanelBottom:
-                                    topologyAnalysisPanelRect?.bottom || 0,
-                                  topologyAnalysisPanelWidth:
-                                    topologyAnalysisPanelRect?.width || 0,
-                                  topologyAnalysisPanelHeight:
-                                    topologyAnalysisPanelRect?.height || 0,
                                   topologyPathStartPromptVisible,
-                                  topologyPathStartPromptContract:
-                                    topologyPathStartPrompt?.getAttribute("data-path-prompt-contract") || "",
-                                  topologyPathStartPromptLane:
-                                    topologyPathStartPrompt?.getAttribute("data-path-prompt-lane") || "",
-                                  topologyPathStartPromptAttentionLayer:
-                                    topologyPathStartPrompt?.getAttribute("data-attention-layer") || "",
-                                  topologyPathStartPromptHandoffContract:
-                                    topologyPathStartPrompt?.getAttribute("data-handoff-contract") || "",
-                                  topologyPathStartPromptOverflowContract:
-                                    topologyPathStartPrompt?.getAttribute("data-overflow-contract") || "",
-                                  topologyPathStartPromptMcpAction:
-                                    topologyPathStartPrompt?.getAttribute("data-mcp-action") || "",
-                                  topologyPathStartPromptCliFallback:
-                                    topologyPathStartPrompt?.getAttribute("data-cli-fallback") || "",
-                                  topologyPathStartPromptLeft:
-                                    topologyPathStartPromptRect?.left || 0,
-                                  topologyPathStartPromptTop:
-                                    topologyPathStartPromptRect?.top || 0,
-                                  topologyPathStartPromptRight:
-                                    topologyPathStartPromptRect?.right || 0,
-                                  topologyPathStartPromptBottom:
-                                    topologyPathStartPromptRect?.bottom || 0,
-                                  topologyPathStartPromptWidth:
-                                    topologyPathStartPromptRect?.width || 0,
-                                  topologyPathStartPromptHeight:
-                                    topologyPathStartPromptRect?.height || 0,
-                                  topologyPathStartPromptClientWidth:
-                                    topologyPathStartPrompt?.clientWidth || 0,
-                                  topologyPathStartPromptScrollWidth:
-                                    topologyPathStartPrompt?.scrollWidth || 0,
                                   topologyPathAnchorPromptVisible,
-                                  topologyPathAnchorPromptContract:
-                                    topologyPathAnchorPrompt?.getAttribute("data-path-prompt-contract") || "",
-                                  topologyPathAnchorPromptLane:
-                                    topologyPathAnchorPrompt?.getAttribute("data-path-prompt-lane") || "",
-                                  topologyPathAnchorPromptAttentionLayer:
-                                    topologyPathAnchorPrompt?.getAttribute("data-attention-layer") || "",
-                                  topologyPathAnchorPromptHandoffContract:
-                                    topologyPathAnchorPrompt?.getAttribute("data-handoff-contract") || "",
-                                  topologyPathAnchorPromptOverflowContract:
-                                    topologyPathAnchorPrompt?.getAttribute("data-overflow-contract") || "",
-                                  topologyPathAnchorPromptMcpAction:
-                                    topologyPathAnchorPrompt?.getAttribute("data-mcp-action") || "",
-                                  topologyPathAnchorPromptCliFallback:
-                                    topologyPathAnchorPrompt?.getAttribute("data-cli-fallback") || "",
-                                  topologyPathAnchorPromptLeft:
-                                    topologyPathAnchorPromptRect?.left || 0,
-                                  topologyPathAnchorPromptTop:
-                                    topologyPathAnchorPromptRect?.top || 0,
-                                  topologyPathAnchorPromptRight:
-                                    topologyPathAnchorPromptRect?.right || 0,
-                                  topologyPathAnchorPromptBottom:
-                                    topologyPathAnchorPromptRect?.bottom || 0,
-                                  topologyPathAnchorPromptWidth:
-                                    topologyPathAnchorPromptRect?.width || 0,
-                                  topologyPathAnchorPromptHeight:
-                                    topologyPathAnchorPromptRect?.height || 0,
-                                  topologyPathAnchorPromptClientWidth:
-                                    topologyPathAnchorPrompt?.clientWidth || 0,
-                                  topologyPathAnchorPromptScrollWidth:
-                                    topologyPathAnchorPrompt?.scrollWidth || 0,
                                   topologyPathPromptClearanceContract,
                                   topologyPathPromptSuppressionContract,
                                   topologyPathPromptPanelClearancePx,
                                   topologyPathPromptViewportRightClearancePx,
-                                  topologyPathCandidateVisibilityText:
-                                    topologyPathCandidateVisibility?.textContent?.trim() || "",
-                                  topologyPathCandidateVisibilityVisible:
-                                    topologyPathCandidateVisibility?.getAttribute("data-visible") || "",
-                                  topologyPathCandidateVisibilityTotal:
-                                    topologyPathCandidateVisibility?.getAttribute("data-total") || "",
-                                  topologyPathVisibleRouteVisible:
-                                    Boolean(topologyPathVisibleRoute),
-                                  topologyPathVisibleRouteContract:
-                                    topologyPathVisibleRoute?.getAttribute("data-route-contract") || "",
-                                  topologyPathVisibleRouteAttentionLayer:
-                                    topologyPathVisibleRoute?.getAttribute("data-attention-layer") || "",
-                                  topologyPathVisibleRouteGuidanceOwner:
-                                    topologyPathVisibleRoute?.getAttribute("data-guidance-owner") || "",
-                                  topologyPathVisibleRouteOverflowContract:
-                                    topologyPathVisibleRoute?.getAttribute("data-overflow-contract") || "",
-                                  topologyPathVisibleRouteSourceSlug:
-                                    topologyPathVisibleRoute?.getAttribute("data-source-slug") || "",
-                                  topologyPathVisibleRouteTargetSlug:
-                                    topologyPathVisibleRoute?.getAttribute("data-target-slug") || "",
-                                  topologyPathVisibleRouteSourceTitle:
-                                    topologyPathVisibleRoute?.getAttribute("data-source-title") || "",
-                                  topologyPathVisibleRouteTargetTitle:
-                                    topologyPathVisibleRoute?.getAttribute("data-target-title") || "",
-                                  topologyPathVisibleRouteSurfaceToken:
-                                    topologyPathVisibleRoute?.getAttribute("data-surface-token") || "",
-                                  topologyPathVisibleRouteBorderToken:
-                                    topologyPathVisibleRoute?.getAttribute("data-border-token") || "",
-                                  topologyPathVisibleRouteChipSurfaceToken:
-                                    topologyPathVisibleRoute?.getAttribute("data-chip-surface-token") || "",
-                                  topologyPathVisibleRouteChipBorderToken:
-                                    topologyPathVisibleRoute?.getAttribute("data-chip-border-token") || "",
-                                  topologyPathVisibleRouteClientWidth:
-                                    topologyPathVisibleRoute?.clientWidth || 0,
-                                  topologyPathVisibleRouteScrollWidth:
-                                    topologyPathVisibleRoute?.scrollWidth || 0,
-                                  topologyPathAgentHandoffVisible:
-                                    Boolean(topologyPathAgentHandoff),
-                                  topologyPathAgentHandoffText:
-                                    topologyPathAgentHandoff?.textContent?.trim() || "",
-                                  topologyPathAgentHandoffLayer:
-                                    topologyPathAgentHandoff?.getAttribute("data-attention-layer") || "",
-                                  topologyPathGuidanceOwner:
-                                    topologyPathAgentHandoff?.getAttribute("data-guidance-owner") ||
-                                    topologyAnalysisPanel?.getAttribute("data-path-guidance-owner") ||
-                                    "",
-                                  topologyPathPromptPolicy:
-                                    topologyPathAgentHandoff?.getAttribute("data-path-prompt-policy") ||
-                                    topologyAnalysisPanel?.getAttribute("data-path-prompt-policy") ||
-                                    "",
-                                  topologyPathHandoffContract:
-                                    topologyPathAgentHandoff?.getAttribute("data-handoff-contract") || "",
-                                  topologyPathHandoffLayoutContract:
-                                    topologyPathAgentHandoff?.getAttribute("data-handoff-layout-contract") || "",
-                                  topologyPathHandoffHierarchy:
-                                    topologyPathAgentHandoff?.getAttribute("data-handoff-hierarchy") || "",
-                                  topologyPathHandoffOverflowContract:
-                                    topologyPathAgentHandoff?.getAttribute("data-overflow-contract") || "",
-                                  topologyPathHandoffSurfaceToken:
-                                    topologyPathAgentHandoff?.getAttribute("data-surface-token") || "",
-                                  topologyPathHandoffBorderToken:
-                                    topologyPathAgentHandoff?.getAttribute("data-border-token") || "",
-                                  topologyPathHandoffActionMinHeightToken:
-                                    topologyPathAgentHandoff?.getAttribute("data-action-min-height-token") || "",
-                                  topologyPathHandoffActionRadiusToken:
-                                    topologyPathAgentHandoff?.getAttribute("data-action-radius-token") || "",
-                                  topologyPathAgentHandoffMcpAction:
-                                    topologyPathAgentHandoff?.getAttribute("data-mcp-action") || "",
-                                  topologyPathAgentHandoffCliFallback:
-                                    topologyPathAgentHandoff?.getAttribute("data-cli-fallback") || "",
-                                  topologyPathAgentHandoffClientWidth:
-                                    topologyPathAgentHandoff?.clientWidth || 0,
-                                  topologyPathAgentHandoffScrollWidth:
-                                    topologyPathAgentHandoff?.scrollWidth || 0,
-                                  topologyPathRestoreSource:
-                                    topologyPathRestoreProbe?.getAttribute("data-source") || "",
-                                  topologyPathRestoreTarget:
-                                    topologyPathRestoreProbe?.getAttribute("data-target") || "",
-                                  topologyPathRestoreFound:
-                                    topologyPathRestoreProbe?.getAttribute("data-found") || "",
-                                  topologyPathRestoreHopCount:
-                                    Number(topologyPathRestoreProbe?.getAttribute("data-hop-count") || 0),
                                   topologyPathResultBannerVisible:
                                     Boolean(
-                                      topologyPathResultBannerRect &&
+                                      (undefined) &&
                                       topologyPathResultBannerStyle &&
                                       topologyPathResultBannerStyle.display !== "none" &&
                                       topologyPathResultBannerStyle.visibility !== "hidden" &&
                                       Number(topologyPathResultBannerStyle.opacity || "1") > 0.01 &&
-                                      topologyPathResultBannerRect.width > 0 &&
-                                      topologyPathResultBannerRect.height > 0
+                                      (undefined).width > 0 &&
+                                      (undefined).height > 0
                                     ),
-                                  topologyPathResultBannerContract:
-                                    topologyPathResultBanner?.getAttribute("data-path-result-contract") || "",
-                                  topologyPathResultBannerLane:
-                                    topologyPathResultBanner?.getAttribute("data-path-result-lane") || "",
-                                  topologyPathResultBannerAttentionLayer:
-                                    topologyPathResultBanner?.getAttribute("data-attention-layer") || "",
-                                  topologyPathResultBannerHandoffContract:
-                                    topologyPathResultBanner?.getAttribute("data-handoff-contract") || "",
-                                  topologyPathResultBannerOverflowContract:
-                                    topologyPathResultBanner?.getAttribute("data-overflow-contract") || "",
-                                  topologyPathResultBannerWidth:
-                                    topologyPathResultBannerRect?.width || 0,
-                                  topologyPathResultBannerHeight:
-                                    topologyPathResultBannerRect?.height || 0,
-                                  topologyPathResultBannerPanelClearancePx,
-                                  topologyPathResultBannerClearanceContract,
-                                  topologyPathResultBannerLeft:
-                                    topologyPathResultBannerRect?.left || 0,
-                                  topologyPathResultBannerTop:
-                                    topologyPathResultBannerRect?.top || 0,
-                                  topologyPathResultBannerRight:
-                                    topologyPathResultBannerRect?.right || 0,
-                                  topologyPathResultBannerBottom:
-                                    topologyPathResultBannerRect?.bottom || 0,
-                                  topologyPathResultBannerClientWidth:
-                                    topologyPathResultBanner?.clientWidth || 0,
-                                  topologyPathResultBannerScrollWidth:
-                                    topologyPathResultBanner?.scrollWidth || 0,
-                                  topologyPathResultRouteChainOverflowContract:
-                                    topologyPathResultRouteChain?.getAttribute("data-overflow-contract") || "",
-                                  topologyPathResultRouteChainCompactContract:
-                                    topologyPathResultRouteChain?.getAttribute("data-compact-contract") || "",
-                                  topologyPathResultRouteChainWidth:
-                                    topologyPathResultRouteChainRect?.width || 0,
-                                  topologyPathResultRouteChainHeight:
-                                    topologyPathResultRouteChainRect?.height || 0,
-                                  topologyPathResultRouteChainClientWidth:
-                                    topologyPathResultRouteChain?.clientWidth || 0,
-                                  topologyPathResultRouteChainScrollWidth:
-                                    topologyPathResultRouteChain?.scrollWidth || 0,
-                                  topologyPathResultActionRailOverflowContract:
-                                    topologyPathResultActionRail?.getAttribute("data-overflow-contract") || "",
-                                  topologyPathResultActionRailHierarchy:
-                                    topologyPathResultActionRail?.getAttribute("data-action-hierarchy") || "",
-                                  topologyPathResultActionRailWidth:
-                                    topologyPathResultActionRailRect?.width || 0,
-                                  topologyPathResultActionRailHeight:
-                                    topologyPathResultActionRailRect?.height || 0,
-                                  topologyPathResultActionRailClientWidth:
-                                    topologyPathResultActionRail?.clientWidth || 0,
-                                  topologyPathResultActionRailScrollWidth:
-                                    topologyPathResultActionRail?.scrollWidth || 0,
-                                  topologyPathResultSecondaryChecksContract:
-                                    topologyPathResultSecondaryChecks?.getAttribute("data-disclosure-contract") || "",
-                                  topologyPathResultSecondaryChecksOpen:
-                                    Boolean(topologyPathResultSecondaryChecks?.getAttribute("open") !== null),
-                                  topologyPathResultSecondaryChecksMenuWidth:
-                                    topologyPathResultSecondaryChecksMenuRect?.width || 0,
-                                  topologyPathResultSecondaryChecksMenuHeight:
-                                    topologyPathResultSecondaryChecksMenuRect?.height || 0,
                                   topologyPathResultRelationChips,
                                   topologyPathResultActions,
                                   topologyPathResultEndpoints,
@@ -3720,16 +3032,6 @@ pub fn run() {
                                     sigmaViewport?.getAttribute("data-kind-legend-state") || "",
                                   topologyKindLegendVisible,
                                   topologyAuditLegendVisible,
-                                  topologyAuditLegendContract:
-                                    topologyAuditLegend?.getAttribute("data-audit-legend-contract") || "",
-                                  topologyAuditLegendAttentionRole:
-                                    topologyAuditLegend?.getAttribute("data-audit-legend-attention-role") || "",
-                                  topologyAuditLegendDensity:
-                                    topologyAuditLegend?.getAttribute("data-audit-legend-density") || "",
-                                  topologyAuditLegendWidth:
-                                    topologyAuditLegendRect?.width || 0,
-                                  topologyAuditLegendHeight:
-                                    topologyAuditLegendRect?.height || 0,
                                   topologyAuditLegendOverlapsAnalysisPanel,
                                   topologyAuditLegendOverlapsMinimap,
                                   topologyTopWorkspaceLabel:
@@ -3760,30 +3062,18 @@ pub fn run() {
                                     topologySearchActionLaneRect?.height || 0,
                                   topologySigmaControlsStackVisible:
                                     Boolean(
-                                      topologySigmaControlsStackRect &&
+                                      (undefined) &&
                                       topologySigmaControlsStackStyle &&
                                       topologySigmaControlsStackStyle.display !== "none" &&
                                       topologySigmaControlsStackStyle.visibility !== "hidden" &&
                                       Number(topologySigmaControlsStackStyle.opacity || "1") > 0.01 &&
-                                      topologySigmaControlsStackRect.width > 0 &&
-                                      topologySigmaControlsStackRect.height > 0
+                                      (undefined).width > 0 &&
+                                      (undefined).height > 0
                                     ),
-                                  topologySigmaControlsStackDensity:
-                                    topologySigmaControlsStack?.getAttribute("data-controls-density") || "",
-                                  topologySigmaControlsStackContract:
-                                    topologySigmaControlsStack?.getAttribute("data-controls-contract") || "",
-                                  topologySigmaControlsStackSurfaceToken:
-                                    topologySigmaControlsStack?.getAttribute("data-control-surface-token") || "",
-                                  topologySigmaControlsStackBorderToken:
-                                    topologySigmaControlsStack?.getAttribute("data-control-border-token") || "",
                                   topologySigmaControlsStackSurfaceComputed:
                                     topologySigmaControlsStackStyle?.backgroundColor || "",
                                   topologySigmaControlsStackBorderComputed:
                                     topologySigmaControlsStackStyle?.borderTopColor || "",
-                                  topologySigmaControlsStackWidth:
-                                    topologySigmaControlsStackRect?.width || 0,
-                                  topologySigmaControlsStackHeight:
-                                    topologySigmaControlsStackRect?.height || 0,
                                   topologyShortcutsHelpButtonVisible:
                                     Boolean(
                                       topologyShortcutsHelpButtonRect &&
@@ -3968,109 +3258,38 @@ pub fn run() {
                                     sigmaViewport?.getAttribute("data-support-chrome-zoom-lens-active") === "true",
                                   topologySupportChromeZoomLensThresholdRatio:
                                     Number(sigmaViewport?.getAttribute("data-support-chrome-zoom-lens-threshold-ratio") || "0"),
-                                  topologyMinimapWidth:
-                                    topologyMinimapRect?.width || 0,
-                                  topologyMinimapHeight:
-                                    topologyMinimapRect?.height || 0,
                                   topologyMinimapRight:
-                                    topologyMinimapRect ? innerWidth - topologyMinimapRect.right : 0,
+                                    (undefined) ? innerWidth - (undefined).right : 0,
                                   topologyMinimapBottom:
-                                    topologyMinimapRect ? innerHeight - topologyMinimapRect.bottom : 0,
+                                    (undefined) ? innerHeight - (undefined).bottom : 0,
                                   topologyMinimapViewportVisible:
                                     Boolean(
-                                      topologyMinimapViewportRect &&
+                                      (undefined) &&
                                       topologyMinimapVisible &&
-                                      topologyMinimapViewportRect.width > 2 &&
-                                      topologyMinimapViewportRect.height > 2
+                                      (undefined).width > 2 &&
+                                      (undefined).height > 2
                                     ),
-                                  topologyMinimapViewportWidth:
-                                    topologyMinimapViewportRect?.width || 0,
-                                  topologyMinimapViewportHeight:
-                                    topologyMinimapViewportRect?.height || 0,
-                                  topologyMinimapViewportFrameState,
-                                  topologyRelationLensVisible: Boolean(topologyRelationLens),
-                                  topologyRelationLensText,
-                                  topologyRelationLensPluralMismatch: /\b1\s+relation\s+types\b/i.test(topologyRelationLensText),
                                   topologySelectedNodePopoverVisible: Boolean(topologySelectedNodePopover),
                                   topologySelectedNodeId,
                                   topologySelectedNodeKind,
                                   topologySelectedNodeTitle,
                                   topologySelectedNodeSource,
                                   topologySelectedNodeSummary,
-                                  topologyNodePopoverPrimaryActionButtonKind,
-                                  topologyNodePopoverPrimaryActionButtonRoute,
-                                  topologyNodePopoverPrimaryActionButtonFlow,
-                                  topologyRelationQualityLensVisible: Boolean(topologyRelationQualityLens),
                                   topologyRelationQualityLensText,
                                   topologySelectedRelationQualityLensText,
                                   topologyOverviewRelationQualityText,
-                                  topologyOverviewRelationQualityDensity,
                                   topologyOverviewAgentReadinessText,
                                   topologyOverviewAgentReadinessMeterSegments,
                                   topologyAnalysisPanelVisible:
                                     Boolean(
-                                      topologyAnalysisPanelRect &&
+                                      (undefined) &&
                                       topologyAnalysisPanelStyle &&
                                       topologyAnalysisPanelStyle.display !== "none" &&
                                       topologyAnalysisPanelStyle.visibility !== "hidden" &&
                                       Number(topologyAnalysisPanelStyle.opacity || "1") > 0.01 &&
-                                      topologyAnalysisPanelRect.width > 0 &&
-                                      topologyAnalysisPanelRect.height > 0
+                                      (undefined).width > 0 &&
+                                      (undefined).height > 0
                                     ),
-                                  topologyAnalysisPanelMode:
-                                    topologyAnalysisPanel?.getAttribute("data-analysis-mode") || "",
-                                  topologyAnalysisPanelRequestedMode:
-                                    topologyAnalysisPanel?.getAttribute("data-requested-analysis-mode") || "",
-                                  topologyAnalysisPanelSelectedContext:
-                                    topologyAnalysisPanel?.getAttribute("data-selected-context") === "true",
-                                  topologyAnalysisPanelSelectedFocusRail:
-                                    topologyAnalysisPanel?.getAttribute("data-selected-focus-rail") === "true",
-                                  topologyAnalysisPanelAttentionRole:
-                                    topologyAnalysisPanel?.getAttribute("data-attention-role") || "",
-                                  topologyAnalysisPanelWidthPolicy:
-                                    topologyAnalysisPanel?.getAttribute("data-panel-width-policy") || "",
-                                  topologyAnalysisPanelWidthBand:
-                                    topologyAnalysisPanel?.getAttribute("data-panel-width-band") || "",
-                                  topologyAnalysisPanelWidthTarget:
-                                    topologyAnalysisPanel?.getAttribute("data-panel-width-target") || "",
-                                  topologyAnalysisPanelWidthContract:
-                                    topologyAnalysisPanel?.getAttribute("data-panel-width-contract") || "",
-                                  topologyAnalysisPanelWidthCss:
-                                    topologyAnalysisPanel?.getAttribute("data-panel-width-css") || "",
-                                  topologyAnalysisPanelWidthToken:
-                                    topologyAnalysisPanel?.getAttribute("data-panel-width-token") || "",
-                                  topologyAnalysisPanelPhoneUtilityReserveToken:
-                                    topologyAnalysisPanel?.getAttribute("data-panel-phone-utility-reserve-token") || "",
-                                  topologyHealthRepairLaneContract:
-                                    topologyAnalysisPanel?.getAttribute("data-health-repair-lane-contract") || "",
-                                  topologyHealthRepairTargetSlug:
-                                    topologyAnalysisPanel?.getAttribute("data-health-repair-target-slug") || "",
-                                  topologyHealthRepairTargetKind:
-                                    topologyAnalysisPanel?.getAttribute("data-health-repair-target-kind") || "",
-                                  topologyHealthRepairOrderContract:
-                                    topologyAnalysisPanel?.getAttribute("data-health-repair-order-contract") ||
-                                    topologyHealthRepairOrder?.getAttribute("data-health-repair-order-contract") ||
-                                    "",
-                                  topologyHealthRepairPrimaryAction:
-                                    topologyHealthRepairOrder?.getAttribute("data-health-repair-primary-action") || "",
-                                  topologyHealthRepairActionOrder:
-                                    topologyHealthRepairOrder?.getAttribute("data-health-repair-action-order") || "",
-                                  topologyHealthRepairVisualContract:
-                                    topologyHealthRepairOrder?.getAttribute("data-health-repair-visual-contract") || "",
-                                  topologyHealthRepairFirstActionPrimary:
-                                    topologyHealthRepairFirstAction?.getAttribute("data-health-repair-primary-action") || "",
-                                  topologyHealthRepairFirstActionTier:
-                                    topologyHealthRepairFirstAction?.getAttribute("data-health-repair-action-tier") || "",
-                                  topologyHealthRepairFirstActionWidth:
-                                    topologyHealthRepairFirstActionRect?.width || 0,
-                                  topologyHealthRepairSyncGate:
-                                    topologyHealthRepairOrder?.getAttribute("data-health-repair-sync-gate") || "",
-                                  topologyAnalysisPanelSurfaceToken:
-                                    topologyAnalysisPanel?.getAttribute("data-panel-surface-token") || "",
-                                  topologyAnalysisPanelLayerContract:
-                                    topologyAnalysisPanel?.getAttribute("data-panel-layer-contract") || "",
-                                  topologyAnalysisPanelZIndexToken:
-                                    topologyAnalysisPanel?.getAttribute("data-panel-z-index-token") || "",
                                   topologyAnalysisPanelZIndexComputed:
                                     topologyAnalysisPanelStyle?.zIndex || "",
                                   topologyAnalysisPanelSurfaceComputed:
@@ -4078,84 +3297,28 @@ pub fn run() {
                                   topologyAnalysisPanelBorderComputed:
                                     topologyAnalysisPanelStyle?.borderColor || "",
                                   topologyVerifierTokenContractVersion: "command-spine-v1",
-                                  topologyAnalysisPanelCommandSpinePaddingToken:
-                                    topologyAnalysisPanel?.getAttribute("data-command-spine-padding-token") || "",
-                                  topologyAnalysisPanelCommandSpineGapToken:
-                                    topologyAnalysisPanel?.getAttribute("data-command-spine-gap-token") || "",
-                                  topologyAnalysisPanelCommandPrimaryHeightToken:
-                                    topologyAnalysisPanel?.getAttribute("data-command-primary-height-token") || "",
-                                  topologyAnalysisPanelCommandSpineSurfaceToken:
-                                    topologyAnalysisPanel?.getAttribute("data-command-spine-surface-token") || "",
-                                  topologyAnalysisPanelCommandSpineBorderToken:
-                                    topologyAnalysisPanel?.getAttribute("data-command-spine-border-token") || "",
-                                  topologyAnalysisPanelWidth:
-                                    topologyAnalysisPanelRect?.width || 0,
-                                  topologyAnalysisPanelHeight:
-                                    topologyAnalysisPanelRect?.height || 0,
                                   topologyAnalysisPanelOverflowY:
                                     topologyAnalysisPanelStyle?.overflowY || "",
-                                  topologyAnalysisPanelClientHeight:
-                                    topologyAnalysisPanel?.clientHeight || 0,
-                                  topologyAnalysisPanelScrollHeight:
-                                    topologyAnalysisPanel?.scrollHeight || 0,
-                                  topologyOverviewPrimaryCopyWidth:
-                                    topologyOverviewPrimaryCopyButtonRect?.width || 0,
-                                  topologyOverviewPrimaryCopyHeight:
-                                    topologyOverviewPrimaryCopyButtonRect?.height || 0,
                                   topologyFocusCommandSpineVisible:
                                     Boolean(
-                                      topologyFocusCommandSpineRect &&
+                                      (undefined) &&
                                       topologyFocusCommandSpineStyle &&
                                       topologyFocusCommandSpineStyle.display !== "none" &&
                                       topologyFocusCommandSpineStyle.visibility !== "hidden" &&
                                       Number(topologyFocusCommandSpineStyle.opacity || "1") > 0.01 &&
-                                      topologyFocusCommandSpineRect.width > 0 &&
-                                      topologyFocusCommandSpineRect.height > 0
+                                      (undefined).width > 0 &&
+                                      (undefined).height > 0
                                     ),
-                                  topologyFocusCommandSpineHierarchy:
-                                    topologyFocusCommandSpine?.getAttribute("data-command-hierarchy") || "",
-                                  topologyFocusCommandSpineAttentionLayer:
-                                    topologyFocusCommandSpine?.getAttribute("data-attention-layer") || "",
-                                  topologyFocusCommandSpineTokenizedSurface:
-                                    topologyFocusCommandSpine?.getAttribute("data-tokenized-surface") || "",
-                                  topologyFocusCommandSpineSurfaceToken:
-                                    topologyFocusCommandSpine?.getAttribute("data-command-spine-surface-token") || "",
-                                  topologyFocusCommandSpineBorderToken:
-                                    topologyFocusCommandSpine?.getAttribute("data-command-spine-border-token") || "",
                                   topologyFocusCommandSpineBackgroundComputed:
                                     topologyFocusCommandSpineStyle?.backgroundImage || "",
                                   topologyFocusCommandSpineBorderComputed:
                                     topologyFocusCommandSpineStyle?.borderColor || "",
-                                  topologyFocusCommandSpineWidth:
-                                    topologyFocusCommandSpineRect?.width || 0,
-                                  topologyFocusCommandSpineHeight:
-                                    topologyFocusCommandSpineRect?.height || 0,
                                   topologyFocusCommandSpinePaddingTokenValue:
                                     topologyFocusCommandSpineStyle?.getPropertyValue("--topology-command-spine-padding").trim() || "",
-                                  topologyFocusCommandPrimaryActionVisible:
-                                    Boolean(topologyFocusPrimaryActionRect && topologyFocusPrimaryActionRect.width > 0 && topologyFocusPrimaryActionRect.height > 0),
-                                  topologyFocusCommandPrimaryActionText:
-                                    topologyFocusPrimaryAction?.textContent?.trim() || "",
-                                  topologyFocusCommandPrimaryActionSurfaceToken:
-                                    topologyFocusPrimaryAction?.getAttribute("data-command-primary-surface-token") || "",
-                                  topologyFocusCommandPrimaryActionBorderToken:
-                                    topologyFocusPrimaryAction?.getAttribute("data-command-primary-border-token") || "",
                                   topologyFocusCommandPrimaryActionSurfaceComputed:
                                     topologyFocusPrimaryActionStyle?.backgroundColor || "",
                                   topologyFocusCommandPrimaryActionBorderComputed:
                                     topologyFocusPrimaryActionStyle?.borderColor || "",
-                                  topologyFocusCommandPrimaryActionWidth:
-                                    topologyFocusPrimaryActionRect?.width || 0,
-                                  topologyFocusCommandPrimaryActionHeight:
-                                    topologyFocusPrimaryActionRect?.height || 0,
-                                  topologyFocusReviewOrderVisible:
-                                    Boolean(topologyFocusReviewOrder),
-                                  topologyFocusSecondaryActionsVisible:
-                                    Boolean(topologyFocusSecondaryActions),
-                                  topologyFocusAgentHandoffVisible:
-                                    Boolean(topologyFocusAgentHandoff),
-                                  topologyFocusAgentHandoffContract:
-                                    topologyFocusAgentHandoff?.getAttribute("data-handoff-contract") || "",
                                   topologyNodePopoverVisible:
                                     Boolean(topologyNodePopoverRect) &&
                                     topologyNodePopoverStyle?.display !== "none" &&
@@ -4188,20 +3351,10 @@ pub fn run() {
                                     topologyNodePopoverStyle?.overflowY || "",
                                   topologyNodePopoverOverflowX:
                                     topologyNodePopoverStyle?.overflowX || "",
-                                  topologyNodePopoverBodyScrollContract:
-                                    topologyNodePopoverBody?.getAttribute("data-body-scroll-contract") || "",
                                   topologyNodePopoverBodyOverflowY:
                                     topologyNodePopoverBodyStyle?.overflowY || "",
                                   topologyNodePopoverBodyOverflowX:
                                     topologyNodePopoverBodyStyle?.overflowX || "",
-                                  topologyNodePopoverBodyTop:
-                                    topologyNodePopoverBodyRect?.top || 0,
-                                  topologyNodePopoverBodyBottom:
-                                    topologyNodePopoverBodyRect?.bottom || 0,
-                                  topologyNodePopoverBodyClientHeight:
-                                    topologyNodePopoverBody?.clientHeight || 0,
-                                  topologyNodePopoverBodyScrollHeight:
-                                    topologyNodePopoverBody?.scrollHeight || 0,
                                   topologyNodePopoverSurfaceToken:
                                     topologyNodePopover?.getAttribute("data-popover-surface-token") || "",
                                   topologyNodePopoverBorderToken:
@@ -4242,11 +3395,11 @@ pub fn run() {
                                   topologyNodePopoverRight:
                                     topologyNodePopoverRect?.right || 0,
                                   topologyNodePopoverInspectorGap:
-                                    topologyNodePopoverRect && topologyAnalysisPanelRect
-                                      ? topologyNodePopoverRect.left - topologyAnalysisPanelRect.right
+                                    topologyNodePopoverRect && (undefined)
+                                      ? topologyNodePopoverRect.left - (undefined).right
                                       : 0,
                                   topologyNodePopoverAttentionLaneContract:
-                                    topologyNodePopoverRect && topologyAnalysisPanelRect
+                                    topologyNodePopoverRect && (undefined)
                                       ? "right-inspector-separated-from-support-rail"
                                       : "",
                                   topologyNodePopoverTop:
@@ -4255,231 +3408,19 @@ pub fn run() {
                                     topologyNodePopoverRect?.bottom || 0,
                                   topologyNodePopoverRelationRowVisible:
                                     Boolean(topologyNodePopoverRelationRow),
-                                  topologyNodePopoverConnectionsOverflowContract:
-                                    topologyNodePopoverConnectionsSection?.getAttribute("data-overflow-contract") || "",
-                                  topologyNodePopoverConnectionListOverflowContract:
-                                    topologyNodePopoverConnectionList?.getAttribute("data-overflow-contract") || "",
-                                  topologyNodePopoverConnectionListReadableRowContract:
-                                    topologyNodePopoverConnectionList?.getAttribute("data-readable-row-contract") || "",
-                                  topologyNodePopoverConnectionListWidth:
-                                    topologyNodePopoverConnectionListRect?.width || 0,
-                                  topologyNodePopoverConnectionListTop:
-                                    topologyNodePopoverConnectionListRect?.top || 0,
-                                  topologyNodePopoverConnectionListBottom:
-                                    topologyNodePopoverConnectionListRect?.bottom || 0,
-                                  topologyNodePopoverConnectionListClientWidth:
-                                    topologyNodePopoverConnectionList?.clientWidth || 0,
-                                  topologyNodePopoverConnectionListScrollWidth:
-                                    topologyNodePopoverConnectionList?.scrollWidth || 0,
-                                  topologyNodePopoverConnectionListRowDensityContract:
-                                    topologyNodePopoverConnectionList?.getAttribute("data-row-density-contract") || "",
-                                  topologyNodePopoverConnectionListRowMinHitHeight:
-                                    Number(topologyNodePopoverConnectionList?.getAttribute("data-row-min-hit-height") || "0"),
-                                  topologyNodePopoverConnectionListRowRenderContract:
-                                    topologyNodePopoverConnectionList?.getAttribute("data-row-render-contract") || "",
-                                  topologyNodePopoverConnectionListRowRenderBudget:
-                                    Number(topologyNodePopoverConnectionList?.getAttribute("data-row-render-budget") || "0"),
-                                  topologyNodePopoverConnectionListRenderedCount:
-                                    Number(topologyNodePopoverConnectionList?.getAttribute("data-rendered-connection-count") || "0"),
-                                  topologyNodePopoverConnectionListHiddenCount:
-                                    Number(topologyNodePopoverConnectionList?.getAttribute("data-hidden-connection-count") || "0"),
-                                  topologyNodePopoverConnectionListTotalCount:
-                                    Number(topologyNodePopoverConnectionList?.getAttribute("data-total-connection-count") || "0"),
-                                  topologyNodePopoverConnectionListHandoffContract:
-                                    topologyNodePopoverConnectionList?.getAttribute("data-relation-list-handoff-contract") || "",
-                                  topologyNodePopoverConnectionListHandoffRoute:
-                                    topologyNodePopoverConnectionList?.getAttribute("data-relation-list-handoff-route") || "",
-                                  topologyNodePopoverConnectionListHandoffTool:
-                                    topologyNodePopoverConnectionList?.getAttribute("data-relation-list-handoff-tool") || "",
-                                  topologyNodePopoverConnectionListVisibleRowCount:
-                                    Number(topologyNodePopoverConnectionList?.getAttribute("data-relation-list-visible-row-count") || "0"),
-                                  topologyNodePopoverConnectionListHiddenRemainderCount:
-                                    Number(topologyNodePopoverConnectionList?.getAttribute("data-relation-list-hidden-remainder-count") || "0"),
-                                  topologyNodePopoverConnectionListDirectFactCount:
-                                    Number(topologyNodePopoverConnectionList?.getAttribute("data-relation-list-direct-fact-count") || "0"),
-                                  topologyNodePopoverConnectionListHandoffSummary:
-                                    topologyNodePopoverConnectionList?.getAttribute("data-relation-list-handoff-summary") || "",
-                                  topologyNodePopoverFooterVisible:
-                                    Boolean(topologyNodePopoverFooterRect) &&
-                                    topologyNodePopoverFooterRect.width > 0 &&
-                                    topologyNodePopoverFooterRect.height > 0,
-                                  topologyNodePopoverFooterContract:
-                                    topologyNodePopoverFooter?.getAttribute("data-footer-contract") || "",
-                                  topologyNodePopoverFooterPositionContract:
-                                    topologyNodePopoverFooter?.getAttribute("data-footer-position-contract") || "",
-                                  topologyNodePopoverFooterOverflowContract:
-                                    topologyNodePopoverFooter?.getAttribute("data-overflow-contract") || "",
-                                  topologyNodePopoverFooterSurfaceToken:
-                                    topologyNodePopoverFooter?.getAttribute("data-popover-footer-surface-token") || "",
                                   topologyNodePopoverFooterSurfaceComputed:
                                     topologyNodePopoverFooterStyle?.backgroundColor || "",
-                                  topologyNodePopoverFooterWidth:
-                                    topologyNodePopoverFooterRect?.width || 0,
-                                  topologyNodePopoverFooterHeight:
-                                    topologyNodePopoverFooterRect?.height || 0,
-                                  topologyNodePopoverFooterTop:
-                                    topologyNodePopoverFooterRect?.top || 0,
-                                  topologyNodePopoverFooterBottom:
-                                    topologyNodePopoverFooterRect?.bottom || 0,
-                                  topologyNodePopoverFooterClientWidth:
-                                    topologyNodePopoverFooter?.clientWidth || 0,
-                                  topologyNodePopoverFooterScrollWidth:
-                                    topologyNodePopoverFooter?.scrollWidth || 0,
-                                  topologyNodePopoverActionRailVisible:
-                                    Boolean(topologyNodePopoverActionRailRect) &&
-                                    topologyNodePopoverActionRailRect.width > 0 &&
-                                    topologyNodePopoverActionRailRect.height > 0,
-                                  topologyNodePopoverActionRailContract:
-                                    topologyNodePopoverActionRail?.getAttribute("data-action-rail-contract") || "",
-                                  topologyNodePopoverActionRailCount:
-                                    Number(topologyNodePopoverActionRail?.getAttribute("data-action-count") || "0"),
-                                  topologyNodePopoverCompactCommandRowVisible:
-                                    Boolean(topologyNodePopoverCompactCommandRowRect) &&
-                                    topologyNodePopoverCompactCommandRowRect.width > 0 &&
-                                    topologyNodePopoverCompactCommandRowRect.height > 0,
-                                  topologyNodePopoverCompactCommandRowContract:
-                                    topologyNodePopoverCompactCommandRow?.getAttribute("data-compact-command-row-contract") || "",
-                                  topologyNodePopoverCompactCommandRowGapToken:
-                                    topologyNodePopoverCompactCommandRow?.getAttribute("data-compact-command-row-gap-token") || "",
-                                  topologyNodePopoverCompactCommandRowTop:
-                                    topologyNodePopoverCompactCommandRowRect?.top || 0,
-                                  topologyNodePopoverCompactCommandRowBottom:
-                                    topologyNodePopoverCompactCommandRowRect?.bottom || 0,
-                                  topologyNodePopoverCompactCommandRowHeight:
-                                    topologyNodePopoverCompactCommandRowRect?.height || 0,
-                                  topologyNodePopoverCompactActionsVisible:
-                                    Boolean(topologyNodePopoverCompactActionsRect) &&
-                                    topologyNodePopoverCompactActionsRect.width > 0 &&
-                                    topologyNodePopoverCompactActionsRect.height > 0,
-                                  topologyNodePopoverCompactActionsContract:
-                                    topologyNodePopoverCompactActions?.getAttribute("data-compact-actions-layout-contract") || "",
-                                  topologyNodePopoverCompactActionsReadableFlow:
-                                    topologyNodePopoverCompactActions?.getAttribute("data-compact-actions-readable-flow") || "",
-                                  topologyNodePopoverCompactActionsTop:
-                                    topologyNodePopoverCompactActionsRect?.top || 0,
-                                  topologyNodePopoverCompactActionsBottom:
-                                    topologyNodePopoverCompactActionsRect?.bottom || 0,
-                                  topologyNodePopoverCompactRelationFactsVisible:
-                                    Boolean(topologyNodePopoverCompactRelationFactsRect) &&
-                                    topologyNodePopoverCompactRelationFactsRect.width > 0 &&
-                                    topologyNodePopoverCompactRelationFactsRect.height > 0,
-                                  topologyNodePopoverCompactRelationFactsContract:
-                                    topologyNodePopoverCompactRelationFacts?.getAttribute("data-compact-relation-facts-contract") || "",
-                                  topologyNodePopoverCompactRelationFactsReadableContract:
-                                    topologyNodePopoverCompactRelationFacts?.getAttribute("data-compact-relation-facts-readable-contract") || "",
-                                  topologyNodePopoverCompactRelationFactsHandoffContract:
-                                    topologyNodePopoverCompactRelationFacts?.getAttribute("data-compact-relation-facts-handoff-contract") || "",
-                                  topologyNodePopoverCompactRelationFactsHandoffRoute:
-                                    topologyNodePopoverCompactRelationFacts?.getAttribute("data-compact-relation-facts-handoff-route") || "",
-                                  topologyNodePopoverCompactRelationFactsHandoffTool:
-                                    topologyNodePopoverCompactRelationFacts?.getAttribute("data-compact-relation-facts-handoff-tool") || "",
-                                  topologyNodePopoverCompactRelationFactsHandoffSummary:
-                                    topologyNodePopoverCompactRelationFacts?.getAttribute("data-compact-relation-facts-handoff-summary") || "",
-                                  topologyNodePopoverCompactRelationFactsHiddenRemainderCount:
-                                    Number(topologyNodePopoverCompactRelationFacts?.getAttribute("data-relation-list-hidden-remainder-count") || "0"),
-                                  topologyNodePopoverCompactRelationFactsNoScores:
-                                    topologyNodePopoverCompactRelationFacts?.getAttribute("data-relation-lens-no-scores") || "",
-                                  topologyNodePopoverCompactRelationFactsAccessibleName:
-                                    topologyNodePopoverCompactRelationFacts?.getAttribute("aria-label") || "",
-                                  topologyNodePopoverCompactRelationFactsTitle:
-                                    topologyNodePopoverCompactRelationFacts?.getAttribute("title") || "",
-                                  topologyNodePopoverCompactRelationFactsTop:
-                                    topologyNodePopoverCompactRelationFactsRect?.top || 0,
-                                  topologyNodePopoverCompactRelationFactsBottom:
-                                    topologyNodePopoverCompactRelationFactsRect?.bottom || 0,
-                                  topologyNodePopoverCompactHandoffSummaryVisible:
-                                    Boolean(topologyNodePopoverCompactHandoffSummaryRect) &&
-                                    topologyNodePopoverCompactHandoffSummaryRect.width > 0 &&
-                                    topologyNodePopoverCompactHandoffSummaryRect.height > 0,
-                                  topologyNodePopoverCompactHandoffSummaryContract:
-                                    topologyNodePopoverCompactHandoffSummary?.getAttribute("data-agent-handoff-summary-contract") || "",
-                                  topologyNodePopoverCompactHandoffSummaryText:
-                                    topologyNodePopoverCompactHandoffSummary?.getAttribute("data-agent-handoff-visible-summary") ||
-                                    topologyNodePopoverCompactHandoffSummary?.textContent ||
-                                    "",
-                                  topologyNodePopoverCompactHandoffSummaryVisibleLabel:
-                                    topologyNodePopoverCompactHandoffSummary?.getAttribute("data-agent-handoff-visible-label") ||
-                                    topologyNodePopoverCompactHandoffSummary?.textContent ||
-                                    "",
-                                  topologyNodePopoverCompactHandoffSummarySelectedNode:
-                                    topologyNodePopoverCompactHandoffSummary?.getAttribute("data-agent-handoff-selected-node") || "",
-                                  topologyNodePopoverCompactHandoffSummaryClientWidth:
-                                    topologyNodePopoverCompactHandoffSummary?.clientWidth || 0,
-                                  topologyNodePopoverCompactHandoffSummaryScrollWidth:
-                                    topologyNodePopoverCompactHandoffSummary?.scrollWidth || 0,
-                                  topologyNodePopoverCompactHandoffSummaryTop:
-                                    topologyNodePopoverCompactHandoffSummaryRect?.top || 0,
-                                  topologyNodePopoverCompactHandoffSummaryBottom:
-                                    topologyNodePopoverCompactHandoffSummaryRect?.bottom || 0,
-                                  topologyNodePopoverCompactBriefActionVisible:
-                                    Boolean(topologyNodePopoverCompactBriefActionRect) &&
-                                    topologyNodePopoverCompactBriefActionRect.width > 0 &&
-                                    topologyNodePopoverCompactBriefActionRect.height > 0,
-                                  topologyNodePopoverCompactBriefActionKind:
-                                    topologyNodePopoverCompactBriefAction?.getAttribute("data-popover-action") || "",
-                                  topologyNodePopoverCompactBriefActionContract:
-                                    topologyNodePopoverCompactBriefAction?.getAttribute("data-agent-handoff-action") || "",
-                                  topologyNodePopoverCompactBriefActionReadableFlow:
-                                    topologyNodePopoverCompactBriefAction?.getAttribute("data-agent-handoff-readable-flow") || "",
-                                  topologyNodePopoverCompactBriefActionRailLabel:
-                                    topologyNodePopoverCompactBriefAction?.getAttribute("data-agent-handoff-rail-label") || "",
-                                  topologyNodePopoverCompactBriefActionTitle:
-                                    topologyNodePopoverCompactBriefAction?.getAttribute("title") || "",
-                                  topologyNodePopoverCompactBriefActionSurfaceToken:
-                                    topologyNodePopoverCompactBriefAction?.getAttribute("data-popover-action-surface-token") || "",
-                                  topologyNodePopoverCompactBriefActionBorderToken:
-                                    topologyNodePopoverCompactBriefAction?.getAttribute("data-popover-action-border-token") || "",
                                   topologyNodePopoverCompactBriefActionSurfaceComputed:
                                     topologyNodePopoverCompactBriefActionStyle?.backgroundColor || "",
                                   topologyNodePopoverCompactBriefActionBorderComputed:
                                     topologyNodePopoverCompactBriefActionStyle?.borderTopColor || "",
-                                  topologyNodePopoverCompactBriefActionWidth:
-                                    topologyNodePopoverCompactBriefActionRect?.width || 0,
-                                  topologyNodePopoverCompactBriefActionHeight:
-                                    topologyNodePopoverCompactBriefActionRect?.height || 0,
                                   topologyNodePopoverCompactMeaningVisible:
-                                    Boolean(topologyNodePopoverCompactMeaningRect) &&
-                                    topologyNodePopoverCompactMeaningRect.width > 0 &&
-                                    topologyNodePopoverCompactMeaningRect.height > 0 &&
+                                    Boolean((undefined)) &&
+                                    (undefined).width > 0 &&
+                                    (undefined).height > 0 &&
                                     topologyNodePopoverCompactMeaningStyle?.display !== "none" &&
                                     topologyNodePopoverCompactMeaningStyle?.visibility !== "hidden" &&
                                     Number(topologyNodePopoverCompactMeaningStyle?.opacity || "1") > 0.01,
-                                  topologyNodePopoverCompactMeaningText:
-                                    topologyNodePopoverCompactMeaning?.textContent?.trim() || "",
-                                  topologyNodePopoverCompactMeaningContract:
-                                    topologyNodePopoverCompactMeaning?.getAttribute("data-compact-meaning-contract") || "",
-                                  topologyNodePopoverCompactMeaningResponsiveContract:
-                                    topologyNodePopoverCompactMeaning?.getAttribute("data-compact-meaning-responsive-contract") || "",
-                                  topologyNodePopoverCompactMeaningLevel:
-                                    topologyNodePopoverCompactMeaning?.getAttribute("data-compact-meaning-level") || "",
-                                  topologyNodePopoverCompactMeaningTextToken:
-                                    topologyNodePopoverCompactMeaning?.getAttribute("data-compact-meaning-text-token") || "",
-                                  topologyNodePopoverCompactMeaningSizeToken:
-                                    topologyNodePopoverCompactMeaning?.getAttribute("data-compact-meaning-size-token") || "",
-                                  topologyNodePopoverCompactMeaningLeadingToken:
-                                    topologyNodePopoverCompactMeaning?.getAttribute("data-compact-meaning-leading-token") || "",
-                                  topologyNodePopoverCompactMeaningGapToken:
-                                    topologyNodePopoverCompactMeaning?.getAttribute("data-compact-meaning-gap-token") || "",
-                                  topologySelectedSkeletonCardRelationSummaryVisible:
-                                    Boolean(topologySelectedSkeletonCardRelationSummaryRect) &&
-                                    topologySelectedSkeletonCardRelationSummaryRect.width > 0 &&
-                                    topologySelectedSkeletonCardRelationSummaryRect.height > 0,
-                                  topologySelectedSkeletonCardRelationSummaryContract:
-                                    topologySelectedSkeletonCardRelationSummary?.getAttribute("data-relation-summary-contract") || "",
-                                  topologySelectedSkeletonCardRelationSummarySurfaceToken:
-                                    topologySelectedSkeletonCardRelationSummary?.getAttribute("data-relation-summary-surface-token") || "",
-                                  topologySelectedSkeletonCardRelationSummaryBorderToken:
-                                    topologySelectedSkeletonCardRelationSummary?.getAttribute("data-relation-summary-border-token") || "",
-                                  topologySelectedSkeletonCardRelationSummaryTextToken:
-                                    topologySelectedSkeletonCardRelationSummary?.getAttribute("data-relation-summary-text-token") || "",
-                                  topologySelectedSkeletonCardRelationSummaryCount:
-                                    Number(topologySelectedSkeletonCardRelationSummary?.getAttribute("data-relation-count") || "0"),
-                                  topologySelectedSkeletonCardRelationSummaryTypeCount:
-                                    Number(topologySelectedSkeletonCardRelationSummary?.getAttribute("data-relation-type-count") || "0"),
-                                  topologySelectedSkeletonCardRelationSummaryWidth:
-                                    topologySelectedSkeletonCardRelationSummaryRect?.width || 0,
-                                  topologySelectedSkeletonCardRelationSummaryHeight:
-                                    topologySelectedSkeletonCardRelationSummaryRect?.height || 0,
                                   topologyNodePopoverRelationRowOverflowContract:
                                     topologyNodePopoverRelationRow?.getAttribute("data-overflow-contract") || "",
                                   topologyNodePopoverRelationRowWidth:
@@ -4648,83 +3589,8 @@ pub fn run() {
                                   topologySelectedRelationLabelFactRouteGate,
                                   topologySelectedRelationLabelFactRouteAction,
                                   topologySelectedRelationLabelFactRouteChips,
-                                  topologyRelationLabelHandoffContract,
-                                  topologySelectedRelationLabelHandoffState,
-                                  topologySelectedRelationLabelHandoffGate,
-                                  topologySelectedRelationLabelHandoffPrimaryAction,
-                                  topologySelectedRelationLabelHandoffCliFallbackCommand,
-                                  topologySelectedRelationLabelHandoffFactRoute,
-                                  topologySelectedRelationLabelHandoffQuality,
-                                  topologySelectedRelationLabelHandoffEvidence,
-                                  topologySelectedRelationClaimLensVisible: Boolean(topologySelectedRelationClaimLens),
-                                  topologySelectedRelationClaimLensText,
-                                  topologySelectedRelationClaimLensQuality,
-                                  topologySelectedRelationClaimLensDotVisible,
-                                  topologySelectedRelationContractKind,
-                                  topologySelectedRelationContractText,
-                                  topologySelectedRelationContractLeft:
-                                    topologySelectedRelationContractRect?.left || 0,
-                                  topologySelectedRelationContractTop:
-                                    topologySelectedRelationContractRect?.top || 0,
-                                  topologySelectedRelationContractRight:
-                                    topologySelectedRelationContractRect?.right || 0,
-                                  topologySelectedRelationContractBottom:
-                                    topologySelectedRelationContractRect?.bottom || 0,
-                                  topologySelectedRelationContractWidth:
-                                    topologySelectedRelationContractRect?.width || 0,
-                                  topologySelectedRelationContractHeight:
-                                    topologySelectedRelationContractRect?.height || 0,
-                                  topologySelectedRelationCardQuality,
-                                  topologySelectedRelationCardEvidenceState,
-                                  topologySelectedRelationCardType,
-                                  topologySelectedRelationCardTypeLabel,
-                                  topologySelectedRelationCardLabelContextContract,
-                                  topologySelectedRelationCardLabelCount,
-                                  topologySelectedRelationCardLabelVisibleText,
-                                  topologySelectedRelationCardLabelReadableText,
-                                  topologySelectedRelationCardHandoffContract,
-                                  topologySelectedRelationCardHandoffAliasContract,
-                                  topologySelectedRelationCardRoute,
-                                  topologySelectedRelationCardEndpointRoute,
-                                  topologySelectedRelationCardPrimaryAction,
-                                  topologySelectedRelationCardCliFallback,
-                                  topologySelectedRelationCardSource,
-                                  topologySelectedRelationCardTarget,
-                                  topologySelectedRelationCardSurfaceRole,
-                                  topologySelectedRelationCardDensity,
-                                  topologySelectedRelationCardDensityContract:
-                                    topologySelectedRelationCard?.getAttribute("data-density-contract") || "",
-                                  topologySelectedRelationCardDockContract,
-                                  topologySelectedRelationCardAttentionLane,
-                                  topologySelectedRelationCardMapClearanceContract,
-                                  topologySelectedRelationCardScaleContract,
-                                  topologySelectedRelationCardMotionContract,
-                                  topologySelectedRelationCardMotionDurationMs,
-                                  topologySelectedRelationCardMotionEasing,
-                                  topologySelectedRelationCardSurfaceToken,
-                                  topologySelectedRelationCardMaxHeightToken,
-                                  topologySelectedRelationCardBorderToken,
-                                  topologySelectedRelationCardShadowToken,
                                   topologySelectedRelationCardSurfaceComputed,
                                   topologySelectedRelationCardBorderComputed,
-                                  topologySelectedRelationCardActionMinWidthToken:
-                                    topologySelectedRelationCard?.getAttribute("data-copy-action-min-width-token") || "",
-                                  topologySelectedRelationCardCopyPayloadMinHeightToken:
-                                    topologySelectedRelationCard?.getAttribute("data-copy-payload-min-height-token") || "",
-                                  topologySelectedRelationCardRouteStepMinWidthToken:
-                                    topologySelectedRelationCard?.getAttribute("data-route-step-min-width-token") || "",
-                                  topologySelectedRelationCardTypographyContract:
-                                    topologySelectedRelationCard?.getAttribute("data-typography-contract") || "",
-                                  topologySelectedRelationCardKickerFontSizeToken:
-                                    topologySelectedRelationCard?.getAttribute("data-kicker-font-size-token") || "",
-                                  topologySelectedRelationCardChipFontSizeToken:
-                                    topologySelectedRelationCard?.getAttribute("data-chip-font-size-token") || "",
-                                  topologySelectedRelationCardRouteLabelFontSizeToken:
-                                    topologySelectedRelationCard?.getAttribute("data-route-label-font-size-token") || "",
-                                  topologySelectedRelationCardRouteValueFontSizeToken:
-                                    topologySelectedRelationCard?.getAttribute("data-route-value-font-size-token") || "",
-                                  topologySelectedRelationCardPayloadFontSizeToken:
-                                    topologySelectedRelationCard?.getAttribute("data-payload-font-size-token") || "",
                                   topologySelectedRelationActionMinWidthTokenValue,
                                   topologySelectedRelationCopyPayloadMinHeightTokenValue,
                                   topologySelectedRelationRouteStepMinWidthTokenValue,
@@ -4734,87 +3600,7 @@ pub fn run() {
                                   topologySelectedRelationRouteValueFontSizeTokenValue,
                                   topologySelectedRelationPayloadFontSizeTokenValue,
                                   topologySelectedRelationCardMotionSyncState,
-                                  topologySelectedRelationProofBandWidth:
-                                    topologySelectedRelationProofBandRect?.width || 0,
-                                  topologySelectedRelationProofBandHeight:
-                                    topologySelectedRelationProofBandRect?.height || 0,
-                                  topologySelectedRelationCardLeft:
-                                    topologySelectedRelationCardRect?.left || 0,
-                                  topologySelectedRelationCardTop:
-                                    topologySelectedRelationCardRect?.top || 0,
-                                  topologySelectedRelationCardRight:
-                                    topologySelectedRelationCardRect?.right || 0,
-                                  topologySelectedRelationCardBottom:
-                                    topologySelectedRelationCardRect?.bottom || 0,
-                                  topologySelectedRelationCardWidth:
-                                    topologySelectedRelationCardRect?.width || 0,
-                                  topologySelectedRelationCardHeight:
-                                    topologySelectedRelationCardRect?.height || 0,
-                                  topologySelectedRelationCardClientWidth:
-                                    topologySelectedRelationCard?.clientWidth || 0,
-                                  topologySelectedRelationCardScrollWidth:
-                                    topologySelectedRelationCard?.scrollWidth || 0,
-                                  topologySelectedRelationCardOverflowContract,
-                                  topologySelectedRelationCardAgentGate,
-                                  topologySelectedRelationCardAgentGateKind,
-                                  topologySelectedRelationCardAgentDecision,
-                                  topologySelectedRelationAgentGateText,
-                                  topologySelectedRelationAgentDecisionText,
-                                  topologySelectedRelationAgentDecisionGateKind,
-                                  topologySelectedRelationAgentDecisionLeft:
-                                    topologySelectedRelationAgentDecisionRect?.left || 0,
-                                  topologySelectedRelationAgentDecisionTop:
-                                    topologySelectedRelationAgentDecisionRect?.top || 0,
-                                  topologySelectedRelationAgentDecisionRight:
-                                    topologySelectedRelationAgentDecisionRect?.right || 0,
-                                  topologySelectedRelationAgentDecisionBottom:
-                                    topologySelectedRelationAgentDecisionRect?.bottom || 0,
-                                  topologySelectedRelationAgentDecisionWidth:
-                                    topologySelectedRelationAgentDecisionRect?.width || 0,
-                                  topologySelectedRelationAgentDecisionHeight:
-                                    topologySelectedRelationAgentDecisionRect?.height || 0,
-                                  topologySelectedRelationAgentRouteText,
-                                  topologySelectedRelationAgentRouteWidth:
-                                    topologySelectedRelationAgentRouteRect?.width || 0,
-                                  topologySelectedRelationAgentRouteHeight:
-                                    topologySelectedRelationAgentRouteRect?.height || 0,
-                                  topologySelectedRelationAgentRouteClientWidth:
-                                    topologySelectedRelationAgentRoute?.clientWidth || 0,
-                                  topologySelectedRelationAgentRouteScrollWidth:
-                                    topologySelectedRelationAgentRoute?.scrollWidth || 0,
-                                  topologySelectedRelationAgentRouteDensity:
-                                    topologySelectedRelationAgentRoute?.getAttribute("data-route-density") || "",
-                                  topologySelectedRelationAgentRouteStepMinWidthToken:
-                                    topologySelectedRelationAgentRoute?.getAttribute("data-route-step-min-width-token") || "",
-                                  topologySelectedRelationAgentRouteOverflowContract:
-                                    topologySelectedRelationAgentRoute?.getAttribute("data-overflow-contract") || "",
                                   topologySelectedRelationAgentRouteSteps,
-                                  topologySelectedRelationAgentRouteGateKind,
-                                  topologySelectedRelationAgentRouteEvidenceState,
-                                  topologySelectedRelationAgentRoutePrimaryAction,
-                                  topologySelectedRelationCardElevationContract,
-                                  topologySelectedRelationMetricStripContract:
-                                    topologySelectedRelationMetricStrip?.getAttribute("data-metric-strip-contract") || "",
-                                  topologySelectedRelationMetricStripHeightToken:
-                                    topologySelectedRelationMetricStrip?.getAttribute("data-metric-strip-height-token") || "",
-                                  topologySelectedRelationMetricStripWidth:
-                                    topologySelectedRelationMetricStripRect?.width || 0,
-                                  topologySelectedRelationMetricStripHeight:
-                                    topologySelectedRelationMetricStripRect?.height || 0,
-                                  topologySelectedRelationCommandCueContract:
-                                    topologySelectedRelationNextAction?.getAttribute("data-command-cue-contract") || "",
-                                  topologySelectedRelationCommandCueAction:
-                                    topologySelectedRelationNextAction?.getAttribute("data-command-cue-action") || "",
-                                  topologySelectedRelationCommandCueVisibleLabel:
-                                    topologySelectedRelationNextAction?.getAttribute("data-command-cue-visible-label") || "",
-                                  topologySelectedRelationCommandCueVisibleAction:
-                                    topologySelectedRelationNextAction?.getAttribute("data-command-cue-visible-action") || "",
-                                  topologySelectedRelationCommandCueVisibleText:
-                                    topologySelectedRelationCommandCue?.textContent?.trim() || "",
-                                  topologySelectedRelationCommandCueWidth:
-                                    topologySelectedRelationCommandCueRect?.width || 0,
-                                  topologySelectedRelationCommandCueHeight:
-                                    topologySelectedRelationCommandCueRect?.height || 0,
                                   topologySelectedRelationPrimaryCopyActionKind,
                                   topologySelectedRelationPrimaryCopyActionText:
                                     topologySelectedRelationPrimaryCopyAction?.textContent || "",
@@ -4825,128 +3611,13 @@ pub fn run() {
                                   topologySelectedRelationPrimaryCopyBadgeText:
                                     topologySelectedRelationPrimaryCopyRecommendationLabel,
                                   topologySelectedRelationCopyActions,
-                                  topologySelectedRelationCopyActionRailWidth:
-                                    topologySelectedRelationCopyActionRailRect?.width || 0,
-                                  topologySelectedRelationCopyActionRailHeight:
-                                    topologySelectedRelationCopyActionRailRect?.height || 0,
-                                  topologySelectedRelationCopyActionRailClientWidth:
-                                    topologySelectedRelationCopyActionRail?.clientWidth || 0,
-                                  topologySelectedRelationCopyActionRailScrollWidth:
-                                    topologySelectedRelationCopyActionRail?.scrollWidth || 0,
-                                  topologySelectedRelationCopyActionRailOverflowContract:
-                                    topologySelectedRelationCopyActionRail?.getAttribute("data-overflow-contract") || "",
-                                  topologySelectedRelationCopyActionRailDensityContract:
-                                    topologySelectedRelationCopyActionRail?.getAttribute("data-density-contract") || "",
-                                  topologySelectedRelationCopyActionRailMinWidthToken:
-                                    topologySelectedRelationCopyActionRail?.getAttribute("data-copy-action-min-width-token") || "",
                                   topologySelectedRelationPrimaryCopyActionWidth:
                                     topologySelectedRelationPrimaryCopyActionRect?.width || 0,
                                   topologySelectedRelationPrimaryCopyActionHeight:
                                     topologySelectedRelationPrimaryCopyActionRect?.height || 0,
-                                  topologySelectedRelationCopyPayloadTool:
-                                    topologySelectedRelationCopyPayload?.getAttribute("data-copy-payload-tool") || "",
-                                  topologySelectedRelationCopyPayloadAction:
-                                    topologySelectedRelationCopyPayload?.getAttribute("data-copy-payload-action") || "",
-                                  topologySelectedRelationCopyPayloadFrom:
-                                    topologySelectedRelationCopyPayload?.getAttribute("data-copy-payload-from") || "",
-                                  topologySelectedRelationCopyPayloadTo:
-                                    topologySelectedRelationCopyPayload?.getAttribute("data-copy-payload-to") || "",
-                                  topologySelectedRelationCopyPayloadType:
-                                    topologySelectedRelationCopyPayload?.getAttribute("data-copy-payload-type") || "",
-                                  topologySelectedRelationCopyPayloadEvidence:
-                                    topologySelectedRelationCopyPayload?.getAttribute("data-copy-payload-evidence") || "",
-                                  topologySelectedRelationCopyPayloadGate:
-                                    topologySelectedRelationCopyPayload?.getAttribute("data-copy-payload-gate") || "",
-                                  topologySelectedRelationCopyPayloadCall:
-                                    topologySelectedRelationCopyPayload?.getAttribute("data-copy-payload-call") || "",
-                                  topologySelectedRelationCopyPayloadSummary:
-                                    topologySelectedRelationCopyPayloadSummary?.getAttribute("data-copy-payload-summary") ||
-                                    topologySelectedRelationCopyPayload?.textContent ||
-                                    "",
-                                  topologySelectedRelationCopyPayloadVisibleSummary:
-                                    topologySelectedRelationCopyPayloadSummary?.getAttribute("data-copy-payload-visible-summary") ||
-                                    topologySelectedRelationCopyPayloadSummary?.textContent ||
-                                    "",
-                                  topologySelectedRelationCopyPayloadLayoutContract:
-                                    topologySelectedRelationCopyPayload?.getAttribute("data-copy-payload-layout-contract") ||
-                                    topologySelectedRelationCopyPayload?.getAttribute("data-layout-contract") ||
-                                    "",
-                                  topologySelectedRelationCopyPayloadVisibleHandleSummary:
-                                    topologySelectedRelationCopyPayloadVisibleHandle?.getAttribute("data-copy-payload-visible-handle-summary") ||
-                                    topologySelectedRelationCopyPayloadVisibleHandle?.textContent ||
-                                    "",
-                                  topologySelectedRelationCliFallbackCommand:
-                                    topologySelectedRelationCopyPayload?.getAttribute("data-cli-fallback-command") || "",
-                                  topologySelectedRelationCliFallbackSummary:
-                                    topologySelectedRelationCliFallback?.getAttribute("data-cli-fallback-summary") ||
-                                    topologySelectedRelationCliFallback?.textContent ||
-                                    "",
-                                  topologySelectedRelationCopyPayloadWidth:
-                                    topologySelectedRelationCopyPayloadRect?.width || 0,
-                                  topologySelectedRelationCopyPayloadHeight:
-                                    topologySelectedRelationCopyPayloadRect?.height || 0,
-                                  topologySelectedRelationCopyPayloadClientWidth:
-                                    topologySelectedRelationCopyPayload?.clientWidth || 0,
-                                  topologySelectedRelationCopyPayloadScrollWidth:
-                                    topologySelectedRelationCopyPayload?.scrollWidth || 0,
-                                  topologySelectedRelationCopyPayloadOverflowContract:
-                                    topologySelectedRelationCopyPayload?.getAttribute("data-overflow-contract") || "",
-                                  topologySelectedRelationCopyPayloadMinHeightToken:
-                                    topologySelectedRelationCopyPayload?.getAttribute("data-min-height-token") || "",
-                                  topologySelectedRelationHandleStripSource:
-                                    topologySelectedRelationHandleStrip?.getAttribute("data-source-handle") || "",
-                                  topologySelectedRelationHandleStripTarget:
-                                    topologySelectedRelationHandleStrip?.getAttribute("data-target-handle") || "",
-                                  topologySelectedRelationHandleStripType:
-                                    topologySelectedRelationHandleStrip?.getAttribute("data-relation-type") || "",
-                                  topologySelectedRelationHandleStripSummary:
-                                    topologySelectedRelationHandleStrip?.getAttribute("data-handle-summary") ||
-                                    topologySelectedRelationHandleStrip?.textContent ||
-                                    "",
-                                  topologySelectedRelationHandleStripWidth:
-                                    topologySelectedRelationHandleStripRect?.width || 0,
-                                  topologySelectedRelationHandleStripHeight:
-                                    topologySelectedRelationHandleStripRect?.height || 0,
-                                  topologySelectedRelationEndpointRouteContract:
-                                    topologySelectedRelationEndpointRoute?.getAttribute("data-endpoint-route-contract") || "",
-                                  topologySelectedRelationEndpointRouteWrapPolicy:
-                                    topologySelectedRelationEndpointRoute?.getAttribute("data-endpoint-route-wrap-policy") || "",
-                                  topologySelectedRelationEndpointRouteLineBudget:
-                                    topologySelectedRelationEndpointRoute?.getAttribute("data-endpoint-route-line-budget") || "",
-                                  topologySelectedRelationEndpointRouteSourceName:
-                                    topologySelectedRelationEndpointRoute?.getAttribute("data-source-name") || "",
-                                  topologySelectedRelationEndpointRouteTargetName:
-                                    topologySelectedRelationEndpointRoute?.getAttribute("data-target-name") || "",
-                                  topologySelectedRelationEndpointRouteSourceHandle:
-                                    topologySelectedRelationEndpointRoute?.getAttribute("data-source-handle") || "",
-                                  topologySelectedRelationEndpointRouteTargetHandle:
-                                    topologySelectedRelationEndpointRoute?.getAttribute("data-target-handle") || "",
-                                  topologySelectedRelationEndpointRouteHandleSummary:
-                                    topologySelectedRelationEndpointRoute?.getAttribute("data-handle-summary") || "",
-                                  topologySelectedRelationEndpointRouteReadableText:
-                                    topologySelectedRelationEndpointRoute?.getAttribute("data-endpoint-route-readable-text") || "",
-                                  topologySelectedRelationEndpointRouteText:
-                                    topologySelectedRelationEndpointRoute?.textContent || "",
-                                  topologySelectedRelationEndpointRouteWidth:
-                                    topologySelectedRelationEndpointRouteRect?.width || 0,
-                                  topologySelectedRelationEndpointRouteHeight:
-                                    topologySelectedRelationEndpointRouteRect?.height || 0,
-                                  topologySelectedRelationEndpointRouteClientWidth:
-                                    topologySelectedRelationEndpointRoute?.clientWidth || 0,
-                                  topologySelectedRelationEndpointRouteScrollWidth:
-                                    topologySelectedRelationEndpointRoute?.scrollWidth || 0,
-                                  topologySelectedRelationEndpointVisibilityContract,
-                                  topologySelectedRelationEndpointReadableRoute,
-                                  topologySelectedRelationEndpointExpectedCount,
                                   topologySelectedRelationEndpointVisibleCount,
                                   topologySelectedRelationEndpointHiddenCount,
                                   topologySelectedRelationEndpointCards,
-                                  topologySelectedRelationContextSilhouettePolicy:
-                                    skeletonCardsLayer?.getAttribute("data-selected-relation-context-silhouette-policy") || "",
-                                  topologySelectedRelationContextSilhouetteActive:
-                                    skeletonCardsLayer?.getAttribute("data-selected-relation-context-silhouette-active") === "true",
-                                  topologySelectedRelationContextSilhouetteHiddenCount:
-                                    Number(skeletonCardsLayer?.getAttribute("data-selected-relation-context-silhouette-hidden-count") || "0"),
                                   topologySelectedRelationLowerPriorityVisibleDimmedCount,
                                   topologySelectedRelationVisibleOrientationAnchorCount,
                                   topologySelectedRelationHiddenContextInteractionContract,
@@ -5041,16 +3712,14 @@ pub fn run() {
                                   topologyDragAlignedCompanionCount: topologyDragVerification?.alignedCompanionCount || 0,
                                   topologyDragClusterSize:
                                     Number(topologyDragVerification?.clusterSize || 0) ||
-                                    Number(skeletonCardsLayer?.getAttribute("data-active-drag-cluster-size") || "0"),
-                                  topologyDragDynamicMotionContract:
-                                    skeletonCardsLayer?.getAttribute("data-drag-dynamic-motion-contract") || "",
+                                    Number((null)?.getAttribute("data-active-drag-cluster-size") || "0"),
                                   topologyDragPhysicsSyncContract:
                                     topologyDragVerification?.dragPhysicsSyncContract ||
-                                    skeletonCardsLayer?.getAttribute("data-drag-physics-sync-contract") ||
+                                    (null)?.getAttribute("data-drag-physics-sync-contract") ||
                                     "",
                                   topologyDragPhysicsReleasePolicy:
                                     topologyDragVerification?.dragPhysicsReleasePolicy ||
-                                    skeletonCardsLayer?.getAttribute("data-drag-physics-release-policy") ||
+                                    (null)?.getAttribute("data-drag-physics-release-policy") ||
                                     "",
                                   topologyDragPhysicsSyncActiveDuring:
                                     topologyDragVerification?.dragPhysicsSyncActiveDuring === true,
@@ -5060,30 +3729,30 @@ pub fn run() {
                                     Number(topologyDragVerification?.workerAppliedFrameChangeCount || 0),
                                   topologyDragRelationLabelVisibilityContract:
                                     topologyDragVerification?.dragRelationLabelVisibilityContract ||
-                                    skeletonCardsLayer?.getAttribute("data-drag-relation-label-visibility-contract") ||
+                                    (null)?.getAttribute("data-drag-relation-label-visibility-contract") ||
                                     "",
                                   topologyDragRelationLabelExpectedCount:
                                     Number(
                                       topologyDragVerification?.dragRelationLabelExpectedCount ||
-                                        skeletonCardsLayer?.getAttribute("data-drag-relation-label-expected-count") ||
+                                        (null)?.getAttribute("data-drag-relation-label-expected-count") ||
                                         "0"
                                     ),
                                   topologyDragRelationLabelVisibleCount:
                                     Number(
                                       topologyDragVerification?.dragRelationLabelVisibleCount ||
-                                        skeletonCardsLayer?.getAttribute("data-drag-relation-label-visible-count") ||
+                                        (null)?.getAttribute("data-drag-relation-label-visible-count") ||
                                         "0"
                                     ),
                                   topologyDragRelationLabelVisibleDuringDrag:
                                     topologyDragVerification?.dragRelationLabelVisible === true,
                                   topologyDragRelationLabelCompactContract:
                                     topologyDragVerification?.dragRelationLabelCompactContract ||
-                                    skeletonCardsLayer?.getAttribute("data-drag-relation-label-compact-contract") ||
+                                    (null)?.getAttribute("data-drag-relation-label-compact-contract") ||
                                     "",
                                   topologyDragRelationLabelCompactCount:
                                     Number(
                                       topologyDragVerification?.dragRelationLabelCompactCount ||
-                                        skeletonCardsLayer?.getAttribute("data-drag-relation-label-compact-count") ||
+                                        (null)?.getAttribute("data-drag-relation-label-compact-count") ||
                                         "0"
                                     ),
                                   topologyDragRelationLabelPresentation:
@@ -5114,308 +3783,138 @@ pub fn run() {
                                     Number(topologyDragVerification?.dragInteractionCueRelationLinkCount || 0),
                                   topologyDragReactiveContextContract:
                                     topologyDragVerification?.dragReactiveContextContract ||
-                                    skeletonCardsLayer?.getAttribute("data-drag-reactive-context-contract") ||
+                                    (null)?.getAttribute("data-drag-reactive-context-contract") ||
                                     "",
                                   topologyDragReactiveContextPolicy:
                                     topologyDragVerification?.dragReactiveContextPolicy ||
-                                    skeletonCardsLayer?.getAttribute("data-drag-reactive-context-policy") ||
+                                    (null)?.getAttribute("data-drag-reactive-context-policy") ||
                                     "",
                                   topologyDragReactiveContextOpacity:
                                     topologyDragVerification?.dragReactiveContextOpacity ||
-                                    skeletonCardsLayer?.getAttribute("data-drag-reactive-context-opacity") ||
+                                    (null)?.getAttribute("data-drag-reactive-context-opacity") ||
                                     "",
                                   topologyDragReactiveContextOpacityToken:
                                     topologyDragVerification?.dragReactiveContextOpacityToken ||
-                                    skeletonCardsLayer?.getAttribute("data-drag-reactive-context-opacity-token") ||
+                                    (null)?.getAttribute("data-drag-reactive-context-opacity-token") ||
                                     "",
                                   topologyDragReactiveContextVisualContract:
                                     topologyDragVerification?.dragReactiveContextVisualContract ||
-                                    skeletonCardsLayer?.getAttribute("data-drag-reactive-context-visual-contract") ||
+                                    (null)?.getAttribute("data-drag-reactive-context-visual-contract") ||
                                     "",
                                   topologyDragReactiveContextVisualToken:
                                     topologyDragVerification?.dragReactiveContextVisualToken ||
-                                    skeletonCardsLayer?.getAttribute("data-drag-reactive-context-visual-token") ||
+                                    (null)?.getAttribute("data-drag-reactive-context-visual-token") ||
                                     "",
                                   topologyDragReactiveContextVisibleCount:
                                     Number(
                                       topologyDragVerification?.dragReactiveContextVisibleCount ||
-                                        skeletonCardsLayer?.getAttribute("data-drag-reactive-context-visible-count") ||
+                                        (null)?.getAttribute("data-drag-reactive-context-visible-count") ||
                                         "0"
                                     ),
                                   topologyDragReactiveMotionContract:
                                     topologyDragVerification?.dragReactiveMotionContract ||
-                                    skeletonCardsLayer?.getAttribute("data-drag-reactive-motion-contract") ||
+                                    (null)?.getAttribute("data-drag-reactive-motion-contract") ||
                                     "",
                                   topologyDragReactiveMotionPolicy:
                                     topologyDragVerification?.dragReactiveMotionPolicy ||
-                                    skeletonCardsLayer?.getAttribute("data-drag-reactive-motion-policy") ||
+                                    (null)?.getAttribute("data-drag-reactive-motion-policy") ||
                                     "",
                                   topologyDragReactiveMotionLinkedPolicy:
                                     topologyDragVerification?.dragReactiveMotionLinkedPolicy ||
-                                    skeletonCardsLayer?.getAttribute("data-drag-reactive-motion-linked-policy") ||
+                                    (null)?.getAttribute("data-drag-reactive-motion-linked-policy") ||
                                     "",
                                   topologyDragReactiveMotionVisibleCount:
                                     Number(
                                       topologyDragVerification?.dragReactiveMotionVisibleCount ||
-                                        skeletonCardsLayer?.getAttribute("data-drag-reactive-motion-visible-count") ||
+                                        (null)?.getAttribute("data-drag-reactive-motion-visible-count") ||
                                         "0"
                                     ),
                                   topologyDragReactiveAmbientMotionVisibleCount:
                                     Number(
                                       topologyDragVerification?.dragReactiveAmbientMotionVisibleCount ||
-                                        skeletonCardsLayer?.getAttribute("data-drag-reactive-ambient-motion-visible-count") ||
+                                        (null)?.getAttribute("data-drag-reactive-ambient-motion-visible-count") ||
                                         "0"
                                     ),
                                   topologyDragReactiveLinkedMotionVisibleCount:
                                     Number(
                                       topologyDragVerification?.dragReactiveLinkedMotionVisibleCount ||
-                                        skeletonCardsLayer?.getAttribute("data-drag-reactive-linked-motion-visible-count") ||
+                                        (null)?.getAttribute("data-drag-reactive-linked-motion-visible-count") ||
                                         "0"
                                     ),
                                   topologyDragReactiveMotionMaxObservedOffsetPx:
                                     Number(
                                       topologyDragVerification?.dragReactiveMotionMaxObservedOffsetPx ||
-                                        skeletonCardsLayer?.getAttribute("data-drag-reactive-motion-max-observed-offset-px") ||
+                                        (null)?.getAttribute("data-drag-reactive-motion-max-observed-offset-px") ||
                                         "0"
                                     ),
                                   topologyDragReactiveMotionMaxOffsetPx:
                                     Number(
                                       topologyDragVerification?.dragReactiveMotionMaxOffsetPx ||
-                                        skeletonCardsLayer?.getAttribute("data-drag-reactive-motion-max-offset-px") ||
+                                        (null)?.getAttribute("data-drag-reactive-motion-max-offset-px") ||
                                         "0"
                                     ),
                                   topologyDragReactiveMotionBaseMaxOffsetPx:
                                     Number(
                                       topologyDragVerification?.dragReactiveMotionBaseMaxOffsetPx ||
-                                        skeletonCardsLayer?.getAttribute("data-drag-reactive-motion-base-max-offset-px") ||
+                                        (null)?.getAttribute("data-drag-reactive-motion-base-max-offset-px") ||
                                         "0"
                                     ),
                                   topologyDragReactiveMotionLinkedMaxOffsetPx:
                                     Number(
                                       topologyDragVerification?.dragReactiveMotionLinkedMaxOffsetPx ||
-                                        skeletonCardsLayer?.getAttribute("data-drag-reactive-motion-linked-max-offset-px") ||
+                                        (null)?.getAttribute("data-drag-reactive-motion-linked-max-offset-px") ||
                                         "0"
                                     ),
                                   topologyDragReactiveMotionMaxOffsetToken:
                                     topologyDragVerification?.dragReactiveMotionMaxOffsetToken ||
-                                    skeletonCardsLayer?.getAttribute("data-drag-reactive-motion-max-offset-token") ||
+                                    (null)?.getAttribute("data-drag-reactive-motion-max-offset-token") ||
                                     "",
                                   topologyDragTensionConnectorContract:
                                     topologyDragVerification?.dragTensionConnectorContract ||
-                                    skeletonCardsLayer?.getAttribute("data-drag-tension-connector-contract") ||
+                                    (null)?.getAttribute("data-drag-tension-connector-contract") ||
                                     "",
                                   topologyDragTensionConnectorPolicy:
                                     topologyDragVerification?.dragTensionConnectorPolicy ||
-                                    skeletonCardsLayer?.getAttribute("data-drag-tension-connector-policy") ||
+                                    (null)?.getAttribute("data-drag-tension-connector-policy") ||
                                     "",
                                   topologyDragTensionConnectorExpectedCount:
                                     Number(
                                       topologyDragVerification?.dragTensionConnectorExpectedCount ||
-                                        skeletonCardsLayer?.getAttribute("data-drag-tension-connector-expected-count") ||
+                                        (null)?.getAttribute("data-drag-tension-connector-expected-count") ||
                                         "0"
                                     ),
                                   topologyDragTensionConnectorVisibleCount:
                                     Number(
                                       topologyDragVerification?.dragTensionConnectorVisibleCount ||
-                                        skeletonCardsLayer?.getAttribute("data-drag-tension-connector-visible-count") ||
+                                        (null)?.getAttribute("data-drag-tension-connector-visible-count") ||
                                         "0"
                                     ),
                                   topologyDragTensionConnectorActiveOpacity:
                                     topologyDragVerification?.dragTensionConnectorActiveOpacity ||
-                                    skeletonCardsLayer?.getAttribute("data-drag-tension-connector-active-opacity") ||
+                                    (null)?.getAttribute("data-drag-tension-connector-active-opacity") ||
                                     "",
                                   topologyDragTensionConnectorActiveStrokeWidth:
                                     topologyDragVerification?.dragTensionConnectorActiveStrokeWidth ||
-                                    skeletonCardsLayer?.getAttribute("data-drag-tension-connector-active-stroke-width") ||
+                                    (null)?.getAttribute("data-drag-tension-connector-active-stroke-width") ||
                                     "",
-                                  topologyDragDynamicState:
-                                    skeletonCardsLayer?.getAttribute("data-drag-dynamic-state") || "",
-                                  topologyDragDynamicRoot:
-                                    skeletonCardsLayer?.getAttribute("data-drag-dynamic-root") || "",
                                   topologyDragSettledRoot:
                                     topologyDragVerification?.dragSettledRoot ||
-                                    skeletonCardsLayer?.getAttribute("data-drag-settled-root") ||
+                                    (null)?.getAttribute("data-drag-settled-root") ||
                                     "",
                                   topologyDragSettleFeedbackContract:
                                     topologyDragVerification?.dragSettleFeedbackContract ||
-                                    skeletonCardsLayer?.getAttribute("data-drag-settle-feedback-contract") ||
+                                    (null)?.getAttribute("data-drag-settle-feedback-contract") ||
                                     "",
                                   topologyDragSettledClusterSize:
                                     Number(
                                       topologyDragVerification?.dragSettledClusterSize ||
-                                        skeletonCardsLayer?.getAttribute("data-drag-settled-cluster-size") ||
+                                        (null)?.getAttribute("data-drag-settled-cluster-size") ||
                                         "0"
                                     ),
-                                  topologyDragConnectorFeedbackContract:
-                                    skeletonCardsLayer?.getAttribute("data-drag-connector-feedback-contract") || "",
-                                  topologyDragCollisionPolicy:
-                                    skeletonCardsLayer?.getAttribute("data-drag-collision-policy") || "",
-                                  topologyDragFrameCacheContract:
-                                    skeletonCardsLayer?.getAttribute("data-drag-frame-cache-contract") || "",
-                                  topologyDragFrameBudgetContract:
-                                    skeletonCardsLayer?.getAttribute("data-drag-frame-budget-contract") || "",
                                   topologyLayoutWorkerPositionFrameSkipPolicy:
                                     topologyDragVerification?.workerFrameSkipPolicy ||
                                     sigmaViewport?.getAttribute("data-layout-worker-position-frame-skip-policy") ||
                                     "",
-                                  topologyRepositionDurationLastMs:
-                                    Number(skeletonCardsLayer?.getAttribute("data-reposition-duration-last-ms") || "0"),
-                                  topologyRepositionDurationMaxMs:
-                                    Number(skeletonCardsLayer?.getAttribute("data-reposition-duration-max-ms") || "0"),
-                                  topologyRepositionPassDurationContract:
-                                    skeletonCardsLayer?.getAttribute("data-reposition-pass-duration-contract") || "",
-                                  topologyRepositionPassSlowest:
-                                    skeletonCardsLayer?.getAttribute("data-reposition-pass-slowest") || "",
-                                  topologyRepositionPassSlowestMs:
-                                    Number(skeletonCardsLayer?.getAttribute("data-reposition-pass-slowest-ms") || "0"),
-                                  topologyRepositionPassCardPlacementMs:
-                                    Number(skeletonCardsLayer?.getAttribute("data-reposition-pass-card-placement-ms") || "0"),
-                                  topologyRepositionPassVisibilityCacheMs:
-                                    Number(skeletonCardsLayer?.getAttribute("data-reposition-pass-visibility-cache-ms") || "0"),
-                                  topologyRepositionPassConnectorLabelMs:
-                                    Number(skeletonCardsLayer?.getAttribute("data-reposition-pass-connector-label-ms") || "0"),
-                                  topologyRepositionPassPopupMs:
-                                    Number(skeletonCardsLayer?.getAttribute("data-reposition-pass-popup-ms") || "0"),
-                                  topologyRepositionMaxPassSlowest:
-                                    skeletonCardsLayer?.getAttribute("data-reposition-max-pass-slowest") || "",
-                                  topologyRepositionMaxPassSlowestMs:
-                                    Number(skeletonCardsLayer?.getAttribute("data-reposition-max-pass-slowest-ms") || "0"),
-                                  topologyRepositionMaxPassCardPlacementMs:
-                                    Number(skeletonCardsLayer?.getAttribute("data-reposition-max-pass-card-placement-ms") || "0"),
-                                  topologyRepositionMaxPassVisibilityCacheMs:
-                                    Number(skeletonCardsLayer?.getAttribute("data-reposition-max-pass-visibility-cache-ms") || "0"),
-                                  topologyRepositionMaxPassConnectorLabelMs:
-                                    Number(skeletonCardsLayer?.getAttribute("data-reposition-max-pass-connector-label-ms") || "0"),
-                                  topologyRepositionMaxPassPopupMs:
-                                    Number(skeletonCardsLayer?.getAttribute("data-reposition-max-pass-popup-ms") || "0"),
-                                  topologyFocusContextSilhouettePolicy:
-                                    skeletonCardsLayer?.getAttribute("data-focus-context-silhouette-policy") || "",
-                                  topologyFocusContextSilhouetteActive:
-                                    skeletonCardsLayer?.getAttribute("data-focus-context-silhouette-active") || "",
-                                  topologyFocusContextSilhouetteHiddenCount:
-                                    Number(skeletonCardsLayer?.getAttribute("data-focus-context-silhouette-hidden-count") || "0"),
-                                  topologyCardPlacementParentRectCacheContract:
-                                    skeletonCardsLayer?.getAttribute("data-card-placement-parent-rect-cache-contract") || "",
-                                  topologyCardPlacementParentRectCacheSize:
-                                    Number(skeletonCardsLayer?.getAttribute("data-card-placement-parent-rect-cache-size") || "0"),
-                                  topologyCardPlacementParentRectReadCount:
-                                    Number(skeletonCardsLayer?.getAttribute("data-card-placement-parent-rect-read-count") || "0"),
-                                  topologyCardPlacementSizeReadCount:
-                                    Number(skeletonCardsLayer?.getAttribute("data-card-placement-size-read-count") || "0"),
-                                  topologyCardPlacementLayoutRectContract:
-                                    skeletonCardsLayer?.getAttribute("data-card-placement-layout-rect-contract") || "",
-                                  topologyLayoutEffectRepositionContract:
-                                    skeletonCardsLayer?.getAttribute("data-layout-effect-reposition-contract") || "",
-                                  topologyLayoutEffectRepositionPolicy:
-                                    skeletonCardsLayer?.getAttribute("data-layout-effect-reposition-policy") || "",
-                                  topologyLayoutEffectRepositionRunCount:
-                                    Number(skeletonCardsLayer?.getAttribute("data-layout-effect-reposition-run-count") || "0"),
-                                  topologyLayoutEffectRepositionSkippedCount:
-                                    Number(skeletonCardsLayer?.getAttribute("data-layout-effect-reposition-skipped-count") || "0"),
-                                  topologyPathEndpointPostprocessContract:
-                                    skeletonCardsLayer?.getAttribute("data-path-endpoint-postprocess-contract") || "",
-                                  topologyPathEndpointPostprocessPolicy:
-                                    skeletonCardsLayer?.getAttribute("data-path-endpoint-postprocess-policy") || "",
-                                  topologyFixedSurfaceRestoreReadPolicy:
-                                    skeletonCardsLayer?.getAttribute("data-fixed-surface-restore-read-policy") || "",
-                                  topologyCardPlacementSubphaseContract:
-                                    skeletonCardsLayer?.getAttribute("data-card-placement-subphase-contract") || "",
-                                  topologyCardPlacementSlowestSubphase:
-                                    skeletonCardsLayer?.getAttribute("data-card-placement-slowest-subphase") || "",
-                                  topologyCardPlacementSlowestSubphaseMs:
-                                    Number(skeletonCardsLayer?.getAttribute("data-card-placement-slowest-subphase-ms") || "0"),
-                                  topologyCardPlacementSubphaseSetupMs:
-                                    Number(skeletonCardsLayer?.getAttribute("data-card-placement-subphase-setup-ms") || "0"),
-                                  topologyCardPlacementSubphaseCoreLoopMs:
-                                    Number(skeletonCardsLayer?.getAttribute("data-card-placement-subphase-core-loop-ms") || "0"),
-                                  topologyCardPlacementSubphaseOverviewCollisionMs:
-                                    Number(skeletonCardsLayer?.getAttribute("data-card-placement-subphase-overview-collision-ms") || "0"),
-                                  topologyCardPlacementSubphaseDimPassMs:
-                                    Number(skeletonCardsLayer?.getAttribute("data-card-placement-subphase-dim-pass-ms") || "0"),
-                                  topologyCardPlacementDimRectReadPolicy:
-                                    skeletonCardsLayer?.getAttribute("data-card-placement-dim-rect-read-policy") || "",
-                                  topologyCardPlacementSubphaseReadLayerMs:
-                                    Number(skeletonCardsLayer?.getAttribute("data-card-placement-subphase-read-layer-ms") || "0"),
-                                  topologyCardPlacementSubphasePathEndpointMs:
-                                    Number(skeletonCardsLayer?.getAttribute("data-card-placement-subphase-path-endpoint-ms") || "0"),
-                                  topologyCardPlacementSubphaseOverviewDomainMs:
-                                    Number(skeletonCardsLayer?.getAttribute("data-card-placement-subphase-overview-domain-ms") || "0"),
-                                  topologyOverviewDomainRectReadPolicy:
-                                    skeletonCardsLayer?.getAttribute("data-overview-domain-rect-read-policy") || "",
-                                  topologyCardPlacementSubphaseFixedRestoreMs:
-                                    Number(skeletonCardsLayer?.getAttribute("data-card-placement-subphase-fixed-restore-ms") || "0"),
-                                  topologyCardPlacementSizeCacheContract:
-                                    skeletonCardsLayer?.getAttribute("data-card-placement-size-cache-contract") || "",
-                                  topologyCardPlacementSizeCacheSize:
-                                    Number(skeletonCardsLayer?.getAttribute("data-card-placement-size-cache-size") || "0"),
-                                  topologyCardPlacementSizeCacheHitCount:
-                                    Number(skeletonCardsLayer?.getAttribute("data-card-placement-size-cache-hit-count") || "0"),
-                                  topologyCardPlacementSizeCacheMissCount:
-                                    Number(skeletonCardsLayer?.getAttribute("data-card-placement-size-cache-miss-count") || "0"),
-                                  topologyCardPlacementFrameRectCacheContract:
-                                    skeletonCardsLayer?.getAttribute("data-card-placement-frame-rect-cache-contract") || "",
-                                  topologyCardPlacementFrameRectCacheSize:
-                                    Number(skeletonCardsLayer?.getAttribute("data-card-placement-frame-rect-cache-size") || "0"),
-                                  topologyCardPlacementFrameRectCacheHitCount:
-                                    Number(skeletonCardsLayer?.getAttribute("data-card-placement-frame-rect-cache-hit-count") || "0"),
-                                  topologyCardPlacementFrameRectDirectReadCount:
-                                    Number(skeletonCardsLayer?.getAttribute("data-card-placement-frame-rect-direct-read-count") || "0"),
-                                  topologyDragRepositionPolicy:
-                                    skeletonCardsLayer?.getAttribute("data-drag-reposition-policy") || "",
-                                  topologyDragDomIndexContract:
-                                    skeletonCardsLayer?.getAttribute("data-drag-dom-index-contract") || "",
-                                  topologyDragDomIndexSize:
-                                    Number(skeletonCardsLayer?.getAttribute("data-drag-dom-index-size") || "0"),
-                                  topologyDragFrameCacheSnapshotCount:
-                                    Number(skeletonCardsLayer?.getAttribute("data-drag-frame-cache-snapshot-count") || "0"),
-                                  topologyDockDragSnapshotContract:
-                                    skeletonCardsLayer?.getAttribute("data-dock-drag-snapshot-contract") || "",
-                                  topologyConnectorDomIndexContract:
-                                    skeletonCardsLayer?.getAttribute("data-connector-dom-index-contract") || "",
-                                  topologyConnectorRectCacheContract:
-                                    skeletonCardsLayer?.getAttribute("data-connector-rect-cache-contract") || "",
-                                  topologyConnectorRectCacheFrameFallbackContract:
-                                    skeletonCardsLayer?.getAttribute("data-connector-rect-cache-frame-fallback-contract") || "",
-                                  topologyConnectorRectCacheAccounting:
-                                    skeletonCardsLayer?.getAttribute("data-connector-rect-cache-accounting") || "",
-                                  topologyConnectorRectCacheSize:
-                                    Number(skeletonCardsLayer?.getAttribute("data-connector-rect-cache-size") || "0"),
-                                  topologyConnectorRectCacheSeedCount:
-                                    Number(skeletonCardsLayer?.getAttribute("data-connector-rect-cache-seed-count") || "0"),
-                                  topologyConnectorRectCacheReadCount:
-                                    Number(skeletonCardsLayer?.getAttribute("data-connector-rect-cache-read-count") || "0"),
-                                  topologyConnectorRectCacheHitCount:
-                                    Number(skeletonCardsLayer?.getAttribute("data-connector-rect-cache-hit-count") || "0"),
-                                  topologyVisibilityStyleWriteContract:
-                                    skeletonCardsLayer?.getAttribute("data-visibility-style-write-contract") || "",
-                                  topologyFinalVisibleCountPolicy:
-                                    skeletonCardsLayer?.getAttribute("data-final-visible-count-policy") || "",
-                                  topologySupportRailOverlapReadPolicy:
-                                    skeletonCardsLayer?.getAttribute("data-support-rail-overlap-read-policy") || "",
-                                  topologySupportRailOverlapActive:
-                                    skeletonCardsLayer?.getAttribute("data-support-rail-overlap-active") === "true",
-                                  topologyDragActiveOverlapPolicy:
-                                    skeletonCardsLayer?.getAttribute("data-drag-active-overlap-policy") || "",
-                                  topologyDragActiveOverlapReadPolicy:
-                                    skeletonCardsLayer?.getAttribute("data-drag-active-overlap-read-policy") || "",
-                                  topologyDragActiveOverlapHiddenCount:
-                                    Number(skeletonCardsLayer?.getAttribute("data-drag-active-overlap-hidden-count") || "0"),
-                                  topologySelectedBlockingSurfaceOverlapActive:
-                                    skeletonCardsLayer?.getAttribute("data-selected-blocking-surface-overlap-active") === "true",
-                                  topologyResidualOverlapClearContract:
-                                    skeletonCardsLayer?.getAttribute("data-residual-overlap-clear-contract") || "",
-                                  topologyResidualOverlapReadPolicy:
-                                    skeletonCardsLayer?.getAttribute("data-residual-overlap-read-policy") || "",
-                                  topologyResidualOverlapClear:
-                                    skeletonCardsLayer?.getAttribute("data-residual-overlap-clear") === "true",
-                                  topologyResidualVisibleCardOverlapCount:
-                                    Number(skeletonCardsLayer?.getAttribute("data-visible-card-overlap-count") || "0"),
-                                  topologyResidualFixedSurfaceOverlapCount:
-                                    Number(skeletonCardsLayer?.getAttribute("data-fixed-surface-overlap-count") || "0"),
-                                  topologyResidualCardFixedSurfaceOverlapCount:
-                                    Number(skeletonCardsLayer?.getAttribute("data-card-fixed-surface-overlap-count") || "0"),
-                                  topologyZoomLensContract:
-                                    skeletonCardsLayer?.getAttribute("data-zoom-lens-contract") || "",
                                   topologyFrameProfile,
                                   topologyMapEngine,
                                   topologyMapCanvasCardCount,
@@ -5486,217 +3985,61 @@ pub fn run() {
                                     topologyZoomVerification?.reason || "",
                                   topologyZoomVerifyHookReason:
                                     topologyZoomVerification?.hookReason || "",
-                                  topologyZoomLensPresentationContract:
-                                    skeletonCardsLayer?.getAttribute("data-zoom-lens-presentation-contract") || "",
                                   topologyZoomLensPresentationActive:
                                     topologyZoomVerification?.presentationActive === true ||
-                                    skeletonCardsLayer?.getAttribute("data-zoom-lens-presentation-active") === "true",
+                                    (null)?.getAttribute("data-zoom-lens-presentation-active") === "true",
                                   topologyZoomLensPresentationSource:
                                     topologyZoomVerification?.presentationSource ||
-                                    skeletonCardsLayer?.getAttribute("data-zoom-lens-presentation-source") || "",
-                                  topologyZoomLensThresholdRatio:
-                                    Number(skeletonCardsLayer?.getAttribute("data-zoom-lens-threshold-ratio") || "0"),
+                                    (null)?.getAttribute("data-zoom-lens-presentation-source") || "",
                                   topologyZoomLensCardMaxWidthPx:
-                                    (skeletonCardsLayer &&
+                                    ((null) &&
                                       Number.parseFloat(
-                                        getComputedStyle(skeletonCardsLayer)
+                                        getComputedStyle((null))
                                           .getPropertyValue("--topology-zoom-lens-card-max-width")
                                       )) || 0,
                                   topologyZoomLensCameraRatio:
                                     Number(
                                       topologyZoomVerification?.cameraRatio ||
-                                      skeletonCardsLayer?.getAttribute("data-zoom-lens-camera-ratio") ||
+                                      (null)?.getAttribute("data-zoom-lens-camera-ratio") ||
                                       "0"
                                     ),
                                   topologyZoomLensActive:
                                     topologyZoomVerification?.active === true ||
-                                    skeletonCardsLayer?.getAttribute("data-zoom-lens-active") === "true",
+                                    (null)?.getAttribute("data-zoom-lens-active") === "true",
                                   topologyZoomLensCardCompactionActive:
                                     topologyZoomVerification?.cardCompactionActive === true ||
-                                    skeletonCardsLayer?.getAttribute("data-zoom-lens-card-compaction-active") === "true",
-                                  topologyZoomLensEligibleCount:
-                                    Number(skeletonCardsLayer?.getAttribute("data-zoom-lens-eligible-count") || "0"),
+                                    (null)?.getAttribute("data-zoom-lens-card-compaction-active") === "true",
                                   topologyZoomLensActiveCardCount:
                                     Number(
                                       topologyZoomVerification?.activeCardCount ||
-                                      skeletonCardsLayer?.getAttribute("data-zoom-lens-active-card-count") ||
+                                      (null)?.getAttribute("data-zoom-lens-active-card-count") ||
                                       "0"
                                     ),
-                                  topologyZoomLensPinMinOpacity:
-                                    skeletonCardsLayer?.getAttribute("data-zoom-lens-pin-min-opacity") || "",
                                   topologyZoomLensVisibleActiveCardCount:
                                     Number(
                                       topologyZoomVerification?.visibleActiveCardCount ||
-                                      skeletonCardsLayer?.getAttribute("data-zoom-lens-visible-active-card-count") ||
+                                      (null)?.getAttribute("data-zoom-lens-visible-active-card-count") ||
                                       "0"
                                     ),
-                                  topologyZoomLensFocusEgoReadableContract:
-                                    skeletonCardsLayer?.getAttribute("data-zoom-lens-focus-ego-readable-contract") || "",
-                                  topologyZoomLensFocusEgoReadableCount:
-                                    Number(skeletonCardsLayer?.getAttribute("data-zoom-lens-focus-ego-readable-count") || "0"),
                                   topologyZoomLensPinProximityContract:
                                     topologyZoomVerification?.proximityPinContract ||
-                                    skeletonCardsLayer?.getAttribute("data-zoom-lens-pin-proximity-contract") || "",
+                                    (null)?.getAttribute("data-zoom-lens-pin-proximity-contract") || "",
                                   topologyZoomLensPinProximityActive:
                                     topologyZoomVerification?.proximityPinActive === true ||
-                                    skeletonCardsLayer?.getAttribute("data-zoom-lens-pin-proximity-active") === "true",
+                                    (null)?.getAttribute("data-zoom-lens-pin-proximity-active") === "true",
                                   topologyZoomLensProximityPinCount:
                                     Number(
                                       topologyZoomVerification?.proximityPinCount ||
-                                      skeletonCardsLayer?.getAttribute("data-zoom-lens-proximity-pin-count") ||
+                                      (null)?.getAttribute("data-zoom-lens-proximity-pin-count") ||
                                       "0"
                                     ),
                                   topologyZoomLensPinProximityRingToken:
                                     topologyZoomVerification?.proximityPinRingToken ||
-                                    skeletonCardsLayer?.getAttribute("data-zoom-lens-pin-proximity-ring-token") || "",
+                                    (null)?.getAttribute("data-zoom-lens-pin-proximity-ring-token") || "",
                                   topologyZoomLensPinGlyphContract:
                                     topologyZoomVerification?.pinGlyphContract || "",
                                   topologyZoomLensPinGlyphVisibleCount:
                                     Number(topologyZoomVerification?.pinGlyphVisibleCount || "0"),
-                                  topologyZoomLensViewportVisibleContract:
-                                    skeletonCardsLayer?.getAttribute("data-zoom-lens-viewport-visible-contract") || "",
-                                  topologyZoomLensPinCanvasContract:
-                                    skeletonCardsLayer?.getAttribute("data-zoom-lens-pin-canvas-contract") || "",
-                                  topologyZoomLensPinCanvasMarginPx:
-                                    Number(skeletonCardsLayer?.getAttribute("data-zoom-lens-pin-canvas-margin-px") || "0"),
-                                  topologyZoomLensPinCanvasClampCount:
-                                    Number(skeletonCardsLayer?.getAttribute("data-zoom-lens-pin-canvas-clamp-count") || "0"),
-                                  topologyZoomLensEmptyViewportFallbackContract:
-                                    skeletonCardsLayer?.getAttribute("data-zoom-lens-empty-viewport-fallback-contract") || "",
-                                  topologyZoomLensEmptyViewportFallbackActive:
-                                    skeletonCardsLayer?.getAttribute("data-zoom-lens-empty-viewport-fallback-active") === "true",
-                                  topologyZoomLensRelationChromeContract:
-                                    skeletonCardsLayer?.getAttribute("data-zoom-lens-relation-chrome-contract") || "",
-                                  topologyZoomLensRelationChromeActive:
-                                    skeletonCardsLayer?.getAttribute("data-zoom-lens-relation-chrome-active") === "true",
-                                  topologyZoomLensRelationThreadCount:
-                                    Number(skeletonCardsLayer?.getAttribute("data-zoom-lens-relation-thread-count") || "0"),
-                                  topologyZoomLensRelationLabelSuppressedCount:
-                                    Number(skeletonCardsLayer?.getAttribute("data-zoom-lens-relation-label-suppressed-count") || "0"),
-                                  topologyFocusDetailLensContract:
-                                    skeletonCardsLayer?.getAttribute("data-focus-detail-lens-contract") || "",
-                                  topologyFocusDetailLensActive:
-                                    skeletonCardsLayer?.getAttribute("data-focus-detail-lens-active") === "true",
-                                  topologyFocusDetailConnectorExpressionContract:
-                                    skeletonCardsLayer?.getAttribute("data-focus-detail-connector-expression-contract") || "",
-                                  topologyFocusDetailConnectorExpressionActive:
-                                    skeletonCardsLayer?.getAttribute("data-focus-detail-connector-expression-active") === "true",
-                                  topologyFocusDetailConnectorExpressionCount:
-                                    Number(skeletonCardsLayer?.getAttribute("data-focus-detail-connector-expression-count") || "0"),
-                                  topologySelectedFocusContextRailVisibleContract:
-                                    skeletonCardsLayer?.getAttribute("data-selected-focus-context-rail-visible-contract") || "",
-                                  topologySelectedFocusContextRailCount:
-                                    Number(skeletonCardsLayer?.getAttribute("data-selected-focus-context-rail-count") || "0"),
-                                  topologySelectedFocusContextRailVisibleCount:
-                                    Number(skeletonCardsLayer?.getAttribute("data-selected-focus-context-rail-visible-count") || "0"),
-                                  topologySelectedFocusContextRailHiddenCount:
-                                    Number(skeletonCardsLayer?.getAttribute("data-selected-focus-context-rail-hidden-count") || "0"),
-                                  topologySelectedFocusContextRailHiddenReason:
-                                    skeletonCardsLayer?.getAttribute("data-selected-focus-context-rail-hidden-reason") || "",
-                                  topologyOverviewDensityLensContract:
-                                    skeletonCardsLayer?.getAttribute("data-overview-density-lens-contract") || "",
-                                  topologyOverviewDensityLensThresholdRatio:
-                                    Number(skeletonCardsLayer?.getAttribute("data-overview-density-lens-threshold-ratio") || "0"),
-                                  topologyOverviewDensityLensMinWidth:
-                                    Number(skeletonCardsLayer?.getAttribute("data-overview-density-lens-min-width") || "0"),
-                                  topologyOverviewDensityLensActive:
-                                    skeletonCardsLayer?.getAttribute("data-overview-density-lens-active") === "true",
-                                  topologyOverviewDensityLensActiveCardCount:
-                                    Number(skeletonCardsLayer?.getAttribute("data-overview-density-lens-active-card-count") || "0"),
-                                  topologyOverviewDensityFixedGeographyContract:
-                                    skeletonCardsLayer?.getAttribute("data-overview-density-fixed-geography-contract") || "",
-                                  topologyOverviewDensityFixedGeographyActive:
-                                    skeletonCardsLayer?.getAttribute("data-overview-density-fixed-geography-active") === "true",
-                                  topologyOverviewDensityFixedGeographyDragContract:
-                                    skeletonCardsLayer?.getAttribute("data-overview-density-fixed-geography-drag-contract") || "",
-                                  topologyOverviewDensityFixedGeographyDragLocked:
-                                    skeletonCardsLayer?.getAttribute("data-overview-density-fixed-geography-drag-locked") === "true",
-                                  topologyOverviewDensityFixedGeographyDragAttempt:
-                                    skeletonCardsLayer?.getAttribute("data-overview-density-fixed-geography-drag-attempt") || "",
-                                  topologyOverviewDensityFixedGeographySlotCount:
-                                    Number(skeletonCardsLayer?.getAttribute("data-overview-density-fixed-geography-slot-count") || "0"),
-                                  topologyOverviewDensityFixedGeographyDomainCount:
-                                    Number(skeletonCardsLayer?.getAttribute("data-overview-density-fixed-geography-domain-count") || "0"),
-                                  topologyOverviewDensityFixedGeographyPinCount:
-                                    Number(skeletonCardsLayer?.getAttribute("data-overview-density-fixed-geography-pin-count") || "0"),
-                                  topologySelectedFocusFixedGeographyContract:
-                                    skeletonCardsLayer?.getAttribute("data-selected-focus-fixed-geography-contract") || "",
-                                  topologySelectedFocusFixedGeographyDragContract:
-                                    skeletonCardsLayer?.getAttribute("data-selected-focus-fixed-geography-drag-contract") || "",
-                                  topologySelectedFocusFixedGeographyDragLocked:
-                                    skeletonCardsLayer?.getAttribute("data-selected-focus-fixed-geography-drag-locked") === "true",
-                                  topologySelectedFocusFixedGeographyDragAttempt:
-                                    skeletonCardsLayer?.getAttribute("data-selected-focus-fixed-geography-drag-attempt") || "",
-                                  topologySelectedFocusContextRailZoomContract:
-                                    skeletonCardsLayer?.getAttribute("data-selected-focus-context-rail-zoom-contract") || "",
-                                  topologySelectedFocusContextRailZoomActive:
-                                    skeletonCardsLayer?.getAttribute("data-selected-focus-context-rail-zoom-active") === "true",
-                                  topologySelectedMapFixedGeographyContract:
-                                    skeletonCardsLayer?.getAttribute("data-selected-map-fixed-geography-contract") || "",
-                                  topologySelectedMapFixedGeographyDragContract:
-                                    skeletonCardsLayer?.getAttribute("data-selected-map-fixed-geography-drag-contract") || "",
-                                  topologySelectedMapFixedGeographyDragLocked:
-                                    skeletonCardsLayer?.getAttribute("data-selected-map-fixed-geography-drag-locked") === "true",
-                                  topologySelectedMapFixedGeographyDragAttempt:
-                                    skeletonCardsLayer?.getAttribute("data-selected-map-fixed-geography-drag-attempt") || "",
-                                  topologyFixedSurfaceLiveSuppressionReadPolicy:
-                                    skeletonCardsLayer?.getAttribute("data-fixed-surface-live-suppression-read-policy") || "",
-                                  topologyFixedSurfaceLiveSuppressionReadCount:
-                                    Number(skeletonCardsLayer?.getAttribute("data-fixed-surface-live-suppression-read-count") || "0"),
-                                  topologyFixedSurfaceLiveSuppressedCount:
-                                    Number(skeletonCardsLayer?.getAttribute("data-fixed-surface-live-suppressed-count") || "0"),
-                                  topologyVisibleCardStateCacheContract:
-                                    skeletonCardsLayer?.getAttribute("data-visible-card-state-cache-contract") || "",
-                                  topologyVisibleCardRectReadPolicy:
-                                    skeletonCardsLayer?.getAttribute("data-visible-card-rect-read-policy") || "",
-                                  topologyVisibleCardSelectedSurfaceRectPolicy:
-                                    skeletonCardsLayer?.getAttribute("data-visible-card-selected-surface-rect-policy") || "",
-                                  topologyVisibleCardStateReadPolicy:
-                                    skeletonCardsLayer?.getAttribute("data-visible-card-state-read-policy") || "",
-                                  topologyVisibleCardRectReadCount:
-                                    Number(skeletonCardsLayer?.getAttribute("data-visible-card-rect-read-count") || "0"),
-                                  topologyVisibleCardHiddenRectSkipCount:
-                                    Number(skeletonCardsLayer?.getAttribute("data-visible-card-hidden-rect-skip-count") || "0"),
-                                  topologyRelationLabelBlockerContract:
-                                    skeletonCardsLayer?.getAttribute("data-relation-label-blocker-contract") || "",
-                                  topologyRelationLabelBlockerSource:
-                                    skeletonCardsLayer?.getAttribute("data-relation-label-blocker-source") || "",
-                                  topologyRelationLabelPhoneBottomReserveContract:
-                                    skeletonCardsLayer?.getAttribute("data-relation-label-phone-bottom-reserve-contract") || "",
-                                  topologyRelationLabelPhoneBottomReservePx:
-                                    Number(skeletonCardsLayer?.getAttribute("data-relation-label-phone-bottom-reserve-px") || "0"),
-                                  topologyRelationLabelPhoneBottomReserveToken:
-                                    skeletonCardsLayer?.getAttribute("data-relation-label-phone-bottom-reserve-token") || "",
-                                  topologyRelationLabelQueryContract:
-                                    skeletonCardsLayer?.getAttribute("data-relation-label-query-contract") || "",
-                                  topologyRelationLabelQueryIndexCount:
-                                    Number(skeletonCardsLayer?.getAttribute("data-relation-label-query-index-count") || "0"),
-                                  topologyRelationLabelDragLayoutPolicy:
-                                    skeletonCardsLayer?.getAttribute("data-relation-label-drag-layout-policy") || "",
-                                  topologyRelationLabelGeometryContract:
-                                    skeletonCardsLayer?.getAttribute("data-relation-label-geometry-contract") || "",
-                                  topologyRelationLabelGeometrySource:
-                                    skeletonCardsLayer?.getAttribute("data-relation-label-geometry-source") || "",
-                                  topologyRelationLabelGeometryExpectedCount:
-                                    Number(skeletonCardsLayer?.getAttribute("data-relation-label-geometry-expected-count") || "0"),
-                                  topologyRelationLabelGeometryReadyCount:
-                                    Number(skeletonCardsLayer?.getAttribute("data-relation-label-geometry-ready-count") || "0"),
-                                  topologyRelationLabelGeometryPendingCount:
-                                    Number(skeletonCardsLayer?.getAttribute("data-relation-label-geometry-pending-count") || "0"),
-                                  topologyVisibilityCountContract:
-                                    skeletonCardsLayer?.getAttribute("data-visibility-count-contract") || "",
-                                  topologyFixedSurfaceMeasureContract:
-                                    skeletonCardsLayer?.getAttribute("data-fixed-surface-measure-contract") || "",
-                                  topologyVisibilityCountSource:
-                                    skeletonCardsLayer?.getAttribute("data-visibility-count-source") || "",
-                                  topologyDragSettleMotionContract:
-                                    skeletonCardsLayer?.getAttribute("data-drag-settle-motion-contract") || "",
-                                  topologyDragSettleOverlapReadPolicy:
-                                    skeletonCardsLayer?.getAttribute("data-drag-settle-overlap-read-policy") || "",
-                                  topologyDragSettleMotionDurationMs:
-                                    Number(skeletonCardsLayer?.getAttribute("data-drag-settle-motion-duration-ms") || "0"),
-                                  topologyDragSettleMotionEasing:
-                                    skeletonCardsLayer?.getAttribute("data-drag-settle-motion-easing") || "",
                                   topologyDragConnectorCount:
                                     Number(topologyDragVerification?.connectorCount || 0) ||
                                     topologyDragConnectorCount,
