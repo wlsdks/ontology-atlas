@@ -2489,11 +2489,6 @@
      */
     --engraved-numeral-face: #8c8c94;
     --engraved-numeral-text-shadow: 0 1px 0 #08080a;
-    --kind-glyph-stroke-project: #57575f;
-    --kind-glyph-stroke-domain: #48484f;
-    --kind-glyph-fill-project: #1c1c22;
-    --kind-glyph-fill-domain: #191920;
-    --kind-glyph-edge-contains: #4a4a54;
     --topology-blocking-backdrop-surface: rgba(0, 0, 0, 0.72);
     /* 가이드 투어 (2026-07-23, `src/features/guided-tour`) — 스크림+컷아웃
        페인트. `--topology-blocking-backdrop-surface`(0.72)보다 옅다: 투어는

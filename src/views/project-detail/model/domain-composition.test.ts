@@ -62,7 +62,7 @@ describe("buildProjectDomainComposition", () => {
     expect(result.maxTotal).toBe(5);
   });
 
-  it("orders top capabilities by degree (connectivity) desc, then title asc", () => {
+  it("orders every capability by degree (connectivity) desc, then title asc", () => {
     const nodes = [
       n("domain:views", "domain", [SLUG], "Views"),
       n("capability:a", "capability", [SLUG], "Alpha"),
@@ -78,10 +78,12 @@ describe("buildProjectDomainComposition", () => {
       // capability:b gets an extra edge to bump its degree above a/c.
       contains("capability:a", "capability:b"),
     ];
-    const result = buildProjectDomainComposition(nodes, edges, SLUG, { topCapabilityLimit: 2 });
+    const result = buildProjectDomainComposition(nodes, edges, SLUG);
     const [views] = result.domains;
-    expect(views.topCapabilities).toEqual(["Bravo", "Alpha"]);
-    expect(views.moreCapabilityCount).toBe(1);
+    // 「상위 2 + N개 더」가 아니라 전부다 — 행을 펼치면 목록이 다 보이므로
+    // 갈 곳 없는 수(「역량 1개 더」)를 만들 이유가 없다.
+    expect(views.capabilities).toEqual(["Bravo", "Alpha", "Charlie"]);
+    expect(views.capabilityCount).toBe(3);
   });
 
   it("sorts domains by total count desc, tie-broken by title asc", () => {

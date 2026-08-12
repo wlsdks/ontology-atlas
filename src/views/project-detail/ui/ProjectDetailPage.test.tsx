@@ -335,19 +335,68 @@ describe("ProjectDetailPage", () => {
     expect(screen.getByText("This project")).toBeInTheDocument();
   });
 
-  it("links each domain composition card to its topology focus deep-link", () => {
+  it("구성 탭의 도메인 행을 펼치면 그 도메인의 지도 딥링크가 나온다", () => {
     mocks.insightNodes = BASE_NODES;
     mocks.insightEdges = BASE_EDGES;
     mocks.canEdit = false;
     // #87 — 구성은 탭 뒤에 있고 탭 상태는 URL 이 진실원이다. 렌더 계약과
-    // 클릭 계약을 나눠 검사한다: 여기서는 "URL 이 구성이면 카드가 그려진다".
+    // 클릭 계약을 나눠 검사한다: 여기서는 "URL 이 구성이면 행이 그려진다".
     // (클릭 → URL 이동은 Next 의 일이라 아래 별 테스트가 URL 기록만 본다.)
     nav.search = "tab=composition";
     renderPage();
 
-    const card = screen.getByTestId("project-detail-domain-card");
-    expect(card).toHaveAttribute("href", "/topology/?mode=focus&p=domain%3Aviews");
-    expect(card).toHaveTextContent("Views");
+    // 카드 격자가 지고 행 목록이 그 자리를 받았다 — 지도로 가는 문은 카드
+    // 전체가 아니라 **펼친 안**의 링크 하나다(2026-08-12, B안).
+    const row = screen.getByTestId("project-detail-domain-row-toggle");
+    expect(row).toHaveTextContent("Views");
+    fireEvent.click(row);
+    expect(screen.getByTestId("project-detail-domain-map-link")).toHaveAttribute(
+      "href",
+      "/topology/?mode=focus&p=domain%3Aviews",
+    );
+  });
+
+  // 히어로의 방사 지도는 「많이 담긴 도메인이 더 크게」라고 약속했지만 실측
+  // 폭 차이가 17개 대 6개에서 4.7px(17대16 은 0.3px)이었고 선이 글자를
+  // 관통했다. 못 지키는 약속은 잉크가 아니라 오해다 — 그 자리에 다른 그림을
+  // 덧대는 대신, 판정 가능한 형식(행+막대)의 목록을 **한 곳**에만 둔다.
+  it("히어로에 방사 도메인 지도가 없다 — 도메인 목록은 구성 탭 한 곳에만 있다", () => {
+    mocks.insightNodes = BASE_NODES;
+    mocks.insightEdges = BASE_EDGES;
+    mocks.canEdit = false;
+    const { container } = renderPage();
+    const header = container.querySelector("header")!;
+
+    /*
+     * **부재를 재는 단언은 셀렉터가 틀리면 영원히 통과한다** — 그래서 먼저 이
+     * 셀렉터가 실제로 그런 SVG 를 잡는지 확인한다(`/gate-probe`: 검사가 빈
+     * 집합에서 헛돌고 있지 않은가).
+     */
+    const probe = document.createElement("div");
+    probe.innerHTML = '<svg role="img" aria-label="probe"></svg>';
+    header.appendChild(probe);
+    expect(header.querySelector("svg[role='img']")).not.toBeNull();
+    probe.remove();
+
+    expect(header.querySelector("svg[role='img']")).toBeNull();
+    // 히어로에 도메인 행이 없다(같은 아홉 줄을 한 화면에 두 번 그리지 않는다).
+    expect(header.querySelector("[data-testid='domain-capacity-bar-row']")).toBeNull();
+  });
+
+  // 같은 문장을 두 번 말하지 않는다 — 각주는 목록이 있는 자리에 한 번.
+  it("겹침 각주는 목록과 같은 자리에 한 번만 나온다", () => {
+    mocks.insightNodes = BASE_NODES;
+    mocks.insightEdges = BASE_EDGES;
+    mocks.canEdit = false;
+    // 탭 상태는 URL 이 진실원이다 — 이 하네스에서 탭 클릭은 URL 만 기록하고
+    // 리렌더는 실앱의 라우터가 한다. 그래서 두 상태를 각각 그려서 본다.
+    const { unmount } = renderPage();
+    expect(screen.queryByTestId("project-detail-domain-overlap-note")).not.toBeInTheDocument();
+    unmount();
+
+    nav.search = "tab=composition";
+    renderPage();
+    expect(screen.getAllByTestId("project-detail-domain-overlap-note")).toHaveLength(1);
   });
 
   it("탭을 누르면 URL 에 기록된다 — 공유·에이전트 재현이 가능해야 한다 (#87)", () => {
@@ -380,7 +429,7 @@ describe("ProjectDetailPage", () => {
 
     // 소유자: "스크롤로 모든거 보여주려 안해도 되니까?" — project.md 본문이
     // 수천 px 라 구성과 같은 스크롤에 두면 구성을 스캔할 방법이 없었다.
-    expect(screen.queryByTestId("project-detail-domain-card")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("project-detail-domain-rows")).not.toBeInTheDocument();
   });
 
   it("연결된 프로젝트는 탭 밖에 있다 — 어느 탭에서든 보인다 (#87)", () => {
@@ -477,7 +526,7 @@ describe("ProjectDetailPage", () => {
     mocks.canEdit = false;
     renderPage();
 
-    expect(screen.queryByTestId("project-detail-domain-card")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("project-detail-domain-rows")).not.toBeInTheDocument();
   });
 
   it("shows the empty-body hint when neither project.detail nor the vault body is available (pre-fix behavior preserved)", () => {
