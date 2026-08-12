@@ -3678,33 +3678,9 @@
    * At short desktop heights the map's primary copy handoff must remain visible;
    * secondary notice/tool chrome moves to the accessibility tree only.
    */
-  @media (max-height: 800px) {
-    .topology-overview-low-height-sr-only {
-      position: absolute !important;
-      width: 1px !important;
-      height: 1px !important;
-      padding: 0 !important;
-      margin: -1px !important;
-      overflow: hidden !important;
-      clip: rect(0, 0, 0, 0) !important;
-      white-space: nowrap !important;
-      border-width: 0 !important;
-    }
-  }
+  
 
-  @media (max-height: 960px) {
-    .topology-overview-medium-height-sr-only {
-      position: absolute !important;
-      width: 1px !important;
-      height: 1px !important;
-      padding: 0 !important;
-      margin: -1px !important;
-      overflow: hidden !important;
-      clip: rect(0, 0, 0, 0) !important;
-      white-space: nowrap !important;
-      border-width: 0 !important;
-    }
-  }
+  
 
   /* [삭제, 2026-07-18] 구 SigmaTopology 커넥터 애니메이션
      (topology-connector-flow / topology-relation-inspector-enter keyframes,

@@ -36,8 +36,6 @@ import type { SVGProps } from 'react';
 export const BRAND_MARK_VIEWBOX = 512;
 
 /** 브랜드 그라디언트 — 인디고 단일 hue 램프(원본 시트 실측). */
-export const BRAND_GRADIENT_FROM = '#787EF6';
-export const BRAND_GRADIENT_TO = '#3E4BDF';
 /** 그라디언트를 못 쓰는 자리(단색 파비콘 등)의 대체값 — 시트 명기 브랜드 컬러. */
 export const BRAND_MARK_SOLID = '#5E6AD2';
 

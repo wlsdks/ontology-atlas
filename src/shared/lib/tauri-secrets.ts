@@ -69,9 +69,6 @@ export const LOCAL_DEFAULT_BASE_URL = 'http://localhost:11434';
 /** 연결할 수 있는 제공자 전부 — 키를 쓰는 셋 + 주소를 쓰는 하나. */
 export type ConnectionProvider = SecretProvider | typeof LOCAL_PROVIDER;
 
-export function isLocalProvider(provider: string): provider is typeof LOCAL_PROVIDER {
-  return provider === LOCAL_PROVIDER;
-}
 
 /** Rust `SecretStatus` (serde camelCase). */
 export interface SecretStatus {
