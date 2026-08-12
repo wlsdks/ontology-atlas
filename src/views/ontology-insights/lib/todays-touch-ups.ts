@@ -21,7 +21,9 @@ import type { DependencyCycle, DependencyCyclesResult } from "./dependency-cycle
 export type TouchUpReason =
   | { kind: "cycle"; length: number }
   | { kind: "neglected-hub"; degree: number; agoDays: number }
-  | { kind: "promotion" };
+  /** fanIn = 들어오는 참조 수 — 큐 행이 이미 나르는 근거(「여러 곳」이라
+   *  뭉뚱그리면 세 행이 같은 문구를 반복한다, 2026-08-13 실측). */
+  | { kind: "promotion"; fanIn: number };
 
 export interface TouchUpItem {
   /** 밴드 행 고유 id — 세션 완료 표기의 키로도 쓴다. */
@@ -102,7 +104,7 @@ export function pickTodaysTouchUps(
       nodeId: row.nodeId,
       title: row.title,
       nodeKind: row.nodeKind,
-      reason: { kind: "promotion" as const },
+      reason: { kind: "promotion" as const, fanIn: row.degree ?? 0 },
       handoffPayload: row.handoffPayload,
     }));
 

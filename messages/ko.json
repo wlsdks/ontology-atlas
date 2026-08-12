@@ -1470,7 +1470,7 @@
         "touchUpFlowHint": "지도에서 확인 → 원문 확인 → 스튜디오에서 수정 → 에이전트로 검증",
         "touchUpWhyNeglectedHub": "{degree}군데에서 쓰는데 {days}일째 손대지 않았어요",
         "touchUpWhyCycle": "개념 {length}개가 서로를 가리켜 시작점이 없어요",
-        "touchUpWhyPromotion": "여러 곳에서 참조돼요. 상위 개념으로 올릴 만해요",
+        "touchUpWhyPromotion": "{count}곳에서 참조돼요. 상위 개념으로 올릴 만해요",
         "rowMenuTrigger": "더보기",
         "askAgent": "에이전트에게 말로 시키기",
         "reviewFallback": "선택한 항목",

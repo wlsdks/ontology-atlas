@@ -591,7 +591,9 @@ export function OntologyInsightsPage() {
       case "cycle":
         return t("doNext.touchUpWhyCycle", { length: item.reason.length });
       case "promotion":
-        return t("doNext.touchUpWhyPromotion");
+        // 참조 수를 그대로 말한다 — 「여러 곳」은 세 행이 같은 문구를 반복하게
+        // 만들었고, 수는 큐 행이 이미 나르고 있었다.
+        return t("doNext.touchUpWhyPromotion", { count: item.reason.fanIn });
     }
   };
   // #63 — 이 화면의 단일 판정. 탭 배지 · 빈 상태 문구 · 건강 주장이 모두
