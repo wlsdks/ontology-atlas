@@ -19,6 +19,7 @@ function session(overrides: Partial<AgentWorkSession> = {}): AgentWorkSession {
     counts: { added: 3, edited: 0, removed: 1 },
     lastTarget: "capabilities/checkout",
     lastTool: "add_relation",
+    agent: null,
     done: true,
     ...overrides,
   };

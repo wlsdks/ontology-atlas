@@ -111,11 +111,17 @@ export function AgentActivityChip({ suppressed = false }: { suppressed?: boolean
               data-testid="agent-activity-status"
               className="min-w-0 truncate text-[color:var(--color-text-primary)]"
             >
+              {/* 이름은 로그가 아는 만큼만 — claude-code/codex 처럼 스스로
+                  밝힌 그대로 쓰고, 모르면 이름 없이 상태만 말한다. */}
               {feed.writing
-                ? t('writing')
+                ? feed.agentName
+                  ? t('writingAgent', { agent: feed.agentName })
+                  : t('writing')
                 : feed.lastAt === null
                   ? t('quietUnknown')
-                  : t('lastWorkedAt', { age: relative(feed.lastAt) })}
+                  : feed.agentName
+                    ? t('lastWorkedAtAgent', { agent: feed.agentName, age: relative(feed.lastAt) })
+                    : t('lastWorkedAt', { age: relative(feed.lastAt) })}
             </span>
             {/* 대상이 없으면(배치 쓰기·문서 흡수, 또는 볼트에서 사라진 슬러그)
                 **대상 없이 상태만** 말한다. 죽은 링크를 만들지 않는다. */}

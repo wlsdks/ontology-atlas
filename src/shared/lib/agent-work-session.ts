@@ -115,6 +115,13 @@ export interface AgentWorkSession {
   /** 마지막으로 손댄 대상 슬러그 후보. 배치·문서 흡수면 null. */
   lastTarget: string | null;
   lastTool: string | null;
+  /**
+   * 이 작업에서 마지막으로 이름을 밝힌 에이전트 (하트비트 또는 MCP 연결 인사의
+   * clientInfo.name, `mcp/src/activity-log.mjs` `resolveAgentName`). 이름 없는
+   * 줄이 직전 이름을 지우지 않는 것은 `lastTarget` 과 같은 이유다 — 배치 한
+   * 줄 때문에 화면이 말할 수 있던 것을 잃지 않는다. 한 번도 못 들었으면 null.
+   */
+  agent: string | null;
   /** 조용해진 지 `idleMs` 가 지났나 — 끝난 작업만 true. */
   done: boolean;
 }
@@ -158,6 +165,7 @@ export function deriveAgentWorkSessions(
         counts: emptyCounts(),
         lastTarget: null,
         lastTool: null,
+        agent: null,
         done: false,
       };
       sessions.push(current);
@@ -170,6 +178,7 @@ export function deriveAgentWorkSessions(
     // 마지막 대상은 **슬러그일 때만** 갱신한다. 배치가 마지막 줄이라고 해서
     // 직전에 알아낸 대상을 지우면, 화면이 말할 수 있던 것을 잃는다.
     current.lastTarget = toSlugTarget(entry.target) ?? current.lastTarget;
+    current.agent = entry.agent?.trim() || current.agent;
   }
 
   for (const session of sessions) {

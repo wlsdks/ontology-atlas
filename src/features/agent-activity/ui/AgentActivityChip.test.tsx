@@ -19,6 +19,7 @@ function feed(overrides: Partial<AgentActivityFeed> = {}): AgentActivityFeed {
     nowMs: NOW,
     writing: false,
     lastAt: NOW - 5 * 60_000,
+    agentName: null,
     lastNode: { slug: "capabilities/checkout", name: "주문서 작성", kind: "capability" },
     lastTargetUnnamed: false,
     notifications: [],
@@ -45,6 +46,22 @@ describe("AgentActivityChip", () => {
     renderChip({ writing: true });
     expect(screen.getByTestId("agent-activity-status")).toHaveTextContent("작업 중");
     expect(screen.getByTestId("agent-activity-target")).toHaveTextContent("주문서 작성");
+  });
+
+  it("이름을 아는 에이전트는 이름으로 말한다 — 「claude-code 작업 중」", () => {
+    renderChip({ writing: true, agentName: "claude-code" });
+    expect(screen.getByTestId("agent-activity-status")).toHaveTextContent("claude-code 작업 중");
+  });
+
+  it("조용해진 뒤에도 이름은 남는다 — 「codex · 마지막 작업 N분 전」", () => {
+    renderChip({ writing: false, agentName: "codex" });
+    const status = screen.getByTestId("agent-activity-status");
+    expect(status.textContent).toMatch(/^codex · 마지막 작업/);
+  });
+
+  it("이름을 모르면 이름 없이 상태만 — 지어내지 않는다", () => {
+    renderChip({ writing: true, agentName: null });
+    expect(screen.getByTestId("agent-activity-status")).toHaveTextContent(/^작업 중$/);
   });
 
   it("조용하면 마지막 작업 시각을 말한다 — 「연결됨」이라고 쓰지 않는다", () => {

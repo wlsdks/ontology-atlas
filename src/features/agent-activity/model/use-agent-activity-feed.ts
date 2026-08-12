@@ -96,6 +96,12 @@ export interface AgentActivityFeed {
   /** 마지막 쓰기가 「쓰는 중」 창(2분) 안인가. */
   writing: boolean;
   lastAt: number | null;
+  /**
+   * 마지막 작업에서 이름을 밝힌 에이전트 (하트비트 > MCP 연결 인사 이름 순 —
+   * 로그가 이미 그 우선순위로 기록한다). 모르면 null 이고, 화면은 이름 없이
+   * 상태만 말한다 — 지어내지 않는다.
+   */
+  agentName: string | null;
   /** 마지막 대상 — **매니페스트에 실재하는 슬러그일 때만** 채워진다. */
   lastNode: VaultShapeNode | null;
   /** 대상이 배치·문서 흡수라 이름이 없거나, 볼트에서 사라졌다. */
@@ -266,6 +272,7 @@ export function useAgentActivityFeed(): AgentActivityFeed {
     nowMs,
     writing: busy,
     lastAt,
+    agentName: last?.agent ?? null,
     lastNode,
     lastTargetUnnamed: lastAt !== null && lastNode === null,
     notifications: notificationsEnabled ? notifications : [],
