@@ -79,3 +79,86 @@ test.describe("인사이트 할 일 — 탭 배지와 묶음 배지가 같은 �
     ).toBe(groupSum + blocking);
   });
 });
+
+/**
+ * **큰 숫자도 같은 폴더를 센다** (2026-08-12 실측 회귀).
+ *
+ * 구성 탭의 대형 숫자(개념·관계)가 상단 칩과 **다른 수**를 말했다 — 칩은 사용자
+ * 볼트(5 개념 · 4 관계), 큰 숫자는 내장 견본(125 · 258). 원인은 카운트업 인트로:
+ * 첫 렌더가 견본으로 그려지며 0→125 로 세기 시작하고, 사용자 볼트가 그 400ms
+ * **안에** 도착하면 동기화 스냅을 다음 프레임이 되덮은 뒤 125 에 영구 정착했다.
+ * 그 화면의 부제가 "모든 숫자는 문서에서 자동으로 계산돼요" 인데, 숫자가 견본을
+ * 세고 있었다.
+ *
+ * 기전은 `use-count-up.test.ts` 가 잠근다. 이 시험이 맡는 것은 그 위 —
+ * **화면에 실제로 같은 수가 찍히는가.** 볼트를 물리고(스텁 피커) 인트로가 끝난
+ * 뒤 큰 숫자와 상단 칩을 함께 읽는다. 시간이 아니라 값의 일치를 단언하므로
+ * 기계 속도와 무관하다.
+ */
+test.describe("인사이트 구성 — 큰 숫자와 상단 칩이 같은 폴더를 센다", () => {
+  test.use({ viewport: { width: 1512, height: 900 } });
+
+  test("개념·관계 대형 숫자 = 상단 칩", async ({ page }) => {
+    const { seedFirstRunSeen } = await import("./first-run-seed");
+    const { stubDirectoryPicker } = await import("./vault-picker-stub");
+    await seedFirstRunSeen(page);
+    await stubDirectoryPicker(page, {
+      "shop.md": [
+        "---",
+        "uid: 11111111-1111-4111-8111-111111111111",
+        "slug: shop",
+        "kind: project",
+        "title: Census Shop",
+        "contains:",
+        "  - capabilities/pay",
+        "---",
+        "",
+        "# Census Shop",
+        "",
+      ].join("\n"),
+      "capabilities/pay.md": [
+        "---",
+        "uid: 22222222-2222-4222-8222-222222222222",
+        "slug: capabilities/pay",
+        "kind: capability",
+        "title: Pay",
+        "---",
+        "",
+        "# Pay",
+        "",
+      ].join("\n"),
+    });
+
+    await page.goto("/ko/topology/?guides=off", { waitUntil: "domcontentloaded" });
+    await page.getByTestId("first-run-starter-open").click();
+    await page.getByTestId("vault-guide-pick-existing").click();
+    await expect(page.getByTestId("topology-index-panel")).toContainText("Census Shop", {
+      timeout: 30_000,
+    });
+
+    await page.goto("/ko/ontology/insights/?guides=off&tab=composition", {
+      waitUntil: "domcontentloaded",
+    });
+    // 인트로(400ms)가 끝나고도 남을 만큼 — 그리고 견본→볼트 교체가 이 안에 있다.
+    await page.waitForTimeout(2_000);
+
+    const seen = await page.evaluate(() => {
+      const chip = [...document.querySelectorAll("header span")].map((el) => (el.textContent ?? "").trim())
+        .find((text) => /개념/.test(text) && /관계/.test(text));
+      const bignums = [...document.querySelectorAll('[data-testid="insights-bignum"]')].map((el) =>
+        Number(/(\d[\d,]*)/.exec(el.textContent ?? "")?.[1]?.replace(/,/g, "") ?? NaN),
+      );
+      return { chip: chip ?? null, bignums };
+    });
+
+    expect(seen.chip, "상단 칩을 못 찾았다 — 이 시험이 공회전한다").not.toBeNull();
+    const chipConcepts = Number(/(\d+)\s*개념/.exec(seen.chip!)?.[1]);
+    const chipRelations = Number(/(\d+)\s*관계/.exec(seen.chip!)?.[1]);
+    console.log(`[census-agreement] 칩 ${seen.chip} · 대형 숫자 ${seen.bignums.join(", ")}`);
+
+    // 공회전 차단: 대형 숫자가 하나도 없으면 아무것도 안 잰 것이다.
+    expect(seen.bignums.length, "대형 숫자를 하나도 못 찾았다").toBeGreaterThanOrEqual(2);
+    expect(seen.bignums[0], `개념 대형 숫자가 칩(${chipConcepts})과 다른 폴더를 센다`).toBe(chipConcepts);
+    expect(seen.bignums[1], `관계 대형 숫자가 칩(${chipRelations})과 다른 폴더를 센다`).toBe(chipRelations);
+  });
+});
