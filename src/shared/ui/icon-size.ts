@@ -51,4 +51,3 @@ export const ICON_SIZE = {
   lg: 16,
 } as const;
 
-export type IconSizeStep = keyof typeof ICON_SIZE;

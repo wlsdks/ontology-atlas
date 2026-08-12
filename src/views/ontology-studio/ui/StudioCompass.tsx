@@ -2023,14 +2023,6 @@ function LaneRender({
    * 했다). 그래서 창만 열면 된다.
    */
   const foldPresence = usePanelPresence(foldOpen);
-  const recommended = isStudioRecommendationAdmissible(
-    view.recommendation,
-    view.relation,
-  );
-  const expected = isStudioRecommendationAdmissible(
-    view.expectation,
-    view.relation,
-  );
   const satNav = (id: string) => {
     if (onOpenNode) return () => onOpenNode(id);
     return undefined;

@@ -57,7 +57,7 @@
       ],
       "excerpt": "Current as of 2026-08-02. This is the user-facing guide for running ontology-atlas as a local meaning graph: CLI-only, MCP-connected, and web workbench flows over the same markdown vault. ontology-atlas is not a hosted graph database. It is a local-first graph workbench where markdown frontmatter is the graph, git is t",
       "wordCount": 2637,
-      "updatedAt": "2026-08-12",
+      "updatedAt": "2026-08-09",
       "linksOut": []
     },
     {
@@ -229,7 +229,7 @@
       ],
       "excerpt": "2026-07-27 update — the current architecture is a local-first, git-backed meaning layer: a folder of markdown files that records what each part of the product is, who owns it, what it depends on, and what proves it. People and AI coding agents read and write that same folder. Round 10 permanently removed every login an",
       "wordCount": 3445,
-      "updatedAt": "2026-08-12",
+      "updatedAt": "2026-08-09",
       "linksOut": [
         "../AGENTS",
         "PRODUCT-DIRECTION",
@@ -9492,7 +9492,7 @@
       ],
       "excerpt": "This document is maintained based on Section 3 of the design spec. For the original Linear specification, see design-references/DESIGN-linear.md. v2 (2026-07): topology-map-v2 에서 출하된 B2+ \"Circuit × Constellation\" 시각 언어가 페이지 롤아웃(랜딩 → docs/ontology 허브 → projects/insights → download)의 규범이 되었다 — 아래 v2 — \"Circuit × Constell",
       "wordCount": 30646,
-      "updatedAt": "2026-08-12",
+      "updatedAt": "2026-08-09",
       "linksOut": [
         "design-references/DESIGN-linear",
         "TOPOLOGY-V2-DESIGN",
@@ -10268,7 +10268,7 @@
       ],
       "excerpt": "이 문서는 제품을 느낌이 아니라 공개·인용 가능한 학술/표준/craft 레퍼런스에 묶어 둔다. \"온톨로지가 뭔지도 모르면서 만드는\" 것을 막기 위한 근거 모음 — 무엇이 이미 있고, 우리가 그 위에서 우리만의 것을 어디서 어떻게 다르게 만드는지. 인용 규율: 여기 실린 레퍼런스는 전부 공개 논문 / W3C 표준 / 공개 서적 / 공개 블로그다. 최초 세트는 2026-06-01, ontology-construction 보강 세트는 2026-08-09에 원문·공식 메타데이터를 다시 열어 확인했다. 링크/인용은 하되 본문을 베끼지 않는다. 새 레퍼런스를 추가할 때도 공개·",
       "wordCount": 4431,
-      "updatedAt": "2026-08-12",
+      "updatedAt": "2026-08-09",
       "linksOut": [
         "ONTOLOGY-ATLAS-SPEC",
         "ONTOLOGY-CONSTRUCTION-QUALIFICATION"
@@ -11069,7 +11069,7 @@
       ],
       "excerpt": "볼트를 만들다 보면 반드시 이 질문에서 멈춥니다. 이건 도메인인가 역량인가? 파일마다 노드를 하나씩 만들어야 하나? 한 노드 아래에 자식이 서른 개면 잘못된 건가? 여기 답이 있습니다. 그리고 답의 대부분은 \"세지 말라\" 입니다. kind별 포함·제외·예시·반례와 isa 판별의 정본은 Atlas 메타모델 명세입니다. 이 장은 그 규칙을 다시 정의하지 않고, 파일 미러링과 fan-out이라는 실제 제작 함정을 설명합니다. \"얼마나 큰가\" 로 층을 고르면 계속 헷갈립니다. 무엇에 답하는가로 고르십시오. · kind · 답하는 질문 · 예 · project · 우리가 무엇",
       "wordCount": 1069,
-      "updatedAt": "2026-08-12",
+      "updatedAt": "2026-08-09",
       "linksOut": [
         "ONTOLOGY-ATLAS-SPEC"
       ]
@@ -11253,7 +11253,7 @@
       ],
       "excerpt": "Submission type: Show HN Category: open source / dev tool (80 chars exactly — under HN's 80 char limit. If too long, fallback: Show HN: ontology-atlas – frontmatter is the graph; AI agents read it via MCP) https://github.com/wlsdks/ontology-atlas (Word count: ~380. HN expects substantive Show HN posts, not one-liners; ",
       "wordCount": 646,
-      "updatedAt": "2026-08-12",
+      "updatedAt": "2026-08-09",
       "linksOut": []
     },
     {
@@ -11311,7 +11311,7 @@
       ],
       "excerpt": "오픈소스 launch 단계의 publication 초안 모음. 메인테이너가 시점에 맞춰 직접 publish. 배포 채널 (2026-07-27 확정, docs/DECISIONS.md): npm 발행 계획은 폐기됐다. 공개 채널은 서명·공증된 macOS DMG 하나이고, 앱이 컴파일된 MCP 서버를 자기 번들에 싣고 다닌다 — 다운로드 1회가 사람 표면과 에이전트 표면을 동시에 설치한다. 터미널을 쓰는 사람에게는 소스 체크아웃이 두 번째 길이다. 아래 초안에 npx 를 다시 넣지 말 것 — 실행하면 404 다. 1. 사전 준비 [ ] 서명·공증된 macOS DMG 를 G",
       "wordCount": 648,
-      "updatedAt": "2026-08-12",
+      "updatedAt": "2026-08-09",
       "linksOut": []
     },
     {
@@ -11349,7 +11349,7 @@
       ],
       "excerpt": "Reddit responds best to honest, problem-first framing. Each subreddit has its own norms; copy below tuned per audience. Title: ontology-atlas — frontmatter as a codebase ontology, AI agents read it via MCP Body (400~500 words, Reddit allows long-form better than HN): my-project/ ├── project.md ├── domains/ │ ├── auth.m",
       "wordCount": 1068,
-      "updatedAt": "2026-08-12",
+      "updatedAt": "2026-08-09",
       "linksOut": []
     },
     {
@@ -11407,7 +11407,7 @@
       ],
       "excerpt": "X 의 언어는 짧고 시각적. 5–7 트윗 짜리 thread 가 sweet spot. 각 트윗 280 chars 안. 1 트윗 = 1 idea. yaml uid: 71890f3e-7b5d-4c0a-8f14-123456789abc kind: capability slug: capabilities/login title: Login domain: domains/auth dependencies: [capabilities/signup] Post the thread in one go (drafts feature) Pin tweet 1 to profile Quote-tweet you",
       "wordCount": 460,
-      "updatedAt": "2026-08-12",
+      "updatedAt": "2026-08-09",
       "linksOut": []
     },
     {
@@ -11628,7 +11628,7 @@
       ],
       "excerpt": "Status: RFC (Request for Comments). This is a v2.0 release candidate, not a ratified standard — see §0 RFC status and feedback for the review window and how to comment. This document promotes an already-shipped, already-enforced de-facto schema into a formal specification. v2 makes immutable node uid mandatory; this is",
       "wordCount": 5445,
-      "updatedAt": "2026-08-12",
+      "updatedAt": "2026-08-09",
       "linksOut": []
     },
     {
@@ -11681,7 +11681,7 @@
       ],
       "excerpt": "Status: executable public input contract for the existing analyzerepostructure MCP tool. The evaluator is implemented by mcp/src/construction-qualification.mjs and the write-eligibility lifecycle by mcp/src/construction-lifecycle.mjs. It adds no vault kind, frontmatter field, new MCP tool, or UI surface. A vault can co",
       "wordCount": 1067,
-      "updatedAt": "2026-08-12",
+      "updatedAt": "2026-08-10",
       "linksOut": [
         "FOUNDATIONS",
         "ONTOLOGY-ATLAS-SPEC",
@@ -11823,7 +11823,7 @@
       ],
       "excerpt": "앱이나 MCP 클라이언트 없이도 같은 로컬 마크다운 볼트를 검사·조회·작성하고, 에이전트 연결과 그래프 작업을 터미널에서 재현하게 하는 운영 진입점이다. 개발자와 에이전트는 새 vault 생성부터 검증, 의미 조회, 관계 분석, 안전한 로컬 체크포인트까지 하나의 명령 표면에서 수행한다. MCP가 연결되지 않은 환경에서도 동일한 compiler/query 결과와 복구 명령을 받아 작업을 이어갈 수 있다. --json 출력은 자동화가 산문을 파싱하지 않고 상태·경고·다음 행동을 판단하게 한다. init·add·import·bootstrap은 새 노드의 lowercase ",
       "wordCount": 362,
-      "updatedAt": "2026-08-12",
+      "updatedAt": "2026-08-09",
       "linksOut": []
     },
     {
@@ -12161,7 +12161,7 @@
       ],
       "excerpt": "로컬 마크다운 볼트를 AI 코딩 에이전트가 읽고 안전하게 갱신하도록 제공하는 stdio JSON-RPC 인터페이스다. 사람과 에이전트가 같은 파일을 진실원으로 사용하며, 서버는 별도 데이터베이스나 모델 실행 루프를 소유하지 않는다. 에이전트는 프로젝트의 의미 노드를 정확히 찾고, 관계·근거·영향 범위를 함께 읽는다. 연결 직후 실제 vault/repository 좌표와 도구 인벤토리를 확인해 잘못된 폴더나 오래된 클라이언트 상태를 발견한다. 쓰기 전에는 현재 문서를 읽고, 동시 편집·중복·끊어진 관계·파괴적 변경을 구조화된 오류와 dry-run으로 차단한다. 도구의 ",
       "wordCount": 1296,
-      "updatedAt": "2026-08-12",
+      "updatedAt": "2026-08-10",
       "linksOut": []
     },
     {
@@ -12199,7 +12199,7 @@
       ],
       "excerpt": "Studio의 나침반 방위 관계 블록(UP=isa, DOWN=contains, RIGHT=depends, LEFT=relates): 채우면 실제 frontmatter 관계를 쓴다. 빈 소켓은 관계를 추가할 수 있다는 중립 affordance이지, 그 관계가 필요하거나 특정 후보가 옳다는 뜻이 아니다. 추천 상태는 대상별 rationale, evidence reference, source/target/relation이 일치하는 safetoadd preflight 영수증이 모두 있을 때만 성립한다. 현재 graph projection과 picker scorer는 그 se",
       "wordCount": 147,
-      "updatedAt": "2026-08-12",
+      "updatedAt": "2026-08-09",
       "linksOut": []
     },
     {
@@ -12387,7 +12387,7 @@
       ],
       "excerpt": "project 노드 하나에 Git 저장소 또는 로컬 폴더 하나를 연결하고, 온톨로지가 선언한 capability/element 구현 경로를 실제 소스 목록과 대조해 버전이 붙은 범주형 영수증으로 남기는 능력. 지도 데이터시트·전체 상세·CLI·MCP agentbrief가 같은 상태·현재성·첫 빈틈·다음 행동을 읽는다. 연결 자체는 설치 앱·MCP·CLI 세 표면 모두에서 가능하다. connectprojectsource (CLI connect-source)는 rootPath를 생략하면 볼트를 감싸는 git 저장소를, 없으면 가장 가까운 조상 매니페스트 폴더를 후보로 지",
       "wordCount": 629,
-      "updatedAt": "2026-08-12",
+      "updatedAt": "2026-08-09",
       "linksOut": []
     },
     {
@@ -12454,7 +12454,7 @@
       ],
       "excerpt": "project·domain·capability·element·document 저작 kind와 도구 전용 vault-readme의 경계를 일관되게 표시하고 관리하는 능력. kind 선택의 의미 판별은 docs/ONTOLOGY-ATLAS-SPEC.md §2가 소유하며, 폴더·팀·워크플로 이름만으로 분류하지 않는다. src/features/taxonomy (구현 증거) docs/ONTOLOGY-ATLAS-SPEC.md §2 (kind 판별의 공개 정본) medium-high (0.85): 구현 경로와 공개 kind 계약을 교차 확인",
       "wordCount": 48,
-      "updatedAt": "2026-08-12",
+      "updatedAt": "2026-08-09",
       "linksOut": []
     },
     {
@@ -12535,7 +12535,7 @@
       ],
       "excerpt": "AI 에이전트가 볼트를 발견·인증하고 읽고 쓸 수 있게 하는 앱 내 connect 플로우와 MCP 대면 표면. 앱 안의 대화형 에이전트는 실제 볼트 도구 근거를 수집한다. 절대 경로와 읽힌 manifest가 함께 있을 때만 활성화하여 화면의 개념, 모델이 읽는 본문, 볼트 안 감사 로그가 한 출처를 가리킨다. 로컬 러너에서는 제한된 읽기 순서와 왕복 시간 상한을 적용한다. 필수 읽기, 상세 payload에 남은 정확한 인용, 한국어 질문의 한국어 응답 중 하나를 생략하면 한 번 교정하고, 두 번째에도 따르지 않은 답은 사용자에게 싣지 않는다. 구조 감사는 census",
       "wordCount": 308,
-      "updatedAt": "2026-08-12",
+      "updatedAt": "2026-08-09",
       "linksOut": []
     },
     {
@@ -12575,7 +12575,7 @@
       ],
       "excerpt": "사람과 agent가 같은 판별로 5개 authorable kind와 typed relation을 작성하도록 하고, 기계가 강제하는 frontmatter shape·사람이 승인하는 의미·현재 query/write 지원 범위· 추론하지 않는 경계를 서로 다른 권위와 검증 경로로 유지하는 능력. project·domain·capability·element·document만 저작할 수 있고, vault-readme는 도구가 만든 reader 전용 kind다. broader는 narrower에서 direct broader를 가리키며 UI에서 isa로 보이지만 현재 공개 rel",
       "wordCount": 127,
-      "updatedAt": "2026-08-12",
+      "updatedAt": "2026-08-09",
       "linksOut": []
     },
     {
@@ -12729,7 +12729,7 @@
       ],
       "excerpt": "markdown frontmatter가 인코딩하는 5개 authorable kind, 예약 reader kind, 실제 storage/query/write relation vocabulary와 비추론 경계를 정의하고 이를 결정론적 그래프로 컴파일·쿼리하는 책임 영역. docs/ONTOLOGY-ATLAS-SPEC.md §2·§5: kind와 relation 의미의 공개 정본 docs/ARCHITECTURE.md: \"compileontology turns markdown frontmatter into a deterministic graph artifact; queryon",
       "wordCount": 112,
-      "updatedAt": "2026-08-12",
+      "updatedAt": "2026-08-09",
       "linksOut": []
     },
     {
@@ -13978,7 +13978,7 @@
       ],
       "excerpt": "This folder is Ontology Atlas described in its own data format (dogfooding). Every .md file here is one node of the product's meaning model: the same project / domain / capability / element graph the app draws and the MCP server serves to AI agents. If you are an agent reading this: this vault is the shared mental mode",
       "wordCount": 600,
-      "updatedAt": "2026-08-12",
+      "updatedAt": "2026-08-09",
       "linksOut": []
     },
     {
@@ -14806,7 +14806,7 @@
       ],
       "excerpt": "[v10 정체성, 2026-07-18] — agent-native, human-sovereign(에이전트가 직접 쓰고, 최종 판단은 사람이 한다). 이 제품은 \"에이전트를 위한 시스템\"이 아니다. 사람과 AI 에이전트가 같이 읽고 같이 고치는 의미 계층 하나이고, 에이전트도 사람과 똑같은 정식 사용자다. 여기서 의미 계층이란 제품의 각 부분이 무엇인지 · 누가 맡는지 · 무엇이 그것을 증명하는지를 적어 둔 마크다운 폴더를 말한다. 에이전트는 이 폴더를 최신 상태로 유지하는 쪽이자 가장 많이 읽는 쪽이고 (MCP/CLI), 사람은 무엇이 맞는 뜻인지 최종적으로 정하는 ",
       "wordCount": 5787,
-      "updatedAt": "2026-08-12",
+      "updatedAt": "2026-08-09",
       "linksOut": [
         "ONTOLOGY-ATLAS-SPEC",
         "AGENT-MEMORY-POSITIONING"
@@ -15126,7 +15126,7 @@
       ],
       "excerpt": "이 폴더는 Ontology Atlas 를 만드는 사람들이 쓰는 기술 문서 모음입니다. 제품이 무엇인지 알고 싶어서 들어오셨다면 이 목록이 아니라 지도 화면을 먼저 보세요 — 제품이 어떤 영역으로 나뉘고 각 영역에 무엇이 들어 있는지 그림 한 장으로 보여 줍니다. 아래 표는 \"어떤 주제를 어느 문서에서 찾는가\" 를 정리한 색인입니다. This folder is the working documentation for people building Ontology Atlas. If you came here to learn what the product is, open the ",
       "wordCount": 1097,
-      "updatedAt": "2026-08-12",
+      "updatedAt": "2026-08-09",
       "linksOut": [
         "../README",
         "PRODUCT-OWNER-OPERATING-SYSTEM",
