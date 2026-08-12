@@ -15,6 +15,11 @@ elements:
 # 내 프로젝트
 
 이 프로젝트가 무엇인지 한두 줄로 적어 주세요 — *무엇을 / 누구를 위해 / 왜*.
+이 노드는 나머지 그래프의 결과와 범위를 정합니다. 저장소·모노레포·부서·출시
+단계와 같은 말이 아닙니다.
+
+kind와 관계 정본:
+https://github.com/wlsdks/ontology-atlas/blob/main/docs/ONTOLOGY-ATLAS-SPEC.md#2-the-five-authorable-node-kinds-and-reserved-reader-kind
 
 ## 한 줄 사명
 
@@ -25,8 +30,8 @@ elements:
 - frontmatter 의 `domains: [...]` 를 채우면 도메인 노드가 프로젝트 트리에
   자동으로 매달립니다.
 - 각 도메인의 역량과 요소도 같은 방식으로 이어집니다.
-- AI 에이전트가 새 노드를 추가하면 이 파일의 `depends_on` / `domains` 가
-  자동 갱신될 수 있습니다 — frontmatter 가 단일 진실원이라 충돌이 없습니다.
+- AI 에이전트가 새 노드를 제안하면 쓰기 전에 그 의미를 확인합니다. 작성된 뒤에는
+  frontmatter가 단일 진실원이고 git에서 변경을 검토할 수 있습니다.
 
 ## 다음에 할 일
 

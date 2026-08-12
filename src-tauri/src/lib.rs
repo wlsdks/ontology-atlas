@@ -4253,8 +4253,9 @@ mod tests {
         assert!(source.contains("후보 \\d+\\/\\d+개 표시"));
         // v2 캔버스 카피 — 정본 census 문구가 relief 마커에 포함돼야 한다.
         assert!(source.contains("개념 \\d+개 · 관계 \\d+개"));
-        assert!(source.contains("data-focus-cluster-size"));
-        assert!(source.contains("data-drag-cluster-hull-dom-policy"));
+        // `data-focus-cluster-size` 단언은 지웠다(2026-08-12 표식 정리) — 그
+        // 속성은 UI 어디에도 없어(“은퇴 표식”), 이 줄은 죽은 조회가 프로브에
+        // 남아 있기를 강제하는 반대 방향 게이트였다.
         assert!(source.contains("dragHandleSlug"));
         assert!(source.contains("data-drag-physics-sync-contract"));
         assert!(source.contains("data-drag-physics-release-policy"));
@@ -4273,23 +4274,7 @@ mod tests {
         assert!(source.contains("topologyZoomVerifyReason"));
         assert!(source.contains("topologyCameraDepthContract"));
         assert!(source.contains("data-camera-depth-contract"));
-        assert!(source.contains("topologyZoomLensPresentationContract"));
         assert!(source.contains("topologyZoomLensPresentationSource"));
-        assert!(source.contains("topologyZoomLensViewportVisibleContract"));
-        assert!(source.contains("topologyZoomLensFocusEgoReadableContract"));
-        assert!(source.contains("topologySelectedFocusContextRailVisibleContract"));
-        assert!(source.contains("topologyZoomLensEmptyViewportFallbackContract"));
-        assert!(source.contains("data-zoom-lens-empty-viewport-fallback-active"));
-        assert!(source.contains("topologyZoomLensRelationChromeContract"));
-        assert!(source.contains("data-zoom-lens-relation-thread-count"));
-        assert!(source.contains("topologyZoomLensPinMinOpacity"));
-        assert!(source.contains("topologyOverviewDensityFixedGeographyContract"));
-        assert!(source.contains("topologyOverviewDensityFixedGeographyDragContract"));
-        assert!(source.contains("topologySelectedFocusFixedGeographyContract"));
-        assert!(source.contains("topologySelectedFocusFixedGeographyDragContract"));
-        assert!(source.contains("topologySelectedFocusContextRailZoomContract"));
-        assert!(source.contains("topologySelectedMapFixedGeographyContract"));
-        assert!(source.contains("topologySelectedMapFixedGeographyDragContract"));
         assert!(source.contains("topologySupportChromeZoomLensActive"));
         assert!(source.contains("topologyMinimapState"));
         assert!(source.contains("topologyDragReactiveMotionContract"));
@@ -4301,13 +4286,9 @@ mod tests {
         assert!(source.contains("topologyDragTensionConnectorContract"));
         assert!(source.contains("topologyDragTensionConnectorVisibleCount"));
         assert!(source.contains("topologyDragTensionConnectorActiveOpacity"));
-        assert!(source.contains("visible(draggedFocus) ? draggedFocus :"));
         assert!(source.contains("__ontologyAtlasTopologyFocusNoopVerify"));
-        assert!(source.contains("ontology-atlas:verify-selected-focus-safe-fit"));
-        assert!(source.contains("data-selected-relation-endpoint-visibility-contract"));
         assert!(source.contains("data-selected-relation-endpoint=\"true\""));
         assert!(source.contains("topologySelectedRelationEndpointCards"));
-        assert!(source.contains("data-selected-relation-context-silhouette-policy"));
         assert!(source.contains("topologySelectedRelationLowerPriorityVisibleDimmedCount"));
     }
 

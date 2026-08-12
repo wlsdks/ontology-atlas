@@ -19,8 +19,12 @@
 > 첫 화면도 둘로 나뉜다. 공개 웹은 소개 페이지(사람을 데려오는 자리), 설치한
 > 앱은 옵시디언처럼 바로 폴더를 여는 첫 실행 화면(마케팅 문구 없음)이다.
 
-> **[v9, 2026-07-17] 지금의 방향을 정하는 정본은 `docs/plans/PRODUCT-PLAN-2026-07.md` 다.**
-> v9 가 정한 것은 넷이다. ① 제품을 두 층으로 나눈다 — Layer 1 은 내 컴퓨터에서
+> **[현재 정본] 이 문서가 제품 방향, `docs/DECISIONS.md`가 결정 이유,
+> `docs/BACKLOG.md`의 활성 실행 트랙이 구현 순서를 맡는다.**
+> `docs/plans/PRODUCT-PLAN-2026-07.md`를 포함한 `docs/plans/`는 당시 의도와
+> 검토 이력을 보존하는 역사 기록이며 현재 상태나 실행 순서를 지시하지 않는다.
+> **[v9, 2026-07-17]** 당시 계획이 정한 것은 넷이다. ① 제품을 두 층으로
+> 나눈다 — Layer 1 은 내 컴퓨터에서
 > 도는 핵심 기능이고 절대 바뀌지 않으며, Layer 2 는 Atlas Network(Spec 표준 ·
 > Hub · 수요가 확인된 뒤에만 만드는 유료 Team Sync)다. ② 1차 대상을 "2~10인
 > 팀의 테크리드" 한 부류로 좁힌다. ③ v8 이 적어 둔 여러 이해관계자는 "게이트를
@@ -65,9 +69,12 @@ Launch framing (v4, 2026-05-18):
 
 Working definition: an ontology here is not just a topology visualization or a
 generic knowledge base. It is the executable meaning model of a product and the
-codebase that realizes it: `project`, `domain`, `capability`, and `element`
-nodes plus typed relations that explain business intent, ownership, dependency,
-evidence, and impact for decision-makers, operators, developers, and AI agents.
+codebase that realizes it, written as five authorable kinds and the typed
+frontmatter relations Atlas actually implements. The exact discriminator,
+`broader`/`is_a` support boundary, and non-inference contract have one authority:
+[`ONTOLOGY-ATLAS-SPEC.md` §2](ONTOLOGY-ATLAS-SPEC.md#2-the-five-authorable-node-kinds-and-reserved-reader-kind).
+This direction document decides why the product exists; it does not maintain a
+second schema glossary.
 
 ### What Atlas should turn into ontology nodes, and what it should not
 
@@ -76,17 +83,12 @@ structure index**. It should make the product/business legible from the graph,
 then let a developer or AI agent trace that meaning down to the implementation
 that proves it.
 
-The primary artifact is the **business-to-code meaning layer**:
-
-1. **Domain** — the stable vocabulary / ownership boundary that explains why a
-   group of capabilities belongs together. A domain may be business-facing
-   ("pipeline", "billing", "risk") or system-facing ("agent handoff",
-   "local vault") as long as it anchors decisions.
-2. **Capability** — the business/product behavior or workflow the organization,
-   product, or codebase can perform.
-3. **Element** — the concrete code artifact, command, route, component, schema,
-   hook, or module that realizes or proves a capability.
-4. **Project** — the product/system scope that contains the model.
+The primary artifact is the **business-to-code meaning layer**. People normally
+read it in the order project outcome → responsibility domain → observable
+capability → implementation element, with `document` nodes preserving the ADR,
+policy, runbook, or reference material that explains those concepts. That is a
+reading path, not a second kind definition; the normative includes, excludes,
+examples, and counterexamples stay in the specification above.
 
 Business concepts are first-class when they are load-bearing: they define the
 market/category, operating model, user-visible behavior, policy, ownership,
@@ -95,10 +97,11 @@ useful ontology terms when they help a planner, marketer, C-level decision-maker
 developer, or AI agent understand what the business does and which capabilities
 and systems carry it.
 
-Source code structure enters as proof and traceability. A file path by itself
-starts as an `element`; it should be promoted to a `capability` only when the
-agent can cite behavior/workflow evidence, and to a `domain` only when multiple
-capabilities share the same vocabulary or ownership boundary.
+Source code structure enters as proof and traceability. A file path by itself is
+evidence, not a node. It earns an `element` only when its distinct implementation
+role helps answer a product, impact, or verification question. It earns a
+`capability` or `domain` only through the independent semantic tests in the
+specification; a folder, team, technology, or workflow name never promotes itself.
 
 The product should therefore optimize the loop:
 
@@ -244,7 +247,7 @@ This is the differentiator. **Generic ontology workbench (Protégé etc.) → "w
 | **Planner / PM / marketer** | Understand the product/business core, narratives, ownership, and change impact without reading source | installed desktop app (`/ontology`, `/topology`, `/docs`; macOS, Windows x64 beta), static/shared vault exports |
 | **C-level / decision-maker** | See what the organization/system is made of, which capabilities matter, and what changes affect strategic bets | overview, topology, graph proof/impact summaries |
 | **Developer** | Maintain the graph as implementation changes; connect code artifacts to domains/capabilities | CLI (`ontology-atlas init/list/validate/add/find/import/index`), installed desktop app (`/ontology`, `/docs`) |
-| **AI agent** (Claude Code, Codex, Cursor, …) | Read for context · write back findings · keep the graph current through verified MCP/CLI loops | MCP server (33 tools — read 19 + write 14), vault-scoped Git evidence/checkpoint, Workshop handoff, agent heartbeat, explicit-project agent brief |
+| **AI agent** (Claude Code, Codex, Cursor, …) | Read for context · write back findings · keep the graph current through verified MCP/CLI loops | MCP server (runtime-advertised read/write inventory), vault-scoped Git evidence/checkpoint, Workshop handoff, agent heartbeat, explicit-project agent brief |
 
 The single artifact serves all audiences: a local, git-backed ontology that
 links business language, product capabilities, implementation evidence, and
@@ -592,10 +595,9 @@ Code-compatible:
 From a source checkout the same entry is `"command": "node"`,
 `"args": ["/absolute/path/to/ontology-atlas/mcp/src/index.js"]`.
 
-Tools (33 — read 19 + write 14):
-
-- read: `connection_info`, `git_status`, `git_history`, `list_concepts`, `get_concept`, `get_concepts`, `find_evidence`, `find_backlinks`, `find_neighbors`, `find_path`, `list_kinds`, `find_orphans`, `query_concepts`, `compile_ontology`, `query_ontology`, `validate_vault`, `analyze_repo_structure`, `infer_imports`, `index_project`
-- write: `absorb_document`, `add_concept`, `add_concepts`, `add_relation`, `add_relations`, `remove_relation`, `replace_relation`, `patch_concept`, `reclassify_concept`, `delete_concept`, `rename_concept`, `merge_concepts`, `git_snapshot`, `finalize_project_meaning`
+The running server advertises the current read/write inventory through
+`tools/list`. Run `mcp-verify` for exact set parity and live vault proof; use
+`mcp/README.md` for the per-tool contracts.
 
 With this in place, the agent can answer **"which concept is this file an element of?"** directly during code exploration. No re-inferring every conversation.
 
@@ -635,7 +637,7 @@ When an agent enters the codebase, it sees this on the first page and picks up t
 ### ✅ Phase 3 — AI agent partner — merged
 
 1. ✅ `mcp/` package — MCP server (`ontology-atlas-mcp`)
-2. ✅ 33 tools (read 19 + write 14): connection/root/toolset proof, vault-scoped Git status/history and local snapshots, persisted Workshop context (`builder_context` compatibility operation), list/get/find/query/compile/validate/analyze/index reads, batch concept/relation writes, narrow relation removal/replacement, concept patch/reclassification, dry-run-first rename/merge/delete/absorb writes, and project-meaning finalization.
+2. ✅ Runtime-advertised MCP inventory: connection/root/toolset proof, vault-scoped Git status/history and local snapshots, persisted Workshop context (`builder_context` compatibility operation), list/get/find/query/compile/validate/analyze/index reads, batch concept/relation writes, narrow relation removal/replacement, concept patch/reclassification, dry-run-first rename/merge/delete/absorb writes, project-source connect/disconnect, and project-meaning finalization. `tools/list` is the exact current set; `mcp-verify` checks it.
 3. ✅ CLI command (`ontology-atlas`) — `node <checkout>/cli/src/index.mjs init <folder>` scaffolds the vault from a source checkout. The installed app `/docs` "Create starter seed" button is the no-terminal alternative. (npm publishing retired 2026-07-27; there is no `npx` channel.)
 4. ⏸ Auto-generated AGENTS.md — DEFERRED (manual updates + dogfood vault cover this)
 5. ✅ `docs/ontology/` dogfood vault — describes our own mental model, including agent-practice notes as document nodes (census: `node cli/src/index.mjs overview`)

@@ -9,13 +9,13 @@ display_en: My ontology vault
 # 내 온톨로지 문서함
 
 이 폴더는 **사람과 AI 에이전트가 함께 키우는 코드베이스 의미 모델**입니다.
-`.md` 파일 하나가 노드 하나(프로젝트 / 도메인 / 역량 / 요소 / 개념)이고,
-파일 맨 위의 frontmatter 가 그래프의 키(slug / kind / depends_on /
-capabilities / elements / domain)입니다.
+`.md` 파일 하나가 노드 하나(프로젝트 / 도메인 / 역량 / 요소 / 문서)이고,
+파일 맨 위의 frontmatter 자체가 그래프입니다.
 
 여기서 말하는 온톨로지는 코드베이스의 **실행 가능한 의미 모델**입니다 —
-프로젝트·도메인·역량·요소와 타입 있는 관계로 소유권, 의존성, 근거, 변경 영향을
-설명합니다.
+저자가 만드는 다섯 kind와 타입 있는 관계로 범위, 의존성, 연관, 설명을
+표현합니다. 포함·제외·예시·반례, direct `is_a` 판별, 추론 경계의 정본은 한 곳입니다:
+https://github.com/wlsdks/ontology-atlas/blob/main/docs/ONTOLOGY-ATLAS-SPEC.md#2-the-five-authorable-node-kinds-and-reserved-reader-kind
 
 ## 5분 만에 시작하기
 
@@ -95,35 +95,22 @@ node $ATLAS/cli/src/index.mjs agent-brief . --verify-fallbacks --json --fallback
 에이전트를 이 문서함이 아니라 코드베이스 루트에서 열었다면 `.` 대신 문서함
 경로를 씁니다(예: `./ontology`).
 
-## 관계 (frontmatter 키)
+## kind와 관계
 
-| 키 | 뜻 |
-|---|---|
-| `depends_on: [<slug>, ...]` | 이 노드가 기대는 다른 노드 |
-| `capabilities: [...]` | 이 도메인/프로젝트가 제공하는 역량 |
-| `elements: [...]` | 이 역량/도메인이 쓰는 요소 |
-| `domain: <slug>` | 이 역량/요소의 상위 도메인 |
-| `relates: [...]` | 느슨한 연관 참조 |
-
-## 종류(kind)
-
-- `project` — 최상위. 보통 작업공간당 하나.
-- `domain` — 큰 영역(인증, 결제, 빌더, …).
-- `capability` — 도메인 안에서 사용자가 할 수 있는 일 하나(로그인, 가입, …).
-- `element` — 역량이 쓰는 더 작은 단위(jwt-token, otp-store, …).
-- `document` — 근거 노드(다른 개념을 뒷받침하는 마크다운 문서).
+폴더 이름으로 추측하지 말고 위 명세를 사용하세요. `project`, `domain`,
+`capability`, `element`, `document`만 저자가 만들며 `vault-readme`는 도구가 만드는
+예약 kind입니다. `broader:`는 검증되는 저장 키이고 앱은 `is_a`로 보여 주지만,
+현재 공개 MCP relation API는 `broader`나 `is_a`를 받지 않습니다. 연결된 agent의
+server instructions가 충돌을 막는 정확한 `patch_concept` fallback을 제공합니다.
 
 ## AI 에이전트가 해줄 수 있는 일
 
-`ontology-atlas-mcp` 서버를 등록하면 에이전트가 이 문서함을 읽고 쓰는 도구
-33개를 갖습니다:
+`ontology-atlas-mcp` 서버를 등록하면 실행 중인 서버가 현재 읽기·쓰기 도구
+목록을 에이전트에게 알려 줍니다. 정확한 이름은 `tools/list`로 보고,
+`mcp-verify`로 서버가 이 문서함을 실제로 읽는지 확인하세요.
 
-- **읽기 19**: connection_info / git_status / git_history / list_concepts / get_concept / get_concepts / find_evidence /
-  find_backlinks / find_neighbors / find_path / list_kinds / find_orphans /
-  query_concepts / compile_ontology / query_ontology / validate_vault /
-  analyze_repo_structure / infer_imports / index_project
-- **쓰기 14**: absorb_document / add_concept / add_concepts / add_relation / add_relations /
-  remove_relation / replace_relation / patch_concept / reclassify_concept /
-  delete_concept / rename_concept / merge_concepts / git_snapshot / finalize_project_meaning
+처음에는 `connection_info`, `list_kinds`, `validate_vault`,
+`query_ontology({ operation: "agent_brief" })`를 사용합니다. 읽기 점검이 깨끗하고
+사람이 제안된 의미를 승인한 뒤에만 씁니다.
 
 자세히: https://github.com/wlsdks/ontology-atlas/tree/main/mcp

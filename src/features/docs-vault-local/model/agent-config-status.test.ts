@@ -4,58 +4,75 @@ import {
   looksLikeOmotMcpJson,
 } from './use-local-vault';
 
+function mcpJson(command: string, args: string[], vault = '.'): string {
+  return JSON.stringify({
+    mcpServers: {
+      'ontology-atlas': {
+        command,
+        args,
+        env: { OATLAS_VAULT: vault },
+      },
+    },
+  });
+}
+
+function codexToml(command: string, args: string[], vault = '.'): string {
+  return [
+    '[mcp_servers.ontology-atlas]',
+    `command = ${JSON.stringify(command)}`,
+    `args = ${JSON.stringify(args)}`,
+    '',
+    '[mcp_servers.ontology-atlas.env]',
+    `OATLAS_VAULT = ${JSON.stringify(vault)}`,
+    '',
+  ].join('\n');
+}
+
 describe('vault-local agent config validation', () => {
-  it('requires .mcp.json to point at the opened vault folder when expectedVault is provided', () => {
-    const config = JSON.stringify({
-      mcpServers: {
-        'ontology-atlas': {
-          command: 'npx',
-          args: ['-y', 'ontology-atlas-mcp'],
-          env: { OATLAS_VAULT: '/Users/dana/other-vault' },
-        },
-      },
-    });
+  const sourceEntrypoint = '/Users/dana/ontology-atlas/mcp/src/index.js';
+  const bundledBinary =
+    '/Applications/Ontology Atlas.app/Contents/MacOS/ontology-atlas-mcp';
 
-    expect(looksLikeOmotMcpJson(config)).toBe(true);
-    expect(looksLikeOmotMcpJson(config, { expectedVault: '.' })).toBe(false);
+  it('accepts the two executable distribution channels in JSON and TOML', () => {
+    for (const [command, args] of [
+      ['node', [sourceEntrypoint]],
+      [bundledBinary, []],
+    ] as const) {
+      expect(looksLikeOmotMcpJson(mcpJson(command, [...args]), { expectedVault: '.' })).toBe(true);
+      expect(looksLikeOmotCodexToml(codexToml(command, [...args]), { expectedVault: '.' })).toBe(true);
+    }
   });
 
-  it('accepts vault-local .mcp.json and Codex config using OATLAS_VAULT=.', () => {
-    const mcpJson = JSON.stringify({
-      mcpServers: {
-        'ontology-atlas': {
-          command: 'npx',
-          args: ['-y', 'ontology-atlas-mcp'],
-          env: { OATLAS_VAULT: '.' },
-        },
-      },
-    });
-    const codexToml = [
-      '[mcp_servers.ontology-atlas]',
-      'command = "npx"',
-      'args = ["-y", "ontology-atlas-mcp"]',
-      '',
-      '[mcp_servers.ontology-atlas.env]',
-      'OATLAS_VAULT = "."',
-      '',
-    ].join('\n');
+  it('rejects the retired npm launch even when its package name looks right', () => {
+    const command = 'npx';
+    const args = ['-y', 'ontology-atlas-mcp'];
 
-    expect(looksLikeOmotMcpJson(mcpJson, { expectedVault: '.' })).toBe(true);
-    expect(looksLikeOmotCodexToml(codexToml, { expectedVault: '.' })).toBe(true);
+    expect(looksLikeOmotMcpJson(mcpJson(command, args), { expectedVault: '.' })).toBe(false);
+    expect(looksLikeOmotCodexToml(codexToml(command, args), { expectedVault: '.' })).toBe(false);
   });
 
-  it('rejects stale vault-local Codex configs pointing at a different vault', () => {
-    const codexToml = [
-      '[mcp_servers.ontology-atlas]',
-      'command = "npx"',
-      'args = ["-y", "ontology-atlas-mcp"]',
-      '',
-      '[mcp_servers.ontology-atlas.env]',
-      'OATLAS_VAULT = "/Users/dana/other-vault"',
-      '',
-    ].join('\n');
+  it('rejects arbitrary or incomplete launch shapes instead of matching a substring', () => {
+    const invalidLaunches: Array<[string, string[]]> = [
+      ['node', []],
+      ['node', ['/tmp/not-atlas.js']],
+      ['node', [sourceEntrypoint, '--extra']],
+      ['/tmp/ontology-atlas-mcp-helper', []],
+      [bundledBinary, ['--extra']],
+    ];
 
-    expect(looksLikeOmotCodexToml(codexToml)).toBe(true);
-    expect(looksLikeOmotCodexToml(codexToml, { expectedVault: '.' })).toBe(false);
+    for (const [command, args] of invalidLaunches) {
+      expect(looksLikeOmotMcpJson(mcpJson(command, args), { expectedVault: '.' })).toBe(false);
+      expect(looksLikeOmotCodexToml(codexToml(command, args), { expectedVault: '.' })).toBe(false);
+    }
+  });
+
+  it('requires the active config to point at the opened vault folder', () => {
+    const json = mcpJson('node', [sourceEntrypoint], '/Users/dana/other-vault');
+    const toml = codexToml('node', [sourceEntrypoint], '/Users/dana/other-vault');
+
+    expect(looksLikeOmotMcpJson(json)).toBe(true);
+    expect(looksLikeOmotMcpJson(json, { expectedVault: '.' })).toBe(false);
+    expect(looksLikeOmotCodexToml(toml)).toBe(true);
+    expect(looksLikeOmotCodexToml(toml, { expectedVault: '.' })).toBe(false);
   });
 });

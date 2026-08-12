@@ -350,9 +350,8 @@ function inspectMcpJson(text, expectedVault, expectedRepoRoot) {
     if (server.env?.OATLAS_REPO_ROOT !== expectedRepoRoot) {
       return { ready: false, message: `OATLAS_REPO_ROOT is ${JSON.stringify(server.env?.OATLAS_REPO_ROOT)}; expected ${JSON.stringify(expectedRepoRoot)}` };
     }
-    if (typeof server.command !== 'string' || server.command.length === 0 || !Array.isArray(server.args)) {
-      return { ready: false, message: 'server command/args shape is incomplete' };
-    }
+    const launch = inspectExecutableLaunch(server.command, server.args);
+    if (!launch.ready) return launch;
     return { ready: true, message: 'ready for Claude Code / Cursor' };
   } catch (err) {
     return { ready: false, message: `invalid JSON: ${err instanceof Error ? err.message : String(err)}` };
@@ -380,10 +379,48 @@ function inspectCodexConfig(text, expectedVault, expectedRepoRoot) {
   if (!repoMatch) return { ready: false, message: 'missing OATLAS_REPO_ROOT env entry' };
   const actualRepoRoot = unescapeTomlString(repoMatch[1]);
   if (actualRepoRoot !== expectedRepoRoot) return { ready: false, message: `OATLAS_REPO_ROOT is ${JSON.stringify(actualRepoRoot)}; expected ${JSON.stringify(expectedRepoRoot)}` };
-  if (!/command\s*=\s*"/.test(serverSection) || !/args\s*=\s*\[/.test(serverSection)) {
-    return { ready: false, message: 'command/args shape is incomplete' };
+  const commandMatch = serverSection.match(/^\s*command\s*=\s*("(?:\\.|[^"\\])*")\s*$/m);
+  const argsMatch = serverSection.match(/^\s*args\s*=\s*(\[[^\n]*\])\s*$/m);
+  if (!commandMatch || !argsMatch) return { ready: false, message: 'server command/args shape is incomplete' };
+  let command;
+  let commandArgs;
+  try {
+    command = JSON.parse(commandMatch[1]);
+    commandArgs = JSON.parse(argsMatch[1]);
+  } catch {
+    return { ready: false, message: 'server command/args shape is invalid' };
   }
+  const launch = inspectExecutableLaunch(command, commandArgs);
+  if (!launch.ready) return launch;
   return { ready: true, message: 'ready for Codex' };
+}
+
+function inspectExecutableLaunch(command, args) {
+  if (typeof command !== 'string' || !Array.isArray(args) || args.some((arg) => typeof arg !== 'string')) {
+    return { ready: false, message: 'server command/args shape is incomplete' };
+  }
+  const absolute = (value) => value.startsWith('/') || /^[A-Za-z]:[\\/]/.test(value) || /^\\\\/.test(value);
+  const normalized = (value) => value.replace(/\\/g, '/').replace(/\/{2,}/g, '/');
+  const sourceEntrypoint =
+    command === 'node' &&
+    args.length === 1 &&
+    absolute(args[0]) &&
+    normalized(args[0]).endsWith('/mcp/src/index.js');
+  const bundledBinary =
+    args.length === 0 &&
+    absolute(command) &&
+    /\/ontology-atlas-mcp(?:\.exe)?$/.test(normalized(command));
+  if (!sourceEntrypoint && !bundledBinary) {
+    return {
+      ready: false,
+      message: 'server launch is unsupported; expected node <absolute>/mcp/src/index.js or an absolute ontology-atlas-mcp app binary',
+    };
+  }
+  const executablePath = sourceEntrypoint ? args[0] : command;
+  if (!existsSync(executablePath) || !statSync(executablePath).isFile()) {
+    return { ready: false, message: `server launch target does not exist: ${executablePath}` };
+  }
+  return { ready: true, message: 'server launch is executable' };
 }
 
 function getTomlSection(text, sectionName) {

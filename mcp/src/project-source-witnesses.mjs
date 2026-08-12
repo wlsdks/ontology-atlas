@@ -9,10 +9,12 @@
  * This is the MCP/CLI-side derivation, over vault docs. The app derives the
  * same set from its in-memory graph
  * (`src/views/home/lib/project-source-witnesses.ts`); the two are pinned
- * together by `tests/contract/project-source-witnesses.contract.test.ts`,
+ * together by `tests/contract/project-source-connect.contract.test.ts`,
  * because a receipt minted by one surface and read by the other must mean the
  * same thing.
  */
+
+import { extractProjectMeaningEvidencePaths } from './project-meaning-evidence.mjs';
 
 const KNOWN_CODE_EXT =
   /\.(ts|tsx|js|jsx|mjs|cjs|mts|cts|md|mdx|css|scss|json|ya?ml|py|rs|go|java|rb|swift|kt|vue|svelte|html|sql|sh)$/i;
@@ -47,7 +49,7 @@ function graphNodeId(doc) {
 }
 
 /**
- * @param {{projectSlug: string, docs: ReadonlyArray<{slug: string, frontmatter?: object, title?: string}>}} input
+ * @param {{projectSlug: string, docs: ReadonlyArray<{slug: string, frontmatter?: object, title?: string, body?: string}>}} input
  *   `docs` must already be scoped to the project (the same containment the
  *   project graph hash uses). Scoping lives with the caller so the hash and the
  *   witnesses can never disagree about what "this project" means.
@@ -86,6 +88,19 @@ export function deriveProjectSourceWitnessesFromDocs(input) {
         });
       }
     }
+  }
+
+  const projectDoc = docs.find((doc) => (
+    doc?.frontmatter?.kind === 'project'
+    && (doc.slug === input?.projectSlug || doc.frontmatter?.slug === input?.projectSlug)
+  ));
+  for (const [index, path] of extractProjectMeaningEvidencePaths(projectDoc?.body).entries()) {
+    add({
+      id: `competency-evidence:${index + 1}`,
+      nodeSlug: projectDoc.slug,
+      role: 'competency-evidence',
+      path,
+    });
   }
 
   // Undocumented raw-path element refs are still explicit source-role claims.

@@ -1,6 +1,6 @@
 ---
 name: ontology-bootstrap
-description: Build a trustworthy first ontology from an empty or near-empty ontology-atlas vault using only Atlas MCP evidence. Use when the user asks to analyze a codebase, bootstrap/fill its ontology, extract product meaning from a repository, or when a requested ontology task finds only starter nodes. Separate observed implementation facts from proposed meanings, define and cite every domain/capability, answer competency questions, obtain user approval, then write with batch tools. Route mature vaults with 20+ curated nodes to ontology-sync instead; this is a workflow threshold, never a vault or project node limit.
+description: Build a trustworthy first ontology from an empty or near-empty ontology-atlas vault using only Atlas MCP evidence. Use when the user asks to analyze a codebase, bootstrap/fill its ontology, extract product meaning from a repository, or when a requested ontology task finds only starter nodes. Separate observed implementation facts from proposed meanings, define and cite every domain/capability, answer competency questions, obtain independent source-hidden qualification and user approval, then write only the exact released plan with batch tools. Route mature vaults with 20+ curated nodes to ontology-sync instead; this is a workflow threshold, never a vault or project node limit.
 ---
 
 # Bootstrap a trustworthy ontology
@@ -15,6 +15,13 @@ CodeGraph, another skill, shell search, or an AST index. Those may exist, but a
 plain agent connected only to Atlas must still succeed.
 
 ## Meaning contract
+
+The normative five-kind discriminator, relation support matrix, direct
+`is_a` test, and inference/standards boundary live only in the
+[Atlas meta-model specification](../../../docs/ONTOLOGY-ATLAS-SPEC.md#2-the-five-authorable-node-kinds-and-reserved-reader-kind).
+This skill owns the bootstrap sequence and evidence/approval states; it does
+not redefine the model. If the linked file is unavailable, use the compact
+meta-model boundary supplied by the connected Atlas MCP instructions.
 
 Keep these epistemic states separate:
 
@@ -128,13 +135,12 @@ counterevidence_or_uncertainty:
 
 Rules:
 
-- Define the project by the outcome it exists to create.
-- Model a domain only when it is a stable responsibility/problem boundary that
-  groups multiple capabilities.
-- Model a capability as an observable ability the product or system provides,
-  independent of its current implementation.
-- Model a concrete package, module, service, schema, or UI surface as an
-  element, not a capability.
+- Apply the specification's positive test and counterexample for every selected
+  kind; do not substitute this workflow's ordering for the kind contract.
+- Define the project by the outcome it exists to create, then preserve the
+  specification's project→domain→capability→element reading order.
+- Treat a concrete package, module, service, schema, UI surface, or file as
+  structural evidence until its distinct element role is stated and cited.
 - Do not stop at package buckets when the read-only import packet exposes an
   exact file endpoint that materially improves change navigation. The model
   may select at most four such endpoints beyond the analyzer's bounded element
@@ -172,7 +178,9 @@ evidence:
 confidence:
 ```
 
-Use containment for ownership/scope and dependency for prerequisite or impact.
+Use the specification's relation matrix for storage name, direction, endpoint
+kinds, inverse behavior, and current MCP support. Use containment for
+ownership/scope and dependency for prerequisite or impact.
 Do not infer dependency merely because two folders import one another; import
 edges are implementation evidence and may justify element-level `depends_on`.
 For an exact file endpoint selected from the import packet, propose
@@ -221,43 +229,82 @@ The proposal is approval-ready only when the first four counts are zero.
 Every competency witness must resolve. Partial answers and evidence conflicts
 may remain only when explicitly shown to the user.
 
-### 8. Ask for approval before writing
+### 8. Produce the non-writing review plan
 
-Before showing the approval prompt, call `analyze_repo_structure` again with
-the complete `proposal` object (project, domains, capabilities, elements,
-typed relations, citations, numeric confidence, and all five typed competency
-answers with their witnesses). Treat
-`proposalValidation.canWrite` as a hard precondition:
+Call `analyze_repo_structure` with the complete `proposal` object and omit
+`qualification`. The first valid response is deliberately non-writing. Require:
 
-- if false, show and resolve every error finding, then repeat the validation;
-- if true, it means the proposal is structurally evidence-ready, not that the
-  user has approved it;
-- require `proposalValidation.writePlan`; its rows are the exact validated
-  writer inputs, not a suggestion to reconstruct by hand;
-- inspect every competency warning. `canWrite:true` with a partial or visible
-  gap means the gap is preserved, not that the question is fully answered;
-- keep every relation source inside the proposed concept set so its evidence
-  and confidence land in that source node body; extending an existing source
-  node needs a separate patch workflow, not a lossy bootstrap plan;
-- never translate warnings into silent acceptance.
+- `proposalValidation.status: pass`;
+- `proposalValidation.canWrite: false`;
+- no `writePlan`;
+- an exact `reviewPlan` plus `constructionLifecycle.planDigest`,
+  `planRevision`, `sourceDigest`, eight lifecycle phases, and
+  `requiredGapIds`.
 
-Show a compact proposal grouped by project, domains, capabilities, elements,
-and relations. Include definitions and evidence, not only slugs. Offer:
+If validation fails, resolve every error and repeat. Do not treat `canWrite`
+being false at this stage as a failure: it proves that proposal validation
+cannot bypass qualification and approval.
 
-- accept all
-- select concepts
-- refine definitions/boundaries
-- stop without writing
+Keep every relation source inside the proposed concept set so its evidence and
+confidence land in that source node body; extending an existing source node
+needs a separate patch workflow, not a lossy bootstrap plan.
 
-Do not call write tools before the user chooses.
+### 9. Qualify, show, and obtain exact-plan acceptance
+
+Give the review plan and evidence packet to a separately identified evaluator.
+The evaluator must use the `constructionQualification:v1` shape exposed by the
+same tool's `qualification` input schema and must report:
+
+- purpose/outcome, decisions, scope, non-goals, portable source references, and
+  named human meaning owners;
+- approved executive, employee, FDE, and agent scenarios and competency
+  questions, including examples, counterexamples, quantifiers, target sets, and
+  explicit unknown/refusal behavior;
+- current digest-bound witnesses, exact claims, citation checks, CQ target
+  results, all seven quality axes, classified diagnostics, and resource use;
+- a complete source-hidden task run by that evaluator;
+- a cold-start `not_applicable` regression or an exact rerun of every prior CQ.
+
+The builder cannot evaluate its own construction. If an independent evaluator
+cannot run, stop without writes and ask the user for an independent evaluation
+handoff. `not_measured`, stale/private provenance, unsupported claims, or any
+red mandatory axis remains blocking. Only functional or pragmatic gaps that
+were independently measured may remain, and each must keep its exact id.
+
+Show the exact review plan grouped by project, domains, capabilities, elements,
+and relations. Include definitions and evidence, not only slugs. Show every
+`requiredGapId` and offer:
+
+- accept all and the listed gaps;
+- select concepts;
+- refine definitions/boundaries;
+- stop without writing.
+
 If the user selects a subset, remove rejected concepts and relations whose
-endpoints are no longer present, then validate that complete subset again.
+endpoints are no longer present, then restart at step 8. A changed plan needs a
+new digest and a fresh acceptance.
 
-### 9. Persist only accepted meaning
+Only after explicit acceptance, fill the qualification's `acceptance` with
+declared human provenance plus the exact returned `planDigest`, `planRevision`,
+and every accepted gap id. This records an assertion; Atlas does not
+authenticate identity or certify the plan as truth.
+
+Call `analyze_repo_structure` again with the unchanged proposal and that
+complete qualification packet. Require all three:
+
+- `proposalValidation.canWrite: true`;
+- `constructionLifecycle.writeEligibility: executable`;
+- `writePlan` exactly equal to the previously shown `reviewPlan`.
+
+Any plan/source digest change, maker-only evaluation, incomplete source-hidden
+run, mandatory-axis failure, regression failure, or unaccepted gap blocks the
+write. Never reconstruct or edit the released rows by hand.
+
+### 10. Persist only the released meaning and verify it
 
 Use `similar_nodes` or `find_evidence` before writes when non-starter concepts
-may already exist. After approval, pass `writePlan.concepts` rows unchanged in
-chunks of at most 50:
+may already exist. Pass `writePlan.concepts` rows unchanged in chunks of at most
+50:
 
 ```text
 add_concepts({ "concepts": [...] })
@@ -271,24 +318,28 @@ add_relations({ "relations": [...] })
 ```
 
 If any concept row fails, stop before relation writes, repair the proposal, and
-repeat validation. `canWrite` proves evidence readiness; it does not prove user
-approval, atomicity, or write success. The deterministic plan preserves the
-evidence, definition, includes/excludes, uncertainty, domain/path, and relation
-rationale so the persisted graph remains auditable.
+restart at step 8. The released plan proves lifecycle eligibility for that
+exact source and proposal; it does not prove atomicity or write success.
 
-### 10. Verify the shared ontology
-
-Call:
+Then call:
 
 ```text
 list_kinds({})
 validate_vault({})
 compile_ontology({ "summary": true })
+connect_project_source({ "projectSlug": "<project>", "rootPath": "<repository root>", "confirm": true })
+finalize_project_meaning({ "projectSlug": "<project>", "expected_mtime": <fresh project mtime> })
 ```
 
-Then verify at least one path from project to domain to capability to element.
-Report the census change, validation issues, graph issues, unanswered
-competency questions, and any concepts intentionally left proposed.
+Verify at least one path from project to domain to capability to element.
+Report the census change, validation issues, graph issues, final meaning
+assessment, unanswered competency questions, accepted gaps, and concepts
+intentionally left proposed. A post-write failure is repaired forward; never
+report construction complete before the finalizer succeeds.
+
+The exact plan preserves the evidence, definition, includes/excludes,
+uncertainty, domain/path, competency audit, and relation rationale so the
+persisted graph remains inspectable by humans and source-hidden agents.
 
 ## Stop conditions
 
@@ -298,7 +349,10 @@ Stop without writes when:
 - proposed domains are only folders, teams, technologies, or README sections;
 - a capability cannot be defined without naming its implementation;
 - important sources contradict one another and the user has not resolved them;
+- an independent evaluator or complete source-hidden task is unavailable;
 - the user has not approved the proposed meaning;
+- the plan/source digest changed after approval or any required gap was not
+  explicitly accepted;
 - the MCP reports a mismatched vault and the target write location is unclear.
 
 Unknown is a valid result. An invented ontology is not.

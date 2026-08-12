@@ -52,8 +52,8 @@ dependencies:
 That's the entire schema. No DB. The frontmatter *is* the graph. You
 can edit it in Obsidian, vscode, neovim — anything that reads markdown.
 
-For AI agents, there's an MCP server (`ontology-atlas-mcp`, 35 tools
-— 19 read + 16 write) over JSON-RPC stdio. The agent gets
+For AI agents, there's an MCP server (`ontology-atlas-mcp`) over JSON-RPC
+stdio. It advertises its current read/write inventory at runtime. The agent gets
 `list_concepts`, `get_concept`, `find_path` (BFS), `find_orphans`,
 `add_concept`, `patch_concept`, `delete_concept`, etc.
 
@@ -116,7 +116,7 @@ every conversation, I built a tiny MCP server that gives it a
 
 The trick: maintain a folder of markdown files where each file is a
 "node" (project, domain, capability, element) and frontmatter is the
-schema. The MCP server has 35 tools — list_concepts, get_concept,
+schema. The MCP server advertises its current tools at runtime: list_concepts, get_concept,
 get_concepts, validate_vault, compile_ontology, query_ontology,
 analyze_repo_structure, infer_imports, add_concept, add_concepts,
 patch_concept, rename_concept, etc.
@@ -174,7 +174,7 @@ account, no backend — period. Static Next.js export so you can run
 the visualization offline (it's a `out/` folder you can host or open
 file://).
 
-**MCP**: 35 tools (19 read + 16 write), JSON-RPC stdio. Should work with any MCP-capable
+**MCP**: runtime-advertised read/write tools over JSON-RPC stdio. Should work with any MCP-capable
 agent (Claude Code, Continue.dev, custom). Doesn't pre-process your
 files into embeddings — agent just reads the markdown live.
 

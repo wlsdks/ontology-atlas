@@ -352,6 +352,72 @@ test('repository proposal blocks unknown citations and unresolved capability dom
   assert.ok(result.findings.some((row) => row.code === 'unresolved-capability-domain'));
 });
 
+test('repository proposal does not treat a structural path as independent semantic corroboration', () => {
+  const analysis = analyzeRepoStructure(fixtureRoot);
+  const readmeEvidence = analysis.semanticEvidence.find((row) => row.source === 'README.md');
+  readmeEvidence.trust = 'claim-review-required';
+  readmeEvidence.riskFlags = ['temporal-claim'];
+  const proposal = completeTypedRepositoryProposal();
+
+  for (const concept of [
+    proposal.project,
+    ...proposal.domains,
+    ...proposal.capabilities,
+    ...proposal.elements,
+  ]) {
+    concept.evidence = ['docs/PRODUCT.md'];
+  }
+  for (const relation of proposal.relations) {
+    relation.evidence = ['docs/PRODUCT.md'];
+  }
+  for (const answer of Object.values(proposal.competencyAnswers)) {
+    answer.witnesses.evidence = ['docs/PRODUCT.md'];
+  }
+  proposal.capabilities[0].evidence = ['README.md', 'src/features/checkout'];
+
+  const result = validateMeaningProposalAgainstAnalysis(analysis, proposal);
+
+  assert.equal(result.status, 'fail');
+  assert.equal(result.canWrite, false);
+  assert.equal(result.gates.riskyEvidenceControlled, false);
+  assert.ok(result.findings.some((row) =>
+    row.code === 'risky-citation-unconfirmed'
+      && row.path === 'concepts[2]'
+      && row.sources.includes('src/features/checkout')));
+});
+
+test('repository proposal accepts a trusted semantic source as independent corroboration', () => {
+  const analysis = analyzeRepoStructure(fixtureRoot);
+  const readmeEvidence = analysis.semanticEvidence.find((row) => row.source === 'README.md');
+  readmeEvidence.trust = 'claim-review-required';
+  readmeEvidence.riskFlags = ['temporal-claim'];
+  const proposal = completeTypedRepositoryProposal();
+
+  for (const concept of [
+    proposal.project,
+    ...proposal.domains,
+    ...proposal.capabilities,
+    ...proposal.elements,
+  ]) {
+    concept.evidence = ['docs/PRODUCT.md'];
+  }
+  for (const relation of proposal.relations) {
+    relation.evidence = ['docs/PRODUCT.md'];
+  }
+  for (const answer of Object.values(proposal.competencyAnswers)) {
+    answer.witnesses.evidence = ['docs/PRODUCT.md'];
+  }
+  proposal.capabilities[0].evidence = ['README.md', 'docs/PRODUCT.md'];
+
+  const result = validateMeaningProposalAgainstAnalysis(analysis, proposal);
+
+  assert.equal(result.status, 'pass');
+  assert.equal(result.canWrite, true);
+  assert.equal(result.gates.riskyEvidenceControlled, true);
+  assert.ok(result.findings.some((row) => row.code === 'risky-citation'));
+  assert.ok(!result.findings.some((row) => row.code === 'risky-citation-unconfirmed'));
+});
+
 test('repository proposal validates the complete approved graph and returns an exact write plan', () => {
   const analysis = analyzeRepoStructure(fixtureRoot);
   const proposal = completeTypedRepositoryProposal();

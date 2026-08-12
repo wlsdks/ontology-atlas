@@ -245,6 +245,8 @@ function StudioStage({
       domainMembership: (domain) => t("domainMembership", { domain }),
       framePrompt: (name) => (isCreate ? t("create.framePrompt") : t("framePrompt", { name })),
       guideBadge: t("guideBadge"),
+      socketAriaNeutral: (question) => t("socketAria.neutral", { question }),
+      socketAriaRecommended: (question) => t("socketAria.recommended", { question }),
       bottomProgress: (filled, total) =>
         `${t("bottomProgress", { filled, total })} ${filled >= total ? t("bottomDone") : t("bottomRemain", { remain: total - filled })}`,
       // **라벨이 행동과 같아야 한다.** 읽기 전용 볼트에서 이 버튼이 하는 일은
@@ -420,6 +422,11 @@ function StudioStage({
     ): CreateCandidate | null => {
       const q = normalize(query);
       if (q.length < 2) return null;
+      // Exact-name equality prevents duplicate creation; it is not evidence
+      // that one concept is a direct broader class of the other. A deliberate
+      // search row remains available, but the isA picker does not nudge it as
+      // "Yes, link this".
+      if (relation === "isA") return null;
       const allow = allowedKindsFor(relation, focalKind);
       return (
         candidates.find(
@@ -502,6 +509,11 @@ function StudioStage({
     if (!originId) return null;
     const originNode = nodes.find((n) => n.id === originId);
     if (!originNode) return null;
+    const relation = rel as StudioRelation;
+    // A relation-bound create context must have at least one schema-valid kind.
+    // In particular project→isA has none; treating it as a blank create context
+    // would later reconnect an arbitrary cross-kind node to the origin.
+    if (allowedKindsFor(relation, originNode.kind).size === 0) return null;
     return {
       originId,
       originLabel: originNode.display ?? originNode.title,
@@ -509,7 +521,7 @@ function StudioStage({
       // A 자신도 자기 문서가 없을 수 있다 — 그러면 A→새 노드 관계를 A 를 인용한
       // 남의 문서에 적게 된다. 쓰기 대상은 여기서도 같은 판정을 거친다.
       originWriteTarget: resolveStudioWriteTarget(originNode),
-      relation: rel as StudioRelation,
+      relation,
       name: searchParams.get("name") ?? "",
     };
   }, [isCreate, searchParams, nodes]);
@@ -900,8 +912,10 @@ function StudioStage({
         filled,
         // Every create-mode relation is unsaved until 저장 — flow its strut.
         staged: filled,
-        recommended: !filled && relation === "isA",
-        expected: !filled && relation === "contains",
+        // A blank draft has neither definition evidence nor a candidate-level
+        // relation preflight. Keep every socket neutral; UP stays clickable.
+        recommendation: null,
+        expectation: null,
       };
     });
     const filledBearings = bearings.filter((b) => b.filled).length;
@@ -937,16 +951,15 @@ function StudioStage({
       summaryVocab,
     );
     // C2 — when opened from a socket, restrict the kind chooser to the bearing's
-    // allowed target kinds (isA/dependsOn/… × A's kind); fall back to all kinds
-    // if the window is empty so the chooser is never dead.
+    // allowed target kinds (isA/dependsOn/… × A's kind). createContext itself
+    // fails closed when this window is empty, so widening here would re-open a
+    // cross-kind relation path.
     const allowedCreateKinds = createContext
       ? CREATE_KINDS.filter((k) =>
           allowedKindsFor(createContext.relation, createContext.originKind).has(k),
         )
       : CREATE_KINDS;
-    const createKindOptions = (allowedCreateKinds.length > 0 ? allowedCreateKinds : CREATE_KINDS).map(
-      (k) => ({ value: k, label: kindLabel(k) }),
-    );
+    const createKindOptions = allowedCreateKinds.map((k) => ({ value: k, label: kindLabel(k) }));
     // Slice 5 — the save-preview mini-graph for a brand-new node: the center is
     // itself the delta (isNew), every staged relation an indigo "added" strut.
     const createDeltaPreview = buildDeltaPreview({
@@ -1213,10 +1226,6 @@ function StudioStage({
   // summary + commit consume the same `changes`.
   const projection = enhanceProjection;
 
-  // Guide the next empty socket in the same priority buildStudioItem uses.
-  const GUIDE_ORDER: StudioRelation[] = ["isA", "contains", "dependsOn", "relates"];
-  const recommendedRel = GUIDE_ORDER.find((r) => !projection.byRelation[r].filled) ?? null;
-
   const bearings: CompassBearingView[] = RELATIONS.map((relation) => {
     const proj = projection.byRelation[relation];
     return {
@@ -1229,8 +1238,10 @@ function StudioStage({
       filled: proj.filled,
       // A lane with a not-yet-saved neighbor flows its strut (저장 대기 = alive).
       staged: proj.neighbors.some((n) => projection.pendingTargetIds?.has(n.id)),
-      recommended: !proj.filled && relation === recommendedRel,
-      expected: !proj.filled && relation === "contains",
+      // The projection knows presence/absence, not semantic evidence or the
+      // result of a candidate-specific relation preflight. Absence is neutral.
+      recommendation: null,
+      expectation: null,
     };
   });
   const filledBearings = RELATIONS.filter((r) => projection.byRelation[r].filled).length;
@@ -1461,6 +1472,9 @@ function StudioStage({
         if (ctx.query.trim()) params.set("name", ctx.query.trim());
         navigateStudio(params);
       }}
+      canCreateNew={(relation) =>
+        allowedKindsFor(relation, focalItem.node.kind).size > 0
+      }
       searchNodes={candidates}
       onOpenNode={openNode}
       onSaveAndOpenNode={commitThenOpen}

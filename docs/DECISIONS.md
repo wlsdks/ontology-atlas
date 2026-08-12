@@ -100,6 +100,147 @@
 **재검토**: 스킬 화면에 목적지가 하나 더 붙을 때(빈 상태를 무대로 쓰는 두 번째 화면이
 생기는 순간), 또는 위 반증 조건이 관측될 때.
 
+---
+
+## 2026-08-12 — 검수는 프로젝트 본문에서 열고, Skills는 좁은 화면에서도 exact rail을 잃지 않는다
+
+**소집**: Design Council 8석 2회전 + Design Guardian(`gpt-5.6-sol`) · **트리거**:
+PO Council이 승인한 U1.3/K1.1/K1.3/K1.2의 시각·상호작용·responsive·handoff 계약
+**결정**: `Build and verify`. 출하 승인은 재빌드한 설치 앱 workbench와 motion 증거가
+모일 때까지 보류한다.
+
+U1.3의 진입은 기존 project detail hero의 `검수 결과 열기` 하나다. 한 local JSON을
+React session에서만 읽고 hero 바로 아래, tabs 위의 full-width inline summary에 같은
+artifact를 투영한다. modal·aside·Agent panel·새 route·URL/localStorage/vault/sidecar write는
+사용하지 않는다. 기본 깊이는 purpose, 현재/다음 결정, 첫 blocker/diagnostic,
+red/unknown/conflict, 사람 승인, exact plan count를 고정 노출한다. `근거·진단 보기`만
+CQ→witness/citation span+digest→example/counterexample/rationale→7 axes→diagnostic→exact
+review/write plan과 equality를 펼친다. 작성 후 maintenance는 별도 상태이고 완료된
+qualification을 소급 변경하지 않는다.
+
+Skills는 1024px 이상에서 기존 340px master + fluid detail을 유지하고, 그 미만은
+list→detail drill-in으로 바꾼다. 상세 진입 때 제목으로, `스킬 목록` 복귀 때 원래 행으로
+focus와 scroll/query/selection을 복원한다. process의 승자는 flat `<ol>`이며 각 행은
+ordinal·exactText·source line을 고정 표시한다. resource/diagnostic만 row disclosure이고
+기존 3단 load chain은 별도 접힌 보조 정보다. K1.2 전 transition edge는 0이며, 명시
+문법에 합격한 semantic label만 글자로 표시한다. chart·legend·semantic 전용 색은 없다.
+
+K1.3의 첫 행동은 `packet 복사` 하나다. canonical UTF-8 bytes와 source/packet digest를
+같이 복사하고 clipboard 성공 뒤에만 완료를 알린다. unavailable/tampered는 고정 문구와
+copy 차단으로 실패 닫는다. file export와 public MCP/CLI process command는 만들지 않는다.
+
+**적용 규칙**: 새 token/ramp/hue/keyframe은 0. 기존 Button/controlClass/RowButton/
+PAGE_FRAME/text·radius·signal/useRowDisclosure/Surface를 쓴다. motion은 opacity-only
+120ms, disclosure 180ms/body 120ms이며 slide·scale·stagger가 없다. reduced motion은
+height/position 변화를 만들지 않는다. malformed/project/digest/plan/tamper mutation,
+27/27 step/order/line, 390/1023/1024/1512 focus·scroll·bottom-nav, flat `<ol>` 접근성,
+K1.2 gold precision과 ambiguous diagnostic을 각각 RED→GREEN으로 증명한다.
+**서명**: owner — C 방향 승인; Design Guardian — 구현 계약; Codex — TDD·실물 검증
+
+**기록된 반대**: clipboard-only packet은 큰 skill에서 운반 한계를 만나 file export가
+필요할 수 있다.
+**반증 조건**: 수용 상한 packet의 clipboard→fresh agent byte/digest 왕복이 재현 가능하게
+실패하면 동일 serializer bytes의 file export 하나를 추가한다.
+**재검토**: K1.3 source-hidden A/B와 최대 packet clipboard 실측 직후.
+
+**상태**: 유효
+
+---
+
+## 2026-08-12 — construction은 같은 artifact를 두 깊이로 읽고, Skills는 손실 없는 인계부터 연다
+
+**소집**: PO Council 5석(`po-evidence`·`po-craft`·`po-steward`·`po-wedge`·
+`po-leverage`, 모두 `gpt-5.6-sol`) 2회전 · **트리거**: 완료된 O1.5를 사람이 쉽게
+판단하는 U1.3과 source-bound Skills process K1.1~K1.3의 연속 구현 요청
+**루브릭**: **19/24** (Problem insight 2 · User moment 4 · Differentiation 3 ·
+Ontology value 4 · Agent value 4 · Verification 2, 치명적 0 없음)
+
+**결정**: `Shape a slice`. O1.5는 exact 9 concepts/9 relations, qualified/executable,
+validation 0, compile issue 0, current source, finalizer 성공과 독립 source-hidden
+48/48 claim·citation, 4 CQ, 7 targets, 7 axes로 완료됐다. `needs_evidence`와
+`structure_not_ready`는 승인 범위 밖 maintenance이며 이 완료를 되돌리지 않는다.
+
+소유자가 고른 C 방향을 채택한다. construction의 기본/전문가 깊이는 전역 persona나
+서로 다른 schema가 아니라 **같은 digest-bound artifact의 화면-local disclosure**다.
+기본 깊이는 다음 결정·첫 blocker·red/unknown/conflict·사람 승인 상태를 항상 보여 주고,
+같은 자리의 `근거·진단 보기`가 CQ·witness·citation·source digest·quality axes·exact
+plan을 펼친다. 어느 깊이도 판정이나 write plan을 다시 계산하지 않는다.
+
+Skills는 `U1.3 → K1.1 → K1.3 → K1.2` 순서로 연다. K1.1은 원문 번호 절차와 line,
+source digest, diagnostic, resource를 손실 없이 보존한다. K1.3은 그 exact IR을 사용자가
+명시적으로 복사/내보낸 때만 source-hidden agent에게 전달한다. K1.2는 마지막에 독립
+gold corpus가 허용한 명시 문법만 의미 overlay로 올린다. exact IR은 의미 추론 없이도
+안전하게 인계할 수 있으므로 K1.3을 K1.2보다 앞에 둔다.
+
+**적용 규칙**: 구현 전 첫 RED는 60~90분 안에서 끝나는 두 기준선이다. 현재 artifact로
+사람의 승인 판단 손실과 current Skills surface만 받은 fresh agent의 exact-step 복원 손실을
+각각 독립 재현한다. 둘 다 재현되지 않으면 구현을 중단한다. 재현되면 각 항목을 독립
+circuit breaker로 완료한 뒤 다음 항목을 연다. IN — session-only canonical envelope,
+같은 artifact 두 깊이, 상시 failure/approval, 1512×900·390×900·재빌드 설치 앱,
+K1.1 exact IR, K1.3 explicit export와 tamper failure, K1.2 precision 100%/false-positive 0.
+OUT — 새 route·전역 초급/전문가 모드·preference 저장·새 MCP tool/validator/vault
+kind/schema/sidecar·자동 저장/전송·generic workflow editor·위험 점수·SKILL.md 편집·
+Skill/step ontology-node 승격.
+**서명**: owner — C 방향과 순차 전체 구현 승인; Codex — Council 종합·기준선·구현·검증
+
+**기록된 반대**: K1.3을 K1.2보다 먼저 만들면 semantic overlay 없는 packet은 raw
+Markdown을 포장한 빈 envelope일 수 있다.
+**반증 조건**: K1.1-only packet을 받은 blinded fresh agent가 raw Markdown 대조군보다
+exact step·line citation, diagnostic truthfulness, recovery action, tamper detection에서
+개선되지 않으면 K1.3을 멈추고 K1.2를 먼저 한다.
+**기준선 뒤 정정**: raw-source 대조군이 이미 step·order·line 27/27이라 정확도
+`개선`은 불가능했다. K1.3의 수용선은 27/27 비열화 없음과 함께 source digest,
+diagnostic/resource truth, packet 부재의 정직한 unavailable, tamper fail-closed를 추가로
+입증하는 것이다. 이 추가 truth 중 하나라도 못 지키면 같은 반증 조건이 성립한다.
+**재검토**: K1.1 source-hidden A/B 직후, K1.3 구현 전.
+
+**상태**: 유효
+
+---
+
+## 2026-08-10 — evidence ingress는 scan 경계까지 닫고 qualification과 분리한다
+
+**소집**: PO Council 5석(`po-evidence`·`po-craft`·`po-steward`·`po-wedge`·
+`po-leverage`, 모두 `gpt-5.6-sol`) · **트리거**: 공개 MCP 계약 변경과 세 제품
+재qualification 뒤 착륙 판정
+**루브릭**: 22/24 (Problem 4 · User moment 4 · Differentiation 2 · Ontology 4 ·
+Agent 4 · Verification 4, 치명적 0 없음)
+
+**결정**: 바로 아래의 bounded meaning evidence ingress 방향은 유지한다. 세 fresh maker와
+source-hidden evaluator에서 TypeScript FDE는 `unknown → partial`, Rust는 current product
+contract를 가진 reviewable plan으로 개선됐고, 뒤집은 exact import 방향은 fail-closed였다.
+Python 답변은 개선되지 않았으며 세 제품 모두 `not-qualified`·write 0이므로 이 결과를
+O1.5 완료나 자동 ontology 품질로 부르지 않는다.
+
+착륙 전 일반 semantic Markdown에도 읽기 전 256 KiB 상한을 적용한다. 세 discovery root를
+합친 전체 walk는 1,000 directory entry에서 멈추고, 실제 경로가 같은 directory를 다시
+방문하지 않으며, oversized·budget·broken link·cycle은 `skipped` 진단으로 남긴다. 기존 200 Markdown,
+6-document packet, 1,200-character excerpt, 4 exact endpoint, 사람 승인, no-auto-write 경계는
+그대로다. 새 tool·schema·kind·UI·Rust import 지원은 만들지 않는다.
+
+**적용 규칙**: 가장 작은 안전 슬라이스. oversized Markdown, broken documentation symlink,
+저장소 안 directory symlink cycle, 전체 walk budget을 각각 public analyzer RED→GREEN으로 증명하고 Node 24 current-hash
+integration과 dogfood를 다시 실행한다. TypeScript에도 노출되는 legacy
+`unobserved-python-import-dependency` code는 공개 소비자 호환성 확인 전 이번 변경에서
+rename하지 않고 후속 부채로 남긴다. O1.5는 `in_progress`를 유지하며 다음 tracer는
+human-owned purpose/CQ/exact plan과 implementation/impact witness를 가진 post-write
+source-hidden 재사용 여정이다.
+**서명**: owner — ontology construction 우선순위와 계속 진행 승인;
+Codex — Council 종합·TDD·gate probe·최종 검증
+
+**기록된 반대**: 이번 ingress는 Sourcegraph류의 코드 탐색과 문서 수집이 복제할 수 있는
+품질 관문일 뿐이고, 세 trial 모두 쓰기 0이라 로컬 meaning asset이라는 해자를 아직 만들지
+못했다.
+**반증 조건**: 서로 다른 두 human-approved post-write trial에서 source-hidden agent가
+persisted vault로 exact 시작점·방향·안전한 거절을 재사용하지 못하거나, baseline보다
+source read·호출·시간을 줄이지 못하면 discovery와 중복 import scan을 축소한다. 그때도
+자동 business meaning write나 새 schema로 우회하지 않는다.
+**재검토**: 두 human-approved post-write source-hidden trial 직후.
+
+**상태**: 유효
+
+---
+
 ## 2026-08-11 — 잠깐 뜨는 표면이 **자기 종류를 선언한다**, 그리고 페이지 틀에 폼 컬럼을 더한다
 
 **소집**: 열지 못했다 — 소유자가 이 세션에서 서브에이전트 호출을 쓰지 말라고 지시했다.
@@ -207,6 +348,514 @@
 
 ---
 
+## 2026-08-10 — meaning evidence ingress는 기존 read-only 계약 안에서 넓힌다
+
+**소집**: 단독 PO 패스 · **트리거**: O1.5의 서로 다른 세 제품에서 원본에 있는 current
+architecture/product 문서와 exact import endpoint가 portable proposal 검증에 도달하지 않아
+FDE CQ와 evidence axis가 반복 실패했다. 바로 앞 「O1.5 첫 red는 UI가 아니라 meaning
+evidence 경계를 먼저 고친다」 결정과 M1.5의 human approval 수명주기는 **유효**하다.
+**루브릭**: 23/24 (Problem 4 · User moment 4 · Differentiation 3 · Ontology 4 ·
+Agent 4 · Verification 4, 치명적 0 없음)
+
+**결정**: 새 MCP tool·input/output schema·ontology kind·frontmatter·UI를 만들지 않는다.
+기존 `semanticEvidence`가 루트 `ARCHITECTURE.md`와 `docs/`·`site/`·`website/` 아래의
+의미 밀도 높은 Markdown을 bounded discovery로 읽는다. 탐색은 전체 세 루트를 합쳐 200개
+Markdown에서 멈추고, archive/assets/benchmarks/evaluations/goals/images/ontology 디렉터리는
+제외하며, packet은 기존처럼 최대 6개 문서와 문서당 1,200자 excerpt만 반환한다. repository
+밖으로 나가는 symlink는 evidence에 넣지 않고 diagnostic으로 남긴다.
+
+Proposal이 들어온 `analyze_repo_structure`는 같은 호출 안에서 기존 `infer_imports`의
+bounded read-only scan을 다시 계산한다. 그래서 이전 호출의 숨은 상태 없이 TypeScript,
+JavaScript, Python의 exact endpoint citation과 dependency 방향을 검증한다. 기존 4개 추가
+endpoint 한도, semantic rationale, 사람 승인, `reviewPlan → qualification → writePlan` 경계는
+그대로다. 경로와 import는 구현 존재·방향만 증명하며 business meaning이나 relation을 자동
+승격하지 않는다.
+
+**적용 규칙**: root architecture, documentation-site introduction/overview, repository-escaping
+symlink, TS exact import 정방향/역방향 fixture를 고정한다. 연결을 각각 제거한 mutation에서
+새 테스트가 RED가 되고 복구 뒤 GREEN이어야 한다. 세 original trial source를 deterministic
+재분석한 뒤 fresh Sol maker/evaluator qualification을 다시 실행하며, O1.5는 그 전까지
+`in_progress`다.
+**서명**: owner — ontology construction 우선순위와 다음 작업 진행 승인;
+Codex — 단독 패스·TDD·gate probe·현장 재검증
+
+**기록된 반대**: 문서 후보와 import 재계산을 더 넣으면 packet과 proposal latency만 커지고,
+source-hidden 품질은 그대로일 수 있다.
+**반증 조건**: 수정된 독립 trial 둘 이상에서 supported claim/FDE CQ가 개선되지 않거나,
+proposal 재검증 시간이 현장 사용을 막을 만큼 증가하면 discovery root·문서 선택 점수·중복
+import scan을 다시 줄인다. 그때도 unsupported claim을 green으로 바꾸거나 자동 write로
+숨기지는 않는다.
+**재검토**: 수정된 세 제품 O1.5 qualification 직후.
+
+**상태**: 유효
+
+---
+
+## 2026-08-10 — O1.5 첫 red는 UI가 아니라 meaning evidence 경계를 먼저 고친다
+
+**소집**: 단독 PO 패스 · **트리거**: 서로 다른 세 제품에서 fresh Sol builder와
+maker-independent source-hidden evaluator를 실행했지만 세 plan이 모두 mandatory 품질축을
+통과하지 못했다. 특히 한 plan은 `claim-review-required` README와 평범한 소스 디렉터리를
+함께 인용하자 proposal validator가 통과시켰고, 독립 evaluator는 지원되지 않는 제품 의미
+주장을 확인했다. 선행 2026-08-09 「ontology construction quality를 Skills와 UI 확장보다
+먼저 닫는다」와 「reviewPlan → exact approval → writePlan」 결정은 **유효**하다.
+**루브릭**: 23/24 (Problem 4 · User moment 4 · Differentiation 3 · Ontology 4 ·
+Agent 4 · Verification 4, 치명적 0 없음)
+
+**결정**: O1.5를 완료로 만들거나 U1.3·Skills·Projects로 넘어가지 않는다. 첫 tracer는
+공개 schema·tool·kind·UI를 늘리지 않고 proposal citation validator의 의미 경계를 좁힌다.
+구조 후보와 실제 경로는 구현의 존재·위치를 증명할 수 있지만, temporal/negated/deprecated로
+표시된 제품 의미를 독립적으로 corroborate하지 못한다. 위험한 의미 인용을 풀려면 analysis
+packet 안의 별도 current semantic evidence row가 필요하다. element path와 import edge의
+구조 검증은 그대로 유지한다.
+
+**적용 규칙**: exact Rust proposal을 수정 전/후 validator에 replay하고, 결함 상태를 다시
+넣으면 새 regression test가 RED가 되는지 gate-probe한다. 그다음 fresh Sol+실제 MCP로 같은
+제품을 다시 분석해 validator가 genuine semantic source를 요구하는지 확인한다. 후속 tracer는
+원본에 이미 존재하는 current architecture/product contract와 entrypoint를 bounded portable
+packet으로 가져오는 evidence ingress다. 세 trial의 공통 실패를 새 ontology primitive로
+오인하지 않으며, repeated missing primitive가 별도로 입증되기 전 O1.4는 hold다.
+**서명**: owner — ontology construction 우선순위와 다음 작업 진행 승인;
+Codex — 세 trial 집계·단독 패스·최소 수리
+
+**기록된 반대**: 모든 write가 이미 막혔으므로 lifecycle은 제 역할을 다했고, 더 정밀한
+evidence 수리보다 사용자가 쉽게 보는 U1.3을 먼저 만들 수 있다.
+**반증 조건**: validator와 evidence ingress를 수리한 독립 재실행 둘 이상에서 supported
+claim·FDE CQ·source-hidden handoff가 전혀 개선되지 않고 시간/호출만 늘어나면 이 반대가
+이긴다. 그때 성능 없는 lifecycle 단계나 packet 필드를 합치거나 제거하되, human approval과
+분리 quality axis는 유지한다.
+**재검토**: 수정된 대표 fresh trial과 다음 세 제품 qualification이 끝났을 때.
+
+**상태**: 유효
+
+---
+
+## 2026-08-09 — M1.5의 영속 ledger는 기존 competency body와 finalizer receipt까지다
+
+**소집**: M1.5 PO Council 재판정 3석(`po-craft`·`po-leverage`·`po-wedge`, 모두
+`gpt-5.6-sol`) · **트리거**: 바로 아래 lifecycle 결정의 “첫 `reviewPlan`과 최종
+`writePlan` rows는 동일” 규칙과, 승인 후에야 존재하는 CQ revision·axis·gap acceptance·
+prior-regression까지 그 rows의 project body에 넣으라는 규칙이 구현 중 충돌했다.
+**루브릭**: 기존 M1.5 23/24 유지 (치명적 0 없음). 새 기능 선호가 아니라 이미 승인한
+두 규칙 중 무엇을 정직하게 보존할지 판정했다.
+
+**결정**: 세 자리 모두 현재 계약에서는 두 요구를 동시에 만족할 수 없다고 독립 판정했다.
+`planDigest`는 첫 review plan 전체에서 계산되고 executable `writePlan`은 그 plan의 exact
+clone이다. 승인 뒤 CQ/axis/gap/regression을 body에 보태면 rows와 digest가 바뀌어 방금 한
+승인이 스스로 무효가 된다. 따라서 바로 아래 결정의 compact-ledger 범위를 다음처럼
+**명시적으로 좁힌다**: project Markdown의 기존 competency answer/witness/visible-gap body와
+기존 `finalize_project_meaning` receipt의 body digest·current graph/source provenance만 이번
+슬라이스의 persistent ledger다. lifecycle 상세 판정, CQ revision, axis, exact gap acceptance,
+pre-write regression은 해당 MCP 응답과 agent 실행 transcript의 증거이며, restart 뒤 영속
+복원된다고 주장하지 않는다. 새 sidecar·finalizer schema 확장·세 번째 approval plan은 만들지
+않고 `reviewPlan === writePlan`과 한 public tool 경계를 보존한다.
+
+**적용 규칙**: 문서와 완료 증거는 이 영속 경계를 그대로 밝힌다. O1.5는 fresh-process에서
+현재 competency body와 finalizer receipt가 같은 질문·visible gap·currentness를 충분히
+복원하는지 직접 측정한다. 승인 transcript가 없으면 “과거 exact gap 승인을 재구성했다”고
+말하지 않는다.
+**서명**: owner — 다음 작업 진행 승인; Codex — 구현 중 모순 발견·재소집·범위 결정
+
+**기록된 반대**: exact gap 승인과 prior-CQ 결과를 영속하지 않으면 lifecycle이 세션 의식에
+그치므로 M1.5를 중단하고 storage 결정을 먼저 해야 한다.
+**반증 조건**: O1.5 fresh-process audit에서 body+receipt만으로 같은 CQ/visible gap을 복원하지
+못해 잘못된 write·maintenance 판단이나 unsupported claim이 한 번이라도 발생하면 이 반대가
+옳다. 그때 (a)를 폐기하고 별도 persistence 계약을 PO Council에 다시 올리며, 승인 전까지
+lifecycle persistence 확장을 중단한다.
+**재검토**: 첫 O1.5 source-hidden fresh-process trial 직후.
+
+**상태**: 유효 — 바로 아래 2026-08-09 M1.5 결정의 compact-ledger 문단만 좁힘
+
+---
+
+## 2026-08-09 — Construction lifecycle은 `reviewPlan → exact approval → writePlan`으로 강제한다
+
+**소집**: PO Council 전체 5석(`gpt-5.6-sol`, 동시 슬롯 한도 때문에 서로 결과를
+보지 않는 두 wave의 1차 판정 뒤 전원 반론 라운드) · **트리거**: O1.3의
+`constructionQualification:v1`은 독립 evaluator로 실행되지만 runtime consumer가 없고,
+현재 `analyze_repo_structure`는 사용자 승인·source-hidden task·prior-CQ regression 전에
+`canWrite:true`와 `writePlan`을 반환한다. 선행 결정인 2026-08-09 「ontology construction
+quality를 Skills와 UI 확장보다 먼저 닫는다」와 「Construction Qualification은 독립 축의
+범주형 판정이다」는 모두 유효하고, 이번 결정은 그 둘을 bootstrap runtime에 연결한다.
+**루브릭**: 23/24 (Problem 4 · User moment 4 · Differentiation 3 · Ontology 4 ·
+Agent 4 · Verification 4, 치명적 0 없음). schema validation·prompt pipeline·승인 절차만은
+이미 대체재가 제공하므로 차별화는 아직 세 제품 O1.5에서 증명해야 한다.
+
+**결정**: M1.5는 새 tool·kind·UI를 만들지 않고 기존 `analyze_repo_structure` 한 도구의
+proposal-validation 계약만 확장한다. lifecycle의 순서는 ① purpose/authority ② human-owned
+CQ revision ③ evidence inventory/reuse ④ examples/counterexamples가 있는 small conceptual
+slice ⑤ semantic/structural tests ⑥ independent source-hidden task ⑦ human plan acceptance
+⑧ prior-CQ regression이다. 첫 호출은 exact candidate rows를 담은 **실행 불가능한**
+`reviewPlan`과 `planDigest`·revision·단계별 진단만 반환한다. 두 번째 호출이 같은 digest의
+정본 `constructionQualification:v1` packet과 사람의 개별 gap 승인을 받았을 때만 그 rows와
+동일한 `writePlan`을 반환한다. plan·CQ revision·diagnostics가 바뀌면 승인은 자동 무효다.
+
+**판정 규칙**: 단계 상태는 `passed | blocked | gap_accepted | awaiting_approval |
+pending_post_write`, 최상위는 `qualificationStatus: invalid | not_qualified | qualified`와
+`writeEligibility: blocked | reviewable | executable`을 분리한다. missing stage/authority,
+maker-only evaluation, source-hidden `not_measured`, digest 불일치, unsupported `is_a`는
+`blocked`다. semantic·structural·evidence/provenance·maintainability/prior-CQ·interoperability
+축의 red/unknown은 사람 승인을 받아도 쓸 수 없다. 독립 source-hidden 실행 뒤 남은
+functional/pragmatic의 명시적 partial/unknown만 exact gap별 사람 승인으로
+`gap_accepted`가 될 수 있고, 이 경우에도 qualification은 계속 `not_qualified`다.
+acceptance의 `decidedBy`와 `authority: human`은 **human-declared acceptance provenance**이지
+인증·신원 증명·truth certificate가 아니다.
+
+**적용 규칙**: accepted lifecycle/CQ revision/plan digest/axis/gap/prior-regression의 compact
+ledger는 exact project body write row에 포함하고, post-write current graph/source 결합은
+기존 `finalize_project_meaning` receipt를 재사용한다. 새 sidecar·frontmatter review state·
+write-tool token·`add_concepts`/`add_relations` signature는 만들지 않는다. prior-CQ는 write 전
+candidate에 dry replay하여 regression이면 block하고, write 뒤 기존 validate→compile→finalize로
+current graph/source에서 definitive replay한다. post-write 실패는 rollback이나 green 승격이
+아니라 `pending_post_write`/명시적 remediation이다. MCP initialize와 두 bootstrap skill mirror는
+이 runtime 결과를 가리키며 lifecycle 문장을 각자 재정의하지 않는다. Node 24 adversarial,
+source/bundled MCP semantic parity, 기존 source-hidden 실패 재실행을 통과해야 한다.
+
+**비용 차단선**: 최대 2 working days·한 PR·기존 public tool 한 개의 additive contract다.
+새 MCP tool, 두 번째 public tool signature, 새 storage, 전역 writer gate가 필요해지면 구현을
+중단하고 범위를 다시 정한다. O1.5 세 제품 qualification·U1.3 기본/전문가 UI·모델 router는
+이번 범위 밖이다.
+**서명**: owner — 활성 작업의 다음 구현 진행 승인; Codex — PO Council 소집·최종 범위 결정
+
+**기록된 반대**: 가장 강한 패배 논점은 “사람이 functional/pragmatic red를 승인할 수 있게
+두면 `정직한 partial`이라는 이름으로 쓸모없는 ontology를 shared 상태로 세탁하므로, 모든 축이
+qualified되기 전에는 쓰기를 전부 막아야 한다”였다. 반면 universal block은 사람이 검토할
+exact plan을 승인 전에 숨기고, persisted graph가 있어야 가능한 post-write regression을
+pre-write 조건으로 요구하는 순환을 만든다.
+**반증 조건**: O1.5 세 제품 중 둘 이상에서 `gap_accepted` plan이 unsupported claim을 저장하거나,
+같은 functional/pragmatic gap이 다음 revision에도 닫히지 않거나, 기존 source-hidden 실패를
+재실행했을 때 지원 claim·정확한 다음 행동은 늘지 않고 시간/호출만 늘면 반대가 옳다. 그때
+전체 lifecycle을 버리지 않고 반복 실패한 축을 mandatory pre-write pass로 승격한다. compact
+receipt가 승인 후 plan mutation·prior-CQ 손실을 한 건도 잡지 못하면 persistence 필드를
+합치거나 제거한다.
+**재검토**: M1.5 gate probe와 첫 O1.5 product trial 뒤.
+
+**상태**: 유효
+
+---
+
+## 2026-08-09 — Construction Qualification은 독립 축의 범주형 판정이다
+
+**소집**: O1.3 단독 PO 패스 24/24 · **트리거**: 기존 구조 검증과
+`meaningAssessment:v1`이 초록이어도 source-hidden 답이 과장될 수 있고, 구축 요구부터
+사람 승인까지를 같은 fixture로 재실행할 계약이 없었다. 새 route·vault schema·kind·
+공개 MCP/CLI tool·시각 축을 바꾸지 않으므로 정식 PO/Design Council 조건은 아니다.
+**루브릭**: 24/24 (Problem 4 · User moment 4 · Differentiation 4 · Ontology 4 ·
+Agent 4 · Verification 4, 치명적 0 없음)
+
+**선행 결정 관계**: 2026-08-09 「ontology construction quality를 Skills와 UI 확장보다
+먼저 닫는다」의 여덟 단계와 일곱 품질 축, 2026-08-02 「CQ quantifier integrity」의
+`targetSet`/`covered`/`uncovered`, human-sovereign·maker-independent 경계는 모두 유효하다.
+이번 결정은 그 원칙을 대체하지 않고 재실행 가능한 qualification packet으로 묶는다.
+
+**결정**: 내부 계약 `constructionQualification:v1`은 project의 graph/source digest,
+분리된 builder/evaluator, 네 사용자군의 motivating scenario, 사람 owner와 승인 revision이
+있는 CQ, expected answer/quantifier/target, unknown/refusal, exemplar/counterexample,
+digest-bound portable witness, exact-text claim ledger와 citation check, target별 witness/claim,
+source-hidden task, 일곱 축, 분류 diagnostic, resource use, 사람 acceptance를 입력으로 받는다.
+합격은 모든 축·CQ·claim·citation·source-hidden task와 사람 acceptance가 동시에 통과할
+때뿐이다. 입력한 `coveredTargets` 문자열은 권위가 없으며 target별 current witness와
+supported claim에서 coverage를 다시 파생한다.
+
+**판정 규칙**: 출력은 `qualified`·`not_qualified`·`invalid`뿐이고 overall score는 없다.
+`partial`·`unknown`·`refused`는 보존한다. claim accuracy, citation accuracy, duration,
+tool calls, token, optional cost는 서로 다른 진단값이며 판정을 평균내지 않는다. stale
+witness, claim citation 누락, maker self-evaluation/approval, agent-owned CQ, 출처 없는
+pass, 분류되지 않은 red는 fail-closed다. 실패 원인은 `evidence`·`prompt`·`ui`·
+`missing_primitive` 중 하나로 귀속한다. 평가기는 vault를 쓰지 않는다.
+
+**범위 경계**: 대표 fixture는 계약이 재실행됨을 증명할 뿐 실제 세 제품의 품질을
+증명하지 않는다. 공개 MCP/bootstrap lifecycle 연결은 PO Council이 필요한 M1.5,
+독립 세 제품 trial은 O1.5, 기본/전문가 disclosure는 U1.3이 소유한다. 따라서 이번에는
+UI·설치 앱·MCP tool inventory를 바꾸지 않는다.
+
+**기록된 반대**: “일곱 축이 모두 pass여야 하면 초기 작은 ontology가 영원히 합격하지
+못하고, 팀은 축을 의례적으로 초록으로 칠할 것이다.”
+**반증 조건**: O1.5의 세 독립 trial 중 둘 이상에서 정직한 `unknown`/`partial`이 다음
+안전 행동을 충분히 지원하는데도 binary qualification만 실사용을 막거나, 같은 근거를
+일곱 축에 복사해 축 분리가 새로운 정보를 전혀 주지 않으면 반대가 옳다. 그때 축을
+평균내지 말고 사용 시나리오별 readiness profile과 mandatory-axis 집합을 사람 owner가
+명시하도록 계약을 좁힌다.
+**재검토**: M1.5 lifecycle 연결 후 O1.5 세 제품 claim ledger와 resource use가 모였을 때.
+**서명**: owner — 다음 작업 진행 승인; Codex — O1.3 구현·게이트·문서화
+**상태**: 유효
+
+---
+
+## 2026-08-09 — 공방은 증거 없는 빈 관계를 추천으로 꾸미지 않는다
+
+**소집**: 단독 PO 패스 24/24 + 디자인 게이트(기존 Compass 구조 안의 상태 교정) ·
+**트리거**: Workshop이 첫 빈 UP 소켓과 same-domain·이름 유사 후보를 `is_a`
+추천처럼 표시했다. 이는 2026-08-09 meta-model 결정의 “same-domain·이름 유사성·
+폴더 중첩은 direct subsumption의 증거가 아니다”를 실제 쓰기 표면이 위반한 관측이다.
+선행 결정과 O1.2 → O1.1 → O1.3 순서는 여전히 유효하다.
+**루브릭**: 24/24 (Problem 4 · User moment 4 · Differentiation 4 · Ontology 4 ·
+Agent 4 · Verification 4, 치명적 0 없음)
+**결정**: 네 고정 방위와 빈 소켓의 관계 affordance는 유지하되, 빈 상태 자체는
+항상 중립이다. `추천` 또는 amber `expected` 상태는 대상별
+`rationale + evidenceRefs + safe_to_add preflight(from/to/relation 일치)` 영수증이
+모두 있을 때만 허용한다. 현재 graph projection과 picker scorer는 이 영수증을
+생산하지 않으므로 runtime 추천은 0개가 정직한 결과다. `is_a` 후보는 같은 kind로만
+제한하고, 자동 추천 대신 중립적인 Browse에서 찾게 한다. exact-name·same-domain·
+adjacency는 발견 신호일 뿐 관계 증거가 아니다.
+**적용 규칙**: create/enhance 모두 같은 정책을 쓴다. project→`is_a`처럼 허용 kind가
+없는 relation-bound create는 모든 kind로 넓히지 않고 닫는다. Compass 배치·방위·
+토큰·모션·picker primitive는 바꾸지 않는다. 일반 사용자는 “추천 근거 없음”과 쉬운
+질문만 보고, 향후 전문가/agent surface는 영수증의 근거와 preflight를 펼칠 수 있다.
+**서명**: owner — O1.1 실행 승인; Codex — 구현·검증
+
+**기록된 반대**: 첫 빈 소켓의 인디고 guide와 amber expected를 없애면 초보자가
+무엇을 먼저 해야 할지 몰라 첫 관계 작성률이 떨어질 수 있다. 그러나 현재 guide는
+올바른 다음 행동이 아니라 증명되지 않은 ontology assertion을 시각적으로 밀었다.
+**반증 조건**: 동일한 starter/낯선 vault에서 중립 공방의 첫 유효 관계 도달 시간이
+기존 대비 반복적으로 늘거나, 사용자가 “추천이 없어서 무엇을 검토할지 모르겠다”에서
+두 번 이상 멈춘다. 그러면 topology 신호를 추천으로 되돌리지 않고, O1.3의 CQ/evidence
+수집 또는 중립적인 시작 안내를 추가한다.
+**재검토**: O1.3가 실제 evidence receipt를 생산하거나 위 stall이 두 번 관측될 때.
+
+**상태**: 유효
+
+## 2026-08-09 — Atlas meta-model은 현재 구현의 경계를 숨기지 않는 한 정본이다
+
+**소집**: PO Council 전체 5석(`gpt-5.6-sol`, 동시 실행 한도 4라 서로의 결과를
+보지 않는 두 wave 뒤 전원 반론 라운드) · **트리거**: writer는 5 kind만 만들고
+reader는 예약 `vault-readme`까지 6 kind를 읽으며, `broader`는 schema·validator·
+Workshop에는 있지만 공개 MCP relation query/write enum과 공개 spec 관계 표에는
+없다. 선행 결정인 2026-08-09 「ontology construction quality를 먼저 닫는다」와
+O1.2 → O1.1 → O1.3 순서는 여전히 유효하고, 반증 조건은 아직 관측되지 않았다.
+**루브릭**: 22/24 (Problem 4 · User moment 4 · Differentiation 4 · Ontology 4 ·
+Agent 4 · Verification 2, 치명적 0 없음). 구현 전 dogfood에는 authored `document`와
+`broader`가 각각 0이라 현재 green을 완료 증거로 세지 않는다.
+**결정**: `docs/ONTOLOGY-ATLAS-SPEC.md`의 meaning-model 절을 5 authorable kinds,
+예약 reader kind, kind별 includes/excludes/examples/counterexamples, relation의 storage/
+display/write 층·방향·domain/range·inverse·추론·absence 의미, direct `is_a` 판별,
+RDF/OWL/SKOS/SHACL 비준수 경계의 유일한 공개 정본으로 삼는다. `broader`는
+narrower → direct broader 저장 키이고 UI에서는 `is_a`로 보이지만 현재 공개 MCP
+relation enum에는 없다는 사실을 그대로 밝힌다. 따라서 기존 노드의 이 관계는
+`get_concept`에서 얻은 `mtime`과 전체 post-change `broader` 배열을 넣은
+`patch_concept`로만 안전하게 갱신하고 `validate_vault`로 확인한다. 이 비대칭을
+이번 변경에서 새 enum·tool로 감추지 않는다.
+**적용 규칙**: `FOUNDATIONS`·`PRODUCT-DIRECTION`·schema starter·bootstrap/
+field-trial·MCP/app prompt는 정본 pointer와 자기 채널에 꼭 필요한 최소 fallback만
+둔다. 폴더·package·team·workflow·README heading은 구조/표현만으로 domain이나
+capability가 되지 않는다. `is_a`는 같은 kind 사이에서 narrower의 모든 정당한
+사례가 broader 정의를 만족하고 둘 사이에 더 가까운 개념이 없을 때만 후보이며,
+same-domain·이름 유사성·폴더 중첩은 증거가 아니다. Atlas는 Markdown에 대한
+application validator/query를 제공할 뿐 RDF serialization, OWL reasoning, SKOS/
+SHACL conformance, 자동 inverse/transitive closure를 제공하지 않는다. 새 kind,
+reasoner, public relation enum, UI 추천 로직(O1.1), CQ 체계(O1.3)는 범위 밖이다.
+**검증 규칙**: 첫 구현 증거는 category-error fixture와 consumer deletion probe다.
+folder/team/workflow 자동 승격과 same-domain/name/nesting `is_a`가 실패해야 하며,
+정본 pointer나 compact boundary를 지우면 schema template·MCP/app prompt·skill
+consumer gate 중 실제 소비자가 빨개져야 한다. source/bundled prompt parity와
+guarded `patch_concept(broader)` fallback도 검사한다. 두 시간 안에 소비자를
+깨뜨리는 RED를 만들지 못하면 prose-only glossary로 circuit-break하고 짧은 honesty
+note만 남긴다.
+**서명**: owner — 활성 트랙 다음 작업 진행 승인; Codex — PO Council 소집·범위 결정
+
+**기록된 반대**: 이 작업은 표준 glossary 자체로는 일반적이고 복제하기 쉽다.
+더구나 현재 dogfood가 논쟁 중인 `document`/`broader` 축을 전혀 쓰지 않아 기존
+71-node green과 현재 adversarial suite는 새 계약을 증명하지 않는다. 실제 소비자와
+삭제 시 RED가 없다면 제품 변경이 아니라 문서 정리이므로 CQ/evidence 검증에 시간을
+써야 한다(PO-결·PO-해자의 가장 강한 반대, 나머지 자리도 수용).
+**반증 조건**: 현재 spec/prompt만 받은 source-hidden 사람과 fresh agent가 별도
+정본 없이도 folder/team/workflow, same-domain sibling, `broader/is_a` 방향·쓰기,
+unsupported inference를 세 번 연속 동일하게 판별하거나, 새 정본과 fixture를 준 뒤에도
+같은 사례에서 반복적으로 갈라진다. 전자면 정본의 사용자 가치를 과장한 것이므로
+honesty note로 축소하고, 후자면 문서 pointer가 실행 계약으로 충분하지 않으므로 O1.3의
+evidence/CQ 판정으로 문제를 이관한다.
+**재검토**: 위 source-hidden 비교가 3회 누적되거나 첫 2시간 deletion probe가
+소비자를 깨뜨리지 못할 때.
+
+**상태**: 유효
+
+## 2026-08-09 — 현재 MCP inventory는 활성 runtime registry에서만 파생한다
+
+**소집**: PO Council 전체 5석(`gpt-5.6-sol`) · **트리거**: 일반 모드의 raw
+`initialize.instructions`가 `33 = 19 + 14`라고 말하면서 쓰기 도구 16개를 나열하고,
+같은 프로세스의 `tools/list`는 `35 = 19 + 16`을 반환했다. read-only 모드에서는
+instructions가 쓰기 16개를 계속 광고하지만 실제 `tools/list`는 읽기 19개뿐이었다.
+기존 MCP surface·generated docs·starter/Settings 테스트는 모두 이 모순을 둔 채
+통과했다. **선행 결정 관계**: 2026-08-01 「문서 검사의 판별 기준」과 2026-08-09
+「신뢰 계약을 먼저 닫는다」의 M1.4 순서는 모두 유효하다.
+**루브릭**: 22/24 (Problem 4 · User moment 4 · Differentiation 2 · Ontology 4 ·
+Agent 4 · Verification 4, 치명적 0 없음)
+**결정**: filtered `TOOLS_FOR_LIST`가 raw initialize inventory와 `tools/list`의 유일한
+실행 정본이다. initialize의 header·read/write 이름·count는 이 활성 집합에서
+mode-aware로 생성하며 full과 read-only 모두 같은 세션의 `tools/list`와 exact set으로
+일치해야 한다. `docs/.generated/mcp-surface.json`은 계속 live `tools/list`에서 만들고,
+숫자 자체가 행동을 돕지 않는 Settings·starter·current prose에서는 고정 count와
+복제된 exhaustive list를 삭제해 `tools/list`/`mcp-verify` 정본을 가리킨다.
+**적용 규칙**: 새 MCP 도구·schema·UI layout·범용 docs codegen·registry 대분할을
+하지 않는다. 역사·archive·prototype의 당시 숫자는 고치지 않는다. current 문서의
+상세 도구 설명은 기존 generated coverage가 등록된 모든 이름을 덮는지 검사하되,
+사람이 쓴 문장을 literal로 고정하지 않는다. raw full/read-only exact parity를 먼저
+RED로 만들고, 고친 줄을 되돌려 gate가 실제로 빨개지는지 확인한다.
+**서명**: owner — M1.4 실행 승인; Codex — PO Council 소집·최종 범위 결정
+
+**기록된 반대**: 가장 작은 해법은 optional initialize의 상세 inventory를 삭제하고
+프로토콜의 권위인 `tools/list`만 보게 하는 것이다. 실제 agent가 숫자 모순 때문에
+도구를 누락했다는 행동 로그가 없으므로, 긴 이름 목록을 생성해 유지하는 것은 prompt
+비용만 늘릴 수 있다(PO-근거·PO-해자·PO-결의 공통 반대).
+**반증 조건**: Atlas MCP만 연결한 fresh Codex·Claude·Cursor가 상세 inventory 없는
+initialize에서도 `tools/list`로 현재 full/read-only 범위와 첫 안전 행동을 빠짐없이
+고르고, 소스·문서 재탐색이나 쓰기 오호출이 세 번 연속 없거나, 상세 목록이 실제
+context 압박을 만든다. 그러면 formatter를 짧은 mode 요약으로 줄이고 상세 목록을
+삭제한다.
+**재검토**: 위 fresh-agent 관측이 세 클라이언트에서 누적되거나 이 슬라이스가 1
+working day를 넘겨 범용 생성 체계를 요구할 때.
+
+**상태**: 유효
+
+## 2026-08-09 — quick-start는 부분 성공을 완료로 승격하지 않는다
+
+**소집**: 단독 PO 패스 · **트리거**: bootstrap/MCP가 실패해 nonzero로 끝났는데도
+green `quick start done`, `bootstrapped`, `MCP already wired`와 agent 질문 권유가
+출력되는 모순을 fresh fixture에서 재현했다. packed 설치본은 누락 runtime import로
+정상 quick-start 자체가 실패하면서도 같은 완료 문구를 냈다.
+**선행 결정 관계**: 2026-08-09 「신뢰 계약을 먼저 닫는다」의 M1.3 순서와
+2026-08-09 「agent config의 ready는 지원되는 실행 shape」의 ready/live 분리는
+**모두 유효**하다. 이번 결정은 CLI 명령·옵션·vault schema를 바꾸지 않고 같은
+상태 구분을 quick-start terminal output에 적용한다.
+**루브릭**: 24/24 (치명적 0: 없음)
+**결정**: quick-start는 scaffold/config write, ontology bootstrap, live MCP verification을
+서로 다른 상태로 취급한다. bootstrap exit가 nonzero면 그 code를 그대로 반환하고,
+성공 색·완료·연결 문구와 agent 사용 권유를 출력하지 않는다. 대신 scaffold와 config가
+이미 쓰였지만 unverified라는 부분 성공, `mcp-verify` 진단, bootstrap 재시도 명령을
+한 recovery block으로 보여 준다. bootstrap이 성공한 경우에만 기존 3-step 완료 흐름을
+유지한다.
+**적용 규칙**: 실패를 숨기기 위해 앞선 write를 rollback하지 않고, 앞선 write를
+근거로 뒤 단계를 성공 처리하지도 않는다. source checkout과 실제 tarball 설치본이
+동일한 success/failure 문구·exit 계약을 가져야 한다. packed package의 모든 reachable
+runtime import는 manifest gate와 smoke가 함께 보호한다.
+**서명**: owner — M1.3 진행 승인; Codex — 구현·packed runtime 검증
+
+**기록된 반대**: “automation은 nonzero exit를 읽으므로 사람이 보는 마지막 완료 문구를
+유지해도 되고, 실패 때도 agent 재시작 다음 단계를 보여 주는 편이 덜 막힌다.”
+**반증 조건**: 새 recovery block 때문에 사용자가 이미 작성된 config까지 사라졌다고
+오해해 반복 init/덮어쓰기를 늘리거나, diagnose→retry보다 종전 혼합 출력에서 복구 시간이
+짧았다는 독립 walkthrough 증거가 두 번 나온다. 그 경우 부분 성공 표현과 복구 순서를
+다시 다듬되 false-success 문구는 되살리지 않는다.
+**재검토**: 위 오해 또는 복구 시간 역전이 서로 다른 두 환경에서 재현될 때.
+
+**상태**: 유효
+
+## 2026-08-09 — agent config의 `ready`는 지원되는 실행 shape를 뜻한다
+
+**소집**: 단독 PO 패스 · **트리거**: 정상 source-checkout 설정은 `0/3`으로,
+존재하지 않는 npm launch는 ready로 판정되는 양방향 신뢰 결함과 실제 연결 파일이
+아닌 `.mcp.json.example`까지 분모에 들어가는 현상이 설치 앱 감사에서 관측됐다.
+**선행 결정 관계**: 2026-07-27 「앱이 MCP를 품는다」의 두 채널, 즉 설치 앱의
+bundled stdio binary와 source-checkout fallback만 지원하고 npm 발행을 폐기한다는
+결정은 **그대로 유효**하다. 이번 결정은 새 채널이 아니라 그 경계를 실행 가능한
+검사로 만든다.
+**루브릭**: 24/24 (치명적 0: 없음)
+**결정**: ready는 정확히 두 launch shape만 인정한다. source는 `node` + 절대 경로
+`.../mcp/src/index.js` 하나, bundle은 절대 경로 `ontology-atlas-mcp` 실행 파일 + 빈
+args다. CLI는 실행 대상이 실제 파일인지까지 확인하고, Settings는 브라우저가 접근할
+수 없는 외부 파일의 실행을 가장하지 않은 채 shape와 현재 vault 좌표 일치만 확인한다.
+활성 분모는 `.mcp.json`과 `.codex/config.toml` 두 개이며 example은 template로
+명시한다. ready와 live는 합치지 않는다. 실제 stdio 기동·35-tool inventory는
+재시작 뒤 `mcp-verify`가 증명한다.
+**적용 규칙**: 문자열 포함 검사, basename만 같은 상대 경로, 추가 인자, `npx`/npm
+launch는 fail-closed다. JSON과 TOML, 앱과 CLI는 같은 launch 분류 규칙을 사용한다.
+새 스타일·토큰·모션은 만들지 않고 기존 Settings 행과 디자인 시스템을 재사용한다.
+**서명**: owner — M1.2 실행 승인; Codex — 구현·설치 앱 검증
+
+**기록된 반대**: “shape와 파일 존재만으로는 에이전트가 지금 연결됐다고 증명할 수
+없으므로 ready라는 표현 자체가 과장이다.”
+**반증 조건**: 지원 shape·존재 파일·정확한 vault 좌표가 모두 valid인 fresh 설정이
+재시작 뒤 반복적으로 MCP 기동에 실패하거나, 사용자가 Settings의 ready를 live session
+확인으로 지속 오해한다. 그 경우 표시를 configured로 좁히고 live verification 상태를
+별도 계층으로 올린다.
+**재검토**: 위 실패 또는 오해가 서로 다른 두 환경에서 재현될 때.
+
+**상태**: 유효
+
+## 2026-08-09 — ontology construction quality를 Skills와 UI 확장보다 먼저 닫는다
+
+**소집**: 소유자 우선순위 확정 + 공개 1차 문헌 재검증을 포함한 단독 PO 패스
+(정식 PO Council 아님) · **트리거**: 소유자가 조사 결과가 부족하면 다시 조사해서라도
+“온톨로지를 제대로 구축하는 것”을 최우선으로 하고, 필요한 UI는 디자인 시스템에서만
+만들라고 명시했다. 기존 field trial은 구조적으로 valid한 vault도 source-hidden 답에서
+과장·미지원 주장을 남길 수 있음을 관측했다.
+**선행 결정 관계**: 2026-07-31 「팬아웃 상한이 아니라 노드 자격 게이트」의
+값·로직·텍스트 3-layer 방어, 2026-08-01 bridge 자격 조건, observed/proposed/shared와
+accepted-write-plan 경계는 **모두 유효**하다. 이번 결정은 그것을 폐기하거나 다시 정하지
+않고, 노드 자격 검사 앞뒤에 요구→검증→승인→회귀 생명주기를 붙인다.
+**루브릭**: 24/24 (치명적 0: 없음)
+**결정**: `docs/FOUNDATIONS.md`의 ontology-construction 계약을 다음 여덟 단계로 고정한다.
+① purpose·authority ② owner와 expected answer가 있는 competency question ③ evidence inventory와
+기존 개념 재사용 ④ examples/counterexamples가 있는 작은 conceptual slice ⑤ semantic·structural
+test ⑥ source-hidden functional·pragmatic task ⑦ 사람 acceptance와 provenance ⑧ prior-CQ regression과
+evolution. 품질은 semantic·structural·functional·evidence/provenance·pragmatic·maintenance·interop
+축을 따로 판정하며 하나의 합계나 node count가 red 축을 가리지 못한다. LLM은 요구와 모델의
+초안·repair를 가속하지만 자기 산출물의 승인자나 단독 evaluator가 아니다.
+**적용 규칙**: Atlas는 application-specific Markdown meaning model이며 RDF/OWL/SKOS/SHACL
+conformance나 OWL inference를 주장하지 않는다. 활성 순서는 MCP 신뢰 결함 M1.1~M1.4 →
+meta-model/is_a/evaluation O1.2·O1.1·O1.3 → lifecycle enforcement M1.5 → 세 제품 독립
+qualification O1.5다. M1.5는 공개 MCP/prompt 계약이므로 진입 때 정식 `/po-council`을 연다.
+O1.5에서 repeated missing primitive가 입증되기 전 새 kind·일반 process ontology를 만들지
+않는다. O1.5 뒤에는 같은 artifact를 기본/전문가 disclosure depth로 보여 주는 U1.3을 먼저
+검증한다. 기본은 목적 확인·애매한 의미 선택·최종 승인을 남기고 조사·CQ replay·validation을
+뒤에서 자동화하며, 전문가는 CQ·witness·반례·관계 이유·진단·write plan을 펼친다. 이는 두
+ontology나 두 validator가 아니며 어느 depth도 red/unknown/conflict와 사람 승인 단계를 숨기지
+않는다. 전역 Settings 모드와 화면별 `세부 보기` 중 무엇을 채택할지는 walkthrough 전에는
+정하지 않는다. Skills와 나머지 Projects/UI는 그 뒤에 두며, UI가 실제로 필요하면 PO→design direction(구조
+선택 시)→design build→design audit→affected instrument→재빌드한 설치 앱 Codex Computer Use
+증거 순서를 지키고 `DESIGN-SYSTEM.md` token/ramp·기존 primitive 밖 병렬 규격을 만들지 않는다.
+**서명**: owner — ontology-construction 우선순위와 디자인 시스템 경계 확정;
+Codex — 조사·실행 원장 반영
+
+**기록된 반대**: “기존 node eligibility·fan-out·validator가 이미 강하므로 lifecycle artifact와
+독립 qualification을 추가하면 first-five-minutes만 느려지고 구축량이 줄어든다.”
+**반증 조건**: 세 제품 trial에서 새 단계가 지원된 claim·CQ answer·source-hidden handoff를
+개선하지 않은 채 시간/호출만 늘리거나, 같은 정보를 여러 정본에 복제해 drift를 만든다.
+그 경우 성능이 없는 단계와 artifact를 합치거나 제거하되 human approval·분리 quality axis는
+유지한다.
+**재검토**: O1.5 세 제품 qualification이 끝나거나, 그 전에 위 반증 조건이 두 독립 trial에서
+같이 관측될 때.
+
+**상태**: 유효
+
+## 2026-08-09 — 신뢰 계약을 먼저 닫고, 5-kind를 검증한 뒤 Skills process를 연다
+
+**소집**: 단독 PO 패스 + 서로 격리된 `gpt-5.6-sol` MCP/ontology/Skills 감사
+(정식 PO Council 아님) · **트리거**: 설치 앱과 fresh MCP field trial에서 승인한
+evidence의 finalize 거절, 실행 불가능한 agent config의 ready 판정, 성공처럼 보이는
+quick-start 실패, 근거 없는 `is_a` 추천, Skill 절차 손실이 함께 관측됐다. 소유자는
+구현 전에 놓치지 않을 단일 작업 원장을 요구했다.
+**루브릭**: 24/24 (치명적 0: 없음)
+**결정**: `docs/BACKLOG.md`의 2026-08-09 활성 실행 트랙을 유일한 상태 정본으로
+삼고, 다음 순서를 지킨다. ① proposal↔finalizer witness parity ② executable agent
+config readiness ③ Studio의 relation-specific recommendation ④ truthful quick-start와
+runtime-derived MCP inventory ⑤ 5-kind·relation·formal/RDF/OWL 경계와 사용자군별
+competency-question 검증 ⑥ source-bound Skills happy-path rail ⑦ 좁은 의미 overlay와
+명시적 process packet. Projects taxonomy와 bounded spotlight motion은 각자의 선행
+게이트 뒤에 둔다. 새 ontology kind나 일반 process ontology는 세 낯선 제품의 독립
+trial에서 동일한 missing primitive가 반복 입증되기 전에는 만들지 않는다.
+**적용 규칙**: 같은 체크리스트를 `docs/plans/`에 복제하지 않는다. Skills process는
+derived·read-only·source-digest-bound이며 ontology node나 vault write가 아니다.
+각 항목은 RED, focused check, affected runtime 또는 source-hidden handoff, 마지막
+`pnpm checks:changed -- <paths...>` 증거 없이 `done`이 아니다. 공개 MCP/CLI/schema나
+Projects taxonomy에 들어갈 때는 정식 `/po-council`을 다시 열고 이 원장에 append한다.
+UI/motion은 PO 뒤 design gate를 거치며 desktop 영향은 재빌드한 설치 앱으로 증명한다.
+현 HEAD에서 재현되지 않은 relation rationale 유실, 이미 구현된 workspace stale-slug와
+Insights evidence 문구는 작업으로 세지 않는다.
+**서명**: owner — 구현 시작 승인; Codex — 실행 원장 작성
+
+**기록된 반대**: ① “C-level·직원까지 쓰려면 outcome/role/process를 지금 root kind로
+추가해야 한다.” ② “Skills process가 ephemeral이면 source-hidden handoff에서 사라지니
+ontology에 영속화해야 한다.”
+**반증 조건**: ① 개선된 evidence·prompt·CQ evaluator를 써도 서로 다른 세 제품에서
+같은 질문이 outcome identity·actor-role participation·process ordering의 부재 때문에
+반복 실패한다. ② 사용자가 승인한 digest-bound packet까지 넘긴 fresh source-hidden
+trial에서도 exact step·diagnostic·claim support가 계속 손실되거나, source 제거 뒤
+장기 audit 요구가 반복된다.
+**재검토**: 위 반증 조건 중 하나가 실제 trial evidence로 관측되거나, 활성 트랙의
+선행 항목이 제품 문제를 해결하지 못하고 동일 failure mode를 남길 때.
+
+**상태**: 유효
 ## 2026-08-09 — 작대기 정리를 **화면에 그려지는 문서 전체**로 넓힌다 (경계는 「사용자가 읽나」)
 
 **트리거**: 소유자 — *"남은것도 해봐"*.

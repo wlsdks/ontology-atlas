@@ -591,6 +591,27 @@ async function runQuickStart({ target, cwdVaultArg }) {
   stdout.write(`\n${COLORS.bold}quick start${COLORS.reset}: bootstrapping from your repo...\n`);
   const bootstrapCode = await runBootstrap(['.', '--vault', cwdVaultArg]);
 
+  if (bootstrapCode !== 0) {
+    const verifyCommand = [
+      CLI,
+      ...['mcp-verify', cwdVaultArg, '--timeout-ms', '15000'].map(shellQuote),
+    ].join(' ');
+    const retryCommand = [
+      CLI,
+      ...['bootstrap', '.', '--vault', cwdVaultArg].map(shellQuote),
+    ].join(' ');
+    stdout.write(`
+${COLORS.yellow}${COLORS.bold}quick start incomplete${COLORS.reset} — vault scaffolded; agent configs written but unverified.
+
+${COLORS.bold}Recover:${COLORS.reset}
+  ${COLORS.dim}1.${COLORS.reset} Diagnose MCP        ${COLORS.cyan}${verifyCommand}${COLORS.reset}
+  ${COLORS.dim}2.${COLORS.reset} Retry bootstrap     ${COLORS.cyan}${retryCommand}${COLORS.reset}
+
+${COLORS.dim}Do not treat the agent connection or ontology bootstrap as ready until both commands pass.${COLORS.reset}
+`);
+    return bootstrapCode;
+  }
+
   const repoRoot = cwd();
   const foundGuides = ['AGENTS.md', 'CLAUDE.md'].filter((name) => existsSync(join(repoRoot, name)));
   if (foundGuides.length > 0) {
@@ -621,7 +642,7 @@ ${COLORS.bold}Next:${COLORS.reset}
   ${COLORS.dim}2.${COLORS.reset} MCP already wired      restart Claude Code / Cursor / Codex from this folder
   ${COLORS.dim}3.${COLORS.reset} Try asking your agent  e.g. "what does the auth capability depend on?"
 `);
-  return bootstrapCode;
+  return 0;
 }
 
 async function runCommandHelp(command) {

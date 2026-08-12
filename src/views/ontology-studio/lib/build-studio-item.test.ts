@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   buildStudioItem,
+  isStudioRecommendationAdmissible,
   selectDefaultStudioNodeId,
   type StudioSourceEdge,
   type StudioSourceNode,
@@ -101,13 +102,12 @@ describe("buildStudioItem — compass bearings", () => {
     expect(item.bearings.left.neighbors.map((n) => n.title)).toEqual(["환불"]);
   });
 
-  it("leaves UP (is_a) empty and marks it the single recommended guided socket", () => {
+  it("leaves an evidence-free UP (is_a) socket neutral", () => {
     const item = buildStudioItem("capability:pay-approve", NODES, EDGES)!;
     expect(item.bearings.up.filled).toBe(false);
     expect(item.bearings.up.frontmatterKey).toBe("broader");
-    expect(item.bearings.up.recommended).toBe(true);
-    // Only one recommended socket across the four bearings.
-    expect(item.order.filter((b) => b.recommended)).toHaveLength(1);
+    expect(item.bearings.up.recommendation).toBeNull();
+    expect(item.order.filter((b) => b.recommendation)).toHaveLength(0);
   });
 
   it("counts filled bearings (3 of 4 here — up empty)", () => {
@@ -119,10 +119,10 @@ describe("buildStudioItem — compass bearings", () => {
   it("marks an empty DOWN (contains) bearing as expected-but-missing (amber)", () => {
     const item = buildStudioItem("capability:transaction", NODES, EDGES)!;
     expect(item.bearings.down.filled).toBe(false);
-    expect(item.bearings.down.expected).toBe(true);
-    // UP is still the recommended one (priority up > down).
-    expect(item.bearings.up.recommended).toBe(true);
-    expect(item.bearings.down.recommended).toBe(false);
+    expect(item.bearings.down.expectation).toBeNull();
+    // Empty topology is not semantic evidence for a recommendation.
+    expect(item.bearings.up.recommendation).toBeNull();
+    expect(item.bearings.down.recommendation).toBeNull();
   });
 
   it("renders a filled UP bearing when a broader-derived is_a edge exists", () => {
@@ -133,8 +133,50 @@ describe("buildStudioItem — compass bearings", () => {
     const item = buildStudioItem("capability:pay-approve", NODES, edges)!;
     expect(item.bearings.up.filled).toBe(true);
     expect(item.bearings.up.neighbors.map((n) => n.title)).toEqual(["거래"]);
-    expect(item.bearings.up.recommended).toBe(false);
+    expect(item.bearings.up.recommendation).toBeNull();
     expect(item.filledBearings).toBe(4);
+  });
+});
+
+describe("isStudioRecommendationAdmissible", () => {
+  const complete = {
+    targetId: "capability:transaction",
+    rationale: "Every checkout example satisfies the transaction definition",
+    evidenceRefs: ["capabilities/transaction"],
+    preflight: {
+      decision: "safe_to_add" as const,
+      fromId: "capability:pay-approve",
+      toId: "capability:transaction",
+      relation: "isA" as const,
+    },
+  };
+
+  it("admits only evidence plus a matching candidate-specific preflight", () => {
+    expect(isStudioRecommendationAdmissible(complete, "isA")).toBe(true);
+  });
+
+  it("keeps evidence-only and preflight-only candidates neutral", () => {
+    expect(
+      isStudioRecommendationAdmissible({ ...complete, preflight: null }, "isA"),
+    ).toBe(false);
+    expect(
+      isStudioRecommendationAdmissible({ ...complete, evidenceRefs: [] }, "isA"),
+    ).toBe(false);
+  });
+
+  it("rejects a preflight for another relation or target", () => {
+    expect(
+      isStudioRecommendationAdmissible(
+        { ...complete, preflight: { ...complete.preflight, relation: "contains" } },
+        "isA",
+      ),
+    ).toBe(false);
+    expect(
+      isStudioRecommendationAdmissible(
+        { ...complete, preflight: { ...complete.preflight, toId: "capability:other" } },
+        "isA",
+      ),
+    ).toBe(false);
   });
 });
 

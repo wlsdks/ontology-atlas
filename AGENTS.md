@@ -4,7 +4,7 @@
 
 ## Project overview
 
-`ontology-atlas` is **a local-first ontology workbench for understanding a product/system from business core to implementation evidence**. The `.md` frontmatter inside the vault *is* the nodes and edges — frontmatter is self-approving, no separate review step. Planners, marketers, C-level decision-makers, developers, and AI agents should be able to read the same graph: business/product domains, capabilities, ownership, dependencies, evidence, and impact. Developers edit via CLI (`ontology-atlas` 54 commands — vault scaffold, agent setup repair, agent-file drift readout, agent activity heartbeat, MCP verify, deterministic graph compile, standard-format interop export, bounded path enumeration, transitive reachability, relation preflight + write, commit preflight, git snapshot, agent handoff, growth/maintenance queue, daily exploration, graph-level deep dive) or web UI (`/ontology`, `/docs`); AI agent (Claude Code, Codex, Cursor) reads/writes the same `.md` files via the `mcp/` MCP server (35 tools). **The macOS app carries that server inside its own bundle** — installing the app installs the agent surface, and the in-app connect button writes the client config with real absolute paths. There is no npm package; environments without the app run the server from a source checkout.
+`ontology-atlas` is **a local-first ontology workbench for understanding a product/system from business core to implementation evidence**. The `.md` frontmatter inside the vault *is* the nodes and edges — frontmatter is self-approving, no separate review step. Planners, marketers, C-level decision-makers, developers, and AI agents should be able to read the same graph: business/product domains, capabilities, ownership, dependencies, evidence, and impact. Developers edit via CLI (`ontology-atlas` 54 commands — vault scaffold, agent setup repair, agent-file drift readout, agent activity heartbeat, MCP verify, deterministic graph compile, standard-format interop export, bounded path enumeration, transitive reachability, relation preflight + write, commit preflight, git snapshot, agent handoff, growth/maintenance queue, daily exploration, graph-level deep dive) or web UI (`/ontology`, `/docs`); AI agent (Claude Code, Codex, Cursor) reads/writes the same `.md` files through the `mcp/` server's current runtime inventory. **The macOS app carries that server inside its own bundle** — installing the app installs the agent surface, and the in-app connect button writes the client config with real absolute paths. There is no npm package; environments without the app run the server from a source checkout.
 
 Atlas does not try to replace CodeGraph, grep, AST indexes, language servers,
 or source search. Those tools answer structural code questions. Atlas gives
@@ -13,9 +13,11 @@ domain/capability context, implementation evidence, impact boundary, and
 verification path that explain why a code artifact matters.
 
 In this project, **ontology** means the executable meaning model of a
-business/product and the codebase that realizes it: `project`, `domain`,
-`capability`, and `element` nodes plus typed relations that explain intent,
-ownership, dependencies, evidence, and impact for humans and AI agents.
+business/product and the codebase that realizes it. The five authorable kinds,
+reserved reader kind, exact relation support layers, `is_a` test, and
+RDF/OWL/SKOS/SHACL non-conformance boundary have one authority:
+`docs/ONTOLOGY-ATLAS-SPEC.md` §2/§5. Do not maintain another kind/relation
+glossary here; this guide owns contributor workflow, not the public meta-model.
 
 **Identity (2026-07): agent-native, human-sovereign.** Not "memory for agents"
 (machine-only stores lose to automation scale) and not another wiki (human-only

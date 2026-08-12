@@ -28,13 +28,11 @@ test("installed-app insights proof follows the current maintenance-board contrac
   assert.doesNotMatch(tauriLib, /hasDecisionQuestionList/);
   assert.doesNotMatch(tauriLib, /hasReaderDecisionLens/);
 });
-
 test("selected relation label agent gate text exposes MCP and CLI for handoff-ready facts", () => {
   assert.equal(expectedRelationLabelAgentGateText("handoff-ready"), "MCP/CLI");
   assert.equal(expectedRelationLabelAgentGateText("preflight-first"), "check");
   assert.equal(expectedRelationLabelAgentGateText("review-first"), "review");
 });
-
 test("selected relation inspector agent gate text accepts localized proof copy", () => {
   assert.equal(isSelectedRelationAgentGateText("MCP/CLI ready"), true);
   assert.equal(isSelectedRelationAgentGateText("Agent gate handoff ready"), true);
@@ -103,5 +101,3 @@ test("selected relation primary copy action text accepts compact localized label
     false,
   );
 });
-
-

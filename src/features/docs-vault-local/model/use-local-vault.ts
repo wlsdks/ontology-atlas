@@ -42,7 +42,11 @@ import {
 import { toErrorMessage } from '@/shared/lib/error-message';
 import { isPickerAbort } from '@/shared/lib/picker-abort';
 import { parseFrontmatter } from '@/shared/lib/parse-frontmatter';
-import { bundledServerLaunch, type McpServerLaunch } from '@/shared/config';
+import {
+  bundledServerLaunch,
+  inspectMcpServerLaunch,
+  type McpServerLaunch,
+} from '@/shared/config';
 import { readBundledMcpServer } from '@/shared/lib/tauri-agent-setup';
 import {
   emptyAgentActivityStatus,
@@ -359,13 +363,12 @@ export function looksLikeOmotMcpJson(
     };
     const server = parsed.mcpServers?.['ontology-atlas'];
     if (!server || typeof server.command !== 'string') return false;
-    const args = Array.isArray(server.args) ? server.args : [];
     const env =
       server.env && typeof server.env === 'object'
         ? (server.env as Record<string, unknown>)
         : {};
     return (
-      args.some((arg) => String(arg).includes('ontology-atlas-mcp')) &&
+      inspectMcpServerLaunch(server.command, server.args).valid &&
       typeof env.OATLAS_VAULT === 'string' &&
       env.OATLAS_VAULT.trim().length > 0 &&
       (options.expectedVault === undefined ||
@@ -376,18 +379,59 @@ export function looksLikeOmotMcpJson(
   }
 }
 
+function configTomlSection(raw: string, name: string): string | null {
+  const escaped = name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const match = raw.match(new RegExp(`^\\[${escaped}\\]\\s*$`, 'm'));
+  if (!match || match.index === undefined) return null;
+  const rest = raw.slice(match.index + match[0].length);
+  const next = rest.search(/^\[[^\]]+\]\s*$/m);
+  return next === -1 ? rest : rest.slice(0, next);
+}
+
+function configTomlString(section: string | null, key: string): string | null {
+  if (!section) return null;
+  const escaped = key.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const match = section.match(new RegExp(`^\\s*${escaped}\\s*=\\s*("(?:\\\\.|[^"\\\\])*")\\s*$`, 'm'));
+  if (!match) return null;
+  try {
+    const value = JSON.parse(match[1]) as unknown;
+    return typeof value === 'string' ? value : null;
+  } catch {
+    return null;
+  }
+}
+
+function configTomlStringArray(section: string | null, key: string): string[] | null {
+  if (!section) return null;
+  const escaped = key.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const match = section.match(new RegExp(`^\\s*${escaped}\\s*=\\s*(\\[[^\\n]*\\])\\s*$`, 'm'));
+  if (!match) return null;
+  try {
+    const value = JSON.parse(match[1]) as unknown;
+    return Array.isArray(value) && value.every((entry) => typeof entry === 'string')
+      ? value
+      : null;
+  } catch {
+    return null;
+  }
+}
+
 export function looksLikeOmotCodexToml(
   raw: string | null,
   options: { expectedVault?: string } = {},
 ): boolean {
   if (!raw) return false;
-  const vaultMatch = raw.match(/\bOATLAS_VAULT\s*=\s*"([^"]+)"/);
+  const serverSection = configTomlSection(raw, 'mcp_servers.ontology-atlas');
+  const envSection = configTomlSection(raw, 'mcp_servers.ontology-atlas.env');
+  const command = configTomlString(serverSection, 'command');
+  const args = configTomlStringArray(serverSection, 'args');
+  const vault = configTomlString(envSection, 'OATLAS_VAULT');
   return (
-    raw.includes('[mcp_servers.ontology-atlas]') &&
-    raw.includes('ontology-atlas-mcp') &&
-    Boolean(vaultMatch) &&
+    inspectMcpServerLaunch(command, args).valid &&
+    typeof vault === 'string' &&
+    vault.trim().length > 0 &&
     (options.expectedVault === undefined ||
-      vaultMatch?.[1]?.trim() === options.expectedVault)
+      vault.trim() === options.expectedVault)
   );
 }
 

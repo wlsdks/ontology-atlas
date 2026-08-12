@@ -39,12 +39,13 @@ display_en: My ontology vault
 
 This folder is **a codebase mental model that humans and AI agents grow
 together**. Every \`.md\` file is one node (project / domain / capability /
-element / concept), and the frontmatter at the top of each file is the
-graph's keys (slug / kind / depends_on / capabilities / elements / domain).
+element / document), and the frontmatter at the top of each file is the graph.
 
 In this vault, an ontology is an executable meaning model for a codebase:
-projects, domains, capabilities, elements, and typed relations that explain
-ownership, dependency, evidence, and change impact.
+five authorable kinds and typed relations that explain scope, dependency,
+association, and description. The exact includes/excludes, examples,
+counterexamples, direct \`is_a\` test, and inference boundary have one source:
+https://github.com/wlsdks/ontology-atlas/blob/main/docs/ONTOLOGY-ATLAS-SPEC.md#2-the-five-authorable-node-kinds-and-reserved-reader-kind
 
 ## Get started in 5 minutes
 
@@ -127,37 +128,24 @@ ${ATLAS_CLI} agent-brief . --verify-fallbacks --json --fallback-timeout-ms 15000
 For an agent opened at your codebase root instead of this vault folder, replace
 \`.\` with the vault path, for example \`./ontology\`.
 
-## Relations (frontmatter keys)
+## Kinds and relations
 
-| Key | What it expresses |
-|---|---|
-| \`depends_on: [<slug>, ...]\` | This node depends on other nodes |
-| \`capabilities: [...]\` | Capabilities this domain / project provides |
-| \`elements: [...]\` | Elements this capability / domain uses |
-| \`domain: <slug>\` | Parent domain of this capability/element |
-| \`relates: [...]\` | Loose related-to references |
-
-## Kinds
-
-- \`project\` — Top-level. Usually one per workspace.
-- \`domain\` — A large area (auth, billing, builder, …).
-- \`capability\` — A user-visible feature inside a domain (login, signup, …).
-- \`element\` — A smaller unit a capability uses (jwt-token, otp-store, …).
-- \`document\` — Evidence node (markdown doc backing other concepts).
+Use the specification linked above rather than guessing from a folder name.
+\`project\`, \`domain\`, \`capability\`, \`element\`, and \`document\` are authorable;
+\`vault-readme\` is generated and reserved. \`broader:\` is a validated storage key
+that the app renders as \`is_a\`, but the current public MCP relation API does not
+accept \`broader\` or \`is_a\`. The connected agent receives the exact guarded
+\`patch_concept\` fallback in its server instructions.
 
 ## What an AI agent can do for you
 
-Once you register the \`ontology-atlas-mcp\` server, the agent gets 35
-tools to read/write this vault:
+Once you register the \`ontology-atlas-mcp\` server, the running server gives the
+agent its current read/write inventory. Use \`tools/list\` for the exact names and
+\`mcp-verify\` to prove that the server can read this vault.
 
-- **read 19**: connection_info / git_status / git_history / list_concepts / get_concept / get_concepts / find_evidence /
-  find_backlinks / find_neighbors / find_path / list_kinds / find_orphans /
-  query_concepts / compile_ontology / query_ontology / validate_vault /
-  analyze_repo_structure / infer_imports / index_project
-- **write 16**: absorb_document / add_concept / add_concepts / add_relation / add_relations /
-  remove_relation / replace_relation / patch_concept / reclassify_concept /
-  delete_concept / rename_concept / merge_concepts / git_snapshot / finalize_project_meaning /
-  connect_project_source / disconnect_project_source
+Start with \`connection_info\`, \`list_kinds\`, \`validate_vault\`, and
+\`query_ontology({ operation: "agent_brief" })\`. Write only after the read-first
+checks are clean and the person accepts the proposed meaning.
 
 Details: https://github.com/wlsdks/ontology-atlas/tree/main/mcp
 `;
@@ -179,6 +167,11 @@ elements:
 # My project
 
 Write a one- or two-line summary of your project here — *what / for whom / why*.
+This node sets the outcome and scope for the rest of the graph; it is not a
+synonym for a repository, monorepo, department, or release phase.
+
+Kind and relation contract:
+https://github.com/wlsdks/ontology-atlas/blob/main/docs/ONTOLOGY-ATLAS-SPEC.md#2-the-five-authorable-node-kinds-and-reserved-reader-kind
 
 ## One-line mission
 
@@ -189,9 +182,9 @@ The problem this project solves, or the value it creates, in a single sentence.
 - Fill in \`domains: [...]\` in the frontmatter and the domain nodes hang
   off your project tree automatically.
 - Each domain's capabilities and elements follow the same pattern.
-- When an AI agent adds a new node, this file's \`depends_on\` / \`domains\`
-  may auto-update — frontmatter is the source of truth, so there are no
-  conflicts.
+- When an AI agent proposes a new node, confirm its meaning before it writes.
+  Frontmatter is the source of truth once written; git keeps the change
+  inspectable.
 
 ## Next steps
 
@@ -215,14 +208,20 @@ capabilities:
 
 # Example domain
 
-A *domain* is a large area of your project (subsystems like auth,
-billing, builder, realtime, search). Rename this file to match one of
-your real domains (\`domains/auth.md\`, \`domains/billing.md\`, …) and list
-the capabilities it owns under \`capabilities:\` in the frontmatter above.
+A *domain* is a durable responsibility, problem, vocabulary, or ownership
+boundary that groups coherent capabilities and would survive an implementation
+rewrite. A source/package folder, team, technology, lifecycle phase, or workflow
+name is evidence to investigate—not a domain by itself.
+
+Kind and relation contract:
+https://github.com/wlsdks/ontology-atlas/blob/main/docs/ONTOLOGY-ATLAS-SPEC.md#2-the-five-authorable-node-kinds-and-reserved-reader-kind
 
 ## How to fill it in
 
-- Use one or two paragraphs of body text to describe *what this domain is*.
+- Describe the responsibility it owns, what is inside and outside the boundary,
+  and the evidence that supports that meaning.
+- Rename this file to a real domain only after that test passes
+  (\`domains/identity.md\`, \`domains/billing.md\`, …).
 - Markdown links to other domains / capabilities in the body register as
   backlinks automatically.
 - Frontmatter keys:
@@ -249,16 +248,18 @@ elements:
 
 # Example capability
 
-A *capability* is one user-visible feature within a domain (login,
-signup, checkout, search, relation editing, …). Rename this file to match
-one of your real capabilities (\`capabilities/login.md\`,
-\`capabilities/checkout.md\`) and update the \`domain:\` and \`elements:\`
-keys above accordingly.
+A *capability* is an observable ability the product, operator, agent, or a
+dependent system can perform without prescribing the current module or
+framework. A component, package, UI screen, command, workflow step, or README
+heading is not a capability without an independent ability claim.
+
+Kind and relation contract:
+https://github.com/wlsdks/ontology-atlas/blob/main/docs/ONTOLOGY-ATLAS-SPEC.md#2-the-five-authorable-node-kinds-and-reserved-reader-kind
 
 ## How to fill it in
 
-- In the body, describe *what this capability does* and one or two user
-  scenarios.
+- State the observable outcome, its boundary, and one or two acceptance
+  scenarios. Then rename this file and update \`domain:\` / \`elements:\`.
 - Frontmatter keys:
   - \`domain: <slug>\` — the single parent domain
   - \`elements: [...]\` — slugs of elements this capability uses
@@ -277,13 +278,18 @@ domain: domains/example-domain
 
 # Example element
 
-An *element* is a smaller unit a capability uses (jwt-token, otp-store,
-indexeddb-adapter, sigma-canvas, …). Rename this file to match a real
-element (\`elements/jwt-token.md\`) and set \`domain:\` to the right parent.
+An *element* is a distinct implementation role that realizes or proves a
+capability and has evidence someone can open. A bare path, import edge, or
+dependency name is evidence—not a concept by itself. Name the role; put its
+canonical repository-relative entrypoint in \`path:\`.
+
+Kind and relation contract:
+https://github.com/wlsdks/ontology-atlas/blob/main/docs/ONTOLOGY-ATLAS-SPEC.md#2-the-five-authorable-node-kinds-and-reserved-reader-kind
 
 ## How to fill it in
 
-- One or two paragraphs in the body covering *what / why / which interface*.
+- Describe what role this element plays, which capability it realizes or proves,
+  and the path or interface that verifies the claim.
 - Frontmatter keys:
   - \`domain: <slug>\` — the single parent domain
   - \`path: <src/...>\` — code path this element corresponds to (optional)
@@ -307,13 +313,13 @@ display_en: My ontology vault
 # 내 온톨로지 문서함
 
 이 폴더는 **사람과 AI 에이전트가 함께 키우는 코드베이스 의미 모델**입니다.
-\`.md\` 파일 하나가 노드 하나(프로젝트 / 도메인 / 역량 / 요소 / 개념)이고,
-파일 맨 위의 frontmatter 가 그래프의 키(slug / kind / depends_on /
-capabilities / elements / domain)입니다.
+\`.md\` 파일 하나가 노드 하나(프로젝트 / 도메인 / 역량 / 요소 / 문서)이고,
+파일 맨 위의 frontmatter 자체가 그래프입니다.
 
 여기서 말하는 온톨로지는 코드베이스의 **실행 가능한 의미 모델**입니다 —
-프로젝트·도메인·역량·요소와 타입 있는 관계로 소유권, 의존성, 근거, 변경 영향을
-설명합니다.
+저자가 만드는 다섯 kind와 타입 있는 관계로 범위, 의존성, 연관, 설명을
+표현합니다. 포함·제외·예시·반례, direct \`is_a\` 판별, 추론 경계의 정본은 한 곳입니다:
+https://github.com/wlsdks/ontology-atlas/blob/main/docs/ONTOLOGY-ATLAS-SPEC.md#2-the-five-authorable-node-kinds-and-reserved-reader-kind
 
 ## 5분 만에 시작하기
 
@@ -393,36 +399,23 @@ ${ATLAS_CLI} agent-brief . --verify-fallbacks --json --fallback-timeout-ms 15000
 에이전트를 이 문서함이 아니라 코드베이스 루트에서 열었다면 \`.\` 대신 문서함
 경로를 씁니다(예: \`./ontology\`).
 
-## 관계 (frontmatter 키)
+## kind와 관계
 
-| 키 | 뜻 |
-|---|---|
-| \`depends_on: [<slug>, ...]\` | 이 노드가 기대는 다른 노드 |
-| \`capabilities: [...]\` | 이 도메인/프로젝트가 제공하는 역량 |
-| \`elements: [...]\` | 이 역량/도메인이 쓰는 요소 |
-| \`domain: <slug>\` | 이 역량/요소의 상위 도메인 |
-| \`relates: [...]\` | 느슨한 연관 참조 |
-
-## 종류(kind)
-
-- \`project\` — 최상위. 보통 작업공간당 하나.
-- \`domain\` — 큰 영역(인증, 결제, 빌더, …).
-- \`capability\` — 도메인 안에서 사용자가 할 수 있는 일 하나(로그인, 가입, …).
-- \`element\` — 역량이 쓰는 더 작은 단위(jwt-token, otp-store, …).
-- \`document\` — 근거 노드(다른 개념을 뒷받침하는 마크다운 문서).
+폴더 이름으로 추측하지 말고 위 명세를 사용하세요. \`project\`, \`domain\`,
+\`capability\`, \`element\`, \`document\`만 저자가 만들며 \`vault-readme\`는 도구가 만드는
+예약 kind입니다. \`broader:\`는 검증되는 저장 키이고 앱은 \`is_a\`로 보여 주지만,
+현재 공개 MCP relation API는 \`broader\`나 \`is_a\`를 받지 않습니다. 연결된 agent의
+server instructions가 충돌을 막는 정확한 \`patch_concept\` fallback을 제공합니다.
 
 ## AI 에이전트가 해줄 수 있는 일
 
-\`ontology-atlas-mcp\` 서버를 등록하면 에이전트가 이 문서함을 읽고 쓰는 도구
-33개를 갖습니다:
+\`ontology-atlas-mcp\` 서버를 등록하면 실행 중인 서버가 현재 읽기·쓰기 도구
+목록을 에이전트에게 알려 줍니다. 정확한 이름은 \`tools/list\`로 보고,
+\`mcp-verify\`로 서버가 이 문서함을 실제로 읽는지 확인하세요.
 
-- **읽기 19**: connection_info / git_status / git_history / list_concepts / get_concept / get_concepts / find_evidence /
-  find_backlinks / find_neighbors / find_path / list_kinds / find_orphans /
-  query_concepts / compile_ontology / query_ontology / validate_vault /
-  analyze_repo_structure / infer_imports / index_project
-- **쓰기 14**: absorb_document / add_concept / add_concepts / add_relation / add_relations /
-  remove_relation / replace_relation / patch_concept / reclassify_concept /
-  delete_concept / rename_concept / merge_concepts / git_snapshot / finalize_project_meaning
+처음에는 \`connection_info\`, \`list_kinds\`, \`validate_vault\`,
+\`query_ontology({ operation: "agent_brief" })\`를 사용합니다. 읽기 점검이 깨끗하고
+사람이 제안된 의미를 승인한 뒤에만 씁니다.
 
 자세히: https://github.com/wlsdks/ontology-atlas/tree/main/mcp
 `;
@@ -444,6 +437,11 @@ elements:
 # 내 프로젝트
 
 이 프로젝트가 무엇인지 한두 줄로 적어 주세요 — *무엇을 / 누구를 위해 / 왜*.
+이 노드는 나머지 그래프의 결과와 범위를 정합니다. 저장소·모노레포·부서·출시
+단계와 같은 말이 아닙니다.
+
+kind와 관계 정본:
+https://github.com/wlsdks/ontology-atlas/blob/main/docs/ONTOLOGY-ATLAS-SPEC.md#2-the-five-authorable-node-kinds-and-reserved-reader-kind
 
 ## 한 줄 사명
 
@@ -454,8 +452,8 @@ elements:
 - frontmatter 의 \`domains: [...]\` 를 채우면 도메인 노드가 프로젝트 트리에
   자동으로 매달립니다.
 - 각 도메인의 역량과 요소도 같은 방식으로 이어집니다.
-- AI 에이전트가 새 노드를 추가하면 이 파일의 \`depends_on\` / \`domains\` 가
-  자동 갱신될 수 있습니다 — frontmatter 가 단일 진실원이라 충돌이 없습니다.
+- AI 에이전트가 새 노드를 제안하면 쓰기 전에 그 의미를 확인합니다. 작성된 뒤에는
+  frontmatter가 단일 진실원이고 git에서 변경을 검토할 수 있습니다.
 
 ## 다음에 할 일
 
@@ -480,14 +478,18 @@ capabilities:
 
 # 예시 영역
 
-*도메인*은 프로젝트의 큰 영역입니다(인증, 결제, 빌더, 실시간, 검색 같은
-하위 시스템). 이 파일을 실제 도메인 이름으로 바꾸고
-(\`domains/auth.md\`, \`domains/billing.md\`, …) 위 frontmatter 의
-\`capabilities:\` 에 이 도메인이 가진 역량을 적으세요.
+*도메인*은 구현을 다시 써도 남을 만큼 지속적인 책임·문제·어휘·소유권 경계이며,
+서로 응집된 역량을 묶습니다. 소스/패키지 폴더, 팀, 기술, 생명주기 단계, 워크플로
+이름은 조사할 근거일 뿐 그 자체로 도메인이 아닙니다.
+
+kind와 관계 정본:
+https://github.com/wlsdks/ontology-atlas/blob/main/docs/ONTOLOGY-ATLAS-SPEC.md#2-the-five-authorable-node-kinds-and-reserved-reader-kind
 
 ## 어떻게 채우나
 
-- 본문 한두 문단으로 *이 도메인이 무엇인지* 설명합니다.
+- 이 도메인이 맡는 책임, 경계 안과 밖, 그 의미를 뒷받침하는 근거를 적습니다.
+- 이 판별을 통과한 뒤에만 실제 도메인 이름으로 바꿉니다
+  (\`domains/identity.md\`, \`domains/billing.md\`, …).
 - 본문에서 다른 도메인/역량으로 거는 마크다운 링크는 자동으로 역참조(backlink)
   로 잡힙니다.
 - frontmatter 키:
@@ -514,14 +516,17 @@ elements:
 
 # 예시 기능
 
-*역량*은 도메인 안에서 사용자가 할 수 있는 일 하나입니다(로그인, 가입, 결제,
-검색, 빌더 캔버스, …). 이 파일을 실제 역량 이름으로 바꾸고
-(\`capabilities/login.md\`, \`capabilities/checkout.md\`) 위의 \`domain:\` 과
-\`elements:\` 키를 그에 맞게 고치세요.
+*역량*은 현재 모듈이나 프레임워크를 전제로 하지 않고 제품·운영자·에이전트·의존
+시스템이 수행할 수 있는 관찰 가능한 능력입니다. 컴포넌트, 패키지, UI 화면,
+명령, 워크플로 단계, README 제목은 독립된 능력 주장이 없으면 역량이 아닙니다.
+
+kind와 관계 정본:
+https://github.com/wlsdks/ontology-atlas/blob/main/docs/ONTOLOGY-ATLAS-SPEC.md#2-the-five-authorable-node-kinds-and-reserved-reader-kind
 
 ## 어떻게 채우나
 
-- 본문에 *이 역량이 무엇을 하는지* 와 사용자 시나리오 한두 개를 적습니다.
+- 관찰 가능한 결과와 경계, 수용 시나리오 한두 개를 적은 뒤 파일 이름과
+  \`domain:\` / \`elements:\`를 고칩니다.
 - frontmatter 키:
   - \`domain: <slug>\` — 상위 도메인 하나
   - \`elements: [...]\` — 이 역량이 쓰는 요소의 slug
@@ -540,13 +545,17 @@ domain: domains/example-domain
 
 # 예시 구성요소
 
-*요소*는 역량이 쓰는 더 작은 단위입니다(jwt-token, otp-store,
-indexeddb-adapter, sigma-canvas, …). 이 파일을 실제 요소 이름으로 바꾸고
-(\`elements/jwt-token.md\`) \`domain:\` 을 알맞은 상위로 지정하세요.
+*요소*는 역량을 실현하거나 증명하며 누군가 열어볼 수 있는 근거가 있는 독립된
+구현 역할입니다. 경로, import edge, 의존성 이름은 근거일 뿐 그 자체로 개념이
+아닙니다. 역할을 이름으로 쓰고 정본 저장소 상대 진입점은 \`path:\`에 적습니다.
+
+kind와 관계 정본:
+https://github.com/wlsdks/ontology-atlas/blob/main/docs/ONTOLOGY-ATLAS-SPEC.md#2-the-five-authorable-node-kinds-and-reserved-reader-kind
 
 ## 어떻게 채우나
 
-- 본문 한두 문단으로 *무엇을 / 왜 / 어떤 인터페이스인지* 를 적습니다.
+- 어떤 역할을 맡고 어느 역량을 실현하거나 증명하며, 어느 경로나 인터페이스로
+  그 주장을 확인할 수 있는지 적습니다.
 - frontmatter 키:
   - \`domain: <slug>\` — 상위 도메인 하나
   - \`path: <src/...>\` — 이 요소가 대응하는 코드 경로(선택)

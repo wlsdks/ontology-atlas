@@ -1688,7 +1688,11 @@ export function toolsListSchemaFailure(tools) {
     !/analyze a code repository and propose ontology node candidates/i.test(analyzeTool.description || '') ||
     !/side effect 0 \(vault frontmatter NOT modified\)/i.test(analyzeTool.description || '') ||
     !/Returns deterministic candidates/i.test(analyzeTool.description || '') ||
-    !/should review and selectively pass to add_concept/i.test(analyzeTool.description || '') ||
+    !/construction lifecycle/i.test(analyzeTool.description || '') ||
+    !/reviewPlan/i.test(analyzeTool.description || '') ||
+    !/independent evaluator/i.test(analyzeTool.description || '') ||
+    !/constructionQualification:v1/i.test(analyzeTool.description || '') ||
+    !/writePlan/i.test(analyzeTool.description || '') ||
     !/bootstrap the ontology/i.test(analyzeTool.description || '') ||
     !/Single source of truth preserved/i.test(analyzeTool.description || '')
   ) {
@@ -3726,6 +3730,58 @@ export function initializeInstructionsFailure(response) {
       return `initialize instructions missing ${label}`;
     }
   }
+  return null;
+}
+
+export function initializeToolInventoryFailure(response, tools) {
+  const instructions = response?.result?.instructions;
+  if (typeof instructions !== 'string') return 'initialize tool inventory missing instructions';
+  if (!Array.isArray(tools) || tools.length === 0) {
+    return 'initialize tool inventory cannot compare an empty tools/list';
+  }
+
+  const section = instructions.match(
+    /## Tool inventory \((\d+) tools = read (\d+) \+ write (\d+)\)\s+([\s\S]*?)(?=\n## )/,
+  );
+  if (!section) return 'initialize tool inventory section missing or malformed';
+
+  const parseNames = (label) => {
+    const line = section[4].match(new RegExp(`^\\*\\*${label}\\*\\*\\s+—\\s+(.+)$`, 'm'));
+    if (!line) return null;
+    return [...line[1].matchAll(/`([a-z][a-z0-9_]*)`/g)].map((match) => match[1]);
+  };
+  const readNames = parseNames('read');
+  const writeNames = parseNames('write');
+  if (!readNames || !writeNames) return 'initialize tool inventory read/write lines missing';
+
+  const total = Number(section[1]);
+  const readCount = Number(section[2]);
+  const writeCount = Number(section[3]);
+  if (total !== readCount + writeCount) return 'initialize tool inventory header does not add up';
+  if (readCount !== readNames.length || writeCount !== writeNames.length) {
+    return 'initialize tool inventory counts do not match listed names';
+  }
+  if (new Set([...readNames, ...writeNames]).size !== readNames.length + writeNames.length) {
+    return 'initialize tool inventory contains duplicate names';
+  }
+
+  const expectedRead = tools
+    .filter((tool) => tool?.annotations?.readOnlyHint === true)
+    .map((tool) => tool.name)
+    .sort();
+  const expectedWrite = tools
+    .filter((tool) => tool?.annotations?.readOnlyHint !== true)
+    .map((tool) => tool.name)
+    .sort();
+  if (total !== tools.length || readCount !== expectedRead.length || writeCount !== expectedWrite.length) {
+    return `initialize tool inventory count mismatch — initialize ${total}/${readCount}/${writeCount}, tools/list ${tools.length}/${expectedRead.length}/${expectedWrite.length}`;
+  }
+
+  const sameNames = (actual, expected) => (
+    actual.length === expected.length && [...actual].sort().every((name, index) => name === expected[index])
+  );
+  if (!sameNames(readNames, expectedRead)) return 'initialize tool inventory read names differ from tools/list';
+  if (!sameNames(writeNames, expectedWrite)) return 'initialize tool inventory write names differ from tools/list';
   return null;
 }
 
@@ -8907,9 +8963,15 @@ async function step2BootAndCall() {
         log('fail', inventoryFailure);
         return res(false);
       }
+      const initializeInventoryFailure = initializeToolInventoryFailure(initRes, listRes.result.tools);
+      if (initializeInventoryFailure) {
+        log('fail', initializeInventoryFailure);
+        return res(false);
+      }
       const toolNames = listRes.result.tools.map((t) => t.name).sort();
       log('ok', `tools/list ${toolNames.length}/${EXPECTED_TOOLS.length} (${toolsListAnnotationSummary(listRes.result.tools)}): ${toolNames.join(' · ')}`);
       log('ok', 'tools/list inventory names: missing/extra/duplicate/invalid checks passed');
+      log('ok', 'initialize tool inventory: counts and read/write names match tools/list exactly');
       const schemaFailure = toolsListSchemaFailure(listRes.result.tools);
       if (schemaFailure) {
         log('fail', schemaFailure);

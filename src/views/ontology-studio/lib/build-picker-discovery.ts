@@ -10,6 +10,10 @@
  *   2. 둘러보기 (browse) — 도메인 드릴다운. 기본은 도메인 목록(이름 + 개수),
  *      도메인 클릭 시 그 도메인의 후보 노드 목록.
  *
+ * `isA` 는 예외다. same-domain·이름 유사·이웃의 이웃은 direct subsumption의
+ * 근거가 아니며 이 모델에는 정의 evidence + relation preflight가 없다. 따라서
+ * `isA` 의 suggestions는 비워 두고, 후보는 중립적인 둘러보기에만 남긴다.
+ *
  * 전부 순수 + 결정적 (Date/random 없음) — 컴포넌트는 렌더만 한다. 제외 대상은
  * 세 지점 공통: 초점 노드 자신 + 이미 어느 방위로든 직접 연결된 노드 + 아직
  * 저장 안 된 stage된 대상.
@@ -41,11 +45,12 @@ const CONTAINER_KINDS: ReadonlySet<string> = new Set(["project", "domain"]);
 
 /**
  * 방위(관계)별 kind 적합도(0~1) — 하드 필터(`allowedKinds`) 안에서의 소프트
- * 선호. 예: 상위개념(is_a) 소켓은 도메인/상위 capability 를, 담는 것(contains)
- * 소켓은 element 를 먼저 민다. 표에 없는 kind 는 적합도 0.
+ * 선호. 예: 담는 것(contains) 소켓은 element 를 먼저 민다. `isA` 는 이
+ * topology-only scorer가 추천하지 않으므로 적합도도 비워 둔다. 표에 없는
+ * kind 는 적합도 0.
  */
 const KIND_FIT: Record<StudioRelation, Record<string, number>> = {
-  isA: { domain: 1, capability: 0.7, project: 0.5 },
+  isA: {},
   dependsOn: { capability: 1, element: 0.7 },
   contains: { element: 1, capability: 0.6 },
   relates: { capability: 0.7, element: 0.7, domain: 0.5, project: 0.4 },
@@ -244,9 +249,16 @@ export function buildPickerDiscovery(input: BuildPickerDiscoveryInput): PickerDi
       compareString(a.node.id, b.node.id),
   );
 
-  const suggestions: PickerSuggestion[] = scored
-    .slice(0, maxSuggestions)
-    .map((entry) => ({ candidate: candidateFromNode(entry.node), reason: entry.reason }));
+  // O1.1 — `is_a` needs semantic evidence that every narrower instance
+  // satisfies the broader definition plus a candidate-specific preflight.
+  // This topology-only scorer has neither. Keeping the browse pool below is
+  // useful; calling any of it a recommendation would turn proximity into fact.
+  const suggestions: PickerSuggestion[] =
+    relation === "isA"
+      ? []
+      : scored
+          .slice(0, maxSuggestions)
+          .map((entry) => ({ candidate: candidateFromNode(entry.node), reason: entry.reason }));
 
   // ── 둘러보기 (도메인 드릴다운) ─────────────────────────────────────────
   const nodesByDomainMap = new Map<string, CreateCandidate[]>();

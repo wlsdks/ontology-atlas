@@ -61,12 +61,34 @@ const ALIAS_ID = "element:srcentitiesdocs-vaultlibderive-ontology-from-vaultts";
 
 const nodes = [
   {
+    id: "project:atlas",
+    title: "Atlas",
+    kind: "project",
+    evidenceIds: ["atlas"],
+    hasOwnDocument: true,
+    agentSlug: "atlas",
+    projectIds: [],
+    lastApprovedAt: new Date(0),
+    lastApprovedBy: "vault-frontmatter",
+  },
+  {
     id: "capability:knowledge-graph",
     title: "Knowledge Graph",
     kind: "capability",
     evidenceIds: ["capabilities/knowledge-graph"],
     hasOwnDocument: true,
     agentSlug: "capabilities/knowledge-graph",
+    projectIds: [],
+    lastApprovedAt: new Date(0),
+    lastApprovedBy: "vault-frontmatter",
+  },
+  {
+    id: "capability:knowledge-graph-peer",
+    title: "Knowledge Graph Peer",
+    kind: "capability",
+    evidenceIds: ["capabilities/knowledge-graph-peer"],
+    hasOwnDocument: true,
+    agentSlug: "capabilities/knowledge-graph-peer",
     projectIds: [],
     lastApprovedAt: new Date(0),
     lastApprovedBy: "vault-frontmatter",
@@ -150,6 +172,37 @@ describe("공방 — 이름만 있는 개념을 문서로 만들고 저장", () 
     fireEvent.click(confirm);
     await waitFor(() => expect(mocks.createDoc).toHaveBeenCalled());
   }
+
+  it("keeps an evidence-free enhance UP socket neutral", () => {
+    // beforeEach seeds a pending isA draft for the materialization cases.
+    // Remove it here so this case observes the actual empty enhance state.
+    window.localStorage.clear();
+    render(<OntologyStudioPage />);
+    expect(screen.getByTestId("studio-socket-up")).not.toHaveTextContent("guideBadge");
+  });
+
+  it("does not turn an exact title match into an isA recommendation", () => {
+    window.localStorage.clear();
+    mocks.searchParams = new URLSearchParams({ node: "capability:knowledge-graph" });
+    render(<OntologyStudioPage />);
+    fireEvent.click(screen.getByTestId("studio-socket-up"));
+    fireEvent.change(screen.getByTestId("studio-picker-input"), {
+      target: { value: "Knowledge Graph Peer" },
+    });
+    expect(screen.queryByTestId("studio-picker-similar-accept")).not.toBeInTheDocument();
+    // Deliberate search still returns the neutral candidate row.
+    expect(
+      screen.getByTestId("studio-picker-row-capability:knowledge-graph-peer"),
+    ).toBeInTheDocument();
+  });
+
+  it("does not offer relation-bound create when project isA has no valid target kind", () => {
+    window.localStorage.clear();
+    mocks.searchParams = new URLSearchParams({ node: "project:atlas" });
+    render(<OntologyStudioPage />);
+    fireEvent.click(screen.getByTestId("studio-socket-up"));
+    expect(screen.queryByTestId("studio-picker-create-new")).not.toBeInTheDocument();
+  });
 
   it("문서는 인용이 가리키는 자리에 앉고, title 은 경로가 아니라 사람 이름이다", async () => {
     await saveWithConsent();

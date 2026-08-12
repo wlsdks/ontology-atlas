@@ -5,7 +5,10 @@ import {
   parseWebviewVerifyPayload,
   validateWebviewVerifyPayload,
 } from "./verify-macos-app-launch.mjs";
-import { WEBVIEW_WORKBENCH_MARKERS } from "./lib/verify-macos/webview-env.mjs";
+import {
+  WEBVIEW_WORKBENCH_MARKERS,
+  webviewWorkbenchMarkersForPath,
+} from "./lib/verify-macos/webview-env.mjs";
 
 /**
  * **설치 앱 WebView 페이로드 계약 — 남은 것만 잰다** (2026-08-12).
@@ -69,6 +72,17 @@ test("payload contract · 워크벤치 마커가 현행 한국어 셸을 받는�
     WEBVIEW_WORKBENCH_MARKERS.every((marker) => marker.test("lorem ipsum")),
     false,
   );
+});
+
+test("payload contract · Skills 라우트는 지도 문구 없이 자기 본문으로 증명한다", () => {
+  const markers = webviewWorkbenchMarkersForPath("/ko/skills/");
+  assert.equal(
+    markers.every((marker) =>
+      marker.test("스킬\n에이전트가 가진 스킬이 언제 뜨고 무엇이 돌아가는지 본다."),
+    ),
+    true,
+  );
+  assert.equal(markers.every((marker) => marker.test("Loading local app shell")), false);
 });
 
 test("payload contract · 정상 페이로드는 통과한다", () => {

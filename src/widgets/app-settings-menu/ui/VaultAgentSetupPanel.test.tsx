@@ -63,8 +63,11 @@ function makeLocalVault(
     manifest,
     agentConfigStatus: {
       mcpJson: false,
+      mcpJsonValid: false,
       codexConfig: true,
+      codexConfigValid: true,
       mcpExample: false,
+      mcpExampleValid: false,
     },
     recentVaults: [],
     ensureAgentConfigs: vi.fn().mockResolvedValue({ created: 2, skipped: 1 }),
@@ -124,7 +127,7 @@ describe('VaultAgentSetupPanel', () => {
     // 같은 사실을 세 번 말하던 앰버 배지는 사라졌다 (2026-08-02 디자인 카운슬
     // S2) — 수를 말하는 줄이 바로 아래에 그대로 있고, 그것이 유일한 진술이다.
     expect(screen.queryByText('누락')).toBeNull();
-    expect(screen.getByText('연결 파일 1/3개 준비됨')).toBeInTheDocument();
+    expect(screen.getByText('연결 파일 1/2개 준비됨')).toBeInTheDocument();
     expect(screen.getByText('· 다음: .mcp.json 만들기')).toBeInTheDocument();
     expect(
       screen.getByText('이 폴더 기준으로 설정돼요 · 다른 코드 폴더에서 열려면 절대경로가 필요해요'),
@@ -151,7 +154,7 @@ describe('VaultAgentSetupPanel', () => {
       screen.getByText('고치기 전에 확인 명령을 돌려 「되나」와 「빠른가」를 따로 봅니다.'),
     ).toBeInTheDocument();
     expect(
-      screen.getByText('에이전트를 연 폴더에서 mcp-verify 를 돌려 도구 33개가 잡히는지 봅니다.'),
+      screen.getByText('에이전트를 연 폴더에서 mcp-verify 를 돌려 현재 도구 목록이 맞는지 확인합니다.'),
     ).toBeInTheDocument();
     expect(
       screen.getByText('처음 고치기 전에 폴더 요약(workspace-brief · agent-brief)을 먼저 읽습니다.'),
@@ -186,7 +189,7 @@ describe('VaultAgentSetupPanel', () => {
     ).toBeInTheDocument();
     expect(screen.getByText('서버 연결')).toBeInTheDocument();
     expect(
-      screen.getByText('mcp-verify 가 로컬 서버를 띄우고 도구 33개를 세고, 이 폴더를 실제로 읽어 봅니다.'),
+      screen.getByText('mcp-verify 가 로컬 서버를 띄우고 현재 도구 목록을 확인한 뒤, 이 폴더를 실제로 읽어 봅니다.'),
     ).toBeInTheDocument();
     expect(screen.getByText('확인 명령')).toBeInTheDocument();
     expect(
@@ -204,7 +207,7 @@ describe('VaultAgentSetupPanel', () => {
     expect(screen.getByText('그래프 묶음')).toBeInTheDocument();
     expect(screen.getByText('먼저 확인')).toBeInTheDocument();
     expect(
-      screen.getByText('Claude Code·Codex·Cursor 가 도구 33개를 직접 부르고, 고칠 때 안전장치를 받아요.'),
+      screen.getByText('Claude Code·Codex·Cursor 가 서버의 현재 도구를 직접 부르고, 고칠 때 안전장치를 받아요.'),
     ).toBeInTheDocument();
     expect(
       screen.getByLabelText('서버 연결 확인 명령 미리보기'),
@@ -241,7 +244,7 @@ describe('VaultAgentSetupPanel', () => {
     ).toBeInTheDocument();
     expect(screen.getByText('.mcp.json')).toBeInTheDocument();
     expect(screen.getByText('.codex/config.toml')).toBeInTheDocument();
-    expect(screen.getByText('.mcp.json.example')).toBeInTheDocument();
+    expect(screen.getByText(/\.mcp\.json\.example은 다른 폴더에서 쓸 본보기/)).toBeInTheDocument();
 
     fireEvent.click(
       screen.getByRole('button', { name: '빠진 연결 파일 만들기' }),
@@ -265,19 +268,22 @@ describe('VaultAgentSetupPanel', () => {
     );
   });
 
-  it('AI agent 설정이 모두 있으면 준비됨으로 표시하고 복구 버튼을 숨긴다', () => {
+  it('실제 연결 설정 둘이 유효하면 본보기 파일 없이도 준비됨으로 표시한다', () => {
     renderPanel({
       agentConfigStatus: {
         mcpJson: true,
+        mcpJsonValid: true,
         codexConfig: true,
-        mcpExample: true,
+        codexConfigValid: true,
+        mcpExample: false,
+        mcpExampleValid: false,
       },
     });
 
     // 같은 사실을 세 번 말하던 앰버 배지는 사라졌다 (2026-08-02 디자인 카운슬
     // S2) — 수를 말하는 줄이 바로 아래에 그대로 있고, 그것이 유일한 진술이다.
     expect(screen.queryByText('누락')).toBeNull();
-    expect(screen.getByText('연결 파일 3/3개 준비됨')).toBeInTheDocument();
+    expect(screen.getByText('연결 파일 2/2개 준비됨')).toBeInTheDocument();
     expect(
       screen.queryByRole('button', { name: '빠진 연결 파일 만들기' }),
     ).not.toBeInTheDocument();
@@ -300,10 +306,11 @@ describe('VaultAgentSetupPanel', () => {
     expect(within(connections).getByText('.mcp.json')).toBeInTheDocument();
     expect(within(connections).getByText('Codex')).toBeInTheDocument();
     expect(within(connections).getByText('.codex/config.toml')).toBeInTheDocument();
-    expect(within(connections).getByText('다른 코드 폴더')).toBeInTheDocument();
-    expect(within(connections).getAllByText('파일 준비됨')).toHaveLength(3);
+    expect(within(connections).queryByText('다른 코드 폴더')).not.toBeInTheDocument();
+    expect(within(connections).queryByText('.mcp.json.example')).not.toBeInTheDocument();
+    expect(within(connections).getAllByText('파일 준비됨')).toHaveLength(2);
     expect(
-      screen.getByText('여기서 아는 것은 연결 파일이 있는지까지예요. Ontology Atlas 는 에이전트에 직접 접속하지 않으니, 다시 켠 뒤 각 도구에서 실제 연결을 확인하세요.'),
+      screen.getByText('.mcp.json.example은 다른 폴더에서 쓸 본보기라 연결 파일 수에 넣지 않아요. 여기는 실행 방식과 이 폴더 경로까지만 확인하므로, 다시 켠 뒤 각 도구에서 실제 연결을 확인하세요.'),
     ).toBeInTheDocument();
 
     // 도구별 «어떻게 확인하나» 는 3단계의 내용이다 — 「연결 확인」을 열면 나온다.
@@ -421,7 +428,7 @@ describe('VaultAgentSetupPanel', () => {
     // 같은 사실을 세 번 말하던 앰버 배지는 사라졌다 (2026-08-02 디자인 카운슬
     // S2) — 수를 말하는 줄이 바로 아래에 그대로 있고, 그것이 유일한 진술이다.
     expect(screen.queryByText('누락')).toBeNull();
-    expect(screen.getByText('연결 파일 2/3개 준비됨')).toBeInTheDocument();
+    expect(screen.getByText('연결 파일 1/2개 준비됨')).toBeInTheDocument();
     expect(
       screen.getByText('· 점검: .codex/config.toml 는 Ontology Atlas 연결 설정이 아니에요'),
     ).toBeInTheDocument();

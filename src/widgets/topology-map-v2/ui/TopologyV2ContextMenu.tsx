@@ -153,7 +153,6 @@ export function TopologyV2ContextMenu({
       onExited={onExited}
       origin="top left"
       ref={menuRef}
-      
       {...transientSurface("menu")}
       role="menu"
       data-testid="topology-v2-context-menu"

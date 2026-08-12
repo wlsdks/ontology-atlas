@@ -43,6 +43,59 @@ export interface McpServerLaunch {
   args: readonly string[];
 }
 
+export interface McpServerLaunchInspection {
+  valid: boolean;
+  kind: McpServerLaunchKind | null;
+  reason: 'ready' | 'unsupported-command' | 'invalid-args';
+}
+
+function isAbsoluteLaunchPath(value: string): boolean {
+  return value.startsWith('/') || /^[A-Za-z]:[\\/]/.test(value) || /^\\\\/.test(value);
+}
+
+function normalizedLaunchPath(value: string): string {
+  return value.replace(/\\/g, '/').replace(/\/{2,}/g, '/');
+}
+
+/**
+ * 설정의 문자열에 제품 이름이 들어 있는지가 아니라, Atlas가 실제로 배포하는
+ * 두 stdio 실행 모양 중 하나인지를 판정한다. 파일 존재/실제 기동은 이보다 강한
+ * `mcp-verify` 단계가 맡는다 — 브라우저는 vault 바깥 절대 경로를 stat할 수 없다.
+ */
+export function inspectMcpServerLaunch(
+  command: unknown,
+  args: unknown,
+): McpServerLaunchInspection {
+  if (typeof command !== 'string' || !Array.isArray(args) || args.some((arg) => typeof arg !== 'string')) {
+    return { valid: false, kind: null, reason: 'invalid-args' };
+  }
+
+  const stringArgs = args as string[];
+  if (
+    command === 'node' &&
+    stringArgs.length === 1 &&
+    isAbsoluteLaunchPath(stringArgs[0]) &&
+    normalizedLaunchPath(stringArgs[0]).endsWith('/mcp/src/index.js')
+  ) {
+    return { valid: true, kind: 'source-checkout', reason: 'ready' };
+  }
+
+  const normalizedCommand = normalizedLaunchPath(command);
+  if (
+    stringArgs.length === 0 &&
+    isAbsoluteLaunchPath(command) &&
+    /\/ontology-atlas-mcp(?:\.exe)?$/.test(normalizedCommand)
+  ) {
+    return { valid: true, kind: 'app-bundled', reason: 'ready' };
+  }
+
+  return {
+    valid: false,
+    kind: null,
+    reason: stringArgs.length === 0 && command === 'node' ? 'invalid-args' : 'unsupported-command',
+  };
+}
+
 /** MCP 클라이언트 설정에서 이 서버가 갖는 이름. */
 export const MCP_SERVER_NAME = "ontology-atlas";
 

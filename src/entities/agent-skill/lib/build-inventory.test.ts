@@ -86,6 +86,36 @@ describe("스킬 인벤토리", () => {
     });
   });
 
+  describe("번호 절차 — source-bound process", () => {
+    it("모든 skill에 process를 채우고 scan truncation은 partial ready 대신 unavailable이다", () => {
+      const source = skill(
+        "skills/process/SKILL.md",
+        "process",
+        "follow a process",
+        "1. Inspect references/guide.md.\n2. Report the result.",
+      );
+      const ready = buildSkillInventory({
+        files: [source],
+        existingPaths: new Set(["skills/process/references/guide.md"]),
+      });
+      expect(ready.skills[0].process).toMatchObject({
+        state: "ready",
+        process: { steps: [{ ordinal: 1 }, { ordinal: 2 }], edges: [] },
+      });
+
+      const truncated = buildSkillInventory({
+        files: [source],
+        existingPaths: new Set(["skills/process/references/guide.md"]),
+        scanTruncated: true,
+      });
+      expect(truncated.skills[0].process).toMatchObject({
+        state: "unavailable",
+        scanTruncated: true,
+        diagnostics: [{ code: "scan_truncated" }],
+      });
+    });
+  });
+
   describe("깨진 자기 폴더 참조", () => {
     it("실재 목록을 주면 없는 것만 잡는다", () => {
       const inv = buildSkillInventory({

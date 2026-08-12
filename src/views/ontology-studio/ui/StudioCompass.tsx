@@ -24,9 +24,11 @@ import { usePrefersReducedMotion } from "@/shared/lib/use-prefers-reduced-motion
 import { IconButton, RowButton, Select, Surface, controlClass } from "@/shared/ui";
 import type {
   StudioBearing,
+  StudioRecommendationCandidate,
   StudioRelation,
   StudioSatellite,
 } from "../lib/build-studio-item";
+import { isStudioRecommendationAdmissible } from "../lib/build-studio-item";
 import type { CreateCandidate, CreateNodeKind } from "../lib/build-create-node";
 import type { PickerDiscovery, PickerSuggestionReason } from "../lib/build-picker-discovery";
 import type { DeltaPreviewLayout, DeltaSatellite, DeltaSatelliteState } from "../lib/build-delta-preview";
@@ -48,8 +50,9 @@ const STAGE_LANE_DELAY_MS = 40;
  *   - create:  an all-empty new node. Identity fields are editable in the center
  *     draft card; filling sockets stages pending relations; save applies.
  *
- * Charter: dark only, neutrals + single indigo, amber ONLY on the
- * expected-but-missing (DOWN) socket. No glow/gradient/particle/scale-hover.
+ * Charter: dark only, neutrals + single indigo. Amber is available only to an
+ * evidence-gated expected state; the current runtime supplies none. No
+ * glow/gradient/particle/scale-hover.
  * Every string is a resolved `label`, so this renders in isolation and is
  * unit-testable. Data + writes live in `OntologyStudioPage`.
  */
@@ -79,8 +82,8 @@ export interface CompassBearingView {
   emptyHint: string;
   neighbors: StudioSatellite[];
   filled: boolean;
-  recommended: boolean;
-  expected: boolean;
+  recommendation: StudioRecommendationCandidate | null;
+  expectation: StudioRecommendationCandidate | null;
   /**
    * This lane carries an unsaved (저장 대기) relation — every create-mode fill,
    * and any enhance-mode lane with a staged neighbor. Drives the slow dash-flow
@@ -112,6 +115,8 @@ export interface StudioCompassLabels {
   /** (name) → the one calm frame prompt. */
   framePrompt: (name: string) => string;
   guideBadge: string; // "여기부터 채워요"
+  socketAriaNeutral: (question: string) => string;
+  socketAriaRecommended: (question: string) => string;
   /** (filled, total) → bottom progress "4개 중 2개 채웠어요 · N군데 남음". */
   bottomProgress: (filled: number, total: number) => string;
   save: string;
@@ -259,6 +264,8 @@ export interface StudioCompassProps {
    * opens carrying the origin (A --relation--> new) + a name prefill.
    */
   onCreateNew?: (ctx?: { relation: StudioRelation; query: string }) => void;
+  /** Relation-bound create is shown only when its target-kind window is non-empty. */
+  canCreateNew?: (relation: StudioRelation) => boolean;
   /**
    * C2 — quiet create-mode context line ("‘A’ 의 ‘담는 것’ 으로 이어질 예정"),
    * present only when CREATE was opened from a socket. Omit → no line.
@@ -1271,6 +1278,10 @@ export function StudioCompass(props: StudioCompassProps) {
           >
             {layouts.map(({ view, layout }) => {
               const lit = view.bearing === activeBearing;
+              const expected = isStudioRecommendationAdmissible(
+                view.expectation,
+                view.relation,
+              );
               // A staged (not-yet-saved) filled lane flows a slow indigo dash —
               // the map's comet grammar — so a pending connection reads as alive.
               const flowing = view.filled && Boolean(view.staged);
@@ -1280,7 +1291,7 @@ export function StudioCompass(props: StudioCompassProps) {
                   : "var(--color-indigo-brand)"
                 : lit
                   ? "var(--color-indigo-hover)"
-                  : view.expected
+                  : expected
                     ? "var(--color-amber-muted-a62)"
                     : "var(--color-border-strong)";
               return layout.struts.map((d, i) => (
@@ -1388,6 +1399,10 @@ export function StudioCompass(props: StudioCompassProps) {
               onPick={pick}
               onClose={closePicker}
               onCreateNew={props.onCreateNew}
+              canCreateNew={
+                Boolean(props.onCreateNew) &&
+                (props.canCreateNew?.(heldPicker.relation) ?? true)
+              }
             />
           ) : null}
 
@@ -1704,9 +1719,12 @@ function CenterCard(
   const borderFor = (bearing: StudioBearing) => {
     const v = bearings.find((b) => b.bearing === bearing);
     const lit = bearing === activeBearing;
+    const expected = v
+      ? isStudioRecommendationAdmissible(v.expectation, v.relation)
+      : false;
     if (v?.filled) return `2px solid ${lit ? "var(--color-indigo-hover)" : "var(--color-indigo-brand)"}`;
     if (lit) return "2px solid var(--color-indigo-hover)";
-    if (v?.expected) return "1.5px dashed var(--color-amber-muted-a62)";
+    if (expected) return "1.5px dashed var(--color-amber-muted-a62)";
     return "1.5px dashed var(--color-border-strong)";
   };
   return (
@@ -1997,6 +2015,14 @@ function LaneRender({
    * 했다). 그래서 창만 열면 된다.
    */
   const foldPresence = usePanelPresence(foldOpen);
+  const recommended = isStudioRecommendationAdmissible(
+    view.recommendation,
+    view.relation,
+  );
+  const expected = isStudioRecommendationAdmissible(
+    view.expectation,
+    view.relation,
+  );
   const satNav = (id: string) => {
     if (onOpenNode) return () => onOpenNode(id);
     return undefined;
@@ -2037,7 +2063,7 @@ function LaneRender({
    * 소켓은 거기서 한 번 더 눌러야 태어난다.
    */
   const socketInk =
-    view.recommended || view.expected
+    recommended || expected
       ? "text-[color:var(--color-text-tertiary)]"
       : "text-[color:var(--color-text-quaternary)]";
   /**
@@ -2208,6 +2234,12 @@ function LaneRender({
           type="button"
           data-testid={`studio-socket-${view.bearing}`}
           data-relation={view.relation}
+          data-recommendation-state={recommended ? "recommended" : "neutral"}
+          aria-label={
+            recommended
+              ? labels.socketAriaRecommended(view.question)
+              : labels.socketAriaNeutral(view.question)
+          }
           onClick={onOpen}
           {...hoverProps}
           className={cn(
@@ -2238,23 +2270,23 @@ function LaneRender({
             // 그래서 좌·우는 자란 만큼을 위아래로 나눠 갖는다(위 `top`).
             minHeight: layout.socket.h,
             ...stageStyle,
-            border: view.recommended
+            border: recommended
               ? "2px dashed var(--color-indigo-a46)"
-              : view.expected
+              : expected
                 ? "1.5px dashed var(--color-amber-muted-a62)"
                 : "1.5px dashed var(--color-border-strong)",
-            background: view.recommended
+            background: recommended
               ? "var(--color-indigo-a12)"
-              : view.expected
+              : expected
                 ? "var(--color-amber-muted-a18)"
                 : "transparent",
           }}
         >
-          {view.recommended ? (
+          {recommended ? (
             <span className="inline-flex items-center gap-1 rounded-chip bg-[color:var(--color-indigo-a16)] px-1.5 py-0.5 text-label font-[var(--font-weight-emphasis)] tracking-[var(--tracking-label)] text-[color:var(--color-indigo-text-soft)]">
               ◈ {labels.guideBadge}
             </span>
-          ) : view.expected ? (
+          ) : expected ? (
             <span className={`flex w-full items-start gap-1.5 text-label ${socketInk}`}>
               <span className="mt-[3px] h-1.5 w-1.5 flex-none rounded-full bg-[color:var(--color-amber-signal-a60)]" />
               <span className="min-w-0 [overflow-wrap:anywhere]">{view.emptyHint}</span>
@@ -2688,6 +2720,7 @@ function InlinePicker({
   onPick,
   onClose,
   onCreateNew,
+  canCreateNew,
 }: {
   /** 퇴장 창(140ms) 동안 `true` — 되접히며 나가고, 그 사이 조작을 받지 않는다. */
   exiting: boolean;
@@ -2707,6 +2740,7 @@ function InlinePicker({
   onPick: (c: CreateCandidate) => void;
   onClose: () => void;
   onCreateNew?: (ctx?: { relation: StudioRelation; query: string }) => void;
+  canCreateNew: boolean;
 }) {
   const W = 300;
   const { left, top, maxHeight } = placePicker(bearing, socket, cardLeft, cardRight);
@@ -2936,7 +2970,7 @@ function InlinePicker({
           </span>
         </div>
       ) : null}
-      <div className="border-t border-[color:var(--color-divider)] p-2">
+      {canCreateNew ? <div className="border-t border-[color:var(--color-divider)] p-2">
         <button
           type="button"
           data-testid="studio-picker-create-new"
@@ -2946,7 +2980,7 @@ function InlinePicker({
           <Plus size={ICON_SIZE.md} aria-hidden className="text-[color:var(--color-text-tertiary)]" />
           {labels.pickerCreateNew}
         </button>
-      </div>
+      </div> : null}
     </div>
   );
 }
@@ -3095,14 +3129,14 @@ function MiniRose({ bearings }: { bearings: CompassBearingView[] }) {
         </>
       );
     }
-    if (v?.recommended)
+    if (v && isStudioRecommendationAdmissible(v.recommendation, v.relation))
       return (
         <>
           <circle {...common} r={3.6} fill="none" stroke="var(--color-indigo-line-a45)" strokeWidth={1.6} />
           <circle {...common} r={1.4} fill="var(--color-indigo-brand)" />
         </>
       );
-    if (v?.expected)
+    if (v && isStudioRecommendationAdmissible(v.expectation, v.relation))
       return <circle {...common} r={3.6} fill="none" stroke="var(--color-amber-muted-a62)" strokeWidth={1.6} />;
     return <circle {...common} r={3.6} fill="none" stroke="var(--color-border-soft)" strokeWidth={1.4} />;
   };

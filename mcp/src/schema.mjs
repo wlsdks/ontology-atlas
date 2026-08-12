@@ -32,6 +32,20 @@ import { randomUUID } from 'node:crypto';
 export const VAULT_KINDS = ['project', 'domain', 'capability', 'element', 'document'];
 
 /**
+ * Public semantic contract for choosing a kind or relation.
+ *
+ * The schema below owns mechanical frontmatter shape. It deliberately does not
+ * duplicate the human/agent meaning tests: every authoring channel points to
+ * the one public contract instead.
+ */
+export const ONTOLOGY_META_MODEL_REFERENCE =
+  'https://github.com/wlsdks/ontology-atlas/blob/main/docs/ONTOLOGY-ATLAS-SPEC.md#2-the-five-authorable-node-kinds-and-reserved-reader-kind';
+
+function metaModelStarterLine() {
+  return `Kind and relation contract: ${ONTOLOGY_META_MODEL_REFERENCE}\n`;
+}
+
+/**
  * Node identity v1 (2026-08-02 decision ledger).
  *
  * `uid` is the immutable machine identity. It is deliberately random rather
@@ -267,7 +281,8 @@ export const VAULT_KIND_SCHEMA = {
       `## How it grows\n\n` +
       `- Fill \`domains: [...]\` in the frontmatter and the domain nodes hang\n` +
       `  off the project tree automatically.\n` +
-      `- Each domain's capabilities and elements follow the same pattern.\n`,
+      `- Each domain's capabilities and elements follow the same pattern.\n\n` +
+      metaModelStarterLine(),
   },
   domain: {
     folder: 'domains/',
@@ -288,8 +303,9 @@ export const VAULT_KIND_SCHEMA = {
     ],
     bodyTemplate: (title) =>
       `# ${title}\n\n` +
-      `A *domain* is a large area of the project (auth, billing, search, …). ` +
-      `Describe in one or two paragraphs what it covers and which capabilities live inside.\n`,
+      `Describe the stable responsibility or problem boundary, what it includes, ` +
+      `what it excludes, and the evidence that makes it more than a folder or team.\n\n` +
+      metaModelStarterLine(),
   },
   capability: {
     folder: 'capabilities/',
@@ -316,7 +332,9 @@ export const VAULT_KIND_SCHEMA = {
     ],
     bodyTemplate: (title) =>
       `# ${title}\n\n` +
-      `A *capability* is one user-visible feature within a domain. Describe what it does and one or two user scenarios.\n`,
+      `Describe the observable, implementation-independent ability, its boundary, ` +
+      `and the evidence or scenario that proves the product or system can perform it.\n\n` +
+      metaModelStarterLine(),
   },
   element: {
     folder: 'elements/',
@@ -340,7 +358,9 @@ export const VAULT_KIND_SCHEMA = {
     ],
     bodyTemplate: (title) =>
       `# ${title}\n\n` +
-      `An *element* is a smaller unit a capability uses (jwt-token, indexeddb-adapter, sigma-canvas, …). Cover *what / why / which interface*.\n`,
+      `Describe the distinct implementation role, what it realizes or proves, and ` +
+      `the source path or interface that supports the claim. A path alone is evidence, not a node.\n\n` +
+      metaModelStarterLine(),
   },
   document: {
     folder: '',
@@ -348,7 +368,10 @@ export const VAULT_KIND_SCHEMA = {
     optional: ['describes', 'relates', 'display', CREATED_BY_KEY],
     requiredExtras: [],
     preferredOrder: ['uid', 'merged_uids', 'slug', 'kind', 'title', 'display', 'describes', 'relates', CREATED_BY_KEY],
-    bodyTemplate: (title) => `# ${title}\n`,
+    bodyTemplate: (title) =>
+      `# ${title}\n\n` +
+      `State what this narrative or reference artifact explains and which graph concept it describes.\n\n` +
+      metaModelStarterLine(),
   },
 };
 

@@ -19,7 +19,7 @@ const DEFAULT_THRESHOLDS = Object.freeze({
 export const COMPETENCY_QUESTION_CONTRACTS = MEANING_COMPETENCY_QUESTIONS;
 
 const COMPETENCY_STATUSES = new Set(['answered', 'partial', 'visible-gap']);
-const PYTHON_SELECTED_IMPORT_ELEMENT_LIMIT = 4;
+const SELECTED_IMPORT_ELEMENT_LIMIT = 4;
 const COMPETENCY_WITNESS_KEYS = Object.freeze([
   'concepts',
   'relations',
@@ -327,12 +327,12 @@ export function validateMeaningProposalAgainstAnalysis(
   const selectedImportEndpointElements = proposal.elements.filter(
     (row) => importEndpointSources.has(row.path) && !importBoundarySources.has(row.path),
   );
-  if (selectedImportEndpointElements.length > PYTHON_SELECTED_IMPORT_ELEMENT_LIMIT) {
+  if (selectedImportEndpointElements.length > SELECTED_IMPORT_ELEMENT_LIMIT) {
     findings.push(finding(
       'python-selected-import-element-limit',
       'error',
       'elements',
-      `Select at most ${PYTHON_SELECTED_IMPORT_ELEMENT_LIMIT} exact Python import endpoints beyond the analyzer boundaries; received ${selectedImportEndpointElements.length}.`,
+      `Select at most ${SELECTED_IMPORT_ELEMENT_LIMIT} exact import endpoints beyond the analyzer boundaries; received ${selectedImportEndpointElements.length}.`,
       selectedImportEndpointElements.map((row) => row.path),
     ));
   }
@@ -457,7 +457,7 @@ export function validateMeaningProposalAgainstAnalysis(
         'unobserved-python-import-dependency',
         'error',
         path,
-        `Python import evidence does not support this dependency direction: ${relation.from} --depends_on--> ${relation.to}`,
+        `Observed import evidence does not support this dependency direction: ${relation.from} --depends_on--> ${relation.to}`,
         relation.evidence,
       ));
     }
@@ -474,7 +474,7 @@ export function validateMeaningProposalAgainstAnalysis(
         'unobserved-python-import-dependency',
         'error',
         path,
-        `Python import evidence does not support this exact file dependency direction: ${fromPath} -> ${toPath}`,
+        `Observed import evidence does not support this exact file dependency direction: ${fromPath} -> ${toPath}`,
         relation.evidence,
       ));
     }
@@ -802,7 +802,8 @@ function validateCitationsAndConfidence({
           `Temporal, negated, or deprecated ${label} evidence needs an independent current-state source: ${source}`,
           [source],
         ));
-      } else {
+      // Structural candidates prove paths, not independent current product meaning.
+      } else if (semantic) {
         safeSources.push(source);
       }
     }

@@ -2,6 +2,7 @@ import {
   MEANING_WITNESS_INVENTORY_CONTRACT,
 } from './meaning-assessment.mjs';
 import { WRITE_RELATION_TYPE_VALUES } from './ontology-engine.mjs';
+import { extractProjectMeaningEvidencePaths } from './project-meaning-evidence.mjs';
 
 const MAX_SCOPE_NODES = 500;
 const ALLOWED_RELATION_TYPES = new Set(WRITE_RELATION_TYPE_VALUES);
@@ -205,6 +206,15 @@ export function buildProjectMeaningInventory({
     const path = doc?.frontmatter?.path;
     if (scope.has(doc?.slug) && safeRelativePath(path)) {
       claims.add(`${doc.slug}\0${path}`);
+    }
+    if (
+      scope.has(doc?.slug)
+      && doc?.frontmatter?.kind === 'project'
+      && (doc.slug === projectSlug || doc.frontmatter?.slug === projectSlug)
+    ) {
+      for (const evidencePath of extractProjectMeaningEvidencePaths(doc.body)) {
+        claims.add(`${doc.slug}\0${evidencePath}`);
+      }
     }
   }
   const evidence = new Set();

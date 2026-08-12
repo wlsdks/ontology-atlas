@@ -7,6 +7,239 @@
 
 ---
 
+## 2026-08-12 · 사람은 검수 결론부터 읽고, 에이전트는 Skill 절차를 손실 없이 넘겨받는다
+
+- 프로젝트 상세의 `검수 결과 열기`가 한 local qualification envelope을 session에서만
+  읽는다. 기본 화면은 목적, 현재/다음 결정, 첫 blocker·diagnostic, red/unknown/conflict,
+  사람 승인, exact plan count를 숨기지 않는다. 같은 결과의 CQ·witness/citation span+digest,
+  examples/counterexamples, 일곱 품질축, diagnostics, exact review/write plan은
+  `근거·진단 보기`에서 펼친다.
+- malformed, 다른 project, plan/source digest mismatch, review/write plan 불일치는 정상
+  판정처럼 보이지 않고 fail-closed다. 작성 후 maintenance는 완료된 qualification과 분리한다.
+  파일은 업로드·기억·vault write하지 않는다.
+- `/skills`는 `SKILL.md`의 번호 절차를 exact text·원문 순서·line span·source digest와 함께
+  flat ordered rail로 보여 준다. truncated/unsupported source는 일부 rail을 만들지 않고
+  unavailable로 닫으며, resource 존재 여부와 diagnostic을 step에 묶는다.
+- 명시 문법에 정확히 맞는 branch/retry/stop/verify만 source-bound 텍스트 라벨로 표시한다.
+  keyword 추측이나 inferred edge는 없고 ambiguous 문장은 diagnostic으로 남는다.
+- 1024px 미만 Skills는 목록↔상세 drill-in으로 바뀌고 검색·선택·스크롤·열린 step과 포커스를
+  복원한다. `packet 복사`는 canonical UTF-8 process packet과 두 digest를 clipboard 성공 뒤에만
+  전달하며 unavailable/tampered 상태에서는 차단한다. file export나 새 MCP/CLI 명령은 없다.
+
+## 2026-08-10 · 저장소에 이미 있던 의미 문서와 import 근거가 proposal까지 이어진다
+
+O1.5 첫 세 제품에서 원본의 architecture/product 문서와 TypeScript import endpoint가
+portable proposal 검증에 도달하지 않던 evidence ingress를 수리했다.
+
+- 루트 `ARCHITECTURE.md`와 `docs/`·`site/`·`website/`의 introduction/overview를 포함한
+  의미 문서를 bounded discovery로 찾는다. 전체 200개 Markdown, 최종 6개 문서, 문서당
+  1,200자라는 기존 작은 packet 경계는 유지한다.
+- 일반 의미 문서는 읽기 전 256 KiB에서 멈추고, 세 root의 전체 walk는 1,000 entry에서
+  끝난다. 이미 방문한 실제 directory를 다시 따라가지 않아 저장소 내부 symlink cycle도
+  `skipped` 진단으로 안전하게 닫힌다.
+- archive류와 repository 밖 symlink는 의미 근거가 되지 않는다.
+- Proposal이 들어온 `analyze_repo_structure`는 기존 `infer_imports` receipt를 같은 호출에서
+  재계산하므로 TS/JS/Python exact endpoint와 방향을 이전 호출의 숨은 상태 없이 검증한다.
+- import 경로는 여전히 구조 근거다. business meaning이나 `depends_on`을 자동 생성하지 않고,
+  human-approved qualification 전에는 `writePlan`과 vault write가 없다.
+
+루트 architecture·문서 사이트·과대 문서·symlink escape/broken/cycle·전체 walk budget·TypeScript
+정방향/역방향 회귀 테스트를 추가했고, 각 방어가 없으면 정확히 RED가 되는 probe를 확인했다.
+세 fresh Sol 재qualification은 TypeScript FDE와 Rust review plan을 개선했지만 Python은
+동일했고 셋 모두 정직하게 `not-qualified`·write 0으로 끝났다. 공개 MCP tool 수, 입출력
+schema, ontology kind/frontmatter, UI는 바뀌지 않았다. O1.5는 human-owned exact plan의
+post-write source-hidden 재사용을 증명할 때까지 `in_progress`다.
+
+## 2026-08-10 · 파일 경로가 위험한 제품 의미를 증명하지 않는다
+
+세 낯선 제품의 독립 ontology-construction trial은 모두 정직하게 미통과했다. vault 쓰기는
+0건으로 막혔지만, 한 plan에서 시간성·부정·폐기 표현 때문에 검토가 필요한 README와 평범한
+소스 디렉터리를 함께 인용하자 proposal validator가 그 디렉터리를 독립 current-state 의미
+근거로 잘못 세는 결함이 드러났다.
+
+- 구조 후보와 실제 경로는 계속 element 위치와 import evidence를 증명한다.
+- 위험 표시된 project/domain/capability/relation 의미를 corroborate하려면 이제 analysis
+  packet 안의 별도 신뢰 가능한 semantic evidence가 필요하다.
+- trusted semantic source가 실제로 함께 있으면 기존처럼 proposal을 검토 단계로 진행한다.
+- 결함을 되살리면 정확히 RED가 되는 regression test와 mutation probe를 추가했다.
+
+이전 exact proposal replay는 `pass`에서 `risky-citation-unconfirmed` 5건의 `fail`로
+바뀌었다. 수정된 MCP만 받은 별도 fresh Sol도 구조 디렉터리를 의미 근거로 승격하지 않고
+첫 proposal부터 마지막까지 차단했으며, review/write plan과 vault write는 모두 0이었다.
+
+공개 MCP tool·입력 schema·vault kind·frontmatter·UI는 바꾸지 않았다. O1.5는 아직
+`in_progress`이며, 다음은 원본의 current architecture/product contract와 implementation
+entrypoint를 bounded portable packet에 포함시키는 evidence ingress 수리다. 세 제품이 독립
+semantic·functional·evidence·pragmatic 판정을 통과하기 전 기본/전문가 UI를 열지 않는다.
+
+## 2026-08-09 · 사용자가 본 계획만 독립 검증 뒤 온톨로지에 기록된다
+
+기존 `analyze_repo_structure`는 proposal 검사가 통과하면 사용자 승인 전에도
+`canWrite:true`와 `writePlan`을 내보냈다. 문서가 승인을 요구해도 MCP 계약 자체는
+agent가 그 단계를 건너뛰는 것을 막지 못했다.
+
+- 첫 proposal 호출은 이제 `reviewPlan`, plan/source digest, 여덟 lifecycle 단계,
+  모든 `requiredGapId`만 반환한다. `canWrite`는 false이고 `writePlan`은 없다.
+- maker와 분리된 evaluator가 네 사용자군 CQ, current claim/citation, 일곱 품질축,
+  전체 source-hidden task, cold-start 또는 이전 CQ regression을 측정해야 한다.
+- 사용자는 정확히 그 plan digest/revision과 남은 gap을 본 뒤 승인한다. 승인은 선언된
+  provenance이며 Atlas가 신원을 인증하거나 의미를 진리로 보증한다는 뜻이 아니다.
+- unchanged proposal과 완전한 `constructionQualification:v1` packet을 다시 제출해야만
+  처음 본 `reviewPlan`과 동일한 `writePlan`이 풀린다. source/plan drift, maker-only,
+  `not_measured`, stale/private evidence, red mandatory axis, regression 실패, 승인되지 않은
+  gap은 모두 fail-closed다.
+- `/ontology-bootstrap`과 MCP initialize prompt도 같은 순서를 사용하며, 쓰기 뒤에는
+  validate·compile·source connect·`finalize_project_meaning`까지 완료해야 한다.
+
+새 tool·kind·frontmatter·UI·sidecar는 추가하지 않았다. 기존 read tool 하나를 두 단계로
+사용하고, 기존 project competency body와 finalizer receipt를 그대로 재사용한다. 따라서
+CQ revision·axis·exact gap acceptance·pre-write regression 상세는 현재 MCP 응답/agent
+transcript의 증거이며 재시작 뒤 자동 복원된다고 주장하지 않는다. 그 필요성은 O1.5
+fresh-process trial이 실제 손실을 재현할 때만 별도 storage 결정으로 다시 연다.
+
+## 2026-08-09 · 구조가 초록이어도 의미가 빨강이면 온톨로지는 합격하지 않는다
+
+문법상 올바른 vault가 모든 사용자 질문에 유용하고 정확한 것은 아니다. 기존의 다섯
+competency question 평가는 일부 `each` 누락을 막았지만, 구축 전체를 한 번에 다시
+실행할 수 있는 요구·주장·출처·독립 판정 계약은 없었다.
+
+- executive·직원·FDE·agent의 결정 시나리오와 사람이 승인한 버전별 CQ를 한 packet에
+  묶었다. expected answer, quantifier, target, unknown/refusal, 예시와 반례가 빠지면
+  유효한 qualification이 아니다.
+- `each`는 target 문자열을 나열해서 통과하지 않는다. target마다 current witness와
+  supported claim이 연결돼야 하며, 미지원 target은 그대로 uncovered로 남는다.
+- semantic·structural·functional·evidence/provenance·pragmatic·maintainability·interop
+  일곱 축을 별도로 판정한다. 한 축의 실패나 unknown을 다른 green이나 node count,
+  속도, 비용으로 평균내지 않는다.
+- 오래된 witness, claim의 citation 누락, maker self-evaluation, agent의 CQ 승인,
+  출처 없는 pass, 분류되지 않은 red를 fail-closed로 고정했다. `partial`·`unknown`·
+  `refused`는 숨기지 않는다.
+- claim/citation accuracy와 시간·호출·token·비용은 서로 다른 측정값으로 반환한다.
+  fixture는 재실행 계약의 표본이며 세 실제 제품을 합격시켰다는 증거는 아니다.
+
+이 단계는 vault schema·kind·공개 MCP tool·UI를 바꾸지 않는다. 다음 `M1.5`가 이 계약을
+실제 bootstrap/MCP lifecycle에 연결하고, 그 뒤 `O1.5`가 세 낯선 제품에서 독립 검증한다.
+
+## 2026-08-09 · 공방이 근거 없는 상위개념을 추천하지 않는다
+
+공방은 첫 빈 UP 소켓과 같은 domain의 이름 비슷한 노드를 상위개념처럼 밀었다.
+사용자는 단순한 안내 색을 따라가도 `broader`라는 실제 의미 주장을 저장할 수 있었고,
+이는 “같은 곳에 있다”와 “모든 사례가 더 넓은 정의를 만족한다”를 혼동했다.
+
+- 빈 소켓은 이제 전부 중립이며 접근성 이름도 `추천 근거 없음`을 명시한다. 네 방위와
+  쉬운 질문은 그대로라 일반 사용자는 기존 방식으로 누르고 둘러볼 수 있다.
+- 추천 표시는 근거 설명, 근거 참조, 대상·관계가 일치하는 safe-to-add preflight가
+  함께 있을 때만 켜진다. 현재 projection에는 그 영수증이 없으므로 추천 0개가
+  의도된 정직한 상태다.
+- `is_a`는 domain→domain, capability→capability, element→element만 후보로 삼는다.
+  같은 domain·이름·인접성은 추천에서 빠지지만 같은 kind 후보는 Browse에 남는다.
+- project→`is_a`처럼 허용 대상이 없는 새 노드 흐름은 모든 종류로 몰래 넓어지지
+  않는다. exact-name 중복 안내도 `is_a` 관계 근거인 것처럼 연결을 권하지 않는다.
+
+Compass 배치·방위·색 토큰·간격·모션·picker primitive는 새로 만들지 않았다. 실제
+1512px 화면에서 중립 소켓 무겹침과 Browse 도달을 측정했고, 390px의 넓은 화면 안내,
+재빌드한 설치 앱의 WebView·스크린샷·Codex Computer Use 흐름까지 확인했다.
+
+## 2026-08-09 · 사람과 agent가 같은 5-kind·관계 경계에서 온톨로지를 만든다
+
+Atlas의 kind 설명이 문서·스타터·MCP·앱 agent 사이에 흩어져 `document`와 예약
+`vault-readme`가 빠지거나, 폴더·팀·워크플로를 domain/capability로 오인하고,
+실제로 없는 `is_a` relation API나 RDF/OWL 추론을 기대할 여지가 있었다.
+
+- 공개 vault spec 한 곳이 5개 authorable kind의 포함·제외·예시·반례와 예약 reader
+  kind를 소유한다. 경로는 element의 근거일 수 있지만 경로 자체가 개념은 아니다.
+- `broader`는 narrower → direct broader 저장 키이고 UI가 `is_a`로 보여 준다는 것,
+  현재 공개 relation API에는 없어서 mtime을 지키는 `patch_concept` 경로가 필요하다는
+  것을 숨기지 않는다.
+- Atlas는 자동 inverse/transitive inference나 RDF/OWL/SKOS/SHACL conformance를
+  제공하지 않는다고 명시했다. machine-readable graph를 formal reasoner라고 부르지 않는다.
+- MCP server instructions, 앱 내 agent prompt, CLI/웹 첫 볼트, bootstrap/field-trial
+  스킬이 같은 정본을 가리킨다. 폴더·팀·워크플로 자동 승격 negative fixture와
+  prompt/template parity 계약이 drift를 막는다.
+- 정본 블록을 실제 MCP consumer에서 제거하면 계약이 실패하고 복구하면 통과하는
+  gate probe를 확인했다. Atlas 자체 볼트도 기존 schema-authoring 개념을 갱신했으며
+  새 kind나 중복 노드는 만들지 않았다.
+
+렌더링 UI·레이아웃·색·간격·모션은 바뀌지 않았다. 따라서 디자인 토큰이나 설치 앱
+번들을 건드리지 않고, 사람이 승인할 의미와 agent가 자동 구축할 경계만 정밀하게 했다.
+
+## 2026-08-09 · MCP 첫 안내와 실제 도구 목록이 항상 같다
+
+MCP 연결 직후 agent가 읽는 initialize 안내는 도구가 33개라고 적으면서 실제
+`tools/list`는 35개를 반환했고, read-only 모드에서도 사용할 수 없는 write 도구를
+계속 안내했다. 이제 count와 read/write 이름 집합은 실행 중인 동일한 registry에서
+파생된다.
+
+- full 모드와 read-only 모드의 initialize inventory가 각 세션의 `tools/list`와
+  정확히 일치한다. read-only 안내에는 write 도구가 하나도 나타나지 않는다.
+- `mcp-verify`가 live 목록과 initialize header·분류·이름을 독립적으로 비교한다.
+  count 오염과 read-only write 누출을 다시 넣으면 실제로 실패하는 것도 확인했다.
+- Settings와 새 볼트 starter는 변하기 쉬운 숫자와 전체 이름 목록을 보여 주지 않는다.
+  일반 사용자는 `mcp-verify`로 연결만 확인하고, 정확한 목록이 필요한 agent·전문가는
+  `tools/list`를 읽는다.
+- 현재 README·가이드·launch 문서와 self-ontology는 같은 정본을 가리킨다. 역사와
+  archive의 당시 숫자는 보존했다.
+
+새 레이아웃·색·간격·모션은 만들지 않았다. 기존 설정 화면의 정보 위계를 유지하면서
+사람에게는 더 짧게, agent에게는 더 정확하게 보이도록 first-contact 계약만 바꿨다.
+
+## 2026-08-09 · quick-start가 실패를 성공이라고 말하지 않는다
+
+`init --quick-start`는 vault와 agent config를 먼저 쓴 뒤 bootstrap을 실행한다.
+종전에는 bootstrap/MCP가 실패해 exit 2가 되어도 마지막에 초록색 `quick start done`,
+`bootstrapped`, `MCP already wired`를 출력해 사람에게 서로 반대인 상태를 말했다.
+
+- 실패 경로는 이제 yellow `quick start incomplete`로 끝난다. vault scaffold와
+  agent config가 이미 작성됐다는 사실은 보존하되 **unverified**라고 명시한다.
+- agent 재시작·질문을 권하지 않고, 같은 cwd에서 그대로 실행 가능한
+  `mcp-verify … --timeout-ms 15000` 진단과 `bootstrap …` 재시도 명령을 보여 준다.
+- 성공 경로의 짧은 3-step과 exit 0은 바뀌지 않았다.
+- 실제 tarball 검증 중 MCP package에서 runtime import 한 파일이 빠져 정상
+  quick-start도 죽는 결함을 발견했다. 누락 파일을 manifest에 포함하고, packed CLI
+  smoke가 성공과 주입된 실패 양쪽의 exit·문구를 함께 검증하게 했다.
+
+화면과 디자인 시스템은 바뀌지 않았다. 생성됨·검증됨·연결됨을 같은 말로 뭉개지
+않도록 CLI onboarding의 상태 provenance만 바로잡은 변경이다.
+
+## 2026-08-09 · `ready`가 실제로 실행 가능한 에이전트 설정을 뜻한다
+
+설치할 수 없는 `npx -y ontology-atlas-mcp` 설정이 준비 완료로 보이고, 반대로
+정상적인 source checkout 설정이 실패로 보이던 양방향 신뢰 결함을 고쳤다.
+
+- source checkout은 `node`가 절대 경로의 `mcp/src/index.js` 하나를 실행할 때,
+  설치 앱은 절대 경로의 `ontology-atlas-mcp` 번들을 직접 실행할 때만 valid다.
+  이름이 비슷한 명령, 추가 인자, npm launch는 repair 대상으로 남는다.
+- Settings의 준비 분모는 실제 클라이언트가 읽는 `.mcp.json`과
+  `.codex/config.toml` 두 개뿐이다. `.mcp.json.example`은 복사·병합용 template로
+  계속 제공하지만 연결 파일인 척 `3`에 포함하지 않는다.
+- CLI는 실행 대상 파일의 존재까지 확인한다. 브라우저 UI는 접근할 수 없는 앱
+  번들·체크아웃을 실행했다고 가장하지 않고 launch shape와 vault 좌표를 확인하며,
+  실제 연결은 재시작 뒤 `mcp-verify`가 별도로 증명한다.
+
+Node 24 fresh init에서 활성 config 4/4와 stdio MCP 35/35를 확인했고, 새로 빌드한
+`/Applications/Ontology Atlas.app`을 Codex Computer Use로 열어 Settings의 `2/2`,
+정확히 두 설정 행, template 제외 안내를 확인했다. 새 색·간격·모션은 만들지 않고
+기존 설정 행과 디자인 시스템을 그대로 사용했다.
+
+## 2026-08-09 · 승인한 competency 근거가 finalize와 다음 agent까지 이어진다
+
+`analyze_repo_structure`가 `canWrite:true`로 승인한 proposal을 그대로 작성해도,
+project의 competency 답에만 있던 `README.md` 같은 근거가 source receipt 단계에서
+사라져 `finalize_project_meaning`이 같은 답을 거절하는 단절을 고쳤다.
+
+- project Markdown의 정확한 `## Competency answers` 절 안에 있는 `Evidence`와
+  `Paths` 행은 이제 앱과 MCP가 같은 source witness로 읽는다. 실제 연결된 코드
+  폴더에 존재하는지는 기존 bounded probe가 다시 확인한다.
+- 임의 본문에 파일명을 적는 것만으로는 근거가 되지 않는다. 절대 경로·상위 폴더
+  이동·형식이 깨진 행은 fail-closed이며 private source root는 Markdown·receipt·
+  `agent_brief`에 들어가지 않는다.
+- Node 24 실제 stdio 왕복으로 proposal → unchanged writePlan → source connect →
+  finalize → 새 MCP process의 `agent_brief`까지 확인했다. 승인한 `scope`는
+  `resolved`로 유지되고, proposal이 의도적으로 남긴 `impact` gap은 숨기지 않는다.
+
+화면이나 디자인 시스템은 바뀌지 않았다. 사용자가 이미 승인한 의미를 뒤 단계가
+다르게 해석하지 않도록 ontology construction의 신뢰 계약만 닫은 변경이다.
+
 ## 2026-08-07 · 디자인 시스템 전면 감사 2회차: 관문 하단 17px 가림 · 손으로 쓴 그림자 0 · 게이트 구멍 다섯
 
 17개 라우트 × 2폭(1512·390)을 다시 재고, 뒤이어 값과 게이트를 수렴시켰다.

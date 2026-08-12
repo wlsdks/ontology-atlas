@@ -32,9 +32,31 @@ test("빈 소켓을 채우면 새 위성이 확정 램프로 도착한다", asyn
 
   const socket = page.locator('[data-testid^="studio-socket-"]').first();
   await expect(socket, "빈 소켓이 없으면 이 게이트는 아무것도 안 지킨다").toBeVisible();
+  await expect(socket).toHaveAttribute("data-recommendation-state", "neutral");
+  await expect(socket).toHaveAccessibleName(/추천 근거 없음/);
+  const relation = await socket.getAttribute("data-relation");
   await socket.click();
 
-  const candidate = page.locator('[data-testid^="studio-suggest-row-"]').first();
+  // O1.1: the first empty socket is normally UP/isA. Topology proximity may
+  // not produce a suggestion there, but the same-kind Browse affordance must
+  // still let the user deliberately choose a candidate.
+  const suggestion = page.locator('[data-testid^="studio-suggest-row-"]').first();
+  if (relation === "isA") {
+    await expect(
+      page.locator('[data-testid^="studio-suggest-row-"]'),
+      "same-domain/title/adjacency는 isA 추천 근거가 아니다",
+    ).toHaveCount(0);
+  }
+  let candidate = suggestion;
+  if ((await suggestion.count()) === 0) {
+    const browseDomain = page.locator('[data-testid^="studio-browse-domain-"]').first();
+    await expect(
+      browseDomain,
+      "isA 추천이 0이어도 같은-kind Browse 후보는 남아야 한다",
+    ).toBeVisible();
+    await browseDomain.click();
+    candidate = page.locator('[data-testid^="studio-browse-node-"]').first();
+  }
   await expect(candidate).toBeVisible();
 
   await page.evaluate(() => {

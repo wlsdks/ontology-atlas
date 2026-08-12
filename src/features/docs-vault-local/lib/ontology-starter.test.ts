@@ -1,7 +1,6 @@
 import { readFileSync } from "node:fs";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
-import { parseMcpToolMetadataFromDescription } from "../../../../cli/src/lib/mcp-metadata.mjs";
 import {
   ONTOLOGY_STARTER_FILES,
   buildCodexConfigToml,
@@ -16,12 +15,6 @@ import {
 } from "./ontology-starter";
 
 const ROOT = path.resolve(__dirname, "../../../..");
-const MCP_PKG = JSON.parse(
-  readFileSync(path.join(ROOT, "mcp", "package.json"), "utf8"),
-);
-const MCP_TOOL_METADATA = parseMcpToolMetadataFromDescription(
-  MCP_PKG.description,
-);
 
 describe("ONTOLOGY_STARTER_FILES", () => {
   it("5 시드 파일 제공 — README + project + 3 example (domain/capability/element)", () => {
@@ -141,20 +134,21 @@ describe("ONTOLOGY_STARTER_FILES", () => {
     }
   });
 
-  it("starter README 는 현재 MCP package tool inventory 를 안내", () => {
-    const readme = ONTOLOGY_STARTER_FILES.find(
-      (f) => f.relPath === "README.md",
-    )?.content;
+  it("starter README 는 live MCP inventory 와 read-first 시작점을 안내", () => {
+    for (const locale of ["en", "ko"] as const) {
+      const readme = starterFilesForLocale(locale).find(
+        (f) => f.relPath === "README.md",
+      )?.content ?? "";
 
-    expect(MCP_TOOL_METADATA).toBeTruthy();
-    expect(readme).toContain(`agent gets ${MCP_TOOL_METADATA?.toolCount}`);
-    expect(readme).toContain(`**read ${MCP_TOOL_METADATA?.readCount}**`);
-    expect(readme).toContain(`**write ${MCP_TOOL_METADATA?.writeCount}**`);
-    expect(readme).toContain("find_neighbors");
-    expect(readme).toContain("compile_ontology");
-    expect(readme).toContain("query_ontology");
-    expect(readme).not.toContain("agent gets 20");
-    expect(readme).not.toContain("**read 12**");
+      expect(readme).toContain("tools/list");
+      expect(readme).toContain("mcp-verify");
+      expect(readme).toContain("connection_info");
+      expect(readme).toContain("list_kinds");
+      expect(readme).toContain("validate_vault");
+      expect(readme).toContain('operation: "agent_brief"');
+      expect(readme).not.toMatch(/\b\d+\s+(?:read|write|tools?)\b/i);
+      expect(readme).not.toMatch(/(?:읽기|쓰기|도구)\s*\d+\s*개/);
+    }
   });
 
   it("starter README 는 첫 agent 연결 검증 루프를 안내", () => {

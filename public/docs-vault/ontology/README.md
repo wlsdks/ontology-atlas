@@ -23,8 +23,8 @@ the shared mental model between the humans building Atlas and you.
   local vault management, onboarding & shell, project portfolio, topology
   navigation). Domain boundaries are human judgment: see `created_by:`.
 - `capabilities/`: user-visible features inside those domains, including the
-  two agent surfaces: `capabilities/mcp-server` (35 MCP tools in `mcp/`) and
-  `capabilities/cli-developer-entry` (54 CLI commands in `cli/`).
+  two agent surfaces: `capabilities/mcp-server` (runtime-advertised tools in
+  `mcp/`) and `capabilities/cli-developer-entry` (local commands in `cli/`).
 - `elements/`: implementation evidence. Each element names a *role* (flat
   slug); the file location lives in its `path:` frontmatter, never in the slug.
 

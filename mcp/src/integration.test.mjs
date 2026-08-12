@@ -37,6 +37,7 @@ import {
 import { GRAPH_ARRAY_KEYS, loadVaultDocs } from "./vault.mjs";
 import { buildProjectSourceGraphHash } from "./project-source-graph-hash.mjs";
 import { renderProjectCompetencyMarkdown } from "./project-meaning-receipt.mjs";
+import { defaultBody } from "./schema.mjs";
 import {
   formatNoTestMatchMessage,
   formatTestFilterSuffix,
@@ -45,6 +46,10 @@ import {
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const SERVER_ENTRY = resolve(__dirname, "index.js");
+const QUALIFIED_CONSTRUCTION_FIXTURE = JSON.parse(readFileSync(
+  resolve(__dirname, "../../tests/fixtures/construction-qualification/qualified.json"),
+  "utf8",
+));
 const EQUALITY_FILTER_KEYS = ["kind", "domain", "slug", "title", "created_by"];
 
 let passed = 0;
@@ -332,6 +337,55 @@ function assertDestructivePreview(
   assert.equal(result.blockedReasons.length, blocked, `${label} blocker count`);
 }
 
+function parseInstructionToolInventory(instructions) {
+  assert.equal(typeof instructions, "string", "initialize instructions are present");
+  const section = instructions.match(
+    /## Tool inventory \((\d+) tools = read (\d+) \+ write (\d+)\)\s+([\s\S]*?)(?=\n## )/,
+  );
+  assert.ok(section, "initialize instructions expose a structured tool inventory");
+
+  const namesFrom = (label) => {
+    const line = section[4].match(new RegExp(`^\\*\\*${label}\\*\\*\\s+—\\s+(.+)$`, "m"));
+    assert.ok(line, `tool inventory exposes ${label} line`);
+    return [...line[1].matchAll(/`([a-z][a-z0-9_]*)`/g)].map((match) => match[1]);
+  };
+
+  return {
+    total: Number(section[1]),
+    readCount: Number(section[2]),
+    writeCount: Number(section[3]),
+    readNames: namesFrom("read"),
+    writeNames: namesFrom("write"),
+  };
+}
+
+function assertInstructionToolInventoryMatches(initializeResponse, tools) {
+  assert.ok(initializeResponse, "initialize response is present");
+  assert.ok(Array.isArray(tools), "tools/list returns an array");
+  assert.ok(tools.length > 0, "tools/list target is non-empty");
+
+  const names = tools.map((tool) => tool.name);
+  assert.equal(new Set(names).size, names.length, "tools/list names are unique");
+  const expectedRead = tools
+    .filter((tool) => tool.annotations?.readOnlyHint === true)
+    .map((tool) => tool.name)
+    .sort();
+  const expectedWrite = tools
+    .filter((tool) => tool.annotations?.readOnlyHint !== true)
+    .map((tool) => tool.name)
+    .sort();
+  const inventory = parseInstructionToolInventory(initializeResponse.result?.instructions);
+
+  assert.equal(inventory.total, tools.length, "inventory total matches tools/list");
+  assert.equal(inventory.readCount, expectedRead.length, "inventory read count matches tools/list");
+  assert.equal(inventory.writeCount, expectedWrite.length, "inventory write count matches tools/list");
+  assert.equal(inventory.total, inventory.readCount + inventory.writeCount, "inventory header adds up");
+  assert.equal(inventory.readCount, inventory.readNames.length, "inventory read count matches its names");
+  assert.equal(inventory.writeCount, inventory.writeNames.length, "inventory write count matches its names");
+  assert.deepEqual([...inventory.readNames].sort(), expectedRead, "inventory read names match tools/list");
+  assert.deepEqual([...inventory.writeNames].sort(), expectedWrite, "inventory write names match tools/list");
+}
+
 // R+ — cycle 39: 단일 도구 (get_concept · add_concept · add_relation) 의
 // description 이 batch 짝 (get_concepts · add_concepts · add_relations) 을
 // 명시 cross-reference. agent 가 tool list 만 보고도 K-round-trip 대안을
@@ -355,6 +409,10 @@ await test("tools/list — 단일 도구 description 이 batch 짝을 cross-refe
       tools.map((tool) => tool.name).sort(),
       [...EXPECTED_TOOLS].sort(),
       "tools/list registry must match verify inventory",
+    );
+    assertInstructionToolInventoryMatches(
+      responses.find((response) => response.id === 1),
+      tools,
     );
     for (const tool of tools) {
       assert.equal(
@@ -581,8 +639,14 @@ await test("tools/list — 단일 도구 description 이 batch 짝을 cross-refe
     const analyzeRepo = findTool("analyze_repo_structure");
     assert.match(
       analyzeRepo?.description ?? "",
-      /analyze a code repository and propose ontology node candidates[\s\S]*side effect 0 \(vault frontmatter NOT modified\)[\s\S]*Returns deterministic candidates[\s\S]*selectively pass to add_concept[\s\S]*bootstrap the ontology[\s\S]*Single source of truth preserved/i,
+      /analyze a code repository and propose ontology node candidates[\s\S]*side effect 0 \(vault frontmatter NOT modified\)[\s\S]*Returns deterministic candidates[\s\S]*construction lifecycle[\s\S]*reviewPlan[\s\S]*constructionQualification:v1[\s\S]*writePlan[\s\S]*bootstrap the ontology/i,
       "analyze_repo_structure description documents bootstrap safety workflow",
+    );
+    const initializeInstructions = responses.find((response) => response.id === 1)?.result?.instructions ?? "";
+    assert.match(
+      initializeInstructions,
+      /Ontology construction lifecycle[\s\S]*reviewPlan[\s\S]*sourceDigest[\s\S]*separately identified evaluator[\s\S]*declared human provenance[\s\S]*writeEligibility:"executable"[\s\S]*finalize_project_meaning/,
+      "initialize instructions expose the non-bypassable review, evaluation, approval, write, and post-write lifecycle",
     );
     assert.match(
       analyzeRepo?.inputSchema?.properties?.rootPath?.description ?? "",
@@ -603,11 +667,32 @@ await test("tools/list — 단일 도구 description 이 batch 짝을 cross-refe
     assert.equal(analyzeRepo?.inputSchema?.properties?.proposal?.additionalProperties, false);
     assert.deepEqual(analyzeRepo?.inputSchema?.properties?.proposal?.properties?.elements?.items?.required, ["slug", "title", "definition", "evidence", "confidence", "domain", "path"]);
     assert.deepEqual(analyzeRepo?.inputSchema?.properties?.proposal?.properties?.relations?.items?.required, ["from", "to", "type", "why", "evidence", "confidence"]);
+    assert.equal(analyzeRepo?.inputSchema?.additionalProperties, false);
+    assert.deepEqual(analyzeRepo?.inputSchema?.properties?.qualification?.required, [
+      "contract",
+      "qualificationId",
+      "subject",
+      "actors",
+      "purposeAuthority",
+      "scenarios",
+      "competencyQuestions",
+      "witnesses",
+      "cqResults",
+      "claims",
+      "citationChecks",
+      "sourceHiddenTask",
+      "axisResults",
+      "diagnostics",
+      "regression",
+      "resourceUse",
+      "acceptance",
+    ]);
+    assert.equal(analyzeRepo?.inputSchema?.properties?.qualification?.additionalProperties, false);
     const competencyAnswerSchema = analyzeRepo?.inputSchema?.properties?.proposal?.properties?.competencyAnswers?.properties?.scope;
     assert.deepEqual(competencyAnswerSchema?.required, ["answer", "status", "witnesses"]);
     assert.deepEqual(competencyAnswerSchema?.properties?.status?.enum, ["answered", "partial", "visible-gap"]);
     assert.deepEqual(competencyAnswerSchema?.properties?.witnesses?.required, ["concepts", "relations", "evidence", "paths"]);
-    assert.deepEqual(analyzeRepo?.outputSchema?.properties?.proposalValidation?.required, ["status", "canWrite", "summary", "gates", "findings", "nextStep"]);
+    assert.deepEqual(analyzeRepo?.outputSchema?.properties?.proposalValidation?.required, ["status", "canWrite", "summary", "gates", "findings", "constructionLifecycle", "nextStep"]);
     assert.equal(analyzeRepo?.outputSchema?.properties?.proposalValidation?.additionalProperties, false);
     const rustConfigurationSchema = analyzeRepo?.outputSchema?.properties?.configurationEvidence;
     assert.deepEqual(rustConfigurationSchema?.properties?.contract?.enum, ["rustFeatureConfigurationEvidence:v1"]);
@@ -619,6 +704,21 @@ await test("tools/list — 단일 도구 description 이 batch 짝을 cross-refe
     assert.equal(rustConfigurationSchema?.additionalProperties, false);
     assert.deepEqual(analyzeRepo?.outputSchema?.properties?.proposalValidation?.properties?.summary?.required, ["concepts", "relations", "findings", "errors", "warnings"]);
     assert.deepEqual(analyzeRepo?.outputSchema?.properties?.proposalValidation?.properties?.writePlan?.required, ["concepts", "relations", "competencyAnswers"]);
+    assert.deepEqual(analyzeRepo?.outputSchema?.properties?.proposalValidation?.properties?.reviewPlan?.required, ["concepts", "relations", "competencyAnswers"]);
+    assert.deepEqual(analyzeRepo?.outputSchema?.properties?.proposalValidation?.properties?.constructionLifecycle?.required, [
+      "contract",
+      "qualificationStatus",
+      "writeEligibility",
+      "planDigest",
+      "sourceDigest",
+      "planRevision",
+      "firstBlockingPhase",
+      "phases",
+      "diagnostics",
+      "requiredGapIds",
+      "nextAction",
+    ]);
+    assert.equal(analyzeRepo?.outputSchema?.properties?.proposalValidation?.properties?.constructionLifecycle?.properties?.phases?.minItems, 8);
     assert.deepEqual(analyzeRepo?.outputSchema?.properties?.proposalValidation?.properties?.writePlan?.properties?.relations?.items?.required, ["from", "to", "type", "why"]);
     assert.ok(analyzeRepo?.outputSchema?.properties?.proposalValidation?.properties?.gates?.required?.includes("competencyWitnessesResolved"));
     assert.deepEqual(analyzeRepo?.outputSchema?.properties?.extractionContract?.properties?.competencyQuestions?.items?.required, ["id", "type", "question", "priority", "requiredWitnesses"]);
@@ -1744,7 +1844,7 @@ await test("tools/list — 단일 도구 description 이 batch 짝을 cross-refe
 
 await test("initialize — instructions 필드 (#45) AI agent 안내 노출", async () => {
   // initialize 응답에 instructions 가 있어야 연결된 agent (Claude Code 등) 가
-  // kind 계층 / 호출 순서 / write 도구 dry-run 패턴을 즉시 인지. 누락 시
+  // authorable/reserved kind 경계 / 호출 순서 / write 도구 dry-run 패턴을 즉시 인지. 누락 시
   // agent 는 매 세션 시행착오로 학습 — 명시 가드.
   const root = makeVault([]);
   try {
@@ -1758,7 +1858,8 @@ await test("initialize — instructions 필드 (#45) AI agent 안내 노출", as
       `instructions 가 의미 있는 길이여야 (got ${instructions.length})`,
     );
     // 핵심 키워드 — drift 시 즉시 깨짐
-    assert.match(instructions, /kind hierarchy/i);
+    assert.match(instructions, /five authorable kinds/i);
+    assert.match(instructions, /vault-readme.*reserved reader kind/i);
     assert.match(instructions, /dry-run|confirm/i);
     assert.match(instructions, /expected_mtime/i);
     assert.match(instructions, /overwrite: true/);
@@ -2232,14 +2333,126 @@ await test("analyze_repo_structure — validates a complete meaning proposal bef
     ]);
     const result = getCallParsed(responses, 2);
     assert.equal(result.proposalValidation.status, "pass");
-    assert.equal(result.proposalValidation.canWrite, true);
+    assert.equal(result.proposalValidation.canWrite, false);
     assert.equal(result.proposalValidation.summary.errors, 0);
     assert.equal(result.proposalValidation.summary.warnings, 1);
     assert.equal(result.proposalValidation.summary.concepts, 3);
     assert.equal(result.proposalValidation.summary.relations, 2);
-    assert.equal(result.proposalValidation.writePlan.concepts.length, 3);
-    assert.equal(result.proposalValidation.writePlan.relations.length, 2);
-    assert.equal(result.proposalValidation.writePlan.competencyAnswers.impact.status, "visible-gap");
+    assert.equal(result.proposalValidation.constructionLifecycle.writeEligibility, "reviewable");
+    assert.equal(result.proposalValidation.constructionLifecycle.phases.length, 8);
+    assert.match(result.proposalValidation.constructionLifecycle.planDigest, /^sha256:[a-f0-9]{64}$/);
+    assert.match(result.proposalValidation.constructionLifecycle.sourceDigest, /^sha256:[a-f0-9]{64}$/);
+    assert.deepEqual(result.proposalValidation.constructionLifecycle.requiredGapIds, [
+      "proposal:visible-competency-gap:competencyAnswers.impact",
+    ]);
+    assert.equal(result.proposalValidation.reviewPlan.concepts.length, 3);
+    assert.equal(result.proposalValidation.writePlan, undefined);
+
+    const qualification = structuredClone(QUALIFIED_CONSTRUCTION_FIXTURE);
+    qualification.qualificationId = "qualification:claims:v1";
+    qualification.subject.projectSlug = "claims";
+    qualification.subject.graphDigest = result.proposalValidation.constructionLifecycle.planDigest;
+    qualification.subject.sourceDigest = result.proposalValidation.constructionLifecycle.sourceDigest;
+    qualification.acceptance.planDigest = result.proposalValidation.constructionLifecycle.planDigest;
+    qualification.acceptance.planRevision = result.proposalValidation.constructionLifecycle.planRevision;
+    qualification.acceptance.acceptedGapIds = result.proposalValidation.constructionLifecycle.requiredGapIds;
+
+    const qualified = await rpc(vaultRoot, [
+      ...INIT_REQUESTS,
+      callTool(2, "analyze_repo_structure", { rootPath: repoRoot, proposal, qualification }),
+    ]);
+    const qualifiedResult = getCallParsed(qualified.responses, 2);
+    assert.equal(qualifiedResult.proposalValidation.status, "pass");
+    assert.equal(qualifiedResult.proposalValidation.canWrite, true);
+    assert.equal(qualifiedResult.proposalValidation.constructionLifecycle.writeEligibility, "executable");
+    assert.deepEqual(
+      qualifiedResult.proposalValidation.writePlan,
+      result.proposalValidation.reviewPlan,
+      "the public writer rows must be byte-for-JSON equal to the reviewed plan",
+    );
+    assert.equal(qualifiedResult.proposalValidation.writePlan.concepts.length, 3);
+    assert.equal(qualifiedResult.proposalValidation.writePlan.relations.length, 2);
+    assert.equal(qualifiedResult.proposalValidation.writePlan.competencyAnswers.impact.status, "visible-gap");
+
+    const sourceHiddenMissing = structuredClone(qualification);
+    sourceHiddenMissing.sourceHiddenTask.status = "not_measured";
+    const blocked = await rpc(vaultRoot, [
+      ...INIT_REQUESTS,
+      callTool(2, "analyze_repo_structure", {
+        rootPath: repoRoot,
+        proposal,
+        qualification: sourceHiddenMissing,
+      }),
+    ]);
+    const blockedResult = getCallParsed(blocked.responses, 2);
+    assert.equal(blockedResult.proposalValidation.canWrite, false);
+    assert.equal(blockedResult.proposalValidation.writePlan, undefined);
+    assert.equal(
+      blockedResult.proposalValidation.constructionLifecycle.firstBlockingPhase,
+      "independent_source_hidden",
+    );
+    assert.ok(blockedResult.proposalValidation.constructionLifecycle.diagnostics.some(
+      ({ code }) => code === "source-hidden-not-measured",
+    ));
+
+    const written = await rpc(vaultRoot, [
+      ...INIT_REQUESTS,
+      callTool(2, "add_concepts", {
+        concepts: qualifiedResult.proposalValidation.writePlan.concepts,
+      }),
+      callTool(3, "add_relations", {
+        relations: qualifiedResult.proposalValidation.writePlan.relations,
+      }),
+    ]);
+    assert.ok(getCallParsed(written.responses, 2).concepts.every((row) => row.ok));
+    assert.ok(getCallParsed(written.responses, 3).relations.every((row) => row.ok));
+
+    const connected = await rpc(vaultRoot, [
+      ...INIT_REQUESTS,
+      callTool(2, "connect_project_source", {
+        projectSlug: "claims",
+        rootPath: repoRoot,
+        confirm: true,
+      }),
+    ]);
+    assert.equal(getCallParsed(connected.responses, 2).projectSource.status, "verified_current");
+
+    const finalized = await rpc(vaultRoot, [
+      ...INIT_REQUESTS,
+      callTool(2, "finalize_project_meaning", {
+        projectSlug: "claims",
+        expected_mtime: statSync(join(vaultRoot, "claims.md")).mtimeMs,
+      }),
+    ]);
+    assert.equal(
+      isErrorResponse(finalized.responses, 2),
+      false,
+      getCallText(finalized.responses, 2),
+    );
+    const finalizedResult = getCallParsed(finalized.responses, 2);
+    assert.equal(finalizedResult.ok, true);
+    assert.equal(finalizedResult.meaningAssessment.dimensions.competency.questions
+      .find((row) => row.id === "scope")?.witnessStatus, "resolved");
+    assert.equal(JSON.stringify(finalizedResult).includes(repoRoot), false);
+
+    const handedOff = await rpc(vaultRoot, [
+      ...INIT_REQUESTS,
+      callTool(2, "query_ontology", {
+        operation: "agent_brief",
+        project: "claims",
+      }),
+    ]);
+    const handoffBrief = getCallParsed(handedOff.responses, 2);
+    assert.equal(
+      handoffBrief.meaningAssessment.dimensions.competency.status,
+      "needs_evidence",
+      JSON.stringify(handoffBrief.meaningAssessment),
+    );
+    assert.equal(handoffBrief.meaningAssessment.dimensions.competency.questions
+      .find((row) => row.id === "scope")?.witnessStatus, "resolved");
+    assert.equal(handoffBrief.meaningAssessment.topGap?.questionId, "impact");
+    assert.equal(handoffBrief.meaningAssessment.dimensions.source.currentness, "current");
+    assert.equal(JSON.stringify(handoffBrief).includes(repoRoot), false);
 
     const legacyProposal = {
       ...proposal,
@@ -2284,6 +2497,165 @@ await test("analyze_repo_structure — validates a complete meaning proposal bef
     assert.ok(malformedBoundaryResult.proposalValidation.findings.some(
       (finding) => finding.code === "invalid-concept-boundary-list",
     ));
+  } finally {
+    rmSync(vaultRoot, { recursive: true, force: true });
+    rmSync(repoRoot, { recursive: true, force: true });
+  }
+});
+
+await test("analyze_repo_structure — validates exact TypeScript import endpoints inside the proposal call", async () => {
+  const vaultRoot = makeVault();
+  const repoRoot = mkdtempSync(join(tmpdir(), "ontology-atlas-ts-proposal-"));
+  try {
+    writeFileSync(join(repoRoot, "package.json"), JSON.stringify({ name: "portable-reader" }), "utf-8");
+    writeFileSync(
+      join(repoRoot, "README.md"),
+      "# Portable Reader\n\nA desktop reader that presents subscribed content.\n",
+      "utf-8",
+    );
+    mkdirSync(join(repoRoot, "src"), { recursive: true });
+    writeFileSync(
+      join(repoRoot, "src", "entry.ts"),
+      "import { loadItems } from './service';\nexport const start = () => loadItems();\n",
+      "utf-8",
+    );
+    writeFileSync(
+      join(repoRoot, "src", "service.ts"),
+      "export const loadItems = () => [];\n",
+      "utf-8",
+    );
+
+    const projectDomain = { from: "portable-reader", to: "domains/reading", type: "domains" };
+    const domainCapability = { from: "domains/reading", to: "capabilities/content-reading", type: "capabilities" };
+    const capabilityEntry = { from: "capabilities/content-reading", to: "elements/desktop-entry", type: "elements" };
+    const capabilityService = { from: "capabilities/content-reading", to: "elements/content-service", type: "elements" };
+    const dependency = { from: "elements/desktop-entry", to: "elements/content-service", type: "depends_on" };
+    const proposal = {
+      project: {
+        slug: "portable-reader",
+        title: "Portable Reader",
+        definition: "A desktop product for reading subscribed content.",
+        evidence: ["README.md"],
+        confidence: 0.9,
+      },
+      domains: [{
+        slug: "domains/reading",
+        title: "Reading",
+        definition: "The responsibility boundary for presenting subscribed content.",
+        evidence: ["README.md"],
+        confidence: 0.9,
+      }],
+      capabilities: [{
+        slug: "capabilities/content-reading",
+        title: "Content reading",
+        definition: "Load and present subscribed content in the desktop product.",
+        domain: "domains/reading",
+        path: "src",
+        evidence: ["README.md"],
+        confidence: 0.9,
+      }],
+      elements: [
+        {
+          slug: "elements/desktop-entry",
+          title: "Desktop entry",
+          definition: "The desktop source entry that starts content loading.",
+          domain: "domains/reading",
+          path: "src/entry.ts",
+          evidence: ["src/entry.ts"],
+          confidence: 0.9,
+        },
+        {
+          slug: "elements/content-service",
+          title: "Content service",
+          definition: "The source boundary that loads subscribed content.",
+          domain: "domains/reading",
+          path: "src/service.ts",
+          evidence: ["src/service.ts"],
+          confidence: 0.9,
+        },
+      ],
+      relations: [
+        { ...projectDomain, why: "The project owns the reading boundary.", evidence: ["README.md"], confidence: 0.9 },
+        { ...domainCapability, why: "Reading is realized through content loading and presentation.", evidence: ["README.md"], confidence: 0.9 },
+        { ...capabilityEntry, why: "The desktop entry implements content reading.", evidence: ["src/entry.ts"], confidence: 0.9 },
+        { ...capabilityService, why: "The content service implements content reading.", evidence: ["src/service.ts"], confidence: 0.9 },
+        { ...dependency, why: "The desktop entry statically imports the content service.", evidence: ["src/entry.ts", "src/service.ts"], confidence: 0.9 },
+      ],
+      competencyAnswers: {
+        scope: {
+          answer: "Desktop users read subscribed content.",
+          status: "answered",
+          witnesses: { concepts: ["portable-reader"], relations: [], evidence: ["README.md"], paths: [] },
+        },
+        domains: {
+          answer: "Reading owns content presentation.",
+          status: "answered",
+          witnesses: { concepts: ["domains/reading"], relations: [projectDomain], evidence: ["README.md"], paths: [] },
+        },
+        abilities: {
+          answer: "Content reading loads and presents subscriptions.",
+          status: "answered",
+          witnesses: { concepts: ["capabilities/content-reading"], relations: [domainCapability], evidence: ["README.md"], paths: [] },
+        },
+        evidence: {
+          answer: "The entry and service files are exact implementation witnesses.",
+          status: "answered",
+          witnesses: {
+            concepts: ["capabilities/content-reading", "elements/desktop-entry", "elements/content-service"],
+            relations: [capabilityEntry, capabilityService],
+            evidence: ["src/entry.ts", "src/service.ts"],
+            paths: ["src", "src/entry.ts", "src/service.ts"],
+          },
+        },
+        impact: {
+          answer: "Changing the service can affect the desktop entry that imports it.",
+          status: "answered",
+          witnesses: {
+            concepts: ["elements/desktop-entry", "elements/content-service"],
+            relations: [dependency],
+            evidence: ["src/entry.ts", "src/service.ts"],
+            paths: [],
+          },
+        },
+      },
+    };
+
+    const reversedProposal = structuredClone(proposal);
+    reversedProposal.relations[4] = {
+      ...reversedProposal.relations[4],
+      from: "elements/content-service",
+      to: "elements/desktop-entry",
+      why: "The content service statically imports the desktop entry.",
+    };
+    reversedProposal.competencyAnswers.impact.witnesses.relations = [{
+      from: "elements/content-service",
+      to: "elements/desktop-entry",
+      type: "depends_on",
+    }];
+
+    const { responses } = await rpc(vaultRoot, [
+      ...INIT_REQUESTS,
+      callTool(2, "analyze_repo_structure", { rootPath: repoRoot, proposal }),
+      callTool(3, "analyze_repo_structure", { rootPath: repoRoot, proposal: reversedProposal }),
+    ]);
+    const result = getCallParsed(responses, 2);
+    const reversedResult = getCallParsed(responses, 3);
+    assert.equal(result.proposalValidation.status, "pass", JSON.stringify(result.proposalValidation.findings));
+    assert.equal(result.proposalValidation.canWrite, false);
+    assert.ok(result.proposalValidation.reviewPlan);
+    assert.equal(
+      result.proposalValidation.findings.some(({ code }) =>
+        ["unknown-citation", "unobserved-python-import-dependency"].includes(code)),
+      false,
+      JSON.stringify(result.proposalValidation.findings),
+    );
+    assert.equal(reversedResult.proposalValidation.status, "fail");
+    assert.ok(
+      reversedResult.proposalValidation.findings.some(
+        ({ code }) => code === "unobserved-python-import-dependency",
+      ),
+      JSON.stringify(reversedResult.proposalValidation.findings),
+    );
   } finally {
     rmSync(vaultRoot, { recursive: true, force: true });
     rmSync(repoRoot, { recursive: true, force: true });
@@ -6449,6 +6821,57 @@ await test("patch_concept — graph 배열 patch 는 canonical set 으로 저장
   }
 });
 
+await test("broader fallback — get mtime, patch full array, validate; is_a relation call stays unavailable", async () => {
+  const root = makeVault([
+    { slug: "domains/auth", content: "---\nkind: domain\ntitle: Authentication\n---\n" },
+    {
+      slug: "capabilities/session-auth",
+      content: "---\nkind: capability\ntitle: Session Authentication\ndomain: domains/auth\n---\n",
+    },
+    {
+      slug: "capabilities/token-auth",
+      content: "---\nkind: capability\ntitle: Token Authentication\ndomain: domains/auth\n---\n",
+    },
+  ]);
+  try {
+    const firstRead = await rpc(root, [
+      ...INIT_REQUESTS,
+      callTool(2, "get_concept", { slug: "capabilities/token-auth" }),
+    ]);
+    const expectedMtime = getCallParsed(firstRead.responses, 2).mtime;
+
+    const { responses } = await rpc(root, [
+      ...INIT_REQUESTS,
+      callTool(2, "patch_concept", {
+        slug: "capabilities/token-auth",
+        expected_mtime: expectedMtime,
+        frontmatter: { broader: ["capabilities/session-auth"] },
+      }),
+      callTool(3, "validate_vault", {}),
+      callTool(4, "get_concept", { slug: "capabilities/token-auth" }),
+      callTool(5, "add_relation", {
+        from: "capabilities/token-auth",
+        to: "capabilities/session-auth",
+        type: "is_a",
+        why: "Both concepts describe authentication abilities.",
+      }),
+    ]);
+
+    assert.equal(getCallParsed(responses, 2).changed, true);
+    assert.deepEqual(getCallParsed(responses, 3).problems, []);
+    const patched = getCallParsed(responses, 4);
+    assert.deepEqual(patched.frontmatter.broader, ["capabilities/session-auth"]);
+    assert.deepEqual(patched.outgoingEdges, [
+      { to: "capabilities/session-auth", via: "broader" },
+      { to: "domains/auth", via: "domain" },
+    ]);
+    assert.equal(isErrorResponse(responses, 5), true);
+    assert.match(responses.find((response) => response.id === 5).result.content[0].text, /type must be one of/i);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
 await test("patch_concept — graph 배열 patch 는 배열 string item 만 허용", async () => {
   const root = makeVault([
     { slug: "foo", content: "---\nkind: project\ntitle: Foo\ndomains: [domains/a]\n---\n" },
@@ -7412,7 +7835,7 @@ await test("connection_info — repository root auto-discovers from a nested Git
   }
 });
 
-await test("connection_info — read-only mode fingerprints the actually advertised toolset", async () => {
+await test("initialize — read-only inventory matches the actually advertised toolset", async () => {
   const root = makeVault([]);
   try {
     const { responses } = await rpc(root, [
@@ -7421,6 +7844,10 @@ await test("connection_info — read-only mode fingerprints the actually adverti
       callTool(3, "connection_info"),
     ], 1500, { OATLAS_READ_ONLY: "1" });
     const listed = responses.find((row) => row.id === 2)?.result?.tools ?? [];
+    assertInstructionToolInventoryMatches(
+      responses.find((response) => response.id === 1),
+      listed,
+    );
     const info = getCallParsed(responses, 3);
     assert.equal(info.server.readOnly, true);
     assert.equal(info.server.toolCount, EXPECTED_READ_TOOLS.length);
@@ -7858,7 +8285,10 @@ await test("reclassify_concept — kind/slug/domain/body and backlinks move toge
   const root = makeVault([
     { slug: "project", content: "---\nkind: project\ntitle: Project\ncontains: [capabilities/claim]\n---\n" },
     { slug: "domains/review", content: "---\nkind: domain\ntitle: Review\n---\n" },
-    { slug: "capabilities/claim", content: "---\nslug: capabilities/claim\nkind: capability\ntitle: Claim\n---\n\n# Claim\n\nA *capability* is one user-visible feature within a domain.\n" },
+    {
+      slug: "capabilities/claim",
+      content: `---\nslug: capabilities/claim\nkind: capability\ntitle: Claim\n---\n\n${defaultBody("capability", "Claim")}\n`,
+    },
   ]);
   try {
     const { responses } = await rpc(root, [
@@ -7883,7 +8313,7 @@ await test("reclassify_concept — kind/slug/domain/body and backlinks move toge
     const claim = getCallParsed(responses, 4);
     assert.equal(claim.frontmatter.kind, "element");
     assert.equal(claim.frontmatter.domain, "domains/review");
-    assert.match(claim.excerpt, /An \*element\*/i);
+    assert.match(claim.excerpt, /distinct implementation role/i);
     assert.deepEqual(getCallParsed(responses, 5).frontmatter.contains, ["elements/claim-entity"]);
   } finally {
     rmSync(root, { recursive: true, force: true });

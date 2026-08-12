@@ -7,9 +7,11 @@
  * 계층(위→아래): project(0) → domain(1) → capability(2) → element(3).
  * 각 방위의 의미에 맞춰 "같은/한 단계 이웃" 창(window)으로 좁힌다:
  *
- *   isA (상위개념/broader)  — 자기와 같거나 한 단계 위(컨테이너) kind
- *     project→∅ · domain→{domain} · capability→{capability,domain} ·
- *     element→{element,capability}
+ *   isA (상위개념/broader)  — domain·capability·element 사이의 같은-kind
+ *     direct subsumption only. project→∅ · domain→{domain} ·
+ *     capability→{capability} · element→{element}
+ *     컨테이너 계층(project→domain→capability→element)은 `contains` 이며
+ *     `is_a` 의 class 계층이 아니다(`docs/ONTOLOGY-ATLAS-SPEC.md` §2.2).
  *   dependsOn (기대는 곳)    — 런타임/행위 의존은 역량·요소로 수렴
  *     (모든 초점)→{capability,element}
  *   contains (담는 것)       — 한 단계 아래(자식) kind
@@ -36,8 +38,8 @@ const MATRIX: Record<StudioRelation, Record<string, KindSet>> = {
   isA: {
     project: EMPTY,
     domain: new Set(["domain"]),
-    capability: new Set(["capability", "domain"]),
-    element: new Set(["element", "capability"]),
+    capability: new Set(["capability"]),
+    element: new Set(["element"]),
   },
   dependsOn: {
     project: new Set(["capability", "element"]),
@@ -69,6 +71,10 @@ export function allowedKindsFor(
 ): KindSet {
   const perKind = MATRIX[relation];
   if (focalKind && focalKind in perKind) return perKind[focalKind];
+  // `is_a` is same-kind only. Without the focal kind, even the candidate kind
+  // cannot prove that invariant, so widening to the union would manufacture a
+  // cross-kind subsumption path.
+  if (relation === "isA") return EMPTY;
   // 초점 kind 미상 → 그 relation 이 어느 초점에서든 허용하는 kind 의 합집합.
   const union = new Set<string>();
   for (const set of Object.values(perKind)) for (const k of set) union.add(k);

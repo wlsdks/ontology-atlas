@@ -55,10 +55,10 @@ tags: [architecture, infra, overview]
 
 ┌────────────────────────────────────────────────────────┐
 │ MCP server (mcp/, v0.13.0)                              │
-│ ├─ 19 read tools  connection/git proof · list/get/find ·│
+│ ├─ read tools     connection/git proof · list/get/find ·│
 │ │                  compile_ontology · query_ontology ·  │
 │ │                  analyze_repo_structure · infer_imports│
-│ └─ 16 write tools add_concept · add_concepts ·          │
+│ └─ write tools    add_concept · add_concepts ·          │
 │                    add_relation · add_relations ·       │
 │                    remove/replace relation · patch ·    │
 │                    reclassify · delete/rename/merge ·   │

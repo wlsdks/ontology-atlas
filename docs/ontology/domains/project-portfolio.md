@@ -5,16 +5,18 @@ kind: domain
 title: Project Portfolio Management
 display_ko: 프로젝트 포트폴리오 관리
 display_en: Project Portfolio Management
-capabilities: [capabilities/project-edit, capabilities/project-quick-edit, capabilities/project-share, capabilities/project-source-evidence]
+capabilities: [capabilities/construction-review, capabilities/project-edit, capabilities/project-quick-edit, capabilities/project-share, capabilities/project-source-evidence]
 elements: [elements/project, elements/project-detail, elements/project-drawer, elements/project-editor, elements/project-selector]
 created_by: human
+relation_notes: { capabilities/construction-review: Project portfolio owns the human review surface because construction qualification is judged in the matching project detail. }
 ---
 
 ## 정의
 하나의 볼트 안에서 여러 project 노드를 목록화·조회·편집·공유하는 관리 영역.
 
 ## 근거
-- AGENTS.md: Project overview (project/domain/capability/element kind 위계, 다중 프로젝트 컨테인먼트)
+- AGENTS.md: Project overview (project→domain→capability→element 읽기 spine,
+  다중 프로젝트 컨테인먼트)
 - src/features/project-edit, project-quick-edit, project-share (구현 증거)
 
 ## 포함 / 제외

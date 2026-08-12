@@ -6,6 +6,7 @@ import {
   parseFrontmatter,
   type LinkContext,
 } from '@/shared/lib/parse-frontmatter';
+import { extractProjectMeaningEvidencePaths } from '@/shared/lib/project-meaning-evidence';
 import { nativeVaultFingerprint } from '@/shared/lib/tauri-vault-fs';
 import type {
   VaultBacklinkEntry,
@@ -369,6 +370,9 @@ function buildMdEntry(
     frontmatter,
     headings,
     excerpt: buildExcerpt(body),
+    ...(frontmatter.kind === 'project'
+      ? { meaningEvidencePaths: extractProjectMeaningEvidencePaths(body) }
+      : {}),
     wordCount: body.split(/\s+/).filter(Boolean).length,
     updatedAt: new Date(lastModified).toISOString(),
     linksOut,

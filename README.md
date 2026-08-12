@@ -56,8 +56,8 @@
 
 <p align="center">
   <a href="LICENSE"><img alt="MIT license" src="https://img.shields.io/badge/license-MIT-5e6ad2.svg" /></a>
-  <a href="mcp/README.md"><img alt="35 MCP tools" src="https://img.shields.io/badge/MCP-33_tools-5e6ad2.svg" /></a>
-  <a href="cli/README.md"><img alt="52 CLI commands" src="https://img.shields.io/badge/CLI-52_commands-5e6ad2.svg" /></a>
+  <a href="mcp/README.md"><img alt="MCP runtime inventory" src="https://img.shields.io/badge/MCP-runtime_inventory-5e6ad2.svg" /></a>
+  <a href="cli/README.md"><img alt="Local CLI" src="https://img.shields.io/badge/CLI-local_tools-5e6ad2.svg" /></a>
   <img alt="Local-first" src="https://img.shields.io/badge/storage-local--first-17181f.svg" />
 </p>
 
@@ -77,6 +77,10 @@ disconnected, what is stale.*
 
 Your agent asks those questions over MCP. You read the same answers as a map,
 and every write the agent makes lands as a line in a Markdown file you can diff.
+
+The exact five-kind discriminator, relation support matrix, direct `is_a` test,
+and standards/inference boundary live in the
+[vault specification](docs/ONTOLOGY-ATLAS-SPEC.md#2-the-five-authorable-node-kinds-and-reserved-reader-kind).
 
 ## Status — read this before installing
 
@@ -129,8 +133,9 @@ This is normally a paragraph of setup instructions. Here it is a button.
 
 Claude Code, Cursor, VS Code and Codex each get a button. Any other MCP client
 can copy the snippet from **Advanced · detailed checks**.
-The bundled server exposes **35 tools — 19 read + 16 write**; the
-[agent guide](mcp/README.md) documents every tool and its contract.
+The bundled server advertises its current read/write surface through
+`tools/list`; the [agent guide](mcp/README.md) documents every tool and its
+contract, and `mcp-verify` proves the live inventory.
 
 ### 3. Read the map
 
@@ -254,9 +259,10 @@ coverage from how the documents link to each other.
 
 ## What your agent gets
 
-**35 MCP tools — 19 read, 16 write** — over stdio JSON-RPC, for Claude Code,
-Cursor, Codex, and any MCP client. The point is not the tool count; it is that
-the answers are *typed*, so an agent can act on them.
+**Typed MCP tools** over stdio JSON-RPC serve Claude Code, Cursor, Codex, and
+any MCP client. The running server advertises the exact current read/write
+inventory through `tools/list`; the value is that the answers are typed, so an
+agent can act on them.
 
 Ask *what breaks if I change this?* and Atlas follows only approved dependency
 declarations. It does not turn folder structure into causal confidence:
@@ -331,7 +337,7 @@ That distinction is the one thing worth learning up front: **a path points at
 code, a slug points at a node.** Mixing them is the most common first mistake,
 and `node $ATLAS/cli/src/index.mjs validate` reports it as a dangling reference.
 
-The hierarchy is deliberately small:
+The usual business-to-code reading spine is deliberately small:
 
 ```text
 project
@@ -340,7 +346,10 @@ project
         └── element
 ```
 
-Typed relations add dependency, evidence, containment, and descriptive meaning.
+`document` is the fifth authorable kind and can describe concepts anywhere on
+that spine. Typed relations add dependency, association, containment, and
+descriptive meaning; implementation evidence lives in node paths and bodies,
+not in an invented `evidence` relation.
 The goal is not to index every symbol — a source artifact earns a node when it
 helps a person or an agent understand a capability, trace impact, or run the
 right proof. Curated, not exhaustive.

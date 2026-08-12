@@ -49,7 +49,7 @@ workspace briefs, graph health, handoff packets, or memory update diffs.
 | [`ARCHITECTURE.md`](ARCHITECTURE.md) | Local-first architecture, route/data flow, build/test pipeline | Canonical technical overview |
 | [`DEVELOPMENT-CHECKS.md`](DEVELOPMENT-CHECKS.md) | Maintainer verification, package checks, dogfood release gates | Canonical maintainer checks |
 | [`DESKTOP-MACOS.md`](DESKTOP-MACOS.md) | macOS desktop app track, readiness gate, first Tauri prototype scope | Current distribution track |
-| [`../mcp/README.md`](../mcp/README.md) | MCP registration, 35 tools, tool contracts, verification | Canonical agent interface |
+| [`../mcp/README.md`](../mcp/README.md) | MCP registration, current runtime inventory, tool contracts, verification | Canonical agent interface |
 | [`../cli/README.md`](../cli/README.md) | CLI commands, graph workflows, installed-package checks | Canonical developer terminal interface |
 | [`DESIGN-SYSTEM.md`](DESIGN-SYSTEM.md) | Visual language, tokens, forbidden patterns | Canonical UI style guide |
 | [`MAP-TESTABILITY.md`](MAP-TESTABILITY.md) | Observing the canvas map from outside (`?e2e=1` → `window.__atlasMap`), and the measurement discipline that a 2026-07-31 six-false-negative incident produced | Canonical map test surface |
@@ -64,8 +64,9 @@ The normative product model is:
 1. **One codebase, one ontology, developer and AI agent grow it together.**
 2. The vault's `.md` frontmatter is the graph. The markdown body is the human
    explanation. Git is the source of truth.
-3. The AI-agent surface is MCP: 35 tools (19 read + 16 write), local-only, no
-   backend. `finalize_project_meaning` stores a versioned competency receipt;
+3. The AI-agent surface is local-only MCP. Its exact read/write inventory comes
+   from the running server's `tools/list`, not a copied document count.
+   `finalize_project_meaning` stores a versioned competency receipt;
    a fresh `agent_brief` re-derives the categorical meaning assessment from the
    current project graph, current witness inventory, saved receipt, and
    project-source provenance.

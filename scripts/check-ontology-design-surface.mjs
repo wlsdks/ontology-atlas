@@ -74,10 +74,48 @@ export const ONTOLOGY_DESIGN_FORBIDDEN_CHECKS = [
 // monochrome/token texture) rather than a decorative color fill. Charter forbids
 // decorative COLOR gradients (purple→pink, aurora, colored bg fills); it allows
 // mask-image alpha fades and token dot-grid textures.
+function maskCssCustomPropertyCalls(line) {
+  let result = "";
+  let cursor = 0;
+  const varCall = /\bvar\(/gi;
+
+  while (cursor < line.length) {
+    varCall.lastIndex = cursor;
+    const match = varCall.exec(line);
+    if (!match) {
+      result += line.slice(cursor);
+      break;
+    }
+
+    result += line.slice(cursor, match.index);
+    let depth = 1;
+    let end = varCall.lastIndex;
+    while (end < line.length && depth > 0) {
+      if (line[end] === "(") depth += 1;
+      if (line[end] === ")") depth -= 1;
+      end += 1;
+    }
+
+    if (depth !== 0) {
+      result += line.slice(match.index);
+      break;
+    }
+
+    // Token names may legitimately contain color words such as "indigo". The
+    // design-system token itself is the authority; inspecting its spelling as a
+    // literal color would turn an allowed functional fill into a false positive.
+    result += "design-token";
+    cursor = end;
+  }
+
+  return result;
+}
+
 export function gradientIsFunctional(line) {
   // Mask fades control reveal/alpha, not color — always functional.
   if (/mask-?image|mask\s*:/i.test(line)) return true;
-  const calls = line.match(/(?:linear|radial|conic)-gradient\(([^)]*(?:\([^)]*\)[^)]*)*)\)/gi);
+  const tokenNeutralLine = maskCssCustomPropertyCalls(line);
+  const calls = tokenNeutralLine.match(/(?:linear|radial|conic)-gradient\(([^)]*(?:\([^)]*\)[^)]*)*)\)/gi);
   if (!calls) return false; // e.g. bare `bg-gradient` Tailwind class — decorative.
   // Decorative when any stop names a real color: a non-monochrome hex, an
   // rgb()/hsl() value, or a color keyword. transparent/black/white/#000/#fff and

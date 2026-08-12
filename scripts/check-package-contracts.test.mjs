@@ -353,9 +353,8 @@ describe('package contract helpers', () => {
    * 담도록 요구했는데(산문 핀), 정작 잡고 싶었던 사고는 「볼트를 재생성했더니
    * README 가 사라진 노드를 가리킨다」였다. 그건 기계가 판정할 수 있다.
    */
-  it('keeps the self-ontology README naming nodes that exist and counts that are derived', () => {
+  it('keeps the self-ontology README naming nodes that exist without freezing surface counts', () => {
     const readme = readFileSync('docs/ontology/README.md', 'utf-8');
-    const surface = generatedSurface();
     const referenced = [...readme.matchAll(/`((?:domains|capabilities|elements)\/[a-z0-9-]+|[a-z0-9-]+\.md)`/g)].map(
       (match) => match[1],
     );
@@ -365,8 +364,8 @@ describe('package contract helpers', () => {
       const file = slug.endsWith('.md') ? `docs/ontology/${slug}` : `docs/ontology/${slug}.md`;
       assert.ok(existsSync(file), `docs/ontology/README.md points at a node that does not exist: ${slug}`);
     }
-    assert.match(readme, new RegExp(`${surface.mcp.toolCount} MCP tools`));
-    assert.match(readme, new RegExp(`${surface.cli.commandCount} CLI commands`));
+    assert.doesNotMatch(readme, /\b\d+\s+MCP tools\b/i);
+    assert.doesNotMatch(readme, /\b\d+\s+CLI commands\b/i);
   });
 
   it('keeps dogfood CLI capability and MCP capability nodes concise and delegates inventories to their generated public sources', () => {

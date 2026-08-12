@@ -4,47 +4,17 @@
  *
  * AI agent (Claude Code 등) 가 vault 의 ontology 를 읽고 쓸 수 있게.
  *
- * read 19:
- *   - connection_info        — active vault/repo roots + server version
- *   - git_status             — vault-scoped local git state + risk summary
- *   - git_history            — vault-scoped commit history (read-only)
- *   - list_concepts          — vault 의 노드 목록 (kind / domain / since / summary)
- *   - get_concept            — 단일 노드 + graph 이웃 + mtime
- *   - get_concepts           — 배치 read (slugs[] → concepts[], partial 허용)
- *   - find_evidence          — title / capabilities / elements / body 부분매칭
- *   - find_backlinks         — 특정 slug 를 가리키는 다른 노드들
- *   - find_neighbors         — 특정 slug 주변의 incoming/outgoing graph edge
- *   - find_path              — 두 slug 사이 BFS 최단 경로 + nodes[] + edges[via] (R+)
- *   - list_kinds             — vault kind 분포 census
- *   - find_orphans           — 어느 다른 노드도 frontmatter 에서 가리키지 않는 doc
- *   - query_concepts         — typed filter DSL (kind=X AND has(Y) AND NOT ...)
- *   - compile_ontology       — vault 를 deterministic graph artifact 로 compile
- *   - query_ontology         — compiled graph engine query (neighbors / path / all_paths / query_plan / centrality / communities / similar_nodes / explain_relation / reachability / pattern_walk / impact / blast_radius / subgraph / builder_context / overview / schema / facets / match_nodes / match_edges / node_profile / domain_profile / domain_matrix / project_scope / project_map / relation_check / components / lineage / containment_tree / cycles / topological_order / recommend_relations / growth_plan / maintenance_plan / agent_brief / workspace_brief / health)
- *   - validate_vault         — vault 전체 health 한 호출 (per-doc + byCode aggregate)
- *   - analyze_repo_structure — R16, code repo 분석 → ontology 후보 (side effect 0)
- *   - infer_imports          — R17, TS/JS/Python import graph → depends_on 후보 (side effect 0)
- *   - index_project          — repo 분석 + import graph + vault validation plan (side effect 0)
- *
- * write 14:
- *   - finalize_project_meaning — current project competency receipt (post-write, expected mtime)
- *   - add_concept       — 새 노드 (.md 파일 작성, 기존 slug 면 throw)
- *   - add_concepts      — 배치 write (concepts[] → results[], partial 허용)
- *   - add_relation      — 두 노드 사이 edge (frontmatter 배열 키 append)
- *   - add_relations     — 배치 edge write (relations[] → results[], partial 허용)
- *   - patch_concept     — 기존 노드 frontmatter (key 단위, null = 삭제) + body
- *   - delete_concept    — 노드 영구 삭제 (dry-run + backlinks 가드 + force)
- *   - rename_concept    — slug 변경 + 모든 backlink 의 array/body 자동 redirect
- *   - merge_concepts    — 두 노드 합치기 (from 의 모든 backlink 를 into 로 redirect 후 from 삭제)
- *   - absorb_document   — Slice 0, CLAUDE.md/AGENTS.md 흡수 → document/policy 노드 + slim pointer (dry-run + 인젝션 Tier 1)
- *   - git_snapshot      — validated, vault-scoped local commit (dry-run + expected HEAD; never pushes)
+ * 현재 도구 표면의 정본은 아래 TOOLS registry를 annotation으로 보강하고
+ * read-only mode로 거른 TOOLS_FOR_LIST다. initialize 안내와 tools/list가 모두
+ * 같은 배열에서 파생되므로 이 머리말에 count나 이름 목록을 다시 복사하지 않는다.
  *
  * 환경 변수:
  *   OATLAS_VAULT=/abs/path/to/vault       — vault root 디렉토리. 미지정 시 cwd.
  *   OATLAS_REPO_ROOT=/abs/path/to/repo    — repository root. 미지정 시 vault의 Git top-level, 없으면 cwd.
  *
  * 사용:
- *   $ npx ontology-atlas-mcp
- *   또는 .mcp.json 에 등록 (README 참고).
+ *   $ node /absolute/path/to/ontology-atlas/mcp/src/index.js
+ *   또는 앱에 번들된 서버를 .mcp.json 에 등록 (README 참고).
  */
 
 /**
@@ -71,6 +41,7 @@ import { basename, isAbsolute, relative, resolve, sep } from 'node:path';
 import { createHash } from 'node:crypto';
 
 import { SERVER_VERSION } from './server-version.mjs';
+import { buildToolInventorySection } from './tool-inventory.mjs';
 import {
   PROJECT_SOURCE_STATE_RELATIVE_PATH,
   buildProjectSourceReceipt,
@@ -132,11 +103,20 @@ import {
   CONSTRUCTION_RULES_EN,
   ELEMENT_NAMING_RULE_BATCH_EN,
   ELEMENT_NAMING_RULE_EN,
+  META_MODEL_RULES_EN,
 } from './construction-rules.mjs';
 import { appendActivityEntry, buildActivityEntry, readHeartbeatAgent } from './activity-log.mjs';
 import { writeFileSync } from 'node:fs';
 import { buildMarkdown, parseFrontmatter } from './parser.mjs';
 import { analyzeRepoStructure } from './analyze.mjs';
+import {
+  CONSTRUCTION_QUALIFICATION_INPUT_SCHEMA,
+} from './construction-qualification.mjs';
+import {
+  CONSTRUCTION_LIFECYCLE_EN,
+  CONSTRUCTION_LIFECYCLE_CONTRACT,
+  CONSTRUCTION_LIFECYCLE_PHASES,
+} from './construction-lifecycle.mjs';
 import { buildAbsorptionPlan, buildSlimPointer } from './absorb.mjs';
 import {
   IMPORT_EDGE_KIND_VALUES,
@@ -881,6 +861,81 @@ const MEANING_WRITE_PLAN_OUTPUT_SCHEMA = Object.freeze({
   required: ['concepts', 'relations', 'competencyAnswers'],
   additionalProperties: false,
 });
+const CONSTRUCTION_LIFECYCLE_OUTPUT_SCHEMA = Object.freeze({
+  type: 'object',
+  properties: {
+    contract: { type: 'string', enum: [CONSTRUCTION_LIFECYCLE_CONTRACT] },
+    qualificationStatus: {
+      type: 'string',
+      enum: ['qualified', 'not_qualified', 'invalid'],
+    },
+    writeEligibility: {
+      type: 'string',
+      enum: ['blocked', 'reviewable', 'executable'],
+    },
+    planDigest: { anyOf: [{ type: 'string', pattern: '^sha256:[a-f0-9]{64}$' }, { type: 'null' }] },
+    sourceDigest: { anyOf: [{ type: 'string', pattern: '^sha256:[a-f0-9]{64}$' }, { type: 'null' }] },
+    planRevision: { type: 'integer', minimum: 1 },
+    firstBlockingPhase: {
+      anyOf: [{ type: 'string', enum: CONSTRUCTION_LIFECYCLE_PHASES }, { type: 'null' }],
+    },
+    phases: {
+      type: 'array',
+      minItems: CONSTRUCTION_LIFECYCLE_PHASES.length,
+      maxItems: CONSTRUCTION_LIFECYCLE_PHASES.length,
+      items: {
+        type: 'object',
+        properties: {
+          id: { type: 'string', enum: CONSTRUCTION_LIFECYCLE_PHASES },
+          status: {
+            type: 'string',
+            enum: ['passed', 'blocked', 'awaiting_approval', 'gap_accepted', 'pending_post_write'],
+          },
+          diagnosticCodes: {
+            type: 'array',
+            uniqueItems: true,
+            items: NON_BLANK_STRING_SCHEMA,
+          },
+        },
+        required: ['id', 'status', 'diagnosticCodes'],
+        additionalProperties: false,
+      },
+    },
+    diagnostics: {
+      type: 'array',
+      items: {
+        type: 'object',
+        properties: {
+          code: NON_BLANK_STRING_SCHEMA,
+          phase: { type: 'string', enum: CONSTRUCTION_LIFECYCLE_PHASES },
+          message: NON_BLANK_STRING_SCHEMA,
+        },
+        required: ['code', 'phase', 'message'],
+        additionalProperties: false,
+      },
+    },
+    requiredGapIds: {
+      type: 'array',
+      uniqueItems: true,
+      items: NON_BLANK_STRING_SCHEMA,
+    },
+    nextAction: NON_BLANK_STRING_SCHEMA,
+  },
+  required: [
+    'contract',
+    'qualificationStatus',
+    'writeEligibility',
+    'planDigest',
+    'sourceDigest',
+    'planRevision',
+    'firstBlockingPhase',
+    'phases',
+    'diagnostics',
+    'requiredGapIds',
+    'nextAction',
+  ],
+  additionalProperties: false,
+});
 const MEANING_PROPOSAL_VALIDATION_OUTPUT_SCHEMA = Object.freeze({
   type: 'object',
   properties: {
@@ -946,10 +1001,12 @@ const MEANING_PROPOSAL_VALIDATION_OUTPUT_SCHEMA = Object.freeze({
         additionalProperties: false,
       },
     },
+    constructionLifecycle: CONSTRUCTION_LIFECYCLE_OUTPUT_SCHEMA,
+    reviewPlan: MEANING_WRITE_PLAN_OUTPUT_SCHEMA,
     writePlan: MEANING_WRITE_PLAN_OUTPUT_SCHEMA,
     nextStep: NON_BLANK_STRING_SCHEMA,
   },
-  required: ['status', 'canWrite', 'summary', 'gates', 'findings', 'nextStep'],
+  required: ['status', 'canWrite', 'summary', 'gates', 'findings', 'constructionLifecycle', 'nextStep'],
   additionalProperties: false,
 });
 const EXTRACTION_CONTRACT_OUTPUT_SCHEMA = Object.freeze({
@@ -1725,25 +1782,18 @@ try {
 // dry-run/confirm 패턴, (4) mtime 충돌 가드, (5) R16/R17 bootstrap workflow,
 // (6) error message 가 다음 tool 을 직접 가리킨다는 사실 — agent UX 가
 // 매번 시행착오로 학습되는 문제를 단번에 해소.
-const SERVER_INSTRUCTIONS = `ontology-atlas — vault of markdown files where each \`.md\` with a frontmatter \`kind:\` is an ontology node. The graph encodes the codebase's mental model and is shared with the human via plain markdown.
+const TOOL_INVENTORY_PLACEHOLDER = '__ONTOLOGY_ATLAS_ACTIVE_TOOL_INVENTORY__';
+const SERVER_INSTRUCTIONS_TEMPLATE = `ontology-atlas — vault of markdown files where each \`.md\` with a frontmatter \`kind:\` is an ontology node. The graph encodes the codebase's mental model and is shared with the human via plain markdown.
 
 ## Node identity
 
 Every valid node has both identities: immutable \`uid\` is the permanent machine identity, while \`slug\` is the current human-readable address. \`list_concepts\`, \`get_concept\`, \`get_concepts\`, compiled/query node rows, and agent handoffs return both. Use \`get_concept({uid})\` or \`get_concepts({uids:[...]})\` for exact continuity across renames; use slug for frontmatter relations, URLs, and all graph-operation inputs. Never treat a slug change as a new UID.
 
-## Tool inventory (33 tools = read 19 + write 14)
+${TOOL_INVENTORY_PLACEHOLDER}
 
-**read** — \`connection_info\` · \`git_status\` · \`git_history\` · \`list_concepts\` · \`get_concept\` · \`get_concepts\` · \`find_evidence\` · \`find_backlinks\` · \`find_neighbors\` · \`find_path\` · \`list_kinds\` · \`find_orphans\` · \`query_concepts\` · \`compile_ontology\` · \`query_ontology\` · \`validate_vault\` · \`analyze_repo_structure\` · \`infer_imports\` · \`index_project\`.
-**write** — \`add_concept\` · \`add_concepts\` · \`add_relation\` · \`add_relations\` · \`remove_relation\` · \`replace_relation\` · \`patch_concept\` · \`reclassify_concept\` · \`delete_concept\` · \`rename_concept\` · \`merge_concepts\` · \`absorb_document\` · \`git_snapshot\` · \`finalize_project_meaning\` · \`connect_project_source\` · \`disconnect_project_source\`.
+${META_MODEL_RULES_EN}
 
-## Kind hierarchy (top → leaf)
-
-- **project** — top-level deliverable (e.g. "auth-platform"). Owns domains / capabilities / elements.
-- **domain** — functional grouping (e.g. "auth", "billing"). Parent of capabilities.
-- **capability** — a coherent unit of behavior (e.g. "token-issue"). Often realized by elements.
-- **element** — concrete piece (library, API, schema, file). Leaf-level.
-- **document** — narrative or reference doc tied to the graph but not a domain object.
-- (\`vault-readme\` is reserved for the auto-generated README.md — agents should not set this kind.)
+${CONSTRUCTION_LIFECYCLE_EN}
 
 ## Two starting workflows
 
@@ -1792,9 +1842,11 @@ When the user says "이 codebase 분석해줘" or you find only starter nodes:
 3. Extract in order: project outcome → stable responsibility domains → observable implementation-independent capabilities → concrete elements → typed relations. A folder, package, team, technology, or README section is not a domain/capability without independent semantic evidence.
 4. Give every proposed domain/capability a non-circular definition, includes/excludes boundary, citation, confidence, and counterevidence/uncertainty. Keep observed facts, proposed meanings, and persisted shared concepts separate.
 5. Answer every \`extractionContract.competencyQuestions\` item with \`answer\`, \`status\` (\`answered\` / \`partial\` / \`visible-gap\`), and typed \`witnesses\` (concepts, exact proposal relations, evidence sources, attached paths). Use \`answered\` only when every \`requiredWitnesses\` kind is present; impact also requires a \`depends_on\` witness. If Atlas exposes a path but not its role, preserve that as partial/visible-gap instead of calling it canonical. Report unsupported assertions, citation gaps, implementation-name leakage, undefined/circular concepts, unresolved conflicts, and question coverage.
-6. Call \`analyze_repo_structure\` again with the complete \`proposal\`: project, domains, capabilities, elements, typed relations, citations, confidence, and every typed competency answer. Fix every error finding; inspect every partial/visible-gap warning. Do not call write tools unless \`proposalValidation.canWrite\` is true and a deterministic \`writePlan\` is present. \`canWrite:true\` with warnings means the gap is preserved, not fully answered.
-7. Show that exact validated graph and obtain explicit user approval. Unknown is a valid result; invented completeness is not. If the user selects a subset, remove rejected endpoints and revalidate the complete subset before writing.
-8. After approval, pass \`writePlan.concepts\` rows unchanged to \`add_concepts\` (chunks of 50). Only when every concept row succeeds, pass the proposal-validated \`writePlan.relations\` rows unchanged to \`add_relations\`. Raw \`infer_imports.moduleEdges\` are never this write plan and must pass the separate import evidence review above. \`canWrite\` proves evidence readiness, not approval, atomicity, or write success. Then run \`validate_vault\`, \`compile_ontology({summary:true})\`, and verify a project → domain → capability → element path.
+6. Call \`analyze_repo_structure\` with the complete \`proposal\` and no \`qualification\`. Fix every error. The first valid response is deliberately non-writing: inspect its exact \`reviewPlan\`, plan/source digests, eight lifecycle phases, warnings, and \`requiredGapIds\`; \`canWrite\` must still be false and \`writePlan\` absent.
+7. Have a separately identified evaluator build the complete \`constructionQualification:v1\` packet from approved competency questions, current portable witnesses, exact claims/citations, all seven axes, a complete source-hidden run, and the prior-CQ regression. If an independent evaluator cannot run, stop without writes and ask the user for an independent evaluation handoff.
+8. Show the exact review plan and every gap. After explicit user acceptance, bind the declared human provenance to the returned plan digest, revision, and every accepted gap id. This is not identity authentication. A selected subset is a new plan: remove rejected endpoints and restart validation before approval.
+9. Call \`analyze_repo_structure\` again with the unchanged proposal plus that qualification packet. Any digest, revision, source-currentness, maker-independence, source-hidden, mandatory-axis, regression, or unaccepted-gap failure keeps \`canWrite:false\`. Only the returned \`writePlan\` is write-authorized.
+10. Pass \`writePlan.concepts\` rows unchanged to \`add_concepts\` (chunks of 50). Only when every concept row succeeds, pass \`writePlan.relations\` unchanged to \`add_relations\`. Raw \`infer_imports.moduleEdges\` are never this plan. Then run \`validate_vault\`, \`compile_ontology({summary:true})\`, connect the project source, and run \`finalize_project_meaning\`.
 
 A non-object row, unknown row fields, missing endpoint, or duplicate slug fail independently with \`ok: false\`. Invalid-only batches return no row-level write metadata and no top-level \`postWriteMaintenance\`; treat them as dry validation evidence. For relation batches, Invalid-only batches return no row-level \`changed\` / \`alreadyExists\` write metadata and no top-level \`postWriteMaintenance\`; treat them as dry validation evidence. An unknown type row includes a closest-value hint such as \`Did you mean "depends_on"?\`. Duplicate slugs fail as \`concepts[n] duplicate slug in input batch; first seen at concepts[m]\`. Retry only corrected rows.
 
@@ -1827,14 +1879,6 @@ Don't retry blindly — parse the suffix and pivot to the suggested tool.
 When code introduces a new capability / element / domain, mirror it in the vault with \`add_concept\` (and \`add_relation\` to wire it). When code is renamed / refactored, use \`rename_concept\` (one atomic call) instead of patch + manual backlink updates. The vault is the *shared* mental model — keeping it in sync is the point.
 
 ${CONSTRUCTION_RULES_EN}`;
-
-const server = new Server(
-  { name: 'ontology-atlas-mcp', version: SERVER_VERSION },
-  {
-    capabilities: { tools: {} },
-    instructions: SERVER_INSTRUCTIONS,
-  },
-);
 
 // ── 도구 정의 ─────────────────────────────────────────────────────────────
 
@@ -4531,7 +4575,8 @@ const TOOLS = [
     description:
       'R16 (autonomous ingest base) — analyze a code repository and propose ontology node candidates. ' +
       'side effect 0 (vault frontmatter NOT modified). Returns deterministic candidates the agent ' +
-      'should review and selectively pass to add_concept. Repository structure is implementation evidence, not automatic business meaning: extractionContract and proposedBusinessOntology make that uncertainty explicit. Detects:\n' +
+      'must turn into an evidence-backed proposal and move through the construction lifecycle before ' +
+      'any exact batch-writer rows are released. Repository structure is implementation evidence, not automatic business meaning: extractionContract and proposedBusinessOntology make that uncertainty explicit. Detects:\n' +
       '  - package.json `name` → project candidate\n' +
       '  - README.md first H1 → project title fallback\n' +
       '  - README.md H2 sections (skipping generic "Usage"/"Installation"/etc) → domain candidates\n' +
@@ -4541,15 +4586,19 @@ const TOOLS = [
       '  - README.rst + bounded static setup.py → Python project/package evidence without execution\n' +
       '  - root Python packages plus at most 12 import-connected implementation boundaries → direct modules plus up to 2 exact security/policy/risk file anchors; unused files are not mirrored and no capability is inferred from imports\n' +
       '  - bounded root Cargo package or repo-contained literal direct workspace members → typed feature declaration + literal cfg/cfg_attr source provenance; predicates are not evaluated and no runtime/import/semantic dependency is inferred\n' +
-      '  - a complete proposal may select at most 4 additional exact Python file endpoints already observed by infer_imports for distinct navigation roles; exact dependency direction is validated and these files never become automatic candidates\n\n' +
+      '  - a complete proposal may select at most 4 additional exact TypeScript, JavaScript, or Python file endpoints already observed by infer_imports for distinct navigation roles; exact dependency direction is validated and these files never become automatic candidates\n\n' +
       'Optionally pass a complete `proposal` to validate project/domain/capability/element definitions, ' +
       'typed relations, citations, risk controls, domain placement, implementation paths, confidence, ' +
       'and typed competency answers with resolvable concept/relation/evidence/path witnesses. Partial ' +
       'or visible-gap answers remain warnings instead of disappearing behind findings 0. A passing ' +
-      'validation includes a deterministic `writePlan` whose rows match `add_concepts` and ' +
-      '`add_relations` inputs and preserves the competency audit in the project body. ' +
-      'Do not call write tools unless proposalValidation.canWrite is true and the user approves; ' +
-      'write every concept row successfully before writing relations.\n\n' +
+      'validation first returns a deterministic non-writing `reviewPlan`, `planDigest`, ' +
+      '`sourceDigest`, and eight-phase construction lifecycle. An independent evaluator must ' +
+      'measure the approved competency questions and source-hidden task, then a human may declare ' +
+      'acceptance bound to that exact plan digest/revision and every visible gap. Pass the resulting ' +
+      '`constructionQualification:v1` packet as `qualification`; only a current, admissible packet ' +
+      'releases the exact reviewed rows as `writePlan`. Declared approval provenance is not identity ' +
+      'authentication. Do not call write tools unless proposalValidation.canWrite is true and a ' +
+      '`writePlan` is present; write every concept row successfully before writing relations.\n\n' +
       'Use this once when a user asks "이 codebase 분석해줘" / "bootstrap the ontology". ' +
       'Single source of truth preserved — only the user (via your subsequent add_concept calls) ' +
       'writes to the vault.',
@@ -4579,7 +4628,13 @@ const TOOLS = [
           description:
             'Optional business ontology proposal to validate against repository evidence before any write call. Python proposals may select at most 4 exact observed import endpoints beyond the analyzer candidates.',
         },
+        qualification: {
+          ...CONSTRUCTION_QUALIFICATION_INPUT_SCHEMA,
+          description:
+            'Optional independent evaluation and declared human acceptance bound to the exact planDigest, planRevision, and sourceDigest returned for this proposal. Omit it on the first review call.',
+        },
       },
+      additionalProperties: false,
     },
     outputSchema: {
       type: 'object',
@@ -5202,6 +5257,18 @@ const TOOLS_FOR_LIST = READ_ONLY_MODE
 // Full registry stays complete so unknown-tool suggestions + the read-only
 // guard can reason about every tool name regardless of what tools/list shows.
 const TOOL_BY_NAME = new Map(TOOLS_FOR_LIST_ALL.map((tool) => [tool.name, tool]));
+
+const SERVER_INSTRUCTIONS = SERVER_INSTRUCTIONS_TEMPLATE.replace(
+  TOOL_INVENTORY_PLACEHOLDER,
+  buildToolInventorySection(TOOLS_FOR_LIST),
+);
+const server = new Server(
+  { name: 'ontology-atlas-mcp', version: SERVER_VERSION },
+  {
+    capabilities: { tools: {} },
+    instructions: SERVER_INSTRUCTIONS,
+  },
+);
 
 // v2 는 스키마 객체가 아니라 **메서드 문자열**을 받는다. 구 판본이
 // `ListToolsRequestSchema` 를 넘기면 v2 는 "not a spec request method" 로
@@ -8217,17 +8284,32 @@ function isPathLikeGraphRef(ref) {
 }
 
 // R16 (b3) — analyze_repo_structure thin wrapper. side effect 0 — vault
-// frontmatter 절대 안 건드림. 사용자 검토 후 별도 add_concept 호출이 진실
-// 진입.
-function analyzeRepoStructureTool({ rootPath, maxDepth, ignore, proposal } = {}) {
+// frontmatter 절대 안 건드림. reviewPlan + independent qualification 뒤 반환된
+// exact writePlan만 별도 batch writer의 진실 진입점이다.
+function analyzeRepoStructureTool({ rootPath, maxDepth, ignore, proposal, qualification } = {}) {
   requireOptionalNonBlankString(rootPath, 'rootPath');
   requireOptionalNonNegativeInteger(maxDepth, 'maxDepth', { max: 10 });
   requireOptionalStringArray(ignore, 'ignore', { max: IGNORE_ARRAY_MAX_ITEMS });
   const target = rootPath ? resolve(rootPath) : REPO_ROOT;
+  const sourceDigest = proposal == null
+    ? undefined
+    : inspectProjectSource(target).fingerprint;
+  // A proposal may cite up to four exact endpoints already observable through
+  // infer_imports. Recompute that bounded, read-only receipt in the proposal
+  // call so validation does not depend on hidden state from an earlier
+  // index_project/infer_imports call.
+  const proposalImportEvidence = proposal == null
+    ? undefined
+    : inferImports(target, { ignore });
   return analyzeRepoStructure(target, {
     maxDepth,
     ignore,
+    ...(proposalImportEvidence === undefined
+      ? {}
+      : { precomputedPythonImports: proposalImportEvidence }),
     proposal,
+    qualification,
+    sourceDigest,
   });
 }
 
@@ -8714,10 +8796,10 @@ function looksLikeGeneratedStarter(body, kind) {
   if (text.length > 800) return false;
   const markers = {
     project: /One- or two-line summary of this project/i,
-    domain: /A \*domain\* is a large area of the project/i,
-    capability: /A \*capability\* is one user-visible feature/i,
-    element: /implementation element/i,
-    document: /source document/i,
+    domain: /(?:Describe the stable responsibility or problem boundary|A \*domain\* is a large area of the project)/i,
+    capability: /(?:Describe the observable, implementation-independent ability|A \*capability\* is one user-visible feature)/i,
+    element: /(?:Describe the distinct implementation role|implementation element)/i,
+    document: /(?:State what this narrative or reference artifact explains|source document)/i,
   };
   return Boolean(markers[kind]?.test(text));
 }
