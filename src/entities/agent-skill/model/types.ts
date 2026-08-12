@@ -57,6 +57,179 @@ export interface SkillInvocation {
   readonly executables: readonly string[];
 }
 
+export interface SkillProcessSource {
+  readonly path: string;
+  readonly digest: string;
+}
+
+export interface SkillProcessPosition {
+  /** 1-based source coordinate. */
+  readonly line: number;
+  /** 1-based source coordinate; `end` is exclusive. */
+  readonly column: number;
+}
+
+export interface SkillProcessSourceSpan {
+  readonly start: SkillProcessPosition;
+  readonly end: SkillProcessPosition;
+}
+
+export type SkillProcessDiagnosticCode =
+  | "scan_truncated"
+  | "skill_markdown_unsupported"
+  | "numbered_steps_unavailable"
+  | "resource_missing"
+  | "resource_existence_unverified"
+  | "resource_path_unsupported"
+  | "semantic_ambiguous";
+
+export interface SkillProcessDiagnostic {
+  readonly code: SkillProcessDiagnosticCode;
+  readonly severity: "warning" | "error";
+  readonly message: string;
+  readonly sourceSpan?: SkillProcessSourceSpan;
+  readonly sourceDigest?: string;
+}
+
+interface SkillProcessSemanticLabelBase {
+  readonly sourceSpan: SkillProcessSourceSpan;
+  readonly sourceDigest: string;
+}
+
+export interface SkillProcessBranchLabel extends SkillProcessSemanticLabelBase {
+  readonly kind: "branch";
+  readonly guard: string;
+  readonly targetOrdinal: number;
+}
+
+export interface SkillProcessRetryLabel extends SkillProcessSemanticLabelBase {
+  readonly kind: "retry";
+  readonly targetOrdinal: number;
+  readonly condition: string;
+}
+
+export interface SkillProcessStopLabel extends SkillProcessSemanticLabelBase {
+  readonly kind: "stop";
+  readonly condition: string;
+}
+
+export interface SkillProcessVerifyLabel extends SkillProcessSemanticLabelBase {
+  readonly kind: "verify";
+  readonly target: string;
+  readonly action: string;
+  readonly criterion: string;
+}
+
+export type SkillProcessSemanticLabel =
+  | SkillProcessBranchLabel
+  | SkillProcessRetryLabel
+  | SkillProcessStopLabel
+  | SkillProcessVerifyLabel;
+
+export interface SkillProcessStep {
+  /** Stable across unrelated line insertions; changes when this step's exact source changes. */
+  readonly stepId: string;
+  /** The number written in the source marker, not a guessed execution order. */
+  readonly ordinal: number;
+  /** Exact list-item text after the source's number marker. */
+  readonly exactText: string;
+  readonly sourceSpan: SkillProcessSourceSpan;
+  /** Exact grammar labels only; these never become process edges. */
+  readonly semanticLabels: readonly SkillProcessSemanticLabel[];
+}
+
+export type SkillProcessResourceKind =
+  | "reference"
+  | "script"
+  | "asset"
+  | "template"
+  | "example";
+
+export interface SkillProcessResource {
+  /** Folder-root-relative path, resolved from the owning SKILL.md. */
+  readonly path: string;
+  readonly kind: SkillProcessResourceKind;
+  /** `null` means the caller did not provide a complete path inventory. */
+  readonly exists: boolean | null;
+  readonly referencedByStepIds: readonly string[];
+}
+
+/**
+ * Read-only, source-derived process projection. It is deliberately not an ontology node,
+ * and K1.1 admits no transition relation at all.
+ */
+export interface SkillProcessIR {
+  readonly irVersion: "skillProcessIR:v1";
+  readonly source: SkillProcessSource;
+  readonly scanTruncated: false;
+  readonly diagnostics: readonly SkillProcessDiagnostic[];
+  readonly steps: readonly SkillProcessStep[];
+  readonly resources: readonly SkillProcessResource[];
+  readonly edges: readonly [];
+}
+
+export type SkillProcessDerivation =
+  | { readonly state: "ready"; readonly process: SkillProcessIR }
+  | {
+      readonly state: "unavailable";
+      readonly source: SkillProcessSource;
+      readonly scanTruncated: boolean;
+      readonly diagnostics: readonly SkillProcessDiagnostic[];
+    };
+
+export type SkillProcessPacketDiagnosticCode =
+  | SkillProcessDiagnosticCode
+  | "process_unavailable"
+  | "process_invalid"
+  | "packet_unavailable"
+  | "packet_malformed"
+  | "packet_noncanonical"
+  | "packet_digest_mismatch"
+  | "source_digest_mismatch";
+
+export interface SkillProcessPacketDiagnostic {
+  readonly code: SkillProcessPacketDiagnosticCode;
+  readonly severity: "error";
+  readonly message: string;
+}
+
+export interface SerializedSkillProcessPacket {
+  readonly state: "ready";
+  readonly text: string;
+  readonly bytes: Uint8Array;
+  readonly sourceDigest: string;
+  readonly packetDigest: string;
+}
+
+export interface VerifiedSkillProcessPacket {
+  readonly state: "ready";
+  readonly process: SkillProcessIR;
+  readonly bytes: Uint8Array;
+  readonly sourceDigest: string;
+  readonly packetDigest: string;
+}
+
+export interface UnavailableSkillProcessPacket {
+  readonly state: "unavailable";
+  readonly source: SkillProcessSource | null;
+  readonly diagnostics: readonly SkillProcessPacketDiagnostic[];
+}
+
+export interface TamperedSkillProcessPacket {
+  readonly state: "tampered";
+  readonly source: SkillProcessSource | null;
+  readonly diagnostics: readonly SkillProcessPacketDiagnostic[];
+}
+
+export type SkillProcessPacketSerialization =
+  | SerializedSkillProcessPacket
+  | UnavailableSkillProcessPacket;
+
+export type SkillProcessPacketVerification =
+  | VerifiedSkillProcessPacket
+  | UnavailableSkillProcessPacket
+  | TamperedSkillProcessPacket;
+
 export interface AgentSkill {
   readonly name: string;
   /** 발동 조건 — 런타임이 이 문장을 읽고 부를지 정한다. */
@@ -66,6 +239,8 @@ export interface AgentSkill {
   /** 설명에서 뽑은 변별 낱말 — 트리거 겹침을 재는 재료. */
   readonly terms: readonly string[];
   readonly invocation: SkillInvocation;
+  /** Ephemeral numbered-process projection; never written back to the skill or vault. */
+  readonly process: SkillProcessDerivation;
   /** 자기 폴더에 있다고 가리켰는데 없는 파일. 조건부 참조는 여기 안 든다. */
   readonly missingBundled: readonly string[];
 }

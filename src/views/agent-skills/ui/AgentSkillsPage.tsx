@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
 
 import { useSkillFolder } from "@/features/agent-skills-local";
@@ -8,6 +8,7 @@ import { Button } from "@/shared/ui";
 import { fieldClass } from "@/shared/ui/control-class";
 import { HexMark } from "@/shared/ui/hex-mark";
 import { PAGE_FRAME, PAGE_HEADER_ROW, PAGE_TITLE_ROW } from "@/shared/ui/page-frame";
+import { LG_BREAKPOINT_PX, useViewportBelow } from "@/shared/lib/use-viewport-below";
 
 import { FindingsPanel } from "./FindingsPanel";
 import { SkillDetail } from "./SkillDetail";
@@ -49,6 +50,13 @@ export function AgentSkillsPage() {
     useSkillFolder();
   const [selected, setSelected] = useState<string | null>(null);
   const [query, setQuery] = useState("");
+  const [compactDetail, setCompactDetail] = useState(false);
+  const [openStepsBySkill, setOpenStepsBySkill] = useState<Record<string, readonly string[]>>({});
+  const isCompact = useViewportBelow(LG_BREAKPOINT_PX);
+  const listScrollRef = useRef<HTMLDivElement>(null);
+  const detailHeadingRef = useRef<HTMLHeadingElement>(null);
+  const listScrollTop = useRef(0);
+  const restoreListFocus = useRef(false);
 
   const groups = useMemo(
     () => (inventory ? groupBySource(filterSkills(inventory.skills, query)) : []),
@@ -58,10 +66,47 @@ export function AgentSkillsPage() {
     () => inventory?.skills.find((s) => s.origin.relativePath === selected) ?? null,
     [inventory, selected],
   );
+  const view = isCompact ? (compactDetail && current ? "detail" : "list") : "split";
+
+  const selectSkill = useCallback((relativePath: string) => {
+    setSelected(relativePath);
+    if (isCompact) {
+      listScrollTop.current = listScrollRef.current?.scrollTop ?? 0;
+      setCompactDetail(true);
+    }
+  }, [isCompact]);
+
+  useEffect(() => {
+    if (isCompact && compactDetail && current) detailHeadingRef.current?.focus();
+  }, [compactDetail, current, isCompact]);
+
+  useEffect(() => {
+    if (!isCompact || compactDetail || !restoreListFocus.current) return;
+    restoreListFocus.current = false;
+    if (listScrollRef.current) listScrollRef.current.scrollTop = listScrollTop.current;
+    const rows = document.querySelectorAll<HTMLElement>("[data-skill-path]");
+    [...rows].find((row) => row.dataset.skillPath === selected)?.focus();
+  }, [compactDetail, isCompact, selected]);
+
+  const returnToList = useCallback(() => {
+    restoreListFocus.current = true;
+    setCompactDetail(false);
+  }, []);
+
+  const toggleStep = useCallback((stepId: string) => {
+    if (!selected) return;
+    setOpenStepsBySkill((currentOpen) => {
+      const open = new Set(currentOpen[selected] ?? []);
+      if (open.has(stepId)) open.delete(stepId);
+      else open.add(stepId);
+      return { ...currentOpen, [selected]: [...open] };
+    });
+  }, [selected]);
 
   return (
     <main
       data-testid="agent-skills-page"
+      data-view={view}
       // 셸이 `h-dvh` 로 뷰포트를 소유하므로 페이지는 `h-full` 로 받고 스크롤은
       // 안에서 처리한다 — 지도·문서함·기록과 같은 문법이다.
       className="flex h-full flex-col overflow-hidden bg-[color:var(--color-canvas)]"
@@ -148,11 +193,9 @@ export function AgentSkillsPage() {
             ) : null}
 
             {/* 2열 — 왼쪽은 찾고 고르는 자리, 오른쪽은 항상 답이 떠 있는 자리. */}
-            <div className="flex min-h-0 flex-1 gap-4">
-              <div
-                data-testid="skills-left"
-                className="flex min-h-0 w-full shrink-0 flex-col gap-2 lg:w-[340px]"
-              >
+            <div data-testid="skills-workbench" data-view={view} className="flex min-h-0 flex-1 gap-4">
+              {!isCompact || view === "list" ? (
+              <div data-testid="skills-left" className="flex min-h-0 w-full shrink-0 flex-col gap-2 lg:w-[340px]">
                 {/* 라벨은 `sr-only <label>` 이 아니라 `aria-label` 로 단다 —
                     화면에 안 보이는 라벨에 클래스를 얹으면 폼 래칫이 그것을
                     「손으로 쓴 규격」으로 세고, 실제로 그렇게 세는 게 맞다. */}
@@ -165,26 +208,35 @@ export function AgentSkillsPage() {
                   // 폼 규격은 값 층이 진다 — 손으로 쓰면 래칫이 막는다.
                   className={fieldClass({ size: "md" })}
                 />
-                <div className="min-h-0 flex-1 overflow-y-auto pr-1">
+                <div ref={listScrollRef} className="min-h-0 flex-1 overflow-y-auto pr-1">
                   <SkillList
                     inventory={inventory}
                     groups={groups}
                     selected={selected}
-                    onSelect={setSelected}
+                    onSelect={selectSkill}
                   />
                 </div>
               </div>
+              ) : null}
 
-              <div
-                data-testid="skills-right"
-                className="hidden min-h-0 flex-1 overflow-y-auto rounded-[var(--radius-panel)] border border-[color:var(--color-border-soft)] px-4 py-3.5 lg:block"
-              >
+              {!isCompact || view === "detail" ? (
+              <div data-testid="skills-right" className="min-h-0 flex-1 overflow-y-auto rounded-[var(--radius-panel)] border border-[color:var(--color-border-soft)] px-4 py-3.5">
                 {current ? (
-                  <SkillDetail skill={current} inventory={inventory} onSelect={setSelected} />
+                  <SkillDetail
+                    key={current.origin.relativePath}
+                    skill={current}
+                    inventory={inventory}
+                    onSelect={selectSkill}
+                    onBack={isCompact ? returnToList : undefined}
+                    headingRef={detailHeadingRef}
+                    openStepIds={new Set(openStepsBySkill[current.origin.relativePath] ?? [])}
+                    onToggleStep={toggleStep}
+                  />
                 ) : (
-                  <FindingsPanel inventory={inventory} onSelect={setSelected} />
+                  <FindingsPanel inventory={inventory} onSelect={selectSkill} />
                 )}
               </div>
+              ) : null}
             </div>
           </>
         ) : null}

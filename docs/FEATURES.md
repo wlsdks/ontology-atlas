@@ -615,6 +615,7 @@ level below `/projects`.
 #### Zone 1 — hero band
 - Project kind glyph + inline-editable name (`InlineEditable`, when `canManageProject`) + hero meta (Hub label or plain label · status) + updated date + inline-editable description
 - "View topology" link + `ProjectQuickEditPanel` (quick-edit: name / description / owner / tags — the fast path; stack/links/dependencies/dates stay in the full editor)
+- **Construction review** — `검수 결과 열기` reads one local qualification envelope into React session state only and places a full-width review directly below the hero. The default depth keeps purpose, current/next decision, first blocker/diagnostic, red/unknown/conflict, human approval, and exact plan counts visible. `근거·진단 보기` expands the same artifact's CQs, source-bound witnesses and citations, examples/counterexamples, seven quality axes, diagnostics, exact review/write plans, and digest equality. Malformed, wrong-project, digest-mismatched, or unequal-plan envelopes fail closed; post-write maintenance is shown separately and never rewrites the completed qualification verdict. Nothing is uploaded, remembered, or written to the vault.
 - **Engraved metric strip** — domains / capabilities / elements / documents / relations, derived from this project's own ontology nodes/edges (not the whole vault)
 - **Mini domain map** (`MiniDomainMap`, lg+, only when the project has domains) — real proportional SVG by domain node count, "open in topology" link
 
@@ -798,11 +799,22 @@ Finder 로도 보지만 **그 세 가지는 어디에도 없다.**
 |---|---|
 | 어느 스킬이 있나 | 고른 폴더의 `SKILL.md` 를 전부 찾아 이름·출처·발동 조건으로 나열 |
 | 언제 뜨나 · 왜 엉뚱한 게 뜨나 | **이름 충돌**(같은 이름이 둘 이상 — 어느 쪽이 뜰지 정해져 있지 않다. 설명까지 다르면 「경쟁」으로 표시) · **트리거 겹침**(이름은 다른데 발동 조건 낱말이 겹치는 쌍) |
-| 뜨면 무슨 일이 일어나나 | 행을 펼치면 **호출 3단**: ① 항상 실려요(설명, 글자 수) ② 뜨면 실려요(본문, 글자 수) ③ 필요하면 열려요(딸린 파일 — **그중 실행되는 것에 「실행됨」 표시**). 가리켰는데 없는 파일은 취소선 |
+| 뜨면 무슨 일이 일어나나 | 번호 절차를 원문 순서·줄 위치 그대로 읽는 flat process rail과, 별도로 접힌 **호출 3단**을 함께 본다. 허용된 명시 문법의 branch/retry/stop/verify만 글자 라벨로 붙고 애매한 문장은 diagnostic으로 남는다. |
 
 **읽기와 실행을 가르는 것이 이 화면의 요점이다.** 스킬은 bash 로 스크립트를 돌릴
 수 있으므로 "이 스킬을 켜 두었다"는 "이 스크립트들이 내 컴퓨터에서 돌 수 있다"와
 같은 말인데, 규격 문서에서는 둘이 「bundled resources」 한 덩어리로 보인다.
+
+Process rail은 `SKILL.md`의 column-1 CommonMark 번호 항목만 source digest와 stable
+step ID, exact text, line span, resource backlink에 묶는다. scan truncation이나 지원하지
+않는 번호 문법은 일부 절차를 완성된 것처럼 보이지 않고 `process unavailable`로 닫힌다.
+1024px 이상은 340px 목록+fluid 상세, 그 미만은 목록↔상세 drill-in이며 복귀하면 이전
+검색·선택·스크롤·step disclosure와 포커스를 복원한다.
+
+사용자가 명시적으로 누르는 **packet 복사**는 이 exact IR의 canonical UTF-8 bytes,
+source digest, packet digest를 함께 전달한다. digest가 맞지 않거나 process가 unavailable이면
+복사를 막고, clipboard가 실제 성공한 뒤에만 완료를 알린다. 자동 저장·file export·public
+MCP/CLI process command는 없다.
 
 **하지 않는 것** (전부 의도한 것이다 — 2026-08-09 원장):
 

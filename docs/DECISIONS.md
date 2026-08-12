@@ -42,6 +42,102 @@
 
 ---
 
+## 2026-08-12 — 검수는 프로젝트 본문에서 열고, Skills는 좁은 화면에서도 exact rail을 잃지 않는다
+
+**소집**: Design Council 8석 2회전 + Design Guardian(`gpt-5.6-sol`) · **트리거**:
+PO Council이 승인한 U1.3/K1.1/K1.3/K1.2의 시각·상호작용·responsive·handoff 계약
+**결정**: `Build and verify`. 출하 승인은 재빌드한 설치 앱 workbench와 motion 증거가
+모일 때까지 보류한다.
+
+U1.3의 진입은 기존 project detail hero의 `검수 결과 열기` 하나다. 한 local JSON을
+React session에서만 읽고 hero 바로 아래, tabs 위의 full-width inline summary에 같은
+artifact를 투영한다. modal·aside·Agent panel·새 route·URL/localStorage/vault/sidecar write는
+사용하지 않는다. 기본 깊이는 purpose, 현재/다음 결정, 첫 blocker/diagnostic,
+red/unknown/conflict, 사람 승인, exact plan count를 고정 노출한다. `근거·진단 보기`만
+CQ→witness/citation span+digest→example/counterexample/rationale→7 axes→diagnostic→exact
+review/write plan과 equality를 펼친다. 작성 후 maintenance는 별도 상태이고 완료된
+qualification을 소급 변경하지 않는다.
+
+Skills는 1024px 이상에서 기존 340px master + fluid detail을 유지하고, 그 미만은
+list→detail drill-in으로 바꾼다. 상세 진입 때 제목으로, `스킬 목록` 복귀 때 원래 행으로
+focus와 scroll/query/selection을 복원한다. process의 승자는 flat `<ol>`이며 각 행은
+ordinal·exactText·source line을 고정 표시한다. resource/diagnostic만 row disclosure이고
+기존 3단 load chain은 별도 접힌 보조 정보다. K1.2 전 transition edge는 0이며, 명시
+문법에 합격한 semantic label만 글자로 표시한다. chart·legend·semantic 전용 색은 없다.
+
+K1.3의 첫 행동은 `packet 복사` 하나다. canonical UTF-8 bytes와 source/packet digest를
+같이 복사하고 clipboard 성공 뒤에만 완료를 알린다. unavailable/tampered는 고정 문구와
+copy 차단으로 실패 닫는다. file export와 public MCP/CLI process command는 만들지 않는다.
+
+**적용 규칙**: 새 token/ramp/hue/keyframe은 0. 기존 Button/controlClass/RowButton/
+PAGE_FRAME/text·radius·signal/useRowDisclosure/Surface를 쓴다. motion은 opacity-only
+120ms, disclosure 180ms/body 120ms이며 slide·scale·stagger가 없다. reduced motion은
+height/position 변화를 만들지 않는다. malformed/project/digest/plan/tamper mutation,
+27/27 step/order/line, 390/1023/1024/1512 focus·scroll·bottom-nav, flat `<ol>` 접근성,
+K1.2 gold precision과 ambiguous diagnostic을 각각 RED→GREEN으로 증명한다.
+**서명**: owner — C 방향 승인; Design Guardian — 구현 계약; Codex — TDD·실물 검증
+
+**기록된 반대**: clipboard-only packet은 큰 skill에서 운반 한계를 만나 file export가
+필요할 수 있다.
+**반증 조건**: 수용 상한 packet의 clipboard→fresh agent byte/digest 왕복이 재현 가능하게
+실패하면 동일 serializer bytes의 file export 하나를 추가한다.
+**재검토**: K1.3 source-hidden A/B와 최대 packet clipboard 실측 직후.
+
+**상태**: 유효
+
+---
+
+## 2026-08-12 — construction은 같은 artifact를 두 깊이로 읽고, Skills는 손실 없는 인계부터 연다
+
+**소집**: PO Council 5석(`po-evidence`·`po-craft`·`po-steward`·`po-wedge`·
+`po-leverage`, 모두 `gpt-5.6-sol`) 2회전 · **트리거**: 완료된 O1.5를 사람이 쉽게
+판단하는 U1.3과 source-bound Skills process K1.1~K1.3의 연속 구현 요청
+**루브릭**: **19/24** (Problem insight 2 · User moment 4 · Differentiation 3 ·
+Ontology value 4 · Agent value 4 · Verification 2, 치명적 0 없음)
+
+**결정**: `Shape a slice`. O1.5는 exact 9 concepts/9 relations, qualified/executable,
+validation 0, compile issue 0, current source, finalizer 성공과 독립 source-hidden
+48/48 claim·citation, 4 CQ, 7 targets, 7 axes로 완료됐다. `needs_evidence`와
+`structure_not_ready`는 승인 범위 밖 maintenance이며 이 완료를 되돌리지 않는다.
+
+소유자가 고른 C 방향을 채택한다. construction의 기본/전문가 깊이는 전역 persona나
+서로 다른 schema가 아니라 **같은 digest-bound artifact의 화면-local disclosure**다.
+기본 깊이는 다음 결정·첫 blocker·red/unknown/conflict·사람 승인 상태를 항상 보여 주고,
+같은 자리의 `근거·진단 보기`가 CQ·witness·citation·source digest·quality axes·exact
+plan을 펼친다. 어느 깊이도 판정이나 write plan을 다시 계산하지 않는다.
+
+Skills는 `U1.3 → K1.1 → K1.3 → K1.2` 순서로 연다. K1.1은 원문 번호 절차와 line,
+source digest, diagnostic, resource를 손실 없이 보존한다. K1.3은 그 exact IR을 사용자가
+명시적으로 복사/내보낸 때만 source-hidden agent에게 전달한다. K1.2는 마지막에 독립
+gold corpus가 허용한 명시 문법만 의미 overlay로 올린다. exact IR은 의미 추론 없이도
+안전하게 인계할 수 있으므로 K1.3을 K1.2보다 앞에 둔다.
+
+**적용 규칙**: 구현 전 첫 RED는 60~90분 안에서 끝나는 두 기준선이다. 현재 artifact로
+사람의 승인 판단 손실과 current Skills surface만 받은 fresh agent의 exact-step 복원 손실을
+각각 독립 재현한다. 둘 다 재현되지 않으면 구현을 중단한다. 재현되면 각 항목을 독립
+circuit breaker로 완료한 뒤 다음 항목을 연다. IN — session-only canonical envelope,
+같은 artifact 두 깊이, 상시 failure/approval, 1512×900·390×900·재빌드 설치 앱,
+K1.1 exact IR, K1.3 explicit export와 tamper failure, K1.2 precision 100%/false-positive 0.
+OUT — 새 route·전역 초급/전문가 모드·preference 저장·새 MCP tool/validator/vault
+kind/schema/sidecar·자동 저장/전송·generic workflow editor·위험 점수·SKILL.md 편집·
+Skill/step ontology-node 승격.
+**서명**: owner — C 방향과 순차 전체 구현 승인; Codex — Council 종합·기준선·구현·검증
+
+**기록된 반대**: K1.3을 K1.2보다 먼저 만들면 semantic overlay 없는 packet은 raw
+Markdown을 포장한 빈 envelope일 수 있다.
+**반증 조건**: K1.1-only packet을 받은 blinded fresh agent가 raw Markdown 대조군보다
+exact step·line citation, diagnostic truthfulness, recovery action, tamper detection에서
+개선되지 않으면 K1.3을 멈추고 K1.2를 먼저 한다.
+**기준선 뒤 정정**: raw-source 대조군이 이미 step·order·line 27/27이라 정확도
+`개선`은 불가능했다. K1.3의 수용선은 27/27 비열화 없음과 함께 source digest,
+diagnostic/resource truth, packet 부재의 정직한 unavailable, tamper fail-closed를 추가로
+입증하는 것이다. 이 추가 truth 중 하나라도 못 지키면 같은 반증 조건이 성립한다.
+**재검토**: K1.1 source-hidden A/B 직후, K1.3 구현 전.
+
+**상태**: 유효
+
+---
+
 ## 2026-08-10 — evidence ingress는 scan 경계까지 닫고 qualification과 분리한다
 
 **소집**: PO Council 5석(`po-evidence`·`po-craft`·`po-steward`·`po-wedge`·

@@ -40,6 +40,7 @@ import { CopyProjectLinkButton } from "@/features/project-share";
 import { useDocumentTitle } from "@/shared/lib/use-document-title";
 import { useTaxonomy } from "@/features/taxonomy";
 import { ProjectQuickEditPanel } from "@/features/project-quick-edit";
+import { useConstructionReviewSession } from "@/features/construction-review-local";
 import { resolveSubscribeUpdate } from "../model/resolve-subscribe-update";
 import { resolveProjectTagline } from "../model/project-tagline";
 import { stripDuplicateHeading } from "../model/strip-duplicate-heading";
@@ -50,6 +51,7 @@ import { buildAgentHandoffSnippet } from "../model/agent-handoff-snippet";
 import { shortenDomainTitle } from "../model/short-domain-title";
 import { MiniDomainMap } from "./MiniDomainMap";
 import { DomainCompositionGrid } from "./DomainCompositionGrid";
+import { ConstructionReviewPanel } from "./construction-review/ConstructionReviewPanel";
 import { TabBar } from "@/shared/ui/tab-bar";
 import {
   compositionTabCount,
@@ -237,6 +239,7 @@ export function ProjectDetailPage({
 }: Props) {
   const t = useTranslations("projectPages.detail");
   const router = useRouter();
+  const constructionReview = useConstructionReviewSession(slug);
   // 탭은 URL 에 산다 (#87) — 공유 가능하고 에이전트가 재현할 수 있어야 한다.
   // 숨은 상태로 두면 핸드오프 패킷에서 "어느 탭을 보던 중" 이 사라진다.
   const searchParams = useSearchParams();
@@ -539,6 +542,24 @@ export function ProjectDetailPage({
             {/* flex-none 은 읽기전용 배지(+액션)가 390px 뷰포트를 밀어내는
                 가로 overflow 를 만들었다 — min-w-0 수축 허용 + wrap. */}
             <div className="ml-auto flex min-w-0 flex-wrap items-center gap-2">
+              <input
+                {...constructionReview.inputProps}
+                data-testid="construction-review-ingress"
+                aria-label={t("constructionReview.openResult")}
+                className="sr-only"
+              />
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                disabled={constructionReview.status === "reading"}
+                onClick={constructionReview.openPicker}
+              >
+                <FileText size={ICON_SIZE.md} aria-hidden="true" />
+                {constructionReview.status === "reading"
+                  ? t("constructionReview.readingResult")
+                  : t("constructionReview.openResult")}
+              </Button>
               <Link href={getTopologyProjectHref(project.slug)} data-testid="project-detail-topology-link">
                 <Button type="button" variant="outline" size="sm">
                   {t("topBarTopologyView")}
@@ -632,6 +653,25 @@ export function ProjectDetailPage({
           </div>
         ) : null}
       </header>
+
+      {constructionReview.status === "ready" && constructionReview.review ? (
+        <ConstructionReviewPanel review={constructionReview.review} />
+      ) : null}
+
+      {constructionReview.status === "blocked" && constructionReview.errorState ? (
+        <section
+          data-testid="construction-review-error"
+          data-envelope-state={constructionReview.errorState}
+          className="mt-[var(--section-gap)] rounded-panel border border-[color:var(--color-danger-a32)] bg-[color:var(--color-danger-a08)] px-4 py-4 sm:px-5"
+        >
+          <h2 className="text-title font-[var(--font-weight-strong)] text-[color:var(--color-danger-text)]">
+            {t("constructionReview.errorTitle")}
+          </h2>
+          <p className="mt-1.5 text-body leading-prose text-[color:var(--color-text-secondary)]">
+            {t(`constructionReview.errors.${constructionReview.errorState}`)}
+          </p>
+        </section>
+      ) : null}
 
       {/* 탭 (#87) — "정보 종류" 가 아니라 **답하는 질문**으로 가른다.
           개요 = 이게 무엇인가(본문) · 구성 = 무엇으로 이루어졌나.

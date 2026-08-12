@@ -47,6 +47,9 @@ vi.mock("@/widgets/search-palette", () => ({
 vi.mock("@/widgets/shortcut-sheet", () => ({
   ShortcutSheet: () => null,
 }));
+vi.mock("@/features/construction-review-local", () => ({
+  useConstructionReviewSession: () => mocks.constructionReview,
+}));
 function ontologyNode(
   id: string,
   kind: string,
@@ -78,6 +81,50 @@ function containsEdge(from: string, to: string) {
 }
 
 const SLUG = "ontology-atlas";
+const PLAN_DIGEST = `sha256:${"a".repeat(64)}`;
+const SOURCE_DIGEST = `sha256:${"b".repeat(64)}`;
+
+function constructionEnvelope(overrides: {
+  projectSlug?: string;
+  sourceDigest?: string;
+  writePlan?: unknown;
+} = {}) {
+  const plan = {
+    concepts: [{ slug: SLUG }],
+    relations: [{ from: SLUG, type: "domains", to: "shared-meaning" }],
+    competencyAnswers: { scope: "answered" },
+  };
+  const projectSlug = overrides.projectSlug ?? SLUG;
+  const sourceDigest = overrides.sourceDigest ?? SOURCE_DIGEST;
+  return {
+    qualification: {
+      contract: "constructionQualification:v1",
+      subject: { projectSlug, graphDigest: PLAN_DIGEST, sourceDigest: SOURCE_DIGEST },
+      purposeAuthority: { outcome: "People and agents judge the same local meaning." },
+      competencyQuestions: [], witnesses: [], cqResults: [], claims: [], citationChecks: [],
+      axisResults: [], diagnostics: [],
+      acceptance: { decision: "accepted", decidedBy: "jinan", authority: "human", planDigest: PLAN_DIGEST },
+    },
+    analysis: {
+      project: { slug: projectSlug },
+      proposalValidation: {
+        reviewPlan: plan,
+        writePlan: overrides.writePlan === undefined ? structuredClone(plan) : overrides.writePlan,
+        findings: [],
+        constructionLifecycle: {
+          contract: "ontologyConstructionLifecycle:v1",
+          qualificationStatus: "qualified",
+          writeEligibility: "executable",
+          planDigest: PLAN_DIGEST,
+          sourceDigest,
+          firstBlockingPhase: null,
+          diagnostics: [],
+          nextAction: "Write the exact approved rows.",
+        },
+      },
+    },
+  };
+}
 
 const BASE_NODES = [
   ontologyNode(`project:${SLUG}`, "project", [], "ontology-atlas"),
@@ -101,6 +148,14 @@ const mocks = vi.hoisted(() => ({
   vaultBody: null as string | null,
   projects: [] as ReturnType<typeof baseProject>[],
   projectsMode: "static" as "static" | "local",
+  constructionReview: {
+    status: "idle",
+    review: null,
+    errorState: null,
+    openPicker: vi.fn(),
+    readFile: vi.fn(),
+    inputProps: {},
+  } as Record<string, unknown>,
 }));
 
 vi.mock("@/features/vault-ontology", () => ({
@@ -176,6 +231,14 @@ describe("ProjectDetailPage", () => {
     mocks.vaultBody = null;
     mocks.projects = [];
     mocks.projectsMode = "static";
+    mocks.constructionReview = {
+      status: "idle",
+      review: null,
+      errorState: null,
+      openPicker: vi.fn(),
+      readFile: vi.fn(),
+      inputProps: {},
+    };
   });
 
   it("local source가 확정되면 같은 slug의 static initial fact를 지운다", async () => {
@@ -190,6 +253,49 @@ describe("ProjectDetailPage", () => {
     expect(
       screen.queryByRole("heading", { name: "ontology-atlas" }),
     ).not.toBeInTheDocument();
+  });
+
+  it("opens one local review result below the hero without persisting it", async () => {
+    mocks.insightNodes = BASE_NODES;
+    mocks.insightEdges = BASE_EDGES;
+    const parsed = await import("@/entities/construction-review").then(({ parseConstructionReviewEnvelope }) =>
+      parseConstructionReviewEnvelope(constructionEnvelope(), SLUG),
+    );
+    if (!parsed.ok) throw new Error(parsed.issues.join(","));
+    mocks.constructionReview = {
+      status: "ready",
+      review: parsed.value,
+      errorState: null,
+      openPicker: vi.fn(),
+      readFile: vi.fn(),
+      inputProps: {},
+    };
+    renderPage();
+
+    expect(screen.getByTestId("construction-review-ingress")).toBeInTheDocument();
+    const summary = screen.getByTestId("construction-review-summary");
+    expect(summary).toHaveAttribute("data-qualification-status", "qualified");
+    expect(summary.compareDocumentPosition(screen.getByRole("tablist"))).toBe(Node.DOCUMENT_POSITION_FOLLOWING);
+    expect(localStorage).toHaveLength(0);
+  });
+
+  it.each(["malformed", "project_mismatch", "digest_mismatch", "plan_mismatch"])(
+  "fails closed for %s review input", async (state) => {
+    mocks.insightNodes = BASE_NODES;
+    mocks.insightEdges = BASE_EDGES;
+    mocks.constructionReview = {
+      status: "blocked",
+      review: null,
+      errorState: state,
+      openPicker: vi.fn(),
+      readFile: vi.fn(),
+      inputProps: {},
+    };
+    renderPage();
+
+    const error = screen.getByTestId("construction-review-error");
+    expect(error).toHaveAttribute("data-envelope-state", state);
+    expect(screen.queryByTestId("construction-review-summary")).not.toBeInTheDocument();
   });
 
   it("renders the hero metric strip with real projectIds-derived counts", () => {

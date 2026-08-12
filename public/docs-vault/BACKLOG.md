@@ -100,14 +100,14 @@ RDF/OWL/SKOS/SHACL 구현으로 소개하지 않는다. **적용 원칙**: LLM�
 | 6 | O1.1 | done(67cfd4394) | Workshop은 근거 없는 `is_a`를 추천하지 않는다. |
 | 7 | O1.3 | done(c1ba92e86) | 요구·CQ·예시·반례·다차원 품질 평가 계약을 고정한다. |
 | 8 | M1.5 | done(030269632) | MCP/skill/prompt가 같은 ontology-construction lifecycle을 강제한다. |
-| 9 | O1.5 | in_progress | bounded meaning evidence ingress와 scan hardening은 검증됨; 다음은 human-owned exact plan의 post-write source-hidden 재사용이다. |
-| 10 | U1.3 | blocked(O1.5) | 같은 ontology-construction을 기본/전문가 깊이로 쉽게 사용한다. |
+| 9 | O1.5 | done(0ef1c5aa4) | human-owned exact plan이 qualification→write→finalize→source-hidden 재사용을 닫았다. |
+| 10 | U1.3 | in_progress | 같은 ontology-construction을 기본/전문가 깊이로 쉽게 사용한다. |
 | 11 | K1.1 | blocked(U1.3) | Skill 번호 절차를 손실 없이 source-bound rail로 읽는다. |
-| 12 | K1.2 | blocked(K1.1) | 명시 문법만 branch/retry/stop/verify로 타입화한다. |
-| 13 | K1.3 | blocked(K1.1) | 승인된 process packet을 digest와 함께 handoff한다. |
-| 14 | U1.1 | blocked(O1.5) | Projects가 lifecycle 질문을 category/status로 두 번 묻지 않는다. |
+| 12 | K1.3 | blocked(K1.1) | 승인된 process packet을 digest와 함께 handoff한다. |
+| 13 | K1.2 | blocked(K1.3) | 명시 문법만 branch/retry/stop/verify로 타입화한다. |
+| 14 | U1.1 | ready | Projects가 lifecycle 질문을 category/status로 두 번 묻지 않는다. |
 | 15 | U1.2 | ready | spotlight가 bounded motion 뒤 idle로 돌아간다. |
-| gate | O1.4 | hold(O1.5 + repeated missing primitive) | missing primitive가 반복 입증될 때만 schema 확장을 상정한다. |
+| gate | O1.4 | hold(repeated missing primitive) | missing primitive가 반복 입증될 때만 schema 확장을 상정한다. |
 
 ### 작업 카드와 완료 조건
 
@@ -314,15 +314,15 @@ write→source-hidden reuse다. 그 여정이 성공한 뒤 서로 다른 두 �
   두 disclosure depth**다. depth를 바꿔도 Markdown·receipt·판정 결과는 같으며, 기본 화면이
   red/unknown/conflict나 사람 승인을 숨기지 않는다. 자동화는 조사·제안·검증까지이고 accepted
   write plan 승인권은 사람에게 남는다.
-- **열린 설계 질문**: 전역 Settings의 지속 모드, 화면별 `세부 보기`, 역할별 remembered
-  preference 중 어느 것이 실제 전환 비용이 가장 낮은지는 구현 전에 `/design-directions`와
-  기본 사용자/전문가 walkthrough로 비교한다. `일반인`처럼 숙련도를 낙인찍는 UI label은
-  검증 없이 채택하지 않는다.
+- **설계 결론**: 전역 Settings나 remembered persona를 만들지 않는다. project detail의
+  `검수 결과 열기`가 같은 페이지 안 summary를 열고, `근거·진단 보기` 하나만 같은 artifact의
+  세부 근거를 펼친다. `일반인`·`전문가 모드`처럼 숙련도를 낙인찍는 label은 없다.
 - **금지**: 두 schema/두 truth, expert-only correctness, 기본 모드의 silent auto-accept,
   중요한 failure를 초록 요약으로 접기, 디자인 시스템 밖 별도 component/token/ramp.
 - **완료**: 처음 온 사용자가 내부 용어를 배우지 않고 construction을 끝내고, 전문가는
   raw Markdown으로 탈출하지 않아도 각 판정 근거를 추적·수정한다. 두 모드가 같은 receipt와
-  diff를 만들며, design audit·responsive sweep·재빌드한 설치 앱 Codex Computer Use가 green이다.
+  diff를 만들며, design audit·responsive sweep·재빌드한 설치 앱 WebView 검증이 green이다.
+  Codex Computer Use 커넥터가 제공되는 환경에서는 같은 설치 앱 여정을 추가 증거로 남긴다.
 
 #### K1.1 — Skills lossless happy-path rail
 
@@ -347,7 +347,7 @@ write→source-hidden reuse다. 그 여정이 성공한 뒤 서로 다른 두 �
 
 #### K1.3 — authorized source-hidden process packet
 
-- **사용자 변화**: 사용자가 명시적으로 복사/내보낸 packet을 새 agent가 원본
+- **사용자 변화**: 사용자가 명시적으로 복사한 packet을 새 agent가 원본
   폴더 없이 읽고 exact steps와 diagnostics를 인용한다.
 - **금지**: 자동 vault 저장, 무단 외부 전송, packet 부재를 process 없음으로 해석.
 - **완료**: digest tamper fail-closed, authorized packet handoff의 supported claims
@@ -406,6 +406,7 @@ kind 묶음이 아니라 qualified statement/provenance envelope다.
 | O1.1 | `67cfd4394` | same-domain sibling 추천, unknown focal isA kind union, exact-name `Yes, link`, project→isA all-kind create를 각각 RED로 고정; suggestion suppression·evidence guard·create/enhance neutral을 되돌린 mutation 4종이 모두 RED | Node 24 focused Vitest 117; contract 1,575; desktop 274; i18n 16; TypeScript·ESLint; Studio fill E2E 1 | Playwright 1512×900에서 중립 socket 3·추천 0·겹침/overflow 0, isA suggestion 0 뒤 Browse 9 domain/동일 kind node 8; 390px honest narrow state; `/Applications/Ontology Atlas.app` 재빌드 뒤 route/WebView/window screenshot pass, Codex Computer Use로 `추천 근거 없음`과 후보 없음 확인 | 현재 producer가 semantic receipt를 만들지 않아 양성 추천은 0; O1.3가 evidence/CQ 계약을 먼저 만든다. 기존 draft 저장 경로의 React setState-in-render warning은 별도 부채; 다음은 O1.3 |
 | O1.3 | `c1ba92e86` | module 부재 RED 뒤 self-reported `coveredTargets`, maker self-evaluation, stale evidence 축 무시, unrelated citation, 일부 claim만 본 source-hidden pass, stale axis pass mutation을 각각 주입해 RED; probe가 독립성 테스트의 우회 통과도 찾아 보강 | Node 24 focused 12; MCP all 579; package contract 30 + root/CLI 260; MCP docs 12; ESLint; docs links/vault; gate-probe RED→GREEN | 네 사용자군·일곱 축의 digest-bound 대표 packet을 재실행해 qualified, 각 adversarial packet은 not-qualified/invalid; dogfood 71 nodes/154 edges, validator·compile·maintenance issue 0, live MCP 35/35 | 내부 순수 계약이며 아직 MCP/bootstrap producer가 쓰지 않음; 대표 fixture는 세 실제 제품 qualification 증거가 아님; UI/app 변경 없음; 다음은 PO Council이 필요한 M1.5 lifecycle enforcement |
 | M1.5 | `030269632` | lifecycle module 부재와 purpose/regression 없는 packet의 통과를 RED로 시작; executable 강제-true mutation 5건, focused-advisor mapping 제거, 예전 direct-add 설명을 각각 RED로 증명 후 복구 | Node 24 lifecycle+qualification 22, analyzer 55, MCP unit 622, integration 116, verify 126, advisor 69; package·docs·agents·decision·ESLint; gate-probe RED→GREEN | source와 bundled MCP가 모두 8단계, 첫 호출 `canWrite:false`, 승인 호출 `canWrite:true`, `reviewPlan === writePlan`; public source-hidden `not_measured`는 writePlan 없이 차단; live MCP 35/35, dogfood 71 nodes/154 edges, validation·compile·maintenance issue 0 | detailed lifecycle/approval transcript는 재시작 뒤 영속 복원하지 않고 기존 competency body+finalizer receipt만 남김; fixture/parity는 세 실제 제품 품질 증거가 아니므로 다음은 O1.5; UI/design/app 변경 없음 |
+| O1.5 | `0ef1c5aa4` | fresh maker/evaluator의 과장·잘못된 evidence·stale owner receipt·schema/closure 우회를 fail-closed로 반복 수리하고 exact current-source human approval 전에는 write 0을 유지 | current qualification 48/48 claim·citation, 4 CQ, 7 targets, 7 axes; exact analyzer `canWrite:true`; lifecycle executable; post-write validate errors/warnings 0; compile issue 0; 독립 final audit GO | 승인한 9 concepts/9 relations를 unchanged writePlan으로 저장하고 source connect·finalizer 성공; 19-read/0-write source-hidden handoff에 private absolute path 0; current source와 exact four-kind path 재검증 | `needs_evidence/structure_not_ready`는 승인 밖 starter island·relation maintenance이며 자동 보완하지 않음; U1.3이 같은 artifact의 disclosure를 소유 |
 
 ### 트랙 공통 종료 규칙
 
@@ -417,7 +418,9 @@ kind 묶음이 아니라 qualified statement/provenance envelope다.
    구조 선택이 있으면 `/design-directions`, 구현 전 `/design-build`, 구현 후
    `/design-audit` 순서를 지킨다. 값은 `DESIGN-SYSTEM.md`의 token/ramp와 기존 primitive가
    소유하며 raw 병렬 규격을 만들지 않는다. 영향에 따라 responsive/motion/map instrument를
-   실행하고, desktop 영향은 설치 앱을 다시 빌드·실행해 Codex Computer Use로 검증한다.
+   실행하고, desktop 영향은 설치 앱을 다시 빌드·실행해 공식 WebView 검증기로 확인한다.
+   Codex Computer Use 커넥터가 제공되면 같은 여정을 추가로 관찰하되, 다른 computer-use
+   구현으로 대체해 통과를 주장하지 않는다.
 5. 마지막 명령은 항상 변경 경로를 넘긴 `pnpm checks:changed -- <paths...>`다.
 6. 완료 때 `docs/CHANGELOG.md`와 필요 시 dogfood ontology를 동기화하고, 이 표만
    상태 정본으로 갱신한다.

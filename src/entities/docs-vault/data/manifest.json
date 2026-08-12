@@ -3292,8 +3292,8 @@
         }
       ],
       "excerpt": "현재 실행 순서의 정본. 사용자가 작업 ID를 지목하면 그 항목만 분해해 구현한다. 완료 표시는 아래 활성 트랙의 증거 표에 먼저 남기고, 기능의 현재 상태는 docs/FEATURES.md, 결정 이유는 docs/DECISIONS.md, 사용자 가시 변경은 docs/CHANGELOG.md가 각각 맡는다. 변하는 숫자를 이 문서에 고정하지 않는다. 현재 dogfood census는 node cli/src/index.mjs overview, 공개 MCP/CLI surface는 pnpm docs:surface:check로 확인한다. 이 트랙은 2026-08-09 설치 앱 ",
-      "wordCount": 5729,
-      "updatedAt": "2026-08-10",
+      "wordCount": 5832,
+      "updatedAt": "2026-08-12",
       "linksOut": []
     },
     {
@@ -4022,6 +4022,11 @@
           "depth": 1,
           "text": "CHANGELOG",
           "slug": "changelog"
+        },
+        {
+          "depth": 2,
+          "text": "2026-08-12 · 사람은 검수 결론부터 읽고, 에이전트는 Skill 절차를 손실 없이 넘겨받는다",
+          "slug": "2026-08-12-사람은-검수-결론부터-읽고-에이전트는-skill-절차를-손실-없이-넘겨받는다"
         },
         {
           "depth": 2,
@@ -6369,9 +6374,9 @@
           "slug": "2026-07-26-첫-만남은-쇼핑몰부터"
         }
       ],
-      "excerpt": "Major change history. Code commit messages answer why; this file answers when / which surface changed. Focused on user-visible changes, not PR-level granularity. Newest at the top. Entries stay date-based; the app version reached v1.0.0 on 2026-07-27, so a release tag now carries the semver promise instead. O1.5 첫 세 제품",
-      "wordCount": 67535,
-      "updatedAt": "2026-08-10",
+      "excerpt": "Major change history. Code commit messages answer why; this file answers when / which surface changed. Focused on user-visible changes, not PR-level granularity. Newest at the top. Entries stay date-based; the app version reached v1.0.0 on 2026-07-27, so a release tag now carries the semver promise instead. 프로젝트 상세의 검수",
+      "wordCount": 67695,
+      "updatedAt": "2026-08-12",
       "linksOut": [
         "audits/CASE-STUDY-AGENTS-MD-DRIFT",
         "domains/catalog",
@@ -6399,6 +6404,16 @@
           "depth": 2,
           "text": "기록 형식",
           "slug": "기록-형식"
+        },
+        {
+          "depth": 2,
+          "text": "2026-08-12 — 검수는 프로젝트 본문에서 열고, Skills는 좁은 화면에서도 exact rail을 잃지 않는다",
+          "slug": "2026-08-12-검수는-프로젝트-본문에서-열고-skills는-좁은-화면에서도-exact-rail을-잃지-않는다"
+        },
+        {
+          "depth": 2,
+          "text": "2026-08-12 — construction은 같은 artifact를 두 깊이로 읽고, Skills는 손실 없는 인계부터 연다",
+          "slug": "2026-08-12-construction은-같은-artifact를-두-깊이로-읽고-skills는-손실-없는-인계부터-연다"
         },
         {
           "depth": 2,
@@ -8482,7 +8497,7 @@
         }
       ],
       "excerpt": "이 파일은 결정과 그때 진 반대 의견을 남긴다. docs/CHANGELOG.md 는 무엇이 언제 바뀌었나를 답하고, 이 파일은 왜 그렇게 정했고, 무엇을 걸었나를 답한다. 최신이 위. 기록은 덧붙이기만 한다 — 지난 기록을 고치지 않는다. 판단이 바뀌었으면 새 기록을 쓰고 옛 기록을 뒤집힘 으로 표시한다. 틀린 기록도 자산이다. 1. 소집 전에 읽는다. 카운슬을 열기 전(그리고 단독 PO 패스를 쓰기 전) 같은 표면 · 같은 질문에 대한 선행 결정이 있는지 먼저 본다. 있으면 새 패스는 그것을 ① 여전히 유효하다고 인용하거나 ② 명시적으로 뒤집는다. 조용히 다시 결정",
-      "wordCount": 103933,
+      "wordCount": 104648,
       "updatedAt": "2026-08-12",
       "linksOut": [
         "slug"
@@ -9682,8 +9697,8 @@
         }
       ],
       "excerpt": "Maintainer-only checks live here so the public README stays readable. Use this page when you touch mcp/, cli/, package manifests, release scripts, or the dogfood ontology. Run this before pushing broad docs, package, MCP, or web changes: For user-facing UI changes, add the relevant Playwright route check. pnpm install ",
-      "wordCount": 9923,
-      "updatedAt": "2026-08-09",
+      "wordCount": 9874,
+      "updatedAt": "2026-08-12",
       "linksOut": []
     },
     {
@@ -10180,8 +10195,8 @@
         }
       ],
       "excerpt": "Complete inventory of features users can actually use right now. Last updated: 2026-08-02 (지금 있는 라우트, 설치한 앱이 지키기로 한 약속, 프로젝트가 무엇을 뜻하는지 확정한 기록(project meaning receipt)을 다시 확인했다 — /ontology 는 /topology?index=expanded 로, /ontology/edit 은 /ontology/studio 로 보내는 옛 주소 호환 redirect 이고, Insights 는 할 일 · 구성 · 연결 · 경계 · 신선도 다섯 개 ",
-      "wordCount": 19000,
-      "updatedAt": "2026-08-10",
+      "wordCount": 19179,
+      "updatedAt": "2026-08-12",
       "linksOut": [
         "slug",
         "project:slug",
@@ -11807,6 +11822,34 @@
       "linksOut": []
     },
     {
+      "slug": "ontology/capabilities/construction-review",
+      "path": "docs/ontology/capabilities/construction-review.md",
+      "title": "Construction Qualification Review",
+      "tags": [],
+      "frontmatter": {
+        "uid": "2a62e2be-ce8e-4923-8883-da0630e64152",
+        "slug": "capabilities/construction-review",
+        "kind": "capability",
+        "title": "Construction Qualification Review",
+        "display_ko": "온톨로지 구축 검수",
+        "display_en": "Construction Qualification Review",
+        "domain": "domains/project-portfolio",
+        "elements": [
+          "elements/project-detail"
+        ],
+        "path": "src/entities/construction-review",
+        "created_by": "agent:unknown",
+        "relation_notes": {
+          "elements/project-detail": "Construction qualification is opened and judged inside the existing project-detail workbench."
+        }
+      },
+      "headings": [],
+      "excerpt": "검증된 ontology construction artifact를 프로젝트 상세에서 결론부터 읽고, 같은 digest-bound 근거와 exact plan을 필요할 때 펼쳐 판단하는 능력이다. malformed, 다른 project, digest 또는 plan 불일치는 정상 판정처럼 보이지 않고 실패 닫으며, 파일은 session 밖에 저장하거나 vault에 쓰지 않는다.",
+      "wordCount": 38,
+      "updatedAt": "2026-08-12",
+      "linksOut": []
+    },
+    {
       "slug": "ontology/capabilities/data-source-mode",
       "path": "docs/ontology/capabilities/data-source-mode.md",
       "title": "Data Source Mode Branching",
@@ -12343,6 +12386,34 @@
       "linksOut": []
     },
     {
+      "slug": "ontology/capabilities/skill-process-handoff",
+      "path": "docs/ontology/capabilities/skill-process-handoff.md",
+      "title": "Agent Skill Process Inspection and Handoff",
+      "tags": [],
+      "frontmatter": {
+        "uid": "1983a68d-8812-4210-83a3-a3cc6b54d21f",
+        "slug": "capabilities/skill-process-handoff",
+        "kind": "capability",
+        "title": "Agent Skill Process Inspection and Handoff",
+        "display_ko": "에이전트 스킬 절차 검수와 인계",
+        "display_en": "Agent Skill Process Inspection and Handoff",
+        "domain": "domains/agent-integration",
+        "elements": [
+          "elements/agent-skill-process-contract"
+        ],
+        "path": "src/views/agent-skills/ui/AgentSkillsPage.tsx",
+        "created_by": "agent:unknown",
+        "relation_notes": {
+          "elements/agent-skill-process-contract": "The capability is implemented by the exact process IR, diagnostics, semantic-label, and canonical packet contract."
+        }
+      },
+      "headings": [],
+      "excerpt": "SKILL.md의 명시적 번호 절차를 exact text, 원문 순서, line span, source digest로 읽고 canonical packet으로 사용자가 승인한 source-hidden agent에게 인계하는 능력이다. truncated 또는 unsupported source와 digest tamper는 실패 닫고, 의미 overlay는 합격한 명시 문법만 텍스트 라벨로 보이며 inferred edge는 만들지 않는다.",
+      "wordCount": 41,
+      "updatedAt": "2026-08-12",
+      "linksOut": []
+    },
+    {
       "slug": "ontology/capabilities/taxonomy",
       "path": "docs/ontology/capabilities/taxonomy.md",
       "title": "Kind Taxonomy Management",
@@ -12554,13 +12625,19 @@
         "capabilities": [
           "capabilities/cli-developer-entry",
           "capabilities/mcp-server",
+          "capabilities/skill-process-handoff",
           "capabilities/vault-agent"
         ],
         "elements": [
           "elements/agent-connect",
+          "elements/agent-skill-process-contract",
           "elements/vault-agent-panel"
         ],
-        "created_by": "human"
+        "created_by": "human",
+        "relation_notes": {
+          "capabilities/skill-process-handoff": "Agent integration owns source-bound skill procedure inspection and explicit handoff to a fresh agent.",
+          "elements/agent-skill-process-contract": "The domain exposes the source-bound process contract as a concrete implementation role shared by the human workbench and agent handoff."
+        }
       },
       "headings": [
         {
@@ -12591,7 +12668,7 @@
       ],
       "excerpt": "AI 코딩 에이전트(Claude Code, Codex, Cursor)와 개발자가 사람과 같은 온톨로지 볼트를 읽고 쓸 수 있게 하는 표면들: MCP 서버, 터미널 CLI, 앱 내 connect 플로우. README.md: \"Your agent reads and maintains it over MCP... one button writes your agent's config and proves the connection.\" mcp/src/index.js · mcp/src/tool-inventory.mjs: 활성 registry에서 tools/list와 full/read-",
       "wordCount": 188,
-      "updatedAt": "2026-08-09",
+      "updatedAt": "2026-08-12",
       "linksOut": []
     },
     {
@@ -12779,6 +12856,7 @@
         "display_ko": "프로젝트 포트폴리오 관리",
         "display_en": "Project Portfolio Management",
         "capabilities": [
+          "capabilities/construction-review",
           "capabilities/project-edit",
           "capabilities/project-quick-edit",
           "capabilities/project-share",
@@ -12791,7 +12869,10 @@
           "elements/project-editor",
           "elements/project-selector"
         ],
-        "created_by": "human"
+        "created_by": "human",
+        "relation_notes": {
+          "capabilities/construction-review": "Project portfolio owns the human review surface because construction qualification is judged in the matching project detail."
+        }
       },
       "headings": [
         {
@@ -12817,7 +12898,7 @@
       ],
       "excerpt": "하나의 볼트 안에서 여러 project 노드를 목록화·조회·편집·공유하는 관리 영역. AGENTS.md: Project overview (project→domain→capability→element 읽기 spine, 다중 프로젝트 컨테인먼트) src/features/project-edit, project-quick-edit, project-share (구현 증거) 포함: 프로젝트 상세/편집기/셀렉터, 빠른 편집, 공유 링크 제외: 프로젝트가 담는 도메인/능력 자체의 의미(그건 각자 도메인) medium (0.7): AGENTS.md 근거는 간접적, 주로 폴더 증거에 ",
       "wordCount": 63,
-      "updatedAt": "2026-08-09",
+      "updatedAt": "2026-08-12",
       "linksOut": []
     },
     {
@@ -12895,6 +12976,28 @@
       "excerpt": "앱 내 AI 에이전트 connect 플로우 위젯. capabilities/vault-agent 의 구현 증거.",
       "wordCount": 11,
       "updatedAt": "2026-08-02",
+      "linksOut": []
+    },
+    {
+      "slug": "ontology/elements/agent-skill-process-contract",
+      "path": "docs/ontology/elements/agent-skill-process-contract.md",
+      "title": "Agent Skill Process Contract",
+      "tags": [],
+      "frontmatter": {
+        "uid": "194544e5-d80d-4292-89e3-5d4d3e4ea178",
+        "slug": "elements/agent-skill-process-contract",
+        "kind": "element",
+        "title": "Agent Skill Process Contract",
+        "display_ko": "에이전트 스킬 절차 계약",
+        "display_en": "Agent Skill Process Contract",
+        "domain": "domains/agent-integration",
+        "path": "src/entities/agent-skill",
+        "created_by": "agent:unknown"
+      },
+      "headings": [],
+      "excerpt": "SKILL.md에서 source-bound process IR, resource backlink, diagnostics, exact semantic labels와 canonical UTF-8 handoff packet을 파생·검증하는 읽기 전용 계약. ontology node나 vault sidecar를 만들지 않으며 transition edges는 비어 있다.",
+      "wordCount": 28,
+      "updatedAt": "2026-08-12",
       "linksOut": []
     },
     {
@@ -13452,9 +13555,9 @@
         "created_by": "agent:unknown"
       },
       "headings": [],
-      "excerpt": "프로젝트 상세 페이지.",
-      "wordCount": 3,
-      "updatedAt": "2026-08-02",
+      "excerpt": "프로젝트 상세 페이지. 프로젝트 자체의 설명·구성·연결뿐 아니라, 사용자가 선택한 construction qualification envelope을 session에서만 읽어 현재 결정, 첫 blocker, 사람 승인, exact plan을 같은 artifact의 근거와 함께 판단하게 한다. malformed, project/digest/plan mismatch는 실패 닫고 작성 후 maintenance는 qualification과 분리한다.",
+      "wordCount": 38,
+      "updatedAt": "2026-08-12",
       "linksOut": []
     },
     {
@@ -15993,12 +16096,22 @@
         "linkText": "domains/agent-integration"
       },
       {
+        "fromSlug": "ontology/capabilities/skill-process-handoff",
+        "context": "frontmatter · **[domains/agent-integration]**",
+        "linkText": "domains/agent-integration"
+      },
+      {
         "fromSlug": "ontology/capabilities/vault-agent",
         "context": "frontmatter · **[domains/agent-integration]**",
         "linkText": "domains/agent-integration"
       },
       {
         "fromSlug": "ontology/elements/agent-connect",
+        "context": "frontmatter · **[domains/agent-integration]**",
+        "linkText": "domains/agent-integration"
+      },
+      {
+        "fromSlug": "ontology/elements/agent-skill-process-contract",
         "context": "frontmatter · **[domains/agent-integration]**",
         "linkText": "domains/agent-integration"
       },
@@ -16011,6 +16124,75 @@
         "fromSlug": "ontology/ontology-atlas",
         "context": "frontmatter · **[domains/agent-integration]**",
         "linkText": "domains/agent-integration"
+      }
+    ],
+    "ontology/elements/project-detail": [
+      {
+        "fromSlug": "ontology/capabilities/construction-review",
+        "context": "frontmatter · **[elements/project-detail]**",
+        "linkText": "elements/project-detail"
+      },
+      {
+        "fromSlug": "ontology/domains/project-portfolio",
+        "context": "frontmatter · **[elements/project-detail]**",
+        "linkText": "elements/project-detail"
+      }
+    ],
+    "ontology/domains/project-portfolio": [
+      {
+        "fromSlug": "ontology/capabilities/construction-review",
+        "context": "frontmatter · **[domains/project-portfolio]**",
+        "linkText": "domains/project-portfolio"
+      },
+      {
+        "fromSlug": "ontology/capabilities/project-edit",
+        "context": "frontmatter · **[domains/project-portfolio]**",
+        "linkText": "domains/project-portfolio"
+      },
+      {
+        "fromSlug": "ontology/capabilities/project-quick-edit",
+        "context": "frontmatter · **[domains/project-portfolio]**",
+        "linkText": "domains/project-portfolio"
+      },
+      {
+        "fromSlug": "ontology/capabilities/project-share",
+        "context": "frontmatter · **[domains/project-portfolio]**",
+        "linkText": "domains/project-portfolio"
+      },
+      {
+        "fromSlug": "ontology/capabilities/project-source-evidence",
+        "context": "frontmatter · **[domains/project-portfolio]**",
+        "linkText": "domains/project-portfolio"
+      },
+      {
+        "fromSlug": "ontology/elements/project",
+        "context": "frontmatter · **[domains/project-portfolio]**",
+        "linkText": "domains/project-portfolio"
+      },
+      {
+        "fromSlug": "ontology/elements/project-detail",
+        "context": "frontmatter · **[domains/project-portfolio]**",
+        "linkText": "domains/project-portfolio"
+      },
+      {
+        "fromSlug": "ontology/elements/project-drawer",
+        "context": "frontmatter · **[domains/project-portfolio]**",
+        "linkText": "domains/project-portfolio"
+      },
+      {
+        "fromSlug": "ontology/elements/project-editor",
+        "context": "frontmatter · **[domains/project-portfolio]**",
+        "linkText": "domains/project-portfolio"
+      },
+      {
+        "fromSlug": "ontology/elements/project-selector",
+        "context": "frontmatter · **[domains/project-portfolio]**",
+        "linkText": "domains/project-portfolio"
+      },
+      {
+        "fromSlug": "ontology/ontology-atlas",
+        "context": "frontmatter · **[domains/project-portfolio]**",
+        "linkText": "domains/project-portfolio"
       }
     ],
     "ontology/domains/local-vault-management": [
@@ -16252,56 +16434,16 @@
         "linkText": "elements/project-editor"
       }
     ],
-    "ontology/domains/project-portfolio": [
+    "ontology/elements/agent-skill-process-contract": [
       {
-        "fromSlug": "ontology/capabilities/project-edit",
-        "context": "frontmatter · **[domains/project-portfolio]**",
-        "linkText": "domains/project-portfolio"
+        "fromSlug": "ontology/capabilities/skill-process-handoff",
+        "context": "frontmatter · **[elements/agent-skill-process-contract]**",
+        "linkText": "elements/agent-skill-process-contract"
       },
       {
-        "fromSlug": "ontology/capabilities/project-quick-edit",
-        "context": "frontmatter · **[domains/project-portfolio]**",
-        "linkText": "domains/project-portfolio"
-      },
-      {
-        "fromSlug": "ontology/capabilities/project-share",
-        "context": "frontmatter · **[domains/project-portfolio]**",
-        "linkText": "domains/project-portfolio"
-      },
-      {
-        "fromSlug": "ontology/capabilities/project-source-evidence",
-        "context": "frontmatter · **[domains/project-portfolio]**",
-        "linkText": "domains/project-portfolio"
-      },
-      {
-        "fromSlug": "ontology/elements/project",
-        "context": "frontmatter · **[domains/project-portfolio]**",
-        "linkText": "domains/project-portfolio"
-      },
-      {
-        "fromSlug": "ontology/elements/project-detail",
-        "context": "frontmatter · **[domains/project-portfolio]**",
-        "linkText": "domains/project-portfolio"
-      },
-      {
-        "fromSlug": "ontology/elements/project-drawer",
-        "context": "frontmatter · **[domains/project-portfolio]**",
-        "linkText": "domains/project-portfolio"
-      },
-      {
-        "fromSlug": "ontology/elements/project-editor",
-        "context": "frontmatter · **[domains/project-portfolio]**",
-        "linkText": "domains/project-portfolio"
-      },
-      {
-        "fromSlug": "ontology/elements/project-selector",
-        "context": "frontmatter · **[domains/project-portfolio]**",
-        "linkText": "domains/project-portfolio"
-      },
-      {
-        "fromSlug": "ontology/ontology-atlas",
-        "context": "frontmatter · **[domains/project-portfolio]**",
-        "linkText": "domains/project-portfolio"
+        "fromSlug": "ontology/domains/agent-integration",
+        "context": "frontmatter · **[elements/agent-skill-process-contract]**",
+        "linkText": "elements/agent-skill-process-contract"
       }
     ],
     "ontology/elements/category": [
@@ -16510,6 +16652,13 @@
         "linkText": "capabilities/cli-developer-entry"
       }
     ],
+    "ontology/capabilities/skill-process-handoff": [
+      {
+        "fromSlug": "ontology/domains/agent-integration",
+        "context": "frontmatter · **[capabilities/skill-process-handoff]**",
+        "linkText": "capabilities/skill-process-handoff"
+      }
+    ],
     "ontology/capabilities/vault-agent": [
       {
         "fromSlug": "ontology/domains/agent-integration",
@@ -16692,6 +16841,13 @@
         "linkText": "elements/root-entry"
       }
     ],
+    "ontology/capabilities/construction-review": [
+      {
+        "fromSlug": "ontology/domains/project-portfolio",
+        "context": "frontmatter · **[capabilities/construction-review]**",
+        "linkText": "capabilities/construction-review"
+      }
+    ],
     "ontology/capabilities/project-edit": [
       {
         "fromSlug": "ontology/domains/project-portfolio",
@@ -16718,13 +16874,6 @@
         "fromSlug": "ontology/domains/project-portfolio",
         "context": "frontmatter · **[capabilities/project-source-evidence]**",
         "linkText": "capabilities/project-source-evidence"
-      }
-    ],
-    "ontology/elements/project-detail": [
-      {
-        "fromSlug": "ontology/domains/project-portfolio",
-        "context": "frontmatter · **[elements/project-detail]**",
-        "linkText": "elements/project-detail"
       }
     ],
     "ontology/elements/project-drawer": [
@@ -17260,6 +17409,13 @@
                 "title": "CLI Developer Entry"
               },
               {
+                "name": "construction-review",
+                "path": "ontology/capabilities/construction-review",
+                "type": "doc",
+                "slug": "ontology/capabilities/construction-review",
+                "title": "Construction Qualification Review"
+              },
+              {
                 "name": "data-source-mode",
                 "path": "ontology/capabilities/data-source-mode",
                 "type": "doc",
@@ -17349,6 +17505,13 @@
                 "type": "doc",
                 "slug": "ontology/capabilities/project-source-evidence",
                 "title": "Project Source Evidence Receipt"
+              },
+              {
+                "name": "skill-process-handoff",
+                "path": "ontology/capabilities/skill-process-handoff",
+                "type": "doc",
+                "slug": "ontology/capabilities/skill-process-handoff",
+                "title": "Agent Skill Process Inspection and Handoff"
               },
               {
                 "name": "taxonomy",
@@ -17447,6 +17610,13 @@
                 "type": "doc",
                 "slug": "ontology/elements/agent-connect",
                 "title": "Agent Connect"
+              },
+              {
+                "name": "agent-skill-process-contract",
+                "path": "ontology/elements/agent-skill-process-contract",
+                "type": "doc",
+                "slug": "ontology/elements/agent-skill-process-contract",
+                "title": "Agent Skill Process Contract"
               },
               {
                 "name": "app-nav-rail",

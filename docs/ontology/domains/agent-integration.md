@@ -5,9 +5,10 @@ kind: domain
 title: AI Agent Integration
 display_ko: AI 에이전트 연동
 display_en: AI Agent Integration
-capabilities: [capabilities/cli-developer-entry, capabilities/mcp-server, capabilities/vault-agent]
-elements: [elements/agent-connect, elements/vault-agent-panel]
+capabilities: [capabilities/cli-developer-entry, capabilities/mcp-server, capabilities/skill-process-handoff, capabilities/vault-agent]
+elements: [elements/agent-connect, elements/agent-skill-process-contract, elements/vault-agent-panel]
 created_by: human
+relation_notes: { capabilities/skill-process-handoff: Agent integration owns source-bound skill procedure inspection and explicit handoff to a fresh agent., elements/agent-skill-process-contract: The domain exposes the source-bound process contract as a concrete implementation role shared by the human workbench and agent handoff. }
 ---
 
 ## 정의

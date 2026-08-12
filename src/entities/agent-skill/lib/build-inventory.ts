@@ -6,6 +6,7 @@ import type {
   SkillTriggerOverlap,
 } from "../model/types";
 import { classifyReferences, distinctiveTerms, isExecutableRef, parseSkill } from "./parse-skill";
+import { deriveSkillProcess } from "./process-ir";
 
 /** 사용자가 고른 폴더에서 읽어 온 파일 하나. */
 export interface SkillSourceFile {
@@ -16,6 +17,8 @@ export interface SkillSourceFile {
 
 export interface BuildInventoryInput {
   readonly files: readonly SkillSourceFile[];
+  /** A bounded folder read cannot safely yield a partial ready process. */
+  readonly scanTruncated?: boolean;
   /**
    * 고른 폴더 안에 실재하는 **모든** 상대 경로 — 자기 폴더 참조가 깨졌는지 볼 때 쓴다.
    *
@@ -91,7 +94,11 @@ export function buildInvocation(
   };
 }
 
-function buildSkill(file: SkillSourceFile, existingPaths?: ReadonlySet<string>): AgentSkill | null {
+function buildSkill(
+  file: SkillSourceFile,
+  existingPaths?: ReadonlySet<string>,
+  scanTruncated = false,
+): AgentSkill | null {
   const parsed = parseSkill(file.text);
   // 규격상 두 값이 다 있어야 스킬이다. 하나라도 없으면 런타임이 못 부르므로
   // 목록에 올리는 것이 오히려 거짓말이 된다.
@@ -115,6 +122,12 @@ function buildSkill(file: SkillSourceFile, existingPaths?: ReadonlySet<string>):
     },
     terms: distinctiveTerms(parsed.description),
     invocation,
+    process: deriveSkillProcess({
+      relativePath: file.relativePath,
+      text: file.text,
+      existingPaths,
+      scanTruncated,
+    }),
     missingBundled,
   };
 }
@@ -165,9 +178,10 @@ function findOverlaps(skills: readonly AgentSkill[], minScore: number): SkillTri
 export function buildSkillInventory({
   files,
   existingPaths,
+  scanTruncated = false,
 }: BuildInventoryInput): SkillInventory {
   const skills = files
-    .map((file) => buildSkill(file, existingPaths))
+    .map((file) => buildSkill(file, existingPaths, scanTruncated))
     .filter((skill): skill is AgentSkill => skill !== null)
     .sort((a, b) => a.name.localeCompare(b.name));
 

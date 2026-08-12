@@ -54,6 +54,122 @@ async function stubSkillFolder(
 }
 
 test.describe("스킬 인벤토리", () => {
+  test("3개 스킬의 27단계를 원문 순서·줄 위치 그대로 복원하고 packet을 canonical bytes로 복사한다", async ({ page }) => {
+    const processBody = (prefix: string) =>
+      Array.from({ length: 9 }, (_, index) => `${index + 1}. ${prefix} exact step ${index + 1}.`).join("\n");
+    await stubSkillFolder(page, {
+      "skills/alpha/SKILL.md": SKILL("alpha", "Run alpha exact process", processBody("Alpha")),
+      "skills/beta/SKILL.md": SKILL("beta", "Run beta exact process", processBody("Beta")),
+      "skills/gamma/SKILL.md": SKILL("gamma", "Run gamma exact process", processBody("Gamma")),
+    });
+    await page.addInitScript(() => {
+      Object.defineProperty(navigator, "clipboard", {
+        configurable: true,
+        value: {
+          writeText: async (value: string) => {
+            (window as unknown as { __skillPacket?: string }).__skillPacket = value;
+          },
+        },
+      });
+    });
+    await seedFirstRunSeen(page);
+    await page.setViewportSize({ width: 1512, height: 900 });
+    await page.goto("/ko/skills/?guides=off");
+    await page.getByTestId("skills-empty-open").click();
+    await expect(page.getByTestId("skill-row-toggle")).toHaveCount(3);
+
+    let recovered = 0;
+    for (const name of ["alpha", "beta", "gamma"]) {
+      await page.getByTestId("skill-row-toggle").filter({ hasText: name }).click();
+      const steps = page.getByTestId("skill-process-step");
+      await expect(steps).toHaveCount(9);
+      for (let index = 0; index < 9; index += 1) {
+        await expect(steps.nth(index)).toHaveAttribute("data-ordinal", String(index + 1));
+        await expect(steps.nth(index)).toHaveAttribute("data-source-start", String(index + 6));
+        await expect(steps.nth(index)).toContainText(`${name[0].toUpperCase()}${name.slice(1)} exact step ${index + 1}.`);
+        recovered += 1;
+      }
+      expect(await steps.locator("[data-process-edge]").count()).toBe(0);
+    }
+    expect(recovered).toBe(27);
+
+    await page.getByTestId("skill-packet-copy").click();
+    await expect(page.getByTestId("skill-packet-status")).toContainText("복사됨");
+    const copied = await page.evaluate(() => (window as unknown as { __skillPacket?: string }).__skillPacket ?? "");
+    expect(copied).toContain('"packetVersion":"skillProcessPacket:v1"');
+    expect(copied).toContain('"packetDigest":"sha256:');
+    expect(copied).toContain('"sourceDigest":"sha256:');
+  });
+
+  test("390·1023은 목록↔상세, 1024·1512는 split이며 상세가 0×0이 아니다", async ({ page }, testInfo) => {
+    await stubSkillFolder(page, {
+      "skills/flow/SKILL.md": SKILL("flow", "Run one exact flow", "1. Read source.\n2. Verify result."),
+    });
+    await seedFirstRunSeen(page);
+
+    for (const width of [390, 1023, 1024, 1512]) {
+      await page.setViewportSize({ width, height: 900 });
+      await page.goto("/ko/skills/?guides=off");
+      await page.getByTestId("skills-empty-open").click();
+      const workbench = page.getByTestId("skills-workbench");
+      await expect(workbench).toHaveAttribute("data-view", width < 1024 ? "list" : "split");
+      await page.getByTestId("skill-row-toggle").click();
+      await expect(workbench).toHaveAttribute("data-view", width < 1024 ? "detail" : "split");
+      const rect = await page.getByTestId("skills-right").evaluate((element) => {
+        const value = element.getBoundingClientRect();
+        return { width: value.width, height: value.height };
+      });
+      expect(rect.width, `${width}px detail width`).toBeGreaterThan(0);
+      expect(rect.height, `${width}px detail height`).toBeGreaterThan(0);
+      expect(
+        await page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth),
+        `${width}px horizontal overflow`,
+      ).toBe(true);
+      await page.getByTestId("skills-right").evaluate((element) => { element.scrollTop = element.scrollHeight; });
+      expect(
+        await page.getByTestId("skill-packet-copy").evaluate((element) => {
+          const rect = element.getBoundingClientRect();
+          const hit = document.elementFromPoint(rect.left + rect.width / 2, rect.top + rect.height / 2);
+          return hit === element || element.contains(hit);
+        }),
+        `${width}px packet action must not be covered`,
+      ).toBe(true);
+      if (width === 390 || width === 1512) {
+        await page.screenshot({ path: testInfo.outputPath(`skills-${width}.png`), fullPage: false });
+      }
+      if (width < 1024) {
+        await expect(page.getByRole("heading", { name: "flow" })).toBeFocused();
+        await page.getByTestId("skills-detail-back").click();
+        await expect(page.getByTestId("skill-row-toggle")).toBeFocused();
+      }
+    }
+  });
+
+  test("명시 문법만 semantic label로 보이고 애매한 문장은 diagnostic으로 남는다", async ({ page }) => {
+    await stubSkillFolder(page, {
+      "skills/semantic/SKILL.md": SKILL(
+        "semantic",
+        "Show exact semantic labels only",
+        "1. Run the check.\n2. Retry step 1 until the smoke test passes.\n3. Stop mutation after writing the receipt.",
+      ),
+    });
+    await seedFirstRunSeen(page);
+    await page.goto("/ko/skills/?guides=off");
+    await page.getByTestId("skills-empty-open").click();
+    await page.getByTestId("skill-row-toggle").click();
+
+    const labels = page.getByTestId("skill-semantic-label");
+    await expect(labels).toHaveCount(1);
+    await expect(labels).toHaveAttribute("data-semantic-kind", "retry");
+    await expect(labels).toContainText("1단계 재시도");
+    await expect(page.getByTestId("skill-process-step").nth(2).getByTestId("skill-semantic-label")).toHaveCount(0);
+    await page.getByTestId("skill-process-step").nth(2).getByTestId("skill-step-disclosure").click();
+    await expect(page.getByTestId("skill-process-step").nth(2)).toContainText(
+      "뜻이 여러 갈래라 라벨을 만들지 않았습니다.",
+    );
+    expect(await page.locator("[data-process-edge]").count()).toBe(0);
+  });
+
   test("폴더를 열면 스킬과 겹침을 그리고, 호출 사슬을 펼쳐 보인다", async ({ page }) => {
     await stubSkillFolder(page, {
       // 이름이 같고 설명이 다른 둘 — 경쟁하는 발동 조건.
@@ -92,6 +208,8 @@ test.describe("스킬 인벤토리", () => {
     // 호출 사슬 — 펼치기 전에는 없다(그래야 이 단언이 무언가를 증명한다).
     await expect(page.getByTestId("skill-invocation-chain")).toHaveCount(0);
     await rows.filter({ hasText: "chartkit" }).click();
+    // exact process와 3단 load chain은 서로 다른 정보다. load chain은 보조 disclosure.
+    await page.getByTestId("skill-load-chain-toggle").click();
     const chain = page.getByTestId("skill-invocation-chain");
     await expect(chain).toBeVisible();
     await expect(chain).toContainText("references/palette.md");
@@ -175,10 +293,12 @@ test.describe("스킬 인벤토리", () => {
 
     // ③ 실행되는 파일이 사슬에 표시된다.
     await rows.filter({ hasText: "csv-report" }).click();
+    await page.getByTestId("skill-load-chain-toggle").click();
     await expect(page.getByTestId("skill-executable-mark")).toHaveCount(1);
 
     // ④ 깨진 자기 폴더 참조가 보인다 — 예시가 그 상황을 일부러 담고 있다.
     await rows.filter({ hasText: "api-docs" }).click();
+    await page.getByTestId("skill-load-chain-toggle").click();
     await expect(page.getByTestId("skill-invocation-chain")).toContainText("openapi.md");
 
     // ⑤ 예시라는 사실을 화면이 말한다 — 내 폴더로 착각하면 안 된다.

@@ -7,6 +7,25 @@
 
 ---
 
+## 2026-08-12 · 사람은 검수 결론부터 읽고, 에이전트는 Skill 절차를 손실 없이 넘겨받는다
+
+- 프로젝트 상세의 `검수 결과 열기`가 한 local qualification envelope을 session에서만
+  읽는다. 기본 화면은 목적, 현재/다음 결정, 첫 blocker·diagnostic, red/unknown/conflict,
+  사람 승인, exact plan count를 숨기지 않는다. 같은 결과의 CQ·witness/citation span+digest,
+  examples/counterexamples, 일곱 품질축, diagnostics, exact review/write plan은
+  `근거·진단 보기`에서 펼친다.
+- malformed, 다른 project, plan/source digest mismatch, review/write plan 불일치는 정상
+  판정처럼 보이지 않고 fail-closed다. 작성 후 maintenance는 완료된 qualification과 분리한다.
+  파일은 업로드·기억·vault write하지 않는다.
+- `/skills`는 `SKILL.md`의 번호 절차를 exact text·원문 순서·line span·source digest와 함께
+  flat ordered rail로 보여 준다. truncated/unsupported source는 일부 rail을 만들지 않고
+  unavailable로 닫으며, resource 존재 여부와 diagnostic을 step에 묶는다.
+- 명시 문법에 정확히 맞는 branch/retry/stop/verify만 source-bound 텍스트 라벨로 표시한다.
+  keyword 추측이나 inferred edge는 없고 ambiguous 문장은 diagnostic으로 남는다.
+- 1024px 미만 Skills는 목록↔상세 drill-in으로 바뀌고 검색·선택·스크롤·열린 step과 포커스를
+  복원한다. `packet 복사`는 canonical UTF-8 process packet과 두 digest를 clipboard 성공 뒤에만
+  전달하며 unavailable/tampered 상태에서는 차단한다. file export나 새 MCP/CLI 명령은 없다.
+
 ## 2026-08-10 · 저장소에 이미 있던 의미 문서와 import 근거가 proposal까지 이어진다
 
 O1.5 첫 세 제품에서 원본의 architecture/product 문서와 TypeScript import endpoint가

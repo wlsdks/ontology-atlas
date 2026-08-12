@@ -2,7 +2,7 @@ import { TOPOLOGY_CONNECTOR_LABEL_PASS_BUDGET_MS } from "./evidence-payload.mjs"
 import { validateAiSettingsMarkers } from "./ai-settings-contract.mjs";
 import { markerNumber, selectedRelationRouteRailTextLeak } from "./relation-marker-validators.mjs";
 import { validateTopologyFocusCommandSpineContract, validateTopologyFocusRightControlsContract, validateTopologyFocusSearchLaneContract, validateTopologyFocusUtilityLaneContract, validateTopologyNodePopoverScrollFooterContract, validateTopologyNodePopoverTokenContract, validateTopologySelectedCardRelationSummaryContract } from "./topology-panel-contracts.mjs";
-import { TOPOLOGY_DIM_ANCHOR_MIN_OPACITY, TOPOLOGY_DIM_CONTEXT_MIN_OPACITY, TOPOLOGY_DIM_OPACITY_CONTRACT, WEBVIEW_WORKBENCH_MARKERS, normalizeTopologySelectedParam } from "./webview-env.mjs";
+import { TOPOLOGY_DIM_ANCHOR_MIN_OPACITY, TOPOLOGY_DIM_CONTEXT_MIN_OPACITY, TOPOLOGY_DIM_OPACITY_CONTRACT, normalizeTopologySelectedParam, webviewWorkbenchMarkersForPath } from "./webview-env.mjs";
 
 export function validateWebviewVerifyPayload(payload, {
   expectedPath = null,
@@ -34,7 +34,7 @@ export function validateWebviewVerifyPayload(payload, {
   ) {
     return `WebView did not report an Ontology Atlas route title (title=${payload.title ?? "unknown"})`;
   }
-  if (!WEBVIEW_WORKBENCH_MARKERS.every((marker) => marker.test(payload.bodyText))) {
+  if (!webviewWorkbenchMarkersForPath(expectedPath).every((marker) => marker.test(payload.bodyText))) {
     return "WebView body text did not include Ontology Atlas workbench markers";
   }
   if (!payload.markers || typeof payload.markers !== "object") {

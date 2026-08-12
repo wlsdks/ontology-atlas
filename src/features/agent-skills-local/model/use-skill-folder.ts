@@ -84,6 +84,7 @@ export function useSkillFolder() {
         inventory: buildSkillInventory({
           files: scan.files,
           existingPaths: scan.existingPaths,
+          scanTruncated: scan.truncated,
         }),
         folderName: handle.name,
         scan: {

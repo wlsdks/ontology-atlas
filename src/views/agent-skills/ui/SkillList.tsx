@@ -80,6 +80,7 @@ export function SkillList({
                   <button
                     type="button"
                     data-testid="skill-row-toggle"
+                    data-skill-path={skill.origin.relativePath}
                     data-active={active ? "true" : "false"}
                     aria-current={active ? "true" : undefined}
                     onClick={() => onSelect(skill.origin.relativePath)}

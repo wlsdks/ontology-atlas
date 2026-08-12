@@ -50,14 +50,14 @@ import { expect, test, type Page } from "@playwright/test";
  * ## 열 수 있는 표면은 몇 개인가 — 분모
  * ════════════════════════════════════════════════════════════════════
  *
- * 소스 전수로 **20개**다(`censusAppearingSurfaces`, 조건부로 나타나는 표면).
- * 이 파일은 그중 **5개**를 연다. 나머지가 안 열리는 이유는 대부분 **볼트가
+ * 소스 전수로 **22개**다(`censusAppearingSurfaces`, 조건부로 나타나는 표면).
+ * 이 파일은 그중 **6개**를 연다. 나머지가 안 열리는 이유는 대부분 **볼트가
  * 필요**하거나(문서 편집기 자동완성 · 에이전트 패널) 캔버스 좌표를 짚어야 해서다
  * (지도 노드 팝오버 · 우클릭 메뉴 — `?e2e=1` 의 `window.__atlasMap` 으로 여는
  * 경로는 이 라운드에서 좌표 변환까지 갔으나 클릭이 노드에 안 닿아 보류했다).
  *
- * **분모를 코드에 적어 두는 이유**: 5/20 이라고 쓰면 다음 사람이 «나머지 15는
- * 왜 안 재나» 를 물을 수 있다. 그냥 5개를 열고 말면 그 질문 자체가 사라진다.
+ * **분모를 코드에 적어 두는 이유**: 6/22 라고 쓰면 다음 사람이 «나머지 16은
+ * 왜 안 재나» 를 물을 수 있다. 그냥 6개를 열고 말면 그 질문 자체가 사라진다.
  * 분모가 늘어나면 `surface-motion-ratchet` 의 「열 수 있는 표면이 늘지 않는다」가
  * 먼저 빨개진다 — 그때 이 목록도 같이 본다.
  *
@@ -99,8 +99,12 @@ const MIN_RULES_PASSED = 15;
  * `@` 입력 + 개념 고르기**를 지나야 나오므로 아래 한 번 클릭짜리 `OPENERS` 문법에
  * 안 들어간다 — 그 사실을 분모가 말한다. 대신 키보드 계약(↑↓·Enter·Esc)은
  * 이 파일이 아니라 위젯 단위 시험이 진다.
+ *
+ * 21 → 22 (2026-08-12): 프로젝트 검수 결과의 근거 disclosure가 추가됐다. 로컬
+ * JSON을 주입한 뒤 실제 toggle을 눌러 여는 경로가 아래 OPENERS에 들어가므로,
+ * 새 표면은 분모뿐 아니라 axe 측정에도 포함된다.
  */
-const APPEARING_SURFACES_IN_SOURCE = 21;
+const APPEARING_SURFACES_IN_SOURCE = 22;
 
 interface Opener {
   readonly name: string;
@@ -109,7 +113,67 @@ interface Opener {
   readonly trigger: string;
   /** 눌린 뒤 **반드시 보여야 하는** 것. 안 보이면 이 게이트는 아무것도 안 잰 것이다. */
   readonly surface: string;
+  /** 보이지 않는 local file transport를 먼저 채워야 trigger가 생기는 표면. */
+  readonly fileInput?: {
+    readonly testId: string;
+    readonly name: string;
+    readonly mimeType: string;
+    readonly body: string;
+  };
 }
+
+const CONSTRUCTION_PLAN_DIGEST = `sha256:${"a".repeat(64)}`;
+const CONSTRUCTION_SOURCE_DIGEST = `sha256:${"b".repeat(64)}`;
+const CONSTRUCTION_REVIEW_FILE = JSON.stringify({
+  qualification: {
+    contract: "constructionQualification:v1",
+    subject: {
+      projectSlug: "storefront",
+      graphDigest: CONSTRUCTION_PLAN_DIGEST,
+      sourceDigest: CONSTRUCTION_SOURCE_DIGEST,
+    },
+    purposeAuthority: { outcome: "사람과 에이전트가 같은 로컬 의미를 판단한다." },
+    competencyQuestions: [],
+    witnesses: [],
+    cqResults: [],
+    claims: [],
+    citationChecks: [],
+    axisResults: [],
+    diagnostics: [],
+    acceptance: {
+      decision: "accepted",
+      decidedBy: "jinan",
+      authority: "human",
+      planDigest: CONSTRUCTION_PLAN_DIGEST,
+    },
+  },
+  analysis: {
+    project: { slug: "storefront" },
+    proposalValidation: {
+      reviewPlan: {
+        concepts: [{ slug: "storefront" }],
+        relations: [{ from: "storefront", type: "domains", to: "commerce" }],
+        competencyAnswers: { scope: "answered" },
+      },
+      writePlan: {
+        concepts: [{ slug: "storefront" }],
+        relations: [{ from: "storefront", type: "domains", to: "commerce" }],
+        competencyAnswers: { scope: "answered" },
+      },
+      findings: [],
+      constructionLifecycle: {
+        contract: "ontologyConstructionLifecycle:v1",
+        qualificationStatus: "qualified",
+        writeEligibility: "executable",
+        planDigest: CONSTRUCTION_PLAN_DIGEST,
+        sourceDigest: CONSTRUCTION_SOURCE_DIGEST,
+        firstBlockingPhase: null,
+        diagnostics: [],
+        nextAction: "승인된 행만 작성한다.",
+      },
+    },
+  },
+});
 
 const OPENERS: readonly Opener[] = [
   {
@@ -142,6 +206,18 @@ const OPENERS: readonly Opener[] = [
     trigger: "do-next-row-menu",
     surface: '[data-testid="do-next-row-menu-popover"]',
   },
+  {
+    name: "프로젝트 검수 근거",
+    route: "/ko/project/storefront/",
+    trigger: "construction-review-evidence-toggle",
+    surface: '[data-testid="construction-review-evidence"]',
+    fileInput: {
+      testId: "construction-review-ingress",
+      name: "construction-review.json",
+      mimeType: "application/json",
+      body: CONSTRUCTION_REVIEW_FILE,
+    },
+  },
 ];
 
 /**
@@ -157,6 +233,14 @@ async function openAndAudit(page: Page, o: Opener) {
   await page.goto(`${o.route}?guides=off`, { waitUntil: "domcontentloaded" });
   // 지도는 물리 시뮬이 수렴해야 화면이 정해진다.
   await page.waitForTimeout(2500);
+
+  if (o.fileInput) {
+    await page.getByTestId(o.fileInput.testId).setInputFiles({
+      name: o.fileInput.name,
+      mimeType: o.fileInput.mimeType,
+      buffer: Buffer.from(o.fileInput.body),
+    });
+  }
 
   await page.getByTestId(o.trigger).first().click({ timeout: 8000 });
   await page.waitForTimeout(800);
@@ -241,7 +325,7 @@ test("접근성 래칫(열린 표면) — 새 룰 위반 0, 기존 개수는 늘
   ).toEqual([]);
 });
 
-test("측정 목록이 분모를 잃지 않는다 — 5/20 이라고 말할 수 있어야 한다", async () => {
+test("측정 목록이 분모를 잃지 않는다 — 6/22 라고 말할 수 있어야 한다", async () => {
   expect(OPENERS.length, "열 표면 목록이 비면 위 시험은 공집합 위에서 전부 초록이다").toBeGreaterThanOrEqual(5);
   expect(
     new Set(OPENERS.map((o) => o.route)).size,

@@ -1381,6 +1381,17 @@ const FIELD_TAGS = ['input', 'textarea', 'select', 'label'] as const;
  */
 const OUTSIDE_VALUE_LAYER_FIELDS: readonly OutsideEntry[] = [
   {
+    file: 'src/views/project-detail/ui/ProjectDetailPage.tsx',
+    count: 1,
+    claim: 'no-spec',
+    proof: 'className="sr-only"',
+    why:
+      '검수 JSON을 브라우저의 로컬 file picker에서 받는 **보이지 않는 transport input**이다. ' +
+      '사람이 보고 누르는 규격은 바로 옆 `Button`이 소유하고, 이 input에 field 모양을 ' +
+      '씌우면 같은 행동에 두 개의 시각 컨트롤이 생긴다.',
+    conditional: 'File System Access 기반 공용 picker primitive가 생기면 이 native input과 등록을 함께 지운다.',
+  },
+  {
     file: 'src/features/project-quick-edit/ui/ProjectQuickEditPanel.tsx',
     count: 4,
     claim: 'no-spec',
