@@ -163,9 +163,18 @@ export function buildNextImportRelationReview(
   reconciliation,
   { afterReviewId = null } = {},
 ) {
-  const candidates = Array.isArray(reconciliation?.inCodeMissingFromVault)
+  const directlyReviewable = Array.isArray(reconciliation?.inCodeMissingFromVault)
     ? reconciliation.inCodeMissingFromVault
     : [];
+  const endpointModelling = Array.isArray(reconciliation?.inCodeMissingEndpointAbsent)
+    ? reconciliation.inCodeMissingEndpointAbsent
+    : [];
+  // Existing concepts remain the first review class. A fresh starter vault has
+  // none, so fall back to one endpoint-modelling candidate instead of returning
+  // an empty queue that pushes agents back to the full import firehose.
+  const candidates = directlyReviewable.length > 0
+    ? directlyReviewable
+    : endpointModelling;
   const rows = candidates.map((candidate) => ({
     candidate,
     reviewId: importRelationReviewId(candidate),
@@ -186,6 +195,10 @@ export function buildNextImportRelationReview(
   const { candidate, reviewId } = rows[index];
   const from = candidate.from;
   const to = candidate.to;
+  const required = Array.isArray(candidate.review?.required) && candidate.review.required.length > 0
+    ? candidate.review.required
+    : ['semantic_rationale', 'human_approval'];
+  const requiresVaultEndpoints = required.includes('vault_endpoints');
   const remaining = rows.length - index - 1;
   return {
     contract: 'nextRelationReview:v1',
@@ -224,8 +237,10 @@ export function buildNextImportRelationReview(
         (candidate.evidenceQualification?.productValueCount ?? 0) > 0
           ? 'eligible_after_semantic_review'
           : 'additional_product_meaning_evidence_required',
-      required: ['observable_ability', 'semantic_rationale', 'explicit_human_approval'],
-      ask: (candidate.evidenceQualification?.productValueCount ?? 0) > 0
+      required,
+      ask: requiresVaultEndpoints
+        ? 'Do not ask for relation approval yet. First model and review both ontology endpoints, then explain the observable ability and semantic rationale before asking for approval.'
+        : (candidate.evidenceQualification?.productValueCount ?? 0) > 0
         ? 'After the reads, explain which observable ability of the source concept fails without the target. ' +
           'Only if that stable meaning dependency holds, ask the person to approve this exact direction and rationale.'
         : 'Do not ask the person to approve a product depends_on relation from this import alone: no product-code value import was observed. ' +

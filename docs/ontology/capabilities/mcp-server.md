@@ -122,9 +122,20 @@ contract, 최상위 `__init__.py` package를 bounded 근거로 읽는다. `infer
 domain·capability·의미 `depends_on`으로 자동 승격하지 않는다. 각 module edge에는
 최대 5개의 정확한 file-edge 영수증과 나머지 근거 존재 여부가 붙는다. vault에 없는
 edge도 실행 가능한 `proposedAction` 대신 `rationale_review_required`로 반환한다.
-`reviewMode:"next"`는 전체 import graph 대신 검토 후보 한 건, 정확한 근거,
-양쪽 개념·relation preflight 호출, 중단 조건, stateless cursor만 5 KiB 이하로
-반환한다. 각 근거는 제품/테스트 코드와 값/타입 전용 사용을 분리하고, module
+구현 경로를 이미 알면 `focusPath` 또는 `reviewMode:"focus"`를 먼저 쓴다. 이 모드는
+loadable vault 없이도 그 파일의 정확한 incoming/outgoing static import 수와 최대 100개
+영수증, stateless cursor를 반환한다. 빈 결과도 영향 없음으로 말하지 않고 symbol·test·dynamic
+behavior와 ontology meaning이 아직 별도 확인 대상임을 고정한다.
+`reviewMode`를 생략하면 예상 MCP 전체 응답(text와 structured content)이 128 KiB 이하일
+때만 기존 전체 graph를 반환한다. 그보다 큰 reconciled scan은 전체 배열 대신 검토 후보
+한 건, 정확한 근거, 양쪽 개념·relation preflight 호출, 중단 조건, stateless cursor와
+자동 선택 이유·예상 byte를 담은 `delivery` receipt만 반환한다. `reviewMode:"next"`는
+같은 compact packet을 명시적으로 요청한다. `reviewMode:"full"`은 전체 shape를
+보존하지만 128 KiB를 넘으면 `allowLargeResponse:true`라는 두 번째 확인이 있어야 한다.
+reconciliation할 loadable vault가 없는 oversized 생략 호출은
+안전한 packet을 가장하지 않고 두 복구 선택을 구조화된 오류로 반환한다. `index_project`의
+내부 분석은 explicit full로 고정해 이 전달 기본값이 기존 plan 의미를 바꾸지 않는다.
+각 근거는 제품/테스트 코드와 값/타입 전용 사용을 분리하고, module
 edge는 bounded sample이 아니라 전체 import에서 두 차원의 count와 교집합인
 `productValueCount`를 계산한다. JS/TS의 명시적 type import와 Python의 명시적
 `TYPE_CHECKING` guard 안 import는 type-only다. `value`는 그 밖의 정적 import라는

@@ -88,8 +88,12 @@ const DEFAULT_IGNORE = new Set([
   'venv',
 ]);
 
-const SOURCE_FOLDERS = ['src', 'lib', 'app'];
+const SOURCE_FOLDERS = ['src', 'source', 'lib', 'app'];
 const WORKSPACE_FOLDERS = ['apps', 'packages'];
+const SOURCE_LAYOUT_COORDINATION_ELEMENT_LIMIT = 10;
+const SOURCE_LAYOUT_COORDINATION_ROLE =
+  /(?:^|[-_.])(app|main|index|manager|loader|registry|storage|client|server|router|controller)(?:[-_.]|$)/i;
+const SOURCE_LAYOUT_CODE_FILE = /\.(?:[cm]?[jt]sx?|py)$/i;
 const PYTHON_NON_PRODUCT_PACKAGES = new Set(['test', 'tests']);
 const PYTHON_IMPORT_ELEMENT_LIMIT = 12;
 const PYTHON_IMPORT_RISK_ELEMENT_LIMIT = 2;
@@ -217,6 +221,33 @@ export function analyzeRepoStructure(rootPath, options = {}) {
   const elements = [];
 
   if (srcDir) {
+    if (basename(srcDir) === 'source') {
+      for (const entry of readdirSync(srcDir).sort()) {
+        if (elements.length >= SOURCE_LAYOUT_COORDINATION_ELEMENT_LIMIT) break;
+        if (
+          ignore.has(entry) ||
+          entry.startsWith('.') ||
+          /\.(?:test|spec)\.(?:[cm]?[jt]sx?)$/i.test(entry) ||
+          !SOURCE_LAYOUT_CODE_FILE.test(entry) ||
+          !SOURCE_LAYOUT_COORDINATION_ROLE.test(entry)
+        ) {
+          continue;
+        }
+        const entryPath = join(srcDir, entry);
+        if (!statSync(entryPath).isFile()) continue;
+        const stem = entry.replace(SOURCE_LAYOUT_CODE_FILE, '');
+        const name = slugify(stem.replace(/_/g, '-'));
+        if (!name) continue;
+        const source = relative(rootPath, entryPath);
+        elements.push({
+          slug: `elements/${name}`,
+          title: humanize(name),
+          ...(domainForName(name) ? { domain: domainForName(name) } : {}),
+          path: source,
+          evidence: { source },
+        });
+      }
+    }
     // FSD pattern — features/ 가 capability 의 main 영역
     const fsdRoots = framework === 'fsd' ? FSD_SCAN_ROOTS : null;
 
@@ -1414,13 +1445,17 @@ function detectReadmeH1(rootPath) {
           isHeadingAdornment(nextLine) &&
           (cand.toLowerCase().endsWith('.rst') || nextLine.startsWith('='))
         ) {
-          return line.trim();
+          const title = cleanHeadingLabel(line);
+          if (title) return title;
         }
         const markdownHeading = line.match(/^#\s+(.+?)\s*$/);
-        if (markdownHeading) return markdownHeading[1].trim();
+        if (markdownHeading) {
+          const title = cleanHeadingLabel(markdownHeading[1]);
+          if (title) return title;
+        }
         const htmlHeading = line.match(/<h1\b[^>]*>(.*?)<\/h1>/i);
         if (htmlHeading) {
-          const title = htmlHeading[1].replace(/<[^>]+>/g, '').trim();
+          const title = cleanHeadingLabel(htmlHeading[1]);
           if (title) return title;
         }
       }
@@ -1429,6 +1464,16 @@ function detectReadmeH1(rootPath) {
     }
   }
   return null;
+}
+
+function cleanHeadingLabel(value) {
+  return String(value)
+    .replace(/!\[[^\]]*\]\([^)]*\)/g, ' ')
+    .replace(/\[([^\]]+)\]\([^)]*\)/g, '$1')
+    .replace(/<[^>]+>/g, ' ')
+    .replace(/&(?:nbsp|middot|amp|lt|gt);/gi, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
 }
 
 function isHeadingAdornment(line) {

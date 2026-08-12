@@ -313,6 +313,57 @@ test('buildNextImportRelationReview — returns one non-executable review packet
   assert.equal(second.cursor.hasMore, false);
 });
 
+test('buildNextImportRelationReview — fresh vault exposes one endpoint-modelling candidate instead of an empty queue', () => {
+  const packet = buildNextImportRelationReview({
+    inCodeMissingFromVault: [],
+    inCodeMissingEndpointAbsent: [
+      {
+        from: 'capabilities/feature-manager',
+        to: 'elements/options-storage',
+        count: 4,
+        absentEndpoints: [
+          'capabilities/feature-manager',
+          'elements/options-storage',
+        ],
+        sourceEvidence: [
+          {
+            from: 'source/feature-manager.tsx',
+            to: 'source/options-storage.ts',
+            kind: 'static',
+            sourceRole: 'production',
+            importUsage: 'value',
+          },
+        ],
+        sourceEvidenceLimited: false,
+        evidenceQualification: {
+          basis: 'whole_module_edge',
+          sourceRoleCounts: { production: 4, test: 0, unknown: 0 },
+          importUsageCounts: { value: 4, type_only: 0, unknown: 0 },
+          productValueCount: 4,
+          status: 'product_value_observed',
+        },
+        review: {
+          status: 'rationale_review_required',
+          writeAllowed: false,
+          required: ['vault_endpoints', 'semantic_rationale', 'human_approval'],
+        },
+      },
+    ],
+    inVaultNotInCode: [],
+  });
+
+  assert.equal(packet.candidate.from, 'capabilities/feature-manager');
+  assert.equal(packet.candidate.to, 'elements/options-storage');
+  assert.equal(packet.writeAllowed, false);
+  assert.deepEqual(packet.decision.required, [
+    'vault_endpoints',
+    'semantic_rationale',
+    'human_approval',
+  ]);
+  assert.match(packet.decision.ask, /model.*endpoint.*before.*approval/i);
+  assert.equal(packet.cursor.total, 1);
+});
+
 test('buildNextImportRelationReview — unknown cursor fails closed instead of restarting silently', () => {
   assert.throws(
     () => buildNextImportRelationReview({

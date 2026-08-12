@@ -42,6 +42,110 @@
 
 ---
 
+## 2026-08-13 (2) — 큰 배열의 확인보다 구현 경로 focus가 먼저다
+
+### 반증 관측
+
+같은 날 앞 결정을 반영한 fresh 서버로 무코칭 시험을 다시 했다. Claude Code는
+`reviewMode:"next"`를 골라 13회·overflow 0으로 끝났지만, Codex는 도구 설명에 있는
+두 번째 확인 `{reviewMode:"full",allowLargeResponse:true}`까지 스스로 승인해 3.94 MB
+complete scan을 세 번 호출했다. 최종 답은 좋았지만 transcript가 3.8 MB가 됐다.
+“명시적 확인이면 에이전트가 비용을 이해했다”는 전제가 실제 사용자에게는 성립하지
+않았다. 앞 기록의 해자 자리 반대가 이겼다.
+
+### 결정
+
+- FDE가 analyzer/ontology에서 구현 file path를 하나 얻었으면 complete import graph보다
+  `focusPath`를 먼저 쓴다. `reviewMode:"focus"`를 명시해도 같은 계약이다.
+- focus는 exact file-level static imports를 incoming/outgoing으로 세고, deterministic
+  cursor와 최대 100개 영수증만 반환한다. vault/reconciliation이 없어도 된다.
+- focus는 source boundary일 뿐 runtime blast radius, affected behavior, symbol coupling,
+  test completeness, semantic `depends_on`을 주장하지 않는다. `writeAllowed:false`다.
+- full+confirmation은 호환성과 오프라인 전수 감사용으로 남지만 기본 FDE impact
+  경로로 설명하지 않는다.
+
+### 가장 강한 반대와 반증 조건
+
+가장 강한 반대는 exact path를 모르는 cold start에서는 focus가 아무 도움도 주지
+않는다는 것이다. analyzer의 entrypoint/path evidence가 빈약하면 여전히 global queue나
+source tool이 필요하다. 수정 후 fresh Codex·Claude가 Refined의 feature registration
+질문에서 `source/feature-manager.tsx` focus를 발견하지 못하거나 full을 다시 고르면 이
+결정도 충분하지 않다. 그때는 `index_project` plan에 executable focus call을 직접 싣거나,
+별도 symbol/CodeGraph integration boundary를 설계한다. focus 결과를 의미 관련성 순위로
+정렬하는 일은 하지 않는다.
+
+**서명 (accountable)**: 소유자 jinan의 장기 MCP 품질 개선 위임 아래 집행
+**상태**: 유효
+
+---
+
+## 2026-08-13 — 대형 import evidence는 기본 호출에서 128 KiB를 넘기지 않는다
+
+### 관찰한 문제
+
+빈 starter vault에서 실제 오픈소스 세 곳(Pyspinel · Textual · Refined GitHub)을
+Codex와 Claude Code에 각각 Atlas MCP만 연결해 무코칭으로 조사했다. 작은 저장소는
+검토 가능한 proposal까지 갔지만, Refined GitHub의 `infer_imports` complete shape는
+874개 고유 후보·253개 endpoint를 만들며 예상 MCP 결과가 3,942,607 bytes였다.
+두 클라이언트는 이 배열을 명시적으로 `full` 요청하거나 전체를 다시 읽으려 했고,
+한 번의 첫 접촉에 수십만~백만 input token을 썼다. 이는 온톨로지 품질 문제가 되기
+전에 전달 계약이 FDE의 작업 기억을 소진하는 결함이다.
+
+### 결정
+
+- `infer_imports`에서 `reviewMode`를 생략하면, 완전한 MCP 결과 envelope의 UTF-8
+  예상 크기가 **128 KiB 이하일 때만** 기존 complete shape를 그대로 반환한다.
+- 128 KiB를 넘고 reconciliation이 가능하면 자동으로 쓰기 없는
+  `nextRelationReview:v1` 한 건, stateless cursor, 실제 예상 크기와 한계를 담은
+  `delivery` receipt를 반환한다. 전체 응답을 원하면 receipt가 명시하는
+  `{reviewMode:"full",allowLargeResponse:true}` 두 번째 확인이 필요하다.
+- reconciliation vault가 없거나 `reconcile:false`이면 자동으로 사실을 요약하지
+  않는다. bounded 경로와 명시적 full 경로를 함께 알리는 오류로 닫는다.
+- `reviewMode:"next"`는 계속 명시적 bounded path다. `index_project`의 내부 분석은
+  full+confirmation을 명시해 기존 proposal 의미를 바꾸지 않는다.
+- import evidence는 계속 source fact일 뿐 semantic `depends_on`이 아니다.
+  사람 승인 없는 relation/frontmatter write는 0이다.
+
+### 왜 이 경계인가
+
+자동 compact 자체는 차별점이 아니라 MCP 위생이다. 독립 PO 판정도 Ontology
+value 4/4 · Agent value 4/4지만 Differentiation 2/4였다. Atlas의 실질 가치는
+bounded source evidence → 양쪽 ontology concept 확인 → semantic rationale → 사람
+승인 → Git Markdown relation으로 이어지는 경계를 큰 저장소에서도 보존하는 데
+있다. 실측 Refined 응답은 3.94 MB 예상 complete envelope에서 약 9 KB의 기본
+wire result로 줄었고, 874건 전체 cursor 순회는 3.11 MB 누적·100건 표본은 100개
+고유 후보/54 endpoint로 손실 없이 진행됐다.
+
+### 카운슬과 가장 강한 반대
+
+근거·결·지킴이·해자 네 자리는 독립 실물/계약 검토를 완료했고 모두
+Build and verify였다. 이번에는 동시성 한계 때문에 지렛대 자리를 독립 agent로
+완주하지 못했으며, accountable 집행자가 기회비용을 직접 검토했다. 이 불완전성을
+5석 만장일치로 포장하지 않는다.
+
+가장 강한 반대는 “폭주를 막았을 뿐, FDE가 어디서 시작하고 무엇이 영향받는지는
+아직 못 답한다”이다. Refined의 사전식 첫 후보는 중앙 seam인
+`feature-manager`가 아니라 `action-pr-link`였고, 특정 endpoint의 incoming/outgoing
+관계와 fan-in/out을 바로 묻는 focus 조회가 없다.
+
+### 반증 조건과 다음 행동
+
+- 수정 후 fresh Atlas-only Codex·Claude 중 둘 이상이 다시 full+confirmation을
+  선택하거나 대량 cursor를 순회하면, 전달 기본값만으로 P0가 닫혔다는 판단은
+  틀리다. endpoint/source-path focus filter를 P0로 승격한다.
+- 세 실제 저장소 중 둘 이상에서 Atlas-only plan이 direct source reading 없이
+  capability 경계·변경 시작점·검증 경로를 안전하게 답하지 못하면 “FDE 단독 도구”
+  포지셔닝은 철회한다. Atlas는 의미/승인 layer이며 CodeGraph·AST·테스트 도구와
+  결합하는 계약을 유지한다.
+- 100+ **후보**를 처리했다는 사실을 100+ **승인된 의미 노드** 품질로 말하지
+  않는다. 100+ node qualification은 별도 사람 승인 plan과 source-hidden 평가가
+  있을 때만 통과한다.
+
+**서명 (accountable)**: 소유자 jinan의 장기 MCP 품질 개선 위임 아래 집행
+**상태**: 유효
+
+---
+
 ## 2026-08-12 — 열 것이 없을 때 **스킬 화면은 무대가 된다**, 그리고 무대 칸을 규격에 올린다
 
 **소집**: 열지 못했다 — 소유자가 이 세션에서 서브에이전트 호출을 쓰지 말라고 지시했다.

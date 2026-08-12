@@ -738,11 +738,21 @@ await test("tools/list — 단일 도구 description 이 batch 짝을 cross-refe
     assert.equal(inferImports?.outputSchema?.type, "object");
     assert.equal(inferImports?.inputSchema?.properties?.sourceFolders?.maxItems, 50);
     assert.equal(inferImports?.inputSchema?.properties?.ignore?.maxItems, 200);
-    assert.deepEqual(inferImports?.inputSchema?.properties?.reviewMode?.enum, ["full", "next"]);
+    assert.deepEqual(inferImports?.inputSchema?.properties?.reviewMode?.enum, ["full", "next", "focus"]);
+    assert.equal(inferImports?.inputSchema?.properties?.allowLargeResponse?.type, "boolean");
+    assert.match(
+      inferImports?.inputSchema?.properties?.allowLargeResponse?.description ?? "",
+      /reviewMode:"full"[\s\S]*exceeds 128 KiB/i,
+    );
     assert.match(inferImports?.inputSchema?.properties?.afterReviewId?.description ?? "", /cursor\.nextAfterReviewId/);
+    assert.equal(inferImports?.inputSchema?.properties?.focusPath?.type, "string");
+    assert.deepEqual(inferImports?.inputSchema?.properties?.focusDirection?.enum, ["incoming", "outgoing", "both"]);
+    assert.equal(inferImports?.inputSchema?.properties?.focusLimit?.maximum, 100);
+    assert.match(inferImports?.inputSchema?.properties?.focusAfterEdgeId?.description ?? "", /nextAfterEdgeId/);
     assert.deepEqual(inferImports?.outputSchema?.required, ["rootPath", "filesScanned", "coverage"]);
     assert.deepEqual(inferImports?.outputSchema?.oneOf?.[0]?.required, ["edges", "externalImports", "unresolved", "moduleEdges"]);
     assert.deepEqual(inferImports?.outputSchema?.oneOf?.[1]?.required, ["contract", "scanSummary", "reconciliationSummary", "reviewQueue", "nextReview"]);
+    assert.deepEqual(inferImports?.outputSchema?.oneOf?.[2]?.required, ["contract", "scanSummary", "focusReview"]);
     assert.equal(inferImports?.outputSchema?.additionalProperties, false);
     assert.equal(inferImports?.outputSchema?.properties?.filesScanned?.type, "integer");
     assert.deepEqual(inferImports?.outputSchema?.properties?.coverage?.properties?.contract?.enum, ["importScanCoverage:v1"]);
@@ -768,7 +778,40 @@ await test("tools/list — 단일 도구 description 이 batch 짝을 cross-refe
     assert.deepEqual(moduleEvidenceSchema?.items?.required, ["from", "to", "kind", "sourceRole", "importUsage"]);
     assert.equal(moduleEvidenceSchema?.items?.additionalProperties, false);
     assert.equal(inferImports?.outputSchema?.properties?.moduleEdges?.items?.properties?.evidenceLimited?.type, "boolean");
-    assert.deepEqual(inferImports?.outputSchema?.properties?.contract?.enum, ["inferImportsReview:v1"]);
+    assert.deepEqual(inferImports?.outputSchema?.properties?.contract?.enum, ["inferImportsReview:v1", "inferImportsFocus:v1"]);
+    assert.deepEqual(inferImports?.outputSchema?.properties?.focusReview?.required, [
+      "contract",
+      "focusPath",
+      "direction",
+      "sourceQualification",
+      "writeAllowed",
+      "summary",
+      "edges",
+      "cursor",
+      "interpretation",
+    ]);
+    assert.deepEqual(inferImports?.outputSchema?.properties?.focusReview?.properties?.writeAllowed?.enum, [false]);
+    assert.equal(inferImports?.outputSchema?.properties?.focusReview?.properties?.edges?.maxItems, 100);
+    assert.deepEqual(
+      inferImports?.outputSchema?.properties?.delivery?.properties?.selection?.enum,
+      ["automatic_compact"],
+    );
+    assert.deepEqual(
+      inferImports?.outputSchema?.properties?.delivery?.properties?.automaticLimitBytes?.enum,
+      [131072],
+    );
+    assert.deepEqual(
+      inferImports?.outputSchema?.properties?.delivery?.required,
+      [
+        "selection",
+        "reason",
+        "estimatedFullResponseBytes",
+        "automaticLimitBytes",
+        "explicitFullAvailable",
+        "explicitFullArguments",
+      ],
+    );
+    assert.equal(inferImports?.outputSchema?.properties?.delivery?.additionalProperties, false);
     assert.deepEqual(inferImports?.outputSchema?.properties?.nextReview?.properties?.writeAllowed?.enum, [false]);
     assert.deepEqual(
       inferImports?.outputSchema?.properties?.nextReview?.properties?.candidate?.properties?.evidenceQualification?.required,
@@ -781,7 +824,7 @@ await test("tools/list — 단일 도구 description 이 batch 짝을 cross-refe
     assert.deepEqual(inferImports?.outputSchema?.properties?.nextReview?.properties?.cursor?.required, ["afterReviewId", "total", "remaining", "hasMore", "nextAfterReviewId"]);
     assert.match(
       inferImports?.description ?? "",
-      /walk TS\/JS files in a code repo and infer file-level \+ module-level import edges[\s\S]*bounded root Python packages[\s\S]*side effect 0 \(vault frontmatter NOT modified\)[\s\S]*source-backed review candidates[\s\S]*reviewMode:"next"[\s\S]*exactly one compact, non-writing `nextRelationReview:v1` packet[\s\S]*bounded exact file-edge `evidence` receipt[\s\S]*rationale_review_required[\s\S]*ask the user[\s\S]*add_relation[\s\S]*`why`/i,
+      /walk TS\/JS files in a code repo and infer file-level \+ module-level import edges[\s\S]*bounded root Python packages[\s\S]*side effect 0 \(vault frontmatter NOT modified\)[\s\S]*source-backed review candidates[\s\S]*focusPath[\s\S]*incoming[\s\S]*outgoing[\s\S]*omit `reviewMode`[\s\S]*128 KiB[\s\S]*larger reconciled scans return exactly one compact, non-writing `nextRelationReview:v1` packet[\s\S]*delivery receipt[\s\S]*reviewMode:"next"[\s\S]*reviewMode:"full"[\s\S]*allowLargeResponse:true[\s\S]*actionable error[\s\S]*bounded exact file-edge `evidence` receipt[\s\S]*rationale_review_required[\s\S]*ask the user[\s\S]*add_relation[\s\S]*`why`/i,
       "infer_imports description documents dependency-ingest safety workflow",
     );
     assert.match(
@@ -2707,6 +2750,139 @@ await test("infer_imports — import graph exposes structuredContent", async () 
   }
 });
 
+await test("infer_imports auto delivery — oversized omitted calls compact, explicit full stays available, and raw scans fail closed", async () => {
+  const vaultRoot = makeVault();
+  const repoRoot = mkdtempSync(join(tmpdir(), "ontology-atlas-infer-auto-delivery-"));
+  try {
+    mkdirSync(join(repoRoot, "src", "shared", "runtime"), { recursive: true });
+    writeFileSync(
+      join(repoRoot, "src", "shared", "runtime", "client.ts"),
+      "export const client = true;\n",
+      "utf-8",
+    );
+    for (let index = 0; index < 160; index += 1) {
+      const featureDir = join(repoRoot, "src", "features", `feature-${String(index).padStart(3, "0")}`);
+      mkdirSync(featureDir, { recursive: true });
+      writeFileSync(
+        join(featureDir, "index.ts"),
+        'import { client } from "../../shared/runtime/client";\nexport const enabled = client;\n',
+        "utf-8",
+      );
+    }
+    const before = readdirSync(vaultRoot, { recursive: true });
+
+    const { responses } = await rpc(vaultRoot, [
+      ...INIT_REQUESTS,
+      callTool(2, "infer_imports", { rootPath: repoRoot }),
+      callTool(3, "infer_imports", { rootPath: repoRoot, reviewMode: "next" }),
+      callTool(4, "infer_imports", { rootPath: repoRoot, reviewMode: "full" }),
+      callTool(5, "infer_imports", {
+        rootPath: repoRoot,
+        reviewMode: "full",
+        allowLargeResponse: true,
+      }),
+      callTool(6, "infer_imports", { rootPath: repoRoot, reconcile: false }),
+      callTool(7, "infer_imports", {
+        rootPath: repoRoot,
+        reviewMode: "focus",
+        focusPath: "src/shared/runtime/client.ts",
+        focusDirection: "both",
+        focusLimit: 25,
+      }),
+    ], 10_000);
+
+    const automatic = getCallParsed(responses, 2);
+    const explicitNext = getCallParsed(responses, 3);
+    const explicitFull = getCallParsed(responses, 5);
+    const focused = getCallParsed(responses, 7);
+    assert.equal(automatic.contract, "inferImportsReview:v1");
+    assert.equal(automatic.edges, undefined);
+    assert.equal(automatic.moduleEdges, undefined);
+    assert.equal(JSON.stringify(automatic).length < 5_120, true);
+    assert.deepEqual(automatic.delivery, {
+      selection: "automatic_compact",
+      reason: "estimated_full_response_exceeds_limit",
+      estimatedFullResponseBytes: automatic.delivery.estimatedFullResponseBytes,
+      automaticLimitBytes: 131_072,
+      explicitFullAvailable: true,
+      explicitFullArguments: {
+        reviewMode: "full",
+        allowLargeResponse: true,
+      },
+    });
+    assert.equal(automatic.delivery.estimatedFullResponseBytes > automatic.delivery.automaticLimitBytes, true);
+    const { delivery: _automaticDelivery, ...automaticWithoutDelivery } = automatic;
+    assert.deepEqual(automaticWithoutDelivery, explicitNext);
+
+    assert.equal(isErrorResponse(responses, 4), true);
+    assert.deepEqual(getCallStructured(responses, 4), {
+      ok: false,
+      errorCode: "tool_error",
+      error: getCallStructured(responses, 4).error,
+      largeResponseConfirmationRequired: true,
+      estimatedFullResponseBytes: getCallStructured(responses, 4).estimatedFullResponseBytes,
+      automaticLimitBytes: 131_072,
+      retryArguments: {
+        reviewMode: "full",
+        allowLargeResponse: true,
+      },
+      boundedAlternative: {
+        reviewMode: "next",
+      },
+    });
+    assert.match(getCallStructured(responses, 4).error, /allowLargeResponse:true/i);
+
+    assert.ok(Array.isArray(explicitFull.edges));
+    assert.ok(Array.isArray(explicitFull.moduleEdges));
+    assert.equal(explicitFull.moduleEdges.length, 160);
+    assert.equal(explicitFull.contract, undefined);
+
+    assert.equal(focused.contract, "inferImportsFocus:v1");
+    assert.equal(JSON.stringify(focused).length < 32_768, true);
+    assert.deepEqual(focused.focusReview.summary, {
+      incoming: 160,
+      outgoing: 0,
+      selected: 160,
+      returned: 25,
+      limited: true,
+    });
+    assert.equal(focused.focusReview.edges.length, 25);
+    assert.equal(focused.focusReview.edges.every((edge) => edge.to === "src/shared/runtime/client.ts"), true);
+    assert.equal(focused.focusReview.cursor.total, 160);
+    assert.equal(focused.focusReview.cursor.remaining, 135);
+    assert.equal(focused.focusReview.writeAllowed, false);
+
+    assert.equal(isErrorResponse(responses, 6), true);
+    assert.match(
+      JSON.stringify(responses.find((response) => response.id === 6)),
+      /estimated full response.*exceeds.*128 KiB.*reconcile:true.*reviewMode.*full/is,
+    );
+    assert.deepEqual(getCallStructured(responses, 6), {
+      ok: false,
+      errorCode: "tool_error",
+      error: getCallStructured(responses, 6).error,
+      estimatedFullResponseBytes: getCallStructured(responses, 6).estimatedFullResponseBytes,
+      automaticLimitBytes: 131_072,
+      requiredForCompact: {
+        reconcile: true,
+        loadableActiveVault: true,
+      },
+      explicitFullOverride: {
+        reviewMode: "full",
+        allowLargeResponse: true,
+      },
+    });
+    assert.equal(
+      getCallStructured(responses, 6).estimatedFullResponseBytes > 131_072,
+      true,
+    );
+    assert.deepEqual(readdirSync(vaultRoot, { recursive: true }), before, "delivery selection must write zero vault bytes");
+  } finally {
+    rmSync(vaultRoot, { recursive: true, force: true });
+    rmSync(repoRoot, { recursive: true, force: true });
+  }
+});
+
 await test("Rust MCP evidence — analyze, infer, and index preserve configuration provenance and unsupported import coverage", async () => {
   const vaultRoot = makeVault();
   const repoRoot = mkdtempSync(join(tmpdir(), "ontology-atlas-rust-evidence-"));
@@ -2828,6 +3004,44 @@ await test("infer_imports reviewMode next — one bounded non-writing relation r
     assert.notEqual(second.nextReview.reviewId, first.nextReview.reviewId);
     assert.equal(second.nextReview.cursor.hasMore, false);
     assert.deepEqual(readReviewVault(), before, "cursor reads must remain side-effect free");
+  } finally {
+    rmSync(vaultRoot, { recursive: true, force: true });
+    rmSync(repoRoot, { recursive: true, force: true });
+  }
+});
+
+await test("infer_imports reviewMode next — fresh vault returns one endpoint-modelling packet without the full firehose", async () => {
+  const vaultRoot = makeVault();
+  const repoRoot = mkdtempSync(join(tmpdir(), "ontology-atlas-infer-fresh-review-"));
+  try {
+    mkdirSync(join(repoRoot, "source", "features", "alpha"), { recursive: true });
+    mkdirSync(join(repoRoot, "source", "features", "beta"), { recursive: true });
+    writeFileSync(
+      join(repoRoot, "source", "features", "alpha", "index.ts"),
+      'import { beta } from "../beta";\nexport const alpha = beta;\n',
+      "utf-8",
+    );
+    writeFileSync(
+      join(repoRoot, "source", "features", "beta", "index.ts"),
+      "export const beta = true;\n",
+      "utf-8",
+    );
+
+    const { responses } = await rpc(vaultRoot, [
+      ...INIT_REQUESTS,
+      callTool(2, "infer_imports", { rootPath: repoRoot, reviewMode: "next" }),
+    ]);
+    const result = getCallParsed(responses, 2);
+    assert.deepEqual(getCallStructured(responses, 2), result);
+    assert.equal(JSON.stringify(result).length < 5_120, true);
+    assert.equal(result.nextReview.candidate.from, "capabilities/alpha");
+    assert.equal(result.nextReview.candidate.to, "capabilities/beta");
+    assert.ok(result.nextReview.decision.required.includes("vault_endpoints"));
+    assert.match(result.nextReview.decision.ask, /model.*endpoint.*before.*approval/i);
+    assert.equal(result.nextReview.writeAllowed, false);
+    assert.equal(result.edges, undefined);
+    assert.equal(result.moduleEdges, undefined);
+    assert.equal(result.reviewQueue.total, 1);
   } finally {
     rmSync(vaultRoot, { recursive: true, force: true });
     rmSync(repoRoot, { recursive: true, force: true });

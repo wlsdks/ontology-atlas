@@ -1824,7 +1824,14 @@ export function toolsListSchemaFailure(tools) {
     !/walk TS\/JS files in a code repo and infer file-level \+ module-level import edges/i.test(inferImportsTool.description || '') ||
     !/side effect 0 \(vault frontmatter NOT modified\)/i.test(inferImportsTool.description || '') ||
     !/source-backed review candidates/i.test(inferImportsTool.description || '') ||
+    !/focusPath/i.test(inferImportsTool.description || '') ||
+    !/incoming\/outgoing/i.test(inferImportsTool.description || '') ||
+    !/Omit `reviewMode`/i.test(inferImportsTool.description || '') ||
+    !/128 KiB/i.test(inferImportsTool.description || '') ||
+    !/delivery receipt/i.test(inferImportsTool.description || '') ||
     !/reviewMode:"next"/i.test(inferImportsTool.description || '') ||
+    !/reviewMode:"full"/i.test(inferImportsTool.description || '') ||
+    !/allowLargeResponse:true/i.test(inferImportsTool.description || '') ||
     !/exactly one compact, non-writing `nextRelationReview:v1` packet/i.test(inferImportsTool.description || '') ||
     !/kindCounts/i.test(inferImportsTool.description || '') ||
     !/bounded exact file-edge `evidence` receipt/i.test(inferImportsTool.description || '') ||
@@ -1852,11 +1859,26 @@ export function toolsListSchemaFailure(tools) {
   const inferReviewModeSchema = propertyAt(inferImportsTool, ['properties', 'reviewMode']);
   if (
     inferReviewModeSchema?.type !== 'string' ||
-    !sameArray(inferReviewModeSchema.enum, ['full', 'next']) ||
-    !/default/i.test(inferReviewModeSchema.description || '') ||
-    !/compact, non-writing/i.test(inferReviewModeSchema.description || '')
+    !sameArray(inferReviewModeSchema.enum, ['full', 'next', 'focus']) ||
+    !/focus.*bounded exact file-level import neighborhood/i.test(inferReviewModeSchema.description || '') ||
+    !/Omit for automatic delivery/i.test(inferReviewModeSchema.description || '') ||
+    !/128 KiB/i.test(inferReviewModeSchema.description || '') ||
+    !/full.*requests the complete scan/i.test(inferReviewModeSchema.description || '') ||
+    !/allowLargeResponse:true/i.test(inferReviewModeSchema.description || '') ||
+    !/next.*explicitly requests one compact packet/i.test(inferReviewModeSchema.description || '')
   ) {
     return 'infer_imports reviewMode contract drift';
+  }
+  const inferAllowLargeResponseSchema = propertyAt(inferImportsTool, [
+    'properties',
+    'allowLargeResponse',
+  ]);
+  if (
+    inferAllowLargeResponseSchema?.type !== 'boolean' ||
+    !/reviewMode:"full"/i.test(inferAllowLargeResponseSchema.description || '') ||
+    !/exceeds 128 KiB/i.test(inferAllowLargeResponseSchema.description || '')
+  ) {
+    return 'infer_imports large response confirmation drift';
   }
   const inferAfterReviewIdSchema = propertyAt(inferImportsTool, ['properties', 'afterReviewId']);
   if (
@@ -1865,6 +1887,22 @@ export function toolsListSchemaFailure(tools) {
     !/cursor\.nextAfterReviewId/i.test(inferAfterReviewIdSchema.description || '')
   ) {
     return 'infer_imports afterReviewId cursor drift';
+  }
+  const inferFocusPathSchema = propertyAt(inferImportsTool, ['properties', 'focusPath']);
+  const inferFocusDirectionSchema = propertyAt(inferImportsTool, ['properties', 'focusDirection']);
+  const inferFocusLimitSchema = propertyAt(inferImportsTool, ['properties', 'focusLimit']);
+  const inferFocusAfterEdgeIdSchema = propertyAt(inferImportsTool, ['properties', 'focusAfterEdgeId']);
+  if (
+    inferFocusPathSchema?.type !== 'string' ||
+    !/repository-relative implementation file/i.test(inferFocusPathSchema.description || '') ||
+    !sameArray(inferFocusDirectionSchema?.enum, ['incoming', 'outgoing', 'both']) ||
+    inferFocusLimitSchema?.type !== 'integer' ||
+    inferFocusLimitSchema.minimum !== 1 ||
+    inferFocusLimitSchema.maximum !== 100 ||
+    inferFocusAfterEdgeIdSchema?.type !== 'string' ||
+    !/nextAfterEdgeId/i.test(inferFocusAfterEdgeIdSchema.description || '')
+  ) {
+    return 'infer_imports focus input contract drift';
   }
   if (inferImportsTool.outputSchema?.type !== 'object') {
     return 'infer_imports outputSchema root drift';
@@ -1875,7 +1913,7 @@ export function toolsListSchemaFailure(tools) {
   const inferOutputBranches = inferImportsTool.outputSchema?.oneOf;
   if (
     !Array.isArray(inferOutputBranches) ||
-    inferOutputBranches.length !== 2 ||
+    inferOutputBranches.length !== 3 ||
     !sameArray(inferOutputBranches[0]?.required, ['edges', 'externalImports', 'unresolved', 'moduleEdges']) ||
     !sameArray(inferOutputBranches[1]?.required, [
       'contract',
@@ -1883,7 +1921,8 @@ export function toolsListSchemaFailure(tools) {
       'reconciliationSummary',
       'reviewQueue',
       'nextReview',
-    ])
+    ]) ||
+    !sameArray(inferOutputBranches[2]?.required, ['contract', 'scanSummary', 'focusReview'])
   ) {
     return 'infer_imports outputSchema full/review branch drift';
   }
@@ -2021,14 +2060,44 @@ export function toolsListSchemaFailure(tools) {
     return 'infer_imports outputSchema moduleEdges evidence drift';
   }
   const importReviewContractSchema = outputPropertyAt(inferImportsTool, ['properties', 'contract']);
+  const importDeliverySchema = outputPropertyAt(inferImportsTool, ['properties', 'delivery']);
   const importNextReviewSchema = outputPropertyAt(inferImportsTool, ['properties', 'nextReview']);
+  const importFocusReviewSchema = outputPropertyAt(inferImportsTool, ['properties', 'focusReview']);
   const importReviewWriteAllowedSchema = importNextReviewSchema?.properties?.writeAllowed;
   const importReviewCursorSchema = importNextReviewSchema?.properties?.cursor;
   const importReviewCandidateSchema = importNextReviewSchema?.properties?.candidate;
   const importReviewQualificationSchema = importReviewCandidateSchema?.properties?.evidenceQualification;
   const importReviewDecisionSchema = importNextReviewSchema?.properties?.decision;
   if (
-    !sameArray(importReviewContractSchema?.enum, ['inferImportsReview:v1']) ||
+    !sameArray(importReviewContractSchema?.enum, ['inferImportsReview:v1', 'inferImportsFocus:v1']) ||
+    importDeliverySchema?.type !== 'object' ||
+    !sameArray(importDeliverySchema?.required, [
+      'selection',
+      'reason',
+      'estimatedFullResponseBytes',
+      'automaticLimitBytes',
+      'explicitFullAvailable',
+      'explicitFullArguments',
+    ]) ||
+    !sameArray(importDeliverySchema?.properties?.selection?.enum, ['automatic_compact']) ||
+    !sameArray(importDeliverySchema?.properties?.reason?.enum, [
+      'estimated_full_response_exceeds_limit',
+    ]) ||
+    !sameArray(importDeliverySchema?.properties?.automaticLimitBytes?.enum, [131072]) ||
+    !sameArray(importDeliverySchema?.properties?.explicitFullAvailable?.enum, [true]) ||
+    !sameArray(importDeliverySchema?.properties?.explicitFullArguments?.required, [
+      'reviewMode',
+      'allowLargeResponse',
+    ]) ||
+    !sameArray(
+      importDeliverySchema?.properties?.explicitFullArguments?.properties?.reviewMode?.enum,
+      ['full'],
+    ) ||
+    !sameArray(
+      importDeliverySchema?.properties?.explicitFullArguments?.properties?.allowLargeResponse?.enum,
+      [true],
+    ) ||
+    importDeliverySchema?.additionalProperties !== false ||
     !sameArray(importNextReviewSchema?.type, ['object', 'null']) ||
     !sameArray(importNextReviewSchema?.required, [
       'contract',
@@ -2075,6 +2144,42 @@ export function toolsListSchemaFailure(tools) {
     importReviewCursorSchema?.additionalProperties !== false
   ) {
     return 'infer_imports compact review approval gate drift';
+  }
+  if (
+    importFocusReviewSchema?.type !== 'object' ||
+    !sameArray(importFocusReviewSchema.required, [
+      'contract',
+      'focusPath',
+      'direction',
+      'sourceQualification',
+      'writeAllowed',
+      'summary',
+      'edges',
+      'cursor',
+      'interpretation',
+    ]) ||
+    importFocusReviewSchema.additionalProperties !== false ||
+    !sameArray(importFocusReviewSchema.properties?.contract?.enum, ['importImpactFocus:v1']) ||
+    !sameArray(importFocusReviewSchema.properties?.writeAllowed?.enum, [false]) ||
+    importFocusReviewSchema.properties?.edges?.maxItems !== 100 ||
+    !sameArray(importFocusReviewSchema.properties?.edges?.items?.required, [
+      'edgeId',
+      'from',
+      'to',
+      'kind',
+      'sourceRole',
+      'importUsage',
+    ]) ||
+    importFocusReviewSchema.properties?.edges?.items?.additionalProperties !== false ||
+    !sameArray(importFocusReviewSchema.properties?.cursor?.required, [
+      'afterEdgeId',
+      'total',
+      'remaining',
+      'hasMore',
+      'nextAfterEdgeId',
+    ])
+  ) {
+    return 'infer_imports focus output contract drift';
   }
 
   const queryTool = tools.find((tool) => tool?.name === 'query_ontology');
@@ -3944,6 +4049,7 @@ export const FIRST_CONTACT_RESPONSE_LABELS = new Map([
   [67, 'all_paths'],
   [68, 'index_project'],
   [69, 'absorb_document_dry_run'],
+  [70, 'infer_imports_focus'],
 ]);
 
 export const OPTIONAL_FIRST_CONTACT_RESPONSE_IDS = [
@@ -4404,7 +4510,30 @@ export function buildFirstContactRequests() {
       jsonrpc: '2.0',
       id: 39,
       method: 'tools/call',
-      params: { name: 'infer_imports', arguments: { rootPath: REPO_ROOT, maxFiles: 5000 } },
+      params: {
+        name: 'infer_imports',
+        arguments: {
+          rootPath: REPO_ROOT,
+          maxFiles: 5000,
+          reviewMode: 'full',
+          allowLargeResponse: true,
+        },
+      },
+    },
+    {
+      jsonrpc: '2.0',
+      id: 70,
+      method: 'tools/call',
+      params: {
+        name: 'infer_imports',
+        arguments: {
+          rootPath: REPO_ROOT,
+          reviewMode: 'focus',
+          focusPath: 'src/entities/knowledge-graph/model/types.ts',
+          focusDirection: 'both',
+          focusLimit: 25,
+        },
+      },
     },
     {
       jsonrpc: '2.0',
@@ -8843,6 +8972,7 @@ async function step2BootAndCall() {
       const limitedQueryConceptsRes = responses.find((r) => r.id === 37);
       const analyzeRepoStructureRes = responses.find((r) => r.id === 38);
       const inferImportsRes = responses.find((r) => r.id === 39);
+      const inferImportsFocusRes = responses.find((r) => r.id === 70);
       const indexProjectRes = responses.find((r) => r.id === 68);
       const findNeighborsRes = responses.find((r) => r.id === 35);
       const findPathRes = responses.find((r) => r.id === 36);
@@ -9489,6 +9619,48 @@ async function step2BootAndCall() {
         log('ok', `infer_imports: ${formatCount(parsed.filesScanned, 'file')} scanned, ${formatCount(parsed.moduleEdges.length, 'module edge')} (${importModuleEdgeKindOutputSummary(parsed.moduleEdges)})`);
       } catch (err) {
         log('fail', `failed to parse infer_imports response: ${err.message}`);
+        return res(false);
+      }
+
+      if (!inferImportsFocusRes || !inferImportsFocusRes.result) {
+        log('fail', 'no infer_imports focus response');
+        return res(false);
+      }
+      try {
+        const text = inferImportsFocusRes.result.content?.[0]?.text || '';
+        const parsed = JSON.parse(text);
+        const focus = parsed.focusReview;
+        if (
+          parsed.contract !== 'inferImportsFocus:v1' ||
+          focus?.contract !== 'importImpactFocus:v1' ||
+          focus?.focusPath !== 'src/entities/knowledge-graph/model/types.ts' ||
+          focus?.writeAllowed !== false ||
+          !Array.isArray(focus?.edges) ||
+          focus.edges.length > 25 ||
+          focus?.summary?.selected !== focus?.cursor?.total ||
+          focus?.summary?.returned !== focus.edges.length ||
+          focus.edges.some((edge) => (
+            edge.from !== focus.focusPath && edge.to !== focus.focusPath
+          ))
+        ) {
+          log('fail', 'infer_imports focus response contract drift');
+          return res(false);
+        }
+        const structuredFailure = structuredContentFailure(
+          inferImportsFocusRes,
+          parsed,
+          'infer_imports focus',
+        );
+        if (structuredFailure) {
+          log('fail', structuredFailure);
+          return res(false);
+        }
+        log(
+          'ok',
+          `infer_imports focus: ${focus.focusPath} (${focus.summary.incoming} incoming, ${focus.summary.outgoing} outgoing, ${focus.summary.returned}/${focus.summary.selected} returned)`,
+        );
+      } catch (err) {
+        log('fail', `failed to parse infer_imports focus response: ${err.message}`);
         return res(false);
       }
 

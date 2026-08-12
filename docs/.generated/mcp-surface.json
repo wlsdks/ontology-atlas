@@ -289,6 +289,11 @@
         "mode": "read",
         "arguments": [
           "afterReviewId",
+          "allowLargeResponse",
+          "focusAfterEdgeId",
+          "focusDirection",
+          "focusLimit",
+          "focusPath",
           "ignore",
           "maxFiles",
           "reconcile",

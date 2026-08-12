@@ -202,6 +202,24 @@ test('README title ignores fenced shell comments and supports centered HTML H1',
   }
 });
 
+test('README Markdown H1 strips decorative inline HTML from project identity', () => {
+  const root = withRepo((r) => {
+    writeFileSync(join(r, 'package.json'), JSON.stringify({ name: 'refined-github' }));
+    writeFileSync(
+      join(r, 'README.md'),
+      '# <img src="source/icon.png" width="45" align="left"> Refined GitHub\n\nBrowser extension features.\n',
+    );
+  });
+  try {
+    const result = analyzeRepoStructure(root);
+    assert.equal(result.project.title, 'Refined GitHub');
+    const readmeEvidence = result.semanticEvidence.find((row) => row.source === 'README.md');
+    assert.equal(readmeEvidence?.title, 'Refined GitHub');
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
 test('semantic evidence discovery ranks generic product/strategy docs without project-specific paths', () => {
   const root = withRepo((r) => {
     writeFileSync(join(r, 'package.json'), JSON.stringify({ name: 'portable-app' }));
@@ -2387,6 +2405,37 @@ test('훑을 폴더가 하나라도 있으면 여전히 FSD 다 (lean FSD 포함
     const r = analyzeRepoStructure(root);
     assert.equal(r.framework, 'fsd');
     assert.ok(r.capabilities.some((c) => c.slug === 'capabilities/auth'));
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test('source/ root exposes only bounded top-level coordination roles as implementation evidence', () => {
+  const root = withRepo((r) => {
+    writeFileSync(join(r, 'package.json'), JSON.stringify({ name: 'source-layout' }));
+    writeFileSync(join(r, 'README.md'), '# Source layout\n');
+    mkdirSync(join(r, 'source', 'features'), { recursive: true });
+    writeFileSync(join(r, 'source', 'feature-manager.tsx'), 'export const manager = true;\n');
+    writeFileSync(join(r, 'source', 'options-storage.ts'), 'export const storage = true;\n');
+    writeFileSync(join(r, 'source', 'incidental-helper.ts'), 'export const helper = true;\n');
+    writeFileSync(join(r, 'source', 'feature-manager.test.ts'), 'export const fixture = true;\n');
+    writeFileSync(join(r, 'source', 'features', 'one.tsx'), 'export const one = true;\n');
+  });
+  try {
+    const result = analyzeRepoStructure(root);
+    assert.equal(result.framework, 'fsd');
+    assert.deepEqual(
+      result.elements.map(({ slug, path }) => ({ slug, path })),
+      [
+        { slug: 'elements/feature-manager', path: 'source/feature-manager.tsx' },
+        { slug: 'elements/options-storage', path: 'source/options-storage.ts' },
+      ],
+    );
+    assert.equal(
+      result.capabilities.some((row) => row.slug === 'capabilities/one'),
+      false,
+      'flat feature files are not self-approving business capabilities',
+    );
   } finally {
     rmSync(root, { recursive: true, force: true });
   }

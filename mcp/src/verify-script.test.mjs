@@ -1871,7 +1871,7 @@ describe('verify.mjs first-contact gates', () => {
       {
         name: 'infer_imports',
         description:
-          'R17 (autonomous ingest deeper): walk TS/JS files in a code repo and infer file-level + module-level import edges. side effect 0 (vault frontmatter NOT modified). moduleEdges are source-backed review candidates with kindCounts and a bounded exact file-edge `evidence` receipt. For approval start with reviewMode:"next": exactly one compact, non-writing `nextRelationReview:v1` packet. Missing edges are rationale_review_required. Ask the user before add_relation and include `why`. Use after analyze_repo_structure to pull real dependency edges from the code, not just suggestedRelations heuristics. Single source of truth preserved: only the user writes to the vault.',
+          'R17 (autonomous ingest deeper): walk TS/JS files in a code repo and infer file-level + module-level import edges. side effect 0 (vault frontmatter NOT modified). moduleEdges are source-backed review candidates with kindCounts and a bounded exact file-edge `evidence` receipt. Use focusPath for an incoming/outgoing bounded exact file neighborhood. Omit `reviewMode` for automatic delivery under 128 KiB; larger results include a delivery receipt. For approval use reviewMode:"next": exactly one compact, non-writing `nextRelationReview:v1` packet. reviewMode:"full" over the limit requires allowLargeResponse:true. Missing edges are rationale_review_required. Ask the user before add_relation and include `why`. Use after analyze_repo_structure to pull real dependency edges from the code, not just suggestedRelations heuristics. Single source of truth preserved: only the user writes to the vault.',
         inputSchema: {
           additionalProperties: false,
           properties: {
@@ -1886,12 +1886,26 @@ describe('verify.mjs first-contact gates', () => {
             },
             reviewMode: {
               type: 'string',
-              enum: ['full', 'next'],
-              description: '`full` (default) or compact, non-writing review.',
+              enum: ['full', 'next', 'focus'],
+              description: 'Omit for automatic delivery under 128 KiB. focus returns a bounded exact file-level import neighborhood. full requests the complete scan with allowLargeResponse:true; next explicitly requests one compact packet.',
+            },
+            allowLargeResponse: {
+              type: 'boolean',
+              description: 'reviewMode:"full" confirmation when the result exceeds 128 KiB.',
             },
             afterReviewId: {
               type: 'string',
               description: '`reviewMode:"next"` cursor.nextAfterReviewId.',
+            },
+            focusPath: {
+              type: 'string',
+              description: 'Repository-relative implementation file to inspect.',
+            },
+            focusDirection: { enum: ['incoming', 'outgoing', 'both'] },
+            focusLimit: { type: 'integer', minimum: 1, maximum: 100 },
+            focusAfterEdgeId: {
+              type: 'string',
+              description: 'Pass focusReview.cursor.nextAfterEdgeId.',
             },
           },
         },
@@ -1909,6 +1923,7 @@ describe('verify.mjs first-contact gates', () => {
                 'nextReview',
               ],
             },
+            { required: ['contract', 'scanSummary', 'focusReview'] },
           ],
           properties: {
             rootPath: { type: 'string' },
@@ -2030,7 +2045,32 @@ describe('verify.mjs first-contact gates', () => {
                 additionalProperties: false,
               },
             },
-            contract: { enum: ['inferImportsReview:v1'] },
+            contract: { enum: ['inferImportsReview:v1', 'inferImportsFocus:v1'] },
+            delivery: {
+              type: 'object',
+              required: [
+                'selection',
+                'reason',
+                'estimatedFullResponseBytes',
+                'automaticLimitBytes',
+                'explicitFullAvailable',
+                'explicitFullArguments',
+              ],
+              properties: {
+                selection: { enum: ['automatic_compact'] },
+                reason: { enum: ['estimated_full_response_exceeds_limit'] },
+                automaticLimitBytes: { enum: [131072] },
+                explicitFullAvailable: { enum: [true] },
+                explicitFullArguments: {
+                  required: ['reviewMode', 'allowLargeResponse'],
+                  properties: {
+                    reviewMode: { enum: ['full'] },
+                    allowLargeResponse: { enum: [true] },
+                  },
+                },
+              },
+              additionalProperties: false,
+            },
             scanSummary: { type: 'object' },
             reconciliationSummary: { type: 'object' },
             reviewQueue: { type: 'object' },
@@ -2095,6 +2135,35 @@ describe('verify.mjs first-contact gates', () => {
                     'nextAfterReviewId',
                   ],
                   additionalProperties: false,
+                },
+              },
+              additionalProperties: false,
+            },
+            focusReview: {
+              type: 'object',
+              required: [
+                'contract',
+                'focusPath',
+                'direction',
+                'sourceQualification',
+                'writeAllowed',
+                'summary',
+                'edges',
+                'cursor',
+                'interpretation',
+              ],
+              properties: {
+                contract: { enum: ['importImpactFocus:v1'] },
+                writeAllowed: { enum: [false] },
+                edges: {
+                  maxItems: 100,
+                  items: {
+                    required: ['edgeId', 'from', 'to', 'kind', 'sourceRole', 'importUsage'],
+                    additionalProperties: false,
+                  },
+                },
+                cursor: {
+                  required: ['afterEdgeId', 'total', 'remaining', 'hasMore', 'nextAfterEdgeId'],
                 },
               },
               additionalProperties: false,
@@ -7964,6 +8033,7 @@ Continue.`;
     assert.equal(FIRST_CONTACT_RESPONSE_LABELS.get(67), 'all_paths');
     assert.equal(FIRST_CONTACT_RESPONSE_LABELS.get(68), 'index_project');
     assert.equal(FIRST_CONTACT_RESPONSE_LABELS.get(69), 'absorb_document_dry_run');
+    assert.equal(FIRST_CONTACT_RESPONSE_LABELS.get(70), 'infer_imports_focus');
     assert.deepEqual(
       [...expectedResponseIds(buildFirstContactRequests()), ...DYNAMIC_FIRST_CONTACT_RESPONSE_IDS].sort((a, b) => a - b),
       [...FIRST_CONTACT_RESPONSE_LABELS.keys()].sort((a, b) => a - b),
@@ -7980,6 +8050,7 @@ Continue.`;
   it('builds bootstrap and import-analysis read smokes into first-contact verify', () => {
     const analyze = buildFirstContactRequests().find((request) => request.id === 38);
     const infer = buildFirstContactRequests().find((request) => request.id === 39);
+    const inferFocus = buildFirstContactRequests().find((request) => request.id === 70);
     const conceptBatchCap = buildFirstContactRequests().find((request) => request.id === 62);
     const relationBatchCap = buildFirstContactRequests().find((request) => request.id === 63);
     const getConceptsBatchCap = buildFirstContactRequests().find((request) => request.id === 64);
@@ -7994,6 +8065,10 @@ Continue.`;
     assert.equal(infer?.params?.name, 'infer_imports');
     assert.equal(infer?.params?.arguments?.maxFiles, 5000);
     assert.ok(infer?.params?.arguments?.rootPath, 'infer_imports rootPath should be populated');
+    assert.equal(inferFocus?.params?.name, 'infer_imports');
+    assert.equal(inferFocus?.params?.arguments?.reviewMode, 'focus');
+    assert.equal(inferFocus?.params?.arguments?.focusPath, 'src/entities/knowledge-graph/model/types.ts');
+    assert.equal(inferFocus?.params?.arguments?.focusLimit, 25);
     assert.equal(conceptBatchCap?.params?.name, 'add_concepts');
     assert.equal(conceptBatchCap?.params?.arguments?.concepts?.length, 51);
     assert.equal(relationBatchCap?.params?.name, 'add_relations');
