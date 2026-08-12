@@ -945,7 +945,7 @@ export function OntologyInsightsPage() {
             정비 보드다. 카피 전면 개편 대신 청중을 정직하게 선언해 기대치를
             맞춘다 — 일반 방문자가 여기서 "내 프로젝트" 같은 걸 찾다가 헤매지
             않도록. */}
-        <p className="mt-1 max-w-2xl text-label text-[color:var(--color-text-quaternary)]">
+        <p className="mt-1 max-w-2xl text-body text-[color:var(--color-text-quaternary)]">
           {t("audienceBanner")}
         </p>
 
