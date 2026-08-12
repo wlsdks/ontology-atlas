@@ -11,6 +11,7 @@ import {
   buildActivityEntry,
   readActivityEntries,
   readHeartbeatAgent,
+  resolveAgentName,
 } from './activity-log.mjs';
 
 function tmpVault() {
@@ -84,6 +85,52 @@ describe('activity-log (B3 — 로컬 감사 로그)', () => {
       mkdirSync(join(root, '.ontology-atlas'), { recursive: true });
       writeFileSync(join(root, '.ontology-atlas/agent-activity.json'), JSON.stringify({ agent: 'claude-code' }), 'utf-8');
       assert.equal(readHeartbeatAgent(root), 'claude-code');
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+});
+
+describe('resolveAgentName — 연결 인사의 클라이언트 이름 자동 기록 (2026-08-13)', () => {
+  /**
+   * 실시간 에이전트 표시의 1번 조각. 종전에는 agent 이름이 하트비트 파일(CLI 로
+   * 직접 등록)에서만 왔다 — 등록을 안 한 에이전트의 활동은 전부 agent: null 로
+   * 쌓였다. 그런데 MCP initialize 인사에는 clientInfo.name("claude-code" 등)이
+   * **이미 실려 온다.** 서버가 아는 사실을 버리지 않는다.
+   *
+   * 우선순위: 하트비트(사람/에이전트가 일부러 등록한 정체) > 인사의 이름(자동)
+   * > null. 하트비트가 있는데 인사가 다른 이름을 말하면 하트비트가 이긴다 —
+   * 등록은 의도이고 인사는 기본값이다.
+   */
+  it('하트비트가 있으면 하트비트가 이긴다', () => {
+    const root = tmpVault();
+    try {
+      mkdirSync(join(root, '.ontology-atlas'), { recursive: true });
+      writeFileSync(
+        join(root, '.ontology-atlas/agent-activity.json'),
+        JSON.stringify({ agent: 'codex' }),
+        'utf-8',
+      );
+      assert.equal(resolveAgentName(root, { name: 'claude-code', version: '1.0' }), 'codex');
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it('하트비트가 없으면 인사의 이름을 쓴다', () => {
+    const root = tmpVault();
+    try {
+      assert.equal(resolveAgentName(root, { name: 'claude-code', version: '1.0' }), 'claude-code');
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it('둘 다 없으면 null — 이름을 지어내지 않는다', () => {
+    const root = tmpVault();
+    try {
+      assert.equal(resolveAgentName(root, undefined), null);
+      assert.equal(resolveAgentName(root, { name: '   ', version: '1' }), null);
     } finally {
       rmSync(root, { recursive: true, force: true });
     }
