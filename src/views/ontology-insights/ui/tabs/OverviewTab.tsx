@@ -1,4 +1,6 @@
+import { Link } from "@/i18n/navigation";
 import { TopologyV2KindGlyph } from "@/shared/ui";
+import { controlClass } from "@/shared/ui/control-class";
 import { getOntologyKindTone } from "@/entities/ontology-class";
 import { DomainCapacityBar, DomainCapacityLegend } from "@/widgets/domain-capacity-bar";
 import { InsightsHeroCensus, type InsightsHeroCensusLabels } from "../parts/InsightsHeroCensus";
@@ -11,6 +13,10 @@ export interface OverviewTabLabels extends InsightsHeroCensusLabels {
   kindCensusTitle: string;
   domainCapacityTitle: string;
   noDomains: string;
+  /** 빈 상태의 둘째 줄 — 도메인이 무엇이고 만들면 무엇을 얻는지. */
+  noDomainsBody: string;
+  /** 빈 상태에서 내미는 다음 한 걸음 — 경계 탭과 같은 문법(설명만 있고 갈 곳이 없으면 빈 방이다). */
+  noDomainsAction: string;
   kindGlyphCaption: string;
   domainCapacityCaption: string;
   capabilityUnit: string;
@@ -120,7 +126,26 @@ export function OverviewTab({
         >
           <CardHead label={labels.domainCapacityTitle} count={domainRows.length} />
           {domainRows.length === 0 ? (
-            <p className="mt-3.5 flex-1 text-body text-[color:var(--color-text-quaternary)]">{labels.noDomains}</p>
+            /*
+             * **「구성」 탭에서 누를 수 있는 것이 0개였다** (2026-08-12 census —
+             * 다섯 탭 중 유일). 특히 이 빈 상태가 가장 흔한 첫 화면이다: 갓 만든
+             * 볼트는 도메인이 없다. 「없습니다」만 말하고 만들 길을 안 내밀면
+             * 이 저장소가 이름 붙여 둔 「다음 단계가 없음」이다. 경계 탭의 빈
+             * 상태(`domain-coupling-empty-action`)와 같은 문법을 쓴다.
+             */
+            <div className="mt-3.5 flex flex-1 flex-col items-start">
+              <p className="text-body text-[color:var(--color-text-tertiary)]">{labels.noDomains}</p>
+              <p className="mt-1.5 max-w-[38em] text-body leading-prose text-[color:var(--color-text-quaternary)]">
+                {labels.noDomainsBody}
+              </p>
+              <Link
+                href="/ontology/studio/?mode=create"
+                data-testid="domain-capacity-empty-action"
+                className={controlClass({ shape: "link", tone: "accent", className: "mt-3 rounded-chip hover:text-[color:var(--color-text-primary)] hover:underline" })}
+              >
+                {labels.noDomainsAction}
+              </Link>
+            </div>
           ) : (
             <div className="mt-3.5 flex min-h-0 flex-1 flex-col">
               {/* 막대 두 조각의 열쇠는 카드에 한 줄만 — 행마다 반복하면 소음이다. */}
@@ -138,9 +163,14 @@ export function OverviewTab({
               </div>
             </div>
           )}
-          <p className="mt-2.5 border-t border-[color:var(--color-divider)] pt-2.5 text-label text-[color:var(--color-text-quaternary)]">
-            {labels.domainCapacityCaption}
-          </p>
+          {/* 이 캡션은 **막대를 읽는 법**이다("왼쪽이 역량, 오른쪽이 요소…").
+              빈 상태에서는 그 막대가 화면에 없는데도 그대로 떠 있었다 — 없는
+              그림을 설명하는 글은 정보가 아니라 소음이다. 행이 있을 때만 단다. */}
+          {domainRows.length > 0 ? (
+            <p className="mt-2.5 border-t border-[color:var(--color-divider)] pt-2.5 text-label text-[color:var(--color-text-quaternary)]">
+              {labels.domainCapacityCaption}
+            </p>
+          ) : null}
         </section>
       </div>
     </div>

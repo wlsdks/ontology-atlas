@@ -663,6 +663,8 @@ export function OntologyInsightsPage() {
     kindCensusTitle: t("kindCensusTitle"),
     domainCapacityTitle: t("domainCapacityTitle"),
     noDomains: t("noDomains"),
+    noDomainsBody: t("noDomainsBody"),
+    noDomainsAction: t("noDomainsAction"),
     kindGlyphCaption: t("kindGlyphCaption"),
     domainCapacityCaption: t("domainCapacityCaption"),
     capabilityUnit: kindLabel("capability"),
