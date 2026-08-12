@@ -21,6 +21,8 @@ export interface DomainCompositionRowsLabels {
   /** 막대가 `aria-hidden` 이므로 수치는 여기 실린다. */
   rowToggleAria: (row: DomainCompositionRow) => string;
   mapLinkLabel: string;
+  /** 역량 링크의 접근 이름 — 눈에는 제목만 보이므로 목적지를 여기서 말한다. */
+  capabilityLinkAria: (title: string) => string;
   capabilitiesEmpty: string;
 }
 
@@ -51,12 +53,16 @@ interface Props {
  * 인터랙티브가 된다. 그래서 감싸는 쪽이 히트 영역·호버·초점 링·손가락 바닥을
  * 더하고, 행의 배치는 한 픽셀도 건드리지 않는다(`block`/`w-auto`/`py-0`).
  *
- * ## 지도로 가는 문은 펼친 안에 하나
+ * ## 지도로 가는 문 — 접힌 행에는 0, 펼친 안에는 이름이 곧 문이다
  *
  * 행마다 지도 칩을 달면 아홉 개짜리 잉크 열이 하나 더 생기고, 접힌 행이 두
  * 개의 목적지를 갖는다(무엇이 주인공인지 사라진다). 접힌 행의 일은 하나 —
- * 「무엇이 들어 있나」를 펼치는 것 — 이고, 펼친 뒤에 그 목록과 함께 지도 문이
- * 나온다. 프로젝트 전체를 지도에서 여는 길은 히어로의 주 버튼이 이미 갖고 있다.
+ * 「무엇이 들어 있나」를 펼치는 것 — 이다. 펼친 안에서는 **역량 이름 자체가 그
+ * 노드의 지도 딥링크**이고(2026-08-13 — 이름 7개가 막다른 텍스트였던 실측이
+ * 근거다: B안이 지운 「갈 곳 없는 수」와 같은 결함이 이름에 남아 있었다), 도메인
+ * 단위 문은 목록 끝의 칩 하나다. 새 잉크 열은 없다 — 링크는 이미 있던 제목
+ * 글자이고, 눌린다는 사실은 호버 면과 커서가 말한다. 프로젝트 전체를 지도에서
+ * 여는 길은 히어로의 주 버튼이 이미 갖고 있다.
  */
 export function DomainCompositionRows({ domains, labels }: Props) {
   return (
@@ -163,17 +169,25 @@ function DomainRow({
                 단에 서서 「도메인이 여덟 개 더 생긴 것」처럼 읽힌다. */}
             {domain.capabilities.length > 0 ? (
               <ul className="flex flex-col pl-[23px]">
-                {domain.capabilities.map((title, index) => (
-                  <li
-                    // 같은 표시 제목이 둘 있을 수 있다(다른 슬러그, 같은 이름).
-                    key={`${title}-${index}`}
-                    // 높이를 내용에 맡기지 않는다 — 목록 안에서도 리듬이 같아야
-                    // 「몇 개인가」가 길이로 읽힌다(치수 규칙성).
-                    style={{ height: "var(--card-row-h)" }}
-                    className="flex items-center gap-1.5 text-body text-[color:var(--color-text-secondary)]"
-                  >
-                    <TopologyV2KindGlyph kind="capability" size={13} />
-                    <span className="min-w-0 flex-1 truncate">{title}</span>
+                {domain.capabilities.map((capability) => (
+                  <li key={capability.id} style={{ height: "var(--card-row-h)" }}>
+                    <Link
+                      href={getTopologyFocusHref(capability.id)}
+                      aria-label={labels.capabilityLinkAria(capability.title)}
+                      data-testid="project-detail-capability-link"
+                      className={controlClass({
+                        shape: "row",
+                        size: "sm",
+                        // 높이를 내용에 맡기지 않는다 — 목록 안에서도 리듬이 같아야
+                        // 「몇 개인가」가 길이로 읽힌다(치수 규칙성). 행 높이는
+                        // li 가 갖고, 링크가 그 안을 가득 채워 히트 면이 된다.
+                        className:
+                          "-mx-1.5 h-full w-[calc(100%+0.75rem)] gap-1.5 px-1.5 py-0 text-body text-[color:var(--color-text-secondary)] hover:bg-[color:var(--color-overlay-1)] hover:text-[color:var(--color-text-primary)]",
+                      })}
+                    >
+                      <TopologyV2KindGlyph kind="capability" size={13} />
+                      <span className="min-w-0 flex-1 truncate">{capability.title}</span>
+                    </Link>
                   </li>
                 ))}
               </ul>

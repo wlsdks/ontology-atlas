@@ -1586,6 +1586,7 @@
       "domainRowsLegendCaption": "오른쪽 숫자는 그 도메인에 담긴 개념 수예요. 막대는 그중 역량과 요소의 비율이고, 행을 누르면 담긴 역량이 전부 펼쳐져요.",
       "domainRowToggleAria": "{title}: 담긴 개념 {total}개, 역량 {capabilities}개, 요소 {elements}개. 담긴 역량 펼치기",
       "domainRowMapLink": "지도에서 이 도메인 열기",
+      "domainCapabilityLinkAria": "지도에서 {name} 열기",
       "domainRowCapabilitiesEmpty": "담긴 역량이 아직 없어요. 요소만 있어요.",
       "domainOverlapNote": "여러 도메인에 속한 개념은 도메인마다 한 번씩 세어져요. 행의 합이 위 역량·요소 수보다 클 수 있어요.",
       "bodyCardTitle": "본문",

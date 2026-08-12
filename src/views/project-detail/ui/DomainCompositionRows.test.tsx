@@ -20,7 +20,11 @@ const DOMAINS: DomainCompositionRow[] = [
     capabilityCount: 3,
     elementCount: 11,
     total: 14,
-    capabilities: ["주문 생성", "주문 취소", "주문 조회"],
+    capabilities: [
+      { id: "capability:order-create", title: "주문 생성" },
+      { id: "capability:order-cancel", title: "주문 취소" },
+      { id: "capability:order-view", title: "주문 조회" },
+    ],
   },
   {
     id: "domain:inventory",
@@ -40,6 +44,7 @@ const LABELS = {
   rowToggleAria: (row: DomainCompositionRow) =>
     `${row.title}: 전체 ${row.total} · 역량 ${row.capabilityCount} · 요소 ${row.elementCount} — 담긴 역량 보기`,
   mapLinkLabel: "지도에서 이 도메인 열기",
+  capabilityLinkAria: (title: string) => `지도에서 ${title} 열기`,
   capabilitiesEmpty: "담긴 역량이 아직 없어요.",
 };
 
@@ -91,7 +96,7 @@ describe("DomainCompositionRows", () => {
     ).toBeInTheDocument();
   });
 
-  it("지도로 가는 길은 펼친 안에 하나뿐 — 접힌 상태에는 없다", () => {
+  it("도메인 단위 지도 문은 펼친 안에 하나뿐 — 접힌 상태에는 없다", () => {
     renderRows();
     expect(screen.queryByTestId("project-detail-domain-map-link")).not.toBeInTheDocument();
 
@@ -100,6 +105,20 @@ describe("DomainCompositionRows", () => {
     const links = screen.getAllByTestId("project-detail-domain-map-link");
     expect(links).toHaveLength(1);
     expect(links[0]).toHaveAttribute("href", "/topology/?mode=focus&p=domain%3Aorders");
+  });
+
+  it("펼친 역량 이름은 그 노드의 지도 딥링크다 — 막다른 텍스트가 아니다", () => {
+    renderRows();
+    fireEvent.click(screen.getAllByTestId("project-detail-domain-row-toggle")[0]);
+
+    const capabilityLinks = screen.getAllByTestId("project-detail-capability-link");
+    expect(capabilityLinks).toHaveLength(3);
+    expect(capabilityLinks[0]).toHaveAttribute(
+      "href",
+      "/topology/?mode=focus&p=capability%3Aorder-create",
+    );
+    expect(capabilityLinks[0]).toHaveAccessibleName("지도에서 주문 생성 열기");
+    expect(capabilityLinks[0]).toHaveTextContent("주문 생성");
   });
 
   it("역량이 0인 도메인은 빈 목록 대신 그 사실을 말한다", () => {
