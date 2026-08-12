@@ -14,10 +14,7 @@
  * receipt — so the write stays an explicit act.
  */
 
-import {
-  inferProjectSourceProposal,
-  rateProjectSourceCandidate,
-} from "./project-source-inference.mjs";
+import { inferProjectSourceProposal } from "./project-source-inference.mjs";
 import type { ProjectSourceReceipt } from "./project-source-receipt";
 
 export type ProjectSourceCandidateMarker =
@@ -102,9 +99,3 @@ export function proposeProjectSourceFromInspection(input: {
 }
 
 /** Re-rate a proposal once the candidate has actually been measured. */
-export function rateProjectSourceProposal(
-  candidate: ProjectSourceCandidate | null,
-  witnessSummary: ProjectSourceReceipt["witnessSummary"] | null,
-): ProjectSourceConfidence {
-  return rateProjectSourceCandidate(candidate, witnessSummary) as ProjectSourceConfidence;
-}

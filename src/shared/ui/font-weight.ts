@@ -37,4 +37,3 @@ export const FONT_WEIGHT = {
   strong: 650,
 } as const;
 
-export type FontWeightStep = keyof typeof FONT_WEIGHT;
