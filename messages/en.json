@@ -1470,7 +1470,7 @@
         "touchUpFlowHint": "Inspect on map → open source → edit in workshop → verify with agent",
         "touchUpWhyNeglectedHub": "{degree} places use it, but it hasn't changed in {days} days",
         "touchUpWhyCycle": "{length} concepts point at each other, so there is no starting point",
-        "touchUpWhyPromotion": "Referenced from many places: worth promoting to a parent concept",
+        "touchUpWhyPromotion": "Referenced from {count} places: worth promoting to a parent concept",
         "rowMenuTrigger": "More actions",
         "askAgent": "Ask the agent about this",
         "reviewFallback": "Selected item",
