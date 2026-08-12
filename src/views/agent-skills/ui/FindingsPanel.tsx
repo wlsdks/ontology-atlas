@@ -148,7 +148,7 @@ function Row({ onClick, children }: { onClick: () => void; children: React.React
       className={controlClass({
         shape: "row",
         size: "sm",
-        className: "justify-between gap-2 text-body",
+        className: "justify-between gap-2 text-body-lg",
       })}
     >
       {children}
