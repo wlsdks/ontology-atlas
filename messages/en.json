@@ -1398,6 +1398,8 @@
       "healthIslands": "Disconnected groups",
       "kindCensusTitle": "Kind census",
       "domainCapacityTitle": "Domain capacity",
+      "noDomainsBody": "A domain is an area that groups capabilities. Create a domain node on the workbench and put concepts in it, and this card shows the balance per area.",
+      "noDomainsAction": "Create a domain on the workbench",
       "noDomains": "No domain nodes yet.",
       "kindGlyphCaption": "Glyphs match the map's node shapes exactly: panel and canvas share one world.",
       "domainCapacityCaption": "The number on the right is how many concepts live in this domain. The bar shows how those split between capabilities and elements: capabilities on the left, elements on the right. A bar leaning hard one way means claims without evidence, or the reverse. A concept in multiple domains is counted once per domain, so the totals can exceed the whole.",
