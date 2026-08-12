@@ -187,7 +187,6 @@ test.describe("스킬 인벤토리", () => {
       const stageEl = document.querySelector('[data-testid="skills-stage"]')!;
       const card = cardEl.getBoundingClientRect();
       const stage = stageEl.getBoundingClientRect();
-      const style = getComputedStyle(cardEl);
       /*
        * ⚠️ **세로는 카드 하나가 아니라 무대 덩어리로 잰다.** 카드 위에 제목과 한 줄
        * 설명이 같이 서 있으므로, 카드만 기준으로 재면 위쪽 여백이 늘 더 커서
