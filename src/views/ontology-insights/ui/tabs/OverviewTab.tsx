@@ -23,6 +23,22 @@ export interface OverviewTabLabels extends InsightsHeroCensusLabels {
   elementUnit: string;
 }
 
+/**
+ * 도메인 행 → 지도 딥링크. 「연결」 탭의 `ConnectionsTabHubLink` 와 **같은
+ * 모양**이다 — 두 탭의 행이 같은 일(그 개념을 지도에서 연다)을 하므로 계약도
+ * 하나여야 한다.
+ */
+export interface OverviewTabDomainLink {
+  /** `buildOntologyNodeHref` — 출처 마커(`via=insights:composition`)까지 실린다. */
+  href: (nodeId: string) => string;
+  /**
+   * 막대는 `aria-hidden` 이므로 **행의 수치가 링크 이름에 실려야 한다**
+   * (「연결」 탭 `impactRowAriaLabel` 과 같은 규율). 그래서 title 만이 아니라
+   * 행 전체를 넘긴다.
+   */
+  ariaLabel: (row: DomainCapacityRow) => string;
+}
+
 export interface OverviewTabProps {
   totalNodes: number;
   totalEdges: number;
@@ -33,6 +49,8 @@ export interface OverviewTabProps {
   domainRows: DomainCapacityRow[];
   edgeTypeSummary: Array<{ key: string; label: string; count: number }>;
   kindLabel: (kind: string) => string;
+  /** 필수다 — 링크 없는 행이 조용히 돌아오는 길을 남기지 않는다. */
+  domainLink: OverviewTabDomainLink;
   labels: OverviewTabLabels;
 }
 
@@ -59,6 +77,7 @@ export function OverviewTab({
   domainRows,
   edgeTypeSummary,
   kindLabel,
+  domainLink,
   labels,
 }: OverviewTabProps) {
   const kindMax = kindRows[0]?.count ?? 0;
@@ -153,12 +172,41 @@ export function OverviewTab({
                 labels={{ capabilityUnit: labels.capabilityUnit, elementUnit: labels.elementUnit }}
               />
               <div className="mt-2.5 flex flex-1 flex-col justify-evenly gap-1">
+                {/*
+                 * **행이 지도로 가는 문이다** (2026-08-12 census: 이 탭에 누를 수
+                 * 있는 것이 0개였다). 링크는 **소비처가 두른다** — 막대 부품은
+                 * `/projects` 카드와 공유되고 그 카드는 이미 전체가 눌리는
+                 * 표면이라, 부품 안에 링크를 넣으면 그쪽이 중첩 인터랙티브가
+                 * 된다(2026-08-09 원장 「두 화면이 같이 바뀐다」). 그래서 부품은
+                 * 표현 전용으로 남는다.
+                 *
+                 * 감싼 링크가 더하는 것은 **히트 영역 · 호버 · 초점 링 · 손가락
+                 * 바닥**뿐이고, 행의 배치는 한 픽셀도 건드리지 않는다:
+                 * `block`/`w-auto` 로 값 층의 flex 행 배치를 비우고(안쪽 막대가
+                 * 자기 배치를 이미 갖는다), `py-0` 로 세로 인셋을 0 으로 되돌려
+                 * **행 높이를 그대로 둔다**(치수 규칙성 — 여섯 행이 같은 높이여야
+                 * 경계 자리를 나란히 비교할 수 있다). 좌우는 허브 행과 같은
+                 * `-mx-1.5 px-1.5` — 호버 면만 카드 인셋 밖으로 6px 나가고
+                 * 글자·막대의 축은 캡션·열쇠와 계속 한 줄에 선다.
+                 */}
                 {domainRows.map((row) => (
-                  <DomainCapacityBar
+                  <Link
                     key={row.id}
-                    row={row}
-                    labels={{ capabilityUnit: labels.capabilityUnit, elementUnit: labels.elementUnit }}
-                  />
+                    href={domainLink.href(row.id)}
+                    aria-label={domainLink.ariaLabel(row)}
+                    data-testid="insights-domain-row-link"
+                    className={controlClass({
+                      shape: "row",
+                      size: "sm",
+                      className:
+                        "-mx-1.5 block w-auto px-1.5 py-0 hover:bg-[color:var(--color-overlay-1)]",
+                    })}
+                  >
+                    <DomainCapacityBar
+                      row={row}
+                      labels={{ capabilityUnit: labels.capabilityUnit, elementUnit: labels.elementUnit }}
+                    />
+                  </Link>
                 ))}
               </div>
             </div>
