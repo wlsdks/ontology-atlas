@@ -1584,9 +1584,6 @@
       "domainCapabilityLabel": "역량",
       "domainElementLabel": "요소",
       "domainRowsLegendCaption": "오른쪽 숫자는 그 도메인에 담긴 개념 수예요. 막대는 그중 역량과 요소의 비율이고, 행을 누르면 담긴 역량이 전부 펼쳐져요.",
-      "domainRowToggleAria": "{title}: 담긴 개념 {total}개 · 역량 {capabilities}개 · 요소 {elements}개 · 담긴 역량 펼치기",
-      "domainRowMapLink": "지도에서 이 도메인 열기",
-      "domainRowCapabilitiesEmpty": "담긴 역량이 아직 없어요. 요소만 있어요.",
       "domainOverlapNote": "여러 도메인에 속한 개념은 도메인마다 한 번씩 세어져요. 행의 합이 위 역량·요소 수보다 클 수 있어요.",
       "bodyCardTitle": "본문",
       "bodyCardGcap": "",
@@ -1657,7 +1654,11 @@
         "composition": "구성"
       },
       "domainEmptyTitle": "아직 도메인이 없어요",
-      "domainEmptyHint": "지도에서 도메인을 이 프로젝트에 연결하면 여기에 구성이 나타나요."
+      "domainEmptyHint": "지도에서 도메인을 이 프로젝트에 연결하면 여기에 구성이 나타나요.",
+      "minimapLabel": "도메인 지도",
+      "minimapSublabel": "많이 담긴 도메인이 더 크게",
+      "minimapAria": "도메인 구성 미니 지도: 도메인 {domains}개, 관계 {relations}개",
+      "domainMoreLine": "역량 {more}개 더"
     },
     "editor": {
       "documentTitleEdit": "프로젝트 편집 · Ontology Atlas",
