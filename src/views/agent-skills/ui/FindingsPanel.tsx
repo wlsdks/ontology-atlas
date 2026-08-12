@@ -127,10 +127,12 @@ function Block({
   return (
     <section className="rounded-[var(--radius-card)] border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-2 py-2.5">
       <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-0.5 px-1">
-        <h3 className="text-label font-[var(--font-weight-emphasis)] text-[color:var(--color-text-primary)]">
+        {/* 분석 화면의 같은 카드(제목 + 우측 mono 수치)가 14/11 인데 여기만
+            11/9.5 였다(2026-08-12 실측·처방). 같은 역할 = 같은 단. */}
+        <h3 className="text-body-lg font-[var(--font-weight-emphasis)] text-[color:var(--color-text-primary)]">
           {title}
         </h3>
-        <p className="text-caption text-[color:var(--color-text-tertiary)]">{note}</p>
+        <p className="font-mono text-label text-[color:var(--color-text-tertiary)]">{note}</p>
       </div>
       <div className="mt-1.5">{children}</div>
     </section>
@@ -146,7 +148,7 @@ function Row({ onClick, children }: { onClick: () => void; children: React.React
       className={controlClass({
         shape: "row",
         size: "sm",
-        className: "justify-between gap-2 text-label",
+        className: "justify-between gap-2 text-body",
       })}
     >
       {children}

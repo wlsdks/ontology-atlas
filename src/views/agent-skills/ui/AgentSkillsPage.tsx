@@ -161,7 +161,7 @@ export function AgentSkillsPage() {
             {folderName || scan?.skippedNotInstalled || scan?.truncated ? (
               <p
                 data-testid="skills-scan-note"
-                className="flex flex-wrap items-baseline gap-x-3 gap-y-1 text-label leading-prose text-[color:var(--color-text-tertiary)]"
+                className="flex flex-wrap items-baseline gap-x-3 gap-y-1 text-body leading-body text-[color:var(--color-text-tertiary)]"
               >
                 <span>
                   {sample ? t("sampleNotice") : t("stat.folder", { folder: folderName ?? "" })}
