@@ -1073,6 +1073,20 @@ export function OntologyInsightsPage() {
                 domainRows={domainRows}
                 edgeTypeSummary={edgeTypeSummary}
                 kindLabel={kindLabel}
+                domainLink={{
+                  href: mapNodeHref,
+                  // 막대는 aria-hidden 이라 행의 세 수를 링크 이름에 실어
+                  // 보낸다 — 화면에 있는 사실이 스크린리더에서 사라지면 안 된다
+                  // (「연결」 탭 impactRowAriaLabel 과 같은 규율). 목적지 문구는
+                  // 허브·신선도 행이 이미 쓰는 한 벌(`… : 지도에서 보기`)을
+                  // 그대로 쓴다 — 이 행이 더할 것은 수치뿐이라 새 문구 키를
+                  // 만들지 않는다. 순서는 화면에 보이는 순서 그대로(이름 →
+                  // 합계 → 역량·요소).
+                  ariaLabel: (row) =>
+                    t("hubRowAriaLabel", {
+                      title: `${row.title} ${row.total} · ${kindLabel("capability")} ${row.capabilityCount} · ${kindLabel("element")} ${row.elementCount}`,
+                    }),
+                }}
                 labels={overviewLabels}
               />
             ) : null}
