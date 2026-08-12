@@ -384,7 +384,7 @@ particle·rarity(gold)·shimmer 를 `--studio-*` 토큰과 `.studio-stage` 안�
 | **중복 커서** | `<button>`·`<summary>` 의 className 에 `cursor-pointer` 를 다시 적는 것 금지 — 정책은 `globals.css` base 한 곳 (2026-08-05) | 동일 (켤 때 위반 0 — 13곳 선정리) |
 | **비활성 흐림** | `disabled:opacity-*` 는 55 외 값 금지 — 정본은 값 층 `CONTROL_DISABLED_CLASS`(한 세트: 흐림·커서·그림자·호버 무력화), 손 컨트롤은 상수 조합 (2026-08-06) | 동일 (켤 때 위반 0 — 9곳 선치환) |
 | 금지 그라디언트 | `scaleGradientSelectors` | 동일 |
-| **accent×틴트 페어링** | `accentTintPairingSelectors` — `tone accent` 와 인디고/앰버 틴트 `bg-` 가 같은 호출/원소에 공존 금지 (상수 우회는 `accent-ink-contrast` 계약이 맡는다) | 전역 error (켤 때 위반 0 — 26곳 선치환) |
+| **accent×틴트 페어링** | `accentTintPairingSelectors` — `tone accent` 와 인디고/앰버 틴트 `bg-` 가 같은 호출/원소에 공존 금지. **삼항식 가지(`tone={cond ? "accent" : …}`)도 잡는다**(2026-08-13 확장 — 직계만 보던 시절 실사용 2곳이 빠져나가 있었다). 상수 우회는 `accent-ink-contrast` 계약이 맡는다 | 전역 error |
 
 > **표에 나온 말 넷** — 「램프(ramp)」는 쓸 수 있는 값을 미리 정해 둔 사다리이고,
 > 그 밖의 값은 lint 가 막는다. 「셀렉터」는 ESLint 가 코드에서 무엇을 찾아낼지
