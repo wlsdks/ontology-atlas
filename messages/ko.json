@@ -3448,19 +3448,19 @@
   "agentSkills": {
     "title": "스킬",
     "subtitle": "에이전트가 가진 스킬이 언제 뜨고, 뜨면 무엇이 열리고 무엇이 돌아가는지 본다.",
+    "stageTitle": "스킬을 살펴볼까요?",
+    "openCardTitle": "내 스킬 폴더 열기",
+    "openCardDesc": "폴더 안의 SKILL.md 를 전부 찾아 읽어요. 파일은 읽기만 하고 아무것도 고치지 않아요.",
+    "openCardNote": "프로젝트나 홈 폴더의 .claude 를 고르면 돼요",
+    "sampleCardTitle": "예시로 둘러보기",
+    "sampleCardDesc": "설치 없이 견본 뭉치로 이 화면이 무엇을 보여주는지 봐요.",
+    "stageCaption": "언제 뜨나 · 왜 엉뚱한 게 뜨나 · 뜨면 뭐가 일어나나. 폴더를 열면 바로 보여요.",
     "openFolder": "스킬 폴더 열기",
     "openAnother": "다른 폴더 열기",
     "pickerTitle": "스킬이 든 폴더를 고르세요",
     "reading": "폴더를 읽는 중…",
     "unsupported": "이 브라우저는 폴더 열기를 지원하지 않아요. 데스크톱 앱에서는 됩니다.",
     "readError": "폴더를 읽지 못했어요. {error}",
-    "emptyBody": "폴더를 하나 고르면 그 안의 SKILL.md 를 전부 찾아요. 폴더 안의 파일만 읽고 아무것도 고치지 않아요.",
-    "answer1": "발동 조건을 쓰여 있는 그대로 보여줘요.",
-    "answer2": "이름이 겹치거나 조건이 비슷한 것을 짚어줘요.",
-    "answer3": "무엇이 열리고 그중 무엇이 실행되는지 봐요.",
-    "emptyHint1": "내 스킬: 프로젝트의.claude",
-    "emptyHint2": "설치한 스킬: 홈 폴더의.claude",
-    "emptyHint3": "읽기만 해요",
     "truncated": "폴더가 커서 {count}개 파일까지만 읽었어요. 아래 결과는 그 범위 안에서예요.",
     "notInstalled": "설치돼 있지 않은 사본 {count}곳은 뺐어요. 옛 버전과 아직 설치 안 한 카탈로그예요. 그건 실제로 뜨지 않아요.",
     "stat": {
@@ -3550,9 +3550,6 @@
       "runsNote": "파일 {count}개",
       "noneRun": "실행되는 파일이 없어요."
     },
-    "answerQ1": "언제 뜨나",
-    "answerQ2": "왜 엉뚱한 게 뜨나",
-    "answerQ3": "뜨면 뭐가 일어나나",
     "openSample": "예시 둘러보기",
     "sampleNotice": "예시 뭉치예요. 내 폴더를 열면 내 스킬이 보여요."
   }

@@ -2,6 +2,7 @@
 
 import { useEffect, useRef } from "react";
 import { controlClass } from "@/shared/ui";
+import { EntryChoiceCard } from "@/shared/ui/entry-choice-card";
 import { PAGE_COLUMN_STAGE } from "@/shared/ui/page-frame";
 
 /**
@@ -102,23 +103,25 @@ export function StudioEntryChoice({
           `items-center` 로 세우므로 중복이지만 무해하고, 값의 출처가 하나인 것이
           더 중요하다. */}
       <div className={`${PAGE_COLUMN_STAGE} mt-7 grid gap-4 sm:grid-cols-2`}>
-        <EntryCard
+        <EntryChoiceCard
           ref={enhanceRef}
+          className="studio-stage-in"
+          style={{ ["--studio-stagger" as string]: "40ms" }}
           testId="studio-entry-enhance"
           onClick={onEnhance}
           title={labels.enhanceTitle}
           desc={labels.enhanceDesc}
           footnote={labels.enhanceRecommend}
-          staggerMs={40}
           illustration={<EnhanceGlyph />}
         />
-        <EntryCard
+        <EntryChoiceCard
+          className="studio-stage-in"
+          style={{ ["--studio-stagger" as string]: "80ms" }}
           testId="studio-entry-create"
           onClick={onCreate}
           title={labels.createTitle}
           desc={labels.createDesc}
           footnote={null}
-          staggerMs={80}
           illustration={<CreateGlyph />}
         />
       </div>
@@ -156,58 +159,11 @@ export function StudioEntryChoice({
   );
 }
 
-const EntryCard = ({
-  ref,
-  testId,
-  onClick,
-  title,
-  desc,
-  footnote,
-  staggerMs,
-  illustration,
-}: {
-  ref?: React.Ref<HTMLButtonElement>;
-  testId: string;
-  onClick: () => void;
-  title: string;
-  desc: string;
-  footnote: string | null;
-  staggerMs: number;
-  illustration: React.ReactNode;
-}) => (
-  <button
-    ref={ref}
-    type="button"
-    data-testid={testId}
-    onClick={onClick}
-    style={{ ["--studio-stagger" as string]: `${staggerMs}ms` }}
-    /* 2026-08-04 체계석 판정 — 「등재 대기」의 답: 이 카드는 인플로우 콘텐츠라
-     * 새 스텝(16)이 아니라 panel(12)이다. 시트 단(18)은 떠 있는 표면의 것이고,
-     * 드로어 라운드가 같은 판정(16 전부 → panel)을 먼저 확정했다. */
-    className={controlClass({ shape: "card", size: "lg", className: "studio-stage-in group flex-col items-start gap-3 rounded-panel bg-[color:var(--color-elevated)] px-5 py-6 text-left hover:border-[color:var(--color-indigo-a46)] hover:bg-[color:var(--color-indigo-a06)]" })}
-  >
-    <span className="grid h-12 w-12 place-items-center rounded-panel border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] text-[color:var(--color-text-tertiary)] transition-colors group-hover:border-[color:var(--color-indigo-a46)] group-hover:text-[color:var(--color-indigo-text-soft)]">
-      {illustration}
-    </span>
-    <span className="flex flex-col gap-1">
-      <span className="text-body-lg font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)] [word-break:keep-all]">
-        {title}
-      </span>
-      <span className="text-caption leading-caption text-[color:var(--color-text-tertiary)] [word-break:keep-all]">
-        {desc}
-      </span>
-    </span>
-    {footnote ? (
-      <span
-        data-testid={`${testId}-recommend`}
-        className="mt-auto inline-flex max-w-full items-center gap-1.5 truncate rounded-chip bg-[color:var(--color-overlay-1)] px-2 py-1 text-label text-[color:var(--color-text-secondary)]"
-      >
-        <span aria-hidden className="h-1 w-1 flex-none rounded-full bg-[color:var(--color-indigo-brand)]" />
-        <span className="truncate">{footnote}</span>
-      </span>
-    ) : null}
-  </button>
-);
+/*
+ * EntryCard 는 `@/shared/ui/entry-choice-card` 로 승격됐다(2026-08-13) —
+ * 스킬 빈 화면이 같은 문법을 골라 두 번째 소비처가 생겼기 때문이다. 등장
+ * 모션(studio-stage-in + 스태거)은 이 화면의 계약이라 여기서 className 으로 준다.
+ */
 
 /** 라인아트 — 강화: 헥사곤 아이템 + 방위 소켓(공방 나침 모티프). */
 function EnhanceGlyph() {
