@@ -511,16 +511,16 @@ test.describe("지도 키보드 걷기", () => {
 
     const section = await sheet.evaluate((el) => {
       const lines = (el as HTMLElement).innerText.split("\n").map((s) => s.trim()).filter(Boolean);
-      const start = lines.findIndex((l, i) => l === "지형도" && i > 3);
+      const start = lines.findIndex((l, i) => l === "지도" && i > 3);
       if (start < 0) return null;
       const rest = lines.slice(start);
       const next = rest.findIndex((l, i) => i > 0 && /^(검색 팔레트|허브|문서함)/.test(l));
       return rest.slice(0, next > 0 ? next : 24);
     });
-    expect(section, "시트에서 「지형도」 절을 못 찾았다 — 이 시험이 공회전한다").not.toBeNull();
+    expect(section, "시트에서 「지도」 절을 못 찾았다 — 이 시험이 공회전한다").not.toBeNull();
     expect(
       section!.some((line) => /↑|↓|←|→|방향키/.test(line)),
-      `지형도 절이 방향키를 안내하지 않는다: ${section!.join(" · ")}`,
+      `지도 절이 방향키를 안내하지 않는다: ${section!.join(" · ")}`,
     ).toBe(true);
   });
 
