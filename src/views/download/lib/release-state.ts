@@ -39,19 +39,6 @@ export function isMacosReleasePublished(): boolean {
 }
 
 /**
- * 게시된 것이 **정식이 아니라 후보**인가.
- *
- * 숨기지 않고 말한다. 후보 빌드는 서명·공증을 정식과 같은 경로로 통과했지만
- * 아직 넓게 쓰이지 않았다 — 그 둘은 서로 다른 사실이고, 받는 사람은 누르기
- * 전에 둘 다 알아야 한다. 감추면 "왜 정식인 줄 알았는데 rc 냐" 가 되고,
- * 파일을 통째로 숨기면(구 동작) 서명된 빌드가 있는데도 페이지가 "아직
- * 없습니다" 라고 말하는 거짓이 된다.
- */
-export function isMacosPrerelease(): boolean {
-  return isMacosReleasePublished() && MACOS_RELEASE.prerelease;
-}
-
-/**
  * 릴리스 시점. 레퍼런스 다운로드 페이지가 버전 옆에 거의 항상 함께 두는 사실이다
  * (예: Zed 는 버전과 날짜를 한 줄에 둔다) — 버전 문자열만으로는 "이게 지난주
  * 빌드인지 재작년 빌드인지" 를 알 수 없기 때문이다.
