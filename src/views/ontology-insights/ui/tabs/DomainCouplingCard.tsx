@@ -8,6 +8,7 @@ import type {
   DomainCouplingPairRow,
 } from "../../lib/domain-coupling-rows";
 import { InsightsSectionTitle } from "../parts/InsightsSectionTitle";
+import { PAGE_COLUMN_STAGE } from "@/shared/ui/page-frame";
 import { controlClass } from '@/shared/ui/control-class';
 
 export interface DomainCouplingCardLabels {
@@ -101,10 +102,18 @@ export function DomainCouplingCard({
 
   if (isColdStart) {
     return (
+      /*
+       * **빈 상태는 무대다** (2026-08-12 실측). 높이 사슬을 잇기 전 이 카드는
+       * 폭 1368 × 높이 118 로 위에 붙어 있었고 아래로 614px 이 죽은 공백이었다 —
+       * 스킬 빈 화면과 같은 병(잉크 3개가 벽까지 퍼진 띠 + 아래 구멍). 같은
+       * 처방을 쓴다: 칸은 무대 폭(`PAGE_COLUMN_STAGE`, 조립대 입구·스킬 빈
+       * 상태와 같은 640)으로 모으고, 남은 높이는 이 래퍼가 소유해 가운데 세운다.
+       */
+      <div className="flex min-h-0 flex-1 flex-col items-center justify-center">
       <section
         aria-label={labels.title}
         data-testid="domain-coupling-empty"
-        className="rounded-panel border border-dashed border-[color:var(--color-divider)] bg-[color:var(--color-overlay-1)] p-[var(--card-pad)] text-center"
+        className={`${PAGE_COLUMN_STAGE} rounded-panel border border-dashed border-[color:var(--color-divider)] bg-[color:var(--color-overlay-1)] p-[var(--card-pad)] text-center`}
       >
         <p className="text-body-lg font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)]">{labels.emptyTitle}</p>
         <p className="mt-1.5 text-body text-[color:var(--color-text-tertiary)]">{labels.emptyDescription}</p>
@@ -116,6 +125,7 @@ export function DomainCouplingCard({
           {labels.emptyAction}
         </Link>
       </section>
+      </div>
     );
   }
 
