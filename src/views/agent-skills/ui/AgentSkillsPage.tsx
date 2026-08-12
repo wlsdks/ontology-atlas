@@ -7,8 +7,8 @@ import { useSkillFolder } from "@/features/agent-skills-local";
 import { Button } from "@/shared/ui";
 import { fieldClass } from "@/shared/ui/control-class";
 import { HexMark } from "@/shared/ui/hex-mark";
-import { PAGE_FRAME, PAGE_HEADER_ROW, PAGE_TITLE_ROW } from "@/shared/ui/page-frame";
 import { LG_BREAKPOINT_PX, useViewportBelow } from "@/shared/lib/use-viewport-below";
+import { PAGE_COLUMN_STAGE, PAGE_FRAME, PAGE_HEADER_ROW, PAGE_TITLE_ROW } from "@/shared/ui/page-frame";
 
 import { FindingsPanel } from "./FindingsPanel";
 import { SkillDetail } from "./SkillDetail";
@@ -111,6 +111,41 @@ export function AgentSkillsPage() {
       // 안에서 처리한다 — 지도·문서함·기록과 같은 문법이다.
       className="flex h-full flex-col overflow-hidden bg-[color:var(--color-canvas)]"
     >
+      {/*
+        * **아무것도 안 열었을 때는 이 화면이 무대다** (2026-08-12, 소유자 지적
+        * *"우측/하단 공백이 너무 심하고 … 이렇게 조립대같은 전략을 쓰던지"*).
+        *
+        * 목록이 있을 때는 다른 목적지와 같은 머리(제목 + 수 + 설명)를 쓴다 — 그건
+        * 2026-08-09 소유자 지적으로 맞춘 것이고 그대로 둔다. 그러나 **열 것이 아직
+        * 없을 때** 그 머리는 화면을 가로로 다 쓰면서(실측 잉크 상자 1368×313,
+        * 좌 104 / 우 40) 아래로 531px 을 비워 둔다. 그때 이 화면의 일은 하나뿐이다:
+        * 「폴더를 고르세요」.
+        *
+        * 답은 같은 앱 안에 있었다 — 조립대 입구는 같은 뷰포트에서 잉크 상자가
+        * `482×318 @(489,291)`, 좌 489 / 우 541 · 상 291 / 하 291 로 **가운데에
+        * 세워져 있다.** 목적지가 무엇인지는 좌측 레일이 이미 말하므로 제목이 머리
+        * 행에 있을 필요가 없고, 여기서는 제목이 **무대의 제목**이 된다.
+        */}
+      {status === "idle" ? (
+        <div
+          data-testid="skills-stage"
+          className={`${PAGE_FRAME} flex min-h-0 flex-1 flex-col items-center justify-center gap-3 pb-4 md:pb-6`}
+        >
+          <h1 className="inline-flex items-center gap-2 text-display font-[var(--font-weight-signature)] tracking-[var(--tracking-card)] text-[color:var(--color-text-primary)]">
+            <HexMark size={13} className="shrink-0 text-[color:var(--color-text-tertiary)]" />
+            {t("title")}
+          </h1>
+          <p className="max-w-[46em] text-center text-body leading-prose text-[color:var(--color-text-secondary)]">
+            {t("subtitle")}
+          </p>
+          <EmptyState
+            onOpenFolder={() => void openFolder(t("pickerTitle"))}
+            onOpenSample={openSample}
+          />
+        </div>
+      ) : null}
+
+      {status !== "idle" ? (
       <div className={`${PAGE_FRAME} flex min-h-0 flex-1 flex-col gap-3 pb-4 md:pb-6`}>
         {/* 머리는 **다른 목적지와 같은 문법**이다 (2026-08-09 소유자 지적:
             *"스킬 탭은 왜 혼자 … 다른 탭과 느낌이 다르고"*). 프로젝트·인사이트가
@@ -163,13 +198,6 @@ export function AgentSkillsPage() {
         ) : null}
         {status === "loading" ? <Notice tone="muted">{t("reading")}</Notice> : null}
 
-        {status === "idle" ? (
-          <EmptyState
-            onOpenFolder={() => void openFolder(t("pickerTitle"))}
-            onOpenSample={openSample}
-          />
-        ) : null}
-
         {inventory ? (
           <>
             {/* 스캔에 대한 사실만 남긴다 — **수는 머리가 진다.** 폴더 이름과
@@ -178,7 +206,7 @@ export function AgentSkillsPage() {
             {folderName || scan?.skippedNotInstalled || scan?.truncated ? (
               <p
                 data-testid="skills-scan-note"
-                className="flex flex-wrap items-baseline gap-x-3 gap-y-1 text-label leading-prose text-[color:var(--color-text-tertiary)]"
+                className="flex flex-wrap items-baseline gap-x-3 gap-y-1 text-body leading-body text-[color:var(--color-text-tertiary)]"
               >
                 <span>
                   {sample ? t("sampleNotice") : t("stat.folder", { folder: folderName ?? "" })}
@@ -241,6 +269,7 @@ export function AgentSkillsPage() {
           </>
         ) : null}
       </div>
+      ) : null}
     </main>
   );
 }
@@ -277,18 +306,52 @@ function EmptyState({ onOpenFolder, onOpenSample }: { onOpenFolder: () => void; 
   return (
     <section
       data-testid="skills-empty"
-      className="flex min-h-0 flex-1 flex-col gap-8 pt-6 pb-6"
+      /*
+       * **내용이 적으면 칸도 좁아진다** (2026-08-12 실측).
+       *
+       * 이 빈 상태는 글이 16개인데 목록형 칸(1448px)을 그대로 써서 세 질문이 벽까지
+       * 펼쳐져 있었고(가장 오른쪽 1472), 아래로 524px — 화면의 58% — 가 비어 있었다.
+       * 소유자: *"너무 횡하고 뭔가 벽에 다 딱 붙어있고"*. 같은 폭을 쓰는 인사이트·
+       * 프로젝트는 글이 48·80개라 정당했으니, 문제는 폭 값이 아니라 **적은 내용에
+       * 같은 폭을 쓴 것**이다.
+       *
+       * ⚠️ **첫 처방은 화면이 반박했다.** 남는 높이를 `justify-center` 로 위아래로
+       * 나눠 봤더니 숫자 하나(아래 공백 524 → 286)는 좋아졌는데, 스크린샷에서는 제목만
+       * 위에 떠 있고 그 아래 320px 공백이 생겼다 — **공백을 아래에서 위로 옮긴 것**
+       * 뿐이었다. 「횡하다」는 공백의 위치 문제가 아니라 **글이 아무 데도 묶여 있지
+       * 않은 것**이었다.
+       *
+       * 그래서 지금 처방은 둘이다: 폭은 규격의 좁은 칸(960)으로 모으고, 내용은 제목
+       * 바로 아래에서 **한 덩어리(카드)로 끝낸다.** 그러면 아래 공백은 「빈 구멍」이
+       * 아니라 페이지의 여백으로 읽힌다. 새 토큰·새 값 0개(기존 표면 조합).
+       */
+      /*
+       * ⚠️ **두 번째 처방도 화면이 반박했다** (2026-08-12, 소유자 스크린샷).
+       *
+       * 카드로 묶는 것만으로는 부족했다 — 실측(1512×900, 잎 요소만 잰 잉크 상자):
+       * `1368×313 @(104,56)` 즉 **위에 붙어 옆으로 벽까지 퍼지고 아래로 531px**
+       * (화면의 59%)이 비었다. 소유자: *"우측/하단 공백이 너무 심하고"*.
+       *
+       * 소유자가 가리킨 답은 같은 앱 안에 이미 있었다 — **조립대의 입구 화면**.
+       * 같은 뷰포트에서 그 화면의 잉크 상자는 `482×318 @(489,291)`: 좌 489 / 우 541,
+       * 상 291 / 하 291 — **가운데에 세워져 있다.** 공백의 양이 아니라 **글이
+       * 화면에 묶여 있는가**가 다른 것이다.
+       *
+       * 그래서 같은 전략을 쓴다: 남는 높이를 이 덩어리가 소유하고(`flex-1` +
+       * 가운데 정렬), 칸은 조립대와 같은 좁은 폭으로 모은다. 새 토큰·새 값 0개.
+       */
+      className={`${PAGE_COLUMN_STAGE} flex flex-col gap-6 rounded-card border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-6 py-6`}
     >
       {/* ⚠️ 여기 별도 헤드라인을 두지 않는다. 한 번 넣었다가 `screen-hierarchy`
           게이트가 잡았다 — 「페이지 제목보다 크거나 같은 글자가 제목 밖에 없다」.
           그리고 게이트가 옳았다: 그 문장("내 에이전트가 어떤 스킬을…")은 페이지
           제목과 그 아래 한 줄이 이미 하는 말이었다. 제목은 하나다. */}
-      <p className="max-w-[46em] text-body-lg leading-prose text-[color:var(--color-text-secondary)]">
+      <p className="text-body-lg leading-prose text-[color:var(--color-text-secondary)]">
         {t("emptyBody")}
       </p>
 
       {/* 세 질문 — 이 화면이 다른 어디서도 답하지 않는 것. 번호가 순서를 말한다. */}
-      <ol className="grid gap-x-8 gap-y-5 md:grid-cols-3">
+      <ol className="grid gap-y-4">
         {answers.map((answer, index) => (
           <li key={answer.key} className="flex flex-col gap-1.5">
             <span className="flex items-baseline gap-2">

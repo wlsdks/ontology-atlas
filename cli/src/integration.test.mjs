@@ -491,6 +491,41 @@ await test('init --quick-start — bootstrap failure reports written configs as 
  * 잠근다. 도메인이 없는 것 자체는 그대로다(README 제목이 없는 저장소에서 경계를
  * 지어내지 않는다) — 바뀐 것은 **부모가 있는데 없다고 말하던 것**이다.
  */
+/**
+ * **1을 내는 그 순간에, 그게 실패가 아니라고 말한다** (2026-08-11, 워크스루 실측).
+ *
+ * `agent-brief` 의 종료코드 1은 「명령이 실패했다」가 아니라 **「그래프가 아직 덜
+ * 여물었다」**는 신호다 — 그 판단은 이미 의도된 것이고 `--help` 에도, 코드 주석에도
+ * 적혀 있다(그 주석은 이 오독을 *"agent-persona-2026-07 QA friction #5"* 로 기록해
+ * 뒀다). 탈출구 `--exit-zero` 도 이미 있다.
+ *
+ * 문제는 **그 말이 마찰이 생기는 자리에 없었다**는 것이다: 갓 만든 볼트에서 1이 나는
+ * 그 화면에는 아무 안내가 없었고, 가이드에도 `--exit-zero` 가 한 번도 안 나온다.
+ * 사람은 `--help` 를 다시 읽지 않고, 에이전트는 1을 보면 대개 멈춘다.
+ *
+ * 그래서 계약은 그대로 두고 **화면에 한 줄**을 넣는다 — 이 저장소의 강등 카드 규칙과
+ * 같은 모양이다(왜 + 어디로).
+ */
+await test('agent-brief — readiness 로 1을 낼 때 그것이 실패가 아니라고 화면에서 말한다', async () => {
+  const repo = makeQuickStartRepoFixture();
+  try {
+    const init = await run(['init', 'ontology', '--quick-start'], { cwd: repo });
+    assert.equal(init.code, 0, `stdout: ${init.stdout}`);
+
+    const brief = await run(['agent-brief', 'ontology'], { cwd: repo });
+    const clean = stripAnsi(brief.stdout) + stripAnsi(brief.stderr);
+    // 이 볼트는 얇아서 readiness 가 아직 ready 가 아니다 — 그래서 1이 나온다.
+    assert.equal(brief.code, 1, `이 픽스처는 아직 ready 가 아니어야 한다:\n${clean}`);
+    assert.match(
+      clean,
+      /--exit-zero/,
+      `1을 내면서 그것이 실패가 아니라는 말과 탈출구를 안 알려 준다:\n${clean}`,
+    );
+  } finally {
+    rmSync(repo, { recursive: true, force: true });
+  }
+});
+
 await test('init --quick-start — 갓 만든 볼트가 자기 검사를 통과한다 (health · validate)', async () => {
   const repo = makeQuickStartRepoFixture();
   try {

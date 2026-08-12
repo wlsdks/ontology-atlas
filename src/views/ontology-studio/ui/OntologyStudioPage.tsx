@@ -88,6 +88,9 @@ import {
   useStudioDrafts,
 } from "../lib/studio-draft-store";
 import { StudioCompass, type CompassBearingView, type StudioCompassLabels } from "./StudioCompass";
+
+/** 입장이 끝났다고 보는 창 — `--motion-base`(180ms) + 스태거 여유. */
+const STAGE_ENTRANCE_WINDOW_MS = 520;
 import { StudioEntryChoice } from "./StudioEntryChoice";
 import { StudioPracticeCleanup } from "./StudioPracticeCleanup";
 import { StudioPracticeRail } from "./StudioPracticeRail";
@@ -1504,6 +1507,72 @@ function StudioStage({
  * 그래서 조건부 렌더 위가 아니라 **밖**에 둔다. 분기 수가 몇이든 이 자리는 하나다.
  */
 export function OntologyStudioPage() {
+  /**
+   * **무대는 한 번만 들어온다** (2026-08-12 실측).
+   *
+   * 소유자: *"공방쪽은 2D인데 좀 움직이고 그런 모션좀 넣어달랬는데 안해주더라고"*.
+   * 재 보니 공방은 **움직인다** — 방위를 채우면 지지대가 흐르고(`studioStrutFlow`)
+   * 도착 표시가 뜬다(`studioFillArrive`). 문제는 그 반대였다: 프레임 샘플링으로
+   * 방위 하나를 채우는 순간을 재 보니 `studioStageIn` 이 **중앙 카드와 나머지 세
+   * 소켓에까지** 붙어 재생됐다. 채운 것은 아래 방위 하나인데 화면 전체가 다시
+   * 들어오는 것이다.
+   *
+   * 그게 역설적으로 「안 움직인다」로 느껴지는 이유다: **모든 것이 같이 움직이면
+   * 아무것도 도착하지 않는다.** 이 저장소의 모션 규칙이 「움직임은 무엇이 어디서
+   * 어디로 갔는지 설명해야 한다」고 정해 둔 그 지점이다.
+   *
+   * 원인은 CSS 가 아니라 정체성이다 — 관계가 landing 하면 React 가 나침 무대를 다시
+   * 마운트하고, CSS 입장 애니메이션은 마운트마다 재생된다. 구조를 뜯어 마운트를
+   * 유지하는 것이 근본이지만 그건 이 컴포넌트에서 큰 수술이라, **입장이 끝난 뒤부터
+   * 재생을 끈다**: 이 표시가 붙으면 `app/globals.css` 가 `.studio-stage-in` 을
+   * 멈춘다. 도착하는 것(위성·지지대·도착 표시)은 자기 애니메이션을 그대로 갖는다.
+   *
+   * 시간을 쓰는 이유: 입장 자체는 살려야 하므로 첫 프레임에 끄면 안 된다. 값은 입장
+   * 길이(`--motion-base` 180ms)에 스태거 여유를 더한 것이고, 늦게 켜져도 잃는 것이
+   * 없다(그동안 재마운트가 없으면 아무 일도 일어나지 않는다).
+   *
+   * ## ⚠️ 이 창을 **페이지 시간**에 걸었던 것이 입장을 통째로 없앴다 (2026-08-12 정정)
+   *
+   * 첫 구현은 타이머를 `[]` 로 걸었다 — 즉 **페이지가 뜬 시점**부터 520ms 였다.
+   * 그런데 공방은 카드 화면(또는 빈 볼트 화면)을 먼저 보여 주고, 사람이 「새로
+   * 만들기」를 누르는 것은 그 뒤다. 그 사이에 520ms 는 이미 지나가 있다.
+   *
+   * 그래서 무대는 **억제된 채로 마운트됐다.** 실측(클릭 직후 5프레임):
+   *
+   * ```
+   * FRAME {"f":0,"card":true,"suppressor":"true","animName":"none","opacity":"1"}
+   * ```
+   *
+   * 첫 프레임에 이미 `opacity: 1` 이고 애니메이션이 `none` — **하드컷**이다. 고치려던
+   * 것(모든 것이 같이 움직여서 아무것도 도착하지 않는 것)의 반대쪽 끝으로 넘어간
+   * 것이고, 이 저장소가 「주인공이 하드컷인데 배경만 움직이면 결함」이라고 적어 둔
+   * 그 자리에서 **주인공이 아예 안 움직이게** 됐다.
+   *
+   * 축이 틀렸다. 잠글 것은 「페이지가 뜬 뒤 얼마나 지났나」가 아니라 **「이 무대가
+   * 이미 한 번 들어왔나」** 다. 그래서 창을 무대의 정체성(`mode` + `node`)에 건다:
+   *
+   * - 카드 화면에서 「새로 만들기」 → 주소가 `?mode=create` 로 바뀐다 → 새 정체성
+   *   → 입장이 재생된다.
+   * - 다른 노드로 옮긴다 → `node` 가 바뀐다 → 새 무대이므로 입장이 재생된다.
+   * - **방위를 채운다 → 주소는 그대로다** → 정체성이 같으므로 억제가 유지된다.
+   *   여기가 원래 고치려던 그 지점이고, 그대로 지켜진다.
+   *
+   * 주소를 읽는 훅을 쓰는 이유: 공방 안의 이동은 라우터가 아니라 `history.pushState`
+   * 로 일어나서(`use-studio-search-params.ts`) `useSearchParams` 만으로는 주소가
+   * 바뀐 것을 모른다.
+   */
+  const stageParams = useStudioSearchParams();
+  const stageIdentity = `${stageParams.get("mode") ?? "enhance"}:${stageParams.get("node") ?? ""}`;
+  const [enteredIdentity, setEnteredIdentity] = useState<string | null>(null);
+  useEffect(() => {
+    const timer = window.setTimeout(
+      () => setEnteredIdentity(stageIdentity),
+      STAGE_ENTRANCE_WINDOW_MS,
+    );
+    return () => window.clearTimeout(timer);
+  }, [stageIdentity]);
+  const stageEntered = enteredIdentity === stageIdentity;
+
   const t = useTranslations("ontologyStudio");
   const toast = useToast();
   const localVault = useLocalVault();
@@ -1665,7 +1734,7 @@ export function OntologyStudioPage() {
   }, [navigateStudio]);
 
   return (
-    <div className="flex h-[100dvh] w-full overflow-hidden">
+    <div className="flex h-[100dvh] w-full overflow-hidden" data-studio-entered={stageEntered ? "true" : undefined}>
       <div className="relative min-w-0 flex-1">
         <StudioStage
           practiceSaved={practiceArtifact !== null}

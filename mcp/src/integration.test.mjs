@@ -3867,8 +3867,16 @@ await test("query_ontology health/workspace_brief — validator findings cannot 
   const root = makeVault([
     { slug: "project", content: "---\nkind: project\ntitle: Project\ndomains: [domains/core]\n---\n" },
     { slug: "domains/core", content: "---\nkind: domain\ntitle: Core\ncapabilities: [capabilities/run]\n---\n" },
-    // Structurally connected, but schema-invalid: capability has no domain.
-    { slug: "capabilities/run", content: "---\nkind: capability\ntitle: Run\nelements: [elements/worker]\n---\n" },
+    /*
+     * Structurally connected, but the graph still has a finding.
+     *
+     * ⚠️ 2026-08-11 — 종전에는 「domain 이 없는 capability」로 소견을 만들었다. 그런데
+     * 이 픽스처의 `domains/core` 가 **그 capability 를 담고 있어서**, 부모가 있는 노드에
+     * 「부모가 없다」고 말하던 그 거짓 양성이 사라지자 이 시험도 같이 초록이 됐다
+     * (`containment-parent`). 시험의 뜻은 「소견이 있으면 healthy 라고 말하지 않는다」이므로
+     * **다른 진짜 소견**으로 바꾼다 — 없는 노드를 가리키는 참조 하나.
+     */
+    { slug: "capabilities/run", content: "---\nkind: capability\ntitle: Run\ndomain: domains/core\nelements: [elements/worker]\ndepends_on: [capabilities/missing]\n---\n" },
     { slug: "elements/worker", content: "---\nkind: element\ntitle: Worker\ndomain: domains/core\n---\n" },
   ]);
   try {

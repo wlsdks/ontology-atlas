@@ -663,6 +663,8 @@ export function OntologyInsightsPage() {
     kindCensusTitle: t("kindCensusTitle"),
     domainCapacityTitle: t("domainCapacityTitle"),
     noDomains: t("noDomains"),
+    noDomainsBody: t("noDomainsBody"),
+    noDomainsAction: t("noDomainsAction"),
     kindGlyphCaption: t("kindGlyphCaption"),
     domainCapacityCaption: t("domainCapacityCaption"),
     capabilityUnit: kindLabel("capability"),
@@ -886,7 +888,14 @@ export function OntologyInsightsPage() {
   return (
     <div className="flex min-h-full w-full">
       {/* 레일은 perf/persistent-shell 이후 layout(AppShell) 상주. */}
-      <div className="min-w-0 flex-1">
+      {/*
+        * **높이 사슬** (2026-08-12 실측). 이 아래 `main` 까지 세로 flex 가 이어져야
+        * 탭패널의 `flex-1` 이 실제로 남은 높이를 받는다. 끊겨 있던 동안: 「구성」
+        * 카드들의 `flex-1`("빈 밴드 금지" 설계)이 한 번도 늘어난 적 없고, 「경계」
+        * 빈 상태 아래로 614px 이 죽은 공백이었다(1512×900 실측). `min-h-full` 사슬
+        * 이라 내용이 길면 그대로 자라 스크롤은 그대로다.
+        */}
+      <div className="flex min-w-0 flex-1 flex-col">
         {/*
          * ⚠️ **실시간 표시를 뺐다** (2026-08-03, 소유자 지적 — 프로젝트 목록과
          * 같은 이유). 「실시간 · 변경 N」은 **지도의 물건**이다: 무엇이 바뀌었는지
@@ -906,7 +915,7 @@ export function OntologyInsightsPage() {
       tabIndex={-1}
           data-insights-surface="maintenance-board"
           data-insights-question-model="one-tab-one-question"
-          className={`${PAGE_FRAME} pb-8 max-lg:pb-[calc(var(--topology-mobile-bottom-tab-reserve)+24px)]`}
+          className={`${PAGE_FRAME} flex min-h-0 flex-1 flex-col pb-8 max-lg:pb-[calc(var(--topology-mobile-bottom-tab-reserve)+24px)]`}
         >
         <MountedGlobalSearch open={searchPaletteOpen} onOpenChange={setSearchPaletteOpen} />
 
@@ -1064,6 +1073,20 @@ export function OntologyInsightsPage() {
                 domainRows={domainRows}
                 edgeTypeSummary={edgeTypeSummary}
                 kindLabel={kindLabel}
+                domainLink={{
+                  href: mapNodeHref,
+                  // 막대는 aria-hidden 이라 행의 세 수를 링크 이름에 실어
+                  // 보낸다 — 화면에 있는 사실이 스크린리더에서 사라지면 안 된다
+                  // (「연결」 탭 impactRowAriaLabel 과 같은 규율). 목적지 문구는
+                  // 허브·신선도 행이 이미 쓰는 한 벌(`… : 지도에서 보기`)을
+                  // 그대로 쓴다 — 이 행이 더할 것은 수치뿐이라 새 문구 키를
+                  // 만들지 않는다. 순서는 화면에 보이는 순서 그대로(이름 →
+                  // 합계 → 역량·요소).
+                  ariaLabel: (row) =>
+                    t("hubRowAriaLabel", {
+                      title: `${row.title} ${row.total} · ${kindLabel("capability")} ${row.capabilityCount} · ${kindLabel("element")} ${row.elementCount}`,
+                    }),
+                }}
                 labels={overviewLabels}
               />
             ) : null}

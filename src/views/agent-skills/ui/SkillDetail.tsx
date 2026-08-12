@@ -67,7 +67,13 @@ export function SkillDetail({
         </button>
       ) : null}
       <header className="flex flex-wrap items-baseline gap-x-2.5 gap-y-1">
-        <h2 ref={headingRef} tabIndex={-1} className="text-title text-[color:var(--color-text-primary)]">{skill.name}</h2>
+        <h2
+          ref={headingRef}
+          tabIndex={-1}
+          className="text-title font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)]"
+        >
+          {skill.name}
+        </h2>
         <p className="text-label text-[color:var(--color-text-tertiary)]">
           {skill.origin.personal ? t("group.mine") : skill.origin.source}
         </p>
@@ -78,7 +84,7 @@ export function SkillDetail({
           data-testid="skill-detail-rivals"
           className="rounded-[var(--radius-card)] border border-[color:var(--color-amber-source-a25)] bg-[color:var(--color-amber-source-a06)] px-3 py-2.5"
         >
-          <p className="text-label font-[var(--font-weight-emphasis)] text-[color:var(--color-amber-source-text-a80)]">
+          <p className="text-body-lg font-[var(--font-weight-emphasis)] text-[color:var(--color-amber-source-text-a80)]">
             {t("detail.competing")}
           </p>
           <ul className="mt-1.5 flex flex-col gap-1">
@@ -115,10 +121,10 @@ export function SkillDetail({
         {loadChainOpen ? t("detail.hideLoadChain") : t("detail.showLoadChain")}
       </button>
       {loadChainOpen ? <SkillInvocationChain skill={skill} /> : null}
-
-      <p className="text-caption leading-prose text-[color:var(--color-text-quaternary)]">
-        {skill.origin.relativePath}
-      </p>
+      {/* 하단에 경로 한 줄이 더 있었는데 지웠다(2026-08-12 실측) — 2단 「뜨면
+          실려요」의 경로와 **바이트 동일**한 문자열이 라벨 없이 136px 아래에 한 번
+          더, 그보다 작은 9.5px 로 떠 있었다. 같은 사실을 라벨 없이 두 번 말하는
+          것은 정보가 아니다. */}
     </article>
   );
 }
@@ -132,7 +138,7 @@ function Jump({ onClick, children }: { onClick: () => void; children: React.Reac
       className={controlClass({
         shape: "link",
         size: "sm",
-        className: "text-left text-label text-[color:var(--color-amber-source-text-a80)]",
+        className: "text-left text-body text-[color:var(--color-amber-source-text-a80)]",
       })}
     >
       {children}

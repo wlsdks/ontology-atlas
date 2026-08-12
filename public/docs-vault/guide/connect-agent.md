@@ -136,6 +136,11 @@ node cli/src/index.mjs agent-brief my-vault
 `needs_evidence` / `invalid` 중 하나이며, 근거를 확인할 수 없을 때는
 추정하지 않고 fail-closed 상태를 반환합니다.
 
+**종료코드 1은 실패가 아닙니다.** 이 명령의 1은 「그래프가 아직 덜 여물었다」는
+신호예요. 갓 만든 볼트는 노드가 적어서 대개 1이 나옵니다. 명령 자체는 정상으로
+끝났고 출력도 유효합니다. `agent-brief && 다음명령`처럼 이어 쓰면 그 1에서 멈추니,
+`--exit-zero`를 주고 출력의 `status`/`readiness`를 직접 읽으세요.
+
 ```
 agent brief healthy — readiness ready 100/100 · 70 노드 · 152 관계 · 6 health checks
 

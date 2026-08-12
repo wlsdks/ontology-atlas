@@ -48,7 +48,7 @@ export function SkillInvocationChain({ skill }: { skill: AgentSkill }) {
         title={t("chain.onTrigger")}
         note={t("chain.chars", { count: onTrigger.chars })}
       >
-        <p className="text-label leading-prose text-[color:var(--color-text-tertiary)]">
+        <p className="text-body leading-body text-[color:var(--color-text-tertiary)]">
           {onTrigger.files[0]}
         </p>
       </Rung>
@@ -59,7 +59,7 @@ export function SkillInvocationChain({ skill }: { skill: AgentSkill }) {
         note={t("chain.fileCount", { count: onDemand.files.length })}
       >
         {onDemand.files.length === 0 ? (
-          <p className="text-label leading-prose text-[color:var(--color-text-tertiary)]">
+          <p className="text-body leading-body text-[color:var(--color-text-tertiary)]">
             {t("chain.noFiles")}
           </p>
         ) : (
@@ -72,8 +72,8 @@ export function SkillInvocationChain({ skill }: { skill: AgentSkill }) {
                   <span
                     className={
                       missing
-                        ? "text-label leading-prose text-[color:var(--color-danger-text)] line-through"
-                        : "text-label leading-prose text-[color:var(--color-text-secondary)]"
+                        ? "text-body leading-body text-[color:var(--color-danger-text)] line-through"
+                        : "text-body leading-body text-[color:var(--color-text-secondary)]"
                     }
                   >
                     {shorten(file)}
@@ -117,11 +117,18 @@ function Rung({
   return (
     <li className="rounded-[var(--radius-card)] border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-3 py-2.5">
       <div className="flex items-baseline justify-between gap-3">
-        <p className="text-label font-[var(--font-weight-emphasis)] text-[color:var(--color-text-primary)]">
+        {/*
+          * **폴더를 열면 화면이 스스로 2단 작아졌다** (2026-08-12 실측·처방).
+          * 같은 뷰의 빈 화면은 이 3단 약속을 `text-body-lg`(14)로 그리는데, 실제
+          * 사실이 도착하는 이 자리는 `text-label`(11)이었다. 우측 수치도 분석
+          * 화면의 같은 자리(카드 머리 우측 mono 수치)가 11인데 여기만 9.5였다.
+          * 소유자: *"스킬쪽 뭔가 내부 너무작지않음?"* — 램프 단만 올린다, 신설 0.
+          */}
+        <p className="text-body-lg font-[var(--font-weight-emphasis)] text-[color:var(--color-text-primary)]">
           <span className="mr-1.5 text-[color:var(--color-text-tertiary)]">{index}</span>
           {title}
         </p>
-        <p className="shrink-0 text-caption text-[color:var(--color-text-tertiary)]">{note}</p>
+        <p className="shrink-0 font-mono text-label text-[color:var(--color-text-tertiary)]">{note}</p>
       </div>
       <div className="mt-1.5">{children}</div>
     </li>

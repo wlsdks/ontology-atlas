@@ -210,7 +210,7 @@ AI 에이전트가 관계를 추가해도 똑같이 이 형태로 남습니다. 
         │
         │  담김 사슬을 타고 projectIds 스탬프
         ▼
-      지도 · INDEX · 인사이트
+      지도 · INDEX · 분석
 ```
 
 파생은 `src/entities/docs-vault/lib/derive-ontology-from-vault.ts` 가 합니다.

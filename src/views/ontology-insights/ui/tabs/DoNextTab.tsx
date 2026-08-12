@@ -1233,7 +1233,15 @@ export function DoNextTab({
                 )}
               </p>
             ) : labels.agentReadinessHint ? (
-              <p className="mt-1 text-label leading-label text-[color:var(--color-text-quaternary)]">
+              /*
+               * `break-keep` — **한국어는 단어 중간에서 끊기면 읽다가 걸린다** (2026-08-12 실측).
+               *
+               * 이 문단이 두 줄로 접히면서 「…으로 나 / 는 거예요」로 끊겼다(계기: 글자마다
+               * Range 를 재서 줄이 바뀐 자리의 앞뒤 글자를 본다 — 둘 다 한글이고 공백이
+               * 없으면 단어 중간이다). 원인은 `word-break: normal` 이고, 이 저장소는 이미
+               * 다른 자리에서 `break-keep` 을 쓰고 있었다.
+               */
+              <p className="mt-1 break-keep text-label leading-label text-[color:var(--color-text-quaternary)]">
                 {labels.agentReadinessHint}
               </p>
             ) : null}

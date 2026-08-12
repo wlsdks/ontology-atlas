@@ -1258,8 +1258,24 @@
     animation-delay: var(--studio-stagger, 0ms);
   }
 
+  /*
+   * **입장은 한 번이다** (2026-08-12 실측).
+   *
+   * 방위를 하나 채우면 React 가 나침 무대를 다시 마운트하고, 그러면 이 입장이
+   * **중앙 카드와 나머지 세 소켓에까지** 다시 재생된다(프레임 샘플링으로 확인).
+   * 채운 것은 방위 하나인데 화면 전체가 다시 들어오면 무엇이 도착했는지 읽히지
+   * 않는다 — 「모든 것이 같이 움직이면 아무것도 도착하지 않는다」.
+   *
+   * 그래서 무대가 입장을 마치면 소비처가 `data-studio-entered` 를 세우고, 그때부터
+   * 이 입장은 멈춘다. **도착하는 것은 그대로 움직인다**(`studioFillArrive` ·
+   * `studioStrutFlow` · 위성 FLIP) — 끄는 것은 「이미 있던 것이 다시 들어오는 것」뿐이다.
+   */
+  [data-studio-entered="true"] .studio-stage-in {
+    animation: none;
+  }
+
   /* 2) 피커 열림 원점 스케일 — 소켓(앵커)에서 자라난다. transform-origin 은
-     소비처가 --studio-picker-origin 으로 소켓의 로컬 좌표를 주입. */
+     소비처가 --studio-anchor-origin 으로 소켓의 로컬 좌표를 주입. */
   /* ── 채움 확정의 안무 (2026-07-28, 소유자 "세팅할때마다 뭔가 움직이면서") ──
      실측: 채움의 절정(제안 선택 → 위성 등장)에서 **아무것도 이동하지
      않았다**. 피커·소켓이 0프레임에 사라지고 완성된 위성이 0프레임에
@@ -1301,7 +1317,19 @@
     }
   }
 
-  @keyframes studioPickerPop {
+  /* ── 무대의 **앵커된 임시 표면** 문법 (2026-08-12) ─────────────────────────
+     소켓 피커 · 접힘 목록 · 관계 편집 카드 — 셋 다 «누른 것 옆에 붙어 열리고
+     그 자리로 되접히는» 같은 종류다. 그래서 값도 한 벌이다.
+
+     ⚠️ **이름이 한때 `studioPickerPop` 이었다.** 피커에만 있던 시절의 이름인데,
+     같은 문법을 접힘 목록·편집 카드에 붙이면서 「피커」라는 이름이 거짓이 됐다 —
+     다음 사람이 편집 카드에 `studio-picker-pop` 을 붙이게 된다. 그래서 문법의
+     이름으로 바꿨다(값·시간·이징 전부 그대로, 렌더 결과 변화 0).
+
+     원점은 **누른 그것**이다(`--studio-anchor-origin`). 소비처가 자기 트리거의
+     로컬 좌표를 주입한다 — 원점이 없으면 상자 가운데에서 자라서, 어디서 왔는지가
+     화면에서 사라진다. */
+  @keyframes studioAnchoredIn {
     from {
       opacity: 0;
       transform: scale(0.96);
@@ -1313,9 +1341,40 @@
     }
   }
 
-  .studio-picker-pop {
-    animation: studioPickerPop var(--motion-fast) var(--motion-ease) both;
-    transform-origin: var(--studio-picker-origin, center);
+  .studio-anchored-in {
+    animation: studioAnchoredIn var(--motion-fast) var(--motion-ease) both;
+    transform-origin: var(--studio-anchor-origin, center);
+  }
+
+  /* 피커가 **나가는 길** (2026-08-12 실측). 그 전까지는 나가는 길이 없었다:
+     Escape 는 `+2ms`(한 프레임), 행을 고르면 `+39ms` 에 **opacity 1.00 그대로**
+     소멸했다. 그동안 결과 쪽(소켓이 채워지는 색 전이 130ms · 도착 표시 240ms)은
+     제대로 움직였으니, **사용자가 누른 그것만 0프레임을 받은** 것이다 —
+     헌장이 「주인공이 하드컷인데 배경만 움직이면 결함」이라고 적어 둔 그 모양.
+
+     되감기(`reverse`)를 쓰지 않는다: 같은 원소에서 클래스만 바뀌는 자리에서는
+     이름이 그대로면 재생이 다시 시작되지 않아 **아예 안 보인다**(이 저장소의
+     `exit-motion-restart` 계약). 그래서 자기 이름으로 정방향 재생한다.
+
+     원점은 등장과 **같은 소켓**이다(`--studio-anchor-origin`). 열릴 때 그 소켓에서
+     자랐으니 닫힐 때도 그 소켓으로 되접혀야 「이건 그 방위의 일이었다」가 읽힌다.
+     시간도 등장과 같은 `--motion-fast` — 닫는 것이 여는 것보다 느리면 걸리적거린다.
+     새 duration/이징 값 0. */
+  @keyframes studioAnchoredOut {
+    from {
+      opacity: 1;
+      transform: scale(1);
+    }
+
+    to {
+      opacity: 0;
+      transform: scale(0.96);
+    }
+  }
+
+  .studio-anchored-out {
+    animation: studioAnchoredOut var(--motion-fast) var(--motion-ease) both;
+    transform-origin: var(--studio-anchor-origin, center);
   }
 
   /* 라우트 로딩 자막 — 대부분의 진입은 400ms 안에 끝나므로 그 전에는 침묵한다.
@@ -2120,7 +2179,6 @@
        --topology-graph-node-dim, --topology-connector) 는 #344
        (retire-sigma-topology) 이후 consumer 0 — topology-map-v2 는 자체
        --topology-v2-edge-* 패밀리를 쓴다. */
-    --topology-card-border-selected: rgba(139, 151, 255, 0.8);
     --topology-relation-summary-surface: rgba(139, 151, 255, 0.18);
     --topology-relation-summary-border: rgba(139, 151, 255, 0.42);
     --topology-relation-summary-text: rgba(222, 225, 255, 0.94);
@@ -2226,9 +2284,6 @@
     --topology-selected-relation-action-min-width: 86px;
     --topology-selected-relation-copy-payload-min-height: 42px;
     --topology-selected-relation-route-step-min-width: 48px;
-    --topology-selected-relation-card-surface: rgba(13, 15, 21, 0.98);
-    --topology-selected-relation-card-border: rgba(139, 151, 255, 0.28);
-    --topology-selected-relation-card-shadow: 0 12px 26px rgba(0, 0, 0, 0.38);
     --topology-selected-relation-kicker-font-size: 9px;
     --topology-selected-relation-chip-font-size: 9px;
     --topology-selected-relation-route-label-font-size: 8px;
@@ -3818,7 +3873,7 @@
 
     /* ② 이동·확대가 실린 등장 — 이름만 불투명도 전용으로 바꿔 자기 시간을 그대로 탄다. */
     .studio-stage-in,
-    .studio-picker-pop {
+    .studio-anchored-in {
       animation-name: panelCrossfadeIn !important;
       animation-duration: var(--motion-fast) !important;
     }
@@ -3827,7 +3882,8 @@
      * ③ 요약이 모이며 **사라지는** 것 — 이건 퇴장이라 이름을 등장 크로스페이드로
      * 바꾸면 반대로 나타나 버린다. 그래서 이동만 지우고 방향은 지킨다.
      */
-    .studio-summary-converge {
+    .studio-summary-converge,
+    .studio-anchored-out {
       animation-name: overlayFadeOut !important;
       animation-duration: var(--motion-fast) !important;
     }

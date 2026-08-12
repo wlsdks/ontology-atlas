@@ -1,5 +1,6 @@
 import { expect, test } from "@playwright/test";
 
+import { openStubbedSkillFolder, stubSkillFolder } from "./skills-folder-stub";
 import { seedFirstRunSeen } from "./first-run-seed";
 
 /**
@@ -26,13 +27,19 @@ import { seedFirstRunSeen } from "./first-run-seed";
  */
 
 const MEMBERS = [
-  { route: "/ko/projects/", title: "프로젝트" },
-  { route: "/ko/ontology/insights/", title: "그래프 인사이트" },
-  { route: "/ko/skills/", title: "스킬" },
+  { route: "/ko/projects/", title: "프로젝트", openFolder: false },
+  { route: "/ko/ontology/insights/", title: "그래프 인사이트", openFolder: false },
+  // 스킬은 **폴더를 연 상태**로 잰다 — 빈 상태에서는 이 화면이 무대가 된다(위 머리말).
+  { route: "/ko/skills/", title: "스킬", openFolder: true },
 ] as const;
 
-async function measureHeader(page: import("@playwright/test").Page, route: string) {
+async function measureHeader(
+  page: import("@playwright/test").Page,
+  route: string,
+  openFolder = false,
+) {
   await page.goto(`${route}?guides=off`);
+  if (openFolder) await openStubbedSkillFolder(page);
   const heading = page.locator("main h1").first();
   await expect(heading).toBeVisible({ timeout: 15_000 });
   return page.evaluate(() => {
@@ -68,13 +75,35 @@ async function measureHeader(page: import("@playwright/test").Page, route: strin
 }
 
 test.describe("페이지 틀", () => {
+  /**
+   * ⚠️ **이 성질은 「목록을 그리는 상태」의 것이다** (2026-08-12 개정).
+   *
+   * 이 시험이 생긴 계기는 소유자 지적 *"스킬 탭은 왜 혼자 … 다른 탭과 느낌이
+   * 다르고"* 였고, 그건 **머리(제목 + 수 + 설명)의 문법**에 대한 말이었다. 그
+   * 문법은 그대로다.
+   *
+   * 그런데 스킬은 **아직 아무 폴더도 열지 않았을 때** 머리 행을 쓰지 않는다 —
+   * 그때 이 화면의 일은 하나(「폴더를 고르세요」)이고, 소유자가 조립대 입구를
+   * 가리키며 그 전략을 지시했다(*"우측/하단 공백이 너무 심하고 … 이렇게 조립대같은
+   * 전략을 쓰던지"*). 실측이 그 지적과 같았다: 잉크 상자 `1368×313`, 아래로 531px
+   * (화면의 59%)이 비어 있었다.
+   *
+   * 그래서 스킬은 이 표에서 **폴더를 연 상태로** 재야 한다. 빈 상태의 정렬은
+   * `skills-inventory.spec.ts` 의 「빈 상태는 화면 가운데에 세워진다」가 잠근다 —
+   * 성질을 지우는 것이 아니라 **각자 맞는 상태에서 재는 것**이다.
+   */
   test("세 목적지의 제목이 같은 y 에 선다 (1280 · 768)", async ({ page }) => {
+    // 스킬을 목록 상태로 재려면 스텁이 **첫 이동 전에** 걸려 있어야 한다.
+    await stubSkillFolder(page, {
+      "packA/skills/report/SKILL.md":
+        "---\nname: report\ndescription: Build a quarterly revenue report\n---\n",
+    });
     await seedFirstRunSeen(page);
     for (const width of [1280, 768]) {
       await page.setViewportSize({ width, height: 900 });
       const measured: { title: string; titleY: number | null; padLeft: string | null }[] = [];
       for (const member of MEMBERS) {
-        const m = await measureHeader(page, member.route);
+        const m = await measureHeader(page, member.route, member.openFolder);
         measured.push({ title: member.title, titleY: m.titleY, padLeft: m.padLeft });
       }
       expect(measured.length, "라우트를 하나도 못 재면 이 시험이 헛돈다").toBe(3);

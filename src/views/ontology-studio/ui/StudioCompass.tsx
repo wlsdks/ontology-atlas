@@ -33,6 +33,7 @@ import type { CreateCandidate, CreateNodeKind } from "../lib/build-create-node";
 import type { PickerDiscovery, PickerSuggestionReason } from "../lib/build-picker-discovery";
 import type { DeltaPreviewLayout, DeltaSatellite, DeltaSatelliteState } from "../lib/build-delta-preview";
 import { fieldClass } from '@/shared/ui/control-class';
+import { useHeldValue, usePanelPresence } from "@/shared/lib/use-presence";
 
 /** 무대 등장의 두 번째 박자 — 잎(레인)이 카드보다 반 박자 늦게 정착한다. */
 const STAGE_LANE_DELAY_MS = 40;
@@ -757,6 +758,58 @@ export function StudioCompass(props: StudioCompassProps) {
   const similarHit =
     openRelation && similarFor ? similarFor(openRelation, query) : null;
 
+  /**
+   * **피커가 나가는 길** (2026-08-12 실측으로 생겼다).
+   *
+   * 그 전까지 피커는 나가는 길이 없었다 — `openRelation` 이 `null` 이 되는 순간
+   * 언마운트다. 프레임으로 재니 Escape 는 **+2ms**(한 프레임), 행을 고르면
+   * **+39ms 에 `opacity: 1.00` 그대로** 사라졌다. 그동안 결과 쪽은 제대로
+   * 움직인다(소켓 색 전이 130ms · 도착 표시 240ms). 즉 **누른 그것만 0프레임**을
+   * 받았고, 이 저장소가 이름 붙여 둔 그 결함이다.
+   *
+   * 창을 열어 두는 것만으로는 부족하다 — 내용은 부모가 주므로 `openRelation` 이
+   * 사라지면 **예쁘게 사라지는 빈 상자**가 된다(`useHeldValue` 머리말의 그 함정).
+   * 그래서 피커가 필요한 것을 한 덩어리로 묶어 붙든다.
+   *
+   * 키를 `관계|검색어` 로 잡는 이유: 붙드는 값이 객체라 정체성으로 비교하면 무한
+   * 재렌더가 나고(그 훅이 실측으로 배운 것), 관계만으로 잡으면 **검색어가 바뀔 때
+   * 붙든 값이 갱신되지 않아** 닫는 순간 목록이 처음 상태로 되돌아가 보인다.
+   * 피커의 내용은 이 둘로 완전히 결정된다(`pickerRows`·`similarHit` 둘 다 그 함수).
+   */
+  const pickerAnchor = openLayout
+    ? (openLayout.layout.socket ?? openLayout.layout.addChip ?? null)
+    : null;
+  const pickerBundle =
+    openRelation && pickerAnchor && openLayout
+      ? {
+          relation: openRelation,
+          socket: pickerAnchor,
+          bearing: openLayout.view.bearing,
+          rows: pickerRows,
+          similarHit,
+          query,
+        }
+      : null;
+  const heldPicker = useHeldValue(pickerBundle, pickerBundle ? `${openRelation}|${query}` : null);
+  const pickerPresence = usePanelPresence(Boolean(pickerBundle));
+
+  /**
+   * 관계 편집 카드도 같은 문법 — 그 위성에서 자라고 그 위성으로 되접힌다
+   * (2026-08-12 실측: 등장 `+33ms 있음/none/1.00`, Esc 뒤 `+544ms 없음` — 둘 다
+   * 하드컷이었다).
+   *
+   * 여기는 **값을 붙들어야 한다.** 카드가 그리는 것(관계·이웃)이 `openEdit` 에서
+   * 오므로, 그 값이 `null` 이 되는 순간 예쁘게 사라지는 빈 상자가 된다.
+   * 키는 원시값이어야 한다(객체 정체성으로 비교하면 무한 재렌더).
+   */
+  const heldEdit = useHeldValue(
+    openEdit,
+    openEdit ? `${openEdit.relation}|${openEdit.neighbor.id}` : null,
+  );
+  const editPresence = usePanelPresence(Boolean(openEdit));
+  /** 작업중 패널도 같은 문법 — 붙들 값은 없다(목록은 `drafts` prop 에서 온다). */
+  const draftsPresence = usePanelPresence(draftsOpen);
+
   // #62 — 무대 위 임시 표면은 서로 배타적이다. 예전엔 '+90 더 보기' 접힘
   // 목록이 열린 채 소켓 피커가 그 위에 그대로 쌓여, 아래 목록이 반쯤 가린
   // 상태로 둘 다 살아 있었다(opus5 검수 스크린샷). 피커를 열 때 접힘 목록·
@@ -872,6 +925,28 @@ export function StudioCompass(props: StudioCompassProps) {
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   }, [openEdit]);
+
+  /*
+   * 접힘 목록도 같은 계약 — Esc 로 닫힌다 (2026-08-12).
+   *
+   * 바로 위 주석이 「관계 편집 카드 · 미리보기 · 작업중 패널엔 Esc 가 있다」고
+   * 적어 뒀는데 **접힘 목록만 빠져 있었다.** 실측(연속 기록): 열고 Esc 를 눌러도
+   * `+1072ms` 까지 그대로 떠 있었고, 그때 사라진 것은 Esc 가 아니라 「더 보기」
+   * 칩을 다시 누른 것 때문이었다. 즉 이 표면은 **키보드로 빠져나올 길이 없었다.**
+   *
+   * 무대 위 임시 표면은 서로 배타적이라 한 번에 하나만 열려 있고, 그래서 전역
+   * Esc 하나가 열린 그것만 닫는다 — 위 셋과 같은 문법이다.
+   */
+  useEffect(() => {
+    if (!openFold) return;
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key !== "Escape" || event.defaultPrevented) return;
+      event.preventDefault();
+      setOpenFold(null);
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [openFold]);
 
   // 소켓 피커도 같은 계약 — Esc 로 닫힌다. 최종 검수에서 이것만 빠져 있었다:
   // 관계 편집 카드 · 미리보기 · 작업중 패널엔 Esc 가 있는데 피커는 없어서, 검색
@@ -1304,54 +1379,56 @@ export function StudioCompass(props: StudioCompassProps) {
 
           {/* inline anchored picker — anchors to the empty socket OR (C4) to the
               filled lane's "＋ 더 잇기" add chip (same {x,y,w,h} shape). */}
-          {openRelation && openLayout && (openLayout.layout.socket ?? openLayout.layout.addChip) ? (
+          {pickerPresence.mounted && heldPicker ? (
             <InlinePicker
-              key={openRelation}
-              socket={(openLayout.layout.socket ?? openLayout.layout.addChip)!}
-              bearing={openLayout.view.bearing}
+              key={heldPicker.relation}
+              exiting={pickerPresence.exiting}
+              socket={heldPicker.socket}
+              bearing={heldPicker.bearing}
               cardLeft={cardLeft}
               cardRight={cardRight}
-              relation={openRelation}
-              question={bearings.find((b) => b.relation === openRelation)?.question ?? ""}
+              relation={heldPicker.relation}
+              question={bearings.find((b) => b.relation === heldPicker.relation)?.question ?? ""}
               labels={labels}
-              rows={pickerRows}
-              similarHit={similarHit}
+              rows={heldPicker.rows}
+              similarHit={heldPicker.similarHit}
               discoveryFor={props.discoveryFor}
               kindLabelFor={kindLabelFor}
-              query={query}
+              query={heldPicker.query}
               onQuery={setQuery}
               onPick={pick}
               onClose={closePicker}
               onCreateNew={props.onCreateNew}
               canCreateNew={
                 Boolean(props.onCreateNew) &&
-                (props.canCreateNew?.(openRelation) ?? true)
+                (props.canCreateNew?.(heldPicker.relation) ?? true)
               }
             />
           ) : null}
 
           {/* inline anchored edit card (Slice 1 — 지지대 편집) */}
-          {openEdit ? (
+          {editPresence.mounted && heldEdit ? (
             <InlineEditCard
-              relation={openEdit.relation}
-              neighbor={openEdit.neighbor}
-              bearing={layouts.find((l) => l.view.relation === openEdit.relation)?.view.bearing ?? "right"}
-              layout={layouts.find((l) => l.view.relation === openEdit.relation)?.layout ?? null}
+              exiting={editPresence.exiting}
+              relation={heldEdit.relation}
+              neighbor={heldEdit.neighbor}
+              bearing={layouts.find((l) => l.view.relation === heldEdit.relation)?.view.bearing ?? "right"}
+              layout={layouts.find((l) => l.view.relation === heldEdit.relation)?.layout ?? null}
               cardLeft={cardLeft}
               cardRight={cardRight}
               labels={labels}
-              editable={props.editabilityOf?.(openEdit.relation, openEdit.neighbor) ?? false}
+              editable={props.editabilityOf?.(heldEdit.relation, heldEdit.neighbor) ?? false}
               bearingLabelFor={props.bearingLabelFor ?? ((r) => r)}
               onRetype={(to) => {
-                props.onRetype?.(openEdit.relation, to, openEdit.neighbor);
+                props.onRetype?.(heldEdit.relation, to, heldEdit.neighbor);
                 setOpenEdit(null);
               }}
               onRemove={() => {
-                props.onRemove?.(openEdit.relation, openEdit.neighbor);
+                props.onRemove?.(heldEdit.relation, heldEdit.neighbor);
                 setOpenEdit(null);
               }}
               onOpenOther={() => {
-                const target = openEdit.neighbor.id;
+                const target = heldEdit.neighbor.id;
                 setOpenEdit(null);
                 guardedOpen(target);
               }}
@@ -1487,13 +1564,38 @@ export function StudioCompass(props: StudioCompassProps) {
           우측에서 밀려나오는 비-모달 패널. 저장 전 변경이 노드별 초안으로 남는다는
           약속(#60)을 눈에 보이게 만드는 곳 — "어디에 남았지?" 를 묻지 않게 한다.
           비-모달이므로 무대를 가리지 않고, Esc 로 닫힌다. */}
-      {draftsOpen ? (
+      {draftsPresence.mounted ? (
         <div
           data-testid="studio-drafts-panel"
           role="dialog"
           aria-label={labels.draftsTitle}
-          className="studio-fade-in absolute right-3 top-[52px] z-[11] flex w-[288px] flex-col rounded-panel border border-[color:var(--color-border-strong)] bg-[color:var(--color-elevated)]"
-          style={{ boxShadow: "var(--shadow-elevation-2)", maxHeight: "min(420px, calc(100% - 96px))" }}
+          inert={draftsPresence.exiting || undefined}
+          data-exiting={draftsPresence.exiting ? "true" : undefined}
+          /*
+           * ⚠️ **여기 붙어 있던 `studio-fade-in` 은 존재하지 않는 클래스였다**
+           * (2026-08-12, 실행 중인 앱에서 확인: `.studio-fade-in` 을 담은 CSS 규칙
+           * **0개**). 이름은 「배어 들어온다」고 말하는데 정의가 저장소 어디에도
+           * 없었으니, 이 패널은 **등장도 퇴장도 없이 툭 나타나고 툭 사라졌다.**
+           *
+           * 이 저장소가 이미 두 번 값을 치른 실패다 — 존재하지 않는 클래스는
+           * 코드에 아무 값도 남기지 않아서, 값을 보는 lint 도 타입 검사도 전체
+           * 테스트도 전부 통과시킨다(`text-large` · `text-callout` 전례).
+           *
+           * 이 패널도 트리거(우측 상단 「작업중」 칩) 바로 아래에 붙는 앵커된
+           * 표면이라, 나머지 셋과 같은 문법을 쓴다. 원점은 오른쪽 위 — 그 칩이
+           * 있는 자리다.
+           */
+          className={cn(
+            "absolute right-3 top-[52px] z-[11] flex w-[288px] flex-col rounded-panel border border-[color:var(--color-border-strong)] bg-[color:var(--color-elevated)]",
+            draftsPresence.exiting ? "studio-anchored-out pointer-events-none" : "studio-anchored-in",
+          )}
+          style={
+            {
+              boxShadow: "var(--shadow-elevation-2)",
+              maxHeight: "min(420px, calc(100% - 96px))",
+              "--studio-anchor-origin": "100% 0",
+            } as React.CSSProperties
+          }
         >
           <div className="flex items-start gap-2 px-3.5 pt-3">
             <div className="min-w-0 flex-1">
@@ -1908,6 +2010,19 @@ function LaneRender({
     view.expectation,
     view.relation,
   );
+  /**
+   * 접힘 목록도 **나가는 길**을 갖는다 (2026-08-12 실측).
+   *
+   * 그 전까지는 열 때도 닫을 때도 애니메이션이 없었다 — 연속 기록:
+   * `+35ms 있음/none/1.00` … `+1072ms 없음`. 즉 등장·퇴장 둘 다 하드컷이고,
+   * 같은 무대의 소켓 피커는 되접히며 나가므로 **같은 자리 같은 종류의 표면 둘이
+   * 서로 다른 문법**을 쓰고 있었다.
+   *
+   * 붙들 값은 없다 — 목록의 내용은 `view.neighbors` 에서 오고 그건 닫아도
+   * 사라지지 않는다(피커는 `openRelation` 이 사라지면 내용도 사라져서 붙들어야
+   * 했다). 그래서 창만 열면 된다.
+   */
+  const foldPresence = usePanelPresence(foldOpen);
   const satNav = (id: string) => {
     if (onOpenNode) return () => onOpenNode(id);
     return undefined;
@@ -2071,8 +2186,9 @@ function LaneRender({
       ) : null}
 
       {/* fold overflow list */}
-      {layout.fold && foldOpen ? (
+      {layout.fold && foldPresence.mounted ? (
         <LaneOverflowList
+          exiting={foldPresence.exiting}
           view={view}
           layout={layout}
           labels={labels}
@@ -2197,6 +2313,7 @@ function LaneRender({
 
 // ── Lane overflow list — all of one lane's neighbors, scrollable, navigable ────
 function LaneOverflowList({
+  exiting,
   view,
   layout,
   labels,
@@ -2206,6 +2323,8 @@ function LaneOverflowList({
   pendingNeighborIds,
   onClose,
 }: {
+  /** 퇴장 창 동안 `true` — 「더 보기」 칩으로 되접히며 나가고, 그 사이 조작을 받지 않는다. */
+  exiting: boolean;
   view: CompassBearingView;
   layout: LaneLayout;
   labels: StudioCompassLabels;
@@ -2232,11 +2351,31 @@ function LaneOverflowList({
     view.bearing === "up" || view.bearing === "down"
       ? clampY(CY - estH / 2, estH)
       : clampY(foldY + 30 - estH / 2, estH);
+  /*
+   * 자라고 되접히는 **원점은 「더 보기」 칩**이다 — 목록은 그 칩 옆 여백에 붙으므로
+   * 원점이 없으면 상자 가운데에서 커져, 어느 방위의 목록인지가 화면에서 사라진다.
+   * 상자 밖으로 나간 값은 클램프한다(원점이 상자 밖이면 방향이 뒤집혀 보인다).
+   */
+  const originX = Math.max(0, Math.min(W, foldX + SAT.w / 2 - left));
+  const originY = Math.max(0, Math.min(estH, foldY + 15 - top));
   return (
     <div
       data-testid={`studio-lane-list-${view.bearing}`}
-      className="absolute z-[8] rounded-panel border border-[color:var(--color-border-strong)] bg-[color:var(--color-elevated)]"
-      style={{ left, top, width: W, boxShadow: "var(--shadow-elevation-2)" }}
+      inert={exiting || undefined}
+      data-exiting={exiting ? "true" : undefined}
+      className={cn(
+        "absolute z-[8] rounded-panel border border-[color:var(--color-border-strong)] bg-[color:var(--color-elevated)]",
+        exiting ? "studio-anchored-out pointer-events-none" : "studio-anchored-in",
+      )}
+      style={
+        {
+          left,
+          top,
+          width: W,
+          boxShadow: "var(--shadow-elevation-2)",
+          "--studio-anchor-origin": `${originX}px ${originY}px`,
+        } as React.CSSProperties
+      }
     >
       <div className="flex items-center gap-2 border-b border-[color:var(--color-divider)] px-3.5 py-2.5">
         <span className="min-w-0 truncate text-caption font-[var(--font-weight-emphasis)] text-[color:var(--color-text-secondary)] [word-break:keep-all]">
@@ -2299,6 +2438,7 @@ function LaneOverflowList({
  * card shows an honest note + a re-center button instead of a broken write.
  */
 function InlineEditCard({
+  exiting,
   relation,
   neighbor,
   bearing,
@@ -2325,6 +2465,8 @@ function InlineEditCard({
   onRetype: (to: StudioRelation) => void;
   onRemove: () => void;
   onOpenOther: () => void;
+  /** 퇴장 창 동안 `true` — 그 위성으로 되접히며 나가고, 그 사이 조작을 받지 않는다. */
+  exiting: boolean;
   onClose: () => void;
 }) {
   const [confirmDelete, setConfirmDelete] = useState(false);
@@ -2342,12 +2484,31 @@ function InlineEditCard({
   const otherRelations = (["isA", "dependsOn", "contains", "relates"] as StudioRelation[]).filter(
     (r) => r !== relation,
   );
+  /*
+   * 원점은 **그 위성**이다(`anchor`) — 카드는 위성 옆 여백에 붙으므로, 원점이
+   * 없으면 상자 가운데에서 커져 「어느 관계의 카드인지」가 화면에서 사라진다.
+   */
+  const originX = Math.max(0, Math.min(W, anchor.x - left));
+  const originY = Math.max(0, Math.min(estH, anchor.y - top));
   return (
     <div
       data-testid="studio-edit-card"
       data-relation={relation}
-      className="absolute z-[9] flex flex-col rounded-panel border border-[color:var(--color-border-strong)] bg-[color:var(--color-elevated)]"
-      style={{ left, top, width: W, boxShadow: "var(--shadow-elevation-2)" }}
+      inert={exiting || undefined}
+      data-exiting={exiting ? "true" : undefined}
+      className={cn(
+        "absolute z-[9] flex flex-col rounded-panel border border-[color:var(--color-border-strong)] bg-[color:var(--color-elevated)]",
+        exiting ? "studio-anchored-out pointer-events-none" : "studio-anchored-in",
+      )}
+      style={
+        {
+          left,
+          top,
+          width: W,
+          boxShadow: "var(--shadow-elevation-2)",
+          "--studio-anchor-origin": `${originX}px ${originY}px`,
+        } as React.CSSProperties
+      }
     >
       <div className="flex items-center gap-2 border-b border-[color:var(--color-divider)] px-3.5 py-2.5">
         <span className="min-w-0 flex-1 truncate text-caption font-[var(--font-weight-emphasis)] text-[color:var(--color-text-secondary)] [word-break:keep-all]">
@@ -2542,6 +2703,7 @@ function PickerSectionHeading({ label }: { label: string }) {
 }
 
 function InlinePicker({
+  exiting,
   socket,
   bearing,
   cardLeft,
@@ -2560,6 +2722,8 @@ function InlinePicker({
   onCreateNew,
   canCreateNew,
 }: {
+  /** 퇴장 창(140ms) 동안 `true` — 되접히며 나가고, 그 사이 조작을 받지 않는다. */
+  exiting: boolean;
   socket: { x: number; y: number; w: number; h: number };
   bearing: StudioBearing;
   cardLeft: number;
@@ -2614,7 +2778,17 @@ function InlinePicker({
     <div
       data-testid="studio-picker"
       data-relation={relation}
-      className="studio-picker-pop absolute z-[8] flex flex-col rounded-panel border border-[color:var(--color-border-strong)] bg-[color:var(--color-elevated)]"
+      /*
+       * 나가는 동안은 **조작을 받지 않는다.** 클릭이 통과하지 않으면 뒤에서
+       * 착지하는 소켓을 140ms 동안 가로막고, 초점이 남아 있으면 화면에서 사라진
+       * 상자 안으로 Tab 이 들어간다.
+       */
+      inert={exiting || undefined}
+      data-exiting={exiting ? "true" : undefined}
+      className={cn(
+        "absolute z-[8] flex flex-col rounded-panel border border-[color:var(--color-border-strong)] bg-[color:var(--color-elevated)]",
+        exiting ? "studio-anchored-out pointer-events-none" : "studio-anchored-in",
+      )}
       style={
         {
           left,
@@ -2622,7 +2796,7 @@ function InlinePicker({
           width: W,
           maxHeight,
           boxShadow: "var(--shadow-elevation-2)",
-          "--studio-picker-origin": `${originX}px ${originY}px`,
+          "--studio-anchor-origin": `${originX}px ${originY}px`,
         } as React.CSSProperties
       }
     >

@@ -262,6 +262,48 @@ describe('deriveOntologyFromVault', () => {
     expect(depEdges.find((e) => e.to === 'project:user-store')).toBeDefined();
   });
 
+  it('depends_on (스키마 정본 키) → dependencies 와 같은 자리에서 depends_on edge', () => {
+    // mcp/src/schema.mjs 는 capability/element 의 캐논 키를 `depends_on` 으로
+    // 두고, MCP vault.mjs 는 alias 로 둘 다 읽는다. 웹 derive 가 `dependencies`
+    // 만 읽으면 에이전트가 정본 키로 쓴 의존 관계가 지도에서 통째로 소실된다.
+    const result = deriveOntologyFromVault(
+      makeManifest([
+        makeDoc({
+          slug: 'capabilities/token-issue',
+          frontmatter: {
+            kind: 'capability',
+            depends_on: ['jwt-signer', 'key-store'],
+          },
+        }),
+      ]),
+    );
+    const depEdges = result.edges.filter((e) => e.type === 'depends_on');
+    expect(depEdges).toHaveLength(2);
+    expect(depEdges.find((e) => e.to === 'capability:jwt-signer')).toBeDefined();
+    expect(depEdges.find((e) => e.to === 'capability:key-store')).toBeDefined();
+  });
+
+  it('dependencies + depends_on 합집합 — 같은 대상은 한 번만', () => {
+    const result = deriveOntologyFromVault(
+      makeManifest([
+        makeDoc({
+          slug: 'capabilities/session',
+          frontmatter: {
+            kind: 'capability',
+            dependencies: ['shared-target', 'only-dep'],
+            depends_on: ['shared-target', 'only-alias'],
+          },
+        }),
+      ]),
+    );
+    const depEdges = result.edges.filter((e) => e.type === 'depends_on');
+    expect(depEdges.map((e) => e.to).sort()).toEqual([
+      'capability:only-alias',
+      'capability:only-dep',
+      'capability:shared-target',
+    ]);
+  });
+
   it('kind 없는 doc 은 무시', () => {
     const result = deriveOntologyFromVault(
       makeManifest([
