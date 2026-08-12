@@ -212,7 +212,7 @@ describe('i18n message catalog', () => {
       '작업공간 문서를 열어 파일과 개념을 확인해요',
     );
     assert.equal(ko.nav.settingsMenu.vaultCtaLocal, '열기');
-    assert.equal(ko.topology.documentTitle, '지형도');
+    assert.equal(ko.topology.documentTitle, '지도');
     // 구 topologyWidgets.controls 단축키/depth 카피(depthHop·shortcutDepthAll·
     // shortcutDoubleClick·shortcutEsc)는 죽은 "지도 조절" 패널 철거(2026-07-21)로
     // 사라졌다 — Fit 타일만 남아 fitViewTooltip/fitViewAriaLabel 만 검증한다.
@@ -341,9 +341,9 @@ describe('i18n message catalog', () => {
       /See all|Pick one|See links|Clean up health|Source vault|source vault|^Source$/m,
     );
 
-    assert.equal(ko.topology.analysis.overviewBriefCopyAriaLabel, '지형도 지도 요약 복사');
-    assert.equal(ko.topology.analysis.overviewBriefCopiedAriaLabel, '지형도 지도 요약 복사됨');
-    assert.equal(ko.topology.analysis.overviewBriefTitle, '지형도 지도 요약');
+    assert.equal(ko.topology.analysis.overviewBriefCopyAriaLabel, '지도 요약 복사');
+    assert.equal(ko.topology.analysis.overviewBriefCopiedAriaLabel, '지도 요약 복사됨');
+    assert.equal(ko.topology.analysis.overviewBriefTitle, '지도 요약');
     assert.equal(ko.topology.analysis.overviewBriefHealthSignals, '상태 신호');
     assert.equal(ko.topology.analysis.overviewBriefHealthUrl, '상태 점검 URL');
     assert.equal(ko.topology.analysis.overviewBriefInsightsUrl, '연결·검증 URL');
@@ -358,7 +358,7 @@ describe('i18n message catalog', () => {
       '문서함 빠른 보기 열기 (D)',
     );
     assert.equal(ko.topology.controls.docsLabel, '작업공간');
-    assert.equal(ko.topology.controls.relayoutToast, '지형도를 다시 정렬합니다');
+    assert.equal(ko.topology.controls.relayoutToast, '지도를 다시 정렬합니다');
     assert.doesNotMatch(
       [
         ko.topology.analysis.overviewBriefCopyAriaLabel,
@@ -530,7 +530,7 @@ describe('i18n message catalog', () => {
     assert.equal(ko.docsVault.sourceContract.agentLabel, 'AI 확인');
     assert.match(ko.docsVault.desktopWelcome.body, /문서 상단의 속성/);
     assert.match(ko.docsVault.desktopWelcome.contractGraphValue, /문서 속성/);
-    assert.match(ko.docsVault.sourceContract.graphBody, /지형도/);
+    assert.match(ko.docsVault.sourceContract.graphBody, /지도/);
     assert.doesNotMatch(
       welcomeCopy,
       /frontmatter|vault|Vault|토폴로지|source|Source|온톨로지 저장소|저장소 파일|온톨로지 노드|\bAgent\b|\bagent\b|에이전트|노드 \{nodes\}개|그래프 DB/,
