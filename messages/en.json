@@ -3520,8 +3520,8 @@
     "detail": {
       "back": "Skill list",
       "backOverview": "All findings",
-      "showLoadChain": "Show the three-stage load chain",
-      "hideLoadChain": "Hide the three-stage load chain",
+      "showLoadChain": "Show how it loads (3 stages)",
+      "hideLoadChain": "Hide how it loads",
       "competing": "Competes with this skill",
       "sameName": "The same name also lives in {source}: which one fires is undefined",
       "sharedTrigger": "Shares a trigger with {name}: {words}"
@@ -3547,7 +3547,7 @@
       "diagnosticResourceUnchecked": "A referenced resource could not be checked.",
       "diagnosticResourcePathUnsupported": "A referenced resource path is outside the supported boundary.",
       "diagnosticSemanticAmbiguous": "Semantic syntax is ambiguous; no label was derived.",
-      "packetCopy": "Copy packet",
+      "packetCopy": "Copy process packet",
       "packetAvailable": "Packet available",
       "packetUnavailable": "Process unavailable; copying is blocked",
       "packetTampered": "Integrity check failed; copying is blocked",

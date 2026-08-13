@@ -3520,8 +3520,8 @@
     "detail": {
       "back": "스킬 목록",
       "backOverview": "전체 진단으로",
-      "showLoadChain": "3단 로드 체인 보기",
-      "hideLoadChain": "3단 로드 체인 닫기",
+      "showLoadChain": "어떻게 실리는지 보기 (3단계)",
+      "hideLoadChain": "어떻게 실리는지 닫기",
       "competing": "이 스킬과 경쟁하는 것",
       "sameName": "같은 이름이 {source} 에도 있어요. 어느 쪽이 뜰지 정해져 있지 않아요",
       "sharedTrigger": "{name} 와 뜨는 조건이 겹쳐요. {words}"
@@ -3547,12 +3547,12 @@
       "diagnosticResourceUnchecked": "가리킨 자료가 있는지 확인하지 못했습니다.",
       "diagnosticResourcePathUnsupported": "가리킨 자료 경로가 지원 범위 밖입니다.",
       "diagnosticSemanticAmbiguous": "뜻이 여러 갈래라 라벨을 만들지 않았습니다.",
-      "packetCopy": "packet 복사",
-      "packetAvailable": "packet 준비됨",
+      "packetCopy": "절차 묶음 복사",
+      "packetAvailable": "절차 묶음 준비됨",
       "packetUnavailable": "프로세스를 읽을 수 없어 복사를 막았습니다",
       "packetTampered": "무결성 확인에 실패해 복사를 막았습니다",
       "packetCopying": "복사 중…",
-      "packetCopied": "packet 복사됨",
+      "packetCopied": "절차 묶음 복사됨",
       "packetCopyFailed": "복사 실패"
     },
     "findings": {
