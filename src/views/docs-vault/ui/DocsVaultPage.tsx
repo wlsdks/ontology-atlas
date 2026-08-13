@@ -735,8 +735,12 @@ function DocsVaultContent() {
     if (!ok) return;
     try {
       await localVault.deleteDoc(slug);
-      // 삭제 성공 — selection/pinned/recent 정리
+      // 삭제 성공 — selection/주소/pinned/recent 정리. 주소를 안 걷어내면
+      // 매니페스트 갱신 순간 「요청한 문서가 없다」 판정이 방금 지운 주소를
+      // 잡아 거짓 경고가 뜬다(2026-08-13 걷기 실측 — 이름 변경과 같은 병).
+      appTouchedSlugsRef.current = new Set([slug]);
       setSelectedSlug(null);
+      replaceUrlState({ slug: null });
       setEditing(false);
       setRecentSlugs((list) => list.filter((s) => s !== slug));
       setPinnedSlugs((list) => {
@@ -763,7 +767,7 @@ function DocsVaultContent() {
         t('dialog.deleteFailed', { message: err instanceof Error ? err.message : String(err) }),
       );
     }
-  }, [canEditCurrent, selectedSlug, manifest, localVault, recentKey, setPinnedSlugs, setRecentSlugs, t]);
+  }, [canEditCurrent, selectedSlug, manifest, localVault, recentKey, replaceUrlState, setPinnedSlugs, setRecentSlugs, t]);
 
   const handleScaffoldOntologyStarter = useCallback(async () => {
     // #73 — 화면 언어로 만든 볼트는 그 언어로 읽히게 한다.
@@ -899,7 +903,7 @@ function DocsVaultContent() {
       // 판정이 옛 주소를 잡아 거짓 경고가 뜬다(2026-08-13 걷기 실측). 새
       // 이름은 매니페스트에 나타날 때까지 「아직 모름」으로 지연 판정한다.
       const prev = selectedSlug;
-      pendingRenameRef.current = { from: prev, to: nextSlug };
+      appTouchedSlugsRef.current = new Set([prev, nextSlug]);
       setSelectedSlug(nextSlug);
       replaceUrlState({ slug: nextSlug });
       setRecentSlugs((list) => {
@@ -1195,25 +1199,26 @@ function DocsVaultContent() {
    */
   const [missingQuerySlug, setMissingQuerySlug] = useState<string | null>(null);
   /**
-   * **앱이 방금 이름을 바꾼 문서는 「없음」이 아니다** (2026-08-13 걷기 실측).
+   * **앱이 방금 손댄 주소는 「없음」이 아니다** (2026-08-13 걷기 실측 2건).
    *
-   * 이름 변경 뒤 두 주소가 판정에 걸릴 수 있다: ① 옛 주소 — 트리 클릭은
+   * 이름 변경·삭제 뒤 판정에 걸리는 주소들: ① 은퇴한 옛 주소 — 트리 클릭은
    * 라우터 내비라 `useSearchParams` 가 옛 `?slug=` 를 물고 있고,
    * `replaceUrlState` 의 `history.replaceState` 는 그 훅에 보이지 않는다.
-   * 매니페스트가 갱신되어 옛 이름이 사라지는 순간 「요청한 문서가 없다」가
-   * 걸려 **방금 성공한 이름 변경에 실패 경고가 붙었다**(0.5초 만에
-   * 「못 찾았어요」). ② 새 주소 — 매니페스트는 다음 폴링까지 옛 판이라 그
-   * 공백에서 새 이름도 「없다」로 보인다. 둘 다 밖에서 온 요청이 아니라 앱
-   * 자신의 행위이므로 판정 대상이 아니다. 사용자가 다른 문서로 가면(질의가
-   * 두 주소 밖으로 바뀌면) 가드를 걷는다.
+   * 매니페스트가 갱신되어 그 이름이 사라지는 순간 「요청한 문서가 없다」가
+   * 걸려 **방금 성공한 이름 변경/삭제에 실패 경고가 붙었다**(둘 다 0.5초
+   * 만에 「못 찾았어요」 — 삭제는 확인 대화상자까지 거친 행위다). ② 이름
+   * 변경의 새 주소 — 매니페스트는 다음 폴링까지 옛 판이라 그 공백에서 새
+   * 이름도 「없다」로 보인다. 전부 밖에서 온 요청이 아니라 앱 자신의
+   * 행위이므로 판정 대상이 아니다. 사용자가 다른 문서로 가면(질의가 그
+   * 집합 밖으로 바뀌면) 가드를 걷는다.
    */
-  const pendingRenameRef = useRef<{ from: string; to: string } | null>(null);
+  const appTouchedSlugsRef = useRef<ReadonlySet<string>>(new Set());
   useEffect(() => {
     if (!normalizedQuerySlug || docsBySlug.size === 0) return;
-    const rename = pendingRenameRef.current;
-    if (rename && normalizedQuerySlug !== rename.from && normalizedQuerySlug !== rename.to) {
-      pendingRenameRef.current = null;
-    } else if (rename) {
+    const touched = appTouchedSlugsRef.current;
+    if (touched.size > 0 && !touched.has(normalizedQuerySlug)) {
+      appTouchedSlugsRef.current = new Set();
+    } else if (touched.has(normalizedQuerySlug)) {
       return;
     }
     if (docsBySlug.has(normalizedQuerySlug)) {

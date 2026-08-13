@@ -63,3 +63,44 @@ test("이름 변경 뒤 — 경고가 안 뜨고 주소가 새 이름을 가리�
   expect(page.url()).toContain("slug=capabilities%2Fcart-renamed");
   await expect(page.getByText("장바구니").first()).toBeVisible();
 });
+
+/**
+ * 삭제도 같은 병이었다 (2026-08-13 걷기 실측): 사용자가 확인 대화상자까지
+ * 거쳐 지운 문서를, 앱이 「못 찾았어요 — 문서함을 바꿔 보라」고 알렸다.
+ * 자기가 방금 지운 주소는 밖에서 온 깨진 링크가 아니다.
+ */
+test("삭제 뒤 — 경고가 안 뜨고 주소가 지운 문서를 가리키지 않는다", async ({ page }) => {
+  test.setTimeout(150_000);
+  page.on("dialog", (d) => void d.accept());
+  await page.setViewportSize({ width: 1512, height: 900 });
+  await seedFirstRunSeen(page);
+  await stubDirectoryPicker(page, VAULT);
+  await page.goto("/ko/topology/?guides=off", { waitUntil: "domcontentloaded" });
+  await page.waitForTimeout(2000);
+  await page.evaluate(() => document.querySelector("nextjs-portal")?.remove());
+  await page.getByTestId("first-run-starter-open").click();
+  await page.waitForTimeout(500);
+  const pick = page.getByTestId("vault-guide-pick-existing");
+  if (await pick.isVisible().catch(() => false)) await pick.click();
+  await page.waitForTimeout(2500);
+
+  await page.goto("/ko/docs/?guides=off", { waitUntil: "domcontentloaded" });
+  await page.waitForTimeout(2500);
+  await page.getByText("capabilities", { exact: true }).first().click();
+  await page.waitForTimeout(500);
+  await page.getByText("장바구니", { exact: true }).first().click();
+  await page.waitForTimeout(1200);
+
+  await page.keyboard.press("Meta+k");
+  await page.waitForTimeout(600);
+  await page.keyboard.type("삭제");
+  await page.waitForTimeout(600);
+  await page.keyboard.press("Enter");
+
+  const banner = page.getByText(/못 찾았어요/);
+  for (let i = 0; i < 12; i += 1) {
+    await page.waitForTimeout(500);
+    expect(await banner.count(), `삭제 ${(i + 1) * 0.5}s 후 거짓 「못 찾았어요」 경고`).toBe(0);
+  }
+  expect(page.url()).not.toContain("slug=capabilities%2Fcart");
+});
