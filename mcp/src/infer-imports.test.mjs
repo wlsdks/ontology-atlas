@@ -4,7 +4,7 @@ import assert from 'node:assert/strict';
 import { mkdtempSync, mkdirSync, writeFileSync, rmSync, symlinkSync } from 'node:fs';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
-import { inferImports } from './infer-imports.mjs';
+import { buildImportImpactFocus, inferImports } from './infer-imports.mjs';
 
 function withRepo(setup) {
   const root = mkdtempSync(join(tmpdir(), 'ontology-atlas-imports-'));
@@ -132,6 +132,151 @@ test('root Python package imports resolve to internal file and flat element depe
           edge.from === 'elements/client' &&
           edge.to === 'elements/connections',
       ),
+    );
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test('src-layout Python package preserves file-level dependency evidence', () => {
+  const root = withRepo((r) => {
+    mkdirSync(join(r, 'src', 'textual'), { recursive: true });
+    writeFileSync(join(r, 'src', 'textual', '__init__.py'), '');
+    writeFileSync(
+      join(r, 'src', 'textual', 'app.py'),
+      'from textual.message_pump import MessagePump\n',
+    );
+    writeFileSync(
+      join(r, 'src', 'textual', 'message_pump.py'),
+      'class MessagePump: pass\n',
+    );
+  });
+  try {
+    const result = inferImports(root);
+    assert.ok(
+      result.edges.length > 0,
+      'fixture must contain at least one observed source import',
+    );
+    assert.ok(
+      result.moduleEdges.some(
+        (edge) =>
+          edge.from === 'elements/app' &&
+          edge.to === 'elements/message-pump',
+      ),
+      `expected src-layout Python file boundary, got: ${JSON.stringify(result.moduleEdges)}`,
+    );
+    assert.ok(
+      inferImports(root, { sourceFolders: ['src/textual'] }).moduleEdges.some(
+        (edge) =>
+          edge.from === 'elements/app' &&
+          edge.to === 'elements/message-pump',
+      ),
+      'a nested sourceFolders scope must preserve repository-relative ontology endpoints',
+    );
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test('source/ TypeScript root preserves feature dependency evidence', () => {
+  const root = withRepo((r) => {
+    mkdirSync(join(r, 'source', 'features', 'alpha'), { recursive: true });
+    mkdirSync(join(r, 'source', 'features', 'beta'), { recursive: true });
+    writeFileSync(
+      join(r, 'source', 'features', 'alpha', 'index.ts'),
+      'import { beta } from "../beta";\nexport const alpha = beta;\n',
+    );
+    writeFileSync(
+      join(r, 'source', 'features', 'beta', 'index.ts'),
+      'export const beta = true;\n',
+    );
+  });
+  try {
+    const result = inferImports(root);
+    assert.ok(
+      result.edges.length > 0,
+      'fixture must contain at least one observed source import',
+    );
+    assert.ok(
+      result.moduleEdges.some(
+        (edge) =>
+          edge.from === 'capabilities/alpha' &&
+          edge.to === 'capabilities/beta',
+      ),
+      `expected source/ feature boundary, got: ${JSON.stringify(result.moduleEdges)}`,
+    );
+    assert.ok(
+      inferImports(root, { sourceFolders: ['source/features'] }).moduleEdges.some(
+        (edge) =>
+          edge.from === 'capabilities/alpha' &&
+          edge.to === 'capabilities/beta',
+      ),
+      'a nested feature scope must not erase its top-level source-root semantics',
+    );
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test('source/ top-level coordinators and helper files stay implementation elements', () => {
+  const root = withRepo((r) => {
+    mkdirSync(join(r, 'source', 'helpers'), { recursive: true });
+    writeFileSync(
+      join(r, 'source', 'feature-manager.tsx'),
+      'import { enable } from "./helpers/feature-utils";\nexport const run = enable;\n',
+    );
+    writeFileSync(
+      join(r, 'source', 'helpers', 'feature-utils.ts'),
+      'export const enable = true;\n',
+    );
+    writeFileSync(
+      join(r, 'source', 'helpers', 'feature-utils.test.ts'),
+      'import { enable } from "./feature-utils";\nexport const observed = enable;\n',
+    );
+  });
+  try {
+    const result = inferImports(root);
+    assert.ok(
+      result.edges.length > 0,
+      'fixture must contain at least one observed source import',
+    );
+    assert.ok(
+      result.moduleEdges.some(
+        (edge) =>
+          edge.from === 'elements/feature-manager' &&
+          edge.to === 'elements/feature-utils',
+      ),
+      `expected source coordinator → helper element boundary, got: ${JSON.stringify(result.moduleEdges)}`,
+    );
+    assert.equal(
+      result.moduleEdges.some((edge) => edge.sourceRoleCounts.test > 0),
+      false,
+      `test files must collapse to their production endpoint, not create ontology nodes: ${JSON.stringify(result.moduleEdges)}`,
+    );
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test('non-source assets never become ontology module endpoints', () => {
+  const root = withRepo((r) => {
+    mkdirSync(join(r, 'source', 'features'), { recursive: true });
+    writeFileSync(
+      join(r, 'source', 'features', 'alpha.tsx'),
+      'import "./alpha.css";\nexport const alpha = true;\n',
+    );
+    writeFileSync(join(r, 'source', 'features', 'alpha.css'), '.alpha {}\n');
+  });
+  try {
+    const result = inferImports(root);
+    assert.ok(
+      result.edges.length > 0,
+      'fixture must contain at least one observed asset import',
+    );
+    assert.deepEqual(
+      result.moduleEdges,
+      [],
+      'asset imports are file evidence, not ontology capability/element endpoints',
     );
   } finally {
     rmSync(root, { recursive: true, force: true });
@@ -897,4 +1042,114 @@ test('invalid infer options are rejected instead of coerced', () => {
   } finally {
     rmSync(root, { recursive: true, force: true });
   }
+});
+
+test('buildImportImpactFocus — one path returns bounded incoming/outgoing evidence with a stable cursor', () => {
+  const incoming = Array.from({ length: 121 }, (_, index) => ({
+    from: `source/features/feature-${String(index).padStart(3, '0')}.tsx`,
+    to: 'source/feature-manager.tsx',
+    kind: 'static',
+    sourceRole: 'production',
+    importUsage: 'value',
+  }));
+  const outgoing = [
+    {
+      from: 'source/feature-manager.tsx',
+      to: 'source/options-storage.ts',
+      kind: 'static',
+      sourceRole: 'production',
+      importUsage: 'value',
+    },
+    {
+      from: 'source/feature-manager.tsx',
+      to: 'source/helpers/feature-utils.ts',
+      kind: 'static',
+      sourceRole: 'production',
+      importUsage: 'value',
+    },
+  ];
+  const unrelated = {
+    from: 'source/a.ts',
+    to: 'source/b.ts',
+    kind: 'static',
+    sourceRole: 'production',
+    importUsage: 'value',
+  };
+
+  const first = buildImportImpactFocus([...outgoing, unrelated, ...incoming], {
+    focusPath: './source/feature-manager.tsx',
+    direction: 'both',
+    limit: 50,
+  });
+  assert.equal(first.contract, 'importImpactFocus:v1');
+  assert.equal(first.focusPath, 'source/feature-manager.tsx');
+  assert.equal(first.sourceQualification, 'observed_static_imports_not_runtime_or_semantic_impact');
+  assert.equal(first.writeAllowed, false);
+  assert.deepEqual(first.summary, {
+    incoming: 121,
+    outgoing: 2,
+    selected: 123,
+    returned: 50,
+    limited: true,
+  });
+  assert.equal(first.edges.length, 50);
+  assert.equal(new Set(first.edges.map((edge) => edge.edgeId)).size, 50);
+  assert.equal(first.cursor.afterEdgeId, null);
+  assert.equal(first.cursor.total, 123);
+  assert.equal(first.cursor.remaining, 73);
+  assert.equal(first.cursor.hasMore, true);
+  assert.equal(typeof first.cursor.nextAfterEdgeId, 'string');
+
+  const second = buildImportImpactFocus([...outgoing, unrelated, ...incoming], {
+    focusPath: 'source/feature-manager.tsx',
+    direction: 'both',
+    limit: 50,
+    afterEdgeId: first.cursor.nextAfterEdgeId,
+  });
+  assert.equal(second.edges.length, 50);
+  assert.equal(second.cursor.remaining, 23);
+  assert.equal(
+    second.edges.some((edge) => first.edges.some((prior) => prior.edgeId === edge.edgeId)),
+    false,
+  );
+});
+
+test('buildImportImpactFocus — direction, no-match truth, and stale cursor fail closed', () => {
+  const edges = [{
+    from: 'src/caller.ts',
+    to: 'src/hub.ts',
+    kind: 'static',
+    sourceRole: 'production',
+    importUsage: 'value',
+  }];
+  const outgoing = buildImportImpactFocus(edges, {
+    focusPath: 'src/hub.ts',
+    direction: 'outgoing',
+  });
+  assert.deepEqual(outgoing.summary, {
+    incoming: 1,
+    outgoing: 0,
+    selected: 0,
+    returned: 0,
+    limited: false,
+  });
+  assert.deepEqual(outgoing.edges, []);
+  assert.equal(outgoing.cursor.nextAfterEdgeId, null);
+  assert.match(outgoing.interpretation, /does not prove no impact/i);
+
+  assert.throws(
+    () => buildImportImpactFocus(edges, {
+      focusPath: 'src/hub.ts',
+      afterEdgeId: 'import-impact:stale',
+    }),
+    /afterEdgeId was not found/i,
+  );
+  assert.throws(
+    () => buildImportImpactFocus(edges, { focusPath: '../outside.ts' }),
+    /repository-relative path/i,
+  );
+  assert.throws(
+    () => buildImportImpactFocus(edges, { focusPath: 'src/hub.ts', direction: 'sideways' }),
+    /direction must be one of/i,
+  );
 });

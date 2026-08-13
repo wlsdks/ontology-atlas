@@ -34,6 +34,11 @@ export const KNOWN_CODES = [
     description: 'frontmatter 가 0 keys 로 파싱됨: YAML syntax 깨짐 가능.',
   },
   {
+    code: 'malformed-frontmatter-line',
+    severity: 'error',
+    description: 'frontmatter 선언 또는 들여쓰기 목록이 key: value 문법을 어김.',
+  },
+  {
     code: 'missing-kind',
     severity: 'warning',
     description: '`kind:` 키 자체가 없음: 그래프에서 빠짐.',

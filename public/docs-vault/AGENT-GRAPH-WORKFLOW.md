@@ -35,6 +35,9 @@ Checked against official docs on 2026-06-04:
 - Codex supports MCP servers in the CLI and IDE extension, stores MCP server
   configuration in Codex `config.toml`, and exposes `codex mcp list` plus the
   `/mcp` TUI panel for checking active servers.
+  Project-scoped `.codex/config.toml` is ignored until Codex marks that project
+  trusted; `codex mcp list` from the trusted folder and `connection_info` are
+  therefore required connection evidence, not optional diagnostics.
   Source: https://developers.openai.com/codex/mcp
 - Claude Code configures MCP servers with `claude mcp`, checks connected
   servers with `claude mcp list` and `/mcp`, and supports local stdio servers
@@ -138,7 +141,10 @@ node $ATLAS/cli/src/index.mjs agent-setup /absolute/path/to/vault --root /absolu
 ```
 
 That command creates missing `.mcp.json` and `.codex/config.toml` files without
-adding starter markdown and without overwriting stale existing configs.
+adding starter markdown. For a parseable existing file, it atomically merges or
+rebinds only the `ontology-atlas` JSON entry / TOML section pair and preserves
+unrelated servers, sections, and comments. Invalid or duplicate Atlas config is
+left untouched with a merge template and a nonzero review result.
 Its terminal and JSON output also point back to this guide
 (`docs/AGENT-GRAPH-WORKFLOW.md`), so CLI-only setup logs still tell a human
 where to read the MCP, graph DB, and verification differences.

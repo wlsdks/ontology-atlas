@@ -387,6 +387,20 @@ describe('focused check suggestions', () => {
     ]);
   });
 
+  it('suggests setup integration for agent config repair helpers', () => {
+    const result = suggestFocusedChecks([
+      'cli/src/lib/agent-config.mjs',
+      'cli/src/lib/agent-config.test.mjs',
+      'cli/src/commands/agent-setup.mjs',
+    ]);
+
+    assert.deepEqual(result.commands.map((row) => row.command), [
+      'pnpm test:cli:lib',
+      'pnpm integration:cli:setup',
+      'pnpm dogfood:status',
+    ]);
+  });
+
   it('suggests narrow dogfood helper tests before broader dogfood gates', () => {
     const result = suggestFocusedChecks([
       'scripts/lib/dogfood-args.mjs',

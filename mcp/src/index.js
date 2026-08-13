@@ -123,6 +123,7 @@ import {
   IMPORT_SOURCE_ROLE_VALUES,
   IMPORT_UNRESOLVED_REASON_VALUES,
   IMPORT_USAGE_VALUES,
+  buildImportImpactFocus,
   inferImports,
   listSourceFiles,
 } from './infer-imports.mjs';
@@ -2088,7 +2089,9 @@ const TOOLS = [
             '`excerpt` (default) returns the first prose paragraph as `excerpt`. `full` returns the entire markdown body as `body` and omits `excerpt`. Use `full` when the answer depends on what the node actually says — evidence paths, confidence, scope boundaries.',
         },
       },
-      oneOf: [{ required: ['slug'] }, { required: ['uid'] }],
+      // Claude Code's Anthropic tool schema rejects a top-level `oneOf` and
+      // silently drops the whole tool. Both selectors stay optional in the
+      // published schema; getConcept enforces exactly-one at runtime.
     },
     outputSchema: {
       type: 'object',
@@ -2164,7 +2167,8 @@ const TOOLS = [
             'Applies to every row. `excerpt` (default) returns the first prose paragraph per row; `full` returns the entire markdown body per row and caps the batch at 20 slugs.',
         },
       },
-      oneOf: [{ required: ['slugs'] }, { required: ['uids'] }],
+      // Same cross-client boundary as get_concept: keep the published input
+      // schema flat and enforce exactly-one in getConceptsBatch at runtime.
     },
     outputSchema: {
       type: 'object',
@@ -3902,17 +3906,18 @@ const TOOLS = [
   {
     name: 'infer_imports',
     description:
-      'R17 (autonomous ingest deeper) — walk TS/JS files in a code repo and infer file-level + module-level import edges. It also walks bounded root Python packages. ' +
+      'R17 (autonomous ingest deeper) — walk TS/JS files in a code repo and infer file-level + module-level import edges. It also walks bounded root Python packages and bounded src/source-layout Python packages. ' +
       'Structured `coverage` names the supported languages and, when Cargo is detected, states that Rust use/mod and macro dependency graphs are unsupported; zero edges never proves that a Rust repository has no dependencies. ' +
       'side effect 0 (vault frontmatter NOT modified). `moduleEdges` are source-backed review candidates, never self-approving semantic `depends_on` relations. ' +
-      'For the approval workflow, start with `reviewMode:"next"`: it returns exactly one compact, non-writing `nextRelationReview:v1` packet plus a stateless cursor instead of the full import graph. ' +
-      'Each module edge includes whole-edge source-role/import-usage counts, `productValueCount`, `kindCounts`, and a bounded exact file-edge `evidence` receipt. Test-only or type-only evidence stays visible but must not be framed as a product depends_on approval question without separate product meaning evidence. ' +
+      'When you know an implementation file, set `focusPath` (or `reviewMode:"focus"`) before considering `full`: Atlas returns bounded exact incoming/outgoing static import receipts, counts, and a cursor without requiring a vault. This focused source boundary is not runtime impact or a semantic relation. ' +
+      'Omit `reviewMode` for size-safe automatic delivery: scans whose estimated full MCP result is at most 128 KiB keep the complete response; larger reconciled scans return exactly one compact, non-writing `nextRelationReview:v1` packet plus a delivery receipt and stateless cursor. Use `reviewMode:"next"` to request that bounded packet explicitly. `reviewMode:"full"` preserves the complete shape, but a result over 128 KiB additionally requires `allowLargeResponse:true`; this second confirmation prevents coding agents from accidentally opting into a multi-megabyte response. Oversized raw scans without a loadable reconciliation vault fail with an actionable error instead of emitting an unbounded default response. Every compact candidate carries `absentEndpoints`. If an endpoint is missing, `nextCalls` is empty and `endpointModelling` separates an evidence-only analysis call from the complete `rootPath + proposal` validation contract, source-bound drafts, and queue resume. It never calls `get_concepts` or `relation_check` on a missing slug, never claims the analysis call created an endpoint, and never promotes a path-derived slug into a business kind or definition. ' +
+      'Each module edge includes whole-edge source-role/import-usage counts, `productValueCount`, `kindCounts`, and a bounded exact file-edge `evidence` receipt. Missing vault edges remain `rationale_review_required`: inspect both concepts and the observed direction, ask the user, then call `add_relation` with an explicit `why`. Test-only or type-only evidence stays visible but must not be framed as a product depends_on approval question without separate product meaning evidence. ' +
       'Detects:\n' +
       '  - relative imports (./, ../) → resolved to file paths\n' +
       '  - dynamic import() / require() / export ... from\n' +
       '  - bare side-effect imports (import "X")\n' +
       '  - apps/* and packages/* workspace imports collapse to analyzer-compatible element slugs\n' +
-      '  - bounded static Python import / from ... import statements in root packages with __init__.py; imports nested under an explicit TYPE_CHECKING guard are type_only; source is parsed as text and never executed\n' +
+      '  - bounded static Python import / from ... import statements in root or src/source-layout packages with __init__.py; imports nested under an explicit TYPE_CHECKING guard are type_only; source is parsed as text and never executed\n' +
       '  - external package imports listed separately\n' +
       '  - tsconfig.json compilerOptions.paths aliases first, then fallback common @/* aliases → resolved to internal files when the target exists; otherwise unresolved as alias-not-found\n\n' +
       'Use after analyze_repo_structure to pull *real* dependency edges from the code, not just suggestedRelations heuristics. ' +
@@ -3930,7 +3935,7 @@ const TOOLS = [
           maxItems: SOURCE_FOLDER_ARRAY_MAX_ITEMS,
           items: NON_BLANK_STRING_SCHEMA,
           description:
-            "Source folders to walk (default: ['src','lib','app','apps','packages']). " +
+            "Source folders to walk (default: ['src','source','lib','app','apps','packages']). Nested scopes preserve repository-relative ontology endpoints. " +
             'If none exist, falls back to rootPath.',
         },
         ignore: {
@@ -3954,14 +3959,40 @@ const TOOLS = [
         },
         reviewMode: {
           type: 'string',
-          enum: ['full', 'next'],
+          enum: ['full', 'next', 'focus'],
           description:
-            '`full` (default) returns the complete scan. `next` returns one compact, non-writing semantic-relation review packet and requires reconciliation.',
+            'Omit for automatic delivery unless focusPath is present. `focus` returns a bounded exact file-level import neighborhood for focusPath. Otherwise responses estimated at or below 128 KiB keep the complete scan, while larger reconciled scans return one compact, non-writing review packet. `full` requests the complete scan; when it exceeds 128 KiB, also pass allowLargeResponse:true. `next` explicitly requests one compact packet and requires reconciliation.',
+        },
+        allowLargeResponse: {
+          type: 'boolean',
+          description:
+            'Confirmation for reviewMode:"full" only. Required when the estimated complete MCP result exceeds 128 KiB. It never changes scan contents or writes the vault.',
         },
         afterReviewId: {
           ...NON_BLANK_STRING_SCHEMA,
           description:
             '`reviewMode:"next"` only. Pass the prior packet cursor.nextAfterReviewId to advance deterministically; omit to start at the first current candidate.',
+        },
+        focusPath: {
+          ...NON_BLANK_STRING_SCHEMA,
+          description:
+            'Repository-relative implementation file to inspect. Supplying focusPath with omitted reviewMode selects focus mode automatically. Returns bounded incoming/outgoing supported static import receipts; it does not claim runtime or semantic impact.',
+        },
+        focusDirection: {
+          type: 'string',
+          enum: ['incoming', 'outgoing', 'both'],
+          description: 'Focus mode only. Which exact file-level import direction to page (default both).',
+        },
+        focusLimit: {
+          type: 'integer',
+          minimum: 1,
+          maximum: 100,
+          description: 'Focus mode only. Maximum exact import receipts returned in one page (default 50, max 100).',
+        },
+        focusAfterEdgeId: {
+          ...NON_BLANK_STRING_SCHEMA,
+          description:
+            'Focus mode only. Pass the prior focusReview.cursor.nextAfterEdgeId to advance deterministically; omit to start at the first current edge.',
         },
       },
     },
@@ -4142,7 +4173,37 @@ const TOOLS = [
           ],
           additionalProperties: false,
         },
-        contract: { type: 'string', enum: ['inferImportsReview:v1'] },
+        contract: { type: 'string', enum: ['inferImportsReview:v1', 'inferImportsFocus:v1'] },
+        delivery: {
+          type: 'object',
+          description:
+            'Present only when omitted reviewMode was automatically compacted because the estimated full MCP result exceeded the safe delivery boundary.',
+          properties: {
+            selection: { type: 'string', enum: ['automatic_compact'] },
+            reason: { type: 'string', enum: ['estimated_full_response_exceeds_limit'] },
+            estimatedFullResponseBytes: { type: 'integer', minimum: 1 },
+            automaticLimitBytes: { type: 'integer', enum: [131072] },
+            explicitFullAvailable: { type: 'boolean', enum: [true] },
+            explicitFullArguments: {
+              type: 'object',
+              additionalProperties: false,
+              properties: {
+                reviewMode: { type: 'string', enum: ['full'] },
+                allowLargeResponse: { type: 'boolean', enum: [true] },
+              },
+              required: ['reviewMode', 'allowLargeResponse'],
+            },
+          },
+          required: [
+            'selection',
+            'reason',
+            'estimatedFullResponseBytes',
+            'automaticLimitBytes',
+            'explicitFullAvailable',
+            'explicitFullArguments',
+          ],
+          additionalProperties: false,
+        },
         scanSummary: {
           type: 'object',
           properties: {
@@ -4192,6 +4253,12 @@ const TOOLS = [
                 from: NON_BLANK_STRING_SCHEMA,
                 to: NON_BLANK_STRING_SCHEMA,
                 relationType: { type: 'string', enum: ['depends_on'] },
+                absentEndpoints: {
+                  type: 'array',
+                  maxItems: 2,
+                  uniqueItems: true,
+                  items: NON_BLANK_STRING_SCHEMA,
+                },
                 importCount: { type: 'integer', minimum: 0 },
                 sourceEvidence: {
                   type: 'array',
@@ -4250,6 +4317,7 @@ const TOOLS = [
                 'from',
                 'to',
                 'relationType',
+                'absentEndpoints',
                 'importCount',
                 'sourceEvidence',
                 'sourceEvidenceLimited',
@@ -4257,9 +4325,158 @@ const TOOLS = [
               ],
               additionalProperties: false,
             },
+            endpointModelling: {
+              type: ['object', 'null'],
+              properties: {
+                status: { type: 'string', enum: ['required_before_relation_review'] },
+                writeAllowed: { type: 'boolean', enum: [false] },
+                absentEndpoints: {
+                  type: 'array',
+                  minItems: 1,
+                  maxItems: 2,
+                  uniqueItems: true,
+                  items: NON_BLANK_STRING_SCHEMA,
+                },
+                observedPathsByEndpoint: {
+                  type: 'array',
+                  minItems: 1,
+                  maxItems: 2,
+                  items: {
+                    type: 'object',
+                    properties: {
+                      endpoint: NON_BLANK_STRING_SCHEMA,
+                      paths: { type: 'array', uniqueItems: true, items: NON_BLANK_STRING_SCHEMA },
+                    },
+                    required: ['endpoint', 'paths'],
+                    additionalProperties: false,
+                  },
+                },
+                analysisCall: {
+                  type: 'object',
+                  properties: {
+                    tool: { type: 'string', enum: ['analyze_repo_structure'] },
+                    arguments: {
+                      type: 'object',
+                      properties: { rootPath: NON_BLANK_STRING_SCHEMA },
+                      required: ['rootPath'],
+                      additionalProperties: false,
+                    },
+                    purpose: NON_BLANK_STRING_SCHEMA,
+                  },
+                  required: ['tool', 'arguments', 'purpose'],
+                  additionalProperties: false,
+                },
+                proposalValidation: {
+                  type: 'object',
+                  properties: {
+                    tool: { type: 'string', enum: ['analyze_repo_structure'] },
+                    requiredArguments: {
+                      type: 'array',
+                      minItems: 2,
+                      maxItems: 2,
+                      uniqueItems: true,
+                      items: { type: 'string', enum: ['rootPath', 'proposal'] },
+                    },
+                    requiredProposalFields: {
+                      type: 'array',
+                      minItems: 6,
+                      maxItems: 6,
+                      uniqueItems: true,
+                      items: {
+                        type: 'string',
+                        enum: ['project', 'domains', 'capabilities', 'elements', 'relations', 'competencyAnswers'],
+                      },
+                    },
+                    fieldsAfterKindDecision: {
+                      type: 'object',
+                      properties: {
+                        common: {
+                          type: 'array',
+                          minItems: 5,
+                          maxItems: 5,
+                          uniqueItems: true,
+                          items: { type: 'string', enum: ['slug', 'title', 'definition', 'evidence', 'confidence'] },
+                        },
+                        byKind: {
+                          type: 'object',
+                          properties: {
+                            project: { type: 'array', maxItems: 0 },
+                            domain: { type: 'array', maxItems: 0 },
+                            capability: {
+                              type: 'array',
+                              minItems: 1,
+                              maxItems: 1,
+                              items: { type: 'string', enum: ['domain'] },
+                            },
+                            element: {
+                              type: 'array',
+                              minItems: 2,
+                              maxItems: 2,
+                              uniqueItems: true,
+                              items: { type: 'string', enum: ['domain', 'path'] },
+                            },
+                          },
+                          required: ['project', 'domain', 'capability', 'element'],
+                          additionalProperties: false,
+                        },
+                      },
+                      required: ['common', 'byKind'],
+                      additionalProperties: false,
+                    },
+                    endpointDrafts: {
+                      type: 'array',
+                      minItems: 1,
+                      maxItems: 2,
+                      items: {
+                        type: 'object',
+                        properties: {
+                          endpoint: NON_BLANK_STRING_SCHEMA,
+                          observedPaths: { type: 'array', uniqueItems: true, items: NON_BLANK_STRING_SCHEMA },
+                          slugCandidate: NON_BLANK_STRING_SCHEMA,
+                          kindDecision: { type: 'string', enum: ['human_meaning_required'] },
+                        },
+                        required: ['endpoint', 'observedPaths', 'slugCandidate', 'kindDecision'],
+                        additionalProperties: false,
+                      },
+                    },
+                    purpose: NON_BLANK_STRING_SCHEMA,
+                  },
+                  required: ['tool', 'requiredArguments', 'requiredProposalFields', 'fieldsAfterKindDecision', 'endpointDrafts', 'purpose'],
+                  additionalProperties: false,
+                },
+                resumeCall: {
+                  type: 'object',
+                  properties: {
+                    tool: { type: 'string', enum: ['infer_imports'] },
+                    arguments: {
+                      type: 'object',
+                      properties: {
+                        rootPath: NON_BLANK_STRING_SCHEMA,
+                        reviewMode: { type: 'string', enum: ['next'] },
+                      },
+                      required: ['rootPath', 'reviewMode'],
+                      additionalProperties: false,
+                    },
+                    purpose: NON_BLANK_STRING_SCHEMA,
+                  },
+                  required: ['tool', 'arguments', 'purpose'],
+                  additionalProperties: false,
+                },
+              },
+              required: [
+                'status',
+                'writeAllowed',
+                'absentEndpoints',
+                'observedPathsByEndpoint',
+                'analysisCall',
+                'proposalValidation',
+                'resumeCall',
+              ],
+              additionalProperties: false,
+            },
             nextCalls: {
               type: 'array',
-              minItems: 2,
+              minItems: 0,
               maxItems: 2,
               items: {
                 type: 'object',
@@ -4278,6 +4495,7 @@ const TOOLS = [
                 questionEligibility: {
                   type: 'string',
                   enum: [
+                    'blocked_missing_vault_endpoints',
                     'eligible_after_semantic_review',
                     'additional_product_meaning_evidence_required',
                   ],
@@ -4310,9 +4528,77 @@ const TOOLS = [
             'sourceQualification',
             'ordering',
             'candidate',
+            'endpointModelling',
             'nextCalls',
             'decision',
             'cursor',
+          ],
+          additionalProperties: false,
+        },
+        focusReview: {
+          type: 'object',
+          properties: {
+            contract: { type: 'string', enum: ['importImpactFocus:v1'] },
+            focusPath: NON_BLANK_STRING_SCHEMA,
+            direction: { type: 'string', enum: ['incoming', 'outgoing', 'both'] },
+            sourceQualification: {
+              type: 'string',
+              enum: ['observed_static_imports_not_runtime_or_semantic_impact'],
+            },
+            writeAllowed: { type: 'boolean', enum: [false] },
+            summary: {
+              type: 'object',
+              properties: {
+                incoming: { type: 'integer', minimum: 0 },
+                outgoing: { type: 'integer', minimum: 0 },
+                selected: { type: 'integer', minimum: 0 },
+                returned: { type: 'integer', minimum: 0, maximum: 100 },
+                limited: { type: 'boolean' },
+              },
+              required: ['incoming', 'outgoing', 'selected', 'returned', 'limited'],
+              additionalProperties: false,
+            },
+            edges: {
+              type: 'array',
+              maxItems: 100,
+              items: {
+                type: 'object',
+                properties: {
+                  edgeId: NON_BLANK_STRING_SCHEMA,
+                  from: NON_BLANK_STRING_SCHEMA,
+                  to: NON_BLANK_STRING_SCHEMA,
+                  kind: { type: 'string', enum: IMPORT_EDGE_KIND_VALUES },
+                  sourceRole: { type: 'string', enum: IMPORT_SOURCE_ROLE_VALUES },
+                  importUsage: { type: 'string', enum: IMPORT_USAGE_VALUES },
+                },
+                required: ['edgeId', 'from', 'to', 'kind', 'sourceRole', 'importUsage'],
+                additionalProperties: false,
+              },
+            },
+            cursor: {
+              type: 'object',
+              properties: {
+                afterEdgeId: { type: ['string', 'null'] },
+                total: { type: 'integer', minimum: 0 },
+                remaining: { type: 'integer', minimum: 0 },
+                hasMore: { type: 'boolean' },
+                nextAfterEdgeId: { type: ['string', 'null'] },
+              },
+              required: ['afterEdgeId', 'total', 'remaining', 'hasMore', 'nextAfterEdgeId'],
+              additionalProperties: false,
+            },
+            interpretation: NON_BLANK_STRING_SCHEMA,
+          },
+          required: [
+            'contract',
+            'focusPath',
+            'direction',
+            'sourceQualification',
+            'writeAllowed',
+            'summary',
+            'edges',
+            'cursor',
+            'interpretation',
           ],
           additionalProperties: false,
         },
@@ -4329,6 +4615,7 @@ const TOOLS = [
             'nextReview',
           ],
         },
+        { required: ['contract', 'scanSummary', 'focusReview'] },
       ],
       additionalProperties: false,
     },
@@ -7439,13 +7726,61 @@ function attachProjectMeaning(agentBrief, artifact) {
     agentBrief.projectSlug,
     agentBrief.readiness?.status,
   );
+  const meaningIsCurrent = context.meaningAssessment?.status === 'verified_current';
+  const meaningAction = meaningIsCurrent
+    ? null
+    : {
+      id: 'meaning_assessment',
+      kind: 'meaning_assessment',
+      // An unbuilt/uncalibrated ontology is an actionable review state, not a
+      // transport failure. Keep the agent out of the green lane without
+      // making first-contact MCP verification impossible on a fresh vault.
+      severity: 'warn',
+      count: 1,
+      target: context.meaningAssessment?.topGap?.id ?? 'assessment_input_invalid',
+      message:
+        'Meaning evidence is not current and complete; review the assessment before treating structural readiness as ontology readiness.',
+    };
+  const adjustedBrief = meaningIsCurrent
+    ? {
+      ...agentBrief,
+      projectSource: context.projectSource,
+      projectSourceRemedy: projectSourceRemedy(context.projectSource),
+      meaningAssessment: context.meaningAssessment,
+    }
+    : {
+      ...agentBrief,
+      status: 'needs_attention',
+      readiness: {
+        ...agentBrief.readiness,
+        status: agentBrief.readiness?.status === 'ready'
+          ? 'needs_attention'
+          : agentBrief.readiness?.status,
+        score: Math.min(agentBrief.readiness?.score ?? 0, 75),
+      },
+      health: {
+        ...agentBrief.health,
+        status: 'needs_attention',
+        checks: [
+          ...(Array.isArray(agentBrief.health?.checks) ? agentBrief.health.checks : []),
+          {
+            id: 'meaning_assessment',
+            status: 'warn',
+            count: 1,
+            message: meaningAction.message,
+          },
+        ],
+      },
+      nextActions: [
+        meaningAction,
+        ...(Array.isArray(agentBrief.nextActions) ? agentBrief.nextActions : []),
+      ],
+      projectSource: context.projectSource,
+      projectSourceRemedy: projectSourceRemedy(context.projectSource),
+      meaningAssessment: context.meaningAssessment,
+    };
   return attachMeaningRepair({
-    ...agentBrief,
-    projectSource: context.projectSource,
-    // The diagnosis has always named an action. This is the same name turned
-    // into a call an agent can make and a screen can render as one button.
-    projectSourceRemedy: projectSourceRemedy(context.projectSource),
-    meaningAssessment: context.meaningAssessment,
+    ...adjustedBrief,
   }, context.meaningRepair);
 }
 
@@ -8338,18 +8673,44 @@ function inferImportsTool({
   ignore,
   maxFiles,
   reconcile = true,
-  reviewMode = 'full',
+  reviewMode,
+  allowLargeResponse,
   afterReviewId,
+  focusPath,
+  focusDirection,
+  focusLimit,
+  focusAfterEdgeId,
 } = {}) {
   requireOptionalNonBlankString(rootPath, 'rootPath');
   requireOptionalStringArray(sourceFolders, 'sourceFolders', { max: SOURCE_FOLDER_ARRAY_MAX_ITEMS });
   requireOptionalStringArray(ignore, 'ignore', { max: IGNORE_ARRAY_MAX_ITEMS });
   requireOptionalPositiveInteger(maxFiles, 'maxFiles', { max: 50000 });
   requireOptionalBoolean(reconcile, 'reconcile');
-  requireOptionalEnum(reviewMode, 'reviewMode', ['full', 'next']);
+  requireOptionalEnum(reviewMode, 'reviewMode', ['full', 'next', 'focus']);
+  requireOptionalBoolean(allowLargeResponse, 'allowLargeResponse');
   requireOptionalNonBlankString(afterReviewId, 'afterReviewId');
+  requireOptionalNonBlankString(focusPath, 'focusPath');
+  requireOptionalEnum(focusDirection, 'focusDirection', ['incoming', 'outgoing', 'both']);
+  requireOptionalPositiveInteger(focusLimit, 'focusLimit', { max: 100 });
+  requireOptionalNonBlankString(focusAfterEdgeId, 'focusAfterEdgeId');
+  const requestedReviewMode = reviewMode ?? (focusPath === undefined ? undefined : 'focus');
+  if (allowLargeResponse !== undefined && reviewMode !== 'full') {
+    throw new Error('allowLargeResponse is only valid with reviewMode "full".');
+  }
   if (afterReviewId !== undefined && reviewMode !== 'next') {
     throw new Error('afterReviewId is only valid with reviewMode "next".');
+  }
+  if (requestedReviewMode === 'focus' && focusPath === undefined) {
+    throw new Error('reviewMode "focus" requires focusPath.');
+  }
+  if (focusPath !== undefined && requestedReviewMode !== 'focus') {
+    throw new Error('focusPath is only valid with reviewMode "focus" or with reviewMode omitted.');
+  }
+  if (
+    (focusDirection !== undefined || focusLimit !== undefined || focusAfterEdgeId !== undefined) &&
+    requestedReviewMode !== 'focus'
+  ) {
+    throw new Error('focusDirection, focusLimit, and focusAfterEdgeId are only valid in focus mode.');
   }
   if (reviewMode === 'next' && reconcile === false) {
     throw new Error('reviewMode "next" requires reconcile:true because the review queue is a vault diff.');
@@ -8360,6 +8721,28 @@ function inferImportsTool({
     ignore,
     maxFiles,
   });
+
+  if (requestedReviewMode === 'focus') {
+    const focusReview = buildImportImpactFocus(result.edges, {
+      focusPath,
+      direction: focusDirection,
+      limit: focusLimit,
+      afterEdgeId: focusAfterEdgeId ?? null,
+    });
+    return {
+      contract: 'inferImportsFocus:v1',
+      rootPath: result.rootPath,
+      filesScanned: result.filesScanned,
+      coverage: result.coverage,
+      scanSummary: {
+        fileEdges: result.edges.length,
+        externalImports: result.externalImports.length,
+        unresolvedImports: result.unresolved.length,
+        moduleEdges: result.moduleEdges.length,
+      },
+      focusReview,
+    };
+  }
 
   // Atlas roadmap Track A #1 — reconcile the code-derived module edges against
   // the vault's compiled depends_on edges so the agent gets "exactly what to
@@ -8417,7 +8800,65 @@ function inferImportsTool({
     }
   }
 
-  if (reviewMode === 'next') {
+  const automaticLimitBytes = 128 * 1024;
+  let effectiveReviewMode = requestedReviewMode ?? 'full';
+  let delivery;
+  if (reviewMode === undefined || (reviewMode === 'full' && allowLargeResponse !== true)) {
+    const estimatedFullResponseBytes = estimateMcpToolResultUtf8Bytes(result);
+    if (estimatedFullResponseBytes <= automaticLimitBytes) {
+      return result;
+    }
+    if (reviewMode === 'full') {
+      const confirmationError = new Error(
+        `Estimated full response (${estimatedFullResponseBytes} bytes) exceeds the 128 KiB delivery limit. Retry with reviewMode:"full", allowLargeResponse:true only when the complete arrays are intentionally required, or use reviewMode:"next" for one bounded review packet.`,
+      );
+      confirmationError.repairFields = {
+        largeResponseConfirmationRequired: true,
+        estimatedFullResponseBytes,
+        automaticLimitBytes,
+        retryArguments: {
+          reviewMode: 'full',
+          allowLargeResponse: true,
+        },
+        boundedAlternative: {
+          reviewMode: 'next',
+        },
+      };
+      throw confirmationError;
+    }
+    if (reconcile === false || !result.reconciliation || !result.reconciliationSummary) {
+      const deliveryError = new Error(
+        `Estimated full response (${estimatedFullResponseBytes} bytes) exceeds the automatic 128 KiB delivery limit, but compact review requires reconcile:true and a loadable active vault. Retry with reconcile:true, or explicitly opt in to the large payload with reviewMode:"full", allowLargeResponse:true.`,
+      );
+      deliveryError.repairFields = {
+        estimatedFullResponseBytes,
+        automaticLimitBytes,
+        requiredForCompact: {
+          reconcile: true,
+          loadableActiveVault: true,
+        },
+        explicitFullOverride: {
+          reviewMode: 'full',
+          allowLargeResponse: true,
+        },
+      };
+      throw deliveryError;
+    }
+    effectiveReviewMode = 'next';
+    delivery = {
+      selection: 'automatic_compact',
+      reason: 'estimated_full_response_exceeds_limit',
+      estimatedFullResponseBytes,
+      automaticLimitBytes,
+      explicitFullAvailable: true,
+      explicitFullArguments: {
+        reviewMode: 'full',
+        allowLargeResponse: true,
+      },
+    };
+  }
+
+  if (effectiveReviewMode === 'next') {
     if (!result.reconciliation || !result.reconciliationSummary) {
       throw new Error(
         'reviewMode "next" requires a loadable active vault so import candidates can be reconciled against existing ontology nodes.',
@@ -8425,9 +8866,11 @@ function inferImportsTool({
     }
     const nextReview = buildNextImportRelationReview(result.reconciliation, {
       afterReviewId: afterReviewId ?? null,
+      rootPath: result.rootPath,
     });
       return {
         contract: 'inferImportsReview:v1',
+        ...(delivery ? { delivery } : {}),
         rootPath: result.rootPath,
         filesScanned: result.filesScanned,
         coverage: result.coverage,
@@ -8439,7 +8882,7 @@ function inferImportsTool({
       },
       reconciliationSummary: result.reconciliationSummary,
       reviewQueue: {
-        total: result.reconciliation.inCodeMissingFromVault.length,
+        total: nextReview?.cursor.total ?? 0,
         returned: nextReview ? 1 : 0,
         exhausted: nextReview === null,
         afterReviewId: afterReviewId ?? null,
@@ -8449,6 +8892,14 @@ function inferImportsTool({
   }
 
   return result;
+}
+
+function estimateMcpToolResultUtf8Bytes(result) {
+  const response = {
+    content: [{ type: 'text', text: JSON.stringify(result, null, 2) }],
+    structuredContent: result,
+  };
+  return Buffer.byteLength(JSON.stringify(response), 'utf8');
 }
 
 function indexProjectTool({ rootPath, maxDepth, maxFiles, threshold, skipImports = false } = {}) {
@@ -8462,7 +8913,12 @@ function indexProjectTool({ rootPath, maxDepth, maxFiles, threshold, skipImports
   let imports = null;
   let pythonImportAnalysis = null;
   if (!skipImports) {
-    imports = inferImportsTool({ rootPath: target, maxFiles });
+    imports = inferImportsTool({
+      rootPath: target,
+      maxFiles,
+      reviewMode: 'full',
+      allowLargeResponse: true,
+    });
     pythonImportAnalysis = {
       ...imports,
       moduleEdges: [...imports.moduleEdges],

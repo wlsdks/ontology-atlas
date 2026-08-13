@@ -7,6 +7,47 @@
 
 ---
 
+## 2026-08-13 · 최초 온톨로지 생성은 구조 무결성과 의미 승인을 통과해야 한다
+
+- malformed frontmatter 선언과 부모 없는 목록 항목을 공통 parser 진단으로 보존하고,
+  CLI·MCP·런타임 validator와 compiler가 구조 오류로 보고하도록 했다.
+- cold-start `bootstrap`, `index --apply`, `init --quick-start`는 이제 review-only다.
+  `constructionQualification:v1`·human acceptance·동일 digest의 writePlan 없이 semantic
+  node/relation을 쓰지 않고 `approval_required`와 `writes:0`을 반환한다.
+- 의미 평가가 invalid/needs_evidence/review_required이면 agent brief가 healthy/ready/100으로
+  포장되지 않고 needs_attention으로 표시된다.
+- 새 Node24 fresh web/app build와 MCP/CLI integration gate로 no-write·parser red/green·앱
+  smoke를 검증했다. 앱 release 서명 키와 기존 performance budget은 별도 release 결정이다.
+
+## 2026-08-13 · 대형 import graph는 검토 가능한 크기로 전달된다
+
+낯선 Python·TypeScript 오픈소스를 fresh Codex와 Claude Code로 0부터 분석하자,
+`infer_imports`의 전체 text와 structured payload가 수백 KiB에서 수 MiB까지 커져
+에이전트 문맥을 삼키는 실패가 재현됐다. import 추론 자체의 정확성과 별개로 전달
+계약이 FDE 흐름을 깨뜨린 결함이었다.
+
+- `reviewMode`를 생략한 결과가 예상 MCP 응답 기준 128 KiB를 넘으면, loadable vault와
+  reconciliation이 있는 경우 전체 배열 대신 한 건의 `nextRelationReview:v1`과 cursor,
+  실제 예상 byte·자동 선택 이유를 담은 `delivery` receipt를 반환한다.
+- 큰 결과에서 `reviewMode:"full"`을 명시해도 `allowLargeResponse:true`라는 두 번째
+  확인 없이는 multi-megabyte payload를 내보내지 않는다. bounded packet 또는 확인된
+  full 호출을 구조화된 복구 정보로 제시한다.
+- Codex가 그 확인까지 반복 승인하는 실제 반증 뒤, 구현 경로 하나를 주는
+  `focusPath`/`reviewMode:"focus"`를 추가했다. 정확한 incoming/outgoing file edge 수와
+  최대 100개 영수증·cursor만 반환하며 vault가 없어도 동작한다. 정적 import 경계이지
+  runtime blast radius나 의미 관계라는 주장은 하지 않는다.
+- compact reconciliation이 불가능한 큰 raw scan은 조용히 full로 강등하지 않고
+  fail-closed한다. 작은 생략 호출과 확인된 full response shape은 유지한다.
+- `index_project`는 내부 import 결과를 명시적으로 확인해 기존 plan 의미를 보존한다.
+- src/source-layout Python, nested source folder, top-level source file, test/resource endpoint
+  분류도 실제 Pyspinel·Textual·Refined GitHub 분석에서 드러난 결함에 맞춰 보강했다.
+
+Refined GitHub 실측에서는 예상 full 결과 3,942,607 bytes가 4,651-byte text packet으로
+줄었고, 874개 review queue와 253개 unique endpoint를 잃지 않았다. 전체 cursor 순회는
+874/874 unique id, p95 50.05ms였으며 starter vault byte digest는 전후 동일했다. 이 수치는
+100개 의미 노드를 자동 생성했다는 뜻이 아니다. 모든 import row는 source evidence일 뿐이고,
+endpoint modelling·semantic rationale·사람 승인 전에는 관계나 노드를 쓰지 않는다.
+
 ## 2026-08-12 · 사람은 검수 결론부터 읽고, 에이전트는 Skill 절차를 손실 없이 넘겨받는다
 
 - 프로젝트 상세의 `검수 결과 열기`가 한 local qualification envelope을 session에서만

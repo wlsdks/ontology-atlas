@@ -79,7 +79,20 @@ node cli/src/index.mjs mcp-verify my-vault
 node cli/src/index.mjs agent-setup my-vault --write
 ```
 
-시작 파일은 건드리지 않고 에이전트 설정만 고칩니다.
+시작 파일은 건드리지 않고 에이전트 설정만 고칩니다. 기존 설정을 해석할 수 있으면
+다른 MCP 서버와 TOML 섹션은 그대로 두고 `ontology-atlas` 항목 하나만 이 볼트로
+원자적으로 바꿉니다. JSON이 깨졌거나 Atlas 섹션이 중복돼 있으면 원본을 건드리지
+않고 예제와 nonzero review 상태를 돌려줍니다. 기존 예제도 해석할 수 있으면 Atlas
+항목만 바꾸고 나머지를 보존합니다. 예제 자체가 깨졌다면 원본 예제는 그대로 두고
+현재 연결만 담은 `.ontology-atlas-current.example` sidecar를 만듭니다. 같은
+codebase 폴더에서 새 볼트를
+다시 만들었을 때는 에이전트를 재시작한 뒤 `connection_info`의 `vaultRoot`까지
+확인해야 실제 전환이 끝납니다.
+
+Codex의 프로젝트 설정은 그 폴더를 **trusted**로 승인한 뒤에만 읽힙니다. 승인
+전에는 `.codex/config.toml`이 올바르게 보여도 `codex mcp list`에는 Atlas가
+나오지 않습니다. 폴더를 신뢰한 다음 그 폴더에서 `codex mcp list`를 실행해
+`ontology-atlas`가 보이는 것과 `connection_info`의 경로를 차례로 확인하십시오.
 
 ## 연결되면 무엇이 달라지나
 

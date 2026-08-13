@@ -17,12 +17,14 @@
 //     → real files. unresolved aliases surface as alias-not-found instead of
 //     external npm.
 //     외부 npm import 는 externalImports 로 별도 분류.
-//   - Python 은 import / from ... import 만 보수적으로 읽으며 동적 import,
-//     namespace-package 추측, 의미 관계 자동 승격은 하지 않음
+//   - Python 은 root 또는 src/source layout package 의 import /
+//     from ... import 만 보수적으로 읽으며 동적 import, namespace-package
+//     추측, 의미 관계 자동 승격은 하지 않음
 //   - 더 정교한 AST parsing 은 후속
 
 import { readFileSync, readdirSync, statSync, lstatSync, existsSync, realpathSync } from 'node:fs';
 import { join, dirname, resolve, relative, isAbsolute, extname, sep } from 'node:path';
+import { createHash } from 'node:crypto';
 
 const DEFAULT_IGNORE = new Set([
   'node_modules',
@@ -94,6 +96,8 @@ const SUPPORT_ELEMENT_BUCKETS = new Set([
   'apps',
   'domain',
   'domains',
+  'helper',
+  'helpers',
   'integration',
   'integrations',
   'infra',
@@ -143,7 +147,7 @@ export function inferImports(rootPath, options = {}) {
   const maxFiles = optionalPositiveInteger(options.maxFiles, 'maxFiles', { max: 50000 }) ?? 5000;
   const sourceFolders = optionalStringArray(options.sourceFolders, 'sourceFolders', {
     max: SOURCE_FOLDER_ARRAY_MAX_ITEMS,
-    fallback: ['src', 'lib', 'app', 'apps', 'packages'],
+    fallback: ['src', 'source', 'lib', 'app', 'apps', 'packages'],
   });
 
   // Resolve search roots — defined source folders that exist, plus rootPath
@@ -189,6 +193,7 @@ export function inferImports(rootPath, options = {}) {
           externalImports,
           unresolved,
           ignore,
+          sourceFolders,
         );
       }
       continue;
@@ -285,6 +290,133 @@ export function inferImports(rootPath, options = {}) {
     unresolved,
     moduleEdges,
   };
+}
+
+/**
+ * Project a bounded, path-focused static import neighborhood from one scan.
+ * This is source evidence only: it does not claim runtime execution, affected
+ * behavior, or an ontology relation. The cursor is stable for unchanged edge
+ * evidence and never writes to the vault.
+ */
+export function buildImportImpactFocus(
+  edges,
+  {
+    focusPath,
+    direction = 'both',
+    limit = 50,
+    afterEdgeId = null,
+  } = {},
+) {
+  if (typeof focusPath !== 'string' || focusPath.length === 0 || focusPath.trim() !== focusPath) {
+    throw new Error('focusPath must be a nonblank repository-relative path without surrounding whitespace.');
+  }
+  const normalizedFocusPath = focusPath.replaceAll('\\', '/').replace(/^\.\//, '');
+  if (
+    isAbsolute(focusPath) ||
+    normalizedFocusPath === '..' ||
+    normalizedFocusPath.startsWith('../') ||
+    normalizedFocusPath.includes('/../')
+  ) {
+    throw new Error('focusPath must be a repository-relative path that stays inside the repository.');
+  }
+  if (!['incoming', 'outgoing', 'both'].includes(direction)) {
+    throw new Error('direction must be one of: incoming, outgoing, both.');
+  }
+  if (!Number.isInteger(limit) || limit < 1 || limit > 100) {
+    throw new Error('limit must be an integer between 1 and 100.');
+  }
+  if (
+    afterEdgeId !== null &&
+    (typeof afterEdgeId !== 'string' || afterEdgeId.length === 0 || afterEdgeId.trim() !== afterEdgeId)
+  ) {
+    throw new Error('afterEdgeId must be null or a nonblank string without surrounding whitespace.');
+  }
+
+  const rows = Array.isArray(edges) ? edges : [];
+  const incoming = rows.filter((edge) => edge?.to === normalizedFocusPath);
+  const outgoing = rows.filter((edge) => edge?.from === normalizedFocusPath);
+  const selected = rows
+    .filter((edge) => {
+      if (direction === 'incoming') return edge?.to === normalizedFocusPath;
+      if (direction === 'outgoing') return edge?.from === normalizedFocusPath;
+      return edge?.from === normalizedFocusPath || edge?.to === normalizedFocusPath;
+    })
+    .sort(compareFocusedImportEdges);
+  const duplicateCounts = new Map();
+  const identified = selected.map((edge) => {
+    const basis = JSON.stringify([
+      edge.from,
+      edge.to,
+      edge.kind,
+      edge.sourceRole,
+      edge.importUsage,
+    ]);
+    const duplicateIndex = duplicateCounts.get(basis) ?? 0;
+    duplicateCounts.set(basis, duplicateIndex + 1);
+    return {
+      edgeId: `import-impact:${createHash('sha256')
+        .update(`${basis}:${duplicateIndex}`)
+        .digest('hex')
+        .slice(0, 20)}`,
+      ...edge,
+    };
+  });
+
+  let start = 0;
+  if (afterEdgeId !== null) {
+    const previous = identified.findIndex((edge) => edge.edgeId === afterEdgeId);
+    if (previous === -1) {
+      throw new Error(
+        `afterEdgeId was not found in the current focused import evidence: ${afterEdgeId}. ` +
+        'Omit afterEdgeId to restart from the first current edge.',
+      );
+    }
+    start = previous + 1;
+  }
+  const page = identified.slice(start, start + limit);
+  const remaining = Math.max(0, identified.length - start - page.length);
+
+  return {
+    contract: 'importImpactFocus:v1',
+    focusPath: normalizedFocusPath,
+    direction,
+    sourceQualification: 'observed_static_imports_not_runtime_or_semantic_impact',
+    writeAllowed: false,
+    summary: {
+      incoming: incoming.length,
+      outgoing: outgoing.length,
+      selected: identified.length,
+      returned: page.length,
+      limited: remaining > 0,
+    },
+    edges: page,
+    cursor: {
+      afterEdgeId,
+      total: identified.length,
+      remaining,
+      hasMore: remaining > 0,
+      nextAfterEdgeId: page.at(-1)?.edgeId ?? null,
+    },
+    interpretation:
+      'These are bounded supported static import receipts around the exact file path. ' +
+      'An empty or partial result does not prove no impact; inspect symbols, tests, dynamic behavior, and ontology meaning separately before changing code or approving a semantic relation.',
+  };
+}
+
+function compareFocusedImportEdges(a, b) {
+  return JSON.stringify([
+    a?.from ?? '',
+    a?.to ?? '',
+    a?.kind ?? '',
+    a?.sourceRole ?? '',
+    a?.importUsage ?? '',
+  ]).localeCompare(JSON.stringify([
+    b?.from ?? '',
+    b?.to ?? '',
+    b?.kind ?? '',
+    b?.sourceRole ?? '',
+    b?.importUsage ?? '',
+  ]));
 }
 
 function importScanCoverage(rootPath) {
@@ -456,6 +588,7 @@ function classifyPythonImport(
   external,
   unresolved,
   ignore,
+  sourceFolders,
 ) {
   const moduleSpec = resolvePythonRelativeModule(
     pythonImport.module,
@@ -470,12 +603,12 @@ function classifyPythonImport(
     });
     return;
   }
-  const baseTarget = resolvePythonModule(moduleSpec, rootPath);
+  const baseTarget = resolvePythonModule(moduleSpec, rootPath, sourceFolders);
   const targets = pythonImport.names.length > 0
     ? pythonImport.names
         .map(
           (name) =>
-            resolvePythonModule(`${moduleSpec}.${name}`, rootPath) ?? baseTarget,
+            resolvePythonModule(`${moduleSpec}.${name}`, rootPath, sourceFolders) ?? baseTarget,
         )
         .filter(Boolean)
     : baseTarget
@@ -505,7 +638,7 @@ function classifyPythonImport(
     return;
   }
   const topLevel = moduleSpec.split('.')[0];
-  if (resolvePythonModule(topLevel, rootPath)) {
+  if (resolvePythonModule(topLevel, rootPath, sourceFolders)) {
     unresolved.push({
       from: relative(rootPath, file),
       spec: pythonImport.module,
@@ -526,24 +659,31 @@ function resolvePythonRelativeModule(spec, file, rootPath) {
   return [...fromParts.slice(0, keep), ...suffix.split('.').filter(Boolean)].join('.');
 }
 
-function resolvePythonModule(spec, rootPath) {
+function resolvePythonModule(spec, rootPath, sourceFolders = []) {
   if (!spec || spec.startsWith('.')) return null;
-  const base = join(rootPath, ...spec.split('.'));
-  const file = `${base}.py`;
-  if (
-    existsSync(file) &&
-    !lstatSync(file).isSymbolicLink() &&
-    lstatSync(file).isFile() &&
-    pathResolvesInsideRoot(rootPath, file)
-  ) return file;
-  const packageEntry = join(base, '__init__.py');
-  if (
-    existsSync(packageEntry) &&
-    !lstatSync(packageEntry).isSymbolicLink() &&
-    lstatSync(packageEntry).isFile() &&
-    pathResolvesInsideRoot(rootPath, packageEntry)
-  ) {
-    return packageEntry;
+  const sourceRoots = new Set(
+    sourceFolders
+      .map((folder) => folder.split(/[\\/]/).filter(Boolean)[0])
+      .filter(Boolean),
+  );
+  for (const searchRoot of [rootPath, ...[...sourceRoots].map((folder) => join(rootPath, folder))]) {
+    const base = join(searchRoot, ...spec.split('.'));
+    const file = `${base}.py`;
+    if (
+      existsSync(file) &&
+      !lstatSync(file).isSymbolicLink() &&
+      lstatSync(file).isFile() &&
+      pathResolvesInsideRoot(rootPath, file)
+    ) return file;
+    const packageEntry = join(base, '__init__.py');
+    if (
+      existsSync(packageEntry) &&
+      !lstatSync(packageEntry).isSymbolicLink() &&
+      lstatSync(packageEntry).isFile() &&
+      pathResolvesInsideRoot(rootPath, packageEntry)
+    ) {
+      return packageEntry;
+    }
   }
   return null;
 }
@@ -865,6 +1005,25 @@ function moduleOf(filePath, sourceFolders, rootPath) {
   // 이름만 슬러그에 싣고, basename 이 레이어를 넘어 겹칠 때만 레이어 단수형
   // 접미로 가른다 (같은 rootPath 를 보므로 두 도구의 판정이 일치한다).
   const parts = filePath.split(/[\\/]/);
+  if (!SOURCE_EXT.has(extname(parts.at(-1) ?? ''))) return null;
+  if (
+    parts.length >= 3 &&
+    sourceFolderStartsAt(parts[0], sourceFolders) &&
+    existsSync(join(rootPath, parts[0], parts[1], '__init__.py'))
+  ) {
+    // `src/<python-package>/...` layout. Treat the first module inside the
+    // package exactly like a root Python package so cross-file imports do not
+    // collapse to one `capabilities/<package>` self-edge.
+    const modulePart = parts[2];
+    const rawName = modulePart === '__init__.py'
+      ? parts[1]
+      : stripSourceExtension(modulePart);
+    const flatName = rawName
+      .replace(/_/g, '-')
+      .replace(/[^A-Za-z0-9-]/g, '')
+      .toLowerCase();
+    return flatName ? `elements/${flatName}` : null;
+  }
   if (
     parts.length >= 2 &&
     existsSync(join(rootPath, parts[0], '__init__.py'))
@@ -881,7 +1040,7 @@ function moduleOf(filePath, sourceFolders, rootPath) {
   }
   for (let i = 0; i < parts.length - 1; i += 1) {
     if (i !== 0) continue;
-    if (sourceFolders.includes(parts[i])) {
+    if (sourceFolderStartsAt(parts[i], sourceFolders)) {
       const next = parts[i + 1];
       if (
         (parts[i] === 'apps' || parts[i] === 'packages') &&
@@ -898,12 +1057,12 @@ function moduleOf(filePath, sourceFolders, rootPath) {
       // capabilities/ 아래에 둔다.
       const capabilityBuckets = new Set(['features']);
       if (capabilityBuckets.has(next) && parts[i + 2]) {
-        return `capabilities/${stripSourceExtension(parts[i + 2])}`;
+        return `capabilities/${ontologySourceName(parts[i + 2])}`;
       }
       // element 류 bucket — analyze 와 같은 flat + 충돌 시 레이어 접미 규칙.
       const elementBuckets = ['entities', 'widgets', 'views'];
       if (elementBuckets.includes(next) && parts[i + 2]) {
-        const name = stripSourceExtension(parts[i + 2]);
+        const name = ontologySourceName(parts[i + 2]);
         const collides =
           elementBuckets.filter((bucket) =>
             existsSync(join(rootPath, parts[i], bucket, name)),
@@ -921,12 +1080,16 @@ function moduleOf(filePath, sourceFolders, rootPath) {
       // feature files as capabilities, but classify support layers by their
       // role so bootstrap lands a more useful graph on a clean vault.
       if (next === 'features' && parts[i + 2]) {
-        return `capabilities/${stripSourceExtension(parts[i + 2])}`;
+        return `capabilities/${ontologySourceName(parts[i + 2])}`;
       }
       if (isSupportElementBucket(next) && parts[i + 2]) {
         // 파일의 basename 이 role 이름 — `src/storage/json-store.js` →
         // `elements/json-store`. 위치는 evidence 가 나른다.
-        return `elements/${stripSourceExtension(parts[parts.length - 1])}`;
+        return `elements/${ontologySourceName(parts[parts.length - 1])}`;
+      }
+      if (SOURCE_EXT.has(extname(next))) {
+        const flatName = ontologySourceName(next);
+        return flatName ? `elements/${flatName}` : null;
       }
       // Generic fallback — sourceFolder 다음 첫 segment 가 module.
       return `capabilities/${next}`;
@@ -985,9 +1148,23 @@ function isSupportElementBucket(segment) {
   return SUPPORT_ELEMENT_BUCKETS.has(segment);
 }
 
+function sourceFolderStartsAt(segment, sourceFolders) {
+  return sourceFolders.some(
+    (folder) => folder.split(/[\\/]/).filter(Boolean)[0] === segment,
+  );
+}
+
 function stripSourceExtension(segment) {
   for (const ext of SOURCE_EXT) {
     if (segment.endsWith(ext)) return segment.slice(0, -ext.length);
   }
   return segment;
+}
+
+function ontologySourceName(segment) {
+  return stripSourceExtension(segment)
+    .replace(/\.(?:test|spec)$/i, '')
+    .replace(/[_\s.]+/g, '-')
+    .replace(/[^A-Za-z0-9-]/g, '')
+    .toLowerCase();
 }

@@ -546,14 +546,16 @@ export function vaultSlugExists(rootPath, slug) {
  */
 export function readDoc(rootPath, filePath) {
   const raw = readFileSync(filePath, 'utf-8');
-  const { frontmatter, body } = parseFrontmatter(raw);
-  return {
+  const { frontmatter, body, diagnostics } = parseFrontmatter(raw);
+  const result = {
     slug: pathToSlug(rootPath, filePath),
     frontmatter,
     body,
     raw,
     mtime: getFileMtime(filePath),
   };
+  if (diagnostics?.length) result.diagnostics = diagnostics;
+  return result;
 }
 
 /**

@@ -125,8 +125,8 @@ slug:
 title:
 kind:
 definition: one sentence explaining what it means
-includes:
-excludes:
+includes: [one or more non-empty boundary statements]
+excludes: [one or more non-empty counter-boundary statements]
 evidence: one or more evidence ids
 confidence: high | medium | low
 status: proposed
@@ -134,6 +134,9 @@ counterevidence_or_uncertainty:
 ```
 
 Rules:
+
+- In the MCP proposal, `includes` and `excludes` are JSON string arrays, never
+  prose scalars. Preserve even a single boundary as a one-item array.
 
 - Apply the specification's positive test and counterexample for every selected
   kind; do not substitute this workflow's ordering for the kind contract.

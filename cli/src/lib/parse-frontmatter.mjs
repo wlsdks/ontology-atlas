@@ -32,11 +32,28 @@ export function parseFrontmatter(input) {
   const block = raw.slice(4, end).trim();
   const body = raw.slice(end + 4).replace(/^\r?\n/, "");
   const frontmatter = {};
+  const diagnostics = [];
   const lines = block.split("\n");
   for (let i = 0; i < lines.length; i += 1) {
     const line = lines[i];
     const idx = line.indexOf(":");
-    if (idx === -1) continue;
+    if (idx === -1) {
+      const trimmed = line.trim();
+      if (/^\s+-\s+/.test(line)) {
+        diagnostics.push({
+          code: "malformed-frontmatter-line",
+          line: i + 2,
+          message: `Frontmatter list item on line ${i + 2} has no parent key.`,
+        });
+      } else if (trimmed && !trimmed.startsWith("#") && !/^\s/.test(line)) {
+        diagnostics.push({
+          code: "malformed-frontmatter-line",
+          line: i + 2,
+          message: `Frontmatter line ${i + 2} must use key: value syntax.`,
+        });
+      }
+      continue;
+    }
     const key = line.slice(0, idx).trim();
     const value = line.slice(idx + 1).trim();
     if (!key) continue;
@@ -107,7 +124,9 @@ export function parseFrontmatter(input) {
     }
     frontmatter[key] = unquote(value);
   }
-  return { frontmatter, body };
+  const result = { frontmatter, body };
+  if (diagnostics.length > 0) result.diagnostics = diagnostics;
+  return result;
 }
 
 function peekIndentedKind(lines, start) {
