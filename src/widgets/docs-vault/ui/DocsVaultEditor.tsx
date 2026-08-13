@@ -434,13 +434,17 @@ export function DocsVaultEditor({
       // setSavedContent, so dirty stays true and the #5(a) poll guard keeps the
       // unsaved edits safe. Surface a localized, reassuring message for the
       // conflict case (the raw message is technical English).
-      const conflict = err instanceof Error && err.name === 'VaultConflictError';
+      const name = err instanceof Error ? err.name : '';
       setError(
-        conflict
+        name === 'VaultConflictError'
           ? t('saveConflict')
-          : err instanceof Error
-            ? err.message
-            : t('saveFailed'),
+          : name === 'VaultIdentityUidError'
+            ? t('saveIdentityUid')
+            : name === 'VaultIdentityHistoryError'
+              ? t('saveIdentityHistory')
+              : err instanceof Error
+                ? err.message
+                : t('saveFailed'),
       );
     } finally {
       setSaving(false);
