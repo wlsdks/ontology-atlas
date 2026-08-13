@@ -32,7 +32,13 @@ const CHECK_IDS = [
   'components',
 ] as const;
 
-function mcpHealth(docs: { slug: string; frontmatter: Record<string, unknown> }[]) {
+function mcpHealth(
+  docs: {
+    slug: string;
+    frontmatter: Record<string, unknown>;
+    diagnostics?: ReadonlyArray<{ code: string }>;
+  }[],
+) {
   const withMtime = docs.map((d, i) => ({ ...d, body: '', mtime: i + 1 }));
   const artifact = compileOntology(withMtime, { includeIndexes: true });
   const result = queryCompiledOntology(artifact, { operation: 'health' }) as {

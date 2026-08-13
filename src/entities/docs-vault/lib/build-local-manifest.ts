@@ -340,7 +340,7 @@ function buildMdEntry(
   lastModified: number,
 ): BuiltVaultEntry {
   const slug = entry.relativePath.replace(/\.md$/, '');
-  const { frontmatter, body } = parseFrontmatter(raw);
+  const { frontmatter, body, diagnostics } = parseFrontmatter(raw);
   const headings = extractHeadings(body);
   const title =
     (typeof frontmatter.title === 'string' && frontmatter.title) ||
@@ -368,6 +368,7 @@ function buildMdEntry(
     description,
     tags,
     frontmatter,
+    ...(diagnostics && diagnostics.length > 0 ? { diagnostics } : {}),
     headings,
     excerpt: buildExcerpt(body),
     ...(frontmatter.kind === 'project'

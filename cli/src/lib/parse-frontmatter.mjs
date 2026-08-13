@@ -45,7 +45,7 @@ export function parseFrontmatter(input) {
           line: i + 2,
           message: `Frontmatter list item on line ${i + 2} has no parent key.`,
         });
-      } else if (trimmed && !trimmed.startsWith("#") && !/^\s/.test(line)) {
+      } else if (trimmed && !trimmed.startsWith("#")) {
         diagnostics.push({
           code: "malformed-frontmatter-line",
           line: i + 2,

@@ -42,6 +42,30 @@ test('block list', () => {
   assert.deepEqual(frontmatter.caps, ['login', 'reset']);
 });
 
+test('indented missing-colon declarations retain diagnostics', () => {
+  const raw = [
+    '---',
+    'kind: domain',
+    '  missing-colon',
+    '  orphan value',
+    '---',
+    '',
+  ].join('\n');
+  const parsed = parseFrontmatter(raw);
+  assert.deepEqual(parsed.diagnostics, [
+    {
+      code: 'malformed-frontmatter-line',
+      line: 3,
+      message: 'Frontmatter line 3 must use key: value syntax.',
+    },
+    {
+      code: 'malformed-frontmatter-line',
+      line: 4,
+      message: 'Frontmatter line 4 must use key: value syntax.',
+    },
+  ]);
+});
+
 test('inline object', () => {
   const { frontmatter } = parseFrontmatter(
     `---\nposition: { x: 100, y: 200 }\n---\n`,

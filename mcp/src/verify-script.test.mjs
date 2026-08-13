@@ -2362,7 +2362,7 @@ describe('verify.mjs first-contact gates', () => {
           required: ['scanned', 'problems', 'summary', 'pathDrift'],
           properties: {
             scanned: { type: 'integer', minimum: 0 },
-            pathDrift: { type: 'object' },
+            pathDrift: { type: 'object', additionalProperties: false },
             problems: {
               type: 'array',
               items: {

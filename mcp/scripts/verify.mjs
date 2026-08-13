@@ -425,6 +425,83 @@ function topLevelInputCombinatorFailure(tools) {
   return null;
 }
 
+// Every nested object in the published tools/list contract must say whether
+// unknown keys are accepted. A bare `{type:'object'}` is ambiguous to clients:
+// it may be an intentional dynamic map or a typed contract that silently lost
+// its fields during a merge. Dynamic maps are explicit and narrowly named;
+// everything else is closed (or uses a typed `additionalProperties` map).
+export const TOOLS_LIST_OPEN_OBJECT_PATHS = new Set([
+  'get_concept.outputSchema.properties.frontmatter',
+  'get_concepts.outputSchema.properties.concepts.items.properties.frontmatter',
+  'get_concepts.outputSchema.properties.concepts.items.properties.growthHint.properties.exampleCall.properties.args',
+  'find_evidence.outputSchema.properties.growthHint.properties.exampleCall.properties.args',
+  'find_path.outputSchema.properties.growthHint.properties.exampleCall.properties.args',
+  'query_concepts.outputSchema.properties.growthHint.properties.exampleCall.properties.args',
+  'query_ontology.outputSchema.properties.compiledSummary',
+  'query_ontology.outputSchema',
+  'infer_imports.outputSchema.properties.nextReview.properties.nextCalls.items.properties.arguments',
+  'disconnect_project_source.outputSchema.properties.nextCall.properties.arguments',
+  'connect_project_source.outputSchema.properties.nextCall.properties.arguments',
+  'connect_project_source.outputSchema.properties.remedy.properties.undo.properties.tool.properties.arguments',
+  'disconnect_project_source.outputSchema.properties.remedy.properties.undo.properties.tool.properties.arguments',
+  'connect_project_source.outputSchema.properties.remedy.properties.tool.anyOf.0.properties.arguments',
+  'disconnect_project_source.outputSchema.properties.remedy.properties.tool.anyOf.0.properties.arguments',
+  'patch_concept.inputSchema.properties.frontmatter',
+  'merge_concepts.outputSchema.properties.capturedFrom.properties.frontmatter',
+  'delete_concept.outputSchema.properties.captured.properties.frontmatter',
+]);
+export const TOOLS_LIST_TYPED_OBJECT_PATHS = new Set([
+  'connect_project_source.outputSchema.properties.binding',
+  'connect_project_source.outputSchema.properties.previewReceipt',
+  'connect_project_source.outputSchema.properties.projectSource',
+  'connect_project_source.outputSchema.properties.remedy',
+  'connect_project_source.outputSchema.properties.nextCall',
+  'disconnect_project_source.outputSchema.properties.projectSource',
+  'disconnect_project_source.outputSchema.properties.remedy',
+  'disconnect_project_source.outputSchema.properties.nextCall',
+  'replace_relation.outputSchema.properties.oldRelation',
+  'replace_relation.outputSchema.properties.newRelation',
+  'infer_imports.outputSchema.properties.reconciliation.properties.inBoth.items',
+  'infer_imports.outputSchema.properties.reconciliation.properties.inCodeMissingFromVault.items',
+  'infer_imports.outputSchema.properties.reconciliation.properties.inCodeMissingEndpointAbsent.items',
+  'infer_imports.outputSchema.properties.reconciliation.properties.inVaultNotInCode.items',
+  'index_project.outputSchema.properties.imports.properties.thresholdApplied',
+  'index_project.outputSchema.properties.imports.properties.reconciliationSummary',
+]);
+
+export function nestedObjectSchemaFailure(tools) {
+  if (!Array.isArray(tools)) return 'tools/list response missing tools array';
+  const stack = [];
+  for (const tool of tools) {
+    stack.push({ schema: tool?.inputSchema, path: `${tool?.name || '(unknown)'}.inputSchema` });
+    stack.push({ schema: tool?.outputSchema, path: `${tool?.name || '(unknown)'}.outputSchema` });
+  }
+  while (stack.length > 0) {
+    const { schema, path } = stack.pop();
+    if (!schema || typeof schema !== 'object') continue;
+    if (schema.type === 'object') {
+      const openPath = TOOLS_LIST_OPEN_OBJECT_PATHS.has(path);
+      const typedPath = TOOLS_LIST_TYPED_OBJECT_PATHS.has(path);
+      if (typedPath && schema.additionalProperties === undefined) {
+        return `${path} nested object missing additionalProperties contract`;
+      }
+      if (schema.additionalProperties === true && !openPath) {
+        return `${path} nested object is open outside the explicit allowlist`;
+      }
+    }
+    for (const [key, value] of Object.entries(schema.properties || {})) {
+      stack.push({ schema: value, path: `${path}.properties.${key}` });
+    }
+    if (schema.items) stack.push({ schema: schema.items, path: `${path}.items` });
+    for (const key of ['oneOf', 'anyOf', 'allOf']) {
+      for (const [index, value] of (schema[key] || []).entries()) {
+        stack.push({ schema: value, path: `${path}.${key}.${index}` });
+      }
+    }
+  }
+  return null;
+}
+
 function backlinkRewritePlanSchemaFailure(schema, label) {
   if (
     schema?.type !== 'object' ||
@@ -3184,6 +3261,8 @@ export function toolsListSchemaFailure(tools) {
     if (schemaFailure) return schemaFailure;
   }
 
+  const nestedObjectFailure = nestedObjectSchemaFailure(tools);
+  if (nestedObjectFailure) return nestedObjectFailure;
   return null;
 }
 

@@ -38,56 +38,56 @@ const SAMPLES: readonly SampleSkill[] = [
     name: "commit-style",
     description:
       "Write commit messages in this repository's house style. Use when staging changes, preparing a pull request, or when the user asks how to word a commit.",
-    body: "Read references/prefixes.md for the allowed prefixes, then draft the subject line.",
+    body: "1. Read references/prefixes.md for the allowed prefixes.\n2. Draft the subject line.\n3. Check the subject before staging.",
   },
   {
     path: "plugins/cache/docs-pack/2.1.0/skills/changelog/SKILL.md",
     name: "changelog",
     description:
       "Draft a user-facing changelog entry from a range of commits. Use when cutting a release or when the user asks what changed since the last version.",
-    body: "Read references/tone.md first. Group entries by surface, not by author.",
+    body: "1. Read references/tone.md first.\n2. Group entries by surface, not by author.\n3. Check that every changed surface is represented.",
   },
   {
     path: "plugins/cache/writing-pack/1.4.0/skills/changelog/SKILL.md",
     name: "changelog",
     description:
       "Maintain the CHANGELOG.md file itself — heading levels, date format, and the unreleased section. Use when the file structure needs fixing rather than new prose.",
-    body: "Keep the Unreleased heading at the top even when empty.",
+    body: "1. Keep the Unreleased heading at the top even when empty.\n2. Check the date and heading format.\n3. Save the corrected changelog.",
   },
   {
     path: "plugins/cache/docs-pack/2.1.0/skills/release-notes/SKILL.md",
     name: "release-notes",
     description:
       "Draft release notes from a range of commits for a version announcement. Use when publishing a release or when the user asks what shipped.",
-    body: "Lead with what a reader can now do that they could not before.",
+    body: "1. Lead with what a reader can now do that they could not before.\n2. Group the changes by user-facing surface.\n3. Check the version and release date.",
   },
   {
     path: "plugins/cache/data-pack/3.0.0/skills/csv-report/SKILL.md",
     name: "csv-report",
     description:
       "Turn a CSV export into a summary table with totals and outliers. Use when the user hands over a spreadsheet dump and wants the shape of it.",
-    body: "Read references/columns.md, then run scripts/summarize.py to build the table.",
+    body: "1. Read references/columns.md.\n2. Run scripts/summarize.py to build the table.\n3. Check totals and outliers before sharing.",
   },
   {
     path: "plugins/cache/data-pack/3.0.0/skills/sql-explain/SKILL.md",
     name: "sql-explain",
     description:
       "Explain a slow SQL query in plain language and name the index that would help. Use when a query plan is pasted in.",
-    body: "Quote the plan line that dominates the cost before proposing anything.",
+    body: "1. Quote the plan line that dominates the cost.\n2. Explain the bottleneck in plain language.\n3. Propose the smallest useful index change.",
   },
   {
     path: "plugins/cache/qa-pack/0.9.0/skills/screenshot-diff/SKILL.md",
     name: "screenshot-diff",
     description:
       "Compare two screenshots and report which regions moved. Use when a visual regression is suspected.",
-    body: "Run scripts/compare.py with both paths, then read references/thresholds.md.",
+    body: "1. Run scripts/compare.py with both paths.\n2. Read references/thresholds.md.\n3. Report only regions that exceed the threshold.",
   },
   {
     path: "plugins/cache/qa-pack/0.9.0/skills/flaky-test/SKILL.md",
     name: "flaky-test",
     description:
       "Diagnose a test that passes and fails without code changes. Use when CI is red intermittently.",
-    body: "Rerun the single spec ten times before touching anything.",
+    body: "1. Rerun the single spec ten times before touching anything.\n2. Record each pass and failure.\n3. Separate environment noise from a reproducible defect.",
   },
   {
     path: "plugins/cache/docs-pack/2.1.0/skills/api-docs/SKILL.md",
@@ -95,7 +95,7 @@ const SAMPLES: readonly SampleSkill[] = [
     description:
       "Generate endpoint reference pages from an OpenAPI document. Use when the user asks to document an HTTP surface.",
     // 일부러 없는 파일을 가리킨다 — 「깨진 참조」가 화면에서 어떻게 보이는지 담는다.
-    body: "Read references/openapi.md for the schema conventions before writing.",
+    body: "1. Read references/openapi.md for the schema conventions before writing.\n2. Check the endpoint names and response shapes.\n3. Report missing source evidence instead of inventing it.",
   },
 ];
 

@@ -4,6 +4,7 @@ import { strict as assert } from 'node:assert';
 import { compileOntology } from './ontology-compiler.mjs';
 import { deriveBridgeShapes, queryCompiledOntology } from './ontology-engine.mjs';
 import { defaultBody } from './schema.mjs';
+import { parseFrontmatter } from './parser.mjs';
 import { validateVaultDocument } from './validate.mjs';
 
 const testUidBySlug = new Map();
@@ -78,6 +79,28 @@ describe('frontmatter integrity gate', () => {
     ]);
     assert.equal(compiled.issues.filter((issue) => issue.code === 'malformed-frontmatter-line').length, 2);
     assert.equal(compiled.issueCount >= 2, true);
+  });
+
+  it('keeps indented missing-colon lines visible through compile and health', () => {
+    const raw = '---\nuid: 00000000-0000-4000-8000-000000000002\nkind: domain\n  missing-colon\n  orphan value\n---\n';
+    const parsed = parseFrontmatter(raw);
+    assert.equal(parsed.diagnostics?.length, 2);
+    const compiled = compileOntology([
+      {
+        slug: 'capabilities/broken',
+        frontmatter: parsed.frontmatter,
+        diagnostics: parsed.diagnostics,
+        body: parsed.body,
+        mtime: 1,
+      },
+    ]);
+    assert.equal(compiled.issues.filter((issue) => issue.code === 'malformed-frontmatter-line').length, 2);
+
+    const health = queryCompiledOntology(compiled, { operation: 'health' });
+    const compileCheck = health.checks.find((check) => check.id === 'compile_issues');
+    assert.equal(compileCheck?.status, 'warn');
+    assert.equal(compileCheck?.count, 2);
+    assert.equal(health.status, 'needs_attention');
   });
 });
 
