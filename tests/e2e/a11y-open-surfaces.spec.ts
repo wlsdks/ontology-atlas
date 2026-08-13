@@ -103,8 +103,12 @@ const MIN_RULES_PASSED = 15;
  * 21 → 22 (2026-08-12): 프로젝트 검수 결과의 근거 disclosure가 추가됐다. 로컬
  * JSON을 주입한 뒤 실제 toggle을 눌러 여는 경로가 아래 OPENERS에 들어가므로,
  * 새 표면은 분모뿐 아니라 axe 측정에도 포함된다.
+ *
+ * 22 → 23 (2026-08-14): 같은 검수 artifact 안에 전문가용 세션 초안 disclosure가
+ * 추가됐다. 원본 영수증을 바꾸지 않는 로컬 편집 표면이며, construction review
+ * e2e가 390/1023/1024/1512에서 열림·overflow를 측정한다.
  */
-const APPEARING_SURFACES_IN_SOURCE = 22;
+const APPEARING_SURFACES_IN_SOURCE = 23;
 
 interface Opener {
   readonly name: string;

@@ -68,6 +68,29 @@ finalize하지 않는다. **상태:** 유효
 
 ---
 
+## 2026-08-14 — U1.3 전문가 초안은 같은 영수증의 세션 전용 수정 깊이다
+
+**결정**: 프로젝트 상세의 `근거·진단 보기` 안에 CQ 문장, witness source reference,
+exact review plan을 수정해 볼 수 있는 검토용 초안을 제공한다. 이 초안은 원본
+qualification receipt·plan/source digest·판정 상태를 바꾸지 않고 React session에만
+존재한다. 변경 즉시 dirty 상태와 `qualification을 다시 받아야 한다`는 경계를 보이며,
+원본 복원으로 되돌릴 수 있다. 자동 저장·localStorage·vault·sidecar·외부 전송은 없다.
+
+**이유**: 일반 사용자는 요약만 읽고 승인 상태와 blocker를 판단하고, 전문가는 같은
+artifact의 CQ·근거·계획을 raw JSON으로 탈출하지 않고 조정할 수 있어야 한다. 두 schema나
+두 truth를 만들지 않으면서 “수정”을 안전한 pre-write 초안으로 한정한다.
+
+**반증 조건**: 초안 편집 뒤 receipt/digest/qualification이 바뀌거나, 새 source-hidden
+evaluator가 재검증 없이 write를 허용하거나, 390px/1023px에서 필드가 잘리고 가려지면
+이 경계가 실패한 것이다. 그 경우 초안을 제거하고 재검증 전용 disclosure로 되돌린다.
+
+**검증**: ConstructionReviewPanel unit, construction-review Playwright(390/1023/1024/1512,
+malformed/project/digest/plan fail-closed), TypeScript, ESLint.
+
+**상태**: 유효
+
+---
+
 ## 2026-08-14 (5) — 샘플 Skills는 실제 프로세스를 보여준다
 
 **관찰**: `/ko/skills`의 제품 샘플이 번호 절차가 아닌 한 줄 설명만 갖고 있어,
