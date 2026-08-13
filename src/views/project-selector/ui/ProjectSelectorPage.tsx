@@ -353,7 +353,7 @@ function ProjectFullCard({ project, facts, domainRows, description, docPath, kin
           생겼다(램프는 0.02 · 0.06 · 0.10). 대체값으로 이미 `overlay-1` 이 적혀
           있었으니 원래 목적지를 알고 있었던 셈이다. 실제 차이는 알파 0.01. */}
       <div className="mt-4 rounded-chip border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-4 py-2.5">
-        <p className="mb-1.5 text-caption text-[color:var(--color-text-quaternary)]">
+        <p className="mb-1.5 text-label text-[color:var(--color-text-quaternary)]">
           {t("factStripGloss")}
         </p>
         <div className="flex flex-wrap items-baseline gap-x-5 gap-y-1.5 text-body">
@@ -394,7 +394,7 @@ function ProjectFullCard({ project, facts, domainRows, description, docPath, kin
               여기서는 어긋난 수로만 보였다. 막대의 각주이므로 막대 아래에 둔다. */}
           <p
             data-testid="project-selector-domain-overlap-note"
-            className="mt-1.5 text-caption text-[color:var(--color-text-quaternary)]"
+            className="mt-1.5 text-label text-[color:var(--color-text-quaternary)]"
           >
             {t("domainOverlapNote")}
           </p>
