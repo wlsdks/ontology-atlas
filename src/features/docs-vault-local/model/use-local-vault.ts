@@ -147,13 +147,23 @@ function assertNodeIdentityContent(
   }
 }
 
+/**
+ * 신원 가드 오류 — `name` 으로 갈래를 싣는다. 에디터가 이 이름을 보고
+ * 사용자 언어 문장으로 바꾼다(`VaultConflictError` 와 같은 문법). 영어
+ * 원문은 남긴다: 콘솔·로그·미지원 표면의 폴백이다.
+ */
+function identityError(name: 'VaultIdentityUidError' | 'VaultIdentityHistoryError', message: string): Error {
+  return Object.assign(new Error(message), { name });
+}
+
 function assertIdentityPatch(
   raw: string,
   updates: Record<string, FrontmatterUpdateValue>,
 ): void {
   const previous = parseFrontmatter(raw).frontmatter;
   if ('merged_uids' in updates) {
-    throw new Error(
+    throw identityError(
+      'VaultIdentityHistoryError',
       '`merged_uids:` is merge-owned identity history and cannot be edited by a generic browser patch.',
     );
   }
@@ -162,10 +172,10 @@ function assertIdentityPatch(
   const previousUid = previous.uid;
   const hasPreviousUid = previousUid !== undefined && previousUid !== null && previousUid !== '';
   if (hasPreviousUid && nextUid !== previousUid) {
-    throw new Error('`uid:` is immutable. Rename or reclassify the node without changing its UID.');
+    throw identityError('VaultIdentityUidError', '`uid:` is immutable. Rename or reclassify the node without changing its UID.');
   }
   if (typeof nextUid !== 'string' || !NODE_UID_RE.test(nextUid)) {
-    throw new Error('`uid:` must be a lowercase UUIDv4.');
+    throw identityError('VaultIdentityUidError', '`uid:` must be a lowercase UUIDv4.');
   }
 }
 
@@ -179,10 +189,11 @@ function assertIdentityTransition(previousRaw: string, nextRaw: string): void {
     previousUid !== '' &&
     next.uid !== previousUid
   ) {
-    throw new Error('`uid:` is immutable. Rename or reclassify the node without changing its UID.');
+    throw identityError('VaultIdentityUidError', '`uid:` is immutable. Rename or reclassify the node without changing its UID.');
   }
   if (JSON.stringify(next.merged_uids) !== JSON.stringify(previous.merged_uids)) {
-    throw new Error(
+    throw identityError(
+      'VaultIdentityHistoryError',
       '`merged_uids:` is merge-owned identity history and cannot be edited by a generic browser save.',
     );
   }

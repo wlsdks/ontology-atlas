@@ -1161,6 +1161,8 @@
       "closeTooltip": "닫기 (Esc)",
       "saveFailed": "저장 실패",
       "saveConflict": "디스크에서 먼저 변경되어 저장하지 못했습니다. 편집 내용은 유지됩니다. 내용을 복사한 뒤 새로고침해 최신 파일에 다시 반영하세요.",
+      "saveIdentityUid": "문서의 uid 는 이 노드의 영구 신원이라 지우거나 바꿀 수 없어요. uid 줄을 원래대로 되돌리면 저장됩니다.",
+      "saveIdentityHistory": "merged_uids 는 합치기 기록이라 여기서 고칠 수 없어요. 그 줄을 원래대로 되돌리면 저장됩니다.",
       "discardConfirm": "저장하지 않은 변경 사항을 버리고 편집을 닫을까요?",
       "linkText": "링크 텍스트",
       "placeholder": "텍스트",
