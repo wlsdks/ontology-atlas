@@ -79,7 +79,7 @@ test("payload contract · Skills 라우트는 지도 문구 없이 자기 본문
   const markers = webviewWorkbenchMarkersForPath("/ko/skills/");
   assert.equal(
     markers.every((marker) =>
-      marker.test("스킬\n에이전트가 가진 스킬이 언제 뜨고 무엇이 돌아가는지 본다."),
+      marker.test("스킬\n스킬을 살펴볼까요?"),
     ),
     true,
   );

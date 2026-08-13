@@ -61,7 +61,7 @@ export const WEBVIEW_WORKBENCH_MARKERS = [
 
 const WEBVIEW_SKILLS_WORKBENCH_MARKERS = [
   /스킬|Skills/,
-  /에이전트가 가진 스킬|See when each agent skill/,
+  /에이전트가 가진 스킬|스킬을 살펴볼까요|See when each agent skill/,
 ];
 
 /**
