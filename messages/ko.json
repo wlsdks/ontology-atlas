@@ -2968,6 +2968,7 @@
     "otherToolsCodexNote": "설정 파일 또는 CLI 명령",
     "otherToolsClaudeDesktopNote": "설정 → Developer 에서 수동 등록 (전용 확장은 후속)",
     "step1Title": "연결 버튼 누르기",
+    "step1TitleManual": "연결 설정 만들기",
     "step1Desc": "쓰는 도구의 버튼을 누르면 이 폴더를 함께 읽고 쓸 준비가 돼요.",
     "step2Title": "에이전트 다시 시작",
     "step2Desc": "Claude Code·Codex·Cursor·Antigravity 를 껐다 켜면 연결이 반영돼요.",

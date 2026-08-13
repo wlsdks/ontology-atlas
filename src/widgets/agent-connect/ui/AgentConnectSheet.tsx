@@ -264,7 +264,9 @@ export function AgentConnectSheet({
               {/* ① 연결 버튼 누르기 — 클라이언트별 원클릭 */}
               <StepRow
                 n={1}
-                title={t("step1Title")}
+                // 웹(수동 경로)에는 눌러 줄 연결 버튼이 없다 — 제목이 없는
+                // 버튼을 약속하면 그 자체가 거짓 캡션이다(2026-08-13 flow 실측).
+                title={serverAvailability.launch ? t("step1Title") : t("step1TitleManual")}
                 desc={
                   serverAvailability.launch
                     ? scope === "global"

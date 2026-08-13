@@ -2968,6 +2968,7 @@
     "otherToolsCodexNote": "config file or CLI command",
     "otherToolsClaudeDesktopNote": "Register manually in Settings → Developer (dedicated extension later)",
     "step1Title": "Press a connect button",
+    "step1TitleManual": "Create the connect config",
     "step1Desc": "Press the button for your tool and it's ready to read and write this folder with you.",
     "step2Title": "Restart the agent",
     "step2Desc": "Quit and reopen Claude Code, Codex, Cursor, or Antigravity to apply the connection.",
