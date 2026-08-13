@@ -201,8 +201,8 @@ bot, an external tool that only needs to *read* the graph — add
 }
 ```
 
-In read-only mode the server advertises **only the 16 read tools** in
-`tools/list` (the 9 write tools — `add_concept`, `add_concepts`,
+In read-only mode the server advertises **only the 19 read tools** in
+`tools/list` (the 16 write tools — `add_concept`, `add_concepts`,
 `add_relation`, `add_relations`, `patch_concept`, `rename_concept`,
 `merge_concepts`, `delete_concept`, `absorb_document` — disappear), and any
 direct call to a write tool is rejected even if the client cached an older

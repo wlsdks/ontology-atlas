@@ -31,8 +31,10 @@ human sees the change appear in their workbench.
 
 The MCP server `ontology-atlas` (the compiled `ontology-atlas-mcp` binary
 inside the installed app, or `mcp/src/index.js` from a source checkout) is the
-primary path. Fall back to the `cli/` binary (`ontology-atlas add` /
-`import` / `validate`) if MCP is unavailable in the current session.
+primary path. Fall back to the source checkout CLI with
+`node <atlas-checkout>/cli/src/index.mjs add|import|validate ...` if MCP is
+unavailable in the current session. There is no npm-installed `ontology-atlas`
+command to assume.
 
 ### 1. Read what's already there (cheap)
 
@@ -120,6 +122,10 @@ is a changelog.
   silently overwritten.
 - **Backlink rot**: after `rename_concept`, the tool atomically rewrites
   every backlink. Don't do `find_backlinks` + N `patch_concept` manually.
+- **Destructive boundary**: ordinary ontology-sync does not call
+  `delete_concept`, `merge_concepts`, `rename_concept`, `absorb_document`, or
+  `git_snapshot`. Those require an explicit user request, a dry-run or
+  preflight review, and the relevant `expected_mtime` guards.
 
 ## Example one-liner the agent might generate
 
