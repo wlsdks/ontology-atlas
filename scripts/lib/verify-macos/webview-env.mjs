@@ -64,6 +64,11 @@ const WEBVIEW_SKILLS_WORKBENCH_MARKERS = [
   /에이전트가 가진 스킬|See when each agent skill/,
 ];
 
+const WEBVIEW_TOPOLOGY_WORKBENCH_MARKERS = [
+  /온톨로지|Ontology|Atlas/,
+  /Map|지도|INDEX|Concept map|개념|Workspace|작업공간|Relief/,
+];
+
 /**
  * The verifier can open any packaged route. Do not make non-topology routes
  * repeat map copy merely to satisfy a launch gate; require two route-owned,
@@ -74,6 +79,9 @@ export function webviewWorkbenchMarkersForPath(expectedPath = null) {
     const pathname = new URL(expectedPath, "tauri://localhost/").pathname;
     if (/\/(?:ko|en)\/skills\/?$/.test(pathname)) {
       return WEBVIEW_SKILLS_WORKBENCH_MARKERS;
+    }
+    if (/\/(?:ko|en)\/topology\/?$/.test(pathname)) {
+      return WEBVIEW_TOPOLOGY_WORKBENCH_MARKERS;
     }
   }
   return WEBVIEW_WORKBENCH_MARKERS;
