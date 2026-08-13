@@ -87,4 +87,23 @@ describe("AgentSkillsPage responsive workbench", () => {
     expect(screen.getByTestId("skill-row-toggle")).toHaveAttribute("data-active", "true");
     expect(screen.getByTestId("skill-row-toggle")).toHaveFocus();
   });
+
+  /**
+   * 넓은 화면의 되돌아갈 문 (2026-08-13 걷기 실측). 진단 개요(FindingsPanel)는
+   * 아무것도 안 골랐을 때만 우측에 뜨는데, 스킬을 하나라도 고르면 같은 행
+   * 재클릭도 Escape 도 무효라 **유일한 복귀가 새로고침**이었다.
+   */
+  it("split view: detail offers a door back to the findings overview", () => {
+    viewport(false);
+    renderPage();
+    // 개요가 먼저 보인다
+    expect(screen.getByTestId("skills-findings")).toBeInTheDocument();
+    fireEvent.click(screen.getByTestId("skill-row-toggle"));
+    expect(screen.queryByTestId("skills-findings")).toBeNull();
+
+    fireEvent.click(screen.getByTestId("skills-detail-overview"));
+    expect(screen.getByTestId("skills-findings")).toBeInTheDocument();
+    // 목록의 활성 표시도 걷힌다 — 선택이 정말 풀렸다는 증거.
+    expect(screen.getByTestId("skill-row-toggle")).toHaveAttribute("data-active", "false");
+  });
 });
