@@ -256,6 +256,7 @@ export function AgentSkillsPage() {
                     inventory={inventory}
                     onSelect={selectSkill}
                     onBack={isCompact ? returnToList : undefined}
+                    onOverview={isCompact ? undefined : () => setSelected(null)}
                     headingRef={detailHeadingRef}
                     openStepIds={new Set(openStepsBySkill[current.origin.relativePath] ?? [])}
                     onToggleStep={toggleStep}

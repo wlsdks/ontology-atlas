@@ -3519,6 +3519,7 @@
     },
     "detail": {
       "back": "Skill list",
+      "backOverview": "All findings",
       "showLoadChain": "Show the three-stage load chain",
       "hideLoadChain": "Hide the three-stage load chain",
       "competing": "Competes with this skill",

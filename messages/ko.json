@@ -3519,6 +3519,7 @@
     },
     "detail": {
       "back": "스킬 목록",
+      "backOverview": "전체 진단으로",
       "showLoadChain": "3단 로드 체인 보기",
       "hideLoadChain": "3단 로드 체인 닫기",
       "competing": "이 스킬과 경쟁하는 것",
