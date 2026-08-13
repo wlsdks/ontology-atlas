@@ -2686,16 +2686,16 @@
         "extrasCaption": "Body text, tags, connected projects, dates: all fine to add after creating."
       },
       "fields": {
-        "slug": "slug",
+        "slug": "Document address",
         "name": "Name",
         "nameEn": "English name (optional)",
         "category": "Category",
         "status": "Status",
         "description": "Short description",
         "detail": "Detail (markdown, optional)",
-        "tagsCsv": "Tags (CSV)",
-        "stackCsv": "Stack (CSV)",
-        "linksText": "Links (one label|url per line)",
+        "tagsCsv": "Tags (comma-separated)",
+        "stackCsv": "Stack (comma-separated)",
+        "linksText": "Links (one per line, name|url)",
         "dependencies": "Dependencies",
         "startedAt": "Start date",
         "launchedAt": "Launch date",
@@ -2704,7 +2704,7 @@
         "progress": "Progress %",
         "slugHint": "Used in URLs. Letters (any script, including non-Latin), digits, and hyphens only, no spaces. Cannot change after creation.",
         "slugGenerate": "Generate from name",
-        "slugDuplicate": "Slug already exists.",
+        "slugDuplicate": "That address already exists.",
         "duplicateNotice": "Starting from a copy of the existing project.",
         "categoryMissingWarning": "Current category reference is broken. Pick another category to recover.",
         "statusMissingWarning": "Current status reference is broken. Pick another status to recover.",
@@ -2823,7 +2823,7 @@
     "markdown": {
       "tabWrite": "Write",
       "tabPreview": "Preview",
-      "footer": "Markdown · GFM",
+      "footer": "Markdown supported",
       "previewEmpty": "Nothing to preview"
     },
     "quickEdit": {
