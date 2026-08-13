@@ -451,13 +451,18 @@ await test("tools/list — 단일 도구 description 이 batch 짝을 cross-refe
     };
     const listConcepts = findTool("list_concepts");
     assert.equal(listConcepts?.outputSchema?.type, "object");
-    assert.deepEqual(listConcepts?.outputSchema?.required, ["total", "vaultRoot", "nodes"]);
+    assert.deepEqual(listConcepts?.outputSchema?.required, ["total", "vaultRoot", "nodes", "pagination"]);
     assert.equal(listConcepts?.outputSchema?.additionalProperties, false);
     assert.equal(listConcepts?.outputSchema?.properties?.total?.type, "integer");
     assert.equal(listConcepts?.outputSchema?.properties?.vaultRoot?.type, "string");
     assert.deepEqual(listConcepts?.outputSchema?.properties?.nodes?.items?.required, ["uid", "slug", "kind", "title", "mtime"]);
     assert.equal(listConcepts?.outputSchema?.properties?.nodes?.items?.properties?.mtime?.type, "number");
     assert.equal(listConcepts?.outputSchema?.properties?.nodes?.items?.additionalProperties, false);
+    assert.deepEqual(
+      listConcepts?.outputSchema?.properties?.pagination?.required,
+      ["offset", "limit", "total", "returned", "hasMore", "nextOffset"],
+    );
+    assert.equal(listConcepts?.outputSchema?.properties?.pagination?.additionalProperties, false);
     assert.deepEqual(listConcepts?.outputSchema?.properties?.vaultWarnings?.required, ["errorCount", "warningCount"]);
     assert.equal(listConcepts?.outputSchema?.properties?.vaultWarnings?.additionalProperties, false);
     const getConceptTool = findTool("get_concept");
@@ -2137,7 +2142,7 @@ await test("tools/call — arguments 생략은 빈 object, non-object 는 명시
       /Unknown argument "lmit" for list_concepts/i,
     );
     assert.equal(responses.find((r) => r.id === 6)?.result?.structuredContent?.errorCode, "unknown_argument");
-    assert.deepEqual(getCallStructured(responses, 6)?.allowedArguments, ["domain", "kind", "limit", "since", "summary"]);
+    assert.deepEqual(getCallStructured(responses, 6)?.allowedArguments, ["domain", "kind", "limit", "offset", "since", "summary"]);
     assert.deepEqual(getCallStructured(responses, 6)?.receivedArguments, ["lmit"]);
     assert.equal(getCallStructured(responses, 6)?.receivedArgument, "lmit");
     assert.equal(getCallStructured(responses, 6)?.suggestion, "limit");
@@ -2149,7 +2154,7 @@ await test("tools/call — arguments 생략은 빈 object, non-object 는 명시
     assert.match(getCallText(responses, 8), /Unknown arguments for list_concepts/i);
     assert.match(getCallText(responses, 8), /"lmit" \(did you mean "limit"\?\)/i);
     assert.match(getCallText(responses, 8), /"summry" \(did you mean "summary"\?\)/i);
-    assert.match(getCallText(responses, 8), /Allowed arguments: domain, kind, limit, since, summary/i);
+    assert.match(getCallText(responses, 8), /Allowed arguments: domain, kind, limit, offset, since, summary/i);
     assert.equal(getCallStructured(responses, 8)?.errorCode, "unknown_argument");
     assert.deepEqual(getCallStructured(responses, 8)?.unknownArguments, [
       { name: "lmit", suggestion: "limit" },
@@ -4187,6 +4192,43 @@ await test("list_concepts — tmp vault 의 노드 수 정확히 보고", async 
     ]);
     const result = getCallParsed(responses, 2);
     assert.equal(result.total, 2, "kind 있는 노드 2 개만 카운트");
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+await test("list_concepts — 100+ vault contract is explicit and resumable", async () => {
+  const root = makeVault([
+    { slug: "z", content: "---\nkind: capability\ntitle: Z\n---\n" },
+    { slug: "a", content: "---\nkind: capability\ntitle: A\n---\n" },
+    { slug: "m", content: "---\nkind: capability\ntitle: M\n---\n" },
+  ]);
+  try {
+    const { responses } = await rpc(root, [
+      ...INIT_REQUESTS,
+      callTool(2, "list_concepts", { limit: 2 }),
+      callTool(3, "list_concepts", { limit: 2, offset: 2 }),
+    ]);
+    const first = getCallParsed(responses, 2);
+    const second = getCallParsed(responses, 3);
+    assert.deepEqual(first.nodes.map((node) => node.slug), ["a", "m"]);
+    assert.deepEqual(second.nodes.map((node) => node.slug), ["z"]);
+    assert.deepEqual(first.pagination, {
+      offset: 0,
+      limit: 2,
+      total: 3,
+      returned: 2,
+      hasMore: true,
+      nextOffset: 2,
+    });
+    assert.deepEqual(second.pagination, {
+      offset: 2,
+      limit: 2,
+      total: 3,
+      returned: 1,
+      hasMore: false,
+      nextOffset: null,
+    });
   } finally {
     rmSync(root, { recursive: true, force: true });
   }

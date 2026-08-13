@@ -38,7 +38,7 @@
  */
 
 import { spawn } from 'node:child_process';
-import { mkdirSync, rmSync, statSync, writeFileSync } from 'node:fs';
+import { mkdirSync, realpathSync, rmSync, statSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { fileURLToPath } from 'node:url';
 import { dirname, resolve, join } from 'node:path';
@@ -889,10 +889,19 @@ export function toolsListSchemaFailure(tools) {
   ) {
     return 'list_concepts inputSchema limit default description drift';
   }
+  const listOffsetSchema = propertyAt(listConceptsTool, ['properties', 'offset']);
+  if (
+    listOffsetSchema?.type !== 'integer' ||
+    listOffsetSchema.minimum !== 0 ||
+    !/Zero-based page offset/i.test(listOffsetSchema?.description ?? '') ||
+    !/pagination\.nextOffset/i.test(listOffsetSchema?.description ?? '')
+  ) {
+    return 'list_concepts inputSchema offset pagination guidance drift';
+  }
   if (listConceptsTool.outputSchema?.type !== 'object') {
     return 'list_concepts outputSchema root drift';
   }
-  if (!sameArray(listConceptsTool.outputSchema?.required, ['total', 'vaultRoot', 'nodes'])) {
+  if (!sameArray(listConceptsTool.outputSchema?.required, ['total', 'vaultRoot', 'nodes', 'pagination'])) {
     return 'list_concepts outputSchema required drift';
   }
   if (listConceptsTool.outputSchema?.additionalProperties !== false) {
@@ -912,6 +921,33 @@ export function toolsListSchemaFailure(tools) {
   }
   if (listNodesSchema.items?.additionalProperties !== false) {
     return 'list_concepts outputSchema node openness drift';
+  }
+  const listPaginationSchema = outputPropertyAt(listConceptsTool, ['properties', 'pagination']);
+  if (
+    listPaginationSchema?.type !== 'object' ||
+    !sameArray(listPaginationSchema.required, ['offset', 'limit', 'total', 'returned', 'hasMore', 'nextOffset']) ||
+    listPaginationSchema.additionalProperties !== false
+  ) {
+    return 'list_concepts outputSchema pagination drift';
+  }
+  for (const propertyName of ['offset', 'total', 'returned']) {
+    const paginationNumber = listPaginationSchema.properties?.[propertyName];
+    if (paginationNumber?.type !== 'integer' || paginationNumber.minimum !== 0) {
+      return `list_concepts outputSchema pagination ${propertyName} drift`;
+    }
+  }
+  if (listPaginationSchema.properties?.limit?.type !== 'integer' || listPaginationSchema.properties?.limit?.minimum !== 1) {
+    return 'list_concepts outputSchema pagination limit drift';
+  }
+  if (listPaginationSchema.properties?.limit?.maximum !== 500) {
+    return 'list_concepts outputSchema pagination limit cap drift';
+  }
+  if (listPaginationSchema.properties?.hasMore?.type !== 'boolean') {
+    return 'list_concepts outputSchema pagination hasMore drift';
+  }
+  const nextOffsetSchema = listPaginationSchema.properties?.nextOffset;
+  if (!sameArray(nextOffsetSchema?.type, ['integer', 'null']) || nextOffsetSchema.minimum !== 0) {
+    return 'list_concepts outputSchema pagination nextOffset drift';
   }
   if (listNodesSchema.items?.properties?.uid?.type !== 'string' || listNodesSchema.items?.properties?.uid?.pattern !== NODE_UID_PATTERN) {
     return 'list_concepts outputSchema node uid drift';
@@ -3179,7 +3215,7 @@ export function strictArgsFailure(response) {
   if (structured.unknownArguments[0]?.name !== 'lmit' || structured.unknownArguments[0]?.suggestion !== 'limit') {
     return 'strict arguments structured error missing canonical unknown argument hint';
   }
-  if (!sameArray(structured?.allowedArguments, ['domain', 'kind', 'limit', 'since', 'summary'])) {
+  if (!sameArray(structured?.allowedArguments, ['domain', 'kind', 'limit', 'offset', 'since', 'summary'])) {
     return 'strict arguments structured error missing allowed arguments';
   }
   return null;
@@ -3208,7 +3244,7 @@ export function strictMultiArgsFailure(response) {
   if (!sameArray(structured?.receivedArguments, ['lmit', 'summry'])) {
     return 'strict multi-argument structured error missing received arguments';
   }
-  if (!sameArray(structured?.allowedArguments, ['domain', 'kind', 'limit', 'since', 'summary'])) {
+  if (!sameArray(structured?.allowedArguments, ['domain', 'kind', 'limit', 'offset', 'since', 'summary'])) {
     return 'strict multi-argument structured error missing allowed arguments';
   }
   if (!Array.isArray(structured?.unknownArguments) || structured.unknownArguments.length !== 2) {
@@ -5539,6 +5575,88 @@ function allGraphQuerySmokeResponseIds() {
   }).expectedResponseIds;
 }
 
+export function firstContactLocalProbeFailure(responses, {
+  repoRoot = REPO_ROOT,
+  vaultRoot = VAULT,
+} = {}) {
+  const canonical = (value) => {
+    try {
+      return realpathSync(value);
+    } catch {
+      return resolve(value);
+    }
+  };
+  const expectedRepoRoot = canonical(repoRoot);
+  const expectedVaultRoot = canonical(vaultRoot);
+  const checks = [
+    {
+      id: 70,
+      label: 'connection_info',
+      validate(payload) {
+        if (canonical(payload.vaultRoot) !== expectedVaultRoot || canonical(payload.repoRoot) !== expectedRepoRoot) {
+          return 'connection_info roots do not match the verifier scope';
+        }
+        if (typeof payload.sameRoot !== 'boolean' || payload.restartRequiredForRootChange !== true) {
+          return 'connection_info scope metadata drift';
+        }
+        if (!payload.server || !Number.isInteger(payload.server.toolCount) || !Array.isArray(payload.server.toolNames)) {
+          return 'connection_info server inventory metadata missing';
+        }
+        return null;
+      },
+    },
+    {
+      id: 71,
+      label: 'git_status',
+      validate(payload) {
+        if (payload.operation !== 'git_status' || canonical(payload.repoRoot) !== expectedRepoRoot || canonical(payload.vaultRoot) !== expectedVaultRoot) {
+          return 'git_status operation or roots do not match the verifier scope';
+        }
+        if (payload.ok === false) {
+          return typeof payload.reason === 'string' && payload.reason.length > 0 ? null : 'git_status unavailable response missing reason';
+        }
+        if (typeof payload.ok !== 'boolean' || !payload.counts || !Array.isArray(payload.files) || !Array.isArray(payload.stagedOutsideVault)) {
+          return 'git_status scope/count/file metadata missing';
+        }
+        return null;
+      },
+    },
+    {
+      id: 72,
+      label: 'git_history',
+      validate(payload) {
+        if (payload.operation !== 'git_history' || canonical(payload.repoRoot) !== expectedRepoRoot || canonical(payload.vaultRoot) !== expectedVaultRoot) {
+          return 'git_history operation or roots do not match the verifier scope';
+        }
+        if (payload.ok === false) {
+          return typeof payload.reason === 'string' && payload.reason.length > 0 ? null : 'git_history unavailable response missing reason';
+        }
+        if (!Number.isInteger(payload.count) || payload.count < 0 || typeof payload.limited !== 'boolean' || typeof payload.hasMore !== 'boolean' || typeof payload.shallow !== 'boolean' || typeof payload.historyComplete !== 'boolean') {
+          return 'git_history bounded-history metadata missing';
+        }
+        return null;
+      },
+    },
+  ];
+
+  for (const check of checks) {
+    const response = responses.find((candidate) => candidate?.id === check.id);
+    if (!response?.result) return `no ${check.label} live probe response`;
+    if (response.result.isError === true) return `${check.label} live probe returned a tool error`;
+    let parsed;
+    try {
+      parsed = JSON.parse(response.result.content?.[0]?.text || '{}');
+    } catch (error) {
+      return `${check.label} live probe returned invalid JSON: ${error.message}`;
+    }
+    const parityFailure = structuredContentFailure(response, parsed, check.label);
+    if (parityFailure) return parityFailure;
+    const failure = check.validate(parsed);
+    if (failure) return failure;
+  }
+  return null;
+}
+
 export function firstContactErrorFailure(response) {
   const label = FIRST_CONTACT_RESPONSE_LABELS.get(response?.id) || `id ${response?.id}`;
   const message = response?.error?.message || JSON.stringify(response?.error || {});
@@ -5599,6 +5717,36 @@ export function listConceptsFailure(parsed) {
   }
   if (!Array.isArray(parsed.nodes)) {
     return 'list_concepts response missing nodes array';
+  }
+  const pagination = parsed.pagination;
+  if (!pagination || typeof pagination !== 'object' || Array.isArray(pagination)) {
+    return 'list_concepts response missing pagination metadata';
+  }
+  if (!Number.isInteger(pagination.offset) || pagination.offset < 0) {
+    return 'list_concepts pagination missing non-negative offset';
+  }
+  if (!Number.isInteger(pagination.limit) || pagination.limit < 1 || pagination.limit > 500) {
+    return 'list_concepts pagination missing bounded limit';
+  }
+  if (pagination.total !== parsed.total) {
+    return 'list_concepts pagination total mismatch';
+  }
+  if (!Number.isInteger(pagination.returned) || pagination.returned !== parsed.nodes.length) {
+    return 'list_concepts pagination returned mismatch';
+  }
+  if (typeof pagination.hasMore !== 'boolean') {
+    return 'list_concepts pagination missing hasMore';
+  }
+  const expectedHasMore = pagination.offset + pagination.returned < parsed.total;
+  if (pagination.hasMore !== expectedHasMore) {
+    return 'list_concepts pagination hasMore mismatch';
+  }
+  const expectedNextOffset = expectedHasMore ? pagination.offset + pagination.returned : null;
+  if (pagination.nextOffset !== expectedNextOffset) {
+    return 'list_concepts pagination nextOffset mismatch';
+  }
+  if (parsed.nodes.length > pagination.limit) {
+    return 'list_concepts pagination page exceeds limit';
   }
   if (parsed.nodes.length > parsed.total) {
     return `list_concepts response node count exceeds total: nodes ${parsed.nodes.length}, total ${parsed.total}`;

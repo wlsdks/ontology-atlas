@@ -294,6 +294,7 @@
           "domain",
           "kind",
           "limit",
+          "offset",
           "since",
           "summary"
         ],

@@ -40,6 +40,44 @@
 **상태**: 유효 / 뒤집힘(→ 링크) / 반증됨(관측: …)
 ```
 
+## 2026-08-13 — 대형 vault의 list_concepts census는 잘림을 숨기지 않는다
+
+**소집**: PO Council 5석 · **트리거**: 130-node fresh vault에서 `list_concepts({limit:100})`가
+100행만 반환하면서 `total:130` 외에 잘림/다음 페이지 신호를 내지 않음 · 기존
+「100개 무표식 절단은 별도 read-contract로 다룬다」결정을 집행으로 승격
+**루브릭**: 22/24 (치명적 0: 없음)
+**결정**: `list_concepts`에 offset 기반 명시적 pagination을 추가하고 raw MCP/CLI 게이트로 닫는다.
+**적용 규칙**: 기존 `compile_ontology` 페이지 메타 재사용 · 새 tool/kind/relation/UI/transport cursor 없음
+**서명**: owner 위임 아래 Codex 집행
+
+**기록된 반대**: pagination은 일반 기능이고 `limit:500` 재호출로 회복 가능하므로 source qualification과
+성능이 먼저라는 주장(해자)
+**반증 조건**: 독립 100+ node 세션 3회에서 모두 `limit:500`을 안정적으로 선택하고 누락 사고가 없으며,
+동시에 다른 blocker가 field trial을 막는 것이 반복 관측되면 후순위로 되돌린다.
+**재검토**: 130+ acceptance fixture 통과 후 다음 3회 zero-state MCP 세션
+**상태**: 유효
+
+**IN**: `offset`, `pagination.offset/limit/total/returned/hasMore/nextOffset`, slug 정렬, schema/verify/integration fixture
+**OUT**: UI, `query_concepts`, `compile_ontology`, transport-level cursor, semantic qualification, 성능 최적화
+
+## 2026-08-13 — 모바일 INDEX에서도 기존 설정으로 보기 모드를 되돌린다
+
+**소집**: Design Council · **트리거**: 390px에서 일반인 보기로 전환한 뒤 확장 INDEX가 상단 설정 레인을 숨겨
+전문가 보기로 돌아갈 가시적 경로가 사라짐 · **루브릭**: 22/24 (치명적 0: 없음)
+**결정**: 새 설정 화면이나 전역 모드 체계를 만들지 않고, 확장 INDEX의 `<md` 표면에 기존
+`AppSettingsMenu(triggerVariant="chrome-tile")`를 하나만 노출한다.
+**적용 규칙**: 기존 설정 행·토큰·session-only 상태·reduced-motion을 재사용하고, URL/localStorage/vault write 0
+**서명**: owner 위임 아래 Codex 집행
+
+**기록된 반대**: 모바일에 별도 보기 모드 탭을 만들어 발견성을 높이자는 제안(결)
+**반증 조건**: 390px에서 일반인→전문가→일반인 왕복, 키보드 focus 복귀, 지도/투어 상태 보존이 실패하거나
+새 trigger가 기존 INDEX/하단 탭을 가리면 별도 surface를 재검토한다.
+**재검토**: 390/1024/1512 responsive sweep 및 reduced-motion 실측
+**상태**: 유효
+
+**IN**: 모바일 확장 INDEX의 기존 설정 escape hatch, `screenControls.audiencePlain`, focus-visible·state 보존 검증
+**OUT**: 새 settings route/tab, public MCP/CLI/schema, 전역 expert/general ontology model
+
 ## 2026-08-13 — 구조 readiness와 의미 qualification을 검수 계층에서 분리한다
 
 **결정:** 에이전트 handoff와 ontology-sync는 구조 readiness를 semantic qualification과

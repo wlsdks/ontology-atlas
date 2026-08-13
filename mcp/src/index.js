@@ -1802,7 +1802,7 @@ ${CONSTRUCTION_LIFECYCLE_EN}
 
 1. \`connection_info\` — prove the resolved vault and repository roots before analysis or writes. Root env changes require a server restart.
 2. \`list_kinds\` — see the kind census (how many projects/domains/capabilities/…).
-2. \`list_concepts\` — full node table. Pass \`summary: true\` for prose previews per row (avoid N follow-up \`get_concept\` calls). Pass \`since: <prevMaxMtime>\` for incremental sync. Watch \`vaultWarnings\` — if non-zero, surface it to the user before making decisions on stale data.
+2. \`list_concepts\` — full node table. Pass \`summary: true\` for prose previews per row (avoid N follow-up \`get_concept\` calls). Pass \`since: <prevMaxMtime>\` for incremental sync. For large vaults, follow \`pagination.nextOffset\` while \`pagination.hasMore\` is true; never assume \`nodes\` contains the whole census when \`total\` is larger. Watch \`vaultWarnings\` — if non-zero, surface it to the user before making decisions on stale data.
 3. \`validate_vault({})\` — read-only frontmatter health check. Run this during first-contact before proposing writes; report blocking errors separately from advisory warnings.
 4. \`query_ontology({operation:'agent_brief'})\` — Claude Code/Codex handoff: readiness, structured \`businessOntologyLens\` for the business-first \`outcome\` → \`domain\` → \`capability\` → \`element\` read order, copyable \`handoffPrompt\`, structured \`cliFallbackCommands[]\` for connector-less sessions, graph entrypoints, first MCP calls, \`graphDbQueryPack\` for \`facets\`, \`schema\`, \`match_nodes\`, \`match_edges\`, \`domain_matrix\`, \`centrality\`, \`all_paths\`, \`explain_relation\`, and \`business_questions\` outcome / domain-boundary / capability-claim / implementation-evidence scans, investigation playbooks including \`graph_traversal\` (\`schema\` → \`query_plan(all_paths)\` → \`all_paths\` → \`pattern_walk\` → \`project_map\`) with \`evidence[]\` and \`stopWhen[]\` checklists, \`traversalStrategy\` (\`plan_before_enumeration\` / \`bounded_path_evidence\` / \`containment_cross_check\`) for performance-aware graph traversal, write guardrails (\`preflight_relation\` / \`preflight_rename\` / \`post_change_sync\`), \`relationDecisionGuide\` for \`relation_check\` outcomes (\`skip_existing\` / \`review_inverse\` / \`safe_to_add\` / \`review_new_schema\`), \`resultContracts\` requiring \`all_paths\` callers to report \`limit\`, \`searchBudget\`, \`expandedStates\`, \`exhaustive\`, \`truncatedByBudget\`, \`totalPathsExact\`, \`evidence.status\`, \`evidence.reason\`, and \`evidence.pathsComplete\`, plus \`match_nodes\` / \`match_edges\` callers to report \`totalMatches\`, \`limited\`, and \`followUp\` details before treating scan rows as evidence, embedded health, and read-first write policy in one response.
 5. \`query_ontology({operation:'workspace_brief'})\` — read-only first-contact diagnosis: project shape, health status, and next actions without fetching the full graph. Use \`query_ontology({operation:'health'})\` when you need a deeper integrity dashboard.
@@ -1998,6 +1998,11 @@ const TOOLS = [
           maximum: 500,
           description: 'Positive integer max rows to return. Defaults to 100, max 500.',
         },
+        offset: {
+          type: 'integer',
+          minimum: 0,
+          description: 'Zero-based page offset. Use pagination.nextOffset until hasMore is false.',
+        },
       },
     },
     outputSchema: {
@@ -2049,6 +2054,19 @@ const TOOLS = [
             additionalProperties: false,
           },
         },
+        pagination: {
+          type: 'object',
+          properties: {
+            offset: { type: 'integer', minimum: 0 },
+            limit: { type: 'integer', minimum: 1, maximum: 500 },
+            total: { type: 'integer', minimum: 0 },
+            returned: { type: 'integer', minimum: 0 },
+            hasMore: { type: 'boolean' },
+            nextOffset: { type: ['integer', 'null'], minimum: 0 },
+          },
+          required: ['offset', 'limit', 'total', 'returned', 'hasMore', 'nextOffset'],
+          additionalProperties: false,
+        },
         summaryHint: {
           type: 'string',
           description: 'Only present when at least one row carries a partial summary — names the follow-up call that returns the full bodies.',
@@ -2063,7 +2081,7 @@ const TOOLS = [
           additionalProperties: false,
         },
       },
-      required: ['total', 'vaultRoot', 'nodes'],
+      required: ['total', 'vaultRoot', 'nodes', 'pagination'],
       additionalProperties: false,
     },
   },
@@ -6063,13 +6081,14 @@ function requireOptionalBoolean(value, name) {
   }
 }
 
-function listConcepts({ kind, domain, since, summary, limit = 100 }) {
+function listConcepts({ kind, domain, since, summary, limit = 100, offset = 0 }) {
   requireOptionalNonBlankString(kind, 'kind');
   requireOptionalEnum(kind, 'kind', NODE_KIND_VALUES);
   requireOptionalNonBlankString(domain, 'domain');
   requireOptionalNonNegativeNumber(since, 'since');
   requireOptionalBoolean(summary, 'summary');
   requireOptionalPositiveInteger(limit, 'limit', { max: 500 });
+  requireOptionalNonNegativeInteger(offset, 'offset');
   const docs = loadVaultDocs(VAULT_ROOT);
 
   // R11 #23 — vault-wide validation 카운트. raw 모두 검증해 silent corruption
@@ -6114,9 +6133,10 @@ function listConcepts({ kind, domain, since, summary, limit = 100 }) {
     if (domain && doc.frontmatter.domain !== domain) return false;
     if (sinceMs !== null && (typeof doc.mtime !== 'number' || doc.mtime <= sinceMs)) return false;
     return true;
-  });
+  }).sort((a, b) => a.slug.localeCompare(b.slug, 'en'));
+  const page = filtered.slice(offset, offset + limit);
   const summaryTruncatedSlugs = [];
-  const nodes = filtered.slice(0, limit).map((doc) => {
+  const nodes = page.map((doc) => {
     // R+ — opt-in summary. agent 가 list 한 호출로 "각 노드 무슨 내용인가?"
     // 파악 가능. 200자 cap 으로 페이로드 부풀림 방지 (find_evidence 와 동일).
     // 호출자가 summary:true 명시 안 하면 비활성 (기존 동작 보존).
@@ -6148,6 +6168,14 @@ function listConcepts({ kind, domain, since, summary, limit = 100 }) {
     total: filtered.length,
     vaultRoot: VAULT_ROOT,
     nodes,
+    pagination: {
+      offset,
+      limit,
+      total: filtered.length,
+      returned: nodes.length,
+      hasMore: offset + nodes.length < filtered.length,
+      nextOffset: offset + nodes.length < filtered.length ? offset + nodes.length : null,
+    },
     // 잘린 요약은 **행에 표시하고 목록에 한 번만 안내한다** — 행마다 안내문을
     // 붙이면 페이로드만 늘고, 아무 데도 안 붙이면 무엇이 남았는지 몰라 다시
     // 요청할 수가 없다.

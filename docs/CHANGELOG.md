@@ -19,6 +19,20 @@
 - 새 Node24 fresh web/app build와 MCP/CLI integration gate로 no-write·parser red/green·앱
   smoke를 검증했다. 앱 release 서명 키와 기존 performance budget은 별도 release 결정이다.
 
+## 2026-08-13 · 대형 vault의 첫 node census가 누락을 숨기지 않는다
+
+- `list_concepts`에 deterministic slug order와 `offset` 기반 페이지 메타
+  (`offset`, `limit`, `total`, `returned`, `hasMore`, `nextOffset`)를 추가했다.
+- 100개를 넘는 vault에서도 첫 응답만 보고 전체 목록을 읽었다고 오해하지 않도록,
+  agent는 `pagination.nextOffset`을 따라가야 한다. 새 raw MCP fixture가 페이지 합산의
+  중복·누락과 종료 조건을 검증한다.
+
+## 2026-08-13 · 모바일에서도 보기 모드를 되돌릴 수 있다
+
+- 확장 INDEX가 화면을 소유하는 작은 화면에서도 기존 설정 메뉴를 다시 열어 일반인 보기와
+  전문가 보기를 왕복할 수 있다.
+- 새 설정 체계나 저장 경로를 만들지 않고 기존 화면 설정 행과 session-only 상태를 재사용한다.
+
 ## 2026-08-13 · 대형 import graph는 검토 가능한 크기로 전달된다
 
 낯선 Python·TypeScript 오픈소스를 fresh Codex와 Claude Code로 0부터 분석하자,
