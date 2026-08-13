@@ -139,6 +139,12 @@ export function InlinePicker({
   );
   // Which domain the 둘러보기 drill-down is inside (null = top-level domain list).
   const [browseKey, setBrowseKey] = useState<string | null>(null);
+  // 묶음이 하나뿐이면 접힌 층을 건너뛴다 — 후보 1개가 「도메인 없음 (1)」 뒤에
+  // 숨어 한 번 더 눌러야 보였다(2026-08-13 flow 실측, 2노드 볼트). 자동 진입일
+  // 때는 되돌아갈 목록도 없으므로 뒤로 줄도 그리지 않는다.
+  const soleDomainKey =
+    discovery && discovery.domains.length === 1 ? discovery.domains[0].key : null;
+  const effectiveBrowseKey = browseKey ?? soleDomainKey;
   const reasonLabel = (reason: PickerSuggestionReason): string =>
     reason === "sameDomain"
       ? labels.reasonSameDomain
@@ -247,7 +253,7 @@ export function InlinePicker({
               {/* 둘러보기 — domain drill-down (default = domain list). */}
               <div data-testid="studio-picker-browse">
                 <PickerSectionHeading label={labels.browseHeading} />
-                {browseKey === null ? (
+                {effectiveBrowseKey === null ? (
                   discovery.domains.map((d) => (
                     <button
                       key={d.key}
@@ -271,6 +277,7 @@ export function InlinePicker({
                   ))
                 ) : (
                   <>
+                    {soleDomainKey === null ? (
                     <button
                       type="button"
                       data-testid="studio-browse-back"
@@ -284,7 +291,8 @@ export function InlinePicker({
                     >
                       {labels.browseBack}
                     </button>
-                    {(discovery.nodesByDomain[browseKey] ?? []).map((c) => (
+                    ) : null}
+                    {(discovery.nodesByDomain[effectiveBrowseKey] ?? []).map((c) => (
                       <button
                         key={c.id}
                         type="button"
