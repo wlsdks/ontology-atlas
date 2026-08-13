@@ -1175,7 +1175,7 @@ const BACKLINK_ROW_OUTPUT_SCHEMA = Object.freeze({
 const CAPTURED_DOC_OUTPUT_SCHEMA = Object.freeze({
   type: 'object',
   properties: {
-    frontmatter: { type: 'object' },
+    frontmatter: { type: 'object', additionalProperties: true },
     body: { type: 'string' },
     bodyExcerpt: { type: 'string' },
   },
@@ -1258,13 +1258,297 @@ const GROWTH_HINT_OUTPUT_SCHEMA = Object.freeze({
       type: 'object',
       properties: {
         tool: NON_BLANK_STRING_SCHEMA,
-        args: { type: 'object' },
+        // Tool arguments are intentionally polymorphic: the example is a
+        // repair hint for several tools, not an invocation envelope for one
+        // fixed operation. Keep that openness explicit so it cannot be
+        // mistaken for an omitted nested schema.
+        args: { type: 'object', additionalProperties: true },
       },
       required: ['tool', 'args'],
       additionalProperties: false,
     },
   },
   required: ['reason', 'suggestion', 'exampleCall'],
+  additionalProperties: false,
+});
+
+// Nested tools/list objects are closed by default. These small contracts are
+// deliberately kept beside the registry so the MCP wire shape and the
+// runtime values cannot drift independently. Only maps whose keys are chosen
+// at runtime (frontmatter and example-call arguments) use an explicit open
+// object schema above/below.
+const PROJECT_SOURCE_GAP_SCHEMA = Object.freeze({
+  type: ['object', 'null'],
+  properties: {
+    id: {
+      type: 'string',
+      enum: [
+        'source_unbound',
+        'multiple_active_sources',
+        'receipt_missing',
+        'receipt_malformed',
+        'source_role_evidence_missing',
+        'declared_source_path_missing',
+        'source_inventory_truncated',
+        'ontology_changed',
+        'source_changed',
+      ],
+    },
+    nodeSlug: { type: 'string' },
+  },
+  required: ['id'],
+  additionalProperties: false,
+});
+const PROJECT_SOURCE_ACTION_SCHEMA = Object.freeze({
+  type: 'object',
+  properties: {
+    id: {
+      type: 'string',
+      enum: [
+        'connect_source',
+        'repair_source_binding',
+        'measure_source',
+        'record_source_role',
+        'repair_source_path',
+        'review_inventory_limit',
+        'remeasure_source',
+        'use_current_evidence',
+      ],
+    },
+    target: { type: 'string' },
+  },
+  required: ['id'],
+  additionalProperties: false,
+});
+const PROJECT_SOURCE_RECEIPT_SCHEMA = Object.freeze({
+  type: 'object',
+  properties: {
+    contractVersion: { type: 'integer', enum: [1] },
+    projectSlug: NON_BLANK_STRING_SCHEMA,
+    sourceId: NON_BLANK_STRING_SCHEMA,
+    sourceKind: { type: 'string', enum: ['git', 'folder'] },
+    sourceRevision: NON_BLANK_STRING_SCHEMA,
+    sourceFingerprint: NON_BLANK_STRING_SCHEMA,
+    graphHash: NON_BLANK_STRING_SCHEMA,
+    measuredAt: { type: 'string', format: 'date-time' },
+    status: { type: 'string', enum: ['needs_evidence', 'review_required', 'verified_current'] },
+    currentness: { type: 'string', enum: ['current'] },
+    topGap: PROJECT_SOURCE_GAP_SCHEMA,
+    nextAction: PROJECT_SOURCE_ACTION_SCHEMA,
+    witnessSummary: {
+      type: 'object',
+      properties: {
+        total: { type: 'integer', minimum: 0 },
+        supported: { type: 'integer', minimum: 0 },
+        missing: { type: 'integer', minimum: 0 },
+      },
+      required: ['total', 'supported', 'missing'],
+      additionalProperties: false,
+    },
+    witnesses: {
+      type: 'array',
+      items: {
+        type: 'object',
+        properties: {
+          id: NON_BLANK_STRING_SCHEMA,
+          nodeSlug: NON_BLANK_STRING_SCHEMA,
+          role: NON_BLANK_STRING_SCHEMA,
+          path: NON_BLANK_STRING_SCHEMA,
+          supported: { type: 'boolean' },
+        },
+        required: ['id', 'nodeSlug', 'role', 'path', 'supported'],
+        additionalProperties: false,
+      },
+    },
+    diagnostics: {
+      type: 'object',
+      properties: {
+        dirty: { type: ['boolean', 'null'] },
+        truncated: { type: 'boolean' },
+      },
+      required: ['dirty', 'truncated'],
+      additionalProperties: false,
+    },
+  },
+  required: [
+    'contractVersion', 'projectSlug', 'sourceId', 'sourceKind',
+    'sourceRevision', 'sourceFingerprint', 'graphHash', 'measuredAt',
+    'status', 'currentness', 'topGap', 'nextAction', 'witnessSummary',
+    'witnesses', 'diagnostics',
+  ],
+  additionalProperties: false,
+});
+const PROJECT_SOURCE_BINDING_VIEW_SCHEMA = Object.freeze({
+  type: 'object',
+  properties: {
+    rootPath: NON_BLANK_STRING_SCHEMA,
+    kind: { type: 'string', enum: ['git', 'folder'] },
+    sourceId: NON_BLANK_STRING_SCHEMA,
+    dirty: { type: ['boolean', 'null'] },
+    truncated: { type: 'boolean' },
+    inventoryFiles: { type: 'integer', minimum: 0 },
+  },
+  required: ['rootPath', 'kind', 'sourceId', 'dirty', 'truncated', 'inventoryFiles'],
+  additionalProperties: false,
+});
+const PROJECT_SOURCE_VIEW_SCHEMA = Object.freeze({
+  type: 'object',
+  properties: {
+    contractVersion: { type: 'integer', enum: [1] },
+    projectSlug: NON_BLANK_STRING_SCHEMA,
+    status: { type: 'string', enum: ['not_measured', 'invalid', 'review_required', 'needs_evidence', 'verified_current'] },
+    currentness: { type: 'string', enum: ['unavailable', 'stale', 'current'] },
+    measuredAt: { type: ['string', 'null'], format: 'date-time' },
+    topGap: PROJECT_SOURCE_GAP_SCHEMA,
+    nextAction: PROJECT_SOURCE_ACTION_SCHEMA,
+    bindingCardinality: { type: 'integer', minimum: 0 },
+    receipt: { anyOf: [PROJECT_SOURCE_RECEIPT_SCHEMA, { type: 'null' }] },
+  },
+  required: [
+    'contractVersion', 'projectSlug', 'status', 'currentness', 'measuredAt',
+    'topGap', 'nextAction', 'bindingCardinality', 'receipt',
+  ],
+  additionalProperties: false,
+});
+const PROJECT_SOURCE_TOOL_CALL_SCHEMA = Object.freeze({
+  type: 'object',
+  properties: {
+    name: NON_BLANK_STRING_SCHEMA,
+    arguments: { type: 'object', additionalProperties: true },
+  },
+  required: ['name', 'arguments'],
+  additionalProperties: false,
+});
+const PROJECT_SOURCE_CLI_CALL_SCHEMA = Object.freeze({
+  type: 'object',
+  properties: {
+    command: NON_BLANK_STRING_SCHEMA,
+    args: { type: 'array', items: NON_BLANK_STRING_SCHEMA },
+  },
+  required: ['command', 'args'],
+  additionalProperties: false,
+});
+const PROJECT_SOURCE_UNDO_SCHEMA = Object.freeze({
+  type: ['object', 'null'],
+  properties: {
+    tool: PROJECT_SOURCE_TOOL_CALL_SCHEMA,
+    cli: PROJECT_SOURCE_CLI_CALL_SCHEMA,
+  },
+  required: ['tool', 'cli'],
+  additionalProperties: false,
+});
+const PROJECT_SOURCE_REMEDY_SCHEMA = Object.freeze({
+  type: 'object',
+  properties: {
+    contract: { type: 'string', enum: ['projectSourceRemedy:v1'] },
+    actionId: { type: ['string', 'null'] },
+    resolvable: { type: 'boolean' },
+    automatable: { type: 'boolean' },
+    requiresHuman: { type: 'string', enum: ['none', 'path_choice', 'authoring'] },
+    requiresConfirm: { type: 'boolean' },
+    inferRoot: { type: 'boolean' },
+    tool: { anyOf: [PROJECT_SOURCE_TOOL_CALL_SCHEMA, { type: 'null' }] },
+    cli: { anyOf: [PROJECT_SOURCE_CLI_CALL_SCHEMA, { type: 'null' }] },
+    undo: PROJECT_SOURCE_UNDO_SCHEMA,
+  },
+  required: [
+    'contract', 'actionId', 'resolvable', 'automatable', 'requiresHuman',
+    'requiresConfirm', 'inferRoot', 'tool', 'cli', 'undo',
+  ],
+  additionalProperties: false,
+});
+const PROJECT_SOURCE_NEXT_CALL_SCHEMA = Object.freeze({
+  type: 'object',
+  properties: {
+    tool: { type: 'string', enum: ['connect_project_source', 'disconnect_project_source'] },
+    arguments: { type: 'object', additionalProperties: true },
+  },
+  required: ['tool', 'arguments'],
+  additionalProperties: false,
+});
+const RELATION_RESULT_SCHEMA = Object.freeze({
+  type: 'object',
+  properties: {
+    to: NON_BLANK_STRING_SCHEMA,
+    type: { ...NON_BLANK_STRING_SCHEMA, enum: RELATION_TYPE_VALUES },
+    key: NON_BLANK_STRING_SCHEMA,
+  },
+  required: ['to', 'type', 'key'],
+  additionalProperties: false,
+});
+const IMPORT_RECONCILIATION_EDGE_SCHEMA = Object.freeze({
+  type: 'object',
+  properties: {
+    from: NON_BLANK_STRING_SCHEMA,
+    to: NON_BLANK_STRING_SCHEMA,
+    count: { type: 'integer', minimum: 1 },
+    absentEndpoints: { type: 'array', maxItems: 2, uniqueItems: true, items: NON_BLANK_STRING_SCHEMA },
+    sourceEvidence: {
+      type: 'array', maxItems: 5,
+      items: {
+        type: 'object',
+        properties: {
+          from: NON_BLANK_STRING_SCHEMA,
+          to: NON_BLANK_STRING_SCHEMA,
+          kind: { type: 'string', enum: IMPORT_EDGE_KIND_VALUES },
+          sourceRole: { type: 'string', enum: IMPORT_SOURCE_ROLE_VALUES },
+          importUsage: { type: 'string', enum: IMPORT_USAGE_VALUES },
+        },
+        required: ['from', 'to', 'kind', 'sourceRole', 'importUsage'],
+        additionalProperties: false,
+      },
+    },
+    sourceEvidenceLimited: { type: 'boolean' },
+    evidenceQualification: {
+      type: 'object',
+      properties: {
+        basis: { type: 'string', enum: ['whole_module_edge'] },
+        sourceRoleCounts: {
+          type: 'object',
+          properties: Object.fromEntries(IMPORT_SOURCE_ROLE_VALUES.map((value) => [value, { type: 'integer', minimum: 0 }])),
+          required: IMPORT_SOURCE_ROLE_VALUES,
+          additionalProperties: false,
+        },
+        importUsageCounts: {
+          type: 'object',
+          properties: Object.fromEntries(IMPORT_USAGE_VALUES.map((value) => [value, { type: 'integer', minimum: 0 }])),
+          required: IMPORT_USAGE_VALUES,
+          additionalProperties: false,
+        },
+        productValueCount: { type: 'integer', minimum: 0 },
+        status: { type: 'string', enum: ['product_value_observed', 'product_value_not_observed'] },
+      },
+      required: ['basis', 'sourceRoleCounts', 'importUsageCounts', 'productValueCount', 'status'],
+      additionalProperties: false,
+    },
+    review: {
+      type: 'object',
+      properties: {
+        status: { type: 'string', enum: ['rationale_review_required'] },
+        writeAllowed: { type: 'boolean', enum: [false] },
+        required: { type: 'array', minItems: 1, items: NON_BLANK_STRING_SCHEMA },
+        next: NON_BLANK_STRING_SCHEMA,
+      },
+      required: ['status', 'writeAllowed', 'required', 'next'],
+      additionalProperties: false,
+    },
+    ref: NON_BLANK_STRING_SCHEMA,
+    via: NON_BLANK_STRING_SCHEMA,
+  },
+  required: ['from', 'to'],
+  additionalProperties: false,
+});
+const IMPORT_RECONCILIATION_SUMMARY_SCHEMA = Object.freeze({
+  type: 'object',
+  properties: {
+    inBoth: { type: 'integer', minimum: 0 },
+    inCodeMissingFromVault: { type: 'integer', minimum: 0 },
+    inCodeMissingEndpointAbsent: { type: 'integer', minimum: 0 },
+    inVaultNotInCode: { type: 'integer', minimum: 0 },
+    unresolvedImports: { type: 'integer', minimum: 0 },
+    hint: { type: 'string' },
+  },
+  required: ['inBoth', 'inCodeMissingFromVault', 'inCodeMissingEndpointAbsent', 'inVaultNotInCode', 'unresolvedImports', 'hint'],
   additionalProperties: false,
 });
 const VAULT_ISSUE_CODE_DESCRIPTION = VAULT_ISSUE_CODE_VALUES.map((code) => `\`${code}\``).join(', ');
@@ -2123,6 +2407,7 @@ const TOOLS = [
         frontmatter: {
           type: 'object',
           description: 'Resolved markdown frontmatter.',
+          additionalProperties: true,
         },
         excerpt: {
           type: 'string',
@@ -2213,6 +2498,7 @@ const TOOLS = [
               frontmatter: {
                 type: 'object',
                 description: 'Resolved markdown frontmatter for successful rows.',
+                additionalProperties: true,
               },
               excerpt: {
                 type: 'string',
@@ -2432,13 +2718,13 @@ const TOOLS = [
         contract: { type: 'string', enum: ['projectSourceConnect:v1'] },
         projectSlug: NON_BLANK_STRING_SCHEMA,
         mode: { type: 'string', enum: ['connect', 'replace', 'remeasure'] },
-        binding: { type: 'object' },
-        inference: { type: ['object', 'null'] },
-        previewReceipt: { type: 'object' },
-        projectSource: { type: 'object' },
-        remedy: { type: 'object' },
+        binding: PROJECT_SOURCE_BINDING_VIEW_SCHEMA,
+        inference: { type: ['object', 'null'], additionalProperties: true },
+        previewReceipt: PROJECT_SOURCE_RECEIPT_SCHEMA,
+        projectSource: PROJECT_SOURCE_VIEW_SCHEMA,
+        remedy: PROJECT_SOURCE_REMEDY_SCHEMA,
         previousBindingCount: { type: 'number' },
-        nextCall: { type: 'object' },
+        nextCall: PROJECT_SOURCE_NEXT_CALL_SCHEMA,
         undo: { type: ['object', 'null'] },
       },
       required: ['ok', 'changed', 'confirmed', 'contract', 'projectSlug', 'mode', 'binding'],
@@ -2471,9 +2757,9 @@ const TOOLS = [
         projectSlug: NON_BLANK_STRING_SCHEMA,
         removed: { type: 'number' },
         bindings: { type: 'array' },
-        projectSource: { type: 'object' },
-        remedy: { type: 'object' },
-        nextCall: { type: 'object' },
+        projectSource: PROJECT_SOURCE_VIEW_SCHEMA,
+        remedy: PROJECT_SOURCE_REMEDY_SCHEMA,
+        nextCall: PROJECT_SOURCE_NEXT_CALL_SCHEMA,
       },
       required: ['ok', 'changed', 'confirmed', 'contract', 'projectSlug', 'removed', 'bindings'],
       additionalProperties: false,
@@ -2834,7 +3120,7 @@ const TOOLS = [
         ok: { type: 'boolean' }, dryRun: { type: 'boolean' }, changed: { type: 'boolean' },
         ...DESTRUCTIVE_PREVIEW_OUTPUT_PROPERTIES,
         from: NON_BLANK_STRING_SCHEMA,
-        oldRelation: { type: 'object' }, newRelation: { type: 'object' },
+        oldRelation: RELATION_RESULT_SCHEMA, newRelation: RELATION_RESULT_SCHEMA,
         postWriteMaintenance: POST_WRITE_MAINTENANCE_OUTPUT_SCHEMA,
       },
       required: ['ok', 'dryRun', 'changed', ...DESTRUCTIVE_PREVIEW_REQUIRED, 'from', 'oldRelation', 'newRelation'],
@@ -2860,6 +3146,7 @@ const TOOLS = [
           type: 'object',
           description:
             'Frontmatter key/value patches (e.g. { kind: "capability", domain: "views" }). null removes the key. Per-locale display names go here as `display_ko` / `display_en` — fill every locale the vault serves so both audiences read a native name (`title` stays the search/matching source).',
+          additionalProperties: true,
         },
         body: {
           type: 'string',
@@ -3786,7 +4073,7 @@ const TOOLS = [
       type: 'object',
       properties: {
         operation: { type: 'string', enum: QUERY_ONTOLOGY_OPERATIONS },
-        compiledSummary: { type: 'object' },
+            compiledSummary: { type: 'object', additionalProperties: true },
       },
       required: ['operation'],
       // The graph engine is intentionally polymorphic: each operation owns its
@@ -4147,50 +4434,38 @@ const TOOLS = [
             additionalProperties: false,
           },
         },
-        reconciliation: {
+            reconciliation: {
           type: ['object', 'null'],
           description:
             'Module edges diffed against the vault\'s compiled depends_on edges (alias-normalized). null when no vault is loadable (e.g. scanning a foreign repo). Absent when reconcile:false.',
           properties: {
-            inBoth: { type: 'array', items: { type: 'object' } },
+            inBoth: {
+              type: 'array',
+              items: {
+                type: 'object',
+                properties: { from: NON_BLANK_STRING_SCHEMA, to: NON_BLANK_STRING_SCHEMA },
+                required: ['from', 'to'],
+                additionalProperties: false,
+              },
+            },
             inCodeMissingFromVault: {
               type: 'array',
               description: 'Import-backed review candidates missing from the vault whose endpoints already exist. Each carries exact source evidence plus `rationale_review_required`; no write action is emitted.',
-              items: { type: 'object' },
+              items: IMPORT_RECONCILIATION_EDGE_SCHEMA,
             },
             inCodeMissingEndpointAbsent: {
               type: 'array',
               description: 'Import-backed review candidates whose from/to includes a slug not yet modelled as a vault node (`absentEndpoints`). Model endpoints, inspect evidence, supply semantic rationale, and obtain human approval before any relation write.',
-              items: { type: 'object' },
+              items: IMPORT_RECONCILIATION_EDGE_SCHEMA,
             },
             inVaultNotInCode: {
               type: 'array',
               description: 'vault depends_on edges with no matching code import — possibly stale, review before removing.',
-              items: { type: 'object' },
+              items: IMPORT_RECONCILIATION_EDGE_SCHEMA,
             },
           },
         },
-        reconciliationSummary: {
-          type: 'object',
-          description: 'Counts + a one-line hint. Present only when reconciliation ran successfully.',
-          properties: {
-            inBoth: { type: 'integer', minimum: 0 },
-            inCodeMissingFromVault: { type: 'integer', minimum: 0 },
-            inCodeMissingEndpointAbsent: { type: 'integer', minimum: 0 },
-            inVaultNotInCode: { type: 'integer', minimum: 0 },
-            unresolvedImports: { type: 'integer', minimum: 0 },
-            hint: { type: 'string' },
-          },
-          required: [
-            'inBoth',
-            'inCodeMissingFromVault',
-            'inCodeMissingEndpointAbsent',
-            'inVaultNotInCode',
-            'unresolvedImports',
-            'hint',
-          ],
-          additionalProperties: false,
-        },
+        reconciliationSummary: IMPORT_RECONCILIATION_SUMMARY_SCHEMA,
         contract: { type: 'string', enum: ['inferImportsReview:v1', 'inferImportsFocus:v1'] },
         delivery: {
           type: 'object',
@@ -4500,7 +4775,10 @@ const TOOLS = [
                 type: 'object',
                 properties: {
                   tool: { type: 'string', enum: ['get_concepts', 'query_ontology'] },
-                  arguments: { type: 'object' },
+                  // Each suggested call has a different strict input shape;
+                  // preserve the repair packet without inventing one shared
+                  // argument contract.
+                  arguments: { type: 'object', additionalProperties: true },
                   purpose: NON_BLANK_STRING_SCHEMA,
                 },
                 required: ['tool', 'arguments', 'purpose'],
@@ -4702,8 +4980,16 @@ const TOOLS = [
             filesScanned: { type: 'integer', minimum: 0 },
             moduleEdges: { type: 'integer', minimum: 0 },
             coverage: IMPORT_SCAN_COVERAGE_OUTPUT_SCHEMA,
-            thresholdApplied: { type: 'object' },
-            reconciliationSummary: { type: 'object' },
+            thresholdApplied: {
+              type: 'object',
+              properties: {
+                threshold: { type: 'integer', minimum: 1 },
+                filteredOut: { type: 'integer', minimum: 0 },
+              },
+              required: ['threshold', 'filteredOut'],
+              additionalProperties: false,
+            },
+            reconciliationSummary: IMPORT_RECONCILIATION_SUMMARY_SCHEMA,
           },
           required: ['filesScanned', 'moduleEdges', 'coverage'],
           additionalProperties: false,

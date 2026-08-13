@@ -508,7 +508,7 @@ export async function scanVaultDir(
   for (const full of files) {
     const raw = await readFile(full, 'utf8');
     const slug = slugFromPath(full, dir);
-    const { frontmatter, body } = parseFrontmatter(raw);
+    const { frontmatter, body, diagnostics } = parseFrontmatter(raw);
     const headings = extractHeadings(body);
     const title =
       (typeof frontmatter.title === 'string' && frontmatter.title) ||
@@ -549,6 +549,7 @@ export async function scanVaultDir(
       description,
       tags,
       frontmatter,
+      ...(diagnostics && diagnostics.length > 0 ? { diagnostics } : {}),
       headings,
       excerpt: buildExcerpt(body),
       wordCount: body.split(/\s+/).filter(Boolean).length,
