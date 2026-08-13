@@ -2114,6 +2114,8 @@
       "statsEvidenceDocs": "Source docs",
       "metricHelp": "Every count here is a direct connection to this node: not a multi-hop total.",
       "containsShowAll": "view all",
+      "groupShowMore": "more",
+      "groupShowFewer": "fewer",
       "containsShowSummary": "summary",
       "containsOtherGroup": "other",
       "noConnections": "no relations recorded yet · relations are declared in frontmatter",
