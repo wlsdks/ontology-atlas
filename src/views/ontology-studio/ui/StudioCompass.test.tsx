@@ -743,6 +743,42 @@ describe("StudioCompass — 발견 표면 (browse + 추천)", () => {
     expect(screen.queryByTestId("studio-browse-node-capability:billing")).not.toBeInTheDocument();
   });
 
+  it("묶음이 하나뿐이면 접힌 층을 건너뛰고 후보를 바로 펼친다 — 뒤로 갈 곳도 없다", () => {
+    const SOLE: PickerDiscovery = {
+      suggestions: [],
+      domains: [{ domainId: null, key: "__no_domain__", title: null, count: 1 }],
+      nodesByDomain: {
+        __no_domain__: [REFUND],
+      },
+    };
+    const bearings: CompassBearingView[] = [
+      bearing("isA", "up"),
+      bearing("dependsOn", "right"),
+      bearing("contains", "down"),
+      bearing("relates", "left"),
+    ];
+    render(
+      <StudioCompass
+        mode="enhance"
+        labels={labels}
+        kindLabelFor={(k) => k}
+        focal={{ kindLabel: "capability", domainLabel: null, name: "MCP Server", definition: "" }}
+        bearings={bearings}
+        filledBearings={0}
+        writable
+        candidatesFor={() => [CANDIDATE]}
+        discoveryFor={() => SOLE}
+        onFill={vi.fn()}
+        onSave={vi.fn()}
+        onExit={vi.fn()}
+      />,
+    );
+    fireEvent.click(screen.getByTestId("studio-socket-right"));
+    expect(screen.getByTestId("studio-browse-node-capability:refund")).toBeInTheDocument();
+    expect(screen.queryByTestId("studio-browse-domain-__no_domain__")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("studio-browse-back")).not.toBeInTheDocument();
+  });
+
   it("picking from a suggestion stages the fill (reuses onFill)", () => {
     const onFill = renderDiscovery();
     fireEvent.click(screen.getByTestId("studio-socket-right"));
