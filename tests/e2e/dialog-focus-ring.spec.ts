@@ -40,6 +40,11 @@ import { expect, test, type Page } from "@playwright/test";
  * **아무것도 클릭하지 않는다**(위 경고 참고).
  */
 async function openGuideSheetOnFirstRun(page: Page) {
+  // 자동 표시는 2026-08-13 부터 기본 끔(opt-in) — 이 스펙이 재는 것은 시트의
+  // 포커스 링이지 자동 표시 여부가 아니므로, 켠 상태를 심고 연다.
+  await page.addInitScript(() => {
+    window.localStorage.setItem("ontology-atlas:guide-auto-start:v1", "1");
+  });
   await page.goto("/ko/topology/");
   await expect(page.getByTestId("vault-guide-sheet")).toBeVisible({ timeout: 20_000 });
 }

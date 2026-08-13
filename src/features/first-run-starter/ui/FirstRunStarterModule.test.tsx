@@ -276,8 +276,10 @@ describe('FirstRunStarterModule', () => {
 
   // 폴더-우선 첫 방문 (소유자 지시 2026-07-24) — 첫 화면을 열자마자 폴더
   // 지정 유도 시트가 1회 자동으로 열리고, 플래그가 있으면 다시 안 뜬다.
+  // 2026-08-13 부터 자동 표시는 전역 기본 끔(opt-in)이라 켠 상태를 전제한다.
   it('auto-opens the folder guide sheet once on the very first visit', () => {
     vi.useFakeTimers();
+    window.localStorage.setItem('ontology-atlas:guide-auto-start:v1', '1');
     window.localStorage.removeItem('vault-open-guide:auto:v1');
     render(<FirstRunStarterModule concepts={1} relations={1} domains={1} />);
     expect(screen.queryByTestId('vault-guide-sheet')).not.toBeInTheDocument();
