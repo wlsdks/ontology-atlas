@@ -742,15 +742,19 @@ function DocsVaultContent() {
       setPinnedSlugs((list) => {
         const next = list.filter((s) => s !== slug);
         if (next.length !== list.length) {
-          // 실제 제거된 경우에만 localStorage 동기화
-          try {
-            window.localStorage.setItem(
-              `${PINNED_DOCS_STORAGE_PREFIX}${recentKey}`,
-              JSON.stringify(next),
-            );
-          } catch {
-            /* ignore */
-          }
+          // 실제 제거된 경우에만 localStorage 동기화 — 갱신 함수는 렌더 중에
+          // 실행될 수 있으므로(스튜디오 임시저장 사고, 2026-08-13) 쓰기는
+          // 마이크로태스크로 렌더 밖에 내보낸다. 멱등 쓰기라 이중 호출 무해.
+          queueMicrotask(() => {
+            try {
+              window.localStorage.setItem(
+                `${PINNED_DOCS_STORAGE_PREFIX}${recentKey}`,
+                JSON.stringify(next),
+              );
+            } catch {
+              /* ignore */
+            }
+          });
         }
         return next;
       });
@@ -895,26 +899,31 @@ function DocsVaultContent() {
       setSelectedSlug(nextSlug);
       setRecentSlugs((list) => {
         const mapped = list.map((s) => (s === prev ? nextSlug : s));
-        try {
-          window.localStorage.setItem(
-            `${RECENT_DOCS_STORAGE_PREFIX}${recentKey}`,
-            JSON.stringify(mapped),
-          );
-        } catch {
-          /* ignore */
-        }
+        // 갱신 함수 안 직접 쓰기 금지 — 위 삭제 경로와 같은 이유(2026-08-13).
+        queueMicrotask(() => {
+          try {
+            window.localStorage.setItem(
+              `${RECENT_DOCS_STORAGE_PREFIX}${recentKey}`,
+              JSON.stringify(mapped),
+            );
+          } catch {
+            /* ignore */
+          }
+        });
         return mapped;
       });
       setPinnedSlugs((list) => {
         const mapped = list.map((s) => (s === prev ? nextSlug : s));
-        try {
-          window.localStorage.setItem(
-            `${PINNED_DOCS_STORAGE_PREFIX}${recentKey}`,
-            JSON.stringify(mapped),
-          );
-        } catch {
-          /* ignore */
-        }
+        queueMicrotask(() => {
+          try {
+            window.localStorage.setItem(
+              `${PINNED_DOCS_STORAGE_PREFIX}${recentKey}`,
+              JSON.stringify(mapped),
+            );
+          } catch {
+            /* ignore */
+          }
+        });
         return mapped;
       });
     } catch (err) {
