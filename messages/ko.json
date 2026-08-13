@@ -2686,16 +2686,16 @@
         "extrasCaption": "소개 본문, 태그, 연결 프로젝트, 일정: 만든 뒤에 채워도 됩니다."
       },
       "fields": {
-        "slug": "slug",
+        "slug": "문서 주소",
         "name": "이름",
         "nameEn": "영문 이름 (선택)",
         "category": "카테고리",
         "status": "상태",
         "description": "짧은 설명",
         "detail": "상세 (마크다운, 선택)",
-        "tagsCsv": "태그 (CSV)",
-        "stackCsv": "스택 (CSV)",
-        "linksText": "링크 (줄별 label|url)",
+        "tagsCsv": "태그 (쉼표로 구분)",
+        "stackCsv": "스택 (쉼표로 구분)",
+        "linksText": "링크 (한 줄에 하나, 이름|주소)",
         "dependencies": "의존 프로젝트",
         "startedAt": "시작일",
         "launchedAt": "출시일",
@@ -2704,7 +2704,7 @@
         "progress": "진행도 %",
         "slugHint": "URL에 쓰임. 문자(한글 등 유니코드 포함)·숫자·하이픈만, 공백 없이. 생성 후엔 변경 불가.",
         "slugGenerate": "이름에서 생성",
-        "slugDuplicate": "이미 존재하는 slug입니다.",
+        "slugDuplicate": "이미 있는 주소예요.",
         "duplicateNotice": "기존 프로젝트 내용을 복제해서 시작합니다.",
         "categoryMissingWarning": "현재 카테고리 참조가 깨졌습니다. 다른 카테고리를 선택해 복구하세요.",
         "statusMissingWarning": "현재 상태 참조가 깨졌습니다. 다른 상태를 선택해 복구하세요.",
@@ -2821,9 +2821,9 @@
       "hubBadge": "HUB"
     },
     "markdown": {
-      "tabWrite": "Write",
-      "tabPreview": "Preview",
-      "footer": "Markdown · GFM",
+      "tabWrite": "쓰기",
+      "tabPreview": "미리보기",
+      "footer": "마크다운 지원",
       "previewEmpty": "미리볼 내용 없음"
     },
     "quickEdit": {
