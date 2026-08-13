@@ -1264,7 +1264,15 @@ function StudioStage({
   const stage = (action: Parameters<typeof reduceStudioChanges>[1]) =>
     setChanges((prev) => {
       const next = reduceStudioChanges(prev, action);
-      saveStudioDraft(focalItem.node.id, focalItem.node.label, next);
+      /*
+       * ⚠️ 갱신 함수 안에서 곧장 저장하면 안 된다 — 이 함수는 React 가 **렌더
+       * 중에** 실행할 수 있고, `saveStudioDraft` 는 `DRAFT_EVENT` 를 동기로
+       * dispatch 해 「작업중」 목록 구독자(useSyncExternalStore)의 setState 를
+       * 렌더 한가운데서 깨운다 — "Cannot update a component while rendering"
+       * (2026-08-13 소켓 채움 flow 실측). 마이크로태스크로 렌더 밖에 내보낸다.
+       * dev 이중 호출로 두 번 예약돼도 같은 값이라 무해하다(멱등 쓰기).
+       */
+      queueMicrotask(() => saveStudioDraft(focalItem.node.id, focalItem.node.label, next));
       return next;
     });
 
