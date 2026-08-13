@@ -647,6 +647,26 @@ export function buildWebviewEvidencePayload(
         agentNextAction: "read-relation-surfaces-after-residual-overlap-clear",
       }
       : null;
+  const topologyRenderProof =
+    markers.topologyMapEngine === "v2"
+      ? {
+        proof: "topology-map-v2-canvas-render",
+        status:
+          markers.topologySigmaViewportVisible === true &&
+          markerNumber(markers, "topologySigmaCanvasCount") >= 1 &&
+          markers.topologySigmaBootError !== true &&
+          markerNumber(markers, "topologyV2CanvasInkPixels") > 0
+            ? "proved"
+            : "incomplete",
+        route: evidenceRoute(payload?.href),
+        engine: markers.topologyMapEngine,
+        viewportVisible: markers.topologySigmaViewportVisible === true,
+        canvasCount: markerNumber(markers, "topologySigmaCanvasCount"),
+        inkPixels: markerNumber(markers, "topologyV2CanvasInkPixels"),
+        agentNextAction:
+          "use visual evidence for node-level rendering; do not infer DOM-card counts from the canvas engine",
+      }
+      : null;
   const zoomLensProof =
     markers.topologyZoomLensContract ===
     "zoom-in-uses-kind-pins-for-noncritical-context-cards"
@@ -1170,6 +1190,7 @@ export function buildWebviewEvidencePayload(
     connectorLabelPassProof,
     visibleCardSelectedSurfaceRectProof,
     residualOverlapProof,
+    topologyRenderProof,
     zoomLensProof,
     nodePopoverCompactHandoffProof,
     nodePopoverCompactVerificationProof,
@@ -1188,4 +1209,3 @@ export function writeWebviewEvidence(payload, outPath, options = {}) {
   );
   console.log(`[desktop-app-verify:webview-evidence] saved ${path.resolve(outPath)}`);
 }
-

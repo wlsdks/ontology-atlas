@@ -42,6 +42,29 @@
 
 ---
 
+## 2026-08-13 — 구조 readiness와 의미 qualification을 검수 계층에서 분리한다
+
+**현상:** 현재 vault와 fresh macOS build는 구조적으로 읽히고 그래프도 렌더링하지만,
+`agent_brief`의 구조 readiness `100/100`과 `meaningAssessment`의 `invalid`/
+`review_required`, 그리고 canvas v2와 오래된 desktop smoke/evidence marker가 서로
+다른 현실을 보고했다.
+
+**결정:** 에이전트 handoff와 ontology-sync는 구조 readiness를 semantic qualification과
+분리해 노출하고, 의미 보정/finalize는 독립 qualification과 명시적 사람 승인을 거친다.
+현재 topology-map-v2 canvas를 증명하는 별도 WebView evidence를 추가하며, 제품 문구는
+바꾸지 않고 desktop smoke 기대값만 현재 route metadata에 맞춘다. `query_ontology`의
+다형 응답 output schema는 억지 범용 schema를 추가하지 않고 별도 계약 설계로 보류한다.
+
+**강한 반대:** 지금 바로 semantic receipt를 finalize하고 모든 query 결과를 하나의
+느슨한 schema로 감싸면 first-contact가 단순해진다.
+
+**반증 조건:** 독립 qualification과 사람 승인 없이 finalize한 receipt가 실제 의미
+오류를 만들지 않고, 모든 query operation이 동일한 안정적 필드 집합을 제공한다는
+관측이 반복되면 이 결정을 재검토한다.
+
+**범위:** 이번 패치는 안내·검수 evidence·smoke 계약·문서 통계만 다룬다. vault 의미
+데이터와 Browser 기반 웹 UX 완료 판정은 변경하지 않는다.
+
 ## 2026-08-13 — 활동 기록의 agent 는 하트비트 > 연결 인사(clientInfo.name) > null
 
 **소집**: 단독 패스 · **트리거**: 공개 계약 파일(`mcp/src/index.js`) 변경 —

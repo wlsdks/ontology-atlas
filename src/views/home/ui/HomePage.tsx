@@ -324,6 +324,7 @@ const INDEX_PANEL_COLLAPSED_KEY = "demo:index-panel-collapsed:v1";
  */
 export function HomePage() {
   const t = useTranslations('topology');
+  const siteT = useTranslations('metadata');
   // 어권별 이름 입력(create composer) 계약의 '지금 화면 언어'.
   const activeLocale = useLocale();
   const tKinds = useTranslations('kinds');
@@ -1313,7 +1314,7 @@ export function HomePage() {
           // 과제 ⑩ — 브라우저 탭 타이틀도 표시용 짧은 제목.
           selectedOntologyNode?.display ?? selectedOntologyNode?.title,
           t('documentTitle'),
-          "ontology-atlas",
+          siteT('siteName'),
         ].filter((value): value is string => Boolean(value)),
       ),
     ).join(" · ") || null,
