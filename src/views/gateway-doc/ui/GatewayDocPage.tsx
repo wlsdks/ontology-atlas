@@ -18,7 +18,7 @@ import {
   trimToRecentSections,
   type DocEntry,
 } from '../lib/vault-doc';
-import { GUIDE_PAGES } from '../model/guide-pages';
+import { GUIDE_ENTRY_PAGE, GUIDE_PAGES, type GuidePage } from '../model/guide-pages';
 import { Link } from '@/i18n/navigation';
 import { controlClass } from '@/shared/ui/control-class';
 
@@ -231,6 +231,14 @@ export function GatewayDocPage({
            * 라우트에는 푸터가 없어서, 종전에는 가이드 안에서 변경 내역으로
            * (그 반대로도) 갈 길이 390 에서 0개였다.
            */}
+          {/*
+           * 장 끝의 이전/다음 — 순서 있는 13장인데 본문이 끝나는 자리에 다음
+           * 장으로 가는 길이 0개였다(2026-08-13 실측: 다 읽은 사람이 왼쪽
+           * 차례로 되돌아가 방금 읽은 장을 스스로 찾아야 했다). 순서의 정본은
+           * `GUIDE_PAGES` 하나다. 변경 내역(sidebar 없음)은 장이 아니라서 없다.
+           */}
+          {sidebar ? <GuidePager activeSegment={activeSegment} /> : null}
+
           <GatewayReadingLinks className="mt-12 w-full max-w-[var(--measure-prose)]" />
 
           {/*
@@ -535,6 +543,71 @@ function GuideChapterList({ activeSegment }: { activeSegment?: string }) {
         );
       })}
     </ul>
+  );
+}
+
+/**
+ * 장 끝 이전/다음. 화살표 글자는 쓰지 않는다 — 방향은 「이전 장/다음 장」
+ * 아이브로우와 정렬(왼쪽/오른쪽)이 이미 말하고, 라벨 끝 화살표는 헌장이
+ * 장식으로 판정한다(`label-decoration` 게이트).
+ */
+function GuidePager({ activeSegment }: { activeSegment?: string }) {
+  const t = useTranslations('gatewayNav');
+  const segment = activeSegment ?? GUIDE_ENTRY_PAGE.segment;
+  const index = GUIDE_PAGES.findIndex((page) => page.segment === segment);
+  if (index === -1) return null;
+  const prev = GUIDE_PAGES[index - 1] ?? null;
+  const next = GUIDE_PAGES[index + 1] ?? null;
+  if (!prev && !next) return null;
+  return (
+    <nav
+      aria-label={t('guidePagerLabel')}
+      data-testid="guide-pager"
+      className="mt-12 flex w-full max-w-[var(--measure-prose)] items-stretch gap-3 border-t border-[color:var(--color-divider)] pt-4"
+    >
+      {prev ? (
+        <GuidePagerLink page={prev} eyebrow={t('guidePrev')} edge="start" testId="guide-pager-prev" />
+      ) : (
+        <span aria-hidden className="flex-1" />
+      )}
+      {next ? (
+        <GuidePagerLink page={next} eyebrow={t('guideNext')} edge="end" testId="guide-pager-next" />
+      ) : (
+        <span aria-hidden className="flex-1" />
+      )}
+    </nav>
+  );
+}
+
+function GuidePagerLink({
+  page,
+  eyebrow,
+  edge,
+  testId,
+}: {
+  page: GuidePage;
+  eyebrow: string;
+  edge: 'start' | 'end';
+  testId: string;
+}) {
+  const t = useTranslations('gatewayNav');
+  return (
+    <Link
+      href={`/guide/${page.segment}`}
+      data-testid={testId}
+      className={controlClass({
+        shape: 'card',
+        className: cn(
+          'flex-1 flex-col gap-1 rounded-card border-[color:var(--color-border-soft)] px-4 py-3 hover:border-[color:var(--color-indigo-a46)] hover:bg-[color:var(--color-indigo-a06)]',
+          edge === 'end' ? 'items-end text-right' : 'items-start text-left',
+        ),
+      })}
+    >
+      <span className="text-label text-[color:var(--color-text-quaternary)]">{eyebrow}</span>
+      <span className="text-body-lg text-[color:var(--color-text-primary)] [word-break:keep-all]">
+        {t(`guidePages.${page.titleKey}`)}
+      </span>
+    </Link>
   );
 }
 

@@ -3414,6 +3414,9 @@
       "cli": "CLI",
       "trust": "On trust"
     },
+    "guidePrev": "Previous chapter",
+    "guideNext": "Next chapter",
+    "guidePagerLabel": "Guide chapter navigation",
     "guideNavLabel": "Guide contents",
     "onThisGuide": "Guide",
     "entryNavLabel": "Entries"
