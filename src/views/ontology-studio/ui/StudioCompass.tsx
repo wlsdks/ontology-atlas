@@ -1477,7 +1477,7 @@ export function StudioCompass(props: StudioCompassProps) {
               borderRight: "1.6px solid var(--color-indigo-brand)",
             }}
           />
-          <span className="text-caption text-[color:var(--color-text-secondary)]" data-testid="studio-bottom-progress">
+          <span className="text-label text-[color:var(--color-text-secondary)]" data-testid="studio-bottom-progress">
             {labels.bottomProgress(filledBearings, 4)}
           </span>
         </div>
@@ -1852,7 +1852,7 @@ function CenterCard(
         />
       ) : definition ? (
         <div className="relative mt-3">
-          <div className="max-w-[322px] text-caption leading-caption text-[color:var(--color-text-tertiary)] line-clamp-3 [word-break:keep-all]">
+          <div className="max-w-[322px] text-label leading-label text-[color:var(--color-text-tertiary)] line-clamp-3 [word-break:keep-all]">
             {definition}
           </div>
           {definitionLong ? (
