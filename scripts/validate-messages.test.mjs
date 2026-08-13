@@ -172,6 +172,8 @@ describe('i18n message catalog', () => {
       ko.navRail.studio,
       ko.navRail.insights,
       ko.navRail.projects,
+      ko.navRail.skills,
+      ko.navRail.git,
     ];
     for (const label of railLabels) {
       assert.equal(typeof label, 'string');
@@ -199,6 +201,25 @@ describe('i18n message catalog', () => {
       railLabels.join('\n'),
       /인사이트|빌더|온톨로지/,
       '레일에 알아듣기 어려운 외래어가 들어왔다',
+    );
+    /*
+     * 한 목적지 한 이름 (2026-08-13). /git 화면은 자기를 「기록」이라 부르는데
+     * 레일만 「Git」이었다 — 레일의 다른 항목은 전부 한국어인데 여기만 개발자
+     * 용어가 샜고, 같은 목적지가 이름 둘을 갖게 됐다. 단어를 못박는 대신
+     * **두 표면이 같은 이름을 쓰는가**를 잠근다(사람이 고른 문장을 고정하지
+     * 않는다는 문서 게이트 원칙 그대로 — 이름을 바꾸려면 두 곳을 같이 바꾸면
+     * 되고, 이 시험은 안 바뀐 쪽을 가리킨다).
+     */
+    const en = await readJson(path.join(MESSAGES_DIR, 'en.json'));
+    assert.equal(
+      ko.navRail.git,
+      ko.atlasGit.title,
+      '레일의 기록 라벨이 그 화면 제목과 다르다 — 한 목적지가 이름 둘을 갖는다',
+    );
+    assert.equal(
+      en.navRail.git,
+      en.atlasGit.title,
+      'rail git label must match the destination title — one destination, one name',
     );
     assert.equal(
       ko.nav.settingsMenu.triggerTitle,
