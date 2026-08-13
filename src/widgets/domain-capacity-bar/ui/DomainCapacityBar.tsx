@@ -136,7 +136,7 @@ export function DomainCapacityBar({
         <span className="block font-mono text-title tabular-nums text-[color:var(--topology-v2-numeral-face)]">
           {row.total}
         </span>
-        <span className="block truncate font-mono text-caption tabular-nums text-[color:var(--color-text-quaternary)]">
+        <span className="block truncate font-mono text-label tabular-nums text-[color:var(--color-text-quaternary)]">
           {labels.capabilityUnit} {row.capabilityCount} · {labels.elementUnit} {row.elementCount}
         </span>
       </span>
