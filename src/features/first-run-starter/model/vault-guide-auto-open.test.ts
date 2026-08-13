@@ -13,12 +13,17 @@ describe('전역 「자동 표시」 스위치의 사정거리', () => {
   });
 
   it('스위치가 켜져 있고 아직 안 봤으면 자동으로 뜬다 — 탐지기가 놀지 않는다', () => {
+    window.localStorage.setItem('ontology-atlas:guide-auto-start:v1', '1');
     expect(readVaultGuideAutoOpened()).toBe(false);
   });
 
   it('스위치를 끄면 폴더-우선 시트도 자동으로 뜨지 않는다', () => {
     window.localStorage.setItem('ontology-atlas:guide-auto-start:v1', '0');
     // 「이미 열었음」으로 취급 = 자동 표시 안 함.
+    expect(readVaultGuideAutoOpened()).toBe(true);
+  });
+
+  it('기본(저장값 없음)도 자동으로 뜨지 않는다 — 2026-08-13 소유자 확정', () => {
     expect(readVaultGuideAutoOpened()).toBe(true);
   });
 });

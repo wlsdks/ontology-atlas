@@ -20,27 +20,27 @@ describe("guide auto-start switch", () => {
     window.localStorage.clear();
   });
 
-  it("기본값은 켬 — 처음 오는 사람에게 안내는 유일한 설명이다", () => {
-    expect(DEFAULT_GUIDE_AUTO_START).toBe(true);
-    expect(readGuideAutoStart()).toBe(true);
+  it("기본값은 끔 — 필요한 사람만 켠다 (2026-08-13 소유자 확정)", () => {
+    expect(DEFAULT_GUIDE_AUTO_START).toBe(false);
+    expect(readGuideAutoStart()).toBe(false);
   });
 
-  it("끄면 저장되고, 켜면 되돌아온다", () => {
-    writeGuideAutoStart(false);
-    expect(readGuideAutoStart()).toBe(false);
+  it("켜면 저장되고, 끄면 되돌아온다", () => {
     writeGuideAutoStart(true);
     expect(readGuideAutoStart()).toBe(true);
+    writeGuideAutoStart(false);
+    expect(readGuideAutoStart()).toBe(false);
   });
 
   /**
-   * `"0"` 만 끔이다. 저장값이 깨졌거나 옛 형식이면 **켬으로 살아난다** —
-   * 반대로 두면 값 하나가 망가진 사용자에게서 설명이 통째로 사라지고, 그건
-   * 조용한 실패다.
+   * 명시적 선택만 존중한다 — 기본을 끔으로 뒤집기 전에 직접 켜 둔 사람의
+   * "1" 이 살아남아야 하고, 모르는 값·빈 값·깨진 값은 기본값(끔)이다.
    */
-  it("모르는 값·빈 값은 켬으로 산다", () => {
-    for (const raw of [null, "", "yes", "true", "1", "nope"]) {
-      expect(resolveGuideAutoStart(raw)).toBe(true);
-    }
+  it("켜 둔 저장값(\"1\")은 살아남고, 모르는 값은 끔이다", () => {
+    expect(resolveGuideAutoStart("1")).toBe(true);
     expect(resolveGuideAutoStart("0")).toBe(false);
+    for (const raw of [null, "", "yes", "true", "nope"]) {
+      expect(resolveGuideAutoStart(raw)).toBe(false);
+    }
   });
 });
