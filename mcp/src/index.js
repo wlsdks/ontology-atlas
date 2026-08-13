@@ -1802,7 +1802,7 @@ ${CONSTRUCTION_LIFECYCLE_EN}
 
 1. \`connection_info\` — prove the resolved vault and repository roots before analysis or writes. Root env changes require a server restart.
 2. \`list_kinds\` — see the kind census (how many projects/domains/capabilities/…).
-2. \`list_concepts\` — full node table. Pass \`summary: true\` for prose previews per row (avoid N follow-up \`get_concept\` calls). Pass \`since: <prevMaxMtime>\` for incremental sync. Watch \`vaultWarnings\` — if non-zero, surface it to the user before making decisions on stale data.
+2. \`list_concepts\` — full node table. Pass \`summary: true\` for prose previews per row (avoid N follow-up \`get_concept\` calls). For a large vault, start at \`offset: 0\` and continue with \`pagination.nextOffset\` while \`hasMore\` is true; never treat one page as the full census. Pass \`since: <prevMaxMtime>\` for incremental sync. Watch \`vaultWarnings\` — if non-zero, surface it to the user before making decisions on stale data.
 3. \`validate_vault({})\` — read-only frontmatter health check. Run this during first-contact before proposing writes; report blocking errors separately from advisory warnings.
 4. \`query_ontology({operation:'agent_brief'})\` — Claude Code/Codex handoff: readiness, structured \`businessOntologyLens\` for the business-first \`outcome\` → \`domain\` → \`capability\` → \`element\` read order, copyable \`handoffPrompt\`, structured \`cliFallbackCommands[]\` for connector-less sessions, graph entrypoints, first MCP calls, \`graphDbQueryPack\` for \`facets\`, \`schema\`, \`match_nodes\`, \`match_edges\`, \`domain_matrix\`, \`centrality\`, \`all_paths\`, \`explain_relation\`, and \`business_questions\` outcome / domain-boundary / capability-claim / implementation-evidence scans, investigation playbooks including \`graph_traversal\` (\`schema\` → \`query_plan(all_paths)\` → \`all_paths\` → \`pattern_walk\` → \`project_map\`) with \`evidence[]\` and \`stopWhen[]\` checklists, \`traversalStrategy\` (\`plan_before_enumeration\` / \`bounded_path_evidence\` / \`containment_cross_check\`) for performance-aware graph traversal, write guardrails (\`preflight_relation\` / \`preflight_rename\` / \`post_change_sync\`), \`relationDecisionGuide\` for \`relation_check\` outcomes (\`skip_existing\` / \`review_inverse\` / \`safe_to_add\` / \`review_new_schema\`), \`resultContracts\` requiring \`all_paths\` callers to report \`limit\`, \`searchBudget\`, \`expandedStates\`, \`exhaustive\`, \`truncatedByBudget\`, \`totalPathsExact\`, \`evidence.status\`, \`evidence.reason\`, and \`evidence.pathsComplete\`, plus \`match_nodes\` / \`match_edges\` callers to report \`totalMatches\`, \`limited\`, and \`followUp\` details before treating scan rows as evidence, embedded health, and read-first write policy in one response.
 5. \`query_ontology({operation:'workspace_brief'})\` — read-only first-contact diagnosis: project shape, health status, and next actions without fetching the full graph. Use \`query_ontology({operation:'health'})\` when you need a deeper integrity dashboard.
@@ -1970,6 +1970,7 @@ const TOOLS = [
     description:
       'List every ontology node in the vault (each .md file with a frontmatter `kind:`). ' +
       'Filter by `kind`, `domain`, and/or `since` (mtime-based incremental sync). ' +
+      'Large vaults are resumable with `offset` + `limit`; always follow `pagination.nextOffset` while `hasMore` is true. ' +
       "AI agents call this first to grasp the codebase's mental model.",
     inputSchema: {
       type: 'object',
@@ -1986,6 +1987,12 @@ const TOOLS = [
           minimum: 0,
           description:
             'Non-negative mtime threshold. Filter to nodes with `mtime > since` (ms). Pair with the `mtime` returned in earlier `list_concepts` / `get_concept` responses for incremental sync — "what changed since I last looked". Strict greater-than (mtime === since 는 제외) so re-passing the max from a previous response does not double-fetch.',
+        },
+        offset: {
+          type: 'integer',
+          minimum: 0,
+          description:
+            'Zero-based page offset applied after kind/domain/since filters. Resume at pagination.nextOffset until hasMore is false; ordering is deterministic by canonical slug.',
         },
         summary: {
           type: 'boolean',
@@ -2007,6 +2014,28 @@ const TOOLS = [
           type: 'integer',
           minimum: 0,
           description: 'Total number of matching ontology nodes before the limit is applied.',
+        },
+        returned: {
+          type: 'integer',
+          minimum: 0,
+          description: 'Number of rows returned in this page.',
+        },
+        limited: {
+          type: 'boolean',
+          description: 'True when this page does not contain every matching row.',
+        },
+        pagination: {
+          type: 'object',
+          properties: {
+            offset: { type: 'integer', minimum: 0 },
+            limit: { type: 'integer', minimum: 1 },
+            total: { type: 'integer', minimum: 0 },
+            returned: { type: 'integer', minimum: 0 },
+            hasMore: { type: 'boolean' },
+            nextOffset: { type: ['integer', 'null'], minimum: 0 },
+          },
+          required: ['offset', 'limit', 'total', 'returned', 'hasMore', 'nextOffset'],
+          additionalProperties: false,
         },
         vaultRoot: {
           type: 'string',
@@ -2063,7 +2092,7 @@ const TOOLS = [
           additionalProperties: false,
         },
       },
-      required: ['total', 'vaultRoot', 'nodes'],
+      required: ['total', 'vaultRoot', 'nodes', 'returned', 'limited', 'pagination'],
       additionalProperties: false,
     },
   },
@@ -6063,12 +6092,13 @@ function requireOptionalBoolean(value, name) {
   }
 }
 
-function listConcepts({ kind, domain, since, summary, limit = 100 }) {
+function listConcepts({ kind, domain, since, summary, offset = 0, limit = 100 }) {
   requireOptionalNonBlankString(kind, 'kind');
   requireOptionalEnum(kind, 'kind', NODE_KIND_VALUES);
   requireOptionalNonBlankString(domain, 'domain');
   requireOptionalNonNegativeNumber(since, 'since');
   requireOptionalBoolean(summary, 'summary');
+  requireOptionalNonNegativeInteger(offset, 'offset');
   requireOptionalPositiveInteger(limit, 'limit', { max: 500 });
   const docs = loadVaultDocs(VAULT_ROOT);
 
@@ -6114,9 +6144,15 @@ function listConcepts({ kind, domain, since, summary, limit = 100 }) {
     if (domain && doc.frontmatter.domain !== domain) return false;
     if (sinceMs !== null && (typeof doc.mtime !== 'number' || doc.mtime <= sinceMs)) return false;
     return true;
-  });
+  }).sort((a, b) => a.slug.localeCompare(b.slug));
+  if (offset > filtered.length) {
+    throw new Error(
+      `offset must be less than or equal to the total matching nodes (${filtered.length}); Received: ${offset}.`,
+    );
+  }
+  const page = filtered.slice(offset, offset + limit);
   const summaryTruncatedSlugs = [];
-  const nodes = filtered.slice(0, limit).map((doc) => {
+  const nodes = page.map((doc) => {
     // R+ — opt-in summary. agent 가 list 한 호출로 "각 노드 무슨 내용인가?"
     // 파악 가능. 200자 cap 으로 페이로드 부풀림 방지 (find_evidence 와 동일).
     // 호출자가 summary:true 명시 안 하면 비활성 (기존 동작 보존).
@@ -6148,6 +6184,16 @@ function listConcepts({ kind, domain, since, summary, limit = 100 }) {
     total: filtered.length,
     vaultRoot: VAULT_ROOT,
     nodes,
+    returned: nodes.length,
+    limited: offset + nodes.length < filtered.length,
+    pagination: {
+      offset,
+      limit,
+      total: filtered.length,
+      returned: nodes.length,
+      hasMore: offset + nodes.length < filtered.length,
+      nextOffset: offset + nodes.length < filtered.length ? offset + nodes.length : null,
+    },
     // 잘린 요약은 **행에 표시하고 목록에 한 번만 안내한다** — 행마다 안내문을
     // 붙이면 페이로드만 늘고, 아무 데도 안 붙이면 무엇이 남았는지 몰라 다시
     // 요청할 수가 없다.

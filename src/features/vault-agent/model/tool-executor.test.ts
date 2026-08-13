@@ -256,6 +256,45 @@ describe('tool-executor — 읽기', () => {
     expect(result.content.length).toBeLessThan(7_000);
   });
 
+  it('대형 목록은 deterministic offset 페이지로 누락 없이 복원한다', async () => {
+    const many = Array.from({ length: 503 }, (_, index) => ({
+      slug: `capabilities/c${String(index).padStart(3, '0')}`,
+      path: `capabilities/c${index}.md`,
+      title: `c${index}`,
+      kind: 'capability',
+      frontmatter: {},
+      excerpt: '',
+      mtime: 1,
+    }));
+    const execute = createToolExecutor(makePort({ docs: many }));
+    const pages: Array<{
+      rows: Array<{ slug: string }>;
+      total: number;
+      returned: number;
+      limited: boolean;
+      pagination: { nextOffset: number | null; hasMore: boolean };
+    }> = [];
+    let offset = 0;
+    do {
+      const page = JSON.parse(
+        (await execute(call('list_concepts', { limit: 40, offset }))).content,
+      ) as (typeof pages)[number];
+      pages.push(page);
+      offset = page.pagination.nextOffset ?? 0;
+      if (!page.pagination.hasMore) break;
+    } while (pages.length < 20);
+
+    expect(pages.length).toBe(13);
+    expect(pages[0]).toMatchObject({ total: 503, returned: 40, limited: true });
+    expect(pages.at(-1)).toMatchObject({ total: 503, returned: 23, limited: false });
+    expect(pages.at(-1)?.pagination).toMatchObject({ hasMore: false, nextOffset: null });
+    expect(new Set(pages.flatMap((page) => page.rows).map((row) => row.slug)).size).toBe(503);
+    const outOfRange = await execute(call('list_concepts', { limit: 40, offset: 504 }));
+    expect(outOfRange.outcome).toBe('args-invalid');
+    expect(outOfRange.isError).toBe(true);
+    expect(outOfRange.content).toContain('invalid_arguments');
+  });
+
   it('get_concepts 는 상한 안에서 요청한 근거 행을 고르게 남긴다', async () => {
     const parents = Array.from({ length: 8 }, (_, index) =>
       node(`domain:d${index}`, {

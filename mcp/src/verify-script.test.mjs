@@ -912,6 +912,11 @@ describe('verify.mjs first-contact gates', () => {
               description:
                 'When true, each node row includes a `summary` (max 200 chars, prose-only: heading / 표 / 코드블록 / 리스트 / 인용 skip 후 첫 단락만, same `extractSummaryExcerpt` helper as `get_concept` / `find_evidence`). Useful for "scan + overview" without N follow-up `get_concept` calls. Default false to keep payload small.',
             },
+            offset: {
+              type: 'integer',
+              minimum: 0,
+              description: 'Zero-based deterministic page offset. Resume with pagination.nextOffset while hasMore is true.',
+            },
             limit: {
               type: 'integer',
               minimum: 1,
@@ -922,10 +927,25 @@ describe('verify.mjs first-contact gates', () => {
         },
         outputSchema: {
           type: 'object',
-          required: ['total', 'vaultRoot', 'nodes'],
+          required: ['total', 'vaultRoot', 'nodes', 'returned', 'limited', 'pagination'],
           properties: {
             total: { type: 'integer', minimum: 0 },
             vaultRoot: { type: 'string', minLength: 1 },
+            returned: { type: 'integer', minimum: 0 },
+            limited: { type: 'boolean' },
+            pagination: {
+              type: 'object',
+              required: ['offset', 'limit', 'total', 'returned', 'hasMore', 'nextOffset'],
+              properties: {
+                offset: { type: 'integer', minimum: 0 },
+                limit: { type: 'integer', minimum: 1 },
+                total: { type: 'integer', minimum: 0 },
+                returned: { type: 'integer', minimum: 0 },
+                hasMore: { type: 'boolean' },
+                nextOffset: { type: ['integer', 'null'], minimum: 0 },
+              },
+              additionalProperties: false,
+            },
             nodes: {
               type: 'array',
               items: {
@@ -5921,7 +5941,7 @@ describe('verify.mjs first-contact gates', () => {
   });
 
   it('fails malformed strict argument smoke responses', () => {
-    const error = 'Unknown argument "lmit" for list_concepts. Did you mean "limit"? Allowed arguments: domain, kind, limit, since, summary. Received arguments: lmit.';
+    const error = 'Unknown argument "lmit" for list_concepts. Did you mean "limit"? Allowed arguments: domain, kind, limit, offset, since, summary. Received arguments: lmit.';
     assert.equal(
       strictArgsFailure({
         result: {
@@ -5935,7 +5955,7 @@ describe('verify.mjs first-contact gates', () => {
             receivedArgument: 'lmit',
             suggestion: 'limit',
             unknownArguments: [{ name: 'lmit', suggestion: 'limit' }],
-            allowedArguments: ['domain', 'kind', 'limit', 'since', 'summary'],
+            allowedArguments: ['domain', 'kind', 'limit', 'offset', 'since', 'summary'],
             receivedArguments: ['lmit'],
           },
         },
@@ -5986,7 +6006,7 @@ describe('verify.mjs first-contact gates', () => {
           error,
           receivedArgument: 'lmit',
           suggestion: 'limit',
-          allowedArguments: ['domain', 'kind', 'limit', 'since', 'summary'],
+          allowedArguments: ['domain', 'kind', 'limit', 'offset', 'since', 'summary'],
         },
       })),
       'strict arguments structured error missing unknown argument hint',
@@ -6000,7 +6020,7 @@ describe('verify.mjs first-contact gates', () => {
           receivedArgument: 'lmit',
           suggestion: 'limit',
           unknownArguments: [{ name: 'limit' }],
-          allowedArguments: ['domain', 'kind', 'limit', 'since', 'summary'],
+          allowedArguments: ['domain', 'kind', 'limit', 'offset', 'since', 'summary'],
         },
       })),
       'strict arguments structured error missing canonical unknown argument hint',
@@ -6008,7 +6028,7 @@ describe('verify.mjs first-contact gates', () => {
   });
 
   it('fails malformed strict multi-argument smoke responses', () => {
-    const error = 'Unknown arguments for list_concepts: "lmit" (did you mean "limit"?), "summry" (did you mean "summary"?). Allowed arguments: domain, kind, limit, since, summary. Received arguments: lmit, summry.';
+    const error = 'Unknown arguments for list_concepts: "lmit" (did you mean "limit"?), "summry" (did you mean "summary"?). Allowed arguments: domain, kind, limit, offset, since, summary. Received arguments: lmit, summry.';
     assert.equal(
       strictMultiArgsFailure({
         result: {
@@ -6024,7 +6044,7 @@ describe('verify.mjs first-contact gates', () => {
               { name: 'lmit', suggestion: 'limit' },
               { name: 'summry', suggestion: 'summary' },
             ],
-            allowedArguments: ['domain', 'kind', 'limit', 'since', 'summary'],
+            allowedArguments: ['domain', 'kind', 'limit', 'offset', 'since', 'summary'],
           },
         },
       }),
@@ -9183,12 +9203,26 @@ Continue.`;
     );
   });
 
+  const listPage = (total, returned = total, offset = 0, limit = 100) => ({
+    returned,
+    limited: offset + returned < total,
+    pagination: {
+      offset,
+      limit,
+      total,
+      returned,
+      hasMore: offset + returned < total,
+      nextOffset: offset + returned < total ? offset + returned : null,
+    },
+  });
+
   it('accepts clean list_concepts payloads', () => {
     assert.equal(
       listConceptsFailure({
         total: 1,
         vaultRoot: '/tmp/vault',
         nodes: [{ uid: TEST_UID, slug: 'project', kind: 'project', title: 'Project', mtime: 1 }],
+        ...listPage(1),
       }),
       null,
     );
@@ -9197,6 +9231,7 @@ Continue.`;
         total: 0,
         vaultRoot: '/tmp/vault',
         nodes: [],
+        ...listPage(0),
         vaultWarnings: { errorCount: 0, warningCount: 0 },
       }),
       null,
@@ -9210,6 +9245,7 @@ Continue.`;
         total: 0,
         vaultRoot: '/tmp/vault',
         nodes: [],
+        ...listPage(0),
         vaultWarnings: { errorCount: 1, warningCount: 2 },
       }),
       'list_concepts vaultWarnings present: errors 1, warnings 2. Run validate_vault for file-level diagnostics before writing.',
@@ -9232,20 +9268,63 @@ Continue.`;
       listConceptsFailure({ total: 0, vaultRoot: '/tmp/vault', nodes: [{ uid: TEST_UID, slug: 'project', kind: 'project', title: 'Project', mtime: 1 }] }),
       'list_concepts response node count exceeds total: nodes 1, total 0',
     );
-    assert.equal(listConceptsFailure({ total: 1, vaultRoot: '/tmp/vault', nodes: [null] }), 'list_concepts response malformed node at index 0');
-    assert.equal(listConceptsFailure({ total: 1, vaultRoot: '/tmp/vault', nodes: [{}] }), 'list_concepts response missing node slug at index 0');
-    assert.equal(listConceptsFailure({ total: 1, vaultRoot: '/tmp/vault', nodes: [{ uid: TEST_UID, slug: 'project' }] }), 'list_concepts response missing node kind: project');
-    assert.equal(listConceptsFailure({ total: 1, vaultRoot: '/tmp/vault', nodes: [{ uid: TEST_UID, slug: 'project', kind: 'project' }] }), 'list_concepts response missing node title: project');
-    assert.equal(listConceptsFailure({ total: 1, vaultRoot: '/tmp/vault', nodes: [{ uid: TEST_UID, slug: 'project', kind: 'project', title: 'Project' }] }), 'list_concepts response missing node mtime: project');
+    assert.equal(listConceptsFailure({ total: 1, vaultRoot: '/tmp/vault', nodes: [null], ...listPage(1) }), 'list_concepts response malformed node at index 0');
+    assert.equal(listConceptsFailure({ total: 1, vaultRoot: '/tmp/vault', nodes: [{}], ...listPage(1) }), 'list_concepts response missing node slug at index 0');
+    assert.equal(listConceptsFailure({ total: 1, vaultRoot: '/tmp/vault', nodes: [{ uid: TEST_UID, slug: 'project' }], ...listPage(1) }), 'list_concepts response missing node kind: project');
+    assert.equal(listConceptsFailure({ total: 1, vaultRoot: '/tmp/vault', nodes: [{ uid: TEST_UID, slug: 'project', kind: 'project' }], ...listPage(1) }), 'list_concepts response missing node title: project');
+    assert.equal(listConceptsFailure({ total: 1, vaultRoot: '/tmp/vault', nodes: [{ uid: TEST_UID, slug: 'project', kind: 'project', title: 'Project' }], ...listPage(1) }), 'list_concepts response missing node mtime: project');
+    assert.equal(
+      listConceptsFailure({
+        total: 1,
+        vaultRoot: '/tmp/vault',
+        nodes: [],
+        ...listPage(1, 0, 2),
+      }),
+      'list_concepts response pagination counts drift',
+    );
+    const validPage = {
+      total: 2,
+      vaultRoot: '/tmp/vault',
+      nodes: [
+        { uid: TEST_UID, slug: 'project', kind: 'project', title: 'Project', mtime: 1 },
+      ],
+      ...listPage(2, 1),
+    };
+    assert.match(
+      listConceptsFailure({ ...validPage, returned: undefined }),
+      /returned mismatch/,
+    );
+    assert.match(
+      listConceptsFailure({ ...validPage, limited: undefined }),
+      /missing limited flag/,
+    );
+    assert.match(
+      listConceptsFailure({ ...validPage, pagination: undefined }),
+      /missing pagination metadata/,
+    );
+    assert.match(
+      listConceptsFailure({
+        ...validPage,
+        pagination: { ...validPage.pagination, hasMore: false },
+      }),
+      /hasMore\/limited drift/,
+    );
+    assert.match(
+      listConceptsFailure({
+        ...validPage,
+        pagination: { ...validPage.pagination, nextOffset: null },
+      }),
+      /nextOffset drift/,
+    );
   });
 
   it('fails malformed project probe payloads', () => {
     assert.equal(
-      projectProbeFailure({ total: 0, vaultRoot: '/tmp/vault', nodes: [] }, { byKind: { project: 1 } }),
+      projectProbeFailure({ total: 0, vaultRoot: '/tmp/vault', nodes: [], ...listPage(0) }, { byKind: { project: 1 } }),
       'project probe response missing project node',
     );
-    assert.equal(projectProbeFailure({ total: 0, vaultRoot: '/tmp/vault', nodes: [] }, { byKind: { project: 0 } }), null);
-    assert.equal(projectProbeFailure({ total: 0, vaultRoot: '/tmp/vault', nodes: [] }, { byKind: { domain: 1 } }), null);
+    assert.equal(projectProbeFailure({ total: 0, vaultRoot: '/tmp/vault', nodes: [], ...listPage(0) }, { byKind: { project: 0 } }), null);
+    assert.equal(projectProbeFailure({ total: 0, vaultRoot: '/tmp/vault', nodes: [], ...listPage(0) }, { byKind: { domain: 1 } }), null);
     assert.equal(
       projectProbeFailure({ total: 1, nodes: [{ slug: 'project', kind: 'project', title: 'Project', mtime: 1 }] }, { byKind: { project: 1 } }),
       'project probe list_concepts response missing vaultRoot',
@@ -9255,6 +9334,7 @@ Continue.`;
         total: 1,
         vaultRoot: '/tmp/vault',
         nodes: [{ uid: TEST_UID, slug: 'capabilities/not-project', kind: 'capability', title: 'Wrong', mtime: 1 }],
+        ...listPage(1),
       }, { byKind: { project: 1 } }),
       'project probe returned non-project node: capabilities/not-project',
     );
@@ -9263,6 +9343,7 @@ Continue.`;
         total: 2,
         vaultRoot: '/tmp/vault',
         nodes: [{ uid: TEST_UID, slug: 'project', kind: 'project', title: 'Project', mtime: 1 }],
+        ...listPage(2, 1),
       }, { byKind: { project: 1 } }),
       'project probe count mismatch: list_kinds project 1, probe 2',
     );
@@ -9271,6 +9352,7 @@ Continue.`;
         total: 1,
         vaultRoot: '/tmp/vault',
         nodes: [{ uid: TEST_UID, slug: 'project', kind: 'project', title: 'Project', mtime: 1 }],
+        ...listPage(1),
       }, { byKind: { project: 1 } }),
       null,
     );
@@ -10104,6 +10186,7 @@ Continue.`;
       total: 1,
       vaultRoot: '/tmp/vault',
       nodes: [{ uid: TEST_UID, slug: 'project', kind: 'project', title: 'Project', mtime: 1 }],
+      ...listPage(1),
     };
     const validation = {
       scanned: 1,

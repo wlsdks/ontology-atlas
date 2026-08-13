@@ -197,6 +197,45 @@ gate의 통과 주장은 해당 runtime 증거가 생길 때만 한다.
 
 ---
 
+## 2026-08-14 — 대형 온톨로지 목록은 누락을 표시하고 끝까지 읽게 한다
+
+### 관찰
+
+독립 Luna MCP 계약 시험에서 500개를 넘는 vault의 `list_concepts({limit:500})`가
+`total`만 크게 반환하고 나머지 노드를 찾을 방법을 주지 않았다. 첫 census가
+완전한 것처럼 보이는 무표식 절단은 이후 source-hidden 판단과 handoff의 근거를
+오염시킨다. 같은 시험에서 summary 목록만으로는 capability/domain의 본문 근거가
+닫히지 않아, 목록을 읽었다는 사실과 의미를 이해했다는 사실도 분리할 필요가
+있었다.
+
+### 결정 (집행)
+
+- MCP `list_concepts`는 필터 후 canonical slug 순으로 정렬하고 `offset`과
+  `limit`을 받는다. 응답은 `returned`, `limited`, `pagination`을 포함하며
+  `hasMore`일 때 반드시 `nextOffset`을 제공한다.
+- 첫 페이지를 전체 census로 표현하지 않는다. MCP README, verifier, local
+  read-only agent adapter가 같은 페이지 계약을 사용하고, 100+ fixture에서
+  페이지 합집합이 중복·누락 없이 원래 total을 회복하는지 검사한다.
+- 목록/summary는 census일 뿐이다. field-trial handoff가 domain, capability,
+  project boundary, implementation, impact를 완료로 표시하려면
+  `get_concept({body:"full"})` 또는 `get_concepts({body:"full"})`의 exact
+  follow-up 근거를 남긴다. 본문이 없거나 잘리면 partial/unknown으로 남긴다.
+- 이번 slice는 새 kind/relation/tool, UI pagination, semantic qualification,
+  automatic vault write를 포함하지 않는다.
+
+### 반증 조건
+
+독립적인 100+ node zero-state 세션 3회에서 첫 목록 응답만으로도 누락 없이
+복원되고, `hasMore`/`nextOffset`을 사용하지 않아도 source-hidden claim이
+동일하게 검증되는 것이 관찰되면 pagination 또는 full-body handoff gate의
+우선순위를 재평가한다. 반대로 한 번이라도 page metadata 없이 500개 밖의 노드를
+놓치거나 summary만으로 본문 의미를 단정하면 이 결정은 유지된다.
+
+**서명 (accountable)**: jinan 위임 하에 집행
+**상태**: 유효
+
+---
+
 ## 2026-08-13 (2) — 큰 배열의 확인보다 구현 경로 focus가 먼저다
 
 ### 반증 관측

@@ -451,7 +451,7 @@ await test("tools/list — 단일 도구 description 이 batch 짝을 cross-refe
     };
     const listConcepts = findTool("list_concepts");
     assert.equal(listConcepts?.outputSchema?.type, "object");
-    assert.deepEqual(listConcepts?.outputSchema?.required, ["total", "vaultRoot", "nodes"]);
+    assert.deepEqual(listConcepts?.outputSchema?.required, ["total", "vaultRoot", "nodes", "returned", "limited", "pagination"]);
     assert.equal(listConcepts?.outputSchema?.additionalProperties, false);
     assert.equal(listConcepts?.outputSchema?.properties?.total?.type, "integer");
     assert.equal(listConcepts?.outputSchema?.properties?.vaultRoot?.type, "string");
@@ -2137,7 +2137,7 @@ await test("tools/call — arguments 생략은 빈 object, non-object 는 명시
       /Unknown argument "lmit" for list_concepts/i,
     );
     assert.equal(responses.find((r) => r.id === 6)?.result?.structuredContent?.errorCode, "unknown_argument");
-    assert.deepEqual(getCallStructured(responses, 6)?.allowedArguments, ["domain", "kind", "limit", "since", "summary"]);
+    assert.deepEqual(getCallStructured(responses, 6)?.allowedArguments, ["domain", "kind", "limit", "offset", "since", "summary"]);
     assert.deepEqual(getCallStructured(responses, 6)?.receivedArguments, ["lmit"]);
     assert.equal(getCallStructured(responses, 6)?.receivedArgument, "lmit");
     assert.equal(getCallStructured(responses, 6)?.suggestion, "limit");
@@ -2149,7 +2149,7 @@ await test("tools/call — arguments 생략은 빈 object, non-object 는 명시
     assert.match(getCallText(responses, 8), /Unknown arguments for list_concepts/i);
     assert.match(getCallText(responses, 8), /"lmit" \(did you mean "limit"\?\)/i);
     assert.match(getCallText(responses, 8), /"summry" \(did you mean "summary"\?\)/i);
-    assert.match(getCallText(responses, 8), /Allowed arguments: domain, kind, limit, since, summary/i);
+    assert.match(getCallText(responses, 8), /Allowed arguments: domain, kind, limit, offset, since, summary/i);
     assert.equal(getCallStructured(responses, 8)?.errorCode, "unknown_argument");
     assert.deepEqual(getCallStructured(responses, 8)?.unknownArguments, [
       { name: "lmit", suggestion: "limit" },
@@ -4187,6 +4187,48 @@ await test("list_concepts — tmp vault 의 노드 수 정확히 보고", async 
     ]);
     const result = getCallParsed(responses, 2);
     assert.equal(result.total, 2, "kind 있는 노드 2 개만 카운트");
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+await test("list_concepts — 500개를 넘는 vault도 offset 페이지로 누락 없이 복원", async () => {
+  const root = makeVault(
+    Array.from({ length: 503 }, (_, index) => ({
+      slug: `capabilities/node-${String(index).padStart(4, "0")}`,
+      content: `---\nkind: capability\ntitle: Node ${index}\n---\n`,
+    })),
+  );
+  try {
+    const { responses } = await rpc(root, [
+      ...INIT_REQUESTS,
+      callTool(2, "list_concepts", { limit: 500 }),
+      callTool(3, "list_concepts", { offset: 500, limit: 500 }),
+      callTool(4, "list_concepts", { offset: 504, limit: 500 }),
+    ]);
+    const first = getCallParsed(responses, 2);
+    const second = getCallParsed(responses, 3);
+    const outOfRange = getCallStructured(responses, 4);
+    assert.equal(first.total, 503);
+    assert.equal(first.returned, 500);
+    assert.equal(first.limited, true);
+    assert.deepEqual(first.pagination, {
+      offset: 0,
+      limit: 500,
+      total: 503,
+      returned: 500,
+      hasMore: true,
+      nextOffset: 500,
+    });
+    assert.equal(second.returned, 3);
+    assert.equal(second.limited, false);
+    assert.equal(second.pagination.nextOffset, null);
+    const slugs = [...first.nodes, ...second.nodes].map((node) => node.slug);
+    assert.equal(new Set(slugs).size, 503);
+    assert.equal(slugs.length, 503);
+    assert.equal(outOfRange?.ok, false);
+    assert.equal(outOfRange?.errorCode, "invalid_arguments");
+    assert.match(String(outOfRange?.error), /offset.*503.*Received: 504/);
   } finally {
     rmSync(root, { recursive: true, force: true });
   }
