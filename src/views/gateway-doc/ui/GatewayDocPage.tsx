@@ -106,10 +106,19 @@ export function GatewayDocPage({
      * 번역된 제목과 원문 제목이 나란히 서면 같은 것이 두 번 나온다.
      */
     const withoutH1 = raw.replace(/^#\s+.*(\r?\n)+/, '');
+    /*
+     * 변경 내역(entryNav)의 머리 인용구도 지운다 — 저장소 기여자에게 이 파일을
+     * 어떻게 쓰라고 말하는 메타라서, 화면 lead 가 같은 말을 사용자 언어로 이미
+     * 한다(2026-08-13 실측: KO 페이지의 첫 문단이 영어 관리 문서였다). 뒤따르는
+     * `---` 구분선까지 한 덩어리다. 인용구가 없으면 아무것도 안 지운다.
+     */
+    const withoutPreamble = entryNav
+      ? withoutH1.replace(/^(?:>.*(?:\r?\n)+)+(?:---(?:\r?\n)+)?/, '')
+      : withoutH1;
     return recentSectionLimit
-      ? trimToRecentSections(withoutH1, recentSectionLimit)
-      : { body: withoutH1, omittedSections: 0 };
-  }, [slug, recentSectionLimit]);
+      ? trimToRecentSections(withoutPreamble, recentSectionLimit)
+      : { body: withoutPreamble, omittedSections: 0 };
+  }, [slug, recentSectionLimit, entryNav]);
 
   /**
    * 항목 목록과 본문 제목의 id 는 **같은 함수**가 낸다 — 두 곳이 각자 만들면
