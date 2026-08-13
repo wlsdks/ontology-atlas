@@ -61,7 +61,12 @@ const STAGE_LANE_DELAY_MS = 40;
 
 // ── Board geometry (fixed coordinate system, centered in the stage) ──────────
 
-const CARD_CREATE_H = 236;
+/*
+ * 도메인 셀렉트가 함께 그려질 때 정의 입력칸이 44px 로 줄어 안내문 둘째 줄
+ * (18px)이 잘렸다(2026-08-13 실측: clientH 42 vs scrollH 60). 두 줄을 항상
+ * 보장하도록 +20. 경고 배너 카드(320)와의 순서는 유지된다.
+ */
+const CARD_CREATE_H = 256;
 /** Create-mode card grows when the near-dup / slug-collision banner is shown so
  * the warning always lives INSIDE the dashed border (never bleeds past it). */
 const CARD_CREATE_H_WARN = 320;
