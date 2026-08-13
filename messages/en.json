@@ -2062,7 +2062,7 @@
     },
     "newDocDialog": {
       "title": "New document",
-      "subtitle": "Pick what kind of node this document is: the folder and starter frontmatter follow the kind.",
+      "subtitle": "Pick what kind of node this document is first: its folder and starter content follow that choice.",
       "cancel": "Cancel"
     },
     "dialog": {
