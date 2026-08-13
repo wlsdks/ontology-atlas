@@ -37,7 +37,10 @@ beforeEach(() => {
   // jsdom 기본값은 포커스 없음이라 명시적으로 세운다.
   vi.spyOn(document, "hasFocus").mockReturnValue(true);
   window.localStorage.removeItem(DOCS_KEY);
-  window.localStorage.removeItem(AUTO_START_KEY);
+  // 자동 표시는 2026-08-13 부터 기본 끔(opt-in) — 자동 발화 행동을 검사하는
+  // 아래 테스트들은 스위치를 켠 상태를 전제로 한다. 기본값 자체의 검사는
+  // 「기본(저장값 없음)이면」 테스트가 따로 한다.
+  window.localStorage.setItem(AUTO_START_KEY, "1");
   vi.useFakeTimers({ shouldAdvanceTime: true });
 });
 
@@ -193,11 +196,21 @@ describe("화면 안내 자동 표시 스위치", () => {
   });
 
   it("켜져 있으면 저절로 뜬다 — 스위치가 실제로 그 발화를 막고 있다는 증거", async () => {
+    window.localStorage.setItem(AUTO_START_KEY, "1");
     renderGuide();
     await act(async () => {
       vi.advanceTimersByTime(6000);
     });
     expect(screen.getByRole("heading", { level: 2 })).toBeInTheDocument();
+  });
+
+  it("기본(저장값 없음)이면 저절로 뜨지 않는다 — 2026-08-13 소유자 확정", async () => {
+    window.localStorage.removeItem(AUTO_START_KEY);
+    renderGuide();
+    await act(async () => {
+      vi.advanceTimersByTime(6000);
+    });
+    expect(screen.queryByRole("heading", { level: 2 })).toBeNull();
   });
 
   it("꺼져 있어도 「다시 보기」로는 열린다 — 스위치는 삭제가 아니다", async () => {
