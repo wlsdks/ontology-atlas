@@ -3447,7 +3447,7 @@
       "taskEndAgent": "{agent} 작업 끝",
       "domainAdded": "도메인 생김",
       "domainRemoved": "도메인 사라짐",
-      "bridgeInserted": "브릿지 끼어듦",
+      "bridgeInserted": "중간 개념 끼어듦",
       "vaultProblem": "폴더 문제"
     }
   },
