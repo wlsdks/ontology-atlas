@@ -6,6 +6,8 @@
 export const BOARD = { w: 1180, h: 600 } as const;
 export const CX = BOARD.w / 2; // 590
 export const CY = BOARD.h / 2; // 300
+export const CARD = { w: 372, h: 172 } as const;
+export const SAT = { w: 226, h: 54, gap: 12 } as const;
 
 /** Clamp a picker/list left edge inside the board with an 8px gutter. */
 export function clampX(x: number, w: number): number {
