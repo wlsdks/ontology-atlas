@@ -894,9 +894,14 @@ function DocsVaultContent() {
       await localVault.renameDoc(selectedSlug, nextSlug, {
         rewriteBacklinks: true,
       });
-      // selection + recent/pinned 마이그레이트
+      // selection + 주소 + 활성 기억 + recent/pinned 마이그레이트.
+      // 주소를 안 옮기면 매니페스트 갱신 순간 「URL 이 요청한 문서가 없다」
+      // 판정이 옛 주소를 잡아 거짓 경고가 뜬다(2026-08-13 걷기 실측). 새
+      // 이름은 매니페스트에 나타날 때까지 「아직 모름」으로 지연 판정한다.
       const prev = selectedSlug;
+      pendingRenameRef.current = { from: prev, to: nextSlug };
       setSelectedSlug(nextSlug);
+      replaceUrlState({ slug: nextSlug });
       setRecentSlugs((list) => {
         const mapped = list.map((s) => (s === prev ? nextSlug : s));
         // 갱신 함수 안 직접 쓰기 금지 — 위 삭제 경로와 같은 이유(2026-08-13).
@@ -931,7 +936,7 @@ function DocsVaultContent() {
         t('dialog.renameFailed', { message: err instanceof Error ? err.message : String(err) }),
       );
     }
-  }, [canEditCurrent, selectedSlug, manifest, localVault, recentKey, setPinnedSlugs, setRecentSlugs, t]);
+  }, [canEditCurrent, selectedSlug, manifest, localVault, recentKey, replaceUrlState, setPinnedSlugs, setRecentSlugs, t]);
 
   // P5c — "새 문서" 는 kind 선택이 먼저 온다(도메인/역량/요소/문서). generic
   // `title:` 템플릿을 없애 "이 vault 의 문서는 노드다" 를 생성 순간에 강제
@@ -1189,8 +1194,28 @@ function DocsVaultContent() {
    * 다시 뜨지 않는다. 사용자가 문서를 직접 고르면 닫힌다.
    */
   const [missingQuerySlug, setMissingQuerySlug] = useState<string | null>(null);
+  /**
+   * **앱이 방금 이름을 바꾼 문서는 「없음」이 아니다** (2026-08-13 걷기 실측).
+   *
+   * 이름 변경 뒤 두 주소가 판정에 걸릴 수 있다: ① 옛 주소 — 트리 클릭은
+   * 라우터 내비라 `useSearchParams` 가 옛 `?slug=` 를 물고 있고,
+   * `replaceUrlState` 의 `history.replaceState` 는 그 훅에 보이지 않는다.
+   * 매니페스트가 갱신되어 옛 이름이 사라지는 순간 「요청한 문서가 없다」가
+   * 걸려 **방금 성공한 이름 변경에 실패 경고가 붙었다**(0.5초 만에
+   * 「못 찾았어요」). ② 새 주소 — 매니페스트는 다음 폴링까지 옛 판이라 그
+   * 공백에서 새 이름도 「없다」로 보인다. 둘 다 밖에서 온 요청이 아니라 앱
+   * 자신의 행위이므로 판정 대상이 아니다. 사용자가 다른 문서로 가면(질의가
+   * 두 주소 밖으로 바뀌면) 가드를 걷는다.
+   */
+  const pendingRenameRef = useRef<{ from: string; to: string } | null>(null);
   useEffect(() => {
     if (!normalizedQuerySlug || docsBySlug.size === 0) return;
+    const rename = pendingRenameRef.current;
+    if (rename && normalizedQuerySlug !== rename.from && normalizedQuerySlug !== rename.to) {
+      pendingRenameRef.current = null;
+    } else if (rename) {
+      return;
+    }
     if (docsBySlug.has(normalizedQuerySlug)) {
       // 문서가 나타났으면 잡아 둔 판정을 걷는다 — 부팅 중 샘플 창에서 내렸던
       // 「없다」가 로컬 볼트 도착으로 거짓이 된 경우다(2026-08-08).
