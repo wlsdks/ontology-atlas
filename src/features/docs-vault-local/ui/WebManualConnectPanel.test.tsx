@@ -45,6 +45,8 @@ describe('WebManualConnectPanel — 브라우저는 경로를 모르지만 사�
     expect(screen.getByTestId('web-manual-connect-copy-config')).toBeDisabled();
 
     fill('web-manual-connect-checkout-input', '/Users/me/ontology-atlas');
+    expect(screen.getByTestId('web-manual-connect-copy-config')).toBeDisabled();
+    fireEvent.click(screen.getByTestId('web-manual-connect-path-confirmation'));
     expect(screen.getByTestId('web-manual-connect-copy-config')).toBeEnabled();
     expect(screen.getByTestId('web-manual-connect-copy-verify')).toBeEnabled();
   });
@@ -53,6 +55,7 @@ describe('WebManualConnectPanel — 브라우저는 경로를 모르지만 사�
     renderPanel();
     fill('web-manual-connect-vault-input', '/Users/me/notes');
     fill('web-manual-connect-checkout-input', '/Users/me/ontology-atlas');
+    fireEvent.click(screen.getByTestId('web-manual-connect-path-confirmation'));
     const parsed = JSON.parse(screen.getByTestId('web-manual-connect-config-body').textContent ?? '');
     expect(parsed.mcpServers['ontology-atlas'].env.OATLAS_VAULT).toBe('/Users/me/notes');
     expect(parsed.mcpServers['ontology-atlas'].args).toEqual([
@@ -64,6 +67,7 @@ describe('WebManualConnectPanel — 브라우저는 경로를 모르지만 사�
     renderPanel();
     fill('web-manual-connect-vault-input', '/Users/me/notes');
     fill('web-manual-connect-checkout-input', '/Users/me/ontology-atlas');
+    fireEvent.click(screen.getByTestId('web-manual-connect-path-confirmation'));
     fireEvent.click(screen.getByTestId('web-manual-connect-tool-codex'));
     const card = screen.getByTestId('web-manual-connect-config-codex');
     expect(within(card).getByText('.codex/config.toml')).toBeInTheDocument();
@@ -95,7 +99,7 @@ describe('WebManualConnectPanel — 브라우저는 경로를 모르지만 사�
   it('확인했다고 말하지 않는다 — 모양만 본다고 화면이 먼저 말한다', () => {
     renderPanel();
     expect(screen.getByTestId('web-manual-connect-shape-only').textContent).toMatch(
-      /모양만[\s\S]*실제로 있는지는 브라우저가 확인할 수 없어요/,
+      /경로의 모양만[\s\S]*같은 폴더인지 증명할 수 없어요/,
     );
   });
 });

@@ -4029,6 +4029,14 @@ body[data-no-tabbar] [data-tabbar="primary"] {
   display: none;
 }
 
+@media (max-width: 1023px) {
+  [data-testid="download-bottom-band"][data-gateway-bottom-reserve-active="true"] {
+    padding-bottom: calc(
+      var(--topology-mobile-bottom-tab-reserve) + var(--page-bottom-breath)
+    );
+  }
+}
+
 /*
  * 문서함 헤더 탭 스트립(docs-chrome-round 슬라이스 B) — 오버플로 시 스트립
  * 내부 가로 스크롤은 허용하되 스크롤바 자체는 숨긴다(design-prescription.md

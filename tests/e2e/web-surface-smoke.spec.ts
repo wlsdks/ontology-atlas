@@ -284,7 +284,7 @@ test.describe("웹 스모크 ③ 정직한 강등", () => {
 
     // 확인한 적 없는 것을 확인했다고 말하지 않는다.
     await expect(page.getByTestId("web-manual-connect-shape-only")).toContainText(
-      "확인할 수 없어요",
+      "증명할 수 없어요",
     );
 
     // 홈 물결은 설정 파일에서 펼쳐지지 않는다 — 잡고, 왜인지 말한다.
@@ -296,6 +296,7 @@ test.describe("웹 스모크 ③ 정직한 강등", () => {
     await page
       .getByTestId("web-manual-connect-checkout-input")
       .fill("/Users/me/ontology-atlas");
+    await page.getByTestId("web-manual-connect-path-confirmation").check();
     await expect(body).toContainText('"OATLAS_VAULT": "/Users/me/notes"');
     await expect(body).toContainText("/Users/me/ontology-atlas/mcp/src/index.js");
     await expect(page.getByTestId("web-manual-connect-copy-config")).toBeEnabled();

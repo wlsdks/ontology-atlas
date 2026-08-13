@@ -204,7 +204,9 @@ bot, an external tool that only needs to *read* the graph — add
 In read-only mode the server advertises **only the 19 read tools** in
 `tools/list` (the 16 write tools — `add_concept`, `add_concepts`,
 `add_relation`, `add_relations`, `patch_concept`, `rename_concept`,
-`merge_concepts`, `delete_concept`, `absorb_document` — disappear), and any
+`merge_concepts`, `delete_concept`, `absorb_document`, `git_snapshot`,
+`finalize_project_meaning`, `connect_project_source`, and
+`disconnect_project_source` — disappear), and any
 direct call to a write tool is rejected even if the client cached an older
 tool list. This is the trust-charter-aligned surface for third-party
 registration: a read consumer gets zero paths to the user's disk. Accepted
@@ -554,7 +556,7 @@ in-repository symlink points to it.
 | `merge_concepts` | **v0.7 ⚠ DESTRUCTIVE MULTI-FILE** Folds `fromSlug` into `intoSlug` — every backlink to `fromSlug` is redirected, then `fromSlug.md` is deleted. The survivor keeps `intoSlug`'s UID and records the source UID plus prior absorbed identities in canonical `merged_uids`; prose and non-identity frontmatter are not auto-merged (use `patch_concept` after if you want to combine descriptions). Without `confirm:true`, runs as a dry-run; each `backlinkUpdates.updates[]` row includes the referrer `slug`, `title`, changed frontmatter keys, and `bodyChanged`. For confirmed writes, pass both `expected_mtime` from `fromSlug` and `expected_into_mtime` from `intoSlug` to prevent either concurrent edit from being overwritten. Confirmed merges return compact `postWriteMaintenance` with `byPhase` / `bySeverity` / `byKind` queue buckets, action `score`, executable `proposedAction`, and current-page next action pointers. |
 | `absorb_document` | **Slice 0 ⚠ DESTRUCTIVE (source-file rewrite)** — the "absorption tool". Converts a CLAUDE.md/AGENTS.md-style markdown file into typed vault nodes so a tech lead's existing agent-instruction file stops needing dual maintenance. Splits the file by `##` sections; rule/policy/decision sections become `kind: document` nodes with a `role: policy` frontmatter extra, architecture/component sections are reported as element/capability *suggestions only* (never auto-written), and sections matching an injection-suspect pattern (Tier 1 — instruction-hijack phrasing, shell/SQL fragments) are excluded from absorption regardless of category. Without `confirm:true`, runs as a dry-run (classification plan only, no writes). The preview reports `outsideRepo`; if the canonical source path is outside `repoRoot`—including an inside-repo symlink that resolves outside—`canConfirm:false` until the caller explicitly supplies `allowOutsideRepo:true` after reviewing the absolute path. With `confirm:true`, absorbed sections are written, the source file is backed up to `<file>.pre-absorb.bak`, and rewritten into a slim pointer that reproduces every non-absorbed section verbatim. Throws instead of overwriting an existing backup. CLI equivalent: `ontology-atlas absorb <file...> [--write]`. Only ever reads a **local** markdown file — for wiki exports (Confluence/Notion/on-prem wikis) a separately-registered third-party MCP reads the page first and the result is saved as a local file before calling this tool; see the `/ontology-absorb-confluence` skill. |
 
-All eight destructive tools (`git_snapshot`, relation remove/replace, rename,
+All nine destructive tools (`git_snapshot`, relation remove/replace, rename,
 reclassify, merge, delete, and absorb) return the same preview contract. A
 valid dry-run has `previewReady:true`; `wouldChange` distinguishes a real
 mutation from a no-op; `canConfirm` is true only when the exact reviewed call
@@ -1113,7 +1115,7 @@ the graph engine's runtime allow-lists. It also checks the `list_kinds`
 `add_relation`, and `patch_concept` single writer `outputSchema` contracts, the `add_concepts`
 and `add_relations` batch writer `outputSchema` row contracts, the `rename_concept`,
 `merge_concepts`, and `delete_concept` destructive writer dry-run/confirm `outputSchema`
-contracts, plus the shared four-field destructive preview schema on all eight
+contracts, plus the shared four-field destructive preview schema on all nine
 destructive tools and `absorb_document.allowOutsideRepo`, the installed batch
 input schemas for the same 50-row cap used by `get_concepts`, `add_concepts`,
 and `add_relations` at runtime, the `find_orphans.kind` / `find_orphans.excludeKinds`
@@ -1284,7 +1286,7 @@ loop is officially open.
 
 ## Status
 
-- 0.12.0 current safety contract — all eight destructive tools expose
+- 0.12.0 current safety contract — all nine destructive tools expose
   `previewReady` / `canConfirm` / `wouldChange` / `blockedReasons`; external or
   symlink-escaped `absorb_document` confirmation requires
   `allowOutsideRepo:true`.

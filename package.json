@@ -143,6 +143,7 @@
     "dogfood:verify": "node cli/src/index.mjs mcp-verify docs/ontology --timeout-ms 15000",
     "dogfood:help": "node scripts/dogfood-mcp-walk.mjs --help",
     "dogfood:walk": "node scripts/dogfood-mcp-walk.mjs",
+    "dogfood:release-gate": "pnpm dogfood:verify && OATLAS_DOGFOOD_TIMEOUT_MS=15000 pnpm dogfood:walk && pnpm test:mcp:dogfood",
     "dogfood:test": "node --test scripts/dogfood-mcp-walk.test.mjs",
     "test:mcp:dogfood": "node scripts/run-focused-node-test.mjs --test-name-pattern \"structuredContent|compile_ontology|tools/list|row-label guidance|batch cap|vault warnings|validate_vault problem|unhealthy first-contact|failing health checks|warn/fail next actions|malformed workspace_brief|malformed maintenance_plan payloads|remaining maintenance buckets|current-page maintenance next actions|stderr warnings|dogfood help|dogfood arguments|dogfood timeout|timeout failures|dogfood response labels|destructive dogfood dry-run|strict relation filters|strict add_relation|strict graph kind filter|strict closest-value smoke|malformed initialize\" scripts/dogfood-mcp-walk.test.mjs",
     "test:mcp:dogfood:timeout": "node scripts/run-focused-node-test.mjs --test-name-pattern \"dogfood timeout|timeout failures|dogfood response labels|dogfood help|dogfood arguments\" scripts/dogfood-mcp-walk.test.mjs",

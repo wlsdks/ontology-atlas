@@ -158,13 +158,14 @@ export function WebManualConnectPanel({
   const t = useTranslations('agentConnect');
   const [vaultRaw, setVaultRaw] = useState('');
   const [checkoutRaw, setCheckoutRaw] = useState('');
+  const [pathConfirmed, setPathConfirmed] = useState(false);
   const [client, setClient] = useState<AgentClientId>(AGENT_CLIENTS[0].id);
   const [cloneCopied, setCloneCopied] = useState(false);
   const { state: configCopyState, copy: copyConfig } = useCopyFeedback(1600);
 
   const vault = useMemo(() => normalizeManualPath(vaultRaw), [vaultRaw]);
   const checkout = useMemo(() => normalizeManualPath(checkoutRaw), [checkoutRaw]);
-  const ready = vault.ok && checkout.ok;
+  const ready = vault.ok && checkout.ok && pathConfirmed;
 
   // 아직 안 채운 칸은 **자리표시자가 든 진짜 설정**으로 그린다. `<…>` 를 쓰지
   // 않는 이유: next-intl 이 꺾쇠를 리치텍스트 태그로 파싱해 화면에서 통째로
@@ -196,7 +197,10 @@ export function WebManualConnectPanel({
           label={t('manualVaultLabel')}
           placeholder={t('manualVaultPlaceholderPath')}
           value={vaultRaw}
-          onChange={setVaultRaw}
+          onChange={(next) => {
+            setVaultRaw(next);
+            setPathConfirmed(false);
+          }}
           issueMessage={issueMessage(vault)}
           testId={`${testIdPrefix}-vault-input`}
         />
@@ -206,7 +210,10 @@ export function WebManualConnectPanel({
           hint={t('manualCheckoutHint')}
           placeholder={t('manualCheckoutPlaceholderPath')}
           value={checkoutRaw}
-          onChange={setCheckoutRaw}
+          onChange={(next) => {
+            setCheckoutRaw(next);
+            setPathConfirmed(false);
+          }}
           issueMessage={issueMessage(checkout)}
           testId={`${testIdPrefix}-checkout-input`}
         />
@@ -240,6 +247,17 @@ export function WebManualConnectPanel({
       >
         {t('manualShapeOnlyNote')}
       </p>
+      <label className={fieldLabel({ row: true })}>
+        <input
+          type="checkbox"
+          checked={pathConfirmed}
+          disabled={!vault.ok || !checkout.ok}
+          onChange={(event) => setPathConfirmed(event.target.checked)}
+          data-testid={`${testIdPrefix}-path-confirmation`}
+          className="size-4 shrink-0"
+        />
+        <span>{t('manualPathConfirmation')}</span>
+      </label>
 
       {/* 도구 고르기 — 설정 파일 위치가 도구마다 다르다. 전역 스코프 패널과 같은 구조. */}
       <div className="flex flex-col gap-2">

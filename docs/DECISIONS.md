@@ -89,6 +89,32 @@
 
 ---
 
+## 2026-08-13 (1) — MCP 실운영 gate와 온톨로지 의미 판정의 경계
+
+이번 전체 검수에서 합성 dogfood와 실제 MCP `verify`/`dogfood:walk`를 모두
+release gate로 취급한다. `tools/list`는 35개 도구의 제목·읽기/쓰기·파괴성·
+local-only·structuredContent 계약을 검증하고, `connection_info`, `git_status`,
+`git_history`는 첫 접점의 실제 root와 bounded metadata를 live probe한다.
+
+`query_ontology`의 outputSchema는 operation discriminator와 `compiledSummary`를
+고정하되, operation마다 달라지는 결과 envelope는 열린 payload로 유지한다.
+`blast_radius`가 relation receipt 없이 반환하는 `risk: "unknown"`은 위험도를
+추측하지 않는 fail-closed 계약이므로 low/medium/high로 좁히지 않는다.
+
+온톨로지 source receipt가 stale이면 connect dry-run으로 새 revision/fingerprint와
+witness를 먼저 제시한다. 이번 측정은 dirty worktree에서 58/58 witness가 지원됐지만,
+receipt 기록과 `finalize_project_meaning`은 독립 evaluator의 competency packet과
+사람의 승인 없이는 실행하지 않는다.
+
+**반증 조건**: live probe가 active root 또는 Git scope metadata를 누락하거나,
+unknown blast radius를 안전한 근거 없이 확정 위험도로 바꾸면 이 gate 결정을
+재검토한다.
+
+**서명 (accountable)**: 소유자 서명 대기
+**상태**: 유효
+
+---
+
 ## 2026-08-13 — 프로젝트 상세: 방사 도메인 지도를 은퇴시키고 행+비율 막대 한 문법으로 (갈래 B)
 
 **소집**: 갈래 문서(A~D, 실측 포함)를 소유자에게 제시, 소유자가 B를 골랐다:
