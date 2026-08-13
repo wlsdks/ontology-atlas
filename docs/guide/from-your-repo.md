@@ -174,7 +174,7 @@ node cli/src/index.mjs health my-vault
 
 무엇을 노드로 만들고 무엇을 만들지 않을지는
 [무엇을 노드로 만드나](/guide/what-becomes-a-node) 가, 볼트가 자란 다음의
-정리는 [볼트가 자란 뒤](/guide/growing-vault) 가 다룹니다.
+정리는 [폴더가 자란 뒤](/guide/growing-vault) 가 다룹니다.
 
 ## 정리
 

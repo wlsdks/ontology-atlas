@@ -169,4 +169,4 @@ CLI FALLBACKS (MCP connector unavailable)
 없는 저장소는 사람이 믿을 수도 없습니다.
 
 사람과 에이전트가 같은 파일을 동시에 고칠 때 한쪽이 조용히 사라지는 것도
-막혀 있습니다 ([볼트가 자란 뒤](/guide/growing-vault) 6절).
+막혀 있습니다 ([폴더가 자란 뒤](/guide/growing-vault) 6절).
