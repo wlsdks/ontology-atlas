@@ -3447,7 +3447,7 @@
       "taskEndAgent": "{agent} finished a task",
       "domainAdded": "Domain added",
       "domainRemoved": "Domain removed",
-      "bridgeInserted": "Bridge inserted",
+      "bridgeInserted": "Middle concept inserted",
       "vaultProblem": "Folder problem"
     }
   },
