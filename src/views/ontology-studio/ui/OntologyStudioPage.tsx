@@ -79,7 +79,7 @@ import {
   type PracticeArtifact,
 } from "../lib/studio-practice-guide";
 import { allowedKindsFor } from "../lib/allowed-kinds";
-import { candidateMatches } from "../lib/match-candidate";
+import { rankCandidates } from "../lib/match-candidate";
 import { clearCreateDraft, readCreateDraft, saveCreateDraft } from "../lib/create-draft-store";
 import {
   clearStudioDraft,
@@ -400,14 +400,14 @@ function StudioStage({
       exclude: ReadonlySet<string>,
     ): CreateCandidate[] => {
       const allow = allowedKindsFor(relation, focalKind);
-      return candidates
-        .filter((c) => allow.has(c.kind))
-        .filter((c) => !exclude.has(c.id))
-        // #66 — 표시 이름뿐 아니라 canonical title 과 ref 까지 정규화해 본다.
-        // 예전엔 `c.title`(= display) 만 봐서 `display_ko` 가 달린 노드를 원문
-        // 이름으로 검색할 수 없었다.
-        .filter((c) => candidateMatches(c, query))
-        .slice(0, 8);
+      // #66 — 표시 이름뿐 아니라 canonical title 과 ref 까지 정규화해 보고,
+      // 정확 일치 > 접두 > 부분 > ref 순으로 올린다(2026-08-13 — 순위 없는
+      // 앞 8개 컷은 정확 일치를 자를 수 있다).
+      return rankCandidates(
+        candidates.filter((c) => allow.has(c.kind)).filter((c) => !exclude.has(c.id)),
+        query,
+        8,
+      );
     },
     [candidates],
   );

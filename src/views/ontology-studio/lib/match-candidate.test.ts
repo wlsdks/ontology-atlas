@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import type { CreateCandidate } from "./build-create-node";
-import { candidateMatches, normalizeForMatch } from "./match-candidate";
+import { candidateMatches, normalizeForMatch, rankCandidates } from "./match-candidate";
 
 const LOCALIZED: CreateCandidate = {
   id: "element:example-element",
@@ -66,5 +66,59 @@ describe("candidateMatches", () => {
       displayLocales: { ko: "예시 구성요소", en: "Sample piece" },
     };
     expect(candidateMatches(bilingual, "sample piece")).toBe(true);
+  });
+});
+
+describe("rankCandidates", () => {
+  const cand = (id: string, title: string, ref = id): CreateCandidate => ({
+    id,
+    title,
+    canonicalTitle: title,
+    kind: "capability",
+    ref,
+  });
+
+  it("정확 일치는 접두 일치들보다 위다 — 풀 순서가 늦어도 (2026-08-13 실측 회귀)", () => {
+    // 실측: 스튜디오 검색에 「주문」을 치면 도메인 「주문」이 접두 역량 5개 아래
+    // 6위였다 — 필터 → 앞 8개 자르기뿐이라 순위가 아예 없어서, 풀 순서상 늦은
+    // 정확 일치는 컷에 잘려 안 보일 수도 있다.
+    const pool = [
+      cand("cap-checkout", "주문서 작성"),
+      cand("cap-cancel", "주문 취소"),
+      cand("domain-order", "주문"),
+      cand("elem-draft", "주문서 초안"),
+    ];
+    const r = rankCandidates(pool, "주문", 8).map((c) => c.id);
+    expect(r[0]).toBe("domain-order");
+  });
+
+  it("접두 일치는 부분 일치보다, 이름 일치는 ref 일치보다 위다", () => {
+    const pool = [
+      cand("ref-only", "결제 수단", "capabilities/주문-결제"),
+      cand("substr", "재주문"),
+      cand("prefix", "주문 확정"),
+    ];
+    const r = rankCandidates(pool, "주문", 8).map((c) => c.id);
+    expect(r).toEqual(["prefix", "substr", "ref-only"]);
+  });
+
+  it("같은 층 안에서는 풀 순서를 지킨다 (안정 정렬)", () => {
+    const pool = [cand("a", "주문 취소"), cand("b", "주문 조회"), cand("c", "주문 확정")];
+    expect(rankCandidates(pool, "주문", 8).map((c) => c.id)).toEqual(["a", "b", "c"]);
+  });
+
+  it("빈 검색어는 풀 순서 그대로 limit 까지", () => {
+    const pool = [cand("a", "하나"), cand("b", "둘"), cand("c", "셋")];
+    expect(rankCandidates(pool, "", 2).map((c) => c.id)).toEqual(["a", "b"]);
+  });
+
+  it("limit 은 순위를 매긴 뒤에 자른다 — 정확 일치가 컷에 잘리지 않는다", () => {
+    const pool = [
+      ...Array.from({ length: 8 }, (_, i) => cand(`p${i}`, `주문 파생 ${i}`)),
+      cand("exact", "주문"),
+    ];
+    const r = rankCandidates(pool, "주문", 8).map((c) => c.id);
+    expect(r[0]).toBe("exact");
+    expect(r).toHaveLength(8);
   });
 });

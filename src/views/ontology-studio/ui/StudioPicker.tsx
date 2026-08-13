@@ -14,7 +14,7 @@ import { ChevronDown, Plus, Search, X } from "lucide-react";
 import { ICON_SIZE } from "@/shared/ui/icon-size";
 import { IconButton, controlClass } from "@/shared/ui";
 import { fieldClass } from "@/shared/ui/control-class";
-import { candidateMatches } from "../lib/match-candidate";
+import { rankCandidates } from "../lib/match-candidate";
 import { cn } from "@/shared/lib/cn";
 import type { StudioBearing, StudioRelation } from "../lib/build-studio-item";
 import type { CreateCandidate } from "../lib/build-create-node";
@@ -405,11 +405,14 @@ export function NodeSearch({
   }
 
 
-  const rows = nodes
-    // #66 — 표시 이름 · canonical title · ref 를 함께 본다(정규화 포함).
-    .filter((n) => candidateMatches(n, query))
-    .filter((n) => n.title !== currentName)
-    .slice(0, 8);
+  // #66 — 표시 이름 · canonical title · ref 를 함께 보고(정규화 포함),
+  // 정확 일치 > 접두 > 부분 > ref 순으로 올린다 — 순위 없이 앞 8개만 자르면
+  // 정확 일치가 컷에 잘릴 수 있다(2026-08-13 실측: 「주문」이 6위).
+  const rows = rankCandidates(
+    nodes.filter((n) => n.title !== currentName),
+    query,
+    8,
+  );
 
   const pick = (id: string) => {
     onOpenNode(id);
