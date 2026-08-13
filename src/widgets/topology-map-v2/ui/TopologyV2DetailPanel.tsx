@@ -131,6 +131,10 @@ export interface TopologyV2DetailPanelLabels {
   containsShowSummary: string;
   /** S2 파트 3 — 경로 프리픽스 요약의 나머지 버킷 라벨("기타"). */
   containsOtherGroup: string;
+  /** 그룹 「+N」 뒤에 붙는 펼침 라벨("더 보기") — +N 이 죽은 수가 아니게 한다. */
+  groupShowMore: string;
+  /** 펼친 그룹을 캡 상태로 되돌리는 라벨("접기"). */
+  groupShowFewer: string;
   metricUsedBy: string;
   metricDependsOn: string;
   /**
@@ -919,6 +923,10 @@ export function TopologyV2DetailPanel({
   // 토글로 기존 리스트를 편다(세션 임시 상태). 노드가 바뀌면 기본(요약)으로 리셋
   // 되도록 slug 를 key 로 쓴다(호출부 HomePage 가 key 를 주므로 재마운트).
   const [showAllContains, setShowAllContains] = useState(false);
+  // 「+N」 펼침 — 그룹별로 독립(하위 항목을 펼쳤다고 기대는 곳까지 길어지면
+  // 패널이 한 번에 다 자란다). 노드가 바뀌면 부모가 패널을 새로 세우므로
+  // 여기 상태는 그 노드의 것만 산다.
+  const [expandedGroups, setExpandedGroups] = useState<ReadonlySet<string>>(new Set());
   const [showProjectRelations, setShowProjectRelations] = useState(false);
 
   const handleKeyDown = useCallback(
@@ -944,6 +952,8 @@ export function TopologyV2DetailPanel({
     view: V2ConnectionGroupView,
   ) => {
     if (view.total === 0) return null;
+    const expanded = expandedGroups.has(group);
+    const shownRows = expanded ? (view.allRows ?? view.rows) : view.rows;
     const overflow = view.total - view.rows.length;
     // S2 파트 3 — 긴 "담는 것"은 경로 프리픽스 요약을 기본으로, "전체 보기"로 리스트.
     // B4 (H1) — 요약이 "기타" 한 덩어리로 무너지면(`usable=false`) 요약을 건너뛰고
@@ -1010,7 +1020,7 @@ export function TopologyV2DetailPanel({
           </ul>
         ) : (
           <ul className="flex flex-col">
-            {view.rows.map((row: V2DatasheetConnection) => (
+            {shownRows.map((row: V2DatasheetConnection) => (
               // Neighbor `id` is unique within a direction group post-dedup
               // (`groupV2ConnectionsByDirection`) — the same neighbor can still
               // appear once per group (mutual dependency, item 5 — no
@@ -1034,12 +1044,31 @@ export function TopologyV2DetailPanel({
           </ul>
         )}
         {overflow > 0 && !useSummary ? (
-          <span
+          // 죽은 수였던 「+N」이 문이 된다 — 프로젝트 상세의 「역량 N개 더」
+          // 반려(2026-08-12 B안 근거)와 같은 계보: 수를 보여 놓고 그 수로
+          // 가는 길이 없으면 사용자는 지도를 떠나 다시 찾아야 한다.
+          <button
+            type="button"
+            aria-expanded={expanded}
             data-datasheet-group-overflow={group}
-            className="pl-[34px] pt-0.5 font-mono text-label text-[color:var(--topology-v2-panel-text-quaternary)]"
+            data-testid={`topology-v2-group-more-${group}`}
+            onClick={() =>
+              setExpandedGroups((current) => {
+                const next = new Set(current);
+                if (next.has(group)) next.delete(group);
+                else next.add(group);
+                return next;
+              })
+            }
+            className={controlClass({
+              shape: "link",
+              size: "sm",
+              className:
+                "ml-[34px] mt-0.5 font-mono text-label text-[color:var(--topology-v2-panel-text-tertiary)] hover:text-[color:var(--topology-v2-panel-text-secondary)]",
+            })}
           >
-            +{overflow}
-          </span>
+            {expanded ? labels.groupShowFewer : `+${overflow} ${labels.groupShowMore}`}
+          </button>
         ) : null}
       </RelationGroupShell>
     );

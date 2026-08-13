@@ -2114,6 +2114,8 @@
       "statsEvidenceDocs": "근거 문서",
       "metricHelp": "모두 이 노드와 직접 연결된 것만 셉니다. 여러 단계 건너뛴 합계가 아니에요.",
       "containsShowAll": "전체 보기",
+      "groupShowMore": "더 보기",
+      "groupShowFewer": "접기",
       "containsShowSummary": "요약 보기",
       "containsOtherGroup": "기타",
       "noConnections": "아직 기록된 관계 없음 · 관계는 문서 상단 속성으로 기록돼요",

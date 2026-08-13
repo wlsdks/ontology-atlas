@@ -5039,6 +5039,8 @@ export function HomePage() {
                   // typed groups read in one consistent word family.
                   metricContains: relationVocabulary("contains", "plain"),
                   containsShowAll: t("nodeDatasheet.containsShowAll"),
+                  groupShowMore: t("nodeDatasheet.groupShowMore"),
+                  groupShowFewer: t("nodeDatasheet.groupShowFewer"),
                   containsShowSummary: t("nodeDatasheet.containsShowSummary"),
                   containsOtherGroup: t("nodeDatasheet.containsOtherGroup"),
                   metricUsedBy: t("nodeDatasheet.metricUsedBy"),

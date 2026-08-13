@@ -177,10 +177,10 @@ describe("buildV2ConnectionGroups — M-2 ROLE axis, single source for metric + 
     const groups = buildV2ConnectionGroups([]);
     expect(groups).toEqual({
       // S2 파트 3 — contains 는 경로 프리픽스 요약을 함께 싣는다(빈 입력이면 빈 요약).
-      contains: { rows: [], total: 0, summary: { groups: [], otherCount: 0, total: 0, usable: false } },
-      usedBy: { rows: [], total: 0 },
-      dependsOn: { rows: [], total: 0 },
-      belongsTo: { rows: [], total: 0 },
+      contains: { rows: [], allRows: [], total: 0, summary: { groups: [], otherCount: 0, total: 0, usable: false } },
+      usedBy: { rows: [], allRows: [], total: 0 },
+      dependsOn: { rows: [], allRows: [], total: 0 },
+      belongsTo: { rows: [], allRows: [], total: 0 },
     });
   });
 
