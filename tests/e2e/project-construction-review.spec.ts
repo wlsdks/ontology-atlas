@@ -17,7 +17,9 @@ function envelope(overrides: { projectSlug?: string; sourceDigest?: string; writ
       contract: "constructionQualification:v1",
       subject: { projectSlug, graphDigest: PLAN_DIGEST, sourceDigest: SOURCE_DIGEST },
       purposeAuthority: { outcome: "사람과 에이전트가 같은 로컬 의미를 판단한다." },
-      competencyQuestions: [], witnesses: [], cqResults: [], claims: [], citationChecks: [],
+      competencyQuestions: [{ id: "cq:scope", question: "What is in scope?" }],
+      witnesses: [{ id: "w:scope", kind: "source_span", provenance: { sourceRef: "README.md:1-3", digest: SOURCE_DIGEST } }],
+      cqResults: [], claims: [], citationChecks: [],
       axisResults: [], diagnostics: [],
       acceptance: { decision: "accepted", decidedBy: "jinan", authority: "human", planDigest: PLAN_DIGEST },
     },
@@ -69,6 +71,25 @@ test.describe("프로젝트 온톨로지 구축 검수", () => {
     await expect(summary).toHaveAttribute("data-plan-equality", "equal");
   });
 
+  test("전문가 검토용 초안은 CQ·계획을 바꾸되 원본 판정과 digest를 보존한다", async ({ page }) => {
+    const localKeysBefore = await page.evaluate(() =>
+      Object.keys(localStorage).filter((key) => key !== "ontology-atlas:last-route").sort(),
+    );
+    await openJson(page, envelope());
+    await page.getByTestId("construction-review-evidence-toggle").click();
+    await page.getByTestId("construction-review-draft-toggle").click();
+
+    await page.getByTestId("construction-review-cq-scope").fill("Which meaning is actually in scope?");
+    await page.getByTestId("construction-review-plan-draft").fill('{"concepts":[{"slug":"revised-storefront"}]}');
+    await expect(page.getByTestId("construction-review-draft-dirty")).toContainText("qualification");
+    await expect(page.getByTestId("construction-review-plan-digest")).toContainText(PLAN_DIGEST);
+    await expect(page.getByTestId("construction-review-summary")).toHaveAttribute("data-qualification-status", "qualified");
+    await expect(page.getByTestId("construction-review-summary")).toHaveAttribute("data-plan-equality", "equal");
+    await expect
+      .poll(() => page.evaluate(() => Object.keys(localStorage).filter((key) => key !== "ontology-atlas:last-route").sort()))
+      .toEqual(localKeysBefore);
+  });
+
   test("390·1023·1024·1512에서 요약과 근거 disclosure가 넘치거나 가려지지 않는다", async ({ page }, testInfo) => {
     await openJson(page, envelope());
     for (const width of [390, 1023, 1024, 1512]) {
@@ -91,6 +112,13 @@ test.describe("프로젝트 온톨로지 구축 검수", () => {
       ).toBe(true);
       if (await toggle.getAttribute("aria-expanded") === "false") await toggle.click();
       await expect(page.getByTestId("construction-review-evidence")).toBeVisible();
+      const draftToggle = page.getByTestId("construction-review-draft-toggle");
+      if (await draftToggle.getAttribute("aria-expanded") === "false") await draftToggle.click();
+      await expect(page.getByTestId("construction-review-draft-fields")).toBeVisible();
+      expect(
+        await page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth),
+        `${width}px draft horizontal overflow`,
+      ).toBe(true);
       if (width === 390 || width === 1512) {
         await page.screenshot({ path: testInfo.outputPath(`construction-${width}.png`), fullPage: true });
       }

@@ -143,6 +143,48 @@ describe("skill process packet", () => {
     expect(verified.process.edges).toEqual([]);
   });
 
+  it("keeps source-hidden packets portable without leaking unneeded source text", () => {
+    const source = `---
+name: handoff
+description: INTERNAL_TRIGGER_DESCRIPTION_MUST_NOT_BE_HANDOFF_DATA
+---
+
+Private implementation notes must stay in the source folder.
+
+1. Read the current source.
+2. Report the source line.
+
+Do not include this trailing source-only note.
+`;
+    const derived = deriveSkillProcess({
+      relativePath: "skills/handoff/SKILL.md",
+      text: source,
+    });
+    const packet = serializeProcessPacket(derived);
+
+    expect(packet.state).toBe("ready");
+    if (packet.state !== "ready") return;
+    // K1.3 carries the exact process projection, not SKILL.md/frontmatter or
+    // bundled-file contents. The source is recoverable only through its digest.
+    expect(packet.text).not.toContain("INTERNAL_TRIGGER_DESCRIPTION_MUST_NOT_BE_HANDOFF_DATA");
+    expect(packet.text).not.toContain("Private implementation notes must stay in the source folder.");
+    expect(packet.text).not.toContain("Do not include this trailing source-only note.");
+    expect(packet.text).toContain('"path":"skills/handoff/SKILL.md"');
+    expect(packet.text).toContain('"exactText":"Read the current source."');
+    expect(packet.text).toContain('"exactText":"Report the source line."');
+
+    const verified = verifyProcessPacket(packet.bytes);
+    expect(verified).toMatchObject({
+      state: "ready",
+      process: {
+        steps: [
+          { exactText: "Read the current source." },
+          { exactText: "Report the source line." },
+        ],
+      },
+    });
+  });
+
   it("refuses a shape-valid semantic label that the exact source grammar did not derive", () => {
     const derived = deriveSkillProcess({
       relativePath: "skills/handoff/SKILL.md",
