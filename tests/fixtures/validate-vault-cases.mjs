@@ -95,6 +95,12 @@ export const VALIDATE_CASES = [
     expectedOk: true,
   },
   {
+    name: '콜론 없는 frontmatter 선언 → malformed-frontmatter-line (error, ok=false)',
+    input: '---\nuid: 01890f3e-7b5d-4c0a-8f14-123456789abc\nkind: capability\ndomain: domains/probe\nelements\n  - elements/orphan\n---\n',
+    expectedCodes: ['malformed-frontmatter-line', 'malformed-frontmatter-line'],
+    expectedOk: false,
+  },
+  {
     name: 'graph 배열 중복/비정렬 → non-canonical-graph-array warning',
     input: '---\nuid: 11890f3e-7b5d-4c0a-8f14-123456789abc\nkind: project\ntitle: Foo\ndependencies: [z, a, z]\n---\n',
     expectedCodes: ['non-canonical-graph-array'],

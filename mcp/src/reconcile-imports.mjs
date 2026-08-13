@@ -161,7 +161,7 @@ export function reconcileImportEdges({ moduleEdges = [], compiledEdges = [], ali
  */
 export function buildNextImportRelationReview(
   reconciliation,
-  { afterReviewId = null } = {},
+  { afterReviewId = null, rootPath = null } = {},
 ) {
   const directlyReviewable = Array.isArray(reconciliation?.inCodeMissingFromVault)
     ? reconciliation.inCodeMissingFromVault
@@ -169,12 +169,10 @@ export function buildNextImportRelationReview(
   const endpointModelling = Array.isArray(reconciliation?.inCodeMissingEndpointAbsent)
     ? reconciliation.inCodeMissingEndpointAbsent
     : [];
-  // Existing concepts remain the first review class. A fresh starter vault has
-  // none, so fall back to one endpoint-modelling candidate instead of returning
-  // an empty queue that pushes agents back to the full import firehose.
-  const candidates = directlyReviewable.length > 0
-    ? directlyReviewable
-    : endpointModelling;
+  // Existing concepts remain the first review class, followed by endpoint
+  // modelling. Both classes stay in one cursor so a mixed queue cannot hide
+  // missing-endpoint recovery forever.
+  const candidates = [...directlyReviewable, ...endpointModelling];
   const rows = candidates.map((candidate) => ({
     candidate,
     reviewId: importRelationReviewId(candidate),
@@ -199,6 +197,15 @@ export function buildNextImportRelationReview(
     ? candidate.review.required
     : ['semantic_rationale', 'human_approval'];
   const requiresVaultEndpoints = required.includes('vault_endpoints');
+  const absentEndpoints = Array.isArray(candidate.absentEndpoints)
+    ? [...candidate.absentEndpoints]
+    : [];
+  if (requiresVaultEndpoints && (typeof rootPath !== 'string' || rootPath.trim().length === 0)) {
+    throw new Error('rootPath is required to build exact endpoint-modelling recovery arguments.');
+  }
+  const endpointModellingRecovery = requiresVaultEndpoints
+    ? buildEndpointModellingRecovery({ candidate, absentEndpoints, rootPath })
+    : null;
   const remaining = rows.length - index - 1;
   return {
     contract: 'nextRelationReview:v1',
@@ -215,26 +222,32 @@ export function buildNextImportRelationReview(
       from,
       to,
       relationType: 'depends_on',
+      absentEndpoints,
       importCount: candidate.count ?? 0,
       sourceEvidence: candidate.sourceEvidence ?? [],
       sourceEvidenceLimited: Boolean(candidate.sourceEvidenceLimited),
       evidenceQualification: candidate.evidenceQualification ?? evidenceQualification(candidate),
     },
-    nextCalls: [
-      {
-        tool: 'get_concepts',
-        arguments: { slugs: [from, to], body: 'full' },
-        purpose: 'Read both ontology meanings before deciding whether the code fact is a semantic dependency.',
-      },
-      {
-        tool: 'query_ontology',
-        arguments: { operation: 'relation_check', from, to, type: 'depends_on' },
-        purpose: 'Check graph shape only; safe_to_add is not semantic approval.',
-      },
-    ],
+    endpointModelling: endpointModellingRecovery,
+    nextCalls: requiresVaultEndpoints
+      ? []
+      : [
+          {
+            tool: 'get_concepts',
+            arguments: { slugs: [from, to], body: 'full' },
+            purpose: 'Read both ontology meanings before deciding whether the code fact is a semantic dependency.',
+          },
+          {
+            tool: 'query_ontology',
+            arguments: { operation: 'relation_check', from, to, type: 'depends_on' },
+            purpose: 'Check graph shape only; safe_to_add is not semantic approval.',
+          },
+        ],
     decision: {
       questionEligibility:
-        (candidate.evidenceQualification?.productValueCount ?? 0) > 0
+        requiresVaultEndpoints
+          ? 'blocked_missing_vault_endpoints'
+          : (candidate.evidenceQualification?.productValueCount ?? 0) > 0
           ? 'eligible_after_semantic_review'
           : 'additional_product_meaning_evidence_required',
       required,
@@ -258,6 +271,59 @@ export function buildNextImportRelationReview(
       remaining,
       hasMore: remaining > 0,
       nextAfterReviewId: reviewId,
+    },
+  };
+}
+
+function buildEndpointModellingRecovery({ candidate, absentEndpoints, rootPath }) {
+  const observedPathsByEndpoint = absentEndpoints.map((endpoint) => {
+    const paths = [];
+    for (const evidence of candidate.sourceEvidence ?? []) {
+      if (endpoint === candidate.from && typeof evidence.from === 'string') paths.push(evidence.from);
+      if (endpoint === candidate.to && typeof evidence.to === 'string') paths.push(evidence.to);
+    }
+    return { endpoint, paths: [...new Set(paths)].sort() };
+  });
+  return {
+    status: 'required_before_relation_review',
+    writeAllowed: false,
+    absentEndpoints,
+    observedPathsByEndpoint,
+    analysisCall: {
+      tool: 'analyze_repo_structure',
+      arguments: { rootPath },
+      purpose: 'Refresh repository candidates and evidence only; this call does not create or validate either missing ontology endpoint.',
+    },
+    proposalValidation: {
+      tool: 'analyze_repo_structure',
+      requiredArguments: ['rootPath', 'proposal'],
+      requiredProposalFields: ['project', 'domains', 'capabilities', 'elements', 'relations', 'competencyAnswers'],
+      fieldsAfterKindDecision: endpointProposalFieldRequirements(),
+      endpointDrafts: observedPathsByEndpoint.map(({ endpoint, paths }) => ({
+        endpoint,
+        observedPaths: paths,
+        slugCandidate: endpoint,
+        kindDecision: 'human_meaning_required',
+      })),
+      purpose: 'Build a complete proposal from reviewed product meaning, then pass it with rootPath. Do not infer kind, title, definition, domain, or path from the endpoint slug alone.',
+    },
+    resumeCall: {
+      tool: 'infer_imports',
+      arguments: { rootPath, reviewMode: 'next' },
+      purpose: 'After an accepted endpoint plan is written, restart the current semantic queue so this candidate is reclassified against the new vault nodes.',
+    },
+  };
+}
+
+function endpointProposalFieldRequirements() {
+  const common = ['slug', 'title', 'definition', 'evidence', 'confidence'];
+  return {
+    common,
+    byKind: {
+      project: [],
+      domain: [],
+      capability: ['domain'],
+      element: ['domain', 'path'],
     },
   };
 }

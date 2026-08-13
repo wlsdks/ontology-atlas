@@ -220,15 +220,7 @@
           "slug",
           "uid"
         ],
-        "required": [],
-        "oneOfRequired": [
-          [
-            "slug"
-          ],
-          [
-            "uid"
-          ]
-        ]
+        "required": []
       },
       {
         "name": "get_concepts",
@@ -238,15 +230,7 @@
           "slugs",
           "uids"
         ],
-        "required": [],
-        "oneOfRequired": [
-          [
-            "slugs"
-          ],
-          [
-            "uids"
-          ]
-        ]
+        "required": []
       },
       {
         "name": "git_history",

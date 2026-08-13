@@ -43,7 +43,7 @@ export const DESKTOP_SMOKE_ROUTE_TITLES = {
   "en:/topology": "Relief · Ontology Atlas",
   "ko:/topology": "지형도 · Ontology Atlas",
   "en:/ontology/insights": "Graph Insights · Ontology Atlas",
-  "ko:/ontology/insights": "그래프 인사이트 · Ontology Atlas",
+  "ko:/ontology/insights": "내 폴더 분석 · Ontology Atlas",
 };
 
 /**

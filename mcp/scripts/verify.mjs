@@ -414,6 +414,17 @@ function inputArrayMaxItemsFailure(tools) {
   return null;
 }
 
+function topLevelInputCombinatorFailure(tools) {
+  for (const tool of tools) {
+    for (const combinator of ['oneOf', 'anyOf', 'allOf']) {
+      if (tool?.inputSchema?.[combinator] !== undefined) {
+        return `${tool?.name || '(unknown)'}.inputSchema top-level ${combinator} is not cross-client compatible`;
+      }
+    }
+  }
+  return null;
+}
+
 function backlinkRewritePlanSchemaFailure(schema, label) {
   if (
     schema?.type !== 'object' ||
@@ -805,6 +816,8 @@ export function toolsListSchemaFailure(tools) {
   }
   const arrayMaxItemsFailure = inputArrayMaxItemsFailure(tools);
   if (arrayMaxItemsFailure) return arrayMaxItemsFailure;
+  const inputCombinatorFailure = topLevelInputCombinatorFailure(tools);
+  if (inputCombinatorFailure) return inputCombinatorFailure;
   const titleDriftTool = tools.find((tool) => tool?.annotations?.title !== expectedToolTitle(tool?.name));
   if (titleDriftTool) {
     return `tools/list title annotation drift: ${titleDriftTool.name || '(unknown)'} (expected ${JSON.stringify(expectedToolTitle(titleDriftTool?.name))}, got ${JSON.stringify(titleDriftTool?.annotations?.title)})`;
@@ -934,13 +947,7 @@ export function toolsListSchemaFailure(tools) {
   if (!sameArray(getConceptTool.outputSchema?.required, ['uid', 'slug', 'frontmatter', 'bodyInfo', 'neighbors', 'outgoingEdges', 'mtime'])) {
     return 'get_concept outputSchema required drift';
   }
-  const getConceptSelectors = getConceptTool.inputSchema?.oneOf;
-  if (
-    !Array.isArray(getConceptSelectors) ||
-    getConceptSelectors.length !== 2 ||
-    !sameArray(getConceptSelectors[0]?.required, ['slug']) ||
-    !sameArray(getConceptSelectors[1]?.required, ['uid'])
-  ) {
+  if (getConceptTool.inputSchema?.required !== undefined || !/exactly one selector/i.test(getConceptTool.description || '')) {
     return 'get_concept inputSchema identity selector drift';
   }
   const getConceptUidInput = propertyAt(getConceptTool, ['properties', 'uid']);
@@ -1003,13 +1010,7 @@ export function toolsListSchemaFailure(tools) {
   ) {
     return 'get_concepts description missing batch partial-result guidance';
   }
-  const getConceptsSelectors = getConceptsTool.inputSchema?.oneOf;
-  if (
-    !Array.isArray(getConceptsSelectors) ||
-    getConceptsSelectors.length !== 2 ||
-    !sameArray(getConceptsSelectors[0]?.required, ['slugs']) ||
-    !sameArray(getConceptsSelectors[1]?.required, ['uids'])
-  ) {
+  if (getConceptsTool.inputSchema?.required !== undefined) {
     return 'get_concepts inputSchema identity selector drift';
   }
   const getConceptsSlugsSchema = propertyAt(getConceptsTool, ['properties', 'slugs']);
@@ -2067,6 +2068,12 @@ export function toolsListSchemaFailure(tools) {
   const importReviewCursorSchema = importNextReviewSchema?.properties?.cursor;
   const importReviewCandidateSchema = importNextReviewSchema?.properties?.candidate;
   const importReviewQualificationSchema = importReviewCandidateSchema?.properties?.evidenceQualification;
+  const importEndpointModellingSchema = importNextReviewSchema?.properties?.endpointModelling;
+  const importProposalValidationSchema = importEndpointModellingSchema?.properties?.proposalValidation;
+  const importFieldsAfterKindSchema = importProposalValidationSchema?.properties?.fieldsAfterKindDecision;
+  const importFieldsByKindSchema = importFieldsAfterKindSchema?.properties?.byKind;
+  const importEndpointDraftsSchema = importProposalValidationSchema?.properties?.endpointDrafts;
+  const importEndpointDraftSchema = importProposalValidationSchema?.properties?.endpointDrafts?.items;
   const importReviewDecisionSchema = importNextReviewSchema?.properties?.decision;
   if (
     !sameArray(importReviewContractSchema?.enum, ['inferImportsReview:v1', 'inferImportsFocus:v1']) ||
@@ -2107,6 +2114,7 @@ export function toolsListSchemaFailure(tools) {
       'sourceQualification',
       'ordering',
       'candidate',
+      'endpointModelling',
       'nextCalls',
       'decision',
       'cursor',
@@ -2117,6 +2125,7 @@ export function toolsListSchemaFailure(tools) {
       'from',
       'to',
       'relationType',
+      'absentEndpoints',
       'importCount',
       'sourceEvidence',
       'sourceEvidenceLimited',
@@ -2129,7 +2138,93 @@ export function toolsListSchemaFailure(tools) {
       'productValueCount',
       'status',
     ]) ||
+    !sameArray(importEndpointModellingSchema?.type, ['object', 'null']) ||
+    !sameArray(importEndpointModellingSchema?.required, [
+      'status',
+      'writeAllowed',
+      'absentEndpoints',
+      'observedPathsByEndpoint',
+      'analysisCall',
+      'proposalValidation',
+      'resumeCall',
+    ]) ||
+    !sameArray(importEndpointModellingSchema?.properties?.status?.enum, [
+      'required_before_relation_review',
+    ]) ||
+    !sameArray(importEndpointModellingSchema?.properties?.writeAllowed?.enum, [false]) ||
+    !sameArray(importEndpointModellingSchema?.properties?.analysisCall?.properties?.tool?.enum, [
+      'analyze_repo_structure',
+    ]) ||
+    !sameArray(importEndpointModellingSchema?.properties?.proposalValidation?.properties?.tool?.enum, [
+      'analyze_repo_structure',
+    ]) ||
+    !sameArray(importEndpointModellingSchema?.properties?.proposalValidation?.properties?.requiredArguments?.items?.enum, [
+      'rootPath',
+      'proposal',
+    ]) ||
+    !sameArray(importProposalValidationSchema?.required, [
+      'tool',
+      'requiredArguments',
+      'requiredProposalFields',
+      'fieldsAfterKindDecision',
+      'endpointDrafts',
+      'purpose',
+    ]) ||
+    importProposalValidationSchema?.additionalProperties !== false ||
+    !sameArray(importFieldsAfterKindSchema?.required, ['common', 'byKind']) ||
+    importFieldsAfterKindSchema?.additionalProperties !== false ||
+    importFieldsAfterKindSchema?.properties?.common?.type !== 'array' ||
+    importFieldsAfterKindSchema?.properties?.common?.minItems !== 5 ||
+    importFieldsAfterKindSchema?.properties?.common?.maxItems !== 5 ||
+    importFieldsAfterKindSchema?.properties?.common?.uniqueItems !== true ||
+    importFieldsAfterKindSchema?.properties?.common?.items?.type !== 'string' ||
+    !sameArray(importFieldsAfterKindSchema?.properties?.common?.items?.enum, [
+      'slug', 'title', 'definition', 'evidence', 'confidence',
+    ]) ||
+    importFieldsByKindSchema?.type !== 'object' ||
+    !sameArray(importFieldsByKindSchema?.required, [
+      'project', 'domain', 'capability', 'element',
+    ]) ||
+    importFieldsByKindSchema?.additionalProperties !== false ||
+    importFieldsByKindSchema?.properties?.project?.type !== 'array' ||
+    importFieldsByKindSchema?.properties?.project?.maxItems !== 0 ||
+    importFieldsByKindSchema?.properties?.domain?.type !== 'array' ||
+    importFieldsByKindSchema?.properties?.domain?.maxItems !== 0 ||
+    importFieldsByKindSchema?.properties?.capability?.type !== 'array' ||
+    importFieldsByKindSchema?.properties?.capability?.minItems !== 1 ||
+    importFieldsByKindSchema?.properties?.capability?.maxItems !== 1 ||
+    importFieldsByKindSchema?.properties?.capability?.items?.type !== 'string' ||
+    !sameArray(importFieldsByKindSchema?.properties?.capability?.items?.enum, ['domain']) ||
+    importFieldsByKindSchema?.properties?.element?.type !== 'array' ||
+    importFieldsByKindSchema?.properties?.element?.minItems !== 2 ||
+    importFieldsByKindSchema?.properties?.element?.maxItems !== 2 ||
+    importFieldsByKindSchema?.properties?.element?.uniqueItems !== true ||
+    importFieldsByKindSchema?.properties?.element?.items?.type !== 'string' ||
+    !sameArray(importFieldsByKindSchema?.properties?.element?.items?.enum, ['domain', 'path']) ||
+    importEndpointDraftsSchema?.type !== 'array' ||
+    importEndpointDraftsSchema?.minItems !== 1 ||
+    importEndpointDraftsSchema?.maxItems !== 2 ||
+    importEndpointDraftSchema?.type !== 'object' ||
+    !sameArray(importEndpointDraftSchema?.required, [
+      'endpoint', 'observedPaths', 'slugCandidate', 'kindDecision',
+    ]) ||
+    importEndpointDraftSchema?.additionalProperties !== false ||
+    nonBlankStringSchemaFailure(importEndpointDraftSchema?.properties?.endpoint) ||
+    importEndpointDraftSchema?.properties?.observedPaths?.type !== 'array' ||
+    importEndpointDraftSchema?.properties?.observedPaths?.uniqueItems !== true ||
+    nonBlankStringSchemaFailure(importEndpointDraftSchema?.properties?.observedPaths?.items) ||
+    nonBlankStringSchemaFailure(importEndpointDraftSchema?.properties?.slugCandidate) ||
+    importEndpointDraftSchema?.properties?.kindDecision?.type !== 'string' ||
+    !sameArray(importEndpointDraftSchema?.properties?.kindDecision?.enum, [
+      'human_meaning_required',
+    ]) ||
+    !sameArray(importEndpointModellingSchema?.properties?.resumeCall?.properties?.tool?.enum, [
+      'infer_imports',
+    ]) ||
+    importNextReviewSchema?.properties?.nextCalls?.minItems !== 0 ||
+    importNextReviewSchema?.properties?.nextCalls?.maxItems !== 2 ||
     !sameArray(importReviewDecisionSchema?.properties?.questionEligibility?.enum, [
+      'blocked_missing_vault_endpoints',
       'eligible_after_semantic_review',
       'additional_product_meaning_evidence_required',
     ]) ||

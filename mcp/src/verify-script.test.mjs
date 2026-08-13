@@ -906,7 +906,6 @@ describe('verify.mjs first-contact gates', () => {
           'Fetch multiple nodes by exactly one selector array: `slugs` or immutable `uids`. Successful rows return permanent `uid` plus current canonical `slug`; graph-operation inputs remain slug-based. Missing slug rows do not abort the batch, so later valid slugs still resolve.',
         inputSchema: {
           additionalProperties: false,
-          oneOf: [{ required: ['slugs'] }, { required: ['uids'] }],
           properties: {
             slugs: {
               type: 'array',
@@ -2084,6 +2083,7 @@ describe('verify.mjs first-contact gates', () => {
                 'sourceQualification',
                 'ordering',
                 'candidate',
+                'endpointModelling',
                 'nextCalls',
                 'decision',
                 'cursor',
@@ -2096,6 +2096,7 @@ describe('verify.mjs first-contact gates', () => {
                     'from',
                     'to',
                     'relationType',
+                    'absentEndpoints',
                     'importCount',
                     'sourceEvidence',
                     'sourceEvidenceLimited',
@@ -2114,11 +2115,101 @@ describe('verify.mjs first-contact gates', () => {
                     },
                   },
                 },
+                endpointModelling: {
+                  type: ['object', 'null'],
+                  required: [
+                    'status',
+                    'writeAllowed',
+                    'absentEndpoints',
+                    'observedPathsByEndpoint',
+                    'analysisCall',
+                    'proposalValidation',
+                    'resumeCall',
+                  ],
+                  properties: {
+                    status: { enum: ['required_before_relation_review'] },
+                    writeAllowed: { enum: [false] },
+                    analysisCall: { properties: { tool: { enum: ['analyze_repo_structure'] } } },
+                    proposalValidation: {
+                      required: [
+                        'tool',
+                        'requiredArguments',
+                        'requiredProposalFields',
+                        'fieldsAfterKindDecision',
+                        'endpointDrafts',
+                        'purpose',
+                      ],
+                      properties: {
+                        tool: { enum: ['analyze_repo_structure'] },
+                        requiredArguments: { items: { enum: ['rootPath', 'proposal'] } },
+                        fieldsAfterKindDecision: {
+                          required: ['common', 'byKind'],
+                          properties: {
+                            common: {
+                              type: 'array',
+                              minItems: 5,
+                              maxItems: 5,
+                              uniqueItems: true,
+                              items: { type: 'string', enum: ['slug', 'title', 'definition', 'evidence', 'confidence'] },
+                            },
+                            byKind: {
+                              type: 'object',
+                              required: ['project', 'domain', 'capability', 'element'],
+                              properties: {
+                                project: { type: 'array', maxItems: 0 },
+                                domain: { type: 'array', maxItems: 0 },
+                                capability: {
+                                  type: 'array',
+                                  minItems: 1,
+                                  maxItems: 1,
+                                  items: { type: 'string', enum: ['domain'] },
+                                },
+                                element: {
+                                  type: 'array',
+                                  minItems: 2,
+                                  maxItems: 2,
+                                  uniqueItems: true,
+                                  items: { type: 'string', enum: ['domain', 'path'] },
+                                },
+                              },
+                              additionalProperties: false,
+                            },
+                          },
+                          additionalProperties: false,
+                        },
+                        endpointDrafts: {
+                          type: 'array',
+                          minItems: 1,
+                          maxItems: 2,
+                          items: {
+                            type: 'object',
+                            required: ['endpoint', 'observedPaths', 'slugCandidate', 'kindDecision'],
+                            properties: {
+                              endpoint: { type: 'string', minLength: 1, pattern: '^(?!\\s)(?!.*\\s$)(?!.*\\u0000).+$' },
+                              observedPaths: {
+                                type: 'array',
+                                uniqueItems: true,
+                                items: { type: 'string', minLength: 1, pattern: '^(?!\\s)(?!.*\\s$)(?!.*\\u0000).+$' },
+                              },
+                              slugCandidate: { type: 'string', minLength: 1, pattern: '^(?!\\s)(?!.*\\s$)(?!.*\\u0000).+$' },
+                              kindDecision: { type: 'string', enum: ['human_meaning_required'] },
+                            },
+                            additionalProperties: false,
+                          },
+                        },
+                      },
+                      additionalProperties: false,
+                    },
+                    resumeCall: { properties: { tool: { enum: ['infer_imports'] } } },
+                  },
+                },
+                nextCalls: { minItems: 0, maxItems: 2 },
                 decision: {
                   type: 'object',
                   properties: {
                     questionEligibility: {
                       enum: [
+                        'blocked_missing_vault_endpoints',
                         'eligible_after_semantic_review',
                         'additional_product_meaning_evidence_required',
                       ],
@@ -2243,9 +2334,9 @@ describe('verify.mjs first-contact gates', () => {
       },
       {
         name: 'get_concept',
+        description: 'Fetch one node by exactly one selector: slug or uid.',
         inputSchema: {
           additionalProperties: false,
-          oneOf: [{ required: ['slug'] }, { required: ['uid'] }],
           properties: {
             slug: { type: 'string' },
             uid: {
@@ -2619,6 +2710,33 @@ describe('verify.mjs first-contact gates', () => {
 
     assert.equal(toolsListSchemaFailure(tools), null);
     assert.equal(toolsListSchemaFailure(null), 'tools/list response missing tools array');
+    for (const mutate of [
+      (schema) => {
+        delete schema.properties.fieldsAfterKindDecision;
+        schema.required = schema.required.filter((field) => field !== 'fieldsAfterKindDecision');
+      },
+      (schema) => {
+        const draft = schema.properties.endpointDrafts.items;
+        delete draft.properties.slugCandidate;
+        draft.required = draft.required.filter((field) => field !== 'slugCandidate');
+      },
+      (schema) => {
+        schema.properties.fieldsAfterKindDecision.properties.byKind
+          .properties.element.items.enum = ['wrong'];
+      },
+      (schema) => {
+        schema.properties.endpointDrafts.items.properties.slugCandidate = { type: 'integer' };
+      },
+    ]) {
+      const changed = structuredClone(inferImportsTool);
+      const proposalValidation = changed.outputSchema.properties.nextReview
+        .properties.endpointModelling.properties.proposalValidation;
+      mutate(proposalValidation);
+      assert.equal(
+        toolsListSchemaFailure(withInferImportsTool(changed)),
+        'infer_imports compact review approval gate drift',
+      );
+    }
     assert.equal(
       toolsListSchemaFailure(withFinalizeProjectMeaningTool({
         ...finalizeProjectMeaningTool,
@@ -3771,6 +3889,24 @@ describe('verify.mjs first-contact gates', () => {
     assert.equal(
       toolsListSchemaFailure(withInferImportsTool({
         ...inferImportsTool,
+        outputSchema: {
+          ...inferImportsTool.outputSchema,
+          properties: {
+            ...inferImportsTool.outputSchema.properties,
+            nextReview: {
+              ...inferImportsTool.outputSchema.properties.nextReview,
+              required: inferImportsTool.outputSchema.properties.nextReview.required.filter(
+                (field) => field !== 'endpointModelling',
+              ),
+            },
+          },
+        },
+      })),
+      'infer_imports compact review approval gate drift',
+    );
+    assert.equal(
+      toolsListSchemaFailure(withInferImportsTool({
+        ...inferImportsTool,
         inputSchema: {
           ...inferImportsTool.inputSchema,
           properties: {
@@ -4169,20 +4305,22 @@ describe('verify.mjs first-contact gates', () => {
       ]),
       'get_concepts inputSchema slugs alias and cap guidance drift',
     );
-    assert.equal(
-      toolsListSchemaFailure([
-        tools[0],
-        {
-          ...tools[1],
-          inputSchema: {
-            ...tools[1].inputSchema,
-            oneOf: [{ required: ['slugs'] }],
+    for (const combinator of ['oneOf', 'anyOf', 'allOf']) {
+      assert.equal(
+        toolsListSchemaFailure([
+          tools[0],
+          {
+            ...tools[1],
+            inputSchema: {
+              ...tools[1].inputSchema,
+              [combinator]: [{ required: ['slugs'] }],
+            },
           },
-        },
-        ...tools.slice(2),
-      ]),
-      'get_concepts inputSchema identity selector drift',
-    );
+          ...tools.slice(2),
+        ]),
+        `get_concepts.inputSchema top-level ${combinator} is not cross-client compatible`,
+      );
+    }
     assert.equal(
       toolsListSchemaFailure([
         tools[0],

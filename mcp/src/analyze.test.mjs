@@ -1532,6 +1532,128 @@ test('pnpm workspace — operational README sections stay out of domains and wor
   }
 });
 
+test('workspace package contracts and READMEs enter the bounded semantic packet as reviewable evidence', () => {
+  const root = withRepo((r) => {
+    writeFileSync(
+      join(r, 'package.json'),
+      JSON.stringify({ name: 'health-platform', private: true, workspaces: ['packages/*'] }),
+    );
+    writeFileSync(
+      join(r, 'README.md'),
+      '# Health Platform\n\nA developer platform for standards-based healthcare applications.\n',
+    );
+    for (const [name, description, readme] of [
+      ['auth', 'Standards-based identity and permissions', '# Identity\n\nOAuth and OpenID authentication for healthcare applications.\n'],
+      ['ccda', 'Clinical document conversion library', '# C-CDA conversion\n\n## Key Features\n\nConvert clinical documents to and from FHIR.\n'],
+      ['core', 'FHIR client library', '# FHIR client\n\n## Key Features\n\nCreate, read, update, delete, and search healthcare resources.\n'],
+      ['server', 'FHIR API server', '# API server\n\n## Responsibilities\n\nStore and serve standards-based healthcare data.\n'],
+      ['ui', 'Healthcare application component library', '# UI library\n\n## Capabilities\n\nBuild healthcare application interfaces.\n'],
+      ['worker', 'Background automation runtime', '# Automation\n\nRun server-side healthcare workflows.\n'],
+    ]) {
+      mkdirSync(join(r, 'packages', name), { recursive: true });
+      writeFileSync(
+        join(r, 'packages', name, 'package.json'),
+        JSON.stringify({ name: `@health/${name}`, description }),
+      );
+      writeFileSync(join(r, 'packages', name, 'README.md'), readme);
+    }
+  });
+  try {
+    const result = analyzeRepoStructure(root);
+    const evidenceBySource = new Map(
+      result.semanticEvidence.map((row) => [row.source, row]),
+    );
+
+    assert.ok(result.semanticEvidence.length <= 6);
+    assert.equal(evidenceBySource.get('README.md')?.role, 'mission');
+    assert.equal(
+      evidenceBySource.get('packages/core/README.md')?.role,
+      'product-capabilities',
+    );
+    assert.match(
+      evidenceBySource.get('packages/core/README.md')?.excerpt ?? '',
+      /Create, read, update, delete, and search healthcare resources/,
+    );
+    assert.ok(
+      result.semanticEvidence.some(
+        (row) =>
+          row.role === 'package-contract' &&
+          row.source.startsWith('packages/') &&
+          /Description:/.test(row.excerpt),
+      ),
+    );
+    assert.ok(
+      result.semanticEvidence
+        .filter((row) => row.source.startsWith('packages/'))
+        .every((row) => row.trust === 'candidate-evidence'),
+    );
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test('workspace member limit counts eligible package directories after hidden entries are filtered', () => {
+  const root = withRepo((r) => {
+    writeFileSync(join(r, 'package.json'), JSON.stringify({ name: 'bounded-workspace' }));
+    writeFileSync(join(r, 'README.md'), '# Bounded workspace\n\nA product workspace.\n');
+    mkdirSync(join(r, 'packages'), { recursive: true });
+    for (let index = 0; index < 48; index += 1) {
+      mkdirSync(join(r, 'packages', `.hidden-${String(index).padStart(2, '0')}`));
+    }
+    mkdirSync(join(r, 'packages', 'real-product'));
+    writeFileSync(
+      join(r, 'packages', 'real-product', 'package.json'),
+      JSON.stringify({ name: '@bounded/real-product', description: 'Real customer workflow' }),
+    );
+    writeFileSync(
+      join(r, 'packages', 'real-product', 'README.md'),
+      '# Real product\n\n## Key Features\n\nRun the real customer workflow.\n',
+    );
+  });
+  try {
+    const result = analyzeRepoStructure(root);
+    assert.ok(
+      result.semanticEvidence.some((row) => row.source === 'packages/real-product/README.md'),
+    );
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test('workspace semantic evidence rejects package files that resolve outside the repository', () => {
+  const outside = withRepo((r) => {
+    writeFileSync(
+      join(r, 'package.json'),
+      JSON.stringify({ name: '@outside/escaped', description: 'Must stay outside' }),
+    );
+    writeFileSync(join(r, 'README.md'), '# Escaped\n\nMust stay outside.\n');
+  });
+  const root = withRepo((r) => {
+    writeFileSync(join(r, 'package.json'), JSON.stringify({ name: 'contained' }));
+    writeFileSync(join(r, 'README.md'), '# Contained\n\nContained product evidence.\n');
+    mkdirSync(join(r, 'packages'), { recursive: true });
+    symlinkSync(outside, join(r, 'packages', 'escaped'));
+  });
+  try {
+    const result = analyzeRepoStructure(root);
+
+    assert.equal(
+      result.semanticEvidence.some((row) => row.source.startsWith('packages/escaped/')),
+      false,
+    );
+    assert.ok(
+      result.skipped.some(
+        (row) =>
+          row.reason ===
+          'semantic-evidence-skip: packages/escaped/package.json resolves outside repository root',
+      ),
+    );
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+    rmSync(outside, { recursive: true, force: true });
+  }
+});
+
 test('최상위 독립 패키지(mcp/·cli/ 류)가 요소 후보로 잡힌다 — package.json 이 판별자', () => {
   // 2026-08-01 실측: analyze 가 src/ FSD 레이어만 걸어 이 저장소의 에이전트
   // 표면(mcp/, cli/)이 재생성 볼트에서 통째로 빠졌다. 도구의 시야가 곧

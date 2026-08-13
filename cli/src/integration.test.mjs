@@ -400,29 +400,29 @@ await test('init --locale=ko — Korean starter bodies, identical graph, English
   }
 });
 
-await test('init --quick-start — scaffolds, bootstraps from the repo, and ends with a compact next-steps block', async () => {
+await test('init --quick-start — scaffolds, previews candidates, and ends with a compact approval block', async () => {
   const repo = makeQuickStartRepoFixture();
   try {
     const r = await run(['init', 'ontology', '--quick-start'], { cwd: repo });
-    assert.equal(r.code, 0, `stdout: ${r.stdout}\nstderr: ${r.stderr}`);
+    assert.equal(r.code, 3, `stdout: ${r.stdout}\nstderr: ${r.stderr}`);
     const clean = stripAnsi(r.stdout);
 
     const vault = join(repo, 'ontology');
-    // bootstrap actually ran — same evidence the analyze --apply tests use
-    // (untouched starter project.md is pruned and replaced by <slug>.md).
-    const projectDoc = readFileSync(join(vault, 'quick-start-app.md'), 'utf-8');
-    assert.match(projectDoc, /title: Quick Start App/);
-    assert.equal(existsSyncTest(join(vault, 'capabilities', 'auth.md')), true);
+    // Semantic candidates are review-only. The starter vault is untouched until
+    // an independently qualified write plan and human acceptance exist.
+    assert.equal(existsSyncTest(join(vault, 'quick-start-app.md')), false);
+    assert.equal(existsSyncTest(join(vault, 'capabilities', 'auth.md')), false);
 
     // .mcp.json still generated (already unconditional, verify quick-start keeps it).
     assert.equal(existsSyncTest(join(repo, '.mcp.json')), true);
     assert.equal(existsSyncTest(join(vault, '.mcp.json')), true);
 
     // compact next-steps block, not the long 6-step default block.
-    assert.match(clean, /quick start done/);
+    assert.match(clean, /quick start review ready/);
+    assert.match(clean, /semantic writes are blocked/);
+    assert.match(clean, /constructionQualification:v1/);
     assert.equal((clean.match(/^\s*\d\.\s/gm) || []).length, 3, `expected exactly 3 next-step lines:\n${clean}`);
-    assert.doesNotMatch(clean, /Open this folder in an AI agent/);
-    assert.doesNotMatch(clean, /See the graph/);
+    assert.doesNotMatch(clean, /quick start done/);
 
     // Slice 0 magic-moment baseline stamped (local only, never transmitted).
     const telemetry = JSON.parse(
@@ -510,7 +510,7 @@ await test('agent-brief — readiness 로 1을 낼 때 그것이 실패가 아�
   const repo = makeQuickStartRepoFixture();
   try {
     const init = await run(['init', 'ontology', '--quick-start'], { cwd: repo });
-    assert.equal(init.code, 0, `stdout: ${init.stdout}`);
+    assert.equal(init.code, 3, `stdout: ${init.stdout}`);
 
     const brief = await run(['agent-brief', 'ontology'], { cwd: repo });
     const clean = stripAnsi(brief.stdout) + stripAnsi(brief.stderr);
@@ -526,11 +526,11 @@ await test('agent-brief — readiness 로 1을 낼 때 그것이 실패가 아�
   }
 });
 
-await test('init --quick-start — 갓 만든 볼트가 자기 검사를 통과한다 (health · validate)', async () => {
+await test('init --quick-start — fresh starter validates and reports health attention honestly', async () => {
   const repo = makeQuickStartRepoFixture();
   try {
     const init = await run(['init', 'ontology', '--quick-start'], { cwd: repo });
-    assert.equal(init.code, 0, `stdout: ${init.stdout}\nstderr: ${init.stderr}`);
+    assert.equal(init.code, 3, `stdout: ${init.stdout}\nstderr: ${init.stderr}`);
 
     /*
      * ⚠️ **종료코드로 잠그면 안 된다** — `validate` 는 경고에 0을 낸다. 첫 판이 그래서
@@ -547,35 +547,27 @@ await test('init --quick-start — 갓 만든 볼트가 자기 검사를 통과�
     assert.match(validateOut, /issue 0/, `경고 0이어야 한다:\n${validateOut}`);
 
     const health = await run(['health', 'ontology'], { cwd: repo });
-    assert.equal(
-      health.code,
-      0,
-      `갓 만든 볼트가 health 에서 needs_attention 이 됐다:\n${stripAnsi(health.stdout)}`,
-    );
-    assert.match(stripAnsi(health.stdout), /vault health healthy/);
+    assert.equal(health.code, 1, `health should surface starter recommendations:\n${stripAnsi(health.stdout)}`);
+    assert.match(stripAnsi(health.stdout), /vault health needs_attention/);
+    assert.match(stripAnsi(health.stdout), /relation_recommendations/);
   } finally {
     rmSync(repo, { recursive: true, force: true });
   }
 });
 
-await test('init --quick-start — suggests absorbing an existing AGENTS.md without auto-absorbing it', async () => {
+await test('init --quick-start — blocks semantic writes before any guide absorption', async () => {
   const repo = makeQuickStartRepoFixture();
   try {
     const agentsBefore = '# Team guide\n\n## Rules\n\nNever skip tests.\n';
     writeFileSync(join(repo, 'AGENTS.md'), agentsBefore, 'utf-8');
 
     const r = await run(['init', 'ontology', '--quick-start'], { cwd: repo });
-    assert.equal(r.code, 0, `stdout: ${r.stdout}\nstderr: ${r.stderr}`);
+    assert.equal(r.code, 3, `stdout: ${r.stdout}\nstderr: ${r.stderr}`);
     const clean = stripAnsi(r.stdout);
 
-    assert.match(clean, /found AGENTS\.md/);
-    assert.match(
-      clean,
-      new RegExp(`${escapeRegExp(CLI)} absorb AGENTS\\.md --vault \\.\\/ontology`),
-    );
-    const absorbLine = clean.split('\n').find((line) => line.includes(`${CLI} absorb AGENTS.md`));
-    assert.ok(absorbLine, `expected an absorb suggestion line in:\n${clean}`);
-    assert.doesNotMatch(absorbLine, /--write/);
+    // The approval gate returns before optional guide absorption. It must not
+    // silently ingest AGENTS.md while the ontology itself is still a review.
+    assert.doesNotMatch(clean, /ontology-atlas absorb/);
 
     // never auto-absorbed — human opt-in only (approval-tier principle).
     assert.equal(readFileSync(join(repo, 'AGENTS.md'), 'utf-8'), agentsBefore);
@@ -589,7 +581,7 @@ await test('init --quick-start — no CLAUDE.md/AGENTS.md present skips the abso
   const repo = makeQuickStartRepoFixture();
   try {
     const r = await run(['init', 'ontology', '--quick-start'], { cwd: repo });
-    assert.equal(r.code, 0, `stdout: ${r.stdout}\nstderr: ${r.stderr}`);
+    assert.equal(r.code, 3, `stdout: ${r.stdout}\nstderr: ${r.stderr}`);
     assert.doesNotMatch(stripAnsi(r.stdout), /ontology-atlas absorb/);
   } finally {
     rmSync(repo, { recursive: true, force: true });
@@ -603,6 +595,10 @@ await test('init --quick-start — unaffected plain init keeps the original verb
     assert.equal(r.code, 0);
     assert.doesNotMatch(stripAnsi(r.stdout), /quick start done/);
     assert.match(stripAnsi(r.stdout), /Open this folder in an AI agent/);
+    assert.match(
+      stripAnsi(r.stdout),
+      /project-scoped \.codex\/config\.toml[\s\S]*trusted/i,
+    );
   } finally {
     rmSync(root, { recursive: true, force: true });
   }
@@ -621,6 +617,78 @@ await test('init — starter .gitignore keeps the local-only Slice 0 telemetry f
     assert.equal(r.code, 0);
     const gitignore = readFileSync(join(root, 'ontology', '.gitignore'), 'utf-8');
     assert.match(gitignore, /\.ontology-atlas\//);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+await test('init — a second vault safely rebinds only the cwd Atlas entries to the new active vault', async () => {
+  const root = mkdtempSync(join(tmpdir(), 'cli-init-rebind-'));
+  try {
+    const first = await run(['init', 'vault-a'], { cwd: root });
+    assert.equal(first.code, 0, first.stderr);
+
+    const rootMcpPath = join(root, '.mcp.json');
+    const rootMcp = JSON.parse(readFileSync(rootMcpPath, 'utf-8'));
+    rootMcp.mcpServers.other = { command: 'node', args: ['/tmp/other.mjs'] };
+    writeFileSync(rootMcpPath, JSON.stringify(rootMcp, null, 2) + '\n');
+    const rootCodexPath = join(root, '.codex', 'config.toml');
+    writeFileSync(
+      rootCodexPath,
+      `[mcp_servers.other]\ncommand = "node"\nargs = ["/tmp/other.mjs"]\n\n${readFileSync(rootCodexPath, 'utf-8')}`,
+    );
+
+    const second = await run(['init', 'vault-b'], { cwd: root });
+    assert.equal(second.code, 0, second.stderr);
+    const clean = stripAnsi(second.stdout);
+    assert.match(clean, /cwd\/\.mcp\.json.*rebound.*vault-b/i);
+    assert.match(clean, /cwd\/\.codex\/config\.toml.*rebound.*vault-b/i);
+
+    const reboundMcp = JSON.parse(readFileSync(rootMcpPath, 'utf-8'));
+    assert.equal(reboundMcp.mcpServers.other.args[0], '/tmp/other.mjs');
+    assert.equal(reboundMcp.mcpServers['ontology-atlas'].env.OATLAS_VAULT, './vault-b');
+    const reboundCodex = readFileSync(rootCodexPath, 'utf-8');
+    assert.match(reboundCodex, /\[mcp_servers\.other\]/);
+    assert.match(reboundCodex, /OATLAS_VAULT = "\.\/vault-b"/);
+    assert.doesNotMatch(reboundCodex, /OATLAS_VAULT = "\.\/vault-a"/);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+await test('init — ambiguous existing client config reports scaffolded but binding unresolved and exits nonzero', async () => {
+  const root = mkdtempSync(join(tmpdir(), 'cli-init-binding-unresolved-'));
+  try {
+    const invalidJson = '{"mcpServers":';
+    writeFileSync(join(root, '.mcp.json'), invalidJson);
+    mkdirSync(join(root, '.codex'), { recursive: true });
+    const duplicateToml = [
+      '[mcp_servers.ontology-atlas]',
+      'command = "node"',
+      'args = ["/tmp/one.mjs"]',
+      '',
+      '[mcp_servers.ontology-atlas]',
+      'command = "node"',
+      'args = ["/tmp/two.mjs"]',
+      '',
+      '[mcp_servers.ontology-atlas.env]',
+      'OATLAS_VAULT = "."',
+      'OATLAS_REPO_ROOT = "."',
+      '',
+    ].join('\n');
+    writeFileSync(join(root, '.codex', 'config.toml'), duplicateToml);
+
+    const result = await run(['init', 'ontology'], { cwd: root });
+    assert.equal(result.code, 1);
+    const clean = stripAnsi(result.stdout + result.stderr);
+    assert.match(clean, /scaffolded but client binding unresolved/i);
+    assert.doesNotMatch(clean, /done: vault scaffolded/i);
+    assert.doesNotMatch(clean, /agents and humans now share/i);
+    assert.equal(readFileSync(join(root, '.mcp.json'), 'utf-8'), invalidJson);
+    assert.equal(readFileSync(join(root, '.codex', 'config.toml'), 'utf-8'), duplicateToml);
+    assert.equal(existsSyncTest(join(root, '.mcp.json.example')), true);
+    assert.equal(existsSyncTest(join(root, '.codex', 'config.toml.example')), true);
+    assert.equal(existsSyncTest(join(root, 'ontology', 'project.md')), true);
   } finally {
     rmSync(root, { recursive: true, force: true });
   }
@@ -646,6 +714,7 @@ await test('agent-setup — writes agent configs for an existing vault without s
     assert.equal(data.summary.ready, 4);
     assert.equal(data.summary.written, 4);
     assert.match(data.commands.setupState, /agent-setup .* --root .* --json/);
+    assert.match(data.commands.codexTrustGuidance, /trusted.*codex mcp list/i);
     assert.match(data.commands.setupRepair, /agent-setup .* --root .* --write/);
     assert.match(data.commands.restartGuidance, /Restart Claude Code, Cursor, or Codex from .* after repair/);
     assert.match(data.commands.setupGate, /agent-brief .* --verify-fallbacks --json/);
@@ -838,7 +907,7 @@ await test('moment — end-to-end via init --quick-start then agent-brief', asyn
     mkdirSync(join(repo, 'src', 'features', 'auth'), { recursive: true });
 
     const init = await run(['init', 'ontology', '--quick-start'], { cwd: repo });
-    assert.equal(init.code, 0, `init failed: ${init.stdout}\n${init.stderr}`);
+    assert.equal(init.code, 3, `init failed: ${init.stdout}\n${init.stderr}`);
 
     const vault = join(repo, 'ontology');
     const before = await run(['moment', vault, '--json']);
@@ -848,8 +917,8 @@ await test('moment — end-to-end via init --quick-start then agent-brief', asyn
     assert.equal(beforeData.moment, null);
 
     // agent-brief's exit code reflects vault readiness (not telemetry) — a
-    // freshly bootstrapped fixture vault can be `needs_shape`. Only the
-    // telemetry side effect matters here.
+    // The semantic bootstrap is review-only, so the starter vault can be
+    // `needs_shape`. Only the telemetry side effect matters here.
     const brief = await run(['agent-brief', vault]);
     assert.equal(brief.stderr, '', `agent-brief errored: ${brief.stderr}`);
 
@@ -1259,7 +1328,7 @@ await test('agent-activity — show normalizes handwritten heartbeat scalar fiel
   }
 });
 
-await test('agent-setup — preserves stale configs and writes merge templates', async () => {
+await test('agent-setup --write — rebinds only the Atlas entries and preserves unrelated client config', async () => {
   const root = mkdtempSync(join(tmpdir(), 'cli-agent-stale-'));
   try {
     mkdirSync(join(root, 'ontology'), { recursive: true });
@@ -1271,16 +1340,290 @@ await test('agent-setup — preserves stale configs and writes merge templates',
     writeFileSync(join(root, '.codex', 'config.toml'), '[mcp_servers.other]\ncommand = "node"\nargs = []\n');
 
     const r = await run(['agent-setup', 'ontology', '--root', '.', '--write', '--json'], { cwd: root });
-    assert.equal(r.code, 1);
+    assert.equal(r.code, 0, r.stderr);
     const data = JSON.parse(r.stdout);
-    assert.equal(data.summary.review, 2);
-    assert.equal(data.summary.examples, 2);
+    assert.equal(data.summary.review, 0);
+    assert.equal(data.summary.ready, 4);
     assert.ok(data.docs.postChangeSync.some((line) => line.includes('sync docs/ontology before finishing')));
-    assert.equal(JSON.parse(readFileSync(join(root, '.mcp.json'), 'utf-8')).mcpServers.other.command, 'node');
-    assert.equal(existsSyncTest(join(root, '.mcp.json.example')), true);
-    assert.equal(existsSyncTest(join(root, '.codex', 'config.toml.example')), true);
+    const repairedMcp = JSON.parse(readFileSync(join(root, '.mcp.json'), 'utf-8'));
+    assert.equal(repairedMcp.mcpServers.other.command, 'node');
+    assert.equal(repairedMcp.mcpServers['ontology-atlas'].env.OATLAS_VAULT, './ontology');
+    const repairedCodex = readFileSync(join(root, '.codex', 'config.toml'), 'utf-8');
+    assert.match(repairedCodex, /\[mcp_servers\.other\]/);
+    assert.match(repairedCodex, /\[mcp_servers\.ontology-atlas\]/);
+    assert.match(repairedCodex, /OATLAS_VAULT = "\.\/ontology"/);
+    assert.equal(existsSyncTest(join(root, '.mcp.json.example')), false);
+    assert.equal(existsSyncTest(join(root, '.codex', 'config.toml.example')), false);
     assert.equal(existsSyncTest(join(root, 'ontology', '.mcp.json')), true);
     assert.equal(existsSyncTest(join(root, 'ontology', '.codex', 'config.toml')), true);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+await test('agent-setup --write — switches a stale Atlas binding to the requested vault without changing other servers', async () => {
+  const root = mkdtempSync(join(tmpdir(), 'cli-agent-rebind-'));
+  try {
+    mkdirSync(join(root, 'vault-a'), { recursive: true });
+    mkdirSync(join(root, 'vault-b'), { recursive: true });
+    const first = await run(['agent-setup', 'vault-a', '--root', '.', '--write', '--json'], { cwd: root });
+    assert.equal(first.code, 0, first.stderr);
+
+    const rootMcpPath = join(root, '.mcp.json');
+    const rootMcp = JSON.parse(readFileSync(rootMcpPath, 'utf-8'));
+    rootMcp.mcpServers.other = { command: 'node', args: ['/tmp/other.mjs'] };
+    writeFileSync(rootMcpPath, JSON.stringify(rootMcp, null, 2) + '\n');
+
+    const rootCodexPath = join(root, '.codex', 'config.toml');
+    const atlasCodex = readFileSync(rootCodexPath, 'utf-8');
+    writeFileSync(
+      rootCodexPath,
+      `# keep this comment\n[mcp_servers.other]\ncommand = "node"\nargs = ["/tmp/other.mjs"]\n\n${atlasCodex}`,
+    );
+
+    const second = await run(['agent-setup', 'vault-b', '--root', '.', '--write', '--json'], { cwd: root });
+    assert.equal(second.code, 0, second.stderr);
+    const data = JSON.parse(second.stdout);
+    assert.equal(data.summary.review, 0);
+    assert.equal(data.summary.ready, 4);
+    assert.equal(data.summary.written, 2);
+    assert.equal(data.summary.repaired, 2);
+
+    const reboundMcp = JSON.parse(readFileSync(rootMcpPath, 'utf-8'));
+    assert.equal(reboundMcp.mcpServers.other.args[0], '/tmp/other.mjs');
+    assert.equal(reboundMcp.mcpServers['ontology-atlas'].env.OATLAS_VAULT, './vault-b');
+    const reboundCodex = readFileSync(rootCodexPath, 'utf-8');
+    assert.match(reboundCodex, /^# keep this comment/m);
+    assert.match(reboundCodex, /\[mcp_servers\.other\][\s\S]*\/tmp\/other\.mjs/);
+    assert.match(reboundCodex, /OATLAS_VAULT = "\.\/vault-b"/);
+    assert.doesNotMatch(reboundCodex, /OATLAS_VAULT = "\.\/vault-a"/);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+await test('agent-setup --write — fails closed on unparseable or duplicate Atlas config instead of overwriting it', async () => {
+  const root = mkdtempSync(join(tmpdir(), 'cli-agent-repair-invalid-'));
+  try {
+    mkdirSync(join(root, 'ontology'), { recursive: true });
+    const invalidJson = '{"mcpServers":';
+    writeFileSync(join(root, '.mcp.json'), invalidJson);
+    mkdirSync(join(root, '.codex'), { recursive: true });
+    const duplicateToml = [
+      '[mcp_servers.ontology-atlas]',
+      'command = "node"',
+      'args = ["/tmp/one.mjs"]',
+      '',
+      '[mcp_servers.ontology-atlas]',
+      'command = "node"',
+      'args = ["/tmp/two.mjs"]',
+      '',
+      '[mcp_servers.ontology-atlas.env]',
+      'OATLAS_VAULT = "."',
+      'OATLAS_REPO_ROOT = "."',
+      '',
+    ].join('\n');
+    writeFileSync(join(root, '.codex', 'config.toml'), duplicateToml);
+
+    const result = await run(['agent-setup', 'ontology', '--root', '.', '--write', '--json'], { cwd: root });
+    assert.equal(result.code, 1);
+    const data = JSON.parse(result.stdout);
+    assert.equal(data.summary.review, 2);
+    assert.equal(readFileSync(join(root, '.mcp.json'), 'utf-8'), invalidJson);
+    assert.equal(readFileSync(join(root, '.codex', 'config.toml'), 'utf-8'), duplicateToml);
+    assert.equal(existsSyncTest(join(root, '.mcp.json.example')), true);
+    assert.equal(existsSyncTest(join(root, '.codex', 'config.toml.example')), true);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+await test('agent-setup --write — safely rebinds quoted Atlas TOML sections without appending a second binding', async () => {
+  const root = mkdtempSync(join(tmpdir(), 'cli-agent-repair-quoted-'));
+  try {
+    const first = await run(['agent-setup', '.', '--root', '.', '--write', '--json'], { cwd: root });
+    assert.equal(first.code, 0, first.stderr);
+    const path = join(root, '.codex', 'config.toml');
+    const quoted = readFileSync(path, 'utf-8')
+      .replace('[mcp_servers.ontology-atlas]', '[mcp_servers."ontology-atlas"]')
+      .replace('[mcp_servers.ontology-atlas.env]', '[mcp_servers."ontology-atlas".env]');
+    writeFileSync(path, quoted);
+
+    const result = await run(['agent-setup', '.', '--root', '.', '--write', '--json'], { cwd: root });
+    assert.equal(result.code, 0, result.stderr);
+    const data = JSON.parse(result.stdout);
+    assert.equal(data.summary.review, 0);
+    const rebound = readFileSync(path, 'utf-8');
+    assert.doesNotMatch(rebound, /\[mcp_servers\."ontology-atlas"/);
+    assert.equal((rebound.match(/\[mcp_servers\.ontology-atlas\]/g) ?? []).length, 1);
+    assert.match(rebound, /OATLAS_VAULT = "\."/);
+    assert.equal(existsSyncTest(join(root, '.codex', 'config.toml.example')), false);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+await test('agent-setup --write — rebinds fully quoted Codex key paths', async () => {
+  const root = mkdtempSync(join(tmpdir(), 'cli-agent-repair-fully-quoted-'));
+  try {
+    const first = await run(['agent-setup', '.', '--root', '.', '--write', '--json'], { cwd: root });
+    assert.equal(first.code, 0, first.stderr);
+    const path = join(root, '.codex', 'config.toml');
+    const quoted = readFileSync(path, 'utf-8')
+      .replace('[mcp_servers.ontology-atlas]', '["mcp_servers"."ontology-atlas"]')
+      .replace('[mcp_servers.ontology-atlas.env]', '["mcp_servers"."ontology-atlas"."env"]');
+    writeFileSync(path, quoted);
+
+    const result = await run(['agent-setup', '.', '--root', '.', '--write', '--json'], { cwd: root });
+    assert.equal(result.code, 0, result.stderr);
+    const rebound = readFileSync(path, 'utf-8');
+    assert.equal((rebound.match(/\[mcp_servers\.ontology-atlas\]/g) ?? []).length, 1);
+    assert.doesNotMatch(rebound, /\["mcp_servers"/);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+await test('agent-setup --write — rebinds TOML-valid spaced quoted key paths', async () => {
+  const root = mkdtempSync(join(tmpdir(), 'cli-agent-repair-spaced-quoted-'));
+  try {
+    const first = await run(['agent-setup', '.', '--root', '.', '--write', '--json'], { cwd: root });
+    assert.equal(first.code, 0, first.stderr);
+    const path = join(root, '.codex', 'config.toml');
+    const quoted = readFileSync(path, 'utf-8')
+      .replace('[mcp_servers.ontology-atlas]', '[ "mcp_servers" . "ontology-atlas" ]')
+      .replace('[mcp_servers.ontology-atlas.env]', '[ "mcp_servers" . "ontology-atlas" . "env" ]');
+    writeFileSync(path, quoted);
+
+    const result = await run(['agent-setup', '.', '--root', '.', '--write', '--json'], { cwd: root });
+    assert.equal(result.code, 0, result.stderr);
+    const rebound = readFileSync(path, 'utf-8');
+    assert.equal((rebound.match(/\[mcp_servers\.ontology-atlas\]/g) ?? []).length, 1);
+    assert.doesNotMatch(rebound, /\[ "mcp_servers"/);
+    assert.equal(existsSyncTest(join(root, '.codex', 'config.toml.example')), false);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+await test('agent-setup --write — refreshes stale merge templates for the currently requested vault', async () => {
+  const root = mkdtempSync(join(tmpdir(), 'cli-agent-repair-template-current-'));
+  try {
+    mkdirSync(join(root, 'vault-a'), { recursive: true });
+    mkdirSync(join(root, 'vault-b'), { recursive: true });
+    mkdirSync(join(root, '.codex'), { recursive: true });
+    writeFileSync(join(root, '.mcp.json'), '{"mcpServers":');
+    writeFileSync(join(root, '.codex', 'config.toml'), 'broken = [');
+    writeFileSync(join(root, '.mcp.json.example'), '{"stale":"vault-a"}\n');
+    writeFileSync(join(root, '.codex', 'config.toml.example'), 'stale = "vault-a"\n');
+
+    const result = await run(['agent-setup', 'vault-b', '--root', '.', '--write', '--json'], { cwd: root });
+    assert.equal(result.code, 1);
+    const mcpExample = readFileSync(join(root, '.mcp.json.example'), 'utf-8');
+    const codexExample = readFileSync(join(root, '.codex', 'config.toml.example'), 'utf-8');
+    assert.match(mcpExample, /"stale": "vault-a"/);
+    assert.match(codexExample, /stale = "vault-a"/);
+    assert.equal(JSON.parse(mcpExample).mcpServers['ontology-atlas'].env.OATLAS_VAULT, './vault-b');
+    assert.match(codexExample, /OATLAS_VAULT = "\.\/vault-b"/);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+await test('agent-setup --write — preserves unrelated entries while rebinding parseable merge templates', async () => {
+  const root = mkdtempSync(join(tmpdir(), 'cli-agent-repair-template-merge-'));
+  try {
+    mkdirSync(join(root, 'vault-b'), { recursive: true });
+    mkdirSync(join(root, '.codex'), { recursive: true });
+    writeFileSync(join(root, '.mcp.json'), '{"mcpServers":');
+    writeFileSync(join(root, '.codex', 'config.toml'), 'broken = [');
+    writeFileSync(join(root, '.mcp.json.example'), JSON.stringify({
+      manualMarker: 'keep-me',
+      mcpServers: {
+        other: { command: '/tmp/other' },
+        'ontology-atlas': { command: 'old', env: { OATLAS_VAULT: './vault-a' } },
+      },
+    }, null, 2) + '\n');
+    writeFileSync(join(root, '.codex', 'config.toml.example'), [
+      'manual_marker = "keep-me"',
+      '',
+      '[mcp_servers.other]',
+      'command = "/tmp/other"',
+      '',
+      '[mcp_servers.ontology-atlas]',
+      'command = "old"',
+      '',
+      '[mcp_servers.ontology-atlas.env]',
+      'OATLAS_VAULT = "./vault-a"',
+      'OATLAS_REPO_ROOT = "."',
+      '',
+    ].join('\n'));
+
+    const result = await run(['agent-setup', 'vault-b', '--root', '.', '--write', '--json'], { cwd: root });
+    assert.equal(result.code, 1);
+    const mcpExample = JSON.parse(readFileSync(join(root, '.mcp.json.example'), 'utf-8'));
+    assert.equal(mcpExample.manualMarker, 'keep-me');
+    assert.equal(mcpExample.mcpServers.other.command, '/tmp/other');
+    assert.equal(mcpExample.mcpServers['ontology-atlas'].env.OATLAS_VAULT, './vault-b');
+    const codexExample = readFileSync(join(root, '.codex', 'config.toml.example'), 'utf-8');
+    assert.match(codexExample, /manual_marker = "keep-me"/);
+    assert.match(codexExample, /\[mcp_servers\.other\][\s\S]*command = "\/tmp\/other"/);
+    assert.match(codexExample, /OATLAS_VAULT = "\.\/vault-b"/);
+    assert.equal(existsSyncTest(join(root, '.mcp.json.ontology-atlas-current.example')), false);
+    assert.equal(existsSyncTest(join(root, '.codex', 'config.toml.ontology-atlas-current.example')), false);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+await test('agent-setup --write — preserves malformed merge templates and emits current-vault sidecars', async () => {
+  const root = mkdtempSync(join(tmpdir(), 'cli-agent-repair-template-sidecar-'));
+  try {
+    mkdirSync(join(root, 'vault-b'), { recursive: true });
+    mkdirSync(join(root, '.codex'), { recursive: true });
+    writeFileSync(join(root, '.mcp.json'), '{"mcpServers":');
+    writeFileSync(join(root, '.codex', 'config.toml'), 'broken = [');
+    writeFileSync(join(root, '.mcp.json.example'), '{"manual":');
+    writeFileSync(join(root, '.codex', 'config.toml.example'), 'manual = [');
+
+    const result = await run(['agent-setup', 'vault-b', '--root', '.', '--write', '--json'], { cwd: root });
+    assert.equal(result.code, 1);
+    const data = JSON.parse(result.stdout);
+    assert.equal(readFileSync(join(root, '.mcp.json.example'), 'utf-8'), '{"manual":');
+    assert.equal(readFileSync(join(root, '.codex', 'config.toml.example'), 'utf-8'), 'manual = [');
+    assert.match(
+      readFileSync(join(root, '.mcp.json.ontology-atlas-current.example'), 'utf-8'),
+      /vault-b/,
+    );
+    assert.match(
+      readFileSync(join(root, '.codex', 'config.toml.ontology-atlas-current.example'), 'utf-8'),
+      /vault-b/,
+    );
+    assert.ok(data.files.some((row) => row.examplePath?.endsWith('.ontology-atlas-current.example')));
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+await test('init — refreshes stale cwd merge templates for the newly requested vault', async () => {
+  const root = mkdtempSync(join(tmpdir(), 'cli-init-template-current-'));
+  try {
+    mkdirSync(join(root, '.codex'), { recursive: true });
+    writeFileSync(join(root, '.mcp.json'), '{"mcpServers":');
+    writeFileSync(join(root, '.codex', 'config.toml'), 'broken = [');
+    writeFileSync(join(root, '.mcp.json.example'), '{"stale":"vault-a"}\n');
+    writeFileSync(join(root, '.codex', 'config.toml.example'), 'stale = "vault-a"\n');
+
+    const result = await run(['init', 'vault-b'], { cwd: root });
+    assert.equal(result.code, 1);
+    const mcpExample = readFileSync(join(root, '.mcp.json.example'), 'utf-8');
+    const codexExample = readFileSync(join(root, '.codex', 'config.toml.example'), 'utf-8');
+    assert.match(mcpExample, /"stale": "vault-a"/);
+    assert.match(codexExample, /stale = "vault-a"/);
+    assert.equal(JSON.parse(mcpExample).mcpServers['ontology-atlas'].env.OATLAS_VAULT, './vault-b');
+    assert.match(codexExample, /OATLAS_VAULT = "\.\/vault-b"/);
+    assert.equal(readFileSync(join(root, '.mcp.json'), 'utf-8'), '{"mcpServers":');
+    assert.equal(readFileSync(join(root, '.codex', 'config.toml'), 'utf-8'), 'broken = [');
   } finally {
     rmSync(root, { recursive: true, force: true });
   }
@@ -5837,11 +6180,11 @@ await test('agent-brief — prints agent handoff entrypoints and playbooks', asy
   const root = await buildGraphFixture();
   try {
     const r = await run(['agent-brief', root]);
-    assert.equal(r.code, 0, `stdout: ${r.stdout}\nstderr: ${r.stderr}`);
+    assert.equal(r.code, 1, `stdout: ${r.stdout}\nstderr: ${r.stderr}`);
     const clean = stripAnsi(r.stdout);
-    assert.match(r.stdout, /\x1b\[32mhealthy\x1b\[0m/);
+    assert.match(r.stdout, /\x1b\[33mneeds_attention\x1b\[0m/);
     assert.match(clean, /agent brief/);
-    assert.match(clean, /readiness ready 100\/100/);
+    assert.match(clean, /readiness needs_attention 75\/100/);
     assert.match(clean, /HANDOFF PROMPT/);
     assert.match(clean, /\.handoffPrompt/);
     assert.match(clean, /MODE GUIDE/);
@@ -5899,7 +6242,7 @@ await test('agent-brief — stamps the Slice 0 magic-moment telemetry the first 
     );
 
     const r = await run(['agent-brief', root]);
-    assert.equal(r.code, 0, `stdout: ${r.stdout}\nstderr: ${r.stderr}`);
+    assert.equal(r.code, 1, `stdout: ${r.stdout}\nstderr: ${r.stderr}`);
 
     const telemetry = JSON.parse(readFileSync(initTelemetryPath, 'utf-8'));
     assert.equal(telemetry.moment.source, 'agent-brief');
@@ -5909,7 +6252,7 @@ await test('agent-brief — stamps the Slice 0 magic-moment telemetry the first 
     // a second run must not overwrite the first recorded moment.
     const before = telemetry.moment.at;
     const r2 = await run(['agent-brief', root]);
-    assert.equal(r2.code, 0);
+    assert.equal(r2.code, 1);
     const telemetryAfter = JSON.parse(readFileSync(initTelemetryPath, 'utf-8'));
     assert.equal(telemetryAfter.moment.at, before);
   } finally {
@@ -5930,7 +6273,7 @@ await test('agent-brief --json — forwards focused diagnosis tuning flags', asy
       '--component-limit=2',
       '--node-limit=1',
     ]);
-    assert.equal(r.code, 0, `stdout: ${r.stdout}\nstderr: ${r.stderr}`);
+    assert.equal(r.code, 1, `stdout: ${r.stdout}\nstderr: ${r.stderr}`);
     const data = JSON.parse(r.stdout);
     assert.equal(data.operation, 'agent_brief');
     assert.deepEqual(data.docs.workflowGuide, {
@@ -5956,7 +6299,7 @@ await test('agent-brief --json — forwards focused diagnosis tuning flags', asy
     assert.ok(data.docs.graphScanProofChecklist[1].evidence.includes('blast_radius'));
     assert.ok(data.docs.graphScanProofChecklist[2].evidence.includes('relation_check'));
     assert.ok(data.docs.graphScanProofChecklist[3].evidence.includes('evidence.pathsComplete'));
-    assert.equal(data.readiness.status, 'ready');
+    assert.equal(data.readiness.status, 'needs_attention');
     assert.ok(data.cliFallbackCommands.includes('ontology-atlas hubs [vault] --plan --limit 10 --types depends_on,relates'));
     assert.ok(data.writeGuardrails.some((guardrail) => guardrail.id === 'preflight_rename'));
     assert.ok(data.writeGuardrails.some((guardrail) => guardrail.calls.some((call) => call.tool === 'validate_vault')));
@@ -6081,7 +6424,7 @@ await test('agent-brief --json — emits CLI fallback commands that run directly
   const root = await buildGraphFixture();
   try {
     const r = await run(['agent-brief', root, '--json']);
-    assert.equal(r.code, 0, `stdout: ${r.stdout}\nstderr: ${r.stderr}`);
+    assert.equal(r.code, 1, `stdout: ${r.stdout}\nstderr: ${r.stderr}`);
     const data = JSON.parse(r.stdout);
     assert.ok(
       data.cliFallbackCommands
@@ -6104,7 +6447,7 @@ await test('agent-brief --verify-fallbacks — executes generated CLI fallback c
   const root = await buildGraphFixture();
   try {
     const r = await run(['agent-brief', root, '--verify-fallbacks']);
-    assert.equal(r.code, 0, `stdout: ${r.stdout}\nstderr: ${r.stderr}`);
+    assert.equal(r.code, 1, `stdout: ${r.stdout}\nstderr: ${r.stderr}`);
     const clean = stripAnsi(r.stdout);
     assert.match(clean, /agent fallback check/);
     assert.match(clean, /setup gate ok=true performanceOk=true wall=\d+ms slow=0\/\d+ failed=0/);
@@ -6120,7 +6463,7 @@ await test('agent-brief --verify-fallbacks --json — emits machine-readable fal
   const root = await buildGraphFixture();
   try {
     const r = await run(['agent-brief', root, '--verify-fallbacks', '--json']);
-    assert.equal(r.code, 0, `stdout: ${r.stdout}\nstderr: ${r.stderr}`);
+    assert.equal(r.code, 1, `stdout: ${r.stdout}\nstderr: ${r.stderr}`);
     const data = JSON.parse(r.stdout);
     assert.equal(data.operation, 'agent_fallback_check');
     assert.equal(data.ok, true);
@@ -6180,7 +6523,7 @@ await test('agent-brief --verify-fallbacks --json — marks slow-but-passing fal
   const root = await buildGraphFixture();
   try {
     const r = await run(['agent-brief', root, '--verify-fallbacks', '--json', '--fallback-slow-ms', '1', '--fallback-concurrency', '2']);
-    assert.equal(r.code, 0, `stdout: ${r.stdout}\nstderr: ${r.stderr}`);
+    assert.equal(r.code, 1, `stdout: ${r.stdout}\nstderr: ${r.stderr}`);
     const data = JSON.parse(r.stdout);
     assert.equal(data.operation, 'agent_fallback_check');
     assert.equal(data.ok, true);
@@ -6252,7 +6595,7 @@ await test('agent-brief --verify-fallbacks — rejects malformed fallback timeou
     const ignoredWithoutVerify = await run(['agent-brief', root, '--json'], {
       env: { OATLAS_AGENT_FALLBACK_TIMEOUT_MS: '1000ms', OATLAS_AGENT_FALLBACK_SLOW_MS: '1000ms', OATLAS_AGENT_FALLBACK_CONCURRENCY: 'fast' },
     });
-    assert.equal(ignoredWithoutVerify.code, 0, `stdout: ${ignoredWithoutVerify.stdout}\nstderr: ${ignoredWithoutVerify.stderr}`);
+    assert.equal(ignoredWithoutVerify.code, 1, `stdout: ${ignoredWithoutVerify.stdout}\nstderr: ${ignoredWithoutVerify.stderr}`);
   } finally {
     rmSync(root, { recursive: true, force: true });
   }
@@ -6262,7 +6605,7 @@ await test('agent-brief --prompt — prints only the copyable handoff prompt', a
   const root = await buildGraphFixture();
   try {
     const r = await run(['agent-brief', root, '--prompt']);
-    assert.equal(r.code, 0, `stdout: ${r.stdout}\nstderr: ${r.stderr}`);
+    assert.equal(r.code, 1, `stdout: ${r.stdout}\nstderr: ${r.stderr}`);
     const clean = stripAnsi(r.stdout);
     assert.match(clean, /^Use the ontology-atlas MCP server/);
     assert.match(clean, /Feature guide: docs\/AGENT-GRAPH-WORKFLOW\.md/);
@@ -6298,7 +6641,7 @@ await test('agent-brief --graph-db-pack — prints only executable graph DB CLI 
   const root = await buildGraphFixture();
   try {
     const r = await run(['agent-brief', root, '--graph-db-pack']);
-    assert.equal(r.code, 0, `stdout: ${r.stdout}\nstderr: ${r.stderr}`);
+    assert.equal(r.code, 1, `stdout: ${r.stdout}\nstderr: ${r.stderr}`);
     const clean = stripAnsi(r.stdout).replaceAll(CLI_INVOCATION, 'ontology-atlas');
     const vaultPath = escapeRegExp(root);
     assert.match(clean, /^# ontology-atlas Graph DB CLI pack/);
@@ -6308,7 +6651,7 @@ await test('agent-brief --graph-db-pack — prints only executable graph DB CLI 
     assert.match(clean, /# - MCP-connected: direct read\/write tools/);
     assert.match(clean, /# - Setup gate: config repair commands, JSON readiness/);
     assert.match(clean, /# Self-check first: Claude Code\/Codex automation can parse ok, performanceOk, failed, timeoutMs, slowThresholdMs, concurrency, wallMs, slow, commands\[\]\.timedOut, commands\[\]\.slow, and slowest\.elapsedMs\./);
-    assert.match(clean, new RegExp(`ontology-atlas agent-brief ${vaultPath} --verify-fallbacks --json --fallback-timeout-ms 15000 --fallback-slow-ms 5000 --fallback-concurrency 4`));
+    assert.match(clean, new RegExp(`ontology-atlas agent-brief ${vaultPath} --verify-fallbacks --json --exit-zero --fallback-timeout-ms 15000 --fallback-slow-ms 5000 --fallback-concurrency 4`));
     assert.match(clean, /# The selected vault path is already inserted/);
     assert.match(clean, /# Evidence rule: scan rows are candidates, not proof/);
     assert.match(clean, /# Proof checklist: report totalMatches\/limited\/row count, run node_profile or blast_radius for node rows, run explain\/path\/relation-check for edge rows, and report evidence\.pathsComplete for paths\./);
@@ -8535,33 +8878,25 @@ function makeSingleFileLayeredRepo() {
   return repo;
 }
 
-await test('bootstrap — analyze 결과만 쓰고 import dependency는 검토 후보로 남긴다', async () => {
+await test('bootstrap — analyze/import candidates stay review-only until approval', async () => {
   const vault = withVault([]);
   const repo = makeFullRepo();
   try {
     const r = await run(['bootstrap', repo, '--vault', vault]);
-    assert.equal(r.code, 0, `stdout: ${r.stdout}\nstderr: ${r.stderr}`);
+    assert.equal(r.code, 3, `stdout: ${r.stdout}\nstderr: ${r.stderr}`);
     const clean = stripAnsi(r.stdout);
-    assert.match(clean, /1\) analyze/);
-    assert.match(clean, /2\) imports/);
-    // project + capability 노드 land
-    assert.equal(existsSyncTest(join(vault, 'bs-app.md')), true, 'project');
-    assert.equal(existsSyncTest(join(vault, 'capabilities', 'auth.md')), true, 'auth capability');
-    assert.equal(
-      existsSyncTest(join(vault, 'capabilities', 'billing.md')),
-      true,
-      'billing capability',
-    );
-    const authDoc = readFileSync(join(vault, 'capabilities', 'auth.md'), 'utf-8');
-    assert.doesNotMatch(authDoc, /dependencies:/);
-    assert.match(clean, /rationale review required/i);
+    assert.match(clean, /approval required/i);
+    assert.match(clean, /writes: 0/);
+    assert.equal(existsSyncTest(join(vault, 'bs-app.md')), false, 'project must not land');
+    assert.equal(existsSyncTest(join(vault, 'capabilities', 'auth.md')), false);
+    assert.equal(existsSyncTest(join(vault, 'capabilities', 'billing.md')), false);
   } finally {
     rmSync(vault, { recursive: true, force: true });
     rmSync(repo, { recursive: true, force: true });
   }
 });
 
-await test('bootstrap --skip-imports — 50개를 넘는 concept 후보를 MCP batch cap에 맞춰 분할', async () => {
+await test('bootstrap --skip-imports — exposes all review candidates without invoking semantic writers', async () => {
   const vault = withVault([]);
   const repo = makeFullRepo();
   const fakeMcp = join(vault, 'fake-mcp-bootstrap-concept-chunks.mjs');
@@ -8606,11 +8941,17 @@ await test('bootstrap --skip-imports — 50개를 넘는 concept 후보를 MCP b
     ], {
       env: { OATLAS_MCP_PATH: fakeMcp },
     });
-    assert.equal(r.code, 0, `stdout: ${r.stdout}\nstderr: ${r.stderr}`);
+    assert.equal(r.code, 3, `stdout: ${r.stdout}\nstderr: ${r.stderr}`);
     const data = JSON.parse(r.stdout);
-    assert.equal(data.analyze.concepts.length, 52);
-    assert.equal(data.analyze.concepts[0].slug, 'demo');
-    assert.equal(data.analyze.concepts.at(-1).slug, 'elements/item-50');
+    assert.equal(data.mode, 'review');
+    assert.equal(data.apply, false);
+    assert.equal(data.writeEligible, false);
+    assert.equal(data.reason, 'approval_required');
+    assert.equal(data.plan.concepts, 52);
+    assert.equal(data.analyze.project.slug, 'demo');
+    assert.equal(data.analyze.elements.at(-1).slug, 'elements/item-50');
+    assert.equal(data.next.writes, 0);
+    assert.equal(existsSyncTest(join(vault, 'demo.md')), false);
   } finally {
     rmSync(vault, { recursive: true, force: true });
     rmSync(repo, { recursive: true, force: true });
@@ -8630,22 +8971,14 @@ await test('bootstrap — import endpoint와 depends_on을 자동 생성하지 �
       '1',
       '--json',
     ]);
-    assert.equal(r.code, 0, `stdout: ${r.stdout}\nstderr: ${r.stderr}`);
+    assert.equal(r.code, 3, `stdout: ${r.stdout}\nstderr: ${r.stderr}`);
     const data = JSON.parse(r.stdout);
-    assert.equal(data.summary.errors, 0);
-    assert.ok(Array.isArray(data.imports.endpointConcepts));
-    assert.deepEqual(data.imports.endpointConcepts, []);
-    assert.deepEqual(data.imports.relations, []);
-    assert.deepEqual(data.imports.containmentRelations, []);
-    assert.ok(
-      data.imports.reviewCandidates.some(
-        (row) =>
-          row.from === 'capabilities/check-in' &&
-          row.to === 'elements/json-store' &&
-          row.review?.status === 'rationale_review_required',
-      ),
-      `expected check-in → storage review candidate, got: ${JSON.stringify(data.imports.reviewCandidates)}`,
-    );
+    assert.equal(data.mode, 'review');
+    assert.equal(data.writeEligible, false);
+    assert.equal(data.reason, 'approval_required');
+    assert.ok(Array.isArray(data.imports.moduleEdges));
+    assert.ok(data.imports.moduleEdges.length > 0);
+    assert.equal(data.plan.importRelations, data.imports.moduleEdges.length);
     assert.equal(
       existsSyncTest(join(vault, 'capabilities', 'check-in.md')),
       false,
@@ -8668,7 +9001,7 @@ await test('bootstrap — import endpoint와 depends_on을 자동 생성하지 �
   }
 });
 
-await test('bootstrap --skip-imports — 1단계 (analyze) 만, imports 영역 skipped 표시', async () => {
+await test('bootstrap --skip-imports — analyze preview keeps imports skipped and writes zero', async () => {
   const vault = withVault([]);
   const repo = makeFullRepo();
   try {
@@ -8679,18 +9012,18 @@ await test('bootstrap --skip-imports — 1단계 (analyze) 만, imports 영역 s
       vault,
       '--skip-imports',
     ]);
-    assert.equal(r.code, 0);
+    assert.equal(r.code, 3);
     const clean = stripAnsi(r.stdout);
-    assert.match(clean, /1\) analyze/);
-    assert.match(clean, /skipped \(--skip-imports\)/);
-    assert.equal(existsSyncTest(join(vault, 'bs-app.md')), true);
+    assert.match(clean, /approval required/);
+    assert.match(clean, /writes: 0/);
+    assert.equal(existsSyncTest(join(vault, 'bs-app.md')), false);
   } finally {
     rmSync(vault, { recursive: true, force: true });
     rmSync(repo, { recursive: true, force: true });
   }
 });
 
-await test('bootstrap --skip-imports — sole README domain yields a verifier-clean vault', async () => {
+await test('bootstrap --skip-imports — sole README domain remains a review candidate', async () => {
   const vault = withVault([]);
   const repo = mkdtempSync(join(tmpdir(), 'cli-bootstrap-single-domain-'));
   try {
@@ -8711,42 +9044,38 @@ await test('bootstrap --skip-imports — sole README domain yields a verifier-cl
       '--skip-imports',
       '--json',
     ]);
-    assert.equal(bootstrap.code, 0, `stdout: ${bootstrap.stdout}\nstderr: ${bootstrap.stderr}`);
+    assert.equal(bootstrap.code, 3, `stdout: ${bootstrap.stdout}\nstderr: ${bootstrap.stderr}`);
     const payload = JSON.parse(bootstrap.stdout);
-    assert.equal(payload.summary.errors, 0);
-    const capability = readFileSync(join(vault, 'capabilities', 'auth.md'), 'utf-8');
-    assert.match(capability, /domain: domains\/accounts/);
+    assert.equal(payload.mode, 'review');
+    assert.equal(payload.writeEligible, false);
+    assert.ok(Array.isArray(payload.plan.readmeOnlyDomains));
+    assert.equal(existsSyncTest(join(vault, 'capabilities', 'auth.md')), false);
 
-    const verify = await run(['mcp-verify', vault, '--timeout-ms', '15000']);
-    assert.equal(verify.code, 0, `stdout: ${verify.stdout}\nstderr: ${verify.stderr}`);
-    assert.match(
-      stripAnsi(verify.stdout),
-      new RegExp(`tools\\/list ${EXPECTED_TOOL_COUNT}\\/${EXPECTED_TOOL_COUNT}`),
-    );
-    assert.match(stripAnsi(verify.stdout), /All passed:/);
   } finally {
     rmSync(vault, { recursive: true, force: true });
     rmSync(repo, { recursive: true, force: true });
   }
 });
 
-await test('bootstrap --json — analyze / imports / summary 모두 단일 JSON', async () => {
+await test('bootstrap --json — analyze / imports / approval plan 모두 단일 JSON', async () => {
   const vault = withVault([]);
   const repo = makeFullRepo();
   try {
     const r = await run(['bootstrap', repo, '--vault', vault, '--json']);
-    assert.equal(r.code, 0);
+    assert.equal(r.code, 3);
     const data = JSON.parse(r.stdout);
+    assert.equal(data.mode, 'review');
+    assert.equal(data.writeEligible, false);
+    assert.equal(data.reason, 'approval_required');
     assert.ok(data.analyze, 'analyze 필드');
-    assert.ok(Array.isArray(data.analyze.concepts));
-    assert.ok(Array.isArray(data.analyze.relations));
+    assert.ok(data.analyze.project);
+    assert.ok(Array.isArray(data.analyze.capabilities));
+    assert.ok(Array.isArray(data.analyze.suggestedRelations));
     assert.ok(data.imports, 'imports 필드');
-    assert.ok(Array.isArray(data.imports.relations));
-    assert.ok(Array.isArray(data.imports.reviewCandidates));
-    assert.ok(data.imports.reviewCandidates.length > 0);
-    assert.deepEqual(data.imports.relations, []);
-    assert.ok(data.summary, 'summary 필드');
-    assert.equal(typeof data.summary.errors, 'number');
+    assert.ok(Array.isArray(data.imports.moduleEdges));
+    assert.ok(data.imports.moduleEdges.length > 0);
+    assert.ok(data.plan.importRelations > 0);
+    assert.equal(data.next.writes, 0);
   } finally {
     rmSync(vault, { recursive: true, force: true });
     rmSync(repo, { recursive: true, force: true });
@@ -8767,49 +9096,45 @@ await test('bootstrap --threshold 3 — 약한 import (count<3) 안 land', async
       '3',
       '--json',
     ]);
-    assert.equal(r.code, 0);
+    assert.equal(r.code, 3);
     const data = JSON.parse(r.stdout);
-    // imports 의 thresholdApplied 메타데이터.
-    assert.ok(data.imports.thresholdApplied);
-    assert.equal(data.imports.thresholdApplied.threshold, 3);
+    // The review-only payload carries raw import evidence; no relation write is
+    // attempted regardless of the threshold flag.
+    assert.ok(Array.isArray(data.imports.moduleEdges));
     // 자동 relation write는 항상 0이고, threshold는 review 후보에만 적용된다.
-    assert.equal(data.imports.relations.length, 0);
-    assert.ok(Array.isArray(data.imports.reviewCandidates));
+    assert.equal(data.next.writes, 0);
   } finally {
     rmSync(vault, { recursive: true, force: true });
     rmSync(repo, { recursive: true, force: true });
   }
 });
 
-await test('bootstrap — 마지막에 vault census 한 줄 (R+ cycle 37)', async () => {
+await test('bootstrap — approval response explains that no vault census changed', async () => {
   const vault = withVault([]);
   const repo = makeFullRepo();
   try {
     const r = await run(['bootstrap', repo, '--vault', vault]);
-    assert.equal(r.code, 0);
+    assert.equal(r.code, 3);
     const clean = stripAnsi(r.stdout);
-    // census 라인 — \"vault now has N nodes (project=1 · capability=2 · ...)\"
-    assert.match(clean, /vault now has \d+ nodes/);
-    // 적어도 project + capability 카운트 표시.
-    assert.match(clean, /project=1/);
-    assert.match(clean, /capability=/);
+    assert.match(clean, /approval required/);
+    assert.match(clean, /writes: 0/);
+    assert.doesNotMatch(clean, /vault now has \d+ nodes/);
   } finally {
     rmSync(vault, { recursive: true, force: true });
     rmSync(repo, { recursive: true, force: true });
   }
 });
 
-await test('bootstrap --json — vaultCensus 필드 노출 (R+ cycle 37)', async () => {
+await test('bootstrap --json — approval response has no mutable vault census', async () => {
   const vault = withVault([]);
   const repo = makeFullRepo();
   try {
     const r = await run(['bootstrap', repo, '--vault', vault, '--json']);
-    assert.equal(r.code, 0);
+    assert.equal(r.code, 3);
     const data = JSON.parse(r.stdout);
-    assert.ok(data.vaultCensus, 'vaultCensus 필드');
-    assert.equal(typeof data.vaultCensus.total, 'number');
-    assert.ok(data.vaultCensus.byKind, 'byKind 객체');
-    assert.ok(data.vaultCensus.total >= 3, 'project + 2 capability 최소');
+    assert.equal(data.next.writes, 0);
+    assert.equal(Object.hasOwn(data, 'vaultCensus'), false);
+    assert.equal(existsSyncTest(join(vault, 'bs-app.md')), false);
   } finally {
     rmSync(vault, { recursive: true, force: true });
     rmSync(repo, { recursive: true, force: true });
@@ -8899,28 +9224,28 @@ await test('index — human plan shows business ontology evidence rows before ap
   }
 });
 
-await test('index --apply --json — applies the same ontology indexing pipeline as bootstrap', async () => {
+await test('index --apply --json — delegates to the review-only approval gate', async () => {
   const vault = withVault([]);
   const repo = makeFullRepo();
   try {
     const r = await run(['index', repo, '--vault', vault, '--apply', '--json']);
-    assert.equal(r.code, 0, `stdout: ${r.stdout}\nstderr: ${r.stderr}`);
+    assert.equal(r.code, 3, `stdout: ${r.stdout}\nstderr: ${r.stderr}`);
     const data = JSON.parse(r.stdout);
     assert.equal(data.mode, 'apply');
-    assert.equal(data.apply.summary.errors, 0);
-    assert.equal(existsSyncTest(join(vault, 'bs-app.md')), true);
-    assert.equal(existsSyncTest(join(vault, 'capabilities', 'auth.md')), true);
-    const authDoc = readFileSync(join(vault, 'capabilities', 'auth.md'), 'utf-8');
-    assert.doesNotMatch(authDoc, /dependencies:/);
-    assert.ok(data.apply.imports.reviewCandidates.length > 0);
-    assert.deepEqual(data.apply.imports.relations, []);
+    assert.equal(data.apply.mode, 'review');
+    assert.equal(data.apply.apply, false);
+    assert.equal(data.apply.writeEligible, false);
+    assert.equal(data.apply.reason, 'approval_required');
+    assert.equal(data.apply.next.writes, 0);
+    assert.equal(existsSyncTest(join(vault, 'bs-app.md')), false);
+    assert.equal(existsSyncTest(join(vault, 'capabilities', 'auth.md')), false);
   } finally {
     rmSync(vault, { recursive: true, force: true });
     rmSync(repo, { recursive: true, force: true });
   }
 });
 
-await test('bootstrap --skip-imports — labels row-level failures without slug or relation shape', async () => {
+await test('bootstrap --skip-imports — does not invoke semantic batch writers before approval', async () => {
   const vault = withVault([]);
   const repo = makeFullRepo();
   const fakeMcp = join(vault, 'fake-mcp-bootstrap-row-labels.mjs');
@@ -8957,18 +9282,19 @@ await test('bootstrap --skip-imports — labels row-level failures without slug 
     const r = await run(['bootstrap', repo, '--vault', vault, '--skip-imports'], {
       env: { OATLAS_MCP_PATH: fakeMcp },
     });
-    assert.equal(r.code, 1, `stdout: ${r.stdout}\nstderr: ${r.stderr}`);
+    assert.equal(r.code, 3, `stdout: ${r.stdout}\nstderr: ${r.stderr}`);
     const clean = stripAnsi(r.stdout);
-    assert.match(clean, /✗ concept concepts\[0\] · concepts\[0\] missing slug/);
-    assert.match(clean, /✗ suggested relations\[0\] · relations\[0\] missing source/);
+    assert.match(clean, /approval required/);
+    assert.match(clean, /writes: 0/);
     assert.doesNotMatch(clean, /undefined/);
+    assert.equal(existsSyncTest(join(vault, 'demo.md')), false);
   } finally {
     rmSync(vault, { recursive: true, force: true });
     rmSync(repo, { recursive: true, force: true });
   }
 });
 
-await test('bootstrap — fails closed when add_concepts response rows drift', async () => {
+await test('bootstrap — approval gate prevents add_concepts response drift from becoming a write', async () => {
   const vault = withVault([]);
   const repo = makeFullRepo();
   const fakeMcp = join(vault, 'fake-mcp-bootstrap-concepts-drift.mjs');
@@ -8997,19 +9323,19 @@ await test('bootstrap — fails closed when add_concepts response rows drift', a
     'utf-8',
   );
   try {
-    const r = await run(['bootstrap', repo, '--vault', vault], {
+    const r = await run(['bootstrap', repo, '--vault', vault, '--skip-imports'], {
       env: { OATLAS_MCP_PATH: fakeMcp },
     });
-    assert.equal(r.code, 2, `stdout: ${r.stdout}\nstderr: ${r.stderr}`);
-    assert.equal(r.stdout, '');
-    assert.match(stripAnsi(r.stderr), /add_concepts\.concepts\[0\]\.ok must be a boolean/);
+    assert.equal(r.code, 3, `stdout: ${r.stdout}\nstderr: ${r.stderr}`);
+    assert.match(stripAnsi(r.stdout), /approval required/);
+    assert.equal(existsSyncTest(join(vault, 'demo.md')), false);
   } finally {
     rmSync(vault, { recursive: true, force: true });
     rmSync(repo, { recursive: true, force: true });
   }
 });
 
-await test('bootstrap — fails closed when add_relations response rows drift', async () => {
+await test('bootstrap — approval gate prevents add_relations response drift from becoming a write', async () => {
   const vault = withVault([]);
   const repo = makeFullRepo();
   const fakeMcp = join(vault, 'fake-mcp-bootstrap-relations-drift.mjs');
@@ -9043,54 +9369,52 @@ await test('bootstrap — fails closed when add_relations response rows drift', 
     'utf-8',
   );
   try {
-    const r = await run(['bootstrap', repo, '--vault', vault], {
+    const r = await run(['bootstrap', repo, '--vault', vault, '--skip-imports'], {
       env: { OATLAS_MCP_PATH: fakeMcp },
     });
-    assert.equal(r.code, 2, `stdout: ${r.stdout}\nstderr: ${r.stderr}`);
-    assert.equal(r.stdout, '');
-    assert.match(stripAnsi(r.stderr), /add_relations\.relations\[0\]\.to must be a non-empty string/);
+    assert.equal(r.code, 3, `stdout: ${r.stdout}\nstderr: ${r.stderr}`);
+    assert.match(stripAnsi(r.stdout), /approval required/);
+    assert.equal(existsSyncTest(join(vault, 'demo.md')), false);
   } finally {
     rmSync(vault, { recursive: true, force: true });
     rmSync(repo, { recursive: true, force: true });
   }
 });
 
-await test('bootstrap 두번째 실행 — grown vault는 plan-only로 보호한다', async () => {
+await test('bootstrap 두번째 실행 — repeated review remains approval-gated and write-free', async () => {
   const vault = withVault([]);
   const repo = makeFullRepo();
   try {
     const r1 = await run(['bootstrap', repo, '--vault', vault]);
-    assert.equal(r1.code, 0);
-    const before = readFileSync(join(vault, 'capabilities', 'auth.md'), 'utf-8');
+    assert.equal(r1.code, 3);
     const r2 = await run(['bootstrap', repo, '--vault', vault, '--json']);
-    assert.equal(r2.code, 0, `2nd run failed: ${r2.stdout}`);
+    assert.equal(r2.code, 3, `2nd run failed: ${r2.stdout}`);
     const data = JSON.parse(r2.stdout);
-    assert.equal(data.mode, 'plan');
+    assert.equal(data.mode, 'review');
     assert.equal(data.apply, false);
-    assert.equal(data.guard.reason, 'vault-already-grown');
+    assert.equal(data.writeEligible, false);
+    assert.equal(data.reason, 'approval_required');
     assert.equal(data.plan.concepts, 3);
-    assert.equal(
-      readFileSync(join(vault, 'capabilities', 'auth.md'), 'utf-8'),
-      before,
-      'repeat bootstrap must not rewrite curated docs',
-    );
+    assert.equal(existsSyncTest(join(vault, 'capabilities', 'auth.md')), false);
   } finally {
     rmSync(vault, { recursive: true, force: true });
     rmSync(repo, { recursive: true, force: true });
   }
 });
 
-await test('bootstrap --reapply — grown vault에 명시적으로 재적용한다', async () => {
+await test('bootstrap --reapply — explicit reapply flag cannot bypass semantic approval', async () => {
   const vault = withVault([]);
   const repo = makeFullRepo();
   try {
-    assert.equal((await run(['bootstrap', repo, '--vault', vault])).code, 0);
+    assert.equal((await run(['bootstrap', repo, '--vault', vault])).code, 3);
     const r = await run(['bootstrap', repo, '--vault', vault, '--reapply', '--json']);
-    assert.equal(r.code, 0, `stdout: ${r.stdout}\nstderr: ${r.stderr}`);
+    assert.equal(r.code, 3, `stdout: ${r.stdout}\nstderr: ${r.stderr}`);
     const data = JSON.parse(r.stdout);
-    assert.equal(data.mode, 'apply');
-    assert.equal(data.apply, true);
-    assert.equal(data.summary.errors, 0);
+    assert.equal(data.mode, 'review');
+    assert.equal(data.apply, false);
+    assert.equal(data.writeEligible, false);
+    assert.equal(data.reason, 'approval_required');
+    assert.equal(data.next.writes, 0);
   } finally {
     rmSync(vault, { recursive: true, force: true });
     rmSync(repo, { recursive: true, force: true });

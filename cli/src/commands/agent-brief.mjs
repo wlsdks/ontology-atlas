@@ -97,7 +97,7 @@ export async function runAgentBrief(args) {
     return readinessExitCode(result, exitZero);
   }
   if (prompt) {
-    process.stdout.write(result.handoffPrompt.trimEnd() + '\n');
+    process.stdout.write(normalizeHandoffPrompt(result).trimEnd() + '\n');
     return readinessExitCode(result, exitZero);
   }
   if (graphDbPack) {
@@ -395,6 +395,7 @@ function formatGraphDbCliPack(result, vaultRoot) {
   const selfCheckCommand = graphDbWithFlags(`${cliInvocation()} agent-brief ${graphDbShellQuote(vaultRoot)}`, [
     '--verify-fallbacks',
     '--json',
+    '--exit-zero',
     '--fallback-timeout-ms 15000',
     '--fallback-slow-ms 5000',
     '--fallback-concurrency 4',
@@ -426,6 +427,22 @@ function formatGraphDbCliPack(result, vaultRoot) {
       command,
     ]),
   ].join('\n');
+}
+
+// The MCP handoff prompt is generated before the project-meaning overlay is
+// attached in the server boundary. Keep the copy-only CLI surface truthful by
+// replacing its single readiness line with the categorical result returned by
+// the same call. This avoids a stale "healthy/ready/100" prompt on an
+// unassessed or invalid meaning graph.
+function normalizeHandoffPrompt(result) {
+  const readiness = result?.readiness ?? {};
+  const graph = result?.graph ?? {};
+  const status = typeof result?.status === 'string' ? result.status : 'unknown';
+  const readinessStatus = typeof readiness.status === 'string' ? readiness.status : 'unknown';
+  const score = Number.isFinite(readiness.score) ? readiness.score : 0;
+  const line = `Current readiness: ${readinessStatus} ${score}/100; graph ${graph.nodes ?? 0} nodes, ${graph.edges ?? 0} edges; status ${status}.`;
+  const prompt = typeof result?.handoffPrompt === 'string' ? result.handoffPrompt : '';
+  return prompt.replace(/^Current readiness: .*$/m, line);
 }
 
 function formatModeGuideComments(result) {

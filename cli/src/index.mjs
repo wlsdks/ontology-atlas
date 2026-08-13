@@ -32,6 +32,13 @@ import { closestAllowedValue, formatUnknownFlagError } from './lib/cli-args.mjs'
 import { readMcpPackageMetadata } from './lib/mcp-metadata.mjs';
 import { runBootstrap } from './commands/bootstrap.mjs';
 import { stampInitCompleted } from './lib/telemetry.mjs';
+import {
+  repairCodexConfigText,
+  repairMcpJsonText,
+  writeCurrentCodexMergeTemplate,
+  writeCurrentMcpMergeTemplate,
+  writeTextAtomically,
+} from './lib/agent-config.mjs';
 
 // 화면에 찍는 **실행용** 명령의 접두사. 이 파일이 안내하는 명령은 붙여 넣으면
 // 실제로 돌아야 한다 — 자세한 규율은 `lib/self-invocation.mjs`.
@@ -404,15 +411,16 @@ async function runInit(targetArg, opts = {}) {
   if (skipped > 0) {
     warn(`${skipped} existing file(s) preserved (not overwritten)`);
   }
+  const clientBindingIssues = [];
 
   // .mcp.json — wired to *this* vault. Two locations covered:
   //   1. cwd (codebase root) — typical "open myproject in Claude Code" flow.
   //      OATLAS_VAULT points to the vault sub-folder relative to cwd.
   //   2. vault target — for "open the vault folder itself in Claude Code"
   //      flow. OATLAS_VAULT='.' (vault is cwd).
-  // Existing .mcp.json in either location is preserved (user might have
-  // other servers wired) — a `.mcp.json.example` is dropped instead so the
-  // user can diff and merge by hand.
+  // Existing parseable configs keep every unrelated server/section while the
+  // single ontology-atlas binding is moved to this requested vault. Malformed
+  // or ambiguous configs remain untouched and receive a merge example.
   function mcpConfigForVault(omotVault, repoRoot) {
     return {
       mcpServers: {
@@ -430,15 +438,24 @@ async function runInit(targetArg, opts = {}) {
     const mcpJsonText =
       JSON.stringify(mcpConfigForVault(omotVault, repoRoot), null, 2) + '\n';
     if (!existsSync(mcpJson)) {
-      writeFileSync(mcpJson, mcpJsonText);
+      writeTextAtomically(mcpJson, mcpJsonText);
       ok(`  ${label}/.mcp.json (OATLAS_VAULT=${omotVault})`);
     } else {
-      warn(
-        `  ${label}/.mcp.json already exists: preserved (manual merge if needed)`,
+      const repaired = repairMcpJsonText(
+        readFileSync(mcpJson, 'utf-8'),
+        mcpConfigForVault(omotVault, repoRoot),
       );
-      if (!existsSync(mcpExample)) {
-        writeFileSync(mcpExample, mcpJsonText);
-        ok(`  ${label}/.mcp.json.example`);
+      if (repaired.ok) {
+        writeTextAtomically(mcpJson, repaired.text);
+        ok(`  ${label}/.mcp.json ${repaired.action} (OATLAS_VAULT=${omotVault})`);
+      } else {
+        warn(`  ${label}/.mcp.json is ambiguous or invalid: preserved (manual merge required)`);
+        clientBindingIssues.push(`${label}/.mcp.json`);
+        const template = writeCurrentMcpMergeTemplate(
+          mcpExample,
+          mcpConfigForVault(omotVault, repoRoot),
+        );
+        ok(`  ${template.path} (current vault merge template)`);
       }
     }
   }
@@ -464,14 +481,28 @@ async function runInit(targetArg, opts = {}) {
   function writeCodexConfig(dir, omotVault, repoRoot, label) {
     const codexDir = join(dir, '.codex');
     const codexConfig = join(codexDir, 'config.toml');
+    const codexExample = join(codexDir, 'config.toml.example');
     if (!existsSync(codexDir)) mkdirSync(codexDir, { recursive: true });
     if (!existsSync(codexConfig)) {
-      writeFileSync(codexConfig, codexConfigForVault(omotVault, repoRoot));
+      writeTextAtomically(codexConfig, codexConfigForVault(omotVault, repoRoot));
       ok(`  ${label}/.codex/config.toml (OATLAS_VAULT=${omotVault})`);
     } else {
-      warn(
-        `  ${label}/.codex/config.toml already exists: preserved (manual merge if needed)`,
+      const repaired = repairCodexConfigText(
+        readFileSync(codexConfig, 'utf-8'),
+        codexConfigForVault(omotVault, repoRoot),
       );
+      if (repaired.ok) {
+        writeTextAtomically(codexConfig, repaired.text);
+        ok(`  ${label}/.codex/config.toml ${repaired.action} (OATLAS_VAULT=${omotVault})`);
+      } else {
+        warn(`  ${label}/.codex/config.toml is ambiguous: preserved (manual merge required)`);
+        clientBindingIssues.push(`${label}/.codex/config.toml`);
+        const template = writeCurrentCodexMergeTemplate(
+          codexExample,
+          codexConfigForVault(omotVault, repoRoot),
+        );
+        ok(`  ${template.path} (current vault merge template)`);
+      }
     }
   }
 
@@ -498,6 +529,14 @@ async function runInit(targetArg, opts = {}) {
     cwdVaultArg = omotRel;
     writeMcpJson(cwdPath, omotRel, '.', 'cwd');
     writeCodexConfig(cwdPath, omotRel, '.', 'cwd');
+  }
+
+  if (clientBindingIssues.length > 0) {
+    stampInitCompleted(target);
+    stdout.write(`\n${COLORS.yellow}${COLORS.bold}scaffolded but client binding unresolved${COLORS.reset}: vault files were created, but ${clientBindingIssues.join(', ')} could not be repaired safely.\n`);
+    stdout.write(`${COLORS.dim}The originals were preserved. Merge the adjacent .example file(s), then run:${COLORS.reset}\n`);
+    stdout.write(`  ${COLORS.cyan}${CLI} agent-setup ${shellQuote(target)} --root ${shellQuote(cwdPath)} --json${COLORS.reset}\n`);
+    return 1;
   }
 
   const codexSetupCommand = [
@@ -544,9 +583,9 @@ ${COLORS.bold}Next steps:${COLORS.reset}
 
   ${COLORS.dim}2.${COLORS.reset} ${COLORS.bold}Bootstrap from your codebase${COLORS.reset} (recommended: agent-less, 1 line):
        ${COLORS.cyan}${analyzeCommand}${COLORS.reset}     ${COLORS.dim}# preview candidates only${COLORS.reset}
-       ${COLORS.cyan}${bootstrapCommand}${COLORS.reset}   ${COLORS.dim}# apply nodes + edges${COLORS.reset}
-       ${COLORS.dim}analyze can apply reviewed concepts + containment; infer-imports stays read-only${COLORS.reset}
-       ${COLORS.dim}and asks for semantic review before one approved dependency write.${COLORS.reset}
+       ${COLORS.cyan}${bootstrapCommand}${COLORS.reset}   ${COLORS.dim}# review candidates, write 0${COLORS.reset}
+       ${COLORS.dim}CLI bootstrap never promotes semantic candidates without an exact qualified plan.${COLORS.reset}
+       ${COLORS.dim}Use a connected agent's ontology-bootstrap flow for review → qualification → human acceptance.${COLORS.reset}
        ${COLORS.dim}--threshold N filters weak import signals from the preview.${COLORS.reset}
 
   ${COLORS.dim}3.${COLORS.reset} ${COLORS.bold}Or add your first node by hand:${COLORS.reset}
@@ -566,6 +605,9 @@ ${COLORS.bold}Next steps:${COLORS.reset}
        ${COLORS.bold}Codex${COLORS.reset}
        Both your codebase root (cwd) and the vault folder now have a wired
        ${COLORS.bold}.codex/config.toml${COLORS.reset}. Open either folder in Codex and restart it.
+       Codex ignores a project-scoped ${COLORS.bold}.codex/config.toml${COLORS.reset} until that folder is
+       ${COLORS.bold}trusted${COLORS.reset}; approve the trust prompt, then run ${COLORS.cyan}codex mcp list${COLORS.reset}
+       from the folder and confirm ${COLORS.bold}ontology-atlas${COLORS.reset} appears before any write.
        For a global Codex config instead, run:
        ${COLORS.cyan}${codexSetupCommand}${COLORS.reset}
        ${COLORS.dim}Codex can store MCP servers globally too, so the command is optional when the repo-local config is enough.${COLORS.reset}
@@ -590,6 +632,18 @@ ${COLORS.dim}AI agents and humans now share the same vault. Have fun.${COLORS.re
 async function runQuickStart({ target, cwdVaultArg }) {
   stdout.write(`\n${COLORS.bold}quick start${COLORS.reset}: bootstrapping from your repo...\n`);
   const bootstrapCode = await runBootstrap(['.', '--vault', cwdVaultArg]);
+
+  if (bootstrapCode === 3) {
+    stdout.write(`
+${COLORS.yellow}${COLORS.bold}quick start review ready${COLORS.reset} — vault scaffolded; semantic writes are blocked until an exact qualified plan is accepted.
+
+${COLORS.bold}Next:${COLORS.reset}
+  ${COLORS.dim}1.${COLORS.reset} Review the printed candidates and connect an agent with ontology-bootstrap.
+  ${COLORS.dim}2.${COLORS.reset} Obtain independent constructionQualification:v1 + human acceptance.
+  ${COLORS.dim}3.${COLORS.reset} Write only the returned exact writePlan.
+`);
+    return bootstrapCode;
+  }
 
   if (bootstrapCode !== 0) {
     const verifyCommand = [

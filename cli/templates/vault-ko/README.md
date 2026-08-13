@@ -48,11 +48,19 @@ https://github.com/wlsdks/ontology-atlas/blob/main/docs/ONTOLOGY-ATLAS-SPEC.md#2
 node <ontology-atlas 체크아웃>/cli/src/index.mjs agent-setup <이 문서함 폴더> --root . --write
 ```
 
-없는 Claude Code / Cursor / Codex 설정 파일만 만들고, 스타터 마크다운을
-추가하거나 기존 설정을 덮어쓰지 않습니다. 직접 병합하려면 `.mcp.json.example`
-을 열어 `OATLAS_VAULT` 자리표시자를 이 문서함의 절대 경로로 바꾼 뒤, 그 서버
+없는 Claude Code / Cursor / Codex 설정 파일을 만들고, 스타터 마크다운은
+추가하지 않습니다. 해석 가능한 기존 파일에서는 `ontology-atlas` 항목만 새
+문서함으로 바꾸며 다른 서버와 섹션은 보존합니다. 잘못되거나 중복된 Atlas 설정은
+건드리지 않습니다. 직접 병합하려면 `.mcp.json.example`을 열어
+`OATLAS_VAULT` 자리표시자를 이 문서함의 절대 경로로 바꾼 뒤, 그 서버
 항목을 에이전트 설정에 복사하세요. CLI 는 체크아웃의 `mcp/src/index.js` 를
 가리키는 `.mcp.json` 과 `.codex/config.toml` 을 만듭니다.
+Codex 는 이 폴더를 trusted 로 승인한 뒤에만 프로젝트 설정을 읽습니다. 신뢰
+요청을 승인하고 이 폴더에서 `codex mcp list` 를 실행해 `ontology-atlas` 가
+보이는지 확인한 뒤 쓰기를 시작하세요.
+해석 가능한 기존 검토 템플릿은 다른 항목을 보존한 채 Atlas 항목만 새 문서함으로
+바꿉니다. 잘못된 템플릿은 보존하고, 현재 연결은 같은 위치의
+`.ontology-atlas-current.example` sidecar 로 따로 만듭니다.
 
 ## 에이전트 연결 확인
 

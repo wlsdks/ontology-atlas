@@ -86,6 +86,26 @@ export const CASES = [
     expected: { frontmatter: { kind: "project" }, body: "" },
   },
   {
+    name: "콜론 없는 frontmatter 선언은 구조 진단",
+    input: "---\nkind: capability\nelements\n  - elements/orphan\n---\n",
+    expected: {
+      frontmatter: { kind: "capability" },
+      body: "",
+      diagnostics: [
+        {
+          code: "malformed-frontmatter-line",
+          line: 3,
+          message: "Frontmatter line 3 must use key: value syntax.",
+        },
+        {
+          code: "malformed-frontmatter-line",
+          line: 4,
+          message: "Frontmatter list item on line 4 has no parent key.",
+        },
+      ],
+    },
+  },
+  {
     name: "value 없는 key — 빈 문자열",
     input: "---\nkind:\n---\n",
     expected: { frontmatter: { kind: "" }, body: "" },

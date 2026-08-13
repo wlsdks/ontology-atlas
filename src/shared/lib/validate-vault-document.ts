@@ -16,6 +16,7 @@ export type VaultIssueSeverity = "error" | "warning";
 
 export type VaultIssueCode =
   | "unclosed-frontmatter"
+  | "malformed-frontmatter-line"
   | "empty-kind"
   | "missing-kind"
   | "unknown-kind"
@@ -107,7 +108,8 @@ export function validateVaultDocument(raw: string): VaultDocumentReport {
     return { ok: true, issues };
   }
 
-  const { frontmatter } = parseFrontmatter(raw);
+  const { frontmatter, diagnostics = [] } = parseFrontmatter(raw);
+  pushFrontmatterDiagnostics(diagnostics, issues);
   const keys = Object.keys(frontmatter);
 
   if (keys.length === 0) {
@@ -158,6 +160,20 @@ export function validateVaultDocument(raw: string): VaultDocumentReport {
   pushNonCanonicalGraphArrayIssues(frontmatter, issues);
 
   return { ok: issuesHaveNoErrors(issues), issues };
+}
+
+function pushFrontmatterDiagnostics(
+  diagnostics: ReadonlyArray<{ code: string; message: string }>,
+  issues: VaultDocumentIssue[],
+): void {
+  for (const diagnostic of diagnostics) {
+    if (diagnostic.code !== "malformed-frontmatter-line") continue;
+    issues.push({
+      code: "malformed-frontmatter-line",
+      severity: "error",
+      message: diagnostic.message,
+    });
+  }
 }
 
 function pushUidIssues(

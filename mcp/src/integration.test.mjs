@@ -464,7 +464,8 @@ await test("tools/list — 단일 도구 description 이 batch 짝을 cross-refe
     assert.equal(getConceptTool?.outputSchema?.type, "object");
     assert.deepEqual(getConceptTool?.outputSchema?.required, ["uid", "slug", "frontmatter", "bodyInfo", "neighbors", "outgoingEdges", "mtime"]);
     assert.equal(getConceptTool?.inputSchema?.properties?.uid?.pattern, "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$");
-    assert.deepEqual(getConceptTool?.inputSchema?.oneOf, [{ required: ["slug"] }, { required: ["uid"] }]);
+    assert.equal(getConceptTool?.inputSchema?.oneOf, undefined, "Claude-compatible input avoids top-level oneOf");
+    assert.match(getConceptTool?.description ?? "", /exactly one selector/i);
     assert.deepEqual(getConceptTool?.inputSchema?.properties?.body?.enum, ["excerpt", "full"]);
     assert.deepEqual(getConceptTool?.outputSchema?.properties?.bodyInfo?.required, ["mode", "totalChars", "returnedChars", "truncated"]);
     assert.equal(getConceptTool?.outputSchema?.additionalProperties, false);
@@ -482,7 +483,8 @@ await test("tools/list — 단일 도구 description 이 batch 짝을 cross-refe
     assert.equal(getConceptsTool?.outputSchema?.additionalProperties, false);
     assert.equal(getConceptsTool?.outputSchema?.properties?.concepts?.type, "array");
     assert.deepEqual(getConceptsTool?.outputSchema?.properties?.concepts?.items?.required, ["ok"]);
-    assert.deepEqual(getConceptsTool?.inputSchema?.oneOf, [{ required: ["slugs"] }, { required: ["uids"] }]);
+    assert.equal(getConceptsTool?.inputSchema?.oneOf, undefined, "Claude-compatible batch input avoids top-level oneOf");
+    assert.match(getConceptsTool?.description ?? "", /exactly one selector array/i);
     assert.equal(getConceptsTool?.outputSchema?.properties?.concepts?.items?.additionalProperties, false);
     assert.equal(getConceptsTool?.outputSchema?.properties?.concepts?.items?.properties?.ok?.type, "boolean");
     assert.equal(getConceptsTool?.outputSchema?.properties?.concepts?.items?.properties?.frontmatter?.type, "object");
@@ -819,7 +821,7 @@ await test("tools/list — 단일 도구 description 이 batch 짝을 cross-refe
     );
     assert.deepEqual(
       inferImports?.outputSchema?.properties?.nextReview?.properties?.decision?.properties?.questionEligibility?.enum,
-      ["eligible_after_semantic_review", "additional_product_meaning_evidence_required"],
+      ["blocked_missing_vault_endpoints", "eligible_after_semantic_review", "additional_product_meaning_evidence_required"],
     );
     assert.deepEqual(inferImports?.outputSchema?.properties?.nextReview?.properties?.cursor?.required, ["afterReviewId", "total", "remaining", "hasMore", "nextAfterReviewId"]);
     assert.match(
@@ -2798,7 +2800,11 @@ await test("infer_imports auto delivery — oversized omitted calls compact, exp
     assert.equal(automatic.contract, "inferImportsReview:v1");
     assert.equal(automatic.edges, undefined);
     assert.equal(automatic.moduleEdges, undefined);
-    assert.equal(JSON.stringify(automatic).length < 5_120, true);
+    assert.equal(
+      JSON.stringify(automatic).length < 5_120,
+      true,
+      `automatic compact response was ${JSON.stringify(automatic).length} bytes`,
+    );
     assert.deepEqual(automatic.delivery, {
       selection: "automatic_compact",
       reason: "estimated_full_response_exceeds_limit",
@@ -3036,6 +3042,44 @@ await test("infer_imports reviewMode next — fresh vault returns one endpoint-m
     assert.equal(JSON.stringify(result).length < 5_120, true);
     assert.equal(result.nextReview.candidate.from, "capabilities/alpha");
     assert.equal(result.nextReview.candidate.to, "capabilities/beta");
+    assert.deepEqual(result.nextReview.candidate.absentEndpoints, [
+      "capabilities/alpha",
+      "capabilities/beta",
+    ]);
+    assert.deepEqual(result.nextReview.nextCalls, []);
+    assert.equal(result.nextReview.decision.questionEligibility, "blocked_missing_vault_endpoints");
+    assert.equal(result.nextReview.endpointModelling.analysisCall.tool, "analyze_repo_structure");
+    assert.deepEqual(result.nextReview.endpointModelling.analysisCall.arguments, { rootPath: repoRoot });
+    assert.deepEqual(result.nextReview.endpointModelling.proposalValidation.requiredArguments, ["rootPath", "proposal"]);
+    assert.deepEqual(result.nextReview.endpointModelling.proposalValidation.fieldsAfterKindDecision, {
+      common: ["slug", "title", "definition", "evidence", "confidence"],
+      byKind: {
+        project: [],
+        domain: [],
+        capability: ["domain"],
+        element: ["domain", "path"],
+      },
+    });
+    assert.equal(result.nextReview.endpointModelling.proposalValidation.endpointDrafts.length, 2);
+    assert.deepEqual(
+      result.nextReview.endpointModelling.proposalValidation.endpointDrafts.map((draft) => ({
+        endpoint: draft.endpoint,
+        slugCandidate: draft.slugCandidate,
+      })),
+      [
+        { endpoint: "capabilities/alpha", slugCandidate: "capabilities/alpha" },
+        { endpoint: "capabilities/beta", slugCandidate: "capabilities/beta" },
+      ],
+    );
+    assert.ok(result.nextReview.endpointModelling.proposalValidation.endpointDrafts.every(
+      (draft) => draft.kindDecision === "human_meaning_required",
+    ));
+    assert.equal(result.nextReview.endpointModelling.resumeCall.tool, "infer_imports");
+    assert.deepEqual(result.nextReview.endpointModelling.resumeCall.arguments, {
+      rootPath: repoRoot,
+      reviewMode: "next",
+    });
+    assert.equal(result.nextReview.endpointModelling.observedPathsByEndpoint.length, 2);
     assert.ok(result.nextReview.decision.required.includes("vault_endpoints"));
     assert.match(result.nextReview.decision.ask, /model.*endpoint.*before.*approval/i);
     assert.equal(result.nextReview.writeAllowed, false);
@@ -4123,7 +4167,8 @@ await test("query_ontology health/workspace_brief — validator findings cannot 
     assert.equal(agentBrief.status, "needs_attention");
     assert.equal(agentBrief.readiness.status, "needs_attention");
     assert.equal(agentBrief.readiness.score, 75);
-    assert.equal(agentBrief.nextActions[0].id, "vault_validation");
+    assert.equal(agentBrief.nextActions[0].id, "meaning_assessment");
+    assert.equal(agentBrief.nextActions.find((action) => action.id === "vault_validation").kind, "validate_vault");
   } finally {
     rmSync(root, { recursive: true, force: true });
   }
@@ -6471,6 +6516,10 @@ await test("MCP write tools — finalize project meaning survives a fresh MCP pr
     ]);
     const brief = getCallParsed(second.responses, 2);
     assert.equal(brief.meaningAssessment.status, "review_required");
+    assert.equal(brief.status, "needs_attention");
+    assert.equal(brief.readiness.status, "needs_attention");
+    assert.ok(brief.readiness.score < 100);
+    assert.ok(brief.nextActions.some((action) => action.id === "meaning_assessment"));
     assert.equal(brief.meaningAssessment.dimensions.competency.status, "answered");
     assert.equal(brief.meaningAssessment.dimensions.source.currentness, "unavailable");
     assert.equal(JSON.stringify(brief.meaningAssessment).includes("src/search.ts"), false);

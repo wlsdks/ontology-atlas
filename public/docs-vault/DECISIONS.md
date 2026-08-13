@@ -42,6 +42,135 @@
 
 ---
 
+## 2026-08-13 (3) — 올바른 vault binding이 후보 복구보다 먼저다 · 100+는 생성 목표가 아니다
+
+### 관찰된 현상
+
+같은 codebase cwd에서 `init vault-a` 뒤 `init vault-b`를 실행하면 두 번째 vault의
+로컬 설정은 생겨도 cwd의 `.mcp.json`과 `.codex/config.toml`은 첫 vault를 계속
+가리켰다. `agent-setup --write`도 stale Atlas entry를 고치지 않고 example만 남겼다.
+따라서 fresh Claude Code/Codex가 0 tools 또는 wrong vault로 시작할 수 있고, 그
+상태에서 얻은 MCP 품질 증거는 대상부터 틀릴 수 있다.
+
+별개로 `infer_imports` reconciliation 원본에는 후보별 `absentEndpoints`가 있지만
+compact `nextRelationReview:v1.candidate`에서 사라졌다. 없는 slug에도
+`get_concepts`와 `relation_check`를 제시하면서 “먼저 모델링하라”는 문장만 남겼다.
+Refined-scale 실험의 874 review candidates / 253 endpoints는 bounded discovery를
+증명했지만 semantic write는 0이었으므로 100+ 의미 ontology 품질 증거가 아니다.
+
+### 2회전 PO Council과 판정
+
+| Rubric row | 점수 | 서명 | 근거 |
+|---|---:|---|---|
+| Problem insight | 3/4 | po-evidence · 근거 | wrong-vault와 missing-endpoint dead call은 재현됨. 100+는 아직 문제 증거가 아니라 qualification 조건이다. |
+| User moment | 3/4 | po-evidence · 근거 | 같은 cwd에서 두 번째 fresh vault를 여는 FDE/agent 순간은 구체적이나 실제 조직 반복 사용은 아직 미측정이다. |
+| Differentiation | 3/4 | po-wedge · 해자 | A/B는 hygiene다. exact acceptance와 source-hidden 변경 판단이 규모에서도 재사용될 때만 해자가 된다. |
+| Ontology value | 4/4 | po-steward · 지킴이 | active vault identity와 endpoint→proposal→relation update path를 명시한다. |
+| Agent value | 4/4 | po-steward · 지킴이 | agent가 올바른 vault와 실행 가능한 비쓰기 복구를 받고, missing slug를 읽거나 자동 승격하지 않는다. |
+| Verification | 3/4 | po-craft · 결 | unit/stdio만으로 끝내지 않고 두 client·두 launch shape·source-hidden trial을 요구한다. 이 기록 시점에는 그 runtime proof가 pending이다. |
+
+합계 **20/24**, fatal zero 없음. 다섯 자리의 최종 수렴은 **Shape a slice**:
+
+1. **B — binding identity**: parseable config에서 정확히 `ontology-atlas` JSON entry /
+   TOML section pair만 원자적으로 merge/rebind한다. 다른 server·section·comment는
+   보존한다. invalid JSON, duplicate/incomplete Atlas TOML은 덮지 않고 example +
+   nonzero review로 닫는다. repeated `init`도 같은 규칙이며 ambiguous하면
+   `scaffolded but client binding unresolved`이지 연결 완료가 아니다.
+2. **A — candidate-local recovery**: compact candidate가 자신의 `absentEndpoints`,
+   observed paths, exact read-only `analyze_repo_structure` / queue-resume arguments를
+   가진다. missing endpoint에서는 `get_concepts`·`relation_check`·승인 질문이 0이다.
+   path slug로 kind/title/definition을 만들지 않고 focus evidence와 semantic queue를
+   합치지 않는다.
+3. **20–30 calibration**: citation 100%, unsupported assertion 0, exact approval,
+   source-hidden change judgment, baseline 비퇴행이 모두 통과할 때만 조건을 동결한다.
+4. **C — 100+ stress qualification**: 100은 생성 quota가 아니다. 낯선 permissive OSS의
+   정직한 accepted plan이 자연스럽게 100 미만이면 padding하지 않고 미달로 기록한다.
+   통과 시 exact digest acceptance → unchanged writePlan → writes → validate/compile/
+   source connect/finalize → precommitted source-hidden change decisions와 claim audit를
+   모두 닫는다.
+
+**정확한 OUT**: 새 kind/relation/schema · 자동 semantic relation/rationale ·
+one-file/one-folder/README-heading bulk promotion · global config 무단 변경 · server-name
+자동 증식 · focus와 semantic packet 합성 · Rust parser · UI 추가 · node count 단독 성공.
+
+### 가장 강한 패배 논거와 반증 조건
+
+**패배 논거**: A·B·C를 하나의 zero-to-100 tracer로 구현해야 독립 fixture가 놓치는
+설정×packet×qualification 접합 결함을 잡을 수 있다. 나누면 각 gate는 초록인데 실제
+여정은 실패할 수 있다.
+
+**반증 조건**: B와 A의 실제 client/runtime gate가 각각 통과했는데도 첫 동결 C가
+wrong-vault, endpoint recovery 단절, 또는 승인 plan과 write target 불일치라는 두 gate
+사이 상태 전달 때문에 반복 실패하고 그 결함이 독립 gate에서 재현되지 않으면 이 분리
+결정은 틀렸다. 그때 C를 두 계약의 단일 integration release gate로 승격한다. 반대로
+20–30 calibration이 기존 baseline의 정확도와 source-hidden 유용성을 유지하지 못하면
+100+를 중단하고 더 작은 competency-dense ontology가 이긴다.
+
+**서명 (accountable)**: 소유자의 “남은 것 전부 진행” 위임 아래 집행. 각 release
+gate의 통과 주장은 해당 runtime 증거가 생길 때만 한다.
+**상태**: 유효
+
+## 2026-08-13 — 온톨로지 최초 진입을 의미 승인 게이트와 파서 무결성에 묶는다
+
+### 관찰
+
+독립 PO 심의와 fresh MCP field audit에서 두 개의 release blocker를 재현했다.
+
+1. `ontology-atlas index <repo> --vault <vault> --apply --skip-imports`와
+   `--quick-start`가 사람 승인·independent qualification·digest-bound
+   writePlan 없이 semantic domain/capability/element를 생성한다. 구조적으로는
+   `healthy · ready · 100/100 · nextActions=[]`를 내지만
+   `meaningAssessment`는 `invalid`, 5개 CQ는 `unassessed`, source는
+   `not_measured`였다. 이는 `reviewPlan → qualification → human acceptance →
+   unchanged writePlan` 결정과 충돌한다.
+2. YAML frontmatter의 선언 라인에서 콜론을 하나 빼면 parser가 조용히 그 줄과
+   이어진 관계를 버리고, `validate`와 `compile`이 0 issue로 통과한다. 네
+   parser/validator 표면 모두 같은 결함을 가졌다.
+
+### 결정 (집행)
+
+- 최초 CLI 진입의 기본 경로는 **비쓰기 review plan**으로 끝난다.
+  `bootstrap`, `index --apply`, `quick-start`는 exact released plan digest와
+  human acceptance가 없으면 semantic node를 쓰지 못한다. 기존 구조 탐색은
+  후보/진단으로만 남기며, 승인 없는 자동 의미 부여를 성공으로 표현하지 않는다.
+- `agent_brief`와 health/readiness 표면은 `meaningAssessment`가 `invalid`,
+  `needs_evidence`, `review_required` 또는 CQ/source를 측정하지 못한 경우
+  `healthy · ready · 100/100 · nextActions=[]`를 내지 않는다. 사용자에게
+  첫 blocker와 review action을 돌려준다. 구조적 readiness와 의미 readiness를
+  숨은 상태로 합치지 않는다.
+- 네 frontmatter parser는 missing-colon header와 orphan indented list를
+  `malformed-frontmatter-line` 진단으로 보존한다. 동일 진단은 MCP/CLI/UI
+  validator 계약에 들어가며 strict validate/compile/health는 red가 된다.
+  정상 block scalar/list/object/comment는 오탐하지 않는다.
+- `list_concepts`의 100개 무표식 절단과 125-node wire 크기는 실재하지만,
+  이번 P0 집행 범위에는 넣지 않는다. 별도 read-contract 변경으로 다룬다.
+
+### 범위 밖
+
+새 kind·relation·MCP tool·UI surface를 만들지 않는다. 승인 없는 vault write,
+자동 qualification, `list_concepts` pagination, agent-brief payload 축소는 이
+결정의 산출물이 아니다.
+
+### 반증 조건
+
+- 승인 없는 `index --apply`가 review-only로 종료하고 vault가 바이트 불변이며,
+  승인된 exact plan만 write eligibility를 얻는다는 negative/positive probe가
+  모두 통과해야 한다.
+- malformed line의 콜론을 제거한 fixture가 모든 validator에서 red가 되고,
+  복원하면 green으로 돌아와야 한다. 정상 block fixture에서 새 진단이 0이어야
+  한다.
+- 의미가 invalid인 그래프가 top-level healthy/100/empty-next-actions로
+  다시 노출되면 이 결정은 실패로 본다.
+
+**근거**: `/tmp/atlas-mcp-full-audit-UMEZNI/` fresh scratch, PO Council
+23/24 (fatal zero 없음), `docs/ONTOLOGY-ATLAS-SPEC.md`,
+`.agents/skills/ontology-bootstrap/SKILL.md`.
+
+**서명 (accountable)**: jinan 승인 대기
+**상태**: 유효
+
+---
+
 ## 2026-08-13 (2) — 큰 배열의 확인보다 구현 경로 focus가 먼저다
 
 ### 반증 관측

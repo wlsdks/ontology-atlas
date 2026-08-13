@@ -25,6 +25,13 @@ import {
 } from '../lib/cli-args.mjs';
 import { resolveVaultRoot } from '../lib/resolve-vault.mjs';
 import { buildPreCommitHookContent } from '../lib/pre-commit-hook.mjs';
+import {
+  repairCodexConfigText,
+  repairMcpJsonText,
+  writeCurrentCodexMergeTemplate,
+  writeCurrentMcpMergeTemplate,
+  writeTextAtomically,
+} from '../lib/agent-config.mjs';
 
 // 「next checks」는 붙여 넣어 실행하라는 블록이다 — 실행 가능한 자기 호출로만
 // 찍는다(`../lib/self-invocation.mjs`).
@@ -214,6 +221,7 @@ function buildAgentSetup(parsed) {
     missing: files.filter((file) => file.status === 'missing').length,
     review: files.filter((file) => file.status === 'review').length,
     written: files.filter((file) => file.action === 'written').length,
+    repaired: files.filter((file) => file.action === 'merged' || file.action === 'rebound').length,
     examples: files.filter((file) => file.examplePath).length,
   };
 
@@ -229,6 +237,8 @@ function buildAgentSetup(parsed) {
       setupState: `${CLI} agent-setup ${shellQuote(vaultRoot)} --root ${shellQuote(codebaseRoot)} --json`,
       setupRepair: `${CLI} agent-setup ${shellQuote(vaultRoot)} --root ${shellQuote(codebaseRoot)} --write`,
       restartGuidance: `Restart Claude Code, Cursor, or Codex from ${shellQuote(codebaseRoot)} after repair.`,
+      codexTrustGuidance:
+        'Codex loads project-scoped .codex/config.toml only after the folder is trusted; approve the trust prompt, then run `codex mcp list` from that folder and confirm ontology-atlas appears.',
       verify: `${CLI} mcp-verify ${shellQuote(vaultRoot)} --timeout-ms 15000`,
       setupGate: `${CLI} agent-brief ${shellQuote(vaultRoot)} --verify-fallbacks --json --fallback-timeout-ms 15000 --fallback-slow-ms 5000 --fallback-concurrency 4`,
       graphRunbook: buildGraphRunbookCommands(vaultRoot),
@@ -284,13 +294,23 @@ function checkMcpJson(target, serverCommand, write) {
   const status = inspectMcpJson(current, target.omotVault, target.repoRootArg);
   if (status.ready) return row(target, 'mcp-json', path, 'ready', 'none', status.message);
 
+  if (write) {
+    const repaired = repairMcpJsonText(current, expected);
+    if (repaired.ok) {
+      writeTextAtomically(path, repaired.text);
+      return row(target, 'mcp-json', path, 'ready', repaired.action, repaired.message);
+    }
+  }
+
   const examplePath = join(target.root, '.mcp.json.example');
   let action = 'preserved';
-  if (write && !existsSync(examplePath)) {
-    writeFileSync(examplePath, expectedText);
-    action = 'example-written';
+  let surfacedExamplePath = examplePath;
+  if (write) {
+    const result = writeCurrentMcpMergeTemplate(examplePath, expected);
+    action = result.action;
+    surfacedExamplePath = result.path;
   }
-  return row(target, 'mcp-json', path, 'review', action, status.message, examplePath);
+  return row(target, 'mcp-json', path, 'review', action, status.message, surfacedExamplePath);
 }
 
 function checkCodexConfig(target, serverCommand, write) {
@@ -310,14 +330,24 @@ function checkCodexConfig(target, serverCommand, write) {
   const status = inspectCodexConfig(current, target.omotVault, target.repoRootArg);
   if (status.ready) return row(target, 'codex-toml', path, 'ready', 'none', status.message);
 
+  if (write) {
+    const repaired = repairCodexConfigText(current, expectedText);
+    if (repaired.ok) {
+      writeTextAtomically(path, repaired.text);
+      return row(target, 'codex-toml', path, 'ready', repaired.action, repaired.message);
+    }
+  }
+
   const examplePath = join(codexDir, 'config.toml.example');
   let action = 'preserved';
-  if (write && !existsSync(examplePath)) {
+  let surfacedExamplePath = examplePath;
+  if (write) {
     mkdirSync(codexDir, { recursive: true });
-    writeFileSync(examplePath, expectedText);
-    action = 'example-written';
+    const result = writeCurrentCodexMergeTemplate(examplePath, expectedText);
+    action = result.action;
+    surfacedExamplePath = result.path;
   }
-  return row(target, 'codex-toml', path, 'review', action, status.message, examplePath);
+  return row(target, 'codex-toml', path, 'review', action, status.message, surfacedExamplePath);
 }
 
 function row(target, kind, path, status, action, message, examplePath = null) {
@@ -441,7 +471,7 @@ function render(result) {
     `${color}${COLORS.bold}${status}${COLORS.reset} ${COLORS.dim}agent setup${COLORS.reset}` +
       ` · ${summary.ready}/${summary.total} ready` +
       ` · ${summary.missing} missing · ${summary.review} review` +
-      (result.sideEffect ? ` · ${summary.written} written · ${summary.examples} example(s)` : '') +
+      (result.sideEffect ? ` · ${summary.written} written · ${summary.repaired} repaired · ${summary.examples} example(s)` : '') +
       `\n`,
   );
   process.stdout.write(`${COLORS.dim}vault${COLORS.reset} ${result.vaultRoot}\n`);
@@ -462,6 +492,7 @@ function render(result) {
   process.stdout.write(`  ${COLORS.cyan}${result.commands.setupState}${COLORS.reset}\n`);
   process.stdout.write(`  ${COLORS.dim}Repair missing configs only if needed: ${result.commands.setupRepair}${COLORS.reset}\n`);
   process.stdout.write(`  ${COLORS.dim}${result.commands.restartGuidance}${COLORS.reset}\n`);
+  process.stdout.write(`  ${COLORS.dim}${result.commands.codexTrustGuidance}${COLORS.reset}\n`);
   process.stdout.write(`  ${COLORS.cyan}${result.commands.verify}${COLORS.reset}\n`);
   process.stdout.write(`  ${COLORS.cyan}${result.commands.setupGate}${COLORS.reset}\n`);
   process.stdout.write(`  ${COLORS.dim}Global Codex fallback: ${result.commands.codexGlobal}${COLORS.reset}\n`);
@@ -484,7 +515,7 @@ function render(result) {
     process.stdout.write(`  ${COLORS.dim}- ${rule}${COLORS.reset}\n`);
   }
   if (!result.sideEffect && (summary.missing > 0 || summary.review > 0)) {
-    process.stdout.write(`\n${COLORS.dim}Run with --write to create missing files and example templates without overwriting existing configs.${COLORS.reset}\n`);
+    process.stdout.write(`\n${COLORS.dim}Run with --write to create missing files or atomically rebind only the ontology-atlas entry. Unrelated entries are preserved; ambiguous files stay untouched with an example.${COLORS.reset}\n`);
   }
   if (result.preCommitHook) {
     const hook = result.preCommitHook;
@@ -616,6 +647,7 @@ function printUsage(stream = process.stderr) {
       `  ontology-atlas agent-setup [vault] [--root path] [--write] [--json]\n` +
       `                            [--install-pre-commit-hook]\n\n` +
       `Check or repair Claude Code / Cursor .mcp.json and Codex .codex/config.toml files for an existing vault.\n` +
+      `With --write, a parseable single ontology-atlas entry is atomically merged or rebound while unrelated entries stay unchanged; ambiguous files are preserved for manual review.\n` +
       `The JSON and terminal output point to ${WORKFLOW_GUIDE_PATH} for CLI-only, MCP-connected, and graph DB comparison flows.\n` +
       `Default root is cwd. Default vault follows OATLAS_VAULT, ./docs/ontology, then cwd.\n\n` +
       `${COLORS.bold}--install-pre-commit-hook${COLORS.reset}\n` +

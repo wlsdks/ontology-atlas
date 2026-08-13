@@ -2089,7 +2089,9 @@ const TOOLS = [
             '`excerpt` (default) returns the first prose paragraph as `excerpt`. `full` returns the entire markdown body as `body` and omits `excerpt`. Use `full` when the answer depends on what the node actually says — evidence paths, confidence, scope boundaries.',
         },
       },
-      oneOf: [{ required: ['slug'] }, { required: ['uid'] }],
+      // Claude Code's Anthropic tool schema rejects a top-level `oneOf` and
+      // silently drops the whole tool. Both selectors stay optional in the
+      // published schema; getConcept enforces exactly-one at runtime.
     },
     outputSchema: {
       type: 'object',
@@ -2165,7 +2167,8 @@ const TOOLS = [
             'Applies to every row. `excerpt` (default) returns the first prose paragraph per row; `full` returns the entire markdown body per row and caps the batch at 20 slugs.',
         },
       },
-      oneOf: [{ required: ['slugs'] }, { required: ['uids'] }],
+      // Same cross-client boundary as get_concept: keep the published input
+      // schema flat and enforce exactly-one in getConceptsBatch at runtime.
     },
     outputSchema: {
       type: 'object',
@@ -3893,7 +3896,7 @@ const TOOLS = [
       'Structured `coverage` names the supported languages and, when Cargo is detected, states that Rust use/mod and macro dependency graphs are unsupported; zero edges never proves that a Rust repository has no dependencies. ' +
       'side effect 0 (vault frontmatter NOT modified). `moduleEdges` are source-backed review candidates, never self-approving semantic `depends_on` relations. ' +
       'When you know an implementation file, set `focusPath` (or `reviewMode:"focus"`) before considering `full`: Atlas returns bounded exact incoming/outgoing static import receipts, counts, and a cursor without requiring a vault. This focused source boundary is not runtime impact or a semantic relation. ' +
-      'Omit `reviewMode` for size-safe automatic delivery: scans whose estimated full MCP result is at most 128 KiB keep the complete response; larger reconciled scans return exactly one compact, non-writing `nextRelationReview:v1` packet plus a delivery receipt and stateless cursor. Use `reviewMode:"next"` to request that bounded packet explicitly. `reviewMode:"full"` preserves the complete shape, but a result over 128 KiB additionally requires `allowLargeResponse:true`; this second confirmation prevents coding agents from accidentally opting into a multi-megabyte response. Oversized raw scans without a loadable reconciliation vault fail with an actionable error instead of emitting an unbounded default response. On a starter vault the compact path returns one endpoint-modelling candidate rather than hiding the queue or forcing a full response. ' +
+      'Omit `reviewMode` for size-safe automatic delivery: scans whose estimated full MCP result is at most 128 KiB keep the complete response; larger reconciled scans return exactly one compact, non-writing `nextRelationReview:v1` packet plus a delivery receipt and stateless cursor. Use `reviewMode:"next"` to request that bounded packet explicitly. `reviewMode:"full"` preserves the complete shape, but a result over 128 KiB additionally requires `allowLargeResponse:true`; this second confirmation prevents coding agents from accidentally opting into a multi-megabyte response. Oversized raw scans without a loadable reconciliation vault fail with an actionable error instead of emitting an unbounded default response. Every compact candidate carries `absentEndpoints`. If an endpoint is missing, `nextCalls` is empty and `endpointModelling` separates an evidence-only analysis call from the complete `rootPath + proposal` validation contract, source-bound drafts, and queue resume. It never calls `get_concepts` or `relation_check` on a missing slug, never claims the analysis call created an endpoint, and never promotes a path-derived slug into a business kind or definition. ' +
       'Each module edge includes whole-edge source-role/import-usage counts, `productValueCount`, `kindCounts`, and a bounded exact file-edge `evidence` receipt. Missing vault edges remain `rationale_review_required`: inspect both concepts and the observed direction, ask the user, then call `add_relation` with an explicit `why`. Test-only or type-only evidence stays visible but must not be framed as a product depends_on approval question without separate product meaning evidence. ' +
       'Detects:\n' +
       '  - relative imports (./, ../) → resolved to file paths\n' +
@@ -4236,6 +4239,12 @@ const TOOLS = [
                 from: NON_BLANK_STRING_SCHEMA,
                 to: NON_BLANK_STRING_SCHEMA,
                 relationType: { type: 'string', enum: ['depends_on'] },
+                absentEndpoints: {
+                  type: 'array',
+                  maxItems: 2,
+                  uniqueItems: true,
+                  items: NON_BLANK_STRING_SCHEMA,
+                },
                 importCount: { type: 'integer', minimum: 0 },
                 sourceEvidence: {
                   type: 'array',
@@ -4294,6 +4303,7 @@ const TOOLS = [
                 'from',
                 'to',
                 'relationType',
+                'absentEndpoints',
                 'importCount',
                 'sourceEvidence',
                 'sourceEvidenceLimited',
@@ -4301,9 +4311,158 @@ const TOOLS = [
               ],
               additionalProperties: false,
             },
+            endpointModelling: {
+              type: ['object', 'null'],
+              properties: {
+                status: { type: 'string', enum: ['required_before_relation_review'] },
+                writeAllowed: { type: 'boolean', enum: [false] },
+                absentEndpoints: {
+                  type: 'array',
+                  minItems: 1,
+                  maxItems: 2,
+                  uniqueItems: true,
+                  items: NON_BLANK_STRING_SCHEMA,
+                },
+                observedPathsByEndpoint: {
+                  type: 'array',
+                  minItems: 1,
+                  maxItems: 2,
+                  items: {
+                    type: 'object',
+                    properties: {
+                      endpoint: NON_BLANK_STRING_SCHEMA,
+                      paths: { type: 'array', uniqueItems: true, items: NON_BLANK_STRING_SCHEMA },
+                    },
+                    required: ['endpoint', 'paths'],
+                    additionalProperties: false,
+                  },
+                },
+                analysisCall: {
+                  type: 'object',
+                  properties: {
+                    tool: { type: 'string', enum: ['analyze_repo_structure'] },
+                    arguments: {
+                      type: 'object',
+                      properties: { rootPath: NON_BLANK_STRING_SCHEMA },
+                      required: ['rootPath'],
+                      additionalProperties: false,
+                    },
+                    purpose: NON_BLANK_STRING_SCHEMA,
+                  },
+                  required: ['tool', 'arguments', 'purpose'],
+                  additionalProperties: false,
+                },
+                proposalValidation: {
+                  type: 'object',
+                  properties: {
+                    tool: { type: 'string', enum: ['analyze_repo_structure'] },
+                    requiredArguments: {
+                      type: 'array',
+                      minItems: 2,
+                      maxItems: 2,
+                      uniqueItems: true,
+                      items: { type: 'string', enum: ['rootPath', 'proposal'] },
+                    },
+                    requiredProposalFields: {
+                      type: 'array',
+                      minItems: 6,
+                      maxItems: 6,
+                      uniqueItems: true,
+                      items: {
+                        type: 'string',
+                        enum: ['project', 'domains', 'capabilities', 'elements', 'relations', 'competencyAnswers'],
+                      },
+                    },
+                    fieldsAfterKindDecision: {
+                      type: 'object',
+                      properties: {
+                        common: {
+                          type: 'array',
+                          minItems: 5,
+                          maxItems: 5,
+                          uniqueItems: true,
+                          items: { type: 'string', enum: ['slug', 'title', 'definition', 'evidence', 'confidence'] },
+                        },
+                        byKind: {
+                          type: 'object',
+                          properties: {
+                            project: { type: 'array', maxItems: 0 },
+                            domain: { type: 'array', maxItems: 0 },
+                            capability: {
+                              type: 'array',
+                              minItems: 1,
+                              maxItems: 1,
+                              items: { type: 'string', enum: ['domain'] },
+                            },
+                            element: {
+                              type: 'array',
+                              minItems: 2,
+                              maxItems: 2,
+                              uniqueItems: true,
+                              items: { type: 'string', enum: ['domain', 'path'] },
+                            },
+                          },
+                          required: ['project', 'domain', 'capability', 'element'],
+                          additionalProperties: false,
+                        },
+                      },
+                      required: ['common', 'byKind'],
+                      additionalProperties: false,
+                    },
+                    endpointDrafts: {
+                      type: 'array',
+                      minItems: 1,
+                      maxItems: 2,
+                      items: {
+                        type: 'object',
+                        properties: {
+                          endpoint: NON_BLANK_STRING_SCHEMA,
+                          observedPaths: { type: 'array', uniqueItems: true, items: NON_BLANK_STRING_SCHEMA },
+                          slugCandidate: NON_BLANK_STRING_SCHEMA,
+                          kindDecision: { type: 'string', enum: ['human_meaning_required'] },
+                        },
+                        required: ['endpoint', 'observedPaths', 'slugCandidate', 'kindDecision'],
+                        additionalProperties: false,
+                      },
+                    },
+                    purpose: NON_BLANK_STRING_SCHEMA,
+                  },
+                  required: ['tool', 'requiredArguments', 'requiredProposalFields', 'fieldsAfterKindDecision', 'endpointDrafts', 'purpose'],
+                  additionalProperties: false,
+                },
+                resumeCall: {
+                  type: 'object',
+                  properties: {
+                    tool: { type: 'string', enum: ['infer_imports'] },
+                    arguments: {
+                      type: 'object',
+                      properties: {
+                        rootPath: NON_BLANK_STRING_SCHEMA,
+                        reviewMode: { type: 'string', enum: ['next'] },
+                      },
+                      required: ['rootPath', 'reviewMode'],
+                      additionalProperties: false,
+                    },
+                    purpose: NON_BLANK_STRING_SCHEMA,
+                  },
+                  required: ['tool', 'arguments', 'purpose'],
+                  additionalProperties: false,
+                },
+              },
+              required: [
+                'status',
+                'writeAllowed',
+                'absentEndpoints',
+                'observedPathsByEndpoint',
+                'analysisCall',
+                'proposalValidation',
+                'resumeCall',
+              ],
+              additionalProperties: false,
+            },
             nextCalls: {
               type: 'array',
-              minItems: 2,
+              minItems: 0,
               maxItems: 2,
               items: {
                 type: 'object',
@@ -4322,6 +4481,7 @@ const TOOLS = [
                 questionEligibility: {
                   type: 'string',
                   enum: [
+                    'blocked_missing_vault_endpoints',
                     'eligible_after_semantic_review',
                     'additional_product_meaning_evidence_required',
                   ],
@@ -4354,6 +4514,7 @@ const TOOLS = [
             'sourceQualification',
             'ordering',
             'candidate',
+            'endpointModelling',
             'nextCalls',
             'decision',
             'cursor',
@@ -7548,13 +7709,61 @@ function attachProjectMeaning(agentBrief, artifact) {
     agentBrief.projectSlug,
     agentBrief.readiness?.status,
   );
+  const meaningIsCurrent = context.meaningAssessment?.status === 'verified_current';
+  const meaningAction = meaningIsCurrent
+    ? null
+    : {
+      id: 'meaning_assessment',
+      kind: 'meaning_assessment',
+      // An unbuilt/uncalibrated ontology is an actionable review state, not a
+      // transport failure. Keep the agent out of the green lane without
+      // making first-contact MCP verification impossible on a fresh vault.
+      severity: 'warn',
+      count: 1,
+      target: context.meaningAssessment?.topGap?.id ?? 'assessment_input_invalid',
+      message:
+        'Meaning evidence is not current and complete; review the assessment before treating structural readiness as ontology readiness.',
+    };
+  const adjustedBrief = meaningIsCurrent
+    ? {
+      ...agentBrief,
+      projectSource: context.projectSource,
+      projectSourceRemedy: projectSourceRemedy(context.projectSource),
+      meaningAssessment: context.meaningAssessment,
+    }
+    : {
+      ...agentBrief,
+      status: 'needs_attention',
+      readiness: {
+        ...agentBrief.readiness,
+        status: agentBrief.readiness?.status === 'ready'
+          ? 'needs_attention'
+          : agentBrief.readiness?.status,
+        score: Math.min(agentBrief.readiness?.score ?? 0, 75),
+      },
+      health: {
+        ...agentBrief.health,
+        status: 'needs_attention',
+        checks: [
+          ...(Array.isArray(agentBrief.health?.checks) ? agentBrief.health.checks : []),
+          {
+            id: 'meaning_assessment',
+            status: 'warn',
+            count: 1,
+            message: meaningAction.message,
+          },
+        ],
+      },
+      nextActions: [
+        meaningAction,
+        ...(Array.isArray(agentBrief.nextActions) ? agentBrief.nextActions : []),
+      ],
+      projectSource: context.projectSource,
+      projectSourceRemedy: projectSourceRemedy(context.projectSource),
+      meaningAssessment: context.meaningAssessment,
+    };
   return attachMeaningRepair({
-    ...agentBrief,
-    projectSource: context.projectSource,
-    // The diagnosis has always named an action. This is the same name turned
-    // into a call an agent can make and a screen can render as one button.
-    projectSourceRemedy: projectSourceRemedy(context.projectSource),
-    meaningAssessment: context.meaningAssessment,
+    ...adjustedBrief,
   }, context.meaningRepair);
 }
 
@@ -8640,6 +8849,7 @@ function inferImportsTool({
     }
     const nextReview = buildNextImportRelationReview(result.reconciliation, {
       afterReviewId: afterReviewId ?? null,
+      rootPath: result.rootPath,
     });
       return {
         contract: 'inferImportsReview:v1',

@@ -7,6 +7,18 @@
 
 ---
 
+## 2026-08-13 · 최초 온톨로지 생성은 구조 무결성과 의미 승인을 통과해야 한다
+
+- malformed frontmatter 선언과 부모 없는 목록 항목을 공통 parser 진단으로 보존하고,
+  CLI·MCP·런타임 validator와 compiler가 구조 오류로 보고하도록 했다.
+- cold-start `bootstrap`, `index --apply`, `init --quick-start`는 이제 review-only다.
+  `constructionQualification:v1`·human acceptance·동일 digest의 writePlan 없이 semantic
+  node/relation을 쓰지 않고 `approval_required`와 `writes:0`을 반환한다.
+- 의미 평가가 invalid/needs_evidence/review_required이면 agent brief가 healthy/ready/100으로
+  포장되지 않고 needs_attention으로 표시된다.
+- 새 Node24 fresh web/app build와 MCP/CLI integration gate로 no-write·parser red/green·앱
+  smoke를 검증했다. 앱 release 서명 키와 기존 performance budget은 별도 release 결정이다.
+
 ## 2026-08-13 · 대형 import graph는 검토 가능한 크기로 전달된다
 
 낯선 Python·TypeScript 오픈소스를 fresh Codex와 Claude Code로 0부터 분석하자,
