@@ -2170,6 +2170,15 @@ function DocsVaultContent() {
           <span className="min-w-0 flex-1 truncate">
             {t('vaultStatus.missingSlugBanner', { slug: missingQuerySlug })}
           </span>
+          {selectedDoc ? (
+            <Link
+              href={getDocHref(selectedDoc.slug)}
+              data-testid="docs-missing-slug-fallback"
+              className={controlClass({ shape: 'link', tone: 'secondary', className: 'shrink-0 text-label' })}
+            >
+              {t('vaultStatus.openFallback')}
+            </Link>
+          ) : null}
         </div>
       ) : null}
 

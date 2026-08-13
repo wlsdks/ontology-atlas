@@ -143,14 +143,14 @@ describe("evaluateDogfoodGate", () => {
     duplicateInventory.tools.push(duplicateInventory.tools.find((tool) => tool.name === "list_concepts"));
     assert.deepEqual(
       evaluateDogfoodGate({ ...okShape, toolsList: duplicateInventory }),
-      ["tools/list: tools mismatch — missing: (none), extra: (none), duplicates: list_concepts, invalidNames: 0"],
+      ["tools/list: tools mismatch: missing: (none), extra: (none), duplicates: list_concepts, invalidNames: 0"],
     );
     const invalidInventory = makeDogfoodToolsList();
     invalidInventory.tools.push({ name: "" }, {});
     assert.deepEqual(
       evaluateDogfoodGate({ ...okShape, toolsList: invalidInventory }),
       [
-        "tools/list: tools mismatch — missing: (none), extra: (none), duplicates: (none), invalidNames: 2",
+        "tools/list: tools mismatch: missing: (none), extra: (none), duplicates: (none), invalidNames: 2",
         "tools/list: tools/list schema missing additionalProperties:false: (unknown)",
       ],
     );
@@ -1266,7 +1266,7 @@ describe("evaluateDogfoodGate", () => {
           },
         },
       }),
-      ["add_relations_batch_cap: add_relations batch cap structured error code mismatch — expected invalid_arguments, got unknown_argument"],
+      ["add_relations_batch_cap: add_relations batch cap structured error code mismatch: expected invalid_arguments, got unknown_argument"],
     );
   });
 
@@ -1886,7 +1886,7 @@ describe("evaluateDogfoodGate", () => {
     );
     assert.deepEqual(
       evaluateDogfoodGate(withCompiled({ ...okShape.compiled, byKind: { project: 2 } })),
-      ["compile_ontology response byKind mismatch — nodeCount 1, byKind 2"],
+      ["compile_ontology response byKind mismatch: nodeCount 1, byKind 2"],
     );
     assert.deepEqual(
       evaluateDogfoodGate(withCompiled({ ...okShape.compiled, edgeCount: 2, resolvedEdgeCount: 1, externalEdgeCount: 0, unresolvedEdgeCount: 1 })),
@@ -1894,11 +1894,11 @@ describe("evaluateDogfoodGate", () => {
     );
     assert.deepEqual(
       evaluateDogfoodGate(withCompiled({ ...okShape.compiled, edgeCount: 3, resolvedEdgeCount: 1, externalEdgeCount: 1 })),
-      ["compile_ontology response edge count mismatch — edgeCount 3, resolved+external+unresolved 2"],
+      ["compile_ontology response edge count mismatch: edgeCount 3, resolved+external+unresolved 2"],
     );
     assert.deepEqual(
       evaluateDogfoodGate(withCompiled({ ...okShape.compiled, edgeCount: 1, resolvedEdgeCount: 1, externalEdgeCount: 1 })),
-      ["compile_ontology response edge count mismatch — edgeCount 1, resolved+external+unresolved 2"],
+      ["compile_ontology response edge count mismatch: edgeCount 1, resolved+external+unresolved 2"],
     );
   });
 
@@ -4007,7 +4007,7 @@ describe("evaluateDogfoodGate", () => {
       list: { ...okShape.list, vaultWarnings: { errorCount: 0, warningCount: 1 } },
     });
     assert.deepEqual(failures, [
-      "list_concepts vaultWarnings present — errors 0, warnings 1. Run validate_vault for file-level diagnostics before writing.",
+      "list_concepts vaultWarnings present: errors 0, warnings 1. Run validate_vault for file-level diagnostics before writing.",
     ]);
   });
 
@@ -4036,7 +4036,7 @@ describe("evaluateDogfoodGate", () => {
       },
     });
     assert.deepEqual(failures, [
-      "validate_vault found 1 problem file — errors 1, warnings 0 — codes missing-kind:error:1",
+      "validate_vault found 1 problem file: errors 1, warnings 0 · codes missing-kind:error:1",
     ]);
   });
 

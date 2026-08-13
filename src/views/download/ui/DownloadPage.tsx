@@ -219,6 +219,7 @@ export function DownloadPage() {
           data-gateway-bottom-reserve-token={
             bottomTabBarPresent ? '--topology-mobile-bottom-tab-reserve' : undefined
           }
+          data-gateway-bottom-reserve-active={bottomTabBarPresent ? 'true' : undefined}
           className={cn(
             PAGE_GUTTER,
             'shrink-0 pt-5 pb-[max(var(--page-bottom-breath),env(safe-area-inset-bottom))] [@media(min-width:64rem)_and_(max-height:56.25rem)]:pt-3 [@media(min-width:64rem)_and_(max-height:56.25rem)]:pb-6',

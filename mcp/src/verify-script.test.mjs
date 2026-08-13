@@ -59,6 +59,7 @@ import {
   expectedToolSplitLabel,
   firstContactMissingResponseLabels,
   firstContactErrorFailure,
+  firstContactLocalProbeFailure,
   findBacklinksFailure,
   findEvidenceFailure,
   findNeighborsFailure,
@@ -152,6 +153,59 @@ import {
   vaultWarningsFailure,
   workspaceBriefSummary,
 } from '../scripts/verify.mjs';
+
+describe('live local first-contact probes', () => {
+  const response = (id, payload) => ({
+    id,
+    result: {
+      content: [{ text: JSON.stringify(payload) }],
+      structuredContent: payload,
+    },
+  });
+
+  it('requires scope and bounded-history metadata for the three local probes', () => {
+    const responses = [
+      response(70, {
+        vaultRoot: '/vault',
+        repoRoot: '/repo',
+        sameRoot: false,
+        restartRequiredForRootChange: true,
+        server: { toolCount: 35, toolNames: [] },
+      }),
+      response(71, {
+        operation: 'git_status',
+        ok: true,
+        repoRoot: '/repo',
+        vaultRoot: '/vault',
+        counts: {},
+        files: [],
+        stagedOutsideVault: [],
+      }),
+      response(72, {
+        operation: 'git_history',
+        repoRoot: '/repo',
+        vaultRoot: '/vault',
+        count: 0,
+        limited: false,
+        hasMore: false,
+        shallow: false,
+        historyComplete: true,
+      }),
+    ];
+
+    assert.equal(
+      firstContactLocalProbeFailure(responses, { repoRoot: '/repo', vaultRoot: '/vault' }),
+      null,
+    );
+    assert.match(
+      firstContactLocalProbeFailure(
+        responses.map((item) => item.id === 72 ? { ...item, result: { ...item.result, structuredContent: { ...item.result.structuredContent, historyComplete: false } } } : item),
+        { repoRoot: '/repo', vaultRoot: '/vault' },
+      ) ?? '',
+      /structuredContent mismatch/,
+    );
+  });
+});
 
 function verifiedRustConfigurationEvidence() {
   return {
@@ -1407,6 +1461,15 @@ describe('verify.mjs first-contact gates', () => {
               },
             },
           },
+        },
+        outputSchema: {
+          type: 'object',
+          properties: {
+            operation: { type: 'string', enum: QUERY_ONTOLOGY_OPERATIONS },
+            compiledSummary: { type: 'object' },
+          },
+          required: ['operation'],
+          additionalProperties: true,
         },
       },
       {

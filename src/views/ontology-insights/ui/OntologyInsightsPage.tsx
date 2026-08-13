@@ -917,7 +917,7 @@ export function OntologyInsightsPage() {
       tabIndex={-1}
           data-insights-surface="maintenance-board"
           data-insights-question-model="one-tab-one-question"
-          className={`${PAGE_FRAME} flex min-h-0 flex-1 flex-col pb-8 max-lg:pb-[calc(var(--topology-mobile-bottom-tab-reserve)+24px)]`}
+          className={`${PAGE_FRAME} flex min-h-0 flex-1 flex-col pb-[calc(var(--topology-mobile-bottom-tab-reserve)+24px)] lg:pb-8`}
         >
         <MountedGlobalSearch open={searchPaletteOpen} onOpenChange={setSearchPaletteOpen} />
 

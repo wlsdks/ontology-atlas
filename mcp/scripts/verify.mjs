@@ -38,7 +38,7 @@
  */
 
 import { spawn } from 'node:child_process';
-import { mkdirSync, rmSync, statSync, writeFileSync } from 'node:fs';
+import { mkdirSync, realpathSync, rmSync, statSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { fileURLToPath } from 'node:url';
 import { dirname, resolve, join } from 'node:path';
@@ -2079,6 +2079,17 @@ export function toolsListSchemaFailure(tools) {
 
   const queryTool = tools.find((tool) => tool?.name === 'query_ontology');
   if (!queryTool) return 'tools/list response missing query_ontology tool';
+  const queryOutputSchema = queryTool.outputSchema;
+  if (
+    queryOutputSchema?.type !== 'object' ||
+    !sameArray(queryOutputSchema.required, ['operation']) ||
+    queryOutputSchema.additionalProperties !== true ||
+    queryOutputSchema.properties?.operation?.type !== 'string' ||
+    !sameArray(queryOutputSchema.properties?.operation?.enum, QUERY_ONTOLOGY_OPERATIONS) ||
+    queryOutputSchema.properties?.compiledSummary?.type !== 'object'
+  ) {
+    return 'query_ontology outputSchema discriminator drift';
+  }
 
   const listKindsTool = tools.find((tool) => tool?.name === 'list_kinds');
   if (!listKindsTool) return 'tools/list response missing list_kinds tool';
@@ -3797,6 +3808,92 @@ export function structuredContentFailure(response, parsed, label) {
   return null;
 }
 
+export function firstContactLocalProbeFailure(responses, {
+  repoRoot = REPO_ROOT,
+  vaultRoot = VAULT,
+} = {}) {
+  const canonical = (value) => {
+    try {
+      return realpathSync(value);
+    } catch {
+      return resolve(value);
+    }
+  };
+  const expectedRepoRoot = canonical(repoRoot);
+  const expectedVaultRoot = canonical(vaultRoot);
+  const checks = [
+    {
+      id: 70,
+      label: 'connection_info',
+      validate(payload) {
+        if (canonical(payload.vaultRoot) !== expectedVaultRoot || canonical(payload.repoRoot) !== expectedRepoRoot) {
+          return 'connection_info roots do not match the verifier scope';
+        }
+        if (typeof payload.sameRoot !== 'boolean' || payload.restartRequiredForRootChange !== true) {
+          return 'connection_info scope metadata drift';
+        }
+        if (!payload.server || !Number.isInteger(payload.server.toolCount) || !Array.isArray(payload.server.toolNames)) {
+          return 'connection_info server inventory metadata missing';
+        }
+        return null;
+      },
+    },
+    {
+      id: 71,
+      label: 'git_status',
+      validate(payload) {
+        if (payload.operation !== 'git_status' || canonical(payload.repoRoot) !== expectedRepoRoot || canonical(payload.vaultRoot) !== expectedVaultRoot) {
+          return 'git_status operation or roots do not match the verifier scope';
+        }
+        if (payload.ok === false) {
+          return typeof payload.reason === 'string' && payload.reason.length > 0
+            ? null
+            : 'git_status unavailable response missing reason';
+        }
+        if (typeof payload.ok !== 'boolean' || !payload.counts || !Array.isArray(payload.files) || !Array.isArray(payload.stagedOutsideVault)) {
+          return 'git_status scope/count/file metadata missing';
+        }
+        return null;
+      },
+    },
+    {
+      id: 72,
+      label: 'git_history',
+      validate(payload) {
+        if (payload.operation !== 'git_history' || canonical(payload.repoRoot) !== expectedRepoRoot || canonical(payload.vaultRoot) !== expectedVaultRoot) {
+          return 'git_history operation or roots do not match the verifier scope';
+        }
+        if (payload.ok === false) {
+          return typeof payload.reason === 'string' && payload.reason.length > 0
+            ? null
+            : 'git_history unavailable response missing reason';
+        }
+        if (!Number.isInteger(payload.count) || payload.count < 0 || typeof payload.limited !== 'boolean' || typeof payload.hasMore !== 'boolean' || typeof payload.shallow !== 'boolean' || typeof payload.historyComplete !== 'boolean') {
+          return 'git_history bounded-history metadata missing';
+        }
+        return null;
+      },
+    },
+  ];
+
+  for (const check of checks) {
+    const response = responses.find((candidate) => candidate?.id === check.id);
+    if (!response?.result) return `no ${check.label} live probe response`;
+    if (response.result.isError === true) return `${check.label} live probe returned a tool error`;
+    let parsed;
+    try {
+      parsed = JSON.parse(response.result.content?.[0]?.text || '{}');
+    } catch (error) {
+      return `${check.label} live probe returned invalid JSON: ${error.message}`;
+    }
+    const parityFailure = structuredContentFailure(response, parsed, check.label);
+    if (parityFailure) return parityFailure;
+    const failure = check.validate(parsed);
+    if (failure) return failure;
+  }
+  return null;
+}
+
 export function structuredContentParityStatus(parsed, structured) {
   if (structured == null) return 'missing';
   return isDeepStrictEqual(structured, parsed) ? 'pass' : 'mismatch';
@@ -3944,6 +4041,9 @@ export const FIRST_CONTACT_RESPONSE_LABELS = new Map([
   [67, 'all_paths'],
   [68, 'index_project'],
   [69, 'absorb_document_dry_run'],
+  [70, 'connection_info'],
+  [71, 'git_status'],
+  [72, 'git_history'],
 ]);
 
 export const OPTIONAL_FIRST_CONTACT_RESPONSE_IDS = [
@@ -4352,6 +4452,24 @@ export function buildFirstContactRequests() {
     },
     { jsonrpc: '2.0', method: 'notifications/initialized' },
     { jsonrpc: '2.0', id: 2, method: 'tools/list' },
+    {
+      jsonrpc: '2.0',
+      id: 70,
+      method: 'tools/call',
+      params: { name: 'connection_info', arguments: {} },
+    },
+    {
+      jsonrpc: '2.0',
+      id: 71,
+      method: 'tools/call',
+      params: { name: 'git_status', arguments: {} },
+    },
+    {
+      jsonrpc: '2.0',
+      id: 72,
+      method: 'tools/call',
+      params: { name: 'git_history', arguments: { limit: 5 } },
+    },
     {
       jsonrpc: '2.0',
       id: 3,
@@ -8904,6 +9022,16 @@ async function step2BootAndCall() {
         log('fail', firstContactErrorFailure(errorRes));
         return res(false);
       }
+
+      const localProbeFailure = firstContactLocalProbeFailure(responses, {
+        repoRoot: REPO_ROOT,
+        vaultRoot: VAULT,
+      });
+      if (localProbeFailure) {
+        log('fail', localProbeFailure);
+        return res(false);
+      }
+      log('ok', 'live local probes: connection_info/git_status/git_history scope and bounded metadata passed');
 
       if (timedOut && missingLabels.length > 0) {
         log('fail', `${verifyTimeoutFailure(timeoutMs)} Missing responses: ${missingLabels.join(', ')}`);

@@ -2420,6 +2420,7 @@ const TOOLS = [
         undo: { type: ['object', 'null'] },
       },
       required: ['ok', 'changed', 'confirmed', 'contract', 'projectSlug', 'mode', 'binding'],
+      additionalProperties: false,
     },
   },
   {
@@ -2453,6 +2454,7 @@ const TOOLS = [
         nextCall: { type: 'object' },
       },
       required: ['ok', 'changed', 'confirmed', 'contract', 'projectSlug', 'removed', 'bindings'],
+      additionalProperties: false,
     },
   },
   {
@@ -3757,6 +3759,18 @@ const TOOLS = [
         },
       },
       required: ['operation'],
+    },
+    outputSchema: {
+      type: 'object',
+      properties: {
+        operation: { type: 'string', enum: QUERY_ONTOLOGY_OPERATIONS },
+        compiledSummary: { type: 'object' },
+      },
+      required: ['operation'],
+      // The graph engine is intentionally polymorphic: each operation owns its
+      // payload contract. This envelope gives MCP clients a stable discriminator
+      // without pretending all 36 payloads share one shape.
+      additionalProperties: true,
     },
   },
   {
