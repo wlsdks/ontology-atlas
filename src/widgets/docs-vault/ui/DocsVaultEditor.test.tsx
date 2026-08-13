@@ -282,6 +282,29 @@ describe('DocsVaultEditor', () => {
     expect(screen.queryByDisplayValue('DISK VERSION')).not.toBeInTheDocument();
   });
 
+  // 신원 가드(uid 지움·바꿈, merged_uids 편집)에 막힌 저장도 충돌과 같은
+  // 문법으로 번역된다 — 종전에는 영어 개발자 문장이 KO 화면에 그대로 떴다.
+  it('surfaces a localized message when the save is rejected by the uid identity guard', async () => {
+    const guard = Object.assign(
+      new Error('`uid:` is immutable. Rename or reclassify the node without changing its UID.'),
+      { name: 'VaultIdentityUidError' },
+    );
+    const onSave = vi.fn().mockRejectedValue(guard);
+    render(
+      <DocsVaultEditor vaultScope={VAULT_SCOPE} doc={doc} getDocContent={async () => 'initial'} onSave={onSave} onClose={vi.fn()} />,
+    );
+    const editor = await screen.findByDisplayValue('initial');
+    fireEvent.change(editor, { target: { value: 'uid deleted' } });
+    fireEvent.click(screen.getByRole('button', { name: '저장' }));
+    await waitFor(() => expect(onSave).toHaveBeenCalled());
+    expect(
+      screen.getByText(
+        '문서의 uid 는 이 노드의 영구 신원이라 지우거나 바꿀 수 없어요. uid 줄을 원래대로 되돌리면 저장됩니다.',
+      ),
+    ).toBeInTheDocument();
+    expect(screen.queryByText(/is immutable/)).not.toBeInTheDocument();
+  });
+
   it('asks before closing with unsaved changes', async () => {
     const onClose = vi.fn();
     const confirmSpy = vi.spyOn(window, 'confirm').mockReturnValue(false);

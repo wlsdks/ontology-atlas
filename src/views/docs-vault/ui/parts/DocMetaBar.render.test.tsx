@@ -122,12 +122,12 @@ describe("DocMetaBar", () => {
   it("renders exactly one map entrance, and it goes to the map", () => {
     renderMetaBar();
 
-    const relationMapLink = screen.getByRole("link", { name: "지형도" });
+    const relationMapLink = screen.getByRole("link", { name: "지도" });
     expect(relationMapLink).toHaveAttribute(
       "href",
       "/topology/?mode=focus&p=ontology%2Fcapabilities%2Fagent-graph-readiness",
     );
-    expect(relationMapLink).toHaveAttribute("title", "이 개념을 지형도에서 열기");
+    expect(relationMapLink).toHaveAttribute("title", "이 개념을 지도에서 열기");
     // 터치 계약은 그대로 — 줄인 것은 개수이지 크기가 아니다.
     expect(relationMapLink.className).toContain("min-h-8");
     expect(relationMapLink.className).toContain("active:translate-y-px");

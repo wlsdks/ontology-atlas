@@ -85,6 +85,9 @@ jobs:
       - name: Install bundled MCP server dependencies
         run: pnpm --dir mcp install --frozen-lockfile
 
+      - name: MCP release gate
+        run: pnpm dogfood:release-gate
+
       - name: Desktop readiness
         run: pnpm desktop:check
 

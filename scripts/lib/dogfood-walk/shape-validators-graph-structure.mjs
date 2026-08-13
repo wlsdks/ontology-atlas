@@ -563,7 +563,10 @@ export function blastRadiusShapeFailure(result, targets) {
   if (!Number.isInteger(result.depth) || result.depth < 0) {
     return "blast_radius response missing depth";
   }
-  if (!["low", "medium", "high"].includes(result.risk)) {
+  // `unknown` is an intentional fail-closed result when relation-level source
+  // receipts are unavailable. The engine documents that state instead of
+  // fabricating a risk level from containment or unqualified edges.
+  if (!["low", "medium", "high", "unknown"].includes(result.risk)) {
     return `blast_radius response unknown risk — ${result.risk}`;
   }
   const summaryFailure = numericSummaryFailure("blast_radius", result.summary, [

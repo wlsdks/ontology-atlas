@@ -591,7 +591,9 @@ export function OntologyInsightsPage() {
       case "cycle":
         return t("doNext.touchUpWhyCycle", { length: item.reason.length });
       case "promotion":
-        return t("doNext.touchUpWhyPromotion");
+        // 참조 수를 그대로 말한다 — 「여러 곳」은 세 행이 같은 문구를 반복하게
+        // 만들었고, 수는 큐 행이 이미 나르고 있었다.
+        return t("doNext.touchUpWhyPromotion", { count: item.reason.fanIn });
     }
   };
   // #63 — 이 화면의 단일 판정. 탭 배지 · 빈 상태 문구 · 건강 주장이 모두
@@ -915,7 +917,7 @@ export function OntologyInsightsPage() {
       tabIndex={-1}
           data-insights-surface="maintenance-board"
           data-insights-question-model="one-tab-one-question"
-          className={`${PAGE_FRAME} flex min-h-0 flex-1 flex-col pb-8 max-lg:pb-[calc(var(--topology-mobile-bottom-tab-reserve)+24px)]`}
+          className={`${PAGE_FRAME} flex min-h-0 flex-1 flex-col pb-[calc(var(--topology-mobile-bottom-tab-reserve)+24px)] lg:pb-8`}
         >
         <MountedGlobalSearch open={searchPaletteOpen} onOpenChange={setSearchPaletteOpen} />
 
@@ -943,7 +945,7 @@ export function OntologyInsightsPage() {
             정비 보드다. 카피 전면 개편 대신 청중을 정직하게 선언해 기대치를
             맞춘다 — 일반 방문자가 여기서 "내 프로젝트" 같은 걸 찾다가 헤매지
             않도록. */}
-        <p className="mt-1 max-w-2xl text-label text-[color:var(--color-text-quaternary)]">
+        <p className="mt-1 max-w-2xl text-body text-[color:var(--color-text-quaternary)]">
           {t("audienceBanner")}
         </p>
 

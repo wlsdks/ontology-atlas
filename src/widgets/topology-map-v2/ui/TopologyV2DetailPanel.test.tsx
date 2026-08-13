@@ -40,6 +40,8 @@ const labels = {
   containsShowAll: "view all",
   containsShowSummary: "summary",
   containsOtherGroup: "other",
+  groupShowMore: "more",
+  groupShowFewer: "fewer",
   metricUsedBy: "used by",
   metricDependsOn: "leans on",
   metricBelongsTo: "belongs to",
@@ -724,6 +726,34 @@ describe("TopologyV2DetailPanel — full-detail A1 opt-in link", () => {
 // 실제 레이아웃을 하지 않으므로 clamp 계약(토큰 기반 max-height + 내부
 // overflow)이 className 에 실제로 걸려 있는지로 회귀를 잡는다.
 describe("TopologyV2DetailPanel — viewport clamp (P3-③)", () => {
+  it("+N 은 죽은 수가 아니다 — 누르면 그 자리에서 전부 펼쳐지고, 다시 누르면 접힌다", () => {
+    const many = Array.from({ length: 9 }, (_, i) => ({
+      id: `capability:c${i}`,
+      title: `Cap ${i}`,
+      kind: "capability",
+      relationType: "contains",
+      direction: "outgoing" as const,
+    }));
+    const groups: TopologyV2DetailPanelProps["groups"] = {
+      contains: { rows: many.slice(0, 6), allRows: many, total: 9 },
+      usedBy: { rows: [], total: 0 },
+      dependsOn: { rows: [], total: 0 },
+      belongsTo: { rows: [], total: 0 },
+    };
+    renderPanel(undefined, undefined, { groups });
+
+    expect(screen.getByText("Cap 0")).toBeInTheDocument();
+    expect(screen.queryByText("Cap 8")).not.toBeInTheDocument();
+
+    const more = screen.getByTestId("topology-v2-group-more-contains");
+    expect(more).toHaveTextContent("+3");
+    fireEvent.click(more);
+    expect(screen.getByText("Cap 8")).toBeInTheDocument();
+
+    fireEvent.click(screen.getByTestId("topology-v2-group-more-contains"));
+    expect(screen.queryByText("Cap 8")).not.toBeInTheDocument();
+  });
+
   it("always carries a viewport-bounded max-height and internal scroll so the footer link stays reachable", () => {
     renderPanel(vi.fn());
     const panel = screen.getByTestId("topology-v2-detail-panel");

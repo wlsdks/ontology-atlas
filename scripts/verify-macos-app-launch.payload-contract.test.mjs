@@ -9,6 +9,7 @@ import {
   WEBVIEW_WORKBENCH_MARKERS,
   webviewWorkbenchMarkersForPath,
 } from "./lib/verify-macos/webview-env.mjs";
+import { validateTopologyMapV2CanvasEvidence } from "./lib/verify-macos/payload-contract.mjs";
 
 /**
  * **설치 앱 WebView 페이로드 계약 — 남은 것만 잰다** (2026-08-12).
@@ -87,6 +88,21 @@ test("payload contract · Skills 라우트는 지도 문구 없이 자기 본문
 
 test("payload contract · 정상 페이로드는 통과한다", () => {
   assert.equal(validateWebviewVerifyPayload(validPayload()), null);
+});
+
+test("payload contract · v2 캔버스 픽셀 증거가 없으면 멈춘다", () => {
+  assert.match(
+    validateTopologyMapV2CanvasEvidence({ topologyMapEngine: "v2" }),
+    /rendered pixels/,
+  );
+  assert.match(
+    validateTopologyMapV2CanvasEvidence({ topologyMapEngine: "v2", topologyV2CanvasInkPixels: 0 }),
+    /rendered pixels/,
+  );
+  assert.equal(
+    validateTopologyMapV2CanvasEvidence({ topologyMapEngine: "v2", topologyV2CanvasInkPixels: 128 }),
+    null,
+  );
 });
 
 test("payload contract · 모양이 틀린 페이로드를 이유와 함께 막는다", () => {

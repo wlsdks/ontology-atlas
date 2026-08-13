@@ -79,7 +79,7 @@ import {
   type PracticeArtifact,
 } from "../lib/studio-practice-guide";
 import { allowedKindsFor } from "../lib/allowed-kinds";
-import { candidateMatches } from "../lib/match-candidate";
+import { rankCandidates } from "../lib/match-candidate";
 import { clearCreateDraft, readCreateDraft, saveCreateDraft } from "../lib/create-draft-store";
 import {
   clearStudioDraft,
@@ -400,14 +400,14 @@ function StudioStage({
       exclude: ReadonlySet<string>,
     ): CreateCandidate[] => {
       const allow = allowedKindsFor(relation, focalKind);
-      return candidates
-        .filter((c) => allow.has(c.kind))
-        .filter((c) => !exclude.has(c.id))
-        // #66 — 표시 이름뿐 아니라 canonical title 과 ref 까지 정규화해 본다.
-        // 예전엔 `c.title`(= display) 만 봐서 `display_ko` 가 달린 노드를 원문
-        // 이름으로 검색할 수 없었다.
-        .filter((c) => candidateMatches(c, query))
-        .slice(0, 8);
+      // #66 — 표시 이름뿐 아니라 canonical title 과 ref 까지 정규화해 보고,
+      // 정확 일치 > 접두 > 부분 > ref 순으로 올린다(2026-08-13 — 순위 없는
+      // 앞 8개 컷은 정확 일치를 자를 수 있다).
+      return rankCandidates(
+        candidates.filter((c) => allow.has(c.kind)).filter((c) => !exclude.has(c.id)),
+        query,
+        8,
+      );
     },
     [candidates],
   );
@@ -1264,7 +1264,15 @@ function StudioStage({
   const stage = (action: Parameters<typeof reduceStudioChanges>[1]) =>
     setChanges((prev) => {
       const next = reduceStudioChanges(prev, action);
-      saveStudioDraft(focalItem.node.id, focalItem.node.label, next);
+      /*
+       * ⚠️ 갱신 함수 안에서 곧장 저장하면 안 된다 — 이 함수는 React 가 **렌더
+       * 중에** 실행할 수 있고, `saveStudioDraft` 는 `DRAFT_EVENT` 를 동기로
+       * dispatch 해 「작업중」 목록 구독자(useSyncExternalStore)의 setState 를
+       * 렌더 한가운데서 깨운다 — "Cannot update a component while rendering"
+       * (2026-08-13 소켓 채움 flow 실측). 마이크로태스크로 렌더 밖에 내보낸다.
+       * dev 이중 호출로 두 번 예약돼도 같은 값이라 무해하다(멱등 쓰기).
+       */
+      queueMicrotask(() => saveStudioDraft(focalItem.node.id, focalItem.node.label, next));
       return next;
     });
 

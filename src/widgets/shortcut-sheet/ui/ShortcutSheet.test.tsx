@@ -100,7 +100,7 @@ describe("ShortcutSheet — 문맥 탭 (#67)", () => {
       "true",
     );
     // 지도 표면 + 전역은 보인다.
-    expect(screen.getByText(enMessages.searchWidgets.shortcuts.sections.topology)).toBeInTheDocument();
+    expect(screen.getByText(enMessages.searchWidgets.shortcuts.sections.topology, { selector: "p" })).toBeInTheDocument();
     expect(screen.getByText(enMessages.searchWidgets.shortcuts.sections.navigation)).toBeInTheDocument();
     // 문서함 전용 섹션은 이 탭에 없다.
     expect(
@@ -114,7 +114,7 @@ describe("ShortcutSheet — 문맥 탭 (#67)", () => {
 
     expect(screen.getByText(enMessages.searchWidgets.shortcuts.sections.docsPalette)).toBeInTheDocument();
     expect(screen.getByText(enMessages.searchWidgets.shortcuts.sections.docsGraph)).toBeInTheDocument();
-    expect(screen.getByText(enMessages.searchWidgets.shortcuts.sections.topology)).toBeInTheDocument();
+    expect(screen.getByText(enMessages.searchWidgets.shortcuts.sections.topology, { selector: "p" })).toBeInTheDocument();
   });
 
   it("문서함 탭에서도 전역 단축키는 남는다 — 지금 누를 수 있는 키가 사라지면 안 된다", () => {
@@ -124,7 +124,7 @@ describe("ShortcutSheet — 문맥 탭 (#67)", () => {
     expect(screen.getByText(enMessages.searchWidgets.shortcuts.sections.navigation)).toBeInTheDocument();
     expect(screen.getByText(enMessages.searchWidgets.shortcuts.sections.docsPalette)).toBeInTheDocument();
     expect(
-      screen.queryByText(enMessages.searchWidgets.shortcuts.sections.topology),
+      screen.queryByText(enMessages.searchWidgets.shortcuts.sections.topology, { selector: "p" }),
     ).not.toBeInTheDocument();
   });
 

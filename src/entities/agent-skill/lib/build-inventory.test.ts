@@ -214,6 +214,32 @@ describe("스킬 인벤토리", () => {
     expect(inv.totals.alwaysLoadedChars).toBe(15);
   });
 
+  describe("내 것 판정 — 라벨 「내 폴더」가 붙을 자격", () => {
+    it("연 폴더 바로 밑 skills/ 만 내 것이다", () => {
+      const inv = buildSkillInventory({
+        files: [skill("skills/mine/SKILL.md", "mine", "alpha bravo charlie")],
+      });
+      expect(inv.skills[0].origin.personal).toBe(true);
+    });
+
+    it("이름 있는 상위 폴더(클론해 온 스킬 저장소)는 내 것이 아니다 — 넷이 전부 「내 폴더」로 뭉개졌던 실측", () => {
+      const inv = buildSkillInventory({
+        files: [
+          skill("anthropic-agent-skills/skills/brainstorming/SKILL.md", "brainstorming", "alpha bravo charlie"),
+        ],
+      });
+      expect(inv.skills[0].origin.personal).toBe(false);
+      expect(inv.skills[0].origin.source).toBe("anthropic-agent-skills");
+    });
+
+    it("마켓플레이스 설치본은 여전히 내 것이 아니다", () => {
+      const inv = buildSkillInventory({
+        files: [skill("plugins/cache/vendor/1.0.0/skills/pdf/SKILL.md", "pdf", "alpha bravo charlie")],
+      });
+      expect(inv.skills[0].origin.personal).toBe(false);
+    });
+  });
+
   describe("출처 이름", () => {
     it("마켓플레이스 설치본은 플러그인 이름으로 줄인다", () => {
       expect(sourceLabelOf("plugins/cache/anthropic-skills/1.2.0/skills/pdf/SKILL.md")).toBe(

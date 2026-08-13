@@ -132,6 +132,10 @@ describe("AgentConnectSheet focus contract", () => {
 
     const card = screen.getByTestId("agent-server-unavailable");
     expect(card).toHaveTextContent("cannot save the config file for you");
+    // 1단 제목도 거짓말하지 않는다 — 이 화면에 연결 버튼은 없으므로
+    // 「버튼 누르기」가 아니라 이 화면이 실제로 해 주는 일을 말한다.
+    expect(screen.getByText("Create the connect config")).toBeInTheDocument();
+    expect(screen.queryByText("Press a connect button")).not.toBeInTheDocument();
     expect(card).not.toHaveTextContent("cannot connect an agent");
     // 대신 그 자리에서 끝나는 길이 살아 있다 — 이유만 말하는 카드는 막다른 길이다.
     expect(screen.getByTestId("web-manual-connect")).toBeInTheDocument();

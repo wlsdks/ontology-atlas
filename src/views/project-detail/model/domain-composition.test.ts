@@ -82,7 +82,8 @@ describe("buildProjectDomainComposition", () => {
     const [views] = result.domains;
     // 「상위 2 + N개 더」가 아니라 전부다 — 행을 펼치면 목록이 다 보이므로
     // 갈 곳 없는 수(「역량 1개 더」)를 만들 이유가 없다.
-    expect(views.capabilities).toEqual(["Bravo", "Alpha", "Charlie"]);
+    expect(views.capabilities.map((cap) => cap.title)).toEqual(["Bravo", "Alpha", "Charlie"]);
+    expect(views.capabilities[0]).toEqual({ id: "capability:b", title: "Bravo" });
     expect(views.capabilityCount).toBe(3);
   });
 

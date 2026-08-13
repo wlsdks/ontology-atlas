@@ -46,6 +46,23 @@ export function readHeartbeatAgent(rootPath) {
 }
 
 /**
+ * 활동 한 줄에 실을 에이전트 이름 — **하트비트 > 연결 인사 > null** (2026-08-13).
+ *
+ * 종전에는 하트비트 파일(CLI `agent-activity` 로 직접 등록)만 봤다. 등록을 안 한
+ * 에이전트의 활동은 전부 `agent: null` 로 쌓였는데, MCP initialize 인사에는
+ * clientInfo.name("claude-code" 등)이 **이미 실려 온다** — 서버가 아는 사실을
+ * 버리지 않는다. 하트비트가 이기는 이유: 등록은 의도(사람이 이 이름으로 부르라고
+ * 정한 것)이고 인사는 기본값이다. 둘 다 없으면 null — 이름을 지어내지 않는다
+ * (readHeartbeatAgent 의 「조작 금지」와 같은 규율).
+ */
+export function resolveAgentName(rootPath, clientInfo) {
+  const heartbeat = readHeartbeatAgent(rootPath);
+  if (heartbeat) return heartbeat;
+  const fromHello = clientInfo?.name;
+  return typeof fromHello === 'string' && fromHello.trim() ? fromHello.trim() : null;
+}
+
+/**
  * best-effort append + 로테이션. 어떤 실패도 throw 하지 않는다.
  * 반환: 기록 성공 여부 (테스트용 — 호출자는 무시해도 됨).
  */

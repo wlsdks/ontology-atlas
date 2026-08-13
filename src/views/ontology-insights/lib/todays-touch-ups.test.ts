@@ -29,8 +29,8 @@ function orphan(nodeId: string): DoNextQueue["rows"][number] {
   return { id: `orphan:${nodeId}`, rowKind: "orphan", nodeId, title: nodeId, nodeKind: "element", evidenceOnly: false, handoffPayload: `o ${nodeId}` };
 }
 
-function promotion(nodeId: string): DoNextQueue["rows"][number] {
-  return { id: `promotion:${nodeId}`, rowKind: "promotion", nodeId, title: nodeId, nodeKind: "element", evidenceOnly: false, handoffPayload: `p ${nodeId}` };
+function promotion(nodeId: string, fanIn = 5): DoNextQueue["rows"][number] {
+  return { id: `promotion:${nodeId}`, rowKind: "promotion", nodeId, title: nodeId, nodeKind: "element", degree: fanIn, evidenceOnly: false, handoffPayload: `p ${nodeId}` };
 }
 
 function queueOf(rows: DoNextQueue["rows"]): DoNextQueue {
@@ -75,6 +75,13 @@ describe("pickTodaysTouchUps (③ 오늘의 손질 절단)", () => {
     expect(picked.map((p) => p.source)).toEqual(["neglected-hub", "promotion", "promotion"]);
     const hub = picked[0];
     expect(hub.reason).toEqual({ kind: "neglected-hub", degree: 12, agoDays: 40 });
+  });
+
+  it("승격 후보의 이유는 참조 수를 나른다 — 「여러 곳」이 아니라 몇 곳인지", () => {
+    const queue = queueOf([neglected("n1", 12, 40), promotion("p1", 7), promotion("p2", 4)]);
+    const picked = pickTodaysTouchUps(queue, noCycles, resolvers);
+    expect(picked[1].reason).toEqual({ kind: "promotion", fanIn: 7 });
+    expect(picked[2].reason).toEqual({ kind: "promotion", fanIn: 4 });
   });
 
   it("콜드스타트 가드 — 소형 vault 는 3건이 있어도 빈 배열", () => {

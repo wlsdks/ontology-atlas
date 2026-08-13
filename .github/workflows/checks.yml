@@ -321,3 +321,7 @@ jobs:
       - name: Docs surface (MCP tools/list)
         if: always()
         run: pnpm docs:surface:check
+
+      - name: MCP release gate
+        if: always()
+        run: pnpm dogfood:release-gate

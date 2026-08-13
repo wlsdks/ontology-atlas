@@ -735,22 +735,30 @@ function DocsVaultContent() {
     if (!ok) return;
     try {
       await localVault.deleteDoc(slug);
-      // 삭제 성공 — selection/pinned/recent 정리
+      // 삭제 성공 — selection/주소/pinned/recent 정리. 주소를 안 걷어내면
+      // 매니페스트 갱신 순간 「요청한 문서가 없다」 판정이 방금 지운 주소를
+      // 잡아 거짓 경고가 뜬다(2026-08-13 걷기 실측 — 이름 변경과 같은 병).
+      appTouchedSlugsRef.current = new Set([slug]);
       setSelectedSlug(null);
+      replaceUrlState({ slug: null });
       setEditing(false);
       setRecentSlugs((list) => list.filter((s) => s !== slug));
       setPinnedSlugs((list) => {
         const next = list.filter((s) => s !== slug);
         if (next.length !== list.length) {
-          // 실제 제거된 경우에만 localStorage 동기화
-          try {
-            window.localStorage.setItem(
-              `${PINNED_DOCS_STORAGE_PREFIX}${recentKey}`,
-              JSON.stringify(next),
-            );
-          } catch {
-            /* ignore */
-          }
+          // 실제 제거된 경우에만 localStorage 동기화 — 갱신 함수는 렌더 중에
+          // 실행될 수 있으므로(스튜디오 임시저장 사고, 2026-08-13) 쓰기는
+          // 마이크로태스크로 렌더 밖에 내보낸다. 멱등 쓰기라 이중 호출 무해.
+          queueMicrotask(() => {
+            try {
+              window.localStorage.setItem(
+                `${PINNED_DOCS_STORAGE_PREFIX}${recentKey}`,
+                JSON.stringify(next),
+              );
+            } catch {
+              /* ignore */
+            }
+          });
         }
         return next;
       });
@@ -759,7 +767,7 @@ function DocsVaultContent() {
         t('dialog.deleteFailed', { message: err instanceof Error ? err.message : String(err) }),
       );
     }
-  }, [canEditCurrent, selectedSlug, manifest, localVault, recentKey, setPinnedSlugs, setRecentSlugs, t]);
+  }, [canEditCurrent, selectedSlug, manifest, localVault, recentKey, replaceUrlState, setPinnedSlugs, setRecentSlugs, t]);
 
   const handleScaffoldOntologyStarter = useCallback(async () => {
     // #73 — 화면 언어로 만든 볼트는 그 언어로 읽히게 한다.
@@ -890,31 +898,41 @@ function DocsVaultContent() {
       await localVault.renameDoc(selectedSlug, nextSlug, {
         rewriteBacklinks: true,
       });
-      // selection + recent/pinned 마이그레이트
+      // selection + 주소 + 활성 기억 + recent/pinned 마이그레이트.
+      // 주소를 안 옮기면 매니페스트 갱신 순간 「URL 이 요청한 문서가 없다」
+      // 판정이 옛 주소를 잡아 거짓 경고가 뜬다(2026-08-13 걷기 실측). 새
+      // 이름은 매니페스트에 나타날 때까지 「아직 모름」으로 지연 판정한다.
       const prev = selectedSlug;
+      appTouchedSlugsRef.current = new Set([prev, nextSlug]);
       setSelectedSlug(nextSlug);
+      replaceUrlState({ slug: nextSlug });
       setRecentSlugs((list) => {
         const mapped = list.map((s) => (s === prev ? nextSlug : s));
-        try {
-          window.localStorage.setItem(
-            `${RECENT_DOCS_STORAGE_PREFIX}${recentKey}`,
-            JSON.stringify(mapped),
-          );
-        } catch {
-          /* ignore */
-        }
+        // 갱신 함수 안 직접 쓰기 금지 — 위 삭제 경로와 같은 이유(2026-08-13).
+        queueMicrotask(() => {
+          try {
+            window.localStorage.setItem(
+              `${RECENT_DOCS_STORAGE_PREFIX}${recentKey}`,
+              JSON.stringify(mapped),
+            );
+          } catch {
+            /* ignore */
+          }
+        });
         return mapped;
       });
       setPinnedSlugs((list) => {
         const mapped = list.map((s) => (s === prev ? nextSlug : s));
-        try {
-          window.localStorage.setItem(
-            `${PINNED_DOCS_STORAGE_PREFIX}${recentKey}`,
-            JSON.stringify(mapped),
-          );
-        } catch {
-          /* ignore */
-        }
+        queueMicrotask(() => {
+          try {
+            window.localStorage.setItem(
+              `${PINNED_DOCS_STORAGE_PREFIX}${recentKey}`,
+              JSON.stringify(mapped),
+            );
+          } catch {
+            /* ignore */
+          }
+        });
         return mapped;
       });
     } catch (err) {
@@ -922,7 +940,7 @@ function DocsVaultContent() {
         t('dialog.renameFailed', { message: err instanceof Error ? err.message : String(err) }),
       );
     }
-  }, [canEditCurrent, selectedSlug, manifest, localVault, recentKey, setPinnedSlugs, setRecentSlugs, t]);
+  }, [canEditCurrent, selectedSlug, manifest, localVault, recentKey, replaceUrlState, setPinnedSlugs, setRecentSlugs, t]);
 
   // P5c — "새 문서" 는 kind 선택이 먼저 온다(도메인/역량/요소/문서). generic
   // `title:` 템플릿을 없애 "이 vault 의 문서는 노드다" 를 생성 순간에 강제
@@ -1180,8 +1198,29 @@ function DocsVaultContent() {
    * 다시 뜨지 않는다. 사용자가 문서를 직접 고르면 닫힌다.
    */
   const [missingQuerySlug, setMissingQuerySlug] = useState<string | null>(null);
+  /**
+   * **앱이 방금 손댄 주소는 「없음」이 아니다** (2026-08-13 걷기 실측 2건).
+   *
+   * 이름 변경·삭제 뒤 판정에 걸리는 주소들: ① 은퇴한 옛 주소 — 트리 클릭은
+   * 라우터 내비라 `useSearchParams` 가 옛 `?slug=` 를 물고 있고,
+   * `replaceUrlState` 의 `history.replaceState` 는 그 훅에 보이지 않는다.
+   * 매니페스트가 갱신되어 그 이름이 사라지는 순간 「요청한 문서가 없다」가
+   * 걸려 **방금 성공한 이름 변경/삭제에 실패 경고가 붙었다**(둘 다 0.5초
+   * 만에 「못 찾았어요」 — 삭제는 확인 대화상자까지 거친 행위다). ② 이름
+   * 변경의 새 주소 — 매니페스트는 다음 폴링까지 옛 판이라 그 공백에서 새
+   * 이름도 「없다」로 보인다. 전부 밖에서 온 요청이 아니라 앱 자신의
+   * 행위이므로 판정 대상이 아니다. 사용자가 다른 문서로 가면(질의가 그
+   * 집합 밖으로 바뀌면) 가드를 걷는다.
+   */
+  const appTouchedSlugsRef = useRef<ReadonlySet<string>>(new Set());
   useEffect(() => {
     if (!normalizedQuerySlug || docsBySlug.size === 0) return;
+    const touched = appTouchedSlugsRef.current;
+    if (touched.size > 0 && !touched.has(normalizedQuerySlug)) {
+      appTouchedSlugsRef.current = new Set();
+    } else if (touched.has(normalizedQuerySlug)) {
+      return;
+    }
     if (docsBySlug.has(normalizedQuerySlug)) {
       // 문서가 나타났으면 잡아 둔 판정을 걷는다 — 부팅 중 샘플 창에서 내렸던
       // 「없다」가 로컬 볼트 도착으로 거짓이 된 경우다(2026-08-08).
@@ -2161,6 +2200,15 @@ function DocsVaultContent() {
           <span className="min-w-0 flex-1 truncate">
             {t('vaultStatus.missingSlugBanner', { slug: missingQuerySlug })}
           </span>
+          {selectedDoc ? (
+            <Link
+              href={getDocHref(selectedDoc.slug)}
+              data-testid="docs-missing-slug-fallback"
+              className={controlClass({ shape: 'link', tone: 'secondary', className: 'shrink-0 text-label' })}
+            >
+              {t('vaultStatus.openFallback')}
+            </Link>
+          ) : null}
         </div>
       ) : null}
 

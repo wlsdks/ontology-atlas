@@ -25,6 +25,7 @@ import {
   WRITE_RELATION_TYPE_VALUES,
 } from "../../../mcp/src/ontology-engine.mjs";
 import { GRAPH_ARRAY_KEYS } from "../../../mcp/src/vault.mjs";
+import { IMPORT_SOURCE_ROLE_VALUES, IMPORT_USAGE_VALUES } from "../../../mcp/src/infer-imports.mjs";
 
 export const WRITE_TOOL_NAMES = new Set([
   "git_snapshot",
@@ -40,8 +41,144 @@ export const WRITE_TOOL_NAMES = new Set([
   "rename_concept",
   "merge_concepts",
   "absorb_document",
+  "finalize_project_meaning",
+  "connect_project_source",
+  "disconnect_project_source",
 ]);
 export const ROOT_PKG = JSON.parse(readFileSync("package.json", "utf-8"));
+const DOGFOOD_UID = "11111111-1111-4111-8111-111111111111";
+const NON_BLANK_STRING_PATTERN = "^(?!\\s)(?!.*\\s$)(?!.*\\u0000).+$";
+
+function rustConfigurationEvidenceFixture() {
+  return {
+    contract: "rustFeatureConfigurationEvidence:v1",
+    status: "not_present",
+    claimBoundary: {
+      compileTimePredicateLocations: false,
+      predicateEvaluation: false,
+      runtimeImpact: false,
+      importDependency: false,
+      macroConsumers: false,
+      semanticDependency: false,
+    },
+    coverage: {
+      predicateEvaluation: false,
+      macroExpansion: false,
+      buildScriptsExecuted: false,
+    },
+    packages: [],
+    unsupportedWorkspaceMembers: [],
+    writePolicy: {
+      automaticRelation: false,
+      writeAllowed: false,
+      humanApprovalRequired: true,
+    },
+    limitations: ["No Cargo manifest was observed."],
+  };
+}
+
+function importScanCoverageFixture() {
+  return {
+    contract: "importScanCoverage:v1",
+    supportedLanguages: ["javascript", "python", "typescript"],
+    supportedExtensions: [".js", ".py", ".ts"],
+    detectedUnsupportedLanguages: [],
+    allDetectedLanguagesSupported: true,
+    zeroEdgesMeaning: "no_supported_static_import_edges_observed",
+    limitations: ["Static source evidence is not semantic dependency approval."],
+  };
+}
+
+function meaningAssessmentSchemaFixture() {
+  const provenanceFields = [
+    "evaluator",
+    "graphHash",
+    "competencyContract",
+    "competencyEvaluator",
+    "competencyGraphHash",
+    "witnessInventoryContract",
+    "witnessInventoryGraphHash",
+    "witnessInventorySourceFingerprint",
+    "sourceGraphHash",
+    "sourceReceiptContractVersion",
+    "sourceId",
+    "sourceRevision",
+    "sourceFingerprint",
+    "sourceMeasuredAt",
+    "sourceGapId",
+  ];
+  return {
+    type: "object",
+    properties: {
+      contract: { type: "string", enum: ["meaningAssessment:v1"] },
+      projectSlug: { type: ["string", "null"] },
+      status: { type: "string", enum: ["verified_current", "review_required", "needs_evidence", "invalid"] },
+      dimensions: {
+        type: "object",
+        properties: {
+          structure: {
+            type: "object",
+            properties: { status: { enum: ["ready", "needs_structure", "invalid"] }, basis: { enum: ["structure_only"] } },
+            required: ["status", "basis"],
+            additionalProperties: false,
+          },
+          competency: {
+            type: "object",
+            properties: {
+              status: { enum: ["answered", "needs_evidence"] },
+              questions: {
+                type: "array",
+                items: {
+                  type: "object",
+                  properties: {
+                    id: { type: "string", minLength: 1, pattern: NON_BLANK_STRING_PATTERN },
+                    status: { enum: ["answered", "partial", "visible-gap", "unassessed"] },
+                    witnessStatus: { enum: ["resolved", "missing", "unavailable"] },
+                  },
+                  required: ["id", "status", "witnessStatus"],
+                  additionalProperties: false,
+                },
+              },
+            },
+            required: ["status", "questions"],
+            additionalProperties: false,
+          },
+          source: {
+            type: "object",
+            properties: {
+              status: { enum: ["not_measured", "needs_evidence", "review_required", "invalid", "verified_current"] },
+              currentness: { enum: ["current", "stale", "unavailable"] },
+            },
+            required: ["status", "currentness"],
+            additionalProperties: false,
+          },
+        },
+        required: ["structure", "competency", "source"],
+        additionalProperties: false,
+      },
+      topGap: {
+        type: ["object", "null"],
+        properties: { dimension: { type: "string" }, id: { type: "string" }, questionId: { type: "string" } },
+        required: ["dimension", "id"],
+        additionalProperties: false,
+      },
+      nextAction: {
+        type: "object",
+        properties: { id: { type: "string" }, target: { type: "string" } },
+        required: ["id"],
+        additionalProperties: false,
+      },
+      provenance: {
+        type: "object",
+        properties: Object.fromEntries(provenanceFields.map((field) => [field, { type: "string" }])),
+        required: provenanceFields,
+        additionalProperties: false,
+      },
+    },
+    required: ["contract", "projectSlug", "status", "dimensions", "topGap", "nextAction", "provenance"],
+    additionalProperties: false,
+  };
+}
 
 export function makeDogfoodInitialize() {
   return {
@@ -226,8 +363,12 @@ export function capturedDocSchemaFixture() {
 export function backlinkRowSchemaFixture() {
   return {
     type: "object",
-    required: ["slug", "kind", "title", "mtime"],
+    required: ["uid", "slug", "kind", "title", "mtime"],
     properties: {
+      uid: {
+        type: "string",
+        pattern: "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+      },
       slug: nonBlankStringSchemaFixture(),
       kind: nonBlankStringSchemaFixture(),
       title: nonBlankStringSchemaFixture(),
@@ -484,6 +625,38 @@ export function makeDogfoodToolsList() {
           dependencyTypes: { type: "array", maxItems: RELATION_TYPE_VALUES.length, items: { type: "string", enum: RELATION_TYPE_VALUES }, description: "health/workspace_brief tuning" },
           componentTypes: { type: "array", maxItems: RELATION_TYPE_VALUES.length, items: { type: "string", enum: RELATION_TYPE_VALUES }, description: "health/workspace_brief tuning" },
         };
+        tool.outputSchema = {
+          type: "object",
+          properties: {
+            operation: { type: "string", enum: QUERY_ONTOLOGY_OPERATIONS },
+            compiledSummary: { type: "object" },
+          },
+          required: ["operation"],
+          additionalProperties: true,
+        };
+      }
+      if (name === "finalize_project_meaning") {
+        tool.inputSchema.properties = {
+          projectSlug: { type: "string", minLength: 1, pattern: NON_BLANK_STRING_PATTERN },
+          expected_mtime: { type: "number", minimum: 0 },
+        };
+        tool.inputSchema.required = ["projectSlug", "expected_mtime"];
+        tool.outputSchema = {
+          type: "object",
+          properties: {
+            ok: { type: "boolean" },
+            changed: { type: "boolean" },
+            contract: { type: "string", enum: ["projectMeaningReceipt:v1"] },
+            projectSlug: { type: "string", minLength: 1, pattern: NON_BLANK_STRING_PATTERN },
+            bodyDigest: { type: "string", pattern: "^sha256:[a-f0-9]{64}$" },
+            graphHash: { type: "string", pattern: "^project-graph-v1:[a-f0-9]{8}$" },
+            sourceFingerprint: { type: "string", minLength: 1, pattern: NON_BLANK_STRING_PATTERN },
+            measuredAt: { type: "string", format: "date-time" },
+            meaningAssessment: meaningAssessmentSchemaFixture(),
+          },
+          required: ["ok", "changed", "contract", "projectSlug", "bodyDigest", "graphHash", "sourceFingerprint", "measuredAt", "meaningAssessment"],
+          additionalProperties: false,
+        };
       }
       if (name === "list_concepts") {
         tool.inputSchema.properties = {
@@ -523,8 +696,9 @@ export function makeDogfoodToolsList() {
               type: "array",
               items: {
                 type: "object",
-                required: ["slug", "kind", "title", "mtime"],
+                required: ["uid", "slug", "kind", "title", "mtime"],
                 properties: {
+                  uid: { type: "string", pattern: "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$" },
                   slug: { type: "string" },
                   kind: { type: "string" },
                   title: { type: "string" },
@@ -548,14 +722,21 @@ export function makeDogfoodToolsList() {
       }
       if (name === "get_concepts") {
         tool.description =
-          "Fetch multiple nodes in one call and saves K-1 round-trips. Order of `concepts[]` matches input `slugs[]`; Missing or invalid slug rows return errors while later valid slugs still resolve.";
-        tool.inputSchema.required = ["slugs"];
+          "Fetch multiple nodes in one call and saves K-1 round-trips. Use exactly one selector array: immutable `uids` or current canonical `slugs`, never together; each returned row carries the permanent `uid` plus current canonical `slug`, while graph-operation inputs remain slug-based. Order of `concepts[]` matches input `slugs[]`; Missing or invalid slug rows return errors while later valid slugs still resolve.";
+        delete tool.inputSchema.required;
+        tool.inputSchema.oneOf = [{ required: ["slugs"] }, { required: ["uids"] }];
         tool.inputSchema.properties.slugs = {
           type: "array",
           maxItems: 50,
           items: { type: "string" },
           description:
             'Vault-relative slugs, unique tail slugs, or frontmatter `slug` aliases. Max 50 per call.',
+        };
+        tool.inputSchema.properties.uids = {
+          type: "array",
+          maxItems: 50,
+          items: { type: "string", pattern: "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$" },
+          description: "Immutable permanent node UIDs; never together with slugs.",
         };
         tool.outputSchema = {
           type: "object",
@@ -565,10 +746,14 @@ export function makeDogfoodToolsList() {
               type: "array",
               items: {
                 type: "object",
-                required: ["ok", "slug"],
+                required: ["ok"],
                 properties: {
                   ok: { type: "boolean" },
                   slug: { type: "string" },
+                  uid: {
+                    type: "string",
+                    pattern: "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+                  },
                   frontmatter: { type: "object" },
                   excerpt: { type: "string" },
                   neighbors: conceptNeighborsSchemaFixture(),
@@ -584,14 +769,22 @@ export function makeDogfoodToolsList() {
         };
       }
       if (name === "get_concept") {
+        tool.inputSchema.properties.slug = { type: "string", minLength: 1 };
+        tool.inputSchema.properties.uid = {
+          type: "string",
+          pattern: "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+          description: "Immutable permanent node UID; never together with slug.",
+        };
+        tool.inputSchema.oneOf = [{ required: ["slug"] }, { required: ["uid"] }];
         tool.inputSchema.properties.body = {
           type: "string",
           enum: ["excerpt", "full"],
         };
         tool.outputSchema = {
           type: "object",
-          required: ["slug", "frontmatter", "bodyInfo", "neighbors", "outgoingEdges", "mtime"],
+          required: ["uid", "slug", "frontmatter", "bodyInfo", "neighbors", "outgoingEdges", "mtime"],
           properties: {
+            uid: { type: "string", pattern: "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$" },
             slug: { type: "string" },
             frontmatter: { type: "object" },
             excerpt: { type: "string" },
@@ -635,8 +828,12 @@ export function makeDogfoodToolsList() {
               type: "array",
               items: {
                 type: "object",
-                required: ["slug", "kind", "title", "mtime", "matchedIn", "score", "excerpt"],
+                required: ["uid", "slug", "kind", "title", "mtime", "matchedIn", "score", "excerpt"],
                 properties: {
+                  uid: {
+                    type: "string",
+                    pattern: "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+                  },
                   slug: { type: "string" },
                   kind: { type: "string" },
                   title: { type: "string" },
@@ -671,8 +868,12 @@ export function makeDogfoodToolsList() {
               type: "array",
               items: {
                 type: "object",
-                required: ["slug", "kind", "title", "mtime"],
+                required: ["uid", "slug", "kind", "title", "mtime"],
                 properties: {
+                  uid: {
+                    type: "string",
+                    pattern: "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+                  },
                   slug: { type: "string" },
                   kind: { type: "string" },
                   title: { type: "string" },
@@ -744,8 +945,12 @@ export function makeDogfoodToolsList() {
               type: "array",
               items: {
                 type: "object",
-                required: ["slug", "kind", "title", "mtime"],
+                required: ["uid", "slug", "kind", "title", "mtime"],
                 properties: {
+                  uid: {
+                    type: "string",
+                    pattern: "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+                  },
                   slug: { type: "string" },
                   kind: { type: "string" },
                   title: { type: "string" },
@@ -784,8 +989,12 @@ export function makeDogfoodToolsList() {
               type: "array",
               items: {
                 type: "object",
-                required: ["slug", "kind", "title"],
+                required: ["uid", "slug", "kind", "title"],
                 properties: {
+                  uid: {
+                    type: "string",
+                    pattern: "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+                  },
                   slug: { type: "string" },
                   kind: { type: "string" },
                   title: { type: "string" },
@@ -923,8 +1132,12 @@ export function makeDogfoodToolsList() {
               type: "array",
               items: {
                 type: "object",
-                required: ["slug", "kind", "title", "mtime"],
+                required: ["uid", "slug", "kind", "title", "mtime"],
                 properties: {
+                  uid: {
+                    type: "string",
+                    pattern: "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+                  },
                   slug: { type: "string" },
                   kind: { type: "string" },
                   title: { type: "string" },
@@ -965,8 +1178,12 @@ export function makeDogfoodToolsList() {
               type: "array",
               items: {
                 type: "object",
-                required: ["slug", "kind", "title", "mtime"],
+                required: ["uid", "slug", "kind", "title", "mtime"],
                 properties: {
+                  uid: {
+                    type: "string",
+                    pattern: "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+                  },
                   slug: { type: "string" },
                   kind: { type: "string" },
                   title: { type: "string" },
@@ -1032,14 +1249,26 @@ export function makeDogfoodToolsList() {
               type: "array",
               items: {
                 type: "object",
-                required: ["slug", "kind", "title", "mtime", "outDegree", "inDegree"],
+                required: ["uid", "slug", "kind", "title", "mtime", "outDegree", "inDegree"],
                 properties: {
+                  uid: {
+                    type: "string",
+                    pattern: "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+                  },
                   slug: { type: "string" },
                   kind: { type: "string" },
                   title: { type: "string" },
+                  path: { type: "string" },
                   mtime: { type: "number", minimum: 0 },
                   outDegree: { type: "integer", minimum: 0 },
                   inDegree: { type: "integer", minimum: 0 },
+                  merged_uids: {
+                    type: "array",
+                    items: {
+                      type: "string",
+                      pattern: "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+                    },
+                  },
                 },
                 additionalProperties: false,
               },
@@ -1126,6 +1355,15 @@ export function makeDogfoodToolsList() {
                 in: stringArrayMapSchemaFixture(),
                 byKind: stringArrayMapSchemaFixture(),
                 byDomain: stringArrayMapSchemaFixture(),
+                uidToSlug: { type: "object", additionalProperties: { type: "string" } },
+                slugToUid: {
+                  type: "object",
+                  additionalProperties: {
+                    type: "string",
+                    pattern: "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+                  },
+                },
+                mergedUidToSlug: { type: "object", additionalProperties: { type: "string" } },
                 edgeById: {
                   type: "object",
                   additionalProperties: {
@@ -1170,7 +1408,7 @@ export function makeDogfoodToolsList() {
       }
       if (name === "analyze_repo_structure") {
         tool.description =
-          "Analyze a code repository and propose ontology node candidates; side effect 0 (vault frontmatter NOT modified). Returns deterministic candidates agents should review and selectively pass to add_concept to bootstrap the ontology. Single source of truth preserved.";
+          "Analyze a code repository and propose ontology node candidates; side effect 0 (vault frontmatter NOT modified). Returns deterministic candidates agents should review and selectively pass to add_concept to bootstrap the ontology. This construction lifecycle exposes reviewPlan, writePlan, an independent evaluator, and constructionQualification:v1 before any write. Single source of truth preserved.";
         tool.inputSchema.properties.rootPath = {
           type: "string",
           minLength: 1,
@@ -1187,6 +1425,7 @@ export function makeDogfoodToolsList() {
             "meaningGate",
             "extractionContract",
             "semanticEvidence",
+            "configurationEvidence",
             "proposalValidation",
             "suggestedRelations",
             "skipped",
@@ -1243,10 +1482,11 @@ export function makeDogfoodToolsList() {
               type: "array",
               items: {
                 type: "object",
-                required: ["slug", "title", "evidence"],
+                required: ["slug", "title", "path", "evidence"],
                 properties: {
                   slug: { type: "string" },
                   title: { type: "string" },
+                  path: { type: "string" },
                   evidence: {
                     type: "object",
                     required: ["source"],
@@ -1340,34 +1580,124 @@ export function makeDogfoodToolsList() {
                 additionalProperties: false,
               },
             },
+            configurationEvidence: {
+              type: "object",
+              properties: {
+                contract: { type: "string", enum: ["rustFeatureConfigurationEvidence:v1"] },
+                writePolicy: {
+                  type: "object",
+                  required: ["automaticRelation", "writeAllowed", "humanApprovalRequired"],
+                  properties: {
+                    automaticRelation: { type: "boolean", enum: [false] },
+                    writeAllowed: { type: "boolean", enum: [false] },
+                    humanApprovalRequired: { type: "boolean", enum: [true] },
+                  },
+                },
+              },
+            },
           },
           additionalProperties: false,
         };
       }
       if (name === "infer_imports") {
         tool.description =
-          "Walk TS/JS files in a code repo and infer file-level + module-level import edges; side effect 0 (vault frontmatter NOT modified). Agent reviews moduleEdges with kindCounts and selectively passes accepted edges to add_relation as `depends_on`. Use after analyze_repo_structure, not just suggestedRelations heuristics. Single source of truth preserved.";
+          "Walk TS/JS files in a code repo and infer file-level + module-level import edges; side effect 0 (vault frontmatter NOT modified). Returns source-backed review candidates in reviewMode:\"next\" and exactly one compact, non-writing `nextRelationReview:v1` packet with kindCounts, a bounded exact file-edge `evidence` receipt, rationale_review_required, and `why` guidance. Agent reviews moduleEdges with kindCounts and selectively passes accepted edges to add_relation; ask the user before add_relation. Use after analyze_repo_structure, not just suggestedRelations heuristics. Single source of truth preserved.";
         tool.inputSchema.properties.maxFiles = {
           type: "integer",
           minimum: 1,
           maximum: 50000,
           description: "Hard stop, default 5000, max 50000 to avoid pathological monorepos.",
         };
+        tool.inputSchema.properties.reviewMode = {
+          type: "string",
+          enum: ["full", "next"],
+          description: "Review mode; default full. `next` returns a compact, non-writing review packet.",
+        };
+        tool.inputSchema.properties.afterReviewId = {
+          type: "string",
+          description: 'Only with reviewMode:"next"; cursor.nextAfterReviewId continues after the previous review.',
+        };
         tool.outputSchema = {
           type: "object",
-          required: ["rootPath", "filesScanned", "edges", "externalImports", "unresolved", "moduleEdges"],
+          required: ["rootPath", "filesScanned", "coverage"],
           properties: {
             rootPath: { type: "string" },
             filesScanned: { type: "integer", minimum: 0 },
+            coverage: {
+              type: "object",
+              properties: {
+                contract: { type: "string", enum: ["importScanCoverage:v1"] },
+                allDetectedLanguagesSupported: { type: "boolean" },
+                zeroEdgesMeaning: { type: "string", enum: ["no_supported_static_import_edges_observed"] },
+              },
+            },
+            contract: { type: "string", enum: ["inferImportsReview:v1"] },
+            nextReview: {
+              type: ["object", "null"],
+              required: ["contract", "reviewId", "status", "writeAllowed", "sourceQualification", "ordering", "candidate", "nextCalls", "decision", "cursor"],
+              properties: {
+                contract: { type: "string" },
+                reviewId: { type: "string" },
+                status: { type: "string" },
+                writeAllowed: { type: "boolean", enum: [false] },
+                sourceQualification: { type: "object" },
+                ordering: { type: "object" },
+                candidate: {
+                  type: "object",
+                  required: ["from", "to", "relationType", "importCount", "sourceEvidence", "sourceEvidenceLimited", "evidenceQualification"],
+                  properties: {
+                    from: { type: "string" },
+                    to: { type: "string" },
+                    relationType: { type: "string" },
+                    importCount: { type: "integer", minimum: 1 },
+                    sourceEvidence: { type: "array" },
+                    sourceEvidenceLimited: { type: "boolean" },
+                    evidenceQualification: {
+                      type: "object",
+                      required: ["basis", "sourceRoleCounts", "importUsageCounts", "productValueCount", "status"],
+                      properties: {
+                        basis: { type: "string" },
+                        sourceRoleCounts: { type: "object" },
+                        importUsageCounts: { type: "object" },
+                        productValueCount: { type: "integer", minimum: 0 },
+                        status: { type: "string" },
+                      },
+                    },
+                  },
+                },
+                nextCalls: { type: "array" },
+                decision: {
+                  type: "object",
+                  properties: {
+                    questionEligibility: { type: "string", enum: ["eligible_after_semantic_review", "additional_product_meaning_evidence_required"] },
+                  },
+                },
+                cursor: {
+                  type: "object",
+                  required: ["afterReviewId", "total", "remaining", "hasMore", "nextAfterReviewId"],
+                  properties: {
+                    afterReviewId: { type: ["string", "null"] },
+                    total: { type: "integer", minimum: 0 },
+                    remaining: { type: "integer", minimum: 0 },
+                    hasMore: { type: "boolean" },
+                    nextAfterReviewId: { type: ["string", "null"] },
+                  },
+                  additionalProperties: false,
+                },
+              },
+              additionalProperties: false,
+            },
             edges: {
               type: "array",
               items: {
                 type: "object",
-                required: ["from", "to", "kind"],
-                properties: {
-                  from: { type: "string" },
-                  to: { type: "string" },
-                  kind: { enum: IMPORT_EDGE_KIND_VALUES },
+                  required: ["from", "to", "kind", "sourceRole", "importUsage"],
+                  properties: {
+                    from: { type: "string" },
+                    to: { type: "string" },
+                    kind: { enum: IMPORT_EDGE_KIND_VALUES },
+                    sourceRole: { enum: IMPORT_SOURCE_ROLE_VALUES },
+                    importUsage: { enum: IMPORT_USAGE_VALUES },
                 },
                 additionalProperties: false,
               },
@@ -1401,7 +1731,7 @@ export function makeDogfoodToolsList() {
               type: "array",
               items: {
                 type: "object",
-                required: ["from", "to", "count", "kindCounts"],
+                required: ["from", "to", "count", "kindCounts", "sourceRoleCounts", "importUsageCounts", "productValueCount", "evidence", "evidenceLimited"],
                 properties: {
                   from: { type: "string" },
                   to: { type: "string" },
@@ -1416,11 +1746,49 @@ export function makeDogfoodToolsList() {
                     additionalProperties: false,
                     minProperties: 1,
                   },
+                  sourceRoleCounts: {
+                    type: "object",
+                    properties: Object.fromEntries(
+                      IMPORT_SOURCE_ROLE_VALUES.map((role) => [role, { type: "integer", minimum: 0 }]),
+                    ),
+                    required: IMPORT_SOURCE_ROLE_VALUES,
+                    additionalProperties: false,
+                  },
+                  importUsageCounts: {
+                    type: "object",
+                    properties: Object.fromEntries(
+                      IMPORT_USAGE_VALUES.map((usage) => [usage, { type: "integer", minimum: 0 }]),
+                    ),
+                    required: IMPORT_USAGE_VALUES,
+                    additionalProperties: false,
+                  },
+                  productValueCount: { type: "integer", minimum: 0 },
+                  evidence: {
+                    type: "array",
+                    maxItems: 5,
+                    items: {
+                      type: "object",
+                      required: ["from", "to", "kind", "sourceRole", "importUsage"],
+                      properties: {
+                        from: { type: "string" },
+                        to: { type: "string" },
+                        kind: { enum: IMPORT_EDGE_KIND_VALUES },
+                        sourceRole: { enum: IMPORT_SOURCE_ROLE_VALUES },
+                        importUsage: { enum: IMPORT_USAGE_VALUES },
+                      },
+                      additionalProperties: false,
+                    },
+                  },
+                  evidenceLimited: { type: "boolean" },
                 },
                 additionalProperties: false,
               },
             },
           },
+          oneOf: [
+            { required: ["edges", "externalImports", "unresolved", "moduleEdges"] },
+            { required: ["contract", "scanSummary", "reconciliationSummary", "reviewQueue", "nextReview"] },
+          ],
           additionalProperties: false,
         };
       }
@@ -1614,6 +1982,9 @@ export function makeDogfoodToolsList() {
       if (["add_relation", "patch_concept", "rename_concept", "merge_concepts", "delete_concept"].includes(name)) {
         tool.inputSchema.properties.expected_mtime = { type: "number", minimum: 0 };
       }
+      if (name === "merge_concepts") {
+        tool.inputSchema.properties.expected_into_mtime = { type: "number", minimum: 0 };
+      }
       if (["rename_concept", "merge_concepts", "delete_concept"].includes(name)) {
         tool.inputSchema.properties.confirm = { type: "boolean" };
       }
@@ -1624,7 +1995,7 @@ export function makeDogfoodToolsList() {
         tool.inputSchema.properties.overwrite = { type: "boolean" };
         tool.outputSchema = {
           type: "object",
-          required: ["ok", "dryRun", "previewReady", "canConfirm", "wouldChange", "blockedReasons", "oldSlug", "newSlug", "sourcePath", "targetPath", "moved", "backlinkUpdates"],
+          required: ["ok", "dryRun", "previewReady", "canConfirm", "wouldChange", "blockedReasons", "uid", "oldSlug", "newSlug", "sourcePath", "targetPath", "moved", "backlinkUpdates"],
           properties: {
             ok: { type: "boolean" },
             dryRun: { type: "boolean" },
@@ -1632,6 +2003,10 @@ export function makeDogfoodToolsList() {
             canConfirm: { type: "boolean" },
             wouldChange: { type: "boolean" },
             blockedReasons: { type: "array", items: nonBlankStringSchemaFixture() },
+            uid: {
+              type: "string",
+              pattern: "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+            },
             oldSlug: { type: "string" },
             newSlug: { type: "string" },
             sourcePath: { type: "string" },
@@ -1648,7 +2023,7 @@ export function makeDogfoodToolsList() {
       if (name === "merge_concepts") {
         tool.outputSchema = {
           type: "object",
-          required: ["ok", "dryRun", "previewReady", "canConfirm", "wouldChange", "blockedReasons", "fromSlug", "intoSlug", "fromPath", "deleted", "backlinkUpdates", "capturedFrom"],
+          required: ["ok", "dryRun", "previewReady", "canConfirm", "wouldChange", "blockedReasons", "fromUid", "intoUid", "absorbedUids", "fromSlug", "intoSlug", "fromPath", "deleted", "backlinkUpdates", "capturedFrom"],
           properties: {
             ok: { type: "boolean" },
             dryRun: { type: "boolean" },
@@ -1656,6 +2031,21 @@ export function makeDogfoodToolsList() {
             canConfirm: { type: "boolean" },
             wouldChange: { type: "boolean" },
             blockedReasons: { type: "array", items: nonBlankStringSchemaFixture() },
+            fromUid: {
+              type: "string",
+              pattern: "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+            },
+            intoUid: {
+              type: "string",
+              pattern: "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+            },
+            absorbedUids: {
+              type: "array",
+              items: {
+                type: "string",
+                pattern: "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+              },
+            },
             fromSlug: { type: "string" },
             intoSlug: { type: "string" },
             fromPath: { type: "string" },
@@ -1673,7 +2063,7 @@ export function makeDogfoodToolsList() {
         tool.inputSchema.properties.force = { type: "boolean" };
         tool.outputSchema = {
           type: "object",
-          required: ["ok", "dryRun", "previewReady", "canConfirm", "wouldChange", "blockedReasons", "slug", "filePath"],
+          required: ["ok", "dryRun", "previewReady", "canConfirm", "wouldChange", "blockedReasons", "uid", "slug", "filePath"],
           properties: {
             ok: { type: "boolean" },
             dryRun: { type: "boolean" },
@@ -1681,6 +2071,10 @@ export function makeDogfoodToolsList() {
             canConfirm: { type: "boolean" },
             wouldChange: { type: "boolean" },
             blockedReasons: { type: "array", items: nonBlankStringSchemaFixture() },
+            uid: {
+              type: "string",
+              pattern: "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+            },
             slug: nonBlankStringSchemaFixture(),
             filePath: nonBlankStringSchemaFixture(),
             backlinks: { type: "array", items: backlinkRowSchemaFixture() },
@@ -1766,27 +2160,28 @@ export const okShape = {
   list: {
     total: 1,
     vaultRoot: "/tmp/vault",
-    nodes: [{ slug: "project", kind: "project", title: "Project", mtime: 1 }],
+    nodes: [{ uid: DOGFOOD_UID, slug: "project", kind: "project", title: "Project", mtime: 1 }],
   },
   listStructured: {
     total: 1,
     vaultRoot: "/tmp/vault",
-    nodes: [{ slug: "project", kind: "project", title: "Project", mtime: 1 }],
+    nodes: [{ uid: DOGFOOD_UID, slug: "project", kind: "project", title: "Project", mtime: 1 }],
   },
   projectProbe: {
     total: 1,
     vaultRoot: "/tmp/vault",
-    nodes: [{ slug: "project", kind: "project", title: "Project", mtime: 1 }],
+    nodes: [{ uid: DOGFOOD_UID, slug: "project", kind: "project", title: "Project", mtime: 1 }],
   },
   projectProbeStructured: {
     total: 1,
     vaultRoot: "/tmp/vault",
-    nodes: [{ slug: "project", kind: "project", title: "Project", mtime: 1 }],
+    nodes: [{ uid: DOGFOOD_UID, slug: "project", kind: "project", title: "Project", mtime: 1 }],
   },
   batch: {
     concepts: [
       {
         ok: true,
+        uid: DOGFOOD_UID,
         slug: "project",
         frontmatter: { kind: "project", title: "Project" },
         excerpt: "Project excerpt",
@@ -1794,6 +2189,7 @@ export const okShape = {
       },
       {
         ok: true,
+        uid: DOGFOOD_UID,
         slug: "capabilities/mcp-server",
         frontmatter: { kind: "capability", title: "MCP Server" },
         excerpt: "MCP Server excerpt",
@@ -1810,6 +2206,7 @@ export const okShape = {
     concepts: [
       {
         ok: true,
+        uid: DOGFOOD_UID,
         slug: "project",
         frontmatter: { kind: "project", title: "Project" },
         excerpt: "Project excerpt",
@@ -1817,6 +2214,7 @@ export const okShape = {
       },
       {
         ok: true,
+        uid: DOGFOOD_UID,
         slug: "capabilities/mcp-server",
         frontmatter: { kind: "capability", title: "MCP Server" },
         excerpt: "MCP Server excerpt",
@@ -1937,14 +2335,14 @@ export const okShape = {
         from: "capabilities/mcp-server",
         to: "domains/ai-agent-partner",
         type: "relates",
-        error: 'Unknown fields in relations[1]: "relation" (did you mean "type"?), "frm" (did you mean "from"?). Allowed fields: from, to, type, expected_mtime. Received fields: frm, from, relation, to, type.',
+        error: 'Unknown fields in relations[1]: "relation" (did you mean "type"?), "frm" (did you mean "from"?). Allowed fields: from, to, type, why, expected_mtime. Received fields: frm, from, relation, to, type.',
         errorCode: "invalid_arguments",
         rowName: "relations[1]",
         unknownFields: [
           { name: "relation", suggestion: "type" },
           { name: "frm", suggestion: "from" },
         ],
-        allowedFields: ["from", "to", "type", "expected_mtime"],
+        allowedFields: ["from", "to", "type", "why", "expected_mtime"],
         receivedFields: ["frm", "from", "relation", "to", "type"],
       },
       {
@@ -1964,13 +2362,13 @@ export const okShape = {
         from: "capabilities/mcp-server",
         to: "domains/ai-agent-partner",
         type: "relates",
-        error: 'Unknown field "relation" in relations[3]. Did you mean "type"? Allowed fields: from, to, type, expected_mtime. Received fields: from, relation, to, type.',
+        error: 'Unknown field "relation" in relations[3]. Did you mean "type"? Allowed fields: from, to, type, why, expected_mtime. Received fields: from, relation, to, type.',
         errorCode: "invalid_arguments",
         rowName: "relations[3]",
         receivedField: "relation",
         suggestion: "type",
         unknownFields: [{ name: "relation", suggestion: "type" }],
-        allowedFields: ["from", "to", "type", "expected_mtime"],
+        allowedFields: ["from", "to", "type", "why", "expected_mtime"],
         receivedFields: ["from", "relation", "to", "type"],
       },
     ],
@@ -1983,14 +2381,14 @@ export const okShape = {
         from: "capabilities/mcp-server",
         to: "domains/ai-agent-partner",
         type: "relates",
-        error: 'Unknown fields in relations[1]: "relation" (did you mean "type"?), "frm" (did you mean "from"?). Allowed fields: from, to, type, expected_mtime. Received fields: frm, from, relation, to, type.',
+        error: 'Unknown fields in relations[1]: "relation" (did you mean "type"?), "frm" (did you mean "from"?). Allowed fields: from, to, type, why, expected_mtime. Received fields: frm, from, relation, to, type.',
         errorCode: "invalid_arguments",
         rowName: "relations[1]",
         unknownFields: [
           { name: "relation", suggestion: "type" },
           { name: "frm", suggestion: "from" },
         ],
-        allowedFields: ["from", "to", "type", "expected_mtime"],
+        allowedFields: ["from", "to", "type", "why", "expected_mtime"],
         receivedFields: ["frm", "from", "relation", "to", "type"],
       },
       {
@@ -2010,13 +2408,13 @@ export const okShape = {
         from: "capabilities/mcp-server",
         to: "domains/ai-agent-partner",
         type: "relates",
-        error: 'Unknown field "relation" in relations[3]. Did you mean "type"? Allowed fields: from, to, type, expected_mtime. Received fields: from, relation, to, type.',
+        error: 'Unknown field "relation" in relations[3]. Did you mean "type"? Allowed fields: from, to, type, why, expected_mtime. Received fields: from, relation, to, type.',
         errorCode: "invalid_arguments",
         rowName: "relations[3]",
         receivedField: "relation",
         suggestion: "type",
         unknownFields: [{ name: "relation", suggestion: "type" }],
-        allowedFields: ["from", "to", "type", "expected_mtime"],
+        allowedFields: ["from", "to", "type", "why", "expected_mtime"],
         receivedFields: ["from", "relation", "to", "type"],
       },
     ],
@@ -2071,9 +2469,10 @@ export const okShape = {
     project: { slug: "sample", title: "Sample" },
     domains: [{ slug: "domains/auth", title: "Auth", evidence: { source: "README.md", line: 3 } }],
     capabilities: [{ slug: "capabilities/auth", title: "Auth", evidence: { source: "src/features/auth" } }],
-    elements: [{ slug: "elements/src/views/home", title: "Home", evidence: { source: "src/views/home" } }],
+    elements: [{ slug: "elements/src/views/home", title: "Home", path: "src/views/home", evidence: { source: "src/views/home" } }],
     suggestedRelations: [{ from: "sample", to: "capabilities/auth", type: "contains" }],
     skipped: [{ path: "src/.cache", reason: "dotfile/ignore" }],
+    configurationEvidence: rustConfigurationEvidenceFixture(),
   },
   analyzedRepoStructured: {
     rootPath: "/repo",
@@ -2081,25 +2480,28 @@ export const okShape = {
     project: { slug: "sample", title: "Sample" },
     domains: [{ slug: "domains/auth", title: "Auth", evidence: { source: "README.md", line: 3 } }],
     capabilities: [{ slug: "capabilities/auth", title: "Auth", evidence: { source: "src/features/auth" } }],
-    elements: [{ slug: "elements/src/views/home", title: "Home", evidence: { source: "src/views/home" } }],
+    elements: [{ slug: "elements/src/views/home", title: "Home", path: "src/views/home", evidence: { source: "src/views/home" } }],
     suggestedRelations: [{ from: "sample", to: "capabilities/auth", type: "contains" }],
     skipped: [{ path: "src/.cache", reason: "dotfile/ignore" }],
+    configurationEvidence: rustConfigurationEvidenceFixture(),
   },
   inferredImports: {
     rootPath: "/repo",
     filesScanned: 2,
-    edges: [{ from: "src/features/auth/index.ts", to: "src/entities/user/index.ts", kind: "static" }],
+    edges: [{ from: "src/features/auth/index.ts", to: "src/entities/user/index.ts", kind: "static", sourceRole: "production", importUsage: "value" }],
     externalImports: [{ from: "src/features/auth/index.ts", spec: "zod" }],
     unresolved: [{ from: "src/features/auth/index.ts", spec: "@/missing", reason: "alias-not-found" }],
-    moduleEdges: [{ from: "capabilities/auth", to: "capabilities/user", count: 1, kindCounts: { static: 1 } }],
+    coverage: importScanCoverageFixture(),
+    moduleEdges: [{ from: "capabilities/auth", to: "capabilities/user", count: 1, kindCounts: { static: 1 }, sourceRoleCounts: { production: 1, test: 0, unknown: 0 }, importUsageCounts: { value: 1, type_only: 0, unknown: 0 }, productValueCount: 1, evidence: [{ from: "src/features/auth/index.ts", to: "src/entities/user/index.ts", kind: "static", sourceRole: "production", importUsage: "value" }], evidenceLimited: false }],
   },
   inferredImportsStructured: {
     rootPath: "/repo",
     filesScanned: 2,
-    edges: [{ from: "src/features/auth/index.ts", to: "src/entities/user/index.ts", kind: "static" }],
+    edges: [{ from: "src/features/auth/index.ts", to: "src/entities/user/index.ts", kind: "static", sourceRole: "production", importUsage: "value" }],
     externalImports: [{ from: "src/features/auth/index.ts", spec: "zod" }],
     unresolved: [{ from: "src/features/auth/index.ts", spec: "@/missing", reason: "alias-not-found" }],
-    moduleEdges: [{ from: "capabilities/auth", to: "capabilities/user", count: 1, kindCounts: { static: 1 } }],
+    coverage: importScanCoverageFixture(),
+    moduleEdges: [{ from: "capabilities/auth", to: "capabilities/user", count: 1, kindCounts: { static: 1 }, sourceRoleCounts: { production: 1, test: 0, unknown: 0 }, importUsageCounts: { value: 1, type_only: 0, unknown: 0 }, productValueCount: 1, evidence: [{ from: "src/features/auth/index.ts", to: "src/entities/user/index.ts", kind: "static", sourceRole: "production", importUsage: "value" }], evidenceLimited: false }],
   },
   renameDryRunRes: {
     result: {
@@ -2308,7 +2710,7 @@ export const okShape = {
     canonicalizationActionCount: 0,
     byKind: { project: 1 },
     byDomain: {},
-    nodes: [{ slug: "project", kind: "project", title: "Project", mtime: 1, outDegree: 2, inDegree: 0 }],
+    nodes: [{ uid: DOGFOOD_UID, slug: "project", kind: "project", title: "Project", mtime: 1, outDegree: 2, inDegree: 0 }],
     edges: [{ id: "e1", from: "project", to: "domains/core", via: "domains", ref: "domains/core", resolved: true, external: false }],
     aliases: [{ alias: "project", slug: "project" }],
     ambiguousAliases: [],
@@ -2332,6 +2734,9 @@ export const okShape = {
       in: { "domains/core": ["e1"] },
       byKind: { project: ["project"] },
       byDomain: {},
+      uidToSlug: { [DOGFOOD_UID]: "project" },
+      slugToUid: { project: DOGFOOD_UID },
+      mergedUidToSlug: {},
       edgeById: {
         e1: { id: "e1", from: "project", to: "domains/core", via: "domains", ref: "domains/core", resolved: true, external: false },
         e2: { id: "e2", from: "project", to: "external/npm", via: "dependencies", ref: "external/npm", resolved: false, external: true },

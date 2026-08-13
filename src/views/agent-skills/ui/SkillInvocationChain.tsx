@@ -38,7 +38,7 @@ export function SkillInvocationChain({ skill }: { skill: AgentSkill }) {
   return (
     <ol className="flex flex-col gap-2" data-testid="skill-invocation-chain">
       <Rung index={1} title={t("chain.always")} note={t("chain.chars", { count: always.chars })}>
-        <p className="text-body leading-prose text-[color:var(--color-text-secondary)]">
+        <p className="text-body-lg leading-prose text-[color:var(--color-text-secondary)]">
           {skill.description}
         </p>
       </Rung>
@@ -48,7 +48,7 @@ export function SkillInvocationChain({ skill }: { skill: AgentSkill }) {
         title={t("chain.onTrigger")}
         note={t("chain.chars", { count: onTrigger.chars })}
       >
-        <p className="text-body leading-body text-[color:var(--color-text-tertiary)]">
+        <p className="text-body-lg leading-body-lg text-[color:var(--color-text-tertiary)]">
           {onTrigger.files[0]}
         </p>
       </Rung>
@@ -59,7 +59,7 @@ export function SkillInvocationChain({ skill }: { skill: AgentSkill }) {
         note={t("chain.fileCount", { count: onDemand.files.length })}
       >
         {onDemand.files.length === 0 ? (
-          <p className="text-body leading-body text-[color:var(--color-text-tertiary)]">
+          <p className="text-body-lg leading-body-lg text-[color:var(--color-text-tertiary)]">
             {t("chain.noFiles")}
           </p>
         ) : (
@@ -72,8 +72,8 @@ export function SkillInvocationChain({ skill }: { skill: AgentSkill }) {
                   <span
                     className={
                       missing
-                        ? "text-body leading-body text-[color:var(--color-danger-text)] line-through"
-                        : "text-body leading-body text-[color:var(--color-text-secondary)]"
+                        ? "text-body-lg leading-body-lg text-[color:var(--color-danger-text)] line-through"
+                        : "text-body-lg leading-body-lg text-[color:var(--color-text-secondary)]"
                     }
                   >
                     {shorten(file)}
@@ -83,13 +83,13 @@ export function SkillInvocationChain({ skill }: { skill: AgentSkill }) {
                       data-testid="skill-executable-mark"
                       // 「돌아간다」는 사실 자체가 정보다 — 경고가 아니라 분류이므로
                       // 위험색이 아니라 강조 없는 라벨로 둔다.
-                      className="shrink-0 rounded-[var(--radius-chip)] border border-[color:var(--color-border-soft)] px-1.5 text-caption text-[color:var(--color-text-tertiary)]"
+                      className="shrink-0 rounded-[var(--radius-chip)] border border-[color:var(--color-border-soft)] px-1.5 text-label text-[color:var(--color-text-tertiary)]"
                     >
                       {t("chain.runs")}
                     </span>
                   ) : null}
                   {missing ? (
-                    <span className="shrink-0 text-caption text-[color:var(--color-danger-text)]">
+                    <span className="shrink-0 text-label text-[color:var(--color-danger-text)]">
                       {t("chain.missing")}
                     </span>
                   ) : null}

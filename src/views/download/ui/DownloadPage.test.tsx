@@ -410,7 +410,7 @@ describe('DownloadPage', () => {
       'href',
       'https://github.com/wlsdks/ontology-atlas',
     );
-    expect(screen.getByText(/Connect your AI assistant/i)).toBeInTheDocument();
+    expect(screen.getByText(/Connect your AI agent/i)).toBeInTheDocument();
     expect(screen.queryByRole('link', { name: /Open my markdown folder/i })).not.toBeInTheDocument();
   });
 

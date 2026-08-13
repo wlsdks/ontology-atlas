@@ -335,7 +335,7 @@ function WorkGroupHeading({
         </span>
         {action ? <span className="ms-auto self-center">{action}</span> : null}
       </div>
-      <p className="text-label leading-label text-[color:var(--color-text-quaternary)]">{hint}</p>
+      <p className="text-body leading-body text-[color:var(--color-text-quaternary)]">{hint}</p>
     </div>
   );
 }
@@ -386,7 +386,7 @@ function TouchUpBand({
       </div>
       <p
         data-testid="do-next-touchups-flow"
-        className="text-label leading-label text-[color:var(--color-text-quaternary)]"
+        className="text-body leading-body text-[color:var(--color-text-quaternary)]"
       >
         {labels.touchUpFlowHint}
       </p>
@@ -417,7 +417,7 @@ function TouchUpBand({
                 <span className="truncate text-body text-[color:var(--color-text-secondary)]">
                   {item.title}
                 </span>
-                <span className="truncate text-label text-[color:var(--color-text-quaternary)]">
+                <span className="truncate text-body text-[color:var(--color-text-quaternary)]">
                   {labels.digestWhyPrefix}
                   {item.why}
                 </span>
@@ -495,7 +495,7 @@ function QueueSection({
           </span>
         </div>
         {hint ? (
-          <p className="text-label leading-label text-[color:var(--color-text-quaternary)]">{hint}</p>
+          <p className="text-body leading-body text-[color:var(--color-text-quaternary)]">{hint}</p>
         ) : null}
       </div>
       {rows.map((row) => {
@@ -564,7 +564,7 @@ function QueueSection({
         );
       })}
       {hiddenCount > 0 ? (
-        <p className="pt-2 text-label text-[color:var(--color-text-quaternary)]">{labels.moreCount(hiddenCount)}</p>
+        <p className="pt-2 text-body text-[color:var(--color-text-quaternary)]">{labels.moreCount(hiddenCount)}</p>
       ) : null}
     </section>
   );
@@ -628,7 +628,7 @@ function DuplicateSection({
             {totalCount}
           </span>
         </div>
-        <p className="text-label leading-label text-[color:var(--color-text-quaternary)]">
+        <p className="text-body leading-body text-[color:var(--color-text-quaternary)]">
           {labels.hintDuplicate}
         </p>
       </div>
@@ -664,7 +664,7 @@ function DuplicateSection({
         </div>
       ) : null}
       {totalCount > shownCount ? (
-        <p className="pt-2 text-label text-[color:var(--color-text-quaternary)]">
+        <p className="pt-2 text-body text-[color:var(--color-text-quaternary)]">
           {labels.duplicateTruncated(shownCount, totalCount)}
         </p>
       ) : null}
@@ -838,7 +838,7 @@ function CycleSection({
         );
       })}
       {cycles.hiddenCycles > 0 ? (
-        <p className="pt-2 text-label text-[color:var(--color-text-quaternary)]">
+        <p className="pt-2 text-body text-[color:var(--color-text-quaternary)]">
           {labels.moreCount(cycles.hiddenCycles)}
         </p>
       ) : null}
@@ -1225,7 +1225,7 @@ export function DoNextTab({
                 data-testid="insights-agent-readiness-breakdown"
                 // `leading-*` 을 안 쓴다 — `text-label` 이 자기 행간을 싣는다
                 // (램프 companion 결합). 옆 줄을 복사하면 off-ramp 래칫이 오른다.
-                className="mt-1 text-label text-[color:var(--color-text-tertiary)]"
+                className="mt-1 text-body text-[color:var(--color-text-tertiary)]"
               >
                 {labels.agentReadinessBlockedBreakdown(
                   agentReadiness.blockedDocuments,
@@ -1241,7 +1241,7 @@ export function DoNextTab({
                * 없으면 단어 중간이다). 원인은 `word-break: normal` 이고, 이 저장소는 이미
                * 다른 자리에서 `break-keep` 을 쓰고 있었다.
                */
-              <p className="mt-1 break-keep text-label leading-label text-[color:var(--color-text-quaternary)]">
+              <p className="mt-1 break-keep text-body leading-body text-[color:var(--color-text-quaternary)]">
                 {labels.agentReadinessHint}
               </p>
             ) : null}
@@ -1433,7 +1433,7 @@ export function DoNextTab({
                 </div>
               ))}
             </div>
-            <p className="mt-2 text-label text-[color:var(--color-text-quaternary)]">{labels.digestApproveHint}</p>
+            <p className="mt-2 text-body text-[color:var(--color-text-quaternary)]">{labels.digestApproveHint}</p>
           </div>
         ) : null}
       </section>

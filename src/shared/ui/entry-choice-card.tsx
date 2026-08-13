@@ -59,7 +59,7 @@ export const EntryChoiceCard = ({
       <span className="text-body-lg font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)] [word-break:keep-all]">
         {title}
       </span>
-      <span className="text-caption leading-caption text-[color:var(--color-text-tertiary)] [word-break:keep-all]">
+      <span className="text-label leading-label text-[color:var(--color-text-tertiary)] [word-break:keep-all]">
         {desc}
       </span>
     </span>

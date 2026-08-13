@@ -151,6 +151,12 @@ export interface V2ConnectionGroupView {
   rows: V2DatasheetConnection[];
   total: number;
   /**
+   * 캡 없는 전체 행 — 「+N」이 죽은 수가 아니라 그 자리에서 펼치는 문이 되기
+   * 위한 재료(2026-08-13, 프로젝트 상세의 「역량 N개 더」 반려와 같은 계보).
+   * 캡 이전 배열을 그대로 참조하므로 추가 비용은 참조 하나다.
+   */
+  allRows?: V2DatasheetConnection[];
+  /**
    * S2 파트 3 — "담는 것" 그룹에만 채워지는 경로 프리픽스 집계(총 행이 임계를
    * 넘을 때 개별 리스트 대신 표시). 전체 행 기준으로 계산(캡 이전).
    */
@@ -198,6 +204,7 @@ export function buildV2ConnectionGroups(
   const toView = (rows: readonly V2DatasheetConnection[]): V2ConnectionGroupView => ({
     rows: rows.slice(0, cap),
     total: rows.length,
+    allRows: rows.slice(),
   });
   return {
     // S2 파트 3 — contains 는 전체 행 기준 경로 프리픽스 요약을 함께 싣는다

@@ -1,6 +1,6 @@
 import type { KnowledgeGraphNode } from "@/entities/knowledge-graph";
 import type { Project } from "@/entities/project";
-import { nameIncludes, nameStartsWith, normalizeForMatch } from "@/shared/lib/node-name-match";
+import { nameEquals, nameIncludes, nameStartsWith, normalizeForMatch } from "@/shared/lib/node-name-match";
 
 /**
  * N12 (persona-ux-2026-07 report) — element nodes are often titled after the
@@ -51,6 +51,9 @@ export interface MatchOntologyOptions {
  * ontology 노드 검색.
  *
  * 점수 (낮을수록 약한 매치):
+ *   5 — 이름 정확 일치 — 이름을 끝까지 친 사용자가 찾는 것은 그 이름의
+ *       노드다. prefix 와 동점이면 최신순 동점 처리가 정확 일치를 가라앉힌다
+ *       (2026-08-13 실측: 「주문」이 「주문서 작성」 등 5개 아래 6위)
  *   4 — 이름 prefix 매치
  *   3 — 이름 substring 매치
  *   2 — summary substring 매치
@@ -114,7 +117,8 @@ export function matchOntologyNodes(
     const id = normalizeForMatch(node.id);
 
     let score = 0;
-    if (nameStartsWith(node, trimmed)) score = 4;
+    if (nameEquals(node, trimmed)) score = 5;
+    else if (nameStartsWith(node, trimmed)) score = 4;
     else if (nameIncludes(node, trimmed)) score = 3;
     else if (summary.includes(trimmed)) score = 2;
     else if (id.includes(trimmed)) score = 1;
@@ -144,6 +148,8 @@ export interface ProjectSearchResult {
  * project 검색.
  *
  * 점수:
+ *   5 — name / nameEn 정확 일치 (노드 매처와 같은 이유 — 동점 최신순이
+ *       정확 일치를 가라앉히지 못하게)
  *   4 — name / nameEn prefix 매치
  *   3 — name / nameEn substring 매치
  *   2 — description / tags / category substring 매치
@@ -179,7 +185,8 @@ export function matchProjects(
     const slug = project.slug.toLowerCase();
 
     let score = 0;
-    if (name.startsWith(trimmed) || nameEn.startsWith(trimmed)) score = 4;
+    if (name === trimmed || nameEn === trimmed) score = 5;
+    else if (name.startsWith(trimmed) || nameEn.startsWith(trimmed)) score = 4;
     else if (name.includes(trimmed) || nameEn.includes(trimmed)) score = 3;
     else if (
       description.includes(trimmed)

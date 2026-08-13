@@ -24,6 +24,7 @@ export function SkillDetail({
   inventory,
   onSelect,
   onBack,
+  onOverview,
   headingRef,
   openStepIds,
   onToggleStep,
@@ -32,6 +33,12 @@ export function SkillDetail({
   inventory: SkillInventory;
   onSelect: (relativePath: string) => void;
   onBack?: () => void;
+  /**
+   * 넓은 화면(split)의 되돌아갈 문 — 선택을 풀어 진단 개요(FindingsPanel)로.
+   * 이 문이 없던 동안 개요로 돌아가는 유일한 길이 새로고침이었다(2026-08-13
+   * 걷기 실측 — 같은 행 재클릭도 Escape 도 무효).
+   */
+  onOverview?: () => void;
   headingRef?: React.RefObject<HTMLHeadingElement | null>;
   openStepIds: ReadonlySet<string>;
   onToggleStep: (stepId: string) => void;
@@ -66,6 +73,16 @@ export function SkillDetail({
           {t("detail.back")}
         </button>
       ) : null}
+      {onOverview ? (
+        <button
+          type="button"
+          data-testid="skills-detail-overview"
+          onClick={onOverview}
+          className={controlClass({ shape: "link", size: "lg", tone: "muted", className: "hidden self-start lg:inline-flex" })}
+        >
+          {t("detail.backOverview")}
+        </button>
+      ) : null}
       <header className="flex flex-wrap items-baseline gap-x-2.5 gap-y-1">
         <h2
           ref={headingRef}
@@ -74,7 +91,7 @@ export function SkillDetail({
         >
           {skill.name}
         </h2>
-        <p className="text-label text-[color:var(--color-text-tertiary)]">
+        <p className="text-body text-[color:var(--color-text-tertiary)]">
           {skill.origin.personal ? t("group.mine") : skill.origin.source}
         </p>
       </header>
@@ -138,7 +155,7 @@ function Jump({ onClick, children }: { onClick: () => void; children: React.Reac
       className={controlClass({
         shape: "link",
         size: "sm",
-        className: "text-left text-body text-[color:var(--color-amber-source-text-a80)]",
+        className: "text-left text-body-lg text-[color:var(--color-amber-source-text-a80)]",
       })}
     >
       {children}

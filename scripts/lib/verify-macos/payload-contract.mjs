@@ -4,6 +4,14 @@ import { markerNumber, selectedRelationRouteRailTextLeak } from "./relation-mark
 import { validateTopologyFocusCommandSpineContract, validateTopologyFocusRightControlsContract, validateTopologyFocusSearchLaneContract, validateTopologyFocusUtilityLaneContract, validateTopologyNodePopoverScrollFooterContract, validateTopologyNodePopoverTokenContract, validateTopologySelectedCardRelationSummaryContract } from "./topology-panel-contracts.mjs";
 import { TOPOLOGY_DIM_ANCHOR_MIN_OPACITY, TOPOLOGY_DIM_CONTEXT_MIN_OPACITY, TOPOLOGY_DIM_OPACITY_CONTRACT, normalizeTopologySelectedParam, webviewWorkbenchMarkersForPath } from "./webview-env.mjs";
 
+export function validateTopologyMapV2CanvasEvidence(markers) {
+  if (markers?.topologyMapEngine !== "v2") return null;
+  if (markerNumber(markers, "topologyV2CanvasInkPixels") <= 0) {
+    return "WebView did not report rendered pixels for the topology-map-v2 canvas";
+  }
+  return null;
+}
+
 export function validateWebviewVerifyPayload(payload, {
   expectedPath = null,
   expectedFixtureVault = null,
@@ -94,6 +102,8 @@ export function validateWebviewVerifyPayload(payload, {
   const topologyMapCanvasActive =
     topologyMapEngine === "canvas" || topologyMapEngine === "v2";
   const topologyMapV2Active = topologyMapEngine === "v2";
+  const topologyMapV2CanvasEvidenceError = validateTopologyMapV2CanvasEvidence(payload.markers);
+  if (topologyMapV2CanvasEvidenceError) return topologyMapV2CanvasEvidenceError;
   const topologyMapV2SelectedContextVisible =
     topologyMapV2Active &&
     payload.markers.topologyV2DetailPanelVisible === true;

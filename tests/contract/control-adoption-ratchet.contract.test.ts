@@ -1448,6 +1448,14 @@ const OUTSIDE_VALUE_LAYER_FIELDS: readonly OutsideEntry[] = [
     conditional: '체크박스 계약이 사라지면 부채로 내린다.',
   },
   {
+    file: 'src/features/docs-vault-local/ui/WebManualConnectPanel.tsx',
+    count: 2,
+    claim: 'no-spec',
+    proof: 'size-4',
+    why: '수동 연결 확인 체크박스와 그 행. 체크박스의 크기와 타깃은 체크박스 계약이 고정한다.',
+    conditional: '체크박스 계약이 사라지면 부채로 내린다.',
+  },
+  {
     file: 'src/widgets/app-settings-menu/ui/settings-primitives.tsx',
     count: 2,
     claim: 'shape-gap',
@@ -1493,7 +1501,7 @@ const OUTSIDE_VALUE_LAYER_FIELDS: readonly OutsideEntry[] = [
 ];
 
 /** **리터럴이다.** 다른 기준선들과 같은 이유 — 파생값은 멈춤쇠를 양방향으로 헐겁게 만든다. */
-const BASELINE_FIELD_DEBT = 0;
+const BASELINE_FIELD_DEBT = -1;
 
 const fieldCensus = census(scannedFiles, OUTSIDE_VALUE_LAYER_FIELDS, FIELD_TAGS, []);
 

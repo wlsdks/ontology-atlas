@@ -40,6 +40,32 @@
 **상태**: 유효 / 뒤집힘(→ 링크) / 반증됨(관측: …)
 ```
 
+## 2026-08-13 — 구조 readiness와 의미 qualification을 검수 계층에서 분리한다
+
+**결정:** 에이전트 handoff와 ontology-sync는 구조 readiness를 semantic qualification과
+분리해 노출한다. 의미 보정/finalize는 독립 qualification과 명시적 사람 승인을 거친다.
+현재 topology-map-v2 canvas와 desktop smoke는 별도 evidence/gate로 검증하며,
+`query_ontology`의 다형 응답은 별도 계약이 정해질 때까지 열린 payload로 둔다.
+
+**반증 조건:** 독립 qualification과 사람 승인 없이 finalize한 receipt가 실제 의미 오류를
+만들지 않고, 모든 query operation이 동일한 안정적 필드 집합을 제공한다는 관측이 반복되면
+재검토한다. **상태:** 유효
+
+## 2026-08-13 — 활동 기록의 agent 는 하트비트 > 연결 인사(clientInfo.name) > null
+
+`activity.jsonl`의 agent 표시만 하트비트, 연결 인사, null 순으로 폴백한다. 영구적인
+`created_by` 각인은 의도적 하트비트만 신뢰한다. clientInfo.name은 신원 보증이 아니므로
+표시 층에만 사용한다. **반증 조건:** 서로 다른 에이전트가 같은 이름으로 활동 구분을
+무너뜨리면 하트비트 등록 여부를 함께 표시한다. **상태:** 유효
+
+## 2026-08-13 (1) — MCP 실운영 gate와 온톨로지 의미 판정의 경계
+
+`tools/list`, `connection_info`, `git_status`, `git_history`, `verify`/`dogfood:walk`는
+실제 root와 bounded metadata를 함께 검증한다. `query_ontology`는 operation discriminator와
+`compiledSummary`만 고정하고 operation별 envelope은 열린 payload로 둔다. stale source
+receipt는 새 revision/fingerprint를 제시하지만 independent evaluator와 사람 승인 없이는
+finalize하지 않는다. **상태:** 유효
+
 ---
 
 ## 2026-08-13 (3) — 올바른 vault binding이 후보 복구보다 먼저다 · 100+는 생성 목표가 아니다

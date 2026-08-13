@@ -203,6 +203,7 @@ import {
 } from "../lib/topology-path-chip-state";
 import { shouldSuppressGlobalShortcuts } from "../lib/blocking-surface";
 import { resolveAgentFocusNodeId } from "../lib/resolve-agent-focus-node";
+import { useAgentWritingFocusSlug } from "../model/use-agent-writing-focus";
 import { resolveTopologyNodeEditTarget } from "../lib/topology-node-edit";
 import { computeCanonicalCensus } from "@/shared/lib/ontology-tree/canonical-census";
 import {
@@ -323,6 +324,7 @@ const INDEX_PANEL_COLLAPSED_KEY = "demo:index-panel-collapsed:v1";
  */
 export function HomePage() {
   const t = useTranslations('topology');
+  const siteT = useTranslations('metadata');
   // 어권별 이름 입력(create composer) 계약의 '지금 화면 언어'.
   const activeLocale = useLocale();
   const tKinds = useTranslations('kinds');
@@ -919,13 +921,20 @@ export function HomePage() {
   const hasFreshAgentHeartbeat = Boolean(
     agentActivityStatus?.heartbeat && agentActivityStatus.valid && !agentActivityStatus.stale,
   );
+  // 둘째 소스(2026-08-13, 실시간 표시 3번 조각): 하트비트를 등록하지 않고 MCP 로만
+  // 붙는 에이전트의 쓰기는 activity.jsonl 에만 남는다 — 쓰는-중 창(2분) 안이면
+  // 그 마지막 대상이 같은 링을 받는다. 하트비트(의도 선언)가 있으면 그쪽이
+  // 이긴다. 어느 쪽이든 실데이터 1노드 · 해석 실패는 조용히 무(無)다.
+  const agentWritingSlug = useAgentWritingFocusSlug(vault.agentActivityLog);
   const agentFocusNodeId = useMemo(() => {
-    if (!hasFreshAgentHeartbeat) return null;
-    return resolveAgentFocusNodeId(
-      agentActivityStatus?.heartbeat?.focus.ontologySlug ?? null,
-      ontologyInsight?.nodes,
-    );
-  }, [hasFreshAgentHeartbeat, agentActivityStatus, ontologyInsight]);
+    const fromHeartbeat = hasFreshAgentHeartbeat
+      ? resolveAgentFocusNodeId(
+          agentActivityStatus?.heartbeat?.focus.ontologySlug ?? null,
+          ontologyInsight?.nodes,
+        )
+      : null;
+    return fromHeartbeat ?? resolveAgentFocusNodeId(agentWritingSlug, ontologyInsight?.nodes);
+  }, [hasFreshAgentHeartbeat, agentActivityStatus, ontologyInsight, agentWritingSlug]);
   // P4b — "에이전트가 방금" INDEX 배지. 이미 fresh-게이트를 통과한
   // `agentFocusNodeId`(W6 지도 링과 같은 소스)가 최근-변경 렌즈 안에도 있을
   // 때만 — 두 번째 매치 휴리스틱을 새로 만들지 않고 기존 신호를 그대로 재사용.
@@ -1305,7 +1314,7 @@ export function HomePage() {
           // 과제 ⑩ — 브라우저 탭 타이틀도 표시용 짧은 제목.
           selectedOntologyNode?.display ?? selectedOntologyNode?.title,
           t('documentTitle'),
-          "ontology-atlas",
+          siteT('siteName'),
         ].filter((value): value is string => Boolean(value)),
       ),
     ).join(" · ") || null,
@@ -5031,6 +5040,8 @@ export function HomePage() {
                   // typed groups read in one consistent word family.
                   metricContains: relationVocabulary("contains", "plain"),
                   containsShowAll: t("nodeDatasheet.containsShowAll"),
+                  groupShowMore: t("nodeDatasheet.groupShowMore"),
+                  groupShowFewer: t("nodeDatasheet.groupShowFewer"),
                   containsShowSummary: t("nodeDatasheet.containsShowSummary"),
                   containsOtherGroup: t("nodeDatasheet.containsOtherGroup"),
                   metricUsedBy: t("nodeDatasheet.metricUsedBy"),

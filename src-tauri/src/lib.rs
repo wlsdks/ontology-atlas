@@ -1615,6 +1615,27 @@ pub fn run() {
                               const topologyFrameProfile = window.__ontologyAtlasTopologyFrameProfile || null;
                               const topologyMapEngineEl = document.querySelector("[data-map-engine]");
                               const topologyMapEngine = topologyMapEngineEl?.getAttribute("data-map-engine") || "";
+                              const topologyV2CanvasInkPixels = (() => {
+                                if (topologyMapEngine !== "v2") return 0;
+                                const canvas = topologyMapEngineEl?.querySelector(
+                                  'canvas[data-testid="topology-map-v2-canvas"]'
+                                );
+                                if (!(canvas instanceof HTMLCanvasElement) || canvas.width < 1 || canvas.height < 1) {
+                                  return 0;
+                                }
+                                try {
+                                  const context = canvas.getContext("2d", { willReadFrequently: true });
+                                  if (!context) return 0;
+                                  const pixels = context.getImageData(0, 0, canvas.width, canvas.height).data;
+                                  let inkPixels = 0;
+                                  for (let index = 3; index < pixels.length; index += 4) {
+                                    if (pixels[index] > 0) inkPixels += 1;
+                                  }
+                                  return inkPixels;
+                                } catch (_) {
+                                  return 0;
+                                }
+                              })();
                               const topologyV2DetailPanel = document.querySelector(
                                 '[data-testid="topology-v2-detail-panel"]'
                               );
@@ -3917,6 +3938,7 @@ pub fn run() {
                                     "",
                                   topologyFrameProfile,
                                   topologyMapEngine,
+                                  topologyV2CanvasInkPixels,
                                   topologyMapCanvasCardCount,
                                   topologyV2DetailPanelVisible,
                                   topologyV2DetailPanelNodeId:
@@ -4253,6 +4275,9 @@ mod tests {
         assert!(source.contains("후보 \\d+\\/\\d+개 표시"));
         // v2 캔버스 카피 — 정본 census 문구가 relief 마커에 포함돼야 한다.
         assert!(source.contains("개념 \\d+개 · 관계 \\d+개"));
+        // v2 캔버스가 존재하기만 하는 false positive를 막는 draw evidence.
+        assert!(source.contains("topologyV2CanvasInkPixels"));
+        assert!(source.contains("getImageData"));
         // `data-focus-cluster-size` 단언은 지웠다(2026-08-12 표식 정리) — 그
         // 속성은 UI 어디에도 없어(“은퇴 표식”), 이 줄은 죽은 조회가 프로브에
         // 남아 있기를 강제하는 반대 방향 게이트였다.

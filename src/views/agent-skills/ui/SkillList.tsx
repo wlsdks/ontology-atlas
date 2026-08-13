@@ -73,7 +73,7 @@ export function SkillList({
               구분되지 않았다. 머리와 메타는 label(11)로 — 문서함 트리 카운트와
               같은 단이다. 배지(「이름겹침」)만 caption 에 남는다(규격이 배지에
               caption 을 허용한 자리). */}
-          <h3 className="px-1 pb-1 text-label text-[color:var(--color-text-tertiary)]">
+          <h3 className="px-1 pb-1 text-body text-[color:var(--color-text-tertiary)]">
             {group.personal ? t("group.mine") : group.source}
             <span className="ml-1.5">({group.skills.length})</span>
           </h3>
@@ -98,14 +98,14 @@ export function SkillList({
                     })}
                   >
                     <span className="flex min-w-0 items-center gap-1.5">
-                      <span className="truncate text-body text-[color:var(--color-text-primary)]">
+                      <span className="truncate text-body-lg text-[color:var(--color-text-primary)]">
                         {skill.name}
                       </span>
                       {collided.has(skill.name) ? (
                         <span
                           data-testid="skill-row-collision-mark"
                           title={t("collisions.title")}
-                          className="shrink-0 text-caption text-[color:var(--color-amber-source-text-a80)]"
+                          className="shrink-0 text-label text-[color:var(--color-amber-source-text-a80)]"
                         >
                           {t("row.collides")}
                         </span>
@@ -113,7 +113,7 @@ export function SkillList({
                     </span>
                     {/* 숫자 셋은 오른쪽 끝에 붙여 **세로로 줄이 맞게** 둔다 —
                         행마다 들쭉날쭉하면 훑을 때 눈이 그 줄을 못 잡는다. */}
-                    <span className="shrink-0 tabular-nums text-label text-[color:var(--color-text-tertiary)]">
+                    <span className="shrink-0 tabular-nums text-body text-[color:var(--color-text-tertiary)]">
                       {t("row.metrics", {
                         chars: skill.invocation.steps[0].chars,
                         files: skill.invocation.steps[2].files.length,
@@ -128,7 +128,7 @@ export function SkillList({
         </section>
       ))}
       {groups.length === 0 ? (
-        <p className="px-1 text-label leading-prose text-[color:var(--color-text-tertiary)]">
+        <p className="px-1 text-body leading-prose text-[color:var(--color-text-tertiary)]">
           {t("noMatch")}
         </p>
       ) : null}

@@ -18,7 +18,7 @@ import {
   trimToRecentSections,
   type DocEntry,
 } from '../lib/vault-doc';
-import { GUIDE_PAGES } from '../model/guide-pages';
+import { GUIDE_ENTRY_PAGE, GUIDE_PAGES, type GuidePage } from '../model/guide-pages';
 import { Link } from '@/i18n/navigation';
 import { controlClass } from '@/shared/ui/control-class';
 
@@ -106,10 +106,19 @@ export function GatewayDocPage({
      * 번역된 제목과 원문 제목이 나란히 서면 같은 것이 두 번 나온다.
      */
     const withoutH1 = raw.replace(/^#\s+.*(\r?\n)+/, '');
+    /*
+     * 변경 내역(entryNav)의 머리 인용구도 지운다 — 저장소 기여자에게 이 파일을
+     * 어떻게 쓰라고 말하는 메타라서, 화면 lead 가 같은 말을 사용자 언어로 이미
+     * 한다(2026-08-13 실측: KO 페이지의 첫 문단이 영어 관리 문서였다). 뒤따르는
+     * `---` 구분선까지 한 덩어리다. 인용구가 없으면 아무것도 안 지운다.
+     */
+    const withoutPreamble = entryNav
+      ? withoutH1.replace(/^(?:>.*(?:\r?\n)+)+(?:---(?:\r?\n)+)?/, '')
+      : withoutH1;
     return recentSectionLimit
-      ? trimToRecentSections(withoutH1, recentSectionLimit)
-      : { body: withoutH1, omittedSections: 0 };
-  }, [slug, recentSectionLimit]);
+      ? trimToRecentSections(withoutPreamble, recentSectionLimit)
+      : { body: withoutPreamble, omittedSections: 0 };
+  }, [slug, recentSectionLimit, entryNav]);
 
   /**
    * 항목 목록과 본문 제목의 id 는 **같은 함수**가 낸다 — 두 곳이 각자 만들면
@@ -231,6 +240,14 @@ export function GatewayDocPage({
            * 라우트에는 푸터가 없어서, 종전에는 가이드 안에서 변경 내역으로
            * (그 반대로도) 갈 길이 390 에서 0개였다.
            */}
+          {/*
+           * 장 끝의 이전/다음 — 순서 있는 13장인데 본문이 끝나는 자리에 다음
+           * 장으로 가는 길이 0개였다(2026-08-13 실측: 다 읽은 사람이 왼쪽
+           * 차례로 되돌아가 방금 읽은 장을 스스로 찾아야 했다). 순서의 정본은
+           * `GUIDE_PAGES` 하나다. 변경 내역(sidebar 없음)은 장이 아니라서 없다.
+           */}
+          {sidebar ? <GuidePager activeSegment={activeSegment} /> : null}
+
           <GatewayReadingLinks className="mt-12 w-full max-w-[var(--measure-prose)]" />
 
           {/*
@@ -535,6 +552,71 @@ function GuideChapterList({ activeSegment }: { activeSegment?: string }) {
         );
       })}
     </ul>
+  );
+}
+
+/**
+ * 장 끝 이전/다음. 화살표 글자는 쓰지 않는다 — 방향은 「이전 장/다음 장」
+ * 아이브로우와 정렬(왼쪽/오른쪽)이 이미 말하고, 라벨 끝 화살표는 헌장이
+ * 장식으로 판정한다(`label-decoration` 게이트).
+ */
+function GuidePager({ activeSegment }: { activeSegment?: string }) {
+  const t = useTranslations('gatewayNav');
+  const segment = activeSegment ?? GUIDE_ENTRY_PAGE.segment;
+  const index = GUIDE_PAGES.findIndex((page) => page.segment === segment);
+  if (index === -1) return null;
+  const prev = GUIDE_PAGES[index - 1] ?? null;
+  const next = GUIDE_PAGES[index + 1] ?? null;
+  if (!prev && !next) return null;
+  return (
+    <nav
+      aria-label={t('guidePagerLabel')}
+      data-testid="guide-pager"
+      className="mt-12 flex w-full max-w-[var(--measure-prose)] items-stretch gap-3 border-t border-[color:var(--color-divider)] pt-4"
+    >
+      {prev ? (
+        <GuidePagerLink page={prev} eyebrow={t('guidePrev')} edge="start" testId="guide-pager-prev" />
+      ) : (
+        <span aria-hidden className="flex-1" />
+      )}
+      {next ? (
+        <GuidePagerLink page={next} eyebrow={t('guideNext')} edge="end" testId="guide-pager-next" />
+      ) : (
+        <span aria-hidden className="flex-1" />
+      )}
+    </nav>
+  );
+}
+
+function GuidePagerLink({
+  page,
+  eyebrow,
+  edge,
+  testId,
+}: {
+  page: GuidePage;
+  eyebrow: string;
+  edge: 'start' | 'end';
+  testId: string;
+}) {
+  const t = useTranslations('gatewayNav');
+  return (
+    <Link
+      href={`/guide/${page.segment}`}
+      data-testid={testId}
+      className={controlClass({
+        shape: 'card',
+        className: cn(
+          'flex-1 flex-col gap-1 rounded-card border-[color:var(--color-border-soft)] px-4 py-3 hover:border-[color:var(--color-indigo-a46)] hover:bg-[color:var(--color-indigo-a06)]',
+          edge === 'end' ? 'items-end text-right' : 'items-start text-left',
+        ),
+      })}
+    >
+      <span className="text-label text-[color:var(--color-text-quaternary)]">{eyebrow}</span>
+      <span className="text-body-lg text-[color:var(--color-text-primary)] [word-break:keep-all]">
+        {t(`guidePages.${page.titleKey}`)}
+      </span>
+    </Link>
   );
 }
 

@@ -48,10 +48,10 @@ export function SkillProcessRail({
         data-process-state="unavailable"
         className="rounded-card border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-3 py-3"
       >
-        <h3 className="text-body font-[var(--font-weight-emphasis)] text-[color:var(--color-text-primary)]">
+        <h3 className="text-body-lg font-[var(--font-weight-emphasis)] text-[color:var(--color-text-primary)]">
           {t("title")}
         </h3>
-        <p className="mt-1 text-label leading-prose text-[color:var(--color-danger-text)]">
+        <p className="mt-1 text-body leading-prose text-[color:var(--color-danger-text)]">
           {t("unavailable")}
         </p>
         <DiagnosticList diagnostics={process.diagnostics} t={t} />
@@ -71,14 +71,14 @@ export function SkillProcessRail({
     <section data-testid="skill-process-rail" data-process-state="ready">
       <div className="flex flex-wrap items-baseline justify-between gap-2">
         <div>
-          <h3 className="text-body font-[var(--font-weight-emphasis)] text-[color:var(--color-text-primary)]">
+          <h3 className="text-body-lg font-[var(--font-weight-emphasis)] text-[color:var(--color-text-primary)]">
             {t("title")}
           </h3>
-          <p className="mt-0.5 text-label text-[color:var(--color-text-tertiary)]">
+          <p className="mt-0.5 text-body text-[color:var(--color-text-tertiary)]">
             {t("exactCount", { count: ir.steps.length })}
           </p>
         </div>
-        <span className="max-w-full break-all font-mono text-caption text-[color:var(--color-text-quaternary)]">
+        <span className="max-w-full break-all font-mono text-label text-[color:var(--color-text-quaternary)]">
           {ir.source.digest}
         </span>
       </div>
@@ -108,7 +108,7 @@ export function SkillProcessRail({
                   {step.ordinal}
                 </span>
                 <div className="min-w-0">
-                  <p className="whitespace-pre-wrap break-words text-body leading-prose text-[color:var(--color-text-primary)]">
+                  <p className="whitespace-pre-wrap break-words text-body-lg leading-prose text-[color:var(--color-text-primary)]">
                     {step.exactText}
                   </p>
                   {step.semanticLabels.length > 0 ? (
@@ -118,7 +118,7 @@ export function SkillProcessRail({
                           key={`${label.kind}:${label.sourceSpan.start.line}`}
                           data-testid="skill-semantic-label"
                           data-semantic-kind={label.kind}
-                          className="text-label leading-prose text-[color:var(--color-text-tertiary)]"
+                          className="text-body leading-prose text-[color:var(--color-text-tertiary)]"
                         >
                           {semanticLabelText(label, t)}
                         </li>
@@ -146,7 +146,7 @@ export function SkillProcessRail({
                       {resources.length > 0 ? (
                         <ul className="flex flex-col gap-1">
                           {resources.map((resource) => (
-                            <li key={resource.path} className="text-label text-[color:var(--color-text-secondary)]">
+                            <li key={resource.path} className="text-body text-[color:var(--color-text-secondary)]">
                               {resource.path} · {resource.kind} · {resource.exists === true
                                 ? t("resourceExists")
                                 : resource.exists === false
@@ -233,7 +233,7 @@ function PacketAction({
       >
         {t("packetCopy")}
       </Button>
-      <p data-testid="skill-packet-status" aria-live="polite" className="text-label text-[color:var(--color-text-tertiary)]">
+      <p data-testid="skill-packet-status" aria-live="polite" className="text-body text-[color:var(--color-text-tertiary)]">
         {status}
       </p>
       {digest ? <span className="break-all font-mono text-caption text-[color:var(--color-text-quaternary)]">{digest}</span> : null}
@@ -252,7 +252,7 @@ function DiagnosticList({
   return (
     <ul className="mt-2 flex flex-col gap-1">
       {diagnostics.map((diagnostic, index) => (
-        <li key={`${diagnostic.code}:${index}`} className="text-label leading-prose text-[color:var(--color-danger-text)]">
+        <li key={`${diagnostic.code}:${index}`} className="text-body leading-prose text-[color:var(--color-danger-text)]">
           {diagnosticText(diagnostic, t)}
         </li>
       ))}

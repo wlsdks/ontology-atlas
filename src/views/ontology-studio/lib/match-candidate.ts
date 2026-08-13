@@ -1,4 +1,4 @@
-import { nameIncludes, normalizeForMatch } from "@/shared/lib/node-name-match";
+import { nameEquals, nameIncludes, nameStartsWith, normalizeForMatch } from "@/shared/lib/node-name-match";
 import type { CreateCandidate } from "./build-create-node";
 
 /**
@@ -22,18 +22,51 @@ import type { CreateCandidate } from "./build-create-node";
 
 export { normalizeForMatch };
 
+function nameSource(candidate: CreateCandidate) {
+  return {
+    // 후보의 `title` 은 현재 로케일의 표시 이름, `canonicalTitle` 이 원문.
+    title: candidate.canonicalTitle ?? candidate.title,
+    display: candidate.title,
+    displayLocales: candidate.displayLocales,
+  };
+}
+
 /** 이 후보가 검색어와 일치하는가. 빈 검색어는 모두 통과. */
 export function candidateMatches(candidate: CreateCandidate, query: string): boolean {
   const q = normalizeForMatch(query);
   if (q === "") return true;
-  const nameMatch = nameIncludes(
-    {
-      // 후보의 `title` 은 현재 로케일의 표시 이름, `canonicalTitle` 이 원문.
-      title: candidate.canonicalTitle ?? candidate.title,
-      display: candidate.title,
-      displayLocales: candidate.displayLocales,
-    },
-    q,
-  );
-  return nameMatch || normalizeForMatch(candidate.ref).includes(q);
+  return nameIncludes(nameSource(candidate), q) || normalizeForMatch(candidate.ref).includes(q);
+}
+
+/**
+ * 필터 + 순위 + 컷을 한 번에 (2026-08-13).
+ *
+ * 결함: 두 소비처(상단 NodeSearch · 관계 피커)가 `candidateMatches` 로 거른 뒤
+ * **풀 순서 그대로 앞 8개를 잘랐다** — 순위가 없어서 「주문」을 치면 정확 일치
+ * 도메인 「주문」이 접두 역량 5개 아래 6위였고, 풀 순서상 더 늦었다면 컷에
+ * 잘려 아예 안 보였을 것이다.
+ *
+ * 사다리는 전역 검색(`widgets/global-search/lib/match.ts`)과 같은 모양이다:
+ * 이름 정확 일치 > 이름 접두 > 이름 부분 > ref 부분. 같은 층 안에서는 풀
+ * 순서를 지킨다(발견-우선 목록의 기존 순서 존중 — `Array.sort` 는 안정 정렬).
+ */
+export function rankCandidates(
+  candidates: readonly CreateCandidate[],
+  query: string,
+  limit: number,
+): CreateCandidate[] {
+  const q = normalizeForMatch(query);
+  if (q === "") return candidates.slice(0, limit);
+  const scored: Array<{ candidate: CreateCandidate; score: number }> = [];
+  for (const candidate of candidates) {
+    const source = nameSource(candidate);
+    let score = 0;
+    if (nameEquals(source, q)) score = 4;
+    else if (nameStartsWith(source, q)) score = 3;
+    else if (nameIncludes(source, q)) score = 2;
+    else if (normalizeForMatch(candidate.ref).includes(q)) score = 1;
+    if (score > 0) scored.push({ candidate, score });
+  }
+  scored.sort((a, b) => b.score - a.score);
+  return scored.slice(0, limit).map((s) => s.candidate);
 }

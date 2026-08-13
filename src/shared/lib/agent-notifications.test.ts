@@ -19,6 +19,7 @@ function session(overrides: Partial<AgentWorkSession> = {}): AgentWorkSession {
     counts: { added: 3, edited: 0, removed: 1 },
     lastTarget: "capabilities/checkout",
     lastTool: "add_relation",
+    agent: null,
     done: true,
     ...overrides,
   };
@@ -30,6 +31,18 @@ describe("deriveTaskNotifications", () => {
     expect(out.map((n) => n.kind)).toEqual(["task-start", "task-end"]);
     expect(out[1].counts).toEqual({ added: 3, edited: 0, removed: 1 });
     expect(out[1].node?.slug).toBe("capabilities/checkout");
+  });
+
+  it("작업이 이름을 알면 시작·끝 알림 둘 다 그 이름을 나른다", () => {
+    const out = deriveTaskNotifications([session({ agent: "claude-code" })]);
+    expect(out[0].agent).toBe("claude-code");
+    expect(out[1].agent).toBe("claude-code");
+  });
+
+  it("이름 모르는 작업의 알림에는 agent 칸이 없다 — 지어내지 않는다", () => {
+    const out = deriveTaskNotifications([session({ agent: null })]);
+    expect(out[0].agent).toBeUndefined();
+    expect(out[1].agent).toBeUndefined();
   });
 
   it("아직 안 끝난 작업엔 끝 알림이 없다", () => {
