@@ -56,6 +56,11 @@ export function nodeNameCandidates(node: NodeNameSource): string[] {
   return out;
 }
 
+/** 이름 중 하나라도 질의와 정확히 같은가 (정규화된 질의를 받는다). */
+export function nameEquals(node: NodeNameSource, normalizedQuery: string): boolean {
+  return nodeNameCandidates(node).some((name) => normalizeForMatch(name) === normalizedQuery);
+}
+
 /** 이름 중 하나라도 질의로 시작하는가 (정규화된 질의를 받는다). */
 export function nameStartsWith(node: NodeNameSource, normalizedQuery: string): boolean {
   return nodeNameCandidates(node).some((name) => normalizeForMatch(name).startsWith(normalizedQuery));

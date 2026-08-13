@@ -30,11 +30,28 @@ describe("matchOntologyNodes", () => {
     expect(r.every((m) => m.score === 0)).toBe(true);
   });
 
-  it("title prefix > substring > summary > id 순 점수", () => {
+  it("title exact > prefix > substring > summary > id 순 점수", () => {
     const r = matchOntologyNodes("세션", corpus);
-    // "세션" 은 title prefix
+    // "세션" 은 title 과 글자까지 같다 — 정확 일치.
     expect(r[0]?.node.id).toBe("session");
-    expect(r[0]?.score).toBe(4);
+    expect(r[0]?.score).toBe(5);
+  });
+
+  it("정확 일치는 더 최근에 승인된 prefix 매치보다 위다 (2026-08-13 실측 회귀)", () => {
+    // 실측: 「주문」을 치면 도메인 「주문」(정확 일치)이 「주문서 작성」 등
+    // 나중에 승인된 접두 일치 5개 아래 6위였다 — 동점(4) 후 최신순이 정확
+    // 일치를 가라앉혔다. 이름을 끝까지 친 사용자가 찾는 것은 그 이름의 노드다.
+    const earlier = new Date("2026-04-01T00:00:00Z");
+    const later = new Date("2026-04-27T00:00:00Z");
+    const vault = [
+      node({ id: "cap-checkout", title: "주문서 작성", lastApprovedAt: later }),
+      node({ id: "cap-cancel", title: "주문 취소", lastApprovedAt: later }),
+      node({ id: "domain-order", title: "주문", kind: "domain", lastApprovedAt: earlier }),
+    ];
+    const r = matchOntologyNodes("주문", vault);
+    expect(r[0]?.node.id).toBe("domain-order");
+    expect(r[0]?.score).toBe(5);
+    expect(r[1]?.score).toBe(4);
   });
 
   it("summary 매치 (title 에 없음) — score 2", () => {
@@ -87,8 +104,8 @@ describe("matchOntologyNodes", () => {
       const r = matchOntologyNodes("온톨로지 코어", [localized]);
       expect(r).toHaveLength(1);
       expect(r[0]?.node.id).toBe("ontology-core");
-      // 화면에 보이는 이름은 title 과 동급 — prefix 매치는 4.
-      expect(r[0]?.score).toBe(4);
+      // 화면에 보이는 이름은 title 과 동급 — 표시 이름 정확 일치도 5.
+      expect(r[0]?.score).toBe(5);
     });
 
     it("표시 이름 부분 일치는 substring 점수", () => {
@@ -99,7 +116,7 @@ describe("matchOntologyNodes", () => {
     it("원문 title 로도 그대로 찾힌다 (범위는 넓히기만 한다)", () => {
       const r = matchOntologyNodes("Ontology Core", [localized]);
       expect(r).toHaveLength(1);
-      expect(r[0]?.score).toBe(4);
+      expect(r[0]?.score).toBe(5);
     });
 
     it("한국어 화면에서도 다른 어권 이름으로 찾힌다", () => {
@@ -112,7 +129,7 @@ describe("matchOntologyNodes", () => {
       });
       const r = matchOntologyNodes("payments", [koScreen]);
       expect(r).toHaveLength(1);
-      expect(r[0]?.score).toBe(4);
+      expect(r[0]?.score).toBe(5);
     });
 
     it("자소 분리(NFD) 입력도 같은 결과", () => {
@@ -252,6 +269,12 @@ describe("matchProjects", () => {
     const r = matchProjects("ia", corpus);
     expect(r[0]?.project.slug).toBe("demo-iam"); // "IAM" prefix 매치
     expect(r[0]?.score).toBe(4);
+  });
+
+  it("name 정확 일치는 5 — 노드 매처와 같은 사다리", () => {
+    const r = matchProjects("iam", corpus);
+    expect(r[0]?.project.slug).toBe("demo-iam");
+    expect(r[0]?.score).toBe(5);
   });
 
   it("description / tags / category 도 매치", () => {
