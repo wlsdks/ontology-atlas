@@ -3414,6 +3414,9 @@
       "cli": "CLI",
       "trust": "신뢰에 관하여"
     },
+    "guidePrev": "이전 장",
+    "guideNext": "다음 장",
+    "guidePagerLabel": "가이드 장 이동",
     "guideNavLabel": "가이드 차례",
     "onThisGuide": "가이드",
     "entryNavLabel": "변경 항목"
