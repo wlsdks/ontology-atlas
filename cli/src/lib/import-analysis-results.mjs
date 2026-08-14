@@ -44,7 +44,7 @@ export function assertInferImportsResult(payload, context = 'infer_imports') {
 }
 
 function assertCompactInferImportsResult(payload, context) {
-  assertExactKeys(payload, ['rootPath', 'filesScanned', 'coverage', 'contract', 'delivery', 'scanSummary', 'reconciliationSummary', 'reviewQueue', 'nextReview'], context);
+  assertExactKeys(payload, ['rootPath', 'filesScanned', 'coverage', 'contract', 'delivery', 'scanSummary', 'reconciliationSummary', 'staleEdgeFollowUp', 'reviewQueue', 'nextReview'], context);
   assertNonEmptyString(payload.contract, `${context}.contract`);
   if (payload.contract !== 'inferImportsReview:v1') {
     throw new Error(`${context}.contract must be inferImportsReview:v1`);
@@ -81,6 +81,7 @@ function assertCompactInferImportsResult(payload, context) {
     assertNonNegativeInteger(payload.scanSummary[field], `${context}.scanSummary.${field}`);
   }
   assertObject(payload.reconciliationSummary, `${context}.reconciliationSummary`);
+  assertStaleEdgeFollowUp(payload.staleEdgeFollowUp, `${context}.staleEdgeFollowUp`, payload.reconciliationSummary.inVaultNotInCode);
   assertObject(payload.reviewQueue, `${context}.reviewQueue`);
   assertExactKeys(payload.reviewQueue, ['total', 'returned', 'exhausted', 'afterReviewId'], `${context}.reviewQueue`);
   assertNonNegativeInteger(payload.reviewQueue.total, `${context}.reviewQueue.total`);
@@ -207,6 +208,35 @@ function assertCountMap(value, keys, path) {
   assertObject(value, path);
   assertExactKeys(value, keys, path);
   for (const key of keys) assertNonNegativeInteger(value[key], `${path}.${key}`);
+}
+
+function assertStaleEdgeFollowUp(value, path, staleCount) {
+  assertObject(value, path);
+  assertExactKeys(value, ['status', 'count', 'nextCall'], path);
+  assertNonNegativeInteger(value.count, `${path}.count`);
+  if (value.count !== staleCount) {
+    throw new Error(`${path}.count must match reconciliationSummary.inVaultNotInCode: count ${value.count}, summary ${staleCount}`);
+  }
+  if (staleCount === 0) {
+    if (value.status !== 'not_present' || value.nextCall !== null) {
+      throw new Error(`${path} must report not_present with no nextCall when no stale edges exist`);
+    }
+    return;
+  }
+  if (value.status !== 'full_follow_up_required') {
+    throw new Error(`${path}.status must be full_follow_up_required when stale edges exist`);
+  }
+  const callPath = `${path}.nextCall`;
+  assertObject(value.nextCall, callPath);
+  assertExactKeys(value.nextCall, ['tool', 'arguments', 'purpose'], callPath);
+  if (value.nextCall.tool !== 'infer_imports') throw new Error(`${callPath}.tool must be infer_imports`);
+  assertObject(value.nextCall.arguments, `${callPath}.arguments`);
+  assertExactKeys(value.nextCall.arguments, ['rootPath', 'reviewMode', 'allowLargeResponse'], `${callPath}.arguments`);
+  assertNonEmptyString(value.nextCall.arguments.rootPath, `${callPath}.arguments.rootPath`);
+  if (value.nextCall.arguments.reviewMode !== 'full' || value.nextCall.arguments.allowLargeResponse !== true) {
+    throw new Error(`${callPath}.arguments must request reviewMode full with allowLargeResponse true`);
+  }
+  assertNonEmptyString(value.nextCall.purpose, `${callPath}.purpose`);
 }
 
 function assertCoverage(value, path) {

@@ -754,6 +754,10 @@ await test("tools/list — 단일 도구 description 이 batch 짝을 cross-refe
     assert.deepEqual(inferImports?.outputSchema?.required, ["rootPath", "filesScanned", "coverage"]);
     assert.deepEqual(inferImports?.outputSchema?.oneOf?.[0]?.required, ["edges", "externalImports", "unresolved", "moduleEdges"]);
     assert.deepEqual(inferImports?.outputSchema?.oneOf?.[1]?.required, ["contract", "scanSummary", "reconciliationSummary", "reviewQueue", "nextReview"]);
+    assert.deepEqual(Object.keys(inferImports?.outputSchema?.properties?.staleEdgeFollowUp?.properties ?? {}).sort(), ["count", "nextCall", "status"]);
+    assert.deepEqual(inferImports?.outputSchema?.properties?.staleEdgeFollowUp?.required, ["status", "count", "nextCall"]);
+    assert.deepEqual(inferImports?.outputSchema?.properties?.staleEdgeFollowUp?.properties?.status?.enum, ["not_present", "full_follow_up_required"]);
+    assert.deepEqual(inferImports?.outputSchema?.properties?.staleEdgeFollowUp?.properties?.nextCall?.properties?.tool?.enum, ["infer_imports"]);
     assert.deepEqual(inferImports?.outputSchema?.oneOf?.[2]?.required, ["contract", "scanSummary", "focusReview"]);
     assert.equal(inferImports?.outputSchema?.additionalProperties, false);
     assert.equal(inferImports?.outputSchema?.properties?.filesScanned?.type, "integer");
@@ -2753,7 +2757,16 @@ await test("infer_imports — import graph exposes structuredContent", async () 
 });
 
 await test("infer_imports auto delivery — oversized omitted calls compact, explicit full stays available, and raw scans fail closed", async () => {
-  const vaultRoot = makeVault();
+  const vaultRoot = makeVault([
+    {
+      slug: "capabilities/legacy",
+      content: "---\nkind: capability\ntitle: Legacy\ndependencies: [capabilities/target]\n---\n",
+    },
+    {
+      slug: "capabilities/target",
+      content: "---\nkind: capability\ntitle: Target\n---\n",
+    },
+  ]);
   const repoRoot = mkdtempSync(join(tmpdir(), "ontology-atlas-infer-auto-delivery-"));
   try {
     mkdirSync(join(repoRoot, "src", "shared", "runtime"), { recursive: true });
@@ -2800,8 +2813,15 @@ await test("infer_imports auto delivery — oversized omitted calls compact, exp
     assert.equal(automatic.contract, "inferImportsReview:v1");
     assert.equal(automatic.edges, undefined);
     assert.equal(automatic.moduleEdges, undefined);
+    assert.equal(automatic.staleEdgeFollowUp.status, "full_follow_up_required");
+    assert.equal(automatic.staleEdgeFollowUp.count, 1);
+    assert.deepEqual(automatic.staleEdgeFollowUp.nextCall, {
+      tool: "infer_imports",
+      arguments: { rootPath: repoRoot, reviewMode: "full", allowLargeResponse: true },
+      purpose: "Read full reconciliation before judging stale vault edges; compact delivery omits stale details.",
+    });
     assert.equal(
-      JSON.stringify(automatic).length < 5_120,
+      JSON.stringify(automatic).length < 6_144,
       true,
       `automatic compact response was ${JSON.stringify(automatic).length} bytes`,
     );
@@ -4276,6 +4296,45 @@ await test("list_concepts — 500개를 넘는 vault도 offset 페이지로 누�
     assert.equal(outOfRange?.ok, false);
     assert.equal(outOfRange?.errorCode, "invalid_arguments");
     assert.match(String(outOfRange?.error), /offset.*503.*Received: 504/);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+await test("list_concepts — 100/125/500 pagination boundary contract", async () => {
+  const root = makeVault(
+    Array.from({ length: 126 }, (_, index) => ({
+      slug: `capabilities/boundary-${String(index).padStart(3, "0")}`,
+      content: `---\nkind: capability\ntitle: Boundary ${index}\n---\n`,
+    })),
+  );
+  try {
+    const { responses } = await rpc(root, [
+      ...INIT_REQUESTS,
+      callTool(2, "list_concepts"),
+      callTool(3, "list_concepts", { limit: 125 }),
+      callTool(4, "list_concepts", { limit: 500 }),
+      callTool(5, "list_concepts", { limit: 501 }),
+    ]);
+    const defaultPage = getCallParsed(responses, 2);
+    const middlePage = getCallParsed(responses, 3);
+    const maxPage = getCallParsed(responses, 4);
+    const overMax = getCallStructured(responses, 5);
+    assert.equal(defaultPage.pagination.limit, 100);
+    assert.equal(defaultPage.returned, 100);
+    assert.equal(defaultPage.limited, true);
+    assert.equal(defaultPage.pagination.nextOffset, 100);
+    assert.equal(middlePage.pagination.limit, 125);
+    assert.equal(middlePage.returned, 125);
+    assert.equal(middlePage.limited, true);
+    assert.equal(middlePage.pagination.nextOffset, 125);
+    assert.equal(maxPage.pagination.limit, 500);
+    assert.equal(maxPage.returned, 126);
+    assert.equal(maxPage.limited, false);
+    assert.equal(maxPage.pagination.nextOffset, null);
+    assert.equal(overMax?.ok, false);
+    assert.equal(overMax?.errorCode, "invalid_arguments");
+    assert.match(String(overMax?.error), /limit must be <= 500/i);
   } finally {
     rmSync(root, { recursive: true, force: true });
   }

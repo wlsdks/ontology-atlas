@@ -11880,3 +11880,32 @@ spotlight만으로 idle gate가 grace 이후에도 active로 남으면 이 결�
 **상태**: 유효 · bounded-motion slice 집행
 
 ---
+
+## 2026-08-14 (7) — compact import 응답은 stale edge를 숨기지 않고 full follow-up을 요구한다
+
+`infer_imports`의 compact/`reviewMode:"next"` 응답은 import-backed review 후보를 한
+건씩 보존하지만, `inVaultNotInCode`는 기존 vault `depends_on` edge가 코드 import에서
+관찰되지 않았다는 stale 후보다. 이 edge의 상세(`from`, `to`, `ref`, `via`)를 compact
+payload에 임의로 잘라 넣으면 누락인지 완전한 부재인지 구분할 수 없다.
+
+**결정**: compact 응답에는 `staleEdgeFollowUp`을 항상 포함한다. stale edge가 없으면
+`{status:"not_present", count:0, nextCall:null}`을 반환한다. 하나라도 있으면
+`status:"full_follow_up_required"`와 `count`를 반환하고, 상세 판단 전에
+`infer_imports({rootPath, reviewMode:"full", allowLargeResponse:true})`를 호출하는
+정확한 `nextCall`을 제공한다. compact 응답은 stale edge 상세를 제공한 것으로
+해석하지 않으며, CLI validator와 MCP outputSchema가 이 불변식을 fail-closed로
+검사한다.
+
+`list_concepts` pagination의 경계도 계약으로 고정한다: 기본 `limit`은 100,
+125는 유효한 중간 page size, 500은 허용되는 최대 page size이며, 501은 거부한다.
+각 페이지는 `returned`, `limited`, `pagination.nextOffset`을 함께 제공하고
+`hasMore`가 true이면 다음 offset을 반드시 사용한다.
+
+**반증**: compact 응답이 stale count를 누락하거나 full follow-up 없이 stale edge가
+검토 완료로 표시되거나, 100/125/500 경계에서 중복·누락·잘못된 nextOffset이 관찰되면
+이 결정을 폐기하고 bounded stale-edge cursor/details를 별도 설계한다.
+
+**서명 (accountable)**: 소유자 승인 대기
+**상태**: 유효 · compact/read-contract slice 집행
+
+---
