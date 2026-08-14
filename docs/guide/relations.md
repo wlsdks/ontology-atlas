@@ -105,7 +105,7 @@ element           element
 
 별도의 데이터베이스·동기화 버튼·서버가 없습니다. **관계는 `.md` 파일 맨 위
 frontmatter 의 한 줄**이며 관계를 추가할 때 DB migration은 없습니다. 단 UID 없는
-v1 문서함을 v2로 바꾸는 명시적 파일 migration은 [볼트의 구조](/guide/vault-structure)에
+v1 문서함을 v2로 바꾸는 명시적 파일 migration은 [폴더의 구조](/guide/vault-structure)에
 따릅니다.
 
 ### 관계를 선언하는 쪽
@@ -289,4 +289,4 @@ AI 에이전트가 관계를 추가해도 똑같이 이 형태로 남습니다. 
 
 관계를 직접 세어 보고 싶으면 [CLI](/guide/cli) 장의 `overview` ·
 `domain-matrix` · `path` 를 보세요. frontmatter 의 나머지 규칙은
-[볼트의 구조](/guide/vault-structure) 에 있습니다.
+[폴더의 구조](/guide/vault-structure) 에 있습니다.
