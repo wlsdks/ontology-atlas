@@ -69,11 +69,6 @@ const WEBVIEW_TOPOLOGY_WORKBENCH_MARKERS = [
   /Map|지도|INDEX|Concept map|개념|Workspace|작업공간|Relief/,
 ];
 
-const WEBVIEW_TOPOLOGY_WORKBENCH_MARKERS = [
-  /온톨로지|Ontology|Atlas/,
-  /Map|지도|INDEX|Concept map|개념|Workspace|작업공간|Relief/,
-];
-
 /**
  * The verifier can open any packaged route. Do not make non-topology routes
  * repeat map copy merely to satisfy a launch gate; require two route-owned,
