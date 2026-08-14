@@ -25,6 +25,7 @@ import { cameraTransitionDurationMs, easeCameraKeyframe, type CameraKeyframe, ty
 import { stepTugAxis, tugFactorForHop, tugFalloffForDistance } from "../interaction/drag-tug";
 import { isCameraUnsettled, isCanvasActive, isEgoTailAnimating, shouldSkipFrame } from "../model/idle-gate";
 import { ambientSleepFactor, isAmbientAsleep } from "../model/ambient-sleep";
+import { stepSpotlightPhase } from "../model/spotlight-motion";
 import { classifyZoomTier, DEFAULT_TIER_REVEAL, type TierRevealConfig, type ZoomTier } from "../model/tier-visibility";
 import { relaxNodeSeparation, type SeparationNode } from "../model/separation";
 import { createForceSimulation, type ForceSimulation } from "../model/force-layout";
@@ -805,6 +806,7 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
   /** 스포트라이트 — prop 미러(같은 패턴) + on/off 지수 램프(0..1, 프레임 바디가 step). */
   const spotlightIdsRef = useRef<ReadonlySet<string> | null>(spotlightIds);
   const spotlightRampRef = useRef(0);
+  const spotlightDashOffsetRef = useRef(0);
   /**
    * 「걸어온 길」 렌즈 세기 0..1 — 스포트라이트와 **같은** 지수 램프를 쓴다
    * (신규 easing 0). 팝오버를 닫아도 이 값이 0 에 닿을 때까지 렌즈 집합을 계속
@@ -3159,6 +3161,13 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
       spotlightRampRef.current = reducedMotionRef.current
         ? (spotlightIdsRef.current !== null ? 1 : 0)
         : stepFocusRamp(spotlightRampRef.current, spotlightIdsRef.current !== null, dt, tokens.focusDimTau);
+      spotlightDashOffsetRef.current = stepSpotlightPhase({
+        dashOffset: spotlightDashOffsetRef.current,
+        settling: Math.abs(spotlightRampRef.current - (spotlightIdsRef.current !== null ? 1 : 0)) > 0.01,
+        reducedMotion: reducedMotionRef.current,
+        dtSeconds: dt,
+        speedPxPerMs: tokens.spotlightRingSpeed,
+      });
 
       // 걸어온 길 렌즈 on/off 램프 — 같은 easing·같은 토큰 재사용.
       // reduced-motion 은 즉착(정적 대비만으로 정보 성립 — 스포트라이트와 같은 계약).
@@ -3247,6 +3256,7 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
         trailLensRamp: trailLensRampRef.current,
         spotlightIds: spotlightIdsRef.current,
         spotlightRamp: spotlightRampRef.current,
+        spotlightDashOffset: spotlightDashOffsetRef.current,
         tierReveal: tierRevealRef.current,
         glyphStyle: glyphStyleRef.current,
         backgroundVariant: canvasBackgroundRef.current,

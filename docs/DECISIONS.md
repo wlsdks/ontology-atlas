@@ -11807,3 +11807,28 @@ U1.1은 `category`와 `status`가 서로 다른 축이어야 한다는 의미 �
 **상태**: 유효 · 호환성 slice 집행
 
 ---
+
+## 2026-08-14 (6) — U1.2 spotlight는 전이만 움직이고 idle에서 멈춘다
+
+현재 spotlight는 on/off 램프와 idle gate를 이미 갖고 있지만, 링의 파선 위상은
+`now * spotlightRingSpeed`로 계산되어 다른 캔버스 활동이 남아 있는 동안에는
+전이 이후에도 계속 바뀔 수 있다. 이는 spotlight 자체가 frame loop를 영구적으로
+열지는 않더라도, 사용자에게는 bounded motion 계약을 증명하지 못한다.
+
+**결정**: 새 색·easing·토큰·효과를 만들지 않고, 기존 `focusDimTau` 램프를
+그대로 사용한다. spotlight가 켜지거나 꺼지는 전이 동안에만 기존 ring-speed로
+위상을 갱신하고, 램프가 목표에 도달하면 마지막 위상으로 고정한다. reduced-motion
+에서는 위상 0과 즉시 정착을 유지한다. idle gate는 기존처럼 전이 종료 후 grace를
+지나 paint를 건너뛴다.
+
+**완료 증거**: spotlight-specific pure contract(수렴 시간·위상 고정·reduced-motion),
+실제 macOS 30fps 녹화의 전이/정지 구간 frame diff, `/map-perf`의 실제 node drag와
+pan 회귀 없음. 녹화·perf 증거 전에는 backlog를 done으로 올리지 않는다.
+
+**반증**: 전이 종료 뒤에도 링 phase가 변하거나, reduced-motion에서 위상이 변하거나,
+spotlight만으로 idle gate가 grace 이후에도 active로 남으면 이 결정을 폐기한다.
+
+**서명 (accountable)**: 소유자 승인 대기
+**상태**: 유효 · bounded-motion slice 집행
+
+---
