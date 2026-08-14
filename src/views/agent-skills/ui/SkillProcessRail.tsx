@@ -145,8 +145,12 @@ export function SkillProcessRail({
                   >
                     {open ? t("hideDetail") : t("showDetail")}
                   </button>
-                  {open ? (
-                    <div id={detailId} className="mt-2 border-t border-[color:var(--color-border-soft)] pt-2">
+                  <div
+                    id={detailId}
+                    className={open ? "mt-2 border-t border-[color:var(--color-border-soft)] pt-2" : ""}
+                  >
+                    {open ? (
+                      <>
                       {resources.length > 0 ? (
                         <ul className="flex flex-col gap-1">
                           {resources.map((resource) => (
@@ -161,8 +165,9 @@ export function SkillProcessRail({
                         </ul>
                       ) : null}
                       <DiagnosticList diagnostics={diagnostics} t={t} />
-                    </div>
-                  ) : null}
+                      </>
+                    ) : null}
+                  </div>
                 </>
               ) : null}
             </li>

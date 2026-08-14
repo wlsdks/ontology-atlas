@@ -58,6 +58,8 @@ describe("SkillProcessRail", () => {
     const disclosure = screen.getByTestId("skill-step-disclosure");
     const detailId = `skill-step-detail-${stepId.replace(/^[^:]+:/, "").replace(/[^a-zA-Z0-9_-]/g, "-")}`;
     expect(disclosure).toHaveAttribute("aria-controls", detailId);
+    expect(document.getElementById(detailId)).not.toBeNull();
+    expect(document.getElementById(detailId)).toBeEmptyDOMElement();
     rerender(
       <NextIntlClientProvider locale="en" messages={enMessages}>
         <SkillProcessRail process={process} openStepIds={new Set([stepId])} onToggleStep={() => undefined} />

@@ -77,6 +77,7 @@ describe("ConstructionReviewPanel", () => {
   it("opens expert evidence locally without replacing the default summary", () => {
     renderPanel();
     expect(screen.queryByTestId("construction-review-evidence")).not.toBeInTheDocument();
+    expect(document.getElementById("construction-review-evidence-panel")).not.toBeNull();
     fireEvent.click(screen.getByTestId("construction-review-evidence-toggle"));
     expect(screen.getByTestId("construction-review-summary")).toBeVisible();
     const evidence = screen.getByTestId("construction-review-evidence");
@@ -96,8 +97,9 @@ describe("ConstructionReviewPanel", () => {
     fireEvent.click(screen.getByTestId("construction-review-evidence-toggle"));
     const draftToggle = screen.getByTestId("construction-review-draft-toggle");
     expect(draftToggle).toHaveAttribute("aria-controls", "construction-review-draft-fields");
+    expect(document.getElementById("construction-review-draft-fields")).not.toBeNull();
     fireEvent.click(draftToggle);
-    expect(screen.getByTestId("construction-review-draft-fields")).toHaveAttribute("id", "construction-review-draft-fields");
+    expect(document.getElementById("construction-review-draft-fields")).not.toBeNull();
 
     const question = screen.getByTestId("construction-review-cq-scope");
     fireEvent.change(question, { target: { value: "Which meaning is actually in scope?" } });
