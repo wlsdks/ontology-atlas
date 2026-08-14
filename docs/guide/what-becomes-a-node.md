@@ -8,7 +8,7 @@
 여기 답이 있습니다. 그리고 **답의 대부분은 "세지 말라"** 입니다.
 
 kind별 포함·제외·예시·반례와 `is_a` 판별의 정본은
-[Atlas 메타모델 명세](../ONTOLOGY-ATLAS-SPEC.md#2-the-five-authorable-node-kinds-and-reserved-reader-kind)입니다.
+[Atlas 메타모델 명세](https://github.com/wlsdks/ontology-atlas/blob/main/docs/ONTOLOGY-ATLAS-SPEC.md#2-the-five-authorable-node-kinds-and-reserved-reader-kind)입니다.
 이 장은 그 규칙을 다시 정의하지 않고, 파일 미러링과 fan-out이라는 실제 제작
 함정을 설명합니다.
 

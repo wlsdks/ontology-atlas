@@ -540,7 +540,7 @@ function SearchPaletteDialog({
                           className="shrink-0 text-[color:var(--color-indigo-accent)]"
                         />
                         <span className="min-w-0 flex-1 truncate">{d.title}</span>
-                        <span className="min-w-0 truncate font-mono text-caption uppercase tracking-[var(--tracking-caps-10)] text-[color:var(--color-text-quaternary)]">
+                        <span className="min-w-0 truncate font-mono text-caption text-[color:var(--color-text-quaternary)]">
                           {d.slug}
                         </span>
                       </Link>
@@ -682,7 +682,7 @@ function SearchPaletteDialog({
                         <div className="font-mono text-caption uppercase tracking-[var(--tracking-caps-10)] text-[color:var(--color-text-quaternary)]">
                           {String(rowIndex + 1).padStart(2, '0')}
                         </div>
-                        <div className="mt-1 font-mono text-caption uppercase tracking-[var(--tracking-caps-08)] text-[color:var(--color-text-quaternary)]">
+                        <div className="mt-1 font-mono text-caption text-[color:var(--color-text-quaternary)]">
                           {r.project.slug}
                         </div>
                       </div>

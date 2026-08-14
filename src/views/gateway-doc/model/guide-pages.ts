@@ -52,7 +52,32 @@ export const GUIDE_PAGES: readonly GuidePage[] = [
  */
 export const GUIDE_ENTRY_PAGE = GUIDE_PAGES[0]!;
 
-export function findGuidePage(segment: string | undefined): GuidePage {
-  if (!segment) return GUIDE_ENTRY_PAGE;
-  return GUIDE_PAGES.find((page) => page.segment === segment) ?? GUIDE_ENTRY_PAGE;
+/**
+ * 세그먼트 해석 결과 — **어느 장을 그릴지**와 **그 장이 요청받은 장인지**를
+ * 함께 말한다.
+ *
+ * ## 왜 `GuidePage` 하나를 돌려주지 않나 (2026-08-14 걷기 실측)
+ *
+ * 종전 `findGuidePage()` 는 모르는 세그먼트에 1장을 **말없이** 돌려줬다.
+ * 가이드 본문의 상대 `.md` 링크가 `/guide/ONTOLOGY-ATLAS-SPEC.md` 로 풀렸을 때
+ * 화면은 404 도 아니고 명세도 아닌 **1장을 그 주소인 척** 그렸다 — 오배송은
+ * 404 보다 알아채기 어렵다. 정적 export 라 진짜 404 라우팅은 제한적이므로
+ * (`generateStaticParams` 가 만든 경로만 실재한다), 폴백 자체는 유지하되
+ * **대체했다는 사실을 화면이 말할 수 있게** `matched` 를 함께 돌려준다.
+ * 렌더 쪽 소비자는 `app/[locale]/guide/[segment]/page.tsx` — `matched` 가
+ * false 면 안내 배너를 얹는다.
+ */
+export interface GuidePageResolution {
+  /** 실제로 그릴 장. 요청이 실재하지 않으면 첫 장. */
+  readonly page: GuidePage;
+  /** 요청한 세그먼트가 실재하는 장이었나 — false 면 화면이 대체를 고지해야 한다. */
+  readonly matched: boolean;
+}
+
+export function resolveGuidePage(segment: string | undefined): GuidePageResolution {
+  // 마디 없는 `/guide` 는 «첫 장을 그 자리에서 그린다» 가 정의된 행동이다
+  // (위 GUIDE_ENTRY_PAGE 주석) — 대체가 아니므로 matched 다.
+  if (!segment) return { page: GUIDE_ENTRY_PAGE, matched: true };
+  const page = GUIDE_PAGES.find((candidate) => candidate.segment === segment);
+  return page ? { page, matched: true } : { page: GUIDE_ENTRY_PAGE, matched: false };
 }

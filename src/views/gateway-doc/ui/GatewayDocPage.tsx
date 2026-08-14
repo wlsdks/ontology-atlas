@@ -68,6 +68,15 @@ export interface GatewayDocPageProps {
   /** 원문 파일의 저장소 내 경로 — 잘렸을 때 "나머지는 여기" 로 쓴다. */
   sourcePath: string;
   /**
+   * 본문 위에 얹는 안내 한 줄. **없으면 안 그린다.**
+   *
+   * 지금의 유일한 손님은 가이드의 모르는-세그먼트 폴백이다: 정적 export 라
+   * 404 라우팅이 제한적이어서 첫 장을 대신 그리는데, **대체했다는 사실을
+   * 말하지 않으면** 그 주소의 문서인 척하는 오배송이 된다(2026-08-14 걷기
+   * 실측). 문구는 페이지가 번역해서 넘긴다 — 이 뷰는 로케일을 모른다.
+   */
+  notice?: string;
+  /**
    * 왼쪽 차례를 그릴지 — 가이드처럼 **여러 장이 한 벌**인 문서만 true.
    *
    * 변경 내역은 한 장짜리라 차례가 없다. 항목이 하나뿐인 목록은 길잡이가 아니라
@@ -92,6 +101,7 @@ export function GatewayDocPage({
   lead,
   recentSectionLimit,
   sourcePath,
+  notice,
   sidebar = false,
   activeSegment,
   entryNav = false,
@@ -200,6 +210,19 @@ export function GatewayDocPage({
             {sidebar ? <GuideSidebar activeSegment={activeSegment} /> : null}
             {entryNav ? <EntrySidebar entries={entries} /> : null}
             <div className="flex min-w-0 flex-col items-center">
+          {/*
+           * 안내는 제목보다 **먼저** 선다 — 이 화면이 요청받은 주소의 문서가
+           * 아니라는 사실은 제목을 읽기 전에 알아야 하는 정보다. 절단 안내
+           * (`gateway-doc-truncated`)와 같은 판 문법: 패널 면 + 3차 텍스트.
+           */}
+          {notice ? (
+            <aside
+              data-testid="gateway-doc-notice"
+              className="mb-6 w-full max-w-[var(--measure-prose)] rounded-panel border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] p-4"
+            >
+              <p className="text-body leading-body text-[color:var(--color-text-tertiary)]">{notice}</p>
+            </aside>
+          ) : null}
           <header className="w-full max-w-[var(--measure-prose)]">
             <h1
               data-testid="gateway-doc-title"

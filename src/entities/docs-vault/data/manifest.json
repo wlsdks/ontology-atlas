@@ -11056,9 +11056,7 @@
       "excerpt": "지도를 처음 열면 가운데 허브에서 도메인이 방사형으로 뻗어 나갑니다. 그 모양만 보면 이런 의문이 듭니다. 도메인끼리는 서로 아무 관계도 못 갖나? 이 구조는 미리 설계된 데이터를 조회하는 것뿐인가? 관계는 DB 에 들어 있나, md 에 들어 있나? 세 질문에 차례로 답합니다. 저장 키·화면 이름·MCP query/write 지원 범위·방향·endpoint kind·inverse·추론 경계의 정본은 Atlas 메타모델 명세입니다. 이 장은 그 표를 복제하지 않고 사람이 지도와 Markdown에서 관계를 읽는 법만 설명합니다. 방사형으로 보이는 건 구조(담김) 관계뿐입",
       "wordCount": 1213,
       "updatedAt": "2026-08-14",
-      "linksOut": [
-        "ONTOLOGY-ATLAS-SPEC"
-      ]
+      "linksOut": []
     },
     {
       "slug": "guide/studio",
@@ -11279,10 +11277,8 @@
       ],
       "excerpt": "볼트를 만들다 보면 반드시 이 질문에서 멈춥니다. 이건 도메인인가 역량인가? 파일마다 노드를 하나씩 만들어야 하나? 한 노드 아래에 자식이 서른 개면 잘못된 건가? 여기 답이 있습니다. 그리고 답의 대부분은 \"세지 말라\" 입니다. kind별 포함·제외·예시·반례와 isa 판별의 정본은 Atlas 메타모델 명세입니다. 이 장은 그 규칙을 다시 정의하지 않고, 파일 미러링과 fan-out이라는 실제 제작 함정을 설명합니다. \"얼마나 큰가\" 로 층을 고르면 계속 헷갈립니다. 무엇에 답하는가로 고르십시오. · kind · 답하는 질문 · 예 · project · 우리가 무엇",
       "wordCount": 1069,
-      "updatedAt": "2026-08-09",
-      "linksOut": [
-        "ONTOLOGY-ATLAS-SPEC"
-      ]
+      "updatedAt": "2026-08-14",
+      "linksOut": []
     },
     {
       "slug": "guide/what-is-atlas",
@@ -15978,16 +15974,6 @@
         "fromSlug": "FOUNDATIONS",
         "context": "rable kinds, one reserved reader kind, relation support layers, `is_a` test, and inference boundary — lives only in **[`ONTOLOGY-ATLAS-SPEC.md` §2]**. The name is earned by that shared meaning model, not by pretending the files implement a standard they do not. - *",
         "linkText": "`ONTOLOGY-ATLAS-SPEC.md` §2"
-      },
-      {
-        "fromSlug": "guide/relations",
-        "context": "뿐인가? 관계는 DB 에 들어 있나, md 에 들어 있나? 세 질문에 차례로 답합니다. 저장 키·화면 이름·MCP query/write 지원 범위·방향·endpoint kind·inverse·추론 경계의 정본은 **[Atlas 메타모델 명세]**입니다. 이 장은 그 표를 복제하지 않고 사람이 지도와 Markdown에서 관계를 읽는 법만 설명합니다. ## 1. 도메인끼리 관계, 생깁니다 방사형으로 보이는 건 **구조(담김) 관계**뿐입니다. 그 위에 **",
-        "linkText": "Atlas 메타모델 명세"
-      },
-      {
-        "fromSlug": "guide/what-becomes-a-node",
-        "context": "하나씩 만들어야 하나? 한 노드 > 아래에 자식이 서른 개면 잘못된 건가? 여기 답이 있습니다. 그리고 **답의 대부분은 \"세지 말라\"** 입니다. kind별 포함·제외·예시·반례와 `is_a` 판별의 정본은 **[Atlas 메타모델 명세]**입니다. 이 장은 그 규칙을 다시 정의하지 않고, 파일 미러링과 fan-out이라는 실제 제작 함정을 설명합니다. ## 1. 네 단계의 읽기 사슬과 document는 질문이 다르다 \"얼마나 큰가\" 로 층을 고르면",
-        "linkText": "Atlas 메타모델 명세"
       },
       {
         "fromSlug": "ONTOLOGY-CONSTRUCTION-QUALIFICATION",
