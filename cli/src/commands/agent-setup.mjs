@@ -240,7 +240,7 @@ function buildAgentSetup(parsed) {
       setupRepair: `${CLI} agent-setup ${shellQuote(vaultRoot)} --root ${shellQuote(codebaseRoot)} --write`,
       restartGuidance: `Restart Claude Code, Cursor, or Codex from ${shellQuote(codebaseRoot)} after repair.`,
       codexTrustGuidance:
-        'Config presence is not a connection. Codex loads project-scoped .codex/config.toml only after the folder is trusted; approve the trust prompt, then run `codex mcp list` from that folder and confirm ontology-atlas appears.',
+        'Config presence is not a connection. In a fresh Codex session, open the exact project root and approve the trust prompt; then run `codex mcp list` from that folder and confirm ontology-atlas appears before treating registration as verified. If the project config is ignored, use the Global Codex fallback command below, restart Codex, and repeat `codex mcp list` plus `connection_info`. This CLI cannot inspect Codex trust or credentials, so status remains unknown/unverified.',
       verify: `${CLI} mcp-verify ${shellQuote(vaultRoot)} --timeout-ms 15000`,
       setupGate: `${CLI} agent-brief ${shellQuote(vaultRoot)} --verify-fallbacks --json --fallback-timeout-ms 15000 --fallback-slow-ms 5000 --fallback-concurrency 4`,
       graphRunbook: buildGraphRunbookCommands(vaultRoot),
@@ -301,6 +301,8 @@ function buildClientStatus(files) {
       mcpConfig: configStatus('codex-toml'),
       mcpConnection: 'unverified',
       trust: 'unknown',
+      projectTrust: 'unknown',
+      registration: 'unverified',
       connected: false,
     },
   };
@@ -534,7 +536,7 @@ function render(result) {
   const claude = result.clientStatus.claudeCode;
   const codex = result.clientStatus.codex;
   process.stdout.write(`  ${COLORS.cyan}Claude Code${COLORS.reset} · MCP config ${claude.mcpConfig} · MCP connection ${claude.mcpConnection} · auth ${claude.auth} · connected ${claude.connected}\n`);
-  process.stdout.write(`  ${COLORS.cyan}Codex${COLORS.reset} · MCP config ${codex.mcpConfig} · MCP connection ${codex.mcpConnection} · trust ${codex.trust} · connected ${codex.connected}\n\n`);
+  process.stdout.write(`  ${COLORS.cyan}Codex${COLORS.reset} · MCP config ${codex.mcpConfig} · MCP connection ${codex.mcpConnection} · trust ${codex.trust} · project trust ${codex.projectTrust} · registration ${codex.registration} · connected ${codex.connected}\n\n`);
 
   for (const file of result.files) {
     const icon = file.status === 'ready' ? COLORS.green : file.status === 'review' ? COLORS.yellow : COLORS.red;
