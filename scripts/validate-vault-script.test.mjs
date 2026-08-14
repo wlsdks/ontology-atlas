@@ -122,4 +122,24 @@ describe("validate-vault script arguments", () => {
       rmSync(dir, { recursive: true, force: true });
     }
   });
+
+  it("does not let a keyless malformed block pass the zero-key fast path", () => {
+    const dir = mkdtempSync(join(tmpdir(), "ontology-atlas-validate-vault-keyless-"));
+    const file = join(dir, "broken.md");
+    try {
+      writeFileSync(file, "---\nmalformed declaration\n---\n");
+
+      const result = spawnSync(process.execPath, [SCRIPT, dir], {
+        cwd: ROOT,
+        encoding: "utf8",
+      });
+
+      assert.equal(result.status, 1);
+      assert.match(result.stdout, /\[malformed-frontmatter-line\]/);
+      assert.match(result.stdout, /\[parse-zero-keys\]/);
+      assert.match(result.stdout, /error 1/);
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
 });
