@@ -5,14 +5,12 @@ kind: capability
 title: Tier Evaluation
 display_ko: 등급 산정
 display_en: Tier Evaluation
-description: "Works out which tier a shopper belongs to from what they have bought over a window."
+description: "일정 기간의 구매 실적을 보고 고객이 어느 등급인지 정하는 계산으로, 등급을 내릴 때의 처리는 아직 결정 목록으로 남아 있습니다."
 domain: domains/loyalty
 elements: []
 ---
 
 # Tier Evaluation · 등급 산정
-
-Works out which tier a shopper belongs to from what they have bought over a window.
 
 일정 기간 동안 산 것을 보고 이 고객이 어느 등급인지 정합니다.
 
@@ -23,3 +21,5 @@ Works out which tier a shopper belongs to from what they have bought over a wind
 - 강등 예고를 며칠 전에 보낼 것인가
 - 등급 혜택을 이미 쓴 주문이 취소되면 등급을 되돌릴 것인가
 - 등급을 계산하는 기간을 달력 기준으로 볼 것인가, 가입일 기준으로 볼 것인가
+
+Works out which tier a shopper belongs to from what they have bought over a window.

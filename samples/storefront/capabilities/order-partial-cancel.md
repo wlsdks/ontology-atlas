@@ -5,15 +5,13 @@ kind: capability
 title: Partial Cancellation
 display_ko: 부분 취소
 display_en: Partial Cancellation
-description: "Drops some items and keeps the rest alive, so only the difference is refunded and the remaining parcel still ships."
+description: "여러 개 산 것 중 일부만 무르고 남은 주문은 그대로 출고하면서, 배송비·쿠폰·적립을 다시 계산해 차액만 돌려주는 일입니다."
 domain: domains/order
 dependencies: [capabilities/refund, capabilities/stock-tracking]
 elements: []
 ---
 
 # Partial Cancellation · 부분 취소
-
-Drops some items and keeps the rest alive, so only the difference is refunded and the remaining parcel still ships.
 
 일부 품목만 빼고 나머지 주문은 살려 둡니다. 차액만 환불되고 남은 상품은 그대로 출고됩니다.
 
@@ -25,3 +23,5 @@ Drops some items and keeps the rest alive, so only the difference is refunded an
 - 재고: 뺀 것만 되돌리면 되지만, 이미 창고에서 집었다면 되돌릴 것이 물건이 아니라 사람의 일입니다
 
 지금 규칙: **할인은 남은 주문 기준으로 다시 계산하고, 차액은 환불에서 뺍니다.** 고객에게는 「원래 할인이 사라졌다」가 아니라 「이만큼 돌려드립니다」로 보입니다.
+
+Drops some items and keeps the rest alive, so only the difference is refunded and the remaining parcel still ships. Full cancellation is easy; the partial case drags shipping fees, coupon thresholds, earned points, and already-picked stock into one recalculation.
