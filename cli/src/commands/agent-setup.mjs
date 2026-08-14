@@ -88,7 +88,7 @@ const FIRST_CONTACT_PROOF_CONTRACT = Object.freeze([
   Object.freeze({
     id: 'config_state',
     label: 'Config state',
-    proves: 'agent-setup --json reports root-specific Claude Code / Cursor and Codex config readiness before repair.',
+    proves: 'agent-setup --json reports root-specific MCP config readiness; it does not claim a live connection, Claude auth, or Codex trust.',
   }),
   Object.freeze({
     id: 'mcp_verify',
@@ -224,6 +224,7 @@ function buildAgentSetup(parsed) {
     repaired: files.filter((file) => file.action === 'merged' || file.action === 'rebound').length,
     examples: files.filter((file) => file.examplePath).length,
   };
+  const clientStatus = buildClientStatus(files);
 
   return {
     operation: 'agent_setup',
@@ -233,12 +234,13 @@ function buildAgentSetup(parsed) {
     serverCommand,
     summary,
     files,
+    clientStatus,
     commands: {
       setupState: `${CLI} agent-setup ${shellQuote(vaultRoot)} --root ${shellQuote(codebaseRoot)} --json`,
       setupRepair: `${CLI} agent-setup ${shellQuote(vaultRoot)} --root ${shellQuote(codebaseRoot)} --write`,
       restartGuidance: `Restart Claude Code, Cursor, or Codex from ${shellQuote(codebaseRoot)} after repair.`,
       codexTrustGuidance:
-        'Codex loads project-scoped .codex/config.toml only after the folder is trusted; approve the trust prompt, then run `codex mcp list` from that folder and confirm ontology-atlas appears.',
+        'Config presence is not a connection. Codex loads project-scoped .codex/config.toml only after the folder is trusted; approve the trust prompt, then run `codex mcp list` from that folder and confirm ontology-atlas appears.',
       verify: `${CLI} mcp-verify ${shellQuote(vaultRoot)} --timeout-ms 15000`,
       setupGate: `${CLI} agent-brief ${shellQuote(vaultRoot)} --verify-fallbacks --json --fallback-timeout-ms 15000 --fallback-slow-ms 5000 --fallback-concurrency 4`,
       graphRunbook: buildGraphRunbookCommands(vaultRoot),
@@ -276,6 +278,30 @@ function buildAgentSetup(parsed) {
       modeComparison: SETUP_MODE_COMPARISON,
       firstContactProofContract: FIRST_CONTACT_PROOF_CONTRACT,
       postChangeSync: POST_CHANGE_SYNC_RULES,
+    },
+  };
+}
+
+function buildClientStatus(files) {
+  const configStatus = (kind) => {
+    const rows = files.filter((file) => file.kind === kind);
+    if (rows.length === 0 || rows.some((file) => file.status === 'missing')) return 'missing';
+    if (rows.some((file) => file.status === 'review')) return 'review';
+    return 'ready';
+  };
+  return {
+    contract: 'clientStatus:v1',
+    claudeCode: {
+      mcpConfig: configStatus('mcp-json'),
+      mcpConnection: 'unverified',
+      auth: 'unknown',
+      connected: false,
+    },
+    codex: {
+      mcpConfig: configStatus('codex-toml'),
+      mcpConnection: 'unverified',
+      trust: 'unknown',
+      connected: false,
     },
   };
 }
@@ -503,6 +529,12 @@ function render(result) {
   );
   process.stdout.write(`${COLORS.dim}vault${COLORS.reset} ${result.vaultRoot}\n`);
   process.stdout.write(`${COLORS.dim}codebase${COLORS.reset} ${result.codebaseRoot}\n\n`);
+
+  process.stdout.write(`${COLORS.bold}Client status:${COLORS.reset} config readiness is not a live connection\n`);
+  const claude = result.clientStatus.claudeCode;
+  const codex = result.clientStatus.codex;
+  process.stdout.write(`  ${COLORS.cyan}Claude Code${COLORS.reset} · MCP config ${claude.mcpConfig} · MCP connection ${claude.mcpConnection} · auth ${claude.auth} · connected ${claude.connected}\n`);
+  process.stdout.write(`  ${COLORS.cyan}Codex${COLORS.reset} · MCP config ${codex.mcpConfig} · MCP connection ${codex.mcpConnection} · trust ${codex.trust} · connected ${codex.connected}\n\n`);
 
   for (const file of result.files) {
     const icon = file.status === 'ready' ? COLORS.green : file.status === 'review' ? COLORS.yellow : COLORS.red;

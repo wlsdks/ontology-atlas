@@ -40,6 +40,29 @@
 **상태**: 유효 / 뒤집힘(→ 링크) / 반증됨(관측: …)
 ```
 
+## 2026-08-14 (11) — 클라이언트 설정·신뢰·실제 연결은 서로 다른 상태다
+
+**소집**: 단독 패스 · **트리거**: fresh client registration audit에서 정상 MCP가
+잘못된 vault를 읽고, Codex trust 미완료와 Claude 인증 부재가 설정 파일의 존재만으로
+구분되지 않음
+**루브릭**: 22/24 (치명적 0: 없음)
+**결정**: `mcp-verify`의 first contact는 `connection_info`를 필수로 호출하고
+`vaultRoot`/`repoRoot`가 verifier scope와 다르면 `wrong_vault`/`wrong_repo_root`로
+fail-closed한다. `agent-setup --json`은 config readiness와 live MCP connection을
+분리하며, Claude `auth`와 Codex `trust`는 확인 전 `unknown`으로 둔다.
+**적용 규칙**: 파일이 ready여도 `connected:false`/`mcpConnection:unverified`다.
+신뢰·인증·실제 tools/list/connection_info 증명은 각각 해당 클라이언트에서 수행한다.
+**서명**: jinan (human owner)
+
+**기록된 반대**: “유효한 설정 파일이면 연결됨으로 간주하자”는 의견은 실제 클라이언트
+trust/auth와 vault rebinding을 관측하지 못하고 잘못된 데이터에 쓰기를 시작할 수 있어
+기각했다.
+**반증 조건**: fresh client가 trust/auth 없이도 동일한 설정 파일만으로 올바른 vault와
+MCP inventory를 재현하고, 다른 vault를 읽지 않는다는 독립 증거가 있으면 상태 계약을
+재검토한다.
+**재검토**: Codex·Claude 각각의 실제 client call qualification이 추가될 때
+**상태**: 유효
+
 ## 2026-08-14 (9) — 100+ node 구조 스트레스와 의미 qualification은 별도 gate다
 
 **관찰**: fresh OSS scratch에서 5-starter vault부터 Atlas MCP로 50+50+25를

@@ -165,7 +165,7 @@ describe('live local first-contact probes', () => {
 
   it('requires scope and bounded-history metadata for the three local probes', () => {
     const responses = [
-      response(70, {
+      response(73, {
         vaultRoot: '/vault',
         repoRoot: '/repo',
         sameRoot: false,
@@ -203,6 +203,48 @@ describe('live local first-contact probes', () => {
         { repoRoot: '/repo', vaultRoot: '/vault' },
       ) ?? '',
       /structuredContent mismatch/,
+    );
+  });
+
+  it('sends connection_info as a required first-contact probe', () => {
+    const request = buildFirstContactRequests().find((candidate) => candidate.id === 73);
+    assert.deepEqual(request?.params, { name: 'connection_info', arguments: {} });
+    assert.equal(initialExpectedFirstContactIds().has(73), true);
+  });
+
+  it('fails closed with wrong_vault when connection_info binds a different vault', () => {
+    const responses = [
+      response(73, {
+        vaultRoot: '/other-vault',
+        repoRoot: '/repo',
+        sameRoot: false,
+        restartRequiredForRootChange: true,
+        server: { toolCount: 35, toolNames: [] },
+      }),
+      response(71, {
+        operation: 'git_status',
+        ok: true,
+        repoRoot: '/repo',
+        vaultRoot: '/vault',
+        counts: {},
+        files: [],
+        stagedOutsideVault: [],
+      }),
+      response(72, {
+        operation: 'git_history',
+        repoRoot: '/repo',
+        vaultRoot: '/vault',
+        count: 0,
+        limited: false,
+        hasMore: false,
+        shallow: false,
+        historyComplete: true,
+      }),
+    ];
+
+    assert.match(
+      firstContactLocalProbeFailure(responses, { repoRoot: '/repo', vaultRoot: '/vault' }) ?? '',
+      /^wrong_vault:/,
     );
   });
 });

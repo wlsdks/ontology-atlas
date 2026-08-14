@@ -38,7 +38,7 @@
  */
 
 import { spawn } from 'node:child_process';
-import { mkdirSync, rmSync, statSync, writeFileSync } from 'node:fs';
+import { mkdirSync, realpathSync, rmSync, statSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { fileURLToPath } from 'node:url';
 import { dirname, resolve, join } from 'node:path';
@@ -4258,6 +4258,9 @@ export const FIRST_CONTACT_RESPONSE_LABELS = new Map([
   [68, 'index_project'],
   [69, 'absorb_document_dry_run'],
   [70, 'infer_imports_focus'],
+  [71, 'git_status'],
+  [72, 'git_history'],
+  [73, 'connection_info'],
 ]);
 
 export const OPTIONAL_FIRST_CONTACT_RESPONSE_IDS = [
@@ -4659,11 +4662,20 @@ export function firstContactLocalProbeFailure(responses, {
   const expectedVaultRoot = canonical(vaultRoot);
   const checks = [
     {
-      id: 70,
+      id: 73,
       label: 'connection_info',
       validate(payload) {
-        if (canonical(payload.vaultRoot) !== expectedVaultRoot || canonical(payload.repoRoot) !== expectedRepoRoot) {
-          return 'connection_info roots do not match the verifier scope';
+        if (typeof payload.vaultRoot !== 'string' || payload.vaultRoot.trim() === '') {
+          return 'wrong_vault: connection_info.vaultRoot is missing';
+        }
+        if (typeof payload.repoRoot !== 'string' || payload.repoRoot.trim() === '') {
+          return 'wrong_repo_root: connection_info.repoRoot is missing';
+        }
+        if (canonical(payload.vaultRoot) !== expectedVaultRoot) {
+          return `wrong_vault: connection_info.vaultRoot ${JSON.stringify(payload.vaultRoot)} does not match expected ${JSON.stringify(expectedVaultRoot)}`;
+        }
+        if (canonical(payload.repoRoot) !== expectedRepoRoot) {
+          return `wrong_repo_root: connection_info.repoRoot ${JSON.stringify(payload.repoRoot)} does not match expected ${JSON.stringify(expectedRepoRoot)}`;
         }
         if (typeof payload.sameRoot !== 'boolean' || payload.restartRequiredForRootChange !== true) {
           return 'connection_info scope metadata drift';
@@ -4747,6 +4759,24 @@ export function buildFirstContactRequests() {
     },
     { jsonrpc: '2.0', method: 'notifications/initialized' },
     { jsonrpc: '2.0', id: 2, method: 'tools/list' },
+    {
+      jsonrpc: '2.0',
+      id: 73,
+      method: 'tools/call',
+      params: { name: 'connection_info', arguments: {} },
+    },
+    {
+      jsonrpc: '2.0',
+      id: 71,
+      method: 'tools/call',
+      params: { name: 'git_status', arguments: {} },
+    },
+    {
+      jsonrpc: '2.0',
+      id: 72,
+      method: 'tools/call',
+      params: { name: 'git_history', arguments: { limit: 20 } },
+    },
     {
       jsonrpc: '2.0',
       id: 3,
@@ -9146,7 +9176,7 @@ async function step2BootAndCall() {
   try {
     return await new Promise((res) => {
     const proc = spawn(SERVER_COMMAND, SERVER_COMMAND_ARGS, {
-      env: { ...process.env, OATLAS_VAULT: VAULT },
+      env: { ...process.env, OATLAS_VAULT: VAULT, OATLAS_REPO_ROOT: REPO_ROOT },
       stdio: ['pipe', 'pipe', 'pipe'],
     });
     let stdout = '';
@@ -9435,6 +9465,16 @@ async function step2BootAndCall() {
         log('fail', serverSignalFailure(signal, stderr, verifyRetryEnvForVault(VAULT)));
         return res(false);
       }
+
+      const localScopeFailure = firstContactLocalProbeFailure(responses, {
+        repoRoot: REPO_ROOT,
+        vaultRoot: VAULT,
+      });
+      if (localScopeFailure) {
+        log('fail', localScopeFailure);
+        return res(false);
+      }
+      log('ok', 'connection_info: active vault/repo roots match the verifier scope (wrong_vault fail-closed)');
 
       if (earlyEmptyVaultPayload) {
         if (!initRes || !initRes.result) {
