@@ -63,6 +63,14 @@ const RULES = [
     ],
   },
   {
+    command: 'pnpm test:meaning-corpus',
+    reason: 'business meaning corpus evaluator or its fixtures changed',
+    matches: [
+      /^scripts\/evaluate-meaning-corpus(?:\.test)?\.mjs$/,
+      /^tests\/fixtures\/meaning-corpus\//,
+    ],
+  },
+  {
     command: 'pnpm test:vault:validate',
     reason: 'vault validator script changed',
     matches: [/^scripts\/validate-vault(?:-script)?\.test\.mjs$/, /^scripts\/validate-vault\.mjs$/],

@@ -38,6 +38,7 @@ import { GRAPH_ARRAY_KEYS, loadVaultDocs } from "./vault.mjs";
 import { buildProjectSourceGraphHash } from "./project-source-graph-hash.mjs";
 import { renderProjectCompetencyMarkdown } from "./project-meaning-receipt.mjs";
 import { defaultBody } from "./schema.mjs";
+import { proposalCoverageRefs } from "./construction-lifecycle.mjs";
 import {
   formatNoTestMatchMessage,
   formatTestFilterSuffix,
@@ -690,6 +691,13 @@ await test("tools/list — 단일 도구 description 이 batch 짝을 cross-refe
       "acceptance",
     ]);
     assert.equal(analyzeRepo?.inputSchema?.properties?.qualification?.additionalProperties, false);
+    assert.deepEqual(analyzeRepo?.inputSchema?.properties?.qualification?.properties?.claims?.items?.required, [
+      "id",
+      "statement",
+      "status",
+      "witnessRefs",
+      "proposalRefs",
+    ]);
     const competencyAnswerSchema = analyzeRepo?.inputSchema?.properties?.proposal?.properties?.competencyAnswers?.properties?.scope;
     assert.deepEqual(competencyAnswerSchema?.required, ["answer", "status", "witnesses"]);
     assert.deepEqual(competencyAnswerSchema?.properties?.status?.enum, ["answered", "partial", "visible-gap"]);
@@ -718,6 +726,8 @@ await test("tools/list — 단일 도구 description 이 batch 짝을 cross-refe
       "phases",
       "diagnostics",
       "requiredGapIds",
+      "proposalCoverage",
+      "admission",
       "nextAction",
     ]);
     assert.equal(analyzeRepo?.outputSchema?.properties?.proposalValidation?.properties?.constructionLifecycle?.properties?.phases?.minItems, 8);
@@ -2424,6 +2434,12 @@ await test("analyze_repo_structure — validates a complete meaning proposal bef
     qualification.acceptance.planDigest = result.proposalValidation.constructionLifecycle.planDigest;
     qualification.acceptance.planRevision = result.proposalValidation.constructionLifecycle.planRevision;
     qualification.acceptance.acceptedGapIds = result.proposalValidation.constructionLifecycle.requiredGapIds;
+    const proposalRefs = proposalCoverageRefs(result.proposalValidation.reviewPlan);
+    qualification.claims.forEach((claim, index) => {
+      claim.proposalRefs = [
+        ...(index === 0 ? proposalRefs : [proposalRefs[0]]),
+      ];
+    });
 
     const qualified = await rpc(vaultRoot, [
       ...INIT_REQUESTS,
@@ -2441,6 +2457,27 @@ await test("analyze_repo_structure — validates a complete meaning proposal bef
     assert.equal(qualifiedResult.proposalValidation.writePlan.concepts.length, 3);
     assert.equal(qualifiedResult.proposalValidation.writePlan.relations.length, 2);
     assert.equal(qualifiedResult.proposalValidation.writePlan.competencyAnswers.impact.status, "visible-gap");
+
+    const foreignProposalClaim = structuredClone(qualification);
+    foreignProposalClaim.claims[0].proposalRefs = [
+      ...proposalRefs.slice(0, -1),
+      "concept:foreign-proposal",
+    ];
+    const foreignProposal = await rpc(vaultRoot, [
+      ...INIT_REQUESTS,
+      callTool(2, "analyze_repo_structure", {
+        rootPath: repoRoot,
+        proposal,
+        qualification: foreignProposalClaim,
+      }),
+    ]);
+    const foreignProposalResult = getCallParsed(foreignProposal.responses, 2);
+    assert.equal(foreignProposalResult.proposalValidation.canWrite, false);
+    assert.equal(foreignProposalResult.proposalValidation.writePlan, undefined);
+    assert.equal(foreignProposalResult.proposalValidation.constructionLifecycle.admission.tier, "hard_block");
+    assert.ok(foreignProposalResult.proposalValidation.constructionLifecycle.diagnostics.some(
+      ({ code }) => code === "proposal-coverage-unexpected:concept:foreign-proposal",
+    ));
 
     const sourceHiddenMissing = structuredClone(qualification);
     sourceHiddenMissing.sourceHiddenTask.status = "not_measured";

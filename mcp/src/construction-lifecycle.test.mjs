@@ -3,9 +3,11 @@ import { readFileSync } from 'node:fs';
 import test from 'node:test';
 
 import {
+  CONSTRUCTION_ADMISSION_CONTRACT,
   CONSTRUCTION_LIFECYCLE_CONTRACT,
   constructionPlanDigest,
   evaluateConstructionLifecycle,
+  proposalCoverageRefs,
 } from './construction-lifecycle.mjs';
 
 const qualificationFixture = JSON.parse(readFileSync(
@@ -48,6 +50,10 @@ function qualification(overrides = {}) {
   packet.acceptance.planDigest = constructionPlanDigest(reviewPlan);
   packet.acceptance.planRevision = 1;
   packet.acceptance.acceptedGapIds = [];
+  const refs = proposalCoverageRefs(reviewPlan);
+  packet.claims.forEach((claim, index) => {
+    claim.proposalRefs = [refs[index % refs.length]];
+  });
   return Object.assign(packet, overrides);
 }
 
@@ -98,6 +104,7 @@ test('every visible proposal warning becomes an exact acceptance gap', () => {
   });
   assert.equal(unaccepted.writeEligibility, 'blocked');
   assert.equal(unaccepted.writePlan, undefined);
+  assert.equal(unaccepted.admission.tier, 'partial_visible_gap');
 
   const packet = qualification();
   packet.acceptance.acceptedGapIds = preview.requiredGapIds;
@@ -145,6 +152,114 @@ test('a digest-bound qualified packet releases exactly the reviewed rows', () =>
   assert.deepEqual(result.writePlan, reviewPlan);
   assert.notEqual(result.writePlan, reviewPlan, 'the evaluator must not leak a mutable caller object');
   assert.equal(result.phases.find(({ id }) => id === 'prior_cq_regression').status, 'pending_post_write');
+});
+
+test('proposal coverage rejects foreign rows and source-hidden handoff drift', () => {
+  const foreign = qualification();
+  foreign.claims.forEach((claim) => {
+    claim.proposalRefs = ['concept:foreign-proposal'];
+  });
+  const foreignResult = evaluate(foreign);
+  assert.equal(foreignResult.writeEligibility, 'blocked');
+  assert.equal(foreignResult.proposalCoverage.status, 'mismatch');
+  assert.deepEqual(foreignResult.proposalCoverage.missingRefs, ['concept:northstar-commerce']);
+  assert.deepEqual(foreignResult.proposalCoverage.unexpectedRefs, ['concept:foreign-proposal']);
+  assert.ok(foreignResult.diagnostics.some(({ code }) => (
+    code === 'proposal-coverage-missing:concept:northstar-commerce'
+  )));
+  assert.equal(foreignResult.admission.tier, 'hard_block');
+
+  const multiPlan = structuredClone(reviewPlan);
+  multiPlan.competencyAnswers = { scope: {} };
+  const sourceHiddenDrift = qualification();
+  sourceHiddenDrift.claims[0].proposalRefs = ['concept:northstar-commerce'];
+  sourceHiddenDrift.claims[1].proposalRefs = ['competency:scope'];
+  sourceHiddenDrift.claims[2].proposalRefs = ['concept:northstar-commerce'];
+  sourceHiddenDrift.claims[3].proposalRefs = ['concept:northstar-commerce'];
+  sourceHiddenDrift.sourceHiddenTask.claimIds = ['claim:outcome'];
+  sourceHiddenDrift.subject.graphDigest = constructionPlanDigest(multiPlan);
+  sourceHiddenDrift.acceptance.planDigest = constructionPlanDigest(multiPlan);
+  const sourceHiddenResult = evaluateConstructionLifecycle({
+    reviewPlan: multiPlan,
+    sourceDigest: 'sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb',
+    qualification: sourceHiddenDrift,
+  });
+  assert.equal(sourceHiddenResult.writeEligibility, 'blocked');
+  assert.ok(sourceHiddenResult.proposalCoverage.sourceHiddenMissingRefs.length > 0);
+  assert.ok(sourceHiddenResult.diagnostics.some(({ code }) => (
+    code.startsWith('proposal-coverage-source-hidden:')
+  )));
+});
+
+test('shadow admission marks a complete packet as self-qualified without bypassing acceptance', () => {
+  const packet = qualification();
+  packet.acceptance.decision = 'pending';
+
+  const result = evaluate(packet);
+
+  assert.equal(result.admission.contract, CONSTRUCTION_ADMISSION_CONTRACT);
+  assert.equal(result.admission.mode, 'shadow');
+  assert.equal(result.admission.tier, 'self_qualified');
+  assert.equal(result.admission.autoWriteCandidate, true);
+  assert.equal(result.admission.humanAcceptanceRequired, true);
+  assert.equal(result.writeEligibility, 'blocked');
+  assert.equal(result.writePlan, undefined);
+});
+
+test('shadow admission exposes measured functional gaps as partial and never auto-writes them', () => {
+  const packet = qualification();
+  packet.cqResults[0].status = 'partial';
+  packet.cqResults[0].gap = 'The risk boundary remains partial.';
+  packet.axisResults.find(({ axis }) => axis === 'functional').status = 'unknown';
+  packet.axisResults.find(({ axis }) => axis === 'functional').findingIds = ['gap:functional'];
+  packet.diagnostics.push({
+    id: 'gap:functional',
+    axis: 'functional',
+    category: 'evidence',
+    message: 'One approved CQ remains partial.',
+    evidenceRefs: ['w:outcome'],
+  });
+  packet.acceptance.acceptedGapIds = ['axis:functional', 'cq:cq:executive-risk'];
+
+  const result = evaluate(packet);
+
+  assert.equal(result.admission.tier, 'partial_visible_gap');
+  assert.equal(result.admission.autoWriteCandidate, false);
+  assert.deepEqual(result.admission.reviewItems, [
+    'axis:functional',
+    'cq:cq:executive-risk',
+  ]);
+});
+
+test('shadow admission hard-blocks missing source-hidden evidence', () => {
+  const packet = qualification();
+  packet.sourceHiddenTask.status = 'not_measured';
+
+  const result = evaluate(packet);
+
+  assert.equal(result.admission.tier, 'hard_block');
+  assert.equal(result.admission.autoWriteCandidate, false);
+  assert.ok(result.admission.diagnosticCodes.includes('source-hidden-not-measured'));
+});
+
+test('shadow admission routes non-gap proposal warnings to human review', () => {
+  const warning = {
+    code: 'risky-competency-evidence',
+    severity: 'warning',
+    path: 'competencyAnswers.scope.witnesses.evidence[0]',
+    message: 'The source needs independent current-state corroboration.',
+  };
+
+  const result = evaluateConstructionLifecycle({
+    reviewPlan,
+    sourceDigest: 'sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb',
+    qualification: qualification(),
+    proposalFindings: [warning],
+  });
+
+  assert.equal(result.admission.tier, 'human_review_required');
+  assert.equal(result.admission.autoWriteCandidate, false);
+  assert.ok(result.admission.reviewItems.includes(`proposal:${warning.code}:${warning.path}`));
 });
 
 test('missing purpose authority and prior-CQ regression fail closed', () => {

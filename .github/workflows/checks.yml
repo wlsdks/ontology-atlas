@@ -118,6 +118,10 @@ jobs:
         if: always()
         run: pnpm package:check
 
+      - name: Meaning corpus quality gate
+        if: always()
+        run: pnpm test:meaning-corpus
+
       - name: Vault migration contracts
         if: always()
         run: pnpm test:vault:migrate

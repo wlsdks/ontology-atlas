@@ -226,15 +226,19 @@ function uniqueConceptEvidence(concepts) {
 }
 
 export function candidateProposalFromAnalysis(analysis) {
+  const evidenceFor = (row) => [
+    row.evidence?.source,
+    row.evidence?.implementation,
+  ].filter(Boolean);
   return {
     domains: analysis.meaningGate.proposedBusinessOntology.domains.map((row) => ({
       slug: row.slug,
-      evidence: [row.evidence?.source].filter(Boolean),
+      evidence: evidenceFor(row),
       confidence: 0.5,
     })),
     capabilities: analysis.meaningGate.proposedBusinessOntology.capabilities.map((row) => ({
       slug: row.slug,
-      evidence: [row.evidence?.source].filter(Boolean),
+      evidence: evidenceFor(row),
       confidence: 0.5,
     })),
     competencyAnswers: {},

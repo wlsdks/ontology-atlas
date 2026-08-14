@@ -35,7 +35,10 @@ exact review-plan and current source SHA-256 digests returned by
    explicit unknown/refusal behavior, exemplar, and counterexample;
 5. currentness-marked witnesses with portable source references and SHA-256
    provenance — private absolute paths are invalid;
-6. one exact-text claim ledger and citation checks;
+6. one exact-text claim ledger and citation checks. Every claim also carries
+   non-empty `proposalRefs` for the exact concept/relation/competency/impact
+   rows in the current review plan; lifecycle output exposes the derived
+   `proposalCoverage` receipt and rejects missing or foreign refs;
 7. target-level CQ results that bind each claimed covered target to witnesses and
    claims — a caller-supplied `coveredTargets` list has no authority;
 8. an independently run source-hidden task, separate quality-axis results,
@@ -59,7 +62,8 @@ The existing read-only tool enforces one sequence:
    `requiredGapIds`; `canWrite` remains false and `writePlan` is absent.
 2. A maker-independent evaluator executes the packet, including the complete
    source-hidden task and prior-CQ regression. The user sees the exact review
-   plan and every remaining gap.
+   plan and every remaining gap. The lifecycle also checks that the evaluator
+   packet covers that same plan, not merely a digest-compatible foreign packet.
 3. If the user accepts, the caller records declared human provenance bound to
    the returned plan digest/revision and accepted gap ids, then calls the same
    tool with the unchanged proposal plus the qualification packet.

@@ -56,7 +56,17 @@ claim/citation, 일곱 품질축, 전체 source-hidden task, cold-start 또는 �
 실행한 뒤 사용자가 그 exact plan과 gap을 승인해야 한다. 같은 proposal과 digest-bound
 `constructionQualification:v1` packet을 다시 제출했을 때만 처음 본 rows와 동일한
 `writePlan`이 풀린다. source/plan drift, maker-only, `not_measured`, red mandatory axis,
-regression 실패, 승인되지 않은 gap은 fail-closed다.
+regression 실패, 승인되지 않은 gap은 fail-closed다. 같은 응답의 `admission`은
+shadow-only로 `self_qualified`, `partial_visible_gap`, `human_review_required`,
+`hard_block`을 분류한다. `self_qualified`는 독립 근거가 모두 통과한 자동 반영 후보
+신호일 뿐이며, 실제 write는 기존 사람 승인·digest-bound `writePlan` gate를 우회하지
+않는다. 측정된 기능 공백은 부분 상태로 보이고, 정책·소유권·도메인 경계·충돌은 사람
+검토, stale·unsupported·비독립 평가·source-hidden/회귀 실패는 hard block으로 남는다.
+각 qualification claim은 현재 `reviewPlan`의 exact `concept:`·`relation:`·`competency:`·
+`impact:` 행을 가리키는 `proposalRefs`를 가져야 하며, lifecycle의
+`proposalCoverage`가 누락·외부 proposal·source-hidden 미검증 행을 fail-closed로
+분류한다. 이는 evaluator handoff의 대상 일치를 보장하는 receipt이지 claim의
+사업적 진실을 자동 승인하는 점수나 의미 판정은 아니다.
 
 승인은 선언된 provenance이며 신원 인증이나 truth certificate가 아니다. project Markdown은
 기존 competency answer/witness/visible gap을, finalizer receipt는 그 body와 current

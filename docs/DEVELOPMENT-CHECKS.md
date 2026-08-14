@@ -53,6 +53,7 @@ pnpm docs-vault:build && git add src/entities/docs-vault/data public/docs-vault
 | Vault integrity | `pnpm vault:validate` | `pnpm vault:audit` |
 | CLI argument parsing | `pnpm test:cli:args` | `pnpm test:cli:lib` |
 | MCP core units | `pnpm test:mcp:unit` | `pnpm integration:mcp:readme` |
+| Business meaning corpus | `pnpm test:meaning-corpus` | source-hidden field trial and fixture-specific review |
 | MCP/docs contract | `pnpm test:mcp:docs` | `pnpm package:check` |
 | Graph hot-path perf | `pnpm perf:graph:check` | `pnpm perf:graph:scale` |
 | Dogfood MCP smoke | `pnpm dogfood:status` | `pnpm dogfood:verify` |

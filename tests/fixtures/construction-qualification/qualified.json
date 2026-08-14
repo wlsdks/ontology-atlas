@@ -219,10 +219,10 @@
     }
   ],
   "claims": [
-    { "id": "claim:outcome", "statement": "Checkout trust is the bounded product outcome at risk.", "status": "supported", "witnessRefs": ["w:outcome", "w:risk-relation"] },
-    { "id": "claim:employee", "statement": "The operator role owns the incident handoff process boundary.", "status": "supported", "witnessRefs": ["w:employee-role", "w:employee-process"] },
-    { "id": "claim:fde", "statement": "Checkout and inventory are the affected capabilities with a current implementation and validation boundary.", "status": "supported", "witnessRefs": ["w:fde-relation", "w:fde-path", "w:validation"] },
-    { "id": "claim:agent", "statement": "Validation and preflight are the next evidence-authorized actions.", "status": "supported", "witnessRefs": ["w:agent-source", "w:source-hidden-task"] }
+    { "id": "claim:outcome", "statement": "Checkout trust is the bounded product outcome at risk.", "status": "supported", "witnessRefs": ["w:outcome", "w:risk-relation"], "proposalRefs": ["concept:northstar-commerce"] },
+    { "id": "claim:employee", "statement": "The operator role owns the incident handoff process boundary.", "status": "supported", "witnessRefs": ["w:employee-role", "w:employee-process"], "proposalRefs": ["competency:cq:employee-process"] },
+    { "id": "claim:fde", "statement": "Checkout and inventory are the affected capabilities with a current implementation and validation boundary.", "status": "supported", "witnessRefs": ["w:fde-relation", "w:fde-path", "w:validation"], "proposalRefs": ["competency:cq:fde-impact"] },
+    { "id": "claim:agent", "statement": "Validation and preflight are the next evidence-authorized actions.", "status": "supported", "witnessRefs": ["w:agent-source", "w:source-hidden-task"], "proposalRefs": ["competency:cq:agent-next-action"] }
   ],
   "citationChecks": [
     { "claimId": "claim:outcome", "witnessRef": "w:outcome", "status": "verified" },
