@@ -55,11 +55,16 @@ describe("SkillProcessRail", () => {
       </NextIntlClientProvider>,
     );
     expect(screen.queryByText(/checklist\.md · reference/)).not.toBeInTheDocument();
+    const disclosure = screen.getByTestId("skill-step-disclosure");
+    const detailId = `skill-step-detail-${stepId.replace(/^[^:]+:/, "").replace(/[^a-zA-Z0-9_-]/g, "-")}`;
+    expect(disclosure).toHaveAttribute("aria-controls", detailId);
     rerender(
       <NextIntlClientProvider locale="en" messages={enMessages}>
         <SkillProcessRail process={process} openStepIds={new Set([stepId])} onToggleStep={() => undefined} />
       </NextIntlClientProvider>,
     );
+    expect(screen.getByTestId("skill-step-disclosure")).toHaveAttribute("aria-controls", detailId);
+    expect(screen.getByTestId("skill-step-disclosure").getAttribute("aria-expanded")).toBe("true");
     expect(screen.getByText(/checklist\.md · reference/)).toHaveTextContent("exists");
   });
 

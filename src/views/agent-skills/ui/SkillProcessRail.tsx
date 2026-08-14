@@ -12,6 +12,8 @@ import {
 import { Button } from "@/shared/ui";
 import { controlClass } from "@/shared/ui/control-class";
 
+const testIdPart = (value: string): string => value.replace(/^[^:]+:/, "").replace(/[^a-zA-Z0-9_-]/g, "-");
+
 export function SkillProcessRail({
   process,
   openStepIds,
@@ -93,6 +95,7 @@ export function SkillProcessRail({
           );
           const hasDetail = resources.length + diagnostics.length > 0;
           const open = openStepIds.has(step.stepId);
+          const detailId = `skill-step-detail-${testIdPart(step.stepId)}`;
           return (
             <li
               key={step.stepId}
@@ -136,13 +139,14 @@ export function SkillProcessRail({
                     type="button"
                     data-testid="skill-step-disclosure"
                     aria-expanded={open}
+                    aria-controls={detailId}
                     onClick={() => onToggleStep(step.stepId)}
                     className={controlClass({ shape: "link", size: "sm", tone: "muted", className: "mt-2" })}
                   >
                     {open ? t("hideDetail") : t("showDetail")}
                   </button>
                   {open ? (
-                    <div className="mt-2 border-t border-[color:var(--color-border-soft)] pt-2">
+                    <div id={detailId} className="mt-2 border-t border-[color:var(--color-border-soft)] pt-2">
                       {resources.length > 0 ? (
                         <ul className="flex flex-col gap-1">
                           {resources.map((resource) => (
