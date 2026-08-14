@@ -5,6 +5,7 @@ import { useDataSourceMode } from '@/features/data-source-mode';
 import { useLocalVault } from '@/features/docs-vault-local';
 import { useStaticVaultSource } from '@/features/vault-sample-source';
 import { extractProjectBody, findProjectVaultDoc } from '@/entities/docs-vault';
+import { fetchServerDocContent } from '@/entities/docs-vault/lib/server-doc-content';
 
 export interface UseProjectBodyState {
   /** project.md 의 실제 마크다운 본문. 없거나 아직 못 읽었으면 null. */
@@ -47,10 +48,28 @@ export function useProjectBody(slug: string | null): UseProjectBodyState {
 
     if (mode === 'static') {
       const doc = findProjectVaultDoc(staticSource.manifest, slug);
-      const body = doc ? extractProjectBody(staticSource.content[doc.slug]) ?? null : null;
-      window.queueMicrotask(() => {
-        if (!cancelled) setResolved({ slug, body });
-      });
+      if (!doc) {
+        window.queueMicrotask(() => {
+          if (!cancelled) setResolved({ slug, body: null });
+        });
+        return () => {
+          cancelled = true;
+        };
+      }
+
+      // Gateway 문서만 동기 fallback map 에 들어 있다. 프로젝트 문서는
+      // static export가 이미 복사한 public raw asset에서 읽어 초기 청크에
+      // 전체 content.json을 싣지 않는다.
+      fetchServerDocContent(doc.slug, {
+        bundledContent: staticSource.content,
+        locationHref: typeof window === 'undefined' ? undefined : window.location.href,
+      })
+        .then((raw) => {
+          if (!cancelled) setResolved({ slug, body: extractProjectBody(raw) ?? null });
+        })
+        .catch(() => {
+          if (!cancelled) setResolved({ slug, body: null });
+        });
       return () => {
         cancelled = true;
       };
