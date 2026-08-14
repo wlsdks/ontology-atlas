@@ -644,7 +644,10 @@ export function DocsVaultEditor({
       {/* 상단 액션 바 */}
       <div className="flex flex-none items-center gap-2 border-b border-[color:var(--color-border-soft)] bg-[color:var(--color-elevated)] px-4 py-2 text-label">
         <span className="font-mono text-caption uppercase tracking-[var(--tracking-caps-14)] text-[color:var(--color-text-quaternary)]">
-          {t('editorEyebrow', { slug: doc.slug })}
+          {t.rich('editorEyebrow', {
+            slug: doc.slug,
+            value: (chunks) => <span className="normal-case tracking-normal">{chunks}</span>,
+          })}
         </span>
         {/* ⚠️ **이 줄의 상태 칩 셋은 한 규격이다** (2026-08-08 실측 수리).
             저장 상태 칩만 `text-caption`(9.5px) 이었고 옆의 「자동 백업 · 최종

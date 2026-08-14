@@ -179,7 +179,7 @@ function TreeBranch({
           size="sm"
           tone="muted"
           onClick={() => setOpen((v) => !v)}
-          className="rounded-card font-mono uppercase tracking-[var(--tracking-caps-08)] hover:bg-[color:var(--color-overlay-1)]"
+          className="rounded-card font-mono hover:bg-[color:var(--color-overlay-1)]"
           style={{ paddingLeft: `${depth * 12 + 4}px` }}
           aria-expanded={effectiveOpen}
         >

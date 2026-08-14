@@ -1062,7 +1062,11 @@ export function ProjectDrawer({
 
               <footer className="mt-6 border-t border-[color:var(--color-overlay-2)] pt-4 md:mt-8">
                 <p className="font-mono text-caption uppercase tracking-[var(--tracking-caps-10)] text-[color:var(--color-text-quaternary)]">
-                  {t("footerUpdated", { slug: project.slug, date: formatDate(project.updatedAt) })}
+                  {t.rich("footerUpdated", {
+                    slug: project.slug,
+                    date: formatDate(project.updatedAt),
+                    value: (chunks) => <span className="normal-case tracking-normal">{chunks}</span>,
+                  })}
                 </p>
               </footer>
             </motion.div>
