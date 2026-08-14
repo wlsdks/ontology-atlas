@@ -5,15 +5,13 @@ kind: capability
 title: Refund Processing
 display_ko: 환불 처리
 display_en: Refund Processing
-description: "Sends settled money back after the fact, in the amount and to the method the original payment used."
+description: "이미 정산이 끝난 돈을 포인트 먼저, 그다음 원래 결제 수단이라는 정해진 순서에 따라 고객에게 돌려보내는 일입니다."
 domain: domains/payment
 dependencies: [capabilities/payment-cancel]
 elements: [elements/refund-record]
 ---
 
 # Refund Processing · 환불 처리
-
-Sends settled money back after the fact, in the amount and to the method the original payment used.
 
 이미 정산된 돈을 사후에 돌려보냅니다. 원 결제와 같은 수단으로, 정해진 금액만큼.
 
@@ -22,3 +20,5 @@ Sends settled money back after the fact, in the amount and to the method the ori
 이 가게가 정한 순서: **포인트 먼저, 그다음 원래 수단.** 포인트는 되돌리기가 확실하고 즉시이기 때문입니다. 남은 금액만 카드로 갑니다.
 
 되돌려 줄 수 없는 경우가 남습니다. 그때는 **정산 문제로 넘기고 고객에게 그렇게 말합니다**: 화면에서 처리되는 척하지 않습니다.
+
+Sends settled money back after the fact, in the amount and to the method the original payment used. When the original path no longer works, points go back first because they are certain and instant, and what cannot be returned is escalated honestly instead of faked.
