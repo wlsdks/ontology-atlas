@@ -4,6 +4,7 @@
 //  1. public/docs-vault/{slug}.md 로 raw 복사
 //  2. src/entities/docs-vault/data/manifest.json 생성 — tree, docs, backlinks, tags
 //  3. src/entities/docs-vault/data/content.json 생성 — desktop/static export fallback
+//  4. src/entities/docs-vault/data/gateway-content.json 생성 — gateway의 동기 문서 fallback
 // static export 빌드 중 'next build' 직전에 실행. 런타임 의존성 없음.
 
 import { readFile, writeFile, mkdir, readdir, stat, rm } from 'node:fs/promises';
@@ -32,6 +33,17 @@ const CONTENT_OUT = path.join(
   'docs-vault',
   'data',
   'content.json',
+);
+// Gateway 는 client surface 에서 첫 페인트 전에 본문을 동기적으로 필요로 한다.
+// 전체 content.json 을 그 경로에 끌어들이지 않도록 guide/* + CHANGELOG 만 별도
+// 작은 map 으로 만든다. 나머지 문서는 public/docs-vault raw asset 으로 읽는다.
+const GATEWAY_CONTENT_OUT = path.join(
+  ROOT,
+  'src',
+  'entities',
+  'docs-vault',
+  'data',
+  'gateway-content.json',
 );
 // P0 공감형 샘플 vault (2026-07) — 비개발자가 dogfood(이 도구 자체 설명)
 // 대신 즉시 알아볼 수 있는 예시 비즈니스("온라인 쇼핑몰")를 볼 수 있게
@@ -422,7 +434,7 @@ export function comparableDoc(doc) {
 // Dogfood census 모듈 소스 — deterministic (timestamp 없음). vault 내용이
 // 실제로 바뀔 때만 diff 가 난다. 음각 숫자 = 실데이터 계약의 산출물.
 
-async function assertOutputsCurrent({ manifest, content, publicFiles }) {
+async function assertOutputsCurrent({ manifest, content, gatewayContent, publicFiles }) {
   const issues = [];
 
   const currentManifest = await readJsonIfExists(MANIFEST_OUT);
@@ -440,6 +452,15 @@ async function assertOutputsCurrent({ manifest, content, publicFiles }) {
     issues.push(`missing ${path.relative(ROOT, CONTENT_OUT)}`);
   } else if (stableStringify(currentContent) !== stableStringify(content)) {
     issues.push(`stale ${path.relative(ROOT, CONTENT_OUT)}`);
+  }
+
+  const currentGatewayContent = await readJsonIfExists(GATEWAY_CONTENT_OUT);
+  if (!currentGatewayContent) {
+    issues.push(`missing ${path.relative(ROOT, GATEWAY_CONTENT_OUT)}`);
+  } else if (
+    stableStringify(currentGatewayContent) !== stableStringify(gatewayContent)
+  ) {
+    issues.push(`stale ${path.relative(ROOT, GATEWAY_CONTENT_OUT)}`);
   }
 
   const expectedPublic = new Map(publicFiles.map((file) => [file.relativePath, file.raw]));
@@ -675,7 +696,13 @@ export async function scanVaultDir(
     tree,
   };
 
-  return { manifest, content, publicFiles };
+  const gatewayContent = Object.fromEntries(
+    Object.entries(content).filter(
+      ([slug]) => slug === 'CHANGELOG' || slug.startsWith('guide/'),
+    ),
+  );
+
+  return { manifest, content, gatewayContent, publicFiles };
 }
 
 async function buildDocsVault({ check = false } = {}) {
@@ -693,7 +720,7 @@ async function buildDocsVault({ check = false } = {}) {
     await ensureDir(path.dirname(MANIFEST_OUT));
   }
 
-  const { manifest, content, publicFiles } = await scanVaultDir(DOCS_DIR, {
+  const { manifest, content, gatewayContent, publicFiles } = await scanVaultDir(DOCS_DIR, {
     rootDir: ROOT,
     publicOutDir: PUBLIC_OUT,
     check,
@@ -701,7 +728,7 @@ async function buildDocsVault({ check = false } = {}) {
   const { docs, backlinksDetail, tags } = manifest;
 
   if (check) {
-    await assertOutputsCurrent({ manifest, content, publicFiles });
+    await assertOutputsCurrent({ manifest, content, gatewayContent, publicFiles });
     console.log(
       `[docs-vault] current · ${docs.length} docs · ${Object.keys(backlinksDetail).length} backlinked · ${Object.keys(tags).length} tags`,
     );
@@ -710,6 +737,7 @@ async function buildDocsVault({ check = false } = {}) {
 
   await writeFile(MANIFEST_OUT, JSON.stringify(manifest, null, 2), 'utf8');
   await writeFile(CONTENT_OUT, JSON.stringify(content, null, 2), 'utf8');
+  await writeFile(GATEWAY_CONTENT_OUT, JSON.stringify(gatewayContent, null, 2), 'utf8');
   console.log(
     `[docs-vault] ${docs.length} docs · ${Object.keys(backlinksDetail).length} backlinked · ${Object.keys(tags).length} tags → ${path.relative(ROOT, MANIFEST_OUT)}`,
   );

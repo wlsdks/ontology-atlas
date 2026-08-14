@@ -1,7 +1,7 @@
 import type { SampleSource } from '@/shared/lib/sample-source';
 import sampleStorefrontContent from '../data/sample-storefront.content.json';
 import sampleStorefrontManifest from '../data/sample-storefront.manifest.json';
-import vaultContent from '../data/content.json';
+import gatewayContent from '../data/gateway-content.json';
 import vaultManifest from '../data/manifest.json';
 import type { VaultManifest } from '../model/types';
 
@@ -31,7 +31,12 @@ import type { VaultManifest } from '../model/types';
 export interface StaticVaultSource {
   source: SampleSource;
   manifest: VaultManifest;
-  /** slug → 원문 마크다운. 매니페스트와 항상 같은 볼트에서 온다. */
+  /**
+   * slug → 원문 마크다운 fallback. Gateway가 첫 페인트 전에 동기적으로
+   * 필요로 하는 guide/* · CHANGELOG만 포함한다. 그 밖의 문서는
+   * `public/docs-vault/{slug}.md` asset으로 비동기 읽기한다.
+   * 매니페스트와 항상 같은 볼트에서 온다.
+   */
   content: Record<string, string>;
   /**
    * 이 매니페스트의 문서 slug 앞에 붙어 있는, **에이전트가 물린 볼트 뿌리
@@ -53,7 +58,7 @@ export interface StaticVaultSource {
 const DOGFOOD: StaticVaultSource = {
   source: 'dogfood',
   manifest: vaultManifest as VaultManifest,
-  content: vaultContent as Record<string, string>,
+  content: gatewayContent as Record<string, string>,
   agentSlugPrefix: 'ontology/',
 };
 
