@@ -78,20 +78,24 @@ writeFileSync(
 );
 
 const init = run('node', [CLI, 'init', 'ontology'], { cwd: project });
-assert.match(init.stdout, /ontology-atlas bootstrap \. --vault \.\/ontology/);
+const initOutput = init.stdout.replace(/\u001b\[[0-9;]*m/g, '');
+assert.match(initOutput, /bootstrap \. --vault \.\/ontology/);
 assert.equal(existsSync(join(project, '.mcp.json')), true);
 assert.equal(existsSync(join(project, '.codex', 'config.toml')), true);
 
 const bootstrap = run('node', [CLI, 'bootstrap', '.', '--vault', './ontology', '--json'], {
   cwd: project,
+  allowFailure: true,
 });
+assert.equal(bootstrap.status, 3);
 const bootstrapJson = JSON.parse(bootstrap.stdout);
-assert.equal(bootstrapJson.summary.errors, 0);
-assert.ok(bootstrapJson.summary.conceptsLanded >= 3);
-assert.ok(bootstrapJson.summary.analyzeRelationsLanded >= 2);
-assert.equal(existsSync(join(vault, 'memory-loop-proof-app.md')), true);
-assert.equal(existsSync(join(vault, 'capabilities', 'capture.md')), true);
-assert.equal(existsSync(join(vault, 'capabilities', 'search.md')), true);
+assert.equal(bootstrapJson.mode, 'review');
+assert.equal(bootstrapJson.writeEligible, false);
+assert.equal(bootstrapJson.reason, 'approval_required');
+assert.equal(bootstrapJson.next.writes, 0);
+assert.equal(existsSync(join(vault, 'memory-loop-proof-app.md')), false);
+assert.equal(existsSync(join(vault, 'capabilities', 'capture.md')), false);
+assert.equal(existsSync(join(vault, 'capabilities', 'search.md')), false);
 
 run('node', [CLI, 'validate', vault], { cwd: project });
 
@@ -114,15 +118,14 @@ assert.ok(agentBrief.playbooks.some((playbook) => playbook.id === 'graph_travers
 
 const conceptRows = await callMcpTool(vault, 'list_concepts', { kind: 'capability', limit: 20 });
 const capabilitySlugs = slugSet(conceptRows.nodes ?? []);
-assert.equal(capabilitySlugs.has('capabilities/capture'), true);
-assert.equal(capabilitySlugs.has('capabilities/search'), true);
+assert.equal(capabilitySlugs.has('capabilities/example-capability'), true);
 
 const captureProfile = await callMcpTool(vault, 'query_ontology', {
   operation: 'node_profile',
-  slug: 'capabilities/capture',
+  slug: 'capabilities/example-capability',
 });
 assert.equal(captureProfile.operation, 'node_profile');
-assert.equal(captureProfile.node.slug, 'capabilities/capture');
+assert.equal(captureProfile.node.slug, 'capabilities/example-capability');
 
 run('git', ['init', '-q'], { cwd: project });
 run('git', ['-c', 'user.name=ontology-atlas smoke', '-c', 'user.email=smoke@example.invalid', 'add', '.'], {
