@@ -131,6 +131,28 @@ describe("skill process IR", () => {
     });
   });
 
+  it.each([
+    ["duplicate", "1. First.\n1. Duplicate."],
+    ["descending", "2. Starts late.\n1. Goes backward."],
+    ["gapped", "1. First.\n3. Skips the second step."],
+  ])("fails closed when numbered step ordinals are %s", (_label, body) => {
+    const result = deriveSkillProcess({
+      relativePath: "skills/process-test/SKILL.md",
+      text: skill(body),
+    });
+
+    expect(result).toMatchObject({
+      state: "unavailable",
+      scanTruncated: false,
+      diagnostics: [
+        {
+          code: "step_ordinals_invalid",
+          severity: "error",
+        },
+      ],
+    });
+  });
+
   it("uses standard UTF-8 SHA-256 and keeps step IDs stable across unrelated source lines", () => {
     expect(sha256Digest("abc")).toBe(
       "sha256:ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad",
