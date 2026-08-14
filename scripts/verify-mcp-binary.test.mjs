@@ -5,6 +5,42 @@ import os from 'node:os';
 import path from 'node:path';
 import { spawnSync } from 'node:child_process';
 
+import { compareMcpContracts } from './verify-mcp-binary.mjs';
+
+const contractFixture = () => ({
+  initialize: { serverInfo: { version: '0.13.0' } },
+  tools: [
+    {
+      name: 'connection_info',
+      inputSchema: { type: 'object', properties: {}, additionalProperties: false },
+      outputSchema: { type: 'object', properties: { toolCount: { type: 'number' } } },
+    },
+  ],
+  callResults: {
+    3: { structuredContent: { toolCount: 35 } },
+    4: { structuredContent: { kinds: [] } },
+    5: { structuredContent: { errors: 0 } },
+  },
+});
+
+test('source/bundled parity accepts exact first-contact contracts', () => {
+  const source = contractFixture();
+  const bundled = structuredClone(source);
+
+  assert.deepEqual(compareMcpContracts(source, bundled), { ok: true, mismatches: [] });
+});
+
+test('source/bundled parity rejects schema drift instead of trusting tool count', () => {
+  const source = contractFixture();
+  const bundled = structuredClone(source);
+  bundled.tools[0].inputSchema.additionalProperties = true;
+
+  assert.deepEqual(compareMcpContracts(source, bundled), {
+    ok: false,
+    mismatches: ['tools/list schemas'],
+  });
+});
+
 test('parses inline binary and vault flags used by the Windows workflows', () => {
   const root = path.join(os.tmpdir(), 'atlas verifier path with spaces');
   const missingBinary = path.join(root, 'ontology-atlas-mcp.exe');

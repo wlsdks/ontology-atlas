@@ -72,4 +72,12 @@ describe("projectToInput", () => {
     input.tags!.push("c");
     expect(project.tags).toEqual(["a", "b"]);
   });
+
+  it("vault에 없는 category/status를 변환 단계에서 주입하지 않음", () => {
+    const project = makeProject({ category: undefined, status: undefined });
+    const input = projectToInput(project);
+
+    expect(input.category).toBeUndefined();
+    expect(input.status).toBeUndefined();
+  });
 });

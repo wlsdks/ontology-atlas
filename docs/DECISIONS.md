@@ -40,44 +40,6 @@
 **상태**: 유효 / 뒤집힘(→ 링크) / 반증됨(관측: …)
 ```
 
-## 2026-08-13 — 대형 vault의 list_concepts census는 잘림을 숨기지 않는다
-
-**소집**: PO Council 5석 · **트리거**: 130-node fresh vault에서 `list_concepts({limit:100})`가
-100행만 반환하면서 `total:130` 외에 잘림/다음 페이지 신호를 내지 않음 · 기존
-「100개 무표식 절단은 별도 read-contract로 다룬다」결정을 집행으로 승격
-**루브릭**: 22/24 (치명적 0: 없음)
-**결정**: `list_concepts`에 offset 기반 명시적 pagination을 추가하고 raw MCP/CLI 게이트로 닫는다.
-**적용 규칙**: 기존 `compile_ontology` 페이지 메타 재사용 · 새 tool/kind/relation/UI/transport cursor 없음
-**서명**: owner 위임 아래 Codex 집행
-
-**기록된 반대**: pagination은 일반 기능이고 `limit:500` 재호출로 회복 가능하므로 source qualification과
-성능이 먼저라는 주장(해자)
-**반증 조건**: 독립 100+ node 세션 3회에서 모두 `limit:500`을 안정적으로 선택하고 누락 사고가 없으며,
-동시에 다른 blocker가 field trial을 막는 것이 반복 관측되면 후순위로 되돌린다.
-**재검토**: 130+ acceptance fixture 통과 후 다음 3회 zero-state MCP 세션
-**상태**: 유효
-
-**IN**: `offset`, `pagination.offset/limit/total/returned/hasMore/nextOffset`, slug 정렬, schema/verify/integration fixture
-**OUT**: UI, `query_concepts`, `compile_ontology`, transport-level cursor, semantic qualification, 성능 최적화
-
-## 2026-08-13 — 모바일 INDEX에서도 기존 설정으로 보기 모드를 되돌린다
-
-**소집**: Design Council · **트리거**: 390px에서 일반인 보기로 전환한 뒤 확장 INDEX가 상단 설정 레인을 숨겨
-전문가 보기로 돌아갈 가시적 경로가 사라짐 · **루브릭**: 22/24 (치명적 0: 없음)
-**결정**: 새 설정 화면이나 전역 모드 체계를 만들지 않고, 확장 INDEX의 `<md` 표면에 기존
-`AppSettingsMenu(triggerVariant="chrome-tile")`를 하나만 노출한다.
-**적용 규칙**: 기존 설정 행·토큰·session-only 상태·reduced-motion을 재사용하고, URL/localStorage/vault write 0
-**서명**: owner 위임 아래 Codex 집행
-
-**기록된 반대**: 모바일에 별도 보기 모드 탭을 만들어 발견성을 높이자는 제안(결)
-**반증 조건**: 390px에서 일반인→전문가→일반인 왕복, 키보드 focus 복귀, 지도/투어 상태 보존이 실패하거나
-새 trigger가 기존 INDEX/하단 탭을 가리면 별도 surface를 재검토한다.
-**재검토**: 390/1024/1512 responsive sweep 및 reduced-motion 실측
-**상태**: 유효
-
-**IN**: 모바일 확장 INDEX의 기존 설정 escape hatch, `screenControls.audiencePlain`, focus-visible·state 보존 검증
-**OUT**: 새 settings route/tab, public MCP/CLI/schema, 전역 expert/general ontology model
-
 ## 2026-08-14 (9) — 100+ node 구조 스트레스와 의미 qualification은 별도 gate다
 
 **관찰**: fresh OSS scratch에서 5-starter vault부터 Atlas MCP로 50+50+25를
@@ -102,7 +64,7 @@ typed node 수 불일치와 citation 없는 node는 구조 수치와 별도로 b
 green인데 의미 결론이 계속 비어 있으면 100+ stress를 qualification 근거로 쓰지 않는다.
 **상태**: 유효
 
-## 2026-08-14 (8) — Skills packet은 독립 source-hidden consumer에서도 닫힌다
+## 2026-08-14 (2) — Skills packet은 독립 source-hidden consumer에서도 닫힌다
 
 **관찰**: 이전 K1.3 검수는 production unit 경로만으로 canonical packet을 확인해
 독립 handoff가 비어 있었다. 새 source-hidden 소비자는 원본 `SKILL.md` 없이 packet
@@ -420,6 +382,45 @@ gate의 통과 주장은 해당 runtime 증거가 생길 때만 한다.
 `.agents/skills/ontology-bootstrap/SKILL.md`.
 
 **서명 (accountable)**: jinan 승인 대기
+**상태**: 유효
+
+---
+
+## 2026-08-14 — 대형 온톨로지 목록은 누락을 표시하고 끝까지 읽게 한다
+
+### 관찰
+
+독립 Luna MCP 계약 시험에서 500개를 넘는 vault의 `list_concepts({limit:500})`가
+`total`만 크게 반환하고 나머지 노드를 찾을 방법을 주지 않았다. 첫 census가
+완전한 것처럼 보이는 무표식 절단은 이후 source-hidden 판단과 handoff의 근거를
+오염시킨다. 같은 시험에서 summary 목록만으로는 capability/domain의 본문 근거가
+닫히지 않아, 목록을 읽었다는 사실과 의미를 이해했다는 사실도 분리할 필요가
+있었다.
+
+### 결정 (집행)
+
+- MCP `list_concepts`는 필터 후 canonical slug 순으로 정렬하고 `offset`과
+  `limit`을 받는다. 응답은 `returned`, `limited`, `pagination`을 포함하며
+  `hasMore`일 때 반드시 `nextOffset`을 제공한다.
+- 첫 페이지를 전체 census로 표현하지 않는다. MCP README, verifier, local
+  read-only agent adapter가 같은 페이지 계약을 사용하고, 100+ fixture에서
+  페이지 합집합이 중복·누락 없이 원래 total을 회복하는지 검사한다.
+- 목록/summary는 census일 뿐이다. field-trial handoff가 domain, capability,
+  project boundary, implementation, impact를 완료로 표시하려면
+  `get_concept({body:"full"})` 또는 `get_concepts({body:"full"})`의 exact
+  follow-up 근거를 남긴다. 본문이 없거나 잘리면 partial/unknown으로 남긴다.
+- 이번 slice는 새 kind/relation/tool, UI pagination, semantic qualification,
+  automatic vault write를 포함하지 않는다.
+
+### 반증 조건
+
+독립적인 100+ node zero-state 세션 3회에서 첫 목록 응답만으로도 누락 없이
+복원되고, `hasMore`/`nextOffset`을 사용하지 않아도 source-hidden claim이
+동일하게 검증되는 것이 관찰되면 pagination 또는 full-body handoff gate의
+우선순위를 재평가한다. 반대로 한 번이라도 page metadata 없이 500개 밖의 노드를
+놓치거나 summary만으로 본문 의미를 단정하면 이 결정은 유지된다.
+
+**서명 (accountable)**: jinan 위임 하에 집행
 **상태**: 유효
 
 ---
@@ -11770,5 +11771,39 @@ bottom 96`)으로 컬링하고, 그 컬의 보호 대상은 center/neighbor/hove
 
 **서명 (accountable)**: 소유자 위임 하에 집행, 서명 대기
 **상태**: 유효
+
+---
+
+## 2026-08-14 (5) — U1.1 Projects taxonomy는 호환성 슬라이스부터
+
+U1.1은 `category`와 `status`가 서로 다른 축이어야 한다는 의미 문제를 다룬다.
+다섯 좌석 전체의 완전한 독립 회전은 이번 실행에서 두 좌석만 병렬로 확보되어
+있으므로, 사용자 손상을 관측했다고 과장하지 않는다. 근거 좌석은
+**Investigate first**, 지킴이 좌석은 **Shape a slice**로 판정했다.
+
+현재 코드에서 category는 placement/cluster를 소유하고 status는 lifecycle 표시를
+소유하지만, 기본 category ID `in-progress`/`planned`는 lifecycle처럼 읽힌다.
+또한 vault에 category/status가 없을 때 `projectToInput`이
+`uncategorized`/`active`를 주입할 수 있어, unrelated field 또는 bulk update가
+원래 없던 frontmatter fact를 만들 위험이 확인됐다.
+
+**결정**: 이번 slice는 의미 migration이 아니다.
+
+- 기존 category/status ID, URL filter, unknown 값은 그대로 roundtrip한다.
+- category의 structural placement와 status의 lifecycle signal을 코드 계약으로
+  유지한다.
+- 새 default ID/라벨, legacy alias 해석, migration, MCP/CLI 명령, 새 UI 문구는
+  이번에 만들지 않는다.
+- `projectToInput`과 bulk update가 omitted category/status를 새 값으로 만들지
+  않도록 보존하고, present/omitted/unknown roundtrip과 deep-link 회귀를
+  테스트한다.
+
+**반증**: 기존 vault를 unrelated field/bulk update로 저장했을 때 누락 값이
+  생기거나, `?c=in-progress`가 다른 grouping을 가리키거나, create/edit에서
+  두 필드가 같은 lifecycle 질문으로 읽히면 이 방향을 `Investigate first`로
+  되돌리고 별도 taxonomy 결정을 연다.
+
+**서명 (accountable)**: 소유자 승인 대기
+**상태**: 유효 · 호환성 slice 집행
 
 ---

@@ -2086,7 +2086,7 @@ ${CONSTRUCTION_LIFECYCLE_EN}
 
 1. \`connection_info\` — prove the resolved vault and repository roots before analysis or writes. Root env changes require a server restart.
 2. \`list_kinds\` — see the kind census (how many projects/domains/capabilities/…).
-2. \`list_concepts\` — full node table. Pass \`summary: true\` for prose previews per row (avoid N follow-up \`get_concept\` calls). Pass \`since: <prevMaxMtime>\` for incremental sync. For large vaults, follow \`pagination.nextOffset\` while \`pagination.hasMore\` is true; never assume \`nodes\` contains the whole census when \`total\` is larger. Watch \`vaultWarnings\` — if non-zero, surface it to the user before making decisions on stale data.
+2. \`list_concepts\` — full node table. Pass \`summary: true\` for prose previews per row (avoid N follow-up \`get_concept\` calls). For a large vault, start at \`offset: 0\` and continue with \`pagination.nextOffset\` while \`hasMore\` is true; never treat one page as the full census. Pass \`since: <prevMaxMtime>\` for incremental sync. Watch \`vaultWarnings\` — if non-zero, surface it to the user before making decisions on stale data.
 3. \`validate_vault({})\` — read-only frontmatter health check. Run this during first-contact before proposing writes; report blocking errors separately from advisory warnings.
 4. \`query_ontology({operation:'agent_brief'})\` — Claude Code/Codex handoff: readiness, structured \`businessOntologyLens\` for the business-first \`outcome\` → \`domain\` → \`capability\` → \`element\` read order, copyable \`handoffPrompt\`, structured \`cliFallbackCommands[]\` for connector-less sessions, graph entrypoints, first MCP calls, \`graphDbQueryPack\` for \`facets\`, \`schema\`, \`match_nodes\`, \`match_edges\`, \`domain_matrix\`, \`centrality\`, \`all_paths\`, \`explain_relation\`, and \`business_questions\` outcome / domain-boundary / capability-claim / implementation-evidence scans, investigation playbooks including \`graph_traversal\` (\`schema\` → \`query_plan(all_paths)\` → \`all_paths\` → \`pattern_walk\` → \`project_map\`) with \`evidence[]\` and \`stopWhen[]\` checklists, \`traversalStrategy\` (\`plan_before_enumeration\` / \`bounded_path_evidence\` / \`containment_cross_check\`) for performance-aware graph traversal, write guardrails (\`preflight_relation\` / \`preflight_rename\` / \`post_change_sync\`), \`relationDecisionGuide\` for \`relation_check\` outcomes (\`skip_existing\` / \`review_inverse\` / \`safe_to_add\` / \`review_new_schema\`), \`resultContracts\` requiring \`all_paths\` callers to report \`limit\`, \`searchBudget\`, \`expandedStates\`, \`exhaustive\`, \`truncatedByBudget\`, \`totalPathsExact\`, \`evidence.status\`, \`evidence.reason\`, and \`evidence.pathsComplete\`, plus \`match_nodes\` / \`match_edges\` callers to report \`totalMatches\`, \`limited\`, and \`followUp\` details before treating scan rows as evidence, embedded health, and read-first write policy in one response.
 5. \`query_ontology({operation:'workspace_brief'})\` — read-only first-contact diagnosis: project shape, health status, and next actions without fetching the full graph. Use \`query_ontology({operation:'health'})\` when you need a deeper integrity dashboard.
@@ -2254,6 +2254,7 @@ const TOOLS = [
     description:
       'List every ontology node in the vault (each .md file with a frontmatter `kind:`). ' +
       'Filter by `kind`, `domain`, and/or `since` (mtime-based incremental sync). ' +
+      'Large vaults are resumable with `offset` + `limit`; always follow `pagination.nextOffset` while `hasMore` is true. ' +
       "AI agents call this first to grasp the codebase's mental model.",
     inputSchema: {
       type: 'object',
@@ -2271,6 +2272,12 @@ const TOOLS = [
           description:
             'Non-negative mtime threshold. Filter to nodes with `mtime > since` (ms). Pair with the `mtime` returned in earlier `list_concepts` / `get_concept` responses for incremental sync — "what changed since I last looked". Strict greater-than (mtime === since 는 제외) so re-passing the max from a previous response does not double-fetch.',
         },
+        offset: {
+          type: 'integer',
+          minimum: 0,
+          description:
+            'Zero-based page offset applied after kind/domain/since filters. Resume at pagination.nextOffset until hasMore is false; ordering is deterministic by canonical slug.',
+        },
         summary: {
           type: 'boolean',
           description:
@@ -2282,11 +2289,6 @@ const TOOLS = [
           maximum: 500,
           description: 'Positive integer max rows to return. Defaults to 100, max 500.',
         },
-        offset: {
-          type: 'integer',
-          minimum: 0,
-          description: 'Zero-based page offset. Use pagination.nextOffset until hasMore is false.',
-        },
       },
     },
     outputSchema: {
@@ -2296,6 +2298,28 @@ const TOOLS = [
           type: 'integer',
           minimum: 0,
           description: 'Total number of matching ontology nodes before the limit is applied.',
+        },
+        returned: {
+          type: 'integer',
+          minimum: 0,
+          description: 'Number of rows returned in this page.',
+        },
+        limited: {
+          type: 'boolean',
+          description: 'True when this page does not contain every matching row.',
+        },
+        pagination: {
+          type: 'object',
+          properties: {
+            offset: { type: 'integer', minimum: 0 },
+            limit: { type: 'integer', minimum: 1 },
+            total: { type: 'integer', minimum: 0 },
+            returned: { type: 'integer', minimum: 0 },
+            hasMore: { type: 'boolean' },
+            nextOffset: { type: ['integer', 'null'], minimum: 0 },
+          },
+          required: ['offset', 'limit', 'total', 'returned', 'hasMore', 'nextOffset'],
+          additionalProperties: false,
         },
         vaultRoot: {
           type: 'string',
@@ -2338,19 +2362,6 @@ const TOOLS = [
             additionalProperties: false,
           },
         },
-        pagination: {
-          type: 'object',
-          properties: {
-            offset: { type: 'integer', minimum: 0 },
-            limit: { type: 'integer', minimum: 1, maximum: 500 },
-            total: { type: 'integer', minimum: 0 },
-            returned: { type: 'integer', minimum: 0 },
-            hasMore: { type: 'boolean' },
-            nextOffset: { type: ['integer', 'null'], minimum: 0 },
-          },
-          required: ['offset', 'limit', 'total', 'returned', 'hasMore', 'nextOffset'],
-          additionalProperties: false,
-        },
         summaryHint: {
           type: 'string',
           description: 'Only present when at least one row carries a partial summary — names the follow-up call that returns the full bodies.',
@@ -2365,7 +2376,7 @@ const TOOLS = [
           additionalProperties: false,
         },
       },
-      required: ['total', 'vaultRoot', 'nodes', 'pagination'],
+      required: ['total', 'vaultRoot', 'nodes', 'returned', 'limited', 'pagination'],
       additionalProperties: false,
     },
   },
@@ -6367,14 +6378,14 @@ function requireOptionalBoolean(value, name) {
   }
 }
 
-function listConcepts({ kind, domain, since, summary, limit = 100, offset = 0 }) {
+function listConcepts({ kind, domain, since, summary, offset = 0, limit = 100 }) {
   requireOptionalNonBlankString(kind, 'kind');
   requireOptionalEnum(kind, 'kind', NODE_KIND_VALUES);
   requireOptionalNonBlankString(domain, 'domain');
   requireOptionalNonNegativeNumber(since, 'since');
   requireOptionalBoolean(summary, 'summary');
-  requireOptionalPositiveInteger(limit, 'limit', { max: 500 });
   requireOptionalNonNegativeInteger(offset, 'offset');
+  requireOptionalPositiveInteger(limit, 'limit', { max: 500 });
   const docs = loadVaultDocs(VAULT_ROOT);
 
   // R11 #23 — vault-wide validation 카운트. raw 모두 검증해 silent corruption
@@ -6419,7 +6430,12 @@ function listConcepts({ kind, domain, since, summary, limit = 100, offset = 0 })
     if (domain && doc.frontmatter.domain !== domain) return false;
     if (sinceMs !== null && (typeof doc.mtime !== 'number' || doc.mtime <= sinceMs)) return false;
     return true;
-  }).sort((a, b) => a.slug.localeCompare(b.slug, 'en'));
+  }).sort((a, b) => a.slug.localeCompare(b.slug));
+  if (offset > filtered.length) {
+    throw new Error(
+      `offset must be less than or equal to the total matching nodes (${filtered.length}); Received: ${offset}.`,
+    );
+  }
   const page = filtered.slice(offset, offset + limit);
   const summaryTruncatedSlugs = [];
   const nodes = page.map((doc) => {
@@ -6454,6 +6470,8 @@ function listConcepts({ kind, domain, since, summary, limit = 100, offset = 0 })
     total: filtered.length,
     vaultRoot: VAULT_ROOT,
     nodes,
+    returned: nodes.length,
+    limited: offset + nodes.length < filtered.length,
     pagination: {
       offset,
       limit,

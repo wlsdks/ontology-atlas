@@ -228,6 +228,11 @@ export const AGENT_READ_TOOLS: readonly AgentToolDefinition[] = [
           minimum: 0,
           description: 'Non-negative mtime threshold (ms). Filter to nodes changed after this.',
         },
+        offset: {
+          type: 'integer',
+          minimum: 0,
+          description: 'Zero-based deterministic slug page offset. Continue with pagination.nextOffset while hasMore is true.',
+        },
         summary: {
           type: 'boolean',
           description: 'When true, each row includes a prose summary (max 200 chars).',
@@ -237,11 +242,6 @@ export const AGENT_READ_TOOLS: readonly AgentToolDefinition[] = [
           minimum: 1,
           maximum: 500,
           description: 'Max rows. Defaults to 100, max 500.',
-        },
-        offset: {
-          type: 'integer',
-          minimum: 0,
-          description: 'Zero-based page offset. Follow pagination.nextOffset until hasMore is false.',
         },
       },
     },

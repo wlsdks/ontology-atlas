@@ -451,18 +451,13 @@ await test("tools/list — 단일 도구 description 이 batch 짝을 cross-refe
     };
     const listConcepts = findTool("list_concepts");
     assert.equal(listConcepts?.outputSchema?.type, "object");
-    assert.deepEqual(listConcepts?.outputSchema?.required, ["total", "vaultRoot", "nodes", "pagination"]);
+    assert.deepEqual(listConcepts?.outputSchema?.required, ["total", "vaultRoot", "nodes", "returned", "limited", "pagination"]);
     assert.equal(listConcepts?.outputSchema?.additionalProperties, false);
     assert.equal(listConcepts?.outputSchema?.properties?.total?.type, "integer");
     assert.equal(listConcepts?.outputSchema?.properties?.vaultRoot?.type, "string");
     assert.deepEqual(listConcepts?.outputSchema?.properties?.nodes?.items?.required, ["uid", "slug", "kind", "title", "mtime"]);
     assert.equal(listConcepts?.outputSchema?.properties?.nodes?.items?.properties?.mtime?.type, "number");
     assert.equal(listConcepts?.outputSchema?.properties?.nodes?.items?.additionalProperties, false);
-    assert.deepEqual(
-      listConcepts?.outputSchema?.properties?.pagination?.required,
-      ["offset", "limit", "total", "returned", "hasMore", "nextOffset"],
-    );
-    assert.equal(listConcepts?.outputSchema?.properties?.pagination?.additionalProperties, false);
     assert.deepEqual(listConcepts?.outputSchema?.properties?.vaultWarnings?.required, ["errorCount", "warningCount"]);
     assert.equal(listConcepts?.outputSchema?.properties?.vaultWarnings?.additionalProperties, false);
     const getConceptTool = findTool("get_concept");
@@ -4244,38 +4239,43 @@ await test("list_concepts — tmp vault 의 노드 수 정확히 보고", async 
   }
 });
 
-await test("list_concepts — 100+ vault contract is explicit and resumable", async () => {
-  const root = makeVault([
-    { slug: "z", content: "---\nkind: capability\ntitle: Z\n---\n" },
-    { slug: "a", content: "---\nkind: capability\ntitle: A\n---\n" },
-    { slug: "m", content: "---\nkind: capability\ntitle: M\n---\n" },
-  ]);
+await test("list_concepts — 500개를 넘는 vault도 offset 페이지로 누락 없이 복원", async () => {
+  const root = makeVault(
+    Array.from({ length: 503 }, (_, index) => ({
+      slug: `capabilities/node-${String(index).padStart(4, "0")}`,
+      content: `---\nkind: capability\ntitle: Node ${index}\n---\n`,
+    })),
+  );
   try {
     const { responses } = await rpc(root, [
       ...INIT_REQUESTS,
-      callTool(2, "list_concepts", { limit: 2 }),
-      callTool(3, "list_concepts", { limit: 2, offset: 2 }),
+      callTool(2, "list_concepts", { limit: 500 }),
+      callTool(3, "list_concepts", { offset: 500, limit: 500 }),
+      callTool(4, "list_concepts", { offset: 504, limit: 500 }),
     ]);
     const first = getCallParsed(responses, 2);
     const second = getCallParsed(responses, 3);
-    assert.deepEqual(first.nodes.map((node) => node.slug), ["a", "m"]);
-    assert.deepEqual(second.nodes.map((node) => node.slug), ["z"]);
+    const outOfRange = getCallStructured(responses, 4);
+    assert.equal(first.total, 503);
+    assert.equal(first.returned, 500);
+    assert.equal(first.limited, true);
     assert.deepEqual(first.pagination, {
       offset: 0,
-      limit: 2,
-      total: 3,
-      returned: 2,
+      limit: 500,
+      total: 503,
+      returned: 500,
       hasMore: true,
-      nextOffset: 2,
+      nextOffset: 500,
     });
-    assert.deepEqual(second.pagination, {
-      offset: 2,
-      limit: 2,
-      total: 3,
-      returned: 1,
-      hasMore: false,
-      nextOffset: null,
-    });
+    assert.equal(second.returned, 3);
+    assert.equal(second.limited, false);
+    assert.equal(second.pagination.nextOffset, null);
+    const slugs = [...first.nodes, ...second.nodes].map((node) => node.slug);
+    assert.equal(new Set(slugs).size, 503);
+    assert.equal(slugs.length, 503);
+    assert.equal(outOfRange?.ok, false);
+    assert.equal(outOfRange?.errorCode, "invalid_arguments");
+    assert.match(String(outOfRange?.error), /offset.*503.*Received: 504/);
   } finally {
     rmSync(root, { recursive: true, force: true });
   }

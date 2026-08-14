@@ -25,7 +25,7 @@ import {
   hostTargetTriple,
   SUPPORTED_TARGET_TRIPLES,
 } from './lib/mcp-binary.mjs';
-import { verifyMcpBinary } from './verify-mcp-binary.mjs';
+import { verifyMcpBinary, verifyMcpParity } from './verify-mcp-binary.mjs';
 
 const root = process.cwd();
 const argv = process.argv.slice(2);
@@ -101,6 +101,10 @@ try {
   const result = await verifyMcpBinary({ binaryPath: outFile, vaultPath: vault });
   console.log(
     `✔ spawn check — version ${result.version}, ${result.toolCount} tools, vault ${path.relative(root, vault)}`,
+  );
+  const parity = await verifyMcpParity({ binaryPath: outFile, vaultPath: vault });
+  console.log(
+    `✔ source/bundled parity — ${parity.toolCount} tools, ${parity.sourceVersion} / ${parity.bundledVersion}`,
   );
 } catch (error) {
   fail(error instanceof Error ? error.message : String(error));

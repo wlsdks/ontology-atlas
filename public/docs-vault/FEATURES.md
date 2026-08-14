@@ -929,7 +929,7 @@ file export + the local stdio MCP genuinely can't serve them.
 1. **connection_info** — active vault/repo roots plus the actually advertised `readOnly`, `toolCount`, `toolNames`, and `toolsetHash`; explicit `OATLAS_REPO_ROOT` wins, otherwise repo root is auto-discovered from the active vault's Git top-level before falling back to process cwd
 2. **git_status** — vault-scoped working-tree state and risk; no writes or remote transport
 3. **git_history** `{ limit? }` — newest-first commits that touched the active vault pathspec only (default 20, max 100), with `limited` / `hasMore`, shallow-repository state, and `historyComplete` so truncated evidence is not mistaken for complete history
-4. **list_concepts** `{ kind?, domain?, since?, summary?, limit? }` — every node as `{uid, slug, …}`, optional filters, mtime, and summary preview
+4. **list_concepts** `{ kind?, domain?, since?, summary?, offset?, limit? }` — every node as `{uid, slug, …}`, optional filters, deterministic slug ordering, mtime, summary preview, and explicit `{returned, limited, pagination:{offset,limit,total,returned,hasMore,nextOffset}}` metadata for lossless large-vault traversal
 5. **get_concept** exactly one of `{ slug }` or `{ uid }` — full detail with both identities, frontmatter, prose, neighbors, edges, and `mtime`; UID lookup survives rename and never falls back to fuzzy matching
 6. **get_concepts** exactly one of `{ slugs }` or `{ uids }` — batch read (max 50), order-preserving partial results with both identities and per-node warnings
 7. **find_evidence** `{ title }` — partial-match across title / capabilities / elements / body; each match carries `{uid, slug}`, `domain`, `mtime`, and prose excerpt

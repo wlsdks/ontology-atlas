@@ -12,11 +12,11 @@ export function projectToInput(project: Project): ProjectInput {
     slug: project.slug,
     name: project.name,
     description: project.description,
-    // R15 (Concern 1) — Project 의 honest type 은 optional. Form 의
-    // ProjectInput 은 required (사용자 vault frontmatter 작성 도구)
-    // 라 form-local default 적용. 사용자가 form 으로 입력 → frontmatter 기록.
-    category: project.category ?? 'uncategorized',
-    status: project.status ?? 'active',
+    // Vault에 없던 taxonomy fact를 변환 단계에서 만들지 않는다. Form의
+    // 신규 작성 기본값은 form-local에서 정하고, 기존 project를 bulk/update로
+    // 다시 쓰는 경로는 omission을 그대로 보존해야 한다.
+    category: project.category,
+    status: project.status,
     owner: project.owner,
     isHub: project.isHub ?? false,
     progress: project.progress,

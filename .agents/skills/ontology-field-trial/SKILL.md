@@ -97,6 +97,19 @@ Record, separately:
   output of the whole trial. Both defects found on 2026-08-01 came from this
   list, not from anything the build phase showed.
 
+### Full-body handoff gate
+
+The list/summary response is a census, not evidence. Before the fresh agent
+marks a domain, capability, project boundary, implementation path, or impact
+answer as complete, it must read the named node bodies with
+`get_concept({body: "full"})` or `get_concepts({body: "full"})`. A summary row,
+title, path, or neighbor list may select the next read but may not close the
+question. Record the exact full-body follow-up count and the slugs read. If a
+named node is missing, truncated, or only available as an excerpt, the answer
+is partial/unknown and must say so; do not infer the body from its title or
+path. This gate exists because a fresh 2026-08 trial answered 4/6 questions
+fully while silently stopping after summary reads.
+
 ## Phase 4 — hallucination check (measures: trust)
 
 Take phase 3's answers back to the clone and verify each claim. An answer that

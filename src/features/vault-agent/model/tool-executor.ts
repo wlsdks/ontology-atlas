@@ -388,13 +388,28 @@ export function createToolExecutor(port: VaultReadPort) {
         const domain = str(args.domain);
         const since = num(args.since);
         const wantSummary = args.summary === true;
+        const offset = Math.max(num(args.offset) ?? 0, 0);
         const limit = Math.min(Math.max(num(args.limit) ?? 100, 1), 500);
-        const offset = Math.max(Math.trunc(num(args.offset) ?? 0), 0);
         const filtered = port.docs
           .filter((doc) => (kind ? doc.kind === kind : true))
           .filter((doc) => (domain ? doc.domain === domain : true))
           .filter((doc) => (since === undefined ? true : (doc.mtime ?? 0) > since))
-          .sort((a, b) => a.slug.localeCompare(b.slug, 'en'));
+          .sort((a, b) => a.slug.localeCompare(b.slug));
+        if (offset > filtered.length) {
+          return {
+            content: JSON.stringify({
+              ok: false,
+              errorCode: 'invalid_arguments',
+              error: `offset must be less than or equal to the total matching nodes (${filtered.length}); Received: ${offset}.`,
+            }),
+            isError: true,
+            outcome: 'args-invalid',
+            target: kind ?? domain ?? '',
+            summary: '목록 범위를 벗어난 offset이라 중단함',
+            readSlugs: [],
+            vaultChars: 0,
+          };
+        }
         const rows = filtered
           .slice(offset, offset + limit)
           .map((doc) => ({
@@ -409,7 +424,8 @@ export function createToolExecutor(port: VaultReadPort) {
         const packed = pack({
           rows,
           returned: rows.length,
-          vaultDocumentTotal: port.docs.length,
+          total: filtered.length,
+          limited: hasMore,
           pagination: {
             offset,
             limit,
@@ -418,6 +434,7 @@ export function createToolExecutor(port: VaultReadPort) {
             hasMore,
             nextOffset: hasMore ? offset + rows.length : null,
           },
+          vaultDocumentTotal: port.docs.length,
         });
         return {
           content: packed.content,
