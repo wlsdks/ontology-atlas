@@ -105,8 +105,8 @@ RDF/OWL/SKOS/SHACL 구현으로 소개하지 않는다. **적용 원칙**: LLM�
 | 11 | K1.1 | done(84fb9d177) | Skill 번호 절차를 손실 없이 source-bound rail로 읽는다. |
 | 12 | K1.3 | done(892a0beb6) | canonical packet·tamper gate와 clipboard UI를 구현했고, fresh source-hidden consumer가 독립적으로 27/27 재현·tamper 거부를 검증했다. |
 | 13 | K1.2 | done(892a0beb6) | 독립 gold corpus가 명시 grammar 4종을 precision 100%로 고정하고 ambiguous 문장은 diagnostic으로 남긴다. |
-| 14 | U1.1 | ready | Projects가 lifecycle 질문을 category/status로 두 번 묻지 않는다. |
-| 15 | U1.2 | ready | spotlight가 bounded motion 뒤 idle로 돌아간다. |
+| 14 | U1.1 | done(0b8406b39; merged 8667c5c3a) | Projects가 lifecycle 질문을 category/status로 두 번 묻지 않는다. |
+| 15 | U1.2 | done(350163ce2; merged 8667c5c3a) | spotlight가 bounded motion 뒤 idle로 돌아간다. |
 | gate | O1.4 | hold(repeated missing primitive) | missing primitive가 반복 입증될 때만 schema 확장을 상정한다. |
 
 ### 2026-08-13 MCP FDE scale checkpoint
@@ -440,6 +440,8 @@ kind 묶음이 아니라 qualified statement/provenance envelope다.
 | K1.1 | `84fb9d177` | parser module 부재, 빈·10자리 marker, scan truncation을 차례로 RED로 고정; truncation 전달 mutation도 RED | agent-skill IR/inventory/UI focused와 full Vitest; responsive E2E 390/1023/1024/1512; source order/span/resource corpus | 3 SKILL의 27/27 ordinal·exact text·line을 source digest와 함께 복원하고 unsupported/truncated는 partial rail 없이 unavailable; load chain과 flat `<ol>` rail 분리, transition edge 0 | column-1 CommonMark ordered item만 lossless contract로 인정하며 unsupported Markdown은 추론하지 않고 diagnostic으로 남김 |
 | K1.3 | `892a0beb6` | packet digest 검사를 제거한 mutation과 tampered/noncanonical/forged-edge fixture가 RED | canonical packet unit·UI clipboard tests; 독립 source-hidden consumer 3/3; packet 9/9; gold 3/3; contract 1,660/1,660 | source-hidden packet에서 27/27 step/order/line, semantic label 4, ambiguous diagnostic 2, resource 2, edge 0, private absolute path 0; exact text·noncanonical·forged edge·source digest tamper 거부 | 사용자가 누른 `packet 복사`만 제공; file export·자동 vault 저장·외부 전송·새 MCP/CLI command 0 |
 | K1.2 | `892a0beb6` | branch/retry/stop/verify 각 tracer와 adversarial 7종을 RED→GREEN; ambiguous diagnostic 제거 mutation RED | semantic/IR/packet focused 74; independent gold 3/3; TypeScript·ESLint; K1.3 strict roundtrip regression | exact whole-step 문법만 source span+digest를 가진 보조 label로 표시; invalid target·ambiguous 문장은 label 0 + diagnostic 1; source-hidden gold에서 admitted label 4, edge 0 | precision 우선의 좁은 grammar이며 default/추론 edge, 색 범례, generic workflow editor는 계속 OUT |
+| U1.1 | `0b8406b39` → `8667c5c3a` | category/status 기본값을 되살리는 mutation이 omitted field를 다시 발명하는지 RED로 확인 | Node 24 project 21 files/126 tests; contract 142 files/1665 tests; TypeScript; docs-vault surface/links | 최신 main에서 omitted category/status 보존, old vault roundtrip 유지; static studio E2E 5/5; desktop smoke 282/282 | category/status 의미 중복을 해소하는 전체 schema migration은 별도 PO 판단 전 OUT; 이번 slice는 호환성과 암묵 default 제거만 다룬다 |
+| U1.2 | `350163ce2` → `8667c5c3a` | spotlight phase를 idle에서도 계속 진행시키는 mutation이 3개 contract 중 1개를 RED로 만들고 원복 후 GREEN | Node 24 topology 61 files/898 tests (+3 todo); TypeScript; desktop contract 282/282; map-perf node drag real mouse | main 기준 새 static export/Tauri app 재빌드·배포; installed app route/window/WebView/screenshot pass; 30fps macOS recording에서 toggle transition 후 idle 안정 구간 확인(활성 crop mean 1.059, idle 0.032); 실제 node drag `노드 잡음 ✓`, 3000-node p95 3.4ms/max 6.9ms, 31-node p95 1.5ms/max 1.9ms | reduced-motion은 pure contract로 0 rotation을 닫았고 별도 시스템 설정 녹화는 아직 없다; spotlight 재설계·always-on repaint는 계속 OUT |
 
 ### 트랙 공통 종료 규칙
 
