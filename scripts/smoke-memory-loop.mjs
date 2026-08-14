@@ -25,6 +25,10 @@ function run(cmd, args, options = {}) {
   return result;
 }
 
+function stripAnsi(value) {
+  return value.replace(/\u001b\[[0-?]*[ -/]*[@-~]/g, '');
+}
+
 function slugSet(rows) {
   return new Set(rows.map((row) => row.slug));
 }
@@ -78,7 +82,7 @@ writeFileSync(
 );
 
 const init = run('node', [CLI, 'init', 'ontology'], { cwd: project });
-const initOutput = init.stdout.replace(/\u001b\[[0-9;]*m/g, '');
+const initOutput = stripAnsi(init.stdout);
 assert.match(initOutput, /bootstrap \. --vault \.\/ontology/);
 assert.equal(existsSync(join(project, '.mcp.json')), true);
 assert.equal(existsSync(join(project, '.codex', 'config.toml')), true);
@@ -93,6 +97,7 @@ assert.equal(bootstrapJson.mode, 'review');
 assert.equal(bootstrapJson.writeEligible, false);
 assert.equal(bootstrapJson.reason, 'approval_required');
 assert.equal(bootstrapJson.next.writes, 0);
+assert.equal(bootstrapJson.guard.qualification, 'constructionQualification:v1');
 assert.equal(existsSync(join(vault, 'memory-loop-proof-app.md')), false);
 assert.equal(existsSync(join(vault, 'capabilities', 'capture.md')), false);
 assert.equal(existsSync(join(vault, 'capabilities', 'search.md')), false);
@@ -118,14 +123,8 @@ assert.ok(agentBrief.playbooks.some((playbook) => playbook.id === 'graph_travers
 
 const conceptRows = await callMcpTool(vault, 'list_concepts', { kind: 'capability', limit: 20 });
 const capabilitySlugs = slugSet(conceptRows.nodes ?? []);
-assert.equal(capabilitySlugs.has('capabilities/example-capability'), true);
-
-const captureProfile = await callMcpTool(vault, 'query_ontology', {
-  operation: 'node_profile',
-  slug: 'capabilities/example-capability',
-});
-assert.equal(captureProfile.operation, 'node_profile');
-assert.equal(captureProfile.node.slug, 'capabilities/example-capability');
+assert.equal(capabilitySlugs.has('capabilities/capture'), false);
+assert.equal(capabilitySlugs.has('capabilities/search'), false);
 
 run('git', ['init', '-q'], { cwd: project });
 run('git', ['-c', 'user.name=ontology-atlas smoke', '-c', 'user.email=smoke@example.invalid', 'add', '.'], {

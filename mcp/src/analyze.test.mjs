@@ -2266,7 +2266,7 @@ test('Meaning gate separates shared ontology, business proposals, and implementa
     );
     assert.deepEqual(
       r.meaningGate.proposedBusinessOntology.capabilities.map((row) => row.slug),
-      ['capabilities/checkout', 'capabilities/theme-toggle'],
+      [],
     );
     assert.deepEqual(r.meaningGate.implementationEvidence.elements, [
       'elements/header',
@@ -2292,7 +2292,7 @@ test('Meaning gate separates shared ontology, business proposals, and implementa
     assert.equal(r.extractionContract.status, 'evidence-gathering');
     assert.equal(r.extractionContract.assertionPolicy.automaticBusinessAssertions, 0);
     assert.equal(r.extractionContract.assertionPolicy.humanApprovalRequired, true);
-    assert.equal(r.extractionContract.qualityGates.proposedBusinessConcepts, 4);
+    assert.equal(r.extractionContract.qualityGates.proposedBusinessConcepts, 2);
     assert.equal(r.extractionContract.qualityGates.uncertaintyExplicit, true);
     assert.equal(r.extractionContract.competencyQuestions.length, 5);
     assert.deepEqual(
@@ -2308,6 +2308,109 @@ test('Meaning gate separates shared ontology, business proposals, and implementa
         (question) => question.id === 'impact',
       ).requiredWitnesses,
       ['concepts', 'relations', 'evidence'],
+    );
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test('semantic evidence triangulates workspace responsibilities into business capabilities', () => {
+  const root = join(
+    process.cwd(),
+    'tests/fixtures/meaning-corpus/collaboration-monorepo',
+  );
+  const result = analyzeRepoStructure(root);
+
+  assert.deepEqual(
+    result.meaningGate.proposedBusinessOntology.capabilities.map((row) => row.slug),
+    [
+      'capabilities/decision-broadcast',
+      'capabilities/acknowledgement-tracking',
+      'capabilities/workspace-authorization',
+    ],
+  );
+  assert.deepEqual(
+    result.meaningGate.implementationEvidence.elements.map((slug) => slug).sort(),
+    ['elements/policy', 'elements/realtime', 'elements/web'],
+  );
+  assert.equal(
+    result.meaningGate.proposedBusinessOntology.capabilities.some((row) =>
+      /capabilities\/(?:web|realtime|policy)$/.test(row.slug),
+    ),
+    false,
+  );
+});
+
+test('semantic business clues suppress implementation-shaped feature and service folders', () => {
+  const commerce = analyzeRepoStructure(join(
+    process.cwd(),
+    'tests/fixtures/meaning-corpus/commerce-fsd',
+  ));
+  const documentService = analyzeRepoStructure(join(
+    process.cwd(),
+    'tests/fixtures/meaning-corpus/document-processing-service',
+  ));
+
+  assert.deepEqual(
+    commerce.meaningGate.proposedBusinessOntology.capabilities.map((row) => row.slug).sort(),
+    ['capabilities/checkout', 'capabilities/inventory-sync'],
+  );
+  assert.deepEqual(
+    documentService.meaningGate.proposedBusinessOntology.capabilities.map((row) => row.slug).sort(),
+    ['capabilities/intake', 'capabilities/review'],
+  );
+  assert.equal(
+    commerce.meaningGate.implementationEvidence.reviewRequiredCapabilities.some(
+      (row) => row.slug === 'capabilities/theme-toggle',
+    ),
+    true,
+  );
+  assert.equal(
+    documentService.meaningGate.implementationEvidence.reviewRequiredCapabilities.some(
+      (row) => row.slug === 'capabilities/logger',
+    ),
+    true,
+  );
+});
+
+test('semantic capability promotion stays quiet without business prose', () => {
+  const root = withRepo((r) => {
+    writeFileSync(join(r, 'package.json'), JSON.stringify({ name: 'quiet-app' }));
+    writeFileSync(join(r, 'README.md'), '# Quiet App\n\n## Accounts\n');
+    mkdirSync(join(r, 'src/features/auth'), { recursive: true });
+    mkdirSync(join(r, 'src/features/logger'), { recursive: true });
+  });
+  try {
+    const result = analyzeRepoStructure(root);
+    assert.deepEqual(
+      result.meaningGate.proposedBusinessOntology.capabilities.map((row) => row.slug),
+      [],
+    );
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test('generic business prose can promote an arbitrary feature without a clue-table entry', () => {
+  const root = withRepo((r) => {
+    writeFileSync(join(r, 'package.json'), JSON.stringify({ name: 'merchant-app' }));
+    writeFileSync(
+      join(r, 'README.md'),
+      '# Merchant App\n\n## Operations\n\nMerchants reconcile billing records before payout.\n',
+    );
+    mkdirSync(join(r, 'src/features/billing'), { recursive: true });
+    mkdirSync(join(r, 'src/features/transport'), { recursive: true });
+  });
+  try {
+    const result = analyzeRepoStructure(root);
+    assert.deepEqual(
+      result.meaningGate.proposedBusinessOntology.capabilities.map((row) => row.slug),
+      ['capabilities/billing'],
+    );
+    assert.ok(
+      result.meaningGate.implementationEvidence.reviewRequiredCapabilities.some(
+        (row) => row.slug === 'capabilities/transport',
+      ),
     );
   } finally {
     rmSync(root, { recursive: true, force: true });

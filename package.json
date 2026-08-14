@@ -104,6 +104,7 @@
     "cli:mcp-verify": "node cli/src/index.mjs mcp-verify",
     "test:mcp:unit": "node --test $(ls mcp/src/*.test.mjs | grep -v '/integration.test.mjs')",
     "eval:meaning-extraction": "node scripts/evaluate-meaning-corpus.mjs",
+    "test:meaning-corpus": "node --test scripts/evaluate-meaning-corpus.test.mjs && pnpm eval:meaning-extraction",
     "integration:mcp": "node --test mcp/src/integration.test.mjs",
     "integration:mcp:surface": "node scripts/run-focused-node-test.mjs --test-name-pattern \"^(tools/list|initialize|tools/call)\" mcp/src/integration.test.mjs",
     "integration:mcp:repo-analysis": "node scripts/run-focused-node-test.mjs --test-name-pattern \"^(index_project|analyze_repo_structure|infer_imports)\" mcp/src/integration.test.mjs",

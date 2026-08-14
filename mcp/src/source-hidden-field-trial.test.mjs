@@ -3,6 +3,13 @@ import { readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { test } from 'node:test';
 import { fileURLToPath } from 'node:url';
+import {
+  MEANING_COMPETENCY_CONTRACT,
+  MEANING_COMPETENCY_EVALUATOR,
+  MEANING_COMPETENCY_QUESTIONS,
+  MEANING_WITNESS_INVENTORY_CONTRACT,
+  deriveMeaningAssessment,
+} from './meaning-assessment.mjs';
 
 const here = dirname(fileURLToPath(import.meta.url));
 const fixture = JSON.parse(readFileSync(
@@ -22,6 +29,64 @@ function collectStrings(value, output = []) {
   }
   return output;
 }
+
+test('source-hidden assessment keeps unavailable currentness and visible gaps without inventing source details', () => {
+  const graphHash = 'project-graph-v1:a1b2c3d4';
+  const sourceFingerprint = 'hidden:unavailable';
+  const assessment = deriveMeaningAssessment({
+    projectSlug: 'sample-product',
+    graphHash,
+    structure: { status: 'ready' },
+    competency: {
+      contract: MEANING_COMPETENCY_CONTRACT,
+      receiptVersion: 1,
+      evaluator: MEANING_COMPETENCY_EVALUATOR,
+      graphHash,
+      inventory: {
+        contract: MEANING_WITNESS_INVENTORY_CONTRACT,
+        graphHash,
+        sourceFingerprint,
+        concepts: ['sample-product'],
+        relations: [],
+        evidence: [],
+        paths: [],
+      },
+      questions: MEANING_COMPETENCY_QUESTIONS.map(({ id }) => ({
+        id,
+        status: 'visible-gap',
+        witnesses: { concepts: [], relations: [], evidence: [], paths: [] },
+        unresolvedWitnesses: [`${id}-source-hidden`],
+      })),
+    },
+    source: {
+      status: 'not_measured',
+      currentness: 'unavailable',
+      topGapId: 'source_unbound',
+      sourcePath: '/private/should-not-be-guessed/repository',
+      sourceText: 'private source text must not enter the handoff',
+    },
+  });
+
+  assert.equal(assessment.status, 'needs_evidence');
+  assert.deepEqual(assessment.dimensions.source, {
+    status: 'not_measured',
+    currentness: 'unavailable',
+  });
+  assert.deepEqual(assessment.topGap, {
+    dimension: 'source',
+    id: 'source_unbound',
+  });
+  assert.equal(assessment.nextAction.id, 'measure_source');
+  assert.ok(assessment.dimensions.competency.questions.every(({ status, witnessStatus }) => (
+    status === 'visible-gap' && witnessStatus === 'missing'
+  )));
+  assert.ok(!collectStrings(assessment).some((value) => (
+    value.includes('/private/should-not-be-guessed')
+      || value.includes('private source text')
+  )));
+  assert.equal('sourcePath' in assessment, false);
+  assert.equal('sourceText' in assessment, false);
+});
 
 test('the source-hidden fixture fixes a precommitted, repository-agnostic 20-CQ question set', () => {
   assert.equal(fixture.contract, 'ontologyFieldTrial:v1');

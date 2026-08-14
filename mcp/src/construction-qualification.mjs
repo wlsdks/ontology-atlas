@@ -278,8 +278,12 @@ export const CONSTRUCTION_QUALIFICATION_INPUT_SCHEMA = Object.freeze({
           statement: SCHEMA_STRING,
           status: { type: 'string', enum: ['supported', 'partial', 'unsupported', 'conflict'] },
           witnessRefs: SCHEMA_STRING_ARRAY,
+          proposalRefs: {
+            ...SCHEMA_STRING_ARRAY,
+            minItems: 1,
+          },
         },
-        required: ['id', 'statement', 'status', 'witnessRefs'],
+        required: ['id', 'statement', 'status', 'witnessRefs', 'proposalRefs'],
         additionalProperties: false,
       },
     },
@@ -763,8 +767,10 @@ function validateClaims(packet, witnesses, findings) {
       !CLAIM_STATUSES.has(row.status)
       || !nonBlank(row.statement, 2000)
       || !uniqueStrings(row.witnessRefs)
+      || !uniqueStrings(row.proposalRefs)
+      || row.proposalRefs.length === 0
     ) {
-      addFinding(findings, 'invalid-claim', `claims.${id}`, 'Claim status or witness refs are invalid.');
+      addFinding(findings, 'invalid-claim', `claims.${id}`, 'Claim status, witness refs, and proposal refs are invalid.');
       continue;
     }
     for (const ref of row.witnessRefs) {

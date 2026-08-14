@@ -114,6 +114,8 @@ import {
 } from './construction-qualification.mjs';
 import {
   CONSTRUCTION_LIFECYCLE_EN,
+  CONSTRUCTION_ADMISSION_CONTRACT,
+  CONSTRUCTION_ADMISSION_TIERS,
   CONSTRUCTION_LIFECYCLE_CONTRACT,
   CONSTRUCTION_LIFECYCLE_PHASES,
 } from './construction-lifecycle.mjs';
@@ -920,6 +922,56 @@ const CONSTRUCTION_LIFECYCLE_OUTPUT_SCHEMA = Object.freeze({
       uniqueItems: true,
       items: NON_BLANK_STRING_SCHEMA,
     },
+    proposalCoverage: {
+      type: 'object',
+      properties: {
+        status: { type: 'string', enum: ['not_measured', 'complete', 'mismatch'] },
+        expectedCount: { type: 'integer', minimum: 0 },
+        coveredCount: { type: 'integer', minimum: 0 },
+        missingRefs: { type: 'array', uniqueItems: true, items: NON_BLANK_STRING_SCHEMA },
+        unexpectedRefs: { type: 'array', uniqueItems: true, items: NON_BLANK_STRING_SCHEMA },
+        sourceHiddenMissingRefs: { type: 'array', uniqueItems: true, items: NON_BLANK_STRING_SCHEMA },
+      },
+      required: [
+        'status',
+        'expectedCount',
+        'coveredCount',
+        'missingRefs',
+        'unexpectedRefs',
+        'sourceHiddenMissingRefs',
+      ],
+      additionalProperties: false,
+    },
+    admission: {
+      type: 'object',
+      properties: {
+        contract: { type: 'string', enum: [CONSTRUCTION_ADMISSION_CONTRACT] },
+        mode: { type: 'string', enum: ['shadow'] },
+        tier: { type: 'string', enum: CONSTRUCTION_ADMISSION_TIERS },
+        autoWriteCandidate: { type: 'boolean' },
+        humanAcceptanceRequired: { type: 'boolean' },
+        reviewItems: {
+          type: 'array',
+          uniqueItems: true,
+          items: NON_BLANK_STRING_SCHEMA,
+        },
+        diagnosticCodes: {
+          type: 'array',
+          uniqueItems: true,
+          items: NON_BLANK_STRING_SCHEMA,
+        },
+      },
+      required: [
+        'contract',
+        'mode',
+        'tier',
+        'autoWriteCandidate',
+        'humanAcceptanceRequired',
+        'reviewItems',
+        'diagnosticCodes',
+      ],
+      additionalProperties: false,
+    },
     nextAction: NON_BLANK_STRING_SCHEMA,
   },
   required: [
@@ -933,6 +985,8 @@ const CONSTRUCTION_LIFECYCLE_OUTPUT_SCHEMA = Object.freeze({
     'phases',
     'diagnostics',
     'requiredGapIds',
+    'proposalCoverage',
+    'admission',
     'nextAction',
   ],
   additionalProperties: false,
@@ -5242,7 +5296,8 @@ const TOOLS = [
       'measure the approved competency questions and source-hidden task, then a human may declare ' +
       'acceptance bound to that exact plan digest/revision and every visible gap. Pass the resulting ' +
       '`constructionQualification:v1` packet as `qualification`; only a current, admissible packet ' +
-      'releases the exact reviewed rows as `writePlan`. Declared approval provenance is not identity ' +
+      'releases the exact reviewed rows as `writePlan`. The lifecycle also reports a shadow-only ' +
+      '`admission` tier; `self_qualified` is an observation, not a write permission. Declared approval provenance is not identity ' +
       'authentication. Do not call write tools unless proposalValidation.canWrite is true and a ' +
       '`writePlan` is present; write every concept row successfully before writing relations.\n\n' +
       'Use this once when a user asks "이 codebase 분석해줘" / "bootstrap the ontology". ' +

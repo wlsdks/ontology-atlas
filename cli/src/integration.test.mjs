@@ -7825,10 +7825,10 @@ await test('repo analysis commands — reject invalid numeric option values befo
   }
 });
 
-// ── analyze --apply (R+ — agent-less bootstrap) ─────────────────────────
+// ── analyze review/apply compatibility guard ────────────────────────────
 //
-// CLI 가 analyze_repo_structure 결과를 add_concepts + add_relations 배치로
-// land. /ontology-bootstrap skill 의 CLI 짝.
+// CLI는 analyze_repo_structure 후보를 표시만 한다. --apply는 기존 호출자의
+// 호환성 플래그일 뿐이며 constructionQualification lifecycle을 우회하지 않는다.
 
 function makeRepoFixture() {
   const repo = mkdtempSync(join(tmpdir(), 'cli-repo-'));
@@ -7876,107 +7876,81 @@ await test('init — fresh starter vault compiles clean (no ambiguous alias / co
   }
 });
 
-await test('analyze --apply — clean init starter nodes are pruned', async () => {
+await test('analyze --apply — fails closed before any direct writer call', async () => {
+  const vault = withVault([]);
   const repo = makeRepoFixture();
+  const writerMarker = join(repo, 'writer-called');
+  const fakeMcp = join(repo, 'fake-mcp-analyze-approval-gate.mjs');
+  const payload = {
+    rootPath: '/repo',
+    framework: 'generic',
+    project: { slug: 'demo', title: 'Demo' },
+    domains: [{ slug: 'domains/core', title: 'Core', evidence: { source: 'README.md' } }],
+    capabilities: [],
+    elements: [],
+    suggestedRelations: [{ from: 'demo', to: 'domains/core', type: 'contains' }],
+    skipped: [],
+  };
+  writeFileSync(
+    fakeMcp,
+    [
+      "import { writeFileSync } from 'node:fs';",
+      "import readline from 'node:readline';",
+      "const writerMarker = " + JSON.stringify(writerMarker) + ";",
+      "const payload = " + JSON.stringify(payload) + ";",
+      "const rl = readline.createInterface({ input: process.stdin });",
+      "rl.on('line', (line) => {",
+      "  const msg = JSON.parse(line);",
+      "  if (msg.method === 'initialize') {",
+      "    console.log(JSON.stringify({ jsonrpc: '2.0', id: msg.id, result: {} }));",
+      "    return;",
+      "  }",
+      "  if (msg.params?.name === 'analyze_repo_structure') {",
+      "    console.log(JSON.stringify({ jsonrpc: '2.0', id: msg.id, result: { content: [{ text: JSON.stringify(payload) }], structuredContent: payload } }));",
+      "    return;",
+      "  }",
+      "  if (msg.params?.name === 'add_concepts' || msg.params?.name === 'add_relations') {",
+      "    writeFileSync(writerMarker, msg.params.name, 'utf-8');",
+      "    console.log(JSON.stringify({ jsonrpc: '2.0', id: msg.id, error: { code: -32603, message: 'direct writer call was not allowed' } }));",
+      "  }",
+      "});",
+    ].join('\n'),
+    'utf-8',
+  );
   try {
-    const init = await run(['init', 'ontology'], { cwd: repo });
-    assert.equal(init.code, 0, `init failed: ${init.stdout}\n${init.stderr}`);
-
-    const vault = join(repo, 'ontology');
-    const r = await run(['analyze', repo, '--vault', vault, '--apply']);
-    assert.equal(r.code, 0, `stdout: ${r.stdout}\nstderr: ${r.stderr}`);
-    const clean = stripAnsi(r.stdout);
-    assert.match(clean, /starters\s+4 removed/);
-    assert.equal(existsSyncTest(join(vault, 'project.md')), false);
-    assert.equal(existsSyncTest(join(vault, 'domains', 'example-domain.md')), false);
-    assert.equal(
-      existsSyncTest(join(vault, 'capabilities', 'example-capability.md')),
-      false,
-    );
-    assert.equal(existsSyncTest(join(vault, 'elements', 'example-element.md')), false);
-    assert.equal(existsSyncTest(join(vault, 'test-app.md')), true);
-    assert.equal(existsSyncTest(join(vault, 'capabilities', 'auth.md')), true);
+    const before = readdirSync(vault).sort();
+    const r = await run(['analyze', repo, '--vault', vault, '--apply', '--json'], {
+      env: { OATLAS_MCP_PATH: fakeMcp },
+    });
+    assert.equal(r.code, 3, `stdout: ${r.stdout}\nstderr: ${r.stderr}`);
+    const data = JSON.parse(r.stdout);
+    assert.equal(data.mode, 'review');
+    assert.equal(data.apply, false);
+    assert.equal(data.writeEligible, false);
+    assert.equal(data.reason, 'approval_required');
+    assert.ok(data.plan.concepts > 0, 'non-empty concept target must be exercised');
+    assert.ok(data.plan.suggestedRelations > 0, 'non-empty relation target must be exercised');
+    assert.equal(data.next.writes, 0);
+    assert.equal(data.constructionLifecycle, null);
+    assert.equal(existsSyncTest(writerMarker), false, 'batch writers must not be called');
+    assert.deepEqual(readdirSync(vault).sort(), before, 'vault must remain byte/file unchanged');
   } finally {
+    rmSync(vault, { recursive: true, force: true });
     rmSync(repo, { recursive: true, force: true });
   }
 });
 
-await test('analyze --apply — edited starter nodes are preserved', async () => {
-  const repo = makeRepoFixture();
-  try {
-    const init = await run(['init', 'ontology'], { cwd: repo });
-    assert.equal(init.code, 0, `init failed: ${init.stdout}\n${init.stderr}`);
-
-    const vault = join(repo, 'ontology');
-    const editedDomain = join(vault, 'domains', 'example-domain.md');
-    writeFileSync(
-      editedDomain,
-      readFileSync(editedDomain, 'utf-8').replace(
-        'title: Example domain',
-        'title: Edited domain',
-      ),
-      'utf-8',
-    );
-
-    const r = await run(['analyze', repo, '--vault', vault, '--apply']);
-    assert.equal(r.code, 0, `stdout: ${r.stdout}\nstderr: ${r.stderr}`);
-    const clean = stripAnsi(r.stdout);
-    assert.match(clean, /starters\s+3 removed · 1 preserved/);
-    assert.equal(existsSyncTest(editedDomain), true);
-    assert.match(readFileSync(editedDomain, 'utf-8'), /title: Edited domain/);
-    assert.equal(existsSyncTest(join(vault, 'capabilities', 'example-capability.md')), false);
-    assert.equal(existsSyncTest(join(vault, 'test-app.md')), true);
-  } finally {
-    rmSync(repo, { recursive: true, force: true });
-  }
-});
-
-await test('analyze --apply — project slug can replace untouched starter project', async () => {
-  const repo = mkdtempSync(join(tmpdir(), 'cli-repo-project-'));
-  try {
-    writeFileSync(
-      join(repo, 'package.json'),
-      JSON.stringify({ name: 'project', description: 'Real project app' }, null, 2),
-      'utf-8',
-    );
-    mkdirSync(join(repo, 'src', 'features', 'auth'), { recursive: true });
-    const init = await run(['init', 'ontology'], { cwd: repo });
-    assert.equal(init.code, 0, `init failed: ${init.stdout}\n${init.stderr}`);
-
-    const vault = join(repo, 'ontology');
-    const r = await run(['analyze', repo, '--vault', vault, '--apply']);
-    assert.equal(r.code, 0, `stdout: ${r.stdout}\nstderr: ${r.stderr}`);
-    const projectDoc = readFileSync(join(vault, 'project.md'), 'utf-8');
-    assert.match(projectDoc, /title: Project/);
-    assert.doesNotMatch(projectDoc, /title: My project/);
-    assert.equal(existsSyncTest(join(vault, 'capabilities', 'auth.md')), true);
-  } finally {
-    rmSync(repo, { recursive: true, force: true });
-  }
-});
-
-await test('analyze --apply — concepts/relations vault 에 land', async () => {
+await test('analyze --apply — human output remains an approval-gated review', async () => {
   const vault = withVault([]);
   const repo = makeRepoFixture();
   try {
-    const r = await run([
-      'analyze',
-      repo,
-      '--vault',
-      vault,
-      '--apply',
-    ]);
-    assert.equal(r.code, 0, `stdout: ${r.stdout}\nstderr: ${r.stderr}`);
+    const r = await run(['analyze', repo, '--vault', vault, '--apply']);
+    assert.equal(r.code, 3, `stdout: ${r.stdout}\nstderr: ${r.stderr}`);
     const clean = stripAnsi(r.stdout);
-    assert.match(clean, /analyze --apply/);
-    assert.match(clean, /concepts/);
-    // project (test-app) 노드가 vault 에 land 됐어야.
-    const projectFile = join(vault, 'test-app.md');
-    assert.equal(existsSyncTest(projectFile), true, 'project file landed');
-    const fm = readFileSync(projectFile, 'utf-8');
-    assert.match(fm, /kind: project/);
-    // package description is prose, not identity; title falls back to package name.
-    assert.match(fm, /title: Test App/);
+    assert.match(clean, /review only\s+approval required · writes 0/);
+    assert.match(clean, /constructionQualification:v1/);
+    assert.match(clean, /No semantic node or relation was written/);
+    assert.equal(existsSyncTest(join(vault, 'test-app.md')), false);
   } finally {
     rmSync(vault, { recursive: true, force: true });
     rmSync(repo, { recursive: true, force: true });
@@ -7989,229 +7963,14 @@ await test('analyze (default, no --apply) — vault 변경 0', async () => {
   try {
     const r = await run(['analyze', repo, '--vault', vault]);
     assert.equal(r.code, 0);
-    // vault 에 새 .md 파일이 *없어야* 함 (default 는 read-only).
+    const clean = stripAnsi(r.stdout);
+    assert.match(clean, /review → qualification → human acceptance → exact writePlan/);
+    assert.doesNotMatch(clean, /ontology-atlas add|add_concept/);
     assert.equal(
       existsSyncTest(join(vault, 'test-app.md')),
       false,
       'project file 안 만들어짐 (default mode)',
     );
-  } finally {
-    rmSync(vault, { recursive: true, force: true });
-    rmSync(repo, { recursive: true, force: true });
-  }
-});
-
-await test('analyze --apply 두 번째 실행 → "already existed" 카운트, errors 0', async () => {
-  const vault = withVault([]);
-  const repo = makeRepoFixture();
-  try {
-    const r1 = await run(['analyze', repo, '--vault', vault, '--apply']);
-    assert.equal(r1.code, 0);
-    const r2 = await run(['analyze', repo, '--vault', vault, '--apply']);
-    assert.equal(r2.code, 0, `2번째 실행 실패: ${r2.stdout}\n${r2.stderr}`);
-    const clean = stripAnsi(r2.stdout);
-    // 모두 already existed (concept side) + 모두 already existed (relation side, idempotent).
-    assert.match(clean, /already existed/);
-    // errors 0
-    assert.match(clean, /0 errors/);
-  } finally {
-    rmSync(vault, { recursive: true, force: true });
-    rmSync(repo, { recursive: true, force: true });
-  }
-});
-
-await test('analyze --apply — 마지막 vault census 라인 (R+ cycle 38)', async () => {
-  const vault = withVault([]);
-  const repo = makeRepoFixture();
-  try {
-    const r = await run(['analyze', repo, '--vault', vault, '--apply']);
-    assert.equal(r.code, 0);
-    const clean = stripAnsi(r.stdout);
-    assert.match(clean, /vault now has \d+ nodes/);
-    assert.match(clean, /project=1/);
-  } finally {
-    rmSync(vault, { recursive: true, force: true });
-    rmSync(repo, { recursive: true, force: true });
-  }
-});
-
-await test('analyze --apply --json — vaultCensus 필드 (R+ cycle 38)', async () => {
-  const vault = withVault([]);
-  const repo = makeRepoFixture();
-  try {
-    const r = await run([
-      'analyze',
-      repo,
-      '--vault',
-      vault,
-      '--apply',
-      '--json',
-    ]);
-    assert.equal(r.code, 0);
-    const data = JSON.parse(r.stdout);
-    assert.ok(data.vaultCensus);
-    assert.equal(typeof data.vaultCensus.total, 'number');
-    assert.ok(data.vaultCensus.total >= 1);
-  } finally {
-    rmSync(vault, { recursive: true, force: true });
-    rmSync(repo, { recursive: true, force: true });
-  }
-});
-
-await test('analyze --apply --json — applied / summary 필드 노출', async () => {
-  const vault = withVault([]);
-  const repo = makeRepoFixture();
-  try {
-    const r = await run([
-      'analyze',
-      repo,
-      '--vault',
-      vault,
-      '--apply',
-      '--json',
-    ]);
-    assert.equal(r.code, 0);
-    const data = JSON.parse(r.stdout);
-    assert.ok(data.applied, 'applied 필드 있음');
-    assert.ok(Array.isArray(data.applied.concepts), 'applied.concepts 배열');
-    assert.ok(Array.isArray(data.applied.relations), 'applied.relations 배열');
-    assert.ok(data.summary, 'summary 필드 있음');
-    assert.equal(typeof data.summary.errors, 'number');
-  } finally {
-    rmSync(vault, { recursive: true, force: true });
-    rmSync(repo, { recursive: true, force: true });
-  }
-});
-
-await test('analyze --apply — labels row-level failures without slug or relation shape', async () => {
-  const vault = withVault([]);
-  const repo = makeRepoFixture();
-  const fakeMcp = join(vault, 'fake-mcp-analyze-row-labels.mjs');
-  writeFileSync(
-    fakeMcp,
-    [
-      "import readline from 'node:readline';",
-      "const rl = readline.createInterface({ input: process.stdin });",
-      "rl.on('line', (line) => {",
-      "  const msg = JSON.parse(line);",
-      "  if (msg.method === 'initialize') {",
-      "    console.log(JSON.stringify({ jsonrpc: '2.0', id: msg.id, result: {} }));",
-      "    return;",
-      "  }",
-      "  if (msg.params?.name === 'analyze_repo_structure') {",
-      "    const payload = { rootPath: '/repo', framework: 'generic', project: { slug: 'demo', title: 'Demo' }, domains: [{ slug: 'domains/core', title: 'Core', evidence: { source: 'README.md' } }], capabilities: [], elements: [], suggestedRelations: [{ from: 'demo', to: 'domains/core', type: 'contains' }], skipped: [] };",
-      "    console.log(JSON.stringify({ jsonrpc: '2.0', id: msg.id, result: { content: [{ text: JSON.stringify(payload) }], structuredContent: payload } }));",
-      "    return;",
-      "  }",
-      "  if (msg.params?.name === 'add_concepts') {",
-      "    const payload = { concepts: [{ ok: false, error: 'concepts[0] missing slug' }, { ok: true, slug: 'domains/core', filePath: '/tmp/domains/core.md', changed: true }] };",
-      "    console.log(JSON.stringify({ jsonrpc: '2.0', id: msg.id, result: { content: [{ text: JSON.stringify(payload) }], structuredContent: payload } }));",
-      "    return;",
-      "  }",
-      "  if (msg.params?.name === 'add_relations') {",
-      "    const payload = { relations: [{ ok: false, error: 'relations[0] missing source' }] };",
-      "    console.log(JSON.stringify({ jsonrpc: '2.0', id: msg.id, result: { content: [{ text: JSON.stringify(payload) }], structuredContent: payload } }));",
-      "  }",
-      "});",
-    ].join('\n'),
-    'utf-8',
-  );
-  try {
-    const r = await run(['analyze', repo, '--vault', vault, '--apply'], {
-      env: { OATLAS_MCP_PATH: fakeMcp },
-    });
-    assert.equal(r.code, 1, `stdout: ${r.stdout}\nstderr: ${r.stderr}`);
-    const clean = stripAnsi(r.stdout);
-    assert.match(clean, /✗ concepts\[0\] · concepts\[0\] missing slug/);
-    assert.match(clean, /✗ relations\[0\] · relations\[0\] missing source/);
-    assert.doesNotMatch(clean, /undefined/);
-  } finally {
-    rmSync(vault, { recursive: true, force: true });
-    rmSync(repo, { recursive: true, force: true });
-  }
-});
-
-await test('analyze --apply — fails closed when add_concepts response rows drift', async () => {
-  const vault = withVault([]);
-  const repo = makeRepoFixture();
-  const fakeMcp = join(vault, 'fake-mcp-analyze-batch-drift.mjs');
-  writeFileSync(
-    fakeMcp,
-    [
-      "import readline from 'node:readline';",
-      "const rl = readline.createInterface({ input: process.stdin });",
-      "rl.on('line', (line) => {",
-      "  const msg = JSON.parse(line);",
-      "  if (msg.method === 'initialize') {",
-      "    console.log(JSON.stringify({ jsonrpc: '2.0', id: msg.id, result: {} }));",
-      "    return;",
-      "  }",
-      "  if (msg.params?.name === 'analyze_repo_structure') {",
-      "    const payload = { rootPath: '/repo', framework: 'generic', project: { slug: 'demo', title: 'Demo' }, domains: [], capabilities: [], elements: [], suggestedRelations: [], skipped: [] };",
-      "    console.log(JSON.stringify({ jsonrpc: '2.0', id: msg.id, result: { content: [{ text: JSON.stringify(payload) }], structuredContent: payload } }));",
-      "    return;",
-      "  }",
-      "  if (msg.params?.name === 'add_concepts') {",
-      "    const payload = { concepts: [{ slug: 'demo', ok: 'true' }] };",
-      "    console.log(JSON.stringify({ jsonrpc: '2.0', id: msg.id, result: { content: [{ text: JSON.stringify(payload) }], structuredContent: payload } }));",
-      "  }",
-      "});",
-    ].join('\n'),
-    'utf-8',
-  );
-  try {
-    const r = await run(['analyze', repo, '--vault', vault, '--apply'], {
-      env: { OATLAS_MCP_PATH: fakeMcp },
-    });
-    assert.equal(r.code, 2, `stdout: ${r.stdout}\nstderr: ${r.stderr}`);
-    assert.equal(r.stdout, '');
-    assert.match(stripAnsi(r.stderr), /add_concepts\.concepts\[0\]\.ok must be a boolean/);
-  } finally {
-    rmSync(vault, { recursive: true, force: true });
-    rmSync(repo, { recursive: true, force: true });
-  }
-});
-
-await test('analyze --apply — fails closed when add_relations response row count drifts', async () => {
-  const vault = withVault([]);
-  const repo = makeRepoFixture();
-  const fakeMcp = join(vault, 'fake-mcp-analyze-relation-count-drift.mjs');
-  writeFileSync(
-    fakeMcp,
-    [
-      "import readline from 'node:readline';",
-      "const rl = readline.createInterface({ input: process.stdin });",
-      "rl.on('line', (line) => {",
-      "  const msg = JSON.parse(line);",
-      "  if (msg.method === 'initialize') {",
-      "    console.log(JSON.stringify({ jsonrpc: '2.0', id: msg.id, result: {} }));",
-      "    return;",
-      "  }",
-      "  if (msg.params?.name === 'analyze_repo_structure') {",
-      "    const payload = { rootPath: '/repo', framework: 'generic', project: { slug: 'demo', title: 'Demo' }, domains: [{ slug: 'domains/core', title: 'Core', evidence: { source: 'README.md' } }], capabilities: [], elements: [], suggestedRelations: [{ from: 'demo', to: 'domains/core', type: 'contains' }], skipped: [] };",
-      "    console.log(JSON.stringify({ jsonrpc: '2.0', id: msg.id, result: { content: [{ text: JSON.stringify(payload) }], structuredContent: payload } }));",
-      "    return;",
-      "  }",
-      "  if (msg.params?.name === 'add_concepts') {",
-      "    const payload = { concepts: msg.params.arguments.concepts.map((concept) => ({ slug: concept.slug, ok: true, filePath: `/tmp/${concept.slug}.md`, changed: true })) };",
-      "    console.log(JSON.stringify({ jsonrpc: '2.0', id: msg.id, result: { content: [{ text: JSON.stringify(payload) }], structuredContent: payload } }));",
-      "    return;",
-      "  }",
-      "  if (msg.params?.name === 'add_relations') {",
-      "    const payload = { relations: [] };",
-      "    console.log(JSON.stringify({ jsonrpc: '2.0', id: msg.id, result: { content: [{ text: JSON.stringify(payload) }], structuredContent: payload } }));",
-      "  }",
-      "});",
-    ].join('\n'),
-    'utf-8',
-  );
-  try {
-    const r = await run(['analyze', repo, '--vault', vault, '--apply'], {
-      env: { OATLAS_MCP_PATH: fakeMcp },
-    });
-    assert.equal(r.code, 2, `stdout: ${r.stdout}\nstderr: ${r.stderr}`);
-    assert.equal(r.stdout, '');
-    assert.match(stripAnsi(r.stderr), /add_relations\.relations row count mismatch: expected 1, got 0/);
   } finally {
     rmSync(vault, { recursive: true, force: true });
     rmSync(repo, { recursive: true, force: true });

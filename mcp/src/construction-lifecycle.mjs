@@ -6,6 +6,13 @@ import {
 } from './construction-qualification.mjs';
 
 export const CONSTRUCTION_LIFECYCLE_CONTRACT = 'ontologyConstructionLifecycle:v1';
+export const CONSTRUCTION_ADMISSION_CONTRACT = 'ontologyConstructionAdmission:v1';
+export const CONSTRUCTION_ADMISSION_TIERS = Object.freeze([
+  'self_qualified',
+  'partial_visible_gap',
+  'human_review_required',
+  'hard_block',
+]);
 
 export const CONSTRUCTION_LIFECYCLE_PHASES = Object.freeze([
   'purpose_authority',
@@ -30,8 +37,10 @@ separate approval tool or writer token.
 2. A separately identified evaluator must run the approved competency questions,
    verify current portable witnesses and citations, execute the complete
    source-hidden task, report every quality axis, and run the prior-CQ regression.
-   Builder-only evaluation, \`not_measured\`, stale evidence, or a red mandatory
-   axis blocks writing.
+   Every qualification claim must carry \`proposalRefs\` for the exact current
+   review-plan rows; missing, foreign, or source-hidden-uncovered rows block
+   writing. Builder-only evaluation, \`not_measured\`, stale evidence, or a red
+   mandatory axis also blocks writing.
 3. Show the exact review plan and every required gap to the person. If they
    accept, record declared human provenance bound to the returned plan digest,
    revision, and exact accepted gap ids. This records an assertion; Atlas does
@@ -40,6 +49,10 @@ separate approval tool or writer token.
    \`constructionQualification:v1\` packet. Write only when it returns
    \`canWrite:true\`, lifecycle \`writeEligibility:"executable"\`, and an exact
    \`writePlan\`. Any source or plan change invalidates the acceptance.
+   The response also contains a shadow-only \`admission\` disposition. It
+   classifies whether the packet is self-qualified, has a visible measured
+   gap, needs human review, or is hard-blocked. \`self_qualified\` is only an
+   auto-write candidate in this phase; it does not bypass human acceptance.
 5. Pass those rows unchanged to the batch writers, then run \`validate_vault\`,
    \`compile_ontology({summary:true})\`, and \`finalize_project_meaning\` after
    connecting the project source. A post-write failure is repaired forward; it
@@ -76,6 +89,78 @@ export function constructionPlanDigest(reviewPlan) {
   if (reviewPlan == null) return null;
   const payload = JSON.stringify(canonical(reviewPlan));
   return `sha256:${createHash('sha256').update(payload, 'utf8').digest('hex')}`;
+}
+
+function proposalRelationRef({ from, to, type } = {}) {
+  return `relation:${type}:${from}->${to}`;
+}
+
+/**
+ * Derive the handoff coverage set from the canonical in-memory review plan.
+ * This is a receipt helper, not a second ontology schema: no semantic truth is
+ * inferred from these labels and no row is written by this function.
+ */
+export function proposalCoverageRefs(reviewPlan) {
+  if (!reviewPlan || typeof reviewPlan !== 'object') return [];
+  const refs = [
+    ...(reviewPlan.concepts ?? []).map(({ slug }) => `concept:${slug}`),
+    ...(reviewPlan.relations ?? []).map(proposalRelationRef),
+    ...Object.keys(reviewPlan.competencyAnswers ?? {}).map((id) => `competency:${id}`),
+    ...(reviewPlan.relations ?? [])
+      .filter(({ type }) => type === 'depends_on')
+      .map((relation) => `impact:${proposalRelationRef(relation)}`),
+    ...Object.keys(reviewPlan.competencyAnswers ?? {})
+      .filter((id) => id === 'impact' || id.toLowerCase().includes('impact'))
+      .map((id) => `impact:competency:${id}`),
+  ];
+  return [...new Set(refs)].sort();
+}
+
+function proposalCoverage(reviewPlan, qualification) {
+  const expectedRefs = proposalCoverageRefs(reviewPlan);
+  if (qualification == null) {
+    return {
+      status: 'not_measured',
+      expectedCount: expectedRefs.length,
+      coveredCount: 0,
+      missingRefs: [],
+      unexpectedRefs: [],
+      sourceHiddenMissingRefs: [],
+    };
+  }
+
+  const expected = new Set(expectedRefs);
+  const claimIdsByRef = new Map();
+  const unexpectedRefs = new Set();
+  for (const claim of qualification.claims ?? []) {
+    for (const ref of claim.proposalRefs ?? []) {
+      if (typeof ref !== 'string' || ref.trim() === '') continue;
+      if (!expected.has(ref)) {
+        unexpectedRefs.add(ref);
+        continue;
+      }
+      const claimIds = claimIdsByRef.get(ref) ?? [];
+      claimIds.push(claim.id);
+      claimIdsByRef.set(ref, claimIds);
+    }
+  }
+  const missingRefs = expectedRefs.filter((ref) => !claimIdsByRef.has(ref));
+  const sourceHiddenClaimIds = new Set(qualification.sourceHiddenTask?.claimIds ?? []);
+  const sourceHiddenMissingRefs = qualification.sourceHiddenTask?.status === 'passed'
+    ? expectedRefs.filter((ref) => (
+      !(claimIdsByRef.get(ref) ?? []).some((claimId) => sourceHiddenClaimIds.has(claimId))
+    ))
+    : [];
+  return {
+    status: missingRefs.length > 0 || unexpectedRefs.size > 0 || sourceHiddenMissingRefs.length > 0
+      ? 'mismatch'
+      : 'complete',
+    expectedCount: expectedRefs.length,
+    coveredCount: expectedRefs.length - missingRefs.length,
+    missingRefs,
+    unexpectedRefs: [...unexpectedRefs].sort(),
+    sourceHiddenMissingRefs,
+  };
 }
 
 function phase(id, status, diagnosticCodes = []) {
@@ -137,6 +222,149 @@ function phasesWithoutQualification() {
   ));
 }
 
+function admissionDisposition(tier, {
+  autoWriteCandidate = false,
+  humanAcceptanceRequired = true,
+  reviewItems = [],
+  diagnosticCodes = [],
+} = {}) {
+  return {
+    contract: CONSTRUCTION_ADMISSION_CONTRACT,
+    mode: 'shadow',
+    tier,
+    autoWriteCandidate,
+    humanAcceptanceRequired,
+    reviewItems: [...new Set(reviewItems)].sort(),
+    diagnosticCodes: [...new Set(diagnosticCodes)].sort(),
+  };
+}
+
+function isHardAdmissionDiagnostic(code) {
+  return [
+    'digest-mismatch',
+    'revision-mismatch',
+    'stale',
+    'unsupported',
+    'claim-not-supported',
+    'citation-not-verified',
+    'source-hidden',
+    'regression',
+    'maker-self-evaluation',
+    'maker-self-approval',
+    'non-independent',
+    'invalid-',
+    'missing-quality-axis',
+    'missing-cq-result',
+    'proposal-coverage-',
+  ].some((marker) => code.includes(marker));
+}
+
+function deriveAdmissionDisposition({
+  qualification,
+  result,
+  diagnostics,
+  requiredGaps,
+  mandatoryRed,
+  sourceHiddenMissing,
+  regressionReady,
+  digestMismatch,
+  nonApprovableWarnings,
+  writeEligibility,
+} = {}) {
+  const diagnosticCodes = diagnostics.map(({ code }) => code);
+  if (qualification == null) {
+    return admissionDisposition('human_review_required', {
+      reviewItems: ['missing-qualification'],
+      diagnosticCodes: ['missing-qualification'],
+      humanAcceptanceRequired: true,
+    });
+  }
+
+  const hardCodes = diagnosticCodes.filter(isHardAdmissionDiagnostic);
+  const invalid = result?.status === 'invalid';
+  const evidenceFailure = (result?.findings ?? []).some(({ severity }) => (
+    severity === 'error' || severity === 'failure'
+  ));
+  if (
+    invalid
+    || evidenceFailure
+    || hardCodes.length > 0
+    || mandatoryRed.length > 0
+    || sourceHiddenMissing
+    || !regressionReady
+    || digestMismatch
+  ) {
+    return admissionDisposition('hard_block', {
+      reviewItems: hardCodes.length > 0 ? hardCodes : ['qualification-gate'],
+      diagnosticCodes,
+      humanAcceptanceRequired: true,
+    });
+  }
+
+  const allAxesPass = Object.values(result?.axes ?? {}).length === CONSTRUCTION_QUALITY_AXES.length
+    && Object.values(result.axes).every(({ status }) => status === 'passed');
+  const allCqsPass = result?.competencyQuestions?.length > 0
+    && result.competencyQuestions.every(({ status }) => status === 'passed');
+  const allClaimsSupported = result?.metrics?.claimAccuracy?.rate === 1;
+  const allCitationsVerified = result?.metrics?.citationAccuracy?.rate === 1;
+  const mandatoryAxesPass = MANDATORY_AXES.every((axis) => result?.axes?.[axis]?.status === 'passed');
+  const noQualificationFailures = (result.findings ?? []).every(({ severity }) => (
+    severity !== 'error' && severity !== 'failure'
+  ));
+  const qualityPass = allAxesPass
+    && allCqsPass
+    && allClaimsSupported
+    && allCitationsVerified
+    && result?.sourceHiddenTask?.status === 'passed'
+    && noQualificationFailures;
+  const visibleGapIds = requiredGaps.filter((id) => (
+    id.startsWith('axis:functional')
+    || id.startsWith('axis:pragmatic')
+    || id.startsWith('cq:')
+    || id.startsWith('proposal:partial-competency-answer:')
+    || id.startsWith('proposal:visible-competency-gap:')
+  ));
+  const onlyVisibleGaps = requiredGaps.length > 0
+    && visibleGapIds.length === requiredGaps.length;
+
+  if (
+    qualityPass
+    && !onlyVisibleGaps
+    && nonApprovableWarnings.length === 0
+    && qualification.acceptance?.decision !== 'rejected'
+  ) {
+    return admissionDisposition('self_qualified', {
+      autoWriteCandidate: true,
+      humanAcceptanceRequired: writeEligibility !== 'executable',
+      diagnosticCodes,
+    });
+  }
+  if (
+    mandatoryAxesPass
+    && allClaimsSupported
+    && allCitationsVerified
+    && result?.sourceHiddenTask?.status === 'passed'
+    && noQualificationFailures
+    && onlyVisibleGaps
+  ) {
+    return admissionDisposition('partial_visible_gap', {
+      reviewItems: visibleGapIds,
+      diagnosticCodes,
+      humanAcceptanceRequired: true,
+    });
+  }
+
+  return admissionDisposition('human_review_required', {
+    reviewItems: [
+      ...requiredGaps,
+      ...nonApprovableWarnings.map(({ code, path }) => `proposal:${code}:${path}`),
+      ...(qualification.acceptance?.decision === 'rejected' ? ['human-rejected-plan'] : []),
+    ],
+    diagnosticCodes,
+    humanAcceptanceRequired: true,
+  });
+}
+
 /**
  * Turn a validated candidate plan plus the existing qualification packet into
  * a write eligibility decision. This function is side-effect free: it returns
@@ -178,6 +406,11 @@ export function evaluateConstructionLifecycle({
         message: finding.message,
       })),
       requiredGapIds: [],
+      proposalCoverage: proposalCoverage(reviewPlan, null),
+      admission: admissionDisposition('human_review_required', {
+        reviewItems: hasProposalErrors ? proposalFindings.map(({ code }) => code) : ['missing-review-plan'],
+        diagnosticCodes: proposalFindings.map(({ code }) => code).filter(Boolean),
+      }),
       nextAction: hasProposalErrors
         ? 'Repair the proposal findings before construction qualification.'
         : 'Submit a complete evidence-backed proposal to produce a non-writing review plan.',
@@ -200,12 +433,18 @@ export function evaluateConstructionLifecycle({
         message: 'Complete the digest-bound construction qualification before any write.',
       }],
       requiredGapIds: requiredGaps,
+      proposalCoverage: proposalCoverage(reviewPlan, null),
+      admission: admissionDisposition('human_review_required', {
+        reviewItems: ['missing-qualification'],
+        diagnosticCodes: ['missing-qualification'],
+      }),
       reviewPlan: clone(reviewPlan),
       nextAction: 'Complete the constructionQualification:v1 packet for this exact review plan.',
     };
   }
 
   const result = evaluateConstructionQualification(qualification);
+  const coverage = proposalCoverage(reviewPlan, qualification);
   const diagnostics = result.findings.map((finding) => ({
     code: finding.code,
     phase: invalidFindingPhase(finding.code),
@@ -240,6 +479,30 @@ export function evaluateConstructionLifecycle({
   }
 
   const requiredGaps = gapIds(result, proposalFindings);
+  for (const ref of coverage.missingRefs) {
+    addDiagnostic(
+      diagnostics,
+      `proposal-coverage-missing:${ref}`,
+      'evidence_reuse',
+      `No qualification claim covers the exact review-plan row ${ref}.`,
+    );
+  }
+  for (const ref of coverage.unexpectedRefs) {
+    addDiagnostic(
+      diagnostics,
+      `proposal-coverage-unexpected:${ref}`,
+      'evidence_reuse',
+      `Qualification claim references a row outside the exact review plan: ${ref}.`,
+    );
+  }
+  for (const ref of coverage.sourceHiddenMissingRefs) {
+    addDiagnostic(
+      diagnostics,
+      `proposal-coverage-source-hidden:${ref}`,
+      'independent_source_hidden',
+      `The source-hidden task does not cover the claim bound to review-plan row ${ref}.`,
+    );
+  }
   const missingGapApprovals = requiredGaps.filter((id) => !qualification.acceptance?.acceptedGapIds?.includes(id));
   if (missingGapApprovals.length > 0) {
     addDiagnostic(
@@ -273,6 +536,7 @@ export function evaluateConstructionLifecycle({
   const digestMismatch = diagnostics.some(({ code }) => code.includes('digest-mismatch') || code.includes('revision-mismatch') || code.includes('digest-subject-mismatch'));
   const executable = !invalid
     && nonApprovableWarnings.length === 0
+    && coverage.status === 'complete'
     && mandatoryRed.length === 0
     && !sourceHiddenMissing
     && regressionReady
@@ -301,11 +565,24 @@ export function evaluateConstructionLifecycle({
     diagnostics.filter(({ phase: phaseId }) => phaseId === id).map(({ code }) => code),
   ));
   const firstBlockingPhase = phases.find(({ status }) => ['blocked', 'awaiting_approval'].includes(status))?.id ?? null;
+  const writeEligibility = executable ? 'executable' : 'blocked';
+  const admission = deriveAdmissionDisposition({
+    qualification,
+    result,
+    diagnostics,
+    requiredGaps,
+    mandatoryRed,
+    sourceHiddenMissing,
+    regressionReady,
+    digestMismatch,
+    nonApprovableWarnings,
+    writeEligibility,
+  });
 
   return {
     contract: CONSTRUCTION_LIFECYCLE_CONTRACT,
     qualificationStatus: result.status,
-    writeEligibility: executable ? 'executable' : 'blocked',
+    writeEligibility,
     planDigest,
     sourceDigest: sourceDigest ?? null,
     planRevision,
@@ -313,6 +590,8 @@ export function evaluateConstructionLifecycle({
     phases,
     diagnostics,
     requiredGapIds: requiredGaps,
+    proposalCoverage: coverage,
+    admission,
     reviewPlan: clone(reviewPlan),
     ...(executable ? { writePlan: clone(reviewPlan) } : {}),
     nextAction: executable

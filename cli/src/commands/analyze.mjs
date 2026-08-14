@@ -1,26 +1,12 @@
 // R16 (b3) — `ontology-atlas analyze [rootPath]`
 // Wraps MCP analyze_repo_structure. side effect 0 — vault 변경 안 함, 후보만.
-// 사용자가 결과 보고 *명시적으로* `ontology-atlas add` 또는 AI agent 의
-// add_concept 로 진입.
+// 후보는 연결된 agent의 review → qualification → human acceptance → exact
+// writePlan lifecycle을 거친 뒤에만 MCP writer로 진입한다.
 
 import { COLORS } from '../lib/colors.mjs';
 import { resolve } from 'node:path';
 import { callMcpTool } from '../lib/mcp-call.mjs';
-import {
-  formatConceptBatchFailureLabel,
-  formatRelationBatchFailureLabel,
-} from '../lib/batch-results.mjs';
-import {
-  callConceptBatches,
-  callRelationBatches,
-} from '../lib/mcp-batches.mjs';
 import { assertAnalyzeRepoStructureResult } from '../lib/repo-analysis-results.mjs';
-import {
-  pruneUntouchedStarterNodes,
-  restorePrunedStarterNodes,
-  summarizePrunedStarterNodes,
-} from '../lib/prune-starters.mjs';
-import { getVaultCensus, writeVaultCensus } from '../lib/vault-census.mjs';
 import {
   formatUnknownFlagError,
   parseBoundedNonNegativeIntegerFlag,
@@ -52,10 +38,9 @@ export async function runAnalyze(args) {
   }
 
   const target = resolve(process.cwd(), rootPath);
-  // analyze 는 *vault 와 무관* 한 도구지만 mcp 통과 시 OATLAS_VAULT 가 필요해서
-  // 그냥 cwd 또는 사용자 지정. mcp 의 analyze 도 vault 안 만지지만
-  // initialization 흐름에 vault path 가 필요. --apply 모드는 vault 에
-  // 실제로 쓰므로 vault 위치 정확히 지정 필요.
+  // analyze 는 *vault 와 무관* 한 도구지만 MCP 통과 시 OATLAS_VAULT 가 필요해서
+  // 그냥 cwd 또는 사용자 지정한다. MCP analyze 자체와 이 CLI의 모든 경로는
+  // 후보만 반환하며 vault를 쓰지 않는다.
   const vaultRoot = resolve(process.cwd(), vault);
   let result;
   try {
@@ -71,12 +56,8 @@ export async function runAnalyze(args) {
     return 2;
   }
 
-  // --apply 분기 — 후보를 vault 에 batch land. mcp 의 add_concepts +
-  // add_relations 호출. partial result OK (이미 존재하는 노드는 ok:false 로
-  // skip). agent-less 워크플로 (CI · plain CLI) 가 /ontology-bootstrap skill
-  // 의 K round-trip 을 우회.
   if (apply) {
-    return await runApply(vaultRoot, result, json);
+    return printApprovalRequiredPlan({ result, target, vaultRoot, json });
   }
 
   if (json) {
@@ -124,9 +105,9 @@ export async function runAnalyze(args) {
   }
 
   process.stdout.write(
-    `${COLORS.dim}side effect 0: vault 변경 안 함. 후보가 맞으면${COLORS.reset} ` +
-      `${COLORS.bold}ontology-atlas add${COLORS.reset} ` +
-      `${COLORS.dim}또는 AI agent 의 add_concept 로 명시 작성.${COLORS.reset}\n`,
+    `${COLORS.dim}side effect 0: vault 변경 안 함. 후보는 연결된 agent에서${COLORS.reset} ` +
+      `${COLORS.bold}review → qualification → human acceptance → exact writePlan${COLORS.reset} ` +
+      `${COLORS.dim}lifecycle을 거친 뒤에만 작성.${COLORS.reset}\n`,
   );
   return 0;
 }
@@ -181,166 +162,48 @@ function parseArgs(args) {
   };
 }
 
-// R+ — analyze 결과를 vault 에 land. add_concepts + add_relations 배치 호출.
-// /ontology-bootstrap skill 의 CLI 짝 — agent-less 흐름 (CI / plain shell)
-// 도 1줄로 vault 부트스트랩.
-async function runApply(vaultRoot, result, json) {
-  // concepts[] 조립 — project 먼저 (capability 의 domain reference 가 의미
-  // 가 있으려면 domain 이 먼저 와야 하고, 그 전에 project 가). add_concepts
-  // 는 cap 50 이므로 대형 저장소 후보는 shared batch helper가 분할한다.
-  const concepts = [];
-  if (result.project) {
-    concepts.push({
-      slug: result.project.slug,
-      kind: 'project',
-      title: result.project.title,
-    });
-  }
-  for (const d of result.domains ?? []) {
-    concepts.push({ slug: d.slug, kind: 'domain', title: d.title });
-  }
-  for (const c of result.capabilities ?? []) {
-    concepts.push({
-      slug: c.slug,
-      kind: 'capability',
-      title: c.title,
-      ...(c.domain ? { domain: c.domain } : {}),
-    });
-  }
-  for (const e of result.elements ?? []) {
-    concepts.push({
-      slug: e.slug,
-      kind: 'element',
-      title: e.title,
-      ...(e.domain ? { domain: e.domain } : {}),
-    });
-  }
-
-  const prunedStarters =
-    concepts.length > 0 ? pruneUntouchedStarterNodes(vaultRoot) : null;
-
-  let conceptRows;
-  try {
-    conceptRows = await callConceptBatches(vaultRoot, concepts);
-  } catch (err) {
-    restorePrunedStarterNodes(vaultRoot, prunedStarters);
-    process.stderr.write(
-      `${COLORS.red}error${COLORS.reset}  add_concepts: ${err instanceof Error ? err.message : String(err)}\n`,
-    );
-    return 2;
-  }
-
-  const relations = result.suggestedRelations ?? [];
-  let relationRows = [];
-  if (relations.length > 0) {
-    try {
-      relationRows = await callRelationBatches(vaultRoot, relations);
-    } catch (err) {
-      process.stderr.write(
-        `${COLORS.red}error${COLORS.reset}  add_relations: ${err instanceof Error ? err.message : String(err)}\n`,
-      );
-      return 2;
-    }
-  }
-
-  // mcp 응답 shape — add_concepts 는 { concepts: [...] }, add_relations 는
-  // { relations: [...] }. 두 도구가 다른 키.
-  const summary = summarize(conceptRows, relationRows);
-  // R+ — apply 흐름 마무리 census (cycle 38, shared helper).
-  const vaultCensus = await getVaultCensus(vaultRoot);
+function printApprovalRequiredPlan({ result, target, vaultRoot, json }) {
+  const concepts = Number(Boolean(result.project))
+    + (result.domains?.length ?? 0)
+    + (result.capabilities?.length ?? 0)
+    + (result.elements?.length ?? 0);
+  const suggestedRelations = result.suggestedRelations?.length ?? 0;
+  const lifecycle = result.proposalValidation?.constructionLifecycle ?? null;
+  const payload = {
+    mode: 'review',
+    apply: false,
+    writeEligible: false,
+    reason: 'approval_required',
+    rootPath: result.rootPath,
+    vaultRoot,
+    plan: { concepts, suggestedRelations },
+    constructionLifecycle: lifecycle,
+    guard: {
+      reason: 'construction-qualification-required',
+      qualification: 'constructionQualification:v1',
+      recovery:
+        'Use the MCP ontology-bootstrap review → independent qualification → human acceptance → exact writePlan flow. No semantic node or relation was written.',
+    },
+    next: {
+      writes: 0,
+      review:
+        'Review the candidates with a connected agent, then write only an unchanged exact writePlan after qualification, human acceptance, validate_vault, compile_ontology, and finalization.',
+    },
+  };
 
   if (json) {
-    process.stdout.write(
-      JSON.stringify(
-        {
-          rootPath: result.rootPath,
-          framework: result.framework,
-          applied: { concepts: conceptRows, relations: relationRows },
-          prunedStarters: summarizePrunedStarterNodes(prunedStarters),
-          summary,
-          vaultCensus,
-        },
-        null,
-        2,
-      ) + '\n',
-    );
-    return summary.errors === 0 ? 0 : 1;
+    process.stdout.write(JSON.stringify(payload, null, 2) + '\n');
+    return 3;
   }
 
   process.stdout.write(
-    `${COLORS.bold}analyze --apply${COLORS.reset} ${COLORS.dim}vault=${vaultRoot}${COLORS.reset}\n\n`,
+    `${COLORS.bold}analyze --apply${COLORS.reset} ${COLORS.dim}${target}${COLORS.reset}\n\n` +
+      `  ${COLORS.bold}review only${COLORS.reset}  approval required · writes 0\n` +
+      `  ${COLORS.bold}candidates${COLORS.reset}   ${concepts} concepts · ${suggestedRelations} suggested relations\n` +
+      `  ${COLORS.bold}guard${COLORS.reset}        constructionQualification:v1 + human acceptance + exact writePlan\n\n` +
+      `${COLORS.dim}Use a connected agent to continue the review → qualification → acceptance → exact writePlan lifecycle. No semantic node or relation was written.${COLORS.reset}\n`,
   );
-  printPrunedStarters(prunedStarters);
-  process.stdout.write(
-    `  ${COLORS.bold}concepts${COLORS.reset}   ${COLORS.green}${summary.conceptsLanded}${COLORS.reset} landed · ` +
-      `${COLORS.dim}${summary.conceptsExisting}${COLORS.reset} already existed · ` +
-      `${summary.conceptsErrors > 0 ? COLORS.red : COLORS.dim}${summary.conceptsErrors}${COLORS.reset} errors\n`,
-  );
-  process.stdout.write(
-    `  ${COLORS.bold}relations${COLORS.reset}  ${COLORS.green}${summary.relationsLanded}${COLORS.reset} landed · ` +
-      `${COLORS.dim}${summary.relationsExisting}${COLORS.reset} already existed · ` +
-      `${summary.relationsErrors > 0 ? COLORS.red : COLORS.dim}${summary.relationsErrors}${COLORS.reset} errors\n\n`,
-  );
-  // 에러 행만 사용자에게 노출 (성공/idempotent 는 noise).
-  conceptRows.forEach((row, index) => {
-    if (row.ok === false) {
-      process.stdout.write(
-        `  ${COLORS.red}✗${COLORS.reset} ${formatConceptBatchFailureLabel(row, index)} ${COLORS.dim}· ${row.error}${COLORS.reset}\n`,
-      );
-    }
-  });
-  relationRows.forEach((row, index) => {
-    if (row.ok === false) {
-      process.stdout.write(
-        `  ${COLORS.red}✗${COLORS.reset} ${formatRelationBatchFailureLabel(row, index)} ${COLORS.dim}· ${row.error}${COLORS.reset}\n`,
-      );
-    }
-  });
-  writeVaultCensus(vaultCensus);
-  return summary.errors === 0 ? 0 : 1;
-}
-
-function printPrunedStarters(prunedStarters) {
-  if (
-    !prunedStarters ||
-    (prunedStarters.removed.length === 0 &&
-      prunedStarters.preserved.length === 0)
-  ) {
-    return;
-  }
-  process.stdout.write(
-    `  ${COLORS.bold}starters${COLORS.reset}   ` +
-      `${COLORS.green}${prunedStarters.removed.length}${COLORS.reset} removed · ` +
-      `${COLORS.dim}${prunedStarters.preserved.length}${COLORS.reset} preserved (edited)\n`,
-  );
-}
-
-function summarize(conceptRows, relationRows) {
-  let conceptsLanded = 0;
-  let conceptsExisting = 0;
-  let conceptsErrors = 0;
-  for (const r of conceptRows) {
-    if (r.ok === true) conceptsLanded += 1;
-    else if (/already exists/i.test(r.error || '')) conceptsExisting += 1;
-    else conceptsErrors += 1;
-  }
-  let relationsLanded = 0;
-  let relationsExisting = 0;
-  let relationsErrors = 0;
-  for (const r of relationRows) {
-    if (r.ok === true && r.alreadyExists) relationsExisting += 1;
-    else if (r.ok === true) relationsLanded += 1;
-    else relationsErrors += 1;
-  }
-  return {
-    conceptsLanded,
-    conceptsExisting,
-    conceptsErrors,
-    relationsLanded,
-    relationsExisting,
-    relationsErrors,
-    errors: conceptsErrors + relationsErrors,
-  };
+  return 3;
 }
 
 function printUsage(stream = process.stderr) {
@@ -351,12 +214,12 @@ function printUsage(stream = process.stderr) {
       `  Walk a code repository (default: cwd), detect package.json / README\n` +
       `  H2 sections / src/ folders, propose ontology node candidates.\n` +
       `  Default: ${COLORS.bold}side effect 0${COLORS.reset}: vault 변경 안 함, 후보만 출력.\n` +
-      `  ${COLORS.bold}--apply${COLORS.reset}: 후보를 vault 에 batch land (add_concepts + add_relations).\n` +
-      `  partial result: 이미 존재하는 노드는 skip, 새 노드만 land.\n` +
+      `  ${COLORS.bold}--apply${COLORS.reset}: compatibility wrapper; approval_required 로 종료하며 쓰지 않음.\n` +
+      `  exact constructionQualification:v1 + human acceptance + writePlan 은 MCP lifecycle 에서만 해제.\n` +
       `  ${COLORS.bold}--max-depth N${COLORS.reset}: default 2, range 0-${MAX_DEPTH_CAP}.\n\n` +
       `${COLORS.bold}Examples:${COLORS.reset}\n` +
       `  ontology-atlas analyze                 # preview only (no writes)\n` +
       `  ontology-atlas analyze ~/my-app --json # machine output\n` +
-      `  ontology-atlas analyze --apply         # bootstrap vault from cwd\n`,
+      `  ontology-atlas analyze --apply         # review-only compatibility check (writes 0)\n`,
   );
 }

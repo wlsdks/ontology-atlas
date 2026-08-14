@@ -40,6 +40,81 @@
 **상태**: 유효 / 뒤집힘(→ 링크) / 반증됨(관측: …)
 ```
 
+## 2026-08-15 (12) — qualification claim을 exact reviewPlan에 묶는다
+
+**소집**: PO Council · Sol xhigh 설계 검토 · **트리거**: fresh field trial에서
+qualification packet이 평가한 artifact와 실제 reviewPlan을 구분하지 못한 채,
+starter vault 평가 또는 unrelated fixture가 digest만 맞춰질 수 있음이 관측됨
+**루브릭**: 22/24 (치명적 0: 없음)
+**관찰**: Pydantic은 path 5/5·role 5/5·relation 9/9·qualification citation 27/27을
+통과했지만 proposal claim 11개가 source-hidden 범위에서 빠졌고 impact witness가
+없었다. Datasette는 path 5/5·role 4/4였지만 evaluator가 5-starter vault만 읽어
+exact proposal을 평가하지 못했다. 기존 test fixture는 다른 proposal에 digest만
+재결합해 executable을 만들 수 있었다.
+**결정**: 기존 `analyze_repo_structure`/construction lifecycle 안에서 canonical
+`reviewPlan`으로부터 결정론적 proposal coverage refs를 메모리에서 파생하고,
+qualification claim이 각 concept·relation·competency·impact ref를 실제로 다루는지
+검사한다. 누락·예상 밖 ref·foreign artifact는 qualification/admission을 fail-closed
+시키며, qualification 실패여도 shadow `admission`은 반드시 반환한다.
+**적용 규칙**: `proposalRefs`는 기존 `constructionQualification:v1` claim row에
+추가하는 최소 계약으로만 둔다. 별도 tool/UI/vault kind/sidecar/aggregate score/
+evaluator generator/automatic write/human acceptance 변경은 하지 않는다. semantic
+truth, policy, ownership, domain boundary, `is_a`, `depends_on`/impact의 의미 판단은
+coverage가 대신하지 않으며 기존 human review를 유지한다. 기존 `canWrite`,
+`writeEligibility`, `writePlan`, digest binding은 보존한다.
+**추가 검증**: 기존 Python scratch의 실제 `fullProposal`과 source-visible qualification
+artifact를 현재 MCP에 다시 넣었다. 25개 exact ref를 모두 채운 packet은
+`proposalCoverage: complete`를 반환했지만 source-hidden/qualification 공백 때문에
+`canWrite:false`, `human_review_required`로 남았다. 같은 packet에서 마지막 ref를
+`concept:foreign-proposal`로 바꾸자 `coveredCount:24`, missing 1, unexpected 1,
+`proposal-coverage-missing:*`와 `proposal-coverage-unexpected:*`, `hard_block`이
+재현됐다. 즉 coverage는 foreign artifact를 잡았고, semantic qualification을
+대신하거나 자동 write를 열지는 않았다.
+**서명**: 소유자 요청에 따라 집행
+
+**기록된 반대**: manifest가 두 번째 ontology schema가 되어 ID만 세고 semantic truth를
+가리거나, valid visible-gap packet까지 막을 수 있다는 우려(지킴이·결·지렛대).
+**반증 조건**: concept/relation/CQ/impact를 하나씩 누락하거나 다른 plan artifact로
+바꾼 mutation matrix에서 정확한 diagnostic이 나오지 않거나, 동일 plan의 valid
+visible-gap packet이 `partial_visible_gap`에 도달하지 못하면 이 계약을 폐기하고
+coverage 표현부터 재설계한다.
+**재검토**: mutation matrix와 fresh evaluator 1회 완료 직후; 이후 fresh trial 3회
+중 최소 2회 `self_qualified` 조건과 함께 재평가
+**상태**: 유효
+
+## 2026-08-14 (11) — 자가 qualification은 먼저 shadow admission으로 측정한다
+
+**소집**: PO Council · Sol xhigh 설계 검토 · **트리거**: 사용자의 반복적인 사람
+승인 최소화 요구와 공개 MCP construction lifecycle 변경
+**루브릭**: 16/24 (치명적 0: 없음)
+**관찰**: fresh field trial이 증명한 것은 승인 부담이 아니라 qualification 미완료와
+source-hidden 공백이었다. 승인 전 write 0과 source-hidden control 결과만으로 즉시
+자동 write를 열 근거는 없었다.
+**결정**: 기존 M1.5의 실제 write 전 사람 승인 요구는 유지한다. 대신 기존
+`analyze_repo_structure` 응답에 shadow-only `admission`을 추가해
+`self_qualified`, `partial_visible_gap`, `human_review_required`, `hard_block`을
+분류한다. `self_qualified`는 이 단계에서 자동 write 후보라는 관측값일 뿐이며
+`canWrite`, `writeEligibility`, `writePlan`과 사람의 수정·거절·잠금을 우회하지 않는다.
+`self_qualified`는 독립 evaluator, current source/plan digest, 7축·CQ·claim·citation,
+완전한 source-hidden, regression이 모두 통과한 경우에만 붙인다. 정책·소유권·도메인
+경계·`is_a`·`depends_on`/impact·충돌은 human review, stale·unsupported·digest drift·
+비독립 평가·source-hidden/회귀 실패는 hard block이다.
+
+**적용 규칙**: 새 도구·UI·vault kind·qualification schema·writer signature를 만들지
+않는다. analyzer side effect 0과 기존 digest-bound human acceptance를 보존한다.
+측정된 functional/pragmatic/CQ 공백은 `partial_visible_gap`으로 드러내되 자동 반영하지
+않는다. 수치 점수나 불확실한 의미를 통합 점수로 만들지 않는다.
+**서명**: 소유자 승인 하에 집행
+
+**기록된 반대**: 현재 trial에는 실제 self-qualified row도, 자동 반영 뒤 human reversal도
+없으므로 이 계약 자체가 검증되지 않은 승인 병목을 최적화할 수 있다는 의견(근거·해자·지렛대).
+**반증 조건**: fresh trial 3회에서 최소 2회 self-qualified row가 나오고, unsupported
+claim/relation·human reversal·source-hidden 정확도 퇴행이 모두 0이 아니면 자동 write를
+열지 않는다. 조건을 만족해도 실제 자동 write 전에는 exact-row write와
+validate→compile→finalize를 별도 검증한다.
+**재검토**: fresh trial 3회 완료 후
+**상태**: 유효
+
 ## 2026-08-14 (13) — MCP selector 오류는 인자 오류로 분류한다
 
 **소집**: 단독 패스 · **트리거**: `get_concept`/`get_concepts`가 selector를 모두

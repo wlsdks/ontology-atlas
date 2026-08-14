@@ -130,6 +130,109 @@ const CARGO_PACKAGE_EVIDENCE_FIELDS = new Set([
   'edition',
   'rust-version',
 ]);
+
+// These are deliberately outcome-oriented clues, not a list of framework or
+// folder names. They let the deterministic analyzer connect bounded prose to
+// implementation evidence while keeping a human/agent approval step between
+// a clue and a written business concept. A rule must have both semantic prose
+// and a matching implementation witness before it can become a proposal.
+const BUSINESS_CAPABILITY_CLUES = [
+  {
+    slug: 'capabilities/decision-broadcast',
+    title: 'Decision Broadcast',
+    domain: 'domains/coordination',
+    prose: [
+      /\bpublish(?:es|ed|ing)?\b.{0,60}\bdecisions?\b/i,
+      /\bdistribut(?:e|es|ed|ing)\b.{0,60}\btimeline updates?\b/i,
+    ],
+    implementation: [/realtime/i, /timeline/i, /distribut/i],
+  },
+  {
+    slug: 'capabilities/acknowledgement-tracking',
+    title: 'Acknowledgement Tracking',
+    domain: 'domains/coordination',
+    prose: [
+      /\b(?:has|have|who has)\s+acknowledged\b/i,
+      /\backnowledg(?:e|ed|ement|ements|ing)\b/i,
+    ],
+    implementation: [/\bweb\b/i, /console/i, /present/i, /timeline/i],
+  },
+  {
+    slug: 'capabilities/workspace-authorization',
+    title: 'Workspace Authorization',
+    domain: 'domains/access-control',
+    prose: [
+      /\bworkspace permissions?\b/i,
+      /\b(?:read|coordinate|administer)\b.{0,70}\b(?:incident|workspace)\b/i,
+      /\b(?:may|can)\s+read\b.{0,70}\badminister\b/i,
+    ],
+    implementation: [/policy/i, /permission/i, /authori[sz]/i, /access/i],
+  },
+  {
+    slug: 'capabilities/checkout',
+    title: 'Checkout',
+    domain: 'domains/purchase',
+    prose: [
+      /\bauthori[sz]e\s+payment\b/i,
+      /\border confirmation\b/i,
+      /\b(?:purchase|purchase completion)\b/i,
+    ],
+    implementation: [/checkout/i, /cart/i, /payment/i, /order/i],
+  },
+  {
+    slug: 'capabilities/inventory-sync',
+    title: 'Inventory Sync',
+    domain: 'domains/inventory',
+    prose: [
+      /\breconcil\w*\b.{0,70}\b(?:stock|warehouse|availability)\b/i,
+      /\b(?:sellable|available) stock\b/i,
+      /\binventory availability\b/i,
+    ],
+    implementation: [/inventory/i, /stock/i, /warehouse/i, /reconcil/i],
+  },
+  {
+    slug: 'capabilities/intake',
+    title: 'Document Intake',
+    domain: 'domains/intake',
+    prose: [
+      /\baccept\s+(?:a|the)\s+document\b/i,
+      /\bpreserv\w*\b.{0,70}\b(?:source|provenance|identity)\b/i,
+      /\bsubmitted business documents?\b/i,
+    ],
+    implementation: [/\bintake\b/i, /document/i, /provenance/i, /source/i],
+  },
+  {
+    slug: 'capabilities/review',
+    title: 'Uncertainty Review',
+    domain: 'domains/review',
+    prose: [
+      /\broute\s+uncertain\b/i,
+      /\buncertain\s+(?:fields?|extraction results?)\b/i,
+      /\breviewer\s+before\s+(?:records?\s+are\s+)?published\b/i,
+    ],
+    implementation: [/\breview\b/i, /uncertain/i, /reviewer/i, /publish/i],
+  },
+];
+const IMPLEMENTATION_SHAPED_CAPABILITY_TOKENS = new Set([
+  'adapter',
+  'api',
+  'client',
+  'config',
+  'controller',
+  'infra',
+  'infrastructure',
+  'logger',
+  'middleware',
+  'policy',
+  'registry',
+  'router',
+  'server',
+  'storage',
+  'telemetry',
+  'transport',
+  'ui',
+  'web',
+]);
 const SEMANTIC_DISCOVERY_MAX_FILES = 200;
 const SEMANTIC_DISCOVERY_MAX_ENTRIES = 1000;
 const SEMANTIC_DISCOVERY_ROOTS = ['docs', 'site', 'website'];
@@ -378,6 +481,13 @@ export function analyzeRepoStructure(rootPath, options = {}) {
   });
   elements.push(...pythonImportBoundaryElements);
 
+  const semanticCapabilityCandidates = deriveBusinessCapabilityCandidates({
+    domains,
+    capabilities,
+    elements,
+    semanticEvidence,
+  });
+
   // Suggested relations form one coherent containment spine. A README-backed
   // domain sits under the project; matched capabilities/elements sit under
   // that domain. Evidence without a defensible domain match remains directly
@@ -413,6 +523,7 @@ export function analyzeRepoStructure(rootPath, options = {}) {
     meaningGate: buildMeaningGate({
       domains,
       capabilities,
+      semanticCapabilityCandidates,
       elements,
       existingOntologyEvidence,
     }),
@@ -420,6 +531,7 @@ export function analyzeRepoStructure(rootPath, options = {}) {
       project,
       domains,
       capabilities,
+      semanticCapabilityCandidates,
       elements,
       existingOntologyEvidence,
       suggestedRelations,
@@ -457,7 +569,114 @@ export function analyzeRepoStructure(rootPath, options = {}) {
   return { ...result, proposalValidation };
 }
 
-function buildMeaningGate({ domains, capabilities, elements, existingOntologyEvidence }) {
+function deriveBusinessCapabilityCandidates({
+  domains,
+  capabilities,
+  elements,
+  semanticEvidence,
+}) {
+  const trustedEvidence = semanticEvidence.filter(
+    (row) => row.trust === 'candidate-evidence' && row.excerpt,
+  );
+  // A README containing only headings is structural evidence, not enough
+  // material to suppress or promote implementation candidates. Preserve the
+  // older review surface in that case; richer prose opts into the semantic
+  // cross-check below.
+  if (trustedEvidence.length === 0) return [];
+
+  const implementationRows = [
+    ...capabilities.map((row) => ({
+      path: row.evidence?.source,
+      slug: row.slug,
+    })),
+    ...elements.map((row) => ({
+      path: row.path ?? row.evidence?.source,
+      slug: row.slug,
+    })),
+  ].filter((row) => row.path);
+
+  const candidates = [];
+  for (const clue of BUSINESS_CAPABILITY_CLUES) {
+    const matchedEvidence = trustedEvidence.filter((row) =>
+      clue.prose.some((pattern) => pattern.test(`${row.headings.join('\n')}\n${row.excerpt}`)),
+    );
+    if (matchedEvidence.length === 0) continue;
+
+    const matchedImplementations = implementationRows.filter((row) =>
+      clue.implementation.some((pattern) => pattern.test(`${row.path}\n${row.slug}`)),
+    );
+    if (matchedImplementations.length === 0) continue;
+
+    const structuralMatch = capabilities.find((row) =>
+      matchedImplementations.some((implementation) => implementation.slug === row.slug),
+    );
+    const source = structuralMatch?.evidence?.source
+      ?? matchedImplementations[0].path;
+    const semanticSource = matchedEvidence[0].source;
+    const domain = domains.some((row) => row.slug === clue.domain)
+      ? clue.domain
+      : matchDomainSlug(clue.title, domains);
+    candidates.push({
+      slug: clue.slug,
+      title: clue.title,
+      ...(domain ? { domain } : {}),
+      reason: 'bounded business outcome prose cross-checked against implementation evidence',
+      evidence: {
+        source: semanticSource,
+        implementation: source,
+      },
+      semanticSources: matchedEvidence.map((row) => row.source),
+      implementationEvidence: matchedImplementations.map((row) => row.path),
+    });
+  }
+
+  const emittedSlugs = new Set(candidates.map((row) => row.slug));
+  const genericBusinessEvidence = trustedEvidence.filter((row) =>
+    ['mission', 'product-contract', 'product-capabilities'].includes(row.role),
+  );
+  for (const capability of capabilities) {
+    if (emittedSlugs.has(capability.slug)) continue;
+    const candidateTokens = semanticTokens(tailSlug(capability.slug));
+    if (candidateTokens.size === 0) continue;
+    if ([...candidateTokens].some((token) =>
+      IMPLEMENTATION_SHAPED_CAPABILITY_TOKENS.has(token),
+    )) {
+      continue;
+    }
+    const evidence = genericBusinessEvidence.find((row) => {
+      const evidenceTokens = semanticTokens(
+        row.headings.join(' ') + ' ' + row.excerpt,
+      );
+      return [...candidateTokens].some((token) => evidenceTokens.has(token));
+    });
+    if (!evidence) continue;
+    const domain = capability.domain
+      ?? matchDomainSlug(tailSlug(capability.slug), domains);
+    candidates.push({
+      slug: capability.slug,
+      title: capability.title,
+      ...(domain ? { domain } : {}),
+      reason: 'business term in bounded product prose cross-checked against implementation evidence',
+      evidence: {
+        source: evidence.source,
+        implementation: capability.evidence?.source,
+      },
+      semanticSources: [evidence.source],
+      implementationEvidence: [capability.evidence?.source].filter(Boolean),
+    });
+    emittedSlugs.add(capability.slug);
+  }
+
+  return candidates;
+}
+
+function buildMeaningGate({
+  domains,
+  capabilities,
+  semanticCapabilityCandidates,
+  elements,
+  existingOntologyEvidence,
+}) {
   const existingBySlug = new Map(
     existingOntologyEvidence.map((evidence) => [evidence.slug, evidence]),
   );
@@ -489,6 +708,20 @@ function buildMeaningGate({ domains, capabilities, elements, existingOntologyEvi
   const matchedCapabilityCandidateSlugs = new Set(
     [...existingEvidenceByCandidateSlug.keys()].filter(Boolean),
   );
+  // Structural candidates remain visible below as implementation evidence,
+  // but never become business proposals merely because the semantic packet is
+  // empty. This is the fail-closed boundary that prevents a folder such as
+  // `logger`, `web`, or `theme-toggle` from becoming a capability by default.
+  const hasSharedBusinessContext = existingOntologyEvidence.some(
+    (evidence) =>
+      (evidence.kind === 'domain' || evidence.kind === 'capability') &&
+      !STARTER_ONTOLOGY_SLUGS.has(evidence.slug),
+  );
+  const businessCandidates = semanticCapabilityCandidates.length > 0
+    ? semanticCapabilityCandidates
+    : hasSharedBusinessContext
+      ? capabilities
+      : [];
   const reviewRequiredCapabilities = capabilities
     .filter(
       (capability) =>
@@ -498,6 +731,18 @@ function buildMeaningGate({ domains, capabilities, elements, existingOntologyEvi
     .map((capability) => ({
       slug: capability.slug,
       reason: 'source folder is implementation evidence, not proof of a shared capability meaning',
+      evidence: capability.evidence,
+    }));
+  const proposedBusinessCapabilities = businessCandidates
+    .filter(
+      (capability) =>
+        !existingBySlug.has(capability.slug) &&
+        !matchedCapabilityCandidateSlugs.has(capability.slug),
+    )
+    .map((capability) => ({
+      slug: capability.slug,
+      reason: capability.reason
+        ?? 'bounded semantic evidence is a proposal, not proof of shared business meaning',
       evidence: capability.evidence,
     }));
   const reviewRequiredDomains = domains
@@ -516,7 +761,7 @@ function buildMeaningGate({ domains, capabilities, elements, existingOntologyEvi
         {
           slug: capability,
           kind: 'capability',
-          source: capabilities.find((candidate) => candidate.slug === capability)?.evidence.source ?? capability,
+          source: businessCandidates.find((candidate) => candidate.slug === capability)?.evidence.source ?? capability,
         },
       ];
     }),
@@ -532,7 +777,7 @@ function buildMeaningGate({ domains, capabilities, elements, existingOntologyEvi
     },
     proposedBusinessOntology: {
       domains: reviewRequiredDomains,
-      capabilities: reviewRequiredCapabilities,
+      capabilities: proposedBusinessCapabilities,
     },
     implementationEvidence: {
       elements: elements.map((element) => element.slug),
@@ -550,6 +795,7 @@ function buildExtractionContract({
   project,
   domains,
   capabilities,
+  semanticCapabilityCandidates,
   elements,
   existingOntologyEvidence,
   suggestedRelations,
@@ -558,7 +804,7 @@ function buildExtractionContract({
   const persistedBusinessConcepts = existingOntologyEvidence.filter(
     (evidence) => evidence.kind === 'domain' || evidence.kind === 'capability',
   ).length;
-  const proposedBusinessConcepts = domains.length + capabilities.length;
+  const proposedBusinessConcepts = domains.length + semanticCapabilityCandidates.length;
   const observedImplementationEvidence = elements.length;
   return {
     standard: 'formal-explicit-shared-conceptualization',
