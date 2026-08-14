@@ -91,4 +91,35 @@ describe("validate-vault script arguments", () => {
       rmSync(dir, { recursive: true, force: true });
     }
   });
+
+  it("fails closed when frontmatter parser reports malformed lines", () => {
+    const dir = mkdtempSync(join(tmpdir(), "ontology-atlas-validate-vault-malformed-"));
+    const file = join(dir, "broken.md");
+    try {
+      writeFileSync(
+        file,
+        "---\n" +
+          "uid: 01890f3e-7b5d-4c0a-8f14-123456789abc\n" +
+          "kind: capability\n" +
+          "domain: domains/probe\n" +
+          "elements\n" +
+          "  - elements/orphan\n" +
+          "---\n",
+      );
+
+      const result = spawnSync(process.execPath, [SCRIPT, dir], {
+        cwd: ROOT,
+        encoding: "utf8",
+      });
+
+      assert.equal(result.status, 1);
+      assert.equal(
+        result.stdout.match(/\[malformed-frontmatter-line\]/g)?.length,
+        2,
+      );
+      assert.match(result.stdout, /error 1/);
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
 });
