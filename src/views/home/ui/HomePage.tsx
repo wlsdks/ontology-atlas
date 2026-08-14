@@ -3643,6 +3643,26 @@ export function HomePage() {
                     }
                   />
                   {selectedNodeOwnsRightRail ? null : (
+                    <>
+                    {/* Mobile-only settings escape hatch: the utility lane is
+                        hidden while the expanded INDEX owns the <md surface. */}
+                    {renderedIndexState === "expanded" ? (
+                      <div
+                        className="pointer-events-auto absolute right-4 top-4 z-[var(--z-map-scrim)] md:hidden"
+                        data-testid="topology-mobile-settings"
+                      >
+                        <AppSettingsMenu
+                          mode={vault.status === 'loaded' ? 'local' : 'static'}
+                          triggerVariant="chrome-tile"
+                          screenControls={{
+                            audiencePlain,
+                            onAudiencePlainChange: setAudiencePlain,
+                            indexCollapsed: indexPanelCollapsedStored,
+                            onIndexCollapsedChange: handleChangeIndexDefaultCollapsed,
+                          }}
+                        />
+                      </div>
+                    ) : null}
                     <div
                       // 겹침 소탕 2026-07-23 — ① <md 확장 INDEX(풀-블리드 시트)
                       // 동안은 시트가 주 표면이므로 레인 전체가 물러난다(시트
@@ -3950,6 +3970,7 @@ export function HomePage() {
                       />
                     </div>
                     </div>
+                    </>
                   )}
                 </>
               ) : null}

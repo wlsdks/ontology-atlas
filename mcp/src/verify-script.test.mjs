@@ -331,6 +331,14 @@ const MCP_PKG = JSON.parse(readFileSync(join(__dirname, '..', 'package.json'), '
 const ROOT_PKG = JSON.parse(readFileSync(join(__dirname, '..', '..', 'package.json'), 'utf-8'));
 const VERIFY_SCRIPT = join(__dirname, '..', 'scripts', 'verify.mjs');
 const TEST_UID = '00000000-0000-4000-8000-000000000001';
+const listPagination = (total, returned = total, offset = 0, limit = 100) => ({
+  offset,
+  limit,
+  total,
+  returned,
+  hasMore: offset + returned < total,
+  nextOffset: offset + returned < total ? offset + returned : null,
+});
 
 function strictErrorResponse(text, extraResult = {}) {
   return {
@@ -918,11 +926,16 @@ describe('verify.mjs first-contact gates', () => {
               maximum: 500,
               description: 'Positive integer max rows to return. Defaults to 100, max 500.',
             },
+            offset: {
+              type: 'integer',
+              minimum: 0,
+              description: 'Zero-based page offset. Use pagination.nextOffset until hasMore is false.',
+            },
           },
         },
         outputSchema: {
           type: 'object',
-          required: ['total', 'vaultRoot', 'nodes'],
+          required: ['total', 'vaultRoot', 'nodes', 'pagination'],
           properties: {
             total: { type: 'integer', minimum: 0 },
             vaultRoot: { type: 'string', minLength: 1 },
@@ -940,6 +953,19 @@ describe('verify.mjs first-contact gates', () => {
                 },
                 additionalProperties: false,
               },
+            },
+            pagination: {
+              type: 'object',
+              properties: {
+                offset: { type: 'integer', minimum: 0 },
+                limit: { type: 'integer', minimum: 1, maximum: 500 },
+                total: { type: 'integer', minimum: 0 },
+                returned: { type: 'integer', minimum: 0 },
+                hasMore: { type: 'boolean' },
+                nextOffset: { type: ['integer', 'null'], minimum: 0 },
+              },
+              required: ['offset', 'limit', 'total', 'returned', 'hasMore', 'nextOffset'],
+              additionalProperties: false,
             },
             vaultWarnings: {
               type: 'object',
@@ -960,7 +986,6 @@ describe('verify.mjs first-contact gates', () => {
           'Fetch multiple nodes by exactly one selector array: `slugs` or immutable `uids`. Successful rows return permanent `uid` plus current canonical `slug`; graph-operation inputs remain slug-based. Missing slug rows do not abort the batch, so later valid slugs still resolve.',
         inputSchema: {
           additionalProperties: false,
-          oneOf: [{ required: ['slugs'] }, { required: ['uids'] }],
           properties: {
             slugs: {
               type: 'array',
@@ -1934,7 +1959,7 @@ describe('verify.mjs first-contact gates', () => {
       {
         name: 'infer_imports',
         description:
-          'R17 (autonomous ingest deeper): walk TS/JS files in a code repo and infer file-level + module-level import edges. side effect 0 (vault frontmatter NOT modified). moduleEdges are source-backed review candidates with kindCounts and a bounded exact file-edge `evidence` receipt. For approval start with reviewMode:"next": exactly one compact, non-writing `nextRelationReview:v1` packet. Missing edges are rationale_review_required. Ask the user before add_relation and include `why`. Use after analyze_repo_structure to pull real dependency edges from the code, not just suggestedRelations heuristics. Single source of truth preserved: only the user writes to the vault.',
+          'R17 (autonomous ingest deeper): walk TS/JS files in a code repo and infer file-level + module-level import edges. side effect 0 (vault frontmatter NOT modified). moduleEdges are source-backed review candidates with kindCounts and a bounded exact file-edge `evidence` receipt. Use focusPath for an incoming/outgoing bounded exact file neighborhood. Omit `reviewMode` for automatic delivery under 128 KiB; larger results include a delivery receipt. For approval use reviewMode:"next": exactly one compact, non-writing `nextRelationReview:v1` packet. reviewMode:"full" over the limit requires allowLargeResponse:true. Missing edges are rationale_review_required. Ask the user before add_relation and include `why`. Use after analyze_repo_structure to pull real dependency edges from the code, not just suggestedRelations heuristics. Single source of truth preserved: only the user writes to the vault.',
         inputSchema: {
           additionalProperties: false,
           properties: {
@@ -1949,12 +1974,26 @@ describe('verify.mjs first-contact gates', () => {
             },
             reviewMode: {
               type: 'string',
-              enum: ['full', 'next'],
-              description: '`full` (default) or compact, non-writing review.',
+              enum: ['full', 'next', 'focus'],
+              description: 'Omit for automatic delivery under 128 KiB. focus returns a bounded exact file-level import neighborhood. full requests the complete scan with allowLargeResponse:true; next explicitly requests one compact packet.',
+            },
+            allowLargeResponse: {
+              type: 'boolean',
+              description: 'reviewMode:"full" confirmation when the result exceeds 128 KiB.',
             },
             afterReviewId: {
               type: 'string',
               description: '`reviewMode:"next"` cursor.nextAfterReviewId.',
+            },
+            focusPath: {
+              type: 'string',
+              description: 'Repository-relative implementation file to inspect.',
+            },
+            focusDirection: { enum: ['incoming', 'outgoing', 'both'] },
+            focusLimit: { type: 'integer', minimum: 1, maximum: 100 },
+            focusAfterEdgeId: {
+              type: 'string',
+              description: 'Pass focusReview.cursor.nextAfterEdgeId.',
             },
           },
         },
@@ -1972,6 +2011,7 @@ describe('verify.mjs first-contact gates', () => {
                 'nextReview',
               ],
             },
+            { required: ['contract', 'scanSummary', 'focusReview'] },
           ],
           properties: {
             rootPath: { type: 'string' },
@@ -2093,7 +2133,32 @@ describe('verify.mjs first-contact gates', () => {
                 additionalProperties: false,
               },
             },
-            contract: { enum: ['inferImportsReview:v1'] },
+            contract: { enum: ['inferImportsReview:v1', 'inferImportsFocus:v1'] },
+            delivery: {
+              type: 'object',
+              required: [
+                'selection',
+                'reason',
+                'estimatedFullResponseBytes',
+                'automaticLimitBytes',
+                'explicitFullAvailable',
+                'explicitFullArguments',
+              ],
+              properties: {
+                selection: { enum: ['automatic_compact'] },
+                reason: { enum: ['estimated_full_response_exceeds_limit'] },
+                automaticLimitBytes: { enum: [131072] },
+                explicitFullAvailable: { enum: [true] },
+                explicitFullArguments: {
+                  required: ['reviewMode', 'allowLargeResponse'],
+                  properties: {
+                    reviewMode: { enum: ['full'] },
+                    allowLargeResponse: { enum: [true] },
+                  },
+                },
+              },
+              additionalProperties: false,
+            },
             scanSummary: { type: 'object' },
             reconciliationSummary: { type: 'object' },
             reviewQueue: { type: 'object' },
@@ -2107,6 +2172,7 @@ describe('verify.mjs first-contact gates', () => {
                 'sourceQualification',
                 'ordering',
                 'candidate',
+                'endpointModelling',
                 'nextCalls',
                 'decision',
                 'cursor',
@@ -2119,6 +2185,7 @@ describe('verify.mjs first-contact gates', () => {
                     'from',
                     'to',
                     'relationType',
+                    'absentEndpoints',
                     'importCount',
                     'sourceEvidence',
                     'sourceEvidenceLimited',
@@ -2137,11 +2204,101 @@ describe('verify.mjs first-contact gates', () => {
                     },
                   },
                 },
+                endpointModelling: {
+                  type: ['object', 'null'],
+                  required: [
+                    'status',
+                    'writeAllowed',
+                    'absentEndpoints',
+                    'observedPathsByEndpoint',
+                    'analysisCall',
+                    'proposalValidation',
+                    'resumeCall',
+                  ],
+                  properties: {
+                    status: { enum: ['required_before_relation_review'] },
+                    writeAllowed: { enum: [false] },
+                    analysisCall: { properties: { tool: { enum: ['analyze_repo_structure'] } } },
+                    proposalValidation: {
+                      required: [
+                        'tool',
+                        'requiredArguments',
+                        'requiredProposalFields',
+                        'fieldsAfterKindDecision',
+                        'endpointDrafts',
+                        'purpose',
+                      ],
+                      properties: {
+                        tool: { enum: ['analyze_repo_structure'] },
+                        requiredArguments: { items: { enum: ['rootPath', 'proposal'] } },
+                        fieldsAfterKindDecision: {
+                          required: ['common', 'byKind'],
+                          properties: {
+                            common: {
+                              type: 'array',
+                              minItems: 5,
+                              maxItems: 5,
+                              uniqueItems: true,
+                              items: { type: 'string', enum: ['slug', 'title', 'definition', 'evidence', 'confidence'] },
+                            },
+                            byKind: {
+                              type: 'object',
+                              required: ['project', 'domain', 'capability', 'element'],
+                              properties: {
+                                project: { type: 'array', maxItems: 0 },
+                                domain: { type: 'array', maxItems: 0 },
+                                capability: {
+                                  type: 'array',
+                                  minItems: 1,
+                                  maxItems: 1,
+                                  items: { type: 'string', enum: ['domain'] },
+                                },
+                                element: {
+                                  type: 'array',
+                                  minItems: 2,
+                                  maxItems: 2,
+                                  uniqueItems: true,
+                                  items: { type: 'string', enum: ['domain', 'path'] },
+                                },
+                              },
+                              additionalProperties: false,
+                            },
+                          },
+                          additionalProperties: false,
+                        },
+                        endpointDrafts: {
+                          type: 'array',
+                          minItems: 1,
+                          maxItems: 2,
+                          items: {
+                            type: 'object',
+                            required: ['endpoint', 'observedPaths', 'slugCandidate', 'kindDecision'],
+                            properties: {
+                              endpoint: { type: 'string', minLength: 1, pattern: '^(?!\\s)(?!.*\\s$)(?!.*\\u0000).+$' },
+                              observedPaths: {
+                                type: 'array',
+                                uniqueItems: true,
+                                items: { type: 'string', minLength: 1, pattern: '^(?!\\s)(?!.*\\s$)(?!.*\\u0000).+$' },
+                              },
+                              slugCandidate: { type: 'string', minLength: 1, pattern: '^(?!\\s)(?!.*\\s$)(?!.*\\u0000).+$' },
+                              kindDecision: { type: 'string', enum: ['human_meaning_required'] },
+                            },
+                            additionalProperties: false,
+                          },
+                        },
+                      },
+                      additionalProperties: false,
+                    },
+                    resumeCall: { properties: { tool: { enum: ['infer_imports'] } } },
+                  },
+                },
+                nextCalls: { minItems: 0, maxItems: 2 },
                 decision: {
                   type: 'object',
                   properties: {
                     questionEligibility: {
                       enum: [
+                        'blocked_missing_vault_endpoints',
                         'eligible_after_semantic_review',
                         'additional_product_meaning_evidence_required',
                       ],
@@ -2158,6 +2315,35 @@ describe('verify.mjs first-contact gates', () => {
                     'nextAfterReviewId',
                   ],
                   additionalProperties: false,
+                },
+              },
+              additionalProperties: false,
+            },
+            focusReview: {
+              type: 'object',
+              required: [
+                'contract',
+                'focusPath',
+                'direction',
+                'sourceQualification',
+                'writeAllowed',
+                'summary',
+                'edges',
+                'cursor',
+                'interpretation',
+              ],
+              properties: {
+                contract: { enum: ['importImpactFocus:v1'] },
+                writeAllowed: { enum: [false] },
+                edges: {
+                  maxItems: 100,
+                  items: {
+                    required: ['edgeId', 'from', 'to', 'kind', 'sourceRole', 'importUsage'],
+                    additionalProperties: false,
+                  },
+                },
+                cursor: {
+                  required: ['afterEdgeId', 'total', 'remaining', 'hasMore', 'nextAfterEdgeId'],
                 },
               },
               additionalProperties: false,
@@ -2182,7 +2368,7 @@ describe('verify.mjs first-contact gates', () => {
           required: ['scanned', 'problems', 'summary', 'pathDrift'],
           properties: {
             scanned: { type: 'integer', minimum: 0 },
-            pathDrift: { type: 'object' },
+            pathDrift: { type: 'object', additionalProperties: false },
             problems: {
               type: 'array',
               items: {
@@ -2237,9 +2423,9 @@ describe('verify.mjs first-contact gates', () => {
       },
       {
         name: 'get_concept',
+        description: 'Fetch one node by exactly one selector: slug or uid.',
         inputSchema: {
           additionalProperties: false,
-          oneOf: [{ required: ['slug'] }, { required: ['uid'] }],
           properties: {
             slug: { type: 'string' },
             uid: {
@@ -2613,6 +2799,33 @@ describe('verify.mjs first-contact gates', () => {
 
     assert.equal(toolsListSchemaFailure(tools), null);
     assert.equal(toolsListSchemaFailure(null), 'tools/list response missing tools array');
+    for (const mutate of [
+      (schema) => {
+        delete schema.properties.fieldsAfterKindDecision;
+        schema.required = schema.required.filter((field) => field !== 'fieldsAfterKindDecision');
+      },
+      (schema) => {
+        const draft = schema.properties.endpointDrafts.items;
+        delete draft.properties.slugCandidate;
+        draft.required = draft.required.filter((field) => field !== 'slugCandidate');
+      },
+      (schema) => {
+        schema.properties.fieldsAfterKindDecision.properties.byKind
+          .properties.element.items.enum = ['wrong'];
+      },
+      (schema) => {
+        schema.properties.endpointDrafts.items.properties.slugCandidate = { type: 'integer' };
+      },
+    ]) {
+      const changed = structuredClone(inferImportsTool);
+      const proposalValidation = changed.outputSchema.properties.nextReview
+        .properties.endpointModelling.properties.proposalValidation;
+      mutate(proposalValidation);
+      assert.equal(
+        toolsListSchemaFailure(withInferImportsTool(changed)),
+        'infer_imports compact review approval gate drift',
+      );
+    }
     assert.equal(
       toolsListSchemaFailure(withFinalizeProjectMeaningTool({
         ...finalizeProjectMeaningTool,
@@ -3765,6 +3978,24 @@ describe('verify.mjs first-contact gates', () => {
     assert.equal(
       toolsListSchemaFailure(withInferImportsTool({
         ...inferImportsTool,
+        outputSchema: {
+          ...inferImportsTool.outputSchema,
+          properties: {
+            ...inferImportsTool.outputSchema.properties,
+            nextReview: {
+              ...inferImportsTool.outputSchema.properties.nextReview,
+              required: inferImportsTool.outputSchema.properties.nextReview.required.filter(
+                (field) => field !== 'endpointModelling',
+              ),
+            },
+          },
+        },
+      })),
+      'infer_imports compact review approval gate drift',
+    );
+    assert.equal(
+      toolsListSchemaFailure(withInferImportsTool({
+        ...inferImportsTool,
         inputSchema: {
           ...inferImportsTool.inputSchema,
           properties: {
@@ -4163,20 +4394,22 @@ describe('verify.mjs first-contact gates', () => {
       ]),
       'get_concepts inputSchema slugs alias and cap guidance drift',
     );
-    assert.equal(
-      toolsListSchemaFailure([
-        tools[0],
-        {
-          ...tools[1],
-          inputSchema: {
-            ...tools[1].inputSchema,
-            oneOf: [{ required: ['slugs'] }],
+    for (const combinator of ['oneOf', 'anyOf', 'allOf']) {
+      assert.equal(
+        toolsListSchemaFailure([
+          tools[0],
+          {
+            ...tools[1],
+            inputSchema: {
+              ...tools[1].inputSchema,
+              [combinator]: [{ required: ['slugs'] }],
+            },
           },
-        },
-        ...tools.slice(2),
-      ]),
-      'get_concepts inputSchema identity selector drift',
-    );
+          ...tools.slice(2),
+        ]),
+        `get_concepts.inputSchema top-level ${combinator} is not cross-client compatible`,
+      );
+    }
     assert.equal(
       toolsListSchemaFailure([
         tools[0],
@@ -5714,7 +5947,7 @@ describe('verify.mjs first-contact gates', () => {
   });
 
   it('fails malformed strict argument smoke responses', () => {
-    const error = 'Unknown argument "lmit" for list_concepts. Did you mean "limit"? Allowed arguments: domain, kind, limit, since, summary. Received arguments: lmit.';
+    const error = 'Unknown argument "lmit" for list_concepts. Did you mean "limit"? Allowed arguments: domain, kind, limit, offset, since, summary. Received arguments: lmit.';
     assert.equal(
       strictArgsFailure({
         result: {
@@ -5728,7 +5961,7 @@ describe('verify.mjs first-contact gates', () => {
             receivedArgument: 'lmit',
             suggestion: 'limit',
             unknownArguments: [{ name: 'lmit', suggestion: 'limit' }],
-            allowedArguments: ['domain', 'kind', 'limit', 'since', 'summary'],
+            allowedArguments: ['domain', 'kind', 'limit', 'offset', 'since', 'summary'],
             receivedArguments: ['lmit'],
           },
         },
@@ -5801,7 +6034,7 @@ describe('verify.mjs first-contact gates', () => {
   });
 
   it('fails malformed strict multi-argument smoke responses', () => {
-    const error = 'Unknown arguments for list_concepts: "lmit" (did you mean "limit"?), "summry" (did you mean "summary"?). Allowed arguments: domain, kind, limit, since, summary. Received arguments: lmit, summry.';
+    const error = 'Unknown arguments for list_concepts: "lmit" (did you mean "limit"?), "summry" (did you mean "summary"?). Allowed arguments: domain, kind, limit, offset, since, summary. Received arguments: lmit, summry.';
     assert.equal(
       strictMultiArgsFailure({
         result: {
@@ -5817,7 +6050,7 @@ describe('verify.mjs first-contact gates', () => {
               { name: 'lmit', suggestion: 'limit' },
               { name: 'summry', suggestion: 'summary' },
             ],
-            allowedArguments: ['domain', 'kind', 'limit', 'since', 'summary'],
+            allowedArguments: ['domain', 'kind', 'limit', 'offset', 'since', 'summary'],
           },
         },
       }),
@@ -8027,6 +8260,7 @@ Continue.`;
     assert.equal(FIRST_CONTACT_RESPONSE_LABELS.get(67), 'all_paths');
     assert.equal(FIRST_CONTACT_RESPONSE_LABELS.get(68), 'index_project');
     assert.equal(FIRST_CONTACT_RESPONSE_LABELS.get(69), 'absorb_document_dry_run');
+    assert.equal(FIRST_CONTACT_RESPONSE_LABELS.get(70), 'infer_imports_focus');
     assert.deepEqual(
       [...expectedResponseIds(buildFirstContactRequests()), ...DYNAMIC_FIRST_CONTACT_RESPONSE_IDS].sort((a, b) => a - b),
       [...FIRST_CONTACT_RESPONSE_LABELS.keys()].sort((a, b) => a - b),
@@ -8043,6 +8277,7 @@ Continue.`;
   it('builds bootstrap and import-analysis read smokes into first-contact verify', () => {
     const analyze = buildFirstContactRequests().find((request) => request.id === 38);
     const infer = buildFirstContactRequests().find((request) => request.id === 39);
+    const inferFocus = buildFirstContactRequests().find((request) => request.id === 70);
     const conceptBatchCap = buildFirstContactRequests().find((request) => request.id === 62);
     const relationBatchCap = buildFirstContactRequests().find((request) => request.id === 63);
     const getConceptsBatchCap = buildFirstContactRequests().find((request) => request.id === 64);
@@ -8057,6 +8292,10 @@ Continue.`;
     assert.equal(infer?.params?.name, 'infer_imports');
     assert.equal(infer?.params?.arguments?.maxFiles, 5000);
     assert.ok(infer?.params?.arguments?.rootPath, 'infer_imports rootPath should be populated');
+    assert.equal(inferFocus?.params?.name, 'infer_imports');
+    assert.equal(inferFocus?.params?.arguments?.reviewMode, 'focus');
+    assert.equal(inferFocus?.params?.arguments?.focusPath, 'src/entities/knowledge-graph/model/types.ts');
+    assert.equal(inferFocus?.params?.arguments?.focusLimit, 25);
     assert.equal(conceptBatchCap?.params?.name, 'add_concepts');
     assert.equal(conceptBatchCap?.params?.arguments?.concepts?.length, 51);
     assert.equal(relationBatchCap?.params?.name, 'add_relations');
@@ -8976,6 +9215,7 @@ Continue.`;
         total: 1,
         vaultRoot: '/tmp/vault',
         nodes: [{ uid: TEST_UID, slug: 'project', kind: 'project', title: 'Project', mtime: 1 }],
+        pagination: listPagination(1),
       }),
       null,
     );
@@ -8984,6 +9224,7 @@ Continue.`;
         total: 0,
         vaultRoot: '/tmp/vault',
         nodes: [],
+        pagination: listPagination(0),
         vaultWarnings: { errorCount: 0, warningCount: 0 },
       }),
       null,
@@ -8997,6 +9238,7 @@ Continue.`;
         total: 0,
         vaultRoot: '/tmp/vault',
         nodes: [],
+        pagination: listPagination(0),
         vaultWarnings: { errorCount: 1, warningCount: 2 },
       }),
       'list_concepts vaultWarnings present: errors 1, warnings 2. Run validate_vault for file-level diagnostics before writing.',
@@ -9016,25 +9258,25 @@ Continue.`;
     assert.equal(listConceptsFailure({ total: 0, nodes: [] }), 'list_concepts response missing vaultRoot');
     assert.equal(listConceptsFailure({ total: 0, vaultRoot: '/tmp/vault' }), 'list_concepts response missing nodes array');
     assert.equal(
-      listConceptsFailure({ total: 0, vaultRoot: '/tmp/vault', nodes: [{ uid: TEST_UID, slug: 'project', kind: 'project', title: 'Project', mtime: 1 }] }),
+      listConceptsFailure({ total: 0, vaultRoot: '/tmp/vault', nodes: [{ uid: TEST_UID, slug: 'project', kind: 'project', title: 'Project', mtime: 1 }], pagination: listPagination(0, 1) }),
       'list_concepts response node count exceeds total: nodes 1, total 0',
     );
-    assert.equal(listConceptsFailure({ total: 1, vaultRoot: '/tmp/vault', nodes: [null] }), 'list_concepts response malformed node at index 0');
-    assert.equal(listConceptsFailure({ total: 1, vaultRoot: '/tmp/vault', nodes: [{}] }), 'list_concepts response missing node slug at index 0');
-    assert.equal(listConceptsFailure({ total: 1, vaultRoot: '/tmp/vault', nodes: [{ uid: TEST_UID, slug: 'project' }] }), 'list_concepts response missing node kind: project');
-    assert.equal(listConceptsFailure({ total: 1, vaultRoot: '/tmp/vault', nodes: [{ uid: TEST_UID, slug: 'project', kind: 'project' }] }), 'list_concepts response missing node title: project');
-    assert.equal(listConceptsFailure({ total: 1, vaultRoot: '/tmp/vault', nodes: [{ uid: TEST_UID, slug: 'project', kind: 'project', title: 'Project' }] }), 'list_concepts response missing node mtime: project');
+    assert.equal(listConceptsFailure({ total: 1, vaultRoot: '/tmp/vault', nodes: [null], pagination: listPagination(1) }), 'list_concepts response malformed node at index 0');
+    assert.equal(listConceptsFailure({ total: 1, vaultRoot: '/tmp/vault', nodes: [{}], pagination: listPagination(1) }), 'list_concepts response missing node slug at index 0');
+    assert.equal(listConceptsFailure({ total: 1, vaultRoot: '/tmp/vault', nodes: [{ uid: TEST_UID, slug: 'project' }], pagination: listPagination(1) }), 'list_concepts response missing node kind: project');
+    assert.equal(listConceptsFailure({ total: 1, vaultRoot: '/tmp/vault', nodes: [{ uid: TEST_UID, slug: 'project', kind: 'project' }], pagination: listPagination(1) }), 'list_concepts response missing node title: project');
+    assert.equal(listConceptsFailure({ total: 1, vaultRoot: '/tmp/vault', nodes: [{ uid: TEST_UID, slug: 'project', kind: 'project', title: 'Project' }], pagination: listPagination(1) }), 'list_concepts response missing node mtime: project');
   });
 
   it('fails malformed project probe payloads', () => {
     assert.equal(
-      projectProbeFailure({ total: 0, vaultRoot: '/tmp/vault', nodes: [] }, { byKind: { project: 1 } }),
+      projectProbeFailure({ total: 0, vaultRoot: '/tmp/vault', nodes: [], pagination: listPagination(0) }, { byKind: { project: 1 } }),
       'project probe response missing project node',
     );
-    assert.equal(projectProbeFailure({ total: 0, vaultRoot: '/tmp/vault', nodes: [] }, { byKind: { project: 0 } }), null);
-    assert.equal(projectProbeFailure({ total: 0, vaultRoot: '/tmp/vault', nodes: [] }, { byKind: { domain: 1 } }), null);
+    assert.equal(projectProbeFailure({ total: 0, vaultRoot: '/tmp/vault', nodes: [], pagination: listPagination(0) }, { byKind: { project: 0 } }), null);
+    assert.equal(projectProbeFailure({ total: 0, vaultRoot: '/tmp/vault', nodes: [], pagination: listPagination(0) }, { byKind: { domain: 1 } }), null);
     assert.equal(
-      projectProbeFailure({ total: 1, nodes: [{ slug: 'project', kind: 'project', title: 'Project', mtime: 1 }] }, { byKind: { project: 1 } }),
+      projectProbeFailure({ total: 1, nodes: [{ slug: 'project', kind: 'project', title: 'Project', mtime: 1 }], pagination: listPagination(1) }, { byKind: { project: 1 } }),
       'project probe list_concepts response missing vaultRoot',
     );
     assert.equal(
@@ -9042,6 +9284,7 @@ Continue.`;
         total: 1,
         vaultRoot: '/tmp/vault',
         nodes: [{ uid: TEST_UID, slug: 'capabilities/not-project', kind: 'capability', title: 'Wrong', mtime: 1 }],
+        pagination: listPagination(1),
       }, { byKind: { project: 1 } }),
       'project probe returned non-project node: capabilities/not-project',
     );
@@ -9050,6 +9293,7 @@ Continue.`;
         total: 2,
         vaultRoot: '/tmp/vault',
         nodes: [{ uid: TEST_UID, slug: 'project', kind: 'project', title: 'Project', mtime: 1 }],
+        pagination: listPagination(2, 1),
       }, { byKind: { project: 1 } }),
       'project probe count mismatch: list_kinds project 1, probe 2',
     );
@@ -9058,6 +9302,7 @@ Continue.`;
         total: 1,
         vaultRoot: '/tmp/vault',
         nodes: [{ uid: TEST_UID, slug: 'project', kind: 'project', title: 'Project', mtime: 1 }],
+        pagination: listPagination(1),
       }, { byKind: { project: 1 } }),
       null,
     );
@@ -9891,6 +10136,7 @@ Continue.`;
       total: 1,
       vaultRoot: '/tmp/vault',
       nodes: [{ uid: TEST_UID, slug: 'project', kind: 'project', title: 'Project', mtime: 1 }],
+      pagination: listPagination(1),
     };
     const validation = {
       scanned: 1,

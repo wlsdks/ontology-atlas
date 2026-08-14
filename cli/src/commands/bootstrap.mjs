@@ -1,13 +1,13 @@
 // R+ — `ontology-atlas bootstrap [rootPath]`
 //
-// 1줄 full bootstrap. analyzer가 제안한 노드/containment를 쓰고 import는
-// source-backed review 후보로 남긴다. agent-less 환경 (CI · plain shell) 또는
-// 새 repo 진입 직후 가장 자주 쓰는 흐름이라 명령으로 승격.
+// 1줄 review plan. analyzer가 제안한 노드/containment를 검토 후보로 반환한다.
+// 의미 노드 write는 constructionQualification:v1 + human acceptance 로 해제되는
+// MCP 경로만 사용한다. CLI cold-start가 승인 없이 semantic graph를 만들면 안 된다.
 //
 // 흐름:
-//   1. analyze_repo_structure → add_concepts + add_relations (cycle 29)
+//   1. analyze_repo_structure → review-only candidates
 //   2. infer_imports → exact evidence + rationale review required (write 0)
-//   3. 통합 summary 출력 (concepts landed/existing/errors + relations)
+//   3. 통합 review summary 출력 (landed 0, explicit approval required)
 //
 // 옵션:
 //   --vault path             vault 위치 (default cwd)
@@ -17,7 +17,7 @@
 //   --skip-imports           1단계 (analyze) 만 — import graph 안 건드림
 //   --json                   머신 가독 출력 (모든 단계 결과 합쳐 한 JSON)
 //
-// exit: 0 if 모든 단계 errors 0, 1 if 어느 단계 errors > 0, 2 if mcp 실패.
+// exit: 3 if semantic approval is required, 1 if input errors, 2 if mcp 실패.
 
 import { COLORS } from '../lib/colors.mjs';
 import { resolve } from 'node:path';
@@ -99,6 +99,25 @@ export async function runBootstrap(args) {
     : domainSplit.corroborated;
   const heldSlugs = new Set(heldReadmeDomains.map((d) => d.slug));
   const concepts = collectConcepts(analyzeResult, domainsToLand);
+
+  // Construction lifecycle boundary: this CLI has no way to authenticate or
+  // verify an independent constructionQualification:v1 packet. Never turn a
+  // shell command into semantic approval. The old writer remains available to
+  // the accepted MCP writePlan path, but cold-start bootstrap is review-only.
+  if (!parsed.acceptedQualification) {
+    return printApprovalRequiredPlan({
+      parsed,
+      target,
+      vaultRoot,
+      analyzeResult,
+      concepts,
+      heldReadmeDomains,
+    });
+  }
+
+  // The writer branch remains for a future packet-bound CLI adapter. No
+  // current parser can set acceptedQualification, so cold-start commands never
+  // cross this boundary.
   const vaultState = await inspectBootstrapVault(vaultRoot);
   if (vaultState?.grown && !parsed.reapply) {
     return printGrownVaultPlan({
@@ -145,6 +164,7 @@ export async function runBootstrap(args) {
         maxFiles: parsed.maxFiles,
       });
       assertInferImportsResult(importsResult);
+      applyImportThreshold(importsResult, parsed.threshold);
     } catch (err) {
       process.stderr.write(
         `${COLORS.red}error${COLORS.reset}  infer_imports: ${err instanceof Error ? err.message : String(err)}\n`,
@@ -331,6 +351,84 @@ export async function runBootstrap(args) {
   writeVaultCensus(vaultCensus);
 
   return summary.errors === 0 ? 0 : 1;
+}
+
+function applyImportThreshold(result, threshold) {
+  if (!threshold || threshold <= 1 || !Array.isArray(result?.moduleEdges)) return;
+  const before = result.moduleEdges.length;
+  result.moduleEdges = result.moduleEdges.filter((edge) => Number(edge.count) >= threshold);
+  result.thresholdApplied = {
+    threshold,
+    filteredOut: before - result.moduleEdges.length,
+  };
+}
+
+async function printApprovalRequiredPlan({
+  parsed,
+  target,
+  vaultRoot,
+  analyzeResult,
+  concepts,
+  heldReadmeDomains,
+}) {
+  let importsResult = null;
+  if (!parsed.skipImports) {
+    try {
+      importsResult = await callMcpTool(vaultRoot, 'infer_imports', {
+        rootPath: target,
+        maxFiles: parsed.maxFiles,
+      });
+      assertInferImportsResult(importsResult);
+      applyImportThreshold(importsResult, parsed.threshold);
+    } catch (err) {
+      process.stderr.write(
+        `${COLORS.red}error${COLORS.reset}  infer_imports: ${err instanceof Error ? err.message : String(err)}\n`,
+      );
+      return 2;
+    }
+  }
+
+  const payload = {
+    mode: 'review',
+    apply: false,
+    writeEligible: false,
+    reason: 'approval_required',
+    rootPath: analyzeResult.rootPath,
+    vaultRoot,
+    guard: {
+      reason: 'construction-qualification-required',
+      qualification: 'constructionQualification:v1',
+      recovery:
+        'Use the MCP ontology-bootstrap review → independent qualification → human acceptance flow. No semantic node was written.',
+    },
+    plan: {
+      concepts: concepts.length,
+      suggestedRelations: analyzeResult.suggestedRelations?.length ?? 0,
+      importRelations: importsResult?.moduleEdges?.length ?? 0,
+      unresolvedImports: importsResult?.unresolved?.length ?? 0,
+      readmeOnlyDomains: heldReadmeDomains.map((domain) => domain.slug),
+    },
+    analyze: analyzeResult,
+    imports: importsResult,
+    next: {
+      review:
+        'Connect an agent with ontology-bootstrap, inspect the exact reviewPlan, obtain an independent constructionQualification:v1 packet and human acceptance, then write only the returned writePlan.',
+      writes: 0,
+    },
+  };
+
+  if (parsed.json) {
+    process.stdout.write(`${JSON.stringify(payload, null, 2)}\n`);
+  } else {
+    process.stdout.write(
+      `${COLORS.bold}bootstrap review${COLORS.reset} ${COLORS.dim}repo=${target}\n` +
+        `                 vault=${vaultRoot}${COLORS.reset}\n\n` +
+        `  ${COLORS.yellow}approval required${COLORS.reset} — ${concepts.length} semantic candidates remain review-only.\n` +
+        `  writes: 0 · suggested relations: ${payload.plan.suggestedRelations} · import candidates: ${payload.plan.importRelations}\n` +
+        `  ${COLORS.dim}${payload.next.review}${COLORS.reset}\n`,
+    );
+  }
+  return 3;
 }
 
 function buildImportReviewCandidates(edges, analyzeConcepts) {
@@ -572,6 +670,7 @@ function parseArgs(args) {
     maxDepth: flags.maxDepth,
     maxFiles: flags.maxFiles,
     threshold: flags.threshold,
+    acceptedQualification: false,
   };
 }
 
@@ -583,10 +682,10 @@ function printUsage(stream = process.stderr) {
       `                           [--apply-readme-domains]\n` +
       `                           [--max-depth N] [--max-files N]\n\n` +
       `${COLORS.bold}What it does:${COLORS.reset}\n` +
-      `  1줄 full bootstrap. analyzer 노드 + suggested relations를 적용하고\n` +
-      `  import는 exact evidence가 붙은 검토 후보로만 반환합니다 (write 0).\n` +
-      `  agent-less 환경 (CI · plain shell) 또는 새 repo 진입 직후 흐름.\n\n` +
-      `  이미 성장한 vault는 기본적으로 plan-only. 다시 쓰려면 --reapply.\n` +
+      `  1줄 review plan. semantic node write는 하지 않고 analyzer 후보와\n` +
+      `  exact evidence import 후보만 반환합니다. constructionQualification:v1\n` +
+      `  + human acceptance + unchanged writePlan은 연결된 MCP lifecycle에서만\n` +
+      `  해제됩니다. 모든 cold-start 실행은 approval_required(종료 3)입니다.\n\n` +
       `  README 제목에서만 나온 도메인은 심지 않고 검토 후보로 남깁니다 —\n` +
       `  코드 구조가 뒷받침하거나 --apply-readme-domains 일 때만 적용.\n` +
       `  --max-depth N: analyze folder walk default 2, range 0-${MAX_DEPTH_CAP}.\n` +

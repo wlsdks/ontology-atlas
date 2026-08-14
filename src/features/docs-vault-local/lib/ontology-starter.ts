@@ -80,11 +80,18 @@ node <ontology-atlas checkout>/cli/src/index.mjs agent-setup <this vault folder>
 \`\`\`
 
 It creates missing Claude Code / Cursor / Codex config files without adding
-starter markdown or overwriting existing ones. To merge by hand instead, open
+starter markdown. In a parseable existing file it changes only the
+\`ontology-atlas\` entry and preserves unrelated servers and sections. Invalid
+or duplicate Atlas config stays untouched. To merge by hand instead, open
 \`.mcp.json.example\`, replace the \`OATLAS_VAULT\` placeholder with the absolute
 path to this vault, then copy that server entry into your agent config. The
 CLI writes \`.mcp.json\` and \`.codex/config.toml\` pointing at the checkout's
-\`mcp/src/index.js\`.
+\`mcp/src/index.js\`. Codex loads the project file only after you trust this
+folder. Approve its trust prompt, run \`codex mcp list\` here, and confirm
+\`ontology-atlas\` appears before any write. A parseable existing review
+template keeps its unrelated entries while Atlas is rebound; a malformed
+template is preserved and the current binding is written beside it as an
+\`.ontology-atlas-current.example\` sidecar.
 
 ## Verify the agent loop
 
@@ -352,11 +359,19 @@ https://github.com/wlsdks/ontology-atlas/blob/main/docs/ONTOLOGY-ATLAS-SPEC.md#2
 node <ontology-atlas 체크아웃>/cli/src/index.mjs agent-setup <이 문서함 폴더> --root . --write
 \`\`\`
 
-없는 Claude Code / Cursor / Codex 설정 파일만 만들고, 스타터 마크다운을
-추가하거나 기존 설정을 덮어쓰지 않습니다. 직접 병합하려면 \`.mcp.json.example\`
-을 열어 \`OATLAS_VAULT\` 자리표시자를 이 문서함의 절대 경로로 바꾼 뒤, 그 서버
+없는 Claude Code / Cursor / Codex 설정 파일을 만들고, 스타터 마크다운은
+추가하지 않습니다. 해석 가능한 기존 파일에서는 \`ontology-atlas\` 항목만 새
+문서함으로 바꾸며 다른 서버와 섹션은 보존합니다. 잘못되거나 중복된 Atlas 설정은
+건드리지 않습니다. 직접 병합하려면 \`.mcp.json.example\`을 열어
+\`OATLAS_VAULT\` 자리표시자를 이 문서함의 절대 경로로 바꾼 뒤, 그 서버
 항목을 에이전트 설정에 복사하세요. CLI 는 체크아웃의 \`mcp/src/index.js\` 를
 가리키는 \`.mcp.json\` 과 \`.codex/config.toml\` 을 만듭니다.
+Codex 는 이 폴더를 trusted 로 승인한 뒤에만 프로젝트 설정을 읽습니다. 신뢰
+요청을 승인하고 이 폴더에서 \`codex mcp list\` 를 실행해 \`ontology-atlas\` 가
+보이는지 확인한 뒤 쓰기를 시작하세요.
+해석 가능한 기존 검토 템플릿은 다른 항목을 보존한 채 Atlas 항목만 새 문서함으로
+바꿉니다. 잘못된 템플릿은 보존하고, 현재 연결은 같은 위치의
+\`.ontology-atlas-current.example\` sidecar 로 따로 만듭니다.
 
 ## 에이전트 연결 확인
 
@@ -738,8 +753,8 @@ export function buildCodexMcpAddCommandTemplate(
 
 /**
  * Safer existing-vault repair command for agents opened at a codebase root.
- * It creates only missing config files and writes merge templates for stale
- * configs, so it is the preferred path before manual template editing.
+ * It creates missing config files, atomically rebinds one parseable Atlas
+ * entry, and leaves ambiguous config untouched with a merge template.
  */
 export function buildAgentSetupCliCommandTemplate(vaultName: string): string {
   const vaultPath = `<absolute path to your ${vaultName} folder>`;

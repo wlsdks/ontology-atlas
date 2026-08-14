@@ -139,6 +139,30 @@ test.describe("스킬 인벤토리", () => {
     expect(await page.locator("[data-process-edge]").count()).toBe(0);
   });
 
+  test("source process가 없으면 source-hidden handoff를 정직하게 막는다", async ({ page }) => {
+    await stubSkillFolder(page, {
+      "skills/unavailable/SKILL.md": SKILL(
+        "unavailable",
+        "A skill with no supported numbered process",
+        "This prose has no executable numbered steps.",
+      ),
+    });
+    await seedFirstRunSeen(page);
+    await page.goto("/ko/skills/?guides=off");
+    await page.getByTestId("skills-empty-open").click();
+    await page.getByTestId("skill-row-toggle").click();
+
+    await expect(page.getByTestId("skill-process-rail")).toHaveAttribute(
+      "data-process-state",
+      "unavailable",
+    );
+    await expect(page.getByTestId("skill-process-step")).toHaveCount(0);
+    await expect(page.getByTestId("skill-packet-copy")).toBeDisabled();
+    await expect(page.getByTestId("skill-packet-status")).toContainText(
+      "프로세스를 읽을 수 없어 복사를 막았습니다",
+    );
+  });
+
   /**
    * **아무것도 없을 때도 화면이 완성돼 보여야 한다** (2026-08-12 소유자 지적).
    *

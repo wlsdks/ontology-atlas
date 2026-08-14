@@ -123,6 +123,7 @@ import {
   IMPORT_SOURCE_ROLE_VALUES,
   IMPORT_UNRESOLVED_REASON_VALUES,
   IMPORT_USAGE_VALUES,
+  buildImportImpactFocus,
   inferImports,
   listSourceFiles,
 } from './infer-imports.mjs';
@@ -1174,7 +1175,7 @@ const BACKLINK_ROW_OUTPUT_SCHEMA = Object.freeze({
 const CAPTURED_DOC_OUTPUT_SCHEMA = Object.freeze({
   type: 'object',
   properties: {
-    frontmatter: { type: 'object' },
+    frontmatter: { type: 'object', additionalProperties: true },
     body: { type: 'string' },
     bodyExcerpt: { type: 'string' },
   },
@@ -1257,13 +1258,297 @@ const GROWTH_HINT_OUTPUT_SCHEMA = Object.freeze({
       type: 'object',
       properties: {
         tool: NON_BLANK_STRING_SCHEMA,
-        args: { type: 'object' },
+        // Tool arguments are intentionally polymorphic: the example is a
+        // repair hint for several tools, not an invocation envelope for one
+        // fixed operation. Keep that openness explicit so it cannot be
+        // mistaken for an omitted nested schema.
+        args: { type: 'object', additionalProperties: true },
       },
       required: ['tool', 'args'],
       additionalProperties: false,
     },
   },
   required: ['reason', 'suggestion', 'exampleCall'],
+  additionalProperties: false,
+});
+
+// Nested tools/list objects are closed by default. These small contracts are
+// deliberately kept beside the registry so the MCP wire shape and the
+// runtime values cannot drift independently. Only maps whose keys are chosen
+// at runtime (frontmatter and example-call arguments) use an explicit open
+// object schema above/below.
+const PROJECT_SOURCE_GAP_SCHEMA = Object.freeze({
+  type: ['object', 'null'],
+  properties: {
+    id: {
+      type: 'string',
+      enum: [
+        'source_unbound',
+        'multiple_active_sources',
+        'receipt_missing',
+        'receipt_malformed',
+        'source_role_evidence_missing',
+        'declared_source_path_missing',
+        'source_inventory_truncated',
+        'ontology_changed',
+        'source_changed',
+      ],
+    },
+    nodeSlug: { type: 'string' },
+  },
+  required: ['id'],
+  additionalProperties: false,
+});
+const PROJECT_SOURCE_ACTION_SCHEMA = Object.freeze({
+  type: 'object',
+  properties: {
+    id: {
+      type: 'string',
+      enum: [
+        'connect_source',
+        'repair_source_binding',
+        'measure_source',
+        'record_source_role',
+        'repair_source_path',
+        'review_inventory_limit',
+        'remeasure_source',
+        'use_current_evidence',
+      ],
+    },
+    target: { type: 'string' },
+  },
+  required: ['id'],
+  additionalProperties: false,
+});
+const PROJECT_SOURCE_RECEIPT_SCHEMA = Object.freeze({
+  type: 'object',
+  properties: {
+    contractVersion: { type: 'integer', enum: [1] },
+    projectSlug: NON_BLANK_STRING_SCHEMA,
+    sourceId: NON_BLANK_STRING_SCHEMA,
+    sourceKind: { type: 'string', enum: ['git', 'folder'] },
+    sourceRevision: NON_BLANK_STRING_SCHEMA,
+    sourceFingerprint: NON_BLANK_STRING_SCHEMA,
+    graphHash: NON_BLANK_STRING_SCHEMA,
+    measuredAt: { type: 'string', format: 'date-time' },
+    status: { type: 'string', enum: ['needs_evidence', 'review_required', 'verified_current'] },
+    currentness: { type: 'string', enum: ['current'] },
+    topGap: PROJECT_SOURCE_GAP_SCHEMA,
+    nextAction: PROJECT_SOURCE_ACTION_SCHEMA,
+    witnessSummary: {
+      type: 'object',
+      properties: {
+        total: { type: 'integer', minimum: 0 },
+        supported: { type: 'integer', minimum: 0 },
+        missing: { type: 'integer', minimum: 0 },
+      },
+      required: ['total', 'supported', 'missing'],
+      additionalProperties: false,
+    },
+    witnesses: {
+      type: 'array',
+      items: {
+        type: 'object',
+        properties: {
+          id: NON_BLANK_STRING_SCHEMA,
+          nodeSlug: NON_BLANK_STRING_SCHEMA,
+          role: NON_BLANK_STRING_SCHEMA,
+          path: NON_BLANK_STRING_SCHEMA,
+          supported: { type: 'boolean' },
+        },
+        required: ['id', 'nodeSlug', 'role', 'path', 'supported'],
+        additionalProperties: false,
+      },
+    },
+    diagnostics: {
+      type: 'object',
+      properties: {
+        dirty: { type: ['boolean', 'null'] },
+        truncated: { type: 'boolean' },
+      },
+      required: ['dirty', 'truncated'],
+      additionalProperties: false,
+    },
+  },
+  required: [
+    'contractVersion', 'projectSlug', 'sourceId', 'sourceKind',
+    'sourceRevision', 'sourceFingerprint', 'graphHash', 'measuredAt',
+    'status', 'currentness', 'topGap', 'nextAction', 'witnessSummary',
+    'witnesses', 'diagnostics',
+  ],
+  additionalProperties: false,
+});
+const PROJECT_SOURCE_BINDING_VIEW_SCHEMA = Object.freeze({
+  type: 'object',
+  properties: {
+    rootPath: NON_BLANK_STRING_SCHEMA,
+    kind: { type: 'string', enum: ['git', 'folder'] },
+    sourceId: NON_BLANK_STRING_SCHEMA,
+    dirty: { type: ['boolean', 'null'] },
+    truncated: { type: 'boolean' },
+    inventoryFiles: { type: 'integer', minimum: 0 },
+  },
+  required: ['rootPath', 'kind', 'sourceId', 'dirty', 'truncated', 'inventoryFiles'],
+  additionalProperties: false,
+});
+const PROJECT_SOURCE_VIEW_SCHEMA = Object.freeze({
+  type: 'object',
+  properties: {
+    contractVersion: { type: 'integer', enum: [1] },
+    projectSlug: NON_BLANK_STRING_SCHEMA,
+    status: { type: 'string', enum: ['not_measured', 'invalid', 'review_required', 'needs_evidence', 'verified_current'] },
+    currentness: { type: 'string', enum: ['unavailable', 'stale', 'current'] },
+    measuredAt: { type: ['string', 'null'], format: 'date-time' },
+    topGap: PROJECT_SOURCE_GAP_SCHEMA,
+    nextAction: PROJECT_SOURCE_ACTION_SCHEMA,
+    bindingCardinality: { type: 'integer', minimum: 0 },
+    receipt: { anyOf: [PROJECT_SOURCE_RECEIPT_SCHEMA, { type: 'null' }] },
+  },
+  required: [
+    'contractVersion', 'projectSlug', 'status', 'currentness', 'measuredAt',
+    'topGap', 'nextAction', 'bindingCardinality', 'receipt',
+  ],
+  additionalProperties: false,
+});
+const PROJECT_SOURCE_TOOL_CALL_SCHEMA = Object.freeze({
+  type: 'object',
+  properties: {
+    name: NON_BLANK_STRING_SCHEMA,
+    arguments: { type: 'object', additionalProperties: true },
+  },
+  required: ['name', 'arguments'],
+  additionalProperties: false,
+});
+const PROJECT_SOURCE_CLI_CALL_SCHEMA = Object.freeze({
+  type: 'object',
+  properties: {
+    command: NON_BLANK_STRING_SCHEMA,
+    args: { type: 'array', items: NON_BLANK_STRING_SCHEMA },
+  },
+  required: ['command', 'args'],
+  additionalProperties: false,
+});
+const PROJECT_SOURCE_UNDO_SCHEMA = Object.freeze({
+  type: ['object', 'null'],
+  properties: {
+    tool: PROJECT_SOURCE_TOOL_CALL_SCHEMA,
+    cli: PROJECT_SOURCE_CLI_CALL_SCHEMA,
+  },
+  required: ['tool', 'cli'],
+  additionalProperties: false,
+});
+const PROJECT_SOURCE_REMEDY_SCHEMA = Object.freeze({
+  type: 'object',
+  properties: {
+    contract: { type: 'string', enum: ['projectSourceRemedy:v1'] },
+    actionId: { type: ['string', 'null'] },
+    resolvable: { type: 'boolean' },
+    automatable: { type: 'boolean' },
+    requiresHuman: { type: 'string', enum: ['none', 'path_choice', 'authoring'] },
+    requiresConfirm: { type: 'boolean' },
+    inferRoot: { type: 'boolean' },
+    tool: { anyOf: [PROJECT_SOURCE_TOOL_CALL_SCHEMA, { type: 'null' }] },
+    cli: { anyOf: [PROJECT_SOURCE_CLI_CALL_SCHEMA, { type: 'null' }] },
+    undo: PROJECT_SOURCE_UNDO_SCHEMA,
+  },
+  required: [
+    'contract', 'actionId', 'resolvable', 'automatable', 'requiresHuman',
+    'requiresConfirm', 'inferRoot', 'tool', 'cli', 'undo',
+  ],
+  additionalProperties: false,
+});
+const PROJECT_SOURCE_NEXT_CALL_SCHEMA = Object.freeze({
+  type: 'object',
+  properties: {
+    tool: { type: 'string', enum: ['connect_project_source', 'disconnect_project_source'] },
+    arguments: { type: 'object', additionalProperties: true },
+  },
+  required: ['tool', 'arguments'],
+  additionalProperties: false,
+});
+const RELATION_RESULT_SCHEMA = Object.freeze({
+  type: 'object',
+  properties: {
+    to: NON_BLANK_STRING_SCHEMA,
+    type: { ...NON_BLANK_STRING_SCHEMA, enum: RELATION_TYPE_VALUES },
+    key: NON_BLANK_STRING_SCHEMA,
+  },
+  required: ['to', 'type', 'key'],
+  additionalProperties: false,
+});
+const IMPORT_RECONCILIATION_EDGE_SCHEMA = Object.freeze({
+  type: 'object',
+  properties: {
+    from: NON_BLANK_STRING_SCHEMA,
+    to: NON_BLANK_STRING_SCHEMA,
+    count: { type: 'integer', minimum: 1 },
+    absentEndpoints: { type: 'array', maxItems: 2, uniqueItems: true, items: NON_BLANK_STRING_SCHEMA },
+    sourceEvidence: {
+      type: 'array', maxItems: 5,
+      items: {
+        type: 'object',
+        properties: {
+          from: NON_BLANK_STRING_SCHEMA,
+          to: NON_BLANK_STRING_SCHEMA,
+          kind: { type: 'string', enum: IMPORT_EDGE_KIND_VALUES },
+          sourceRole: { type: 'string', enum: IMPORT_SOURCE_ROLE_VALUES },
+          importUsage: { type: 'string', enum: IMPORT_USAGE_VALUES },
+        },
+        required: ['from', 'to', 'kind', 'sourceRole', 'importUsage'],
+        additionalProperties: false,
+      },
+    },
+    sourceEvidenceLimited: { type: 'boolean' },
+    evidenceQualification: {
+      type: 'object',
+      properties: {
+        basis: { type: 'string', enum: ['whole_module_edge'] },
+        sourceRoleCounts: {
+          type: 'object',
+          properties: Object.fromEntries(IMPORT_SOURCE_ROLE_VALUES.map((value) => [value, { type: 'integer', minimum: 0 }])),
+          required: IMPORT_SOURCE_ROLE_VALUES,
+          additionalProperties: false,
+        },
+        importUsageCounts: {
+          type: 'object',
+          properties: Object.fromEntries(IMPORT_USAGE_VALUES.map((value) => [value, { type: 'integer', minimum: 0 }])),
+          required: IMPORT_USAGE_VALUES,
+          additionalProperties: false,
+        },
+        productValueCount: { type: 'integer', minimum: 0 },
+        status: { type: 'string', enum: ['product_value_observed', 'product_value_not_observed'] },
+      },
+      required: ['basis', 'sourceRoleCounts', 'importUsageCounts', 'productValueCount', 'status'],
+      additionalProperties: false,
+    },
+    review: {
+      type: 'object',
+      properties: {
+        status: { type: 'string', enum: ['rationale_review_required'] },
+        writeAllowed: { type: 'boolean', enum: [false] },
+        required: { type: 'array', minItems: 1, items: NON_BLANK_STRING_SCHEMA },
+        next: NON_BLANK_STRING_SCHEMA,
+      },
+      required: ['status', 'writeAllowed', 'required', 'next'],
+      additionalProperties: false,
+    },
+    ref: NON_BLANK_STRING_SCHEMA,
+    via: NON_BLANK_STRING_SCHEMA,
+  },
+  required: ['from', 'to'],
+  additionalProperties: false,
+});
+const IMPORT_RECONCILIATION_SUMMARY_SCHEMA = Object.freeze({
+  type: 'object',
+  properties: {
+    inBoth: { type: 'integer', minimum: 0 },
+    inCodeMissingFromVault: { type: 'integer', minimum: 0 },
+    inCodeMissingEndpointAbsent: { type: 'integer', minimum: 0 },
+    inVaultNotInCode: { type: 'integer', minimum: 0 },
+    unresolvedImports: { type: 'integer', minimum: 0 },
+    hint: { type: 'string' },
+  },
+  required: ['inBoth', 'inCodeMissingFromVault', 'inCodeMissingEndpointAbsent', 'inVaultNotInCode', 'unresolvedImports', 'hint'],
   additionalProperties: false,
 });
 const VAULT_ISSUE_CODE_DESCRIPTION = VAULT_ISSUE_CODE_VALUES.map((code) => `\`${code}\``).join(', ');
@@ -1801,7 +2086,7 @@ ${CONSTRUCTION_LIFECYCLE_EN}
 
 1. \`connection_info\` — prove the resolved vault and repository roots before analysis or writes. Root env changes require a server restart.
 2. \`list_kinds\` — see the kind census (how many projects/domains/capabilities/…).
-2. \`list_concepts\` — full node table. Pass \`summary: true\` for prose previews per row (avoid N follow-up \`get_concept\` calls). Pass \`since: <prevMaxMtime>\` for incremental sync. Watch \`vaultWarnings\` — if non-zero, surface it to the user before making decisions on stale data.
+2. \`list_concepts\` — full node table. Pass \`summary: true\` for prose previews per row (avoid N follow-up \`get_concept\` calls). Pass \`since: <prevMaxMtime>\` for incremental sync. For large vaults, follow \`pagination.nextOffset\` while \`pagination.hasMore\` is true; never assume \`nodes\` contains the whole census when \`total\` is larger. Watch \`vaultWarnings\` — if non-zero, surface it to the user before making decisions on stale data.
 3. \`validate_vault({})\` — read-only frontmatter health check. Run this during first-contact before proposing writes; report blocking errors separately from advisory warnings.
 4. \`query_ontology({operation:'agent_brief'})\` — Claude Code/Codex handoff: readiness, structured \`businessOntologyLens\` for the business-first \`outcome\` → \`domain\` → \`capability\` → \`element\` read order, copyable \`handoffPrompt\`, structured \`cliFallbackCommands[]\` for connector-less sessions, graph entrypoints, first MCP calls, \`graphDbQueryPack\` for \`facets\`, \`schema\`, \`match_nodes\`, \`match_edges\`, \`domain_matrix\`, \`centrality\`, \`all_paths\`, \`explain_relation\`, and \`business_questions\` outcome / domain-boundary / capability-claim / implementation-evidence scans, investigation playbooks including \`graph_traversal\` (\`schema\` → \`query_plan(all_paths)\` → \`all_paths\` → \`pattern_walk\` → \`project_map\`) with \`evidence[]\` and \`stopWhen[]\` checklists, \`traversalStrategy\` (\`plan_before_enumeration\` / \`bounded_path_evidence\` / \`containment_cross_check\`) for performance-aware graph traversal, write guardrails (\`preflight_relation\` / \`preflight_rename\` / \`post_change_sync\`), \`relationDecisionGuide\` for \`relation_check\` outcomes (\`skip_existing\` / \`review_inverse\` / \`safe_to_add\` / \`review_new_schema\`), \`resultContracts\` requiring \`all_paths\` callers to report \`limit\`, \`searchBudget\`, \`expandedStates\`, \`exhaustive\`, \`truncatedByBudget\`, \`totalPathsExact\`, \`evidence.status\`, \`evidence.reason\`, and \`evidence.pathsComplete\`, plus \`match_nodes\` / \`match_edges\` callers to report \`totalMatches\`, \`limited\`, and \`followUp\` details before treating scan rows as evidence, embedded health, and read-first write policy in one response.
 5. \`query_ontology({operation:'workspace_brief'})\` — read-only first-contact diagnosis: project shape, health status, and next actions without fetching the full graph. Use \`query_ontology({operation:'health'})\` when you need a deeper integrity dashboard.
@@ -1997,6 +2282,11 @@ const TOOLS = [
           maximum: 500,
           description: 'Positive integer max rows to return. Defaults to 100, max 500.',
         },
+        offset: {
+          type: 'integer',
+          minimum: 0,
+          description: 'Zero-based page offset. Use pagination.nextOffset until hasMore is false.',
+        },
       },
     },
     outputSchema: {
@@ -2048,6 +2338,19 @@ const TOOLS = [
             additionalProperties: false,
           },
         },
+        pagination: {
+          type: 'object',
+          properties: {
+            offset: { type: 'integer', minimum: 0 },
+            limit: { type: 'integer', minimum: 1, maximum: 500 },
+            total: { type: 'integer', minimum: 0 },
+            returned: { type: 'integer', minimum: 0 },
+            hasMore: { type: 'boolean' },
+            nextOffset: { type: ['integer', 'null'], minimum: 0 },
+          },
+          required: ['offset', 'limit', 'total', 'returned', 'hasMore', 'nextOffset'],
+          additionalProperties: false,
+        },
         summaryHint: {
           type: 'string',
           description: 'Only present when at least one row carries a partial summary — names the follow-up call that returns the full bodies.',
@@ -2062,7 +2365,7 @@ const TOOLS = [
           additionalProperties: false,
         },
       },
-      required: ['total', 'vaultRoot', 'nodes'],
+      required: ['total', 'vaultRoot', 'nodes', 'pagination'],
       additionalProperties: false,
     },
   },
@@ -2088,7 +2391,9 @@ const TOOLS = [
             '`excerpt` (default) returns the first prose paragraph as `excerpt`. `full` returns the entire markdown body as `body` and omits `excerpt`. Use `full` when the answer depends on what the node actually says — evidence paths, confidence, scope boundaries.',
         },
       },
-      oneOf: [{ required: ['slug'] }, { required: ['uid'] }],
+      // Claude Code's Anthropic tool schema rejects a top-level `oneOf` and
+      // silently drops the whole tool. Both selectors stay optional in the
+      // published schema; getConcept enforces exactly-one at runtime.
     },
     outputSchema: {
       type: 'object',
@@ -2102,6 +2407,7 @@ const TOOLS = [
         frontmatter: {
           type: 'object',
           description: 'Resolved markdown frontmatter.',
+          additionalProperties: true,
         },
         excerpt: {
           type: 'string',
@@ -2164,7 +2470,8 @@ const TOOLS = [
             'Applies to every row. `excerpt` (default) returns the first prose paragraph per row; `full` returns the entire markdown body per row and caps the batch at 20 slugs.',
         },
       },
-      oneOf: [{ required: ['slugs'] }, { required: ['uids'] }],
+      // Same cross-client boundary as get_concept: keep the published input
+      // schema flat and enforce exactly-one in getConceptsBatch at runtime.
     },
     outputSchema: {
       type: 'object',
@@ -2191,6 +2498,7 @@ const TOOLS = [
               frontmatter: {
                 type: 'object',
                 description: 'Resolved markdown frontmatter for successful rows.',
+                additionalProperties: true,
               },
               excerpt: {
                 type: 'string',
@@ -2410,13 +2718,13 @@ const TOOLS = [
         contract: { type: 'string', enum: ['projectSourceConnect:v1'] },
         projectSlug: NON_BLANK_STRING_SCHEMA,
         mode: { type: 'string', enum: ['connect', 'replace', 'remeasure'] },
-        binding: { type: 'object' },
-        inference: { type: ['object', 'null'] },
-        previewReceipt: { type: 'object' },
-        projectSource: { type: 'object' },
-        remedy: { type: 'object' },
+        binding: PROJECT_SOURCE_BINDING_VIEW_SCHEMA,
+        inference: { type: ['object', 'null'], additionalProperties: true },
+        previewReceipt: PROJECT_SOURCE_RECEIPT_SCHEMA,
+        projectSource: PROJECT_SOURCE_VIEW_SCHEMA,
+        remedy: PROJECT_SOURCE_REMEDY_SCHEMA,
         previousBindingCount: { type: 'number' },
-        nextCall: { type: 'object' },
+        nextCall: PROJECT_SOURCE_NEXT_CALL_SCHEMA,
         undo: { type: ['object', 'null'] },
       },
       required: ['ok', 'changed', 'confirmed', 'contract', 'projectSlug', 'mode', 'binding'],
@@ -2449,9 +2757,9 @@ const TOOLS = [
         projectSlug: NON_BLANK_STRING_SCHEMA,
         removed: { type: 'number' },
         bindings: { type: 'array' },
-        projectSource: { type: 'object' },
-        remedy: { type: 'object' },
-        nextCall: { type: 'object' },
+        projectSource: PROJECT_SOURCE_VIEW_SCHEMA,
+        remedy: PROJECT_SOURCE_REMEDY_SCHEMA,
+        nextCall: PROJECT_SOURCE_NEXT_CALL_SCHEMA,
       },
       required: ['ok', 'changed', 'confirmed', 'contract', 'projectSlug', 'removed', 'bindings'],
       additionalProperties: false,
@@ -2812,7 +3120,7 @@ const TOOLS = [
         ok: { type: 'boolean' }, dryRun: { type: 'boolean' }, changed: { type: 'boolean' },
         ...DESTRUCTIVE_PREVIEW_OUTPUT_PROPERTIES,
         from: NON_BLANK_STRING_SCHEMA,
-        oldRelation: { type: 'object' }, newRelation: { type: 'object' },
+        oldRelation: RELATION_RESULT_SCHEMA, newRelation: RELATION_RESULT_SCHEMA,
         postWriteMaintenance: POST_WRITE_MAINTENANCE_OUTPUT_SCHEMA,
       },
       required: ['ok', 'dryRun', 'changed', ...DESTRUCTIVE_PREVIEW_REQUIRED, 'from', 'oldRelation', 'newRelation'],
@@ -2838,6 +3146,7 @@ const TOOLS = [
           type: 'object',
           description:
             'Frontmatter key/value patches (e.g. { kind: "capability", domain: "views" }). null removes the key. Per-locale display names go here as `display_ko` / `display_en` — fill every locale the vault serves so both audiences read a native name (`title` stays the search/matching source).',
+          additionalProperties: true,
         },
         body: {
           type: 'string',
@@ -3764,7 +4073,7 @@ const TOOLS = [
       type: 'object',
       properties: {
         operation: { type: 'string', enum: QUERY_ONTOLOGY_OPERATIONS },
-        compiledSummary: { type: 'object' },
+            compiledSummary: { type: 'object', additionalProperties: true },
       },
       required: ['operation'],
       // The graph engine is intentionally polymorphic: each operation owns its
@@ -3902,17 +4211,18 @@ const TOOLS = [
   {
     name: 'infer_imports',
     description:
-      'R17 (autonomous ingest deeper) — walk TS/JS files in a code repo and infer file-level + module-level import edges. It also walks bounded root Python packages. ' +
+      'R17 (autonomous ingest deeper) — walk TS/JS files in a code repo and infer file-level + module-level import edges. It also walks bounded root Python packages and bounded src/source-layout Python packages. ' +
       'Structured `coverage` names the supported languages and, when Cargo is detected, states that Rust use/mod and macro dependency graphs are unsupported; zero edges never proves that a Rust repository has no dependencies. ' +
       'side effect 0 (vault frontmatter NOT modified). `moduleEdges` are source-backed review candidates, never self-approving semantic `depends_on` relations. ' +
-      'For the approval workflow, start with `reviewMode:"next"`: it returns exactly one compact, non-writing `nextRelationReview:v1` packet plus a stateless cursor instead of the full import graph. ' +
-      'Each module edge includes whole-edge source-role/import-usage counts, `productValueCount`, `kindCounts`, and a bounded exact file-edge `evidence` receipt. Test-only or type-only evidence stays visible but must not be framed as a product depends_on approval question without separate product meaning evidence. ' +
+      'When you know an implementation file, set `focusPath` (or `reviewMode:"focus"`) before considering `full`: Atlas returns bounded exact incoming/outgoing static import receipts, counts, and a cursor without requiring a vault. This focused source boundary is not runtime impact or a semantic relation. ' +
+      'Omit `reviewMode` for size-safe automatic delivery: scans whose estimated full MCP result is at most 128 KiB keep the complete response; larger reconciled scans return exactly one compact, non-writing `nextRelationReview:v1` packet plus a delivery receipt and stateless cursor. Use `reviewMode:"next"` to request that bounded packet explicitly. `reviewMode:"full"` preserves the complete shape, but a result over 128 KiB additionally requires `allowLargeResponse:true`; this second confirmation prevents coding agents from accidentally opting into a multi-megabyte response. Oversized raw scans without a loadable reconciliation vault fail with an actionable error instead of emitting an unbounded default response. Every compact candidate carries `absentEndpoints`. If an endpoint is missing, `nextCalls` is empty and `endpointModelling` separates an evidence-only analysis call from the complete `rootPath + proposal` validation contract, source-bound drafts, and queue resume. It never calls `get_concepts` or `relation_check` on a missing slug, never claims the analysis call created an endpoint, and never promotes a path-derived slug into a business kind or definition. ' +
+      'Each module edge includes whole-edge source-role/import-usage counts, `productValueCount`, `kindCounts`, and a bounded exact file-edge `evidence` receipt. Missing vault edges remain `rationale_review_required`: inspect both concepts and the observed direction, ask the user, then call `add_relation` with an explicit `why`. Test-only or type-only evidence stays visible but must not be framed as a product depends_on approval question without separate product meaning evidence. ' +
       'Detects:\n' +
       '  - relative imports (./, ../) → resolved to file paths\n' +
       '  - dynamic import() / require() / export ... from\n' +
       '  - bare side-effect imports (import "X")\n' +
       '  - apps/* and packages/* workspace imports collapse to analyzer-compatible element slugs\n' +
-      '  - bounded static Python import / from ... import statements in root packages with __init__.py; imports nested under an explicit TYPE_CHECKING guard are type_only; source is parsed as text and never executed\n' +
+      '  - bounded static Python import / from ... import statements in root or src/source-layout packages with __init__.py; imports nested under an explicit TYPE_CHECKING guard are type_only; source is parsed as text and never executed\n' +
       '  - external package imports listed separately\n' +
       '  - tsconfig.json compilerOptions.paths aliases first, then fallback common @/* aliases → resolved to internal files when the target exists; otherwise unresolved as alias-not-found\n\n' +
       'Use after analyze_repo_structure to pull *real* dependency edges from the code, not just suggestedRelations heuristics. ' +
@@ -3930,7 +4240,7 @@ const TOOLS = [
           maxItems: SOURCE_FOLDER_ARRAY_MAX_ITEMS,
           items: NON_BLANK_STRING_SCHEMA,
           description:
-            "Source folders to walk (default: ['src','lib','app','apps','packages']). " +
+            "Source folders to walk (default: ['src','source','lib','app','apps','packages']). Nested scopes preserve repository-relative ontology endpoints. " +
             'If none exist, falls back to rootPath.',
         },
         ignore: {
@@ -3954,14 +4264,40 @@ const TOOLS = [
         },
         reviewMode: {
           type: 'string',
-          enum: ['full', 'next'],
+          enum: ['full', 'next', 'focus'],
           description:
-            '`full` (default) returns the complete scan. `next` returns one compact, non-writing semantic-relation review packet and requires reconciliation.',
+            'Omit for automatic delivery unless focusPath is present. `focus` returns a bounded exact file-level import neighborhood for focusPath. Otherwise responses estimated at or below 128 KiB keep the complete scan, while larger reconciled scans return one compact, non-writing review packet. `full` requests the complete scan; when it exceeds 128 KiB, also pass allowLargeResponse:true. `next` explicitly requests one compact packet and requires reconciliation.',
+        },
+        allowLargeResponse: {
+          type: 'boolean',
+          description:
+            'Confirmation for reviewMode:"full" only. Required when the estimated complete MCP result exceeds 128 KiB. It never changes scan contents or writes the vault.',
         },
         afterReviewId: {
           ...NON_BLANK_STRING_SCHEMA,
           description:
             '`reviewMode:"next"` only. Pass the prior packet cursor.nextAfterReviewId to advance deterministically; omit to start at the first current candidate.',
+        },
+        focusPath: {
+          ...NON_BLANK_STRING_SCHEMA,
+          description:
+            'Repository-relative implementation file to inspect. Supplying focusPath with omitted reviewMode selects focus mode automatically. Returns bounded incoming/outgoing supported static import receipts; it does not claim runtime or semantic impact.',
+        },
+        focusDirection: {
+          type: 'string',
+          enum: ['incoming', 'outgoing', 'both'],
+          description: 'Focus mode only. Which exact file-level import direction to page (default both).',
+        },
+        focusLimit: {
+          type: 'integer',
+          minimum: 1,
+          maximum: 100,
+          description: 'Focus mode only. Maximum exact import receipts returned in one page (default 50, max 100).',
+        },
+        focusAfterEdgeId: {
+          ...NON_BLANK_STRING_SCHEMA,
+          description:
+            'Focus mode only. Pass the prior focusReview.cursor.nextAfterEdgeId to advance deterministically; omit to start at the first current edge.',
         },
       },
     },
@@ -4098,51 +4434,69 @@ const TOOLS = [
             additionalProperties: false,
           },
         },
-        reconciliation: {
+            reconciliation: {
           type: ['object', 'null'],
           description:
             'Module edges diffed against the vault\'s compiled depends_on edges (alias-normalized). null when no vault is loadable (e.g. scanning a foreign repo). Absent when reconcile:false.',
           properties: {
-            inBoth: { type: 'array', items: { type: 'object' } },
+            inBoth: {
+              type: 'array',
+              items: {
+                type: 'object',
+                properties: { from: NON_BLANK_STRING_SCHEMA, to: NON_BLANK_STRING_SCHEMA },
+                required: ['from', 'to'],
+                additionalProperties: false,
+              },
+            },
             inCodeMissingFromVault: {
               type: 'array',
               description: 'Import-backed review candidates missing from the vault whose endpoints already exist. Each carries exact source evidence plus `rationale_review_required`; no write action is emitted.',
-              items: { type: 'object' },
+              items: IMPORT_RECONCILIATION_EDGE_SCHEMA,
             },
             inCodeMissingEndpointAbsent: {
               type: 'array',
               description: 'Import-backed review candidates whose from/to includes a slug not yet modelled as a vault node (`absentEndpoints`). Model endpoints, inspect evidence, supply semantic rationale, and obtain human approval before any relation write.',
-              items: { type: 'object' },
+              items: IMPORT_RECONCILIATION_EDGE_SCHEMA,
             },
             inVaultNotInCode: {
               type: 'array',
               description: 'vault depends_on edges with no matching code import — possibly stale, review before removing.',
-              items: { type: 'object' },
+              items: IMPORT_RECONCILIATION_EDGE_SCHEMA,
             },
           },
         },
-        reconciliationSummary: {
+        reconciliationSummary: IMPORT_RECONCILIATION_SUMMARY_SCHEMA,
+        contract: { type: 'string', enum: ['inferImportsReview:v1', 'inferImportsFocus:v1'] },
+        delivery: {
           type: 'object',
-          description: 'Counts + a one-line hint. Present only when reconciliation ran successfully.',
+          description:
+            'Present only when omitted reviewMode was automatically compacted because the estimated full MCP result exceeded the safe delivery boundary.',
           properties: {
-            inBoth: { type: 'integer', minimum: 0 },
-            inCodeMissingFromVault: { type: 'integer', minimum: 0 },
-            inCodeMissingEndpointAbsent: { type: 'integer', minimum: 0 },
-            inVaultNotInCode: { type: 'integer', minimum: 0 },
-            unresolvedImports: { type: 'integer', minimum: 0 },
-            hint: { type: 'string' },
+            selection: { type: 'string', enum: ['automatic_compact'] },
+            reason: { type: 'string', enum: ['estimated_full_response_exceeds_limit'] },
+            estimatedFullResponseBytes: { type: 'integer', minimum: 1 },
+            automaticLimitBytes: { type: 'integer', enum: [131072] },
+            explicitFullAvailable: { type: 'boolean', enum: [true] },
+            explicitFullArguments: {
+              type: 'object',
+              additionalProperties: false,
+              properties: {
+                reviewMode: { type: 'string', enum: ['full'] },
+                allowLargeResponse: { type: 'boolean', enum: [true] },
+              },
+              required: ['reviewMode', 'allowLargeResponse'],
+            },
           },
           required: [
-            'inBoth',
-            'inCodeMissingFromVault',
-            'inCodeMissingEndpointAbsent',
-            'inVaultNotInCode',
-            'unresolvedImports',
-            'hint',
+            'selection',
+            'reason',
+            'estimatedFullResponseBytes',
+            'automaticLimitBytes',
+            'explicitFullAvailable',
+            'explicitFullArguments',
           ],
           additionalProperties: false,
         },
-        contract: { type: 'string', enum: ['inferImportsReview:v1'] },
         scanSummary: {
           type: 'object',
           properties: {
@@ -4192,6 +4546,12 @@ const TOOLS = [
                 from: NON_BLANK_STRING_SCHEMA,
                 to: NON_BLANK_STRING_SCHEMA,
                 relationType: { type: 'string', enum: ['depends_on'] },
+                absentEndpoints: {
+                  type: 'array',
+                  maxItems: 2,
+                  uniqueItems: true,
+                  items: NON_BLANK_STRING_SCHEMA,
+                },
                 importCount: { type: 'integer', minimum: 0 },
                 sourceEvidence: {
                   type: 'array',
@@ -4250,6 +4610,7 @@ const TOOLS = [
                 'from',
                 'to',
                 'relationType',
+                'absentEndpoints',
                 'importCount',
                 'sourceEvidence',
                 'sourceEvidenceLimited',
@@ -4257,15 +4618,167 @@ const TOOLS = [
               ],
               additionalProperties: false,
             },
+            endpointModelling: {
+              type: ['object', 'null'],
+              properties: {
+                status: { type: 'string', enum: ['required_before_relation_review'] },
+                writeAllowed: { type: 'boolean', enum: [false] },
+                absentEndpoints: {
+                  type: 'array',
+                  minItems: 1,
+                  maxItems: 2,
+                  uniqueItems: true,
+                  items: NON_BLANK_STRING_SCHEMA,
+                },
+                observedPathsByEndpoint: {
+                  type: 'array',
+                  minItems: 1,
+                  maxItems: 2,
+                  items: {
+                    type: 'object',
+                    properties: {
+                      endpoint: NON_BLANK_STRING_SCHEMA,
+                      paths: { type: 'array', uniqueItems: true, items: NON_BLANK_STRING_SCHEMA },
+                    },
+                    required: ['endpoint', 'paths'],
+                    additionalProperties: false,
+                  },
+                },
+                analysisCall: {
+                  type: 'object',
+                  properties: {
+                    tool: { type: 'string', enum: ['analyze_repo_structure'] },
+                    arguments: {
+                      type: 'object',
+                      properties: { rootPath: NON_BLANK_STRING_SCHEMA },
+                      required: ['rootPath'],
+                      additionalProperties: false,
+                    },
+                    purpose: NON_BLANK_STRING_SCHEMA,
+                  },
+                  required: ['tool', 'arguments', 'purpose'],
+                  additionalProperties: false,
+                },
+                proposalValidation: {
+                  type: 'object',
+                  properties: {
+                    tool: { type: 'string', enum: ['analyze_repo_structure'] },
+                    requiredArguments: {
+                      type: 'array',
+                      minItems: 2,
+                      maxItems: 2,
+                      uniqueItems: true,
+                      items: { type: 'string', enum: ['rootPath', 'proposal'] },
+                    },
+                    requiredProposalFields: {
+                      type: 'array',
+                      minItems: 6,
+                      maxItems: 6,
+                      uniqueItems: true,
+                      items: {
+                        type: 'string',
+                        enum: ['project', 'domains', 'capabilities', 'elements', 'relations', 'competencyAnswers'],
+                      },
+                    },
+                    fieldsAfterKindDecision: {
+                      type: 'object',
+                      properties: {
+                        common: {
+                          type: 'array',
+                          minItems: 5,
+                          maxItems: 5,
+                          uniqueItems: true,
+                          items: { type: 'string', enum: ['slug', 'title', 'definition', 'evidence', 'confidence'] },
+                        },
+                        byKind: {
+                          type: 'object',
+                          properties: {
+                            project: { type: 'array', maxItems: 0 },
+                            domain: { type: 'array', maxItems: 0 },
+                            capability: {
+                              type: 'array',
+                              minItems: 1,
+                              maxItems: 1,
+                              items: { type: 'string', enum: ['domain'] },
+                            },
+                            element: {
+                              type: 'array',
+                              minItems: 2,
+                              maxItems: 2,
+                              uniqueItems: true,
+                              items: { type: 'string', enum: ['domain', 'path'] },
+                            },
+                          },
+                          required: ['project', 'domain', 'capability', 'element'],
+                          additionalProperties: false,
+                        },
+                      },
+                      required: ['common', 'byKind'],
+                      additionalProperties: false,
+                    },
+                    endpointDrafts: {
+                      type: 'array',
+                      minItems: 1,
+                      maxItems: 2,
+                      items: {
+                        type: 'object',
+                        properties: {
+                          endpoint: NON_BLANK_STRING_SCHEMA,
+                          observedPaths: { type: 'array', uniqueItems: true, items: NON_BLANK_STRING_SCHEMA },
+                          slugCandidate: NON_BLANK_STRING_SCHEMA,
+                          kindDecision: { type: 'string', enum: ['human_meaning_required'] },
+                        },
+                        required: ['endpoint', 'observedPaths', 'slugCandidate', 'kindDecision'],
+                        additionalProperties: false,
+                      },
+                    },
+                    purpose: NON_BLANK_STRING_SCHEMA,
+                  },
+                  required: ['tool', 'requiredArguments', 'requiredProposalFields', 'fieldsAfterKindDecision', 'endpointDrafts', 'purpose'],
+                  additionalProperties: false,
+                },
+                resumeCall: {
+                  type: 'object',
+                  properties: {
+                    tool: { type: 'string', enum: ['infer_imports'] },
+                    arguments: {
+                      type: 'object',
+                      properties: {
+                        rootPath: NON_BLANK_STRING_SCHEMA,
+                        reviewMode: { type: 'string', enum: ['next'] },
+                      },
+                      required: ['rootPath', 'reviewMode'],
+                      additionalProperties: false,
+                    },
+                    purpose: NON_BLANK_STRING_SCHEMA,
+                  },
+                  required: ['tool', 'arguments', 'purpose'],
+                  additionalProperties: false,
+                },
+              },
+              required: [
+                'status',
+                'writeAllowed',
+                'absentEndpoints',
+                'observedPathsByEndpoint',
+                'analysisCall',
+                'proposalValidation',
+                'resumeCall',
+              ],
+              additionalProperties: false,
+            },
             nextCalls: {
               type: 'array',
-              minItems: 2,
+              minItems: 0,
               maxItems: 2,
               items: {
                 type: 'object',
                 properties: {
                   tool: { type: 'string', enum: ['get_concepts', 'query_ontology'] },
-                  arguments: { type: 'object' },
+                  // Each suggested call has a different strict input shape;
+                  // preserve the repair packet without inventing one shared
+                  // argument contract.
+                  arguments: { type: 'object', additionalProperties: true },
                   purpose: NON_BLANK_STRING_SCHEMA,
                 },
                 required: ['tool', 'arguments', 'purpose'],
@@ -4278,6 +4791,7 @@ const TOOLS = [
                 questionEligibility: {
                   type: 'string',
                   enum: [
+                    'blocked_missing_vault_endpoints',
                     'eligible_after_semantic_review',
                     'additional_product_meaning_evidence_required',
                   ],
@@ -4310,9 +4824,77 @@ const TOOLS = [
             'sourceQualification',
             'ordering',
             'candidate',
+            'endpointModelling',
             'nextCalls',
             'decision',
             'cursor',
+          ],
+          additionalProperties: false,
+        },
+        focusReview: {
+          type: 'object',
+          properties: {
+            contract: { type: 'string', enum: ['importImpactFocus:v1'] },
+            focusPath: NON_BLANK_STRING_SCHEMA,
+            direction: { type: 'string', enum: ['incoming', 'outgoing', 'both'] },
+            sourceQualification: {
+              type: 'string',
+              enum: ['observed_static_imports_not_runtime_or_semantic_impact'],
+            },
+            writeAllowed: { type: 'boolean', enum: [false] },
+            summary: {
+              type: 'object',
+              properties: {
+                incoming: { type: 'integer', minimum: 0 },
+                outgoing: { type: 'integer', minimum: 0 },
+                selected: { type: 'integer', minimum: 0 },
+                returned: { type: 'integer', minimum: 0, maximum: 100 },
+                limited: { type: 'boolean' },
+              },
+              required: ['incoming', 'outgoing', 'selected', 'returned', 'limited'],
+              additionalProperties: false,
+            },
+            edges: {
+              type: 'array',
+              maxItems: 100,
+              items: {
+                type: 'object',
+                properties: {
+                  edgeId: NON_BLANK_STRING_SCHEMA,
+                  from: NON_BLANK_STRING_SCHEMA,
+                  to: NON_BLANK_STRING_SCHEMA,
+                  kind: { type: 'string', enum: IMPORT_EDGE_KIND_VALUES },
+                  sourceRole: { type: 'string', enum: IMPORT_SOURCE_ROLE_VALUES },
+                  importUsage: { type: 'string', enum: IMPORT_USAGE_VALUES },
+                },
+                required: ['edgeId', 'from', 'to', 'kind', 'sourceRole', 'importUsage'],
+                additionalProperties: false,
+              },
+            },
+            cursor: {
+              type: 'object',
+              properties: {
+                afterEdgeId: { type: ['string', 'null'] },
+                total: { type: 'integer', minimum: 0 },
+                remaining: { type: 'integer', minimum: 0 },
+                hasMore: { type: 'boolean' },
+                nextAfterEdgeId: { type: ['string', 'null'] },
+              },
+              required: ['afterEdgeId', 'total', 'remaining', 'hasMore', 'nextAfterEdgeId'],
+              additionalProperties: false,
+            },
+            interpretation: NON_BLANK_STRING_SCHEMA,
+          },
+          required: [
+            'contract',
+            'focusPath',
+            'direction',
+            'sourceQualification',
+            'writeAllowed',
+            'summary',
+            'edges',
+            'cursor',
+            'interpretation',
           ],
           additionalProperties: false,
         },
@@ -4329,6 +4911,7 @@ const TOOLS = [
             'nextReview',
           ],
         },
+        { required: ['contract', 'scanSummary', 'focusReview'] },
       ],
       additionalProperties: false,
     },
@@ -4397,8 +4980,16 @@ const TOOLS = [
             filesScanned: { type: 'integer', minimum: 0 },
             moduleEdges: { type: 'integer', minimum: 0 },
             coverage: IMPORT_SCAN_COVERAGE_OUTPUT_SCHEMA,
-            thresholdApplied: { type: 'object' },
-            reconciliationSummary: { type: 'object' },
+            thresholdApplied: {
+              type: 'object',
+              properties: {
+                threshold: { type: 'integer', minimum: 1 },
+                filteredOut: { type: 'integer', minimum: 0 },
+              },
+              required: ['threshold', 'filteredOut'],
+              additionalProperties: false,
+            },
+            reconciliationSummary: IMPORT_RECONCILIATION_SUMMARY_SCHEMA,
           },
           required: ['filesScanned', 'moduleEdges', 'coverage'],
           additionalProperties: false,
@@ -5776,13 +6367,14 @@ function requireOptionalBoolean(value, name) {
   }
 }
 
-function listConcepts({ kind, domain, since, summary, limit = 100 }) {
+function listConcepts({ kind, domain, since, summary, limit = 100, offset = 0 }) {
   requireOptionalNonBlankString(kind, 'kind');
   requireOptionalEnum(kind, 'kind', NODE_KIND_VALUES);
   requireOptionalNonBlankString(domain, 'domain');
   requireOptionalNonNegativeNumber(since, 'since');
   requireOptionalBoolean(summary, 'summary');
   requireOptionalPositiveInteger(limit, 'limit', { max: 500 });
+  requireOptionalNonNegativeInteger(offset, 'offset');
   const docs = loadVaultDocs(VAULT_ROOT);
 
   // R11 #23 — vault-wide validation 카운트. raw 모두 검증해 silent corruption
@@ -5827,9 +6419,10 @@ function listConcepts({ kind, domain, since, summary, limit = 100 }) {
     if (domain && doc.frontmatter.domain !== domain) return false;
     if (sinceMs !== null && (typeof doc.mtime !== 'number' || doc.mtime <= sinceMs)) return false;
     return true;
-  });
+  }).sort((a, b) => a.slug.localeCompare(b.slug, 'en'));
+  const page = filtered.slice(offset, offset + limit);
   const summaryTruncatedSlugs = [];
-  const nodes = filtered.slice(0, limit).map((doc) => {
+  const nodes = page.map((doc) => {
     // R+ — opt-in summary. agent 가 list 한 호출로 "각 노드 무슨 내용인가?"
     // 파악 가능. 200자 cap 으로 페이로드 부풀림 방지 (find_evidence 와 동일).
     // 호출자가 summary:true 명시 안 하면 비활성 (기존 동작 보존).
@@ -5861,6 +6454,14 @@ function listConcepts({ kind, domain, since, summary, limit = 100 }) {
     total: filtered.length,
     vaultRoot: VAULT_ROOT,
     nodes,
+    pagination: {
+      offset,
+      limit,
+      total: filtered.length,
+      returned: nodes.length,
+      hasMore: offset + nodes.length < filtered.length,
+      nextOffset: offset + nodes.length < filtered.length ? offset + nodes.length : null,
+    },
     // 잘린 요약은 **행에 표시하고 목록에 한 번만 안내한다** — 행마다 안내문을
     // 붙이면 페이로드만 늘고, 아무 데도 안 붙이면 무엇이 남았는지 몰라 다시
     // 요청할 수가 없다.
@@ -7439,13 +8040,61 @@ function attachProjectMeaning(agentBrief, artifact) {
     agentBrief.projectSlug,
     agentBrief.readiness?.status,
   );
+  const meaningIsCurrent = context.meaningAssessment?.status === 'verified_current';
+  const meaningAction = meaningIsCurrent
+    ? null
+    : {
+      id: 'meaning_assessment',
+      kind: 'meaning_assessment',
+      // An unbuilt/uncalibrated ontology is an actionable review state, not a
+      // transport failure. Keep the agent out of the green lane without
+      // making first-contact MCP verification impossible on a fresh vault.
+      severity: 'warn',
+      count: 1,
+      target: context.meaningAssessment?.topGap?.id ?? 'assessment_input_invalid',
+      message:
+        'Meaning evidence is not current and complete; review the assessment before treating structural readiness as ontology readiness.',
+    };
+  const adjustedBrief = meaningIsCurrent
+    ? {
+      ...agentBrief,
+      projectSource: context.projectSource,
+      projectSourceRemedy: projectSourceRemedy(context.projectSource),
+      meaningAssessment: context.meaningAssessment,
+    }
+    : {
+      ...agentBrief,
+      status: 'needs_attention',
+      readiness: {
+        ...agentBrief.readiness,
+        status: agentBrief.readiness?.status === 'ready'
+          ? 'needs_attention'
+          : agentBrief.readiness?.status,
+        score: Math.min(agentBrief.readiness?.score ?? 0, 75),
+      },
+      health: {
+        ...agentBrief.health,
+        status: 'needs_attention',
+        checks: [
+          ...(Array.isArray(agentBrief.health?.checks) ? agentBrief.health.checks : []),
+          {
+            id: 'meaning_assessment',
+            status: 'warn',
+            count: 1,
+            message: meaningAction.message,
+          },
+        ],
+      },
+      nextActions: [
+        meaningAction,
+        ...(Array.isArray(agentBrief.nextActions) ? agentBrief.nextActions : []),
+      ],
+      projectSource: context.projectSource,
+      projectSourceRemedy: projectSourceRemedy(context.projectSource),
+      meaningAssessment: context.meaningAssessment,
+    };
   return attachMeaningRepair({
-    ...agentBrief,
-    projectSource: context.projectSource,
-    // The diagnosis has always named an action. This is the same name turned
-    // into a call an agent can make and a screen can render as one button.
-    projectSourceRemedy: projectSourceRemedy(context.projectSource),
-    meaningAssessment: context.meaningAssessment,
+    ...adjustedBrief,
   }, context.meaningRepair);
 }
 
@@ -8338,18 +8987,44 @@ function inferImportsTool({
   ignore,
   maxFiles,
   reconcile = true,
-  reviewMode = 'full',
+  reviewMode,
+  allowLargeResponse,
   afterReviewId,
+  focusPath,
+  focusDirection,
+  focusLimit,
+  focusAfterEdgeId,
 } = {}) {
   requireOptionalNonBlankString(rootPath, 'rootPath');
   requireOptionalStringArray(sourceFolders, 'sourceFolders', { max: SOURCE_FOLDER_ARRAY_MAX_ITEMS });
   requireOptionalStringArray(ignore, 'ignore', { max: IGNORE_ARRAY_MAX_ITEMS });
   requireOptionalPositiveInteger(maxFiles, 'maxFiles', { max: 50000 });
   requireOptionalBoolean(reconcile, 'reconcile');
-  requireOptionalEnum(reviewMode, 'reviewMode', ['full', 'next']);
+  requireOptionalEnum(reviewMode, 'reviewMode', ['full', 'next', 'focus']);
+  requireOptionalBoolean(allowLargeResponse, 'allowLargeResponse');
   requireOptionalNonBlankString(afterReviewId, 'afterReviewId');
+  requireOptionalNonBlankString(focusPath, 'focusPath');
+  requireOptionalEnum(focusDirection, 'focusDirection', ['incoming', 'outgoing', 'both']);
+  requireOptionalPositiveInteger(focusLimit, 'focusLimit', { max: 100 });
+  requireOptionalNonBlankString(focusAfterEdgeId, 'focusAfterEdgeId');
+  const requestedReviewMode = reviewMode ?? (focusPath === undefined ? undefined : 'focus');
+  if (allowLargeResponse !== undefined && reviewMode !== 'full') {
+    throw new Error('allowLargeResponse is only valid with reviewMode "full".');
+  }
   if (afterReviewId !== undefined && reviewMode !== 'next') {
     throw new Error('afterReviewId is only valid with reviewMode "next".');
+  }
+  if (requestedReviewMode === 'focus' && focusPath === undefined) {
+    throw new Error('reviewMode "focus" requires focusPath.');
+  }
+  if (focusPath !== undefined && requestedReviewMode !== 'focus') {
+    throw new Error('focusPath is only valid with reviewMode "focus" or with reviewMode omitted.');
+  }
+  if (
+    (focusDirection !== undefined || focusLimit !== undefined || focusAfterEdgeId !== undefined) &&
+    requestedReviewMode !== 'focus'
+  ) {
+    throw new Error('focusDirection, focusLimit, and focusAfterEdgeId are only valid in focus mode.');
   }
   if (reviewMode === 'next' && reconcile === false) {
     throw new Error('reviewMode "next" requires reconcile:true because the review queue is a vault diff.');
@@ -8360,6 +9035,28 @@ function inferImportsTool({
     ignore,
     maxFiles,
   });
+
+  if (requestedReviewMode === 'focus') {
+    const focusReview = buildImportImpactFocus(result.edges, {
+      focusPath,
+      direction: focusDirection,
+      limit: focusLimit,
+      afterEdgeId: focusAfterEdgeId ?? null,
+    });
+    return {
+      contract: 'inferImportsFocus:v1',
+      rootPath: result.rootPath,
+      filesScanned: result.filesScanned,
+      coverage: result.coverage,
+      scanSummary: {
+        fileEdges: result.edges.length,
+        externalImports: result.externalImports.length,
+        unresolvedImports: result.unresolved.length,
+        moduleEdges: result.moduleEdges.length,
+      },
+      focusReview,
+    };
+  }
 
   // Atlas roadmap Track A #1 — reconcile the code-derived module edges against
   // the vault's compiled depends_on edges so the agent gets "exactly what to
@@ -8417,7 +9114,65 @@ function inferImportsTool({
     }
   }
 
-  if (reviewMode === 'next') {
+  const automaticLimitBytes = 128 * 1024;
+  let effectiveReviewMode = requestedReviewMode ?? 'full';
+  let delivery;
+  if (reviewMode === undefined || (reviewMode === 'full' && allowLargeResponse !== true)) {
+    const estimatedFullResponseBytes = estimateMcpToolResultUtf8Bytes(result);
+    if (estimatedFullResponseBytes <= automaticLimitBytes) {
+      return result;
+    }
+    if (reviewMode === 'full') {
+      const confirmationError = new Error(
+        `Estimated full response (${estimatedFullResponseBytes} bytes) exceeds the 128 KiB delivery limit. Retry with reviewMode:"full", allowLargeResponse:true only when the complete arrays are intentionally required, or use reviewMode:"next" for one bounded review packet.`,
+      );
+      confirmationError.repairFields = {
+        largeResponseConfirmationRequired: true,
+        estimatedFullResponseBytes,
+        automaticLimitBytes,
+        retryArguments: {
+          reviewMode: 'full',
+          allowLargeResponse: true,
+        },
+        boundedAlternative: {
+          reviewMode: 'next',
+        },
+      };
+      throw confirmationError;
+    }
+    if (reconcile === false || !result.reconciliation || !result.reconciliationSummary) {
+      const deliveryError = new Error(
+        `Estimated full response (${estimatedFullResponseBytes} bytes) exceeds the automatic 128 KiB delivery limit, but compact review requires reconcile:true and a loadable active vault. Retry with reconcile:true, or explicitly opt in to the large payload with reviewMode:"full", allowLargeResponse:true.`,
+      );
+      deliveryError.repairFields = {
+        estimatedFullResponseBytes,
+        automaticLimitBytes,
+        requiredForCompact: {
+          reconcile: true,
+          loadableActiveVault: true,
+        },
+        explicitFullOverride: {
+          reviewMode: 'full',
+          allowLargeResponse: true,
+        },
+      };
+      throw deliveryError;
+    }
+    effectiveReviewMode = 'next';
+    delivery = {
+      selection: 'automatic_compact',
+      reason: 'estimated_full_response_exceeds_limit',
+      estimatedFullResponseBytes,
+      automaticLimitBytes,
+      explicitFullAvailable: true,
+      explicitFullArguments: {
+        reviewMode: 'full',
+        allowLargeResponse: true,
+      },
+    };
+  }
+
+  if (effectiveReviewMode === 'next') {
     if (!result.reconciliation || !result.reconciliationSummary) {
       throw new Error(
         'reviewMode "next" requires a loadable active vault so import candidates can be reconciled against existing ontology nodes.',
@@ -8425,9 +9180,11 @@ function inferImportsTool({
     }
     const nextReview = buildNextImportRelationReview(result.reconciliation, {
       afterReviewId: afterReviewId ?? null,
+      rootPath: result.rootPath,
     });
       return {
         contract: 'inferImportsReview:v1',
+        ...(delivery ? { delivery } : {}),
         rootPath: result.rootPath,
         filesScanned: result.filesScanned,
         coverage: result.coverage,
@@ -8439,7 +9196,7 @@ function inferImportsTool({
       },
       reconciliationSummary: result.reconciliationSummary,
       reviewQueue: {
-        total: result.reconciliation.inCodeMissingFromVault.length,
+        total: nextReview?.cursor.total ?? 0,
         returned: nextReview ? 1 : 0,
         exhausted: nextReview === null,
         afterReviewId: afterReviewId ?? null,
@@ -8449,6 +9206,14 @@ function inferImportsTool({
   }
 
   return result;
+}
+
+function estimateMcpToolResultUtf8Bytes(result) {
+  const response = {
+    content: [{ type: 'text', text: JSON.stringify(result, null, 2) }],
+    structuredContent: result,
+  };
+  return Buffer.byteLength(JSON.stringify(response), 'utf8');
 }
 
 function indexProjectTool({ rootPath, maxDepth, maxFiles, threshold, skipImports = false } = {}) {
@@ -8462,7 +9227,12 @@ function indexProjectTool({ rootPath, maxDepth, maxFiles, threshold, skipImports
   let imports = null;
   let pythonImportAnalysis = null;
   if (!skipImports) {
-    imports = inferImportsTool({ rootPath: target, maxFiles });
+    imports = inferImportsTool({
+      rootPath: target,
+      maxFiles,
+      reviewMode: 'full',
+      allowLargeResponse: true,
+    });
     pythonImportAnalysis = {
       ...imports,
       moduleEdges: [...imports.moduleEdges],

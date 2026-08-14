@@ -414,6 +414,94 @@ function inputArrayMaxItemsFailure(tools) {
   return null;
 }
 
+function topLevelInputCombinatorFailure(tools) {
+  for (const tool of tools) {
+    for (const combinator of ['oneOf', 'anyOf', 'allOf']) {
+      if (tool?.inputSchema?.[combinator] !== undefined) {
+        return `${tool?.name || '(unknown)'}.inputSchema top-level ${combinator} is not cross-client compatible`;
+      }
+    }
+  }
+  return null;
+}
+
+// Every nested object in the published tools/list contract must say whether
+// unknown keys are accepted. A bare `{type:'object'}` is ambiguous to clients:
+// it may be an intentional dynamic map or a typed contract that silently lost
+// its fields during a merge. Dynamic maps are explicit and narrowly named;
+// everything else is closed (or uses a typed `additionalProperties` map).
+export const TOOLS_LIST_OPEN_OBJECT_PATHS = new Set([
+  'get_concept.outputSchema.properties.frontmatter',
+  'get_concepts.outputSchema.properties.concepts.items.properties.frontmatter',
+  'get_concepts.outputSchema.properties.concepts.items.properties.growthHint.properties.exampleCall.properties.args',
+  'find_evidence.outputSchema.properties.growthHint.properties.exampleCall.properties.args',
+  'find_path.outputSchema.properties.growthHint.properties.exampleCall.properties.args',
+  'query_concepts.outputSchema.properties.growthHint.properties.exampleCall.properties.args',
+  'query_ontology.outputSchema.properties.compiledSummary',
+  'query_ontology.outputSchema',
+  'infer_imports.outputSchema.properties.nextReview.properties.nextCalls.items.properties.arguments',
+  'disconnect_project_source.outputSchema.properties.nextCall.properties.arguments',
+  'connect_project_source.outputSchema.properties.nextCall.properties.arguments',
+  'connect_project_source.outputSchema.properties.remedy.properties.undo.properties.tool.properties.arguments',
+  'disconnect_project_source.outputSchema.properties.remedy.properties.undo.properties.tool.properties.arguments',
+  'connect_project_source.outputSchema.properties.remedy.properties.tool.anyOf.0.properties.arguments',
+  'disconnect_project_source.outputSchema.properties.remedy.properties.tool.anyOf.0.properties.arguments',
+  'patch_concept.inputSchema.properties.frontmatter',
+  'merge_concepts.outputSchema.properties.capturedFrom.properties.frontmatter',
+  'delete_concept.outputSchema.properties.captured.properties.frontmatter',
+]);
+export const TOOLS_LIST_TYPED_OBJECT_PATHS = new Set([
+  'connect_project_source.outputSchema.properties.binding',
+  'connect_project_source.outputSchema.properties.previewReceipt',
+  'connect_project_source.outputSchema.properties.projectSource',
+  'connect_project_source.outputSchema.properties.remedy',
+  'connect_project_source.outputSchema.properties.nextCall',
+  'disconnect_project_source.outputSchema.properties.projectSource',
+  'disconnect_project_source.outputSchema.properties.remedy',
+  'disconnect_project_source.outputSchema.properties.nextCall',
+  'replace_relation.outputSchema.properties.oldRelation',
+  'replace_relation.outputSchema.properties.newRelation',
+  'infer_imports.outputSchema.properties.reconciliation.properties.inBoth.items',
+  'infer_imports.outputSchema.properties.reconciliation.properties.inCodeMissingFromVault.items',
+  'infer_imports.outputSchema.properties.reconciliation.properties.inCodeMissingEndpointAbsent.items',
+  'infer_imports.outputSchema.properties.reconciliation.properties.inVaultNotInCode.items',
+  'index_project.outputSchema.properties.imports.properties.thresholdApplied',
+  'index_project.outputSchema.properties.imports.properties.reconciliationSummary',
+]);
+
+export function nestedObjectSchemaFailure(tools) {
+  if (!Array.isArray(tools)) return 'tools/list response missing tools array';
+  const stack = [];
+  for (const tool of tools) {
+    stack.push({ schema: tool?.inputSchema, path: `${tool?.name || '(unknown)'}.inputSchema` });
+    stack.push({ schema: tool?.outputSchema, path: `${tool?.name || '(unknown)'}.outputSchema` });
+  }
+  while (stack.length > 0) {
+    const { schema, path } = stack.pop();
+    if (!schema || typeof schema !== 'object') continue;
+    if (schema.type === 'object') {
+      const openPath = TOOLS_LIST_OPEN_OBJECT_PATHS.has(path);
+      const typedPath = TOOLS_LIST_TYPED_OBJECT_PATHS.has(path);
+      if (typedPath && schema.additionalProperties === undefined) {
+        return `${path} nested object missing additionalProperties contract`;
+      }
+      if (schema.additionalProperties === true && !openPath) {
+        return `${path} nested object is open outside the explicit allowlist`;
+      }
+    }
+    for (const [key, value] of Object.entries(schema.properties || {})) {
+      stack.push({ schema: value, path: `${path}.properties.${key}` });
+    }
+    if (schema.items) stack.push({ schema: schema.items, path: `${path}.items` });
+    for (const key of ['oneOf', 'anyOf', 'allOf']) {
+      for (const [index, value] of (schema[key] || []).entries()) {
+        stack.push({ schema: value, path: `${path}.${key}.${index}` });
+      }
+    }
+  }
+  return null;
+}
+
 function backlinkRewritePlanSchemaFailure(schema, label) {
   if (
     schema?.type !== 'object' ||
@@ -805,6 +893,8 @@ export function toolsListSchemaFailure(tools) {
   }
   const arrayMaxItemsFailure = inputArrayMaxItemsFailure(tools);
   if (arrayMaxItemsFailure) return arrayMaxItemsFailure;
+  const inputCombinatorFailure = topLevelInputCombinatorFailure(tools);
+  if (inputCombinatorFailure) return inputCombinatorFailure;
   const titleDriftTool = tools.find((tool) => tool?.annotations?.title !== expectedToolTitle(tool?.name));
   if (titleDriftTool) {
     return `tools/list title annotation drift: ${titleDriftTool.name || '(unknown)'} (expected ${JSON.stringify(expectedToolTitle(titleDriftTool?.name))}, got ${JSON.stringify(titleDriftTool?.annotations?.title)})`;
@@ -876,10 +966,19 @@ export function toolsListSchemaFailure(tools) {
   ) {
     return 'list_concepts inputSchema limit default description drift';
   }
+  const listOffsetSchema = propertyAt(listConceptsTool, ['properties', 'offset']);
+  if (
+    listOffsetSchema?.type !== 'integer' ||
+    listOffsetSchema.minimum !== 0 ||
+    !/Zero-based page offset/i.test(listOffsetSchema?.description ?? '') ||
+    !/pagination\.nextOffset/i.test(listOffsetSchema?.description ?? '')
+  ) {
+    return 'list_concepts inputSchema offset pagination guidance drift';
+  }
   if (listConceptsTool.outputSchema?.type !== 'object') {
     return 'list_concepts outputSchema root drift';
   }
-  if (!sameArray(listConceptsTool.outputSchema?.required, ['total', 'vaultRoot', 'nodes'])) {
+  if (!sameArray(listConceptsTool.outputSchema?.required, ['total', 'vaultRoot', 'nodes', 'pagination'])) {
     return 'list_concepts outputSchema required drift';
   }
   if (listConceptsTool.outputSchema?.additionalProperties !== false) {
@@ -899,6 +998,33 @@ export function toolsListSchemaFailure(tools) {
   }
   if (listNodesSchema.items?.additionalProperties !== false) {
     return 'list_concepts outputSchema node openness drift';
+  }
+  const listPaginationSchema = outputPropertyAt(listConceptsTool, ['properties', 'pagination']);
+  if (
+    listPaginationSchema?.type !== 'object' ||
+    !sameArray(listPaginationSchema.required, ['offset', 'limit', 'total', 'returned', 'hasMore', 'nextOffset']) ||
+    listPaginationSchema.additionalProperties !== false
+  ) {
+    return 'list_concepts outputSchema pagination drift';
+  }
+  for (const propertyName of ['offset', 'total', 'returned']) {
+    const paginationNumber = listPaginationSchema.properties?.[propertyName];
+    if (paginationNumber?.type !== 'integer' || paginationNumber.minimum !== 0) {
+      return `list_concepts outputSchema pagination ${propertyName} drift`;
+    }
+  }
+  if (listPaginationSchema.properties?.limit?.type !== 'integer' || listPaginationSchema.properties?.limit?.minimum !== 1) {
+    return 'list_concepts outputSchema pagination limit drift';
+  }
+  if (listPaginationSchema.properties?.limit?.maximum !== 500) {
+    return 'list_concepts outputSchema pagination limit cap drift';
+  }
+  if (listPaginationSchema.properties?.hasMore?.type !== 'boolean') {
+    return 'list_concepts outputSchema pagination hasMore drift';
+  }
+  const nextOffsetSchema = listPaginationSchema.properties?.nextOffset;
+  if (!sameArray(nextOffsetSchema?.type, ['integer', 'null']) || nextOffsetSchema.minimum !== 0) {
+    return 'list_concepts outputSchema pagination nextOffset drift';
   }
   if (listNodesSchema.items?.properties?.uid?.type !== 'string' || listNodesSchema.items?.properties?.uid?.pattern !== NODE_UID_PATTERN) {
     return 'list_concepts outputSchema node uid drift';
@@ -934,13 +1060,7 @@ export function toolsListSchemaFailure(tools) {
   if (!sameArray(getConceptTool.outputSchema?.required, ['uid', 'slug', 'frontmatter', 'bodyInfo', 'neighbors', 'outgoingEdges', 'mtime'])) {
     return 'get_concept outputSchema required drift';
   }
-  const getConceptSelectors = getConceptTool.inputSchema?.oneOf;
-  if (
-    !Array.isArray(getConceptSelectors) ||
-    getConceptSelectors.length !== 2 ||
-    !sameArray(getConceptSelectors[0]?.required, ['slug']) ||
-    !sameArray(getConceptSelectors[1]?.required, ['uid'])
-  ) {
+  if (getConceptTool.inputSchema?.required !== undefined || !/exactly one selector/i.test(getConceptTool.description || '')) {
     return 'get_concept inputSchema identity selector drift';
   }
   const getConceptUidInput = propertyAt(getConceptTool, ['properties', 'uid']);
@@ -1003,13 +1123,7 @@ export function toolsListSchemaFailure(tools) {
   ) {
     return 'get_concepts description missing batch partial-result guidance';
   }
-  const getConceptsSelectors = getConceptsTool.inputSchema?.oneOf;
-  if (
-    !Array.isArray(getConceptsSelectors) ||
-    getConceptsSelectors.length !== 2 ||
-    !sameArray(getConceptsSelectors[0]?.required, ['slugs']) ||
-    !sameArray(getConceptsSelectors[1]?.required, ['uids'])
-  ) {
+  if (getConceptsTool.inputSchema?.required !== undefined) {
     return 'get_concepts inputSchema identity selector drift';
   }
   const getConceptsSlugsSchema = propertyAt(getConceptsTool, ['properties', 'slugs']);
@@ -1824,7 +1938,14 @@ export function toolsListSchemaFailure(tools) {
     !/walk TS\/JS files in a code repo and infer file-level \+ module-level import edges/i.test(inferImportsTool.description || '') ||
     !/side effect 0 \(vault frontmatter NOT modified\)/i.test(inferImportsTool.description || '') ||
     !/source-backed review candidates/i.test(inferImportsTool.description || '') ||
+    !/focusPath/i.test(inferImportsTool.description || '') ||
+    !/incoming\/outgoing/i.test(inferImportsTool.description || '') ||
+    !/Omit `reviewMode`/i.test(inferImportsTool.description || '') ||
+    !/128 KiB/i.test(inferImportsTool.description || '') ||
+    !/delivery receipt/i.test(inferImportsTool.description || '') ||
     !/reviewMode:"next"/i.test(inferImportsTool.description || '') ||
+    !/reviewMode:"full"/i.test(inferImportsTool.description || '') ||
+    !/allowLargeResponse:true/i.test(inferImportsTool.description || '') ||
     !/exactly one compact, non-writing `nextRelationReview:v1` packet/i.test(inferImportsTool.description || '') ||
     !/kindCounts/i.test(inferImportsTool.description || '') ||
     !/bounded exact file-edge `evidence` receipt/i.test(inferImportsTool.description || '') ||
@@ -1852,11 +1973,26 @@ export function toolsListSchemaFailure(tools) {
   const inferReviewModeSchema = propertyAt(inferImportsTool, ['properties', 'reviewMode']);
   if (
     inferReviewModeSchema?.type !== 'string' ||
-    !sameArray(inferReviewModeSchema.enum, ['full', 'next']) ||
-    !/default/i.test(inferReviewModeSchema.description || '') ||
-    !/compact, non-writing/i.test(inferReviewModeSchema.description || '')
+    !sameArray(inferReviewModeSchema.enum, ['full', 'next', 'focus']) ||
+    !/focus.*bounded exact file-level import neighborhood/i.test(inferReviewModeSchema.description || '') ||
+    !/Omit for automatic delivery/i.test(inferReviewModeSchema.description || '') ||
+    !/128 KiB/i.test(inferReviewModeSchema.description || '') ||
+    !/full.*requests the complete scan/i.test(inferReviewModeSchema.description || '') ||
+    !/allowLargeResponse:true/i.test(inferReviewModeSchema.description || '') ||
+    !/next.*explicitly requests one compact packet/i.test(inferReviewModeSchema.description || '')
   ) {
     return 'infer_imports reviewMode contract drift';
+  }
+  const inferAllowLargeResponseSchema = propertyAt(inferImportsTool, [
+    'properties',
+    'allowLargeResponse',
+  ]);
+  if (
+    inferAllowLargeResponseSchema?.type !== 'boolean' ||
+    !/reviewMode:"full"/i.test(inferAllowLargeResponseSchema.description || '') ||
+    !/exceeds 128 KiB/i.test(inferAllowLargeResponseSchema.description || '')
+  ) {
+    return 'infer_imports large response confirmation drift';
   }
   const inferAfterReviewIdSchema = propertyAt(inferImportsTool, ['properties', 'afterReviewId']);
   if (
@@ -1865,6 +2001,22 @@ export function toolsListSchemaFailure(tools) {
     !/cursor\.nextAfterReviewId/i.test(inferAfterReviewIdSchema.description || '')
   ) {
     return 'infer_imports afterReviewId cursor drift';
+  }
+  const inferFocusPathSchema = propertyAt(inferImportsTool, ['properties', 'focusPath']);
+  const inferFocusDirectionSchema = propertyAt(inferImportsTool, ['properties', 'focusDirection']);
+  const inferFocusLimitSchema = propertyAt(inferImportsTool, ['properties', 'focusLimit']);
+  const inferFocusAfterEdgeIdSchema = propertyAt(inferImportsTool, ['properties', 'focusAfterEdgeId']);
+  if (
+    inferFocusPathSchema?.type !== 'string' ||
+    !/repository-relative implementation file/i.test(inferFocusPathSchema.description || '') ||
+    !sameArray(inferFocusDirectionSchema?.enum, ['incoming', 'outgoing', 'both']) ||
+    inferFocusLimitSchema?.type !== 'integer' ||
+    inferFocusLimitSchema.minimum !== 1 ||
+    inferFocusLimitSchema.maximum !== 100 ||
+    inferFocusAfterEdgeIdSchema?.type !== 'string' ||
+    !/nextAfterEdgeId/i.test(inferFocusAfterEdgeIdSchema.description || '')
+  ) {
+    return 'infer_imports focus input contract drift';
   }
   if (inferImportsTool.outputSchema?.type !== 'object') {
     return 'infer_imports outputSchema root drift';
@@ -1875,7 +2027,7 @@ export function toolsListSchemaFailure(tools) {
   const inferOutputBranches = inferImportsTool.outputSchema?.oneOf;
   if (
     !Array.isArray(inferOutputBranches) ||
-    inferOutputBranches.length !== 2 ||
+    inferOutputBranches.length !== 3 ||
     !sameArray(inferOutputBranches[0]?.required, ['edges', 'externalImports', 'unresolved', 'moduleEdges']) ||
     !sameArray(inferOutputBranches[1]?.required, [
       'contract',
@@ -1883,7 +2035,8 @@ export function toolsListSchemaFailure(tools) {
       'reconciliationSummary',
       'reviewQueue',
       'nextReview',
-    ])
+    ]) ||
+    !sameArray(inferOutputBranches[2]?.required, ['contract', 'scanSummary', 'focusReview'])
   ) {
     return 'infer_imports outputSchema full/review branch drift';
   }
@@ -2021,14 +2174,50 @@ export function toolsListSchemaFailure(tools) {
     return 'infer_imports outputSchema moduleEdges evidence drift';
   }
   const importReviewContractSchema = outputPropertyAt(inferImportsTool, ['properties', 'contract']);
+  const importDeliverySchema = outputPropertyAt(inferImportsTool, ['properties', 'delivery']);
   const importNextReviewSchema = outputPropertyAt(inferImportsTool, ['properties', 'nextReview']);
+  const importFocusReviewSchema = outputPropertyAt(inferImportsTool, ['properties', 'focusReview']);
   const importReviewWriteAllowedSchema = importNextReviewSchema?.properties?.writeAllowed;
   const importReviewCursorSchema = importNextReviewSchema?.properties?.cursor;
   const importReviewCandidateSchema = importNextReviewSchema?.properties?.candidate;
   const importReviewQualificationSchema = importReviewCandidateSchema?.properties?.evidenceQualification;
+  const importEndpointModellingSchema = importNextReviewSchema?.properties?.endpointModelling;
+  const importProposalValidationSchema = importEndpointModellingSchema?.properties?.proposalValidation;
+  const importFieldsAfterKindSchema = importProposalValidationSchema?.properties?.fieldsAfterKindDecision;
+  const importFieldsByKindSchema = importFieldsAfterKindSchema?.properties?.byKind;
+  const importEndpointDraftsSchema = importProposalValidationSchema?.properties?.endpointDrafts;
+  const importEndpointDraftSchema = importProposalValidationSchema?.properties?.endpointDrafts?.items;
   const importReviewDecisionSchema = importNextReviewSchema?.properties?.decision;
   if (
-    !sameArray(importReviewContractSchema?.enum, ['inferImportsReview:v1']) ||
+    !sameArray(importReviewContractSchema?.enum, ['inferImportsReview:v1', 'inferImportsFocus:v1']) ||
+    importDeliverySchema?.type !== 'object' ||
+    !sameArray(importDeliverySchema?.required, [
+      'selection',
+      'reason',
+      'estimatedFullResponseBytes',
+      'automaticLimitBytes',
+      'explicitFullAvailable',
+      'explicitFullArguments',
+    ]) ||
+    !sameArray(importDeliverySchema?.properties?.selection?.enum, ['automatic_compact']) ||
+    !sameArray(importDeliverySchema?.properties?.reason?.enum, [
+      'estimated_full_response_exceeds_limit',
+    ]) ||
+    !sameArray(importDeliverySchema?.properties?.automaticLimitBytes?.enum, [131072]) ||
+    !sameArray(importDeliverySchema?.properties?.explicitFullAvailable?.enum, [true]) ||
+    !sameArray(importDeliverySchema?.properties?.explicitFullArguments?.required, [
+      'reviewMode',
+      'allowLargeResponse',
+    ]) ||
+    !sameArray(
+      importDeliverySchema?.properties?.explicitFullArguments?.properties?.reviewMode?.enum,
+      ['full'],
+    ) ||
+    !sameArray(
+      importDeliverySchema?.properties?.explicitFullArguments?.properties?.allowLargeResponse?.enum,
+      [true],
+    ) ||
+    importDeliverySchema?.additionalProperties !== false ||
     !sameArray(importNextReviewSchema?.type, ['object', 'null']) ||
     !sameArray(importNextReviewSchema?.required, [
       'contract',
@@ -2038,6 +2227,7 @@ export function toolsListSchemaFailure(tools) {
       'sourceQualification',
       'ordering',
       'candidate',
+      'endpointModelling',
       'nextCalls',
       'decision',
       'cursor',
@@ -2048,6 +2238,7 @@ export function toolsListSchemaFailure(tools) {
       'from',
       'to',
       'relationType',
+      'absentEndpoints',
       'importCount',
       'sourceEvidence',
       'sourceEvidenceLimited',
@@ -2060,7 +2251,93 @@ export function toolsListSchemaFailure(tools) {
       'productValueCount',
       'status',
     ]) ||
+    !sameArray(importEndpointModellingSchema?.type, ['object', 'null']) ||
+    !sameArray(importEndpointModellingSchema?.required, [
+      'status',
+      'writeAllowed',
+      'absentEndpoints',
+      'observedPathsByEndpoint',
+      'analysisCall',
+      'proposalValidation',
+      'resumeCall',
+    ]) ||
+    !sameArray(importEndpointModellingSchema?.properties?.status?.enum, [
+      'required_before_relation_review',
+    ]) ||
+    !sameArray(importEndpointModellingSchema?.properties?.writeAllowed?.enum, [false]) ||
+    !sameArray(importEndpointModellingSchema?.properties?.analysisCall?.properties?.tool?.enum, [
+      'analyze_repo_structure',
+    ]) ||
+    !sameArray(importEndpointModellingSchema?.properties?.proposalValidation?.properties?.tool?.enum, [
+      'analyze_repo_structure',
+    ]) ||
+    !sameArray(importEndpointModellingSchema?.properties?.proposalValidation?.properties?.requiredArguments?.items?.enum, [
+      'rootPath',
+      'proposal',
+    ]) ||
+    !sameArray(importProposalValidationSchema?.required, [
+      'tool',
+      'requiredArguments',
+      'requiredProposalFields',
+      'fieldsAfterKindDecision',
+      'endpointDrafts',
+      'purpose',
+    ]) ||
+    importProposalValidationSchema?.additionalProperties !== false ||
+    !sameArray(importFieldsAfterKindSchema?.required, ['common', 'byKind']) ||
+    importFieldsAfterKindSchema?.additionalProperties !== false ||
+    importFieldsAfterKindSchema?.properties?.common?.type !== 'array' ||
+    importFieldsAfterKindSchema?.properties?.common?.minItems !== 5 ||
+    importFieldsAfterKindSchema?.properties?.common?.maxItems !== 5 ||
+    importFieldsAfterKindSchema?.properties?.common?.uniqueItems !== true ||
+    importFieldsAfterKindSchema?.properties?.common?.items?.type !== 'string' ||
+    !sameArray(importFieldsAfterKindSchema?.properties?.common?.items?.enum, [
+      'slug', 'title', 'definition', 'evidence', 'confidence',
+    ]) ||
+    importFieldsByKindSchema?.type !== 'object' ||
+    !sameArray(importFieldsByKindSchema?.required, [
+      'project', 'domain', 'capability', 'element',
+    ]) ||
+    importFieldsByKindSchema?.additionalProperties !== false ||
+    importFieldsByKindSchema?.properties?.project?.type !== 'array' ||
+    importFieldsByKindSchema?.properties?.project?.maxItems !== 0 ||
+    importFieldsByKindSchema?.properties?.domain?.type !== 'array' ||
+    importFieldsByKindSchema?.properties?.domain?.maxItems !== 0 ||
+    importFieldsByKindSchema?.properties?.capability?.type !== 'array' ||
+    importFieldsByKindSchema?.properties?.capability?.minItems !== 1 ||
+    importFieldsByKindSchema?.properties?.capability?.maxItems !== 1 ||
+    importFieldsByKindSchema?.properties?.capability?.items?.type !== 'string' ||
+    !sameArray(importFieldsByKindSchema?.properties?.capability?.items?.enum, ['domain']) ||
+    importFieldsByKindSchema?.properties?.element?.type !== 'array' ||
+    importFieldsByKindSchema?.properties?.element?.minItems !== 2 ||
+    importFieldsByKindSchema?.properties?.element?.maxItems !== 2 ||
+    importFieldsByKindSchema?.properties?.element?.uniqueItems !== true ||
+    importFieldsByKindSchema?.properties?.element?.items?.type !== 'string' ||
+    !sameArray(importFieldsByKindSchema?.properties?.element?.items?.enum, ['domain', 'path']) ||
+    importEndpointDraftsSchema?.type !== 'array' ||
+    importEndpointDraftsSchema?.minItems !== 1 ||
+    importEndpointDraftsSchema?.maxItems !== 2 ||
+    importEndpointDraftSchema?.type !== 'object' ||
+    !sameArray(importEndpointDraftSchema?.required, [
+      'endpoint', 'observedPaths', 'slugCandidate', 'kindDecision',
+    ]) ||
+    importEndpointDraftSchema?.additionalProperties !== false ||
+    nonBlankStringSchemaFailure(importEndpointDraftSchema?.properties?.endpoint) ||
+    importEndpointDraftSchema?.properties?.observedPaths?.type !== 'array' ||
+    importEndpointDraftSchema?.properties?.observedPaths?.uniqueItems !== true ||
+    nonBlankStringSchemaFailure(importEndpointDraftSchema?.properties?.observedPaths?.items) ||
+    nonBlankStringSchemaFailure(importEndpointDraftSchema?.properties?.slugCandidate) ||
+    importEndpointDraftSchema?.properties?.kindDecision?.type !== 'string' ||
+    !sameArray(importEndpointDraftSchema?.properties?.kindDecision?.enum, [
+      'human_meaning_required',
+    ]) ||
+    !sameArray(importEndpointModellingSchema?.properties?.resumeCall?.properties?.tool?.enum, [
+      'infer_imports',
+    ]) ||
+    importNextReviewSchema?.properties?.nextCalls?.minItems !== 0 ||
+    importNextReviewSchema?.properties?.nextCalls?.maxItems !== 2 ||
     !sameArray(importReviewDecisionSchema?.properties?.questionEligibility?.enum, [
+      'blocked_missing_vault_endpoints',
       'eligible_after_semantic_review',
       'additional_product_meaning_evidence_required',
     ]) ||
@@ -2076,20 +2353,45 @@ export function toolsListSchemaFailure(tools) {
   ) {
     return 'infer_imports compact review approval gate drift';
   }
+  if (
+    importFocusReviewSchema?.type !== 'object' ||
+    !sameArray(importFocusReviewSchema.required, [
+      'contract',
+      'focusPath',
+      'direction',
+      'sourceQualification',
+      'writeAllowed',
+      'summary',
+      'edges',
+      'cursor',
+      'interpretation',
+    ]) ||
+    importFocusReviewSchema.additionalProperties !== false ||
+    !sameArray(importFocusReviewSchema.properties?.contract?.enum, ['importImpactFocus:v1']) ||
+    !sameArray(importFocusReviewSchema.properties?.writeAllowed?.enum, [false]) ||
+    importFocusReviewSchema.properties?.edges?.maxItems !== 100 ||
+    !sameArray(importFocusReviewSchema.properties?.edges?.items?.required, [
+      'edgeId',
+      'from',
+      'to',
+      'kind',
+      'sourceRole',
+      'importUsage',
+    ]) ||
+    importFocusReviewSchema.properties?.edges?.items?.additionalProperties !== false ||
+    !sameArray(importFocusReviewSchema.properties?.cursor?.required, [
+      'afterEdgeId',
+      'total',
+      'remaining',
+      'hasMore',
+      'nextAfterEdgeId',
+    ])
+  ) {
+    return 'infer_imports focus output contract drift';
+  }
 
   const queryTool = tools.find((tool) => tool?.name === 'query_ontology');
   if (!queryTool) return 'tools/list response missing query_ontology tool';
-  const queryOutputSchema = queryTool.outputSchema;
-  if (
-    queryOutputSchema?.type !== 'object' ||
-    !sameArray(queryOutputSchema.required, ['operation']) ||
-    queryOutputSchema.additionalProperties !== true ||
-    queryOutputSchema.properties?.operation?.type !== 'string' ||
-    !sameArray(queryOutputSchema.properties?.operation?.enum, QUERY_ONTOLOGY_OPERATIONS) ||
-    queryOutputSchema.properties?.compiledSummary?.type !== 'object'
-  ) {
-    return 'query_ontology outputSchema discriminator drift';
-  }
 
   const listKindsTool = tools.find((tool) => tool?.name === 'list_kinds');
   if (!listKindsTool) return 'tools/list response missing list_kinds tool';
@@ -2961,6 +3263,8 @@ export function toolsListSchemaFailure(tools) {
     if (schemaFailure) return schemaFailure;
   }
 
+  const nestedObjectFailure = nestedObjectSchemaFailure(tools);
+  if (nestedObjectFailure) return nestedObjectFailure;
   return null;
 }
 
@@ -2990,7 +3294,7 @@ export function strictArgsFailure(response) {
   if (structured.unknownArguments[0]?.name !== 'lmit' || structured.unknownArguments[0]?.suggestion !== 'limit') {
     return 'strict arguments structured error missing canonical unknown argument hint';
   }
-  if (!sameArray(structured?.allowedArguments, ['domain', 'kind', 'limit', 'since', 'summary'])) {
+  if (!sameArray(structured?.allowedArguments, ['domain', 'kind', 'limit', 'offset', 'since', 'summary'])) {
     return 'strict arguments structured error missing allowed arguments';
   }
   return null;
@@ -3019,7 +3323,7 @@ export function strictMultiArgsFailure(response) {
   if (!sameArray(structured?.receivedArguments, ['lmit', 'summry'])) {
     return 'strict multi-argument structured error missing received arguments';
   }
-  if (!sameArray(structured?.allowedArguments, ['domain', 'kind', 'limit', 'since', 'summary'])) {
+  if (!sameArray(structured?.allowedArguments, ['domain', 'kind', 'limit', 'offset', 'since', 'summary'])) {
     return 'strict multi-argument structured error missing allowed arguments';
   }
   if (!Array.isArray(structured?.unknownArguments) || structured.unknownArguments.length !== 2) {
@@ -3808,92 +4112,6 @@ export function structuredContentFailure(response, parsed, label) {
   return null;
 }
 
-export function firstContactLocalProbeFailure(responses, {
-  repoRoot = REPO_ROOT,
-  vaultRoot = VAULT,
-} = {}) {
-  const canonical = (value) => {
-    try {
-      return realpathSync(value);
-    } catch {
-      return resolve(value);
-    }
-  };
-  const expectedRepoRoot = canonical(repoRoot);
-  const expectedVaultRoot = canonical(vaultRoot);
-  const checks = [
-    {
-      id: 70,
-      label: 'connection_info',
-      validate(payload) {
-        if (canonical(payload.vaultRoot) !== expectedVaultRoot || canonical(payload.repoRoot) !== expectedRepoRoot) {
-          return 'connection_info roots do not match the verifier scope';
-        }
-        if (typeof payload.sameRoot !== 'boolean' || payload.restartRequiredForRootChange !== true) {
-          return 'connection_info scope metadata drift';
-        }
-        if (!payload.server || !Number.isInteger(payload.server.toolCount) || !Array.isArray(payload.server.toolNames)) {
-          return 'connection_info server inventory metadata missing';
-        }
-        return null;
-      },
-    },
-    {
-      id: 71,
-      label: 'git_status',
-      validate(payload) {
-        if (payload.operation !== 'git_status' || canonical(payload.repoRoot) !== expectedRepoRoot || canonical(payload.vaultRoot) !== expectedVaultRoot) {
-          return 'git_status operation or roots do not match the verifier scope';
-        }
-        if (payload.ok === false) {
-          return typeof payload.reason === 'string' && payload.reason.length > 0
-            ? null
-            : 'git_status unavailable response missing reason';
-        }
-        if (typeof payload.ok !== 'boolean' || !payload.counts || !Array.isArray(payload.files) || !Array.isArray(payload.stagedOutsideVault)) {
-          return 'git_status scope/count/file metadata missing';
-        }
-        return null;
-      },
-    },
-    {
-      id: 72,
-      label: 'git_history',
-      validate(payload) {
-        if (payload.operation !== 'git_history' || canonical(payload.repoRoot) !== expectedRepoRoot || canonical(payload.vaultRoot) !== expectedVaultRoot) {
-          return 'git_history operation or roots do not match the verifier scope';
-        }
-        if (payload.ok === false) {
-          return typeof payload.reason === 'string' && payload.reason.length > 0
-            ? null
-            : 'git_history unavailable response missing reason';
-        }
-        if (!Number.isInteger(payload.count) || payload.count < 0 || typeof payload.limited !== 'boolean' || typeof payload.hasMore !== 'boolean' || typeof payload.shallow !== 'boolean' || typeof payload.historyComplete !== 'boolean') {
-          return 'git_history bounded-history metadata missing';
-        }
-        return null;
-      },
-    },
-  ];
-
-  for (const check of checks) {
-    const response = responses.find((candidate) => candidate?.id === check.id);
-    if (!response?.result) return `no ${check.label} live probe response`;
-    if (response.result.isError === true) return `${check.label} live probe returned a tool error`;
-    let parsed;
-    try {
-      parsed = JSON.parse(response.result.content?.[0]?.text || '{}');
-    } catch (error) {
-      return `${check.label} live probe returned invalid JSON: ${error.message}`;
-    }
-    const parityFailure = structuredContentFailure(response, parsed, check.label);
-    if (parityFailure) return parityFailure;
-    const failure = check.validate(parsed);
-    if (failure) return failure;
-  }
-  return null;
-}
-
 export function structuredContentParityStatus(parsed, structured) {
   if (structured == null) return 'missing';
   return isDeepStrictEqual(structured, parsed) ? 'pass' : 'mismatch';
@@ -4041,9 +4259,7 @@ export const FIRST_CONTACT_RESPONSE_LABELS = new Map([
   [67, 'all_paths'],
   [68, 'index_project'],
   [69, 'absorb_document_dry_run'],
-  [70, 'connection_info'],
-  [71, 'git_status'],
-  [72, 'git_history'],
+  [70, 'infer_imports_focus'],
 ]);
 
 export const OPTIONAL_FIRST_CONTACT_RESPONSE_IDS = [
@@ -4454,24 +4670,6 @@ export function buildFirstContactRequests() {
     { jsonrpc: '2.0', id: 2, method: 'tools/list' },
     {
       jsonrpc: '2.0',
-      id: 70,
-      method: 'tools/call',
-      params: { name: 'connection_info', arguments: {} },
-    },
-    {
-      jsonrpc: '2.0',
-      id: 71,
-      method: 'tools/call',
-      params: { name: 'git_status', arguments: {} },
-    },
-    {
-      jsonrpc: '2.0',
-      id: 72,
-      method: 'tools/call',
-      params: { name: 'git_history', arguments: { limit: 5 } },
-    },
-    {
-      jsonrpc: '2.0',
       id: 3,
       method: 'tools/call',
       params: { name: 'list_concepts', arguments: { limit: 5 } },
@@ -4522,7 +4720,30 @@ export function buildFirstContactRequests() {
       jsonrpc: '2.0',
       id: 39,
       method: 'tools/call',
-      params: { name: 'infer_imports', arguments: { rootPath: REPO_ROOT, maxFiles: 5000 } },
+      params: {
+        name: 'infer_imports',
+        arguments: {
+          rootPath: REPO_ROOT,
+          maxFiles: 5000,
+          reviewMode: 'full',
+          allowLargeResponse: true,
+        },
+      },
+    },
+    {
+      jsonrpc: '2.0',
+      id: 70,
+      method: 'tools/call',
+      params: {
+        name: 'infer_imports',
+        arguments: {
+          rootPath: REPO_ROOT,
+          reviewMode: 'focus',
+          focusPath: 'src/entities/knowledge-graph/model/types.ts',
+          focusDirection: 'both',
+          focusLimit: 25,
+        },
+      },
     },
     {
       jsonrpc: '2.0',
@@ -5433,6 +5654,88 @@ function allGraphQuerySmokeResponseIds() {
   }).expectedResponseIds;
 }
 
+export function firstContactLocalProbeFailure(responses, {
+  repoRoot = REPO_ROOT,
+  vaultRoot = VAULT,
+} = {}) {
+  const canonical = (value) => {
+    try {
+      return realpathSync(value);
+    } catch {
+      return resolve(value);
+    }
+  };
+  const expectedRepoRoot = canonical(repoRoot);
+  const expectedVaultRoot = canonical(vaultRoot);
+  const checks = [
+    {
+      id: 70,
+      label: 'connection_info',
+      validate(payload) {
+        if (canonical(payload.vaultRoot) !== expectedVaultRoot || canonical(payload.repoRoot) !== expectedRepoRoot) {
+          return 'connection_info roots do not match the verifier scope';
+        }
+        if (typeof payload.sameRoot !== 'boolean' || payload.restartRequiredForRootChange !== true) {
+          return 'connection_info scope metadata drift';
+        }
+        if (!payload.server || !Number.isInteger(payload.server.toolCount) || !Array.isArray(payload.server.toolNames)) {
+          return 'connection_info server inventory metadata missing';
+        }
+        return null;
+      },
+    },
+    {
+      id: 71,
+      label: 'git_status',
+      validate(payload) {
+        if (payload.operation !== 'git_status' || canonical(payload.repoRoot) !== expectedRepoRoot || canonical(payload.vaultRoot) !== expectedVaultRoot) {
+          return 'git_status operation or roots do not match the verifier scope';
+        }
+        if (payload.ok === false) {
+          return typeof payload.reason === 'string' && payload.reason.length > 0 ? null : 'git_status unavailable response missing reason';
+        }
+        if (typeof payload.ok !== 'boolean' || !payload.counts || !Array.isArray(payload.files) || !Array.isArray(payload.stagedOutsideVault)) {
+          return 'git_status scope/count/file metadata missing';
+        }
+        return null;
+      },
+    },
+    {
+      id: 72,
+      label: 'git_history',
+      validate(payload) {
+        if (payload.operation !== 'git_history' || canonical(payload.repoRoot) !== expectedRepoRoot || canonical(payload.vaultRoot) !== expectedVaultRoot) {
+          return 'git_history operation or roots do not match the verifier scope';
+        }
+        if (payload.ok === false) {
+          return typeof payload.reason === 'string' && payload.reason.length > 0 ? null : 'git_history unavailable response missing reason';
+        }
+        if (!Number.isInteger(payload.count) || payload.count < 0 || typeof payload.limited !== 'boolean' || typeof payload.hasMore !== 'boolean' || typeof payload.shallow !== 'boolean' || typeof payload.historyComplete !== 'boolean') {
+          return 'git_history bounded-history metadata missing';
+        }
+        return null;
+      },
+    },
+  ];
+
+  for (const check of checks) {
+    const response = responses.find((candidate) => candidate?.id === check.id);
+    if (!response?.result) return `no ${check.label} live probe response`;
+    if (response.result.isError === true) return `${check.label} live probe returned a tool error`;
+    let parsed;
+    try {
+      parsed = JSON.parse(response.result.content?.[0]?.text || '{}');
+    } catch (error) {
+      return `${check.label} live probe returned invalid JSON: ${error.message}`;
+    }
+    const parityFailure = structuredContentFailure(response, parsed, check.label);
+    if (parityFailure) return parityFailure;
+    const failure = check.validate(parsed);
+    if (failure) return failure;
+  }
+  return null;
+}
+
 export function firstContactErrorFailure(response) {
   const label = FIRST_CONTACT_RESPONSE_LABELS.get(response?.id) || `id ${response?.id}`;
   const message = response?.error?.message || JSON.stringify(response?.error || {});
@@ -5493,6 +5796,36 @@ export function listConceptsFailure(parsed) {
   }
   if (!Array.isArray(parsed.nodes)) {
     return 'list_concepts response missing nodes array';
+  }
+  const pagination = parsed.pagination;
+  if (!pagination || typeof pagination !== 'object' || Array.isArray(pagination)) {
+    return 'list_concepts response missing pagination metadata';
+  }
+  if (!Number.isInteger(pagination.offset) || pagination.offset < 0) {
+    return 'list_concepts pagination missing non-negative offset';
+  }
+  if (!Number.isInteger(pagination.limit) || pagination.limit < 1 || pagination.limit > 500) {
+    return 'list_concepts pagination missing bounded limit';
+  }
+  if (pagination.total !== parsed.total) {
+    return 'list_concepts pagination total mismatch';
+  }
+  if (!Number.isInteger(pagination.returned) || pagination.returned !== parsed.nodes.length) {
+    return 'list_concepts pagination returned mismatch';
+  }
+  if (typeof pagination.hasMore !== 'boolean') {
+    return 'list_concepts pagination missing hasMore';
+  }
+  const expectedHasMore = pagination.offset + pagination.returned < parsed.total;
+  if (pagination.hasMore !== expectedHasMore) {
+    return 'list_concepts pagination hasMore mismatch';
+  }
+  const expectedNextOffset = expectedHasMore ? pagination.offset + pagination.returned : null;
+  if (pagination.nextOffset !== expectedNextOffset) {
+    return 'list_concepts pagination nextOffset mismatch';
+  }
+  if (parsed.nodes.length > pagination.limit) {
+    return 'list_concepts pagination page exceeds limit';
   }
   if (parsed.nodes.length > parsed.total) {
     return `list_concepts response node count exceeds total: nodes ${parsed.nodes.length}, total ${parsed.total}`;
@@ -8961,6 +9294,7 @@ async function step2BootAndCall() {
       const limitedQueryConceptsRes = responses.find((r) => r.id === 37);
       const analyzeRepoStructureRes = responses.find((r) => r.id === 38);
       const inferImportsRes = responses.find((r) => r.id === 39);
+      const inferImportsFocusRes = responses.find((r) => r.id === 70);
       const indexProjectRes = responses.find((r) => r.id === 68);
       const findNeighborsRes = responses.find((r) => r.id === 35);
       const findPathRes = responses.find((r) => r.id === 36);
@@ -9022,16 +9356,6 @@ async function step2BootAndCall() {
         log('fail', firstContactErrorFailure(errorRes));
         return res(false);
       }
-
-      const localProbeFailure = firstContactLocalProbeFailure(responses, {
-        repoRoot: REPO_ROOT,
-        vaultRoot: VAULT,
-      });
-      if (localProbeFailure) {
-        log('fail', localProbeFailure);
-        return res(false);
-      }
-      log('ok', 'live local probes: connection_info/git_status/git_history scope and bounded metadata passed');
 
       if (timedOut && missingLabels.length > 0) {
         log('fail', `${verifyTimeoutFailure(timeoutMs)} Missing responses: ${missingLabels.join(', ')}`);
@@ -9617,6 +9941,48 @@ async function step2BootAndCall() {
         log('ok', `infer_imports: ${formatCount(parsed.filesScanned, 'file')} scanned, ${formatCount(parsed.moduleEdges.length, 'module edge')} (${importModuleEdgeKindOutputSummary(parsed.moduleEdges)})`);
       } catch (err) {
         log('fail', `failed to parse infer_imports response: ${err.message}`);
+        return res(false);
+      }
+
+      if (!inferImportsFocusRes || !inferImportsFocusRes.result) {
+        log('fail', 'no infer_imports focus response');
+        return res(false);
+      }
+      try {
+        const text = inferImportsFocusRes.result.content?.[0]?.text || '';
+        const parsed = JSON.parse(text);
+        const focus = parsed.focusReview;
+        if (
+          parsed.contract !== 'inferImportsFocus:v1' ||
+          focus?.contract !== 'importImpactFocus:v1' ||
+          focus?.focusPath !== 'src/entities/knowledge-graph/model/types.ts' ||
+          focus?.writeAllowed !== false ||
+          !Array.isArray(focus?.edges) ||
+          focus.edges.length > 25 ||
+          focus?.summary?.selected !== focus?.cursor?.total ||
+          focus?.summary?.returned !== focus.edges.length ||
+          focus.edges.some((edge) => (
+            edge.from !== focus.focusPath && edge.to !== focus.focusPath
+          ))
+        ) {
+          log('fail', 'infer_imports focus response contract drift');
+          return res(false);
+        }
+        const structuredFailure = structuredContentFailure(
+          inferImportsFocusRes,
+          parsed,
+          'infer_imports focus',
+        );
+        if (structuredFailure) {
+          log('fail', structuredFailure);
+          return res(false);
+        }
+        log(
+          'ok',
+          `infer_imports focus: ${focus.focusPath} (${focus.summary.incoming} incoming, ${focus.summary.outgoing} outgoing, ${focus.summary.returned}/${focus.summary.selected} returned)`,
+        );
+      } catch (err) {
+        log('fail', `failed to parse infer_imports focus response: ${err.message}`);
         return res(false);
       }
 

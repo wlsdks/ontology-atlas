@@ -85,6 +85,14 @@ describe("Atlas meta-model — one public canon reaches every authoring channel"
     expect(read(path)).toContain(LOCAL_SPEC_POINTER);
   });
 
+  it.each([
+    ".agents/skills/ontology-bootstrap/SKILL.md",
+    ".claude/skills/ontology-bootstrap/SKILL.md",
+  ])("%s keeps proposal boundaries in the MCP array shape", (path) => {
+    const skill = flat(read(path));
+    expect(skill).toMatch(/includes.*excludes.*JSON string arrays.*never prose scalars/i);
+  });
+
   it("the public canon owns the stable anchor consumed above", () => {
     expect(read(SPEC_PATH)).toContain(
       "## 2. The five authorable node kinds and reserved reader kind",

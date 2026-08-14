@@ -4,6 +4,8 @@ import { strict as assert } from 'node:assert';
 import { compileOntology } from './ontology-compiler.mjs';
 import { deriveBridgeShapes, queryCompiledOntology } from './ontology-engine.mjs';
 import { defaultBody } from './schema.mjs';
+import { parseFrontmatter } from './parser.mjs';
+import { validateVaultDocument } from './validate.mjs';
 
 const testUidBySlug = new Map();
 
@@ -44,6 +46,63 @@ function artifact() {
     { includeIndexes: true },
   );
 }
+
+describe('frontmatter integrity gate', () => {
+  it('turns a missing frontmatter colon into a validator error and compiler issue', () => {
+    const raw = '---\nuid: 00000000-0000-4000-8000-000000000001\nkind: capability\ndomain: domains/auth\nelements\n  - elements/login\n---\n';
+    const validation = validateVaultDocument(raw);
+    assert.equal(validation.ok, false);
+    assert.deepEqual(
+      validation.issues.filter((issue) => issue.code === 'malformed-frontmatter-line').map((issue) => issue.message),
+      [
+        'Frontmatter line 5 must use key: value syntax.',
+        'Frontmatter list item on line 6 has no parent key.',
+      ],
+    );
+
+    const compiled = compileOntology([
+      {
+        slug: 'capabilities/login',
+        frontmatter: {
+          uid: '00000000-0000-4000-8000-000000000001',
+          kind: 'capability',
+          title: 'Login',
+          domain: 'domains/auth',
+        },
+        diagnostics: [
+          { code: 'malformed-frontmatter-line', line: 5, message: 'Frontmatter line 5 must use key: value syntax.' },
+          { code: 'malformed-frontmatter-line', line: 6, message: 'Frontmatter list item on line 6 has no parent key.' },
+        ],
+        body: '',
+        mtime: 1,
+      },
+    ]);
+    assert.equal(compiled.issues.filter((issue) => issue.code === 'malformed-frontmatter-line').length, 2);
+    assert.equal(compiled.issueCount >= 2, true);
+  });
+
+  it('keeps indented missing-colon lines visible through compile and health', () => {
+    const raw = '---\nuid: 00000000-0000-4000-8000-000000000002\nkind: domain\n  missing-colon\n  orphan value\n---\n';
+    const parsed = parseFrontmatter(raw);
+    assert.equal(parsed.diagnostics?.length, 2);
+    const compiled = compileOntology([
+      {
+        slug: 'capabilities/broken',
+        frontmatter: parsed.frontmatter,
+        diagnostics: parsed.diagnostics,
+        body: parsed.body,
+        mtime: 1,
+      },
+    ]);
+    assert.equal(compiled.issues.filter((issue) => issue.code === 'malformed-frontmatter-line').length, 2);
+
+    const health = queryCompiledOntology(compiled, { operation: 'health' });
+    const compileCheck = health.checks.find((check) => check.id === 'compile_issues');
+    assert.equal(compileCheck?.status, 'warn');
+    assert.equal(compileCheck?.count, 2);
+    assert.equal(health.status, 'needs_attention');
+  });
+});
 
 describe('queryCompiledOntology', () => {
   it('suggests close enum values for direct graph-engine callers', () => {

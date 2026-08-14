@@ -81,6 +81,18 @@ export function compileOntology(docs, options = {}) {
     slugs,
     message: `Alias "${alias}" resolves to multiple nodes: ${slugs.join(', ')}`,
   }));
+  for (const doc of docs) {
+    for (const diagnostic of doc?.diagnostics ?? []) {
+      if (diagnostic?.code !== 'malformed-frontmatter-line') continue;
+      issues.push({
+        code: diagnostic.code,
+        severity: 'error',
+        slug: doc.slug,
+        line: diagnostic.line,
+        message: diagnostic.message,
+      });
+    }
+  }
 
   const edges = [];
   const edgeKeys = new Set();

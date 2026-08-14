@@ -5,6 +5,7 @@ import { useTranslations } from "next-intl";
 
 import type { ConstructionReviewProjection } from "@/entities/construction-review";
 import { Surface, controlClass } from "@/shared/ui";
+import { fieldClass, fieldLabel } from "@/shared/ui/control-class";
 
 type UnknownRecord = Record<string, unknown>;
 
@@ -14,10 +15,41 @@ const record = (value: unknown): UnknownRecord | null =>
     : null;
 const rows = (value: unknown): unknown[] => (Array.isArray(value) ? value : []);
 const text = (value: unknown): string => (typeof value === "string" ? value : "");
+const testIdPart = (value: string): string => value.replace(/^[^:]+:/, "").replace(/[^a-zA-Z0-9_-]/g, "-");
+
+interface ConstructionReviewDraft {
+  readonly questions: Readonly<Record<string, string>>;
+  readonly witnessSourceRefs: Readonly<Record<string, string>>;
+  readonly plan: string;
+}
+
+function draftFor(review: ConstructionReviewProjection): ConstructionReviewDraft {
+  const questions = Object.fromEntries(
+    rows(review.qualification.competencyQuestions).map((value, index) => {
+      const item = record(value);
+      return [text(item?.id) || String(index + 1), text(item?.question)];
+    }),
+  );
+  const witnessSourceRefs = Object.fromEntries(
+    rows(review.qualification.witnesses).map((value, index) => {
+      const item = record(value);
+      const provenance = record(item?.provenance);
+      return [text(item?.id) || String(index + 1), text(provenance?.sourceRef)];
+    }),
+  );
+  return {
+    questions,
+    witnessSourceRefs,
+    plan: JSON.stringify(review.reviewPlan, null, 2),
+  };
+}
 
 export function ConstructionReviewPanel({ review }: { review: ConstructionReviewProjection }) {
   const t = useTranslations("projectPages.detail.constructionReview");
   const [evidenceOpen, setEvidenceOpen] = useState(false);
+  const [draftOpen, setDraftOpen] = useState(false);
+  const [draft, setDraft] = useState<ConstructionReviewDraft>(() => draftFor(review));
+  const [draftDirty, setDraftDirty] = useState(false);
   const qualification = review.qualification;
   const questions = rows(qualification.competencyQuestions);
   const witnesses = rows(qualification.witnesses);
@@ -238,6 +270,111 @@ export function ConstructionReviewPanel({ review }: { review: ConstructionReview
             <p className="mt-2 text-label text-[color:var(--color-text-tertiary)]">{t("writePlanMissing")}</p>
           )}
         </EvidenceSection>
+
+        <section data-testid="construction-review-draft" className="border-t border-[color:var(--color-border-soft)] pt-4">
+          <div className="flex flex-wrap items-start justify-between gap-3">
+            <div className="min-w-0">
+              <h3 className="text-body font-[var(--font-weight-emphasis)] text-[color:var(--color-text-primary)]">
+                {t("draftTitle")}
+              </h3>
+              <p className="mt-1 max-w-[72ch] text-label leading-prose text-[color:var(--color-text-tertiary)]">
+                {t("draftHint")}
+              </p>
+            </div>
+            <button
+              type="button"
+              data-testid="construction-review-draft-toggle"
+              aria-expanded={draftOpen}
+              onClick={() => setDraftOpen((open) => !open)}
+              className={controlClass({
+                shape: "link",
+                size: "lg",
+                tone: draftOpen ? "default" : "muted",
+              })}
+            >
+              {draftOpen ? t("hideDraft") : t("showDraft")}
+            </button>
+          </div>
+          <Surface
+            as="div"
+            open={draftOpen}
+            motion="overlay"
+            data-testid="construction-review-draft-fields"
+            className="mt-3 flex flex-col gap-3"
+          >
+            <p
+              data-testid="construction-review-draft-dirty"
+              role="status"
+              className={draftDirty
+                ? "rounded-chip border border-[color:var(--color-amber-source-a34)] bg-[color:var(--color-amber-source-a08)] px-3 py-2 text-label leading-prose text-[color:var(--color-amber-source-text-a95)]"
+                : "rounded-chip border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-3 py-2 text-label leading-prose text-[color:var(--color-text-tertiary)]"}
+            >
+              {draftDirty ? t("draftDirty") : t("draftClean")}
+            </p>
+            {draftDirty ? (
+              <button
+                type="button"
+                data-testid="construction-review-draft-reset"
+                onClick={() => {
+                  setDraft(draftFor(review));
+                  setDraftDirty(false);
+                }}
+                className={controlClass({ shape: "link", size: "lg", tone: "muted" })}
+              >
+                {t("resetDraft")}
+              </button>
+            ) : null}
+            {Object.entries(draft.questions).map(([id, value]) => (
+              <label key={id} className={fieldLabel({ className: "flex flex-col gap-1" })}>
+                <span className="font-mono text-caption text-[color:var(--color-text-quaternary)]">CQ · {id}</span>
+                <textarea
+                  data-testid={`construction-review-cq-${testIdPart(id)}`}
+                  value={value}
+                  rows={2}
+                  onChange={(event) => {
+                    const next = event.currentTarget.value;
+                    setDraft((current) => ({ ...current, questions: { ...current.questions, [id]: next } }));
+                    setDraftDirty(true);
+                  }}
+                  className={fieldClass({ multiline: true, size: "md", className: "mt-1 w-full resize-y" })}
+                />
+              </label>
+            ))}
+            {Object.entries(draft.witnessSourceRefs).map(([id, value]) => (
+              <label key={id} className={fieldLabel({ className: "flex flex-col gap-1" })}>
+                <span className="font-mono text-caption text-[color:var(--color-text-quaternary)]">{t("witnessSourceRef", { id })}</span>
+                <input
+                  data-testid={`construction-review-witness-${testIdPart(id)}`}
+                  value={value}
+                  onChange={(event) => {
+                    const next = event.currentTarget.value;
+                    setDraft((current) => ({ ...current, witnessSourceRefs: { ...current.witnessSourceRefs, [id]: next } }));
+                    setDraftDirty(true);
+                  }}
+                  className={fieldClass({ size: "md", className: "mt-1 w-full font-mono" })}
+                />
+              </label>
+            ))}
+            <label className={fieldLabel({ className: "flex flex-col gap-1" })}>
+              <span className="font-mono text-caption text-[color:var(--color-text-quaternary)]">{t("planDraft")}</span>
+              <textarea
+                data-testid="construction-review-plan-draft"
+                value={draft.plan}
+                rows={8}
+                onChange={(event) => {
+                  const next = event.currentTarget.value;
+                  setDraft((current) => ({ ...current, plan: next }));
+                  setDraftDirty(true);
+                }}
+                className={fieldClass({ multiline: true, size: "md", className: "mt-1 w-full resize-y font-mono" })}
+              />
+            </label>
+            <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-caption text-[color:var(--color-text-quaternary)]">
+              <span data-testid="construction-review-plan-digest">{t("planDigest", { digest: review.planDigest })}</span>
+              <span>{t("draftNoWrite")}</span>
+            </div>
+          </Surface>
+        </section>
       </Surface>
     </section>
   );

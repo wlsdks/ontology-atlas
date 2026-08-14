@@ -79,11 +79,18 @@ test("payload contract · Skills 라우트는 지도 문구 없이 자기 본문
   const markers = webviewWorkbenchMarkersForPath("/ko/skills/");
   assert.equal(
     markers.every((marker) =>
-      marker.test("스킬\n에이전트가 가진 스킬이 언제 뜨고 무엇이 돌아가는지 본다."),
+      marker.test("스킬\n스킬을 살펴볼까요?"),
     ),
     true,
   );
   assert.equal(markers.every((marker) => marker.test("Loading local app shell")), false);
+});
+
+test("payload contract · topology route accepts the current map shell", () => {
+  const markers = webviewWorkbenchMarkersForPath("/en/topology/");
+  const currentMapBody = "Atlas\nMap\nDocs\nWorkshop\nInsights\nProjects\nSkills\nHistory\nINDEX";
+  assert.equal(markers.every((marker) => marker.test(currentMapBody)), true);
+  assert.equal(markers.every((marker) => marker.test("Atlas\nDocs\nWorkshop")), false);
 });
 
 test("payload contract · 정상 페이로드는 통과한다", () => {

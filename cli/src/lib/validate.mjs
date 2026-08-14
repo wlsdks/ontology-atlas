@@ -47,10 +47,11 @@ export function validateVaultDocument(raw) {
   }
 
   if (!startsWithDelim) {
-    return { ok: true, issues };
+    return { ok: !issues.some((issue) => issue.severity === 'error'), issues };
   }
 
-  const { frontmatter } = parseFrontmatter(raw);
+  const { frontmatter, diagnostics = [] } = parseFrontmatter(raw);
+  pushFrontmatterDiagnostics(diagnostics, issues);
   const keys = Object.keys(frontmatter);
 
   if (keys.length === 0) {
@@ -108,6 +109,17 @@ export function validateVaultDocument(raw) {
     ok: !issues.some((i) => i.severity === 'error'),
     issues,
   };
+}
+
+function pushFrontmatterDiagnostics(diagnostics, issues) {
+  for (const diagnostic of diagnostics) {
+    if (!diagnostic || diagnostic.code !== 'malformed-frontmatter-line') continue;
+    issues.push({
+      code: diagnostic.code,
+      severity: 'error',
+      message: diagnostic.message,
+    });
+  }
 }
 
 function pushUidIssues(frontmatter, issues) {

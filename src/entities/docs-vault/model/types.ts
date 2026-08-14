@@ -14,6 +14,12 @@ export interface VaultDoc {
   description?: string;
   tags: string[];
   frontmatter: Record<string, unknown>;
+  /** Parser diagnostics are retained so health cannot hide malformed metadata. */
+  diagnostics?: Array<{
+    code: string;
+    line: number;
+    message: string;
+  }>;
   headings: VaultHeading[];
   excerpt: string;
   /**

@@ -114,6 +114,19 @@ export const VAULT_HEALTH_CASES = [
     ],
   },
   {
+    name: 'malformed frontmatter diagnostics → compile issue + needs attention',
+    docs: [
+      {
+        slug: 'domains/broken',
+        frontmatter: { kind: 'domain', title: 'Broken' },
+        diagnostics: [
+          { code: 'malformed-frontmatter-line' },
+          { code: 'malformed-frontmatter-line' },
+        ],
+      },
+    ],
+  },
+  {
     // opus5 검수 — 사이클 열거 가지치기(역방향 도달성)가 결과를 바꾸지 않는지
     // 강하게 잡는 케이스: 길이 4 순환 + 그와 두 노드를 공유하는 길이 3 순환 +
     // 아무 데도 못 돌아오는 긴 사슬(가지치기가 잘라야 하는 죽은 경로).

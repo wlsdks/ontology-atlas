@@ -88,8 +88,12 @@ const DEFAULT_IGNORE = new Set([
   'venv',
 ]);
 
-const SOURCE_FOLDERS = ['src', 'lib', 'app'];
+const SOURCE_FOLDERS = ['src', 'source', 'lib', 'app'];
 const WORKSPACE_FOLDERS = ['apps', 'packages'];
+const SOURCE_LAYOUT_COORDINATION_ELEMENT_LIMIT = 10;
+const SOURCE_LAYOUT_COORDINATION_ROLE =
+  /(?:^|[-_.])(app|main|index|manager|loader|registry|storage|client|server|router|controller)(?:[-_.]|$)/i;
+const SOURCE_LAYOUT_CODE_FILE = /\.(?:[cm]?[jt]sx?|py)$/i;
 const PYTHON_NON_PRODUCT_PACKAGES = new Set(['test', 'tests']);
 const PYTHON_IMPORT_ELEMENT_LIMIT = 12;
 const PYTHON_IMPORT_RISK_ELEMENT_LIMIT = 2;
@@ -111,6 +115,8 @@ const SEMANTIC_EVIDENCE_MAX_EXCERPT = 1200;
 const SEMANTIC_EVIDENCE_MAX_HEADINGS = 8;
 const SEMANTIC_EVIDENCE_MAX_DOCUMENTS = 6;
 const SEMANTIC_EVIDENCE_MAX_BYTES = 256 * 1024;
+const WORKSPACE_SEMANTIC_EVIDENCE_MAX_MEMBERS = 48;
+const NODE_PACKAGE_DESCRIPTION_MAX_LENGTH = 320;
 const CARGO_MANIFEST_MAX_BYTES = 256 * 1024;
 const PYTHON_SETUP_MAX_BYTES = 256 * 1024;
 const CARGO_MANIFEST_MAX_FEATURES = 48;
@@ -217,6 +223,33 @@ export function analyzeRepoStructure(rootPath, options = {}) {
   const elements = [];
 
   if (srcDir) {
+    if (basename(srcDir) === 'source') {
+      for (const entry of readdirSync(srcDir).sort()) {
+        if (elements.length >= SOURCE_LAYOUT_COORDINATION_ELEMENT_LIMIT) break;
+        if (
+          ignore.has(entry) ||
+          entry.startsWith('.') ||
+          /\.(?:test|spec)\.(?:[cm]?[jt]sx?)$/i.test(entry) ||
+          !SOURCE_LAYOUT_CODE_FILE.test(entry) ||
+          !SOURCE_LAYOUT_COORDINATION_ROLE.test(entry)
+        ) {
+          continue;
+        }
+        const entryPath = join(srcDir, entry);
+        if (!statSync(entryPath).isFile()) continue;
+        const stem = entry.replace(SOURCE_LAYOUT_CODE_FILE, '');
+        const name = slugify(stem.replace(/_/g, '-'));
+        if (!name) continue;
+        const source = relative(rootPath, entryPath);
+        elements.push({
+          slug: `elements/${name}`,
+          title: humanize(name),
+          ...(domainForName(name) ? { domain: domainForName(name) } : {}),
+          path: source,
+          evidence: { source },
+        });
+      }
+    }
     // FSD pattern — features/ 가 capability 의 main 영역
     const fsdRoots = framework === 'fsd' ? FSD_SCAN_ROOTS : null;
 
@@ -619,6 +652,8 @@ function collectSemanticEvidence(rootPath, skipped = []) {
         ? extractCargoPackageContract(text)
         : source === 'setup.py'
           ? extractPythonSetupPackageContract(text)
+          : source.endsWith('/package.json')
+            ? extractNodePackageContract(text)
           : extractSemanticDocument(text);
       if (extracted.skipReason) {
         skipped.push({ path, reason: extracted.skipReason });
@@ -769,6 +804,46 @@ function extractPythonSetupPackageContract(text) {
     headings: ['Package contract'],
     excerpt: details.join('. ').slice(0, SEMANTIC_EVIDENCE_MAX_EXCERPT),
     riskText: [...packageFields.values()].join('\n'),
+  };
+}
+
+function extractNodePackageContract(text) {
+  let parsed;
+  try {
+    parsed = JSON.parse(text);
+  } catch (error) {
+    return {
+      title: null,
+      headings: [],
+      excerpt: '',
+      skipReason: `package-contract-skip: malformed package.json: ${error.message}`,
+    };
+  }
+  const packageName = typeof parsed?.name === 'string' ? parsed.name.trim() : '';
+  const description = typeof parsed?.description === 'string'
+    ? parsed.description.replace(/\s+/g, ' ').trim()
+    : '';
+  if (!packageName || !description) {
+    return {
+      title: null,
+      headings: [],
+      excerpt: '',
+      skipReason: 'package-contract-skip: workspace package.json requires static name and description',
+    };
+  }
+  const visiblePackageName = truncateCargoValue(
+    packageName,
+    CARGO_MANIFEST_MAX_TOKEN_LENGTH,
+  );
+  const visibleDescription = truncateCargoValue(
+    description,
+    NODE_PACKAGE_DESCRIPTION_MAX_LENGTH,
+  );
+  return {
+    title: `${visiblePackageName} package contract`,
+    headings: ['Package contract'],
+    excerpt: `Package: ${visiblePackageName}. Description: ${visibleDescription}`,
+    riskText: `${packageName}\n${description}`,
   };
 }
 
@@ -1109,6 +1184,7 @@ function discoverSemanticEvidenceCandidates(rootPath, skipped = []) {
       bySource.set(source, { source, role, pathScore: 100 });
     }
   }
+  discoverWorkspaceSemanticEvidenceCandidates(rootPath, bySource, skipped);
   let filesSeen = 0;
   let entriesSeen = 0;
   const visitedDirectories = new Set();
@@ -1182,6 +1258,56 @@ function discoverSemanticEvidenceCandidates(rootPath, skipped = []) {
   return [...bySource.values()];
 }
 
+function discoverWorkspaceSemanticEvidenceCandidates(rootPath, bySource, skipped) {
+  for (const folder of WORKSPACE_FOLDERS) {
+    const workspaceRoot = join(rootPath, folder);
+    if (!existsSync(workspaceRoot)) continue;
+    let entries;
+    try {
+      entries = readdirSync(workspaceRoot).sort();
+    } catch (error) {
+      pushSkippedOnce(skipped, {
+        path: workspaceRoot,
+        reason: `semantic-evidence-read-error: ${error.message}`,
+      });
+      continue;
+    }
+    const eligible = entries.filter((entry) => {
+      if (entry.startsWith('.')) return false;
+      try {
+        return statSync(join(workspaceRoot, entry)).isDirectory();
+      } catch {
+        return false;
+      }
+    });
+    const considered = eligible.slice(0, WORKSPACE_SEMANTIC_EVIDENCE_MAX_MEMBERS);
+    if (eligible.length > considered.length) {
+      pushSkippedOnce(skipped, {
+        path: workspaceRoot,
+        reason: `semantic-evidence-skip: ${folder} workspace members limited to ${WORKSPACE_SEMANTIC_EVIDENCE_MAX_MEMBERS}`,
+      });
+    }
+    for (const entry of considered) {
+      const packageSource = `${folder}/${entry}/package.json`;
+      if (existsSync(join(rootPath, packageSource))) {
+        bySource.set(packageSource, {
+          source: packageSource,
+          role: 'package-contract',
+          pathScore: 74,
+        });
+      }
+      const readmeSource = `${folder}/${entry}/README.md`;
+      if (existsSync(join(rootPath, readmeSource))) {
+        bySource.set(readmeSource, {
+          source: readmeSource,
+          role: 'product-capabilities',
+          pathScore: 75,
+        });
+      }
+    }
+  }
+}
+
 function classifySemanticEvidencePath(source) {
   const normalized = source.toLowerCase();
   if (/(?:^|\/)(?:readme|features?|capabilit(?:y|ies)|feature-catalog)(?:[._/-]|$)/.test(normalized)) {
@@ -1210,6 +1336,7 @@ function semanticContentScore({ title, headings, excerpt }) {
     /\buser need\b/,
     /\bmission\b/,
     /\bcapabilit(?:y|ies)\b/,
+    /\bkey features\b/,
     /\bresponsibilit(?:y|ies)\b/,
     /\bdomain\b/,
     /한 줄 정의/,
@@ -1414,13 +1541,17 @@ function detectReadmeH1(rootPath) {
           isHeadingAdornment(nextLine) &&
           (cand.toLowerCase().endsWith('.rst') || nextLine.startsWith('='))
         ) {
-          return line.trim();
+          const title = cleanHeadingLabel(line);
+          if (title) return title;
         }
         const markdownHeading = line.match(/^#\s+(.+?)\s*$/);
-        if (markdownHeading) return markdownHeading[1].trim();
+        if (markdownHeading) {
+          const title = cleanHeadingLabel(markdownHeading[1]);
+          if (title) return title;
+        }
         const htmlHeading = line.match(/<h1\b[^>]*>(.*?)<\/h1>/i);
         if (htmlHeading) {
-          const title = htmlHeading[1].replace(/<[^>]+>/g, '').trim();
+          const title = cleanHeadingLabel(htmlHeading[1]);
           if (title) return title;
         }
       }
@@ -1429,6 +1560,16 @@ function detectReadmeH1(rootPath) {
     }
   }
   return null;
+}
+
+function cleanHeadingLabel(value) {
+  return String(value)
+    .replace(/!\[[^\]]*\]\([^)]*\)/g, ' ')
+    .replace(/\[([^\]]+)\]\([^)]*\)/g, '$1')
+    .replace(/<[^>]+>/g, ' ')
+    .replace(/&(?:nbsp|middot|amp|lt|gt);/gi, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
 }
 
 function isHeadingAdornment(line) {

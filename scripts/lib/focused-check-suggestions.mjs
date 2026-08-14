@@ -535,6 +535,14 @@ const RULES = [
     matches: [/^cli\/src\/index\.mjs$/, /^cli\/src\/lib\/cli-commands\.mjs$/],
   },
   {
+    command: 'pnpm integration:cli:setup',
+    reason: 'agent config merge, root rebind, or setup flow changed',
+    matches: [
+      /^cli\/src\/lib\/agent-config\.(?:mjs|test\.mjs)$/,
+      /^cli\/src\/commands\/agent-setup\.mjs$/,
+    ],
+  },
+  {
     command: 'pnpm integration:cli',
     reason: 'CLI integration test harness or broad integration contract changed',
     matches: [/^cli\/src\/integration\.test\.mjs$/],

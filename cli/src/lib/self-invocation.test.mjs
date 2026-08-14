@@ -56,7 +56,7 @@ test('init 이 안내하는 명령을 그대로 실행하면 실제로 돈다', 
   const dir = mkdtempSync(path.join(tmpdir(), 'oatlas-init-'));
   try {
     const stdout = stripAnsi(
-      execFileSync(process.execPath, [CLI_ENTRY, 'init', dir], { encoding: 'utf8' }),
+      execFileSync(process.execPath, [CLI_ENTRY, 'init', 'vault'], { cwd: dir, encoding: 'utf8' }),
     );
 
     // 「Next steps」 블록의 실행용 줄에는 죽은 이름이 없어야 한다.

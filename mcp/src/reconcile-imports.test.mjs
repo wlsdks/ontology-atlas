@@ -258,7 +258,12 @@ test('buildNextImportRelationReview — returns one non-executable review packet
         },
       },
     ],
-    inCodeMissingEndpointAbsent: [{ from: 'capabilities/a', to: 'elements/missing' }],
+    inCodeMissingEndpointAbsent: [{
+      from: 'capabilities/a',
+      to: 'elements/missing',
+      absentEndpoints: ['elements/missing'],
+      review: { required: ['vault_endpoints', 'semantic_rationale', 'human_approval'] },
+    }],
     inVaultNotInCode: [],
   };
 
@@ -270,6 +275,7 @@ test('buildNextImportRelationReview — returns one non-executable review packet
     from: 'capabilities/a',
     to: 'capabilities/b',
     relationType: 'depends_on',
+    absentEndpoints: [],
     importCount: 3,
     sourceEvidence: [{ from: 'src/a.ts', to: 'src/b.ts', kind: 'static' }],
     sourceEvidenceLimited: false,
@@ -281,6 +287,7 @@ test('buildNextImportRelationReview — returns one non-executable review packet
       status: 'product_value_observed',
     },
   });
+  assert.equal(first.endpointModelling, null);
   assert.deepEqual(first.nextCalls, [
     {
       tool: 'get_concepts',
@@ -298,8 +305,8 @@ test('buildNextImportRelationReview — returns one non-executable review packet
       purpose: 'Check graph shape only; safe_to_add is not semantic approval.',
     },
   ]);
-  assert.equal(first.cursor.total, 2);
-  assert.equal(first.cursor.remaining, 1);
+  assert.equal(first.cursor.total, 3);
+  assert.equal(first.cursor.remaining, 2);
   assert.equal(first.cursor.hasMore, true);
   assert.equal(first.cursor.afterReviewId, null);
   assert.equal(first.cursor.nextAfterReviewId, first.reviewId);
@@ -309,8 +316,173 @@ test('buildNextImportRelationReview — returns one non-executable review packet
   });
   assert.equal(second.candidate.from, 'capabilities/c');
   assert.equal(second.candidate.to, 'capabilities/d');
-  assert.equal(second.cursor.remaining, 0);
+  assert.equal(second.cursor.remaining, 1);
+  assert.equal(second.cursor.hasMore, true);
+
+  const third = buildNextImportRelationReview(reconciliation, {
+    rootPath: '/repo',
+    afterReviewId: second.reviewId,
+  });
+  assert.equal(third.candidate.to, 'elements/missing');
+  assert.equal(third.decision.questionEligibility, 'blocked_missing_vault_endpoints');
+  assert.equal(third.cursor.remaining, 0);
+  assert.equal(third.cursor.hasMore, false);
+});
+
+test('buildNextImportRelationReview — fresh vault exposes one endpoint-modelling candidate instead of an empty queue', () => {
+  const packet = buildNextImportRelationReview({
+    inCodeMissingFromVault: [],
+    inCodeMissingEndpointAbsent: [
+      {
+        from: 'capabilities/feature-manager',
+        to: 'elements/options-storage',
+        count: 4,
+        absentEndpoints: [
+          'capabilities/feature-manager',
+          'elements/options-storage',
+        ],
+        sourceEvidence: [
+          {
+            from: 'source/feature-manager.tsx',
+            to: 'source/options-storage.ts',
+            kind: 'static',
+            sourceRole: 'production',
+            importUsage: 'value',
+          },
+        ],
+        sourceEvidenceLimited: false,
+        evidenceQualification: {
+          basis: 'whole_module_edge',
+          sourceRoleCounts: { production: 4, test: 0, unknown: 0 },
+          importUsageCounts: { value: 4, type_only: 0, unknown: 0 },
+          productValueCount: 4,
+          status: 'product_value_observed',
+        },
+        review: {
+          status: 'rationale_review_required',
+          writeAllowed: false,
+          required: ['vault_endpoints', 'semantic_rationale', 'human_approval'],
+        },
+      },
+    ],
+    inVaultNotInCode: [],
+  }, { rootPath: '/repo' });
+
+  assert.equal(packet.candidate.from, 'capabilities/feature-manager');
+  assert.equal(packet.candidate.to, 'elements/options-storage');
+  assert.deepEqual(packet.candidate.absentEndpoints, [
+    'capabilities/feature-manager',
+    'elements/options-storage',
+  ]);
+  assert.equal(packet.writeAllowed, false);
+  assert.deepEqual(packet.nextCalls, []);
+  assert.equal(packet.decision.questionEligibility, 'blocked_missing_vault_endpoints');
+  assert.deepEqual(packet.decision.required, [
+    'vault_endpoints',
+    'semantic_rationale',
+    'human_approval',
+  ]);
+  assert.match(packet.decision.ask, /model.*endpoint.*before.*approval/i);
+  assert.deepEqual(packet.endpointModelling, {
+    status: 'required_before_relation_review',
+    writeAllowed: false,
+    absentEndpoints: [
+      'capabilities/feature-manager',
+      'elements/options-storage',
+    ],
+    observedPathsByEndpoint: [
+      {
+        endpoint: 'capabilities/feature-manager',
+        paths: ['source/feature-manager.tsx'],
+      },
+      {
+        endpoint: 'elements/options-storage',
+        paths: ['source/options-storage.ts'],
+      },
+    ],
+    analysisCall: {
+      tool: 'analyze_repo_structure',
+      arguments: { rootPath: '/repo' },
+      purpose: 'Refresh repository candidates and evidence only; this call does not create or validate either missing ontology endpoint.',
+    },
+    proposalValidation: {
+      tool: 'analyze_repo_structure',
+      requiredArguments: ['rootPath', 'proposal'],
+      requiredProposalFields: ['project', 'domains', 'capabilities', 'elements', 'relations', 'competencyAnswers'],
+      fieldsAfterKindDecision: {
+        common: ['slug', 'title', 'definition', 'evidence', 'confidence'],
+        byKind: {
+          project: [],
+          domain: [],
+          capability: ['domain'],
+          element: ['domain', 'path'],
+        },
+      },
+      endpointDrafts: [
+        {
+          endpoint: 'capabilities/feature-manager',
+          observedPaths: ['source/feature-manager.tsx'],
+          slugCandidate: 'capabilities/feature-manager',
+          kindDecision: 'human_meaning_required',
+        },
+        {
+          endpoint: 'elements/options-storage',
+          observedPaths: ['source/options-storage.ts'],
+          slugCandidate: 'elements/options-storage',
+          kindDecision: 'human_meaning_required',
+        },
+      ],
+      purpose: 'Build a complete proposal from reviewed product meaning, then pass it with rootPath. Do not infer kind, title, definition, domain, or path from the endpoint slug alone.',
+    },
+    resumeCall: {
+      tool: 'infer_imports',
+      arguments: { rootPath: '/repo', reviewMode: 'next' },
+      purpose: 'After an accepted endpoint plan is written, restart the current semantic queue so this candidate is reclassified against the new vault nodes.',
+    },
+  });
+  assert.equal(packet.cursor.total, 1);
+});
+
+test('buildNextImportRelationReview — mixed queues preserve endpoint-modelling recovery after existing endpoints', () => {
+  const reconciliation = {
+    inCodeMissingFromVault: [{
+      from: 'capabilities/existing-a',
+      to: 'capabilities/existing-b',
+      review: { required: ['semantic_rationale', 'human_approval'] },
+    }],
+    inCodeMissingEndpointAbsent: [{
+      from: 'capabilities/missing-a',
+      to: 'elements/missing-b',
+      absentEndpoints: ['capabilities/missing-a', 'elements/missing-b'],
+      review: { required: ['vault_endpoints', 'semantic_rationale', 'human_approval'] },
+    }],
+  };
+  const first = buildNextImportRelationReview(reconciliation, { rootPath: '/repo' });
+  assert.equal(first.candidate.from, 'capabilities/existing-a');
+  assert.equal(first.cursor.total, 2);
+  assert.equal(first.cursor.hasMore, true);
+  const second = buildNextImportRelationReview(reconciliation, {
+    rootPath: '/repo',
+    afterReviewId: first.reviewId,
+  });
+  assert.equal(second.candidate.from, 'capabilities/missing-a');
+  assert.equal(second.decision.questionEligibility, 'blocked_missing_vault_endpoints');
+  assert.equal(second.cursor.total, 2);
   assert.equal(second.cursor.hasMore, false);
+});
+
+test('buildNextImportRelationReview — missing endpoint recovery fails closed without an exact repository root', () => {
+  assert.throws(
+    () => buildNextImportRelationReview({
+      inCodeMissingEndpointAbsent: [{
+        from: 'capabilities/a',
+        to: 'elements/b',
+        absentEndpoints: ['capabilities/a', 'elements/b'],
+        review: { required: ['vault_endpoints', 'semantic_rationale', 'human_approval'] },
+      }],
+    }),
+    /rootPath is required.*endpoint-modelling/i,
+  );
 });
 
 test('buildNextImportRelationReview — unknown cursor fails closed instead of restarting silently', () => {

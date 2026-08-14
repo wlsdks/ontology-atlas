@@ -280,6 +280,9 @@ jobs:
       - name: Install MCP dependencies
         run: pnpm --dir mcp install --frozen-lockfile
 
+      - name: Agent config setup integration
+        run: pnpm integration:cli:setup
+
       # MCP 서버의 단위 스위트. **어느 워크플로에도 물려 있지 않았다** —
       # `package:check` 가 CLI 쪽(`test:cli:lib`/`test:cli:commands`)은 돌리는데
       # MCP 는 대칭 스텝이 없었다. 그 사이 `verify-script.test.mjs` 1건이 소스

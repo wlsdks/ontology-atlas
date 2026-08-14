@@ -120,8 +120,8 @@ export async function runIndex(args) {
     },
     meaningGate: summarizeMeaningGate(analyzeResult.meaningGate),
     next: {
-      apply: 'ontology-atlas index [rootPath] --apply --vault [vault]',
-      review: 'Review analyzer candidates before applying. Inferred imports are never auto-promoted: inspect evidence and both concepts, explain the semantic dependency, and obtain human approval.',
+      apply: null,
+      review: 'Review candidates with ontology-bootstrap, obtain an independent constructionQualification:v1 packet and human acceptance, then write only the exact returned writePlan. CLI preview writes 0.',
     },
   };
 
@@ -345,7 +345,7 @@ function printPlan(payload) {
       `            report business/product domain + capability first; use code rows as implementation evidence\n\n` +
       evidenceBlock +
       reviewBlock +
-      `${COLORS.dim}side effect 0: --apply can land analyzer concepts/containment. Import evidence always remains rationale-review-required.${COLORS.reset}\n`,
+      `${COLORS.dim}side effect 0: CLI index is review-only. Semantic writes require an exact qualified writePlan through the MCP lifecycle.${COLORS.reset}\n`,
   );
 }
 

@@ -40,81 +40,378 @@
 **상태**: 유효 / 뒤집힘(→ 링크) / 반증됨(관측: …)
 ```
 
----
+## 2026-08-13 — 대형 vault의 list_concepts census는 잘림을 숨기지 않는다
+
+**소집**: PO Council 5석 · **트리거**: 130-node fresh vault에서 `list_concepts({limit:100})`가
+100행만 반환하면서 `total:130` 외에 잘림/다음 페이지 신호를 내지 않음 · 기존
+「100개 무표식 절단은 별도 read-contract로 다룬다」결정을 집행으로 승격
+**루브릭**: 22/24 (치명적 0: 없음)
+**결정**: `list_concepts`에 offset 기반 명시적 pagination을 추가하고 raw MCP/CLI 게이트로 닫는다.
+**적용 규칙**: 기존 `compile_ontology` 페이지 메타 재사용 · 새 tool/kind/relation/UI/transport cursor 없음
+**서명**: owner 위임 아래 Codex 집행
+
+**기록된 반대**: pagination은 일반 기능이고 `limit:500` 재호출로 회복 가능하므로 source qualification과
+성능이 먼저라는 주장(해자)
+**반증 조건**: 독립 100+ node 세션 3회에서 모두 `limit:500`을 안정적으로 선택하고 누락 사고가 없으며,
+동시에 다른 blocker가 field trial을 막는 것이 반복 관측되면 후순위로 되돌린다.
+**재검토**: 130+ acceptance fixture 통과 후 다음 3회 zero-state MCP 세션
+**상태**: 유효
+
+**IN**: `offset`, `pagination.offset/limit/total/returned/hasMore/nextOffset`, slug 정렬, schema/verify/integration fixture
+**OUT**: UI, `query_concepts`, `compile_ontology`, transport-level cursor, semantic qualification, 성능 최적화
+
+## 2026-08-13 — 모바일 INDEX에서도 기존 설정으로 보기 모드를 되돌린다
+
+**소집**: Design Council · **트리거**: 390px에서 일반인 보기로 전환한 뒤 확장 INDEX가 상단 설정 레인을 숨겨
+전문가 보기로 돌아갈 가시적 경로가 사라짐 · **루브릭**: 22/24 (치명적 0: 없음)
+**결정**: 새 설정 화면이나 전역 모드 체계를 만들지 않고, 확장 INDEX의 `<md` 표면에 기존
+`AppSettingsMenu(triggerVariant="chrome-tile")`를 하나만 노출한다.
+**적용 규칙**: 기존 설정 행·토큰·session-only 상태·reduced-motion을 재사용하고, URL/localStorage/vault write 0
+**서명**: owner 위임 아래 Codex 집행
+
+**기록된 반대**: 모바일에 별도 보기 모드 탭을 만들어 발견성을 높이자는 제안(결)
+**반증 조건**: 390px에서 일반인→전문가→일반인 왕복, 키보드 focus 복귀, 지도/투어 상태 보존이 실패하거나
+새 trigger가 기존 INDEX/하단 탭을 가리면 별도 surface를 재검토한다.
+**재검토**: 390/1024/1512 responsive sweep 및 reduced-motion 실측
+**상태**: 유효
+
+**IN**: 모바일 확장 INDEX의 기존 설정 escape hatch, `screenControls.audiencePlain`, focus-visible·state 보존 검증
+**OUT**: 새 settings route/tab, public MCP/CLI/schema, 전역 expert/general ontology model
 
 ## 2026-08-13 — 구조 readiness와 의미 qualification을 검수 계층에서 분리한다
 
-**현상:** 현재 vault와 fresh macOS build는 구조적으로 읽히고 그래프도 렌더링하지만,
-`agent_brief`의 구조 readiness `100/100`과 `meaningAssessment`의 `invalid`/
-`review_required`, 그리고 canvas v2와 오래된 desktop smoke/evidence marker가 서로
-다른 현실을 보고했다.
-
 **결정:** 에이전트 handoff와 ontology-sync는 구조 readiness를 semantic qualification과
-분리해 노출하고, 의미 보정/finalize는 독립 qualification과 명시적 사람 승인을 거친다.
-현재 topology-map-v2 canvas를 증명하는 별도 WebView evidence를 추가하며, 제품 문구는
-바꾸지 않고 desktop smoke 기대값만 현재 route metadata에 맞춘다. `query_ontology`의
-다형 응답 output schema는 억지 범용 schema를 추가하지 않고 별도 계약 설계로 보류한다.
+분리해 노출한다. 의미 보정/finalize는 독립 qualification과 명시적 사람 승인을 거친다.
+현재 topology-map-v2 canvas와 desktop smoke는 별도 evidence/gate로 검증하며,
+`query_ontology`의 다형 응답은 별도 계약이 정해질 때까지 열린 payload로 둔다.
 
-**강한 반대:** 지금 바로 semantic receipt를 finalize하고 모든 query 결과를 하나의
-느슨한 schema로 감싸면 first-contact가 단순해진다.
-
-**반증 조건:** 독립 qualification과 사람 승인 없이 finalize한 receipt가 실제 의미
-오류를 만들지 않고, 모든 query operation이 동일한 안정적 필드 집합을 제공한다는
-관측이 반복되면 이 결정을 재검토한다.
-
-**범위:** 이번 패치는 안내·검수 evidence·smoke 계약·문서 통계만 다룬다. vault 의미
-데이터와 Browser 기반 웹 UX 완료 판정은 변경하지 않는다.
+**반증 조건:** 독립 qualification과 사람 승인 없이 finalize한 receipt가 실제 의미 오류를
+만들지 않고, 모든 query operation이 동일한 안정적 필드 집합을 제공한다는 관측이 반복되면
+재검토한다. **상태:** 유효
 
 ## 2026-08-13 — 활동 기록의 agent 는 하트비트 > 연결 인사(clientInfo.name) > null
 
-**소집**: 단독 패스 · **트리거**: 공개 계약 파일(`mcp/src/index.js`) 변경 —
-단, 도구 시그니처·스키마는 그대로이고 바뀐 것은 활동 기록(`activity.jsonl`)의
-`agent` 필드가 채워지는 조건뿐이다.
-**선행 기록**: 2026-07-31 「저작 출처 created_by」— **여전히 유효, 범위 그대로.**
-`created_by` 는 볼트에 영구히 박히는 각인이라 하트비트(의도적 등록)만 믿고,
-부재는 unknown 이다. 이번 결정은 그 각인이 아니라 **일지**(activity.jsonl)에만
-연결 인사의 `clientInfo.name` 을 자동 폴백으로 더한다 — 일지는 이름이 틀려도
-고쳐 쓰면 그만이지만 각인은 되돌리기 비싸다는 비대칭이 두 정책을 가른다.
-**결정**: `resolveAgentName` = 하트비트 > `server.getClientVersion().name` > null.
-실시간 에이전트 표시(소유자 문의 2026-08-13, "가능성 파악" → "좋아..!")의
-1번 조각. **서명**: 소유자 (진행 승인 기반, PR #1066).
-
-**기록된 반대**: clientInfo.name 은 클라이언트가 자칭하는 값이라 신원 보증이
-없다 — 표시에 쓰면 위장이 가능하다.
-**반증 조건**: 실제 볼트에서 서로 다른 에이전트가 같은 이름을 자칭해 활동
-구분이 무의미해지는 사례가 관측되면, 표시 층에서 하트비트 등록 여부를 병기한다.
-**재검토**: 조각 ②(활동 팝오버)·③(지도 라벨)이 이 이름을 화면에 올릴 때.
-
-**상태**: 유효
-
----
+`activity.jsonl`의 agent 표시만 하트비트, 연결 인사, null 순으로 폴백한다. 영구적인
+`created_by` 각인은 의도적 하트비트만 신뢰한다. clientInfo.name은 신원 보증이 아니므로
+표시 층에만 사용한다. **반증 조건:** 서로 다른 에이전트가 같은 이름으로 활동 구분을
+무너뜨리면 하트비트 등록 여부를 함께 표시한다. **상태:** 유효
 
 ## 2026-08-13 (1) — MCP 실운영 gate와 온톨로지 의미 판정의 경계
 
-이번 전체 검수에서 합성 dogfood와 실제 MCP `verify`/`dogfood:walk`를 모두
-release gate로 취급한다. `tools/list`는 35개 도구의 제목·읽기/쓰기·파괴성·
-local-only·structuredContent 계약을 검증하고, `connection_info`, `git_status`,
-`git_history`는 첫 접점의 실제 root와 bounded metadata를 live probe한다.
+`tools/list`, `connection_info`, `git_status`, `git_history`, `verify`/`dogfood:walk`는
+실제 root와 bounded metadata를 함께 검증한다. `query_ontology`는 operation discriminator와
+`compiledSummary`만 고정하고 operation별 envelope은 열린 payload로 둔다. stale source
+receipt는 새 revision/fingerprint를 제시하지만 independent evaluator와 사람 승인 없이는
+finalize하지 않는다. **상태:** 유효
 
-`query_ontology`의 outputSchema는 operation discriminator와 `compiledSummary`를
-고정하되, operation마다 달라지는 결과 envelope는 열린 payload로 유지한다.
-`blast_radius`가 relation receipt 없이 반환하는 `risk: "unknown"`은 위험도를
-추측하지 않는 fail-closed 계약이므로 low/medium/high로 좁히지 않는다.
+---
 
-온톨로지 source receipt가 stale이면 connect dry-run으로 새 revision/fingerprint와
-witness를 먼저 제시한다. 이번 측정은 dirty worktree에서 58/58 witness가 지원됐지만,
-receipt 기록과 `finalize_project_meaning`은 독립 evaluator의 competency packet과
-사람의 승인 없이는 실행하지 않는다.
+## 2026-08-14 — U1.3 전문가 초안은 같은 영수증의 세션 전용 수정 깊이다
 
-**반증 조건**: live probe가 active root 또는 Git scope metadata를 누락하거나,
-unknown blast radius를 안전한 근거 없이 확정 위험도로 바꾸면 이 gate 결정을
-재검토한다.
+**결정**: 프로젝트 상세의 `근거·진단 보기` 안에 CQ 문장, witness source reference,
+exact review plan을 수정해 볼 수 있는 검토용 초안을 제공한다. 이 초안은 원본
+qualification receipt·plan/source digest·판정 상태를 바꾸지 않고 React session에만
+존재한다. 변경 즉시 dirty 상태와 `qualification을 다시 받아야 한다`는 경계를 보이며,
+원본 복원으로 되돌릴 수 있다. 자동 저장·localStorage·vault·sidecar·외부 전송은 없다.
 
-**서명 (accountable)**: 소유자 서명 대기
+**이유**: 일반 사용자는 요약만 읽고 승인 상태와 blocker를 판단하고, 전문가는 같은
+artifact의 CQ·근거·계획을 raw JSON으로 탈출하지 않고 조정할 수 있어야 한다. 두 schema나
+두 truth를 만들지 않으면서 “수정”을 안전한 pre-write 초안으로 한정한다.
+
+**반증 조건**: 초안 편집 뒤 receipt/digest/qualification이 바뀌거나, 새 source-hidden
+evaluator가 재검증 없이 write를 허용하거나, 390px/1023px에서 필드가 잘리고 가려지면
+이 경계가 실패한 것이다. 그 경우 초안을 제거하고 재검증 전용 disclosure로 되돌린다.
+
+**검증**: ConstructionReviewPanel unit, construction-review Playwright(390/1023/1024/1512,
+malformed/project/digest/plan fail-closed), TypeScript, ESLint.
+
 **상태**: 유효
 
 ---
 
+## 2026-08-14 (5) — 샘플 Skills는 실제 프로세스를 보여준다
+
+**관찰**: `/ko/skills`의 제품 샘플이 번호 절차가 아닌 한 줄 설명만 갖고 있어,
+정상적인 기능이 `process unavailable`로 보였다. 사용자가 처음 보는 샘플에서
+기능이 없는 것처럼 보이는 것은 Skills 프로세스 레일의 목적과 맞지 않는다.
+
+**결정**: 제품 샘플 Skill은 최소 두 개 이상의 명시적 번호 절차를 가진다. 이
+절차는 데모용 정적 문구이며 온톨로지 노드나 vault 기록을 만들지 않는다. 실제
+소스가 번호 절차를 제공하지 않거나 스캔이 잘린 경우에는 기존의
+`unavailable`/진단 상태를 유지한다. 번호가 아닌 문장을 의미 단계로 추론해
+채우지 않는다.
+
+**범위**: 샘플 fixture와 그 계약 테스트만 변경한다. K1.1 원문 순서·줄 번호·
+source digest, K1.2의 보수적 semantic overlay, K1.3의 packet 무결성 계약은
+그대로 유지한다.
+
+**반증 조건**: 샘플에서 2개 이상의 번호 절차가 렌더링되지 않거나, 번호가 없는
+실제 Skill이 자동으로 `ready`가 되거나, 샘플을 읽는 과정에서 vault/MCP 쓰기가
+발생하면 이 결정을 폐기하고 fixture/스캔 경계를 다시 설계한다.
+
+**서명 (accountable)**: 소유자 승인 대기
+**상태**: 유효
+
+---
+
+## 2026-08-14 (6) — 들여쓴 frontmatter 선언도 손실 없이 실패시킨다
+
+**관찰**: 기존 네 parser는 콜론 없는 최상위 선언과 고아 list item만 진단하고,
+들여쓴 콜론 없는 선언은 무시했다. 그 줄이 관계나 필드처럼 보이는 위치에 있어도
+`validate`는 `ok=true`, compiler는 issue 0, health는 정상처럼 보일 수 있었다.
+
+**결정**: frontmatter 블록 안의 빈 줄·주석·정상 block scalar/list/object를 제외한
+모든 non-empty 콜론 없는 줄은 `malformed-frontmatter-line` 진단으로 보존한다.
+MCP·CLI·scripts·웹 parser는 같은 line/message 계약을 공유하고, validator는 error,
+compiler는 issue, MCP와 브라우저 health는 `needs_attention`로 닫는다. 로컬/정적
+manifest도 diagnostics를 보존해 앱이 파싱 손상을 숨기지 않는다. 정상 들여쓰기
+구조는 계속 진단하지 않는다.
+
+**게이트 프로브**: 새 contract fixture를 먼저 추가했을 때 parser 4-way 4건과
+validator 3건이 실패했다(RED). 조건을 네 parser에 적용한 뒤 parser/validator
+contract 166건과 compiler/health integrity test가 GREEN이 됐다.
+
+**반증 조건**: 정상 block scalar/list/object 또는 들여쓴 주석이 새 error를 만들거나,
+malformed line이 compile issue와 health `needs_attention`까지 전달되지 않으면
+이 결정을 재검토한다.
+
+**서명 (accountable)**: 소유자 위임 하에 집행
+**상태**: 유효
+
+---
+
+## 2026-08-13 (3) — 올바른 vault binding이 후보 복구보다 먼저다 · 100+는 생성 목표가 아니다
+
+### 관찰된 현상
+
+같은 codebase cwd에서 `init vault-a` 뒤 `init vault-b`를 실행하면 두 번째 vault의
+로컬 설정은 생겨도 cwd의 `.mcp.json`과 `.codex/config.toml`은 첫 vault를 계속
+가리켰다. `agent-setup --write`도 stale Atlas entry를 고치지 않고 example만 남겼다.
+따라서 fresh Claude Code/Codex가 0 tools 또는 wrong vault로 시작할 수 있고, 그
+상태에서 얻은 MCP 품질 증거는 대상부터 틀릴 수 있다.
+
+별개로 `infer_imports` reconciliation 원본에는 후보별 `absentEndpoints`가 있지만
+compact `nextRelationReview:v1.candidate`에서 사라졌다. 없는 slug에도
+`get_concepts`와 `relation_check`를 제시하면서 “먼저 모델링하라”는 문장만 남겼다.
+Refined-scale 실험의 874 review candidates / 253 endpoints는 bounded discovery를
+증명했지만 semantic write는 0이었으므로 100+ 의미 ontology 품질 증거가 아니다.
+
+### 2회전 PO Council과 판정
+
+| Rubric row | 점수 | 서명 | 근거 |
+|---|---:|---|---|
+| Problem insight | 3/4 | po-evidence · 근거 | wrong-vault와 missing-endpoint dead call은 재현됨. 100+는 아직 문제 증거가 아니라 qualification 조건이다. |
+| User moment | 3/4 | po-evidence · 근거 | 같은 cwd에서 두 번째 fresh vault를 여는 FDE/agent 순간은 구체적이나 실제 조직 반복 사용은 아직 미측정이다. |
+| Differentiation | 3/4 | po-wedge · 해자 | A/B는 hygiene다. exact acceptance와 source-hidden 변경 판단이 규모에서도 재사용될 때만 해자가 된다. |
+| Ontology value | 4/4 | po-steward · 지킴이 | active vault identity와 endpoint→proposal→relation update path를 명시한다. |
+| Agent value | 4/4 | po-steward · 지킴이 | agent가 올바른 vault와 실행 가능한 비쓰기 복구를 받고, missing slug를 읽거나 자동 승격하지 않는다. |
+| Verification | 3/4 | po-craft · 결 | unit/stdio만으로 끝내지 않고 두 client·두 launch shape·source-hidden trial을 요구한다. 이 기록 시점에는 그 runtime proof가 pending이다. |
+
+합계 **20/24**, fatal zero 없음. 다섯 자리의 최종 수렴은 **Shape a slice**:
+
+1. **B — binding identity**: parseable config에서 정확히 `ontology-atlas` JSON entry /
+   TOML section pair만 원자적으로 merge/rebind한다. 다른 server·section·comment는
+   보존한다. invalid JSON, duplicate/incomplete Atlas TOML은 덮지 않고 example +
+   nonzero review로 닫는다. repeated `init`도 같은 규칙이며 ambiguous하면
+   `scaffolded but client binding unresolved`이지 연결 완료가 아니다.
+2. **A — candidate-local recovery**: compact candidate가 자신의 `absentEndpoints`,
+   observed paths, exact read-only `analyze_repo_structure` / queue-resume arguments를
+   가진다. missing endpoint에서는 `get_concepts`·`relation_check`·승인 질문이 0이다.
+   path slug로 kind/title/definition을 만들지 않고 focus evidence와 semantic queue를
+   합치지 않는다.
+3. **20–30 calibration**: citation 100%, unsupported assertion 0, exact approval,
+   source-hidden change judgment, baseline 비퇴행이 모두 통과할 때만 조건을 동결한다.
+4. **C — 100+ stress qualification**: 100은 생성 quota가 아니다. 낯선 permissive OSS의
+   정직한 accepted plan이 자연스럽게 100 미만이면 padding하지 않고 미달로 기록한다.
+   통과 시 exact digest acceptance → unchanged writePlan → writes → validate/compile/
+   source connect/finalize → precommitted source-hidden change decisions와 claim audit를
+   모두 닫는다.
+
+**정확한 OUT**: 새 kind/relation/schema · 자동 semantic relation/rationale ·
+one-file/one-folder/README-heading bulk promotion · global config 무단 변경 · server-name
+자동 증식 · focus와 semantic packet 합성 · Rust parser · UI 추가 · node count 단독 성공.
+
+### 가장 강한 패배 논거와 반증 조건
+
+**패배 논거**: A·B·C를 하나의 zero-to-100 tracer로 구현해야 독립 fixture가 놓치는
+설정×packet×qualification 접합 결함을 잡을 수 있다. 나누면 각 gate는 초록인데 실제
+여정은 실패할 수 있다.
+
+**반증 조건**: B와 A의 실제 client/runtime gate가 각각 통과했는데도 첫 동결 C가
+wrong-vault, endpoint recovery 단절, 또는 승인 plan과 write target 불일치라는 두 gate
+사이 상태 전달 때문에 반복 실패하고 그 결함이 독립 gate에서 재현되지 않으면 이 분리
+결정은 틀렸다. 그때 C를 두 계약의 단일 integration release gate로 승격한다. 반대로
+20–30 calibration이 기존 baseline의 정확도와 source-hidden 유용성을 유지하지 못하면
+100+를 중단하고 더 작은 competency-dense ontology가 이긴다.
+
+**서명 (accountable)**: 소유자의 “남은 것 전부 진행” 위임 아래 집행. 각 release
+gate의 통과 주장은 해당 runtime 증거가 생길 때만 한다.
+**상태**: 유효
+
+## 2026-08-13 — 온톨로지 최초 진입을 의미 승인 게이트와 파서 무결성에 묶는다
+
+### 관찰
+
+독립 PO 심의와 fresh MCP field audit에서 두 개의 release blocker를 재현했다.
+
+1. `ontology-atlas index <repo> --vault <vault> --apply --skip-imports`와
+   `--quick-start`가 사람 승인·independent qualification·digest-bound
+   writePlan 없이 semantic domain/capability/element를 생성한다. 구조적으로는
+   `healthy · ready · 100/100 · nextActions=[]`를 내지만
+   `meaningAssessment`는 `invalid`, 5개 CQ는 `unassessed`, source는
+   `not_measured`였다. 이는 `reviewPlan → qualification → human acceptance →
+   unchanged writePlan` 결정과 충돌한다.
+2. YAML frontmatter의 선언 라인에서 콜론을 하나 빼면 parser가 조용히 그 줄과
+   이어진 관계를 버리고, `validate`와 `compile`이 0 issue로 통과한다. 네
+   parser/validator 표면 모두 같은 결함을 가졌다.
+
+### 결정 (집행)
+
+- 최초 CLI 진입의 기본 경로는 **비쓰기 review plan**으로 끝난다.
+  `bootstrap`, `index --apply`, `quick-start`는 exact released plan digest와
+  human acceptance가 없으면 semantic node를 쓰지 못한다. 기존 구조 탐색은
+  후보/진단으로만 남기며, 승인 없는 자동 의미 부여를 성공으로 표현하지 않는다.
+- `agent_brief`와 health/readiness 표면은 `meaningAssessment`가 `invalid`,
+  `needs_evidence`, `review_required` 또는 CQ/source를 측정하지 못한 경우
+  `healthy · ready · 100/100 · nextActions=[]`를 내지 않는다. 사용자에게
+  첫 blocker와 review action을 돌려준다. 구조적 readiness와 의미 readiness를
+  숨은 상태로 합치지 않는다.
+- 네 frontmatter parser는 missing-colon header와 orphan indented list를
+  `malformed-frontmatter-line` 진단으로 보존한다. 동일 진단은 MCP/CLI/UI
+  validator 계약에 들어가며 strict validate/compile/health는 red가 된다.
+  정상 block scalar/list/object/comment는 오탐하지 않는다.
+- `list_concepts`의 100개 무표식 절단과 125-node wire 크기는 실재하지만,
+  이번 P0 집행 범위에는 넣지 않는다. 별도 read-contract 변경으로 다룬다.
+
+### 범위 밖
+
+새 kind·relation·MCP tool·UI surface를 만들지 않는다. 승인 없는 vault write,
+자동 qualification, `list_concepts` pagination, agent-brief payload 축소는 이
+결정의 산출물이 아니다.
+
+### 반증 조건
+
+- 승인 없는 `index --apply`가 review-only로 종료하고 vault가 바이트 불변이며,
+  승인된 exact plan만 write eligibility를 얻는다는 negative/positive probe가
+  모두 통과해야 한다.
+- malformed line의 콜론을 제거한 fixture가 모든 validator에서 red가 되고,
+  복원하면 green으로 돌아와야 한다. 정상 block fixture에서 새 진단이 0이어야
+  한다.
+- 의미가 invalid인 그래프가 top-level healthy/100/empty-next-actions로
+  다시 노출되면 이 결정은 실패로 본다.
+
+**근거**: `/tmp/atlas-mcp-full-audit-UMEZNI/` fresh scratch, PO Council
+23/24 (fatal zero 없음), `docs/ONTOLOGY-ATLAS-SPEC.md`,
+`.agents/skills/ontology-bootstrap/SKILL.md`.
+
+**서명 (accountable)**: jinan 승인 대기
+**상태**: 유효
+
+---
+
+## 2026-08-13 (2) — 큰 배열의 확인보다 구현 경로 focus가 먼저다
+
+### 반증 관측
+
+같은 날 앞 결정을 반영한 fresh 서버로 무코칭 시험을 다시 했다. Claude Code는
+`reviewMode:"next"`를 골라 13회·overflow 0으로 끝났지만, Codex는 도구 설명에 있는
+두 번째 확인 `{reviewMode:"full",allowLargeResponse:true}`까지 스스로 승인해 3.94 MB
+complete scan을 세 번 호출했다. 최종 답은 좋았지만 transcript가 3.8 MB가 됐다.
+“명시적 확인이면 에이전트가 비용을 이해했다”는 전제가 실제 사용자에게는 성립하지
+않았다. 앞 기록의 해자 자리 반대가 이겼다.
+
+### 결정
+
+- FDE가 analyzer/ontology에서 구현 file path를 하나 얻었으면 complete import graph보다
+  `focusPath`를 먼저 쓴다. `reviewMode:"focus"`를 명시해도 같은 계약이다.
+- focus는 exact file-level static imports를 incoming/outgoing으로 세고, deterministic
+  cursor와 최대 100개 영수증만 반환한다. vault/reconciliation이 없어도 된다.
+- focus는 source boundary일 뿐 runtime blast radius, affected behavior, symbol coupling,
+  test completeness, semantic `depends_on`을 주장하지 않는다. `writeAllowed:false`다.
+- full+confirmation은 호환성과 오프라인 전수 감사용으로 남지만 기본 FDE impact
+  경로로 설명하지 않는다.
+
+### 가장 강한 반대와 반증 조건
+
+가장 강한 반대는 exact path를 모르는 cold start에서는 focus가 아무 도움도 주지
+않는다는 것이다. analyzer의 entrypoint/path evidence가 빈약하면 여전히 global queue나
+source tool이 필요하다. 수정 후 fresh Codex·Claude가 Refined의 feature registration
+질문에서 `source/feature-manager.tsx` focus를 발견하지 못하거나 full을 다시 고르면 이
+결정도 충분하지 않다. 그때는 `index_project` plan에 executable focus call을 직접 싣거나,
+별도 symbol/CodeGraph integration boundary를 설계한다. focus 결과를 의미 관련성 순위로
+정렬하는 일은 하지 않는다.
+
+**서명 (accountable)**: 소유자 jinan의 장기 MCP 품질 개선 위임 아래 집행
+**상태**: 유효
+
+---
+
+## 2026-08-13 — 대형 import evidence는 기본 호출에서 128 KiB를 넘기지 않는다
+
+### 관찰한 문제
+
+빈 starter vault에서 실제 오픈소스 세 곳(Pyspinel · Textual · Refined GitHub)을
+Codex와 Claude Code에 각각 Atlas MCP만 연결해 무코칭으로 조사했다. 작은 저장소는
+검토 가능한 proposal까지 갔지만, Refined GitHub의 `infer_imports` complete shape는
+874개 고유 후보·253개 endpoint를 만들며 예상 MCP 결과가 3,942,607 bytes였다.
+두 클라이언트는 이 배열을 명시적으로 `full` 요청하거나 전체를 다시 읽으려 했고,
+한 번의 첫 접촉에 수십만~백만 input token을 썼다. 이는 온톨로지 품질 문제가 되기
+전에 전달 계약이 FDE의 작업 기억을 소진하는 결함이다.
+
+### 결정
+
+- `infer_imports`에서 `reviewMode`를 생략하면, 완전한 MCP 결과 envelope의 UTF-8
+  예상 크기가 **128 KiB 이하일 때만** 기존 complete shape를 그대로 반환한다.
+- 128 KiB를 넘고 reconciliation이 가능하면 자동으로 쓰기 없는
+  `nextRelationReview:v1` 한 건, stateless cursor, 실제 예상 크기와 한계를 담은
+  `delivery` receipt를 반환한다. 전체 응답을 원하면 receipt가 명시하는
+  `{reviewMode:"full",allowLargeResponse:true}` 두 번째 확인이 필요하다.
+- reconciliation vault가 없거나 `reconcile:false`이면 자동으로 사실을 요약하지
+  않는다. bounded 경로와 명시적 full 경로를 함께 알리는 오류로 닫는다.
+- `reviewMode:"next"`는 계속 명시적 bounded path다. `index_project`의 내부 분석은
+  full+confirmation을 명시해 기존 proposal 의미를 바꾸지 않는다.
+- import evidence는 계속 source fact일 뿐 semantic `depends_on`이 아니다.
+  사람 승인 없는 relation/frontmatter write는 0이다.
+
+### 왜 이 경계인가
+
+자동 compact 자체는 차별점이 아니라 MCP 위생이다. 독립 PO 판정도 Ontology
+value 4/4 · Agent value 4/4지만 Differentiation 2/4였다. Atlas의 실질 가치는
+bounded source evidence → 양쪽 ontology concept 확인 → semantic rationale → 사람
+승인 → Git Markdown relation으로 이어지는 경계를 큰 저장소에서도 보존하는 데
+있다. 실측 Refined 응답은 3.94 MB 예상 complete envelope에서 약 9 KB의 기본
+wire result로 줄었고, 874건 전체 cursor 순회는 3.11 MB 누적·100건 표본은 100개
+고유 후보/54 endpoint로 손실 없이 진행됐다.
+
+### 카운슬과 가장 강한 반대
+
+근거·결·지킴이·해자 네 자리는 독립 실물/계약 검토를 완료했고 모두
+Build and verify였다. 이번에는 동시성 한계 때문에 지렛대 자리를 독립 agent로
+완주하지 못했으며, accountable 집행자가 기회비용을 직접 검토했다. 이 불완전성을
+5석 만장일치로 포장하지 않는다.
+
+가장 강한 반대는 “폭주를 막았을 뿐, FDE가 어디서 시작하고 무엇이 영향받는지는
+아직 못 답한다”이다. Refined의 사전식 첫 후보는 중앙 seam인
+`feature-manager`가 아니라 `action-pr-link`였고, 특정 endpoint의 incoming/outgoing
+관계와 fan-in/out을 바로 묻는 focus 조회가 없다.
+
+### 반증 조건과 다음 행동
+
+- 수정 후 fresh Atlas-only Codex·Claude 중 둘 이상이 다시 full+confirmation을
+  선택하거나 대량 cursor를 순회하면, 전달 기본값만으로 P0가 닫혔다는 판단은
+  틀리다. endpoint/source-path focus filter를 P0로 승격한다.
+- 세 실제 저장소 중 둘 이상에서 Atlas-only plan이 direct source reading 없이
+  capability 경계·변경 시작점·검증 경로를 안전하게 답하지 못하면 “FDE 단독 도구”
+  포지셔닝은 철회한다. Atlas는 의미/승인 layer이며 CodeGraph·AST·테스트 도구와
+  결합하는 계약을 유지한다.
+- 100+ **후보**를 처리했다는 사실을 100+ **승인된 의미 노드** 품질로 말하지
+  않는다. 100+ node qualification은 별도 사람 승인 plan과 source-hidden 평가가
+  있을 때만 통과한다.
+
+**서명 (accountable)**: 소유자 jinan의 장기 MCP 품질 개선 위임 아래 집행
+**상태**: 유효
+
+---
 ## 2026-08-13 — 프로젝트 상세: 방사 도메인 지도를 은퇴시키고 행+비율 막대 한 문법으로 (갈래 B)
 
 **소집**: 갈래 문서(A~D, 실측 포함)를 소유자에게 제시, 소유자가 B를 골랐다:
@@ -163,7 +460,6 @@ unknown blast radius를 안전한 근거 없이 확정 위험도로 바꾸면 �
 **반증 조건**: 소유자가 이 이름을 세 번째로 기각하거나, 첫 방문자가 「스튜디오」를
 보고 무엇을 하는 화면인지 못 알아보는 관측이 나오면 — 그때는 보편명 후보(작업대·편집)
 로 돌아간다.
-
 ## 2026-08-12 — 열 것이 없을 때 **스킬 화면은 무대가 된다**, 그리고 무대 칸을 규격에 올린다
 
 **소집**: 열지 못했다 — 소유자가 이 세션에서 서브에이전트 호출을 쓰지 말라고 지시했다.

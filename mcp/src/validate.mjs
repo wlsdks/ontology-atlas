@@ -35,6 +35,7 @@ import { inspectMergedUids, missingExpectedFields, nodeUidIssue } from './schema
  *  - missing-expected-field (warning) — R14
  *  - non-canonical-graph-array (warning)
  *  - parse-zero-keys (warning)
+ *  - malformed-frontmatter-line (error)
  *  - dangling-graph-reference (warning) — whole-vault graph validation
  *
  * @param {string} raw
@@ -43,6 +44,7 @@ import { inspectMergedUids, missingExpectedFields, nodeUidIssue } from './schema
 export const VAULT_ISSUE_CODE_VALUES = Object.freeze([
   'unclosed-frontmatter',
   'parse-zero-keys',
+  'malformed-frontmatter-line',
   'missing-kind',
   'empty-kind',
   'unknown-kind',
@@ -96,10 +98,11 @@ export function validateVaultDocument(raw) {
   }
 
   if (!startsWithDelim) {
-    return { ok: true, issues };
+    return { ok: !issues.some((issue) => issue.severity === 'error'), issues };
   }
 
-  const { frontmatter } = parseFrontmatter(raw);
+  const { frontmatter, diagnostics = [] } = parseFrontmatter(raw);
+  pushFrontmatterDiagnostics(diagnostics, issues);
   const keys = Object.keys(frontmatter);
 
   if (keys.length === 0) {
@@ -157,6 +160,17 @@ export function validateVaultDocument(raw) {
     ok: !issues.some((i) => i.severity === 'error'),
     issues,
   };
+}
+
+function pushFrontmatterDiagnostics(diagnostics, issues) {
+  for (const diagnostic of diagnostics) {
+    if (!diagnostic || diagnostic.code !== 'malformed-frontmatter-line') continue;
+    issues.push({
+      code: diagnostic.code,
+      severity: 'error',
+      message: diagnostic.message,
+    });
+  }
 }
 
 function pushUidIssues(frontmatter, issues) {

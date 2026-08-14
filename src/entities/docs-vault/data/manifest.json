@@ -56,8 +56,8 @@
         }
       ],
       "excerpt": "Current as of 2026-08-02. This is the user-facing guide for running ontology-atlas as a local meaning graph: CLI-only, MCP-connected, and web workbench flows over the same markdown vault. ontology-atlas is not a hosted graph database. It is a local-first graph workbench where markdown frontmatter is the graph, git is t",
-      "wordCount": 2637,
-      "updatedAt": "2026-08-09",
+      "wordCount": 2749,
+      "updatedAt": "2026-08-14",
       "linksOut": []
     },
     {
@@ -3022,6 +3022,11 @@
         },
         {
           "depth": 3,
+          "text": "2026-08-13 MCP FDE scale checkpoint",
+          "slug": "2026-08-13-mcp-fde-scale-checkpoint"
+        },
+        {
+          "depth": 3,
           "text": "작업 카드와 완료 조건",
           "slug": "작업-카드와-완료-조건"
         },
@@ -3292,8 +3297,8 @@
         }
       ],
       "excerpt": "현재 실행 순서의 정본. 사용자가 작업 ID를 지목하면 그 항목만 분해해 구현한다. 완료 표시는 아래 활성 트랙의 증거 표에 먼저 남기고, 기능의 현재 상태는 docs/FEATURES.md, 결정 이유는 docs/DECISIONS.md, 사용자 가시 변경은 docs/CHANGELOG.md가 각각 맡는다. 변하는 숫자를 이 문서에 고정하지 않는다. 현재 dogfood census는 node cli/src/index.mjs overview, 공개 MCP/CLI surface는 pnpm docs:surface:check로 확인한다. 이 트랙은 2026-08-09 설치 앱 ",
-      "wordCount": 6127,
-      "updatedAt": "2026-08-12",
+      "wordCount": 6380,
+      "updatedAt": "2026-08-14",
       "linksOut": []
     },
     {
@@ -4022,6 +4027,26 @@
           "depth": 1,
           "text": "CHANGELOG",
           "slug": "changelog"
+        },
+        {
+          "depth": 2,
+          "text": "2026-08-13 · 최초 온톨로지 생성은 구조 무결성과 의미 승인을 통과해야 한다",
+          "slug": "2026-08-13-최초-온톨로지-생성은-구조-무결성과-의미-승인을-통과해야-한다"
+        },
+        {
+          "depth": 2,
+          "text": "2026-08-13 · 대형 vault의 첫 node census가 누락을 숨기지 않는다",
+          "slug": "2026-08-13-대형-vault의-첫-node-census가-누락을-숨기지-않는다"
+        },
+        {
+          "depth": 2,
+          "text": "2026-08-13 · 모바일에서도 보기 모드를 되돌릴 수 있다",
+          "slug": "2026-08-13-모바일에서도-보기-모드를-되돌릴-수-있다"
+        },
+        {
+          "depth": 2,
+          "text": "2026-08-13 · 대형 import graph는 검토 가능한 크기로 전달된다",
+          "slug": "2026-08-13-대형-import-graph는-검토-가능한-크기로-전달된다"
         },
         {
           "depth": 2,
@@ -6374,9 +6399,9 @@
           "slug": "2026-07-26-첫-만남은-쇼핑몰부터"
         }
       ],
-      "excerpt": "Major change history. Code commit messages answer why; this file answers when / which surface changed. Focused on user-visible changes, not PR-level granularity. Newest at the top. Entries stay date-based; the app version reached v1.0.0 on 2026-07-27, so a release tag now carries the semver promise instead. 프로젝트 상세의 검수",
-      "wordCount": 67695,
-      "updatedAt": "2026-08-12",
+      "excerpt": "Major change history. Code commit messages answer why; this file answers when / which surface changed. Focused on user-visible changes, not PR-level granularity. Newest at the top. Entries stay date-based; the app version reached v1.0.0 on 2026-07-27, so a release tag now carries the semver promise instead. malformed f",
+      "wordCount": 68125,
+      "updatedAt": "2026-08-14",
       "linksOut": [
         "audits/CASE-STUDY-AGENTS-MD-DRIFT",
         "domains/catalog",
@@ -6407,6 +6432,16 @@
         },
         {
           "depth": 2,
+          "text": "2026-08-13 — 대형 vault의 list_concepts census는 잘림을 숨기지 않는다",
+          "slug": "2026-08-13-대형-vault의-list_concepts-census는-잘림을-숨기지-않는다"
+        },
+        {
+          "depth": 2,
+          "text": "2026-08-13 — 모바일 INDEX에서도 기존 설정으로 보기 모드를 되돌린다",
+          "slug": "2026-08-13-모바일-index에서도-기존-설정으로-보기-모드를-되돌린다"
+        },
+        {
+          "depth": 2,
           "text": "2026-08-13 — 구조 readiness와 의미 qualification을 검수 계층에서 분리한다",
           "slug": "2026-08-13-구조-readiness와-의미-qualification을-검수-계층에서-분리한다"
         },
@@ -6419,6 +6454,116 @@
           "depth": 2,
           "text": "2026-08-13 (1) — MCP 실운영 gate와 온톨로지 의미 판정의 경계",
           "slug": "2026-08-13-1-mcp-실운영-gate와-온톨로지-의미-판정의-경계"
+        },
+        {
+          "depth": 2,
+          "text": "2026-08-14 — U1.3 전문가 초안은 같은 영수증의 세션 전용 수정 깊이다",
+          "slug": "2026-08-14-u13-전문가-초안은-같은-영수증의-세션-전용-수정-깊이다"
+        },
+        {
+          "depth": 2,
+          "text": "2026-08-14 (5) — 샘플 Skills는 실제 프로세스를 보여준다",
+          "slug": "2026-08-14-5-샘플-skills는-실제-프로세스를-보여준다"
+        },
+        {
+          "depth": 2,
+          "text": "2026-08-14 (6) — 들여쓴 frontmatter 선언도 손실 없이 실패시킨다",
+          "slug": "2026-08-14-6-들여쓴-frontmatter-선언도-손실-없이-실패시킨다"
+        },
+        {
+          "depth": 2,
+          "text": "2026-08-13 (3) — 올바른 vault binding이 후보 복구보다 먼저다 · 100+는 생성 목표가 아니다",
+          "slug": "2026-08-13-3-올바른-vault-binding이-후보-복구보다-먼저다-100는-생성-목표가-아니다"
+        },
+        {
+          "depth": 3,
+          "text": "관찰된 현상",
+          "slug": "관찰된-현상"
+        },
+        {
+          "depth": 3,
+          "text": "2회전 PO Council과 판정",
+          "slug": "2회전-po-council과-판정"
+        },
+        {
+          "depth": 3,
+          "text": "가장 강한 패배 논거와 반증 조건",
+          "slug": "가장-강한-패배-논거와-반증-조건"
+        },
+        {
+          "depth": 2,
+          "text": "2026-08-13 — 온톨로지 최초 진입을 의미 승인 게이트와 파서 무결성에 묶는다",
+          "slug": "2026-08-13-온톨로지-최초-진입을-의미-승인-게이트와-파서-무결성에-묶는다"
+        },
+        {
+          "depth": 3,
+          "text": "관찰",
+          "slug": "관찰"
+        },
+        {
+          "depth": 3,
+          "text": "결정 (집행)",
+          "slug": "결정-집행"
+        },
+        {
+          "depth": 3,
+          "text": "범위 밖",
+          "slug": "범위-밖"
+        },
+        {
+          "depth": 3,
+          "text": "반증 조건",
+          "slug": "반증-조건"
+        },
+        {
+          "depth": 2,
+          "text": "2026-08-13 (2) — 큰 배열의 확인보다 구현 경로 focus가 먼저다",
+          "slug": "2026-08-13-2-큰-배열의-확인보다-구현-경로-focus가-먼저다"
+        },
+        {
+          "depth": 3,
+          "text": "반증 관측",
+          "slug": "반증-관측"
+        },
+        {
+          "depth": 3,
+          "text": "결정",
+          "slug": "결정"
+        },
+        {
+          "depth": 3,
+          "text": "가장 강한 반대와 반증 조건",
+          "slug": "가장-강한-반대와-반증-조건"
+        },
+        {
+          "depth": 2,
+          "text": "2026-08-13 — 대형 import evidence는 기본 호출에서 128 KiB를 넘기지 않는다",
+          "slug": "2026-08-13-대형-import-evidence는-기본-호출에서-128-kib를-넘기지-않는다"
+        },
+        {
+          "depth": 3,
+          "text": "관찰한 문제",
+          "slug": "관찰한-문제"
+        },
+        {
+          "depth": 3,
+          "text": "결정",
+          "slug": "결정-2"
+        },
+        {
+          "depth": 3,
+          "text": "왜 이 경계인가",
+          "slug": "왜-이-경계인가"
+        },
+        {
+          "depth": 3,
+          "text": "카운슬과 가장 강한 반대",
+          "slug": "카운슬과-가장-강한-반대"
+        },
+        {
+          "depth": 3,
+          "text": "반증 조건과 다음 행동",
+          "slug": "반증-조건과-다음-행동"
         },
         {
           "depth": 2,
@@ -8108,7 +8253,7 @@
         {
           "depth": 3,
           "text": "반증 조건",
-          "slug": "반증-조건"
+          "slug": "반증-조건-2"
         },
         {
           "depth": 2,
@@ -8308,7 +8453,7 @@
         {
           "depth": 3,
           "text": "반증 조건",
-          "slug": "반증-조건-2"
+          "slug": "반증-조건-3"
         },
         {
           "depth": 2,
@@ -8343,7 +8488,7 @@
         {
           "depth": 3,
           "text": "반증 조건",
-          "slug": "반증-조건-3"
+          "slug": "반증-조건-4"
         },
         {
           "depth": 2,
@@ -8368,7 +8513,7 @@
         {
           "depth": 3,
           "text": "반증 조건",
-          "slug": "반증-조건-4"
+          "slug": "반증-조건-5"
         },
         {
           "depth": 2,
@@ -8443,7 +8588,7 @@
         {
           "depth": 3,
           "text": "반증 조건",
-          "slug": "반증-조건-5"
+          "slug": "반증-조건-6"
         },
         {
           "depth": 2,
@@ -8478,7 +8623,7 @@
         {
           "depth": 3,
           "text": "반증 조건",
-          "slug": "반증-조건-6"
+          "slug": "반증-조건-7"
         },
         {
           "depth": 2,
@@ -8527,8 +8672,8 @@
         }
       ],
       "excerpt": "이 파일은 결정과 그때 진 반대 의견을 남긴다. docs/CHANGELOG.md 는 무엇이 언제 바뀌었나를 답하고, 이 파일은 왜 그렇게 정했고, 무엇을 걸었나를 답한다. 최신이 위. 기록은 덧붙이기만 한다 — 지난 기록을 고치지 않는다. 판단이 바뀌었으면 새 기록을 쓰고 옛 기록을 뒤집힘 으로 표시한다. 틀린 기록도 자산이다. 1. 소집 전에 읽는다. 카운슬을 열기 전(그리고 단독 PO 패스를 쓰기 전) 같은 표면 · 같은 질문에 대한 선행 결정이 있는지 먼저 본다. 있으면 새 패스는 그것을 ① 여전히 유효하다고 인용하거나 ② 명시적으로 뒤집는다. 조용히 다시 결정",
-      "wordCount": 105996,
-      "updatedAt": "2026-08-13",
+      "wordCount": 108011,
+      "updatedAt": "2026-08-14",
       "linksOut": [
         "slug"
       ]
@@ -10225,8 +10370,8 @@
         }
       ],
       "excerpt": "Complete inventory of features users can actually use right now. Last updated: 2026-08-02 (지금 있는 라우트, 설치한 앱이 지키기로 한 약속, 프로젝트가 무엇을 뜻하는지 확정한 기록(project meaning receipt)을 다시 확인했다 — /ontology 는 /topology?index=expanded 로, /ontology/edit 은 /ontology/studio 로 보내는 옛 주소 호환 redirect 이고, Insights 는 할 일 · 구성 · 연결 · 경계 · 신선도 다섯 개 ",
-      "wordCount": 19204,
-      "updatedAt": "2026-08-13",
+      "wordCount": 19364,
+      "updatedAt": "2026-08-14",
       "linksOut": [
         "slug",
         "project:slug",
@@ -10431,8 +10576,8 @@
         }
       ],
       "excerpt": "앱의 「에이전트 연결」 버튼 한 번이면 됩니다. 지금 쓰는 도구를 고르면 그 도구의 설정 파일에 볼트의 실제 절대 경로가 박힌 설정을 써 줍니다. · 도구 · 쓰는 파일 · Claude Code · .mcp.json · Codex · .codex/config.toml · Cursor · .cursor/mcp.json · Antigravity · .agents/mcpconfig.json · 버튼 하나가 파일 하나를 씁니다. 고르지 않은 도구의 파일은 만들지 않습니다. 여기서 한 번 헷갈리면 나머지가 다 이상해집니다. 에이전트는 Atlas 앱에 붙는 게 아니라 폴더에 붙",
-      "wordCount": 864,
-      "updatedAt": "2026-08-13",
+      "wordCount": 973,
+      "updatedAt": "2026-08-14",
       "linksOut": []
     },
     {
@@ -12185,8 +12330,8 @@
         }
       ],
       "excerpt": "로컬 마크다운 볼트를 AI 코딩 에이전트가 읽고 안전하게 갱신하도록 제공하는 stdio JSON-RPC 인터페이스다. 사람과 에이전트가 같은 파일을 진실원으로 사용하며, 서버는 별도 데이터베이스나 모델 실행 루프를 소유하지 않는다. 에이전트는 프로젝트의 의미 노드를 정확히 찾고, 관계·근거·영향 범위를 함께 읽는다. 연결 직후 실제 vault/repository 좌표와 도구 인벤토리를 확인해 잘못된 폴더나 오래된 클라이언트 상태를 발견한다. 쓰기 전에는 현재 문서를 읽고, 동시 편집·중복·끊어진 관계·파괴적 변경을 구조화된 오류와 dry-run으로 차단한다. 도구의 ",
-      "wordCount": 1296,
-      "updatedAt": "2026-08-10",
+      "wordCount": 1410,
+      "updatedAt": "2026-08-14",
       "linksOut": []
     },
     {

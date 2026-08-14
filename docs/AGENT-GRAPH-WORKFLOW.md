@@ -35,6 +35,9 @@ Checked against official docs on 2026-06-04:
 - Codex supports MCP servers in the CLI and IDE extension, stores MCP server
   configuration in Codex `config.toml`, and exposes `codex mcp list` plus the
   `/mcp` TUI panel for checking active servers.
+  Project-scoped `.codex/config.toml` is ignored until Codex marks that project
+  trusted; `codex mcp list` from the trusted folder and `connection_info` are
+  therefore required connection evidence, not optional diagnostics.
   Source: https://developers.openai.com/codex/mcp
 - Claude Code configures MCP servers with `claude mcp`, checks connected
   servers with `claude mcp list` and `/mcp`, and supports local stdio servers
@@ -138,7 +141,10 @@ node $ATLAS/cli/src/index.mjs agent-setup /absolute/path/to/vault --root /absolu
 ```
 
 That command creates missing `.mcp.json` and `.codex/config.toml` files without
-adding starter markdown and without overwriting stale existing configs.
+adding starter markdown. For a parseable existing file, it atomically merges or
+rebinds only the `ontology-atlas` JSON entry / TOML section pair and preserves
+unrelated servers, sections, and comments. Invalid or duplicate Atlas config is
+left untouched with a merge template and a nonzero review result.
 Its terminal and JSON output also point back to this guide
 (`docs/AGENT-GRAPH-WORKFLOW.md`), so CLI-only setup logs still tell a human
 where to read the MCP, graph DB, and verification differences.
@@ -313,12 +319,17 @@ node cli/src/index.mjs health docs/ontology                     # compile issues
 node cli/src/index.mjs mcp-verify docs/ontology --timeout-ms 15000
 ```
 
-What the run must show, regardless of how large the vault has grown: `health`
-reports **healthy**, `validate` reports **0 problem files**, `workspace_brief`
-and `agent_brief` return **healthy**, and `mcp-verify` passes parser, server
-boot, every registered tool, strict argument/enum checks, destructive dry-runs,
-batch no-write checks, briefs, graph query smokes, and structured content
-checks.
+What the run must show is split into two contracts. `validate` reports **0
+problem files**, `health` reports no structural compile/cycle/unresolved-edge
+errors, and `mcp-verify` passes parser, server boot, every registered tool,
+strict argument/enum checks, destructive dry-runs, batch no-write checks,
+briefs, graph query smokes, and structured content checks. A cold-start or
+unqualified vault may still report `needs_attention`: `workspace_brief` and
+`agent_brief` must surface an invalid, unmeasured, or stale `meaningAssessment`
+instead of relabelling it `healthy`/`ready`/`100`. The stronger `healthy` and
+`ready` result is reserved for a vault whose meaning assessment is current and
+whose exact construction plan has passed the qualification and human-approval
+gate.
 
 ## Recommended First User Flow
 

@@ -51,11 +51,18 @@ node <ontology-atlas checkout>/cli/src/index.mjs agent-setup <this vault folder>
 ```
 
 It creates missing Claude Code / Cursor / Codex config files without adding
-starter markdown or overwriting existing ones. To merge by hand instead, open
+starter markdown. In a parseable existing file it changes only the
+`ontology-atlas` entry and preserves unrelated servers and sections. Invalid
+or duplicate Atlas config stays untouched. To merge by hand instead, open
 `.mcp.json.example`, replace the `OATLAS_VAULT` placeholder with the absolute
 path to this vault, then copy that server entry into your agent config. The
 CLI writes `.mcp.json` and `.codex/config.toml` pointing at the checkout's
-`mcp/src/index.js`.
+`mcp/src/index.js`. Codex loads the project file only after you trust this
+folder. Approve its trust prompt, run `codex mcp list` here, and confirm
+`ontology-atlas` appears before any write. A parseable existing review
+template keeps its unrelated entries while Atlas is rebound; a malformed
+template is preserved and the current binding is written beside it as an
+`.ontology-atlas-current.example` sidecar.
 
 ## Verify the agent loop
 

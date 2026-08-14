@@ -109,6 +109,35 @@ RDF/OWL/SKOS/SHACL 구현으로 소개하지 않는다. **적용 원칙**: LLM�
 | 15 | U1.2 | ready | spotlight가 bounded motion 뒤 idle로 돌아간다. |
 | gate | O1.4 | hold(repeated missing primitive) | missing primitive가 반복 입증될 때만 schema 확장을 상정한다. |
 
+### 2026-08-13 MCP FDE scale checkpoint
+
+fresh Pyspinel·Textual·Refined GitHub clone과 5-starter vault에서 Codex/Claude Code를
+Atlas-only로 반복 실행했다. `analyze_repo_structure`는 작은 review plan을 만들 수 있었지만,
+대형 `infer_imports` full payload가 에이전트 문맥을 삼키고 source layout에 따라 Python/TS
+endpoint를 놓치는 P0가 재현됐다. 현재 slice는 source/import 분류를 보강하고, 예상 MCP
+응답 128 KiB 초과 시 한 건의 compact review로 자동 전환하며, 큰 explicit full에도
+`allowLargeResponse:true` 확인을 요구한다. 자동 node/relation write는 0이다.
+
+**남긴 순서**:
+
+1. **완료 · focused import evidence** — fresh Codex가 large-response 확인까지 승인해 full을
+   세 번 읽는 반증 뒤 `focusPath`/`reviewMode:"focus"`를 P0로 승격했다. endpoint 하나의
+   incoming/outgoing exact file edge 수와 최대 100개 영수증·cursor를 vault 없이 반환한다.
+   정적 source boundary이며 runtime/semantic impact나 자동 관계를 주장하지 않는다.
+2. **P1 · candidate-local endpoint repair** — global `nextReview` 후보 안에
+   `absentEndpoints`와 정확한 endpoint modelling 복구 인자를 직접 싣는다. focus evidence와
+   semantic review queue를 한 packet으로 섞지 않는다.
+3. **P1 · client registration isolation** — 같은 cwd에서 여러 fresh vault를 등록할 때
+   첫 client config가 남고 이후 server가 0 tools 또는 잘못된 vault를 가리키는 Codex/Claude
+   precedence trap을 설치 앱/source-checkout 각각에서 분리 검증한다. MCP 분석 품질과 client
+   registration 품질을 한 판정으로 섞지 않는다.
+4. **P1 · 100+ semantic-node qualification** — 이번 실측은 874 review candidates와 253
+   unique endpoints의 bounded discovery를 증명했지 100+ 의미 노드의 품질을 증명하지 않았다.
+   서로 다른 domain/CQ를 가진 100+ accepted concept scenario에서 사람 승인·write·source-hidden
+   task가 필요할 때만 실행한다. node 수를 목표로 bulk-promote하지 않는다.
+5. **P2 · unsupported languages** — Rust `use`/`mod`/macro graph는 계속 명시적 unsupported다.
+   0 edge를 의존 없음으로 해석하지 않으며, 반복 FDE 수요가 Python/TS P1보다 높아질 때만 연다.
+
 ### 작업 카드와 완료 조건
 
 #### D0 — 문서 정본과 실행 원장

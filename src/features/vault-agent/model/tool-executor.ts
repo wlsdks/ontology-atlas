@@ -389,11 +389,14 @@ export function createToolExecutor(port: VaultReadPort) {
         const since = num(args.since);
         const wantSummary = args.summary === true;
         const limit = Math.min(Math.max(num(args.limit) ?? 100, 1), 500);
-        const rows = port.docs
+        const offset = Math.max(Math.trunc(num(args.offset) ?? 0), 0);
+        const filtered = port.docs
           .filter((doc) => (kind ? doc.kind === kind : true))
           .filter((doc) => (domain ? doc.domain === domain : true))
           .filter((doc) => (since === undefined ? true : (doc.mtime ?? 0) > since))
-          .slice(0, limit)
+          .sort((a, b) => a.slug.localeCompare(b.slug, 'en'));
+        const rows = filtered
+          .slice(offset, offset + limit)
           .map((doc) => ({
             slug: doc.slug,
             kind: doc.kind,
@@ -402,7 +405,20 @@ export function createToolExecutor(port: VaultReadPort) {
             ...(doc.mtime ? { mtime: doc.mtime } : {}),
             ...(wantSummary ? { summary: wrapUntrusted(doc.excerpt) } : {}),
           }));
-        const packed = pack({ rows, returned: rows.length, vaultDocumentTotal: port.docs.length });
+        const hasMore = offset + rows.length < filtered.length;
+        const packed = pack({
+          rows,
+          returned: rows.length,
+          vaultDocumentTotal: port.docs.length,
+          pagination: {
+            offset,
+            limit,
+            total: filtered.length,
+            returned: rows.length,
+            hasMore,
+            nextOffset: hasMore ? offset + rows.length : null,
+          },
+        });
         return {
           content: packed.content,
           isError: false,
