@@ -344,11 +344,11 @@ describe("rpc response completion helpers", () => {
   it("summarizes strict closest-value smoke details for final dogfood output", () => {
     assert.equal(
       strictRepairSummary(okShape.strictArgs),
-      "rejected true (arg lmit->limit; allowed 5)",
+      "rejected true (arg lmit->limit; allowed 6)",
     );
     assert.equal(
       strictRepairSummary(okShape.strictMultiArgs),
-      "rejected true (args lmit->limit, summry->summary; allowed 5)",
+      "rejected true (args lmit->limit, summry->summary; allowed 6)",
     );
     assert.equal(
       strictRepairSummary(okShape.strictEnum),

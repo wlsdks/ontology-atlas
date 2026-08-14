@@ -123,15 +123,18 @@ For every proposed domain or capability, produce:
 ```text
 slug:
 title:
-kind:
 definition: one sentence explaining what it means
 includes: [one or more non-empty boundary statements]
 excludes: [one or more non-empty counter-boundary statements]
 evidence: one or more evidence ids
-confidence: high | medium | low
-status: proposed
-counterevidence_or_uncertainty:
+confidence: number 0.0-1.0
+uncertainty:
 ```
+
+(`kind` is not a proposal-row field — the kind is expressed by which bucket
+(project/domains/capabilities/elements) the row sits in. `analyze_repo_structure`
+proposal rows are `additionalProperties: false`, so unknown keys like `status`
+are rejected; track work-in-progress status outside the proposal.)
 
 Rules:
 
@@ -305,7 +308,7 @@ write. Never reconstruct or edit the released rows by hand.
 
 ### 10. Persist only the released meaning and verify it
 
-Use `similar_nodes` or `find_evidence` before writes when non-starter concepts
+Use `query_ontology({operation:"similar_nodes"})` or `find_evidence` before writes when non-starter concepts
 may already exist. Pass `writePlan.concepts` rows unchanged in chunks of at most
 50:
 

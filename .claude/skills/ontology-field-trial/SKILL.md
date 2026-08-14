@@ -63,11 +63,13 @@ exists. Check them all against the clone:
 ```bash
 # list every path-shaped reference the vault makes, then test each one
 node <atlas>/cli/src/index.mjs validate <vault>          # frontmatter + graph refs
-OATLAS_REPO_ROOT=$PWD/repo node <atlas>/cli/src/index.mjs health <vault>
+OATLAS_REPO_ROOT=$PWD/repo node <atlas>/cli/src/index.mjs index <vault>   # prints "path drift"
 ```
 
-`health` is the one that opens the repository — `validate` deliberately does
-not, and says so. Then spot-check by hand: pick every cited path and confirm it
+Path-existence lives in `validate_vault`'s `pathDrift` (it needs `repoRoot` —
+the CLI `index` command passes it and prints the drift count). `health` does
+NOT open the repository (its five checks are graph-only), and plain `validate`
+deliberately does not either. Then spot-check by hand: pick every cited path and confirm it
 resolves in the clone.
 
 Record: **cited paths / paths that exist**. Anything below 100% is a

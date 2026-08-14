@@ -209,7 +209,7 @@ export const AGENT_READ_TOOLS: readonly AgentToolDefinition[] = [
   {
     name: 'list_concepts',
     description:
-      'List nodes, optionally filtered by kind and/or domain. Use `summary: true` to get a one-paragraph preview per row instead of N follow-up reads.',
+      'List nodes, optionally filtered by kind and/or domain. Use `summary: true` to get a one-paragraph preview per row instead of N follow-up reads. For large vaults, resume with the MCP pagination contract.',
     effect: 'read',
     parameters: {
       type: 'object',
@@ -242,6 +242,11 @@ export const AGENT_READ_TOOLS: readonly AgentToolDefinition[] = [
           minimum: 1,
           maximum: 500,
           description: 'Max rows. Defaults to 100, max 500.',
+        },
+        offset: {
+          type: 'integer',
+          minimum: 0,
+          description: 'Zero-based page offset. Follow pagination.nextOffset until hasMore is false.',
         },
       },
     },

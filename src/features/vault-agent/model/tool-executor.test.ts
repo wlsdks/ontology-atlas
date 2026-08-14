@@ -205,6 +205,30 @@ describe('tool-executor — 읽기', () => {
     expect(payload.conceptsIncludingReferenced).toBe(3);
   });
 
+  it('list_concepts 는 결정적 slug 순서와 offset pagination 을 지킨다', async () => {
+    const execute = createToolExecutor(
+      makePort({
+        docs: [
+          { slug: 'capabilities/z', path: 'capabilities/z.md', title: 'Z', kind: 'capability', frontmatter: {}, excerpt: '', mtime: 1 },
+          { slug: 'capabilities/a', path: 'capabilities/a.md', title: 'A', kind: 'capability', frontmatter: {}, excerpt: '', mtime: 1 },
+          { slug: 'capabilities/m', path: 'capabilities/m.md', title: 'M', kind: 'capability', frontmatter: {}, excerpt: '', mtime: 1 },
+        ],
+      }),
+    );
+    const payload = JSON.parse(
+      (await execute(call('list_concepts', { limit: 2, offset: 2 }))).content,
+    ) as { rows: Array<{ slug: string }>; pagination: Record<string, unknown> };
+    expect(payload.rows.map((row) => row.slug)).toEqual(['capabilities/z']);
+    expect(payload.pagination).toEqual({
+      offset: 2,
+      limit: 2,
+      total: 3,
+      returned: 1,
+      hasMore: false,
+      nextOffset: null,
+    });
+  });
+
   it('find_backlinks 는 지도 엣지가 아니라 frontmatter 원문에서 센다', async () => {
     // 지도는 관계 타입의 부분집합만 엣지로 그린다(`describes` 는 안 그린다).
     // 백링크를 엣지에서 세면 터미널의 에이전트가 보는 관계를 화면 안

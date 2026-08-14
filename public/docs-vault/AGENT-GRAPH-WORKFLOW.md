@@ -319,12 +319,17 @@ node cli/src/index.mjs health docs/ontology                     # compile issues
 node cli/src/index.mjs mcp-verify docs/ontology --timeout-ms 15000
 ```
 
-What the run must show, regardless of how large the vault has grown: `health`
-reports **healthy**, `validate` reports **0 problem files**, `workspace_brief`
-and `agent_brief` return **healthy**, and `mcp-verify` passes parser, server
-boot, every registered tool, strict argument/enum checks, destructive dry-runs,
-batch no-write checks, briefs, graph query smokes, and structured content
-checks.
+What the run must show is split into two contracts. `validate` reports **0
+problem files**, `health` reports no structural compile/cycle/unresolved-edge
+errors, and `mcp-verify` passes parser, server boot, every registered tool,
+strict argument/enum checks, destructive dry-runs, batch no-write checks,
+briefs, graph query smokes, and structured content checks. A cold-start or
+unqualified vault may still report `needs_attention`: `workspace_brief` and
+`agent_brief` must surface an invalid, unmeasured, or stale `meaningAssessment`
+instead of relabelling it `healthy`/`ready`/`100`. The stronger `healthy` and
+`ready` result is reserved for a vault whose meaning assessment is current and
+whose exact construction plan has passed the qualification and human-approval
+gate.
 
 ## Recommended First User Flow
 

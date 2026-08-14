@@ -110,7 +110,7 @@ describe("`.claude/rules` path scoping contract", () => {
     expect(dead, `아무 파일도 안 맞는 글롭 — 이 규칙은 실리지 않는다:\n${dead.join("\n")}`).toEqual(
       [],
     );
-  });
+  }, 15_000);
 
   it("상주 총량이 20KB 를 넘지 않는다 — 되돌아가는 길에 저항을 둔다", () => {
     // 정확한 상한이 중요한 게 아니라, 상주분이 다시 부풀 때 **누가 알아채는

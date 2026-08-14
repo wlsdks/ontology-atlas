@@ -156,7 +156,17 @@ export function buildDogfoodRequests(targets) {
     call(56, "query_concepts", { filter: `kind=capability AND domain=${domainSlug}`, limit: 5 }),
     call(60, "query_concepts", { filter: `slug!=${projectSlug}`, limit: 1 }),
     call(57, "analyze_repo_structure", { rootPath: ROOT, maxDepth: 2 }),
-    call(58, "infer_imports", { rootPath: ROOT, maxFiles: 5000 }),
+    // reviewMode 없는 기본 호출은 128 KiB 를 넘는 순간 압축 리뷰 패킷
+    // (inferImportsReview:v1, 원시 배열 없음)으로 자동 전환된다 — 이 저장소는
+    // 이미 그 문턱을 넘어서, 전체 배열 모양을 단언하는 게이트가 2026-08-13 에
+    // 빨개졌다. 게이트가 재는 것은 전체 응답 계약이므로 mcp/scripts/verify.mjs
+    // 의 같은 스모크와 동일하게 명시적으로 전체를 요청한다.
+    call(58, "infer_imports", {
+      rootPath: ROOT,
+      maxFiles: 5000,
+      reviewMode: "full",
+      allowLargeResponse: true,
+    }),
     call(63, "rename_concept", {
       oldSlug: capabilitySlug,
       newSlug: `${capabilitySlug}-dogfood-dry-run`,
