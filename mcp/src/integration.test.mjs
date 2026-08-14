@@ -4174,6 +4174,53 @@ await test("query_ontology health/workspace_brief — validator findings cannot 
   }
 });
 
+await test("query_ontology health/workspace_brief — meaning assessment cannot report healthy", async () => {
+  const root = makeVault([
+    { slug: "project", content: "---\nkind: project\ntitle: Project\ndomains: [domains/core]\n---\n" },
+    { slug: "domains/core", content: "---\nkind: domain\ntitle: Core\ncapabilities: [capabilities/run]\n---\n" },
+    { slug: "capabilities/run", content: "---\nkind: capability\ntitle: Run\ndomain: domains/core\nelements: [elements/worker]\n---\n" },
+    { slug: "elements/worker", content: "---\nkind: element\ntitle: Worker\ndomain: domains/core\n---\n" },
+  ]);
+  try {
+    const { responses } = await rpc(root, [
+      ...INIT_REQUESTS,
+      callTool(2, "query_ontology", { operation: "health" }),
+      callTool(3, "query_ontology", { operation: "workspace_brief" }),
+    ]);
+    const health = getCallParsed(responses, 2);
+    const brief = getCallParsed(responses, 3);
+    assert.equal(health.checks.find((check) => check.id === "meaning_assessment")?.status, "warn");
+    assert.equal(health.status, "needs_attention");
+    assert.equal(brief.status, "needs_attention");
+    assert.equal(brief.health.checks.find((check) => check.id === "meaning_assessment")?.status, "warn");
+    assert.equal(brief.nextActions[0]?.id, "meaning_assessment");
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+await test("query_ontology health/workspace_brief — clean projectless graph stays healthy", async () => {
+  const root = makeVault([
+    { slug: "domains/core", content: "---\nkind: domain\ntitle: Core\ncapabilities: [capabilities/run]\n---\n" },
+    { slug: "capabilities/run", content: "---\nkind: capability\ntitle: Run\ndomain: domains/core\n---\n" },
+  ]);
+  try {
+    const { responses } = await rpc(root, [
+      ...INIT_REQUESTS,
+      callTool(2, "query_ontology", { operation: "health" }),
+      callTool(3, "query_ontology", { operation: "workspace_brief" }),
+    ]);
+    const health = getCallParsed(responses, 2);
+    const brief = getCallParsed(responses, 3);
+    assert.equal(health.status, "healthy");
+    assert.equal(health.checks.some((check) => check.id === "meaning_assessment"), false);
+    assert.equal(brief.status, "healthy");
+    assert.equal(brief.health.checks.some((check) => check.id === "meaning_assessment"), false);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
 await test("list_concepts — tmp vault 의 노드 수 정확히 보고", async () => {
   const root = makeVault([
     { slug: "a", content: "---\nkind: capability\ntitle: A\n---\n" },
