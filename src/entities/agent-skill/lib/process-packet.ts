@@ -20,6 +20,7 @@ const PROCESS_DIAGNOSTIC_CODES = new Set([
   "scan_truncated",
   "skill_markdown_unsupported",
   "numbered_steps_unavailable",
+  "step_ordinals_invalid",
   "resource_missing",
   "resource_existence_unverified",
   "resource_path_unsupported",
@@ -233,6 +234,12 @@ function validProcess(value: unknown): value is SkillProcessIR {
     }
     stepIds.add(step.stepId);
     knownOrdinals.add(Number(step.ordinal));
+  }
+  if (!process.steps.every((valueStep, index) => {
+    const step = record(valueStep);
+    return step !== null && step.ordinal === index + 1;
+  })) {
+    return false;
   }
   const expectedSemanticDiagnostics: unknown[] = [];
   for (const valueStep of process.steps) {

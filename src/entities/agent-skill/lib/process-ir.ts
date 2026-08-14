@@ -284,6 +284,20 @@ export function deriveSkillProcess({
     ]);
   }
 
+  const ordinalsAreContiguous = steps.every(
+    (step, index) => step.ordinal === index + 1,
+  );
+  if (!ordinalsAreContiguous) {
+    return unavailable(source, false, [
+      {
+        code: "step_ordinals_invalid",
+        severity: "error",
+        message:
+          "Numbered process steps must use each ordinal exactly once in ascending order.",
+      },
+    ]);
+  }
+
   const diagnostics: SkillProcessDiagnostic[] = [];
   const knownOrdinals = new Set(steps.map((step) => step.ordinal));
   const semanticSteps = steps.map((step) => {

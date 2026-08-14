@@ -65,9 +65,51 @@ test.describe("스킬 인벤토리", () => {
     await page.getByTestId("skill-packet-copy").click();
     await expect(page.getByTestId("skill-packet-status")).toContainText("복사됨");
     const copied = await page.evaluate(() => (window as unknown as { __skillPacket?: string }).__skillPacket ?? "");
-    expect(copied).toContain('"packetVersion":"skillProcessPacket:v1"');
-    expect(copied).toContain('"packetDigest":"sha256:');
-    expect(copied).toContain('"sourceDigest":"sha256:');
+    const packet = JSON.parse(copied) as {
+      packetVersion?: string;
+      packetDigest?: string;
+      sourceDigest?: string;
+      process?: {
+        irVersion?: string;
+        source?: { path?: string; digest?: string };
+        scanTruncated?: boolean;
+        diagnostics?: unknown[];
+        edges?: unknown[];
+        steps?: Array<{
+          stepId?: string;
+          ordinal?: number;
+          exactText?: string;
+          semanticLabels?: unknown[];
+          sourceSpan?: { start?: { line?: number }; end?: { line?: number } };
+        }>;
+        resources?: unknown[];
+      };
+    };
+    expect(packet.packetVersion).toBe("skillProcessPacket:v1");
+    expect(packet.packetDigest).toMatch(/^sha256:[a-f0-9]{64}$/);
+    expect(packet.sourceDigest).toMatch(/^sha256:[a-f0-9]{64}$/);
+    expect(packet.process).toMatchObject({
+      irVersion: "skillProcessIR:v1",
+      source: { path: "skills/gamma/SKILL.md", digest: packet.sourceDigest },
+      scanTruncated: false,
+      diagnostics: [],
+      resources: [],
+      edges: [],
+    });
+    expect(packet.process?.steps).toHaveLength(9);
+    expect(packet.process?.steps?.map((step) => step.ordinal)).toEqual(
+      Array.from({ length: 9 }, (_, index) => index + 1),
+    );
+    expect(packet.process?.steps?.every((step) =>
+      typeof step.stepId === "string" &&
+      /^step:[a-f0-9]{16}$/.test(step.stepId) &&
+      typeof step.exactText === "string" &&
+      step.exactText.length > 0 &&
+      Array.isArray(step.semanticLabels) &&
+      step.semanticLabels.length === 0 &&
+      step.sourceSpan?.start?.line === (step.ordinal ?? 0) + 5 &&
+      step.sourceSpan?.end?.line === (step.ordinal ?? 0) + 5,
+    )).toBe(true);
   });
 
   test("390·1023은 목록↔상세, 1024·1512는 split이며 상세가 0×0이 아니다", async ({ page }, testInfo) => {

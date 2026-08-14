@@ -80,6 +80,7 @@ export type SkillProcessDiagnosticCode =
   | "scan_truncated"
   | "skill_markdown_unsupported"
   | "numbered_steps_unavailable"
+  | "step_ordinals_invalid"
   | "resource_missing"
   | "resource_existence_unverified"
   | "resource_path_unsupported"

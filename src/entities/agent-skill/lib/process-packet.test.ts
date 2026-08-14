@@ -117,6 +117,34 @@ describe("skill process packet", () => {
     });
   });
 
+  it.each([
+    ["duplicate", [1, 1]],
+    ["descending", [2, 1]],
+    ["gapped", [1, 3]],
+  ])("rejects %s process ordinals in packet validation", (_label, ordinals) => {
+    const derived = deriveSkillProcess({
+      relativePath: "skills/handoff/SKILL.md",
+      text: raw,
+    });
+    expect(derived.state).toBe("ready");
+    if (derived.state !== "ready") return;
+    const forged = {
+      state: "ready",
+      process: {
+        ...derived.process,
+        steps: derived.process.steps.map((step, index) => ({
+          ...step,
+          ordinal: ordinals[index],
+        })),
+      },
+    } as unknown as SkillProcessDerivation;
+
+    expect(serializeProcessPacket(forged)).toMatchObject({
+      state: "unavailable",
+      diagnostics: [{ code: "process_invalid" }],
+    });
+  });
+
   it("preserves exact semantic labels in the canonical source-hidden packet", () => {
     const derived = deriveSkillProcess({
       relativePath: "skills/handoff/SKILL.md",

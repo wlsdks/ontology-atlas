@@ -637,6 +637,14 @@ diagnostic/resource truth, packet 부재의 정직한 unavailable, tamper fail-c
 입증하는 것이다. 이 추가 truth 중 하나라도 못 지키면 같은 반증 조건이 성립한다.
 **재검토**: K1.1 source-hidden A/B 직후, K1.3 구현 전.
 
+K1.1의 번호 절차는 `1..n`을 정확히 한 번씩, 원문 순서대로 사용해야 한다. 중복·
+역순·건너뛴 번호는 부분적인 ready rail이나 packet으로 보존하지 않고
+`step_ordinals_invalid` 진단과 `unavailable` 상태로 닫는다. packet 검증기도 같은
+연속성 규칙을 다시 검사해, 타입을 위조한 source-hidden handoff가 의미 없는 ordinal
+대상으로 semantic label을 연결하지 못하게 한다. 이 규칙은 K1.1의 원문 손실 방지와
+K1.3의 canonical packet 무결성을 함께 지키는 내부 IR 계약이며 새 MCP/CLI 표면은 만들지
+않는다.
+
 **상태**: 유효
 
 ---
