@@ -118,7 +118,8 @@ is a changelog.
   `missing-expected-field` warning and tell the human.
 - **Concurrent edits**: every write tool accepts `expected_mtime` from
   `get_concept`. Use it on `patch_concept` / `rename_concept` /
-  `merge_concepts` / `delete_concept` so a parallel human edit isn't
+  `merge_concepts` / `delete_concept` (`merge_concepts` additionally takes
+  `expected_into_mtime` to guard the survivor) so a parallel human edit isn't
   silently overwritten.
 - **Backlink rot**: after `rename_concept`, the tool atomically rewrites
   every backlink. Don't do `find_backlinks` + N `patch_concept` manually.

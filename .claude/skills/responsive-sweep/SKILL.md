@@ -42,7 +42,7 @@ description: Live-verify a UI change across the tablet/laptop/wide breakpoint ma
    **`?guides=off` 를 항상 함께 붙인다** (2026-07-28) — 첫 방문 안내가 반투명
    막으로 화면을 덮으면 `elementFromPoint` 가 전부 그 막을 돌려줘서, 겹침·가림
    판정이 통째로 무의미해진다. 안내 화면 자체의 반응형을 볼 때만 `?guides=reset`.
-   이 목록이 있는 곳은 한 곳뿐이다: `features/guided-tour/model/first-run-seen.ts`.
+   이 목록이 있는 곳은 한 곳뿐이다: `src/features/guided-tour/model/first-run-seen.ts`.
 2. **rect 를 직접 잰다** — `evaluate_script` 로:
    - 화면에 고정돼 떠 있는 요소끼리 겹치는지: 의심되는 요소들의
      `getBoundingClientRect()` 를 받아 겹친 폭을 계산해 수치로 남긴다

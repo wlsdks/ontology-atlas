@@ -1,6 +1,6 @@
 ---
 name: ontology-extract
-description: User gave you prose — a meeting note, a PR description, an RFC draft, a chat log, a paragraph from a Notion page — and asks "extract ontology from this" or similar. Read the prose, cross-check the existing vault with `similar_nodes` / `find_evidence`, then propose a small set of candidate nodes/edges, ask the user to pick which to land, and only then call `add_concept` / `add_relation` / `patch_concept`. Skip when the prose is just a personal note with no ontology-shaped concepts.
+description: User gave you prose — a meeting note, a PR description, an RFC draft, a chat log, a paragraph from a Notion page — and asks "extract ontology from this" or similar. Read the prose, cross-check the existing vault with `query_ontology(similar_nodes)` / `find_evidence`, then propose a small set of candidate nodes/edges, ask the user to pick which to land, and only then call `add_concept` / `add_relation` / `patch_concept`. Skip when the prose is just a personal note with no ontology-shaped concepts.
 ---
 
 # /ontology-extract — prose 에서 ontology 가 자라게
@@ -26,12 +26,12 @@ description: User gave you prose — a meeting note, a PR description, an RFC dr
 ```
 list_kinds                  # 전체 윤곽
 find_evidence(title)        # prose 의 핵심 명사 한두 개를 title 매치
-similar_nodes               # prose 의 핵심 구절을 candidate 로 받아 유사도 점수
+query_ontology(similar_nodes)  # prose 의 핵심 구절을 candidate 로 받아 유사도 점수
 ```
 
 줄글에서 *명사* 와 *동사구* 를 후보(candidate — 아직 볼트에 쓰지 않고 사용자가 고르게 제안만 하는 노드) 로 뽑은 다음, 볼트에 **이미 있는지** 먼저 확인한다. 가장 흔한 실패는 `auth-login` 노드가 이미 있는데 "사용자 로그인" 이라는 노드를 따로 만들어 같은 개념이 둘이 되는 것이다.
 
-`similar_nodes({candidateSlug, title})` 는 줄글에서 뽑은 말과 기존 노드가 얼마나 닮았는지를 (slug + title + 이웃 노드 기준) 점수로 돌려준다. 점수가 0.3 이상이면 *기존 노드를 patch(고쳐 쓰기)* 할 후보로, 그 미만이면 *새 노드* 후보로 나눈다.
+`query_ontology({operation:"similar_nodes", candidateSlug, title})` 는 — similar_nodes 는 독립 도구가 아니라 query_ontology 의 operation 이다 — 줄글에서 뽑은 말과 기존 노드가 얼마나 닮았는지를 (slug + title + 이웃 노드 기준) 점수로 돌려준다. 점수가 0.3 이상이면 *기존 노드를 patch(고쳐 쓰기)* 할 후보로, 그 미만이면 *새 노드* 후보로 나눈다.
 
 ### 2. Candidate 추출 — kind 별 분류
 
@@ -123,7 +123,7 @@ warnings 0. find_orphans 변동 0.
 >
 > Agent:
 > - `find_evidence("OTP")` → 0 매치
-> - `similar_nodes(title:"OTP 전송")` → `elements/sms-sender` 점수 0.18 (낮음, 새 노드 권장)
+> - `query_ontology({operation:"similar_nodes", title:"OTP 전송"})` → `elements/sms-sender` 점수 0.18 (낮음, 새 노드 권장)
 > - `list_kinds` → 26 노드, capabilities/auth-login 존재 확인
 > - **후보 표 제시**: new `elements/otp-sender` (domain auth), patch `capabilities/auth-login` body 에 OTP 흐름 추가
 > - 사용자 "둘 다 진행" → `add_concept` + `patch_concept(expected_mtime)`

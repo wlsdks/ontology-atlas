@@ -60,7 +60,10 @@ Confluence 를 읽기만 하지, 거기 다시 쓰지 않는다.
 저장해야 한다:
 
 ```
-mkdir -p .ontology-atlas/wiki-import   # vault 바깥, 세션 스크래치
+mkdir -p .ontology-atlas/wiki-import   # 세션 스크래치 — repoRoot 안에 둔다
+# filePath 는 절대 경로로 넘긴다(상대 경로는 MCP 서버 cwd 기준이라 셸 cwd 와
+# 다를 수 있다). repoRoot 밖 파일은 confirm:true 여도 allowOutsideRepo:true
+# 없이는 차단된다 — dry-run 검토 후에만 그 스위치를 켠다.
 # 위키 MCP 응답 본문을 그대로 저장
 write .ontology-atlas/wiki-import/<page-slug>.md
 ```
@@ -78,7 +81,8 @@ absorb_document({ filePath: ".ontology-atlas/wiki-import/<page-slug>.md" })
 응답의 `sections[]` 를 본다. 각 섹션은 `category` (policy / architecture /
 unclassified), `kind` (document / capability / element / null), `action`
 (absorb / suggest / skip), 그리고 `injectionSuspect` (문서 안에 심어 둔
-지시문 — 읽는 에이전트를 조종하려고 박아 둔 문장 — 이 몇 개 걸렸는지) 를 갖는다:
+지시문 — 읽는 에이전트를 조종하려고 박아 둔 문장 — 에 걸렸는가. 섹션 행은
+boolean 이고, 몇 개인지 총계는 `summary.injectionSuspect` 에 있다) 를 갖는다:
 
 | action | 의미 |
 |---|---|
