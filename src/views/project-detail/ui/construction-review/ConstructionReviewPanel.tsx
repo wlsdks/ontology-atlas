@@ -205,15 +205,15 @@ export function ConstructionReviewPanel({ review }: { review: ConstructionReview
         {evidenceOpen ? t("hideEvidence") : t("showEvidence")}
       </button>
 
-      <Surface
-        as="section"
-        open={evidenceOpen}
-        motion="overlay"
-        data-testid="construction-review-evidence"
-        id="construction-review-evidence-panel"
-        aria-label={t("showEvidence")}
-        className="mt-3 flex flex-col gap-4 border-t border-[color:var(--color-border-soft)] pt-4"
-      >
+      <div id="construction-review-evidence-panel" className="contents">
+        <Surface
+          as="section"
+          open={evidenceOpen}
+          motion="overlay"
+          data-testid="construction-review-evidence"
+          aria-label={t("showEvidence")}
+          className="mt-3 flex flex-col gap-4 border-t border-[color:var(--color-border-soft)] pt-4"
+        >
         <EvidenceSection title={t("cqTitle")}>
           <ol className="flex flex-col gap-2">
             {questions.map((value, index) => {
@@ -355,14 +355,14 @@ export function ConstructionReviewPanel({ review }: { review: ConstructionReview
               {draftOpen ? t("hideDraft") : t("showDraft")}
             </button>
           </div>
-          <Surface
-            as="div"
-            open={draftOpen}
-            motion="overlay"
-            id="construction-review-draft-fields"
-            data-testid="construction-review-draft-fields"
-            className="mt-3 flex flex-col gap-3"
-          >
+          <div id="construction-review-draft-fields" className="contents">
+            <Surface
+              as="div"
+              open={draftOpen}
+              motion="overlay"
+              data-testid="construction-review-draft-fields"
+              className="mt-3 flex flex-col gap-3"
+            >
             <p
               data-testid="construction-review-draft-dirty"
               role="status"
@@ -439,9 +439,11 @@ export function ConstructionReviewPanel({ review }: { review: ConstructionReview
               <span data-testid="construction-review-plan-digest">{t("planDigest", { digest: review.planDigest })}</span>
               <span>{t("draftNoWrite")}</span>
             </div>
-          </Surface>
+            </Surface>
+          </div>
         </section>
-      </Surface>
+        </Surface>
+      </div>
     </section>
   );
 }
