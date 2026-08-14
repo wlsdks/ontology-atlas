@@ -78,6 +78,43 @@
 **IN**: 모바일 확장 INDEX의 기존 설정 escape hatch, `screenControls.audiencePlain`, focus-visible·state 보존 검증
 **OUT**: 새 settings route/tab, public MCP/CLI/schema, 전역 expert/general ontology model
 
+## 2026-08-14 — 전문가 disclosure와 Skills gold packet은 근거를 버리지 않는다
+
+**관찰**: U1.3 기본 요약과 fail-closed는 통과했지만, 전문가 disclosure가 CQ 결과의
+상태·witness refs, witness source span/digest/currentness, 예시·반례의 판정 문장,
+relation rationale/evidence refs, 7개 축의 evidence/finding refs를 일부 숨겼다.
+K1.2/K1.3은 production unit test만으로는 독립 gold corpus와 source-hidden byte
+consumer를 증명하지 못했다.
+
+**결정**: 같은 digest-bound artifact를 유지한 채 전문가 화면에 위 근거를 펼쳐 보이고,
+세션 초안이 바뀐 필드(CQ/witness/exact plan)를 field-level diff로 표시한다. Skills에는
+별도 `agentSkillProcessGold:v1` corpus와 독립 UTF-8/packet digest consumer를 둔다.
+gold grammar의 admitted label precision은 100%, ambiguous label은 0개·diagnostic으로
+남기고, packet은 source text·frontmatter를 운반하지 않으며 `edges: []`를 유지한다.
+이는 UI의 새 판정이나 vault/MCP write가 아니다.
+
+**적용 규칙**: source-bound IR·K1.1 순서·K1.2 좁은 문법·K1.3 canonical clipboard
+계약을 바꾸지 않는다. 새 gold corpus가 실패하면 gate가 RED가 되어야 하며, pass만으로
+source-hidden qualification을 주장하지 않는다. 실제 fresh agent가 packet만으로
+27/27 exact step/order/line·digest·resource·tamper를 재현하기 전까지 K1.3 전체 상태는
+`in_progress`로 남긴다.
+
+**검증**: ConstructionReviewPanel 4/4, process gold 3/3, TypeScript·ESLint,
+U1.3/K1 Playwright 18/18, static build 75 routes. gold branch-target mutation은
+의도적으로 1건 RED 후 원복해 gate를 확인했다.
+
+**기록된 반대**: “근거는 raw JSON에서만 보여 주면 된다”는 의견은 기본 사용자의 결정
+속도와 expert provenance를 분리하지 못한다. 반대로 “모든 source를 packet에 넣자”는
+의견은 private path·원문 누출과 portable handoff 경계를 깨므로 채택하지 않는다.
+
+**반증 조건**: 독립 fresh source-hidden consumer가 gold packet에서 raw Markdown을
+요구하거나 digest/line/resource truth를 재현하지 못하면 K1.3 clipboard-only 결정을
+재검토한다. 전문가 화면에서 receipt와 초안 diff가 불일치하거나 390px에서 disclosure가
+겹치면 U1.3을 되돌린다.
+
+**서명**: 소유자 승인 하에 집행
+**상태**: 유효
+
 ## 2026-08-13 — 구조 readiness와 의미 qualification을 검수 계층에서 분리한다
 
 **결정:** 에이전트 handoff와 ontology-sync는 구조 readiness를 semantic qualification과

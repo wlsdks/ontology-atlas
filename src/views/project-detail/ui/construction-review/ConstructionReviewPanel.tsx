@@ -23,6 +23,45 @@ interface ConstructionReviewDraft {
   readonly plan: string;
 }
 
+function stringList(value: unknown): string[] {
+  return rows(value).map((item) => text(item)).filter(Boolean);
+}
+
+function sourceSpanText(value: unknown): string {
+  const span = record(value);
+  const start = record(span?.start);
+  const end = record(span?.end);
+  if (!start || !end || typeof start.line !== "number" || typeof end.line !== "number") {
+    return "";
+  }
+  const startColumn = typeof start.column === "number" ? `:${start.column}` : "";
+  const endColumn = typeof end.column === "number" ? `:${end.column}` : "";
+  return `L${start.line}${startColumn}–L${end.line}${endColumn}`;
+}
+
+function sourceEvidenceText(provenance: UnknownRecord | null, unreadable: string): string {
+  const sourceRef = text(provenance?.sourceRef);
+  const span = sourceSpanText(provenance?.sourceSpan);
+  const digest = text(provenance?.digest) || text(provenance?.sourceDigest);
+  const location = [sourceRef, span].filter(Boolean).join(" · ");
+  return [location || unreadable, digest].filter(Boolean).join(" · ");
+}
+
+function draftDiffs(review: ConstructionReviewProjection, draft: ConstructionReviewDraft): string[] {
+  const original = draftFor(review);
+  const changes: string[] = [];
+  const changedQuestions = Object.keys(draft.questions).filter(
+    (id) => draft.questions[id] !== original.questions[id],
+  );
+  if (changedQuestions.length > 0) changes.push(`CQ: ${changedQuestions.join(", ")}`);
+  const changedWitnesses = Object.keys(draft.witnessSourceRefs).filter(
+    (id) => draft.witnessSourceRefs[id] !== original.witnessSourceRefs[id],
+  );
+  if (changedWitnesses.length > 0) changes.push(`witness: ${changedWitnesses.join(", ")}`);
+  if (draft.plan !== original.plan) changes.push("exact plan");
+  return changes;
+}
+
 function draftFor(review: ConstructionReviewProjection): ConstructionReviewDraft {
   const questions = Object.fromEntries(
     rows(review.qualification.competencyQuestions).map((value, index) => {
@@ -154,6 +193,7 @@ export function ConstructionReviewPanel({ review }: { review: ConstructionReview
         type="button"
         data-testid="construction-review-evidence-toggle"
         aria-expanded={evidenceOpen}
+        aria-controls="construction-review-evidence-panel"
         onClick={() => setEvidenceOpen((open) => !open)}
         className={controlClass({
           shape: "link",
@@ -170,18 +210,32 @@ export function ConstructionReviewPanel({ review }: { review: ConstructionReview
         open={evidenceOpen}
         motion="overlay"
         data-testid="construction-review-evidence"
+        id="construction-review-evidence-panel"
+        aria-label={t("showEvidence")}
         className="mt-3 flex flex-col gap-4 border-t border-[color:var(--color-border-soft)] pt-4"
       >
         <EvidenceSection title={t("cqTitle")}>
           <ol className="flex flex-col gap-2">
             {questions.map((value, index) => {
               const question = record(value);
+              const questionId = text(question?.id) || String(index + 1);
+              const result = rows(qualification.cqResults).find((candidate) => {
+                const item = record(candidate);
+                return text(item?.cqId) === questionId || text(item?.id) === questionId;
+              });
+              const resultRecord = record(result);
               return (
-                <li key={text(question?.id) || index} className="text-body text-[color:var(--color-text-secondary)]">
+                <li key={questionId} className="text-body text-[color:var(--color-text-secondary)]">
                   <span className="font-mono text-caption text-[color:var(--color-text-quaternary)]">
-                    {text(question?.id) || index + 1}
+                    {questionId}
                   </span>{" "}
                   {text(question?.question) || t("unreadable")}
+                  <span className="ml-1 text-label text-[color:var(--color-text-tertiary)]">
+                    · {text(resultRecord?.status) || t("unreadable")}
+                    {stringList(resultRecord?.witnessRefs).length > 0
+                      ? ` · ${stringList(resultRecord?.witnessRefs).join(", ")}`
+                      : ""}
+                  </span>
                   <ExampleRows question={question} />
                 </li>
               );
@@ -197,9 +251,9 @@ export function ConstructionReviewPanel({ review }: { review: ConstructionReview
               return (
                 <li key={text(witness?.id) || index} className="break-words text-label leading-prose text-[color:var(--color-text-secondary)]">
                   <b className="font-[var(--font-weight-emphasis)]">{text(witness?.id) || t("unreadable")}</b>
-                  {` · ${text(witness?.kind) || t("unreadable")} · ${text(provenance?.sourceRef) || t("unreadable")}`}
+                  {` · ${text(witness?.kind) || t("unreadable")} · ${sourceEvidenceText(provenance, t("unreadable"))}`}
                   <span className="mt-0.5 block font-mono text-caption text-[color:var(--color-text-quaternary)]">
-                    {text(provenance?.digest) || t("unreadable")}
+                    {witness?.current === false ? t("staleWitness") : t("currentWitness")}
                   </span>
                 </li>
               );
@@ -230,15 +284,20 @@ export function ConstructionReviewPanel({ review }: { review: ConstructionReview
         </EvidenceSection>
 
         <EvidenceSection title={t("axesTitle")}>
-          <ul className="grid gap-1 sm:grid-cols-2 lg:grid-cols-3">
-            {axes.map((value, index) => {
-              const axis = record(value);
-              return (
-                <li key={text(axis?.axis) || index} className="text-label text-[color:var(--color-text-secondary)]">
-                  {text(axis?.axis) || t("unreadable")} · {text(axis?.status) || t("unreadable")}
-                </li>
-              );
-            })}
+            <ul className="grid gap-1 sm:grid-cols-2 lg:grid-cols-3">
+              {axes.map((value, index) => {
+                const axis = record(value);
+                const evidenceRefs = stringList(axis?.evidenceRefs);
+                const findingIds = stringList(axis?.findingIds);
+                return (
+                  <li key={text(axis?.axis) || index} className="text-label text-[color:var(--color-text-secondary)]">
+                  <span className="font-[var(--font-weight-emphasis)]">{text(axis?.axis) || t("unreadable")}</span>
+                  {` · ${text(axis?.status) || t("unreadable")}`}
+                  {evidenceRefs.length > 0 ? <span className="block text-caption text-[color:var(--color-text-quaternary)]">{t("evidenceRefs", { refs: evidenceRefs.join(", ") })}</span> : null}
+                  {findingIds.length > 0 ? <span className="block text-caption text-[color:var(--color-danger-text)]">{t("findingIds", { ids: findingIds.join(", ") })}</span> : null}
+                  </li>
+                );
+              })}
           </ul>
         </EvidenceSection>
 
@@ -263,9 +322,9 @@ export function ConstructionReviewPanel({ review }: { review: ConstructionReview
           <p className="mt-1 font-mono text-caption break-all text-[color:var(--color-text-quaternary)]">
             {t("sourceDigest", { digest: review.sourceDigest })}
           </p>
-          <PlanRows title={t("reviewPlan")} plan={review.reviewPlan} />
+          <PlanRows title={t("reviewPlan")} plan={review.reviewPlan} unreadable={t("unreadable")} />
           {review.writePlan ? (
-            <PlanRows title={t("writePlan")} plan={review.writePlan} />
+            <PlanRows title={t("writePlan")} plan={review.writePlan} unreadable={t("unreadable")} />
           ) : (
             <p className="mt-2 text-label text-[color:var(--color-text-tertiary)]">{t("writePlanMissing")}</p>
           )}
@@ -311,6 +370,11 @@ export function ConstructionReviewPanel({ review }: { review: ConstructionReview
             >
               {draftDirty ? t("draftDirty") : t("draftClean")}
             </p>
+            {draftDirty ? (
+              <ul data-testid="construction-review-draft-diff" className="flex flex-col gap-1 rounded-card border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-3 py-2 text-label text-[color:var(--color-text-secondary)]">
+                {draftDiffs(review, draft).map((change) => <li key={change}>{t("draftChangedField", { field: change })}</li>)}
+              </ul>
+            ) : null}
             {draftDirty ? (
               <button
                 type="button"
@@ -399,8 +463,14 @@ function EvidenceSection({ title, children }: { title: string; children: React.R
 }
 
 function ExampleRows({ question }: { question: UnknownRecord | null }) {
-  const examples = rows(question?.examples).map((item) => text(record(item)?.id)).filter(Boolean);
-  const counterexamples = rows(question?.counterexamples).map((item) => text(record(item)?.id)).filter(Boolean);
+  const examples = rows(question?.examples).map((item) => {
+    const example = record(item);
+    return [text(example?.id), text(example?.expectedStatus)].filter(Boolean).join(" · ");
+  }).filter(Boolean);
+  const counterexamples = rows(question?.counterexamples).map((item) => {
+    const counterexample = record(item);
+    return [text(counterexample?.id), text(counterexample?.mustReject)].filter(Boolean).join(" · ");
+  }).filter(Boolean);
   if (examples.length + counterexamples.length === 0) return null;
   return (
     <span className="mt-1 block text-caption text-[color:var(--color-text-quaternary)]">
@@ -409,11 +479,15 @@ function ExampleRows({ question }: { question: UnknownRecord | null }) {
   );
 }
 
-function PlanRows({ title, plan }: { title: string; plan: Readonly<Record<string, unknown>> }) {
+function PlanRows({ title, plan, unreadable }: { title: string; plan: Readonly<Record<string, unknown>>; unreadable: string }) {
   const concepts = rows(plan.concepts).map((item) => text(record(item)?.slug)).filter(Boolean);
   const relations = rows(plan.relations).map((item) => {
     const row = record(item);
-    return [text(row?.from), text(row?.type), text(row?.to)].filter(Boolean).join(" → ");
+    const relation = [text(row?.from), text(row?.type), text(row?.to)].filter(Boolean).join(" → ");
+    const rationale = text(row?.rationale) || text(row?.why);
+    const evidenceRefs = stringList(row?.evidenceRefs ?? row?.witnessRefs);
+    const details = [rationale, evidenceRefs.length ? `evidence: ${evidenceRefs.join(", ")}` : ""].filter(Boolean).join(" · ");
+    return details ? `${relation} · ${details}` : relation || unreadable;
   }).filter(Boolean);
   return (
     <div className="mt-3">
