@@ -56,7 +56,11 @@ node cli/src/index.mjs overview        # from the repo root
 
 After connecting an agent (the installed app's connect button, or
 `agent-setup` from this checkout), ask it to prove the connection before it
-edits anything:
+edits anything. `agent-setup --json` also labels each config's launch scope:
+source-checkout configs are **source-bound**, while only the installed app's
+bundled binary is portable across working directories. A relative
+`./mcp/src/index.js` example copied into an unrelated empty folder is a review
+template, not a live connection:
 
 > Use the ontology-atlas MCP server to run `validate_vault`, then
 > `query_ontology({ "operation""workspace_brief" })`, then

@@ -139,7 +139,14 @@ quick start reports review-ready, not semantically complete.
 
 Open either the codebase root or the vault folder in the agent and restart it.
 The generated root config points at `./ontology`; the vault-local config uses
-`OATLAS_VAULT=.` so the folder stays portable.
+`OATLAS_VAULT=.` so the vault coordinates stay portable. The generated source
+checkout launcher is still **source-bound**: it invokes `node` with an absolute
+`mcp/src/index.js` path when `agent-setup` writes an active config, while the
+tracked `.mcp.json.example` / `.codex/config.toml` examples use a relative
+`./mcp/src/index.js` only as a merge template for a real Atlas checkout. Copying
+those examples into an arbitrary empty cwd does not install or start MCP and
+must remain a review state. The only portable executable channel is the
+installed app's bundled absolute `ontology-atlas-mcp` binary.
 
 For an existing vault, run `node cli/src/index.mjs agent-setup ./ontology --write`
 from the codebase root. It checks or creates only `.mcp.json` and
