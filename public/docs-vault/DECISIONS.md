@@ -40,6 +40,30 @@
 **상태**: 유효 / 뒤집힘(→ 링크) / 반증됨(관측: …)
 ```
 
+## 2026-08-14 (9) — 100+ node 구조 스트레스와 의미 qualification은 별도 gate다
+
+**관찰**: fresh OSS scratch에서 5-starter vault부터 Atlas MCP로 50+50+25를
+작성해 130개 Markdown, 132 edges를 만들었다. pagination은 50/50/30으로 130개를
+중복 없이 복원했고, full-body 130/130, validate 130 files/0 problems, compile
+issues 0, unresolved edges 0, source path 5/5였다. 그러나 source-hidden semantic
+감사에서는 typed node 129/130, citation 5/130, unknown capability 120개, 4 audience
+CQ 0개 측정, semantic/functional/pragmatic/interoperability 미측정으로 나왔다.
+
+**결정**: node 수·페이지·컴파일 green을 의미 품질 점수나 95점 qualification으로
+승격하지 않는다. 구조 스트레스 결과는 MCP transport/read/validator 증거로만 보존하고,
+낯선 100+ 제품의 95점 주장은 fresh evaluator가 source clone 없이 vault만 받아 4 audience
+CQ·7축·citation truth·unknown/unsupported를 판정한 뒤 constructionQualification:v1와
+사람 승인으로 닫을 때만 허용한다.
+
+**적용 규칙**: 승인 없는 bootstrap/index --apply는 계속 review/approval_required/write 0이다.
+semantic evaluator가 없으면 self-report로 대체하지 않고 `not_measured`로 남긴다.
+typed node 수 불일치와 citation 없는 node는 구조 수치와 별도로 blocker로 기록한다.
+
+**반증 조건**: 독립 fresh source-hidden evaluator가 130/130 claim과 citation을 재현하고
+4 audience CQ 및 7축을 95점 이상으로 통과시키면 이 분리를 재검토한다. 반대로 구조 수치만
+green인데 의미 결론이 계속 비어 있으면 100+ stress를 qualification 근거로 쓰지 않는다.
+**상태**: 유효
+
 ## 2026-08-14 (2) — Skills packet은 독립 source-hidden consumer에서도 닫힌다
 
 **관찰**: 이전 K1.3 검수는 production unit 경로만으로 canonical packet을 확인해
