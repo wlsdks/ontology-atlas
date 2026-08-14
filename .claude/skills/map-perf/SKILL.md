@@ -35,9 +35,10 @@ URL 에 `e2e=1` 이 있을 때만 `window.__atlasMap` 이 붙는다. 측정할 �
 
 ```js
 window.__atlasMap.nodes()
-// → [{ id, kind, label, x, y, draggable, hidden }]
+// → [{ id, kind, label, x, y, draggable, hidden, radius, agentFocus }]
 //   x/y = CSS 픽셀(마우스 좌표계). draggable = 시뮬에 있는가(= 끌 수 있는가).
-//   hidden = 밀도 게이트로 접혀 화면에 없는가.
+//   hidden = 밀도 게이트로 접혀 화면에 없는가. radius = 화면 반지름.
+//   이 밖에 edges() · edgeAt() · camera() · selection() · chips() 게터도 있다.
 
 window.__atlasMap.interaction()
 // → { kind: "node" | "pan" | "idle", nodeId }

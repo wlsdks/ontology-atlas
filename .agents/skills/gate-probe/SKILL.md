@@ -48,7 +48,7 @@ description: Prove a gate before you trust it. Run whenever you add or change a 
 ### 1. 켜기 전 전수 측정 (새 룰일 때만)
 
 「전수 측정」은 **이 룰을 지금 켜면 몇 건이 걸리는지 하나도 빠뜨리지 않고 세어
-보는 것**이다. `.claude/rules/design.md` 「룰을 켜기 전 반드시 측정한다」의 4단계를
+보는 것**이다. `.claude/rules/design-gates.md` 「룰을 켜기 전 반드시 측정한다」의 4단계를
 그대로 따른다. 걸린 것을 **패턴별로 분류**하고, 진짜 위반이 한 PR 로 치울 만한
 규모인지 본다.
 

@@ -40,7 +40,7 @@ description: Build a screen from this repo's design system deterministically —
 
 1. `app/globals.css` 에서 그 역할을 하는 토큰(token — 색·크기 같은 값에 이름을
    붙여 한 곳에 모아 둔 것)이 이미 있는지 찾는다
-2. `docs/DESIGN-SYSTEM.md` 의 **「시스템을 늘리는 규칙」** 절을 읽는다 — 여섯
+2. `docs/DESIGN-SYSTEM.md` 의 **「시스템을 늘리는 규칙」** 절을 읽는다 — 일곱
    조항이 있고, 이게 그 0번이다
 3. `git log --oneline -- app/globals.css | head -20` 으로 그 값이 왜 지금 값이
    됐는지 본다
@@ -58,7 +58,7 @@ description: Build a screen from this repo's design system deterministically —
   얹는 옵션(`active`/`inline`/… — 이 문서에서 「축」이라고 부르는 것)
 - `src/shared/ui/controls.tsx` · `surface.tsx` — 프리미티브가 무엇을 보장하는지
 - `app/globals.css` 의 램프 — 글자 크기 · 행간 · 반경 · 그림자 · 색 토큰
-- `.claude/rules/design.md` 의 「이 스케일은 바꾸지 않는다」는 약속
+- `.claude/rules/design.md` 의 「스케일 고정 계약」 절
 
 **이 줄이 왜 여기 있는가 (2026-08-03, 소유자 지적).** 컨트롤 244개를 정리하는
 동안 이 자리는 **한 번도 불려 오지 않았다.** 어떤 값을 몇 단계로 둘지 — 색조
@@ -134,7 +134,7 @@ description: Build a screen from this repo's design system deterministically —
 |---|---|---|
 | 글자 크기 | 글자 크기 램프 (`caption`…`hero-lg`) | 램프에 없는 이름을 쓰면 Tailwind 가 클래스를 아예 안 만들어서, **CSS 에 아무 값도 안 남고** 기본값 16px 로 그려진다. 에러도 경고도 안 난다 |
 | 행간 | `--leading-*` — 글자 크기와 **한 짝**이다 | 조건에 따라 글자 크기만 바꾸면 행간이 짝을 잃는다 |
-| 반경 | `rounded-chip/card/panel` | — |
+| 반경 | `rounded-micro/chip/card/panel/sheet` | — |
 | 그림자 | elevation-1/2/3 · dock-* · control-press | 손으로 값을 만지면 빛이 오는 방향이 뒤집히거나, 위에 뜬 것이 더 옅어 보이는 일이 생긴다 |
 | 색 | `--color-*` | 새 색상(hue)을 더하는 것은 색 시스템을 하나 더 만드는 것이다 |
 | 애니메이션 길이 | `--motion-fast`(눌렸다는 확인) · `base`(위치 이동) · `settle`(결과 확정) | 숫자를 보고 고르지 말고 **무슨 일에 쓰는지**로 고른다 |

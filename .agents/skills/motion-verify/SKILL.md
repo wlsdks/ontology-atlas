@@ -33,7 +33,7 @@ chrome-devtools 로 검증할 URL/줌/상태를 화면에 세팅한다. 지도�
 카드로 화면을 덮으면 녹화의 첫 구간이 통째로 그 안내가 된다. **손으로 눌러 닫는
 것은 대안이 아니다** — 닫는 동작 자체가 자기 애니메이션을 재생하고 포커스를
 옮겨서, 재려던 모션의 첫 프레임과 섞인다. 되돌리려면 `?guides=reset`.
-이 목록이 있는 곳은 한 곳뿐이다: `features/guided-tour/model/first-run-seen.ts`.
+이 목록이 있는 곳은 한 곳뿐이다: `src/features/guided-tour/model/first-run-seen.ts`.
 
 ## 2. 녹화 → 프레임 추출
 
@@ -99,7 +99,7 @@ print(f"mean={mean:.3f} cv={sd/mean:.2f} min={min(diffs):.3f} stalls={len(stalls
   없다 = 끊기지 않고 이어졌다. **이게 핵심 합격선.**
 - `stalls > 0` 이 여러 프레임 연속으로 나오면 → 아무 일도 없을 때 그리기를 멈추는
   장치가 잘못 걸렸거나 브라우저가 프레임을 건너뛴 것으로 의심하고,
-  `idle-gate.ts` 의 활동 플래그부터 조사한다.
+  `src/widgets/topology-map-v2/model/idle-gate.ts` 의 활동 플래그부터 조사한다.
 - `cv` 가 0.4 이하면 영상 압축 때문에 생기는 잡음 수준이라 문제가 아니다. 일정한
   간격으로 튀는 값은 다른 애니메이션(코멧이 지나가는 것 등)이 끼어든 것일 수
   있으니, 이어 붙인 이미지를 보고 원인을 확인한다.
