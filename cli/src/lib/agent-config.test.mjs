@@ -82,6 +82,21 @@ test('TOML repair accepts whitespace around quoted dotted-key separators', () =>
   assert.equal(parseToml(repaired.text).mcp_servers['ontology-atlas'].env.OATLAS_VAULT, './vault-b');
 });
 
+test('TOML repair accepts whitespace around unquoted dotted-key separators', () => {
+  const text = [
+    '[ mcp_servers . ontology-atlas ]',
+    'command = "old"',
+    '',
+    '[ mcp_servers . ontology-atlas . env ]',
+    'OATLAS_VAULT = "./vault-a"',
+    '',
+  ].join('\n');
+  const repaired = repairCodexConfigText(text, expectedToml);
+  assert.equal(repaired.ok, true);
+  const parsed = parseToml(repaired.text);
+  assert.equal(parsed.mcp_servers['ontology-atlas'].env.OATLAS_VAULT, './vault-b');
+});
+
 test('TOML repair accepts a valid commented Atlas header and preserves unrelated sections', () => {
   const text = [
     '[mcp_servers.other]',

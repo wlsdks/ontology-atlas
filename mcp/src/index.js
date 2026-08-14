@@ -6286,7 +6286,7 @@ function classifyErrorCode(err, message) {
     return 'not_found';
   }
   if (/already exists|conflict|identical/i.test(message)) return 'conflict';
-  if (/must be|must not|cannot be|At least one|Invalid value|Received:|points outside|Too many/i.test(message)) {
+  if (/must be|must not|cannot be|requires exactly one of|At least one|Invalid value|Received:|points outside|Too many/i.test(message)) {
     return 'invalid_arguments';
   }
   return 'tool_error';

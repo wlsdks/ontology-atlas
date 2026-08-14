@@ -2169,6 +2169,29 @@ await test("tools/call — arguments 생략은 빈 object, non-object 는 명시
   }
 });
 
+await test("get_concept/get_concepts — selector one-of is enforced at runtime", async () => {
+  const root = makeVault([
+    { slug: "project", content: "---\nkind: project\ntitle: Demo\nuid: 123e4567-e89b-42d3-a456-426614174000\n---\n" },
+  ]);
+  try {
+    const { responses } = await rpc(root, [
+      ...INIT_REQUESTS,
+      callTool(2, "get_concept", { slug: "project", uid: "123e4567-e89b-42d3-a456-426614174000" }),
+      callTool(3, "get_concept", {}),
+      callTool(4, "get_concepts", { slugs: ["project"], uids: ["123e4567-e89b-42d3-a456-426614174000"] }),
+      callTool(5, "get_concepts", {}),
+    ]);
+    for (const id of [2, 3, 4, 5]) {
+      assert.equal(isErrorResponse(responses, id), true, `request ${id} rejects non-one-of selector payload`);
+      assert.equal(getCallStructured(responses, id)?.errorCode, "invalid_arguments");
+    }
+    assert.match(getCallText(responses, 2), /exactly one of slug or uid/i);
+    assert.match(getCallText(responses, 4), /exactly one of slugs or uids/i);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
 await test("compile_ontology — deterministic graph artifact + indexes", async () => {
   const root = makeVault([
     {
