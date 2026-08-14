@@ -140,6 +140,20 @@ describe('focused check suggestions', () => {
     assert.deepEqual(result.escalations.map((row) => row.command), ['pnpm dogfood:verify']);
   });
 
+  it('suggests the source-hidden fixture contract for fixture or test changes', () => {
+    const result = suggestFocusedChecks([
+      'tests/fixtures/source-hidden-field-trial/v1.json',
+      'mcp/src/source-hidden-field-trial.test.mjs',
+    ]);
+
+    assert.deepEqual(result.commands.map((row) => row.command), [
+      'pnpm exec node --test mcp/src/source-hidden-field-trial.test.mjs',
+      'pnpm test:mcp:unit',
+      'pnpm dogfood:status',
+    ]);
+    assert.deepEqual(result.escalations.map((row) => row.command), ['pnpm dogfood:verify']);
+  });
+
   it('suggests focused MCP surface integration for server entrypoint changes', () => {
     const result = suggestFocusedChecks(['mcp/src/index.js']);
 

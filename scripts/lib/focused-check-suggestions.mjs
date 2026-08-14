@@ -184,7 +184,8 @@ const RULES = [
     reason: 'MCP core unit implementation changed',
     matches: [
       /^mcp\/src\/(?:analyze|meaning-evaluation|construction-qualification|construction-lifecycle|infer-imports|ontology-atlas-ignore|ontology-compiler|ontology-engine|parser|query|validate|vault|index)\.(?:mjs|js)$/,
-      /^mcp\/src\/(?:analyze|meaning-evaluation|construction-qualification|construction-lifecycle|infer-imports|ontology-atlas-ignore|ontology-compiler|ontology-engine|parser|query|validate|vault|redirect-backlinks|conflict-detection|json-rpc-lines)\.test\.mjs$/,
+      /^mcp\/src\/(?:analyze|meaning-evaluation|construction-qualification|construction-lifecycle|infer-imports|ontology-atlas-ignore|ontology-compiler|ontology-engine|parser|query|validate|vault|redirect-backlinks|conflict-detection|json-rpc-lines|source-hidden-field-trial)\.test\.mjs$/,
+      /^tests\/fixtures\/source-hidden-field-trial\/v1\.json$/,
     ],
   },
   {
@@ -672,6 +673,7 @@ const MCP_DIRECT_UNIT_TESTS = new Map([
   ['mcp/src/validate.mjs', 'mcp/src/validate.test.mjs'],
   ['mcp/src/vault.mjs', 'mcp/src/vault.test.mjs'],
   ['mcp/scripts/json-rpc-lines.mjs', 'mcp/src/json-rpc-lines.test.mjs'],
+  ['tests/fixtures/source-hidden-field-trial/v1.json', 'mcp/src/source-hidden-field-trial.test.mjs'],
 ]);
 
 const MCP_DIRECT_UNIT_TEST_FILES = new Set([
@@ -679,6 +681,7 @@ const MCP_DIRECT_UNIT_TEST_FILES = new Set([
   'mcp/src/redirect-backlinks.test.mjs',
   'mcp/src/conflict-detection.test.mjs',
   'mcp/src/json-rpc-lines.test.mjs',
+  'mcp/src/source-hidden-field-trial.test.mjs',
 ]);
 
 const CLI_DIRECT_LIB_TESTS = new Map([
