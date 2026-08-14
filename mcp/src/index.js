@@ -7923,7 +7923,9 @@ function queryOntologyTool(args = {}) {
     : queryResult;
   const result = args.operation === 'agent_brief'
     ? attachProjectMeaning(validatedResult, artifact)
-    : validatedResult;
+    : ['health', 'workspace_brief'].includes(args.operation)
+      ? attachMeaningReadiness(validatedResult, artifact, args)
+      : validatedResult;
   return {
     ...result,
     compiledSummary: {
@@ -7937,6 +7939,86 @@ function queryOntologyTool(args = {}) {
       issues: artifact.issues.length,
     },
   };
+}
+
+function meaningReadinessCheck(artifact) {
+  const projectSlugs = (Array.isArray(artifact?.nodes) ? artifact.nodes : [])
+    .filter((node) => node?.kind === 'project' && typeof node.slug === 'string')
+    .map((node) => node.slug)
+    .sort((left, right) => left.localeCompare(right));
+  const assessments = projectSlugs.map((projectSlug) => {
+    try {
+      // The graph engine's health status includes semantic checks; meaning
+      // assessment needs the structural readiness input only. Scope and
+      // inventory failures below still fail closed via a null graph hash.
+      const context = projectMeaningContext(artifact, projectSlug, 'ready');
+      return {
+        projectSlug,
+        status: context.meaningAssessment?.status ?? 'invalid',
+        topGap: context.meaningAssessment?.topGap?.id ?? 'assessment_input_invalid',
+      };
+    } catch {
+      return { projectSlug, status: 'invalid', topGap: 'assessment_input_invalid' };
+    }
+  });
+  const unresolved = assessments.filter((assessment) => assessment.status !== 'verified_current');
+  if (unresolved.length === 0) {
+    return {
+      status: 'pass',
+      count: assessments.length,
+      message: assessments.length === 0
+        ? 'No project meaning assessments are in scope.'
+        : `Meaning assessments are current for ${assessments.length} project(s).`,
+      assessments,
+    };
+  }
+  const first = unresolved[0];
+  return {
+    status: 'warn',
+    count: unresolved.length,
+    message: `${unresolved.length} project meaning assessment(s) require review; first ${first.projectSlug}: ${first.status} (${first.topGap}).`,
+    assessments,
+  };
+}
+
+function attachMeaningReadiness(result, artifact, args = {}) {
+  const meaning = meaningReadinessCheck(artifact);
+  if (meaning.status === 'pass') return result;
+  const check = {
+    id: 'meaning_assessment',
+    status: meaning.status,
+    count: meaning.count,
+    message: meaning.message,
+  };
+  const action = {
+    id: 'meaning_assessment',
+    kind: 'meaning_assessment',
+    severity: 'warn',
+    count: meaning.count,
+    message: meaning.message,
+  };
+  const actionLimit = typeof args.limit === 'number' ? args.limit : result.operation === 'workspace_brief' ? 10 : 5;
+  if (result.operation === 'health') {
+    return {
+      ...result,
+      status: 'needs_attention',
+      checks: [...(Array.isArray(result.checks) ? result.checks : []), check],
+    };
+  }
+  if (result.operation === 'workspace_brief') {
+    return {
+      ...result,
+      status: 'needs_attention',
+      health: {
+        ...result.health,
+        status: 'needs_attention',
+        checks: [...(Array.isArray(result.health?.checks) ? result.health.checks : []), check],
+      },
+      nextActions: [action, ...(Array.isArray(result.nextActions) ? result.nextActions : [])]
+        .slice(0, actionLimit),
+    };
+  }
+  return result;
 }
 
 function meaningSourceFromProjectSource(projectSource) {
