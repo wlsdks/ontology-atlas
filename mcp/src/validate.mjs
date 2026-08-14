@@ -112,7 +112,7 @@ export function validateVaultDocument(raw) {
       message:
         'frontmatter 블록은 있지만 key 가 하나도 추출되지 않았습니다: 들여쓰기 또는 콜론 누락 의심.',
     });
-    return { ok: true, issues };
+    return { ok: !issues.some((issue) => issue.severity === 'error'), issues };
   }
 
   const rawKind = frontmatter.kind;

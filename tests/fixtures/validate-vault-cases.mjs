@@ -95,6 +95,12 @@ export const VALIDATE_CASES = [
     expectedOk: true,
   },
   {
+    name: '키 없이 malformed frontmatter만 있으면 parser diagnostics가 error를 유지',
+    input: '---\nmalformed declaration\n---\n',
+    expectedCodes: ['malformed-frontmatter-line', 'parse-zero-keys'],
+    expectedOk: false,
+  },
+  {
     name: '콜론 없는 frontmatter 선언 → malformed-frontmatter-line (error, ok=false)',
     input: '---\nuid: 01890f3e-7b5d-4c0a-8f14-123456789abc\nkind: capability\ndomain: domains/probe\nelements\n  - elements/orphan\n---\n',
     expectedCodes: ['malformed-frontmatter-line', 'malformed-frontmatter-line'],
