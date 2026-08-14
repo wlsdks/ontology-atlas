@@ -1,4 +1,6 @@
 const EDGE_KINDS = new Set(['static', 'dynamic', 'require', 'reexport', 'side']);
+const SOURCE_ROLES = ['production', 'test', 'unknown'];
+const IMPORT_USAGES = ['value', 'type_only', 'unknown'];
 const UNRESOLVED_REASONS = new Set(['empty', 'relative-not-found', 'alias-not-found']);
 
 export function assertInferImportsResult(payload, context = 'infer_imports') {
@@ -9,6 +11,14 @@ export function assertInferImportsResult(payload, context = 'infer_imports') {
     assertCompactInferImportsResult(payload, context);
     return;
   }
+  assertExactKeys(payload, ['rootPath', 'filesScanned', 'coverage', 'edges', 'externalImports', 'unresolved', 'moduleEdges', 'reconciliation', 'reconciliationSummary'], context);
+  assertCoverage(payload.coverage, `${context}.coverage`);
+  if (payload.reconciliation !== undefined && payload.reconciliation !== null) {
+    assertObject(payload.reconciliation, `${context}.reconciliation`);
+  }
+  if (payload.reconciliationSummary !== undefined) {
+    assertObject(payload.reconciliationSummary, `${context}.reconciliationSummary`);
+  }
   assertArray(payload.edges, `${context}.edges`);
   assertArray(payload.externalImports, `${context}.externalImports`);
   assertArray(payload.unresolved, `${context}.unresolved`);
@@ -18,12 +28,14 @@ export function assertInferImportsResult(payload, context = 'infer_imports') {
   payload.externalImports.forEach((row, index) => {
     const rowPath = `${context}.externalImports[${index}]`;
     assertObject(row, rowPath);
+    assertExactKeys(row, ['from', 'spec'], rowPath);
     assertNonEmptyString(row.from, `${rowPath}.from`);
     assertNonEmptyString(row.spec, `${rowPath}.spec`);
   });
   payload.unresolved.forEach((row, index) => {
     const rowPath = `${context}.unresolved[${index}]`;
     assertObject(row, rowPath);
+    assertExactKeys(row, ['from', 'spec', 'reason'], rowPath);
     assertNonEmptyString(row.from, `${rowPath}.from`);
     assertNonEmptyString(row.spec, `${rowPath}.spec`);
     assertUnresolvedReason(row.reason, `${rowPath}.reason`);
@@ -32,6 +44,12 @@ export function assertInferImportsResult(payload, context = 'infer_imports') {
 }
 
 function assertCompactInferImportsResult(payload, context) {
+  assertExactKeys(payload, ['rootPath', 'filesScanned', 'coverage', 'contract', 'delivery', 'scanSummary', 'reconciliationSummary', 'reviewQueue', 'nextReview'], context);
+  assertNonEmptyString(payload.contract, `${context}.contract`);
+  if (payload.contract !== 'inferImportsReview:v1') {
+    throw new Error(`${context}.contract must be inferImportsReview:v1`);
+  }
+  assertCoverage(payload.coverage, `${context}.coverage`);
   const deliveryPath = `${context}.delivery`;
   assertObject(payload.delivery, deliveryPath);
   assertExactKeys(payload.delivery, ['selection', 'reason', 'estimatedFullResponseBytes', 'automaticLimitBytes', 'explicitFullAvailable', 'explicitFullArguments'], deliveryPath);
@@ -62,6 +80,7 @@ function assertCompactInferImportsResult(payload, context) {
   for (const field of ['fileEdges', 'externalImports', 'unresolvedImports', 'moduleEdges']) {
     assertNonNegativeInteger(payload.scanSummary[field], `${context}.scanSummary.${field}`);
   }
+  assertObject(payload.reconciliationSummary, `${context}.reconciliationSummary`);
   assertObject(payload.reviewQueue, `${context}.reviewQueue`);
   assertExactKeys(payload.reviewQueue, ['total', 'returned', 'exhausted', 'afterReviewId'], `${context}.reviewQueue`);
   assertNonNegativeInteger(payload.reviewQueue.total, `${context}.reviewQueue.total`);
@@ -190,6 +209,41 @@ function assertCountMap(value, keys, path) {
   for (const key of keys) assertNonNegativeInteger(value[key], `${path}.${key}`);
 }
 
+function assertCoverage(value, path) {
+  assertObject(value, path);
+  assertExactKeys(value, [
+    'contract',
+    'supportedLanguages',
+    'supportedExtensions',
+    'detectedUnsupportedLanguages',
+    'allDetectedLanguagesSupported',
+    'zeroEdgesMeaning',
+    'limitations',
+  ], path);
+  if (value.contract !== 'importScanCoverage:v1') throw new Error(`${path}.contract must be importScanCoverage:v1`);
+  assertUniqueStringArray(value.supportedLanguages, ['javascript', 'python', 'typescript'], `${path}.supportedLanguages`);
+  assertUniqueStringArray(value.supportedExtensions, null, `${path}.supportedExtensions`);
+  assertUniqueStringArray(value.detectedUnsupportedLanguages, ['rust'], `${path}.detectedUnsupportedLanguages`);
+  if (typeof value.allDetectedLanguagesSupported !== 'boolean') {
+    throw new Error(`${path}.allDetectedLanguagesSupported must be a boolean`);
+  }
+  if (value.zeroEdgesMeaning !== 'no_supported_static_import_edges_observed') {
+    throw new Error(`${path}.zeroEdgesMeaning must be no_supported_static_import_edges_observed`);
+  }
+  assertArray(value.limitations, `${path}.limitations`);
+  if (value.limitations.length < 1) throw new Error(`${path}.limitations must not be empty`);
+  value.limitations.forEach((item, index) => assertNonEmptyString(item, `${path}.limitations[${index}]`));
+}
+
+function assertUniqueStringArray(value, allowed, path) {
+  assertArray(value, path);
+  if (new Set(value).size !== value.length) throw new Error(`${path} must not contain duplicates`);
+  value.forEach((item, index) => {
+    assertNonEmptyString(item, `${path}[${index}]`);
+    if (allowed && !allowed.includes(item)) throw new Error(`${path}[${index}] is invalid`);
+  });
+}
+
 function assertMeaningCall(value, path, tool) {
   assertObject(value, path);
   assertExactKeys(value, ['tool', 'arguments', 'purpose'], path);
@@ -245,13 +299,27 @@ function assertProposalValidation(value, path) {
 
 function assertFileEdge(row, path) {
   assertObject(row, path);
+  assertExactKeys(row, ['from', 'to', 'kind', 'sourceRole', 'importUsage'], path);
   assertNonEmptyString(row.from, `${path}.from`);
   assertNonEmptyString(row.to, `${path}.to`);
   assertEdgeKind(row.kind, `${path}.kind`);
+  if (!SOURCE_ROLES.includes(row.sourceRole)) throw new Error(`${path}.sourceRole is invalid`);
+  if (!IMPORT_USAGES.includes(row.importUsage)) throw new Error(`${path}.importUsage is invalid`);
 }
 
 function assertModuleEdge(row, path) {
   assertObject(row, path);
+  assertExactKeys(row, [
+    'from',
+    'to',
+    'count',
+    'kindCounts',
+    'sourceRoleCounts',
+    'importUsageCounts',
+    'productValueCount',
+    'evidence',
+    'evidenceLimited',
+  ], path);
   assertNonEmptyString(row.from, `${path}.from`);
   assertNonEmptyString(row.to, `${path}.to`);
   assertPositiveInteger(row.count, `${path}.count`);
@@ -265,17 +333,18 @@ function assertModuleEdge(row, path) {
   if (total !== row.count) {
     throw new Error(`${path}.kindCounts total must equal count: count ${row.count}, kindCounts ${total}`);
   }
-  if (row.evidence !== undefined || row.evidenceLimited !== undefined) {
-    assertArray(row.evidence, `${path}.evidence`);
-    if (row.evidence.length > 5) {
-      throw new Error(`${path}.evidence must contain at most 5 rows`);
-    }
-    row.evidence.forEach((evidence, index) =>
-      assertFileEdge(evidence, `${path}.evidence[${index}]`),
-    );
-    if (typeof row.evidenceLimited !== 'boolean') {
-      throw new Error(`${path}.evidenceLimited must be a boolean`);
-    }
+  assertCountMap(row.sourceRoleCounts, SOURCE_ROLES, `${path}.sourceRoleCounts`);
+  assertCountMap(row.importUsageCounts, IMPORT_USAGES, `${path}.importUsageCounts`);
+  assertNonNegativeInteger(row.productValueCount, `${path}.productValueCount`);
+  assertArray(row.evidence, `${path}.evidence`);
+  if (row.evidence.length > 5) {
+    throw new Error(`${path}.evidence must contain at most 5 rows`);
+  }
+  row.evidence.forEach((evidence, index) =>
+    assertFileEdge(evidence, `${path}.evidence[${index}]`),
+  );
+  if (typeof row.evidenceLimited !== 'boolean') {
+    throw new Error(`${path}.evidenceLimited must be a boolean`);
   }
 }
 

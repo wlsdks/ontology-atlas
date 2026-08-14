@@ -3,6 +3,43 @@ import { describe, it } from 'node:test';
 
 import { assertInferImportsResult } from './import-analysis-results.mjs';
 
+function coverageFixture() {
+  return {
+    contract: 'importScanCoverage:v1',
+    supportedLanguages: ['javascript', 'python', 'typescript'],
+    supportedExtensions: ['.js', '.py', '.ts'],
+    detectedUnsupportedLanguages: [],
+    allDetectedLanguagesSupported: true,
+    zeroEdgesMeaning: 'no_supported_static_import_edges_observed',
+    limitations: ['Static source evidence only; runtime execution is not inferred.'],
+  };
+}
+
+function reconciliationSummaryFixture() {
+  return { fileEdges: 277, moduleEdges: 105, unresolvedImports: 2, externalImports: 1153 };
+}
+
+function moduleEdgeFixture(overrides = {}) {
+  return {
+    from: 'capabilities/a',
+    to: 'capabilities/b',
+    count: 2,
+    kindCounts: { static: 1, dynamic: 1 },
+    sourceRoleCounts: { production: 2, test: 0, unknown: 0 },
+    importUsageCounts: { value: 2, type_only: 0, unknown: 0 },
+    productValueCount: 2,
+    evidence: [{
+      from: 'src/a.ts',
+      to: 'src/b.ts',
+      kind: 'static',
+      sourceRole: 'production',
+      importUsage: 'value',
+    }],
+    evidenceLimited: true,
+    ...overrides,
+  };
+}
+
 function compactNextReviewFixture() {
   return {
     contract: 'nextRelationReview:v1',
@@ -87,7 +124,7 @@ describe('import-analysis-results', () => {
   it('accepts the bounded compact delivery returned for oversized scans', () => {
     assert.doesNotThrow(() =>
       assertInferImportsResult({
-        contract: 'inferImports:v1',
+        contract: 'inferImportsReview:v1',
         delivery: {
           selection: 'automatic_compact',
           reason: 'estimated_full_response_exceeds_limit',
@@ -98,7 +135,9 @@ describe('import-analysis-results', () => {
         },
         rootPath: '/repo',
         filesScanned: 237,
+        coverage: coverageFixture(),
         scanSummary: { fileEdges: 277, externalImports: 1153, unresolvedImports: 2, moduleEdges: 105 },
+        reconciliationSummary: reconciliationSummaryFixture(),
         reviewQueue: { total: 105, returned: 1, exhausted: false, afterReviewId: null },
         nextReview: compactNextReviewFixture(),
       }),
@@ -109,6 +148,7 @@ describe('import-analysis-results', () => {
     assert.throws(
       () =>
         assertInferImportsResult({
+          contract: 'inferImportsReview:v1',
           delivery: {
             selection: 'automatic_compact',
             reason: 'estimated_full_response_exceeds_limit',
@@ -119,7 +159,9 @@ describe('import-analysis-results', () => {
           },
           rootPath: '/repo',
           filesScanned: 237,
+          coverage: coverageFixture(),
           scanSummary: { fileEdges: 277, externalImports: 1153, unresolvedImports: 2, moduleEdges: 105 },
+          reconciliationSummary: reconciliationSummaryFixture(),
           reviewQueue: { total: 105, returned: 1, exhausted: false, afterReviewId: null },
         }),
       /infer_imports\.nextReview must be an object/,
@@ -129,6 +171,7 @@ describe('import-analysis-results', () => {
   it('rejects compact delivery metadata that lies about why it was compacted', () => {
     assert.throws(
       () => assertInferImportsResult({
+        contract: 'inferImportsReview:v1',
         delivery: {
           selection: 'automatic_compact',
           reason: 'unknown',
@@ -139,7 +182,9 @@ describe('import-analysis-results', () => {
         },
         rootPath: '/repo',
         filesScanned: 237,
+        coverage: coverageFixture(),
         scanSummary: { fileEdges: 0, externalImports: 0, unresolvedImports: 0, moduleEdges: 0 },
+        reconciliationSummary: reconciliationSummaryFixture(),
         reviewQueue: { total: 0, returned: 0, exhausted: true, afterReviewId: null },
         nextReview: null,
       }),
@@ -151,6 +196,7 @@ describe('import-analysis-results', () => {
     const nextReview = compactNextReviewFixture();
     assert.throws(
       () => assertInferImportsResult({
+        contract: 'inferImportsReview:v1',
         delivery: {
           selection: 'automatic_compact',
           reason: 'estimated_full_response_exceeds_limit',
@@ -161,7 +207,9 @@ describe('import-analysis-results', () => {
         },
         rootPath: '/repo',
         filesScanned: 237,
+        coverage: coverageFixture(),
         scanSummary: { fileEdges: 277, externalImports: 1153, unresolvedImports: 2, moduleEdges: 105 },
+        reconciliationSummary: reconciliationSummaryFixture(),
         reviewQueue: { total: 105, returned: 2, exhausted: false, afterReviewId: null },
         nextReview,
       }),
@@ -174,6 +222,7 @@ describe('import-analysis-results', () => {
     delete nextReview.endpointModelling.proposalValidation.requiredProposalFields;
     assert.throws(
       () => assertInferImportsResult({
+        contract: 'inferImportsReview:v1',
         delivery: {
           selection: 'automatic_compact',
           reason: 'estimated_full_response_exceeds_limit',
@@ -184,11 +233,68 @@ describe('import-analysis-results', () => {
         },
         rootPath: '/repo',
         filesScanned: 237,
+        coverage: coverageFixture(),
         scanSummary: { fileEdges: 277, externalImports: 1153, unresolvedImports: 2, moduleEdges: 105 },
+        reconciliationSummary: reconciliationSummaryFixture(),
         reviewQueue: { total: 105, returned: 1, exhausted: false, afterReviewId: null },
         nextReview,
       }),
       /proposalValidation\.requiredProposalFields must be an array/,
+    );
+  });
+
+  it('rejects MCP contract drift before a compact or full payload is consumed', () => {
+    const compact = {
+      contract: 'inferImportsReview:v1',
+      delivery: {
+        selection: 'automatic_compact',
+        reason: 'estimated_full_response_exceeds_limit',
+        estimatedFullResponseBytes: 716018,
+        automaticLimitBytes: 131072,
+        explicitFullAvailable: true,
+        explicitFullArguments: { reviewMode: 'full', allowLargeResponse: true },
+      },
+      rootPath: '/repo',
+      filesScanned: 1,
+      coverage: coverageFixture(),
+      scanSummary: { fileEdges: 0, externalImports: 0, unresolvedImports: 0, moduleEdges: 0 },
+      reconciliationSummary: reconciliationSummaryFixture(),
+      reviewQueue: { total: 0, returned: 0, exhausted: true, afterReviewId: null },
+      nextReview: null,
+    };
+    const wrongContract = { ...compact, contract: 'inferImports:v1' };
+    assert.throws(
+      () => assertInferImportsResult(wrongContract),
+      /contract must be inferImportsReview:v1/,
+    );
+    const missingCoverage = { ...compact, coverage: undefined };
+    assert.throws(
+      () => assertInferImportsResult(missingCoverage),
+      /coverage must be an object/,
+    );
+
+    const full = {
+      rootPath: '/repo',
+      filesScanned: 1,
+      coverage: coverageFixture(),
+      edges: [{ from: 'src/a.ts', to: 'src/b.ts', kind: 'static' }],
+      externalImports: [],
+      unresolved: [],
+      moduleEdges: [moduleEdgeFixture()],
+    };
+    assert.throws(
+      () => assertInferImportsResult(full),
+      /edges\[0\] has unexpected field|edges\[0\]\.sourceRole is invalid/,
+    );
+    const missingModuleEvidence = { ...full, edges: [], moduleEdges: [{ ...moduleEdgeFixture(), evidence: undefined }] };
+    assert.throws(
+      () => assertInferImportsResult(missingModuleEvidence),
+      /moduleEdges\[0\]\.evidence must be an array/,
+    );
+    const missingCounts = { ...full, edges: [], moduleEdges: [{ ...moduleEdgeFixture(), sourceRoleCounts: undefined }] };
+    assert.throws(
+      () => assertInferImportsResult(missingCounts),
+      /moduleEdges\[0\]\.sourceRoleCounts must be an object/,
     );
   });
 
@@ -197,16 +303,18 @@ describe('import-analysis-results', () => {
       assertInferImportsResult({
         rootPath: '/repo',
         filesScanned: 2,
-        edges: [{ from: 'src/a.ts', to: 'src/b.ts', kind: 'static' }],
+        coverage: coverageFixture(),
+        edges: [{
+          from: 'src/a.ts',
+          to: 'src/b.ts',
+          kind: 'static',
+          sourceRole: 'production',
+          importUsage: 'value',
+        }],
         externalImports: [{ from: 'src/a.ts', spec: 'react' }],
         unresolved: [{ from: 'src/a.ts', spec: '@/missing', reason: 'alias-not-found' }],
         moduleEdges: [
-          {
-            from: 'capabilities/a',
-            to: 'capabilities/b',
-            count: 2,
-            kindCounts: { static: 1, dynamic: 1 },
-          },
+          moduleEdgeFixture(),
         ],
       }),
     );
@@ -218,6 +326,7 @@ describe('import-analysis-results', () => {
         assertInferImportsResult({
           rootPath: '',
           filesScanned: 1,
+          coverage: coverageFixture(),
           edges: [],
           externalImports: [],
           unresolved: [],
@@ -230,6 +339,7 @@ describe('import-analysis-results', () => {
         assertInferImportsResult({
           rootPath: '/repo',
           filesScanned: 1,
+          coverage: coverageFixture(),
           edges: {},
           externalImports: [],
           unresolved: [],
@@ -242,6 +352,7 @@ describe('import-analysis-results', () => {
         assertInferImportsResult({
           rootPath: '/repo',
           filesScanned: -1,
+          coverage: coverageFixture(),
           edges: [],
           externalImports: [],
           unresolved: [],
@@ -257,6 +368,7 @@ describe('import-analysis-results', () => {
         assertInferImportsResult({
           rootPath: '/repo',
           filesScanned: 1,
+          coverage: coverageFixture(),
           edges: [],
           externalImports: [],
           unresolved: [{ from: 'src/a.ts', spec: '@/missing', reason: 'unresolved-alias' }],
@@ -272,10 +384,11 @@ describe('import-analysis-results', () => {
         assertInferImportsResult({
           rootPath: '/repo',
           filesScanned: 1,
+          coverage: coverageFixture(),
           edges: [],
           externalImports: [],
           unresolved: [],
-          moduleEdges: [{ from: 'capabilities/a', to: 'capabilities/b', count: 0, kindCounts: {} }],
+          moduleEdges: [moduleEdgeFixture({ count: 0, kindCounts: {} })],
         }),
       /infer_imports\.moduleEdges\[0\]\.count must be a positive integer/,
     );
@@ -284,10 +397,11 @@ describe('import-analysis-results', () => {
         assertInferImportsResult({
           rootPath: '/repo',
           filesScanned: 1,
+          coverage: coverageFixture(),
           edges: [],
           externalImports: [],
           unresolved: [],
-          moduleEdges: [{ from: 'capabilities/a', to: 'capabilities/b', count: 2, kindCounts: { static: 1 } }],
+          moduleEdges: [moduleEdgeFixture({ kindCounts: { static: 1 } })],
         }),
       /infer_imports\.moduleEdges\[0\]\.kindCounts total must equal count: count 2, kindCounts 1/,
     );
@@ -296,10 +410,11 @@ describe('import-analysis-results', () => {
         assertInferImportsResult({
           rootPath: '/repo',
           filesScanned: 1,
+          coverage: coverageFixture(),
           edges: [],
           externalImports: [],
           unresolved: [],
-          moduleEdges: [{ from: 'capabilities/a', to: 'capabilities/b', count: 1, kindCounts: { unknown: 1 } }],
+          moduleEdges: [moduleEdgeFixture({ count: 1, kindCounts: { unknown: 1 } })],
         }),
       /infer_imports\.moduleEdges\[0\]\.kindCounts\.unknown must be one of/,
     );
@@ -311,17 +426,25 @@ it('infer_imports module evidence는 bounded exact file edge 계약을 지킨다
     assertInferImportsResult({
       rootPath: '/repo',
       filesScanned: 2,
+      coverage: coverageFixture(),
       edges: [],
       externalImports: [],
       unresolved: [],
-      moduleEdges: [{
-        from: 'capabilities/a',
-        to: 'capabilities/b',
+      moduleEdges: [moduleEdgeFixture({
         count: 1,
         kindCounts: { static: 1 },
-        evidence: [{ from: 'src/a.ts', to: 'src/b.ts', kind: 'static' }],
+        sourceRoleCounts: { production: 1, test: 0, unknown: 0 },
+        importUsageCounts: { value: 1, type_only: 0, unknown: 0 },
+        productValueCount: 1,
+        evidence: [{
+          from: 'src/a.ts',
+          to: 'src/b.ts',
+          kind: 'static',
+          sourceRole: 'production',
+          importUsage: 'value',
+        }],
         evidenceLimited: false,
-      }],
+      })],
     }),
   );
   assert.throws(
@@ -329,17 +452,25 @@ it('infer_imports module evidence는 bounded exact file edge 계약을 지킨다
       assertInferImportsResult({
         rootPath: '/repo',
         filesScanned: 2,
+        coverage: coverageFixture(),
         edges: [],
         externalImports: [],
         unresolved: [],
-        moduleEdges: [{
-          from: 'capabilities/a',
-          to: 'capabilities/b',
+        moduleEdges: [moduleEdgeFixture({
           count: 1,
           kindCounts: { static: 1 },
-          evidence: [{ from: '', to: 'src/b.ts', kind: 'static' }],
+          sourceRoleCounts: { production: 1, test: 0, unknown: 0 },
+          importUsageCounts: { value: 1, type_only: 0, unknown: 0 },
+          productValueCount: 1,
+          evidence: [{
+            from: '',
+            to: 'src/b.ts',
+            kind: 'static',
+            sourceRole: 'production',
+            importUsage: 'value',
+          }],
           evidenceLimited: false,
-        }],
+        })],
       }),
     /moduleEdges\[0\]\.evidence\[0\]\.from must be a non-empty string/,
   );
