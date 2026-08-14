@@ -3,7 +3,8 @@
 import { spawn } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
-import { pathToFileURL } from 'node:url';
+import { fileURLToPath, pathToFileURL } from 'node:url';
+import { isDeepStrictEqual } from 'node:util';
 
 function request(id, method, params = {}) {
   return `${JSON.stringify({ jsonrpc: '2.0', id, method, params })}\n`;
@@ -96,6 +97,165 @@ export async function verifyMcpBinary({ binaryPath, vaultPath, expectedMinTools 
   });
 }
 
+function jsonRpcRequest(id, method, params = {}) {
+  return `${JSON.stringify({ jsonrpc: '2.0', id, method, params })}\n`;
+}
+
+function canonicalize(value) {
+  if (Array.isArray(value)) return value.map(canonicalize);
+  if (value && typeof value === 'object') {
+    return Object.fromEntries(
+      Object.entries(value)
+        .sort(([left], [right]) => left.localeCompare(right))
+        .map(([key, entry]) => [key, canonicalize(entry)]),
+    );
+  }
+  return value;
+}
+
+/**
+ * Probe the narrow first-contact contract that must be identical in source and
+ * in the app sidecar. The binary is generated from the same entrypoint, but a
+ * bundler can still drop or rewrite JSON schemas; comparing the live payloads
+ * catches that release-only failure.
+ */
+async function probeMcpEndpoint({ command, args, vaultPath, cwd, timeoutMs }) {
+  return await new Promise((resolve, reject) => {
+    const child = spawn(command, args, {
+      cwd,
+      env: { ...process.env, OATLAS_VAULT: vaultPath, OATLAS_REPO_ROOT: cwd },
+      stdio: ['pipe', 'pipe', 'pipe'],
+    });
+    let stdout = '';
+    let stderr = '';
+    let settled = false;
+    let deadline;
+
+    const finish = (error, result) => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(deadline);
+      child.kill();
+      if (error) reject(error);
+      else resolve(result);
+    };
+
+    const inspect = () => {
+      const messages = stdout
+        .split('\n')
+        .filter(Boolean)
+        .map((line) => {
+          try {
+            return JSON.parse(line);
+          } catch {
+            return null;
+          }
+        })
+        .filter(Boolean);
+      const byId = new Map(messages.map((message) => [message.id, message]));
+      if (![1, 2, 3, 4, 5].every((id) => byId.has(id))) return;
+      const initialize = byId.get(1).result;
+      const tools = byId.get(2).result?.tools;
+      if (!initialize || !Array.isArray(tools)) {
+        finish(new Error('MCP endpoint did not return initialize/tools/list results'));
+        return;
+      }
+      const callResults = Object.fromEntries(
+        [3, 4, 5].map((id) => [id, byId.get(id).result]),
+      );
+      if (Object.values(callResults).some((result) => !result)) {
+        finish(new Error('MCP endpoint returned an empty first-contact result'));
+        return;
+      }
+      finish(null, { initialize, tools, callResults });
+    };
+
+    child.on('error', (error) => finish(new Error(`could not spawn MCP endpoint: ${error.message}`)));
+    child.stdout.on('data', (chunk) => {
+      stdout += chunk;
+      inspect();
+    });
+    child.stderr.on('data', (chunk) => {
+      stderr += chunk;
+    });
+
+    child.stdin.write(
+      jsonRpcRequest(1, 'initialize', {
+        protocolVersion: '2024-11-05',
+        capabilities: {},
+        clientInfo: { name: 'verify-mcp-parity', version: '1' },
+      }),
+    );
+    child.stdin.write(jsonRpcRequest(2, 'tools/list'));
+    child.stdin.write(jsonRpcRequest(3, 'tools/call', { name: 'connection_info', arguments: {} }));
+    child.stdin.write(jsonRpcRequest(4, 'tools/call', { name: 'list_kinds', arguments: {} }));
+    child.stdin.write(jsonRpcRequest(5, 'tools/call', { name: 'validate_vault', arguments: {} }));
+
+    deadline = setTimeout(() => {
+      finish(
+        new Error(
+          `MCP endpoint parity probe timed out after ${timeoutMs}ms; stderr: ${stderr.slice(0, 600)}`,
+        ),
+      );
+    }, timeoutMs);
+  });
+}
+
+export function compareMcpContracts(source, bundled) {
+  const mismatches = [];
+  if (!isDeepStrictEqual(canonicalize(source.tools), canonicalize(bundled.tools))) {
+    mismatches.push('tools/list schemas');
+  }
+  const resultContract = (result) => ({
+    isError: Boolean(result?.isError),
+    structuredContent: result?.structuredContent,
+  });
+  for (const [id, label] of [
+    [3, 'connection_info'],
+    [4, 'list_kinds'],
+    [5, 'validate_vault'],
+  ]) {
+    if (
+      !isDeepStrictEqual(
+        canonicalize(resultContract(source.callResults[id])),
+        canonicalize(resultContract(bundled.callResults[id])),
+      )
+    ) {
+      mismatches.push(`tools/call ${label} result`);
+    }
+  }
+  return { ok: mismatches.length === 0, mismatches };
+}
+
+export async function verifyMcpParity({ binaryPath, vaultPath, timeoutMs = 25_000 }) {
+  const binary = path.resolve(binaryPath);
+  const vault = path.resolve(vaultPath);
+  const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
+  const source = await probeMcpEndpoint({
+    command: process.execPath,
+    args: [path.join(root, 'mcp', 'src', 'index.js')],
+    vaultPath: vault,
+    cwd: root,
+    timeoutMs,
+  });
+  const bundled = await probeMcpEndpoint({
+    command: binary,
+    args: [],
+    vaultPath: vault,
+    cwd: root,
+    timeoutMs,
+  });
+  const comparison = compareMcpContracts(source, bundled);
+  if (!comparison.ok) {
+    throw new Error(`source/bundled MCP parity failed: ${comparison.mismatches.join(', ')}`);
+  }
+  return {
+    toolCount: bundled.tools.length,
+    sourceVersion: source.initialize.serverInfo?.version ?? 'unknown',
+    bundledVersion: bundled.initialize.serverInfo?.version ?? 'unknown',
+  };
+}
+
 function flagValue(argv, name) {
   const prefix = `--${name}=`;
   const inline = argv.find((arg) => arg.startsWith(prefix));
@@ -113,6 +273,10 @@ async function main() {
   try {
     const result = await verifyMcpBinary({ binaryPath, vaultPath });
     console.log(`✔ MCP binary spawn check — version ${result.version}, ${result.toolCount} tools`);
+    const parity = await verifyMcpParity({ binaryPath, vaultPath });
+    console.log(
+      `✔ source/bundled MCP parity — ${parity.toolCount} tools, ${parity.sourceVersion} / ${parity.bundledVersion}`,
+    );
   } catch (error) {
     console.error(`✖ ${error instanceof Error ? error.message : String(error)}`);
     process.exit(1);
