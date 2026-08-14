@@ -6158,6 +6158,71 @@ export function inferImportsFailure(parsed) {
   if (!Number.isInteger(parsed.filesScanned) || parsed.filesScanned < 0) {
     return 'infer_imports response missing filesScanned count';
   }
+
+  // Large scans are deliberately delivered as a bounded review packet. The
+  // automatic 128 KiB response limit is part of the public contract, so a
+  // dogfood/client call must not treat the compact branch as a malformed full
+  // scan merely because its raw edge arrays are absent. Keep the packet
+  // structural checks strict; only the large arrays are omitted.
+  if (parsed.contract === 'inferImportsReview:v1') {
+    const summary = parsed.scanSummary;
+    if (!summary || typeof summary !== 'object' || Array.isArray(summary)) {
+      return 'infer_imports review response missing scanSummary';
+    }
+    for (const propertyName of ['fileEdges', 'externalImports', 'unresolvedImports', 'moduleEdges']) {
+      if (!Number.isInteger(summary[propertyName]) || summary[propertyName] < 0) {
+        return `infer_imports review response missing scanSummary.${propertyName}`;
+      }
+    }
+    const reconciliation = parsed.reconciliationSummary;
+    if (!reconciliation || typeof reconciliation !== 'object' || Array.isArray(reconciliation)) {
+      return 'infer_imports review response missing reconciliationSummary';
+    }
+    for (const propertyName of [
+      'inBoth',
+      'inCodeMissingFromVault',
+      'inCodeMissingEndpointAbsent',
+      'inVaultNotInCode',
+      'unresolvedImports',
+    ]) {
+      if (!Number.isInteger(reconciliation[propertyName]) || reconciliation[propertyName] < 0) {
+        return `infer_imports review response missing reconciliationSummary.${propertyName}`;
+      }
+    }
+    if (typeof reconciliation.hint !== 'string' || reconciliation.hint.length === 0) {
+      return 'infer_imports review response missing reconciliationSummary.hint';
+    }
+    const queue = parsed.reviewQueue;
+    if (!queue || typeof queue !== 'object' || Array.isArray(queue)) {
+      return 'infer_imports review response missing reviewQueue';
+    }
+    if (
+      !Number.isInteger(queue.total) || queue.total < 0 ||
+      !Number.isInteger(queue.returned) || queue.returned < 0 ||
+      typeof queue.exhausted !== 'boolean' ||
+      (queue.afterReviewId !== null && typeof queue.afterReviewId !== 'string')
+    ) {
+      return 'infer_imports review response malformed reviewQueue';
+    }
+    if (queue.returned > queue.total) {
+      return 'infer_imports review response reviewQueue returned exceeds total';
+    }
+    if (parsed.nextReview !== null && (
+      !parsed.nextReview || typeof parsed.nextReview !== 'object' || Array.isArray(parsed.nextReview) ||
+      parsed.nextReview.contract !== 'nextRelationReview:v1'
+    )) {
+      return 'infer_imports review response malformed nextReview';
+    }
+    return null;
+  }
+
+  if (parsed.contract === 'inferImportsFocus:v1') {
+    if (!parsed.focusReview || typeof parsed.focusReview !== 'object' || Array.isArray(parsed.focusReview)) {
+      return 'infer_imports focus response missing focusReview';
+    }
+    return null;
+  }
+
   for (const propertyName of ['edges', 'externalImports', 'unresolved', 'moduleEdges']) {
     if (!Array.isArray(parsed[propertyName])) {
       return `infer_imports response missing ${propertyName} array`;

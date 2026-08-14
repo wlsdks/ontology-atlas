@@ -674,6 +674,12 @@ export function makeDogfoodToolsList() {
             description:
               "Non-negative mtime threshold. Filter to nodes with mtime > since for incremental sync and does not double-fetch rows already seen.",
           },
+          offset: {
+            type: "integer",
+            minimum: 0,
+            description:
+              "Deterministic pagination offset. Continue from pagination.nextOffset returned by the prior page.",
+          },
           summary: {
             type: "boolean",
             description:
@@ -688,10 +694,25 @@ export function makeDogfoodToolsList() {
         };
         tool.outputSchema = {
           type: "object",
-          required: ["total", "vaultRoot", "nodes"],
+          required: ["total", "vaultRoot", "nodes", "returned", "limited", "pagination"],
           properties: {
             total: { type: "integer", minimum: 0 },
             vaultRoot: { type: "string", minLength: 1 },
+            returned: { type: "integer", minimum: 0 },
+            limited: { type: "boolean" },
+            pagination: {
+              type: "object",
+              required: ["offset", "limit", "total", "returned", "hasMore", "nextOffset"],
+              properties: {
+                offset: { type: "integer", minimum: 0 },
+                limit: { type: "integer", minimum: 1 },
+                total: { type: "integer", minimum: 0 },
+                returned: { type: "integer", minimum: 0 },
+                hasMore: { type: "boolean" },
+                nextOffset: { type: ["integer", "null"], minimum: 0 },
+              },
+              additionalProperties: false,
+            },
             nodes: {
               type: "array",
               items: {
@@ -724,7 +745,6 @@ export function makeDogfoodToolsList() {
         tool.description =
           "Fetch multiple nodes in one call and saves K-1 round-trips. Use exactly one selector array: immutable `uids` or current canonical `slugs`, never together; each returned row carries the permanent `uid` plus current canonical `slug`, while graph-operation inputs remain slug-based. Order of `concepts[]` matches input `slugs[]`; Missing or invalid slug rows return errors while later valid slugs still resolve.";
         delete tool.inputSchema.required;
-        tool.inputSchema.oneOf = [{ required: ["slugs"] }, { required: ["uids"] }];
         tool.inputSchema.properties.slugs = {
           type: "array",
           maxItems: 50,
@@ -769,13 +789,18 @@ export function makeDogfoodToolsList() {
         };
       }
       if (name === "get_concept") {
+        tool.description =
+          "Fetch one ontology node by exactly one selector: current canonical slug or immutable permanent node UID, never together. Use body=full when the complete markdown evidence is required.";
         tool.inputSchema.properties.slug = { type: "string", minLength: 1 };
         tool.inputSchema.properties.uid = {
           type: "string",
           pattern: "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
           description: "Immutable permanent node UID; never together with slug.",
         };
-        tool.inputSchema.oneOf = [{ required: ["slug"] }, { required: ["uid"] }];
+        // Cross-client MCP clients do not consistently accept a top-level
+        // oneOf. Runtime validation keeps slug/uid mutually exclusive; the
+        // public schema exposes both optional fields and documents the
+        // runtime repair instead.
         tool.inputSchema.properties.body = {
           type: "string",
           enum: ["excerpt", "full"],
@@ -1601,7 +1626,7 @@ export function makeDogfoodToolsList() {
       }
       if (name === "infer_imports") {
         tool.description =
-          "Walk TS/JS files in a code repo and infer file-level + module-level import edges; side effect 0 (vault frontmatter NOT modified). Returns source-backed review candidates in reviewMode:\"next\" and exactly one compact, non-writing `nextRelationReview:v1` packet with kindCounts, a bounded exact file-edge `evidence` receipt, rationale_review_required, and `why` guidance. Agent reviews moduleEdges with kindCounts and selectively passes accepted edges to add_relation; ask the user before add_relation. Use after analyze_repo_structure, not just suggestedRelations heuristics. Single source of truth preserved.";
+          "Walk TS/JS files in a code repo and infer file-level + module-level import edges; side effect 0 (vault frontmatter NOT modified). Returns source-backed review candidates with focusPath incoming/outgoing support, a bounded exact file-edge `evidence` receipt, and kindCounts. Omit `reviewMode` for automatic delivery under 128 KiB; larger reconciled scans return a delivery receipt and exactly one compact, non-writing `nextRelationReview:v1` packet. Use reviewMode:\"next\" for that packet, or reviewMode:\"full\" with allowLargeResponse:true for an intentional large result. Every candidate remains rationale_review_required; ask the user before add_relation and include `why`. Use after analyze_repo_structure, not just suggestedRelations heuristics. Single source of truth preserved.";
         tool.inputSchema.properties.maxFiles = {
           type: "integer",
           minimum: 1,
@@ -1610,12 +1635,34 @@ export function makeDogfoodToolsList() {
         };
         tool.inputSchema.properties.reviewMode = {
           type: "string",
-          enum: ["full", "next"],
-          description: "Review mode; default full. `next` returns a compact, non-writing review packet.",
+          enum: ["full", "next", "focus"],
+          description:
+            "Review mode; focus returns a bounded exact file-level import neighborhood. Omit for automatic delivery under 128 KiB; larger scans use a compact packet. full requests the complete scan with allowLargeResponse:true and next explicitly requests one compact packet.",
+        };
+        tool.inputSchema.properties.allowLargeResponse = {
+          type: "boolean",
+          description: 'Only with reviewMode:"full" when the complete result exceeds 128 KiB.',
         };
         tool.inputSchema.properties.afterReviewId = {
           type: "string",
           description: 'Only with reviewMode:"next"; cursor.nextAfterReviewId continues after the previous review.',
+        };
+        tool.inputSchema.properties.focusPath = {
+          type: "string",
+          description: "Repository-relative implementation file to inspect with focus mode.",
+        };
+        tool.inputSchema.properties.focusDirection = {
+          type: "string",
+          enum: ["incoming", "outgoing", "both"],
+        };
+        tool.inputSchema.properties.focusLimit = {
+          type: "integer",
+          minimum: 1,
+          maximum: 100,
+        };
+        tool.inputSchema.properties.focusAfterEdgeId = {
+          type: "string",
+          description: "Continue focus pagination after cursor.nextAfterEdgeId.",
         };
         tool.outputSchema = {
           type: "object",
@@ -1631,26 +1678,94 @@ export function makeDogfoodToolsList() {
                 zeroEdgesMeaning: { type: "string", enum: ["no_supported_static_import_edges_observed"] },
               },
             },
-            contract: { type: "string", enum: ["inferImportsReview:v1"] },
+            contract: { type: "string", enum: ["inferImportsReview:v1", "inferImportsFocus:v1"] },
+            delivery: {
+              type: "object",
+              properties: {
+                selection: { type: "string", enum: ["automatic_compact"] },
+                reason: { type: "string", enum: ["estimated_full_response_exceeds_limit"] },
+                estimatedFullResponseBytes: { type: "integer", minimum: 1 },
+                automaticLimitBytes: { type: "integer", enum: [131072] },
+                explicitFullAvailable: { type: "boolean", enum: [true] },
+                explicitFullArguments: {
+                  type: "object",
+                  properties: {
+                    reviewMode: { type: "string", enum: ["full"] },
+                    allowLargeResponse: { type: "boolean", enum: [true] },
+                  },
+                  required: ["reviewMode", "allowLargeResponse"],
+                  additionalProperties: false,
+                },
+              },
+              required: ["selection", "reason", "estimatedFullResponseBytes", "automaticLimitBytes", "explicitFullAvailable", "explicitFullArguments"],
+              additionalProperties: false,
+            },
+            scanSummary: {
+              type: "object",
+              properties: {
+                fileEdges: { type: "integer", minimum: 0 },
+                externalImports: { type: "integer", minimum: 0 },
+                unresolvedImports: { type: "integer", minimum: 0 },
+                moduleEdges: { type: "integer", minimum: 0 },
+              },
+              required: ["fileEdges", "externalImports", "unresolvedImports", "moduleEdges"],
+              additionalProperties: false,
+            },
+            reviewQueue: {
+              type: "object",
+              properties: {
+                total: { type: "integer", minimum: 0 },
+                returned: { type: "integer", enum: [0, 1] },
+                exhausted: { type: "boolean" },
+                afterReviewId: { type: ["string", "null"] },
+              },
+              required: ["total", "returned", "exhausted", "afterReviewId"],
+              additionalProperties: false,
+            },
             nextReview: {
               type: ["object", "null"],
               required: ["contract", "reviewId", "status", "writeAllowed", "sourceQualification", "ordering", "candidate", "nextCalls", "decision", "cursor"],
               properties: {
-                contract: { type: "string" },
-                reviewId: { type: "string" },
-                status: { type: "string" },
+                contract: { type: "string", enum: ["nextRelationReview:v1"] },
+                reviewId: { type: "string", minLength: 1, pattern: NON_BLANK_STRING_PATTERN },
+                status: { type: "string", enum: ["rationale_review_required"] },
                 writeAllowed: { type: "boolean", enum: [false] },
-                sourceQualification: { type: "object" },
-                ordering: { type: "object" },
+                sourceQualification: { type: "string", enum: ["observed_this_call_not_relation_receipt"] },
+                ordering: {
+                  type: "object",
+                  properties: {
+                    basis: { type: "string", enum: ["canonical_from_to"] },
+                    meaningConfidence: { type: "boolean", enum: [false] },
+                    note: { type: "string", minLength: 1, pattern: NON_BLANK_STRING_PATTERN },
+                  },
+                  required: ["basis", "meaningConfidence", "note"],
+                  additionalProperties: false,
+                },
                 candidate: {
                   type: "object",
-                  required: ["from", "to", "relationType", "importCount", "sourceEvidence", "sourceEvidenceLimited", "evidenceQualification"],
+                  required: ["from", "to", "relationType", "absentEndpoints", "importCount", "sourceEvidence", "sourceEvidenceLimited", "evidenceQualification"],
                   properties: {
-                    from: { type: "string" },
-                    to: { type: "string" },
-                    relationType: { type: "string" },
-                    importCount: { type: "integer", minimum: 1 },
-                    sourceEvidence: { type: "array" },
+                    from: { type: "string", minLength: 1, pattern: NON_BLANK_STRING_PATTERN },
+                    to: { type: "string", minLength: 1, pattern: NON_BLANK_STRING_PATTERN },
+                    relationType: { type: "string", enum: ["depends_on"] },
+                    absentEndpoints: { type: "array", maxItems: 2, uniqueItems: true, items: { type: "string", minLength: 1, pattern: NON_BLANK_STRING_PATTERN } },
+                    importCount: { type: "integer", minimum: 0 },
+                    sourceEvidence: {
+                      type: "array",
+                      maxItems: 5,
+                      items: {
+                        type: "object",
+                        required: ["from", "to", "kind", "sourceRole", "importUsage"],
+                        properties: {
+                          from: { type: "string", minLength: 1, pattern: NON_BLANK_STRING_PATTERN },
+                          to: { type: "string", minLength: 1, pattern: NON_BLANK_STRING_PATTERN },
+                          kind: { type: "string", enum: IMPORT_EDGE_KIND_VALUES },
+                          sourceRole: { type: "string", enum: IMPORT_SOURCE_ROLE_VALUES },
+                          importUsage: { type: "string", enum: IMPORT_USAGE_VALUES },
+                        },
+                        additionalProperties: false,
+                      },
+                    },
                     sourceEvidenceLimited: { type: "boolean" },
                     evidenceQualification: {
                       type: "object",
@@ -1662,29 +1777,84 @@ export function makeDogfoodToolsList() {
                         productValueCount: { type: "integer", minimum: 0 },
                         status: { type: "string" },
                       },
+                      additionalProperties: false,
                     },
                   },
+                  additionalProperties: false,
                 },
-                nextCalls: { type: "array" },
+                endpointModelling: {
+                  type: ["object", "null"],
+                  properties: {
+                    status: { type: "string", enum: ["required_before_relation_review"] },
+                    writeAllowed: { type: "boolean", enum: [false] },
+                    absentEndpoints: { type: "array", minItems: 1, maxItems: 2, uniqueItems: true, items: { type: "string", minLength: 1, pattern: NON_BLANK_STRING_PATTERN } },
+                    observedPathsByEndpoint: { type: "array", minItems: 1, maxItems: 2 },
+                    analysisCall: { type: "object", properties: { tool: { type: "string", enum: ["analyze_repo_structure"] } } },
+                    proposalValidation: {
+                      type: "object",
+                      properties: {
+                        tool: { type: "string", enum: ["analyze_repo_structure"] },
+                        requiredArguments: { type: "array", items: { type: "string", enum: ["rootPath", "proposal"] } },
+                        fieldsAfterKindDecision: {
+                          type: "object",
+                          properties: {
+                            common: { type: "array", minItems: 5, maxItems: 5, uniqueItems: true, items: { type: "string", enum: ["slug", "title", "definition", "evidence", "confidence"] } },
+                            byKind: { type: "object", required: ["project", "domain", "capability", "element"], additionalProperties: false, properties: { project: { type: "array", maxItems: 0 }, domain: { type: "array", maxItems: 0 }, capability: { type: "array", minItems: 1, maxItems: 1, items: { type: "string", enum: ["domain"] } }, element: { type: "array", minItems: 2, maxItems: 2, uniqueItems: true, items: { type: "string", enum: ["domain", "path"] } } } },
+                          required: ["common", "byKind"],
+                          additionalProperties: false,
+                        },
+                        endpointDrafts: { type: "array", minItems: 1, maxItems: 2, items: { type: "object", required: ["endpoint", "observedPaths", "slugCandidate", "kindDecision"], additionalProperties: false, properties: { endpoint: { type: "string", minLength: 1, pattern: NON_BLANK_STRING_PATTERN }, observedPaths: { type: "array", uniqueItems: true, items: { type: "string", minLength: 1, pattern: NON_BLANK_STRING_PATTERN } }, slugCandidate: { type: "string", minLength: 1, pattern: NON_BLANK_STRING_PATTERN }, kindDecision: { type: "string", enum: ["human_meaning_required"] } } } },
+                      },
+                      required: ["tool", "requiredArguments", "requiredProposalFields", "fieldsAfterKindDecision", "endpointDrafts", "purpose"],
+                      additionalProperties: false,
+                    },
+                    resumeCall: { type: "object", properties: { tool: { type: "string", enum: ["infer_imports"] } } },
+                  },
+                  required: ["status", "writeAllowed", "absentEndpoints", "observedPathsByEndpoint", "analysisCall", "proposalValidation", "resumeCall"],
+                  additionalProperties: false,
+                },
+                nextCalls: { type: "array", minItems: 0, maxItems: 2 },
                 decision: {
                   type: "object",
                   properties: {
-                    questionEligibility: { type: "string", enum: ["eligible_after_semantic_review", "additional_product_meaning_evidence_required"] },
+                    questionEligibility: { type: "string", enum: ["blocked_missing_vault_endpoints", "eligible_after_semantic_review", "additional_product_meaning_evidence_required"] },
+                    required: { type: "array", items: { type: "string", minLength: 1, pattern: NON_BLANK_STRING_PATTERN }, minItems: 1 },
+                    ask: { type: "string", minLength: 1, pattern: NON_BLANK_STRING_PATTERN },
+                    stopWhen: { type: "array", items: { type: "string", minLength: 1, pattern: NON_BLANK_STRING_PATTERN }, minItems: 1 },
                   },
+                  required: ["questionEligibility", "required", "ask", "stopWhen"],
+                  additionalProperties: false,
                 },
                 cursor: {
                   type: "object",
                   required: ["afterReviewId", "total", "remaining", "hasMore", "nextAfterReviewId"],
                   properties: {
                     afterReviewId: { type: ["string", "null"] },
-                    total: { type: "integer", minimum: 0 },
+                    total: { type: "integer", minimum: 1 },
                     remaining: { type: "integer", minimum: 0 },
                     hasMore: { type: "boolean" },
-                    nextAfterReviewId: { type: ["string", "null"] },
+                    nextAfterReviewId: { type: "string", minLength: 1, pattern: NON_BLANK_STRING_PATTERN },
                   },
                   additionalProperties: false,
                 },
               },
+              additionalProperties: false,
+            },
+            },
+            focusReview: {
+              type: "object",
+              properties: {
+                contract: { type: "string", enum: ["importImpactFocus:v1"] },
+                focusPath: { type: "string", minLength: 1, pattern: NON_BLANK_STRING_PATTERN },
+                direction: { type: "string", enum: ["incoming", "outgoing", "both"] },
+                sourceQualification: { type: "string", enum: ["observed_static_imports_not_runtime_or_semantic_impact"] },
+                writeAllowed: { type: "boolean", enum: [false] },
+                summary: { type: "object", required: ["incoming", "outgoing", "selected", "returned", "limited"], properties: { incoming: { type: "integer", minimum: 0 }, outgoing: { type: "integer", minimum: 0 }, selected: { type: "integer", minimum: 0 }, returned: { type: "integer", minimum: 0, maximum: 100 }, limited: { type: "boolean" } }, additionalProperties: false },
+                edges: { type: "array", maxItems: 100, items: { type: "object", required: ["edgeId", "from", "to", "kind", "sourceRole", "importUsage"], properties: { edgeId: { type: "string", minLength: 1, pattern: NON_BLANK_STRING_PATTERN }, from: { type: "string", minLength: 1, pattern: NON_BLANK_STRING_PATTERN }, to: { type: "string", minLength: 1, pattern: NON_BLANK_STRING_PATTERN }, kind: { type: "string", enum: IMPORT_EDGE_KIND_VALUES }, sourceRole: { type: "string", enum: IMPORT_SOURCE_ROLE_VALUES }, importUsage: { type: "string", enum: IMPORT_USAGE_VALUES } }, additionalProperties: false } },
+                cursor: { type: "object", required: ["afterEdgeId", "total", "remaining", "hasMore", "nextAfterEdgeId"], properties: { afterEdgeId: { type: ["string", "null"] }, total: { type: "integer", minimum: 0 }, remaining: { type: "integer", minimum: 0 }, hasMore: { type: "boolean" }, nextAfterEdgeId: { type: ["string", "null"] } }, additionalProperties: false },
+                interpretation: { type: "string", minLength: 1, pattern: NON_BLANK_STRING_PATTERN },
+              },
+              required: ["contract", "focusPath", "direction", "sourceQualification", "writeAllowed", "summary", "edges", "cursor", "interpretation"],
               additionalProperties: false,
             },
             edges: {
@@ -1788,12 +1958,47 @@ export function makeDogfoodToolsList() {
           oneOf: [
             { required: ["edges", "externalImports", "unresolved", "moduleEdges"] },
             { required: ["contract", "scanSummary", "reconciliationSummary", "reviewQueue", "nextReview"] },
+            { required: ["contract", "scanSummary", "focusReview"] },
           ],
           additionalProperties: false,
         };
+        // Keep the compact review fixture structurally identical to the
+        // runtime schema even though the nested literal is intentionally
+        // assembled in a readable, staged shape above.
+        const inferReviewSchema = tool.outputSchema.properties.nextReview;
+        const inferEndpointSchema = inferReviewSchema.properties.endpointModelling;
+        inferReviewSchema.properties.nextCalls = inferEndpointSchema.nextCalls;
+        inferReviewSchema.properties.decision = inferEndpointSchema.decision;
+        inferReviewSchema.properties.cursor = inferEndpointSchema.cursor;
+        inferReviewSchema.required = ["contract", "reviewId", "status", "writeAllowed", "sourceQualification", "ordering", "candidate", "endpointModelling", "nextCalls", "decision", "cursor"];
+        delete inferEndpointSchema.nextCalls;
+        delete inferEndpointSchema.decision;
+        delete inferEndpointSchema.cursor;
+        delete inferEndpointSchema.properties.required;
+        delete inferEndpointSchema.properties.additionalProperties;
+        inferEndpointSchema.required = ["status", "writeAllowed", "absentEndpoints", "observedPathsByEndpoint", "analysisCall", "proposalValidation", "resumeCall"];
+        inferEndpointSchema.additionalProperties = false;
+        const inferProposalSchema = inferEndpointSchema.properties.proposalValidation;
+        const inferFieldsSchema = inferProposalSchema.properties.fieldsAfterKindDecision;
+        const inferEndpointDrafts = inferFieldsSchema.endpointDrafts;
+        delete inferFieldsSchema.endpointDrafts;
+        delete inferFieldsSchema.properties.required;
+        delete inferFieldsSchema.properties.additionalProperties;
+        inferFieldsSchema.required = ["common", "byKind"];
+        inferFieldsSchema.additionalProperties = false;
+        inferProposalSchema.properties.endpointDrafts = inferEndpointDrafts;
+        const inferResumeCall = inferProposalSchema.resumeCall;
+        delete inferProposalSchema.resumeCall;
+        delete inferProposalSchema.properties.required;
+        delete inferProposalSchema.properties.additionalProperties;
+        inferProposalSchema.required = ["tool", "requiredArguments", "requiredProposalFields", "fieldsAfterKindDecision", "endpointDrafts", "purpose"];
+        inferProposalSchema.additionalProperties = false;
+        inferEndpointSchema.properties.resumeCall = inferResumeCall;
+        delete inferReviewSchema.properties.additionalProperties;
+        inferReviewSchema.additionalProperties = false;
       }
       if (name === "get_concepts") {
-        tool.inputSchema.required = ["slugs"];
+        delete tool.inputSchema.required;
         tool.inputSchema.properties.slugs = {
           ...tool.inputSchema.properties.slugs,
           type: "array",
@@ -2159,21 +2364,33 @@ export const okShape = {
   kindsStructured: { total: 1, byKind: { project: 1 } },
   list: {
     total: 1,
+    returned: 1,
+    limited: false,
+    pagination: { offset: 0, limit: 100, total: 1, returned: 1, hasMore: false, nextOffset: null },
     vaultRoot: "/tmp/vault",
     nodes: [{ uid: DOGFOOD_UID, slug: "project", kind: "project", title: "Project", mtime: 1 }],
   },
   listStructured: {
     total: 1,
+    returned: 1,
+    limited: false,
+    pagination: { offset: 0, limit: 100, total: 1, returned: 1, hasMore: false, nextOffset: null },
     vaultRoot: "/tmp/vault",
     nodes: [{ uid: DOGFOOD_UID, slug: "project", kind: "project", title: "Project", mtime: 1 }],
   },
   projectProbe: {
     total: 1,
+    returned: 1,
+    limited: false,
+    pagination: { offset: 0, limit: 100, total: 1, returned: 1, hasMore: false, nextOffset: null },
     vaultRoot: "/tmp/vault",
     nodes: [{ uid: DOGFOOD_UID, slug: "project", kind: "project", title: "Project", mtime: 1 }],
   },
   projectProbeStructured: {
     total: 1,
+    returned: 1,
+    limited: false,
+    pagination: { offset: 0, limit: 100, total: 1, returned: 1, hasMore: false, nextOffset: null },
     vaultRoot: "/tmp/vault",
     nodes: [{ uid: DOGFOOD_UID, slug: "project", kind: "project", title: "Project", mtime: 1 }],
   },
@@ -4045,7 +4262,7 @@ export const okShape = {
         receivedArgument: "lmit",
         suggestion: "limit",
         unknownArguments: [{ name: "lmit", suggestion: "limit" }],
-        allowedArguments: ["domain", "kind", "limit", "since", "summary"],
+        allowedArguments: ["domain", "kind", "limit", "offset", "since", "summary"],
         receivedArguments: ["lmit"],
       },
     },
@@ -4064,7 +4281,7 @@ export const okShape = {
           { name: "lmit", suggestion: "limit" },
           { name: "summry", suggestion: "summary" },
         ],
-        allowedArguments: ["domain", "kind", "limit", "since", "summary"],
+        allowedArguments: ["domain", "kind", "limit", "offset", "since", "summary"],
       },
     },
   },
