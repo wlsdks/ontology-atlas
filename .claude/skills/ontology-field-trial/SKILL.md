@@ -55,6 +55,31 @@ Record:
 
 A fast build is not a passing grade. It is the denominator for everything below.
 
+## Candidate packet gate — before any write (when analyzer or qualification changed)
+
+The persisted-vault handoff below answers whether the accepted meaning survives.
+It does **not** answer whether the analyzer's proposed meaning can be evaluated
+before acceptance. When the trial changes repository analysis, qualification, or
+the construction lifecycle, run this separate gate before Phase 3:
+
+1. Take the exact non-writing `reviewPlan` returned by the analyzer, including
+   every full body, `planDigest`, `sourceDigest`, `planRevision`,
+   `requiredGapIds`, and proposal-coverage receipt available at that phase.
+2. Give that candidate packet to a fresh source-hidden evaluator. It receives no
+   source clone and no starter/shared vault. The packet must state
+   `sourceHidden: true`, `canWrite: false`, and must not contain `writePlan`.
+3. Serialize and deserialize the packet in scratch. Fail the gate if any body,
+   array order, row, digest, or gap changes; exercise missing, foreign, and
+   truncated-row mutations and record that they are rejected.
+4. Ask the same fixed questions from the candidate packet alone. Record candidate
+   answers separately from persisted-vault answers. A starter-vault `0/6` is a
+   handoff setup failure, not analyzer semantic evidence.
+
+This is a measurement boundary, not a new MCP/CLI schema or a write path. If the
+packet is already lossless, do not implement another envelope. Move to the
+semantic/evidence gap the evaluator actually named. Candidate evaluation never
+changes the shared vault and never substitutes for human acceptance.
+
 ## Phase 2 — citation accuracy (measures: truth)
 
 Every `elements:` entry and every path in a node body is a claim that a file
