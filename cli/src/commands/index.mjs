@@ -124,6 +124,7 @@ export async function runIndex(args) {
           moduleEdges: importsResult.moduleEdges?.length ?? importsResult.scanSummary?.moduleEdges ?? 0,
           thresholdApplied: importsResult.thresholdApplied,
           reconciliationSummary: importsResult.reconciliationSummary,
+          staleEdgeFollowUp: importsResult.staleEdgeFollowUp,
           delivery: importsResult.delivery,
           reviewQueue: importsResult.reviewQueue,
         }

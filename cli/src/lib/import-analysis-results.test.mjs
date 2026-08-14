@@ -15,8 +15,30 @@ function coverageFixture() {
   };
 }
 
-function reconciliationSummaryFixture() {
-  return { fileEdges: 277, moduleEdges: 105, unresolvedImports: 2, externalImports: 1153 };
+function reconciliationSummaryFixture(overrides = {}) {
+  return {
+    inBoth: 0,
+    inCodeMissingFromVault: 0,
+    inCodeMissingEndpointAbsent: 105,
+    inVaultNotInCode: 0,
+    unresolvedImports: 2,
+    hint: 'Review import-backed candidates before writing ontology relations.',
+    ...overrides,
+  };
+}
+
+function staleEdgeFollowUpFixture(count = 0) {
+  return {
+    status: count > 0 ? 'full_follow_up_required' : 'not_present',
+    count,
+    nextCall: count > 0
+      ? {
+          tool: 'infer_imports',
+          arguments: { rootPath: '/repo', reviewMode: 'full', allowLargeResponse: true },
+          purpose: 'Read full reconciliation before judging stale vault edges; compact delivery omits stale details.',
+        }
+      : null,
+  };
 }
 
 function moduleEdgeFixture(overrides = {}) {
@@ -138,6 +160,7 @@ describe('import-analysis-results', () => {
         coverage: coverageFixture(),
         scanSummary: { fileEdges: 277, externalImports: 1153, unresolvedImports: 2, moduleEdges: 105 },
         reconciliationSummary: reconciliationSummaryFixture(),
+        staleEdgeFollowUp: staleEdgeFollowUpFixture(),
         reviewQueue: { total: 105, returned: 1, exhausted: false, afterReviewId: null },
         nextReview: compactNextReviewFixture(),
       }),
@@ -162,6 +185,7 @@ describe('import-analysis-results', () => {
           coverage: coverageFixture(),
           scanSummary: { fileEdges: 277, externalImports: 1153, unresolvedImports: 2, moduleEdges: 105 },
           reconciliationSummary: reconciliationSummaryFixture(),
+          staleEdgeFollowUp: staleEdgeFollowUpFixture(),
           reviewQueue: { total: 105, returned: 1, exhausted: false, afterReviewId: null },
         }),
       /infer_imports\.nextReview must be an object/,
@@ -185,6 +209,7 @@ describe('import-analysis-results', () => {
         coverage: coverageFixture(),
         scanSummary: { fileEdges: 0, externalImports: 0, unresolvedImports: 0, moduleEdges: 0 },
         reconciliationSummary: reconciliationSummaryFixture(),
+        staleEdgeFollowUp: staleEdgeFollowUpFixture(),
         reviewQueue: { total: 0, returned: 0, exhausted: true, afterReviewId: null },
         nextReview: null,
       }),
@@ -210,6 +235,7 @@ describe('import-analysis-results', () => {
         coverage: coverageFixture(),
         scanSummary: { fileEdges: 277, externalImports: 1153, unresolvedImports: 2, moduleEdges: 105 },
         reconciliationSummary: reconciliationSummaryFixture(),
+        staleEdgeFollowUp: staleEdgeFollowUpFixture(),
         reviewQueue: { total: 105, returned: 2, exhausted: false, afterReviewId: null },
         nextReview,
       }),
@@ -236,6 +262,7 @@ describe('import-analysis-results', () => {
         coverage: coverageFixture(),
         scanSummary: { fileEdges: 277, externalImports: 1153, unresolvedImports: 2, moduleEdges: 105 },
         reconciliationSummary: reconciliationSummaryFixture(),
+        staleEdgeFollowUp: staleEdgeFollowUpFixture(),
         reviewQueue: { total: 105, returned: 1, exhausted: false, afterReviewId: null },
         nextReview,
       }),
@@ -259,6 +286,7 @@ describe('import-analysis-results', () => {
       coverage: coverageFixture(),
       scanSummary: { fileEdges: 0, externalImports: 0, unresolvedImports: 0, moduleEdges: 0 },
       reconciliationSummary: reconciliationSummaryFixture(),
+      staleEdgeFollowUp: staleEdgeFollowUpFixture(),
       reviewQueue: { total: 0, returned: 0, exhausted: true, afterReviewId: null },
       nextReview: null,
     };
@@ -295,6 +323,37 @@ describe('import-analysis-results', () => {
     assert.throws(
       () => assertInferImportsResult(missingCounts),
       /moduleEdges\[0\]\.sourceRoleCounts must be an object/,
+    );
+  });
+
+  it('requires an explicit full follow-up when compact reconciliation has stale vault edges', () => {
+    const compact = {
+      contract: 'inferImportsReview:v1',
+      delivery: {
+        selection: 'automatic_compact',
+        reason: 'estimated_full_response_exceeds_limit',
+        estimatedFullResponseBytes: 716018,
+        automaticLimitBytes: 131072,
+        explicitFullAvailable: true,
+        explicitFullArguments: { reviewMode: 'full', allowLargeResponse: true },
+      },
+      rootPath: '/repo',
+      filesScanned: 237,
+      coverage: coverageFixture(),
+      scanSummary: { fileEdges: 277, externalImports: 1153, unresolvedImports: 2, moduleEdges: 105 },
+      reconciliationSummary: reconciliationSummaryFixture({ inVaultNotInCode: 2 }),
+      staleEdgeFollowUp: staleEdgeFollowUpFixture(2),
+      reviewQueue: { total: 105, returned: 1, exhausted: false, afterReviewId: null },
+      nextReview: compactNextReviewFixture(),
+    };
+    assert.doesNotThrow(() => assertInferImportsResult(compact));
+    assert.throws(
+      () => assertInferImportsResult({ ...compact, staleEdgeFollowUp: staleEdgeFollowUpFixture() }),
+      /staleEdgeFollowUp\.count must match reconciliationSummary\.inVaultNotInCode/,
+    );
+    assert.throws(
+      () => assertInferImportsResult({ ...compact, staleEdgeFollowUp: { ...staleEdgeFollowUpFixture(2), status: 'not_present' } }),
+      /staleEdgeFollowUp\.status must be full_follow_up_required/,
     );
   });
 

@@ -1551,6 +1551,34 @@ const IMPORT_RECONCILIATION_SUMMARY_SCHEMA = Object.freeze({
   required: ['inBoth', 'inCodeMissingFromVault', 'inCodeMissingEndpointAbsent', 'inVaultNotInCode', 'unresolvedImports', 'hint'],
   additionalProperties: false,
 });
+const IMPORT_STALE_EDGE_FOLLOW_UP_SCHEMA = Object.freeze({
+  type: 'object',
+  properties: {
+    status: { type: 'string', enum: ['not_present', 'full_follow_up_required'] },
+    count: { type: 'integer', minimum: 0 },
+    nextCall: {
+      type: ['object', 'null'],
+      properties: {
+        tool: { type: 'string', enum: ['infer_imports'] },
+        arguments: {
+          type: 'object',
+          properties: {
+            rootPath: NON_BLANK_STRING_SCHEMA,
+            reviewMode: { type: 'string', enum: ['full'] },
+            allowLargeResponse: { type: 'boolean', enum: [true] },
+          },
+          required: ['rootPath', 'reviewMode', 'allowLargeResponse'],
+          additionalProperties: false,
+        },
+        purpose: NON_BLANK_STRING_SCHEMA,
+      },
+      required: ['tool', 'arguments', 'purpose'],
+      additionalProperties: false,
+    },
+  },
+  required: ['status', 'count', 'nextCall'],
+  additionalProperties: false,
+});
 const VAULT_ISSUE_CODE_DESCRIPTION = VAULT_ISSUE_CODE_VALUES.map((code) => `\`${code}\``).join(', ');
 const IMPORT_EDGE_KIND_DESCRIPTION = IMPORT_EDGE_KIND_VALUES.join(', ');
 const NODE_KIND_DESCRIPTION = NODE_KIND_VALUES.join(', ');
@@ -4477,6 +4505,7 @@ const TOOLS = [
           },
         },
         reconciliationSummary: IMPORT_RECONCILIATION_SUMMARY_SCHEMA,
+        staleEdgeFollowUp: IMPORT_STALE_EDGE_FOLLOW_UP_SCHEMA,
         contract: { type: 'string', enum: ['inferImportsReview:v1', 'inferImportsFocus:v1'] },
         delivery: {
           type: 'object',
@@ -5001,6 +5030,7 @@ const TOOLS = [
               additionalProperties: false,
             },
             reconciliationSummary: IMPORT_RECONCILIATION_SUMMARY_SCHEMA,
+            staleEdgeFollowUp: IMPORT_STALE_EDGE_FOLLOW_UP_SCHEMA,
           },
           required: ['filesScanned', 'moduleEdges', 'coverage'],
           additionalProperties: false,
@@ -9081,6 +9111,27 @@ function analyzeRepoStructureTool({ rootPath, maxDepth, ignore, proposal, qualif
 
 // R17 — infer_imports thin wrapper. side effect 0. 결과 moduleEdges 는
 // exact source evidence가 붙은 rationale-review 후보다.
+function buildImportStaleEdgeFollowUp(result) {
+  const count = Array.isArray(result?.reconciliation?.inVaultNotInCode)
+    ? result.reconciliation.inVaultNotInCode.length
+    : 0;
+  return {
+    status: count > 0 ? 'full_follow_up_required' : 'not_present',
+    count,
+    nextCall: count > 0
+      ? {
+          tool: 'infer_imports',
+          arguments: {
+            rootPath: result.rootPath,
+            reviewMode: 'full',
+            allowLargeResponse: true,
+          },
+          purpose: 'Read full reconciliation before judging stale vault edges; compact delivery omits stale details.',
+        }
+      : null,
+  };
+}
+
 function inferImportsTool({
   rootPath,
   sourceFolders,
@@ -9295,6 +9346,7 @@ function inferImportsTool({
         moduleEdges: result.moduleEdges.length,
       },
       reconciliationSummary: result.reconciliationSummary,
+      staleEdgeFollowUp: buildImportStaleEdgeFollowUp(result),
       reviewQueue: {
         total: nextReview?.cursor.total ?? 0,
         returned: nextReview ? 1 : 0,
@@ -9468,6 +9520,7 @@ function indexProjectTool({ rootPath, maxDepth, maxFiles, threshold, skipImports
           filesScanned: imports.filesScanned,
           moduleEdges: importRelations,
           coverage: imports.coverage,
+          ...(imports.staleEdgeFollowUp ? { staleEdgeFollowUp: imports.staleEdgeFollowUp } : {}),
           ...(imports.thresholdApplied ? { thresholdApplied: imports.thresholdApplied } : {}),
           ...(imports.reconciliationSummary ? { reconciliationSummary: imports.reconciliationSummary } : {}),
         }

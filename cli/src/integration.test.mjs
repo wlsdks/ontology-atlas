@@ -9267,6 +9267,11 @@ await test('index --json — accepts MCP compact import delivery for a large sou
     const data = JSON.parse(r.stdout);
     assert.equal(data.imports.delivery.selection, 'automatic_compact');
     assert.ok(data.imports.reviewQueue.total > 0);
+    assert.deepEqual(data.imports.staleEdgeFollowUp, {
+      status: 'not_present',
+      count: 0,
+      nextCall: null,
+    });
     assert.equal(data.plan.importRelations, data.imports.moduleEdges);
     assert.equal(existsSyncTest(join(vault, 'compact-import-fixture.md')), false);
   } finally {
