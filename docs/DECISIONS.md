@@ -40,6 +40,35 @@
 **상태**: 유효 / 뒤집힘(→ 링크) / 반증됨(관측: …)
 ```
 
+## 2026-08-14 (2) — Skills packet은 독립 source-hidden consumer에서도 닫힌다
+
+**관찰**: 이전 K1.3 검수는 production unit 경로만으로 canonical packet을 확인해
+독립 handoff가 비어 있었다. 새 source-hidden 소비자는 원본 `SKILL.md` 없이 packet
+bytes만 받아 gold와 27단계 fixture를 읽었다.
+
+**결정**: K1.3을 완료로 올린다. 독립 consumer가 gold packet에서 semantic label 4개,
+ambiguous diagnostic 2개, `edges: []`, source/packet digest를 재현했고, 27/27 ordinal·
+순서·multiline span·resource를 보존했다. exact text 변경, noncanonical JSON, digest를
+다시 만든 forged edge, source digest mismatch는 모두 거부했다. packet은 source text와
+frontmatter를 운반하지 않는다.
+
+**적용 규칙**: 이 결과는 source-hidden packet handoff의 품질 증거이지 ontology
+qualification이나 자동 vault/MCP write 권한이 아니다. fresh agent가 packet을 명시적으로
+받지 못한 vault-only 상태는 계속 `process unavailable`이다.
+
+**검증**: 독립 consumer 3/3, packet 9/9, gold 3/3, SkillProcessRail 6/6,
+contract 1,660/1,660, TypeScript 0, ESLint 0 errors. U1/K Playwright와 build는
+기존 static 18/18·75 routes 결과를 별도 근거로 유지한다.
+
+**기록된 반대**: “같은 production verifier를 다시 호출한 것이므로 독립성이 없다”는
+지적은 독립 consumer가 canonical bytes와 digest/edge/tamper 규칙을 별도 구현으로
+검사한 사실로 해소된다. 반대로 packet에 원문을 싣자는 제안은 private source leakage
+경계를 깨므로 여전히 거부한다.
+
+**반증 조건**: source-hidden fresh agent가 packet-only 상태에서 27/27 step·line·digest·
+resource를 재현하지 못하거나 tamper/forged-edge를 통과시키면 K1.3을 다시 연다.
+**상태**: 유효
+
 ## 2026-08-14 — 전문가 disclosure와 Skills gold packet은 근거를 버리지 않는다
 
 **관찰**: U1.3 기본 요약과 fail-closed는 통과했지만, 전문가 disclosure가 CQ 결과의
