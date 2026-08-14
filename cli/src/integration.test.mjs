@@ -713,12 +713,28 @@ await test('agent-setup — writes agent configs for an existing vault without s
     assert.equal(data.sideEffect, true);
     assert.equal(data.summary.ready, 4);
     assert.equal(data.summary.written, 4);
+    assert.deepEqual(data.clientStatus, {
+      contract: 'clientStatus:v1',
+      claudeCode: {
+        mcpConfig: 'ready',
+        mcpConnection: 'unverified',
+        auth: 'unknown',
+        connected: false,
+      },
+      codex: {
+        mcpConfig: 'ready',
+        mcpConnection: 'unverified',
+        trust: 'unknown',
+        connected: false,
+      },
+    });
     assert.ok(data.files.every((file) => file.launchScope === 'source-bound'));
     assert.ok(data.files.every((file) => file.portable === false));
     assert.match(data.commands.genericClient, /"launchScope":"source-bound"/);
     assert.match(data.commands.genericClient, /"portable":false/);
     assert.match(data.commands.setupState, /agent-setup .* --root .* --json/);
     assert.match(data.commands.codexTrustGuidance, /trusted.*codex mcp list/i);
+    assert.match(data.commands.codexTrustGuidance, /not a connection/i);
     assert.match(data.commands.setupRepair, /agent-setup .* --root .* --write/);
     assert.match(data.commands.restartGuidance, /Restart Claude Code, Cursor, or Codex from .* after repair/);
     assert.match(data.commands.setupGate, /agent-brief .* --verify-fallbacks --json/);
@@ -932,6 +948,9 @@ await test('agent-setup — terminal output points humans to the workflow guide'
     assert.match(clean, /ontology-atlas hubs .*ontology.* --plan --limit 10 --types depends_on,relates/);
     assert.match(clean, /Repair missing configs only if needed: ontology-atlas agent-setup .*ontology.* --root .* --write/);
     assert.match(clean, /Restart Claude Code, Cursor, or Codex from .* after repair/);
+    assert.match(clean, /Client status: config readiness is not a live connection/);
+    assert.match(clean, /Claude Code .*MCP config missing .*MCP connection unverified .*auth unknown .*connected false/);
+    assert.match(clean, /Codex .*MCP config missing .*MCP connection unverified .*trust unknown .*connected false/);
     assert.match(clean, /Mode guide:/);
     assert.match(clean, /MCP-connected · direct read\/write tools/);
     assert.match(clean, /graph DB differences/);
