@@ -92,6 +92,35 @@ import {
   workspaceBriefShapeFailure,
 } from "./shape-validators-workspace.mjs";
 
+// Semantic qualification is intentionally fail-closed in the product
+// response: an unqualified project reports `needs_attention` and a
+// `meaning_assessment` warning. The dogfood walk verifies the transport and
+// structural contracts; it must not turn that honest semantic advisory into a
+// release failure (nor hide any structural/validation failure). Keep this
+// allow-list tiny and explicit so new warning kinds remain blocking until the
+// gate receives a deliberate contract update.
+const NON_BLOCKING_ADVISORY_CHECKS = new Set(["meaning_assessment"]);
+const NON_BLOCKING_ADVISORY_ACTIONS = new Set(["meaning_assessment"]);
+
+function isAdvisoryOnlyChecks(checks) {
+  return Array.isArray(checks) && checks.length > 0 && checks.every((check) => (
+    check?.status === "pass" ||
+    check?.status === "info" ||
+    (check?.status === "warn" && NON_BLOCKING_ADVISORY_CHECKS.has(check?.id))
+  ));
+}
+
+function isAdvisoryOnlyStatus(result, checks) {
+  return result?.status !== "healthy" && isAdvisoryOnlyChecks(checks);
+}
+
+function nonAdvisoryNextActions(actions) {
+  return blockingNextActions(actions).filter((label) => {
+    const id = String(label).split(":", 1)[0];
+    return !NON_BLOCKING_ADVISORY_ACTIONS.has(id);
+  });
+}
+
 export function recordResult(failures, label, result) {
   if (!result) {
     failures.push(`${label}: missing response`);
@@ -691,36 +720,38 @@ export function evaluateDogfoodGate({
   }
   const consistencyFailures = crossToolConsistencyFailures({ kinds, list, validation, compiled, overview });
   failures.push(...consistencyFailures);
-  if (brief && !briefShapeFailure && brief.status !== "healthy") {
+  const briefChecks = brief?.health?.checks;
+  if (brief && !briefShapeFailure && brief.status !== "healthy" && !isAdvisoryOnlyStatus(brief, briefChecks)) {
     failures.push(`workspace_brief: status ${brief.status} (${workspaceBriefSummary(brief)})`);
   }
   const briefFailedChecks = failedHealthChecks(brief?.health?.checks);
   if (briefFailedChecks.length > 0) {
     failures.push(`workspace_brief: failing health checks ${briefFailedChecks.join(", ")}`);
   }
-  const blockingActions = blockingNextActions(brief?.nextActions);
+  const blockingActions = nonAdvisoryNextActions(brief?.nextActions);
   if (blockingActions.length > 0) {
     failures.push(`workspace_brief: actionable nextActions ${blockingActions.join(", ")}`);
   }
-  if (tunedBrief && !tunedBriefShapeFailure && tunedBrief.status !== "healthy") {
+  const tunedBriefChecks = tunedBrief?.health?.checks;
+  if (tunedBrief && !tunedBriefShapeFailure && tunedBrief.status !== "healthy" && !isAdvisoryOnlyStatus(tunedBrief, tunedBriefChecks)) {
     failures.push(`workspace_brief_tuned: status ${tunedBrief.status} (${workspaceBriefSummary(tunedBrief)})`);
   }
   const tunedBriefFailedChecks = failedHealthChecks(tunedBrief?.health?.checks);
   if (tunedBriefFailedChecks.length > 0) {
     failures.push(`workspace_brief_tuned: failing health checks ${tunedBriefFailedChecks.join(", ")}`);
   }
-  const tunedBlockingActions = blockingNextActions(tunedBrief?.nextActions);
+  const tunedBlockingActions = nonAdvisoryNextActions(tunedBrief?.nextActions);
   if (tunedBlockingActions.length > 0) {
     failures.push(`workspace_brief_tuned: actionable nextActions ${tunedBlockingActions.join(", ")}`);
   }
-  if (health && !healthShapeFailure && health.status !== "healthy") {
+  if (health && !healthShapeFailure && health.status !== "healthy" && !isAdvisoryOnlyStatus(health, health.checks)) {
     failures.push(`health: status ${health.status} (${healthStatusSummary(health)})`);
   }
   const healthFailedChecks = failedHealthChecks(health?.checks);
   if (healthFailedChecks.length > 0) {
     failures.push(`health: failing health checks ${healthFailedChecks.join(", ")}`);
   }
-  if (tunedHealth && !tunedHealthShapeFailure && tunedHealth.status !== "healthy") {
+  if (tunedHealth && !tunedHealthShapeFailure && tunedHealth.status !== "healthy" && !isAdvisoryOnlyStatus(tunedHealth, tunedHealth.checks)) {
     failures.push(`health_tuned: status ${tunedHealth.status} (${healthStatusSummary(tunedHealth)})`);
   }
   const tunedHealthFailedChecks = failedHealthChecks(tunedHealth?.checks);

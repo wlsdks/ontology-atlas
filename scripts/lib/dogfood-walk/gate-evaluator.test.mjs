@@ -581,7 +581,7 @@ describe("evaluateDogfoodGate", () => {
           },
         },
       }),
-      ["strict_args: strict arguments structured error code mismatch — expected unknown_argument, got invalid_arguments"],
+      ["strict_args: strict arguments structured error code mismatch: expected unknown_argument, got invalid_arguments"],
     );
     assert.deepEqual(
       evaluateDogfoodGate({ ...okShape, strictArgs: structuredError('Unknown argument "lmit" for list_concepts.') }),
@@ -683,7 +683,7 @@ describe("evaluateDogfoodGate", () => {
           },
         },
       }),
-      ["strict_unknown_tool: strict unknown-tool structured error code mismatch — expected unknown_tool, got unknown_argument"],
+      ["strict_unknown_tool: strict unknown-tool structured error code mismatch: expected unknown_tool, got unknown_argument"],
     );
     assert.deepEqual(
       evaluateDogfoodGate({
@@ -1300,7 +1300,7 @@ describe("evaluateDogfoodGate", () => {
       ...okShape,
       kinds: { total: 2, byKind: { project: 1 } },
     });
-    assert.deepEqual(failures, ["list_kinds response total mismatch — total 2, byKind 1"]);
+    assert.deepEqual(failures, ["list_kinds response total mismatch: total 2, byKind 1"]);
   });
 
   it("fails on malformed list_concepts payloads", () => {
@@ -1315,14 +1315,27 @@ describe("evaluateDogfoodGate", () => {
     assert.deepEqual(
       evaluateDogfoodGate({
         ...okShape,
-        projectProbe: { total: 0, vaultRoot: "/tmp/vault", nodes: [] },
+        projectProbe: {
+          total: 0,
+          returned: 0,
+          limited: false,
+          pagination: { offset: 0, limit: 100, total: 0, returned: 0, hasMore: false, nextOffset: null },
+          vaultRoot: "/tmp/vault",
+          nodes: [],
+        },
       }),
       ["project_probe response missing project node"],
     );
     assert.deepEqual(
       evaluateDogfoodGate({
         ...okShape,
-        projectProbe: { total: 1, nodes: [{ slug: "project", kind: "project", title: "Project", mtime: 1 }] },
+        projectProbe: {
+          total: 1,
+          returned: 1,
+          limited: false,
+          pagination: { offset: 0, limit: 100, total: 1, returned: 1, hasMore: false, nextOffset: null },
+          nodes: [{ uid: "11111111-1111-4111-8111-111111111111", slug: "project", kind: "project", title: "Project", mtime: 1 }],
+        },
       }),
       ["project_probe: list_concepts response missing vaultRoot"],
     );
@@ -1331,8 +1344,11 @@ describe("evaluateDogfoodGate", () => {
         ...okShape,
         projectProbe: {
           total: 1,
+          returned: 1,
+          limited: false,
+          pagination: { offset: 0, limit: 100, total: 1, returned: 1, hasMore: false, nextOffset: null },
           vaultRoot: "/tmp/vault",
-          nodes: [{ slug: "capabilities/not-project", kind: "capability", title: "Wrong", mtime: 1 }],
+          nodes: [{ uid: "11111111-1111-4111-8111-111111111111", slug: "capabilities/not-project", kind: "capability", title: "Wrong", mtime: 1 }],
         },
       }),
       ["project_probe returned non-project node: capabilities/not-project"],
@@ -1342,8 +1358,11 @@ describe("evaluateDogfoodGate", () => {
         ...okShape,
         projectProbe: {
           total: 2,
+          returned: 1,
+          limited: true,
+          pagination: { offset: 0, limit: 100, total: 2, returned: 1, hasMore: true, nextOffset: 1 },
           vaultRoot: "/tmp/vault",
-          nodes: [{ slug: "project", kind: "project", title: "Project", mtime: 1 }],
+          nodes: [{ uid: "11111111-1111-4111-8111-111111111111", slug: "project", kind: "project", title: "Project", mtime: 1 }],
         },
       }),
       ["project_probe count mismatch — list_kinds project 1, probe 2"],
@@ -1390,7 +1409,7 @@ describe("evaluateDogfoodGate", () => {
     assert.deepEqual(
       evaluateDogfoodGate({ ...okShape, batchStructured: { concepts: [okShape.batch.concepts[0]] } }),
       [
-        'get_concepts structuredContent mismatch — $.concepts[1]: parsed {"ok":true,"slug":"capabilities/mcp-server","frontmatter":{"kind":"capability","title":"MCP S..., structuredContent undefined',
+        'get_concepts structuredContent mismatch — $.concepts[1]: parsed {"ok":true,"uid":"11111111-1111-4111-8111-111111111111","slug":"capabilities/mcp-server","fro..., structuredContent undefined',
       ],
     );
   });
@@ -1960,7 +1979,7 @@ describe("evaluateDogfoodGate", () => {
     );
     assert.deepEqual(
       evaluateDogfoodGate({ ...okShape, overview: { ...okShape.overview, graph: { ...okShape.overview.graph, edges: 3 } } }),
-      ["overview response edge count mismatch — edges 3, resolved+external+unresolved 2"],
+      ["overview response edge count mismatch: edges 3, resolved+external+unresolved 2"],
     );
     assert.deepEqual(
       evaluateDogfoodGate({ ...okShape, overview: { ...okShape.overview, hubs: null } }),
@@ -3941,7 +3960,10 @@ describe("evaluateDogfoodGate", () => {
 
   it("fails when dogfood read surfaces disagree on counts", () => {
     assert.deepEqual(
-      evaluateDogfoodGate({ ...okShape, list: { ...okShape.list, total: 2 } }),
+      evaluateDogfoodGate({
+        ...okShape,
+        list: { ...okShape.list, total: 2, limited: true, pagination: { ...okShape.list.pagination, total: 2, hasMore: true, nextOffset: 1 }, },
+      }),
       [
         "list_concepts structuredContent mismatch — $.total: parsed 2, structuredContent 1",
         "dogfood count mismatch — list_kinds.total 1, list_concepts.total 2",
@@ -4167,13 +4189,97 @@ describe("evaluateDogfoodGate", () => {
   it("fails on unhealthy first-contact diagnosis", () => {
     const failures = evaluateDogfoodGate({
       ...okShape,
-      brief: { ...okShape.brief, status: "needs_attention" },
-      health: { ...okShape.health, status: "needs_attention" },
+      brief: { ...okShape.brief, status: "needs_attention", health: { checks: [{ id: "compile_issues", status: "fail", count: 1 }] } },
+      briefStructured: { ...okShape.briefStructured, status: "needs_attention", health: { checks: [{ id: "compile_issues", status: "fail", count: 1 }] } },
+      health: { ...okShape.health, status: "needs_attention", checks: [{ id: "compile_issues", status: "fail", count: 1 }] },
+      healthStructured: { ...okShape.healthStructured, status: "needs_attention", checks: [{ id: "compile_issues", status: "fail", count: 1 }] },
     });
     assert.deepEqual(failures, [
       "workspace_brief: status needs_attention (1 node, 0 next actions, 1 health check, growth actions:0 external:0 ignoredExternal:0)",
+      "workspace_brief: failing health checks compile_issues:fail:1",
       "health: status needs_attention (issues:0, unresolved:0, cycles:0, 1 check)",
+      "health: failing health checks compile_issues:fail:1",
     ]);
+  });
+
+  it("keeps an honest semantic advisory non-blocking while preserving structural health gates", () => {
+    const semanticAdvisory = {
+      operation: "workspace_brief",
+      status: "needs_attention",
+      summary: { nodes: 1, edges: 0, issues: 0 },
+      nextActions: [{ id: "meaning_assessment", kind: "meaning_assessment", severity: "warn", count: 1 }],
+      health: {
+        checks: [
+          { id: "compile_issues", status: "pass", count: 0 },
+          { id: "meaning_assessment", status: "warn", count: 1 },
+        ],
+      },
+    };
+    const semanticHealth = {
+      operation: "health",
+      status: "needs_attention",
+      summary: { issues: 0, unresolvedEdges: 0, dependencyCycles: 0 },
+      checks: [
+        { id: "compile_issues", status: "pass", count: 0 },
+        { id: "meaning_assessment", status: "warn", count: 1 },
+      ],
+    };
+    assert.deepEqual(
+      evaluateDogfoodGate({
+        ...okShape,
+        brief: semanticAdvisory,
+        briefStructured: semanticAdvisory,
+        tunedBrief: semanticAdvisory,
+        tunedBriefStructured: semanticAdvisory,
+        health: semanticHealth,
+        healthStructured: semanticHealth,
+        tunedHealth: semanticHealth,
+        tunedHealthStructured: semanticHealth,
+      }),
+      [],
+    );
+    assert.deepEqual(
+      evaluateDogfoodGate({
+        ...okShape,
+        brief: {
+          ...semanticAdvisory,
+          health: { checks: [...semanticAdvisory.health.checks, { id: "vault_validation", status: "warn", count: 1 }] },
+        },
+        briefStructured: {
+          ...semanticAdvisory,
+          health: { checks: [...semanticAdvisory.health.checks, { id: "vault_validation", status: "warn", count: 1 }] },
+        },
+      }),
+      ["workspace_brief: status needs_attention (1 node, 1 next action, 3 health checks)"],
+    );
+  });
+
+  it("accepts the bounded infer_imports review branch used for large scans", () => {
+    const packet = {
+      contract: "inferImportsReview:v1",
+      rootPath: "/tmp/repo",
+      filesScanned: 5000,
+      coverage: { contract: "importScanCoverage:v1" },
+      scanSummary: { fileEdges: 100, externalImports: 3, unresolvedImports: 2, moduleEdges: 20 },
+      reconciliationSummary: {
+        inBoth: 1,
+        inCodeMissingFromVault: 2,
+        inCodeMissingEndpointAbsent: 3,
+        inVaultNotInCode: 4,
+        unresolvedImports: 2,
+        hint: "Review observed import candidates before writing semantic relations.",
+      },
+      reviewQueue: { total: 5, returned: 1, exhausted: false, afterReviewId: null },
+      nextReview: { contract: "nextRelationReview:v1" },
+    };
+    assert.deepEqual(
+      evaluateDogfoodGate({
+        ...okShape,
+        inferredImports: packet,
+        inferredImportsStructured: packet,
+      }),
+      [],
+    );
   });
 
   it("fails on failing health checks even when top-level status is healthy", () => {
