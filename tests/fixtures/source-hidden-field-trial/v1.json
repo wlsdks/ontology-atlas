@@ -1,0 +1,131 @@
+{
+  "contract": "ontologyFieldTrial:v1",
+  "trialId": "trial:source-hidden-cq-v1",
+  "purpose": "Deterministic four-phase contract specimen for auditing a source-hidden CQ handoff. It is not a real repository run and never grants qualification.",
+  "questionSet": {
+    "revision": 1,
+    "fixedBeforeBuild": true,
+    "questions": [
+      { "id": "cq01-purpose", "audience": "executive", "question": "What outcome does this system exist to create?" },
+      { "id": "cq02-users", "audience": "executive", "question": "Who uses the system and what decision does each audience make?" },
+      { "id": "cq03-boundary", "audience": "executive", "question": "What is deliberately outside the system boundary?" },
+      { "id": "cq04-risk", "audience": "executive", "question": "Which named boundary contains the principal product risk?" },
+      { "id": "cq05-evidence", "audience": "executive", "question": "Which current evidence supports the decision to change this system?" },
+      { "id": "cq06-domain-owner", "audience": "employee", "question": "Which domain owns the work involved in this request?" },
+      { "id": "cq07-capability-owner", "audience": "employee", "question": "Which capability and role own the next handoff?" },
+      { "id": "cq08-next-action", "audience": "employee", "question": "What is the next safe action for the receiving person?" },
+      { "id": "cq09-process-boundary", "audience": "employee", "question": "Where does the current process boundary begin and end?" },
+      { "id": "cq10-visible-gap", "audience": "employee", "question": "Which unresolved gap must remain visible to the receiving person?" },
+      { "id": "cq11-start-path", "audience": "fde", "question": "What canonical implementation path should an FDE read first?" },
+      { "id": "cq12-capability-path", "audience": "fde", "question": "Where is the named capability implemented?" },
+      { "id": "cq13-impact", "audience": "fde", "question": "Which observed dependency bounds the change impact?" },
+      { "id": "cq14-verification", "audience": "fde", "question": "Which current verification evidence covers the proposed change?" },
+      { "id": "cq15-source-currentness", "audience": "fde", "question": "How do we know the cited source is current?" },
+      { "id": "cq16-first-read", "audience": "agent", "question": "What is the first read-only Atlas action for a new agent?" },
+      { "id": "cq17-write-precondition", "audience": "agent", "question": "Which evidence and human decision are required before a write?" },
+      { "id": "cq18-refusal", "audience": "agent", "question": "Which claim must the agent refuse because the vault cannot prove it?" },
+      { "id": "cq19-source-hidden", "audience": "agent", "question": "What remains unknown when the source is removed?" },
+      { "id": "cq20-follow-up", "audience": "agent", "question": "What bounded follow-up read should close the remaining gap?" }
+    ]
+  },
+  "phaseOrder": ["build", "citation", "handoff", "hallucination"],
+  "phases": {
+    "build": {
+      "status": "measured",
+      "sourceAccess": true,
+      "driver": "fresh-mcp-agent",
+      "skill": "ontology-bootstrap",
+      "durationMs": 336000,
+      "meaningfulNodes": 11,
+      "relationsWritten": 10,
+      "vaultWrites": { "builder": 10, "evaluator": 0 },
+      "humanApproval": { "required": true, "recorded": false }
+    },
+    "citation": {
+      "status": "measured",
+      "sourceAccess": true,
+      "citedPaths": [
+        "docs/product-outcome.md",
+        "docs/architecture.md",
+        "docs/operations.md",
+        "src/entrypoint.ts",
+        "src/domain-boundary.ts",
+        "src/capability.ts",
+        "tests/verification.ts",
+        "README.md"
+      ],
+      "pathChecks": [
+        { "path": "docs/product-outcome.md", "exists": true },
+        { "path": "docs/architecture.md", "exists": true },
+        { "path": "docs/operations.md", "exists": true },
+        { "path": "src/entrypoint.ts", "exists": true },
+        { "path": "src/domain-boundary.ts", "exists": true },
+        { "path": "src/capability.ts", "exists": true },
+        { "path": "tests/verification.ts", "exists": true },
+        { "path": "README.md", "exists": true }
+      ],
+      "validatorIssues": 0
+    },
+    "handoff": {
+      "status": "measured",
+      "sourceAccess": false,
+      "evaluatorId": "agent:source-hidden-evaluator",
+      "summaryReads": 20,
+      "fullBodyFollowUpCount": 20,
+      "questions": [
+        { "id": "cq01-purpose", "status": "answered", "checkableFromVault": true, "fullBodySlugs": ["project-root"] },
+        { "id": "cq02-users", "status": "answered", "checkableFromVault": true, "fullBodySlugs": ["project-root", "audience-boundary"] },
+        { "id": "cq03-boundary", "status": "answered", "checkableFromVault": true, "fullBodySlugs": ["project-root"] },
+        { "id": "cq04-risk", "status": "answered", "checkableFromVault": true, "fullBodySlugs": ["risk-boundary"] },
+        { "id": "cq05-evidence", "status": "answered", "checkableFromVault": true, "fullBodySlugs": ["evidence-register"] },
+        { "id": "cq06-domain-owner", "status": "answered", "checkableFromVault": true, "fullBodySlugs": ["domain-owner"] },
+        { "id": "cq07-capability-owner", "status": "answered", "checkableFromVault": true, "fullBodySlugs": ["capability-owner"] },
+        { "id": "cq08-next-action", "status": "answered", "checkableFromVault": true, "fullBodySlugs": ["handoff-process"] },
+        { "id": "cq09-process-boundary", "status": "answered", "checkableFromVault": true, "fullBodySlugs": ["handoff-process"] },
+        { "id": "cq10-visible-gap", "status": "answered", "checkableFromVault": true, "fullBodySlugs": ["visible-gap"] },
+        { "id": "cq11-start-path", "status": "answered", "checkableFromVault": true, "fullBodySlugs": ["implementation-entry"] },
+        { "id": "cq12-capability-path", "status": "answered", "checkableFromVault": true, "fullBodySlugs": ["capability-entry"] },
+        { "id": "cq13-impact", "status": "partial", "checkableFromVault": false, "fullBodySlugs": ["impact-boundary"] },
+        { "id": "cq14-verification", "status": "answered", "checkableFromVault": true, "fullBodySlugs": ["verification-boundary"] },
+        { "id": "cq15-source-currentness", "status": "partial", "checkableFromVault": false, "fullBodySlugs": ["source-receipt"] },
+        { "id": "cq16-first-read", "status": "answered", "checkableFromVault": true, "fullBodySlugs": ["agent-handoff"] },
+        { "id": "cq17-write-precondition", "status": "answered", "checkableFromVault": true, "fullBodySlugs": ["write-gate"] },
+        { "id": "cq18-refusal", "status": "answered", "checkableFromVault": true, "fullBodySlugs": ["visible-gap"] },
+        { "id": "cq19-source-hidden", "status": "unanswered", "checkableFromVault": false, "fullBodySlugs": ["source-receipt"] },
+        { "id": "cq20-follow-up", "status": "answered", "checkableFromVault": true, "fullBodySlugs": ["agent-handoff", "visible-gap"] }
+      ],
+      "unansweredQuestionIds": ["cq19-source-hidden"],
+      "partialQuestionIds": ["cq13-impact", "cq15-source-currentness"]
+    },
+    "hallucination": {
+      "status": "measured",
+      "sourceAccess": true,
+      "claims": [
+        { "id": "claim:cq01-purpose", "questionId": "cq01-purpose", "status": "verified" },
+        { "id": "claim:cq02-users", "questionId": "cq02-users", "status": "verified" },
+        { "id": "claim:cq03-boundary", "questionId": "cq03-boundary", "status": "verified" },
+        { "id": "claim:cq04-risk", "questionId": "cq04-risk", "status": "verified" },
+        { "id": "claim:cq05-evidence", "questionId": "cq05-evidence", "status": "verified" },
+        { "id": "claim:cq06-domain-owner", "questionId": "cq06-domain-owner", "status": "verified" },
+        { "id": "claim:cq07-capability-owner", "questionId": "cq07-capability-owner", "status": "verified" },
+        { "id": "claim:cq08-next-action", "questionId": "cq08-next-action", "status": "verified" },
+        { "id": "claim:cq09-process-boundary", "questionId": "cq09-process-boundary", "status": "verified" },
+        { "id": "claim:cq10-visible-gap", "questionId": "cq10-visible-gap", "status": "verified" },
+        { "id": "claim:cq11-start-path", "questionId": "cq11-start-path", "status": "verified" },
+        { "id": "claim:cq12-capability-path", "questionId": "cq12-capability-path", "status": "verified" },
+        { "id": "claim:cq13-impact", "questionId": "cq13-impact", "status": "partial" },
+        { "id": "claim:cq14-verification", "questionId": "cq14-verification", "status": "verified" },
+        { "id": "claim:cq15-source-currentness", "questionId": "cq15-source-currentness", "status": "partial" },
+        { "id": "claim:cq16-first-read", "questionId": "cq16-first-read", "status": "verified" },
+        { "id": "claim:cq17-write-precondition", "questionId": "cq17-write-precondition", "status": "verified" },
+        { "id": "claim:cq18-refusal", "questionId": "cq18-refusal", "status": "verified" },
+        { "id": "claim:cq19-source-hidden", "questionId": "cq19-source-hidden", "status": "unsupported" },
+        { "id": "claim:cq20-follow-up", "questionId": "cq20-follow-up", "status": "verified" }
+      ],
+      "failedClaimIds": ["claim:cq19-source-hidden"],
+      "unsupportedPresentedAsFact": 0
+    }
+  },
+  "evaluationStatus": "fixture_only",
+  "qualificationStatus": "not_assessed"
+}
