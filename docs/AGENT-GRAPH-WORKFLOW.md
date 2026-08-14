@@ -44,6 +44,14 @@ Checked against official docs on 2026-06-04:
   for tools that need direct system access.
   Source: https://code.claude.com/docs/en/mcp
 
+Atlas keeps the Codex boundary machine-readable too: `agent-setup --json`
+reports `clientStatus.codex.projectTrust: "unknown"` and
+`registration: "unverified"` until a fresh Codex session passes the trust
+prompt, `codex mcp list`, and Atlas `connection_info`. If the project config is
+ignored, use the generated global `codex mcp add ...` fallback, restart Codex,
+and repeat those checks. Atlas cannot inspect Codex credentials or trust
+directly, so config readiness never becomes a live-connection claim.
+
 Ontology Atlas therefore does not reimplement Claude Code, Codex, or Cursor chat
 inside the app — it does not own an agent loop, model routing, API keys, or
 billing. It prepares the local MCP files, root-specific commands, restart

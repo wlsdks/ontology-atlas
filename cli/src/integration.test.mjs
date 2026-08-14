@@ -725,6 +725,8 @@ await test('agent-setup — writes agent configs for an existing vault without s
         mcpConfig: 'ready',
         mcpConnection: 'unverified',
         trust: 'unknown',
+        projectTrust: 'unknown',
+        registration: 'unverified',
         connected: false,
       },
     });
@@ -733,8 +735,15 @@ await test('agent-setup — writes agent configs for an existing vault without s
     assert.match(data.commands.genericClient, /"launchScope":"source-bound"/);
     assert.match(data.commands.genericClient, /"portable":false/);
     assert.match(data.commands.setupState, /agent-setup .* --root .* --json/);
-    assert.match(data.commands.codexTrustGuidance, /trusted.*codex mcp list/i);
+    assert.match(data.commands.codexTrustGuidance, /fresh Codex.*trust.*codex mcp list/i);
     assert.match(data.commands.codexTrustGuidance, /not a connection/i);
+    assert.match(data.commands.codexTrustGuidance, /Global Codex fallback/i);
+    assert.match(data.commands.codexTrustGuidance, /connection_info/i);
+    assert.match(data.commands.codexTrustGuidance, /cannot inspect Codex trust or credentials/i);
+    assert.match(data.commands.codexGlobal, /^codex mcp add ontology-atlas --env OATLAS_VAULT=/);
+    assert.match(data.commands.codexGlobal, /--env OATLAS_REPO_ROOT=/);
+    assert.equal(data.clientStatus.codex.projectTrust, 'unknown');
+    assert.equal(data.clientStatus.codex.registration, 'unverified');
     assert.match(data.commands.setupRepair, /agent-setup .* --root .* --write/);
     assert.match(data.commands.restartGuidance, /Restart Claude Code, Cursor, or Codex from .* after repair/);
     assert.match(data.commands.setupGate, /agent-brief .* --verify-fallbacks --json/);
@@ -950,7 +959,7 @@ await test('agent-setup — terminal output points humans to the workflow guide'
     assert.match(clean, /Restart Claude Code, Cursor, or Codex from .* after repair/);
     assert.match(clean, /Client status: config readiness is not a live connection/);
     assert.match(clean, /Claude Code .*MCP config missing .*MCP connection unverified .*auth unknown .*connected false/);
-    assert.match(clean, /Codex .*MCP config missing .*MCP connection unverified .*trust unknown .*connected false/);
+    assert.match(clean, /Codex .*MCP config missing .*MCP connection unverified .*trust unknown .*project trust unknown .*registration unverified .*connected false/);
     assert.match(clean, /Mode guide:/);
     assert.match(clean, /MCP-connected · direct read\/write tools/);
     assert.match(clean, /graph DB differences/);

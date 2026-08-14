@@ -40,6 +40,28 @@
 **상태**: 유효 / 뒤집힘(→ 링크) / 반증됨(관측: …)
 ```
 
+## 2026-08-14 (12) — Codex fresh trust와 MCP 등록은 별도 증명이다
+
+**소집**: 단독 패스 · **트리거**: Codex CLI 0.147.0의 fresh project registration 경로에서
+생성된 `.codex/config.toml`과 실제 프로젝트 trust·MCP 등록을 구분해야 함
+**루브릭**: 22/24 (치명적 0: 없음)
+**결정**: `agent-setup --json`의 Codex 상태는 config readiness와 별도로
+`projectTrust: unknown`, `registration: unverified`, `mcpConnection: unverified`,
+`connected: false`로 시작한다. 안내는 정확한 project root에서 fresh Codex trust를 승인하고
+`codex mcp list` 및 `connection_info`를 순서대로 확인하게 하며, project config가 무시될 때는
+출력된 global `codex mcp add ...` fallback을 사용한 뒤 같은 증명을 반복하게 한다.
+**적용 규칙**: CLI는 Codex trust·credential·live connection을 직접 검사했다고 주장하지 않는다.
+파일 존재나 fallback 명령 출력만으로 registration을 ready/connected로 승격하지 않는다.
+**서명**: jinan (human owner)
+
+**기록된 반대**: “project config가 생성되면 Codex 등록 완료로 표시하자”는 의견은 fresh trust
+prompt와 실제 server inventory를 관측하지 못하므로 기각했다.
+**반증 조건**: credential 없는 fresh project에서도 `codex mcp list`와 `connection_info`를
+독립적으로 재현하고, config-only 상태가 동일한 vault·inventory를 보장한다는 증거가 나오면
+이 상태 계약을 재검토한다.
+**재검토**: Codex credential을 제공한 독립 client qualification이 추가될 때
+**상태**: 유효
+
 ## 2026-08-14 (11) — 클라이언트 설정·신뢰·실제 연결은 서로 다른 상태다
 
 **소집**: 단독 패스 · **트리거**: fresh client registration audit에서 정상 MCP가

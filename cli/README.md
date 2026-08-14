@@ -430,6 +430,14 @@ Codex ignores a project-scoped `.codex/config.toml` until the folder is
 folder and confirm `ontology-atlas` appears. A generated file on its own is not
 connection proof.
 
+The machine-readable `agent-setup --json` contract keeps this boundary explicit:
+`clientStatus.codex.projectTrust` starts as `unknown`, `registration` as
+`unverified`, and `mcpConnection`/`connected` stay `unverified`/`false` until a
+fresh Codex session has passed the trust prompt, `codex mcp list`, and Atlas
+`connection_info`. If the project config is ignored, use the printed global
+`codex mcp add ...` fallback and repeat those checks. This command cannot inspect
+Codex credentials or trust directly, so it never reports those states as ready.
+
 ```jsonc
 // .mcp.json (in your agent's config dir)
 {
