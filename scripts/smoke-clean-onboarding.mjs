@@ -44,6 +44,10 @@ function hasCommand(command) {
   }).status === 0;
 }
 
+function stripAnsi(value) {
+  return value.replace(/\u001b\[[0-?]*[ -/]*[@-~]/g, '');
+}
+
 const temp = mkdtempSync(join(tmpdir(), 'ontology-atlas-clean-onboarding-'));
 const fakeHome = join(temp, 'home');
 const fakeCodexHome = join(temp, 'codex-home');
@@ -61,13 +65,14 @@ writeFileSync(
 );
 
 const init = run('node', [CLI, 'init', 'ontology'], { cwd: project });
-assert.match(init.stdout, /codex mcp add ontology-atlas/);
-assert.match(init.stdout, /\.codex\/config\.toml/);
-assert.match(init.stdout, new RegExp(`${expectedToolCount} tools`));
-assert.match(init.stdout, expectedToolSplitRe);
-assert.match(init.stdout, /ontology-atlas analyze \. --vault \.\/ontology/);
-assert.match(init.stdout, /ontology-atlas bootstrap \. --vault \.\/ontology/);
-assert.doesNotMatch(init.stdout, /\/path\/to\/your\/repo/);
+const initOutput = stripAnsi(init.stdout);
+assert.match(initOutput, /codex mcp add ontology-atlas/);
+assert.match(initOutput, /\.codex\/config\.toml/);
+assert.match(initOutput, new RegExp(`${expectedToolCount} tools`));
+assert.match(initOutput, expectedToolSplitRe);
+assert.match(initOutput, /analyze \. --vault \.\/ontology/);
+assert.match(initOutput, /bootstrap \. --vault \.\/ontology/);
+assert.doesNotMatch(initOutput, /\/path\/to\/your\/repo/);
 
 const mcpConfig = JSON.parse(readFileSync(join(project, '.mcp.json'), 'utf-8'));
 const server = mcpConfig.mcpServers['ontology-atlas'];
@@ -90,29 +95,23 @@ run('node', [VERIFY], {
 
 const bootstrap = run(
   'node',
-  [CLI, 'bootstrap', '.', '--vault', './ontology', '--skip-imports'],
-  { cwd: project },
+  [CLI, 'bootstrap', '.', '--vault', './ontology', '--skip-imports', '--json'],
+  { cwd: project, allowFailure: true },
 );
-assert.match(bootstrap.stdout, /starters.*4.*removed/);
-assert.equal(existsSync(join(project, 'ontology', 'project.md')), false);
-assert.equal(
-  existsSync(join(project, 'ontology', 'domains', 'example-domain.md')),
-  false,
-);
-assert.equal(
-  existsSync(join(project, 'ontology', 'capabilities', 'example-capability.md')),
-  false,
-);
-assert.equal(
-  existsSync(join(project, 'ontology', 'elements', 'example-element.md')),
-  false,
-);
-assert.equal(existsSync(join(project, 'ontology', 'clean-onboarding-app.md')), true);
-assert.equal(existsSync(join(project, 'ontology', 'domains', 'capture.md')), true);
-assert.equal(
-  existsSync(join(project, 'ontology', 'capabilities', 'capture.md')),
-  true,
-);
+assert.equal(bootstrap.status, 3);
+const bootstrapJson = JSON.parse(bootstrap.stdout);
+assert.equal(bootstrapJson.mode, 'review');
+assert.equal(bootstrapJson.writeEligible, false);
+assert.equal(bootstrapJson.reason, 'approval_required');
+assert.equal(bootstrapJson.next.writes, 0);
+assert.equal(bootstrapJson.guard.qualification, 'constructionQualification:v1');
+assert.equal(existsSync(join(project, 'ontology', 'project.md')), true);
+assert.equal(existsSync(join(project, 'ontology', 'domains', 'example-domain.md')), true);
+assert.equal(existsSync(join(project, 'ontology', 'capabilities', 'example-capability.md')), true);
+assert.equal(existsSync(join(project, 'ontology', 'elements', 'example-element.md')), true);
+assert.equal(existsSync(join(project, 'ontology', 'clean-onboarding-app.md')), false);
+assert.equal(existsSync(join(project, 'ontology', 'domains', 'capture.md')), false);
+assert.equal(existsSync(join(project, 'ontology', 'capabilities', 'capture.md')), false);
 run('node', [CLI, 'validate', join(project, 'ontology')], { cwd: project });
 
 if (hasCommand('claude')) {
