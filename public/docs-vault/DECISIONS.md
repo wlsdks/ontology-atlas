@@ -40,6 +40,33 @@
 **상태**: 유효 / 뒤집힘(→ 링크) / 반증됨(관측: …)
 ```
 
+## 2026-08-14 (13) — MCP selector 오류는 인자 오류로 분류한다
+
+**소집**: 단독 패스 · **트리거**: `get_concept`/`get_concepts`가 selector를 모두
+생략하거나 두 selector 계열을 동시에 받는 경우 실행 자체는 거절하면서도 공개 오류
+분류를 일반 `tool_error`로 노출해 호출자가 복구 경로를 선택할 수 없었다.
+**루브릭**: 21/24 (치명적 0: 없음)
+
+**결정**: 각 도구는 `slug` 또는 `uid`, 복수 조회는 `slugs` 또는 `uids` 중 정확히 한
+selector 계열만 받는다. 위반은 MCP의 `invalid_arguments` 계약으로 반환하고, 유효한
+selector payload와 TOML dotted key 공백 표기는 기존대로 보존한다. 런타임 거부와
+문서·통합 테스트의 오류 분류를 같은 계약으로 고정한다.
+
+**적용 규칙**: selector가 잘못되었다고 자동 보정하거나 임의의 첫 selector를 선택하지
+않는다. config repair는 문법적으로 유효한 dotted key를 의미적으로 파싱하고 unrelated
+section을 보존한다. 새 MCP tool·kind·vault write는 만들지 않는다.
+
+**검증**: 양쪽 selector의 누락/중복 RED fixture, valid TOML dotted-key whitespace
+fixture, runtime integration과 MCP verify contract가 RED→GREEN으로 통과한다.
+
+**기록된 반대**: “모든 호출 실패를 `tool_error`로 통일하면 구현이 단순하다”는 의견은
+호출자가 입력 오류와 서버 오류를 구분하지 못하게 하므로 기각했다.
+**반증 조건**: 유효한 selector가 `invalid_arguments`로 거절되거나, 잘못된 selector가
+성공/암묵적 보정으로 통과하거나, config repair가 unrelated section을 지우면 이 결정을
+재검토한다.
+**서명**: jinan
+**상태**: 유효
+
 ## 2026-08-14 (12) — Codex fresh trust와 MCP 등록은 별도 증명이다
 
 **소집**: 단독 패스 · **트리거**: Codex CLI 0.147.0의 fresh project registration 경로에서
