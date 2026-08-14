@@ -265,6 +265,8 @@ function buildAgentSetup(parsed) {
         command: serverCommand.command,
         args: serverCommand.args,
         env: { OATLAS_VAULT: vaultRoot, OATLAS_REPO_ROOT: codebaseRoot },
+        launchScope: serverCommand.launchScope,
+        portable: serverCommand.portable,
       }),
     },
     docs: {
@@ -285,20 +287,20 @@ function checkMcpJson(target, serverCommand, write) {
   if (!existsSync(path)) {
     if (write) {
       writeFileSync(path, expectedText);
-      return row(target, 'mcp-json', path, 'ready', 'written', 'created .mcp.json');
+      return row(target, 'mcp-json', path, 'ready', 'written', 'created .mcp.json', null, serverCommand);
     }
-    return row(target, 'mcp-json', path, 'missing', 'dry-run', 'run again with --write to create .mcp.json');
+    return row(target, 'mcp-json', path, 'missing', 'dry-run', 'run again with --write to create .mcp.json', null, serverCommand);
   }
 
   const current = readFileSync(path, 'utf-8');
   const status = inspectMcpJson(current, target.omotVault, target.repoRootArg);
-  if (status.ready) return row(target, 'mcp-json', path, 'ready', 'none', status.message);
+  if (status.ready) return row(target, 'mcp-json', path, 'ready', 'none', status.message, null, status);
 
   if (write) {
     const repaired = repairMcpJsonText(current, expected);
     if (repaired.ok) {
       writeTextAtomically(path, repaired.text);
-      return row(target, 'mcp-json', path, 'ready', repaired.action, repaired.message);
+      return row(target, 'mcp-json', path, 'ready', repaired.action, repaired.message, null, serverCommand);
     }
   }
 
@@ -310,7 +312,7 @@ function checkMcpJson(target, serverCommand, write) {
     action = result.action;
     surfacedExamplePath = result.path;
   }
-  return row(target, 'mcp-json', path, 'review', action, status.message, surfacedExamplePath);
+  return row(target, 'mcp-json', path, 'review', action, status.message, surfacedExamplePath, status);
 }
 
 function checkCodexConfig(target, serverCommand, write) {
@@ -321,20 +323,20 @@ function checkCodexConfig(target, serverCommand, write) {
     if (write) {
       mkdirSync(codexDir, { recursive: true });
       writeFileSync(path, expectedText);
-      return row(target, 'codex-toml', path, 'ready', 'written', 'created .codex/config.toml');
+      return row(target, 'codex-toml', path, 'ready', 'written', 'created .codex/config.toml', null, serverCommand);
     }
-    return row(target, 'codex-toml', path, 'missing', 'dry-run', 'run again with --write to create .codex/config.toml');
+    return row(target, 'codex-toml', path, 'missing', 'dry-run', 'run again with --write to create .codex/config.toml', null, serverCommand);
   }
 
   const current = readFileSync(path, 'utf-8');
   const status = inspectCodexConfig(current, target.omotVault, target.repoRootArg);
-  if (status.ready) return row(target, 'codex-toml', path, 'ready', 'none', status.message);
+  if (status.ready) return row(target, 'codex-toml', path, 'ready', 'none', status.message, null, status);
 
   if (write) {
     const repaired = repairCodexConfigText(current, expectedText);
     if (repaired.ok) {
       writeTextAtomically(path, repaired.text);
-      return row(target, 'codex-toml', path, 'ready', repaired.action, repaired.message);
+      return row(target, 'codex-toml', path, 'ready', repaired.action, repaired.message, null, serverCommand);
     }
   }
 
@@ -347,10 +349,10 @@ function checkCodexConfig(target, serverCommand, write) {
     action = result.action;
     surfacedExamplePath = result.path;
   }
-  return row(target, 'codex-toml', path, 'review', action, status.message, surfacedExamplePath);
+  return row(target, 'codex-toml', path, 'review', action, status.message, surfacedExamplePath, status);
 }
 
-function row(target, kind, path, status, action, message, examplePath = null) {
+function row(target, kind, path, status, action, message, examplePath = null, launch = null) {
   return {
     owner: target.owner,
     kind,
@@ -360,6 +362,8 @@ function row(target, kind, path, status, action, message, examplePath = null) {
     action,
     message,
     reason: target.reason,
+    ...(launch?.launchScope ? { launchScope: launch.launchScope } : {}),
+    ...(typeof launch?.portable === 'boolean' ? { portable: launch.portable } : {}),
     ...(examplePath ? { examplePath } : {}),
   };
 }
@@ -382,7 +386,7 @@ function inspectMcpJson(text, expectedVault, expectedRepoRoot) {
     }
     const launch = inspectExecutableLaunch(server.command, server.args);
     if (!launch.ready) return launch;
-    return { ready: true, message: 'ready for Claude Code / Cursor' };
+    return { ...launch, message: 'ready for Claude Code / Cursor' };
   } catch (err) {
     return { ready: false, message: `invalid JSON: ${err instanceof Error ? err.message : String(err)}` };
   }
@@ -422,7 +426,7 @@ function inspectCodexConfig(text, expectedVault, expectedRepoRoot) {
   }
   const launch = inspectExecutableLaunch(command, commandArgs);
   if (!launch.ready) return launch;
-  return { ready: true, message: 'ready for Codex' };
+  return { ...launch, message: 'ready for Codex' };
 }
 
 function inspectExecutableLaunch(command, args) {
@@ -436,11 +440,24 @@ function inspectExecutableLaunch(command, args) {
     args.length === 1 &&
     absolute(args[0]) &&
     normalized(args[0]).endsWith('/mcp/src/index.js');
+  const sourceBoundRelative =
+    command === 'node' &&
+    args.length === 1 &&
+    !absolute(args[0]) &&
+    normalized(args[0]).replace(/^\.\//, '') === 'mcp/src/index.js';
   const bundledBinary =
     args.length === 0 &&
     absolute(command) &&
     /\/ontology-atlas-mcp(?:\.exe)?$/.test(normalized(command));
   if (!sourceEntrypoint && !bundledBinary) {
+    if (sourceBoundRelative) {
+      return {
+        ready: false,
+        launchScope: 'source-bound',
+        portable: false,
+        message: 'source-bound launch is relative to an ontology-atlas checkout; expected an absolute mcp/src/index.js path',
+      };
+    }
     return {
       ready: false,
       message: 'server launch is unsupported; expected node <absolute>/mcp/src/index.js or an absolute ontology-atlas-mcp app binary',
@@ -448,9 +465,19 @@ function inspectExecutableLaunch(command, args) {
   }
   const executablePath = sourceEntrypoint ? args[0] : command;
   if (!existsSync(executablePath) || !statSync(executablePath).isFile()) {
-    return { ready: false, message: `server launch target does not exist: ${executablePath}` };
+    return {
+      ready: false,
+      launchScope: sourceEntrypoint ? 'source-bound' : 'app-bundled',
+      portable: sourceEntrypoint ? false : true,
+      message: `server launch target does not exist: ${executablePath}`,
+    };
   }
-  return { ready: true, message: 'server launch is executable' };
+  return {
+    ready: true,
+    launchScope: sourceEntrypoint ? 'source-bound' : 'app-bundled',
+    portable: sourceEntrypoint ? false : true,
+    message: 'server launch is executable',
+  };
 }
 
 function getTomlSection(text, sectionName) {
@@ -602,21 +629,28 @@ function resolveMcpServerCommand() {
   if (envPath) {
     if (!existsSync(envPath)) throw new Error(`OATLAS_MCP_PATH does not exist: ${envPath}`);
     if (!statSync(envPath).isFile()) throw new Error(`OATLAS_MCP_PATH is not a file: ${envPath}`);
-    return { command: 'node', args: [envPath] };
+    return { command: 'node', args: [envPath], launchScope: 'source-bound', portable: false };
   }
 
   try {
-    return { command: 'node', args: [require_.resolve('ontology-atlas-mcp/src/index.js')] };
+    return {
+      command: 'node',
+      args: [require_.resolve('ontology-atlas-mcp/src/index.js')],
+      launchScope: 'source-bound',
+      portable: false,
+    };
   } catch {
     const monoDev = resolve(PKG_ROOT, '..', 'mcp', 'src', 'index.js');
-    if (existsSync(monoDev)) return { command: 'node', args: [monoDev] };
+    if (existsSync(monoDev)) {
+      return { command: 'node', args: [monoDev], launchScope: 'source-bound', portable: false };
+    }
   }
   // npm 발행 폐기 (docs/DECISIONS.md 2026-07-27) — 설치된 앱이 번들로 싣고
   // 다니는 서버를 찾는다. 그것도 없으면 실패 사유를 말한다. 붙지 않는 설정을
   // 조용히 쓰는 것보다 여기서 멈추는 편이 진단이 싸다.
   const bundled = '/Applications/Ontology Atlas.app/Contents/MacOS/ontology-atlas-mcp';
   if (existsSync(bundled) && statSync(bundled).isFile()) {
-    return { command: bundled, args: [] };
+    return { command: bundled, args: [], launchScope: 'app-bundled', portable: true };
   }
 
   throw new Error(

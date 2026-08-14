@@ -713,6 +713,10 @@ await test('agent-setup — writes agent configs for an existing vault without s
     assert.equal(data.sideEffect, true);
     assert.equal(data.summary.ready, 4);
     assert.equal(data.summary.written, 4);
+    assert.ok(data.files.every((file) => file.launchScope === 'source-bound'));
+    assert.ok(data.files.every((file) => file.portable === false));
+    assert.match(data.commands.genericClient, /"launchScope":"source-bound"/);
+    assert.match(data.commands.genericClient, /"portable":false/);
     assert.match(data.commands.setupState, /agent-setup .* --root .* --json/);
     assert.match(data.commands.codexTrustGuidance, /trusted.*codex mcp list/i);
     assert.match(data.commands.setupRepair, /agent-setup .* --root .* --write/);
@@ -861,6 +865,53 @@ await test('agent-setup — existing app-bundled configs report ready', async ()
     const data = JSON.parse(r.stdout);
     assert.equal(data.summary.ready, 2);
     assert.equal(data.summary.review, 0);
+    assert.ok(data.files.every((file) => file.launchScope === 'app-bundled'));
+    assert.ok(data.files.every((file) => file.portable === true));
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+await test('agent-setup — relative source templates are source-bound review, not portable ready', async () => {
+  const root = mkdtempSync(join(tmpdir(), 'cli-agent-setup-relative-source-'));
+  try {
+    writeFileSync(
+      join(root, '.mcp.json'),
+      JSON.stringify({
+        mcpServers: {
+          'ontology-atlas': {
+            command: 'node',
+            args: ['./mcp/src/index.js'],
+            env: { OATLAS_VAULT: '.', OATLAS_REPO_ROOT: '.' },
+          },
+        },
+      }),
+      'utf-8',
+    );
+    mkdirSync(join(root, '.codex'), { recursive: true });
+    writeFileSync(
+      join(root, '.codex', 'config.toml'),
+      [
+        '[mcp_servers.ontology-atlas]',
+        'command = "node"',
+        'args = ["./mcp/src/index.js"]',
+        '',
+        '[mcp_servers.ontology-atlas.env]',
+        'OATLAS_VAULT = "."',
+        'OATLAS_REPO_ROOT = "."',
+        '',
+      ].join('\n'),
+      'utf-8',
+    );
+
+    const result = await run(['agent-setup', '.', '--root', '.', '--json'], { cwd: root });
+    assert.equal(result.code, 1);
+    const data = JSON.parse(result.stdout);
+    assert.equal(data.summary.ready, 0);
+    assert.equal(data.summary.review, 2);
+    assert.ok(data.files.every((file) => file.launchScope === 'source-bound'));
+    assert.ok(data.files.every((file) => file.portable === false));
+    assert.ok(data.files.every((file) => /source-bound/i.test(file.message)));
   } finally {
     rmSync(root, { recursive: true, force: true });
   }

@@ -91,6 +91,31 @@ malformed/project/digest/plan fail-closed), TypeScript, ESLint.
 
 ---
 
+## 2026-08-14 (7) — source-bound MCP 템플릿은 portable launch로 가장하지 않는다
+
+**관찰**: 추적 중인 `.mcp.json.example`와 `.codex/config.toml`은 `node
+./mcp/src/index.js`를 담고 있다. 이 템플릿을 MCP 소스 checkout 밖의 빈 cwd에
+그대로 복사하면 서버 파일이 없어 0/1 launch가 되고, 기존 문구의 “portable”을
+설정 파일 전체의 portable 실행으로 읽을 여지가 있다.
+
+**결정**: 새 npm/npx 채널이나 상대경로 fallback은 만들지 않는다. `agent-setup`
+결과와 각 파일 행은 실행 범위를 `source-bound` 또는 `app-bundled`로, 그리고
+`portable` 여부를 명시한다. 실제 활성 설정의 `ready`는 기존 결정대로 절대
+source-entrypoint 또는 설치 앱의 절대 bundled binary만 통과한다. 상대경로 source
+템플릿은 보존하되 `review`와 source-bound 진단으로 닫고, fresh cwd에서 연결된
+것처럼 세지 않는다. “graph/vault 데이터가 portable”이라는 표현은 실행기까지
+이식된다는 뜻으로 사용하지 않는다.
+
+**적용 규칙**: 기존 launch shape·분모·파일 보존을 유지하고, metadata는 additive로
+노출한다. fresh empty cwd에서 복사한 두 템플릿이 `ready=0`, `review=2`인지와
+source-bound 진단을 고정한 뒤 정상 source checkout과 bundled fixture를 GREEN으로
+검증한다.
+
+**서명 (accountable)**: 소유자 위임 하에 집행
+**상태**: 유효
+
+---
+
 ## 2026-08-14 (5) — 샘플 Skills는 실제 프로세스를 보여준다
 
 **관찰**: `/ko/skills`의 제품 샘플이 번호 절차가 아닌 한 줄 설명만 갖고 있어,
