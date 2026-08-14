@@ -11931,3 +11931,25 @@ payload에 임의로 잘라 넣으면 누락인지 완전한 부재인지 구분
 **상태**: 유효 · compact/read-contract slice 집행
 
 ---
+
+## 2026-08-14 (8) — desktop 성능 게이트는 정적 자산만 차단한다
+
+기존 `desktop:perf`는 `out/` 전체와 macOS `.app` 전체 바이트 한도를 같은
+실패 조건으로 묶었다. 번들 전체 크기는 빌드 메타데이터·서명·런타임 동봉물의
+영향을 함께 받아 원인과 사용자 성능을 분리하지 못하므로, 그 두 합계는 이제
+정보성 크기 지표로만 출력한다.
+
+**결정**: `out/_next/static` 합계와 최대 JS/CSS 청크만 정적 성능 하드 게이트로
+유지한다. `.app` 존재 여부(`--require-app`)와 정적 빌드 산출물 존재 여부는
+계속 실패시킨다. `desktop:perf`는 런타임 시작을 측정한다고 주장하지 않으며,
+`desktop:verify-app`의 Tauri/WebView 기동 증거와 `cli:mcp-verify`의 MCP 시작
+증거를 별도 경계로 보고서에 명시한다.
+
+**반증**: 정적 자산 한도가 초과되어도 `desktop:perf`가 빨간색이 아니거나,
+JS/CSS 산출물이 하나도 없는데 통과하거나, release preflight가 앱/MCP 시작
+검증을 건너뛰면 이 분리를 폐기하고 원인을 다시 나눈다.
+
+**서명 (accountable)**: jinan
+**상태**: 유효 · 게이트 경계 재정의
+
+---
