@@ -40,6 +40,78 @@
 **상태**: 유효 / 뒤집힘(→ 링크) / 반증됨(관측: …)
 ```
 
+## 2026-08-15 (14) — candidate packet은 lossless였고, 다음은 의미 보정이다
+
+**소집**: 소유자 집행 · Sol xhigh 재검토 · **트리거**: (13)의 Candidate Envelope
+Probe와 동일 packet source-hidden 재실행 완료
+**루브릭**: 해당 없음 — 기존 contract를 늘리지 않는 검증·skill 보강
+**관찰**: H2/Axios/Undici 세 packet 모두 reviewPlan full body·row 순서·plan/source
+digest가 JSON 왕복 뒤 동일했다. 누락·foreign·truncated 변이는 감지됐고,
+`sourceHidden:true`, `canWrite:false`, `writePlan` 부재를 유지했다. packet-only
+evaluator는 H2 1 complete·3 partial·2 gap, Axios 4·1·1, Undici 4·1·1을 기록했으며
+unsupported claim은 0, citation은 모두 정확했다.
+**결정**: 새 candidate handoff envelope·public field·tool·UI·storage·writer를
+만들지 않는다. field-trial skill에 candidate packet gate를 추가해 앞으로 candidate
+평가와 persisted-vault handoff를 분리한다. 다음 product slice는 H2에서 드러난
+scope/domain/ability/impact의 의미 공백과 Axios/Undici의 omitted behavior·blast
+radius 공백을, 기존 competency answer·gap·quality diagnostics 안에서 보강하는
+semantic/evidence calibration으로 한다.
+**적용 규칙**: lossless 전달은 의미 품질 증명이 아니다. source-hidden evaluator가
+말한 unknown은 보강 질문·evidence gap으로 남기며 complete로 승격하지 않는다.
+node count와 통합 점수는 만들지 않고, human acceptance·no-write·source-hidden을
+그대로 둔다.
+**서명**: 소유자 요청에 따라 집행
+
+**기록된 반대**: packet-only 결과의 낮은 complete 비율을 analyzer 실패로 보고 새
+transport/schema를 추가해야 한다는 의견
+**반증 조건**: 동일 packet이 세 trial에서 body·digest·순서를 보존하고도 evaluator가
+같은 semantic/unknown 결과를 내면 transport 가설은 반증된다. 실제 probe가 이를
+관측했으므로 반대는 패배로 기록한다.
+**재검토**: semantic/evidence calibration 이후 동일 세 trial에서 q1~q6의 gap과
+unsupported claim/citation accuracy가 어떻게 변하는지 측정할 때
+**상태**: 유효
+
+## 2026-08-15 (13) — candidate handoff는 먼저 scratch probe로 판별한다
+
+**소집**: PO Council · Sol xhigh 설계 검토 · **트리거**: qualification claim을
+exact reviewPlan에 묶은 뒤 fresh OSS trial 3회에서 source-hidden evaluator가
+starter vault 또는 수동 envelope를 보게 된 경계가 드러남
+**루브릭**: seat별 19~22/24 (치명적 0: 없음)
+**관찰**: H2와 Axios는 starter vault만 평가해 subject-specific 답변이 0/6이었다.
+Undici는 exact candidate의 full body 9/9를 수동 전달받아 3 full·2 partial·1 gap을
+반환했지만 여전히 `not_qualified`, `canWrite:false`, `hard_block`이었다. 현재
+`reviewPlan`, `planDigest`, `sourceDigest`, `requiredGapIds`, full body와 proposal
+coverage는 MCP 응답에 존재하지만 evaluator 수신·JSON round-trip·known gap과
+measured gap의 구분을 재사용 가능한 경계로 증명하는 gate는 없다.
+**결정**: 새 MCP/CLI 공개 도구·스키마·UI·vault/sidecar 저장·writer·자동 write를
+만들지 않는다. 먼저 수정 없는 scratch의 **Candidate Envelope Probe**를 실행해
+기존 `reviewPlan`과 `planDigest`, `sourceDigest`, `planRevision`, `requiredGapIds`,
+proposal coverage, 모든 full body를 source-hidden evaluator에 그대로 전달하고,
+serialize/deserialize 뒤 body·순서·digest가 deep-equal인지, foreign/missing/
+truncated row와 source-hidden 미측정이 fail-closed인지, acceptance 전 vault write가
+0이고 `writePlan`이 없는지 확인한다. 세 trial에서 probe가 lossless이면 이 handoff
+slice는 구현하지 않고 semantic/evidence calibration으로 이동한다. lossless가
+증명되지 않을 때만 session/test-only 내부 gate를 만든다.
+**적용 규칙**: 기존 `proposalValidation.reviewPlan`을 ephemeral handoff의 정본으로
+삼는다. 후보는 ontology truth나 persisted evidence가 아니며, human acceptance와
+기존 digest-bound lifecycle을 우회하지 않는다. full body 전달은 의미 품질 증명이
+아니고, evaluator는 source clone/private path를 받지 않는다. 새 aggregate score,
+자동 semantic truth, public contract 확장은 이번 slice의 no-go다.
+**서명**: 소유자 요청에 따라 집행
+
+**기록된 반대**: 현재 MCP 응답이 이미 필요한 full body·digest·gap을 반환하고 Undici도
+9/9 본문을 읽었으므로 별도 handoff 경계는 중복일 수 있으며, H2/Axios의 0/6은
+transport가 아니라 starter-only trial harness 오류라는 의견(결·지킴이·지렛대).
+**반증 조건**: 현재 응답을 수정 없이 세 trial의 source-hidden evaluator에 전달했을
+때 모든 body·순서·digest가 동일하고, 수동 envelope와 답변률·claim/citation 정확도·
+gap·다음 행동이 동일하게 재현되며, no-write/writePlan 부재도 유지되면 handoff
+slice는 폐기한다. 반대로 payload equality가 깨지거나 foreign/truncated/missing
+row가 통과하면 lossless 경계를 먼저 만든다.
+**재검토**: Candidate Envelope Probe와 세 trial의 동일 경계 재실행 직후; probe가
+통과하면 Undici에서 관측된 domain exclusion·정확한 implementation file·omitted
+behavior를 semantic calibration의 다음 slice로 연다.
+**상태**: 유효
+
 ## 2026-08-15 (12) — qualification claim을 exact reviewPlan에 묶는다
 
 **소집**: PO Council · Sol xhigh 설계 검토 · **트리거**: fresh field trial에서
