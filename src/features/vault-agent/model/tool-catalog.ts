@@ -243,11 +243,6 @@ export const AGENT_READ_TOOLS: readonly AgentToolDefinition[] = [
           maximum: 500,
           description: 'Max rows. Defaults to 100, max 500.',
         },
-        offset: {
-          type: 'integer',
-          minimum: 0,
-          description: 'Zero-based page offset. Follow pagination.nextOffset until hasMore is false.',
-        },
       },
     },
   },
