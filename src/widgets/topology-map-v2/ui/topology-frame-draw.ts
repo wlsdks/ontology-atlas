@@ -505,6 +505,8 @@ export interface FrameDrawParams {
   spotlightIds: ReadonlySet<string> | null;
   /** 스포트라이트 on/off 지수 램프 0..1 — loop 가 `stepFocusRamp`(focusDimTau 재사용)로 step. */
   spotlightRamp: number;
+  /** 스포트라이트 파선 위상 — transition 중에만 갱신되고 이후 고정된다. */
+  spotlightDashOffset: number;
   /**
    * 슬라이스 C (개발/비개발 모드 토글) — 티어 게이트 config. 생략 시
    * `DEFAULT_TIER_REVEAL`(개발 모드). 비개발(plain) 모드는 HomePage 가
@@ -603,6 +605,7 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
     trailLensIds = null,
     spotlightIds,
     spotlightRamp,
+    spotlightDashOffset,
     tierReveal = DEFAULT_TIER_REVEAL,
     glyphStyle = "fill",
     backgroundVariant = "dot",
@@ -1255,12 +1258,14 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
         // 값이 **정확히** `human` 일 때만. 부재는 unknown 이지 사람이 아니다.
         reviewPending: node.createdBy === "human",
         // 스포트라이트 변경-노드 링 (Image #14) — 렌즈 ON + 창 안 노드에만.
-        // dashOffset = now×speed 회전 위상(reduced-motion 정적), alpha = 램프.
+        // dashOffset는 loop가 bounded transition 중에만 갱신한다. 램프가
+        // 정착한 뒤에도 다른 캔버스 활동이 남아 있을 수 있으므로 now 기반
+        // 무한 회전은 금지한다. reduced-motion은 0으로 고정한다.
         spotlightRing:
           spotlightLensActive && spotlightIds !== null && spotlightIds.has(node.id)
             ? {
                 alpha: spotlightRamp,
-                dashOffset: reducedMotion ? 0 : (now * tokens.spotlightRingSpeed) % 9,
+                dashOffset: reducedMotion ? 0 : spotlightDashOffset,
               }
             : null,
         now,
