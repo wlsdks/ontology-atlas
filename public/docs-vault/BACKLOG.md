@@ -103,8 +103,8 @@ RDF/OWL/SKOS/SHACL 구현으로 소개하지 않는다. **적용 원칙**: LLM�
 | 9 | O1.5 | done(0ef1c5aa4) | human-owned exact plan이 qualification→write→finalize→source-hidden 재사용을 닫았다. |
 | 10 | U1.3 | done(84fb9d177) | 같은 ontology-construction을 기본/전문가 깊이로 쉽게 사용한다. |
 | 11 | K1.1 | done(84fb9d177) | Skill 번호 절차를 손실 없이 source-bound rail로 읽는다. |
-| 12 | K1.3 | done(84fb9d177) | 승인된 process packet을 digest와 함께 handoff한다. |
-| 13 | K1.2 | done(84fb9d177) | 명시 문법만 branch/retry/stop/verify로 타입화한다. |
+| 12 | K1.3 | in_progress | canonical packet·tamper gate와 clipboard UI는 구현됐고, fresh source-hidden consumer의 독립 27/27 재현 증거를 추가 검증 중이다. |
+| 13 | K1.2 | done(working slice) | 독립 gold corpus가 명시 grammar 4종을 precision 100%로 고정하고 ambiguous 문장은 diagnostic으로 남긴다. |
 | 14 | U1.1 | ready | Projects가 lifecycle 질문을 category/status로 두 번 묻지 않는다. |
 | 15 | U1.2 | ready | spotlight가 bounded motion 뒤 idle로 돌아간다. |
 | gate | O1.4 | hold(repeated missing primitive) | missing primitive가 반복 입증될 때만 schema 확장을 상정한다. |

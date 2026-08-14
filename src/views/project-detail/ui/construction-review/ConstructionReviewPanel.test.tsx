@@ -31,9 +31,10 @@ function review(): ConstructionReviewProjection {
     sourceDigest: `sha256:${"b".repeat(64)}`,
     qualification: {
       competencyQuestions: [{ id: "cq:scope", question: "What is in scope?", examples: [{ id: "e:1" }], counterexamples: [{ id: "c:1" }] }],
-      witnesses: [{ id: "w:scope", kind: "source_span", provenance: { sourceRef: "README.md:1-3", digest: `sha256:${"b".repeat(64)}` } }],
+      witnesses: [{ id: "w:scope", kind: "source_span", current: true, provenance: { sourceRef: "README.md:1-3", sourceSpan: { start: { line: 1, column: 1 }, end: { line: 3, column: 9 } }, digest: `sha256:${"b".repeat(64)}` } }],
+      cqResults: [{ cqId: "cq:scope", status: "answered", witnessRefs: ["w:scope"] }],
       citationChecks: [{ claimId: "claim:scope", witnessRef: "w:scope", status: "verified" }],
-      axisResults: [{ axis: "semantic", status: "passed" }],
+      axisResults: [{ axis: "semantic", status: "passed", evidenceRefs: ["w:scope"], findingIds: [] }],
       diagnostics: [],
     },
     lifecycle: { diagnostics: [] },
@@ -85,6 +86,9 @@ describe("ConstructionReviewPanel", () => {
     expect(evidence).toHaveTextContent("README.md:1-3");
     expect(evidence).toHaveTextContent("semantic");
     expect(evidence).toHaveTextContent("sha256:");
+    expect(evidence).toHaveTextContent("answered");
+    expect(evidence).toHaveTextContent("L1:1–L3:9");
+    expect(evidence).toHaveTextContent("evidence: w:scope");
   });
 
   it("lets an expert revise a local CQ and exact plan draft without changing the receipt", () => {
@@ -104,6 +108,7 @@ describe("ConstructionReviewPanel", () => {
     fireEvent.change(plan, { target: { value: '{"concepts":[{"slug":"revised-atlas"}]}' } });
     expect(plan).toHaveValue('{"concepts":[{"slug":"revised-atlas"}]}');
     expect(screen.getByTestId("construction-review-draft-dirty")).toHaveTextContent(/qualification/i);
+    expect(screen.getByTestId("construction-review-draft-diff")).toHaveTextContent(/CQ: cq:scope/i);
     expect(screen.getByTestId("construction-review-plan-digest")).toHaveTextContent(`sha256:${"a".repeat(64)}`);
     fireEvent.click(screen.getByTestId("construction-review-draft-reset"));
     expect(screen.getByTestId("construction-review-draft-dirty")).toHaveTextContent(/matches/i);
