@@ -8,8 +8,6 @@ import {
   EXPECTED_DESTRUCTIVE_TOOLS,
   EXPECTED_IDEMPOTENT_TOOLS,
   EXPECTED_TOOLS,
-  IMPORT_EDGE_KIND_VALUES,
-  IMPORT_UNRESOLVED_REASON_VALUES,
   VAULT_ISSUE_CODE_VALUES,
   expectedToolTitle,
 } from "../../../mcp/scripts/verify.mjs";
@@ -25,7 +23,6 @@ import {
   WRITE_RELATION_TYPE_VALUES,
 } from "../../../mcp/src/ontology-engine.mjs";
 import { GRAPH_ARRAY_KEYS } from "../../../mcp/src/vault.mjs";
-import { IMPORT_SOURCE_ROLE_VALUES, IMPORT_USAGE_VALUES } from "../../../mcp/src/infer-imports.mjs";
 
 export const WRITE_TOOL_NAMES = new Set([
   "git_snapshot",
