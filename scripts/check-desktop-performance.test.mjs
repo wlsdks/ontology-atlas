@@ -5,6 +5,7 @@ import path from "node:path";
 import { afterEach, describe, it } from "node:test";
 import {
   DESKTOP_PERFORMANCE_BUDGETS,
+  DESKTOP_PERFORMANCE_EVIDENCE_BOUNDARY,
   evaluateDesktopPerformance,
 } from "./check-desktop-performance.mjs";
 
@@ -61,6 +62,30 @@ describe("evaluateDesktopPerformance", () => {
     assert.equal(result.ok, true);
     assert.equal(result.missing.length, 0);
     assert.equal(result.checks.length, 4);
+    assert.deepEqual(
+      result.checks.filter((check) => check.kind === "metric").map((check) => check.label),
+      ["static export out/ size", "macOS .app bundle size"],
+    );
+    assert.equal(result.evidenceBoundary, DESKTOP_PERFORMANCE_EVIDENCE_BOUNDARY);
+  });
+
+  it("does not fail on total out/ or .app size metrics", () => {
+    const root = makeTempRoot();
+    writeMinimalArtifacts(root);
+
+    const result = evaluateDesktopPerformance({
+      root,
+      requireApp: true,
+      budgets: {
+        ...DESKTOP_PERFORMANCE_BUDGETS,
+        outBytes: 1,
+        appBundleBytes: 1,
+      },
+    });
+
+    assert.equal(result.ok, true);
+    assert.equal(result.checks.find((check) => check.label === "static export out/ size")?.ok, true);
+    assert.equal(result.checks.find((check) => check.label === "macOS .app bundle size")?.ok, true);
   });
 
   it("reports a missing app bundle when app artifacts are required", () => {
@@ -93,5 +118,34 @@ describe("evaluateDesktopPerformance", () => {
     assert.equal(result.ok, false);
     assert.equal(largestChunkCheck?.ok, false);
     assert.equal(largestChunkCheck?.detail, "out/_next/static/chunks/huge.js");
+  });
+
+  it("fails when the Next static asset total exceeds its budget", () => {
+    const root = makeTempRoot();
+    writeMinimalArtifacts(root);
+    writeFile(root, "out/_next/static/chunks/large.css", DESKTOP_PERFORMANCE_BUDGETS.nextStaticBytes);
+
+    const result = evaluateDesktopPerformance({ root });
+    const staticTotalCheck = result.checks.find(
+      (check) => check.label === "Next static asset size",
+    );
+
+    assert.equal(result.ok, false);
+    assert.equal(staticTotalCheck?.ok, false);
+  });
+
+  it("fails closed when no JS/CSS asset can be measured", () => {
+    const root = makeTempRoot();
+    writeFile(root, "out/index.html", 1024);
+    fs.mkdirSync(path.join(root, "out", "_next", "static"), { recursive: true });
+
+    const result = evaluateDesktopPerformance({ root });
+    const largestChunkCheck = result.checks.find(
+      (check) => check.label === "largest JS/CSS chunk",
+    );
+
+    assert.equal(result.ok, false);
+    assert.equal(largestChunkCheck?.ok, false);
+    assert.equal(largestChunkCheck?.actual, null);
   });
 });

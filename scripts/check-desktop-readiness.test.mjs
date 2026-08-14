@@ -55,7 +55,7 @@ test("desktop readiness check proves Tauri macOS shell prerequisites", () => {
   assert.match(result.stdout, /✓ desktop packaged-route smoke is available/);
   assert.match(
     result.stdout,
-    /✓ desktop performance budget gate covers static assets and packaged \.app size/,
+    /✓ desktop performance gate keeps static asset hard limits, report-only artifact totals, and explicit runtime\/MCP evidence boundaries/,
   );
   assert.match(
     result.stdout,
