@@ -107,4 +107,18 @@ describe('validateVaultDocument (R11 #23)', () => {
       true,
     );
   });
+
+  it('malformed graph relation values are errors, not silently ignored', () => {
+    const r = validateVaultDocument(
+      `---\nuid: ${TEST_UID}\nkind: capability\ndepends_on: [capabilities/auth\nrelates: capabilities/legacy\n---\n`,
+    );
+    assert.equal(r.ok, false);
+    assert.deepEqual(
+      r.issues.filter((issue) => issue.code === 'malformed-frontmatter-line').map((issue) => issue.message),
+      [
+        'Frontmatter line 4 graph relation `depends_on:` must be an array.',
+        'Frontmatter line 5 graph relation `relates:` must be an array.',
+      ],
+    );
+  });
 });

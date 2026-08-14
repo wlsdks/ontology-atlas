@@ -102,6 +102,28 @@ describe('frontmatter integrity gate', () => {
     assert.equal(compileCheck?.count, 2);
     assert.equal(health.status, 'needs_attention');
   });
+
+  it('keeps malformed relation values visible through compile and health', () => {
+    const raw = '---\nuid: 00000000-0000-4000-8000-000000000003\nkind: capability\ndepends_on: [capabilities/auth\n---\n';
+    const parsed = parseFrontmatter(raw);
+    const compiled = compileOntology([
+      {
+        slug: 'capabilities/broken-relation',
+        frontmatter: parsed.frontmatter,
+        body: parsed.body,
+        mtime: 1,
+      },
+    ]);
+    assert.equal(compiled.edges.length, 0);
+    assert.equal(compiled.issues.filter((issue) => issue.code === 'malformed-frontmatter-line').length, 1);
+    assert.equal(compiled.issueCount, 1);
+
+    const health = queryCompiledOntology(compiled, { operation: 'health' });
+    const compileCheck = health.checks.find((check) => check.id === 'compile_issues');
+    assert.equal(compileCheck?.status, 'warn');
+    assert.equal(compileCheck?.count, 1);
+    assert.equal(health.status, 'needs_attention');
+  });
 });
 
 describe('queryCompiledOntology', () => {

@@ -8,6 +8,21 @@
 //   key:\n  - item1\n  - item2          (block list)
 //   key:\n  child: 1\n  other: 2        (block object)
 
+// These frontmatter keys are graph edges, not arbitrary metadata. A scalar or
+// object at one of these keys used to survive parsing and then disappear from
+// the compiler because collectNeighborRefs only consumes arrays.
+const GRAPH_ARRAY_KEYS = new Set([
+  'domains',
+  'capabilities',
+  'elements',
+  'dependencies',
+  'depends_on',
+  'relates',
+  'contains',
+  'describes',
+  'broader',
+]);
+
 export function parseFrontmatter(input) {
   // 줄바꿈·인코딩 정규화 — **읽기 경로에서만** (2026-07-28 실측).
   //
@@ -61,6 +76,7 @@ export function parseFrontmatter(input) {
     if (scalarIndicator) {
       const read = readBlockScalar(lines, i + 1, scalarIndicator[0]);
       frontmatter[key] = read.value;
+      pushGraphArrayDiagnostic(diagnostics, key, i + 2, frontmatter[key]);
       i = read.next - 1;
       continue;
     }
@@ -92,16 +108,19 @@ export function parseFrontmatter(input) {
           j += 1;
         }
         frontmatter[key] = obj;
+        pushGraphArrayDiagnostic(diagnostics, key, i + 2, frontmatter[key]);
         i = j - 1;
         continue;
       }
       frontmatter[key] = '';
+      pushGraphArrayDiagnostic(diagnostics, key, i + 2, frontmatter[key]);
       continue;
     }
     if (value.startsWith('[') && value.endsWith(']')) {
       frontmatter[key] = splitTopLevel(value.slice(1, -1), ',')
         .map((s) => unquote(s.trim()))
         .filter(Boolean);
+      pushGraphArrayDiagnostic(diagnostics, key, i + 2, frontmatter[key]);
       continue;
     }
     if (value.startsWith('{') && value.endsWith('}')) {
@@ -118,13 +137,24 @@ export function parseFrontmatter(input) {
         }
       }
       frontmatter[key] = obj;
+      pushGraphArrayDiagnostic(diagnostics, key, i + 2, frontmatter[key]);
       continue;
     }
     frontmatter[key] = unquote(value);
+    pushGraphArrayDiagnostic(diagnostics, key, i + 2, frontmatter[key]);
   }
   const result = { frontmatter, body };
   if (diagnostics.length > 0) result.diagnostics = diagnostics;
   return result;
+}
+
+function pushGraphArrayDiagnostic(diagnostics, key, line, value) {
+  if (!GRAPH_ARRAY_KEYS.has(key) || Array.isArray(value)) return;
+  diagnostics.push({
+    code: 'malformed-frontmatter-line',
+    line,
+    message: `Frontmatter line ${line} graph relation \`${key}:\` must be an array.`,
+  });
 }
 
 function peekIndentedKind(lines, start) {
