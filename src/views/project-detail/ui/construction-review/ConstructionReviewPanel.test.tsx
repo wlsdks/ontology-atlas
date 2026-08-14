@@ -94,7 +94,10 @@ describe("ConstructionReviewPanel", () => {
   it("lets an expert revise a local CQ and exact plan draft without changing the receipt", () => {
     renderPanel();
     fireEvent.click(screen.getByTestId("construction-review-evidence-toggle"));
-    fireEvent.click(screen.getByTestId("construction-review-draft-toggle"));
+    const draftToggle = screen.getByTestId("construction-review-draft-toggle");
+    expect(draftToggle).toHaveAttribute("aria-controls", "construction-review-draft-fields");
+    fireEvent.click(draftToggle);
+    expect(screen.getByTestId("construction-review-draft-fields")).toHaveAttribute("id", "construction-review-draft-fields");
 
     const question = screen.getByTestId("construction-review-cq-scope");
     fireEvent.change(question, { target: { value: "Which meaning is actually in scope?" } });

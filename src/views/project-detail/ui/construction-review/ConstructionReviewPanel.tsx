@@ -344,6 +344,7 @@ export function ConstructionReviewPanel({ review }: { review: ConstructionReview
               type="button"
               data-testid="construction-review-draft-toggle"
               aria-expanded={draftOpen}
+              aria-controls="construction-review-draft-fields"
               onClick={() => setDraftOpen((open) => !open)}
               className={controlClass({
                 shape: "link",
@@ -358,6 +359,7 @@ export function ConstructionReviewPanel({ review }: { review: ConstructionReview
             as="div"
             open={draftOpen}
             motion="overlay"
+            id="construction-review-draft-fields"
             data-testid="construction-review-draft-fields"
             className="mt-3 flex flex-col gap-3"
           >
