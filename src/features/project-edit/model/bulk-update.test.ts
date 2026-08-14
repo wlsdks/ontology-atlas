@@ -97,6 +97,19 @@ describe("buildBulkStatusUpdateInputs", () => {
     expect(inputs[0].slug).toBe("alpha");
     expect(inputs[0].status).toBe("live");
   });
+
+  it("does not invent an omitted category while changing status", () => {
+    const [projectWithoutCategory] = projects;
+    const inputs = buildBulkStatusUpdateInputs({
+      projects: [{ ...projectWithoutCategory, category: undefined }],
+      targetSlugs: ["alpha"],
+      nextStatusId: "live",
+    });
+
+    expect(inputs).toHaveLength(1);
+    expect(inputs[0].category).toBeUndefined();
+    expect(inputs[0].status).toBe("live");
+  });
 });
 
 describe("buildBulkCategoryUpdateInputs", () => {

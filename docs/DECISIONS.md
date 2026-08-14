@@ -11773,3 +11773,37 @@ bottom 96`)으로 컬링하고, 그 컬의 보호 대상은 center/neighbor/hove
 **상태**: 유효
 
 ---
+
+## 2026-08-14 (5) — U1.1 Projects taxonomy는 호환성 슬라이스부터
+
+U1.1은 `category`와 `status`가 서로 다른 축이어야 한다는 의미 문제를 다룬다.
+다섯 좌석 전체의 완전한 독립 회전은 이번 실행에서 두 좌석만 병렬로 확보되어
+있으므로, 사용자 손상을 관측했다고 과장하지 않는다. 근거 좌석은
+**Investigate first**, 지킴이 좌석은 **Shape a slice**로 판정했다.
+
+현재 코드에서 category는 placement/cluster를 소유하고 status는 lifecycle 표시를
+소유하지만, 기본 category ID `in-progress`/`planned`는 lifecycle처럼 읽힌다.
+또한 vault에 category/status가 없을 때 `projectToInput`이
+`uncategorized`/`active`를 주입할 수 있어, unrelated field 또는 bulk update가
+원래 없던 frontmatter fact를 만들 위험이 확인됐다.
+
+**결정**: 이번 slice는 의미 migration이 아니다.
+
+- 기존 category/status ID, URL filter, unknown 값은 그대로 roundtrip한다.
+- category의 structural placement와 status의 lifecycle signal을 코드 계약으로
+  유지한다.
+- 새 default ID/라벨, legacy alias 해석, migration, MCP/CLI 명령, 새 UI 문구는
+  이번에 만들지 않는다.
+- `projectToInput`과 bulk update가 omitted category/status를 새 값으로 만들지
+  않도록 보존하고, present/omitted/unknown roundtrip과 deep-link 회귀를
+  테스트한다.
+
+**반증**: 기존 vault를 unrelated field/bulk update로 저장했을 때 누락 값이
+  생기거나, `?c=in-progress`가 다른 grouping을 가리키거나, create/edit에서
+  두 필드가 같은 lifecycle 질문으로 읽히면 이 방향을 `Investigate first`로
+  되돌리고 별도 taxonomy 결정을 연다.
+
+**서명 (accountable)**: 소유자 승인 대기
+**상태**: 유효 · 호환성 slice 집행
+
+---
