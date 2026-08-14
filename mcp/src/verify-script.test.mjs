@@ -8858,9 +8858,10 @@ Continue.`;
           { slug: 'README', kind: 'vault-readme' },
           { slug: 'project', kind: 'project' },
           { slug: 'capabilities/mcp-server', kind: 'capability' },
+          { slug: 'elements/mcp-sdk', kind: 'element' },
         ],
       }),
-      { slug: 'capabilities/mcp-server', pathTarget: 'project', project: 'project', hasNode: true, hasProject: true },
+      { slug: 'elements/mcp-sdk', pathTarget: 'project', project: 'project', hasNode: true, hasProject: true },
     );
     assert.deepEqual(
       buildGraphQuerySmokeArgs({ nodes: [{ slug: 'capabilities/a', kind: 'capability' }] }),

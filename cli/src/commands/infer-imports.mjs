@@ -15,11 +15,11 @@ import {
 } from '../lib/cli-args.mjs';
 
 const MAX_FILES_CAP = 50000;
-const ALLOWED_FLAGS = ['--vault', '--json', '--apply', '--max-files', '--threshold'];
+const ALLOWED_FLAGS = ['--vault', '--json', '--apply', '--full', '--max-files', '--threshold'];
 
 
 export async function runInferImports(args) {
-  const { rootPath, vault, json, maxFiles, apply, threshold, error, help } =
+  const { rootPath, vault, json, apply, full, maxFiles, threshold, error, help } =
     parseArgs(args);
   if (help) {
     printUsage(process.stdout);
@@ -45,14 +45,29 @@ export async function runInferImports(args) {
 
   let result;
   try {
-    result = await callMcpTool(vaultRoot, 'infer_imports', {
+    const importArgs = {
       rootPath: target,
       maxFiles,
-    });
+    };
+    // Thresholding is defined over the complete module-edge list. The normal
+    // preview may be a bounded compact packet, which is a valid read result
+    // but intentionally has no full arrays.
+    if (full || threshold !== undefined) {
+      importArgs.reviewMode = 'full';
+      importArgs.allowLargeResponse = true;
+    }
+    result = await callMcpTool(vaultRoot, 'infer_imports', importArgs);
     assertInferImportsResult(result);
   } catch (err) {
     process.stderr.write(
       `${COLORS.red}error${COLORS.reset}  infer_imports: ${err instanceof Error ? err.message : String(err)}\n`,
+    );
+    return 2;
+  }
+
+  if ((full || threshold !== undefined) && !Array.isArray(result.moduleEdges)) {
+    process.stderr.write(
+      `${COLORS.red}error${COLORS.reset}  infer_imports: --full/--threshold requires a complete module-edge response; retry with reviewMode:"full" and allowLargeResponse:true was not honored.\n`,
     );
     return 2;
   }
@@ -75,9 +90,9 @@ export async function runInferImports(args) {
     return 0;
   }
 
-  const fileEdges = result.edges?.length ?? 0;
-  const ext = result.externalImports?.length ?? 0;
-  const unres = result.unresolved?.length ?? 0;
+  const fileEdges = result.edges?.length ?? result.scanSummary?.fileEdges ?? 0;
+  const ext = result.externalImports?.length ?? result.scanSummary?.externalImports ?? 0;
+  const unres = result.unresolved?.length ?? result.scanSummary?.unresolvedImports ?? 0;
   const modEdges = result.moduleEdges ?? [];
   const edgeKindSummary = formatEdgeKindSummary(result.edges ?? []);
 
@@ -95,6 +110,16 @@ export async function runInferImports(args) {
   if (filteredOut > 0) {
     process.stdout.write(
       `  ${COLORS.dim}--threshold ${threshold} filtered ${filteredOut} weak edges (count < ${threshold})${COLORS.reset}\n\n`,
+    );
+  }
+
+  if (result.delivery?.selection === 'automatic_compact') {
+    const queue = result.reviewQueue;
+    process.stdout.write(
+      `  ${COLORS.bold}delivery${COLORS.reset} ${COLORS.dim}compact review packet (${queue?.returned ?? 0} of ${queue?.total ?? 0} candidates; full response is an explicit opt-in)${COLORS.reset}\n`,
+    );
+    process.stdout.write(
+      `  ${COLORS.dim}next review: ${result.nextReview?.reviewId ?? 'none'} · write allowed: no · side effect 0${COLORS.reset}\n\n`,
     );
   }
 
@@ -131,7 +156,7 @@ export async function runInferImports(args) {
 
 function parseArgs(args) {
   if (args.includes('--help') || args.includes('-h')) return { help: true };
-  const flags = { vault: null, json: false, apply: false };
+  const flags = { vault: null, json: false, apply: false, full: false };
   const positional = [];
   for (let i = 0; i < args.length; i += 1) {
     const a = args[i];
@@ -139,6 +164,7 @@ function parseArgs(args) {
     else if (a.startsWith('--vault=')) flags.vault = parseVaultFlag(a.slice('--vault='.length));
     else if (a === '--json') flags.json = true;
     else if (a === '--apply') flags.apply = true;
+    else if (a === '--full') flags.full = true;
     else if (a === '--max-files')
       flags.maxFiles = parseBoundedPositiveIntegerFlag('--max-files', args[++i], { max: MAX_FILES_CAP });
     else if (a.startsWith('--max-files='))
@@ -165,6 +191,7 @@ function parseArgs(args) {
     vault: flags.vault || '.',
     json: flags.json,
     apply: flags.apply,
+    full: flags.full,
     maxFiles: flags.maxFiles,
     threshold: flags.threshold,
   };
@@ -197,7 +224,7 @@ function formatKindCounts(kindCounts) {
 function printUsage(stream = process.stderr) {
   stream.write(
     `\n${COLORS.bold}Usage:${COLORS.reset}\n` +
-      `  ontology-atlas infer-imports [rootPath] [--vault path] [--apply] [--json]\n` +
+      `  ontology-atlas infer-imports [rootPath] [--vault path] [--apply] [--full] [--json]\n` +
       `                              [--max-files N] [--threshold N]\n\n` +
       `${COLORS.bold}What it does:${COLORS.reset}\n` +
       `  Walk TS/JS files and bounded root Python packages (default: src,lib,app,packages → fallback rootPath),\n` +
@@ -211,6 +238,7 @@ function printUsage(stream = process.stderr) {
       `  큰 codebase 의 accidental cross-feature import 가 ontology 에\n` +
       `  들어가는 걸 차단. preview / --apply / --json 모두 적용.\n` +
       `  ${COLORS.bold}--max-files N${COLORS.reset}: default 5000, max ${MAX_FILES_CAP} hard stop.\n\n` +
+      `  ${COLORS.bold}--full${COLORS.reset}: explicitly request the complete module-edge arrays when the MCP response would otherwise be compacted.\n\n` +
       `${COLORS.bold}Examples:${COLORS.reset}\n` +
       `  ontology-atlas infer-imports                       # preview only\n` +
       `  ontology-atlas infer-imports ~/my-app --json       # machine output\n` +
