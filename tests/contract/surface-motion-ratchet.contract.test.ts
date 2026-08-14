@@ -142,7 +142,7 @@ const BASELINE_HARD_CUTS = 0;
  * `a11y-open-surfaces.spec.ts` 의 분모와 짝이므로 둘을 같이 올린다 — 한쪽만
  * 올리면 그 파일의 자기 대조가 먼저 터진다(그게 이 짝의 존재 이유다).
  */
-const BASELINE_APPEARING_SURFACES = 22;
+const BASELINE_APPEARING_SURFACES = 23;
 
 const SELF = 'tests/contract/surface-motion-ratchet.contract.test.ts';
 const FIXTURES = 'tests/fixtures/surface-motion';

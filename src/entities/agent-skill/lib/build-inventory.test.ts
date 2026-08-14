@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import { buildSkillInventory, sourceLabelOf } from "./build-inventory";
+import { sampleExistingPaths, sampleSkillFiles } from "../model/sample-skills";
 
 /**
  * 스킬 인벤토리가 **정말 무언가를 보고 있는지** 잠근다.
@@ -19,6 +20,16 @@ const skill = (path: string, name: string, description: string, body = "") =>
   }) as const;
 
 describe("스킬 인벤토리", () => {
+  it("제품 샘플도 실제 번호 절차를 보여 준다 — 빈 rail을 성공 예시로 내보내지 않는다", () => {
+    const inv = buildSkillInventory({
+      files: sampleSkillFiles(),
+      existingPaths: sampleExistingPaths(),
+    });
+    expect(inv.skills).toHaveLength(9);
+    expect(inv.skills.every((entry) => entry.process.state === "ready")).toBe(true);
+    expect(inv.skills.every((entry) => entry.process.state === "ready" && entry.process.process.steps.length >= 2)).toBe(true);
+  });
+
   it("frontmatter 두 값이 다 있는 것만 스킬로 센다", () => {
     const inv = buildSkillInventory({
       files: [

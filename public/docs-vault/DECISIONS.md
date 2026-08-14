@@ -106,6 +106,80 @@ finalize하지 않는다. **상태:** 유효
 
 ---
 
+## 2026-08-14 — U1.3 전문가 초안은 같은 영수증의 세션 전용 수정 깊이다
+
+**결정**: 프로젝트 상세의 `근거·진단 보기` 안에 CQ 문장, witness source reference,
+exact review plan을 수정해 볼 수 있는 검토용 초안을 제공한다. 이 초안은 원본
+qualification receipt·plan/source digest·판정 상태를 바꾸지 않고 React session에만
+존재한다. 변경 즉시 dirty 상태와 `qualification을 다시 받아야 한다`는 경계를 보이며,
+원본 복원으로 되돌릴 수 있다. 자동 저장·localStorage·vault·sidecar·외부 전송은 없다.
+
+**이유**: 일반 사용자는 요약만 읽고 승인 상태와 blocker를 판단하고, 전문가는 같은
+artifact의 CQ·근거·계획을 raw JSON으로 탈출하지 않고 조정할 수 있어야 한다. 두 schema나
+두 truth를 만들지 않으면서 “수정”을 안전한 pre-write 초안으로 한정한다.
+
+**반증 조건**: 초안 편집 뒤 receipt/digest/qualification이 바뀌거나, 새 source-hidden
+evaluator가 재검증 없이 write를 허용하거나, 390px/1023px에서 필드가 잘리고 가려지면
+이 경계가 실패한 것이다. 그 경우 초안을 제거하고 재검증 전용 disclosure로 되돌린다.
+
+**검증**: ConstructionReviewPanel unit, construction-review Playwright(390/1023/1024/1512,
+malformed/project/digest/plan fail-closed), TypeScript, ESLint.
+
+**상태**: 유효
+
+---
+
+## 2026-08-14 (5) — 샘플 Skills는 실제 프로세스를 보여준다
+
+**관찰**: `/ko/skills`의 제품 샘플이 번호 절차가 아닌 한 줄 설명만 갖고 있어,
+정상적인 기능이 `process unavailable`로 보였다. 사용자가 처음 보는 샘플에서
+기능이 없는 것처럼 보이는 것은 Skills 프로세스 레일의 목적과 맞지 않는다.
+
+**결정**: 제품 샘플 Skill은 최소 두 개 이상의 명시적 번호 절차를 가진다. 이
+절차는 데모용 정적 문구이며 온톨로지 노드나 vault 기록을 만들지 않는다. 실제
+소스가 번호 절차를 제공하지 않거나 스캔이 잘린 경우에는 기존의
+`unavailable`/진단 상태를 유지한다. 번호가 아닌 문장을 의미 단계로 추론해
+채우지 않는다.
+
+**범위**: 샘플 fixture와 그 계약 테스트만 변경한다. K1.1 원문 순서·줄 번호·
+source digest, K1.2의 보수적 semantic overlay, K1.3의 packet 무결성 계약은
+그대로 유지한다.
+
+**반증 조건**: 샘플에서 2개 이상의 번호 절차가 렌더링되지 않거나, 번호가 없는
+실제 Skill이 자동으로 `ready`가 되거나, 샘플을 읽는 과정에서 vault/MCP 쓰기가
+발생하면 이 결정을 폐기하고 fixture/스캔 경계를 다시 설계한다.
+
+**서명 (accountable)**: 소유자 승인 대기
+**상태**: 유효
+
+---
+
+## 2026-08-14 (6) — 들여쓴 frontmatter 선언도 손실 없이 실패시킨다
+
+**관찰**: 기존 네 parser는 콜론 없는 최상위 선언과 고아 list item만 진단하고,
+들여쓴 콜론 없는 선언은 무시했다. 그 줄이 관계나 필드처럼 보이는 위치에 있어도
+`validate`는 `ok=true`, compiler는 issue 0, health는 정상처럼 보일 수 있었다.
+
+**결정**: frontmatter 블록 안의 빈 줄·주석·정상 block scalar/list/object를 제외한
+모든 non-empty 콜론 없는 줄은 `malformed-frontmatter-line` 진단으로 보존한다.
+MCP·CLI·scripts·웹 parser는 같은 line/message 계약을 공유하고, validator는 error,
+compiler는 issue, MCP와 브라우저 health는 `needs_attention`로 닫는다. 로컬/정적
+manifest도 diagnostics를 보존해 앱이 파싱 손상을 숨기지 않는다. 정상 들여쓰기
+구조는 계속 진단하지 않는다.
+
+**게이트 프로브**: 새 contract fixture를 먼저 추가했을 때 parser 4-way 4건과
+validator 3건이 실패했다(RED). 조건을 네 parser에 적용한 뒤 parser/validator
+contract 166건과 compiler/health integrity test가 GREEN이 됐다.
+
+**반증 조건**: 정상 block scalar/list/object 또는 들여쓴 주석이 새 error를 만들거나,
+malformed line이 compile issue와 health `needs_attention`까지 전달되지 않으면
+이 결정을 재검토한다.
+
+**서명 (accountable)**: 소유자 위임 하에 집행
+**상태**: 유효
+
+---
+
 ## 2026-08-13 (3) — 올바른 vault binding이 후보 복구보다 먼저다 · 100+는 생성 목표가 아니다
 
 ### 관찰된 현상

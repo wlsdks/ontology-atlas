@@ -30,6 +30,7 @@
 export interface VaultHealthDoc {
   slug: string;
   frontmatter: Record<string, unknown>;
+  diagnostics?: ReadonlyArray<{ code: string }>;
 }
 
 export type VaultHealthStatus = 'healthy' | 'needs_attention';
@@ -171,6 +172,12 @@ interface CompiledGraph {
   aliasToSlug: Map<string, string>;
 }
 
+function malformedFrontmatterCount(doc: VaultHealthDoc): number {
+  return (doc.diagnostics ?? []).filter(
+    (diagnostic) => diagnostic.code === 'malformed-frontmatter-line',
+  ).length;
+}
+
 // Mirror of mcp/src/ontology-compiler.mjs compileOntology — only the parts the
 // health verdict needs (alias map, edges, resolution, issue count).
 function compile(docs: readonly VaultHealthDoc[]): CompiledGraph {
@@ -225,7 +232,17 @@ function compile(docs: readonly VaultHealthDoc[]): CompiledGraph {
     outgoing.get(edge.from)!.push(edge);
   }
 
-  return { nodes, edges, issueCount: ambiguousCount + danglingCount, outgoing, aliasToSlug };
+  const malformedCount = docs.reduce(
+    (count, doc) => count + malformedFrontmatterCount(doc),
+    0,
+  );
+  return {
+    nodes,
+    edges,
+    issueCount: ambiguousCount + danglingCount + malformedCount,
+    outgoing,
+    aliasToSlug,
+  };
 }
 
 // Undirected connected components over resolved edges (mcp connectedComponentGroups

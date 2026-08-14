@@ -1652,7 +1652,17 @@
         "sourceDigest": "소스 digest: {digest}",
         "reviewPlan": "검토 계획",
         "writePlan": "작성 계획",
-        "writePlanMissing": "작성 계획은 아직 없습니다. 계획 불일치는 아닙니다."
+        "writePlanMissing": "작성 계획은 아직 없습니다. 계획 불일치는 아닙니다.",
+        "draftTitle": "검토용 초안",
+        "draftHint": "CQ·증거 위치·정확한 계획을 이 결과 안에서 세밀하게 고쳐 볼 수 있습니다. 원본 판정과 vault는 바뀌지 않습니다.",
+        "showDraft": "검토용 수정 열기",
+        "hideDraft": "검토용 수정 닫기",
+        "draftDirty": "검토용 초안이 바뀌었습니다. 저장하지 않으며, 다시 qualification을 받아야 합니다.",
+        "draftClean": "원본 결과와 같은 검토용 초안입니다.",
+        "resetDraft": "원본으로 되돌리기",
+        "witnessSourceRef": "증거 위치 · {id}",
+        "planDraft": "검토 계획 초안(JSON)",
+        "draftNoWrite": "세션에서만 유지 · 자동 저장/전송 없음"
       },
       "tabs": {
         "ariaLabel": "프로젝트 상세 보기 전환",

@@ -86,4 +86,27 @@ describe("ConstructionReviewPanel", () => {
     expect(evidence).toHaveTextContent("semantic");
     expect(evidence).toHaveTextContent("sha256:");
   });
+
+  it("lets an expert revise a local CQ and exact plan draft without changing the receipt", () => {
+    renderPanel();
+    fireEvent.click(screen.getByTestId("construction-review-evidence-toggle"));
+    fireEvent.click(screen.getByTestId("construction-review-draft-toggle"));
+
+    const question = screen.getByTestId("construction-review-cq-scope");
+    fireEvent.change(question, { target: { value: "Which meaning is actually in scope?" } });
+    expect(question).toHaveValue("Which meaning is actually in scope?");
+
+    const witness = screen.getByTestId("construction-review-witness-scope");
+    fireEvent.change(witness, { target: { value: "ARCHITECTURE.md:4-7" } });
+    expect(witness).toHaveValue("ARCHITECTURE.md:4-7");
+
+    const plan = screen.getByTestId("construction-review-plan-draft");
+    fireEvent.change(plan, { target: { value: '{"concepts":[{"slug":"revised-atlas"}]}' } });
+    expect(plan).toHaveValue('{"concepts":[{"slug":"revised-atlas"}]}');
+    expect(screen.getByTestId("construction-review-draft-dirty")).toHaveTextContent(/qualification/i);
+    expect(screen.getByTestId("construction-review-plan-digest")).toHaveTextContent(`sha256:${"a".repeat(64)}`);
+    fireEvent.click(screen.getByTestId("construction-review-draft-reset"));
+    expect(screen.getByTestId("construction-review-draft-dirty")).toHaveTextContent(/matches/i);
+    expect(screen.getByTestId("construction-review-plan-draft")).toHaveValue(JSON.stringify(review().reviewPlan, null, 2));
+  });
 });

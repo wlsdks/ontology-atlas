@@ -658,7 +658,10 @@ export function ProjectDetailPage({
       </header>
 
       {constructionReview.status === "ready" && constructionReview.review ? (
-        <ConstructionReviewPanel review={constructionReview.review} />
+        <ConstructionReviewPanel
+          key={`${constructionReview.review.sourceDigest}:${constructionReview.review.planDigest}`}
+          review={constructionReview.review}
+        />
       ) : null}
 
       {constructionReview.status === "blocked" && constructionReview.errorState ? (
