@@ -151,7 +151,7 @@ function ProjectDetailTopBar({
       <span aria-hidden className="text-label text-[color:var(--color-text-quaternary)]">
         ▸
       </span>
-      <span className="max-w-[240px] truncate font-mono text-label uppercase tracking-[var(--tracking-caps-12)] text-[color:var(--color-text-primary)]">
+      <span className="max-w-[240px] truncate font-mono text-label text-[color:var(--color-text-primary)]">
         {projectName ?? slug ?? t("topBarProjectFallback")}
       </span>
 
@@ -918,7 +918,11 @@ export function ProjectDetailPage({
 
       <footer className="mt-[var(--section-gap)] border-t border-[color:var(--color-overlay-2)] pt-6 pb-[var(--page-bottom-breath)]">
         <p className="font-mono text-caption uppercase tracking-[var(--tracking-caps-10)] text-[color:var(--color-text-quaternary)]">
-          {t("footerSummary", { slug: project.slug, date: formatDate(project.updatedAt) })}
+          {t.rich("footerSummary", {
+            slug: project.slug,
+            date: formatDate(project.updatedAt),
+            value: (chunks) => <span className="normal-case tracking-normal">{chunks}</span>,
+          })}
         </p>
       </footer>
 

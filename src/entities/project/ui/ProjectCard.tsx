@@ -312,7 +312,7 @@ export function ProjectCard({
             </span>
           ))
         ) : (
-          <span className="font-mono text-caption uppercase tracking-[var(--tracking-caps-08)] text-[color:var(--color-text-quaternary)] md:text-caption">
+          <span className="font-mono text-caption text-[color:var(--color-text-quaternary)] md:text-caption">
             {dense ? project.slug : fallbackMeta}
           </span>
         )}

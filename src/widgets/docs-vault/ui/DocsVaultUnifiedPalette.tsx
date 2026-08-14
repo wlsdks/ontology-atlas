@@ -699,7 +699,7 @@ function ResultRow({
         ) : null}
       </span>
       {row.meta ? (
-        <span className="truncate font-mono text-caption uppercase tracking-[var(--tracking-caps-10)] text-[color:var(--color-text-quaternary)]">
+        <span className="truncate font-mono text-caption text-[color:var(--color-text-quaternary)]">
           {row.meta}
         </span>
       ) : null}

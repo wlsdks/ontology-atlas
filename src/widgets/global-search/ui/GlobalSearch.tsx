@@ -500,7 +500,7 @@ export function GlobalSearch({
                   <span className="min-w-0 flex-1 truncate text-[color:var(--color-text-primary)]">
                     {project.name}
                   </span>
-                  <span className="hidden shrink-0 font-mono text-caption uppercase tracking-[var(--tracking-caps-10)] text-[color:var(--color-text-tertiary)] md:inline">
+                  <span className="hidden shrink-0 font-mono text-caption text-[color:var(--color-text-tertiary)] md:inline">
                     {project.slug}
                   </span>
                   <span className="shrink-0 font-mono text-caption uppercase tracking-[var(--tracking-caps-10)] text-[color:var(--color-text-tertiary)]">

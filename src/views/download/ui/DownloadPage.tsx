@@ -410,7 +410,7 @@ function PortraitStage({
             'flex flex-wrap items-baseline gap-x-3 gap-y-1 font-mono text-caption leading-caption text-[color:var(--color-text-quaternary)]',
           )}
         >
-          <span className="uppercase tracking-[var(--tracking-caps-16)]">docs/ontology</span>
+          <span>docs/ontology</span>
           <span aria-hidden>·</span>
           <span
             data-token="engraved-numeral"
