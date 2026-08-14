@@ -64,6 +64,32 @@ function inBodyInternalLinks(): Array<{ file: string; href: string }> {
   return out;
 }
 
+/**
+ * 마크다운 본문의 **모든** 링크 — 종류를 가리지 않고 뽑는다.
+ *
+ * ## 왜 두 번째 스캐너인가 (2026-08-14 걷기 실측)
+ *
+ * 위 `inBodyInternalLinks` 는 `](/…)` 꼴만 본다. 그래서
+ * `[명세](../ONTOLOGY-ATLAS-SPEC.md#…)` 같은 **상대 경로 링크는 검사 자체를
+ * 통과했다** — e2e 도 `a[href^="/"]` 만 봐서 마찬가지였다. 그 링크를 누르면
+ * `/ko/guide/ONTOLOGY-ATLAS-SPEC.md` 로 가고, `findGuidePage()` 폴백이 1장을
+ * **말없이** 그렸다: 404 가 아니라 **오배송**이라 두 게이트 다 못 봤다.
+ *
+ * 전수 측정(켜기 전): 가이드 13장의 상대 링크는 정확히 2개였고 둘 다 이
+ * 결함이었다 — 가이드 장 사이를 상대 경로로 잇는 정당한 관례는 **없다**.
+ * 그래서 허용목록 없이 전부 막는다: 내부는 `/guide/<장>` 절대 경로로,
+ * 저장소 문서는 GitHub 로(위 규율과 같다).
+ */
+function inBodyAllLinks(): Array<{ file: string; href: string }> {
+  const out: Array<{ file: string; href: string }> = [];
+  for (const name of readdirSync(GUIDE_DIR)) {
+    if (!name.endsWith('.md')) continue;
+    const body = readFileSync(join(GUIDE_DIR, name), 'utf8');
+    for (const m of body.matchAll(/\]\(([^)\s]+)\)/g)) out.push({ file: `docs/guide/${name}`, href: m[1] });
+  }
+  return out;
+}
+
 /** 쿼리·해시·후행 슬래시를 떼어 라우트 경로만 남긴다. */
 function toRoutePath(href: string): string {
   const path = href.split(/[?#]/)[0];
@@ -126,6 +152,25 @@ describe('가이드 본문 링크 — 실재하는 라우트만 가리킨다', (
    * 그리고 그 주소가 실제로 200 인지 확인한다. 이 계약은 **원본 마크다운의
    * 목적지**만 본다.
    */
+
+  it('상대 경로 링크를 두지 않는다 — 내부는 절대 경로, 저장소 문서는 GitHub 로', () => {
+    /**
+     * 사연은 `inBodyAllLinks` 의 주석에. 요지: 상대 `.md` 링크는 라우터가
+     * `/guide/<파일명>` 으로 풀고, 그 세그먼트는 실재하지 않아 폴백이 다른
+     * 장을 그린다 — 404 없이 틀린 문서가 나오는 **조용한 오배송**이다.
+     */
+    const all = inBodyAllLinks();
+    // 공회전 차단: 이 스캐너가 절대·외부 링크를 실제로 보고 있어야
+    // «상대 링크 없음» 이 빈 집합 위의 통과가 아니다.
+    expect(all.length, '전체 링크 스캔이 깨졌다').toBeGreaterThan(links.length);
+    const relative = all.filter(({ href }) => !/^(\/|https?:\/\/)/.test(href));
+    expect(
+      relative.map((d) => `${d.file} → ${d.href}`),
+      '가이드 본문에 상대 경로 링크가 있다 — 라우터가 /guide/<파일명> 으로 풀고 ' +
+        '폴백이 엉뚱한 장을 그린다. 가이드 장은 /guide/<segment> 절대 경로로, ' +
+        '저장소 문서는 GitHub blob URL 로 적어라',
+    ).toEqual([]);
+  });
 
   it('마크다운 원본에 로케일을 박지 않는다', () => {
     /**
