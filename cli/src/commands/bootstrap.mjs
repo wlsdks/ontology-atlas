@@ -22,22 +22,8 @@
 import { COLORS } from '../lib/colors.mjs';
 import { resolve } from 'node:path';
 import { callMcpTool } from '../lib/mcp-call.mjs';
-import {
-  formatConceptBatchFailureLabel,
-  formatRelationBatchFailureLabel,
-} from '../lib/batch-results.mjs';
-import {
-  callConceptBatches,
-  callRelationBatches,
-} from '../lib/mcp-batches.mjs';
 import { assertInferImportsResult } from '../lib/import-analysis-results.mjs';
 import { assertAnalyzeRepoStructureResult } from '../lib/repo-analysis-results.mjs';
-import {
-  pruneUntouchedStarterNodes,
-  restorePrunedStarterNodes,
-  summarizePrunedStarterNodes,
-} from '../lib/prune-starters.mjs';
-import { getVaultCensus, writeVaultCensus } from '../lib/vault-census.mjs';
 import {
   formatUnknownFlagError,
   parseBoundedNonNegativeIntegerFlag,
@@ -50,15 +36,6 @@ import {
 const MAX_DEPTH_CAP = 10;
 const MAX_FILES_CAP = 50000;
 const ALLOWED_FLAGS = ['--vault', '--json', '--skip-imports', '--reapply', '--apply-readme-domains', '--max-depth', '--max-files', '--threshold'];
-
-const FRESH_VAULT_SLUGS = new Set([
-  'README',
-  'project',
-  'domains/example-domain',
-  'capabilities/example-capability',
-  'elements/example-element',
-]);
-
 
 export async function runBootstrap(args) {
   const parsed = parseArgs(args);
@@ -77,7 +54,7 @@ export async function runBootstrap(args) {
   const target = resolve(process.cwd(), parsed.rootPath);
   const vaultRoot = resolve(process.cwd(), parsed.vault);
 
-  // Stage 1 — analyze + apply.
+  // Stage 1 — analyze + review. This command never applies semantic rows.
   let analyzeResult;
   try {
     analyzeResult = await callMcpTool(vaultRoot, 'analyze_repo_structure', {
@@ -97,260 +74,21 @@ export async function runBootstrap(args) {
   const domainsToLand = parsed.applyReadmeDomains
     ? [...domainSplit.corroborated, ...domainSplit.readmeOnly]
     : domainSplit.corroborated;
-  const heldSlugs = new Set(heldReadmeDomains.map((d) => d.slug));
   const concepts = collectConcepts(analyzeResult, domainsToLand);
 
-  // Construction lifecycle boundary: this CLI has no way to authenticate or
-  // verify an independent constructionQualification:v1 packet. Never turn a
-  // shell command into semantic approval. The old writer remains available to
-  // the accepted MCP writePlan path, but cold-start bootstrap is review-only.
-  if (!parsed.acceptedQualification) {
-    return printApprovalRequiredPlan({
-      parsed,
-      target,
-      vaultRoot,
-      analyzeResult,
-      concepts,
-      heldReadmeDomains,
-    });
-  }
-
-  // The writer branch remains for a future packet-bound CLI adapter. No
-  // current parser can set acceptedQualification, so cold-start commands never
-  // cross this boundary.
-  const vaultState = await inspectBootstrapVault(vaultRoot);
-  if (vaultState?.grown && !parsed.reapply) {
-    return printGrownVaultPlan({
-      parsed,
-      target,
-      vaultRoot,
-      analyzeResult,
-      concepts,
-      vaultState,
-    });
-  }
-  const prunedStarters =
-    concepts.length > 0 ? pruneUntouchedStarterNodes(vaultRoot) : null;
-  let conceptsRows = [];
-  if (concepts.length > 0) {
-    try {
-      conceptsRows = await callConceptBatches(vaultRoot, concepts);
-    } catch (err) {
-      restorePrunedStarterNodes(vaultRoot, prunedStarters);
-      process.stderr.write(
-        `${COLORS.red}error${COLORS.reset}  add_concepts: ${err instanceof Error ? err.message : String(err)}\n`,
-      );
-      return 2;
-    }
-  }
-
-  const suggested = (analyzeResult.suggestedRelations ?? []).filter(
-    (r) => !heldSlugs.has(r.from) && !heldSlugs.has(r.to),
-  );
-  const analyzeRelationsRows = await applyRelations(vaultRoot, suggested);
-  if (analyzeRelationsRows === null) return 2;
-
-  // Stage 2 — infer-imports review only (--skip-imports 면 생략). Source imports
-  // are evidence, not self-approving semantic dependencies or ontology nodes.
-  let importsResult = null;
-  let importEndpointRows = [];
-  let importContainmentRows = [];
-  let importsRows = [];
-  let importReviewCandidates = [];
-  if (!parsed.skipImports) {
-    try {
-      importsResult = await callMcpTool(vaultRoot, 'infer_imports', {
-        rootPath: target,
-        maxFiles: parsed.maxFiles,
-      });
-      assertInferImportsResult(importsResult);
-      applyImportThreshold(importsResult, parsed.threshold);
-    } catch (err) {
-      process.stderr.write(
-        `${COLORS.red}error${COLORS.reset}  infer_imports: ${err instanceof Error ? err.message : String(err)}\n`,
-      );
-      return 2;
-    }
-    let edges = Array.isArray(importsResult.moduleEdges)
-      ? importsResult.moduleEdges
-      : [];
-    let filteredOut = 0;
-    if (parsed.threshold && parsed.threshold > 1) {
-      const before = edges.length;
-      edges = edges.filter((m) => Number(m.count) >= parsed.threshold);
-      filteredOut = before - edges.length;
-      importsResult.thresholdApplied = {
-        threshold: parsed.threshold,
-        filteredOut,
-      };
-    }
-    importReviewCandidates = buildImportReviewCandidates(edges, concepts);
-  }
-
-  const summary = combineSummary(
-    conceptsRows,
-    importEndpointRows,
-    importContainmentRows,
-    analyzeRelationsRows,
-    importsRows,
-  );
-
-  // R+ — 마지막 census. 사용자가 \"방금 뭐 land 됐나?\" 를 1줄로 인지.
-  // analyzer apply 흐름의 마무리 census (cycle 38 shared helper).
-  const vaultCensus = await getVaultCensus(vaultRoot);
-
-  if (parsed.json) {
-    process.stdout.write(
-      JSON.stringify(
-        {
-          mode: 'apply',
-          apply: true,
-          rootPath: analyzeResult.rootPath,
-          framework: analyzeResult.framework,
-          analyze: {
-            concepts: conceptsRows,
-            relations: analyzeRelationsRows,
-          },
-          imports: parsed.skipImports
-            ? null
-            : {
-                filesScanned: importsResult?.filesScanned,
-                thresholdApplied: importsResult?.thresholdApplied,
-                endpointConcepts: importEndpointRows,
-                containmentRelations: importContainmentRows,
-                relations: importsRows,
-                reviewCandidates: importReviewCandidates,
-                writeBlocked: 'rationale_review_required',
-              },
-          prunedStarters: summarizePrunedStarterNodes(prunedStarters),
-          readmeDomainReview: heldReadmeDomains.map((d) => ({
-            slug: d.slug,
-            title: d.title,
-            evidence: d.evidence ?? null,
-          })),
-          summary,
-          vaultCensus,
-        },
-        null,
-        2,
-      ) + '\n',
-    );
-    return summary.errors === 0 ? 0 : 1;
-  }
-
-  process.stdout.write(
-    `${COLORS.bold}bootstrap${COLORS.reset} ${COLORS.dim}repo=${target}\n           vault=${vaultRoot}${COLORS.reset}\n\n`,
-  );
-  printPrunedStarters(prunedStarters);
-  process.stdout.write(
-    `  ${COLORS.bold}1) analyze${COLORS.reset}    concepts: ` +
-      `${COLORS.green}${summary.conceptsLanded}${COLORS.reset} landed · ` +
-      `${COLORS.dim}${summary.conceptsExisting}${COLORS.reset} already existed · ` +
-      `${summary.conceptsErrors > 0 ? COLORS.red : COLORS.dim}${summary.conceptsErrors}${COLORS.reset} errors\n`,
-  );
-  if (heldReadmeDomains.length > 0) {
-    const onlyReadme = domainSplit.corroborated.length === 0;
-    process.stdout.write(
-      `                ${COLORS.yellow}README 제목 ${heldReadmeDomains.length}개는 심지 않고 검토 후보로 남김${COLORS.reset}` +
-        `${COLORS.dim} · 문서 절이지 도메인이 아닐 수 있어요. 그대로 심으려면 --apply-readme-domains${COLORS.reset}\n`,
-    );
-    if (onlyReadme) {
-      process.stdout.write(
-        `                ${COLORS.dim}코드에서 구조를 못 찾았어요(하위 폴더 없는 src 등): 도메인 확정은 에이전트/공방에서 하는 편이 맞아요.${COLORS.reset}\n`,
-      );
-    }
-    for (const d of heldReadmeDomains.slice(0, 12)) {
-      process.stdout.write(
-        `                  ${COLORS.dim}· ${d.slug}${COLORS.reset} ${COLORS.dim}← ${d.evidence?.source ?? 'README'}${COLORS.reset}\n`,
-      );
-    }
-  }
-  process.stdout.write(
-      `                relations (suggested): ` +
-      `${COLORS.green}${summary.analyzeRelationsLanded}${COLORS.reset} landed · ` +
-      `${COLORS.dim}${summary.analyzeRelationsExisting}${COLORS.reset} already existed · ` +
-      `${summary.analyzeRelationsErrors > 0 ? COLORS.red : COLORS.dim}${summary.analyzeRelationsErrors}${COLORS.reset} errors\n`,
-  );
-  if (parsed.skipImports) {
-    process.stdout.write(
-      `  ${COLORS.dim}2) imports     skipped (--skip-imports)${COLORS.reset}\n`,
-    );
-  } else {
-    const thr = importsResult?.thresholdApplied;
-    process.stdout.write(
-      `  ${COLORS.bold}2) imports${COLORS.reset}    ` +
-        `${COLORS.yellow}${importReviewCandidates.length}${COLORS.reset} review candidates · ` +
-        `${COLORS.dim}0 automatic semantic writes: rationale review required${COLORS.reset}` +
-        (thr
-          ? ` ${COLORS.dim}(--threshold ${thr.threshold} filtered ${thr.filteredOut})${COLORS.reset}`
-          : '') +
-        '\n',
-    );
-  }
-  process.stdout.write('\n');
-
-  // 에러 행만 노출 — first 12 + summary.
-  let errCount = 0;
-  conceptsRows.forEach((row, index) => {
-    if (row.ok === false) {
-      if (errCount < 12) {
-        process.stdout.write(
-          `  ${COLORS.red}✗${COLORS.reset} ${formatConceptBatchFailureLabel(row, index, 'concept')} ${COLORS.dim}· ${row.error}${COLORS.reset}\n`,
-        );
-      }
-      errCount += 1;
-    }
+  // This command is deliberately a preview-only ingress. There is no CLI
+  // switch, environment variable, or hidden parser state that can manufacture
+  // the independent constructionQualification:v1 + human acceptance required
+  // by the lifecycle. Keep the return unconditional so a future option cannot
+  // accidentally resurrect the former batch-writer branch.
+  return printApprovalRequiredPlan({
+    parsed,
+    target,
+    vaultRoot,
+    analyzeResult,
+    concepts,
+    heldReadmeDomains,
   });
-  analyzeRelationsRows.forEach((row, index) => {
-    if (row.ok === false) {
-      if (errCount < 12) {
-        process.stdout.write(
-          `  ${COLORS.red}✗${COLORS.reset} ${formatRelationBatchFailureLabel(row, index, 'suggested')} ${COLORS.dim}· ${row.error}${COLORS.reset}\n`,
-        );
-      }
-      errCount += 1;
-    }
-  });
-  importEndpointRows.forEach((row, index) => {
-    if (row.ok === false) {
-      if (errCount < 12) {
-        process.stdout.write(
-          `  ${COLORS.red}✗${COLORS.reset} ${formatConceptBatchFailureLabel(row, index, 'import endpoint')} ${COLORS.dim}· ${row.error}${COLORS.reset}\n`,
-        );
-      }
-      errCount += 1;
-    }
-  });
-  importContainmentRows.forEach((row, index) => {
-    if (row.ok === false) {
-      if (errCount < 12) {
-        process.stdout.write(
-          `  ${COLORS.red}✗${COLORS.reset} ${formatRelationBatchFailureLabel(row, index, 'import containment')} ${COLORS.dim}· ${row.error}${COLORS.reset}\n`,
-        );
-      }
-      errCount += 1;
-    }
-  });
-  importsRows.forEach((row, index) => {
-    if (row.ok === false) {
-      if (errCount < 12) {
-        process.stdout.write(
-          `  ${COLORS.red}✗${COLORS.reset} ${formatRelationBatchFailureLabel(row, index, 'import')} ${COLORS.dim}· ${row.error}${COLORS.reset}\n`,
-        );
-      }
-      errCount += 1;
-    }
-  });
-  if (errCount > 12) {
-    process.stdout.write(
-      `  ${COLORS.dim}… ${errCount - 12} more errors${COLORS.reset}\n`,
-    );
-  }
-
-  // R+ — \"vault now has N nodes (...)\" 한 줄 (shared helper).
-  writeVaultCensus(vaultCensus);
-
-  return summary.errors === 0 ? 0 : 1;
 }
 
 function applyImportThreshold(result, threshold) {
@@ -431,48 +169,6 @@ async function printApprovalRequiredPlan({
   return 3;
 }
 
-function buildImportReviewCandidates(edges, analyzeConcepts) {
-  const known = new Set((analyzeConcepts ?? []).map((concept) => concept.slug));
-  return (edges ?? []).map((edge) => {
-    const absentEndpoints = [edge.from, edge.to].filter((slug) => !known.has(slug));
-    const required = [];
-    if (absentEndpoints.length > 0) required.push('vault_endpoints');
-    if ((edge.evidence?.length ?? 0) === 0) required.push('source_evidence');
-    required.push('semantic_rationale', 'human_approval');
-    return {
-      from: edge.from,
-      to: edge.to,
-      count: edge.count,
-      kindCounts: edge.kindCounts,
-      sourceEvidence: edge.evidence ?? [],
-      sourceEvidenceLimited: Boolean(edge.evidenceLimited),
-      ...(absentEndpoints.length > 0 ? { absentEndpoints } : {}),
-      review: {
-        status: 'rationale_review_required',
-        writeAllowed: false,
-        required,
-        next:
-          'Review the exact import evidence and both ontology concepts, explain why the semantic dependency holds, ask the user, then write one explicit depends_on relation with why.',
-      },
-    };
-  });
-}
-
-function printPrunedStarters(prunedStarters) {
-  if (
-    !prunedStarters ||
-    (prunedStarters.removed.length === 0 &&
-      prunedStarters.preserved.length === 0)
-  ) {
-    return;
-  }
-  process.stdout.write(
-    `  ${COLORS.bold}starters${COLORS.reset}   ` +
-      `${COLORS.green}${prunedStarters.removed.length}${COLORS.reset} removed · ` +
-      `${COLORS.dim}${prunedStarters.preserved.length}${COLORS.reset} preserved (edited)\n`,
-  );
-}
-
 /**
  * README 제목에서만 나온 도메인과, 코드 구조가 뒷받침하는 도메인을 가른다.
  *
@@ -543,80 +239,6 @@ function collectConcepts(analyzeResult, domainsToLand) {
   return out;
 }
 
-// add_relations 의 50-row chunk 분할. 호출 실패 (mcp throw) 시 null 리턴.
-async function applyRelations(vaultRoot, relations) {
-  if (!Array.isArray(relations) || relations.length === 0) return [];
-  try {
-    return await callRelationBatches(vaultRoot, relations);
-  } catch (err) {
-    process.stderr.write(
-      `${COLORS.red}error${COLORS.reset}  add_relations: ${err instanceof Error ? err.message : String(err)}\n`,
-    );
-    return null;
-  }
-}
-
-function combineSummary(
-  conceptsRows,
-  importEndpointRows,
-  importContainmentRows,
-  analyzeRelRows,
-  importsRows,
-) {
-  const conceptStats = countConcepts(conceptsRows);
-  const importEndpointStats = countConcepts(importEndpointRows);
-  const importContainmentStats = countRelations(importContainmentRows);
-  const analyzeRelStats = countRelations(analyzeRelRows);
-  const importStats = countRelations(importsRows);
-  return {
-    conceptsLanded: conceptStats.landed,
-    conceptsExisting: conceptStats.existing,
-    conceptsErrors: conceptStats.errors,
-    importEndpointConceptsLanded: importEndpointStats.landed,
-    importEndpointConceptsExisting: importEndpointStats.existing,
-    importEndpointConceptsErrors: importEndpointStats.errors,
-    importContainmentLanded: importContainmentStats.landed,
-    importContainmentExisting: importContainmentStats.existing,
-    importContainmentErrors: importContainmentStats.errors,
-    analyzeRelationsLanded: analyzeRelStats.landed,
-    analyzeRelationsExisting: analyzeRelStats.existing,
-    analyzeRelationsErrors: analyzeRelStats.errors,
-    importsLanded: importStats.landed,
-    importsExisting: importStats.existing,
-    importsErrors: importStats.errors,
-    errors:
-      conceptStats.errors +
-      importEndpointStats.errors +
-      importContainmentStats.errors +
-      analyzeRelStats.errors +
-      importStats.errors,
-  };
-}
-
-function countConcepts(rows) {
-  let landed = 0;
-  let existing = 0;
-  let errors = 0;
-  for (const r of rows) {
-    if (r.ok === true) landed += 1;
-    else if (/already exists/i.test(r.error || '')) existing += 1;
-    else errors += 1;
-  }
-  return { landed, existing, errors };
-}
-
-function countRelations(rows) {
-  let landed = 0;
-  let existing = 0;
-  let errors = 0;
-  for (const r of rows) {
-    if (r.ok === true && r.alreadyExists) existing += 1;
-    else if (r.ok === true) landed += 1;
-    else errors += 1;
-  }
-  return { landed, existing, errors };
-}
-
 function parseArgs(args) {
   if (args.includes('--help') || args.includes('-h')) return { help: true };
   const flags = {
@@ -670,7 +292,6 @@ function parseArgs(args) {
     maxDepth: flags.maxDepth,
     maxFiles: flags.maxFiles,
     threshold: flags.threshold,
-    acceptedQualification: false,
   };
 }
 
@@ -698,75 +319,4 @@ function printUsage(stream = process.stderr) {
       `  ontology-atlas bootstrap --reapply             # 성장한 vault에 명시 재적용\n` +
       `  ontology-atlas bootstrap --json                # 머신 가독\n`,
   );
-}
-
-async function inspectBootstrapVault(vaultRoot) {
-  try {
-    const result = await callMcpTool(vaultRoot, 'list_concepts', { limit: 500 });
-    if (!result || !Array.isArray(result.nodes)) return null;
-    const nonStarterSlugs = result.nodes
-      .map((node) => node.slug)
-      .filter((slug) => !FRESH_VAULT_SLUGS.has(slug));
-    return {
-      total: result.total,
-      slugs: result.nodes.map((node) => node.slug),
-      nonStarterSlugs,
-      grown: nonStarterSlugs.length > 0,
-    };
-  } catch {
-    // Older/fake MCP servers used by compatibility tests may not expose the
-    // preflight read. Keep the existing bootstrap path instead of failing.
-    return null;
-  }
-}
-
-async function printGrownVaultPlan({ parsed, target, vaultRoot, analyzeResult, concepts, vaultState }) {
-  let importsResult = null;
-  if (!parsed.skipImports) {
-    try {
-      importsResult = await callMcpTool(vaultRoot, 'infer_imports', {
-        rootPath: target,
-        maxFiles: parsed.maxFiles,
-      });
-      assertInferImportsResult(importsResult);
-    } catch (err) {
-      process.stderr.write(
-        `${COLORS.red}error${COLORS.reset}  infer_imports: ${err instanceof Error ? err.message : String(err)}\n`,
-      );
-      return 2;
-    }
-  }
-  const payload = {
-    mode: 'plan',
-    apply: false,
-    rootPath: analyzeResult.rootPath,
-    vaultRoot,
-    guard: {
-      reason: 'vault-already-grown',
-      currentNodes: vaultState.total,
-      nonStarterSlugs: vaultState.nonStarterSlugs,
-      recovery: 'Review this plan, then pass --reapply only if analyzer output should be merged again.',
-    },
-    plan: {
-      concepts: concepts.length,
-      suggestedRelations: analyzeResult.suggestedRelations?.length ?? 0,
-      importRelations: importsResult?.moduleEdges?.length ?? 0,
-      unresolvedImports: importsResult?.unresolved?.length ?? 0,
-    },
-    analyze: analyzeResult,
-    imports: importsResult,
-  };
-  if (parsed.json) {
-    process.stdout.write(`${JSON.stringify(payload, null, 2)}\n`);
-  } else {
-    process.stdout.write(
-      `${COLORS.bold}bootstrap plan${COLORS.reset} ${COLORS.dim}repo=${target}\n` +
-        `               vault=${vaultRoot}${COLORS.reset}\n\n` +
-        `  ${COLORS.yellow}protected${COLORS.reset} vault already has ${vaultState.total} nodes; no files were changed.\n` +
-        `  candidates: ${concepts.length} concepts · ${payload.plan.suggestedRelations} suggested relations · ` +
-        `${payload.plan.importRelations} import review candidates\n` +
-        `  ${COLORS.dim}Review the plan and use --reapply only for an intentional merge.${COLORS.reset}\n`,
-    );
-  }
-  return 0;
 }
