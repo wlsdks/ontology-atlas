@@ -40,8 +40,9 @@ description: Write the brief for a subagent so the parallel run does not corrupt
 
 ## 4. 측정값 오염 — 자기 워크트리 안에서 재라
 
-메인에서 `pnpm lint` 를 돌리면 `.claude/worktrees/**` 까지 읽는다. `output/` ·
-`.tmp/` 의 프로브도 섞인다 — **git 은 무시하는데 eslint 는 읽는다**(main 경고가
+메인 lint 가 `.claude/worktrees/**` 를 읽던 구멍은 `eslint.config.mjs` 의
+globalIgnores 가 막았다(`.qa-scratch/**` 포함). 그래도 `output/` · `.tmp/` 의
+프로브는 여전히 섞인다 — **git 은 무시하는데 eslint 는 읽는다**(main 경고가
 96 으로 보였는데 실제는 92였다).
 
 - 재는 것은 **자기 워크트리 안에서**. 작업 파일은 **저장소 밖 스크래치패드**에.
