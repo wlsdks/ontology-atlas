@@ -3416,6 +3416,7 @@
     "changelogTitle": "Changelog",
     "changelogLead": "What changed, and when. Newest first.",
     "guideLead": "From one folder to a map your AI agent can read.",
+    "guideUnknownSegment": "We couldn't find the chapter you asked for, so this is the guide's first chapter. Pick the one you want from the contents.",
     "truncatedNote": "{count} older entries are folded away: the gateway shows only the recent ones.",
     "readFullSource": "Read the full file on GitHub",
     "guidePages": {

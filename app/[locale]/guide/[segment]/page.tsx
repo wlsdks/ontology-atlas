@@ -1,6 +1,6 @@
 import type { Metadata } from 'next';
 import { getTranslations } from 'next-intl/server';
-import { GatewayDocPage, GUIDE_PAGES, GUIDE_ENTRY_PAGE, findGuidePage } from '@/views/gateway-doc';
+import { GatewayDocPage, GUIDE_PAGES, GUIDE_ENTRY_PAGE, resolveGuidePage } from '@/views/gateway-doc';
 import { buildPageMetadata } from '@/shared/lib/page-metadata';
 import { routing } from '@/i18n/routing';
 
@@ -20,7 +20,7 @@ export async function generateMetadata({
   params: Promise<{ locale: string; segment: string }>;
 }): Promise<Metadata> {
   const { locale, segment } = await params;
-  const page = findGuidePage(segment);
+  const { page } = resolveGuidePage(segment);
   const tNav = await getTranslations({ locale, namespace: 'gatewayNav' });
   const t = await getTranslations({ locale, namespace: 'metadata' });
   return buildPageMetadata({
@@ -37,7 +37,7 @@ export default async function Page({
   params: Promise<{ locale: string; segment: string }>;
 }) {
   const { locale, segment } = await params;
-  const page = findGuidePage(segment);
+  const { page, matched } = resolveGuidePage(segment);
   const t = await getTranslations({ locale, namespace: 'gatewayNav' });
 
   return (
@@ -45,6 +45,12 @@ export default async function Page({
       slug={page.slug}
       title={t(`guidePages.${page.titleKey}`)}
       {...(page.segment === GUIDE_ENTRY_PAGE.segment ? { lead: t('guideLead') } : {})}
+      /*
+       * 모르는 세그먼트에는 첫 장을 그리되 **대체했다고 말한다** — 말없는
+       * 폴백은 그 주소의 문서인 척하는 오배송이다(2026-08-14 걷기 실측:
+       * 본문의 상대 `.md` 링크가 여기로 떨어져 1장이 명세 행세를 했다).
+       */
+      {...(matched ? {} : { notice: t('guideUnknownSegment') })}
       sourcePath={`docs/${page.slug}.md`}
       sidebar
       activeSegment={page.segment}

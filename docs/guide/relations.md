@@ -10,7 +10,7 @@
 
 저장 키·화면 이름·MCP query/write 지원 범위·방향·endpoint kind·inverse·추론
 경계의 정본은
-[Atlas 메타모델 명세](../ONTOLOGY-ATLAS-SPEC.md#5-relation-types-and-their-semantics)입니다.
+[Atlas 메타모델 명세](https://github.com/wlsdks/ontology-atlas/blob/main/docs/ONTOLOGY-ATLAS-SPEC.md#5-relation-types-and-their-semantics)입니다.
 이 장은 그 표를 복제하지 않고 사람이 지도와 Markdown에서 관계를 읽는 법만
 설명합니다.
 

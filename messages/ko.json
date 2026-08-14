@@ -3416,6 +3416,7 @@
     "changelogTitle": "변경 내역",
     "changelogLead": "무엇이 언제 바뀌었는지. 최신이 위입니다.",
     "guideLead": "폴더 하나가 지도가 되고, 그 지도를 AI 에이전트가 읽기까지.",
+    "guideUnknownSegment": "요청하신 장을 찾지 못했습니다. 대신 가이드의 첫 장을 보여드립니다. 차례에서 원하는 장을 고를 수 있습니다.",
     "truncatedNote": "이전 항목 {count}개는 여기서 접었습니다. 관문은 최근 것만 보여줍니다.",
     "readFullSource": "저장소에서 전문 읽기",
     "guidePages": {
