@@ -93,6 +93,35 @@ export function compileOntology(docs, options = {}) {
       });
     }
   }
+  // `compileOntology` is also a public library boundary: callers may provide
+  // parsed frontmatter without carrying parser diagnostics. Never let a
+  // scalar/object relation field disappear merely because that metadata was
+  // omitted. The normal parser diagnostic is deduplicated by its exact
+  // message; direct callers still get the same fail-closed issue.
+  for (const doc of docs) {
+    const frontmatter = doc?.frontmatter;
+    if (!frontmatter || typeof frontmatter !== 'object') continue;
+    const diagnostics = new Set(
+      (doc?.diagnostics ?? [])
+        .filter((diagnostic) => diagnostic?.code === 'malformed-frontmatter-line')
+        .map((diagnostic) => diagnostic.message),
+    );
+    for (const key of GRAPH_ARRAY_KEYS) {
+      if (!Object.prototype.hasOwnProperty.call(frontmatter, key)) continue;
+      if (Array.isArray(frontmatter[key])) continue;
+      const message = `Frontmatter graph relation \`${key}:\` must be an array.`;
+      const alreadyReported =
+        diagnostics.has(message) ||
+        [...diagnostics].some((item) => item?.includes(`graph relation \`${key}:\``));
+      if (alreadyReported) continue;
+      issues.push({
+        code: 'malformed-frontmatter-line',
+        severity: 'error',
+        slug: doc.slug,
+        message,
+      });
+    }
+  }
 
   const edges = [];
   const edgeKeys = new Set();

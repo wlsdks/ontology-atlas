@@ -66,6 +66,42 @@ test('indented missing-colon declarations retain diagnostics', () => {
   ]);
 });
 
+test('relation fields with malformed inline values retain diagnostics', () => {
+  const raw = [
+    '---',
+    'kind: capability',
+    'depends_on: [capabilities/auth',
+    'relates: capabilities/legacy',
+    'contains: { capabilities/ui: stale }',
+    '---',
+    '',
+  ].join('\n');
+  const parsed = parseFrontmatter(raw);
+  assert.deepEqual(parsed.frontmatter, {
+    kind: 'capability',
+    depends_on: '[capabilities/auth',
+    relates: 'capabilities/legacy',
+    contains: { 'capabilities/ui': 'stale' },
+  });
+  assert.deepEqual(parsed.diagnostics, [
+    {
+      code: 'malformed-frontmatter-line',
+      line: 3,
+      message: 'Frontmatter line 3 graph relation `depends_on:` must be an array.',
+    },
+    {
+      code: 'malformed-frontmatter-line',
+      line: 4,
+      message: 'Frontmatter line 4 graph relation `relates:` must be an array.',
+    },
+    {
+      code: 'malformed-frontmatter-line',
+      line: 5,
+      message: 'Frontmatter line 5 graph relation `contains:` must be an array.',
+    },
+  ]);
+});
+
 test('inline object', () => {
   const { frontmatter } = parseFrontmatter(
     `---\nposition: { x: 100, y: 200 }\n---\n`,
