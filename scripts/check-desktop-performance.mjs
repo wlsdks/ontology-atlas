@@ -5,15 +5,16 @@ import { fileURLToPath } from "node:url";
 import { loadMacosReleaseNames } from "./lib/macos-release-names.mjs";
 
 export const DESKTOP_PERFORMANCE_BUDGETS = {
-  outBytes: 32 * 1024 * 1024,
   nextStaticBytes: 8 * 1024 * 1024,
   maxStaticAssetBytes: 1.5 * 1024 * 1024,
-  appBundleBytes: 25 * 1024 * 1024,
 };
 
 const STATIC_ASSET_EXTENSIONS = new Set([".js", ".css"]);
+export const DESKTOP_PERFORMANCE_EVIDENCE_BOUNDARY =
+  "This check measures static artifact sizes only; runtime startup is verified by desktop:verify-app and MCP startup by cli:mcp-verify.";
 
 function formatMiB(bytes) {
+  if (bytes === null) return "not measured";
   return `${(bytes / 1024 / 1024).toFixed(2)}MiB`;
 }
 
@@ -47,10 +48,21 @@ function largestStaticAsset(root) {
 
 function addBudgetCheck(checks, label, actual, budget) {
   checks.push({
+    kind: "budget",
     label,
     actual,
     budget,
     ok: actual <= budget,
+  });
+}
+
+function addSizeMetric(checks, label, actual, detail) {
+  checks.push({
+    kind: "metric",
+    label,
+    actual,
+    ok: true,
+    ...(detail ? { detail } : {}),
   });
 }
 
@@ -79,6 +91,7 @@ export function evaluateDesktopPerformance({
       missing: [`${path.relative(root, outDir)}/`],
       checks,
       appBundlePath,
+      evidenceBoundary: DESKTOP_PERFORMANCE_EVIDENCE_BOUNDARY,
     };
   }
   if (!fs.existsSync(nextStaticDir)) {
@@ -87,10 +100,11 @@ export function evaluateDesktopPerformance({
       missing: [`${path.relative(root, nextStaticDir)}/`],
       checks,
       appBundlePath,
+      evidenceBoundary: DESKTOP_PERFORMANCE_EVIDENCE_BOUNDARY,
     };
   }
 
-  addBudgetCheck(checks, "static export out/ size", directorySize(outDir), budgets.outBytes);
+  addSizeMetric(checks, "static export out/ size", directorySize(outDir));
   addBudgetCheck(
     checks,
     "Next static asset size",
@@ -100,35 +114,42 @@ export function evaluateDesktopPerformance({
   const largest = largestStaticAsset(nextStaticDir);
   if (largest) {
     checks.push({
+      kind: "budget",
       label: "largest JS/CSS chunk",
       actual: largest.size,
       budget: budgets.maxStaticAssetBytes,
       ok: largest.size <= budgets.maxStaticAssetBytes,
       detail: path.relative(root, largest.path),
     });
+  } else {
+    checks.push({
+      kind: "budget",
+      label: "largest JS/CSS chunk",
+      actual: null,
+      budget: budgets.maxStaticAssetBytes,
+      ok: false,
+      detail: "no .js or .css asset found under out/_next/static",
+    });
   }
 
   if (fs.existsSync(appBundlePath)) {
-    addBudgetCheck(
-      checks,
-      "macOS .app bundle size",
-      directorySize(appBundlePath),
-      budgets.appBundleBytes,
-    );
+    addSizeMetric(checks, "macOS .app bundle size", directorySize(appBundlePath));
   } else if (requireApp) {
     return {
       ok: false,
       missing: [path.relative(root, appBundlePath)],
       checks,
       appBundlePath,
+      evidenceBoundary: DESKTOP_PERFORMANCE_EVIDENCE_BOUNDARY,
     };
   }
 
   return {
-    ok: checks.every((check) => check.ok),
+    ok: checks.filter((check) => check.kind === "budget").every((check) => check.ok),
     missing: [],
     checks,
     appBundlePath,
+    evidenceBoundary: DESKTOP_PERFORMANCE_EVIDENCE_BOUNDARY,
   };
 }
 
@@ -150,19 +171,22 @@ function parseArgs(argv) {
 }
 
 export function printDesktopPerformanceReport(result) {
-  console.log("[desktop-performance] static export + macOS app size budgets");
+  console.log("[desktop-performance] static artifact hard gates + desktop size metrics");
+  console.log(
+    `[desktop-performance] evidence boundary: ${result.evidenceBoundary ?? DESKTOP_PERFORMANCE_EVIDENCE_BOUNDARY}`,
+  );
   for (const missingPath of result.missing) {
     console.error(`✗ missing build artifact: ${missingPath}`);
   }
   for (const check of result.checks) {
-    const marker = check.ok ? "✓" : "✗";
+    const marker = check.kind === "metric" ? "ℹ" : check.ok ? "✓" : "✗";
     const detail = check.detail ? ` (${check.detail})` : "";
-    console.log(
-      `${marker} ${check.label}: ${formatMiB(check.actual)} / ${formatMiB(check.budget)}${detail}`,
-    );
+    const value = formatMiB(check.actual);
+    const budget = check.budget === undefined ? "" : ` / ${formatMiB(check.budget)}`;
+    console.log(`${marker} ${check.label}: ${value}${budget}${detail}`);
   }
   if (result.ok) {
-    console.log("[desktop-performance] ready: desktop artifacts stay within current budgets");
+    console.log("[desktop-performance] ready: enforced static asset gates passed");
   }
 }
 

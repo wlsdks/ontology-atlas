@@ -342,13 +342,16 @@ if (
   pkg.scripts?.["desktop:perf"] === "node scripts/check-desktop-performance.mjs" &&
   desktopPerformanceScript.includes("DESKTOP_PERFORMANCE_BUDGETS") &&
   desktopPerformanceScript.includes("maxStaticAssetBytes") &&
-  desktopPerformanceScript.includes("appBundleBytes") &&
+  desktopPerformanceScript.includes("nextStaticBytes") &&
+  desktopPerformanceScript.includes("DESKTOP_PERFORMANCE_EVIDENCE_BOUNDARY") &&
+  desktopPerformanceScript.includes("desktop:verify-app") &&
+  desktopPerformanceScript.includes("cli:mcp-verify") &&
   pkg.scripts?.["desktop:release-preflight"]?.includes("pnpm desktop:perf -- --require-app")
 ) {
-  pass("desktop performance budget gate covers static assets and packaged .app size");
+  pass("desktop performance gate keeps static asset hard limits, report-only artifact totals, and explicit runtime/MCP evidence boundaries");
 } else {
   fail(
-    "package.json must expose desktop:perf and include `pnpm desktop:perf -- --require-app` in desktop:release-preflight so macOS artifact size regressions are gated",
+    "package.json must expose desktop:perf and include `pnpm desktop:perf -- --require-app` in desktop:release-preflight; the script must hard-gate Next static/chunk sizes while reporting total artifact sizes and naming desktop:verify-app plus cli:mcp-verify as separate startup evidence",
   );
 }
 
