@@ -24,7 +24,7 @@ const MAX_DEPTH_CAP = 10;
 const MAX_FILES_CAP = 50000;
 const MEANING_GATE_EVIDENCE_ROW_LIMIT = 5;
 const MEANING_GATE_REVIEW_ROW_LIMIT = 5;
-const ALLOWED_FLAGS = ['--vault', '--json', '--apply', '--skip-imports', '--max-depth', '--max-files', '--threshold'];
+const ALLOWED_FLAGS = ['--vault', '--json', '--apply', '--full', '--skip-imports', '--max-depth', '--max-files', '--threshold'];
 
 export async function runIndex(args) {
   const parsed = parseArgs(args);
@@ -35,6 +35,14 @@ export async function runIndex(args) {
   if (parsed.error) {
     process.stderr.write(`${COLORS.red}error${COLORS.reset}  ${parsed.error}\n`);
     printUsage();
+    return 1;
+  }
+  if (parsed.full && parsed.apply) {
+    process.stderr.write(`${COLORS.red}error${COLORS.reset}  --full is a read-only import delivery option and cannot be combined with --apply.\n`);
+    return 1;
+  }
+  if (parsed.full && parsed.skipImports) {
+    process.stderr.write(`${COLORS.red}error${COLORS.reset}  --full requires imports; remove --skip-imports.\n`);
     return 1;
   }
 
@@ -62,10 +70,18 @@ export async function runIndex(args) {
   let importsResult = null;
   if (!parsed.skipImports) {
     try {
-      importsResult = await callMcpTool(vaultRoot, 'infer_imports', {
+      const importArgs = {
         rootPath: target,
         maxFiles: parsed.maxFiles,
-      });
+      };
+      // A large scan is compacted by MCP unless the caller explicitly asks for
+      // the full arrays. Thresholding also needs the complete module-edge list;
+      // the default index plan only needs the bounded queue summary.
+      if (parsed.full || parsed.threshold !== undefined) {
+        importArgs.reviewMode = 'full';
+        importArgs.allowLargeResponse = true;
+      }
+      importsResult = await callMcpTool(vaultRoot, 'infer_imports', importArgs);
       assertInferImportsResult(importsResult);
     } catch (err) {
       process.stderr.write(
@@ -105,9 +121,11 @@ export async function runIndex(args) {
     imports: importsResult
       ? {
           filesScanned: importsResult.filesScanned,
-          moduleEdges: importsResult.moduleEdges.length,
+          moduleEdges: importsResult.moduleEdges?.length ?? importsResult.scanSummary?.moduleEdges ?? 0,
           thresholdApplied: importsResult.thresholdApplied,
           reconciliationSummary: importsResult.reconciliationSummary,
+          delivery: importsResult.delivery,
+          reviewQueue: importsResult.reviewQueue,
         }
       : null,
     plan,
@@ -230,7 +248,11 @@ function buildPlan(analyzeResult, importsResult) {
       analyzeResult.capabilities.length +
       analyzeResult.elements.length,
     suggestedRelations: analyzeResult.suggestedRelations.length,
-    importRelations: importsResult?.moduleEdges?.length ?? 0,
+    importRelations:
+      importsResult?.moduleEdges?.length ??
+      importsResult?.scanSummary?.moduleEdges ??
+      importsResult?.reviewQueue?.total ??
+      0,
     phases: [
       'analyze_repo_structure',
       importsResult ? 'infer_imports' : 'infer_imports skipped',
@@ -255,6 +277,7 @@ function parseArgs(args) {
   let vault = '.';
   let json = false;
   let apply = false;
+  let full = false;
   let skipImports = false;
   let maxDepth;
   let maxFiles;
@@ -267,6 +290,8 @@ function parseArgs(args) {
       json = true;
     } else if (arg === '--apply') {
       apply = true;
+    } else if (arg === '--full') {
+      full = true;
     } else if (arg === '--skip-imports') {
       skipImports = true;
     } else if (arg === '--vault') {
@@ -313,6 +338,7 @@ function parseArgs(args) {
     vault,
     json,
     apply,
+    full,
     skipImports,
     maxDepth,
     maxFiles,
@@ -352,7 +378,7 @@ function printPlan(payload) {
 function printUsage(stream = process.stderr) {
   stream.write(
     `\n${COLORS.bold}Usage:${COLORS.reset}\n` +
-      `  ontology-atlas index [rootPath] [--vault path] [--apply]\n` +
+      `  ontology-atlas index [rootPath] [--vault path] [--apply] [--full]\n` +
       `                         [--threshold N] [--skip-imports] [--json]\n` +
       `                         [--max-depth N] [--max-files N]\n\n` +
       `${COLORS.bold}What it does:${COLORS.reset}\n` +

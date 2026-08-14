@@ -9194,6 +9194,15 @@ await test('bootstrap --json — approval response has no mutable vault census',
 
 // ── index (R+ — long-running project ontology indexing entrypoint) ─────
 
+await test('index --full — rejects combinations that silently skip or write imports', async () => {
+  const skipped = await run(['index', '--full', '--skip-imports']);
+  assert.equal(skipped.code, 1);
+  assert.match(skipped.stderr, /--full requires imports/);
+  const applied = await run(['index', '--full', '--apply']);
+  assert.equal(applied.code, 1);
+  assert.match(applied.stderr, /cannot be combined with --apply/);
+});
+
 await test('index --json — analyzes and verifies a repo without mutating the vault', async () => {
   const vault = withVault([]);
   const repo = makeFullRepo();
@@ -9220,6 +9229,77 @@ await test('index --json — analyzes and verifies a repo without mutating the v
     assert.equal(data.validation.problemFiles, 0);
     assert.equal(existsSyncTest(join(vault, 'bs-app.md')), false);
     assert.equal(existsSyncTest(join(vault, 'capabilities', 'auth.md')), false);
+  } finally {
+    rmSync(vault, { recursive: true, force: true });
+    rmSync(repo, { recursive: true, force: true });
+  }
+});
+
+function makeCompactImportRepo() {
+  const repo = mkdtempSync(join(tmpdir(), 'cli-compact-import-'));
+  writeFileSync(
+    join(repo, 'package.json'),
+    JSON.stringify({ name: 'compact-import-fixture', description: 'large bounded import fixture' }, null, 2),
+    'utf-8',
+  );
+  mkdirSync(join(repo, 'src'), { recursive: true });
+  for (let index = 0; index < 140; index += 1) {
+    const externalImports = Array.from(
+      { length: 20 },
+      (_, dependency) => `import compact_external_${index}_${dependency}\n`,
+    ).join('');
+    const internalImport = index > 0 ? `from .module_${index - 1} import value\n` : '';
+    writeFileSync(
+      join(repo, 'src', `module_${index}.py`),
+      `${externalImports}${internalImport}value = ${index}\n`,
+      'utf-8',
+    );
+  }
+  return repo;
+}
+
+await test('index --json — accepts MCP compact import delivery for a large source scan', async () => {
+  const vault = withVault([]);
+  const repo = makeCompactImportRepo();
+  try {
+    const r = await run(['index', repo, '--vault', vault, '--json']);
+    assert.equal(r.code, 0, `stdout: ${r.stdout}\nstderr: ${r.stderr}`);
+    const data = JSON.parse(r.stdout);
+    assert.equal(data.imports.delivery.selection, 'automatic_compact');
+    assert.ok(data.imports.reviewQueue.total > 0);
+    assert.equal(data.plan.importRelations, data.imports.moduleEdges);
+    assert.equal(existsSyncTest(join(vault, 'compact-import-fixture.md')), false);
+  } finally {
+    rmSync(vault, { recursive: true, force: true });
+    rmSync(repo, { recursive: true, force: true });
+  }
+});
+
+await test('infer-imports — prints a compact queue instead of rejecting an oversized delivery', async () => {
+  const vault = withVault([]);
+  const repo = makeCompactImportRepo();
+  try {
+    const r = await run(['infer-imports', repo, '--vault', vault]);
+    assert.equal(r.code, 0, `stdout: ${r.stdout}\nstderr: ${r.stderr}`);
+    const clean = stripAnsi(r.stdout);
+    assert.match(clean, /compact review packet/);
+    assert.match(clean, /write allowed: no/);
+  } finally {
+    rmSync(vault, { recursive: true, force: true });
+    rmSync(repo, { recursive: true, force: true });
+  }
+});
+
+await test('infer-imports --full — explicitly requests complete arrays for an oversized scan', async () => {
+  const vault = withVault([]);
+  const repo = makeCompactImportRepo();
+  try {
+    const r = await run(['infer-imports', repo, '--vault', vault, '--full', '--json']);
+    assert.equal(r.code, 0, `stdout: ${r.stdout}\nstderr: ${r.stderr}`);
+    const data = JSON.parse(r.stdout);
+    assert.ok(Array.isArray(data.moduleEdges));
+    assert.ok(data.moduleEdges.length > 0);
+    assert.equal(data.delivery, undefined);
   } finally {
     rmSync(vault, { recursive: true, force: true });
     rmSync(repo, { recursive: true, force: true });

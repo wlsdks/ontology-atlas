@@ -121,13 +121,13 @@ ${COLORS.bold}Usage:${COLORS.reset}
 
 ${COLORS.bold}Bootstrap${COLORS.reset} ${COLORS.dim}(R16/R17: autonomous ingest base)${COLORS.reset}
   ontology-atlas index [rootPath]             ${COLORS.green}project ontology index${COLORS.reset}: analyze + imports + validate plan
-       --apply --threshold N --json           ${COLORS.dim}analyzer land · import review filter · machine output${COLORS.reset}
+       --apply --full --threshold N --json     ${COLORS.dim}analyzer land · import review/full delivery · machine output${COLORS.reset}
   ontology-atlas bootstrap [rootPath]         ${COLORS.green}1줄 full bootstrap${COLORS.reset}: analyzer write + import review
        --threshold N --skip-imports --json    ${COLORS.dim}review filter · imports skip · machine output${COLORS.reset}
   ontology-atlas analyze [rootPath]           Walk a repo, propose ontology node candidates (side effect 0)
        --apply --max-depth N --json           ${COLORS.dim}or land via batch · folder walk depth · machine output${COLORS.reset}
   ontology-atlas infer-imports [rootPath] TS/JS/Python import graph → depends_on edge candidates (side effect 0)
-       --apply --threshold N --max-files N    ${COLORS.dim}apply disabled · review filter · default 5000 max${COLORS.reset}
+       --apply --full --threshold N --max-files N ${COLORS.dim}apply disabled · review/full delivery · default 5000 max${COLORS.reset}
   ontology-atlas preflight [vault]            ${COLORS.green}Commit preflight${COLORS.reset}: staged files → vault nodes → blast-radius summary
        --staged --depth N --json              ${COLORS.dim}non-blocking, silent when nothing matches${COLORS.reset}
   ontology-atlas snapshot [vault]             ${COLORS.green}Snapshot the vault${COLORS.reset}: vault-scoped git commit with a semantic summary

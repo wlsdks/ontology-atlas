@@ -5271,8 +5271,13 @@ export function buildGraphQuerySmokeArgs(listPayload, projectPayload = null) {
     ),
   )?.slug;
   const resolvedProjectSlug = projectSlug || probedProjectSlug;
+  // Prefer an element when the vault exposes one: it exercises the deepest
+  // authored graph path instead of depending on filesystem-order census rows.
+  const preferredElementSlug = candidateNodes.find(
+    (node) => node?.kind === 'element' && typeof node?.slug === 'string' && node.slug.length > 0,
+  )?.slug;
   const fallbackSlug = candidateNodes.find((node) => typeof node?.slug === 'string' && node.slug.length > 0)?.slug || null;
-  const smokeSlug = nonRootSlug || resolvedProjectSlug || fallbackSlug;
+  const smokeSlug = preferredElementSlug || nonRootSlug || resolvedProjectSlug || fallbackSlug;
   const pathTarget = resolvedProjectSlug && resolvedProjectSlug !== smokeSlug ? resolvedProjectSlug : smokeSlug;
   return {
     slug: smokeSlug,

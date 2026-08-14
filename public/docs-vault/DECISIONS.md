@@ -64,6 +64,31 @@ typed node 수 불일치와 citation 없는 node는 구조 수치와 별도로 b
 green인데 의미 결론이 계속 비어 있으면 100+ stress를 qualification 근거로 쓰지 않는다.
 **상태**: 유효
 
+## 2026-08-14 (10) — 대형 import 응답은 compact review를 잃지 않고 소비한다
+
+**관찰**: Locust fresh field-trial에서 237개 파일·277개 file edge·1,153개 external
+import·105개 module-edge 후보가 관측됐다. MCP는 128 KiB 경계를 넘는 결과를
+`automatic_compact` packet으로 축약했지만, CLI가 full 배열만 요구해 정상적인 읽기 결과를
+실패로 처리했다. compact packet에는 의미 승인이 아니라 bounded review queue와 endpoint
+부재·정적 evidence만 있었다.
+
+**결정**: `index`와 `infer-imports`는 compact delivery를 명시된 MCP 계약으로 검증하고
+queue/scan summary/delivery provenance를 보존한다. compact 상태에서는 write를 허용하지
+않고, threshold를 요구한 호출만 `reviewMode: full` + `allowLargeResponse: true`로 완전 배열을
+요청한다. delivery reason, 128 KiB 경계, queue cardinality, next-review의 endpoint modelling,
+source evidence, decision/cursor를 CLI에서도 fail-closed로 검사한다.
+
+**적용 규칙**: compact 수락은 semantic `depends_on` 승인이나 vault write가 아니다. 100+
+후보·노드 수는 구조/transport evidence일 뿐 qualification 점수가 아니다. explicit full이
+필요한 경우에도 source evidence와 human meaning review를 별도 수행한다.
+
+**기록된 반대**: “항상 full payload를 내려 에이전트가 한 번에 읽게 하자”는 의견은 128 KiB
+경계에서 문맥 손실과 재시도 비용을 재현했다. 다만 threshold/full 호출이 필요한 사용자
+경로는 계속 명시적으로 완전 배열을 요청할 수 있다.
+**반증 조건**: compact queue가 실제 MCP schema와 달라 검증을 통과하거나, full opt-in이
+완전 module-edge 배열을 반환하지 않는데도 threshold가 green이 되면 이 계약을 다시 연다.
+**상태**: 유효
+
 ## 2026-08-14 (2) — Skills packet은 독립 source-hidden consumer에서도 닫힌다
 
 **관찰**: 이전 K1.3 검수는 production unit 경로만으로 canonical packet을 확인해
