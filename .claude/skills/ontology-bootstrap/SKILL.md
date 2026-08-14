@@ -167,6 +167,15 @@ Rules:
   than four exact endpoints look useful, choose the few that answer distinct
   competency or impact questions and record the rest as a visible exploration
   gap.
+- **Mine the declared external dependencies before closing the model**
+  (2026-08-14 field trial: "what is the most important external dependency?"
+  was the one onboarding question the vault could not answer at all, while the
+  repository's dependency manifest sat unread). Read the manifest the ecosystem
+  uses (package.json, pyproject/requirements, Cargo.toml, go.mod) and the
+  `externalImports` bucket of the import packet, then record the two or three
+  externals the project cannot work without: either as `external` elements
+  with a one-line "why it matters", or as a named list in the project body.
+  Recording none is allowed only with an explicit visible gap stating why.
 - Prefer the repository's language, but normalize vague slogans and technical
   nouns into precise definitions.
 - Merge synonyms. Split overloaded concepts. Keep genuinely uncertain concepts

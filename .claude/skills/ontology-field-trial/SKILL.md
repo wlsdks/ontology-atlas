@@ -97,6 +97,15 @@ Record, separately:
   output of the whole trial. Both defects found on 2026-08-01 came from this
   list, not from anything the build phase showed.
 
+### Scope-promotion rule
+
+A capability's `Excludes` section bounds **that capability only**. The fresh
+agent must not promote it to project scope: "the store-output capability
+excludes plotting" does not mean "the project has no plotting". Project-level
+scope claims may cite only the project node's own excludes. (2026-08-14 trial:
+the single failed claim of the run was exactly this promotion — the vault was
+right, the handoff answer widened it.)
+
 ### Full-body handoff gate
 
 The list/summary response is a census, not evidence. Before the fresh agent
