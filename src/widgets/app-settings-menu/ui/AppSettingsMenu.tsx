@@ -336,8 +336,9 @@ export function AppSettingsMenu({
     // closePanel owns the return target so ⌘K can intentionally yield focus
     // to the command palette without the modal cleanup stealing it back.
     restoreFocus: false,
-    // 도크는 비모달이다 — 지도를 보며 값을 맞추는 표면이라 지도로 Tab 해 나갈
-    // 수 있어야 한다. 초점을 가두면 키보드 사용자만 그 지도에 못 간다.
+    // ⚠️ trapTab 은 기본 true 다 — 이 시트는 2026-07-30 에 모달+딤으로
+    // 회귀했고(aria-modal="true") Tab 도 실제로 가둔다. 한때 여기 있던
+    // "도크는 비모달" 주석은 그 회귀 전의 것이라 지웠다(오정보).
   });
   const titleId = useId();
   const isDesktopRuntime = isTauriVaultRuntime();
