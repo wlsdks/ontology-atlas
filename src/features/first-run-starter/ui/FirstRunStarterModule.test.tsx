@@ -413,8 +413,9 @@ describe('FirstRunStarterModule', () => {
 
     const dogfoodTab = screen.getByTestId('first-run-starter-sample-source-dogfood');
     const storefrontTab = screen.getByTestId('first-run-starter-sample-source-storefront');
-    expect(storefrontTab).toHaveAttribute('aria-pressed', 'true');
-    expect(dogfoodTab).toHaveAttribute('aria-pressed', 'false');
+    // 2026-08-15 (8) — 배타 단일선택이라 radiogroup + aria-checked 다.
+    expect(storefrontTab).toHaveAttribute('aria-checked', 'true');
+    expect(dogfoodTab).toHaveAttribute('aria-checked', 'false');
 
     // 2026-07-24 구조 개편 — 샘플 선택은 "무엇을 볼지 골랐다"는 신호라
     // 카드가 접히고 INDEX 에 자리를 넘긴다(되돌아오기 1행이 항상 남는다).
@@ -432,7 +433,7 @@ describe('FirstRunStarterModule', () => {
     render(<FirstRunStarterModule concepts={1} relations={1} domains={1} />);
 
     expect(screen.getByTestId('first-run-starter-sample-source-dogfood')).toHaveAttribute(
-      'aria-pressed',
+      'aria-checked',
       'true',
     );
   });
@@ -454,12 +455,21 @@ describe('FirstRunStarterModule', () => {
     expect(screen.queryByTestId('first-run-starter-reopen')).not.toBeInTheDocument();
   });
 
-  it('exposes the sample source as a selection control, not a tablist', () => {
+  it('exposes the sample source as an exclusive selection, not a tablist', () => {
     render(<FirstRunStarterModule concepts={1} relations={1} domains={1} />);
 
     const group = screen.getByTestId('first-run-starter-sample-source');
-    expect(group).toHaveAttribute('role', 'group');
+    /*
+     * 2026-08-02 PO 카운슬이 `role="tab"` 을 반납한 판단은 그대로 유효하다 —
+     * 다만 그때 검토한 대안이 tablist 였지 radiogroup 이 아니었다. 형제에
+     * `aria-pressed` 를 나란히 걸면 배타성이 접근성 트리에 안 실린다.
+     */
+    expect(group).toHaveAttribute('role', 'radiogroup');
     expect(group.querySelectorAll('[role="tab"]')).toHaveLength(0);
+    // 탭 스톱은 체크된 하나뿐이다(roving) — 종전엔 둘 다 탭 스톱이었다.
+    const radios = [...group.querySelectorAll<HTMLElement>('[role="radio"]')];
+    expect(radios).toHaveLength(2);
+    expect(radios.filter((r) => r.tabIndex === 0)).toHaveLength(1);
   });
 
   // 왼쪽부터 읽는다 — 순서가 곧 "무엇을 먼저 권하는가" 다.
@@ -468,7 +478,7 @@ describe('FirstRunStarterModule', () => {
 
     const tabs = screen
       .getByTestId('first-run-starter-sample-source')
-      .querySelectorAll('[aria-pressed]');
+      .querySelectorAll('[role="radio"]');
     expect(tabs[0]).toHaveAttribute(
       'data-testid',
       'first-run-starter-sample-source-storefront',
@@ -485,7 +495,7 @@ describe('FirstRunStarterModule', () => {
     render(<FirstRunStarterModule concepts={1} relations={1} domains={1} />);
 
     expect(screen.getByTestId('first-run-starter-sample-source-storefront')).toHaveAttribute(
-      'aria-pressed',
+      'aria-checked',
       'true',
     );
     expect(screen.getByTestId('first-run-starter-context')).toHaveTextContent(

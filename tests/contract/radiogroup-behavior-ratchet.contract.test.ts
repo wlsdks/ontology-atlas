@@ -63,6 +63,22 @@ const REGISTERED: ReadonlyArray<readonly [file: string, why: string]> = [
   ["src/widgets/project-drawer/ui/ProjectDrawer.tsx", "shape:'pill' + 대문자 mono caption — 값 층 칩 램프의 조합이 아니다"],
   ["src/widgets/atlas-git-panel/ui/CommitDetail.tsx", "tone:'secondary' + 「눌린 칩의 인디고를 덮지 마라」 조건부 보더"],
   ["src/views/docs-vault/ui/parts/DocsSidebarBody.tsx", "bg-canvas 우물 · Chip 아이템 · Tooltip 래퍼 · 켜진 칩만 라벨"],
+  /*
+   * ⚠️ 아래 다섯은 「체계」석 판정에서 **이주 대상**이었다. 실측이 그 배정을
+   * 뒤집었다 — 다섯 다 **값 층에 없는 hover 잉크**를 지고 있어서, 이주하면
+   * 비활성 항목의 hover 피드백이 사라진다. 이 저장소의 hover 는 축이 아니라
+   * 자리마다 손으로 쓰는 것이고(전수: `controlClass` 호출 **312곳**이 hover 를
+   * 손으로 쓴다 — 칩 88 · link 74 · row 42 · card 34 · icon 28 · pill 24 ·
+   * segment 19), 같은 「비활성 세그먼트 hover」 역할에 세 자리가 **서로 다른
+   * 잉크**를 쓴다(`text-primary` · `text-secondary` · `topology-v2-panel-text-primary`).
+   *
+   * 그래서 그릇 수렴은 **hover 축 판정 뒤**로 미룬다. 행동은 지금 다 붙였다.
+   */
+  ["src/views/ontology-insights/ui/tabs/MeaningGapSection.tsx", "비활성 칩 hover — 값 층에 칩 hover 가 없다"],
+  ["src/views/ontology-studio/ui/StudioMaterializeDialog.tsx", "flex-1 균등폭 + tracking-body + 비활성 hover"],
+  ["src/views/ontology-studio/ui/StudioCompass.tsx", "비활성 세그먼트 hover"],
+  ["src/features/ontology-blocks/ui/BlockImportModule.tsx", "p-1/gap-1 인셋 + 비활성 세그먼트 hover"],
+  ["src/features/first-run-starter/ui/FirstRunStarterModule.tsx", "패널 스코프 hover 잉크"],
 ];
 
 /**
@@ -74,11 +90,11 @@ const REGISTERED: ReadonlyArray<readonly [file: string, why: string]> = [
  * 파일은 여전히 훅을 부르므로** 초록이었다. 래칫의 단위가 결함의 단위보다
  * 굵으면 그만큼 못 본다.
  *
- * 오늘 6자리 = AppearancePickers 2 · TopologyIndexPanel 1 · ProjectDrawer 1 ·
- * CommitDetail 1 · DocsSidebarBody 1. 프리미티브 자신은 면제 목록이라 안 들어가고,
- * 「프리미티브가 훅을 쓰는가」는 공회전 방지 시험이 따로 단언한다.
+ * 오늘 **11자리 = 등재 10파일**(그중 `AppearancePickers` 만 그룹이 둘이라 2) 이다.
+ * 프리미티브 파일 자신은 면제 목록이라 이 수에 안 들어가고, 「프리미티브가 훅을
+ * 쓰는가」는 공회전 방지 시험이 따로 단언한다 — 두 자리에서 각각 잠근다.
  */
-const HOOK_ADOPTION_FLOOR = 6;
+const HOOK_ADOPTION_FLOOR = 11;
 
 /**
  * **부채 장부** — 아직 이주도 훅 착용도 안 한 손 radiogroup. 늘 수 없고, 갚으면
@@ -86,9 +102,13 @@ const HOOK_ADOPTION_FLOOR = 6;
  * 에 있다.
  */
 const DEBT: ReadonlyArray<readonly [file: string, count: number]> = [
-  // 우물 이주 대상 — 프리미티브 컨테이너와 거의 같은데 `p-1`/`gap-1` 이다.
-  // 그 값은 프리미티브 머리말이 이미 재고 기각한 값이라 이주하면 픽셀이 움직인다.
-  ["src/features/ontology-blocks/ui/BlockImportModule.tsx", 1],
+  /*
+   * ✅ **비어 있다 (2026-08-15).** 프리미티브 밖에서 손으로 건
+   * `role="radiogroup"` 이 **0** 이고, 배타 선택을 `aria-pressed` 로 표현하던
+   * 9그룹도 전부 재문법됐다. 행동 층 결함 18/18 → **0/18.**
+   *
+   * 남은 것은 **그릇**의 수렴이고 그건 결함이 아니라 설계 과제다(위 등재).
+   */
 ];
 
 function walk(dir: string, out: string[] = []): string[] {

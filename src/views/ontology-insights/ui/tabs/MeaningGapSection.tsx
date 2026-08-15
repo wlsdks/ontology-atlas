@@ -16,6 +16,7 @@ import {
   type QueueRowAbilities,
   type QueueRowActionLabels,
 } from "../parts/QueueRowActions";
+import { useRovingRadioGroup } from "@/shared/lib/use-roving-radio-group";
 import { InsightsSectionTitle } from "../parts/InsightsSectionTitle";
 
 /**
@@ -313,6 +314,26 @@ function MeaningGapRowView({
 }) {
   const saved = ui.phase.kind === "saved";
   const saving = ui.phase.kind === "saving";
+
+  /*
+   * 도메인 칩 — **배타 단일선택**이다(단일 값이고 재클릭으로 해제되지 않는다).
+   * 종전엔 형제에 `aria-pressed` 를 나란히 걸어 배타성이 접근성 트리에 안
+   * 실렸다. 초기값이 빈 문자열이라 처음엔 아무것도 안 눌려 있는데, 그건
+   * **미선택 라디오그룹**의 정당한 모양이고 훅이 그 경우 첫 항목을 탭 스톱으로
+   * 삼는다(APG).
+   *
+   * ⚠️ 그릇은 자리에 남는다 — 「체계」석 판정은 이 자리를 `variant='chips'`
+   * 이주 대상으로 봤지만, 재 보니 **값 층에 칩 hover 가 없다**(전수: `controlClass`
+   * 호출 312곳이 hover 를 손으로 쓰고 그중 칩이 88). 이주하면 비활성 칩의
+   * hover 피드백이 사라져 「눌리는 것처럼 안 보이는」 회귀가 된다. hover 를
+   * 값 층이 질지는 별도 라운드의 판정이다.
+   */
+  const domainGroup = useRovingRadioGroup({
+    value: ui.value,
+    values: domainChoices.map((c) => c.value),
+    onChange: (value) => onPatch({ value, cancelArmed: false }),
+    busy: saving,
+  });
   // 저장 확인 중에도 영역은 열려 있어야 한다 — 폼이 사라지고 확인 줄이
   // 들어오는 것이 같은 하나의 높이 전이를 지나야 "이 행이 고쳐진 행이 됐다"
   // 로 읽힌다(툭 접히면 그냥 다른 화면이다).
@@ -469,18 +490,15 @@ function MeaningGapRowView({
                       <legend className="pb-1 text-label text-[color:var(--color-text-quaternary)]">
                         {labels.domainLegend}
                       </legend>
-                      <div className="flex flex-wrap gap-1.5">
-                        {domainChoices.map((choice) => {
+                      <div {...domainGroup.groupProps} aria-label={labels.domainLegend} className="flex flex-wrap gap-1.5">
+                        {domainChoices.map((choice, index) => {
                           const active = ui.value === choice.value;
                           return (
                             <button
                               key={choice.value}
+                              {...domainGroup.itemProps(index)}
                               type="button"
                               data-testid="meaning-gap-domain-chip"
-                              aria-pressed={active}
-                              onClick={() =>
-                                onPatch({ value: choice.value, cancelArmed: false })
-                              }
                               /* 여기는 **선택**이다(`aria-pressed` 와 짝) —
                                  그래서 잉크를 손으로 쓰지 않고 램프의 `active`
                                  를 쓴다. 눌림은 이 앱 전역에서 한 벌이어야

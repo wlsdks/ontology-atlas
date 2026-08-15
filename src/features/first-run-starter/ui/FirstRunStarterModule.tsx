@@ -17,6 +17,7 @@ import { useLatinEyebrow } from "@/shared/lib/latin-eyebrow";
 import { useSampleSource } from "@/features/vault-sample-source";
 import { VaultOpenGuideSheet } from "@/features/docs-vault-local";
 import { CompactCopyButton, controlClass } from "@/shared/ui";
+import { useRovingRadioGroup } from "@/shared/lib/use-roving-radio-group";
 
 import { useFirstRunStarter } from "../model/use-first-run-starter";
 import {
@@ -158,6 +159,26 @@ export function FirstRunStarterModule({
   // INDEX 에 자리를 넘길지. 사용자가 "무엇을 볼지" 를 고른 순간(샘플 전환)
   // 접어 데이터로 넘긴다. dismiss 는 세션 영구, 이건 세션 내 토글.
   const [collapsed, setCollapsed] = useState(false);
+
+  /*
+   * 예시 출처 — **배타 단일선택**이다. 2026-08-02 PO 카운슬이 `role="tab"` 을
+   * 반납하고 `aria-pressed` 로 바로잡았는데, **그때 검토한 대안이 tablist 였지
+   * radiogroup 이 아니었다.** 형제에 pressed 를 나란히 걸면 배타성이 접근성
+   * 트리에 안 실린다(2026-08-15 (3)). 「같은 선택의 재클릭은 아무 일도 하지
+   * 않는다」는 그때의 계약은 훅이 그대로 지킨다 — 값이 실제로 바뀔 때만
+   * `onChange` 가 불린다.
+   *
+   * ⚠️ 그릇은 자리에 남는다 — 비활성 세그먼트가 값 층에 없는 hover 잉크
+   * (`--topology-v2-panel-text-primary`)를 진다. 이주하면 그 피드백이 사라진다.
+   */
+  const sampleSourceGroup = useRovingRadioGroup<"storefront" | "dogfood">({
+    value: sampleSource,
+    values: ["storefront", "dogfood"],
+    onChange: (next) => {
+      setSampleSource(next);
+      setCollapsed(true);
+    },
+  });
   /*
    * 렌즈가 켜지면 카드를 접어 INDEX 에 자리를 넘긴다(위 `lensActive` 주석).
    *
@@ -358,7 +379,7 @@ export function FirstRunStarterModule({
           를 선택 컨트롤(`aria-pressed`)로 바로잡고, 같은 선택의 재클릭은
           아무 일도 하지 않는다. */}
       <div
-        role="group"
+        {...sampleSourceGroup.groupProps}
         aria-label={t("sampleSourceAria")}
         data-testid="first-run-starter-sample-source"
         className="mb-2 grid shrink-0 grid-cols-2 gap-1 rounded-[var(--chrome-radius-inner)] border border-[color:var(--topology-v2-panel-border)] bg-[color:var(--color-overlay-1)] p-1"
@@ -371,18 +392,13 @@ export function FirstRunStarterModule({
             { source: "storefront", label: "sampleSourceStorefront", tip: "sampleSourceStorefrontTip" },
             { source: "dogfood", label: "sampleSourceDogfood", tip: "sampleSourceDogfoodTip" },
           ] as const
-        ).map(({ source, label, tip }) => (
+        ).map(({ source, label, tip }, index) => (
           <button
             key={source}
+            {...sampleSourceGroup.itemProps(index)}
             type="button"
-            aria-pressed={sampleSource === source}
             title={t(tip)}
             data-testid={`first-run-starter-sample-source-${source}`}
-            onClick={() => {
-              if (source === sampleSource) return;
-              setSampleSource(source);
-              setCollapsed(true);
-            }}
             /* 보더 없는 인셋 + 패널 잉크 + 말줄임 — 축 셋이 이 한 자리에서
                정확히 맞는다. `--chrome-radius-inner` 는 `--radius-chip` 의
                별칭이라 반경도 그대로다(픽셀 변화 0). */

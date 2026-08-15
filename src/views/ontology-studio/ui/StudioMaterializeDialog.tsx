@@ -6,6 +6,7 @@ import { ICON_SIZE } from "@/shared/ui/icon-size";
 import type { CreateNodeKind } from "../lib/build-create-node";
 import type { StudioWriteTarget } from "../lib/resolve-write-target";
 import { Dialog, controlClass } from "@/shared/ui";
+import { useRovingRadioGroup } from "@/shared/lib/use-roving-radio-group";
 
 /**
  * "이 개념은 아직 문서가 없어요" — 문서를 만들어도 되는지 묻는 동의 표면.
@@ -57,6 +58,21 @@ export function StudioMaterializeDialog({
   // 종류를 못 정한 개념(예: 이름만 적힌 `relates:` 항목)은 우리가 지어내지
   // 않는다 — 사용자가 고른다. 아는 경우엔 묻지 않는다.
   const [kind, setKind] = useState<CreateNodeKind>(target.kind ?? "element");
+
+  /*
+   * kind 칩 — **배타 단일선택**이다(초기값이 항상 있어 하나가 참이고, 재클릭으로
+   * 해제되지 않는다). 종전엔 형제에 `aria-pressed` 를 나란히 걸어 배타성이
+   * 접근성 트리에 안 실렸다.
+   *
+   * ⚠️ 그릇은 자리에 남는다 — 이 칩들은 값 층이 안 내는 것 셋을 진다(`flex-1`
+   * 균등폭 · `tracking-body` · 비활성 hover). 특히 hover 는 값 층에 칩 hover 가
+   * 아예 없어서 생긴 것이고(전수 312곳/칩 88), 이주하면 그 피드백이 사라진다.
+   */
+  const kindGroup = useRovingRadioGroup<CreateNodeKind>({
+    value: kind,
+    values: KIND_CHOICES,
+    onChange: setKind,
+  });
   const confirmRef = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
@@ -121,16 +137,15 @@ export function StudioMaterializeDialog({
               <span className="text-label tracking-label text-[color:var(--color-text-tertiary)]">
                 {labels.kindPrompt}
               </span>
-              <div className="flex gap-1.5">
-                {KIND_CHOICES.map((option) => {
+              <div {...kindGroup.groupProps} aria-label={labels.kindLabel} className="flex gap-1.5">
+                {KIND_CHOICES.map((option, index) => {
                   const on = option === kind;
                   return (
                     <button
                       key={option}
+                      {...kindGroup.itemProps(index)}
                       type="button"
                       data-testid={`studio-materialize-kind-${option}`}
-                      aria-pressed={on}
-                      onClick={() => setKind(option)}
                       className={controlClass({
                         shape: "chip",
                         size: "lg",
