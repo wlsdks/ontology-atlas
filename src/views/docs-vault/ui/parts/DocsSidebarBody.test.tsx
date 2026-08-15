@@ -52,7 +52,7 @@ function renderSidebar(
   const onCreateNewDoc = vi.fn();
   const onSortChange = vi.fn();
   const onGroupChange = vi.fn();
-  render(
+  const view = render(
     <NextIntlClientProvider locale="ko" messages={koMessages}>
       <DocsSidebarBody
         pinnedSlugs={[]}
@@ -84,7 +84,7 @@ function renderSidebar(
       />
     </NextIntlClientProvider>,
   );
-  return { onSelect, onCreateNewDoc, onSortChange, onGroupChange };
+  return { ...view, onSelect, onCreateNewDoc, onSortChange, onGroupChange };
 }
 
 describe("DocsSidebarBody — 최근 바뀐 문서 (목록 안 조용한 섹션, 기본 접힘)", () => {
@@ -408,5 +408,83 @@ describe("DocsSidebarBody — 목록 순서 메뉴", () => {
     const menu = screen.getByTestId("docs-sidebar-order-menu");
     expect(menu).toHaveAttribute("data-surface-state", "exiting");
     expect(menu).toHaveAttribute("inert");
+  });
+});
+
+/**
+ * 레일 버튼이 **무슨 상태를 말하나** — 세 소비처가 서로 다른 셋이다 (2026-08-15).
+ *
+ * 이 시험들이 없어서 결함이 살았다. 위의 20개는 «눌리나 · 무엇이 열리나»만
+ * 봤고 접근성 트리에 무엇이 실리는지는 **한 번도 보지 않았다.** 그 사이
+ * `RailIconButton` 은 `aria-pressed={active}` 를 무조건 붙이고 있었고,
+ * `controls.tsx` 의 `Chip` 머리말이 이미 금지해 둔 그 자동 묶기였다.
+ *
+ * lint 도 axe 도 이걸 못 본다: 없는 속성은 셀렉터로 잡을 수 없고,
+ * `button[aria-pressed]` 는 axe 에게 완벽히 유효한 마크업이다. 「이 버튼이
+ * 정말 토글인가」는 **핸들러가 무엇을 하는지**에 달렸고, 그건 재야 안다.
+ */
+describe("DocsSidebarBody — 레일 버튼의 상태 어휘", () => {
+  const orderTree: VaultManifest["tree"] = {
+    name: "root",
+    path: "",
+    type: "dir",
+    children: [
+      { name: "architecture", path: "architecture.md", type: "doc", slug: "architecture", title: "Architecture" },
+    ],
+  };
+  const orderDocs = [makeDoc("architecture", "Architecture", new Date().toISOString())];
+
+  it("새 문서는 행동이다 — 눌림 상태를 낭독하지 않는다", () => {
+    renderSidebar([], { canCreateNewDoc: true });
+    const button = screen.getByTestId("docs-sidebar-new-doc");
+    // 종전: aria-pressed="false" 를 계속 낭독했다. 이 버튼에는 눌림 상태가
+    // 존재하지 않는다 — 누르면 다이얼로그가 열리거나 폴더 열기로 간다.
+    expect(button).not.toHaveAttribute("aria-pressed");
+    expect(button).not.toHaveAttribute("aria-expanded");
+  });
+
+  it("거르기는 토글이다 — 켜고 끄는 상태를 낭독한다", () => {
+    renderSidebar([]);
+    const button = screen.getByTestId("docs-sidebar-search-toggle");
+    expect(button).toHaveAttribute("aria-pressed", "false");
+    fireEvent.click(button);
+    expect(screen.getByTestId("docs-sidebar-search-toggle")).toHaveAttribute("aria-pressed", "true");
+  });
+
+  it("정렬은 메뉴를 여는 버튼이다 — expanded/haspopup 이지 pressed 가 아니다", () => {
+    renderSidebar(orderDocs, { tree: orderTree });
+    const button = screen.getByTestId("docs-sidebar-order-toggle");
+    expect(button).not.toHaveAttribute("aria-pressed");
+    expect(button).toHaveAttribute("aria-haspopup", "menu");
+    expect(button).toHaveAttribute("aria-expanded", "false");
+    fireEvent.click(button);
+    expect(screen.getByTestId("docs-sidebar-order-toggle")).toHaveAttribute("aria-expanded", "true");
+  });
+
+  /**
+   * 이 시험이 이 라운드의 핵심이다 — **보이는 상태와 말해지는 상태가 실제로
+   * 갈린다.** 종전엔 `aria-pressed={orderMenuOpen || !orderIsDefault}` 로 둘을
+   * 한 값에 섞어서, 메뉴를 닫아도 정렬이 기본이 아니면 「눌림」이 남았다.
+   */
+  it("정렬이 기본이 아니면 인디고는 켜지고, 그래도 메뉴는 닫혀 있다고 말한다", () => {
+    /*
+     * 특정 클래스 이름을 못박지 않는다 — 값 층이 램프를 고치면 그 시험은
+     * 내용이 맞는데도 빨개진다(`documentation.md`: 사람이 쓴 문자열을 핀으로
+     * 박지 않는다). 여기서 잠그는 것은 **두 사실이 갈렸다**는 성질이다:
+     * 보이는 것은 정렬에 따라 바뀌고, 말해지는 것은 메뉴 상태만 따른다.
+     */
+    const { unmount } = renderSidebar(orderDocs, { tree: orderTree });
+    const atDefault = screen.getByTestId("docs-sidebar-order-toggle");
+    const defaultClass = atDefault.className;
+    expect(atDefault).toHaveAttribute("aria-expanded", "false");
+    unmount();
+
+    renderSidebar(orderDocs, { tree: orderTree, sort: "recent" });
+    const atRecent = screen.getByTestId("docs-sidebar-order-toggle");
+    // 보이는 상태는 바뀌었다 — 정렬이 기본이 아니라고 인디고가 말한다.
+    expect(atRecent.className).not.toBe(defaultClass);
+    // 말해지는 상태는 그대로다 — 메뉴는 여전히 닫혀 있다. 종전엔 여기가
+    // aria-pressed="true" 로 뒤집혀 「눌린 버튼」이 됐다.
+    expect(atRecent).toHaveAttribute("aria-expanded", "false");
   });
 });
