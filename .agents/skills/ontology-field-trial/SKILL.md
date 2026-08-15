@@ -126,6 +126,13 @@ Use these bounded labels:
 - `not_measured`: use for a suspected conflict when no trusted contradiction is
   present. Ambiguity is not a conflict.
 
+An `[observed · impact]` review question is still `weak` for q5: it proves that
+bounded production import evidence was found, but it does not by itself prove
+that an ontology `depends_on` relation should be accepted. The next action is
+to inspect the bounded `infer_imports` evidence and validate the exact proposal
+witness; absence of an impact question is never evidence of a complete impact
+answer.
+
 For H2, Axios, and Undici, compare before/after on two independent axes:
 
 1. **Body transport equality** — exact review-plan bodies, order, digests,

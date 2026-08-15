@@ -2410,6 +2410,37 @@ test('Meaning gate measures dependency impact only when multiple elements lack t
   }
 });
 
+test('Meaning gate reuses bounded JS/TS import evidence for impact', () => {
+  const root = withRepo((r) => {
+    writeFileSync(join(r, 'package.json'), JSON.stringify({ name: 'typed-impact' }));
+    writeFileSync(join(r, 'README.md'), '# Typed Impact\n\n## Requests\n');
+    mkdirSync(join(r, 'src/features/request'), { recursive: true });
+    mkdirSync(join(r, 'src/entities/http'), { recursive: true });
+    writeFileSync(
+      join(r, 'src/features/request/index.ts'),
+      "import { send } from '../../entities/http/index';\nexport const request = () => send();\n",
+    );
+    writeFileSync(
+      join(r, 'src/entities/http/index.ts'),
+      'export const send = () => true;\n',
+    );
+  });
+  try {
+    const result = analyzeRepoStructure(root);
+    assert.equal(
+      result.meaningGate.reviewQuestions.some((question) =>
+        question.startsWith('[not-measured · impact]')),
+      false,
+    );
+    assert.ok(
+      result.meaningGate.reviewQuestions.some((question) =>
+        question.startsWith('[observed · impact] 1 typed production import boundary')),
+    );
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
 test('Meaning gate asks for policy-evidence review without calling risk a conflict', () => {
   const root = withRepo((r) => {
     writeFileSync(join(r, 'package.json'), JSON.stringify({ name: 'policy-risk' }));
