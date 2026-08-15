@@ -769,8 +769,9 @@ Defined via Tailwind 4's CSS-based `@theme`. See `app/globals.css` for the actua
 
 ### Signal tones (3, symmetric ladders)
 
-Design Guardian verdict, `.qa-scratch/audit-2026-07/guardian-color-verdict.md`
-§① (2026-07-20): **신호 톤은 3종이다 — warning(amber) · error(red) ·
+Design Guardian verdict §① (2026-07-20) — 그 판정의 작업 파일은 gitignore 된
+`.qa-scratch/` 에 있었고 저장소에 없다. **아래 문단이 살아남은 정본이다**:
+**신호 톤은 3종이다 — warning(amber) · error(red) ·
 success(emerald).** Each is a solid status dot plus a symmetric
 surface/border/text alpha ladder built on ONE hue. These are the only
 chroma exceptions to the neutrals + single-indigo charter; they explain
@@ -861,8 +862,9 @@ faces 13 → **1** (the nav-rail brand mark), chroma area 32,987px² → 36px².
 insights 구성 tab keeps 4 kind-tone faces, all inside the 종류 census card where
 the unlabelled stack strip has no other channel. `/ko/project/[slug]` renders
 zero. None of these is `--color-status-success`; a green **status dot** would be,
-and that is a separate, sanctioned signal. Decision record:
-`.qa-scratch/domain-bar-color-2026-07-26.md`.
+and that is a separate, sanctioned signal. 판정 2026-07-26(소유자 확정) —
+작업 파일은 gitignore 된 `.qa-scratch/` 에 있었고 저장소에 없다. 실측과 근거는
+`.claude/rules/design.md` 「막대 채색」 문단이 옮겨 적어 두었다.
 
 ### Borders
 
@@ -3727,7 +3729,8 @@ system in consuming apps."*
 
 ### 확장 — 접힌 묶음을 어떻게 펼치나 (2026-08-01 신설 · 2026-08-02 개정)
 
-시안 `.qa-scratch/proto-expand.html` 의 좌측 계측 패널을 그대로 이식했다. 같은
+시안(gitignore 된 `.qa-scratch/` 의 프로토타입 — 저장소에 없다)의 좌측 계측
+패널을 그대로 이식했다. 같은
 `appearance-preferences` 스토어(`ontology-atlas:expand:v1`)를 쓰고, 지도 캔버스가
 매 프레임 ref 미러로 읽어 **다음 프레임부터** 반영된다.
 

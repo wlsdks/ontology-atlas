@@ -1065,7 +1065,8 @@ const eslintConfig = defineConfig([
     },
   },
   // 도메인 용량 막대는 kind 팔레트를 쓰지 않는다 (소유자 확정 2026-07-26,
-  // `.qa-scratch/domain-bar-color-2026-07-26.md`).
+  // 2026-07-26 소유자 확정 — 실측과 근거는 `.claude/rules/design.md` 「막대
+  // 채색」 문단. 원본 작업 파일은 gitignore 된 `.qa-scratch/` 라 저장소에 없다).
   //
   // 이 막대의 두 조각은 순서(역량이 늘 왼쪽) + 단위어 + 바로 옆 숫자가 이미
   // 정체를 나른다. 거기에 kind 색을 얹으면 중복 잉크인데, 하필 그 쌍(앰버
@@ -1091,7 +1092,7 @@ const eslintConfig = defineConfig([
             {
               group: ['@/entities/ontology-class', '@/entities/ontology-class/**'],
               message:
-                '도메인 용량 막대는 kind 팔레트를 쓰지 않습니다 — 조각의 정체는 순서·단위어·숫자가 나르고, 채색은 `--color-indigo-brand` + `--color-text-quaternary` + 1px 심입니다. 근거: `.qa-scratch/domain-bar-color-2026-07-26.md`.',
+                '도메인 용량 막대는 kind 팔레트를 쓰지 않습니다 — 조각의 정체는 순서·단위어·숫자가 나르고, 채색은 `--color-indigo-brand` + `--color-text-quaternary` + 1px 심입니다. 근거: `.claude/rules/design.md` 「막대 채색」 문단(2026-07-26 소유자 확정).',
             },
           ],
         },
