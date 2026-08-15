@@ -30,7 +30,7 @@ high (README + AGENTS.md 직접 인용)
 
 ## Competency answers
 
-### scope — answered
+### scope: answered
 
 What product/system outcome and user problem define the ontology scope?
 
@@ -39,7 +39,7 @@ Ontology Atlas helps people and AI coding agents preserve and judge one shared, 
 - Concepts: `ontology-atlas`
 - Evidence: `README.md`
 
-### domains — answered
+### domains: answered
 
 Which stable business responsibilities or decision boundaries form its domains?
 
@@ -49,7 +49,7 @@ Seven stable responsibility boundaries cover agent integration, design-system st
 - Relations: `ontology-atlas` --contains--> `domains/agent-integration`, `ontology-atlas` --contains--> `domains/design-system`, `ontology-atlas` --contains--> `domains/graph-modeling`, `ontology-atlas` --contains--> `domains/local-vault-management`, `ontology-atlas` --contains--> `domains/onboarding-and-shell`, `ontology-atlas` --contains--> `domains/project-portfolio`, `ontology-atlas` --contains--> `domains/topology-navigation`
 - Evidence: `README.md`
 
-### abilities — partial
+### abilities: partial
 
 Which observable abilities realize those outcomes inside each domain?
 
@@ -60,7 +60,7 @@ The agent-integration domain exposes an MCP server and terminal workflow that le
 - Evidence: `mcp/src`, `cli/src`
 - Gap: This answer covers only the agent-integration domain; the other contained domains still need typed capability witnesses here.
 
-### evidence — partial
+### evidence: partial
 
 Which source artifacts provide implementation evidence for each ability?
 
@@ -71,7 +71,7 @@ The MCP and CLI source entrypoints are exact repository witnesses for the agent-
 - Paths: `mcp/src`, `cli/src`
 - Gap: This answer covers only the MCP and CLI abilities; the remaining contained capabilities still need canonical path witnesses here.
 
-### impact — answered
+### impact: answered
 
 Which typed dependencies explain change impact across the model?
 

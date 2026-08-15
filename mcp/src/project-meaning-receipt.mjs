@@ -156,7 +156,7 @@ export function renderProjectCompetencyMarkdown(answers) {
       typeof gap === 'string' && gap.trim() ? `- Gap: ${gap}` : null,
     ].filter(Boolean);
     return [
-      `### ${id} — ${status}`,
+      `### ${id}: ${status}`,
       '',
       question,
       '',
@@ -217,9 +217,9 @@ export function parseProjectCompetencyMarkdown(body) {
 
   const questions = headingMatches.map((match, index) => {
     const contract = MEANING_COMPETENCY_QUESTIONS[index];
-    const expectedHeading = `${contract.id} — `;
-    if (!match[1].startsWith(expectedHeading)) fail('competency ids must be fixed and ordered');
-    const status = match[1].slice(expectedHeading.length);
+    const heading = new RegExp(`^${contract.id}(?::| —) (.+)$`).exec(match[1]);
+    if (!heading) fail('competency ids must be fixed and ordered');
+    const status = heading[1];
     if (!QUESTION_STATUSES.has(status)) fail(`${contract.id} status is unknown`);
     const blockStart = match.index + match[0].length;
     const blockEnd = headingMatches[index + 1]?.index ?? content.length;
