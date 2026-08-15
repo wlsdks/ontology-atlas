@@ -12,6 +12,7 @@ import {
   isTauriVaultRuntime,
   pickTauriVaultDirectory,
 } from "@/shared/lib/tauri-vault-fs";
+import { useRovingRadioGroup } from "@/shared/lib/use-roving-radio-group";
 import { controlClass } from "@/shared/ui/control-class";
 import { IconButton } from "@/shared/ui/controls";
 import { useLocalVault } from "@/features/docs-vault-local";
@@ -51,6 +52,21 @@ export function BlockImportModule() {
   const { status, manifest, createDoc } = useLocalVault();
   const [preview, setPreview] = useState<PreviewSource | null>(null);
   const [resolution, setResolution] = useState<BlockConflictResolution>("skip");
+
+  /*
+   * 충돌 해결 선택 — role 은 이미 옳았는데 **화살표 이동이 없었다**(약속만 하고
+   * 아무 일도 안 일어남).
+   *
+   * ⚠️ 그릇은 자리에 남는다 — 이 컨테이너는 프리미티브 캐노니컬과 거의 같은데
+   * `p-1`/`gap-1` 이고(캐노니컬은 `p-px`/`gap-px`), 비활성 세그먼트가 값 층에
+   * 없는 hover 잉크를 진다. 인셋만이면 이주가 맞지만 hover 가 함께 걸려 있어
+   * 그릇 수렴은 hover 축 판정 뒤로 미룬다(2026-08-15 (8) 후속).
+   */
+  const resolutionGroup = useRovingRadioGroup<BlockConflictResolution>({
+    value: resolution,
+    values: ["skip", "prefix"],
+    onChange: setResolution,
+  });
   const [busy, setBusy] = useState(false);
   const [inlineText, setInlineText] = useState<{ kind: "done" | "error"; text: string } | null>(
     null,
@@ -333,16 +349,14 @@ export function BlockImportModule() {
                         ))}
                       </ul>
                       <div
-                        role="radiogroup"
+                        {...resolutionGroup.groupProps}
                         aria-label={t("resolutionLabel")}
                         className="mt-2.5 grid grid-cols-2 gap-1 rounded-[var(--chrome-radius-inner)] border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] p-1"
                       >
                         <button
+                          {...resolutionGroup.itemProps(0)}
                           type="button"
-                          role="radio"
-                          aria-checked={resolution === "skip"}
                           data-testid="block-import-resolution-skip"
-                          onClick={() => setResolution("skip")}
                           className={controlClass({
                             shape: "segment",
                             truncate: true,
@@ -353,11 +367,9 @@ export function BlockImportModule() {
                           {t("resolutionSkip")}
                         </button>
                         <button
+                          {...resolutionGroup.itemProps(1)}
                           type="button"
-                          role="radio"
-                          aria-checked={resolution === "prefix"}
                           data-testid="block-import-resolution-prefix"
-                          onClick={() => setResolution("prefix")}
                           className={controlClass({
                             shape: "segment",
                             truncate: true,

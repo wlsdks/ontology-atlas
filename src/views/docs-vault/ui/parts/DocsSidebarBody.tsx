@@ -36,6 +36,7 @@ import {
 import { resolveLocaleDisplayName } from "@/shared/lib/locale-display-name";
 import { Chip, IconButton, RowButton, Surface, Tooltip, controlClass } from "@/shared/ui";
 import { fieldClass } from '@/shared/ui/control-class';
+import { useRovingRadioGroup } from "@/shared/lib/use-roving-radio-group";
 
 /**
  * DocsVaultPage 의 사이드바 본문 — machined 파일 트리 (docs-vault-final spec).
@@ -319,6 +320,25 @@ export function DocsSidebarBody({
     ).length;
   }, [manifest.docs, normalizedTreeQuery]);
   const collectionOptions: DocsVaultCollection[] = ["all", "guides", "ontology"];
+
+  /*
+   * 컬렉션 칩 — **배타 단일선택**이다(`collection` 이 단일 값이고, 고른 것을 다시
+   * 눌러도 해제되지 않는다). 종전엔 `role="group"` + 형제 `aria-pressed` 였다.
+   *
+   * 그 선택에는 기록된 근거가 있었다 — 바로 위 주석이 `tablist` 를 반납한
+   * 이유를 적어 뒀다. **그 판단은 여전히 옳다.** 다만 그때 검토한 대안이
+   * tablist 였지 radiogroup 이 아니었고, 배타성을 접근성 트리에 싣는 것은
+   * radiogroup 의 일이다(2026-08-15 (3)).
+   *
+   * 그릇은 자리에 남는다 — `bg-canvas` 우물 · `p-0.5`/`gap-0.5` · 아이템이
+   * `Chip` · `Tooltip` 래퍼 · 「켜진 칩만 라벨을 보여 준다」 다섯이 프리미티브의
+   * 두 캐노니컬 어디에도 안 맞는다(2026-08-15 (8) 등재).
+   */
+  const collectionGroup = useRovingRadioGroup({
+    value: collection,
+    values: collectionOptions,
+    onChange: onCollectionChange,
+  });
   const collectionIcons: Record<DocsVaultCollection, ReactNode> = {
     all: <Files size={ICON_SIZE.md} aria-hidden />,
     guides: <BookOpen size={ICON_SIZE.md} aria-hidden />,
@@ -359,11 +379,11 @@ export function DocsSidebarBody({
           말한다 — 상태와 액션이 한 줄에 섞여 있던 것이 복잡도의 절반이다.
         */}
         <div
-          role="group"
+          {...collectionGroup.groupProps}
           aria-label={t("collectionAriaLabel")}
           className="flex min-w-0 flex-none items-center gap-0.5 rounded-chip border border-[color:var(--color-border-soft)] bg-[color:var(--color-canvas)] p-0.5"
         >
-          {collectionOptions.map((option) => {
+          {collectionOptions.map((option, index) => {
             const isActive = collection === option;
             const tooltip = t(`collection.${option}.tooltip`, {
               count: collectionCounts[option],
@@ -371,12 +391,11 @@ export function DocsSidebarBody({
             return (
               <Tooltip key={option} content={tooltip}>
                 <Chip
+                  {...collectionGroup.itemProps(index)}
                   data-testid={`docs-sidebar-collection-${option}`}
                   aria-label={tooltip}
-                  aria-pressed={isActive}
                   active={isActive}
                   tone={isActive ? "strong" : "muted"}
-                  onClick={() => onCollectionChange(option)}
                   className="min-w-0 flex-none hover:text-[color:var(--color-text-primary)]"
                 >
                   {collectionIcons[option]}

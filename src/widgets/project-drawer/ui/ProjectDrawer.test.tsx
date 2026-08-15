@@ -99,10 +99,10 @@ describe("ProjectDrawer 임팩트 모드 도움말 (rank16)", () => {
   it("4개 모드 필이 서로 다른 title(도움말)을 갖는다", () => {
     renderDrawer();
 
-    const none = screen.getByRole("button", { name: /^기본 —/ });
-    const upstream = screen.getByRole("button", { name: /^의존 —/ });
-    const downstream = screen.getByRole("button", { name: /^영향 —/ });
-    const network = screen.getByRole("button", { name: /^네트워크 —/ });
+    const none = screen.getByRole("radio", { name: /^기본 —/ });
+    const upstream = screen.getByRole("radio", { name: /^의존 —/ });
+    const downstream = screen.getByRole("radio", { name: /^영향 —/ });
+    const network = screen.getByRole("radio", { name: /^네트워크 —/ });
 
     const titles = [none, upstream, downstream, network].map((btn) =>
       btn.getAttribute("title"),
@@ -115,8 +115,8 @@ describe("ProjectDrawer 임팩트 모드 도움말 (rank16)", () => {
   it("의존/영향 필의 aria-label 이 rank13 방향 어휘를 그대로 쓴다", () => {
     renderDrawer();
 
-    const upstream = screen.getByRole("button", { name: /^의존 —/ });
-    const downstream = screen.getByRole("button", { name: /^영향 —/ });
+    const upstream = screen.getByRole("radio", { name: /^의존 —/ });
+    const downstream = screen.getByRole("radio", { name: /^영향 —/ });
 
     expect(upstream.getAttribute("aria-label")).toContain("필요한 대상");
     expect(downstream.getAttribute("aria-label")).toContain("필요로 하는 대상");
@@ -133,7 +133,7 @@ describe("ProjectDrawer 임팩트 모드 도움말 (rank16)", () => {
         "강조 없이 현재 노드만 봅니다",
       ),
     ).toBeInTheDocument();
-    fireEvent.click(screen.getByRole("button", { name: /^의존 —/ }));
+    fireEvent.click(screen.getByRole("radio", { name: /^의존 —/ }));
     expect(onChangeImpactMode).toHaveBeenCalledWith("upstream");
     first.unmount();
 

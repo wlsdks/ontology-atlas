@@ -18,6 +18,7 @@ import { ICON_SIZE } from "@/shared/ui/icon-size";
 import { cn } from "@/shared/lib/cn";
 import { studioBoardScale } from "../lib/board-scale";
 import { usePrefersReducedMotion } from "@/shared/lib/use-prefers-reduced-motion";
+import { useRovingRadioGroup } from "@/shared/lib/use-roving-radio-group";
 import { IconButton, Select, controlClass } from "@/shared/ui";
 import type {
   StudioBearing,
@@ -1702,6 +1703,25 @@ function CenterCard(
 ) {
   const { mode, focal, cardH, cardTop, cardLeft, bearings, activeBearing } = props;
   const [defExpanded, setDefExpanded] = useState(false);
+
+  /*
+   * kind 세그먼트 — **배타 단일선택**이다(단일 값이고 재클릭으로 해제되지
+   * 않는다). 종전엔 `role="group"` + 형제 `aria-pressed` 라 배타성이 접근성
+   * 트리에 안 실렸고 화살표 이동도 없었다.
+   *
+   * ⚠️ 그릇은 자리에 남는다(2026-08-15 (8) 판정에서 정정). 판정은 이 자리를
+   * `SegmentedControl` 이주 대상으로 봤는데, 재 보니 비활성 세그먼트가
+   * **값 층에 없는 hover 잉크**를 진다. 그건 이 자리만의 사정이 아니라
+   * 전수 결과다 — `controlClass` 호출 **312곳이 hover 를 손으로 쓰고**
+   * (칩 88 · segment 19), 같은 「비활성 세그먼트 hover」 역할에 세 자리가
+   * **서로 다른 잉크**를 쓴다. 이주하면 그 피드백이 사라진다.
+   */
+  const createKindGroup = useRovingRadioGroup<string>({
+    value: props.createKind ?? "",
+    values: (props.createKinds ?? []).map((k) => k.value),
+    onChange: (value) => props.onCreateKind?.(value as never),
+  });
+
   const definition = focal.definition || "";
   const definitionLong = definition.length > 120;
   const borderFor = (bearing: StudioBearing) => {
@@ -1746,17 +1766,16 @@ function CenterCard(
               {props.labels.createKindLabel}
             </span>
             <div
-              role="group"
+              {...createKindGroup.groupProps}
               aria-labelledby={CREATE_KIND_LABEL_ID}
               className="flex gap-1 rounded-chip border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] p-[3px]"
             >
-            {props.createKinds.map((k) => (
+            {props.createKinds.map((k, index) => (
               <button
                 key={k.value}
+                {...createKindGroup.itemProps(index)}
                 type="button"
                 data-testid={`studio-create-kind-${k.value}`}
-                aria-pressed={props.createKind === k.value}
-                onClick={() => props.onCreateKind?.(k.value)}
                 className={controlClass({
                   shape: "segment",
                   size: "md",

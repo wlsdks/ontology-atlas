@@ -37,6 +37,7 @@ import { CopyProjectLinkButton } from "@/features/project-share";
 import { useTaxonomy } from "@/features/taxonomy";
 import { useBodyScrollLock } from "@/shared/lib/use-body-scroll-lock";
 import { PublicQuickActions } from "@/widgets/public-quick-actions";
+import { useRovingRadioGroup } from "@/shared/lib/use-roving-radio-group";
 import { IMPACT_MODE_COPY_KEYS } from "../lib/impact-mode-copy";
 
 interface Props {
@@ -240,6 +241,21 @@ export function ProjectDrawer({
   const impactModeHelpKey =
     IMPACT_MODE_COPY_KEYS.find((item) => item.mode === impactMode)?.helpKey ??
     "impactHelpNone";
+
+  /*
+   * 임팩트 모드 — **배타 단일선택**이다(`none` 이 「끔」 값으로 선택지 안에 들어와
+   * 있어 교과서적 radiogroup 이고, 재클릭으로 해제되지 않는다). 종전엔 형제에
+   * `aria-pressed` 를 나란히 걸어 **배타성이 접근성 트리에 안 실렸다**.
+   *
+   * 그릇은 자리에 남는다 — `shape:'pill'` + 대문자 mono caption 은 값 층 칩 램프의
+   * 조합이 아니다(2026-08-15 (8) 의 판정 규칙: 재고 칩으로 그려지면 변형, 별도
+   * tone/pill 기하를 지면 훅 직접).
+   */
+  const impactGroup = useRovingRadioGroup({
+    value: impactMode,
+    values: IMPACT_MODE_COPY_KEYS.map((item) => item.mode),
+    onChange: onChangeImpactMode,
+  });
 
   // 공개용 드로어는 "설명 → 핵심 정보 → 연결" 순서가 먼저 읽히도록 요약 정보를 묶는다.
   const signalItems = project
@@ -758,7 +774,11 @@ export function ProjectDrawer({
                     )}
 
                     {impactInsight && (
-                      <div className="mt-3 flex flex-wrap gap-2">
+                      <div
+                        {...impactGroup.groupProps}
+                        aria-label={t("impactModeGroupAria")}
+                        className="mt-3 flex flex-wrap gap-2"
+                      >
                         {/* rank16 (design council B6) — 4개 필이 각기 다른
                             그래프 연산(강조 없음 / 의존 폐쇄집합 / 피의존
                             폐쇄집합 / 양방향 폐쇄집합)을 트리거하는데 이전엔
@@ -767,16 +787,15 @@ export function ProjectDrawer({
                             도움말을, aria-label 은 시각 라벨을 앞에 포함해
                             (Label-in-Name) 스크린리더/터치에서도 같은 정보를
                             전달한다 — title 단독 의존 금지. */}
-                        {IMPACT_MODE_COPY_KEYS.map((item) => {
+                        {IMPACT_MODE_COPY_KEYS.map((item, index) => {
                           const active = impactMode === item.mode;
                           const label = t(item.labelKey);
                           const help = t(item.helpKey);
                           return (
                             <button
                               key={item.mode}
+                              {...impactGroup.itemProps(index)}
                               type="button"
-                              onClick={() => onChangeImpactMode(item.mode)}
-                              aria-pressed={active}
                               aria-describedby="project-drawer-impact-help"
                               title={help}
                               aria-label={`${label} — ${help}`}

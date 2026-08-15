@@ -1108,7 +1108,9 @@ describe("StudioCompass — create", () => {
         createKind="capability"
       />,
     );
-    const group = screen.getByRole("group", { name: labels.createKindLabel });
+    // 2026-08-15 (8) — 배타 단일선택이라 group 이 아니라 radiogroup 이다.
+    // 이름을 갖는다는 이 시험의 취지는 그대로다(소켓의 관계 질문과 갈라 세운다).
+    const group = screen.getByRole("radiogroup", { name: labels.createKindLabel });
     expect(group).toContainElement(screen.getByTestId("studio-create-kind-capability"));
     // 시각으로도 서 있어야 한다 — aria 만 있는 라벨은 보는 사람에게 없는 것과 같다.
     expect(screen.getByText(labels.createKindLabel)).toBeInTheDocument();

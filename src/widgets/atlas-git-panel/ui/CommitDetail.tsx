@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { cn } from "@/shared/lib/cn";
+import { useRovingRadioGroup } from "@/shared/lib/use-roving-radio-group";
 import { TopologyV2KindGlyph } from "@/shared/ui/topology-v2-kind-glyph";
 import { controlClass } from "@/shared/ui";
 import type { GitChangeEntry } from "@/shared/lib/tauri-git";
@@ -94,6 +95,21 @@ export function CommitDetail({
   const focused = focusedConceptId ?? concepts[0]?.id ?? null;
 
   /*
+   * 개념 칩 — **배타 단일선택**이다(초기값이 `concepts[0]` 이라 항상 하나가
+   * 참이고, 재클릭으로 해제되지 않는다). 종전엔 형제에 `aria-pressed` 를 나란히
+   * 걸어 배타성이 접근성 트리에 안 실렸다.
+   *
+   * 그릇은 자리에 남는다 — `tone:'secondary'` + 조건부 보더가 값 층 칩 램프의
+   * 조합이 아니고, 그 보더 규칙은 「눌린 칩의 인디고를 덮지 마라」는 실측이
+   * 남긴 것이다(2026-08-15 (8) 의 판정 규칙).
+   */
+  const conceptGroup = useRovingRadioGroup({
+    value: focused,
+    values: concepts.map((c) => c.id),
+    onChange: setFocusedConceptId,
+  });
+
+  /*
    * 기본 렌즈는 **개념**이다. 이 제품이 git 클라이언트와 갈리는 지점이 거기라서
    * 다 — 파일 목록은 어느 도구에나 있고 「이 걸음이 어느 개념을 건드렸나」는
    * 여기에만 있다. 개념이 하나도 없는 걸음(설정 파일만 고친 것 등)에서만 파일로
@@ -160,14 +176,13 @@ export function CommitDetail({
               {/* 탭이 이미 「바뀐 개념 N」이라고 말했다 — 바로 밑에서 같은 말을
                   또 하면 두 번째 것은 잉크만 쓰고 아무것도 안 말한다. */}
               <div className="flex flex-none flex-col gap-2.5 px-5 pt-4">
-                <div className="flex flex-wrap gap-1.5">
-                  {concepts.map((concept) => (
+                <div {...conceptGroup.groupProps} aria-label={t("conceptChipsAria")} className="flex flex-wrap gap-1.5">
+                  {concepts.map((concept, index) => (
                     <button
                       key={concept.id}
+                      {...conceptGroup.itemProps(index)}
                       type="button"
                       data-testid="atlas-git-concept-chip"
-                      aria-pressed={focused === concept.id}
-                      onClick={() => setFocusedConceptId(concept.id)}
                       className={controlClass({
                         shape: "chip",
                         size: "md",
@@ -216,9 +231,12 @@ export function CommitDetail({
                   <button
                     type="button"
                     data-testid="atlas-git-commit-file"
-                    aria-pressed={activeFile === file.path}
+                    /* 파일 목록도 같은 이유로 `aria-current` 다 — 바로 위
+                       형제 렌즈가 `role="tablist"`+`aria-selected` 를 쓰고 있어
+                       여기에 pressed 를 두면 한 화면에 어휘가 셋이 된다. */
+                    aria-current={activeFile === file.path ? "true" : undefined}
                     onClick={() => setOpenFile(file.path)}
-                    className={controlClass({ shape: "row", stacked: true, className: "min-h-8 min-w-0 gap-2.5 border-l-2 border-l-transparent px-5 hover:bg-[color:var(--color-overlay-1)] aria-pressed:border-l-[color:var(--color-indigo-brand)] aria-pressed:bg-[color:var(--color-overlay-2)]" })}
+                    className={controlClass({ shape: "row", stacked: true, className: "min-h-8 min-w-0 gap-2.5 border-l-2 border-l-transparent px-5 hover:bg-[color:var(--color-overlay-1)] aria-[current=true]:border-l-[color:var(--color-indigo-brand)] aria-[current=true]:bg-[color:var(--color-overlay-2)]" })}
                   >
                     <span
                       aria-hidden

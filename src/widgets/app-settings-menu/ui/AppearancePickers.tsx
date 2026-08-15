@@ -2,6 +2,7 @@
 
 import { useTranslations } from 'next-intl';
 import { cn } from '@/shared/lib/cn';
+import { useRovingRadioGroup } from '@/shared/lib/use-roving-radio-group';
 import {
   CANVAS_BACKGROUNDS,
   GLYPH_SETS,
@@ -141,6 +142,17 @@ function CanvasBgSwatch({ variant }: { variant: CanvasBackground }) {
 export function CanvasBackgroundPicker() {
   const t = useTranslations('nav.settingsMenu');
   const value = useCanvasBackground();
+  /*
+   * 그릇이 프리미티브의 두 캐노니컬(우물·칩 줄)로 수렴하지 않는다 — 미리보기
+   * 스와치를 인 격자 타일이고, 활성 잉크가 부모/자식으로 갈라져 있어(아래
+   * 주석 게이트) `shape:'tile'` 을 유지해야 한다. 그래서 그릇은 자리에 남기고
+   * **행동만** 훅으로 받는다(2026-08-15 (8)).
+   */
+  const group = useRovingRadioGroup({
+    value,
+    values: CANVAS_BACKGROUNDS,
+    onChange: writeCanvasBackground,
+  });
   return (
     /*
      * 자기 여백을 갖지 않는다 — 이 피커는 LNB 의 「지도 배경」 칸을 통째로 쓰므로
@@ -152,17 +164,15 @@ export function CanvasBackgroundPicker() {
       <p className="mt-0.5 break-keep text-label text-[color:var(--color-text-quaternary)]">
         {t('canvasBgCaption')}
       </p>
-      <div role="radiogroup" aria-label={t('canvasBgLabel')} className="mt-3 grid grid-cols-2 gap-2.5">
-        {CANVAS_BACKGROUNDS.map((variant) => {
+      <div {...group.groupProps} aria-label={t('canvasBgLabel')} className="mt-3 grid grid-cols-2 gap-2.5">
+        {CANVAS_BACKGROUNDS.map((variant, index) => {
           const active = variant === value;
           return (
             <button
               key={variant}
+              {...group.itemProps(index)}
               type="button"
-              role="radio"
-              aria-checked={active}
               data-testid={`app-settings-canvas-bg-${variant}`}
-              onClick={() => writeCanvasBackground(variant)}
               className={controlClass({
                 shape: 'tile',
                 size: 'md',
@@ -196,23 +206,23 @@ export function CanvasBackgroundPicker() {
 export function GlyphSetPicker() {
   const t = useTranslations('nav.settingsMenu');
   const value = useGlyphSet();
+  /* 위와 같은 이유로 그릇은 자리에, 행동은 훅에. */
+  const group = useRovingRadioGroup({ value, values: GLYPH_SETS, onChange: writeGlyphSet });
   return (
     <div className="px-3 py-2.5" data-testid="app-settings-glyph-set">
       <p className="text-body text-[color:var(--color-text-secondary)]">{t('glyphSetLabel')}</p>
       <p className="mt-0.5 break-keep text-label text-[color:var(--color-text-quaternary)]">
         {t('glyphSetCaption')}
       </p>
-      <div role="radiogroup" aria-label={t('glyphSetLabel')} className="mt-2 grid grid-cols-2 gap-2">
-        {GLYPH_SETS.map((set: GlyphSet) => {
+      <div {...group.groupProps} aria-label={t('glyphSetLabel')} className="mt-2 grid grid-cols-2 gap-2">
+        {GLYPH_SETS.map((set: GlyphSet, index) => {
           const active = set === value;
           return (
             <button
               key={set}
+              {...group.itemProps(index)}
               type="button"
-              role="radio"
-              aria-checked={active}
               data-testid={`app-settings-glyph-set-${set}`}
-              onClick={() => writeGlyphSet(set)}
               className={controlClass({
                 shape: 'tile',
                 size: 'md',
