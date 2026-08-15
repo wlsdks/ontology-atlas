@@ -1712,6 +1712,13 @@ function moduleOf(filePath, sourceFolders, rootPath, workspacePackages = []) {
         const flatName = ontologySourceName(next);
         return flatName ? `elements/${flatName}` : null;
       }
+      // A conventional `lib/` tree is a library implementation boundary, not
+      // a business feature namespace. Keep its static edges useful for code
+      // review while leaving capability meaning to bounded product evidence.
+      if (parts[i] === 'lib') {
+        const flatName = ontologySourceName(next);
+        return flatName ? `elements/${flatName}` : null;
+      }
       // Generic fallback — sourceFolder 다음 첫 segment 가 module.
       return `capabilities/${next}`;
     }

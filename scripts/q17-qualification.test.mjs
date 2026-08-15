@@ -93,6 +93,7 @@ function sourceHiddenFor(name, artifactPacket) {
     qualificationStatus: 'measured',
     sourceAccess: false,
     packetKind: 'independent-persisted-vault',
+    canWrite: false,
     answers,
     claimRefs: proposalClaimRefs(artifactPacket.reviewPlan),
   };
@@ -140,15 +141,17 @@ function qualificationPacket() {
   const current = artifact();
   const packet = {
     contract: 'atlasQ17Qualification:v1',
+    sourceHidden: true,
+    canWrite: false,
     baseline,
     current,
-    sourceHidden: {
-      baseline: sourceHiddenFor('baseline', baseline),
-      current: sourceHiddenFor('current', current),
-    },
     citationAudit: {
       baseline: citationAuditFor('baseline', baseline),
       current: citationAuditFor('current', current),
+    },
+    sourceHiddenEvidence: {
+      baseline: sourceHiddenFor('baseline', baseline),
+      current: sourceHiddenFor('current', current),
     },
     metrics: {
       baseline: metricSet(2),
@@ -211,7 +214,7 @@ test('Q17 mutation gate makes every critical evidence defect red', async (t) => 
     ],
     [
       'source-hidden bound to another plan',
-      (packet) => { packet.sourceHidden.current.reviewPlanDigest = `sha256:${'a'.repeat(64)}`; },
+      (packet) => { packet.sourceHiddenEvidence.current.reviewPlanDigest = `sha256:${'a'.repeat(64)}`; },
       'source-hidden-review-plan-digest-mismatch',
     ],
     [
@@ -247,6 +250,36 @@ test('Q17 mutation gate makes every critical evidence defect red', async (t) => 
       (packet) => { delete packet.current.analysis.proposalValidation.constructionLifecycle.admission.tier; },
       'missing-admission-tier',
     ],
+    [
+      'source-hidden summary canWrite true',
+      (packet) => { packet.sourceHiddenEvidence.current.canWrite = true; },
+      'source-hidden-can-write',
+    ],
+    [
+      'source-hidden summary writePlan present',
+      (packet) => { packet.sourceHiddenEvidence.current.writePlan = {}; },
+      'source-hidden-write-plan-present',
+    ],
+    [
+      'source-hidden packet canWrite true',
+      (packet) => { packet.canWrite = true; },
+      'source-hidden-packet-can-write',
+    ],
+    [
+      'source-hidden packet writePlan present',
+      (packet) => { packet.writePlan = {}; },
+      'source-hidden-packet-write-plan-present',
+    ],
+    [
+      'source-hidden packet sourceHidden false',
+      (packet) => { packet.sourceHidden = false; },
+      'source-hidden-packet-boundary',
+    ],
+    [
+      'source-hidden packet sourceHidden missing',
+      (packet) => { delete packet.sourceHidden; },
+      'source-hidden-packet-boundary',
+    ],
   ];
 
   assert.ok(mutations.length >= 9, 'the mutation census must stay non-empty');
@@ -257,17 +290,32 @@ test('Q17 mutation gate makes every critical evidence defect red', async (t) => 
 
 test('Q17 source-hidden evidence rejects fixture-only, private-path, and incomplete packets', () => {
   expectRed(
-    (packet) => { packet.sourceHidden.current.evaluationStatus = 'fixture_only'; },
+    (packet) => { packet.sourceHiddenEvidence.current.evaluationStatus = 'fixture_only'; },
     'fixture-only-source-hidden',
   );
   expectRed(
-    (packet) => { packet.sourceHidden.current.answers[0].evidenceRefs = ['/Users/private/repo/README.md']; },
+    (packet) => { packet.sourceHiddenEvidence.current.answers[0].evidenceRefs = ['/Users/private/repo/README.md']; },
     'source-hidden-private-path',
   );
   expectRed(
-    (packet) => { packet.sourceHidden.current.answers.pop(); },
+    (packet) => { packet.sourceHiddenEvidence.current.answers.pop(); },
     'source-hidden-question-count-mismatch',
   );
+});
+
+test('Q17 source-hidden trial fails closed for missing impact witness and semantic citation support', () => {
+  const missingImpactWitness = qualificationPacket();
+  missingImpactWitness.current.reviewPlan.relations[0].type = 'depends_on';
+  missingImpactWitness.current.analysis.relationWitnesses = [];
+  const witnessResult = evaluateQ17Qualification(missingImpactWitness);
+  assert.equal(witnessResult.status, 'fail');
+  assert.ok(codes(witnessResult).includes('missing-relation-witness'));
+
+  const unsupportedSemanticCitation = qualificationPacket();
+  unsupportedSemanticCitation.citationAudit.current.entries[0].supportsClaim = false;
+  const citationResult = evaluateQ17Qualification(unsupportedSemanticCitation);
+  assert.equal(citationResult.status, 'fail');
+  assert.ok(codes(citationResult).includes('unsupported-citation'));
 });
 
 test('Q17 determinism and performance failures remain categorical', () => {
