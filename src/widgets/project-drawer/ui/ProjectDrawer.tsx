@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef } from "react";
+import { badgeClass } from "@/shared/ui/badge-class";
 import Image from "next/image";
 import { Link, useRouter } from "@/i18n/navigation";
 import { useTranslations } from "next-intl";
@@ -397,20 +398,20 @@ export function ProjectDrawer({
                   {isContainerNode ? t("categoryProject") : categoryLabel(project.category)}
                 </span>
                 {containerLabel && !isContainerNode ? (
-                  <span className="rounded-full border border-[color:var(--color-indigo-line-a32)] bg-[color:var(--color-indigo-a12)] px-2 py-0.5 font-mono text-caption uppercase tracking-[var(--tracking-caps-12)] text-[color:var(--color-indigo-line-a90)]">
+                  <span className={badgeClass({ shape: "pill", className: "border border-[color:var(--color-indigo-line-a32)] bg-[color:var(--color-indigo-a12)] font-mono uppercase tracking-[var(--tracking-caps-12)] text-[color:var(--color-indigo-line-a90)]" })}>
                     Project · {containerLabel}
                   </span>
                 ) : null}
                 {isContainerNode ? (
-                  <span className="rounded-full border border-[color:var(--color-amber-docs-a45)] bg-[color:var(--color-amber-docs-a12)] px-2 py-0.5 font-mono text-caption uppercase tracking-[var(--tracking-caps-12)] text-[color:var(--color-amber-docs-a95)]">
+                  <span className={badgeClass({ shape: "pill", className: "border border-[color:var(--color-amber-docs-a45)] bg-[color:var(--color-amber-docs-a12)] font-mono uppercase tracking-[var(--tracking-caps-12)] text-[color:var(--color-amber-docs-a95)]" })}>
                     {t("containerBadge")}
                   </span>
                 ) : project.isHub ? (
-                  <span className="rounded-full border border-[color:var(--color-indigo-accent-a50)] bg-[color:var(--color-indigo-a16)] px-2 py-0.5 font-mono text-caption uppercase tracking-[var(--tracking-caps-12)] text-[color:var(--color-indigo-text-soft)]">
+                  <span className={badgeClass({ shape: "pill", className: "border border-[color:var(--color-indigo-accent-a50)] bg-[color:var(--color-indigo-a16)] font-mono uppercase tracking-[var(--tracking-caps-12)] text-[color:var(--color-indigo-text-soft)]" })}>
                     {t("hubBadge")}
                   </span>
                 ) : (
-                  <span className="rounded-full border border-[color:var(--color-divider)] bg-[color:var(--color-overlay-2)] px-2 py-0.5 font-mono text-caption uppercase tracking-[var(--tracking-caps-12)] text-[color:var(--color-text-tertiary)]">
+                  <span className={badgeClass({ shape: "pill", className: "border border-[color:var(--color-divider)] bg-[color:var(--color-overlay-2)] font-mono uppercase tracking-[var(--tracking-caps-12)] text-[color:var(--color-text-tertiary)]" })}>
                     {t("serviceBadge")}
                   </span>
                 )}

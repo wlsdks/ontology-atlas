@@ -2817,9 +2817,17 @@ or fluid column widths"* — 폭은 램프 스텝이 아니라 그리드·내용
 | 패널 (INDEX · 데이터시트) | 콘텐츠 | `--topology-v2-panel-radius` 12px (= `rounded-panel`) | `--topology-v2-panel-pad` | title 헤더 · body 행 |
 | 팝오버 (ego popover) | 콘텐츠 | `rounded-panel` | `--card-pad` | title + body/label |
 | 카드 (일반) | 콘텐츠 | `rounded-card` | `--card-pad` | title + body |
-| 배지·칩 (일반) | 콘텐츠 | `rounded-chip` | `px-2 py-0.5` | label (또는 caption) |
+| 배지·칩 (일반) | 콘텐츠 | **`badgeClass({ shape })` 가 낸다** — `micro`(micro·px-1.5 py-0.5·caption) · `tag`(chip·px-1.5·label) · `pill`(full·px-2 py-0.5·caption). 값을 여기 베끼지 않는다 | 위와 같음 | 위와 같음 |
 | 입력 (input/search) | 콘텐츠 | `rounded-card` | `px-3 py-2` | body |
 | 버튼 (일반) | 콘텐츠 | `rounded-chip`~`card` | `px-3 py-1.5` | body |
+
+**배지 행이 왜 위임인가** (2026-08-15): 종전 이 줄은 `rounded-chip · px-2 py-0.5 ·
+label` 을 처방하고 있었는데, 전수해 보니 그 조합의 **정확 일치가 프로덕션 0건**
+이었다 — 배지 67건이 기하 30종 · 색 60종으로 갈려 있었고 표는 아무도 안 보고
+있었다. 값을 문서에 다시 적는 대신 `badgeClass` 에 위임하고, 손으로 쓴 기하는
+`static-badge-adoption-ratchet` 이 붙든다. **색과 자간은 값 층이 일부러 안
+덮는다** — 색 조합 60종에 최대 클러스터가 2라, 어떤 값을 골라도 소비처 0
+선택지가 되기 때문이다(그 수렴은 자리별 디자인 판정으로 다음 라운드).
 
 ### 명시 예외 (램프 밖, 문서화된 것만)
 
