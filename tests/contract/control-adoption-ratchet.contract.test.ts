@@ -596,10 +596,19 @@ const OUTSIDE_VALUE_LAYER: readonly OutsideEntry[] = [
     claim: 'chrome-token',
     proof: '[@media(pointer:coarse)]',
     why:
-      '최근 변경 창(window) 라디오 칩. **포인터 조건을 className 안에서 직접 분기**한다 ' +
-      '— `h-6`(24)이지만 손가락에서 `--touch-target-min`(44)으로 갈아탄다. 값 층은 ' +
-      '무변형 문자열을 내므로 `[@media(...)]` 변형을 원리적으로 못 낸다.',
-    conditional: '값 층이 포인터 조건부 높이 축을 얻으면 이 줄을 지우고 옮긴다.',
+      '최근 변경 창(window) 라디오 칩. ⚠️ **2026-08-15 정정** — 종전 근거(“값 층은 ' +
+      '`[@media(pointer:coarse)]` 변형을 원리적으로 못 낸다”)는 **더 이상 참이 아니다**. ' +
+      '값 층이 `atlas-touch-floor`(globals.css, coarse 에서 44px)를 chip/segment base 에 ' +
+      '실으면서 그 조건은 발화했고, 이 자리의 손 변형은 이제 값 층이 낼 수 있는 것이다. ' +
+      '남은 진짜 blocker 는 높이가 아니라 셋이다: `min-w-12` **균일폭**(값 층에 축 없음) · ' +
+      '`--topology-v2-panel-*` **패널 스코프 잉크**(무채색 램프가 아니다) · ' +
+      '`rounded-[var(--chrome-radius-inner)]` **크롬 반경**(칩 램프의 `rounded-chip` 이 아니다). ' +
+      '게다가 이 치수(24 · 11px · 48px 균일)는 소유자가 두 번 고쳐 확정한 것이라 ' +
+      '(2026-08-02 *“버튼이 너무 작고”* → *“비율이나 그런게 맞아야하는데”*), 램프로 끌어당기면 ' +
+      '그 이력을 깬다.',
+    conditional:
+      '값 층이 **균일폭 축 + 패널 스코프 잉크**를 얻으면 이 줄을 지우고 옮긴다. ' +
+      '(포인터 조건부 높이는 이미 얻었다 — 그것만으로는 부족하다.)',
   },
   /*
    * 2026-08-06 — **마지막 셋.** 각각 열어서 근거를 확인했다.
