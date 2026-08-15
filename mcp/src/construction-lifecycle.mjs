@@ -521,6 +521,13 @@ export function evaluateConstructionLifecycle({
     || qualification.sourceHiddenTask.status === 'not_measured';
   if (sourceHiddenMissing) {
     addDiagnostic(diagnostics, 'source-hidden-not-measured', 'independent_source_hidden', 'The independent source-hidden task was not measured.');
+  } else if (qualification.sourceHiddenTask.status !== 'passed') {
+    addDiagnostic(
+      diagnostics,
+      'source-hidden-task-not-passed',
+      'independent_source_hidden',
+      'The independent source-hidden task did not pass; a failed or unknown handoff cannot be accepted as a writable gap.',
+    );
   }
   const regressionReady = qualification.regression?.status === 'passed'
     || qualification.regression?.status === 'not_applicable';
@@ -538,7 +545,7 @@ export function evaluateConstructionLifecycle({
     && nonApprovableWarnings.length === 0
     && coverage.status === 'complete'
     && mandatoryRed.length === 0
-    && !sourceHiddenMissing
+    && qualification.sourceHiddenTask?.status === 'passed'
     && regressionReady
     && accepted
     && !digestMismatch

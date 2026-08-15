@@ -158,15 +158,19 @@ exists. Check them all against the clone:
 
 ```bash
 # list every path-shaped reference the vault makes, then test each one
-node <atlas>/cli/src/index.mjs validate <vault>          # frontmatter + graph refs
-OATLAS_REPO_ROOT=$PWD/repo node <atlas>/cli/src/index.mjs index <vault>   # prints "path drift"
+node <atlas>/cli/src/index.mjs validate <vault> --json
+node <atlas>/cli/src/index.mjs index <repo> --vault <vault> --json
+OATLAS_REPO_ROOT=<repo> node <atlas>/cli/src/index.mjs health <vault> --json
 ```
 
-Path-existence lives in `validate_vault`'s `pathDrift` (it needs `repoRoot` —
-the CLI `index` command passes it and prints the drift count). `health` does
-NOT open the repository (its five checks are graph-only), and plain `validate`
-deliberately does not either. Then spot-check by hand: pick every cited path and confirm it
-resolves in the clone.
+`index` receives the repository as its positional `rootPath` and the vault via
+`--vault`; passing the vault as the positional argument analyzes the wrong root.
+The `index` command forwards the repository root to `validate_vault`, whose
+`pathDrift` is the authoritative cited-path check. `health` also performs the
+vault validation and source-path check when `OATLAS_REPO_ROOT` is set; without
+that variable it deliberately reports only frontmatter/graph-reference scope.
+Plain `validate` deliberately does not check source paths. Then spot-check by
+hand: pick every cited path and confirm it resolves in the clone.
 
 Record: **cited paths / paths that exist**. Anything below 100% is a
 hallucination, not a rounding error — name the node and the path.
