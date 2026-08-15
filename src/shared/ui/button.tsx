@@ -74,6 +74,20 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
     return (
       <button
         ref={ref}
+        /*
+         * ★ **기본은 `button` 이다** (2026-08-15 이식성 시험이 잡았다).
+         *
+         * 형제 프리미티브(`Chip`·`IconButton`·`RowButton`)는 *"폼 안에서
+         * `<button>` 의 기본은 submit 이라 칩 하나가 폼을 보낸다"* 를 막는 것을
+         * 자기 존재 이유로 적어 두었는데, 정작 **표준 버튼만 raw `<button>`**
+         * 이었다. 이 저장소 안에서는 안 터졌다 — 폼이 하나뿐이고 그 안의 버튼
+         * 일곱이 전부 `type` 을 손으로 달아 뒀기 때문이다. 그 관례를 모르는
+         * 사람(= 이 시스템을 받아 갈 사람)에게는 「취소」가 폼을 보낸다.
+         *
+         * `{...props}` 가 **뒤에** 펼쳐지므로 `type="submit"` 을 넘기면 그쪽이
+         * 이긴다 — 기존 소비처는 하나도 안 바뀐다.
+         */
+        type="button"
         className={cn(buttonVariants({ variant, size }), className)}
         {...props}
       />

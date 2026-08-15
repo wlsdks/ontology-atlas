@@ -84,7 +84,9 @@ export default async function LocaleLayout({
               consumer 는 useLocalVault() 로 동일 instance 공유 — Round 7
               에서 발견한 8 곳 독립 호출 → 2-3 인스턴스 중복 fix. */}
           <LocalVaultProvider>
-            <ToastProvider>
+            {/* 알림 영역 이름은 **앱이 넣는다** — 프리미티브가 번역을 직접
+                읽으면 그 부품은 이 앱의 것이 된다(2026-08-15 이식성 슬라이스). */}
+            <ToastProvider notificationsLabel={tNav('notificationsAriaLabel')}>
               <TooltipProvider delayDuration={300}>
                 {/* live-web — 로컬 vault 로드 시 변경 baseline 자동 1회.
                     이후 에이전트 편집이 클릭 없이 토폴로지에 pulse. 헤드리스. */}
