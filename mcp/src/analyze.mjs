@@ -89,7 +89,8 @@ const DEFAULT_IGNORE = new Set([
   'venv',
 ]);
 
-const SOURCE_FOLDERS = ['src', 'source', 'lib', 'app'];
+const SOURCE_FOLDERS = ['src', 'source', 'lib', 'app', 'internal'];
+const IMPLEMENTATION_ONLY_SOURCE_FOLDERS = new Set(['internal']);
 const WORKSPACE_FOLDERS = ['apps', 'packages'];
 const SOURCE_LAYOUT_COORDINATION_ELEMENT_LIMIT = 10;
 const SOURCE_LAYOUT_COORDINATION_ROLE =
@@ -132,6 +133,7 @@ const RUST_IMPLEMENTATION_ELEMENT_LIMIT = 24;
 const RUST_MODULES_PER_TARGET_LIMIT = 12;
 const RUST_SOURCE_MAX_BYTES = 256 * 1024;
 const LIBRARY_SOURCE_ELEMENT_LIMIT = 24;
+const IMPLEMENTATION_SOURCE_ELEMENT_LIMIT = 48;
 const CARGO_MANIFEST_MAX_FEATURES = 48;
 const CARGO_MANIFEST_MAX_FEATURE_VALUES = 16;
 const CARGO_MANIFEST_MAX_TOKEN_LENGTH = 80;
@@ -275,6 +277,16 @@ const GENERIC_NARRATIVE_CAPABILITY_CLUES = [
       /\bframework\b.{0,80}\b(?:routes?|serves?|handles?|builds?|for|that|which)\b.{0,40}\b(?:web|http|node\.js)\b/i,
     ],
     implementation: [/web/i, /http/i, /request/i, /response/i, /application/i, /route/i, /url/i],
+  },
+  {
+    slug: 'capabilities/build-tooling',
+    title: 'Build Tooling',
+    prose: [
+      /\b(?:web|javascript|typescript)\s+bundler\b/i,
+      /\bbundler\s+project\b/i,
+      /\bbundl(?:e|es|ed|ing)\b.{0,80}\b(?:web|javascript|typescript)\b/i,
+    ],
+    implementation: [/\b(?:bundler|builder|compiler|linker)s?\b/i],
   },
 ];
 const IMPLEMENTATION_SHAPED_CAPABILITY_TOKENS = new Set([
@@ -489,6 +501,8 @@ export function analyzeRepoStructure(rootPath, options = {}) {
       // generic — src/ 의 깊이 1 폴더 만
       let directLibraryElementCount = 0;
       let directLibraryLimitRecorded = false;
+      let directImplementationElementCount = 0;
+      let directImplementationLimitRecorded = false;
       for (const sub of readdirSync(srcDir).sort()) {
         if (ignore.has(sub) || sub.startsWith('.')) {
           skipped.push({ path: join(srcDir, sub), reason: 'dotfile/ignore' });
@@ -501,6 +515,34 @@ export function analyzeRepoStructure(rootPath, options = {}) {
           sourcePythonPackagePathSet.has(source) ||
           rustImplementationEvidence.skipDirectories.has(source)
         ) {
+          continue;
+        }
+        if (IMPLEMENTATION_ONLY_SOURCE_FOLDERS.has(basename(srcDir))) {
+          // Some large repositories keep product implementation below an
+          // internal/ root instead of src/ or lib/. Its direct children are
+          // implementation evidence only: a folder name must not become a
+          // business capability without trusted narrative evidence.
+          if (!subStat.isDirectory()) continue;
+          if (directImplementationElementCount >= IMPLEMENTATION_SOURCE_ELEMENT_LIMIT) {
+            if (!directImplementationLimitRecorded) {
+              skipped.push({
+                path: srcDir,
+                reason: `implementation-source-element-limit: omitted direct internal entries after ${IMPLEMENTATION_SOURCE_ELEMENT_LIMIT}`,
+              });
+              directImplementationLimitRecorded = true;
+            }
+            continue;
+          }
+          const slug = slugify(sub);
+          if (!slug) continue;
+          elements.push({
+            slug: `elements/${slug}`,
+            title: humanize(slug),
+            ...(domainForName(slug) ? { domain: domainForName(slug) } : {}),
+            path: source,
+            evidence: { source },
+          });
+          directImplementationElementCount += 1;
           continue;
         }
         if (basename(srcDir) === 'lib') {
@@ -570,6 +612,26 @@ export function analyzeRepoStructure(rootPath, options = {}) {
         }
       }
     }
+  }
+
+  // Repositories may have both a conventional lib/ or src/ root and a
+  // separately owned internal/ implementation tree. Keep the primary-root
+  // behavior above, but admit bounded internal evidence as an additional
+  // implementation witness instead of silently dropping it.
+  for (const candidate of IMPLEMENTATION_ONLY_SOURCE_FOLDERS) {
+    if (candidate === basename(srcDir ?? '')) continue;
+    const implementationRoot = join(rootPath, candidate);
+    if (!existsSync(implementationRoot) || !statSync(implementationRoot).isDirectory()) {
+      continue;
+    }
+    elements.push(
+      ...materializeImplementationOnlySourceElements(rootPath, implementationRoot, {
+        ignore,
+        domainForName,
+        existingElements: elements,
+        skipped,
+      }),
+    );
   }
 
   const workspaceElementAdmission = detectWorkspaceElements(rootPath, {
@@ -3015,6 +3077,55 @@ function materializePythonPackageElements(paths, { domainForName, existingElemen
       path,
       evidence: { source: path },
     });
+  }
+  return out;
+}
+
+function materializeImplementationOnlySourceElements(
+  rootPath,
+  sourceDir,
+  { ignore, domainForName, existingElements, skipped },
+) {
+  const out = [];
+  const claimed = new Set(existingElements.map((element) => element.slug));
+  let admitted = 0;
+  let limitRecorded = false;
+  for (const entry of readdirSync(sourceDir).sort()) {
+    if (ignore.has(entry) || entry.startsWith('.')) {
+      skipped.push({ path: join(sourceDir, entry), reason: 'dotfile/ignore' });
+      continue;
+    }
+    const entryPath = join(sourceDir, entry);
+    let entryStat;
+    try {
+      entryStat = statSync(entryPath);
+    } catch {
+      continue;
+    }
+    if (!entryStat.isDirectory()) continue;
+    if (admitted >= IMPLEMENTATION_SOURCE_ELEMENT_LIMIT) {
+      if (!limitRecorded) {
+        skipped.push({
+          path: sourceDir,
+          reason: `implementation-source-element-limit: omitted direct internal entries after ${IMPLEMENTATION_SOURCE_ELEMENT_LIMIT}`,
+        });
+        limitRecorded = true;
+      }
+      continue;
+    }
+    const name = slugify(entry);
+    const slug = name ? `elements/${name}` : null;
+    const source = relative(rootPath, entryPath);
+    if (!slug || claimed.has(slug)) continue;
+    out.push({
+      slug,
+      title: humanize(name),
+      ...(domainForName(name) ? { domain: domainForName(name) } : {}),
+      path: source,
+      evidence: { source },
+    });
+    claimed.add(slug);
+    admitted += 1;
   }
   return out;
 }
