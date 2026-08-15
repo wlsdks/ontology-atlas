@@ -464,11 +464,10 @@ export function analyzeRepoStructure(rootPath, options = {}) {
     skipped,
   });
   elements.push(...rootPythonPackages);
-  const pythonImportAnalysis = Object.hasOwn(options, 'precomputedPythonImports')
+  const importAnalysis = Object.hasOwn(options, 'precomputedPythonImports')
     ? options.precomputedPythonImports
-    : analyzePythonImportsForElementEvidence(rootPath, {
+    : analyzeImportsForElementEvidence(rootPath, {
         extraIgnore,
-        rootPythonPackages,
         skipped,
       });
   const pythonImportBoundaryElements = detectPythonImportBoundaryElements(rootPath, {
@@ -476,7 +475,7 @@ export function analyzeRepoStructure(rootPath, options = {}) {
     domainForName,
     existingElements: elements,
     rootPythonPackages,
-    imports: pythonImportAnalysis,
+    imports: importAnalysis,
     skipped,
   });
   elements.push(...pythonImportBoundaryElements);
@@ -526,7 +525,7 @@ export function analyzeRepoStructure(rootPath, options = {}) {
       semanticCapabilityCandidates,
       elements,
       existingOntologyEvidence,
-      observedDependencyRelations: (pythonImportAnalysis?.moduleEdges ?? []).map(
+      observedDependencyRelations: (importAnalysis?.moduleEdges ?? []).map(
         (relation) => ({ ...relation, type: 'depends_on' }),
       ),
       semanticEvidence,
@@ -550,8 +549,8 @@ export function analyzeRepoStructure(rootPath, options = {}) {
     result,
     options.proposal,
     {
-      observedImportEdges: pythonImportAnalysis?.edges ?? [],
-      observedImportRelations: pythonImportAnalysis?.moduleEdges ?? [],
+      observedImportEdges: importAnalysis?.edges ?? [],
+      observedImportRelations: importAnalysis?.moduleEdges ?? [],
       importBoundaryElements: pythonImportBoundaryElements,
     },
   );
@@ -807,17 +806,34 @@ function buildMeaningGate({
       '[weak · capability-outcome] Confirm the proposed capability with a concrete business outcome and the responsibility it owns.',
     );
   }
-  const implementationElementSlugs = new Set(elements.map((element) => element.slug));
+  const implementationEvidenceSlugs = new Set([
+    ...capabilities.map((capability) => capability.slug),
+    ...elements.map((element) => element.slug),
+  ]);
   const hasTypedDependencyRelation = observedDependencyRelations.some(
     (relation) =>
       relation?.type === 'depends_on' &&
-      implementationElementSlugs.has(relation.from) &&
-      implementationElementSlugs.has(relation.to),
+      implementationEvidenceSlugs.has(relation.from) &&
+      implementationEvidenceSlugs.has(relation.to) &&
+      (relation.productValueCount === undefined || relation.productValueCount > 0),
   );
-  if (implementationElementSlugs.size >= 2 && !hasTypedDependencyRelation) {
-    reviewQuestions.push(
-      '[not-measured · impact] Identify the typed depends_on relation between implementation elements, or record why no dependency impact is currently measurable.',
-    );
+  if (elements.length >= 2 || hasTypedDependencyRelation) {
+    if (hasTypedDependencyRelation) {
+      const typedDependencyCount = observedDependencyRelations.filter(
+        (relation) =>
+          relation?.type === 'depends_on' &&
+          implementationEvidenceSlugs.has(relation.from) &&
+          implementationEvidenceSlugs.has(relation.to) &&
+          (relation.productValueCount === undefined || relation.productValueCount > 0),
+      ).length;
+      reviewQuestions.push(
+        `[observed · impact] ${typedDependencyCount} typed production import ${typedDependencyCount === 1 ? 'boundary' : 'boundaries'} link implementation candidates; review bounded infer_imports evidence before promoting a depends_on relation.`,
+      );
+    } else {
+      reviewQuestions.push(
+        '[not-measured · impact] Identify the typed depends_on relation between implementation elements, or record why no dependency impact is currently measurable.',
+      );
+    }
   }
   const hasPolicyEvidenceRisk = semanticEvidence.some((row) =>
     row.riskFlags.some((risk) =>
@@ -2326,20 +2342,18 @@ function pythonRiskEndpointPriority(fileName) {
   return 0;
 }
 
-function analyzePythonImportsForElementEvidence(
+function analyzeImportsForElementEvidence(
   rootPath,
-  { extraIgnore, rootPythonPackages, skipped },
+  { extraIgnore, skipped },
 ) {
-  if (rootPythonPackages.length === 0) return null;
   try {
     return inferImports(rootPath, {
-      sourceFolders: [],
       ignore: extraIgnore,
     });
   } catch (error) {
     pushSkippedOnce(skipped, {
       path: rootPath,
-      reason: `python-import-evidence-skip: ${error.message}`,
+      reason: `import-evidence-skip: ${error.message}`,
     });
     return null;
   }

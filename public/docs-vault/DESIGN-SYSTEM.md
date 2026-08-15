@@ -3005,7 +3005,8 @@ JSX 안에 44px 정사각 버튼이나 라벨 버튼을 인라인 클래스로 �
 | `ChromeTile` / `ChromeChip` | `src/shared/ui/chrome-tile.tsx` · `chrome-chip.tsx` | 크롬 타일/칩 (별도 "크롬 문법" 절) |
 | `controlClass()` | `src/shared/ui/control-class.ts` | **값 층** — 눌리는 것들의 단일 클래스 출처 (아래 절) |
 | `Chip` · `IconButton` · `RowButton` | `src/shared/ui/controls.tsx` | **행동 층** — `type="button"` 기본 · 접근 이름 강제 · 버튼 시맨틱 |
-| `Surface` | `src/shared/ui/surface.tsx` | 조건부로 나타나는 표면의 등장·퇴장 |
+| `Surface` | `src/shared/ui/surface.tsx` | 조건부로 나타나는 표면의 등장·퇴장 — **모달이 아니다** |
+| `Dialog` | `src/shared/ui/dialog.tsx` | **뒤를 막는 중앙 대화상자** — 스크림(`--overlay-scrim`)·트랩·Esc·복귀·스크롤락·`--z-dialog`·폭 2단(`--dialog-w-sm/md`)이 기본으로 딸려 온다. `modal={false}` 없음(비모달은 Surface 의 소비자). 게이트: `tests/contract/dialog-adoption-ratchet.contract.test.ts` — 프리미티브 밖 `role="dialog"` 마크업은 장부를 넘지 못한다 |
 
 ⚠️ **`Card` · `Badge` · `DetailCard` 는 2026-08-03 에 삭제됐다.** 2026-04-30 생성,
 3개월간 프로덕션 사용처 0. 이유는 게으름이 아니라 그 컴포넌트가 **시스템을
@@ -3659,13 +3660,16 @@ system in consuming apps."*
 ### 다이얼로그 폭 스케일
 
 ```
---dialog-w-sm: 420px;
---dialog-w-md: 560px;   /* 토폴로지 "개념 추가" 컴포저 */
---dialog-w-lg: 720px;
+--dialog-w-sm: 420px;   /* Dialog 기본 — 하드코딩 군집 360~448 의 수렴점 */
+--dialog-w-md: 560px;   /* 토폴로지 "개념 추가" 컴포저 · 넓은 시트 */
 ```
 
-- 중앙 정렬 모달/컴포저 폭 단일 진실원. 실제 적용은
-  `w-[min(var(--dialog-w-md), calc(100vw - 2rem))]` 로 좁은 뷰포트를 감싼다.
+- **2단이 전부다** (「체계」석 비준 2026-08-15). 옛 판의 `--dialog-w-lg: 720`
+  은 소비자 0 · 정의 0 인 유령이라 지웠다 — 아무도 안 쓰는 토큰은 규격이
+  아니라 오정보다. 새 단이 필요하면 「체계」 소집이 먼저다.
+- 중앙 정렬 모달/컴포저 폭 단일 진실원, 1차 소비자는 `Dialog`
+  (`src/shared/ui/dialog.tsx`). 실제 적용은
+  `w-[min(var(--dialog-w-*), calc(100vw - 2rem))]` 로 좁은 뷰포트를 감싼다.
 
 ### 소비 규범 (하드)
 

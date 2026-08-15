@@ -70,7 +70,8 @@ describe("StudioMaterializeDialog", () => {
     render(
       <StudioMaterializeDialog target={TARGET} labels={LABELS} onConfirm={vi.fn()} onCancel={vi.fn()} />,
     );
-    const scrim = screen.getByTestId("studio-materialize-dialog");
+    // Dialog 이식 후 testid 는 패널에 있고, 스크림은 그 부모(컨테이너-겸-스크림)다.
+    const scrim = screen.getByTestId("studio-materialize-dialog").parentElement as HTMLElement;
     expect(scrim.className).toContain("var(--overlay-scrim)");
     expect(scrim.className).not.toContain("var(--color-overlay-");
   });

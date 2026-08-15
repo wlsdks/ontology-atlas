@@ -40,6 +40,37 @@
 **상태**: 유효 / 뒤집힘(→ 링크) / 반증됨(관측: …)
 ```
 
+## 2026-08-15 (16) — production import evidence는 관측이지 승인된 impact 관계가 아니다
+
+**소집**: 단독 PO pass · **트리거**: (15)의 반증 조건; semantic/evidence tracer를
+H2·Axios·Undici에 다시 돌렸을 때 review 질문만 늘고 impact 경계가 보이지 않음
+**루브릭**: 24/24 (치명적 0: 없음)
+**관찰**: 이전 분석은 JS/TS 저장소에서도 Python 경로에만 import evidence를 연결해
+Axios·Undici의 q5를 `not_measured`로 남겼다. 기존 `infer_imports`는 5,000 파일
+bounded scan과 production/value 분리를 이미 제공하지만 analyzer의 의미 gate가 이를
+candidate-only 분석에 사용하지 않았다. 보강 후 Axios는 11개, Undici는 16개의
+production import boundary를 관측했고, H2는 후보가 없어 영향 주장을 만들지 않았다.
+**결정**: analyzer가 기존 `infer_imports`를 JS/TS/Python 공통의 bounded 내부 근거로
+재사용한다. 기존 `meaningGate.reviewQuestions`에 `[observed · impact]`와 경계 수를
+표시하되, ontology `depends_on` 승인 관계나 새 public field/tool/UI/write path는
+만들지 않는다. 관측된 q5는 tracer에서 `weak`로 남기고 exact evidence와 proposal
+witness를 별도 검토한다.
+**적용 규칙**: production/value import만 관측으로 세며 test-only/type-only edge는
+impact 관측으로 승격하지 않는다. 요소가 둘 이상인데 관측이 없으면 기존
+`[not-measured · impact]`를 유지한다. H2처럼 요소·관계가 없을 때는 영향 질문을
+발명하지 않는다. 5,000 파일 bounded scan과 no-write/source-hidden 경계를 유지한다.
+**서명**: 소유자 요청에 따라 집행
+
+**기록된 반대**: analyzer가 매번 import scan을 수행하면 대형 저장소 분석 시간이
+늘고, 정적 import를 runtime impact나 business relation으로 과대해석할 수 있다는
+의견
+**반증 조건**: 다음 대형 저장소 trial에서 bounded scan이 허용 시간을 넘기거나,
+production import가 있어도 정확한 source witness를 재현하지 못하거나, source-hidden
+evaluator가 observed 질문을 accepted impact로 오해하면 이 결정을 재검토한다.
+**재검토**: full proposal + source-hidden handoff에서 exact impact witness를
+검증한 직후
+**상태**: 유효
+
 ## 2026-08-15 (15) — 의미 보정은 기존 출력 계약의 tracer부터 시작한다
 
 **소집**: PO Council · **트리거**: 소유자 요청 및 의미 보정 방향 확정; 새
@@ -12159,5 +12190,48 @@ JS/CSS 산출물이 하나도 없는데 통과하거나, release preflight가 �
 
 **서명 (accountable)**: jinan
 **상태**: 유효 · 게이트 경계 재정의
+
+---
+
+## 2026-08-15 — 모달성은 프리미티브가 소유한다: Dialog 신설 · 폭 2단 · 채택 래칫
+
+부품 완전성 감사가 최대 공백으로 모달을 지목했고, 「체계」석 소집 실측이
+전제를 더 어둡게 정정했다: `role="dialog"` 26곳/23파일에서 스크림 토큰
+**5갈래** + 무스크림 aria-modal 2곳(ProjectDrawer 는 modal-without-modality
+현행범) · 폭 하드코딩 **8종**(360~576) · z 하드코딩(z-50 12곳/z-40 3곳) ·
+aria-modal 선언 대비 트랩 실재 8/20. 행동 훅(`use-dialog-focus-trap` ·
+`use-body-scroll-lock`)과 `transientSurface("sheet")` 규약은 이미 있었다 —
+없던 것은 자동으로 입혀 주는 자리다(Surface 하드컷 사고와 같은 병).
+
+**결정** (체계석 비준): `src/shared/ui/dialog.tsx` 에 `Dialog` 신설. 캐노니컬
+토큰 — 스크림 `--overlay-scrim`(컨테이너-겸-스크림, z 층 하나) · z
+`--z-dialog` · 표면 `--color-panel` · 보더 `--color-divider` · 반경
+`rounded-panel` · 그림자 `--shadow-elevation-3` · 폭 `--dialog-w-sm`(420,
+신설)/`-md`(560, 기존). **`modal={false}` 없음** — 비모달은 Surface 의
+소비자다(WAI-ARIA APG: 모달 패턴은 트랩·aria-modal·Esc·복귀 한 벌; opt-out
+스위치는 계약의 구멍). v1 은 center 변형만 — sheet/edge/palette 는 각자 첫
+소비자가 이주하는 PR 에서 등재한다(소비자 없는 선택지를 미리 만드는 것이
+컨트롤 높이 8~9종 사고의 원인). 첫 소비자 3파일(NewDocKindDialog ·
+StudioMaterializeDialog · StudioPracticeCleanup — 전부 0.85 스크림 진영이라
+스크림 시각 변화 0) 이주. 게이트: `dialog-adoption-ratchet.contract.test.ts`
+전수 워킹 래칫(등재 2파일/근거 명기 · 부채 17파일, 새 파일은 첫날부터 0) +
+`dialog.test.tsx` 모달성 계약. 문서의 유령 `--dialog-w-lg: 720` 삭제.
+
+**기록된 반대 (조건으로 수용)**: ⓐ 변형별 첫 소비자의 responsive-sweep
+실측 없이 머지 불가 — 이 PR 에서 center 를 390/768/1280 실측. ⓑ 스크림 값
+수렴(0.6→0.85, 7파일)은 위계석 시각 승인 후 별도 라운드. ⓒ 모션 문법
+통일(Surface CSS 키프레임 vs framer OVERLAY_SPRING)은 모션석 공동 서명
+대상이라 v1 은 현직 다수파(framer)를 그대로 계승 — 문법 교체를 이 PR 에
+싣지 않는다.
+
+**반증**: ① 새 모달이 래칫을 우회해(Radix 합성 등 스캐너 시야 밖 문법)
+프리미티브 없이 늘어나는 것이 관측되면 스캐너 사정거리를 넓힌다. ② center
+2단(420/560)으로 덮이지 않는 정당한 폭 요구가 두 번째로 나타나면 단을
+등재한다(첫 번째는 예외 신청이 아니라 기존 단으로 수렴을 먼저 시도).
+③ `initialFocus="none"` 소비자가 초점을 아무 데도 안 주는 사고가 관측되면
+none 을 지우고 ref 기반 initialFocus 로 바꾼다.
+
+**서명 (accountable)**: jinan
+**상태**: 유효 · v1 center — sheet/edge/palette 는 후속 라운드
 
 ---

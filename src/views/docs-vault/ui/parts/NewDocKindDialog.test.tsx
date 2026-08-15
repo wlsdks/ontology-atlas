@@ -20,8 +20,12 @@ function render(ui: React.ReactElement) {
  * 여기서 같이 고정한다.
  */
 describe("NewDocKindDialog", () => {
+  const triggers: HTMLButtonElement[] = [];
   afterEach(() => {
-    document.body.innerHTML = "";
+    // ⚠️ `document.body.innerHTML = ""` 로 통째로 비우면 안 된다 — Dialog 가
+    // body 에 포털을 세우므로, React 언마운트 전에 그 노드를 지우면
+    // removeChild 가 NotFoundError 로 터진다. 트리거만 걷는다.
+    for (const trigger of triggers.splice(0)) trigger.remove();
   });
 
   function renderWithTrigger() {
@@ -29,12 +33,13 @@ describe("NewDocKindDialog", () => {
     trigger.textContent = "open trigger";
     document.body.appendChild(trigger);
     trigger.focus();
+    triggers.push(trigger);
     return trigger;
   }
 
   it("열리면 첫 kind 버튼에 포커스한다", () => {
     renderWithTrigger();
-    render(<NewDocKindDialog onSelect={() => {}} onClose={() => {}} />);
+    render(<NewDocKindDialog open onSelect={() => {}} onClose={() => {}} />);
 
     const firstKindButton = within(screen.getByRole("dialog")).getAllByRole(
       "button",
@@ -45,7 +50,7 @@ describe("NewDocKindDialog", () => {
   it("ESC 를 누르면 onClose 가 호출된다", () => {
     renderWithTrigger();
     const onClose = vi.fn();
-    render(<NewDocKindDialog onSelect={() => {}} onClose={onClose} />);
+    render(<NewDocKindDialog open onSelect={() => {}} onClose={onClose} />);
 
     fireEvent.keyDown(window, { key: "Escape" });
 
@@ -55,7 +60,7 @@ describe("NewDocKindDialog", () => {
   it("kind 버튼을 고르면 onSelect 가 해당 kind 로 호출된다", () => {
     renderWithTrigger();
     const onSelect = vi.fn();
-    render(<NewDocKindDialog onSelect={onSelect} onClose={() => {}} />);
+    render(<NewDocKindDialog open onSelect={onSelect} onClose={() => {}} />);
 
     fireEvent.click(screen.getByText("Domain"));
 
@@ -64,7 +69,7 @@ describe("NewDocKindDialog", () => {
 
   it("Tab 이 다이얼로그 밖으로 새지 않는다 (마지막 → 첫 focusable 순환)", () => {
     renderWithTrigger();
-    render(<NewDocKindDialog onSelect={() => {}} onClose={() => {}} />);
+    render(<NewDocKindDialog open onSelect={() => {}} onClose={() => {}} />);
 
     const buttons = within(screen.getByRole("dialog")).getAllByRole("button");
     const last = buttons[buttons.length - 1];
@@ -77,7 +82,7 @@ describe("NewDocKindDialog", () => {
 
   it("Shift+Tab 이 첫 focusable 에서 마지막으로 순환한다", () => {
     renderWithTrigger();
-    render(<NewDocKindDialog onSelect={() => {}} onClose={() => {}} />);
+    render(<NewDocKindDialog open onSelect={() => {}} onClose={() => {}} />);
 
     const buttons = within(screen.getByRole("dialog")).getAllByRole("button");
     buttons[0].focus();
@@ -90,7 +95,7 @@ describe("NewDocKindDialog", () => {
   it("언마운트되면 트리거로 포커스가 복귀한다", () => {
     const trigger = renderWithTrigger();
     const { unmount } = render(
-      <NewDocKindDialog onSelect={() => {}} onClose={() => {}} />,
+      <NewDocKindDialog open onSelect={() => {}} onClose={() => {}} />,
     );
 
     unmount();
