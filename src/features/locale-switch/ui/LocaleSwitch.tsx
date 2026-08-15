@@ -3,7 +3,7 @@
 import { useLocale, useTranslations } from 'next-intl';
 import { usePathname, useRouter } from 'next/navigation';
 import { useTransition } from 'react';
-import { controlClass } from '@/shared/ui/control-class';
+import { SegmentedControl } from '@/shared/ui/segmented-control';
 
 const STORAGE_KEY = 'ontology-atlas:locale';
 const LOCALES = [
@@ -74,38 +74,16 @@ export function LocaleSwitch({ onSwitchStart }: LocaleSwitchProps = {}) {
   }
 
   return (
-    <div
-      role="group"
-      aria-label={t('switcher')}
-      className="inline-flex items-center gap-px rounded-chip border border-[color:var(--color-border-soft)] bg-[color:var(--color-elevated)] p-px text-label"
-    >
-      {LOCALES.map(({ code, label, nameKey }) => {
-        const active = code === locale;
-        return (
-          <button
-            key={code}
-            type="button"
-            onClick={() => switchTo(code)}
-            disabled={isPending}
-            aria-pressed={active}
-            aria-label={`${label} ${t(nameKey)}`}
-            className={
-              // coarse 포인터에서 히트만 44px — 시각 크기(32px)는 그대로다.
-              // 이 토글은 관문(/download) 상단 GNB 에도 서므로 터치 계약을 탄다.
-              controlClass({
-                shape: 'segment',
-                size: 'md',
-                tone: active ? 'default' : 'muted',
-                className:
-                  'touch-hit-expand h-8 min-w-8 px-2 font-[var(--font-weight-signature)] ' +
-                  (active ? 'bg-[color:var(--color-panel)]' : 'hover:text-[color:var(--color-text-secondary)]'),
-              })
-            }
-          >
-            {label}
-          </button>
-        );
-      })}
-    </div>
+    <SegmentedControl
+      ariaLabel={t('switcher')}
+      value={locale}
+      busy={isPending}
+      onChange={(next) => switchTo(next)}
+      options={LOCALES.map(({ code, label, nameKey }) => ({
+        value: code as string,
+        label,
+        ariaLabel: `${label} ${t(nameKey)}`,
+      }))}
+    />
   );
 }

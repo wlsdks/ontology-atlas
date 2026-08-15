@@ -3009,6 +3009,7 @@ JSX 안에 44px 정사각 버튼이나 라벨 버튼을 인라인 클래스로 �
 | `Dialog` | `src/shared/ui/dialog.tsx` | **뒤를 막는 중앙 대화상자** — 스크림(`--overlay-scrim`)·트랩·Esc·복귀·스크롤락·`--z-dialog`·폭 2단(`--dialog-w-sm/md`)이 기본으로 딸려 온다. `modal={false}` 없음(비모달은 Surface 의 소비자). 게이트: `tests/contract/dialog-adoption-ratchet.contract.test.ts` — 프리미티브 밖 `role="dialog"` 마크업은 장부를 넘지 못한다 |
 | `Input` / `Textarea` | `src/shared/ui/input.tsx` | 폼 필드의 **행동 층** — 접근 이름 강제(label/aria-label/labelledBy 택1) + `error`/`hint` → `aria-invalid`·`aria-describedby`·`role="alert"` 자동 배선. 스타일은 `fieldClass` 호출 결과와 **바이트 동일**(계약 단언 — 값은 값 층 한 곳에만). 게이트: `tests/contract/field-adoption-ratchet.contract.test.ts` — 새 파일의 raw 텍스트 필드는 0 |
 | `Checkbox` | `src/shared/ui/checkbox.tsx` | 라벨 내장 체크박스 — brand accent · size-4 · 값 층 초점 링 · `fieldLabel(row)`(라벨=타깃, WCAG 2.5.8). raw `type="checkbox"` 는 래칫이, `accent-[` 이탈은 lint 가 막는다 |
+| `SegmentedControl` | `src/shared/ui/segmented-control.tsx` | 보더 상자 안 **배타 단일선택** — radiogroup + `aria-checked`(2택 포함, aria-pressed 표현 불가) · roving tabindex + 화살표 순환 + selection-follows-focus(Home/End·Escape 없음) · 컨테이너 캐노니컬 `p-px gap-px overlay-1 border-soft rounded-chip`(인셋은 높이 사다리 산수 — 24→28·32→36 만 어휘 위) · 선택 표현은 값 층 `active` 하나 |
 
 ⚠️ **`Card` · `Badge` · `DetailCard` 는 2026-08-03 에 삭제됐다.** 2026-04-30 생성,
 3개월간 프로덕션 사용처 0. 이유는 게으름이 아니라 그 컴포넌트가 **시스템을

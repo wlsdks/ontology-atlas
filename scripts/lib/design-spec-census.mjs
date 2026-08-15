@@ -86,6 +86,8 @@ const PRIMITIVE_EXPORT_FILES = new Set([
   // 2026-08-15 (2) 폼 행동 층 — Input/Textarea · Checkbox.
   'src/shared/ui/input.tsx',
   'src/shared/ui/checkbox.tsx',
+  // 2026-08-15 (3) 배타 단일선택 — SegmentedControl.
+  'src/shared/ui/segmented-control.tsx',
 ]);
 
 /**

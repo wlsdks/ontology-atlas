@@ -4248,4 +4248,14 @@ html[data-gateway-stage] {
   .atlas-touch-floor {
     min-height: var(--touch-target-min);
   }
+  /*
+   * 폭 짝 (2026-08-15) — 세그먼트처럼 **라벨이 짧아 폭까지 좁은** 컨트롤용.
+   * touch-hit-expand(유령 히트)를 기각한 이유 그대로, 폭도 실제 크기로
+   * 민다(min-width 는 이웃을 밀어내므로 gap-px 밀집에서도 안 겹친다).
+   * 실측 계보: EN/KO 세그먼트가 유령 히트 제거 후 coarse 에서 40×44 로
+   * 남아 touch-target-contract 가 잡았다 — 높이만 있는 바닥의 반쪽이었다.
+   */
+  .atlas-touch-floor-wide {
+    min-width: var(--touch-target-min);
+  }
 }

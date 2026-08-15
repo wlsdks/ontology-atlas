@@ -234,8 +234,14 @@ describe("한 시트 안에서 «값 하나 고르기» 는 한 규격이다", (
     const primitives = sourceWithoutComments("settings-primitives.tsx");
     const activity = sourceWithoutComments("AgentActivitySettings.tsx");
 
-    // 높이 — 셋 다 32px 한 단. `h-8` 이 세 자리에 서 있어야 한다.
-    expect(primitives.match(/\bh-8\b/g)?.length ?? 0, "칩·세그먼트 둘 다 h-8 이어야 한다").toBeGreaterThanOrEqual(2);
+    // 높이 — 셋 다 32px 한 단. 칩(Choice)은 `h-8` 을 직접 서고, 세그먼트는
+    // 2026-08-15 에 `SegmentedControl` 어댑터가 되어 높이를 **값 층**
+    // (segment/lg = min-h-8)이 낸다 — 같은 32 를 다른 문법으로 보증하는 것이라
+    // 여기서는 「어댑터가 실제로 그 프리미티브에 위임하는가」를 본다.
+    expect(primitives.match(/\bh-8\b/g)?.length ?? 0, "칩(Choice)은 h-8 이어야 한다").toBeGreaterThanOrEqual(1);
+    expect(primitives, "세그먼트가 값 층 위임(SegmentedControl)을 잃었다 — 32px 보증이 사라진다").toMatch(
+      /<SegmentedControl\b/,
+    );
     expect(activity).toMatch(/\bh-8\b/);
 
     // 타입 단 — 칩은 `text-body`(12.5). 세그먼트는 무게만 다르고 단은 같다.

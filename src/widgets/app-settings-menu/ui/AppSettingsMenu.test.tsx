@@ -468,11 +468,11 @@ describe('AppSettingsMenu screenControls injection', () => {
     const sc = controls();
     openSheet(<AppSettingsMenu mode="static" screenControls={sc} />);
     fireEvent.click(
-      screen.getByRole('button', { name: 'nav.settingsMenu.viewModePlain' }),
+      screen.getByRole('radio', { name: 'nav.settingsMenu.viewModePlain' }),
     );
     expect(sc.onAudiencePlainChange).toHaveBeenCalledWith(true);
     fireEvent.click(
-      screen.getByRole('button', { name: 'nav.settingsMenu.indexDefaultCollapsed' }),
+      screen.getByRole('radio', { name: 'nav.settingsMenu.indexDefaultCollapsed' }),
     );
     expect(sc.onIndexCollapsedChange).toHaveBeenCalledWith(true);
   });
