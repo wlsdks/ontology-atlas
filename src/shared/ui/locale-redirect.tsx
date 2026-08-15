@@ -52,7 +52,6 @@ export function LocaleRedirect() {
         // 이 redirect 화면에도 자동 반영되게 한다 (design.md 토큰 규율).
         background: 'var(--color-canvas)',
         color: 'var(--color-text-secondary)',
-        fontFamily: 'Inter, -apple-system, BlinkMacSystemFont, sans-serif',
       }}
     >
       <p
@@ -64,7 +63,6 @@ export function LocaleRedirect() {
           justifyContent: 'center',
           gap: '0.5rem',
           margin: 0,
-          fontSize: '0.875rem',
         }}
       >
         Opening Ontology Atlas…
