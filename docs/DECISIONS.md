@@ -40,6 +40,37 @@
 **상태**: 유효 / 뒤집힘(→ 링크) / 반증됨(관측: …)
 ```
 
+## 2026-08-15 (16) — production import evidence는 관측이지 승인된 impact 관계가 아니다
+
+**소집**: 단독 PO pass · **트리거**: (15)의 반증 조건; semantic/evidence tracer를
+H2·Axios·Undici에 다시 돌렸을 때 review 질문만 늘고 impact 경계가 보이지 않음
+**루브릭**: 24/24 (치명적 0: 없음)
+**관찰**: 이전 분석은 JS/TS 저장소에서도 Python 경로에만 import evidence를 연결해
+Axios·Undici의 q5를 `not_measured`로 남겼다. 기존 `infer_imports`는 5,000 파일
+bounded scan과 production/value 분리를 이미 제공하지만 analyzer의 의미 gate가 이를
+candidate-only 분석에 사용하지 않았다. 보강 후 Axios는 11개, Undici는 16개의
+production import boundary를 관측했고, H2는 후보가 없어 영향 주장을 만들지 않았다.
+**결정**: analyzer가 기존 `infer_imports`를 JS/TS/Python 공통의 bounded 내부 근거로
+재사용한다. 기존 `meaningGate.reviewQuestions`에 `[observed · impact]`와 경계 수를
+표시하되, ontology `depends_on` 승인 관계나 새 public field/tool/UI/write path는
+만들지 않는다. 관측된 q5는 tracer에서 `weak`로 남기고 exact evidence와 proposal
+witness를 별도 검토한다.
+**적용 규칙**: production/value import만 관측으로 세며 test-only/type-only edge는
+impact 관측으로 승격하지 않는다. 요소가 둘 이상인데 관측이 없으면 기존
+`[not-measured · impact]`를 유지한다. H2처럼 요소·관계가 없을 때는 영향 질문을
+발명하지 않는다. 5,000 파일 bounded scan과 no-write/source-hidden 경계를 유지한다.
+**서명**: 소유자 요청에 따라 집행
+
+**기록된 반대**: analyzer가 매번 import scan을 수행하면 대형 저장소 분석 시간이
+늘고, 정적 import를 runtime impact나 business relation으로 과대해석할 수 있다는
+의견
+**반증 조건**: 다음 대형 저장소 trial에서 bounded scan이 허용 시간을 넘기거나,
+production import가 있어도 정확한 source witness를 재현하지 못하거나, source-hidden
+evaluator가 observed 질문을 accepted impact로 오해하면 이 결정을 재검토한다.
+**재검토**: full proposal + source-hidden handoff에서 exact impact witness를
+검증한 직후
+**상태**: 유효
+
 ## 2026-08-15 (15) — 의미 보정은 기존 출력 계약의 tracer부터 시작한다
 
 **소집**: PO Council · **트리거**: 소유자 요청 및 의미 보정 방향 확정; 새
