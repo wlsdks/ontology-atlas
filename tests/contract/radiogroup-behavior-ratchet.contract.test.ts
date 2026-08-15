@@ -50,14 +50,35 @@ const EXEMPT_FILES = new Set([
 
 /**
  * **등재** — 그릇이 프리미티브의 두 캐노니컬로 수렴하지 않아 훅을 직접 입는
- * 자리. 면제가 아니라 **「이 그릇은 변형으로 못 만든다」는 기록**이고, 각 줄은
- * 왜 그런지를 진다. 만들 수 있게 되면 줄을 지우고 이주한다.
+ * 자리. 면제가 아니라 **「이 그릇은 변형으로 못 만든다」는 기록**이다.
  *
- * 오늘은 **비어 있다** — 이번 라운드가 이주시킨 것은 `Choice`(7 콜사이트가
- * 어댑터 하나로 접힌다) 뿐이고, 나머지 자리들은 아직 손 role 을 지고 있어
- * 아래 `DEBT` 에 있다.
+ * ⚠️ **훅을 입으면 이 스캐너의 시야에서 빠진다** — role 이 훅의 `groupProps` 에서
+ * 나오므로 파일에 `role="radiogroup"` 리터럴이 남지 않는다. 설계상 맞다(폴리싱할
+ * 손 role 이 없다). 그래서 이 목록은 **강제가 아니라 기록**이고, 채택이 조용히
+ * 되돌아가는 것은 아래 `HOOK_ADOPTION_FLOOR` 가 막는다.
  */
-const REGISTERED: ReadonlyArray<readonly [file: string, why: string]> = [];
+const REGISTERED: ReadonlyArray<readonly [file: string, why: string]> = [
+  ["src/widgets/app-settings-menu/ui/AppearancePickers.tsx", "격자 미리보기 타일 — shape:'tile' + 부모/자식으로 갈린 활성 잉크"],
+  ["src/widgets/topology-index-panel/ui/TopologyIndexPanel.tsx", "패널 스코프 잉크 + 크롬 반경 + 소유자가 두 번 고쳐 확정한 48px 균일폭"],
+  ["src/widgets/project-drawer/ui/ProjectDrawer.tsx", "shape:'pill' + 대문자 mono caption — 값 층 칩 램프의 조합이 아니다"],
+  ["src/widgets/atlas-git-panel/ui/CommitDetail.tsx", "tone:'secondary' + 「눌린 칩의 인디고를 덮지 마라」 조건부 보더"],
+  ["src/views/docs-vault/ui/parts/DocsSidebarBody.tsx", "bg-canvas 우물 · Chip 아이템 · Tooltip 래퍼 · 켜진 칩만 라벨"],
+];
+
+/**
+ * **훅 호출 «자리» 수의 바닥.** 위 등재가 강제가 아니므로 이 수가 대신 방향을
+ * 잠근다 — 줄면 누군가 행동 층을 걷어낸 것이다(늘리는 것은 자유).
+ *
+ * ⚠️ **파일 수가 아니라 자리 수를 센다.** 처음엔 파일로 셌는데 프로브가 그
+ * 구멍을 잡았다: `AppearancePickers` 는 그룹이 둘이라 **한쪽 배선을 걷어내도
+ * 파일은 여전히 훅을 부르므로** 초록이었다. 래칫의 단위가 결함의 단위보다
+ * 굵으면 그만큼 못 본다.
+ *
+ * 오늘 6자리 = AppearancePickers 2 · TopologyIndexPanel 1 · ProjectDrawer 1 ·
+ * CommitDetail 1 · DocsSidebarBody 1. 프리미티브 자신은 면제 목록이라 안 들어가고,
+ * 「프리미티브가 훅을 쓰는가」는 공회전 방지 시험이 따로 단언한다.
+ */
+const HOOK_ADOPTION_FLOOR = 6;
 
 /**
  * **부채 장부** — 아직 이주도 훅 착용도 안 한 손 radiogroup. 늘 수 없고, 갚으면
@@ -65,9 +86,9 @@ const REGISTERED: ReadonlyArray<readonly [file: string, why: string]> = [];
  * 에 있다.
  */
 const DEBT: ReadonlyArray<readonly [file: string, count: number]> = [
+  // 우물 이주 대상 — 프리미티브 컨테이너와 거의 같은데 `p-1`/`gap-1` 이다.
+  // 그 값은 프리미티브 머리말이 이미 재고 기각한 값이라 이주하면 픽셀이 움직인다.
   ["src/features/ontology-blocks/ui/BlockImportModule.tsx", 1],
-  ["src/widgets/app-settings-menu/ui/AppearancePickers.tsx", 2],
-  ["src/widgets/topology-index-panel/ui/TopologyIndexPanel.tsx", 1],
 ];
 
 function walk(dir: string, out: string[] = []): string[] {
@@ -91,9 +112,15 @@ function walk(dir: string, out: string[] = []): string[] {
  */
 const ROLE_RE = /role=\{?["']radiogroup["']\}?/g;
 
+const HOOK_CALL_RE = new RegExp(`${HOOK}\\s*(?:<[^>]*>)?\\s*\\(`);
+/** 같은 패턴의 전역판 — 파일 안의 **자리 수**를 센다. */
+const HOOK_CALL_RE_G = new RegExp(`${HOOK}\\s*(?:<[^>]*>)?\\s*\\(`, "g");
+
 function scan() {
   const found = new Map<string, number>();
-  const withHook = new Set<string>();
+  /** 훅을 부르는 **모든** 파일 — role 리터럴 유무와 무관하게 센다. */
+  const hookFiles = new Set<string>();
+  let hookCallSites = 0;
   let scanned = 0;
   let doubleQuoted = 0;
   let singleQuoted = 0;
@@ -114,6 +141,13 @@ function scan() {
        * 둘이 어긋나는 쪽이 기본값이 된다.
        */
       const src = stripComments(readFileSync(file, "utf8"));
+      // 제네릭 인자(`useRovingRadioGroup<T>({…})`)를 건너뛴다 — 리터럴 매칭은
+      // 타입 인자 하나에 조용히 죽는다.
+      const hookCalls = [...src.matchAll(HOOK_CALL_RE_G)].length;
+      if (hookCalls > 0) {
+        hookFiles.add(rel);
+        hookCallSites += hookCalls;
+      }
       const hits = [...src.matchAll(ROLE_RE)];
       if (!hits.length) continue;
       found.set(rel, hits.length);
@@ -121,12 +155,9 @@ function scan() {
         if (h[0].includes('"')) doubleQuoted += 1;
         else singleQuoted += 1;
       }
-      // 제네릭 인자(`useRovingRadioGroup<T>({…})`)를 건너뛴다 — 리터럴 매칭은
-      // 타입 인자 하나에 조용히 죽는다.
-      if (new RegExp(`${HOOK}\\s*(?:<[^>]*>)?\\s*\\(`).test(src)) withHook.add(rel);
     }
   }
-  return { found, withHook, scanned, doubleQuoted, singleQuoted };
+  return { found, hookFiles, hookCallSites, scanned, doubleQuoted, singleQuoted };
 }
 
 describe("radiogroup 행동 래칫 — role 이 약속한 키보드가 실재하는가", () => {
@@ -158,7 +189,7 @@ describe("radiogroup 행동 래칫 — role 이 약속한 키보드가 실재하
       readFileSync(path.join(ROOT, "src/shared/ui/segmented-control.tsx"), "utf8"),
     );
     expect(
-      new RegExp(`${HOOK}\\s*(?:<[^>]*>)?\\s*\\(`).test(primitive),
+      HOOK_CALL_RE.test(primitive),
       "프리미티브가 훅을 안 쓴다 — 행동이 두 구현이 됐다",
     ).toBe(true);
     expect(primitive, "프리미티브가 훅의 groupProps 를 안 편다 — role 이 안 실린다").toContain(
@@ -183,9 +214,21 @@ describe("radiogroup 행동 래칫 — role 이 약속한 키보드가 실재하
   it("등재는 면제가 아니다 — 등재된 파일은 훅 호출이 실재해야 한다", () => {
     const fake: string[] = [];
     for (const [file] of REGISTERED) {
-      if (!census.withHook.has(file)) fake.push(`${file}: 등재돼 있는데 ${HOOK} 호출이 없다`);
+      if (!census.hookFiles.has(file)) fake.push(`${file}: 등재돼 있는데 ${HOOK} 호출이 없다`);
     }
     expect(fake, "이름만 적어 둔 등재는 세탁이다").toEqual([]);
+  });
+
+  it("행동 층 채택이 뒷걸음치지 않는다 — 훅 호출 자리 수의 바닥", () => {
+    /*
+     * 훅을 입은 자리는 `role` 리터럴을 잃어 위 스캔의 시야 밖이다. 그러면
+     * 「채택을 조용히 걷어내는 것」을 볼 눈이 없어진다 — 이 바닥이 그 눈이다.
+     * 늘리는 것은 자유이고 줄이면 빨개진다(래칫의 방향은 언제나 한쪽이다).
+     */
+    expect(
+      census.hookCallSites,
+      `${HOOK} 을 부르는 «자리» 가 줄었다 — 행동 층을 걷어낸 그룹이 있는지 보라.`,
+    ).toBeGreaterThanOrEqual(HOOK_ADOPTION_FLOOR);
   });
 
   it("장부의 회수분은 내린다 — 실측보다 후한 장부는 래칫이 아니다", () => {

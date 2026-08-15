@@ -9,6 +9,7 @@ import {
 } from "react";
 import { ChevronLeft, Search } from "lucide-react";
 import { ICON_SIZE } from "@/shared/ui/icon-size";
+import { useRovingRadioGroup } from "@/shared/lib/use-roving-radio-group";
 import { Link } from "@/i18n/navigation";
 import { controlClass } from "@/shared/ui";
 import {
@@ -258,6 +259,28 @@ export function TopologyIndexPanel({
   plainMode = false,
   vaultLoaded = true,
 }: TopologyIndexPanelProps) {
+  /*
+   * 최근 변경 창(window) 칩 — **행동만** 훅으로 받는다(2026-08-15 (8)).
+   *
+   * 그릇은 자리에 남는다: 이 칩들의 치수(24 · 11px · 7px · 48px 균일)는
+   * 소유자가 두 번 고쳐 확정한 것이고(2026-08-02 *"버튼이 너무 작고"* → 고친 뒤
+   * *"비율이나 그런게 맞아야하는데"*), 패널 스코프 잉크(`--topology-v2-panel-*`)와
+   * 크롬 반경을 진다 — 값 층 조합에 없는 것들이라 프리미티브로 끌어당기면 그
+   * 이력을 깬다. 반면 **화살표 이동이 없던 것은 그 이력과 무관한 결함**이었다.
+   */
+  const WINDOW_CHIP_VALUES = ["auto", 1, 7, 30] as const;
+  const WINDOW_CHIP_LABELS = [
+    labels.windowChipAuto,
+    labels.windowChip1,
+    labels.windowChip7,
+    labels.windowChip30,
+  ];
+  const windowGroup = useRovingRadioGroup<(typeof WINDOW_CHIP_VALUES)[number]>({
+    value: recentWindow as (typeof WINDOW_CHIP_VALUES)[number],
+    values: WINDOW_CHIP_VALUES,
+    onChange: (next) => onWindowChange?.(next),
+  });
+
   const [query, setQuery] = useState("");
   const [openIds, setOpenIds] = useState<Set<string>>(
     () => new Set(treeResult.roots.map((root) => root.node.id)),
@@ -525,7 +548,7 @@ export function TopologyIndexPanel({
           렌즈 활성 + controlled + 라벨 4종 제공 시에만. "auto"=적응 사다리. */}
       {lensActive && onWindowChange && labels.windowChipAuto && labels.windowChip1 && labels.windowChip7 && labels.windowChip30 ? (
         <div
-          role="radiogroup"
+          {...windowGroup.groupProps}
           aria-label={labels.windowChipsAria ?? labels.segmentRecentAria}
           data-testid="topology-index-window-chips"
           /*
@@ -553,19 +576,12 @@ export function TopologyIndexPanel({
            */
           className="mb-3 flex shrink-0 flex-wrap items-center gap-1.5"
         >
-          {([
-            ["auto", labels.windowChipAuto],
-            [1, labels.windowChip1],
-            [7, labels.windowChip7],
-            [30, labels.windowChip30],
-          ] as const).map(([value, label]) => (
+          {WINDOW_CHIP_VALUES.map((value, index) => (
             <button
               key={String(value)}
+              {...windowGroup.itemProps(index)}
               type="button"
-              role="radio"
-              aria-checked={recentWindow === value}
               data-testid={`topology-index-window-chip-${value}`}
-              onClick={() => onWindowChange(value)}
               /*
                * 치수는 **같은 패널의 세그먼트와 한 방언**으로 간다
                * (2026-08-02 실측 · 소유자: *"버튼이 너무 작고"* → 고친 뒤
@@ -598,7 +614,7 @@ export function TopologyIndexPanel({
                   : "border-[color:var(--topology-v2-panel-border)] text-[color:var(--topology-v2-panel-text-tertiary)] hover:text-[color:var(--topology-v2-panel-text-primary)]"
               }`}
             >
-              {label}
+              {WINDOW_CHIP_LABELS[index]}
             </button>
           ))}
         </div>

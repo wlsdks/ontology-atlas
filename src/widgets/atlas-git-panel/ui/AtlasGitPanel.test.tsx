@@ -400,7 +400,10 @@ describe("AtlasGitPanel — 데스크톱(Tauri)", () => {
     expect(await screen.findByTestId("atlas-git-diff-pre")).toHaveTextContent("+new line");
     // 미커밋 줄이 목록 맨 위에 있고, 그것이 골라져 있다.
     const pending = screen.getByTestId("atlas-git-pending-row");
-    expect(pending).toHaveAttribute("aria-pressed", "true");
+    // 2026-08-15 (8) — 이 행은 「지금 보고 있는 것」이지 눌린 버튼이 아니다.
+    // 형제 커밋 행이 이미 `aria-expanded` 를 쓰므로 pressed 를 두면 한 목록이
+    // 어휘 둘로 갈린다.
+    expect(pending).toHaveAttribute("aria-current", "true");
     // 탭 버튼은 더 이상 존재하지 않는다.
     expect(screen.queryByTestId("atlas-git-diff-toggle")).toBeNull();
     expect(screen.queryByTestId("atlas-git-history-tab")).toBeNull();
@@ -1004,7 +1007,9 @@ describe("AtlasGitPanel — 2단 작업대의 선택", () => {
       "abc1234def5678",
     );
     // 커밋을 고르면 미커밋 줄은 눌린 상태가 풀린다 — 둘이 동시에 열리지 않는다.
-    expect(screen.getByTestId("atlas-git-pending-row")).toHaveAttribute("aria-pressed", "false");
+    // 안 고른 행은 속성 자체가 없다 — `aria-current="false"` 는 낭독기에게
+    // 「현재가 아님」을 굳이 말하는 소음이다(WAI-ARIA: 기본값이 false).
+    expect(screen.getByTestId("atlas-git-pending-row")).not.toHaveAttribute("aria-current");
   });
 
   it("미커밋 줄로 되돌아오면 변경 내용이 다시 보인다", async () => {

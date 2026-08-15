@@ -2129,9 +2129,16 @@ function StepList({
           <button
             type="button"
             data-testid="atlas-git-pending-row"
-            aria-pressed={selection.kind === "pending"}
+            /*
+             * **`aria-current` 이지 `aria-pressed` 가 아니다** (2026-08-15 (8)).
+             * 이 행은 마스터-디테일 목록에서 「지금 보고 있는 것」을 가리킨다 —
+             * 눌린 버튼이 아니다. 형제 커밋 행들이 이미 `aria-expanded` 를 쓰고
+             * 있어서, 여기에 pressed 를 두면 **한 목록이 어휘 둘로 갈린다.**
+             * radiogroup 을 심는 것도 답이 아니다(그러면 셋이 된다).
+             */
+            aria-current={selection.kind === "pending" ? "true" : undefined}
             onClick={() => setSelection({ kind: "pending" })}
-            className={cn(STEP_ROW, "border-l-dashed border-l-[color:var(--color-indigo-a46)] aria-pressed:border-l-[color:var(--color-indigo-brand)] aria-pressed:bg-[color:var(--color-overlay-2)]")}
+            className={cn(STEP_ROW, "border-l-dashed border-l-[color:var(--color-indigo-a46)] aria-[current=true]:border-l-[color:var(--color-indigo-brand)] aria-[current=true]:bg-[color:var(--color-overlay-2)]")}
           >
             <span className="truncate text-label tabular-nums text-[color:var(--color-text-tertiary)]">
               {t("pendingNow")}

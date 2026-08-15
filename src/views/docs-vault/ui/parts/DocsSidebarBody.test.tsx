@@ -209,7 +209,9 @@ describe("DocsSidebarBody — #22 아이콘 행: 검색 토글 + 카운트", () 
     });
     const active = screen.getByTestId("docs-sidebar-collection-ontology");
     expect(active).toHaveTextContent("지도 문서");
-    expect(active).toHaveAttribute("aria-pressed", "true");
+    // 2026-08-15 (8) — 배타 단일선택이라 radiogroup + aria-checked 다.
+    expect(active).toHaveAttribute("aria-checked", "true");
+    expect(active).toHaveAttribute("role", "radio");
     // 안 고른 보기는 이름을 안 말한다 — 켜진 것 하나만 말해야 «지금» 이 읽힌다.
     expect(screen.getByTestId("docs-sidebar-collection-all")).toHaveTextContent("");
     expect(screen.queryByText("전체 문서")).not.toBeInTheDocument();
@@ -227,7 +229,9 @@ describe("DocsSidebarBody — #22 아이콘 행: 검색 토글 + 카운트", () 
     });
     const active = screen.getByTestId("docs-sidebar-collection-all");
     expect(active).toHaveTextContent("전체 문서");
-    expect(active).toHaveAttribute("aria-pressed", "true");
+    // 2026-08-15 (8) — 배타 단일선택이라 radiogroup + aria-checked 다.
+    expect(active).toHaveAttribute("aria-checked", "true");
+    expect(active).toHaveAttribute("role", "radio");
     // 개수는 툴팁(접근성 이름)이 계속 갖는다 — 칩 라벨이 폭을 먹지 않게.
     expect(active.getAttribute("aria-label")).toContain("3");
   });
