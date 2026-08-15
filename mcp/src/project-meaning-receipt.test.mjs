@@ -72,7 +72,7 @@ function competencyBody(overrides = {}) {
     impact: 'Which typed dependencies explain change impact across the model?',
   };
   return `# Demo\n\n## Competency answers\n\n${Object.entries(rows).map(([id, row]) => [
-    `### ${id} — ${row.status ?? 'answered'}`,
+    `### ${id}: ${row.status ?? 'answered'}`,
     '',
     questions[id] ?? 'Unknown question?',
     '',
@@ -149,6 +149,20 @@ test('parses the deterministic five-section competency Markdown', () => {
   ]);
 });
 
+test('the dogfood project keeps its competency answers on the shipped machine contract', () => {
+  const body = readFileSync(
+    new URL('../../docs/ontology/ontology-atlas.md', import.meta.url),
+    'utf8',
+  );
+  const parsed = parseProjectCompetencyMarkdown(body);
+
+  assert.deepEqual(
+    parsed.questions.map(({ id }) => id),
+    ['scope', 'domains', 'abilities', 'evidence', 'impact'],
+  );
+  assert.equal(parsed.questions.length > 0, true, 'dogfood competency gate must not idle');
+});
+
 test('canonical competency Markdown renderer round-trips through the strict parser', () => {
   const parsed = parseProjectCompetencyMarkdown(competencyBody());
   const answers = Object.fromEntries(parsed.questions.map((row) => [row.id, {
@@ -159,8 +173,13 @@ test('canonical competency Markdown renderer round-trips through the strict pars
   }]));
   const rendered = renderProjectCompetencyMarkdown(answers);
 
-  assert.equal(rendered.startsWith('## Competency answers\n\n### scope — answered'), true);
+  assert.equal(rendered.startsWith('## Competency answers\n\n### scope: answered'), true);
   assert.deepEqual(parseProjectCompetencyMarkdown(rendered), parsed);
+});
+
+test('legacy em-dash competency headings remain readable', () => {
+  const legacyBody = competencyBody().replaceAll(/^(### [a-z]+): /gm, '$1 — ');
+  assert.equal(parseProjectCompetencyMarkdown(legacyBody).questions.length, 5);
 });
 
 test('finalize persists only provenance and a fresh reader re-derives verified current', () => withVault((root) => {
@@ -351,7 +370,7 @@ test('a current source with an older competency receipt asks to reevaluate compe
 
 test('malformed competency rows fail closed', () => {
   assert.throws(() => parseProjectCompetencyMarkdown(
-    competencyBody().replace('### impact — answered', '### unknown — answered'),
+    competencyBody().replace('### impact: answered', '### unknown: answered'),
   ));
   assert.throws(() => parseProjectCompetencyMarkdown(
     competencyBody().replace('- Concepts: `projects/demo`', '- Concepts: projects/demo'),
@@ -369,7 +388,7 @@ test('malformed competency rows fail closed', () => {
     ),
   ));
   assert.throws(() => parseProjectCompetencyMarkdown(
-    `${competencyBody()}\n### scope — answered\n\nDuplicate\n`,
+    `${competencyBody()}\n### scope: answered\n\nDuplicate\n`,
   ));
 });
 

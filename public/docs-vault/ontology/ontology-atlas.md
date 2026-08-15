@@ -43,10 +43,10 @@ Ontology Atlas helps people and AI coding agents preserve and judge one shared, 
 
 Which stable business responsibilities or decision boundaries form its domains?
 
-Six stable responsibility boundaries cover agent integration, graph modeling, local vault management, onboarding and shell delivery, project portfolio work, and topology navigation.
+Seven stable responsibility boundaries cover agent integration, design-system stewardship, graph modeling, local vault management, onboarding and shell delivery, project portfolio work, and topology navigation.
 
-- Concepts: `ontology-atlas`, `domains/agent-integration`, `domains/graph-modeling`, `domains/local-vault-management`, `domains/onboarding-and-shell`, `domains/project-portfolio`, `domains/topology-navigation`
-- Relations: `ontology-atlas` --contains--> `domains/agent-integration`, `ontology-atlas` --contains--> `domains/graph-modeling`, `ontology-atlas` --contains--> `domains/local-vault-management`, `ontology-atlas` --contains--> `domains/onboarding-and-shell`, `ontology-atlas` --contains--> `domains/project-portfolio`, `ontology-atlas` --contains--> `domains/topology-navigation`
+- Concepts: `ontology-atlas`, `domains/agent-integration`, `domains/design-system`, `domains/graph-modeling`, `domains/local-vault-management`, `domains/onboarding-and-shell`, `domains/project-portfolio`, `domains/topology-navigation`
+- Relations: `ontology-atlas` --contains--> `domains/agent-integration`, `ontology-atlas` --contains--> `domains/design-system`, `ontology-atlas` --contains--> `domains/graph-modeling`, `ontology-atlas` --contains--> `domains/local-vault-management`, `ontology-atlas` --contains--> `domains/onboarding-and-shell`, `ontology-atlas` --contains--> `domains/project-portfolio`, `ontology-atlas` --contains--> `domains/topology-navigation`
 - Evidence: `README.md`
 
 ### abilities: partial
