@@ -111,15 +111,70 @@ description: Build a screen from this repo's design system deterministically —
 | 몇 개 중 하나 고르기 (5개 이상 · 라벨이 길다) | `<Select>` |
 | 상자를 부모가 이미 냈다 | `frame="bare"` — `boxed` 를 겹치면 상자 속 상자가 된다 |
 
-⚠️ **입력의 폭은 `className` 으로 준다** — 그 `className` 은 입력이 아니라
-**래퍼**(라벨+입력+오류를 담는 세로 상자)로 간다. 입력을 칸에 꽉 채우려면
-`className="w-full"` 이다. 값 표(`frame` · `size` · `multiline`)는
-`docs/DESIGN-SYSTEM.md` 「폼 필드」 절.
+⚠️ **`Checkbox` 와 `SegmentedControl` 이 겹쳐 보일 때** (2026-08-15 두 번째
+시험이 지적한 모순): 가르는 것은 옵션 개수가 아니라 **라벨이 무엇의 이름인가**다.
+라벨이 **그 항목 자체의 이름**이면(「만들면 바로 공개돼요」) `Checkbox` —
+켜고 끄는 것 하나다. 항목 이름이 **행 왼쪽에 이미 있고** 라벨이 **값의
+이름**이면(「켬」/「끔」·「개발」/「일반」) `SegmentedControl` 이다. 그래서 설정
+행은 거의 항상 세그먼트이고, 폼 안의 동의 한 줄은 거의 항상 체크박스다.
+
+⚠️ **입력의 폭**: `className` 은 입력이 아니라 **래퍼**(라벨+입력+오류를 담는
+세로 상자)로 간다. 래퍼가 세로 flex 라 자식이 가로로 늘어나므로, 칸을 꽉
+채우려면 **래퍼에** `className="w-full"` 을 준다(입력에 직접 거는 게 아니다).
+값 표(`frame` · `size` · `multiline`)는 `docs/DESIGN-SYSTEM.md` 「폼 필드」 절.
 
 게이트: `field-class` · `field-adoption-ratchet`(새 파일의 생 `<input>` 은 0) ·
 `checkbox-target-size` · `dialog-adoption-ratchet` · `touch-floor-layer`.
 
 **뒤를 막는 표면**은 `<Surface>` 가 아니라 `<Dialog>` 다 — 아래 2절.
+
+### 폼 하나를 통째로 — **베낄 것이 없어서 짐작하게 두지 않는다**
+
+2026-08-15 두 번째 이식성 시험의 진단: *"번들에 컴포넌트 사용 예제가 0건이라
+호출 모양을 전부 타입에서 역산해야 했다"* — 부품과 규격이 다 있어도 **한 번
+조립된 모습**이 없으면 매번 소스를 열게 된다. 그래서 여기 한 장을 둔다:
+
+```tsx
+<Dialog open={open} onClose={close} labelledBy="new-project-title" size="sm">
+  <h2 id="new-project-title" className="text-title font-[var(--font-weight-strong)] text-[color:var(--color-text-primary)]">
+    새 프로젝트 만들기
+  </h2>
+
+  <div className="mt-4 flex flex-col gap-3">
+    <Input
+      label="이름"
+      className="w-full"                    {/* 폭은 래퍼에 */}
+      value={name}
+      onChange={(e) => setName(e.target.value)}
+      error={submitted && !name.trim() ? '이름을 입력하세요' : undefined}
+    />
+    <Textarea
+      label="설명"
+      className="w-full"
+      rows={3}
+      hint="나중에 바꿀 수 있어요"
+      value={desc}
+      onChange={(e) => setDesc(e.target.value)}
+    />
+    <Checkbox
+      label="만들면 바로 공개돼요"
+      checked={isPublic}
+      onChange={(e) => setPublic(e.target.checked)}
+    />
+  </div>
+
+  {/* 푸터: 오른쪽 정렬 · 취소가 왼쪽 · 주 행동이 오른쪽(실측 관례) */}
+  <div className="mt-4 flex justify-end gap-2">
+    <Button variant="ghost" onClick={close}>취소</Button>
+    <Button variant="primary" onClick={submit}>만들기</Button>
+  </div>
+</Dialog>
+```
+
+여기서 읽어야 할 것 넷: ① 제목은 `text-title` + `strong` 이고 `labelledBy`
+로 다이얼로그에 묶는다 ② 오류·안내는 **prop 이지 형제 원소가 아니다**
+③ 푸터는 `justify-end gap-2` · 취소(`ghost`) 왼쪽 · 주 행동(`primary`)
+오른쪽 ④ 세로 리듬은 `gap-3`(필드 사이) · `mt-4`(묶음 사이).
 
 모양 여섯은 419개를 전부 세어서 나온 것이다(칩 128 · 링크형 85 · 행 39 ·
 아이콘 36 · pill 32 · 카드 18). **아홉 번째를 감으로 추가하지 않는다** — 나중에
