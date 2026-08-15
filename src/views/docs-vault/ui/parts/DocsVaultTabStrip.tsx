@@ -220,7 +220,7 @@ export function DocsVaultTabStrip({
                 "my-auto mr-1.5 flex-none hover:bg-[color:var(--color-overlay-3)] hover:text-[color:var(--color-text-primary)]",
                 active
                   ? "opacity-100"
-                  : "opacity-0 group-hover:opacity-100 focus-visible:opacity-100",
+                  : "[@media(hover:hover)]:opacity-0 group-hover:opacity-100 focus-visible:opacity-100",
               )}
             >
               <X size={ICON_SIZE.md} aria-hidden />

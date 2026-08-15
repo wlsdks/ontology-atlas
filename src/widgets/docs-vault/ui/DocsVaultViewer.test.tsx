@@ -73,7 +73,21 @@ describe("DocsVaultViewer", () => {
     expect(anchor.className).toContain("sm:-left-9");
     expect(anchor.className).not.toContain("sm:h-5");
     expect(anchor.className).not.toContain("sm:w-5");
-    expect(anchor.className).toContain("sm:opacity-0");
+    /*
+     * 2026-08-15 — 숨김의 기준이 **폭에서 호버 능력으로** 바뀌었다.
+     * 종전 `sm:opacity-0` 은 「좁으면 터치일 것」이라는 짐작이고, 터치 계약이
+     * 정확히 그것을 금지한다(`design.md`: *"화면 폭으로 터치인지 짐작하지
+     * 말 것"*). 실제 결함은 **넓은 터치 기기**(태블릿·터치 노트북)였다 —
+     * 거기서는 이 앵커가 호버 전까지 안 보이는데 호버가 일어나지 않는다.
+     *
+     * `[@media(hover:hover)]:opacity-0` 은 호버가 실제로 되는 기기에서만
+     * 숨긴다. 좁은 화면의 동작은 그대로다(거기도 대개 호버가 없다).
+     */
+    expect(anchor.className).not.toContain("sm:opacity-0");
+    expect(anchor.className).toContain("[@media(hover:hover)]:opacity-0");
+    expect(anchor.className).toContain("group-hover:opacity-100");
+    // 키보드가 안 보이는 칸에 멈추지 않는다.
+    expect(anchor.className).toContain("focus-visible:opacity-100");
   });
 
   it("makes table links usable as source-record jump targets", async () => {

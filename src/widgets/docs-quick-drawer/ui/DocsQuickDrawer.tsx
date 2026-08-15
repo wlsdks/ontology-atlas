@@ -267,7 +267,7 @@ function DocRow({
             "mr-1 transition-opacity",
             pinned
               ? "text-[color:var(--color-indigo-accent)] opacity-100"
-              : "opacity-0 hover:text-[color:var(--color-indigo-accent)] group-hover:opacity-100 focus-visible:opacity-100",
+              : "[@media(hover:hover)]:opacity-0 hover:text-[color:var(--color-indigo-accent)] group-hover:opacity-100 focus-visible:opacity-100",
           )}
         >
           <Star size={ICON_SIZE.sm} fill={pinned ? "currentColor" : "none"} />
@@ -650,8 +650,17 @@ export function DocsQuickDrawer({
                           shape: "pill",
                           size: "sm",
                           active: selected,
-                          className:
-                            "shrink-0 gap-1 hover:border-[color:var(--color-indigo-a34)] hover:text-[color:var(--color-text-primary)]",
+                          /*
+                           * hover 보더는 **안 골라진 것에만** 준다 (2026-08-15).
+                           * 종전엔 무조건 걸어서, 골라진 칩에 마우스를 올리면
+                           * hover 가 선택 보더를 덮었다 — 선택 신호가 오히려
+                           * 약해진다(실측: `indigo-pale-a28` 2.09 → `a34` 1.48).
+                           * 같은 파일 계열의 `CommitDetail` 은 이미 이 가드를
+                           * 주석과 함께 갖고 있었다.
+                           */
+                          className: selected
+                            ? "shrink-0 gap-1"
+                            : "shrink-0 gap-1 hover:border-[color:var(--color-indigo-a34)] hover:text-[color:var(--color-text-primary)]",
                         })}
                       >
                         <Hash size={ICON_SIZE.sm} />

@@ -321,7 +321,14 @@ export function ProjectCard({
 
       <div
         className={cn(
-          'pointer-events-none absolute inset-0 rounded-sheet border border-[color:var(--color-indigo-accent)] transition-opacity duration-[var(--motion-base)] md:rounded-sheet',
+          /*
+           * duration 을 안 적는다 (2026-08-15). 종전 `--motion-base`(180ms)는
+           * **이동 램프**인데 이 링이 뜨는 계기는 둘 다 「이미 일어난 상태를
+           * 알려 주는 것」이다 — 호버(`group-hover:opacity-40`)와 선택
+           * (`selected`). 둘 다 `--motion-fast`(120ms) 예산이고, 그건
+           * Tailwind 기본 전환이 이미 낸다.
+           */
+          'pointer-events-none absolute inset-0 rounded-sheet border border-[color:var(--color-indigo-accent)] transition-opacity md:rounded-sheet',
           selected ? 'opacity-100' : 'opacity-0 group-hover:opacity-40',
         )}
         aria-hidden

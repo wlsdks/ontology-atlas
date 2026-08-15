@@ -279,8 +279,17 @@ export function InlineEditCard({
                   className={controlClass({
                     shape: "chip",
                     tone: "danger",
+                    /*
+                     * hover 면은 `a12` 다 — 종전 `a32` 는 **보더 토큰**이었고
+                     * (실사용: 보더 14 · 면 1 = 이 자리), 면으로 쓰면 붉은
+                     * 잉크와 부딪혀 **어느 표면 위에서도 AA 를 깬다**:
+                     * canvas 4.30 · panel 4.05 · elevated 3.72 (필요 4.5).
+                     * 쉬는 상태는 5.32 였으니 호버가 오히려 읽기를 나쁘게
+                     * 만들고 있었다. 면 가족(a08 10회 · a10 4 · a12 3)의 가장
+                     * 진한 단이 `a12` 이고 최악 호스트에서도 4.79 다.
+                     */
                     className:
-                      "flex-none font-[var(--font-weight-emphasis)] hover:bg-[color:var(--color-danger-a32)]",
+                      "flex-none font-[var(--font-weight-emphasis)] hover:bg-[color:var(--color-danger-a12)]",
                   })}
                 >
                   {labels.editDeleteYes}
