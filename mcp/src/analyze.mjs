@@ -140,6 +140,9 @@ const AUTOTOOLS_IMPLEMENTATION_MANIFESTS = new Map([
   ['configure.in', { slug: 'elements/autotools-configure', title: 'Autotools Configure' }],
   ['Makefile.am', { slug: 'elements/autotools-build', title: 'Autotools Build' }],
 ]);
+const AUTOTOOLS_IDENTITY_FILES = ['configure.ac', 'configure.in'];
+const AUTOTOOLS_IDENTITY_MAX_BYTES = 256 * 1024;
+const AUTOTOOLS_IDENTITY_MAX_LENGTH = 160;
 const LIBRARY_SOURCE_ELEMENT_LIMIT = 24;
 const IMPLEMENTATION_SOURCE_ELEMENT_LIMIT = 48;
 const CARGO_MANIFEST_MAX_FEATURES = 48;
@@ -1367,9 +1370,15 @@ function enrichProjectCandidate(project, semanticEvidence) {
       row.trust === 'candidate-evidence' &&
       row.excerpt,
   );
-  const sources = uniqueStrings(trustedRows.map((row) => row.source)).slice(0, 3);
-  const lead = trustedRows[0];
-  const sentence = boundedEvidenceSentence(lead?.excerpt);
+  const sources = uniqueStrings([
+    ...(project.evidence ?? []),
+    ...trustedRows.map((row) => row.source),
+  ]).slice(0, 3);
+  const purposeWitness = trustedRows
+    .map((row) => ({ row, sentence: explicitPurposeSentence(row.excerpt) }))
+    .find(({ sentence }) => sentence);
+  const lead = purposeWitness?.row ?? trustedRows[0];
+  const sentence = purposeWitness?.sentence ?? boundedEvidenceSentence(lead?.excerpt);
   const definition = sentence
     ? `Proposed repository purpose from ${lead.source}: ${sentence}`
     : 'Repository purpose is not established by the bounded semantic evidence scan.';
@@ -1455,6 +1464,28 @@ function boundedEvidenceSentence(value) {
   if (!text) return '';
   const sentence = text.match(/^(.{24,360}?[.!?])(?:\s|$)/)?.[1];
   return (sentence ?? text.slice(0, 360)).trim();
+}
+
+function explicitPurposeSentence(value) {
+  const text = String(value ?? '')
+    .replace(/[\*_`]/g, '')
+    .replace(/\s+/g, ' ')
+    .trim();
+  if (!text) return '';
+  const sentences = text.match(/[^.!?]+(?:[.!?](?=\s|$)|$)/g) ?? [];
+  return (
+    sentences
+      .map((sentence) => sentence.trim())
+      .find(
+        (sentence) =>
+          sentence.length >= 24 &&
+          sentence.length <= 360 &&
+          !/^\d+(?:\.\d+)*\s/.test(sentence) &&
+          !/^(?:release|version)\b/i.test(sentence) &&
+          !/\b(?:was|is|has been) released\b/i.test(sentence) &&
+          /\b(?:provides|allows|lets|enables|helps|exists\s+to)\b/i.test(sentence),
+      ) ?? ''
+  );
 }
 
 function uniqueStrings(values) {
@@ -2727,7 +2758,61 @@ function uniqueEvidenceRows(rows) {
   return unique;
 }
 
+function extractStaticAutotoolsIdentity(text) {
+  const match = String(text).match(
+    /^\s*AC_INIT\s*\(\s*(\[[^\]\r\n]{1,160}\]|"(?:\\.|[^"\\\r\n])*"|'(?:\\.|[^'\\\r\n])*')\s*(?=,|\))/m,
+  );
+  if (!match) return '';
+  const literal = match[1];
+  const identity = literal.slice(1, -1).trim();
+  if (
+    !identity ||
+    identity.length > AUTOTOOLS_IDENTITY_MAX_LENGTH ||
+    /[\u0000-\u001f\u007f]/.test(identity) ||
+    /[`$\\]/.test(identity) ||
+    /\b(?:m4_[A-Za-z0-9_]+|esyscmd|syscmd|eval|include|ifdef|ifelse)\s*\(/i.test(identity)
+  ) {
+    return '';
+  }
+  return identity;
+}
+
+function detectAutotoolsIdentity(rootPath, skipped = []) {
+  for (const source of AUTOTOOLS_IDENTITY_FILES) {
+    const path = join(rootPath, source);
+    if (!existsSync(path)) continue;
+    try {
+      const pathStat = statSync(path);
+      if (!pathStat.isFile()) continue;
+      if (!pathResolvesInsideRoot(rootPath, path)) {
+        pushSkippedOnce(skipped, {
+          path,
+          reason: `project-identity-skip: ${source} resolves outside repository root`,
+        });
+        continue;
+      }
+      if (pathStat.size > AUTOTOOLS_IDENTITY_MAX_BYTES) {
+        pushSkippedOnce(skipped, {
+          path,
+          reason: `project-identity-skip: ${source} exceeds ${AUTOTOOLS_IDENTITY_MAX_BYTES} bytes`,
+        });
+        continue;
+      }
+      const identity = extractStaticAutotoolsIdentity(readFileSync(path, 'utf-8'));
+      const slug = identity ? slugify(identity.replace(/[_/]+/g, '-')) : '';
+      if (identity && slug) {
+        return { slug, title: identity, evidence: [source] };
+      }
+    } catch {
+      // An unreadable or concurrently removed configure file is not identity evidence.
+    }
+  }
+  return null;
+}
+
 function detectProject(rootPath, skipped = []) {
+  const autotoolsIdentity = detectAutotoolsIdentity(rootPath, skipped);
+  if (autotoolsIdentity) return autotoolsIdentity;
   const pkgPath = join(rootPath, 'package.json');
   if (existsSync(pkgPath)) {
     try {

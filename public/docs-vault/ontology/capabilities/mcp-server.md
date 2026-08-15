@@ -160,8 +160,11 @@ edge는 bounded sample이 아니라 전체 import에서 두 차원의 count와 �
 
 C/Autotools 저장소에서도 빈 import graph를 “의존 없음”으로 말하지 않는다. bounded
 manifest/source discovery가 실제 `.c`/`.h`를 확인하면 `infer_imports.coverage`는 `c`를
-미지원 언어로 표시하고 `allDetectedLanguagesSupported:false`를 반환한다. C include/build
-dependency graph를 분석하거나 의미 관계로 자동 승격하지는 않는다.
+미지원 언어로 표시하고 `allDetectedLanguagesSupported:false`를 반환한다. 실행하지 않는
+정적 `AC_INIT` 리터럴은 프로젝트 이름의 근거로 쓰고, bounded README prose에서는
+릴리스 상태보다 목적을 직접 말하는 문장을 우선한다. 이 근거만으로 domain이나
+capability를 만들지 않으며 C include/build dependency graph를 분석하거나 의미 관계로
+자동 승격하지도 않는다.
 
 Rust 저장소도 같은 원칙으로 빈 import graph를 “의존 없음”으로 말하지 않는다.
 `infer_imports.coverage`는 Cargo 감지 시 `use`/`mod`/macro dependency scan이 아직

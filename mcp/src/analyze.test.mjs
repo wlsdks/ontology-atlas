@@ -520,6 +520,124 @@ test('static setup.py name replaces a generic folder slug while README.rst remai
   }
 });
 
+test('Autotools identity and explicit purpose outrank an RST status prelude', () => {
+  const root = withRepo((r) => {
+    writeFileSync(
+      join(r, 'README.rst'),
+      [
+        'Status',
+        '======',
+        '',
+        'Release 0.1 provides compatibility fixes for downstream adopters.',
+        '',
+        'Purpose',
+        '=======',
+        '',
+        'Signal Mapper provides bounded records for local signal inspection.',
+      ].join('\n'),
+    );
+    writeFileSync(
+      join(r, 'configure.ac'),
+      [
+        'dnl The analyzer must read this file without invoking Autoconf.',
+        "AC_INIT([Signal_Mapper], [0.1.0], [bugs@example.invalid])",
+        'AC_CONFIG_SRCDIR([src/main.c])',
+      ].join('\n'),
+    );
+    writeFileSync(join(r, 'Makefile.am'), 'bin_PROGRAMS = signal-mapper\n');
+    mkdirSync(join(r, 'src'), { recursive: true });
+    writeFileSync(join(r, 'src', 'main.c'), 'int main(void) { return 0; }\n');
+  });
+  try {
+    const result = analyzeRepoStructure(root);
+
+    assert.equal(result.project.title, 'Signal_Mapper');
+    assert.equal(result.project.slug, 'signal-mapper');
+    assert.equal(
+      result.project.definition,
+      'Proposed repository purpose from README.rst: Signal Mapper provides bounded records for local signal inspection.',
+    );
+    assert.ok(result.project.evidence.includes('configure.ac'));
+    assert.ok(result.elements.some((element) => element.path === 'configure.ac'));
+    assert.equal(result.proposalValidation.canWrite, false);
+    assert.equal('writePlan' in result.proposalValidation, false);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test('dynamic and unsafe AC_INIT literals stay out of project identity', () => {
+  for (const acInit of [
+    'AC_INIT([m4_esyscmd([printf unsafe])], [0.1.0])',
+    'AC_INIT([$(touch /tmp/atlas-ac-init-unsafe)], [0.1.0])',
+  ]) {
+    const root = withRepo((r) => {
+      writeFileSync(join(r, 'README.rst'), 'Status\n======\n\nRelease 0.1 is available.\n');
+      writeFileSync(join(r, 'configure.ac'), acInit);
+    });
+    try {
+      const result = analyzeRepoStructure(root);
+
+      assert.equal(result.project.title, 'Status');
+      assert.equal(result.project.evidence.includes('configure.ac'), false);
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  }
+});
+
+test('oversized AC_INIT source is skipped before project identity admission', () => {
+  const root = withRepo((r) => {
+    writeFileSync(join(r, 'README.rst'), 'Status\n======\n\nRelease 0.1 is available.\n');
+    writeFileSync(
+      join(r, 'configure.ac'),
+      `AC_INIT([Oversized Candidate], [0.1.0])\n${'dnl padding\n'.repeat(22000)}`,
+    );
+  });
+  try {
+    const result = analyzeRepoStructure(root);
+
+    assert.equal(result.project.title, 'Status');
+    assert.equal(result.project.evidence.includes('configure.ac'), false);
+    assert.ok(
+      result.skipped.some(
+        (row) =>
+          row.path.endsWith('configure.ac') &&
+          row.reason === 'project-identity-skip: configure.ac exceeds 262144 bytes',
+      ),
+    );
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test('AC_INIT symlink outside the repository is skipped before project identity admission', () => {
+  const outside = withRepo((r) => {
+    writeFileSync(join(r, 'configure.ac'), 'AC_INIT([Escaped Candidate], [0.1.0])\n');
+  });
+  const root = withRepo((r) => {
+    writeFileSync(join(r, 'README.rst'), 'Status\n======\n\nRelease 0.1 is available.\n');
+    symlinkSync(join(outside, 'configure.ac'), join(r, 'configure.ac'));
+  });
+  try {
+    const result = analyzeRepoStructure(root);
+
+    assert.equal(result.project.title, 'Status');
+    assert.equal(result.project.evidence.includes('configure.ac'), false);
+    assert.ok(
+      result.skipped.some(
+        (row) =>
+          row.path.endsWith('configure.ac') &&
+          row.reason ===
+            'project-identity-skip: configure.ac resolves outside repository root',
+      ),
+    );
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+    rmSync(outside, { recursive: true, force: true });
+  }
+});
+
 test('setup.py symlink outside the repository is rejected before project identity or evidence admission', () => {
   const outside = withRepo((r) => {
     writeFileSync(
