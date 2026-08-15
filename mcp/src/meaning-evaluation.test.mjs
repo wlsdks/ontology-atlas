@@ -352,6 +352,55 @@ test('repository proposal blocks unknown citations and unresolved capability dom
   assert.ok(result.findings.some((row) => row.code === 'unresolved-capability-domain'));
 });
 
+test('repository proposal rejects a relation rationale that names an endpoint path without citing it', () => {
+  const analysis = analyzeRepoStructure(fixtureRoot);
+  const proposal = completeTypedRepositoryProposal();
+  proposal.relations[4].why =
+    'src/features/checkout reads inventory availability before completing checkout.';
+
+  const result = validateMeaningProposalAgainstAnalysis(analysis, proposal);
+
+  assert.equal(result.status, 'fail');
+  assert.equal(result.canWrite, false);
+  assert.equal(result.gates.relationsResolved, false);
+  assert.ok(result.findings.some((row) =>
+    row.code === 'relation-path-citation-mismatch'
+      && row.path === 'relations[4]'
+      && row.sources.includes('src/features/checkout')));
+});
+
+test('repository proposal accepts an exact endpoint path when the relation cites the same path', () => {
+  const analysis = analyzeRepoStructure(fixtureRoot);
+  const proposal = completeTypedRepositoryProposal();
+  proposal.relations[4].why =
+    'src/features/checkout reads inventory availability before completing checkout.';
+  proposal.relations[4].evidence = ['README.md', 'src/features/checkout'];
+
+  const result = validateMeaningProposalAgainstAnalysis(analysis, proposal);
+
+  assert.equal(result.status, 'pass', JSON.stringify(result.findings));
+  assert.equal(result.canWrite, true);
+  assert.equal(
+    result.findings.some((row) => row.code === 'relation-path-citation-mismatch'),
+    false,
+  );
+});
+
+test('repository proposal does not mistake a longer path token for an exact endpoint path', () => {
+  const analysis = analyzeRepoStructure(fixtureRoot);
+  const proposal = completeTypedRepositoryProposal();
+  proposal.relations[4].why =
+    'src/features/checkout-adapter keeps the inventory boundary outside checkout.';
+
+  const result = validateMeaningProposalAgainstAnalysis(analysis, proposal);
+
+  assert.equal(result.status, 'pass', JSON.stringify(result.findings));
+  assert.equal(
+    result.findings.some((row) => row.code === 'relation-path-citation-mismatch'),
+    false,
+  );
+});
+
 test('repository proposal does not treat a structural path as independent semantic corroboration', () => {
   const analysis = analyzeRepoStructure(fixtureRoot);
   const readmeEvidence = analysis.semanticEvidence.find((row) => row.source === 'README.md');
