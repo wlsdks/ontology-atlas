@@ -21,6 +21,22 @@ import { seedFirstRunSeen } from "./first-run-seed";
  * **채워진 버튼**은 잉크가 흰색이라 밝아질수록 대비가 떨어진다. ② 틴트를 지는
  * 컨트롤에 `accent` 잉크를 썼는데 호버에서 틴트가 한 단 올라갔다.
  *
+ * ## 이 계기가 **안 보는 것** (2026-08-15 실측 — 켤지 말지를 숫자가 정했다)
+ *
+ * - **비텍스트 대비(1.4.11)는 판정하지 않는다.** 호버로 보더가 바뀌는 자리를
+ *   전수해 3:1 로 재 봤더니 **60건 중 57건이 미달**이었다(1.12~2.92). 이걸
+ *   오류로 켜면 57건 소음이고, 그건 이 저장소가 명시적으로 금지한 모양이다
+ *   (`design-gates.md` 「룰을 켜기 전 반드시 측정한다」 — 소음이 기존 신호까지
+ *   덮는다). 게다가 이 앱의 호버는 보더 하나로 상태를 말하지 않는다: 면·잉크·
+ *   보더가 **함께** 바뀌고, 「1px 보더는 이 어두운 바탕에서 무엇을 골라도
+ *   휘도로 못 가른다」는 것은 이미 별도로 실측됐다. **「보더에 3:1 을 요구할
+ *   것인가」는 계기의 질문이 아니라 디자인 판정**이라 그 자리로 넘긴다.
+ * - **`group-hover:` 로 바뀌는 자식 잉크** — 이 계기는 컨트롤 **자신의** 색만
+ *   읽는다(실측 25자리가 그 시야 밖).
+ * - **볼트가 있어야 그려지는 컨트롤·열리는 표면**(시트·메뉴·팝오버). 2026-08-15 (6)
+ *   이 기록한 사각과 같은 것이다 — 조건부로만 나오는 표시는 런타임 계기의 시야에
+ *   영원히 안 들어올 수 있고, 그래서 소스 층의 계산 계약이 짝으로 필요하다.
+ *
  * ## ⚠️ 스타일시트를 읽어서 추론하지 않는다
  *
  * 처음엔 `document.styleSheets` 에서 `:hover` 규칙을 찾아 계산했다. **그 계기는
@@ -80,9 +96,49 @@ async function readState(el: Locator): Promise<Sample | null> {
  *
  * 그래서 쉬는 상태는 **아무것도 호버하기 전에** 한 번에 걷는다.
  */
+/**
+ * 쉬는 상태를 걷기 **전에** 포인터를 컨트롤이 없는 곳으로 치운다.
+ *
+ * 이 함수가 없으면 같은 페이지에서 `auditRoute` 를 두 번 부를 때 두 번째
+ * 스윕의 「쉬는 상태」가 **첫 스윕이 마지막으로 호버한 컨트롤 위에서** 읽힌다.
+ * 그 컨트롤은 rest == hover 가 되어 «호버가 색을 안 바꾼다»로 분류돼 조용히
+ * 빠진다 — 아래 자기검증 테스트가 정확히 그렇게 두 번 부른다.
+ *
+ * ⚠️ **고정 좌표를 쓰지 않는다.** 이 파일 머리말이 기록한 그 사고가 «(2,2)를
+ * 안전하다고 가정했는데 좌측 레일 위였다» 였다. 후보를 훑어 **실제로 컨트롤이
+ * 없는 지점**을 찾고, 못 찾으면 그 사실을 드러낸다.
+ */
+async function parkPointer(page: Page): Promise<void> {
+  const { width, height } = VIEWPORT;
+  const candidates: Array<[number, number]> = [
+    [Math.floor(width / 2), height - 2],
+    [width - 2, Math.floor(height / 2)],
+    [Math.floor(width / 2), 2],
+    [2, height - 2],
+  ];
+  for (const [x, y] of candidates) {
+    const clear = await page
+      .evaluate(
+        ([px, py]) => {
+          const el = document.elementFromPoint(px, py);
+          return !el || !el.closest("a[href],button,[role=button],summary");
+        },
+        [x, y],
+      )
+      .catch(() => false);
+    if (clear) {
+      await page.mouse.move(x, y);
+      await page.waitForTimeout(30);
+      return;
+    }
+  }
+  throw new Error("포인터를 치울 빈 지점을 못 찾았다 — 쉬는 상태가 호버된 채로 읽힐 수 있다");
+}
+
 async function auditRoute(page: Page) {
   const offenders: string[] = [];
   let compared = 0;
+  await parkPointer(page);
   const controls = page.locator("a[href],button,[role=button],summary");
   const n = await controls.count();
   const resting: (Sample | null)[] = [];
@@ -92,9 +148,18 @@ async function auditRoute(page: Page) {
     const visible = await el
       .evaluate((node) => {
         const c = getComputedStyle(node), r = node.getBoundingClientRect();
+        /*
+         * ⚠️ **첫 뷰포트 제약을 걷어냈다** (2026-08-15). 종전엔
+         * `r.top >= 0 && r.bottom <= innerHeight …` 로 **처음 보이는 화면 안**
+         * 컨트롤만 쟀다. 그 제약은 기술적 한계가 아니라 관성이었다 —
+         * Playwright 의 `hover()` 는 대상을 알아서 스크롤해 넣는다. 실측:
+         * 그 한 줄이 **17개 라우트에서 컨트롤 25개**를 안 재고 있었다.
+         *
+         * 쉬는 상태를 스크롤 전에 걷어도 되는 이유: 이 계기가 읽는 것은 색뿐이고
+         * 색은 스크롤로 안 바뀐다(배경 합성도 조상 체인이라 위치와 무관하다).
+         */
         return (
           r.width > 6 && r.height > 6 && c.visibility !== "hidden" && Number(c.opacity) > 0.05 &&
-          r.top >= 0 && r.bottom <= innerHeight && r.left >= 0 && r.right <= innerWidth &&
           !(node as HTMLButtonElement).disabled && node.getAttribute("aria-disabled") !== "true"
         );
       })
@@ -129,7 +194,19 @@ for (const route of AUDITED_ROUTES) {
     await page.goto(`${route}?guides=off`, { waitUntil: "domcontentloaded" });
     await page.waitForSelector("main", { timeout: 20_000 });
     await page.waitForTimeout(800);
-    const { offenders } = await auditRoute(page);
+    const { offenders, compared } = await auditRoute(page);
+    /*
+     * **라우트마다 바닥이 있다** (2026-08-15). 종전엔 이 단언 하나뿐이라
+     * 어느 라우트가 **0건을 비교하고도 초록**일 수 있었다 — 「미달 없음」과
+     * 「아무것도 안 쟀음」이 화면에서 똑같이 생긴다. 자매 래칫 둘
+     * (`contrast-ratchet`·`a11y-ratchet`)은 이미 그 문법을 쓰는데 이 계기만
+     * 안 쓰고 있었고, 그 가드가 19개 중 **한 라우트에만** 있었다.
+     *
+     * 3 은 실측(2026-08-15, 1512×900)에서 가장 적은 라우트가 4였던 것에
+     * 여유 하나를 뺀 값이다. 이 수가 내려가면 화면이 조용해진 것이거나
+     * 계기가 고장난 것이고, 어느 쪽이든 봐야 한다.
+     */
+    expect(compared, `${route} 에서 호버로 색이 바뀌는 컨트롤을 거의 못 찾았다 — 미달 0 이 증거가 아니다`).toBeGreaterThanOrEqual(3);
     expect(offenders, "쉴 때는 통과하는데 호버에서 AA 를 깬다").toEqual([]);
   });
 }
