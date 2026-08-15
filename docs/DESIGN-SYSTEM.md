@@ -2816,7 +2816,8 @@ or fluid column widths"* — 폭은 램프 스텝이 아니라 그리드·내용
 | 상태 칩 (`CHROME_STATUS_CHIP_CLASS`) | 44px (타일과 동일) | `--chrome-radius` 10px | `px-3.5` | body / label |
 | 패널 (INDEX · 데이터시트) | 콘텐츠 | `--topology-v2-panel-radius` 12px (= `rounded-panel`) | `--topology-v2-panel-pad` | title 헤더 · body 행 |
 | 팝오버 (ego popover) | 콘텐츠 | `rounded-panel` | `--card-pad` | title + body/label |
-| 카드 (일반) | 콘텐츠 | `rounded-card` | `--card-pad` | title + body |
+| **구획 상자** (패널) | 콘텐츠 | `rounded-panel` | **`--card-pad`** | title + body |
+| **항목 상자** (카드) | 콘텐츠 | `rounded-card` | 내용 밀도가 정한다 (강제 안 함) | title + body |
 | 배지·칩 (일반) | 콘텐츠 | **`badgeClass({ shape })` 가 낸다** — `micro`(micro·px-1.5 py-0.5·caption) · `tag`(chip·px-1.5·label) · `pill`(full·px-2 py-0.5·caption). 값을 여기 베끼지 않는다 | 위와 같음 | 위와 같음 |
 | 입력 (input/search) | 콘텐츠 | `rounded-card` | `px-3 py-2` | body |
 | 버튼 (일반) | 콘텐츠 | `rounded-chip`~`card` | `px-3 py-1.5` | body |
@@ -2828,6 +2829,23 @@ label` 을 처방하고 있었는데, 전수해 보니 그 조합의 **정확 �
 `static-badge-adoption-ratchet` 이 붙든다. **색과 자간은 값 층이 일부러 안
 덮는다** — 색 조합 60종에 최대 클러스터가 2라, 어떤 값을 골라도 소비처 0
 선택지가 되기 때문이다(그 수렴은 자리별 디자인 판정으로 다음 라운드).
+
+**구획이면 panel, 항목이면 card** (2026-08-15 「체계」석). 페이지·시트·드로어
+바닥에 직접 놓여 **구역을 만드는** 상자는 `rounded-panel`(12px) +
+`p-[var(--card-pad)]`. 이미 카드/패널 안에 내포되거나 **반복 목록의 한 항목**인
+상자는 `rounded-card`(9px)이고 인셋은 내용 밀도가 정한다.
+
+바깥 12 > 안쪽 9 의 동심 관계는 Material 3 shape scale · Apple HIG 의 「내포
+표면은 더 작은 반경」 지침과 같다. 실측 근거: 한 파일 안에서 바깥이 panel/16px,
+안쪽이 card 인 자리가 실재하고(`ConstructionReviewPanel` 104 ↔ 158행), card
+가족 표본은 전부 항목·내포 상자다. 패딩 분포도 갈린다 — panel 가족은 16px
+준다수파(46%), card 가족은 밀도 주도 롱테일이라 **card 인셋은 강제하지 않는다**.
+
+⚠️ **종전 이 표는 「카드(일반) = `rounded-card` + `--card-pad`」였는데 그 짝의
+실사용은 0건이었다.** 살아 있는 규격은 `rounded-panel` + 16px(토큰 13 + 손 12 =
+25곳)이다. 표를 보고 만들면 현실과 어긋나는 오정보였고, 2026-07-26 에 지운
+`--pad-panel` 과 같은 병이다. `--topology-v2-panel-pad`(14px)는 소비처 4곳이
+전부 지도 상세 패널 안이라 **지도 국소 토큰**이지 일반 패널 규격이 아니다.
 
 ### 명시 예외 (램프 밖, 문서화된 것만)
 

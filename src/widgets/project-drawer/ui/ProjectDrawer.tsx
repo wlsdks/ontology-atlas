@@ -626,7 +626,7 @@ export function ProjectDrawer({
                       {t("connectionsTitle")}
                     </h3>
                   </div>
-                  <div className="mt-3 rounded-panel border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-4 py-4">
+                  <div className="mt-3 rounded-panel border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] p-[var(--card-pad)]">
                     <p className="text-body-lg leading-title text-[color:var(--color-text-secondary)]">
                       {relationshipSummary}
                     </p>
@@ -813,7 +813,7 @@ export function ProjectDrawer({
                       <h3 className="font-mono text-caption uppercase tracking-[var(--tracking-caps-12)] text-[color:var(--color-text-quaternary)]">
                         {t("tagsAndStack")}
                       </h3>
-                      <div className="mt-3 rounded-panel border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-4 py-4">
+                      <div className="mt-3 rounded-panel border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] p-[var(--card-pad)]">
                         {project.tags.length > 0 && (
                           <div>
                             <p className="font-mono text-caption uppercase tracking-[var(--tracking-caps-12)] text-[color:var(--color-text-quaternary)]">
@@ -863,7 +863,7 @@ export function ProjectDrawer({
                       <div className="mt-3 grid gap-3">
                         {(project.dependencies.length > 0 ||
                           missingDependencyIssues.length > 0) && (
-                          <div className="rounded-panel border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-4 py-4">
+                          <div className="rounded-panel border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] p-[var(--card-pad)]">
                             <p className="font-mono text-caption uppercase tracking-[var(--tracking-caps-12)] text-[color:var(--color-text-quaternary)]">
                               {t("dependsOn")}
                             </p>
@@ -901,7 +901,7 @@ export function ProjectDrawer({
                         )}
 
                         {referencedBy.length > 0 && (
-                          <div className="rounded-panel border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-4 py-4">
+                          <div className="rounded-panel border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] p-[var(--card-pad)]">
                             <p className="font-mono text-caption uppercase tracking-[var(--tracking-caps-12)] text-[color:var(--color-text-quaternary)]">
                               {t("usedBy")}
                             </p>
@@ -925,7 +925,7 @@ export function ProjectDrawer({
                           </div>
                         )}
                         {relatedDocs.length > 0 && (
-                          <div className="rounded-panel border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-4 py-4">
+                          <div className="rounded-panel border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] p-[var(--card-pad)]">
                             <p className="flex items-center gap-1.5 font-mono text-caption uppercase tracking-[var(--tracking-caps-12)] text-[color:var(--color-text-quaternary)]">
                               <BookOpen size={ICON_SIZE.sm} aria-hidden />
                               {t("relatedDocs", { count: relatedDocs.length })}

@@ -1,7 +1,12 @@
-import { readFileSync, readdirSync, statSync } from "node:fs";
+import { statSync } from "node:fs";
 import path from "node:path";
 
 import { describe, expect, it } from "vitest";
+
+import {
+  censusStaticSurfaces,
+  isHandBadge,
+} from "../../scripts/lib/static-surface-census.mjs";
 
 /**
  * 정적 배지 채택 래칫 — **손으로 쓴 배지 기하가 늘지 못한다** (2026-08-15).
@@ -32,66 +37,12 @@ import { describe, expect, it } from "vitest";
 
 const ROOT = process.cwd();
 
-function stripComments(source: string): string {
-  return source
-    .replace(/\/\*[\s\S]*?\*\//g, (m) => m.replace(/[^\n]/g, " "))
-    .replace(/(^|[^:])\/\/.*$/gm, "$1");
-}
-
-/** 여는 태그를 중괄호 깊이로 끊는다 — 다행 태그·콜백 대응. */
-function openingTag(source: string, from: number): string {
-  let depth = 0;
-  let quote: string | null = null;
-  for (let i = from; i < source.length; i += 1) {
-    const c = source[i];
-    if (quote) {
-      if (c === quote && source[i - 1] !== "\\") quote = null;
-    } else if (c === '"' || c === "'" || c === "`") quote = c;
-    else if (c === "{") depth += 1;
-    else if (c === "}") depth -= 1;
-    else if (c === ">" && depth === 0) return source.slice(from, i);
-  }
-  return source.slice(from, from + 1500);
-}
-
-/** 손으로 쓴 배지 기하인가. `badgeClass` 소비자는 세지 않는다. */
-export function isHandBadge(tag: string): boolean {
-  if (!/className=/.test(tag)) return false;
-  if (/badgeClass|controlClass|fieldClass/.test(tag)) return false;
-  if (!/rounded-(micro|chip|full)\b/.test(tag)) return false;
-  const hasInset = /\bp[xy]?-[0-9.]+/.test(tag);
-  const hasType = /\btext-(caption|label|body)\b/.test(tag);
-  if (!hasInset && !hasType) return false;
-  // 상태 점 — 글자 없는 작은 원은 배지가 아니다(신호 톤 규격이 따로 있다).
-  if (/\b(size|h)-(1|1\.5|2|2\.5|3)\b/.test(tag) && !hasInset && !hasType) return false;
-  return true;
-}
-
-function scan(): Map<string, number> {
-  const found = new Map<string, number>();
-  const walk = (dir: string): void => {
-    for (const name of readdirSync(dir)) {
-      const p = path.join(dir, name);
-      if (statSync(p).isDirectory()) {
-        if (name === "node_modules" || name === ".next") continue;
-        walk(p);
-        continue;
-      }
-      if (!name.endsWith(".tsx") || name.endsWith(".test.tsx")) continue;
-      const rel = path.relative(ROOT, p);
-      // 프리미티브 층은 네이티브 원소의 정당한 집이다.
-      if (rel.startsWith("src/shared/ui/")) continue;
-      const src = stripComments(readFileSync(p, "utf8"));
-      for (const m of src.matchAll(/<span\b/g)) {
-        if (isHandBadge(openingTag(src, m.index ?? 0))) {
-          found.set(rel, (found.get(rel) ?? 0) + 1);
-        }
-      }
-    }
-  };
-  for (const root of ["src", "app"]) walk(path.join(ROOT, root));
-  return found;
-}
+/**
+ * **스캐너는 여기서 만들지 않는다** — `scripts/lib/static-surface-census.mjs`
+ * 를 부른다. 장부와 게이트가 **같은 함수**로 세어야 「장부가 실측보다 후하다」
+ * 는 양방향 검사가 뜻을 갖는다(2026-08-15 에 손으로 적은 장부가 네 번 틀린
+ * 뒤 `/design-system-audit` 에 성문화한 규율).
+ */
 
 /**
  * **부채 장부** — 2026-08-15 이주(바이트 동일 17곳) 직후 실측. 파일별 상한이고
@@ -136,24 +87,14 @@ const DEBT: ReadonlyArray<readonly [file: string, count: number]> = [
 ];
 
 describe("정적 배지 채택 래칫", () => {
-  const found = scan();
+  const census = censusStaticSurfaces(ROOT);
+  const found = census.badges;
   const ledger = new Map(DEBT);
 
   it("탐지기가 공회전하지 않는다 — 파일을 실제로 훑고 장부가 실재한다", () => {
     // 「걸린 파일이 0이 아니다」가 아니라 「훑은 파일이 충분하다」를 잠근다
     // (2026-08-03 label-decoration 판례: 공회전 방지의 대상을 틀리지 않는다).
-    let scanned = 0;
-    const walk = (dir: string): void => {
-      for (const name of readdirSync(dir)) {
-        const p = path.join(dir, name);
-        if (statSync(p).isDirectory()) {
-          if (name === "node_modules" || name === ".next") continue;
-          walk(p);
-        } else if (name.endsWith(".tsx") && !name.endsWith(".test.tsx")) scanned += 1;
-      }
-    };
-    for (const root of ["src", "app"]) walk(path.join(ROOT, root));
-    expect(scanned, "훑은 파일이 너무 적다 — 워커가 죽었다").toBeGreaterThan(100);
+    expect(census.scanned, "훑은 파일이 너무 적다 — 워커가 죽었다").toBeGreaterThan(100);
     for (const [file] of DEBT) {
       expect(statSync(path.join(ROOT, file)).isFile(), `${file} 이 실재하지 않는다`).toBe(true);
     }
