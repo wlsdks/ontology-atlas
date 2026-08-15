@@ -40,6 +40,35 @@
 **상태**: 유효 / 뒤집힘(→ 링크) / 반증됨(관측: …)
 ```
 
+## 2026-08-15 (17) — analyzer가 이미 내보내는 proposal 근거의 계약을 정렬한다
+
+**소집**: 단독 패스 + Sol xhigh 설계 검토 · **트리거**: held-out 재감사에서
+기존 reviewQuestions만으로는 candidate/persisted 의미와 다음 행동을 반복해서
+field-join해야 했지만, 동시에 새 Q1~Q6 public envelope는 기존 (15)의 no-go와
+충돌할 수 있었음
+**루브릭**: 18/24 (치명적 0: 없음)
+**관찰**: analyzer는 이미 project purpose의 definition/evidence/excludes,
+proposal domain/capability의 definition/boundary/confidence/uncertainty, static
+production import의 why/evidence/uncertainty를 반환한다. MCP outputSchema는
+이 실제 응답을 `slug/title/reason`만 허용하고 `package-contract` semantic role도
+enum에서 빠뜨려 소비자가 근거를 안전하게 해석할 계약이 어긋나 있었다.
+**결정**: 새 tool·top-level Q1~Q6 field·UI·writer·aggregate score는 보류한다.
+대신 이미 반환되는 proposal metadata와 `package-contract` role을 outputSchema에
+정렬하고, reviewQuestions/semanticEvidence/qualification lifecycle의 no-write
+경계를 유지한다. Q1~Q6 candidate/persisted tracer는 scratch에서만 측정한다.
+**적용 규칙**: static import는 runtime impact나 승인된 `depends_on`이 아니다.
+proposal-only는 `answered`/`qualified`/`canWrite`로 승격하지 않는다. 새 public
+assessment는 세 trial에서 기존 필드 join이 반복적으로 실패할 때만 재검토한다.
+**서명**: 소유자 요청에 따라 집행
+
+**기록된 반대**: Q1~Q6 상태·근거·nextAction을 하나의 public packet으로 만들면
+에이전트가 첫 write 전에 덜 헤맬 수 있다는 의견
+**반증 조건**: H2/Axios/Undici 세 trial에서 기존 필드로 candidate/persisted를
+분리해도 fresh evaluator가 같은 Q1~Q6 결과를 재현하지 못하거나, 반복적인 field
+join이 실제 handoff 실패를 만든다는 관측
+**재검토**: 세 trial의 scratch tracer 재실행 직후
+**상태**: 유효
+
 ## 2026-08-15 (16) — production import evidence는 관측이지 승인된 impact 관계가 아니다
 
 **소집**: 단독 PO pass · **트리거**: (15)의 반증 조건; semantic/evidence tracer를

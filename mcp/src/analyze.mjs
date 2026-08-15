@@ -20,7 +20,7 @@
 // 결과 shape:
 //   {
 //     rootPath, framework: 'fsd' | 'next' | 'generic',
-//     project?: { slug, title },
+//     project?: { slug, title, definition, evidence, includes, excludes, confidence, uncertainty },
 //     domains: [{ slug, title, evidence: { source, line? } }],
 //     capabilities: [{ slug, title, evidence: { source } }],
 //     elements: [{ slug, title, path, evidence: { source } }],
@@ -30,8 +30,8 @@
 //       sourceStructureRole: 'implementation-evidence',
 //       businessOntology: { domains: [slug], capabilities: [slug], evidence: [{ slug, kind, source }] },
 //       proposedBusinessOntology: {
-//         domains: [{ slug, reason, evidence }],
-//         capabilities: [{ slug, reason, evidence }],
+//         domains: [{ slug, reason, evidence, title, definition, includes, excludes, confidence, uncertainty, evidenceSources }],
+//         capabilities: [{ slug, reason, evidence, title, definition, includes, excludes, confidence, uncertainty, evidenceSources }],
 //       },
 //       implementationEvidence: { elements: [slug], reviewRequiredCapabilities: [{ slug, reason, evidence }] },
 //       reviewQuestions: [string],
@@ -53,6 +53,7 @@ import {
   existsSync,
   realpathSync,
 } from 'node:fs';
+import { createHash } from 'node:crypto';
 import { join, basename, relative, isAbsolute, sep } from 'node:path';
 import {
   COMPETENCY_QUESTION_CONTRACTS,
@@ -105,7 +106,9 @@ const SEMANTIC_EVIDENCE_SEEDS = [
   ['README.md', 'mission'],
   ['README.rst', 'mission'],
   ['ARCHITECTURE.md', 'architecture'],
+  ['package.json', 'package-contract'],
   ['Cargo.toml', 'package-contract'],
+  ['pyproject.toml', 'package-contract'],
   ['setup.py', 'package-contract'],
   ['docs/FEATURES.md', 'product-capabilities'],
   ['docs/SYSTEM-MAP.md', 'architecture'],
@@ -120,6 +123,15 @@ const WORKSPACE_ELEMENT_LIMIT = 48;
 const NODE_PACKAGE_DESCRIPTION_MAX_LENGTH = 320;
 const CARGO_MANIFEST_MAX_BYTES = 256 * 1024;
 const PYTHON_SETUP_MAX_BYTES = 256 * 1024;
+const PYTHON_PROJECT_MAX_BYTES = 256 * 1024;
+const NODE_PACKAGE_MANIFEST_MAX_BYTES = 256 * 1024;
+const NODE_PACKAGE_EXPORT_LIMIT = 24;
+const NODE_PACKAGE_SCRIPT_LIMIT = 24;
+const NODE_PACKAGE_DEPENDENCY_LIMIT = 48;
+const RUST_IMPLEMENTATION_ELEMENT_LIMIT = 24;
+const RUST_MODULES_PER_TARGET_LIMIT = 12;
+const RUST_SOURCE_MAX_BYTES = 256 * 1024;
+const LIBRARY_SOURCE_ELEMENT_LIMIT = 24;
 const CARGO_MANIFEST_MAX_FEATURES = 48;
 const CARGO_MANIFEST_MAX_FEATURE_VALUES = 16;
 const CARGO_MANIFEST_MAX_TOKEN_LENGTH = 80;
@@ -214,6 +226,43 @@ const BUSINESS_CAPABILITY_CLUES = [
     implementation: [/\breview\b/i, /uncertain/i, /reviewer/i, /publish/i],
   },
 ];
+const GENERIC_NARRATIVE_CAPABILITY_CLUES = [
+  {
+    slug: 'capabilities/package-management',
+    title: 'Package Management',
+    prose: [
+      /\bpackage manager\b.{0,100}\b(?:keeps?|manages?|resolves?|installs?|publishes?|coordinates?|fast|efficient|strict|deterministic|for|that|which|using)\b/i,
+      /\bdependency graph\b.{0,80}\b(?:consistent|resolv|manage|coordinate)/i,
+      /\b(?:downloads?|manages?|resolves?|installs?|compiles?)\b.{0,80}\b(?:project|dependencies|packages?)\b/i,
+      /\bmonorepos?\b.{0,80}\b(?:support|manage|work|build|coordinate)/i,
+    ],
+    implementation: [
+      /package/i,
+      /workspace/i,
+      /dependenc/i,
+      /lockfile/i,
+      /install/i,
+    ],
+  },
+  {
+    slug: 'capabilities/data-validation',
+    title: 'Data Validation',
+    prose: [
+      /\bdata validation\b.{0,80}\b(?:using|with|keeps?|rejects?|validat(?:es|ed|ing)?|ensur(?:es|e)|checks?)\b/i,
+      /\bvalidat(?:e|es|ed|ing)\b.{0,80}\b(?:data|records?|models?|fields?)\b/i,
+    ],
+    implementation: [/valid/i, /schema/i, /model/i, /field/i, /parse/i],
+  },
+  {
+    slug: 'capabilities/web-framework',
+    title: 'Web Framework',
+    prose: [
+      /\bweb framework\b.{0,100}\b(?:routes?|serves?|handles?|builds?|provides?|supports?|for|that|which|node\.js)\b/i,
+      /\bframework\b.{0,80}\b(?:routes?|serves?|handles?|builds?|for|that|which)\b.{0,40}\b(?:web|http|node\.js)\b/i,
+    ],
+    implementation: [/web/i, /http/i, /request/i, /response/i, /application/i, /route/i, /url/i],
+  },
+];
 const IMPLEMENTATION_SHAPED_CAPABILITY_TOKENS = new Set([
   'adapter',
   'api',
@@ -234,10 +283,13 @@ const IMPLEMENTATION_SHAPED_CAPABILITY_TOKENS = new Set([
   'ui',
   'web',
 ]);
+const GENERIC_BUSINESS_CAPABILITY_CANDIDATE_LIMIT = 12;
+const GENERIC_BUSINESS_CAPABILITY_EVIDENCE_LIMIT = 3;
 const SEMANTIC_DISCOVERY_MAX_FILES = 200;
 const SEMANTIC_DISCOVERY_MAX_ENTRIES = 1000;
 const SEMANTIC_DISCOVERY_ROOTS = ['docs', 'site', 'website'];
 const SEMANTIC_DISCOVERY_SKIP_DIRS = new Set([
+  '_theme',
   'archive',
   'assets',
   'benchmarks',
@@ -281,10 +333,11 @@ export function analyzeRepoStructure(rootPath, options = {}) {
   const skipped = [];
   const workspaceDiscovery = discoverDeclaredWorkspacePackages(rootPath, { ignore });
   skipped.push(...workspaceDiscovery.skipped);
-  const project = detectProject(rootPath, skipped);
+  let project = detectProject(rootPath, skipped);
   const { domains, readmePath } = detectDomainsFromReadme(rootPath);
   const existingOntologyEvidence = detectExistingOntologyEvidence(rootPath, skipped);
   const semanticEvidence = collectSemanticEvidence(rootPath, skipped);
+  project = enrichProjectCandidate(project, semanticEvidence);
   const configurationEvidence = collectRustFeatureConfigurationEvidence(rootPath);
   const domainForName = (name) => matchDomainSlug(name, domains);
 
@@ -297,6 +350,13 @@ export function analyzeRepoStructure(rootPath, options = {}) {
       break;
     }
   }
+  const sourcePythonPackagePaths = discoverSourcePythonPackagePaths(rootPath, {
+    srcDir,
+    ignore,
+    skipped,
+  });
+  const sourcePythonPackagePathSet = new Set(sourcePythonPackagePaths);
+  const rustImplementationEvidence = discoverRustImplementationEvidence(rootPath, skipped);
 
   // framework heuristic — *features/* 만 있어도 fsd 로 (ontology-atlas 자체
   // 같이 lean FSD).
@@ -413,13 +473,65 @@ export function analyzeRepoStructure(rootPath, options = {}) {
       }
     } else {
       // generic — src/ 의 깊이 1 폴더 만
-      for (const sub of readdirSync(srcDir)) {
+      let directLibraryElementCount = 0;
+      let directLibraryLimitRecorded = false;
+      for (const sub of readdirSync(srcDir).sort()) {
         if (ignore.has(sub) || sub.startsWith('.')) {
           skipped.push({ path: join(srcDir, sub), reason: 'dotfile/ignore' });
           continue;
         }
         const subPath = join(srcDir, sub);
-        if (!statSync(subPath).isDirectory()) continue;
+        const subStat = statSync(subPath);
+        const source = relative(rootPath, subPath);
+        if (
+          sourcePythonPackagePathSet.has(source) ||
+          rustImplementationEvidence.skipDirectories.has(source)
+        ) {
+          continue;
+        }
+        if (basename(srcDir) === 'lib') {
+          if (subStat.isDirectory()) {
+            elements.push({
+              slug: `elements/${sub}`,
+              title: humanize(sub),
+              ...(domainForName(sub) ? { domain: domainForName(sub) } : {}),
+              path: source,
+              evidence: { source },
+            });
+            continue;
+          }
+          if (
+            !subStat.isFile() ||
+            !SOURCE_LAYOUT_CODE_FILE.test(sub) ||
+            /\.(?:test|spec)\.(?:[cm]?[jt]sx?)$/i.test(sub)
+          ) {
+            continue;
+          }
+          if (directLibraryElementCount >= LIBRARY_SOURCE_ELEMENT_LIMIT) {
+            if (!directLibraryLimitRecorded) {
+              skipped.push({
+                path: srcDir,
+                reason: `library-source-element-limit: omitted direct lib files after ${LIBRARY_SOURCE_ELEMENT_LIMIT}`,
+              });
+              directLibraryLimitRecorded = true;
+            }
+            continue;
+          }
+          const name = slugify(sub.replace(SOURCE_LAYOUT_CODE_FILE, ''));
+          const slug = name ? `elements/${name}` : null;
+          if (slug && !elements.some((element) => element.slug === slug)) {
+            elements.push({
+              slug,
+              title: humanize(name),
+              ...(domainForName(name) ? { domain: domainForName(name) } : {}),
+              path: source,
+              evidence: { source },
+            });
+            directLibraryElementCount += 1;
+          }
+          continue;
+        }
+        if (!subStat.isDirectory()) continue;
         capabilities.push({
           slug: `capabilities/${sub}`,
           title: humanize(sub),
@@ -454,6 +566,16 @@ export function analyzeRepoStructure(rootPath, options = {}) {
     existingElements: elements,
   });
   elements.push(...workspaceElementAdmission.elements);
+  const sourcePythonPackages = materializePythonPackageElements(
+    sourcePythonPackagePaths,
+    { domainForName, existingElements: elements },
+  );
+  elements.push(...sourcePythonPackages);
+  elements.push(
+    ...materializeRustImplementationElements(rustImplementationEvidence.rows, {
+      existingElements: elements,
+    }),
+  );
   elements.push(
     ...detectRootPackages(rootPath, {
       ignore,
@@ -481,6 +603,7 @@ export function analyzeRepoStructure(rootPath, options = {}) {
     domainForName,
     existingElements: elements,
     rootPythonPackages,
+    sourcePythonPackages,
     imports: importAnalysis,
     skipped,
   });
@@ -514,6 +637,12 @@ export function analyzeRepoStructure(rootPath, options = {}) {
       });
     }
   }
+  suggestedRelations.push(
+    ...buildSuggestedDependencyRelations(importAnalysis?.moduleEdges ?? [], [
+      ...capabilities,
+      ...elements,
+    ]),
+  );
   if (maxDepth > 0); // reserved for deeper element walking
 
   void readmePath; // signal used
@@ -578,6 +707,393 @@ export function analyzeRepoStructure(rootPath, options = {}) {
   return { ...result, proposalValidation };
 }
 
+/**
+ * Turn the candidate-only result into an independently reviewable, but never
+ * self-qualifying, competency packet. The statuses here describe how much of
+ * the proposal can be inspected from this bounded result; they are deliberately
+ * not the qualification contract's `answered` status.
+ */
+export function buildProposalAssessment(result) {
+  const {
+    project,
+    domains,
+    capabilities,
+    elements,
+    meaningGate,
+    extractionContract,
+    semanticEvidence,
+    suggestedRelations,
+    skipped,
+  } = result;
+  const candidateDomains = meaningGate.proposedBusinessOntology.domains;
+  const candidateCapabilities = meaningGate.proposedBusinessOntology.capabilities;
+  const persistedDomains = meaningGate.businessOntology.domains;
+  const persistedCapabilities = meaningGate.businessOntology.capabilities;
+  const dependencyRelations = suggestedRelations.filter((relation) => relation.type === 'depends_on');
+  const productionBoundaryCount = extractionContract.qualityGates.typedRelationsProposed
+    - suggestedRelations.filter((relation) => relation.type === 'contains').length;
+  const trustedEvidence = semanticEvidence.filter((row) => row.trust === 'candidate-evidence');
+  const riskEvidence = semanticEvidence.filter((row) => row.riskFlags.length > 0);
+  const digestInput = {
+    framework: result.framework,
+    project,
+    domains,
+    capabilities,
+    elements,
+    meaningGate,
+    extractionContract,
+    semanticEvidence,
+    configurationEvidence: result.configurationEvidence,
+    suggestedRelations,
+    skipped,
+  };
+  const sourceRefs = uniqueStrings(trustedEvidence.map((row) => row.source));
+  const projectRefs = project ? [project.slug] : [];
+  const domainRefs = uniqueStrings([
+    ...domains.map((row) => row.slug),
+    ...candidateDomains.map((row) => row.slug),
+  ]);
+  const capabilityRefs = uniqueStrings([
+    ...capabilities.map((row) => row.slug),
+    ...candidateCapabilities.map((row) => row.slug),
+  ]);
+  const elementRefs = elements.map((row) => row.slug);
+
+  const evidence = {
+    project: project
+      ? [
+          {
+            evidenceType: 'project-purpose',
+            sourceRef: project.evidence?.[0] ?? sourceRefs[0] ?? 'repository-root',
+            location: project.evidence?.[0] ?? 'repository-root',
+            excerpt: project.definition ?? project.title,
+            resolution: project.definition ? 'bounded-candidate' : 'identity-only',
+            supports: Boolean(project.definition && project.evidence?.length),
+          },
+        ]
+      : [],
+    domains: candidateDomains.slice(0, 12).map((row) => ({
+      evidenceType: 'domain-candidate',
+      sourceRef: row.evidence?.source ?? 'repository-structure',
+      location: row.evidence?.line ? `${row.evidence.source}:${row.evidence.line}` : row.evidence?.source ?? 'repository-structure',
+      excerpt: row.definition ?? row.reason,
+      resolution: row.confidence >= 0.8 ? 'bounded-candidate' : 'proposal-only',
+      supports: Boolean(row.evidence?.source),
+    })),
+    capabilities: candidateCapabilities.slice(0, 12).map((row) => ({
+      evidenceType: 'capability-candidate',
+      sourceRef: row.evidence?.source ?? row.evidenceSources?.[0] ?? 'repository-structure',
+      location: row.evidence?.implementation ?? row.evidence?.source ?? 'repository-structure',
+      excerpt: row.definition ?? row.reason,
+      resolution: row.confidence >= 0.8 ? 'bounded-candidate' : 'proposal-only',
+      supports: Boolean(row.evidence?.source || row.evidenceSources?.length),
+    })),
+    elements: elements.slice(0, 24).map((row) => ({
+      evidenceType: 'implementation-path',
+      sourceRef: row.evidence?.source ?? row.path,
+      location: row.path,
+      excerpt: `${row.title} implementation entry point`,
+      resolution: 'path-observed',
+      supports: Boolean(row.path && row.evidence?.source),
+    })),
+    relations: dependencyRelations.slice(0, 24).map((row) => ({
+      evidenceType: 'static-production-import',
+      sourceRef: row.evidence?.[0] ?? 'infer_imports',
+      location: row.evidence?.join(', ') ?? 'infer_imports',
+      excerpt: row.why,
+      resolution: 'static-only',
+      supports: Boolean(row.from && row.to && row.evidence?.length),
+    })),
+    omissions: skipped.slice(0, 12).map((row) => ({
+      evidenceType: 'bounded-scan-omission',
+      sourceRef: row.path,
+      location: row.path,
+      excerpt: row.reason,
+      resolution: 'bounded-scan',
+      supports: false,
+    })),
+  };
+
+  const questions = [
+    makeAssessmentQuestion({
+      id: 'scope',
+      status: project?.definition && project?.evidence?.length ? 'partial' : 'missing',
+      statusReason: project?.definition
+        ? 'A repository-purpose candidate is bounded by evidence, but no shared semantic approval is present.'
+        : 'No bounded project-purpose witness was found in the scanned evidence.',
+      claim: project?.definition ?? 'Repository purpose is not established by this bounded scan.',
+      candidateRefs: projectRefs,
+      questionEvidence: evidence.project,
+      limits: [
+        'Repository prose is a proposal witness, not a shared business assertion.',
+        ...(project?.excludes ?? []),
+      ],
+      nextAction: {
+        action: 'qualify_project_scope',
+        targets: sourceRefs.slice(0, 6),
+        completionCriterion: 'An independent evaluator confirms the purpose, includes, and excludes against portable evidence.',
+      },
+    }),
+    makeAssessmentQuestion({
+      id: 'domains',
+      status: persistedDomains.length > 0
+        ? 'reviewable_candidate'
+        : candidateDomains.length > 0
+          ? 'partial'
+          : 'missing',
+      statusReason: persistedDomains.length > 0
+        ? 'Persisted domain evidence is available for review.'
+        : candidateDomains.length > 0
+          ? 'Domain-shaped candidates exist, but repository headings do not establish stable business boundaries.'
+          : 'No bounded domain candidate with independent evidence was found.',
+      claim: candidateDomains.length > 0
+        ? `${candidateDomains.length} bounded domain candidate(s) require boundary review.`
+        : 'No business domain boundary is asserted.',
+      candidateRefs: domainRefs,
+      questionEvidence: evidence.domains,
+      limits: [
+        'README headings and folder names are structural clues, not shared domain meaning.',
+        'Overlaps, ownership, and external-system boundaries are not established by this scan.',
+      ],
+      nextAction: {
+        action: 'confirm_domain_boundaries',
+        targets: domainRefs.slice(0, 12),
+        completionCriterion: 'Each retained domain has an independent responsibility sentence, excludes, and evidence-backed placement.',
+      },
+    }),
+    makeAssessmentQuestion({
+      id: 'abilities',
+      status: candidateCapabilities.length > 0
+        ? 'reviewable_candidate'
+        : capabilities.length > 0
+          ? 'partial'
+          : 'missing',
+      statusReason: candidateCapabilities.length > 0
+        ? 'Outcome-oriented candidate abilities have bounded prose and implementation witnesses, but remain unqualified.'
+        : capabilities.length > 0
+          ? 'Implementation-shaped capabilities exist without enough independent business outcome evidence.'
+          : 'No capability candidate was found.',
+      claim: candidateCapabilities.length > 0
+        ? `${candidateCapabilities.length} outcome-oriented capability candidate(s) are reviewable without automatic promotion.`
+        : 'No business ability is asserted by this bounded scan.',
+      candidateRefs: capabilityRefs,
+      questionEvidence: evidence.capabilities,
+      limits: [
+        'A capability candidate is not a persisted capability and cannot be admitted automatically.',
+        'The scan does not establish ownership, user success criteria, or complete behavior.',
+      ],
+      nextAction: {
+        action: 'confirm_capability_outcomes',
+        targets: capabilityRefs.slice(0, 12),
+        completionCriterion: 'Each retained ability states an observable outcome, responsibility boundary, excludes, and evidence path.',
+      },
+    }),
+    makeAssessmentQuestion({
+      id: 'evidence',
+      status: elements.length > 0 && elements.every((row) => row.path && row.evidence?.source)
+        ? 'reviewable_candidate'
+        : elements.length > 0
+          ? 'partial'
+          : 'missing',
+      statusReason: elements.length > 0
+        ? 'Implementation elements expose bounded repository-relative paths; role accuracy still requires review.'
+        : 'No implementation element path was admitted by this bounded scan.',
+      claim: `${elements.length} implementation element candidate(s) carry repository-relative evidence paths.`,
+      candidateRefs: elementRefs,
+      questionEvidence: evidence.elements,
+      limits: [
+        'A path proves an observable implementation location, not the business role assigned to it.',
+        'Unsupported languages, runtime behavior, and tests are not silently inferred.',
+      ],
+      nextAction: {
+        action: 'resolve_implementation_citations',
+        targets: elementRefs.slice(0, 24),
+        completionCriterion: 'Every retained ability has an exact, portable implementation path whose role is independently confirmed.',
+      },
+    }),
+    makeAssessmentQuestion({
+      id: 'impact',
+      status: dependencyRelations.length > 0 ? 'reviewable_candidate' : 'unmeasured',
+      statusReason: dependencyRelations.length > 0
+        ? 'Static production import boundaries are available as review candidates; runtime impact is not measured.'
+        : productionBoundaryCount > 0
+          ? 'Typed import boundaries were observed, but no bounded dependency proposal was safe to emit.'
+          : 'No production dependency witness was available in this bounded scan.',
+      claim: dependencyRelations.length > 0
+        ? `${dependencyRelations.length} bounded static dependency candidate(s) are available for impact review.`
+        : 'Impact remains unmeasured.',
+      candidateRefs: uniqueStrings(dependencyRelations.flatMap((row) => [row.from, row.to])),
+      questionEvidence: evidence.relations,
+      limits: [
+        'Static imports are not runtime impact, business dependency, or approval to write depends_on.',
+        'A dependency relation requires exact direction, rationale, and independent semantic review.',
+      ],
+      nextAction: {
+        action: 'review_dependency_impact',
+        targets: dependencyRelations.slice(0, 24).map((row) => `${row.from}->${row.to}`),
+        completionCriterion: 'An independent evaluator confirms direction and business impact, or records a visible gap without promotion.',
+      },
+    }),
+    makeAssessmentQuestion({
+      id: 'omissions',
+      status: skipped.length > 0 || extractionContract.limitations.length > 0 ? 'partial' : 'unmeasured',
+      statusReason: 'The scan reports bounded omissions and limitations, but cannot establish the behavior of what it did not inspect.',
+      claim: `${skipped.length} bounded scan omission(s) and ${extractionContract.limitations.length} general limitation(s) are visible.`,
+      candidateRefs: uniqueStrings([...projectRefs, ...domainRefs, ...capabilityRefs]),
+      questionEvidence: evidence.omissions,
+      limits: [
+        'Runtime, test, package, external-system, and unsupported-language behavior may remain outside this scan.',
+        'A missing witness is not evidence that the behavior does not exist.',
+      ],
+      nextAction: {
+        action: 'inspect_omitted_behavior',
+        targets: uniqueStrings(skipped.map((row) => row.path)).slice(0, 12),
+        completionCriterion: 'Each omission is either covered by a portable witness or kept visible as an unresolved gap.',
+      },
+    }),
+  ];
+
+  const qualityFindings = [];
+  if (persistedDomains.length === 0 && persistedCapabilities.length === 0 && (candidateDomains.length > 0 || candidateCapabilities.length > 0)) {
+    qualityFindings.push(makeQualityFinding({
+      category: 'weak_meaning',
+      severity: 'warning',
+      summary: 'Repository evidence proposes meaning, but no shared business ontology is available to confirm it.',
+      affectedQuestionIds: ['scope', 'domains', 'abilities'],
+      affectedCandidateRefs: uniqueStrings([...projectRefs, ...domainRefs, ...capabilityRefs]),
+      evidenceRefs: sourceRefs.slice(0, 6),
+      detectionBasis: 'persisted business domain/capability evidence is empty while proposal candidates are present',
+      remediation: 'Keep candidates proposal-only and obtain an independent semantic witness before admission.',
+    }));
+  }
+  if (candidateDomains.length === 0 || candidateDomains.some((row) => row.reason?.includes('heading'))) {
+    qualityFindings.push(makeQualityFinding({
+      category: 'missing_boundary',
+      severity: 'warning',
+      summary: candidateDomains.length === 0
+        ? 'No stable business domain boundary was found.'
+        : 'Some domain candidates are heading-shaped and need explicit responsibility boundaries.',
+      affectedQuestionIds: ['domains', 'omissions'],
+      affectedCandidateRefs: domainRefs,
+      evidenceRefs: sourceRefs.slice(0, 6),
+      detectionBasis: candidateDomains.length === 0 ? 'no domain candidate with bounded evidence' : 'domain candidate reason identifies heading-only evidence',
+      remediation: 'Supply a responsibility sentence, includes/excludes, ownership boundary, and independent source witness.',
+    }));
+  }
+  if (dependencyRelations.length > 0 || productionBoundaryCount > 0) {
+    qualityFindings.push(makeQualityFinding({
+      category: 'runtime_impact_unmeasured',
+      severity: 'warning',
+      summary: 'Static production import evidence is visible, but runtime and business impact remain unmeasured.',
+      affectedQuestionIds: ['impact'],
+      affectedCandidateRefs: uniqueStrings(dependencyRelations.flatMap((row) => [row.from, row.to])),
+      evidenceRefs: uniqueStrings(dependencyRelations.flatMap((row) => row.evidence ?? [])).slice(0, 12),
+      detectionBasis: `${dependencyRelations.length} bounded depends_on candidate(s) or ${productionBoundaryCount} typed relation(s) observed`,
+      remediation: 'Review exact direction and rationale independently; do not promote the edge to ontology truth without impact evidence.',
+    }));
+  }
+  if (riskEvidence.length > 0) {
+    qualityFindings.push(makeQualityFinding({
+      category: 'policy_risk_conflict',
+      severity: 'warning',
+      summary: 'Evidence carries policy/risk flags that require review before semantic promotion.',
+      affectedQuestionIds: ['scope', 'domains', 'abilities', 'omissions'],
+      affectedCandidateRefs: uniqueStrings([...domainRefs, ...capabilityRefs]),
+      evidenceRefs: riskEvidence.map((row) => row.source).slice(0, 12),
+      detectionBasis: 'semantic evidence rows contain explicit riskFlags',
+      remediation: 'Inspect each flagged source, distinguish current policy from instruction/future/negated prose, and record any contradiction explicitly.',
+    }));
+  }
+
+  return {
+    schemaVersion: 'proposalAssessment:v1',
+    assessmentPolicyVersion: 'q1-q6-proposal-only:v1',
+    analyzerResultDigest: stableAssessmentDigest(digestInput),
+    sourceVisibility: 'analyzer-visible',
+    assessmentKind: 'proposal_competency',
+    qualificationState: 'unqualified_proposal',
+    admissionState: 'not_admitted',
+    proposalOnly: true,
+    questions,
+    qualityFindings,
+    globalCaveats: uniqueStrings([
+      'This assessment is a review packet, not an ontology qualification result.',
+      'No analyzer-generated status is equivalent to answered, verified, or qualified.',
+      'Automatic business assertions, admission, and write plans remain blocked until the existing independent qualification lifecycle succeeds.',
+      ...extractionContract.limitations,
+    ]),
+    recommendedNextAction: {
+      action: 'independent_semantic_review',
+      targets: uniqueStrings([...projectRefs, ...domainRefs, ...capabilityRefs]).slice(0, 24),
+      completionCriterion: 'An independent evaluator resolves or preserves every Q1-Q6 gap with portable evidence before any write consideration.',
+    },
+  };
+}
+
+function makeAssessmentQuestion({
+  id,
+  status,
+  statusReason,
+  claim,
+  candidateRefs,
+  questionEvidence,
+  limits,
+  nextAction,
+}) {
+  return {
+    id,
+    status,
+    statusReason,
+    claim,
+    candidateRefs: uniqueStrings(candidateRefs),
+    evidence: questionEvidence,
+    limits: uniqueStrings(limits),
+    nextAction,
+    blocksQualification: true,
+  };
+}
+
+function makeQualityFinding({
+  category,
+  severity,
+  summary,
+  affectedQuestionIds,
+  affectedCandidateRefs,
+  evidenceRefs,
+  detectionBasis,
+  remediation,
+}) {
+  return {
+    category,
+    severity,
+    summary,
+    affectedQuestionIds,
+    affectedCandidateRefs: uniqueStrings(affectedCandidateRefs),
+    evidenceRefs: uniqueStrings(evidenceRefs),
+    detectionBasis,
+    remediation,
+    blocksBeta: false,
+    blocksQualification: true,
+  };
+}
+
+function stableAssessmentDigest(value) {
+  const canonical = (input) => {
+    if (Array.isArray(input)) return input.map(canonical);
+    if (input && typeof input === 'object') {
+      return Object.fromEntries(
+        Object.entries(input)
+          .sort(([left], [right]) => left.localeCompare(right))
+          .map(([key, child]) => [key, canonical(child)]),
+      );
+    }
+    return input;
+  };
+  return `sha256:${createHash('sha256')
+    .update(JSON.stringify(canonical(value)), 'utf8')
+    .digest('hex')}`;
+}
+
 function deriveBusinessCapabilityCandidates({
   domains,
   capabilities,
@@ -586,6 +1102,9 @@ function deriveBusinessCapabilityCandidates({
 }) {
   const trustedEvidence = semanticEvidence.filter(
     (row) => row.trust === 'candidate-evidence' && row.excerpt,
+  );
+  const businessNarrativeEvidence = trustedEvidence.filter((row) =>
+    ['mission', 'product-contract', 'product-capabilities'].includes(row.role),
   );
   // A README containing only headings is structural evidence, not enough
   // material to suppress or promote implementation candidates. Preserve the
@@ -606,7 +1125,7 @@ function deriveBusinessCapabilityCandidates({
 
   const candidates = [];
   for (const clue of BUSINESS_CAPABILITY_CLUES) {
-    const matchedEvidence = trustedEvidence.filter((row) =>
+    const matchedEvidence = businessNarrativeEvidence.filter((row) =>
       clue.prose.some((pattern) => pattern.test(`${row.headings.join('\n')}\n${row.excerpt}`)),
     );
     if (matchedEvidence.length === 0) continue;
@@ -640,10 +1159,30 @@ function deriveBusinessCapabilityCandidates({
   }
 
   const emittedSlugs = new Set(candidates.map((row) => row.slug));
-  const genericBusinessEvidence = trustedEvidence.filter((row) =>
-    ['mission', 'product-contract', 'product-capabilities'].includes(row.role),
-  );
-  for (const capability of capabilities) {
+  // Generic candidates are intentionally stricter than the outcome clue table:
+  // the prose must name the structural candidate and a separately observed
+  // element path must carry the same normalized term. That keeps a documented
+  // folder from becoming a capability when no implementation entrypoint exists.
+  const genericBusinessEvidence = trustedEvidence
+    .filter((row) =>
+      ['mission', 'product-contract', 'product-capabilities', 'package-contract'].includes(
+        row.role,
+      ),
+    )
+    .sort((a, b) => a.source.localeCompare(b.source));
+  const genericImplementationRows = elements
+    .map((row) => ({
+      path: row.path,
+      slug: row.slug,
+    }))
+    .filter((row) => row.path)
+    .sort((a, b) =>
+      a.path.localeCompare(b.path) || a.slug.localeCompare(b.slug),
+    );
+  const genericCandidates = [];
+  for (const capability of [...capabilities].sort((a, b) =>
+    a.slug.localeCompare(b.slug),
+  )) {
     if (emittedSlugs.has(capability.slug)) continue;
     const candidateTokens = semanticTokens(tailSlug(capability.slug));
     if (candidateTokens.size === 0) continue;
@@ -652,31 +1191,180 @@ function deriveBusinessCapabilityCandidates({
     )) {
       continue;
     }
-    const evidence = genericBusinessEvidence.find((row) => {
-      const evidenceTokens = semanticTokens(
-        row.headings.join(' ') + ' ' + row.excerpt,
-      );
-      return [...candidateTokens].some((token) => evidenceTokens.has(token));
-    });
-    if (!evidence) continue;
+    const matchedEvidence = genericBusinessEvidence
+      .filter((row) => {
+        const evidenceTokens = semanticTokens(row.excerpt);
+        return [...candidateTokens].every((token) => evidenceTokens.has(token));
+      })
+      .slice(0, GENERIC_BUSINESS_CAPABILITY_EVIDENCE_LIMIT);
+    if (matchedEvidence.length === 0) continue;
+    const matchedImplementations = genericImplementationRows
+      .filter((row) => {
+        const implementationTokens = pathSemanticTokens(`${row.path} ${row.slug}`);
+        return [...candidateTokens].every((token) => implementationTokens.has(token));
+      })
+      .slice(0, GENERIC_BUSINESS_CAPABILITY_EVIDENCE_LIMIT);
+    if (matchedImplementations.length === 0) continue;
     const domain = capability.domain
       ?? matchDomainSlug(tailSlug(capability.slug), domains);
-    candidates.push({
+    genericCandidates.push({
       slug: capability.slug,
       title: capability.title,
       ...(domain ? { domain } : {}),
-      reason: 'business term in bounded product prose cross-checked against implementation evidence',
+      reason: 'proposal-only: bounded narrative terms cross-checked against an implemented element path; human approval required',
       evidence: {
-        source: evidence.source,
-        implementation: capability.evidence?.source,
+        source: matchedEvidence[0].source,
+        implementation: matchedImplementations[0].path,
       },
-      semanticSources: [evidence.source],
-      implementationEvidence: [capability.evidence?.source].filter(Boolean),
+      semanticSources: matchedEvidence.map((row) => row.source),
+      implementationEvidence: matchedImplementations.map((row) => row.path),
     });
-    emittedSlugs.add(capability.slug);
+  }
+  for (const candidate of genericCandidates.slice(
+    0,
+    GENERIC_BUSINESS_CAPABILITY_CANDIDATE_LIMIT,
+  )) {
+    candidates.push(candidate);
+    emittedSlugs.add(candidate.slug);
+  }
+
+  const narrativeImplementationRows = elements
+    .map((row) => ({
+      path: row.path ?? row.evidence?.source,
+      slug: row.slug,
+    }))
+    .filter((row) => row.path)
+    .sort((a, b) => a.path.localeCompare(b.path) || a.slug.localeCompare(b.slug));
+  for (const clue of GENERIC_NARRATIVE_CAPABILITY_CLUES) {
+    if (emittedSlugs.has(clue.slug)) continue;
+    const matchedEvidence = genericBusinessEvidence.filter((row) =>
+      /[.!?]/.test(row.excerpt)
+      && clue.prose.some((pattern) => pattern.test(row.excerpt)),
+    );
+    if (matchedEvidence.length === 0) continue;
+    const matchedImplementations = narrativeImplementationRows
+      .filter((row) => clue.implementation.some((pattern) => pattern.test(`${row.path}\n${row.slug}`)))
+      .slice(0, GENERIC_BUSINESS_CAPABILITY_EVIDENCE_LIMIT);
+    if (matchedImplementations.length === 0) continue;
+    const domain = matchDomainSlug(clue.title, domains);
+    candidates.push({
+      slug: clue.slug,
+      title: clue.title,
+      ...(domain ? { domain } : {}),
+      reason: 'proposal-only: bounded outcome prose cross-checked against implementation evidence; human approval required',
+      evidence: {
+        source: matchedEvidence[0].source,
+        implementation: matchedImplementations[0].path,
+      },
+      semanticSources: matchedEvidence.map((row) => row.source),
+      implementationEvidence: matchedImplementations.map((row) => row.path),
+    });
+    emittedSlugs.add(clue.slug);
   }
 
   return candidates;
+}
+
+function enrichProjectCandidate(project, semanticEvidence) {
+  if (!project) return project;
+  const trustedRows = semanticEvidence.filter(
+    (row) =>
+      ['mission', 'product-contract', 'product-capabilities'].includes(row.role) &&
+      row.trust === 'candidate-evidence' &&
+      row.excerpt,
+  );
+  const sources = uniqueStrings(trustedRows.map((row) => row.source)).slice(0, 3);
+  const lead = trustedRows[0];
+  const sentence = boundedEvidenceSentence(lead?.excerpt);
+  const definition = sentence
+    ? `Proposed repository purpose from ${lead.source}: ${sentence}`
+    : 'Repository purpose is not established by the bounded semantic evidence scan.';
+  const limitations = [
+    'shared business ownership is not established by repository evidence',
+    'runtime, test, and external-system behavior remain outside this bounded scan',
+  ];
+  return {
+    ...project,
+    ...(sources.length > 0 ? { evidence: sources } : {}),
+    definition,
+    includes: ['repository-contained implementation evidence'],
+    excludes: limitations,
+    confidence: sources.length > 0 ? 0.5 : 0.2,
+    uncertainty: 'proposal-only: source prose is a bounded purpose witness, not a shared business assertion',
+  };
+}
+
+function enrichMeaningCandidate(candidate, kind, semanticEvidence, implementationPaths = []) {
+  const sourceNames = uniqueStrings([
+    ...(candidate.semanticSources ?? []),
+    candidate.evidence?.source,
+    candidate.evidence?.implementation,
+  ]);
+  const trustedRows = sourceNames
+    .map((source) => semanticEvidence.find((row) => row.source === source))
+    .filter((row) => row?.trust === 'candidate-evidence' && row.excerpt);
+  const lead = trustedRows[0];
+  const sentence = boundedEvidenceSentence(lead?.excerpt);
+  const label = kind === 'domain' ? 'responsibility boundary' : 'ability';
+  const definition = sentence
+    ? `Proposed ${label} from ${lead.source}: ${sentence}`
+    : `Proposed ${label} named by bounded repository evidence; shared meaning remains unconfirmed.`;
+  const includes = kind === 'capability'
+    ? uniqueStrings(implementationPaths).slice(0, GENERIC_BUSINESS_CAPABILITY_EVIDENCE_LIMIT)
+    : [];
+  return {
+    title: candidate.title,
+    ...(candidate.domain ? { domain: candidate.domain } : {}),
+    definition,
+    ...(includes.length > 0 ? { includes } : {}),
+    excludes: [
+      'shared business ownership is not established by this repository scan',
+      'runtime behavior outside the cited implementation evidence is not asserted',
+    ],
+    confidence: 0.5,
+    uncertainty: 'proposal-only: bounded prose and path evidence require semantic qualification before admission',
+    evidenceSources: sourceNames,
+  };
+}
+
+function buildSuggestedDependencyRelations(moduleEdges, implementationNodes) {
+  const implementationSlugs = new Set(implementationNodes.map((node) => node.slug));
+  return [...moduleEdges]
+    .filter((edge) =>
+      edge?.productValueCount > 0 &&
+      implementationSlugs.has(edge.from) &&
+      implementationSlugs.has(edge.to),
+    )
+    .sort((a, b) =>
+      a.from.localeCompare(b.from) ||
+      a.to.localeCompare(b.to),
+    )
+    .slice(0, 24)
+    .map((edge) => ({
+      from: edge.from,
+      to: edge.to,
+      type: 'depends_on',
+      why: 'proposal-only: bounded production value-import evidence; runtime impact is not asserted',
+      evidence: uniqueStrings(
+        (edge.evidence ?? []).flatMap((row) => [row.from, row.to]),
+      ).slice(0, 4),
+      confidence: 0.5,
+      uncertainty: 'static import evidence requires semantic impact review before relation admission',
+    }));
+}
+
+function boundedEvidenceSentence(value) {
+  const text = String(value ?? '')
+    .replace(/[\*_`]/g, '')
+    .replace(/\s+/g, ' ')
+    .trim();
+  if (!text) return '';
+  const sentence = text.match(/^(.{24,360}?[.!?])(?:\s|$)/)?.[1];
+  return (sentence ?? text.slice(0, 360)).trim();
+}
+
+function uniqueStrings(values) {
+  return [...new Set(values.filter((value) => typeof value === 'string' && value.trim()))];
 }
 
 function buildMeaningGate({
@@ -755,6 +1443,12 @@ function buildMeaningGate({
       reason: capability.reason
         ?? 'bounded semantic evidence is a proposal, not proof of shared business meaning',
       evidence: capability.evidence,
+      ...enrichMeaningCandidate(
+        capability,
+        'capability',
+        semanticEvidence,
+        capability.implementationEvidence,
+      ),
     }));
   const reviewRequiredDomains = domains
     .filter((domain) => !existingBySlug.has(domain.slug))
@@ -762,6 +1456,7 @@ function buildMeaningGate({
       slug: domain.slug,
       reason: 'README heading is a concept clue, not proof of a shared business boundary',
       evidence: domain.evidence,
+      ...enrichMeaningCandidate(domain, 'domain', semanticEvidence),
     }));
   const businessEvidence = uniqueEvidenceRows([
     ...existingDomainEvidence.map(formatOntologyEvidence),
@@ -782,6 +1477,8 @@ function buildMeaningGate({
     'What business/product outcome, user workflow, ownership boundary, or decision does this node explain?',
     'Which source path, README heading, import edge, or file-level element proves the implementation evidence?',
     'Should this code structure stay evidence-only instead of becoming a domain or capability node?',
+    '[visible-gap · omitted-behavior] Record runtime, test, package, and unsupported-language behavior this scan did not inspect, plus the next repository-contained witness needed to assess it.',
+    '[visible-gap · scope-exclusion] Separate project exclusions explicitly stated by evidence from boundaries that remain unknown; record the source citation for each.',
   ];
   const hasTrustedMissionOrProductEvidence = semanticEvidence.some(
     (row) =>
@@ -942,10 +1639,15 @@ function collectSemanticEvidence(rootPath, skipped = []) {
     const path = join(rootPath, source);
     if (!existsSync(path)) continue;
     try {
+      const nodePackageContract = source === 'package.json' || source.endsWith('/package.json');
       const packageContractMaxBytes = source === 'Cargo.toml'
         ? CARGO_MANIFEST_MAX_BYTES
         : source === 'setup.py'
           ? PYTHON_SETUP_MAX_BYTES
+          : source === 'pyproject.toml'
+            ? PYTHON_PROJECT_MAX_BYTES
+            : nodePackageContract
+              ? NODE_PACKAGE_MANIFEST_MAX_BYTES
           : null;
       if (packageContractMaxBytes !== null) {
         const issue = packageContractPathIssue(
@@ -955,7 +1657,13 @@ function collectSemanticEvidence(rootPath, skipped = []) {
           packageContractMaxBytes,
         );
         if (issue) {
-          pushSkippedOnce(skipped, { path, reason: issue });
+          pushSkippedOnce(skipped, {
+            path,
+            reason:
+              nodePackageContract && issue.endsWith('resolves outside repository root')
+                ? `semantic-evidence-skip: ${source} resolves outside repository root`
+                : issue,
+          });
           continue;
         }
       } else {
@@ -979,11 +1687,22 @@ function collectSemanticEvidence(rootPath, skipped = []) {
         ? extractCargoPackageContract(text)
         : source === 'setup.py'
           ? extractPythonSetupPackageContract(text)
-          : source.endsWith('/package.json')
+          : source === 'pyproject.toml'
+            ? extractPythonPyprojectPackageContract(text)
+          : nodePackageContract
             ? extractNodePackageContract(text)
           : extractSemanticDocument(text);
       if (extracted.skipReason) {
-        skipped.push({ path, reason: extracted.skipReason });
+        if (
+          !(
+            source === 'package.json' &&
+            skipped.some(
+              (row) => row.path === path && /^package-json-parse-error:/.test(row.reason),
+            )
+          )
+        ) {
+          pushSkippedOnce(skipped, { path, reason: extracted.skipReason });
+        }
         continue;
       }
       if (!extracted.excerpt && extracted.headings.length === 0) continue;
@@ -1134,6 +1853,62 @@ function extractPythonSetupPackageContract(text) {
   };
 }
 
+function extractPythonPyprojectPackageContract(text) {
+  const projectFields = new Map();
+  let section = '';
+  for (const rawLine of text.split(/\r?\n/)) {
+    const line = stripTomlComment(rawLine).trim();
+    if (!line) continue;
+    const sectionMatch = line.match(/^\[([^\]]+)\]$/);
+    if (sectionMatch) {
+      section = sectionMatch[1].trim();
+      continue;
+    }
+    if (section !== 'project') continue;
+    const assignment = line.match(/^([^=]+?)\s*=\s*(.+)$/);
+    if (!assignment) continue;
+    const key = normalizeTomlKey(assignment[1]);
+    if (!['name', 'description', 'requires-python'].includes(key)) continue;
+    const value = staticTomlString(assignment[2]);
+    if (value !== null) projectFields.set(key, value);
+  }
+  const packageName = projectFields.get('name');
+  if (!packageName) {
+    return {
+      title: null,
+      headings: [],
+      excerpt: '',
+      skipReason: 'package-contract-skip: pyproject.toml has no static project name',
+    };
+  }
+  const visiblePackageName = truncateCargoValue(
+    packageName,
+    CARGO_MANIFEST_MAX_TOKEN_LENGTH,
+  );
+  const details = [
+    `Package: ${visiblePackageName}`,
+    projectFields.get('description')
+      ? `Description: ${truncateCargoValue(
+        projectFields.get('description'),
+        CARGO_MANIFEST_MAX_DESCRIPTION_LENGTH,
+      )}`
+      : null,
+    projectFields.get('requires-python')
+      ? `Python: ${truncateCargoValue(
+        projectFields.get('requires-python'),
+        CARGO_MANIFEST_MAX_TOKEN_LENGTH,
+      )}`
+      : null,
+  ].filter(Boolean);
+  return {
+    packageName: visiblePackageName,
+    title: `${visiblePackageName} package contract`,
+    headings: ['Package contract'],
+    excerpt: details.join('. ').slice(0, SEMANTIC_EVIDENCE_MAX_EXCERPT),
+    riskText: [...projectFields.values()].join('\n'),
+  };
+}
+
 function extractNodePackageContract(text) {
   let parsed;
   try {
@@ -1166,12 +1941,84 @@ function extractNodePackageContract(text) {
     description,
     NODE_PACKAGE_DESCRIPTION_MAX_LENGTH,
   );
+  const publicExports = collectNodePublicExportKeys(parsed.exports);
+  const scripts = collectStaticManifestKeys(parsed.scripts, NODE_PACKAGE_SCRIPT_LIMIT);
+  const dependencies = collectStaticManifestKeys(
+    parsed.dependencies,
+    NODE_PACKAGE_DEPENDENCY_LIMIT,
+    isPackageDependencyName,
+  );
+  const details = [
+    `Package: ${visiblePackageName}`,
+    `Description: ${visibleDescription}`,
+    publicExports.length > 0 ? `Exports: ${publicExports.join(', ')}` : null,
+    scripts.length > 0 ? `Scripts: ${scripts.join(', ')}` : null,
+    dependencies.length > 0 ? `Dependencies: ${dependencies.join(', ')}` : null,
+  ].filter(Boolean);
   return {
+    packageName: visiblePackageName,
     title: `${visiblePackageName} package contract`,
     headings: ['Package contract'],
-    excerpt: `Package: ${visiblePackageName}. Description: ${visibleDescription}`,
+    excerpt: details.join('. ').slice(0, SEMANTIC_EVIDENCE_MAX_EXCERPT),
     riskText: `${packageName}\n${description}`,
   };
+}
+
+function staticTomlString(value) {
+  const trimmed = String(value).trim();
+  if (trimmed.length < 2) return null;
+  const quote = trimmed[0];
+  if ((quote !== '"' && quote !== "'") || trimmed.at(-1) !== quote) return null;
+  const body = trimmed.slice(1, -1);
+  return /[\r\n]/.test(body) ? null : body;
+}
+
+function collectNodePublicExportKeys(exports) {
+  if (typeof exports === 'string') {
+    return isSafeNodeExportTarget(exports) ? ['.'] : [];
+  }
+  if (!exports || typeof exports !== 'object' || Array.isArray(exports)) return [];
+  const subpathKeys = Object.keys(exports)
+    .filter((key) => key === '.' || /^\.\/[A-Za-z0-9@._/-]+$/.test(key))
+    .sort();
+  if (subpathKeys.length === 0) {
+    return collectNodeExportTargets(exports).some(isSafeNodeExportTarget) ? ['.'] : [];
+  }
+  return subpathKeys
+    .filter((key) => collectNodeExportTargets(exports[key]).some(isSafeNodeExportTarget))
+    .slice(0, NODE_PACKAGE_EXPORT_LIMIT);
+}
+
+function collectNodeExportTargets(value, targets = []) {
+  if (typeof value === 'string') {
+    targets.push(value);
+  } else if (value && typeof value === 'object' && !Array.isArray(value)) {
+    for (const nested of Object.values(value)) collectNodeExportTargets(nested, targets);
+  }
+  return targets;
+}
+
+function isSafeNodeExportTarget(value) {
+  if (typeof value !== 'string' || !value.startsWith('./') || value.includes('\\')) {
+    return false;
+  }
+  return !value.split('/').some((segment) => segment === '..' || segment.length === 0 && value !== './');
+}
+
+function collectStaticManifestKeys(value, limit, isAllowed = isSafeManifestKey) {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return [];
+  return Object.keys(value)
+    .filter((key) => isAllowed(key))
+    .sort()
+    .slice(0, limit);
+}
+
+function isSafeManifestKey(value) {
+  return /^[A-Za-z0-9@._:/-]{1,100}$/.test(value);
+}
+
+function isPackageDependencyName(value) {
+  return /^(?:@[A-Za-z0-9][A-Za-z0-9._-]*\/)?[A-Za-z0-9][A-Za-z0-9._-]{0,99}$/.test(value);
 }
 
 function stripPythonComment(line) {
@@ -1251,22 +2098,28 @@ function extractCargoPackageContract(text) {
         assignmentValue += ` ${stripTomlComment(lines[lineIndex]).trim()}`;
       }
     }
-    if (
-      (packageEvidenceField || section === 'features') &&
-      !isBalancedTomlFragment(assignmentValue)
-    ) {
+    if (packageEvidenceField) {
+      const staticValue = isBalancedTomlFragment(assignmentValue)
+        ? staticTomlString(assignmentValue)
+        : null;
+      if (key === 'name' && staticValue === null) {
+        return {
+          title: null,
+          headings: [],
+          excerpt: '',
+          skipReason: 'package-contract-skip: root Cargo.toml has no static package name',
+        };
+      }
+      if (staticValue !== null) packageFields.set(key, staticValue);
+      continue;
+    }
+    if (section === 'features' && !isBalancedTomlFragment(assignmentValue)) {
       return {
         title: null,
         headings: [],
         excerpt: '',
         skipReason: 'package-contract-skip: malformed Cargo.toml package/features contract',
       };
-    }
-    if (
-      packageEvidenceField
-    ) {
-      packageFields.set(key, normalizeTomlScalar(assignmentValue));
-      continue;
     }
     if (section === 'features') {
       features.push({
@@ -1336,6 +2189,7 @@ function extractCargoPackageContract(text) {
     features.length,
   );
   return {
+    packageName: visiblePackageName,
     title: `${visiblePackageName} package contract`,
     headings: features.length > 0
       ? ['Package contract', 'Features']
@@ -1406,17 +2260,6 @@ function stripTomlComment(line) {
 }
 
 function normalizeTomlKey(value) {
-  const trimmed = value.trim();
-  if (
-    (trimmed.startsWith('"') && trimmed.endsWith('"')) ||
-    (trimmed.startsWith("'") && trimmed.endsWith("'"))
-  ) {
-    return trimmed.slice(1, -1);
-  }
-  return trimmed;
-}
-
-function normalizeTomlScalar(value) {
   const trimmed = value.trim();
   if (
     (trimmed.startsWith('"') && trimmed.endsWith('"')) ||
@@ -1809,6 +2652,38 @@ function detectProject(rootPath, skipped = []) {
       });
     }
   }
+  const pyprojectPath = join(rootPath, 'pyproject.toml');
+  if (existsSync(pyprojectPath)) {
+    try {
+      const issue = packageContractPathIssue(
+        rootPath,
+        pyprojectPath,
+        'pyproject.toml',
+        PYTHON_PROJECT_MAX_BYTES,
+      );
+      if (issue) {
+        pushSkippedOnce(skipped, { path: pyprojectPath, reason: issue });
+      } else {
+        const contract = extractPythonPyprojectPackageContract(
+          readFileSync(pyprojectPath, 'utf-8'),
+        );
+        if (contract.packageName) {
+          const slug = slugify(contract.packageName.replace(/_/g, '-'));
+          if (slug) {
+            return {
+              slug,
+              title: detectReadmeH1(rootPath) || humanize(contract.packageName),
+            };
+          }
+        }
+      }
+    } catch (err) {
+      skipped.push({
+        path: pyprojectPath,
+        reason: `python-package-contract-read-error: ${err.message}`,
+      });
+    }
+  }
   const setupPath = join(rootPath, 'setup.py');
   if (existsSync(setupPath)) {
     try {
@@ -2072,6 +2947,296 @@ function detectDomainsFromReadme(rootPath) {
   return { domains: [], readmePath: null };
 }
 
+function discoverSourcePythonPackagePaths(rootPath, { srcDir, ignore, skipped }) {
+  if (!srcDir || !['src', 'source'].includes(basename(srcDir))) return [];
+  let entries;
+  try {
+    entries = readdirSync(srcDir).sort();
+  } catch {
+    return [];
+  }
+  const paths = [];
+  for (const entry of entries) {
+    if (
+      ignore.has(entry) ||
+      PYTHON_NON_PRODUCT_PACKAGES.has(entry.toLowerCase()) ||
+      entry.startsWith('.')
+    ) {
+      continue;
+    }
+    const packagePath = join(srcDir, entry);
+    const packageEntry = join(packagePath, '__init__.py');
+    try {
+      if (!statSync(packagePath).isDirectory() || !existsSync(packageEntry)) continue;
+      if (
+        !pathResolvesInsideRoot(rootPath, packagePath) ||
+        !pathResolvesInsideRoot(rootPath, packageEntry)
+      ) {
+        pushSkippedOnce(skipped, {
+          path: packagePath,
+          reason: 'python-package-skip: path resolves outside repository root',
+        });
+        continue;
+      }
+      paths.push(relative(rootPath, packagePath));
+    } catch {
+      // A concurrent or unreadable package is not evidence.
+    }
+  }
+  return paths;
+}
+
+function materializePythonPackageElements(paths, { domainForName, existingElements }) {
+  const out = [];
+  const claimed = new Set(existingElements.map((element) => element.slug));
+  for (const path of [...paths].sort()) {
+    const flatName = slugify(basename(path).replace(/_/g, '-'));
+    if (!flatName || claimed.has(`elements/${flatName}`)) continue;
+    const slug = `elements/${flatName}`;
+    claimed.add(slug);
+    out.push({
+      slug,
+      title: humanize(flatName),
+      ...(domainForName(flatName) ? { domain: domainForName(flatName) } : {}),
+      path,
+      evidence: { source: path },
+    });
+  }
+  return out;
+}
+
+function discoverRustImplementationEvidence(rootPath, skipped) {
+  const empty = { rows: [], skipDirectories: new Set() };
+  const manifestPath = join(rootPath, 'Cargo.toml');
+  if (!existsSync(manifestPath)) return empty;
+  try {
+    const issue = packageContractPathIssue(
+      rootPath,
+      manifestPath,
+      'Cargo.toml',
+      CARGO_MANIFEST_MAX_BYTES,
+    );
+    if (issue) {
+      pushSkippedOnce(skipped, { path: manifestPath, reason: issue });
+      return empty;
+    }
+    if (!extractCargoPackageContract(readFileSync(manifestPath, 'utf-8')).packageName) {
+      return empty;
+    }
+  } catch {
+    return empty;
+  }
+
+  const srcRoot = join(rootPath, 'src');
+  try {
+    if (!existsSync(srcRoot) || !statSync(srcRoot).isDirectory()) return empty;
+    if (!pathResolvesInsideRoot(rootPath, srcRoot)) return empty;
+  } catch {
+    return empty;
+  }
+
+  const targetRows = [];
+  const skipDirectories = new Set();
+  const addTarget = (path, name) => {
+    try {
+      if (
+        !existsSync(path) ||
+        !statSync(path).isFile() ||
+        !pathResolvesInsideRoot(rootPath, path)
+      ) {
+        return;
+      }
+      targetRows.push({
+        path: relative(rootPath, path),
+        name,
+        kind: 'rust-target',
+      });
+    } catch {
+      // Only resolved, regular files can become evidence.
+    }
+  };
+  addTarget(join(srcRoot, 'lib.rs'), 'lib');
+  addTarget(join(srcRoot, 'main.rs'), 'main');
+
+  const binRoot = join(srcRoot, 'bin');
+  try {
+    if (existsSync(binRoot) && statSync(binRoot).isDirectory()) {
+      if (pathResolvesInsideRoot(rootPath, binRoot)) {
+        skipDirectories.add('src/bin');
+        for (const entry of readdirSync(binRoot).sort()) {
+          const path = join(binRoot, entry);
+          if (entry.endsWith('.rs')) {
+            addTarget(path, entry.slice(0, -3));
+          } else if (statSync(path).isDirectory()) {
+            addTarget(join(path, 'main.rs'), entry);
+          }
+        }
+      }
+    }
+  } catch {
+    // An unreadable target directory contributes no evidence.
+  }
+
+  const moduleRows = [];
+  const seenModulePaths = new Set(targetRows.map((row) => row.path));
+  for (const target of targetRows) {
+    if (moduleRows.length >= RUST_IMPLEMENTATION_ELEMENT_LIMIT) break;
+    const targetPath = join(rootPath, target.path);
+    let text;
+    try {
+      if (statSync(targetPath).size > RUST_SOURCE_MAX_BYTES) continue;
+      text = readFileSync(targetPath, 'utf-8');
+    } catch {
+      continue;
+    }
+    for (const moduleName of extractRustModuleNames(text).slice(0, RUST_MODULES_PER_TARGET_LIMIT)) {
+      const modulePath = resolveRustModulePath(rootPath, targetPath, moduleName);
+      if (!modulePath) continue;
+      const source = relative(rootPath, modulePath);
+      if (seenModulePaths.has(source)) continue;
+      seenModulePaths.add(source);
+      const moduleRoot = relative(rootPath, join(modulePath, '..')).replaceAll('\\', '/');
+      if (moduleRoot !== 'src') skipDirectories.add(moduleRoot);
+      moduleRows.push({ path: source, name: moduleName, kind: 'rust-module' });
+      if (targetRows.length + moduleRows.length >= RUST_IMPLEMENTATION_ELEMENT_LIMIT) break;
+    }
+  }
+  return {
+    rows: [...targetRows, ...moduleRows].slice(0, RUST_IMPLEMENTATION_ELEMENT_LIMIT),
+    skipDirectories,
+  };
+}
+
+function materializeRustImplementationElements(rows, { existingElements }) {
+  const out = [];
+  const claimed = new Set(existingElements.map((element) => element.slug));
+  for (const row of rows) {
+    const base = slugify(row.name.replace(/_/g, '-'));
+    if (!base) continue;
+    const bareSlug = `elements/${base}`;
+    const slug = claimed.has(bareSlug)
+      ? `elements/${base}-${row.kind}`
+      : bareSlug;
+    if (claimed.has(slug)) continue;
+    claimed.add(slug);
+    out.push({
+      slug,
+      title: humanize(base),
+      path: row.path,
+      evidence: { source: row.path },
+    });
+  }
+  return out;
+}
+
+function resolveRustModulePath(rootPath, targetPath, moduleName) {
+  const targetDir = join(targetPath, '..');
+  for (const candidate of [
+    join(targetDir, `${moduleName}.rs`),
+    join(targetDir, moduleName, 'mod.rs'),
+  ]) {
+    try {
+      if (
+        existsSync(candidate) &&
+        statSync(candidate).isFile() &&
+        pathResolvesInsideRoot(rootPath, candidate)
+      ) {
+        return candidate;
+      }
+    } catch {
+      // Continue to the alternate Rust module convention.
+    }
+  }
+  return null;
+}
+
+function extractRustModuleNames(text) {
+  const names = new Set();
+  for (const line of stripRustNonCode(text).split(/\r?\n/)) {
+    const match = line.match(
+      /^\s*(?:pub(?:\s*\([^\r\n)]*\))?\s+)?mod\s+([A-Za-z_][A-Za-z0-9_]*)\s*;/,
+    );
+    if (match) names.add(match[1]);
+  }
+  return [...names].sort();
+}
+
+function stripRustNonCode(text) {
+  let output = '';
+  let index = 0;
+  while (index < text.length) {
+    if (text.startsWith('//', index)) {
+      const end = text.indexOf('\n', index + 2);
+      const consumed = end === -1 ? text.length : end;
+      output += text.slice(index, consumed).replace(/[^\n]/g, ' ');
+      index = consumed;
+      continue;
+    }
+    if (text.startsWith('/*', index)) {
+      const consumed = consumeRustBlockComment(text, index);
+      output += text.slice(index, consumed).replace(/[^\n]/g, ' ');
+      index = consumed;
+      continue;
+    }
+    const rawEnd = consumeRustRawString(text, index);
+    if (rawEnd !== null) {
+      output += text.slice(index, rawEnd).replace(/[^\n]/g, ' ');
+      index = rawEnd;
+      continue;
+    }
+    if (text[index] === '"') {
+      const consumed = consumeRustQuoted(text, index);
+      output += text.slice(index, consumed).replace(/[^\n]/g, ' ');
+      index = consumed;
+      continue;
+    }
+    output += text[index];
+    index += 1;
+  }
+  return output;
+}
+
+function consumeRustBlockComment(text, start) {
+  let depth = 1;
+  let index = start + 2;
+  while (index < text.length && depth > 0) {
+    if (text.startsWith('/*', index)) {
+      depth += 1;
+      index += 2;
+    } else if (text.startsWith('*/', index)) {
+      depth -= 1;
+      index += 2;
+    } else {
+      index += 1;
+    }
+  }
+  return index;
+}
+
+function consumeRustRawString(text, start) {
+  const match = text.slice(start).match(/^(?:br|r)(#*)"/);
+  if (!match) return null;
+  const terminator = `"${match[1]}`;
+  const end = text.indexOf(terminator, start + match[0].length);
+  return end === -1 ? text.length : end + terminator.length;
+}
+
+function consumeRustQuoted(text, start) {
+  let escaped = false;
+  for (let index = start + 1; index < text.length; index += 1) {
+    if (escaped) {
+      escaped = false;
+      continue;
+    }
+    if (text[index] === '\\') {
+      escaped = true;
+      continue;
+    }
+    if (text[index] === '"') return index + 1;
+  }
+  return text.length;
+}
+
 /**
  * 최상위 독립 패키지 (root 바로 아래 `package.json` 을 가진 디렉토리) 를
  * 요소 후보로 제안한다 — `mcp/`, `cli/` 같은 sibling 패키지.
@@ -2185,11 +3350,13 @@ function detectPythonImportBoundaryElements(
     domainForName,
     existingElements,
     rootPythonPackages,
+    sourcePythonPackages = [],
     imports,
     skipped,
   },
 ) {
-  if (rootPythonPackages.length === 0 || !imports) return [];
+  const pythonPackages = [...rootPythonPackages, ...sourcePythonPackages];
+  if (pythonPackages.length === 0 || !imports) return [];
 
   const scores = new Map();
   const neighbors = new Map();
@@ -2209,7 +3376,7 @@ function detectPythonImportBoundaryElements(
   }
 
   const pathCandidates = new Map();
-  for (const packageElement of rootPythonPackages) {
+  for (const packageElement of pythonPackages) {
     const packagePath = join(rootPath, packageElement.path);
     let entries;
     try {
@@ -2254,7 +3421,7 @@ function detectPythonImportBoundaryElements(
     imports.edges.flatMap((edge) => [edge.from, edge.to]),
   )) {
     if (!source.endsWith('.py') || source.endsWith('/__init__.py')) continue;
-    if (!rootPythonPackages.some((row) => source.startsWith(`${row.path}/`))) {
+    if (!pythonPackages.some((row) => source.startsWith(`${row.path}/`))) {
       continue;
     }
     const relativeParts = source.split('/');
@@ -2509,6 +3676,10 @@ function semanticTokens(value) {
       .filter(Boolean)
       .map((token) => (token.length > 3 && token.endsWith('s') ? token.slice(0, -1) : token)),
   );
+}
+
+function pathSemanticTokens(value) {
+  return semanticTokens(String(value).replace(/[\\/._]+/g, '-'));
 }
 
 function validateRootPath(rootPath) {
