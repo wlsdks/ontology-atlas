@@ -526,6 +526,10 @@ export function analyzeRepoStructure(rootPath, options = {}) {
       semanticCapabilityCandidates,
       elements,
       existingOntologyEvidence,
+      observedDependencyRelations: (pythonImportAnalysis?.moduleEdges ?? []).map(
+        (relation) => ({ ...relation, type: 'depends_on' }),
+      ),
+      semanticEvidence,
     }),
     extractionContract: buildExtractionContract({
       project,
@@ -676,6 +680,8 @@ function buildMeaningGate({
   semanticCapabilityCandidates,
   elements,
   existingOntologyEvidence,
+  observedDependencyRelations = [],
+  semanticEvidence,
 }) {
   const existingBySlug = new Map(
     existingOntologyEvidence.map((evidence) => [evidence.slug, evidence]),
@@ -767,6 +773,63 @@ function buildMeaningGate({
     }),
   ]);
 
+  const reviewQuestions = [
+    'What business/product outcome, user workflow, ownership boundary, or decision does this node explain?',
+    'Which source path, README heading, import edge, or file-level element proves the implementation evidence?',
+    'Should this code structure stay evidence-only instead of becoming a domain or capability node?',
+  ];
+  const hasTrustedMissionOrProductEvidence = semanticEvidence.some(
+    (row) =>
+      ['mission', 'product-contract', 'product-capabilities'].includes(row.role) &&
+      row.trust === 'candidate-evidence' &&
+      row.excerpt,
+  );
+  const hasPersistedBusinessDomain = existingDomainEvidence.length > 0;
+  const hasREADMEOnlyDomainCandidate = reviewRequiredDomains.length > 0;
+  if (!hasTrustedMissionOrProductEvidence) {
+    reviewQuestions.push(
+      '[missing · scope] Add trusted mission or product evidence that states the user outcome and the repository responsibility boundary.',
+    );
+  }
+  if (!hasPersistedBusinessDomain || hasREADMEOnlyDomainCandidate) {
+    reviewQuestions.push(
+      '[weak · domain-boundary] Confirm the domain boundary with persisted business evidence; a README heading alone is only a candidate.',
+    );
+  }
+  if (reviewRequiredCapabilities.length > 0) {
+    for (const capability of reviewRequiredCapabilities) {
+      capability.reason =
+        'implementation-only: source folder is implementation evidence, not proof of a shared capability meaning; add business outcome and stable responsibility evidence before promoting this capability';
+    }
+  }
+  if (proposedBusinessCapabilities.length > 0) {
+    reviewQuestions.push(
+      '[weak · capability-outcome] Confirm the proposed capability with a concrete business outcome and the responsibility it owns.',
+    );
+  }
+  const implementationElementSlugs = new Set(elements.map((element) => element.slug));
+  const hasTypedDependencyRelation = observedDependencyRelations.some(
+    (relation) =>
+      relation?.type === 'depends_on' &&
+      implementationElementSlugs.has(relation.from) &&
+      implementationElementSlugs.has(relation.to),
+  );
+  if (implementationElementSlugs.size >= 2 && !hasTypedDependencyRelation) {
+    reviewQuestions.push(
+      '[not-measured · impact] Identify the typed depends_on relation between implementation elements, or record why no dependency impact is currently measurable.',
+    );
+  }
+  const hasPolicyEvidenceRisk = semanticEvidence.some((row) =>
+    row.riskFlags.some((risk) =>
+      ['future-state-claim', 'negated-claim', 'deprecated-state'].includes(risk),
+    ),
+  );
+  if (hasPolicyEvidenceRisk) {
+    reviewQuestions.push(
+      '[review · policy-evidence] Review future, negated, or deprecated evidence before treating it as current policy; the risk alone is not current policy.',
+    );
+  }
+
   return {
     policy: 'business-first',
     sourceStructureRole: 'implementation-evidence',
@@ -783,11 +846,7 @@ function buildMeaningGate({
       elements: elements.map((element) => element.slug),
       reviewRequiredCapabilities,
     },
-    reviewQuestions: [
-      'What business/product outcome, user workflow, ownership boundary, or decision does this node explain?',
-      'Which source path, README heading, import edge, or file-level element proves the implementation evidence?',
-      'Should this code structure stay evidence-only instead of becoming a domain or capability node?',
-    ],
+    reviewQuestions,
   };
 }
 
