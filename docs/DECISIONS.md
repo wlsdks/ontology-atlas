@@ -12281,3 +12281,50 @@ none 을 지우고 ref 기반 initialFocus 로 바꾼다.
 **상태**: 유효 · Input/Textarea·Checkbox 시행 — SegmentedControl 은 다음 PR
 
 ---
+
+## 2026-08-15 (3) — SegmentedControl: 배타 단일선택의 정본, 2택도 radiogroup 이다
+
+2026-08-15 (2) 의 후속 시행. 「보더 상자 안 세그먼트 단일선택」 5곳 손 재구현의
+드리프트를 수렴했다 — ARIA 3종(aria-pressed 2 · radiogroup 3, **roving 구현
+0곳**: role 이 화살표 이동을 약속만 하고 아무 일도 안 일어났다) · 컨테이너 인셋
+3종 · 바탕 3종 · 선택 표현 2언어(손 조합 bg-panel 은 잉크 대비 1.17:1 — 상태가
+아니라 착시).
+
+**결정** (체계석 + 상호작용석 공동 서명):
+- `SegmentedControl`(`src/shared/ui/segmented-control.tsx`) — **2택 on/off 도
+  radiogroup** 이다. 각 세그먼트의 라벨은 설정 이름이 아니라 값의 이름이고
+  (「개발/일반」·「EN/KO」), aria-pressed 병렬 걸기는 접근성 트리에 배타성을
+  싣지 않는다. aria-pressed 는 프리미티브에서 **표현 불가**(prop 없음).
+- **키보드 계약은 프리미티브가 진다**: roving tabindex(체크 항목만 탭 스톱) ·
+  화살표 순환 + selection-follows-focus · Space · **Home/End 없음**(라디오 표에
+  없는 키 — 회귀 방지 테스트로 못박음) · Escape 미처리(숙주의 것).
+- **컨테이너 캐노니컬**: `p-px gap-px overlay-1 border-soft rounded-chip` —
+  인셋은 다수결(2:2:1 무다수)이 아니라 **높이 사다리 산수**가 정했다(p-px 만
+  아이템 24/32 위에서 자연높이 28/36 이 어휘 위. p-0.5→30/38 · p-1→34/42 는
+  어휘 밖으로 이미 사형된 값들). 바탕은 α(어느 표면에서도 부모+2%) —
+  fieldClass boxed 동족.
+- **값 층 변경(체계석 공동 서명)**: `segment` base 에 `atlas-touch-floor` 추가
+  (세그먼트만 coarse 44 승격이 없어 「한 시트 두 규격」 재현 중이었다) · 기본
+  크기 lg(이주 모집단 3/4 가 이미 32px) · `LocaleSwitch` 의 `touch-hit-expand`
+  제거(1px 인접 유령 히트 — globals.css 기각 주석의 그 실례)와 **동일 커밋**.
+- 이주 4곳: settings SegmentSwitch(어댑터로 축소) · LocaleSwitch ·
+  AgentConnectSheet(scope) · FootprintSettings(presets). **BlockImportModule 은
+  소비자가 아니다** — 2열 그리드 줄바꿈 라디오라 단일 행 스트립이 아니고,
+  chips 변형(Choice 분리) 라운드로 이관.
+
+**기록된 반대 / 이관**: ① Choice 의 칩 라디오그룹 분리 승격(chips 변형)과
+DocsSidebarBody·FirstRunStarterModule 의 「배타 선택인데 토글 문법」 2곳은
+다음 라운드 — 후자는 roving 없던 시절의 정직한 role 반납이라, 프리미티브가
+키보드를 지는 지금 그 근거가 사라졌다. ② 픽셀 이동(AgentConnect 24→32 ·
+바탕 α 전환 · 글자 11→12.5)은 위계석 시각 확인 + 390/768/1280 실측을 머지
+조건으로 승계(2026-08-15 (1) ⓐ).
+
+**반증**: ① 화살표 이동이 무거운 부수효과(볼트 쓰기·파괴 동작)를 즉발하는
+소비자가 생기면 selection-follows-focus 를 그 자리에서 재판정한다(지금 5곳은
+전부 되돌릴 수 있는 선호값 쓰기). ② 세그먼트가 5지 이상으로 자라는 소비자가
+관측되면 스트립이 아니라 Select 의 자리다 — 옵션 수 상한 판정을 더한다.
+
+**서명 (accountable)**: jinan
+**상태**: 유효 · chips 변형·잔여 2곳은 후속
+
+---

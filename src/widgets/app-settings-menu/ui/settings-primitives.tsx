@@ -1,6 +1,7 @@
 import { type ReactNode } from 'react';
 import { cn } from '@/shared/lib/cn';
 import { controlClass } from '@/shared/ui/control-class';
+import { SegmentedControl } from '@/shared/ui/segmented-control';
 
 /**
  * 설정 시트의 원시 요소 셋 — 그룹 · 행 · 값 슬라이더 · 라디오 칩 · 2세그먼트 토글.
@@ -258,6 +259,13 @@ export function Choice<T extends string | boolean>({
 }
 
 /** 2-세그먼트 토글 — LocaleSwitch 와 같은 표면 문법(구 설정 기어에서 승계). */
+/**
+ * 2026-08-15 — 껍데기만 남았다. 실체는 `SegmentedControl`(shared/ui) 이다:
+ * aria-pressed 병렬 걸기(배타성이 접근성 트리에 안 실림) · roving 없는 그룹 ·
+ * 손 조합 선택 표현(bg-panel — 잉크 대비 1.17:1 착시) 전부 프리미티브의
+ * radiogroup + roving + 값 층 active 로 대체됐다. 이 어댑터는 설정 시트의
+ * boolean 시그니처를 보존할 뿐이다.
+ */
 export function SegmentSwitch({
   ariaLabel,
   value,
@@ -272,36 +280,12 @@ export function SegmentSwitch({
   testId?: string;
 }) {
   return (
-    <div
-      role="group"
-      aria-label={ariaLabel}
-      data-testid={testId}
-      className="inline-flex items-center gap-px rounded-chip border border-[color:var(--color-border-soft)] bg-[color:var(--color-elevated)] p-px text-body"
-    >
-      {options.map((option) => {
-        const active = option.value === value;
-        return (
-          <button
-            key={String(option.value)}
-            type="button"
-            onClick={() => onChange(option.value)}
-            aria-pressed={active}
-            className={controlClass({
-              shape: 'segment',
-              size: 'md',
-              tone: active ? 'default' : 'muted',
-              className: cn(
-                'h-8 px-2 font-[var(--font-weight-signature)]',
-                active
-                  ? 'bg-[color:var(--color-panel)]'
-                  : 'hover:text-[color:var(--color-text-secondary)]',
-              ),
-            })}
-          >
-            {option.label}
-          </button>
-        );
-      })}
-    </div>
+    <SegmentedControl
+      ariaLabel={ariaLabel}
+      value={value}
+      onChange={onChange}
+      options={options}
+      testId={testId}
+    />
   );
 }
