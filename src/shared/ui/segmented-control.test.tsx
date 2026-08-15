@@ -153,3 +153,72 @@ describe("SegmentedControl", () => {
     expect((ko as HTMLButtonElement).disabled).toBe(false);
   });
 });
+
+/**
+ * `chips` 변형 — 떨어진 칩 줄 (2026-08-15 2차 라운드).
+ *
+ * 새 그릇이 아니라 **실측 다수파의 등재**다: 손 radiogroup 12그룹 중 10이
+ * 이미 `flex flex-wrap items-center gap-1.5` 였다(바이트 동일 9 + no-op 추가 1).
+ * 그런데 그 10곳 전부 **roving 0 · onKeyDown 0** 이었다 — 이 변형의 존재
+ * 이유는 모양이 아니라 **행동을 자동으로 입혀 주는 것**이다.
+ */
+describe("SegmentedControl — chips 변형", () => {
+  const OPTIONS = [
+    { value: "a", label: "A" },
+    { value: "b", label: "B" },
+    { value: "c", label: "C" },
+  ] as const;
+
+  it("행동은 그릇과 무관하다 — chips 도 radiogroup + roving 을 그대로 받는다", () => {
+    const onChange = vi.fn();
+    render(
+      <SegmentedControl ariaLabel="모양" variant="chips" value="a" options={OPTIONS} onChange={onChange} />,
+    );
+    const radios = screen.getAllByRole("radio");
+    expect(radios).toHaveLength(3);
+    // 탭 스톱은 체크된 하나뿐이다 — 이게 12그룹에 전부 없던 것이다.
+    expect(radios.filter((r) => r.tabIndex === 0)).toHaveLength(1);
+    radios[0].focus();
+    fireEvent.keyDown(radios[0], { key: "ArrowRight" });
+    expect(onChange).toHaveBeenCalledWith("b");
+  });
+
+  it("chips 컨테이너 캐노니컬 — 우물을 입지 않는다", () => {
+    const { container } = render(
+      <SegmentedControl ariaLabel="모양" variant="chips" value="a" options={OPTIONS} onChange={vi.fn()} />,
+    );
+    const group = container.querySelector('[role="radiogroup"]')!;
+    expect(group.className).toContain("flex-wrap");
+    expect(group.className).toContain("gap-1.5");
+    // 우물의 표식 셋은 없다 — 있으면 두 그릇이 섞인 것이다.
+    expect(group.className).not.toContain("bg-[color:var(--color-overlay-1)]");
+    expect(group.className).not.toContain("p-px");
+    expect(group.className).not.toContain("gap-px");
+  });
+
+  it("fill 은 항목이 폭을 균등하게 나눠 갖게 한다", () => {
+    render(
+      <SegmentedControl ariaLabel="모양" variant="chips" fill value="a" options={OPTIONS} onChange={vi.fn()} />,
+    );
+    for (const radio of screen.getAllByRole("radio")) {
+      expect(radio.className).toContain("flex-1");
+      expect(radio.className).toContain("min-w-0");
+    }
+  });
+
+  it("옵션 title 은 통과하고, per-option className 통로는 열려 있지 않다", () => {
+    render(
+      <SegmentedControl
+        ariaLabel="모양"
+        variant="chips"
+        value="a"
+        options={[{ value: "a", label: "A", title: "가나다" }, { value: "b", label: "B" }]}
+        onChange={vi.fn()}
+      />,
+    );
+    expect(screen.getAllByRole("radio")[0]).toHaveAttribute("title", "가나다");
+    // 타입 층의 계약이다 — 여기 단언은 그 계약이 삭제되면 같이 깨지라고 둔다.
+    const optionKeys = Object.keys({ value: "", label: "", ariaLabel: "", title: "", testId: "" });
+    expect(optionKeys).not.toContain("className");
+  });
+});

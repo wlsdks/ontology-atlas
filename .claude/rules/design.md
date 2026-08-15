@@ -331,7 +331,8 @@ particle·rarity(gold)·shimmer 를 `--studio-*` 토큰과 `.studio-stage` 안�
 - `src/shared/ui/dialog.tsx` — **뒤를 막는 모달**의 정본 (스크림·트랩·Esc·복귀·스크롤락·폭 2단). 2026-08-15 신설 — 축·토큰·변형을 바꾸는 것이 곧 규격 변경이다
 - `src/shared/ui/input.tsx` · `src/shared/ui/checkbox.tsx` — 폼 **행동 층**의 정본 (이름 강제 · 오류/힌트 배선 · 라벨=타깃). 2026-08-15 신설
 - `src/shared/ui/badge-class.ts` — **정적 배지의 기하** 정본 (반경·인셋·타입단). 2026-08-15 신설 — 색·자간은 일부러 축이 아니다(실측에 다수파 없음)
-- `src/shared/ui/segmented-control.tsx` — **배타 단일선택**의 정본 (radiogroup + roving + 컨테이너 캐노니컬). 2026-08-15 신설
+- `src/shared/ui/segmented-control.tsx` — **배타 단일선택**의 정본 (그릇 캐노니컬 둘: `well`·`chips` + `fill`). 2026-08-15 신설, 같은 날 2차 라운드에서 행동을 훅으로 갈라냄
+- `src/shared/lib/use-roving-radio-group.ts` — **radiogroup 행동 층**의 정본 (roving tabindex · 화살표 순환 · selection follows focus · Home/End 없음). 2026-08-15 신설 — 그릇이 수렴하지 않는 자리는 이것을 직접 입는다
 - `src/shared/ui/page-frame.ts` — **페이지 틀**(상단 여백 · 좌우 인셋 · 최대 폭 · 헤더/제목 줄). 2026-08-09 신설 — 그 전까지 이 층에는 규격이 아예 없어서 목적지마다 제각각이었다(제목까지 32/48/20px)
 - `app/globals.css` — 램프(ramp — 쓸 수 있는 값을 미리 정해 둔 사다리. 그 밖의 값은 lint 가 막는다): 글자 크기 · 행간 · 모서리 반경 · 그림자 · 컨트롤 높이 · 팔레트의 기준색
 - `.claude/rules/design.md` — 이 파일의 「스케일 고정 계약」 절

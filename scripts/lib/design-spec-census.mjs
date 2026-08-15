@@ -97,6 +97,12 @@ const PRIMITIVE_EXPORT_FILES = new Set([
   'src/shared/ui/checkbox.tsx',
   // 2026-08-15 (3) 배타 단일선택 — SegmentedControl.
   'src/shared/ui/segmented-control.tsx',
+  /*
+   * 2026-08-15 (8) radiogroup **행동 층** — 이 파일이 내보내는 것이 곧 계약이다
+   * (`groupProps`/`itemProps` 의 모양이 바뀌면 그것을 입은 모든 그릇이 바뀐다).
+   * 값은 한 줄도 안 내므로 어휘 census 가 아니라 export census 가 맞다.
+   */
+  'src/shared/lib/use-roving-radio-group.ts',
 ]);
 
 /**

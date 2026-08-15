@@ -107,20 +107,66 @@ function SectionLabel({ children }: { children: ReactNode }) {
 }
 
 /**
+ * 이 레일 버튼이 **무슨 상태를 말하는가** — 소비처가 반드시 고른다 (2026-08-15).
+ *
+ * 종전엔 `{...railStateAria(state)}` 를 무조건 붙였다. 그런데 `controls.tsx` 의
+ * `Chip` 머리말이 이미 그 자동 묶기를 금지해 뒀다: *"`active` 는 **보이는
+ * 상태**이고 `aria-pressed` 는 **말해지는 상태**라, 둘을 자동으로 묶으면
+ * 토글이 아닌 것이 스크린리더에 토글로 읽힌다."* 규칙은 적혀 있었고 이
+ * 래퍼가 정확히 그것을 어기고 있었다.
+ *
+ * 실측(2026-08-15 전수)한 소비처 셋이 **서로 다른 셋**이다:
+ *
+ * | 소비처 | 무엇인가 | 정직한 속성 |
+ * |---|---|---|
+ * | 거르기 | 켜고 끄는 토글 | `aria-pressed` |
+ * | 정렬 | **메뉴를 여는 버튼** | `aria-expanded` + `aria-haspopup` |
+ * | 새 문서 | **행동**(다이얼로그를 열거나 폴더 열기로 보낸다) | 없음 |
+ *
+ * 새 문서 버튼은 눌림 상태가 존재하지 않는데 `aria-pressed="false"` 를 계속
+ * 낭독하고 있었다. 정렬 버튼은 `orderMenuOpen || !orderIsDefault` 라 **두
+ * 가지를 한 속성에 섞었다** — 메뉴를 닫아도 정렬이 기본이 아니면 pressed 가
+ * true 로 남았다. 그 둘은 실제로 다른 사실이고, 지금은 갈라져 있다:
+ * 보이는 인디고는 「정렬이 기본이 아니다」를 말하고, 접근성 트리는 「메뉴가
+ * 열려 있다」를 말한다.
+ *
+ * 그래서 `state` 는 **선택 가능한 옵션이 아니라 필수**다 — 빠뜨리면 타입이
+ * 막는다. 자동으로 채워 주면 그 순간 이 결함이 되돌아온다.
+ */
+type RailButtonState =
+  | { kind: "toggle"; pressed: boolean }
+  | { kind: "disclosure"; expanded: boolean }
+  | { kind: "action" };
+
+function railStateAria(state: RailButtonState) {
+  switch (state.kind) {
+    case "toggle":
+      return { "aria-pressed": state.pressed };
+    case "disclosure":
+      return { "aria-expanded": state.expanded, "aria-haspopup": "menu" as const };
+    case "action":
+      return {};
+  }
+}
+
+/**
  * #22 — 옵시디언식 상단 아이콘 행의 단일 버튼. hover 툴팁(평문) + active
- * 인디고. a11y: title(툴팁) + aria-label + aria-pressed 로 스크린리더 도달.
+ * 인디고. a11y: title(툴팁) + aria-label + `state` 가 정하는 상태 속성.
  */
 function RailIconButton({
   icon,
   label,
   active,
+  state,
   disabled = false,
   onClick,
   testId,
 }: {
   icon: ReactNode;
   label: string;
+  /** **보이는** 상태(인디고). 말해지는 상태는 `state` 가 따로 진다. */
   active: boolean;
+  state: RailButtonState;
   disabled?: boolean;
   onClick: () => void;
   testId?: string;
@@ -133,7 +179,7 @@ function RailIconButton({
         active={active}
         onClick={onClick}
         disabled={disabled}
-        aria-pressed={active}
+        {...railStateAria(state)}
         data-testid={testId}
         className="flex-none hover:text-[color:var(--color-text-primary)]"
       >
@@ -352,6 +398,7 @@ export function DocsSidebarBody({
           icon={<ListFilter size={ICON_SIZE.md} aria-hidden />}
           label={t("searchLabel")}
           active={searchExpanded}
+          state={{ kind: "toggle", pressed: searchExpanded }}
           onClick={() => {
             if (searchExpanded) {
               setTreeQuery("");
@@ -366,7 +413,10 @@ export function DocsSidebarBody({
             testId="docs-sidebar-order-toggle"
             icon={<ArrowDownUp size={ICON_SIZE.md} aria-hidden />}
             label={orderSummary}
+            // 보이는 인디고는 「정렬이 기본이 아니다」, 접근성 트리는 「메뉴가
+            // 열려 있다」 — 서로 다른 사실이라 서로 다른 값을 진다.
             active={orderMenuOpen || !orderIsDefault}
+            state={{ kind: "disclosure", expanded: orderMenuOpen }}
             onClick={() => setOrderMenuOpen((open) => !open)}
           />
           <Surface
@@ -432,6 +482,7 @@ export function DocsSidebarBody({
           icon={<Plus size={ICON_SIZE.md} aria-hidden />}
           label={canCreateNewDoc ? t("newDocButtonLabel") : t("newDocDisabledHint")}
           active={false}
+          state={{ kind: "action" }}
           onClick={onCreateNewDoc}
         />
       </div>
