@@ -40,6 +40,70 @@
 **상태**: 유효 / 뒤집힘(→ 링크) / 반증됨(관측: …)
 ```
 
+## 2026-08-16 — native 구현 경로는 파일 목록이 아니라 build-role 대표 집합으로 전달한다
+
+**소집**: 단독 패스 · **트리거**: held-out C field trial의 canonical capability path
+오선택과 source-hidden q4 구현 역할 공백
+**루브릭**: 22/24 (Problem insight 4 · User moment 4 · Differentiation 2 ·
+Ontology value 4 · Agent value 4 · Verification 4, 치명적 0: 없음)
+**결정**: 기존 응답 shape과 source element 36개 상한 안에서 Autotools의 정적
+build 선언을 역할 근거로 읽고, 공개 interface·공통 preparation·specialized API·
+선택형 platform backend를 대표 경로로 보존한다.
+**적용 규칙**: 기존 field 재사용 · 실행 없는 literal만 · 역할별 대표 1개 예약 ·
+business capability/`depends_on`/write 자동 생성 금지
+**서명**: jinan
+
+**관찰**: 실제 held-out 저장소는 cited path 39/39가 존재했지만, 종전 36개 source
+선택의 대부분이 같은 이름의 platform 파일이었다. 공개 header template은 후보에도
+들지 않았고 `buildProposalAssessment`는 `configure.ac`까지 “implementation entry
+point”로 표현했다. source-visible proposal은 specialized raw API source를 중앙
+capability path로 골랐고, source-hidden q4는 exact path별 역할을 답하지 못했다.
+
+**세부 결정**:
+
+1. `configure.ac`/`configure.in`의 정적 `AC_CONFIG_FILES`가 지목한 root 또는 한 단계
+   하위 `Makefile`에 대응하는 `Makefile.am`만 256 KiB 안에서 읽는다. bracket 유무를
+   모두 지원하되 변수·shell·wildcard·절대 경로·`..`는 실행하거나 해석하지 않는다.
+2. 설치 대상 `*_include_HEADERS`/`*_pkginclude_HEADERS`가 이름 붙인 실제 header 또는
+   존재하는 `.h.in` template만 `Public interface contract`다. `noinst_HEADERS`는
+   내부 build 근거이지 공개 계약이 아니므로 승격하지 않는다.
+3. non-`EXTRA` `*_SOURCES`는 `Core implementation source`, raw/API filename token은
+   중앙성을 주장하지 않는 `Specialized API source`, `EXTRA_*_SOURCES`의 하위 source는
+   `Selectable platform backend`로 구분한다. 나머지는 unclassified로 남긴다.
+4. 새 필드 없이 기존 `title`·`path`·`evidence.source`를 사용한다. q4 handoff의
+   excerpt는 모든 파일을 entry point라 부르지 않고 관측된 implementation path라고
+   표현한다.
+5. 역할마다 대표 1개를 먼저 확보한 뒤 나머지를 채우며 36개 상한은 늘리지 않는다.
+   자동 domain/capability, C dependency graph, `depends_on`, `writePlan`은 만들지 않는다.
+
+**검증**: 합성 40+ source fixture는 구현 전 public template 누락으로 RED였고 수정 후
+analyzer 101/101을 통과했다. 실제 held-out 재측정은 첫 역할 집합에 public interface,
+preparation core, raw API, platform backend를 모두 보존했고 source 36 · automatic
+domain 0 · capability 0 · `depends_on` 0 · `canWrite:false` · `writePlan` 없음이었다.
+
+독립 재검토에서 fresh source-visible 제안자는 specialized API나 platform backend가
+아닌 공통 preparation 역할을 capability의 canonical path로 골랐다. 후보 packet에
+없던 임의 platform 경로는 실제 stdio MCP가 `unknown-citation`으로 차단했고, analyzer가
+공개한 platform 대표와 그 `Makefile.am` 근거를 사용한 뒤에만 review plan을 냈다.
+packet은 full body·digest·revision·8 phases를 JSON 왕복 뒤 그대로 보존했고 missing,
+foreign, truncated row 변이를 모두 거부했다. fresh source-hidden 평가는 q1/q3/q4
+3개 answered · q2/q6 2개 partial · q5 1개 unknown이었다. q4는 exact path별 core와
+selectable backend 역할을 구분했고, q5는 typed dependency 부재를 `not_measured`로
+유지했으며 source 내용이나 영향 방향을 새로 추론하지 않았다. 소스 MCP와 앱 bundle의
+같은 held-out 응답은 project·역할 경로·상한·no-write 비교 필드가 전부 일치했다.
+
+**기록된 반대**: 역할을 기존 title/excerpt에 싣는 것은 새 typed field보다 약해,
+fresh proposal agent가 여전히 specialized source를 canonical path로 고를 수 있다.
+**반증 조건**: 독립 source-visible proposal이 다시 raw/platform source를 중앙 path로
+선택하거나 source-hidden q4가 역할을 구분하지 못하면 이 최소 계약은 부족하다.
+그때만 별도 typed role contract를 재검토한다. q5 impact가 계속 unknown인 것은 이번
+실패가 아니다. C include/build dependency graph는 별도 관측 전까지 OUT이다.
+**재검토**: 같은 held-out candidate packet의 독립 proposal + source-hidden 재평가 직후
+
+**상태**: 유효 · role-evidence slice 집행 · q5 impact 미측정 유지
+
+---
+
 ## 2026-08-16 — 미지원 C와 관계의 명시 경로는 write 전 근거 계약에서 실패 닫는다
 
 ### 먼저 — 세 줄

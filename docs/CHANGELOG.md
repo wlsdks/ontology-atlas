@@ -9,6 +9,13 @@
 
 ## 2026-08-16 · C 미지원 범위와 관계의 정확한 경로 근거를 숨기지 않는다
 
+- Autotools C/H 분석은 정적 `AC_CONFIG_FILES`와 literal Automake 선언에서 공개
+  interface contract, 공통 implementation source, specialized API source, 선택형 platform
+  backend를 구분한다. 36개 source 상한 안에서 각 역할의 대표를 먼저 보존하므로 반복
+  platform 파일이 공개 header나 preparation 경로를 밀어내지 않는다.
+- analyzer의 구현 근거 설명은 모든 파일을 “entry point”로 부르지 않고 실제 path와
+  build-role을 함께 전달한다. 이 개선으로 domain/capability/`depends_on`을 자동
+  생성하거나 C impact를 지원한다고 주장하지 않으며 기존 no-write 경계도 유지한다.
 - C/Autotools 저장소는 실행 없이 정적 `AC_INIT` 리터럴에서 프로젝트 이름을 읽고,
   README의 릴리스 상태보다 제품 목적을 직접 설명하는 문장을 우선한다. 이 근거만으로
   domain/capability를 자동 생성하지 않으며 기존 사람 승인·no-write 경계도 유지한다.

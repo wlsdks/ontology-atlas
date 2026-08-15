@@ -10,7 +10,7 @@ import {
 } from 'node:fs';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
-import { analyzeRepoStructure } from './analyze.mjs';
+import { analyzeRepoStructure, buildProposalAssessment } from './analyze.mjs';
 
 function withRepo(setup) {
   const root = mkdtempSync(join(tmpdir(), 'ontology-atlas-analyze-'));
@@ -1884,6 +1884,150 @@ test('native C repositories expose bounded build, documentation, and source evid
   } finally {
     rmSync(root, { recursive: true, force: true });
     if (outside) rmSync(outside, { recursive: true, force: true });
+  }
+});
+
+test('Autotools C/H role evidence reserves public and core witnesses ahead of raw and platform paths', () => {
+  const root = withRepo((r) => {
+    writeFileSync(join(r, 'README.md'), '# Signal Bridge\n\nA bounded native interface fixture.\n');
+    writeFileSync(
+      join(r, 'configure.ac'),
+      [
+        'AC_INIT([signal-bridge], [0.1.0])',
+        'AC_CONFIG_FILES(include/Makefile Makefile)',
+        'AC_OUTPUT',
+      ].join('\n'),
+    );
+    mkdirSync(join(r, 'include'), { recursive: true });
+    mkdirSync(join(r, 'src', 'platform'), { recursive: true });
+    writeFileSync(join(r, 'include', 'signal_bridge.h.in'), 'int bridge_call(void);\n');
+    writeFileSync(join(r, 'include', 'undeclared.h.in'), 'int hidden_contract(void);\n');
+    writeFileSync(join(r, 'include', 'private.h'), 'int private_contract(void);\n');
+    const publicHeaderNames = Array.from(
+      { length: 36 },
+      (_, index) => `contract_${String(index).padStart(2, '0')}.h`,
+    );
+    for (const name of publicHeaderNames) {
+      writeFileSync(join(r, 'include', name), 'int public_contract(void);\n');
+    }
+    writeFileSync(join(r, 'src', 'core.c'), 'int core(void) { return 0; }\n');
+    writeFileSync(join(r, 'src', 'prep_call.c'), 'int prep_call(void) { return 0; }\n');
+    writeFileSync(join(r, 'src', 'raw_api.c'), 'int raw_api(void) { return 0; }\n');
+    writeFileSync(
+      join(r, 'include', 'Makefile.am'),
+      [
+        `nodist_include_HEADERS = signal_bridge.h ${publicHeaderNames.join(' ')}`,
+        'noinst_HEADERS = private.h',
+        'unsafe_HEADERS = undeclared.h.in $(DYNAMIC_HEADER)',
+      ].join('\n'),
+    );
+
+    const platformPaths = [
+      'src/platform/aarch64_backend.c',
+      ...Array.from({ length: 36 }, (_, index) => `src/platform/slot_${String(index).padStart(2, '0')}.c`),
+    ];
+    for (const path of platformPaths) {
+      writeFileSync(join(r, path), 'int platform_backend(void) { return 0; }\n');
+    }
+    writeFileSync(
+      join(r, 'Makefile.am'),
+      [
+        'libsignal_bridge_la_SOURCES = src/core.c src/prep_call.c src/raw_api.c',
+        'unsafe_la_SOURCES = ../escape.c src/*.c /absolute.c $(shell echo src/unsafe.c)',
+        `EXTRA_libsignal_bridge_la_SOURCES = ${platformPaths.join(' ')}`,
+      ].join('\n'),
+    );
+  });
+  try {
+    const result = analyzeRepoStructure(root);
+    const sourceRows = result.elements.filter((element) => /\.(?:c|h(?:\.in)?)$/i.test(element.path));
+    const publicContract = result.elements.find((element) => element.path === 'include/signal_bridge.h.in');
+    const prepSource = result.elements.find((element) => element.path === 'src/prep_call.c');
+    const rawSource = result.elements.find((element) => element.path === 'src/raw_api.c');
+    const platformBackend = result.elements.find((element) => element.path === 'src/platform/aarch64_backend.c');
+
+    assert.ok(publicContract, 'declared public header template must be admitted');
+    assert.match(publicContract.title, /^Public interface contract:/);
+    assert.match(prepSource?.title ?? '', /^Core implementation source:/);
+    assert.match(rawSource?.title ?? '', /^Specialized API source:/);
+    assert.match(platformBackend?.title ?? '', /^Selectable platform backend:/);
+    assert.equal(publicContract.evidence.source, 'include/Makefile.am');
+    assert.equal(prepSource?.evidence.source, 'Makefile.am');
+    assert.equal(rawSource?.evidence.source, 'src/raw_api.c');
+    assert.equal(platformBackend?.evidence.source, 'Makefile.am');
+    assert.equal(sourceRows.length, 36);
+    assert.ok(sourceRows.indexOf(publicContract) < sourceRows.indexOf(rawSource));
+    assert.ok(sourceRows.indexOf(prepSource) < sourceRows.indexOf(rawSource));
+    assert.ok(sourceRows.indexOf(prepSource) < sourceRows.indexOf(platformBackend));
+    assert.equal(result.elements.some((element) => element.path === 'include/undeclared.h.in'), false);
+    assert.equal(result.elements.some((element) => element.path === 'include/private.h'), false);
+    assert.ok(result.elements.some((element) => element.path === 'configure.ac'));
+    assert.ok(result.elements.some((element) => element.path === 'Makefile.am'));
+    assert.deepEqual(result.domains, []);
+    assert.deepEqual(result.capabilities, []);
+    assert.equal(result.extractionContract.assertionPolicy.automaticBusinessAssertions, 0);
+    assert.equal(result.proposalValidation.canWrite, false);
+    assert.equal('writePlan' in result.proposalValidation, false);
+    assert.equal(result.suggestedRelations.some((relation) => relation.type === 'depends_on'), false);
+
+    const assessment = buildProposalAssessment(result);
+    const publicEvidence = assessment.questions
+      .find((question) => question.id === 'evidence')
+      ?.evidence.find(
+      (evidence) => evidence.location === 'include/signal_bridge.h.in',
+      );
+    assert.match(publicEvidence?.excerpt ?? '', /^Public interface contract:/);
+    assert.match(publicEvidence?.excerpt ?? '', /observed implementation path/);
+    assert.doesNotMatch(publicEvidence?.excerpt ?? '', /implementation entry point/i);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test('Autotools role evidence keeps internal headers and dynamic assignments unclassified', () => {
+  const root = withRepo((r) => {
+    writeFileSync(join(r, 'README.md'), '# Signal Boundary\n');
+    writeFileSync(
+      join(r, 'configure.ac'),
+      'AC_INIT([signal-boundary], [0.1.0])\nAC_CONFIG_FILES(include/Makefile Makefile)\n',
+    );
+    mkdirSync(join(r, 'include'), { recursive: true });
+    mkdirSync(join(r, 'src'), { recursive: true });
+    writeFileSync(join(r, 'include', 'public.h.in'), 'int public_contract(void);\n');
+    writeFileSync(join(r, 'include', 'private.h'), 'int private_contract(void);\n');
+    writeFileSync(join(r, 'include', 'dynamic.h.in'), 'int dynamic_contract(void);\n');
+    writeFileSync(join(r, 'src', 'main.c'), 'int main(void) { return 0; }\n');
+    writeFileSync(join(r, 'src', 'unsafe.c'), 'int unsafe(void) { return 0; }\n');
+    writeFileSync(
+      join(r, 'include', 'Makefile.am'),
+      [
+        'nodist_include_HEADERS = public.h',
+        'noinst_HEADERS = private.h',
+        'include_HEADERS = dynamic.h $(DYNAMIC_HEADER)',
+      ].join('\n'),
+    );
+    writeFileSync(
+      join(r, 'Makefile.am'),
+      [
+        'signal_boundary_SOURCES = src/main.c',
+        'unsafe_SOURCES = src/unsafe.c $(shell echo src/unsafe.c)',
+      ].join('\n'),
+    );
+  });
+  try {
+    const result = analyzeRepoStructure(root);
+    assert.match(
+      result.elements.find((element) => element.path === 'include/public.h.in')?.title ?? '',
+      /^Public interface contract:/,
+    );
+    assert.equal(result.elements.some((element) => element.path === 'include/private.h'), false);
+    assert.equal(result.elements.some((element) => element.path === 'include/dynamic.h.in'), false);
+    assert.match(
+      result.elements.find((element) => element.path === 'src/unsafe.c')?.title ?? '',
+      /^Unclassified native source evidence:/,
+    );
+  } finally {
+    rmSync(root, { recursive: true, force: true });
   }
 });
 

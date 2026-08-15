@@ -166,6 +166,14 @@ manifest/source discovery가 실제 `.c`/`.h`를 확인하면 `infer_imports.cov
 capability를 만들지 않으며 C include/build dependency graph를 분석하거나 의미 관계로
 자동 승격하지도 않는다.
 
+같은 Autotools 분석은 정적 `AC_CONFIG_FILES`가 지목한 root 또는 한 단계 하위
+`Makefile.am`의 literal 선언을 실행 없이 읽는다. 설치 대상 header와 존재하는 `.h.in`
+template, non-`EXTRA` core source, raw/API specialized source, `EXTRA_*_SOURCES`의 선택형
+platform backend를 구분해 source 36개 안에서 역할별 대표를 먼저 보존한다. 내부
+`noinst_HEADERS`, 변수·shell·wildcard·절대/상위 경로는 역할 근거가 되지 않는다. 이
+build-role은 구현 handoff의 관측 근거이며 canonical capability나 C impact를 자동
+승인하지 않는다.
+
 Rust 저장소도 같은 원칙으로 빈 import graph를 “의존 없음”으로 말하지 않는다.
 `infer_imports.coverage`는 Cargo 감지 시 `use`/`mod`/macro dependency scan이 아직
 지원되지 않음을 명시하고, 0 edge의 뜻을 지원 언어에서 관측된 정적 import가 없다는

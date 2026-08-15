@@ -54,7 +54,7 @@ import {
   realpathSync,
 } from 'node:fs';
 import { createHash } from 'node:crypto';
-import { join, basename, relative, isAbsolute, sep } from 'node:path';
+import { join, basename, relative, isAbsolute, sep, dirname } from 'node:path';
 import {
   COMPETENCY_QUESTION_CONTRACTS,
   validateMeaningProposalAgainstAnalysis,
@@ -97,6 +97,7 @@ const SOURCE_LAYOUT_COORDINATION_ROLE =
   /(?:^|[-_.])(app|main|index|manager|loader|registry|storage|client|server|router|controller)(?:[-_.]|$)/i;
 const SOURCE_LAYOUT_CODE_FILE = /\.(?:[cm]?[jt]sx?|py)$/i;
 const NATIVE_SOURCE_FILE = /\.(?:c|h)$/i;
+const NATIVE_ROLE_EVIDENCE_FILE = /\.(?:c|h(?:\.in)?)$/i;
 const PYTHON_NON_PRODUCT_PACKAGES = new Set(['test', 'tests']);
 const PYTHON_IMPORT_ELEMENT_LIMIT = 12;
 const PYTHON_IMPORT_RISK_ELEMENT_LIMIT = 2;
@@ -143,6 +144,23 @@ const AUTOTOOLS_IMPLEMENTATION_MANIFESTS = new Map([
 const AUTOTOOLS_IDENTITY_FILES = ['configure.ac', 'configure.in'];
 const AUTOTOOLS_IDENTITY_MAX_BYTES = 256 * 1024;
 const AUTOTOOLS_IDENTITY_MAX_LENGTH = 160;
+const AUTOTOOLS_ROLE_MANIFEST_MAX_BYTES = 256 * 1024;
+const AUTOTOOLS_ROLE_TARGET_LIMIT = 48;
+const AUTOTOOLS_ROLE_ASSIGNMENT_LIMIT = 256;
+const AUTOTOOLS_ROLE_LITERAL_PATH_MAX_LENGTH = 240;
+const AUTOTOOLS_ROLE_SELECTION_PRIORITY = new Map([
+  ['Public interface contract', 0],
+  ['Core implementation source', 1],
+  ['Specialized API source', 2],
+  ['Selectable platform backend', 3],
+  ['Unclassified native source evidence', 4],
+]);
+const AUTOTOOLS_ROLE_CLASSIFICATION_PRIORITY = new Map([
+  ['Public interface contract', 0],
+  ['Specialized API source', 1],
+  ['Core implementation source', 2],
+  ['Selectable platform backend', 3],
+]);
 const LIBRARY_SOURCE_ELEMENT_LIMIT = 24;
 const IMPLEMENTATION_SOURCE_ELEMENT_LIMIT = 48;
 const CARGO_MANIFEST_MAX_FEATURES = 48;
@@ -889,7 +907,7 @@ export function buildProposalAssessment(result) {
       evidenceType: 'implementation-path',
       sourceRef: row.evidence?.source ?? row.path,
       location: row.path,
-      excerpt: `${row.title} implementation entry point`,
+      excerpt: `${row.title}; observed implementation path: ${row.path}`,
       resolution: 'path-observed',
       supports: Boolean(row.path && row.evidence?.source),
     })),
@@ -3236,6 +3254,251 @@ function materializeImplementationOnlySourceElements(
   return out;
 }
 
+function readAutotoolsRoleManifest(rootPath, path, skipped) {
+  const source = relative(rootPath, path);
+  try {
+    if (!existsSync(path) || !statSync(path).isFile()) return null;
+    if (!pathResolvesInsideRoot(rootPath, path)) {
+      pushSkippedOnce(skipped, {
+        path,
+        reason: 'autotools-role-evidence-skip: ' + source + ' resolves outside repository root',
+      });
+      return null;
+    }
+    if (statSync(path).size > AUTOTOOLS_ROLE_MANIFEST_MAX_BYTES) {
+      pushSkippedOnce(skipped, {
+        path,
+        reason: 'autotools-role-evidence-skip: ' + source + ' exceeds ' + AUTOTOOLS_ROLE_MANIFEST_MAX_BYTES + ' bytes',
+      });
+      return null;
+    }
+    return readFileSync(path, 'utf-8');
+  } catch {
+    pushSkippedOnce(skipped, {
+      path,
+      reason: 'autotools-role-evidence-skip: ' + source + ' is unreadable',
+    });
+    return null;
+  }
+}
+
+function staticAutotoolsLines(contents) {
+  return contents
+    .split(/\r?\n/)
+    .filter((line) => !/^\s*(?:dnl\b|#)/i.test(line))
+    .map((line) => line.trim());
+}
+
+function isStaticAutotoolsRolePath(value) {
+  if (
+    !value ||
+    value.length > AUTOTOOLS_ROLE_LITERAL_PATH_MAX_LENGTH ||
+    isAbsolute(value) ||
+    value.includes('\\') ||
+    !/^[A-Za-z0-9][A-Za-z0-9._/-]*$/.test(value)
+  ) {
+    return false;
+  }
+  return value.split('/').every(
+    (segment) => segment !== '.' && segment !== '..' && /^[A-Za-z0-9][A-Za-z0-9._-]*$/.test(segment),
+  );
+}
+
+function extractStaticAutotoolsMakefileTargets(contents) {
+  const targets = new Set();
+  const source = staticAutotoolsLines(contents).join('\n');
+  const pattern = /\bAC_CONFIG_FILES\s*\(\s*(?:\[([^\]]*)\]|([^)]*))\s*\)/g;
+  let match;
+  while ((match = pattern.exec(source)) !== null) {
+    const candidates = (match[1] ?? match[2] ?? '').trim().split(/\s+/).filter(Boolean);
+    if (
+      candidates.length === 0 ||
+      candidates.length > AUTOTOOLS_ROLE_TARGET_LIMIT ||
+      !candidates.every(isStaticAutotoolsRolePath)
+    ) {
+      continue;
+    }
+    for (const candidate of candidates) {
+      const segments = candidate.split('/');
+      if (
+        candidate === 'Makefile' ||
+        (segments.length === 2 && segments[1] === 'Makefile')
+      ) {
+        targets.add(candidate);
+      }
+    }
+  }
+  return [...targets].sort().slice(0, AUTOTOOLS_ROLE_TARGET_LIMIT);
+}
+
+function makefileAmPathForTarget(rootPath, target) {
+  if (target === 'Makefile') return join(rootPath, 'Makefile.am');
+  return join(rootPath, target.slice(0, -'/Makefile'.length), 'Makefile.am');
+}
+
+function extractStaticAutotoolsRoleAssignments(contents) {
+  const assignments = [];
+  let pending = '';
+  const flush = (line) => {
+    const assignment = line.match(/^([A-Za-z][A-Za-z0-9_]*)\s*(?:\+?=|:=)\s*(.+)$/);
+    if (!assignment) return;
+    const name = assignment[1];
+    if (!/_HEADERS$/.test(name) && !/_SOURCES$/.test(name)) return;
+    const values = assignment[2].trim().split(/\s+/).filter(Boolean);
+    if (
+      values.length === 0 ||
+      values.length > AUTOTOOLS_ROLE_ASSIGNMENT_LIMIT ||
+      !values.every(isStaticAutotoolsRolePath)
+    ) {
+      return;
+    }
+    assignments.push({ name, values });
+  };
+
+  for (const line of staticAutotoolsLines(contents)) {
+    if (!line) continue;
+    const current = pending ? pending + ' ' + line : line;
+    if (current.endsWith('\\')) {
+      pending = current.slice(0, -1).trim();
+      continue;
+    }
+    flush(current);
+    pending = '';
+    if (assignments.length >= AUTOTOOLS_ROLE_ASSIGNMENT_LIMIT) break;
+  }
+  return assignments;
+}
+
+function resolveStaticAutotoolsRoleFile(rootPath, manifestPath, literalPath) {
+  if (!isStaticAutotoolsRolePath(literalPath)) return null;
+  const path = join(dirname(manifestPath), literalPath);
+  try {
+    if (
+      !existsSync(path) ||
+      !statSync(path).isFile() ||
+      !pathResolvesInsideRoot(rootPath, path)
+    ) {
+      return null;
+    }
+    return path;
+  } catch {
+    return null;
+  }
+}
+
+function resolveStaticAutotoolsHeaderFile(rootPath, manifestPath, literalPath) {
+  if (!/\.h(?:\.in)?$/i.test(literalPath)) return null;
+  const direct = resolveStaticAutotoolsRoleFile(rootPath, manifestPath, literalPath);
+  if (direct && NATIVE_ROLE_EVIDENCE_FILE.test(direct)) return direct;
+  if (!/\.h$/i.test(literalPath)) return null;
+  const template = resolveStaticAutotoolsRoleFile(rootPath, manifestPath, literalPath + '.in');
+  return template && /\.h\.in$/i.test(template) ? template : null;
+}
+
+function nativeRoleForSource(path, isExtra, source) {
+  const name = basename(path).replace(NATIVE_ROLE_EVIDENCE_FILE, '');
+  if (/(?:^|[-_.])(raw|api)(?:[-_.]|$)/i.test(name)) {
+    return 'Specialized API source';
+  }
+  if (isExtra && source.includes('/')) {
+    return 'Selectable platform backend';
+  }
+  return 'Core implementation source';
+}
+
+function discoverAutotoolsDeclaredRoleEvidence(rootPath, skipped) {
+  const roleCandidates = new Map();
+  const makefilePaths = new Set();
+  const addRoleCandidate = (path, role, evidenceSource) => {
+    if (!NATIVE_ROLE_EVIDENCE_FILE.test(path)) return;
+    const source = relative(rootPath, path);
+    const existing = roleCandidates.get(source);
+    if (
+      !existing ||
+      (AUTOTOOLS_ROLE_CLASSIFICATION_PRIORITY.get(role) ?? Infinity) <
+        (AUTOTOOLS_ROLE_CLASSIFICATION_PRIORITY.get(existing.role) ?? Infinity)
+    ) {
+      roleCandidates.set(source, { path, role, evidenceSource });
+    }
+  };
+
+  for (const configName of AUTOTOOLS_IDENTITY_FILES) {
+    const configPath = join(rootPath, configName);
+    const contents = readAutotoolsRoleManifest(rootPath, configPath, skipped);
+    if (!contents) continue;
+    for (const target of extractStaticAutotoolsMakefileTargets(contents)) {
+      makefilePaths.add(makefileAmPathForTarget(rootPath, target));
+    }
+  }
+
+  for (const manifestPath of [...makefilePaths].sort()) {
+    const contents = readAutotoolsRoleManifest(rootPath, manifestPath, skipped);
+    if (!contents) continue;
+    const manifestSource = relative(rootPath, manifestPath);
+    for (const assignment of extractStaticAutotoolsRoleAssignments(contents)) {
+      if (/(?:^|_)(?:include|pkginclude)_HEADERS$/.test(assignment.name)) {
+        for (const literalPath of assignment.values) {
+          const path = resolveStaticAutotoolsHeaderFile(rootPath, manifestPath, literalPath);
+          if (path) addRoleCandidate(path, 'Public interface contract', manifestSource);
+        }
+        continue;
+      }
+      if (assignment.name.endsWith('_HEADERS')) continue;
+
+      const isExtra = assignment.name.startsWith('EXTRA_');
+      for (const literalPath of assignment.values) {
+        const path = resolveStaticAutotoolsRoleFile(rootPath, manifestPath, literalPath);
+        if (!path || !NATIVE_SOURCE_FILE.test(path)) continue;
+        const source = relative(rootPath, path);
+        const role = nativeRoleForSource(path, isExtra, source);
+        addRoleCandidate(
+          path,
+          role,
+          role === 'Specialized API source' ? source : manifestSource,
+        );
+      }
+    }
+  }
+
+  return roleCandidates;
+}
+
+function nativeEvidenceTitle(source, role) {
+  const fileName = source.split('/').at(-1);
+  const stem = slugify(fileName.replace(NATIVE_ROLE_EVIDENCE_FILE, ''));
+  return role + ': ' + humanize(stem);
+}
+
+function compareNativeEvidenceCandidates(left, right) {
+  const roleDelta =
+    (AUTOTOOLS_ROLE_SELECTION_PRIORITY.get(left.role) ?? Infinity) -
+    (AUTOTOOLS_ROLE_SELECTION_PRIORITY.get(right.role) ?? Infinity);
+  if (roleDelta !== 0) return roleDelta;
+  const representativePriority = (candidate) => {
+    const fileName = candidate.source.split('/').at(-1).toLowerCase();
+    const stem = fileName.replace(NATIVE_ROLE_EVIDENCE_FILE, '');
+    if (candidate.role === 'Public interface contract') {
+      return fileName.endsWith('.h.in') ? 0 : candidate.source.startsWith('include/') ? 1 : 2;
+    }
+    if (candidate.role === 'Core implementation source') {
+      if (/(?:^|[-_.])prep(?:[-_.]|$)/.test(stem)) return 0;
+      return /(?:^|[-_.])(main|core)(?:[-_.]|$)/.test(stem) ? 1 : 2;
+    }
+    if (candidate.role === 'Specialized API source') {
+      return /^(?:raw[-_.]?api|api)$/.test(stem) ? 0 : 1;
+    }
+    return 0;
+  };
+  const representativeDelta = representativePriority(left) - representativePriority(right);
+  if (representativeDelta !== 0) return representativeDelta;
+  const leftBase = left.source.split('/').at(-1).toLowerCase();
+  const rightBase = right.source.split('/').at(-1).toLowerCase();
+  const basePriority = (base) => (
+    base === 'main.c' || base === 'main.h' ? 0 : base.endsWith('.c') ? 1 : 2
+  );
+  return basePriority(leftBase) - basePriority(rightBase) || left.source.localeCompare(right.source);
+}
+
 function discoverAutotoolsImplementationEvidence(rootPath, { ignore, skipped }) {
   const hasAutotoolsManifest = [...AUTOTOOLS_IMPLEMENTATION_MANIFESTS.keys()].some(
     (manifest) => {
@@ -3323,6 +3586,11 @@ function discoverAutotoolsImplementationEvidence(rootPath, { ignore, skipped }) 
     }
   }
 
+  const declaredRoleEvidence = discoverAutotoolsDeclaredRoleEvidence(rootPath, skipped);
+  for (const [source, row] of declaredRoleEvidence) {
+    sourceCandidates.set(source, row.path);
+  }
+
   if (sourceCandidates.size === 0) {
     return { isNativeProject: false, elements: [] };
   }
@@ -3404,13 +3672,27 @@ function discoverAutotoolsImplementationEvidence(rootPath, { ignore, skipped }) 
     });
   }
 
-  const sortedSources = [...sourceCandidates.keys()].sort((left, right) => {
-    const leftBase = left.split('/').at(-1).toLowerCase();
-    const rightBase = right.split('/').at(-1).toLowerCase();
-    const priority = (base) => (base === 'main.c' || base === 'main.h' ? 0 : base.endsWith('.c') ? 1 : 2);
-    return priority(leftBase) - priority(rightBase) || left.localeCompare(right);
-  });
-  const selectedSources = sortedSources.slice(0, NATIVE_SOURCE_ELEMENT_LIMIT);
+  const sortedSources = [...sourceCandidates.entries()]
+    .map(([source, path]) => ({
+      source,
+      path,
+      role: declaredRoleEvidence.get(source)?.role ?? 'Unclassified native source evidence',
+    }))
+    .sort(compareNativeEvidenceCandidates);
+  const selectedSources = [];
+  const selectedSourcePaths = new Set();
+  for (const role of AUTOTOOLS_ROLE_SELECTION_PRIORITY.keys()) {
+    const representative = sortedSources.find((candidate) => candidate.role === role);
+    if (!representative || selectedSourcePaths.has(representative.source)) continue;
+    selectedSources.push(representative);
+    selectedSourcePaths.add(representative.source);
+  }
+  for (const candidate of sortedSources) {
+    if (selectedSources.length >= NATIVE_SOURCE_ELEMENT_LIMIT) break;
+    if (selectedSourcePaths.has(candidate.source)) continue;
+    selectedSources.push(candidate);
+    selectedSourcePaths.add(candidate.source);
+  }
   if (sortedSources.length > selectedSources.length) {
     pushSkippedOnce(skipped, {
       path: rootPath,
@@ -3418,9 +3700,9 @@ function discoverAutotoolsImplementationEvidence(rootPath, { ignore, skipped }) 
     });
   }
   const sourceSlugCounts = new Map();
-  for (const source of selectedSources) {
+  for (const { source, role } of selectedSources) {
     const fileName = source.split('/').at(-1);
-    const stem = slugify(fileName.replace(NATIVE_SOURCE_FILE, ''));
+    const stem = slugify(fileName.replace(NATIVE_ROLE_EVIDENCE_FILE, ''));
     if (!stem) continue;
     const count = sourceSlugCounts.get(stem) ?? 0;
     sourceSlugCounts.set(stem, count + 1);
@@ -3429,9 +3711,11 @@ function discoverAutotoolsImplementationEvidence(rootPath, { ignore, skipped }) 
       : `elements/${stem}-${slugify(source.split('/').slice(-2, -1)[0]) || 'native'}`;
     addElement({
       slug,
-      title: humanize(stem),
+      title: nativeEvidenceTitle(source, role),
       path: source,
-      evidence: { source },
+      evidence: {
+        source: declaredRoleEvidence.get(source)?.evidenceSource ?? source,
+      },
     });
   }
 
