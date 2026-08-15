@@ -12786,3 +12786,66 @@ diff 는 0이라 rect 는 수학적으로 불변이다 — 그래서 잰 것은 
 교체는 각자 픽셀 실측과 함께 후속 PR
 
 ---
+
+## 2026-08-15 (9) — 비표준 구현 루트도 의미 후보의 증거가 되되, 기능으로 자동 승격하지 않는다
+
+**선행 기록**: 의미 분석은 사업 서술과 구현 증거를 교차 확인한 제안만 내고, 폴더
+구조만으로 사업 능력을 확정하지 않는다는 기존 결정들을 유지한다. 이번 held-out
+측정에서 기존 분석기는 `lib/`와 함께 존재하는 `internal/` 구현 루트를 읽지 못해,
+제품 서술이 있어도 구현 witness가 끊기는 반증 조건이 관측됐다.
+
+**관찰된 현상**: 대규모 저장소의 실제 구현이 `internal/<role>/` 아래에 있지만
+분석기의 첫 번째 source root 선택 때문에 해당 경로가 semantic candidate에 연결되지
+않았다. 한 저장소는 4개 요소·사업 후보 0개로 반환됐고, 재측정 전에는
+`internal/bundler`가 분석 결과에 없었다.
+
+**사용자 문제**: 개발자 또는 코딩 에이전트가 저장소를 처음 분석하는 순간, README의
+제품 목적과 실제 구현 위치를 함께 따라갈 수 없어 후보를 재탐색하거나 수동으로
+맥락을 복구해야 한다. 다만 `internal`이라는 이름 자체는 구현 계층일 뿐 사업
+의미의 증거가 아니므로, 이를 capability로 올리면 기존의 폴더=사업 오탐을 되살린다.
+
+**PO pass**: `internal/`의 직접 하위 디렉터리를 bounded implementation element로
+수집하고, 신뢰 가능한 제품 문장과 같은 의미의 구현 경로가 함께 있을 때만 기존
+proposal-only 후보를 만든다. 새 writer·MCP/CLI 필드·vault 스키마·자동 write는
+추가하지 않으며, 단위·held-out·무쓰기 검증으로 확인한다.
+
+**결정**:
+
+- `internal/`은 기존 `src/source/lib/app`를 대체하지 않는다. 다른 source root가
+  선택된 저장소에서도 `internal/`의 직접 하위 디렉터리를 추가로 최대 48개까지
+  요소 증거로 수집한다. `internal/`만 있는 저장소에서도 동일하게 동작한다.
+- 수집된 항목은 `elements/<role>`과 실제 상대 경로만 가진다. `internal/<role>`을
+  `capabilities/<role>`로 만들지 않으며, 하위 깊이 전체를 재귀 스캔하지 않는다.
+- 신뢰 가능한 mission/product/package 문장에 web/JavaScript/TypeScript bundler
+  또는 bundler project가 명시되고, 구현 요소 경로에 bundler/builder/compiler/linker
+  witness가 있을 때만 `capabilities/build-tooling`을 기존 proposal-only 형식으로
+  제안한다. 제안은 여전히 사람 의미 승인 전에는 vault에 들어가지 않는다.
+- 기존 `canWrite: false`, human approval, visible gap/review question 경계를
+  유지한다. 이번 slice는 분석 증거 수집과 후보 연결만 바꾼다.
+
+**기각한 대안**: `internal`의 폴더명을 곧바로 capability로 올리는 방식은 사업
+의미와 구현 구조를 혼동하므로 기각했다. `internal`을 source root 우선순위로만
+바꾸는 방식도 `lib`와 `internal`이 공존하는 저장소에서 한쪽 증거를 잃으므로
+기각했다.
+
+**반증 조건**: ① 서술과 경로가 모두 없는 저장소에서 `build-tooling`이 제안되거나
+`internal/<role>`이 capability로 반환되는 사례가 1건이라도 나오면 이 결정은
+실패한 것이다. ② 48개 제한을 넘긴 내부 루트에서 제한·누락이 표시되지 않으면
+bounded scan 경계가 실패한 것이다. ③ 독립 source-hidden 평가에서 구현 경로가
+늘었지만 다음 작업 handoff 또는 후보의 의미 판단이 개선되지 않는다면, 다음
+라운드는 clue 추가가 아니라 evaluator/질문 품질부터 다시 연다.
+
+**루브릭**: 21/24 (Problem insight 4 · User moment 4 · Differentiation 3 ·
+Ontology value 4 · Agent value 4 · Verification 2, 치명적 0 없음). Verification 2는
+이번 기록 시점에 source-visible calibration과 regression은 완료했지만,
+source-hidden 독립 evaluator의 qualification은 아직 완료하지 않았기 때문이다.
+
+**검증 증거**: analyzer unit 91/91 통과. held-out 3개 저장소 재측정에서 기존 후보가
+없던 대규모 저장소는 31개 bounded 요소와 `capabilities/build-tooling` 제안을 얻었고,
+다른 두 저장소는 새 후보를 만들지 않았다. 전체 MCP/app dogfood와 source-hidden
+qualification은 이 결정의 후속 조건으로 남긴다.
+
+**상태**: 유효 · bounded implementation-evidence slice 집행 · source-hidden
+qualification pending
+
+---
