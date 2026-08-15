@@ -265,7 +265,7 @@ const control = cva(`${DISABLED} ${FOCUS}`, {
       // TOUCH_FLOOR (2026-08-15 상호작용석 처방 + 체계석 공동 서명): 세그먼트만
       // coarse 44 승격이 없어 「한 시트 두 규격」이 재현되고 있었다. gap-px 밀집
       // 배치라 유령 히트(touch-hit-expand)는 자격 미달 — 실제 높이 방식이 유일하다.
-      segment: `${TOUCH_FLOOR} inline-flex items-center justify-center rounded-chip text-center transition-colors`,
+      segment: `${TOUCH_FLOOR} atlas-touch-floor-wide inline-flex items-center justify-center rounded-chip text-center transition-colors`,
     },
     /**
      * 크기 — **높이는 사다리가 정하고, 패딩은 그 안에서 결정된다.**
