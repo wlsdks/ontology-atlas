@@ -379,6 +379,7 @@ particle·rarity(gold)·shimmer 를 `--studio-*` 토큰과 `.studio-stage` 안�
 | **행간 램프** | `leading-[N]` 값 직접 적기 금지 + 이름 유틸리티(숫자꼴 `leading-4~7` · 비율꼴 `relaxed`·`snug`·`none`·`tight`) 전부 금지 — **2026-08-05 에 190건을 전량 램프로 옮겨 래칫 전 패밀리 0**. 목적지는 `--leading-*` 8단 + 비율 2단(`display-tight`·`prose`) | 동일 |
 | **램프 우회** | 램프 토큰을 대괄호 안에서 길이로 돌려 참조하는 것만 금지 (램프 밖 크기 토큰은 정당) | 동일 (켤 때 위반 0) |
 | **인라인 그림자** | JSX `style={{ boxShadow }}` 의 값이 사다리·도킹·눌림·표면 토큰 중 하나를 참조하지 않으면 금지 (2026-08-04) | `src/**`+`app/**` 전역 error — **램프 부채 예외 파일도 받는다** |
+| **인라인 크기·반경** | JSX `style={{ fontSize/borderRadius }}` 의 리터럴 금지(삼항 가지·template literal 포함) — `var()` 토큰 참조만 통과, 단 `--text-*` 램프 토큰의 인라인 우회는 별도로 금지(행간 짝 상실) (2026-08-15) | 동일 (켤 때 위반 0 — 1곳 선치환). Satori 예약 파일명(`opengraph-image`/`twitter-image`)만 스코프 블록 면제 |
 | **자간 램프** | `tracking-[Nem]` 금지 — 대문자 마이크로 라벨은 `--tracking-caps-08/10/12/14/16`, 본문 짝은 `--tracking-caption/label/body/body-lg/title` (2026-08-05) | 동일 (켤 때 위반 0 — 243곳 선치환) |
 | **무게 램프** | `font-[NNN]` **과 이름 스텝**(`font-medium`·`font-semibold`·`font-bold` …) 둘 다 금지 — `--font-weight-signature`(510)·`-emphasis`(560)·`-strong`(650) 셋뿐. `font-normal`(400)은 기본값 복귀라 허용 (2026-08-05) | 동일 (켤 때 위반 0 — 대괄호 13곳 + 이름 스텝 216곳 선치환) |
 | **Tailwind 팔레트** | `text-white`·`bg-slate-*` 등 기본 팔레트 유틸리티 금지 — `--color-*` 토큰만 (2026-08-05) | 동일 (켤 때 위반 0 — 4곳 선치환) |
