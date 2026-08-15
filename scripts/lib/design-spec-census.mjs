@@ -83,6 +83,9 @@ const PRIMITIVE_EXPORT_FILES = new Set([
   'src/shared/ui/surface.tsx',
   // 2026-08-15 「체계」석 비준으로 신설된 모달 정본 — 무엇을 내보내느냐가 계약.
   'src/shared/ui/dialog.tsx',
+  // 2026-08-15 (2) 폼 행동 층 — Input/Textarea · Checkbox.
+  'src/shared/ui/input.tsx',
+  'src/shared/ui/checkbox.tsx',
 ]);
 
 /**

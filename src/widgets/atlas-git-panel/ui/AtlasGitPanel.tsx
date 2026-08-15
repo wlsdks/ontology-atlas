@@ -54,12 +54,12 @@ import {
 import type { OntologyChangeset } from "@/shared/lib/ontology-tree";
 import { gitHostPlatformFrom, gitInstallGuide } from "@/shared/lib/git-install-guide";
 import { TopologyV2KindGlyph } from "@/shared/ui/topology-v2-kind-glyph";
-import { controlClass } from "@/shared/ui";
+import { Checkbox, controlClass } from "@/shared/ui";
 import type { KnowledgeGraphEdge, KnowledgeGraphNode } from "@/entities/knowledge-graph";
 import { buildConceptEgo, matchNodeId, type ConceptEgo } from "../model/build-concept-ego";
 import { CommitDetail } from "./CommitDetail";
 import { cn } from "@/shared/lib/cn";
-import { fieldClass, fieldLabel } from '@/shared/ui/control-class';
+import { fieldClass } from '@/shared/ui/control-class';
 
 /**
  * Atlas Git — 기록 목적지 본체.
@@ -2353,17 +2353,13 @@ function ActionDock({
             aria-label={t("messageLabel")}
             className={fieldClass({ multiline: true, size: "md", className: "w-full font-mono text-label break-all" })}
           />
-          <label className={fieldLabel({ row: true })}>
-            <input
-              type="checkbox"
-              data-testid="atlas-git-push-optin"
-              checked={pushOptIn}
-              disabled={!upstream}
-              onChange={(event) => setPushOptIn(event.target.checked)}
-              className="size-4 shrink-0 accent-[var(--color-indigo-accent)]"
-            />
-            {t("pushOptIn")}
-          </label>
+          <Checkbox
+            data-testid="atlas-git-push-optin"
+            checked={pushOptIn}
+            disabled={!upstream}
+            onChange={(event) => setPushOptIn(event.target.checked)}
+            label={t("pushOptIn")}
+          />
           <p className="text-caption text-[color:var(--color-text-quaternary)]">
             {upstream ? t("pushOptInHint", { upstream }) : t("pushNoUpstream")}
           </p>

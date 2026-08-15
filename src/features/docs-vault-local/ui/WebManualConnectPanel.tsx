@@ -8,6 +8,7 @@ import { ICON_SIZE } from '@/shared/ui/icon-size';
 import { copyText } from '@/shared/lib/copy-text';
 import { useCopyFeedback } from '@/shared/lib/use-copy-feedback';
 import { controlClass, fieldClass, fieldLabel } from '@/shared/ui/control-class';
+import { Checkbox } from '@/shared/ui';
 
 import { AGENT_CLIENTS, type AgentClientId } from '../lib/agent-clients';
 import {
@@ -247,17 +248,13 @@ export function WebManualConnectPanel({
       >
         {t('manualShapeOnlyNote')}
       </p>
-      <label className={fieldLabel({ row: true })}>
-        <input
-          type="checkbox"
-          checked={pathConfirmed}
-          disabled={!vault.ok || !checkout.ok}
-          onChange={(event) => setPathConfirmed(event.target.checked)}
-          data-testid={`${testIdPrefix}-path-confirmation`}
-          className="size-4 shrink-0"
-        />
-        <span>{t('manualPathConfirmation')}</span>
-      </label>
+      <Checkbox
+        checked={pathConfirmed}
+        disabled={!vault.ok || !checkout.ok}
+        onChange={(event) => setPathConfirmed(event.target.checked)}
+        data-testid={`${testIdPrefix}-path-confirmation`}
+        label={<span>{t('manualPathConfirmation')}</span>}
+      />
 
       {/* 도구 고르기 — 설정 파일 위치가 도구마다 다르다. 전역 스코프 패널과 같은 구조. */}
       <div className="flex flex-col gap-2">

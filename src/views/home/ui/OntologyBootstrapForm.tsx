@@ -8,7 +8,8 @@ import {
   selectedElements,
   type BootstrapPlan,
 } from "@/features/docs-vault-local";
-import { controlClass, fieldClass, fieldLabel } from "@/shared/ui/control-class";
+import { controlClass, fieldClass } from "@/shared/ui/control-class";
+import { Checkbox } from "@/shared/ui";
 
 /**
  * "내 문서로 지도 만들기" — 기존 .md 폴더(frontmatter 없음)를 연 사용자의
@@ -148,23 +149,22 @@ export function OntologyBootstrapForm({
             </legend>
             <div className="mt-1 flex max-h-40 flex-col gap-0.5 overflow-y-auto">
               {plan.domains.map((d) => (
-                <label
+                <Checkbox
                   key={d.name}
-                  className={fieldLabel({ row: true, className: "rounded-[var(--radius-chip)] px-1.5 py-1 text-body text-[color:var(--color-text-primary)] transition-colors hover:bg-[color:var(--color-overlay-1)]" })}
-                >
-                  <input
-                    type="checkbox"
-                    checked={accepted.has(d.name)}
-                    disabled={busy}
-                    onChange={() => toggleDomain(d.name)}
-                    data-testid={`ontology-bootstrap-domain-${d.name}`}
-                    className="size-4 shrink-0 accent-[color:var(--color-indigo-brand)]"
-                  />
-                  <span className="min-w-0 flex-1 truncate">{d.name}</span>
-                  <span className="font-mono text-caption text-[color:var(--color-text-quaternary)]">
-                    {labels.folderDocCount(d.docCount)}
-                  </span>
-                </label>
+                  className="rounded-[var(--radius-chip)] px-1.5 py-1 text-body text-[color:var(--color-text-primary)] transition-colors hover:bg-[color:var(--color-overlay-1)]"
+                  checked={accepted.has(d.name)}
+                  disabled={busy}
+                  onChange={() => toggleDomain(d.name)}
+                  data-testid={`ontology-bootstrap-domain-${d.name}`}
+                  label={
+                    <>
+                      <span className="min-w-0 flex-1 truncate">{d.name}</span>
+                      <span className="font-mono text-caption text-[color:var(--color-text-quaternary)]">
+                        {labels.folderDocCount(d.docCount)}
+                      </span>
+                    </>
+                  }
+                />
               ))}
             </div>
           </fieldset>
