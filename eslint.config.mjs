@@ -44,6 +44,25 @@ const scaleGradientSelectors = [
     message:
       'canvas 글로우 금지 (forbidden.md). 유일한 예외는 발자국 트레일 번짐이고 shared/lib/footprint-glyph.ts 안에서만 산다.',
   },
+  /*
+   * 체크박스 accent — 정본은 brand 하나다 (2026-08-15 「체계」석 비준).
+   *
+   * 켜기 전 전수: accent-[ 6곳이 세 갈래였다 — brand 4 · accent(#7170ff) 1 ·
+   * **무지정(UA 기본색) 1**(둘 이상의 채색 시스템 금지 현행범). Checkbox
+   * 프리미티브(shared/ui/checkbox.tsx)로 6곳 전량 이주 후 켰다 — 켜는 순간
+   * 위반 0. 면제 파일 0 설계(disabled:opacity 선례): brand 토큰 참조만
+   * 통과시키므로 프리미티브 자신도 이 룰 아래에 있다.
+   */
+  {
+    selector: 'Literal[value=/accent-\\[(?!color:var\\(--color-indigo-brand\\))/]',
+    message:
+      '체크박스 accent 는 --color-indigo-brand 하나다 — 직접 쓰지 말고 Checkbox(shared/ui/checkbox.tsx)를 쓴다. 근거: 2026-08-15 체계석 비준(docs/DECISIONS.md).',
+  },
+  {
+    selector: 'TemplateElement[value.raw=/accent-\\[(?!color:var\\(--color-indigo-brand\\))/]',
+    message:
+      '체크박스 accent 는 --color-indigo-brand 하나다 (template literal) — Checkbox 프리미티브를 쓴다.',
+  },
 ];
 
 // ── 인디고 잉크 라이선스 (2026-08-03 체계석) ────────────────────────
