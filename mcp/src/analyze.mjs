@@ -96,6 +96,7 @@ const SOURCE_LAYOUT_COORDINATION_ELEMENT_LIMIT = 10;
 const SOURCE_LAYOUT_COORDINATION_ROLE =
   /(?:^|[-_.])(app|main|index|manager|loader|registry|storage|client|server|router|controller)(?:[-_.]|$)/i;
 const SOURCE_LAYOUT_CODE_FILE = /\.(?:[cm]?[jt]sx?|py)$/i;
+const NATIVE_SOURCE_FILE = /\.(?:c|h)$/i;
 const PYTHON_NON_PRODUCT_PACKAGES = new Set(['test', 'tests']);
 const PYTHON_IMPORT_ELEMENT_LIMIT = 12;
 const PYTHON_IMPORT_RISK_ELEMENT_LIMIT = 2;
@@ -132,6 +133,13 @@ const NODE_PACKAGE_DEPENDENCY_LIMIT = 48;
 const RUST_IMPLEMENTATION_ELEMENT_LIMIT = 24;
 const RUST_MODULES_PER_TARGET_LIMIT = 12;
 const RUST_SOURCE_MAX_BYTES = 256 * 1024;
+const NATIVE_SOURCE_ELEMENT_LIMIT = 36;
+const NATIVE_DOC_BUILD_ELEMENT_LIMIT = 12;
+const AUTOTOOLS_IMPLEMENTATION_MANIFESTS = new Map([
+  ['configure.ac', { slug: 'elements/autotools-configure', title: 'Autotools Configure' }],
+  ['configure.in', { slug: 'elements/autotools-configure', title: 'Autotools Configure' }],
+  ['Makefile.am', { slug: 'elements/autotools-build', title: 'Autotools Build' }],
+]);
 const LIBRARY_SOURCE_ELEMENT_LIMIT = 24;
 const IMPLEMENTATION_SOURCE_ELEMENT_LIMIT = 48;
 const CARGO_MANIFEST_MAX_FEATURES = 48;
@@ -383,6 +391,10 @@ export function analyzeRepoStructure(rootPath, options = {}) {
   });
   const sourcePythonPackagePathSet = new Set(sourcePythonPackagePaths);
   const rustImplementationEvidence = discoverRustImplementationEvidence(rootPath, skipped);
+  const nativeImplementationEvidence = discoverAutotoolsImplementationEvidence(rootPath, {
+    ignore,
+    skipped,
+  });
 
   // framework heuristic — *features/* 만 있어도 fsd 로 (ontology-atlas 자체
   // 같이 lean FSD).
@@ -497,7 +509,7 @@ export function analyzeRepoStructure(rootPath, options = {}) {
           evidence: { source: relative(rootPath, subPath) },
         });
       }
-    } else {
+    } else if (!nativeImplementationEvidence.isNativeProject) {
       // generic — src/ 의 깊이 1 폴더 만
       let directLibraryElementCount = 0;
       let directLibraryLimitRecorded = false;
@@ -613,6 +625,12 @@ export function analyzeRepoStructure(rootPath, options = {}) {
       }
     }
   }
+
+  // Native C projects expose source files and build manifests directly rather
+  // than through the JS/Python folder conventions above. Keep those paths as
+  // implementation evidence; the meaning gate still prevents them from
+  // becoming business capabilities without semantic witnesses.
+  elements.push(...nativeImplementationEvidence.elements);
 
   // Repositories may have both a conventional lib/ or src/ root and a
   // separately owned internal/ implementation tree. Keep the primary-root
@@ -2982,7 +3000,10 @@ function detectDomainsFromReadme(rootPath) {
           ) ||
           // operational / aggregate sections that describe the README, not a
           // product ownership boundary
-          /\bin numbers$|^install\b|^core capabilities$|^providers? and (?:local|offline) (?:path|setup|mode)$|^verification$|^community(?: and support)?$/i.test(
+          /\bin numbers$|^install\b|^core capabilities$|^providers? and (?:local|offline) (?:path|setup|mode)$|^verification$|^community(?:\s+(?:and|&)\s+support)?$/i.test(
+            normalizedTitle,
+          ) ||
+          /^(?:documentation\s+(?:and|&)\s+community(?:\s+support|\s+(?:and|&)\s+support)|documentation\s+(?:and|&)\s+support)$/i.test(
             normalizedTitle,
           ) ||
           // narrative / question-style headers
@@ -3128,6 +3149,208 @@ function materializeImplementationOnlySourceElements(
     admitted += 1;
   }
   return out;
+}
+
+function discoverAutotoolsImplementationEvidence(rootPath, { ignore, skipped }) {
+  const hasAutotoolsManifest = [...AUTOTOOLS_IMPLEMENTATION_MANIFESTS.keys()].some(
+    (manifest) => {
+      const path = join(rootPath, manifest);
+      try {
+        return existsSync(path) && statSync(path).isFile() && pathResolvesInsideRoot(rootPath, path);
+      } catch {
+        return false;
+      }
+    },
+  );
+  if (!hasAutotoolsManifest) {
+    return { isNativeProject: false, elements: [] };
+  }
+
+  const sourceCandidates = new Map();
+  const visitedDirectories = new Set();
+  let entriesSeen = 0;
+
+  const addSourceCandidate = (path) => {
+    const source = relative(rootPath, path);
+    if (!source || sourceCandidates.has(source)) return;
+    try {
+      if (
+        !statSync(path).isFile() ||
+        !NATIVE_SOURCE_FILE.test(path) ||
+        !pathResolvesInsideRoot(rootPath, path)
+      ) {
+        return;
+      }
+      sourceCandidates.set(source, path);
+    } catch {
+      // A broken or concurrently removed path is not evidence.
+    }
+  };
+
+  const visitSourceRoot = (dir, depth, descend = true) => {
+    if (depth > 3 || entriesSeen >= 2000) return;
+    let realDirectory;
+    try {
+      realDirectory = realpathSync(dir);
+      if (visitedDirectories.has(realDirectory)) return;
+      visitedDirectories.add(realDirectory);
+    } catch {
+      return;
+    }
+    let entries;
+    try {
+      entries = readdirSync(dir).sort();
+    } catch {
+      return;
+    }
+    for (const entry of entries) {
+      if (entriesSeen >= 2000) break;
+      entriesSeen += 1;
+      if (ignore.has(entry) || entry.startsWith('.')) continue;
+      const path = join(dir, entry);
+      let pathStat;
+      try {
+        if (!pathResolvesInsideRoot(rootPath, path)) continue;
+        pathStat = statSync(path);
+      } catch {
+        continue;
+      }
+      if (pathStat.isDirectory() && descend) {
+        visitSourceRoot(path, depth + 1);
+      } else if (pathStat.isFile()) {
+        addSourceCandidate(path);
+      }
+    }
+  };
+
+  // Root-level C files are common in small native tools. Conventional source
+  // roots are walked separately so a large repository does not turn every
+  // documentation/vendor file into an implementation candidate.
+  visitSourceRoot(rootPath, 0, false);
+  for (const sourceFolder of SOURCE_FOLDERS) {
+    const sourceRoot = join(rootPath, sourceFolder);
+    try {
+      if (existsSync(sourceRoot) && statSync(sourceRoot).isDirectory()) {
+        visitSourceRoot(sourceRoot, 0);
+      }
+    } catch {
+      // Continue with the remaining conventional source roots.
+    }
+  }
+
+  if (sourceCandidates.size === 0) {
+    return { isNativeProject: false, elements: [] };
+  }
+
+  const elements = [];
+  const claimedSlugs = new Set();
+  const addElement = (row) => {
+    if (claimedSlugs.has(row.slug)) return;
+    claimedSlugs.add(row.slug);
+    elements.push(row);
+  };
+
+  for (const [manifest, descriptor] of AUTOTOOLS_IMPLEMENTATION_MANIFESTS) {
+    const path = join(rootPath, manifest);
+    try {
+      if (!existsSync(path) || !statSync(path).isFile() || !pathResolvesInsideRoot(rootPath, path)) {
+        continue;
+      }
+    } catch {
+      continue;
+    }
+    const source = relative(rootPath, path);
+    addElement({
+      slug: descriptor.slug,
+      title: descriptor.title,
+      path: source,
+      evidence: { source },
+    });
+  }
+
+  const docsDependencyPath = join(rootPath, 'docs', 'Pipfile');
+  try {
+    if (
+      existsSync(docsDependencyPath) &&
+      statSync(docsDependencyPath).isFile() &&
+      pathResolvesInsideRoot(rootPath, docsDependencyPath)
+    ) {
+      const source = relative(rootPath, docsDependencyPath);
+      addElement({
+        slug: 'elements/docs-dependencies',
+        title: 'Documentation Dependencies',
+        path: source,
+        evidence: { source },
+      });
+    }
+  } catch {
+    // An unreadable dependency manifest is not evidence.
+  }
+
+  const docsRoot = join(rootPath, 'docs');
+  let docsBuildScripts = [];
+  try {
+    if (existsSync(docsRoot) && statSync(docsRoot).isDirectory()) {
+      docsBuildScripts = readdirSync(docsRoot)
+        .filter((entry) => /^build_[A-Za-z0-9_-]+\.py$/i.test(entry))
+        .filter((entry) => {
+          const path = join(docsRoot, entry);
+          try {
+            return statSync(path).isFile() && pathResolvesInsideRoot(rootPath, path);
+          } catch {
+            return false;
+          }
+        })
+        .sort()
+        .slice(0, NATIVE_DOC_BUILD_ELEMENT_LIMIT);
+    }
+  } catch {
+    docsBuildScripts = [];
+  }
+  for (const entry of docsBuildScripts) {
+    const source = `docs/${entry}`;
+    const suffix = slugify(entry.slice('build_'.length, -'.py'.length));
+    if (!suffix) continue;
+    addElement({
+      slug: `elements/docs-build-${suffix}`,
+      title: `Documentation Build ${humanize(suffix)}`,
+      path: source,
+      evidence: { source },
+    });
+  }
+
+  const sortedSources = [...sourceCandidates.keys()].sort((left, right) => {
+    const leftBase = left.split('/').at(-1).toLowerCase();
+    const rightBase = right.split('/').at(-1).toLowerCase();
+    const priority = (base) => (base === 'main.c' || base === 'main.h' ? 0 : base.endsWith('.c') ? 1 : 2);
+    return priority(leftBase) - priority(rightBase) || left.localeCompare(right);
+  });
+  const selectedSources = sortedSources.slice(0, NATIVE_SOURCE_ELEMENT_LIMIT);
+  if (sortedSources.length > selectedSources.length) {
+    pushSkippedOnce(skipped, {
+      path: rootPath,
+      reason: `native-source-element-limit: omitted ${sortedSources.length - selectedSources.length} C/C header paths after ${NATIVE_SOURCE_ELEMENT_LIMIT}`,
+    });
+  }
+  const sourceSlugCounts = new Map();
+  for (const source of selectedSources) {
+    const fileName = source.split('/').at(-1);
+    const stem = slugify(fileName.replace(NATIVE_SOURCE_FILE, ''));
+    if (!stem) continue;
+    const count = sourceSlugCounts.get(stem) ?? 0;
+    sourceSlugCounts.set(stem, count + 1);
+    const slug = count === 0
+      ? `elements/${stem}`
+      : `elements/${stem}-${slugify(source.split('/').slice(-2, -1)[0]) || 'native'}`;
+    addElement({
+      slug,
+      title: humanize(stem),
+      path: source,
+      evidence: { source },
+    });
+  }
+
+  return { isNativeProject: true, elements };
 }
 
 function discoverRustImplementationEvidence(rootPath, skipped) {

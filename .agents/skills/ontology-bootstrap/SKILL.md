@@ -131,6 +131,12 @@ confidence: number 0.0-1.0
 uncertainty:
 ```
 
+Do not copy a domain-shaped row into `proposal.domains` when its only witness
+is a README heading. Keep it out of the write candidate, answer the domain
+competency question as `partial` or `visible-gap`, and name the missing
+responsibility/ownership evidence. This includes operational headings such as
+Documentation, Installation, Community, and Support, including `&` variants.
+
 (`kind` is not a proposal-row field — the kind is expressed by which bucket
 (project/domains/capabilities/elements) the row sits in. `analyze_repo_structure`
 proposal rows are `additionalProperties: false`, so unknown keys like `status`
@@ -147,7 +153,8 @@ Rules:
   specification's project→domain→capability→element reading order.
 - Treat a concrete package, module, service, schema, UI surface, or file as
   structural evidence until its distinct element role is stated and cited.
-- Do not stop at package buckets when the read-only import packet exposes an
+- Do not stop at package buckets when the analyzer packet (including
+  `elements`, semantic evidence, and the read-only import packet) exposes an
   exact file endpoint that materially improves change navigation. The model
   may select at most four such endpoints beyond the analyzer's bounded element
   candidates. Prefer meaning-dense roles: an execution entrypoint, an external
@@ -163,6 +170,18 @@ Rules:
 - A selected endpoint remains structural evidence, not automatic business
   meaning. Cite its exact repo-relative path, state what the import proves, and
   keep behavioral ownership partial when no semantic source establishes it.
+- If `infer_imports` returns zero files or module edges because the repository
+  language is unsupported, that is a coverage gap, not evidence that source
+  files or runtime/build endpoints are absent. Use exact paths exposed by the
+  analyzer packet when they exist, and keep impact `not_measured` when no
+  dependency witness is available.
+- When the analyzer exposes runtime entrypoints, build manifests, documentation
+  generators, or dependency manifests, inspect them as structural evidence.
+  A README build recipe remains documentation evidence, not an implementation
+  element.
+- Never combine generic README sections such as Documentation, Community, or
+  Support into a compound business domain. Without a durable responsibility or
+  ownership witness, keep the domain competency answer partial or visible-gap.
 - Never mirror an entire directory or service family into elements. If more
   than four exact endpoints look useful, choose the few that answer distinct
   competency or impact questions and record the rest as a visible exploration
