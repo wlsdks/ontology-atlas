@@ -10,7 +10,16 @@ const buttonVariants = cva(
     'rounded-panel',
     'border border-transparent',
     'select-none',
-    'transition-[background-color,border-color,color,box-shadow,transform] duration-[var(--motion-base)] ease-[var(--motion-ease)]',
+    /*
+     * ⚠️ duration 을 안 적는다 (2026-08-15). 종전엔 `--motion-base`(180ms) —
+     * **이동 램프**였다. 호버는 「이미 일어난 상태를 알려 주는 것」이라
+     * `--motion-fast`(120ms) 예산이고, 그건 Tailwind 기본 전환이 이미 낸다
+     * (`design.md`: 「기본값이면 duration 클래스를 아예 쓰지 않는다」).
+     * `active:translate-y-[1px]` 누름 되먹임도 같은 그룹을 타므로 함께
+     * 120ms 가 된다 — 누름은 즉시여야 하는 자리다.
+     * `ease-` 도 같은 이유로 뺀다(기본값과 같은 값이었다).
+     */
+    'transition-[background-color,border-color,color,box-shadow,transform]',
     'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-accent)] focus-visible:ring-offset-2 focus-visible:ring-offset-[color:var(--color-canvas)]',
     'active:translate-y-[1px]',
     'motion-reduce:transition-none motion-reduce:transform-none',

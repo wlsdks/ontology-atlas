@@ -150,7 +150,14 @@ export function StudioMaterializeDialog({
                         shape: "chip",
                         size: "lg",
                         active: on,
-                        className: `flex-1 justify-center tracking-body hover:border-[color:var(--color-border-strong)] hover:text-[color:var(--color-text-secondary)] ${FOCUS_RING}`,
+                        /*
+                         * hover 는 **안 골라진 칸에만** — 종전엔 무조건 걸어서
+                         * 골라진 칸에 마우스를 올리면 선택 보더가 덮였다
+                         * (실측: `indigo-pale-a28` 2.09 → `border-strong` 1.55).
+                         */
+                        className: on
+                          ? `flex-1 justify-center tracking-body ${FOCUS_RING}`
+                          : `flex-1 justify-center tracking-body hover:border-[color:var(--color-border-strong)] hover:text-[color:var(--color-text-secondary)] ${FOCUS_RING}`,
                       })}
                     >
                       {labels.kindOptionLabel(option)}

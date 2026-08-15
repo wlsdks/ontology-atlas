@@ -41,7 +41,17 @@ export function TopologyReviewLink({
       // 높이/radius 는 ChromeChip 기준(44px·10px)으로 수렴 — 같은 우상단
       // 열의 "작업공간" 칩과 나란히 있어 --topology-utility-lane-height
       // (32~36px clamp) 를 쓰면 과도기 높이 불일치가 났다(feat/chrome-finish).
-      className="inline-flex h-[var(--chrome-tile-size)] items-center gap-2 rounded-[var(--chrome-radius)] border border-[color:var(--topology-utility-lane-accent-border)] bg-[color:var(--topology-utility-lane-accent-surface)] px-3.5 text-[length:var(--topology-chrome-title-size)] font-[var(--font-weight-signature)] text-[color:var(--color-indigo-accent)] shadow-[var(--topology-utility-lane-shadow)] transition-[background-color,border-color] duration-[var(--motion-fast)] ease-[var(--motion-ease)] hover:bg-[color:var(--topology-utility-lane-accent-hover-surface)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--topology-utility-lane-focus-ring)] focus-visible:ring-offset-2 focus-visible:ring-offset-[color:var(--color-canvas)] motion-reduce:transition-none"
+      //
+      // ⚠️ 잉크는 `--color-indigo-text-soft`(accentOnTint) 다 (2026-08-15).
+      // 종전 `--color-indigo-accent` 는 `accent-ink-contrast` 계약이
+      // **맨 어두운 바탕에만** 라이선스한 잉크인데, 이 칩의 바탕은 인디고
+      // 틴트다(`utility-lane-accent-surface` = rgba(94,106,210,.12)).
+      // 실측: 쉬는 상태 canvas 4.73 / **panel 4.46(미달)**, 호버에서
+      // 4.45 / 4.17 로 더 떨어졌다. soft 로 바꾸면 8.71 / 8.21.
+      //
+      // 그 계약이 이 자리를 못 본 이유는 틴트 이름이 `--topology-*` 별칭이라
+      // 그 소스 스캔의 정규식(`--color-(indigo|amber)…-a\d+`)에 안 걸려서다.
+      className="inline-flex h-[var(--chrome-tile-size)] items-center gap-2 rounded-[var(--chrome-radius)] border border-[color:var(--topology-utility-lane-accent-border)] bg-[color:var(--topology-utility-lane-accent-surface)] px-3.5 text-[length:var(--topology-chrome-title-size)] font-[var(--font-weight-signature)] text-[color:var(--color-indigo-text-soft)] shadow-[var(--topology-utility-lane-shadow)] transition-[background-color,border-color] duration-[var(--motion-fast)] ease-[var(--motion-ease)] hover:bg-[color:var(--topology-utility-lane-accent-hover-surface)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--topology-utility-lane-focus-ring)] focus-visible:ring-offset-2 focus-visible:ring-offset-[color:var(--color-canvas)] motion-reduce:transition-none"
     >
       <GitCompare className="size-[var(--topology-chrome-icon-size)]" aria-hidden />
       <span>{label(count)}</span>

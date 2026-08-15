@@ -728,7 +728,7 @@ export function DocsSidebarBody({
                             e.stopPropagation();
                             onTogglePin(slug);
                           }}
-                          className="absolute right-1 top-1/2 -translate-y-1/2 opacity-0 transition-opacity hover:text-[color:var(--color-text-primary)] group-hover:opacity-100"
+                          className="absolute right-1 top-1/2 -translate-y-1/2 [@media(hover:hover)]:opacity-0 transition-opacity hover:text-[color:var(--color-text-primary)] focus-visible:opacity-100 group-hover:opacity-100"
                         >
                           <PinOff size={ICON_SIZE.sm} aria-hidden />
                         </IconButton>

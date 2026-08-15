@@ -359,7 +359,7 @@ export function TopologyRealmLedger({
                         shape: "link",
                         size: "md",
                         className:
-                          "shrink-0 text-[color:var(--color-indigo-accent)] opacity-0 transition-opacity focus-visible:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a46)] focus-visible:ring-inset group-hover:opacity-100 motion-reduce:transition-none",
+                          "shrink-0 text-[color:var(--color-indigo-accent)] [@media(hover:hover)]:opacity-0 transition-opacity focus-visible:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a46)] focus-visible:ring-inset group-hover:opacity-100 motion-reduce:transition-none",
                       })}
                     >
                       <CornerUpRight size={ICON_SIZE.sm} aria-hidden="true" />

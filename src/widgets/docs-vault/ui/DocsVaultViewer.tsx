@@ -878,7 +878,7 @@ function HeadingAnchor({
       className={`absolute right-0 top-1/2 -translate-y-1/2 transition-[background-color,color,opacity] sm:-left-9 sm:right-auto ${
         copied
           ? 'opacity-100'
-          : 'opacity-100 hover:bg-[color:var(--color-indigo-line-a06)] hover:text-[color:var(--color-indigo-line-a90)] sm:opacity-0 sm:group-hover:opacity-100 focus-visible:opacity-100'
+          : 'opacity-100 hover:bg-[color:var(--color-indigo-line-a06)] hover:text-[color:var(--color-indigo-line-a90)] [@media(hover:hover)]:opacity-0 group-hover:opacity-100 focus-visible:opacity-100'
       }`}
       contentEditable={false}
     >
