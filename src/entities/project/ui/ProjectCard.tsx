@@ -216,7 +216,7 @@ export function ProjectCard({
       )}
 
       {isHub && (
-        <span className={badgeClass({ shape: "pill", className: "absolute -top-2 left-3 bg-[color:var(--color-indigo-brand)] font-mono uppercase tracking-[var(--tracking-caps-10)] text-[color:var(--color-text-primary)] md:left-4 md:text-caption" })}>
+        <span className={badgeClass({ shape: "pill", className: "absolute -top-2 left-3 bg-[color:var(--color-indigo-brand)] font-mono uppercase tracking-[var(--tracking-caps-10)] text-[color:var(--color-text-on-accent)] md:left-4 md:text-caption" })}>
           허브
         </span>
       )}

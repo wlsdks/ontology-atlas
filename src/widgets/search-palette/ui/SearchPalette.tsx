@@ -657,7 +657,7 @@ function SearchPaletteDialog({
                             {highlightMatch(r.project.name, query)}
                           </span>
                           {r.project.isHub ? (
-                            <span className="rounded-full bg-[color:var(--color-indigo-brand)] px-1.5 py-0.5 font-mono text-caption uppercase tracking-[var(--tracking-caps-10)] text-[color:var(--color-text-primary)]">
+                            <span className="rounded-full bg-[color:var(--color-indigo-brand)] px-1.5 py-0.5 font-mono text-caption uppercase tracking-[var(--tracking-caps-10)] text-[color:var(--color-text-on-accent)]">
                               {t('hub')}
                             </span>
                           ) : null}
