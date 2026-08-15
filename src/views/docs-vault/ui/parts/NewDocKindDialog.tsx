@@ -50,10 +50,9 @@ export function NewDocKindDialog({
             <button
               type="button"
               onClick={() => onSelect(kind)}
-              className={controlClass({
+              className={controlClass({ hoverBorder: 'strong',
                 shape: "card",
-                className:
-                  "w-full text-left hover:border-[color:var(--color-border-strong)]",
+                className: "w-full text-left",
               })}
             >
               <TopologyV2KindGlyph kind={kind} size={16} />
@@ -67,10 +66,10 @@ export function NewDocKindDialog({
       <button
         type="button"
         onClick={onClose}
-        className={controlClass({
+        className={controlClass({ hoverInk: 'secondary',
           shape: "link",
           tone: "muted",
-          className: "touch-hit-expand mt-3 hover:text-[color:var(--color-text-secondary)]",
+          className: "touch-hit-expand mt-3",
         })}
       >
         {t("cancel")}

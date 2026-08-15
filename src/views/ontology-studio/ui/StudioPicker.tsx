@@ -285,8 +285,6 @@ export function InlinePicker({
                       className={controlClass({
                         shape: "row",
                         size: "sm",
-                        className:
-                          "hover:text-[color:var(--color-text-secondary)]",
                       })}
                     >
                       {labels.browseBack}

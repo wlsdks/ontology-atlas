@@ -126,7 +126,7 @@ function BacklinkItem({
         <button
           type="button"
           onClick={() => onNavigate(doc.slug)}
-          className={controlClass({ shape: "row", size: "sm", className: "group min-w-0 flex-1 gap-1.5 rounded-micro py-0.5 hover:text-[color:var(--color-text-primary)]" })}
+          className={controlClass({ hoverInk: 'strong', shape: "row", size: "sm", className: "group min-w-0 flex-1 gap-1.5 rounded-micro py-0.5" })}
         >
           <FileText
             size={ICON_SIZE.sm}

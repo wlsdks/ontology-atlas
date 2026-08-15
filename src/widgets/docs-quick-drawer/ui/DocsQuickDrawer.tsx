@@ -236,7 +236,7 @@ function DocRow({
         <Link
           href={getDocHref(doc.slug)}
           onClick={onClose}
-          className={controlClass({ shape: "row", size: "sm", tone: "secondary", className: "min-w-0 flex-1 gap-2 group-hover:text-[color:var(--color-text-primary)]" })}
+          className={controlClass({ hoverInk: 'strong', shape: "row", size: "sm", tone: "secondary", className: "min-w-0 flex-1 gap-2 group-" })}
         >
           <FileText
             size={ICON_SIZE.sm}
@@ -624,11 +624,10 @@ export function DocsQuickDrawer({
                     <button
                       type="button"
                       onClick={() => setActiveTag(null)}
-                      className={controlClass({
+                      className={controlClass({ hoverInk: 'strong', hoverBorder: 'strong',
                         shape: "pill",
                         size: "sm",
-                        className:
-                          "shrink-0 gap-1 hover:border-[color:var(--color-border-strong)] hover:text-[color:var(--color-text-primary)]",
+                        className: "shrink-0 gap-1",
                       })}
                       aria-label={t("tagClearAriaLabel")}
                     >

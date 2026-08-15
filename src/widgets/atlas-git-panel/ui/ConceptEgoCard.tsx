@@ -150,7 +150,7 @@ export function ConceptEgoCard({
                     data-testid="atlas-git-ego-neighbor"
                     onClick={onSelect ? () => onSelect(neighbor.id) : undefined}
                     disabled={!onSelect}
-                    className={controlClass({ shape: "link", tone: "secondary", className: "min-w-0 gap-1.5 text-label enabled:hover:text-[color:var(--color-text-primary)] disabled:cursor-default" })}
+                    className={controlClass({ hoverInk: 'strong', shape: "link", tone: "secondary", className: "min-w-0 gap-1.5 text-label enabled: disabled:cursor-default" })}
                   >
                     <TopologyV2KindGlyph kind={neighbor.kind} size={11} />
                     <span className="truncate">{neighbor.label}</span>

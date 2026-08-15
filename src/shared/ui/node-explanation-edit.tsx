@@ -73,7 +73,7 @@ export function NodeExplanationEdit({
             onClick={beginEdit}
             aria-label={labels.edit}
             data-testid="node-explanation-edit-button"
-            className={controlClass({ shape: "icon", size: "xs", tone: "muted", className: "h-6 w-6 rounded-full hover:bg-[color:var(--color-overlay-2)] hover:text-[color:var(--color-text-primary)]" })}
+            className={controlClass({ hoverInk: 'strong', hoverSurface: 'lift', shape: "icon", size: "xs", tone: "muted", className: "h-6 w-6 rounded-full" })}
           >
             <PencilLine size={ICON_SIZE.sm} aria-hidden />
           </button>
@@ -114,7 +114,7 @@ export function NodeExplanationEdit({
             disabled={saving}
             aria-label={labels.cancel}
             data-testid="node-explanation-cancel"
-            className={controlClass({ shape: "icon", tone: "muted", className: "h-6 w-6 rounded-full hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a46)] focus-visible:ring-inset" })}
+            className={controlClass({ hoverInk: 'strong', shape: "icon", tone: "muted", className: "h-6 w-6 rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a46)] focus-visible:ring-inset" })}
           >
             <X size={ICON_SIZE.sm} aria-hidden />
           </button>

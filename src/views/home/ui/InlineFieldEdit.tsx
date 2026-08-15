@@ -81,12 +81,11 @@ export function InlineFieldEdit({
           onClick={beginEdit}
           aria-label={labels.edit}
           data-testid="inline-field-edit-button"
-          className={controlClass({
+          className={controlClass({ hoverInk: 'strong', hoverSurface: 'lift',
             shape: "icon",
             size: "sm",
             tone: "muted",
-            className:
-              "hover:bg-[color:var(--color-overlay-2)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a46)] focus-visible:ring-inset",
+            className: "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a46)] focus-visible:ring-inset",
           })}
         >
           <PencilLine size={ICON_SIZE.sm} aria-hidden />
@@ -137,12 +136,11 @@ export function InlineFieldEdit({
         disabled={saving}
         aria-label={labels.cancel}
         data-testid="inline-field-cancel"
-        className={controlClass({
+        className={controlClass({ hoverInk: 'strong',
           shape: "icon",
           size: "md",
           tone: "muted",
-          className:
-            "hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a46)] focus-visible:ring-inset",
+          className: "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a46)] focus-visible:ring-inset",
         })}
       >
         <X size={ICON_SIZE.sm} aria-hidden />

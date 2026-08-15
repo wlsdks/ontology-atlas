@@ -748,3 +748,123 @@ describe('계기가 스스로를 설명한다', () => {
     );
   });
 });
+
+/**
+ * **호버 축 셋** (2026-08-15 (11)).
+ *
+ * 이 파일이 오래 「호버는 소비처의 몫」이라고 적어 온 규율이 낳은 실측:
+ * hover 선언 **752개 / 자리 511 / 파일 129**, 같은 역할에 서로 다른 잉크 셋.
+ * 규율이 아니라 **결원**이었고, `DISABLED`(2026-08-03) → `FOCUS`(08-05) 에
+ * 이은 세 번째 같은 발견이다.
+ *
+ * lint 로는 못 잠근다 — 판정 대상이 **cva 가 조합해 내는 결과 문자열**이라
+ * 코드에는 `hoverInk: 'strong'` 같은 키만 있고 값은 실행할 때 합쳐진다.
+ */
+describe('호버 축 — 값 층이 내는 결과 문자열', () => {
+  const hovers = (s: string) => s.split(' ').filter((c) => c.startsWith('hover:'));
+
+  it('탐지기가 공회전하지 않는다 — 축이 실제로 무언가를 낸다', () => {
+    expect(hovers(controlClass({ hoverInk: 'strong' })).length).toBeGreaterThan(0);
+    expect(hovers(controlClass({ shape: 'row', hoverSurface: 'lift' })).length).toBeGreaterThan(0);
+    expect(hovers(controlClass({ hoverBorder: 'strong' })).length).toBeGreaterThan(0);
+  });
+
+  it('기본값은 아무것도 안 낸다 — 전부 옵트인이다', () => {
+    /*
+     * 기본으로 켜면 지금 호버가 아예 없는 자리들이 조용히 달라진다(보더만
+     * 세어도 30곳). 그건 축 신설이 아니라 전역 시각 변경이라 이 축의 일이
+     * 아니다 — 이 단언이 그 판단을 못박는다.
+     */
+    for (const shape of ['chip', 'pill', 'row', 'icon', 'segment', 'card', 'tile', 'link'] as const) {
+      expect(hovers(controlClass({ shape })), `${shape} 기본값이 호버를 낸다`).toEqual([]);
+    }
+  });
+
+  it('잉크는 scope 가 값을 고른다 — 축은 밝기 단만 고른다', () => {
+    expect(controlClass({ hoverInk: 'strong' })).toContain(
+      'hover:text-[color:var(--color-text-primary)]',
+    );
+    expect(controlClass({ hoverInk: 'secondary' })).toContain(
+      'hover:text-[color:var(--color-text-secondary)]',
+    );
+    expect(controlClass({ hoverInk: 'strong', scope: 'panel' })).toContain(
+      'hover:text-[color:var(--topology-v2-panel-text-primary)]',
+    );
+    expect(controlClass({ hoverInk: 'secondary', scope: 'panel' })).toContain(
+      'hover:text-[color:var(--topology-v2-panel-text-secondary)]',
+    );
+  });
+
+  it('면은 행과 부품이 다른 단을 쓴다 — rest 가 다르기 때문이다', () => {
+    // 행은 rest 가 투명하므로 첫 단, 부품은 이미 한 단 올라서 있으므로 다음 단.
+    expect(controlClass({ shape: 'row', hoverSurface: 'lift' })).toContain(
+      'hover:bg-[color:var(--color-overlay-1)]',
+    );
+    for (const shape of ['chip', 'pill', 'icon', 'segment'] as const) {
+      expect(controlClass({ shape, hoverSurface: 'lift' })).toContain(
+        'hover:bg-[color:var(--color-overlay-2)]',
+      );
+    }
+    expect(controlClass({ shape: 'row', hoverSurface: 'lift', scope: 'panel' })).toContain(
+      'hover:bg-[color:var(--topology-v2-panel-row-hover)]',
+    );
+  });
+
+  it('골라진 것은 호버를 안 받는다 — 「곧」과 「지금」이 같은 말을 하면 안 된다', () => {
+    /*
+     * 실측(2026-08-15 (10)): 그렇게 겹친 자리에서 선택 보더가 호버에 덮여
+     * 2.09 → 1.48 로 **약해지고** 있었다. 그 가드를 소비처가 매번 쓰던 것을
+     * 이 키가 구조로 흡수한다.
+     */
+    for (const v of [
+      { hoverInk: 'strong' },
+      { hoverSurface: 'lift' },
+      { hoverBorder: 'strong' },
+      { hoverInk: 'secondary', hoverSurface: 'lift', hoverBorder: 'strong' },
+    ] as const) {
+      expect(hovers(controlClass({ ...v, active: true })), `${JSON.stringify(v)} 가 active 에서 샜다`).toEqual([]);
+    }
+  });
+
+  it('셋은 서로 독립이다 — 두 속성이 함께 필요한 자리가 96곳이었다', () => {
+    const both = controlClass({ hoverInk: 'strong', hoverBorder: 'strong' });
+    expect(both).toContain('hover:text-[color:var(--color-text-primary)]');
+    expect(both).toContain('hover:border-[color:var(--color-border-strong)]');
+    const all3 = controlClass({ shape: 'chip', hoverInk: 'strong', hoverSurface: 'lift', hoverBorder: 'strong' });
+    expect(hovers(all3)).toHaveLength(3);
+  });
+
+  it('축이 램프 밖으로 새지 않는다 — 전 조합이 토큰만 낸다', () => {
+    const offenders: string[] = [];
+    for (const shape of ['chip', 'pill', 'row', 'icon', 'segment', 'card', 'tile', 'link'] as const) {
+      for (const scope of ['app', 'panel'] as const) {
+        for (const hoverInk of ['none', 'strong', 'secondary'] as const) {
+          for (const hoverSurface of ['none', 'lift'] as const) {
+            for (const hoverBorder of ['none', 'strong'] as const) {
+              for (const h of hovers(controlClass({ shape, scope, hoverInk, hoverSurface, hoverBorder }))) {
+                if (!/^hover:(text|bg|border)-\[color:var\(--[a-z0-9-]+\)\]$/.test(h)) {
+                  offenders.push(`${shape}/${scope}: ${h}`);
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+    expect(offenders, '호버 축이 토큰이 아닌 값을 냈다').toEqual([]);
+  });
+
+  it('축이 조용히 늘지 않는다 — 선택지는 실측 다수파만', () => {
+    const SOURCE = readFileSync(join(process.cwd(), 'src/shared/ui/control-class.ts'), 'utf8');
+    /*
+     * 선택지를 소스에서 못박는다 — 늘리려면 이 줄을 고쳐야 하고, 그 diff 가
+     * 「어느 실측이 이 선택지를 요구했나」를 요구한다(배지 tone 축 판례).
+     */
+    expect(SOURCE).toContain("hoverInk: { none: '', strong: '', secondary: '' },");
+    expect(SOURCE).toContain("hoverSurface: { none: '', lift: '' },");
+    expect(SOURCE).toContain("hoverBorder: { none: '', strong: '' },");
+    // 합쳐서 넷 — 셋이 아니라 넷인 이유는 잉크만 두 단이기 때문이다.
+    const options = ['strong', 'secondary', 'lift', 'strong'];
+    expect(options).toHaveLength(4);
+  });
+});

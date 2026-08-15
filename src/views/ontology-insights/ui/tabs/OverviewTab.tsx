@@ -160,7 +160,7 @@ export function OverviewTab({
               <Link
                 href="/ontology/studio/?mode=create"
                 data-testid="domain-capacity-empty-action"
-                className={controlClass({ shape: "link", tone: "accent", className: "mt-3 rounded-chip hover:text-[color:var(--color-text-primary)] hover:underline" })}
+                className={controlClass({ hoverInk: 'strong', shape: "link", tone: "accent", className: "mt-3 rounded-chip hover:underline" })}
               >
                 {labels.noDomainsAction}
               </Link>
@@ -195,11 +195,10 @@ export function OverviewTab({
                     href={domainLink.href(row.id)}
                     aria-label={domainLink.ariaLabel(row)}
                     data-testid="insights-domain-row-link"
-                    className={controlClass({
+                    className={controlClass({ hoverSurface: 'lift',
                       shape: "row",
                       size: "sm",
-                      className:
-                        "-mx-1.5 block w-auto px-1.5 py-0 hover:bg-[color:var(--color-overlay-1)]",
+                      className: "-mx-1.5 block w-auto px-1.5 py-0",
                     })}
                   >
                     <DomainCapacityBar

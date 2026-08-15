@@ -107,6 +107,8 @@ description: Build a screen from this repo's design system deterministically —
 | 여러 줄 입력 | `<Textarea label="…">` |
 | 오류 · 안내 문구 | `error` / `hint` **prop 으로만** 넘긴다 — `aria-invalid` · `aria-describedby` · `role="alert"` 가 자동으로 배선된다. 손으로 쓰면 배선이 갈라진다 |
 | 켜고 끄는 것 하나 | `<Checkbox label="…">` — 라벨이 곧 타깃이다(WCAG 2.5.8) |
+| **마우스를 올렸을 때 반응** | `controlClass` 의 축 셋 — `hoverInk`(`'strong'`·`'secondary'`) · `hoverSurface`(`'lift'`) · `hoverBorder`(`'strong'`). **전부 옵트인**이고 골라진 것(`active`)에는 자동으로 안 걸린다. 손으로 `hover:text-…` 를 쓰면 래칫이 막는다 |
+| 〃 인데 축의 값이 아닌 게 필요하다 | **왜 다른지를 먼저 대라.** 인디고 틴트 단은 값이 아니라 위계 판정이라 축이 일부러 안 갖는다(실측: 13단이 서로 구별되지 않는다). 자리에 남기되 그 근거를 주석에 적는다 |
 | 몇 개 중 하나 고르기 (2~4개 · 라벨이 짧다) | `<SegmentedControl>` — **2택 「켬/끔」도 이것**이다. radiogroup + 화살표 이동이 딸려 온다 |
 | 〃 인데 **붙은 막대가 아니라 떨어진 칩 줄**이거나 개수가 데이터로 정해진다 | 같은 부품, `variant="chips"` — 그릇만 바뀌고 행동은 같다. 폭을 균등히 나누려면 `fill` |
 | 〃 인데 그릇이 **정말 다르다**(격자 타일 · 패널 스코프 잉크 등) | `useRovingRadioGroup`(shared/lib)을 직접 입고 래칫에 근거와 함께 등재한다. **`role="radiogroup"` 만 손으로 걸지 마라** — 그러면 보조기술에 화살표 이동을 약속하고 아무 일도 안 일어난다(실측 18그룹 전부가 그 상태였다) |

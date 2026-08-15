@@ -44,7 +44,7 @@ export function TopologyInsightsReturnChip({
         href={href}
         aria-label={ariaLabel}
         data-testid="topology-insights-return-chip-link"
-        className={controlClass({ shape: "link", className: "min-w-0 gap-1.5 hover:text-[color:var(--color-text-primary)]" })}
+        className={controlClass({ hoverInk: 'strong', shape: "link", className: "min-w-0 gap-1.5" })}
       >
         <ArrowLeft
           size={ICON_SIZE.md}
@@ -58,11 +58,11 @@ export function TopologyInsightsReturnChip({
         onClick={onDismiss}
         aria-label={dismissAriaLabel}
         data-testid="topology-insights-return-chip-dismiss"
-        className={controlClass({
+        className={controlClass({ hoverInk: 'strong',
           shape: "icon",
           size: "sm",
           tone: "muted",
-          className: "-mr-1 hover:text-[color:var(--color-text-primary)]",
+          className: "-mr-1",
         })}
       >
         <X size={ICON_SIZE.md} aria-hidden />

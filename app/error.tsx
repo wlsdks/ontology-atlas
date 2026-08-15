@@ -55,7 +55,7 @@ export default function RouteError({ error, reset }: Props) {
           </button>
           <Link
             href="/"
-            className={controlClass({ shape: "icon", tone: "secondary", className: "h-10 rounded-full border border-[color:var(--color-divider)] px-4 text-body hover:border-[color:var(--color-border-strong)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a50)]" })}
+            className={controlClass({ hoverInk: 'strong', hoverBorder: 'strong', shape: "icon", tone: "secondary", className: "h-10 rounded-full border border-[color:var(--color-divider)] px-4 text-body focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a50)]" })}
           >
             Topology home
           </Link>

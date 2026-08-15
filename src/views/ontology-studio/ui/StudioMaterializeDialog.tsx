@@ -200,7 +200,7 @@ export function StudioMaterializeDialog({
             shape: "chip",
             size: "lg",
             tone: "onAccent",
-            className: `tracking-body hover:bg-[color:var(--color-indigo-brand-hover)] ${FOCUS_RING}`,
+            className: `tracking-body ${FOCUS_RING}`,
           })}
         >
           {labels.confirm}

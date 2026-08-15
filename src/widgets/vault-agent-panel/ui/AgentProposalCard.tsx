@@ -165,7 +165,7 @@ export function AgentProposalCard({
                 onClick={() =>
                   onFocusNode(proposal.changes[0]?.files[0]?.path.replace(/\.md$/, '') ?? '')
                 }
-                className={controlClass({ shape: "link", className: "underline decoration-dotted underline-offset-2 hover:text-[color:var(--color-text-primary)]" })}
+                className={controlClass({ hoverInk: 'strong', shape: "link", className: "underline decoration-dotted underline-offset-2" })}
               >
                 {labels.showOnMap}
               </button>
@@ -179,12 +179,11 @@ export function AgentProposalCard({
             data-testid="agent-proposal-cancel"
             disabled={busy}
             onClick={onCancel}
-            className={controlClass({
+            className={controlClass({ hoverInk: 'strong', hoverBorder: 'strong',
               shape: 'chip',
               size: 'md',
               tone: 'secondary',
-              className:
-                'tracking-label border-[color:var(--color-border-soft)] hover:border-[color:var(--color-border-strong)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-accent)]',
+              className: 'tracking-label border-[color:var(--color-border-soft)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-accent)]',
             })}
           >
             {labels.cancel}
@@ -198,7 +197,7 @@ export function AgentProposalCard({
               className={controlClass({
                 tone: 'onAccent',
                 className:
-                  'tracking-label hover:bg-[color:var(--color-indigo-brand-hover)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-accent)]',
+                  'tracking-label focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-accent)]',
               })}
             >
               {proposal.status === 'applying' ? labels.applying : labels.apply(selected.length)}
@@ -282,7 +281,7 @@ function ChangeRow({
           data-testid="agent-proposal-change-toggle"
           aria-expanded={open}
           onClick={() => setOpen((current) => !current)}
-          className={controlClass({ shape: "link", tone: "muted", className: "shrink-0 tracking-label hover:text-[color:var(--color-text-primary)]" })}
+          className={controlClass({ hoverInk: 'strong', shape: "link", tone: "muted", className: "shrink-0 tracking-label" })}
         >
           {expandHint}
         </button>

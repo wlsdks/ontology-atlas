@@ -67,11 +67,11 @@ export function TopologyPathChip({
         onClick={onClear}
         aria-label={clearAriaLabel}
         data-testid="topology-path-chip-clear"
-        className={controlClass({
+        className={controlClass({ hoverInk: 'strong',
           shape: "icon",
           size: "sm",
           tone: "muted",
-          className: "-mr-1 hover:text-[color:var(--color-text-primary)]",
+          className: "-mr-1",
         })}
       >
         <X size={ICON_SIZE.md} aria-hidden />
