@@ -41,6 +41,14 @@ const DEFAULT_IGNORE = new Set([
 const IGNORE_ARRAY_MAX_ITEMS = 200;
 const SOURCE_FOLDER_ARRAY_MAX_ITEMS = 50;
 const MODULE_EDGE_EVIDENCE_LIMIT = 5;
+const WORKSPACE_DISCOVERY_MAX_ENTRIES = 10000;
+const WORKSPACE_PACKAGE_LIMIT = 500;
+const WORKSPACE_MANIFEST_MAX_BYTES = 256 * 1024;
+const WORKSPACE_PATTERN_LIMIT = 64;
+const WORKSPACE_PATTERN_MAX_SEGMENTS = 24;
+const WORKSPACE_PATTERN_MAX_GLOBSTARS = 2;
+const WORKSPACE_PATTERN_MAX_WILDCARDS = 16;
+const WORKSPACE_PATTERN_MATCH_STATE_LIMIT = 250000;
 
 const SOURCE_EXT = new Set([
   '.ts',
@@ -149,25 +157,45 @@ export function inferImports(rootPath, options = {}) {
     max: SOURCE_FOLDER_ARRAY_MAX_ITEMS,
     fallback: ['src', 'source', 'lib', 'app', 'apps', 'packages'],
   });
+  const workspaceDiscovery = Array.isArray(options.workspacePackages)
+    ? { hasDeclaration: true, packages: options.workspacePackages }
+    : options.workspacePackages ?? discoverDeclaredWorkspacePackages(rootPath, { ignore });
+  const workspacePackages = Array.isArray(workspaceDiscovery?.packages)
+    ? workspaceDiscovery.packages
+    : [];
+  // `apps`/`packages` are a legacy fallback for undeclared monorepos. Once a
+  // repository declares its package roots, scanning those broad directories
+  // would silently re-admit excluded workspace members.
+  const scanSourceFolders =
+    options.sourceFolders === undefined && workspaceDiscovery?.hasDeclaration
+      ? sourceFolders.filter((folder) => !['apps', 'packages'].includes(folder))
+      : sourceFolders;
 
   // Resolve search roots — defined source folders that exist, plus rootPath
   // itself if no source folder exists (so simple repos still work).
   const roots = [];
   let configuredRootExists = false;
-  for (const f of sourceFolders) {
+  for (const f of scanSourceFolders) {
     const p = join(rootPath, f);
     if (!existsSync(p) || !statSync(p).isDirectory()) continue;
     configuredRootExists = true;
     if (ignore.has(f)) continue;
     roots.push(p);
   }
+  if (workspaceDiscovery?.hasDeclaration) configuredRootExists = true;
+  for (const workspacePackage of workspacePackages) {
+    const packageRoot = join(rootPath, workspacePackage.path);
+    if (!existsSync(packageRoot) || !statSync(packageRoot).isDirectory()) continue;
+    roots.push(packageRoot);
+  }
+  const uniqueRoots = pruneNestedRoots(roots, rootPath);
   if (roots.length === 0 && !configuredRootExists) {
     const pythonPackageRoots = discoverRootPythonPackages(rootPath, ignore);
-    roots.push(...(pythonPackageRoots.length > 0 ? pythonPackageRoots : [rootPath]));
+    uniqueRoots.push(...(pythonPackageRoots.length > 0 ? pythonPackageRoots : [rootPath]));
   }
 
   const files = [];
-  for (const r of roots) walk(r, ignore, files, maxFiles);
+  for (const r of uniqueRoots) walk(r, ignore, files, maxFiles);
 
   const edges = [];
   const externalImports = [];
@@ -210,10 +238,11 @@ export function inferImports(rootPath, options = {}) {
         externalImports,
         unresolved,
         importKindOf(match[0]),
-        pathAliases,
-        ignore,
-        importUsageOf(match[0]),
-      );
+          pathAliases,
+          ignore,
+          importUsageOf(match[0]),
+          workspacePackages,
+        );
     }
     for (const match of content.matchAll(SIDE_IMPORT_RE)) {
       // SIDE_IMPORT_RE matches a superset of IMPORT_RE in some cases —
@@ -225,7 +254,20 @@ export function inferImports(rootPath, options = {}) {
       const window = content.slice(Math.max(0, idx - 10), idx + 2);
       if (/from\s*$/.test(window.replace(/\s+$/, ''))) continue;
       const spec = match[1];
-      classify(spec, file, dir, rootPath, edges, externalImports, unresolved, 'side', pathAliases, ignore);
+      classify(
+        spec,
+        file,
+        dir,
+        rootPath,
+        edges,
+        externalImports,
+        unresolved,
+        'side',
+        pathAliases,
+        ignore,
+        'value',
+        workspacePackages,
+      );
     }
   }
 
@@ -233,8 +275,8 @@ export function inferImports(rootPath, options = {}) {
   // first segment under one of the source folders.
   const moduleCount = new Map();
   for (const e of edges) {
-    const fm = moduleOf(e.from, sourceFolders, rootPath);
-    const tm = moduleOf(e.to, sourceFolders, rootPath);
+    const fm = moduleOf(e.from, sourceFolders, rootPath, workspacePackages);
+    const tm = moduleOf(e.to, sourceFolders, rootPath, workspacePackages);
     if (!fm || !tm || fm === tm) continue;
     const key = `${fm} → ${tm}`;
     const bucket = moduleCount.get(key) ?? {
@@ -435,6 +477,474 @@ function importScanCoverage(rootPath) {
       'Observed edges are bounded static source evidence, not runtime execution or semantic depends_on approval.',
     ],
   };
+}
+
+/**
+ * Read repository-declared Node workspace layouts as bounded implementation
+ * evidence. This is deliberately not business meaning: package names and
+ * workspace manifests only decide which source roots/import aliases are safe
+ * to inspect.
+ *
+ * @param {string} rootPath
+ * @param {{ ignore?: Set<string> }} [options]
+ * @returns {{ hasDeclaration: boolean, packages: Array<{ path: string, name: string|null, slug: string }>, skipped: Array<{ path: string, reason: string }> }}
+ */
+export function discoverDeclaredWorkspacePackages(rootPath, options = {}) {
+  const ignore = options.ignore instanceof Set ? options.ignore : DEFAULT_IGNORE;
+  const declarations = readWorkspaceDeclarations(rootPath);
+  if (declarations.patterns.length === 0) {
+    return {
+      hasDeclaration: declarations.hasDeclaration,
+      packages: [],
+      skipped: declarations.skipped,
+    };
+  }
+
+  const includedPatterns = declarations.patterns.filter((row) => !row.exclude);
+  const excludedPatterns = declarations.patterns.filter((row) => row.exclude);
+  const candidates = enumeratePackageDirectories(rootPath, ignore, declarations.skipped);
+  for (const declaration of includedPatterns) {
+    const literalPackage = readDeclaredLiteralWorkspacePackage(
+      rootPath,
+      declaration,
+      ignore,
+      declarations.skipped,
+    );
+    if (!literalPackage || candidates.some((candidate) => candidate.path === literalPackage.path)) {
+      continue;
+    }
+    candidates.push(literalPackage);
+  }
+  const packages = [];
+  const matchedPatterns = new Set();
+  const matchBudget = { remaining: WORKSPACE_PATTERN_MATCH_STATE_LIMIT, exhausted: false };
+
+  candidateLoop:
+  for (const candidate of candidates) {
+    const matchingIncludes = [];
+    for (const declaration of includedPatterns) {
+      if (workspacePatternMatches(declaration.pattern, candidate.path, matchBudget)) {
+        matchingIncludes.push(declaration);
+      }
+      if (matchBudget.exhausted) break candidateLoop;
+    }
+    if (matchingIncludes.length === 0) continue;
+    for (const match of matchingIncludes) matchedPatterns.add(match.key);
+    let excluded = false;
+    for (const declaration of excludedPatterns) {
+      if (workspacePatternMatches(declaration.pattern, candidate.path, matchBudget)) {
+        excluded = true;
+      }
+      if (matchBudget.exhausted) break candidateLoop;
+      if (excluded) break;
+    }
+    if (excluded) {
+      declarations.skipped.push({ path: candidate.path, reason: 'workspace-declaration-excluded' });
+      continue;
+    }
+    packages.push(candidate);
+  }
+
+  if (matchBudget.exhausted) {
+    declarations.skipped.push({
+      path: '.',
+      reason: `workspace-declaration-match-limit: reached ${WORKSPACE_PATTERN_MATCH_STATE_LIMIT} pattern states`,
+    });
+  }
+
+  for (const declaration of includedPatterns) {
+    if (matchedPatterns.has(declaration.key)) continue;
+    declarations.skipped.push({
+      path: declaration.source,
+      reason: `workspace-declaration-no-package-match: ${declaration.pattern}`,
+    });
+  }
+
+  packages.sort((a, b) => a.path.localeCompare(b.path));
+  const omitted = Math.max(0, packages.length - WORKSPACE_PACKAGE_LIMIT);
+  if (omitted > 0) {
+    declarations.skipped.push({
+      path: '.',
+      reason: `workspace-declaration-package-limit: omitted ${omitted} declared package roots`,
+    });
+  }
+  return {
+    hasDeclaration: true,
+    packages: assignWorkspacePackageSlugs(packages.slice(0, WORKSPACE_PACKAGE_LIMIT)),
+    skipped: dedupeWorkspaceSkipped(declarations.skipped),
+  };
+}
+
+function readWorkspaceDeclarations(rootPath) {
+  const patterns = [];
+  const skipped = [];
+  let hasDeclaration = false;
+  const pnpmWorkspacePath = join(rootPath, 'pnpm-workspace.yaml');
+  if (existsSync(pnpmWorkspacePath)) {
+    hasDeclaration = true;
+    const parsed = readPnpmWorkspacePatterns(rootPath, pnpmWorkspacePath, skipped);
+    for (const pattern of parsed) {
+      patterns.push({
+        pattern,
+        exclude: pattern.startsWith('!'),
+        source: 'pnpm-workspace.yaml',
+        key: `pnpm-workspace.yaml:${pattern}`,
+      });
+    }
+  }
+
+  const packagePath = join(rootPath, 'package.json');
+  if (existsSync(packagePath)) {
+    const parsed = readNodeWorkspacePatterns(rootPath, packagePath, skipped);
+    if (parsed !== null) hasDeclaration = true;
+    for (const pattern of parsed ?? []) {
+      patterns.push({
+        pattern,
+        exclude: pattern.startsWith('!'),
+        source: 'package.json#workspaces',
+        key: `package.json#workspaces:${pattern}`,
+      });
+    }
+  }
+
+  if (patterns.length > WORKSPACE_PATTERN_LIMIT) {
+    skipped.push({
+      path: '.',
+      reason: `workspace-declaration-pattern-limit: omitted ${patterns.length - WORKSPACE_PATTERN_LIMIT} patterns`,
+    });
+    // A later declaration can be an exclusion. Once the manifest exceeds the
+    // bounded declaration budget, selecting from a prefix could re-admit a
+    // package that an omitted exclusion would have removed. Keep declaration
+    // discovery fail-closed instead.
+    return { hasDeclaration, patterns: [], skipped };
+  }
+  const normalized = [];
+  for (const declaration of patterns) {
+    const normalizedPattern = normalizeWorkspacePattern(declaration.pattern, declaration.source, skipped);
+    if (!normalizedPattern) continue;
+    normalized.push({
+      ...declaration,
+      pattern: normalizedPattern.pattern,
+      exclude: normalizedPattern.exclude,
+    });
+  }
+  return { hasDeclaration, patterns: normalized, skipped };
+}
+
+function readPnpmWorkspacePatterns(rootPath, workspacePath, skipped) {
+  const source = relative(rootPath, workspacePath);
+  let text;
+  try {
+    const size = statSync(workspacePath).size;
+    if (size > WORKSPACE_MANIFEST_MAX_BYTES) {
+      skipped.push({ path: source, reason: `workspace-declaration-skip: exceeds ${WORKSPACE_MANIFEST_MAX_BYTES} byte limit` });
+      return [];
+    }
+    text = readFileSync(workspacePath, 'utf-8');
+  } catch (error) {
+    skipped.push({ path: source, reason: `workspace-declaration-skip: ${error.message}` });
+    return [];
+  }
+
+  const patterns = [];
+  let inPackages = false;
+  for (const line of text.split(/\r?\n/)) {
+    if (/^packages:\s*(?:#.*)?$/.test(line)) {
+      inPackages = true;
+      continue;
+    }
+    if (!inPackages) continue;
+    if (/^\S[^:]*:\s*(?:#.*)?$/.test(line)) break;
+    const match = line.match(/^\s*-\s*(.*?)\s*(?:#.*)?$/);
+    if (!match) continue;
+    const value = unquoteWorkspaceScalar(match[1]);
+    if (value) patterns.push(value);
+  }
+  if (patterns.length === 0) {
+    skipped.push({ path: source, reason: 'workspace-declaration-skip: no static packages entries' });
+  }
+  return patterns;
+}
+
+function readNodeWorkspacePatterns(rootPath, packagePath, skipped) {
+  let manifest;
+  try {
+    const size = statSync(packagePath).size;
+    if (size > WORKSPACE_MANIFEST_MAX_BYTES) {
+      skipped.push({ path: relative(rootPath, packagePath), reason: `workspace-declaration-skip: exceeds ${WORKSPACE_MANIFEST_MAX_BYTES} byte limit` });
+      return null;
+    }
+    manifest = JSON.parse(readFileSync(packagePath, 'utf-8'));
+  } catch {
+    return null;
+  }
+  if (!Object.hasOwn(manifest, 'workspaces')) return null;
+  const value = Array.isArray(manifest.workspaces)
+    ? manifest.workspaces
+    : Array.isArray(manifest.workspaces?.packages)
+      ? manifest.workspaces.packages
+      : null;
+  if (!value || !value.every((pattern) => typeof pattern === 'string')) {
+    skipped.push({ path: 'package.json', reason: 'workspace-declaration-skip: workspaces must be a static string array' });
+    return [];
+  }
+  return value;
+}
+
+function normalizeWorkspacePattern(value, source, skipped) {
+  if (typeof value !== 'string') return null;
+  const raw = value.trim();
+  const exclude = raw.startsWith('!');
+  const body = (exclude ? raw.slice(1) : raw).replace(/\\/g, '/');
+  if (!body || body.startsWith('/') || /^[A-Za-z]:\//.test(body)) {
+    skipped.push({ path: source, reason: `workspace-declaration-skip: invalid absolute pattern ${JSON.stringify(value)}` });
+    return null;
+  }
+  const segments = body.split('/');
+  if (segments.some((segment) => segment === '..' || segment.includes('\0'))) {
+    skipped.push({ path: source, reason: `workspace-declaration-skip: unsafe pattern ${JSON.stringify(value)}` });
+    return null;
+  }
+  const normalizedSegments = segments.filter((segment) => segment && segment !== '.');
+  if (normalizedSegments.length > WORKSPACE_PATTERN_MAX_SEGMENTS) {
+    skipped.push({
+      path: source,
+      reason: `workspace-declaration-skip: segment limit ${WORKSPACE_PATTERN_MAX_SEGMENTS} exceeded`,
+    });
+    return null;
+  }
+  const globstarCount = normalizedSegments.filter((segment) => segment === '**').length;
+  if (globstarCount > WORKSPACE_PATTERN_MAX_GLOBSTARS) {
+    skipped.push({
+      path: source,
+      reason: `workspace-declaration-skip: globstar limit ${WORKSPACE_PATTERN_MAX_GLOBSTARS} exceeded`,
+    });
+    return null;
+  }
+  const wildcardCount = normalizedSegments.reduce(
+    (count, segment) => count + [...segment].filter((character) => character === '*').length,
+    0,
+  );
+  if (wildcardCount > WORKSPACE_PATTERN_MAX_WILDCARDS) {
+    skipped.push({
+      path: source,
+      reason: `workspace-declaration-skip: wildcard limit ${WORKSPACE_PATTERN_MAX_WILDCARDS} exceeded`,
+    });
+    return null;
+  }
+  return { exclude, pattern: normalizedSegments.join('/') || '.' };
+}
+
+function unquoteWorkspaceScalar(value) {
+  const trimmed = value.trim();
+  if (trimmed.length >= 2 && ((trimmed.startsWith("'") && trimmed.endsWith("'")) || (trimmed.startsWith('"') && trimmed.endsWith('"')))) {
+    return trimmed.slice(1, -1);
+  }
+  return trimmed;
+}
+
+function enumeratePackageDirectories(rootPath, ignore, skipped) {
+  const candidates = [];
+  let entriesSeen = 0;
+  let stopped = false;
+
+  function visit(directory) {
+    if (stopped) return;
+    const manifestPath = join(directory, 'package.json');
+    if (existsSync(manifestPath) && statSync(manifestPath).isFile()) {
+      const path = relative(rootPath, directory) || '.';
+      candidates.push({ path, name: readWorkspacePackageName(manifestPath) });
+    }
+    let entries;
+    try {
+      entries = readdirSync(directory).sort();
+    } catch (error) {
+      skipped.push({ path: relative(rootPath, directory) || '.', reason: `workspace-discovery-skip: ${error.message}` });
+      return;
+    }
+    for (const entry of entries) {
+      if (stopped) return;
+      entriesSeen += 1;
+      if (entriesSeen > WORKSPACE_DISCOVERY_MAX_ENTRIES) {
+        stopped = true;
+        skipped.push({ path: relative(rootPath, directory) || '.', reason: `workspace-discovery-entry-limit: reached ${WORKSPACE_DISCOVERY_MAX_ENTRIES}` });
+        return;
+      }
+      if (ignore.has(entry) || entry.startsWith('.')) continue;
+      const fullPath = join(directory, entry);
+      let stat;
+      try {
+        stat = lstatSync(fullPath);
+      } catch (error) {
+        skipped.push({ path: relative(rootPath, fullPath), reason: `workspace-discovery-skip: ${error.message}` });
+        continue;
+      }
+      if (stat.isSymbolicLink()) continue;
+      if (stat.isDirectory()) visit(fullPath);
+    }
+  }
+
+  visit(rootPath);
+  return candidates;
+}
+
+function readDeclaredLiteralWorkspacePackage(rootPath, declaration, ignore, skipped) {
+  if (declaration.pattern.includes('*')) return null;
+  const segments = declaration.pattern === '.' ? [] : declaration.pattern.split('/');
+  if (segments.some((segment) => ignore.has(segment))) {
+    skipped.push({
+      path: declaration.source,
+      reason: `workspace-declaration-ignored: ${declaration.pattern}`,
+    });
+    return null;
+  }
+  const packageRoot = declaration.pattern === '.' ? rootPath : join(rootPath, declaration.pattern);
+  let stat;
+  try {
+    stat = lstatSync(packageRoot);
+  } catch {
+    return null;
+  }
+  if (stat.isSymbolicLink()) {
+    skipped.push({ path: declaration.pattern, reason: 'workspace-declaration-skip: symbolic package root' });
+    return null;
+  }
+  if (!stat.isDirectory() || !existsSync(join(packageRoot, 'package.json'))) return null;
+  try {
+    if (!pathResolvesInsideRoot(rootPath, packageRoot)) {
+      skipped.push({ path: declaration.pattern, reason: 'workspace-declaration-skip: package root resolves outside repository' });
+      return null;
+    }
+  } catch (error) {
+    skipped.push({ path: declaration.pattern, reason: `workspace-declaration-skip: ${error.message}` });
+    return null;
+  }
+  return {
+    path: declaration.pattern,
+    name: readWorkspacePackageName(join(packageRoot, 'package.json')),
+  };
+}
+
+function readWorkspacePackageName(packagePath) {
+  try {
+    const manifest = JSON.parse(readFileSync(packagePath, 'utf-8'));
+    return typeof manifest.name === 'string' && manifest.name.trim() === manifest.name
+      ? manifest.name
+      : null;
+  } catch {
+    return null;
+  }
+}
+
+function assignWorkspacePackageSlugs(packages) {
+  const baseSlugs = packages.map((workspacePackage) => ({
+    ...workspacePackage,
+    baseSlug: workspacePackageBaseSlug(workspacePackage),
+  }));
+  const counts = new Map();
+  for (const workspacePackage of baseSlugs) {
+    counts.set(workspacePackage.baseSlug, (counts.get(workspacePackage.baseSlug) ?? 0) + 1);
+  }
+  return baseSlugs.map((workspacePackage) => ({
+    path: workspacePackage.path,
+    name: workspacePackage.name,
+    slug: (counts.get(workspacePackage.baseSlug) ?? 0) === 1
+      ? workspacePackage.baseSlug
+      : workspacePathSlug(workspacePackage.path),
+  }));
+}
+
+function workspacePackageBaseSlug(workspacePackage) {
+  const name = workspacePackage.name?.replace(/^@[^/]+\//, '') || basename(workspacePackage.path);
+  return workspacePathSlug(name) || 'workspace-package';
+}
+
+function workspacePathSlug(value) {
+  return value
+    .replace(/\\/g, '/')
+    .replace(/[^A-Za-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+    .toLowerCase();
+}
+
+function workspacePatternMatches(pattern, candidatePath, budget) {
+  const patternSegments = pattern === '.' ? [] : pattern.split('/');
+  const pathSegments = candidatePath === '.' ? [] : candidatePath.split('/');
+  let states = closeWorkspaceGlobStates(new Set([0]), patternSegments);
+  for (const pathSegment of pathSegments) {
+    const next = new Set();
+    for (const patternIndex of states) {
+      if (!consumeWorkspacePatternBudget(budget)) return false;
+      const segment = patternSegments[patternIndex];
+      if (segment === '**') {
+        next.add(patternIndex);
+      } else if (segment && workspaceSegmentMatches(segment, pathSegment)) {
+        next.add(patternIndex + 1);
+      }
+    }
+    states = closeWorkspaceGlobStates(next, patternSegments);
+    if (states.size === 0) return false;
+  }
+  return closeWorkspaceGlobStates(states, patternSegments).has(patternSegments.length);
+}
+
+function closeWorkspaceGlobStates(states, patternSegments) {
+  const closed = new Set(states);
+  for (let index = 0; index < patternSegments.length; index += 1) {
+    if (patternSegments[index] === '**' && closed.has(index)) {
+      closed.add(index + 1);
+    }
+  }
+  return closed;
+}
+
+function consumeWorkspacePatternBudget(budget) {
+  if (!budget) return true;
+  if (budget.remaining <= 0) {
+    budget.exhausted = true;
+    return false;
+  }
+  budget.remaining -= 1;
+  return true;
+}
+
+function workspaceSegmentMatches(pattern, value) {
+  if (!pattern.includes('*')) return pattern === value;
+  const fragments = pattern.split('*');
+  let cursor = 0;
+  let sawFragment = false;
+  let finalFragmentEnd = 0;
+  for (const fragment of fragments) {
+    if (!fragment) continue;
+    const found = value.indexOf(fragment, cursor);
+    if (found === -1) return false;
+    if (!sawFragment && !pattern.startsWith('*') && found !== 0) return false;
+    sawFragment = true;
+    cursor = found + fragment.length;
+    finalFragmentEnd = cursor;
+  }
+  return pattern.endsWith('*') || (!sawFragment ? value.length === 0 : finalFragmentEnd === value.length);
+}
+
+function dedupeWorkspaceSkipped(rows) {
+  const seen = new Set();
+  return rows.filter((row) => {
+    const key = `${row.path}\u0000${row.reason}`;
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+}
+
+function pruneNestedRoots(roots, rootPath) {
+  const byRelativePath = [...new Set(roots.map((root) => relative(rootPath, root) || '.'))]
+    .sort((a, b) => a.length - b.length || a.localeCompare(b));
+  const retained = [];
+  for (const candidate of byRelativePath) {
+    if (retained.some((parent) => parent === '.' || candidate === parent || candidate.startsWith(`${parent}/`))) continue;
+    retained.push(candidate);
+  }
+  return retained.map((path) => (path === '.' ? rootPath : join(rootPath, path)));
 }
 
 function discoverRootPythonPackages(rootPath, ignore) {
@@ -800,7 +1310,7 @@ function compareImportEvidence(a, b) {
     a.kind.localeCompare(b.kind);
 }
 
-function classify(spec, file, dir, rootPath, edges, external, unresolved, kindOverride, pathAliases = [], ignore = DEFAULT_IGNORE, importUsage = 'value') {
+function classify(spec, file, dir, rootPath, edges, external, unresolved, kindOverride, pathAliases = [], ignore = DEFAULT_IGNORE, importUsage = 'value', workspacePackages = []) {
   const kind = kindOverride ?? 'static';
   if (!spec) {
     unresolved.push({ from: relative(rootPath, file), spec, reason: 'empty' });
@@ -827,6 +1337,29 @@ function classify(spec, file, dir, rootPath, edges, external, unresolved, kindOv
     }
     return;
   }
+  const workspaceResolved = resolveWorkspacePackageImport(spec, rootPath, workspacePackages);
+  if (workspaceResolved.matched) {
+    if (workspaceResolved.path) {
+      const resolvedRelative = relative(rootPath, workspaceResolved.path);
+      if (isIgnoredPath(resolvedRelative, ignore)) return;
+      edges.push({
+        from: relative(rootPath, file),
+        to: resolvedRelative,
+        kind,
+        sourceRole: sourceRoleOf(relative(rootPath, file)),
+        importUsage,
+      });
+    } else if (workspaceResolved.denied) {
+      unresolved.push({
+        from: relative(rootPath, file),
+        spec,
+        reason: 'alias-not-found',
+      });
+    } else {
+      external.push({ from: relative(rootPath, file), spec });
+    }
+    return;
+  }
   const aliasResolved = resolveAliasImport(spec, rootPath, pathAliases);
   if (aliasResolved.matched) {
     if (aliasResolved.path) {
@@ -849,6 +1382,92 @@ function classify(spec, file, dir, rootPath, edges, external, unresolved, kindOv
     return;
   }
   external.push({ from: relative(rootPath, file), spec });
+}
+
+function resolveWorkspacePackageImport(spec, rootPath, workspacePackages = []) {
+  const matchingPackage = [...workspacePackages]
+    .filter((workspacePackage) =>
+      workspacePackage.name &&
+      (spec === workspacePackage.name || spec.startsWith(`${workspacePackage.name}/`)),
+    )
+    .sort((a, b) => b.name.length - a.name.length || a.path.localeCompare(b.path))[0];
+  if (!matchingPackage) return { matched: false, path: null, denied: false };
+
+  const packageRoot = join(rootPath, matchingPackage.path);
+  if (!pathResolvesInsideRoot(rootPath, packageRoot)) {
+    return { matched: true, path: null, denied: true };
+  }
+  const subpath = spec.slice(matchingPackage.name.length).replace(/^\//, '');
+  const candidates = subpath
+    ? [
+        ...workspaceEntryCandidates(packageRoot, subpath),
+        resolve(packageRoot, subpath),
+        resolve(packageRoot, 'src', subpath),
+        resolve(packageRoot, 'source', subpath),
+        resolve(packageRoot, 'lib', subpath),
+      ]
+    : workspaceEntryCandidates(packageRoot);
+  let denied = false;
+  for (const candidate of candidates) {
+    const resolved = resolveImportCandidate(candidate);
+    if (!resolved) continue;
+    if (
+      pathResolvesInsideRoot(rootPath, resolved) &&
+      pathResolvesInsideRoot(packageRoot, resolved)
+    ) {
+      return { matched: true, path: resolved, denied: false };
+    }
+    denied = true;
+  }
+  return { matched: true, path: null, denied };
+}
+
+function workspaceEntryCandidates(packageRoot, subpath = '') {
+  const candidates = [];
+  try {
+    const manifest = JSON.parse(readFileSync(join(packageRoot, 'package.json'), 'utf-8'));
+    if (!subpath) {
+      for (const field of ['source', 'module', 'main', 'types']) {
+        if (typeof manifest[field] === 'string') candidates.push(resolve(packageRoot, manifest[field]));
+      }
+    }
+    for (const entry of workspaceExportEntries(manifest.exports, subpath)) {
+      candidates.push(resolve(packageRoot, entry));
+    }
+  } catch {
+    // The package was already admitted by its declared path. A malformed
+    // manifest simply cannot provide an import entrypoint, so leave it as an
+    // external import instead of guessing a semantic relationship.
+  }
+  if (!subpath) {
+    candidates.push(
+      resolve(packageRoot, 'src', 'index'),
+      resolve(packageRoot, 'source', 'index'),
+      resolve(packageRoot, 'lib', 'index'),
+      resolve(packageRoot, 'index'),
+    );
+  }
+  return [...new Set(candidates)];
+}
+
+function workspaceExportEntries(exports, subpath) {
+  if (typeof exports === 'string') return subpath ? [] : [exports];
+  if (!exports || typeof exports !== 'object' || Array.isArray(exports)) return [];
+  const target = subpath
+    ? exports[`./${subpath}`]
+    : Object.hasOwn(exports, '.')
+      ? exports['.']
+      : exports;
+  return collectWorkspaceExportStrings(target);
+}
+
+function collectWorkspaceExportStrings(value, entries = []) {
+  if (typeof value === 'string') {
+    entries.push(value);
+  } else if (value && typeof value === 'object' && !Array.isArray(value)) {
+    for (const nested of Object.values(value)) collectWorkspaceExportStrings(nested, entries);
+  }
+  return entries;
 }
 
 function isIgnoredPath(filePath, ignore) {
@@ -992,7 +1611,7 @@ function resolveRelativeImport(spec, fromDir) {
   return null;
 }
 
-function moduleOf(filePath, sourceFolders, rootPath) {
+function moduleOf(filePath, sourceFolders, rootPath, workspacePackages = []) {
   // filePath is relative to rootPath. Find first segment that's a source
   // folder, then take the next segment as the "module" id.
   //
@@ -1006,6 +1625,8 @@ function moduleOf(filePath, sourceFolders, rootPath) {
   // 접미로 가른다 (같은 rootPath 를 보므로 두 도구의 판정이 일치한다).
   const parts = filePath.split(/[\\/]/);
   if (!SOURCE_EXT.has(extname(parts.at(-1) ?? ''))) return null;
+  const workspacePackage = workspacePackageForFile(filePath, workspacePackages);
+  if (workspacePackage) return `elements/${workspacePackage.slug}`;
   if (
     parts.length >= 3 &&
     sourceFolderStartsAt(parts[0], sourceFolders) &&
@@ -1096,6 +1717,14 @@ function moduleOf(filePath, sourceFolders, rootPath) {
     }
   }
   return null;
+}
+
+function workspacePackageForFile(filePath, workspacePackages) {
+  return [...workspacePackages]
+    .filter((workspacePackage) =>
+      filePath === workspacePackage.path || filePath.startsWith(`${workspacePackage.path}/`),
+    )
+    .sort((a, b) => b.path.length - a.path.length || a.path.localeCompare(b.path))[0] ?? null;
 }
 
 function validateRootPath(rootPath) {

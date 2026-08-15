@@ -2813,3 +2813,146 @@ test('source/ root exposes only bounded top-level coordination roles as implemen
     rmSync(root, { recursive: true, force: true });
   }
 });
+
+test('declared pnpm workspace packages become implementation elements without business promotion', () => {
+  const root = withRepo((r) => {
+    writeFileSync(join(r, 'package.json'), JSON.stringify({ name: 'workspace-root', private: true }));
+    writeFileSync(
+      join(r, 'pnpm-workspace.yaml'),
+      [
+        'packages:',
+        "  - 'packages/*'",
+        "  - 'packages/tooling/*'",
+        "  - '!packages/ignored'",
+        '',
+      ].join('\n'),
+    );
+    mkdirSync(join(r, 'packages', 'core', 'src'), { recursive: true });
+    mkdirSync(join(r, 'packages', 'tooling', 'worker', 'src'), { recursive: true });
+    mkdirSync(join(r, 'packages', 'ignored', 'src'), { recursive: true });
+    writeFileSync(join(r, 'packages', 'core', 'package.json'), '{"name":"@scope/core"}\n');
+    writeFileSync(join(r, 'packages', 'tooling', 'worker', 'package.json'), '{"name":"@scope/worker"}\n');
+    writeFileSync(join(r, 'packages', 'ignored', 'package.json'), '{"name":"@scope/ignored"}\n');
+    writeFileSync(
+      join(r, 'packages', 'core', 'src', 'index.ts'),
+      'import { worker } from "@scope/worker";\nexport const core = worker;\n',
+    );
+    writeFileSync(join(r, 'packages', 'tooling', 'worker', 'src', 'index.ts'), 'export const worker = 1;\n');
+    writeFileSync(join(r, 'packages', 'ignored', 'src', 'index.ts'), 'export const ignored = true;\n');
+  });
+  try {
+    const result = analyzeRepoStructure(root);
+    assert.deepEqual(result.capabilities, [], 'workspace package names stay implementation-only');
+    assert.deepEqual(result.domains, [], 'workspace layout does not invent business domains');
+    assert.deepEqual(
+      result.elements.map(({ slug, path }) => ({ slug, path })),
+      [
+        { slug: 'elements/core', path: 'packages/core' },
+        { slug: 'elements/worker', path: 'packages/tooling/worker' },
+      ],
+    );
+    assert.ok(
+      result.meaningGate.reviewQuestions.some((question) => /typed production import boundar/.test(question)),
+      `workspace import boundary was not visible for review: ${JSON.stringify(result.meaningGate.reviewQuestions)}`,
+    );
+    assert.ok(
+      result.skipped.some(
+        (row) => row.path === 'packages/ignored' && row.reason === 'workspace-declaration-excluded',
+      ),
+      `workspace exclusion was not reported: ${JSON.stringify(result.skipped)}`,
+    );
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test('workspace import evidence is capped to the same declared packages as analyzer elements', () => {
+  const root = withRepo((r) => {
+    writeFileSync(join(r, 'package.json'), JSON.stringify({ name: 'workspace-root', private: true }));
+    writeFileSync(join(r, 'pnpm-workspace.yaml'), "packages:\n  - 'packages/*'\n");
+    for (let index = 0; index < 50; index += 1) {
+      const name = `package-${String(index).padStart(2, '0')}`;
+      mkdirSync(join(r, 'packages', name, 'src'), { recursive: true });
+      writeFileSync(
+        join(r, 'packages', name, 'package.json'),
+        JSON.stringify({ name: `@scope/${name}` }),
+      );
+      writeFileSync(join(r, 'packages', name, 'src', 'index.ts'), 'export const value = true;\n');
+    }
+    writeFileSync(
+      join(r, 'packages', 'package-00', 'src', 'index.ts'),
+      [
+        'import { value as admitted } from "@scope/package-01";',
+        'import { value as omitted } from "@scope/package-49";',
+        'export const value = admitted || omitted;',
+      ].join('\n'),
+    );
+  });
+  try {
+    const result = analyzeRepoStructure(root);
+
+    assert.equal(result.elements.length, 48);
+    assert.ok(
+      result.skipped.some(
+        (row) =>
+          row.reason ===
+          'workspace-import-evidence-limit: omitted 2 declared package roots to match analyzer elements',
+      ),
+      `import evidence must expose the same admitted package boundary as elements: ${JSON.stringify(result.skipped)}`,
+    );
+    assert.ok(
+      result.meaningGate.reviewQuestions.some((question) =>
+        question.startsWith('[observed · impact] 1 typed production import boundary'),
+      ),
+      `only the admitted package-to-package boundary may reach the meaning gate: ${JSON.stringify(result.meaningGate.reviewQuestions)}`,
+    );
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test('workspace import evidence excludes a declared package whose element slug was already claimed', () => {
+  const root = withRepo((r) => {
+    writeFileSync(join(r, 'package.json'), JSON.stringify({ name: 'workspace-root', private: true }));
+    writeFileSync(join(r, 'pnpm-workspace.yaml'), "packages:\n  - 'packages/*'\n");
+    mkdirSync(join(r, 'src', 'entities', 'core'), { recursive: true });
+    writeFileSync(join(r, 'src', 'entities', 'core', 'index.ts'), 'export const core = true;\n');
+    for (const name of ['client', 'core']) {
+      mkdirSync(join(r, 'packages', name, 'src'), { recursive: true });
+      writeFileSync(
+        join(r, 'packages', name, 'package.json'),
+        JSON.stringify({ name: `@scope/${name}` }),
+      );
+      writeFileSync(join(r, 'packages', name, 'src', 'index.ts'), 'export const value = true;\n');
+    }
+    writeFileSync(
+      join(r, 'packages', 'client', 'src', 'index.ts'),
+      'import { value } from "@scope/core";\nexport const client = value;\n',
+    );
+  });
+  try {
+    const result = analyzeRepoStructure(root);
+
+    assert.ok(
+      result.skipped.some(
+        (row) =>
+          row.reason === 'workspace-element-skip: duplicate implementation slug elements/core',
+      ),
+    );
+    assert.ok(
+      result.skipped.some(
+        (row) =>
+          row.reason ===
+          'workspace-import-evidence-limit: omitted 1 declared package roots to match analyzer elements',
+      ),
+      `a package without an analyzer element must not remain an import endpoint: ${JSON.stringify(result.skipped)}`,
+    );
+    assert.equal(
+      result.meaningGate.reviewQuestions.some((question) => question.startsWith('[observed · impact]')),
+      false,
+      `a skipped endpoint cannot become a typed impact boundary: ${JSON.stringify(result.meaningGate.reviewQuestions)}`,
+    );
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
