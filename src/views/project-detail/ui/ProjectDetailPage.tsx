@@ -530,7 +530,9 @@ export function ProjectDetailPage({
                 ariaLabel={t("inlineDescriptionAria")}
                 placeholder={t("inlineDescriptionPlaceholder")}
                 dataTestId="project-detail-description"
-                className="mt-2.5 max-w-[64ch] text-body-lg leading-body-lg text-[color:var(--color-text-secondary)]"
+                // `break-keep` — 이 설명이 576px 에서 「아|홉」으로 단어 중간
+                // 끊김 (2026-08-15 korean-word-break 실측, main 나흘 적화의 하나).
+                className="mt-2.5 max-w-[64ch] break-keep text-body-lg leading-body-lg text-[color:var(--color-text-secondary)]"
               />
             </div>
             {/* flex-none 은 읽기전용 배지(+액션)가 390px 뷰포트를 밀어내는

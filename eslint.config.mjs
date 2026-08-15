@@ -158,6 +158,64 @@ const inlineShadowSelectors = [
 ];
 
 /*
+ * 인라인 style 의 크기·반경 — 그림자 인라인 룰(위)의 나머지 절반 (2026-08-15).
+ *
+ * ## 왜
+ *
+ * 클래스 램프 룰은 className 문자열만 본다. `style={{ fontSize }}` 로 쓰면
+ * 클래스가 아예 안 생기므로 걸릴 것이 없다 — StudioCompass 인라인 그림자
+ * 8건이 빠져나갔던 것과 정확히 같은 문법 구멍이고, 2026-08-15 감사가 렌더
+ * census(6라우트 이탈 0)와 별개로 소스에서 1건을 실측했다: locale-redirect 의
+ * fontSize '0.875rem' — 값은 body-lg 와 동일(픽셀 0)이지만 옆 클래스가 이미
+ * 같은 크기를 싣고 있어 **중복이자 행간 짝 없는 크기**였다. 먼저 걷어내고
+ * 켠다 — 켜는 순간 위반 0.
+ *
+ * ## 허용 판정
+ *
+ * `var(` 참조는 통과다 — 표면 전용 크기 토큰(--topology-chrome-title-size 류)
+ * 을 인라인으로 소비하는 것은 정당하다. 단 **타입 램프 토큰(--text-*)의 인라인
+ * 우회는 별도 셀렉터로 막는다** — 크기만 얻고 그 단이 싣는 행간 짝을 잃는
+ * 것이 클래스 쪽 램프 우회 룰과 같은 병이기 때문이다.
+ *
+ * 삼항 가지는 첫날부터 잡는다(accent 틴트 룰이 2026-08-13 에 밟은 「직계는
+ * 삼항을 못 본다」 함정의 선반영). 비교 리터럴은 BinaryExpression 아래라
+ * `ConditionalExpression > Literal` 에 안 걸린다.
+ *
+ * ## Satori 예외 (파일명 스코프 블록)
+ *
+ * `opengraph-image.tsx` / `twitter-image.tsx` 는 Next.js 예약 파일명이고 그
+ * 이름의 파일은 구조상 전부 Satori 로 그려진다 — CSS 변수가 닿지 않아 숫자
+ * 리터럴이 유일한 표기다(hex 룰의 「CSS 변수가 닿지 않는 표면」 과 같은 사유).
+ * 전수 1파일 8자리라 줄마다 disable 을 다는 것이 소음이라, footprint 전례대로
+ * 뒤쪽 스코프 블록이 이 배열만 빼고 다시 싣는다.
+ */
+const inlineSizeSelectors = [
+  {
+    selector:
+      'JSXAttribute[name.name="style"] Property[key.name=/^(fontSize|borderRadius)$/] > Literal:not([raw=/var\\(/])',
+    message:
+      '인라인 style 의 크기·반경 하드코딩 금지 — 클래스가 안 생겨 램프 룰이 못 보는 층이다. 크기는 타입 램프 유틸리티(클래스)로, 반경은 radius 램프로, CSS 변수가 닿지 않는 표면(Satori·canvas)만 eslint-disable + 사유.',
+  },
+  {
+    selector:
+      'JSXAttribute[name.name="style"] Property[key.name=/^(fontSize|borderRadius)$/] ConditionalExpression > Literal:not([raw=/var\\(/])',
+    message:
+      '인라인 style 의 크기·반경 하드코딩 금지 (삼항 가지) — 조건이 갈려도 두 가지 모두 램프를 탄다.',
+  },
+  {
+    selector:
+      'JSXAttribute[name.name="style"] Property[key.name=/^(fontSize|borderRadius)$/] > TemplateLiteral:not(:has(TemplateElement[value.raw=/var\\(/]))',
+    message:
+      '인라인 style 의 크기·반경 하드코딩 금지 (template literal) — 토큰을 var() 로 참조하지 않는 조립 문자열은 램프 밖이다.',
+  },
+  {
+    selector: 'JSXAttribute[name.name="style"] Property[key.name="fontSize"] > Literal[value=/var\\(--text-/]',
+    message:
+      '타입 램프 토큰을 인라인 fontSize 로 우회 참조 금지 — 크기만 얻고 그 단이 싣는 행간 짝을 잃는다. 램프 유틸리티(클래스)를 쓴다. 램프 밖 표면 전용 크기 토큰은 이 룰에 걸리지 않는다.',
+  },
+];
+
+/*
  * 중복 `cursor-pointer` — 중앙 규칙이 이미 정한 것을 다시 적는 것.
  *
  * ## 왜 (2026-08-05 소유자 확정)
@@ -1036,6 +1094,7 @@ const eslintConfig = defineConfig([
         // 램프 부채 파일도 이 블록은 받는다 — 인라인 그림자는 램프가 아니라
         // 사다리 문제라 부채 면제와 함께 빠지면 안 된다.
         ...inlineShadowSelectors,
+        ...inlineSizeSelectors,
         ...cursorAffordanceSelectors,
         ...disabledAffordanceSelectors,
       ],
@@ -1059,6 +1118,7 @@ const eslintConfig = defineConfig([
         ...arbitrarySizeSelectors,
         ...accentTintPairingSelectors,
         ...inlineShadowSelectors,
+        ...inlineSizeSelectors,
         ...cursorAffordanceSelectors,
         ...disabledAffordanceSelectors,
         ...typographyAxisSelectors,
@@ -1102,6 +1162,35 @@ const eslintConfig = defineConfig([
         // 타입 축·층위·인라인 그림자·커서까지 같이 꺼져 있었다. 전수 0 이라
         // 켜는 비용은 0.
         ...inlineShadowSelectors,
+        ...inlineSizeSelectors,
+        ...cursorAffordanceSelectors,
+        ...disabledAffordanceSelectors,
+        ...typographyAxisSelectors,
+        ...layerSelectors,
+      ],
+    },
+  },
+  /*
+   * Satori 표면 — 인라인 크기·반경 룰만 뺀다 (2026-08-15, inlineSizeSelectors
+   * 주석의 「Satori 예외」 절 참조).
+   *
+   * `opengraph-image.tsx` / `twitter-image.tsx` 는 Next.js 예약 파일명이고 그
+   * 이름의 파일은 전부 Satori 로 그려진다 — CSS 변수가 닿지 않아 숫자 리터럴이
+   * 유일한 표기다. 전수(2026-08-15): 1파일 8자리.
+   *
+   * ⚠️ flat config 는 rule option 배열을 병합하지 않고 교체한다 — 이 블록은
+   * 뺄 것(inlineSizeSelectors)만 빼고 **나머지 전부를 다시 실어야** 한다.
+   * 반드시 위 램프 블록들보다 뒤에 온다.
+   */
+  {
+    files: ['**/opengraph-image.tsx', '**/twitter-image.tsx'],
+    rules: {
+      'no-restricted-syntax': [
+        'error',
+        ...scaleGradientSelectors,
+        ...arbitrarySizeSelectors,
+        ...accentTintPairingSelectors,
+        ...inlineShadowSelectors,
         ...cursorAffordanceSelectors,
         ...disabledAffordanceSelectors,
         ...typographyAxisSelectors,
@@ -1144,6 +1233,7 @@ const eslintConfig = defineConfig([
         // 이 경로의 `font-semibold`·`tracking-[…]`·`text-white` 는 0 error 로
         // 통과했다. 전수 0 이라 켜는 비용은 0.
         ...inlineShadowSelectors,
+        ...inlineSizeSelectors,
         ...cursorAffordanceSelectors,
         ...disabledAffordanceSelectors,
         ...typographyAxisSelectors,
