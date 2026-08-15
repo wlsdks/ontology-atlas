@@ -59,7 +59,7 @@ import {
   validateMeaningProposalAgainstAnalysis,
 } from './meaning-evaluation.mjs';
 import { evaluateConstructionLifecycle } from './construction-lifecycle.mjs';
-import { inferImports } from './infer-imports.mjs';
+import { discoverDeclaredWorkspacePackages, inferImports } from './infer-imports.mjs';
 import { collectRustFeatureConfigurationEvidence } from './rust-feature-evidence.mjs';
 
 /**
@@ -116,6 +116,7 @@ const SEMANTIC_EVIDENCE_MAX_HEADINGS = 8;
 const SEMANTIC_EVIDENCE_MAX_DOCUMENTS = 6;
 const SEMANTIC_EVIDENCE_MAX_BYTES = 256 * 1024;
 const WORKSPACE_SEMANTIC_EVIDENCE_MAX_MEMBERS = 48;
+const WORKSPACE_ELEMENT_LIMIT = 48;
 const NODE_PACKAGE_DESCRIPTION_MAX_LENGTH = 320;
 const CARGO_MANIFEST_MAX_BYTES = 256 * 1024;
 const PYTHON_SETUP_MAX_BYTES = 256 * 1024;
@@ -278,6 +279,8 @@ export function analyzeRepoStructure(rootPath, options = {}) {
   ]);
 
   const skipped = [];
+  const workspaceDiscovery = discoverDeclaredWorkspacePackages(rootPath, { ignore });
+  skipped.push(...workspaceDiscovery.skipped);
   const project = detectProject(rootPath, skipped);
   const { domains, readmePath } = detectDomainsFromReadme(rootPath);
   const existingOntologyEvidence = detectExistingOntologyEvidence(rootPath, skipped);
@@ -443,13 +446,14 @@ export function analyzeRepoStructure(rootPath, options = {}) {
     }
   }
 
-  elements.push(
-    ...detectWorkspaceElements(rootPath, {
-      ignore,
-      domainForName,
-      skipped,
-    }),
-  );
+  const workspaceElementAdmission = detectWorkspaceElements(rootPath, {
+    ignore,
+    domainForName,
+    skipped,
+    workspaceDiscovery,
+    existingElements: elements,
+  });
+  elements.push(...workspaceElementAdmission.elements);
   elements.push(
     ...detectRootPackages(rootPath, {
       ignore,
@@ -469,6 +473,8 @@ export function analyzeRepoStructure(rootPath, options = {}) {
     : analyzeImportsForElementEvidence(rootPath, {
         extraIgnore,
         skipped,
+        workspaceDiscovery,
+        admittedWorkspacePackages: workspaceElementAdmission.packages,
       });
   const pythonImportBoundaryElements = detectPythonImportBoundaryElements(rootPath, {
     ignore,
@@ -2344,12 +2350,27 @@ function pythonRiskEndpointPriority(fileName) {
 
 function analyzeImportsForElementEvidence(
   rootPath,
-  { extraIgnore, skipped },
+  { extraIgnore, skipped, workspaceDiscovery, admittedWorkspacePackages = null },
 ) {
   try {
-    return inferImports(rootPath, {
+    if (
+      admittedWorkspacePackages &&
+      workspaceDiscovery.packages.length > admittedWorkspacePackages.length
+    ) {
+      pushSkippedOnce(skipped, {
+        path: '.',
+        reason:
+          `workspace-import-evidence-limit: omitted ${workspaceDiscovery.packages.length - admittedWorkspacePackages.length} ` +
+          'declared package roots to match analyzer elements',
+      });
+    }
+    const options = {
       ignore: extraIgnore,
-    });
+      ...(admittedWorkspacePackages
+        ? { workspacePackages: admittedWorkspacePackages }
+        : {}),
+    };
+    return inferImports(rootPath, options);
   } catch (error) {
     pushSkippedOnce(skipped, {
       path: rootPath,
@@ -2359,7 +2380,42 @@ function analyzeImportsForElementEvidence(
   }
 }
 
-function detectWorkspaceElements(rootPath, { ignore, domainForName, skipped }) {
+function detectWorkspaceElements(
+  rootPath,
+  { ignore, domainForName, skipped, workspaceDiscovery, existingElements = [] },
+) {
+  if (workspaceDiscovery?.hasDeclaration) {
+    const elements = [];
+    const admittedWorkspacePackages = [];
+    const claimed = new Set(existingElements.map((element) => element.slug));
+    const admitted = workspaceDiscovery.packages.slice(0, WORKSPACE_ELEMENT_LIMIT);
+    const omitted = Math.max(0, workspaceDiscovery.packages.length - admitted.length);
+    if (omitted > 0) {
+      pushSkippedOnce(skipped, {
+        path: '.',
+        reason: `workspace-element-limit: omitted ${omitted} declared package elements`,
+      });
+    }
+    for (const workspacePackage of admitted) {
+      const slug = `elements/${workspacePackage.slug}`;
+      if (claimed.has(slug)) {
+        pushSkippedOnce(skipped, {
+          path: workspacePackage.path,
+          reason: `workspace-element-skip: duplicate implementation slug ${slug}`,
+        });
+        continue;
+      }
+      claimed.add(slug);
+      elements.push({
+        slug,
+        title: humanize(workspacePackage.slug),
+        path: workspacePackage.path,
+        evidence: { source: workspacePackage.path },
+      });
+      admittedWorkspacePackages.push(workspacePackage);
+    }
+    return { elements, packages: admittedWorkspacePackages };
+  }
   const elements = [];
   for (const folder of WORKSPACE_FOLDERS) {
     const workspaceRoot = join(rootPath, folder);
@@ -2395,7 +2451,7 @@ function detectWorkspaceElements(rootPath, { ignore, domainForName, skipped }) {
       });
     }
   }
-  return elements;
+  return { elements, packages: null };
 }
 
 function humanize(s) {
