@@ -71,6 +71,7 @@ export function evaluateQ17Qualification(packet) {
   if (packet.contract !== Q17_QUALIFICATION_CONTRACT) {
     add('determinism', 'invalid-q17-contract', 'critical', 'Packet must declare the internal Q17 contract.');
   }
+  validateSourceHiddenWriteBoundary('packet', packet, add);
 
   const artifacts = new Map();
   for (const name of ['baseline', 'current']) {
@@ -78,7 +79,7 @@ export function evaluateQ17Qualification(packet) {
   }
   for (const [name, artifact] of artifacts) {
     validateCitationAudit(name, packet.citationAudit?.[name], artifact, add);
-    validateSourceHidden(name, packet.sourceHidden?.[name], artifact, add);
+    validateSourceHidden(name, packet.sourceHiddenEvidence?.[name], artifact, add);
   }
   validateMetrics(packet.metrics, artifacts, add);
 
@@ -346,6 +347,7 @@ function validateSourceHidden(name, summary, artifact, add) {
     add('source_hidden', 'missing-source-hidden-summary', 'critical', `${name} has no source-hidden summary.`, name);
     return;
   }
+  validateSourceHiddenWriteBoundary(name, summary, add);
   if (containsPrivatePath(summary)) {
     add('source_hidden', 'source-hidden-private-path', 'critical', `${name} source-hidden packet leaks a clone or private absolute path.`, name);
   }
@@ -390,6 +392,22 @@ function validateSourceHidden(name, summary, artifact, add) {
       subject: 'source-hidden claim coverage',
       add,
     });
+  }
+}
+
+function validateSourceHiddenWriteBoundary(name, value, add) {
+  if (name === 'packet') {
+    if (value.sourceHidden !== true) {
+      add('source_hidden', 'source-hidden-packet-boundary', 'critical', 'Q17 packet must explicitly declare sourceHidden=true.');
+    }
+    if (value.canWrite !== false) {
+      add('source_hidden', 'source-hidden-packet-can-write', 'critical', 'Q17 packet must explicitly declare canWrite=false.');
+    }
+  } else if (value.canWrite !== false) {
+    add('source_hidden', 'source-hidden-can-write', 'critical', `${name} source-hidden evidence must explicitly remain non-writing.`, name);
+  }
+  if (Object.hasOwn(value, 'writePlan')) {
+    add('source_hidden', name === 'packet' ? 'source-hidden-packet-write-plan-present' : 'source-hidden-write-plan-present', 'critical', `${name} source-hidden evidence must not expose writePlan.`, name === 'packet' ? null : name);
   }
 }
 

@@ -744,6 +744,10 @@ await test("tools/list — 단일 도구 description 이 batch 짝을 cross-refe
     assert.equal(analyzeMeaningGate?.properties?.implementationEvidence?.properties?.elements?.items?.type, "string");
     assert.equal(analyzeMeaningGate?.properties?.implementationEvidence?.properties?.reviewRequiredCapabilities?.items?.additionalProperties, false);
     assert.deepEqual(analyzeMeaningGate?.properties?.implementationEvidence?.properties?.reviewRequiredCapabilities?.items?.required, ["slug", "reason", "evidence"]);
+    assert.ok(
+      analyzeRepo?.outputSchema?.properties?.semanticEvidence?.items?.properties?.role?.enum?.includes("package-contract"),
+      "semantic evidence schema must admit the package-contract role emitted by analysis",
+    );
     assert.deepEqual(analyzeRepo?.outputSchema?.properties?.suggestedRelations?.items?.required, ["from", "to", "type"]);
     assert.equal(analyzeRepo?.outputSchema?.properties?.suggestedRelations?.items?.additionalProperties, false);
     const inferImports = findTool("infer_imports");
@@ -2297,7 +2301,19 @@ await test("analyze_repo_structure — bootstrap candidates expose structuredCon
     const result = getCallParsed(responses, 2);
     assert.deepEqual(getCallStructured(responses, 2), result);
     assert.equal(result.framework, "fsd");
-    assert.deepEqual(result.project, { slug: "sample-app", title: "Sample App" });
+    assert.deepEqual(result.project, {
+      slug: "sample-app",
+      title: "Sample App",
+      definition: "Proposed repository purpose from README.md: Login flows.",
+      evidence: ["README.md"],
+      includes: ["repository-contained implementation evidence"],
+      excludes: [
+        "shared business ownership is not established by repository evidence",
+        "runtime, test, and external-system behavior remain outside this bounded scan",
+      ],
+      confidence: 0.5,
+      uncertainty: "proposal-only: source prose is a bounded purpose witness, not a shared business assertion",
+    });
     assert.ok(result.domains.some((domain) => domain.slug === "domains/auth"));
     assert.ok(result.capabilities.some((capability) => capability.slug === "capabilities/auth"));
     assert.ok(result.suggestedRelations.some((relation) => relation.from === "domains/auth" && relation.to === "capabilities/auth" && relation.type === "contains"));
@@ -3268,7 +3284,7 @@ await test("index_project — repo analysis, import indexing, and vault validati
       sampleAmbiguousSlugs: [],
       sampleNewSlugs: ["capabilities/auth", "capabilities/billing", "domains/auth"],
     });
-    assert.equal(result.plan.suggestedRelations, 3);
+    assert.equal(result.plan.suggestedRelations, 4);
     assert.ok(result.plan.importRelations >= 1);
     assert.equal(result.meaningGate.policy, "business-first");
     assert.equal(result.meaningGate.sourceStructureRole, "implementation-evidence");
@@ -3367,6 +3383,15 @@ await test("index_project — Python package and import boundaries reach the pub
     assert.deepEqual(result.analyze.project, {
       slug: "protocol-client",
       title: "Protocol Client",
+      definition: "Proposed repository purpose from README.rst: A standardized diagnostic protocol client.",
+      evidence: ["README.rst"],
+      includes: ["repository-contained implementation evidence"],
+      excludes: [
+        "shared business ownership is not established by repository evidence",
+        "runtime, test, and external-system behavior remain outside this bounded scan",
+      ],
+      confidence: 0.5,
+      uncertainty: "proposal-only: source prose is a bounded purpose witness, not a shared business assertion",
     });
     assert.equal(result.analyze.elements, 5);
     assert.equal(result.plan.concepts, 6);

@@ -262,6 +262,36 @@ test('source/ top-level coordinators and helper files stay implementation elemen
   }
 });
 
+test('generic lib source folders collapse to implementation elements rather than business capabilities', () => {
+  const root = withRepo((r) => {
+    mkdirSync(join(r, 'lib', 'format'), { recursive: true });
+    mkdirSync(join(r, 'lib', 'parse'), { recursive: true });
+    writeFileSync(join(r, 'lib', 'format', 'index.js'), 'export const format = true;\n');
+    writeFileSync(
+      join(r, 'lib', 'parse', 'index.js'),
+      'import { format } from "../format/index.js";\nexport const parse = format;\n',
+    );
+  });
+  try {
+    const result = inferImports(root);
+
+    assert.ok(
+      result.moduleEdges.some(
+        (edge) => edge.from === 'elements/parse' && edge.to === 'elements/format',
+      ),
+      `generic lib import was not retained as implementation evidence: ${JSON.stringify(result.moduleEdges)}`,
+    );
+    assert.equal(
+      result.moduleEdges.some(
+        (edge) => edge.from.startsWith('capabilities/') || edge.to.startsWith('capabilities/'),
+      ),
+      false,
+    );
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
 test('non-source assets never become ontology module endpoints', () => {
   const root = withRepo((r) => {
     mkdirSync(join(r, 'source', 'features'), { recursive: true });
