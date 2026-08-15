@@ -81,6 +81,8 @@ const PALETTE_ROOT_PATTERN =
 const PRIMITIVE_EXPORT_FILES = new Set([
   'src/shared/ui/controls.tsx',
   'src/shared/ui/surface.tsx',
+  // 2026-08-15 「체계」석 비준으로 신설된 모달 정본 — 무엇을 내보내느냐가 계약.
+  'src/shared/ui/dialog.tsx',
 ]);
 
 /**

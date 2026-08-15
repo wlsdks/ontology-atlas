@@ -2620,17 +2620,13 @@ function DocsVaultContent() {
         ) : null}
       </AnimatePresence>
 
-      {/* rank2 — NewDocKindDialog 가 framer motion 진입/퇴장 스프링을 쓰므로
-          AnimatePresence 로 감싸야 닫힘 시 퇴장 애니메이션이 끝까지 재생된
-          뒤 언마운트된다(그냥 조건부 렌더면 즉시 사라짐). */}
-      <AnimatePresence>
-        {newDocKindDialogOpen ? (
-          <NewDocKindDialog
-            onSelect={(kind) => void handleCreateNewDocWithKind(kind)}
-            onClose={() => setNewDocKindDialogOpen(false)}
-          />
-        ) : null}
-      </AnimatePresence>
+      {/* 모달 골격(등장·퇴장 presence 포함)은 Dialog 프리미티브가 소유한다 —
+          호출부는 open 만 넘긴다 (2026-08-15 체계석 비준). */}
+      <NewDocKindDialog
+        open={newDocKindDialogOpen}
+        onSelect={(kind) => void handleCreateNewDocWithKind(kind)}
+        onClose={() => setNewDocKindDialogOpen(false)}
+      />
 
       {/* design-council B2 rank4 — 비차단 근접 중복 경고. 화면을 덮지 않는
           하단 고정 칩(scrim/backdrop 없음) — 뒤 콘텐츠 상호작용을 막지

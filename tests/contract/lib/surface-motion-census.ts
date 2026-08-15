@@ -74,6 +74,9 @@ export const MOTION_MECHANISMS = [
   'usePanelPresence',
   'useSurfaceSwap',
   '<Surface',
+  // Dialog 는 내부에 AnimatePresence 를 품은 모달 프리미티브다 — 조건부로
+  // 마운트돼도 등장·퇴장을 스스로 진다 (2026-08-15 체계석 비준, dialog.tsx).
+  '<Dialog',
   'animate-out',
   'data-[state=closed]',
 ];

@@ -12192,3 +12192,46 @@ JS/CSS 산출물이 하나도 없는데 통과하거나, release preflight가 �
 **상태**: 유효 · 게이트 경계 재정의
 
 ---
+
+## 2026-08-15 — 모달성은 프리미티브가 소유한다: Dialog 신설 · 폭 2단 · 채택 래칫
+
+부품 완전성 감사가 최대 공백으로 모달을 지목했고, 「체계」석 소집 실측이
+전제를 더 어둡게 정정했다: `role="dialog"` 26곳/23파일에서 스크림 토큰
+**5갈래** + 무스크림 aria-modal 2곳(ProjectDrawer 는 modal-without-modality
+현행범) · 폭 하드코딩 **8종**(360~576) · z 하드코딩(z-50 12곳/z-40 3곳) ·
+aria-modal 선언 대비 트랩 실재 8/20. 행동 훅(`use-dialog-focus-trap` ·
+`use-body-scroll-lock`)과 `transientSurface("sheet")` 규약은 이미 있었다 —
+없던 것은 자동으로 입혀 주는 자리다(Surface 하드컷 사고와 같은 병).
+
+**결정** (체계석 비준): `src/shared/ui/dialog.tsx` 에 `Dialog` 신설. 캐노니컬
+토큰 — 스크림 `--overlay-scrim`(컨테이너-겸-스크림, z 층 하나) · z
+`--z-dialog` · 표면 `--color-panel` · 보더 `--color-divider` · 반경
+`rounded-panel` · 그림자 `--shadow-elevation-3` · 폭 `--dialog-w-sm`(420,
+신설)/`-md`(560, 기존). **`modal={false}` 없음** — 비모달은 Surface 의
+소비자다(WAI-ARIA APG: 모달 패턴은 트랩·aria-modal·Esc·복귀 한 벌; opt-out
+스위치는 계약의 구멍). v1 은 center 변형만 — sheet/edge/palette 는 각자 첫
+소비자가 이주하는 PR 에서 등재한다(소비자 없는 선택지를 미리 만드는 것이
+컨트롤 높이 8~9종 사고의 원인). 첫 소비자 3파일(NewDocKindDialog ·
+StudioMaterializeDialog · StudioPracticeCleanup — 전부 0.85 스크림 진영이라
+스크림 시각 변화 0) 이주. 게이트: `dialog-adoption-ratchet.contract.test.ts`
+전수 워킹 래칫(등재 2파일/근거 명기 · 부채 17파일, 새 파일은 첫날부터 0) +
+`dialog.test.tsx` 모달성 계약. 문서의 유령 `--dialog-w-lg: 720` 삭제.
+
+**기록된 반대 (조건으로 수용)**: ⓐ 변형별 첫 소비자의 responsive-sweep
+실측 없이 머지 불가 — 이 PR 에서 center 를 390/768/1280 실측. ⓑ 스크림 값
+수렴(0.6→0.85, 7파일)은 위계석 시각 승인 후 별도 라운드. ⓒ 모션 문법
+통일(Surface CSS 키프레임 vs framer OVERLAY_SPRING)은 모션석 공동 서명
+대상이라 v1 은 현직 다수파(framer)를 그대로 계승 — 문법 교체를 이 PR 에
+싣지 않는다.
+
+**반증**: ① 새 모달이 래칫을 우회해(Radix 합성 등 스캐너 시야 밖 문법)
+프리미티브 없이 늘어나는 것이 관측되면 스캐너 사정거리를 넓힌다. ② center
+2단(420/560)으로 덮이지 않는 정당한 폭 요구가 두 번째로 나타나면 단을
+등재한다(첫 번째는 예외 신청이 아니라 기존 단으로 수렴을 먼저 시도).
+③ `initialFocus="none"` 소비자가 초점을 아무 데도 안 주는 사고가 관측되면
+none 을 지우고 ref 기반 initialFocus 로 바꾼다.
+
+**서명 (accountable)**: jinan
+**상태**: 유효 · v1 center — sheet/edge/palette 는 후속 라운드
+
+---

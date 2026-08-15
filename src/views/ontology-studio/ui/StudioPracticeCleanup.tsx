@@ -1,12 +1,10 @@
 "use client";
 
 import { useEffect, useRef } from "react";
-import { motion, useReducedMotion } from "framer-motion";
 import { FileText, Sparkles } from "lucide-react";
 import { ICON_SIZE } from "@/shared/ui/icon-size";
-import { OVERLAY_SPRING, OVERLAY_SPRING_REDUCED, SCRIM_FADE, SCRIM_FADE_REDUCED } from "@/shared/motion";
 import type { PracticeCleanupPlan } from "../lib/studio-practice-guide";
-import { controlClass } from "@/shared/ui";
+import { Dialog, controlClass } from "@/shared/ui";
 
 /**
  * 실습 마무리 — **"이거 지울까요?"** 를 묻는 자리.
@@ -30,8 +28,12 @@ import { controlClass } from "@/shared/ui";
  * 손으로 해 본 직후다 — 해 보기 전에 말하면 광고문이고, 해 본 뒤에 말하면
  * 안도다. 그래서 이 문장은 첫 화면이 아니라 마지막 화면에 있다.
  *
- * 진짜 모달 — `--overlay-scrim` 백드롭, Tab 트랩, Esc 닫기(= 남겨 두기),
- * 트리거로 포커스 복귀. 헌장 준수: 무채색 + 단일 인디고, glow/particle 없음.
+ * 모달 골격은 `Dialog` 가 소유한다 (2026-08-15 체계석 비준의 첫 소비자).
+ * 이 화면의 고유 판단만 여기 남는다: ① 기본 초점은 파괴적 행동이 아니라
+ * 「남겨 두기」(`initialFocus="none"` + 자체 effect — Enter 한 번에 지워지면
+ * 질문이 아니라 함정이다) ② 닫기(Esc·스크림 클릭)는 남겨 두기와 같고, 삭제가
+ * 도는 동안(busy)은 닫기도 잠근다 — 닫아도 삭제는 계속되므로 뜻과 결과가
+ * 어긋난다.
  */
 export interface StudioPracticeCleanupLabels {
   title: string;
@@ -75,98 +77,47 @@ export function StudioPracticeCleanup({
   onKeep: () => void;
   onAgentAction: (() => void) | null;
 }) {
-  const cardRef = useRef<HTMLDivElement>(null);
   const keepRef = useRef<HTMLButtonElement>(null);
-  const previousFocusRef = useRef<HTMLElement | null>(null);
-  const reducedMotion = useReducedMotion();
 
   useEffect(() => {
-    previousFocusRef.current = document.activeElement as HTMLElement | null;
     // 파괴적 행동에 기본 포커스를 주지 않는다 — Enter 한 번에 지워지면
     // 그건 질문이 아니라 함정이다.
     keepRef.current?.focus({ preventScroll: true });
-    return () => {
-      previousFocusRef.current?.focus?.({ preventScroll: true });
-    };
   }, []);
 
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") {
-        e.stopPropagation();
-        // 삭제가 도는 중이면 Esc 는 아무것도 안 한다. 닫아도 삭제는 계속되므로,
-        // 「남겨 두기」의 뜻과 실제 결과가 어긋난다 — 버튼은 이미 `busy` 로
-        // 잠가 두고 키보드만 열어 두면 그 잠금이 반쪽이다.
-        if (busy) return;
-        // Esc = 남겨 두기. 취소가 파괴 쪽으로 떨어지면 안 된다.
-        onKeep();
-        return;
-      }
-      if (e.key !== "Tab") return;
-      const card = cardRef.current;
-      if (!card) return;
-      const items = Array.from(
-        card.querySelectorAll<HTMLElement>(
-          'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])',
-        ),
-      ).filter((el) => !el.hasAttribute("disabled"));
-      if (items.length === 0) return;
-      const first = items[0];
-      const last = items[items.length - 1];
-      const active = document.activeElement;
-      if (!(active instanceof HTMLElement) || !card.contains(active)) {
-        e.preventDefault();
-        (e.shiftKey ? last : first).focus();
-        return;
-      }
-      if (e.shiftKey ? active === first : active === last) {
-        e.preventDefault();
-        (e.shiftKey ? last : first).focus();
-      }
-    };
-    window.addEventListener("keydown", onKey, true);
-    return () => window.removeEventListener("keydown", onKey, true);
-  }, [onKeep, busy]);
-
   return (
-    <motion.div
-      data-testid="studio-practice-cleanup"
-      data-overlay-spring="true"
-      role="dialog"
-      aria-modal="true"
+    <Dialog
+      open
+      onClose={() => {
+        if (busy) return;
+        // 닫기 = 남겨 두기. 취소가 파괴 쪽으로 떨어지면 안 된다.
+        onKeep();
+      }}
       aria-label={labels.dialogAria}
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      transition={reducedMotion ? SCRIM_FADE_REDUCED : SCRIM_FADE}
-      className="fixed inset-0 z-[var(--z-dialog)] flex items-center justify-center bg-[color:var(--overlay-scrim)] px-6"
+      initialFocus="none"
+      testId="studio-practice-cleanup"
+      className="flex flex-col overflow-hidden p-0"
     >
-      <motion.div
-        ref={cardRef}
-        initial={{ opacity: 0, y: 8 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={reducedMotion ? OVERLAY_SPRING_REDUCED : OVERLAY_SPRING}
-        className="flex w-[440px] max-w-full flex-col overflow-hidden rounded-panel border border-[color:var(--color-border-strong)] bg-[color:var(--color-elevated)] shadow-[var(--shadow-elevation-3)]"
-      >
-        <div className="border-b border-[color:var(--color-divider)] px-5 py-3">
-          <h2 className="text-body-lg tracking-body-lg font-[var(--font-weight-strong)] text-[color:var(--color-text-primary)] [word-break:keep-all]">
-            {labels.title}
-          </h2>
-        </div>
+      <div className="border-b border-[color:var(--color-divider)] px-5 py-3">
+        <h2 className="text-body-lg tracking-body-lg font-[var(--font-weight-strong)] text-[color:var(--color-text-primary)] [word-break:keep-all]">
+          {labels.title}
+        </h2>
+      </div>
 
-        <div className="flex flex-col gap-3 px-5 py-4">
-          <p className="text-body tracking-body leading-body text-[color:var(--color-text-secondary)] [word-break:keep-all]">
-            {labels.summary}
-          </p>
+      <div className="flex flex-col gap-3 px-5 py-4">
+        <p className="text-body tracking-body leading-body text-[color:var(--color-text-secondary)] [word-break:keep-all]">
+          {labels.summary}
+        </p>
 
-          {/* 무엇이 사라지는지 파일 이름으로 말한다 — "정리합니다" 같은
-              동사만으로는 사용자가 무엇을 승인하는지 알 수 없다. */}
-          {outcome === "written" ? (
+        {/* 무엇이 사라지는지 파일 이름으로 말한다 — "정리합니다" 같은
+            동사만으로는 사용자가 무엇을 승인하는지 알 수 없다. */}
+        {outcome === "written" ? (
           <ul className="flex flex-col gap-1.5">
             {plan.deleteSlugs.map((slug) => (
               <li
                 key={slug}
                 data-testid="studio-practice-delete-row"
-                className="flex items-center gap-2 rounded-card border border-[color:var(--color-divider)] bg-[color:var(--color-panel)] px-3 py-2"
+                className="flex items-center gap-2 rounded-card border border-[color:var(--color-divider)] bg-[color:var(--color-overlay-1)] px-3 py-2"
               >
                 <FileText size={ICON_SIZE.md} aria-hidden className="flex-none text-[color:var(--color-text-tertiary)]" />
                 <span
@@ -180,7 +131,7 @@ export function StudioPracticeCleanup({
             {plan.detach ? (
               <li
                 data-testid="studio-practice-detach-row"
-                className="flex items-center gap-2 rounded-card border border-[color:var(--color-divider)] bg-[color:var(--color-panel)] px-3 py-2"
+                className="flex items-center gap-2 rounded-card border border-[color:var(--color-divider)] bg-[color:var(--color-overlay-1)] px-3 py-2"
               >
                 <FileText size={ICON_SIZE.md} aria-hidden className="flex-none text-[color:var(--color-text-tertiary)]" />
                 <span
@@ -195,15 +146,15 @@ export function StudioPracticeCleanup({
               </li>
             ) : null}
           </ul>
-          ) : null}
+        ) : null}
 
-          <p className="text-body tracking-body leading-body text-[color:var(--color-text-secondary)] [word-break:keep-all]">
-            {labels.question}
-          </p>
-        </div>
+        <p className="text-body tracking-body leading-body text-[color:var(--color-text-secondary)] [word-break:keep-all]">
+          {labels.question}
+        </p>
+      </div>
 
-        <div className="flex gap-2 border-t border-[color:var(--color-divider)] px-5 py-3">
-          {outcome === "written" ? (
+      <div className="flex gap-2 border-t border-[color:var(--color-divider)] px-5 py-3">
+        {outcome === "written" ? (
           <button
             type="button"
             data-testid="studio-practice-delete"
@@ -213,45 +164,44 @@ export function StudioPracticeCleanup({
           >
             {labels.deleteLabel}
           </button>
-          ) : null}
-          <button
-            ref={keepRef}
-            type="button"
-            data-testid="studio-practice-keep"
-            disabled={busy}
-            onClick={onKeep}
-            className={controlClass({ shape: "chip", tone: "accentOnTint", className: "flex h-8 min-h-[var(--overlay-close-size)] flex-1 justify-center border-[color:var(--color-indigo-line-a45)] bg-[color:var(--color-indigo-a16)] text-body tracking-body font-[var(--font-weight-emphasis)] hover:bg-[color:var(--color-indigo-a24)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a46)] focus-visible:ring-inset" })}
-          >
-            {labels.keepLabel}
-          </button>
-        </div>
+        ) : null}
+        <button
+          ref={keepRef}
+          type="button"
+          data-testid="studio-practice-keep"
+          disabled={busy}
+          onClick={onKeep}
+          className={controlClass({ shape: "chip", tone: "accentOnTint", className: "flex h-8 min-h-[var(--overlay-close-size)] flex-1 justify-center border-[color:var(--color-indigo-line-a45)] bg-[color:var(--color-indigo-a16)] text-body tracking-body font-[var(--font-weight-emphasis)] hover:bg-[color:var(--color-indigo-a24)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a46)] focus-visible:ring-inset" })}
+        >
+          {labels.keepLabel}
+        </button>
+      </div>
 
-        {/* 해 본 직후에만 성립하는 문장. 첫 화면에 있으면 광고문이다. */}
-        <div className="flex items-start gap-2 border-t border-[color:var(--color-divider)] bg-[color:var(--color-panel)] px-5 py-3">
-          <Sparkles size={ICON_SIZE.md} aria-hidden className="mt-0.5 flex-none text-[color:var(--color-text-tertiary)]" />
-          <p className="min-w-0 flex-1 text-body leading-body text-[color:var(--color-text-tertiary)] [word-break:keep-all]">
-            {labels.agentHint}
-            {onAgentAction && labels.agentAction ? (
-              <>
-                {" "}
-                <button
-                  type="button"
-                  data-testid="studio-practice-agent"
-                  onClick={onAgentAction}
-                  className={controlClass({
-            shape: "link",
-            tone: "accent",
-            className:
-              "font-[var(--font-weight-signature)] underline underline-offset-2 hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a46)]",
-          })}
-                >
-                  {labels.agentAction}
-                </button>
-              </>
-            ) : null}
-          </p>
-        </div>
-      </motion.div>
-    </motion.div>
+      {/* 해 본 직후에만 성립하는 문장. 첫 화면에 있으면 광고문이다. */}
+      <div className="flex items-start gap-2 border-t border-[color:var(--color-divider)] bg-[color:var(--color-overlay-1)] px-5 py-3">
+        <Sparkles size={ICON_SIZE.md} aria-hidden className="mt-0.5 flex-none text-[color:var(--color-text-tertiary)]" />
+        <p className="min-w-0 flex-1 text-body leading-body text-[color:var(--color-text-tertiary)] [word-break:keep-all]">
+          {labels.agentHint}
+          {onAgentAction && labels.agentAction ? (
+            <>
+              {" "}
+              <button
+                type="button"
+                data-testid="studio-practice-agent"
+                onClick={onAgentAction}
+                className={controlClass({
+                  shape: "link",
+                  tone: "accent",
+                  className:
+                    "font-[var(--font-weight-signature)] underline underline-offset-2 hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a46)]",
+                })}
+              >
+                {labels.agentAction}
+              </button>
+            </>
+          ) : null}
+        </p>
+      </div>
+    </Dialog>
   );
 }

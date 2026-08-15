@@ -118,12 +118,18 @@ description: Build a screen from this repo's design system deterministically —
 애니메이션 클래스 · 사라지는 동안 클릭과 포커스를 막는 `inert` +
 `pointer-events-none` · 다 사라진 뒤 한 번 알려 주는 콜백.
 
-**모달이면 지켜야 할 것이 더 있다** — `design.md` 가 「이게 정말 모달인지」를
-증명하라고 요구한다: 뒤를 덮는 막(scrim)이 있거나 뒤쪽 조작이 막혀 있을 것 ·
-`role="dialog"` + `aria-modal` · Esc 로 닫힐 것 · 열릴 때 포커스가 **사용자가
-다음에 할 행동**에 가 있을 것 · 닫힐 때 열었던 버튼으로 포커스가 돌아올 것.
-뼈대를 새로 짜지 말고 `AgentConnectSheet` 또는 `RecentChangesNeedsVaultDialog`
-를 그대로 따른다.
+**모달이면 `<Surface>` 가 아니라 `<Dialog>` 다** (2026-08-15 체계석 비준).
+`design.md` 가 요구하는 모달성 증명 — 뒤를 덮는 막 · `role="dialog"` +
+`aria-modal` · Esc · 트랩 · 포커스 복귀 · 스크롤락 — 이 전부 기본으로 딸려
+온다:
+
+```tsx
+<Dialog open={open} onClose={close} labelledBy="my-title" size="sm">…</Dialog>
+```
+
+뼈대를 손으로 짜면 게이트가 막는다(`dialog-adoption-ratchet` — 프리미티브 밖
+`role="dialog"` 마크업은 장부를 넘지 못한다). 비모달 표면(뒤가 살아 있어야
+하는 패널·팝오버)만 `<Surface>` 로 남는다.
 
 **화면 한가운데서 튀어나오는 팝오버는 반려 사유다.** 누른 버튼 쪽에서 열리도록
 `origin` 에 방향을 준다.
