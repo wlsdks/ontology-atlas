@@ -3053,6 +3053,60 @@ test('generic narrative capability clues work without structural capability fold
   }
 });
 
+test('internal implementation roots preserve nested evidence and can support a bounded build-tooling proposal', () => {
+  const root = withRepo((r) => {
+    writeFileSync(join(r, 'package.json'), JSON.stringify({ name: 'large-build-system' }));
+    writeFileSync(
+      join(r, 'README.md'),
+      '# Large Build System\n\nThis is a web bundler project for compiling JavaScript applications.\n',
+    );
+    mkdirSync(join(r, 'internal', 'bundler'), { recursive: true });
+    writeFileSync(join(r, 'internal', 'bundler', 'index.js'), 'export const bundle = () => true;\n');
+    mkdirSync(join(r, 'internal', 'scheduler'), { recursive: true });
+  });
+  try {
+    const result = analyzeRepoStructure(root);
+    assert.deepEqual(result.capabilities, []);
+    assert.deepEqual(
+      result.elements.map((row) => [row.slug, row.path]),
+      [
+        ['elements/bundler', 'internal/bundler'],
+        ['elements/scheduler', 'internal/scheduler'],
+      ],
+    );
+    const proposal = result.meaningGate.proposedBusinessOntology.capabilities.find(
+      (row) => row.slug === 'capabilities/build-tooling',
+    );
+    assert.ok(proposal);
+    assert.deepEqual(proposal.evidence, {
+      source: 'README.md',
+      implementation: 'internal/bundler',
+    });
+    assert.ok(result.meaningGate.implementationEvidence.elements.includes('elements/bundler'));
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test('internal implementation evidence stays evidence-only without narrative qualification', () => {
+  const root = withRepo((r) => {
+    writeFileSync(join(r, 'README.md'), '# Large Build System\n\n## Bundler\n');
+    mkdirSync(join(r, 'internal', 'bundler'), { recursive: true });
+    writeFileSync(join(r, 'internal', 'bundler', 'index.js'), 'export const bundle = () => true;\n');
+  });
+  try {
+    const result = analyzeRepoStructure(root);
+    assert.deepEqual(result.capabilities, []);
+    assert.deepEqual(
+      result.meaningGate.proposedBusinessOntology.capabilities,
+      [],
+    );
+    assert.deepEqual(result.elements.map((row) => row.path), ['internal/bundler']);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
 test('semantic evidence remains a reusable candidate body citation with explicit visible gaps', () => {
   const root = withRepo((r) => {
     writeFileSync(join(r, 'package.json'), JSON.stringify({ name: 'merchant-app' }));
