@@ -40,6 +40,67 @@
 **상태**: 유효 / 뒤집힘(→ 링크) / 반증됨(관측: …)
 ```
 
+## 2026-08-15 (20) — 첫 held-out trial은 자격 미충족에서 정확히 멈춘다
+
+**소집**: 단독 field-trial pass + Sol xhigh 검토 · **트리거**: source-hidden
+qualification 경계와 persisted handoff의 실제 실행 증거가 필요함
+**루브릭**: 21/24 (치명적 0: 없음)
+**관찰**: 세 개의 낯선 저장소에 대한 candidate packet은 JSON 왕복·digest·foreign/
+truncated/source-hidden/writePlan 변이 거부를 모두 통과했지만, starter vault를 만든
+builder는 semantic write 0회에서 `canWrite:false`로 멈췄다. 정확한 `index <repo>
+--vault <vault>` 경로 검사도 `problemFiles:0`, `pathDrift:0`을 확인했다. persisted
+source-hidden evaluator는 vault만 읽어 5개 full body를 확인했고 Q1~Q5는 `missing`,
+Q6는 `weak`, `setup_failure:true`로 보고했다.
+**결정**: 이 실행은 안전한 no-write·setup-failure 증거로 채택한다. 의미 품질이
+향상됐거나 4단계 semantic trial을 통과했다고 주장하지 않으며, 기존 baseline은
+갱신하지 않는다. 다음 실제 trial은 qualification과 명시적 exact-plan acceptance를
+충족한 populated vault에서만 Phase 2~4를 측정한다.
+**적용 규칙**: starter/template node는 실제 business meaning·evidence·impact의
+대체물이 아니다. source-hidden evaluator는 `/private/tmp`의 vault 외 root를 읽지
+않고, full-body read 수·질문별 missing/weak/conflict를 보존한다.
+**서명**: 소유자 요청에 따라 집행
+
+**기록된 반대**: candidate proposal이 이미 충분한 path와 README 의미를 가지므로
+테스트용으로 write를 진행해 persisted handoff까지 측정하자는 의견
+**반증 조건**: 동일한 source-hidden·qualification·acceptance 경계 안에서 실제
+populated vault가 만들어지고, 그 뒤 persisted 답변과 claim audit가 baseline보다
+나아지는 관측이 나올 때 이 보류 결정을 갱신한다.
+**재검토**: 명시적 qualification과 exact-plan acceptance가 있는 다음 held-out trial
+직후
+**상태**: 유효
+
+## 2026-08-15 (19) — source-hidden 실패는 승인 가능한 visible gap이 아니다
+
+**소집**: 단독 PO pass + Sol xhigh 설계 검토 · **트리거**: source-hidden field
+trial의 mutation probe에서 `sourceHiddenTask.status:"failed"`를 `axis:pragmatic`
+gap으로 분류하고 사람 acceptance를 붙이면 `qualificationStatus:"not_qualified"`인
+상태에서도 `writeEligibility:"executable"`과 `writePlan`이 반환되는 fail-open이
+재현됨
+**루브릭**: 22/24 (치명적 0: 없음)
+**관찰**: `not_measured`만 hard block하고 `failed`/`unknown`은 gap acceptance 경로에
+남아 있었음. independent source-hidden은 의미 handoff의 필수 증거이므로 실패한
+평가를 측정된 기능 공백처럼 허용하면 source를 잃은 에이전트의 잘못된 결론이 write
+경계까지 도달한다.
+**결정**: `sourceHiddenTask.status`가 정확히 `passed`가 아니면 lifecycle은
+`source-hidden-task-not-passed` diagnostic과 hard-block을 반환하고, 어떤 accepted
+gap도 `writePlan`을 열 수 없게 한다. 기존 사람 승인·digest binding·no-write는
+그대로 유지한다.
+**적용 규칙**: `failed`·`unknown`은 partial visible gap이 아니라 재평가가 필요한
+독립성/근거 실패다. `not_measured`의 기존 diagnostic도 유지한다. 새 tool·field·UI·
+writer·aggregate score는 만들지 않는다.
+**서명**: 소유자 요청에 따라 집행
+
+**기록된 반대**: pragmatic/functional gap을 사람이 명시적으로 수용하면 일부
+사용자는 계속 검토 가능한 plan을 원할 수 있으므로 source-hidden 실패도 같은
+경로로 볼 수 있다는 의견
+**반증 조건**: source-hidden 실패 packet이 source를 보지 않은 evaluator의 답을
+정확히 보존하면서도 independent handoff 품질을 낮추지 않고, 별도 평가에서
+write eligibility를 안전하게 열어도 된다는 재현 가능한 관측이 나올 때만 재검토한다.
+현재 probe는 반대로 실패 packet에서 writePlan이 열리는 위험을 확인했다.
+**재검토**: 다음 세 held-out trial에서 source-hidden `passed`/`failed`/`unknown` 변이와
+accepted gap matrix를 다시 실행한 직후
+**상태**: 유효
+
 ## 2026-08-15 (17) — analyzer가 이미 내보내는 proposal 근거의 계약을 정렬한다
 
 **소집**: 단독 패스 + Sol xhigh 설계 검토 · **트리거**: held-out 재감사에서

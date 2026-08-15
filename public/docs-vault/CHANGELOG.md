@@ -7,6 +7,13 @@
 
 ---
 
+## 2026-08-15 · source-hidden 실패가 write 경계를 우회하지 않는다
+
+- 독립 source-hidden 평가가 `failed` 또는 `unknown`이면, 사람이 gap을 수용해도
+  construction lifecycle은 hard-block으로 남고 `writePlan`을 내놓지 않는다.
+- `not_measured` 차단과 digest-bound human approval은 그대로 유지하며, 회귀 테스트가
+  실패/미측정 handoff의 write 우회를 직접 검출한다.
+
 ## 2026-08-13 · 최초 온톨로지 생성은 구조 무결성과 의미 승인을 통과해야 한다
 
 - malformed frontmatter 선언과 부모 없는 목록 항목을 공통 parser 진단으로 보존하고,
