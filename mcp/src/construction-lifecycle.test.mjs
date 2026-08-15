@@ -333,6 +333,30 @@ test('only independently measured functional or pragmatic gaps can be accepted w
   assert.deepEqual(result.writePlan, reviewPlan);
 });
 
+test('failed or unknown source-hidden evidence cannot be laundered into a writable gap', () => {
+  for (const status of ['failed', 'unknown']) {
+    const packet = qualification();
+    packet.sourceHiddenTask.status = status;
+    packet.axisResults.find(({ axis }) => axis === 'pragmatic').status = 'failed';
+    packet.axisResults.find(({ axis }) => axis === 'pragmatic').findingIds = ['gap:source-hidden'];
+    packet.diagnostics.push({
+      id: 'gap:source-hidden',
+      axis: 'pragmatic',
+      category: 'evidence',
+      message: `Source-hidden task is ${status}.`,
+      evidenceRefs: ['w:source-hidden-task'],
+    });
+    packet.acceptance.acceptedGapIds = ['axis:pragmatic'];
+
+    const result = evaluate(packet);
+
+    assert.equal(result.writeEligibility, 'blocked', status);
+    assert.equal(result.writePlan, undefined, status);
+    assert.equal(result.admission.tier, 'hard_block', status);
+    assert.ok(result.diagnostics.some(({ code }) => code === 'source-hidden-task-not-passed'), status);
+  }
+});
+
 test('unaccepted gaps and mandatory-axis regressions withhold the write plan', () => {
   const unaccepted = qualification();
   unaccepted.cqResults[0].status = 'partial';
