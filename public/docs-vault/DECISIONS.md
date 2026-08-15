@@ -69,6 +69,37 @@ join이 실제 handoff 실패를 만든다는 관측
 **재검토**: 세 trial의 scratch tracer 재실행 직후
 **상태**: 유효
 
+## 2026-08-15 (18) — library product prose can seed a proposal-only request capability
+
+**소집**: 단독 패스 · **트리거**: semantic/evidence calibration에서 generic `lib/`
+기반 library는 HTTP client라는 trusted product/package prose와 구현 element를
+가지고도 capability 후보가 0개라 q3가 `missing`으로 남음
+**루브릭**: 20/24 (치명적 0: 없음)
+**관찰**: bounded narrative matcher는 structural capability folder가 없어도
+proposal-only 후보를 만들 수 있었지만, request/client 의미와 `adapter`·`dispatcher`·
+`handler` 같은 구현 witness를 연결하는 clue가 없었다. 보강 후 held-out library
+두 건에서 `capabilities/request-client`가 각각 product/docs 또는 package contract와
+구현 path에 묶여 생성되고, H2처럼 구현 root가 관측되지 않는 경우에는 후보를
+발명하지 않았다.
+**결정**: 기존 `GENERIC_NARRATIVE_CAPABILITY_CLUES`에 vendor-neutral HTTP request
+client clue를 추가한다. trusted sentence와 repository-relative element path가 둘 다
+있을 때만 기존 `proposedBusinessOntology.capabilities`에 proposal-only로 노출한다.
+새 field/tool/UI/writer/aggregate score/자동 승격은 만들지 않는다.
+**적용 규칙**: heading-only, risk-marked prose, element path 부재는 후보를 만들지
+않는다. 후보의 definition/evidence/confidence/uncertainty와 human approval/no-write
+경계를 유지한다. source-hidden evaluator가 이를 accepted business fact로 읽으면
+후보 규칙을 즉시 좁히고 persisted evidence를 요구한다.
+**서명**: 소유자 요청에 따라 집행
+
+**기록된 반대**: HTTP/client 어휘가 들어간 문서와 adapter-like path만으로 capability를
+만들면 기술 구현을 business meaning으로 과대해석할 수 있다는 의견
+**반증 조건**: fresh held-out repository에서 trusted product sentence 또는 exact
+implementation witness 없이 후보가 생성되거나, source-hidden handoff가 후보를
+승인된 사실로 답하면 이 clue는 실패한 것으로 판정한다
+**재검토**: 다음 source-hidden 20-CQ trial에서 candidate/persisted 결과와
+unsupported-claim audit를 함께 재실행한 직후
+**상태**: 유효
+
 ## 2026-08-15 (16) — production import evidence는 관측이지 승인된 impact 관계가 아니다
 
 **소집**: 단독 PO pass · **트리거**: (15)의 반증 조건; semantic/evidence tracer를

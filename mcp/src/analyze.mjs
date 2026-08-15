@@ -228,6 +228,20 @@ const BUSINESS_CAPABILITY_CLUES = [
 ];
 const GENERIC_NARRATIVE_CAPABILITY_CLUES = [
   {
+    slug: 'capabilities/request-client',
+    title: 'Request Client',
+    prose: [
+      /\b(?:promise[-\s]+based\s+)?(?:http|https)(?:\/\d+(?:\.\d+)?)?\s+client\b/i,
+      /\bclient\b.{0,80}\b(?:http|https)(?:\/\d+(?:\.\d+)?)?\s+(?:requests?|responses?|apis?)\b/i,
+      /\b(?:make|perform|issue|send)\s+(?:http|https)(?:\/\d+(?:\.\d+)?)?\s+(?:requests?|calls?)\b/i,
+    ],
+    implementation: [
+      /\b(?:client|request|response)s?\b/i,
+      /\b(?:adapters?|dispatchers?|transports?|handlers?)\b/i,
+      /\b(?:http|https|fetch|xhr)\b/i,
+    ],
+  },
+  {
     slug: 'capabilities/package-management',
     title: 'Package Management',
     prose: [
