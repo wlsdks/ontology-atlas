@@ -5,8 +5,8 @@ import { ChevronDown } from 'lucide-react';
 import { ICON_SIZE } from '@/shared/ui/icon-size';
 import { useTranslations } from 'next-intl';
 
-import { cn } from '@/shared/lib/cn';
 import { controlClass } from '@/shared/ui/control-class';
+import { SegmentedControl } from '@/shared/ui/segmented-control';
 import { Chip } from '@/shared/ui/controls';
 import { Choice, DETAIL_TOGGLE_CHIP, RESET_LINK_INK, Slider } from './settings-primitives';
 import {
@@ -130,41 +130,30 @@ export function FootprintSettings() {
         패널을 지배했는데, 이건 "세기 하나 고르기" 라는 작은 결정이다. 컨트롤의
         시각 무게는 결정의 무게를 따라야 한다.
       */}
-      <div
-        role="radiogroup"
-        aria-label={t('presetLabel')}
-        className="inline-flex justify-self-start rounded-chip border border-[color:var(--color-border-soft)] p-0.5"
-      >
-        {PRESET_ORDER.map((name) => {
-          // "지금 이 프리셋인가" 는 프리셋이 정하는 값들만 비교한다 — 색·배치처럼
-          // 프리셋이 건드리지 않는 값이 달라도 프리셋은 여전히 그 프리셋이다.
-          const preset: Partial<FootprintPreference> = FOOTPRINT_PRESETS[name];
-          const active = (Object.entries(preset) as [keyof FootprintPreference, unknown][]).every(
-            ([key, want]) => pref[key] === want,
-          );
-          return (
-            <button
-              key={name}
-              type="button"
-              role="radio"
-              aria-checked={active}
-              data-testid={`app-settings-footprint-preset-${name}`}
-              onClick={() => writeFootprint(applyFootprintPreset(pref, name))}
-              className={controlClass({
-                shape: 'segment',
-                size: 'lg',
-                active,
-                className: cn(
-                  'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a46)]',
-                  !active && 'hover:text-[color:var(--color-text-primary)]',
-                ),
-              })}
-            >
-              {t(`preset.${name}`)}
-            </button>
-          );
-        })}
-      </div>
+      {/* "지금 이 프리셋인가" 는 프리셋이 정하는 값들만 비교한다 — 색·배치처럼
+          프리셋이 건드리지 않는 값이 달라도 프리셋은 여전히 그 프리셋이다.
+          어느 프리셋과도 안 맞으면 value 가 어떤 옵션과도 불일치 → 체크 0
+          (APG: 첫 항목이 탭 스톱) — 프리미티브가 그 상태를 그대로 지원한다. */}
+      <SegmentedControl
+        ariaLabel={t('presetLabel')}
+        className="justify-self-start"
+        value={
+          PRESET_ORDER.find((name) => {
+            const preset: Partial<FootprintPreference> = FOOTPRINT_PRESETS[name];
+            return (Object.entries(preset) as [keyof FootprintPreference, unknown][]).every(
+              ([key, want]) => pref[key] === want,
+            );
+          }) ?? ''
+        }
+        onChange={(name) => {
+          if (name) writeFootprint(applyFootprintPreset(pref, name as (typeof PRESET_ORDER)[number]));
+        }}
+        options={PRESET_ORDER.map((name) => ({
+          value: name as string,
+          label: t(`preset.${name}`),
+          testId: `app-settings-footprint-preset-${name}`,
+        }))}
+      />
 
       <Chip
         size="lg"

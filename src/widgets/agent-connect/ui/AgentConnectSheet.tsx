@@ -8,7 +8,7 @@ import { Cable, Check, ChevronDown, Copy, X } from "lucide-react";
 import { ICON_SIZE } from "@/shared/ui/icon-size";
 import { MOTION } from "@/shared/motion";
 import { useBodyScrollLock } from "@/shared/lib/use-body-scroll-lock";
-import { controlClass, IconButton } from "@/shared/ui";
+import { controlClass, IconButton, SegmentedControl } from "@/shared/ui";
 import type { AgentServerAvailability } from "@/shared/config";
 import {
   type AgentClientId,
@@ -282,30 +282,17 @@ export function AgentConnectSheet({
                   * 왜 전역을 앱이 대신 쓰지 않는지는 `lib/agent-global-scope.ts` 에 있다.
                   */}
                 {serverAvailability.launch ? (
-                  <div
-                    role="radiogroup"
-                    aria-label={t("scopeLabel")}
-                    data-testid="agent-scope-segment"
-                    className="inline-flex rounded-chip border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] p-0.5"
-                  >
-                    {(["project", "global"] as const).map((option: AgentConfigScope) => (
-                      <button
-                        key={option}
-                        type="button"
-                        role="radio"
-                        aria-checked={scope === option}
-                        onClick={() => setAgentConfigScope(option)}
-                        data-testid={`agent-scope-${option}`}
-                        className={controlClass({
-                          shape: "segment",
-                          active: scope === option,
-                          className: "font-[var(--font-weight-signature)] hover:text-[color:var(--color-text-primary)]",
-                        })}
-                      >
-                        {option === "project" ? t("scopeProject") : t("scopeGlobal")}
-                      </button>
-                    ))}
-                  </div>
+                  <SegmentedControl
+                    ariaLabel={t("scopeLabel")}
+                    testId="agent-scope-segment"
+                    value={scope}
+                    onChange={(next) => setAgentConfigScope(next)}
+                    options={(["project", "global"] as const).map((option: AgentConfigScope) => ({
+                      value: option,
+                      label: option === "project" ? t("scopeProject") : t("scopeGlobal"),
+                      testId: `agent-scope-${option}`,
+                    }))}
+                  />
                 ) : null}
 
                 {scope === "global" ? (
