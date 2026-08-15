@@ -1341,7 +1341,7 @@ export function ProjectForm({
           손으로 쓴 `0 18px 36px var(--color-shadow-a22)` 를 사다리의 최하 부유
           단으로 바꾼다. y 는 18 로 같고 번짐 36→40, 진하기 a22→a35 로 짙어진다:
           떠 있는 것일수록 더 짙고 넓게 — 광원 가정이 사다리와 하나가 된다. */}
-      <div className="sticky top-4 z-10 rounded-panel border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] px-4 py-4 shadow-[inset_0_1px_0_var(--color-overlay-2),var(--shadow-elevation-1)]">
+      <div className="sticky top-4 z-10 rounded-panel border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] p-[var(--card-pad)] shadow-[inset_0_1px_0_var(--color-overlay-2),var(--shadow-elevation-1)]">
         <div className="flex flex-col gap-3">
           <div className="flex items-start justify-between gap-3">
             <div className="min-w-0">
@@ -1417,7 +1417,7 @@ export function ProjectForm({
         </div>
       </div>
 
-      <div className="rounded-panel border border-[color:var(--color-overlay-2)] bg-[color:var(--color-panel)] px-4 py-4">
+      <div className="rounded-panel border border-[color:var(--color-overlay-2)] bg-[color:var(--color-panel)] p-[var(--card-pad)]">
         <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
           <p className="font-mono text-caption uppercase tracking-[var(--tracking-caps-12)] text-[color:var(--color-text-quaternary)]">
             {t("sections.navLabel")}
@@ -1594,7 +1594,7 @@ export function ProjectForm({
                 반복했고, "왼쪽 입력이 여기 반영됩니다" 는 정작 그 왼쪽 입력이
                 화면 밖에 있을 때 쓰던 변명이었다. 지금은 마주 보므로 뺀다. */}
             {(mode === "edit" || saveNotice) && (
-              <div className="mb-4 rounded-panel border border-[color:var(--color-overlay-2)] bg-[color:var(--color-panel)] p-4">
+              <div className="mb-4 rounded-panel border border-[color:var(--color-overlay-2)] bg-[color:var(--color-panel)] p-[var(--card-pad)]">
                 <p className="font-mono text-caption uppercase tracking-[var(--tracking-caps-12)] text-[color:var(--color-text-quaternary)]">
                   {t("preview.previewEyebrow")}
                 </p>
@@ -1654,7 +1654,7 @@ export function ProjectForm({
             <p className="mt-2 text-label text-[color:var(--color-text-quaternary)]">
               {t("preview.cardCaption")}
             </p>
-            <div className="mt-4 rounded-panel border border-[color:var(--color-overlay-2)] bg-[color:var(--color-panel)] p-4">
+            <div className="mt-4 rounded-panel border border-[color:var(--color-overlay-2)] bg-[color:var(--color-panel)] p-[var(--card-pad)]">
               <div className="flex items-start justify-between gap-3">
                 <div>
                   <p className="font-mono text-caption uppercase tracking-[var(--tracking-caps-12)] text-[color:var(--color-text-quaternary)]">
@@ -1710,7 +1710,7 @@ function CreateExtras({
   children: React.ReactNode;
 }) {
   return (
-    <section className="rounded-panel border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] px-4 py-4 md:px-5">
+    <section className="rounded-panel border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] p-[var(--card-pad)] md:px-5">
       <button
         type="button"
         data-testid="project-create-extras-toggle"

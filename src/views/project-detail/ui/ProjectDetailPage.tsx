@@ -670,7 +670,7 @@ export function ProjectDetailPage({
         <section
           data-testid="construction-review-error"
           data-envelope-state={constructionReview.errorState}
-          className="mt-[var(--section-gap)] rounded-panel border border-[color:var(--color-danger-a32)] bg-[color:var(--color-danger-a08)] px-4 py-4 sm:px-5"
+          className="mt-[var(--section-gap)] rounded-panel border border-[color:var(--color-danger-a32)] bg-[color:var(--color-danger-a08)] p-[var(--card-pad)] sm:px-5"
         >
           <h2 className="text-title font-[var(--font-weight-strong)] text-[color:var(--color-danger-text)]">
             {t("constructionReview.errorTitle")}

@@ -107,7 +107,7 @@ export function ConstructionReviewPanel({ review }: { review: ConstructionReview
       data-qualification-status={review.qualificationStatus}
       data-write-eligibility={review.writeEligibility}
       data-plan-equality={review.planEquality}
-      className="mt-[var(--section-gap)] rounded-panel border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] px-4 py-4 sm:px-5"
+      className="mt-[var(--section-gap)] rounded-panel border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] p-[var(--card-pad)] sm:px-5"
     >
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="min-w-0">
