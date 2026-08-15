@@ -9,6 +9,9 @@
 
 ## 2026-08-16 · C 미지원 범위와 관계의 정확한 경로 근거를 숨기지 않는다
 
+- C/Autotools 저장소는 실행 없이 정적 `AC_INIT` 리터럴에서 프로젝트 이름을 읽고,
+  README의 릴리스 상태보다 제품 목적을 직접 설명하는 문장을 우선한다. 이 근거만으로
+  domain/capability를 자동 생성하지 않으며 기존 사람 승인·no-write 경계도 유지한다.
 - 실제 C/H가 있는 Autotools 저장소를 `infer_imports`가 스캔하지 못하면
   `detectedUnsupportedLanguages:["c"]`와 `allDetectedLanguagesSupported:false`를
   반환한다. 0 edge는 C 의존이 없다는 뜻이 아니며 일반 C include graph는 아직
