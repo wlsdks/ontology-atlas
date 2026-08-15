@@ -77,6 +77,15 @@ const RAMP_TOKEN_PATTERN =
 const PALETTE_ROOT_PATTERN =
   /^--color-(?:canvas|panel|elevated|text-[a-z]+|indigo-(?:brand|accent|hover)|status-[a-z]+)$/;
 
+/**
+ * **cva 로 축·선택지를 내는 값 층 파일** — 센서스가 「이름과 값」을 센다.
+ * 2026-08-15 에 `badge-class.ts`(정적 배지 기하)가 합류했다.
+ */
+const VARIANT_VOCABULARY_FILES = new Set([
+  'src/shared/ui/control-class.ts',
+  'src/shared/ui/badge-class.ts',
+]);
+
 /** 이 파일 자신은 램프 어휘를 갖지 않는다 — export 목록만 센다. */
 const PRIMITIVE_EXPORT_FILES = new Set([
   'src/shared/ui/controls.tsx',
@@ -151,7 +160,7 @@ function extractSection(markdown, heading) {
 export function censusFor(path, text) {
   if (text === null || text === undefined) return new Map();
   if (path === 'app/globals.css') return cssRampCensus(text);
-  if (path === 'src/shared/ui/control-class.ts') return variantVocabularyCensus(path, text);
+  if (VARIANT_VOCABULARY_FILES.has(path)) return variantVocabularyCensus(path, text);
   if (PRIMITIVE_EXPORT_FILES.has(path)) return exportedPrimitiveCensus(path, text);
   if (VALUE_EXPORT_FILES.has(path)) return exportedValueCensus(path, text);
   if (path === SPEC_RULE_DOC) return scaleContractCensus(text);

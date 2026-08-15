@@ -111,6 +111,21 @@ description: Build a screen from this repo's design system deterministically —
 | 몇 개 중 하나 고르기 (5개 이상 · 라벨이 길다) | `<Select>` |
 | 상자를 부모가 이미 냈다 | `frame="bare"` — `boxed` 를 겹치면 상자 속 상자가 된다 |
 
+**눌리지 않는 작은 표시**(상태 라벨 · 종류 태그 · 개수 배지)는 컨트롤이 아니다 —
+`badgeClass({ shape })` 가 기하를 낸다:
+
+| 필요한 것 | 쓸 것 |
+|---|---|
+| 아주 작은 표시(개수 · 상태 한 단어) | `badgeClass({ shape: 'micro' })` |
+| 일반 태그 | `badgeClass({ shape: 'tag' })` — 기본값 |
+| 알약형(대문자 아이브로우가 흔하다) | `badgeClass({ shape: 'pill' })` |
+
+⚠️ **색과 자간은 값 층이 안 낸다.** 실측에서 배지 색 조합이 60종(최대 클러스터
+2)이라 수렴할 다수파가 없었고, 그래서 tone 축을 만들면 소비처 0 선택지가 된다.
+색은 그 배지가 **무슨 사실을 나르는지**가 정하므로 `className` 으로 넘긴다:
+`badgeClass({ shape: 'pill', className: 'bg-[color:var(--color-indigo-a12)] …' })`.
+손으로 기하를 다시 쓰면 `static-badge-adoption-ratchet` 이 막는다.
+
 ⚠️ **`Checkbox` 와 `SegmentedControl` 이 겹쳐 보일 때** (2026-08-15 두 번째
 시험이 지적한 모순): 가르는 것은 옵션 개수가 아니라 **라벨이 무엇의 이름인가**다.
 라벨이 **그 항목 자체의 이름**이면(「만들면 바로 공개돼요」) `Checkbox` —

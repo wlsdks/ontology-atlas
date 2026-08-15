@@ -7,6 +7,7 @@ export { Surface, type SurfaceMotion, type SurfaceProps } from './surface';
 export { Dialog, type DialogProps } from './dialog';
 export { Input, Textarea, type InputProps, type TextareaProps } from './input';
 export { Checkbox, type CheckboxProps } from './checkbox';
+export { badgeClass, type BadgeShape, type BadgeClassOptions } from './badge-class';
 export { SegmentedControl, type SegmentedControlProps, type SegmentedOption } from './segmented-control';
 /**
  * `<Button>` 은 **표준 버튼 하나**만 덮는다 — 전수 419개 중 그 모양은 1개였다.

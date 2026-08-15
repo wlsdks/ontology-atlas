@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef } from "react";
+import { badgeClass } from "@/shared/ui/badge-class";
 import type { useTranslations } from "next-intl";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { Bot, Check, Clipboard, GitCompareArrows, HardDrive, Network, X } from "lucide-react";
@@ -281,7 +282,7 @@ export function DocsVaultAuditModal({
                       <span className="font-mono text-caption uppercase tracking-[var(--tracking-caps-14)] text-[color:var(--color-indigo-pale-a82)]">
                         {cell.label}
                       </span>
-                      <span className="rounded-micro border border-[color:var(--color-indigo-line-a20)] bg-[color:var(--color-indigo-a06)] px-1.5 py-0.5 font-mono text-caption uppercase tracking-[var(--tracking-caps-08)] text-[color:var(--color-text-quaternary)]">
+                      <span className={badgeClass({ shape: "micro", className: "border border-[color:var(--color-indigo-line-a20)] bg-[color:var(--color-indigo-a06)] font-mono uppercase tracking-[var(--tracking-caps-08)] text-[color:var(--color-text-quaternary)]" })}>
                         {cell.chip}
                       </span>
                     </div>
@@ -294,9 +295,8 @@ export function DocsVaultAuditModal({
                     {"proofMarkers" in cell ? (
                       <div className="mt-1.5 flex flex-wrap gap-1">
                         {cell.proofMarkers.map((marker) => (
-                          <span
-                            key={marker}
-                            className="rounded-micro border border-[color:var(--color-indigo-line-a15)] bg-[color:var(--color-indigo-a06)] px-1.5 py-0.5 font-mono text-caption text-[color:var(--color-text-quaternary)]"
+                          <span key={marker}
+                            className={badgeClass({ shape: "micro", className: "border border-[color:var(--color-indigo-line-a15)] bg-[color:var(--color-indigo-a06)] font-mono text-[color:var(--color-text-quaternary)]" })}
                           >
                             {marker}
                           </span>
@@ -345,7 +345,7 @@ export function DocsVaultAuditModal({
                     <span className="font-mono text-caption uppercase tracking-[var(--tracking-caps-14)] text-[color:var(--color-indigo-pale-a82)]">
                       {tSkillParity("header")}
                     </span>
-                    <span className="rounded-micro border border-[color:var(--color-indigo-line-a20)] bg-[color:var(--color-indigo-a06)] px-1.5 py-0.5 font-mono text-caption uppercase tracking-[var(--tracking-caps-08)] text-[color:var(--color-text-quaternary)]">
+                    <span className={badgeClass({ shape: "micro", className: "border border-[color:var(--color-indigo-line-a20)] bg-[color:var(--color-indigo-a06)] font-mono uppercase tracking-[var(--tracking-caps-08)] text-[color:var(--color-text-quaternary)]" })}>
                       {tSkillParity("chip")}
                     </span>
                   </div>
@@ -370,8 +370,7 @@ export function DocsVaultAuditModal({
                   {disagreeing.length > 0 ? (
                     <div className="mt-1.5 flex flex-wrap gap-1">
                       {disagreeing.map((row) => (
-                        <span
-                          key={row.name}
+                        <span key={row.name}
                           data-testid={`docs-audit-skill-parity-${row.name}`}
                           data-verdict={row.verdict}
                           // `--color-amber-source-*` 는 **경고 사다리**다 —
@@ -380,7 +379,7 @@ export function DocsVaultAuditModal({
                           // 이름이 다른 `--color-amber-docs-*` 쪽이다.
                           // (카운슬 「위계」가 둘을 혼동해 교체를 처방했고,
                           // 「체계」가 바로잡았다. 게이트도 없는 토큰을 잡았다.)
-                          className="rounded-micro border border-[color:var(--color-amber-source-a35)] bg-[color:var(--color-amber-source-a12)] px-1.5 py-0.5 font-mono text-caption text-[color:var(--color-amber-source-a90)]"
+                          className={badgeClass({ shape: "micro", className: "border border-[color:var(--color-amber-source-a35)] bg-[color:var(--color-amber-source-a12)] font-mono text-[color:var(--color-amber-source-a90)]" })}
                         >
                           {row.name}
                         </span>
