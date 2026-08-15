@@ -80,6 +80,70 @@ packet is already lossless, do not implement another envelope. Move to the
 semantic/evidence gap the evaluator actually named. Candidate evaluation never
 changes the shared vault and never substitutes for human acceptance.
 
+## Semantic/evidence calibration tracer — after the candidate packet gate
+
+Use this internal tracer when the candidate packet is lossless but the
+source-hidden evaluator still reports semantic gaps. It uses only fields that
+already exist in the `analyze_repo_structure` response:
+
+- `meaningGate.reviewQuestions`
+- `implementationEvidence.reviewRequiredCapabilities`
+- `semanticEvidence.riskFlags`
+- `proposalValidation.findings`
+- `competencyAnswers.gap`
+- `constructionLifecycle.diagnostics`
+
+Do not introduce a new public field, tool, schema, UI, or writer for the tracer.
+It is a measurement procedure for choosing the next implementation slice, not a
+new output contract.
+
+Classify the fixed source-hidden questions in this order and keep the two
+surfaces separate:
+
+| question | calibration axis |
+| --- | --- |
+| q1 | scope |
+| q2 | domain |
+| q3 | ability |
+| q4 | evidence |
+| q5 | impact |
+| q6 | omitted-behavior |
+
+For each axis, record the candidate-packet-only result and the persisted-vault
+result in separate rows. Attach the existing response field and source/path
+references that support the result, then record one next action for the next
+analysis or review pass. Do not infer a persisted-vault answer from a candidate
+packet answer, or use a starter-vault failure as evidence about analyzer quality.
+
+Use these bounded labels:
+
+- `missing`: the question has no supported answer, required witness, or
+  explicitly surfaced gap.
+- `weak`: an answer exists, but the cited evidence, boundary, behavior, or
+  impact is incomplete; preserve the reason and the next action.
+- `conflict`: use only when trusted observations or accepted proposal evidence
+  deterministically contradict each other.
+- `not_measured`: use for a suspected conflict when no trusted contradiction is
+  present. Ambiguity is not a conflict.
+
+For H2, Axios, and Undici, compare before/after on two independent axes:
+
+1. **Body transport equality** — exact review-plan bodies, order, digests,
+   revision, required gaps, and packet mutation rejection.
+2. **Semantic gap** — the q1–q6 labels, evidence references, next actions, and
+   unanswered behavior/impact boundaries.
+
+Never combine those axes into one score or claim that transport equality proves
+semantic improvement. A lossless body with the same semantic gaps is a
+transport pass and a calibration miss; a changed semantic result must still be
+checked for citation accuracy and unsupported claims.
+
+The tracer ends with a short scratch report containing the two surfaces, the
+six-axis labels, supporting existing fields, next actions, and the before/after
+comparison. It must not aggregate a quality score, write to the vault, create a
+write plan, approve a human review, or weaken qualification. Automatic writes
+and human-approval bypass remain out of scope.
+
 ## Phase 2 — citation accuracy (measures: truth)
 
 Every `elements:` entry and every path in a node body is a claim that a file

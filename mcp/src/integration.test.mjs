@@ -3269,7 +3269,7 @@ await test("index_project — repo analysis, import indexing, and vault validati
     assert.deepEqual(result.meaningGate.implementationEvidence.reviewRequiredRows, [
       {
         slug: "capabilities/billing",
-        reason: "source folder is implementation evidence, not proof of a shared capability meaning",
+        reason: "implementation-only: source folder is implementation evidence, not proof of a shared capability meaning; add business outcome and stable responsibility evidence before promoting this capability",
         evidence: { source: "src/features/billing" },
       },
     ]);

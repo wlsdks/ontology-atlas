@@ -40,6 +40,40 @@
 **상태**: 유효 / 뒤집힘(→ 링크) / 반증됨(관측: …)
 ```
 
+## 2026-08-15 (15) — 의미 보정은 기존 출력 계약의 tracer부터 시작한다
+
+**소집**: PO Council · **트리거**: 소유자 요청 및 의미 보정 방향 확정; 새
+`meaningGate.diagnostics`는 MCP public output contract를 늘릴 수 있음
+**루브릭**: 다섯 자리 모두 `Shape a slice`; 결론은 새 field 보류
+**관찰**: candidate packet transport는 lossless였지만 H2/Axios/Undici의
+source-hidden 평가에는 scope/domain/ability/impact와 omitted behavior 공백이
+남았다. 기존 `meaningGate`에는 후보·구현근거·reviewQuestions가 있고,
+`proposalValidation`과 lifecycle에는 proposal 이후의 findings/diagnostics가
+있지만, 후보-only 분석에서 공백을 새 계약 없이 한눈에 연결하는 절차가 없었다.
+**결정**: 첫 보정은 기존 `meaningGate.reviewQuestions`와
+`implementationEvidence.reviewRequiredCapabilities.reason`만 강화한다. trusted
+scope 근거 부족, README-only domain boundary, implementation-only capability,
+typed impact 미측정, future/negated/deprecated evidence를 근거와 다음 행동이
+붙은 질문으로 드러낸다. `conflict`는 trusted contradiction이 없으면 주장하지
+않는다. 새 field/tool/UI/handoff/writer/aggregate score/자동 write와
+qualification 완화는 만들지 않는다.
+**적용 규칙**: 기존 3개 review question의 의미와 출력 shape를 보존한다.
+`proposalValidation`은 proposal이 있을 때만 쓰고, candidate-only 결과에 억지로
+재사용하지 않는다. 의미 질문은 quality score가 아니며, human acceptance와
+source-hidden/no-write 경계를 바꾸지 않는다. field-trial skill에는 candidate와
+persisted-vault를 분리하는 semantic/evidence calibration tracer를 기록한다.
+**서명**: 소유자 요청에 따라 집행
+
+**기록된 반대**: proposal 없는 초기 분석에서는 기존 필드만으로 항목별
+severity/action을 구조화하기 어려우므로 `meaningGate.diagnostics`를 바로
+추가해야 한다는 의견
+**반증 조건**: 기존 reviewQuestions/review-required reason과 tracer만으로 세
+trial의 q1~q6 공백과 다음 행동을 재현하지 못하거나, 동일한 소비자가 반복해서
+field 조인을 요구하면 additive diagnostics field를 재검토한다.
+**재검토**: semantic/evidence tracer로 H2/Axios/Undici before/after를 다시
+측정한 직후
+**상태**: 유효
+
 ## 2026-08-15 (14) — candidate packet은 lossless였고, 다음은 의미 보정이다
 
 **소집**: 소유자 집행 · Sol xhigh 재검토 · **트리거**: (13)의 Candidate Envelope

@@ -2274,14 +2274,19 @@ test('Meaning gate separates shared ontology, business proposals, and implementa
     assert.deepEqual(r.meaningGate.implementationEvidence.reviewRequiredCapabilities, [
       {
         slug: 'capabilities/checkout',
-        reason: 'source folder is implementation evidence, not proof of a shared capability meaning',
+        reason: 'implementation-only: source folder is implementation evidence, not proof of a shared capability meaning; add business outcome and stable responsibility evidence before promoting this capability',
         evidence: { source: 'src/features/checkout' },
       },
       {
         slug: 'capabilities/theme-toggle',
-        reason: 'source folder is implementation evidence, not proof of a shared capability meaning',
+        reason: 'implementation-only: source folder is implementation evidence, not proof of a shared capability meaning; add business outcome and stable responsibility evidence before promoting this capability',
         evidence: { source: 'src/features/theme-toggle' },
       },
+    ]);
+    assert.deepEqual(r.meaningGate.reviewQuestions.slice(0, 3), [
+      'What business/product outcome, user workflow, ownership boundary, or decision does this node explain?',
+      'Which source path, README heading, import edge, or file-level element proves the implementation evidence?',
+      'Should this code structure stay evidence-only instead of becoming a domain or capability node?',
     ]);
     assert.ok(
       r.meaningGate.reviewQuestions.some((question) =>
@@ -2309,6 +2314,118 @@ test('Meaning gate separates shared ontology, business proposals, and implementa
       ).requiredWitnesses,
       ['concepts', 'relations', 'evidence'],
     );
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test('Meaning gate adds a scope question when trusted mission/product evidence is missing', () => {
+  const root = withRepo((r) => {
+    writeFileSync(join(r, 'package.json'), JSON.stringify({ name: 'scope-gap' }));
+    writeFileSync(join(r, 'README.md'), '# Scope Gap\n\n## Accounts\n');
+    mkdirSync(join(r, 'src/features/accounts'), { recursive: true });
+  });
+  try {
+    const questions = analyzeRepoStructure(root).meaningGate.reviewQuestions;
+    assert.ok(questions.some((question) => question.startsWith('[missing · scope]')));
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test('Meaning gate marks README-only domains as weak even with trusted product prose', () => {
+  const root = withRepo((r) => {
+    writeFileSync(join(r, 'package.json'), JSON.stringify({ name: 'domain-gap' }));
+    writeFileSync(
+      join(r, 'README.md'),
+      '# Domain Gap\n\nOur product helps operators reconcile account records before payout.\n\n## Accounts\n',
+    );
+    mkdirSync(join(r, 'src/features/reconciliation'), { recursive: true });
+  });
+  try {
+    const result = analyzeRepoStructure(root);
+    assert.equal(
+      result.semanticEvidence.some(
+        (row) => row.role === 'mission' && row.trust === 'candidate-evidence' && row.excerpt,
+      ),
+      true,
+    );
+    assert.ok(
+      result.meaningGate.reviewQuestions.some((question) =>
+        question.startsWith('[weak · domain-boundary]'),
+      ),
+    );
+    assert.equal(
+      result.meaningGate.reviewQuestions.some((question) =>
+        question.startsWith('[missing · scope]'),
+      ),
+      false,
+    );
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test('Meaning gate measures dependency impact only when multiple elements lack typed depends_on evidence', () => {
+  const singleElementRoot = withRepo((r) => {
+    writeFileSync(join(r, 'package.json'), JSON.stringify({ name: 'one-element' }));
+    mkdirSync(join(r, 'src/features/auth'), { recursive: true });
+    mkdirSync(join(r, 'src/entities/user'), { recursive: true });
+  });
+  const multiElementRoot = withRepo((r) => {
+    writeFileSync(join(r, 'package.json'), JSON.stringify({ name: 'multi-element' }));
+    mkdirSync(join(r, 'src/entities/user'), { recursive: true });
+    mkdirSync(join(r, 'src/widgets/header'), { recursive: true });
+  });
+  const linkedPythonRoot = withRepo((r) => {
+    writeFileSync(join(r, 'README.rst'), 'Linked Python client.\n');
+    mkdirSync(join(r, 'diagnostic_client/services'), { recursive: true });
+    writeFileSync(join(r, 'diagnostic_client/__init__.py'), '');
+    writeFileSync(join(r, 'diagnostic_client/client.py'), 'from .services import requests\n');
+    writeFileSync(join(r, 'diagnostic_client/services/__init__.py'), '');
+    writeFileSync(join(r, 'diagnostic_client/services/requests.py'), '');
+  });
+  try {
+    const singleElementQuestions = analyzeRepoStructure(singleElementRoot).meaningGate.reviewQuestions;
+    assert.equal(
+      singleElementQuestions.some((question) => question.includes('not-measured · impact')),
+      false,
+    );
+
+    const multiElementQuestions = analyzeRepoStructure(multiElementRoot).meaningGate.reviewQuestions;
+    assert.equal(
+      multiElementQuestions.some((question) => question.startsWith('[not-measured · impact]')),
+      true,
+    );
+
+    const linkedQuestions = analyzeRepoStructure(linkedPythonRoot).meaningGate.reviewQuestions;
+    assert.equal(
+      linkedQuestions.some((question) => question.includes('not-measured · impact')),
+      false,
+    );
+  } finally {
+    rmSync(singleElementRoot, { recursive: true, force: true });
+    rmSync(multiElementRoot, { recursive: true, force: true });
+    rmSync(linkedPythonRoot, { recursive: true, force: true });
+  }
+});
+
+test('Meaning gate asks for policy-evidence review without calling risk a conflict', () => {
+  const root = withRepo((r) => {
+    writeFileSync(join(r, 'package.json'), JSON.stringify({ name: 'policy-risk' }));
+    writeFileSync(
+      join(r, 'README.md'),
+      '# Policy Risk\n\nThe legacy policy is deprecated and the future workflow will support approvals.\n',
+    );
+    mkdirSync(join(r, 'src/features/approvals'), { recursive: true });
+  });
+  try {
+    const questions = analyzeRepoStructure(root).meaningGate.reviewQuestions;
+    const policyQuestion = questions.find((question) =>
+      question.startsWith('[review · policy-evidence]'),
+    );
+    assert.ok(policyQuestion);
+    assert.doesNotMatch(policyQuestion, /conflict/i);
   } finally {
     rmSync(root, { recursive: true, force: true });
   }
