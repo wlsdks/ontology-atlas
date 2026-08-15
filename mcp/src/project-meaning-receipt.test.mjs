@@ -149,6 +149,20 @@ test('parses the deterministic five-section competency Markdown', () => {
   ]);
 });
 
+test('the dogfood project keeps its competency answers on the shipped machine contract', () => {
+  const body = readFileSync(
+    new URL('../../docs/ontology/ontology-atlas.md', import.meta.url),
+    'utf8',
+  );
+  const parsed = parseProjectCompetencyMarkdown(body);
+
+  assert.deepEqual(
+    parsed.questions.map(({ id }) => id),
+    ['scope', 'domains', 'abilities', 'evidence', 'impact'],
+  );
+  assert.equal(parsed.questions.length > 0, true, 'dogfood competency gate must not idle');
+});
+
 test('canonical competency Markdown renderer round-trips through the strict parser', () => {
   const parsed = parseProjectCompetencyMarkdown(competencyBody());
   const answers = Object.fromEntries(parsed.questions.map((row) => [row.id, {
