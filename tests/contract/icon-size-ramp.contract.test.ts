@@ -38,7 +38,10 @@ import { ICON_SIZE } from '../../src/shared/ui/icon-size';
  * 알려진 한계 둘 — **둘 다 과소 계상 방향**이다:
  *
  * 1. `size={cond ? 14 : undefined}` 같은 **조건식은 리터럴이 아니라 안 보인다**
- *    (현재 1곳, AppSettingsMenu — else 가지는 무지정 24 로 렌더된다).
+ *    (현재 1곳, AppSettingsMenu — 단 그 자리는 결함이 아니다: 세 variant 전부
+ *    className 토큰(`--app-nav-rail-utility-icon-size` ·
+ *    `--topology-chrome-icon-size`) 또는 size={14} 가 덮는다. 2026-08-15 재실측
+ *    — 종전 «else 가지는 무지정 24 로 렌더된다» 는 className 을 안 본 오판).
  * 2. **런타임 변수로 렌더되는 아이콘**(`const Icon = item.icon; <Icon size={17} />`)
  *    은 여는 태그 이름이 lucide import 집합에 없어 안 보인다. 2026-08-05 실측
  *    8곳이고, 그중 **하나가 실제로 램프 밖이었다** — `BottomTabBar` 의 내비
@@ -85,6 +88,33 @@ interface IconScan {
   unsized: Map<string, number>;
 }
 
+/**
+ * **`icon={…}` 슬롯의 크기는 소비자가 소유한다** (2026-08-15).
+ *
+ * 종전 장부는 «무지정 lucide = 기본 24px 렌더» 로 9곳(5파일)을 부채로 들고
+ * 있었는데, **9곳 전부 거짓 부채였다** — 셋 다 슬롯 컨테이너가 CSS 로 크기를
+ * 정한다: ChromeChip `[&>svg]:size-3.5`(14) · ChromeTile
+ * `[&>svg]:size-[var(--chrome-icon)]`(16) · EmptyState `[&>svg]:size-4`(16).
+ * 이 자리들에 `size=` prop 을 달아 «갚는» 것은 컨테이너가 소유한 값을 콜사이트
+ * 에 한 번 더 적는 것 — 값이 두 곳에 적히면 그때부터 어긋난다(Carbon).
+ *
+ * 그래서 무지정 판정에서 뺀다. 단 **아무 `icon={` 나 면제하지 않는다** — 슬롯
+ * 바로 앞의 가장 가까운 여는 태그가 아래 목록(슬롯에 `[&>svg]:size-` 를 거는
+ * 것이 별도 단언으로 증명된 프리미티브)일 때만이다. 모르는 소비자의
+ * `icon={<X/>}` 는 그대로 무지정으로 세인다(과대 방향 — 사람이 보게 된다).
+ * `size={13}` 같은 램프 밖 리터럴은 슬롯 안이어도 여전히 잡힌다.
+ */
+const SIZED_SLOT_OWNERS = new Set(['ChromeChip', 'ChromeTile', 'EmptyState']);
+
+/** 슬롯 소유자 판정 — `icon={` 직전에서 가장 가까운 여는 컴포넌트 태그. */
+function slotOwner(source: string, tagIndex: number): string | null {
+  const before = source.slice(0, tagIndex);
+  if (!/icon=\{\s*$/.test(before)) return null;
+  let owner: string | null = null;
+  for (const m of before.matchAll(/<([A-Z][A-Za-z0-9]*)\b/g)) owner = m[1];
+  return owner;
+}
+
 function scanSource(rel: string, source: string, ramp: Set<number>, acc: IconScan): void {
   // [^}] 는 개행도 포함하므로 /s 플래그가 필요 없다. [\s\S]*? 로 쓰면 안 된다 —
   // 게으른 수량자가 앞선 다른 모듈의 import 를 건너 삼켜 아이콘 이름 집합이 오염된다
@@ -121,6 +151,8 @@ function scanSource(rel: string, source: string, ramp: Set<number>, acc: IconSca
     } else if (cls) {
       if (!ramp.has(Number(cls[1]) * 4)) acc.offRamp.set(rel, (acc.offRamp.get(rel) ?? 0) + 1);
     } else if (!tag.includes('size=') && !tag.includes('size-[') && !tag.includes('h-[')) {
+      const owner = slotOwner(source, tagMatch.index ?? 0);
+      if (owner !== null && SIZED_SLOT_OWNERS.has(owner)) continue;
       acc.unsized.set(rel, (acc.unsized.get(rel) ?? 0) + 1);
     }
   }
@@ -180,18 +212,20 @@ const OFF_RAMP_DEBT: ReadonlyArray<readonly [string, number]> = [
 ];
 
 /**
- * 무지정 lucide — 기본 24px 로 렌더된다. 셋 다 의도한 24 가 아니라 누락으로
- * 보이지만(형제들은 전부 명시 크기), 고치면 픽셀이 움직이므로 부채로 등재만
- * 한다. (+ AppSettingsMenu 의 조건식 else 가지 1곳은 탐지기 시야 밖 — 사정거리
- * 주석 참조.)
+ * **2026-08-15: 비었다 — 그리고 갚아서 빈 것이 아니라 장부가 틀려서 빈 것이다.**
+ *
+ * 여기 있던 9곳(HomePage 3 · ConnectionsTab 2 · ImpactRankingCard 1 ·
+ * SearchHint 2 · TopologyFitControl 1)은 전부 `icon={…}` 슬롯이었고, 슬롯
+ * 컨테이너(ChromeChip 14 · ChromeTile 16 · EmptyState 16)가 CSS 로 크기를
+ * 정하고 있었다 — «기본 24px 로 렌더된다» 는 종전 전제가 컨테이너의
+ * `[&>svg]:size-*` 를 안 본 오판이었다. `SIZED_SLOT_OWNERS` 분류 + 슬롯 소유자
+ * CSS 단언이 그 판정을 이어받는다.
+ *
+ * 이 배열이 비어도 검사는 공회전하지 않는다 — 스캐너는 여전히 저장소 전체를
+ * 훑고, 슬롯 밖 무지정이나 모르는 소비자의 슬롯 무지정이 하나라도 생기면
+ * «장부 0 을 넘었다» 로 빨개진다(프로브가 양쪽 다 증명한다).
  */
-const UNSIZED_DEBT: ReadonlyArray<readonly [string, number]> = [
-  ['src/views/home/ui/HomePage.tsx', 3],
-  ['src/views/ontology-insights/ui/tabs/ConnectionsTab.tsx', 2],
-  ['src/views/ontology-insights/ui/tabs/ImpactRankingCard.tsx', 1],
-  ['src/widgets/search-hint/ui/SearchHint.tsx', 2],
-  ['src/widgets/topology-controls/ui/TopologyFitControl.tsx', 1],
-];
+const UNSIZED_DEBT: ReadonlyArray<readonly [string, number]> = [];
 
 describe('콘텐츠 아이콘 크기 램프', () => {
   const ramp = new Set<number>(Object.values(ICON_SIZE));
@@ -257,6 +291,28 @@ describe('콘텐츠 아이콘 크기 램프', () => {
     expect(stale).toEqual([]);
   });
 
+  /**
+   * **슬롯 면제는 소비자가 실제로 크기를 소유할 때만 성립한다.** 분류가
+   * `SIZED_SLOT_OWNERS` 이름만 믿으면, 그 프리미티브에서 `[&>svg]:size-*` 가
+   * 지워지는 날 슬롯 아이콘 전부가 24px 로 풀리는데 아무것도 안 빨개진다 —
+   * 그래서 이름 집합과 CSS 실물을 여기서 묶는다.
+   */
+  it('슬롯 소유자는 자기 슬롯의 svg 크기를 실제로 소유한다 ([&>svg]:size-*)', () => {
+    const OWNER_FILES: Record<string, string> = {
+      ChromeChip: 'src/shared/ui/chrome-chip.tsx',
+      ChromeTile: 'src/shared/ui/chrome-tile.tsx',
+      EmptyState: 'src/shared/ui/empty-state.tsx',
+    };
+    expect(Object.keys(OWNER_FILES).sort()).toEqual([...SIZED_SLOT_OWNERS].sort());
+    for (const [owner, rel] of Object.entries(OWNER_FILES)) {
+      const src = readFileSync(path.join(ROOT, rel), 'utf8');
+      expect(
+        src.includes('[&>svg]:size-'),
+        `${owner}(${rel}) 가 슬롯 svg 크기를 잃었다 — 슬롯 면제(SIZED_SLOT_OWNERS)의 전제가 무너진다`,
+      ).toBe(true);
+    }
+  });
+
   /*
    * ── 상주 프로브 — 탐지기 자신이 살아 있는지. 합성 소스를 같은 함수에 먹인다.
    * (게이트 프로브 규율: 「위반이 있다」가 아니라 「제품/결함을 실제로 먹는다」)
@@ -285,6 +341,14 @@ describe('콘텐츠 아이콘 크기 램프', () => {
     expect(probe('<Check className="size-3" />').offRamp.size).toBe(0);
     // 무지정 — 기본 24 로 잡힌다
     expect(probe('<Check aria-hidden />').unsized.get('probe.tsx')).toBe(1);
+    // 슬롯 무지정 — 크기를 소유한 프리미티브의 슬롯이면 무지정이 아니다
+    const owned = probe('<ChromeChip icon={<Check aria-hidden />} />');
+    expect(owned.unsized.size).toBe(0);
+    expect(owned.total, '슬롯 면제가 분모까지 지우면 공회전 단언이 헐거워진다').toBe(1);
+    // 슬롯이어도 **모르는 소비자**면 그대로 무지정이다 (면제의 방향: 과대 계상 쪽)
+    expect(probe('<Mystery icon={<Check aria-hidden />} />').unsized.get('probe.tsx')).toBe(1);
+    // 슬롯이어도 램프 밖 리터럴은 여전히 잡힌다
+    expect(probe('<ChromeChip icon={<Check size={13} />} />').offRamp.get('probe.tsx')).toBe(1);
     // 시야 밖이 맞는 것 — 비-lucide 태그의 숫자 size, 문자열 size
     expect(probe('<Select size={13} />').total).toBe(0);
     // 토큰 참조는 무지정도 위반도 아니다
