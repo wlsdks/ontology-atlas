@@ -113,7 +113,10 @@ describe('손가락 바닥은 캐스케이드 레이어 밖에 산다', () => {
  */
 describe('값 층이 바닥을 실제로 내보낸다', () => {
   /** 자기 높이를 `min-h-*` 로 내는 모양 — 커져도 이웃을 밀어낼 뿐 겹치지 않는다. */
-  const FLOORED: ControlShape[] = ['chip', 'row', 'pill'];
+  // segment 는 2026-08-15 에 합류했다 — 세그먼트만 coarse 승격이 없어 같은
+  // 시트에서 Choice 칩은 44, 세그먼트는 24 로 남는 「한 시트 두 규격」이
+  // 재현되고 있었다(상호작용석 처방 P4 · 체계석 공동 서명).
+  const FLOORED: ControlShape[] = ['chip', 'row', 'pill', 'segment'];
 
   /**
    * 바닥을 **주면 안 되는** 모양 둘. 이 단언이 이 파일에서 가장 중요하다 —

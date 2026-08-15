@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { badgeClass } from "@/shared/ui/badge-class";
 import { Link, useRouter } from '@/i18n/navigation';
 import { useTranslations } from 'next-intl';
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
@@ -405,7 +406,7 @@ function SearchPaletteDialog({
               {query.trim() ? t('headingResults') : t('headingRecent')}
             </p>
             {containerLabel ? (
-              <span className="rounded-full border border-[color:var(--color-indigo-line-a32)] bg-[color:var(--color-indigo-a12)] px-2 py-0.5 font-mono text-caption uppercase tracking-[var(--tracking-caps-12)] text-[color:var(--color-indigo-line-a90)]">
+              <span className={badgeClass({ shape: "pill", className: "border border-[color:var(--color-indigo-line-a32)] bg-[color:var(--color-indigo-a12)] font-mono uppercase tracking-[var(--tracking-caps-12)] text-[color:var(--color-indigo-line-a90)]" })}>
                 {t('containerBadge', { name: containerLabel })}
               </span>
             ) : null}
@@ -656,7 +657,7 @@ function SearchPaletteDialog({
                             {highlightMatch(r.project.name, query)}
                           </span>
                           {r.project.isHub ? (
-                            <span className="rounded-full bg-[color:var(--color-indigo-brand)] px-1.5 py-0.5 font-mono text-caption uppercase tracking-[var(--tracking-caps-10)] text-[color:var(--color-text-primary)]">
+                            <span className="rounded-full bg-[color:var(--color-indigo-brand)] px-1.5 py-0.5 font-mono text-caption uppercase tracking-[var(--tracking-caps-10)] text-[color:var(--color-text-on-accent)]">
                               {t('hub')}
                             </span>
                           ) : null}
@@ -665,14 +666,14 @@ function SearchPaletteDialog({
                           {r.project.description}
                         </p>
                         <div className="mt-2 flex flex-wrap items-center gap-1.5">
-                          <span className="rounded-full border border-[color:var(--color-divider)] px-2 py-0.5 font-mono text-caption uppercase tracking-[var(--tracking-caps-08)] text-[color:var(--color-text-quaternary)]">
+                          <span className={badgeClass({ shape: "pill", className: "border border-[color:var(--color-divider)] font-mono uppercase tracking-[var(--tracking-caps-08)] text-[color:var(--color-text-quaternary)]" })}>
                             {categoryLabel(r.project.category)}
                           </span>
-                          <span className="rounded-full border border-[color:var(--color-divider)] px-2 py-0.5 font-mono text-caption uppercase tracking-[var(--tracking-caps-08)] text-[color:var(--color-text-quaternary)]">
+                          <span className={badgeClass({ shape: "pill", className: "border border-[color:var(--color-divider)] font-mono uppercase tracking-[var(--tracking-caps-08)] text-[color:var(--color-text-quaternary)]" })}>
                             {statusLabel(r.project.status)}
                           </span>
                           {query.trim() && (
-                            <span className="rounded-full border border-[color:var(--color-indigo-a30)] bg-[color:var(--color-indigo-a08)] px-2 py-0.5 font-mono text-caption uppercase tracking-[var(--tracking-caps-08)] text-[color:var(--color-indigo-text-soft)]">
+                            <span className={badgeClass({ shape: "pill", className: "border border-[color:var(--color-indigo-a30)] bg-[color:var(--color-indigo-a08)] font-mono uppercase tracking-[var(--tracking-caps-08)] text-[color:var(--color-indigo-text-soft)]" })}>
                               {t(MATCH_FIELD_KEYS[r.matchedField])}
                             </span>
                           )}

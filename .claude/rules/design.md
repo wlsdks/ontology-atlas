@@ -117,8 +117,9 @@ paths:
   (`#5e6ad2`)만 더한다 — 이 극단적인 제약이 AI 가 뽑아낸 티 나는 화면을 막는다.
 - 채색은 **인디고 하나**. **상태를 알리는 색은 3종이다: warning(amber) ·
   error(red) · success(emerald)** — 셋 다 같은 구성을 갖는다(꽉 찬 점 하나 +
-  배경/테두리/글자용 반투명 3단) (Design Guardian verdict,
-  `.qa-scratch/audit-2026-07/guardian-color-verdict.md` §①, 2026-07-20).
+  배경/테두리/글자용 반투명 3단) (디자인 가디언 판정 §①, 2026-07-20 — 그 판정의
+  작업 파일은 `.qa-scratch/`(gitignore)에 있었고 **저장소에 없다**. 살아남은
+  기록은 이 문단과 `docs/DESIGN-SYSTEM.md` "Signal tones" 절이다).
   success 는 "연결됨 / 쓰기 확인 / 완료" 처럼 잘 됐다는 뜻일 때만 쓴다 — 쓰임을
   넓히지 말고, 이미 코드에 박혀 있던 초록을 토큰으로 바꾸는 데까지만. 장식으로
   쓰는 초록, 성공과 무관한 초록은 금지. 상세: `docs/DESIGN-SYSTEM.md` "Signal tones".
@@ -168,7 +169,8 @@ paths:
   앰버/유칼립투스 짝은 트랙 위에 겹쳐 놓고 잰 대비가 **1.14:1** 이라 밝기로는
   구분되지 않고 색상(hue)으로만 갈렸는데, 그 색상 차이가 적록 색약(남성 약 8%)
   이 가장 못 가르는 방향이다 — 색이 무엇인지 알려 준다는 전제 자체가 틀렸다
-  (소유자 확정 2026-07-26, `.qa-scratch/domain-bar-color-2026-07-26.md`).
+  (소유자 확정 2026-07-26 — 위 수치가 그 판정에서 옮겨 적은 실측이고, 원본
+  작업 파일은 `.qa-scratch/`(gitignore)라 저장소에 없다. **근거는 이 문단이다**).
 - 온톨로지 종류(kind) 색은 예외로 허용하되 **데이터를 나타내는 표시로만** 쓴다.
   그래프의 채움색은 작은 점이 3:1 대비를 내야 해서 선명해도 되지만, 패널이나
   카드에서는 무채색 바탕 + 작은 표식 + 라벨/아이콘으로 낮춘다. 상세 카드 안에서
@@ -328,6 +330,8 @@ particle·rarity(gold)·shimmer 를 `--studio-*` 토큰과 `.studio-stage` 안�
 - `src/shared/ui/surface.tsx` — 화면이 **나타나고 사라지는 방식**을 담은 기본 부품
 - `src/shared/ui/dialog.tsx` — **뒤를 막는 모달**의 정본 (스크림·트랩·Esc·복귀·스크롤락·폭 2단). 2026-08-15 신설 — 축·토큰·변형을 바꾸는 것이 곧 규격 변경이다
 - `src/shared/ui/input.tsx` · `src/shared/ui/checkbox.tsx` — 폼 **행동 층**의 정본 (이름 강제 · 오류/힌트 배선 · 라벨=타깃). 2026-08-15 신설
+- `src/shared/ui/badge-class.ts` — **정적 배지의 기하** 정본 (반경·인셋·타입단). 2026-08-15 신설 — 색·자간은 일부러 축이 아니다(실측에 다수파 없음)
+- `src/shared/ui/segmented-control.tsx` — **배타 단일선택**의 정본 (radiogroup + roving + 컨테이너 캐노니컬). 2026-08-15 신설
 - `src/shared/ui/page-frame.ts` — **페이지 틀**(상단 여백 · 좌우 인셋 · 최대 폭 · 헤더/제목 줄). 2026-08-09 신설 — 그 전까지 이 층에는 규격이 아예 없어서 목적지마다 제각각이었다(제목까지 32/48/20px)
 - `app/globals.css` — 램프(ramp — 쓸 수 있는 값을 미리 정해 둔 사다리. 그 밖의 값은 lint 가 막는다): 글자 크기 · 행간 · 모서리 반경 · 그림자 · 컨트롤 높이 · 팔레트의 기준색
 - `.claude/rules/design.md` — 이 파일의 「스케일 고정 계약」 절
@@ -418,6 +422,7 @@ particle·rarity(gold)·shimmer 를 `--studio-*` 토큰과 `.studio-stage` 안�
 | **누를 수 있는 것은 전부 pointer** — 활성 `button`·`summary`·`a[href]` 는 렌더된 커서가 pointer 여야 한다 | `tests/e2e/cursor-affordance.spec.ts`(감사 대상 17개 라우트 전부 + 자기검증 프로브) | 위반이 **코드에 아무 값도 안 남긴다** — 새 컴포넌트가 그냥 `<button>` 을 쓰면 클래스도 인라인 스타일도 없이 브라우저 기본값으로 떨어져서 볼 문자열이 없다. lint 셀렉터는 «중복해서 적은 것» 만 볼 수 있고, «중앙 규칙이 사라졌거나 안 닿는 것» 은 렌더 결과를 재야 안다 |
 | **지도 패널의 둘째 잉크 램프가 성질을 지킨다** — 패널 표면 위 본문 AA · 위계 단조 감소 · 잉크가 몰래 늘지 않음 | `tests/contract/topology-panel-ink-ladder.contract.test.ts` | 판정하려면 **그 잉크가 얹힌 표면 토큰의 값**과 대비 계산이 필요하다 — 다른 파일의 값을 봐야 하므로 한 파일 AST 셀렉터로는 표현할 수 없다. 값은 자유롭게 바꿀 수 있고 대신 장부(`INK_LEDGER`)를 같이 고쳐야 해서 **그 판단이 diff 에 남는다**. 왜 전역으로 수렴시키지 않았는지는 `docs/DECISIONS.md` 2026-08-06 |
 | **어느 바탕 위에 어느 글자색까지 쓸 수 있나** — quaternary 는 겹치지 않은 무채색 바탕(맨 아래 3단 + canvas/panel 위 overlay-1)까지, 그보다 올라선 바탕(overlay-2 이상 · elevated+overlay · 색이 섞인 바탕) 위의 글자는 tertiary 부터 | `tests/contract/quaternary-ink-surface.contract.test.ts`(값·자리) + `tests/e2e/a11y-open-surfaces.spec.ts`(화면) | 판정이 글자색이 아니라 **그 글자가 얹힌 바탕이 어떻게 겹쳐졌는지**에 달렸다 — 같은 클래스가 panel 위에서는 대비 5.00, overlay-2 위에서는 4.36 이다. 게다가 이 층에서 가장 흔한 코드 모양이 `active ? 틴트+밝은 글자색 : quaternary` 같은 분기라, 같은 태그에 붙은 클래스만 보고 짝을 맞추면 엉뚱하게 걸린다(2026-08-04 전수 18쌍 중 다수가 분기였다) — 그래서 코드만 보는 래칫 대신 값 자체를 고정하는 계약 + 실제로 화면을 열어서 재는 검사를 쓴다 |
+| **꽉 찬 브랜드 면 위에 어느 잉크를 얹어도 되나** — `--color-indigo-brand`(100% 불투명) 위의 글자는 AA(4.5:1)를 넘어야 하고, 오늘 그 자리를 통과하는 잉크는 `--color-text-on-accent` 다 | `tests/contract/brand-fill-ink-license.contract.test.ts` | 판정이 **두 토큰 값의 합성 대비**라 한 파일 AST 셀렉터로는 표현할 수 없다. 그리고 위반이 값 규칙을 하나도 안 어긴다 — `text-primary` 도 `indigo-brand` 도 정당한 램프 토큰이고, 틀린 것은 **둘을 같은 자리에 둔 것**이다(4.42:1). 인접한 `accent-ink-contrast` 계약은 **틴트 위 인디고 잉크**만 보므로 이 짝은 그 시야 밖이었다 |
 
 **램프에 없는 칸은 아무 소리도 안 낸다 (2026-07-27 실측).** `text-large` 는
 램프에 없는데도 tsc·eslint·전체 테스트를 전부 통과했다 — Tailwind 가 그

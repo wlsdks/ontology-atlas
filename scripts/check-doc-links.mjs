@@ -143,6 +143,12 @@ export function checkFile(file, { root = ROOT } = {}) {
 
   if (!isHistoricalDoc(relative)) {
     for (const ref of collectProseDocRefs(markdown)) {
+      // 유령 디렉터리 인용은 실재 여부를 묻지 않는다 — 작업자의 컴퓨터에만 있는
+      // 자리라, exists() 로 판정하면 로컬만 초록인 게이트가 된다.
+      if (ref.ghost) {
+        problems.push({ file: relative, line: ref.line, target: ref.target, kind: 'cited path (저장소에 없는 자리)' });
+        continue;
+      }
       const resolved = ref.relative ? path.resolve(path.dirname(file), ref.target) : path.join(root, ref.target);
       if (!exists(resolved)) {
         problems.push({ file: relative, line: ref.line, target: ref.target, kind: 'cited path' });

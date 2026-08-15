@@ -8789,10 +8789,40 @@
           "depth": 2,
           "text": "2026-08-15 (2) — 폼 행동 층: Input/Textarea·Checkbox 승인, Switch·Slider 반려",
           "slug": "2026-08-15-2-폼-행동-층-inputtextareacheckbox-승인-switchslider-반려"
+        },
+        {
+          "depth": 2,
+          "text": "2026-08-15 (3) — SegmentedControl: 배타 단일선택의 정본, 2택도 radiogroup 이다",
+          "slug": "2026-08-15-3-segmentedcontrol-배타-단일선택의-정본-2택도-radiogroup-이다"
+        },
+        {
+          "depth": 2,
+          "text": "PO Council Verdict — 디자인 시스템 별도 공개 repo 추출 (2026-08-15)",
+          "slug": "po-council-verdict-디자인-시스템-별도-공개-repo-추출-2026-08-15"
+        },
+        {
+          "depth": 2,
+          "text": "2026-08-15 (4) — 정적 배지는 값 층이 **기하만** 소유한다. 색은 다수파가 없어 축이 아니다",
+          "slug": "2026-08-15-4-정적-배지는-값-층이-기하만-소유한다-색은-다수파가-없어-축이-아니다"
+        },
+        {
+          "depth": 2,
+          "text": "2026-08-15 (5) — 섹션 카드: 값 층 **반려**, 대신 이미 있던 토큰의 미채택 12곳을 갚는다",
+          "slug": "2026-08-15-5-섹션-카드-값-층-반려-대신-이미-있던-토큰의-미채택-12곳을-갚는다"
+        },
+        {
+          "depth": 2,
+          "text": "2026-08-15 (6) — 같은 대비 결함이 **세 번째** 났다. 이번엔 고치지 말고 잠근다",
+          "slug": "2026-08-15-6-같은-대비-결함이-세-번째-났다-이번엔-고치지-말고-잠근다"
+        },
+        {
+          "depth": 2,
+          "text": "2026-08-15 (7) — 배지 tone 축 **재심 반려**. 역할은 넷이지만 «분류 가능»은 «수렴 가능»이 아니다",
+          "slug": "2026-08-15-7-배지-tone-축-재심-반려-역할은-넷이지만-분류-가능은-수렴-가능이-아니다"
         }
       ],
       "excerpt": "이 파일은 결정과 그때 진 반대 의견을 남긴다. docs/CHANGELOG.md 는 무엇이 언제 바뀌었나를 답하고, 이 파일은 왜 그렇게 정했고, 무엇을 걸었나를 답한다. 최신이 위. 기록은 덧붙이기만 한다 — 지난 기록을 고치지 않는다. 판단이 바뀌었으면 새 기록을 쓰고 옛 기록을 뒤집힘 으로 표시한다. 틀린 기록도 자산이다. 1. 소집 전에 읽는다. 카운슬을 열기 전(그리고 단독 PO 패스를 쓰기 전) 같은 표면 · 같은 질문에 대한 선행 결정이 있는지 먼저 본다. 있으면 새 패스는 그것을 ① 여전히 유효하다고 인용하거나 ② 명시적으로 뒤집는다. 조용히 다시 결정",
-      "wordCount": 112649,
+      "wordCount": 115743,
       "updatedAt": "2026-08-15",
       "linksOut": [
         "slug"
@@ -9781,7 +9811,7 @@
         }
       ],
       "excerpt": "This document is maintained based on Section 3 of the design spec. For the original Linear specification, see design-references/DESIGN-linear.md. v2 (2026-07): topology-map-v2 에서 출하된 B2+ \"Circuit × Constellation\" 시각 언어가 페이지 롤아웃(랜딩 → docs/ontology 허브 → projects/insights → download)의 규범이 되었다 — 아래 v2 — \"Circuit × Constell",
-      "wordCount": 30805,
+      "wordCount": 31158,
       "updatedAt": "2026-08-15",
       "linksOut": [
         "design-references/DESIGN-linear",
@@ -12141,6 +12171,55 @@
       "linksOut": []
     },
     {
+      "slug": "ontology/capabilities/control-primitives",
+      "path": "docs/ontology/capabilities/control-primitives.md",
+      "title": "Control & Form Primitives",
+      "tags": [],
+      "frontmatter": {
+        "uid": "f8f39986-79c1-4dc4-9e7a-ae40dc609f17",
+        "slug": "capabilities/control-primitives",
+        "kind": "capability",
+        "title": "Control & Form Primitives",
+        "display_ko": "컨트롤·폼 프리미티브",
+        "display_en": "Control & Form Primitives",
+        "domain": "domains/design-system",
+        "elements": [],
+        "path": "src/shared/ui/control-class.ts",
+        "created_by": "agent:unknown"
+      },
+      "headings": [
+        {
+          "depth": 1,
+          "text": "Control & Form Primitives",
+          "slug": "control-form-primitives"
+        },
+        {
+          "depth": 2,
+          "text": "사용자 결과",
+          "slug": "사용자-결과"
+        },
+        {
+          "depth": 2,
+          "text": "층 구조",
+          "slug": "층-구조"
+        },
+        {
+          "depth": 2,
+          "text": "추출 경계",
+          "slug": "추출-경계"
+        },
+        {
+          "depth": 2,
+          "text": "게이트",
+          "slug": "게이트"
+        }
+      ],
+      "excerpt": "화면을 만드는 사람이 className 을 손으로 쓰지 않게 하는 부품 층. 값은 controlClass()/fieldClass()(cva)가 내고, 행동(기본 type · 접근 이름 강제 · 오류 배선 · 키보드 계약)은 컴포넌트가 진다. 같은 뜻의 컨트롤이 화면마다 다른 크기·색으로 나오지 않는다. 이름 없는 입력, 배타성이 접근성 트리에 안 실린 선택, 초점 링 없는 체크박스가 구조적으로 만들어지지 않는다. 값 층 control-class.ts: 모양 8종(chip·icon·row·pill·card·link·tile·segment) × 크기 × 톤 9단, fie",
+      "wordCount": 231,
+      "updatedAt": "2026-08-15",
+      "linksOut": []
+    },
+    {
       "slug": "ontology/capabilities/data-source-mode",
       "path": "docs/ontology/capabilities/data-source-mode.md",
       "title": "Data Source Mode Branching",
@@ -12175,6 +12254,153 @@
       "excerpt": "폴더가 선택되었는지에 따라 vault-picked 모드와 static/sample 모드 사이에서 앱 동작을 분기하는 능력. src/features/data-source-mode (구현 증거) docs/FEATURES.md: \"Mode branching (data source)\" 절 (주의: risky-citation 경고: negated/deprecated-state 서술 포함 문서, 재검증 필요) medium-high (0.85): 단, docs/FEATURES.md 인용분은 최신성 재확인 필요",
       "wordCount": 46,
       "updatedAt": "2026-08-09",
+      "linksOut": []
+    },
+    {
+      "slug": "ontology/capabilities/design-build-handoff",
+      "path": "docs/ontology/capabilities/design-build-handoff.md",
+      "title": "Design Build Handoff",
+      "tags": [],
+      "frontmatter": {
+        "uid": "f0289ebb-4f66-4e62-8ed6-456524e4922a",
+        "slug": "capabilities/design-build-handoff",
+        "kind": "capability",
+        "title": "Design Build Handoff",
+        "display_ko": "조립 순서 핸드오프",
+        "display_en": "Design Build Handoff",
+        "domain": "domains/design-system",
+        "elements": [],
+        "path": ".claude/skills/design-build/SKILL.md",
+        "created_by": "agent:unknown"
+      },
+      "headings": [
+        {
+          "depth": 1,
+          "text": "Design Build Handoff",
+          "slug": "design-build-handoff"
+        },
+        {
+          "depth": 2,
+          "text": "사용자 결과",
+          "slug": "사용자-결과"
+        },
+        {
+          "depth": 2,
+          "text": "왜 이것이 이 시스템의 핵심인가",
+          "slug": "왜-이것이-이-시스템의-핵심인가"
+        },
+        {
+          "depth": 2,
+          "text": "알려진 결함 (2026-08-15 실측, 수리 중)",
+          "slug": "알려진-결함-2026-08-15-실측-수리-중"
+        },
+        {
+          "depth": 2,
+          "text": "추출 경계",
+          "slug": "추출-경계"
+        },
+        {
+          "depth": 2,
+          "text": "사본 계약",
+          "slug": "사본-계약"
+        }
+      ],
+      "excerpt": "에이전트가 화면을 만들기 시작할 때 가장 먼저 읽는 안내판. 「명령에서 화면까지, 같은 순서로」: 어떤 부품을 집을지, 어느 램프에서 값을 가져올지, 다 짓고 무엇으로 재는지를 순서로 처방한다. 에이전트가 매번 다른 방식으로 조립하지 않는다. 규격을 어겼을 때 어느 게이트가 잡는지까지 같은 문서에서 알 수 있다. 2026-08-03 census 의 진단: 「막고 있던 것은 모델의 취향이 아니라 가져다 쓸 부품이 없다는 것과 작업 순서가 안 적혀 있다는 것이었다」. 부품은 2026-08-15 세 라운드로 갖춰졌다: 그러면 남는 것이 이 안내판이다. 조립 시험에서 음성이",
+      "wordCount": 214,
+      "updatedAt": "2026-08-15",
+      "linksOut": []
+    },
+    {
+      "slug": "ontology/capabilities/design-gate-ratchets",
+      "path": "docs/ontology/capabilities/design-gate-ratchets.md",
+      "title": "Design Gates & Ratchets",
+      "tags": [],
+      "frontmatter": {
+        "uid": "3090f5e0-65e3-4d66-810a-28f6d616bf02",
+        "slug": "capabilities/design-gate-ratchets",
+        "kind": "capability",
+        "title": "Design Gates & Ratchets",
+        "display_ko": "디자인 게이트와 래칫",
+        "display_en": "Design Gates & Ratchets",
+        "domain": "domains/design-system",
+        "elements": [],
+        "path": "eslint.config.mjs",
+        "created_by": "agent:unknown"
+      },
+      "headings": [
+        {
+          "depth": 1,
+          "text": "Design Gates & Ratchets",
+          "slug": "design-gates-ratchets"
+        },
+        {
+          "depth": 2,
+          "text": "사용자 결과",
+          "slug": "사용자-결과"
+        },
+        {
+          "depth": 2,
+          "text": "세 갈래",
+          "slug": "세-갈래"
+        },
+        {
+          "depth": 2,
+          "text": "추출 경계",
+          "slug": "추출-경계"
+        }
+      ],
+      "excerpt": "규격을 어기면 빨개지게 만드는 층. 이 디자인 시스템에서 가장 대체 불가능한 부분이고(2026-08-15 PO 카운슬 실측: 부품·토큰 배포는 붐비지만 강제를 통째로 배포하는 곳은 못 찾았다), 동시에 가장 이식하기 어려운 부분이다. 에이전트가 만든 화면이 규격을 벗어나면 CI 가 빨간불로 말한다: 사람이 눈으로 찾아내지 않아도 된다. 게이트가 조용히 죽는 것(빈 집합 위 공회전)까지 프로브가 잡는다. 1. lint 셀렉터(no-restricted-syntax): 값이 코드에 문자열로 남는 규격: 타입·반경·그림자·모션·자간·무게·팔레트·층위·커서·비활성·accent",
+      "wordCount": 214,
+      "updatedAt": "2026-08-15",
+      "linksOut": []
+    },
+    {
+      "slug": "ontology/capabilities/design-token-ramps",
+      "path": "docs/ontology/capabilities/design-token-ramps.md",
+      "title": "Design Token Ramps",
+      "tags": [],
+      "frontmatter": {
+        "uid": "e098afc6-7170-4740-9161-c370a7cb2283",
+        "slug": "capabilities/design-token-ramps",
+        "kind": "capability",
+        "title": "Design Token Ramps",
+        "display_ko": "디자인 토큰 램프",
+        "display_en": "Design Token Ramps",
+        "domain": "domains/design-system",
+        "elements": [],
+        "path": "app/globals.css",
+        "created_by": "agent:unknown"
+      },
+      "headings": [
+        {
+          "depth": 1,
+          "text": "Design Token Ramps",
+          "slug": "design-token-ramps"
+        },
+        {
+          "depth": 2,
+          "text": "사용자 결과",
+          "slug": "사용자-결과"
+        },
+        {
+          "depth": 2,
+          "text": "램프",
+          "slug": "램프"
+        },
+        {
+          "depth": 2,
+          "text": "추출 경계",
+          "slug": "추출-경계"
+        },
+        {
+          "depth": 2,
+          "text": "게이트",
+          "slug": "게이트"
+        }
+      ],
+      "excerpt": "쓸 수 있는 값을 미리 몇 단계로 정해 둔 사다리들. 그 밖의 값은 lint 가 막는다. 화면마다 조금씩 다른 글자 크기·모서리·그림자가 생기지 않는다. 빛이 한 방향에서 오고, 위에 뜬 것이 더 짙은 그림자를 갖는다. 글자 크기 8단 · 행간 10단(크기와 1:1 짝) · 자간 · 무게 3단 · 반경 5단 · 그림자 5종(고도 3 + 도킹 2) · 모션 3단(fast 확인 · base 이동 · settle 확정) · 컨트롤 높이 · 층위(z) 사다리 · 아이콘 3단 · 다이얼로그 폭 2단 혼합. 고유 토큰 이름 580 중 269(46%)가 --topology- 이고",
+      "wordCount": 184,
+      "updatedAt": "2026-08-15",
       "linksOut": []
     },
     {
@@ -12960,6 +13186,68 @@
       "excerpt": "AI 코딩 에이전트(Claude Code, Codex, Cursor)와 개발자가 사람과 같은 온톨로지 볼트를 읽고 쓸 수 있게 하는 표면들: MCP 서버, 터미널 CLI, 앱 내 connect 플로우. README.md: \"Your agent reads and maintains it over MCP... one button writes your agent's config and proves the connection.\" mcp/src/index.js · mcp/src/tool-inventory.mjs: 활성 registry에서 tools/list와 full/read-",
       "wordCount": 188,
       "updatedAt": "2026-08-12",
+      "linksOut": []
+    },
+    {
+      "slug": "ontology/domains/design-system",
+      "path": "docs/ontology/domains/design-system.md",
+      "title": "Design System & Enforcement",
+      "tags": [],
+      "frontmatter": {
+        "uid": "27e7b72d-dfec-405d-b236-3139b59cd68a",
+        "slug": "domains/design-system",
+        "kind": "domain",
+        "title": "Design System & Enforcement",
+        "display_ko": "디자인 시스템과 강제",
+        "display_en": "Design System & Enforcement",
+        "capabilities": [
+          "capabilities/control-primitives",
+          "capabilities/design-build-handoff",
+          "capabilities/design-gate-ratchets",
+          "capabilities/design-token-ramps"
+        ],
+        "created_by": "agent:unknown"
+      },
+      "headings": [
+        {
+          "depth": 2,
+          "text": "정의",
+          "slug": "정의"
+        },
+        {
+          "depth": 2,
+          "text": "근거",
+          "slug": "근거"
+        },
+        {
+          "depth": 2,
+          "text": "포함 / 제외",
+          "slug": "포함-제외"
+        },
+        {
+          "depth": 2,
+          "text": "추출 경계 (2026-08-15 PO 카운슬)",
+          "slug": "추출-경계-2026-08-15-po-카운슬"
+        },
+        {
+          "depth": 2,
+          "text": "추출 명세: 시험 A 실측 (2026-08-15)",
+          "slug": "추출-명세-시험-a-실측-2026-08-15"
+        },
+        {
+          "depth": 3,
+          "text": "시험 B: 수리 후 재측정 (같은 날)",
+          "slug": "시험-b-수리-후-재측정-같은-날"
+        },
+        {
+          "depth": 2,
+          "text": "확신도",
+          "slug": "확신도"
+        }
+      ],
+      "excerpt": "사람과 AI 에이전트가 화면을 만들 때 고를 수 있는 값과 부품을 미리 정하고, 그 밖으로 나가면 자동으로 실패하게 만드는 책임 영역. 값(토큰 램프) · 부품(컨트롤 프리미티브) · 강제(lint 셀렉터·계약 테스트·래칫) · 조립 순서(핸드오프) 넷으로 이루어진다. 이 도메인이 다른 곳과 구별되는 지점: 문서가 아니라 게이트가 규격을 지킨다. 2026-08-03 전수 실측이 그 근거다: 디자인 시스템 문서가 이미 있는 상태에서 생 <button 419개 중 프리미티브가 덮던 것은 1개, 칩 하나의 크기 조합이 50종이었다. 게이트를 켠 뒤 손으로 쓴 버튼 74 ·",
+      "wordCount": 858,
+      "updatedAt": "2026-08-15",
       "linksOut": []
     },
     {
@@ -14150,6 +14438,7 @@
         "elements": [],
         "contains": [
           "domains/agent-integration",
+          "domains/design-system",
           "domains/graph-modeling",
           "domains/local-vault-management",
           "domains/onboarding-and-shell",
@@ -16476,6 +16765,33 @@
         "linkText": "domains/project-portfolio"
       }
     ],
+    "ontology/domains/design-system": [
+      {
+        "fromSlug": "ontology/capabilities/control-primitives",
+        "context": "frontmatter · **[domains/design-system]**",
+        "linkText": "domains/design-system"
+      },
+      {
+        "fromSlug": "ontology/capabilities/design-build-handoff",
+        "context": "frontmatter · **[domains/design-system]**",
+        "linkText": "domains/design-system"
+      },
+      {
+        "fromSlug": "ontology/capabilities/design-gate-ratchets",
+        "context": "frontmatter · **[domains/design-system]**",
+        "linkText": "domains/design-system"
+      },
+      {
+        "fromSlug": "ontology/capabilities/design-token-ramps",
+        "context": "frontmatter · **[domains/design-system]**",
+        "linkText": "domains/design-system"
+      },
+      {
+        "fromSlug": "ontology/ontology-atlas",
+        "context": "frontmatter · **[domains/design-system]**",
+        "linkText": "domains/design-system"
+      }
+    ],
     "ontology/domains/local-vault-management": [
       {
         "fromSlug": "ontology/capabilities/data-source-mode",
@@ -16945,6 +17261,34 @@
         "fromSlug": "ontology/domains/agent-integration",
         "context": "frontmatter · **[capabilities/vault-agent]**",
         "linkText": "capabilities/vault-agent"
+      }
+    ],
+    "ontology/capabilities/control-primitives": [
+      {
+        "fromSlug": "ontology/domains/design-system",
+        "context": "frontmatter · **[capabilities/control-primitives]**",
+        "linkText": "capabilities/control-primitives"
+      }
+    ],
+    "ontology/capabilities/design-build-handoff": [
+      {
+        "fromSlug": "ontology/domains/design-system",
+        "context": "frontmatter · **[capabilities/design-build-handoff]**",
+        "linkText": "capabilities/design-build-handoff"
+      }
+    ],
+    "ontology/capabilities/design-gate-ratchets": [
+      {
+        "fromSlug": "ontology/domains/design-system",
+        "context": "frontmatter · **[capabilities/design-gate-ratchets]**",
+        "linkText": "capabilities/design-gate-ratchets"
+      }
+    ],
+    "ontology/capabilities/design-token-ramps": [
+      {
+        "fromSlug": "ontology/domains/design-system",
+        "context": "frontmatter · **[capabilities/design-token-ramps]**",
+        "linkText": "capabilities/design-token-ramps"
       }
     ],
     "ontology/capabilities/ontology-blocks": [
@@ -17697,11 +18041,39 @@
                 "title": "Construction Qualification Review"
               },
               {
+                "name": "control-primitives",
+                "path": "ontology/capabilities/control-primitives",
+                "type": "doc",
+                "slug": "ontology/capabilities/control-primitives",
+                "title": "Control & Form Primitives"
+              },
+              {
                 "name": "data-source-mode",
                 "path": "ontology/capabilities/data-source-mode",
                 "type": "doc",
                 "slug": "ontology/capabilities/data-source-mode",
                 "title": "Data Source Mode Branching"
+              },
+              {
+                "name": "design-build-handoff",
+                "path": "ontology/capabilities/design-build-handoff",
+                "type": "doc",
+                "slug": "ontology/capabilities/design-build-handoff",
+                "title": "Design Build Handoff"
+              },
+              {
+                "name": "design-gate-ratchets",
+                "path": "ontology/capabilities/design-gate-ratchets",
+                "type": "doc",
+                "slug": "ontology/capabilities/design-gate-ratchets",
+                "title": "Design Gates & Ratchets"
+              },
+              {
+                "name": "design-token-ramps",
+                "path": "ontology/capabilities/design-token-ramps",
+                "type": "doc",
+                "slug": "ontology/capabilities/design-token-ramps",
+                "title": "Design Token Ramps"
               },
               {
                 "name": "desktop-download-decision",
@@ -17842,6 +18214,13 @@
                 "type": "doc",
                 "slug": "ontology/domains/agent-integration",
                 "title": "AI Agent Integration"
+              },
+              {
+                "name": "design-system",
+                "path": "ontology/domains/design-system",
+                "type": "doc",
+                "slug": "ontology/domains/design-system",
+                "title": "Design System & Enforcement"
               },
               {
                 "name": "graph-modeling",

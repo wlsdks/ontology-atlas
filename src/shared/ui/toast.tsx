@@ -1,7 +1,6 @@
 'use client';
 
 import { type ReactNode } from 'react';
-import { useTranslations } from 'next-intl';
 import { toast as sonnerToast, Toaster } from 'sonner';
 
 type ToastTone = 'success' | 'info' | 'error';
@@ -47,8 +46,25 @@ interface ToastApi {
  *
  * 본 모듈이 'use client' 인 이유: sonner 내부 store 가 클라이언트 전용.
  */
-export function ToastProvider({ children }: { children: ReactNode }) {
-  const t = useTranslations('nav');
+export function ToastProvider({
+  children,
+  /**
+   * 알림 영역의 접근 이름. **문자열은 주입받는다** (2026-08-15 이식성 슬라이스).
+   *
+   * 종전에는 이 부품이 `useTranslations('nav')` 로 직접 번역을 읽었다 — 그
+   * 한 줄 때문에 알림 부품이 이 앱의 next-intl 설정과 `nav` 네임스페이스에
+   * 묶여, 디자인 시스템만 받아 간 사람의 프로젝트에서는 **부품이 아예 안
+   * 돈다**. 프리미티브가 자기 문자열을 스스로 가져오면 그 프리미티브는 그
+   * 앱의 것이지 시스템의 것이 아니다.
+   *
+   * 기본값은 영어 한 단어 — 주입을 잊어도 스크린리더가 이름 없는 영역을
+   * 만나지 않는다. 이 앱은 `AppProviders` 에서 번역을 넣어 준다.
+   */
+  notificationsLabel = 'Notifications',
+}: {
+  children: ReactNode;
+  notificationsLabel?: string;
+}) {
   return (
     <>
       {children}
@@ -66,7 +82,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
           left: 16,
         }}
         gap={8}
-        containerAriaLabel={t('notificationsAriaLabel')}
+        containerAriaLabel={notificationsLabel}
         // sonner 기본 hotkey (Alt+T) 는 한국어 사용자에게 의미 전달 약함 +
         // screen reader 가 "알림 alt+T" 로 라벨을 모호하게 만듦. 빈 배열로
         // 비활성화해 region 라벨이 locale-aware "Notifications / 작업 알림"

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useId, useMemo, useRef, useState } from "react";
+import { badgeClass } from "@/shared/ui/badge-class";
 import { useTranslations } from "next-intl";
 import { ChevronDown, Clipboard, X } from "lucide-react";
 import { ICON_SIZE } from "@/shared/ui/icon-size";
@@ -341,8 +342,7 @@ export function LiveActivityBadge({
       >
         <span aria-hidden className="inline-block h-1.5 w-1.5 rounded-full bg-[color:var(--color-status-success)]" />
         <span className="font-mono uppercase tracking-[var(--tracking-caps-10)]">{labels.live}</span>
-        <span
-          className="rounded-micro border border-[color:var(--color-indigo-line-a22)] px-1.5 py-0.5 font-mono text-caption uppercase tracking-[var(--tracking-caps-08)] text-[color:var(--color-text-secondary)]"
+        <span className={badgeClass({ shape: "micro", className: "border border-[color:var(--color-indigo-line-a22)] font-mono uppercase tracking-[var(--tracking-caps-08)] text-[color:var(--color-text-secondary)]" })}
           data-testid="live-agent-state-chip"
         >
           {agentStateChip}
@@ -530,9 +530,8 @@ export function LiveActivityBadge({
                   >
                     {evidenceCounts.map(([label, count]) =>
                       count > 0 ? (
-                        <span
-                          key={label}
-                          className="rounded-micro border border-[color:var(--color-border-soft)] px-1.5 py-0.5 font-mono text-caption uppercase tracking-[var(--tracking-caps-08)] text-[color:var(--color-text-quaternary)]"
+                        <span key={label}
+                          className={badgeClass({ shape: "micro", className: "border border-[color:var(--color-border-soft)] font-mono uppercase tracking-[var(--tracking-caps-08)] text-[color:var(--color-text-quaternary)]" })}
                         >
                           {label} · {count}
                         </span>

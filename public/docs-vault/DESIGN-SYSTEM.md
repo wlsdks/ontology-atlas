@@ -769,8 +769,9 @@ Defined via Tailwind 4's CSS-based `@theme`. See `app/globals.css` for the actua
 
 ### Signal tones (3, symmetric ladders)
 
-Design Guardian verdict, `.qa-scratch/audit-2026-07/guardian-color-verdict.md`
-§① (2026-07-20): **신호 톤은 3종이다 — warning(amber) · error(red) ·
+Design Guardian verdict §① (2026-07-20) — 그 판정의 작업 파일은 gitignore 된
+`.qa-scratch/` 에 있었고 저장소에 없다. **아래 문단이 살아남은 정본이다**:
+**신호 톤은 3종이다 — warning(amber) · error(red) ·
 success(emerald).** Each is a solid status dot plus a symmetric
 surface/border/text alpha ladder built on ONE hue. These are the only
 chroma exceptions to the neutrals + single-indigo charter; they explain
@@ -861,8 +862,9 @@ faces 13 → **1** (the nav-rail brand mark), chroma area 32,987px² → 36px².
 insights 구성 tab keeps 4 kind-tone faces, all inside the 종류 census card where
 the unlabelled stack strip has no other channel. `/ko/project/[slug]` renders
 zero. None of these is `--color-status-success`; a green **status dot** would be,
-and that is a separate, sanctioned signal. Decision record:
-`.qa-scratch/domain-bar-color-2026-07-26.md`.
+and that is a separate, sanctioned signal. 판정 2026-07-26(소유자 확정) —
+작업 파일은 gitignore 된 `.qa-scratch/` 에 있었고 저장소에 없다. 실측과 근거는
+`.claude/rules/design.md` 「막대 채색」 문단이 옮겨 적어 두었다.
 
 ### Borders
 
@@ -2814,10 +2816,36 @@ or fluid column widths"* — 폭은 램프 스텝이 아니라 그리드·내용
 | 상태 칩 (`CHROME_STATUS_CHIP_CLASS`) | 44px (타일과 동일) | `--chrome-radius` 10px | `px-3.5` | body / label |
 | 패널 (INDEX · 데이터시트) | 콘텐츠 | `--topology-v2-panel-radius` 12px (= `rounded-panel`) | `--topology-v2-panel-pad` | title 헤더 · body 행 |
 | 팝오버 (ego popover) | 콘텐츠 | `rounded-panel` | `--card-pad` | title + body/label |
-| 카드 (일반) | 콘텐츠 | `rounded-card` | `--card-pad` | title + body |
-| 배지·칩 (일반) | 콘텐츠 | `rounded-chip` | `px-2 py-0.5` | label (또는 caption) |
+| **구획 상자** (패널) | 콘텐츠 | `rounded-panel` | **`--card-pad`** | title + body |
+| **항목 상자** (카드) | 콘텐츠 | `rounded-card` | 내용 밀도가 정한다 (강제 안 함) | title + body |
+| 배지·칩 (일반) | 콘텐츠 | **`badgeClass({ shape })` 가 낸다** — `micro`(micro·px-1.5 py-0.5·caption) · `tag`(chip·px-1.5·label) · `pill`(full·px-2 py-0.5·caption). 값을 여기 베끼지 않는다 | 위와 같음 | 위와 같음 |
 | 입력 (input/search) | 콘텐츠 | `rounded-card` | `px-3 py-2` | body |
 | 버튼 (일반) | 콘텐츠 | `rounded-chip`~`card` | `px-3 py-1.5` | body |
+
+**배지 행이 왜 위임인가** (2026-08-15): 종전 이 줄은 `rounded-chip · px-2 py-0.5 ·
+label` 을 처방하고 있었는데, 전수해 보니 그 조합의 **정확 일치가 프로덕션 0건**
+이었다 — 배지 67건이 기하 30종 · 색 60종으로 갈려 있었고 표는 아무도 안 보고
+있었다. 값을 문서에 다시 적는 대신 `badgeClass` 에 위임하고, 손으로 쓴 기하는
+`static-badge-adoption-ratchet` 이 붙든다. **색과 자간은 값 층이 일부러 안
+덮는다** — 색 조합 60종에 최대 클러스터가 2라, 어떤 값을 골라도 소비처 0
+선택지가 되기 때문이다(그 수렴은 자리별 디자인 판정으로 다음 라운드).
+
+**구획이면 panel, 항목이면 card** (2026-08-15 「체계」석). 페이지·시트·드로어
+바닥에 직접 놓여 **구역을 만드는** 상자는 `rounded-panel`(12px) +
+`p-[var(--card-pad)]`. 이미 카드/패널 안에 내포되거나 **반복 목록의 한 항목**인
+상자는 `rounded-card`(9px)이고 인셋은 내용 밀도가 정한다.
+
+바깥 12 > 안쪽 9 의 동심 관계는 Material 3 shape scale · Apple HIG 의 「내포
+표면은 더 작은 반경」 지침과 같다. 실측 근거: 한 파일 안에서 바깥이 panel/16px,
+안쪽이 card 인 자리가 실재하고(`ConstructionReviewPanel` 104 ↔ 158행), card
+가족 표본은 전부 항목·내포 상자다. 패딩 분포도 갈린다 — panel 가족은 16px
+준다수파(46%), card 가족은 밀도 주도 롱테일이라 **card 인셋은 강제하지 않는다**.
+
+⚠️ **종전 이 표는 「카드(일반) = `rounded-card` + `--card-pad`」였는데 그 짝의
+실사용은 0건이었다.** 살아 있는 규격은 `rounded-panel` + 16px(토큰 13 + 손 12 =
+25곳)이다. 표를 보고 만들면 현실과 어긋나는 오정보였고, 2026-07-26 에 지운
+`--pad-panel` 과 같은 병이다. `--topology-v2-panel-pad`(14px)는 소비처 4곳이
+전부 지도 상세 패널 안이라 **지도 국소 토큰**이지 일반 패널 규격이 아니다.
 
 ### 명시 예외 (램프 밖, 문서화된 것만)
 
@@ -3009,6 +3037,7 @@ JSX 안에 44px 정사각 버튼이나 라벨 버튼을 인라인 클래스로 �
 | `Dialog` | `src/shared/ui/dialog.tsx` | **뒤를 막는 중앙 대화상자** — 스크림(`--overlay-scrim`)·트랩·Esc·복귀·스크롤락·`--z-dialog`·폭 2단(`--dialog-w-sm/md`)이 기본으로 딸려 온다. `modal={false}` 없음(비모달은 Surface 의 소비자). 게이트: `tests/contract/dialog-adoption-ratchet.contract.test.ts` — 프리미티브 밖 `role="dialog"` 마크업은 장부를 넘지 못한다 |
 | `Input` / `Textarea` | `src/shared/ui/input.tsx` | 폼 필드의 **행동 층** — 접근 이름 강제(label/aria-label/labelledBy 택1) + `error`/`hint` → `aria-invalid`·`aria-describedby`·`role="alert"` 자동 배선. 스타일은 `fieldClass` 호출 결과와 **바이트 동일**(계약 단언 — 값은 값 층 한 곳에만). 게이트: `tests/contract/field-adoption-ratchet.contract.test.ts` — 새 파일의 raw 텍스트 필드는 0 |
 | `Checkbox` | `src/shared/ui/checkbox.tsx` | 라벨 내장 체크박스 — brand accent · size-4 · 값 층 초점 링 · `fieldLabel(row)`(라벨=타깃, WCAG 2.5.8). raw `type="checkbox"` 는 래칫이, `accent-[` 이탈은 lint 가 막는다 |
+| `SegmentedControl` | `src/shared/ui/segmented-control.tsx` | 보더 상자 안 **배타 단일선택** — radiogroup + `aria-checked`(2택 포함, aria-pressed 표현 불가) · roving tabindex + 화살표 순환 + selection-follows-focus(Home/End·Escape 없음) · 컨테이너 캐노니컬 `p-px gap-px overlay-1 border-soft rounded-chip`(인셋은 높이 사다리 산수 — 24→28·32→36 만 어휘 위) · 선택 표현은 값 층 `active` 하나 |
 
 ⚠️ **`Card` · `Badge` · `DetailCard` 는 2026-08-03 에 삭제됐다.** 2026-04-30 생성,
 3개월간 프로덕션 사용처 0. 이유는 게으름이 아니라 그 컴포넌트가 **시스템을
@@ -3726,7 +3755,8 @@ system in consuming apps."*
 
 ### 확장 — 접힌 묶음을 어떻게 펼치나 (2026-08-01 신설 · 2026-08-02 개정)
 
-시안 `.qa-scratch/proto-expand.html` 의 좌측 계측 패널을 그대로 이식했다. 같은
+시안(gitignore 된 `.qa-scratch/` 의 프로토타입 — 저장소에 없다)의 좌측 계측
+패널을 그대로 이식했다. 같은
 `appearance-preferences` 스토어(`ontology-atlas:expand:v1`)를 쓰고, 지도 캔버스가
 매 프레임 ref 미러로 읽어 **다음 프레임부터** 반영된다.
 

@@ -9,7 +9,7 @@ description: 사람과 AI 에이전트가 제품의 의미와 구현 근거를 �
 domains: []
 capabilities: []
 elements: []
-contains: [domains/agent-integration, domains/graph-modeling, domains/local-vault-management, domains/onboarding-and-shell, domains/project-portfolio, domains/topology-navigation]
+contains: [domains/agent-integration, domains/design-system, domains/graph-modeling, domains/local-vault-management, domains/onboarding-and-shell, domains/project-portfolio, domains/topology-navigation]
 created_by: human
 path: README.md
 ---

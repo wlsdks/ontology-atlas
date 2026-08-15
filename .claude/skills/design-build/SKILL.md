@@ -86,6 +86,8 @@ description: Build a screen from this repo's design system deterministically —
 
 ## 1. 컨트롤 — 손으로 className 을 쓰지 않는다
 
+**누르는 것**:
+
 | 필요한 것 | 쓸 것 |
 |---|---|
 | 라벨 있는 작은 컨트롤 | `<Chip>` |
@@ -95,6 +97,99 @@ description: Build a screen from this repo's design system deterministically —
 | 보더 없는 인셋 (세그먼트 · 탭 · 고스트 버튼) | `controlClass({ shape: 'segment' })` |
 | 위에 없는 모양 (pill · card · link · tile) | `controlClass({ shape })` |
 | 그 여덟에도 없는 모양 | **멈추고 전체를 다시 센다** — 분류에 없는 모양이 나왔다는 뜻이다 |
+
+**값을 받는 것** (2026-08-15 등재 — 이 표에 없어서 실사용 시험에서 에이전트가
+폼을 짓다 멈췄다. 부품은 있는데 안내판이 그리로 안 갔다):
+
+| 필요한 것 | 쓸 것 |
+|---|---|
+| 한 줄 텍스트 입력 | `<Input label="…">` — 이름(`label` · `aria-label` · `labelledBy`) 셋 중 하나를 **타입이 요구한다** |
+| 여러 줄 입력 | `<Textarea label="…">` |
+| 오류 · 안내 문구 | `error` / `hint` **prop 으로만** 넘긴다 — `aria-invalid` · `aria-describedby` · `role="alert"` 가 자동으로 배선된다. 손으로 쓰면 배선이 갈라진다 |
+| 켜고 끄는 것 하나 | `<Checkbox label="…">` — 라벨이 곧 타깃이다(WCAG 2.5.8) |
+| 몇 개 중 하나 고르기 (2~4개 · 라벨이 짧다) | `<SegmentedControl>` — **2택 「켬/끔」도 이것**이다. radiogroup + 화살표 이동이 딸려 온다 |
+| 몇 개 중 하나 고르기 (5개 이상 · 라벨이 길다) | `<Select>` |
+| 상자를 부모가 이미 냈다 | `frame="bare"` — `boxed` 를 겹치면 상자 속 상자가 된다 |
+
+**눌리지 않는 작은 표시**(상태 라벨 · 종류 태그 · 개수 배지)는 컨트롤이 아니다 —
+`badgeClass({ shape })` 가 기하를 낸다:
+
+| 필요한 것 | 쓸 것 |
+|---|---|
+| 아주 작은 표시(개수 · 상태 한 단어) | `badgeClass({ shape: 'micro' })` |
+| 일반 태그 | `badgeClass({ shape: 'tag' })` — 기본값 |
+| 알약형(대문자 아이브로우가 흔하다) | `badgeClass({ shape: 'pill' })` |
+
+⚠️ **색과 자간은 값 층이 안 낸다.** 실측에서 배지 색 조합이 60종(최대 클러스터
+2)이라 수렴할 다수파가 없었고, 그래서 tone 축을 만들면 소비처 0 선택지가 된다.
+색은 그 배지가 **무슨 사실을 나르는지**가 정하므로 `className` 으로 넘긴다:
+`badgeClass({ shape: 'pill', className: 'bg-[color:var(--color-indigo-a12)] …' })`.
+손으로 기하를 다시 쓰면 `static-badge-adoption-ratchet` 이 막는다.
+
+⚠️ **`Checkbox` 와 `SegmentedControl` 이 겹쳐 보일 때** (2026-08-15 두 번째
+시험이 지적한 모순): 가르는 것은 옵션 개수가 아니라 **라벨이 무엇의 이름인가**다.
+라벨이 **그 항목 자체의 이름**이면(「만들면 바로 공개돼요」) `Checkbox` —
+켜고 끄는 것 하나다. 항목 이름이 **행 왼쪽에 이미 있고** 라벨이 **값의
+이름**이면(「켬」/「끔」·「개발」/「일반」) `SegmentedControl` 이다. 그래서 설정
+행은 거의 항상 세그먼트이고, 폼 안의 동의 한 줄은 거의 항상 체크박스다.
+
+⚠️ **입력의 폭**: `className` 은 입력이 아니라 **래퍼**(라벨+입력+오류를 담는
+세로 상자)로 간다. 래퍼가 세로 flex 라 자식이 가로로 늘어나므로, 칸을 꽉
+채우려면 **래퍼에** `className="w-full"` 을 준다(입력에 직접 거는 게 아니다).
+값 표(`frame` · `size` · `multiline`)는 `docs/DESIGN-SYSTEM.md` 「폼 필드」 절.
+
+게이트: `field-class` · `field-adoption-ratchet`(새 파일의 생 `<input>` 은 0) ·
+`checkbox-target-size` · `dialog-adoption-ratchet` · `touch-floor-layer`.
+
+**뒤를 막는 표면**은 `<Surface>` 가 아니라 `<Dialog>` 다 — 아래 2절.
+
+### 폼 하나를 통째로 — **베낄 것이 없어서 짐작하게 두지 않는다**
+
+2026-08-15 두 번째 이식성 시험의 진단: *"번들에 컴포넌트 사용 예제가 0건이라
+호출 모양을 전부 타입에서 역산해야 했다"* — 부품과 규격이 다 있어도 **한 번
+조립된 모습**이 없으면 매번 소스를 열게 된다. 그래서 여기 한 장을 둔다:
+
+```tsx
+<Dialog open={open} onClose={close} labelledBy="new-project-title" size="sm">
+  <h2 id="new-project-title" className="text-title font-[var(--font-weight-strong)] text-[color:var(--color-text-primary)]">
+    새 프로젝트 만들기
+  </h2>
+
+  <div className="mt-4 flex flex-col gap-3">
+    <Input
+      label="이름"
+      className="w-full"                    {/* 폭은 래퍼에 */}
+      value={name}
+      onChange={(e) => setName(e.target.value)}
+      error={submitted && !name.trim() ? '이름을 입력하세요' : undefined}
+    />
+    <Textarea
+      label="설명"
+      className="w-full"
+      rows={3}
+      hint="나중에 바꿀 수 있어요"
+      value={desc}
+      onChange={(e) => setDesc(e.target.value)}
+    />
+    <Checkbox
+      label="만들면 바로 공개돼요"
+      checked={isPublic}
+      onChange={(e) => setPublic(e.target.checked)}
+    />
+  </div>
+
+  {/* 푸터: 오른쪽 정렬 · 취소가 왼쪽 · 주 행동이 오른쪽(실측 관례) */}
+  <div className="mt-4 flex justify-end gap-2">
+    <Button variant="ghost" onClick={close}>취소</Button>
+    <Button variant="primary" onClick={submit}>만들기</Button>
+  </div>
+</Dialog>
+```
+
+여기서 읽어야 할 것 넷: ① 제목은 `text-title` + `strong` 이고 `labelledBy`
+로 다이얼로그에 묶는다 ② 오류·안내는 **prop 이지 형제 원소가 아니다**
+③ 푸터는 `justify-end gap-2` · 취소(`ghost`) 왼쪽 · 주 행동(`primary`)
+오른쪽 ④ 세로 리듬은 `gap-3`(필드 사이) · `mt-4`(묶음 사이).
 
 모양 여섯은 419개를 전부 세어서 나온 것이다(칩 128 · 링크형 85 · 행 39 ·
 아이콘 36 · pill 32 · 카드 18). **아홉 번째를 감으로 추가하지 않는다** — 나중에

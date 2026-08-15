@@ -312,7 +312,7 @@ export function DependencyPicker({
                 </span>
               )}
               {p.isHub && (
-                <span className="rounded-micro bg-[color:var(--color-indigo-brand)] px-1 font-mono text-caption uppercase tracking-[var(--tracking-caps-08)] text-[color:var(--color-text-primary)]">
+                <span className="rounded-micro bg-[color:var(--color-indigo-brand)] px-1 font-mono text-caption uppercase tracking-[var(--tracking-caps-08)] text-[color:var(--color-text-on-accent)]">
                   HUB
                 </span>
               )}

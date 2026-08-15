@@ -33,11 +33,13 @@ describe("LocaleSwitch", () => {
   it("keeps locale buttons large enough for first-viewport touch", () => {
     renderSwitch();
 
-    expect(screen.getByRole("button", { name: "EN English" }).className).toContain(
-      "h-8",
+    // SegmentedControl 이주(2026-08-15) — 크기는 값 층이 낸다: min-h-8(32px)
+    // + atlas-touch-floor(coarse 44 승격, 유령 히트가 아니라 실제 높이).
+    expect(screen.getByRole("radio", { name: "EN English" }).className).toContain(
+      "min-h-8",
     );
-    expect(screen.getByRole("button", { name: "KO 한국어" }).className).toContain(
-      "min-w-8",
+    expect(screen.getByRole("radio", { name: "KO 한국어" }).className).toContain(
+      "atlas-touch-floor",
     );
   });
 
@@ -73,7 +75,7 @@ describe("LocaleSwitch", () => {
     );
     renderSwitch();
 
-    fireEvent.click(screen.getByRole("button", { name: "KO 한국어" }));
+    fireEvent.click(screen.getByRole("radio", { name: "KO 한국어" }));
 
     expect(mocks.replace).toHaveBeenCalledWith(
       "/ko/ontology/insights/?tab=freshness&tag=a&tag=b#recent",
@@ -86,7 +88,7 @@ describe("LocaleSwitch", () => {
     const onSwitchStart = vi.fn();
     renderSwitch(onSwitchStart);
 
-    fireEvent.click(screen.getByRole("button", { name: "KO 한국어" }));
+    fireEvent.click(screen.getByRole("radio", { name: "KO 한국어" }));
 
     expect(onSwitchStart).toHaveBeenCalledWith("ko");
     expect(onSwitchStart.mock.invocationCallOrder[0]).toBeLessThan(

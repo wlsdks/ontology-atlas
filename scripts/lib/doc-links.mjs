@@ -79,6 +79,39 @@ const REPO_TOP_LEVEL = new Set([
   '.github',
 ]);
 
+/**
+ * **저장소에 없는 자리를 근거로 인용한 것** — 목록 밖이라 위 검사가 원리적으로
+ * 못 보던 층 (2026-08-15 실측으로 발견).
+ *
+ * `REPO_TOP_LEVEL` 은 손으로 관리하는 13줄짜리 허용목록이고, 그래서 **목록에 없는
+ * 디렉터리를 가리키는 인용은 검사 자체가 존재하지 않았다.** 그 틈에서 색 헌장의
+ * 근거(`신호 톤 3종`)와 막대 채색 규율의 근거가 각각 gitignore 된 작업 폴더의
+ * `.md` 를 가리킨 채 3주를 살았다 — 그 파일들은 이 컴퓨터에도 없고, 클론한
+ * 사람에게는 **폴더째** 없다. lint 메시지 하나는 개발자에게 그 없는 파일을
+ * 근거로 대고 있었다.
+ *
+ * ## 왜 「목록 밖 전부」가 아니라 점-디렉터리인가
+ *
+ * 켜기 전 전수(2026-08-15): 목록 밖 인용은 **255건**인데 대부분 정당하다 —
+ * `@docs/…`(임포트 문법) 35 · `domains/foo.md`(볼트 상대 예시) 10 ·
+ * 루트 파일명 199. 전부 잡으면 소음이 신호를 덮는다. 반면 **gitignore 된
+ * 점-디렉터리**를 근거로 인용한 것은 정의상 아무도 못 여는 자리다.
+ *
+ * `exists()` 로 판정하지 않고 **무조건** 잡는다 — 그 폴더는 작업하는 사람의
+ * 컴퓨터에만 있으므로, 실재 여부로 판정하면 로컬은 초록이고 CI 는 빨간 검사가
+ * 된다(기계마다 다른 게이트는 게이트가 아니다).
+ */
+const KEPT_DOT_DIRS = new Set(['.claude', '.agents', '.codex', '.github']);
+
+/**
+ * 예외 — **사용자 폴더에 런타임에 생기는 산출물**을 이름으로 부르는 것은 정당하다.
+ * 저장소가 갖고 있어야 하는 파일이 아니라 「생기면 여기 생긴다」는 설명이다.
+ */
+const RUNTIME_ARTIFACT_DOT_DIRS = new Set([
+  '.ontology-atlas', // 볼트 안 에이전트 기록·임포트 — 사용자 폴더에 생긴다
+  '.tmp', // 검사 스크립트가 만드는 상태 파일
+]);
+
 export function collectProseDocRefs(markdown) {
   const refs = [];
   stripFencedBlocks(markdown).forEach((line, index) => {
@@ -87,7 +120,18 @@ export function collectProseDocRefs(markdown) {
       if (/[*?{}<>|[\]]/.test(target)) continue; // 글롭 · 플레이스홀더
       if (isExternalTarget(target)) continue;
       const relative = target.startsWith('./') || target.startsWith('../');
-      if (!relative && !REPO_TOP_LEVEL.has(target.split('/')[0])) continue;
+      const head = target.split('/')[0];
+      const ghostDir =
+        !relative &&
+        head.startsWith('.') &&
+        target.includes('/') &&
+        !KEPT_DOT_DIRS.has(head) &&
+        !RUNTIME_ARTIFACT_DOT_DIRS.has(head);
+      if (ghostDir) {
+        refs.push({ line: index + 1, target, relative: false, ghost: true });
+        continue;
+      }
+      if (!relative && !REPO_TOP_LEVEL.has(head)) continue;
       refs.push({ line: index + 1, target, relative });
     }
   });

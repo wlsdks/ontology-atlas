@@ -1,4 +1,5 @@
 import { motion } from 'framer-motion';
+import { badgeClass } from "@/shared/ui/badge-class";
 import { cn } from '@/shared/lib/cn';
 import { MOTION, STAGGER } from '@/shared/motion';
 import type { Project } from '../model/types';
@@ -215,13 +216,13 @@ export function ProjectCard({
       )}
 
       {isHub && (
-        <span className="absolute -top-2 left-3 rounded-full bg-[color:var(--color-indigo-brand)] px-2 py-0.5 font-mono text-caption uppercase tracking-[var(--tracking-caps-10)] text-[color:var(--color-text-primary)] md:left-4 md:text-caption">
+        <span className={badgeClass({ shape: "pill", className: "absolute -top-2 left-3 bg-[color:var(--color-indigo-brand)] font-mono uppercase tracking-[var(--tracking-caps-10)] text-[color:var(--color-text-on-accent)] md:left-4 md:text-caption" })}>
           허브
         </span>
       )}
 
       {!isHub && shared && (
-        <span className="absolute -top-2 left-3 rounded-full border border-[color:var(--color-indigo-accent-a50)] bg-[color:var(--color-indigo-a26)] px-2 py-0.5 font-mono text-caption uppercase tracking-[var(--tracking-caps-10)] text-[color:var(--color-indigo-text-soft)] md:left-4 md:text-caption">
+        <span className={badgeClass({ shape: "pill", className: "absolute -top-2 left-3 border border-[color:var(--color-indigo-accent-a50)] bg-[color:var(--color-indigo-a26)] font-mono uppercase tracking-[var(--tracking-caps-10)] text-[color:var(--color-indigo-text-soft)] md:left-4 md:text-caption" })}>
           공유
         </span>
       )}
