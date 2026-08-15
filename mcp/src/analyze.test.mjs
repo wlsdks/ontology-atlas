@@ -3010,6 +3010,16 @@ test('generic narrative capability clues work without structural capability fold
       source: 'lib/workspace.js',
       expected: 'capabilities/package-management',
     },
+    {
+      readme: '# Request Toolkit\n\nA promise-based HTTP client makes requests for browser and Node.js applications.\n',
+      source: 'lib/adapter.js',
+      expected: 'capabilities/request-client',
+    },
+    {
+      readme: '# Protocol Toolkit\n\nAn HTTP/1.1 client handles requests for Node.js applications.\n',
+      source: 'lib/dispatcher.js',
+      expected: 'capabilities/request-client',
+    },
   ];
 
   for (const fixture of fixtures) {
