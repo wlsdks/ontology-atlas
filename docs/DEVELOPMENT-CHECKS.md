@@ -210,6 +210,14 @@ someone improved the prose. They are gone; these two nets replace them.
   history (`CHANGELOG.md`, `docs/DECISIONS.md`, `docs/archive|audits|superpowers|plans|prototypes/**`)
   because naming a deleted file is what a changelog is *for*; links are still
   checked there, since a link is a promise to open.
+- **`design-doc-token-integrity` — 같은 갈래인데 대상이 파일이 아니라 **토큰**이다
+  (계약 테스트, `pnpm test:contracts` 에 포함). `docs/DESIGN-SYSTEM.md` 가 백틱이나
+  `var(...)` 안에서 인용한 `--토큰` 이 `app/globals.css` 에 실재하는지 본다.
+  **왜 생겼나**: 그 문서가 `--topology-*-hover-*` 13개를 「호버는 이미 토큰으로
+  뒷받침된다」는 근거로 나열하는데 하나도 없었다 — 그 전제로 감사를 시작하면 그
+  자체가 사각이다(2026-08-15 실측: 인용 393 중 **190개가 저장소에 없다**, 165개가
+  없어진 지도 화면의 것). `docs:links` 는 **파일 경로**만 봐서 토큰은 시야 밖이었다.
+  래칫이라 늘지 못하고, 문서를 정리해 줄이면 상한도 같이 내린다.
 
 markdownlint is deliberately **not** wired in. Measured 2026-08-01 with default
 rules (excluding `node_modules`): ~15,700 violations, 84% of them

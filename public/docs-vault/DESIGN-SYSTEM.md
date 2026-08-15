@@ -995,6 +995,17 @@ depends 의 축-밖 규칙 ⑤ 칩이 어떤 노드보다 어두움 ⑥ 관문�
 
 ### Relief/Topology layout tokens
 
+> ⚠️ **이 절의 토큰 이름은 상당수가 실재하지 않는다** (2026-08-15 실측). 문서
+> 전체가 인용한 토큰 **393개 중 190개**가 `app/globals.css` 에 없고, 그중
+> **165개가 `--topology-*`** — 대부분 이 절이다. 없어진 화면의 토큰 목록이
+> 그대로 남은 것이다.
+>
+> **그러니 여기 이름을 근거로 삼지 마라.** 값의 정본은 언제나 `globals.css` 다.
+> 이 수는 `tests/contract/design-doc-token-integrity.contract.test.ts` 가
+> 지키고 있어서 **늘지는 못한다**. 어느 화면이 진짜 없어졌는지 절마다 판정해
+> 지우는 것은 별도 작업이고, 지우면 그 계약의 상한도 같이 내린다.
+
+
 Relief/Topology layout tokens live in `app/globals.css` under `:root` because
 they are runtime workbench contracts, not Tailwind-only decoration. Use token
 names in component data markers and tests whenever a surface depends on
