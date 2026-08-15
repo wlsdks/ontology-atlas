@@ -86,6 +86,8 @@ description: Build a screen from this repo's design system deterministically —
 
 ## 1. 컨트롤 — 손으로 className 을 쓰지 않는다
 
+**누르는 것**:
+
 | 필요한 것 | 쓸 것 |
 |---|---|
 | 라벨 있는 작은 컨트롤 | `<Chip>` |
@@ -95,6 +97,29 @@ description: Build a screen from this repo's design system deterministically —
 | 보더 없는 인셋 (세그먼트 · 탭 · 고스트 버튼) | `controlClass({ shape: 'segment' })` |
 | 위에 없는 모양 (pill · card · link · tile) | `controlClass({ shape })` |
 | 그 여덟에도 없는 모양 | **멈추고 전체를 다시 센다** — 분류에 없는 모양이 나왔다는 뜻이다 |
+
+**값을 받는 것** (2026-08-15 등재 — 이 표에 없어서 실사용 시험에서 에이전트가
+폼을 짓다 멈췄다. 부품은 있는데 안내판이 그리로 안 갔다):
+
+| 필요한 것 | 쓸 것 |
+|---|---|
+| 한 줄 텍스트 입력 | `<Input label="…">` — 이름(`label` · `aria-label` · `labelledBy`) 셋 중 하나를 **타입이 요구한다** |
+| 여러 줄 입력 | `<Textarea label="…">` |
+| 오류 · 안내 문구 | `error` / `hint` **prop 으로만** 넘긴다 — `aria-invalid` · `aria-describedby` · `role="alert"` 가 자동으로 배선된다. 손으로 쓰면 배선이 갈라진다 |
+| 켜고 끄는 것 하나 | `<Checkbox label="…">` — 라벨이 곧 타깃이다(WCAG 2.5.8) |
+| 몇 개 중 하나 고르기 (2~4개 · 라벨이 짧다) | `<SegmentedControl>` — **2택 「켬/끔」도 이것**이다. radiogroup + 화살표 이동이 딸려 온다 |
+| 몇 개 중 하나 고르기 (5개 이상 · 라벨이 길다) | `<Select>` |
+| 상자를 부모가 이미 냈다 | `frame="bare"` — `boxed` 를 겹치면 상자 속 상자가 된다 |
+
+⚠️ **입력의 폭은 `className` 으로 준다** — 그 `className` 은 입력이 아니라
+**래퍼**(라벨+입력+오류를 담는 세로 상자)로 간다. 입력을 칸에 꽉 채우려면
+`className="w-full"` 이다. 값 표(`frame` · `size` · `multiline`)는
+`docs/DESIGN-SYSTEM.md` 「폼 필드」 절.
+
+게이트: `field-class` · `field-adoption-ratchet`(새 파일의 생 `<input>` 은 0) ·
+`checkbox-target-size` · `dialog-adoption-ratchet` · `touch-floor-layer`.
+
+**뒤를 막는 표면**은 `<Surface>` 가 아니라 `<Dialog>` 다 — 아래 2절.
 
 모양 여섯은 419개를 전부 세어서 나온 것이다(칩 128 · 링크형 85 · 행 39 ·
 아이콘 36 · pill 32 · 카드 18). **아홉 번째를 감으로 추가하지 않는다** — 나중에

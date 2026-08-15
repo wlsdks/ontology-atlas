@@ -12328,3 +12328,45 @@ DocsSidebarBody·FirstRunStarterModule 의 「배타 선택인데 토글 문법�
 **상태**: 유효 · chips 변형·잔여 2곳은 후속
 
 ---
+
+## PO Council Verdict — 디자인 시스템 별도 공개 repo 추출 (2026-08-15)
+
+**Convened because**: 새 공개 표면(별도 repository) + 방향·포지셔닝 + 소유자 목표 선언("나중에 공유, 완벽해야 함, 에이전트가 그것만으로 개발").
+
+| PO | 판정 (R1→R2) | 소유 행 점수 |
+|---|---|---|
+| 근거 | Investigate first → **Shape a slice** (새로 안 것: 요구한 시험에 해당하는 관측이 이미 존재 — 결의 조립 시험 음성) | Problem insight 3 · User moment 2 |
+| 결 | Shape a slice 유지 (처방 1·2·4 의 소속 정정: 추출 전제가 아니라 오늘의 결함) | Verification 1 — 반증 조건: 시험 A 통과 시 3+ |
+| 지킴이 | Shape a slice 유지 (조건: vault 모델링은 추출과 분리해 단독 선행 — 알리바이 방지) | Ontology value 1 · Agent value 3 |
+| 해자 | Shape a slice 유지 (테마 API 충돌 해소: 지을 표면이 아니라 경계에서 보존할 성질) | Differentiation 2 (재성형 시 3) |
+| 지렛대 | Shape a slice 유지 (병목 정정: 토큰 분리가 아니라 소비 경로 단절) | appetite 2.5일 (결의 검증 비용 인용) |
+
+**Rubric total**: 12/24 (threshold 18 — **제안 원형(지금 전체 추출)은 기준 미달**, 치명 0 없음. 근거의 R1 Ontology 0 주장은 서명자(지킴이) 실증으로 철회됨)
+
+**The decisive disagreement**: 「지금 추출 vs 준비 먼저」는 갈리지 않았다(5:0). 실제 분기는 **해자의 「토큰=매개변수, 게이트=상품」 vs 지렛대의 「테마 API 는 OUT」** — 해소: 매개변수화는 API 를 짓는 것이 아니라 **경계 게이트가 특정 hex/경로가 아닌 토큰 참조 여부를 검사하게 설계**하는 것으로 충족(비용 ~0). 멀티브랜드 테마 표면은 OUT 유지.
+
+**핵심 실측 셋** (판정을 정한 숫자):
+① repo 는 **이미 PUBLIC**(10★ · 0 fork · 제3자 이슈 0 · 14일 고유 방문 34) — 추출은 가독성이 아니라 주소 추가이고, 유통 수요 관측은 0.
+② 조립 시험 음성: `/design-build` 안내판에 2026-08-15 신설 부품 5개(Input·Textarea·Checkbox·SegmentedControl·Select) 라우팅 **0건** — "에이전트가 바로 개발"을 막는 병목은 문서 부족이 아니라 소비 경로 단절.
+③ vault 74노드 중 디자인 시스템 지시 **0** — 의미 계층을 파는 제품의 최대 미모델링 영역. 토큰 고유 580 중 topology 결박 269(46%).
+
+**Decision (accountable: jinan)**: 별도 repo 는 **지금 만들지 않는다**. 대신 「이식성 슬라이스」(appetite 2.5일)를 시행한다 — 순서 고정:
+1. **시험 A** (2h): 빈 폴더 + 추출 후보 꾸러미(중립 토큰 + control-class + 프리미티브 + design-build + 디자인 셀렉터) → 새 에이전트 세션에 화면 3개(폼 다이얼로그·설정 행·목록+빈 상태) → 이 저장소의 기존 게이트에 통과. **실패 목록 = 추출 명세 = 「완벽」의 정지 조건.**
+2. **vault 모델링** (20분, 추출과 분리해 단독): `domains/design-system` + capability 4(control-primitives·design-token-ramps·design-gate-ratchets·design-build-handoff), 노드 본문에 extractable/atlas-bound 경계 명시, `find_backlinks` 로 blast radius. 온톨로지-결합 프리미티브 4종(last-edit-subject-row·evidence-only-badge·mtime-conflict-badge·node-explanation-edit)은 atlas-bound.
+3. **결박 8파일 제거** (~1일): shared/ui 의 next-intl/@i18n/sonner 의존 — 문자열 props 주입, toast 어댑터 경계 1파일.
+4. **오늘의 결함 수리** (~0.5일): /design-build 폼 행 5개(두 사본) · 죽은 인용 2건(.qa-scratch 색 헌장 근거 → DECISIONS 로 이관) + docs:links 사정거리를 .claude/rules/** 로 확대 · 「비준→안내판」 게이트(design-spec-census 에 얹기, 켜기 전 위반 5).
+5. **검증** (~0.5일): 조립 시험 재실행 + 폼 한 장 390/1512 두 폭 rect 증명 — 이것 없이는 Verification 1 에서 안 움직인다(결 서명).
+
+**OUT (no-go)**: 별도 repo 생성 · npm(헌장 ⑤ — 명시적 번복 기록 없이 불가) · 멀티브랜드 테마 표면 · 토큰 580 전체 2층 분리(토끼굴 — grep 가능 표시선만 긋고 이월) · DESIGN-SYSTEM.md 전면 재작성.
+
+**Recorded dissent**: 해자의 자기반박 — "enforcement 배포의 빈 자리는 기회가 아니라 무덤일 수 있다(게이트의 본질적 코드베이스-특이성 때문)" — **falsifier**: 소비자용 census 부트스트랩을 만들어도 첫 외부 적용에서 래칫 기준선이 성립하지 않으면 그가 옳다 — **revisit**: 첫 외부 적용 시.
+
+**repo 생성 재진입 조건** (지렛대): ⑴ 외부에서 이 시스템을 쓰고 싶다는 실제 요청 1건, 또는 ⑵ 소유자가 공개 시점을 확정. 그 전의 추출은 소비자 없는 발행.
+
+**부기**: 2026-07-27 npm 결정의 **반증 조건 ①이 2026-08-15 발화**(연결 버튼 출하 후 2주 신호 0 — DMG 11·fork 0·제3자 이슈 0). 그 기록의 자기 처방대로 답은 새 채널이 아니라 유입이다. 이 사실은 본 결정과 별개로 유효하다.
+
+**소유자 미결 질문 4** (이번 슬라이스는 막지 않음 — 추출 실행 전 필답): ① 첫 수요자가 본인(다음 프로젝트)인가 바깥인가(무응답 시 본인 가정) ② "나중에"의 구체 트리거 ③ 브랜드(인디고·앰버·마크)를 지고 가나 벗고 가나(공개 후 비가역) ④ 추출 repo 가 자기 vault 를 갖나.
+
+**Slice**: IN 위 1~5 · OUT 위 명시 · appetite 2.5일
+
+---
