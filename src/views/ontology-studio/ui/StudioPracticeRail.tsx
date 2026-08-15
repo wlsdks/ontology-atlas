@@ -108,10 +108,9 @@ export function StudioPracticeRail({
         type="button"
         data-testid="studio-practice-quit"
         onClick={onQuit}
-        className={controlClass({
+        className={controlClass({ hoverInk: 'secondary',
           shape: "link",
-          className:
-            "touch-hit-expand flex-none px-2 hover:bg-[color:var(--color-overlay-1)] hover:text-[color:var(--color-text-secondary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a46)]",
+          className: "touch-hit-expand flex-none px-2 hover:bg-[color:var(--color-overlay-1)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a46)]",
         })}
       >
         {labels.quit}

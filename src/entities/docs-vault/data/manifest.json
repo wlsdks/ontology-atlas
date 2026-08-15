@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-08-15",
+  "generatedAt": "2026-08-16",
   "docs": [
     {
       "slug": "AGENT-GRAPH-WORKFLOW",
@@ -8932,13 +8932,43 @@
         },
         {
           "depth": 2,
+          "text": "2026-08-15 (11) — 호버 축은 **하나가 아니라 셋**이다. 자리별 실측이 그것을 정했다",
+          "slug": "2026-08-15-11-호버-축은-하나가-아니라-셋이다-자리별-실측이-그것을-정했다"
+        },
+        {
+          "depth": 3,
+          "text": "무엇이 조정을 결정했나 — 자리별 co-occurrence",
+          "slug": "무엇이-조정을-결정했나-자리별-co-occurrence"
+        },
+        {
+          "depth": 3,
+          "text": "결정",
+          "slug": "결정-4"
+        },
+        {
+          "depth": 3,
+          "text": "축이 아니라 톤의 결원이었던 것 — 채워진 버튼",
+          "slug": "축이-아니라-톤의-결원이었던-것-채워진-버튼"
+        },
+        {
+          "depth": 3,
+          "text": "이주와 게이트",
+          "slug": "이주와-게이트"
+        },
+        {
+          "depth": 3,
+          "text": "프로브 (`/gate-probe`)",
+          "slug": "프로브-gate-probe"
+        },
+        {
+          "depth": 2,
           "text": "2026-08-15 (9) — 비표준 구현 루트도 의미 후보의 증거가 되되, 기능으로 자동 승격하지 않는다",
           "slug": "2026-08-15-9-비표준-구현-루트도-의미-후보의-증거가-되되-기능으로-자동-승격하지-않는다"
         }
       ],
       "excerpt": "이 파일은 결정과 그때 진 반대 의견을 남긴다. docs/CHANGELOG.md 는 무엇이 언제 바뀌었나를 답하고, 이 파일은 왜 그렇게 정했고, 무엇을 걸었나를 답한다. 최신이 위. 기록은 덧붙이기만 한다 — 지난 기록을 고치지 않는다. 판단이 바뀌었으면 새 기록을 쓰고 옛 기록을 뒤집힘 으로 표시한다. 틀린 기록도 자산이다. 1. 소집 전에 읽는다. 카운슬을 열기 전(그리고 단독 PO 패스를 쓰기 전) 같은 표면 · 같은 질문에 대한 선행 결정이 있는지 먼저 본다. 있으면 새 패스는 그것을 ① 여전히 유효하다고 인용하거나 ② 명시적으로 뒤집는다. 조용히 다시 결정",
-      "wordCount": 119109,
-      "updatedAt": "2026-08-15",
+      "wordCount": 119816,
+      "updatedAt": "2026-08-16",
       "linksOut": [
         "slug"
       ]
@@ -9926,8 +9956,8 @@
         }
       ],
       "excerpt": "This document is maintained based on Section 3 of the design spec. For the original Linear specification, see design-references/DESIGN-linear.md. v2 (2026-07): topology-map-v2 에서 출하된 B2+ \"Circuit × Constellation\" 시각 언어가 페이지 롤아웃(랜딩 → docs/ontology 허브 → projects/insights → download)의 규범이 되었다 — 아래 v2 — \"Circuit × Constell",
-      "wordCount": 31158,
-      "updatedAt": "2026-08-15",
+      "wordCount": 31236,
+      "updatedAt": "2026-08-16",
       "linksOut": [
         "design-references/DESIGN-linear",
         "TOPOLOGY-V2-DESIGN",
@@ -10137,8 +10167,8 @@
         }
       ],
       "excerpt": "Maintainer-only checks live here so the public README stays readable. Use this page when you touch mcp/, cli/, package manifests, release scripts, or the dogfood ontology. Run this before pushing broad docs, package, MCP, or web changes: For user-facing UI changes, add the relevant Playwright route check. pnpm install ",
-      "wordCount": 10183,
-      "updatedAt": "2026-08-15",
+      "wordCount": 10261,
+      "updatedAt": "2026-08-16",
       "linksOut": []
     },
     {

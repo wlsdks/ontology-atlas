@@ -195,7 +195,7 @@ export function GuidedTourCard({
                 shape: "chip",
                 size: "lg",
                 tone: "onAccent",
-                className: "justify-center hover:bg-[color:var(--color-indigo-brand-hover)]",
+                className: "justify-center",
               })}
             >
               {t("devBranchAction")}

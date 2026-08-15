@@ -68,12 +68,11 @@ export function AgentScopeSheet({
           type="button"
           data-testid="agent-scope-cancel"
           onClick={onCancel}
-          className={controlClass({
+          className={controlClass({ hoverInk: 'strong', hoverBorder: 'strong',
             shape: 'chip',
             size: 'md',
             tone: 'secondary',
-            className:
-              'tracking-label border-[color:var(--color-border-soft)] hover:border-[color:var(--color-border-strong)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-accent)]',
+            className: 'tracking-label border-[color:var(--color-border-soft)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-accent)]',
           })}
         >
           {labels.cancel}
@@ -86,7 +85,7 @@ export function AgentScopeSheet({
           className={controlClass({
             tone: 'onAccent',
             className:
-              'tracking-label hover:bg-[color:var(--color-indigo-brand-hover)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-accent)]',
+              'tracking-label focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-accent)]',
           })}
         >
           {labels.accept}

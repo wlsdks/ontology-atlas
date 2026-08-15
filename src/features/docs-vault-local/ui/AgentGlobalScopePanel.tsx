@@ -117,11 +117,10 @@ export function AgentGlobalScopePanel({ vaultPath, launch }: AgentGlobalScopePan
           type="button"
           onClick={() => void copy(client.id, instruction.text)}
           data-testid={`agent-global-scope-copy-${client.id}`}
-          className={controlClass({
+          className={controlClass({ hoverInk: 'strong', hoverBorder: 'strong',
             shape: 'chip',
             tone: 'secondary',
-            className:
-              'mt-1.5 font-[var(--font-weight-signature)] hover:border-[color:var(--color-border-strong)] hover:text-[color:var(--color-text-primary)]',
+            className: 'mt-1.5 font-[var(--font-weight-signature)]',
           })}
         >
           {isCopied ? (

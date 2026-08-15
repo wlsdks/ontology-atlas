@@ -110,12 +110,11 @@ export function OntologyBootstrapForm({
           onClick={onCancel}
           aria-label={labels.cancel}
           data-testid="ontology-bootstrap-cancel"
-          className={controlClass({
+          className={controlClass({ hoverInk: 'strong',
             shape: "icon",
             size: "sm",
             tone: "muted",
-            className:
-              "hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a46)] focus-visible:ring-inset",
+            className: "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a46)] focus-visible:ring-inset",
           })}
         >
           <X size={ICON_SIZE.sm} aria-hidden />

@@ -470,8 +470,23 @@ const control = cva(`${DISABLED} ${FOCUS}`, {
        * 새 hue 0: 바탕은 헌장의 단일 인디고, 잉크는 무채(#fff). 대비 실측
        * 4.71:1 로 WCAG AA(4.5) 위다.
        */
+      /*
+       * ⚠️ **호버가 여기 들어온 것은 축이 아니라 결원 보충이다** (2026-08-15 (11)).
+       *
+       * `design-gates.md` 「호버 상태 대비」가 이미 규칙을 확정해 뒀다 —
+       * **채워진 버튼만 호버에서 어두워진다**(밝히면 흰 잉크와 부딪혀 AA 를
+       * 깬다. 실측: 주 CTA 넷이 호버 중 3.17~4.41 이었다). 그런데 그 규칙이
+       * 값 층에 없어서 **소비처 12곳이 12곳 다 같은 문자열을 손으로** 쓰고
+       * 있었다. `button.tsx` 의 primary 변형은 그것을 이미 갖고 있다 — 즉
+       * 이건 「규칙을 값 층에 내릴까」가 아니라 **두 값 층의 값 불일치**였다.
+       *
+       * 이 호버는 위 세 축과 달리 **옵트인이 아니다.** 톤의 정의에 속하기
+       * 때문이다: 인디고 면에 흰 잉크를 얹기로 한 순간 「그 면이 어떻게
+       * 호버하는가」는 선택지가 아니라 그 톤이 지켜야 할 대비 계약이다.
+       * (`--color-indigo-brand` 4.70 → `-hover` 5.38.)
+       */
       onAccent:
-        'bg-[color:var(--color-indigo-brand)] font-[var(--font-weight-emphasis)] text-[color:var(--color-text-on-accent)]',
+        'bg-[color:var(--color-indigo-brand)] font-[var(--font-weight-emphasis)] text-[color:var(--color-text-on-accent)] hover:bg-[color:var(--color-indigo-brand-hover)]',
     },
     /**
      * **어느 잉크 램프 위에 서 있는가.**
@@ -562,6 +577,54 @@ const control = cva(`${DISABLED} ${FOCUS}`, {
     stacked: { false: '', true: '' },
     active: { true: '', false: '' },
     /*
+     * ── **호버 축 셋** (2026-08-15 (11) — 전수 752선언 뒤 신설)
+     *
+     * 이 파일은 오래 「호버는 소비처의 몫」이라고 적어 뒀다. 그 규율이 낳은
+     * 실측이 이것이다: hover 선언 **752개 · 자리 511 · 파일 129**, 그리고 같은
+     * 「비활성 세그먼트 호버」 한 역할에 세 자리가 **서로 다른 잉크**를 썼다.
+     * 규율이 아니라 결원이었다 — `DISABLED`(2026-08-03) → `FOCUS`(08-05) 가
+     * 같은 발견을 이미 두 번 했고 이것이 세 번째다.
+     *
+     * **왜 한 축이 아니라 셋인가.** 자리별 실측이 답이다 — 호버를 가진 호출
+     * 309 중 **글자만 117 · 배경만 90 · 글자+테두리 61 · 글자+배경 31 ·
+     * 테두리만 6 · 셋 다 4**. 두 속성이 함께 필요한 자리가 **96**이라 열거형
+     * 하나로는 표현되지 않는다. 셋은 축 증식이 아니라 **서로 독립인 CSS 속성
+     * 셋**이고, 각 축의 선택지는 실측 다수파만 갖는다(합쳐도 넷).
+     *
+     * **전부 옵트인이다.** 기본값으로 켜면 지금 호버가 아예 없는 자리들이
+     * 조용히 달라진다 — 보더만 세어도 **30곳**이다. 그건 축 신설이 아니라
+     * 전역 시각 변경이고, 그 판단은 이 축의 일이 아니다.
+     *
+     * **active 에서는 셋 다 안 낸다.** 「곧 선택될 것」과 「이미 선택된 것」이
+     * 같은 언어로 말하면 사용자는 자기가 뭘 골랐는지 모른다. 실측: 그렇게
+     * 겹친 자리에서 선택 보더가 호버에 덮여 **2.09 → 1.48** 로 약해지고 있었다
+     * (2026-08-15 (10) 이 두 자리를 손으로 고쳤고, 이 축이 그 가드를 구조로
+     * 흡수한다). 비활성 쪽은 `CONTROL_DISABLED_CLASS` 가 이미 무력화한다.
+     *
+     * 값은 **전부 기존 램프**다 — 새 토큰 0 · `globals.css` 변경 0.
+     */
+    /**
+     * 호버 잉크. 실측 331선언 중 상위 4종(앱·패널 × primary·secondary)이
+     * **95.2%** 이고, 그 4종은 `scope` 축이 이미 나르는 두 램프의 두 단이다.
+     * 그래서 이 축은 **밝기 단만** 고르고 값은 scope 가 정한다.
+     */
+    hoverInk: { none: '', strong: '', secondary: '' },
+    /**
+     * 호버 면 — 「지금 커서 아래」를 한 단 밝히는 것. 실측 216선언을 역할로
+     * 세면 이 중립 lift 가 **57%** 이고, 갈래(행이냐 부품이냐 · 앱이냐 패널이냐)는
+     * `shape`·`scope` 가 이미 나른다. 인디고 틴트 강화는 **축이 아니다** —
+     * 16종에 다수파가 없고, 틴트 단은 값이 아니라 위계 판정이다.
+     */
+    hoverSurface: { none: '', lift: '' },
+    /**
+     * 호버 테두리 — 경계가 또렷해지는 것. 선택지가 하나인 이유는 실측이다:
+     * 인디고 계열이 70%로 더 많지만 **13단으로 흩어져 있고 인접 단이 서로
+     * 구별되지 않는다**(합성 대비 1.0~1.2:1 — 이 저장소가 1.14 를 이미
+     * 「밝기로는 구분 안 됨」으로 기각했다). 아무도 못 가르는 13단은 정보가
+     * 아니라 소음이라 값 층이 고를 것이 없다.
+     */
+    hoverBorder: { none: '', strong: '' },
+    /*
      * ── **삭제된 축: `fixedHeight`** (2026-08-03 소유자 결정)
      *
      * 여기 「높이를 고정한다」는 축이 있었다. 칩 램프가 30/34 를 내는데 계약이
@@ -592,6 +655,31 @@ const control = cva(`${DISABLED} ${FOCUS}`, {
      */
   },
   compoundVariants: [
+    /*
+     * ── **호버 방출** (2026-08-15 (11)). 축은 「어느 단인가」만 고르고, 실제
+     * 값은 여기서 `scope`·`shape` 와 만나 정해진다. `active: false` 가 키의
+     * 절반이다 — 골라진 것은 호버를 안 받는다(위 축 주석의 2.09→1.48 실측).
+     */
+    { hoverInk: 'strong', scope: 'app', active: false, class: 'hover:text-[color:var(--color-text-primary)]' },
+    { hoverInk: 'secondary', scope: 'app', active: false, class: 'hover:text-[color:var(--color-text-secondary)]' },
+    { hoverInk: 'strong', scope: 'panel', active: false, class: 'hover:text-[color:var(--topology-v2-panel-text-primary)]' },
+    { hoverInk: 'secondary', scope: 'panel', active: false, class: 'hover:text-[color:var(--topology-v2-panel-text-secondary)]' },
+
+    /*
+     * 면 — 「한 단 밝아진다」. 갈래는 실측이 정했다: rest 가 투명한 **행**은
+     * `overlay-1`, rest 가 이미 한 단 올라선 **부품**은 `overlay-2`(사다리의
+     * 다음 칸), 패널 스코프는 그 스코프의 행 호버 토큰.
+     */
+    { hoverSurface: 'lift', shape: 'row', scope: 'app', active: false, class: 'hover:bg-[color:var(--color-overlay-1)]' },
+    { hoverSurface: 'lift', shape: 'chip', scope: 'app', active: false, class: 'hover:bg-[color:var(--color-overlay-2)]' },
+    { hoverSurface: 'lift', shape: 'pill', scope: 'app', active: false, class: 'hover:bg-[color:var(--color-overlay-2)]' },
+    { hoverSurface: 'lift', shape: 'icon', scope: 'app', active: false, class: 'hover:bg-[color:var(--color-overlay-2)]' },
+    { hoverSurface: 'lift', shape: 'segment', scope: 'app', active: false, class: 'hover:bg-[color:var(--color-overlay-2)]' },
+    { hoverSurface: 'lift', scope: 'panel', active: false, class: 'hover:bg-[color:var(--topology-v2-panel-row-hover)]' },
+
+    // 테두리 — 경계가 또렷해진다. 단 하나(위 축 주석의 「13단은 소음」 실측).
+    { hoverBorder: 'strong', active: false, class: 'hover:border-[color:var(--color-border-strong)]' },
+
     /*
      * ── 행의 반경은 **배치가 정한다** (2026-08-06).
      *
@@ -729,6 +817,9 @@ const control = cva(`${DISABLED} ${FOCUS}`, {
     stacked: false,
     active: false,
     truncate: false,
+    hoverInk: 'none',
+    hoverSurface: 'none',
+    hoverBorder: 'none',
   },
 });
 

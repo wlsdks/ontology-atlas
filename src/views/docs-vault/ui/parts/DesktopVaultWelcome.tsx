@@ -235,7 +235,7 @@ export function DesktopVaultWelcome({
               type="button"
               onClick={onOpen}
               disabled={busy}
-              className={controlClass({ shape: "row", stacked: true, className: "items-start gap-3 border-t border-[color:var(--color-border-soft)] px-4 py-3.5 hover:bg-[color:var(--color-overlay-1)]" })}
+              className={controlClass({ hoverSurface: 'lift', shape: "row", stacked: true, className: "items-start gap-3 border-t border-[color:var(--color-border-soft)] px-4 py-3.5" })}
             >
               <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-chip border border-[color:var(--color-divider)] text-[color:var(--color-text-secondary)]">
                 <FilePlus size={ICON_SIZE.md} aria-hidden />
@@ -253,7 +253,7 @@ export function DesktopVaultWelcome({
             <button
               type="button"
               onClick={onOpenSample}
-              className={controlClass({ shape: "row", stacked: true, className: "items-start gap-3 border-t border-[color:var(--color-border-soft)] px-4 py-3.5 hover:bg-[color:var(--color-overlay-1)]" })}
+              className={controlClass({ hoverSurface: 'lift', shape: "row", stacked: true, className: "items-start gap-3 border-t border-[color:var(--color-border-soft)] px-4 py-3.5" })}
             >
               <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-chip border border-[color:var(--color-divider)] text-[color:var(--color-text-secondary)]">
                 <Package size={ICON_SIZE.md} aria-hidden />

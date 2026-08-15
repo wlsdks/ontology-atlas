@@ -101,11 +101,10 @@ export function HandoffCopyButton({
          * 높이 하나(30 vs 32)였고, 칩 램프가 32 로 수렴하면서 두 값이 같아졌다.
          * 아무것도 안 고르는 축은 «고를 것만 늘리는 것» 이라 지웠다.
          */
-        className={controlClass({
+        className={controlClass({ hoverInk: 'strong',
           shape: "chip",
           size: "md",
-          className:
-            "hover:border-[color:var(--color-indigo-a46)] hover:text-[color:var(--color-text-primary)]",
+          className: "hover:border-[color:var(--color-indigo-a46)]",
         })}
       >
         {copied ? <Check size={ICON_SIZE.sm} aria-hidden /> : <Copy size={ICON_SIZE.sm} aria-hidden />}

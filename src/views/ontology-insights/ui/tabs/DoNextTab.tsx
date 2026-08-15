@@ -42,11 +42,10 @@ import { controlClass } from "@/shared/ui/control-class";
  * `-mx-2` 는 램프 인셋(`px-2`)과 짝이다 — 글자 x 좌표를 형제 행들과
  * 맞춘 채 히트 영역만 좌우로 넓힌다.
  */
-const QUIET_REST_TOGGLE = controlClass({
+const QUIET_REST_TOGGLE = controlClass({ hoverInk: 'strong', hoverSurface: 'lift',
   shape: "row",
   size: "sm",
-  className:
-    "-mx-2 mt-1 hover:bg-[color:var(--color-overlay-1)] hover:text-[color:var(--color-text-primary)]",
+  className: "-mx-2 mt-1",
 });
 
 /**

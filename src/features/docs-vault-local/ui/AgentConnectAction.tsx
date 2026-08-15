@@ -255,11 +255,10 @@ export function AgentConnectAction({ vaultPath, launch, onWritten, clientId }: A
             type="button"
             data-testid="agent-connect-copy-analyze"
             onClick={() => void copyAnalyze(buildAgentAnalyzePrompt({ vaultPath }))}
-            className={controlClass({
+            className={controlClass({ hoverInk: 'strong',
               shape: 'chip',
               tone: 'secondary',
-              className:
-                'mt-2.5 border-[color:var(--color-overlay-3)] hover:border-[color:var(--color-indigo-line-a35)] hover:text-[color:var(--color-text-primary)]',
+              className: 'mt-2.5 border-[color:var(--color-overlay-3)] hover:border-[color:var(--color-indigo-line-a35)]',
             })}
           >
             {analyzeCopy === 'failed' ? (
@@ -298,11 +297,10 @@ export function AgentConnectAction({ vaultPath, launch, onWritten, clientId }: A
               setError(null);
             }}
             data-testid="agent-connect-retry"
-            className={controlClass({
+            className={controlClass({ hoverInk: 'strong',
               shape: 'link',
               tone: 'accentOnTint',
-              className:
-                'touch-hit-expand mt-2 font-[var(--font-weight-signature)] hover:text-[color:var(--color-text-primary)]',
+              className: 'touch-hit-expand mt-2 font-[var(--font-weight-signature)]',
             })}
           >
             {t('connectRetry')}

@@ -120,7 +120,7 @@ export function DomainCouplingCard({
         <Link
           href={labels.emptyActionHref}
           data-testid="domain-coupling-empty-action"
-          className={controlClass({ shape: "link", tone: "accent", className: "mt-3 rounded-chip hover:text-[color:var(--color-text-primary)] hover:underline" })}
+          className={controlClass({ hoverInk: 'strong', shape: "link", tone: "accent", className: "mt-3 rounded-chip hover:underline" })}
         >
           {labels.emptyAction}
         </Link>

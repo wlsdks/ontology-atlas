@@ -49,12 +49,11 @@ export function EmptyState({
           <button
             type="button"
             onClick={onOpenAgentWorkflow}
-            className={controlClass({
+            className={controlClass({ hoverInk: 'strong',
               shape: "chip",
               size: "lg",
               tone: "secondary",
-              className:
-                "justify-center gap-2 hover:border-[color:var(--color-indigo-line-a32)] hover:text-[color:var(--color-text-primary)]",
+              className: "justify-center gap-2 hover:border-[color:var(--color-indigo-line-a32)]",
             })}
           >
             <Bot size={ICON_SIZE.md} aria-hidden />
@@ -62,12 +61,11 @@ export function EmptyState({
           </button>
           <Link
             href="/topology/"
-            className={controlClass({
+            className={controlClass({ hoverInk: 'strong',
               shape: "chip",
               size: "lg",
               tone: "secondary",
-              className:
-                "justify-center gap-2 hover:border-[color:var(--color-indigo-line-a32)] hover:text-[color:var(--color-text-primary)]",
+              className: "justify-center gap-2 hover:border-[color:var(--color-indigo-line-a32)]",
             })}
           >
             <Network size={ICON_SIZE.md} aria-hidden />

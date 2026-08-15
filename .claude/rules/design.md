@@ -325,7 +325,7 @@ particle·rarity(gold)·shimmer 를 `--studio-*` 토큰과 `.studio-stage` 안�
 **아래를 고치는 변경은 `design-system` 자리를 소집한다.** 회의를 열지 말지를
 고르는 게 아니라, **이 목록에 걸리면 부른다**:
 
-- `src/shared/ui/control-class.ts` — 값 층(컨트롤이 어떻게 보일지를 정하는 값들이 모인 곳)의 축·선택지·기본값. 「축」은 고를 수 있는 항목 하나(모양·크기·톤 같은 것)이고, 「선택지」는 그 항목이 가질 수 있는 값들이다. **cva 가 둘이다** — 눌리는 것(`controlClass`)과 값을 받는 것(`fieldClass`·`fieldLabel`, 2026-08-06). 값 표는 `docs/DESIGN-SYSTEM.md` 「폼 필드」 절
+- `src/shared/ui/control-class.ts` — 값 층(컨트롤이 어떻게 보일지를 정하는 값들이 모인 곳)의 축·선택지·기본값. **호버 축 셋(`hoverInk`·`hoverSurface`·`hoverBorder`)이 2026-08-15 에 여기 들어왔다** — 그 전까지 호버는 소비처의 몫이었고, 그 규율이 낳은 실측이 hover 선언 752개·자리 511이었다. 「축」은 고를 수 있는 항목 하나(모양·크기·톤 같은 것)이고, 「선택지」는 그 항목이 가질 수 있는 값들이다. **cva 가 둘이다** — 눌리는 것(`controlClass`)과 값을 받는 것(`fieldClass`·`fieldLabel`, 2026-08-06). 값 표는 `docs/DESIGN-SYSTEM.md` 「폼 필드」 절
 - `src/shared/ui/controls.tsx` — 버튼·칩처럼 **눌러서 동작하는** 부품(프리미티브 = 다른 화면들이 가져다 쓰는 기본 부품)
 - `src/shared/ui/surface.tsx` — 화면이 **나타나고 사라지는 방식**을 담은 기본 부품
 - `src/shared/ui/dialog.tsx` — **뒤를 막는 모달**의 정본 (스크림·트랩·Esc·복귀·스크롤락·폭 2단). 2026-08-15 신설 — 축·토큰·변형을 바꾸는 것이 곧 규격 변경이다

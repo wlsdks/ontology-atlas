@@ -64,7 +64,7 @@ export function GatewayNav() {
       >
         <Link
           href="/"
-          className={controlClass({ shape: "link", className: "touch-hit-expand gap-2 hover:text-[color:var(--color-text-primary)]" })}
+          className={controlClass({ hoverInk: 'strong', shape: "link", className: "touch-hit-expand gap-2" })}
         >
           <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-chip border border-[color:var(--color-border-soft)] bg-[color:var(--color-elevated)] text-[color:var(--color-indigo-accent)]">
             <Orbit size={ICON_SIZE.sm} />
@@ -121,7 +121,7 @@ export function GatewayNav() {
               rel="noreferrer noopener"
               data-testid="gateway-x-link"
               aria-label={tNav('xLabel')}
-              className={controlClass({ shape: "link", tone: "muted", className: "touch-hit-expand hover:text-[color:var(--color-text-primary)]" })}
+              className={controlClass({ hoverInk: 'strong', shape: "link", tone: "muted", className: "touch-hit-expand" })}
             >
               <XMark size={14} aria-hidden />
             </a>
