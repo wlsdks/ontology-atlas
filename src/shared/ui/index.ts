@@ -5,6 +5,8 @@ export { Button, buttonVariants, type ButtonProps } from './button';
  */
 export { Surface, type SurfaceMotion, type SurfaceProps } from './surface';
 export { Dialog, type DialogProps } from './dialog';
+export { Input, Textarea, type InputProps, type TextareaProps } from './input';
+export { Checkbox, type CheckboxProps } from './checkbox';
 /**
  * `<Button>` 은 **표준 버튼 하나**만 덮는다 — 전수 419개 중 그 모양은 1개였다.
  * 나머지 여섯 모양(칩 · 링크형 · 행 · 아이콘 · pill · 카드)은 이쪽이다.

@@ -19,7 +19,7 @@ import { ICON_SIZE } from "@/shared/ui/icon-size";
 import { fieldClass, fieldLabel } from "@/shared/ui/control-class";
 import { cn } from "@/shared/lib/cn";
 import { slugify } from "@/shared/lib/slugify";
-import { Button, controlClass } from "@/shared/ui";
+import { Button, Checkbox, controlClass } from "@/shared/ui";
 import {
   ProjectCard,
   computeHubSlugs,
@@ -1091,21 +1091,20 @@ export function ProjectForm({
         </FieldRow>
       </div>
 
-      <label className={fieldLabel({ row: true, className: "text-body-lg" })}>
-        <input
-          type="checkbox"
-          name="isHub"
-          checked={values.isHub}
-          onChange={(e) => setValue("isHub", e.target.checked)}
-          className="size-4 shrink-0 accent-[color:var(--color-indigo-brand)]"
-        />
-        <span>
-          {t("fields.isHubLabel")}{" "}
-          <span className="text-[color:var(--color-text-quaternary)]">
-            {t("fields.isHubHint")}
+      <Checkbox
+        className="text-body-lg"
+        name="isHub"
+        checked={values.isHub}
+        onChange={(e) => setValue("isHub", e.target.checked)}
+        label={
+          <span>
+            {t("fields.isHubLabel")}{" "}
+            <span className="text-[color:var(--color-text-quaternary)]">
+              {t("fields.isHubHint")}
+            </span>
           </span>
-        </span>
-      </label>
+        }
+      />
     </>
   );
 

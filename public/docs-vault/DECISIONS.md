@@ -12235,3 +12235,49 @@ none 을 지우고 ref 기반 initialFocus 로 바꾼다.
 **상태**: 유효 · v1 center — sheet/edge/palette 는 후속 라운드
 
 ---
+
+## 2026-08-15 (2) — 폼 행동 층: Input/Textarea·Checkbox 승인, Switch·Slider 반려
+
+부품 완전성 로드맵 2·3단계의 「체계」석 비준. census 정정이 먼저였다: 「텍스트
+필드의 값 층(fieldClass) 미경유 3파일」이라는 브리핑 전제는 오판이었고(셋의
+실체는 sr-only 프록시·checkbox·range), **미경유는 0** — 폼 부채 래칫이 이미
+종료 선언한 상태였다. 그래서 이 라운드의 축은 채택이 아니라 **행동**이다.
+
+**결정**:
+- `Input`/`Textarea`(`src/shared/ui/input.tsx`) — 새 축 0 · 새 토큰 0 · 픽셀
+  0 이 성립 조건. 나르는 것은 배선 둘뿐: ① 접근 이름 타입 강제 ② `error`/
+  `hint` → `aria-invalid`+`aria-describedby`(error 먼저)+`role="alert"` 자동
+  배선(창립 census: invalid 7곳·describedby 11곳·alert 14파일이 전부 제각각
+  손 배선). 스타일은 fieldClass 호출 결과와 바이트 동일을 계약으로 단언.
+  기존 fieldClass 직접 호출 현장은 부채가 아니다 — 이주 강제 없음, **새
+  파일만** 래칫이 막는다(`field-adoption-ratchet`, 텍스트류 상한 38곳/25파일).
+- `Checkbox`(`src/shared/ui/checkbox.tsx`) — 6곳/5파일 드리프트 3갈래(brand 4 ·
+  accent 1 · **UA 기본색 1**) + 6곳 전부 focus-visible 0 을 수렴: brand accent ·
+  size-4 · 값 층 초점 링 · 라벨 내장(fieldLabel row — 라벨이 곧 WCAG 2.5.8
+  타깃). 6곳 전량 이주 후 `accent-[` lint 점화(brand 토큰만 통과 — 면제 파일
+  0 설계). 폼 부채 기준선 -1 → -6.
+- **Switch 반려** — `role="switch"` 전수 1곳이고 실체는 칩 토글(APG 문법상
+  이미 옳다). 시각 스위치 프리미티브는 소비자 0 발명.
+- **Slider 승격 반려** — range 전수 1파일·소비 2곳 전부 설정 시트 내부.
+
+**기록된 반대 / 재개 조건 (반려 2건의 반증)**: ① on/off 단일 행이 세그먼트
+문법 밖에서 **두 번째로** 필요해지는 관측이 나오면 그 PR 에서 Switch 를
+등재한다. ② 설정 밖 두 번째 range 소비자가 생기는 PR 에서 Slider 를 승격하되
+`w-28` 라벨 결합(치수 동승 사고 계보)을 반드시 푼다. 등재부:
+`field-adoption-ratchet` 의 SPECIAL_REGISTERED.
+
+**후속 (같은 비준의 3단계)**: SegmentedControl 승격 — 「보더 상자 안 세그먼트
+단일선택」 5곳 손 재구현(인셋 3종·ARIA 3종, feature 층 둘은 FSD 감금이 원인)
+을 제네릭 options + radiogroup + 값 층 segment 램프 위임으로 수렴. Choice 는
+칩 라디오그룹만 분리 승격, `w-28` 행 문법은 위젯 잔류. 픽셀이 움직이는 이주는
+각 PR 에서 390/768/1280 responsive-sweep 실측이 머지 조건(2026-08-15 (1)의
+조건 ⓐ 승계). 2-택 aria-pressed 잔류 여부는 상호작용석 공동 서명.
+
+**반증**: ① Input 의 error 배선을 우회한 손 role="alert" 폼이 새 파일에서
+관측되면 래칫 사정거리를 alert 마크업까지 넓힌다. ② 이름 강제 타입을
+`aria-label=""` 빈 문자열로 우회하는 사례가 관측되면 런타임 단언을 더한다.
+
+**서명 (accountable)**: jinan
+**상태**: 유효 · Input/Textarea·Checkbox 시행 — SegmentedControl 은 다음 PR
+
+---

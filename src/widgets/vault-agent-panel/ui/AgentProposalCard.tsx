@@ -6,8 +6,7 @@ import { ICON_SIZE } from '@/shared/ui/icon-size';
 
 import type { AgentProposal, ProposalChange } from '@/features/vault-agent';
 import { summarizeChangeVolume } from '@/features/vault-agent/model/proposal-applier';
-import { controlClass } from '@/shared/ui';
-import { fieldLabel } from '@/shared/ui/control-class';
+import { Checkbox, controlClass } from '@/shared/ui';
 
 /**
  * 제안 카드 — #688 동의 문법의 일반화.
@@ -135,17 +134,14 @@ export function AgentProposalCard({
       </ul>
 
       {canWrite && !settled ? (
-        <label className={fieldLabel({ row: true, className: "tracking-label" })}>
-          <input
-            type="checkbox"
-            data-testid="agent-proposal-snapshot"
-            checked={proposal.snapshotRequested}
-            disabled={!vaultIsGit}
-            onChange={(event) => onToggleSnapshot(event.target.checked)}
-            className="size-4 shrink-0 accent-[color:var(--color-indigo-brand)]"
-          />
-          <span>{vaultIsGit ? labels.snapshot : labels.snapshotUnavailable}</span>
-        </label>
+        <Checkbox
+          className="tracking-label"
+          data-testid="agent-proposal-snapshot"
+          checked={proposal.snapshotRequested}
+          disabled={!vaultIsGit}
+          onChange={(event) => onToggleSnapshot(event.target.checked)}
+          label={<span>{vaultIsGit ? labels.snapshot : labels.snapshotUnavailable}</span>}
+        />
       ) : null}
 
       {settled ? (
@@ -259,27 +255,28 @@ function ChangeRow({
          * 펼침 버튼은 라벨 **밖**에 남는다 — 안에 넣으면 「자세히」를 누를 때마다
          * 선택이 뒤집힌다.
          */}
-        <label className={fieldLabel({ row: true, className: "min-w-0 flex-1" })}>
-          <input
-            type="checkbox"
-            data-testid={`agent-proposal-change-${change.id}`}
-            checked={change.selected}
-            disabled={disabled}
-            onChange={(event) => onToggle(event.target.checked)}
-            className="size-4 shrink-0 accent-[color:var(--color-indigo-brand)]"
-          />
-          <FileText
-            aria-hidden="true"
-            size={ICON_SIZE.sm}
-            className="shrink-0 text-[color:var(--color-text-quaternary)]"
-          />
-          <span
-            className="min-w-0 flex-1 truncate text-label tracking-label text-[color:var(--color-text-secondary)]"
-            title={change.summary}
-          >
-            {change.summary}
-          </span>
-        </label>
+        <Checkbox
+          className="min-w-0 flex-1"
+          data-testid={`agent-proposal-change-${change.id}`}
+          checked={change.selected}
+          disabled={disabled}
+          onChange={(event) => onToggle(event.target.checked)}
+          label={
+            <>
+              <FileText
+                aria-hidden="true"
+                size={ICON_SIZE.sm}
+                className="shrink-0 text-[color:var(--color-text-quaternary)]"
+              />
+              <span
+                className="min-w-0 flex-1 truncate text-label tracking-label text-[color:var(--color-text-secondary)]"
+                title={change.summary}
+              >
+                {change.summary}
+              </span>
+            </>
+          }
+        />
         <button
           type="button"
           data-testid="agent-proposal-change-toggle"

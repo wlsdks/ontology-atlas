@@ -1501,7 +1501,12 @@ const OUTSIDE_VALUE_LAYER_FIELDS: readonly OutsideEntry[] = [
 ];
 
 /** **리터럴이다.** 다른 기준선들과 같은 이유 — 파생값은 멈춤쇠를 양방향으로 헐겁게 만든다. */
-const BASELINE_FIELD_DEBT = -1;
+/*
+ * 2026-08-15: -1 → -6. Checkbox 프리미티브 이주로 raw type="checkbox" 5파일
+ * 6곳이 shared/ui/checkbox.tsx 한 곳으로 접혔다(「체계」석 비준 —
+ * docs/DECISIONS.md).
+ */
+const BASELINE_FIELD_DEBT = -6;
 
 const fieldCensus = census(scannedFiles, OUTSIDE_VALUE_LAYER_FIELDS, FIELD_TAGS, []);
 
