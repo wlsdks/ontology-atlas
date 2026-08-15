@@ -328,6 +328,11 @@ export function validateMeaningProposalAgainstAnalysis(
   const proposalElementPaths = new Map(
     proposal.elements.map((row) => [row.slug, row.path]),
   );
+  const proposalConceptPaths = new Map(
+    concepts
+      .filter((row) => repositoryPathExists(analysis.rootPath, row.path))
+      .map((row) => [row.slug, row.path]),
+  );
   const selectedImportEndpointElements = proposal.elements.filter(
     (row) => importEndpointSources.has(row.path) && !importBoundarySources.has(row.path),
   );
@@ -442,10 +447,28 @@ export function validateMeaningProposalAgainstAnalysis(
         'Every proposed relation needs a one-line rationale.',
       ));
     }
+    const endpointPaths = [...new Set([
+      proposalConceptPaths.get(relation.from),
+      proposalConceptPaths.get(relation.to),
+    ].filter(nonEmpty))];
+    const namedEndpointPaths = endpointPaths.filter((source) =>
+      textNamesExactPath(relation.why, source));
+    const missingNamedPathCitations = namedEndpointPaths.filter((source) =>
+      !relation.evidence?.includes(source));
+    if (missingNamedPathCitations.length > 0) {
+      findings.push(finding(
+        'relation-path-citation-mismatch',
+        'error',
+        path,
+        'A relation rationale that names an exact endpoint path must cite that same path as relation evidence.',
+        missingNamedPathCitations,
+      ));
+    }
+    const relationAvailableSources = new Set([...availableSources, ...endpointPaths]);
     validateCitationsAndConfidence({
       row: relation,
       path,
-      availableSources,
+      availableSources: relationAvailableSources,
       evidenceBySource,
       findings,
       label: 'relation',
@@ -516,6 +539,7 @@ export function validateMeaningProposalAgainstAnalysis(
       'relation-source-not-in-write-plan',
       'unsupported-relation-type',
       'unobserved-python-import-dependency',
+      'relation-path-citation-mismatch',
     ].includes(row.code)),
     confidenceValid: !findings.some((row) => row.code === 'invalid-confidence'),
     competencyQuestionsAnswered: competencyAudit.allAnswered,
@@ -845,6 +869,24 @@ function repositoryPathExists(rootPath, value) {
   const relativePath = relative(absoluteRoot, candidate);
   if (relativePath === '..' || relativePath.startsWith(`..${sep}`)) return false;
   return existsSync(candidate);
+}
+
+function textNamesExactPath(text, path) {
+  if (!nonEmpty(text) || !nonEmpty(path)) return false;
+  const pathCharacter = /[A-Za-z0-9_./-]/;
+  let offset = 0;
+  while (offset <= text.length - path.length) {
+    const index = text.indexOf(path, offset);
+    if (index < 0) return false;
+    const before = index > 0 ? text[index - 1] : '';
+    const afterIndex = index + path.length;
+    const after = afterIndex < text.length ? text[afterIndex] : '';
+    if ((!before || !pathCharacter.test(before)) && (!after || !pathCharacter.test(after))) {
+      return true;
+    }
+    offset = index + path.length;
+  }
+  return false;
 }
 
 function buildWritePlan(proposal) {

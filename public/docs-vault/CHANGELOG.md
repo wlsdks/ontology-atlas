@@ -7,6 +7,18 @@
 
 ---
 
+## 2026-08-16 · C 미지원 범위와 관계의 정확한 경로 근거를 숨기지 않는다
+
+- 실제 C/H가 있는 Autotools 저장소를 `infer_imports`가 스캔하지 못하면
+  `detectedUnsupportedLanguages:["c"]`와 `allDetectedLanguagesSupported:false`를
+  반환한다. 0 edge는 C 의존이 없다는 뜻이 아니며 일반 C include graph는 아직
+  지원하지 않는다.
+- 관계 설명이 양끝 concept의 정확한 repository path를 직접 이름 붙이면 같은 관계의
+  evidence에도 그 경로가 있어야 한다. `Makefile.am` 사실을 주장하면서 `README.md`만
+  인용한 proposal은 이제 write 전 검증에서 실패한다.
+- MCP 공개 output enum과 CLI strict validator를 함께 갱신해 source·bundle·CLI가 같은
+  receipt를 소비한다. 새 도구·필드·자동 관계 쓰기는 추가하지 않았다.
+
 ## 2026-08-15 · source-hidden 실패가 write 경계를 우회하지 않는다
 
 - 독립 source-hidden 평가가 `failed` 또는 `unknown`이면, 사람이 gap을 수용해도

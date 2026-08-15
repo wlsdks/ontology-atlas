@@ -277,13 +277,17 @@ function verifiedRustConfigurationEvidence() {
   };
 }
 
-function verifiedImportScanCoverage({ rust = false } = {}) {
+function verifiedImportScanCoverage({ c = false, rust = false } = {}) {
+  const detectedUnsupportedLanguages = [
+    ...(c ? ['c'] : []),
+    ...(rust ? ['rust'] : []),
+  ];
   return {
     contract: 'importScanCoverage:v1',
     supportedLanguages: ['javascript', 'python', 'typescript'],
     supportedExtensions: ['.js', '.py', '.ts'],
-    detectedUnsupportedLanguages: rust ? ['rust'] : [],
-    allDetectedLanguagesSupported: !rust,
+    detectedUnsupportedLanguages,
+    allDetectedLanguagesSupported: detectedUnsupportedLanguages.length === 0,
     zeroEdgesMeaning: 'no_supported_static_import_edges_observed',
     limitations: ['Static source evidence is not semantic dependency approval.'],
   };
@@ -2056,6 +2060,10 @@ describe('verify.mjs first-contact gates', () => {
               type: 'object',
               properties: {
                 contract: { enum: ['importScanCoverage:v1'] },
+                detectedUnsupportedLanguages: {
+                  type: 'array',
+                  items: { enum: ['c', 'rust'] },
+                },
                 allDetectedLanguagesSupported: { type: 'boolean' },
                 zeroEdgesMeaning: {
                   enum: ['no_supported_static_import_edges_observed'],
@@ -8725,6 +8733,21 @@ Continue.`;
         coverage: lyingCoverage,
       }),
       'infer_imports import scan coverage overclaims Rust support',
+    );
+
+    const lyingCCoverage = verifiedImportScanCoverage({ c: true });
+    lyingCCoverage.allDetectedLanguagesSupported = true;
+    assert.equal(
+      inferImportsFailure({
+        rootPath: '/repo',
+        filesScanned: 0,
+        edges: [],
+        externalImports: [],
+        unresolved: [],
+        moduleEdges: [],
+        coverage: lyingCCoverage,
+      }),
+      'infer_imports import scan coverage overclaims C support',
     );
   });
 

@@ -2052,6 +2052,10 @@ export function toolsListSchemaFailure(tools) {
   if (
     importCoverageSchema?.type !== 'object' ||
     !sameArray(importCoverageSchema.properties?.contract?.enum, ['importScanCoverage:v1']) ||
+    !sameArray(
+      importCoverageSchema.properties?.detectedUnsupportedLanguages?.items?.enum,
+      ['c', 'rust'],
+    ) ||
     importCoverageSchema.properties?.allDetectedLanguagesSupported?.type !== 'boolean' ||
     Object.hasOwn(importCoverageSchema.properties ?? {}, 'completeForDetectedLanguages') ||
     !sameArray(importCoverageSchema.properties?.zeroEdgesMeaning?.enum, [
@@ -6449,6 +6453,18 @@ function importScanCoverageFailure(coverage) {
     coverage.limitations.length === 0
   ) {
     return 'import scan coverage boundary drift';
+  }
+  if (
+    new Set(coverage.detectedUnsupportedLanguages).size !== coverage.detectedUnsupportedLanguages.length ||
+    coverage.detectedUnsupportedLanguages.some((language) => !['c', 'rust'].includes(language))
+  ) {
+    return 'import scan coverage unsupported-language enum drift';
+  }
+  if (
+    coverage.detectedUnsupportedLanguages.includes('c') &&
+    coverage.allDetectedLanguagesSupported !== false
+  ) {
+    return 'import scan coverage overclaims C support';
   }
   if (
     coverage.detectedUnsupportedLanguages.includes('rust') &&

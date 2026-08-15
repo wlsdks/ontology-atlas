@@ -776,6 +776,10 @@ await test("tools/list — 단일 도구 description 이 batch 짝을 cross-refe
     assert.equal(inferImports?.outputSchema?.additionalProperties, false);
     assert.equal(inferImports?.outputSchema?.properties?.filesScanned?.type, "integer");
     assert.deepEqual(inferImports?.outputSchema?.properties?.coverage?.properties?.contract?.enum, ["importScanCoverage:v1"]);
+    assert.deepEqual(
+      inferImports?.outputSchema?.properties?.coverage?.properties?.detectedUnsupportedLanguages?.items?.enum,
+      ["c", "rust"],
+    );
     assert.deepEqual(inferImports?.outputSchema?.properties?.coverage?.properties?.zeroEdgesMeaning?.enum, ["no_supported_static_import_edges_observed"]);
     assert.equal(inferImports?.outputSchema?.properties?.coverage?.additionalProperties, false);
     assert.deepEqual(inferImports?.outputSchema?.properties?.edges?.items?.required, ["from", "to", "kind", "sourceRole", "importUsage"]);
@@ -2985,7 +2989,7 @@ await test("infer_imports auto delivery — oversized omitted calls compact, exp
   }
 });
 
-await test("Rust MCP evidence — analyze, infer, and index preserve configuration provenance and unsupported import coverage", async () => {
+await test("Rust and Autotools C MCP evidence — analyze, infer, and index preserve provenance and unsupported import coverage", async () => {
   const vaultRoot = makeVault();
   const repoRoot = mkdtempSync(join(tmpdir(), "ontology-atlas-rust-evidence-"));
   try {
@@ -3008,6 +3012,9 @@ await test("Rust MCP evidence — analyze, infer, and index preserve configurati
       "utf-8",
     );
     writeFileSync(join(repoRoot, "src", "portable.rs"), "pub fn run() {}\n", "utf-8");
+    writeFileSync(join(repoRoot, "configure.ac"), "AC_INIT([conditional-engine], [1.0])\nAC_PROG_CC\n", "utf-8");
+    writeFileSync(join(repoRoot, "Makefile.am"), "bin_PROGRAMS = native-check\nnative_check_SOURCES = src/native.c\n", "utf-8");
+    writeFileSync(join(repoRoot, "src", "native.c"), "int main(void) { return 0; }\n", "utf-8");
 
     const { responses } = await rpc(vaultRoot, [
       ...INIT_REQUESTS,
@@ -3039,7 +3046,7 @@ await test("Rust MCP evidence — analyze, infer, and index preserve configurati
     assert.deepEqual(getCallStructured(responses, 3), imports);
     assert.equal(imports.filesScanned, 0);
     assert.deepEqual(imports.edges, []);
-    assert.deepEqual(imports.coverage.detectedUnsupportedLanguages, ["rust"]);
+    assert.deepEqual(imports.coverage.detectedUnsupportedLanguages, ["c", "rust"]);
     assert.equal(imports.coverage.allDetectedLanguagesSupported, false);
     assert.equal(imports.coverage.zeroEdgesMeaning, "no_supported_static_import_edges_observed");
 

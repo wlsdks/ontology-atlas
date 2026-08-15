@@ -253,7 +253,7 @@ function assertCoverage(value, path) {
   if (value.contract !== 'importScanCoverage:v1') throw new Error(`${path}.contract must be importScanCoverage:v1`);
   assertUniqueStringArray(value.supportedLanguages, ['javascript', 'python', 'typescript'], `${path}.supportedLanguages`);
   assertUniqueStringArray(value.supportedExtensions, null, `${path}.supportedExtensions`);
-  assertUniqueStringArray(value.detectedUnsupportedLanguages, ['rust'], `${path}.detectedUnsupportedLanguages`);
+  assertUniqueStringArray(value.detectedUnsupportedLanguages, ['c', 'rust'], `${path}.detectedUnsupportedLanguages`);
   if (typeof value.allDetectedLanguagesSupported !== 'boolean') {
     throw new Error(`${path}.allDetectedLanguagesSupported must be a boolean`);
   }

@@ -40,6 +40,73 @@
 **상태**: 유효 / 뒤집힘(→ 링크) / 반증됨(관측: …)
 ```
 
+## 2026-08-16 — 미지원 C와 관계의 명시 경로는 write 전 근거 계약에서 실패 닫는다
+
+### 먼저 — 세 줄
+
+- **정한 것**: 실제 C/H가 있는 Autotools 저장소는 import graph 미지원으로 표시하고,
+  관계 설명이 양끝 concept의 정확한 경로를 이름 붙이면 같은 관계 evidence에도 그
+  경로가 있어야 한다.
+- **다르게 한 것**: 내부 버그 수정으로만 보지 않았다. `c`는 기존 공개 output enum의
+  값 집합을 늘리므로 MCP·CLI 계약 변경으로 기록하고 함께 검증한다.
+- **네가 할 일**: 없음 — 같은 jq 현장시험에서 두 영수증을 다시 확인한다.
+
+**소집**: PO 카운슬 5자리. 네 자리는 독립 병렬 1라운드와 상호 반박 1라운드를
+완료했다. 지렛대 자리는 두 모델 실행이 종료되지 않아 소집자가 역할 원문으로 순차
+수행했으며, 따라서 그 자리의 1라운드 독립성은 없다. · **트리거**: `importScanCoverage:v1`
+공개 enum 확장과 source-hidden field trial의 관계 근거 불일치
+**루브릭**: 22/24 (Problem insight 4 · User moment 4 · Differentiation 2 ·
+Ontology value 4 · Agent value 4 · Verification 4, 치명적 0: 없음). source/stdio
+MCP·CLI와 같은 jq 재시험에서 C false-complete 차단, exact-path 근거 실패, 수정 후
+review-only 복귀를 모두 확인했다.
+
+## PO Council Verdict — native evidence integrity
+
+| PO | 판정 | 소유 행 점수 |
+|---|---|---|
+| 근거 | Build and verify | Problem insight 4 · User moment 4 |
+| 결 | Build and verify | Verification 4 |
+| 지킴이 | Build and verify | Ontology value 4 · Agent value 4 |
+| 해자 | Build and verify — 필수 위생 | Differentiation 2 |
+| 지렛대 | Build and verify | appetite: 최대 하루 |
+
+**선행 결정 관계**: 2026-08-15의 source-hidden 실패 hard-block과 candidate-only
+no-write 결정을 유지한다. 이번 변경은 사람 승인·qualification·writePlan을 열지 않고,
+그 전에 proposal evidence와 scan coverage가 거짓 green을 내지 못하게 한다.
+
+**The decisive disagreement**: 두 검사는 복제하기 쉬운 위생이므로 차별화 투자로
+확장하지 말아야 한다는 의견과, 바로 그 false-green이 다음 source-hidden trial을
+막는 현재 구속 조건이라는 의견이 갈렸다. 가장 작은 공통 결론은 일반 C include
+graph나 자연어 검증을 만들지 않고, 이미 존재하는 typed receipt와 exact endpoint
+path만 정직하게 만드는 것이다.
+
+**Decision (accountable: 소유자 요청에 따라 집행)**:
+
+1. Autotools manifest와 bounded conventional source discovery가 실제 `.c`/`.h`를 함께
+   확인할 때만 `detectedUnsupportedLanguages`에 `c`를 추가하고
+   `allDetectedLanguagesSupported:false`를 반환한다.
+2. `importScanCoverage:v1` shape과 version은 유지하되 MCP output enum, producer,
+   CLI strict validator와 verify contract를 같은 변경에서 맞춘다.
+3. 관계 양끝의 존재하는 `path:`가 `why`에 exact token으로 나타나면 그 관계의
+   `evidence[]`에도 정확히 있어야 한다. 부분 문자열, 임의 파일명, 일반 자연어 의미는
+   추측하지 않는다.
+4. RED→GREEN 뒤 구현을 무력화해 두 gate가 실제로 RED가 되는지 probe하고, source/stdio
+   MCP·CLI와 동일 jq candidate gate를 재실행한다.
+
+**Recorded dissent**: 기존 `v1`의 rust-only enum을 exhaustive하게 소비하는 외부
+클라이언트는 `c` 추가로 깨질 수 있고, C 감지나 경로 token 경계가 넓으면 false-positive
+차단을 만들 수 있다. **falsifier**: 현재 CLI/verify parity가 새 값을 거부하거나,
+Autotools metadata-only 저장소가 `c`로 잡히거나, 더 긴 path token이 endpoint exact
+match로 차단되거나, 같은 jq 재시험이 여전히 false complete/관계 근거 불일치를
+반환하면 이 반대가 옳다. **revisit**: 위 관측 중 하나가 발생하거나 다음 C field
+trial이 일반 include graph 필요성을 독립적으로 확인할 때.
+
+**Slice**: IN C unsupported receipt · exact endpoint relation evidence · public consumer
+parity · ontology/changelog · same jq rerun · OUT C include/build graph · compiler 실행 ·
+퍼지/NLP 검증 · 새 field/tool/UI · 자동 relation/write · appetite 최대 하루
+
+**상태**: 유효
+
 ## 2026-08-15 (20) — 첫 held-out trial은 자격 미충족에서 정확히 멈춘다
 
 **소집**: 단독 field-trial pass + Sol xhigh 검토 · **트리거**: source-hidden
