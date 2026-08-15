@@ -1700,6 +1700,114 @@ test('Generic README sections (Usage / Installation / Tests) skipped from domain
   }
 });
 
+test('README ampersand community support sections stay out of domains', () => {
+  const root = withRepo((r) => {
+    writeFileSync(
+      join(r, 'README.md'),
+      '# Native Tool\n\n## Documentation\n\n## Community & Support\n\n## Documentation & Community Support\n\n## Runtime\n',
+    );
+  });
+  try {
+    const result = analyzeRepoStructure(root);
+    assert.deepEqual(result.domains.map((domain) => domain.slug), ['domains/runtime']);
+    assert.deepEqual(
+      result.meaningGate.proposedBusinessOntology.domains.map((domain) => domain.slug),
+      ['domains/runtime'],
+    );
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test('native C repositories expose bounded build, documentation, and source evidence', () => {
+  let outside = null;
+  const root = withRepo((r) => {
+    writeFileSync(
+      join(r, 'README.md'),
+      '# Native Tool\n\nA portable command-line processor.\n\n## Documentation\n\n## Community & Support\n',
+    );
+    writeFileSync(join(r, 'configure.ac'), 'AC_INIT([native-tool])\n');
+    writeFileSync(join(r, 'Makefile.am'), 'bin_PROGRAMS = native-tool\n');
+    mkdirSync(join(r, 'src'), { recursive: true });
+    writeFileSync(join(r, 'src', 'main.c'), 'int main(void) { return 0; }\n');
+    writeFileSync(join(r, 'src', 'parse.c'), 'int parse(void) { return 0; }\n');
+    writeFileSync(join(r, 'src', 'parse.h'), 'int parse(void);\n');
+    outside = mkdtempSync(join(tmpdir(), 'ontology-atlas-native-outside-'));
+    writeFileSync(join(outside, 'escaped.c'), 'int escaped(void) { return 0; }\n');
+    writeFileSync(join(outside, 'build_escape.py'), 'print("escaped")\n');
+    symlinkSync(join(outside, 'escaped.c'), join(r, 'src', 'escaped.c'));
+    mkdirSync(join(r, 'tests'), { recursive: true });
+    writeFileSync(join(r, 'tests', 'native_test.c'), 'int test(void) { return 0; }\n');
+    mkdirSync(join(r, 'vendor'), { recursive: true });
+    writeFileSync(join(r, 'vendor', 'third_party.c'), 'int vendor(void) { return 0; }\n');
+    mkdirSync(join(r, 'docs'), { recursive: true });
+    writeFileSync(join(r, 'docs', 'build_website.py'), 'print("site")\n');
+    writeFileSync(join(r, 'docs', 'Pipfile'), '[packages]\nmarkdown = "*"\n');
+    symlinkSync(join(outside, 'build_escape.py'), join(r, 'docs', 'build_escape.py'));
+  });
+  try {
+    const result = analyzeRepoStructure(root);
+    const paths = result.elements.map((element) => element.path);
+    assert.deepEqual(result.domains, []);
+    assert.deepEqual(result.capabilities, []);
+    assert.ok(paths.includes('configure.ac'));
+    assert.ok(paths.includes('Makefile.am'));
+    assert.ok(paths.includes('docs/build_website.py'));
+    assert.ok(paths.includes('docs/Pipfile'));
+    assert.ok(paths.includes('src/main.c'));
+    assert.ok(paths.includes('src/parse.c'));
+    assert.ok(paths.includes('src/parse.h'));
+    assert.equal(paths.includes('tests/native_test.c'), false);
+    assert.equal(paths.includes('vendor/third_party.c'), false);
+    assert.equal(paths.includes('src/escaped.c'), false);
+    assert.equal(paths.includes('docs/build_escape.py'), false);
+    assert.equal(new Set(result.elements.map((element) => element.slug)).size, result.elements.length);
+    assert.equal(result.suggestedRelations.some((relation) => relation.type === 'depends_on'), false);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+    if (outside) rmSync(outside, { recursive: true, force: true });
+  }
+});
+
+test('native evidence scanner stays scoped to Autotools-shaped repositories', () => {
+  const root = withRepo((r) => {
+    writeFileSync(join(r, 'README.md'), '# CMake Tool\n');
+    writeFileSync(join(r, 'CMakeLists.txt'), 'add_executable(tool src/main.c)\n');
+    mkdirSync(join(r, 'src'), { recursive: true });
+    writeFileSync(join(r, 'src', 'main.c'), 'int main(void) { return 0; }\n');
+  });
+  try {
+    const result = analyzeRepoStructure(root);
+    assert.deepEqual(result.elements, []);
+    assert.deepEqual(result.capabilities, []);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test('native documentation generator evidence is sorted and bounded', () => {
+  const root = withRepo((r) => {
+    writeFileSync(join(r, 'README.md'), '# Native Tool\n');
+    writeFileSync(join(r, 'configure.ac'), 'AC_INIT([native-tool])\n');
+    mkdirSync(join(r, 'src'), { recursive: true });
+    writeFileSync(join(r, 'src', 'main.c'), 'int main(void) { return 0; }\n');
+    mkdirSync(join(r, 'docs'), { recursive: true });
+    for (let index = 0; index < 13; index += 1) {
+      writeFileSync(join(r, 'docs', `build_${String(index).padStart(2, '0')}.py`), '');
+    }
+  });
+  try {
+    const result = analyzeRepoStructure(root);
+    const generatorPaths = result.elements
+      .map((element) => element.path)
+      .filter((path) => path.startsWith('docs/build_'));
+    assert.equal(generatorPaths.length, 12);
+    assert.deepEqual(generatorPaths, [...generatorPaths].sort());
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
 test('Narrative / language-guide / sentence README H2s skipped from domains', () => {
   const root = withRepo((r) => {
     writeFileSync(
