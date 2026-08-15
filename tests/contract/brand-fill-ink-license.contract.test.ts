@@ -229,6 +229,19 @@ describe("브랜드 면 × 잉크 페어링 — 소스 전수", () => {
     expect(inklessFills, "잉크 없는 브랜드 면 리터럴이 늘었다 — 각 자리가 정말 글자 없는 면인지 확인하라").toBeLessThanOrEqual(24);
   });
 
+  it("사각이 줄었으면 상한도 내린다 — 여유를 무료로 두지 않는다", () => {
+    /*
+     * 「체계」석 권고(2026-08-15): 점 하나가 지워져 사각이 줄었는데 상한이 24로
+     * 남으면, 그 여유가 다음에 들어오는 **진짜 짝**의 무료 통행증이 된다.
+     * `accent-ink-contrast` 의 「갚았으면 기준선도 내린다」와 같은 문법이다.
+     */
+    const { inklessFills } = scan();
+    expect(
+      inklessFills,
+      "잉크 없는 브랜드 면 리터럴이 줄었다 — 위 상한 24 도 같이 내려라.",
+    ).toBeGreaterThanOrEqual(24);
+  });
+
   it("탐지기가 심은 위반을 잡고 정상 짝은 놓아준다", () => {
     const bad = `rounded-full bg-[color:var(--color-indigo-brand)] text-[color:var(--color-text-primary)]`;
     const good = `rounded-full bg-[color:var(--color-indigo-brand)] text-[color:var(--color-text-on-accent)]`;
