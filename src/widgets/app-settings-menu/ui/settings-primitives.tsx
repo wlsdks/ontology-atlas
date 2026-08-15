@@ -1,6 +1,5 @@
 import { type ReactNode } from 'react';
 import { cn } from '@/shared/lib/cn';
-import { controlClass } from '@/shared/ui/control-class';
 import { SegmentedControl } from '@/shared/ui/segmented-control';
 
 /**
@@ -201,11 +200,18 @@ export function Slider({
 /**
  * 값 몇 개 중 하나 고르기 — 라디오 칩 한 줄. `Slider` 와 같은 행 문법.
  *
- * 칩의 높이(32px)와 글자(12.5px)는 이 시트의 다른 주 컨트롤인 `SegmentSwitch`
- * 와 **같은 값**이다 — 둘 다 "값 하나 고르기" 라서 다를 이유가 없다. 종전엔
- * 24px / 9.5px 이라 자기 라벨(11px)보다 작았다: 누르는 것이 화면에서 가장
- * 작은 글자였다(위계 역전). 24px 은 WCAG 2.5.8(AA) 최소 타깃 24×24 에 여유
- * 0으로 걸쳐 있기도 했고, 「고리」·「기둥」은 폭 38.4px 이었다.
+ * **2026-08-15 — 껍데기만 남았다.** 실체는 `SegmentedControl variant="chips"`
+ * 다(`SegmentSwitch` 와 같은 운명). 종전엔 `role="radiogroup"` 을 손으로 걸고
+ * **roving tabindex 도 화살표 이동도 없었다** — role 이 보조기술에게 약속만
+ * 하고 아무 일도 안 일어났고, 그건 프리미티브 창립 전수가 결함으로 지목한 바로
+ * 그 문장이다. 이 어댑터가 진 것은 설정 시트의 **행 문법**(`w-28` 라벨 + 행
+ * 인셋)뿐이고, 그건 설정 밖 소비가 0이라 승격 대상이 아니다(2026-08-15 (2) 의
+ * `Switch` 반려 기준 그대로). **승격된 단위는 컴포넌트가 아니라 그릇이다.**
+ *
+ * 이주는 **픽셀 0** 이다 — 손 오버라이드 `h-8 px-3 text-body` 가 값 층
+ * `chip lg`(`min-h-8 px-3 py-1 text-body`)와 기하 동등이다. 움직인 것은 선택
+ * 표현 색 하나뿐이고, 그것도 손 조합(`indigo-accent` 보더 + `indigo-line-a13`)
+ * 에서 램프 active 로 **수렴**한 것이다.
  */
 export function Choice<T extends string | boolean>({
   label,
@@ -226,34 +232,18 @@ export function Choice<T extends string | boolean>({
   return (
     <div className="flex min-h-11 items-center gap-3 px-1 py-2">
       <span className="w-28 shrink-0 text-body text-[color:var(--color-text-secondary)]">{label}</span>
-      <div role="radiogroup" aria-label={label} data-testid={testId} className="flex flex-wrap gap-1.5">
-        {options.map((option) => {
-          const active = option.value === value;
-          return (
-            <button
-              key={String(option.value)}
-              type="button"
-              role="radio"
-              aria-checked={active}
-              data-testid={optionTestId?.(option.value)}
-              onClick={() => onChange(option.value)}
-              className={controlClass({
-                shape: 'chip',
-                size: 'md',
-                tone: active ? 'accentOnTint' : 'muted',
-                className: cn(
-                  'h-8 px-3 text-body',
-                  active
-                    ? 'border-[color:var(--color-indigo-accent)] bg-[color:var(--color-indigo-line-a13)]'
-                    : 'border-[color:var(--color-border-soft)] hover:border-[color:var(--color-border-strong)]',
-                ),
-              })}
-            >
-              {option.label}
-            </button>
-          );
-        })}
-      </div>
+      <SegmentedControl
+        ariaLabel={label}
+        variant="chips"
+        value={value}
+        onChange={onChange}
+        options={options.map((option) => ({
+          value: option.value,
+          label: option.label,
+          testId: optionTestId?.(option.value),
+        }))}
+        testId={testId}
+      />
     </div>
   );
 }

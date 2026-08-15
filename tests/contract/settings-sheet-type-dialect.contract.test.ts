@@ -234,14 +234,33 @@ describe("한 시트 안에서 «값 하나 고르기» 는 한 규격이다", (
     const primitives = sourceWithoutComments("settings-primitives.tsx");
     const activity = sourceWithoutComments("AgentActivitySettings.tsx");
 
-    // 높이 — 셋 다 32px 한 단. 칩(Choice)은 `h-8` 을 직접 서고, 세그먼트는
-    // 2026-08-15 에 `SegmentedControl` 어댑터가 되어 높이를 **값 층**
-    // (segment/lg = min-h-8)이 낸다 — 같은 32 를 다른 문법으로 보증하는 것이라
-    // 여기서는 「어댑터가 실제로 그 프리미티브에 위임하는가」를 본다.
-    expect(primitives.match(/\bh-8\b/g)?.length ?? 0, "칩(Choice)은 h-8 이어야 한다").toBeGreaterThanOrEqual(1);
-    expect(primitives, "세그먼트가 값 층 위임(SegmentedControl)을 잃었다 — 32px 보증이 사라진다").toMatch(
-      /<SegmentedControl\b/,
-    );
+    /*
+     * 높이 — 셋 다 32px 한 단.
+     *
+     * ⚠️ **2026-08-15 2차 라운드에서 이 단언의 자리가 바뀌었다.** 종전엔
+     * 「`settings-primitives.tsx` 안에 `h-8` 리터럴이 있는가」를 봤다. 그런데
+     * 그날 `Choice` 도 `SegmentSwitch` 처럼 `SegmentedControl` 어댑터가 되면서
+     * 그 리터럴이 사라졌고, 이 단언이 **규격이 좋아졌는데 빨개졌다** —
+     * `design-gates.md` 가 「규격이 아니라 글자 모양을 붙들고 있는 게이트」라고
+     * 부르는 그 모양이다(그런 게이트는 다음 사람이 게이트 대신 규격 쪽을
+     * 되돌리게 만든다).
+     *
+     * 그래서 32px 보증을 **실제로 그것을 내는 자리**에서 잰다: 두 어댑터가
+     * 프리미티브에 위임하는가 + 그 프리미티브의 두 그릇이 같은 높이 단인가.
+     */
+    expect(
+      primitives.match(/<SegmentedControl\b/g)?.length ?? 0,
+      "설정 시트의 «값 하나 고르기» 둘(Choice·SegmentSwitch)이 값 층 위임을 잃었다",
+    ).toBeGreaterThanOrEqual(2);
+
+    const valueLayer = sourceAtPath("src/shared/ui/control-class.ts");
+    for (const shape of ["chip", "segment"]) {
+      expect(
+        valueLayer,
+        `${shape} lg 가 32px 단(min-h-8)을 잃었다 — 두 그릇이 같은 높이라는 전제가 깨진다`,
+      ).toMatch(new RegExp(`shape: '${shape}', size: 'lg', class: '[^']*min-h-8`));
+    }
+
     expect(activity).toMatch(/\bh-8\b/);
 
     // 타입 단 — 칩은 `text-body`(12.5). 세그먼트는 무게만 다르고 단은 같다.

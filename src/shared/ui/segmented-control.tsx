@@ -1,8 +1,9 @@
 "use client";
 
-import { useRef, type KeyboardEvent, type ReactNode } from "react";
+import { type ReactNode } from "react";
 
 import { cn } from "@/shared/lib/cn";
+import { useRovingRadioGroup } from "@/shared/lib/use-roving-radio-group";
 import { controlClass, type ControlSize } from "./control-class";
 
 /**
@@ -26,12 +27,30 @@ import { controlClass, type ControlSize } from "./control-class";
  * 안 바뀌는 단일 토글(스포트라이트·미리보기)만 그 문법이 옳고, 그건 이
  * 부품의 소비자가 아니다.
  *
- * ## 키보드 — 프리미티브가 진다
+ * ## 키보드 — 이제 훅이 진다 (2026-08-15 2차 라운드)
  *
- * roving tabindex(체크 항목만 탭 스톱) · →↓/←↑ 순환 이동 + **selection
- * follows focus**(네이티브 라디오와 동일 — 다섯 현장 전부 되돌릴 수 있는
- * 선호값 쓰기라 안전) · Space · **Home/End 없음**(tabs 표의 키다, 라디오
- * 표에 없다) · Escape 미처리(팝오버의 Escape 를 훔치지 않는다).
+ * roving tabindex · →↓/←↑ 순환 + selection follows focus · Space ·
+ * Home/End 없음 · Escape 미처리 — **구현은 `shared/lib/use-roving-radio-group`
+ * 하나**이고 이 파일은 그것을 입는다. 갈라놓은 이유: 창립 라운드가 훑지 않은
+ * 손 radiogroup 이 더 있었고(최종 모집단 18그룹 · roving 0 · 100%), 그중
+ * 격자 타일처럼 **그릇이 진짜로 다른** 자리가 있어 한 컴포넌트로 수렴하지
+ * 않는다. 그런 자리는 훅을 직접 입는다. 이 파일이 남는 이유는 다수파 그릇
+ * 둘을 **자동으로 입혀 주기 위해서**다 — 훅만 주면 자리마다 각자 배선하고,
+ * 그게 오늘 roving 0 이 된 경로다(Dialog 원장의 그 문장).
+ *
+ * ## 그릇 캐노니컬 둘 (`variant`)
+ *
+ * | | 컨테이너 | 아이템 | 실측 |
+ * |---|---|---|---:|
+ * | `well`(기본) | `inline-flex gap-px … p-px` | `shape:'segment'` | 4그룹 |
+ * | `chips` | `flex flex-wrap items-center gap-1.5` | `shape:'chip'` | **10/12 가 이미 이 문법** |
+ *
+ * `chips` 는 새 값이 아니라 **실측 다수파의 등재**다(바이트 동일 9 + no-op
+ * 추가만 붙은 1). 그리고 `Choice` 의 손 오버라이드 `h-8 px-3 text-body` 는
+ * `chip lg`(`min-h-8 px-3 py-1 text-body`)와 **기하 동등**이라 이주가 픽셀
+ * 0이다 — 움직이는 것은 선택 표현 색뿐이고, 그건 창립 전수가 「2언어」라고
+ * 적었지만 실제로는 **3언어**로 살아 있었다(Choice 손 조합 · TopologyIndexPanel
+ * 제3언어 · 램프 active).
  *
  * ## 컨테이너 캐노니컬 — 인셋은 다수결이 아니라 사다리가 정했다
  *
@@ -58,6 +77,12 @@ export interface SegmentedOption<T extends string | number | boolean> {
   label: ReactNode;
   /** 보이는 라벨이 약어(EN·KO)일 때 낭독용 전체 이름. */
   ariaLabel?: string;
+  /**
+   * 마우스 툴팁 — 네이티브 속성 통과. 실측 소비처 2(FirstRunStarter ·
+   * ProjectDrawer)라 열었다. **per-option `className` 은 열지 않는다** —
+   * 「자리잡기 전용」 prop 계약이 규격 반입 통로가 된다(체계석 명시).
+   */
+  title?: string;
   testId?: string;
 }
 
@@ -65,8 +90,20 @@ export type SegmentedControlProps<T extends string | number | boolean> = Segment
   value: T;
   options: ReadonlyArray<SegmentedOption<T>>;
   onChange: (next: T) => void;
-  /** 값 층 segment 의 크기 단 — 기본 lg(32px, coarse 44 승격). */
+  /** 값 층 크기 단 — 기본 lg(32px, coarse 44 승격). */
   size?: Extract<ControlSize, "md" | "lg">;
+  /**
+   * 그릇 — 실측 다수파 둘. 기본은 `well`(붙은 우물, 4그룹).
+   * `chips` 는 떨어진 칩 줄(`flex flex-wrap items-center gap-1.5`)이고,
+   * 바이트 동일 9그룹 + no-op 추가 1 = 10/12 가 이미 그 문법이었다.
+   */
+  variant?: "well" | "chips";
+  /**
+   * 항목이 폭을 균등하게 나눠 갖는다. 실측 소비처 3(BlockImport ·
+   * FirstRunStarter · StudioMaterialize) — 2옵션에서 `grid-cols-2` 와
+   * 수학적으로 같은 폭이다.
+   */
+  fill?: boolean;
   /** 전환 진행 중 — 재선택만 잠그고 초점은 산다. 그룹 disabled 를 걸지 않는다. */
   busy?: boolean;
   testId?: string;
@@ -81,68 +118,54 @@ export function SegmentedControl<T extends string | number | boolean>({
   options,
   onChange,
   size = "lg",
+  variant = "well",
+  fill,
   busy,
   testId,
   className,
 }: SegmentedControlProps<T>) {
-  const itemRefs = useRef<Array<HTMLButtonElement | null>>([]);
-  const checkedIndex = options.findIndex((o) => o.value === value);
-  // APG: 체크 항목이 없으면 첫 항목이 탭 스톱이다.
-  const tabStopIndex = checkedIndex >= 0 ? checkedIndex : 0;
-
-  const select = (index: number) => {
-    if (busy) return;
-    const option = options[index];
-    if (!option) return;
-    itemRefs.current[index]?.focus({ preventScroll: true });
-    if (option.value !== value) onChange(option.value);
-  };
-
-  const handleKeyDown = (event: KeyboardEvent<HTMLButtonElement>, index: number) => {
-    // Home/End 는 라디오 표에 없는 키다 — tab-bar 를 베끼며 같이 들어오는
-    // 회귀를 계약 테스트가 막는다. Escape 도 처리하지 않는다(숙주의 것).
-    if (event.key === "ArrowRight" || event.key === "ArrowDown") {
-      event.preventDefault();
-      select((index + 1) % options.length);
-    } else if (event.key === "ArrowLeft" || event.key === "ArrowUp") {
-      event.preventDefault();
-      select((index - 1 + options.length) % options.length);
-    } else if (event.key === " ") {
-      event.preventDefault();
-      select(index);
-    }
-  };
+  /*
+   * 행동은 이 파일이 구현하지 않는다 — `useRovingRadioGroup` 하나다. 이 파일이
+   * 남는 이유는 **그릇을 자동으로 입혀 주기 위해서**이고, 그게 없으면 12곳이
+   * 각자 배선한다(Dialog 원장 2026-08-15: "없던 것은 자동으로 입혀 주는 자리다").
+   */
+  const group = useRovingRadioGroup<T>({
+    value,
+    values: options.map((o) => o.value),
+    onChange,
+    busy,
+  });
 
   return (
     <div
-      role="radiogroup"
+      {...group.groupProps}
       aria-label={ariaLabel}
       aria-labelledby={labelledBy}
-      aria-busy={busy || undefined}
       data-testid={testId}
       className={cn(
-        "inline-flex items-center gap-px rounded-chip border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] p-px",
+        variant === "well"
+          ? "inline-flex items-center gap-px rounded-chip border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] p-px"
+          : "flex flex-wrap items-center gap-1.5",
+        fill && (variant === "well" ? "flex w-full" : "w-full"),
         className,
       )}
     >
       {options.map((option, index) => {
-        const checked = index === checkedIndex;
+        const item = group.itemProps(index);
         return (
           <button
             key={String(option.value)}
-            ref={(el) => {
-              itemRefs.current[index] = el;
-            }}
+            {...item}
             type="button"
-            role="radio"
-            aria-checked={checked}
             aria-label={option.ariaLabel}
-            aria-disabled={busy || undefined}
-            tabIndex={index === tabStopIndex ? 0 : -1}
+            title={option.title}
             data-testid={option.testId}
-            onClick={() => select(index)}
-            onKeyDown={(event) => handleKeyDown(event, index)}
-            className={controlClass({ shape: "segment", size, active: checked })}
+            className={controlClass({
+              shape: variant === "well" ? "segment" : "chip",
+              size,
+              active: item["aria-checked"],
+              className: fill ? "min-w-0 flex-1" : undefined,
+            })}
           >
             {option.label}
           </button>
