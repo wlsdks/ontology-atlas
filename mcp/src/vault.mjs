@@ -407,7 +407,7 @@ export function walkMd(rootPath) {
       if (entry.isDirectory()) {
         if (SKIP_DIRS.has(entry.name)) continue;
         stack.push(join(dir, entry.name));
-      } else if (entry.name.endsWith('.md')) {
+      } else if (entry.isFile() && entry.name.endsWith('.md')) {
         out.push(join(dir, entry.name));
       }
     }

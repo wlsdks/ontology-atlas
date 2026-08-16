@@ -11,9 +11,15 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
 
-import { slugToPath as mcpSlugToPath, loadVaultDocs, pathToSlug } from "../../mcp/src/vault.mjs";
+import {
+  slugToPath as mcpSlugToPath,
+  loadVaultDocs,
+  pathToSlug,
+  walkMd as mcpWalkMd,
+} from "../../mcp/src/vault.mjs";
 import { compileOntology } from "../../mcp/src/ontology-compiler.mjs";
 import { slugToPath as cliSlugToPath, writeFrontmatterKey } from "../../cli/src/lib/write-vault.mjs";
+import { walkMd as cliWalkMd } from "../../cli/src/lib/walk-vault.mjs";
 
 /**
  * **볼트 무결성 — 전부 "한 파일만 보면 정상" 이라 파일 단위 검사가 못 잡는다.**
@@ -104,6 +110,50 @@ describe("볼트 밖 쓰기 — 심볼릭 링크", () => {
     const { root, outside } = vaultWithEscapeLink();
     expect(() => writeFrontmatterKey(root, "escape", "relates", ["a"])).toThrow(/symlink/);
     expect(readFileSync(outside, "utf8")).not.toContain("relates");
+  });
+});
+
+/**
+ * **볼트 안의 링크가 볼트 밖 문서를 읽게 하지 않는다.**
+ *
+ * 단일 slug 쓰기는 위 가드를 탔지만 전체 목록은 별도 walker를 썼다. Dirent의
+ * 심볼릭 링크는 directory가 아니므로 이름만 `.md`면 일반 파일처럼 수집됐고,
+ * MCP/CLI가 링크 대상을 따라 읽었다. 선택한 vault가 읽기 경계라는 약속은 전체
+ * 순회에서도 같아야 한다.
+ */
+describe("볼트 밖 읽기 — 심볼릭 링크", () => {
+  const walkers = [
+    ["mcp", mcpWalkMd],
+    ["cli", cliWalkMd],
+  ] as const;
+
+  function vaultWithReadableEscape(): { root: string; safe: string } {
+    const base = vault();
+    const root = join(base, "root");
+    const outside = join(base, "outside.md");
+    const safe = join(root, "safe.md");
+    mkdirSync(root, { recursive: true });
+    writeFileSync(outside, "---\nkind: domain\ntitle: Outside secret\n---\nOUTSIDE_SECRET\n");
+    writeFileSync(safe, "---\nkind: domain\ntitle: Safe\n---\nsafe-body\n");
+    symlinkSync(outside, join(root, "escape.md"));
+    return { root, safe };
+  }
+
+  it("probe: MCP와 CLI 두 walker를 모두 검사한다", () => {
+    expect(walkers).toHaveLength(2);
+  });
+
+  it.each(walkers)("%s: 실제 파일만 걷고 .md 링크는 제외한다", (_name, walk) => {
+    const { root, safe } = vaultWithReadableEscape();
+    expect(walk(root)).toEqual([safe]);
+  });
+
+  it("MCP loader 응답에 링크 대상의 제목이나 본문이 들어오지 않는다", () => {
+    const { root } = vaultWithReadableEscape();
+    const docs = loadVaultDocs(root);
+    expect(docs.map((doc) => doc.slug)).toEqual(["safe"]);
+    expect(JSON.stringify(docs)).not.toContain("OUTSIDE_SECRET");
+    expect(JSON.stringify(docs)).not.toContain("Outside secret");
   });
 });
 
