@@ -196,7 +196,7 @@
         "noneReady": "Nothing found yet",
         "noneReadyCaption": "Install Claude Agent or Codex and it shows up here.",
         "webLabel": "A browser is not allowed to start programs on this computer",
-        "webCaption": "Get the Mac app to use the tools installed here from inside Atlas. On this screen you can still point a tool you started yourself at this folder, from the “MCP” section.",
+        "webCaption": "Get the Mac app to use the tools installed here from inside Atlas. On this screen you can still point a tool you started yourself at this folder, from the “Connect in terminal” section.",
         "state": {
           "ready": "Ready",
           "cli-missing": "Install needed",
@@ -3707,7 +3707,7 @@
       },
       "launch": {
         "title": "The tool could not be started",
-        "hint": "Check its state in the Agents section of settings."
+        "hint": "Check its state in the “Chat in app” section of settings."
       },
       "network": {
         "title": "No connection to the outside",

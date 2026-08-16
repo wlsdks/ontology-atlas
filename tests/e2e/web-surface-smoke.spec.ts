@@ -252,8 +252,19 @@ type DegradedSurface = {
    * ③ **이 화면에서도 되는 것** (있을 때만). 되는 것을 안 된다고 쓰는 것도
    * 「곧 됩니다」와 같은 갈래의 거짓말이라(2026-08-01, `surfaces.md`), 한 번
    * 적은 뒤에는 조용히 사라지지 못하게 잠근다.
+   *
+   * ⚠️ **문구가 아니라 「가리킨 자리가 있는가」를 잰다** (2026-08-17). 종전에는
+   * `/내 에이전트 연결/` 처럼 문장을 통째로 못박았고, 문구가 바뀌자 빨간불이
+   * 되면서 **그 빨간불이 「문구가 낡았다」인지 「가리키는 곳이 없다」인지
+   * 구별되지 않았다**. 실제로는 둘 다였다 — 카드가 「MCP」 칸을 가리켰는데 그런
+   * 이름의 칸은 이 시트에 없었다. `documentation.md`: *사람이 쓴 문장을 못박지
+   * 마라, 기계가 만들어 낼 수 있는 것만 검사하라.*
+   *
+   * 그래서 여기서는 **「…」 안의 이름이 이 시트의 실제 칸 이름인지**만 본다.
+   * 번역 파일 쪽의 같은 검사는
+   * `tests/contract/settings-section-reference.contract.test.ts`.
    */
-  alsoHere?: RegExp;
+  alsoHereNamesSettingsSection?: true;
 };
 
 const DEGRADED_SURFACES: readonly DegradedSurface[] = [
@@ -305,7 +316,7 @@ const DEGRADED_SURFACES: readonly DegradedSurface[] = [
     card: "app-settings-runtimes-web",
     reason: /브라우저는[\s\S]*권한이 없어요/,
     destinationText: /맥 앱을 받으면/,
-    alsoHere: /내 에이전트 연결/,
+    alsoHereNamesSettingsSection: true,
   },
 ];
 
@@ -329,7 +340,21 @@ test.describe("웹 스모크 ③ 정직한 강등", () => {
         await expect(destination).toHaveAttribute("href", /\/download\//);
       }
       if (surface.destinationText) await expect(card).toHaveText(surface.destinationText);
-      if (surface.alsoHere) await expect(card).toHaveText(surface.alsoHere);
+      if (surface.alsoHereNamesSettingsSection) {
+        // 「…」 안의 이름이 이 시트에 **실제로 있는 칸**이어야 한다. 문구는
+        // 얼마든지 고쳐도 되고, 없는 칸을 가리킬 때만 터진다.
+        const quoted = [...(await card.innerText()).matchAll(/[「“]([^」”]+)[」”]/gu)].map((m) =>
+          m[1].trim(),
+        );
+        expect(quoted, "이 화면에서도 되는 곳을 이름으로 대야 한다").not.toEqual([]);
+        const navLabels = (
+          await page.locator('[data-testid^="app-settings-nav-"]').allInnerTexts()
+        ).map((text) => text.trim());
+        expect(navLabels.length, "설정 칸 목록을 못 읽었다 — 이 검사가 헛돈다").toBeGreaterThan(5);
+        for (const name of quoted) {
+          expect(navLabels, `카드가 가리킨 「${name}」 칸이 이 시트에 없다`).toContain(name);
+        }
+      }
     });
   }
 
