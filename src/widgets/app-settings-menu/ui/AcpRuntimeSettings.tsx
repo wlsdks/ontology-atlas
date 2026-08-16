@@ -189,6 +189,26 @@ export function AcpRuntimeSettings() {
                 : t('guardedExplainerNone')}
             </p>
           ) : null}
+          {/*
+            디스크에 무엇이 생기는지 말한다 (2026-08-17).
+
+            대화를 시작하면 Rust 가 앱 데이터 안에 그 도구용 설정 폴더를 만들고,
+            사용자의 **실제 자격증명 파일에 심볼릭 링크를 건다**
+            (`src-tauri/src/acp.rs` 의 `link_credentials`). 격리하면 로그인이
+            깨지고, 비밀을 앱 폴더로 복사하는 것은 헌장이 막는 일이라 링크가
+            그 사이의 답이다 — 그건 옳다. 다만 **아무 화면도 그 사실을 말하지
+            않고 있었다.**
+
+            바로 옆 API 키 칸은 키를 어떻게 두는지 두 문장으로 설명한다. 실제
+            자격증명 파일을 건드리는 이쪽이 침묵하는 것은 앞뒤가 안 맞는다.
+            게이트: `tests/contract/acp-disk-disclosure.contract.test.ts`.
+          */}
+          <p
+            data-testid="app-settings-runtimes-disk-note"
+            className="break-keep px-1 text-label leading-label text-[color:var(--color-text-quaternary)]"
+          >
+            {t('diskNote')}
+          </p>
           <SettingsGroup label={t('readyHeading', { count: ready.length })}>
             {ready.length === 0 ? (
               <SettingsRow label={t('noneReady')} caption={t('noneReadyCaption')} control={null} />
