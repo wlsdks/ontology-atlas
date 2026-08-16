@@ -4,7 +4,7 @@
   "agents": [
     {
       "id": "claude-acp",
-      "name": "Claude Code",
+      "name": "Claude Agent",
       "description": "ACP wrapper for Anthropic's Claude",
       "website": "https://github.com/agentclientprotocol/claude-agent-acp",
       "license": "proprietary",

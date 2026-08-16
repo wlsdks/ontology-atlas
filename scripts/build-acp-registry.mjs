@@ -89,12 +89,27 @@ const VERIFIED = new Set(['claude-acp', 'codex-acp']);
 /**
  * 화면에 쓸 이름 — 레지스트리 이름이 사람들이 부르는 이름과 다를 때만 적는다.
  *
- * 레지스트리의 `Claude Agent` 는 정확하지만 아무도 그렇게 안 부른다. 화면이
- * 사용자가 쓰는 말을 써야 「내가 가진 그거」라고 알아본다.
+ * ## 지금 비어 있고, 비어 있어야 한다 (2026-08-16)
+ *
+ * 한때 `'claude-acp': 'Claude Code'` 가 있었다. 근거는 *"레지스트리의 `Claude
+ * Agent` 는 정확하지만 아무도 그렇게 안 부른다"* 였고, 그건 **명시적으로 허용되지
+ * 않은 이름**이다:
+ *
+ * > **Not permitted:** "Claude Code" or "Claude Code Agent"
+ * > **Allowed:** "Claude Agent", preferred for **dropdown menus**
+ * > — Anthropic, Claude Agent SDK 문서 「Branding guidelines」
+ * >   (https://code.claude.com/docs/en/agent-sdk/overview)
+ *
+ * 이 목록이 정확히 그 「dropdown menu」이고, 레지스트리가 이미 허용된 이름을
+ * 쓰고 있었다. 우리가 그걸 덮어써서 규칙을 깼던 것이다.
+ *
+ * ⚠️ **이건 「Claude Code」라는 말을 저장소에서 다 지우라는 뜻이 아니다.**
+ * 사용자가 **자기 컴퓨터에 따로 설치한 그 제품**을 가리키는 문장(MCP 연결 안내의
+ * 「Claude Code 에 연결」 등)은 그 제품의 실제 이름을 부르는 것이라 그대로 둔다 —
+ * 거기서 이름을 바꾸면 안내가 틀린 안내가 된다. 금지되는 것은 **우리 제품이
+ * 내놓는 에이전트에 그 이름을 붙이는 것**이다.
  */
-const DISPLAY_NAME = {
-  'claude-acp': 'Claude Code',
-};
+const DISPLAY_NAME = {};
 
 /**
  * 그 어댑터가 감싸는 **진짜 CLI** 의 실행 파일 이름. 레지스트리에는 없는
