@@ -156,6 +156,13 @@ function rpc(vaultRoot, requests, timeoutMs = 1500, extraEnv = {}) {
   });
 }
 
+function rpcForRepo(vaultRoot, repoRoot, requests, timeoutMs = 1500, extraEnv = {}) {
+  return rpc(vaultRoot, requests, timeoutMs, {
+    OATLAS_REPO_ROOT: repoRoot,
+    ...extraEnv,
+  });
+}
+
 /**
  * ⚠️ **`2024-11-05` 은 낡은 상수가 아니라 시험 대상이다.**
  *
@@ -2327,7 +2334,7 @@ await test("compile_ontology — deterministic graph artifact + indexes", async 
 
 await test("analyze_repo_structure — bootstrap candidates expose structuredContent", async () => {
   const vaultRoot = makeVault();
-  const repoRoot = mkdtempSync(join(tmpdir(), "ontology-atlas-analyze-"));
+  const repoRoot = realpathSync(mkdtempSync(join(tmpdir(), "ontology-atlas-analyze-")));
   try {
     writeFileSync(
       join(repoRoot, "package.json"),
@@ -2338,7 +2345,7 @@ await test("analyze_repo_structure — bootstrap candidates expose structuredCon
     mkdirSync(join(repoRoot, "src", "features", "auth"), { recursive: true });
     writeFileSync(join(repoRoot, "src", "features", "auth", "index.ts"), "export const auth = true;\n", "utf-8");
 
-    const { responses } = await rpc(vaultRoot, [
+    const { responses } = await rpcForRepo(vaultRoot, repoRoot, [
       ...INIT_REQUESTS,
       callTool(2, "analyze_repo_structure", { rootPath: repoRoot }),
     ]);
@@ -2368,7 +2375,7 @@ await test("analyze_repo_structure — bootstrap candidates expose structuredCon
 
 await test("analyze_repo_structure — validates a complete meaning proposal before writes", async () => {
   const vaultRoot = makeVault();
-  const repoRoot = mkdtempSync(join(tmpdir(), "ontology-atlas-proposal-"));
+  const repoRoot = realpathSync(mkdtempSync(join(tmpdir(), "ontology-atlas-proposal-")));
   try {
     writeFileSync(join(repoRoot, "package.json"), JSON.stringify({ name: "claims" }), "utf-8");
     writeFileSync(
@@ -2472,7 +2479,7 @@ await test("analyze_repo_structure — validates a complete meaning proposal bef
         },
       },
     };
-    const { responses } = await rpc(vaultRoot, [
+    const { responses } = await rpcForRepo(vaultRoot, repoRoot, [
       ...INIT_REQUESTS,
       callTool(2, "analyze_repo_structure", { rootPath: repoRoot, proposal }),
     ]);
@@ -2508,7 +2515,7 @@ await test("analyze_repo_structure — validates a complete meaning proposal bef
       ];
     });
 
-    const qualified = await rpc(vaultRoot, [
+    const qualified = await rpcForRepo(vaultRoot, repoRoot, [
       ...INIT_REQUESTS,
       callTool(2, "analyze_repo_structure", { rootPath: repoRoot, proposal, qualification }),
     ]);
@@ -2530,7 +2537,7 @@ await test("analyze_repo_structure — validates a complete meaning proposal bef
       ...proposalRefs.slice(0, -1),
       "concept:foreign-proposal",
     ];
-    const foreignProposal = await rpc(vaultRoot, [
+    const foreignProposal = await rpcForRepo(vaultRoot, repoRoot, [
       ...INIT_REQUESTS,
       callTool(2, "analyze_repo_structure", {
         rootPath: repoRoot,
@@ -2548,7 +2555,7 @@ await test("analyze_repo_structure — validates a complete meaning proposal bef
 
     const sourceHiddenMissing = structuredClone(qualification);
     sourceHiddenMissing.sourceHiddenTask.status = "not_measured";
-    const blocked = await rpc(vaultRoot, [
+    const blocked = await rpcForRepo(vaultRoot, repoRoot, [
       ...INIT_REQUESTS,
       callTool(2, "analyze_repo_structure", {
         rootPath: repoRoot,
@@ -2567,7 +2574,7 @@ await test("analyze_repo_structure — validates a complete meaning proposal bef
       ({ code }) => code === "source-hidden-not-measured",
     ));
 
-    const written = await rpc(vaultRoot, [
+    const written = await rpcForRepo(vaultRoot, repoRoot, [
       ...INIT_REQUESTS,
       callTool(2, "add_concepts", {
         concepts: qualifiedResult.proposalValidation.writePlan.concepts,
@@ -2579,7 +2586,7 @@ await test("analyze_repo_structure — validates a complete meaning proposal bef
     assert.ok(getCallParsed(written.responses, 2).concepts.every((row) => row.ok));
     assert.ok(getCallParsed(written.responses, 3).relations.every((row) => row.ok));
 
-    const connected = await rpc(vaultRoot, [
+    const connected = await rpcForRepo(vaultRoot, repoRoot, [
       ...INIT_REQUESTS,
       callTool(2, "connect_project_source", {
         projectSlug: "claims",
@@ -2589,7 +2596,7 @@ await test("analyze_repo_structure — validates a complete meaning proposal bef
     ]);
     assert.equal(getCallParsed(connected.responses, 2).projectSource.status, "verified_current");
 
-    const finalized = await rpc(vaultRoot, [
+    const finalized = await rpcForRepo(vaultRoot, repoRoot, [
       ...INIT_REQUESTS,
       callTool(2, "finalize_project_meaning", {
         projectSlug: "claims",
@@ -2607,7 +2614,7 @@ await test("analyze_repo_structure — validates a complete meaning proposal bef
       .find((row) => row.id === "scope")?.witnessStatus, "resolved");
     assert.equal(JSON.stringify(finalizedResult).includes(repoRoot), false);
 
-    const handedOff = await rpc(vaultRoot, [
+    const handedOff = await rpcForRepo(vaultRoot, repoRoot, [
       ...INIT_REQUESTS,
       callTool(2, "query_ontology", {
         operation: "agent_brief",
@@ -2624,7 +2631,9 @@ await test("analyze_repo_structure — validates a complete meaning proposal bef
       .find((row) => row.id === "scope")?.witnessStatus, "resolved");
     assert.equal(handoffBrief.meaningAssessment.topGap?.questionId, "impact");
     assert.equal(handoffBrief.meaningAssessment.dimensions.source.currentness, "current");
-    assert.equal(JSON.stringify(handoffBrief).includes(repoRoot), false);
+    assert.equal(JSON.stringify(handoffBrief.projectSource).includes(repoRoot), false);
+    assert.equal(JSON.stringify(handoffBrief.meaningAssessment).includes(repoRoot), false);
+    assert.equal(JSON.stringify(handoffBrief.meaningRepair).includes(repoRoot), false);
 
     const legacyProposal = {
       ...proposal,
@@ -2636,7 +2645,7 @@ await test("analyze_repo_structure — validates a complete meaning proposal bef
         impact: "Review decisions gate publication.",
       },
     };
-    const { responses: legacyResponses } = await rpc(vaultRoot, [
+    const { responses: legacyResponses } = await rpcForRepo(vaultRoot, repoRoot, [
       ...INIT_REQUESTS,
       callTool(2, "analyze_repo_structure", {
         rootPath: repoRoot,
@@ -2655,7 +2664,7 @@ await test("analyze_repo_structure — validates a complete meaning proposal bef
       ...proposal,
       project: { ...proposal.project, includes: "Reviewable claims." },
     };
-    const { responses: malformedBoundaryResponses } = await rpc(vaultRoot, [
+    const { responses: malformedBoundaryResponses } = await rpcForRepo(vaultRoot, repoRoot, [
       ...INIT_REQUESTS,
       callTool(2, "analyze_repo_structure", {
         rootPath: repoRoot,
@@ -2677,7 +2686,7 @@ await test("analyze_repo_structure — validates a complete meaning proposal bef
 
 await test("analyze_repo_structure — validates exact TypeScript import endpoints inside the proposal call", async () => {
   const vaultRoot = makeVault();
-  const repoRoot = mkdtempSync(join(tmpdir(), "ontology-atlas-ts-proposal-"));
+  const repoRoot = realpathSync(mkdtempSync(join(tmpdir(), "ontology-atlas-ts-proposal-")));
   try {
     writeFileSync(join(repoRoot, "package.json"), JSON.stringify({ name: "portable-reader" }), "utf-8");
     writeFileSync(
@@ -2811,7 +2820,7 @@ await test("analyze_repo_structure — validates exact TypeScript import endpoin
       type: "depends_on",
     }];
 
-    const { responses } = await rpc(vaultRoot, [
+    const { responses } = await rpcForRepo(vaultRoot, repoRoot, [
       ...INIT_REQUESTS,
       callTool(2, "analyze_repo_structure", { rootPath: repoRoot, proposal }),
       callTool(3, "analyze_repo_structure", { rootPath: repoRoot, proposal: reversedProposal }),
@@ -2842,7 +2851,7 @@ await test("analyze_repo_structure — validates exact TypeScript import endpoin
 
 await test("infer_imports — import graph exposes structuredContent", async () => {
   const vaultRoot = makeVault();
-  const repoRoot = mkdtempSync(join(tmpdir(), "ontology-atlas-infer-"));
+  const repoRoot = realpathSync(mkdtempSync(join(tmpdir(), "ontology-atlas-infer-")));
   try {
     mkdirSync(join(repoRoot, "src", "features", "auth"), { recursive: true });
     mkdirSync(join(repoRoot, "src", "entities", "user"), { recursive: true });
@@ -2862,7 +2871,7 @@ await test("infer_imports — import graph exposes structuredContent", async () 
     writeFileSync(join(repoRoot, "src", "entities", "user", "index.ts"), "export const user = true;\n", "utf-8");
     writeFileSync(join(repoRoot, "src", "shared", "api", "client.ts"), "export const client = true;\n", "utf-8");
 
-    const { responses } = await rpc(vaultRoot, [
+    const { responses } = await rpcForRepo(vaultRoot, repoRoot, [
       ...INIT_REQUESTS,
       callTool(2, "infer_imports", { rootPath: repoRoot }),
     ]);
@@ -2887,7 +2896,7 @@ await test("infer_imports — import graph exposes structuredContent", async () 
 
 await test("infer_imports — Go package evidence stays typed while focus and index return bounded summaries", async () => {
   const vaultRoot = makeVault();
-  const repoRoot = mkdtempSync(join(tmpdir(), "ontology-atlas-go-summary-"));
+  const repoRoot = realpathSync(mkdtempSync(join(tmpdir(), "ontology-atlas-go-summary-")));
   try {
     writeFileSync(join(repoRoot, "go.mod"), "module example.test/sample\n", "utf-8");
     mkdirSync(join(repoRoot, "cmd", "sample"), { recursive: true });
@@ -2899,7 +2908,7 @@ await test("infer_imports — Go package evidence stays typed while focus and in
     );
     writeFileSync(join(repoRoot, "internal", "store", "store.go"), "package store\n\nconst Ready = true\n", "utf-8");
 
-    const { responses } = await rpc(vaultRoot, [
+    const { responses } = await rpcForRepo(vaultRoot, repoRoot, [
       ...INIT_REQUESTS,
       callTool(2, "infer_imports", { rootPath: repoRoot, reconcile: false }),
       callTool(3, "infer_imports", {
@@ -2964,7 +2973,7 @@ await test("infer_imports auto delivery — oversized omitted calls compact, exp
       content: "---\nkind: capability\ntitle: Target\n---\n",
     },
   ]);
-  const repoRoot = mkdtempSync(join(tmpdir(), "ontology-atlas-infer-auto-delivery-"));
+  const repoRoot = realpathSync(mkdtempSync(join(tmpdir(), "ontology-atlas-infer-auto-delivery-")));
   try {
     mkdirSync(join(repoRoot, "src", "shared", "runtime"), { recursive: true });
     writeFileSync(
@@ -2983,7 +2992,7 @@ await test("infer_imports auto delivery — oversized omitted calls compact, exp
     }
     const before = readdirSync(vaultRoot, { recursive: true });
 
-    const { responses } = await rpc(vaultRoot, [
+    const { responses } = await rpcForRepo(vaultRoot, repoRoot, [
       ...INIT_REQUESTS,
       callTool(2, "infer_imports", { rootPath: repoRoot }),
       callTool(3, "infer_imports", { rootPath: repoRoot, reviewMode: "next" }),
@@ -3108,7 +3117,7 @@ await test("infer_imports auto delivery — oversized omitted calls compact, exp
 
 await test("Rust and Autotools C MCP evidence — analyze, infer, and index preserve provenance and unsupported import coverage", async () => {
   const vaultRoot = makeVault();
-  const repoRoot = mkdtempSync(join(tmpdir(), "ontology-atlas-rust-evidence-"));
+  const repoRoot = realpathSync(mkdtempSync(join(tmpdir(), "ontology-atlas-rust-evidence-")));
   try {
     mkdirSync(join(repoRoot, "src"), { recursive: true });
     writeFileSync(
@@ -3133,7 +3142,7 @@ await test("Rust and Autotools C MCP evidence — analyze, infer, and index pres
     writeFileSync(join(repoRoot, "Makefile.am"), "bin_PROGRAMS = native-check\nnative_check_SOURCES = src/native.c\n", "utf-8");
     writeFileSync(join(repoRoot, "src", "native.c"), "int main(void) { return 0; }\n", "utf-8");
 
-    const { responses } = await rpc(vaultRoot, [
+    const { responses } = await rpcForRepo(vaultRoot, repoRoot, [
       ...INIT_REQUESTS,
       callTool(2, "analyze_repo_structure", { rootPath: repoRoot }),
       callTool(3, "infer_imports", { rootPath: repoRoot }),
@@ -3183,7 +3192,7 @@ await test("infer_imports reviewMode next — one bounded non-writing relation r
     { slug: "elements/client", content: "---\nkind: element\ntitle: API Client\n---\n\nCalls the remote API.\n" },
     { slug: "elements/user", content: "---\nkind: element\ntitle: User Entity\n---\n\nRepresents the signed-in user.\n" },
   ]);
-  const repoRoot = mkdtempSync(join(tmpdir(), "ontology-atlas-infer-review-"));
+  const repoRoot = realpathSync(mkdtempSync(join(tmpdir(), "ontology-atlas-infer-review-")));
   try {
     mkdirSync(join(repoRoot, "src", "features", "auth"), { recursive: true });
     mkdirSync(join(repoRoot, "src", "entities", "user"), { recursive: true });
@@ -3202,7 +3211,7 @@ await test("infer_imports reviewMode next — one bounded non-writing relation r
     ];
     const before = readReviewVault();
 
-    const { responses: firstResponses } = await rpc(vaultRoot, [
+    const { responses: firstResponses } = await rpcForRepo(vaultRoot, repoRoot, [
       ...INIT_REQUESTS,
       callTool(2, "infer_imports", { rootPath: repoRoot, reviewMode: "next" }),
     ]);
@@ -3218,7 +3227,7 @@ await test("infer_imports reviewMode next — one bounded non-writing relation r
     assert.equal(first.reconciliation, undefined);
     assert.deepEqual(readReviewVault(), before, "review must write zero vault bytes");
 
-    const { responses: secondResponses } = await rpc(vaultRoot, [
+    const { responses: secondResponses } = await rpcForRepo(vaultRoot, repoRoot, [
       ...INIT_REQUESTS,
       callTool(2, "infer_imports", {
         rootPath: repoRoot,
@@ -3238,7 +3247,7 @@ await test("infer_imports reviewMode next — one bounded non-writing relation r
 
 await test("infer_imports reviewMode next — fresh vault returns one endpoint-modelling packet without the full firehose", async () => {
   const vaultRoot = makeVault();
-  const repoRoot = mkdtempSync(join(tmpdir(), "ontology-atlas-infer-fresh-review-"));
+  const repoRoot = realpathSync(mkdtempSync(join(tmpdir(), "ontology-atlas-infer-fresh-review-")));
   try {
     mkdirSync(join(repoRoot, "source", "features", "alpha"), { recursive: true });
     mkdirSync(join(repoRoot, "source", "features", "beta"), { recursive: true });
@@ -3253,7 +3262,7 @@ await test("infer_imports reviewMode next — fresh vault returns one endpoint-m
       "utf-8",
     );
 
-    const { responses } = await rpc(vaultRoot, [
+    const { responses } = await rpcForRepo(vaultRoot, repoRoot, [
       ...INIT_REQUESTS,
       callTool(2, "infer_imports", { rootPath: repoRoot, reviewMode: "next" }),
     ]);
@@ -3317,7 +3326,7 @@ await test("infer_imports reviewMode next — test-only type evidence stays visi
     { slug: "capabilities/a", content: "---\nkind: capability\ntitle: A\n---\n\nA product ability.\n" },
     { slug: "capabilities/b", content: "---\nkind: capability\ntitle: B\n---\n\nA supporting ability.\n" },
   ]);
-  const repoRoot = mkdtempSync(join(tmpdir(), "ontology-atlas-infer-test-scope-"));
+  const repoRoot = realpathSync(mkdtempSync(join(tmpdir(), "ontology-atlas-infer-test-scope-")));
   try {
     mkdirSync(join(repoRoot, "src", "features", "a"), { recursive: true });
     mkdirSync(join(repoRoot, "src", "features", "b"), { recursive: true });
@@ -3332,7 +3341,7 @@ await test("infer_imports reviewMode next — test-only type evidence stays visi
       "utf-8",
     );
 
-    const { responses } = await rpc(vaultRoot, [
+    const { responses } = await rpcForRepo(vaultRoot, repoRoot, [
       ...INIT_REQUESTS,
       callTool(2, "infer_imports", { rootPath: repoRoot, reviewMode: "next" }),
     ]);
@@ -3357,7 +3366,7 @@ await test("index_project — repo analysis, import indexing, and vault validati
       content: "---\nslug: sample-app\nkind: project\ntitle: Existing Sample App\n---\n",
     },
   ]);
-  const repoRoot = mkdtempSync(join(tmpdir(), "ontology-atlas-index-"));
+  const repoRoot = realpathSync(mkdtempSync(join(tmpdir(), "ontology-atlas-index-")));
   try {
     writeFileSync(
       join(repoRoot, "package.json"),
@@ -3388,7 +3397,7 @@ await test("index_project — repo analysis, import indexing, and vault validati
     );
     writeFileSync(join(repoRoot, "src", "features", "billing", "index.ts"), "export const billing = true;\n", "utf-8");
 
-    const { responses } = await rpc(vaultRoot, [
+    const { responses } = await rpcForRepo(vaultRoot, repoRoot, [
       ...INIT_REQUESTS,
       callTool(2, "index_project", { rootPath: repoRoot }),
     ]);
@@ -3458,7 +3467,7 @@ await test("index_project — repo analysis, import indexing, and vault validati
 
 await test("index_project — Python package and import boundaries reach the public read-only plan", async () => {
   const vaultRoot = makeVault([]);
-  const repoRoot = mkdtempSync(join(tmpdir(), "ontology-atlas-index-python-"));
+  const repoRoot = realpathSync(mkdtempSync(join(tmpdir(), "ontology-atlas-index-python-")));
   try {
     writeFileSync(
       join(repoRoot, "README.rst"),
@@ -3491,7 +3500,7 @@ await test("index_project — Python package and import boundaries reach the pub
       "utf-8",
     );
 
-    const { responses } = await rpc(vaultRoot, [
+    const { responses } = await rpcForRepo(vaultRoot, repoRoot, [
       ...INIT_REQUESTS,
       callTool(2, "index_project", { rootPath: repoRoot }),
       callTool(3, "analyze_repo_structure", { rootPath: repoRoot }),
@@ -3562,7 +3571,7 @@ await test("index_project — Python package and import boundaries reach the pub
 
 await test("infer_imports — Python package-internal symlink escape is rejected at the MCP boundary", async () => {
   const vaultRoot = makeVault([]);
-  const repoRoot = mkdtempSync(join(tmpdir(), "ontology-atlas-index-python-symlink-"));
+  const repoRoot = realpathSync(mkdtempSync(join(tmpdir(), "ontology-atlas-index-python-symlink-")));
   const outsideRoot = mkdtempSync(join(tmpdir(), "ontology-atlas-index-python-outside-"));
   try {
     mkdirSync(join(repoRoot, "pkg"), { recursive: true });
@@ -3575,7 +3584,7 @@ await test("infer_imports — Python package-internal symlink escape is rejected
     writeFileSync(join(outsideRoot, "__init__.py"), "", "utf-8");
     symlinkSync(outsideRoot, join(repoRoot, "pkg", "escaped"));
 
-    const { responses } = await rpc(vaultRoot, [
+    const { responses } = await rpcForRepo(vaultRoot, repoRoot, [
       ...INIT_REQUESTS,
       callTool(2, "infer_imports", { rootPath: repoRoot, reconcile: false }),
     ]);
@@ -3616,14 +3625,14 @@ await test("index_project — ambiguous aliases stay in review instead of becomi
       content: "---\nkind: capability\ntitle: Shared Capability\ndomain: domains/shared\n---\n",
     },
   ]);
-  const repoRoot = mkdtempSync(join(tmpdir(), "ontology-atlas-index-ambiguous-"));
+  const repoRoot = realpathSync(mkdtempSync(join(tmpdir(), "ontology-atlas-index-ambiguous-")));
   try {
     writeFileSync(
       join(repoRoot, "package.json"),
       JSON.stringify({ name: "shared", description: "Shared" }, null, 2),
       "utf-8",
     );
-    const { responses } = await rpc(vaultRoot, [
+    const { responses } = await rpcForRepo(vaultRoot, repoRoot, [
       ...INIT_REQUESTS,
       callTool(2, "index_project", {
         rootPath: repoRoot,
@@ -4415,7 +4424,12 @@ await test("query_ontology health/workspace_brief — meaning assessment cannot 
     ]);
     const health = getCallParsed(responses, 2);
     const brief = getCallParsed(responses, 3);
-    assert.equal(health.checks.find((check) => check.id === "meaning_assessment")?.status, "warn");
+    const meaningCheck = health.checks.find((check) => check.id === "meaning_assessment");
+    assert.equal(meaningCheck?.status, "warn");
+    assert.match(meaningCheck?.message ?? "", /competency_not_authored/);
+    assert.match(meaningCheck?.message ?? "", /Nothing is broken/);
+    assert.match(meaningCheck?.message ?? "", /finalize_project_meaning/);
+    assert.doesNotMatch(meaningCheck?.message ?? "", /assessment_input_invalid/);
     assert.equal(health.status, "needs_attention");
     assert.equal(brief.status, "needs_attention");
     assert.equal(brief.health.checks.find((check) => check.id === "meaning_assessment")?.status, "warn");
