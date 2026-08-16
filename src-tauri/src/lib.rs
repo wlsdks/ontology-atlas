@@ -1669,13 +1669,43 @@ fn read_vault_binary_file(
 fn write_text_atomically(path: &std::path::Path, content: &str) -> Result<(), String> {
     use std::io::Write;
 
-    let temporary = path.with_extension(format!(
-        "{}.oatlas-tmp-{}",
-        path.extension().and_then(|e| e.to_str()).unwrap_or(""),
-        std::process::id()
-    ));
+    static TEMP_SEQUENCE: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(0);
+
+    let parent = path
+        .parent()
+        .ok_or_else(|| "atomic write target must have a parent directory".to_string())?;
+    let file_name = path
+        .file_name()
+        .ok_or_else(|| "atomic write target must include a file name".to_string())?
+        .to_string_lossy();
+    let nonce = std::time::SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .map_err(|err| err.to_string())?
+        .as_nanos();
+    let mut created = None;
+    for _ in 0..64 {
+        let sequence = TEMP_SEQUENCE.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+        let candidate = parent.join(format!(
+            ".{file_name}.oatlas-tmp-{}-{nonce:x}-{sequence:x}",
+            std::process::id()
+        ));
+        match fs::OpenOptions::new()
+            .write(true)
+            .create_new(true)
+            .open(&candidate)
+        {
+            Ok(file) => {
+                created = Some((candidate, file));
+                break;
+            }
+            Err(err) if err.kind() == std::io::ErrorKind::AlreadyExists => continue,
+            Err(err) => return Err(err.to_string()),
+        }
+    }
+    let (temporary, mut file) = created.ok_or_else(|| {
+        "could not create a private temporary file for the atomic write".to_string()
+    })?;
     let result = (|| -> std::io::Result<()> {
-        let mut file = fs::File::create(&temporary)?;
         file.write_all(content.as_bytes())?;
         // 이름을 바꾸기 전에 디스크에 확정한다 — 안 하면 이름만 새것이고
         // 내용은 아직 캐시에 있는 상태로 전원이 나갈 수 있다.
@@ -1712,7 +1742,39 @@ fn remove_vault_entry(
     {
         return Err("refusing to remove the selected vault root".into());
     }
-    let path = resolve_existing_inside(&root_path, &relative_path)?;
+    let path = resolve_inside(&root_path, &relative_path)?;
+    let root = canonical_root(&root_path)?;
+    let parent = path
+        .parent()
+        .ok_or_else(|| "remove target must have a parent directory".to_string())?;
+    let canonical_parent = fs::canonicalize(parent).map_err(|err| err.to_string())?;
+    if !canonical_parent.starts_with(&root) {
+        return Err("resolved path must stay inside the selected vault".into());
+    }
+
+    let entry_metadata = fs::symlink_metadata(&path).map_err(|err| err.to_string())?;
+    if entry_metadata.file_type().is_symlink() {
+        let canonical_target = fs::canonicalize(&path).map_err(|err| err.to_string())?;
+        if !canonical_target.starts_with(&root) {
+            return Err("resolved path must stay inside the selected vault".into());
+        }
+
+        #[cfg(windows)]
+        {
+            if fs::metadata(&path)
+                .map_err(|err| err.to_string())?
+                .is_dir()
+            {
+                return fs::remove_dir(path).map_err(|err| err.to_string());
+            }
+        }
+        return fs::remove_file(path).map_err(|err| err.to_string());
+    }
+
+    let canonical_path = fs::canonicalize(&path).map_err(|err| err.to_string())?;
+    if !canonical_path.starts_with(&root) {
+        return Err("resolved path must stay inside the selected vault".into());
+    }
     let metadata = fs::metadata(&path).map_err(|err| err.to_string())?;
     if metadata.is_dir() {
         if recursive.unwrap_or(false) {
@@ -5181,6 +5243,34 @@ mod tests {
         fs::remove_dir_all(root).ok();
     }
 
+    #[cfg(unix)]
+    #[test]
+    fn remove_vault_entry_unlinks_an_internal_symlink_without_deleting_its_target() {
+        use std::os::unix::fs::symlink;
+
+        let nonce = std::time::SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .unwrap()
+            .as_nanos();
+        let root = std::env::temp_dir().join(format!("ontology-atlas-remove-link-{nonce}"));
+        fs::create_dir_all(&root).unwrap();
+        let target = root.join("real.md");
+        let alias = root.join("alias.md");
+        fs::write(&target, "keep me").unwrap();
+        symlink(&target, &alias).unwrap();
+
+        remove_vault_entry(
+            root.to_string_lossy().to_string(),
+            "alias.md".into(),
+            Some(false),
+        )
+        .unwrap();
+
+        assert!(!alias.exists(), "링크 엔트리가 남았다");
+        assert_eq!(fs::read_to_string(&target).unwrap(), "keep me");
+        fs::remove_dir_all(root).ok();
+    }
+
     #[test]
     fn inspect_project_source_returns_a_deterministic_bounded_folder_inventory() {
         let root = std::env::temp_dir().join(format!(
@@ -5512,6 +5602,39 @@ mod atomic_write_tests {
 
         assert!(result.is_err(), "디렉터리를 파일로 덮어썼다");
         assert!(target.is_dir(), "대상이 파일로 바뀌었다");
+        std::fs::remove_dir_all(&dir).ok();
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn a_preexisting_temporary_symlink_cannot_redirect_an_atomic_write() {
+        use std::os::unix::fs::symlink;
+
+        let dir = std::env::temp_dir().join(format!(
+            "oatlas-atomic-link-{}-{}",
+            std::process::id(),
+            std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)
+                .unwrap()
+                .as_nanos()
+        ));
+        std::fs::create_dir_all(&dir).unwrap();
+        let target = dir.join("note.md");
+        let sentinel = dir.join("outside-sentinel.txt");
+        let predictable_temporary = target.with_extension(format!(
+            "{}.oatlas-tmp-{}",
+            target.extension().and_then(|e| e.to_str()).unwrap_or(""),
+            std::process::id()
+        ));
+        std::fs::write(&target, "old").unwrap();
+        std::fs::write(&sentinel, "outside").unwrap();
+        symlink(&sentinel, &predictable_temporary).unwrap();
+
+        write_text_atomically(&target, "new").unwrap();
+
+        assert_eq!(std::fs::read_to_string(&sentinel).unwrap(), "outside");
+        assert_eq!(std::fs::read_to_string(&target).unwrap(), "new");
+        assert_ne!(std::fs::canonicalize(&target).unwrap(), sentinel);
         std::fs::remove_dir_all(&dir).ok();
     }
 }
