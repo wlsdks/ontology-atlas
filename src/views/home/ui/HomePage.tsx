@@ -9,7 +9,7 @@ import { subscribeAgentChatIntent } from "@/shared/lib/agent-chat-intent";
 import { isGuardedRuntime } from "@/features/acp-session/model/runtime-gate";
 import { agentChatDoor } from "../model/agent-chat-door";
 import { AcpChatPanel, AcpChatResizeHandle, useChatWidth } from "@/widgets/acp-chat-panel";
-import { vaultMcpServers } from "@/features/acp-session/model/vault-mcp-server";
+import { vaultMcpServers, vaultSelfReadSlot } from "@/features/acp-session/model/vault-mcp-server";
 import { useChatSuggestions } from "@/features/acp-session/model/use-chat-suggestions";
 import { cn } from "@/shared/lib/cn";
 import {
@@ -2251,10 +2251,19 @@ export function HomePage() {
    * 그것을 지켜보는 effect 가 계속 다시 돈다. 잠금은 세션 훅이 지지만
    * (`startingRef`) **헛돌게 두지 않는 것은 여기 몫**이다.
    */
-  const acpMcpServers = useMemo(
-    () => vaultMcpServers(agentServer.launch, gitVaultPath),
-    [agentServer.launch, gitVaultPath],
-  );
+  /*
+   * 이 런타임이 볼트에서 **스스로** 같은 서버를 읽어 오면 여기서 또 꽂지
+   * 않는다 — 2026-08-17 실측에서 `mcp.ontology-atlas.*` 와 `mcp.atlas-vault.*`
+   * 가 같은 결과를 내며 프로세스가 둘이었다. 판정과 실측 근거는
+   * `vault-mcp-server.ts`.
+   */
+  const acpMcpServers = useMemo(() => {
+    const registeredCommand =
+      vaultSelfReadSlot(acpRuntimeId) === 'codex-config'
+        ? (vault.agentConfigStatus?.codexRegisteredCommand ?? null)
+        : null;
+    return vaultMcpServers(agentServer.launch, gitVaultPath, registeredCommand);
+  }, [agentServer.launch, gitVaultPath, acpRuntimeId, vault.agentConfigStatus]);
 
   const indexSlotFrames: ReadonlyArray<{ state: IndexPanelState; exiting: boolean }> =
     indexSlotSwap.leaving === null
