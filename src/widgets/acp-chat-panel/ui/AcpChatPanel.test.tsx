@@ -416,3 +416,85 @@ describe('대화 패널 — 못 하는 일은 정직하게', () => {
     await waitFor(() => expect(bridge.stopped).toContain('acp-1-999'));
   });
 });
+
+describe('대화 패널 — 사람이 읽는 화면이다', () => {
+  it('에이전트의 답을 마크다운으로 그린다 — 백틱이 글자로 남지 않게', async () => {
+    /*
+     * 실물에서 이렇게 나왔다: ``이 폴더(`my-ontology-2`)는 …`` — 백틱째로.
+     * 이 저장소에는 이미 렌더러가 있는데 이 화면만 안 쓰고 있었다.
+     */
+    await bootSession();
+    emit({
+      jsonrpc: '2.0',
+      method: 'session/update',
+      params: {
+        update: {
+          sessionUpdate: 'agent_message_chunk',
+          content: { text: '이 폴더의 `payment` 노드를 봤어요.\n\n- 하나\n- 둘' },
+        },
+      },
+    });
+
+    const body = await waitFor(() => {
+      const el = document.querySelector('[data-acp-entry="agent"]');
+      expect(el).not.toBeNull();
+      return el!;
+    });
+    // 백틱은 사라지고 코드 조각이 된다.
+    expect(body.querySelector('code')?.textContent).toBe('payment');
+    expect(body.textContent).not.toContain('`');
+    // 목록도 목록으로 그려진다.
+    expect(body.querySelectorAll('li')).toHaveLength(2);
+  });
+
+  it('도구 줄은 함수 이름이 아니라 일어난 일을 적는다', async () => {
+    await bootSession();
+    emit({
+      jsonrpc: '2.0',
+      method: 'session/update',
+      params: {
+        update: {
+          sessionUpdate: 'tool_call',
+          toolCallId: 'tc-known',
+          title: 'mcp__atlas-vault__add_concept',
+          kind: 'other',
+          status: 'pending',
+        },
+      },
+    });
+
+    const row = await waitFor(() => {
+      const el = document.querySelector('[data-acp-entry="tool"]');
+      expect(el).not.toBeNull();
+      return el!;
+    });
+    expect(row).toHaveAttribute('data-tool-label', 'known');
+    // 함수 이름이 화면에 남아 있으면 고친 것이 아니다.
+    expect(row.textContent).not.toContain('mcp__');
+    expect(row.textContent).not.toContain('add_concept');
+  });
+
+  it('모르는 도구는 이름만 보여 준다 — 그럴듯한 말을 지어내지 않는다', async () => {
+    await bootSession();
+    emit({
+      jsonrpc: '2.0',
+      method: 'session/update',
+      params: {
+        update: {
+          sessionUpdate: 'tool_call',
+          toolCallId: 'tc-raw',
+          title: 'Terminal',
+          kind: 'execute',
+          status: 'pending',
+        },
+      },
+    });
+    const row = await waitFor(() => {
+      const el = document.querySelector('[data-acp-entry="tool"]');
+      expect(el).not.toBeNull();
+      return el!;
+    });
+    expect(row).toHaveAttribute('data-tool-label', 'raw');
+    expect(row.textContent).toContain('Terminal');
+  });
+});

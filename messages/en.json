@@ -3659,6 +3659,16 @@
     "untitled": "Untitled chat",
     "model": "Model",
     "mode": "Mode",
-    "runtimePicker": "Which tool to chat with"
+    "runtimePicker": "Which tool to chat with",
+    "tool": {
+      "connect": "Connected to the folder",
+      "read": "Read the map",
+      "check": "Checked the map",
+      "addNode": "Added a concept",
+      "editNode": "Edited a concept",
+      "renameNode": "Renamed a concept",
+      "mergeNodes": "Merged two concepts",
+      "addRelation": "Linked a relation"
+    }
   }
 }

@@ -1,6 +1,8 @@
 'use client';
 
 import { CornerDownLeft, History, Square, SquarePen, X } from 'lucide-react';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslations } from 'next-intl';
 
@@ -11,7 +13,35 @@ import { useHeldValue } from '@/shared/lib/use-presence';
 import { cn } from '@/shared/lib/cn';
 import { useAcpSession, type AcpEvent } from '@/features/acp-session/model/use-acp-session';
 
+import { VAULT_MCP_SERVER_NAME } from '@/features/acp-session/model/vault-mcp-server';
+
 import { AcpPermissionCard } from './AcpPermissionCard';
+import { toolLabel } from './tool-label';
+
+/**
+ * 대화 안의 마크다운 — **대화 밀도**로 맞춘 값 한 벌.
+ *
+ * 문서 화면(`ProjectDetailPage`)에도 같은 성격의 문자열이 있지만 그건 본문
+ * 페이지용이라 한 단 크고 제목 여백이 세 배다. 셋째 소비처가 생기면 그때
+ * 공용으로 올린다 — 지금 둘은 **정말 다른 밀도**라 합치면 한쪽이 망가진다.
+ */
+const CHAT_MARKDOWN = [
+  'break-keep text-body leading-body text-[color:var(--color-text-secondary)]',
+  '[&>*:first-child]:mt-0 [&>*:last-child]:mb-0',
+  '[&_p]:mb-2',
+  '[&_ul]:my-2 [&_ul]:pl-[18px] [&_ol]:my-2 [&_ol]:pl-[18px]',
+  '[&_li]:mb-1 [&_li]:list-disc [&_li]:pl-0.5 [&_li::marker]:text-[color:var(--color-text-quaternary)]',
+  '[&_code]:rounded-micro [&_code]:border [&_code]:border-[color:var(--color-border-soft)]',
+  '[&_code]:px-1 [&_code]:py-0.5 [&_code]:font-mono [&_code]:text-label [&_code]:text-[color:var(--color-text-tertiary)]',
+  '[&_pre]:my-2 [&_pre]:overflow-x-auto [&_pre]:rounded-card [&_pre]:border',
+  '[&_pre]:border-[color:var(--color-border-soft)] [&_pre]:bg-[color:var(--color-overlay-1)] [&_pre]:p-2.5',
+  '[&_pre_code]:border-0 [&_pre_code]:p-0',
+  '[&_strong]:font-[var(--font-weight-strong)] [&_strong]:text-[color:var(--color-text-primary)]',
+  '[&_h1]:mt-3 [&_h1]:mb-1.5 [&_h1]:text-body-lg [&_h1]:font-[var(--font-weight-strong)] [&_h1]:text-[color:var(--color-text-primary)]',
+  '[&_h2]:mt-3 [&_h2]:mb-1.5 [&_h2]:text-body-lg [&_h2]:font-[var(--font-weight-strong)] [&_h2]:text-[color:var(--color-text-primary)]',
+  '[&_h3]:mt-2.5 [&_h3]:mb-1 [&_h3]:text-body [&_h3]:font-[var(--font-weight-strong)] [&_h3]:text-[color:var(--color-text-primary)]',
+  '[&_a]:text-[color:var(--color-indigo-accent)] [&_a]:underline-offset-2',
+].join(' ');
 
 /**
  * 앱 안에서 사용자의 코딩 에이전트와 나누는 대화.
@@ -386,13 +416,19 @@ function TranscriptEntry({ event }: { event: AcpEvent }) {
     );
   }
   if (event.kind === 'agent') {
+    /*
+     * 에이전트는 **마크다운으로 답한다** — 실물에서 백틱과 목록이 글자 그대로
+     * 나오고 있었다(`` `connect_project_source` `` 가 백틱째로). 이 저장소에는
+     * 이미 렌더러가 있는데(문서함·프로젝트 상세) 이 화면만 안 쓰고 있었다.
+     *
+     * 문서 화면의 그 값을 그대로 가져오지 않는다 — 거기는 본문 페이지라
+     * `text-body-lg` 에 제목 여백이 크고, 420px 패널에서는 한 문단이 화면을
+     * 다 먹는다. 여기는 **대화 밀도**다.
+     */
     return (
-      <p
-        data-acp-entry="agent"
-        className="whitespace-pre-wrap break-keep text-body leading-body text-[color:var(--color-text-secondary)]"
-      >
-        {event.text}
-      </p>
+      <div data-acp-entry="agent" className={CHAT_MARKDOWN}>
+        <ReactMarkdown remarkPlugins={[remarkGfm]}>{event.text}</ReactMarkdown>
+      </div>
     );
   }
   if (event.kind === 'thought') {
@@ -406,23 +442,33 @@ function TranscriptEntry({ event }: { event: AcpEvent }) {
     );
   }
   if (event.kind === 'tool') {
+    /*
+     * 함수 이름이 아니라 **일어난 일**을 적는다. 우리가 꽂아 준 도구는 뜻을
+     * 알고(`toolLabel`), 남의 도구는 이름만 보여 준다 — 모르는 것을 그럴듯하게
+     * 지어내면 실제로 한 일과 어긋나는 날 화면이 거짓말을 한다.
+     */
+    const label = toolLabel(event.title, VAULT_MCP_SERVER_NAME);
+    const done = event.status === 'completed';
     return (
       <p
         data-acp-entry="tool"
         data-tool-kind={event.toolKind}
         data-tool-status={event.status}
-        className="flex items-center gap-1.5 break-all text-label leading-label text-[color:var(--color-text-tertiary)]"
+        data-tool-label={label.kind}
+        className="flex items-center gap-1.5 break-all text-label leading-label text-[color:var(--color-text-quaternary)]"
       >
+        {/* 끝난 것과 도는 것을 **점 하나**로 가른다 — 배지를 또 달면 대화보다
+            도구 줄이 더 시끄러워진다. */}
         <span
-          className={badgeClass({
-            shape: 'micro',
-            className:
-              'bg-[color:var(--color-overlay-2)] text-[color:var(--color-text-quaternary)]',
-          })}
-        >
-          {t(`toolKind.${event.toolKind}`)}
-        </span>
-        {event.title}
+          aria-hidden
+          className={cn(
+            'size-1.5 shrink-0 rounded-full',
+            done
+              ? 'bg-[color:var(--color-text-quaternary)]'
+              : 'bg-[color:var(--color-indigo-accent)]',
+          )}
+        />
+        {label.kind === 'known' ? t(`tool.${label.text}`) : label.text}
       </p>
     );
   }

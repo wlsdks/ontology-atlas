@@ -3659,6 +3659,16 @@
     "untitled": "제목 없는 대화",
     "model": "모델",
     "mode": "작업 방식",
-    "runtimePicker": "어느 도구와 대화할지"
+    "runtimePicker": "어느 도구와 대화할지",
+    "tool": {
+      "connect": "폴더에 연결했어요",
+      "read": "지도를 읽었어요",
+      "check": "지도를 점검했어요",
+      "addNode": "개념을 추가했어요",
+      "editNode": "개념을 고쳤어요",
+      "renameNode": "개념 이름을 바꿨어요",
+      "mergeNodes": "개념 둘을 합쳤어요",
+      "addRelation": "관계를 이었어요"
+    }
   }
 }
