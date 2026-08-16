@@ -1019,7 +1019,7 @@ mod tests {
     use super::*;
     use std::collections::HashSet;
 
-    fn probe_with<'a>(
+    pub(super) fn probe_with<'a>(
         files: &'a HashSet<PathBuf>,
         dirs: &'a std::collections::HashMap<PathBuf, Vec<String>>,
     ) -> (
@@ -1034,7 +1034,7 @@ mod tests {
         )
     }
 
-    fn empty_dirs() -> std::collections::HashMap<PathBuf, Vec<String>> {
+    pub(super) fn empty_dirs() -> std::collections::HashMap<PathBuf, Vec<String>> {
         std::collections::HashMap::new()
     }
 
@@ -1909,5 +1909,91 @@ mod real_machine_probe {
                 Err(e) => println!("{id}: 실패 {e}"),
             }
         }
+    }
+}
+
+#[cfg(test)]
+mod timing_probe {
+    use super::*;
+
+    /// 진짜 디스크로 **얼마나 걸리나** — 진단용, `--ignored` 로만 돈다.
+    #[test]
+    #[ignore]
+    fn how_slow_is_detect() {
+        let home = std::env::var_os("HOME").map(PathBuf::from);
+        let path = std::env::var_os("PATH");
+        let (is_executable, list_dir, read_text, login_ok) = real_probe();
+
+        let skip = |_: &Path, _: &[&str]| None;
+        let fast = FsProbe {
+            is_executable: &is_executable,
+            list_dir: &list_dir,
+            read_text: &read_text,
+            login_ok: &skip,
+        };
+        let t = std::time::Instant::now();
+        let out = detect_runtimes(home.as_deref(), path.as_deref(), &fast);
+        println!("확인 없이: {:?} · {}개", t.elapsed(), out.len());
+
+        let full = FsProbe {
+            is_executable: &is_executable,
+            list_dir: &list_dir,
+            read_text: &read_text,
+            login_ok: &login_ok,
+        };
+        let t = std::time::Instant::now();
+        let out = detect_runtimes(home.as_deref(), path.as_deref(), &full);
+        println!("확인 포함: {:?} · {}개", t.elapsed(), out.len());
+    }
+}
+
+#[cfg(test)]
+mod newcomer_view {
+    use super::tests::{empty_dirs, probe_with};
+    use super::*;
+    use std::collections::HashSet;
+
+    /// **아무것도 안 깔린 사람에게 화면이 뭐라고 하나** — 진단용.
+    /// 소유자 질문(2026-08-16): *"안 쓰던 사람은 어떻게 나오지?"*
+    #[test]
+    #[ignore]
+    fn what_a_newcomer_sees() {
+        let files: HashSet<PathBuf> = HashSet::new(); // 아무것도 없다
+        let dirs = empty_dirs();
+        let (is_exec, list, read) = probe_with(&files, &dirs);
+        let probe = FsProbe {
+            is_executable: &is_exec,
+            list_dir: &list,
+            read_text: &read,
+            login_ok: &|_, _| None,
+        };
+        let out = detect_runtimes(None, None, &probe);
+        let mut by_state: std::collections::BTreeMap<&str, Vec<&str>> = Default::default();
+        for s in &out {
+            by_state.entry(s.state.as_str()).or_default().push(&s.id);
+        }
+        println!("── 아무것도 안 깔린 기계 ──");
+        for (state, ids) in &by_state {
+            println!("  {state:16} {}개  예: {}", ids.len(), ids.iter().take(3).cloned().collect::<Vec<_>>().join(", "));
+        }
+        println!("  → 「이 컴퓨터에서 확인됐어요」 = {}개",
+                 out.iter().filter(|s| s.state == "ready").count());
+
+        // ② node 만 있는 사람 (개발자라면 흔하다)
+        let mut files: HashSet<PathBuf> = HashSet::new();
+        files.insert(PathBuf::from("/usr/local/bin/npx"));
+        let (is_exec, list, read) = probe_with(&files, &dirs);
+        let probe = FsProbe {
+            is_executable: &is_exec,
+            list_dir: &list,
+            read_text: &read,
+            login_ok: &|_, _| None,
+        };
+        let out = detect_runtimes(None, None, &probe);
+        println!("── npx 만 있는 기계 ──");
+        let mut by_state: std::collections::BTreeMap<&str, usize> = Default::default();
+        for s in &out { *by_state.entry(s.state.as_str()).or_default() += 1; }
+        for (state, n) in &by_state { println!("  {state:16} {n}개"); }
+        println!("  → 「확인됐어요」 = {}개", out.iter().filter(|s| s.state == "ready").count());
     }
 }

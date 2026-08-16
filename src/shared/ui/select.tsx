@@ -398,7 +398,23 @@ export function Select({
   const anchorStyle: CSSProperties | undefined = anchor
     ? {
         left: anchor.left,
-        width: anchor.width,
+        /*
+         * **목록이 자기 항목보다 좁아지지 않는다** (2026-08-16 소유자 실보고).
+         *
+         * 종전엔 `width: anchor.width` 로 트리거 폭에 못 박았다. 좁은 자리에
+         * 놓인 셀렉트에서는 그 폭이 곧 목록 폭이 되어 **고를 것들이 잘렸다** —
+         * 실물에서 `Read Only` 가 `Rea…`, `Agent` 가 `Ag…` 로 나왔다. 고를 수
+         * 없는 목록은 목록이 아니다.
+         *
+         * 트리거 폭은 이제 **바닥**이고(그보다 좁아지지 않는다) 내용이 더 넓으면
+         * 그만큼 자란다. 넓은 자리의 셀렉트는 종전과 똑같다 — 이 값은 늘리기만
+         * 하고 줄이지 않는다.
+         *
+         * 상한을 두는 이유: 항목 하나가 유난히 길면 목록이 창을 가로지른다.
+         * 화면 가장자리 여백(`VIEWPORT_PAD`)을 남긴다.
+         */
+        minWidth: anchor.width,
+        maxWidth: `calc(100vw - ${VIEWPORT_PAD * 2}px)`,
         // 상한 둘 중 작은 쪽. 행을 아직 못 쟀으면(첫 레이아웃) 자리 상한만 쓴다.
         maxHeight: growth ? growth.height : anchor.availableHeight,
         ...(anchor.top !== null ? { top: anchor.top } : {}),
@@ -462,7 +478,11 @@ export function Select({
                 )}
               </span>
               <span className="min-w-0 flex-1">
-                <span className="block truncate">{option.label}</span>
+                {/*
+                  항목 이름은 **자르지 않는다.** 목록이 이제 내용만큼 자라므로
+                  자를 이유가 없고, 자르면 고를 수 없는 목록이 된다.
+                */}
+                <span className="block whitespace-nowrap">{option.label}</span>
                 {option.description ? (
                   <span className="mt-0.5 block truncate text-label text-[color:var(--color-text-quaternary)]">
                     {option.description}

@@ -8,6 +8,7 @@ import { Button, Chip, IconButton, RowButton, Select, Surface, Textarea } from '
 import { badgeClass } from '@/shared/ui/badge-class';
 import { ICON_SIZE } from '@/shared/ui/icon-size';
 import { useHeldValue } from '@/shared/lib/use-presence';
+import { cn } from '@/shared/lib/cn';
 import { useAcpSession, type AcpEvent } from '@/features/acp-session/model/use-acp-session';
 
 import { AcpPermissionCard } from './AcpPermissionCard';
@@ -229,7 +230,24 @@ export function AcpChatPanel({
         그 약속을 드롭다운 한 번으로 무를 수 있으면 약속이 아니다.
       */}
       {choices.models.length > 0 || choices.modes.length > 0 ? (
-        <div data-testid="acp-chat-choices" className="flex shrink-0 flex-wrap items-center gap-2">
+        /*
+         * 고를 거리는 **한 줄에 균등하게** 놓는다 (2026-08-16 소유자 실보고:
+         * *"제대로 보이지도 않고 위치도 이상하고"*).
+         *
+         * 종전엔 `flex-wrap` 이라 각자 내용만큼만 넓어졌고, 좁아진 트리거가
+         * 목록까지 좁게 만들어 고를 것들이 잘렸다. 격자로 두면 폭이 자리에서
+         * 정해지고 개수가 하나든 둘이든 줄이 흔들리지 않는다 — 이 저장소의
+         * 「치수는 우리가 정하지 내용물이 정하지 않는다」 규율 그대로다.
+         */
+        <div
+          data-testid="acp-chat-choices"
+          className={cn(
+            'grid shrink-0 gap-2',
+            choices.models.length > 0 && choices.modes.length > 0
+              ? 'grid-cols-2'
+              : 'grid-cols-1',
+          )}
+        >
           {choices.models.length > 0 ? (
             <Select
               ariaLabel={t('model')}
@@ -238,6 +256,7 @@ export function AcpChatPanel({
               onChange={(value) => void chooseModel(value)}
               options={choices.models.map((model) => ({ value: model.id, label: model.name }))}
               data-testid="acp-chat-model"
+              className="min-w-0"
             />
           ) : null}
           {choices.modes.length > 0 ? (
@@ -248,6 +267,7 @@ export function AcpChatPanel({
               onChange={(value) => void chooseMode(value)}
               options={choices.modes.map((mode) => ({ value: mode.id, label: mode.name }))}
               data-testid="acp-chat-mode"
+              className="min-w-0"
             />
           ) : null}
         </div>
