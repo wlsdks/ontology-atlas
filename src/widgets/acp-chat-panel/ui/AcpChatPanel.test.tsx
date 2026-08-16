@@ -197,7 +197,19 @@ describe('대화 패널 — 권한 카드가 실제로 막는다', () => {
 
     fireEvent.click(screen.getByTestId('acp-permission-reject'));
     await waitFor(() => expect(answerFor(77)).toEqual({ outcome: 'selected', optionId: 'reject' }));
-    expect(screen.queryByTestId('acp-permission-card')).toBeNull();
+    /*
+     * 카드는 **즉시** 사라지지 않는다 — 퇴장 애니메이션이 도는 동안 남아 있다.
+     * 그동안 다시 누를 수 있으면 답을 두 번 보내게 되므로, 그 창에서는
+     * `inert` 로 막혀 있어야 한다(`Surface` 의 계약). 사라지는 것 자체는
+     * 시간이 지나면 일어나므로 여기서는 **막혀 있는가**를 잰다.
+     */
+    const card = screen.queryByTestId('acp-permission-card');
+    if (card) {
+      expect(card.closest('[inert]'), '퇴장 중인 카드가 여전히 눌린다').not.toBeNull();
+    }
+    await waitFor(() => expect(screen.queryByTestId('acp-permission-card')).toBeNull(), {
+      timeout: 2000,
+    });
   });
 
   it('「이번만 허용」을 누르면 그 한 번만 허용된다', async () => {

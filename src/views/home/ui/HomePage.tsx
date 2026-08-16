@@ -4,6 +4,8 @@ import Image from "next/image";
 import { withBasePath } from "@/shared/lib/base-path";
 import { useHeldValue, useSurfaceSwap } from "@/shared/lib/use-presence";
 import { detectAcpRuntimes, isAcpBridgeAvailable } from "@/shared/lib/tauri-acp";
+import { AcpChatPanel } from "@/widgets/acp-chat-panel";
+import { vaultMcpServers } from "@/features/acp-session/model/vault-mcp-server";
 import { cn } from "@/shared/lib/cn";
 import {
   type KeyboardEvent as ReactKeyboardEvent,
@@ -2121,19 +2123,21 @@ export function HomePage() {
    * **검증된 실행기만** 이름으로 부른다 — 우리가 실제로 재 보지 않은 것을
    * 첫 화면에서 권하면, 그 권유가 곧 보증으로 읽힌다.
    */
-  const [acpRuntimeLabel, setAcpRuntimeLabel] = useState<string | null>(null);
+  const [acpRuntime, setAcpRuntime] = useState<{ id: string; label: string } | null>(null);
+  const [acpChatOpen, setAcpChatOpen] = useState(false);
   useEffect(() => {
     if (!isAcpBridgeAvailable()) return;
     let cancelled = false;
     void detectAcpRuntimes().then((list) => {
       if (cancelled) return;
       const best = (list ?? []).find((r) => r.state === 'ready' && r.verified && r.isolated);
-      setAcpRuntimeLabel(best?.label ?? null);
+      setAcpRuntime(best ? { id: best.id, label: best.label } : null);
     });
     return () => {
       cancelled = true;
     };
   }, []);
+  const acpRuntimeLabel = acpRuntime?.label ?? null;
 
   const indexSlotFrames: ReadonlyArray<{ state: IndexPanelState; exiting: boolean }> =
     indexSlotSwap.leaving === null
@@ -4539,7 +4543,6 @@ export function HomePage() {
                       relationCount={topologyTotalRelations}
                       agentConnected={agentConnect.status.kind === "connected"}
                       onCreateNode={openCreateNodeWithKind}
-                      onOpenAgentConnect={agentConnectLauncher.open}
                       // '기존 폴더 선택'으로 빈 폴더를 연 사용자에게 '빈
                       // 폴더로 새로 시작' 과 같은 스타터를 버튼으로 제공한다
                       // (2026-07-24). 문서가 이미 있으면 미전달 → 종전
@@ -4581,6 +4584,12 @@ export function HomePage() {
                       // 카드의 중앙 계산에서 혼자 빠진다. 그 폭을 알려 준다.
                       indexExpanded={renderedIndexState === "expanded"}
                       acpRuntimeLabel={acpRuntimeLabel}
+                      // 찾은 것이 있으면 그 대화를 연다. 없으면 종전대로 밖의
+                      // 도구를 붙이는 설정 시트로 간다 — 두 번째 문을 만드는
+                      // 게 아니라 **같은 문이 상황에 따라 다른 데로 간다**.
+                      onOpenAgentConnect={
+                        acpRuntime ? () => setAcpChatOpen(true) : agentConnectLauncher.open
+                      }
                     />
                   ) : (
                   <TopologyEmptyState
@@ -5464,6 +5473,30 @@ export function HomePage() {
           downloadHref={`/${activeLocale}/download/`}
           prefillRequest={vaultAgentPrefill ?? askPrefill}
         />
+      ) : null}
+      {/*
+        앱 안에서 **사용자의 코딩 에이전트**와 나누는 대화. 위 패널(키를 넣는
+        갈래)과 **같은 자리의 형제**다 — 새 표면을 만들지 않는다.
+
+        「지도가 주」(2026-07-27 적용 규칙)는 그대로다: 이 패널은 지도 옆에
+        서고, 지도를 덮지 않는다.
+      */}
+      {acpChatOpen && acpRuntime && gitVaultPath ? (
+        <Surface
+          open={acpChatOpen}
+          as="aside"
+          origin="right"
+          onExited={() => setAcpChatOpen(false)}
+          className="flex w-[var(--topology-agent-panel-width,360px)] min-h-0 shrink-0 flex-col border-l border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] p-4"
+        >
+          <AcpChatPanel
+            runtimeId={acpRuntime.id}
+            runtimeLabel={acpRuntime.label}
+            vaultRoot={gitVaultPath}
+            mcpServers={vaultMcpServers(agentServer.launch, gitVaultPath)}
+            onClose={() => setAcpChatOpen(false)}
+          />
+        </Surface>
       ) : null}
     </main>
   );

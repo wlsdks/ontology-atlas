@@ -1,12 +1,13 @@
 'use client';
 
-import { CornerDownLeft, Square } from 'lucide-react';
+import { CornerDownLeft, Square, X } from 'lucide-react';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslations } from 'next-intl';
 
-import { Button, Chip, Textarea } from '@/shared/ui';
+import { Button, Chip, IconButton, Surface, Textarea } from '@/shared/ui';
 import { badgeClass } from '@/shared/ui/badge-class';
 import { ICON_SIZE } from '@/shared/ui/icon-size';
+import { useHeldValue } from '@/shared/lib/use-presence';
 import { useAcpSession, type AcpEvent } from '@/features/acp-session/model/use-acp-session';
 
 import { AcpPermissionCard } from './AcpPermissionCard';
@@ -36,11 +37,13 @@ export function AcpChatPanel({
   runtimeLabel,
   vaultRoot,
   mcpServers,
+  onClose,
 }: {
   runtimeId: string;
   runtimeLabel: string;
   vaultRoot: string | null;
   mcpServers?: unknown[];
+  onClose?: () => void;
 }) {
   const t = useTranslations('acpChat');
   const { status, events, error, pending, start, send, cancel } = useAcpSession({
@@ -50,6 +53,12 @@ export function AcpChatPanel({
   });
   const [draft, setDraft] = useState('');
   const listRef = useRef<HTMLDivElement | null>(null);
+  /*
+   * 퇴장 애니메이션이 도는 동안에도 그릴 것이 있어야 한다 — `pending` 이
+   * null 로 바뀌는 순간 내용이 사라지면 **빈 상자**가 사라지는 애니메이션을
+   * 하게 된다. 키는 요청의 파일 경로다(같은 카드인지 가르는 값).
+   */
+  const pendingHeld = useHeldValue(pending, pending?.request.filePath ?? null);
 
   useEffect(() => {
     void start();
@@ -85,15 +94,22 @@ export function AcpChatPanel({
         <p className="min-w-0 truncate text-body font-[var(--font-weight-emphasis)] text-[color:var(--color-text-primary)]">
           {runtimeLabel}
         </p>
-        <span
-          data-acp-status-badge={status}
-          className={badgeClass({
-            shape: 'micro',
-            className:
-              'bg-[color:var(--color-overlay-2)] text-[color:var(--color-text-tertiary)]',
-          })}
-        >
-          {t(`status.${status}`)}
+        <span className="flex shrink-0 items-center gap-2">
+          <span
+            data-acp-status-badge={status}
+            className={badgeClass({
+              shape: 'micro',
+              className:
+                'bg-[color:var(--color-overlay-2)] text-[color:var(--color-text-tertiary)]',
+            })}
+          >
+            {t(`status.${status}`)}
+          </span>
+          {onClose ? (
+            <IconButton label={t('close')} data-testid="acp-chat-close" onClick={onClose}>
+              <X size={ICON_SIZE.sm} aria-hidden />
+            </IconButton>
+          ) : null}
         </span>
       </header>
 
@@ -121,7 +137,18 @@ export function AcpChatPanel({
         </p>
       ) : null}
 
-      {pending ? <AcpPermissionCard pending={pending} /> : null}
+      {/*
+        `{pending ? … : null}` 로만 그리면 카드가 한 프레임에 툭 나타나고 툭
+        사라진다(등장 래칫이 이걸 잡았다). 이 카드는 **에이전트를 멈춰 세우는
+        것**이라 화면에서 가장 급한 표면인데, 예고 없이 나타나면 사용자는
+        무엇이 바뀌었는지 못 따라간다.
+
+        `origin` 이 아래인 이유: 이 카드는 작성 칸 바로 위에서 자란다 — 눈과
+        손이 이미 가 있는 자리에서 태어나야 한다.
+      */}
+      <Surface open={Boolean(pending)} origin="bottom center" motion="overlay">
+        {pendingHeld ? <AcpPermissionCard pending={pendingHeld} /> : null}
+      </Surface>
 
       <div className="grid gap-2">
         <Textarea

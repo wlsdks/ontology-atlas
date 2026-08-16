@@ -6027,8 +6027,39 @@ function summarizeWrite(name, args, result) {
       return okRows > 0 ? { target: '(batch)', summary: `add_concepts ${okRows}행 성공` } : null;
     }
     case 'add_relations': {
-      const okRows = (result?.relations ?? []).filter((row) => row?.ok).length;
-      return okRows > 0 ? { target: '(batch)', summary: `add_relations ${okRows}행 성공` } : null;
+      const rows = result?.relations ?? [];
+      const okRows = rows.filter((row) => row?.ok).length;
+      if (okRows === 0) return null;
+      /*
+       * ⚠️ **이유를 버리지 않는다** (2026-08-16 지킴이 자리 적발).
+       *
+       * 배치 행에도 `why` 가 있고 `depends_on` 은 런타임이 그것을 **필수로**
+       * 요구한다. 그런데 이 분기가 `{ target, summary }` 만 돌려주는 바람에,
+       * 이유가 frontmatter 에는 들어가고 활동 기록에서만 사라졌다.
+       *
+       * 그 결과가 실제로 관측됐다: 살아있는 볼트의 활동 15줄 전부 `why: null`
+       * 이었고, 그중 둘이 바로 이 경로였다. 그 상태로 「기록에 이유가 없다」를
+       * 근거 삼아 다른 결론을 낼 뻔했다.
+       *
+       * 행마다 이유가 다를 수 있으므로 **성공한 행의 이유만** 모아 잇는다.
+       * 같은 이유가 반복되면 한 번만 적는다 — 열 행이 같은 이유일 때 그것을
+       * 열 번 적으면 읽을 수 없는 줄이 된다.
+       */
+      // ⚠️ 걸러 낸 **뒤에** 번호를 매기면 원본 행과 짝이 어긋난다. 원본 순서를
+      // 유지한 채 성공한 행에서만 이유를 꺼낸다.
+      const reasons = [
+        ...new Set(
+          rows
+            .map((row, index) => (row?.ok ? args.relations?.[index]?.why : null))
+            .filter((why) => typeof why === 'string' && why.trim().length > 0)
+            .map((why) => why.trim()),
+        ),
+      ];
+      return {
+        target: '(batch)',
+        summary: `add_relations ${okRows}행 성공`,
+        why: reasons.length > 0 ? reasons.join(' · ') : null,
+      };
     }
     case 'patch_concept':
       return { target: args.slug, summary: `patch_concept ${args.slug}` };

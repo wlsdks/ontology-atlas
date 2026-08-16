@@ -71,6 +71,8 @@ export interface AcpClient {
   newSession(params: {
     cwd: string;
     mcpServers?: unknown[];
+    /** 세션 시작 지시에 덧붙일 한 문단. 기본 지시를 **대체하지 않는다**. */
+    appendSystemPrompt?: string;
   }): Promise<{ sessionId: string; modes?: Record<string, unknown> }>;
   prompt(sessionId: string, blocks: unknown[]): Promise<{ stopReason?: string }>;
   cancel(sessionId: string): Promise<void>;
@@ -206,6 +208,13 @@ export function createAcpClient(
       const result = await call('session/new', {
         cwd: params.cwd,
         mcpServers: params.mcpServers ?? [],
+        // 어댑터는 `_meta.systemPrompt` 로 **덧붙이기**를 받는다(그 값은
+        // `type`/`preset` 이 고정된 채 `append` 만 흘러 들어간다). 기본 지시를
+        // 통째로 갈아치우지 않는 이유: 그 지시가 그 도구를 그 도구답게 만드는
+        // 것이고, 우리가 그것을 다시 쓸 근거가 없다.
+        ...(params.appendSystemPrompt
+          ? { _meta: { systemPrompt: { append: params.appendSystemPrompt } } }
+          : {}),
       });
       const sessionId = typeof result.sessionId === 'string' ? result.sessionId : null;
       if (!sessionId) throw new Error('session/new response missing sessionId');

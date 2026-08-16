@@ -844,18 +844,33 @@ fn acp_start(
         .path()
         .app_data_dir()
         .map_err(|err| format!("app-data-dir-unavailable:{err}"))?;
-    let config_dir = acp::prepare_isolated_config(&runtime_id, &app_data, home.as_deref())?;
-    let config_env = acp::config_env_for(&runtime_id).ok_or("unknown-runtime")?;
+    //
+    // ⚠️ **격리를 못 한다고 띄우기를 막지는 않는다** (2026-08-16, 문서 담당이
+    // 코드를 읽고 잡은 결함). 처음엔 격리 실패를 `?` 로 올려 버려서, 격리 표에
+    // 없는 실행기는 **띄우기 자체가 실패**했다 — 그런데 화면은 그것들을
+    // 「준비됨」이라고 말하고 있었다. 화면과 실제가 어긋나면 그건 화면이
+    // 거짓말하는 것이고, 여기서는 목록 전체가 그 상태였다.
+    //
+    // 그래서 갈래는 둘이다: 격리할 수 있으면 격리하고, 못 하면 **격리 없이
+    // 띄우되 화면이 그 사실을 이미 말해 두었다**(「확인 안 됨」 표시). 알고
+    // 고르게 하는 것과, 못 하게 막는 것은 다른 일이다.
+    let isolation = acp::config_env_for(&runtime_id).and_then(|env| {
+        acp::prepare_isolated_config(&runtime_id, &app_data, home.as_deref())
+            .ok()
+            .map(|dir| (env, dir))
+    });
 
     let mut command = Command::new(&launch.program);
     command
         .args(&launch.args)
         .current_dir(&root)
         .env("PATH", &launch.path_env)
-        .env(config_env, &config_dir)
         .stdin(Stdio::piped())
         .stdout(Stdio::piped())
         .stderr(Stdio::piped());
+    if let Some((env, dir)) = &isolation {
+        command.env(env, dir);
+    }
 
     #[cfg(unix)]
     {

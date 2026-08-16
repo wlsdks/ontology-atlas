@@ -15,6 +15,13 @@ App Settings의 agent config 상태는 실제 client config 두 개만 세며 ex
 연결로 가장하지 않는다. source-checkout과 app-bundled launch shape, 현재 vault 좌표가
 맞아야 ready이고, live stdio 연결과 tool inventory는 별도 `mcp-verify`가 증명한다.
 
+여기서 말하는 「앱 안의 대화형 에이전트」는 이 능력이 소유하는 vault-agent 패널
+하나다: 사용자가 넣은 키나 로컬 러너에 붙는 제공자 중립 루프이고, 볼트 도구만
+부른다. 사용자가 이미 설치해 둔 코딩 에이전트(Claude Code, Codex 등)를 앱이
+ACP 로 직접 띄우는 것은 별개 능력이며 `capabilities/acp-runtime`이 소유한다.
+그쪽은 설정 격리와 권한 관문이 다른 층에 있고, 오늘 사용자가 여는 표면도 설정의
+「실행기」 절 하나로 다르다.
+
 ## 근거
 - src/features/vault-agent: 제공자 중립 에이전트 루프, 도구 실행, 근거 인용
 - src-tauri/src/llm.rs: 로컬/원격 전송, 감사 로그, 분리된 timeout

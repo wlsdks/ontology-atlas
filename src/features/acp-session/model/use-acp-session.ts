@@ -64,6 +64,29 @@ export interface UseAcpSessionOptions {
   mcpServers?: unknown[];
 }
 
+/**
+ * 세션 시작 지시에 **덧붙이는** 한 문단.
+ *
+ * ## 왜 필요한가 — 「왜 바꿨는지」는 저절로 안 남는다
+ *
+ * 이 저장소의 볼트는 관계에 이유를 적을 자리(`why`)를 갖고 있고 `depends_on`
+ * 은 그것을 필수로 요구한다. 그런데 실측(2026-08-16)에서 살아있는 볼트의
+ * 활동 기록 15줄 전부 `why` 가 비어 있었다.
+ *
+ * 대화를 앱 안으로 옮기는 것만으로는 이게 안 채워진다 — 같은 실측이 그것도
+ * 보여 줬다(앱 안 채팅도 이미 `why` 를 쓸 수 있는데 볼트의 6.5%만 차 있다).
+ * **채우는 것은 자리가 아니라 지시다.**
+ *
+ * 기본 지시를 갈아치우지 않고 덧붙이기만 한다. 그 도구를 그 도구답게 만드는
+ * 것이 그 지시이고, 우리가 그걸 다시 쓸 근거가 없다.
+ */
+const VAULT_HANDOFF_PROMPT = [
+  'You are working inside an Ontology Atlas vault opened in the Atlas app.',
+  'The `atlas-vault` MCP server is already connected to this exact folder — use it to read and write the graph instead of parsing markdown by hand.',
+  'Whenever you add or change a relation, put the reason in the `why` field, phrased from what the person actually asked. That reason is the only record of why the graph changed.',
+  'Keep your work inside this folder. If something genuinely needs a path outside it, say so before trying.',
+].join(' ');
+
 let eventSeq = 0;
 const nextEventId = () => `acp-evt-${(eventSeq += 1)}`;
 
@@ -188,7 +211,11 @@ export function useAcpSession({ runtimeId, vaultRoot, mcpServers }: UseAcpSessio
       clientRef.current = client;
 
       await client.initialize();
-      const session = await client.newSession({ cwd: vaultRoot, mcpServers });
+      const session = await client.newSession({
+        cwd: vaultRoot,
+        mcpServers,
+        appendSystemPrompt: VAULT_HANDOFF_PROMPT,
+      });
       sessionIdRef.current = session.sessionId;
       if (!disposedRef.current) setStatus('ready');
     } catch (err) {

@@ -6288,6 +6288,64 @@ await test("add_concept/add_concepts — 활동 기록 agent 는 하트비트 �
   }
 });
 
+// 2026-08-16 — 배치로 쓴 관계의 **이유가 활동 기록에서만 사라지던 버그**.
+// `why` 는 frontmatter 에는 들어가는데 `summarizeWrite` 의 배치 분기가
+// `{target, summary}` 만 돌려줘서 기록 줄에서 빠졌다. 실제로 그 상태에서
+// 살아있는 볼트의 활동 15줄 전부가 `why: null` 이었고, 그 사실이 「대화가
+// 앱 밖에서 일어나서 이유가 안 남는다」는 **틀린 결론의 근거**로 쓰일 뻔했다.
+await test("add_relations — 배치로 쓴 관계도 활동 기록에 이유를 남긴다", async () => {
+  const root = makeVault([
+    { slug: "capabilities/a", content: "---\nslug: capabilities/a\nkind: capability\ntitle: A\ndomain: auth\n---\n\n# A\n" },
+    { slug: "capabilities/b", content: "---\nslug: capabilities/b\nkind: capability\ntitle: B\ndomain: auth\n---\n\n# B\n" },
+    { slug: "capabilities/c", content: "---\nslug: capabilities/c\nkind: capability\ntitle: C\ndomain: auth\n---\n\n# C\n" },
+  ]);
+  try {
+    await rpc(root, [
+      ...INIT_REQUESTS,
+      callTool(2, "add_relations", {
+        relations: [
+          { from: "capabilities/a", to: "capabilities/b", type: "depends_on", why: "토큰 검증이 세션 조회를 먼저 한다" },
+          { from: "capabilities/a", to: "capabilities/c", type: "depends_on", why: "감사 줄을 남기지 못하면 보내지 않는다" },
+        ],
+      }),
+    ]);
+    const lines = readFileSync(join(root, ".ontology-atlas", "activity.jsonl"), "utf-8").trim().split("\n");
+    assert.ok(lines.length > 0, "활동 기록이 비어 있으면 이 테스트는 공회전이다");
+    const last = JSON.parse(lines[lines.length - 1]);
+    assert.equal(last.tool, "add_relations");
+    assert.ok(last.why, "배치 관계의 이유가 기록에서 사라졌다");
+    assert.match(last.why, /토큰 검증/, "첫 행의 이유가 없다");
+    assert.match(last.why, /감사 줄/, "둘째 행의 이유가 없다");
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+await test("add_relations — 같은 이유가 반복되면 한 번만 적는다", async () => {
+  // 열 행이 같은 이유일 때 그것을 열 번 적으면 읽을 수 없는 줄이 된다.
+  const root = makeVault([
+    { slug: "capabilities/a", content: "---\nslug: capabilities/a\nkind: capability\ntitle: A\ndomain: auth\n---\n\n# A\n" },
+    { slug: "capabilities/b", content: "---\nslug: capabilities/b\nkind: capability\ntitle: B\ndomain: auth\n---\n\n# B\n" },
+    { slug: "capabilities/c", content: "---\nslug: capabilities/c\nkind: capability\ntitle: C\ndomain: auth\n---\n\n# C\n" },
+  ]);
+  try {
+    await rpc(root, [
+      ...INIT_REQUESTS,
+      callTool(2, "add_relations", {
+        relations: [
+          { from: "capabilities/a", to: "capabilities/b", type: "depends_on", why: "같은 이유" },
+          { from: "capabilities/a", to: "capabilities/c", type: "depends_on", why: "같은 이유" },
+        ],
+      }),
+    ]);
+    const lines = readFileSync(join(root, ".ontology-atlas", "activity.jsonl"), "utf-8").trim().split("\n");
+    const last = JSON.parse(lines[lines.length - 1]);
+    assert.equal((last.why.match(/같은 이유/g) ?? []).length, 1);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
 await test("patch_concept — created_by 는 보존되고 덮어쓸 수 없다", async () => {
   const root = makeVault([
     {
