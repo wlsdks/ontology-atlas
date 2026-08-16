@@ -25,6 +25,16 @@ import {
 const HERE = dirname(fileURLToPath(import.meta.url));
 const OWNER = 'project-source-vocabulary.mjs';
 
+test('스캐너가 두 표기를 다 본다 — 「공집합이 아니다」와 「전집합을 본다」는 다르다', () => {
+  // 합성이 아니라 **실제 파일**로 확인한다. 프로브가 결함과 같은 가정
+  // (작은따옴표)으로 쓰여 있으면 그 결함을 증명할 수 없다.
+  const text = readFileSync(join(HERE, 'meaning-assessment.mjs'), 'utf8');
+  const single = [...text.matchAll(/'[a-z_]{6,}'/g)].length;
+  const double = [...text.matchAll(/"[a-z_]{6,}"/g)].length;
+  assert.ok(double > 0, '이 파일이 큰따옴표를 안 쓴다면 이 검사가 지키던 것이 사라졌다');
+  void single;
+});
+
 test('검사가 헛돌고 있지 않다 — 낱말이 실재한다', () => {
   assert.ok(PROJECT_SOURCE_ACTION_IDS.size >= 6, '처방 목록이 비었다');
   assert.ok(PROJECT_SOURCE_GAP_IDS.size >= 6, '간극 목록이 비었다');
@@ -44,7 +54,12 @@ test('이 목록을 다시 선언하는 파일이 없다', () => {
     const text = readFileSync(join(HERE, file), 'utf8');
     // 이 낱말들을 **자기 파일 안에서 새 Set 으로** 묶는 자리를 찾는다.
     for (const block of text.matchAll(/new Set\(\[([^\]]*)\]/g)) {
-      const names = [...block[1].matchAll(/'([a-z_]+)'/g)].map((m) => m[1]);
+      // ⚠️ **표기가 둘이다** (2026-08-17 실측). 처음에는 작은따옴표만 봤고,
+      // 그래서 큰따옴표를 쓰는 `meaning-assessment.mjs` 의 **세 번째 사본**을
+      // 통째로 못 봤다 — 게이트가 있는데 아무것도 안 막고 있었다.
+      // 이 저장소가 이미 적어 둔 함정이다(`design-gates.md`: 아이콘 스캐너가
+      // 작은따옴표만 봐서 파일의 73%를 못 봤다). 같은 데서 두 번 넘어졌다.
+      const names = [...block[1].matchAll(/['"]([a-z_]+)['"]/g)].map((m) => m[1]);
       if (names.length < 3) continue;
       const overlap = names.filter(
         (n) => PROJECT_SOURCE_ACTION_IDS.has(n) || PROJECT_SOURCE_GAP_IDS.has(n),
