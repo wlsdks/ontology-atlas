@@ -954,6 +954,21 @@ fn spawn_acp_line_pump<R: std::io::Read + Send + 'static>(
     });
 }
 
+/// 권한 요청 하나를 우리 정책으로 판정한다 — `allow-inside-vault` 또는 `ask`.
+///
+/// **판정을 화면 쪽에 다시 구현하지 않는다.** 두 벌이 되면 한쪽만 느슨해지는
+/// 쪽이 기본값이 되고, 그 한쪽이 하필 사용자에게 보이는 쪽이다. 게다가 이
+/// 판정은 심볼릭 링크를 풀고 아직 없는 경로의 조상을 정규화해야 해서, 브라우저
+/// 쪽에서는 애초에 정확히 할 수 없다.
+#[tauri::command]
+fn acp_permission_verdict(vault_root: String, file_path: Option<String>) -> String {
+    let verdict = acp::permission_verdict(Path::new(&vault_root), file_path.as_deref());
+    match verdict {
+        acp::PermissionVerdict::AllowInsideVault => "allow-inside-vault".to_string(),
+        acp::PermissionVerdict::Ask => "ask".to_string(),
+    }
+}
+
 /// 세션에 한 줄을 보낸다. 줄바꿈은 여기서 붙인다 — 호출자가 잊으면 상대는
 /// 영원히 기다리고, 그 증상은 「멈췄다」로만 보인다.
 #[tauri::command]
@@ -4464,6 +4479,7 @@ pub fn run() {
             acp_start,
             acp_send,
             acp_stop,
+            acp_permission_verdict,
             pick_vault_directory,
             inspect_project_source,
             list_vault_directory,
