@@ -211,7 +211,8 @@
         "unknownExplainer": "\"Not checked\" does not mean the tool is missing. It means Atlas does not yet know how to look for it on this computer. You can still start it.",
         "installGuide": "How to install",
         "openChat": "Open a chat with this tool",
-        "loginHint": "You are not signed in to this tool. Run it once in a terminal to sign in and it will appear here."
+        "loginHint": "You are not signed in to this tool. Run it once in a terminal to sign in and it will appear here.",
+        "diskNote": "Starting a chat gives Atlas its own settings folder for that tool inside the app, so your own settings for it are left alone. The login you already did is linked, not copied, so you do not have to sign in again. The original stays in one place."
       }
     },
     "primaryAriaLabel": "Primary menu",
