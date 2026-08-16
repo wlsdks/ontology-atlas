@@ -150,6 +150,7 @@ const STORAGE_KEY_REGISTRY: StorageEntry[] = [
   // 확장 어포던스·구조·세 숫자. 발자국·배경과 같은 화면 취향이라 볼트와 무관하다 —
   // 폴더를 바꿔도 "펼치는 방식"에 대한 내 선호는 그대로여야 한다.
   { key: "ontology-atlas:expand:v1", kind: "storage", scope: "global", note: "확장 어포던스·구조·개수 선호" },
+  { key: "atlas.acp-chat.width", kind: "storage", scope: "global", note: "대화 칸 폭 — 이 컴퓨터의 화면 취향이라 볼트를 바꿔도 그대로다" },
   { key: "ontology-atlas:locale", kind: "storage", scope: "global", note: "화면 언어" },
   { key: "ontology-atlas:local-endpoint", kind: "storage", scope: "global", note: "LLM 로컬 엔드포인트" },
   { key: "ontology-atlas:agent-config-scope", kind: "storage", scope: "global", note: "MCP 설정 적용 범위(project|global)" },
@@ -163,6 +164,7 @@ const STORAGE_KEY_REGISTRY: StorageEntry[] = [
   { key: "demo:gesture-hint:dismissed:v1", kind: "storage", scope: "global", note: "제스처 힌트 1회성" },
   { key: "demo:sample-node-hint-dismissed:v1", kind: "storage", scope: "global", note: "샘플 노드 힌트 1회성" },
   { key: "demo:first-run-starter-dismissed:v1", kind: "storage", scope: "global", note: "첫 실행 카드 1회성(세션)" },
+  { key: "demo:vault-start-steps-dismissed:v1", kind: "storage", scope: "global", note: "첫 걸음 카드 1회성(세션) — 마지막 걸음을 지나면 거둔다" },
   { key: "vault-open-guide:auto:v1", kind: "storage", scope: "global", note: "폴더 열기 안내 1회성" },
   { key: "guided-tour:v1", kind: "storage", scope: "global", note: "투어 완료 표시" },
   { key: "guided-tour:${destination}:v1", kind: "storage", scope: "global", note: "목적지별 투어 완료 표시" },
@@ -299,6 +301,7 @@ const STORAGE_KEY_REGISTRY: StorageEntry[] = [
   { key: "ontology-atlas:local-endpoint-change", kind: "event", scope: "global", note: "" },
   { key: "ontology-atlas:secret-change", kind: "event", scope: "global", note: "" },
   { key: "ontology-atlas:settings-view-intent", kind: "event", scope: "global", note: "설정 시트 드릴인 요청" },
+  { key: "ontology-atlas:agent-chat-intent", kind: "event", scope: "global", note: "설정 → 대화 열기 요청 (위 신호의 반대 방향)" },
   { key: "ontology-atlas:studio-draft-change", kind: "event", scope: "global", note: "" },
   { key: "ontology-atlas:studio-url-change", kind: "event", scope: "global", note: "" },
   { key: "ontology-atlas:verify-edge-selected", kind: "event", scope: "global", note: "e2e 검증 훅" },

@@ -163,8 +163,9 @@
         "footprint": "Footprints",
         "notify": "Notifications",
         "workspace": "Workspace",
-        "agent": "Connect my agents",
-        "ai": "In-app agent"
+        "runtimes": "Chat in app",
+        "agent": "Connect in terminal",
+        "ai": "API Key"
       },
       "sectionGroup": {
         "look": "Appearance",
@@ -185,7 +186,33 @@
       "agentNotificationsLabel": "Notifications",
       "agentNotificationsCaption": "Announces when a task starts and ends, and when a domain appears or disappears. Single nodes and single relations are not announced: the map already shows them.",
       "agentNotificationKindsLabel": "What to receive",
-      "agentNotificationKindsCaption": "Muted kinds never reach the bell."
+      "agentNotificationKindsCaption": "Muted kinds never reach the bell.",
+      "runtimes": {
+        "intro": "Atlas launches the AI coding tools installed on this computer, so you can talk to them right here.",
+        "recheck": "Check again",
+        "checking": "Looking…",
+        "readyHeading": "Found on this computer ({count})",
+        "othersHeading": "Show the other {count}",
+        "noneReady": "Nothing found yet",
+        "noneReadyCaption": "Install Claude Agent or Codex and it shows up here.",
+        "webLabel": "A browser is not allowed to start programs on this computer",
+        "webCaption": "Get the Mac app to use the tools installed here from inside Atlas. On this screen you can still point a tool you started yourself at this folder, from the “MCP” section.",
+        "state": {
+          "ready": "Ready",
+          "cli-missing": "Install needed",
+          "node-missing": "Node needed",
+          "uvx-missing": "uv needed",
+          "binary-missing": "Install yourself",
+          "cli-unknown": "Not checked",
+          "login-needed": "Sign in needed"
+        },
+        "guardedExplainer": "Atlas can ask you before a file outside this folder is touched, but only for these: {names}. Every other tool follows the settings you gave it directly.",
+        "guardedExplainerNone": "No tool here can be asked about before it touches a file outside this folder. Each one follows the settings you gave it directly.",
+        "unknownExplainer": "\"Not checked\" does not mean the tool is missing. It means Atlas does not yet know how to look for it on this computer. You can still start it.",
+        "installGuide": "How to install",
+        "openChat": "Open a chat with this tool",
+        "loginHint": "You are not signed in to this tool. Run it once in a terminal to sign in and it will appear here."
+      }
     },
     "primaryAriaLabel": "Primary menu",
     "notificationsAriaLabel": "Notifications"
@@ -520,7 +547,10 @@
     "busy": "Opening folder…",
     "scaffolding": "Writing starter structure…",
     "errorFallback": "Could not open the folder. Try again.",
-    "trustLine": "Stored only on your computer · plain markdown files · no server"
+    "errorRootRejected": "This folder can't be used as a map. Pick a folder that holds your documents, not a system folder or your whole home folder.",
+    "trustLine": "Stored only on your computer · plain markdown files · no server",
+    "errorPathMissing": "That folder is gone. It looks like it was moved or deleted. Pick another one.",
+    "errorPermission": "Atlas cannot read this folder. Pick it again to grant access."
   },
   "firstRunStarter": {
     "brand": "Ontology Atlas",
@@ -568,7 +598,10 @@
     "reopenLabel": "Reopen the start guide",
     "sampleSourceStorefrontTip": "Products, orders, members, delivery: learn to read the map with names everyone knows",
     "sampleSourceDogfoodTip": "The map of the code that built this app: people and agents actually grew it, and the git history proves it",
-    "cliBridgeSourceOnly": "This command runs inside an ontology-atlas source checkout. You do not need it if you only use the app."
+    "cliBridgeSourceOnly": "This command runs inside an ontology-atlas source checkout. You do not need it if you only use the app.",
+    "errorRootRejected": "This folder cannot become a map. Pick a folder that holds documents, not a system folder or your whole home folder.",
+    "errorPathMissing": "That folder is gone. It looks like it was moved or deleted. Pick another one.",
+    "errorPermission": "Atlas cannot read this folder. Pick it again to grant access."
   },
   "guidedTour": {
     "progressLabel": "{current}/{total}",
@@ -1817,6 +1850,7 @@
       "unsupportedTooltip": "Local ontology folder editing is available in the installed desktop app.",
       "permissionNeededBanner": "Workspace is paused: re-grant folder access to keep editing. Showing sample docs until then.",
       "errorBanner": "Workspace folder is unavailable ({message}). Showing sample docs: open the picker to re-pick or refresh.",
+      "rootRejectedBanner": "This folder can't be used as a map. Pick a folder that holds your documents, not a system folder or your whole home folder.",
       "openPicker": "Open picker",
       "openFallback": "Open this document",
       "missingSlugBanner": "Couldn't find “{slug}” in this folder, so another document is open instead. If it lives in a different folder, switch folders."
@@ -1896,7 +1930,7 @@
       "error": "Finder open failed: {message}"
     },
     "agentSetup": {
-      "ariaLabel": "My agent connection",
+      "ariaLabel": "MCP connection",
       "title": "My agent connection",
       "ready": "ready",
       "missing": "missing",
@@ -2512,28 +2546,7 @@
       "pastReadOnlyNotice": "This folder is open read-only, so this walk isn't being kept. Saving any document will ask for write access."
     },
     "startChecklist": {
-      "kicker": "{done}/{total} done",
-      "title": "Start checklist",
-      "subtitle": "Fastest with an AI at your side: follow the steps and the map comes alive.",
-      "stepDocs": "Put the {count} documents in this folder on the map",
-      "stepAgent": "Let AI tools read and grow this map with you",
-      "agentHintReady": "The connection setup is in this folder: AI tools read and grow this map with you.",
-      "agentHintPending": "Press \"Create starter docs\" and the connection setup is created too, so AI tools can read and grow this map.",
-      "ctaCreate": "Create",
-      "ctaAgent": "Open connect guide",
-      "stepAnalyze": "Let AI read your code and draft the map",
-      "stepManual": "Or start by hand (optional)",
-      "ctaAnalyze": "Copy the AI instructions",
-      "ctaAnalyzeAgain": "Copy again",
-      "ctaAnalyzeFailed": "Copy failed: try again",
-      "analyzeNeedsAgent": "Connect an AI tool above first: that's where you'll paste this",
-      "analyzePromise": "This only proposes candidates: nothing is written to your folder before you approve",
-      "ctaAnalyzeCopied": "Copied: paste into your AI tool",
-      "analyzePrompt": "This folder is an ontology-atlas folder. Use the /ontology-bootstrap skill (or MCP index_project → analyze_repo_structure) to analyze my codebase, propose the project/domain/capability ontology, and write only what I approve to the folder.",
-      "stepScaffold": "Create starter docs (one click)",
-      "ctaScaffold": "Create for me",
-      "ctaScaffoldBusy": "Creating…",
-      "scaffoldToast": "Created {concepts} ontology concepts and {configs} agent config files"
+      "scaffoldToast": "Created {concepts} concept documents and {configs} AI connection files"
     },
     "recentChangesNeedsVault": {
       "eyebrow": "Recent changes",
@@ -2548,6 +2561,44 @@
       "body": "You're looking at the sample map, so it can't be edited. Open your folder and you can create items right here: each one lands as a markdown file in that folder.",
       "action": "Open my folder",
       "close": "Close"
+    },
+    "startSteps": {
+      "title": "Getting started",
+      "progress": "{current} / {total}",
+      "skip": "Skip",
+      "back": "Back",
+      "agent": {
+        "title": "Connect an AI agent",
+        "bodyFound": "Found an AI tool on this machine: {runtime}. You can chat with it right here and fill in the map together.",
+        "bodyMissing": "If you use Claude Agent or Codex, you can chat with it right here and fill in the map. Everything else works without connecting.",
+        "cta": "Open agent settings"
+      },
+      "analyze": {
+        "title": "Let AI draft the map from your code",
+        "bodyAgent": "It reads this folder and proposes the projects, domains and capabilities it finds. The instruction tells it to propose first and write nothing until you approve.",
+        "bodyCopy": "Copy the instruction and paste it into the AI tool you already use. The instruction tells it to propose first and write nothing until you approve.",
+        "ctaAgent": "Ask the agent",
+        "ctaCopy": "Copy the instruction",
+        "ctaCopied": "Copied. Paste it into your tool",
+        "ctaFailed": "Copy failed. Try again"
+      },
+      "starter": {
+        "title": "Create the starter documents",
+        "body": "This folder is still empty. We can create five skeleton documents and the AI connection settings in one go. You can edit or delete them later.",
+        "cta": "Create starter documents",
+        "ctaBusy": "Creating…"
+      },
+      "manual": {
+        "title": "Start by hand",
+        "body": "You can start without AI. Create your first project and the map grows from there.",
+        "cta": "Create the first project"
+      },
+      "docs": {
+        "title": "Start from the documents in this folder",
+        "body": "Found {count} documents here that are not on the map yet. They can go on the map as they are.",
+        "cta": "Build the map from my documents"
+      },
+      "next": "Next"
     }
   },
   "fullDetailA1": {
@@ -2971,9 +3022,9 @@
     "statusStale": "Last signal {ago}. Restart an agent session to continue.",
     "statusNone": "Not connected yet. Step 1 above takes about a minute.",
     "manualPathHint": "This is a browser session, so fill in the absolute folder path yourself: replace the [absolute path to your my-folder] slot in the snippet with your real path.",
-    "claudeCode": "Claude Code:.mcp.json",
+    "claudeCode": "Claude Code: .mcp.json",
     "codex": "Codex: one command",
-    "genericHint": "Any other MCP client registers with the same command/args. Verify with node $ATLAS/cli/src/index.mjs mcp-verify.",
+    "genericHint": "Any other MCP client registers with the same launch command and arguments. Use “Verify connection” above rather than running a check by hand.",
     "previewLabel": "Once connected, the agent reads it like this",
     "previewSentence": "\"This project is made of {domains}, and each document is its evidence.\"",
     "previewMoreDomains": "and {count} more",
@@ -3074,7 +3125,8 @@
     "scopeGlobalCopySnippet": "Copy settings",
     "scopeGlobalCopied": "Copied",
     "scopeGlobalLossNote": "These files live in your home folder, not in this folder: so a git diff will not show the change. To undo it, remove the ontology-atlas entry from the file above. Still nothing leaves this machine.",
-    "scopeGlobalToolLabel": "Your tool"
+    "scopeGlobalToolLabel": "Your tool",
+    "mergeSkipped": "Left these files untouched: {files}. We could not read them, and overwriting would remove what you already registered. Open them and add the `ontology-atlas` entry yourself."
   },
   "appUpdate": {
     "availableTitle": "Version {version} is available",
@@ -3586,5 +3638,78 @@
     },
     "openSample": "Browse the example",
     "sampleNotice": "This is the example set: open your folder to see your own skills."
+  },
+  "acpChat": {
+    "ariaLabel": "Conversation with {runtime}",
+    "emptyHint": "Ask anything about this folder. Whatever you are looking at on the map works too.",
+    "composerLabel": "Write what you want done",
+    "send": "Send",
+    "stop": "Stop",
+    "status": {
+      "idle": "Off",
+      "starting": "Starting",
+      "ready": "Ready",
+      "thinking": "Thinking",
+      "error": "Problem",
+      "exited": "Ended"
+    },
+    "permission": {
+      "title": "It wants to touch something outside this folder",
+      "body": "Nothing happens until you allow it. Check below where it wants to write.",
+      "unknownTarget": "Cannot tell what it wants to do",
+      "reject": "No thanks",
+      "allowOnce": "Allow once",
+      "allowAlways": "Allow the folder that path is in, for this whole conversation"
+    },
+    "close": "Close conversation",
+    "composerPlaceholder": "Ask about this folder, or give it a task",
+    "composerHint": "Enter to send · ⇧Enter for a new line",
+    "history": "Past chats",
+    "newChat": "New chat",
+    "untitled": "Untitled chat",
+    "model": "Model",
+    "mode": "Mode",
+    "runtimePicker": "Which tool to chat with",
+    "tool": {
+      "connect": "Connected to the folder",
+      "read": "Read the map",
+      "check": "Checked the map",
+      "addNode": "Added a concept",
+      "editNode": "Edited a concept",
+      "renameNode": "Renamed a concept",
+      "mergeNodes": "Merged two concepts",
+      "addRelation": "Linked a relation"
+    },
+    "toolGroup": "{count} steps",
+    "resize": "Resize the chat panel",
+    "resizeHint": "Drag to widen or narrow. Arrow keys work too.",
+    "closeHistory": "Close the past chats list",
+    "trouble": {
+      "auth": {
+        "title": "You have been signed out",
+        "hint": "Run the tool once in your terminal to sign in again, then press “New chat” above."
+      },
+      "timeout": {
+        "title": "The tool is not responding",
+        "hint": "Try “New chat”. If it keeps happening, check that the tool starts on its own in a terminal."
+      },
+      "launch": {
+        "title": "The tool could not be started",
+        "hint": "Check its state in the Agents section of settings."
+      },
+      "network": {
+        "title": "No connection to the outside",
+        "hint": "Check your internet connection, then press “New chat”. Reading and editing the map works offline."
+      },
+      "unknown": {
+        "title": "Something went wrong",
+        "hint": "Try “New chat”. If it keeps happening, the details below are what to report."
+      },
+      "details": "Details",
+      "diagnosticsLabel": "What the tool printed"
+    },
+    "notice": {
+      "gateOff": "In this conversation Atlas cannot ask you before a file outside this folder is touched. The tool follows the settings you gave it directly."
+    }
   }
 }

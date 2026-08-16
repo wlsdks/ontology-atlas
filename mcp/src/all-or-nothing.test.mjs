@@ -17,9 +17,9 @@
  * 그래서 계약을 여기 못박는다. 세 갈래를 다 잰다: ① 사전 거절(흔한 경우) ②
  * 쓰기 중 실패 시 되돌리기 ③ 되돌리기마저 실패하면 **숨기지 않고 말하기**.
  */
-import { describe, it } from 'node:test';
+import { describe, it, test } from 'node:test';
 import assert from 'node:assert/strict';
-import { chmodSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync, existsSync } from 'node:fs';
+import { chmodSync, mkdirSync, mkdtempSync, readFileSync, rmSync, statSync, writeFileSync, existsSync } from 'node:fs';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
 
@@ -137,4 +137,39 @@ describe('applyAllOrNothing', () => {
     assert.equal(result.applied, 1);
     rmSync(root, { recursive: true, force: true });
   });
+});
+
+test('남이 그 사이에 고쳤으면 한 글자도 안 쓴다', async () => {
+  /*
+   * 2026-08-16 검수: `expected_mtime` 검사는 **한 파일**을 고치는 길에만
+   * 있었다. 여러 파일을 고치는 rename/merge/reclassify 는 몇 분 전에 읽은
+   * 스냅샷으로 참조 문서 N개를 다시 썼고, 그 사이 사용자가 옵시디언에서 고친
+   * 것은 조용히 사라졌다 — 사람과 에이전트가 한 폴더를 같이 쓰는 것이 이
+   * 제품이 파는 바로 그 상황인데, 거기서만 보호가 없었다.
+   */
+  const dir = mkdtempSync(join(tmpdir(), 'oatlas-conflict-'));
+  const kept = join(dir, 'kept.md');
+  const stale = join(dir, 'stale.md');
+  writeFileSync(kept, 'kept-before', 'utf-8');
+  writeFileSync(stale, 'stale-before', 'utf-8');
+
+  // 계획을 세운 시점의 mtime 을 들고 간다.
+  const staleMtime = statSync(stale).mtimeMs;
+  // 그 사이 사용자가 고쳤다 — 1ms 이상 벌린다.
+  await new Promise((resolve) => setTimeout(resolve, 20));
+  writeFileSync(stale, 'edited by the human', 'utf-8');
+
+  assert.throws(
+    () =>
+      applyAllOrNothing([
+        { op: 'write', path: kept, content: 'kept-after' },
+        { op: 'write', path: stale, content: 'agent-after', expectedMtime: staleMtime },
+      ]),
+    /changed on disk/,
+  );
+
+  // **한 글자도 안 썼다** — 사람의 편집도, 앞 파일도 그대로.
+  assert.equal(readFileSync(stale, 'utf-8'), 'edited by the human');
+  assert.equal(readFileSync(kept, 'utf-8'), 'kept-before');
+  rmSync(dir, { recursive: true, force: true });
 });

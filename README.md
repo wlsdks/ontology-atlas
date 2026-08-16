@@ -487,6 +487,22 @@ explains the workflow; [development checks](docs/DEVELOPMENT-CHECKS.md) owns the
 full gate reference, and [map testability](docs/MAP-TESTABILITY.md) owns canvas
 performance, readability, contrast, and browser instrumentation.
 
+### Refreshing the agent runtime catalog
+
+The list of coding agents the desktop app can launch is a committed snapshot of
+the [ACP registry](https://agentclientprotocol.com/get-started/registry), not a
+runtime fetch — the app stays usable offline and never opens a connection the
+person did not ask for.
+
+```bash
+pnpm acp:registry          # refresh src-tauri/src/acp-registry.json
+pnpm acp:registry:check    # fail if the committed snapshot is stale
+```
+
+Refresh it deliberately and read the diff: a new entry means the app will offer
+to launch a program it has never run here. Only the runtimes this repository has
+actually measured are marked `verified`.
+
 ## Documentation
 
 - **Use the product:** [hosted guide](https://wlsdks.github.io/ontology-atlas/en/guide/) ·

@@ -3,8 +3,16 @@
 import Image from "next/image";
 import { withBasePath } from "@/shared/lib/base-path";
 import { useHeldValue, useSurfaceSwap } from "@/shared/lib/use-presence";
+import { detectAcpRuntimes, isAcpBridgeAvailable } from "@/shared/lib/tauri-acp";
+import { requestSettingsView } from "@/shared/lib/settings-view-intent";
+import { subscribeAgentChatIntent } from "@/shared/lib/agent-chat-intent";
+import { isGuardedRuntime } from "@/features/acp-session/model/runtime-gate";
+import { agentChatDoor } from "../model/agent-chat-door";
+import { AcpChatPanel, AcpChatResizeHandle, useChatWidth } from "@/widgets/acp-chat-panel";
+import { vaultMcpServers } from "@/features/acp-session/model/vault-mcp-server";
 import { cn } from "@/shared/lib/cn";
 import {
+  type CSSProperties,
   type KeyboardEvent as ReactKeyboardEvent,
   type PointerEvent as ReactPointerEvent,
   useCallback,
@@ -31,8 +39,11 @@ import {
 import {
   FirstRunReadout,
   SampleNodeHint,
+  readFirstRunStarterDismissed,
   useFirstRunSampleModeSettled,
+  writeFirstRunStarterDismissed,
 } from "@/features/first-run-starter";
+import { VAULT_START_STEPS_DISMISSED_KEY } from "@/widgets/topology-controls";
 import { useNavRailContextHrefs, useNavRailSettingsSlot } from "@/widgets/app-nav-rail";
 import dynamic from "next/dynamic";
 import { ProjectDrawer } from "@/widgets/project-drawer";
@@ -78,8 +89,8 @@ const TopologyEmptyState = dynamic(
   () => import("@/widgets/topology-controls").then((m) => m.TopologyEmptyState),
   { ssr: false },
 );
-const VaultStartChecklist = dynamic(
-  () => import("@/widgets/topology-controls").then((m) => m.VaultStartChecklist),
+const VaultStartSteps = dynamic(
+  () => import("@/widgets/topology-controls").then((m) => m.VaultStartSteps),
   { ssr: false },
 );
 const ShortcutSheet = dynamic(
@@ -217,6 +228,8 @@ import { isLlmChatBridgeAvailable } from "@/shared/lib/tauri-llm";
 import { useAgentDockDefaultOpen } from "@/shared/lib/use-agent-dock-default";
 import { getTauriVaultRootPath, isTauriVaultRuntime } from "@/shared/lib/tauri-vault-fs";
 import { buildAgentAnalyzePrompt } from "@/shared/config/agent-prompts";
+import { resolveToastRightOffset } from "@/shared/ui/toast-position";
+import { RIGHT_DOCK_WIDTH_VAR } from "@/shared/lib/right-dock-reserve";
 
 import { computeUpdatedAgo } from "../lib/format-updated-ago";
 import { buildNavRailContextHrefs } from "../lib/nav-rail-context-hrefs";
@@ -418,10 +431,12 @@ export function HomePage() {
    * 닫은 도크가 키 조회 한 번에 다시 열려 "닫기가 안 먹는" 것으로 읽힌다.
    */
   const agentDockTouchedRef = useRef(false);
-  useEffect(() => {
-    if (agentDockDefaultOpen !== true || agentDockTouchedRef.current) return;
-    setVaultAgentOpen(true);
-  }, [agentDockDefaultOpen]);
+  /*
+   * ⚠️ 스스로 여는 것은 **문 하나**(`openAgentChat`)를 탄다 — 그 문이 「코딩
+   * 에이전트냐 API 키냐」를 정하므로, 여기서 갈래를 다시 고르면 두 대화창이
+   * 같이 뜬다(2026-08-16 소유자 실보고: *"대화창 하나만 쓰자"*). 그 함수는
+   * 실행기 상태를 읽어야 해서 이 아래에 있고, 이 효과도 거기 붙어 있다.
+   */
   /**
    * 바깥에서 건너온 첫 마디(S7). 여기 실리는 것은 **문장 하나**뿐이고, 전송은
    * 하지 않는다 — 패널의 입력칸에 앉을 뿐이라 사용자가 고쳐 보내거나 지울 수
@@ -562,6 +577,18 @@ export function HomePage() {
   // (localStorage)는 건드리지 않는 순수 세션 강등.
   const [indexManualExpandDuringSelection, setIndexManualExpandDuringSelection] =
     useState(false);
+  /*
+   * 아직 아무것도 없는 지도에서는 INDEX 를 접어 둔다 (2026-08-16 소유자 실보고,
+   * *"처음 시작하면 왼쪽 index 는 닫혀 있어야 할 듯"*).
+   *
+   * INDEX 는 「개념 목록」이라 개념이 0개면 **담을 것이 없다** — 실제로 그
+   * 화면에는 「일치하는 개념이 없습니다」한 줄만 있고, 그 한 줄이 화면 왼쪽
+   * 3분의 1을 가진 채 정작 이때 유일하게 할 일이 적힌 시작 체크리스트를
+   * 오른쪽으로 밀어내고 있었다. 위 선택-중 강등과 같은 구조다: **저장된
+   * 선호는 건드리지 않는 세션 강등**이라, 개념이 하나라도 생기면 원래대로
+   * 돌아오고 사용자가 직접 펼치면 그쪽이 이긴다.
+   */
+  const [indexManualExpandWhileEmpty, setIndexManualExpandWhileEmpty] = useState(false);
   const setIndexPreference = useCallback(
     (next: IndexPanelState) => {
       try {
@@ -603,6 +630,9 @@ export function HomePage() {
     // C — 선택 중 수동 전개는 그 선택 동안 자동 강등을 이긴다 (선택 해제
     // 시 리셋; 비선택 상태에선 무해한 no-op 플래그).
     setIndexManualExpandDuringSelection(true);
+    // 빈 지도 강등도 같다 — 직접 펼쳤으면 그 뜻이 이긴다. 이 줄이 없으면
+    // 탭이 눌리는데 아무 일도 안 일어난다(강등이 매 렌더 다시 접는다).
+    setIndexManualExpandWhileEmpty(true);
     if (analysisMode !== "overview") {
       setRouteState((current) => ({ ...current, analysisMode: "overview" }));
     }
@@ -2095,10 +2125,12 @@ export function HomePage() {
   // 소유자 후속 (2026-07-24): 영역/스포트라이트 원장도 노드 선택 중엔 닫는다
   // — "좌/우 패널이 다 열려 불편". 탈출 어포던스는 상단 영역/렌즈 칩의 ✕ 와
   // Esc 가 유지하므로 원장 상시 노출이 필수는 아니다. 선택 해제 시 복귀.
+  /** 담을 개념이 아직 하나도 없는 지도인가. 위 `indexManualExpandWhileEmpty` 참고. */
+  const topologyGraphEmpty = (ontologyInsight?.nodes.length ?? 0) === 0;
   const renderedIndexState: IndexPanelState =
-    topologySelectionActive &&
-    !indexManualExpandDuringSelection &&
-    baseRenderedIndexState === "expanded"
+    baseRenderedIndexState === "expanded" &&
+    ((topologySelectionActive && !indexManualExpandDuringSelection) ||
+      (topologyGraphEmpty && !indexManualExpandWhileEmpty))
       ? "collapsed"
       : baseRenderedIndexState;
   /**
@@ -2112,6 +2144,76 @@ export function HomePage() {
    * 표면마다 다르면 그게 다시 결함이다.
    */
   const indexSlotSwap = useSurfaceSwap(renderedIndexState);
+  /*
+   * 폴더를 연 **바로 다음 화면**에서 「무엇을 쓸 수 있는지」를 말하기 위한 탐지
+   * (2026-08-16 소유자 지적). 설정 안에만 두면 그 사실은 찾아 들어간 사람에게만
+   * 존재한다.
+   *
+   * **검증된 실행기만** 이름으로 부른다 — 우리가 실제로 재 보지 않은 것을
+   * 첫 화면에서 권하면, 그 권유가 곧 보증으로 읽힌다.
+   */
+  /*
+   * 여기서 **쓸 수 있는 것들**과 **지금 고른 것**을 나눠 둔다.
+   *
+   * ⚠️ 종전 조건은 `r.isolated` 였는데, 그건 「설정 격리가 되는가」다. codex 는
+   * 설정 격리로는 안 걸리고 **세션 모드**로 걸린다(2026-08-16 실측) — 그래서
+   * 관문을 붙여 놓고도 목록에서 빠져 **아무도 고를 수 없었다.** 판정은
+   * `isGuardedRuntime` 한 곳으로 모은다.
+   */
+  const [acpRuntimes, setAcpRuntimes] = useState<Array<{ id: string; label: string }>>([]);
+  const [acpRuntimeId, setAcpRuntimeId] = useState<string | null>(null);
+  const [acpChatOpen, setAcpChatOpen] = useState(false);
+  /**
+   * 대화 패널이 **화면에 붙어 있나** — 열림과 다른 값이다.
+   *
+   * 열림은 「보여야 하나」이고 이것은 「그려져 있나」다. 닫을 때 둘이 같은
+   * 값이면 사라지는 애니메이션이 돌 자리가 없다(그래서 종전에는 안 돌았다).
+   */
+  const [chatMounted, setChatMounted] = useState(false);
+  /**
+   * 대화 칸의 폭은 **사용자가 정하고 이 컴퓨터가 기억한다.** 어떤 사람은 지도를
+   * 보면서 짧게 묻고 어떤 사람은 코드 덩어리를 읽는다 — 그 둘에 다 맞는 한 수는
+   * 없어서, 우리는 지도가 죽지 않을 선만 지킨다.
+   */
+  const chatWidth = useChatWidth();
+  useEffect(() => {
+    if (!isAcpBridgeAvailable()) return;
+    let cancelled = false;
+    /*
+     * **두 번 부른다** — 첫 화면이 뜨는 프레임에 로그인 확인(수백 ms)을 얹지
+     * 않는다. 먼저 찾은 것으로 그리고, 확인이 끝나면 고친다. 로그인이 안 된
+     * 도구는 그때 목록에서 빠진다(그 도구로 열면 인증 오류로 죽으므로).
+     */
+    const apply = (list: Awaited<ReturnType<typeof detectAcpRuntimes>>) => {
+      if (cancelled) return;
+      const usable = (list ?? [])
+        .filter((r) => r.state === 'ready' && r.verified && isGuardedRuntime(r.id, r.isolated))
+        .map((r) => ({ id: r.id, label: r.label }));
+      setAcpRuntimes(usable);
+      setAcpRuntimeId((current) =>
+        current && usable.some((r) => r.id === current) ? current : (usable[0]?.id ?? null),
+      );
+    };
+    void detectAcpRuntimes().then((fast) => {
+      apply(fast);
+      void detectAcpRuntimes({ probeLogin: true }).then(apply);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+  const acpRuntime = acpRuntimes.find((r) => r.id === acpRuntimeId) ?? null;
+  const acpRuntimeLabel = acpRuntime?.label ?? null;
+  /*
+   * 매 렌더 새 배열을 만들면 그 값을 받는 훅의 `start` 정체가 매번 바뀌고,
+   * 그것을 지켜보는 effect 가 계속 다시 돈다. 잠금은 세션 훅이 지지만
+   * (`startingRef`) **헛돌게 두지 않는 것은 여기 몫**이다.
+   */
+  const acpMcpServers = useMemo(
+    () => vaultMcpServers(agentServer.launch, gitVaultPath),
+    [agentServer.launch, gitVaultPath],
+  );
+
   const indexSlotFrames: ReadonlyArray<{ state: IndexPanelState; exiting: boolean }> =
     indexSlotSwap.leaving === null
       ? [{ state: renderedIndexState, exiting: false }]
@@ -2455,12 +2557,38 @@ export function HomePage() {
     };
   }, [selectedOntologyNode, spotlightOn, realmTitle, topologyV2Graph.nodes.length]);
 
+  /**
+   * ## 대화창은 **하나**다 (2026-08-16 소유자 확정)
+   *
+   * 여기에는 대화를 하는 갈래가 둘 있다 — 내 컴퓨터에 깔린 코딩 에이전트와
+   * 이야기하는 것(ACP), 그리고 내가 넣어 둔 API 키로 이야기하는 것. 종전에는
+   * **둘 다 자기 문과 자기 창을 갖고 있었고**, 열림 상태도 서로 몰랐다. 그래서
+   * 지도 오른쪽에 비슷하게 생긴 대화창이 둘 뜰 수 있었다(소유자 실보고:
+   * *"이 에이전트랑 다른 거지? 이 대화창은? 뭔가 헷갈리는데"*).
+   *
+   * 갈래가 둘인 것은 사실이고 그 자체는 문제가 아니다 — **문이 둘이고 창이
+   * 둘인 것**이 문제였다. 그래서 문을 하나로 모은다:
+   *
+   * - 코딩 에이전트가 잡히면 그쪽으로 간다(더 할 수 있는 게 많다 — 이 폴더의
+   *   MCP 도구를 그대로 쓰고, 사용자가 이미 쓰던 구독/설정을 탄다)
+   * - 없으면 키 갈래로 간다(코딩 에이전트를 안 쓰는 사람에게 남는 길)
+   * - **둘이 동시에 열리는 일은 없다**
+   */
+  const agentChatUsesRuntime = Boolean(acpRuntime && gitVaultPath);
+
   const openVaultAgent = useCallback(() => {
-    setVaultAgentOpen(true);
+    if (agentChatUsesRuntime) {
+      setChatMounted(true);
+      setAcpChatOpen(true);
+      setVaultAgentOpen(false);
+    } else {
+      setVaultAgentOpen(true);
+      setAcpChatOpen(false);
+    }
     // 물러나는 표면들 — 툭 사라지지 않게 각자의 닫힘 경로를 그대로 탄다.
     setOntologySearchOpen(false);
     setCreateNodeOpen(false);
-  }, []);
+  }, [agentChatUsesRuntime]);
 
   /**
    * 첫 마디의 화면 언어 — 패널의 빈 대화 칩과 **같은 키**를 읽는다. 두
@@ -2518,10 +2646,145 @@ export function HomePage() {
    */
   const closeVaultAgent = useCallback(() => {
     agentDockTouchedRef.current = true;
+    /*
+     * 닫는 순간에도 **그려진 채로 남는다** — 그래야 사라지는 애니메이션이 돌
+     * 자리가 있다. 다 사라지면 `Surface` 가 `onExited` 로 알려 주고 그때
+     * 언마운트한다(주소로 들어온 요청처럼 이 함수를 안 거친 경로도 있어서,
+     * 여기서 한 번 더 켜 둔다).
+     */
+    setChatMounted(true);
+    // 창이 하나이므로 닫는 것도 하나다 — 어느 갈래가 떠 있었든 이 한 번으로 닫힌다.
     setVaultAgentOpen(false);
+    setAcpChatOpen(false);
     setVaultAgentPrefill(null);
     setRouteState({ askIntent: null }, { replace: true });
   }, [setRouteState]);
+
+  /**
+   * 어느 갈래가 **그 하나뿐인 창**을 갖고 있나.
+   *
+   * 주소가 들고 온 「이거 물어봐」도 같은 규칙을 탄다 — 코딩 에이전트가 있으면
+   * 그 문장은 그쪽 작성 칸에 앉는다. 종전에는 이 요청만 키 갈래를 따로 열어서,
+   * 칩으로 여는 창과 노드에서 여는 창이 **서로 다른 창**이었다.
+   */
+  const {
+    runtime: runtimeChatOpen,
+    key: keyChatOpen,
+    /** 지금 대화창이 떠 있나 — 어느 갈래든. 칩의 눌림 상태가 이 값을 읽는다. */
+    open: agentChatOpen,
+  } = agentChatDoor({
+    hasRuntime: agentChatUsesRuntime,
+    runtimeOpen: acpChatOpen,
+    keyOpen: vaultAgentOpen,
+    hasAskIntent: Boolean(askPrefill),
+  });
+
+  /**
+   * 이 폴더를 분석하라는 지시 — **볼트 경로를 아는 빌더**가 만든다. i18n 문자열로
+   * 두면 경로가 없어서, 에이전트가 어느 폴더를 보라는 것인지 문장만으로는 모른다.
+   */
+  const analyzePrompt = useMemo(
+    () =>
+      buildAgentAnalyzePrompt({
+        vaultPath:
+          (vault.handle ? getTauriVaultRootPath(vault.handle) : null) ??
+          vault.handle?.name ??
+          null,
+      }),
+    [vault.handle],
+  );
+
+  /**
+   * 그 지시를 **대화 작성 칸에 앉힌다.** 보내는 것은 여전히 사람이 한다 —
+   * 노드의 「말로 시키기」와 같은 계약이고, 같은 상태를 쓴다.
+   */
+  const sendAnalyzeToAgent = useCallback(() => {
+    setVaultAgentPrefill({ text: analyzePrompt, nonce: Date.now() });
+    openVaultAgent();
+  }, [analyzePrompt, openVaultAgent]);
+
+  /**
+   * 첫 걸음 카드를 거둔다 — 마지막 걸음을 지났다는 뜻이다. 세션 단위라 앱을
+   * 새로 열면 다시 안내한다.
+   */
+  const [startStepsDismissed, setStartStepsDismissed] = useState(() =>
+    readFirstRunStarterDismissed(VAULT_START_STEPS_DISMISSED_KEY),
+  );
+  const dismissStartSteps = useCallback(() => {
+    writeFirstRunStarterDismissed(VAULT_START_STEPS_DISMISSED_KEY);
+    setStartStepsDismissed(true);
+  }, []);
+
+  /**
+   * **오른쪽에 선 것을 알림이 비켜선다** (2026-08-16 소유자 화면).
+   *
+   * 토스트는 화면 오른쪽 아래 고정이라, 지도 오른쪽에 대화 패널이 서면 그
+   * 16px 여백이 **패널 안쪽**이 된다 — 「만들었어요」 알림이 작성 칸 위에
+   * 그대로 얹혔다. 하단에서 이미 쓰던 예약 계약을 오른쪽에도 건다.
+   *
+   * 폭을 상수로 박지 않고 **실측한다**: 이 패널의 폭은 사용자가 끌어서 정한다.
+   */
+  useEffect(() => {
+    const root = document.documentElement;
+    const clear = () => {
+      root.style.removeProperty("--app-toast-right-offset");
+      root.style.removeProperty(RIGHT_DOCK_WIDTH_VAR);
+    };
+    if (!agentChatOpen) {
+      clear();
+      return undefined;
+    }
+    const apply = () => {
+      const dock = document.querySelector<HTMLElement>("[data-right-dock]");
+      const width = dock?.getBoundingClientRect().width ?? 0;
+      if (width === 0) {
+        clear();
+        return;
+      }
+      // 폭 자체를 적어 둔다 — 지도 위의 떠 있는 카드들이 오른쪽 벽을 이 값에서
+      // 구한다(`right-dock-reserve.ts`). 알림의 오프셋은 그 위에 여백을 더한 것.
+      root.style.setProperty(RIGHT_DOCK_WIDTH_VAR, `${Math.round(width)}px`);
+      root.style.setProperty(
+        "--app-toast-right-offset",
+        `${resolveToastRightOffset(Math.round(width))}px`,
+      );
+    };
+    apply();
+    // 폭은 끌 때마다 바뀌고, 패널은 열린 뒤에 붙는다 — 한 번만 재면 낡는다.
+    const dock = document.querySelector<HTMLElement>("[data-right-dock]");
+    const observer =
+      typeof ResizeObserver === "undefined" || !dock ? null : new ResizeObserver(apply);
+    if (dock) observer?.observe(dock);
+    window.addEventListener("resize", apply);
+    return () => {
+      observer?.disconnect();
+      window.removeEventListener("resize", apply);
+      clear();
+    };
+  }, [agentChatOpen]);
+
+  /*
+   * 설정의 Agents 칸에서 「이 도구로 대화 열기」를 누르면 여기로 온다
+   * (2026-08-16 검수: 「연결」하러 간 화면에 연결로 넘어갈 문이 없었다).
+   * 문은 여전히 하나다 — 실행기만 지목하고 여는 것은 같은 함수가 한다.
+   */
+  useEffect(() => {
+    return subscribeAgentChatIntent((runtimeId) => {
+      if (runtimeId) setAcpRuntimeId(runtimeId);
+      agentDockTouchedRef.current = true;
+      openVaultAgent();
+    });
+  }, [openVaultAgent]);
+
+  /*
+   * 스스로 여는 것도 **같은 문**을 탄다. 여기 있는 이유는 위 `openVaultAgent`
+   * 가 실행기 상태를 읽어야 해서다 — 이 효과가 갈래를 따로 고르면 그 순간
+   * 대화창이 둘이 된다.
+   */
+  useEffect(() => {
+    if (agentDockDefaultOpen !== true || agentDockTouchedRef.current) return;
+    openVaultAgent();
+  }, [agentDockDefaultOpen, openVaultAgent]);
 
   const handleSelect = useCallback(
     (
@@ -2768,6 +3031,25 @@ export function HomePage() {
     const handler = (event: globalThis.KeyboardEvent) => {
       if (event.key !== "Escape") return;
       if (event.defaultPrevented) return;
+      /*
+       * ⚠️ **대화창 안에서 누른 Esc 는 지도의 것이 아니다** (2026-08-16 검수).
+       *
+       * 이 사다리는 `window` 에서 듣고 `event.target` 을 안 봤다. 그래서 대화
+       * 작성 칸에 글을 쓰다가 Esc 를 누르면 — 한국어 입력을 취소하려는 손이
+       * 흔히 하는 일이다 — **뒤에 있는 지도의 선택이 풀렸다.** 사용자가 보고
+       * 있지도 않은 것이 바뀌는 것은 이 사다리가 약속한 「한 단계씩」이 아니다.
+       *
+       * 대화창은 자기 안의 것을 자기가 닫는다(지난 대화 목록). 그 안에서 더
+       * 닫을 것이 없으면 아무 일도 안 일어나는 편이 맞다 — 지도를 건드리는
+       * 것보다 낫다.
+       */
+      const target = event.target;
+      if (
+        target instanceof Element &&
+        target.closest('[data-testid="acp-chat-panel"], [data-testid="vault-agent-panel"]')
+      ) {
+        return;
+      }
       const action = resolveTopologyEscLadderAction({
         realmActive: resolvedRealmSlug !== null,
         selectedEdgeActive: selectedEdge !== null,
@@ -3131,10 +3413,6 @@ export function HomePage() {
     }
   }, [vault, toast, t, activeLocale]);
 
-  const checklistProjectCount = useMemo(
-    () => ontologyInsight?.nodes.filter((node) => node.kind === "project").length ?? 0,
-    [ontologyInsight],
-  );
   // Guardian I-1 — 도메인 크기 단일 진실원(그래프 BFS). INDEX 트리 행과
   // /projects·인사이트가 같은 숫자를 말하게 한다.
   const indexDomainCensus = useMemo(
@@ -3417,7 +3695,26 @@ export function HomePage() {
       // 에이전트 패널이 자리를 차지하면 화면 오른쪽에 붙는 고정 표면(선택-노드
       // 인스펙터)도 그만큼 안쪽으로 선다. 근거(노드)와 상대(에이전트)가 서로를
       // 덮으면 "지도를 같이 보며" 가 성립하지 않는다 — 규칙은 globals.css.
-      data-agent-panel-open={vaultAgentOpen || Boolean(askPrefill) ? 'true' : 'false'}
+      data-agent-panel-open={agentChatOpen ? 'true' : 'false'}
+      /*
+       * ⚠️ **그 규칙이 재는 폭이 틀려 있었다** (2026-08-16 검수).
+       *
+       * globals.css 의 예약은 `var(--agent-panel-width)` — 키 갈래 패널이 쓰는
+       * `clamp(320px, 26vw, 420px)` 이다. 그런데 코딩 에이전트 갈래는 폭을
+       * **사용자가 끌어서** 정하고(320~968px) 그 토큰에 아무것도 안 쓴다.
+       * 둘 다 `data-agent-panel-open='true'` 를 켜므로, 규칙은 엉뚱한 수로
+       * 자리를 비웠다: 1512 폭에서 26vw = 393 인데 패널은 420 이라 인스펙터가
+       * 27px 겹쳐 **폭 조절 손잡이를 덮었고**, 사용자가 넓혀 두면 인스펙터가
+       * 패널 안으로 통째로 들어갔다.
+       *
+       * 규칙을 고치는 대신 **그 규칙이 읽는 값을 맞는 값으로 채운다** — 두
+       * 갈래는 동시에 열리지 않으므로 이 덮어쓰기가 키 갈래를 건드리지 않는다.
+       */
+      style={
+        runtimeChatOpen
+          ? ({ '--agent-panel-width': `${chatWidth.width}px` } as CSSProperties)
+          : undefined
+      }
       className="relative flex h-full w-full overflow-hidden bg-[color:var(--color-canvas)]"
     >
       {/* 좌측 64px 내비 레일은 perf/persistent-shell 이후 `app/[locale]/layout.tsx`
@@ -3704,12 +4001,12 @@ export function HomePage() {
                         <ChromeChip
                           onClick={() =>
                             (agentDockTouchedRef.current = true,
-                            vaultAgentOpen ? setVaultAgentOpen(false) : openVaultAgent())
+                            agentChatOpen ? closeVaultAgent() : openVaultAgent())
                           }
                           aria-label={tAgent('title')}
-                          aria-pressed={vaultAgentOpen}
+                          aria-pressed={agentChatOpen}
                           data-testid="topology-vault-agent-toggle"
-                          active={vaultAgentOpen}
+                          active={agentChatOpen}
                           compact={topologyUtilityChromeCompact}
                           icon={<MessageCircle />}
                         >
@@ -4510,17 +4807,14 @@ export function HomePage() {
                    * `docsFoundCount`). 화면을 새로 만든 게 아니라 이미 있던
                    * 화면에 도달하게 한 것이다 — 팝업 신설 0.
                    */
-                  canCreateNode ? (
-                    <VaultStartChecklist
-                      projectCount={checklistProjectCount}
-                      relationCount={topologyTotalRelations}
+                  canCreateNode && !startStepsDismissed ? (
+                    <VaultStartSteps
                       agentConnected={agentConnect.status.kind === "connected"}
+                      acpRuntimeLabel={acpRuntimeLabel}
                       onCreateNode={openCreateNodeWithKind}
-                      onOpenAgentConnect={agentConnectLauncher.open}
-                      // '기존 폴더 선택'으로 빈 폴더를 연 사용자에게 '빈
-                      // 폴더로 새로 시작' 과 같은 스타터를 버튼으로 제공한다
-                      // (2026-07-24). 문서가 이미 있으면 미전달 → 종전
-                      // '직접 만들기' 행 유지.
+                      // '기존 폴더 선택'으로 빈 폴더를 연 사용자에게 '빈 폴더로
+                      // 새로 시작' 과 같은 스타터를 버튼으로 제공한다
+                      // (2026-07-24). 문서가 이미 있으면 미전달.
                       onScaffoldStarter={
                         (vault.manifest?.docs.length ?? 0) === 0
                           ? handleScaffoldStarter
@@ -4528,9 +4822,9 @@ export function HomePage() {
                       }
                       scaffolding={starterScaffolding}
                       /*
-                       * 문서가 있는 폴더면 1단이 「내 문서 N개로 지도 만들기」로
-                       * 바뀐다 — 빈 폴더의 1순위(에이전트 연결)는 빈 폴더 맥락의
-                       * 지시였고, 여기서는 사용자가 이미 가진 것이 첫 걸음이다.
+                       * 문서가 있는 폴더면 그것이 첫 걸음이다 — 빈 폴더의
+                       * 1순위(에이전트 연결)는 빈 폴더 맥락의 순서였고, 이미
+                       * 가진 것이 있는 사람에게 첫 걸음은 그 가진 것이다.
                        */
                       docsFoundCount={bootstrapPlan?.elements.length ?? 0}
                       onStartFromDocs={
@@ -4543,15 +4837,32 @@ export function HomePage() {
                        * 문자열이라 경로가 없었고, 그래서 에이전트가 어느 폴더를
                        * 보라는 것인지 문장만으로는 알 수 없었다.
                        */
-                      analyzePrompt={buildAgentAnalyzePrompt({
-                        vaultPath:
-                          (vault.handle ? getTauriVaultRootPath(vault.handle) : null) ??
-                          vault.handle?.name ??
-                          null,
-                      })}
-                      // C9 — 힌트가 실제 `.mcp.json` 존재를 반영하도록 실파일
-                      // 상태를 넘긴다("이미 준비됨" 허위 단언 제거).
-                      mcpConfigReady={vault.agentConfigStatus?.mcpJson ?? false}
+                      analyzePrompt={analyzePrompt}
+                      /*
+                       * 붙여넣을 곳이 **이 앱 안에** 있으면 복사를 시키지 않는다
+                       * (2026-08-16 소유자: *"두번짼 뭔지도 모르겠고"*). 지시를
+                       * 대화 작성 칸에 앉히고, 보내는 것은 여전히 사람이 한다.
+                       */
+                      onSendAnalyzeToAgent={
+                        agentChatUsesRuntime ? sendAnalyzeToAgent : null
+                      }
+                      // 2026-08-16 소유자 실보고 — 카드가 INDEX 오른쪽 가장자리와
+                      // 겹쳐 보였다. INDEX 는 지도 칼럼을 좁히지 않고 그 **위에
+                      // 뜨므로**(오른쪽 에이전트 패널은 flex 형제라 실제로 좁힌다)
+                      // 카드의 중앙 계산에서 혼자 빠진다. 그 폭을 알려 준다.
+                      indexExpanded={renderedIndexState === "expanded"}
+                      onFinish={dismissStartSteps}
+                      /*
+                       * 이 걸음의 이름은 **연결**이고, 연결이 사는 곳은 설정의
+                       * Agents 칸이다 — 무엇이 잡혔는지 보고, 무엇을 쓸지 고르는
+                       * 자리다(2026-08-16 소유자 지적).
+                       *
+                       * ⚠️ 종전에는 잡힌 것이 있으면 **대화**를 열었다. 그러면
+                       * 「연결」이라고 적힌 버튼이 대화를 여는 것이라 이름과 한
+                       * 일이 어긋난다. 대화로 가는 문은 따로 있다(유틸 레인의
+                       * 「에이전트」 칩 · 다음 걸음의 「에이전트에게 시키기」).
+                       */
+                      onOpenAgentConnect={() => requestSettingsView("runtimes")}
                     />
                   ) : (
                   <TopologyEmptyState
@@ -5417,8 +5728,14 @@ export function HomePage() {
           곡선이 된다. 따로 맞춘 두 애니메이션이 아니라 물리적으로 하나다. */}
       {llmBridgeAvailable ? (
         <VaultAgentPanel
-          // 주소가 「이 개념을 물어보라」 를 들고 있으면 그것만으로 열린다.
-          open={vaultAgentOpen || Boolean(askPrefill)}
+          /*
+           * 주소가 「이 개념을 물어보라」 를 들고 있으면 그것만으로 열린다.
+           *
+           * ⚠️ **코딩 에이전트 갈래가 창을 갖고 있으면 이쪽은 열리지 않는다** —
+           * 대화창은 하나다(2026-08-16). 이 조건이 없으면 주소로 들어온 요청이
+           * 두 번째 창을 띄운다.
+           */
+          open={keyChatOpen}
           onClose={closeVaultAgent}
           vaultPath={gitVaultPath}
           insight={ontologyInsight}
@@ -5435,6 +5752,70 @@ export function HomePage() {
           downloadHref={`/${activeLocale}/download/`}
           prefillRequest={vaultAgentPrefill ?? askPrefill}
         />
+      ) : null}
+      {/*
+        앱 안에서 **사용자의 코딩 에이전트**와 나누는 대화. 위 패널(키를 넣는
+        갈래)과 **같은 자리의 형제**다 — 새 표면을 만들지 않는다.
+
+        「지도가 주」(2026-07-27 적용 규칙)는 그대로다: 이 패널은 지도 옆에
+        서고, 지도를 덮지 않는다.
+      */}
+      {(runtimeChatOpen || chatMounted) && acpRuntime && gitVaultPath ? (
+        <Surface
+          open={runtimeChatOpen}
+          as="aside"
+          origin="right"
+          /*
+           * ⚠️ **여기가 죽은 코드였다** (2026-08-16 검수에서 적발).
+           *
+           * 종전에는 이 블록의 마운트 조건과 `open` 이 **같은 값**이었다. 그래서
+           * 닫기를 누르면 같은 프레임에 통째로 사라졌고, 퇴장 애니메이션은 한
+           * 번도 재생된 적이 없으며 이 콜백도 불린 적이 없다 — 「사라지는 동안」
+           * 이 존재하지 않았다.
+           *
+           * 마운트와 열림을 갈라 둔다: 열 때 마운트하고, 다 사라진 뒤에 언마운트.
+           * 이 저장소가 표면마다 지키는 「퇴장은 두 프레임짜리 일」 그대로다.
+           */
+          onExited={() => setChatMounted(false)}
+          /*
+           * ⚠️ 종전 폭은 `var(--topology-agent-panel-width, 360px)` 였는데 **그
+           * 토큰은 존재하지 않는다** — 늘 폴백 360px 이 쓰였고, 아무도 안 쓰는
+           * 토큰 이름이 규격처럼 보이고 있었다(`design.md`: 아무도 안 쓰는
+           * 토큰은 규격이 아니라 틀린 정보다).
+           *
+           * 그다음 폭은 `w-[420px] xl:w-[480px]` 두 리터럴이었다. 그 둘도
+           * **누구의 답도 아니었다** — 이제 사용자가 왼쪽 모서리를 끌어 정하고,
+           * 우리는 지도가 지켜야 할 몫만 지킨다(`panel-width.ts`). 화면 폭에
+           * 따른 분기가 사라지므로 `xl:` 도 없앤다.
+           */
+          style={{ width: chatWidth.width }}
+          /* 화면 오른쪽에 선 것 — 알림이 이 폭만큼 비켜선다(위 효과). */
+          data-right-dock="chat"
+          className="relative flex min-h-0 shrink-0 flex-col border-l border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] p-4"
+        >
+          <AcpChatResizeHandle
+            width={chatWidth.width}
+            onWidth={chatWidth.setWidth}
+            onCommit={chatWidth.commitWidth}
+          />
+          <AcpChatPanel
+            /*
+             * 실행기를 바꾸면 **패널을 다시 만든다.** 세션은 프로세스 하나에
+             * 묶여 있어서, 같은 패널에서 도구만 갈아 끼우면 「지금 무엇이
+             * 살아 있나」가 흐려진다. 다시 만드는 편이 싸고 분명하다.
+             */
+            key={acpRuntime.id}
+            runtimeId={acpRuntime.id}
+            runtimeLabel={acpRuntime.label}
+            runtimes={acpRuntimes}
+            onRuntimeChange={setAcpRuntimeId}
+            vaultRoot={gitVaultPath}
+            mcpServers={acpMcpServers}
+            // 노드에서 건너온 문장은 **여기** 작성 칸에 앉는다 — 보내지는 않는다.
+            prefillRequest={vaultAgentPrefill ?? askPrefill}
+            onClose={closeVaultAgent}
+          />
+        </Surface>
       ) : null}
     </main>
   );

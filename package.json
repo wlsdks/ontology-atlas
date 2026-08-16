@@ -54,6 +54,8 @@
     "tauri": "tauri",
     "desktop:dev": "pnpm tauri dev",
     "mcp:build-binary": "node scripts/build-mcp-binary.mjs",
+    "acp:registry": "node scripts/build-acp-registry.mjs",
+    "acp:registry:check": "node scripts/build-acp-registry.mjs --check",
     "mcp:verify-binary": "node scripts/verify-mcp-binary.mjs",
     "desktop:build:app": "node scripts/clean-tauri-macos-apps.mjs && pnpm mcp:build-binary && pnpm tauri build --bundles app",
     "desktop:build:app:local": "node scripts/clean-tauri-macos-apps.mjs && pnpm mcp:build-binary && pnpm tauri build --bundles app --config '{\"bundle\":{\"createUpdaterArtifacts\":false}}'",

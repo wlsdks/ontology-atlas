@@ -398,7 +398,23 @@ export function Select({
   const anchorStyle: CSSProperties | undefined = anchor
     ? {
         left: anchor.left,
-        width: anchor.width,
+        /*
+         * **목록이 자기 항목보다 좁아지지 않는다** (2026-08-16 소유자 실보고).
+         *
+         * 종전엔 `width: anchor.width` 로 트리거 폭에 못 박았다. 좁은 자리에
+         * 놓인 셀렉트에서는 그 폭이 곧 목록 폭이 되어 **고를 것들이 잘렸다** —
+         * 실물에서 `Read Only` 가 `Rea…`, `Agent` 가 `Ag…` 로 나왔다. 고를 수
+         * 없는 목록은 목록이 아니다.
+         *
+         * 트리거 폭은 이제 **바닥**이고(그보다 좁아지지 않는다) 내용이 더 넓으면
+         * 그만큼 자란다. 넓은 자리의 셀렉트는 종전과 똑같다 — 이 값은 늘리기만
+         * 하고 줄이지 않는다.
+         *
+         * 상한을 두는 이유: 항목 하나가 유난히 길면 목록이 창을 가로지른다.
+         * 화면 가장자리 여백(`VIEWPORT_PAD`)을 남긴다.
+         */
+        minWidth: anchor.width,
+        maxWidth: `calc(100vw - ${VIEWPORT_PAD * 2}px)`,
         // 상한 둘 중 작은 쪽. 행을 아직 못 쟀으면(첫 레이아웃) 자리 상한만 쓴다.
         maxHeight: growth ? growth.height : anchor.availableHeight,
         ...(anchor.top !== null ? { top: anchor.top } : {}),
@@ -448,7 +464,7 @@ export function Select({
               onMouseEnter={() => setActiveIndex(index)}
               onClick={() => commit(index)}
               className={cn(
-                "flex cursor-pointer items-start gap-2 rounded-chip px-2.5 py-2 text-caption",
+                "flex cursor-pointer items-start gap-2 rounded-chip px-2.5 py-2 text-body",
                 isActive
                   ? "bg-[color:var(--color-indigo-a16)] text-[color:var(--color-text-primary)]"
                   : "text-[color:var(--color-text-secondary)]",
@@ -462,7 +478,11 @@ export function Select({
                 )}
               </span>
               <span className="min-w-0 flex-1">
-                <span className="block truncate">{option.label}</span>
+                {/*
+                  항목 이름은 **자르지 않는다.** 목록이 이제 내용만큼 자라므로
+                  자를 이유가 없고, 자르면 고를 수 없는 목록이 된다.
+                */}
+                <span className="block whitespace-nowrap">{option.label}</span>
                 {option.description ? (
                   <span className="mt-0.5 block truncate text-label text-[color:var(--color-text-quaternary)]">
                     {option.description}
@@ -494,7 +514,7 @@ export function Select({
         onClick={() => (open ? setOpen(false) : openList())}
         onKeyDown={onKeyDown}
         className={cn(
-          "flex w-full items-center gap-2 rounded-card border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-3 text-left text-caption text-[color:var(--color-text-secondary)] outline-none transition-colors hover:border-[color:var(--color-border-strong)] focus-visible:outline-none focus-visible:border-[color:var(--color-indigo-a46)] focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a24)] data-[state=open]:border-[color:var(--color-indigo-a46)]",
+          "flex w-full items-center gap-2 rounded-card border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-3 text-left text-body text-[color:var(--color-text-secondary)] outline-none transition-colors hover:border-[color:var(--color-border-strong)] focus-visible:outline-none focus-visible:border-[color:var(--color-indigo-a46)] focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a24)] data-[state=open]:border-[color:var(--color-indigo-a46)]",
           // 비활성 한 세트는 값 층에서 — 손으로 적으면 커서·흐림만 남고
           // 호버 무력화가 빠진다(실제로 빠져 있던 자리다).
           CONTROL_DISABLED_CLASS,

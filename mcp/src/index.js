@@ -6203,8 +6203,39 @@ function summarizeWrite(name, args, result) {
       return okRows > 0 ? { target: '(batch)', summary: `add_concepts ${okRows}행 성공` } : null;
     }
     case 'add_relations': {
-      const okRows = (result?.relations ?? []).filter((row) => row?.ok).length;
-      return okRows > 0 ? { target: '(batch)', summary: `add_relations ${okRows}행 성공` } : null;
+      const rows = result?.relations ?? [];
+      const okRows = rows.filter((row) => row?.ok).length;
+      if (okRows === 0) return null;
+      /*
+       * ⚠️ **이유를 버리지 않는다** (2026-08-16 지킴이 자리 적발).
+       *
+       * 배치 행에도 `why` 가 있고 `depends_on` 은 런타임이 그것을 **필수로**
+       * 요구한다. 그런데 이 분기가 `{ target, summary }` 만 돌려주는 바람에,
+       * 이유가 frontmatter 에는 들어가고 활동 기록에서만 사라졌다.
+       *
+       * 그 결과가 실제로 관측됐다: 살아있는 볼트의 활동 15줄 전부 `why: null`
+       * 이었고, 그중 둘이 바로 이 경로였다. 그 상태로 「기록에 이유가 없다」를
+       * 근거 삼아 다른 결론을 낼 뻔했다.
+       *
+       * 행마다 이유가 다를 수 있으므로 **성공한 행의 이유만** 모아 잇는다.
+       * 같은 이유가 반복되면 한 번만 적는다 — 열 행이 같은 이유일 때 그것을
+       * 열 번 적으면 읽을 수 없는 줄이 된다.
+       */
+      // ⚠️ 걸러 낸 **뒤에** 번호를 매기면 원본 행과 짝이 어긋난다. 원본 순서를
+      // 유지한 채 성공한 행에서만 이유를 꺼낸다.
+      const reasons = [
+        ...new Set(
+          rows
+            .map((row, index) => (row?.ok ? args.relations?.[index]?.why : null))
+            .filter((why) => typeof why === 'string' && why.trim().length > 0)
+            .map((why) => why.trim()),
+        ),
+      ];
+      return {
+        target: '(batch)',
+        summary: `add_relations ${okRows}행 성공`,
+        why: reasons.length > 0 ? reasons.join(' · ') : null,
+      };
     }
     case 'patch_concept':
       return { target: args.slug, summary: `patch_concept ${args.slug}` };
@@ -9161,7 +9192,7 @@ function validateVaultTool({ repoRoot } = {}) {
   // (default: active resolved repository root). Surfaced here because it is a vault-health signal the
   // agent already runs validate_vault for at first-contact. The agent fixes via
   // patch_concept (correct the path) or by removing the stale entry.
-  const driftRoot = repoRoot ? resolve(repoRoot) : REPO_ROOT;
+  const driftRoot = repoRoot ? assertScanRootAllowed(repoRoot, 'repoRoot') : REPO_ROOT;
   // 근거 없는 저장소 루트에 대고는 **재지 않는다.** 재면 그 볼트와 아무 상관
   // 없는 디렉터리에 없는 파일이 전부 "drift" 로 잡혀, 멀쩡한 볼트가
   // `needs_attention` 이 된다. 안 본 것은 0이 아니라 *안 봤다* 이므로
@@ -9386,11 +9417,59 @@ function isPathLikeGraphRef(ref) {
 // R16 (b3) — analyze_repo_structure thin wrapper. side effect 0 — vault
 // frontmatter 절대 안 건드림. reviewPlan + independent qualification 뒤 반환된
 // exact writePlan만 별도 batch writer의 진실 진입점이다.
+/**
+ * 훑을 수 있는 자리인가 — **볼트나 그 저장소 안이어야 한다.**
+ *
+ * ## 왜 (2026-08-16 검수, 실측으로 확인)
+ *
+ * `analyze_repo_structure` · `infer_imports` · `index_project` · `validate_vault`
+ * 는 `rootPath`(또는 `repoRoot`)를 받아 `resolve()` 만 하고 **아무 경계도 안
+ * 봤다.** 그래서 이런 호출이 그대로 성공했다:
+ *
+ * ```
+ * analyze_repo_structure {"rootPath":"/etc"}  → ok, 디렉터리 구조를 돌려줌
+ * ```
+ *
+ * 게다가 이 넷은 **읽기 도구**라 `OATLAS_READ_ONLY` 가 안 막는다. 그 모드의
+ * 설명은 「등록한 사람이 볼트 주인이 아닐 때 권한다」인데, 쓰기는 못 해도
+ * **디스크 전체를 훑을 수는 있는** 상태였다.
+ *
+ * 이건 이 제품이 사용자에게 한 약속과 정면으로 부딪힌다:
+ * *"사용자 디스크에 있는 비밀번호·인증 키 같은 파일은 절대 자동으로 훑지
+ * 않는다"* (`local-first.md`), *"사용자 디스크를 자동으로 훑지 않는다"*
+ * (신뢰 헌장). 프롬프트 한 줄로 유도되는 도구 호출이 그 약속을 깬다.
+ *
+ * 그래서 **볼트 아니면 그 볼트의 저장소** 안만 허용한다. 심볼릭 링크로
+ * 빠져나가는 길을 막으려고 비교 전에 실제 경로로 편다 — `absorb_document` 가
+ * 이미 쓰는 문법 그대로다.
+ */
+function assertScanRootAllowed(target, argName = 'rootPath') {
+  const canonical = existsSync(target) ? realpathSync(target) : resolve(target);
+  const roots = [];
+  for (const root of [VAULT_ROOT, REPO_ROOT]) {
+    try {
+      roots.push(existsSync(root) ? realpathSync(root) : resolve(root));
+    } catch {
+      roots.push(resolve(root));
+    }
+  }
+  const inside = roots.some((root) => {
+    if (canonical === root) return true;
+    const rel = relative(root, canonical);
+    return rel !== '' && rel !== '..' && !rel.startsWith(`..${sep}`) && !isAbsolute(rel);
+  });
+  if (inside) return canonical;
+  throw new Error(
+    `${argName} must be inside the vault (${roots[0]}) or its repository (${roots[1]}). ` +
+      'This server only reads the folder it was opened for.',
+  );
+}
+
 function analyzeRepoStructureTool({ rootPath, maxDepth, ignore, proposal, qualification } = {}) {
   requireOptionalNonBlankString(rootPath, 'rootPath');
   requireOptionalNonNegativeInteger(maxDepth, 'maxDepth', { max: 10 });
   requireOptionalStringArray(ignore, 'ignore', { max: IGNORE_ARRAY_MAX_ITEMS });
-  const target = rootPath ? resolve(rootPath) : REPO_ROOT;
+  const target = rootPath ? assertScanRootAllowed(rootPath) : REPO_ROOT;
   const sourceDigest = proposal == null
     ? undefined
     : inspectProjectSource(target).fingerprint;
@@ -9513,7 +9592,7 @@ function inferImportsTool({
   if (reviewMode === 'next' && reconcile === false) {
     throw new Error('reviewMode "next" requires reconcile:true because the review queue is a vault diff.');
   }
-  const target = rootPath ? resolve(rootPath) : REPO_ROOT;
+  const target = rootPath ? assertScanRootAllowed(rootPath) : REPO_ROOT;
   const result = inferImports(target, {
     sourceFolders,
     ignore,
@@ -9724,7 +9803,7 @@ function indexProjectTool({ rootPath, maxDepth, maxFiles, threshold, skipImports
   requireOptionalPositiveInteger(threshold, 'threshold');
   requireOptionalBoolean(skipImports, 'skipImports');
 
-  const target = rootPath ? resolve(rootPath) : REPO_ROOT;
+  const target = rootPath ? assertScanRootAllowed(rootPath) : REPO_ROOT;
   let imports = null;
   let importAnalysis = null;
   let thresholdApplied = null;
@@ -9990,6 +10069,34 @@ function renameConcept({ oldSlug, newSlug, confirm = false, overwrite = false, e
   requireOptionalNonNegativeNumber(expected_mtime, 'expected_mtime');
   if (oldSlug === newSlug) {
     throw new Error('oldSlug and newSlug are identical.');
+  }
+  /*
+   * ⚠️ **대소문자만 다른 이름은 여기서 막는다** (2026-08-16 검수 — 실제로
+   * 문서가 사라지는 것을 재현했다).
+   *
+   * 위 검사는 문자열 비교라 `Auth` 와 `auth` 를 다른 것으로 본다. 그런데
+   * macOS·Windows 의 파일 시스템은 그 둘을 **같은 파일**로 보므로, 새 이름으로
+   * 쓰고 옛 이름을 지우면 방금 쓴 그것이 지워졌다 — 그리고 이 도구는
+   * `ok: true, moved: true` 를 돌려줬다. 실측:
+   *
+   * ```
+   * rename_concept{oldSlug:"Auth", newSlug:"auth", confirm:true, overwrite:true}
+   *   → ok:true, moved:true, backlinkUpdates:{totalUpdated:1}
+   *   → 디스크에서 Auth.md 도 auth.md 도 없어짐. 참조는 매달린 채 남음
+   * ```
+   *
+   * 쓰기 층에도 막는 장치를 뒀지만(`applyAllOrNothing` 의 같은-파일 판정),
+   * 그것만 있으면 결과가 **반만 된 이름 바꾸기**가 된다: 참조는 새 이름을
+   * 가리키는데 디스크의 파일 이름은 그대로다. 반쯤 된 것을 성공이라고 말하지
+   * 않는다 — 여기서 못 한다고 분명히 말하고, 할 수 있는 길을 알려 준다.
+   */
+  if (oldSlug.toLowerCase() === newSlug.toLowerCase()) {
+    throw new Error(
+      `oldSlug and newSlug differ only in letter case ("${oldSlug}" → "${newSlug}"). ` +
+        'On macOS and Windows those are the same file, so this rename would delete the ' +
+        'document instead of renaming it. Rename through a different name first ' +
+        `(for example "${newSlug}-tmp"), then to "${newSlug}".`,
+    );
   }
   if (!vaultSlugExists(VAULT_ROOT, oldSlug)) {
     throw new Error(missingSlugMessage('Source slug does not exist in vault', oldSlug));

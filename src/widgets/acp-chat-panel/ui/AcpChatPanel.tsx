@@ -1,0 +1,907 @@
+'use client';
+
+import { ArrowUp, ChevronRight, History, Square, SquarePen, X } from 'lucide-react';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { useTranslations } from 'next-intl';
+
+import { Chip, IconButton, RowButton, Select, Surface, Textarea } from '@/shared/ui';
+import { Tooltip, TooltipProvider } from '@/shared/ui/tooltip';
+import { formatDate } from '@/shared/lib/format-date';
+import { badgeClass } from '@/shared/ui/badge-class';
+import { controlClass } from '@/shared/ui/control-class';
+import { ICON_SIZE } from '@/shared/ui/icon-size';
+import { useHeldValue } from '@/shared/lib/use-presence';
+import {
+  COMPOSER_MIN_ROWS,
+  composerGrowth,
+  composerMaxRows,
+  snapScrollTop,
+} from '@/shared/lib/composer-growth';
+import { cn } from '@/shared/lib/cn';
+import { useAcpSession, type AcpEvent } from '@/features/acp-session/model/use-acp-session';
+import { readAcpTrouble } from '@/features/acp-session/model/acp-trouble';
+
+import { VAULT_MCP_SERVER_NAME } from '@/features/acp-session/model/vault-mcp-server';
+
+import { AcpPermissionCard } from './AcpPermissionCard';
+import { groupEvents } from './group-events';
+import { toolLabel } from './tool-label';
+
+/**
+ * 대화 안의 마크다운 — **대화 밀도**로 맞춘 값 한 벌.
+ *
+ * 문서 화면(`ProjectDetailPage`)에도 같은 성격의 문자열이 있지만 그건 본문
+ * 페이지용이라 한 단 크고 제목 여백이 세 배다. 셋째 소비처가 생기면 그때
+ * 공용으로 올린다 — 지금 둘은 **정말 다른 밀도**라 합치면 한쪽이 망가진다.
+ */
+const CHAT_MARKDOWN = [
+  'break-keep text-body-lg leading-body-lg text-[color:var(--color-text-secondary)]',
+  '[&>*:first-child]:mt-0 [&>*:last-child]:mb-0',
+  '[&_p]:mb-2',
+  '[&_ul]:my-2 [&_ul]:pl-[18px] [&_ol]:my-2 [&_ol]:pl-[18px]',
+  '[&_li]:mb-1 [&_li]:list-disc [&_li]:pl-0.5 [&_li::marker]:text-[color:var(--color-text-quaternary)]',
+  '[&_code]:rounded-micro [&_code]:border [&_code]:border-[color:var(--color-border-soft)]',
+  '[&_code]:px-1 [&_code]:py-0.5 [&_code]:font-mono [&_code]:text-label [&_code]:text-[color:var(--color-text-tertiary)]',
+  '[&_pre]:my-2 [&_pre]:overflow-x-auto [&_pre]:rounded-card [&_pre]:border',
+  '[&_pre]:border-[color:var(--color-border-soft)] [&_pre]:bg-[color:var(--color-overlay-1)] [&_pre]:p-2.5',
+  '[&_pre_code]:border-0 [&_pre_code]:p-0',
+  '[&_strong]:font-[var(--font-weight-strong)] [&_strong]:text-[color:var(--color-text-primary)]',
+  '[&_h1]:mt-3 [&_h1]:mb-1.5 [&_h1]:text-body-lg [&_h1]:font-[var(--font-weight-strong)] [&_h1]:text-[color:var(--color-text-primary)]',
+  '[&_h2]:mt-3 [&_h2]:mb-1.5 [&_h2]:text-body-lg [&_h2]:font-[var(--font-weight-strong)] [&_h2]:text-[color:var(--color-text-primary)]',
+  '[&_h3]:mt-2.5 [&_h3]:mb-1 [&_h3]:text-body [&_h3]:font-[var(--font-weight-strong)] [&_h3]:text-[color:var(--color-text-primary)]',
+  '[&_a]:text-[color:var(--color-indigo-accent)] [&_a]:underline-offset-2',
+].join(' ');
+
+/**
+ * 앱 안에서 사용자의 코딩 에이전트와 나누는 대화.
+ *
+ * ## 이 화면이 하는 일 하나
+ *
+ * **지금 보고 있는 볼트에 대해, 이미 쓰고 있는 에이전트에게 그 자리에서 묻는다.**
+ * 그래서 새로 마련할 것이 없다 — 키도, 설정 파일도, 터미널 왕복도.
+ *
+ * ## 주목 순서
+ *
+ * 권한 카드 > 대화 > 작성 칸. 권한 카드가 떠 있는 동안 에이전트는 멈춰 있으므로
+ * 그것이 이 화면에서 가장 급한 것이다. 그래서 목록 **위**가 아니라 작성 칸
+ * **바로 위**에 둔다 — 눈과 손이 이미 가 있는 자리다.
+ *
+ * ## 생각과 말을 구별한다
+ *
+ * 에이전트의 「생각」은 답이 아니다. 같은 무게로 그리면 사용자가 중간 과정을
+ * 결론으로 읽는다. 그래서 흐리고 작게 둔다 — 숨기지는 않는다(무슨 일이 일어나는지
+ * 보이는 것이 기다림을 견디게 한다).
+ */
+export function AcpChatPanel({
+  runtimeId,
+  runtimeLabel,
+  vaultRoot,
+  mcpServers,
+  runtimes = [],
+  onRuntimeChange,
+  prefillRequest,
+  onClose,
+}: {
+  runtimeId: string;
+  runtimeLabel: string;
+  vaultRoot: string | null;
+  mcpServers?: unknown[];
+  /**
+   * 지금 고를 수 있는 실행기들 — **관문이 있는 것만** 담겨 온다
+   * (`isGuardedRuntime`). 하나뿐이면 고를 것이 없으므로 이름만 그린다.
+   */
+  runtimes?: ReadonlyArray<{ id: string; label: string }>;
+  onRuntimeChange?: (runtimeId: string) => void;
+  /**
+   * 바깥(지도의 노드·주소)에서 건너온 **문장 하나**. 앉기만 하고 보내지
+   * 않는다 — 사용자가 고쳐 보내거나 지울 수 있어야 한다.
+   */
+  prefillRequest?: { text: string; nonce: number } | null;
+  onClose?: () => void;
+}) {
+  const t = useTranslations('acpChat');
+  const {
+    status,
+    events,
+    error,
+    diagnostics,
+    pending,
+    sessions,
+    choices,
+    chooseModel,
+    chooseMode,
+    start,
+    send,
+    cancel,
+    switchSession,
+  } = useAcpSession({ runtimeId, vaultRoot, mcpServers });
+  /** 어댑터가 준 것을 사람이 읽는 갈래로 옮긴다 — 못 알아보면 `unknown`. */
+  const trouble = error ? readAcpTrouble(error) : null;
+  const [draft, setDraft] = useState('');
+  const [historyOpen, setHistoryOpen] = useState(false);
+  /** 작성 칸에 손이 가 있나 — 단축키 안내를 그때만 띄운다. */
+  const [composerFocused, setComposerFocused] = useState(false);
+  const listRef = useRef<HTMLDivElement | null>(null);
+  const inputRef = useRef<HTMLTextAreaElement | null>(null);
+  /**
+   * 자람을 재는 **오프스크린 미러**. 보이는 칸의 높이를 `''` 로 되돌려
+   * `scrollHeight` 를 읽는 흔한 방법은 매 프레임 상자를 접었다 펴므로 자람이
+   * 전이가 아니라 계단이 된다. 미러는 같은 타이포·같은 폭이라 같은 줄 나눔이
+   * 나오고, 보이는 상자는 한 번도 되돌려지지 않는다.
+   */
+  const mirrorRef = useRef<HTMLTextAreaElement | null>(null);
+  /** 이 패널 자체 — 작성 칸의 상한을 **이 칸의 높이**에서 구하려고 잰다. */
+  const panelRef = useRef<HTMLElement | null>(null);
+
+  /**
+   * 바깥에서 건너온 문장을 작성 칸에 **앉힌다.**
+   *
+   * 효과가 아니라 렌더 중 조정으로 받는다(리액트의 "prop 이 바뀌면 state 를
+   * 맞추기" 패턴) — 효과로 받으면 한 프레임은 빈 칸이 그려지고, 그 한 프레임이
+   * 정확히 「눌렀는데 늦게 반응한다」로 보인다. 옆 패널이 쓰는 문법과 같다.
+   */
+  const prefillNonce = prefillRequest?.nonce ?? null;
+  const prefillText = prefillRequest?.text ?? null;
+  const [seenPrefillNonce, setSeenPrefillNonce] = useState<number | null>(null);
+  if (prefillNonce !== null && prefillText && prefillNonce !== seenPrefillNonce) {
+    setSeenPrefillNonce(prefillNonce);
+    setDraft(prefillText);
+  }
+  /*
+   * 퇴장 애니메이션이 도는 동안에도 그릴 것이 있어야 한다 — `pending` 이
+   * null 로 바뀌는 순간 내용이 사라지면 **빈 상자**가 사라지는 애니메이션을
+   * 하게 된다. 키는 요청의 파일 경로다(같은 카드인지 가르는 값).
+   */
+  const pendingHeld = useHeldValue(pending, pending?.request.filePath ?? null);
+
+  useEffect(() => {
+    void start();
+  }, [start]);
+
+  /*
+   * 떠 있는 목록은 **Esc 로 닫힌다.** 실물에서 Esc 를 눌렀는데 목록이 그대로
+   * 남아 있었다(2026-08-16 검수) — 이 앱의 다른 표면은 전부 그 키로 닫히므로,
+   * 여기만 안 닫히면 사용자가 배운 것이 틀린 것이 된다. 뒤의 막을 누르는 길은
+   * 그대로 있고, 이건 손을 안 옮기는 두 번째 길이다.
+   */
+  useEffect(() => {
+    if (!historyOpen) return;
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key !== 'Escape') return;
+      // 이 표면이 닫히는 것으로 끝난다 — 뒤의 패널까지 같이 닫지 않는다.
+      event.stopPropagation();
+      setHistoryOpen(false);
+    };
+    // 캡처 단계에서 받는다. 위쪽에 있는 「한 단계씩 닫기」가 먼저 잡으면
+    // 이 목록 대신 패널이 닫힌다.
+    window.addEventListener('keydown', onKey, true);
+    return () => window.removeEventListener('keydown', onKey, true);
+  }, [historyOpen]);
+
+  // 새 말이 오면 아래로 따라간다. 사용자가 위로 올려 읽는 중이면 방해하지
+  // 않는다 — 바닥 근처일 때만 따라간다.
+  useEffect(() => {
+    const list = listRef.current;
+    if (!list) return;
+    const nearBottom = list.scrollHeight - list.scrollTop - list.clientHeight < 120;
+    if (nearBottom) list.scrollTop = list.scrollHeight;
+  }, [events, pending]);
+
+  /**
+   * 작성 칸이 **글을 따라 자란다** (2026-08-16 소유자 지시: *"입력하고 나면
+   * 이렇게 길어지는 것도 구현해야 함"*).
+   *
+   * 줄 수가 고정이면 세 줄짜리 부탁을 쓰는 사람은 자기가 쓴 것의 3분의 2를
+   * 못 본 채 보내기를 누른다. 산수는 옆 패널이 이미 푼 것을 그대로 쓴다
+   * (`shared/lib/composer-growth` — 높이는 **정수 줄**이라 윗변에 글자가 반으로
+   * 잘리는 자리가 없다). 자람은 `transform` 이 아니라 실제 높이로 간다 —
+   * 아래의 고를 것과 보내기가 같이 밀려나야 「칸이 자랐다」로 읽힌다.
+   */
+  useLayoutEffect(() => {
+    const input = inputRef.current;
+    const mirror = mirrorRef.current;
+    if (!input || !mirror) return;
+    mirror.value = draft;
+    const style = window.getComputedStyle(input);
+    const lineHeight = Number.parseFloat(style.lineHeight);
+    const growth = composerGrowth(
+      {
+        lineHeight,
+        paddingBlock: Number.parseFloat(style.paddingTop) + Number.parseFloat(style.paddingBottom),
+        borderBlock:
+          Number.parseFloat(style.borderTopWidth) + Number.parseFloat(style.borderBottomWidth),
+        contentHeight: mirror.scrollHeight,
+      },
+      /*
+       * 상한을 **이 패널의 높이에서** 구한다. 기본값 6줄은 좁은 띠를 기준으로
+       * 정한 수라 세로로 긴 이 칸에는 인색했다(소유자: *"어느 정도까지는
+       * 길어지면 좋겠는데"*). 그렇다고 큰 수를 박으면 창을 줄였을 때 작성 칸이
+       * 대화를 통째로 밀어낸다 — 비율이 답이다.
+       */
+      composerMaxRows(panelRef.current?.clientHeight ?? 0, lineHeight),
+    );
+    // 잴 수 없는 상태(SSR·jsdom·폰트 로드 전)에서는 손대지 않는다 — 0px 로
+    // 접히는 것보다 `rows` 기본값이 언제나 낫다.
+    if (!growth) return;
+    input.style.height = `${growth.height}px`;
+    input.scrollTop = snapScrollTop(input.scrollTop, lineHeight);
+  }, [draft]);
+
+  const submit = useCallback(() => {
+    const text = draft.trim();
+    if (!text || status === 'thinking') return;
+    setDraft('');
+    void send(text);
+  }, [draft, send, status]);
+
+      {/*
+        고를 거리 — **온 것만 그린다.** 실측: codex 는 모델 33개를 내놓고,
+        claude 는 모델을 아예 안 내놓는다(`session/set_model` 이 「그런 메서드
+        없음」). 그래서 개수를 짐작해 자리를 미리 잡아 두지 않는다: 없는 도구에
+        빈 드롭다운을 남겨 두면 그건 「곧 됩니다」와 같은 거짓말이다.
+
+        ⚠️ 모드 목록에는 **권한 확인을 건너뛰는 것들이 빠져 있다**
+        (`keepGateSafeModes`). 이 화면이 「폴더 밖은 먼저 물어본다」고 약속하는데
+        그 약속을 드롭다운 한 번으로 무를 수 있으면 약속이 아니다.
+      */}
+  const choicesRow =
+    choices.models.length > 0 || choices.modes.length > 0 ? (
+        /*
+         * 고를 거리는 **한 줄에 균등하게** 놓는다 (2026-08-16 소유자 실보고:
+         * *"제대로 보이지도 않고 위치도 이상하고"*).
+         *
+         * 종전엔 `flex-wrap` 이라 각자 내용만큼만 넓어졌고, 좁아진 트리거가
+         * 목록까지 좁게 만들어 고를 것들이 잘렸다. 격자로 두면 폭이 자리에서
+         * 정해지고 개수가 하나든 둘이든 줄이 흔들리지 않는다 — 이 저장소의
+         * 「치수는 우리가 정하지 내용물이 정하지 않는다」 규율 그대로다.
+         */
+        <div
+          data-testid="acp-chat-choices"
+          className={cn(
+            'grid shrink-0 gap-2',
+            choices.models.length > 0 && choices.modes.length > 0
+              ? 'grid-cols-2'
+              : 'grid-cols-1',
+          )}
+        >
+          {choices.models.length > 0 ? (
+            <Select
+              ariaLabel={t('model')}
+              size="md"
+              value={choices.currentModelId ?? ''}
+              onChange={(value) => void chooseModel(value)}
+              options={choices.models.map((model) => ({ value: model.id, label: model.name }))}
+              data-testid="acp-chat-model"
+              className="min-w-0"
+            />
+          ) : null}
+          {choices.modes.length > 0 ? (
+            <Select
+              ariaLabel={t('mode')}
+              size="md"
+              value={choices.currentModeId ?? ''}
+              onChange={(value) => void chooseMode(value)}
+              options={choices.modes.map((mode) => ({ value: mode.id, label: mode.name }))}
+              data-testid="acp-chat-mode"
+              className="min-w-0"
+            />
+          ) : null}
+        </div>
+      ) : null;
+
+  const busy = status === 'thinking';
+  const canType = status === 'ready' || status === 'thinking';
+
+  return (
+    <section
+      ref={panelRef}
+      data-testid="acp-chat-panel"
+      data-acp-status={status}
+      /*
+       * ⚠️ `flex-1` 이 없어서 이 화면 전체가 위로 뭉쳐 있었다 (2026-08-16 소유자
+       * 실보고: *"입력하는 곳이 왜 위에 붙어 있는지도 이상하고"*).
+       *
+       * 구조는 처음부터 채팅이었다 — 머리 / 늘어나는 기록 / 바닥의 작성 칸.
+       * 그런데 이 `<section>` 이 부모 flex 의 자식인데 자기 몫을 주장하지 않아
+       * **내용만큼만** 커졌고, 기록이 비어 있으면 그 높이가 0 이라 작성 칸이
+       * 곧바로 머리 밑에 붙었다. 아래 텅 빈 자리는 패널의 남은 높이였다.
+       *
+       * 채팅에서 작성 칸이 바닥에 있는 것은 취향이 아니라 **손이 가는 자리**이고,
+       * 그 위가 비어 있어야 대화가 쌓일 곳이 보인다.
+       */
+      className="relative flex h-full min-h-0 flex-1 flex-col gap-3"
+      aria-label={t('ariaLabel', { runtime: runtimeLabel })}
+    >
+      <header className="flex items-center justify-between gap-2">
+        {/*
+          쓸 수 있는 도구가 둘 이상이면 **이름 자리가 곧 고르는 자리**가 된다 —
+          이름을 보여 주려고 이미 쓰고 있는 자리이므로 새 크롬이 안 생긴다.
+          하나뿐이면 고를 것이 없으니 글자로 둔다(선택지 하나짜리 드롭다운은
+          고르는 척만 하는 것이다).
+        */}
+        {runtimes.length > 1 && onRuntimeChange ? (
+          <Select
+            ariaLabel={t('runtimePicker')}
+            size="md"
+            value={runtimeId}
+            onChange={onRuntimeChange}
+            options={runtimes.map((r) => ({ value: r.id, label: r.label }))}
+            data-testid="acp-chat-runtime"
+            className="min-w-0"
+          />
+        ) : (
+          <p className="min-w-0 truncate text-body font-[var(--font-weight-emphasis)] text-[color:var(--color-text-primary)]">
+            {runtimeLabel}
+          </p>
+        )}
+        <span className="flex shrink-0 items-center gap-2">
+          <span
+            data-acp-status-badge={status}
+            className={badgeClass({
+              shape: 'micro',
+              className:
+                'bg-[color:var(--color-overlay-2)] text-[color:var(--color-text-tertiary)]',
+            })}
+          >
+            {t(`status.${status}`)}
+          </span>
+          {/*
+            지난 대화가 **있을 때만** 문을 낸다 — 처음 쓰는 사람에게 늘 비어
+            있는 목록 버튼을 보여 줄 이유가 없다.
+          */}
+          {/*
+            아이콘만 있는 버튼은 **이름이 안 보인다.** `title` 이 붙어 있긴 하나
+            macOS 웹뷰의 기본 툴팁은 한참 기다려야 뜨고, 그동안 사용자는 이게
+            뭐 하는 버튼인지 모른다(소유자: *"마우스 올리면 툴팁이 떠야 이게
+            뭐하는건지 이해 가능할듯"*). 저장소에 이미 있는 툴팁을 쓴다.
+
+            크기도 한 단 올린다 — 이 셋은 이 패널의 주 크롬이라 `md`(32px)로는
+            눌러야 할 것으로 안 읽힌다.
+          */}
+          <TooltipProvider delayDuration={200}>
+            {sessions.length > 0 ? (
+              <Tooltip content={t('history')} withProvider={false} side="bottom">
+                <IconButton
+                  size="lg"
+                  label={t('history')}
+                  data-testid="acp-chat-history"
+                  aria-expanded={historyOpen}
+                  onClick={() => setHistoryOpen((open) => !open)}
+                >
+                  <History size={ICON_SIZE.md} aria-hidden />
+                </IconButton>
+              </Tooltip>
+            ) : null}
+            <Tooltip content={t('newChat')} withProvider={false} side="bottom">
+              <IconButton
+                size="lg"
+                label={t('newChat')}
+                data-testid="acp-chat-new"
+                disabled={status === 'starting'}
+                onClick={() => {
+                  setHistoryOpen(false);
+                  void switchSession(null);
+                }}
+              >
+                <SquarePen size={ICON_SIZE.md} aria-hidden />
+              </IconButton>
+            </Tooltip>
+            {onClose ? (
+              <Tooltip content={t('close')} withProvider={false} side="bottom">
+                <IconButton
+                  size="lg"
+                  label={t('close')}
+                  data-testid="acp-chat-close"
+                  onClick={onClose}
+                >
+                  <X size={ICON_SIZE.md} aria-hidden />
+                </IconButton>
+              </Tooltip>
+            ) : null}
+          </TooltipProvider>
+        </span>
+      </header>
+
+      <div
+        ref={listRef}
+        data-testid="acp-chat-transcript"
+        /*
+         * 기록의 간격은 **한 단계 크다** (2026-08-16 여백 감사).
+         * 읽는 글이 12.5 → 14px 로 올라갔는데 줄 사이는 8px 그대로여서, 말과
+         * 말이 한 덩어리로 뭉쳤다. 글자가 커지면 그 사이도 같이 커져야 한다 —
+         * 간격은 절대값이 아니라 **글자에 대한 비율**로 읽힌다.
+         */
+        className="flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto"
+      >
+        {events.length === 0 && status !== 'starting' ? (
+          // 빈 대화의 안내는 **기록이 쌓일 그 자리 한가운데**에 둔다. 위쪽에
+          // 붙여 두면 그것이 첫 번째 말풍선처럼 읽히고, 정작 대화가 시작될
+          // 자리는 비어 보인다.
+          <p
+            data-testid="acp-chat-empty"
+            className="m-auto max-w-[28ch] break-keep text-center text-label leading-prose text-[color:var(--color-text-quaternary)]"
+          >
+            {t('emptyHint')}
+          </p>
+        ) : null}
+        {groupEvents(events).map((item, index) => {
+          if (item.kind === 'toolGroup') return <ToolGroup key={item.id} events={item.events} />;
+          /*
+           * 사용자의 말 앞에 실선 하나 — **차례가 바뀐 자리**다. 첫 차례
+           * 위에는 긋지 않는다(위에 아무것도 없는데 경계를 그으면 그건 경계가
+           * 아니라 장식이다).
+           */
+          const turnStart = item.event.kind === 'user' && index > 0;
+          return (
+            <div
+              key={item.event.id}
+              data-turn-start={turnStart ? 'true' : undefined}
+              className={cn(
+                'flex flex-col',
+                turnStart &&
+                  'mt-2 border-t border-[color:var(--color-divider)] pt-3',
+              )}
+            >
+              <TranscriptEntry event={item.event} />
+            </div>
+          );
+        })}
+      </div>
+
+      {/*
+        오류는 **사람의 말 한 문장 + 다음에 할 일**이다.
+
+        ⚠️ 종전에는 어댑터가 준 것을 그대로 붙였다(2026-08-16 소유자 화면):
+        `문제가 생겼어요: {"code":-32603,"message":"Internal error: Failed to
+        authenticate: OAuth session expired…"}`. 소유자: *"이렇게 보여주면
+        사용자가 어떻게 알겠어."* 그 줄에는 무슨 일이 났는지도, 뭘 해야 하는지도
+        사람의 말로는 없다.
+
+        원문은 버리지 않고 **접어 둔다** — 같은 일이 반복될 때 알려 줄 것이
+        필요하고, 어댑터가 남긴 말(stderr)도 그때 같이 나온다.
+      */}
+      {error ? (
+        <div
+          data-testid="acp-chat-error"
+          data-trouble={trouble?.kind}
+          role="alert"
+          className="break-keep rounded-card border border-[color:var(--color-danger-a32)] bg-[color:var(--color-danger-a08)] p-[var(--card-pad)]"
+        >
+          <p className="text-body font-[var(--font-weight-emphasis)] text-[color:var(--color-status-danger)]">
+            {t(`trouble.${trouble?.kind ?? 'unknown'}.title`)}
+          </p>
+          <p className="mt-1 text-label leading-prose text-[color:var(--color-text-tertiary)]">
+            {t(`trouble.${trouble?.kind ?? 'unknown'}.hint`)}
+          </p>
+          <details className="mt-2">
+            <summary
+              data-testid="acp-chat-error-details"
+              className={controlClass({
+                shape: 'link',
+                size: 'sm',
+                tone: 'muted',
+                hoverInk: 'strong',
+                className: 'list-none',
+              })}
+            >
+              {t('trouble.details')}
+            </summary>
+            <p className="mt-1.5 whitespace-pre-wrap break-all font-mono text-caption leading-caption text-[color:var(--color-text-quaternary)]">
+              {error}
+            </p>
+            {diagnostics.length > 0 ? (
+              <>
+                <p className="mt-2 text-caption leading-caption text-[color:var(--color-text-quaternary)]">
+                  {t('trouble.diagnosticsLabel')}
+                </p>
+                <p className="mt-1 whitespace-pre-wrap break-all font-mono text-caption leading-caption text-[color:var(--color-text-quaternary)]">
+                  {diagnostics.join('\n')}
+                </p>
+              </>
+            ) : null}
+          </details>
+        </div>
+      ) : null}
+
+      {/*
+        `{pending ? … : null}` 로만 그리면 카드가 한 프레임에 툭 나타나고 툭
+        사라진다(등장 래칫이 이걸 잡았다). 이 카드는 **에이전트를 멈춰 세우는
+        것**이라 화면에서 가장 급한 표면인데, 예고 없이 나타나면 사용자는
+        무엇이 바뀌었는지 못 따라간다.
+
+        `origin` 이 아래인 이유: 이 카드는 작성 칸 바로 위에서 자란다 — 눈과
+        손이 이미 가 있는 자리에서 태어나야 한다.
+      */}
+      <Surface open={Boolean(pending)} origin="bottom center" motion="overlay">
+        {pendingHeld ? <AcpPermissionCard pending={pendingHeld} /> : null}
+      </Surface>
+
+      {/*
+        작성 칸 — **상자 하나 안에 다 들어간다** (2026-08-16 소유자 실보고:
+        *"디자인도 이게 더 일반적인가? 대부분 이런 형태 아닌가"*).
+
+        종전엔 입력 상자가 있고 그 **밖에** 넓은 「보내기」 알약이 따로 있었다.
+        그러면 보내기가 대화 화면의 주인공처럼 크게 자리를 먹는데, 정작 주인공은
+        대화다. 지금 형태는 상자 하나가 「여기가 쓰는 자리」를 말하고, 그 안
+        아래줄에 **고를 것(왼쪽)과 보내기(오른쪽)** 가 앉는다.
+
+        보내기는 **원형 아이콘**이다. 글자 「보내기」를 지운 이유는 화살표가 이미
+        그 뜻이고, 상자 안에서 폭을 덜 먹기 때문이다. 이름은 툴팁과 접근성
+        이름이 진다 — 아이콘만 있는 컨트롤의 규칙 그대로다.
+
+        상자 안에 상자를 만들지 않으려고 작성 칸은 `frame="bare"` 다.
+      */}
+      <div
+        data-testid="acp-chat-composer"
+        className="relative shrink-0 rounded-card border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] p-[var(--card-pad)] transition-colors focus-within:border-[color:var(--color-indigo-a46)]"
+      >
+        {/*
+          단축키 안내는 **비어 있을 때만** — 글자가 들어오면 사라진다(겹침 방지).
+        */}
+        {composerFocused && draft.length === 0 ? (
+          <span
+            data-testid="acp-chat-hint"
+            className={badgeClass({
+              shape: 'micro',
+              className:
+                'pointer-events-none absolute right-3 top-3 bg-[color:var(--color-overlay-2)] text-[color:var(--color-text-quaternary)]',
+            })}
+          >
+            {t('composerHint')}
+          </span>
+        ) : null}
+        {/*
+          미러가 실제 칸과 **같은 폭**이어야 줄 나눔이 같다. 그래서 둘을 같은
+          `relative` 상자에 넣는다 — 바깥 상자에 붙이면 안쪽 여백만큼 미러가
+          넓어져서 한 줄 늦게 자란다.
+        */}
+        <div className="relative">
+          <Textarea
+            ref={inputRef}
+            aria-label={t('composerLabel')}
+            placeholder={t('composerPlaceholder')}
+            frame="bare"
+            className="w-full"
+            rows={COMPOSER_MIN_ROWS}
+            value={draft}
+            disabled={!canType}
+            style={{
+              // 자람은 **표면 이동**이다 — 앱 공통 램프를 그대로 탄다.
+              transitionProperty: 'height',
+              transitionDuration: 'var(--motion-base)',
+              transitionTimingFunction: 'var(--motion-ease)',
+            }}
+            onFocus={() => setComposerFocused(true)}
+            onBlur={() => setComposerFocused(false)}
+            onChange={(e) => setDraft(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key !== 'Enter') return;
+              /*
+               * Enter 로 보내고 ⇧Enter 로 줄을 바꾼다 — 채팅의 관례이고, 사람이
+               * 이미 손에 익힌 것이다. ⌘/Ctrl+Enter 도 계속 받는다.
+               */
+              if (e.shiftKey) return;
+              e.preventDefault();
+              submit();
+            }}
+          />
+          {/*
+            `invisible`(visibility: hidden)이지 `opacity-0` 이 아니다 — 투명한
+            원소는 여전히 그려지는 원소라 겹침 감사에 잡히고 캐럿이 칠해질
+            여지도 남는다. 레이아웃은 그대로 도니 `scrollHeight` 는 같다.
+          */}
+          <Textarea
+            ref={mirrorRef}
+            aria-hidden
+            tabIndex={-1}
+            readOnly
+            aria-label={t('composerLabel')}
+            frame="bare"
+            rows={1}
+            data-testid="acp-chat-composer-mirror"
+            className="pointer-events-none invisible absolute inset-x-0 top-0 h-0 overflow-hidden"
+          />
+        </div>
+        <div className="mt-2 flex items-center justify-between gap-2">
+          <span className="flex min-w-0 flex-1 items-center gap-2">{choicesRow}</span>
+          <span className="flex shrink-0 items-center gap-1.5">
+            {busy ? (
+              <Chip size="md" tone="secondary" data-testid="acp-chat-stop" onClick={cancel}>
+                <Square size={ICON_SIZE.sm} aria-hidden />
+                {t('stop')}
+              </Chip>
+            ) : null}
+            <Tooltip content={t('send')} side="top">
+              <button
+                type="button"
+                aria-label={t('send')}
+                data-testid="acp-chat-send"
+                disabled={!canType || busy || draft.trim().length === 0}
+                onClick={submit}
+                className={controlClass({
+                  /*
+                   * 원형은 값 층의 `pill` 이 낸다(`rounded-full`) — 손으로 적지
+                   * 않는다. 채움·잉크·호버는 `onAccent` 한 톤이 다 낸다:
+                   * 채운 인디고 위에 `accent` 잉크를 얹으면 합성 대비가
+                   * AA 미달이고, 그 짝은 lint 가 막는다(실제로 막혔다).
+                   * 여기 남는 것은 **이 자리에서만 맞는 것** — 정사각으로
+                   * 만들어 원이 되게 하는 폭과 가운데 정렬뿐이다.
+                   */
+                  shape: 'pill',
+                  size: 'md',
+                  tone: 'onAccent',
+                  className: 'w-8 justify-center px-0',
+                })}
+              >
+                <ArrowUp size={ICON_SIZE.md} aria-hidden />
+              </button>
+            </Tooltip>
+          </span>
+        </div>
+      </div>
+
+      {/*
+        지난 대화 목록 — **떠 있는 것**이다.
+
+        ⚠️ **z-index 를 쓰지 않는다.** 처음엔 `--z-map-popover` 를 썼는데 그런
+        토큰은 **없다** — 없는 변수를 참조하면 CSS 가 그 선언을 통째로 버려서
+        아무 에러 없이 층위가 사라진다(이 저장소가 「아무도 안 쓰는 토큰은
+        규격이 아니라 틀린 정보다」라고 적어 둔 그 함정이다).
+        대신 이 블록을 패널의 **맨 끝**에 둔다 — 같은 층에서는 나중에 그린 것이
+        위에 온다. 새 토큰도, 사다리 변경도 필요 없다.
+
+        ⚠️ 종전에는 이것을 flex 자식으로 뒀다. 그래서 열면 대화가 아래로
+        **밀려났고**, 목록이 대화의 일부처럼 보였다(소유자: *"이렇게 같이 나와서
+        구분도 안 되고"*). 떠 있어야 할 것을 흐름에 두면 그건 팝오버가 아니라
+        그냥 또 하나의 줄이다.
+
+        그래서 패널 기준으로 **절대 위치**에 놓고, 뒤에 막을 깔아 「이건 위에
+        떠 있고 아무 데나 누르면 닫힌다」를 눈으로 말한다.
+
+        ⚠️ 여기 담기는 것은 **이 폴더의 대화뿐**이다(`keepSessionsInFolder`).
+      */}
+      {historyOpen && sessions.length > 0 ? (
+        <button
+          type="button"
+          /*
+           * ⚠️ 이 막의 이름은 **목록을 닫는 것**이다 (2026-08-16 검수에서 적발).
+           * 종전에는 패널 닫기와 같은 키(`close`)를 써서, 화면을 못 보는
+           * 사용자에게 「대화를 끝냅니다」라고 말하고 목록만 닫았다.
+           */
+          aria-label={t('closeHistory')}
+          data-testid="acp-chat-history-scrim"
+          onClick={() => setHistoryOpen(false)}
+          className="absolute inset-0 cursor-default bg-[color:var(--color-overlay-1)]"
+        />
+      ) : null}
+      <div className="pointer-events-none absolute inset-x-0 top-11 flex justify-end">
+        <Surface
+          open={historyOpen && sessions.length > 0}
+          origin="top right"
+          motion="overlay"
+          className="pointer-events-auto w-[min(320px,100%)]"
+        >
+          <div className="overflow-hidden rounded-card border border-[color:var(--color-border-soft)] bg-[color:var(--color-elevated)] shadow-[var(--shadow-elevation-2)]">
+            {/*
+              이름이 있어야 무엇의 목록인지 알 수 있다.
+
+              ⚠️ 종전에는 대문자 아이브로우 규격(`font-mono` + `uppercase` +
+              넓은 자간)이었다. 그 규격은 라틴 문자를 전제한다 — 한글에는
+              대문자가 없어서 `uppercase` 는 아무 일도 안 하고, 넓은 자간만
+              남아 **「지난」과 「대화」가 다른 두 낱말처럼** 벌어져 보였다
+              (2026-08-16 소유자 화면). 그냥 라벨로 둔다.
+
+              개수를 옆에 두는 이유: 목록이 스크롤되면 몇 개인지가 안 보인다.
+            */}
+            <div className="flex items-center justify-between gap-2 border-b border-[color:var(--color-divider)] px-3 py-2">
+              <p className="text-label leading-label text-[color:var(--color-text-tertiary)]">
+                {t('history')}
+              </p>
+              <span
+                className={badgeClass({
+                  shape: 'micro',
+                  className:
+                    'bg-[color:var(--color-overlay-2)] text-[color:var(--color-text-quaternary)]',
+                })}
+              >
+                {sessions.length}
+              </span>
+            </div>
+            <ul data-testid="acp-chat-history-list" className="grid max-h-64 gap-0.5 overflow-y-auto p-1">
+              {sessions.map((session) => (
+                <li key={session.sessionId}>
+                  <RowButton
+                    data-testid="acp-chat-history-item"
+                    data-session-id={session.sessionId}
+                    onClick={() => {
+                      setHistoryOpen(false);
+                      void switchSession(session.sessionId);
+                    }}
+                    /*
+                     * 마우스가 지나가는 줄이 **반응해야** 어디를 누르는지 알 수
+                     * 있다(소유자: *"마우스 올리면 각 영역에 호버 효과 있으면"*).
+                     * 면과 글자를 함께 올린다 — 면만 밝히면 어느 줄인지는 알아도
+                     * 그 줄의 제목이 여전히 뒤로 물러나 있다.
+                     */
+                    hoverSurface="lift"
+                    hoverInk="strong"
+                    className="w-full"
+                  >
+                    <span className="grid min-w-0 flex-1 gap-0.5 text-left">
+                      <span className="truncate text-body-lg leading-body-lg text-[color:var(--color-text-secondary)]">
+                        {session.title ?? t('untitled')}
+                      </span>
+                      {/*
+                        언제 한 대화인지는 **이미 받아 온 값**이다. 안 보여 주면
+                        제목만 비슷한 대화들 사이에서 고를 근거가 없다.
+                      */}
+                      {/*
+                        ⚠️ 종전에는 날짜가 **있을 때만** 이 줄을 그렸다. 그러면
+                        같은 목록 안에서 행 높이가 56px 과 38px 로 갈린다 — 이
+                        저장소의 「치수는 우리가 정하지 내용물이 정하지 않는다」
+                        규율이 정확히 그것을 금지한다(2026-08-16 검수).
+                        날짜가 없어도 그 줄은 자리를 지킨다.
+                      */}
+                      <span className="truncate text-label leading-label text-[color:var(--color-text-quaternary)]">
+                        {session.updatedAt ? formatDate(session.updatedAt) : '\u00A0'}
+                      </span>
+                    </span>
+                  </RowButton>
+                </li>
+              ))}
+            </ul>
+          </div>
+        </Surface>
+      </div>
+    </section>
+  );
+}
+
+/**
+ * 답이 온 뒤의 도구 줄 묶음 — **접어 두고, 눌러서 편다.**
+ *
+ * 기다리는 동안에는 펼쳐져 있었다(`groupEvents` 가 마지막 덩어리는 안 묶는다).
+ * 답이 오면 그때부터는 답이 주인공이라 자리를 내준다. 숨기는 것이 아니라
+ * **한 줄로 접는 것**이라, 무슨 일이 있었는지는 언제든 볼 수 있다.
+ */
+function ToolGroup({ events }: { events: Extract<AcpEvent, { kind: 'tool' }>[] }) {
+  const t = useTranslations('acpChat');
+  const [open, setOpen] = useState(false);
+  return (
+    <div data-acp-entry="tool-group" data-tool-count={events.length}>
+      <button
+        type="button"
+        data-testid="acp-chat-tool-group"
+        aria-expanded={open}
+        onClick={() => setOpen((v) => !v)}
+        className={controlClass({
+          shape: 'link',
+          size: 'md',
+          tone: 'muted',
+          hoverInk: 'secondary',
+        })}
+      >
+        <ChevronRight
+          size={ICON_SIZE.sm}
+          aria-hidden
+          className={open ? 'rotate-90 transition-transform' : 'transition-transform'}
+        />
+        {t('toolGroup', { count: events.length })}
+      </button>
+      {open ? (
+        <div className="mt-1 grid gap-1 pl-4">
+          {events.map((event) => (
+            <TranscriptEntry key={event.id} event={event} />
+          ))}
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
+function TranscriptEntry({ event }: { event: AcpEvent }) {
+  const t = useTranslations('acpChat');
+
+  if (event.kind === 'user') {
+    /*
+     * **한 차례가 여기서 시작한다** (2026-08-16 소유자: *"내가 한 질문과
+     * 답변도 구분 잘 되어야하고"*).
+     *
+     * 종전에도 오른쪽 정렬 + 인디고 틴트로 갈라 두긴 했다. 그런데 답변이 길면
+     * 스크롤 중에 「어디서부터 이 질문의 답인지」가 흐려진다 — 갈라야 하는
+     * 것은 말풍선 하나가 아니라 **차례의 경계**다.
+     *
+     * 그래서 셋을 준다: 위쪽 여백(다음 차례와 떨어뜨린다) · 테두리(면이 아니라
+     * 물체로 보이게) · 첫 차례가 아니면 그 위에 실선 하나. 색을 더 진하게
+     * 하지 않은 이유는 인디고가 이 앱에서 「선택됨」을 뜻하기 때문이다.
+     */
+    return (
+      <p
+        data-acp-entry="user"
+        className="mt-1 max-w-[85%] self-end break-keep rounded-card border border-[color:var(--color-indigo-a22)] bg-[color:var(--color-indigo-a12)] px-3 py-2 text-body-lg leading-body-lg text-[color:var(--color-text-primary)]"
+      >
+        {event.text}
+      </p>
+    );
+  }
+  if (event.kind === 'agent') {
+    /*
+     * 에이전트는 **마크다운으로 답한다** — 실물에서 백틱과 목록이 글자 그대로
+     * 나오고 있었다(`` `connect_project_source` `` 가 백틱째로). 이 저장소에는
+     * 이미 렌더러가 있는데(문서함·프로젝트 상세) 이 화면만 안 쓰고 있었다.
+     *
+     * 문서 화면의 그 값을 그대로 가져오지 않는다 — 거기는 본문 페이지라
+     * `text-body-lg` 에 제목 여백이 크고, 420px 패널에서는 한 문단이 화면을
+     * 다 먹는다. 여기는 **대화 밀도**다.
+     */
+    return (
+      <div data-acp-entry="agent" className={CHAT_MARKDOWN}>
+        <ReactMarkdown remarkPlugins={[remarkGfm]}>{event.text}</ReactMarkdown>
+      </div>
+    );
+  }
+  if (event.kind === 'thought') {
+    return (
+      <p
+        data-acp-entry="thought"
+        className="whitespace-pre-wrap break-keep text-label leading-label text-[color:var(--color-text-quaternary)]"
+      >
+        {event.text}
+      </p>
+    );
+  }
+  if (event.kind === 'tool') {
+    /*
+     * 함수 이름이 아니라 **일어난 일**을 적는다. 우리가 꽂아 준 도구는 뜻을
+     * 알고(`toolLabel`), 남의 도구는 이름만 보여 준다 — 모르는 것을 그럴듯하게
+     * 지어내면 실제로 한 일과 어긋나는 날 화면이 거짓말을 한다.
+     */
+    const label = toolLabel(event.title, VAULT_MCP_SERVER_NAME);
+    const done = event.status === 'completed';
+    return (
+      <p
+        data-acp-entry="tool"
+        data-tool-kind={event.toolKind}
+        data-tool-status={event.status}
+        data-tool-label={label.kind}
+        className="flex items-center gap-1.5 break-all text-label leading-label text-[color:var(--color-text-quaternary)]"
+      >
+        {/* 끝난 것과 도는 것을 **점 하나**로 가른다 — 배지를 또 달면 대화보다
+            도구 줄이 더 시끄러워진다. */}
+        <span
+          aria-hidden
+          className={cn(
+            'size-1.5 shrink-0 rounded-full',
+            done
+              ? 'bg-[color:var(--color-text-quaternary)]'
+              : 'bg-[color:var(--color-indigo-accent)]',
+          )}
+        />
+        {label.kind === 'known' ? t(`tool.${label.text}`) : label.text}
+      </p>
+    );
+  }
+  /*
+   * 알림 줄에 남는 것은 **사용자에게 하는 말 하나**뿐이다 (2026-08-16 검수).
+   *
+   * 종전에는 여기로 진단이 다 흘러들어서 대화 한가운데에 이런 것이 대문자
+   * 고정폭으로 찍혔다: `UNPARSABLE:{"JSONRPC":"2.0","ID":7,…` · `SEND-FAILED: …`.
+   * 사람이 읽을 것이 아니고 읽어도 할 일이 없다 — 그것들은 이제 오류 블록의
+   * 「자세히」로 간다.
+   *
+   * 남은 하나(`gate-off`)는 진단이 아니라 **약속에 관한 사실**이다: 이 대화에서는
+   * 폴더 밖을 건드릴 때 대신 물어봐 주지 못한다. 조용히 접어 두면 화면이 지키지
+   * 못할 약속을 계속 하게 된다.
+   */
+  return (
+    <p
+      data-acp-entry="notice"
+      data-notice={event.text}
+      className="break-keep rounded-chip border border-[color:var(--color-amber-source-a30)] bg-[color:var(--color-amber-source-a08)] px-2.5 py-1.5 text-label leading-prose text-[color:var(--color-text-secondary)]"
+    >
+      {t('notice.gateOff')}
+    </p>
+  );
+}

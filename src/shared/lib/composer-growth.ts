@@ -20,15 +20,55 @@
  * 여기서 한다. 그래야 "9px 이 아니라 20px 의 배수" 같은 불변식을 jsdom 없이
  * 단위 테스트로 못 박을 수 있다 — 이건 모션이 아니라 **정렬**이라
  * reduced-motion 에서도 살아 있어야 하는 규칙이다.
+ *
+ * ## 왜 `shared` 로 내려왔나 (2026-08-16)
+ *
+ * 원래는 `features/vault-agent/model/` 에 있었다. 작성 칸이 **둘**이 되면서
+ * (키를 넣는 갈래 · 내 코딩 에이전트와 나누는 대화) 같은 산수를 둘이 쓰게 됐고,
+ * 그때 한쪽 기능의 모델을 다른 쪽이 빌려 쓰면 **그 기능을 정리하는 날 남의
+ * 작성 칸이 같이 죽는다** — BYOK 패널의 거취는 아직 열려 있는 질문이다.
+ * 이 저장소의 규율 그대로다: 공통화가 필요하면 한 단계 아래로 끌어내린다.
  */
 
 /** 아직 아무 말도 안 한 사람에게 내미는 최소 크기. */
 export const COMPOSER_MIN_ROWS = 2;
 /**
- * 자람의 상한. 여기를 넘으면 입력칸이 대화를 밀어내기 시작하므로, 그 위는
+ * 자람의 기본 상한. 여기를 넘으면 입력칸이 대화를 밀어내기 시작하므로, 그 위는
  * 상자를 키우는 대신 안쪽 스크롤로 넘긴다.
+ *
+ * **한 화면 안의 좁은 띠**(키 갈래 패널의 하단 바)를 기준으로 정한 값이다.
+ * 세로로 긴 칸에서는 이 수가 너무 인색하다 — 그런 자리는 아래
+ * `composerMaxRows` 로 **자기 높이에서** 상한을 구한다.
  */
 export const COMPOSER_MAX_ROWS = 6;
+
+/**
+ * 작성 칸이 차지해도 되는 **몫**. 대화가 주인공이므로 절반을 넘지 않는다.
+ *
+ * 2026-08-16 소유자 지적: *"이렇게 계속 길어지지는 않지만 어느 정도까지는
+ * 길어지면 좋겠는데"*. 맞는 요구였고, 6줄이라는 수는 좁은 띠에서 나온 값이라
+ * 세로로 긴 대화 칸에는 안 맞았다. 그렇다고 「12줄」 같은 새 상수를 박으면
+ * 그 수도 **어느 한 화면 크기에서만** 맞는다 — 창을 줄이면 작성 칸이 대화를
+ * 통째로 밀어낸다. 그래서 상한을 **비율**로 두고 그 자리의 높이에서 구한다.
+ */
+export const COMPOSER_MAX_SHARE = 0.4;
+
+/** 자람의 절대 상한. 이보다 크면 「입력칸」이 아니라 편집기다. */
+export const COMPOSER_CEILING_ROWS = 16;
+
+/**
+ * 이 자리에서 허용되는 최대 줄 수 — 쓸 수 있는 높이에서 구한다.
+ *
+ * 잴 수 없으면(SSR·마운트 직전) 기본 상한으로 돌아간다. 0줄이 되는 길은
+ * 없다: 최소값은 시작 크기보다 한 줄 크다(자랄 수 없는 「자라는 칸」은
+ * 없는 것과 같다).
+ */
+export function composerMaxRows(availableHeight: number, lineHeight: number): number {
+  if (!Number.isFinite(availableHeight) || availableHeight <= 0) return COMPOSER_MAX_ROWS;
+  if (!Number.isFinite(lineHeight) || lineHeight <= 0) return COMPOSER_MAX_ROWS;
+  const rows = Math.floor((availableHeight * COMPOSER_MAX_SHARE) / lineHeight);
+  return Math.min(Math.max(rows, COMPOSER_MIN_ROWS + 1), COMPOSER_CEILING_ROWS);
+}
 
 export interface ComposerMetrics {
   /** 계산된 줄 높이(px). */
@@ -61,19 +101,25 @@ export interface ComposerGrowth {
  * 호출자는 그때 아무것도 하지 않는다 — 0px 로 접히는 것보다 손대지 않는 편이
  * 언제나 낫다.
  */
-export function composerGrowth(metrics: ComposerMetrics): ComposerGrowth | null {
+export function composerGrowth(
+  metrics: ComposerMetrics,
+  /** 이 자리의 상한. 세로로 긴 칸은 `composerMaxRows` 로 자기 높이에서 구한다. */
+  maxRows: number = COMPOSER_MAX_ROWS,
+): ComposerGrowth | null {
   const { lineHeight, paddingBlock, borderBlock, contentHeight } = metrics;
   if (!Number.isFinite(lineHeight) || lineHeight <= 0) return null;
   if (!Number.isFinite(paddingBlock) || !Number.isFinite(borderBlock)) return null;
   if (!Number.isFinite(contentHeight) || contentHeight <= 0) return null;
 
+  // 상한이 시작 크기보다 작으면 「자라는 칸」이 오히려 줄어든다.
+  const cap = Math.max(COMPOSER_MIN_ROWS, Math.floor(maxRows));
   const textHeight = contentHeight - paddingBlock;
   const wanted = Math.max(1, Math.round(textHeight / lineHeight));
-  const rows = Math.min(Math.max(wanted, COMPOSER_MIN_ROWS), COMPOSER_MAX_ROWS);
+  const rows = Math.min(Math.max(wanted, COMPOSER_MIN_ROWS), cap);
   return {
     height: rows * lineHeight + paddingBlock + borderBlock,
     rows,
-    overflowing: wanted > COMPOSER_MAX_ROWS,
+    overflowing: wanted > cap,
   };
 }
 

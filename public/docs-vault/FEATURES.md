@@ -1115,6 +1115,29 @@ just unmounted).
   - Unregistered vendors collapse to a one-line `name · [Add key]` row that
     expands in place, one at a time — three always-open password fields would
     turn a settings sheet into a form gate.
+- **실행기** (`AcpRuntimeSettings`, 2026-08-16, 데스크톱 앱 전용) — 이 컴퓨터에
+  이미 설치된 코딩 에이전트(Claude Code, Codex 등)를 앱이 찾아서 보여 주는 절.
+  이 절이 하는 일 하나는 **무엇을 지금 쓸 수 있는지 말하는 것**이다.
+  - 목록은 두 갈래로 갈린다: 「바로 쓸 수 있어요」가 펼쳐져 있고 「설치가 필요한
+    것」은 접힌다. 못 쓰는 이유는 설치 필요 / Node 필요 / uv 필요 / 직접 설치의
+    네 갈래로 갈라 적는다. 갈래마다 사용자가 할 일이 다르므로 「설치됨/아님」
+    둘로 뭉개지 않는다. [다시 확인] 으로 언제든 다시 훑는다.
+  - **목록은 빌드 때 커밋해 둔 ACP 레지스트리 스냅샷에서 온다**
+    (`src-tauri/src/acp-registry.json`, `scripts/build-acp-registry.mjs`,
+    갱신은 `pnpm acp:registry`). 실행 중에 CDN 을 부르지 않으므로 인터넷이 없어도
+    목록이 그대로 나오고, 무엇이 바뀌었는지는 git diff 에 남는다. 아이콘도 같은
+    이유로 빌드 때 받아 `public/acp-icons/` 에 번들한다(레지스트리 규격이 16×16
+    단색 SVG 라 브랜드 색이 앱으로 들어오지 않는다).
+  - **격리를 실측한 실행기에만 앱의 관문이 붙는다.** 앱이 띄우는 세션은 사용자의
+    전역 설정을 물려받지 않고 앱이 관리하는 설정 디렉터리를 쓰며, 볼트 밖 파일
+    요청이 오면 사용자에게 묻는다. 그 격리를 아직 재 보지 않은 줄에는
+    「확인 안 됨」 표시가 붙고, 그 뜻(그 도구에 해 둔 설정을 그대로 쓴다)을 묶음
+    위에서 한 번 설명한다. 표시는 반복되고 문장은 반복되지 않는다.
+  - **오늘 여기까지다.** 이 절은 무엇이 준비됐는지 말하고 앱이 어떤 규칙으로
+    띄우는지 밝히는 데까지고, **앱 안에서 그 에이전트와 대화하는 패널은 아직 열
+    수 있는 자리가 없다**(`src/widgets/acp-chat-panel/` 은 모듈로만 존재한다).
+  - 브라우저에서는 프로세스를 띄울 수 없다. 웹에서는 목록 대신 왜 안 되는지와
+    어디서 되는지를 적는 한 줄이 그 자리를 대신한다.
 - The persistent shell mounts the rail settings trigger. Contextual
   `LiveActivityIndicator` and header controls remain on the pages whose
   workflow needs richer status or screen controls; they are not additional

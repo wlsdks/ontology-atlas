@@ -104,12 +104,69 @@ export function validateVaultDocument(raw) {
   }
 
   pushNonCanonicalGraphArrayIssues(frontmatter, issues);
+  pushSwallowedRelationNoteIssues(frontmatter, issues);
 
   return {
     ok: !issues.some((i) => i.severity === 'error'),
     issues,
   };
 }
+
+/**
+ * **이유 하나가 다음 이유들을 통째로 삼킨 자국**을 찾는다.
+ *
+ * ## 왜 (2026-08-16 검수 — 우리 볼트에서 실제로 발견)
+ *
+ * `domains/agent-integration.md` 는 관계 이유를 셋 선언해 뒀는데 읽어 보면
+ * **하나**였다. 나머지 둘이 첫 값 안으로 글자로 삼켜져 있었다:
+ *
+ * ```
+ * capabilities/acp-runtime: "…permission gate., capabilities/skill-process-handoff: …"
+ * ```
+ *
+ * 원인은 값 안의 **작은따옴표 한 개**(`user's`)였다. 값이 따옴표로 안 감싸여
+ * 있으면 그 한 글자가 따옴표 상태를 열고, 그 뒤의 쉼표는 더 이상 구분자로
+ * 안 읽힌다. 쓰는 쪽 규칙은 같은 날 고쳤지만(작은따옴표도 감싸게), **이미
+ * 생긴 자국은 그대로 남는다.**
+ *
+ * 그리고 그때 `validate` 는 **`issue 0`** 이라고 답했다 — 관계 배열은 멀쩡해서
+ * 그래프는 정상이고, 사라진 것은 이유뿐이라 아무 검사도 볼 것이 없었다.
+ * 「왜 그렇게 이었는지」는 이 제품이 가장 중요하게 여기는 기록인데, 그것이
+ * 조용히 사라지는 길이 열려 있었던 것이다.
+ *
+ * 판정: 어떤 이유 값 안에 **이 노드가 실제로 선언한 다른 관계 대상**이
+ * `대상: ` 꼴로 들어 있으면, 그건 문장이 아니라 삼켜진 항목이다. 이 조건은
+ * 좁다 — 우연히 자기 이웃의 슬러그를 콜론까지 붙여 인용하는 문장은 없다.
+ */
+function pushSwallowedRelationNoteIssues(frontmatter, issues) {
+  const notes = frontmatter.relation_notes;
+  if (!notes || typeof notes !== 'object' || Array.isArray(notes)) return;
+
+  // 이 노드가 어디로 이어져 있다고 선언했는지 — 삼켜졌다면 그중 하나가 값 안에 있다.
+  const targets = new Set();
+  for (const value of Object.values(frontmatter)) {
+    if (!Array.isArray(value)) continue;
+    for (const item of value) if (typeof item === 'string' && item.includes('/')) targets.add(item);
+  }
+  for (const key of Object.keys(notes)) targets.add(key);
+
+  for (const [key, value] of Object.entries(notes)) {
+    if (typeof value !== 'string') continue;
+    const swallowed = [...targets].filter(
+      (target) => target !== key && value.includes(`${target}: `),
+    );
+    if (swallowed.length === 0) continue;
+    issues.push({
+      code: 'swallowed-relation-note',
+      severity: 'error',
+      message:
+        `relation_notes 의 \`${key}\` 값 안에 다른 항목이 글자로 들어가 있습니다 ` +
+        `(${swallowed.join(' · ')}). 값에 따옴표가 없어 구분자가 안 읽힌 자국입니다 — ` +
+        '그 항목들의 이유가 사라진 상태입니다. 값을 큰따옴표로 감싸고 항목을 나눠 주세요.',
+    });
+  }
+}
+
 
 function pushFrontmatterDiagnostics(diagnostics, issues) {
   for (const diagnostic of diagnostics) {

@@ -586,7 +586,7 @@ describe('AppSettingsMenu appearance pickers (#20/#21)', () => {
     const baseline = sizeClasses();
     expect(baseline, '고정 높이가 없다 — 내용이 창 크기를 정하고 있다').toMatch(/h-\[\d+px\]/);
     expect(baseline, '고정 폭이 없다').toMatch(/w-\[\d+px\]/);
-    for (const item of ['background', 'expand', 'footprint', 'notify', 'workspace', 'agent', 'ai']) {
+    for (const item of ['background', 'expand', 'footprint', 'notify', 'workspace', 'runtimes', 'agent', 'ai']) {
       fireEvent.click(screen.getByTestId(`app-settings-nav-${item}`));
       expect(sizeClasses(), `${item} 절에서 창 크기가 바뀐다`).toBe(baseline);
     }
@@ -596,13 +596,16 @@ describe('AppSettingsMenu appearance pickers (#20/#21)', () => {
    * LNB 는 **묶음**을 가진다. 다섯 항목이 왜 그 순서인지를 말하는 것이 묶음의
    * 일이고, 그게 없으면 목록이 그냥 다섯 줄이다.
    */
-  it('LNB 는 두 묶음으로 나뉘고 5·3 으로 갈린다', () => {
+  it('LNB 는 두 묶음으로 나뉘고 5·4 로 갈린다', () => {
     openSheet();
     const nav = screen.getByTestId('app-settings-nav');
     // 문구가 아니라 **구조**로 잠근다 — 라벨을 다듬을 때마다 깨지면 안 된다.
     const groups = [...nav.children];
     expect(groups.length, '묶음이 둘이 아니다').toBe(2);
-    expect(groups.map((g) => g.querySelectorAll('button').length)).toEqual([5, 3]);
+    // 2026-08-16 에 「이어진 것」이 3 → 4 가 됐다(실행기 절 신설). 이 검사가
+    // 지키는 것은 개수가 아니라 **묶음이 둘이고 각각 제목이 있다**는 구조다 —
+    // 개수는 그 구조의 부수치라 절을 늘릴 때 같이 갱신한다.
+    expect(groups.map((g) => g.querySelectorAll('button').length)).toEqual([5, 4]);
     for (const g of groups) {
       expect(g.querySelector('p'), '묶음에 제목이 없다 — 그러면 그냥 일곱 줄이다').not.toBeNull();
     }
@@ -614,7 +617,7 @@ describe('AppSettingsMenu appearance pickers (#20/#21)', () => {
    */
   it('LNB 항목마다 아이콘이 하나씩 있다', () => {
     openSheet();
-    for (const item of ['screen', 'background', 'expand', 'footprint', 'notify', 'workspace', 'agent', 'ai']) {
+    for (const item of ['screen', 'background', 'expand', 'footprint', 'notify', 'workspace', 'runtimes', 'agent', 'ai']) {
       const svgs = screen.getByTestId(`app-settings-nav-${item}`).querySelectorAll('svg');
       expect(svgs.length, `${item} 항목에 아이콘이 없다`).toBe(1);
     }

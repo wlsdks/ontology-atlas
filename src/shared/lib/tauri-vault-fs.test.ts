@@ -18,6 +18,7 @@ import {
   isTauriVaultRuntime,
   listTauriDirectoryNames,
   openTauriVaultInFinder,
+  vaultRootRejectionReason,
   pickTauriVaultDirectory,
   inspectTauriProjectSource,
   tauriVaultPathExists,
@@ -401,5 +402,45 @@ describe('tauri vault file-system shim', () => {
     await expect(ensureTauriChildDirectory('/vault', 'my-ontology')).rejects.toThrow(
       'Tauri vault runtime is not available.',
     );
+  });
+});
+
+describe('vaultRootRejectionReason — 거절은 실패와 다르게 읽힌다', () => {
+  /*
+   * 2026-08-16 — 폴더 피커가 `/`(Macintosh HD)를 볼트로 받아들였고, 막은 것은
+   * macOS 경고 대화상자였다. Rust 쪽이 사유 코드를 돌려주게 됐고, 화면은 그
+   * 코드를 보고 자기 언어 문구를 고른다. 이 파서가 코드를 못 뽑아내면 화면은
+   * 다시 「폴더를 열지 못했습니다. 다시 시도해 주세요」로 떨어지는데, 그건
+   * 몇 번을 눌러도 같은 결과라 거짓 안내다.
+   */
+  it('사유 코드를 뽑아낸다 — Error 와 문자열 둘 다', () => {
+    expect(vaultRootRejectionReason(new Error('vault-root-rejected:filesystem-root'))).toBe(
+      'filesystem-root',
+    );
+    expect(vaultRootRejectionReason('vault-root-rejected:home-directory')).toBe('home-directory');
+    expect(vaultRootRejectionReason('vault-root-rejected:system-directory')).toBe(
+      'system-directory',
+    );
+  });
+
+  it('Tauri 가 원문을 감싸 던져도 찾아낸다', () => {
+    // invoke 는 커맨드 오류를 그대로 주기도 하고 문장에 실어 주기도 한다.
+    expect(
+      vaultRootRejectionReason(
+        new Error('invoke failed: vault-root-rejected:system-directory'),
+      ),
+    ).toBe('system-directory');
+  });
+
+  it('거절이 아닌 오류는 null — 평범한 실패를 거절로 오인하지 않는다', () => {
+    expect(vaultRootRejectionReason(new Error('permission denied'))).toBeNull();
+    expect(vaultRootRejectionReason(null)).toBeNull();
+    expect(vaultRootRejectionReason(undefined)).toBeNull();
+    expect(vaultRootRejectionReason({ code: 42 })).toBeNull();
+  });
+
+  it('접두사만 있고 사유가 비면 null — 빈 코드로 문구를 고르지 않는다', () => {
+    expect(vaultRootRejectionReason('vault-root-rejected:')).toBeNull();
+    expect(vaultRootRejectionReason('vault-root-rejected:   ')).toBeNull();
   });
 });

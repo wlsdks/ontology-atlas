@@ -2563,6 +2563,7 @@ version = "1.0.0-rc.6"
 dependencies = [
  "chrono",
  "keyring",
+ "libc",
  "notify-debouncer-full",
  "objc2",
  "rfd",

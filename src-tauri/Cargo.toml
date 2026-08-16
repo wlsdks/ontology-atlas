@@ -27,6 +27,15 @@ notify-debouncer-full = "0.3"
 tauri-plugin-updater = "2.10.1"
 tauri-plugin-process = "2.3.1"
 
+# libc 도 tauri 가 이미 끌어오는 transitive dep (0.2, Cargo.lock 에 단일 버전) —
+# 직접 선언해도 신규 공급망 표면 0 (objc2 와 같은 근거).
+#
+# 쓰는 곳은 하나다: ACP 하네스를 **프로세스 그룹째** 끝내는 것. 어댑터는 자기
+# 자식(진짜 CLI · MCP 서버)을 또 띄우므로 `Child::kill()` 만으로는 손자들이
+# 고아로 남는다. 표준 라이브러리에는 프로세스 그룹에 신호를 보내는 길이 없다.
+[target.'cfg(unix)'.dependencies]
+libc = "0.2"
+
 # objc2 는 tauri 가 이미 끌어오는 transitive dep — 신규 공급망 표면 0.
 # WKWebView 의 60fps rAF 캡 해제 (ProMotion 120Hz)에만 사용.
 [target.'cfg(target_os = "macos")'.dependencies]

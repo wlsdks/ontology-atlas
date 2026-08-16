@@ -288,6 +288,29 @@ export function createTauriVaultHandle(rootPath: string): FileSystemDirectoryHan
   return new TauriDirectoryHandle(rootPath, '', invoke) as unknown as FileSystemDirectoryHandle;
 }
 
+/**
+ * Rust `pick_vault_directory` 가 「이 자리는 볼트 루트로 받을 수 없다」고 거절할 때
+ * 쓰는 접두사. 사유 코드는 `filesystem-root` · `home-directory` · `system-directory`.
+ *
+ * 문장이 아니라 **코드**로 넘기는 이유: 사람이 읽는 문구를 Rust 안에서 만들면
+ * 번역이 거기 갇힌다. 화면이 코드를 보고 자기 언어로 고른다.
+ */
+export const VAULT_ROOT_REJECTED_PREFIX = 'vault-root-rejected:';
+
+/** 이 오류가 「받을 수 없는 자리」 거절이면 사유 코드를, 아니면 null 을 준다. */
+export function vaultRootRejectionReason(error: unknown): string | null {
+  const text =
+    typeof error === 'string'
+      ? error
+      : error instanceof Error
+        ? error.message
+        : null;
+  if (!text) return null;
+  const at = text.indexOf(VAULT_ROOT_REJECTED_PREFIX);
+  if (at < 0) return null;
+  return text.slice(at + VAULT_ROOT_REJECTED_PREFIX.length).trim() || null;
+}
+
 export async function pickTauriVaultDirectory(
   dialogTitle?: string,
 ): Promise<FileSystemDirectoryHandle | null> {

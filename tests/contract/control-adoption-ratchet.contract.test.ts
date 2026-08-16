@@ -900,6 +900,19 @@ const NO_BASIS: readonly NoBasisEntry[] = [
       '`data-backdrop-surface-token` · `data-interactive-overlay`(투어 자동시작 차단 판정이 읽는 ' +
       '마커). 컨트롤 규격은 0이다.',
   },
+  {
+    file: 'src/widgets/acp-chat-panel/ui/AcpChatPanel.tsx',
+    count: 1,
+    family: 'button',
+    claim: 'click-surface',
+    proof: 'data-testid="acp-chat-history-scrim"',
+    why:
+      '앱 안 대화의 **지난 대화 목록 뒤 막**. 그 목록은 절대 위치로 떠서 대화를 덮는다 — ' +
+      '흐름에 두면 열 때 대화가 밀려나고 목록이 대화의 일부처럼 보였다(2026-08-16 소유자 ' +
+      '실보고). 떠 있는 것에는 「아무 데나 누르면 닫힌다」가 딸려야 하고 그 클릭면이 이 막이다. ' +
+      '`absolute inset-0` 과 바탕 한 겹이 전부이고, 값 층의 모양 여덟 중 무엇을 씌워도 ' +
+      '**보이는 것이 달라지지 않는다** — 씌울 규격이 없어서다.',
+  },
 ];
 
 const NO_BASIS_BUTTONS = NO_BASIS.filter((e) => e.family === 'button');
@@ -916,7 +929,17 @@ const NO_BASIS_BUTTONS = NO_BASIS.filter((e) => e.family === 'button');
 const NO_BASIS_ANCHORS = NO_BASIS.filter((e) => e.family === 'anchor');
 
 /** 리터럴이다 — 등재 기준선들과 같은 이유(파생이면 멈춤쇠가 양방향으로 헐거워진다). */
-const BASELINE_NO_BASIS = 4;
+/*
+ * 4 → 5 (2026-08-16): 앱 안 대화의 **지난 대화 목록 뒤 막**.
+ *
+ * 그 목록은 절대 위치로 떠서 대화를 덮는다(흐름에 두면 대화가 밀려나고 목록이
+ * 대화의 일부처럼 보였다 — 소유자 실보고). 떠 있는 것에는 「아무 데나 누르면
+ * 닫힌다」가 딸려야 하고, 그 클릭면이 이 막이다.
+ *
+ * 자격 요건 둘을 그대로 만족한다: `absolute inset-0`(화면을 덮는다) · 램프가
+ * 소유한 속성 **0개**(자리잡기와 바탕 한 겹뿐, 씌울 규격이 없다).
+ */
+const BASELINE_NO_BASIS = 5;
 const BASELINE_ANCHOR_NO_BASIS = 0;
 
 /**
@@ -925,7 +948,7 @@ const BASELINE_ANCHOR_NO_BASIS = 0;
  * 사람은 ① 그 자리가 정말 클릭면이면 등록부와 이 수를 손으로 올리고(그 diff 가
  * 「왜」를 적을 자리다) ② 아니면 부채로 갚는다. 조용히 면제되는 경로는 없다.
  */
-const CLICK_SURFACE_CENSUS = 4;
+const CLICK_SURFACE_CENSUS = 5;
 
 const ROOTS = ['src', 'app'];
 const GLOBALS_CSS = 'app/globals.css';

@@ -24,8 +24,14 @@ const SETTINGS_VIEW_INTENT_EVENT = 'ontology-atlas:settings-view-intent';
  * 약속하는데, 열리는 방은 BYOK(`ai`) 하나뿐이었다. 시트에는 `agent` 뷰가
  * 실재하는데 이 타입이 그것을 부를 수 없어서, 약속한 방 중 하나로 가는 문이
  * 아예 없었다(카운슬 「핸드오프」).
+ *
+ * `'runtimes'` 는 2026-08-16 에 더했다 — 시작 체크리스트의 1단이 「AI 도구
+ * 연결」인데, 앱 안에서 바로 대화할 도구를 고르는 자리는 `agent`(밖의 도구에
+ * 이 폴더를 알려 주는 설정)가 아니라 **실행기 목록**이다. 그 둘은 하는 일이
+ * 달라서 한쪽으로 보내면 사용자가 엉뚱한 화면에서 찾게 된다(소유자 실보고:
+ * *"바로 설정이 나와서 ACP 연결하게 해야 하는 거 아님?"*).
  */
-export type SettingsViewIntent = 'ai' | 'agent';
+export type SettingsViewIntent = 'ai' | 'agent' | 'runtimes';
 
 interface SettingsViewIntentDetail {
   view: SettingsViewIntent;

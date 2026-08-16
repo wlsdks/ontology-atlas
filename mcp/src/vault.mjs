@@ -3,13 +3,17 @@
 
 import {
   accessSync,
+  closeSync,
   constants as fsConstants,
+  fsyncSync,
+  openSync,
   readdirSync,
   readFileSync,
   writeFileSync,
   mkdirSync,
   existsSync,
   realpathSync,
+  renameSync,
   statSync,
   unlinkSync,
 } from 'node:fs';
@@ -1030,7 +1034,7 @@ function runNodeEligibilityGate(rootPath, slug, frontmatter, { created = false }
  * somewhere else.
  */
 function commitDoc(rootPath, slug, filePath, frontmatter, body, { created = false, previousFrontmatter } = {}) {
-  writeFileSync(filePath, buildMarkdown({ frontmatter, body }), 'utf-8');
+  writeFileAtomically(filePath, buildMarkdown({ frontmatter, body }));
   if (created) noteGateWrite(rootPath, slug);
   noteParentGrowth(slug, previousFrontmatter, frontmatter);
   runNodeEligibilityGate(rootPath, slug, frontmatter, { created });
@@ -1625,8 +1629,129 @@ function buildRefResolver(docs) {
  * @param {Array<{op:'write'|'delete', path:string, content?:string}>} plan
  * @returns {{applied:number}}
  */
+/**
+ * 파일 하나를 **끊기지 않게** 쓴다 — 임시 파일에 쓰고, 디스크에 확정하고, 이름을 바꾼다.
+ *
+ * ## 왜 (2026-08-16 검수)
+ *
+ * 종전에는 `writeFileSync` 하나였다. 그건 원본을 **먼저 비우고** 쓴다. 그
+ * 사이에 프로세스가 죽거나 디스크가 차면 사용자의 마크다운이 **잘린 채로**
+ * 남는다 — 그리고 그 파일은 방금 우리가 열어 준 그 폴더의 것이다.
+ *
+ * ⚠️ 이 저장소에는 안전한 쓰기가 **이미 있었다**(`cli/src/lib/agent-config.mjs`
+ * 의 `writeTextAtomically`). 그런데 쓰는 곳이 `.mcp.json` 과 `config.toml`
+ * 뿐이었다 — **설정 파일은 지키고 사용자 데이터는 안 지키는** 모양이었다.
+ *
+ * 이름 바꾸기(rename)는 같은 파일 시스템 안에서 원자적이다. 그래서 어느
+ * 순간에 죽어도 파일은 **옛 내용 아니면 새 내용**이지, 반쪽이 되지 않는다.
+ */
+export function writeFileAtomically(filePath, text) {
+  const temporaryPath = `${filePath}.oatlas-tmp-${process.pid}`;
+  let descriptor = null;
+  try {
+    descriptor = openSync(temporaryPath, 'wx');
+    writeFileSync(descriptor, text, 'utf-8');
+    // 이름을 바꾸기 전에 디스크에 확정한다 — 안 하면 이름만 새것이고 내용은
+    // 아직 캐시에 있는 상태로 전원이 나갈 수 있다.
+    fsyncSync(descriptor);
+    closeSync(descriptor);
+    descriptor = null;
+    renameSync(temporaryPath, filePath);
+  } finally {
+    if (descriptor !== null) {
+      try {
+        closeSync(descriptor);
+      } catch {
+        /* 이미 닫혔다 */
+      }
+    }
+    try {
+      // 성공하면 rename 이 가져갔으므로 여기서 지울 것이 없다. 실패했을 때만
+      // 임시 파일이 남고, 그건 원본을 건드리지 않고 치운다.
+      if (existsSync(temporaryPath)) unlinkSync(temporaryPath);
+    } catch {
+      /* 못 치워도 원본은 멀쩡하다 */
+    }
+  }
+}
+
+/**
+ * 두 경로가 **같은 파일을 가리키는가**를 비교할 열쇠.
+ *
+ * 이미 있는 파일이면 실제 경로(심볼릭 링크를 편 것)를 쓰고, 아직 없으면 경로
+ * 문자열을 쓴다. 대소문자를 구별하지 않는 파일 시스템(macOS 기본 · Windows)을
+ * 위해 소문자로 눕힌다 — 구별하는 시스템에서는 서로 다른 두 파일이 같은 열쇠를
+ * 갖게 되지만, 그 경우 손해는 「지우기 하나를 안 한 것」뿐이고 그건 데이터가
+ * 사라지는 쪽보다 언제나 낫다.
+ */
+function sameFileKey(path) {
+  try {
+    if (existsSync(path)) return realpathSync(path).toLowerCase();
+  } catch {
+    /* 실제 경로를 못 펴면 문자열로 간다 — 판정이 없는 것보다 낫다. */
+  }
+  return resolve(path).toLowerCase();
+}
+
 export function applyAllOrNothing(plan) {
   if (!Array.isArray(plan) || plan.length === 0) return { applied: 0 };
+
+  /*
+   * ⓪ **같은 파일을 쓰고 또 지우는 계획은 지우기를 뺀다.**
+   *
+   * 이름만 대소문자가 다른 rename 은 이 계획을 만든다:
+   *   write `capabilities/auth.md` · delete `capabilities/Auth.md`
+   * 그런데 macOS·Windows 의 파일 시스템은 그 둘을 **같은 파일**로 본다. 그래서
+   * 쓰고 나서 지우면 방금 쓴 그것이 지워진다 — 노드가 통째로 사라지고, 도구는
+   * 성공이라고 답한다(2026-08-16 검수에서 재현).
+   *
+   * 앞단(`rename_concept`)에서 그 경우를 거절하지만, 같은 계획을 만드는 도구가
+   * 셋(rename · merge · reclassify)이라 **쓰기 층에도** 막아 둔다. 문자열 비교로
+   * 못 잡는 것을 여기서는 **실제 경로**로 잡는다.
+   */
+  const writeTargets = new Set();
+  for (const entry of plan) {
+    if (entry.op !== 'write') continue;
+    writeTargets.add(sameFileKey(entry.path));
+  }
+  const safePlan = plan.filter(
+    (entry) => entry.op !== 'delete' || !writeTargets.has(sameFileKey(entry.path)),
+  );
+  if (safePlan.length !== plan.length) plan = safePlan;
+
+  /*
+   * ⓪-b **남이 그 사이에 고쳤으면 한 글자도 안 쓴다.**
+   *
+   * ## 왜 (2026-08-16 검수)
+   *
+   * `expected_mtime` 검사는 **한 파일**을 고치는 길에만 있었다. 그런데 이 함수를
+   * 쓰는 셋(rename · merge · reclassify)은 참조하는 문서 N개를 **몇 분 전에 읽은
+   * 스냅샷**으로 다시 쓴다. 그 사이 사용자가 옵시디언에서 그중 하나를 고쳤으면
+   * 그 편집은 조용히 사라졌다 — 사람과 에이전트가 한 폴더를 같이 쓰는 것이
+   * 이 제품이 파는 바로 그 상황인데, 그 상황에서만 보호가 없었다.
+   *
+   * 계획을 만든 쪽이 각 항목에 `expectedMtime` 을 실어 보내면 여기서 본다.
+   * 안 실어 보내면 종전대로 검사하지 않는다(회귀 0) — 다만 그 자리는 이제
+   * 「안 넣은 것」이지 「없는 것」이 아니다.
+   */
+  const conflicts = [];
+  for (const entry of plan) {
+    if (entry.expectedMtime === null || entry.expectedMtime === undefined) continue;
+    if (!existsSync(entry.path)) continue;
+    const current = getFileMtime(entry.path);
+    if (current === null) continue;
+    if (Math.abs(current - entry.expectedMtime) >= 1) {
+      conflicts.push(entry.path);
+    }
+  }
+  if (conflicts.length > 0) {
+    throw new Error(
+      `Refused before writing anything: ${conflicts.length} file(s) changed on disk since they `
+        + `were read, so this operation would overwrite someone else's edit:\n  `
+        + `${conflicts.join('\n  ')}\n`
+        + 'The vault is unchanged. Re-read those documents and run this again.',
+    );
+  }
 
   // ① 사전 점검 — 한 글자도 쓰기 전에. 흔한 실패(읽기 전용 파일·잠긴 파일·
   //    읽기 전용 볼트)는 여기서 걸러져 되돌리기 자체가 필요 없어진다.
@@ -1665,7 +1790,7 @@ export function applyAllOrNothing(plan) {
       const before = existed ? readFileSync(entry.path, 'utf-8') : null;
       if (entry.op === 'write') {
         mkdirSync(dirname(entry.path), { recursive: true });
-        writeFileSync(entry.path, entry.content, 'utf-8');
+        writeFileAtomically(entry.path, entry.content);
       } else {
         if (existed) unlinkSync(entry.path);
       }
@@ -1676,7 +1801,7 @@ export function applyAllOrNothing(plan) {
     const unrecovered = [];
     for (const step of done.reverse()) {
       try {
-        if (step.existed) writeFileSync(step.path, step.before, 'utf-8');
+        if (step.existed) writeFileAtomically(step.path, step.before);
         else if (existsSync(step.path)) unlinkSync(step.path);
       } catch {
         unrecovered.push(step.path);
@@ -1869,6 +1994,14 @@ export function redirectBacklinks(rootPath, targetSlug, nextSlug, options = {}) 
       op: 'write',
       path: filePath,
       content: buildMarkdown({ frontmatter: nextFm, body: nextBody }),
+      /*
+       * **읽은 시점을 같이 들고 간다** (2026-08-16 검수).
+       *
+       * 이 문서는 몇 초~몇 분 전에 읽은 스냅샷이다. 그 사이 사용자가 자기
+       * 편집기에서 이 파일을 고쳤으면, 여기서 그대로 쓰는 순간 그 편집이
+       * 사라진다. 쓰기 직전에 이 값과 디스크를 대조한다.
+       */
+      expectedMtime: getFileMtime(filePath),
     });
   }
 

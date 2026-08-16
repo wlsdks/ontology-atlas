@@ -8,6 +8,7 @@ export { buildOntologyTree, countTreeNodes, flattenTree } from "./build-tree";
 export { buildOntologyEgoSubgraph } from "./build-ego";
 export {
   buildOntologyReachability,
+  buildReachabilityIndex,
   computeOntologyDependents,
   IMPACT_RELATION_TYPES,
 } from "./reachability";
