@@ -178,6 +178,19 @@ function normalizeInventory(value) {
 }
 
 function normalizeQuestions(competency, projectSlug) {
+  /*
+   * **「아직 안 적었다」와 「망가졌다」를 가른다** (2026-08-17 실측).
+   *
+   * 볼트를 방금 만들고 검사하면 `assessment_input_invalid` 가 나왔다. `init`
+   * 이 역량 질문 블록을 안 만들어 두는데, 그 블록이 **없는 것**이 아래
+   * `malformed` 로 뭉개졌기 때문이다. 그래서 갓 태어난 볼트가 자기가 고장
+   * 났다고 말했고, 사용자는 자기가 뭘 깨뜨린 줄 알게 된다.
+   *
+   * 판정 자체는 그대로다(아직 의미가 확인되지 않은 것은 사실이다). 바뀌는
+   * 것은 **이름과 처방**이다: 안 적었으면 안 적었다고 하고 무엇을 하면
+   * 되는지 같이 준다.
+   */
+  const absent = competency === null || competency === undefined;
   const rows = Array.isArray(competency?.questions) ? competency.questions : [];
   const inventory = normalizeInventory(competency?.inventory);
   const byId = new Map();
@@ -239,6 +252,7 @@ function normalizeQuestions(competency, projectSlug) {
 
   return {
     malformed,
+    absent,
     inventory,
     questions: MEANING_COMPETENCY_QUESTIONS.map(({ id }) => (
       byId.get(id) ?? { id, status: "unassessed", witnessStatus: "unavailable" }
@@ -371,19 +385,33 @@ export function deriveMeaningAssessment(input) {
   const rawStructureStatus = safeInput.structure?.status;
   const structureStatus = normalizeMeaningStructureStatus(rawStructureStatus);
 
-  if (
+  const inputBroken =
     !safeProjectSlug(safeInput.projectSlug)
     || !safeGraphHash(safeInput.graphHash)
     || !STRUCTURE_STATUS_NORMALIZATION.has(rawStructureStatus)
-    || normalized.malformed
-    || sourceReceiptMalformed(safeInput.source)
-  ) {
+    || sourceReceiptMalformed(safeInput.source);
+
+  // 다른 것이 틀렸으면 그것을 먼저 말한다 — 「안 적었다」가 진짜 결함을 가리면
+  // 사용자는 엉뚱한 곳을 고치게 된다.
+  if (inputBroken || (normalized.malformed && !normalized.absent)) {
     return result(
       safeInput,
       normalized,
       "invalid",
       { dimension: "assessment", id: "assessment_input_invalid" },
       { id: "repair_assessment_input" },
+    );
+  }
+
+  // 역량 답이 **아직 없다**. 망가진 게 아니라 아직 안 한 일이다 — 이름과
+  // 처방이 그렇게 말해야 갓 만든 볼트가 자기가 고장 났다고 하지 않는다.
+  if (normalized.absent) {
+    return result(
+      safeInput,
+      normalized,
+      "invalid",
+      { dimension: "competency", id: "competency_not_authored" },
+      { id: "author_competency_answers" },
     );
   }
 

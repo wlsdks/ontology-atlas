@@ -403,6 +403,26 @@ function invalidAssessment(input) {
   });
 }
 
+/**
+ * 아직 `finalize_project_meaning` 을 한 번도 안 돌린 프로젝트 (2026-08-17).
+ *
+ * 종전에는 이 경우도 `invalidAssessment` 로 보냈다. 그래서 **볼트를 방금
+ * 만들고 바로 검사하면** `invalid (assessment_input_invalid)` 가 나왔고,
+ * 아무 잘못도 안 한 사람이 자기가 뭘 깨뜨린 줄 알게 됐다.
+ *
+ * 판정은 그대로 「아직 확인 안 됨」이다 — 바뀌는 것은 **이름과 처방**뿐이다.
+ * `competency: null` 로 넘겨서 평가기가 「안 적었다」 갈래를 타게 한다.
+ */
+function notAuthoredAssessment(input) {
+  return deriveMeaningAssessment({
+    projectSlug: input.projectSlug,
+    graphHash: input.graphHash,
+    structure: input.structure,
+    source: input.source,
+    competency: null,
+  });
+}
+
 export function readProjectMeaningAssessment(input) {
   const {
     vaultRoot,
@@ -420,7 +440,8 @@ export function readProjectMeaningAssessment(input) {
   const stored = readState(receiptPath);
   const receipt = stored.state?.receipts.find((row) => row.projectSlug === projectSlug);
   if (!receipt) {
-    return invalidAssessment({ projectSlug, graphHash, structure, source, inventory });
+    // 「아직 안 했다」는 「망가졌다」가 아니다.
+    return notAuthoredAssessment({ projectSlug, graphHash, structure, source, inventory });
   }
 
   let parsed;
