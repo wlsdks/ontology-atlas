@@ -38,7 +38,10 @@ describe("vault-freshness-drift script arguments", () => {
   });
 
   it("--changed-files dry-run mode reports 0 drift with no vault matches", () => {
-    const result = run(["--changed-files", "README.md", "--json"], { cwd: ROOT });
+    const result = run(
+      ["--changed-files", "__vault_freshness_no_match_fixture__.txt", "--json"],
+      { cwd: ROOT },
+    );
     assert.equal(result.status, 0);
     const payload = JSON.parse(result.stdout);
     assert.equal(payload.hasDrift, false);

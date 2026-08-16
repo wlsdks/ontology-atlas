@@ -37,6 +37,11 @@ concurrency:
 
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+  # Reusable-workflow inputs are untrusted strings. Keep them out of `run:`
+  # source so quotes/newlines can only be argv data, never shell syntax.
+  VAULT_DIR: ${{ inputs.vault-dir || 'docs/ontology' }}
+  BASE_SHA: ${{ github.event.pull_request.base.sha }}
+  HEAD_SHA: ${{ github.event.pull_request.head.sha }}
 
 jobs:
   freshness:
@@ -49,6 +54,7 @@ jobs:
         uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
         with:
           fetch-depth: 0
+          persist-credentials: false
 
       - name: Setup Node.js
         uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
@@ -58,14 +64,14 @@ jobs:
       # No `pnpm install` — both scripts below only import node builtins +
       # scripts/lib, so the whole job stays install-free and fast.
       - name: Validate vault frontmatter
-        run: node scripts/validate-vault.mjs "${{ inputs.vault-dir || 'docs/ontology' }}"
+        run: node scripts/validate-vault.mjs "$VAULT_DIR"
 
       - name: Compute vault freshness drift
         run: |
           node scripts/vault-freshness-drift.mjs \
-            --vault "${{ inputs.vault-dir || 'docs/ontology' }}" \
-            --base "${{ github.event.pull_request.base.sha }}" \
-            --head "${{ github.event.pull_request.head.sha }}" \
+            --vault "$VAULT_DIR" \
+            --base "$BASE_SHA" \
+            --head "$HEAD_SHA" \
             --json > vault-freshness-drift.json
           node -e "const p=require('./vault-freshness-drift.json'); console.log(p.hasDrift ? p.staleNodes.length+' node(s) may go stale' : '0 node(s) at risk ✓')"
 
