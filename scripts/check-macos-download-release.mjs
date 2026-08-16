@@ -113,6 +113,14 @@ function githubAssetHeaders() {
   return githubApiHeaders({ Accept: "application/octet-stream" });
 }
 
+function headersForRedirect(headers, fromUrl, toUrl) {
+  if (new URL(fromUrl).origin === new URL(toUrl).origin) return headers;
+  const sensitive = new Set(["authorization", "cookie", "proxy-authorization"]);
+  return Object.fromEntries(
+    Object.entries(headers).filter(([name]) => !sensitive.has(name.toLowerCase())),
+  );
+}
+
 function requestRaw(url, { headers = {}, method = "GET", maxBytes = 1024 * 1024, redirects = 5 } = {}) {
   const parsed = new URL(url);
   const client = parsed.protocol === "http:" ? http : https;
@@ -131,7 +139,12 @@ function requestRaw(url, { headers = {}, method = "GET", maxBytes = 1024 * 1024,
           return;
         }
         const nextUrl = new URL(location, url).toString();
-        requestRaw(nextUrl, { headers, method, maxBytes, redirects: redirects - 1 })
+        requestRaw(nextUrl, {
+          headers: headersForRedirect(headers, url, nextUrl),
+          method,
+          maxBytes,
+          redirects: redirects - 1,
+        })
           .then(resolve, reject);
         return;
       }
@@ -199,7 +212,11 @@ function requestSha256(url, { headers = {}, maxBytes = MAX_DOWNLOAD_HASH_BYTES, 
           return;
         }
         const nextUrl = new URL(location, url).toString();
-        requestSha256(nextUrl, { headers, maxBytes, redirects: redirects - 1 })
+        requestSha256(nextUrl, {
+          headers: headersForRedirect(headers, url, nextUrl),
+          maxBytes,
+          redirects: redirects - 1,
+        })
           .then(resolve, reject);
         return;
       }

@@ -503,6 +503,46 @@ test("download release verifier accepts GH_TOKEN for authenticated GitHub API re
   });
 });
 
+test("download release verifier strips authorization on cross-origin asset redirects", async () => {
+  const storageAuthorization = [];
+  await withServer((req, res) => {
+    storageAuthorization.push(req.headers.authorization);
+    makeHandler()(req, res);
+  }, async (storageBaseUrl) => {
+    await withServer((req, res) => {
+      if (
+        req.url === "/repos/wlsdks/ontology-atlas/releases?per_page=20" ||
+        req.url === "/repos/wlsdks/ontology-atlas/releases/tags/v0.1.0"
+      ) {
+        const payload = releasePayload(`http://${req.headers.host}`);
+        payload[0].draft = true;
+        res.writeHead(200, { "Content-Type": "application/json" });
+        res.end(JSON.stringify(req.url.includes("/tags/") ? payload[0] : payload));
+        return;
+      }
+      if (req.url?.startsWith("/asset-api/")) {
+        res.writeHead(302, {
+          Location: `${storageBaseUrl}${req.url.replace("/asset-api/", "/download/")}`,
+        });
+        res.end();
+        return;
+      }
+      res.writeHead(404);
+      res.end("not found");
+    }, async (apiBaseUrl) => {
+      const { stdout } = await runVerifierWithArgs(
+        apiBaseUrl,
+        ["--allow-draft", "--tag=v0.1.0"],
+        { GITHUB_TOKEN: "test-token", GH_TOKEN: "" },
+      );
+      assert.match(stdout, /exposes reachable draft macOS download assets/);
+    });
+  });
+
+  assert.ok(storageAuthorization.length > 0, "redirect target was never requested");
+  assert.deepEqual(storageAuthorization, storageAuthorization.map(() => undefined));
+});
+
 test("download release verifier can validate draft assets before publishing", async () => {
   await withServer(makeHandler(), async (baseUrl) => {
     const payload = releasePayload(baseUrl);
