@@ -10226,7 +10226,8 @@ function renameConcept({ oldSlug, newSlug, confirm = false, overwrite = false, e
   if (!vaultSlugExists(VAULT_ROOT, oldSlug)) {
     throw new Error(missingSlugMessage('Source slug does not exist in vault', oldSlug));
   }
-  if (!overwrite && vaultSlugExists(VAULT_ROOT, newSlug)) {
+  const targetExists = vaultSlugExists(VAULT_ROOT, newSlug);
+  if (!overwrite && targetExists) {
     throw new Error(
       `Target slug already exists: "${newSlug}". Pass overwrite: true to replace it.`,
     );
@@ -10235,6 +10236,7 @@ function renameConcept({ oldSlug, newSlug, confirm = false, overwrite = false, e
   const sourcePath = slugToPath(VAULT_ROOT, oldSlug);
   const targetPath = slugToPath(VAULT_ROOT, newSlug);
   const sourceDoc = readDoc(VAULT_ROOT, sourcePath);
+  const targetDoc = overwrite && targetExists ? readDoc(VAULT_ROOT, targetPath) : null;
 
   // 슬러그 평면성 — rename 은 writeDoc 을 거치지 않고 직접 쓰므로 여기서도
   // 같은 게이트를 잰다 (경로형 정체성이 rename 으로 되살아나는 문 봉쇄).
@@ -10299,12 +10301,22 @@ function renameConcept({ oldSlug, newSlug, confirm = false, overwrite = false, e
       op: 'write',
       path: targetPath,
       content: buildMarkdown({ frontmatter: nextFrontmatter, body: sourceDoc.body }),
+      ...(targetDoc
+        ? { expectedRaw: targetDoc.raw, expectedMtime: targetDoc.mtime }
+        : { expectedAbsent: true }),
     },
     ...result.plan,
     // 삭제는 마지막이다 — 계획 안에서도 순서는 유지된다. 되돌리기는 역순이라
     // 옛 파일이 먼저 복원되고 새 파일이 지워진다.
-    ...(sourcePath !== targetPath ? [{ op: 'delete', path: sourcePath }] : []),
-  ]);
+    ...(sourcePath !== targetPath
+      ? [{
+          op: 'delete',
+          path: sourcePath,
+          expectedRaw: sourceDoc.raw,
+          expectedMtime: sourceDoc.mtime,
+        }]
+      : []),
+  ], { requireRevisions: true });
 
   return {
     ok: true,
@@ -10402,10 +10414,20 @@ function reclassifyConcept({ slug, newKind, newSlug, domain, body, confirm = fal
       op: 'write',
       path: targetPath,
       content: buildMarkdown({ frontmatter: nextFrontmatter, body: nextBody }),
+      ...(sourcePath === targetPath
+        ? { expectedRaw: sourceDoc.raw, expectedMtime: sourceDoc.mtime }
+        : { expectedAbsent: true }),
     },
     ...(appliedBacklinks.plan ?? []),
-    ...(sourcePath !== targetPath ? [{ op: 'delete', path: sourcePath }] : []),
-  ]);
+    ...(sourcePath !== targetPath
+      ? [{
+          op: 'delete',
+          path: sourcePath,
+          expectedRaw: sourceDoc.raw,
+          expectedMtime: sourceDoc.mtime,
+        }]
+      : []),
+  ], { requireRevisions: true });
   return {
     ...base,
     ok: true,
@@ -10484,6 +10506,8 @@ function mergeConcepts({ fromSlug, intoSlug, confirm = false, expected_mtime, ex
   const intoIdentityWrite = {
     op: 'write',
     path: intoPath,
+    expectedRaw: intoDoc.raw,
+    expectedMtime: intoDoc.mtime,
     content: buildMarkdown({
       frontmatter: {
         ...redirectedInto.frontmatter,
@@ -10495,7 +10519,15 @@ function mergeConcepts({ fromSlug, intoSlug, confirm = false, expected_mtime, ex
   };
   if (intoPlanIndex >= 0) result.plan[intoPlanIndex] = intoIdentityWrite;
   else result.plan.push(intoIdentityWrite);
-  applyAllOrNothing([...result.plan, { op: 'delete', path: fromPath }]);
+  applyAllOrNothing([
+    ...result.plan,
+    {
+      op: 'delete',
+      path: fromPath,
+      expectedRaw: fromDoc.raw,
+      expectedMtime: fromDoc.mtime,
+    },
+  ], { requireRevisions: true });
 
   return {
     ok: true,

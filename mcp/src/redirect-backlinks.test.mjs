@@ -316,5 +316,26 @@ test("domain: 단일 문자열 참조는 여전히 따라간다", () => {
   rmSync(root, { recursive: true, force: true });
 });
 
+test("deferred plan은 다시 쓸 바로 그 snapshot 바이트와 mtime을 함께 싣는다", () => {
+  const root = makeVault();
+  writeMd(root, "target", "---\nkind: capability\n---\n");
+  writeMd(
+    root,
+    "ref",
+    "---\nkind: capability\nrelates: [target]\n---\n사람이 지킬 본문\n",
+  );
+  const before = readMd(root, "ref");
+
+  const result = redirectBacklinks(root, "target", "renamed", {
+    dryRun: false,
+    deferWrite: true,
+  });
+
+  assert.equal(result.plan.length, 1);
+  assert.equal(result.plan[0].expectedRaw, before);
+  assert.equal(typeof result.plan[0].expectedMtime, "number");
+  rmSync(root, { recursive: true, force: true });
+});
+
 console.log(`\nredirectBacklinks: ${passed} passed, ${failed} failed`);
 if (failed > 0) process.exit(1);

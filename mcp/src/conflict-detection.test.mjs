@@ -251,5 +251,42 @@ test("read → write 일치 흐름은 conflict 없음 (round-trip)", () => {
   rmSync(root, { recursive: true, force: true });
 });
 
+test("patch는 atomic rename 직전 사람 편집을 보존하고 충돌로 멈춘다", () => {
+  const root = makeVault();
+  const file = writeMd(root, "foo", "---\nkind: capability\n---\nold body");
+  const doc = readDoc(root, file);
+
+  assert.throws(
+    () => patchFrontmatter(root, "foo", { title: "Agent" }, {
+      expectedMtime: doc.mtime,
+      beforeCommit() {
+        writeFileSync(file, `${doc.raw}\nhuman note`, "utf-8");
+      },
+    }),
+    /changed on disk/i,
+  );
+  assert.match(readFileSync(file, "utf-8"), /human note/);
+  assert.doesNotMatch(readFileSync(file, "utf-8"), /title: Agent/);
+  rmSync(root, { recursive: true, force: true });
+});
+
+test("delete는 unlink 직전 사람 편집을 보존하고 충돌로 멈춘다", () => {
+  const root = makeVault();
+  const file = writeMd(root, "foo", "---\nkind: capability\n---\nold body");
+  const doc = readDoc(root, file);
+
+  assert.throws(
+    () => deleteDoc(root, "foo", {
+      expectedMtime: doc.mtime,
+      beforeDelete() {
+        writeFileSync(file, `${doc.raw}\nhuman note`, "utf-8");
+      },
+    }),
+    /changed on disk/i,
+  );
+  assert.match(readFileSync(file, "utf-8"), /human note/);
+  rmSync(root, { recursive: true, force: true });
+});
+
 console.log(`\nconflict-detection: ${passed} passed, ${failed} failed`);
 if (failed > 0) process.exit(1);
