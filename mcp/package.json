@@ -53,6 +53,7 @@
     "src/project-source-graph-hash.mjs",
     "src/project-source-inspection.mjs",
     "src/project-source-receipt.mjs",
+    "src/project-source-vocabulary.mjs",
     "src/project-source-mint.mjs",
     "src/project-source-discovery.mjs",
     "src/project-source-inference.mjs",
