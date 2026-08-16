@@ -21,8 +21,8 @@
  * status + per-check counts, following the parser/validator contract pattern.
  *
  * Scope: the health VERDICT (status + actionable check counts). It deliberately
- * mirrors the five health checks the MCP engine flips status on
- * (compile_issues · unresolved_edges · dependency_cycles ·
+ * mirrors the six health checks the MCP engine flips status on
+ * (vault_present · compile_issues · unresolved_edges · dependency_cycles ·
  * relation_recommendations · components), not the full engine API.
  */
 
@@ -38,6 +38,7 @@ export type VaultHealthCheckStatus = 'pass' | 'warn' | 'fail' | 'info';
 
 export interface VaultHealthCheck {
   id:
+    | 'vault_present'
     | 'compile_issues'
     | 'unresolved_edges'
     | 'dependency_cycles'
@@ -434,7 +435,7 @@ function dependencyCycleCount(graph: CompiledGraph): number {
 
 /**
  * Compute the vault health verdict from raw frontmatter, matching the MCP
- * engine's `health()` for the five status-flipping checks.
+ * engine's `health()` for the six status-flipping checks.
  */
 export function computeVaultHealth(docs: readonly VaultHealthDoc[]): VaultHealthResult {
   const graph = compile(docs);
@@ -447,6 +448,10 @@ export function computeVaultHealth(docs: readonly VaultHealthDoc[]): VaultHealth
   const islands = actionableGroups.slice(1);
 
   const checks: VaultHealthCheck[] = [
+    // 셀 것이 있는가를 먼저 묻는다. 노드가 0개면 아래 다섯이 전부 셀 것이
+    // 없어 통과하고 「정상」이 나온다 — 폴더를 잘못 짚은 사람이 그 사실을
+    // 알아챌 자리가 없어진다 (2026-08-16 실측, MCP 엔진과 같은 결함이었다).
+    { id: 'vault_present', status: graph.nodes.length === 0 ? 'fail' : 'pass', count: graph.nodes.length },
     { id: 'compile_issues', status: graph.issueCount === 0 ? 'pass' : 'warn', count: graph.issueCount },
     { id: 'unresolved_edges', status: unresolvedEdges === 0 ? 'pass' : 'warn', count: unresolvedEdges },
     { id: 'dependency_cycles', status: dependencyCycles === 0 ? 'pass' : 'fail', count: dependencyCycles },

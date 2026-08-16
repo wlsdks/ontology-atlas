@@ -10,6 +10,13 @@
 
 export const VAULT_HEALTH_CASES = [
   {
+    // 볼트가 아닌 폴더를 검사하면 둘 다 「정상」이라고 답했다 (2026-08-16 실측:
+    // `health <빈 폴더>` → healthy). 나머지 검사가 전부 셀 것이 없어 통과했기
+    // 때문이다 — 빈 집합 위에서 헛도는 검사는 검사가 아니다.
+    name: 'empty folder is not a healthy vault',
+    docs: [],
+  },
+  {
     name: 'fully-linked healthy vault',
     docs: [
       {

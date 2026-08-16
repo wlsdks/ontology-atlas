@@ -4111,6 +4111,9 @@ describe('queryCompiledOntology', () => {
     assert.deepEqual(
       result.checks.map((check) => ({ id: check.id, status: check.status, count: check.count })),
       [
+        // 셀 것이 있는가를 먼저 묻는다 — 없으면 아래 다섯의 `pass` 는 아무것도
+        // 증명하지 않는다 (`empty-vault-health.test.mjs`).
+        { id: 'vault_present', status: 'pass', count: 3 },
         { id: 'compile_issues', status: 'pass', count: 0 },
         { id: 'unresolved_edges', status: 'pass', count: 0 },
         { id: 'dependency_cycles', status: 'pass', count: 0 },

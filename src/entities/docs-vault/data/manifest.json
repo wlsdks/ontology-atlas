@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-08-16",
+  "generatedAt": "2026-08-17",
   "docs": [
     {
       "slug": "AGENT-GRAPH-WORKFLOW",
@@ -6467,6 +6467,11 @@
         },
         {
           "depth": 2,
+          "text": "2026-08-17 (19) — 셀 것이 없으면 전부 통과한다",
+          "slug": "2026-08-17-19-셀-것이-없으면-전부-통과한다"
+        },
+        {
+          "depth": 2,
           "text": "2026-08-16 (18) — 거울이 둘이면 한쪽만 고쳐지는 것이 기본값이다",
           "slug": "2026-08-16-18-거울이-둘이면-한쪽만-고쳐지는-것이-기본값이다"
         },
@@ -9162,8 +9167,8 @@
         }
       ],
       "excerpt": "이 파일은 결정과 그때 진 반대 의견을 남긴다. docs/CHANGELOG.md 는 무엇이 언제 바뀌었나를 답하고, 이 파일은 왜 그렇게 정했고, 무엇을 걸었나를 답한다. 최신이 위. 기록은 덧붙이기만 한다 — 지난 기록을 고치지 않는다. 판단이 바뀌었으면 새 기록을 쓰고 옛 기록을 뒤집힘 으로 표시한다. 틀린 기록도 자산이다. 1. 소집 전에 읽는다. 카운슬을 열기 전(그리고 단독 PO 패스를 쓰기 전) 같은 표면 · 같은 질문에 대한 선행 결정이 있는지 먼저 본다. 있으면 새 패스는 그것을 ① 여전히 유효하다고 인용하거나 ② 명시적으로 뒤집는다. 조용히 다시 결정",
-      "wordCount": 129957,
-      "updatedAt": "2026-08-16",
+      "wordCount": 130245,
+      "updatedAt": "2026-08-17",
       "linksOut": [
         "slug"
       ]
@@ -12397,7 +12402,13 @@
         "domain": "domains/agent-integration",
         "elements": [],
         "path": "src-tauri/src/acp.rs",
-        "created_by": "human"
+        "created_by": "human",
+        "dependencies": [
+          "capabilities/mcp-server"
+        ],
+        "relation_notes": {
+          "capabilities/mcp-server": "ACP 세션은 session/new 의 mcpServers 로 이 서버를 주입받아 볼트 도구를 얻는다 (src/features/acp-session/model/vault-mcp-server.ts). 그래서 ACP 는 MCP 서버를 대체하는 경로가 아니라 그 위에 서는 경로다."
+        }
       },
       "headings": [
         {
@@ -12423,7 +12434,7 @@
       ],
       "excerpt": "사용자가 이미 설치해 둔 코딩 에이전트(Claude Code, Codex 등)를 앱이 ACP(Agent Client Protocol) v1 로 직접 띄우고, 그 세션의 설정을 격리하고, 볼트 밖 파일 접근을 사람에게 되묻는 능력. 새 API 키도 새 벤더 연동도 필요 없다: 그 도구가 이미 쓰는 구독 인증을 그대로 쓴다. 이 능력이 실제로 하는 일 여섯: 1. 탐지. 이 기기의 실행기 상태를 다섯으로 갈라 판정한다: ready, cli-missing, node-missing, uvx-missing, binary-missing. 상태를 「설치됨/아님」 둘로 뭉개지 않는",
       "wordCount": 449,
-      "updatedAt": "2026-08-16",
+      "updatedAt": "2026-08-17",
       "linksOut": []
     },
     {
@@ -16981,6 +16992,23 @@
         "linkText": "`2026-05-04-claude-code.md`"
       }
     ],
+    "ontology/capabilities/mcp-server": [
+      {
+        "fromSlug": "ontology/capabilities/acp-runtime",
+        "context": "frontmatter · **[capabilities/mcp-server]**",
+        "linkText": "capabilities/mcp-server"
+      },
+      {
+        "fromSlug": "ontology/capabilities/cli-developer-entry",
+        "context": "frontmatter · **[capabilities/mcp-server]**",
+        "linkText": "capabilities/mcp-server"
+      },
+      {
+        "fromSlug": "ontology/domains/agent-integration",
+        "context": "frontmatter · **[capabilities/mcp-server]**",
+        "linkText": "capabilities/mcp-server"
+      }
+    ],
     "ontology/domains/agent-integration": [
       {
         "fromSlug": "ontology/capabilities/acp-runtime",
@@ -17113,18 +17141,6 @@
         "fromSlug": "ontology/ontology-atlas",
         "context": "frontmatter · **[domains/onboarding-and-shell]**",
         "linkText": "domains/onboarding-and-shell"
-      }
-    ],
-    "ontology/capabilities/mcp-server": [
-      {
-        "fromSlug": "ontology/capabilities/cli-developer-entry",
-        "context": "frontmatter · **[capabilities/mcp-server]**",
-        "linkText": "capabilities/mcp-server"
-      },
-      {
-        "fromSlug": "ontology/domains/agent-integration",
-        "context": "frontmatter · **[capabilities/mcp-server]**",
-        "linkText": "capabilities/mcp-server"
       }
     ],
     "ontology/elements/project-detail": [

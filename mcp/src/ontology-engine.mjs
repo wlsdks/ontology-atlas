@@ -4110,6 +4110,20 @@ export function createOntologyEngine(artifact, options = {}) {
     const issueCount = Array.isArray(artifact?.issues) ? artifact.issues.length : 0;
     const graph = overviewResult.graph;
     const checks = [
+      // 셀 것이 있는가를 먼저 묻는다. 이게 없으면 아래 검사들의 `pass` 는
+      // 아무것도 증명하지 않는다 — 노드가 0개면 순환도 0, 안 풀린 엣지도 0,
+      // 끊긴 덩어리도 0 이라 **전부 통과하고 「정상」이 나온다**(2026-08-16
+      // 실측: 볼트가 아닌 폴더가 healthy · exit 0). 폴더를 잘못 짚은 사람이
+      // 그 사실을 알아챌 유일한 자리가 여기다.
+      healthCheck({
+        id: 'vault_present',
+        status: graph.nodes === 0 ? 'fail' : 'pass',
+        count: graph.nodes,
+        message:
+          graph.nodes === 0
+            ? 'This folder has no ontology nodes, so every other check below passed with nothing to count. Either the path is not a vault, or the vault is empty: check the folder you passed, or scaffold one with the CLI `init` command.'
+            : 'The folder contains ontology nodes.',
+      }),
       healthCheck({
         id: 'compile_issues',
         status: issueCount === 0 ? 'pass' : 'warn',
