@@ -28,6 +28,8 @@ const bridge = vi.hoisted(() => ({
   stderr: null as ((line: string) => void) | null,
   /** 껍데기가 보내는 알림 — 관문을 못 세웠다는 사실이 이 길로 온다. */
   notice: null as ((message: string) => void) | null,
+  /** 세션 모드 관문 적용 실패를 재현한다. */
+  failSetMode: false,
   stopped: [] as string[],
   /** 우리가 보낸 요청 — 「무엇을 실어 보냈나」를 확인할 유일한 창구. */
   sent: [] as Array<{ id?: number; method?: string; params?: unknown }>,
@@ -51,6 +53,18 @@ vi.mock('@/shared/lib/tauri-acp', () => ({
     const message = JSON.parse(line) as { id?: number; method?: string; params?: unknown };
     bridge.sent.push(message);
     if (typeof message.id !== 'number') return;
+    if (message.method === 'session/set_mode' && bridge.failSetMode) {
+      queueMicrotask(() =>
+        bridge.listener?.(
+          JSON.stringify({
+            jsonrpc: '2.0',
+            id: message.id,
+            error: { code: -32603, message: 'mode rejected' },
+          }),
+        ),
+      );
+      return;
+    }
     const result =
       message.method === 'session/new' || message.method === 'session/load'
         ? { sessionId: 's-1' }
@@ -90,6 +104,7 @@ afterEach(() => {
   bridge.listener = null;
   bridge.stderr = null;
   bridge.notice = null;
+  bridge.failSetMode = false;
   bridge.stopped = [];
   bridge.sent = [];
 });
@@ -369,6 +384,24 @@ describe('세션 지시문 — 실측으로 얻은 네 줄이 실제로 실린�
 });
 
 describe('관문을 못 세웠으면 화면이 말한다', () => {
+  it('codex 모드 관문 적용 실패는 준비 완료가 아니며 띄운 프로세스를 끝낸다', async () => {
+    bridge.failSetMode = true;
+    const { result } = renderHook(() =>
+      useAcpSession({ runtimeId: 'codex-acp', vaultRoot: '/vault' }),
+    );
+    const first = result.current.start();
+    await waitFor(() => expect(bridge.starts).toBe(1));
+
+    await act(async () => {
+      bridge.release?.();
+      await first;
+    });
+
+    expect(result.current.status, '관문이 없는데 대화를 쓸 수 있게 열었다').toBe('error');
+    expect(result.current.error).toContain('gate-mode-failed:read-only');
+    expect(bridge.stopped, '관문 없이 뜬 어댑터가 살아남았다').toEqual(['acp-1']);
+  });
+
   it('`gate-off:` 로 온 알림은 접어 두지 않고 대화에 남는다', async () => {
     /*
      * 2026-08-16 검수: 격리 설정을 만들다 실패해도 `.ok()` 가 그것을 삼켰고,

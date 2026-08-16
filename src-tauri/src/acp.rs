@@ -683,6 +683,24 @@ pub(crate) fn config_env_for(runtime_id: &str) -> Option<&'static str> {
     isolation_for(runtime_id).map(|s| s.config_env)
 }
 
+/// 실행기가 설정 격리를 지원하면 **반드시** 준비하고, 실패는 시작 실패로 올린다.
+///
+/// `None` 은 검증되지 않은 실행기에 격리를 지어내지 않는다는 뜻이다. 반대로
+/// `config_env_for()` 가 값을 돌려준 실행기는 화면이 이미 「관문 있음」이라고
+/// 말하므로, 준비 실패 뒤 비격리 상태로 띄우는 선택지는 없다.
+pub(crate) fn prepare_runtime_isolation(
+    runtime_id: &str,
+    app_data_dir: &Path,
+    home: Option<&Path>,
+) -> Result<Option<(&'static str, PathBuf)>, String> {
+    let Some(env) = config_env_for(runtime_id) else {
+        return Ok(None);
+    };
+    let dir = prepare_isolated_config(runtime_id, app_data_dir, home)
+        .map_err(|reason| format!("isolation-failed:{reason}"))?;
+    Ok(Some((env, dir)))
+}
+
 /// 자격증명 링크를 건다. 이미 올바른 곳을 가리키면 그대로 둔다.
 fn link_credentials(source: &Path, link: &Path) -> Result<(), String> {
     if let Ok(existing) = std::fs::read_link(link) {
@@ -1824,6 +1842,37 @@ mod tests {
         let dir = prepare_isolated_config("claude-acp", &base.join("appdata"), Some(&home)).unwrap();
         assert!(!dir.join(".credentials.json").exists());
         let _ = std::fs::remove_dir_all(&base);
+    }
+
+    #[test]
+    fn guarded_runtime_isolation_failure_blocks_launch_preparation() {
+        let nonce = std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .unwrap()
+            .as_nanos();
+        let base = std::env::temp_dir().join(format!("atlas-acp-gate-{nonce}"));
+        std::fs::create_dir_all(&base).unwrap();
+        let app_data_file = base.join("not-a-directory");
+        std::fs::write(&app_data_file, "blocked").unwrap();
+
+        let error = prepare_runtime_isolation("claude-acp", &app_data_file, None).unwrap_err();
+        assert!(
+            error.starts_with("isolation-failed:config-dir-failed:"),
+            "격리 준비 실패가 시작 실패로 올라오지 않았다: {error}"
+        );
+
+        let _ = std::fs::remove_dir_all(&base);
+    }
+
+    #[test]
+    fn unguarded_runtime_does_not_invent_an_isolation_requirement() {
+        let isolation = prepare_runtime_isolation(
+            "gemini-acp",
+            Path::new("/path/that/does/not/need/to/exist"),
+            None,
+        )
+        .unwrap();
+        assert!(isolation.is_none());
     }
 
     #[test]

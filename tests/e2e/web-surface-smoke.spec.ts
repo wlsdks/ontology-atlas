@@ -290,8 +290,8 @@ const DEGRADED_SURFACES: readonly DegradedSurface[] = [
     // 에서는 도구를 실행할 수 없어요」 하나였는데, 그 문장만 읽은 웹 사용자는
     // 「웹에서는 에이전트를 아예 못 쓴다」로 읽는다 — `agent-server-unavailable`
     // 이 2026-08-01 에 정정당한 바로 그 거짓이다. 웹에서도 자기가 직접 띄운
-    // 에이전트를 이 폴더에 붙일 수 있고, 그 길(「내 에이전트 연결」)은 같은
-    // 시트 안에 있다. 그래서 그 문장을 카드에 넣고 여기서 잠근다.
+    // 에이전트를 이 폴더에 붙일 수 있고, 그 길(「MCP」)은 같은 시트 안에
+    // 있다. 그래서 그 문장을 카드에 넣고 여기서 잠근다.
     name: "실행기 — 브라우저는 이 컴퓨터의 프로그램을 띄우지 못한다",
     url: "/ko/topology/",
     open: async (page) => {
@@ -305,7 +305,7 @@ const DEGRADED_SURFACES: readonly DegradedSurface[] = [
     card: "app-settings-runtimes-web",
     reason: /브라우저는[\s\S]*권한이 없어요/,
     destinationText: /맥 앱을 받으면/,
-    alsoHere: /내 에이전트 연결/,
+    alsoHere: /MCP[\s\S]*직접 띄운 도구/,
   },
 ];
 

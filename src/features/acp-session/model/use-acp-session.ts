@@ -435,9 +435,8 @@ export function useAcpSession({ runtimeId, vaultRoot, mcpServers }: UseAcpSessio
        * **관문을 세운다.** codex 는 설정 격리로는 안 걸리고 세션 모드로만
        * 걸린다(실측 — `runtime-gate.ts`). 재 본 실행기에만 건다.
        *
-       * 실패해도 대화는 계속한다. 다만 화면이 「물어봐 준다」고 말한 것과
-       * 어긋나므로 **기록을 남긴다** — 조용히 넘어가면 관문이 없는 채로
-       * 있다고 말하는 화면이 된다.
+       * 실패하면 대화를 열지 않는다. 관문이 없는 채로 준비 완료를 내보내면
+       * 화면의 「폴더 밖은 먼저 물어본다」는 약속이 거짓이 된다.
        */
       const gatedMode = GATED_SESSION_MODE[runtimeId];
       let choices = session.choices;
@@ -454,14 +453,9 @@ export function useAcpSession({ runtimeId, vaultRoot, mcpServers }: UseAcpSessio
            */
           choices = { ...choices, currentModeId: gatedMode };
         } else {
-          /*
-           * ⚠️ 이것만은 **진단이 아니라 사용자에게 하는 말**이다. 이 화면이
-           * 「폴더 밖은 먼저 물어본다」고 약속했는데 그 관문이 안 걸렸다는 뜻
-           * 이므로, 조용히 접어 두면 화면이 지키지 못할 약속을 계속 하게 된다.
-           * 그래서 이 한 줄만 대화에 남고, 문구는 화면이 사람 말로 옮긴다.
-           */
-          push({ kind: 'notice', id: nextEventId(), text: 'gate-off' });
-          keepDiagnostic(`gate-mode-failed:${gatedMode}`);
+          const failure = `gate-mode-failed:${gatedMode}`;
+          keepDiagnostic(failure);
+          throw new Error(failure);
         }
       }
 

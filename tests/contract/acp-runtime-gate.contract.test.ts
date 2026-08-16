@@ -65,6 +65,14 @@ describe('관문 — 말하는 것과 거는 것이 같아야 한다', () => {
     expect(src, '모드 걸기가 실패해도 조용하면 안 된다').toMatch(/gate-mode-failed/);
   });
 
+  it('설정 격리를 약속한 실행기는 준비 실패 뒤에 프로세스를 띄우지 않는다', () => {
+    const src = readFileSync(join(ROOT, 'src-tauri/src/lib.rs'), 'utf8');
+    expect(src).toMatch(/prepare_runtime_isolation\([\s\S]*?\)\?/);
+    expect(src, '격리 실패를 삼키고 비격리 프로세스를 띄우는 갈래가 남아 있다').not.toContain(
+      'isolation_failure',
+    );
+  });
+
   it('화면이 **그 함수로** 판정한다 — 자기만의 기준을 다시 만들지 않는다', () => {
     const src = readFileSync(
       join(ROOT, 'src/widgets/app-settings-menu/ui/AcpRuntimeSettings.tsx'),
