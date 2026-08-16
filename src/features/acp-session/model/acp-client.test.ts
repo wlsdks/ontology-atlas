@@ -40,6 +40,26 @@ function fakeTransport() {
   };
 }
 
+/** WebView가 내려가는 경합처럼 모든 IPC 전송이 거절되는 통로. */
+function rejectingTransport() {
+  let listener: ((line: string) => void) | null = null;
+  const transport: AcpTransport = {
+    send: () => Promise.reject(new Error('bridge down')),
+    subscribe: (onLine) => {
+      listener = onLine;
+      return () => {
+        listener = null;
+      };
+    },
+  };
+  return {
+    transport,
+    emit(payload: unknown) {
+      listener?.(JSON.stringify(payload));
+    },
+  };
+}
+
 /** 실측(2026-08-16)에서 실제로 받은 권한 요청의 모양. */
 function permissionRequest(filePath: string, id = 7) {
   return {
@@ -312,6 +332,38 @@ describe('ACP 클라이언트 — 요청/응답과 잡음', () => {
 });
 
 describe('ACP 클라이언트 — 답이 안 오면 언젠가 끝난다', () => {
+  it.each([
+    ['initialize', (client: ReturnType<typeof createAcpClient>) => client.initialize()],
+    [
+      'session/prompt',
+      (client: ReturnType<typeof createAcpClient>) =>
+        client.prompt('s-1', [{ type: 'text', text: '이 폴더를 훑어봐' }]),
+    ],
+  ])('%s 전송이 거절되면 timeout 없이 즉시 실패하고 늦은 답은 무시한다', async (method, run) => {
+    const t = rejectingTransport();
+    const notices: string[] = [];
+    const client = createAcpClient(t.transport, {
+      verdict: alwaysAsk,
+      askUser: async () => null,
+      onProtocolNotice: (message) => notices.push(message),
+    });
+    let failure: unknown;
+    const settled = run(client).catch((error: unknown) => {
+      failure = error;
+    });
+
+    await vi.waitFor(() => expect(notices).toContain('send-failed: Error: bridge down'));
+    try {
+      expect(failure).toBeInstanceOf(Error);
+      expect(String(failure)).toContain(`acp-send-failed: ${method}`);
+      t.emit({ jsonrpc: '2.0', id: 1, result: { stopReason: 'late' } });
+      expect(String(failure)).toContain(`acp-send-failed: ${method}`);
+    } finally {
+      client.dispose();
+      await settled;
+    }
+  });
+
   it('악수에 답이 없으면 시간이 지나 실패한다 — 「켜는 중」에 붙박이지 않는다', async () => {
     /*
      * 2026-08-16 검수에서 적발. 어댑터가 뜨긴 했는데 답을 안 하는 상태(잘못된

@@ -275,9 +275,19 @@ export function createAcpClient(
    * 방금 죽은 뒤 권한 카드에 답하거나 「그만」을 누르면 그 전송이 거절되고,
    * 아무도 안 받은 거절이 콘솔로 튄다.
    */
+  const send = (payload: unknown): Promise<void> => {
+    try {
+      // 동기 transport는 같은 tick에 줄을 기록한다 — 테스트뿐 아니라 로컬
+      // 브리지의 요청/응답 순서도 이 성질에 기대고 있다.
+      return Promise.resolve(transport.send(JSON.stringify(payload)));
+    } catch (error) {
+      return Promise.reject(error);
+    }
+  };
+
+  /** 답을 기다리지 않는 알림/응답 전송. 실패는 진단으로만 남긴다. */
   const write = (payload: unknown) => {
-    // 전송이 동기일 수도 비동기일 수도 있다 — 둘 다 같은 길로 받는다.
-    void Promise.resolve(transport.send(JSON.stringify(payload))).catch((error: unknown) => {
+    void send(payload).catch((error: unknown) => {
       // 이미 끝난 세션에 쓰는 것은 정상적인 경합이다 — 진단으로만 남긴다.
       handlers.onProtocolNotice?.(`send-failed: ${String(error)}`);
     });
@@ -319,7 +329,13 @@ export function createAcpClient(
           reject(error);
         },
       });
-      write({ jsonrpc: '2.0', id, method, params });
+      void send({ jsonrpc: '2.0', id, method, params }).catch((error: unknown) => {
+        handlers.onProtocolNotice?.(`send-failed: ${String(error)}`);
+        const waiting = pending.get(id);
+        if (!waiting) return;
+        pending.delete(id);
+        waiting.reject(new Error(`acp-send-failed: ${method}: ${String(error)}`));
+      });
     });
   };
 
