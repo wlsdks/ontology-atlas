@@ -37,6 +37,7 @@
  * 모두 PASS → exit 0, 실패 → exit 1 + 진단 메시지.
  */
 
+import { isBacklinkKeyValue } from '../src/backlink-key-shape.mjs';
 import { spawn } from 'node:child_process';
 import { mkdirSync, realpathSync, rmSync, statSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
@@ -5741,11 +5742,18 @@ function backlinkKeyChangeFailure(row) {
   return null;
 }
 
+/**
+ * ⚠️ **판정을 여기서 다시 쓰지 않는다** (2026-08-17).
+ *
+ * 종전에는 이 함수가 문자열/배열만 받았고, 그래서 `relation_notes`(맵)을 가진
+ * 노드의 rename 이 **정상인데도** 이 게이트를 못 넘었다. 맞는 동작에 켜지는
+ * 게이트는 꺼지는 게이트다.
+ *
+ * 모양 판정은 `mcp/src/backlink-key-shape.mjs` 하나가 갖고, 자기 테스트도
+ * 거기 있다.
+ */
 function isStringOrStringArray(value) {
-  return (
-    isCleanNonBlankString(value) ||
-    (Array.isArray(value) && value.every((item) => isCleanNonBlankString(item)))
-  );
+  return isBacklinkKeyValue(value);
 }
 
 function isCleanNonBlankString(value) {
@@ -9077,7 +9085,17 @@ export function agentBriefFailure(parsed) {
   if (
     !Array.isArray(parsed.cliFallbackCommands) ||
     parsed.cliFallbackCommands.length === 0 ||
-    parsed.cliFallbackCommands.some((command) => typeof command !== 'string' || !/^ontology-atlas\s/.test(command))
+    /*
+     * ⚠️ 종전에는 `^ontology-atlas\s` 를 **요구**했다 — 그 이름의 전역 명령은
+     * 없으므로(2026-07-27 원장) 이 검사는 거짓말을 막는 게 아니라 강제하고
+     * 있었다. 2026-08-17 에 CLI 쪽 계약을 뒤집었는데 **이 검증기는 안 고쳤고**,
+     * 그래서 도그푸드 게이트가 빨개졌다. 같은 거짓말을 하는 자리가 둘이었고
+     * 하나만 고쳐진 것 — 이 저장소가 오늘만 세 번 만난 모양이다.
+     */
+    parsed.cliFallbackCommands.some(
+      (command) =>
+        typeof command !== 'string' || !/^node\s+\S*cli\/src\/index\.mjs\s+\S/.test(command),
+    )
   ) {
     return 'agent_brief response missing cliFallbackCommands';
   }

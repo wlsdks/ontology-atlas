@@ -10865,17 +10865,17 @@ Continue.`;
         'Run relation_check before add_relation.',
       ].join('\n'),
       cliFallbackCommands: [
-        'ontology-atlas workspace-brief [vault]',
-        'ontology-atlas facets [vault] --limit 10',
-        'ontology-atlas schema [vault] --limit 20',
-        'ontology-atlas hubs [vault] --plan --limit 10 --types depends_on,relates',
-        'ontology-atlas domain-matrix [vault] --limit 10',
-        'ontology-atlas match-nodes [vault] --plan --kind capability --min-degree 2 --sort degree --limit 10',
-        'ontology-atlas match-edges [vault] --plan --types depends_on --limit 20',
-        'ontology-atlas all-paths capability:mcp-server domain:ai-agent-partner [vault] --plan --max-hops 3 --force',
-        'ontology-atlas pattern-walk project:app [vault] --pattern domains,capabilities',
-        'ontology-atlas project-map project:app [vault]',
-        'ontology-atlas explain capability:mcp-server domain:ai-agent-partner [vault] --direction undirected',
+        'node /abs/cli/src/index.mjs workspace-brief [vault]',
+        'node /abs/cli/src/index.mjs facets [vault] --limit 10',
+        'node /abs/cli/src/index.mjs schema [vault] --limit 20',
+        'node /abs/cli/src/index.mjs hubs [vault] --plan --limit 10 --types depends_on,relates',
+        'node /abs/cli/src/index.mjs domain-matrix [vault] --limit 10',
+        'node /abs/cli/src/index.mjs match-nodes [vault] --plan --kind capability --min-degree 2 --sort degree --limit 10',
+        'node /abs/cli/src/index.mjs match-edges [vault] --plan --types depends_on --limit 20',
+        'node /abs/cli/src/index.mjs all-paths capability:mcp-server domain:ai-agent-partner [vault] --plan --max-hops 3 --force',
+        'node /abs/cli/src/index.mjs pattern-walk project:app [vault] --pattern domains,capabilities',
+        'node /abs/cli/src/index.mjs project-map project:app [vault]',
+        'node /abs/cli/src/index.mjs explain capability:mcp-server domain:ai-agent-partner [vault] --direction undirected',
       ],
       health: {
         checks: [{ id: 'compile_issues', status: 'pass', count: 0, message: 'ok' }],
@@ -11188,11 +11188,12 @@ Continue.`;
       'agent_brief response missing cliFallbackCommands',
     );
     assert.equal(
-      agentBriefFailure({ ...payload, cliFallbackCommands: ['node cli/src/index.mjs health'] }),
+      // 2026-08-17: 계약이 뒤집혔다 — 이제 **맨몸 이름**이 거절된다(실행 불가).
+      agentBriefFailure({ ...payload, cliFallbackCommands: ['ontology-atlas health'] }),
       'agent_brief response missing cliFallbackCommands',
     );
     assert.equal(
-      agentBriefFailure({ ...payload, cliFallbackCommands: ['ontology-atlas workspace-brief [vault]'] }),
+      agentBriefFailure({ ...payload, cliFallbackCommands: ['node /abs/cli/src/index.mjs workspace-brief [vault]'] }),
       'agent_brief cliFallbackCommands missing centrality plan fallback',
     );
     assert.equal(
