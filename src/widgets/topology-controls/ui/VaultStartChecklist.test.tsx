@@ -51,6 +51,26 @@ describe("VaultStartChecklist (에이전트-우선, 2026-07-24 소유자 지시)
     expect(screen.queryByTestId("checklist-cta-agent")).not.toBeInTheDocument();
   });
 
+  /*
+   * 2026-08-16 소유자 실보고 — 앱이 Claude Code 를 찾아 대화까지 되는 상태인데
+   * 이 단은 빈 동그라미였고 버튼은 「연결 안내 열기」였다. 눌렀더니 채팅이
+   * 떠서 *"뭐지?"* 가 됐다. 화면이 약속한 것과 한 일이 달랐던 것이다.
+   */
+  it("앱 안에서 부를 수 있는 실행기가 있으면 그것이 곧 연결이다", () => {
+    renderChecklist({ acpRuntimeLabel: "Claude Code" });
+    expect(screen.getByTestId("checklist-step-agent")).toHaveAttribute("data-done", "true");
+    // 완료여도 대화로 들어가는 문은 남는다 — 그 문이 곧 완료의 내용이다.
+    expect(screen.getByTestId("checklist-cta-agent")).toBeInTheDocument();
+    // 붙여넣을 곳이 없다는 안내는 사라진다 — 이미 있다.
+    expect(screen.queryByTestId("checklist-analyze-needs-agent")).not.toBeInTheDocument();
+  });
+
+  it("찾은 것이 없으면 그 단은 미완료로 남는다", () => {
+    renderChecklist({ acpRuntimeLabel: null });
+    expect(screen.getByTestId("checklist-step-agent")).toHaveAttribute("data-done", "false");
+    expect(screen.getByTestId("checklist-analyze-needs-agent")).toBeInTheDocument();
+  });
+
   it("derives analyze/manual progress from live counts", () => {
     renderChecklist({ relationCount: 2, projectCount: 1 });
     expect(screen.getByTestId("checklist-step-analyze")).toHaveAttribute("data-done", "true");

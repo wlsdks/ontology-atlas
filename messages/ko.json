@@ -2544,7 +2544,8 @@
       "agentHintReady": "연결 설정이 이 폴더에 준비돼 있어요. AI 도구가 이 지도를 같이 읽고 씁니다.",
       "agentHintPending": "'시작 문서 만들기'를 누르면 연결 설정도 함께 만들어져, AI 도구가 이 지도를 읽고 쓸 수 있어요.",
       "ctaCreate": "만들기",
-      "ctaAgent": "연결 안내 열기",
+      "ctaAgent": "AI 도구 연결",
+      "ctaAgentChat": "대화 열기",
       "stepAnalyze": "AI가 이 코드를 읽고 지도 초안을 그리게 하기",
       "stepManual": "직접 손으로 시작하기 (선택)",
       "ctaAnalyze": "AI에게 줄 지시 복사",
@@ -2558,7 +2559,7 @@
       "ctaScaffold": "만들어 주기",
       "ctaScaffoldBusy": "만드는 중…",
       "scaffoldToast": "온톨로지 개념 {concepts}개 · 에이전트 설정 파일 {configs}개를 만들었어요",
-      "stepAgentFound": "{runtime} 를 찾았어요. 여기서 바로 대화할 수 있어요"
+      "stepAgentFound": "{runtime} 준비됨"
     },
     "recentChangesNeedsVault": {
       "eyebrow": "최근 변경",

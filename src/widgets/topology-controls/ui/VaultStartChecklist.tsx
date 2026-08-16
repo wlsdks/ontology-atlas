@@ -1,7 +1,16 @@
 "use client";
 
 import { useTranslations } from "next-intl";
-import { Cable, Check, CircleAlert, ClipboardCopy, Map as MapIcon, Plus, Sparkles } from "lucide-react";
+import {
+  Cable,
+  Check,
+  CircleAlert,
+  ClipboardCopy,
+  Map as MapIcon,
+  MessageSquare,
+  Plus,
+  Sparkles,
+} from "lucide-react";
 import { ICON_SIZE } from "@/shared/ui/icon-size";
 import { useCopyFeedback } from "@/shared/lib/use-copy-feedback";
 import { Chip } from "@/shared/ui";
@@ -139,9 +148,18 @@ export function VaultStartChecklist({
       : []),
     {
       id: "agent",
-      done: agentConnected,
+      /*
+       * ⚠️ **찾아 놓고 「아직 안 됨」이라고 말하고 있었다** (2026-08-16 소유자
+       * 실보고). 완료 판정이 heartbeat(밖의 도구가 이 폴더를 건드렸는가) 하나뿐이라,
+       * 앱이 Claude Code 를 찾아서 바로 대화까지 되는 상태인데도 이 단은 빈 동그라미
+       * 였고 버튼은 「연결 안내 열기」였다. 그래서 눌렀더니 채팅이 떠서 *"뭐지?"* 가
+       * 됐다 — 화면이 약속한 것과 한 일이 달랐다.
+       *
+       * 앱 안에서 바로 부를 수 있는 실행기가 있으면 **그것이 곧 연결이다.**
+       */
+      done: agentConnected || acpRuntimeLabel !== null,
       // 앱이 이미 찾아 둔 것이 있으면 그것을 이름으로 말한다. 「AI 도구를
-      // 연결하세요」보다 「Claude Code 를 찾았어요」가 훨씬 먼 데까지 간다 —
+      // 연결하세요」보다 「Claude Code 준비됨」이 훨씬 먼 데까지 간다 —
       // 사용자는 그게 자기가 가진 그거라는 걸 안다.
       label: acpRuntimeLabel ? t("stepAgentFound", { runtime: acpRuntimeLabel }) : t("stepAgent"),
       cta: onOpenAgentConnect ? (
@@ -167,8 +185,15 @@ export function VaultStartChecklist({
               : "shrink-0 border-[color:var(--color-indigo-a46)] bg-[color:var(--color-indigo-a16)] font-[var(--font-weight-signature)] hover:bg-[color:var(--color-indigo-a24)]"
           }
         >
-          <Cable size={ICON_SIZE.sm} aria-hidden />
-          {t("ctaAgent")}
+          {acpRuntimeLabel ? (
+            <MessageSquare size={ICON_SIZE.sm} aria-hidden />
+          ) : (
+            <Cable size={ICON_SIZE.sm} aria-hidden />
+          )}
+          {/* 버튼 이름은 **누르면 일어날 일**이다. 찾은 것이 있으면 대화가
+              열리고, 없으면 고르는 화면이 열린다 — 둘을 한 이름으로 부르면
+              둘 중 하나에서는 거짓말이 된다. */}
+          {acpRuntimeLabel ? t("ctaAgentChat") : t("ctaAgent")}
         </Chip>
       ) : null,
     },
@@ -257,13 +282,21 @@ export function VaultStartChecklist({
         aria-live="polite"
         className="pointer-events-auto w-[min(420px,calc(100vw-2rem))] rounded-card border border-[color:var(--color-divider)] bg-[color:var(--color-panel)] px-5 py-5 shadow-[var(--shadow-elevation-1)]"
       >
-        <p className="font-mono text-caption uppercase tracking-[var(--tracking-caps-16)] text-[color:var(--color-text-quaternary)]">
-          {t("kicker", { done: doneCount, total: steps.length })}
-        </p>
-        <h2 className="mt-2 text-title font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)]">
-          {t("title")}
-        </h2>
-        <p className="mt-1 text-body leading-body text-[color:var(--color-text-tertiary)]">
+        {/*
+         * 제목과 진행이 한 줄이다 (2026-08-16). 종전에는 「0/3 완료」가 제목
+         * **위에** 홀로 한 줄을 먹었는데, 눈이 카드에 처음 닿을 때 읽어야 하는
+         * 것은 이 카드가 무엇인가(제목)이지 몇 개 했는가가 아니다. 진행은 제목의
+         * 곁다리이므로 그 옆에 둔다 — 줄이 하나 줄고 위계가 바로 선다.
+         */}
+        <div className="flex items-baseline justify-between gap-3">
+          <h2 className="text-title font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)]">
+            {t("title")}
+          </h2>
+          <span className="shrink-0 font-mono text-label tabular-nums text-[color:var(--color-text-quaternary)]">
+            {t("kicker", { done: doneCount, total: steps.length })}
+          </span>
+        </div>
+        <p className="mt-1 break-keep text-body leading-body text-[color:var(--color-text-tertiary)]">
           {t("subtitle")}
         </p>
         <ol className="mt-4 flex flex-col gap-2.5">
@@ -272,12 +305,13 @@ export function VaultStartChecklist({
               key={step.id}
               data-testid={`checklist-step-${step.id}`}
               data-done={step.done ? "true" : "false"}
-              className="flex items-center justify-between gap-3"
+              className="flex items-start justify-between gap-3"
             >
-              <span className="flex min-w-0 flex-1 items-center gap-2.5">
+              <span className="flex min-w-0 flex-1 items-start gap-2.5">
                 <span
                   aria-hidden
-                  className={`flex h-4 w-4 shrink-0 items-center justify-center rounded-full border ${
+                  // 줄이 두 줄로 접힐 수 있으므로 동그라미는 **첫 줄**에 맞춘다.
+                  className={`mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded-full border ${
                     step.done
                       ? "border-transparent bg-[color:var(--color-status-success)] text-[color:var(--color-canvas)]"
                       : "border-[color:var(--color-border-strong)] text-transparent"
@@ -285,8 +319,14 @@ export function VaultStartChecklist({
                 >
                   <Check size={ICON_SIZE.sm} strokeWidth={3} />
                 </span>
+                {/*
+                 * ⚠️ 종전 `truncate` — 「Claude Code 를 찾았어요. 여기서 바로
+                 * 대화…」가 잘려서 문장이 끝을 잃었다(소유자 실보고). 잘린 문장은
+                 * 정보를 주는 대신 「여기 뭔가 더 있다」만 말한다. 문구를 짧게
+                 * 만들고 잘라 내지 않는다 — 그래도 넘치면 두 줄까지 접는다.
+                 */}
                 <span
-                  className={`truncate text-body ${
+                  className={`min-w-0 break-keep text-body leading-body ${
                     step.done
                       ? "text-[color:var(--color-text-quaternary)] line-through"
                       : "text-[color:var(--color-text-secondary)]"
@@ -295,9 +335,19 @@ export function VaultStartChecklist({
                   {step.label}
                 </span>
               </span>
-              {/* 완료한 단은 CTA 를 접는다 — 다만 「지시 복사」는 완료 뒤에도
-                  다시 필요하다(위 주석). */}
-              {step.done && step.id !== "analyze" ? null : step.cta}
+              {/*
+               * 완료한 단은 CTA 를 접는다 — 다음 미완료 행이 시선 승자가 되게.
+               * 예외 둘: 「지시 복사」는 완료 뒤에도 다시 필요하고(위 주석),
+               * **대화 열기**는 그 단의 완료가 곧 「그 문이 열렸다」는 뜻이라
+               * 치우면 준비된 도구로 들어갈 길 자체가 사라진다. 밖의 도구가
+               * 이미 붙어 있어서 완료된 경우(heartbeat)에는 그 문이 없으므로
+               * 종전대로 접는다 — 예외는 **문이 실재할 때만**이다.
+               */}
+              {step.done &&
+              step.id !== "analyze" &&
+              !(step.id === "agent" && acpRuntimeLabel !== null)
+                ? null
+                : step.cta}
             </li>
           ))}
         </ol>
@@ -327,7 +377,7 @@ export function VaultStartChecklist({
          * 아직 연결 안 한 사람에게 **막지 않고** 순서를 말한다 — 복사는 되지만
          * 붙여넣을 곳이 없으면 그 복사는 아무 데도 안 간다.
          */}
-        {agentConnected ? null : (
+        {agentConnected || acpRuntimeLabel ? null : (
           <p
             data-testid="checklist-analyze-needs-agent"
             className="mt-1 text-label leading-prose text-[color:var(--color-text-quaternary)]"

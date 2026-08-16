@@ -2544,7 +2544,8 @@
       "agentHintReady": "The connection setup is in this folder: AI tools read and grow this map with you.",
       "agentHintPending": "Press \"Create starter docs\" and the connection setup is created too, so AI tools can read and grow this map.",
       "ctaCreate": "Create",
-      "ctaAgent": "Open connect guide",
+      "ctaAgent": "Connect an AI tool",
+      "ctaAgentChat": "Open chat",
       "stepAnalyze": "Let AI read your code and draft the map",
       "stepManual": "Or start by hand (optional)",
       "ctaAnalyze": "Copy the AI instructions",
@@ -2558,7 +2559,7 @@
       "ctaScaffold": "Create for me",
       "ctaScaffoldBusy": "Creating…",
       "scaffoldToast": "Created {concepts} ontology concepts and {configs} agent config files",
-      "stepAgentFound": "Found {runtime}. You can talk to it right here"
+      "stepAgentFound": "{runtime} is ready"
     },
     "recentChangesNeedsVault": {
       "eyebrow": "Recent changes",

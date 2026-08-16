@@ -4,6 +4,7 @@ import Image from "next/image";
 import { withBasePath } from "@/shared/lib/base-path";
 import { useHeldValue, useSurfaceSwap } from "@/shared/lib/use-presence";
 import { detectAcpRuntimes, isAcpBridgeAvailable } from "@/shared/lib/tauri-acp";
+import { requestSettingsView } from "@/shared/lib/settings-view-intent";
 import { AcpChatPanel } from "@/widgets/acp-chat-panel";
 import { vaultMcpServers } from "@/features/acp-session/model/vault-mcp-server";
 import { cn } from "@/shared/lib/cn";
@@ -565,6 +566,18 @@ export function HomePage() {
   // (localStorage)는 건드리지 않는 순수 세션 강등.
   const [indexManualExpandDuringSelection, setIndexManualExpandDuringSelection] =
     useState(false);
+  /*
+   * 아직 아무것도 없는 지도에서는 INDEX 를 접어 둔다 (2026-08-16 소유자 실보고,
+   * *"처음 시작하면 왼쪽 index 는 닫혀 있어야 할 듯"*).
+   *
+   * INDEX 는 「개념 목록」이라 개념이 0개면 **담을 것이 없다** — 실제로 그
+   * 화면에는 「일치하는 개념이 없습니다」한 줄만 있고, 그 한 줄이 화면 왼쪽
+   * 3분의 1을 가진 채 정작 이때 유일하게 할 일이 적힌 시작 체크리스트를
+   * 오른쪽으로 밀어내고 있었다. 위 선택-중 강등과 같은 구조다: **저장된
+   * 선호는 건드리지 않는 세션 강등**이라, 개념이 하나라도 생기면 원래대로
+   * 돌아오고 사용자가 직접 펼치면 그쪽이 이긴다.
+   */
+  const [indexManualExpandWhileEmpty, setIndexManualExpandWhileEmpty] = useState(false);
   const setIndexPreference = useCallback(
     (next: IndexPanelState) => {
       try {
@@ -606,6 +619,9 @@ export function HomePage() {
     // C — 선택 중 수동 전개는 그 선택 동안 자동 강등을 이긴다 (선택 해제
     // 시 리셋; 비선택 상태에선 무해한 no-op 플래그).
     setIndexManualExpandDuringSelection(true);
+    // 빈 지도 강등도 같다 — 직접 펼쳤으면 그 뜻이 이긴다. 이 줄이 없으면
+    // 탭이 눌리는데 아무 일도 안 일어난다(강등이 매 렌더 다시 접는다).
+    setIndexManualExpandWhileEmpty(true);
     if (analysisMode !== "overview") {
       setRouteState((current) => ({ ...current, analysisMode: "overview" }));
     }
@@ -2098,10 +2114,12 @@ export function HomePage() {
   // 소유자 후속 (2026-07-24): 영역/스포트라이트 원장도 노드 선택 중엔 닫는다
   // — "좌/우 패널이 다 열려 불편". 탈출 어포던스는 상단 영역/렌즈 칩의 ✕ 와
   // Esc 가 유지하므로 원장 상시 노출이 필수는 아니다. 선택 해제 시 복귀.
+  /** 담을 개념이 아직 하나도 없는 지도인가. 위 `indexManualExpandWhileEmpty` 참고. */
+  const topologyGraphEmpty = (ontologyInsight?.nodes.length ?? 0) === 0;
   const renderedIndexState: IndexPanelState =
-    topologySelectionActive &&
-    !indexManualExpandDuringSelection &&
-    baseRenderedIndexState === "expanded"
+    baseRenderedIndexState === "expanded" &&
+    ((topologySelectionActive && !indexManualExpandDuringSelection) ||
+      (topologyGraphEmpty && !indexManualExpandWhileEmpty))
       ? "collapsed"
       : baseRenderedIndexState;
   /**
@@ -4584,11 +4602,21 @@ export function HomePage() {
                       // 카드의 중앙 계산에서 혼자 빠진다. 그 폭을 알려 준다.
                       indexExpanded={renderedIndexState === "expanded"}
                       acpRuntimeLabel={acpRuntimeLabel}
-                      // 찾은 것이 있으면 그 대화를 연다. 없으면 종전대로 밖의
-                      // 도구를 붙이는 설정 시트로 간다 — 두 번째 문을 만드는
-                      // 게 아니라 **같은 문이 상황에 따라 다른 데로 간다**.
+                      /*
+                       * 같은 문이 상황에 따라 다른 데로 간다 — 그 단에 **남아
+                       * 있는 일**로.
+                       *
+                       * 찾은 것이 있으면 남은 일은 「말 걸기」라 대화가 열린다.
+                       * 없으면 남은 일은 「어느 도구를 쓸지 고르기」이고, 그
+                       * 화면은 설정의 **실행기** 칸이다 — 종전에는 밖의 도구에
+                       * 이 폴더를 알려 주는 `agent` 칸으로 보냈는데, 그건 다른
+                       * 일이라 사용자가 엉뚱한 화면에서 찾게 된다(2026-08-16
+                       * 소유자 실보고).
+                       */
                       onOpenAgentConnect={
-                        acpRuntime ? () => setAcpChatOpen(true) : agentConnectLauncher.open
+                        acpRuntime
+                          ? () => setAcpChatOpen(true)
+                          : () => requestSettingsView("runtimes")
                       }
                     />
                   ) : (
