@@ -93,6 +93,83 @@ fn canonical_root(root_path: &str) -> Result<PathBuf, String> {
     Ok(root)
 }
 
+/// 볼트 루트로 받아들이면 **안 되는** 자리인가 — 안 되면 안정된 사유 코드를 준다.
+///
+/// ## 왜 이 검사가 있는가 (2026-08-16)
+///
+/// 폴더 피커에서 `/`(Macintosh HD)를 고르면 앱이 **한 마디 망설임 없이 볼트로
+/// 받아들였다.** 그리고 「이 폴더의 문서 34개를 지도에 올리기」를 제안했는데, 그
+/// 34개는 설치된 앱 번들 안의 마크다운이었다. macOS 가 직접 *"다른 앱의 데이터에
+/// 접근하려고 합니다"* 경고를 띄워 멈춘 것이지 우리가 막은 것이 아니다.
+///
+/// 읽기만 하던 시절에는 이것이 사고가 아니라 실수였다. **볼트 루트는 곧 에이전트의
+/// 작업 폴더가 되므로**, 같은 실수의 결과가 「잘못된 폴더를 읽었다」에서 「잘못된
+/// 폴더에서 에이전트가 파일을 고쳤다」로 바뀐다. 그래서 이 함수는 ACP 를 붙이기
+/// **전에** 닫아야 하는 문이고, 나중에 세션 작업 폴더 판정도 같은 함수를 쓴다 —
+/// 판정이 두 벌이 되면 한쪽만 느슨해지는 쪽이 기본값이 된다.
+///
+/// ## 무엇을 막고 무엇을 안 막나
+///
+/// 막는 것은 **이름이 정해진 자리**뿐이다: 파일시스템 루트(부모가 없는 경로 —
+/// Windows 드라이브 루트 `C:\` 도 여기 걸린다) · 홈 디렉터리 **자기 자신** ·
+/// 사용자 컨테이너(`/Users`) · OS·앱 디렉터리. 홈 **안쪽**(`~/notes`)은 정당한
+/// 볼트이므로 막지 않는다 — 막으면 가장 흔한 사용을 막는다.
+///
+/// 「폴더가 너무 크다」 같은 발견적 판정은 일부러 넣지 않았다. 임계값을 넘는
+/// 정당한 볼트가 반드시 생기고, 그때 사용자는 이유를 알 수 없는 거절을 만난다.
+fn vault_root_rejection(root: &Path) -> Option<&'static str> {
+    // 부모가 없으면 파일시스템 루트다(`/`, `C:\`). 심볼릭 링크로 우회하지
+    // 못하도록 호출자가 canonicalize 한 경로를 넘긴다.
+    if root.parent().is_none() {
+        return Some("filesystem-root");
+    }
+
+    let home = std::env::var_os(if cfg!(windows) { "USERPROFILE" } else { "HOME" })
+        .map(PathBuf::from)
+        .and_then(|p| fs::canonicalize(p).ok());
+    if home.as_deref() == Some(root) {
+        return Some("home-directory");
+    }
+
+    #[cfg(target_os = "macos")]
+    const SYSTEM_DIRS: &[&str] = &[
+        "/Applications",
+        "/System",
+        "/Library",
+        "/Users",
+        "/Volumes",
+        "/private",
+        "/usr",
+        "/bin",
+        "/sbin",
+        "/opt",
+    ];
+    #[cfg(target_os = "linux")]
+    const SYSTEM_DIRS: &[&str] = &[
+        "/home", "/usr", "/bin", "/sbin", "/etc", "/var", "/opt", "/boot", "/proc", "/sys", "/dev",
+    ];
+    #[cfg(windows)]
+    const SYSTEM_DIRS: &[&str] = &[
+        "C:\\Windows",
+        "C:\\Program Files",
+        "C:\\Program Files (x86)",
+        "C:\\Users",
+        "C:\\ProgramData",
+    ];
+    #[cfg(not(any(target_os = "macos", target_os = "linux", windows)))]
+    const SYSTEM_DIRS: &[&str] = &[];
+
+    for dir in SYSTEM_DIRS {
+        // 정확히 그 디렉터리일 때만 막는다. 그 **안쪽**은 사용자가 고를 수 있는
+        // 자리가 있다(예: 리눅스의 `/home/<사용자>`, macOS 의 `/Volumes/<디스크>`).
+        if root == Path::new(dir) {
+            return Some("system-directory");
+        }
+    }
+
+    None
+}
+
 fn ensure_inside_canonical(root_path: &str, path: &Path) -> Result<PathBuf, String> {
     let root = canonical_root(root_path)?;
     let canonical_path = fs::canonicalize(path).map_err(|err| err.to_string())?;
@@ -682,10 +759,19 @@ fn metadata_mtime_ms(path: &Path) -> Result<u128, String> {
 #[tauri::command]
 fn pick_vault_directory(dialog_title: Option<String>) -> Result<Option<String>, String> {
     let title = dialog_title.as_deref().unwrap_or("Open ontology vault");
-    Ok(rfd::FileDialog::new()
-        .set_title(title)
-        .pick_folder()
-        .map(|path| path.to_string_lossy().to_string()))
+    let Some(picked) = rfd::FileDialog::new().set_title(title).pick_folder() else {
+        return Ok(None);
+    };
+    // 심볼릭 링크를 따라간 **실제** 자리로 판정한다 — `/tmp` → `/private/tmp`
+    // 처럼 이름만 다른 같은 자리를 놓치지 않기 위해서다. canonicalize 가
+    // 실패하면(권한 등) 사용자가 방금 고른 경로를 그대로 판정한다.
+    let resolved = fs::canonicalize(&picked).unwrap_or_else(|_| picked.clone());
+    if let Some(reason) = vault_root_rejection(&resolved) {
+        // 화면이 사유별 문구를 고를 수 있도록 **안정된 코드**를 돌려준다.
+        // 사람이 읽는 문장을 여기서 만들면 번역이 Rust 안에 갇힌다.
+        return Err(format!("vault-root-rejected:{reason}"));
+    }
+    Ok(Some(picked.to_string_lossy().to_string()))
 }
 
 #[tauri::command]
@@ -4195,6 +4281,75 @@ mod tests {
     fn open_vault_in_finder_rejects_non_directory_root() {
         let error = open_vault_in_finder("/path/that/does/not/exist".into()).unwrap_err();
         assert!(!error.is_empty());
+    }
+
+    /// 2026-08-16 — 폴더 피커가 `/`(Macintosh HD)를 볼트로 받아들였고, 막은 것은
+    /// 우리가 아니라 macOS 의 경고 대화상자였다. 볼트 루트는 곧 에이전트의 작업
+    /// 폴더가 되므로 그 문을 먼저 닫는다.
+    #[test]
+    fn vault_root_rejection_blocks_the_filesystem_root() {
+        assert_eq!(
+            vault_root_rejection(Path::new("/")),
+            Some("filesystem-root")
+        );
+    }
+
+    #[test]
+    fn vault_root_rejection_blocks_named_system_directories() {
+        // 이 목록이 비면 검사는 통과하면서 아무것도 안 막는다 — 빈 집합 위에서
+        // 도는 게이트는 게이트가 아니므로 그 자체를 먼저 단언한다.
+        let blocked: Vec<&str> = if cfg!(target_os = "macos") {
+            vec!["/Applications", "/System", "/Library", "/Users", "/Volumes"]
+        } else if cfg!(target_os = "linux") {
+            vec!["/home", "/usr", "/etc", "/var"]
+        } else if cfg!(windows) {
+            vec!["C:\\Windows", "C:\\Program Files", "C:\\Users"]
+        } else {
+            vec![]
+        };
+        assert!(
+            !blocked.is_empty(),
+            "이 플랫폼에는 막을 자리가 하나도 등록돼 있지 않다"
+        );
+        for dir in blocked {
+            assert_eq!(
+                vault_root_rejection(Path::new(dir)),
+                Some("system-directory"),
+                "{dir} 는 볼트 루트로 받으면 안 된다"
+            );
+        }
+    }
+
+    #[test]
+    fn vault_root_rejection_blocks_the_home_directory_itself() {
+        let key = if cfg!(windows) { "USERPROFILE" } else { "HOME" };
+        let Some(home) = std::env::var_os(key).map(PathBuf::from) else {
+            return; // 홈이 없는 환경(일부 CI)에서는 판정할 것이 없다
+        };
+        let Ok(home) = fs::canonicalize(home) else {
+            return;
+        };
+        assert_eq!(
+            vault_root_rejection(&home),
+            Some("home-directory"),
+            "홈 디렉터리 자체는 볼트가 아니다"
+        );
+    }
+
+    #[test]
+    fn vault_root_rejection_allows_ordinary_folders_inside_home() {
+        // 가장 흔한 정당한 볼트를 막으면 이 검사는 제품을 망가뜨린다.
+        // 홈 **안쪽**은 통과해야 한다.
+        let key = if cfg!(windows) { "USERPROFILE" } else { "HOME" };
+        let Some(home) = std::env::var_os(key).map(PathBuf::from) else {
+            return;
+        };
+        assert_eq!(vault_root_rejection(&home.join("notes")), None);
+        assert_eq!(vault_root_rejection(&home.join("code/atlas/docs")), None);
+        // 시스템 디렉터리의 안쪽도 자리에 따라 정당하다(외장 디스크 등).
+        if cfg!(target_os = "macos") {
+            assert_eq!(vault_root_rejection(Path::new("/Volumes/Work/vault")), None);
+        }
     }
 
     #[test]

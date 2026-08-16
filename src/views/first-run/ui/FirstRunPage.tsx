@@ -84,7 +84,11 @@ export function FirstRunPage() {
       : actionError !== null
         ? actionError || t("errorFallback")
         : vault.status === "error"
-          ? vault.errorMessage ?? t("errorFallback")
+          ? // 「받을 수 없는 자리」는 실패가 아니라 거절이다. 여기에 「다시 시도해
+            // 주세요」를 띄우면 몇 번을 눌러도 같은 결과라서 화면이 거짓말을 한다.
+            vault.errorCode === "root-rejected"
+            ? t("errorRootRejected")
+            : vault.errorMessage ?? t("errorFallback")
           : null;
 
   const cardBase = controlClass({

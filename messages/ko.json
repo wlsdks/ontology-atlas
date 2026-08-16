@@ -520,6 +520,7 @@
     "busy": "폴더 여는 중…",
     "scaffolding": "시작 구조 작성 중…",
     "errorFallback": "폴더를 열지 못했습니다. 다시 시도해 주세요.",
+    "errorRootRejected": "이 폴더는 지도로 만들 수 없어요. 시스템 폴더나 홈 폴더 전체 말고, 문서가 들어 있는 폴더를 골라 주세요.",
     "trustLine": "내 컴퓨터에만 저장돼요 · 파일은 평범한 마크다운 · 서버 없음"
   },
   "firstRunStarter": {
@@ -1817,6 +1818,7 @@
       "unsupportedTooltip": "로컬 온톨로지 폴더 편집은 설치된 데스크톱 앱에서 사용할 수 있습니다.",
       "permissionNeededBanner": "Vault 잠시 멈춤: 폴더 권한 재승인이 필요합니다. 그동안 샘플 문서를 보여주고 있어요.",
       "errorBanner": "Vault 폴더에 접근할 수 없어요 ({message}). 샘플 문서를 대신 표시: picker 에서 다시 선택하거나 refresh 해 주세요.",
+      "rootRejectedBanner": "이 폴더는 지도로 만들 수 없어요. 시스템 폴더나 홈 폴더 전체 말고, 문서가 들어 있는 폴더를 골라 주세요.",
       "openPicker": "문서함 다시 선택",
       "openFallback": "이 문서 열기",
       "missingSlugBanner": "「{slug}」 문서를 이 문서함에서 못 찾았어요. 대신 다른 문서를 열었습니다. 다른 폴더의 문서라면 문서함을 바꿔 주세요."

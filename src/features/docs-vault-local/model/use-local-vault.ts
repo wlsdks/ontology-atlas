@@ -37,6 +37,7 @@ import {
   getTauriVaultRootPath,
   isTauriVaultRuntime,
   pickTauriVaultDirectory,
+  vaultRootRejectionReason,
   tauriVaultPathExists,
 } from '@/shared/lib/tauri-vault-fs';
 import { toErrorMessage } from '@/shared/lib/error-message';
@@ -216,8 +217,13 @@ type Status =
  *   더는 절대 경로로 접근할 수 없음. "폴더 다시 선택" 이 다음 행동.
  * - `access-failed` — 그 외 읽기/빌드 실패. `errorMessage` 에 원인 문자열이
  *   담긴다 (Tauri 커맨드의 Err(String) 포함 — 더는 침묵하지 않음).
+ * - `root-rejected` — 고른 자리가 볼트 루트로 받을 수 없는 곳(파일시스템 루트 ·
+ *   홈 디렉터리 자체 · OS/앱 디렉터리). **실패가 아니라 거절**이라서 코드를
+ *   가른다: 다시 시도해도 같은 결과이므로 "다시 시도해 주세요" 는 틀린 안내다.
+ *   `errorMessage` 는 null 이고, 화면이 사유를 자기 언어로 고른다
+ *   (`vaultRootRejectionReason`).
  */
-export type VaultErrorCode = 'path-missing' | 'access-failed';
+export type VaultErrorCode = 'path-missing' | 'access-failed' | 'root-rejected';
 
 interface State {
   status: Status;
@@ -769,6 +775,19 @@ export function useLocalVaultInternal() {
       // 취소는 실패가 아니다 — 선택창 직전 상태로 복귀(`isPickerAbort` 주석 참고).
       if (isPickerAbort(err)) {
         setState(previousState);
+        return;
+      }
+      // 「받을 수 없는 자리」 거절은 실패와 다르게 다룬다. 원인 문자열을 그대로
+      // 화면에 흘리면 사용자가 `vault-root-rejected:filesystem-root` 를 읽게 되고,
+      // 「다시 시도해 주세요」 는 몇 번을 해도 같은 결과라 거짓 안내가 된다.
+      const rejection = vaultRootRejectionReason(err);
+      if (rejection) {
+        setState((s) => ({
+          ...s,
+          status: 'error',
+          errorMessage: null,
+          errorCode: 'root-rejected',
+        }));
         return;
       }
       // 같은 이유로 ko 하드코딩 "폴더를 열지 못했습니다" 제거 — null 이면

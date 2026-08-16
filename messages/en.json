@@ -520,6 +520,7 @@
     "busy": "Opening folder…",
     "scaffolding": "Writing starter structure…",
     "errorFallback": "Could not open the folder. Try again.",
+    "errorRootRejected": "This folder can't be used as a map. Pick a folder that holds your documents, not a system folder or your whole home folder.",
     "trustLine": "Stored only on your computer · plain markdown files · no server"
   },
   "firstRunStarter": {
@@ -1817,6 +1818,7 @@
       "unsupportedTooltip": "Local ontology folder editing is available in the installed desktop app.",
       "permissionNeededBanner": "Workspace is paused: re-grant folder access to keep editing. Showing sample docs until then.",
       "errorBanner": "Workspace folder is unavailable ({message}). Showing sample docs: open the picker to re-pick or refresh.",
+      "rootRejectedBanner": "This folder can't be used as a map. Pick a folder that holds your documents, not a system folder or your whole home folder.",
       "openPicker": "Open picker",
       "openFallback": "Open this document",
       "missingSlugBanner": "Couldn't find “{slug}” in this folder, so another document is open instead. If it lives in a different folder, switch folders."

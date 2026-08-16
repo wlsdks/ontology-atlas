@@ -2151,9 +2151,13 @@ function DocsVaultContent() {
           <span className="flex-1">
             {localVault.status === 'permission-needed'
               ? t('vaultStatus.permissionNeededBanner')
-              : t('vaultStatus.errorBanner', {
-                  message: localVault.errorMessage ?? '',
-                })}
+              : // 거절은 실패와 다르다 — 원인 문자열을 그대로 흘리면 사용자가
+                // `vault-root-rejected:filesystem-root` 를 읽게 된다.
+                localVault.errorCode === 'root-rejected'
+                ? t('vaultStatus.rootRejectedBanner')
+                : t('vaultStatus.errorBanner', {
+                    message: localVault.errorMessage ?? '',
+                  })}
           </span>
           <button
             type="button"
