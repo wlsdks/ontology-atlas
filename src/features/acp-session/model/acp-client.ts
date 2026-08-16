@@ -156,6 +156,11 @@ function normalizeFolder(value: unknown): string | null {
 export interface AcpPermissionRequest {
   /** 사람이 읽는 한 줄. 어댑터가 준 그대로. */
   title: string | null;
+  /**
+   * 부른 도구의 **식별자**(`mcp__atlas-vault__add_concept` 같은). 정책이 이걸
+   * 본다 — MCP 도구 호출에는 파일 경로가 없기 때문이다.
+   */
+  toolName: string | null;
   /** `edit` · `execute` · `read` … 화면이 아이콘/색을 고르는 타입 있는 사실. */
   toolKind: string | null;
   /** 있으면 절대 경로. 정책 판정의 근거이자 화면이 보여 줄 대상. */
@@ -167,6 +172,12 @@ export interface AcpPermissionRequest {
 export interface AcpClientHandlers {
   /** 스트리밍 갱신 — 텍스트 청크·툴콜·계획 등. */
   onUpdate?: (update: Record<string, unknown>) => void;
+  /**
+   * 우리가 세션에 꽂아 준 볼트 MCP 서버의 이름. 그 서버의 도구는 볼트 밖을
+   * 건드릴 수 없으므로 자동 허용한다(`isVaultMcpTool`). 안 넘기면 그 자동
+   * 허용이 꺼진다 — 없는 것을 있는 척하지 않는다.
+   */
+  vaultMcpServerName?: string;
   /** 이 경로가 볼트 안인가. Rust 판정으로 간다. */
   verdict: (filePath: string | null) => Promise<'allow-inside-vault' | 'ask'>;
   /**
@@ -246,6 +257,19 @@ export function createAcpClient(
     const request = toPermissionRequest(params);
     const allowOnce = request.options.find((o) => o.kind === 'allow_once');
     const rejectOnce = request.options.find((o) => o.kind === 'reject_once');
+
+    /*
+     * **우리가 꽂아 준 볼트 도구는 볼트 안이다.** 그 서버는 볼트 경로로 띄운
+     * 것이라 밖을 건드릴 수 없다 — 실측에서 이 갈래가 없어 에이전트가 지도에
+     * 아무것도 못 썼다(`isVaultMcpTool` 주석).
+     */
+    if (
+      allowOnce &&
+      isVaultMcpTool(request.toolName, handlers.vaultMcpServerName ?? '')
+    ) {
+      write({ jsonrpc: '2.0', id, result: selected(allowOnce.optionId) });
+      return;
+    }
 
     // 볼트 안이면 앱이 대신 허용한다. 여기서 매번 물으면 대화가 성립하지 않는다.
     const verdict = await handlers.verdict(request.filePath);
@@ -444,12 +468,73 @@ function asRecord(value: unknown): Record<string, unknown> {
 }
 
 /** 권한 요청 원문에서 화면과 정책이 쓸 것만 추린다. */
+/**
+ * 부른 **도구의 이름**을 뽑는다. 구조화된 자리를 먼저 보고 없으면 제목을 쓴다.
+ *
+ * ⚠️ 제목으로 정책을 판정하지 않는다는 이 파일의 규율(계약 ②)과 부딪히는 것처럼
+ * 보이는데, 다르다. 그 규율이 막으려던 것은 **사람이 읽으라고 지은 문장**에서
+ * 경로를 긁어내는 것이었다(문구가 바뀌면 정책이 조용히 뒤집힌다). 여기서 찾는
+ * 것은 문장이 아니라 **식별자**이고, 우선 순위도 구조화된 자리가 먼저다 —
+ * `allow_always` 선택지의 `_meta` 에 `targets[].toolName` 이 실려 온다(실측).
+ * 제목은 그것이 없을 때의 차선이며, 실측에서 그 값은 도구 이름 그 자체였다
+ * (`"mcp__atlas-vault__add_concept"`).
+ */
+function readToolName(params: Record<string, unknown>): string | null {
+  const options = Array.isArray(params.options) ? params.options : [];
+  for (const entry of options) {
+    const changes = asRecord(asRecord(asRecord(entry)._meta).permission).changes;
+    if (!Array.isArray(changes)) continue;
+    for (const change of changes) {
+      const targets = asRecord(change).targets;
+      if (!Array.isArray(targets)) continue;
+      for (const target of targets) {
+        const t = asRecord(target);
+        if (t.type === 'tool' && typeof t.toolName === 'string') return t.toolName;
+      }
+    }
+  }
+  const title = asRecord(params.toolCall).title;
+  return typeof title === 'string' ? title : null;
+}
+
+/**
+ * 이 도구가 **우리가 꽂아 준 볼트 MCP 서버**의 것인가.
+ *
+ * ## 왜 이게 필요한가 (2026-08-16 실측으로 발견)
+ *
+ * 진짜 세션을 한 바퀴 돌려 보니 **에이전트가 지도에 아무것도 못 썼다.**
+ * 우리 관문이 우리 자신의 도구를 막고 있었다:
+ *
+ * ```
+ * 권한 요청: 밖 · (경로 없음)  ×4  → 전부 거절
+ * 답: "MCP 툴 호출이 전부 권한 거부로 막혀서 지도에 실제로 쓰지 못했습니다"
+ * ```
+ *
+ * 원인은 정책이 **파일 경로만 볼 줄 알았다**는 것이다. MCP 도구 호출에는
+ * `file_path` 가 없으니 「경로를 모름 → 물어봄」으로 떨어졌고, 자동 응답이
+ * 없는 실측 환경에서는 그게 곧 거절이었다.
+ *
+ * 그런데 그 서버는 **우리가 볼트 경로로 띄운 것**이라 볼트 밖을 건드릴 수가
+ * 없다 — 「볼트 안 파일」과 정확히 같은 근거로 자동 허용이 맞다. 관문이
+ * 지키려는 것은 「볼트 밖」이지 「도구를 쓰는 것」이 아니다.
+ *
+ * ⚠️ **남는 위험 하나**: 프로젝트의 `.mcp.json` 이 같은 이름의 서버를 정의하면
+ * 이 판정을 빌려 갈 수 있다. 이름이 겹치면 어댑터 쪽에서 충돌이 나므로 좁은
+ * 구멍이지만, 0은 아니다. 그래서 이름을 여기 리터럴로 적지 않고 **우리가
+ * 주입할 때 쓰는 그 상수**를 가져다 쓴다 — 한 곳만 바꾸면 둘이 같이 움직인다.
+ */
+export function isVaultMcpTool(toolName: string | null, serverName: string): boolean {
+  if (!toolName || !serverName) return false;
+  return toolName.startsWith(`mcp__${serverName}__`);
+}
+
 export function toPermissionRequest(params: Record<string, unknown>): AcpPermissionRequest {
   const toolCall = asRecord(params.toolCall);
   const rawInput = asRecord(toolCall.rawInput);
   const rawOptions = Array.isArray(params.options) ? params.options : [];
   return {
     title: typeof toolCall.title === 'string' ? toolCall.title : null,
+    toolName: readToolName(params),
     toolKind: typeof toolCall.kind === 'string' ? toolCall.kind : null,
     // 제목이 아니라 이 값으로 판정한다 — 제목은 볼트 안이면 상대 경로,
     // 밖이면 절대 경로라서 문구가 바뀌는 날 정책이 조용히 뒤집힌다.

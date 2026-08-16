@@ -169,6 +169,61 @@ describe('대화 패널 — 일어난 일만 그린다', () => {
 });
 
 describe('대화 패널 — 권한 카드가 실제로 막는다', () => {
+  /**
+   * ⚠️ **실측이 아니었으면 못 잡았을 결함** (2026-08-16).
+   *
+   * 진짜 세션을 한 바퀴 돌려 보니 에이전트가 지도에 **아무것도 못 썼다** —
+   * 우리 관문이 우리 자신의 MCP 도구를 막고 있었다. MCP 도구 호출에는
+   * `file_path` 가 없어서 「경로를 모름 → 물어봄」으로 떨어졌고, 그 서버는
+   * 볼트 경로로 우리가 띄운 것이라 애초에 밖을 건드릴 수가 없는데도 그랬다.
+   *
+   * 단위 검사는 전부 통과하고 있었다. 파일 경로가 있는 요청만 넣어 봤기
+   * 때문이다 — **없는 입력은 검사도 없었다.**
+   */
+  function mcpPermissionRequest(toolName: string, id = 78) {
+    return {
+      jsonrpc: '2.0',
+      id,
+      method: 'session/request_permission',
+      params: {
+        sessionId: 's-1',
+        options: [
+          { kind: 'reject_once', name: 'Deny', optionId: 'reject' },
+          { kind: 'allow_once', name: 'Allow Once', optionId: 'allow' },
+        ],
+        // 실측 그대로: `rawInput` 에 경로가 없고 이름이 `title` 에 온다.
+        toolCall: { toolCallId: 'tc9', title: toolName, kind: 'other', rawInput: { summary: true } },
+      },
+    };
+  }
+
+  it('우리가 꽂아 준 볼트 도구는 경로가 없어도 막지 않는다', async () => {
+    await bootSession();
+    emit(mcpPermissionRequest('mcp__atlas-vault__add_concept'));
+
+    await waitFor(() => expect(answerFor(78)).toEqual({ outcome: 'selected', optionId: 'allow' }));
+    // 카드를 띄우지 않는다 — 볼트 안 파일과 같은 근거로 자동 허용이다.
+    expect(screen.queryByTestId('acp-permission-card')).toBeNull();
+  });
+
+  it('남의 MCP 도구는 경로가 없으면 그대로 묻는다', async () => {
+    await bootSession();
+    emit(mcpPermissionRequest('mcp__some-other-server__write_file', 79));
+
+    // 이름이 우리 서버가 아니면 자동 허용의 근거가 없다 — 물어봐야 한다.
+    await waitFor(() => expect(screen.getByTestId('acp-permission-card')).toBeInTheDocument());
+    expect(answerFor(79)).toBeUndefined();
+  });
+
+  it('이름을 흉내 낸 도구는 통과하지 못한다', async () => {
+    await bootSession();
+    // 접두사만 비슷한 것(`atlas-vault-evil`)이 통과하면 판정이 무의미해진다.
+    emit(mcpPermissionRequest('mcp__atlas-vault-evil__write_file', 80));
+
+    await waitFor(() => expect(screen.getByTestId('acp-permission-card')).toBeInTheDocument());
+    expect(answerFor(80)).toBeUndefined();
+  });
+
   it('볼트 안이면 카드를 안 띄우고 앱이 대신 허용한다', async () => {
     bridge.verdict = 'allow-inside-vault';
     await bootSession();

@@ -11,6 +11,7 @@ import {
   stopAcpSession,
 } from '@/shared/lib/tauri-acp';
 
+import { VAULT_MCP_SERVER_NAME } from './vault-mcp-server';
 import {
   createAcpClient,
   type AcpClient,
@@ -230,6 +231,12 @@ export function useAcpSession({ runtimeId, vaultRoot, mcpServers }: UseAcpSessio
 
       const client = createAcpClient(transport, {
         onUpdate: applyUpdate,
+        /*
+         * 우리가 꽂아 준 볼트 서버의 도구는 자동 허용한다 — 그 서버는 볼트
+         * 경로로 띄운 것이라 밖을 건드릴 수 없다. 이 줄이 없으면 에이전트가
+         * 지도에 **아무것도 못 쓴다**(2026-08-16 실측으로 발견).
+         */
+        vaultMcpServerName: VAULT_MCP_SERVER_NAME,
         verdict: (filePath) => acpPermissionVerdict(vaultRoot, filePath),
         askUser,
         onProtocolNotice: (message) => push({ kind: 'notice', id: nextEventId(), text: message }),
