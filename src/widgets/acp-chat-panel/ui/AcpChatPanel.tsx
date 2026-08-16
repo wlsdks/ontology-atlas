@@ -22,6 +22,7 @@ import {
 import { cn } from '@/shared/lib/cn';
 import { useAcpSession, type AcpEvent } from '@/features/acp-session/model/use-acp-session';
 import { readAcpTrouble } from '@/features/acp-session/model/acp-trouble';
+import type { ChatSuggestion } from '@/features/acp-session/model/chat-suggestions';
 
 import { VAULT_MCP_SERVER_NAME } from '@/features/acp-session/model/vault-mcp-server';
 
@@ -82,6 +83,7 @@ export function AcpChatPanel({
   runtimes = [],
   onRuntimeChange,
   prefillRequest,
+  suggestions = [],
   onClose,
 }: {
   runtimeId: string;
@@ -99,6 +101,16 @@ export function AcpChatPanel({
    * 않는다 — 사용자가 고쳐 보내거나 지울 수 있어야 한다.
    */
   prefillRequest?: { text: string; nonce: number } | null;
+  /**
+   * 「무엇을 물어보지」에 대한 답 — **이 폴더의 지금 상태**에서 뽑은 것
+   * (`useChatSuggestions`). 빈 대화일 때만 그린다: 대화가 시작되면 사용자는
+   * 이미 무엇을 물어볼지 아는 상태이고, 그때부터 이 칸은 자리만 먹는다.
+   *
+   * 볼트를 여기서 직접 읽지 않고 **받는다** — 그러면 이 패널이
+   * `LocalVaultProvider` 없이는 못 서게 되고, 그건 이 위젯이 지금까지 지켜
+   * 온 성질이 아니다(`vaultRoot` · `runtimes` 도 전부 받아 온다).
+   */
+  suggestions?: readonly ChatSuggestion[];
   onClose?: () => void;
 }) {
   const t = useTranslations('acpChat');
@@ -419,12 +431,42 @@ export function AcpChatPanel({
           // 빈 대화의 안내는 **기록이 쌓일 그 자리 한가운데**에 둔다. 위쪽에
           // 붙여 두면 그것이 첫 번째 말풍선처럼 읽히고, 정작 대화가 시작될
           // 자리는 비어 보인다.
-          <p
-            data-testid="acp-chat-empty"
-            className="m-auto max-w-[28ch] break-keep text-center text-label leading-prose text-[color:var(--color-text-quaternary)]"
-          >
-            {t('emptyHint')}
-          </p>
+          <div className="m-auto grid max-w-[34ch] gap-3">
+            <p
+              data-testid="acp-chat-empty"
+              className="break-keep text-center text-label leading-prose text-[color:var(--color-text-quaternary)]"
+            >
+              {t('emptyHint')}
+            </p>
+            {/*
+              「무엇을 물어보지」에 대한 답은 **이 폴더의 지금 상태**에서 나온다
+              (2026-08-17). 예시 문장을 박아 두는 흔한 방식은 추천이 아니라
+              장식이다 — 어느 앱에나 붙일 수 있고, 눌러 보면 내 폴더와 상관없는
+              답이 나와서 추천을 한 번 더 믿지 않게 된다. 어떤 사실이 있을 때
+              무엇을 권하는지는 `chat-suggestions.ts` 가 갖는다.
+            */}
+            {suggestions.length > 0 ? (
+              <div className="grid gap-1.5" data-testid="acp-chat-suggestions">
+                <p className="text-center text-caption leading-caption text-[color:var(--color-text-quaternary)]">
+                  {t('suggest.heading')}
+                </p>
+                {suggestions.map((s) => (
+                  <Chip
+                    key={s.kind}
+                    size="md"
+                    tone="secondary"
+                    data-testid={`acp-chat-suggestion-${s.kind}`}
+                    className="w-full justify-start text-left"
+                    onClick={() => setDraft(t(`suggest.${s.kind}.prompt`, s.params))}
+                  >
+                    <span className="min-w-0 break-keep">
+                      {t(`suggest.${s.kind}.label`, s.params)}
+                    </span>
+                  </Chip>
+                ))}
+              </div>
+            ) : null}
+          </div>
         ) : null}
         {groupEvents(events).map((item, index) => {
           if (item.kind === 'toolGroup') return <ToolGroup key={item.id} events={item.events} />;

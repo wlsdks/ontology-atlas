@@ -3711,6 +3711,29 @@
     },
     "notice": {
       "gateOff": "In this conversation Atlas cannot ask you before a file outside this folder is touched. The tool follows the settings you gave it directly."
+    },
+    "suggest": {
+      "heading": "Worth doing in this folder right now",
+      "bootstrap": {
+        "label": "Read the code and start the map",
+        "prompt": "Read this repository and propose candidate domains and capabilities. Cite the file paths you based each on, and write nothing to the vault until I confirm."
+      },
+      "island": {
+        "label": "{count} nodes around “{first}” sit apart from the map",
+        "prompt": "{count} nodes including “{first}” are not connected to the rest of the map. Using the code as evidence, work out where they belong and propose the links along with why."
+      },
+      "containment": {
+        "label": "“{domain}” does not link back to “{slug}”",
+        "prompt": "“{slug}” says it belongs to “{domain}”, but “{domain}” does not list it. Check whether that is right, and link it if so."
+      },
+      "evidence": {
+        "label": "{count} capabilities with no code behind them",
+        "prompt": "{count} capabilities including “{first}” have no implementation evidence. Find which file each one actually lives in and record it. Say so when you cannot find one."
+      },
+      "explain": {
+        "label": "Explain this folder from the map alone",
+        "prompt": "Using only the {count} nodes on the map and their relations, explain to a newcomer what this folder is. Invent nothing that is not on the map, and point out any place the explanation stalls, because that is a hole in the map."
+      }
     }
   }
 }

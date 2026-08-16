@@ -10,6 +10,20 @@
 
 export const VAULT_HEALTH_CASES = [
   {
+    // 평범한 마크다운(디자인 문서 · 백로그 · 릴리스 노트)은 온톨로지 노드가
+    // **아니다** — `kind:` 가 없다. MCP 컴파일러는 그것을 노드로 세지 않는데
+    // 웹 사본은 세고 있었고, 그래서 우리 자신의 문서함(163개 중 83개가 평범한
+    // 마크다운)에 대해 화면이 「고칠 곳 83군데」라고 말했다. CLI 는 같은 볼트를
+    // 「정상」이라고 답한다 (2026-08-17 실측).
+    name: 'plain markdown without kind: is not a node',
+    docs: [
+      { slug: 'domains/auth', frontmatter: { kind: 'domain', title: 'Auth', capabilities: ['capabilities/login'] } },
+      { slug: 'capabilities/login', frontmatter: { kind: 'capability', title: 'Login', domain: 'domains/auth' } },
+      { slug: 'DESIGN-SYSTEM', frontmatter: { title: '디자인 시스템' } },
+      { slug: 'BACKLOG', frontmatter: {} },
+    ],
+  },
+  {
     // 볼트가 아닌 폴더를 검사하면 둘 다 「정상」이라고 답했다 (2026-08-16 실측:
     // `health <빈 폴더>` → healthy). 나머지 검사가 전부 셀 것이 없어 통과했기
     // 때문이다 — 빈 집합 위에서 헛도는 검사는 검사가 아니다.
