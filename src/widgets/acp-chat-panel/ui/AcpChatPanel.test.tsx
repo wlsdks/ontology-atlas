@@ -609,3 +609,90 @@ describe('작성 칸 — 안내가 쓰는 글을 가리지 않는다', () => {
     }
   });
 });
+
+describe('대화 패널 — 떠 있는 것은 떠 있어야 한다', () => {
+  /*
+   * 2026-08-16 소유자 실보고: *"이렇게 같이 나와서 구분도 안 되고"*.
+   *
+   * 지난 대화 목록을 flex 자식으로 뒀더니, 열면 대화가 아래로 **밀려나고**
+   * 목록이 대화의 일부처럼 보였다. 떠 있어야 할 것을 흐름에 두면 그건
+   * 팝오버가 아니라 그냥 또 하나의 줄이다.
+   */
+  function replyToList() {
+    const call = [...bridge.sent].reverse().find((m) => m.method === 'session/list');
+    if (!call) return false;
+    emit({
+      jsonrpc: '2.0',
+      id: call.id,
+      result: {
+        sessions: [
+          { sessionId: 's-old', cwd: '/vault', title: '어제 하던 정리', updatedAt: '2026-08-15T09:00:00Z' },
+        ],
+      },
+    });
+    return true;
+  }
+
+  it('목록은 흐름을 밀지 않는다 — 떠서 덮는다', async () => {
+    await bootSession();
+    await waitFor(() => expect(replyToList()).toBe(true));
+    fireEvent.click(await screen.findByTestId('acp-chat-history'));
+
+    const list = await screen.findByTestId('acp-chat-history-list');
+    // 조상 어딘가가 흐름에서 빠져 있어야 한다(`absolute`).
+    const floating = list.closest('.absolute');
+    expect(floating, '목록이 흐름 안에 있으면 열 때 대화가 밀려난다').not.toBeNull();
+  });
+
+  it('막이 있고, 아무 데나 누르면 닫힌다', async () => {
+    await bootSession();
+    await waitFor(() => expect(replyToList()).toBe(true));
+    fireEvent.click(await screen.findByTestId('acp-chat-history'));
+
+    const scrim = await screen.findByTestId('acp-chat-history-scrim');
+    fireEvent.click(scrim);
+    await waitFor(() => expect(screen.queryByTestId('acp-chat-history-scrim')).toBeNull());
+  });
+
+  it('언제 한 대화인지 보여 준다 — 이미 받아 온 값을 버리지 않는다', async () => {
+    await bootSession();
+    await waitFor(() => expect(replyToList()).toBe(true));
+    fireEvent.click(await screen.findByTestId('acp-chat-history'));
+
+    const item = await screen.findByTestId('acp-chat-history-item');
+    expect(item.textContent).toContain('어제 하던 정리');
+    // 제목만 비슷한 대화들 사이에서 고를 근거가 시각이다.
+    expect(item.textContent, '날짜가 없으면 무엇을 고를지 알 수 없다').toMatch(/2026/);
+  });
+});
+
+describe('대화 패널 — 내 질문과 답이 갈린다', () => {
+  it('두 번째 질문부터는 차례 경계가 그어진다', async () => {
+    await bootSession();
+    const box = screen.getByRole('textbox');
+
+    fireEvent.change(box, { target: { value: '첫 질문' } });
+    fireEvent.click(screen.getByTestId('acp-chat-send'));
+    await waitFor(() => expect(screen.getByText('첫 질문')).toBeInTheDocument());
+    // 위에 아무것도 없는데 경계를 그으면 그건 경계가 아니라 장식이다.
+    expect(document.querySelectorAll('[data-turn-start]')).toHaveLength(0);
+
+    emit({
+      jsonrpc: '2.0',
+      method: 'session/update',
+      params: { update: { sessionUpdate: 'agent_message_chunk', content: { text: '답' } } },
+    });
+    // 차례가 끝나야 다음 말을 보낼 수 있다 — 도는 중에는 작성 칸이 잠긴다.
+    replyTo('session/prompt', { stopReason: 'end_turn' });
+    await waitFor(() =>
+      expect(screen.getByTestId('acp-chat-panel')).toHaveAttribute('data-acp-status', 'ready'),
+    );
+
+    fireEvent.change(box, { target: { value: '둘째 질문' } });
+    fireEvent.click(screen.getByTestId('acp-chat-send'));
+
+    await waitFor(() =>
+      expect(document.querySelectorAll('[data-turn-start]'), '차례가 바뀌었는데 경계가 없다').toHaveLength(1),
+    );
+  });
+});

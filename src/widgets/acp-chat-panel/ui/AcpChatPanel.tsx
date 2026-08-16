@@ -8,6 +8,7 @@ import { useTranslations } from 'next-intl';
 
 import { Button, Chip, IconButton, RowButton, Select, Surface, Textarea } from '@/shared/ui';
 import { Tooltip, TooltipProvider } from '@/shared/ui/tooltip';
+import { formatDate } from '@/shared/lib/format-date';
 import { badgeClass } from '@/shared/ui/badge-class';
 import { controlClass } from '@/shared/ui/control-class';
 import { ICON_SIZE } from '@/shared/ui/icon-size';
@@ -208,7 +209,7 @@ export function AcpChatPanel({
        * 채팅에서 작성 칸이 바닥에 있는 것은 취향이 아니라 **손이 가는 자리**이고,
        * 그 위가 비어 있어야 대화가 쌓일 곳이 보인다.
        */
-      className="flex h-full min-h-0 flex-1 flex-col gap-3"
+      className="relative flex h-full min-h-0 flex-1 flex-col gap-3"
       aria-label={t('ariaLabel', { runtime: runtimeLabel })}
     >
       <header className="flex items-center justify-between gap-2">
@@ -301,38 +302,6 @@ export function AcpChatPanel({
         </span>
       </header>
 
-      {/*
-        지난 대화 목록. 머리 바로 아래에서 자란다 — 연 버튼 옆이다.
-
-        ⚠️ 여기 담기는 것은 **이 폴더의 대화뿐**이다. 어댑터는 `cwd` 를 줘도
-        다른 폴더의 대화까지 돌려주고(실측), 그대로 그리면 앱에서 연 적도 없는
-        폴더의 작업 제목이 화면에 뜬다. 거르는 곳은 `keepSessionsInFolder` 하나다.
-      */}
-      <Surface open={historyOpen && sessions.length > 0} origin="top right" motion="overlay">
-        <ul
-          data-testid="acp-chat-history-list"
-          className="grid max-h-48 gap-0.5 overflow-y-auto rounded-panel border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] p-1"
-        >
-          {sessions.map((session) => (
-            <li key={session.sessionId}>
-              <RowButton
-                data-testid="acp-chat-history-item"
-                data-session-id={session.sessionId}
-                onClick={() => {
-                  setHistoryOpen(false);
-                  void switchSession(session.sessionId);
-                }}
-                className="w-full"
-              >
-                <span className="min-w-0 flex-1 truncate text-left text-body text-[color:var(--color-text-secondary)]">
-                  {session.title ?? t('untitled')}
-                </span>
-              </RowButton>
-            </li>
-          ))}
-        </ul>
-      </Surface>
-
       <div
         ref={listRef}
         data-testid="acp-chat-transcript"
@@ -355,13 +324,28 @@ export function AcpChatPanel({
             {t('emptyHint')}
           </p>
         ) : null}
-        {groupEvents(events).map((item) =>
-          item.kind === 'toolGroup' ? (
-            <ToolGroup key={item.id} events={item.events} />
-          ) : (
-            <TranscriptEntry key={item.event.id} event={item.event} />
-          ),
-        )}
+        {groupEvents(events).map((item, index) => {
+          if (item.kind === 'toolGroup') return <ToolGroup key={item.id} events={item.events} />;
+          /*
+           * 사용자의 말 앞에 실선 하나 — **차례가 바뀐 자리**다. 첫 차례
+           * 위에는 긋지 않는다(위에 아무것도 없는데 경계를 그으면 그건 경계가
+           * 아니라 장식이다).
+           */
+          const turnStart = item.event.kind === 'user' && index > 0;
+          return (
+            <div
+              key={item.event.id}
+              data-turn-start={turnStart ? 'true' : undefined}
+              className={cn(
+                'flex flex-col',
+                turnStart &&
+                  'mt-2 border-t border-[color:var(--color-divider)] pt-3',
+              )}
+            >
+              <TranscriptEntry event={item.event} />
+            </div>
+          );
+        })}
       </div>
 
       {error ? (
@@ -475,6 +459,80 @@ export function AcpChatPanel({
           </span>
         </div>
       </div>
+      {/*
+        지난 대화 목록 — **떠 있는 것**이다.
+
+        ⚠️ **z-index 를 쓰지 않는다.** 처음엔 `--z-map-popover` 를 썼는데 그런
+        토큰은 **없다** — 없는 변수를 참조하면 CSS 가 그 선언을 통째로 버려서
+        아무 에러 없이 층위가 사라진다(이 저장소가 「아무도 안 쓰는 토큰은
+        규격이 아니라 틀린 정보다」라고 적어 둔 그 함정이다).
+        대신 이 블록을 패널의 **맨 끝**에 둔다 — 같은 층에서는 나중에 그린 것이
+        위에 온다. 새 토큰도, 사다리 변경도 필요 없다.
+
+        ⚠️ 종전에는 이것을 flex 자식으로 뒀다. 그래서 열면 대화가 아래로
+        **밀려났고**, 목록이 대화의 일부처럼 보였다(소유자: *"이렇게 같이 나와서
+        구분도 안 되고"*). 떠 있어야 할 것을 흐름에 두면 그건 팝오버가 아니라
+        그냥 또 하나의 줄이다.
+
+        그래서 패널 기준으로 **절대 위치**에 놓고, 뒤에 막을 깔아 「이건 위에
+        떠 있고 아무 데나 누르면 닫힌다」를 눈으로 말한다.
+
+        ⚠️ 여기 담기는 것은 **이 폴더의 대화뿐**이다(`keepSessionsInFolder`).
+      */}
+      {historyOpen && sessions.length > 0 ? (
+        <button
+          type="button"
+          aria-label={t('close')}
+          data-testid="acp-chat-history-scrim"
+          onClick={() => setHistoryOpen(false)}
+          className="absolute inset-0 cursor-default bg-[color:var(--color-overlay-1)]"
+        />
+      ) : null}
+      <div className="pointer-events-none absolute inset-x-0 top-11 flex justify-end">
+        <Surface
+          open={historyOpen && sessions.length > 0}
+          origin="top right"
+          motion="overlay"
+          className="pointer-events-auto w-[min(320px,100%)]"
+        >
+          <div className="overflow-hidden rounded-panel border border-[color:var(--color-border-soft)] bg-[color:var(--color-elevated)] shadow-[var(--shadow-elevation-2)]">
+            {/* 이름이 있어야 무엇의 목록인지 알 수 있다. */}
+            <p className="px-3 pb-1.5 pt-2.5 font-mono text-label uppercase tracking-[var(--tracking-caps-14)] text-[color:var(--color-text-quaternary)]">
+              {t('history')}
+            </p>
+            <ul data-testid="acp-chat-history-list" className="grid max-h-64 gap-0.5 overflow-y-auto p-1 pt-0">
+              {sessions.map((session) => (
+                <li key={session.sessionId}>
+                  <RowButton
+                    data-testid="acp-chat-history-item"
+                    data-session-id={session.sessionId}
+                    onClick={() => {
+                      setHistoryOpen(false);
+                      void switchSession(session.sessionId);
+                    }}
+                    className="w-full"
+                  >
+                    <span className="grid min-w-0 flex-1 gap-0.5 text-left">
+                      <span className="truncate text-body text-[color:var(--color-text-secondary)]">
+                        {session.title ?? t('untitled')}
+                      </span>
+                      {/*
+                        언제 한 대화인지는 **이미 받아 온 값**이다. 안 보여 주면
+                        제목만 비슷한 대화들 사이에서 고를 근거가 없다.
+                      */}
+                      {session.updatedAt ? (
+                        <span className="truncate text-label leading-label text-[color:var(--color-text-quaternary)]">
+                          {formatDate(session.updatedAt)}
+                        </span>
+                      ) : null}
+                    </span>
+                  </RowButton>
+                </li>
+              ))}
+            </ul>
+          </div>
+        </Surface>
+      </div>
     </section>
   );
 }
@@ -525,10 +583,22 @@ function TranscriptEntry({ event }: { event: AcpEvent }) {
   const t = useTranslations('acpChat');
 
   if (event.kind === 'user') {
+    /*
+     * **한 차례가 여기서 시작한다** (2026-08-16 소유자: *"내가 한 질문과
+     * 답변도 구분 잘 되어야하고"*).
+     *
+     * 종전에도 오른쪽 정렬 + 인디고 틴트로 갈라 두긴 했다. 그런데 답변이 길면
+     * 스크롤 중에 「어디서부터 이 질문의 답인지」가 흐려진다 — 갈라야 하는
+     * 것은 말풍선 하나가 아니라 **차례의 경계**다.
+     *
+     * 그래서 셋을 준다: 위쪽 여백(다음 차례와 떨어뜨린다) · 테두리(면이 아니라
+     * 물체로 보이게) · 첫 차례가 아니면 그 위에 실선 하나. 색을 더 진하게
+     * 하지 않은 이유는 인디고가 이 앱에서 「선택됨」을 뜻하기 때문이다.
+     */
     return (
       <p
         data-acp-entry="user"
-        className="self-end max-w-[85%] break-keep rounded-card bg-[color:var(--color-indigo-a12)] px-3 py-2 text-body-lg leading-body-lg text-[color:var(--color-text-primary)]"
+        className="mt-1 max-w-[85%] self-end break-keep rounded-card border border-[color:var(--color-indigo-a22)] bg-[color:var(--color-indigo-a12)] px-3 py-2 text-body-lg leading-body-lg text-[color:var(--color-text-primary)]"
       >
         {event.text}
       </p>
