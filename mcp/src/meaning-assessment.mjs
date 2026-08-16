@@ -8,6 +8,8 @@ import { evaluateQuantifiedCompetencyCoverage } from "./competency-coverage.mjs"
  * dimension cannot hide a gap in another.
  */
 
+import { PROJECT_SOURCE_GAP_IDS as SOURCE_GAP_IDS } from "./project-source-vocabulary.mjs";
+
 export const MEANING_ASSESSMENT_CONTRACT = "meaningAssessment:v1";
 export const MEANING_COMPETENCY_CONTRACT = "meaningCompetency:v1";
 export const MEANING_COMPETENCY_EVALUATOR = "meaningProposalValidator:v1";
@@ -69,17 +71,6 @@ const SOURCE_STATUSES = new Set([
   "verified_current",
 ]);
 const SOURCE_CURRENTNESS = new Set(["current", "stale", "unavailable"]);
-const SOURCE_GAP_IDS = new Set([
-  "source_unbound",
-  "multiple_active_sources",
-  "receipt_missing",
-  "receipt_malformed",
-  "source_role_evidence_missing",
-  "declared_source_path_missing",
-  "source_inventory_truncated",
-  "ontology_changed",
-  "source_changed",
-]);
 
 function safeVaultSlug(value, maxLength = 300) {
   if (
