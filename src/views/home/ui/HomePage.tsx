@@ -2156,7 +2156,12 @@ export function HomePage() {
   useEffect(() => {
     if (!isAcpBridgeAvailable()) return;
     let cancelled = false;
-    void detectAcpRuntimes().then((list) => {
+    /*
+     * **두 번 부른다** — 첫 화면이 뜨는 프레임에 로그인 확인(수백 ms)을 얹지
+     * 않는다. 먼저 찾은 것으로 그리고, 확인이 끝나면 고친다. 로그인이 안 된
+     * 도구는 그때 목록에서 빠진다(그 도구로 열면 인증 오류로 죽으므로).
+     */
+    const apply = (list: Awaited<ReturnType<typeof detectAcpRuntimes>>) => {
       if (cancelled) return;
       const usable = (list ?? [])
         .filter((r) => r.state === 'ready' && r.verified && isGuardedRuntime(r.id, r.isolated))
@@ -2165,6 +2170,10 @@ export function HomePage() {
       setAcpRuntimeId((current) =>
         current && usable.some((r) => r.id === current) ? current : (usable[0]?.id ?? null),
       );
+    };
+    void detectAcpRuntimes().then((fast) => {
+      apply(fast);
+      void detectAcpRuntimes({ probeLogin: true }).then(apply);
     });
     return () => {
       cancelled = true;

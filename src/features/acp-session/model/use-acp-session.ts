@@ -279,12 +279,26 @@ export function useAcpSession({ runtimeId, vaultRoot, mcpServers }: UseAcpSessio
        * 있다고 말하는 화면이 된다.
        */
       const gatedMode = GATED_SESSION_MODE[runtimeId];
-      if (gatedMode && (await client.setMode(session.sessionId, gatedMode)) === false) {
-        push({ kind: 'notice', id: nextEventId(), text: `gate-mode-failed:${gatedMode}` });
+      let choices = session.choices;
+      if (gatedMode) {
+        if (await client.setMode(session.sessionId, gatedMode)) {
+          /*
+           * ⚠️ **화면에도 반영한다.** 이걸 빠뜨렸더니 세션은 `read-only` 인데
+           * 드롭다운은 `Agent` 라고 적혀 있었다(2026-08-16 실물 확인) — 화면이
+           * 지금 상태를 틀리게 말하는 것이고, 하필 그 값이 「폴더 밖을 물어보나」를
+           * 정하는 값이라 가장 틀리면 안 되는 자리다.
+           *
+           * `session/new` 가 준 값은 **모드를 걸기 전**의 것이라 그대로 두면
+           * 낡는다. 우리가 건 값이 지금 값이다.
+           */
+          choices = { ...choices, currentModeId: gatedMode };
+        } else {
+          push({ kind: 'notice', id: nextEventId(), text: `gate-mode-failed:${gatedMode}` });
+        }
       }
 
       if (!disposedRef.current) {
-        setChoices(session.choices);
+        setChoices(choices);
         setStatus('ready');
       }
       // 목록은 세션이 선 뒤에 채운다 — 화면이 뜨는 프레임을 목록이 붙잡지 않게.

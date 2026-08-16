@@ -81,11 +81,14 @@ export function AcpRuntimeSettings() {
   const [checking, setChecking] = useState(false);
   const [othersOpen, setOthersOpen] = useState(false);
 
-  /** 버튼으로 다시 찾기 — 누른 것에 대한 반응이라 「찾는 중」을 표시한다. */
+  /**
+   * 버튼으로 다시 찾기 — 누른 것에 대한 반응이라 「찾는 중」을 표시한다.
+   * 누른 경우에는 **처음부터 로그인까지** 확인한다(기다릴 각오를 한 것이다).
+   */
   const refresh = useCallback(async () => {
     setChecking(true);
     try {
-      setRuntimes(await detectAcpRuntimes());
+      setRuntimes(await detectAcpRuntimes({ probeLogin: true }));
     } finally {
       setChecking(false);
     }
@@ -100,8 +103,23 @@ export function AcpRuntimeSettings() {
     // 것 자체가 「혹시 되나」를 매번 시도하는 모양이 된다.
     if (!isAcpBridgeAvailable()) return;
     let cancelled = false;
-    void detectAcpRuntimes().then((list) => {
-      if (!cancelled) setRuntimes(list);
+    /*
+     * **두 번 부른다.** 첫 번째는 로그인 확인 없이 — 디스크만 훑으므로 거의
+     * 즉시 그려진다. 그다음 확인까지 해서 고친다.
+     *
+     * 종전에는 한 번에 다 했고, 그래서 화면이 뜨는 데 그 확인 시간이 그대로
+     * 얹혔다(소유자: *"Agents 탭 누르면 로딩 속도가 1초인가 느린데?"*).
+     * 목록을 먼저 그릴 수 있는데도 아무것도 안 보여 주고 있었던 것이다.
+     *
+     * 줄이 나중에 「준비됨」에서 「로그인 필요」로 바뀔 수 있다. 그건 숨길
+     * 일이 아니라 **확인이 끝났다는 뜻**이고, 빈 화면 1초보다 낫다.
+     */
+    void detectAcpRuntimes().then((fast) => {
+      if (cancelled) return;
+      setRuntimes(fast);
+      void detectAcpRuntimes({ probeLogin: true }).then((full) => {
+        if (!cancelled && full) setRuntimes(full);
+      });
     });
     return () => {
       cancelled = true;

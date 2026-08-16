@@ -101,10 +101,22 @@ export interface AcpRuntimeStatus {
   isolated: boolean;
 }
 
-export async function detectAcpRuntimes(): Promise<AcpRuntimeStatus[] | null> {
+/**
+ * 이 기기의 실행기 상태.
+ *
+ * `probeLogin` 을 켜면 **각 CLI 를 띄워 로그인 여부까지** 확인한다. 그것이 이
+ * 호출에서 유일하게 느린 부분이라(실측: claude 300ms · codex 45ms) 기본은
+ * 꺼져 있다 — 화면은 **먼저 그리고 나중에 고친다**(2026-08-16 소유자 지적:
+ * *"일단 로딩되게 하고 업데이트 시키는 방향으로"*).
+ */
+export async function detectAcpRuntimes(
+  options?: { probeLogin?: boolean },
+): Promise<AcpRuntimeStatus[] | null> {
   const invoke = getInvoke();
   if (!invoke) return null;
-  return invoke<AcpRuntimeStatus[]>('acp_detect_runtimes');
+  return invoke<AcpRuntimeStatus[]>('acp_detect_runtimes', {
+    probeLogin: options?.probeLogin ?? false,
+  });
 }
 
 export async function startAcpSession(

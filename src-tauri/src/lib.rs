@@ -1042,15 +1042,36 @@ fn terminate_all_acp_sessions(app: &AppHandle) {
 /// 관리자(nvm 등)가 심은 경로가 통째로 없다. 무엇을 뒤지는지는 `acp.rs` 에
 /// 전부 적혀 있고 그 목록이 곧 검사 대상이다.
 ///
-/// 읽기만 한다 — 이 커맨드는 아무것도 띄우지 않고 아무것도 쓰지 않는다.
+/// **아무것도 쓰지 않는다.** 다만 `probe_login` 이 참이면 로그인 확인을 위해
+/// 그 CLI 를 짧게 띄운다(종료 코드만 본다 — 출력은 버린다).
+///
+/// 이 기기의 실행기 상태.
+///
+/// `probe_login` 이 참일 때만 **각 CLI 를 띄워 로그인 여부를 확인한다.**
+/// 그것이 이 호출에서 유일하게 느린 부분이고(실측: claude 300ms · codex 45ms),
+/// 나머지는 디스크를 훑는 것이라 거의 즉시다.
+///
+/// ## 왜 나눴나 (2026-08-16 소유자 지적)
+///
+/// *"Agents 탭 누르면 로딩 속도가 1초인가 느린데? 일단 로딩되게 하고 업데이트
+/// 시키는 방향으로 가야 하지 않을까"* — 맞는 지적이다. 로그인 확인을 붙이면서
+/// **화면이 뜨는 시간에 그 비용이 그대로 얹혔다.** 목록을 먼저 그릴 수 있는데도
+/// 확인이 끝날 때까지 아무것도 안 보여 주고 있었다.
+///
+/// 그래서 화면은 두 번 부른다: 먼저 확인 없이 그리고, 그다음 확인해서 고친다.
 #[tauri::command]
-fn acp_detect_runtimes() -> Vec<acp::AcpRuntimeStatus> {
+fn acp_detect_runtimes(probe_login: Option<bool>) -> Vec<acp::AcpRuntimeStatus> {
     let (is_executable, list_dir, read_text, login_ok) = acp::real_probe();
+    let skip = |_: &std::path::Path, _: &[&str]| None;
     let probe = acp::FsProbe {
         is_executable: &is_executable,
         list_dir: &list_dir,
         read_text: &read_text,
-        login_ok: &login_ok,
+        login_ok: if probe_login.unwrap_or(false) {
+            &login_ok
+        } else {
+            &skip
+        },
     };
     let home = std::env::var_os(if cfg!(windows) { "USERPROFILE" } else { "HOME" })
         .map(PathBuf::from);

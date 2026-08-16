@@ -78,6 +78,25 @@ describe('관문 — 말하는 것과 거는 것이 같아야 한다', () => {
     ).toBe(false);
   });
 
+  it('건 모드를 **화면에도 반영한다** — 지금 상태를 틀리게 말하지 않는다', () => {
+    /*
+     * 2026-08-16 실물 확인에서 잡힌 결함: 세션은 `read-only` 로 걸렸는데
+     * 드롭다운은 `Agent` 라고 적혀 있었다. `session/new` 가 준 값은 **모드를
+     * 걸기 전**의 것이라 그대로 두면 낡는다.
+     *
+     * 하필 그 값이 「폴더 밖을 물어보나」를 정하는 값이라, 가장 틀리면 안 되는
+     * 자리다. 사용자는 화면을 보고 안전하다고 믿거나 반대로 의심한다.
+     */
+    const src = readFileSync(
+      join(ROOT, 'src/features/acp-session/model/use-acp-session.ts'),
+      'utf8',
+    );
+    expect(
+      /currentModeId: gatedMode/.test(src),
+      '모드를 걸고 화면에 반영하지 않으면 드롭다운이 걸기 전 값을 계속 보여 준다',
+    ).toBe(true);
+  });
+
   it('codex 는 실측한 그 모드로 건다', () => {
     // 값이 바뀌면 다시 재야 한다 — 다른 모드는 관문을 세우지 못했다(실측).
     expect(GATED_SESSION_MODE['codex-acp']).toBe('read-only');

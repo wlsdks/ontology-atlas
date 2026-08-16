@@ -337,3 +337,59 @@ describe('실행기 목록 — 설치는 우리가 대신 하지 않는다', () 
     expect(text).not.toMatch(/curl|npm install|brew install|\| *bash/);
   });
 });
+
+describe('실행기 목록 — 먼저 그리고 나중에 고친다', () => {
+  /*
+   * 2026-08-16 소유자 지적: *"Agents 탭 누르면 로딩 속도가 1초인가 느린데?
+   * 일단 로딩되게 하고 업데이트 시키는 방향으로 가야 하지 않을까"*.
+   *
+   * 로그인 확인을 붙이면서 그 비용이 **화면이 뜨는 시간에 그대로 얹혔다.**
+   * 목록은 먼저 그릴 수 있는데도 확인이 끝날 때까지 아무것도 안 보여 줬다.
+   */
+  it('첫 그림은 로그인 확인 없이 — 확인은 그다음에 한 번 더', async () => {
+    /*
+     * 확인 쪽은 **일부러 늦게** 답하게 둔다. 둘이 같은 프레임에 끝나 버리면
+     * 「먼저 그린다」가 지켜졌는지 볼 수 없다 — 그게 이 검사의 전부다.
+     */
+    let releaseSlow: () => void = () => {};
+    const slow = new Promise<void>((resolve) => {
+      releaseSlow = resolve;
+    });
+    bridge.detect.mockImplementation(async (options?: { probeLogin?: boolean }) => {
+      if (options?.probeLogin) await slow;
+      return [
+        makeRuntime({
+          id: 'claude-acp',
+          isolated: true,
+          state: options?.probeLogin ? 'login-needed' : 'ready',
+        }),
+      ];
+    });
+    render(<AcpRuntimeSettings />);
+
+    // ① 확인이 끝나기 **전에** 이미 목록이 있다 — 빈 화면으로 기다리지 않는다.
+    await waitFor(() =>
+      expect(screen.getByTestId('app-settings-runtime-claude-acp')).toBeInTheDocument(),
+    );
+    expect(screen.getByText(/readyHeading.*"count":1/)).toBeInTheDocument();
+
+    // ② 확인이 끝나면 고쳐진다 — 준비된 것에서 빠진다.
+    releaseSlow();
+    await waitFor(() => expect(screen.getByText(/readyHeading.*"count":0/)).toBeInTheDocument());
+
+    // 두 번 부른다: 확인 없이 한 번, 확인해서 한 번.
+    const calls = bridge.detect.mock.calls.map((c) => c[0]?.probeLogin ?? false);
+    expect(calls).toEqual([false, true]);
+  });
+
+  it('「다시 확인」은 처음부터 로그인까지 확인한다 — 기다릴 각오를 한 것이다', async () => {
+    bridge.detect.mockResolvedValue([makeRuntime({ id: 'claude-acp', isolated: true })]);
+    render(<AcpRuntimeSettings />);
+    await screen.findByTestId('app-settings-runtime-claude-acp');
+    bridge.detect.mockClear();
+
+    fireEvent.click(screen.getByTestId('app-settings-runtimes-recheck'));
+    await waitFor(() => expect(bridge.detect).toHaveBeenCalled());
+    expect(bridge.detect.mock.calls[0][0]?.probeLogin).toBe(true);
+  });
+});
