@@ -464,7 +464,7 @@ export function Select({
               onMouseEnter={() => setActiveIndex(index)}
               onClick={() => commit(index)}
               className={cn(
-                "flex cursor-pointer items-start gap-2 rounded-chip px-2.5 py-2 text-caption",
+                "flex cursor-pointer items-start gap-2 rounded-chip px-2.5 py-2 text-body",
                 isActive
                   ? "bg-[color:var(--color-indigo-a16)] text-[color:var(--color-text-primary)]"
                   : "text-[color:var(--color-text-secondary)]",
@@ -514,7 +514,7 @@ export function Select({
         onClick={() => (open ? setOpen(false) : openList())}
         onKeyDown={onKeyDown}
         className={cn(
-          "flex w-full items-center gap-2 rounded-card border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-3 text-left text-caption text-[color:var(--color-text-secondary)] outline-none transition-colors hover:border-[color:var(--color-border-strong)] focus-visible:outline-none focus-visible:border-[color:var(--color-indigo-a46)] focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a24)] data-[state=open]:border-[color:var(--color-indigo-a46)]",
+          "flex w-full items-center gap-2 rounded-card border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-3 text-left text-body text-[color:var(--color-text-secondary)] outline-none transition-colors hover:border-[color:var(--color-border-strong)] focus-visible:outline-none focus-visible:border-[color:var(--color-indigo-a46)] focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a24)] data-[state=open]:border-[color:var(--color-indigo-a46)]",
           // 비활성 한 세트는 값 층에서 — 손으로 적으면 커서·흐림만 남고
           // 호버 무력화가 빠진다(실제로 빠져 있던 자리다).
           CONTROL_DISABLED_CLASS,

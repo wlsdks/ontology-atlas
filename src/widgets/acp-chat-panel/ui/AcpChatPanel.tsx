@@ -29,7 +29,7 @@ import { toolLabel } from './tool-label';
  * 공용으로 올린다 — 지금 둘은 **정말 다른 밀도**라 합치면 한쪽이 망가진다.
  */
 const CHAT_MARKDOWN = [
-  'break-keep text-body leading-body text-[color:var(--color-text-secondary)]',
+  'break-keep text-body-lg leading-body-lg text-[color:var(--color-text-secondary)]',
   '[&>*:first-child]:mt-0 [&>*:last-child]:mb-0',
   '[&_p]:mb-2',
   '[&_ul]:my-2 [&_ul]:pl-[18px] [&_ol]:my-2 [&_ol]:pl-[18px]',
@@ -336,7 +336,13 @@ export function AcpChatPanel({
       <div
         ref={listRef}
         data-testid="acp-chat-transcript"
-        className="flex min-h-0 flex-1 flex-col gap-2 overflow-y-auto"
+        /*
+         * 기록의 간격은 **한 단계 크다** (2026-08-16 여백 감사).
+         * 읽는 글이 12.5 → 14px 로 올라갔는데 줄 사이는 8px 그대로여서, 말과
+         * 말이 한 덩어리로 뭉쳤다. 글자가 커지면 그 사이도 같이 커져야 한다 —
+         * 간격은 절대값이 아니라 **글자에 대한 비율**로 읽힌다.
+         */
+        className="flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto"
       >
         {events.length === 0 && status !== 'starting' ? (
           // 빈 대화의 안내는 **기록이 쌓일 그 자리 한가운데**에 둔다. 위쪽에
@@ -492,7 +498,7 @@ function ToolGroup({ events }: { events: Extract<AcpEvent, { kind: 'tool' }>[] }
         onClick={() => setOpen((v) => !v)}
         className={controlClass({
           shape: 'link',
-          size: 'sm',
+          size: 'md',
           tone: 'muted',
           hoverInk: 'secondary',
         })}
@@ -522,7 +528,7 @@ function TranscriptEntry({ event }: { event: AcpEvent }) {
     return (
       <p
         data-acp-entry="user"
-        className="self-end max-w-[85%] break-keep rounded-card bg-[color:var(--color-indigo-a12)] px-3 py-2 text-body leading-body text-[color:var(--color-text-primary)]"
+        className="self-end max-w-[85%] break-keep rounded-card bg-[color:var(--color-indigo-a12)] px-3 py-2 text-body-lg leading-body-lg text-[color:var(--color-text-primary)]"
       >
         {event.text}
       </p>
