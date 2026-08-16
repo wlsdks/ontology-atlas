@@ -322,10 +322,12 @@ describe('ACP 클라이언트 — 답이 안 오면 언젠가 끝난다', () => 
     try {
       const t = fakeTransport();
       const client = createAcpClient(t.transport, { verdict: alwaysAsk, askUser: async () => null });
-      const promise = client.initialize();
+      // 타이머를 움직이기 전에 거절 관찰자를 붙인다. 늦게 붙이면 동작은 맞아도
+      // Vitest가 그 사이의 거절을 unhandled rejection으로 판정한다.
+      const timedOut = expect(client.initialize()).rejects.toThrow(/acp-timeout/);
       // 답을 한 줄도 안 준다.
       await vi.advanceTimersByTimeAsync(60_000);
-      await expect(promise).rejects.toThrow(/acp-timeout/);
+      await timedOut;
     } finally {
       vi.useRealTimers();
     }
