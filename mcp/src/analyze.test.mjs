@@ -173,6 +173,222 @@ test('README.rst accepts punctuation title adornments and excludes directive cod
   }
 });
 
+test('README semantic evidence keeps later meaning blocks ahead of decorative noise', () => {
+  const root = withRepo((r) => {
+    const noise = (label) => Array.from(
+      { length: 36 },
+      (_, index) => `[${label} ${index}](https://example.invalid/${label.toLowerCase()}/${index})`,
+    );
+    const readme = [
+      '# Portable Toolkit',
+      '',
+      ...Array.from(
+        { length: 24 },
+        (_, index) => `[![Badge ${index}](https://example.invalid/badge/${index}.svg)](https://example.invalid/check/${index})`,
+      ),
+      '',
+      '## Sponsors',
+      ...noise('Sponsor'),
+      '',
+      '## Backers',
+      ...noise('Backer'),
+      '',
+      '## Funding',
+      ...noise('Funding'),
+      '',
+      '## Donations',
+      ...noise('Donation'),
+      '',
+      '## Table of Contents',
+      ...noise('Contents'),
+      '',
+      '## Introduction',
+      '',
+      'Portable Toolkit is a local tool for organizing reusable workflows.',
+      '',
+      '## Architecture',
+      '',
+      'The architecture separates the local workspace from the presentation layer.',
+      '',
+      '## Features',
+      '',
+      'The tool provides searchable notes and bounded exports.',
+    ].join('\n');
+    assert.ok(noise('Sponsor').join('\n').length > 1200);
+    writeFileSync(join(r, 'README.md'), readme);
+  });
+  try {
+    const evidence = analyzeRepoStructure(root).semanticEvidence.find(
+      (row) => row.source === 'README.md',
+    );
+
+    const excerpt = evidence?.excerpt ?? '';
+    assert.match(excerpt, /local tool for organizing reusable workflows/);
+    assert.match(excerpt, /architecture separates the local workspace/);
+    assert.match(excerpt, /provides searchable notes and bounded exports/);
+    assert.doesNotMatch(excerpt, /Badge 0|Sponsor 0|Backer 0|Funding 0|Donation 0|Contents 0/);
+    assert.ok(
+      excerpt.indexOf('local tool for organizing reusable workflows') <
+        excerpt.indexOf('architecture separates the local workspace'),
+    );
+    assert.ok(
+      excerpt.indexOf('architecture separates the local workspace') <
+        excerpt.indexOf('provides searchable notes and bounded exports'),
+    );
+    assert.deepEqual(
+      (evidence?.headings ?? []).filter((heading) =>
+        ['Introduction', 'Architecture', 'Features'].includes(heading),
+      ),
+      ['Introduction', 'Architecture', 'Features'],
+    );
+    assert.ok(excerpt.length <= 1200);
+    assert.ok((evidence?.headings.length ?? 0) <= 8);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test('README semantic evidence reserves purpose, architecture, and feature prose', () => {
+  const root = withRepo((r) => {
+    const introduction = [
+      'Portable Toolkit is a local tool for organizing reusable workflows.',
+      ...Array.from(
+        { length: 48 },
+        () => 'The introduction explains the context and intended use of the toolkit in detail.',
+      ),
+    ].join(' ');
+    assert.ok(introduction.length > 1200);
+    writeFileSync(
+      join(r, 'README.md'),
+      [
+        '# Portable Toolkit',
+        '',
+        '## Introduction',
+        introduction,
+        '',
+        '## Architecture',
+        'The architecture separates the local workspace from the presentation layer.',
+        '',
+        '## Features',
+        'The tool provides searchable notes and bounded exports.',
+      ].join('\n'),
+    );
+  });
+  try {
+    const evidence = analyzeRepoStructure(root).semanticEvidence.find(
+      (row) => row.source === 'README.md',
+    );
+    const excerpt = evidence?.excerpt ?? '';
+
+    assert.match(excerpt, /Portable Toolkit is a local tool for organizing reusable workflows/);
+    assert.match(excerpt, /architecture separates the local workspace/);
+    assert.match(excerpt, /provides searchable notes and bounded exports/);
+    assert.ok(
+      excerpt.indexOf('Portable Toolkit is a local tool') <
+        excerpt.indexOf('architecture separates the local workspace'),
+    );
+    assert.ok(
+      excerpt.indexOf('architecture separates the local workspace') <
+        excerpt.indexOf('provides searchable notes and bounded exports'),
+    );
+    assert.ok(excerpt.length <= 1200);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test('README semantic evidence truncates selected purpose, architecture, and ability sections at safe boundaries', () => {
+  const root = withRepo((r) => {
+    writeFileSync(
+      join(r, 'README.md'),
+      [
+        '# Boundary-safe evidence',
+        '',
+        '## Introduction',
+        'Purpose marker ends a complete sentence.',
+        ...Array.from({ length: 80 }, () => 'purposefiller'),
+        '',
+        '## Architecture',
+        'Architecture marker',
+        ...Array.from({ length: 80 }, () => 'architecturefiller'),
+        '',
+        '## Features',
+        'Feature marker preserves the ability category.',
+      ].join('\n'),
+    );
+  });
+  try {
+    const excerpt = analyzeRepoStructure(root).semanticEvidence.find(
+      (row) => row.source === 'README.md',
+    )?.excerpt ?? '';
+
+    assert.match(excerpt, /Purpose marker ends a complete sentence\. Architecture marker/);
+    assert.match(excerpt, /architecturefiller Feature marker preserves the ability category\./);
+    assert.doesNotMatch(excerpt, /architecturefille Feature marker/);
+    assert.ok(excerpt.length <= 1200);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test('README semantic evidence strips optional closing Markdown heading hashes', () => {
+  const root = withRepo((r) => {
+    writeFileSync(
+      join(r, 'README.md'),
+      [
+        '# Heading cleanup #',
+        '',
+        '## Introduction #',
+        'This repository keeps its evidence local.',
+      ].join('\n'),
+    );
+  });
+  try {
+    const evidence = analyzeRepoStructure(root).semanticEvidence.find(
+      (row) => row.source === 'README.md',
+    );
+
+    assert.equal(evidence?.title, 'Heading cleanup');
+    assert.ok(evidence?.headings.includes('Introduction'));
+    assert.equal(evidence?.headings.includes('Introduction #'), false);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test('decorative-only README evidence does not invent a repository purpose', () => {
+  const root = withRepo((r) => {
+    writeFileSync(
+      join(r, 'README.md'),
+      [
+        '# Portable Toolkit',
+        '',
+        '## Sponsors',
+        '[![Sponsor](https://example.invalid/sponsor.svg)](https://example.invalid/sponsor)',
+        '',
+        '## Table of Contents',
+        '- [Introduction](#introduction)',
+        '- [Features](#features)',
+      ].join('\n'),
+    );
+  });
+  try {
+    const result = analyzeRepoStructure(root);
+    const evidence = result.semanticEvidence.find(
+      (row) => row.source === 'README.md',
+    );
+
+    assert.equal(evidence?.excerpt, '');
+    assert.equal(
+      result.project.definition,
+      'Repository purpose is not established by the bounded semantic evidence scan.',
+    );
+    assert.equal(result.project.confidence, 0.2);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
 test('README title ignores fenced shell comments and supports centered HTML H1', () => {
   const root = withRepo((r) => {
     writeFileSync(join(r, 'package.json'), JSON.stringify({ name: 'muse' }));
@@ -969,6 +1185,16 @@ test('root Cargo package contract is admissible evidence for a feature capabilit
         '',
       ].join('\n'),
     );
+    mkdirSync(join(r, 'docs'), { recursive: true });
+    writeFileSync(
+      join(r, 'docs', 'product-contract.md'),
+      [
+        '# Product Contract',
+        '',
+        'Calc Kit provides repeatable scientific calculations for Rust teams.',
+        'Library Configuration owns optional library behavior selection.',
+      ].join('\n'),
+    );
   });
   try {
     const proposal = {
@@ -976,15 +1202,15 @@ test('root Cargo package contract is admissible evidence for a feature capabilit
         slug: 'calc-kit',
         title: 'Calc Kit',
         definition: 'A library for repeatable scientific calculations.',
-        evidence: ['README.md'],
+        evidence: ['README.md', 'docs/product-contract.md'],
         confidence: 0.9,
       },
       domains: [{
         slug: 'domains/library-configuration',
         title: 'Library Configuration',
         definition: 'The responsibility boundary for selecting optional library behavior.',
-        evidence: ['README.md'],
-        confidence: 0.9,
+        evidence: ['README.md', 'docs/product-contract.md'],
+        confidence: 0.5,
       }],
       capabilities: [{
         slug: 'capabilities/optional-feature-selection',
@@ -1003,7 +1229,7 @@ test('root Cargo package contract is admissible evidence for a feature capabilit
           witnesses: {
             concepts: ['calc-kit'],
             relations: [],
-            evidence: ['README.md'],
+            evidence: ['README.md', 'docs/product-contract.md'],
             paths: [],
           },
         },
@@ -1070,7 +1296,10 @@ test('root Cargo package contract is admissible evidence for a feature capabilit
       'package contract must not displace the mission evidence',
     );
     assert.equal(result.proposalValidation.canWrite, false);
-    assert.ok(result.proposalValidation.reviewPlan);
+    assert.ok(
+      result.proposalValidation.reviewPlan,
+      JSON.stringify(result.proposalValidation.findings),
+    );
     assert.equal(result.proposalValidation.writePlan, undefined);
     assert.equal(result.proposalValidation.constructionLifecycle.writeEligibility, 'reviewable');
   } finally {
@@ -1804,7 +2033,7 @@ test('Generic README sections (Usage / Installation / Tests) skipped from domain
   const root = withRepo((r) => {
     writeFileSync(
       join(r, 'README.md'),
-      '# X\n\n## Usage\n\n## Installation\n\n## Tests\n\n## Real Domain\n',
+      '# X\n\n## Usage\n\n## Installation\n\n## Tests\n\n## Sponsors\n\n## Real Domain\n',
     );
   });
   try {
@@ -2370,6 +2599,187 @@ test('top-level Python package becomes implementation evidence without promoting
   }
 });
 
+test('Go package imports become implementation elements and proposal-only dependency evidence', () => {
+  const root = withRepo((r) => {
+    writeFileSync(join(r, 'go.mod'), 'module example.test/ingress\n');
+    mkdirSync(join(r, 'cmd', 'runner'), { recursive: true });
+    mkdirSync(join(r, 'internal', 'state'), { recursive: true });
+    writeFileSync(
+      join(r, 'cmd', 'runner', 'main.go'),
+      'package runner\n\nimport "example.test/ingress/internal/state"\n\nvar _ = state.Ready\n',
+    );
+    writeFileSync(join(r, 'internal', 'state', 'state.go'), 'package state\n\nconst Ready = true\n');
+  });
+  try {
+    const result = analyzeRepoStructure(root);
+    const goElements = result.elements
+      .filter((element) => ['cmd/runner', 'internal/state'].includes(element.path))
+      .map(({ slug, path }) => ({ slug, path }))
+      .sort((left, right) => left.path.localeCompare(right.path));
+
+    assert.deepEqual(goElements, [
+      { slug: 'elements/runner', path: 'cmd/runner' },
+      { slug: 'elements/state', path: 'internal/state' },
+    ]);
+    assert.deepEqual(result.domains, []);
+    assert.deepEqual(result.capabilities, []);
+    const dependency = result.suggestedRelations.find(
+      (relation) => relation.type === 'depends_on' && relation.from === 'elements/runner',
+    );
+    assert.deepEqual(dependency, {
+      from: 'elements/runner',
+      to: 'elements/state',
+      type: 'depends_on',
+      why: 'proposal-only: bounded production value-import evidence; runtime impact is not asserted',
+      evidence: ['cmd/runner/main.go', 'internal/state'],
+      confidence: 0.5,
+      uncertainty: 'static import evidence requires semantic impact review before relation admission',
+    });
+    assert.ok(
+      result.meaningGate.reviewQuestions.some((question) =>
+        question.startsWith('[observed · impact] 1 typed production import boundary'),
+      ),
+    );
+    assert.equal(result.proposalValidation.canWrite, false);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test('Go package element admission caps deterministically after production edge participation', () => {
+  const root = withRepo((r) => {
+    writeFileSync(join(r, 'go.mod'), 'module example.test/ingress\n');
+    mkdirSync(join(r, 'z', 'runner'), { recursive: true });
+    const imports = [];
+    for (let index = 0; index < 25; index += 1) {
+      const name = `part-${String(index).padStart(2, '0')}`;
+      mkdirSync(join(r, 'pkg', name), { recursive: true });
+      writeFileSync(join(r, 'pkg', name, 'part.go'), `package part${index}\n`);
+      imports.push(`  "example.test/ingress/pkg/${name}"`);
+    }
+    writeFileSync(
+      join(r, 'z', 'runner', 'main.go'),
+      ['package runner', '', 'import (', ...imports, ')'].join('\n'),
+    );
+  });
+  try {
+    const result = analyzeRepoStructure(root);
+    const goPaths = result.elements
+      .map((element) => element.path)
+      .filter((path) => path === 'z/runner' || path.startsWith('pkg/'))
+      .sort();
+
+    assert.equal(goPaths.length, 24);
+    assert.deepEqual(goPaths, [
+      ...Array.from({ length: 23 }, (_, index) => `pkg/part-${String(index).padStart(2, '0')}`),
+      'z/runner',
+    ]);
+    assert.ok(
+      result.skipped.some((row) =>
+        row.reason === 'go-package-element-limit: omitted 2 lower-priority package directories',
+      ),
+      JSON.stringify(result.skipped),
+    );
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test('Go package basename collisions use the minimum parent context without reusing an element slug', () => {
+  const root = withRepo((r) => {
+    writeFileSync(join(r, 'go.mod'), 'module example.test/ingress\n');
+    mkdirSync(join(r, 'cmd', 'worker'), { recursive: true });
+    mkdirSync(join(r, 'pkg', 'worker'), { recursive: true });
+    writeFileSync(
+      join(r, 'cmd', 'worker', 'main.go'),
+      'package worker\n\nimport "example.test/ingress/pkg/worker"\n\nvar _ = worker.Ready\n',
+    );
+    writeFileSync(join(r, 'pkg', 'worker', 'worker.go'), 'package worker\n\nconst Ready = true\n');
+  });
+  try {
+    const result = analyzeRepoStructure(root);
+    const goElements = result.elements
+      .filter((element) => ['cmd/worker', 'pkg/worker'].includes(element.path))
+      .map(({ slug, path }) => ({ slug, path }))
+      .sort((left, right) => left.path.localeCompare(right.path));
+
+    assert.deepEqual(goElements, [
+      { slug: 'elements/cmd-worker', path: 'cmd/worker' },
+      { slug: 'elements/pkg-worker', path: 'pkg/worker' },
+    ]);
+    assert.equal(new Set(result.elements.map((element) => element.slug)).size, result.elements.length);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test('test-only Go package imports remain implementation evidence without a product dependency prompt', () => {
+  const root = withRepo((r) => {
+    writeFileSync(join(r, 'go.mod'), 'module example.test/ingress\n');
+    mkdirSync(join(r, 'cmd', 'check'), { recursive: true });
+    mkdirSync(join(r, 'pkg', 'state'), { recursive: true });
+    writeFileSync(
+      join(r, 'cmd', 'check', 'main_test.go'),
+      'package check\n\nimport "example.test/ingress/pkg/state"\n\nvar _ = state.Ready\n',
+    );
+    writeFileSync(join(r, 'pkg', 'state', 'state.go'), 'package state\n\nconst Ready = true\n');
+  });
+  try {
+    const result = analyzeRepoStructure(root);
+
+    assert.deepEqual(result.domains, []);
+    assert.deepEqual(result.capabilities, []);
+    assert.ok(result.elements.some((element) => element.path === 'cmd/check'));
+    assert.ok(result.elements.some((element) => element.path === 'pkg/state'));
+    assert.equal(result.suggestedRelations.some((relation) => relation.type === 'depends_on'), false);
+    assert.equal(
+      result.meaningGate.reviewQuestions.some((question) => /\bimpact\]/.test(question)),
+      false,
+      JSON.stringify(result.meaningGate.reviewQuestions),
+    );
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test('Go package evidence preserves existing JavaScript and Python dependency proposals', () => {
+  const root = withRepo((r) => {
+    writeFileSync(join(r, 'go.mod'), 'module example.test/ingress\n');
+    mkdirSync(join(r, 'src', 'features', 'request'), { recursive: true });
+    mkdirSync(join(r, 'src', 'entities', 'http'), { recursive: true });
+    mkdirSync(join(r, 'src', 'diagnostic_client'), { recursive: true });
+    mkdirSync(join(r, 'cmd', 'runner'), { recursive: true });
+    mkdirSync(join(r, 'pkg', 'state'), { recursive: true });
+    writeFileSync(
+      join(r, 'src', 'features', 'request', 'index.ts'),
+      "import { send } from '../../entities/http/index';\nexport const request = () => send();\n",
+    );
+    writeFileSync(join(r, 'src', 'entities', 'http', 'index.ts'), 'export const send = () => true;\n');
+    writeFileSync(join(r, 'src', 'diagnostic_client', '__init__.py'), '');
+    writeFileSync(join(r, 'src', 'diagnostic_client', 'client.py'), 'from . import transport\n');
+    writeFileSync(join(r, 'src', 'diagnostic_client', 'transport.py'), '');
+    writeFileSync(
+      join(r, 'cmd', 'runner', 'main.go'),
+      'package runner\n\nimport "example.test/ingress/pkg/state"\n\nvar _ = state.Ready\n',
+    );
+    writeFileSync(join(r, 'pkg', 'state', 'state.go'), 'package state\n\nconst Ready = true\n');
+  });
+  try {
+    const dependencies = analyzeRepoStructure(root).suggestedRelations
+      .filter((relation) => relation.type === 'depends_on')
+      .map(({ from, to }) => ({ from, to }))
+      .sort((left, right) => `${left.from}\0${left.to}`.localeCompare(`${right.from}\0${right.to}`));
+
+    assert.deepEqual(dependencies, [
+      { from: 'capabilities/request', to: 'elements/http' },
+      { from: 'elements/client', to: 'elements/transport' },
+      { from: 'elements/runner', to: 'elements/state' },
+    ]);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
 test('Python import boundaries become bounded element evidence without mirroring unused files', () => {
   const root = withRepo((r) => {
     writeFileSync(
@@ -2425,7 +2835,14 @@ test('Python import boundary paths can support a validated impact proposal', () 
   const root = withRepo((r) => {
     writeFileSync(
       join(r, 'README.rst'),
-      'Diagnostic Client\n=================\n\nA diagnostic protocol client for application developers.\n',
+      [
+        'Diagnostic Client',
+        '=================',
+        '',
+        'A diagnostic protocol client for application developers.',
+        'Diagnostics owns diagnostic request behavior and response handling.',
+        '',
+      ].join('\n'),
     );
     writeFileSync(
       join(r, 'setup.py'),
@@ -2433,6 +2850,16 @@ test('Python import boundary paths can support a validated impact proposal', () 
         'setup(',
         "    name='diagnostic-client',",
         ')',
+      ].join('\n'),
+    );
+    mkdirSync(join(r, 'docs'), { recursive: true });
+    writeFileSync(
+      join(r, 'docs', 'product-contract.md'),
+      [
+        '# Product Contract',
+        '',
+        'Diagnostic Client lets applications issue diagnostic protocol requests.',
+        'Diagnostics owns diagnostic request behavior and response handling.',
       ].join('\n'),
     );
     mkdirSync(join(r, 'diagnostic_client/services'), { recursive: true });
@@ -2492,14 +2919,14 @@ test('Python import boundary paths can support a validated impact proposal', () 
         slug: 'diagnostic-client',
         title: 'Diagnostic Client',
         definition: 'A protocol client that lets applications issue diagnostic requests.',
-        evidence: ['README.rst'],
+        evidence: ['README.rst', 'docs/product-contract.md'],
         confidence: 0.9,
       },
       domains: [{
         slug: 'domains/diagnostics',
         title: 'Diagnostics',
         definition: 'The responsibility boundary for diagnostic request behavior.',
-        evidence: ['README.rst'],
+        evidence: ['README.rst', 'docs/product-contract.md'],
         confidence: 0.8,
       }],
       capabilities: [{
@@ -2532,19 +2959,23 @@ test('Python import boundary paths can support a validated impact proposal', () 
         },
       ],
       relations: [
-        relation(containment.projectDomain, 'The project contains the diagnostics responsibility.', ['README.rst']),
+        relation(
+          containment.projectDomain,
+          'The project contains the diagnostics responsibility.',
+          ['README.rst', 'docs/product-contract.md'],
+        ),
         relation(containment.domainCapability, 'Diagnostics contains request execution.', ['README.rst']),
         relation(dependency, 'The client statically imports the services package.', ['diagnostic_client/client.py']),
       ],
       competencyAnswers: {
         scope: answer('Application developers use the client to issue diagnostic requests.', {
           concepts: ['diagnostic-client'],
-          evidence: ['README.rst'],
+          evidence: ['README.rst', 'docs/product-contract.md'],
         }),
         domains: answer('Diagnostics owns diagnostic request behavior.', {
           concepts: ['domains/diagnostics'],
           relations: [containment.projectDomain],
-          evidence: ['README.rst'],
+          evidence: ['README.rst', 'docs/product-contract.md'],
         }),
         abilities: answer('Request execution creates requests and interprets responses.', {
           concepts: ['capabilities/request-execution'],
@@ -2843,7 +3274,7 @@ test('README domain and feature with same name do not collide', () => {
   }
 });
 
-test('A sole README domain is the deterministic parent for otherwise unmatched code candidates', () => {
+test('A sole README domain does not absorb otherwise unmatched code candidates', () => {
   const root = withRepo((r) => {
     writeFileSync(join(r, 'package.json'), JSON.stringify({ name: 'bootstrap-app' }));
     writeFileSync(join(r, 'README.md'), '# Bootstrap App\n\n## Accounts\n');
@@ -2853,12 +3284,12 @@ test('A sole README domain is the deterministic parent for otherwise unmatched c
   });
   try {
     const r = analyzeRepoStructure(root);
-    assert.equal(r.capabilities[0].domain, 'domains/accounts');
-    assert.equal(r.elements[0].domain, 'domains/accounts');
+    assert.equal(r.capabilities[0].domain, undefined);
+    assert.equal(r.elements[0].domain, undefined);
     assert.deepEqual(r.suggestedRelations, [
       { from: 'bootstrap-app', to: 'domains/accounts', type: 'contains' },
-      { from: 'domains/accounts', to: 'capabilities/auth', type: 'contains' },
-      { from: 'domains/accounts', to: 'elements/session', type: 'contains' },
+      { from: 'bootstrap-app', to: 'capabilities/auth', type: 'contains' },
+      { from: 'bootstrap-app', to: 'elements/session', type: 'contains' },
     ]);
   } finally {
     rmSync(root, { recursive: true, force: true });
@@ -2877,13 +3308,13 @@ test('Business containment spine — fuzzy domain match connects project → dom
     const r = analyzeRepoStructure(root);
     assert.equal(r.capabilities[0].domain, 'domains/evidence-intake');
     assert.equal(r.capabilities[1].domain, 'domains/claim-review');
-    assert.equal(r.elements[0].domain, 'domains/claim-review');
+    assert.equal(r.elements[0].domain, undefined);
     assert.deepEqual(r.suggestedRelations, [
       { from: 'claims', to: 'domains/evidence-intake', type: 'contains' },
       { from: 'claims', to: 'domains/claim-review', type: 'contains' },
       { from: 'domains/evidence-intake', to: 'capabilities/capture-evidence', type: 'contains' },
       { from: 'domains/claim-review', to: 'capabilities/review-claims', type: 'contains' },
-      { from: 'domains/claim-review', to: 'elements/claim', type: 'contains' },
+      { from: 'claims', to: 'elements/claim', type: 'contains' },
     ]);
   } finally {
     rmSync(root, { recursive: true, force: true });
@@ -3009,6 +3440,196 @@ test('Meaning gate marks README-only domains as weak even with trusted product p
       ),
       false,
     );
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test('project purpose attaches only claim-aligned semantic corroboration', () => {
+  const root = withRepo((r) => {
+    writeFileSync(join(r, 'package.json'), JSON.stringify({ name: 'ledger-bridge' }));
+    writeFileSync(
+      join(r, 'README.md'),
+      '# Ledger Bridge\n\nLedger Bridge provides invoice reconciliation for finance operations.\n',
+    );
+    mkdirSync(join(r, 'docs'), { recursive: true });
+    writeFileSync(
+      join(r, 'docs', 'product-contract.md'),
+      '# Product Contract\n\nInvoice reconciliation supports finance operations with a local review queue.\n',
+    );
+    writeFileSync(
+      join(r, 'docs', 'product-overview.md'),
+      '# Product Overview\n\nDeveloper onboarding explains local repository setup and contributor workflows.\n',
+    );
+  });
+  try {
+    const result = analyzeRepoStructure(root);
+
+    assert.deepEqual(result.project.evidence, [
+      'README.md',
+      'docs/product-contract.md',
+    ]);
+    assert.equal(result.project.evidence.includes('docs/product-overview.md'), false);
+    assert.match(result.project.uncertainty, /purpose witness/);
+    assert.doesNotMatch(result.project.uncertainty, /identity.*corroborat/i);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test('project purpose prefers the repository identity sentence over a later feature outcome', () => {
+  const root = withRepo((r) => {
+    writeFileSync(
+      join(r, 'README.md'),
+      [
+        '> Featured sponsor: build reviews faster.',
+        '',
+        '# Capture Desk',
+        '',
+        'Capture Desk is an open-source, self-hosted note-taking app built for quick capture.',
+        '',
+        '## Web Clipper',
+        '',
+        'The extension lets you review each clip and customize its Markdown format before saving.',
+      ].join('\n'),
+    );
+  });
+  try {
+    const result = analyzeRepoStructure(root);
+
+    assert.match(
+      result.project.definition,
+      /Capture Desk is an open-source, self-hosted note-taking app built for quick capture/,
+    );
+    assert.doesNotMatch(result.project.definition, /extension lets you review each clip/);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test('duplicated semantic prose does not become a second purpose or domain witness', () => {
+  const root = withRepo((r) => {
+    const prose = [
+      '# Ledger Bridge',
+      '',
+      'Ledger Bridge provides invoice reconciliation for finance operations.',
+      '',
+      '## Invoice Reconciliation',
+      '',
+      'Invoice Reconciliation owns invoice matching and settlement exceptions.',
+    ].join('\n');
+    writeFileSync(join(r, 'README.md'), prose);
+    mkdirSync(join(r, 'docs'), { recursive: true });
+    writeFileSync(join(r, 'docs', 'product-contract.md'), prose);
+  });
+  try {
+    const result = analyzeRepoStructure(root);
+    const domain = result.meaningGate.proposedBusinessOntology.domains.find(
+      (row) => row.slug === 'domains/invoice-reconciliation',
+    );
+
+    assert.deepEqual(result.project.evidence, ['README.md']);
+    assert.deepEqual(domain.evidenceSources, ['README.md']);
+    assert.match(domain.definition, /responsibility remains unconfirmed/);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test('domain boundaries require a separate responsibility witness and never reuse the project mission', () => {
+  const root = withRepo((r) => {
+    writeFileSync(join(r, 'package.json'), JSON.stringify({ name: 'ledger-bridge' }));
+    writeFileSync(
+      join(r, 'README.md'),
+      [
+        '# Ledger Bridge',
+        '',
+        'Ledger Bridge provides invoice reconciliation for finance operations.',
+        '',
+        '## Invoice Reconciliation',
+        '',
+        '## Account Support',
+        '',
+        '## Billing',
+      ].join('\n'),
+    );
+    mkdirSync(join(r, 'docs'), { recursive: true });
+    writeFileSync(
+      join(r, 'docs', 'product-contract.md'),
+      '# Product Contract\n\nThe Invoice Reconciliation domain owns invoice matching and settlement exceptions.\n',
+    );
+    writeFileSync(
+      join(r, 'docs', 'architecture.md'),
+      '# Architecture\n\nAccount Support handles account access requests and operator escalations.\n',
+    );
+  });
+  try {
+    const result = analyzeRepoStructure(root);
+    const domains = result.meaningGate.proposedBusinessOntology.domains;
+    const invoiceReconciliation = domains.find((row) => row.slug === 'domains/invoice-reconciliation');
+    const accountSupport = domains.find((row) => row.slug === 'domains/account-support');
+    const billing = domains.find((row) => row.slug === 'domains/billing');
+
+    assert.deepEqual(invoiceReconciliation.evidenceSources, [
+      'README.md',
+      'docs/product-contract.md',
+    ]);
+    assert.match(invoiceReconciliation.definition, /Invoice Reconciliation domain owns invoice matching/);
+    assert.deepEqual(accountSupport.evidenceSources, ['README.md', 'docs/architecture.md']);
+    assert.match(accountSupport.definition, /Account Support handles account access requests/);
+    assert.deepEqual(billing.evidenceSources, ['README.md']);
+    assert.equal(
+      billing.definition,
+      'Proposed responsibility boundary named by README heading; repository-contained responsibility remains unconfirmed.',
+    );
+    assert.ok(
+      domains.every((domain) => !domain.definition.includes('Ledger Bridge provides invoice reconciliation')),
+    );
+    assert.ok(
+      result.meaningGate.reviewQuestions.some((question) =>
+        question.startsWith('[weak · domain-boundary]'),
+      ),
+    );
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test('same-file, risky, package, and implementation evidence cannot corroborate a domain boundary', () => {
+  const root = withRepo((r) => {
+    writeFileSync(
+      join(r, 'package.json'),
+      JSON.stringify({
+        name: 'billing-bridge',
+        description: 'Billing handles settlement records for finance operations.',
+      }),
+    );
+    writeFileSync(
+      join(r, 'README.md'),
+      '# Billing Bridge\n\nBilling Bridge provides finance operations support.\n\n## Billing\n',
+    );
+    mkdirSync(join(r, 'docs'), { recursive: true });
+    writeFileSync(
+      join(r, 'docs', 'product-roadmap.md'),
+      '# Product Roadmap\n\nBilling will support settlement records and handles future exception workflows.\n',
+    );
+    mkdirSync(join(r, 'src', 'billing'), { recursive: true });
+    writeFileSync(join(r, 'src', 'billing', 'index.js'), 'export const settle = () => true;\n');
+  });
+  try {
+    const result = analyzeRepoStructure(root);
+    const billing = result.meaningGate.proposedBusinessOntology.domains.find(
+      (row) => row.slug === 'domains/billing',
+    );
+
+    assert.deepEqual(billing.evidenceSources, ['README.md']);
+    assert.equal(
+      billing.definition,
+      'Proposed responsibility boundary named by README heading; repository-contained responsibility remains unconfirmed.',
+    );
+    assert.equal(result.extractionContract.assertionPolicy.automaticBusinessAssertions, 0);
+    assert.equal(result.proposalValidation.canWrite, false);
+    assert.equal('writePlan' in result.proposalValidation, false);
   } finally {
     rmSync(root, { recursive: true, force: true });
   }
@@ -3305,14 +3926,11 @@ test('generic narrative proposals require trusted role prose and a normalized el
       assert.equal(typeof proposal.title, 'string', fixture.name);
       assert.match(proposal.definition, /^Proposed ability from /, fixture.name);
       assert.deepEqual(proposal.includes, [fixture.expected.implementation], fixture.name);
-      assert.deepEqual(proposal.excludes, [
-        'shared business ownership is not established by this repository scan',
-        'runtime behavior outside the cited implementation evidence is not asserted',
-      ], fixture.name);
+      assert.deepEqual(proposal.excludes, [], fixture.name);
       assert.equal(proposal.confidence, 0.5, fixture.name);
       assert.equal(
         proposal.uncertainty,
-        'proposal-only: bounded prose and path evidence require semantic qualification before admission',
+        'proposal-only: bounded prose and path evidence require semantic qualification before admission. Unknowns: shared business ownership is not established by this repository scan; runtime behavior outside the cited implementation evidence is not asserted.',
         fixture.name,
       );
       assert.deepEqual(
@@ -3406,17 +4024,18 @@ test('generic narrative capability clues work without structural capability fold
       assert.ok(proposal, fixture.expected);
       assert.match(result.project.definition, /^Proposed repository purpose from /);
       assert.ok(result.project.evidence.length >= 1);
-      assert.deepEqual(result.project.excludes, [
-        'shared business ownership is not established by repository evidence',
-        'runtime, test, and external-system behavior remain outside this bounded scan',
-      ]);
+      assert.deepEqual(result.project.excludes, []);
+      assert.equal(
+        result.project.uncertainty,
+        'proposal-only: source prose is a bounded purpose witness, not a shared business assertion. Unknowns: shared business ownership is not established by repository evidence; runtime, test, and external-system behavior remain outside this bounded scan.',
+      );
       assert.match(proposal.reason, /^proposal-only:/);
       assert.equal(proposal.evidence.source, 'README.md');
       assert.equal(proposal.evidence.implementation, fixture.source);
       assert.match(proposal.definition, /^Proposed ability from README.md: /);
       assert.deepEqual(proposal.includes, [fixture.source]);
       assert.equal(proposal.confidence, 0.5);
-      assert.equal(proposal.uncertainty, 'proposal-only: bounded prose and path evidence require semantic qualification before admission');
+      assert.equal(proposal.uncertainty, 'proposal-only: bounded prose and path evidence require semantic qualification before admission. Unknowns: shared business ownership is not established by this repository scan; runtime behavior outside the cited implementation evidence is not asserted.');
     } finally {
       rmSync(root, { recursive: true, force: true });
     }

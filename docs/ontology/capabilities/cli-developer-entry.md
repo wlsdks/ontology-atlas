@@ -8,6 +8,7 @@ elements: []
 path: cli/src
 created_by: "agent:unknown"
 dependencies: [capabilities/mcp-server]
+relation_notes: { capabilities/mcp-server: "The terminal command surface delegates ontology reads, writes, and verification to the same MCP contracts so schema or runtime changes must be checked across both surfaces." }
 display: CLI Developer Entry
 display_ko: 터미널에서 쓰기
 display_en: Terminal Commands

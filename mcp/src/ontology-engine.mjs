@@ -279,11 +279,14 @@ export const QUERY_ONTOLOGY_OPERATIONS = Object.freeze([
   'growth_plan',
   'maintenance_plan',
   'agent_brief',
+  'meaning_repair_review',
   'workspace_brief',
   'health',
 ]);
 export const QUERY_PLAN_TARGET_OPERATIONS = Object.freeze(
-  QUERY_ONTOLOGY_OPERATIONS.filter((operation) => operation !== 'query_plan'),
+  QUERY_ONTOLOGY_OPERATIONS.filter((operation) => (
+    operation !== 'query_plan' && operation !== 'meaning_repair_review'
+  )),
 );
 
 export function queryCompiledOntology(artifact, query = {}, options = {}) {

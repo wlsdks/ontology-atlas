@@ -35,6 +35,76 @@
   자리가 없다. 오늘 쓸 수 있는 것은 설정의 「실행기」 절까지다.
 - 브라우저에서는 도구를 실행할 수 없다. 웹에서는 그 자리에 왜 안 되는지와 어디서
   되는지를 적는다.
+## 2026-08-16 · 대형 Go 저장소의 목적과 package 경계를 첫 분석에서 잃지 않는다
+
+- README 의미 packet은 앞에서 만난 1,200자를 그대로 자르지 않는다. purpose,
+  responsibility/architecture, ability/capability block을 각각 보존하고 sponsor/backer/
+  funding/donation/TOC 및 link/image-only 장식을 제외한 뒤 원문 순서로 전달한다.
+- `infer_imports`는 기존 JS/TS/Python file edge를 바꾸지 않고, root `go.mod`의
+  module-local import를 별도 `goPackageImports:v1` evidence로 반환한다. 각 row는 실제
+  importing file과 repository-relative source/target package directory를 보존하므로
+  존재하지 않는 imported target file을 만들지 않는다.
+- Go scan은 `go`/compiler/network/module cache를 실행하지 않고 기존 5,000-file cap을
+  공유하며, file당 256 KiB·256 imports, nested module 제외 경계를 구조화한다. 다중행
+  raw string의 import 모양 텍스트와 Go build가 읽지 않는 `vendor`/`testdata`/`_` prefix
+  fixture tree도 근거에서 제외한다. 낯선 대형
+  Apache-licensed Go 저장소에서 2,725개 Go file·6,358개 local import·1,696개 package
+  boundary를 읽었고 세 번 실행 중앙값은 1.784초였다.
+- Analyzer와 `index_project`는 같은 full receipt를 한 번만 재사용해 import 참여 package를
+  bounded implementation element/path 후보로 보낸다. package 이름을 business capability로
+  자동 승격하거나 `depends_on`을 쓰지 않으며, source-hidden qualification과 사람의 exact-plan
+  승인 경계는 그대로다.
+- 공개 MCP schema, compact/focus summary, CLI strict consumer, verifier, 자체 온톨로지를
+  같은 계약으로 갱신해 대형 Go evidence가 전달 단계에서 조용히 사라지지 않게 했다.
+  strict consumer는 Go language enum 누락과 production/value aggregate 축소도 거부한다.
+- `Excludes`는 실제 제품/개념 경계만 허용한다. “아직 증명되지 않음/측정되지 않음”은
+  `Uncertainty`나 competency gap으로 남기고, proposal이 이를 exclusion으로 넣으면
+  `epistemic-exclusion-boundary`로 fail closed한다. source-hidden 재평가에서는 q1~q5가
+  근거 있는 weak, q6가 누락 목록으로 완전 답변됐고 9/9 인용 경로가 존재했지만,
+  독립 책임·행동·semantic impact 근거가 부족해 쓰기 0과 `not_qualified`를 유지했다.
+
+## 2026-08-16 · 대형 프로젝트의 의미 검토가 5 KiB 인수인계에서 끊기지 않는다
+
+- `agent_brief.meaningRepair:v2`는 의미 검토 규모·현재성·첫 행동만 담는 compact
+  manifest가 되었고, 전체 typed evidence는 기존 `query_ontology`의 읽기 전용
+  `meaning_repair_review` operation으로 이동했다.
+- 각 review page는 project → domain → capability 결정 순서에서 최대 20개이면서
+  5 KiB 이하이고, 같은 대상의 literal full-body 읽기와 다음 opaque cursor를 제공한다.
+  graph/source/typed rows/mtime이 바뀌거나 cursor가 잘못되면 쓰기 없이 실패 닫는다.
+- 현재 dogfood에서 실제로 관측된 5,135-byte v1 hard stop을 회귀 fixture로 고정했다.
+  CLI는 다시 유효한 `agent-brief`를 출력하고, 설치 verifier는 마지막 page까지 전체
+  합집합·순서·누락·중복·크기와 각 full-body의 kind·mtime·비절단 여부,
+  source/bundle parity를 확인한다.
+- 문서화된 `connect-source --root <path>`와 `--root=<path>`가 값을 거꾸로 검사하던
+  CLI 파싱 결함도 고쳤다.
+- 자체 온톨로지는 본문에만 있던 9개 capability 구현 위치를 canonical `path:`로
+  승격해 26/26 경로를 갖췄다. 독립 source-visible/source-hidden 평가에 맞춰 7개
+  도메인·26개 typed ability는 `answered`로, 행동 근거와 도메인 간 영향 범위는
+  남은 약점을 숨기지 않는 `partial`로 바로잡았다.
+- 이전에 폴더 이름만 근거로 삼던 app update와 네 project 작업 capability는 실제
+  source/test witness, 포함·제외 경계, 미검증 runtime 범위를 갖도록 보강했다. 최종
+  source-hidden 재평가는 과장 제거와 visible gap 정합성을 PASS로 판정했다.
+- 같은 source path를 capability와 element가 함께 증명할 때 첫 노드만 남기던 receipt
+  dedupe를 node+path 기준으로 고쳤다. 실제 dogfood의 두 false-negative가 사라져
+  capability canonical-path 측정도 26/26이 됐다.
+
+## 2026-08-16 · 목적과 도메인의 고신뢰는 독립된 의미 근거를 요구한다
+
+- `analyze_repo_structure`는 README 첫 제품 정체성 문장을 뒤쪽 확장 기능 문장보다
+  우선하고, 무관하거나 복제된 문서를 목적 corroboration으로 붙이지 않는다.
+- README H2 도메인 후보는 별도 current product/architecture 문서에 도메인 이름과
+  명시적 책임 문장이 함께 있을 때만 corroborated로 표시한다. 같은 README, roadmap,
+  package/path/implementation 근거는 책임 경계의 두 번째 의미 권위가 아니다.
+- project purpose·proposed domain·project→domain relation의 confidence가 0.8 이상이거나
+  `scope`·`domains`가 `answered`이면 current semantic source 두 개가 필요하다. 목적은
+  두 출처 모두 목적 주장과 맞아야 하고, 도메인은 두 출처 모두 이름과 명시적 책임
+  문장을 가져야 한다. 한 근거뿐인 정직한 low-confidence `partial`은 계속 reviewable이지만,
+  single-source 고신뢰·완료 응답은 review/write plan 전에 실패 닫는다.
+- implementation element는 이름이 유일한 README domain과 겹치더라도 자동으로 그
+  domain 아래에 넣지 않는다. 역할 근거가 없는 path는 project-scoped evidence로 남긴다.
+- fresh 외부 저장소에서 single-source 과장 차단, low-confidence partial 유지,
+  responsibility-aligned multi-source q1/q2 통과, source/bundled MCP 동일 응답, 후보 패킷의
+  missing/foreign/truncated mutation 거절을 함께 검증했다. 자동 write는 열지 않았다.
 
 ## 2026-08-16 · C 미지원 범위와 관계의 정확한 경로 근거를 숨기지 않는다
 

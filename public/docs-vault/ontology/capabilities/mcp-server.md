@@ -8,6 +8,7 @@ elements: []
 path: mcp/src
 created_by: "agent:unknown"
 dependencies: [capabilities/vault-ontology]
+relation_notes: { capabilities/vault-ontology: "The MCP server parses, validates, and writes the vault ontology schema, so schema changes alter the agent-facing read and write contract." }
 display_ko: AI 연결 서버
 display_en: AI Connection Server
 ---
@@ -105,13 +106,35 @@ path가 함께 인용됐는지 검사한다. 일부만 덮으면 누락 target s
 돌려주며 write plan을 만들지 않는다. 정직한 `partial`/`visible-gap` proposal은 계속
 검토·저장할 수 있다.
 
+project purpose·proposed domain·project→domain relation이 confidence 0.8 이상이거나
+`scope`·`domains`가 `answered`이면 서로 다른 current semantic source 두 개가 그
+주장의 비일반 의미를 실제로 지지해야 한다. 목적은 두 출처가 목적 주장에 맞아야 하고,
+도메인은 두 출처가 각각 domain 이름과 명시적 responsibility 문장을 가져야 한다.
+같은 문장을 복제한 문서, 무관한 trusted
+문서, roadmap·negated/deprecated 근거, package manifest와 implementation path는 두 번째
+의미 권위로 세지 않는다. 한 근거만 있는 경우 confidence 0.8 미만과 명시적 `partial`
+gap으로 남기면 검토 가능하지만, 고신뢰·완료 응답으로 과장하면 review/write plan 전에
+실패 닫는다. analyzer도 프로젝트 정체성 문장을 뒤쪽 feature 문장보다 우선하고,
+domain은 별도 product/architecture responsibility 문장이 있을 때만 corroborated 후보로
+표시한다. implementation element는 domain 이름과 겹치거나 후보가 하나뿐이어도 역할
+근거 없이 자동 귀속하지 않고 project-scoped evidence로 남긴다.
+
+README의 앞 1,200자를 그대로 자르지 않는다. heading-scoped block에서 purpose,
+responsibility/architecture, ability/capability prose를 각각 보존하고 sponsor/backer/
+funding/donation/TOC 및 link/image-only 장식을 구조적으로 제외한 뒤 원문 순서로 전달한다.
+기존 문서당 1,200자·heading 8개·packet 6문서·읽기 전 256 KiB 상한은 바꾸지 않는다.
+`Excludes`에는 source가 말하는 제품/개념 경계만 둔다. “아직 증명되지 않음”이나
+“bounded scan 밖”은 `Uncertainty`/competency gap이며, proposal이 이를 exclusion으로
+넣으면 `epistemic-exclusion-boundary`로 write plan 전에 막는다.
+
 Cold-start 의미 근거는 루트 `ARCHITECTURE.md`와 `docs/`·`site/`·`website/` 아래에서
 분류된 current Markdown도 기존 `semanticEvidence` packet으로 운반한다. 세 root 전체에서
 Markdown 200개·directory entry 1,000개까지만 탐색하고, 일반 의미 문서는 읽기 전
 256 KiB에서 멈춘다. 실제 경로가 같은 directory는 한 번만 방문하며 archive류와
 끊어졌거나 repository 밖인 symlink는 제외한다. 최종 packet의 6문서·문서당 1,200자 경계는 유지한다.
 Proposal이 들어온 같은 호출은 기존 read-only import receipt도 다시 계산해 TS/JS/Python
-exact endpoint와 방향을 검증한다. 이 문서와 경로는 evidence/provenance일 뿐 business
+file endpoint와 Go의 importing-file/package-directory endpoint 및 방향을 검증한다. 이
+문서와 경로는 evidence/provenance일 뿐 business
 meaning이나 `depends_on`을 자동 승인하지 않으며, maker-independent qualification과 사람의
 exact-plan 승인이 없으면 `writePlan`을 열지 않는다.
 관계 rationale이 양끝 concept의 정확한 repository `path:`를 직접 이름 붙이면 같은 관계의
@@ -120,15 +143,20 @@ evidence에도 그 경로가 있어야 한다. 다른 문서만 인용한 경우
 파일명을 추측해 차단하지 않는다.
 
 fresh `agent_brief`가 current source와 incomplete competency를 함께 읽으면 첫
-`nextActions`를 `review_competency_repair`로 올린다. 연결된 `meaningRepair:v1`은
-현재 project Markdown의 선언, typed containment가 만든 구조 검토 후보, current
-source receipt가 직접 지지한 canonical-path 후보, 아직 미해결인 대상을 분리한다.
+`nextActions`를 `review_competency_repair`로 올린다. 연결된 `meaningRepair:v2` compact
+manifest는 disposition count,
+provenance, `reviewRevision`, 첫 `meaning_repair_review` 호출만 담고, 별도
+`meaningRepairReviewPage:v1`이 현재 project Markdown 선언, typed containment가 만든
+구조 검토 후보, current source receipt가 직접 지지한 canonical-path 후보, 아직
+미해결인 대상 전체를 운반한다.
 containment와 path 존재는 사람의 의미 승인이나 행동 증명이 아니므로 후보를 자동으로
 `answered`로 바꾸거나 쓰지 않는다. source/provenance/scope/validation/mtime이 흔들리면
 기존 source·health 행동을 보존한 채 repair를 차단한다. 첫 review read는 project,
-domain, capability의 정확한 합집합을 공개 full-body 상한인 최대 20개 단위의 literal
-`get_concepts` 호출로 제공한다. 따라서 현재 dogfood 27개 검토 대상도 FDE가 batching을
-추측하지 않고 20+7로 실행하며, verifier는 누락·중복·순서·5 KiB 상한을 함께 검사한다.
+domain, capability의 정확한 합집합을 결정적·무상태 cursor로 나눈다. 각 page는 최대
+20개이면서 JSON 5 KiB 이하이고 같은 대상의 literal `get_concepts(body:"full")` 호출을
+제공한다. `reviewRevision`은 graph/source/typed row/mtime을 결박하며 verifier는 마지막
+page까지 누락·중복·순서·크기·현재성뿐 아니라 각 full-body의 kind·mtime·비절단 여부와
+source/bundle parity를 검사한다.
 
 Python cold start에서는 `README.rst`, 실행하지 않는 정적 `setup.py` package
 contract, 최상위 `__init__.py` package를 bounded 근거로 읽는다. `infer_imports`는
@@ -157,6 +185,19 @@ edge는 bounded sample이 아니라 전체 import에서 두 차원의 count와 �
 숨기지 않되 그 import만으로 제품 `depends_on` 승인을 묻지 않고 별도 제품 의미
 근거를 요구한다. 그 밖에도 에이전트는 양쪽 개념과 방향을 읽고 의미적 이유를 설명한
 뒤 사람에게 물어야 하며, 승인된 한 건만 비어 있지 않은 `why`와 함께 기록한다.
+
+Root `go.mod`가 있는 Go 저장소는 compiler·`go list`·module cache·network를 실행하지
+않고 module-local import만 bounded text로 읽는다. 기존 file edge에 package directory를
+섞거나 임의의 target file을 만들지 않고, 별도 `goPackageImports:v1` receipt가 importing
+file과 repository-relative source/target package directory, literal import spec,
+production/test role을 보존한다. 전체 scan은 기존 file cap을 공유하고 각 Go file은
+256 KiB·256 imports에서 멈추며 nested module과 외부 module은 범위 밖이라고 명시한다.
+다중행 raw string 속 import 모양 텍스트와 `vendor`/`testdata`/underscore-prefixed
+fixture tree는 Go build 경계 밖 근거로 제외한다.
+Analyzer는 production/value import 참여가 큰 package directory를 최대 24개 implementation
+element/path 후보로 전달할 뿐, 폴더 이름을 domain이나 capability로 승격하거나 package
+edge를 의미 `depends_on`으로 자동 승인하지 않는다. compact/focus 응답은 package evidence
+건수와 explicit full-evidence 호출을 남겨 대형 graph가 조용히 사라지지 않게 한다.
 
 C/Autotools 저장소에서도 빈 import graph를 “의존 없음”으로 말하지 않는다. bounded
 manifest/source discovery가 실제 `.c`/`.h`를 확인하면 `infer_imports.coverage`는 `c`를
@@ -217,7 +258,8 @@ element 관계는 `reachability`/`subgraph`의 구조 근거이며 영향이나 
   `tools/list`와 모드별 initialize 인벤토리를 함께 만드는 경계
 - `mcp/src/analyze.mjs` · `mcp/src/rust-feature-evidence.mjs` ·
   `mcp/src/infer-imports.mjs`: bounded repository 의미 ingress, Rust 구성 provenance,
-  실행 없는 TS/JS/Python import 근거, Autotools C/Rust 미지원 범위와 exact-path 관계 근거
+  실행 없는 TS/JS/Python file-import와 Go package-import 근거, Autotools C/Rust 미지원
+  범위와 exact-path 관계 근거
 - `mcp/src/vault.mjs` · `mcp/src/schema.mjs`: 파일 읽기/쓰기와 UID/slug 규격
 - `mcp/src/ontology-compiler.mjs` · `mcp/src/ontology-engine.mjs`: compile/query
 - `mcp/src/competency-coverage.mjs` · `mcp/src/meaning-evaluation.mjs`: quantified

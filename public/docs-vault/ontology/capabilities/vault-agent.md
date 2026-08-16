@@ -5,6 +5,7 @@ kind: capability
 title: Agent Connect & Vault Access
 domain: domains/agent-integration
 elements: [elements/agent-connect, elements/vault-agent-panel]
+path: src/features/vault-agent
 created_by: human
 ---
 

@@ -802,6 +802,45 @@ await test("tools/list — 단일 도구 description 이 batch 짝을 cross-refe
     assert.deepEqual(moduleEvidenceSchema?.items?.required, ["from", "to", "kind", "sourceRole", "importUsage"]);
     assert.equal(moduleEvidenceSchema?.items?.additionalProperties, false);
     assert.equal(inferImports?.outputSchema?.properties?.moduleEdges?.items?.properties?.evidenceLimited?.type, "boolean");
+    assert.deepEqual(
+      inferImports?.outputSchema?.properties?.coverage?.properties?.supportedLanguages?.items?.enum,
+      ["go", "javascript", "python", "typescript"],
+    );
+    const goPackageEvidenceSchema = inferImports?.outputSchema?.properties?.packageImportEvidence;
+    assert.deepEqual(goPackageEvidenceSchema?.required, [
+      "contract",
+      "modulePath",
+      "sourceQualification",
+      "writeAllowed",
+      "filesScanned",
+      "fileScanLimited",
+      "perFileByteLimit",
+      "perFileImportLimit",
+      "skipped",
+      "limitations",
+      "packageImports",
+      "moduleEdges",
+    ]);
+    assert.equal(goPackageEvidenceSchema?.additionalProperties, false);
+    assert.deepEqual(goPackageEvidenceSchema?.properties?.contract?.enum, ["goPackageImports:v1"]);
+    assert.deepEqual(goPackageEvidenceSchema?.properties?.sourceQualification?.enum, ["observed_bounded_go_package_imports_not_runtime_or_semantic_impact"]);
+    assert.deepEqual(goPackageEvidenceSchema?.properties?.writeAllowed?.enum, [false]);
+    assert.deepEqual(goPackageEvidenceSchema?.properties?.packageImports?.items?.required, ["fromFile", "fromPackage", "toPackage", "importSpec", "kind", "sourceRole", "importUsage"]);
+    assert.equal(goPackageEvidenceSchema?.properties?.packageImports?.items?.additionalProperties, false);
+    assert.deepEqual(goPackageEvidenceSchema?.properties?.moduleEdges?.items?.required, ["fromPackage", "toPackage", "count", "kindCounts", "sourceRoleCounts", "importUsageCounts", "productValueCount", "evidence", "evidenceLimited"]);
+    assert.equal(goPackageEvidenceSchema?.properties?.moduleEdges?.items?.additionalProperties, false);
+    assert.deepEqual(goPackageEvidenceSchema?.properties?.moduleEdges?.items?.properties?.evidence?.items?.required, ["fromFile", "fromPackage", "toPackage", "importSpec", "kind", "sourceRole", "importUsage"]);
+    const goPackageSummarySchema = inferImports?.outputSchema?.properties?.packageImportEvidenceSummary;
+    assert.deepEqual(goPackageSummarySchema?.required, ["contract", "filesScanned", "fileScanLimited", "packageImports", "moduleEdges", "fullEvidenceCall"]);
+    assert.equal(goPackageSummarySchema?.additionalProperties, false);
+    assert.deepEqual(goPackageSummarySchema?.properties?.fullEvidenceCall?.properties?.tool?.enum, ["infer_imports"]);
+    assert.deepEqual(goPackageSummarySchema?.properties?.fullEvidenceCall?.properties?.arguments?.required, ["rootPath", "reviewMode", "allowLargeResponse"]);
+    assert.equal(goPackageSummarySchema?.properties?.fullEvidenceCall?.properties?.arguments?.properties?.sourceFolders?.maxItems, 50);
+    assert.equal(goPackageSummarySchema?.properties?.fullEvidenceCall?.properties?.arguments?.properties?.ignore?.maxItems, 200);
+    assert.equal(goPackageSummarySchema?.properties?.fullEvidenceCall?.properties?.arguments?.properties?.maxFiles?.maximum, 50000);
+    assert.deepEqual(indexProject?.outputSchema?.properties?.imports?.properties?.packageImports?.type, "integer");
+    assert.deepEqual(indexProject?.outputSchema?.properties?.imports?.properties?.packageModuleEdges?.type, "integer");
+    assert.deepEqual(indexProject?.outputSchema?.properties?.imports?.required, ["filesScanned", "moduleEdges", "packageImports", "packageModuleEdges", "coverage"]);
     assert.deepEqual(inferImports?.outputSchema?.properties?.contract?.enum, ["inferImportsReview:v1", "inferImportsFocus:v1"]);
     assert.deepEqual(inferImports?.outputSchema?.properties?.focusReview?.required, [
       "contract",
@@ -1734,6 +1773,7 @@ await test("tools/list — 단일 도구 description 이 batch 짝을 cross-refe
         "growth_plan",
         "maintenance_plan",
         "agent_brief",
+        "meaning_repair_review",
         "workspace_brief",
         "health",
       ],
@@ -2311,12 +2351,9 @@ await test("analyze_repo_structure — bootstrap candidates expose structuredCon
       definition: "Proposed repository purpose from README.md: Login flows.",
       evidence: ["README.md"],
       includes: ["repository-contained implementation evidence"],
-      excludes: [
-        "shared business ownership is not established by repository evidence",
-        "runtime, test, and external-system behavior remain outside this bounded scan",
-      ],
+      excludes: [],
       confidence: 0.5,
-      uncertainty: "proposal-only: source prose is a bounded purpose witness, not a shared business assertion",
+      uncertainty: "proposal-only: source prose is a bounded purpose witness, not a shared business assertion. Unknowns: shared business ownership is not established by repository evidence; runtime, test, and external-system behavior remain outside this bounded scan.",
     });
     assert.ok(result.domains.some((domain) => domain.slug === "domains/auth"));
     assert.ok(result.capabilities.some((capability) => capability.slug === "capabilities/auth"));
@@ -2336,7 +2373,13 @@ await test("analyze_repo_structure — validates a complete meaning proposal bef
     writeFileSync(join(repoRoot, "package.json"), JSON.stringify({ name: "claims" }), "utf-8");
     writeFileSync(
       join(repoRoot, "README.md"),
-      "# Claims\n\nTeams need reviewable claims.\n\n## Review\n\nReview claims before publication.\n",
+      "# Claims\n\nTeams need reviewable claims.\n\n## Review\n\nReview owns publication-readiness decisions for claims.\n\nReview claims before publication.\n",
+      "utf-8",
+    );
+    mkdirSync(join(repoRoot, "docs"), { recursive: true });
+    writeFileSync(
+      join(repoRoot, "docs", "product-contract.md"),
+      "# Product Contract\n\nClaims provides reviewable claim publishing for teams.\n\nReview owns publication-readiness decisions for claims.\n",
       "utf-8",
     );
     mkdirSync(join(repoRoot, "src", "review"), { recursive: true });
@@ -2346,14 +2389,14 @@ await test("analyze_repo_structure — validates a complete meaning proposal bef
         slug: "claims",
         title: "Claims",
         definition: "A system for publishing reviewable claims.",
-        evidence: ["README.md"],
+        evidence: ["README.md", "docs/product-contract.md"],
         confidence: 0.9,
       },
       domains: [{
         slug: "domains/review",
         title: "Review",
         definition: "The responsibility boundary for deciding whether claims may be published.",
-        evidence: ["README.md"],
+        evidence: ["README.md", "docs/product-contract.md"],
         confidence: 0.9,
       }],
       capabilities: [{
@@ -2372,7 +2415,7 @@ await test("analyze_repo_structure — validates a complete meaning proposal bef
           to: "domains/review",
           type: "domains",
           why: "The project owns the review boundary.",
-          evidence: ["README.md"],
+          evidence: ["README.md", "docs/product-contract.md"],
           confidence: 0.9,
         },
         {
@@ -2389,7 +2432,7 @@ await test("analyze_repo_structure — validates a complete meaning proposal bef
           answer: "Teams publishing reviewable claims.",
           status: "answered",
           witnesses: {
-            concepts: ["claims"], relations: [], evidence: ["README.md"], paths: [],
+            concepts: ["claims"], relations: [], evidence: ["README.md", "docs/product-contract.md"], paths: [],
           },
         },
         domains: {
@@ -2398,7 +2441,7 @@ await test("analyze_repo_structure — validates a complete meaning proposal bef
           witnesses: {
             concepts: ["domains/review"],
             relations: [{ from: "claims", to: "domains/review", type: "domains" }],
-            evidence: ["README.md"], paths: [],
+            evidence: ["README.md", "docs/product-contract.md"], paths: [],
           },
         },
         abilities: {
@@ -2639,7 +2682,13 @@ await test("analyze_repo_structure — validates exact TypeScript import endpoin
     writeFileSync(join(repoRoot, "package.json"), JSON.stringify({ name: "portable-reader" }), "utf-8");
     writeFileSync(
       join(repoRoot, "README.md"),
-      "# Portable Reader\n\nA desktop reader that presents subscribed content.\n",
+      "# Portable Reader\n\nA desktop reader that presents subscribed content.\n\nReading owns subscribed-content presentation.\n",
+      "utf-8",
+    );
+    mkdirSync(join(repoRoot, "docs"), { recursive: true });
+    writeFileSync(
+      join(repoRoot, "docs", "product-contract.md"),
+      "# Product Contract\n\nPortable Reader provides subscribed-content reading for desktop users.\n\nReading owns subscribed-content presentation.\n",
       "utf-8",
     );
     mkdirSync(join(repoRoot, "src"), { recursive: true });
@@ -2664,14 +2713,14 @@ await test("analyze_repo_structure — validates exact TypeScript import endpoin
         slug: "portable-reader",
         title: "Portable Reader",
         definition: "A desktop product for reading subscribed content.",
-        evidence: ["README.md"],
+        evidence: ["README.md", "docs/product-contract.md"],
         confidence: 0.9,
       },
       domains: [{
         slug: "domains/reading",
         title: "Reading",
         definition: "The responsibility boundary for presenting subscribed content.",
-        evidence: ["README.md"],
+        evidence: ["README.md", "docs/product-contract.md"],
         confidence: 0.9,
       }],
       capabilities: [{
@@ -2704,7 +2753,7 @@ await test("analyze_repo_structure — validates exact TypeScript import endpoin
         },
       ],
       relations: [
-        { ...projectDomain, why: "The project owns the reading boundary.", evidence: ["README.md"], confidence: 0.9 },
+        { ...projectDomain, why: "The project owns the reading boundary.", evidence: ["README.md", "docs/product-contract.md"], confidence: 0.9 },
         { ...domainCapability, why: "Reading is realized through content loading and presentation.", evidence: ["README.md"], confidence: 0.9 },
         { ...capabilityEntry, why: "The desktop entry implements content reading.", evidence: ["src/entry.ts"], confidence: 0.9 },
         { ...capabilityService, why: "The content service implements content reading.", evidence: ["src/service.ts"], confidence: 0.9 },
@@ -2714,12 +2763,12 @@ await test("analyze_repo_structure — validates exact TypeScript import endpoin
         scope: {
           answer: "Desktop users read subscribed content.",
           status: "answered",
-          witnesses: { concepts: ["portable-reader"], relations: [], evidence: ["README.md"], paths: [] },
+          witnesses: { concepts: ["portable-reader"], relations: [], evidence: ["README.md", "docs/product-contract.md"], paths: [] },
         },
         domains: {
           answer: "Reading owns content presentation.",
           status: "answered",
-          witnesses: { concepts: ["domains/reading"], relations: [projectDomain], evidence: ["README.md"], paths: [] },
+          witnesses: { concepts: ["domains/reading"], relations: [projectDomain], evidence: ["README.md", "docs/product-contract.md"], paths: [] },
         },
         abilities: {
           answer: "Content reading loads and presents subscriptions.",
@@ -2830,6 +2879,74 @@ await test("infer_imports — import graph exposes structuredContent", async () 
     assert.equal(result.reconciliationSummary.unresolvedImports, 1);
     assert.match(result.reconciliationSummary.hint, /unresolved import/i);
     assert.doesNotMatch(result.reconciliationSummary.hint, /are in sync/i);
+  } finally {
+    rmSync(vaultRoot, { recursive: true, force: true });
+    rmSync(repoRoot, { recursive: true, force: true });
+  }
+});
+
+await test("infer_imports — Go package evidence stays typed while focus and index return bounded summaries", async () => {
+  const vaultRoot = makeVault();
+  const repoRoot = mkdtempSync(join(tmpdir(), "ontology-atlas-go-summary-"));
+  try {
+    writeFileSync(join(repoRoot, "go.mod"), "module example.test/sample\n", "utf-8");
+    mkdirSync(join(repoRoot, "cmd", "sample"), { recursive: true });
+    mkdirSync(join(repoRoot, "internal", "store"), { recursive: true });
+    writeFileSync(
+      join(repoRoot, "cmd", "sample", "main.go"),
+      'package sample\n\nimport "example.test/sample/internal/store"\n\nvar _ = store.Ready\n',
+      "utf-8",
+    );
+    writeFileSync(join(repoRoot, "internal", "store", "store.go"), "package store\n\nconst Ready = true\n", "utf-8");
+
+    const { responses } = await rpc(vaultRoot, [
+      ...INIT_REQUESTS,
+      callTool(2, "infer_imports", { rootPath: repoRoot, reconcile: false }),
+      callTool(3, "infer_imports", {
+        rootPath: repoRoot,
+        sourceFolders: ["source"],
+        ignore: ["ignored-dir"],
+        maxFiles: 7,
+        reviewMode: "focus",
+        focusPath: "cmd/sample/main.go",
+      }),
+      callTool(4, "index_project", { rootPath: repoRoot }),
+    ]);
+    const full = getCallParsed(responses, 2);
+    const focused = getCallParsed(responses, 3);
+    const indexed = getCallParsed(responses, 4);
+
+    assert.equal(full.packageImportEvidence.contract, "goPackageImports:v1");
+    assert.equal(full.packageImportEvidence.packageImports.length, 1);
+    assert.equal(full.packageImportEvidence.moduleEdges.length, 1);
+    assert.equal(full.edges.length, 0, "Go package imports must not enter legacy file edges");
+
+    const expectedSummary = {
+      contract: "goPackageImports:v1",
+      filesScanned: 2,
+      fileScanLimited: false,
+      packageImports: 1,
+      moduleEdges: 1,
+      fullEvidenceCall: {
+        tool: "infer_imports",
+        arguments: {
+          rootPath: repoRoot,
+          sourceFolders: ["source"],
+          ignore: ["ignored-dir"],
+          maxFiles: 7,
+          reviewMode: "full",
+          allowLargeResponse: true,
+        },
+        purpose: "Read the complete typed Go package-import evidence; focus only contains legacy file edges.",
+      },
+    };
+    assert.deepEqual(focused.packageImportEvidenceSummary, expectedSummary);
+    assert.deepEqual(focused.focusReview.edges, []);
+    assert.match(focused.focusReview.interpretation, /legacy file edges only/i);
+    assert.equal(indexed.imports.moduleEdges, 0);
+    assert.equal(indexed.imports.packageImports, 1);
+    assert.equal(indexed.imports.packageModuleEdges, 1);
+    assert.equal(indexed.plan.importRelations, 1);
   } finally {
     rmSync(vaultRoot, { recursive: true, force: true });
     rmSync(repoRoot, { recursive: true, force: true });
@@ -3393,12 +3510,9 @@ await test("index_project — Python package and import boundaries reach the pub
       definition: "Proposed repository purpose from README.rst: A standardized diagnostic protocol client.",
       evidence: ["README.rst"],
       includes: ["repository-contained implementation evidence"],
-      excludes: [
-        "shared business ownership is not established by repository evidence",
-        "runtime, test, and external-system behavior remain outside this bounded scan",
-      ],
+      excludes: [],
       confidence: 0.5,
-      uncertainty: "proposal-only: source prose is a bounded purpose witness, not a shared business assertion",
+      uncertainty: "proposal-only: source prose is a bounded purpose witness, not a shared business assertion. Unknowns: shared business ownership is not established by repository evidence; runtime, test, and external-system behavior remain outside this bounded scan.",
     });
     assert.equal(result.analyze.elements, 5);
     assert.equal(result.plan.concepts, 6);

@@ -4040,6 +4040,21 @@
         },
         {
           "depth": 2,
+          "text": "2026-08-16 · 대형 Go 저장소의 목적과 package 경계를 첫 분석에서 잃지 않는다",
+          "slug": "2026-08-16-대형-go-저장소의-목적과-package-경계를-첫-분석에서-잃지-않는다"
+        },
+        {
+          "depth": 2,
+          "text": "2026-08-16 · 대형 프로젝트의 의미 검토가 5 KiB 인수인계에서 끊기지 않는다",
+          "slug": "2026-08-16-대형-프로젝트의-의미-검토가-5-kib-인수인계에서-끊기지-않는다"
+        },
+        {
+          "depth": 2,
+          "text": "2026-08-16 · 목적과 도메인의 고신뢰는 독립된 의미 근거를 요구한다",
+          "slug": "2026-08-16-목적과-도메인의-고신뢰는-독립된-의미-근거를-요구한다"
+        },
+        {
+          "depth": 2,
           "text": "2026-08-16 · C 미지원 범위와 관계의 정확한 경로 근거를 숨기지 않는다",
           "slug": "2026-08-16-c-미지원-범위와-관계의-정확한-경로-근거를-숨기지-않는다"
         },
@@ -6420,7 +6435,7 @@
         }
       ],
       "excerpt": "Major change history. Code commit messages answer why; this file answers when / which surface changed. Focused on user-visible changes, not PR-level granularity. Newest at the top. Entries stay date-based; the app version reached v1.0.0 on 2026-07-27, so a release tag now carries the semver promise instead. 설정에 「실행기」 절",
-      "wordCount": 68657,
+      "wordCount": 69258,
       "updatedAt": "2026-08-16",
       "linksOut": [
         "audits/CASE-STUDY-AGENTS-MD-DRIFT",
@@ -6524,6 +6539,26 @@
           "depth": 2,
           "text": "2026-08-16 — ACP 로 사용자의 에이전트를 앱 안으로 들인다: 「위임 일꾼」 경계는 뒤집고, 「지도가 주」는 유지한다",
           "slug": "2026-08-16-acp-로-사용자의-에이전트를-앱-안으로-들인다-위임-일꾼-경계는-뒤집고-지도가-주는-유지한다"
+        },
+        {
+          "depth": 2,
+          "text": "2026-08-16 — Go import는 기존 file edge에 섞지 않고 typed package evidence로 공개한다",
+          "slug": "2026-08-16-go-import는-기존-file-edge에-섞지-않고-typed-package-evidence로-공개한다"
+        },
+        {
+          "depth": 2,
+          "text": "2026-08-16 — dogfood 의미 답변은 구조 완성과 의미 미완성을 동시에 말한다",
+          "slug": "2026-08-16-dogfood-의미-답변은-구조-완성과-의미-미완성을-동시에-말한다"
+        },
+        {
+          "depth": 2,
+          "text": "2026-08-16 — 의미 수리 인수인계와 상세 검토는 고정 예산의 두 계약으로 나눈다",
+          "slug": "2026-08-16-의미-수리-인수인계와-상세-검토는-고정-예산의-두-계약으로-나눈다"
+        },
+        {
+          "depth": 2,
+          "text": "2026-08-16 — 목적·도메인의 answered와 고신뢰는 주장에 맞는 독립 의미 근거를 요구한다",
+          "slug": "2026-08-16-목적도메인의-answered와-고신뢰는-주장에-맞는-독립-의미-근거를-요구한다"
         },
         {
           "depth": 2,
@@ -9112,7 +9147,7 @@
         }
       ],
       "excerpt": "이 파일은 결정과 그때 진 반대 의견을 남긴다. docs/CHANGELOG.md 는 무엇이 언제 바뀌었나를 답하고, 이 파일은 왜 그렇게 정했고, 무엇을 걸었나를 답한다. 최신이 위. 기록은 덧붙이기만 한다 — 지난 기록을 고치지 않는다. 판단이 바뀌었으면 새 기록을 쓰고 옛 기록을 뒤집힘 으로 표시한다. 틀린 기록도 자산이다. 1. 소집 전에 읽는다. 카운슬을 열기 전(그리고 단독 PO 패스를 쓰기 전) 같은 표면 · 같은 질문에 대한 선행 결정이 있는지 먼저 본다. 있으면 새 패스는 그것을 ① 여전히 유효하다고 인용하거나 ② 명시적으로 뒤집는다. 조용히 다시 결정",
-      "wordCount": 127249,
+      "wordCount": 129061,
       "updatedAt": "2026-08-16",
       "linksOut": [
         "slug"
@@ -10810,7 +10845,7 @@
         }
       ],
       "excerpt": "Complete inventory of features users can actually use right now. Last updated: 2026-08-02 (지금 있는 라우트, 설치한 앱이 지키기로 한 약속, 프로젝트가 무엇을 뜻하는지 확정한 기록(project meaning receipt)을 다시 확인했다 — /ontology 는 /topology?index=expanded 로, /ontology/edit 은 /ontology/studio 로 보내는 옛 주소 호환 redirect 이고, Insights 는 할 일 · 구성 · 연결 · 경계 · 신선도 다섯 개 ",
-      "wordCount": 19686,
+      "wordCount": 19886,
       "updatedAt": "2026-08-16",
       "linksOut": [
         "slug",
@@ -12399,6 +12434,11 @@
         },
         {
           "depth": 2,
+          "text": "포함 / 제외",
+          "slug": "포함-제외"
+        },
+        {
+          "depth": 2,
           "text": "근거",
           "slug": "근거"
         },
@@ -12408,9 +12448,9 @@
           "slug": "확신도"
         }
       ],
-      "excerpt": "설치된 macOS 앱의 업데이트를 확인하고 적용하는 능력. src/features/app-update (구현 증거만) low-medium (0.6)",
-      "wordCount": 19,
-      "updatedAt": "2026-08-02",
+      "excerpt": "데스크톱 셸에서 새 버전을 주기적으로 확인하고, 업데이트 토스트에서 다운로드·설치· 재시작하거나 버전별로 안내를 닫게 하는 능력. 포함: desktop-shell 자동 확인, 버전별 dismiss, 진행 상태, 설치 후 relaunch. 제외: 웹 업데이트, 현재 화면에 연결되지 않은 수동 확인, updater feed·서명·실제 설치 성공의 배포 환경 보증. src/features/app-update/model/use-app-update.ts: desktop gate, update 확인, downloadAndInstall, 진행 상태와 relaunch src/fea",
+      "wordCount": 97,
+      "updatedAt": "2026-08-16",
       "linksOut": []
     },
     {
@@ -12430,6 +12470,9 @@
         "dependencies": [
           "capabilities/mcp-server"
         ],
+        "relation_notes": {
+          "capabilities/mcp-server": "The terminal command surface delegates ontology reads, writes, and verification to the same MCP contracts so schema or runtime changes must be checked across both surfaces."
+        },
         "display": "CLI Developer Entry",
         "display_ko": "터미널에서 쓰기",
         "display_en": "Terminal Commands"
@@ -12473,7 +12516,7 @@
       ],
       "excerpt": "앱이나 MCP 클라이언트 없이도 같은 로컬 마크다운 볼트를 검사·조회·작성하고, 에이전트 연결과 그래프 작업을 터미널에서 재현하게 하는 운영 진입점이다. 개발자와 에이전트는 새 vault 생성부터 검증, 의미 조회, 관계 분석, 안전한 로컬 체크포인트까지 하나의 명령 표면에서 수행한다. MCP가 연결되지 않은 환경에서도 동일한 compiler/query 결과와 복구 명령을 받아 작업을 이어갈 수 있다. --json 출력은 자동화가 산문을 파싱하지 않고 상태·경고·다음 행동을 판단하게 한다. init·add·import·bootstrap은 새 노드의 lowercase ",
       "wordCount": 362,
-      "updatedAt": "2026-08-09",
+      "updatedAt": "2026-08-16",
       "linksOut": []
     },
     {
@@ -12751,6 +12794,7 @@
         "elements": [
           "elements/download"
         ],
+        "path": "src/views/download",
         "created_by": "agent:unknown"
       },
       "headings": [
@@ -12772,7 +12816,7 @@
       ],
       "excerpt": "플랫폼별 설치 파일과 신뢰 상태를 한 자리에서 비교하고, 설치가 막히면 웹으로 계속할 수 있게 하는 능력. macOS는 서명·공증된 Apple Silicon/Intel DMG를, Windows는 SmartScreen 위험을 먼저 밝힌 미서명 x64 베타를 제시한다. src/views/download (플랫폼 그룹·릴리스 사실·경고·CTA) .github/workflows/release-macos.yml (macOS + Windows 공개 릴리스 검증) .github/workflows/windows-beta-check.yml (비밀 키 없는 Windows PR 네이티브",
       "wordCount": 73,
-      "updatedAt": "2026-08-09",
+      "updatedAt": "2026-08-16",
       "linksOut": []
     },
     {
@@ -12792,6 +12836,7 @@
           "elements/docs-vault-widget",
           "elements/local-fs-handle"
         ],
+        "path": "src/features/docs-vault-local",
         "created_by": "human"
       },
       "headings": [
@@ -12813,7 +12858,7 @@
       ],
       "excerpt": "File System Access API로 로컬 마크다운 폴더를 선택·마운트해 실시간 데이터소스로 삼는 능력. src/features/docs-vault-local (구현 증거) high (0.9): local-first 원칙 문서와 정합",
       "wordCount": 28,
-      "updatedAt": "2026-08-09",
+      "updatedAt": "2026-08-16",
       "linksOut": []
     },
     {
@@ -12830,6 +12875,7 @@
         "elements": [
           "elements/first-run"
         ],
+        "path": "src/features/first-run-starter",
         "created_by": "agent:unknown"
       },
       "headings": [
@@ -12856,7 +12902,7 @@
       ],
       "excerpt": "완전히 새로운 사용자를 빈 상태에서 쓸 수 있는 스타터 볼트까지 데려가는 첫 실행 경험. 지도(/topology) 왼쪽 INDEX 패널 맨 위의 첫 실행 카드가 이 역량의 표면이다. 볼트를 고르기 전에만 산다. 폴더가 열리면 카드는 사라지고 INDEX 가 자리를 되받는다. 그래서 이 카드가 말해야 하는 것은 \"지금 보이는 건 남의 샘플이고, 내 폴더를 고르면 같은 지도가 내 데이터로 켜진다\" 하나다. 계기 대접은 여기 것이 아니다 (2026-08-02, PO 카운슬). 개념/관계/도메인 수를 3분할 인셋 계기 블록(19px mono semibold)으로 그려 왔고, ",
       "wordCount": 353,
-      "updatedAt": "2026-08-09",
+      "updatedAt": "2026-08-16",
       "linksOut": []
     },
     {
@@ -12950,6 +12996,9 @@
         "dependencies": [
           "capabilities/vault-ontology"
         ],
+        "relation_notes": {
+          "capabilities/vault-ontology": "The MCP server parses, validates, and writes the vault ontology schema, so schema changes alter the agent-facing read and write contract."
+        },
         "display_ko": "AI 연결 서버",
         "display_en": "AI Connection Server"
       },
@@ -13006,7 +13055,7 @@
         }
       ],
       "excerpt": "로컬 마크다운 볼트를 AI 코딩 에이전트가 읽고 안전하게 갱신하도록 제공하는 stdio JSON-RPC 인터페이스다. 사람과 에이전트가 같은 파일을 진실원으로 사용하며, 서버는 별도 데이터베이스나 모델 실행 루프를 소유하지 않는다. 에이전트는 프로젝트의 의미 노드를 정확히 찾고, 관계·근거·영향 범위를 함께 읽는다. 연결 직후 실제 vault/repository 좌표와 도구 인벤토리를 확인해 잘못된 폴더나 오래된 클라이언트 상태를 발견한다. 쓰기 전에는 현재 문서를 읽고, 동시 편집·중복·끊어진 관계·파괴적 변경을 구조화된 오류와 dry-run으로 차단한다. 도구의 ",
-      "wordCount": 1650,
+      "wordCount": 1966,
       "updatedAt": "2026-08-16",
       "linksOut": []
     },
@@ -13024,6 +13073,7 @@
         "elements": [
           "elements/ontology-studio"
         ],
+        "path": "src/features/ontology-blocks",
         "created_by": "agent:unknown"
       },
       "headings": [
@@ -13045,23 +13095,24 @@
       ],
       "excerpt": "Studio의 나침반 방위 관계 블록(UP=isa, DOWN=contains, RIGHT=depends, LEFT=relates): 채우면 실제 frontmatter 관계를 쓴다. 빈 소켓은 관계를 추가할 수 있다는 중립 affordance이지, 그 관계가 필요하거나 특정 후보가 옳다는 뜻이 아니다. 추천 상태는 대상별 rationale, evidence reference, source/target/relation이 일치하는 safetoadd preflight 영수증이 모두 있을 때만 성립한다. 현재 graph projection과 picker scorer는 그 se",
       "wordCount": 147,
-      "updatedAt": "2026-08-09",
+      "updatedAt": "2026-08-16",
       "linksOut": []
     },
     {
       "slug": "ontology/capabilities/project-data-source",
       "path": "docs/ontology/capabilities/project-data-source.md",
-      "title": "Active Project Resolution",
+      "title": "Project Data Access",
       "tags": [],
       "frontmatter": {
         "uid": "0563e7ee-3818-4bbd-97fa-4035ad43a03d",
         "slug": "capabilities/project-data-source",
         "kind": "capability",
-        "title": "Active Project Resolution",
+        "title": "Project Data Access",
         "domain": "domains/local-vault-management",
         "elements": [
           "elements/project"
         ],
+        "path": "src/features/project-data-source",
         "created_by": "agent:unknown"
       },
       "headings": [
@@ -13069,6 +13120,11 @@
           "depth": 2,
           "text": "정의",
           "slug": "정의"
+        },
+        {
+          "depth": 2,
+          "text": "포함 / 제외",
+          "slug": "포함-제외"
         },
         {
           "depth": 2,
@@ -13081,25 +13137,26 @@
           "slug": "확신도"
         }
       ],
-      "excerpt": "선택된 볼트 안에서 현재 활성 프로젝트가 무엇인지 판정하는 능력. src/features/project-data-source (구현 증거만) low-medium (0.6): 폴더 증거만",
-      "wordCount": 23,
-      "updatedAt": "2026-08-09",
+      "excerpt": "선택한 local vault 또는 정적 샘플에서 프로젝트 목록과 본문을 읽고, local 모드에서만 프로젝트 생성·수정·부분수정·삭제 권한을 제공하는 데이터 접근 경계. 포함: manifest 목록 파생, slug별 본문 lazy read, local/static 분기, local CRUD gate. 제외: 단일 활성 프로젝트 선택 상태, ontology 관계 판정, 정적 샘플 쓰기. src/features/project-data-source/model/use-projects.ts: local/static 목록 분기 src/features/project-data-so",
+      "wordCount": 103,
+      "updatedAt": "2026-08-16",
       "linksOut": []
     },
     {
       "slug": "ontology/capabilities/project-edit",
       "path": "docs/ontology/capabilities/project-edit.md",
-      "title": "Project Full Edit",
+      "title": "Project Form Editing",
       "tags": [],
       "frontmatter": {
         "uid": "b8a4b1ad-616b-4230-b206-9efa6292d217",
         "slug": "capabilities/project-edit",
         "kind": "capability",
-        "title": "Project Full Edit",
+        "title": "Project Form Editing",
         "domain": "domains/project-portfolio",
         "elements": [
           "elements/project-editor"
         ],
+        "path": "src/features/project-edit",
         "created_by": "agent:unknown"
       },
       "headings": [
@@ -13107,6 +13164,11 @@
           "depth": 2,
           "text": "정의",
           "slug": "정의"
+        },
+        {
+          "depth": 2,
+          "text": "포함 / 제외",
+          "slug": "포함-제외"
         },
         {
           "depth": 2,
@@ -13119,21 +13181,21 @@
           "slug": "확신도"
         }
       ],
-      "excerpt": "project 노드의 필드와 컨테인먼트를 전체 편집하는 능력. src/features/project-edit (구현 증거만) low-medium (0.6)",
-      "wordCount": 19,
-      "updatedAt": "2026-08-02",
+      "excerpt": "project의 주요 필드를 검증해 생성·수정·복제·삭제하고, 새 프로젝트나 분류 변경 때 category 경계와 겹침을 고려해 위치를 자동 배치하는 폼 편집 능력. 포함: 폼 검증·직렬화, 일정과 taxonomy 보존, 생성/수정/복제/삭제, 자동 배치. 제외: 수동 position·containment 편집, screenshot upload, MCP/agent 쓰기 경로. src/features/project-edit/ui/ProjectForm.tsx: 검증·직렬화·submit 흐름 src/features/project-edit/model/schema.ts와 sc",
+      "wordCount": 84,
+      "updatedAt": "2026-08-16",
       "linksOut": []
     },
     {
       "slug": "ontology/capabilities/project-quick-edit",
       "path": "docs/ontology/capabilities/project-quick-edit.md",
-      "title": "Project Quick Edit",
+      "title": "Project Quick Edit Dialog",
       "tags": [],
       "frontmatter": {
         "uid": "6b2e10a4-b30f-405a-a02f-90ccc4d471a0",
         "slug": "capabilities/project-quick-edit",
         "kind": "capability",
-        "title": "Project Quick Edit",
+        "title": "Project Quick Edit Dialog",
         "domain": "domains/project-portfolio",
         "elements": [],
         "path": "src/features/project-quick-edit",
@@ -13147,6 +13209,11 @@
         },
         {
           "depth": 2,
+          "text": "포함 / 제외",
+          "slug": "포함-제외"
+        },
+        {
+          "depth": 2,
           "text": "근거",
           "slug": "근거"
         },
@@ -13156,21 +13223,21 @@
           "slug": "확신도"
         }
       ],
-      "excerpt": "전체 편집기를 열지 않고 프로젝트를 가볍게 인라인 수정하는 능력. src/features/project-quick-edit (구현 증거만) low-medium (0.6)",
-      "wordCount": 21,
-      "updatedAt": "2026-08-02",
+      "excerpt": "전체 편집기로 이동하지 않고 프로젝트 상세의 우측 다이얼로그에서 이름·설명·소유자· 태그를 수정·적용하거나 되돌리는 능력. 포함: editable 상세 화면의 네 필드, 이름 필수 검증, 적용/되돌리기, 성공·실패 상태. 제외: read-only/static 모드, category·status·timeline·관계 편집, persistence 통합 보증. src/features/project-quick-edit/ui/ProjectQuickEditPanel.tsx: dialog, 네 필드, patch payload와 상태 처리 src/views/project-detai",
+      "wordCount": 80,
+      "updatedAt": "2026-08-16",
       "linksOut": []
     },
     {
       "slug": "ontology/capabilities/project-share",
       "path": "docs/ontology/capabilities/project-share.md",
-      "title": "Project Sharing",
+      "title": "Project Link Copy",
       "tags": [],
       "frontmatter": {
         "uid": "034ea9b5-5381-46c3-ae91-b1dc6ad8b184",
         "slug": "capabilities/project-share",
         "kind": "capability",
-        "title": "Project Sharing",
+        "title": "Project Link Copy",
         "domain": "domains/project-portfolio",
         "elements": [],
         "path": "src/features/project-share",
@@ -13184,6 +13251,11 @@
         },
         {
           "depth": 2,
+          "text": "포함 / 제외",
+          "slug": "포함-제외"
+        },
+        {
+          "depth": 2,
           "text": "근거",
           "slug": "근거"
         },
@@ -13193,9 +13265,9 @@
           "slug": "확신도"
         }
       ],
-      "excerpt": "프로젝트에 대한 공유 가능한 참조/링크를 만드는 능력. src/features/project-share (구현 증거만) low (0.55)",
-      "wordCount": 19,
-      "updatedAt": "2026-08-02",
+      "excerpt": "프로젝트 상세 상단바나 드로어에서 현재 locale·basePath를 반영한 상세 URL을 만들어 클립보드에 복사하고 성공·실패 피드백을 주는 능력. 포함: 프로젝트 상세 URL 생성, clipboard 복사, 상태/토스트/aria-live 피드백, 상세 상단바와 프로젝트 드로어 진입점. 제외: 권한·초대·만료·서버 저장·협업 공유, 목적지 접근성의 E2E 보증. src/features/project-share/ui/CopyProjectLinkButton.tsx: URL 생성·복사·피드백 src/features/project-share/ui/CopyProjectLin",
+      "wordCount": 79,
+      "updatedAt": "2026-08-16",
       "linksOut": []
     },
     {
@@ -13279,6 +13351,7 @@
           "elements/category",
           "elements/status"
         ],
+        "path": "src/features/taxonomy",
         "created_by": "agent:unknown"
       },
       "headings": [
@@ -13300,7 +13373,7 @@
       ],
       "excerpt": "project·domain·capability·element·document 저작 kind와 도구 전용 vault-readme의 경계를 일관되게 표시하고 관리하는 능력. kind 선택의 의미 판별은 docs/ONTOLOGY-ATLAS-SPEC.md §2가 소유하며, 폴더·팀·워크플로 이름만으로 분류하지 않는다. src/features/taxonomy (구현 증거) docs/ONTOLOGY-ATLAS-SPEC.md §2 (kind 판별의 공개 정본) medium-high (0.85): 구현 경로와 공개 kind 계약을 교차 확인",
       "wordCount": 48,
-      "updatedAt": "2026-08-09",
+      "updatedAt": "2026-08-16",
       "linksOut": []
     },
     {
@@ -13321,6 +13394,7 @@
           "elements/topology-index-panel",
           "elements/topology-map-v2"
         ],
+        "path": "src/widgets/topology-map-v2",
         "created_by": "agent:unknown"
       },
       "headings": [
@@ -13342,7 +13416,7 @@
       ],
       "excerpt": "볼트 전체 그래프를 커스텀 canvas-2D 엔진 위에서 렌더링·팬/줌·검색하는 능력. src/features/에 전용 폴더는 없으나 위젯 증거 + 문서 서술로 제안됨(review-required). src/widgets/topology-map-v2, topology-controls, global-search (구현 증거) AGENTS.md: Tech stack (\"The graph renderer is ours: a custom canvas-2D engine (topology-map-v2)\") medium-high (0.85): capability 후보가 featu",
       "wordCount": 56,
-      "updatedAt": "2026-08-09",
+      "updatedAt": "2026-08-16",
       "linksOut": []
     },
     {
@@ -13360,6 +13434,7 @@
           "elements/agent-connect",
           "elements/vault-agent-panel"
         ],
+        "path": "src/features/vault-agent",
         "created_by": "human"
       },
       "headings": [
@@ -14820,8 +14895,8 @@
         },
         {
           "depth": 3,
-          "text": "abilities: partial",
-          "slug": "abilities-partial"
+          "text": "abilities: answered",
+          "slug": "abilities-answered"
         },
         {
           "depth": 3,
@@ -14830,12 +14905,12 @@
         },
         {
           "depth": 3,
-          "text": "impact: answered",
-          "slug": "impact-answered"
+          "text": "impact: partial",
+          "slug": "impact-partial"
         }
       ],
       "excerpt": "로컬 마크다운 볼트의 frontmatter를 타입이 있는 계산 가능 그래프(도메인·능력·구현 증거·의존·영향)로 바꾸는 로컬-퍼스트 온톨로지 워크벤치. 개발자는 CLI/웹으로, AI 코딩 에이전트는 MCP로 같은 파일을 읽고 쓴다. README.md: \"Your AI coding agent forgets your codebase between sessions... turns the Markdown in your repository into a graph of your product\" AGENTS.md: Project overview (\"a local-first ont",
-      "wordCount": 415,
+      "wordCount": 639,
       "updatedAt": "2026-08-16",
       "linksOut": []
     },
@@ -18482,28 +18557,28 @@
                 "path": "ontology/capabilities/project-data-source",
                 "type": "doc",
                 "slug": "ontology/capabilities/project-data-source",
-                "title": "Active Project Resolution"
+                "title": "Project Data Access"
               },
               {
                 "name": "project-edit",
                 "path": "ontology/capabilities/project-edit",
                 "type": "doc",
                 "slug": "ontology/capabilities/project-edit",
-                "title": "Project Full Edit"
+                "title": "Project Form Editing"
               },
               {
                 "name": "project-quick-edit",
                 "path": "ontology/capabilities/project-quick-edit",
                 "type": "doc",
                 "slug": "ontology/capabilities/project-quick-edit",
-                "title": "Project Quick Edit"
+                "title": "Project Quick Edit Dialog"
               },
               {
                 "name": "project-share",
                 "path": "ontology/capabilities/project-share",
                 "type": "doc",
                 "slug": "ontology/capabilities/project-share",
-                "title": "Project Sharing"
+                "title": "Project Link Copy"
               },
               {
                 "name": "project-source-evidence",

@@ -20,7 +20,7 @@ const CONFIDENCE_COLORS = {
 };
 
 export async function runConnectSource(args) {
-  const { projectSlug, vault, root, confirm, repair, json, error, help } = parseArgs(args);
+  const { projectSlug, vault, root, confirm, repair, json, error, help } = parseConnectSourceArgs(args);
   if (help) {
     printUsage(process.stdout);
     return 0;
@@ -100,7 +100,7 @@ export async function runConnectSource(args) {
   return 0;
 }
 
-function parseArgs(args) {
+export function parseConnectSourceArgs(args) {
   if (args.includes('--help') || args.includes('-h')) return { help: true };
   const flags = { vault: null, root: null, confirm: false, repair: false, json: false };
   const positional = [];
@@ -109,11 +109,11 @@ function parseArgs(args) {
     if (a === '--vault') flags.vault = parseVaultFlag(args[++i]);
     else if (a.startsWith('--vault=')) flags.vault = parseVaultFlag(a.slice('--vault='.length));
     else if (a === '--root') {
-      const value = parseRequiredFlagValue(args[++i], '--root');
+      const value = parseRequiredFlagValue('--root', args[++i]);
       if (value instanceof Error) return { error: value.message };
       flags.root = value;
     } else if (a.startsWith('--root=')) {
-      const value = parseRequiredFlagValue(a.slice('--root='.length), '--root');
+      const value = parseRequiredFlagValue('--root', a.slice('--root='.length));
       if (value instanceof Error) return { error: value.message };
       flags.root = value;
     } else if (a === '--confirm') flags.confirm = true;

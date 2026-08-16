@@ -1,7 +1,11 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
-import { attachMeaningRepair, buildMeaningRepair } from './meaning-repair.mjs';
+import {
+  attachMeaningRepair,
+  buildMeaningRepair,
+  buildMeaningRepairReviewPage,
+} from './meaning-repair.mjs';
 
 const GRAPH_HASH = 'project-graph-v1:1234abcd';
 
@@ -93,18 +97,22 @@ function fixture(overrides = {}) {
       ],
     },
     scopedDocs: [
-      { slug: 'domains/one', frontmatter: { kind: 'domain' } },
-      { slug: 'domains/two', frontmatter: { kind: 'domain' } },
+      { slug: 'projects/example', mtime: 1, frontmatter: { kind: 'project' } },
+      { slug: 'domains/one', mtime: 2, frontmatter: { kind: 'domain' } },
+      { slug: 'domains/two', mtime: 3, frontmatter: { kind: 'domain' } },
       {
         slug: 'capabilities/one',
+        mtime: 4,
         frontmatter: { kind: 'capability', domain: 'domains/one', path: 'src/one' },
       },
       {
         slug: 'capabilities/two',
+        mtime: 5,
         frontmatter: { kind: 'capability', domain: 'domains/two', path: 'src/two' },
       },
       {
         slug: 'capabilities/three',
+        mtime: 6,
         frontmatter: { kind: 'capability', domain: 'domains/two', path: 'src/three' },
       },
     ],
@@ -112,12 +120,19 @@ function fixture(overrides = {}) {
   return { ...input, ...overrides };
 }
 
-function largeReviewFixture() {
+function largeReviewFixture({ domainCount = 6, capabilityCount = 20, longNames = false } = {}) {
   const input = fixture();
-  const domains = Array.from({ length: 6 }, (_, index) => `domains/d${index + 1}`);
+  const domains = Array.from(
+    { length: domainCount },
+    (_, index) => longNames
+      ? `domains/responsibility-boundary-${String(index + 1).padStart(2, '0')}`
+      : `domains/d${index + 1}`,
+  );
   const capabilities = Array.from(
-    { length: 20 },
-    (_, index) => `capabilities/c${String(index + 1).padStart(2, '0')}`,
+    { length: capabilityCount },
+    (_, index) => longNames
+      ? `capabilities/observable-product-ability-${String(index + 1).padStart(2, '0')}`
+      : `capabilities/c${String(index + 1).padStart(2, '0')}`,
   );
   const domainRelations = domains.map((domain) => ({
     from: input.projectSlug,
@@ -147,9 +162,15 @@ function largeReviewFixture() {
     path: paths[index],
   }));
   input.scopedDocs = [
-    ...domains.map((slug) => ({ slug, frontmatter: { kind: 'domain' } })),
+    { slug: input.projectSlug, mtime: 1, frontmatter: { kind: 'project' } },
+    ...domains.map((slug, index) => ({
+      slug,
+      mtime: index + 2,
+      frontmatter: { kind: 'domain' },
+    })),
     ...capabilities.map((slug, index) => ({
       slug,
+      mtime: domainCount + index + 2,
       frontmatter: {
         kind: 'capability',
         domain: domains[index % domains.length],
@@ -175,51 +196,50 @@ function largeReviewFixture() {
 test('buildMeaningRepair separates declared, review candidates, and unresolved targets', () => {
   const result = buildMeaningRepair(fixture());
 
-  assert.equal(result.contract, 'meaningRepair:v1');
+  assert.equal(result.contract, 'meaningRepair:v2');
   assert.equal(result.status, 'human_review_required');
   assert.equal(result.primaryQuestion, 'abilities');
   assert.deepEqual(result.questionsNeedingReview, ['abilities', 'evidence']);
 
   assert.deepEqual(result.questions.abilities, {
     basis: 'typed_containment',
+    answerStatus: 'partial',
     targetCount: 2,
     review: {
       state: 'structural_candidates_only',
-      alreadyDeclared: [{ slug: 'domains/one', witnessCapabilities: ['capabilities/one'] }],
-      candidateAdditions: [{
-        slug: 'domains/two',
-        witnessCapabilities: ['capabilities/three', 'capabilities/two'],
-      }],
-      declaredWithoutSupport: [],
-      unresolved: [],
+      alreadyDeclared: 1,
+      candidateAdditions: 1,
+      declaredWithoutSupport: 0,
+      unresolved: 0,
     },
   });
   assert.deepEqual(result.questions.evidence, {
     basis: 'current_source_canonical_path',
+    answerStatus: 'partial',
     targetCount: 3,
     review: {
       state: 'source_path_candidates_only',
-      alreadyDeclared: ['capabilities/one'],
-      candidateAdditions: ['capabilities/two'],
-      declaredWithoutSupport: [],
-      unresolved: ['capabilities/three'],
+      alreadyDeclared: 1,
+      candidateAdditions: 1,
+      declaredWithoutSupport: 0,
+      unresolved: 1,
     },
   });
+  assert.match(result.reviewRevision, /^sha256:[a-f0-9]{64}$/);
   assert.deepEqual(result.workflow[0], {
     step: 'read_review_inputs',
-    derivation: { slugs: 'project_and_all_review_targets' },
+    derivation: {
+      operation: 'meaning_repair_review',
+      order: 'project_then_domains_then_capabilities',
+    },
     calls: [{
-      tool: 'get_concepts',
+      tool: 'query_ontology',
       arguments: {
-        slugs: [
-          'projects/example',
-          'domains/one',
-          'domains/two',
-          'capabilities/one',
-          'capabilities/three',
-          'capabilities/two',
-        ],
-        body: 'full',
+        operation: 'meaning_repair_review',
+        project: 'projects/example',
+        expectedGraphHash: GRAPH_HASH,
+        expectedSourceFingerprint: 'git:source-fingerprint',
+        reviewRevision: result.reviewRevision,
       },
     }],
   });
@@ -231,28 +251,114 @@ test('buildMeaningRepair separates declared, review candidates, and unresolved t
   );
 });
 
-test('buildMeaningRepair emits executable full-body review batches without omitting a target', () => {
+test('buildMeaningRepairReviewPage emits bounded full-body pages without omitting a target', () => {
   const { input, domains, capabilities } = largeReviewFixture();
-  const result = buildMeaningRepair(input);
-  const readStep = result.workflow[0];
+  const repair = buildMeaningRepair(input);
   const expectedTargets = [input.projectSlug, ...domains, ...capabilities];
-  const emittedTargets = readStep.calls.flatMap((call) => call.arguments.slugs);
+  const emittedTargets = [];
+  const pageSizes = [];
+  let cursor;
+  do {
+    const page = buildMeaningRepairReviewPage(input, {
+      expectedGraphHash: GRAPH_HASH,
+      expectedSourceFingerprint: 'git:source-fingerprint',
+      reviewRevision: repair.reviewRevision,
+      ...(cursor ? { cursor } : {}),
+    });
+    assert.equal(page.contract, 'meaningRepairReviewPage:v1');
+    assert.equal(page.status, 'ready');
+    assert.equal(page.sideEffect, false);
+    assert.ok(Buffer.byteLength(JSON.stringify(page)) <= 5 * 1024);
+    assert.ok(page.targets.length > 0 && page.targets.length <= 20);
+    assert.deepEqual(page.readCall, {
+      tool: 'get_concepts',
+      arguments: { slugs: page.targets.map(({ slug }) => slug), body: 'full' },
+    });
+    pageSizes.push(page.targets.length);
+    emittedTargets.push(...page.targets.map(({ slug }) => slug));
+    cursor = page.pagination.nextCursor ?? undefined;
+    assert.equal(page.pagination.hasMore, Boolean(cursor));
+  } while (cursor);
 
-  assert.deepEqual(readStep.derivation, { slugs: 'project_and_all_review_targets' });
-  assert.deepEqual(readStep.calls.map((call) => call.arguments.slugs.length), [20, 7]);
-  assert.ok(readStep.calls.every((call) => (
-    call.tool === 'get_concepts'
-      && call.arguments.body === 'full'
-      && call.arguments.slugs.length > 0
-      && call.arguments.slugs.length <= 20
-      && call.deriveArguments === undefined
-  )));
+  assert.deepEqual(pageSizes, [20, 7]);
   assert.deepEqual(emittedTargets, expectedTargets);
+  assert.equal(new Set(emittedTargets).size, emittedTargets.length);
+});
+
+test('buildMeaningRepair keeps a seven-domain twenty-six-capability project within the handoff budget', () => {
+  const { input, domains, capabilities } = largeReviewFixture({
+    domainCount: 7,
+    capabilityCount: 26,
+    longNames: true,
+  });
+  const result = buildMeaningRepair(input);
+  const emittedTargets = [];
+  const pageSizes = [];
+  let cursor;
+  do {
+    const page = buildMeaningRepairReviewPage(input, {
+      expectedGraphHash: GRAPH_HASH,
+      expectedSourceFingerprint: 'git:source-fingerprint',
+      reviewRevision: result.reviewRevision,
+      ...(cursor ? { cursor } : {}),
+    });
+    assert.equal(page.status, 'ready');
+    assert.ok(page.targets.length > 0 && page.targets.length <= 20);
+    assert.ok(Buffer.byteLength(JSON.stringify(page)) <= 5 * 1024);
+    pageSizes.push(page.targets.length);
+    emittedTargets.push(...page.targets.map(({ slug }) => slug));
+    cursor = page.pagination.nextCursor ?? undefined;
+  } while (cursor);
+
+  assert.deepEqual(emittedTargets, [input.projectSlug, ...domains, ...capabilities]);
+  assert.equal(pageSizes.length, 2, 'the large fixture should stay within two bounded review pages');
   assert.equal(new Set(emittedTargets).size, emittedTargets.length);
   assert.ok(
     Buffer.byteLength(JSON.stringify(result)) <= 5 * 1024,
-    'the executable action packet must stay within the explicit 5 KiB handoff budget',
+    'a normal seven-domain project must not make agent_brief reject its repair packet',
   );
+});
+
+test('buildMeaningRepairReviewPage fails closed on stale provenance and a foreign cursor', () => {
+  const input = fixture();
+  const repair = buildMeaningRepair(input);
+  const args = {
+    expectedGraphHash: GRAPH_HASH,
+    expectedSourceFingerprint: 'git:source-fingerprint',
+    reviewRevision: repair.reviewRevision,
+  };
+  const stale = buildMeaningRepairReviewPage(input, {
+    ...args,
+    expectedSourceFingerprint: 'git:old-source',
+  });
+  assert.equal(stale.status, 'blocked');
+  assert.equal(stale.blockedBy, 'provenance_changed');
+  assert.deepEqual(stale.targets, []);
+  assert.equal(stale.readCall, null);
+
+  const first = buildMeaningRepairReviewPage(input, args);
+  assert.equal(first.status, 'ready');
+  assert.throws(
+    () => buildMeaningRepairReviewPage(input, { ...args, cursor: `${first.pagination.nextCursor}x` }),
+    /cursor_invalid/,
+  );
+
+  const { input: pagedInput } = largeReviewFixture();
+  const pagedRepair = buildMeaningRepair(pagedInput);
+  const pagedFirst = buildMeaningRepairReviewPage(pagedInput, {
+    expectedGraphHash: GRAPH_HASH,
+    expectedSourceFingerprint: 'git:source-fingerprint',
+    reviewRevision: pagedRepair.reviewRevision,
+  });
+  assert.equal(pagedFirst.pagination.hasMore, true);
+  pagedInput.scopedDocs[0].mtime += 1;
+  const changedRepair = buildMeaningRepair(pagedInput);
+  const foreign = buildMeaningRepairReviewPage(pagedInput, {
+    reviewRevision: changedRepair.reviewRevision,
+    cursor: pagedFirst.pagination.nextCursor,
+  });
+  assert.equal(foreign.status, 'blocked');
+  assert.equal(foreign.blockedBy, 'cursor_not_found');
 });
 
 test('buildMeaningRepair fails closed when source evidence is not current', () => {
@@ -274,6 +380,16 @@ test('buildMeaningRepair fails closed when the project inventory is limited or u
   assert.equal(result.status, 'blocked');
   assert.equal(result.blockedBy, 'incomplete_project_scope');
   assert.equal(result.questions, null);
+});
+
+test('buildMeaningRepair fails closed when a review target has no conflict-guard mtime', () => {
+  const input = fixture();
+  delete input.scopedDocs[0].mtime;
+  const result = buildMeaningRepair(input);
+
+  assert.equal(result.status, 'blocked');
+  assert.equal(result.blockedBy, 'review_mtime_unavailable');
+  assert.equal(result.reviewRevision, null);
 });
 
 test('buildMeaningRepair never exposes private source coordinates from its inputs', () => {
@@ -299,7 +415,7 @@ test('attachMeaningRepair makes the human review action the first agent-brief ac
     severity: 'warn',
     count: 2,
     target: 'abilities',
-    detailContract: 'meaningRepair:v1',
+    detailContract: 'meaningRepair:v2',
     message: 'Review current competency claims against graph-structural and current-source candidates; explicit human approval is required before any write.',
   });
   assert.equal(result.nextActions[1].id, 'existing_health_action');

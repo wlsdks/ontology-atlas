@@ -45,14 +45,17 @@ export function deriveProjectSourceWitnesses(input: {
     }
   }
   const candidates: ProjectSourceWitnessInput[] = [];
-  const seenPaths = new Set<string>();
+  const seenClaims = new Set<string>();
   const add = (candidate: ProjectSourceWitnessInput) => {
     const path = normalizedPath(candidate.path);
+    // The same path can support more than one ontology role. Keep each node's
+    // claim while collapsing duplicate declarations on that same node.
+    const claim = `${candidate.nodeSlug}\0${path}`;
     // An explicit frontmatter `path:` can legitimately be a repository-root
     // artifact such as README.md or package.json. It is still checked against
     // the inspected source inventory before becoming supported evidence.
-    if (!looksLikeSourceWitnessPath(path) || seenPaths.has(path)) return;
-    seenPaths.add(path);
+    if (!looksLikeSourceWitnessPath(path) || seenClaims.has(claim)) return;
+    seenClaims.add(claim);
     candidates.push({ ...candidate, path });
   };
 

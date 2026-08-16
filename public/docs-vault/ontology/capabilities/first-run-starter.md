@@ -5,6 +5,7 @@ kind: capability
 title: First-Run Starter Vault
 domain: domains/onboarding-and-shell
 elements: [elements/first-run]
+path: src/features/first-run-starter
 created_by: "agent:unknown"
 ---
 

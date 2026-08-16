@@ -97,6 +97,11 @@ describe("witness derivation parity", () => {
     // empty arrays proves nothing.
     expect(fromDocs.length).toBeGreaterThanOrEqual(4);
     expect(fromDocs).toEqual(fromGraph);
+    expect(
+      fromDocs
+        .filter((witness) => witness.path === "src/play/engine.ts")
+        .map((witness) => witness.nodeSlug),
+    ).toEqual(["capabilities/play", "music-streaming", "elements/engine"]);
   });
 });
 

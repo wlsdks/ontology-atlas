@@ -2,6 +2,9 @@ const EDGE_KINDS = new Set(['static', 'dynamic', 'require', 'reexport', 'side'])
 const SOURCE_ROLES = ['production', 'test', 'unknown'];
 const IMPORT_USAGES = ['value', 'type_only', 'unknown'];
 const UNRESOLVED_REASONS = new Set(['empty', 'relative-not-found', 'alias-not-found']);
+const GO_PACKAGE_IMPORT_KINDS = new Set(['static', 'side']);
+const GO_PACKAGE_IMPORT_SOURCE_QUALIFICATION =
+  'observed_bounded_go_package_imports_not_runtime_or_semantic_impact';
 
 export function assertInferImportsResult(payload, context = 'infer_imports') {
   assertObject(payload, context);
@@ -11,7 +14,7 @@ export function assertInferImportsResult(payload, context = 'infer_imports') {
     assertCompactInferImportsResult(payload, context);
     return;
   }
-  assertExactKeys(payload, ['rootPath', 'filesScanned', 'coverage', 'edges', 'externalImports', 'unresolved', 'moduleEdges', 'reconciliation', 'reconciliationSummary'], context);
+  assertExactKeys(payload, ['rootPath', 'filesScanned', 'coverage', 'edges', 'externalImports', 'unresolved', 'moduleEdges', 'packageImportEvidence', 'reconciliation', 'reconciliationSummary'], context);
   assertCoverage(payload.coverage, `${context}.coverage`);
   if (payload.reconciliation !== undefined && payload.reconciliation !== null) {
     assertObject(payload.reconciliation, `${context}.reconciliation`);
@@ -41,10 +44,16 @@ export function assertInferImportsResult(payload, context = 'infer_imports') {
     assertUnresolvedReason(row.reason, `${rowPath}.reason`);
   });
   payload.moduleEdges.forEach((row, index) => assertModuleEdge(row, `${context}.moduleEdges[${index}]`));
+  if (payload.packageImportEvidence !== undefined) {
+    assertGoPackageImportEvidence(
+      payload.packageImportEvidence,
+      `${context}.packageImportEvidence`,
+    );
+  }
 }
 
 function assertCompactInferImportsResult(payload, context) {
-  assertExactKeys(payload, ['rootPath', 'filesScanned', 'coverage', 'contract', 'delivery', 'scanSummary', 'reconciliationSummary', 'staleEdgeFollowUp', 'reviewQueue', 'nextReview'], context);
+  assertExactKeys(payload, ['rootPath', 'filesScanned', 'coverage', 'contract', 'delivery', 'scanSummary', 'packageImportEvidenceSummary', 'reconciliationSummary', 'staleEdgeFollowUp', 'reviewQueue', 'nextReview'], context);
   assertNonEmptyString(payload.contract, `${context}.contract`);
   if (payload.contract !== 'inferImportsReview:v1') {
     throw new Error(`${context}.contract must be inferImportsReview:v1`);
@@ -79,6 +88,12 @@ function assertCompactInferImportsResult(payload, context) {
   assertExactKeys(payload.scanSummary, ['fileEdges', 'externalImports', 'unresolvedImports', 'moduleEdges'], `${context}.scanSummary`);
   for (const field of ['fileEdges', 'externalImports', 'unresolvedImports', 'moduleEdges']) {
     assertNonNegativeInteger(payload.scanSummary[field], `${context}.scanSummary.${field}`);
+  }
+  if (payload.packageImportEvidenceSummary !== undefined) {
+    assertGoPackageImportEvidenceSummary(
+      payload.packageImportEvidenceSummary,
+      `${context}.packageImportEvidenceSummary`,
+    );
   }
   assertObject(payload.reconciliationSummary, `${context}.reconciliationSummary`);
   assertStaleEdgeFollowUp(payload.staleEdgeFollowUp, `${context}.staleEdgeFollowUp`, payload.reconciliationSummary.inVaultNotInCode);
@@ -251,7 +266,14 @@ function assertCoverage(value, path) {
     'limitations',
   ], path);
   if (value.contract !== 'importScanCoverage:v1') throw new Error(`${path}.contract must be importScanCoverage:v1`);
-  assertUniqueStringArray(value.supportedLanguages, ['javascript', 'python', 'typescript'], `${path}.supportedLanguages`);
+  const supportedLanguages = ['go', 'javascript', 'python', 'typescript'];
+  assertUniqueStringArray(value.supportedLanguages, supportedLanguages, `${path}.supportedLanguages`);
+  if (
+    value.supportedLanguages.length !== supportedLanguages.length ||
+    supportedLanguages.some((language) => !value.supportedLanguages.includes(language))
+  ) {
+    throw new Error(`${path}.supportedLanguages must exactly match the public language contract`);
+  }
   assertUniqueStringArray(value.supportedExtensions, null, `${path}.supportedExtensions`);
   assertUniqueStringArray(value.detectedUnsupportedLanguages, ['c', 'rust'], `${path}.detectedUnsupportedLanguages`);
   if (typeof value.allDetectedLanguagesSupported !== 'boolean') {
@@ -263,6 +285,217 @@ function assertCoverage(value, path) {
   assertArray(value.limitations, `${path}.limitations`);
   if (value.limitations.length < 1) throw new Error(`${path}.limitations must not be empty`);
   value.limitations.forEach((item, index) => assertNonEmptyString(item, `${path}.limitations[${index}]`));
+}
+
+function assertGoPackageImportEvidence(value, path) {
+  assertObject(value, path);
+  assertExactKeys(value, [
+    'contract',
+    'modulePath',
+    'sourceQualification',
+    'writeAllowed',
+    'filesScanned',
+    'fileScanLimited',
+    'perFileByteLimit',
+    'perFileImportLimit',
+    'skipped',
+    'limitations',
+    'packageImports',
+    'moduleEdges',
+  ], path);
+  if (value.contract !== 'goPackageImports:v1') {
+    throw new Error(`${path}.contract must be goPackageImports:v1`);
+  }
+  assertNonEmptyString(value.modulePath, `${path}.modulePath`);
+  if (value.sourceQualification !== GO_PACKAGE_IMPORT_SOURCE_QUALIFICATION) {
+    throw new Error(`${path}.sourceQualification must be ${GO_PACKAGE_IMPORT_SOURCE_QUALIFICATION}`);
+  }
+  if (value.writeAllowed !== false) {
+    throw new Error(`${path}.writeAllowed must be false`);
+  }
+  assertNonNegativeInteger(value.filesScanned, `${path}.filesScanned`);
+  if (typeof value.fileScanLimited !== 'boolean') {
+    throw new Error(`${path}.fileScanLimited must be a boolean`);
+  }
+  assertPositiveInteger(value.perFileByteLimit, `${path}.perFileByteLimit`);
+  assertPositiveInteger(value.perFileImportLimit, `${path}.perFileImportLimit`);
+  assertArray(value.skipped, `${path}.skipped`);
+  value.skipped.forEach((row, index) => {
+    const rowPath = `${path}.skipped[${index}]`;
+    assertObject(row, rowPath);
+    assertExactKeys(row, ['file', 'reason'], rowPath);
+    assertNonEmptyString(row.file, `${rowPath}.file`);
+    assertNonEmptyString(row.reason, `${rowPath}.reason`);
+  });
+  assertArray(value.limitations, `${path}.limitations`);
+  if (value.limitations.length === 0) {
+    throw new Error(`${path}.limitations must not be empty`);
+  }
+  value.limitations.forEach((row, index) =>
+    assertNonEmptyString(row, `${path}.limitations[${index}]`),
+  );
+  assertArray(value.packageImports, `${path}.packageImports`);
+  value.packageImports.forEach((row, index) =>
+    assertGoPackageImportRow(row, `${path}.packageImports[${index}]`),
+  );
+  assertArray(value.moduleEdges, `${path}.moduleEdges`);
+  value.moduleEdges.forEach((row, index) =>
+    assertGoPackageModuleEdge(row, `${path}.moduleEdges[${index}]`),
+  );
+}
+
+function assertGoPackageImportEvidenceSummary(value, path) {
+  assertObject(value, path);
+  assertExactKeys(value, [
+    'contract',
+    'filesScanned',
+    'fileScanLimited',
+    'packageImports',
+    'moduleEdges',
+    'fullEvidenceCall',
+  ], path);
+  if (value.contract !== 'goPackageImports:v1') {
+    throw new Error(`${path}.contract must be goPackageImports:v1`);
+  }
+  assertNonNegativeInteger(value.filesScanned, `${path}.filesScanned`);
+  if (typeof value.fileScanLimited !== 'boolean') {
+    throw new Error(`${path}.fileScanLimited must be a boolean`);
+  }
+  assertNonNegativeInteger(value.packageImports, `${path}.packageImports`);
+  assertNonNegativeInteger(value.moduleEdges, `${path}.moduleEdges`);
+  const callPath = `${path}.fullEvidenceCall`;
+  assertObject(value.fullEvidenceCall, callPath);
+  assertExactKeys(value.fullEvidenceCall, ['tool', 'arguments', 'purpose'], callPath);
+  if (value.fullEvidenceCall.tool !== 'infer_imports') {
+    throw new Error(`${callPath}.tool must be infer_imports`);
+  }
+  assertObject(value.fullEvidenceCall.arguments, `${callPath}.arguments`);
+  assertExactKeys(
+    value.fullEvidenceCall.arguments,
+    ['rootPath', 'sourceFolders', 'ignore', 'maxFiles', 'reviewMode', 'allowLargeResponse'],
+    `${callPath}.arguments`,
+  );
+  assertNonEmptyString(value.fullEvidenceCall.arguments.rootPath, `${callPath}.arguments.rootPath`);
+  if (value.fullEvidenceCall.arguments.sourceFolders !== undefined) {
+    assertUniqueStringArray(
+      value.fullEvidenceCall.arguments.sourceFolders,
+      null,
+      `${callPath}.arguments.sourceFolders`,
+    );
+  }
+  if (value.fullEvidenceCall.arguments.ignore !== undefined) {
+    assertUniqueStringArray(
+      value.fullEvidenceCall.arguments.ignore,
+      null,
+      `${callPath}.arguments.ignore`,
+    );
+  }
+  if (value.fullEvidenceCall.arguments.maxFiles !== undefined) {
+    assertPositiveInteger(
+      value.fullEvidenceCall.arguments.maxFiles,
+      `${callPath}.arguments.maxFiles`,
+    );
+    if (value.fullEvidenceCall.arguments.maxFiles > 50000) {
+      throw new Error(`${callPath}.arguments.maxFiles must be <= 50000`);
+    }
+  }
+  if (
+    value.fullEvidenceCall.arguments.reviewMode !== 'full' ||
+    value.fullEvidenceCall.arguments.allowLargeResponse !== true
+  ) {
+    throw new Error(`${callPath}.arguments must request reviewMode full with allowLargeResponse true`);
+  }
+  assertNonEmptyString(value.fullEvidenceCall.purpose, `${callPath}.purpose`);
+}
+
+function assertGoPackageImportRow(row, path) {
+  assertObject(row, path);
+  assertExactKeys(row, [
+    'fromFile',
+    'fromPackage',
+    'toPackage',
+    'importSpec',
+    'kind',
+    'sourceRole',
+    'importUsage',
+  ], path);
+  for (const field of ['fromFile', 'fromPackage', 'toPackage', 'importSpec']) {
+    assertNonEmptyString(row[field], `${path}.${field}`);
+  }
+  if (!GO_PACKAGE_IMPORT_KINDS.has(row.kind)) {
+    throw new Error(`${path}.kind must be one of static, side`);
+  }
+  if (!SOURCE_ROLES.includes(row.sourceRole)) {
+    throw new Error(`${path}.sourceRole is invalid`);
+  }
+  if (row.importUsage !== 'value') {
+    throw new Error(`${path}.importUsage must be value`);
+  }
+}
+
+function assertGoPackageModuleEdge(row, path) {
+  assertObject(row, path);
+  assertExactKeys(row, [
+    'fromPackage',
+    'toPackage',
+    'count',
+    'kindCounts',
+    'sourceRoleCounts',
+    'importUsageCounts',
+    'productValueCount',
+    'evidence',
+    'evidenceLimited',
+  ], path);
+  assertNonEmptyString(row.fromPackage, `${path}.fromPackage`);
+  assertNonEmptyString(row.toPackage, `${path}.toPackage`);
+  assertPositiveInteger(row.count, `${path}.count`);
+  assertObject(row.kindCounts, `${path}.kindCounts`);
+  const kindCounts = Object.entries(row.kindCounts);
+  if (kindCounts.length === 0) {
+    throw new Error(`${path}.kindCounts must not be empty`);
+  }
+  let kindTotal = 0;
+  for (const [kind, count] of kindCounts) {
+    if (!GO_PACKAGE_IMPORT_KINDS.has(kind)) {
+      throw new Error(`${path}.kindCounts.${kind} must be one of static, side`);
+    }
+    assertPositiveInteger(count, `${path}.kindCounts.${kind}`);
+    kindTotal += count;
+  }
+  if (kindTotal !== row.count) {
+    throw new Error(`${path}.kindCounts total must equal count: count ${row.count}, kindCounts ${kindTotal}`);
+  }
+  assertCountMap(row.sourceRoleCounts, SOURCE_ROLES, `${path}.sourceRoleCounts`);
+  assertCountMap(row.importUsageCounts, IMPORT_USAGES, `${path}.importUsageCounts`);
+  if (row.sourceRoleCounts.production + row.sourceRoleCounts.test + row.sourceRoleCounts.unknown !== row.count) {
+    throw new Error(`${path}.sourceRoleCounts total must equal count`);
+  }
+  if (row.importUsageCounts.value + row.importUsageCounts.type_only + row.importUsageCounts.unknown !== row.count) {
+    throw new Error(`${path}.importUsageCounts total must equal count`);
+  }
+  if (row.importUsageCounts.type_only !== 0 || row.importUsageCounts.unknown !== 0) {
+    throw new Error(`${path}.importUsageCounts must record Go imports as value`);
+  }
+  assertNonNegativeInteger(row.productValueCount, `${path}.productValueCount`);
+  if (
+    row.productValueCount !== row.sourceRoleCounts.production ||
+    row.productValueCount > row.importUsageCounts.value
+  ) {
+    throw new Error(`${path}.productValueCount must equal production value imports`);
+  }
+  assertArray(row.evidence, `${path}.evidence`);
+  if (row.evidence.length === 0 || row.evidence.length > 5) {
+    throw new Error(`${path}.evidence must contain 1 to 5 rows`);
+  }
+  row.evidence.forEach((evidence, index) => {
+    assertGoPackageImportRow(evidence, `${path}.evidence[${index}]`);
+    if (evidence.fromPackage !== row.fromPackage || evidence.toPackage !== row.toPackage) {
+      throw new Error(`${path}.evidence[${index}] must match the package edge endpoints`);
+    }
+  });
+  if (typeof row.evidenceLimited !== 'boolean') {
+    throw new Error(`${path}.evidenceLimited must be a boolean`);
+  }
 }
 
 function assertUniqueStringArray(value, allowed, path) {

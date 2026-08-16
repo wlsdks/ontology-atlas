@@ -150,12 +150,17 @@ describe('witnesses', () => {
     { slug: 'domains/audio', frontmatter: { kind: 'domain', title: 'Audio' } },
   ];
 
-  it('collects declared paths once, in a stable order', () => {
+  it('collects declared paths once per ontology role, in a stable order', () => {
     const witnesses = deriveProjectSourceWitnessesFromDocs({ projectSlug: 'music-streaming', docs });
     // Sorted by witness id, so the same vault always mints the same receipt.
     assert.deepEqual(
       witnesses.map((witness) => witness.id),
-      ['capabilities/play:element:src/play/engine.ts', 'capabilities/play:path', 'music-streaming:path'],
+      [
+        'capabilities/play:element:src/play/engine.ts',
+        'capabilities/play:path',
+        'element:engine:path',
+        'music-streaming:path',
+      ],
     );
     assert.equal(witnesses.find((witness) => witness.path === 'src/app').role, 'entrypoint');
     assert.equal(witnesses.find((witness) => witness.path === 'src/play/engine.ts').role, 'implementation');

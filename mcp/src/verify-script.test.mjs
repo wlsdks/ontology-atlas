@@ -91,6 +91,8 @@ import {
   maintenanceNextActionOutputSummary,
   maintenanceReadyCursorFailure,
   maintenanceResumeCursorFailure,
+  meaningRepairFullBodyReadsFailure,
+  meaningRepairReviewChainFailure,
   overviewFailure,
   overviewQueryPlanFailure,
   parserSmokeFailure,
@@ -284,12 +286,49 @@ function verifiedImportScanCoverage({ c = false, rust = false } = {}) {
   ];
   return {
     contract: 'importScanCoverage:v1',
-    supportedLanguages: ['javascript', 'python', 'typescript'],
+    supportedLanguages: ['go', 'javascript', 'python', 'typescript'],
     supportedExtensions: ['.js', '.py', '.ts'],
     detectedUnsupportedLanguages,
     allDetectedLanguagesSupported: detectedUnsupportedLanguages.length === 0,
     zeroEdgesMeaning: 'no_supported_static_import_edges_observed',
     limitations: ['Static source evidence is not semantic dependency approval.'],
+  };
+}
+
+function verifiedGoPackageImportEvidence(overrides = {}) {
+  const row = {
+    fromFile: 'cmd/sample/main.go',
+    fromPackage: 'cmd/sample',
+    toPackage: 'internal/store',
+    importSpec: 'example.test/sample/internal/store',
+    kind: 'static',
+    sourceRole: 'production',
+    importUsage: 'value',
+  };
+  return {
+    contract: 'goPackageImports:v1',
+    modulePath: 'example.test/sample',
+    sourceQualification: 'observed_bounded_go_package_imports_not_runtime_or_semantic_impact',
+    writeAllowed: false,
+    filesScanned: 2,
+    fileScanLimited: false,
+    perFileByteLimit: 262144,
+    perFileImportLimit: 256,
+    skipped: [],
+    limitations: ['Observed static source evidence only.'],
+    packageImports: [row],
+    moduleEdges: [{
+      fromPackage: row.fromPackage,
+      toPackage: row.toPackage,
+      count: 1,
+      kindCounts: { static: 1 },
+      sourceRoleCounts: { production: 1, test: 0, unknown: 0 },
+      importUsageCounts: { value: 1, type_only: 0, unknown: 0 },
+      productValueCount: 1,
+      evidence: [row],
+      evidenceLimited: false,
+    }],
+    ...overrides,
   };
 }
 
@@ -299,15 +338,9 @@ function humanMeaningRepair(projectSlug) {
     { length: 20 },
     (_, index) => `capabilities/c${String(index + 1).padStart(2, '0')}`,
   );
-  const abilityRows = domains.map((slug, index) => ({
-    slug,
-    witnessCapabilities: capabilities.filter((_, capabilityIndex) => (
-      capabilityIndex % domains.length === index
-    )),
-  }));
-  const targets = [projectSlug, ...domains, ...capabilities];
+  const reviewRevision = `sha256:${'a'.repeat(64)}`;
   return {
-    contract: 'meaningRepair:v1',
+    contract: 'meaningRepair:v2',
     status: 'human_review_required',
     projectSlug,
     blockedBy: null,
@@ -319,38 +352,50 @@ function humanMeaningRepair(projectSlug) {
       sourceMeasuredAt: '2026-08-04T00:00:00.000Z',
       sourceCurrentness: 'current',
     },
+    reviewRevision,
     questions: {
       abilities: {
         basis: 'typed_containment',
+        answerStatus: 'partial',
         targetCount: domains.length,
         review: {
           state: 'structural_candidates_only',
-          alreadyDeclared: abilityRows.slice(0, 1),
-          candidateAdditions: abilityRows.slice(1),
-          declaredWithoutSupport: [],
-          unresolved: [],
+          alreadyDeclared: 1,
+          candidateAdditions: 5,
+          declaredWithoutSupport: 0,
+          unresolved: 0,
         },
       },
       evidence: {
         basis: 'current_source_canonical_path',
+        answerStatus: 'partial',
         targetCount: capabilities.length,
         review: {
           state: 'source_path_candidates_only',
-          alreadyDeclared: capabilities.slice(0, 2),
-          candidateAdditions: capabilities.slice(2, 11),
-          declaredWithoutSupport: [],
-          unresolved: capabilities.slice(11),
+          alreadyDeclared: 2,
+          candidateAdditions: 9,
+          declaredWithoutSupport: 0,
+          unresolved: 9,
         },
       },
     },
     workflow: [
       {
         step: 'read_review_inputs',
-        derivation: { slugs: 'project_and_all_review_targets' },
-        calls: [
-          { tool: 'get_concepts', arguments: { slugs: targets.slice(0, 20), body: 'full' } },
-          { tool: 'get_concepts', arguments: { slugs: targets.slice(20), body: 'full' } },
-        ],
+        derivation: {
+          operation: 'meaning_repair_review',
+          order: 'project_then_domains_then_capabilities',
+        },
+        calls: [{
+          tool: 'query_ontology',
+          arguments: {
+            operation: 'meaning_repair_review',
+            project: projectSlug,
+            expectedGraphHash: 'project-graph-v1:a1b2c3d4',
+            expectedSourceFingerprint: 'git:abc123:clean',
+            reviewRevision,
+          },
+        }],
       },
       { step: 'human_semantic_approval', calls: [] },
       { step: 'write_approved_project_body', calls: [] },
@@ -8703,6 +8748,64 @@ Continue.`;
     );
   });
 
+  it('fails closed when a Go package-import receipt claims write authority', () => {
+    assert.equal(
+      inferImportsFailure({
+        rootPath: '/repo',
+        filesScanned: 2,
+        edges: [],
+        externalImports: [],
+        unresolved: [],
+        moduleEdges: [],
+        coverage: verifiedImportScanCoverage(),
+        packageImportEvidence: verifiedGoPackageImportEvidence({ writeAllowed: true }),
+      }),
+      'infer_imports Go package-import evidence must remain write-blocked',
+    );
+
+    const undercounted = verifiedGoPackageImportEvidence();
+    undercounted.moduleEdges[0].productValueCount = 0;
+    assert.equal(
+      inferImportsFailure({
+        rootPath: '/repo',
+        filesScanned: 2,
+        edges: [],
+        externalImports: [],
+        unresolved: [],
+        moduleEdges: [],
+        coverage: verifiedImportScanCoverage(),
+        packageImportEvidence: undercounted,
+      }),
+      'infer_imports Go package-import evidence package module edge productValueCount mismatch at index 0',
+    );
+  });
+
+  it('fails closed when a focused Go package-import summary cannot retrieve full evidence', () => {
+    assert.equal(
+      inferImportsFailure({
+        contract: 'inferImportsFocus:v1',
+        rootPath: '/repo',
+        filesScanned: 2,
+        coverage: verifiedImportScanCoverage(),
+        scanSummary: { fileEdges: 0, externalImports: 0, unresolvedImports: 0, moduleEdges: 0 },
+        focusReview: {},
+        packageImportEvidenceSummary: {
+          contract: 'goPackageImports:v1',
+          filesScanned: 2,
+          fileScanLimited: false,
+          packageImports: 1,
+          moduleEdges: 1,
+          fullEvidenceCall: {
+            tool: 'infer_imports',
+            arguments: { rootPath: '/repo', reviewMode: 'full', allowLargeResponse: false },
+            purpose: 'Read the complete typed Go package-import evidence.',
+          },
+        },
+      }),
+      'infer_imports focus Go package-import summary malformed fullEvidenceCall',
+    );
+  });
+
   it('rejects Rust evidence that permits writes or hides unsupported import coverage', () => {
     const unsafeConfiguration = verifiedRustConfigurationEvidence();
     unsafeConfiguration.writePolicy.writeAllowed = true;
@@ -10697,13 +10800,14 @@ Continue.`;
         },
       },
       meaningRepair: {
-        contract: 'meaningRepair:v1',
+        contract: 'meaningRepair:v2',
         status: 'blocked',
         projectSlug: 'project:app',
         blockedBy: 'source_not_current',
         primaryQuestion: null,
         questionsNeedingReview: [],
         provenance: null,
+        reviewRevision: null,
         questions: null,
         workflow: [],
         stopWhen: [
@@ -11007,21 +11111,21 @@ Continue.`;
         deriveArguments: { slugs: 'project_and_all_review_targets' },
       }],
     };
-    const overCapRead = structuredClone(executableRepair);
-    const overCapTargets = overCapRead.workflow[0].calls.flatMap((call) => call.arguments.slugs);
-    overCapRead.workflow[0].calls = [
-      { tool: 'get_concepts', arguments: { slugs: overCapTargets.slice(0, 21), body: 'full' } },
-      { tool: 'get_concepts', arguments: { slugs: overCapTargets.slice(21), body: 'full' } },
-    ];
-    const omittedTarget = structuredClone(executableRepair);
-    omittedTarget.workflow[0].calls[1].arguments.slugs.pop();
-    const duplicatedTarget = structuredClone(executableRepair);
-    duplicatedTarget.workflow[0].calls[1].arguments.slugs.push(
-      duplicatedTarget.workflow[0].calls[0].arguments.slugs[0],
-    );
+    const mismatchedRevision = structuredClone(executableRepair);
+    mismatchedRevision.workflow[0].calls[0].arguments.reviewRevision = `sha256:${'b'.repeat(64)}`;
+    const exposedOffset = structuredClone(executableRepair);
+    exposedOffset.workflow[0].calls[0].arguments.offset = 20;
+    const wrongOperation = structuredClone(executableRepair);
+    wrongOperation.workflow[0].calls[0].arguments.operation = 'agent_brief';
     const oversizedPacket = structuredClone(executableRepair);
     oversizedPacket.provenance.sourceFingerprint = `git:${'x'.repeat(5_000)}`;
-    for (const malformed of [oldPseudoRead, overCapRead, omittedTarget, duplicatedTarget, oversizedPacket]) {
+    for (const malformed of [
+      oldPseudoRead,
+      mismatchedRevision,
+      exposedOffset,
+      wrongOperation,
+      oversizedPacket,
+    ]) {
       assert.equal(
         agentBriefFailure({ ...repairPayload, meaningRepair: malformed }),
         'agent_brief response malformed meaningRepair review packet',
@@ -11347,6 +11451,117 @@ Continue.`;
         nextActions: [{ id: 'resolve_dangling_references', kind: 'resolve_dangling_references', severity: 'fail', count: 1 }],
       }),
       'agent_brief has actionable nextActions: resolve_dangling_references:fail:1. Inspect agent_brief.nextActions before writing.',
+    );
+  });
+
+  it('validates the complete provenance-bound meaning repair review page chain', () => {
+    const repair = humanMeaningRepair('project:app');
+    const agentBrief = { meaningRepair: repair };
+    const rows = [
+      { slug: 'project:app', kind: 'project', expectedMtime: 1 },
+      ...Array.from({ length: 6 }, (_, index) => ({
+        slug: `domains/d${index + 1}`,
+        kind: 'domain',
+        expectedMtime: index + 2,
+        abilitiesDisposition: index === 0 ? 'already_declared' : 'candidate_addition',
+      })),
+      ...Array.from({ length: 20 }, (_, index) => ({
+        slug: `capabilities/c${String(index + 1).padStart(2, '0')}`,
+        kind: 'capability',
+        expectedMtime: index + 8,
+        abilityWitness: {
+          from: `domains/d${(index % 6) + 1}`,
+          type: 'capabilities',
+        },
+        evidenceDisposition: index < 2
+          ? 'already_declared'
+          : index < 11 ? 'candidate_addition' : 'unresolved',
+      })),
+    ];
+    const firstCursor = 'mrp1.first.cursor';
+    const page = (targets, hasMore) => ({
+      operation: 'meaning_repair_review',
+      contract: 'meaningRepairReviewPage:v1',
+      sideEffect: false,
+      status: 'ready',
+      projectSlug: repair.projectSlug,
+      blockedBy: null,
+      provenance: {
+        graphHash: repair.provenance.graphHash,
+        sourceFingerprint: repair.provenance.sourceFingerprint,
+      },
+      reviewRevision: repair.reviewRevision,
+      pagination: {
+        total: rows.length,
+        returned: targets.length,
+        hasMore,
+        nextCursor: hasMore ? firstCursor : null,
+      },
+      targets,
+      readCall: {
+        tool: 'get_concepts',
+        arguments: { slugs: targets.map(({ slug }) => slug), body: 'full' },
+      },
+      nextCall: hasMore ? {
+        tool: 'query_ontology',
+        arguments: {
+          operation: 'meaning_repair_review',
+          project: repair.projectSlug,
+          reviewRevision: repair.reviewRevision,
+          cursor: firstCursor,
+        },
+      } : null,
+    });
+    const pages = [page(rows.slice(0, 20), true), page(rows.slice(20), false)];
+    const requests = [repair.workflow[0].calls[0].arguments, pages[0].nextCall.arguments];
+    assert.equal(meaningRepairReviewChainFailure(agentBrief, pages, requests), null);
+
+    const omitted = structuredClone(pages);
+    omitted[1].targets.pop();
+    omitted[1].pagination.returned -= 1;
+    omitted[1].readCall.arguments.slugs.pop();
+    assert.equal(
+      meaningRepairReviewChainFailure(agentBrief, omitted, requests),
+      'meaning repair review page union has missing or duplicate targets',
+    );
+    const wrongRequest = structuredClone(requests);
+    wrongRequest[1].cursor = 'mrp1.foreign.cursor';
+    assert.equal(
+      meaningRepairReviewChainFailure(agentBrief, pages, wrongRequest),
+      'meaning repair review request 2 does not match the issued call',
+    );
+
+    const readPayloads = pages.map(({ targets }) => ({
+      concepts: targets.map((target) => ({
+        ok: true,
+        uid: '11111111-1111-4111-8111-111111111111',
+        slug: target.slug,
+        frontmatter: { kind: target.kind },
+        body: `Full body for ${target.slug}`,
+        bodyInfo: { totalChars: 20, returnedChars: 20, truncated: false },
+        neighbors: {},
+        outgoingEdges: [],
+        mtime: target.expectedMtime,
+      })),
+    }));
+    assert.equal(meaningRepairFullBodyReadsFailure(pages, readPayloads), null);
+    const changedMtime = structuredClone(readPayloads);
+    changedMtime[1].concepts[0].mtime += 1;
+    assert.equal(
+      meaningRepairFullBodyReadsFailure(pages, changedMtime),
+      `meaning repair full-body read 2 mtime changed for ${pages[1].targets[0].slug}`,
+    );
+    const truncatedBody = structuredClone(readPayloads);
+    truncatedBody[0].concepts[0].bodyInfo.truncated = true;
+    assert.equal(
+      meaningRepairFullBodyReadsFailure(pages, truncatedBody),
+      'meaning repair full-body read 1 row 1 is incomplete',
+    );
+    const missingLength = structuredClone(readPayloads);
+    delete missingLength[0].concepts[0].bodyInfo.totalChars;
+    assert.equal(
+      meaningRepairFullBodyReadsFailure(pages, missingLength),
+      'meaning repair full-body read 1 row 1 is incomplete',
     );
   });
 

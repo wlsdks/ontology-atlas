@@ -5,6 +5,7 @@ kind: capability
 title: Kind Taxonomy Management
 domain: domains/graph-modeling
 elements: [elements/category, elements/status]
+path: src/features/taxonomy
 created_by: "agent:unknown"
 ---
 
