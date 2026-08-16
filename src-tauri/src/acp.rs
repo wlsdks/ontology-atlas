@@ -359,10 +359,12 @@ pub(crate) struct AcpRuntimeStatus {
     pub brand_ink: Option<String>,
     /// `npx` · `uvx` · `binary`
     pub launch_kind: String,
-    /// `ready` · `cli-missing` · `node-missing` · `uvx-missing` · `binary-missing`
+    /// `ready` · `cli-unknown` · `cli-missing` · `node-missing` · `uvx-missing` · `binary-missing`
     ///
-    /// 다섯인 이유는 **각각 사용자가 할 일이 다르기** 때문이다. 「설치됨/아님」
-    /// 둘로 뭉개면 화면이 무엇을 하라고 말해야 할지 모른다.
+    /// 여섯인 이유는 **각각 사용자가 할 일이 다르기** 때문이다. 「설치됨/아님」
+    /// 둘로 뭉개면 화면이 무엇을 하라고 말해야 할지 모른다. 그리고 `cli-unknown`
+    /// 은 사용자가 할 일이 아니라 **우리가 할 일**이 남았다는 뜻이다 —
+    /// `UNDERLYING_CLI` 에 그 도구의 실행 파일 이름을 적으면 사라진다.
     pub state: String,
     /// 찾아낸 진짜 CLI 절대 경로 (아는 경우만).
     pub cli_path: Option<String>,
@@ -427,6 +429,23 @@ pub(crate) fn detect_runtimes(
                 "cli-missing"
             } else if program.is_none() {
                 launcher_missing_state(&agent.launch)
+            } else if agent.cli.is_none() {
+                /*
+                 * ⚠️ **여기가 「준비됨」이었다** (2026-08-16 소유자 지적:
+                 * *"우리는 지금 이렇게 다 보여서 좀 이상한데"*).
+                 *
+                 * 이 갈래는 「그 도구가 이 컴퓨터에 있다」가 아니라 **「우리가
+                 * 이 어댑터가 무슨 CLI 를 감싸는지 안 적어 뒀다」**는 뜻이다.
+                 * `UNDERLYING_CLI` 에 12개만 있어서 나머지 26개는 확인할
+                 * 방법 자체가 없는데, npx 가 있다는 이유로 전부 「준비됨」이
+                 * 됐다 — 38개 중 20개가 그렇게 초록 배지를 달고 있었다.
+                 *
+                 * 그건 화면이 **해 본 적 없는 것을 해 본 것처럼 말하는 것**이고,
+                 * 이 제품이 「곧 됩니다」를 안 쓰는 것과 같은 규율에 걸린다.
+                 * 띄우는 것은 여전히 되므로 목록에서 빼지 않는다 — 상태만
+                 * 정직해진다.
+                 */
+                "cli-unknown"
             } else {
                 "ready"
             };
@@ -1146,6 +1165,61 @@ mod tests {
         let claude = out.iter().find(|r| r.id == "claude-acp").unwrap();
         assert_eq!(claude.state, "node-missing");
         assert_eq!(claude.cli_path.as_deref(), Some("/usr/local/bin/claude"));
+    }
+
+    /// **띄울 수 있다 ≠ 그 도구가 여기 있다.**
+    ///
+    /// 2026-08-16 소유자 지적(*"이렇게 다 보여서 좀 이상한데"*)의 뿌리. 우리가
+    /// 무슨 CLI 를 감싸는지 안 적어 둔 실행기는 확인할 방법이 없는데, npx 만
+    /// 있으면 전부 「준비됨」이 됐다 — 38개 중 20개가 그랬다.
+    ///
+    /// 이 검사는 **개수**를 못 박지 않는다(레지스트리가 자라면 바뀐다).
+    /// 못 박는 것은 규칙 하나다: **CLI 이름을 모르면 「준비됨」이라고 말하지
+    /// 않는다.**
+    #[test]
+    fn we_do_not_call_a_runtime_ready_when_we_never_checked_for_it() {
+        // npx 는 있고, 아는 CLI 는 하나도 없는 기기.
+        let mut files: HashSet<PathBuf> = HashSet::new();
+        files.insert(PathBuf::from("/usr/local/bin/npx"));
+        let dirs = empty_dirs();
+        let (is_exec, list, read) = probe_with(&files, &dirs);
+        let probe = FsProbe {
+            is_executable: &is_exec,
+            list_dir: &list,
+            read_text: &read,
+        };
+        let out = detect_runtimes(None, None, &probe);
+
+        for status in &out {
+            let agent = registry().iter().find(|a| a.id == status.id).unwrap();
+            if agent.cli.is_none() {
+                /*
+                 * 띄울 방법이 없으면 그 사유가 먼저다(`binary-missing` 등) —
+                 * 그것도 정직한 답이다. 잡아야 하는 것은 **「준비됨」이라고
+                 * 말하는 것** 하나다.
+                 */
+                assert_ne!(
+                    status.state, "ready",
+                    "{}: 감싸는 CLI 를 모르는데 준비됐다고 말한다 — 확인한 적 없는 것이다",
+                    status.id,
+                );
+            } else {
+                // 아는 CLI 인데 이 기기에 없다 → 사용자가 할 일이 분명하다.
+                assert_eq!(status.state, "cli-missing", "{}", status.id);
+            }
+        }
+
+        // 그리고 이 상황에서 「준비됨」은 **하나도 없어야** 한다.
+        assert_eq!(
+            out.iter().filter(|s| s.state == "ready").count(),
+            0,
+            "아는 CLI 가 하나도 없는 기기인데 준비됨이 있다",
+        );
+        // 검사가 빈 집합 위에서 돌고 있지 않은지도 본다.
+        assert!(
+            out.iter().filter(|s| s.state == "cli-unknown").count() > 0,
+            "cli-unknown 이 0 이면 이 검사는 아무것도 안 지키고 있다",
+        );
     }
 
     #[test]

@@ -15,6 +15,8 @@ import {
   createAcpClient,
   type AcpClient,
   type AcpPermissionRequest,
+  type AcpSessionChoices,
+  type AcpSessionSummary,
   type AcpTransport,
 } from './acp-client';
 
@@ -87,6 +89,14 @@ const VAULT_HANDOFF_PROMPT = [
   'Keep your work inside this folder. If something genuinely needs a path outside it, say so before trying.',
 ].join(' ');
 
+/** 아직 아무것도 모를 때의 값. 「없음」과 「안 내놓음」을 같은 화면으로 둔다. */
+const EMPTY_CHOICES: AcpSessionChoices = {
+  models: [],
+  currentModelId: null,
+  modes: [],
+  currentModeId: null,
+};
+
 let eventSeq = 0;
 const nextEventId = () => `acp-evt-${(eventSeq += 1)}`;
 
@@ -95,9 +105,25 @@ export function useAcpSession({ runtimeId, vaultRoot, mcpServers }: UseAcpSessio
   const [events, setEvents] = useState<AcpEvent[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState<PendingPermission | null>(null);
+  /** 이 폴더의 지난 대화들. **이 폴더 것만** 담긴다(`keepSessionsInFolder`). */
+  const [sessions, setSessions] = useState<AcpSessionSummary[]>([]);
+  /**
+   * 이 세션이 고를 수 있는 것들. 어댑터마다 다르다 — 실측: codex 는 모델 33개,
+   * claude 는 모델을 **아예 안 내놓는다**(`session/set_model` 이 「그런 메서드
+   * 없음」). 그래서 화면은 개수를 짐작하지 않고 **온 것만** 그린다.
+   */
+  const [choices, setChoices] = useState<AcpSessionChoices>(EMPTY_CHOICES);
 
   const clientRef = useRef<AcpClient | null>(null);
   const sessionIdRef = useRef<string | null>(null);
+  /** 다음 `start()` 가 이어 받을 대화. 한 번 쓰고 비운다. */
+  const resumeIdRef = useRef<string | null>(null);
+  /*
+   * `switchSession` 은 `start`/`stop` 둘 다 부르는데, 그 둘은 서로를 의존성으로
+   * 갖지 않는다(순환). ref 로 한 단계 끊는다 — 최신 것을 부르되 의존성은 안 만든다.
+   */
+  const startRef = useRef<(() => Promise<void>) | null>(null);
+  const stopRef = useRef<(() => Promise<void>) | null>(null);
   const acpSessionRef = useRef<string | null>(null);
   const unlistenRef = useRef<(() => void) | null>(null);
   const disposedRef = useRef(false);
@@ -211,18 +237,89 @@ export function useAcpSession({ runtimeId, vaultRoot, mcpServers }: UseAcpSessio
       clientRef.current = client;
 
       await client.initialize();
-      const session = await client.newSession({
+      /*
+       * 이어 받을 대화가 지정돼 있으면 그걸 먼저 시도한다. 실패하면 **새 대화로
+       * 떨어진다** — 지난 대화를 못 여는 것이 대화 자체를 못 여는 이유가 되면
+       * 안 된다(그 파일은 우리가 만든 것도 아니고 언제든 사라질 수 있다).
+       */
+      let session: { sessionId: string; choices: AcpSessionChoices } | null = null;
+      if (resumeIdRef.current) {
+        try {
+          session = await client.loadSession({
+            sessionId: resumeIdRef.current,
+            cwd: vaultRoot,
+            mcpServers,
+          });
+        } catch {
+          push({ kind: 'notice', id: nextEventId(), text: 'resume-failed' });
+        }
+        resumeIdRef.current = null;
+      }
+      session ??= await client.newSession({
         cwd: vaultRoot,
         mcpServers,
         appendSystemPrompt: VAULT_HANDOFF_PROMPT,
       });
       sessionIdRef.current = session.sessionId;
-      if (!disposedRef.current) setStatus('ready');
+      if (!disposedRef.current) {
+        setChoices(session.choices);
+        setStatus('ready');
+      }
+      // 목록은 세션이 선 뒤에 채운다 — 화면이 뜨는 프레임을 목록이 붙잡지 않게.
+      void client
+        .listSessions(vaultRoot)
+        .then((list) => {
+          if (!disposedRef.current) setSessions(list);
+        })
+        .catch(() => {
+          /* 지난 대화를 못 읽는 것은 지금 대화의 문제가 아니다. */
+        });
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err));
       setStatus('error');
     }
   }, [applyUpdate, askUser, mcpServers, push, runtimeId, vaultRoot]);
+
+  /**
+   * 대화를 갈아탄다 — 지난 것을 이어 받거나(`sessionId`), 새로 연다(`null`).
+   *
+   * 프로세스를 끝내고 다시 띄운다. 한 프로세스 안에서 세션만 바꿀 수도 있지만,
+   * 그러면 「지금 무엇이 살아 있나」가 두 곳(프로세스·세션)에 흩어진다 — 여기서
+   * 아낄 시간(수 초)보다 그 복잡도가 비싸다.
+   */
+  const switchSession = useCallback(
+    async (sessionId: string | null) => {
+      await stopRef.current?.();
+      setEvents([]);
+      setError(null);
+      resumeIdRef.current = sessionId;
+      setChoices(EMPTY_CHOICES);
+      await startRef.current?.();
+    },
+    [],
+  );
+
+  /**
+   * 고른 것을 세션에 반영한다 — **화면 상태를 먼저 바꾸지 않는다.**
+   * 어댑터가 거절하면(claude 의 모델처럼) 화면이 바뀐 척하게 되기 때문이다.
+   */
+  const chooseModel = useCallback(async (modelId: string) => {
+    const client = clientRef.current;
+    const sessionId = sessionIdRef.current;
+    if (!client || !sessionId) return;
+    if (await client.setModel(sessionId, modelId)) {
+      setChoices((prev) => ({ ...prev, currentModelId: modelId }));
+    }
+  }, []);
+
+  const chooseMode = useCallback(async (modeId: string) => {
+    const client = clientRef.current;
+    const sessionId = sessionIdRef.current;
+    if (!client || !sessionId) return;
+    if (await client.setMode(sessionId, modeId)) {
+      setChoices((prev) => ({ ...prev, currentModeId: modeId }));
+    }
+  }, []);
 
   const send = useCallback(
     async (text: string) => {
@@ -265,6 +362,18 @@ export function useAcpSession({ runtimeId, vaultRoot, mcpServers }: UseAcpSessio
     setStatus('idle');
   }, []);
 
+  /*
+   * 최신 것을 ref 에 물려 둔다 — `switchSession` 이 순환 의존 없이 부르게.
+   *
+   * **렌더 중에 쓰지 않고 effect 로 미룬다.** 렌더 도중 ref 를 건드리면 React 가
+   * 경고하고, 실제로도 렌더가 버려지는 경우(동시성)에 어긋난 값이 남는다.
+   * `switchSession` 은 사용자가 누른 뒤에만 도므로 이 시점이면 늦지 않다.
+   */
+  useEffect(() => {
+    startRef.current = start;
+    stopRef.current = stop;
+  }, [start, stop]);
+
   useEffect(() => {
     disposedRef.current = false;
     return () => {
@@ -274,5 +383,19 @@ export function useAcpSession({ runtimeId, vaultRoot, mcpServers }: UseAcpSessio
     };
   }, [stop]);
 
-  return { status, events, error, pending, start, send, cancel, stop };
+  return {
+    status,
+    events,
+    error,
+    pending,
+    sessions,
+    choices,
+    chooseModel,
+    chooseMode,
+    start,
+    send,
+    cancel,
+    stop,
+    switchSession,
+  };
 }

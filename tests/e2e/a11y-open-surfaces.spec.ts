@@ -115,8 +115,14 @@ const MIN_RULES_PASSED = 15;
  * 나타난다. 그 사실을 분모가 말한다(위 「@ 입력」 표면과 같은 부류다). 접근성은
  * 위젯 단위 시험이 진다 — 카드의 `role="alertdialog"` · 이름 배선 · 닫는 X 가
  * 없다는 계약은 `AcpChatPanel.test.tsx` 가 잰다.
+ *
+ * 25 → 26 (2026-08-16): ACP 대화의 **지난 대화 목록** 팝오버. 바로 위 둘과 같은
+ * 이유로 이 스윕이 못 연다 — 데스크톱 브리지가 있어야 하고, 그 위에 **이 폴더의
+ * 지난 대화가 실제로 있어야** 버튼 자체가 생긴다(없으면 안 그린다). 접근성과
+ * 폴더 범위 계약은 `AcpChatPanel.test.tsx` 와
+ * `tests/contract/acp-session-scope.contract.test.ts` 가 진다.
  */
-const APPEARING_SURFACES_IN_SOURCE = 25;
+const APPEARING_SURFACES_IN_SOURCE = 26;
 
 interface Opener {
   readonly name: string;

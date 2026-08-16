@@ -142,7 +142,17 @@ const BASELINE_HARD_CUTS = 0;
  * `a11y-open-surfaces.spec.ts` 의 분모와 짝이므로 둘을 같이 올린다 — 한쪽만
  * 올리면 그 파일의 자기 대조가 먼저 터진다(그게 이 짝의 존재 이유다).
  */
-const BASELINE_APPEARING_SURFACES = 25;
+/*
+ * 25 → 26 (2026-08-16): 앱 안 대화의 **지난 대화 목록**. 머리의 목록 버튼에서
+ * 자라는 팝오버라 처음부터 `<Surface origin="top right">` 로 태어났고 하드컷은
+ * 그대로 0 이다.
+ *
+ * ⚠️ 이 표면은 **브라우저 훑기로는 못 연다** — 데스크톱에서 실행기를 찾고
+ * 세션이 선 뒤에야 생기는 자리다. 그래서 짝인 `a11y-open-surfaces.spec.ts`
+ * 분모도 같이 올리되, 그쪽 목록에 넣을 수 없는 이유를 거기 적는다(권한 카드가
+ * 2026-08-16 에 같은 이유로 간 길이다).
+ */
+const BASELINE_APPEARING_SURFACES = 26;
 
 const SELF = 'tests/contract/surface-motion-ratchet.contract.test.ts';
 const FIXTURES = 'tests/fixtures/surface-motion';

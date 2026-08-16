@@ -23,8 +23,16 @@ import { DETAIL_TOGGLE_CHIP, SettingsGroup, SettingsRow } from './settings-primi
  *
  * ## 두 갈래로 나눠 보여 준다
  *
- * 목록이 38줄이라 한 덩어리로 두면 훑기가 안 된다. 「바로 쓸 수 있는 것」이
- * 펼쳐져 있고 「설치가 필요한 것」은 접힌다 — 지금 할 수 있는 일이 먼저다.
+ * 목록이 38줄이라 한 덩어리로 두면 훑기가 안 된다. **이 컴퓨터에서 실제로
+ * 확인된 것**이 펼쳐져 있고 나머지는 접힌다 — 지금 할 수 있는 일이 먼저다.
+ *
+ * ⚠️ **「확인된 것」의 뜻이 한 번 틀렸다** (2026-08-16 소유자 지적: *"이렇게
+ * 다 보여서 좀 이상한데"*). 종전 기준은 `state === 'ready'` 였는데, 그 값은
+ * 「그 도구가 여기 있다」가 아니라 **「npx 가 있으니 띄울 수는 있다」**였다.
+ * 우리가 감싸는 CLI 이름을 12개만 적어 둬서 나머지 26개는 확인할 방법 자체가
+ * 없었는데도 20줄이 초록 「준비됨」을 달고 있었다. Rust 쪽에서 그 갈래를
+ * `cli-unknown` 으로 갈랐고(`acp.rs`), 그래서 이 화면의 첫 묶음은 이제
+ * **정말 확인한 것**만 담는다.
  *
  * ## 누가 대신 물어봐 주나 (소유자 확정 2026-08-16)
  *
@@ -184,11 +192,23 @@ export function AcpRuntimeSettings() {
                 {t('othersHeading', { count: others.length })}
               </Chip>
               {othersOpen ? (
-                <SettingsGroup>
-                  {others.map((runtime) => (
-                    <RuntimeRow key={runtime.id} runtime={runtime} />
-                  ))}
-                </SettingsGroup>
+                <>
+                  {/* 「확인 못 함」이 무슨 뜻인지는 그 줄들이 보일 때만 말한다 —
+                      안 펼친 사람에게는 설명할 것이 없다. */}
+                  {others.some((r) => r.state === 'cli-unknown') ? (
+                    <p
+                      data-testid="app-settings-runtimes-unknown-note"
+                      className="break-keep px-1 text-label leading-label text-[color:var(--color-text-quaternary)]"
+                    >
+                      {t('unknownExplainer')}
+                    </p>
+                  ) : null}
+                  <SettingsGroup>
+                    {others.map((runtime) => (
+                      <RuntimeRow key={runtime.id} runtime={runtime} />
+                    ))}
+                  </SettingsGroup>
+                </>
               ) : null}
             </div>
           ) : null}

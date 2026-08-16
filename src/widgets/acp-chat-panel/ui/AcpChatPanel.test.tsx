@@ -249,6 +249,89 @@ describe('대화 패널 — 권한 카드가 실제로 막는다', () => {
   });
 });
 
+describe('대화 패널 — 대화방처럼 관리한다', () => {
+  /** `session/list` 응답을 흉내 낸다. 다른 폴더 것을 섞어 둔다 — 실제가 그렇다. */
+  function replyToList() {
+    const call = [...bridge.sent].reverse().find((m) => m.method === 'session/list');
+    if (!call) return false;
+    emit({
+      jsonrpc: '2.0',
+      id: call.id,
+      result: {
+        sessions: [
+          { sessionId: 's-old', cwd: '/vault', title: '어제 하던 정리', updatedAt: null },
+          { sessionId: 's-other', cwd: '/somewhere/else', title: '남의 폴더 작업', updatedAt: null },
+        ],
+      },
+    });
+    return true;
+  }
+
+  it('지난 대화가 있으면 목록 문이 생기고, 이 폴더 것만 담긴다', async () => {
+    await bootSession();
+    await waitFor(() => expect(replyToList()).toBe(true));
+
+    const historyButton = await screen.findByTestId('acp-chat-history');
+    fireEvent.click(historyButton);
+
+    const items = await screen.findAllByTestId('acp-chat-history-item');
+    expect(items).toHaveLength(1);
+    expect(items[0]).toHaveAttribute('data-session-id', 's-old');
+    // 열지 않은 폴더의 제목이 화면에 있으면 그게 결함이다.
+    expect(screen.queryByText('남의 폴더 작업')).toBeNull();
+  });
+
+  it('지난 대화를 고르면 그것을 이어 받는다', async () => {
+    await bootSession();
+    await waitFor(() => expect(replyToList()).toBe(true));
+    fireEvent.click(await screen.findByTestId('acp-chat-history'));
+    const before = bridge.sent.filter((m) => m.method === 'initialize').length;
+    fireEvent.click((await screen.findAllByTestId('acp-chat-history-item'))[0]);
+
+    /*
+     * 대화를 갈아타면 **프로세스부터 다시 띄운다** — 그래서 악수(`initialize`)가
+     * 한 번 더 있고, 그것에 답해야 그다음이 온다. 이 왕복을 흉내 내지 않으면
+     * 검사가 「안 왔다」고 말하는데 실제로는 우리가 답을 안 준 것이다.
+     */
+    await waitFor(() =>
+      expect(bridge.sent.filter((m) => m.method === 'initialize').length).toBe(before + 1),
+    );
+    replyTo('initialize', { protocolVersion: 1 });
+
+    // 그리고 새로 만드는 게 아니라 그 대화를 **이어 받는다**.
+    await waitFor(() => {
+      const load = [...bridge.sent].reverse().find((m) => m.method === 'session/load');
+      expect(load).toBeTruthy();
+      expect((load?.params as { sessionId?: string })?.sessionId).toBe('s-old');
+    });
+    expect(
+      [...bridge.sent].reverse().findIndex((m) => m.method === 'session/load'),
+      '이어 받는 자리에서 새 대화를 만들면 지난 맥락이 사라진다',
+    ).toBeLessThan([...bridge.sent].reverse().findIndex((m) => m.method === 'session/new'));
+  });
+
+  it('지난 대화가 없으면 목록 문을 만들지 않는다', async () => {
+    await bootSession();
+    const call = [...bridge.sent].reverse().find((m) => m.method === 'session/list');
+    emit({ jsonrpc: '2.0', id: call?.id, result: { sessions: [] } });
+    // 늘 비어 있는 버튼을 처음 쓰는 사람에게 보여 줄 이유가 없다.
+    await waitFor(() => expect(screen.getByTestId('acp-chat-new')).toBeInTheDocument());
+    expect(screen.queryByTestId('acp-chat-history')).toBeNull();
+  });
+
+  it('「새 대화」는 기록을 비우고 새로 연다', async () => {
+    await bootSession();
+    fireEvent.change(screen.getByRole('textbox'), { target: { value: '먼저 한 말' } });
+    fireEvent.click(screen.getByTestId('acp-chat-send'));
+    await waitFor(() => expect(screen.getByText('먼저 한 말')).toBeInTheDocument());
+
+    fireEvent.click(screen.getByTestId('acp-chat-new'));
+    await waitFor(() => expect(screen.queryByText('먼저 한 말')).toBeNull());
+    // 새로 여는 것이지 이어 받는 것이 아니다.
+    expect(bridge.sent.filter((m) => m.method === 'session/load')).toHaveLength(0);
+  });
+});
+
 describe('대화 패널 — 못 하는 일은 정직하게', () => {
   it('세션이 끝나면 상태로 말하고 작성 칸을 잠근다', async () => {
     await bootSession();

@@ -191,9 +191,9 @@
         "intro": "이 컴퓨터에 설치된 AI 코딩 도구를 앱이 대신 띄워서, 여기서 바로 대화해요.",
         "recheck": "다시 확인",
         "checking": "찾는 중이에요",
-        "readyHeading": "바로 쓸 수 있어요 ({count})",
-        "othersHeading": "설치가 필요한 것 {count}개 보기",
-        "noneReady": "쓸 수 있는 도구가 없어요",
+        "readyHeading": "이 컴퓨터에서 확인됐어요 ({count})",
+        "othersHeading": "나머지 {count}개 보기",
+        "noneReady": "확인된 도구가 없어요",
         "noneReadyCaption": "Claude Code 나 Codex 를 설치하면 여기에 나타나요.",
         "webLabel": "브라우저는 이 컴퓨터의 프로그램을 띄울 권한이 없어요",
         "webCaption": "맥 앱을 받으면 이 컴퓨터에 설치된 도구를 앱 안에서 바로 쓸 수 있어요. 이 화면에서도 「내 에이전트 연결」로, 직접 띄운 도구를 이 폴더에 붙일 수 있어요.",
@@ -202,10 +202,12 @@
           "cli-missing": "설치 필요",
           "node-missing": "Node 필요",
           "uvx-missing": "uv 필요",
-          "binary-missing": "직접 설치"
+          "binary-missing": "직접 설치",
+          "cli-unknown": "확인 못 함"
         },
         "guardedExplainer": "폴더 밖 파일을 건드릴 때 Atlas 가 대신 물어봐 줄 수 있는 건 지금 {names} 뿐이에요. 나머지 도구는 그 도구에 직접 해 둔 설정대로 움직여요.",
-        "guardedExplainerNone": "지금은 폴더 밖 파일을 건드릴 때 Atlas 가 대신 물어봐 줄 수 있는 도구가 없어요. 각 도구에 직접 해 둔 설정대로 움직여요."
+        "guardedExplainerNone": "지금은 폴더 밖 파일을 건드릴 때 Atlas 가 대신 물어봐 줄 수 있는 도구가 없어요. 각 도구에 직접 해 둔 설정대로 움직여요.",
+        "unknownExplainer": "「확인 못 함」은 그 도구가 없다는 뜻이 아니라, 이 컴퓨터에 있는지 Atlas 가 알아볼 방법을 아직 안 갖췄다는 뜻이에요. 눌러서 띄워 보는 건 됩니다."
       }
     },
     "primaryAriaLabel": "주요 메뉴",
@@ -3649,6 +3651,11 @@
     },
     "close": "대화 닫기",
     "composerPlaceholder": "이 폴더에 대해 물어보거나 시켜요",
-    "composerHint": "Enter 로 보내고 ⇧Enter 로 줄바꿈"
+    "composerHint": "Enter 로 보내고 ⇧Enter 로 줄바꿈",
+    "history": "지난 대화",
+    "newChat": "새 대화",
+    "untitled": "제목 없는 대화",
+    "model": "모델",
+    "mode": "작업 방식"
   }
 }

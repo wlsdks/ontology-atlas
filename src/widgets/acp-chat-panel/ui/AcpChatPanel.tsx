@@ -1,10 +1,10 @@
 'use client';
 
-import { CornerDownLeft, Square, X } from 'lucide-react';
+import { CornerDownLeft, History, Square, SquarePen, X } from 'lucide-react';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslations } from 'next-intl';
 
-import { Button, Chip, IconButton, Surface, Textarea } from '@/shared/ui';
+import { Button, Chip, IconButton, RowButton, Select, Surface, Textarea } from '@/shared/ui';
 import { badgeClass } from '@/shared/ui/badge-class';
 import { ICON_SIZE } from '@/shared/ui/icon-size';
 import { useHeldValue } from '@/shared/lib/use-presence';
@@ -46,12 +46,22 @@ export function AcpChatPanel({
   onClose?: () => void;
 }) {
   const t = useTranslations('acpChat');
-  const { status, events, error, pending, start, send, cancel } = useAcpSession({
-    runtimeId,
-    vaultRoot,
-    mcpServers,
-  });
+  const {
+    status,
+    events,
+    error,
+    pending,
+    sessions,
+    choices,
+    chooseModel,
+    chooseMode,
+    start,
+    send,
+    cancel,
+    switchSession,
+  } = useAcpSession({ runtimeId, vaultRoot, mcpServers });
   const [draft, setDraft] = useState('');
+  const [historyOpen, setHistoryOpen] = useState(false);
   const listRef = useRef<HTMLDivElement | null>(null);
   /*
    * 퇴장 애니메이션이 도는 동안에도 그릴 것이 있어야 한다 — `pending` 이
@@ -117,6 +127,31 @@ export function AcpChatPanel({
           >
             {t(`status.${status}`)}
           </span>
+          {/*
+            지난 대화가 **있을 때만** 문을 낸다 — 처음 쓰는 사람에게 늘 비어
+            있는 목록 버튼을 보여 줄 이유가 없다.
+          */}
+          {sessions.length > 0 ? (
+            <IconButton
+              label={t('history')}
+              data-testid="acp-chat-history"
+              aria-expanded={historyOpen}
+              onClick={() => setHistoryOpen((open) => !open)}
+            >
+              <History size={ICON_SIZE.sm} aria-hidden />
+            </IconButton>
+          ) : null}
+          <IconButton
+            label={t('newChat')}
+            data-testid="acp-chat-new"
+            disabled={status === 'starting'}
+            onClick={() => {
+              setHistoryOpen(false);
+              void switchSession(null);
+            }}
+          >
+            <SquarePen size={ICON_SIZE.sm} aria-hidden />
+          </IconButton>
           {onClose ? (
             <IconButton label={t('close')} data-testid="acp-chat-close" onClick={onClose}>
               <X size={ICON_SIZE.sm} aria-hidden />
@@ -124,6 +159,73 @@ export function AcpChatPanel({
           ) : null}
         </span>
       </header>
+
+      {/*
+        지난 대화 목록. 머리 바로 아래에서 자란다 — 연 버튼 옆이다.
+
+        ⚠️ 여기 담기는 것은 **이 폴더의 대화뿐**이다. 어댑터는 `cwd` 를 줘도
+        다른 폴더의 대화까지 돌려주고(실측), 그대로 그리면 앱에서 연 적도 없는
+        폴더의 작업 제목이 화면에 뜬다. 거르는 곳은 `keepSessionsInFolder` 하나다.
+      */}
+      <Surface open={historyOpen && sessions.length > 0} origin="top right" motion="overlay">
+        <ul
+          data-testid="acp-chat-history-list"
+          className="grid max-h-48 gap-0.5 overflow-y-auto rounded-panel border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] p-1"
+        >
+          {sessions.map((session) => (
+            <li key={session.sessionId}>
+              <RowButton
+                data-testid="acp-chat-history-item"
+                data-session-id={session.sessionId}
+                onClick={() => {
+                  setHistoryOpen(false);
+                  void switchSession(session.sessionId);
+                }}
+                className="w-full"
+              >
+                <span className="min-w-0 flex-1 truncate text-left text-body text-[color:var(--color-text-secondary)]">
+                  {session.title ?? t('untitled')}
+                </span>
+              </RowButton>
+            </li>
+          ))}
+        </ul>
+      </Surface>
+
+      {/*
+        고를 거리 — **온 것만 그린다.** 실측: codex 는 모델 33개를 내놓고,
+        claude 는 모델을 아예 안 내놓는다(`session/set_model` 이 「그런 메서드
+        없음」). 그래서 개수를 짐작해 자리를 미리 잡아 두지 않는다: 없는 도구에
+        빈 드롭다운을 남겨 두면 그건 「곧 됩니다」와 같은 거짓말이다.
+
+        ⚠️ 모드 목록에는 **권한 확인을 건너뛰는 것들이 빠져 있다**
+        (`keepGateSafeModes`). 이 화면이 「폴더 밖은 먼저 물어본다」고 약속하는데
+        그 약속을 드롭다운 한 번으로 무를 수 있으면 약속이 아니다.
+      */}
+      {choices.models.length > 0 || choices.modes.length > 0 ? (
+        <div data-testid="acp-chat-choices" className="flex shrink-0 flex-wrap items-center gap-2">
+          {choices.models.length > 0 ? (
+            <Select
+              ariaLabel={t('model')}
+              size="md"
+              value={choices.currentModelId ?? ''}
+              onChange={(value) => void chooseModel(value)}
+              options={choices.models.map((model) => ({ value: model.id, label: model.name }))}
+              data-testid="acp-chat-model"
+            />
+          ) : null}
+          {choices.modes.length > 0 ? (
+            <Select
+              ariaLabel={t('mode')}
+              size="md"
+              value={choices.currentModeId ?? ''}
+              onChange={(value) => void chooseMode(value)}
+              options={choices.modes.map((mode) => ({ value: mode.id, label: mode.name }))}
+              data-testid="acp-chat-mode"
+            />
+          ) : null}
+        </div>
+      ) : null}
 
       <div
         ref={listRef}

@@ -30,6 +30,128 @@ export interface AcpTransport {
   subscribe(onLine: (line: string) => void): () => void;
 }
 
+/** 고를 수 있는 것 하나 — 모델이든 모드든 화면에는 같은 모양으로 그린다. */
+export interface AcpChoice {
+  id: string;
+  name: string;
+  description: string | null;
+}
+
+/**
+ * **관문을 없애는 모드는 내놓지 않는다.**
+ *
+ * 실측(2026-08-16)에서 어댑터가 내놓는 모드에는 권한 확인을 통째로 건너뛰는
+ * 것들이 섞여 있다:
+ *
+ * - `bypassPermissions` — *"Bypass all permission checks"*
+ * - `acceptEdits` — *"Auto-accept file edit operations"*
+ * - `agent-full-access` — codex 쪽의 같은 갈래
+ *
+ * 이 앱은 「폴더 밖 파일을 건드릴 때 먼저 물어본다」고 화면에서 약속한다. 그
+ * 약속을 한 번의 드롭다운 선택으로 무를 수 있으면 그건 약속이 아니라 기본값이다.
+ * 그래서 **여기서는 안 내놓는다** — 그 모드가 정말 필요한 사람은 그 도구를 자기
+ * 터미널에서 그렇게 쓰면 된다. 우리가 막는 것이 아니라, **우리 화면이 지킬 수
+ * 있는 약속만 내놓는** 것이다.
+ *
+ * ⚠️ 「거절로 닫히는」 모드는 막지 않는다(`dontAsk` 는 미리 허용 안 된 것을
+ * **거절**한다 — 안전한 쪽으로 실패한다). 가르는 기준은 「엄격한가」가 아니라
+ * **「묻지 않고 통과시키는가」**다.
+ */
+const GATE_REMOVING_MODES = new Set(['bypassPermissions', 'acceptEdits', 'agent-full-access']);
+
+export function keepGateSafeModes(modes: AcpChoice[]): AcpChoice[] {
+  return modes.filter((mode) => !GATE_REMOVING_MODES.has(mode.id));
+}
+
+/** `{availableModels|availableModes, current…Id}` 를 화면이 쓰는 모양으로. */
+function toChoices(raw: unknown, listKey: string): AcpChoice[] {
+  const block = asRecord(raw);
+  const list = block && Array.isArray(block[listKey]) ? (block[listKey] as unknown[]) : [];
+  const out: AcpChoice[] = [];
+  for (const item of list) {
+    const row = asRecord(item);
+    const id =
+      typeof row?.modelId === 'string'
+        ? row.modelId
+        : typeof row?.id === 'string'
+          ? row.id
+          : null;
+    if (!id) continue;
+    out.push({
+      id,
+      name: typeof row.name === 'string' && row.name.trim() ? row.name : id,
+      description: typeof row.description === 'string' ? row.description : null,
+    });
+  }
+  return out;
+}
+
+function currentId(raw: unknown, key: string): string | null {
+  const block = asRecord(raw);
+  const value = block?.[key];
+  return typeof value === 'string' ? value : null;
+}
+
+/** 세션 하나가 내놓는 고를 거리들. 어댑터가 안 내놓으면 빈 배열이다. */
+export interface AcpSessionChoices {
+  models: AcpChoice[];
+  currentModelId: string | null;
+  modes: AcpChoice[];
+  currentModeId: string | null;
+}
+
+export function readSessionChoices(result: Record<string, unknown>): AcpSessionChoices {
+  return {
+    models: toChoices(result.models, 'availableModels'),
+    currentModelId: currentId(result.models, 'currentModelId'),
+    // 모드는 **거르고** 내보낸다 — 위 주석 참고.
+    modes: keepGateSafeModes(toChoices(result.modes, 'availableModes')),
+    currentModeId: currentId(result.modes, 'currentModeId'),
+  };
+}
+
+/** 지난 대화 한 줄 — 목록에 그릴 만큼만. */
+export interface AcpSessionSummary {
+  sessionId: string;
+  /** 그 대화가 열렸던 폴더의 절대 경로. **거르는 기준이 이것이다.** */
+  cwd: string;
+  /** 어댑터가 지어 준 제목. 없으면 null — 화면이 대신 지어내지 않는다. */
+  title: string | null;
+  /** ISO 문자열. 없으면 null. */
+  updatedAt: string | null;
+}
+
+/**
+ * 목록을 **우리가 거른다** (2026-08-16 실측).
+ *
+ * `session/list` 에 `cwd` 를 줘도 어댑터는 **그 폴더로 걸러 주지 않는다** —
+ * 실측에서 열지도 않은 다른 저장소들의 대화가 제목까지 그대로 돌아왔다
+ * (`/Users/…/side-project/…` 의 「디자인 시스템 수준 파악」 등).
+ *
+ * 그걸 그대로 그리면 Atlas 가 **사용자가 이 앱에서 연 적 없는 폴더의 작업
+ * 제목**을 화면에 띄우게 된다. 신뢰 헌장 ②(사용자 모르게 수집하는 것 0)와
+ * 로컬 우선 규칙(볼트 밖을 훑지 않는다)이 정면으로 막는 일이다.
+ *
+ * 그래서 이 함수가 유일한 통로이고, 여기서 반드시 거른다. 어댑터가 나중에
+ * 제대로 걸러 주게 되어도 이 검사는 남는다 — 남의 동작에 우리 약속을 걸지
+ * 않는다. 게이트: `tests/contract/acp-session-scope.contract.test.ts`.
+ */
+export function keepSessionsInFolder(
+  sessions: AcpSessionSummary[],
+  cwd: string,
+): AcpSessionSummary[] {
+  const root = normalizeFolder(cwd);
+  if (!root) return [];
+  return sessions.filter((s) => normalizeFolder(s.cwd) === root);
+}
+
+/** 끝의 `/` 만 정리한다. 그 이상은 Rust 가 할 일이다(심볼릭 링크·상대 경로). */
+function normalizeFolder(value: unknown): string | null {
+  if (typeof value !== 'string') return null;
+  const trimmed = value.trim().replace(/\/+$/, '');
+  return trimmed.length > 0 ? trimmed : null;
+}
+
 /** 권한 요청 하나 — 화면이 사용자에게 보여 줄 만큼만 추린 모양. */
 export interface AcpPermissionRequest {
   /** 사람이 읽는 한 줄. 어댑터가 준 그대로. */
@@ -73,9 +195,28 @@ export interface AcpClient {
     mcpServers?: unknown[];
     /** 세션 시작 지시에 덧붙일 한 문단. 기본 지시를 **대체하지 않는다**. */
     appendSystemPrompt?: string;
-  }): Promise<{ sessionId: string; modes?: Record<string, unknown> }>;
+  }): Promise<{ sessionId: string; choices: AcpSessionChoices }>;
   prompt(sessionId: string, blocks: unknown[]): Promise<{ stopReason?: string }>;
   cancel(sessionId: string): Promise<void>;
+  /**
+   * 이 폴더의 지난 대화들. **`cwd` 로 걸러서** 돌려준다 — 아래 주석 참고.
+   * 어댑터가 이 기능을 안 내놓으면 빈 배열이다(없는 것을 있는 척하지 않는다).
+   */
+  listSessions(cwd: string): Promise<AcpSessionSummary[]>;
+  /** 지난 대화를 이어 받는다. 실패하면 던진다 — 부르는 쪽이 새 대화로 떨어진다. */
+  loadSession(params: {
+    sessionId: string;
+    cwd: string;
+    mcpServers?: unknown[];
+  }): Promise<{ sessionId: string; choices: AcpSessionChoices }>;
+  /**
+   * 모델을 바꾼다. **안 내놓는 어댑터가 있다** — claude 는 `session/set_model`
+   * 자체가 「그런 메서드 없음」이다(실측). 그래서 실패를 삼키고 `false` 를
+   * 돌려준다: 화면은 되는 것만 그리고, 안 되는 것은 조용히 없는 채로 둔다.
+   */
+  setModel(sessionId: string, modelId: string): Promise<boolean>;
+  /** 모드를 바꾼다. 둘 다 지원한다(실측). */
+  setMode(sessionId: string, modeId: string): Promise<boolean>;
   /** 전송에서 온 줄 하나를 먹인다. 구독을 직접 걸었을 때만 쓴다. */
   ingest(line: string): void;
   dispose(): void;
@@ -218,7 +359,7 @@ export function createAcpClient(
       });
       const sessionId = typeof result.sessionId === 'string' ? result.sessionId : null;
       if (!sessionId) throw new Error('session/new response missing sessionId');
-      return { sessionId, modes: asRecord(result.modes) };
+      return { sessionId, choices: readSessionChoices(result) };
     },
     prompt: async (sessionId, blocks) => {
       const result = await call('session/prompt', { sessionId, prompt: blocks });
@@ -227,6 +368,60 @@ export function createAcpClient(
     cancel: async (sessionId) => {
       // 취소는 알림이다 — 답을 기다리지 않는다.
       write({ jsonrpc: '2.0', method: 'session/cancel', params: { sessionId } });
+    },
+    listSessions: async (cwd) => {
+      let result: Record<string, unknown>;
+      try {
+        result = await call('session/list', { cwd });
+      } catch {
+        // 이 기능을 안 내놓는 어댑터가 있다. 없는 것은 없는 대로 — 빈 목록이
+        // 「지난 대화가 없다」와 같은 화면을 만든다(둘 다 고를 것이 없다).
+        return [];
+      }
+      const raw = Array.isArray(result.sessions) ? result.sessions : [];
+      const summaries: AcpSessionSummary[] = [];
+      for (const item of raw) {
+        const row = asRecord(item);
+        const sessionId = typeof row?.sessionId === 'string' ? row.sessionId : null;
+        const folder = typeof row?.cwd === 'string' ? row.cwd : null;
+        // 어느 폴더의 것인지 모르는 줄은 **버린다.** 「아마 이 폴더겠지」로
+        // 남겨 두면 남의 폴더 제목이 화면에 뜨는 바로 그 사고가 된다.
+        if (!sessionId || !folder) continue;
+        summaries.push({
+          sessionId,
+          cwd: folder,
+          title: typeof row.title === 'string' && row.title.trim() ? row.title : null,
+          updatedAt: typeof row.updatedAt === 'string' ? row.updatedAt : null,
+        });
+      }
+      return keepSessionsInFolder(summaries, cwd);
+    },
+    loadSession: async (params) => {
+      const result = await call('session/load', {
+        sessionId: params.sessionId,
+        cwd: params.cwd,
+        mcpServers: params.mcpServers ?? [],
+      });
+      // 어댑터가 `sessionId` 를 안 돌려주는 경우가 있어 요청한 값을 유지한다.
+      const sessionId =
+        typeof result.sessionId === 'string' ? result.sessionId : params.sessionId;
+      return { sessionId, choices: readSessionChoices(result) };
+    },
+    setModel: async (sessionId, modelId) => {
+      try {
+        await call('session/set_model', { sessionId, modelId });
+        return true;
+      } catch {
+        return false;
+      }
+    },
+    setMode: async (sessionId, modeId) => {
+      try {
+        await call('session/set_mode', { sessionId, modeId });
+        return true;
+      } catch {
+        return false;
+      }
     },
     ingest,
     dispose: () => {

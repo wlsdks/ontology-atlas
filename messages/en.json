@@ -191,9 +191,9 @@
         "intro": "Atlas launches the AI coding tools installed on this computer, so you can talk to them right here.",
         "recheck": "Check again",
         "checking": "Looking…",
-        "readyHeading": "Ready to use ({count})",
-        "othersHeading": "Show {count} that need installing",
-        "noneReady": "No tool is ready yet",
+        "readyHeading": "Found on this computer ({count})",
+        "othersHeading": "Show the other {count}",
+        "noneReady": "Nothing found yet",
         "noneReadyCaption": "Install Claude Code or Codex and it shows up here.",
         "webLabel": "A browser is not allowed to start programs on this computer",
         "webCaption": "Get the Mac app to use the tools installed here from inside Atlas. On this screen you can still point a tool you started yourself at this folder, from “Connect my agents”.",
@@ -202,10 +202,12 @@
           "cli-missing": "Install needed",
           "node-missing": "Node needed",
           "uvx-missing": "uv needed",
-          "binary-missing": "Install yourself"
+          "binary-missing": "Install yourself",
+          "cli-unknown": "Not checked"
         },
         "guardedExplainer": "Right now {names} is the only tool Atlas can ask you about before it touches a file outside this folder. Every other tool follows the settings you gave it directly.",
-        "guardedExplainerNone": "No tool here can be asked about before it touches a file outside this folder. Each one follows the settings you gave it directly."
+        "guardedExplainerNone": "No tool here can be asked about before it touches a file outside this folder. Each one follows the settings you gave it directly.",
+        "unknownExplainer": "\"Not checked\" does not mean the tool is missing. It means Atlas does not yet know how to look for it on this computer. You can still start it."
       }
     },
     "primaryAriaLabel": "Primary menu",
@@ -3649,6 +3651,11 @@
     },
     "close": "Close conversation",
     "composerPlaceholder": "Ask about this folder, or give it a task",
-    "composerHint": "Enter to send · ⇧Enter for a new line"
+    "composerHint": "Enter to send · ⇧Enter for a new line",
+    "history": "Past chats",
+    "newChat": "New chat",
+    "untitled": "Untitled chat",
+    "model": "Model",
+    "mode": "Mode"
   }
 }
