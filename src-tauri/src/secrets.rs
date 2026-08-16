@@ -138,22 +138,129 @@ pub(crate) fn read_secret(provider: &str) -> Result<String, String> {
 
 /// 키 삭제 — 없어도 성공으로 본다(멱등). "지웠는데 에러" 는 사용자에게
 /// 의미 없는 불안만 준다.
+///
+/// ## 다만 「없었다」와 「못 지웠다」는 다르다 (2026-08-17)
+///
+/// 예전에는 `let _ = handle.delete_credential();` 로 결과를 통째로 버리고
+/// **무조건** `stored: false` 를 돌려줬다. 키체인이 잠겨 있거나 삭제가
+/// 실패해도 화면은 「지웠어요」라고 말했고, **키는 그대로 남아 있었다.**
+///
+/// 멱등성 논리("없으면 성공")는 옳지만 여기까지 오면 안 된다. 이 모듈이 다루는
+/// 것은 비밀이고, **지워졌다는 거짓말은 사용자가 안심하고 그 자리를 떠나게
+/// 만든다** — 지워졌다고 믿고 컴퓨터를 넘기거나 공유한다. 이 파일 맨 위가
+/// 선언한 계약("WebView 가 키를 절대 보지 못하게 한다")과 같은 무게의 약속이다.
+///
+/// 그래서 오류의 **종류를 가른다**: 없어서 실패한 것만 성공으로 보고, 나머지는
+/// 실패라고 말한다. 지우지 못한 것을 지웠다고 하는 것보다, 못 지웠다고 하는
+/// 편이 언제나 낫다.
+///
+/// ⚠️ **확인에 `secret_status` 를 쓰면 안 된다.** 그 함수는 일부러 모든
+/// 키체인 오류를 「없음」으로 강등한다(잠긴 키체인 때문에 화면이 막히지 않게).
+/// 그러니 그것으로 확인하면 잠긴 키체인이 그대로 「지워짐」으로 통과한다 —
+/// 고치려던 결함과 똑같은 답이 나온다.
 #[tauri::command]
 pub fn secret_clear(provider: String) -> Result<SecretStatus, String> {
     let known = validate_provider(&provider)?;
-    if let Ok(handle) = entry(&provider) {
-        let _ = handle.delete_credential();
-    }
-    Ok(SecretStatus {
+    let handle = entry(&provider)?;
+    let cleared = SecretStatus {
         provider: known.to_string(),
         stored: false,
         last4: None,
-    })
+    };
+    // 키체인 결과를 세 갈래로 좁혀서 **판정은 순수 함수에 맡긴다** — 키체인이
+    // 있어야 도는 코드는 테스트할 수 없지만, 판정은 테스트할 수 있다.
+    let deleted = match handle.delete_credential() {
+        Ok(()) => Step::Done,
+        Err(keyring::Error::NoEntry) => Step::Missing,
+        Err(_) => Step::Failed,
+    };
+    // 지웠다고 주장하기 전에 되읽는다. 삭제가 애초에 실패했으면 되읽을 필요가
+    // 없다(그 자체로 답이 나왔다).
+    let readback = if deleted == Step::Done {
+        match handle.get_password() {
+            Ok(_) => Step::Done, // 아직 읽힌다 = 안 지워졌다
+            Err(keyring::Error::NoEntry) => Step::Missing,
+            Err(_) => Step::Failed,
+        }
+    } else {
+        Step::Failed
+    };
+    if is_cleared(deleted, readback) {
+        Ok(cleared)
+    } else {
+        Err(STILL_THERE.to_string())
+    }
 }
+
+/// 키체인 한 번의 결과를 이 셋으로 좁힌다.
+#[derive(Clone, Copy, PartialEq, Eq, Debug)]
+pub(crate) enum Step {
+    /// 됐다(삭제 성공 · 되읽기에서 아직 값이 읽힘).
+    Done,
+    /// 그런 항목이 없다.
+    Missing,
+    /// 다른 이유로 실패했다 — 잠긴 키체인 등. **모른다는 뜻이다.**
+    Failed,
+}
+
+/// 「정말 지워졌는가」 판정. 여기서 `true` 를 돌려주면 화면이 사용자에게
+/// **지워졌다고 말한다** — 그 말에 기대어 사람은 컴퓨터를 넘기거나 공유한다.
+/// 그래서 **확실할 때만** `true` 다.
+pub(crate) fn is_cleared(deleted: Step, readback: Step) -> bool {
+    match deleted {
+        // 애초에 없었다 — 멱등. "지웠는데 에러" 라는 의미 없는 불안을 안 준다.
+        Step::Missing => true,
+        // 못 지웠다. 잠긴 키체인이면 값은 그대로 남아 있다.
+        Step::Failed => false,
+        Step::Done => match readback {
+            // 확인됐다.
+            Step::Missing => true,
+            // 지웠다는데 아직 읽힌다 — 안 지워진 것이다.
+            Step::Done => false,
+            // 삭제 자체는 성공했다. 되읽기가 다른 이유로 실패한 것까지 실패로
+            // 부르면 멀쩡한 삭제마다 경고가 뜬다.
+            Step::Failed => true,
+        },
+    }
+}
+
+/// 지우지 못했을 때 사용자가 읽는 문장. 왜 안 됐는지와 **직접 지우는 길**을
+/// 같이 준다 — 이 저장소의 강등 카드 규율과 같다(못 하는 이유 + 갈 곳).
+const STILL_THERE: &str = "키를 지우지 못했어요. 키체인이 잠겨 있을 수 있어요 — \
+잠금을 풀고 다시 시도하거나, 키체인 접근 앱에서 \"Ontology Atlas\" 항목을 직접 지워 주세요.";
 
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn clearing_is_only_claimed_when_it_is_certain() {
+        // 2026-08-17 실측 재현: 예전 코드는 삭제 결과를 통째로 버리고 무조건
+        // "지웠어요" 를 돌려줬다. 잠긴 키체인에서 키는 그대로 남아 있었다.
+        assert!(!is_cleared(Step::Failed, Step::Failed), "못 지웠으면 지웠다고 하면 안 된다");
+        // 지웠다는데 아직 읽히면 안 지워진 것이다.
+        assert!(!is_cleared(Step::Done, Step::Done), "아직 읽히면 안 지워진 것이다");
+    }
+
+    #[test]
+    fn absent_key_still_counts_as_cleared() {
+        // 멱등 — 원래 의도는 지킨다. "없는 걸 지웠다" 로 불안 주지 않는다.
+        assert!(is_cleared(Step::Missing, Step::Failed));
+        assert!(is_cleared(Step::Missing, Step::Missing));
+    }
+
+    #[test]
+    fn a_verified_delete_is_cleared() {
+        // 늘 실패하는 판정은 판정이 아니다 — 정상 경로가 통과하는지도 본다.
+        assert!(is_cleared(Step::Done, Step::Missing));
+    }
+
+    #[test]
+    fn a_successful_delete_survives_an_unreadable_readback() {
+        // 삭제는 됐는데 되읽기만 다른 이유로 실패한 경우까지 실패로 부르면
+        // 멀쩡한 삭제마다 경고가 뜬다.
+        assert!(is_cleared(Step::Done, Step::Failed));
+    }
 
     #[test]
     fn provider_allowlist_rejects_arbitrary_names() {
