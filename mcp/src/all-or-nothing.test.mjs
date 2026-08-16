@@ -19,7 +19,7 @@
  */
 import { describe, it, test } from 'node:test';
 import assert from 'node:assert/strict';
-import { chmodSync, mkdirSync, mkdtempSync, readFileSync, rmSync, statSync, writeFileSync, existsSync } from 'node:fs';
+import { chmodSync, mkdirSync, mkdtempSync, readFileSync, rmSync, statSync, unlinkSync, writeFileSync, existsSync } from 'node:fs';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
 
@@ -131,6 +131,43 @@ describe('applyAllOrNothing', () => {
     rmSync(root, { recursive: true, force: true });
   });
 
+  it('사전 거절은 아직 없는 상위 디렉터리도 만들지 않는다', () => {
+    const root = scratch();
+    const locked = join(root, 'locked.md');
+    writeFileSync(locked, 'locked');
+    chmodSync(locked, 0o444);
+
+    assert.throws(() =>
+      applyAllOrNothing([
+        { op: 'write', path: join(root, 'new', 'nested', 'node.md'), content: 'x' },
+        { op: 'write', path: locked, content: 'blocked' },
+      ]),
+    );
+
+    assert.equal(
+      existsSync(join(root, 'new')),
+      false,
+      '아무것도 쓰기 전 거절이 디렉터리 부작용을 남겼다',
+    );
+    chmodSync(locked, 0o644);
+    rmSync(root, { recursive: true, force: true });
+  });
+
+  it('쓰기 실패는 이 작업이 새로 만든 빈 디렉터리까지 되돌린다', () => {
+    const root = scratch();
+    mkdirSync(join(root, 'trap.md'));
+
+    assert.throws(() =>
+      applyAllOrNothing([
+        { op: 'write', path: join(root, 'new', 'nested', 'node.md'), content: 'x' },
+        { op: 'write', path: join(root, 'trap.md'), content: 'boom' },
+      ]),
+    );
+
+    assert.equal(existsSync(join(root, 'new')), false, 'rollback 뒤 빈 디렉터리가 남았다');
+    rmSync(root, { recursive: true, force: true });
+  });
+
   it('없는 파일의 삭제는 오류가 아니다 — 계획은 목표 상태를 말한다', () => {
     const root = scratch();
     const result = applyAllOrNothing([{ op: 'delete', path: join(root, 'never-existed.md') }]);
@@ -171,5 +208,28 @@ test('남이 그 사이에 고쳤으면 한 글자도 안 쓴다', async () => {
   // **한 글자도 안 썼다** — 사람의 편집도, 앞 파일도 그대로.
   assert.equal(readFileSync(stale, 'utf-8'), 'edited by the human');
   assert.equal(readFileSync(kept, 'utf-8'), 'kept-before');
+  rmSync(dir, { recursive: true, force: true });
+});
+
+test('expectedMtime 대상이 삭제됐으면 stale 내용으로 되살리지 않는다', () => {
+  const dir = mkdtempSync(join(tmpdir(), 'oatlas-deleted-conflict-'));
+  const kept = join(dir, 'kept.md');
+  const deleted = join(dir, 'deleted.md');
+  writeFileSync(kept, 'kept-before', 'utf-8');
+  writeFileSync(deleted, 'human-owned', 'utf-8');
+  const expectedMtime = statSync(deleted).mtimeMs;
+  unlinkSync(deleted);
+
+  assert.throws(
+    () =>
+      applyAllOrNothing([
+        { op: 'write', path: kept, content: 'kept-after' },
+        { op: 'write', path: deleted, content: 'stale-agent-copy', expectedMtime },
+      ]),
+    /changed|deleted/i,
+  );
+
+  assert.equal(readFileSync(kept, 'utf-8'), 'kept-before');
+  assert.equal(existsSync(deleted), false, '사람이 지운 파일을 stale 내용으로 되살렸다');
   rmSync(dir, { recursive: true, force: true });
 });

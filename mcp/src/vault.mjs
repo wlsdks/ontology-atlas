@@ -15,6 +15,7 @@ import {
   existsSync,
   realpathSync,
   renameSync,
+  rmdirSync,
   statSync,
   unlinkSync,
 } from 'node:fs';
@@ -1707,6 +1708,42 @@ function sameFileKey(path) {
   return resolve(path).toLowerCase();
 }
 
+/** 아직 없는 쓰기 대상에서 가장 가까운 기존 부모. 사전점검은 절대 만들지 않는다. */
+function nearestExistingParent(path) {
+  let probe = dirname(path);
+  for (;;) {
+    if (existsSync(probe)) return probe;
+    const parent = dirname(probe);
+    if (parent === probe) return probe;
+    probe = parent;
+  }
+}
+
+/**
+ * 실제 적용 중에만 부모 디렉터리를 한 칸씩 만든다.
+ *
+ * `recursive:true`는 다른 프로세스가 경합으로 만든 디렉터리까지 우리가 만든
+ * 것으로 오인할 수 있다. 한 칸씩 EEXIST를 가르면 rollback이 소유한 것만 안다.
+ */
+function createMissingParents(path, createdDirectories) {
+  const missing = [];
+  let probe = dirname(path);
+  while (!existsSync(probe)) {
+    missing.push(probe);
+    const parent = dirname(probe);
+    if (parent === probe) break;
+    probe = parent;
+  }
+  for (const dir of missing.reverse()) {
+    try {
+      mkdirSync(dir);
+      createdDirectories.push(dir);
+    } catch (error) {
+      if (error?.code !== 'EEXIST') throw error;
+    }
+  }
+}
+
 export function applyAllOrNothing(plan) {
   if (!Array.isArray(plan) || plan.length === 0) return { applied: 0 };
 
@@ -1751,16 +1788,18 @@ export function applyAllOrNothing(plan) {
   const conflicts = [];
   for (const entry of plan) {
     if (entry.expectedMtime === null || entry.expectedMtime === undefined) continue;
-    if (!existsSync(entry.path)) continue;
+    if (!existsSync(entry.path)) {
+      conflicts.push(entry.path);
+      continue;
+    }
     const current = getFileMtime(entry.path);
-    if (current === null) continue;
-    if (Math.abs(current - entry.expectedMtime) >= 1) {
+    if (current === null || Math.abs(current - entry.expectedMtime) >= 1) {
       conflicts.push(entry.path);
     }
   }
   if (conflicts.length > 0) {
     throw new Error(
-      `Refused before writing anything: ${conflicts.length} file(s) changed on disk since they `
+      `Refused before writing anything: ${conflicts.length} file(s) changed on disk or were deleted since they `
         + `were read, so this operation would overwrite someone else's edit:\n  `
         + `${conflicts.join('\n  ')}\n`
         + 'The vault is unchanged. Re-read those documents and run this again.',
@@ -1776,8 +1815,7 @@ export function applyAllOrNothing(plan) {
       if (existsSync(entry.path)) {
         accessSync(entry.path, fsConstants.W_OK);
       } else if (entry.op === 'write') {
-        if (!existsSync(dir)) mkdirSync(dir, { recursive: true });
-        accessSync(dir, fsConstants.W_OK);
+        accessSync(nearestExistingParent(entry.path), fsConstants.W_OK);
       }
       if (entry.op === 'delete' && existsSync(entry.path)) {
         // 파일을 지우려면 **파일이 아니라 디렉터리**에 쓰기 권한이 있어야 한다.
@@ -1798,12 +1836,13 @@ export function applyAllOrNothing(plan) {
 
   // ② 적용 — 각 항목의 **직전 상태**를 들고 간다. 되돌릴 재료다.
   const done = [];
+  const createdDirectories = [];
   try {
     for (const entry of plan) {
       const existed = existsSync(entry.path);
       const before = existed ? readFileSync(entry.path, 'utf-8') : null;
       if (entry.op === 'write') {
-        mkdirSync(dirname(entry.path), { recursive: true });
+        createMissingParents(entry.path, createdDirectories);
         writeFileAtomically(entry.path, entry.content);
       } else {
         if (existed) unlinkSync(entry.path);
@@ -1819,6 +1858,13 @@ export function applyAllOrNothing(plan) {
         else if (existsSync(step.path)) unlinkSync(step.path);
       } catch {
         unrecovered.push(step.path);
+      }
+    }
+    for (const dir of createdDirectories.reverse()) {
+      try {
+        rmdirSync(dir);
+      } catch (rollbackError) {
+        if (rollbackError?.code !== 'ENOENT') unrecovered.push(dir);
       }
     }
     const reason = error?.message ?? String(error);
