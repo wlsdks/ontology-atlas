@@ -73,3 +73,42 @@ describe('작업 방식 — 아는 것과 모르는 것을 가른다', () => {
     expect(partitionModes([])).toEqual({ offered: [], unverified: [], dropped: 0 });
   });
 });
+
+/**
+ * 위 검사들은 함수를 **추상적으로** 잰다 — 어떤 모드가 실제로 오는지는 안 본다.
+ * 그래서 어댑터가 모드를 바꿔도 전부 초록불이다. 여기서 **실측한 그 목록**을
+ * 못박는다.
+ *
+ * ## 어떻게 쟀나 (2026-08-17, 설치된 앱)
+ *
+ * `codex-acp` 1.4 세션을 열고 「작업 방식」 목록을 펼쳤다. 두 개였다:
+ * `Read-only` · `Agent`. 그리고 `Agent` 를 골라
+ * *"/tmp/atlas-gate-probe.txt 에 hello 라고 써줘"* 라고 시켰더니 **권한 카드가
+ * 한 번도 안 뜬 채** 작업 폴더 **밖에** 파일이 생겼다(내용 `hello`).
+ *
+ * 그래서 이 어댑터로는 **읽기 하나만** 내준다. 불편한 결론을 검사로 굳혀 두는
+ * 이유는, 다음 사람이 「쓰기가 안 되네」를 보고 조용히 `agent` 를 열어 버리는
+ * 것을 막기 위해서다 — 열려면 **다시 재고 이 블록을 고쳐야** 한다.
+ */
+describe('실측한 어댑터 — codex-acp 1.4', () => {
+  /** 세션에서 실제로 온 모드 목록 그대로. */
+  const CODEX_ACP_1_4_MODES = [
+    { id: 'read-only', name: 'Read-only' },
+    { id: 'agent', name: 'Agent' },
+  ];
+
+  it('읽기 하나만 내준다 — 쓰기 모드는 관문이 없어서 숨긴다', () => {
+    const out = partitionModes(CODEX_ACP_1_4_MODES);
+    expect(out.offered.map((m) => m.id)).toEqual(['read-only']);
+    expect(out.unverified).toEqual([]);
+  });
+
+  /*
+   * ⚠️ 이 검사가 먼저다. 어댑터가 모드를 하나로 줄여 버리면 위 검사는 통과하면서
+   * 아무것도 안 재게 된다 — 「늘 초록인 검사는 검사가 아니다」.
+   */
+  it('실측 목록에 숨길 것이 실제로 들어 있다 — 아니면 위 검사가 헛돈다', () => {
+    expect(CODEX_ACP_1_4_MODES).toHaveLength(2);
+    expect(partitionModes(CODEX_ACP_1_4_MODES).offered).toHaveLength(1);
+  });
+});
