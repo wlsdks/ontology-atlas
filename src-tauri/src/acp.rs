@@ -36,19 +36,81 @@
 use std::ffi::OsStr;
 use std::path::{Path, PathBuf};
 
-/// 앱이 부를 수 있는 실행기 한 종류.
+/// 커밋된 ACP 레지스트리 스냅샷의 항목 하나.
+///
+/// 목록의 정본은 `src-tauri/src/acp-registry.json` 이고, 그것은
+/// `scripts/build-acp-registry.mjs` 가 만든다. **런타임에 받아오지 않는다** —
+/// 앱을 켤 때마다 CDN 에 붙는 것은 사용자가 켠 적 없는 통신이고, 비행기
+/// 안에서는 목록이 비어 버린다.
+#[derive(Debug, Clone, serde::Deserialize)]
+pub(crate) struct RegistryAgent {
+    pub id: String,
+    pub name: String,
+    pub description: String,
+    pub website: Option<String>,
+    pub license: Option<String>,
+    /// 우리가 **실제로 재 본** 것인가. 화면이 안 해 본 것을 해 본 것처럼
+    /// 말하지 않기 위한 표시다.
+    pub verified: bool,
+    /// 그 어댑터가 감싸는 진짜 CLI 의 실행 파일 이름. 모르면 `None` —
+    /// 짐작해서 채우면 화면이 없는 이유를 지어내게 된다.
+    pub cli: Option<String>,
+    pub launch: RegistryLaunch,
+}
+
+#[derive(Debug, Clone, serde::Deserialize)]
+#[serde(tag = "kind", rename_all = "lowercase")]
+pub(crate) enum RegistryLaunch {
+    /// `npx -y <package> <args…>`
+    Npx {
+        package: String,
+        #[serde(default)]
+        args: Vec<String>,
+    },
+    /// `uvx <package> <args…>`
+    Uvx {
+        package: String,
+        #[serde(default)]
+        args: Vec<String>,
+    },
+    /// 사용자가 이미 설치한 실행 파일. **앱이 대신 받아 오지 않는다** —
+    /// 남의 바이너리를 앱이 내려받아 실행하는 것은 이 제품이 안 하기로 한 일이다.
+    Binary {
+        command: String,
+        #[serde(default)]
+        args: Vec<String>,
+    },
+}
+
+#[derive(Debug, Clone, serde::Deserialize)]
+struct RegistrySnapshot {
+    agents: Vec<RegistryAgent>,
+}
+
+/// 빌드에 박아 넣은 스냅샷. 파일이 깨져 있으면 **빌드가 아니라 실행이** 실패해야
+/// 하므로, 여기서 한 번만 파싱하고 실패하면 빈 목록으로 둔다 — 목록이 비면
+/// 화면이 「찾은 것이 없다」고 말하지, 잘못된 것을 띄우지 않는다.
+fn registry() -> &'static [RegistryAgent] {
+    static REGISTRY: std::sync::OnceLock<Vec<RegistryAgent>> = std::sync::OnceLock::new();
+    REGISTRY.get_or_init(|| {
+        serde_json::from_str::<RegistrySnapshot>(include_str!("acp-registry.json"))
+            .map(|s| s.agents)
+            .unwrap_or_default()
+    })
+}
+
+pub(crate) fn registry_agent(id: &str) -> Option<&'static RegistryAgent> {
+    registry().iter().find(|a| a.id == id)
+}
+
+/// 설정을 격리하는 방법 — **우리가 실제로 재 본 실행기만** 여기 있다.
+///
+/// 격리는 실행기마다 다른 환경 변수와 자격증명 파일을 알아야 하고, 그것을
+/// 짐작으로 채우면 로그인이 조용히 깨진다. 그래서 이 표는 레지스트리가 아니라
+/// 실측에서 자란다.
 #[derive(Debug, Clone, Copy)]
-pub(crate) struct AcpRuntimeSpec {
-    /// 화면·설정이 쓰는 안정된 식별자.
+pub(crate) struct IsolationSpec {
     pub id: &'static str,
-    /// 사람이 읽는 이름.
-    pub label: &'static str,
-    /// 사용자가 이미 깔아 둔 CLI 의 실행 파일 이름.
-    pub cli: &'static str,
-    /// 어댑터가 전역 설치돼 있을 때의 실행 파일 이름.
-    pub adapter_bin: &'static str,
-    /// 설치돼 있지 않을 때 `npx` 로 부를 **버전 못 박은** 패키지.
-    pub adapter_package: &'static str,
     /// 이 실행기가 「설정을 어디서 읽나」를 정하는 환경 변수.
     pub config_env: &'static str,
     /// 그 설정 디렉터리 안의 자격증명 파일 이름. 격리하면 로그인이 깨지므로
@@ -56,6 +118,27 @@ pub(crate) struct AcpRuntimeSpec {
     pub credentials_file: &'static str,
     /// 사용자의 원본 설정 디렉터리(홈 기준 상대 경로).
     pub user_config_dir: &'static str,
+}
+
+pub(crate) const ISOLATION: &[IsolationSpec] = &[
+    IsolationSpec {
+        id: "claude-acp",
+        config_env: "CLAUDE_CONFIG_DIR",
+        credentials_file: ".credentials.json",
+        user_config_dir: ".claude",
+    },
+    IsolationSpec {
+        // codex 의 격리는 아직 실측하지 않았다. 값만 등재해 두어 「하나만 특별
+        // 대우하는 코드」가 생기지 않게 한다.
+        id: "codex-acp",
+        config_env: "CODEX_HOME",
+        credentials_file: "auth.json",
+        user_config_dir: ".codex",
+    },
+];
+
+fn isolation_for(id: &str) -> Option<&'static IsolationSpec> {
+    ISOLATION.iter().find(|s| s.id == id)
 }
 
 /// 앱이 띄우는 세션에 넣는 설정. **사용자의 전역 설정을 물려받지 않는다.**
@@ -77,36 +160,6 @@ const ISOLATED_CLAUDE_SETTINGS: &str = r#"{
   }
 }
 "#;
-
-/// 이번 조각이 부르는 실행기.
-///
-/// **claude 하나로 시작한다**(결정 원장 2026-08-16). codex 는 같은 자리에 이미
-/// 등록해 두되, 화면에 내보낼지는 다음 조각에서 정한다 — 목록에 두 줄이 있어야
-/// 「하나만 특별 대우하는 코드」가 생기지 않는다.
-pub(crate) const RUNTIMES: &[AcpRuntimeSpec] = &[
-    AcpRuntimeSpec {
-        id: "claude",
-        label: "Claude Code",
-        cli: "claude",
-        adapter_bin: "claude-agent-acp",
-        adapter_package: "@agentclientprotocol/claude-agent-acp@0.68.0",
-        config_env: "CLAUDE_CONFIG_DIR",
-        credentials_file: ".credentials.json",
-        user_config_dir: ".claude",
-    },
-    AcpRuntimeSpec {
-        id: "codex",
-        label: "Codex",
-        cli: "codex",
-        adapter_bin: "codex-acp",
-        adapter_package: "@agentclientprotocol/codex-acp@1.3.0",
-        // codex 는 다음 조각이다. 값만 등재해 두어 「하나만 특별 대우하는 코드」가
-        // 생기지 않게 한다 — 격리 동작은 아직 실측하지 않았다.
-        config_env: "CODEX_HOME",
-        credentials_file: "auth.json",
-        user_config_dir: ".codex",
-    },
-];
 
 /// 파일시스템을 어떻게 들여다볼지 — 테스트가 진짜 디스크 없이 판정할 수 있게
 /// 주입한다. 「이 기기에 무엇이 있나」를 검사가 기기에 의존해서 물으면, 그
@@ -284,59 +337,191 @@ pub(crate) fn resolve_command(
 pub(crate) struct AcpRuntimeStatus {
     pub id: String,
     pub label: String,
-    /// `ready` · `cli-missing` · `node-missing`
+    pub description: String,
+    pub website: Option<String>,
+    pub license: Option<String>,
+    /// 우리가 실제로 재 본 것인가.
+    pub verified: bool,
+    /// `npx` · `uvx` · `binary`
+    pub launch_kind: String,
+    /// `ready` · `cli-missing` · `node-missing` · `uvx-missing` · `binary-missing`
+    ///
+    /// 다섯인 이유는 **각각 사용자가 할 일이 다르기** 때문이다. 「설치됨/아님」
+    /// 둘로 뭉개면 화면이 무엇을 하라고 말해야 할지 모른다.
     pub state: String,
-    /// 찾아낸 CLI 절대 경로 (없으면 null).
+    /// 찾아낸 진짜 CLI 절대 경로 (아는 경우만).
     pub cli_path: Option<String>,
-    /// 전역 설치된 어댑터 절대 경로. 있으면 npx 를 건너뛴다.
+    /// 전역 설치된 어댑터/실행 파일 절대 경로. 있으면 npx 를 건너뛴다.
     pub adapter_path: Option<String>,
-    /// 어댑터가 없을 때 쓸 npx 절대 경로.
-    pub npx_path: Option<String>,
-    /// npx 로 부를 때의 버전 못 박은 패키지 이름.
-    pub adapter_package: String,
+    /// npx 로 부를 때의 **버전 못 박은** 패키지 이름 (npx 갈래만).
+    pub adapter_package: Option<String>,
+    /// 이 실행기의 설정을 앱이 격리할 수 있는가. 못 하면 사용자의 전역 설정을
+    /// 물려받게 되므로 **권한 관문이 없다** — 화면이 그 사실을 말해야 한다.
+    pub isolated: bool,
 }
 
-/// 이 기기의 실행기 상태를 전부 판정한다.
+/// **실제로 띄울 프로그램**을 찾는다. 상태 표시와 실행이 같은 답을 쓰게 하는
+/// 한 곳이다 — 갈라지면 화면이 「이걸 띄운다」고 말한 것과 다른 것이 뜬다.
 ///
-/// 판정은 셋뿐이고 **각각 다음 행동이 다르다**: `ready` 는 바로 쓸 수 있고,
-/// `cli-missing` 은 사용자가 그 도구를 설치해야 하고, `node-missing` 은 도구는
-/// 있는데 어댑터를 띄울 방법이 없다(Node 설치 또는 어댑터 전역 설치). 「설치됨/
-/// 아님」 두 값으로 뭉개면 화면이 무엇을 하라고 말해야 할지 모른다.
+/// npx 갈래는 전역 설치된 어댑터가 있으면 그것을 쓴다(npx 는 첫 실행이 느리다).
+fn resolve_program(
+    launch: &RegistryLaunch,
+    dirs: &[PathBuf],
+    probe: &FsProbe<'_>,
+) -> Option<PathBuf> {
+    match launch {
+        RegistryLaunch::Npx { package, .. } => adapter_bin_name(package)
+            .and_then(|bin| resolve_command(&bin, dirs, probe))
+            .or_else(|| resolve_command("npx", dirs, probe)),
+        RegistryLaunch::Uvx { .. } => resolve_command("uvx", dirs, probe),
+        RegistryLaunch::Binary { command, .. } => resolve_command(command, dirs, probe),
+    }
+}
+
+/// 띄울 방법이 없을 때의 사유 코드 — 실행 방식마다 사용자가 할 일이 다르다.
+fn launcher_missing_state(launch: &RegistryLaunch) -> &'static str {
+    match launch {
+        RegistryLaunch::Npx { .. } => "node-missing",
+        RegistryLaunch::Uvx { .. } => "uvx-missing",
+        RegistryLaunch::Binary { .. } => "binary-missing",
+    }
+}
+
+/// 이 기기의 실행기 상태를 전부 판정한다 — 레지스트리에 등재된 모든 항목.
+///
+/// 판정 순서가 계약이다: **CLI 가 없는 것이 먼저다.** 그게 사용자가 할 일이
+/// 더 분명하기 때문이다(그 도구를 설치하라). Node 가 없다는 답은 도구는 있는데
+/// 띄울 방법이 없을 때만 유용하다.
 pub(crate) fn detect_runtimes(
     home: Option<&Path>,
     path_env: Option<&OsStr>,
     probe: &FsProbe<'_>,
 ) -> Vec<AcpRuntimeStatus> {
     let dirs = candidate_bin_dirs(home, path_env, probe);
-    let npx = resolve_command("npx", &dirs, probe);
 
-    RUNTIMES
+    registry()
         .iter()
-        .map(|spec| {
-            let cli = resolve_command(spec.cli, &dirs, probe);
-            let adapter = resolve_command(spec.adapter_bin, &dirs, probe);
-            let state = if cli.is_none() {
+        .map(|agent| {
+            let cli = agent
+                .cli
+                .as_deref()
+                .and_then(|name| resolve_command(name, &dirs, probe));
+            let program = resolve_program(&agent.launch, &dirs, probe);
+
+            let state = if agent.cli.is_some() && cli.is_none() {
                 "cli-missing"
-            } else if adapter.is_none() && npx.is_none() {
-                "node-missing"
+            } else if program.is_none() {
+                launcher_missing_state(&agent.launch)
             } else {
                 "ready"
             };
+
             AcpRuntimeStatus {
-                id: spec.id.to_string(),
-                label: spec.label.to_string(),
+                id: agent.id.clone(),
+                label: agent.name.clone(),
+                description: agent.description.clone(),
+                website: agent.website.clone(),
+                license: agent.license.clone(),
+                verified: agent.verified,
+                launch_kind: match agent.launch {
+                    RegistryLaunch::Npx { .. } => "npx",
+                    RegistryLaunch::Uvx { .. } => "uvx",
+                    RegistryLaunch::Binary { .. } => "binary",
+                }
+                .to_string(),
                 state: state.to_string(),
                 cli_path: cli.map(to_string_lossy),
-                adapter_path: adapter.map(to_string_lossy),
-                npx_path: npx.clone().map(to_string_lossy),
-                adapter_package: spec.adapter_package.to_string(),
+                adapter_path: program.map(to_string_lossy),
+                adapter_package: match &agent.launch {
+                    RegistryLaunch::Npx { package, .. } | RegistryLaunch::Uvx { package, .. } => {
+                        Some(package.clone())
+                    }
+                    RegistryLaunch::Binary { .. } => None,
+                },
+                isolated: isolation_for(&agent.id).is_some(),
             }
         })
         .collect()
 }
 
+/// 실행기 하나를 띄우기 위한 값들을 푼다. 못 띄우면 **사람이 읽을 수 있는
+/// 사유 코드**를 돌려준다.
+pub(crate) fn resolve_launch(
+    runtime_id: &str,
+    home: Option<&Path>,
+    path_env: Option<&OsStr>,
+    probe: &FsProbe<'_>,
+) -> Result<AcpLaunch, String> {
+    let agent = registry_agent(runtime_id).ok_or_else(|| format!("unknown-runtime:{runtime_id}"))?;
+    let dirs = candidate_bin_dirs(home, path_env, probe);
+    let joined = std::env::join_paths(dirs.iter())
+        .map_err(|err| format!("path-join-failed:{err}"))?
+        .to_string_lossy()
+        .to_string();
+
+    if let Some(cli) = agent.cli.as_deref() {
+        if resolve_command(cli, &dirs, probe).is_none() {
+            return Err(format!("cli-missing:{cli}"));
+        }
+    }
+
+    match &agent.launch {
+        RegistryLaunch::Binary { command, args } => {
+            let program = resolve_command(command, &dirs, probe)
+                .ok_or_else(|| format!("binary-missing:{command}"))?;
+            Ok(AcpLaunch {
+                program,
+                args: args.clone(),
+                path_env: joined,
+            })
+        }
+        RegistryLaunch::Npx { package, args } => {
+            // 이미 전역 설치돼 있으면 그것을 쓴다 — npx 는 첫 실행이 느리다.
+            // 패키지 이름의 마지막 조각이 대개 실행 파일 이름이다
+            // (`@agentclientprotocol/claude-agent-acp@0.68.0` → `claude-agent-acp`).
+            if let Some(installed) =
+                adapter_bin_name(package).and_then(|bin| resolve_command(&bin, &dirs, probe))
+            {
+                return Ok(AcpLaunch {
+                    program: installed,
+                    args: args.clone(),
+                    path_env: joined,
+                });
+            }
+            let npx = resolve_command("npx", &dirs, probe).ok_or("node-missing")?;
+            // `-y` 는 「설치할까요?」 프롬프트를 끈다. 우리에겐 답할 사람이 없다 —
+            // 물어보면 프로세스가 조용히 멈춘 채로 남는다.
+            let mut full = vec!["-y".to_string(), package.clone()];
+            full.extend(args.iter().cloned());
+            Ok(AcpLaunch {
+                program: npx,
+                args: full,
+                path_env: joined,
+            })
+        }
+        RegistryLaunch::Uvx { package, args } => {
+            let uvx = resolve_command("uvx", &dirs, probe).ok_or("uvx-missing")?;
+            let mut full = vec![package.clone()];
+            full.extend(args.iter().cloned());
+            Ok(AcpLaunch {
+                program: uvx,
+                args: full,
+                path_env: joined,
+            })
+        }
+    }
+}
+
 fn to_string_lossy(path: PathBuf) -> String {
     path.to_string_lossy().to_string()
+}
+
+/// `@scope/name@1.2.3` · `name@1.2.3` → `name`. 버전과 스코프를 벗긴다.
+pub(crate) fn adapter_bin_name(package: &str) -> Option<String> {
+    let without_scope = package.rsplit('/').next()?;
+    // 스코프 없는 `name@1.2.3` 도 같은 규칙으로 잘린다.
+    let name = without_scope.split('@').next().filter(|s| !s.is_empty())?;
+    Some(name.to_string())
 }
 
 /// 어댑터를 실제로 띄울 때 쓰는 값 한 벌.
@@ -352,48 +537,6 @@ pub(crate) struct AcpLaunch {
     /// 그 어댑터는 다시 진짜 CLI(`claude`)를 **이름으로** 찾는다. 부모가 못
     /// 찾던 그 PATH 를 자식에게 그대로 물려주면 어댑터가 같은 자리에서 막힌다.
     pub path_env: String,
-}
-
-/// 실행기 하나를 띄우기 위한 값들을 푼다. 못 띄우면 **사람이 읽을 수 있는
-/// 이유**를 돌려준다 — 이 문자열은 화면이 그대로 쓰지 않고 사유 판정에만 쓴다.
-pub(crate) fn resolve_launch(
-    runtime_id: &str,
-    home: Option<&Path>,
-    path_env: Option<&OsStr>,
-    probe: &FsProbe<'_>,
-) -> Result<AcpLaunch, String> {
-    let spec = RUNTIMES
-        .iter()
-        .find(|s| s.id == runtime_id)
-        .ok_or_else(|| format!("unknown-runtime:{runtime_id}"))?;
-
-    let dirs = candidate_bin_dirs(home, path_env, probe);
-    let joined = std::env::join_paths(dirs.iter())
-        .map_err(|err| format!("path-join-failed:{err}"))?
-        .to_string_lossy()
-        .to_string();
-
-    if resolve_command(spec.cli, &dirs, probe).is_none() {
-        return Err(format!("cli-missing:{}", spec.cli));
-    }
-
-    // 이미 깔린 어댑터가 있으면 그것 — npx 는 첫 실행이 느리고 네트워크를 탄다.
-    if let Some(adapter) = resolve_command(spec.adapter_bin, &dirs, probe) {
-        return Ok(AcpLaunch {
-            program: adapter,
-            args: Vec::new(),
-            path_env: joined,
-        });
-    }
-
-    let npx = resolve_command("npx", &dirs, probe).ok_or_else(|| "node-missing".to_string())?;
-    Ok(AcpLaunch {
-        program: npx,
-        // `-y` 는 「설치할까요?」 프롬프트를 끈다. 우리에겐 답할 사람이 없다 —
-        // 물어보면 프로세스가 조용히 멈춘 채로 남는다.
-        args: vec!["-y".to_string(), spec.adapter_package.to_string()],
-        path_env: joined,
-    })
 }
 
 /// 앱이 관리하는 설정 디렉터리를 준비하고 그 경로를 준다.
@@ -415,15 +558,16 @@ pub(crate) fn prepare_isolated_config(
     app_data_dir: &Path,
     home: Option<&Path>,
 ) -> Result<PathBuf, String> {
-    let spec = RUNTIMES
-        .iter()
-        .find(|s| s.id == runtime_id)
-        .ok_or_else(|| format!("unknown-runtime:{runtime_id}"))?;
+    // 격리를 아직 실측하지 않은 실행기는 **격리하지 않는다고 정직하게 알린다.**
+    // 짐작한 환경 변수로 설정을 옮기면 로그인이 조용히 깨지고, 사용자는 왜
+    // 안 되는지 알 수 없다.
+    let spec = isolation_for(runtime_id)
+        .ok_or_else(|| format!("isolation-unsupported:{runtime_id}"))?;
 
     let dir = app_data_dir.join("agent-config").join(spec.id);
     std::fs::create_dir_all(&dir).map_err(|err| format!("config-dir-failed:{err}"))?;
 
-    if spec.id == "claude" {
+    if spec.id == "claude-acp" {
         std::fs::write(dir.join("settings.json"), ISOLATED_CLAUDE_SETTINGS)
             .map_err(|err| format!("settings-write-failed:{err}"))?;
     }
@@ -441,10 +585,7 @@ pub(crate) fn prepare_isolated_config(
 
 /// 이 실행기의 「설정을 어디서 읽나」 환경 변수 이름.
 pub(crate) fn config_env_for(runtime_id: &str) -> Option<&'static str> {
-    RUNTIMES
-        .iter()
-        .find(|s| s.id == runtime_id)
-        .map(|s| s.config_env)
+    isolation_for(runtime_id).map(|s| s.config_env)
 }
 
 /// 자격증명 링크를 건다. 이미 올바른 곳을 가리키면 그대로 둔다.
@@ -839,7 +980,7 @@ mod tests {
             read_text: &read,
         };
         let out = detect_runtimes(Some(Path::new("/home/me")), None, &probe);
-        let claude = out.iter().find(|r| r.id == "claude").unwrap();
+        let claude = out.iter().find(|r| r.id == "claude-acp").unwrap();
         assert_eq!(
             claude.cli_path.as_deref(),
             Some("/home/me/.local/bin/claude"),
@@ -933,23 +1074,27 @@ mod tests {
         let path = std::env::join_paths([PathBuf::from("/usr/bin"), PathBuf::from("/bin")]).unwrap();
         let out = detect_runtimes(Some(Path::new("/home/me")), Some(&path), &probe);
 
-        let claude = out.iter().find(|r| r.id == "claude").unwrap();
+        let claude = out.iter().find(|r| r.id == "claude-acp").unwrap();
         assert_eq!(claude.state, "ready", "PATH 밖에 있어도 찾아야 한다");
         assert_eq!(
             claude.cli_path.as_deref(),
             Some("/home/me/.local/bin/claude")
         );
         assert_eq!(
-            claude.npx_path.as_deref(),
-            Some("/home/me/.nvm/versions/node/v24.16.0/bin/npx")
+            claude.adapter_path.as_deref(),
+            Some("/home/me/.nvm/versions/node/v24.16.0/bin/npx"),
+            "설치된 어댑터가 없으면 npx 로 띄운다"
         );
         assert!(
-            claude.adapter_package.ends_with("@0.68.0"),
-            "어댑터 버전은 못 박혀 있어야 한다: {}",
+            claude
+                .adapter_package
+                .as_deref()
+                .is_some_and(|p| p.ends_with("@0.68.0")),
+            "어댑터 버전은 못 박혀 있어야 한다: {:?}",
             claude.adapter_package
         );
 
-        let codex = out.iter().find(|r| r.id == "codex").unwrap();
+        let codex = out.iter().find(|r| r.id == "codex-acp").unwrap();
         assert_eq!(codex.state, "ready");
     }
 
@@ -968,7 +1113,8 @@ mod tests {
                 read_text: &read,
             };
             let out = detect_runtimes(None, None, &probe);
-            assert!(out.iter().all(|r| r.state == "cli-missing"));
+            let claude = out.iter().find(|r| r.id == "claude-acp").unwrap();
+            assert_eq!(claude.state, "cli-missing", "CLI 부재가 먼저다 — 할 일이 더 분명하다");
         }
 
         // ② CLI 는 있는데 npx 도 어댑터도 없다 → 띄울 방법이 없다.
@@ -980,7 +1126,7 @@ mod tests {
             read_text: &read,
         };
         let out = detect_runtimes(None, None, &probe);
-        let claude = out.iter().find(|r| r.id == "claude").unwrap();
+        let claude = out.iter().find(|r| r.id == "claude-acp").unwrap();
         assert_eq!(claude.state, "node-missing");
         assert_eq!(claude.cli_path.as_deref(), Some("/usr/local/bin/claude"));
     }
@@ -1004,7 +1150,7 @@ mod tests {
             read_text: &read,
         };
         let out = detect_runtimes(None, None, &probe);
-        let claude = out.iter().find(|r| r.id == "claude").unwrap();
+        let claude = out.iter().find(|r| r.id == "claude-acp").unwrap();
         assert_eq!(claude.state, "ready");
         assert_eq!(
             claude.adapter_path.as_deref(),
@@ -1028,7 +1174,7 @@ mod tests {
                 list_dir: &list,
                 read_text: &read,
             };
-            let launch = resolve_launch("claude", None, None, &probe).unwrap();
+            let launch = resolve_launch("claude-acp", None, None, &probe).unwrap();
             assert_eq!(launch.program, PathBuf::from("/usr/local/bin/npx"));
             assert_eq!(
                 launch.args,
@@ -1047,7 +1193,7 @@ mod tests {
             list_dir: &list,
             read_text: &read,
         };
-        let launch = resolve_launch("claude", None, None, &probe).unwrap();
+        let launch = resolve_launch("claude-acp", None, None, &probe).unwrap();
         assert_eq!(
             launch.program,
             PathBuf::from("/usr/local/bin/claude-agent-acp")
@@ -1078,7 +1224,7 @@ mod tests {
             list_dir: &list,
             read_text: &read,
         };
-        let launch = resolve_launch("claude", Some(Path::new("/home/me")), None, &probe).unwrap();
+        let launch = resolve_launch("claude-acp", Some(Path::new("/home/me")), None, &probe).unwrap();
         assert!(
             launch.path_env.contains("/home/me/.local/bin"),
             "자식 PATH 에 CLI 가 있는 자리가 없다: {}",
@@ -1105,7 +1251,7 @@ mod tests {
             list_dir: &list,
             read_text: &read,
         };
-        assert!(resolve_launch("claude", None, None, &probe)
+        assert!(resolve_launch("claude-acp", None, None, &probe)
             .unwrap_err()
             .starts_with("cli-missing:"));
 
@@ -1118,7 +1264,7 @@ mod tests {
             read_text: &read,
         };
         assert_eq!(
-            resolve_launch("claude", None, None, &probe).unwrap_err(),
+            resolve_launch("claude-acp", None, None, &probe).unwrap_err(),
             "node-missing"
         );
 
@@ -1282,7 +1428,7 @@ mod tests {
         std::fs::create_dir_all(home.join(".claude")).unwrap();
         std::fs::write(home.join(".claude").join(".credentials.json"), "{\"t\":1}").unwrap();
 
-        let dir = prepare_isolated_config("claude", &app_data, Some(&home)).unwrap();
+        let dir = prepare_isolated_config("claude-acp", &app_data, Some(&home)).unwrap();
         assert_eq!(
             std::fs::read_to_string(dir.join("settings.json")).unwrap(),
             ISOLATED_CLAUDE_SETTINGS
@@ -1300,7 +1446,7 @@ mod tests {
         // 사용자가 우리 설정을 고쳐 관문을 열어 둔 채 잊는 일을 막는다 —
         // 이 디렉터리는 앱의 것이고 매번 다시 쓴다.
         std::fs::write(dir.join("settings.json"), "{\"permissions\":{\"allow\":[\"Bash(*)\"]}}").unwrap();
-        let dir2 = prepare_isolated_config("claude", &app_data, Some(&home)).unwrap();
+        let dir2 = prepare_isolated_config("claude-acp", &app_data, Some(&home)).unwrap();
         assert_eq!(
             std::fs::read_to_string(dir2.join("settings.json")).unwrap(),
             ISOLATED_CLAUDE_SETTINGS,
@@ -1318,7 +1464,7 @@ mod tests {
         let _ = std::fs::remove_dir_all(&base);
         let home = base.join("home");
         std::fs::create_dir_all(&home).unwrap();
-        let dir = prepare_isolated_config("claude", &base.join("appdata"), Some(&home)).unwrap();
+        let dir = prepare_isolated_config("claude-acp", &base.join("appdata"), Some(&home)).unwrap();
         assert!(!dir.join(".credentials.json").exists());
         let _ = std::fs::remove_dir_all(&base);
     }
@@ -1378,18 +1524,60 @@ mod tests {
     }
 
     #[test]
-    fn the_runtime_catalog_is_not_empty_and_pins_every_adapter() {
-        // 목록이 비면 탐지는 통과하면서 아무것도 안 찾는다 — 빈 집합 위에서
-        // 도는 게이트는 게이트가 아니다.
-        assert!(!RUNTIMES.is_empty());
-        for spec in RUNTIMES {
-            assert!(
-                spec.adapter_package.contains('@') && spec.adapter_package.rsplit('@').next().is_some_and(|v| v.chars().next().is_some_and(|c| c.is_ascii_digit())),
-                "{} 의 어댑터 버전이 못 박혀 있지 않다: {}",
-                spec.id,
-                spec.adapter_package
-            );
+    fn the_registry_snapshot_is_loaded_and_every_entry_can_be_launched() {
+        // 스냅샷이 안 읽히면 목록이 비고, 그러면 이 검사들은 「빈 집합 위에서」
+        // 통과한다. 그 상태를 먼저 막는다.
+        let agents = registry();
+        assert!(agents.len() >= 20, "레지스트리 스냅샷이 비었거나 너무 작다: {}", agents.len());
+
+        for agent in agents {
+            assert!(!agent.id.is_empty() && !agent.name.is_empty());
+            match &agent.launch {
+                RegistryLaunch::Npx { package, .. } => {
+                    // 버전을 못 박지 않으면 어느 날 어댑터가 올라가면서 앱이
+                    // 조용히 다른 프로토콜을 말하게 된다.
+                    assert!(
+                        package.contains('@')
+                            && package
+                                .rsplit('@')
+                                .next()
+                                .is_some_and(|v| v.chars().next().is_some_and(|c| c.is_ascii_digit())),
+                        "{} 의 npx 패키지에 버전이 없다: {package}",
+                        agent.id
+                    );
+                    assert!(adapter_bin_name(package).is_some(), "{}: 실행 파일 이름을 못 뽑는다", agent.id);
+                }
+                RegistryLaunch::Uvx { package, .. } => assert!(!package.is_empty()),
+                RegistryLaunch::Binary { command, .. } => {
+                    assert!(!command.is_empty());
+                    assert!(!command.starts_with("./"), "{}: `./` 가 안 벗겨졌다", agent.id);
+                }
+            }
         }
+    }
+
+    #[test]
+    fn every_isolation_entry_points_at_a_real_registry_agent() {
+        // 격리 표가 레지스트리에 없는 id 를 가리키면, 그 실행기는 영원히
+        // 「격리 못 함」으로 남으면서 아무도 못 알아챈다.
+        for spec in ISOLATION {
+            assert!(
+                registry_agent(spec.id).is_some(),
+                "격리 표의 {} 가 레지스트리에 없다",
+                spec.id
+            );
+            assert!(!spec.config_env.is_empty() && !spec.credentials_file.is_empty());
+        }
+    }
+
+    #[test]
+    fn adapter_bin_name_strips_scope_and_version() {
+        assert_eq!(
+            adapter_bin_name("@agentclientprotocol/claude-agent-acp@0.68.0").as_deref(),
+            Some("claude-agent-acp")
+        );
+        assert_eq!(adapter_bin_name("codex-acp@1.3.0").as_deref(), Some("codex-acp"));
+        assert_eq!(adapter_bin_name("plain").as_deref(), Some("plain"));
     }
 }
 
@@ -1409,10 +1597,10 @@ mod real_machine_probe {
         // 정작 재려던 것을 못 잰다.
         let gui_path = std::env::join_paths([PathBuf::from("/usr/bin"), PathBuf::from("/bin")]).unwrap();
         for r in detect_runtimes(home.as_deref(), Some(&gui_path), &probe) {
-            println!("{:>8} · {:<14} cli={:?} adapter={:?} npx={:?}", r.state, r.id, r.cli_path, r.adapter_path, r.npx_path);
+            println!("{:>8} · {:<14} cli={:?} adapter={:?} verified={:?}", r.state, r.id, r.cli_path, r.adapter_path, r.verified);
         }
         println!("--- launch ---");
-        for id in ["claude", "codex"] {
+        for id in ["claude-acp", "codex-acp"] {
             match resolve_launch(id, home.as_deref(), Some(&gui_path), &probe) {
                 Ok(l) => println!("{id}: {:?} {:?}", l.program, l.args),
                 Err(e) => println!("{id}: 실패 {e}"),
