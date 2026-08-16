@@ -73,6 +73,23 @@ describe('관문 — 말하는 것과 거는 것이 같아야 한다', () => {
     );
   });
 
+  it('세션 시작과 로그인 확인은 같은 부모 환경 차단 함수를 쓴다', () => {
+    const lib = readFileSync(join(ROOT, 'src-tauri/src/lib.rs'), 'utf8');
+    const acp = readFileSync(join(ROOT, 'src-tauri/src/acp.rs'), 'utf8');
+    const start = lib.slice(lib.indexOf('fn acp_start('), lib.indexOf('fn acp_permission_verdict('));
+    const probe = acp.slice(
+      acp.indexOf('pub(crate) fn real_probe()'),
+      acp.indexOf('const LOGIN_PROBE_TIMEOUT'),
+    );
+
+    expect(start, '실제 세션만 부모 환경을 그대로 받으면 로그인 판정과 실행이 갈라진다').toContain(
+      'apply_runtime_environment',
+    );
+    expect(probe, '로그인 확인만 부모 환경을 그대로 받으면 준비됨 판정이 실제 세션과 갈라진다').toContain(
+      'apply_runtime_environment',
+    );
+  });
+
   it('화면이 **그 함수로** 판정한다 — 자기만의 기준을 다시 만들지 않는다', () => {
     const src = readFileSync(
       join(ROOT, 'src/widgets/app-settings-menu/ui/AcpRuntimeSettings.tsx'),

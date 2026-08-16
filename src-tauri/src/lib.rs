@@ -950,10 +950,10 @@ fn acp_start(
     command
         .args(&launch.args)
         .current_dir(&root)
-        .env("PATH", &launch.path_env)
         .stdin(Stdio::piped())
         .stdout(Stdio::piped())
         .stderr(Stdio::piped());
+    acp::apply_runtime_environment(&mut command, &runtime_id, &launch.path_env);
     if let Some((env, dir)) = &isolation {
         command.env(env, dir);
     }
@@ -1137,7 +1137,7 @@ fn terminate_all_acp_sessions(app: &AppHandle) {
 #[tauri::command]
 fn acp_detect_runtimes(probe_login: Option<bool>) -> Vec<acp::AcpRuntimeStatus> {
     let (is_executable, list_dir, read_text, login_ok) = acp::real_probe();
-    let skip = |_: &std::path::Path, _: &[&str], _: &str| None;
+    let skip = |_: &str, _: &std::path::Path, _: &[&str], _: &str| None;
     let probe = acp::FsProbe {
         is_executable: &is_executable,
         list_dir: &list_dir,

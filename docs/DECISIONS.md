@@ -40,6 +40,48 @@
 **상태**: 유효 / 뒤집힘(→ 링크) / 반증됨(관측: …)
 ```
 
+## 2026-08-17 (43) — 검증한 ACP 구독 실행기는 부모의 임의 자격증명을 받지 않는다
+
+**소집**: 단독 PO 패스 + Sol xhigh 보안 설계 검토 · **트리거**: 앱 프로세스에
+실린 키·라우팅·동적 로더 입력이 ACP 자식 전체로 상속되는 경로 ·
+**루브릭**: 22/24 (치명적 0: 없음)
+
+**관찰된 현상**: `Command::new`로 띄운 ACP 세션과 로그인 확인은 재구축한 PATH만
+덮고 부모 환경 나머지를 모두 상속했다. 따라서 `OPENAI_API_KEY`·
+`ANTHROPIC_API_KEY`·`GH_TOKEN`뿐 아니라 `NODE_OPTIONS`·`DYLD_*`·`BASH_ENV`와
+요청 목적지를 바꾸는 base URL도 자식과 그 손자에게 갔다. Claude 공식 문서는
+[`ANTHROPIC_API_KEY`가 로그인된 구독보다 우선한다](https://code.claude.com/docs/en/env-vars)고
+명시한다. OpenAI 공식 문서는 ChatGPT 구독 로그인과 API 키 로그인의 정책 경계가
+다르며, 로그인 캐시는 `CODEX_HOME`의 `auth.json` 또는 OS credential store에
+있고 기업 CA는 `CODEX_CA_CERTIFICATE`로 보존한다고 설명한다
+([OpenAI Codex 인증](https://developers.openai.com/codex/auth)).
+
+**결정**: 구독 로그인·권한 관문을 실측한 `claude-acp`와 `codex-acp`만
+`env_clear()` 뒤 명시적 환경을 받는다. 홈·임시 폴더·로케일·사용자 이름·셸·
+표준 proxy/CA·Windows 실행 환경을 공통으로 남기고, Codex에는 `CODEX_HOME`과
+`CODEX_CA_CERTIFICATE`만 추가한다. API 키·액세스 토큰·임의 provider/routing·
+동적 로더·SSH agent는 전달하지 않는다. PATH는 부모 값이 아니라 앱이 실제 CLI를
+찾으며 만든 값으로 다시 쓴다. 실제 세션과 `auth status`/`login status` 판정은
+반드시 같은 함수로 환경을 만든다.
+
+미검증 36종에는 `env_clear()`를 추측 적용하지 않는다. 환경 API 키만으로 인증하는
+도구를 조용히 망가뜨릴 수 있기 때문이다. 이 기기에서 정리된 환경으로 Claude와
+Codex 로그인 판정은 모두 `ready`를 유지했다. 블랙박스 자식 테스트에서는 강제로
+넣은 테스트 비밀과 `NODE_OPTIONS`가 사라지고 재구축한 PATH가 남았다.
+
+**적용 규칙**: 인증·라우팅은 화면이 약속한 경로만 · 검증한 실행기부터 확장 ·
+판정과 실행은 같은 입력을 쓴다.
+**서명**: 진안 — 소유자, Sol — 설계 검토, Codex — RED 재현·구현·검증.
+
+**기록된 반대**: 기업 gateway·커스텀 provider·SSH agent를 의도적으로 환경에 둔
+사용자는 터미널과 달리 앱 ACP에서 그 기능이 사라진다.
+**반증 조건**: 검증 실행기의 실제 사용자가 구독 대신 명시적 enterprise/provider
+경로가 필요해 작업을 터미널에서 반복하는 사례가 나온다. 그러면 전체 상속을 되살리지
+말고, 화면에 보이는 런타임별 opt-in 환경 프로필과 감사 기록을 설계한다.
+**재검토**: 위 사례 1건 또는 새 실행기의 구독 인증·기업망 실측이 끝날 때.
+
+**상태**: 유효
+
 ## 2026-08-17 (42) — CI가 실행하는 외부 코드는 전체 commit SHA로 고정한다
 
 **소집**: 단독 PO 패스 · **트리거**: 릴리스 비밀과 산출물을 다루는 공급망 입력 ·
