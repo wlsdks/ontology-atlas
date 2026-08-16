@@ -4035,6 +4035,11 @@
         },
         {
           "depth": 2,
+          "text": "2026-08-17 · 에이전트 설정 쓰기가 볼트 밖 inode를 건드리지 않는다",
+          "slug": "2026-08-17-에이전트-설정-쓰기가-볼트-밖-inode를-건드리지-않는다"
+        },
+        {
+          "depth": 2,
           "text": "2026-08-17 · 같은 MCP 서버는 한 벌만 띄우되 현재 볼트를 잃지 않는다",
           "slug": "2026-08-17-같은-mcp-서버는-한-벌만-띄우되-현재-볼트를-잃지-않는다"
         },
@@ -6464,8 +6469,8 @@
           "slug": "2026-07-26-첫-만남은-쇼핑몰부터"
         }
       ],
-      "excerpt": "Major change history. Code commit messages answer why; this file answers when / which surface changed. Focused on user-visible changes, not PR-level granularity. Newest at the top. Entries stay date-based; the app version reached v1.0.0 on 2026-07-27, so a release tag now carries the semver promise instead. Codex가 볼트의 ",
-      "wordCount": 69842,
+      "excerpt": "Major change history. Code commit messages answer why; this file answers when / which surface changed. Focused on user-visible changes, not PR-level granularity. Newest at the top. Entries stay date-based; the app version reached v1.0.0 on 2026-07-27, so a release tag now carries the semver promise instead. 허용된 .mcp.js",
+      "wordCount": 69945,
       "updatedAt": "2026-08-17",
       "linksOut": [
         "audits/CASE-STUDY-AGENTS-MD-DRIFT",
@@ -6494,6 +6499,11 @@
           "depth": 2,
           "text": "기록 형식",
           "slug": "기록-형식"
+        },
+        {
+          "depth": 2,
+          "text": "2026-08-17 (59) — 에이전트 설정은 새 inode를 완성한 뒤 안정된 부모 안에서 교체한다",
+          "slug": "2026-08-17-59-에이전트-설정은-새-inode를-완성한-뒤-안정된-부모-안에서-교체한다"
         },
         {
           "depth": 2,
@@ -9392,7 +9402,7 @@
         }
       ],
       "excerpt": "이 파일은 결정과 그때 진 반대 의견을 남긴다. docs/CHANGELOG.md 는 무엇이 언제 바뀌었나를 답하고, 이 파일은 왜 그렇게 정했고, 무엇을 걸었나를 답한다. 최신이 위. 기록은 덧붙이기만 한다 — 지난 기록을 고치지 않는다. 판단이 바뀌었으면 새 기록을 쓰고 옛 기록을 뒤집힘 으로 표시한다. 틀린 기록도 자산이다. 1. 소집 전에 읽는다. 카운슬을 열기 전(그리고 단독 PO 패스를 쓰기 전) 같은 표면 · 같은 질문에 대한 선행 결정이 있는지 먼저 본다. 있으면 새 패스는 그것을 ① 여전히 유효하다고 인용하거나 ② 명시적으로 뒤집는다. 조용히 다시 결정",
-      "wordCount": 140526,
+      "wordCount": 140887,
       "updatedAt": "2026-08-17",
       "linksOut": [
         "slug"
@@ -13706,7 +13716,7 @@
         }
       ],
       "excerpt": "AI 에이전트가 볼트를 발견·인증하고 읽고 쓸 수 있게 하는 앱 내 connect 플로우와 MCP 대면 표면. 앱 안의 대화형 에이전트는 실제 볼트 도구 근거를 수집한다. 절대 경로와 읽힌 manifest가 함께 있을 때만 활성화하여 화면의 개념, 모델이 읽는 본문, 볼트 안 감사 로그가 한 출처를 가리킨다. 로컬 러너에서는 제한된 읽기 순서와 왕복 시간 상한을 적용한다. 필수 읽기, 상세 payload에 남은 정확한 인용, 한국어 질문의 한국어 응답 중 하나를 생략하면 한 번 교정하고, 두 번째에도 따르지 않은 답은 사용자에게 싣지 않는다. 구조 감사는 census",
-      "wordCount": 381,
+      "wordCount": 450,
       "updatedAt": "2026-08-17",
       "linksOut": []
     },

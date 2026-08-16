@@ -2,7 +2,7 @@
 uid: a81da7e2-8ff6-46c9-a0aa-27b2948bc7b3
 slug: capabilities/vault-agent
 kind: capability
-title: "Agent Connect & Vault Access"
+title: Agent Connect & Vault Access
 domain: domains/agent-integration
 elements: [elements/agent-connect, elements/vault-agent-panel]
 path: src/features/vault-agent
@@ -15,6 +15,11 @@ AI 에이전트가 볼트를 발견·인증하고 읽고 쓸 수 있게 하는 �
 App Settings의 agent config 상태는 실제 client config 두 개만 세며 example template을
 연결로 가장하지 않는다. source-checkout과 app-bundled launch shape, 현재 vault 좌표가
 맞아야 ready이고, live stdio 연결과 tool inventory는 별도 `mcp-verify`가 증명한다.
+Unix의 승인된 agent config 쓰기는 설정 루트와 부모를 조각별 no-follow 디렉터리
+FD로 붙들고 새 inode를 완성한 뒤 링크 수를 쓰기 전·commit 직전에 확인하고\n원자적으로 이름을 교체한다. 따라서 허용된
+파일명이 볼트 밖 inode의 하드링크이거나 검사 뒤 부모 이름이 외부 심볼릭 링크로
+바뀌어도 밖의 파일을 수정하지 않는다. Windows reparse-point 경쟁은 아직
+증명되지 않았으며 정적 링크 검사 이상의 보장을 하지 않는다.
 
 여기서 말하는 「앱 안의 대화형 에이전트」는 이 능력이 소유하는 vault-agent 패널
 하나다: 사용자가 넣은 키나 로컬 러너에 붙는 제공자 중립 루프이고, 볼트 도구만
@@ -27,6 +32,7 @@ ACP 로 직접 띄우는 것은 별개 능력이며 `capabilities/acp-runtime`�
 - src/features/vault-agent: 제공자 중립 에이전트 루프, 도구 실행, 근거 인용
 - src-tauri/src/llm.rs: 로컬/원격 전송, 감사 로그, 분리된 timeout
 - src-tauri/src/llm_audit.rs: log-before-send 예약·확정, Unix openat/O_NOFOLLOW·link-count 경계, 볼트별 배타 잠금과 예약 꼬리 검증
+- src-tauri/src/agent_setup.rs: 승인된 MCP 설정의 Unix dirfd/no-follow 탐색과 새 inode 원자 교체
 - src/widgets/vault-agent-panel: 사용자가 읽기·실패·제안을 판정하는 패널
 - src/shared/config/mcp-server-launch.ts · src/features/docs-vault-local/model/use-local-vault.ts
   : JSON/TOML launch shape와 vault readiness의 공유 판정
