@@ -13,6 +13,7 @@ import {
   Expand,
   Footprints,
   HardDrive,
+  SquareTerminal,
   Layers,
   MessageSquare,
   Monitor,
@@ -41,6 +42,7 @@ import {
   buildRouteFocusHref,
   rememberRouteFocusIntent,
 } from '@/shared/ui/route-focus-manager';
+import { AcpRuntimeSettings } from './AcpRuntimeSettings';
 import { VaultAgentSetupPanel } from './VaultAgentSetupPanel';
 import { CanvasBackgroundPicker, GlyphSetPicker } from './AppearancePickers';
 import { FootprintSettings } from './FootprintSettings';
@@ -143,7 +145,10 @@ const SETTINGS_GROUPS = [
   // 같은 절의 두 요약 행이 아니라 서로 다른 목적지다. 하나는 밖의 도구가 이
   // 폴더를 읽게 하는 **설정 파일**이고, 하나는 앱 안에서 말을 거는 **키**다.
   // 이름의 첫 글자가 갈리는 것이 그 차이를 나르는 채널이다.
-  { key: 'connect', items: ['workspace', 'agent', 'ai'] },
+  // 「실행기」가 「내 에이전트 연결」보다 **앞**인 이유: 실행기는 이 앱 안에서
+  // 바로 말을 거는 것이고, 「내 에이전트 연결」은 **밖의 도구**가 이 폴더를 읽게
+  // 하는 설정 파일이다. 안에서 되는 것을 먼저 보여 준다.
+  { key: 'connect', items: ['workspace', 'runtimes', 'agent', 'ai'] },
 ] as const;
 
 type SettingsSection = (typeof SETTINGS_GROUPS)[number]['items'][number];
@@ -162,6 +167,9 @@ const SECTION_ICON: Record<SettingsSection, typeof Monitor> = {
   // 사각 대 삼각이라 훑기에서 갈린다.
   notify: Bell,
   workspace: HardDrive,
+  // 터미널 사각형 — 이 목록에서 유일한 «실행되는 것»의 실루엣이다. 로봇(밖의
+  // 도구)·말풍선(앱 안 대화)과 훑기에서 갈린다.
+  runtimes: SquareTerminal,
   // 밖의 도구 = 로봇, 앱 안의 대화 = 말풍선. 실루엣이 갈려야 훑기 채널이 선다
   // (이름의 첫 글자를 가른 것과 같은 이유다).
   agent: Bot,
@@ -1076,6 +1084,9 @@ export function AppSettingsMenu({
                     */}
                     <BlockImportModule />
                     </>
+
+                ) : section === 'runtimes' ? (
+                  <AcpRuntimeSettings />
 
                 ) : section === 'agent' ? (
                   isLocalVaultLoaded ? (

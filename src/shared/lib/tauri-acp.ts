@@ -45,18 +45,36 @@ export function isAcpBridgeAvailable(): boolean {
 export interface AcpRuntimeStatus {
   id: string;
   label: string;
+  description: string;
+  website: string | null;
+  license: string | null;
+  /**
+   * 우리가 **실제로 재 본** 실행기인가. 화면이 안 해 본 것을 해 본 것처럼
+   * 말하지 않기 위한 표시다.
+   */
+  verified: boolean;
+  launchKind: 'npx' | 'uvx' | 'binary';
   /**
    * `ready` — 바로 쓸 수 있다
    * `cli-missing` — 그 도구를 설치해야 한다
-   * `node-missing` — 도구는 있는데 어댑터를 띄울 방법이 없다
+   * `node-missing` — 도구는 있는데 어댑터를 띄울 Node 가 없다
+   * `uvx-missing` — 〃 uv 가 없다
+   * `binary-missing` — 직접 설치해야 하는 실행 파일이 없다
    *
-   * 셋을 「설치됨/아님」 둘로 뭉개지 않는다 — 각각 사용자가 할 일이 다르다.
+   * 다섯을 「설치됨/아님」 둘로 뭉개지 않는다 — 각각 사용자가 할 일이 다르다.
    */
-  state: 'ready' | 'cli-missing' | 'node-missing';
+  state: 'ready' | 'cli-missing' | 'node-missing' | 'uvx-missing' | 'binary-missing';
   cliPath: string | null;
   adapterPath: string | null;
-  npxPath: string | null;
-  adapterPackage: string;
+  adapterPackage: string | null;
+  /**
+   * 앱이 이 실행기의 설정을 격리할 수 있는가.
+   *
+   * **false 면 권한 관문이 없다.** 사용자가 그 도구에 해 둔 설정을 그대로 쓰므로,
+   * 「묻지 말고 다 해」로 설정해 둔 사람에게는 앱에서 띄워도 안 묻는다. 화면은
+   * 그 사실을 그 줄에 적어야 한다 — 빼거나 조용히 두지 않는다.
+   */
+  isolated: boolean;
 }
 
 export async function detectAcpRuntimes(): Promise<AcpRuntimeStatus[] | null> {

@@ -163,6 +163,7 @@
         "footprint": "발자국",
         "notify": "알림",
         "workspace": "작업 공간",
+        "runtimes": "실행기",
         "agent": "내 에이전트 연결",
         "ai": "앱 안 에이전트"
       },
@@ -185,7 +186,26 @@
       "agentNotificationsLabel": "알림",
       "agentNotificationsCaption": "작업이 시작·끝날 때, 도메인이 생기거나 사라질 때 벨에 남깁니다. 노드 하나·관계 하나는 알리지 않아요. 지도가 이미 보여줍니다.",
       "agentNotificationKindsLabel": "받을 알림",
-      "agentNotificationKindsCaption": "끈 갈래는 벨에 쌓이지 않습니다."
+      "agentNotificationKindsCaption": "끈 갈래는 벨에 쌓이지 않습니다.",
+      "runtimes": {
+        "intro": "이 컴퓨터에 설치된 AI 코딩 도구를 찾았어요. 여기서 바로 대화할 수 있어요.",
+        "recheck": "다시 확인",
+        "checking": "찾는 중이에요",
+        "readyHeading": "바로 쓸 수 있어요 ({count})",
+        "othersHeading": "설치가 필요한 것 {count}개 보기",
+        "noneReady": "쓸 수 있는 도구가 없어요",
+        "noneReadyCaption": "Claude Code 나 Codex 를 설치하면 여기에 나타나요.",
+        "notGuarded": "이 도구는 Atlas 가 대신 물어봐 주지 못해요. 그 도구에 해 둔 설정을 그대로 써요.",
+        "webLabel": "브라우저에서는 도구를 실행할 수 없어요",
+        "webCaption": "앱을 받으면 이 컴퓨터의 도구를 앱 안에서 바로 쓸 수 있어요.",
+        "state": {
+          "ready": "준비됨",
+          "cli-missing": "설치 필요",
+          "node-missing": "Node 필요",
+          "uvx-missing": "uv 필요",
+          "binary-missing": "직접 설치"
+        }
+      }
     },
     "primaryAriaLabel": "주요 메뉴",
     "notificationsAriaLabel": "작업 알림"

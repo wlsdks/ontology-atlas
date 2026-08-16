@@ -163,6 +163,7 @@
         "footprint": "Footprints",
         "notify": "Notifications",
         "workspace": "Workspace",
+        "runtimes": "Runtimes",
         "agent": "Connect my agents",
         "ai": "In-app agent"
       },
@@ -185,7 +186,26 @@
       "agentNotificationsLabel": "Notifications",
       "agentNotificationsCaption": "Announces when a task starts and ends, and when a domain appears or disappears. Single nodes and single relations are not announced: the map already shows them.",
       "agentNotificationKindsLabel": "What to receive",
-      "agentNotificationKindsCaption": "Muted kinds never reach the bell."
+      "agentNotificationKindsCaption": "Muted kinds never reach the bell.",
+      "runtimes": {
+        "intro": "These are the AI coding tools found on this computer. You can talk to them right here.",
+        "recheck": "Check again",
+        "checking": "Looking…",
+        "readyHeading": "Ready to use ({count})",
+        "othersHeading": "Show {count} that need installing",
+        "noneReady": "No tool is ready yet",
+        "noneReadyCaption": "Install Claude Code or Codex and it shows up here.",
+        "notGuarded": "Atlas cannot ask on your behalf for this tool. It uses the settings you gave that tool.",
+        "webLabel": "A browser cannot run these tools",
+        "webCaption": "Get the app to use the tools on this computer from inside Atlas.",
+        "state": {
+          "ready": "Ready",
+          "cli-missing": "Install needed",
+          "node-missing": "Node needed",
+          "uvx-missing": "uv needed",
+          "binary-missing": "Install yourself"
+        }
+      }
     },
     "primaryAriaLabel": "Primary menu",
     "notificationsAriaLabel": "Notifications"
