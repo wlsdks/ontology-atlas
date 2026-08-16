@@ -1,10 +1,20 @@
-import { readFileSync } from "node:fs";
+import {
+  existsSync,
+  mkdirSync,
+  mkdtempSync,
+  readFileSync,
+  readdirSync,
+  rmSync,
+  writeFileSync,
+} from "node:fs";
+import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 
 import {
   REHEARSAL_SKIPS,
   REHEARSAL_SUBSTITUTES,
+  ephemeralUpdaterKey,
   localCommandFor,
   parseBuildMacosSteps,
 } from "../../scripts/release-rehearsal.mjs";
@@ -177,6 +187,54 @@ describe("리허설이 릴리스 잡을 빠짐없이 덮는다", () => {
 
   it("desktop:release-rehearsal 이 등록돼 있다", () => {
     expect(pkg.scripts["desktop:release-rehearsal"]).toBe("node scripts/release-rehearsal.mjs");
+  });
+
+  it("버리는 업데이터 개인키를 저장소 밖에서 만들고 읽은 즉시 지운다", () => {
+    const sandbox = mkdtempSync(join(tmpdir(), "ontology-atlas-rehearsal-key-"));
+    const repoRoot = join(sandbox, "repo");
+    const tempRoot = join(sandbox, "system-temp");
+    mkdirSync(repoRoot);
+    mkdirSync(tempRoot);
+
+    try {
+      const env = ephemeralUpdaterKey(repoRoot, {
+        existingKey: "",
+        tempRoot,
+        generate(keyPath: string) {
+          expect(keyPath.startsWith(`${tempRoot}/`)).toBe(true);
+          writeFileSync(keyPath, "throwaway-private-key", { mode: 0o600 });
+          return { status: 0 };
+        },
+      });
+
+      expect(env).toEqual({
+        TAURI_SIGNING_PRIVATE_KEY: "throwaway-private-key",
+        TAURI_SIGNING_PRIVATE_KEY_PASSWORD: "",
+      });
+      expect(readdirSync(tempRoot)).toEqual([]);
+      expect(existsSync(join(repoRoot, ".tmp", "rehearsal-updater.key"))).toBe(false);
+    } finally {
+      rmSync(sandbox, { recursive: true, force: true });
+    }
+  });
+
+  it("버리는 업데이터 키 생성이 실패해도 임시 디렉터리를 남기지 않는다", () => {
+    const sandbox = mkdtempSync(join(tmpdir(), "ontology-atlas-rehearsal-key-fail-"));
+    const tempRoot = join(sandbox, "system-temp");
+    mkdirSync(tempRoot);
+
+    try {
+      expect(
+        ephemeralUpdaterKey(sandbox, {
+          existingKey: "",
+          tempRoot,
+          generate: () => ({ status: 1 }),
+        }),
+      ).toBeNull();
+      expect(readdirSync(tempRoot)).toEqual([]);
+    } finally {
+      rmSync(sandbox, { recursive: true, force: true });
+    }
   });
 });
 

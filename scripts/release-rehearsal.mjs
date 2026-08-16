@@ -41,6 +41,7 @@
  */
 import { spawnSync } from "node:child_process";
 import fs from "node:fs";
+import os from "node:os";
 import path from "node:path";
 import { pathToFileURL } from "node:url";
 
@@ -177,17 +178,33 @@ function run(argv, { cwd, env }) {
  * 것은 "아카이브가 서명된 앱으로 다시 만들어지고 서명이 붙는가" 이지 "우리
  * 키로 서명됐는가" 가 아니다 — 후자는 실제 태그에서만 참이 된다.
  */
-function ephemeralUpdaterKey(root) {
-  if ((process.env.TAURI_SIGNING_PRIVATE_KEY ?? "").trim()) return null;
-  const keyPath = path.join(root, ".tmp", "rehearsal-updater.key");
-  fs.mkdirSync(path.dirname(keyPath), { recursive: true });
-  const generated = spawnSync(
-    "pnpm",
-    ["exec", "tauri", "signer", "generate", "-w", keyPath, "--password", "", "--force"],
-    { cwd: root, encoding: "utf8" },
-  );
-  if (generated.status !== 0) return null;
-  return { TAURI_SIGNING_PRIVATE_KEY: fs.readFileSync(keyPath, "utf8"), TAURI_SIGNING_PRIVATE_KEY_PASSWORD: "" };
+export function ephemeralUpdaterKey(
+  root,
+  {
+    existingKey = process.env.TAURI_SIGNING_PRIVATE_KEY ?? "",
+    tempRoot = os.tmpdir(),
+    generate = (keyPath) =>
+      spawnSync(
+        "pnpm",
+        ["exec", "tauri", "signer", "generate", "-w", keyPath, "--password", "", "--force"],
+        { cwd: root, encoding: "utf8" },
+      ),
+  } = {},
+) {
+  if (existingKey.trim()) return null;
+  const privateDir = fs.mkdtempSync(path.join(tempRoot, "ontology-atlas-rehearsal-updater-"));
+  const keyPath = path.join(privateDir, "updater.key");
+  try {
+    const generated = generate(keyPath);
+    if (generated.status !== 0) return null;
+    fs.chmodSync(keyPath, 0o600);
+    return {
+      TAURI_SIGNING_PRIVATE_KEY: fs.readFileSync(keyPath, "utf8"),
+      TAURI_SIGNING_PRIVATE_KEY_PASSWORD: "",
+    };
+  } finally {
+    fs.rmSync(privateDir, { recursive: true, force: true });
+  }
 }
 
 function main() {
