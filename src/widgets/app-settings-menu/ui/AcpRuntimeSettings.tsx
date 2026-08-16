@@ -5,6 +5,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { useTranslations } from 'next-intl';
 
 import { badgeClass } from '@/shared/ui/badge-class';
+import { controlClass } from '@/shared/ui/control-class';
 import { Chip } from '@/shared/ui';
 import { ICON_SIZE } from '@/shared/ui/icon-size';
 import { detectAcpRuntimes, isAcpBridgeAvailable, type AcpRuntimeStatus } from '@/shared/lib/tauri-acp';
@@ -225,6 +226,28 @@ function RuntimeRow({ runtime }: { runtime: AcpRuntimeStatus }) {
   const t = useTranslations('nav.settingsMenu.runtimes');
   const isReady = runtime.state === 'ready';
 
+  /*
+   * ## 왜 「설치」 버튼이 아니라 **그 도구의 안내로 보내는 링크**인가
+   *
+   * 참고 제품(Buzz)의 같은 자리에는 `Install` 버튼이 있고, 누르면 **설치
+   * 스크립트를 실제로 실행한다**(실측: `curl -fsSL https://…/install.sh | bash`
+   * 를 `run_install_command_with_retry` 로 돌린다).
+   *
+   * 우리는 그것을 안 한다. 「아무도 검사하지 않은 코드를 돌릴 이유를 댈 수
+   * 없다」가 이 저장소의 규칙이고(`forbidden.md`), 그 스크립트는 URL 뒤에 있어
+   * **언제든 바뀔 수 있다** — 우리가 무엇을 실행하는지 diff 로 보여 줄 수 없다.
+   *
+   * ⚠️ 우리도 남의 코드를 돌리기는 한다(`npx -y <패키지>@<버전>`). 다르다고
+   * 주장하는 근거는 셋이다: **버전이 못 박혀 있고**(그 URL 스크립트는 아니다),
+   * 우리가 띄운 **자식 프로세스 안에서만 살고**(시스템 전역 설치가 아니다),
+   * **사용자가 대화를 열 때** 일어난다(범용 「설치」 버튼이 아니다).
+   *
+   * 그래서 여기서 하는 일은 하나다 — **그 도구의 공식 안내로 보낸다.** 설치
+   * 명령을 우리가 베껴 적지도 않는다(그건 그 벤더가 바꿀 수 있는 것이고,
+   * 우리가 적어 두면 그 사본이 낡는다).
+   */
+  const website = isReady ? null : runtime.website;
+
   return (
     <SettingsRow
       label={runtime.label}
@@ -256,6 +279,27 @@ function RuntimeRow({ runtime }: { runtime: AcpRuntimeStatus }) {
            * 19번 듣는다. 묶음 위 설명은 목록 **앞에** 있으므로 순서대로 읽는
            * 사람에게 먼저 도착한다. 그거면 된다.
            */}
+          {website ? (
+            <a
+              href={website}
+              target="_blank"
+              rel="noopener noreferrer"
+              data-testid="app-settings-runtime-install"
+              className={controlClass({
+                shape: 'link',
+                size: 'sm',
+                tone: 'secondary',
+                hoverInk: 'strong',
+                className: 'shrink-0',
+              })}
+            >
+              {/* 앱을 **떠나는** 링크라 글리프가 라벨 앞에 서고 스스로를 선언한다. */}
+              <span aria-hidden data-external-link-marker>
+                ↗
+              </span>
+              {t('installGuide')}
+            </a>
+          ) : null}
           <span
             data-runtime-state={runtime.state}
             className={badgeClass({

@@ -27,12 +27,13 @@ function makeRuntime(over: {
   verified?: boolean;
   icon?: string | null;
   brandInk?: string | null;
+  website?: string | null;
 }) {
   return {
     id: over.id,
     label: over.id,
     description: '',
-    website: null,
+    website: over.website ?? 'https://example.com/install',
     license: null,
     verified: over.verified ?? false,
     icon: over.icon ?? null,
@@ -289,3 +290,50 @@ describe('실행기 목록 — 못 하는 일은 정직하게', () => {
 });
 
 export type { Runtime };
+
+describe('실행기 목록 — 설치는 우리가 대신 하지 않는다', () => {
+  /*
+   * 참고 제품(Buzz)의 같은 자리에는 `Install` 버튼이 있고, 누르면 설치
+   * 스크립트를 **실제로 실행한다**(실측: `curl … | bash` 를 재시도까지 하며
+   * 돌린다). 우리는 안 한다 — 「아무도 검사하지 않은 코드를 돌릴 이유를 댈 수
+   * 없다」(`forbidden.md`)이고, URL 뒤의 스크립트는 언제든 바뀌므로 우리가
+   * 무엇을 실행하는지 diff 로 보여 줄 수 없다.
+   *
+   * 이 검사가 지키는 것은 **그 자리에 실행 버튼이 다시 생기지 않는 것**이다.
+   */
+  it('준비 안 된 줄은 그 도구의 공식 안내로 보낸다 — 우리가 설치하지 않는다', async () => {
+    bridge.detect.mockResolvedValue([
+      makeRuntime({ id: 'goose', state: 'cli-missing', isolated: false }),
+    ]);
+    render(<AcpRuntimeSettings />);
+    fireEvent.click(await screen.findByTestId('app-settings-runtimes-others-toggle'));
+
+    const link = await screen.findByTestId('app-settings-runtime-install');
+    // 링크지 버튼이 아니다 — 누르면 그 도구의 사이트가 열린다.
+    expect(link.tagName).toBe('A');
+    expect(link).toHaveAttribute('target', '_blank');
+    expect(link).toHaveAttribute('rel', expect.stringContaining('noopener'));
+  });
+
+  it('준비된 줄에는 설치 안내가 없다 — 이미 있는 것에 설치를 권하지 않는다', async () => {
+    bridge.detect.mockResolvedValue([makeRuntime({ id: 'claude-acp', isolated: true })]);
+    render(<AcpRuntimeSettings />);
+    await screen.findByTestId('app-settings-runtime-claude-acp');
+    expect(screen.queryByTestId('app-settings-runtime-install')).toBeNull();
+  });
+
+  it('설치 명령을 화면에 베껴 두지 않는다', async () => {
+    /*
+     * 명령을 우리가 적어 두면 그 사본이 낡는다(벤더가 바꾼다). 그리고 화면에
+     * `curl … | bash` 가 보이면 사용자는 그것을 우리가 보증한 것으로 읽는다.
+     */
+    bridge.detect.mockResolvedValue([
+      makeRuntime({ id: 'goose', state: 'cli-missing', isolated: false }),
+    ]);
+    render(<AcpRuntimeSettings />);
+    fireEvent.click(await screen.findByTestId('app-settings-runtimes-others-toggle'));
+
+    const text = screen.getByTestId('app-settings-runtimes').textContent ?? '';
+    expect(text).not.toMatch(/curl|npm install|brew install|\| *bash/);
+  });
+});

@@ -207,7 +207,8 @@
         },
         "guardedExplainer": "Right now {names} is the only tool Atlas can ask you about before it touches a file outside this folder. Every other tool follows the settings you gave it directly.",
         "guardedExplainerNone": "No tool here can be asked about before it touches a file outside this folder. Each one follows the settings you gave it directly.",
-        "unknownExplainer": "\"Not checked\" does not mean the tool is missing. It means Atlas does not yet know how to look for it on this computer. You can still start it."
+        "unknownExplainer": "\"Not checked\" does not mean the tool is missing. It means Atlas does not yet know how to look for it on this computer. You can still start it.",
+        "installGuide": "How to install"
       }
     },
     "primaryAriaLabel": "Primary menu",
