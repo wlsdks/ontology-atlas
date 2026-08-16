@@ -2,11 +2,9 @@
   "mcpServers": {
     "ontology-atlas": {
       "command": "node",
-      "args": [
-        "/Users/jinan/orca/workspaces/ontology-atlas/main-3/mcp/src/index.js"
-      ],
+      "args": ["./mcp/src/index.js"],
       "env": {
-        "OATLAS_VAULT": "../../../../../../private/tmp/claude-501/-Users-jinan-orca-workspaces-ontology-atlas-main-3/cbc05282-ecc2-4d13-9222-d8f9bb988b40/scratchpad/trial-vault",
+        "OATLAS_VAULT": "./docs/ontology",
         "OATLAS_REPO_ROOT": "."
       }
     }
