@@ -8,6 +8,7 @@ import { badgeClass } from '@/shared/ui/badge-class';
 import { Chip } from '@/shared/ui';
 import { ICON_SIZE } from '@/shared/ui/icon-size';
 import { detectAcpRuntimes, isAcpBridgeAvailable, type AcpRuntimeStatus } from '@/shared/lib/tauri-acp';
+import { isGuardedRuntime } from '@/features/acp-session/model/runtime-gate';
 
 import { DETAIL_TOGGLE_CHIP, SettingsGroup, SettingsRow } from './settings-primitives';
 
@@ -128,7 +129,9 @@ export function AcpRuntimeSettings() {
    * 문장이 저절로 따라오고, 하나도 없으면 다른 문장으로 갈린다. 「지금은 Claude
    * Code 뿐」을 문자열에 박아 두면 그 문장은 그날부터 썩는다.
    */
-  const guardedNames = ready.filter((r) => r.isolated).map((r) => r.label);
+  const guardedNames = ready
+    .filter((r) => isGuardedRuntime(r.id, r.isolated))
+    .map((r) => r.label);
 
   return (
     <div className="grid min-w-0 gap-3" data-testid="app-settings-runtimes">
@@ -155,7 +158,7 @@ export function AcpRuntimeSettings() {
         </SettingsGroup>
       ) : (
         <>
-          {ready.some((r) => !r.isolated) ? (
+          {ready.some((r) => !isGuardedRuntime(r.id, r.isolated)) ? (
             <p
               data-testid="app-settings-runtimes-guard-note"
               data-guarded-count={guardedNames.length}

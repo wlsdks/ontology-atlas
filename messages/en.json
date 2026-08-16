@@ -3656,6 +3656,7 @@
     "newChat": "New chat",
     "untitled": "Untitled chat",
     "model": "Model",
-    "mode": "Mode"
+    "mode": "Mode",
+    "runtimePicker": "Which tool to chat with"
   }
 }

@@ -11,6 +11,7 @@ import {
   stopAcpSession,
 } from '@/shared/lib/tauri-acp';
 
+import { GATED_SESSION_MODE } from './runtime-gate';
 import { VAULT_MCP_SERVER_NAME } from './vault-mcp-server';
 import {
   createAcpClient,
@@ -268,6 +269,20 @@ export function useAcpSession({ runtimeId, vaultRoot, mcpServers }: UseAcpSessio
         appendSystemPrompt: VAULT_HANDOFF_PROMPT,
       });
       sessionIdRef.current = session.sessionId;
+
+      /*
+       * **관문을 세운다.** codex 는 설정 격리로는 안 걸리고 세션 모드로만
+       * 걸린다(실측 — `runtime-gate.ts`). 재 본 실행기에만 건다.
+       *
+       * 실패해도 대화는 계속한다. 다만 화면이 「물어봐 준다」고 말한 것과
+       * 어긋나므로 **기록을 남긴다** — 조용히 넘어가면 관문이 없는 채로
+       * 있다고 말하는 화면이 된다.
+       */
+      const gatedMode = GATED_SESSION_MODE[runtimeId];
+      if (gatedMode && (await client.setMode(session.sessionId, gatedMode)) === false) {
+        push({ kind: 'notice', id: nextEventId(), text: `gate-mode-failed:${gatedMode}` });
+      }
+
       if (!disposedRef.current) {
         setChoices(session.choices);
         setStatus('ready');

@@ -5,6 +5,7 @@ import { withBasePath } from "@/shared/lib/base-path";
 import { useHeldValue, useSurfaceSwap } from "@/shared/lib/use-presence";
 import { detectAcpRuntimes, isAcpBridgeAvailable } from "@/shared/lib/tauri-acp";
 import { requestSettingsView } from "@/shared/lib/settings-view-intent";
+import { isGuardedRuntime } from "@/features/acp-session/model/runtime-gate";
 import { AcpChatPanel } from "@/widgets/acp-chat-panel";
 import { vaultMcpServers } from "@/features/acp-session/model/vault-mcp-server";
 import { cn } from "@/shared/lib/cn";
@@ -2141,20 +2142,35 @@ export function HomePage() {
    * **검증된 실행기만** 이름으로 부른다 — 우리가 실제로 재 보지 않은 것을
    * 첫 화면에서 권하면, 그 권유가 곧 보증으로 읽힌다.
    */
-  const [acpRuntime, setAcpRuntime] = useState<{ id: string; label: string } | null>(null);
+  /*
+   * 여기서 **쓸 수 있는 것들**과 **지금 고른 것**을 나눠 둔다.
+   *
+   * ⚠️ 종전 조건은 `r.isolated` 였는데, 그건 「설정 격리가 되는가」다. codex 는
+   * 설정 격리로는 안 걸리고 **세션 모드**로 걸린다(2026-08-16 실측) — 그래서
+   * 관문을 붙여 놓고도 목록에서 빠져 **아무도 고를 수 없었다.** 판정은
+   * `isGuardedRuntime` 한 곳으로 모은다.
+   */
+  const [acpRuntimes, setAcpRuntimes] = useState<Array<{ id: string; label: string }>>([]);
+  const [acpRuntimeId, setAcpRuntimeId] = useState<string | null>(null);
   const [acpChatOpen, setAcpChatOpen] = useState(false);
   useEffect(() => {
     if (!isAcpBridgeAvailable()) return;
     let cancelled = false;
     void detectAcpRuntimes().then((list) => {
       if (cancelled) return;
-      const best = (list ?? []).find((r) => r.state === 'ready' && r.verified && r.isolated);
-      setAcpRuntime(best ? { id: best.id, label: best.label } : null);
+      const usable = (list ?? [])
+        .filter((r) => r.state === 'ready' && r.verified && isGuardedRuntime(r.id, r.isolated))
+        .map((r) => ({ id: r.id, label: r.label }));
+      setAcpRuntimes(usable);
+      setAcpRuntimeId((current) =>
+        current && usable.some((r) => r.id === current) ? current : (usable[0]?.id ?? null),
+      );
     });
     return () => {
       cancelled = true;
     };
   }, []);
+  const acpRuntime = acpRuntimes.find((r) => r.id === acpRuntimeId) ?? null;
   const acpRuntimeLabel = acpRuntime?.label ?? null;
 
   const indexSlotFrames: ReadonlyArray<{ state: IndexPanelState; exiting: boolean }> =
@@ -5530,8 +5546,16 @@ export function HomePage() {
           className="flex w-[420px] min-h-0 shrink-0 flex-col border-l border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] p-4 xl:w-[480px]"
         >
           <AcpChatPanel
+            /*
+             * 실행기를 바꾸면 **패널을 다시 만든다.** 세션은 프로세스 하나에
+             * 묶여 있어서, 같은 패널에서 도구만 갈아 끼우면 「지금 무엇이
+             * 살아 있나」가 흐려진다. 다시 만드는 편이 싸고 분명하다.
+             */
+            key={acpRuntime.id}
             runtimeId={acpRuntime.id}
             runtimeLabel={acpRuntime.label}
+            runtimes={acpRuntimes}
+            onRuntimeChange={setAcpRuntimeId}
             vaultRoot={gitVaultPath}
             mcpServers={vaultMcpServers(agentServer.launch, gitVaultPath)}
             onClose={() => setAcpChatOpen(false)}

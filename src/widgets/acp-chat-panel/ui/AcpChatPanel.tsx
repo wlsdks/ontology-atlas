@@ -37,12 +37,20 @@ export function AcpChatPanel({
   runtimeLabel,
   vaultRoot,
   mcpServers,
+  runtimes = [],
+  onRuntimeChange,
   onClose,
 }: {
   runtimeId: string;
   runtimeLabel: string;
   vaultRoot: string | null;
   mcpServers?: unknown[];
+  /**
+   * 지금 고를 수 있는 실행기들 — **관문이 있는 것만** 담겨 온다
+   * (`isGuardedRuntime`). 하나뿐이면 고를 것이 없으므로 이름만 그린다.
+   */
+  runtimes?: ReadonlyArray<{ id: string; label: string }>;
+  onRuntimeChange?: (runtimeId: string) => void;
   onClose?: () => void;
 }) {
   const t = useTranslations('acpChat');
@@ -113,9 +121,27 @@ export function AcpChatPanel({
       aria-label={t('ariaLabel', { runtime: runtimeLabel })}
     >
       <header className="flex items-center justify-between gap-2">
-        <p className="min-w-0 truncate text-body font-[var(--font-weight-emphasis)] text-[color:var(--color-text-primary)]">
-          {runtimeLabel}
-        </p>
+        {/*
+          쓸 수 있는 도구가 둘 이상이면 **이름 자리가 곧 고르는 자리**가 된다 —
+          이름을 보여 주려고 이미 쓰고 있는 자리이므로 새 크롬이 안 생긴다.
+          하나뿐이면 고를 것이 없으니 글자로 둔다(선택지 하나짜리 드롭다운은
+          고르는 척만 하는 것이다).
+        */}
+        {runtimes.length > 1 && onRuntimeChange ? (
+          <Select
+            ariaLabel={t('runtimePicker')}
+            size="md"
+            value={runtimeId}
+            onChange={onRuntimeChange}
+            options={runtimes.map((r) => ({ value: r.id, label: r.label }))}
+            data-testid="acp-chat-runtime"
+            className="min-w-0"
+          />
+        ) : (
+          <p className="min-w-0 truncate text-body font-[var(--font-weight-emphasis)] text-[color:var(--color-text-primary)]">
+            {runtimeLabel}
+          </p>
+        )}
         <span className="flex shrink-0 items-center gap-2">
           <span
             data-acp-status-badge={status}
