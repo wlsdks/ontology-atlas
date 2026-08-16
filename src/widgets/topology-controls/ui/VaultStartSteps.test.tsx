@@ -67,7 +67,7 @@ describe("첫 걸음 — 한 번에 하나씩", () => {
 });
 
 describe("첫 걸음 — 에이전트 걸음은 앱이 아는 것을 말한다", () => {
-  it("찾은 실행기가 있으면 이름으로 부르고, 문은 대화로 간다", () => {
+  it("찾은 실행기가 있으면 이름으로 부르고, 문은 **설정의 Agents 칸**으로 간다", () => {
     const onOpenAgentConnect = vi.fn();
     renderSteps({ acpRuntimeLabel: "Claude Agent", onOpenAgentConnect });
     expect(screen.getByTestId("start-step-body").textContent).toContain("Claude Agent");
@@ -81,7 +81,7 @@ describe("첫 걸음 — 에이전트 걸음은 앱이 아는 것을 말한다",
     expect(screen.getByTestId("start-step-skip").textContent).toBe("다음");
   });
 
-  it("찾은 것이 없으면 건너뛸 수 있고, 문은 도구를 고르는 화면으로 간다", () => {
+  it("찾은 것이 없어도 같은 문이다 — 연결이 사는 곳은 한 군데다", () => {
     const onOpenAgentConnect = vi.fn();
     renderSteps({ acpRuntimeLabel: null, onOpenAgentConnect });
     expect(card().dataset.agentReady).toBe("false");

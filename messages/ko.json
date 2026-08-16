@@ -2562,10 +2562,9 @@
       "back": "이전",
       "agent": {
         "title": "AI 에이전트 연결",
-        "bodyFound": "이 컴퓨터에서 {runtime} 을(를) 찾았어요. 앱 안에서 바로 대화하면서 이 지도를 같이 채울 수 있어요.",
+        "bodyFound": "쓸 수 있는 AI 도구를 찾았어요: {runtime}. 앱 안에서 바로 대화하면서 이 지도를 같이 채울 수 있어요.",
         "bodyMissing": "Claude Agent 나 Codex 를 쓰고 있다면 앱 안에서 바로 대화하며 지도를 채울 수 있어요. 연결하지 않아도 나머지는 그대로 씁니다.",
-        "ctaFound": "대화 열기",
-        "ctaMissing": "쓸 도구 고르기"
+        "cta": "에이전트 설정 열기"
       },
       "analyze": {
         "title": "코드를 읽고 지도 초안 그리기",

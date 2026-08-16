@@ -4735,15 +4735,16 @@ export function HomePage() {
                       indexExpanded={renderedIndexState === "expanded"}
                       onFinish={dismissStartSteps}
                       /*
-                       * 같은 문이 상황에 따라 다른 데로 간다 — 그 걸음에 **남아
-                       * 있는 일**로. 찾은 것이 있으면 대화가 열리고, 없으면 어느
-                       * 도구를 쓸지 고르는 화면(설정의 실행기 칸)이 열린다.
+                       * 이 걸음의 이름은 **연결**이고, 연결이 사는 곳은 설정의
+                       * Agents 칸이다 — 무엇이 잡혔는지 보고, 무엇을 쓸지 고르는
+                       * 자리다(2026-08-16 소유자 지적).
+                       *
+                       * ⚠️ 종전에는 잡힌 것이 있으면 **대화**를 열었다. 그러면
+                       * 「연결」이라고 적힌 버튼이 대화를 여는 것이라 이름과 한
+                       * 일이 어긋난다. 대화로 가는 문은 따로 있다(유틸 레인의
+                       * 「에이전트」 칩 · 다음 걸음의 「에이전트에게 시키기」).
                        */
-                      onOpenAgentConnect={
-                        acpRuntime
-                          ? () => openVaultAgent()
-                          : () => requestSettingsView("runtimes")
-                      }
+                      onOpenAgentConnect={() => requestSettingsView("runtimes")}
                     />
                   ) : (
                   <TopologyEmptyState

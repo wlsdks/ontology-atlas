@@ -2562,10 +2562,9 @@
       "back": "Back",
       "agent": {
         "title": "Connect an AI agent",
-        "bodyFound": "Found {runtime} on this machine. You can chat with it right here and fill in the map together.",
+        "bodyFound": "Found an AI tool on this machine: {runtime}. You can chat with it right here and fill in the map together.",
         "bodyMissing": "If you use Claude Agent or Codex, you can chat with it right here and fill in the map. Everything else works without connecting.",
-        "ctaFound": "Open the chat",
-        "ctaMissing": "Pick a tool"
+        "cta": "Open agent settings"
       },
       "analyze": {
         "title": "Let AI draft the map from your code",

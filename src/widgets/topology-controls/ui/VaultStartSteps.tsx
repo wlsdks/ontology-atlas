@@ -188,12 +188,14 @@ export function VaultStartSteps({
     }
     if (current === "agent") {
       return {
-        label: acpRuntimeLabel ? t("agent.ctaFound") : t("agent.ctaMissing"),
-        icon: acpRuntimeLabel ? (
-          <MessageSquare size={ICON_SIZE.sm} aria-hidden />
-        ) : (
-          <Cable size={ICON_SIZE.sm} aria-hidden />
-        ),
+        /*
+         * 이 걸음의 이름은 **연결**이고, 연결이 사는 곳은 설정의 Agents 칸
+         * 하나다 — 무엇이 잡혔는지 보고 무엇을 쓸지 고르는 자리(2026-08-16
+         * 소유자 지적). 잡힌 것이 있고 없고에 따라 **다른 데로 보내지 않는다**:
+         * 이름이 「연결」인데 대화가 열리면 이름과 한 일이 어긋난다.
+         */
+        label: t("agent.cta"),
+        icon: <Cable size={ICON_SIZE.sm} aria-hidden />,
         testId: "start-step-cta-agent",
         disabled: onOpenAgentConnect === null,
         run: () => {
