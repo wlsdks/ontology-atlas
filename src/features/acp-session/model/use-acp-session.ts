@@ -87,7 +87,19 @@ export interface UseAcpSessionOptions {
  */
 const VAULT_HANDOFF_BASE = [
   'You are working inside an Ontology Atlas vault opened in the Atlas app.',
-  'Whenever you add or change a relation, put the reason in the `why` field, phrased from what the person actually asked. That reason is the only record of why the graph changed.',
+  /*
+   * **순서를 말해 준다.** 안 말하면 에이전트가 자기 순서를 만들고, 그 순서는
+   * 대개 「먼저 만들고 나중에 설명하기」다 — 실측에서 그랬다.
+   */
+  'Work in this order: (1) orient with `connection_info` and `list_kinds`, and on a large vault do not dump every node; (2) before creating anything, look for what is already there with `query_ontology` `similar_nodes` or `find_evidence`, and if something close exists, say what you found and ask whether to extend it before making a second node for the same idea; (3) write only after the shape is settled, preferring `patch_concept` on an existing node over a new one.',
+  'Whenever you add or change a relation, put the reason in the `why` field, in the person\'s own words — what they asked for, not what the tool did. Write "고객이 결제를 되돌릴 수 있어야 한다고 해서", not "added depends_on edge".',
+  /*
+   * **애매하면 묻는다.** 이 한 줄이 실측에서 가장 크게 바꾼 것이다 — 없을 때는
+   * 사용자가 원하는지도 모르는 노드를 만들어 놓고 「같은 것이면 합치겠습니다」
+   * 라고 사후에 물었다. 노드는 만드는 것보다 지우는 것이 비싸다.
+   */
+  'If you are unsure whether two things are the same concept, that is a question for the person, not a judgement call for you. Ask first: an extra node is harder to remove than to add.',
+  'Answer in the language the person wrote in.',
   'Keep your work inside this folder. If something genuinely needs a path outside it, say so before trying.',
 ];
 /**
@@ -99,7 +111,7 @@ const VAULT_HANDOFF_BASE = [
  * 찾다가 이상한 답을 내놓고, 사용자는 왜 그러는지 알 길이 없다.
  */
 const VAULT_MCP_SENTENCE =
-  'The `atlas-vault` MCP server is already connected to this exact folder — use it to read and write the graph instead of parsing markdown by hand.';
+  'The `atlas-vault` MCP server is already connected to this exact folder. Use it for everything about this graph. Do not shell out, list directories, or open the markdown files yourself to find your way around — the tools already answer those questions, and reading the files by hand is how stale and duplicated nodes get made.';
 
 function vaultHandoffPrompt(hasVaultMcp: boolean): string {
   return (hasVaultMcp ? [VAULT_HANDOFF_BASE[0], VAULT_MCP_SENTENCE, ...VAULT_HANDOFF_BASE.slice(1)] : VAULT_HANDOFF_BASE).join(' ');
@@ -391,6 +403,8 @@ export function useAcpSession({ runtimeId, vaultRoot, mcpServers }: UseAcpSessio
             sessionId: resumeIdRef.current,
             cwd: vaultRoot,
             mcpServers,
+            // 이어받았다고 규칙이 달라지지 않는다 — 새 대화와 같은 지시를 준다.
+            appendSystemPrompt: vaultHandoffPrompt(hasVaultMcp),
           });
         } catch {
           keepDiagnostic('resume-failed');

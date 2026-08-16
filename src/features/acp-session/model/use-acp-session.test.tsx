@@ -259,3 +259,102 @@ describe('볼트 서버 — 꽂았을 때만 꽂혔다고 말한다', () => {
     });
   });
 });
+
+describe('이어받은 대화 — 규칙이 달라지지 않는다', () => {
+  it('session/load 에도 새 대화와 같은 지시가 실린다', async () => {
+    /*
+     * 2026-08-16 검수: 지시문이 **새 대화에만** 붙었다. 그래서 「지난 대화」로
+     * 이어받은 세션은 다른 규칙으로 움직였다 — 관계를 바꿀 때 이유를 적으라는
+     * 요구도, 폴더 밖으로 나가지 말라는 요구도 없는 채로. 같은 화면·같은
+     * 폴더인데 어제 시작한 대화와 오늘 시작한 대화가 다르게 굴면 규칙이 아니다.
+     */
+    const { result } = renderHook(() =>
+      useAcpSession({
+        runtimeId: 'claude-acp',
+        vaultRoot: '/vault',
+        mcpServers: [{ name: 'atlas-vault' }],
+      }),
+    );
+    const first = result.current.start();
+    await waitFor(() => expect(bridge.starts).toBe(1));
+    await act(async () => {
+      bridge.release?.();
+      await first;
+    });
+
+    // 지난 대화를 이어받는다. 붙잡아 둔 프로세스 띄우기를 그 사이에 풀어 준다 —
+    // `await` 로 감으면 풀 기회가 없어 검사가 스스로 멈춘다.
+    const switching = result.current.switchSession('s-old');
+    await waitFor(() => expect(bridge.starts).toBe(2));
+    await act(async () => {
+      bridge.release?.();
+      await switching;
+    });
+
+    await waitFor(() =>
+      expect(bridge.sent.some((m) => m.method === 'session/load')).toBe(true),
+    );
+    const load = bridge.sent.find((m) => m.method === 'session/load');
+    const meta = (load?.params as Record<string, unknown>)?._meta as
+      | { systemPrompt?: { append?: string } }
+      | undefined;
+    expect(meta?.systemPrompt?.append, '이어받은 대화에 지시가 안 실렸다').toContain('`why`');
+
+    await act(async () => {
+      await result.current.stop();
+    });
+  });
+});
+
+describe('세션 지시문 — 실측으로 얻은 네 줄이 실제로 실린다', () => {
+  /**
+   * 2026-08-16 실험(같은 볼트·같은 과제, 실제 어댑터 5회):
+   *
+   * | | 지금 지시 | 새 지시 |
+   * |---|---|---|
+   * | 겹치는 개념을 시켰을 때 | **묻지 않고 새 노드를 만들었다** | 찾아서 알리고 멈췄다 |
+   * | 걸린 시간 | 88초 | 50초 · 45초 |
+   * | 셸·파일 직접 읽기 | 2회 | **0회** |
+   * | 중복 확인 | 안 함 | 매번 |
+   *
+   * 이 검사는 문장 자체를 못 박지 않는다(문구는 계속 다듬을 것이다). 못 박는
+   * 것은 **그 네 가지 지시가 세션에 실제로 실려 나가는가**다 — 실려 나가지
+   * 않으면 위 표는 아무 의미가 없다.
+   */
+  it('순서 · 중복 확인 · 애매하면 묻기 · 손으로 읽지 않기 가 전부 실린다', async () => {
+    const { result } = renderHook(() =>
+      useAcpSession({
+        runtimeId: 'claude-acp',
+        vaultRoot: '/vault',
+        mcpServers: [{ name: 'atlas-vault' }],
+      }),
+    );
+    const first = result.current.start();
+    await waitFor(() => expect(bridge.starts).toBe(1));
+    await act(async () => {
+      bridge.release?.();
+      await first;
+    });
+
+    const call = bridge.sent.find((m) => m.method === 'session/new');
+    const meta = (call?.params as Record<string, unknown>)?._meta as
+      | { systemPrompt?: { append?: string } }
+      | undefined;
+    const prompt = meta?.systemPrompt?.append ?? '';
+
+    // ① 도구를 우회하지 말 것
+    expect(prompt, '손으로 훑지 말라는 지시가 없다').toMatch(/Do not shell out/);
+    // ② 순서
+    expect(prompt, '작업 순서가 없다').toMatch(/Work in this order/);
+    // ③ 만들기 전에 찾아보기
+    expect(prompt, '중복을 먼저 찾으라는 지시가 없다').toMatch(/similar_nodes|find_evidence/);
+    // ④ 애매하면 묻기 — 실측에서 가장 크게 바꾼 줄
+    expect(prompt, '애매할 때 묻지 않고 만들게 된다').toMatch(/Ask first/);
+    // ⑤ 사람이 쓴 언어로 답하기
+    expect(prompt, '한국어로 물었는데 영어로 답한다').toMatch(/language the person wrote in/);
+
+    await act(async () => {
+      await result.current.stop();
+    });
+  });
+});

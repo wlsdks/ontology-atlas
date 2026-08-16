@@ -243,6 +243,8 @@ export interface AcpClient {
     sessionId: string;
     cwd: string;
     mcpServers?: unknown[];
+    /** 새 대화와 **같은 지시**를 준다 — 이어받았다고 규칙이 달라지지 않게. */
+    appendSystemPrompt?: string;
   }): Promise<{ sessionId: string; choices: AcpSessionChoices }>;
   /**
    * 모델을 바꾼다. **안 내놓는 어댑터가 있다** — claude 는 `session/set_model`
@@ -525,6 +527,17 @@ export function createAcpClient(
         sessionId: params.sessionId,
         cwd: params.cwd,
         mcpServers: params.mcpServers ?? [],
+        /*
+         * ⚠️ **이어받는 대화에도 같은 지시를 준다** (2026-08-16 검수에서 적발).
+         *
+         * 종전에는 새 대화에만 붙었다. 그래서 「지난 대화」로 이어받은 세션은
+         * **다른 규칙으로 움직였다** — 관계를 바꿀 때 `why` 를 적으라는 요구도,
+         * 폴더 밖으로 나가지 말라는 요구도 없는 채로. 같은 화면 · 같은 폴더인데
+         * 어제 시작한 대화와 오늘 시작한 대화가 다르게 굴면 그건 규칙이 아니다.
+         */
+        ...(params.appendSystemPrompt
+          ? { _meta: { systemPrompt: { append: params.appendSystemPrompt } } }
+          : {}),
       });
       // 어댑터가 `sessionId` 를 안 돌려주는 경우가 있어 요청한 값을 유지한다.
       const sessionId =
