@@ -2181,6 +2181,15 @@ export function HomePage() {
   }, []);
   const acpRuntime = acpRuntimes.find((r) => r.id === acpRuntimeId) ?? null;
   const acpRuntimeLabel = acpRuntime?.label ?? null;
+  /*
+   * 매 렌더 새 배열을 만들면 그 값을 받는 훅의 `start` 정체가 매번 바뀌고,
+   * 그것을 지켜보는 effect 가 계속 다시 돈다. 잠금은 세션 훅이 지지만
+   * (`startingRef`) **헛돌게 두지 않는 것은 여기 몫**이다.
+   */
+  const acpMcpServers = useMemo(
+    () => vaultMcpServers(agentServer.launch, gitVaultPath),
+    [agentServer.launch, gitVaultPath],
+  );
 
   const indexSlotFrames: ReadonlyArray<{ state: IndexPanelState; exiting: boolean }> =
     indexSlotSwap.leaving === null
@@ -5566,7 +5575,7 @@ export function HomePage() {
             runtimes={acpRuntimes}
             onRuntimeChange={setAcpRuntimeId}
             vaultRoot={gitVaultPath}
-            mcpServers={vaultMcpServers(agentServer.launch, gitVaultPath)}
+            mcpServers={acpMcpServers}
             onClose={() => setAcpChatOpen(false)}
           />
         </Surface>

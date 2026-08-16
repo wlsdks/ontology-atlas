@@ -303,6 +303,8 @@ describe('toPermissionRequest — 제목이 아니라 경로를 본다', () => {
   it('모양이 달라도 터지지 않는다 — 어댑터가 바뀌어도 대화가 죽지 않아야 한다', () => {
     expect(toPermissionRequest({})).toEqual({
       title: null,
+      // 도구 이름도 모르면 null 이다 — MCP 도구 자동 허용 판정이 이 값을 본다.
+      toolName: null,
       toolKind: null,
       filePath: null,
       options: [],

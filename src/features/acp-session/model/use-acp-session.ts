@@ -120,6 +120,19 @@ export function useAcpSession({ runtimeId, vaultRoot, mcpServers }: UseAcpSessio
   const sessionIdRef = useRef<string | null>(null);
   /** 다음 `start()` 가 이어 받을 대화. 한 번 쓰고 비운다. */
   const resumeIdRef = useRef<string | null>(null);
+  /** 지금 띄우는 중인가 — `clientRef` 는 다 끝난 뒤에야 채워져서 늦다. */
+  const startingRef = useRef(false);
+  /**
+   * 세대 번호 — `stop()` 이 부를 때마다 오른다.
+   *
+   * **띄우는 도중에 닫으면** `stop()` 은 아직 없는 것을 치우고 끝나고, 그 뒤에
+   * `start()` 가 이어 달려 프로세스와 클라이언트를 **새로 만들어 놓는다.**
+   * 닫은 화면 뒤에서 어댑터가 계속 도는 것이다(검사가 이걸 잡았다).
+   *
+   * 그래서 `start()` 는 기다릴 때마다 자기 세대가 아직 유효한지 확인하고,
+   * 아니면 **자기가 만든 것을 자기가 치우고** 빠진다.
+   */
+  const generationRef = useRef(0);
   /*
    * `switchSession` 은 `start`/`stop` 둘 다 부르는데, 그 둘은 서로를 의존성으로
    * 갖지 않는다(순환). ref 로 한 단계 끊는다 — 최신 것을 부르되 의존성은 안 만든다.
@@ -197,12 +210,41 @@ export function useAcpSession({ runtimeId, vaultRoot, mcpServers }: UseAcpSessio
 
   const start = useCallback(async () => {
     if (!isAcpBridgeAvailable() || !vaultRoot) return;
-    if (clientRef.current) return;
+    /*
+     * ⚠️ **잠금은 첫 `await` 앞에서 건다** (2026-08-16 실측으로 발견).
+     *
+     * 종전 잠금은 `clientRef.current` 하나였는데, 그 값은 프로세스를 띄우고
+     * 이벤트를 붙인 **뒤에야** 채워진다. 그 사이에 `start()` 가 한 번 더
+     * 불리면 둘 다 잠금을 통과해서 **어댑터가 두 개 뜬다.**
+     *
+     * 실제로 그랬다 — 대화창 하나에 어댑터 두 개:
+     * ```
+     * 83796  npm exec @agentclientprotocol/claude-agent-acp@0.68.0
+     * 83797  npm exec @agentclientprotocol/claude-agent-acp@0.68.0
+     * ```
+     * 그러면 `sessionIdRef` 는 나중 것을 가리키는데 줄은 먼저 것으로 오가서
+     * 말을 걸면 `Session not found` 로 죽는다. 게다가 먼저 뜬 프로세스는
+     * 아무도 안 끄는 유령이 된다.
+     *
+     * 두 번 불리는 이유는 하나가 아니다 — 개발 모드의 이중 실행도 있고,
+     * `mcpServers` 가 매 렌더 새 배열이라 `start` 의 정체가 바뀌는 것도 있다.
+     * 그래서 **부르는 쪽을 고치는 것으로는 부족하다**: 여기서 잠근다.
+     */
+    if (clientRef.current || startingRef.current) return;
+    startingRef.current = true;
+    const generation = generationRef.current;
+    /** 내가 시작한 뒤에 누가 닫았나. */
+    const stale = () => generationRef.current !== generation;
     setStatus('starting');
     setError(null);
     try {
       const acpSessionId = await startAcpSession(runtimeId, vaultRoot);
       if (!acpSessionId) throw new Error('bridge-unavailable');
+      // 기다리는 동안 닫혔으면 **내가 띄운 것을 내가 끈다.**
+      if (stale()) {
+        await stopAcpSession(acpSessionId);
+        return;
+      }
       acpSessionRef.current = acpSessionId;
 
       let onLine: ((line: string) => void) | null = null;
@@ -229,6 +271,14 @@ export function useAcpSession({ runtimeId, vaultRoot, mcpServers }: UseAcpSessio
           setPending(null);
         },
       });
+
+      if (stale()) {
+        unlistenRef.current?.();
+        unlistenRef.current = null;
+        acpSessionRef.current = null;
+        await stopAcpSession(acpSessionId);
+        return;
+      }
 
       const client = createAcpClient(transport, {
         onUpdate: applyUpdate,
@@ -313,6 +363,8 @@ export function useAcpSession({ runtimeId, vaultRoot, mcpServers }: UseAcpSessio
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err));
       setStatus('error');
+    } finally {
+      startingRef.current = false;
     }
   }, [applyUpdate, askUser, mcpServers, push, runtimeId, vaultRoot]);
 
@@ -382,11 +434,20 @@ export function useAcpSession({ runtimeId, vaultRoot, mcpServers }: UseAcpSessio
   }, []);
 
   const stop = useCallback(async () => {
+    /*
+     * **세대를 먼저 올린다.** 이 줄이 없으면 띄우는 도중에 닫았을 때
+     * `stop()` 은 아직 없는 것을 치우고 끝나고, 뒤이어 `start()` 가 프로세스를
+     * 새로 만들어 놓는다 — 닫은 화면 뒤에서 어댑터가 계속 돈다.
+     */
+    generationRef.current += 1;
+
     // 순서가 중요하다: 기다리는 권한부터 닫고, 그다음 프로세스를 끝낸다.
     // 반대로 하면 이미 죽은 상대에게 답을 보내려 한다.
     pendingResolverRef.current?.(null);
     pendingResolverRef.current = null;
     setPending(null);
+    // 띄우는 중이었더라도 잠금을 푼다 — 안 그러면 다시 못 띄운다.
+    startingRef.current = false;
     clientRef.current?.dispose();
     clientRef.current = null;
     unlistenRef.current?.();

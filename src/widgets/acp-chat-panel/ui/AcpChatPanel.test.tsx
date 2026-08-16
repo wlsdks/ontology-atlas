@@ -498,3 +498,61 @@ describe('대화 패널 — 사람이 읽는 화면이다', () => {
     expect(row.textContent).toContain('Terminal');
   });
 });
+
+describe('대화 패널 — 어댑터를 두 개 띄우지 않는다', () => {
+  /**
+   * ⚠️ **실물에서만 드러난 결함** (2026-08-16).
+   *
+   * 대화창 하나인데 어댑터 프로세스가 둘 떠 있었다:
+   * ```
+   * 83796  npm exec @agentclientprotocol/claude-agent-acp@0.68.0
+   * 83797  npm exec @agentclientprotocol/claude-agent-acp@0.68.0
+   * ```
+   * 잠금이 `clientRef` 하나였는데 그 값은 프로세스를 띄우고 이벤트를 붙인
+   * **뒤에야** 채워진다. 그 사이에 한 번 더 불리면 둘 다 통과한다. 그러면
+   * 세션 번호는 나중 것인데 줄은 먼저 것으로 오가서 `Session not found` 로
+   * 죽고, 먼저 뜬 프로세스는 아무도 안 끄는 유령이 된다.
+   */
+  it('띄우는 중에 또 불려도 세션은 하나만 연다', async () => {
+    render(<AcpChatPanel runtimeId="claude-acp" runtimeLabel="Claude Agent" vaultRoot="/vault" />);
+
+    // 첫 악수가 나갈 때까지 기다린다 — 이 시점이 「띄우는 중」이다.
+    await waitFor(() => expect(bridge.sent.some((m) => m.method === 'initialize')).toBe(true));
+    const initializes = bridge.sent.filter((m) => m.method === 'initialize').length;
+    expect(initializes, '띄우는 중에 악수가 두 번 나가면 프로세스가 둘이다').toBe(1);
+
+    replyTo('initialize', { protocolVersion: 1 });
+    await waitFor(() => expect(bridge.sent.some((m) => m.method === 'session/new')).toBe(true));
+    // 세션도 하나뿐이어야 한다.
+    expect(bridge.sent.filter((m) => m.method === 'session/new')).toHaveLength(1);
+  });
+
+  it('매 렌더 새 배열이 와도 다시 띄우지 않는다', async () => {
+    /*
+     * 이 결함의 방아쇠 하나가 그것이었다 — 부모가 `mcpServers` 를 매번 새로
+     * 만들면 훅의 `start` 정체가 바뀌고 그것을 보는 effect 가 다시 돈다.
+     * 부르는 쪽도 고쳤지만(useMemo), **여기서 막히는 것이 계약**이다.
+     */
+    const { rerender } = render(
+      <AcpChatPanel
+        runtimeId="claude-acp"
+        runtimeLabel="Claude Agent"
+        vaultRoot="/vault"
+        mcpServers={[{ name: 'atlas-vault' }]}
+      />,
+    );
+    await waitFor(() => expect(bridge.sent.some((m) => m.method === 'initialize')).toBe(true));
+
+    for (let i = 0; i < 3; i += 1) {
+      rerender(
+        <AcpChatPanel
+          runtimeId="claude-acp"
+          runtimeLabel="Claude Agent"
+          vaultRoot="/vault"
+          mcpServers={[{ name: 'atlas-vault' }]}
+        />,
+      );
+    }
+    expect(bridge.sent.filter((m) => m.method === 'initialize')).toHaveLength(1);
+  });
+});
