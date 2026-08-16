@@ -153,7 +153,9 @@ function unquote(value) {
   // 인용부호 없는 값은 이스케이프 문법이 아니라 원문이므로 건드리지 않는다.
   const quote = trimmed.length >= 2 ? trimmed[0] : "";
   if ((quote === '"' || quote === "'") && trimmed[trimmed.length - 1] === quote) {
-    return trimmed.slice(1, -1).replace(new RegExp(`\\\\(${quote}|\\\\)`, "g"), "$1");
+    const inner = trimmed.slice(1, -1).replace(new RegExp(`\\\\(${quote}|\\\\)`, "g"), "$1");
+    // 큰따옴표 안의 `\n` 은 줄바꿈이다 — 쓰는 쪽이 접은 것을 여기서 편다.
+    return quote === '"' ? inner.replace(/\\n/g, "\n").replace(/\\t/g, "\t") : inner;
   }
   return value.replace(/^["']|["']$/g, "");
 }
@@ -240,12 +242,30 @@ function serializeValue(v) {
 // 역슬래시를 먼저 이스케이프한다. 안 하면 값 안의 `\\` 가 읽을 때 한 겹
 // 벗겨져 왕복이 안 닫힌다(따옴표만 이스케이프하던 종전에는 따옴표 쪽이
 // 반대 방향으로 새어서 저장할 때마다 백슬래시가 배가됐다).
-function escapeQuoted(text) {
-  return text.replace(/\\/g, '\\\\').replace(/"/g, '\\"');
+/*
+ * 따옴표가 필요한 값인가 — **다섯 곳이 같은 답을 내야 한다.**
+ *
+ * ## 왜 규칙이 바뀌었나 (2026-08-16 검수, 재현됨)
+ *
+ * 줄바꿈이 빠져 있었다. 그 한 글자가 frontmatter 블록을 통째로 부순다:
+ * 배열·객체 안의 값은 한 줄에 들어가야 해서 블록 문법을 못 쓰는데, 거기서
+ * 줄바꿈이 그대로 나가면 다음 줄이 새 키로 읽힌다. 실제로 깨진 자리가
+ * `relation_notes: { slug: why }` 였다(`add_relation` 의 `why`).
+ *
+ * 작은따옴표도 규칙에 들어왔다. `unquote` 는 짝이 안 맞는 따옴표를 양 끝에서
+ * 벗기므로, `'지도'` 같은 값이 따옴표 없이 쓰이면 되읽을 때 `지도` 가 된다.
+ */
+function needsQuote(s) {
+  return /[:,#\[\]"'{}&|*!%@`\n\t]|^\s|\s$/.test(s);
 }
 
-function needsQuote(s) {
-  return /[:,\[\]"{}]|^\s|\s$/.test(s);
+/** 따옴표 안에 안전하게 담기도록 만든다 — 줄바꿈은 `\n` 으로 접는다. */
+function escapeQuoted(text) {
+  return text
+    .replace(/\\/g, '\\\\')
+    .replace(/"/g, '\\"')
+    .replace(/\n/g, '\\n')
+    .replace(/\t/g, '\\t');
 }
 
 // 본문 + frontmatter 합쳐서 markdown 생성.

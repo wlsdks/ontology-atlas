@@ -177,8 +177,22 @@ export function findCreateSlugCollision(
   return candidates.find((candidate) => candidate.ref === slug) ?? null;
 }
 
+/**
+ * YAML 스칼라를 안전하게 적는다 — **네 곳이 같은 답을 내야 한다.**
+ *
+ * 2026-08-16 검수(재현됨): 줄바꿈이 규칙에 빠져 있었다. 그 한 글자가
+ * frontmatter 블록을 통째로 부순다 — `note\nkind: element` 는 **노드의 종류를
+ * 바꾸고**, `note\n---\nx: 1` 은 frontmatter 를 거기서 끝낸다. 따옴표만으로는
+ * 안 된다(줄이 이미 끊겼다). 그래서 `\n` 으로 접고 읽는 쪽이 되돌린다.
+ */
 function quoteYamlScalar(v: string): string {
-  return /[:#[\]{}"',&|*!%@`]/.test(v) ? `"${v.replace(/"/g, '\\"')}"` : v;
+  if (!/[:,#[\]{}"'&|*!%@`\n\t]|^\s|\s$/.test(v)) return v;
+  const escaped = v
+    .replace(/\\/g, '\\\\')
+    .replace(/"/g, '\\"')
+    .replace(/\n/g, '\\n')
+    .replace(/\t/g, '\\t');
+  return `"${escaped}"`;
 }
 
 /** Dedupe pending relations by (type, candidate.id) preserving first-seen order. */

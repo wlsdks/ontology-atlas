@@ -487,6 +487,23 @@ async function readAgentActivityStatus(
   return parseAgentActivityStatus(raw);
 }
 
+/**
+ * 사이드카 상태 두 개가 **실질적으로 같은가** — 폴링이 새 객체를 만들 때마다
+ * 앱 전체를 다시 그리지 않게 하는 판정.
+ *
+ * 얕게 본다: 이 상태들은 boolean/문자열 몇 개짜리 평평한 객체다. 깊은 비교는
+ * 그 자체가 5초마다 도는 비용이 된다.
+ */
+function shallowEqualStatus(a: unknown, b: unknown): boolean {
+  if (a === b) return true;
+  if (!a || !b || typeof a !== 'object' || typeof b !== 'object') return false;
+  const left = a as Record<string, unknown>;
+  const right = b as Record<string, unknown>;
+  const keys = Object.keys(left);
+  if (keys.length !== Object.keys(right).length) return false;
+  return keys.every((key) => left[key] === right[key]);
+}
+
 async function readVaultSidecarStatuses(handle: FileSystemDirectoryHandle): Promise<{
   agentConfigStatus: AgentConfigStatus;
   agentActivityStatus: AgentActivityStatus;
@@ -932,7 +949,24 @@ export function useLocalVaultInternal() {
         const fp = await computeLocalVaultFingerprint(handle);
         if (fp === lastFingerprintRef.current) {
           const sidecars = await readVaultSidecarStatuses(handle);
-          setState((s) => ({ ...s, ...sidecars, lastLoadedAt: Date.now() }));
+          /*
+           * ⚠️ **안 바뀌었으면 상태도 안 건드린다** (2026-08-16 검수).
+           *
+           * 종전에는 아무것도 안 바뀐 틱에도 `setState` 로 새 객체를 만들었고,
+           * 컨텍스트 프로바이더가 그 결과를 그대로 흘려서 **5초마다 앱 전체가
+           * 다시 그려졌다** — 아무 일도 안 일어난 채로, 영원히.
+           *
+           * `lastLoadedAt` 은 화면 어디에도 안 쓰이는데(그 값을 위해 매 틱
+           * 새 객체를 만들었다), 사이드카 셋은 실제로 바뀔 수 있다. 그래서
+           * **바뀐 것이 있을 때만** 갱신한다.
+           */
+          setState((s) => {
+            const same =
+              shallowEqualStatus(s.agentConfigStatus, sidecars.agentConfigStatus) &&
+              shallowEqualStatus(s.agentActivityStatus, sidecars.agentActivityStatus) &&
+              s.agentActivityLog.length === sidecars.agentActivityLog.length;
+            return same ? s : { ...s, ...sidecars, lastLoadedAt: Date.now() };
+          });
           return false;
         }
       } catch {

@@ -3,7 +3,7 @@ import { isEvidenceOnlyConcept } from "@/entities/knowledge-graph";
 import {
   IMPACT_RELATION_TYPES,
   buildOntologyReachability,
-  computeOntologyDependents,
+  buildReachabilityIndex,
 } from "@/shared/lib/ontology-tree";
 
 export interface ImpactRankingRow {
@@ -50,7 +50,7 @@ export interface ImpactRanking {
  * "이걸 바꾸면 어디까지 깨지나" 랭킹 — 각 개념을 (직접·간접) 가리키는 개념
  * 수의 내림차순.
  *
- * 계산을 새로 짜지 않고 `computeOntologyDependents` / `buildOntologyReachability`
+ * 계산을 새로 짜지 않고 `buildOntologyReachability`
  * 를 그대로 부른다. 그 함수들이 MCP `query_ontology({operation:"blast_radius",
  * direction:"incoming"})` 와 같은 의미론(역방향 전이 도달, soft association
  * 제외)의 단일 진실원이라, 화면이 말하는 수와 에이전트가 답하는 수가 갈라질
@@ -87,9 +87,27 @@ export function buildImpactRanking(
   evidenceLimit = 4,
 ): ImpactRanking {
   const dependencyEdges = edges.filter((edge) => IMPACT_RELATION_TYPES.includes(edge.type));
+  /*
+   * 색인을 **한 번만** 만든다 (2026-08-16 검수, 실측).
+   *
+   * 종전에는 노드마다 두 번 훑었고, 그 두 번이 각각 `nodeById` 맵과 인접
+   * 목록을 처음부터 다시 만들었다 — N개 노드에 대해 색인을 2N번. 잰 값:
+   * 500노드 132ms · 2,000노드 **2.37초** · 8,000노드 **51.8초**. 인사이트
+   * 화면은 셸에서 한 번 누르면 나오는 자리다.
+   *
+   * 이 색인은 아래 두 호출이 쓰는 **같은 필터**(`IMPACT_RELATION_TYPES`,
+   * 제외 없음)로 만든다 — 필터가 다르면 색인도 다른 것이 된다.
+   */
+  const index = buildReachabilityIndex(nodes, edges, { types: IMPACT_RELATION_TYPES });
   const scored: ImpactRankingRow[] = [];
   for (const node of nodes) {
-    const total = computeOntologyDependents(node.id, nodes, edges);
+    const total = buildOntologyReachability(node.id, nodes, edges, {
+      direction: "incoming",
+      depth: Math.max(nodes.length, 1),
+      limit: 1,
+      types: IMPACT_RELATION_TYPES,
+      index,
+    }).summary.reachableNodes;
     if (total === 0) continue;
     // 같은 필터·같은 방향에서 깊이만 1로 잘라 "바로 이어진 것"을 얻는다 —
     // 인접 목록을 따로 세면 두 수가 서로 다른 규칙을 쓰게 된다.
@@ -98,6 +116,7 @@ export function buildImpactRanking(
       depth: 1,
       limit: 1,
       types: IMPACT_RELATION_TYPES,
+      index,
     }).summary.reachableNodes;
     scored.push({
       id: node.id,

@@ -34,6 +34,56 @@ export interface BuildOntologyReachabilityOptions {
   types?: readonly string[];
   /** 관계 타입 제외 목록. 구조 탐색에서 특정 관계를 숨길 때만 사용한다. */
   excludeTypes?: readonly string[];
+  /**
+   * 미리 만들어 둔 색인 — **같은 그래프로 여러 번 부를 때만** 넘긴다.
+   *
+   * ## 왜 (2026-08-16 검수, 실측)
+   *
+   * 이 함수는 부를 때마다 `nodeById` 맵과 인접 목록을 **처음부터 다시** 만든다.
+   * 한 번 부를 때는 옳은 설계인데(호출자가 아무것도 안 들고 있어도 된다),
+   * 노드마다 한 번씩 부르는 자리가 있다 — 영향도 순위. 거기서는 N개 노드에
+   * 대해 색인을 2N번 새로 만들었고, 실측한 비용의 **약 절반**이 그것이었다:
+   *
+   * | 노드 | 걸린 시간 |
+   * |---:|---:|
+   * | 500 | 132ms |
+   * | 2,000 | 2.37s |
+   * | 8,000 | 51.8s |
+   *
+   * 색인을 밖에서 한 번 만들어 넘기면 그 절반이 사라진다. **판정은 하나도 안
+   * 바뀐다** — 같은 재료를 다시 만들지 않을 뿐이다.
+   *
+   * ⚠️ 색인은 `types`·`excludeTypes` 에 **묶여 있다.** 다른 필터로 만든 것을
+   * 넘기면 조용히 다른 답이 나온다. 그래서 `buildReachabilityIndex` 가 그
+   * 필터를 인자로 받고, 넘기는 쪽이 같은 값을 쓰게 한다.
+   */
+  index?: ReachabilityIndex;
+}
+
+/** 같은 그래프·같은 필터로 여러 번 훑을 때 재사용하는 색인. */
+export interface ReachabilityIndex {
+  nodeById: ReadonlyMap<string, KnowledgeGraphNode>;
+  adjacency: ReachabilityAdjacency;
+}
+
+/**
+ * 색인을 한 번 만든다. 필터가 색인의 일부이므로 **쓸 때와 같은 값**을 준다.
+ */
+export function buildReachabilityIndex(
+  nodes: readonly KnowledgeGraphNode[],
+  edges: readonly KnowledgeGraphEdge[],
+  options: { types?: readonly string[]; excludeTypes?: readonly string[] } = {},
+): ReachabilityIndex {
+  const typeSet =
+    Array.isArray(options.types) && options.types.length > 0 ? new Set(options.types) : null;
+  const excludeSet =
+    Array.isArray(options.excludeTypes) && options.excludeTypes.length > 0
+      ? new Set(options.excludeTypes)
+      : null;
+  return {
+    nodeById: new Map(nodes.map((node) => [node.id, node] as const)),
+    adjacency: buildAdjacency(edges, typeSet, excludeSet),
+  };
 }
 
 interface DiscoveredNode {
@@ -94,8 +144,8 @@ export function buildOntologyReachability(
   const excludeSet = Array.isArray(options.excludeTypes) && options.excludeTypes.length > 0
     ? new Set(options.excludeTypes)
     : null;
-  const nodeById = new Map(nodes.map((node) => [node.id, node] as const));
-  const adjacency = buildAdjacency(edges, typeSet, excludeSet);
+  const nodeById = options.index?.nodeById ?? new Map(nodes.map((node) => [node.id, node] as const));
+  const adjacency = options.index?.adjacency ?? buildAdjacency(edges, typeSet, excludeSet);
   const discovered = new Map<string, DiscoveredNode>([
     [startId, { id: startId, distance: 0 }],
   ]);

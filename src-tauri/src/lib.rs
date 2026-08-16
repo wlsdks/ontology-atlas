@@ -1588,6 +1588,41 @@ fn read_vault_binary_file(
     })
 }
 
+/// 파일 하나를 **끊기지 않게** 쓴다 — 임시 파일에 쓰고, 디스크에 확정하고, 이름을 바꾼다.
+///
+/// ## 왜 (2026-08-16 검수)
+///
+/// 종전에는 `fs::write` 하나였다. 그건 원본을 **먼저 비우고** 쓴다. 그 사이에
+/// 앱이 죽거나 디스크가 차면 사용자의 마크다운이 **잘린 채로** 남는다 — 그리고
+/// 그 파일은 방금 우리가 열어 준 그 폴더의 것이다. 이 제품의 약속은 「당신의
+/// 파일은 그대로 당신 디스크에 있다」이고, 그 약속에는 「멀쩡하게」가 포함된다.
+///
+/// 이름 바꾸기는 같은 파일 시스템 안에서 원자적이다. 그래서 어느 순간에 죽어도
+/// 파일은 **옛 내용 아니면 새 내용**이지, 반쪽이 되지 않는다.
+fn write_text_atomically(path: &std::path::Path, content: &str) -> Result<(), String> {
+    use std::io::Write;
+
+    let temporary = path.with_extension(format!(
+        "{}.oatlas-tmp-{}",
+        path.extension().and_then(|e| e.to_str()).unwrap_or(""),
+        std::process::id()
+    ));
+    let result = (|| -> std::io::Result<()> {
+        let mut file = fs::File::create(&temporary)?;
+        file.write_all(content.as_bytes())?;
+        // 이름을 바꾸기 전에 디스크에 확정한다 — 안 하면 이름만 새것이고
+        // 내용은 아직 캐시에 있는 상태로 전원이 나갈 수 있다.
+        file.sync_all()?;
+        drop(file);
+        fs::rename(&temporary, path)
+    })();
+    if result.is_err() {
+        // 실패하면 임시 파일만 치운다. 원본은 손대지 않았다.
+        let _ = fs::remove_file(&temporary);
+    }
+    result.map_err(|err| err.to_string())
+}
+
 #[tauri::command]
 fn write_vault_text_file(
     root_path: String,
@@ -1595,7 +1630,7 @@ fn write_vault_text_file(
     content: String,
 ) -> Result<(), String> {
     let path = resolve_write_target_inside(&root_path, &relative_path)?;
-    fs::write(path, content).map_err(|err| err.to_string())
+    write_text_atomically(&path, &content)
 }
 
 #[tauri::command]
@@ -5191,5 +5226,52 @@ mod tests {
 
         fs::remove_dir_all(root).ok();
         fs::remove_dir_all(outside).ok();
+    }
+}
+
+#[cfg(test)]
+mod atomic_write_tests {
+    use super::write_text_atomically;
+
+    /// **원본을 먼저 비우지 않는다.**
+    ///
+    /// 2026-08-16 검수: 종전 `fs::write` 는 O_TRUNC 다 — 쓰는 도중에 죽으면
+    /// 사용자의 마크다운이 잘린 채로 남는다. 이 검사가 잡는 것은 「새 내용이
+    /// 들어갔나」가 아니라 **「임시 파일을 거쳐 갔나」**다: 그 성질이 원자성을
+    /// 낳고, 결과만 보면 두 구현이 구별되지 않는다.
+    #[test]
+    fn replaces_through_a_temporary_file_and_leaves_none_behind() {
+        let dir = std::env::temp_dir().join(format!("oatlas-atomic-{}", std::process::id()));
+        std::fs::create_dir_all(&dir).unwrap();
+        let target = dir.join("note.md");
+        std::fs::write(&target, "old").unwrap();
+
+        write_text_atomically(&target, "new").unwrap();
+
+        assert_eq!(std::fs::read_to_string(&target).unwrap(), "new");
+        // 임시 파일이 남으면 다음 쓰기가 `create` 에서 걸리거나 사용자 폴더가 지저분해진다.
+        let leftovers: Vec<_> = std::fs::read_dir(&dir)
+            .unwrap()
+            .filter_map(|e| e.ok())
+            .map(|e| e.file_name().to_string_lossy().to_string())
+            .filter(|name| name.contains("oatlas-tmp"))
+            .collect();
+        assert!(leftovers.is_empty(), "임시 파일이 남았다: {leftovers:?}");
+        std::fs::remove_dir_all(&dir).ok();
+    }
+
+    #[test]
+    fn a_failed_write_leaves_the_original_untouched() {
+        let dir = std::env::temp_dir().join(format!("oatlas-atomic-fail-{}", std::process::id()));
+        std::fs::create_dir_all(&dir).unwrap();
+        // 디렉터리를 대상으로 주면 rename 이 실패한다 — 원본이 없는 경우의 대역.
+        let target = dir.join("as-dir");
+        std::fs::create_dir_all(&target).unwrap();
+
+        let result = write_text_atomically(&target, "new");
+
+        assert!(result.is_err(), "디렉터리를 파일로 덮어썼다");
+        assert!(target.is_dir(), "대상이 파일로 바뀌었다");
+        std::fs::remove_dir_all(&dir).ok();
     }
 }
