@@ -4,6 +4,8 @@ import { useEffect, useRef } from 'react';
 import { ShieldAlert } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 
+import { permissionIntent } from '@/features/acp-session/model/permission-intent';
+
 import { Button } from '@/shared/ui';
 import { controlClass } from '@/shared/ui/control-class';
 import { ICON_SIZE } from '@/shared/ui/icon-size';
@@ -32,6 +34,8 @@ import type { PendingPermission } from '@/features/acp-session/model/use-acp-ses
 export function AcpPermissionCard({ pending }: { pending: PendingPermission }) {
   const t = useTranslations('acpChat.permission');
   const { request, resolve } = pending;
+  /* 어디만이 아니라 **무엇을** — 아래 주석 참고. */
+  const intent = permissionIntent(request.toolKind);
 
   const allowOnce = request.options.find((o) => o.kind === 'allow_once');
   const rejectOnce = request.options.find((o) => o.kind === 'reject_once');
@@ -88,6 +92,22 @@ export function AcpPermissionCard({ pending }: { pending: PendingPermission }) {
           </p>
         </div>
       </div>
+
+      {/*
+        **무엇을 하려는가** (2026-08-17). 경로만 보여 주면 「읽겠다」와
+        「지우겠다」가 화면에서 똑같다 — 그 둘은 완전히 다른 결정이다. 값은
+        `toolKind` 로 오고 있었고 그 필드 주석이 «화면이 쓸 타입 있는 사실»
+        이라고 이미 적어 뒀는데, 화면이 안 읽고 있었다.
+
+        모르면 모른다고 한다. 「읽기」로 짐작하면 가장 위험한 쪽으로 틀린다.
+      */}
+      <p
+        data-testid="acp-permission-intent"
+        data-intent={intent}
+        className="break-keep text-label leading-label text-[color:var(--color-text-primary)]"
+      >
+        {t(`intent.${intent}`)}
+      </p>
 
       {/* 경로는 판단의 근거라 줄이지 않는다. `break-all` 은 긴 경로가 칸 밖으로
           나가지 않게 하고, mono 는 여기서 장식이 아니라 «이건 파일 경로다» 를
