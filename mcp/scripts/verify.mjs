@@ -37,6 +37,7 @@
  * 모두 PASS → exit 0, 실패 → exit 1 + 진단 메시지.
  */
 
+import { isBacklinkKeyValue } from '../src/backlink-key-shape.mjs';
 import { spawn } from 'node:child_process';
 import { mkdirSync, realpathSync, rmSync, statSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
@@ -5745,24 +5746,18 @@ function backlinkKeyChangeFailure(row) {
   return null;
 }
 
+/**
+ * ⚠️ **판정을 여기서 다시 쓰지 않는다** (2026-08-17).
+ *
+ * 종전에는 이 함수가 문자열/배열만 받았고, 그래서 `relation_notes`(맵)을 가진
+ * 노드의 rename 이 **정상인데도** 이 게이트를 못 넘었다. 맞는 동작에 켜지는
+ * 게이트는 꺼지는 게이트다.
+ *
+ * 모양 판정은 `mcp/src/backlink-key-shape.mjs` 하나가 갖고, 자기 테스트도
+ * 거기 있다.
+ */
 function isBacklinkRewriteValue(value) {
-  return (
-    isCleanNonBlankString(value) ||
-    (
-      Array.isArray(value) &&
-      value.length > 0 &&
-      value.every((item) => isCleanNonBlankString(item))
-    ) ||
-    (
-      value !== null &&
-      typeof value === 'object' &&
-      !Array.isArray(value) &&
-      Object.keys(value).length > 0 &&
-      Object.entries(value).every(
-        ([key, item]) => isCleanNonBlankString(key) && isCleanNonBlankString(item),
-      )
-    )
-  );
+  return isBacklinkKeyValue(value);
 }
 
 function isCleanNonBlankString(value) {

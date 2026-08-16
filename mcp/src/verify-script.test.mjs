@@ -11251,6 +11251,11 @@ Continue.`;
       'agent_brief response missing cliFallbackCommands',
     );
     assert.equal(
+      // 2026-08-17: 계약이 뒤집혔다 — 이제 **맨몸 이름**이 거절된다(실행 불가).
+      agentBriefFailure({ ...payload, cliFallbackCommands: ['ontology-atlas health'] }),
+      'agent_brief response missing cliFallbackCommands',
+    );
+    assert.equal(
       agentBriefFailure({ ...payload, cliFallbackCommands: ["node '/tmp/ontology atlas/cli/src/index.mjs' workspace-brief [vault]"] }),
       'agent_brief cliFallbackCommands missing centrality plan fallback',
     );
