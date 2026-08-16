@@ -969,6 +969,16 @@ test('root Cargo package contract is admissible evidence for a feature capabilit
         '',
       ].join('\n'),
     );
+    mkdirSync(join(r, 'docs'), { recursive: true });
+    writeFileSync(
+      join(r, 'docs', 'product-contract.md'),
+      [
+        '# Product Contract',
+        '',
+        'Calc Kit provides repeatable scientific calculations for Rust teams.',
+        'Library Configuration owns optional library behavior selection.',
+      ].join('\n'),
+    );
   });
   try {
     const proposal = {
@@ -976,15 +986,15 @@ test('root Cargo package contract is admissible evidence for a feature capabilit
         slug: 'calc-kit',
         title: 'Calc Kit',
         definition: 'A library for repeatable scientific calculations.',
-        evidence: ['README.md'],
+        evidence: ['README.md', 'docs/product-contract.md'],
         confidence: 0.9,
       },
       domains: [{
         slug: 'domains/library-configuration',
         title: 'Library Configuration',
         definition: 'The responsibility boundary for selecting optional library behavior.',
-        evidence: ['README.md'],
-        confidence: 0.9,
+        evidence: ['README.md', 'docs/product-contract.md'],
+        confidence: 0.5,
       }],
       capabilities: [{
         slug: 'capabilities/optional-feature-selection',
@@ -1003,7 +1013,7 @@ test('root Cargo package contract is admissible evidence for a feature capabilit
           witnesses: {
             concepts: ['calc-kit'],
             relations: [],
-            evidence: ['README.md'],
+            evidence: ['README.md', 'docs/product-contract.md'],
             paths: [],
           },
         },
@@ -1070,7 +1080,10 @@ test('root Cargo package contract is admissible evidence for a feature capabilit
       'package contract must not displace the mission evidence',
     );
     assert.equal(result.proposalValidation.canWrite, false);
-    assert.ok(result.proposalValidation.reviewPlan);
+    assert.ok(
+      result.proposalValidation.reviewPlan,
+      JSON.stringify(result.proposalValidation.findings),
+    );
     assert.equal(result.proposalValidation.writePlan, undefined);
     assert.equal(result.proposalValidation.constructionLifecycle.writeEligibility, 'reviewable');
   } finally {
@@ -1804,7 +1817,7 @@ test('Generic README sections (Usage / Installation / Tests) skipped from domain
   const root = withRepo((r) => {
     writeFileSync(
       join(r, 'README.md'),
-      '# X\n\n## Usage\n\n## Installation\n\n## Tests\n\n## Real Domain\n',
+      '# X\n\n## Usage\n\n## Installation\n\n## Tests\n\n## Sponsors\n\n## Real Domain\n',
     );
   });
   try {
@@ -2425,7 +2438,14 @@ test('Python import boundary paths can support a validated impact proposal', () 
   const root = withRepo((r) => {
     writeFileSync(
       join(r, 'README.rst'),
-      'Diagnostic Client\n=================\n\nA diagnostic protocol client for application developers.\n',
+      [
+        'Diagnostic Client',
+        '=================',
+        '',
+        'A diagnostic protocol client for application developers.',
+        'Diagnostics owns diagnostic request behavior and response handling.',
+        '',
+      ].join('\n'),
     );
     writeFileSync(
       join(r, 'setup.py'),
@@ -2433,6 +2453,16 @@ test('Python import boundary paths can support a validated impact proposal', () 
         'setup(',
         "    name='diagnostic-client',",
         ')',
+      ].join('\n'),
+    );
+    mkdirSync(join(r, 'docs'), { recursive: true });
+    writeFileSync(
+      join(r, 'docs', 'product-contract.md'),
+      [
+        '# Product Contract',
+        '',
+        'Diagnostic Client lets applications issue diagnostic protocol requests.',
+        'Diagnostics owns diagnostic request behavior and response handling.',
       ].join('\n'),
     );
     mkdirSync(join(r, 'diagnostic_client/services'), { recursive: true });
@@ -2492,14 +2522,14 @@ test('Python import boundary paths can support a validated impact proposal', () 
         slug: 'diagnostic-client',
         title: 'Diagnostic Client',
         definition: 'A protocol client that lets applications issue diagnostic requests.',
-        evidence: ['README.rst'],
+        evidence: ['README.rst', 'docs/product-contract.md'],
         confidence: 0.9,
       },
       domains: [{
         slug: 'domains/diagnostics',
         title: 'Diagnostics',
         definition: 'The responsibility boundary for diagnostic request behavior.',
-        evidence: ['README.rst'],
+        evidence: ['README.rst', 'docs/product-contract.md'],
         confidence: 0.8,
       }],
       capabilities: [{
@@ -2532,19 +2562,23 @@ test('Python import boundary paths can support a validated impact proposal', () 
         },
       ],
       relations: [
-        relation(containment.projectDomain, 'The project contains the diagnostics responsibility.', ['README.rst']),
+        relation(
+          containment.projectDomain,
+          'The project contains the diagnostics responsibility.',
+          ['README.rst', 'docs/product-contract.md'],
+        ),
         relation(containment.domainCapability, 'Diagnostics contains request execution.', ['README.rst']),
         relation(dependency, 'The client statically imports the services package.', ['diagnostic_client/client.py']),
       ],
       competencyAnswers: {
         scope: answer('Application developers use the client to issue diagnostic requests.', {
           concepts: ['diagnostic-client'],
-          evidence: ['README.rst'],
+          evidence: ['README.rst', 'docs/product-contract.md'],
         }),
         domains: answer('Diagnostics owns diagnostic request behavior.', {
           concepts: ['domains/diagnostics'],
           relations: [containment.projectDomain],
-          evidence: ['README.rst'],
+          evidence: ['README.rst', 'docs/product-contract.md'],
         }),
         abilities: answer('Request execution creates requests and interprets responses.', {
           concepts: ['capabilities/request-execution'],
@@ -2843,7 +2877,7 @@ test('README domain and feature with same name do not collide', () => {
   }
 });
 
-test('A sole README domain is the deterministic parent for otherwise unmatched code candidates', () => {
+test('A sole README domain does not absorb otherwise unmatched code candidates', () => {
   const root = withRepo((r) => {
     writeFileSync(join(r, 'package.json'), JSON.stringify({ name: 'bootstrap-app' }));
     writeFileSync(join(r, 'README.md'), '# Bootstrap App\n\n## Accounts\n');
@@ -2853,12 +2887,12 @@ test('A sole README domain is the deterministic parent for otherwise unmatched c
   });
   try {
     const r = analyzeRepoStructure(root);
-    assert.equal(r.capabilities[0].domain, 'domains/accounts');
-    assert.equal(r.elements[0].domain, 'domains/accounts');
+    assert.equal(r.capabilities[0].domain, undefined);
+    assert.equal(r.elements[0].domain, undefined);
     assert.deepEqual(r.suggestedRelations, [
       { from: 'bootstrap-app', to: 'domains/accounts', type: 'contains' },
-      { from: 'domains/accounts', to: 'capabilities/auth', type: 'contains' },
-      { from: 'domains/accounts', to: 'elements/session', type: 'contains' },
+      { from: 'bootstrap-app', to: 'capabilities/auth', type: 'contains' },
+      { from: 'bootstrap-app', to: 'elements/session', type: 'contains' },
     ]);
   } finally {
     rmSync(root, { recursive: true, force: true });
@@ -2877,13 +2911,13 @@ test('Business containment spine — fuzzy domain match connects project → dom
     const r = analyzeRepoStructure(root);
     assert.equal(r.capabilities[0].domain, 'domains/evidence-intake');
     assert.equal(r.capabilities[1].domain, 'domains/claim-review');
-    assert.equal(r.elements[0].domain, 'domains/claim-review');
+    assert.equal(r.elements[0].domain, undefined);
     assert.deepEqual(r.suggestedRelations, [
       { from: 'claims', to: 'domains/evidence-intake', type: 'contains' },
       { from: 'claims', to: 'domains/claim-review', type: 'contains' },
       { from: 'domains/evidence-intake', to: 'capabilities/capture-evidence', type: 'contains' },
       { from: 'domains/claim-review', to: 'capabilities/review-claims', type: 'contains' },
-      { from: 'domains/claim-review', to: 'elements/claim', type: 'contains' },
+      { from: 'claims', to: 'elements/claim', type: 'contains' },
     ]);
   } finally {
     rmSync(root, { recursive: true, force: true });
@@ -3009,6 +3043,196 @@ test('Meaning gate marks README-only domains as weak even with trusted product p
       ),
       false,
     );
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test('project purpose attaches only claim-aligned semantic corroboration', () => {
+  const root = withRepo((r) => {
+    writeFileSync(join(r, 'package.json'), JSON.stringify({ name: 'ledger-bridge' }));
+    writeFileSync(
+      join(r, 'README.md'),
+      '# Ledger Bridge\n\nLedger Bridge provides invoice reconciliation for finance operations.\n',
+    );
+    mkdirSync(join(r, 'docs'), { recursive: true });
+    writeFileSync(
+      join(r, 'docs', 'product-contract.md'),
+      '# Product Contract\n\nInvoice reconciliation supports finance operations with a local review queue.\n',
+    );
+    writeFileSync(
+      join(r, 'docs', 'product-overview.md'),
+      '# Product Overview\n\nDeveloper onboarding explains local repository setup and contributor workflows.\n',
+    );
+  });
+  try {
+    const result = analyzeRepoStructure(root);
+
+    assert.deepEqual(result.project.evidence, [
+      'README.md',
+      'docs/product-contract.md',
+    ]);
+    assert.equal(result.project.evidence.includes('docs/product-overview.md'), false);
+    assert.match(result.project.uncertainty, /purpose witness/);
+    assert.doesNotMatch(result.project.uncertainty, /identity.*corroborat/i);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test('project purpose prefers the repository identity sentence over a later feature outcome', () => {
+  const root = withRepo((r) => {
+    writeFileSync(
+      join(r, 'README.md'),
+      [
+        '> Featured sponsor: build reviews faster.',
+        '',
+        '# Capture Desk',
+        '',
+        'Capture Desk is an open-source, self-hosted note-taking app built for quick capture.',
+        '',
+        '## Web Clipper',
+        '',
+        'The extension lets you review each clip and customize its Markdown format before saving.',
+      ].join('\n'),
+    );
+  });
+  try {
+    const result = analyzeRepoStructure(root);
+
+    assert.match(
+      result.project.definition,
+      /Capture Desk is an open-source, self-hosted note-taking app built for quick capture/,
+    );
+    assert.doesNotMatch(result.project.definition, /extension lets you review each clip/);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test('duplicated semantic prose does not become a second purpose or domain witness', () => {
+  const root = withRepo((r) => {
+    const prose = [
+      '# Ledger Bridge',
+      '',
+      'Ledger Bridge provides invoice reconciliation for finance operations.',
+      '',
+      '## Invoice Reconciliation',
+      '',
+      'Invoice Reconciliation owns invoice matching and settlement exceptions.',
+    ].join('\n');
+    writeFileSync(join(r, 'README.md'), prose);
+    mkdirSync(join(r, 'docs'), { recursive: true });
+    writeFileSync(join(r, 'docs', 'product-contract.md'), prose);
+  });
+  try {
+    const result = analyzeRepoStructure(root);
+    const domain = result.meaningGate.proposedBusinessOntology.domains.find(
+      (row) => row.slug === 'domains/invoice-reconciliation',
+    );
+
+    assert.deepEqual(result.project.evidence, ['README.md']);
+    assert.deepEqual(domain.evidenceSources, ['README.md']);
+    assert.match(domain.definition, /responsibility remains unconfirmed/);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test('domain boundaries require a separate responsibility witness and never reuse the project mission', () => {
+  const root = withRepo((r) => {
+    writeFileSync(join(r, 'package.json'), JSON.stringify({ name: 'ledger-bridge' }));
+    writeFileSync(
+      join(r, 'README.md'),
+      [
+        '# Ledger Bridge',
+        '',
+        'Ledger Bridge provides invoice reconciliation for finance operations.',
+        '',
+        '## Invoice Reconciliation',
+        '',
+        '## Account Support',
+        '',
+        '## Billing',
+      ].join('\n'),
+    );
+    mkdirSync(join(r, 'docs'), { recursive: true });
+    writeFileSync(
+      join(r, 'docs', 'product-contract.md'),
+      '# Product Contract\n\nThe Invoice Reconciliation domain owns invoice matching and settlement exceptions.\n',
+    );
+    writeFileSync(
+      join(r, 'docs', 'architecture.md'),
+      '# Architecture\n\nAccount Support handles account access requests and operator escalations.\n',
+    );
+  });
+  try {
+    const result = analyzeRepoStructure(root);
+    const domains = result.meaningGate.proposedBusinessOntology.domains;
+    const invoiceReconciliation = domains.find((row) => row.slug === 'domains/invoice-reconciliation');
+    const accountSupport = domains.find((row) => row.slug === 'domains/account-support');
+    const billing = domains.find((row) => row.slug === 'domains/billing');
+
+    assert.deepEqual(invoiceReconciliation.evidenceSources, [
+      'README.md',
+      'docs/product-contract.md',
+    ]);
+    assert.match(invoiceReconciliation.definition, /Invoice Reconciliation domain owns invoice matching/);
+    assert.deepEqual(accountSupport.evidenceSources, ['README.md', 'docs/architecture.md']);
+    assert.match(accountSupport.definition, /Account Support handles account access requests/);
+    assert.deepEqual(billing.evidenceSources, ['README.md']);
+    assert.equal(
+      billing.definition,
+      'Proposed responsibility boundary named by README heading; repository-contained responsibility remains unconfirmed.',
+    );
+    assert.ok(
+      domains.every((domain) => !domain.definition.includes('Ledger Bridge provides invoice reconciliation')),
+    );
+    assert.ok(
+      result.meaningGate.reviewQuestions.some((question) =>
+        question.startsWith('[weak · domain-boundary]'),
+      ),
+    );
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test('same-file, risky, package, and implementation evidence cannot corroborate a domain boundary', () => {
+  const root = withRepo((r) => {
+    writeFileSync(
+      join(r, 'package.json'),
+      JSON.stringify({
+        name: 'billing-bridge',
+        description: 'Billing handles settlement records for finance operations.',
+      }),
+    );
+    writeFileSync(
+      join(r, 'README.md'),
+      '# Billing Bridge\n\nBilling Bridge provides finance operations support.\n\n## Billing\n',
+    );
+    mkdirSync(join(r, 'docs'), { recursive: true });
+    writeFileSync(
+      join(r, 'docs', 'product-roadmap.md'),
+      '# Product Roadmap\n\nBilling will support settlement records and handles future exception workflows.\n',
+    );
+    mkdirSync(join(r, 'src', 'billing'), { recursive: true });
+    writeFileSync(join(r, 'src', 'billing', 'index.js'), 'export const settle = () => true;\n');
+  });
+  try {
+    const result = analyzeRepoStructure(root);
+    const billing = result.meaningGate.proposedBusinessOntology.domains.find(
+      (row) => row.slug === 'domains/billing',
+    );
+
+    assert.deepEqual(billing.evidenceSources, ['README.md']);
+    assert.equal(
+      billing.definition,
+      'Proposed responsibility boundary named by README heading; repository-contained responsibility remains unconfirmed.',
+    );
+    assert.equal(result.extractionContract.assertionPolicy.automaticBusinessAssertions, 0);
+    assert.equal(result.proposalValidation.canWrite, false);
+    assert.equal('writePlan' in result.proposalValidation, false);
   } finally {
     rmSync(root, { recursive: true, force: true });
   }

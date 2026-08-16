@@ -7,6 +7,24 @@
 
 ---
 
+## 2026-08-16 · 목적과 도메인의 고신뢰는 독립된 의미 근거를 요구한다
+
+- `analyze_repo_structure`는 README 첫 제품 정체성 문장을 뒤쪽 확장 기능 문장보다
+  우선하고, 무관하거나 복제된 문서를 목적 corroboration으로 붙이지 않는다.
+- README H2 도메인 후보는 별도 current product/architecture 문서에 도메인 이름과
+  명시적 책임 문장이 함께 있을 때만 corroborated로 표시한다. 같은 README, roadmap,
+  package/path/implementation 근거는 책임 경계의 두 번째 의미 권위가 아니다.
+- project purpose·proposed domain·project→domain relation의 confidence가 0.8 이상이거나
+  `scope`·`domains`가 `answered`이면 current semantic source 두 개가 필요하다. 목적은
+  두 출처 모두 목적 주장과 맞아야 하고, 도메인은 두 출처 모두 이름과 명시적 책임
+  문장을 가져야 한다. 한 근거뿐인 정직한 low-confidence `partial`은 계속 reviewable이지만,
+  single-source 고신뢰·완료 응답은 review/write plan 전에 실패 닫는다.
+- implementation element는 이름이 유일한 README domain과 겹치더라도 자동으로 그
+  domain 아래에 넣지 않는다. 역할 근거가 없는 path는 project-scoped evidence로 남긴다.
+- fresh 외부 저장소에서 single-source 과장 차단, low-confidence partial 유지,
+  responsibility-aligned multi-source q1/q2 통과, source/bundled MCP 동일 응답, 후보 패킷의
+  missing/foreign/truncated mutation 거절을 함께 검증했다. 자동 write는 열지 않았다.
+
 ## 2026-08-16 · C 미지원 범위와 관계의 정확한 경로 근거를 숨기지 않는다
 
 - Autotools C/H 분석은 정적 `AC_CONFIG_FILES`와 literal Automake 선언에서 공개

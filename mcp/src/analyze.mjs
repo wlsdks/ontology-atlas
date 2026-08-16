@@ -731,10 +731,16 @@ export function analyzeRepoStructure(rootPath, options = {}) {
     semanticEvidence,
   });
 
+  // Element paths are implementation observations. Even an exact token match
+  // with a README domain name does not prove that implementation role, so raw
+  // elements stay project-scoped until a reviewed capability/element relation
+  // carries role-specific evidence.
+  for (const element of elements) delete element.domain;
+
   // Suggested relations form one coherent containment spine. A README-backed
-  // domain sits under the project; matched capabilities/elements sit under
-  // that domain. Evidence without a defensible domain match remains directly
-  // under the project instead of inventing business meaning.
+  // domain sits under the project; matched capability candidates may sit under
+  // that domain. Raw implementation elements remain directly under the project
+  // instead of inventing business-role meaning from a name match.
   const suggestedRelations = [];
   if (project) {
     for (const domain of domains) {
@@ -1388,15 +1394,25 @@ function enrichProjectCandidate(project, semanticEvidence) {
       row.trust === 'candidate-evidence' &&
       row.excerpt,
   );
-  const sources = uniqueStrings([
-    ...(project.evidence ?? []),
-    ...trustedRows.map((row) => row.source),
-  ]).slice(0, 3);
   const purposeWitness = trustedRows
-    .map((row) => ({ row, sentence: explicitPurposeSentence(row.excerpt) }))
+    .map((row) => ({ row, sentence: explicitPurposeSentence(row.excerpt, project.title) }))
     .find(({ sentence }) => sentence);
   const lead = purposeWitness?.row ?? trustedRows[0];
   const sentence = purposeWitness?.sentence ?? boundedEvidenceSentence(lead?.excerpt);
+  // Project identity evidence can remain visible, but a second semantic source
+  // corroborates this purpose only when its own bounded prose overlaps the
+  // selected purpose claim. A trustworthy but unrelated product document is
+  // still useful evidence elsewhere; it is not a purpose witness.
+  const purposeCorroborators = sentence
+    ? independentSemanticEvidenceRows(trustedRows.filter(
+      (row) => row.source !== lead?.source && hasClaimSpecificSemanticOverlap(sentence, row.excerpt),
+    ), [lead])
+    : [];
+  const sources = uniqueStrings([
+    ...(project.evidence ?? []),
+    lead?.source,
+    ...purposeCorroborators.map((row) => row.source),
+  ]).slice(0, 3);
   const definition = sentence
     ? `Proposed repository purpose from ${lead.source}: ${sentence}`
     : 'Repository purpose is not established by the bounded semantic evidence scan.';
@@ -1416,6 +1432,9 @@ function enrichProjectCandidate(project, semanticEvidence) {
 }
 
 function enrichMeaningCandidate(candidate, kind, semanticEvidence, implementationPaths = []) {
+  if (kind === 'domain') {
+    return enrichDomainMeaningCandidate(candidate, semanticEvidence);
+  }
   const sourceNames = uniqueStrings([
     ...(candidate.semanticSources ?? []),
     candidate.evidence?.source,
@@ -1445,6 +1464,30 @@ function enrichMeaningCandidate(candidate, kind, semanticEvidence, implementatio
     confidence: 0.5,
     uncertainty: 'proposal-only: bounded prose and path evidence require semantic qualification before admission',
     evidenceSources: sourceNames,
+  };
+}
+
+function enrichDomainMeaningCandidate(candidate, semanticEvidence) {
+  const nameSource = candidate.evidence?.source;
+  const witness = findDomainResponsibilityWitness(candidate, semanticEvidence);
+  const evidenceSources = witness
+    ? uniqueStrings([nameSource, witness.row.source])
+    : uniqueStrings([nameSource]);
+  const definition = witness
+    ? `Proposed responsibility boundary from ${witness.row.source}: ${witness.sentence}`
+    : 'Proposed responsibility boundary named by README heading; repository-contained responsibility remains unconfirmed.';
+  return {
+    title: candidate.title,
+    definition,
+    excludes: [
+      'shared business ownership is not established by this repository scan',
+      'runtime behavior outside the cited implementation evidence is not asserted',
+    ],
+    confidence: 0.5,
+    uncertainty: witness
+      ? 'proposal-only: repository prose corroborates this boundary candidate; human approval is still required'
+      : 'proposal-only: README heading names a candidate, but no separate repository responsibility witness was found',
+    evidenceSources,
   };
 }
 
@@ -1484,26 +1527,126 @@ function boundedEvidenceSentence(value) {
   return (sentence ?? text.slice(0, 360)).trim();
 }
 
-function explicitPurposeSentence(value) {
+function explicitPurposeSentence(value, projectTitle = '') {
   const text = String(value ?? '')
     .replace(/[\*_`]/g, '')
     .replace(/\s+/g, ' ')
     .trim();
   if (!text) return '';
   const sentences = text.match(/[^.!?]+(?:[.!?](?=\s|$)|$)/g) ?? [];
+  const candidates = sentences
+    .map((sentence) => sentence.trim())
+    .filter((sentence) =>
+      sentence.length >= 24 &&
+      sentence.length <= 360 &&
+      !/^\d+(?:\.\d+)*\s/.test(sentence) &&
+      !/^(?:release|version)\b/i.test(sentence) &&
+      !/\b(?:was|is|has been) released\b/i.test(sentence));
+  const normalizedTitle = normalizeSemanticText(projectTitle);
+  const identityPurpose = normalizedTitle
+    ? candidates.find((sentence) => {
+      const normalized = normalizeSemanticText(sentence);
+      return (
+        (normalized.startsWith(`${normalizedTitle} is `) ||
+          normalized.startsWith(`${normalizedTitle} are `)) &&
+        /\b(?:app|application|client|database|engine|framework|library|platform|runtime|server|service|tool|workbench)\b/i.test(sentence) &&
+        /\b(?:built|created|designed|made)\s+for\b|\bfor\b|\bto\b/i.test(sentence)
+      );
+    })
+    : null;
   return (
-    sentences
-      .map((sentence) => sentence.trim())
+    identityPurpose ??
+    candidates
       .find(
         (sentence) =>
-          sentence.length >= 24 &&
-          sentence.length <= 360 &&
-          !/^\d+(?:\.\d+)*\s/.test(sentence) &&
-          !/^(?:release|version)\b/i.test(sentence) &&
-          !/\b(?:was|is|has been) released\b/i.test(sentence) &&
           /\b(?:provides|allows|lets|enables|helps|exists\s+to)\b/i.test(sentence),
       ) ?? ''
   );
+}
+
+function hasClaimSpecificSemanticOverlap(purposeSentence, candidateProse) {
+  const purposeTerms = semanticClaimTerms(purposeSentence);
+  if (purposeTerms.size < 2) return false;
+  const candidateTerms = semanticClaimTerms(candidateProse);
+  let overlap = 0;
+  for (const term of purposeTerms) {
+    if (!candidateTerms.has(term)) continue;
+    overlap += 1;
+    if (overlap >= 2) return true;
+  }
+  return false;
+}
+
+function semanticClaimTerms(value) {
+  const genericTerms = new Set([
+    'a', 'an', 'and', 'application', 'applications', 'codebase', 'developer', 'developers',
+    'for', 'from', 'helps', 'local', 'of', 'operations', 'platform', 'product', 'project',
+    'provides', 'repository', 'service', 'services', 'software', 'system', 'the', 'this',
+    'to', 'tool', 'tools', 'user', 'users', 'with', 'workflow', 'workflows',
+  ]);
+  const tokens = String(value ?? '').toLowerCase().match(/[a-z0-9]+|[가-힣]{2,}/g) ?? [];
+  return new Set(tokens.filter((term) => (
+    !genericTerms.has(term) && (term.length >= 4 || /^[가-힣]{2,}$/.test(term))
+  )));
+}
+
+function findDomainResponsibilityWitness(candidate, semanticEvidence) {
+  const nameSource = candidate.evidence?.source;
+  const normalizedDomain = normalizeSemanticText(candidate.title);
+  const nameFingerprint = semanticEvidenceFingerprint(
+    semanticEvidence.find((row) => row.source === nameSource),
+  );
+  if (!normalizedDomain) return null;
+  for (const row of semanticEvidence) {
+    if (
+      row.source === nameSource
+      || !['product-contract', 'architecture'].includes(row.role)
+      || row.trust !== 'candidate-evidence'
+      || !row.excerpt
+      || semanticEvidenceFingerprint(row) === nameFingerprint
+    ) {
+      continue;
+    }
+    const sentence = responsibilitySentenceForDomain(row.excerpt, normalizedDomain);
+    if (sentence) return { row, sentence };
+  }
+  return null;
+}
+
+function independentSemanticEvidenceRows(rows, initialRows = []) {
+  const seen = new Set(initialRows.map(semanticEvidenceFingerprint).filter(Boolean));
+  return rows.filter((row) => {
+    const fingerprint = semanticEvidenceFingerprint(row);
+    if (!fingerprint || seen.has(fingerprint)) return false;
+    seen.add(fingerprint);
+    return true;
+  });
+}
+
+function semanticEvidenceFingerprint(row) {
+  return String(row?.excerpt ?? '')
+    .normalize('NFKC')
+    .toLowerCase()
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+function responsibilitySentenceForDomain(value, normalizedDomain) {
+  const sentences = String(value ?? '').match(/[^.!?]+(?:[.!?](?=\s|$)|$)/g) ?? [];
+  return sentences
+    .map((sentence) => sentence.replace(/\s+/g, ' ').trim())
+    .find((sentence) => (
+      normalizeSemanticText(sentence).includes(normalizedDomain)
+      && /\b(?:owns|is responsible for|governs|handles|covers)\b|(?:소유(?:한다|함)?|책임(?:을)?\s*(?:진다|맡는다)|관할|담당(?:한다|함)?|다룬다|처리(?:한다|함)?|관리(?:한다|함)?|포괄(?:한다|함)?)/i.test(sentence)
+    )) ?? '';
+}
+
+function normalizeSemanticText(value) {
+  return String(value ?? '')
+    .toLowerCase()
+    .replace(/[^a-z0-9가-힣]+/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
 }
 
 function uniqueStrings(values) {
@@ -1631,14 +1774,30 @@ function buildMeaningGate({
   );
   const hasPersistedBusinessDomain = existingDomainEvidence.length > 0;
   const hasREADMEOnlyDomainCandidate = reviewRequiredDomains.length > 0;
+  const hasUnconfirmedDomainBoundary = reviewRequiredDomains.some(
+    (domain) => domain.evidenceSources.length < 2,
+  );
+  const hasRepositoryCorroboratedDomainBoundary = reviewRequiredDomains.some(
+    (domain) => domain.evidenceSources.length >= 2,
+  );
   if (!hasTrustedMissionOrProductEvidence) {
     reviewQuestions.push(
       '[missing · scope] Add trusted mission or product evidence that states the user outcome and the repository responsibility boundary.',
     );
   }
-  if (!hasPersistedBusinessDomain || hasREADMEOnlyDomainCandidate) {
+  if (!hasPersistedBusinessDomain && !hasREADMEOnlyDomainCandidate) {
     reviewQuestions.push(
       '[weak · domain-boundary] Confirm the domain boundary with persisted business evidence; a README heading alone is only a candidate.',
+    );
+  }
+  if (hasUnconfirmedDomainBoundary) {
+    reviewQuestions.push(
+      '[weak · domain-boundary] Add a separate current product-contract or architecture responsibility witness; a README heading alone remains only a candidate.',
+    );
+  }
+  if (hasRepositoryCorroboratedDomainBoundary) {
+    reviewQuestions.push(
+      '[proposal · domain-boundary] Repository prose corroborates a proposed boundary, but human approval is still required before it becomes shared meaning.',
     );
   }
   if (reviewRequiredCapabilities.length > 0) {
@@ -3098,7 +3257,7 @@ function detectDomainsFromReadme(rootPath) {
         const wordCount = title.split(/\s+/).filter(Boolean).length;
         if (
           // generic doc sections (exact match)
-          /^(usage|installation|getting started|quick start|license|contributing|requirements|features|setup|status|tech stack|architecture|folder map|routes|tests?|documentation|overview|development|deployment|changelog|roadmap|faq|demo|examples?|guides?|table of contents|toc|acknowledge?ments?)$/i.test(
+          /^(usage|installation|getting started|quick start|license|contributing|requirements|features|setup|status|tech stack|architecture|folder map|routes|tests?|documentation|overview|development|deployment|changelog|roadmap|faq|demo|examples?|guides?|table of contents|toc|acknowledge?ments?|sponsors?)$/i.test(
             normalizedTitle,
           ) ||
           // operational / aggregate sections that describe the README, not a
@@ -4379,11 +4538,10 @@ function matchDomainSlug(name, domains) {
     }
   }
   if (bestScore > 0 && !tied) return best;
-  // With exactly one README-backed business domain there is no competing
-  // meaning to invent: assigning unmatched implementation candidates to that
-  // sole domain creates a valid containment spine. Multiple domains remain
-  // unassigned unless token evidence disambiguates them.
-  return domains.length === 1 ? domains[0].slug : null;
+  // A sole README heading is still not role evidence. Unmatched implementation
+  // candidates remain under the project instead of being absorbed into the
+  // only available domain by elimination.
+  return null;
 }
 
 function semanticTokens(value) {

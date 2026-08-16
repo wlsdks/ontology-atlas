@@ -2336,7 +2336,13 @@ await test("analyze_repo_structure — validates a complete meaning proposal bef
     writeFileSync(join(repoRoot, "package.json"), JSON.stringify({ name: "claims" }), "utf-8");
     writeFileSync(
       join(repoRoot, "README.md"),
-      "# Claims\n\nTeams need reviewable claims.\n\n## Review\n\nReview claims before publication.\n",
+      "# Claims\n\nTeams need reviewable claims.\n\n## Review\n\nReview owns publication-readiness decisions for claims.\n\nReview claims before publication.\n",
+      "utf-8",
+    );
+    mkdirSync(join(repoRoot, "docs"), { recursive: true });
+    writeFileSync(
+      join(repoRoot, "docs", "product-contract.md"),
+      "# Product Contract\n\nClaims provides reviewable claim publishing for teams.\n\nReview owns publication-readiness decisions for claims.\n",
       "utf-8",
     );
     mkdirSync(join(repoRoot, "src", "review"), { recursive: true });
@@ -2346,14 +2352,14 @@ await test("analyze_repo_structure — validates a complete meaning proposal bef
         slug: "claims",
         title: "Claims",
         definition: "A system for publishing reviewable claims.",
-        evidence: ["README.md"],
+        evidence: ["README.md", "docs/product-contract.md"],
         confidence: 0.9,
       },
       domains: [{
         slug: "domains/review",
         title: "Review",
         definition: "The responsibility boundary for deciding whether claims may be published.",
-        evidence: ["README.md"],
+        evidence: ["README.md", "docs/product-contract.md"],
         confidence: 0.9,
       }],
       capabilities: [{
@@ -2372,7 +2378,7 @@ await test("analyze_repo_structure — validates a complete meaning proposal bef
           to: "domains/review",
           type: "domains",
           why: "The project owns the review boundary.",
-          evidence: ["README.md"],
+          evidence: ["README.md", "docs/product-contract.md"],
           confidence: 0.9,
         },
         {
@@ -2389,7 +2395,7 @@ await test("analyze_repo_structure — validates a complete meaning proposal bef
           answer: "Teams publishing reviewable claims.",
           status: "answered",
           witnesses: {
-            concepts: ["claims"], relations: [], evidence: ["README.md"], paths: [],
+            concepts: ["claims"], relations: [], evidence: ["README.md", "docs/product-contract.md"], paths: [],
           },
         },
         domains: {
@@ -2398,7 +2404,7 @@ await test("analyze_repo_structure — validates a complete meaning proposal bef
           witnesses: {
             concepts: ["domains/review"],
             relations: [{ from: "claims", to: "domains/review", type: "domains" }],
-            evidence: ["README.md"], paths: [],
+            evidence: ["README.md", "docs/product-contract.md"], paths: [],
           },
         },
         abilities: {
@@ -2639,7 +2645,13 @@ await test("analyze_repo_structure — validates exact TypeScript import endpoin
     writeFileSync(join(repoRoot, "package.json"), JSON.stringify({ name: "portable-reader" }), "utf-8");
     writeFileSync(
       join(repoRoot, "README.md"),
-      "# Portable Reader\n\nA desktop reader that presents subscribed content.\n",
+      "# Portable Reader\n\nA desktop reader that presents subscribed content.\n\nReading owns subscribed-content presentation.\n",
+      "utf-8",
+    );
+    mkdirSync(join(repoRoot, "docs"), { recursive: true });
+    writeFileSync(
+      join(repoRoot, "docs", "product-contract.md"),
+      "# Product Contract\n\nPortable Reader provides subscribed-content reading for desktop users.\n\nReading owns subscribed-content presentation.\n",
       "utf-8",
     );
     mkdirSync(join(repoRoot, "src"), { recursive: true });
@@ -2664,14 +2676,14 @@ await test("analyze_repo_structure — validates exact TypeScript import endpoin
         slug: "portable-reader",
         title: "Portable Reader",
         definition: "A desktop product for reading subscribed content.",
-        evidence: ["README.md"],
+        evidence: ["README.md", "docs/product-contract.md"],
         confidence: 0.9,
       },
       domains: [{
         slug: "domains/reading",
         title: "Reading",
         definition: "The responsibility boundary for presenting subscribed content.",
-        evidence: ["README.md"],
+        evidence: ["README.md", "docs/product-contract.md"],
         confidence: 0.9,
       }],
       capabilities: [{
@@ -2704,7 +2716,7 @@ await test("analyze_repo_structure — validates exact TypeScript import endpoin
         },
       ],
       relations: [
-        { ...projectDomain, why: "The project owns the reading boundary.", evidence: ["README.md"], confidence: 0.9 },
+        { ...projectDomain, why: "The project owns the reading boundary.", evidence: ["README.md", "docs/product-contract.md"], confidence: 0.9 },
         { ...domainCapability, why: "Reading is realized through content loading and presentation.", evidence: ["README.md"], confidence: 0.9 },
         { ...capabilityEntry, why: "The desktop entry implements content reading.", evidence: ["src/entry.ts"], confidence: 0.9 },
         { ...capabilityService, why: "The content service implements content reading.", evidence: ["src/service.ts"], confidence: 0.9 },
@@ -2714,12 +2726,12 @@ await test("analyze_repo_structure — validates exact TypeScript import endpoin
         scope: {
           answer: "Desktop users read subscribed content.",
           status: "answered",
-          witnesses: { concepts: ["portable-reader"], relations: [], evidence: ["README.md"], paths: [] },
+          witnesses: { concepts: ["portable-reader"], relations: [], evidence: ["README.md", "docs/product-contract.md"], paths: [] },
         },
         domains: {
           answer: "Reading owns content presentation.",
           status: "answered",
-          witnesses: { concepts: ["domains/reading"], relations: [projectDomain], evidence: ["README.md"], paths: [] },
+          witnesses: { concepts: ["domains/reading"], relations: [projectDomain], evidence: ["README.md", "docs/product-contract.md"], paths: [] },
         },
         abilities: {
           answer: "Content reading loads and presents subscriptions.",

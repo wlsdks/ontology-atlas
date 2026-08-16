@@ -20,6 +20,49 @@ export const COMPETENCY_QUESTION_CONTRACTS = MEANING_COMPETENCY_QUESTIONS;
 
 const COMPETENCY_STATUSES = new Set(['answered', 'partial', 'visible-gap']);
 const SELECTED_IMPORT_ELEMENT_LIMIT = 4;
+const MEANING_AUTHORITY_CONFIDENCE_THRESHOLD = 0.8;
+const MEANING_AUTHORITY_MIN_SOURCES = 2;
+const MEANING_AUTHORITY_MIN_TERM_OVERLAP = 2;
+const PURPOSE_AUTHORITY_ROLES = new Set([
+  'mission',
+  'product-contract',
+  'product-capabilities',
+]);
+const DOMAIN_AUTHORITY_ROLES = new Set([
+  'mission',
+  'product-contract',
+  'architecture',
+]);
+const MEANING_AUTHORITY_STOP_WORDS = new Set([
+  'about',
+  'allow',
+  'application',
+  'boundary',
+  'business',
+  'capability',
+  'cover',
+  'domain',
+  'enable',
+  'evidence',
+  'govern',
+  'handle',
+  'help',
+  'manage',
+  'meaning',
+  'operator',
+  'own',
+  'product',
+  'project',
+  'provide',
+  'purpose',
+  'repository',
+  'responsibility',
+  'service',
+  'software',
+  'system',
+  'user',
+  'workflow',
+]);
 const COMPETENCY_WITNESS_KEYS = Object.freeze([
   'concepts',
   'relations',
@@ -368,6 +411,47 @@ export function validateMeaningProposalAgainstAnalysis(
     });
   }
 
+  if (
+    proposal.project.confidence >= MEANING_AUTHORITY_CONFIDENCE_THRESHOLD &&
+    alignedSemanticAuthoritySources({
+      sources: proposal.project.evidence,
+      claim: `${proposal.project.title}\n${proposal.project.definition}`,
+      evidenceBySource,
+      allowedRoles: PURPOSE_AUTHORITY_ROLES,
+    }).length < MEANING_AUTHORITY_MIN_SOURCES
+  ) {
+    findings.push(finding(
+      'insufficient-purpose-authority',
+      'error',
+      'project',
+      'High-confidence repository purpose needs two claim-aligned current semantic sources, or it must remain below 0.8 with an explicit competency gap.',
+      proposal.project.evidence,
+    ));
+  }
+
+  for (const [index, domain] of proposal.domains.entries()) {
+    if (
+      domain.confidence < MEANING_AUTHORITY_CONFIDENCE_THRESHOLD ||
+      sharedDomains.has(domain.slug)
+    ) {
+      continue;
+    }
+    const alignedSources = domainAuthoritySources({
+      sources: domain.evidence,
+      domain,
+      claim: `${domain.title}\n${domain.definition}`,
+      evidenceBySource,
+    });
+    if (alignedSources.length >= MEANING_AUTHORITY_MIN_SOURCES) continue;
+    findings.push(finding(
+      'insufficient-domain-authority',
+      'error',
+      `concepts[${index}]`,
+      `High-confidence domain meaning needs two responsibility-specific current semantic sources, or it must remain below 0.8 with an explicit competency gap: ${domain.slug}`,
+      domain.evidence,
+    ));
+  }
+
   for (const [index, capability] of proposal.capabilities.entries()) {
     if (!proposalDomains.has(capability.domain) && !sharedDomains.has(capability.domain)) {
       findings.push(finding(
@@ -473,6 +557,29 @@ export function validateMeaningProposalAgainstAnalysis(
       findings,
       label: 'relation',
     });
+    const proposedDomain = proposal.domains.find(
+      (domain) => domain.slug === relation.to,
+    );
+    if (
+      relation.from === proposal.project.slug &&
+      proposedDomain &&
+      !sharedDomains.has(proposedDomain.slug) &&
+      relation.confidence >= MEANING_AUTHORITY_CONFIDENCE_THRESHOLD &&
+      domainAuthoritySources({
+        sources: relation.evidence,
+        domain: proposedDomain,
+        claim: `${proposedDomain.title}\n${proposedDomain.definition}\n${relation.why}`,
+        evidenceBySource,
+      }).length < MEANING_AUTHORITY_MIN_SOURCES
+    ) {
+      findings.push(finding(
+        'insufficient-domain-relation-authority',
+        'error',
+        path,
+        'A high-confidence project-to-domain relation needs two responsibility-specific current semantic sources, or it must remain below 0.8.',
+        relation.evidence,
+      ));
+    }
     if (
       relation.type === 'depends_on' &&
       importBoundarySlugs.has(relation.from) &&
@@ -512,6 +619,7 @@ export function validateMeaningProposalAgainstAnalysis(
     proposal,
     availableSources,
     evidenceBySource,
+    sharedDomains,
     conceptSlugs: relationEndpoints,
     proposalPaths: new Set(concepts.map((row) => row.path).filter(nonEmpty)),
     relationKeys,
@@ -540,8 +648,14 @@ export function validateMeaningProposalAgainstAnalysis(
       'unsupported-relation-type',
       'unobserved-python-import-dependency',
       'relation-path-citation-mismatch',
+      'insufficient-domain-relation-authority',
     ].includes(row.code)),
-    confidenceValid: !findings.some((row) => row.code === 'invalid-confidence'),
+    confidenceValid: !findings.some((row) => [
+      'invalid-confidence',
+      'insufficient-purpose-authority',
+      'insufficient-domain-authority',
+      'insufficient-domain-relation-authority',
+    ].includes(row.code)),
     competencyQuestionsAnswered: competencyAudit.allAnswered,
     competencyWitnessesResolved: competencyAudit.witnessesResolved,
   };
@@ -582,11 +696,110 @@ function validateOptionalConceptBoundaryList(value, path, findings) {
   ));
 }
 
+function alignedSemanticAuthoritySources({
+  sources,
+  claim,
+  evidenceBySource,
+  allowedRoles,
+  evidencePredicate = () => true,
+}) {
+  const claimTokens = meaningAuthorityTokens(claim);
+  if (claimTokens.size === 0) return [];
+  const requiredOverlap = Math.min(MEANING_AUTHORITY_MIN_TERM_OVERLAP, claimTokens.size);
+  const aligned = [];
+  const seenEvidence = new Set();
+  for (const source of new Set(Array.isArray(sources) ? sources : [])) {
+    const evidence = evidenceBySource.get(source);
+    if (
+      evidence?.trust !== 'candidate-evidence' ||
+      !allowedRoles.has(evidence.role) ||
+      typeof evidence.excerpt !== 'string' ||
+      !evidence.excerpt.trim() ||
+      !evidencePredicate(evidence)
+    ) {
+      continue;
+    }
+    const evidenceTokens = meaningAuthorityTokens(
+      `${evidence.title ?? ''}\n${evidence.excerpt ?? ''}`,
+    );
+    let overlap = 0;
+    for (const token of claimTokens) {
+      if (evidenceTokens.has(token)) overlap += 1;
+    }
+    if (overlap < requiredOverlap) continue;
+    const fingerprint = evidence.excerpt
+      .normalize('NFKC')
+      .toLowerCase()
+      .replace(/\s+/g, ' ')
+      .trim();
+    if (seenEvidence.has(fingerprint)) continue;
+    seenEvidence.add(fingerprint);
+    aligned.push(source);
+  }
+  return aligned;
+}
+
+function domainAuthoritySources({ sources, domain, claim, evidenceBySource }) {
+  return alignedSemanticAuthoritySources({
+    sources,
+    claim,
+    evidenceBySource,
+    allowedRoles: DOMAIN_AUTHORITY_ROLES,
+    evidencePredicate: (evidence) =>
+      hasExplicitDomainResponsibility(evidence.excerpt, domain.title),
+  });
+}
+
+function hasExplicitDomainResponsibility(value, domainTitle) {
+  const normalizedDomain = normalizeMeaningAuthorityText(domainTitle);
+  if (!normalizedDomain) return false;
+  const sentences = String(value ?? '').match(/[^.!?]+(?:[.!?](?=\s|$)|$)/g) ?? [];
+  return sentences.some((sentence) => (
+    normalizeMeaningAuthorityText(sentence).includes(normalizedDomain) &&
+    /\b(?:owns|is responsible for|governs|handles|covers)\b|(?:소유(?:한다|함)?|책임(?:을)?\s*(?:진다|맡는다)|관할|담당(?:한다|함)?|다룬다|처리(?:한다|함)?|관리(?:한다|함)?|포괄(?:한다|함)?)/i.test(sentence)
+  ));
+}
+
+function normalizeMeaningAuthorityText(value) {
+  return String(value ?? '')
+    .normalize('NFKC')
+    .toLowerCase()
+    .replace(/[^a-z0-9가-힣]+/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+function meaningAuthorityTokens(value) {
+  const rawTokens = String(value ?? '')
+    .normalize('NFKC')
+    .toLowerCase()
+    .match(/[\p{L}\p{N}]+/gu) ?? [];
+  return new Set(
+    rawTokens
+      .map(normalizeMeaningAuthorityToken)
+      .filter((token) =>
+        token.length >= 3 && !MEANING_AUTHORITY_STOP_WORDS.has(token)),
+  );
+}
+
+function normalizeMeaningAuthorityToken(token) {
+  if (!/^[a-z0-9]+$/.test(token)) return token;
+  if (token.length > 5 && token.endsWith('ies')) return `${token.slice(0, -3)}y`;
+  if (token.length > 5 && token.endsWith('ing')) {
+    const stem = token.slice(0, -3);
+    return stem.endsWith(stem.at(-1).repeat(2)) ? stem.slice(0, -1) : stem;
+  }
+  if (token.length > 4 && token.endsWith('ed')) return token.slice(0, -2);
+  if (token.length > 3 && token.endsWith('s')) return token.slice(0, -1);
+  return token;
+}
+
 function validateCompetencyAnswers({
   analysis,
   proposal,
   availableSources,
   evidenceBySource,
+  sharedDomains,
   conceptSlugs,
   proposalPaths,
   relationKeys,
@@ -739,6 +952,44 @@ function validateCompetencyAnswers({
           `${path}.witnesses.relations`,
           `An answered impact competency requires a depends_on relation witness.`,
         ));
+      }
+      if (contract.id === 'scope') {
+        const alignedSources = alignedSemanticAuthoritySources({
+          sources: witnesses.evidence,
+          claim: `${proposal.project.title}\n${proposal.project.definition}\n${row.answer}`,
+          evidenceBySource,
+          allowedRoles: PURPOSE_AUTHORITY_ROLES,
+        });
+        if (alignedSources.length < MEANING_AUTHORITY_MIN_SOURCES) {
+          complete = false;
+          findings.push(finding(
+            'insufficient-competency-authority',
+            'error',
+            path,
+            'An answered scope competency needs two claim-aligned current semantic sources, or it must be partial with an explicit authority gap.',
+            witnesses.evidence,
+          ));
+        }
+      }
+      if (contract.id === 'domains') {
+        const unsupportedDomains = proposal.domains.filter((domain) =>
+          !sharedDomains.has(domain.slug) &&
+          domainAuthoritySources({
+            sources: witnesses.evidence,
+            domain,
+            claim: `${domain.title}\n${domain.definition}\n${row.answer}`,
+            evidenceBySource,
+          }).length < MEANING_AUTHORITY_MIN_SOURCES);
+        if (unsupportedDomains.length > 0) {
+          complete = false;
+          findings.push(finding(
+            'insufficient-competency-authority',
+            'error',
+            path,
+            'An answered domains competency needs two responsibility-specific current semantic sources for every proposed domain, or it must be partial with an explicit authority gap.',
+            unsupportedDomains.map((domain) => domain.slug),
+          ));
+        }
       }
       const coverage = evaluateQuantifiedCompetencyCoverage({
         id: contract.id,

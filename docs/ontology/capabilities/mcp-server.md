@@ -105,6 +105,19 @@ path가 함께 인용됐는지 검사한다. 일부만 덮으면 누락 target s
 돌려주며 write plan을 만들지 않는다. 정직한 `partial`/`visible-gap` proposal은 계속
 검토·저장할 수 있다.
 
+project purpose·proposed domain·project→domain relation이 confidence 0.8 이상이거나
+`scope`·`domains`가 `answered`이면 서로 다른 current semantic source 두 개가 그
+주장의 비일반 의미를 실제로 지지해야 한다. 목적은 두 출처가 목적 주장에 맞아야 하고,
+도메인은 두 출처가 각각 domain 이름과 명시적 responsibility 문장을 가져야 한다.
+같은 문장을 복제한 문서, 무관한 trusted
+문서, roadmap·negated/deprecated 근거, package manifest와 implementation path는 두 번째
+의미 권위로 세지 않는다. 한 근거만 있는 경우 confidence 0.8 미만과 명시적 `partial`
+gap으로 남기면 검토 가능하지만, 고신뢰·완료 응답으로 과장하면 review/write plan 전에
+실패 닫는다. analyzer도 프로젝트 정체성 문장을 뒤쪽 feature 문장보다 우선하고,
+domain은 별도 product/architecture responsibility 문장이 있을 때만 corroborated 후보로
+표시한다. implementation element는 domain 이름과 겹치거나 후보가 하나뿐이어도 역할
+근거 없이 자동 귀속하지 않고 project-scoped evidence로 남긴다.
+
 Cold-start 의미 근거는 루트 `ARCHITECTURE.md`와 `docs/`·`site/`·`website/` 아래에서
 분류된 current Markdown도 기존 `semanticEvidence` packet으로 운반한다. 세 root 전체에서
 Markdown 200개·directory entry 1,000개까지만 탐색하고, 일반 의미 문서는 읽기 전
