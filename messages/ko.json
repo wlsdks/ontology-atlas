@@ -3660,7 +3660,14 @@
       "unknownTarget": "무엇을 하려는지 알 수 없어요",
       "reject": "안 할래요",
       "allowOnce": "이번만 허용",
-      "allowAlways": "위 경로가 있는 폴더 전체를 이번 대화 내내 허용"
+      "allowAlways": "위 경로가 있는 폴더 전체를 이번 대화 내내 허용",
+      "intent": {
+        "read": "읽으려고 해요",
+        "edit": "고치려고 해요",
+        "delete": "지우려고 해요",
+        "execute": "실행하려고 해요",
+        "unknown": "무엇을 하려는지 이 도구가 말해 주지 않았어요"
+      }
     },
     "close": "대화 닫기",
     "composerPlaceholder": "이 폴더에 대해 물어보거나 시켜요",
