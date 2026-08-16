@@ -163,9 +163,9 @@
         "footprint": "발자국",
         "notify": "알림",
         "workspace": "작업 공간",
-        "runtimes": "실행기",
-        "agent": "내 에이전트 연결",
-        "ai": "앱 안 에이전트"
+        "runtimes": "Agents",
+        "agent": "MCP",
+        "ai": "API Key"
       },
       "sectionGroup": {
         "look": "보이는 것",
@@ -188,14 +188,13 @@
       "agentNotificationKindsLabel": "받을 알림",
       "agentNotificationKindsCaption": "끈 갈래는 벨에 쌓이지 않습니다.",
       "runtimes": {
-        "intro": "이 컴퓨터에 설치된 AI 코딩 도구를 찾았어요. 여기서 바로 대화할 수 있어요.",
+        "intro": "이 컴퓨터에 설치된 AI 코딩 도구를 앱이 대신 띄워서, 여기서 바로 대화해요.",
         "recheck": "다시 확인",
         "checking": "찾는 중이에요",
         "readyHeading": "바로 쓸 수 있어요 ({count})",
         "othersHeading": "설치가 필요한 것 {count}개 보기",
         "noneReady": "쓸 수 있는 도구가 없어요",
         "noneReadyCaption": "Claude Code 나 Codex 를 설치하면 여기에 나타나요.",
-        "notGuarded": "이 도구는 Atlas 가 대신 물어봐 주지 못해요. 그 도구에 해 둔 설정을 그대로 써요.",
         "webLabel": "브라우저는 이 컴퓨터의 프로그램을 띄울 권한이 없어요",
         "webCaption": "맥 앱을 받으면 이 컴퓨터에 설치된 도구를 앱 안에서 바로 쓸 수 있어요. 이 화면에서도 「내 에이전트 연결」로, 직접 띄운 도구를 이 폴더에 붙일 수 있어요.",
         "state": {
@@ -205,8 +204,8 @@
           "uvx-missing": "uv 필요",
           "binary-missing": "직접 설치"
         },
-        "notGuardedShort": "확인 안 됨",
-        "notGuardedExplainer": "「{mark}」 표시가 붙은 도구는 Atlas 가 대신 물어봐 주지 못해요. 그 도구에 해 둔 설정을 그대로 씁니다."
+        "guardedExplainer": "폴더 밖 파일을 건드릴 때 Atlas 가 대신 물어봐 줄 수 있는 건 지금 {names} 뿐이에요. 나머지 도구는 그 도구에 직접 해 둔 설정대로 움직여요.",
+        "guardedExplainerNone": "지금은 폴더 밖 파일을 건드릴 때 Atlas 가 대신 물어봐 줄 수 있는 도구가 없어요. 각 도구에 직접 해 둔 설정대로 움직여요."
       }
     },
     "primaryAriaLabel": "주요 메뉴",
@@ -2559,7 +2558,7 @@
       "ctaScaffold": "만들어 주기",
       "ctaScaffoldBusy": "만드는 중…",
       "scaffoldToast": "온톨로지 개념 {concepts}개 · 에이전트 설정 파일 {configs}개를 만들었어요",
-      "stepAgentFound": "{runtime} 준비됨"
+      "stepAgentFound": "{runtime} 연결됨"
     },
     "recentChangesNeedsVault": {
       "eyebrow": "최근 변경",
@@ -3648,6 +3647,8 @@
       "allowOnce": "이번만 허용",
       "allowAlways": "이 폴더 전체를 이번 대화 내내 허용"
     },
-    "close": "대화 닫기"
+    "close": "대화 닫기",
+    "composerPlaceholder": "이 폴더에 대해 물어보거나 시켜요",
+    "composerHint": "Enter 로 보내고 ⇧Enter 로 줄바꿈"
   }
 }

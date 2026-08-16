@@ -87,7 +87,19 @@ export function AcpChatPanel({
     <section
       data-testid="acp-chat-panel"
       data-acp-status={status}
-      className="flex min-h-0 flex-col gap-3"
+      /*
+       * ⚠️ `flex-1` 이 없어서 이 화면 전체가 위로 뭉쳐 있었다 (2026-08-16 소유자
+       * 실보고: *"입력하는 곳이 왜 위에 붙어 있는지도 이상하고"*).
+       *
+       * 구조는 처음부터 채팅이었다 — 머리 / 늘어나는 기록 / 바닥의 작성 칸.
+       * 그런데 이 `<section>` 이 부모 flex 의 자식인데 자기 몫을 주장하지 않아
+       * **내용만큼만** 커졌고, 기록이 비어 있으면 그 높이가 0 이라 작성 칸이
+       * 곧바로 머리 밑에 붙었다. 아래 텅 빈 자리는 패널의 남은 높이였다.
+       *
+       * 채팅에서 작성 칸이 바닥에 있는 것은 취향이 아니라 **손이 가는 자리**이고,
+       * 그 위가 비어 있어야 대화가 쌓일 곳이 보인다.
+       */
+      className="flex h-full min-h-0 flex-1 flex-col gap-3"
       aria-label={t('ariaLabel', { runtime: runtimeLabel })}
     >
       <header className="flex items-center justify-between gap-2">
@@ -119,7 +131,13 @@ export function AcpChatPanel({
         className="flex min-h-0 flex-1 flex-col gap-2 overflow-y-auto"
       >
         {events.length === 0 && status !== 'starting' ? (
-          <p className="break-keep text-label leading-label text-[color:var(--color-text-quaternary)]">
+          // 빈 대화의 안내는 **기록이 쌓일 그 자리 한가운데**에 둔다. 위쪽에
+          // 붙여 두면 그것이 첫 번째 말풍선처럼 읽히고, 정작 대화가 시작될
+          // 자리는 비어 보인다.
+          <p
+            data-testid="acp-chat-empty"
+            className="m-auto max-w-[28ch] break-keep text-center text-label leading-prose text-[color:var(--color-text-quaternary)]"
+          >
             {t('emptyHint')}
           </p>
         ) : null}
@@ -150,38 +168,56 @@ export function AcpChatPanel({
         {pendingHeld ? <AcpPermissionCard pending={pendingHeld} /> : null}
       </Surface>
 
-      <div className="grid gap-2">
+      {/*
+        작성 칸은 **바닥에 고정**이고 이름을 글자로 달지 않는다 — 채팅에서 상자
+        위에 「무엇을 시킬지 적어요」라는 라벨이 붙어 있으면 그건 대화가 아니라
+        폼이다(소유자: *"디자인 자체가 아쉬움… 채팅방처럼"*). 이름은 화면 밖으로
+        보내고(`aria-label`) 자리에는 안내만 흐리게 둔다.
+
+        `shrink-0` 이 있어야 기록이 길어져도 작성 칸이 눌리지 않는다.
+      */}
+      <div className="grid shrink-0 gap-2">
         <Textarea
-          label={t('composerLabel')}
+          aria-label={t('composerLabel')}
+          placeholder={t('composerPlaceholder')}
           className="w-full"
           rows={3}
           value={draft}
           disabled={!canType}
           onChange={(e) => setDraft(e.target.value)}
           onKeyDown={(e) => {
-            // ⌘/Ctrl + Enter 로 보낸다. Enter 하나로 보내면 줄바꿈을 못 쓴다.
-            if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
-              e.preventDefault();
-              submit();
-            }
+            if (e.key !== 'Enter') return;
+            /*
+             * Enter 로 보내고 ⇧Enter 로 줄을 바꾼다 — 채팅의 관례이고, 사람이
+             * 이미 손에 익힌 것이다. ⌘/Ctrl+Enter 도 계속 받는다: 종전 방식이
+             * 손에 익은 사람의 입력을 말없이 버리지 않는다.
+             */
+            if (e.shiftKey) return;
+            e.preventDefault();
+            submit();
           }}
         />
-        <div className="flex items-center justify-end gap-2">
-          {busy ? (
-            <Chip size="lg" tone="secondary" data-testid="acp-chat-stop" onClick={cancel}>
-              <Square size={ICON_SIZE.sm} aria-hidden />
-              {t('stop')}
-            </Chip>
-          ) : null}
-          <Button
-            variant="primary"
-            data-testid="acp-chat-send"
-            disabled={!canType || busy || draft.trim().length === 0}
-            onClick={submit}
-          >
-            <CornerDownLeft size={ICON_SIZE.sm} aria-hidden />
-            {t('send')}
-          </Button>
+        <div className="flex items-center justify-between gap-2">
+          <span className="min-w-0 truncate text-caption text-[color:var(--color-text-quaternary)]">
+            {t('composerHint')}
+          </span>
+          <span className="flex shrink-0 items-center gap-2">
+            {busy ? (
+              <Chip size="lg" tone="secondary" data-testid="acp-chat-stop" onClick={cancel}>
+                <Square size={ICON_SIZE.sm} aria-hidden />
+                {t('stop')}
+              </Chip>
+            ) : null}
+            <Button
+              variant="primary"
+              data-testid="acp-chat-send"
+              disabled={!canType || busy || draft.trim().length === 0}
+              onClick={submit}
+            >
+              <CornerDownLeft size={ICON_SIZE.sm} aria-hidden />
+              {t('send')}
+            </Button>
+          </span>
         </div>
       </div>
     </section>

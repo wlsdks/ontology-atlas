@@ -5515,7 +5515,19 @@ export function HomePage() {
           as="aside"
           origin="right"
           onExited={() => setAcpChatOpen(false)}
-          className="flex w-[var(--topology-agent-panel-width,360px)] min-h-0 shrink-0 flex-col border-l border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] p-4"
+          /*
+           * ⚠️ 종전 폭은 `var(--topology-agent-panel-width, 360px)` 였는데 **그
+           * 토큰은 존재하지 않는다** — 늘 폴백 360px 이 쓰였고, 아무도 안 쓰는
+           * 토큰 이름이 규격처럼 보이고 있었다(`design.md`: 아무도 안 쓰는
+           * 토큰은 규격이 아니라 틀린 정보다).
+           *
+           * 대화는 설정 패널보다 넓어야 한다 — 말풍선·도구 줄·권한 카드가 다
+           * 여기 들어온다(소유자: *"너무 작음"*). 상한은 카운슬이 정한 바닥이
+           * 정한다: 1040 폭에서 패널을 열어도 지도 캔버스가 480px 이상 남아야
+           * 하므로 1040 − 64(레일) − 480 = **496px 이 최대**다. 420 을 기본으로
+           * 두고 넓은 화면에서만 480 으로 간다.
+           */
+          className="flex w-[420px] min-h-0 shrink-0 flex-col border-l border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] p-4 xl:w-[480px]"
         >
           <AcpChatPanel
             runtimeId={acpRuntime.id}

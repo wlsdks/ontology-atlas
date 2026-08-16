@@ -163,9 +163,9 @@
         "footprint": "Footprints",
         "notify": "Notifications",
         "workspace": "Workspace",
-        "runtimes": "Runtimes",
-        "agent": "Connect my agents",
-        "ai": "In-app agent"
+        "runtimes": "Agents",
+        "agent": "MCP",
+        "ai": "API Key"
       },
       "sectionGroup": {
         "look": "Appearance",
@@ -188,14 +188,13 @@
       "agentNotificationKindsLabel": "What to receive",
       "agentNotificationKindsCaption": "Muted kinds never reach the bell.",
       "runtimes": {
-        "intro": "These are the AI coding tools found on this computer. You can talk to them right here.",
+        "intro": "Atlas launches the AI coding tools installed on this computer, so you can talk to them right here.",
         "recheck": "Check again",
         "checking": "Looking…",
         "readyHeading": "Ready to use ({count})",
         "othersHeading": "Show {count} that need installing",
         "noneReady": "No tool is ready yet",
         "noneReadyCaption": "Install Claude Code or Codex and it shows up here.",
-        "notGuarded": "Atlas cannot ask on your behalf for this tool. It uses the settings you gave that tool.",
         "webLabel": "A browser is not allowed to start programs on this computer",
         "webCaption": "Get the Mac app to use the tools installed here from inside Atlas. On this screen you can still point a tool you started yourself at this folder, from “Connect my agents”.",
         "state": {
@@ -205,8 +204,8 @@
           "uvx-missing": "uv needed",
           "binary-missing": "Install yourself"
         },
-        "notGuardedShort": "Unguarded",
-        "notGuardedExplainer": "Tools marked “{mark}” run with the settings you gave them. Atlas cannot ask on your behalf."
+        "guardedExplainer": "Right now {names} is the only tool Atlas can ask you about before it touches a file outside this folder. Every other tool follows the settings you gave it directly.",
+        "guardedExplainerNone": "No tool here can be asked about before it touches a file outside this folder. Each one follows the settings you gave it directly."
       }
     },
     "primaryAriaLabel": "Primary menu",
@@ -2559,7 +2558,7 @@
       "ctaScaffold": "Create for me",
       "ctaScaffoldBusy": "Creating…",
       "scaffoldToast": "Created {concepts} ontology concepts and {configs} agent config files",
-      "stepAgentFound": "{runtime} is ready"
+      "stepAgentFound": "{runtime} connected"
     },
     "recentChangesNeedsVault": {
       "eyebrow": "Recent changes",
@@ -3615,7 +3614,7 @@
   },
   "acpChat": {
     "ariaLabel": "Conversation with {runtime}",
-    "emptyHint": "Ask anything about this folder. What you see on the map works too.",
+    "emptyHint": "Ask anything about this folder. Whatever you are looking at on the map works too.",
     "composerLabel": "Write what you want done",
     "send": "Send",
     "stop": "Stop",
@@ -3648,6 +3647,8 @@
       "allowOnce": "Allow once",
       "allowAlways": "Allow this whole folder for this conversation"
     },
-    "close": "Close conversation"
+    "close": "Close conversation",
+    "composerPlaceholder": "Ask about this folder, or give it a task",
+    "composerHint": "Enter to send · ⇧Enter for a new line"
   }
 }

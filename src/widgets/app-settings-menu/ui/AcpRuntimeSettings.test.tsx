@@ -89,23 +89,72 @@ describe('실행기 목록 — 앱이 못 막는 것은 그 줄에서 말한다'
    * 고르게 한다. 이 검사가 없으면 나중에 누가 캡션을 「잉크 낭비」로 보고
    * 지우고, 그때 화면은 못 막는다는 사실을 말하지 않게 된다.
    */
-  it('격리 못 하는 실행기에만 표시가 붙는다', async () => {
+  it('줄에는 배지를 안 단다 — 이 사실은 배지 한 칸에 안 들어간다', async () => {
+    /*
+     * 2026-08-16, 소유자 지적으로 **세 번** 바뀐 끝에 없앤 것. 세 번 다 같은
+     * 것을 가르쳤다: 4~6글자짜리 배지로는 「폴더 밖 파일을 건드릴 때 앱이 대신
+     * 물어봐 줄 수 있느냐」를 말할 수 없다. 조건과 결과가 다 있어야 뜻이 선다.
+     *
+     * 이 검사가 지키는 것은 「배지를 다시 만들지 마라」가 아니라 **눈에 보이는
+     * 반복이 줄마다 생기지 않는 것**이다 — 그게 세 번 다 나온 증상이었다.
+     */
+    bridge.detect.mockResolvedValue([
+      makeRuntime({ id: 'claude-acp', isolated: true }),
+      makeRuntime({ id: 'gemini', isolated: false }),
+      makeRuntime({ id: 'cursor', isolated: false }),
+    ]);
+    render(<AcpRuntimeSettings />);
+    await waitFor(() => expect(screen.getByTestId('app-settings-runtime-gemini')).toBeInTheDocument());
+
+    for (const id of ['claude-acp', 'gemini', 'cursor']) {
+      const row = screen.getByTestId(`app-settings-runtime-${id}`);
+      // 눈에 보이는 배지는 상태 하나뿐이다.
+      const visible = [...row.querySelectorAll('[data-runtime-state], [data-runtime-guarded]')];
+      expect(visible.map((el) => el.getAttribute('data-runtime-state')), id).toEqual(['ready']);
+    }
+  });
+
+  it('설명은 목록 **앞에** 한 번만 — 안 보이는 층에도 복사하지 않는다', async () => {
+    /*
+     * 한 번은 이 문장을 줄마다 `sr-only` 로 남겼다. 화면은 조용해졌지만 낭독기로
+     * 듣는 사람에게는 같은 문장이 19번 들린다 — 고치려던 그 결함을 안 보이는
+     * 층으로 옮긴 것이다. 설명이 목록보다 **먼저** 오면 순서대로 읽는 사람에게
+     * 먼저 도착하므로, 사본은 필요 없다.
+     */
+    bridge.detect.mockResolvedValue([
+      makeRuntime({ id: 'claude-acp', isolated: true }),
+      makeRuntime({ id: 'gemini', isolated: false }),
+      makeRuntime({ id: 'cursor', isolated: false }),
+    ]);
+    render(<AcpRuntimeSettings />);
+    const note = await screen.findByTestId('app-settings-runtimes-guard-note');
+
+    const root = screen.getByTestId('app-settings-runtimes');
+    const sentence = note.textContent ?? '';
+    expect(sentence.length).toBeGreaterThan(0);
+    // 그 설명은 이 칸에 **한 번만** 나온다 — 줄마다 복사돼 있으면 여기서 걸린다.
+    expect(root.textContent?.split(sentence).length, '설명이 두 번 이상 나온다').toBe(2);
+    // 그리고 목록보다 앞에 온다(문서 순서).
+    const group = root.querySelector('section[aria-label]');
+    expect(
+      note.compareDocumentPosition(group!) & Node.DOCUMENT_POSITION_FOLLOWING,
+      '설명이 목록 뒤에 있으면 순서대로 읽는 사람은 목록을 다 지난 뒤에 듣는다',
+    ).toBeTruthy();
+  });
+
+  it('묶음 위 설명이 막아 주는 도구의 **이름**을 댄다 — 손으로 적은 문장이 아니다', async () => {
+    /*
+     * 「지금은 Claude Code 뿐」을 문자열에 박아 두면 둘째가 생기는 날부터
+     * 그 문장은 거짓이 된다. 이름은 데이터에서 나와야 한다.
+     */
     bridge.detect.mockResolvedValue([
       makeRuntime({ id: 'claude-acp', isolated: true }),
       makeRuntime({ id: 'gemini', isolated: false }),
     ]);
     render(<AcpRuntimeSettings />);
-
-    await waitFor(() => expect(screen.getByTestId('app-settings-runtime-gemini')).toBeInTheDocument());
-    // 문자열이 아니라 **표시 자체**로 잰다. 번역 키의 접두사가 겹쳐서 문자열
-    // 비교가 우연히 통과한 적이 있다(`notGuardedShort` ⊃ `notGuarded`).
-    expect(
-      screen.getByTestId('app-settings-runtime-gemini').querySelector('[data-runtime-unguarded]'),
-    ).not.toBeNull();
-    expect(
-      screen.getByTestId('app-settings-runtime-claude-acp').querySelector('[data-runtime-unguarded]'),
-      '막아 주는 것에 표시가 붙으면 그 표시가 아무 뜻도 안 나른다',
-    ).toBeNull();
+    const note = await screen.findByTestId('app-settings-runtimes-guard-note');
+    expect(note).toHaveAttribute('data-guarded-count', '1');
+    expect(note.textContent).toContain('claude-acp'); // makeRuntime 은 label 을 id 로 둔다
   });
 
   it('같은 설명을 줄마다 반복하지 않는다 — 묶음 위에 한 번만', async () => {
@@ -123,7 +172,9 @@ describe('실행기 목록 — 앱이 못 막는 것은 그 줄에서 말한다'
       expect(screen.getByTestId('app-settings-runtimes-guard-note')).toBeInTheDocument(),
     );
     expect(screen.getAllByTestId('app-settings-runtimes-guard-note')).toHaveLength(1);
-    expect(document.querySelectorAll('[data-runtime-unguarded]')).toHaveLength(3);
+    // 줄에는 그 사실이 **아무 형태로도** 복사돼 있지 않다 — 배지도, 안 보이는
+    // 글도. 사본을 안 보이는 층으로 옮기는 것도 같은 결함이다.
+    expect(document.querySelectorAll('[data-runtime-unguarded]')).toHaveLength(0);
   });
 
   it('상태는 한 번만 말한다 — 배지 하나', async () => {
