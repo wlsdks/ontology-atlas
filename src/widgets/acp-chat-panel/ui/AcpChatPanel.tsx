@@ -1,12 +1,12 @@
 'use client';
 
-import { ChevronRight, CornerDownLeft, History, Square, SquarePen, X } from 'lucide-react';
+import { ArrowUp, ChevronRight, History, Square, SquarePen, X } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslations } from 'next-intl';
 
-import { Button, Chip, IconButton, RowButton, Select, Surface, Textarea } from '@/shared/ui';
+import { Chip, IconButton, RowButton, Select, Surface, Textarea } from '@/shared/ui';
 import { Tooltip, TooltipProvider } from '@/shared/ui/tooltip';
 import { formatDate } from '@/shared/lib/format-date';
 import { badgeClass } from '@/shared/ui/badge-class';
@@ -371,37 +371,34 @@ export function AcpChatPanel({
       </Surface>
 
       {/*
-        작성 칸은 **바닥에 고정**이고 이름을 글자로 달지 않는다 — 채팅에서 상자
-        위에 「무엇을 시킬지 적어요」라는 라벨이 붙어 있으면 그건 대화가 아니라
-        폼이다(소유자: *"디자인 자체가 아쉬움… 채팅방처럼"*). 이름은 화면 밖으로
-        보내고(`aria-label`) 자리에는 안내만 흐리게 둔다.
+        작성 칸 — **상자 하나 안에 다 들어간다** (2026-08-16 소유자 실보고:
+        *"디자인도 이게 더 일반적인가? 대부분 이런 형태 아닌가"*).
 
-        `shrink-0` 이 있어야 기록이 길어져도 작성 칸이 눌리지 않는다.
+        종전엔 입력 상자가 있고 그 **밖에** 넓은 「보내기」 알약이 따로 있었다.
+        그러면 보내기가 대화 화면의 주인공처럼 크게 자리를 먹는데, 정작 주인공은
+        대화다. 지금 형태는 상자 하나가 「여기가 쓰는 자리」를 말하고, 그 안
+        아래줄에 **고를 것(왼쪽)과 보내기(오른쪽)** 가 앉는다.
+
+        보내기는 **원형 아이콘**이다. 글자 「보내기」를 지운 이유는 화살표가 이미
+        그 뜻이고, 상자 안에서 폭을 덜 먹기 때문이다. 이름은 툴팁과 접근성
+        이름이 진다 — 아이콘만 있는 컨트롤의 규칙 그대로다.
+
+        상자 안에 상자를 만들지 않으려고 작성 칸은 `frame="bare"` 다.
       */}
-      <div className="relative grid shrink-0 gap-2">
+      <div
+        data-testid="acp-chat-composer"
+        className="relative shrink-0 rounded-card border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] p-[var(--card-pad)] transition-colors focus-within:border-[color:var(--color-indigo-a46)]"
+      >
         {/*
-          단축키 안내는 **처음 한 번만** 필요하다. 늘 띄워 두면 매번 읽히지도
-          않으면서 자리를 먹고, 아예 없애면 아무도 모른다. 그래서 작성 칸에
-          손이 갔을 때만 띄우고, 자리는 겹쳐 두어 **줄이 흔들리지 않게** 한다
-          (「치수는 우리가 정한다」).
-        */}
-        {/*
-          ⚠️ **비어 있을 때만** 띄운다 (2026-08-16 소유자 실보고: *"박스 위에
-          글자에 입력한 게 겹치는데?"*).
-          종전엔 손이 가 있기만 하면 띄웠는데, 그 자리가 곧 긴 문장이 지나가는
-          자리라 **글자 위에 글자가 겹쳤다.** 「줄이 안 흔들리게」 하려고 겹쳐
-          둔 것이 더 나쁜 것을 만들었다 — 배우고 나면 사라져야 할 안내가 읽는
-          것을 가린 것이다. 한 글자라도 치면 사라진다.
+          단축키 안내는 **비어 있을 때만** — 글자가 들어오면 사라진다(겹침 방지).
         */}
         {composerFocused && draft.length === 0 ? (
           <span
             data-testid="acp-chat-hint"
             className={badgeClass({
               shape: 'micro',
-              // 기하는 값 층이 낸다. 여기 남는 것은 이 자리에서만 맞는 것 —
-              // 겹쳐 놓기(자리)와 색이다.
               className:
-                'pointer-events-none absolute right-2 top-1.5 z-[1] bg-[color:var(--color-overlay-2)] text-[color:var(--color-text-quaternary)]',
+                'pointer-events-none absolute right-3 top-3 bg-[color:var(--color-overlay-2)] text-[color:var(--color-text-quaternary)]',
             })}
           >
             {t('composerHint')}
@@ -410,8 +407,9 @@ export function AcpChatPanel({
         <Textarea
           aria-label={t('composerLabel')}
           placeholder={t('composerPlaceholder')}
+          frame="bare"
           className="w-full"
-          rows={3}
+          rows={2}
           value={draft}
           disabled={!canType}
           onFocus={() => setComposerFocused(true)}
@@ -421,44 +419,51 @@ export function AcpChatPanel({
             if (e.key !== 'Enter') return;
             /*
              * Enter 로 보내고 ⇧Enter 로 줄을 바꾼다 — 채팅의 관례이고, 사람이
-             * 이미 손에 익힌 것이다. ⌘/Ctrl+Enter 도 계속 받는다: 종전 방식이
-             * 손에 익은 사람의 입력을 말없이 버리지 않는다.
+             * 이미 손에 익힌 것이다. ⌘/Ctrl+Enter 도 계속 받는다.
              */
             if (e.shiftKey) return;
             e.preventDefault();
             submit();
           }}
         />
-        <div className="flex items-center justify-between gap-2">
-          {/*
-            고를 거리는 **작성 칸 옆**에 산다 (2026-08-16 재배치).
-            종전엔 머리 아래에 있어서, 대화가 시작되기도 전에 화면 위쪽 두 줄을
-            컨트롤이 차지했다 — 이 화면의 일은 대화인데 눈이 먼저 닿는 것이
-            설정이었다. 「지금 보낼 것」에 걸리는 설정이므로 손이 이미 가 있는
-            자리가 맞다.
-          */}
-          <span className="flex min-w-0 flex-1 items-center gap-2">
-            {choicesRow}
-          </span>
-          <span className="flex shrink-0 items-center gap-2">
+        <div className="mt-2 flex items-center justify-between gap-2">
+          <span className="flex min-w-0 flex-1 items-center gap-2">{choicesRow}</span>
+          <span className="flex shrink-0 items-center gap-1.5">
             {busy ? (
-              <Chip size="lg" tone="secondary" data-testid="acp-chat-stop" onClick={cancel}>
+              <Chip size="md" tone="secondary" data-testid="acp-chat-stop" onClick={cancel}>
                 <Square size={ICON_SIZE.sm} aria-hidden />
                 {t('stop')}
               </Chip>
             ) : null}
-            <Button
-              variant="primary"
-              data-testid="acp-chat-send"
-              disabled={!canType || busy || draft.trim().length === 0}
-              onClick={submit}
-            >
-              <CornerDownLeft size={ICON_SIZE.sm} aria-hidden />
-              {t('send')}
-            </Button>
+            <Tooltip content={t('send')} side="top">
+              <button
+                type="button"
+                aria-label={t('send')}
+                data-testid="acp-chat-send"
+                disabled={!canType || busy || draft.trim().length === 0}
+                onClick={submit}
+                className={controlClass({
+                  /*
+                   * 원형은 값 층의 `pill` 이 낸다(`rounded-full`) — 손으로 적지
+                   * 않는다. 채움·잉크·호버는 `onAccent` 한 톤이 다 낸다:
+                   * 채운 인디고 위에 `accent` 잉크를 얹으면 합성 대비가
+                   * AA 미달이고, 그 짝은 lint 가 막는다(실제로 막혔다).
+                   * 여기 남는 것은 **이 자리에서만 맞는 것** — 정사각으로
+                   * 만들어 원이 되게 하는 폭과 가운데 정렬뿐이다.
+                   */
+                  shape: 'pill',
+                  size: 'md',
+                  tone: 'onAccent',
+                  className: 'w-8 justify-center px-0',
+                })}
+              >
+                <ArrowUp size={ICON_SIZE.md} aria-hidden />
+              </button>
+            </Tooltip>
           </span>
         </div>
       </div>
+
       {/*
         지난 대화 목록 — **떠 있는 것**이다.
 
@@ -495,7 +500,7 @@ export function AcpChatPanel({
           motion="overlay"
           className="pointer-events-auto w-[min(320px,100%)]"
         >
-          <div className="overflow-hidden rounded-panel border border-[color:var(--color-border-soft)] bg-[color:var(--color-elevated)] shadow-[var(--shadow-elevation-2)]">
+          <div className="overflow-hidden rounded-card border border-[color:var(--color-border-soft)] bg-[color:var(--color-elevated)] shadow-[var(--shadow-elevation-2)]">
             {/* 이름이 있어야 무엇의 목록인지 알 수 있다. */}
             <p className="px-3 pb-1.5 pt-2.5 font-mono text-label uppercase tracking-[var(--tracking-caps-14)] text-[color:var(--color-text-quaternary)]">
               {t('history')}
