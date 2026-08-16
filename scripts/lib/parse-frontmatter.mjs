@@ -169,7 +169,10 @@ function unquote(value) {
   // 인용부호 없는 값은 이스케이프 문법이 아니라 원문이므로 건드리지 않는다.
   const quote = trimmed.length >= 2 ? trimmed[0] : "";
   if ((quote === '"' || quote === "'") && trimmed[trimmed.length - 1] === quote) {
-    return trimmed.slice(1, -1).replace(new RegExp(`\\\\(${quote}|\\\\)`, "g"), "$1");
+    const inner = trimmed.slice(1, -1).replace(new RegExp(`\\\\(${quote}|\\\\)`, "g"), "$1");
+    // 큰따옴표의 `\n`/`\t`는 serializer가 접은 줄바꿈·탭이다.
+    // 작은따옴표는 YAML 규칙대로 이스케이프 없는 원문으로 둔다.
+    return quote === '"' ? inner.replace(/\\n/g, "\n").replace(/\\t/g, "\t") : inner;
   }
   return value.replace(/^["']|["']$/g, "");
 }

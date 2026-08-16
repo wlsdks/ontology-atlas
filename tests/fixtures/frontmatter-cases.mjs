@@ -252,6 +252,14 @@ export const CASES = [
     expected: { frontmatter: { kind: "capability", title: 'say "hello"' }, body: "" },
   },
   {
+    name: "큰따옴표 안의 줄바꿈·탭 이스케이프를 원문으로 되돌린다",
+    input: '---\nkind: capability\nsummary: "first\\nsecond\\tvalue"\n---\n',
+    expected: {
+      frontmatter: { kind: "capability", summary: "first\nsecond\tvalue" },
+      body: "",
+    },
+  },
+  {
     name: "인라인 리스트 — 따옴표 안의 콤마로 쪼개지 않는다",
     input: '---\nkind: capability\ntags: ["a, b", c]\n---\n',
     expected: { frontmatter: { kind: "capability", tags: ["a, b", "c"] }, body: "" },
