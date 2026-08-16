@@ -94,6 +94,8 @@ export async function runInferImports(args) {
   const ext = result.externalImports?.length ?? result.scanSummary?.externalImports ?? 0;
   const unres = result.unresolved?.length ?? result.scanSummary?.unresolvedImports ?? 0;
   const modEdges = result.moduleEdges ?? [];
+  const packageImportEvidence = result.packageImportEvidence;
+  const packageImportEvidenceSummary = result.packageImportEvidenceSummary;
   const edgeKindSummary = formatEdgeKindSummary(result.edges ?? []);
 
   process.stdout.write(
@@ -145,6 +147,35 @@ export async function runInferImports(args) {
         `    ${COLORS.dim}… ${modEdges.length - 16} more${COLORS.reset}\n`,
       );
     process.stdout.write('\n');
+  }
+
+  if (packageImportEvidence?.moduleEdges?.length > 0) {
+    process.stdout.write(
+      `  ${COLORS.bold}Go package imports${COLORS.reset} ${COLORS.dim}(${packageImportEvidence.moduleEdges.length}): observed static source evidence; not a semantic relation${COLORS.reset}\n`,
+    );
+    for (const edge of packageImportEvidence.moduleEdges.slice(0, 16)) {
+      const kindSummary = formatKindCounts(edge.kindCounts);
+      const kindSuffix = kindSummary ? ` ${COLORS.dim}(${kindSummary})${COLORS.reset}` : '';
+      process.stdout.write(
+        `    ${COLORS.cyan}${edge.fromPackage}${COLORS.reset} ${COLORS.dim}—package-imports→${COLORS.reset} ${COLORS.cyan}${edge.toPackage}${COLORS.reset} ${COLORS.dim}× ${edge.count}${COLORS.reset}${kindSuffix}\n`,
+      );
+      const receipt = edge.evidence?.[0];
+      if (receipt) {
+        process.stdout.write(
+          `      ${COLORS.dim}evidence: ${receipt.fromFile} —${receipt.kind}→ ${receipt.importSpec}${COLORS.reset}\n`,
+        );
+      }
+    }
+    if (packageImportEvidence.moduleEdges.length > 16) {
+      process.stdout.write(
+        `    ${COLORS.dim}… ${packageImportEvidence.moduleEdges.length - 16} more${COLORS.reset}\n`,
+      );
+    }
+    process.stdout.write('\n');
+  } else if (packageImportEvidenceSummary) {
+    process.stdout.write(
+      `  ${COLORS.bold}Go package imports${COLORS.reset} ${COLORS.dim}summary: ${packageImportEvidenceSummary.packageImports} receipts / ${packageImportEvidenceSummary.moduleEdges} package edges; request full evidence explicitly${COLORS.reset}\n\n`,
+    );
   }
 
   process.stdout.write(
@@ -228,6 +259,7 @@ function printUsage(stream = process.stderr) {
       `                              [--max-files N] [--threshold N]\n\n` +
       `${COLORS.bold}What it does:${COLORS.reset}\n` +
       `  Walk TS/JS files and bounded root Python packages (default: src,lib,app,packages → fallback rootPath),\n` +
+      `  and root Go modules as separate local package-import evidence,\n` +
       `  parse imports (static / dynamic / require / re-export / side-effect),\n` +
       `  resolve relative imports, tsconfig paths, and fallback @/* aliases,\n` +
       `  classify external (npm) separately and unresolved aliases explicitly,\n` +

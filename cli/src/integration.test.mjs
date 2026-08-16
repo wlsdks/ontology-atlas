@@ -8149,6 +8149,36 @@ await test('infer-imports preview — file edge kind summary exposed', async () 
   }
 });
 
+await test('infer-imports preview — labels Go package rows as package imports, never depends_on', async () => {
+  const vault = withVault([]);
+  const repo = mkdtempSync(join(tmpdir(), 'cli-go-imports-'));
+  try {
+    writeFileSync(join(repo, 'go.mod'), 'module example.test/sample\n', 'utf-8');
+    mkdirSync(join(repo, 'cmd', 'sample'), { recursive: true });
+    mkdirSync(join(repo, 'internal', 'store'), { recursive: true });
+    writeFileSync(
+      join(repo, 'cmd', 'sample', 'main.go'),
+      'package sample\n\nimport "example.test/sample/internal/store"\n\nvar _ = store.Ready\n',
+      'utf-8',
+    );
+    writeFileSync(
+      join(repo, 'internal', 'store', 'store.go'),
+      'package store\n\nconst Ready = true\n',
+      'utf-8',
+    );
+
+    const r = await run(['infer-imports', repo, '--vault', vault]);
+    assert.equal(r.code, 0, `stdout: ${r.stdout}\nstderr: ${r.stderr}`);
+    const clean = stripAnsi(r.stdout);
+    assert.match(clean, /Go package imports \(1\)/);
+    assert.match(clean, /cmd\/sample.*—package-imports→.*internal\/store/s);
+    assert.doesNotMatch(clean, /depends_on/);
+  } finally {
+    rmSync(vault, { recursive: true, force: true });
+    rmSync(repo, { recursive: true, force: true });
+  }
+});
+
 await test('infer-imports (default) — vault 변경 0', async () => {
   const vault = withVault([
     {
@@ -8365,7 +8395,7 @@ await test('infer-imports — fails closed when infer_imports module edge payloa
       "    return;",
       "  }",
       "  if (msg.params?.name === 'infer_imports') {",
-      "    const payload = { rootPath: '/repo', filesScanned: 1, coverage: { contract: 'importScanCoverage:v1', supportedLanguages: ['javascript', 'python', 'typescript'], supportedExtensions: ['.js', '.py', '.ts'], detectedUnsupportedLanguages: [], allDetectedLanguagesSupported: true, zeroEdgesMeaning: 'no_supported_static_import_edges_observed', limitations: ['Static source evidence only; runtime execution is not inferred.'] }, edges: [], externalImports: [], unresolved: [], moduleEdges: [{ from: 'capabilities/a', to: 'capabilities/b', count: 2, kindCounts: { static: 1 } }] };",
+      "    const payload = { rootPath: '/repo', filesScanned: 1, coverage: { contract: 'importScanCoverage:v1', supportedLanguages: ['go', 'javascript', 'python', 'typescript'], supportedExtensions: ['.go', '.js', '.py', '.ts'], detectedUnsupportedLanguages: [], allDetectedLanguagesSupported: true, zeroEdgesMeaning: 'no_supported_static_import_edges_observed', limitations: ['Static source evidence only; runtime execution is not inferred.'] }, edges: [], externalImports: [], unresolved: [], moduleEdges: [{ from: 'capabilities/a', to: 'capabilities/b', count: 2, kindCounts: { static: 1 } }] };",
       "    console.log(JSON.stringify({ jsonrpc: '2.0', id: msg.id, result: { content: [{ text: JSON.stringify(payload) }], structuredContent: payload } }));",
       "  }",
       "});",
@@ -8404,7 +8434,7 @@ await test('infer-imports --json — fails closed when infer_imports rootPath pa
       "    return;",
       "  }",
       "  if (msg.params?.name === 'infer_imports') {",
-      "    const payload = { rootPath: '', filesScanned: 1, coverage: { contract: 'importScanCoverage:v1', supportedLanguages: ['javascript', 'python', 'typescript'], supportedExtensions: ['.js', '.py', '.ts'], detectedUnsupportedLanguages: [], allDetectedLanguagesSupported: true, zeroEdgesMeaning: 'no_supported_static_import_edges_observed', limitations: ['Static source evidence only; runtime execution is not inferred.'] }, edges: [], externalImports: [], unresolved: [], moduleEdges: [] };",
+      "    const payload = { rootPath: '', filesScanned: 1, coverage: { contract: 'importScanCoverage:v1', supportedLanguages: ['go', 'javascript', 'python', 'typescript'], supportedExtensions: ['.go', '.js', '.py', '.ts'], detectedUnsupportedLanguages: [], allDetectedLanguagesSupported: true, zeroEdgesMeaning: 'no_supported_static_import_edges_observed', limitations: ['Static source evidence only; runtime execution is not inferred.'] }, edges: [], externalImports: [], unresolved: [], moduleEdges: [] };",
       "    console.log(JSON.stringify({ jsonrpc: '2.0', id: msg.id, result: { content: [{ text: JSON.stringify(payload) }], structuredContent: payload } }));",
       "  }",
       "});",
@@ -8440,7 +8470,7 @@ await test('infer-imports --json — fails closed when unresolved reason payload
       "    return;",
       "  }",
       "  if (msg.params?.name === 'infer_imports') {",
-      "    const payload = { rootPath: '/repo', filesScanned: 1, coverage: { contract: 'importScanCoverage:v1', supportedLanguages: ['javascript', 'python', 'typescript'], supportedExtensions: ['.js', '.py', '.ts'], detectedUnsupportedLanguages: [], allDetectedLanguagesSupported: true, zeroEdgesMeaning: 'no_supported_static_import_edges_observed', limitations: ['Static source evidence only; runtime execution is not inferred.'] }, edges: [], externalImports: [], unresolved: [{ from: 'src/a.ts', spec: '@/missing', reason: 'unresolved-alias' }], moduleEdges: [] };",
+      "    const payload = { rootPath: '/repo', filesScanned: 1, coverage: { contract: 'importScanCoverage:v1', supportedLanguages: ['go', 'javascript', 'python', 'typescript'], supportedExtensions: ['.go', '.js', '.py', '.ts'], detectedUnsupportedLanguages: [], allDetectedLanguagesSupported: true, zeroEdgesMeaning: 'no_supported_static_import_edges_observed', limitations: ['Static source evidence only; runtime execution is not inferred.'] }, edges: [], externalImports: [], unresolved: [{ from: 'src/a.ts', spec: '@/missing', reason: 'unresolved-alias' }], moduleEdges: [] };",
       "    console.log(JSON.stringify({ jsonrpc: '2.0', id: msg.id, result: { content: [{ text: JSON.stringify(payload) }], structuredContent: payload } }));",
       "  }",
       "});",

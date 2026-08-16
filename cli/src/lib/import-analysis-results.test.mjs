@@ -6,8 +6,8 @@ import { assertInferImportsResult } from './import-analysis-results.mjs';
 function coverageFixture() {
   return {
     contract: 'importScanCoverage:v1',
-    supportedLanguages: ['javascript', 'python', 'typescript'],
-    supportedExtensions: ['.js', '.py', '.ts'],
+    supportedLanguages: ['go', 'javascript', 'python', 'typescript'],
+    supportedExtensions: ['.go', '.js', '.py', '.ts'],
     detectedUnsupportedLanguages: [],
     allDetectedLanguagesSupported: true,
     zeroEdgesMeaning: 'no_supported_static_import_edges_observed',
@@ -58,6 +58,70 @@ function moduleEdgeFixture(overrides = {}) {
       importUsage: 'value',
     }],
     evidenceLimited: true,
+    ...overrides,
+  };
+}
+
+function goPackageImportEvidenceFixture(overrides = {}) {
+  const row = {
+    fromFile: 'cmd/sample/main.go',
+    fromPackage: 'cmd/sample',
+    toPackage: 'internal/store',
+    importSpec: 'example.test/sample/internal/store',
+    kind: 'static',
+    sourceRole: 'production',
+    importUsage: 'value',
+  };
+  return {
+    contract: 'goPackageImports:v1',
+    modulePath: 'example.test/sample',
+    sourceQualification: 'observed_bounded_go_package_imports_not_runtime_or_semantic_impact',
+    writeAllowed: false,
+    filesScanned: 2,
+    fileScanLimited: false,
+    perFileByteLimit: 262144,
+    perFileImportLimit: 256,
+    skipped: [],
+    limitations: [
+      'External Go modules are not included in local package import evidence.',
+      'Nested Go modules and go.work workspaces are not scanned.',
+      'Observed imports are bounded static source evidence, not runtime execution or semantic depends_on approval.',
+    ],
+    packageImports: [row],
+    moduleEdges: [{
+      fromPackage: row.fromPackage,
+      toPackage: row.toPackage,
+      count: 1,
+      kindCounts: { static: 1 },
+      sourceRoleCounts: { production: 1, test: 0, unknown: 0 },
+      importUsageCounts: { value: 1, type_only: 0, unknown: 0 },
+      productValueCount: 1,
+      evidence: [row],
+      evidenceLimited: false,
+    }],
+    ...overrides,
+  };
+}
+
+function goPackageImportEvidenceSummaryFixture(overrides = {}) {
+  return {
+    contract: 'goPackageImports:v1',
+    filesScanned: 2,
+    fileScanLimited: false,
+    packageImports: 1,
+    moduleEdges: 1,
+    fullEvidenceCall: {
+      tool: 'infer_imports',
+      arguments: {
+        rootPath: '/repo',
+        sourceFolders: ['source'],
+        ignore: ['generated'],
+        maxFiles: 700,
+        reviewMode: 'full',
+        allowLargeResponse: true,
+      },
+      purpose: 'Read the complete typed Go package-import evidence.',
+    },
     ...overrides,
   };
 }
@@ -159,11 +223,45 @@ describe('import-analysis-results', () => {
         filesScanned: 237,
         coverage: coverageFixture(),
         scanSummary: { fileEdges: 277, externalImports: 1153, unresolvedImports: 2, moduleEdges: 105 },
+        packageImportEvidenceSummary: goPackageImportEvidenceSummaryFixture(),
         reconciliationSummary: reconciliationSummaryFixture(),
         staleEdgeFollowUp: staleEdgeFollowUpFixture(),
         reviewQueue: { total: 105, returned: 1, exhausted: false, afterReviewId: null },
         nextReview: compactNextReviewFixture(),
       }),
+    );
+  });
+
+  it('rejects malformed compact Go package-import summaries before they can hide a large scan', () => {
+    const summary = goPackageImportEvidenceSummaryFixture({
+      fullEvidenceCall: {
+        tool: 'infer_imports',
+        arguments: { rootPath: '/repo', reviewMode: 'full', allowLargeResponse: false },
+        purpose: 'Read the complete typed Go package-import evidence.',
+      },
+    });
+    assert.throws(
+      () => assertInferImportsResult({
+        contract: 'inferImportsReview:v1',
+        delivery: {
+          selection: 'automatic_compact',
+          reason: 'estimated_full_response_exceeds_limit',
+          estimatedFullResponseBytes: 716018,
+          automaticLimitBytes: 131072,
+          explicitFullAvailable: true,
+          explicitFullArguments: { reviewMode: 'full', allowLargeResponse: true },
+        },
+        rootPath: '/repo',
+        filesScanned: 237,
+        coverage: coverageFixture(),
+        scanSummary: { fileEdges: 277, externalImports: 1153, unresolvedImports: 2, moduleEdges: 105 },
+        packageImportEvidenceSummary: summary,
+        reconciliationSummary: reconciliationSummaryFixture(),
+        staleEdgeFollowUp: staleEdgeFollowUpFixture(),
+        reviewQueue: { total: 105, returned: 1, exhausted: false, afterReviewId: null },
+        nextReview: compactNextReviewFixture(),
+      }),
+      /packageImportEvidenceSummary\.fullEvidenceCall\.arguments must request reviewMode full with allowLargeResponse true/,
     );
   });
 
@@ -300,6 +398,17 @@ describe('import-analysis-results', () => {
       () => assertInferImportsResult(missingCoverage),
       /coverage must be an object/,
     );
+    const missingGoCoverage = {
+      ...compact,
+      coverage: {
+        ...coverageFixture(),
+        supportedLanguages: ['javascript', 'python', 'typescript'],
+      },
+    };
+    assert.throws(
+      () => assertInferImportsResult(missingGoCoverage),
+      /supportedLanguages must exactly match the public language contract/,
+    );
 
     const full = {
       rootPath: '/repo',
@@ -376,6 +485,38 @@ describe('import-analysis-results', () => {
           moduleEdgeFixture(),
         ],
       }),
+    );
+  });
+
+  it('accepts a valid root Go package-import receipt without changing legacy file edges', () => {
+    const coverage = coverageFixture();
+    assert.doesNotThrow(() =>
+      assertInferImportsResult({
+        rootPath: '/repo',
+        filesScanned: 2,
+        coverage,
+        edges: [],
+        externalImports: [],
+        unresolved: [],
+        moduleEdges: [],
+        packageImportEvidence: goPackageImportEvidenceFixture(),
+      }),
+    );
+
+    const undercounted = goPackageImportEvidenceFixture();
+    undercounted.moduleEdges[0].productValueCount = 0;
+    assert.throws(
+      () => assertInferImportsResult({
+        rootPath: '/repo',
+        filesScanned: 2,
+        coverage,
+        edges: [],
+        externalImports: [],
+        unresolved: [],
+        moduleEdges: [],
+        packageImportEvidence: undercounted,
+      }),
+      /productValueCount must equal production value imports/,
     );
   });
 
