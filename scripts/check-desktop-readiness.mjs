@@ -206,10 +206,9 @@ const cargoPackageName = cargoToml.match(/\[package\][\s\S]*?\nname\s*=\s*"([^"]
 const releaseBuildOrder = orderedIndexes(releaseWorkflow, [
   "name: Verify release source commit",
   "name: Verify release tag version",
-  "name: Decide signing path",
+  "name: Require signed release credentials",
   "name: Import Apple Developer ID certificate",
   "name: Build signed and notarized release artifact",
-  "name: Build unsigned release artifact",
   "name: Stage release assets",
   "name: Upload workflow artifact",
   "name: Cleanup Apple signing keychain",
@@ -1163,14 +1162,15 @@ if (
   /pnpm desktop:release-source -- --sha="\$\{GITHUB_SHA\}"/.test(releaseWorkflow) &&
   /echo "\$APPLE_CERTIFICATE_P12_BASE64" \| base64 -D > "\$CERTIFICATE_PATH"/.test(releaseWorkflow) &&
   !/base64 --decode/.test(releaseWorkflow) &&
+  /name:\s*Require signed release credentials[\s\S]*?run:\s*pnpm desktop:release-secrets/.test(
+    releaseWorkflow,
+  ) &&
   /pnpm desktop:release-artifact\b/.test(releaseWorkflow) &&
-  // 인증서가 없는 동안의 경로. 조용한 폴백은 금지 — 어느 경로로 갔는지
-  // 요약과 릴리스 본문에 크게 적혀야 한다.
-  /pnpm desktop:release-artifact:unsigned/.test(releaseWorkflow) &&
-  /UNSIGNED/.test(releaseWorkflow) &&
+  !/pnpm desktop:release-artifact:unsigned/.test(releaseWorkflow) &&
+  !/steps\.signing\.outputs\.signed/.test(releaseWorkflow) &&
   /Summarize macOS release assets/.test(releaseWorkflow) &&
   /name:\s*Cleanup Apple signing keychain/.test(releaseWorkflow) &&
-  /if:\s*\$\{\{\s*always\(\)\s*&&\s*steps\.signing\.outputs\.signed/.test(releaseWorkflow) &&
+  /if:\s*\$\{\{\s*always\(\)\s*\}\}/.test(releaseWorkflow) &&
   /security delete-keychain "\$KEYCHAIN_PATH" 2>\/dev\/null \|\| true/.test(releaseWorkflow) &&
   /rm -f "\$CERTIFICATE_PATH"/.test(releaseWorkflow) &&
   /Summarize published desktop release/.test(releaseWorkflow) &&

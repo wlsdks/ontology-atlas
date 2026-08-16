@@ -57,14 +57,14 @@ export const REHEARSAL_SKIPS = {
     "GITHUB_SHA 가 main 의 현재 head 와 같아야 통과한다. 태그를 찍는 순간의 사실이라 지금은 확인할 수 없다 — 태그는 반드시 main head 에 찍고, 찍은 뒤에는 릴리스가 끝날 때까지 main 에 아무것도 머지하지 마라(머지하면 이 게이트가 빨개진다).",
   "Verify release tag version":
     "실제 태그 이름이 필요하다. 대신 아래에서 package.json · tauri.conf.json · Cargo.toml 세 버전이 서로 맞는지 확인한다.",
-  "Decide signing path":
-    "레포에 Apple 시크릿 5종이 모두 등록돼 있으므로 러너는 **서명 경로**로 간다. 이 기계에는 Developer ID 인증서가 없어 그 경로를 밟을 수 없다.",
+  "Require signed release credentials":
+    "레포에 Apple 시크릿 5종이 모두 등록돼 있어야 러너가 이 게이트를 통과한다. 이 기계에는 Actions secret 이 없으므로 실제 값 검사는 태그 워크플로에서만 성립한다.",
   "Import Apple Developer ID certificate":
     "APPLE_CERTIFICATE_P12_BASE64 로 임시 키체인을 만드는 단계다. 시크릿 없이는 밟을 수 없고, 밟아도 이 기계의 키체인을 건드리게 되므로 리허설에서 일부러 하지 않는다.",
   "Enable Corepack pnpm":
     "러너에 pnpm 을 심는 단계다. 이 기계에는 이미 pnpm 이 있고, 버전이 러너와 같은지는 위의 도구 점검이 답한다.",
   "Build signed and notarized release artifact":
-    "codesign(Developer ID) + notarytool 이 필요하다. 대신 아래 '미서명 경로' 를 끝까지 돌려 빌드·스모크·사이드카 동봉·DMG·체크섬·설치 스모크를 증명한다. 서명·공증·DMG 컨테이너 서명 세 단계만 실제 태그에서 처음 밟힌다.",
+    "codesign(Developer ID) + notarytool 이 필요하다. 대신 같은 단계의 로컬 대체 명령이 ad-hoc 서명 경로를 끝까지 돌려 빌드·스모크·사이드카 동봉·DMG·체크섬·설치 스모크를 증명한다. Developer ID 서명·공증·DMG 컨테이너 서명만 실제 태그에서 처음 밟힌다.",
   "Summarize macOS release assets": "GITHUB_STEP_SUMMARY 에 표를 쓸 뿐이라 성립 여부가 없다.",
   "Cleanup Apple signing keychain": "서명 경로에서만 만들어진 키체인을 지운다.",
 };
@@ -80,16 +80,15 @@ export const REHEARSAL_SUBSTITUTES = {
     argv: ["node", "scripts/release-rehearsal.mjs", "--check-versions"],
     note: "태그 이름 대신 package.json · tauri.conf.json · Cargo.toml 세 버전이 서로 맞는지 본다.",
   },
-  "Build unsigned release artifact": {
+  "Build signed and notarized release artifact": {
     argv: ["pnpm", "desktop:release-artifact:unsigned"],
-    note: "러너는 시크릿이 있어 **서명 경로**로 가지만, 두 경로는 서명/공증 단계만 다르다. 이쪽을 끝까지 돌려 나머지를 증명한다.",
+    note: "공개 workflow에는 unsigned 폴백이 없다. 로컬에서만 ad-hoc 서명 대체 경로를 끝까지 돌려 Developer ID 서명·공증 외의 체인을 증명한다.",
   },
 };
 
 /** 앱 컴파일·DMG·설치 스모크는 오래 걸린다 — `--fast` 는 여기서 멈춘다. */
 export const REHEARSAL_SLOW_STEPS = new Set([
   "Build signed and notarized release artifact",
-  "Build unsigned release artifact",
 ]);
 
 /**

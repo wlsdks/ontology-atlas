@@ -145,6 +145,21 @@ describe("워크플로 보안 계약", () => {
     expect(release!.source).toMatch(/tags:/);
   });
 
+  it("macOS 직접 다운로드 릴리스는 서명·공증 자격증명이 없으면 실패한다", () => {
+    const release = all.find((w) => w.name === "release-macos.yml")!.source;
+    const build = jobBlock(release, "build-macos");
+
+    expect(build).toMatch(
+      /- name: Require signed release credentials\n(?:        env:[\s\S]*?)?        run: pnpm desktop:release-secrets/,
+    );
+    expect(build).toMatch(
+      /- name: Build signed and notarized release artifact\n        run: pnpm desktop:release-artifact/,
+    );
+    expect(build).not.toContain("desktop:release-artifact:unsigned");
+    expect(build).not.toContain("steps.signing.outputs.signed");
+    expect(build).not.toContain("UNSIGNED build");
+  });
+
   it("발행은 승인 환경 뒤에 있다", () => {
     // 태그를 민 사람이 곧 공개까지 하는 구조를 막는다. 사람이 초안을 설치해
     // 확인한 뒤에만 공개된다.
@@ -194,29 +209,30 @@ describe("워크플로 보안 계약", () => {
 
     const expectedSteps: Record<string, string[]> = {
       APPLE_CERTIFICATE_P12_BASE64: [
-        "Decide signing path",
+        "Require signed release credentials",
         "Import Apple Developer ID certificate",
         "Build signed and notarized release artifact",
       ],
       APPLE_CERTIFICATE_PASSWORD: [
-        "Decide signing path",
+        "Require signed release credentials",
         "Import Apple Developer ID certificate",
         "Build signed and notarized release artifact",
       ],
-      APPLE_ID: ["Decide signing path", "Build signed and notarized release artifact"],
+      APPLE_ID: ["Require signed release credentials", "Build signed and notarized release artifact"],
       APPLE_APP_SPECIFIC_PASSWORD: [
-        "Decide signing path",
+        "Require signed release credentials",
         "Build signed and notarized release artifact",
       ],
-      APPLE_TEAM_ID: ["Decide signing path", "Build signed and notarized release artifact"],
+      APPLE_TEAM_ID: [
+        "Require signed release credentials",
+        "Build signed and notarized release artifact",
+      ],
       TAURI_SIGNING_PRIVATE_KEY: [
         "Build signed and notarized release artifact",
-        "Build unsigned release artifact",
         "Build Windows NSIS installer",
       ],
       TAURI_SIGNING_PRIVATE_KEY_PASSWORD: [
         "Build signed and notarized release artifact",
-        "Build unsigned release artifact",
         "Build Windows NSIS installer",
       ],
     };
