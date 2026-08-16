@@ -30,6 +30,7 @@ import {
 import { cn } from '@/shared/lib/cn';
 import { useAcpSession, type AcpEvent } from '@/features/acp-session/model/use-acp-session';
 import { readAcpTrouble } from '@/features/acp-session/model/acp-trouble';
+import { withoutErrorEcho } from '@/features/acp-session/model/error-echo';
 import type { ChatSuggestion } from '@/features/acp-session/model/chat-suggestions';
 import { linkSlugs } from '@/features/acp-session/model/link-slugs';
 import { readToolTargets } from '@/features/acp-session/model/tool-targets';
@@ -519,7 +520,14 @@ export function AcpChatPanel({
             ) : null}
           </div>
         ) : null}
-        {groupEvents(events).map((item, index) => {
+        {/*
+          어댑터는 실패를 **메시지로도** 보내고 RPC 도 거절한다. 그대로 두면
+          같은 실패가 두 번 보이고, 영문 원문이 아래 평문 카드보다 **먼저**
+          읽힌다(2026-08-17 설치된 앱 실측). 지우는 조건은 `error-echo.ts` 가
+          갖고, 그 조건은 「이미 떠 있는 오류 원문 안에 통째로 든 마지막 한 줄」
+          뿐이다 — 에이전트의 말을 화면이 지우는 일이니 넓히지 않는다.
+        */}
+        {groupEvents(withoutErrorEcho(events, error)).map((item, index) => {
           if (item.kind === 'toolGroup')
             return (
               <ToolGroup
