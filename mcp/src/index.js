@@ -8739,6 +8739,11 @@ function connectProjectSourceTool({ projectSlug, rootPath, confirm, repair } = {
   }
 
   const written = writeProjectSourceBinding(VAULT_ROOT, { ...binding, receipt }, { repair: repair === true });
+  if (written.status === 'blocked_unsafe_path') {
+    throw new Error(
+      `connect_project_source blocked: ${PROJECT_SOURCE_STATE_RELATIVE_PATH} is behind an unsafe sidecar path. repair: true cannot bypass a symlink or junction boundary.`,
+    );
+  }
   if (written.status === 'blocked_malformed') {
     throw new Error(
       `connect_project_source blocked: ${PROJECT_SOURCE_STATE_RELATIVE_PATH} is malformed. Re-run with repair: true to discard and rewrite it.`,
@@ -8775,6 +8780,11 @@ function disconnectProjectSourceTool({ projectSlug, confirm } = {}) {
   // clear it, so an unresolvable slug falls back to the literal value.
   const canonicalSlug = resolveExistingVaultSlug(projectSlug, allDocs) ?? projectSlug;
   const sidecar = readProjectSourceBindings(VAULT_ROOT);
+  if (sidecar.status === 'unsafe_path') {
+    throw new Error(
+      `disconnect_project_source blocked: ${PROJECT_SOURCE_STATE_RELATIVE_PATH} is behind an unsafe sidecar path. Replace the symlink or junction with a real vault-local directory first.`,
+    );
+  }
   if (sidecar.status === 'malformed') {
     throw new Error(
       `disconnect_project_source blocked: ${PROJECT_SOURCE_STATE_RELATIVE_PATH} is malformed. Inspect it by hand, or re-connect with repair: true to rewrite it.`,
@@ -8807,6 +8817,11 @@ function disconnectProjectSourceTool({ projectSlug, confirm } = {}) {
   }
 
   const result = removeProjectSourceBindings(VAULT_ROOT, canonicalSlug);
+  if (result.status === 'blocked_unsafe_path') {
+    throw new Error(
+      `disconnect_project_source blocked: ${PROJECT_SOURCE_STATE_RELATIVE_PATH} is behind an unsafe sidecar path.`,
+    );
+  }
   if (result.status === 'persistence_failed') {
     throw new Error('disconnect_project_source could not persist the sidecar update.');
   }

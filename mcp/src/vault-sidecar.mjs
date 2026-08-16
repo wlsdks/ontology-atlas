@@ -309,7 +309,6 @@ export function appendVaultSidecarLine(vaultRoot, filename, line) {
     assertOpenedFileMatches(initial, descriptor, filename);
     assertContext(context);
     writeFileSync(descriptor, completeLine, 'utf8');
-    fsyncSync(descriptor);
     return revisionOf(fstatSync(descriptor));
   } finally {
     if (descriptor !== null) closeSync(descriptor);

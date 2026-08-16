@@ -1,13 +1,4 @@
 import { createHash } from 'node:crypto';
-import {
-  existsSync,
-  mkdirSync,
-  readFileSync,
-  renameSync,
-  rmSync,
-  writeFileSync,
-} from 'node:fs';
-import { dirname, join, resolve } from 'node:path';
 
 import {
   MEANING_COMPETENCY_CONTRACT,
@@ -15,9 +6,15 @@ import {
   MEANING_COMPETENCY_QUESTIONS,
   deriveMeaningAssessment,
 } from './meaning-assessment.mjs';
+import {
+  SidecarPathError,
+  readVaultSidecarText,
+  replaceVaultSidecarText,
+} from './vault-sidecar.mjs';
 
 export const PROJECT_MEANING_RECEIPT_VERSION = 1;
 export const PROJECT_MEANING_STATE_RELATIVE_PATH = '.ontology-atlas/project-meaning.json';
+const PROJECT_MEANING_STATE_FILENAME = 'project-meaning.json';
 export const PROJECT_COMPETENCY_MARKDOWN_CONTRACT = 'projectCompetencyMarkdown:v1';
 
 const QUESTION_STATUSES = new Set(['answered', 'partial', 'visible-gap']);
@@ -328,13 +325,24 @@ function strictState(value) {
   return { version: value.version, receipts };
 }
 
-function readState(path) {
-  if (!existsSync(path)) return { status: 'missing', state: null };
+function readState(vaultRoot) {
+  let stored;
   try {
-    const state = strictState(JSON.parse(readFileSync(path, 'utf8')));
-    return state ? { status: 'current', state } : { status: 'malformed', state: null };
-  } catch {
-    return { status: 'malformed', state: null };
+    stored = readVaultSidecarText(vaultRoot, PROJECT_MEANING_STATE_FILENAME);
+  } catch (error) {
+    if (error instanceof SidecarPathError) {
+      return { status: 'unsafe_path', state: null, revision: null, error };
+    }
+    return { status: 'malformed', state: null, revision: null, error };
+  }
+  if (!stored) return { status: 'missing', state: null, revision: null };
+  try {
+    const state = strictState(JSON.parse(stored.text));
+    return state
+      ? { status: 'current', state, revision: stored.revision }
+      : { status: 'malformed', state: null, revision: stored.revision };
+  } catch (error) {
+    return { status: 'malformed', state: null, revision: stored.revision, error };
   }
 }
 
@@ -353,8 +361,8 @@ export function finalizeProjectMeaningReceipt({
   if (!safeMeasuredAt(measuredAt)) throw new Error('measuredAt is invalid');
   parseProjectCompetencyMarkdown(projectBody);
 
-  const receiptPath = join(resolve(vaultRoot), PROJECT_MEANING_STATE_RELATIVE_PATH);
-  const existing = readState(receiptPath);
+  const existing = readState(vaultRoot);
+  if (existing.status === 'unsafe_path') throw existing.error;
   if (existing.status === 'malformed') throw new Error('Existing project meaning receipt is malformed');
   const receipt = {
     version: PROJECT_MEANING_RECEIPT_VERSION,
@@ -371,18 +379,12 @@ export function finalizeProjectMeaningReceipt({
     version: PROJECT_MEANING_RECEIPT_VERSION,
     receipts: [...retained, receipt].sort((left, right) => left.projectSlug.localeCompare(right.projectSlug)),
   };
-  mkdirSync(dirname(receiptPath), { recursive: true });
-  const tempPath = `${receiptPath}.tmp`;
-  try {
-    writeFileSync(tempPath, `${JSON.stringify(state, null, 2)}\n`, { encoding: 'utf8', flag: 'wx' });
-    renameSync(tempPath, receiptPath);
-  } finally {
-    try {
-      rmSync(tempPath, { force: true });
-    } catch {
-      // A non-file collision is deliberately left for manual inspection.
-    }
-  }
+  replaceVaultSidecarText(
+    vaultRoot,
+    PROJECT_MEANING_STATE_FILENAME,
+    `${JSON.stringify(state, null, 2)}\n`,
+    { expectedRevision: existing.revision },
+  );
   return receipt;
 }
 
@@ -436,8 +438,10 @@ export function readProjectMeaningAssessment(input) {
   if (typeof vaultRoot !== 'string' || vaultRoot.length === 0) {
     return invalidAssessment({ projectSlug, graphHash, structure, source, inventory });
   }
-  const receiptPath = join(resolve(vaultRoot), PROJECT_MEANING_STATE_RELATIVE_PATH);
-  const stored = readState(receiptPath);
+  const stored = readState(vaultRoot);
+  if (stored.status === 'unsafe_path' || stored.status === 'malformed') {
+    return invalidAssessment({ projectSlug, graphHash, structure, source, inventory });
+  }
   const receipt = stored.state?.receipts.find((row) => row.projectSlug === projectSlug);
   if (!receipt) {
     // 「아직 안 했다」는 「망가졌다」가 아니다.

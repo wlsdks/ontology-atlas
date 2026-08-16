@@ -1,10 +1,10 @@
 import assert from 'node:assert/strict';
 import {
-  existsSync,
   mkdirSync,
   mkdtempSync,
   readFileSync,
   rmSync,
+  symlinkSync,
   writeFileSync,
 } from 'node:fs';
 import { tmpdir } from 'node:os';
@@ -419,7 +419,7 @@ test('declared gaps are stable unresolved markers and must agree with status', (
   ));
 });
 
-test('malformed existing state blocks overwrite and a temp write failure preserves the receipt', () => withVault((root) => {
+test('malformed existing state blocks overwrite', () => withVault((root) => {
   const body = competencyBody();
   const args = {
     vaultRoot: root,
@@ -434,17 +434,35 @@ test('malformed existing state blocks overwrite and a temp write failure preserv
   writeFileSync(path, '{broken', 'utf8');
   assert.throws(() => finalizeProjectMeaningReceipt(args), /existing/i);
   assert.equal(readFileSync(path, 'utf8'), '{broken');
+}));
 
-  rmSync(path);
-  finalizeProjectMeaningReceipt(args);
-  const before = readFileSync(path, 'utf8');
-  mkdirSync(`${path}.tmp`);
-  assert.throws(() => finalizeProjectMeaningReceipt({
+test('unsafe meaning sidecar paths block finalize and cannot masquerade as not authored', () => withVault((root) => {
+  const vault = join(root, 'vault');
+  const outside = join(root, 'outside');
+  mkdirSync(vault);
+  mkdirSync(outside);
+  const sentinel = join(outside, 'project-meaning.json');
+  writeFileSync(sentinel, 'outside-original', 'utf8');
+  symlinkSync(outside, join(vault, '.ontology-atlas'), process.platform === 'win32' ? 'junction' : 'dir');
+  const body = competencyBody();
+  const args = {
+    vaultRoot: vault,
+    projectSlug: 'projects/demo',
+    projectBody: body,
+    graphHash: GRAPH_HASH,
+    sourceFingerprint: SOURCE_FINGERPRINT,
+    measuredAt: MEASURED_AT,
+  };
+
+  assert.throws(() => finalizeProjectMeaningReceipt(args), /sidecar|unsafe|ontology-atlas/i);
+  const assessment = readProjectMeaningAssessment({
     ...args,
-    measuredAt: '2026-08-02T07:00:00.000Z',
-  }));
-  assert.equal(readFileSync(path, 'utf8'), before);
-  assert.equal(existsSync(path), true);
+    structure: { status: 'ready' },
+    source: source(),
+    inventory: inventory(),
+  });
+  assert.equal(assessment.status, 'invalid');
+  assert.equal(readFileSync(sentinel, 'utf8'), 'outside-original');
 }));
 
 test('duplicate project receipts make the envelope malformed and block overwrite', () => withVault((root) => {
