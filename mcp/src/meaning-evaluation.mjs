@@ -401,6 +401,17 @@ export function validateMeaningProposalAgainstAnalysis(
     }
     validateOptionalConceptBoundaryList(concept.includes, `${path}.includes`, findings);
     validateOptionalConceptBoundaryList(concept.excludes, `${path}.excludes`, findings);
+    if (Array.isArray(concept.excludes)) {
+      for (const [boundaryIndex, boundary] of concept.excludes.entries()) {
+        if (!nonEmpty(boundary) || !isEpistemicExclusionBoundary(boundary)) continue;
+        findings.push(finding(
+          'epistemic-exclusion-boundary',
+          'error',
+          `${path}.excludes[${boundaryIndex}]`,
+          'Excludes must state a sourced product/concept boundary, not an unknown or unmeasured evidence limit. Move this statement to uncertainty or a competency gap.',
+        ));
+      }
+    }
     validateCitationsAndConfidence({
       row: concept,
       path,
@@ -694,6 +705,14 @@ function validateOptionalConceptBoundaryList(value, path, findings) {
     path,
     'Concept includes/excludes must be a unique array of at most 20 non-empty strings.',
   ));
+}
+
+function isEpistemicExclusionBoundary(value) {
+  const normalized = String(value).replace(/\s+/g, ' ').trim().toLowerCase();
+  return (
+    /\bnot\s+(?:established|asserted|proven|verified|measured|observed|known|confirmed)\b/.test(normalized) ||
+    /\bremain(?:s|ed)?\s+outside\s+(?:this|the)\s+(?:bounded\s+)?(?:scan|evidence)\b/.test(normalized)
+  );
 }
 
 function alignedSemanticAuthoritySources({

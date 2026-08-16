@@ -173,6 +173,222 @@ test('README.rst accepts punctuation title adornments and excludes directive cod
   }
 });
 
+test('README semantic evidence keeps later meaning blocks ahead of decorative noise', () => {
+  const root = withRepo((r) => {
+    const noise = (label) => Array.from(
+      { length: 36 },
+      (_, index) => `[${label} ${index}](https://example.invalid/${label.toLowerCase()}/${index})`,
+    );
+    const readme = [
+      '# Portable Toolkit',
+      '',
+      ...Array.from(
+        { length: 24 },
+        (_, index) => `[![Badge ${index}](https://example.invalid/badge/${index}.svg)](https://example.invalid/check/${index})`,
+      ),
+      '',
+      '## Sponsors',
+      ...noise('Sponsor'),
+      '',
+      '## Backers',
+      ...noise('Backer'),
+      '',
+      '## Funding',
+      ...noise('Funding'),
+      '',
+      '## Donations',
+      ...noise('Donation'),
+      '',
+      '## Table of Contents',
+      ...noise('Contents'),
+      '',
+      '## Introduction',
+      '',
+      'Portable Toolkit is a local tool for organizing reusable workflows.',
+      '',
+      '## Architecture',
+      '',
+      'The architecture separates the local workspace from the presentation layer.',
+      '',
+      '## Features',
+      '',
+      'The tool provides searchable notes and bounded exports.',
+    ].join('\n');
+    assert.ok(noise('Sponsor').join('\n').length > 1200);
+    writeFileSync(join(r, 'README.md'), readme);
+  });
+  try {
+    const evidence = analyzeRepoStructure(root).semanticEvidence.find(
+      (row) => row.source === 'README.md',
+    );
+
+    const excerpt = evidence?.excerpt ?? '';
+    assert.match(excerpt, /local tool for organizing reusable workflows/);
+    assert.match(excerpt, /architecture separates the local workspace/);
+    assert.match(excerpt, /provides searchable notes and bounded exports/);
+    assert.doesNotMatch(excerpt, /Badge 0|Sponsor 0|Backer 0|Funding 0|Donation 0|Contents 0/);
+    assert.ok(
+      excerpt.indexOf('local tool for organizing reusable workflows') <
+        excerpt.indexOf('architecture separates the local workspace'),
+    );
+    assert.ok(
+      excerpt.indexOf('architecture separates the local workspace') <
+        excerpt.indexOf('provides searchable notes and bounded exports'),
+    );
+    assert.deepEqual(
+      (evidence?.headings ?? []).filter((heading) =>
+        ['Introduction', 'Architecture', 'Features'].includes(heading),
+      ),
+      ['Introduction', 'Architecture', 'Features'],
+    );
+    assert.ok(excerpt.length <= 1200);
+    assert.ok((evidence?.headings.length ?? 0) <= 8);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test('README semantic evidence reserves purpose, architecture, and feature prose', () => {
+  const root = withRepo((r) => {
+    const introduction = [
+      'Portable Toolkit is a local tool for organizing reusable workflows.',
+      ...Array.from(
+        { length: 48 },
+        () => 'The introduction explains the context and intended use of the toolkit in detail.',
+      ),
+    ].join(' ');
+    assert.ok(introduction.length > 1200);
+    writeFileSync(
+      join(r, 'README.md'),
+      [
+        '# Portable Toolkit',
+        '',
+        '## Introduction',
+        introduction,
+        '',
+        '## Architecture',
+        'The architecture separates the local workspace from the presentation layer.',
+        '',
+        '## Features',
+        'The tool provides searchable notes and bounded exports.',
+      ].join('\n'),
+    );
+  });
+  try {
+    const evidence = analyzeRepoStructure(root).semanticEvidence.find(
+      (row) => row.source === 'README.md',
+    );
+    const excerpt = evidence?.excerpt ?? '';
+
+    assert.match(excerpt, /Portable Toolkit is a local tool for organizing reusable workflows/);
+    assert.match(excerpt, /architecture separates the local workspace/);
+    assert.match(excerpt, /provides searchable notes and bounded exports/);
+    assert.ok(
+      excerpt.indexOf('Portable Toolkit is a local tool') <
+        excerpt.indexOf('architecture separates the local workspace'),
+    );
+    assert.ok(
+      excerpt.indexOf('architecture separates the local workspace') <
+        excerpt.indexOf('provides searchable notes and bounded exports'),
+    );
+    assert.ok(excerpt.length <= 1200);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test('README semantic evidence truncates selected purpose, architecture, and ability sections at safe boundaries', () => {
+  const root = withRepo((r) => {
+    writeFileSync(
+      join(r, 'README.md'),
+      [
+        '# Boundary-safe evidence',
+        '',
+        '## Introduction',
+        'Purpose marker ends a complete sentence.',
+        ...Array.from({ length: 80 }, () => 'purposefiller'),
+        '',
+        '## Architecture',
+        'Architecture marker',
+        ...Array.from({ length: 80 }, () => 'architecturefiller'),
+        '',
+        '## Features',
+        'Feature marker preserves the ability category.',
+      ].join('\n'),
+    );
+  });
+  try {
+    const excerpt = analyzeRepoStructure(root).semanticEvidence.find(
+      (row) => row.source === 'README.md',
+    )?.excerpt ?? '';
+
+    assert.match(excerpt, /Purpose marker ends a complete sentence\. Architecture marker/);
+    assert.match(excerpt, /architecturefiller Feature marker preserves the ability category\./);
+    assert.doesNotMatch(excerpt, /architecturefille Feature marker/);
+    assert.ok(excerpt.length <= 1200);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test('README semantic evidence strips optional closing Markdown heading hashes', () => {
+  const root = withRepo((r) => {
+    writeFileSync(
+      join(r, 'README.md'),
+      [
+        '# Heading cleanup #',
+        '',
+        '## Introduction #',
+        'This repository keeps its evidence local.',
+      ].join('\n'),
+    );
+  });
+  try {
+    const evidence = analyzeRepoStructure(root).semanticEvidence.find(
+      (row) => row.source === 'README.md',
+    );
+
+    assert.equal(evidence?.title, 'Heading cleanup');
+    assert.ok(evidence?.headings.includes('Introduction'));
+    assert.equal(evidence?.headings.includes('Introduction #'), false);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test('decorative-only README evidence does not invent a repository purpose', () => {
+  const root = withRepo((r) => {
+    writeFileSync(
+      join(r, 'README.md'),
+      [
+        '# Portable Toolkit',
+        '',
+        '## Sponsors',
+        '[![Sponsor](https://example.invalid/sponsor.svg)](https://example.invalid/sponsor)',
+        '',
+        '## Table of Contents',
+        '- [Introduction](#introduction)',
+        '- [Features](#features)',
+      ].join('\n'),
+    );
+  });
+  try {
+    const result = analyzeRepoStructure(root);
+    const evidence = result.semanticEvidence.find(
+      (row) => row.source === 'README.md',
+    );
+
+    assert.equal(evidence?.excerpt, '');
+    assert.equal(
+      result.project.definition,
+      'Repository purpose is not established by the bounded semantic evidence scan.',
+    );
+    assert.equal(result.project.confidence, 0.2);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
 test('README title ignores fenced shell comments and supports centered HTML H1', () => {
   const root = withRepo((r) => {
     writeFileSync(join(r, 'package.json'), JSON.stringify({ name: 'muse' }));
@@ -2383,6 +2599,187 @@ test('top-level Python package becomes implementation evidence without promoting
   }
 });
 
+test('Go package imports become implementation elements and proposal-only dependency evidence', () => {
+  const root = withRepo((r) => {
+    writeFileSync(join(r, 'go.mod'), 'module example.test/ingress\n');
+    mkdirSync(join(r, 'cmd', 'runner'), { recursive: true });
+    mkdirSync(join(r, 'internal', 'state'), { recursive: true });
+    writeFileSync(
+      join(r, 'cmd', 'runner', 'main.go'),
+      'package runner\n\nimport "example.test/ingress/internal/state"\n\nvar _ = state.Ready\n',
+    );
+    writeFileSync(join(r, 'internal', 'state', 'state.go'), 'package state\n\nconst Ready = true\n');
+  });
+  try {
+    const result = analyzeRepoStructure(root);
+    const goElements = result.elements
+      .filter((element) => ['cmd/runner', 'internal/state'].includes(element.path))
+      .map(({ slug, path }) => ({ slug, path }))
+      .sort((left, right) => left.path.localeCompare(right.path));
+
+    assert.deepEqual(goElements, [
+      { slug: 'elements/runner', path: 'cmd/runner' },
+      { slug: 'elements/state', path: 'internal/state' },
+    ]);
+    assert.deepEqual(result.domains, []);
+    assert.deepEqual(result.capabilities, []);
+    const dependency = result.suggestedRelations.find(
+      (relation) => relation.type === 'depends_on' && relation.from === 'elements/runner',
+    );
+    assert.deepEqual(dependency, {
+      from: 'elements/runner',
+      to: 'elements/state',
+      type: 'depends_on',
+      why: 'proposal-only: bounded production value-import evidence; runtime impact is not asserted',
+      evidence: ['cmd/runner/main.go', 'internal/state'],
+      confidence: 0.5,
+      uncertainty: 'static import evidence requires semantic impact review before relation admission',
+    });
+    assert.ok(
+      result.meaningGate.reviewQuestions.some((question) =>
+        question.startsWith('[observed · impact] 1 typed production import boundary'),
+      ),
+    );
+    assert.equal(result.proposalValidation.canWrite, false);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test('Go package element admission caps deterministically after production edge participation', () => {
+  const root = withRepo((r) => {
+    writeFileSync(join(r, 'go.mod'), 'module example.test/ingress\n');
+    mkdirSync(join(r, 'z', 'runner'), { recursive: true });
+    const imports = [];
+    for (let index = 0; index < 25; index += 1) {
+      const name = `part-${String(index).padStart(2, '0')}`;
+      mkdirSync(join(r, 'pkg', name), { recursive: true });
+      writeFileSync(join(r, 'pkg', name, 'part.go'), `package part${index}\n`);
+      imports.push(`  "example.test/ingress/pkg/${name}"`);
+    }
+    writeFileSync(
+      join(r, 'z', 'runner', 'main.go'),
+      ['package runner', '', 'import (', ...imports, ')'].join('\n'),
+    );
+  });
+  try {
+    const result = analyzeRepoStructure(root);
+    const goPaths = result.elements
+      .map((element) => element.path)
+      .filter((path) => path === 'z/runner' || path.startsWith('pkg/'))
+      .sort();
+
+    assert.equal(goPaths.length, 24);
+    assert.deepEqual(goPaths, [
+      ...Array.from({ length: 23 }, (_, index) => `pkg/part-${String(index).padStart(2, '0')}`),
+      'z/runner',
+    ]);
+    assert.ok(
+      result.skipped.some((row) =>
+        row.reason === 'go-package-element-limit: omitted 2 lower-priority package directories',
+      ),
+      JSON.stringify(result.skipped),
+    );
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test('Go package basename collisions use the minimum parent context without reusing an element slug', () => {
+  const root = withRepo((r) => {
+    writeFileSync(join(r, 'go.mod'), 'module example.test/ingress\n');
+    mkdirSync(join(r, 'cmd', 'worker'), { recursive: true });
+    mkdirSync(join(r, 'pkg', 'worker'), { recursive: true });
+    writeFileSync(
+      join(r, 'cmd', 'worker', 'main.go'),
+      'package worker\n\nimport "example.test/ingress/pkg/worker"\n\nvar _ = worker.Ready\n',
+    );
+    writeFileSync(join(r, 'pkg', 'worker', 'worker.go'), 'package worker\n\nconst Ready = true\n');
+  });
+  try {
+    const result = analyzeRepoStructure(root);
+    const goElements = result.elements
+      .filter((element) => ['cmd/worker', 'pkg/worker'].includes(element.path))
+      .map(({ slug, path }) => ({ slug, path }))
+      .sort((left, right) => left.path.localeCompare(right.path));
+
+    assert.deepEqual(goElements, [
+      { slug: 'elements/cmd-worker', path: 'cmd/worker' },
+      { slug: 'elements/pkg-worker', path: 'pkg/worker' },
+    ]);
+    assert.equal(new Set(result.elements.map((element) => element.slug)).size, result.elements.length);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test('test-only Go package imports remain implementation evidence without a product dependency prompt', () => {
+  const root = withRepo((r) => {
+    writeFileSync(join(r, 'go.mod'), 'module example.test/ingress\n');
+    mkdirSync(join(r, 'cmd', 'check'), { recursive: true });
+    mkdirSync(join(r, 'pkg', 'state'), { recursive: true });
+    writeFileSync(
+      join(r, 'cmd', 'check', 'main_test.go'),
+      'package check\n\nimport "example.test/ingress/pkg/state"\n\nvar _ = state.Ready\n',
+    );
+    writeFileSync(join(r, 'pkg', 'state', 'state.go'), 'package state\n\nconst Ready = true\n');
+  });
+  try {
+    const result = analyzeRepoStructure(root);
+
+    assert.deepEqual(result.domains, []);
+    assert.deepEqual(result.capabilities, []);
+    assert.ok(result.elements.some((element) => element.path === 'cmd/check'));
+    assert.ok(result.elements.some((element) => element.path === 'pkg/state'));
+    assert.equal(result.suggestedRelations.some((relation) => relation.type === 'depends_on'), false);
+    assert.equal(
+      result.meaningGate.reviewQuestions.some((question) => /\bimpact\]/.test(question)),
+      false,
+      JSON.stringify(result.meaningGate.reviewQuestions),
+    );
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test('Go package evidence preserves existing JavaScript and Python dependency proposals', () => {
+  const root = withRepo((r) => {
+    writeFileSync(join(r, 'go.mod'), 'module example.test/ingress\n');
+    mkdirSync(join(r, 'src', 'features', 'request'), { recursive: true });
+    mkdirSync(join(r, 'src', 'entities', 'http'), { recursive: true });
+    mkdirSync(join(r, 'src', 'diagnostic_client'), { recursive: true });
+    mkdirSync(join(r, 'cmd', 'runner'), { recursive: true });
+    mkdirSync(join(r, 'pkg', 'state'), { recursive: true });
+    writeFileSync(
+      join(r, 'src', 'features', 'request', 'index.ts'),
+      "import { send } from '../../entities/http/index';\nexport const request = () => send();\n",
+    );
+    writeFileSync(join(r, 'src', 'entities', 'http', 'index.ts'), 'export const send = () => true;\n');
+    writeFileSync(join(r, 'src', 'diagnostic_client', '__init__.py'), '');
+    writeFileSync(join(r, 'src', 'diagnostic_client', 'client.py'), 'from . import transport\n');
+    writeFileSync(join(r, 'src', 'diagnostic_client', 'transport.py'), '');
+    writeFileSync(
+      join(r, 'cmd', 'runner', 'main.go'),
+      'package runner\n\nimport "example.test/ingress/pkg/state"\n\nvar _ = state.Ready\n',
+    );
+    writeFileSync(join(r, 'pkg', 'state', 'state.go'), 'package state\n\nconst Ready = true\n');
+  });
+  try {
+    const dependencies = analyzeRepoStructure(root).suggestedRelations
+      .filter((relation) => relation.type === 'depends_on')
+      .map(({ from, to }) => ({ from, to }))
+      .sort((left, right) => `${left.from}\0${left.to}`.localeCompare(`${right.from}\0${right.to}`));
+
+    assert.deepEqual(dependencies, [
+      { from: 'capabilities/request', to: 'elements/http' },
+      { from: 'elements/client', to: 'elements/transport' },
+      { from: 'elements/runner', to: 'elements/state' },
+    ]);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
 test('Python import boundaries become bounded element evidence without mirroring unused files', () => {
   const root = withRepo((r) => {
     writeFileSync(
@@ -3529,14 +3926,11 @@ test('generic narrative proposals require trusted role prose and a normalized el
       assert.equal(typeof proposal.title, 'string', fixture.name);
       assert.match(proposal.definition, /^Proposed ability from /, fixture.name);
       assert.deepEqual(proposal.includes, [fixture.expected.implementation], fixture.name);
-      assert.deepEqual(proposal.excludes, [
-        'shared business ownership is not established by this repository scan',
-        'runtime behavior outside the cited implementation evidence is not asserted',
-      ], fixture.name);
+      assert.deepEqual(proposal.excludes, [], fixture.name);
       assert.equal(proposal.confidence, 0.5, fixture.name);
       assert.equal(
         proposal.uncertainty,
-        'proposal-only: bounded prose and path evidence require semantic qualification before admission',
+        'proposal-only: bounded prose and path evidence require semantic qualification before admission. Unknowns: shared business ownership is not established by this repository scan; runtime behavior outside the cited implementation evidence is not asserted.',
         fixture.name,
       );
       assert.deepEqual(
@@ -3630,17 +4024,18 @@ test('generic narrative capability clues work without structural capability fold
       assert.ok(proposal, fixture.expected);
       assert.match(result.project.definition, /^Proposed repository purpose from /);
       assert.ok(result.project.evidence.length >= 1);
-      assert.deepEqual(result.project.excludes, [
-        'shared business ownership is not established by repository evidence',
-        'runtime, test, and external-system behavior remain outside this bounded scan',
-      ]);
+      assert.deepEqual(result.project.excludes, []);
+      assert.equal(
+        result.project.uncertainty,
+        'proposal-only: source prose is a bounded purpose witness, not a shared business assertion. Unknowns: shared business ownership is not established by repository evidence; runtime, test, and external-system behavior remain outside this bounded scan.',
+      );
       assert.match(proposal.reason, /^proposal-only:/);
       assert.equal(proposal.evidence.source, 'README.md');
       assert.equal(proposal.evidence.implementation, fixture.source);
       assert.match(proposal.definition, /^Proposed ability from README.md: /);
       assert.deepEqual(proposal.includes, [fixture.source]);
       assert.equal(proposal.confidence, 0.5);
-      assert.equal(proposal.uncertainty, 'proposal-only: bounded prose and path evidence require semantic qualification before admission');
+      assert.equal(proposal.uncertainty, 'proposal-only: bounded prose and path evidence require semantic qualification before admission. Unknowns: shared business ownership is not established by this repository scan; runtime behavior outside the cited implementation evidence is not asserted.');
     } finally {
       rmSync(root, { recursive: true, force: true });
     }

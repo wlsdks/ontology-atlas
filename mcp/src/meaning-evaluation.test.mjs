@@ -498,6 +498,27 @@ test('repository proposal reports malformed concept boundary lists without crash
     row.code === 'invalid-concept-boundary-list' && row.path === 'concepts[2].excludes'));
 });
 
+test('repository proposal rejects epistemic unknowns encoded as product exclusions', () => {
+  const analysis = analyzeRepoStructure(fixtureRoot);
+  const proposal = completeTypedRepositoryProposal();
+  proposal.project.excludes = [
+    'Consumer identity is not established by the bounded repository evidence.',
+    'Runtime behavior outside the cited evidence is not asserted.',
+  ];
+
+  const result = validateMeaningProposalAgainstAnalysis(analysis, proposal);
+
+  assert.equal(result.status, 'fail');
+  assert.equal(result.canWrite, false);
+  assert.equal(result.writePlan, undefined);
+  assert.deepEqual(
+    result.findings
+      .filter((row) => row.code === 'epistemic-exclusion-boundary')
+      .map((row) => row.path),
+    ['project.excludes[0]', 'project.excludes[1]'],
+  );
+});
+
 test('repository proposal blocks unknown citations and unresolved capability domains', () => {
   const analysis = analyzeRepoStructure(fixtureRoot);
   const proposal = repositoryProposalFromGolden(expected);

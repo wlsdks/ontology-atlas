@@ -40,6 +40,70 @@
 **상태**: 유효 / 뒤집힘(→ 링크) / 반증됨(관측: …)
 ```
 
+## 2026-08-16 — Go import는 기존 file edge에 섞지 않고 typed package evidence로 공개한다
+
+**소집 근거**: 공개 MCP output 계약 변경과 held-out 대형 Go 저장소의 false-green —
+**소집한 자리**: 근거 · 결 · 지킴이 · 해자 · 지렛대 · **이유**: 공개 evidence의
+정직성, agent-only handoff, 제품 차별화와 4일 appetite가 모두 걸림
+
+| 자리 | 판정 | 맡은 항목 / 처방 |
+|---|---|---|
+| 근거 | Build and verify | Problem insight 4 · User moment 4 · 별도 typed package edge |
+| 결 | Build and verify | Verification 4 · 대표 파일 금지 · source/bundle 실물 검증 |
+| 지킴이 | Build and verify | Ontology value 4 · Agent value 4 · 공개 MCP-only 경로 |
+| 해자 | Shape a slice | Differentiation 3 · parser보다 검토 가능한 로컬 evidence 결합에 집중 |
+| 지렛대 | Build and verify | appetite 최대 4일 · compiler/symbol/call graph 제외 |
+
+**루브릭 합계**: 23/24 (통과선 18 · 0점짜리 치명 항목: 없음)
+
+**선행 결정 관계**: 2026-08-15의 “production import evidence는 관측이지 승인된
+impact 관계가 아니다”는 유지한다. 그 기록의 세 반증 조건 중 실제 production Go
+import witness를 재현하지 못한 조건은 관측됐지만, scan 시간 초과와 source-hidden
+evidence의 approved impact 오인은 관측되지 않았다. 2026-08-16 C coverage 결정의
+“공개 enum 확장은 계약 변경으로 기록하고 strict consumer를 함께 맞춘다”를 적용한다.
+
+**갈린 지점**: 기존 `edges`의 `to`를 언어별로 file/package로 넓힐지, Go package
+import를 별도 typed receipt로 분리할지 갈렸다. 임의 대표 파일은 전원이 기각했다.
+
+**적용한 규칙**: 최소 슬라이스 규칙 — 기존 JS/TS/Python file edge 의미는 그대로
+두고, Go에 필요한 package endpoint만 versioned branch로 추가한다.
+
+**권고 (chief)**: README는 기존 1,200자·8 heading·6문서·256 KiB 상한 안에서
+purpose·responsibility·ability block을 결정론적으로 고르고 sponsor/backer/TOC
+section을 제외한다. 공개 `infer_imports`는 root `go.mod`의 module-local import만
+bounded text로 읽어 `{fromFile,toPackage,...}` typed evidence를 반환하고, analyzer와
+`index_project`가 같은 결과를 재사용한다. 기존 file edges, 5,000-file 상한,
+candidate/source-hidden qualification, no-write/사람 승인 경계는 유지한다.
+**서명 (accountable: 소유자)**: 전체 작업 진행과 검증 후 main 병합 요청에 따라 집행
+
+**기록된 반대**: 별도 package branch는 schema·CLI·bundle 소비자 비용이 크므로,
+같은 `edges.to`에 root-contained package directory를 넣고 문구만 source dependency
+endpoint로 넓히는 편이 더 작다. — **반증 조건**: 새 package receipt가 README-only
+보강보다 held-out q4/q5를 유의미하게 높이지 못하거나, 4일 appetite/source·bundle
+parity를 넘기거나, 직접 MCP 소비자가 새 branch를 안전하게 이어받지 못하면 이 반대가
+옳다. — **재검토**: 동일 held-out q1~q6와 direct `infer_imports`/`index_project`,
+defect-reversion, strict consumer parity 측정 직후
+
+**슬라이스**: IN semantic README block selection · root Go module-local package imports ·
+typed public package receipt · analyzer/index 재사용 · bounded package elements · MCP/CLI/docs/
+ontology/source-bundle parity · held-out 재시험 · OUT `go list`/compiler/network · AST/symbol/
+call graph · nested modules/workspaces · arbitrary representative file · capability/depends_on
+자동 승격 · writer/UI/score/qualification 우회 · appetite 최대 4일
+
+**집행 측정**: 낯선 Apache-licensed 대형 Go 저장소에서 direct source scan은 2,725개
+Go file·6,358개 module-local import·1,696개 package boundary를 읽었고 세 번 중앙값은
+1.784초였다. 실제 stdio MCP candidate gate는 제한 2,000 file에서 4,330 import·1,307
+package boundary를 전달하고 legacy file edge 0, 인용 경로 9/9, vault write 0을 보였다.
+source-hidden evaluator는 full body 8/8·relation 7/7·digest/revision/gap order와 세 변조
+거부를 확인했다. q1~q5는 `weak`, q6는 누락 목록으로 완전 답변됐지만 underlying evidence는
+`missing`이었다. 첫 packet에서 발견된 scope-promotion 위험 때문에 epistemic unknown을
+`Excludes`에서 `Uncertainty`/gap으로 이동시키고 `epistemic-exclusion-boundary` validator를
+추가했다. 수정 packet은 proposal validation 0 error·5 honest warning, source digest 동일,
+새 plan digest, `not_qualified`·write 0을 유지했다. 이는 transport/분석 개선이지 완성된
+business ontology 자격 판정이 아니다.
+
+**상태**: 유효
+
 ## 2026-08-16 — dogfood 의미 답변은 구조 완성과 의미 미완성을 동시에 말한다
 
 **소집**: source-visible qualifier + source-hidden evaluator · **트리거**:

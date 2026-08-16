@@ -80,8 +80,8 @@ function rustConfigurationEvidenceFixture() {
 function importScanCoverageFixture() {
   return {
     contract: "importScanCoverage:v1",
-    supportedLanguages: ["javascript", "python", "typescript"],
-    supportedExtensions: [".js", ".py", ".ts"],
+    supportedLanguages: ["go", "javascript", "python", "typescript"],
+    supportedExtensions: [".go", ".js", ".py", ".ts"],
     detectedUnsupportedLanguages: [],
     allDetectedLanguagesSupported: true,
     zeroEdgesMeaning: "no_supported_static_import_edges_observed",

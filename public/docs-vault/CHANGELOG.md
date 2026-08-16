@@ -7,6 +7,34 @@
 
 ---
 
+## 2026-08-16 · 대형 Go 저장소의 목적과 package 경계를 첫 분석에서 잃지 않는다
+
+- README 의미 packet은 앞에서 만난 1,200자를 그대로 자르지 않는다. purpose,
+  responsibility/architecture, ability/capability block을 각각 보존하고 sponsor/backer/
+  funding/donation/TOC 및 link/image-only 장식을 제외한 뒤 원문 순서로 전달한다.
+- `infer_imports`는 기존 JS/TS/Python file edge를 바꾸지 않고, root `go.mod`의
+  module-local import를 별도 `goPackageImports:v1` evidence로 반환한다. 각 row는 실제
+  importing file과 repository-relative source/target package directory를 보존하므로
+  존재하지 않는 imported target file을 만들지 않는다.
+- Go scan은 `go`/compiler/network/module cache를 실행하지 않고 기존 5,000-file cap을
+  공유하며, file당 256 KiB·256 imports, nested module 제외 경계를 구조화한다. 다중행
+  raw string의 import 모양 텍스트와 Go build가 읽지 않는 `vendor`/`testdata`/`_` prefix
+  fixture tree도 근거에서 제외한다. 낯선 대형
+  Apache-licensed Go 저장소에서 2,725개 Go file·6,358개 local import·1,696개 package
+  boundary를 읽었고 세 번 실행 중앙값은 1.784초였다.
+- Analyzer와 `index_project`는 같은 full receipt를 한 번만 재사용해 import 참여 package를
+  bounded implementation element/path 후보로 보낸다. package 이름을 business capability로
+  자동 승격하거나 `depends_on`을 쓰지 않으며, source-hidden qualification과 사람의 exact-plan
+  승인 경계는 그대로다.
+- 공개 MCP schema, compact/focus summary, CLI strict consumer, verifier, 자체 온톨로지를
+  같은 계약으로 갱신해 대형 Go evidence가 전달 단계에서 조용히 사라지지 않게 했다.
+  strict consumer는 Go language enum 누락과 production/value aggregate 축소도 거부한다.
+- `Excludes`는 실제 제품/개념 경계만 허용한다. “아직 증명되지 않음/측정되지 않음”은
+  `Uncertainty`나 competency gap으로 남기고, proposal이 이를 exclusion으로 넣으면
+  `epistemic-exclusion-boundary`로 fail closed한다. source-hidden 재평가에서는 q1~q5가
+  근거 있는 weak, q6가 누락 목록으로 완전 답변됐고 9/9 인용 경로가 존재했지만,
+  독립 책임·행동·semantic impact 근거가 부족해 쓰기 0과 `not_qualified`를 유지했다.
+
 ## 2026-08-16 · 대형 프로젝트의 의미 검토가 5 KiB 인수인계에서 끊기지 않는다
 
 - `agent_brief.meaningRepair:v2`는 의미 검토 규모·현재성·첫 행동만 담는 compact

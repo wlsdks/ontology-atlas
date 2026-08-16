@@ -286,12 +286,49 @@ function verifiedImportScanCoverage({ c = false, rust = false } = {}) {
   ];
   return {
     contract: 'importScanCoverage:v1',
-    supportedLanguages: ['javascript', 'python', 'typescript'],
+    supportedLanguages: ['go', 'javascript', 'python', 'typescript'],
     supportedExtensions: ['.js', '.py', '.ts'],
     detectedUnsupportedLanguages,
     allDetectedLanguagesSupported: detectedUnsupportedLanguages.length === 0,
     zeroEdgesMeaning: 'no_supported_static_import_edges_observed',
     limitations: ['Static source evidence is not semantic dependency approval.'],
+  };
+}
+
+function verifiedGoPackageImportEvidence(overrides = {}) {
+  const row = {
+    fromFile: 'cmd/sample/main.go',
+    fromPackage: 'cmd/sample',
+    toPackage: 'internal/store',
+    importSpec: 'example.test/sample/internal/store',
+    kind: 'static',
+    sourceRole: 'production',
+    importUsage: 'value',
+  };
+  return {
+    contract: 'goPackageImports:v1',
+    modulePath: 'example.test/sample',
+    sourceQualification: 'observed_bounded_go_package_imports_not_runtime_or_semantic_impact',
+    writeAllowed: false,
+    filesScanned: 2,
+    fileScanLimited: false,
+    perFileByteLimit: 262144,
+    perFileImportLimit: 256,
+    skipped: [],
+    limitations: ['Observed static source evidence only.'],
+    packageImports: [row],
+    moduleEdges: [{
+      fromPackage: row.fromPackage,
+      toPackage: row.toPackage,
+      count: 1,
+      kindCounts: { static: 1 },
+      sourceRoleCounts: { production: 1, test: 0, unknown: 0 },
+      importUsageCounts: { value: 1, type_only: 0, unknown: 0 },
+      productValueCount: 1,
+      evidence: [row],
+      evidenceLimited: false,
+    }],
+    ...overrides,
   };
 }
 
@@ -8708,6 +8745,64 @@ Continue.`;
         coverage: verifiedImportScanCoverage(),
       }),
       null,
+    );
+  });
+
+  it('fails closed when a Go package-import receipt claims write authority', () => {
+    assert.equal(
+      inferImportsFailure({
+        rootPath: '/repo',
+        filesScanned: 2,
+        edges: [],
+        externalImports: [],
+        unresolved: [],
+        moduleEdges: [],
+        coverage: verifiedImportScanCoverage(),
+        packageImportEvidence: verifiedGoPackageImportEvidence({ writeAllowed: true }),
+      }),
+      'infer_imports Go package-import evidence must remain write-blocked',
+    );
+
+    const undercounted = verifiedGoPackageImportEvidence();
+    undercounted.moduleEdges[0].productValueCount = 0;
+    assert.equal(
+      inferImportsFailure({
+        rootPath: '/repo',
+        filesScanned: 2,
+        edges: [],
+        externalImports: [],
+        unresolved: [],
+        moduleEdges: [],
+        coverage: verifiedImportScanCoverage(),
+        packageImportEvidence: undercounted,
+      }),
+      'infer_imports Go package-import evidence package module edge productValueCount mismatch at index 0',
+    );
+  });
+
+  it('fails closed when a focused Go package-import summary cannot retrieve full evidence', () => {
+    assert.equal(
+      inferImportsFailure({
+        contract: 'inferImportsFocus:v1',
+        rootPath: '/repo',
+        filesScanned: 2,
+        coverage: verifiedImportScanCoverage(),
+        scanSummary: { fileEdges: 0, externalImports: 0, unresolvedImports: 0, moduleEdges: 0 },
+        focusReview: {},
+        packageImportEvidenceSummary: {
+          contract: 'goPackageImports:v1',
+          filesScanned: 2,
+          fileScanLimited: false,
+          packageImports: 1,
+          moduleEdges: 1,
+          fullEvidenceCall: {
+            tool: 'infer_imports',
+            arguments: { rootPath: '/repo', reviewMode: 'full', allowLargeResponse: false },
+            purpose: 'Read the complete typed Go package-import evidence.',
+          },
+        },
+      }),
+      'infer_imports focus Go package-import summary malformed fullEvidenceCall',
     );
   });
 

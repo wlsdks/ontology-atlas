@@ -101,6 +101,7 @@ const NATIVE_ROLE_EVIDENCE_FILE = /\.(?:c|h(?:\.in)?)$/i;
 const PYTHON_NON_PRODUCT_PACKAGES = new Set(['test', 'tests']);
 const PYTHON_IMPORT_ELEMENT_LIMIT = 12;
 const PYTHON_IMPORT_RISK_ELEMENT_LIMIT = 2;
+const GO_PACKAGE_ELEMENT_LIMIT = 24;
 const STARTER_ONTOLOGY_SLUGS = new Set([
   'domains/example-domain',
   'capabilities/example-capability',
@@ -723,6 +724,36 @@ export function analyzeRepoStructure(rootPath, options = {}) {
     skipped,
   });
   elements.push(...pythonImportBoundaryElements);
+  const goPackageElementAdmission = materializeGoPackageElements(
+    importAnalysis?.packageImportEvidence,
+    { existingElements: elements, skipped },
+  );
+  elements.push(...goPackageElementAdmission.elements);
+  const goPackageBoundaryElements = elements.filter((element) =>
+    goPackageElementAdmission.packagePaths.has(element.path),
+  );
+  const observedGoDependencyRelations = mapGoPackageDependencyRelations(
+    importAnalysis?.packageImportEvidence,
+    goPackageBoundaryElements,
+  );
+  const observedDependencyRelations = [
+    ...(importAnalysis?.moduleEdges ?? []),
+    ...observedGoDependencyRelations,
+  ];
+  const productGoPackageElementSlugs = new Set(
+    observedGoDependencyRelations
+      .filter((relation) => relation.productValueCount > 0)
+      .flatMap((relation) => [relation.from, relation.to]),
+  );
+  const nonProductGoPackageElementSlugs = new Set(
+    goPackageBoundaryElements
+      .map((element) => element.slug)
+      .filter((slug) => !productGoPackageElementSlugs.has(slug)),
+  );
+  const observedImportEdges = [
+    ...(importAnalysis?.edges ?? []),
+    ...mapGoPackageImportReceipts(importAnalysis?.packageImportEvidence),
+  ];
 
   const semanticCapabilityCandidates = deriveBusinessCapabilityCandidates({
     domains,
@@ -759,7 +790,7 @@ export function analyzeRepoStructure(rootPath, options = {}) {
     }
   }
   suggestedRelations.push(
-    ...buildSuggestedDependencyRelations(importAnalysis?.moduleEdges ?? [], [
+    ...buildSuggestedDependencyRelations(observedDependencyRelations, [
       ...capabilities,
       ...elements,
     ]),
@@ -781,9 +812,10 @@ export function analyzeRepoStructure(rootPath, options = {}) {
       semanticCapabilityCandidates,
       elements,
       existingOntologyEvidence,
-      observedDependencyRelations: (importAnalysis?.moduleEdges ?? []).map(
+      observedDependencyRelations: observedDependencyRelations.map(
         (relation) => ({ ...relation, type: 'depends_on' }),
       ),
+      nonProductGoPackageElementSlugs,
       semanticEvidence,
     }),
     extractionContract: buildExtractionContract({
@@ -805,9 +837,12 @@ export function analyzeRepoStructure(rootPath, options = {}) {
     result,
     options.proposal,
     {
-      observedImportEdges: importAnalysis?.edges ?? [],
-      observedImportRelations: importAnalysis?.moduleEdges ?? [],
-      importBoundaryElements: pythonImportBoundaryElements,
+      observedImportEdges,
+      observedImportRelations: observedDependencyRelations,
+      importBoundaryElements: [
+        ...pythonImportBoundaryElements,
+        ...goPackageBoundaryElements,
+      ],
     },
   );
   const candidateWritePlan = proposalValidation.writePlan;
@@ -948,6 +983,7 @@ export function buildProposalAssessment(result) {
       limits: [
         'Repository prose is a proposal witness, not a shared business assertion.',
         ...(project?.excludes ?? []),
+        ...(project?.uncertainty ? [project.uncertainty] : []),
       ],
       nextAction: {
         action: 'qualify_project_scope',
@@ -1425,9 +1461,10 @@ function enrichProjectCandidate(project, semanticEvidence) {
     ...(sources.length > 0 ? { evidence: sources } : {}),
     definition,
     includes: ['repository-contained implementation evidence'],
-    excludes: limitations,
+    excludes: [],
     confidence: sources.length > 0 ? 0.5 : 0.2,
-    uncertainty: 'proposal-only: source prose is a bounded purpose witness, not a shared business assertion',
+    uncertainty:
+      `proposal-only: source prose is a bounded purpose witness, not a shared business assertion. Unknowns: ${limitations.join('; ')}.`,
   };
 }
 
@@ -1452,17 +1489,19 @@ function enrichMeaningCandidate(candidate, kind, semanticEvidence, implementatio
   const includes = kind === 'capability'
     ? uniqueStrings(implementationPaths).slice(0, GENERIC_BUSINESS_CAPABILITY_EVIDENCE_LIMIT)
     : [];
+  const limitations = [
+    'shared business ownership is not established by this repository scan',
+    'runtime behavior outside the cited implementation evidence is not asserted',
+  ];
   return {
     title: candidate.title,
     ...(candidate.domain ? { domain: candidate.domain } : {}),
     definition,
     ...(includes.length > 0 ? { includes } : {}),
-    excludes: [
-      'shared business ownership is not established by this repository scan',
-      'runtime behavior outside the cited implementation evidence is not asserted',
-    ],
+    excludes: [],
     confidence: 0.5,
-    uncertainty: 'proposal-only: bounded prose and path evidence require semantic qualification before admission',
+    uncertainty:
+      `proposal-only: bounded prose and path evidence require semantic qualification before admission. Unknowns: ${limitations.join('; ')}.`,
     evidenceSources: sourceNames,
   };
 }
@@ -1476,19 +1515,151 @@ function enrichDomainMeaningCandidate(candidate, semanticEvidence) {
   const definition = witness
     ? `Proposed responsibility boundary from ${witness.row.source}: ${witness.sentence}`
     : 'Proposed responsibility boundary named by README heading; repository-contained responsibility remains unconfirmed.';
+  const limitations = [
+    'shared business ownership is not established by this repository scan',
+    'runtime behavior outside the cited implementation evidence is not asserted',
+  ];
+  const uncertainty = witness
+    ? 'proposal-only: repository prose corroborates this boundary candidate; human approval is still required'
+    : 'proposal-only: README heading names a candidate, but no separate repository responsibility witness was found';
   return {
     title: candidate.title,
     definition,
-    excludes: [
-      'shared business ownership is not established by this repository scan',
-      'runtime behavior outside the cited implementation evidence is not asserted',
-    ],
+    excludes: [],
     confidence: 0.5,
-    uncertainty: witness
-      ? 'proposal-only: repository prose corroborates this boundary candidate; human approval is still required'
-      : 'proposal-only: README heading names a candidate, but no separate repository responsibility witness was found',
+    uncertainty: `${uncertainty}. Unknowns: ${limitations.join('; ')}.`,
     evidenceSources,
   };
+}
+
+function materializeGoPackageElements(packageImportEvidence, { existingElements, skipped }) {
+  const candidatesByPath = new Map();
+  for (const edge of packageImportEvidence?.moduleEdges ?? []) {
+    const count = Number.isInteger(edge.count) && edge.count > 0 ? edge.count : 0;
+    const productValueCount = Number.isInteger(edge.productValueCount) && edge.productValueCount > 0
+      ? edge.productValueCount
+      : 0;
+    for (const path of [edge.fromPackage, edge.toPackage]) {
+      if (typeof path !== 'string') continue;
+      const candidate = candidatesByPath.get(path) ?? {
+        path,
+        count: 0,
+        productValueCount: 0,
+      };
+      candidate.count += count;
+      candidate.productValueCount += productValueCount;
+      candidatesByPath.set(path, candidate);
+    }
+  }
+  const candidates = [...candidatesByPath.values()].sort((a, b) =>
+    b.productValueCount - a.productValueCount ||
+    b.count - a.count ||
+    a.path.localeCompare(b.path),
+  );
+  const admittedCandidates = candidates.slice(0, GO_PACKAGE_ELEMENT_LIMIT);
+  if (candidates.length > admittedCandidates.length) {
+    skipped.push({
+      path: 'go.mod',
+      reason: `go-package-element-limit: omitted ${candidates.length - admittedCandidates.length} lower-priority package directories`,
+    });
+  }
+  const packagePaths = new Set(admittedCandidates.map((candidate) => candidate.path));
+  const claimed = new Set(existingElements.map((element) => element.slug));
+  const existingPaths = new Set(existingElements.map((element) => element.path));
+  const elements = [];
+  for (const { path, name } of resolveGoPackageElementNames(
+    admittedCandidates.filter((candidate) => !existingPaths.has(candidate.path)),
+    claimed,
+  )) {
+    const slug = `elements/${name}`;
+    claimed.add(slug);
+    elements.push({
+      slug,
+      title: humanize(name),
+      path,
+      evidence: { source: path },
+    });
+  }
+  return { elements, packagePaths };
+}
+
+function resolveGoPackageElementNames(candidates, claimed) {
+  const rows = candidates
+    .map((candidate) => ({
+      path: candidate.path,
+      segments: (candidate.path === '.' ? ['root'] : candidate.path.split('/'))
+        .map((segment) => slugify(segment))
+        .filter(Boolean),
+      depth: 1,
+    }))
+    .filter((row) => row.segments.length > 0);
+  while (true) {
+    const names = new Map(rows.map((row) => [
+      row,
+      row.segments.slice(-row.depth).join('-'),
+    ]));
+    const counts = new Map();
+    for (const name of names.values()) {
+      const slug = `elements/${name}`;
+      counts.set(slug, (counts.get(slug) ?? 0) + 1);
+    }
+    const conflicts = rows.filter((row) => {
+      const slug = `elements/${names.get(row)}`;
+      return claimed.has(slug) || (counts.get(slug) ?? 0) > 1;
+    });
+    if (conflicts.length === 0) {
+      return rows.map((row) => ({ path: row.path, name: names.get(row) }));
+    }
+    let advanced = false;
+    for (const row of conflicts) {
+      if (row.depth < row.segments.length) {
+        row.depth += 1;
+        advanced = true;
+      }
+    }
+    if (advanced) continue;
+
+    const assigned = new Set(claimed);
+    return rows.map((row) => {
+      const baseName = names.get(row);
+      let name = baseName;
+      let suffix = 2;
+      while (assigned.has(`elements/${name}`)) {
+        name = `${baseName}-${suffix}`;
+        suffix += 1;
+      }
+      assigned.add(`elements/${name}`);
+      return { path: row.path, name };
+    });
+  }
+}
+
+function mapGoPackageDependencyRelations(packageImportEvidence, elements) {
+  const elementsByPath = new Map(elements.map((element) => [element.path, element.slug]));
+  return (packageImportEvidence?.moduleEdges ?? [])
+    .map((edge) => ({
+      ...edge,
+      from: elementsByPath.get(edge.fromPackage),
+      to: elementsByPath.get(edge.toPackage),
+      evidence: (edge.evidence ?? []).map((receipt) => ({
+        from: receipt.fromFile,
+        to: receipt.toPackage,
+        kind: receipt.kind,
+        sourceRole: receipt.sourceRole,
+        importUsage: receipt.importUsage,
+      })),
+    }))
+    .filter((edge) => edge.from && edge.to && edge.from !== edge.to);
+}
+
+function mapGoPackageImportReceipts(packageImportEvidence) {
+  return (packageImportEvidence?.packageImports ?? []).map((receipt) => ({
+    from: receipt.fromFile,
+    to: receipt.toPackage,
+    kind: receipt.kind,
+    sourceRole: receipt.sourceRole,
+    importUsage: receipt.importUsage,
+  }));
 }
 
 function buildSuggestedDependencyRelations(moduleEdges, implementationNodes) {
@@ -1660,6 +1831,7 @@ function buildMeaningGate({
   elements,
   existingOntologyEvidence,
   observedDependencyRelations = [],
+  nonProductGoPackageElementSlugs = new Set(),
   semanticEvidence,
 }) {
   const existingBySlug = new Map(
@@ -1822,7 +1994,10 @@ function buildMeaningGate({
       implementationEvidenceSlugs.has(relation.to) &&
       (relation.productValueCount === undefined || relation.productValueCount > 0),
   );
-  if (elements.length >= 2 || hasTypedDependencyRelation) {
+  const impactRelevantElements = elements.filter((element) =>
+    !nonProductGoPackageElementSlugs.has(element.slug),
+  );
+  if (impactRelevantElements.length >= 2 || hasTypedDependencyRelation) {
     if (hasTypedDependencyRelation) {
       const typedDependencyCount = observedDependencyRelations.filter(
         (relation) =>
@@ -2825,13 +3000,20 @@ function semanticContentScore({ title, headings, excerpt }) {
 
 function extractSemanticDocument(text) {
   const lines = text.split(/\r?\n/);
-  const headings = [];
-  const prose = [];
-  let proseLength = 0;
   let title = null;
   let fence = null;
   let rstLiteralBlock = false;
   let frontmatter = lines[0]?.trim() === '---';
+  const rootSection = {
+    heading: null,
+    parent: null,
+    lineIndex: -1,
+    prose: [],
+    excluded: false,
+  };
+  const sections = [rootSection];
+  const headingStack = [rootSection];
+  let currentSection = rootSection;
   for (let lineIndex = 0; lineIndex < lines.length; lineIndex += 1) {
     const rawLine = lines[lineIndex];
     const line = rawLine.trim();
@@ -2870,17 +3052,36 @@ function extractSemanticDocument(text) {
         : markdownHeading
         ? markdownHeading[1].length
         : Number(htmlHeading[1]);
-      const value = (setextOrRstHeading
+      const headingValue = (setextOrRstHeading
         ? setextOrRstHeading.value
         : markdownHeading
           ? markdownHeading[2]
           : htmlHeading[2])
         .replace(/<[^>]+>/g, '')
-        .replace(/\[(.*?)\]\([^)]*\)/g, '$1')
+        .replace(/\[(.*?)\]\([^)]*\)/g, '$1');
+      const value = (markdownHeading
+        ? headingValue.replace(/\s+#+\s*$/, '')
+        : headingValue)
         .trim();
       if (!value) continue;
       if (level === 1 && !title) title = value;
-      if (headings.length < SEMANTIC_EVIDENCE_MAX_HEADINGS) headings.push(value);
+      while (
+        headingStack.length > 1 &&
+        headingStack[headingStack.length - 1].heading.level >= level
+      ) {
+        headingStack.pop();
+      }
+      const parent = headingStack[headingStack.length - 1];
+      currentSection = {
+        heading: { level, value },
+        parent,
+        lineIndex,
+        prose: [],
+        excluded:
+          parent.excluded || isExcludedSemanticSection(value),
+      };
+      sections.push(currentSection);
+      headingStack.push(currentSection);
       if (setextOrRstHeading) lineIndex += 1;
       continue;
     }
@@ -2895,6 +3096,7 @@ function extractSemanticDocument(text) {
     ) {
       continue;
     }
+    if (isDecorativeSemanticLine(line)) continue;
     const cleaned = line
       .replace(/^>\s*/, '')
       .replace(/^[-*]\s+/, '')
@@ -2903,16 +3105,226 @@ function extractSemanticDocument(text) {
       .replace(/&(?:nbsp|middot|amp|lt|gt);/gi, ' ')
       .replace(/\s+/g, ' ')
       .trim();
-    if (cleaned && proseLength < SEMANTIC_EVIDENCE_MAX_EXCERPT) {
-      prose.push(cleaned);
-      proseLength += cleaned.length + 1;
+    if (cleaned) currentSection.prose.push({ lineIndex, text: cleaned });
+  }
+
+  const eligibleSections = sections.filter(
+    (section) => !section.excluded && section.prose.length > 0,
+  );
+  const namedPreferredSections = eligibleSections.filter(
+    (section) => semanticSectionHasNamedCategory(section),
+  );
+  const candidateSections = namedPreferredSections.length > 0
+    ? [
+      ...eligibleSections.filter(
+        (section) =>
+          semanticSectionCategory(section) === 'purpose' &&
+          !semanticSectionHasNamedCategory(section),
+      ),
+      ...namedPreferredSections,
+    ]
+    : eligibleSections;
+  const selectedSections = [];
+  const selectedSectionSet = new Set();
+  for (const category of ['purpose', 'architecture', 'ability']) {
+    const section = candidateSections.find(
+      (candidate) => semanticSectionCategory(candidate) === category,
+    );
+    if (!section) continue;
+    selectedSections.push(section);
+    selectedSectionSet.add(section);
+  }
+  for (
+    const section of [...candidateSections].sort(
+      (a, b) =>
+        semanticSectionPriority(b) - semanticSectionPriority(a) ||
+        a.lineIndex - b.lineIndex,
+    )
+  ) {
+    if (selectedSections.length >= SEMANTIC_EVIDENCE_MAX_HEADINGS + 1) break;
+    if (selectedSectionSet.has(section)) continue;
+    selectedSections.push(section);
+    selectedSectionSet.add(section);
+  }
+
+  const orderedSections = [...selectedSections].sort(
+    (a, b) => a.lineIndex - b.lineIndex,
+  );
+  const sectionTextRows = orderedSections.map((section) => ({
+    section,
+    text: section.prose.map((row) => row.text).join(' '),
+  }));
+  const requiredSections = ['purpose', 'architecture', 'ability']
+    .map((category) =>
+      sectionTextRows.find(
+        ({ section }) => semanticSectionCategory(section) === category,
+      ),
+    )
+    .filter(Boolean);
+  const proseBudget = Math.max(
+    0,
+    SEMANTIC_EVIDENCE_MAX_EXCERPT - Math.max(0, sectionTextRows.length - 1),
+  );
+  const reserveLength = requiredSections.length > 0
+    ? Math.floor(proseBudget / requiredSections.length)
+    : 0;
+  const reservedLengths = new Map(
+    requiredSections.map(({ section, text }) => [
+      section,
+      Math.min(reserveLength, text.length),
+    ]),
+  );
+  let remainingBudget = proseBudget;
+  for (const length of reservedLengths.values()) remainingBudget -= length;
+  const selectedProse = sectionTextRows
+    .map(({ section, text }) => {
+      const reservedLength = reservedLengths.get(section) ?? 0;
+      const extraLength = Math.min(
+        Math.max(0, text.length - reservedLength),
+        Math.max(0, remainingBudget),
+      );
+      remainingBudget -= extraLength;
+      return truncateSemanticExcerptAtBoundary(text, reservedLength + extraLength);
+    })
+    .filter(Boolean)
+    .join(' ')
+    .slice(0, SEMANTIC_EVIDENCE_MAX_EXCERPT)
+    .trim();
+
+  const titleSection = sections.find(
+    (section) => section.heading?.level === 1 && !section.excluded,
+  );
+  const prioritizedHeadingSections = [
+    ...(titleSection ? [titleSection] : []),
+    ...selectedSections.filter((section) => section.heading),
+  ];
+  const headingSelection = [];
+  const seenHeadingSections = new Set();
+  for (const section of prioritizedHeadingSections) {
+    if (seenHeadingSections.has(section)) continue;
+    seenHeadingSections.add(section);
+    headingSelection.push(section);
+  }
+  for (const section of sections) {
+    if (
+      section.heading &&
+      !section.excluded &&
+      !seenHeadingSections.has(section)
+    ) {
+      seenHeadingSections.add(section);
+      headingSelection.push(section);
     }
   }
+  const headings = headingSelection
+    .slice(0, SEMANTIC_EVIDENCE_MAX_HEADINGS)
+    .sort((a, b) => a.lineIndex - b.lineIndex)
+    .map((section) => section.heading.value);
+
   return {
     title,
     headings,
-    excerpt: prose.join(' ').slice(0, SEMANTIC_EVIDENCE_MAX_EXCERPT).trim(),
+    excerpt: selectedProse,
   };
+}
+
+function truncateSemanticExcerptAtBoundary(text, maxLength) {
+  if (text.length <= maxLength) return text;
+  if (maxLength <= 0) return '';
+  const sentence = [...text.matchAll(/[.!?]+(?=\s|$)/g)]
+    .findLast((match) => match.index + match[0].length <= maxLength);
+  if (sentence) {
+    return text.slice(0, sentence.index + sentence[0].length).trimEnd();
+  }
+  const bounded = text.slice(0, maxLength);
+  const lastWordBoundary = bounded.lastIndexOf(' ');
+  return (lastWordBoundary > 0 ? bounded.slice(0, lastWordBoundary) : bounded).trimEnd();
+}
+
+function normalizeSemanticHeading(value) {
+  return cleanHeadingLabel(value)
+    .toLowerCase()
+    .replace(/[_-]+/g, ' ')
+    .replace(/[^\p{L}\p{N}\s]+/gu, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+function isExcludedSemanticSection(value) {
+  const heading = normalizeSemanticHeading(value);
+  return (
+    /\b(?:sponsors?|sponsorship|backers?|funding|fundraisers?|donations?|donate)\b/i.test(
+      heading,
+    ) || /^(?:table of contents|contents?|toc)$/i.test(heading)
+  );
+}
+
+function isDecorativeSemanticLine(value) {
+  const line = String(value)
+    .replace(/^>\s*/, '')
+    .replace(/^[-*+]\s+/, '')
+    .trim();
+  if (!line) return true;
+  if (/^(?:featured\s+)?(?:sponsors?|backers?|funding|donations?|donate)\b/i.test(line)) {
+    return true;
+  }
+  if (/^(?:https?:\/\/|www\.)\S+$/i.test(line)) return true;
+  const remaining = line
+    .replace(/\[!\[[^\]]*\]\([^)]*\)\]\([^)]*\)/g, '')
+    .replace(/!?\[[^\]]*\]\([^)]*\)/g, '')
+    .replace(/!?\[[^\]]*\]\[[^\]]*\]/g, '')
+    .replace(/<a\b[^>]*>.*?<\/a>/gi, '')
+    .replace(/<img\b[^>]*>/gi, '')
+    .replace(/<[^>]+>/g, '')
+    .replace(/[|]/g, '')
+    .replace(/[`*_~]/g, '')
+    .trim();
+  return remaining.length === 0;
+}
+
+function semanticSectionPriority(section) {
+  return {
+    purpose: 3,
+    architecture: 2,
+    ability: 1,
+  }[semanticSectionCategory(section)] ?? 0;
+}
+
+function semanticSectionCategory(section) {
+  const namedCategory = semanticHeadingCategory(section.heading?.value ?? '');
+  if (namedCategory) return namedCategory;
+  const heading = normalizeSemanticHeading(section.heading?.value ?? '');
+  if (!heading || section.heading?.level === 1) return 'purpose';
+  return null;
+}
+
+function semanticSectionHasNamedCategory(section) {
+  return Boolean(section.heading && semanticHeadingCategory(section.heading.value));
+}
+
+function semanticHeadingCategory(value) {
+  const heading = normalizeSemanticHeading(value);
+  if (
+    /\b(?:purpose|mission|vision|introduction|overview|about|user need|product goal|problem statement)\b/i.test(
+      heading,
+    )
+  ) {
+    return 'purpose';
+  }
+  if (
+    /\b(?:architecture|responsibilit(?:y|ies)|design|structure|how it works|system map|workflow|boundar(?:y|ies))\b/i.test(
+      heading,
+    )
+  ) {
+    return 'architecture';
+  }
+  if (
+    /\b(?:features?|capabilit(?:y|ies)|functionality|use cases?|what it does|supported)\b/i.test(
+      heading,
+    )
+  ) {
+    return 'ability';
+  }
+  return null;
 }
 
 function formatOntologyEvidence(evidence) {

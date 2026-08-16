@@ -648,7 +648,7 @@ const IMPORT_SCAN_COVERAGE_OUTPUT_SCHEMA = Object.freeze({
     supportedLanguages: {
       type: 'array',
       uniqueItems: true,
-      items: { type: 'string', enum: ['javascript', 'python', 'typescript'] },
+      items: { type: 'string', enum: ['go', 'javascript', 'python', 'typescript'] },
     },
     supportedExtensions: { type: 'array', uniqueItems: true, items: NON_BLANK_STRING_SCHEMA },
     detectedUnsupportedLanguages: {
@@ -672,6 +672,162 @@ const IMPORT_SCAN_COVERAGE_OUTPUT_SCHEMA = Object.freeze({
     'zeroEdgesMeaning',
     'limitations',
   ],
+  additionalProperties: false,
+});
+const GO_PACKAGE_IMPORT_ROW_SCHEMA = Object.freeze({
+  type: 'object',
+  properties: {
+    fromFile: NON_BLANK_STRING_SCHEMA,
+    fromPackage: NON_BLANK_STRING_SCHEMA,
+    toPackage: NON_BLANK_STRING_SCHEMA,
+    importSpec: NON_BLANK_STRING_SCHEMA,
+    kind: { type: 'string', enum: ['static', 'side'] },
+    sourceRole: { type: 'string', enum: IMPORT_SOURCE_ROLE_VALUES },
+    importUsage: { type: 'string', enum: ['value'] },
+  },
+  required: ['fromFile', 'fromPackage', 'toPackage', 'importSpec', 'kind', 'sourceRole', 'importUsage'],
+  additionalProperties: false,
+});
+const GO_PACKAGE_IMPORT_MODULE_EDGE_SCHEMA = Object.freeze({
+  type: 'object',
+  properties: {
+    fromPackage: NON_BLANK_STRING_SCHEMA,
+    toPackage: NON_BLANK_STRING_SCHEMA,
+    count: { type: 'integer', minimum: 1 },
+    kindCounts: {
+      type: 'object',
+      properties: {
+        static: { type: 'integer', minimum: 1 },
+        side: { type: 'integer', minimum: 1 },
+      },
+      minProperties: 1,
+      additionalProperties: false,
+    },
+    sourceRoleCounts: {
+      type: 'object',
+      properties: Object.fromEntries(
+        IMPORT_SOURCE_ROLE_VALUES.map((role) => [role, { type: 'integer', minimum: 0 }]),
+      ),
+      required: IMPORT_SOURCE_ROLE_VALUES,
+      additionalProperties: false,
+    },
+    importUsageCounts: {
+      type: 'object',
+      properties: Object.fromEntries(
+        IMPORT_USAGE_VALUES.map((usage) => [usage, { type: 'integer', minimum: 0 }]),
+      ),
+      required: IMPORT_USAGE_VALUES,
+      additionalProperties: false,
+    },
+    productValueCount: { type: 'integer', minimum: 0 },
+    evidence: {
+      type: 'array',
+      minItems: 1,
+      maxItems: 5,
+      items: GO_PACKAGE_IMPORT_ROW_SCHEMA,
+    },
+    evidenceLimited: { type: 'boolean' },
+  },
+  required: [
+    'fromPackage',
+    'toPackage',
+    'count',
+    'kindCounts',
+    'sourceRoleCounts',
+    'importUsageCounts',
+    'productValueCount',
+    'evidence',
+    'evidenceLimited',
+  ],
+  additionalProperties: false,
+});
+const GO_PACKAGE_IMPORT_EVIDENCE_OUTPUT_SCHEMA = Object.freeze({
+  type: 'object',
+  description:
+    'Root Go module-only, bounded package import evidence. It is observed static source evidence, never a runtime claim or semantic relation approval.',
+  properties: {
+    contract: { type: 'string', enum: ['goPackageImports:v1'] },
+    modulePath: NON_BLANK_STRING_SCHEMA,
+    sourceQualification: {
+      type: 'string',
+      enum: ['observed_bounded_go_package_imports_not_runtime_or_semantic_impact'],
+    },
+    writeAllowed: { type: 'boolean', enum: [false] },
+    filesScanned: { type: 'integer', minimum: 0 },
+    fileScanLimited: { type: 'boolean' },
+    perFileByteLimit: { type: 'integer', minimum: 1 },
+    perFileImportLimit: { type: 'integer', minimum: 1 },
+    skipped: {
+      type: 'array',
+      items: {
+        type: 'object',
+        properties: { file: NON_BLANK_STRING_SCHEMA, reason: NON_BLANK_STRING_SCHEMA },
+        required: ['file', 'reason'],
+        additionalProperties: false,
+      },
+    },
+    limitations: { type: 'array', minItems: 1, items: NON_BLANK_STRING_SCHEMA },
+    packageImports: { type: 'array', items: GO_PACKAGE_IMPORT_ROW_SCHEMA },
+    moduleEdges: { type: 'array', items: GO_PACKAGE_IMPORT_MODULE_EDGE_SCHEMA },
+  },
+  required: [
+    'contract',
+    'modulePath',
+    'sourceQualification',
+    'writeAllowed',
+    'filesScanned',
+    'fileScanLimited',
+    'perFileByteLimit',
+    'perFileImportLimit',
+    'skipped',
+    'limitations',
+    'packageImports',
+    'moduleEdges',
+  ],
+  additionalProperties: false,
+});
+const GO_PACKAGE_IMPORT_EVIDENCE_SUMMARY_SCHEMA = Object.freeze({
+  type: 'object',
+  description:
+    'Bounded Go package-import census. Call fullEvidenceCall to retrieve the complete typed receipt; focusReview itself contains legacy file edges only.',
+  properties: {
+    contract: { type: 'string', enum: ['goPackageImports:v1'] },
+    filesScanned: { type: 'integer', minimum: 0 },
+    fileScanLimited: { type: 'boolean' },
+    packageImports: { type: 'integer', minimum: 0 },
+    moduleEdges: { type: 'integer', minimum: 0 },
+    fullEvidenceCall: {
+      type: 'object',
+      properties: {
+        tool: { type: 'string', enum: ['infer_imports'] },
+        arguments: {
+          type: 'object',
+          properties: {
+            rootPath: NON_BLANK_STRING_SCHEMA,
+            sourceFolders: {
+              type: 'array',
+              maxItems: SOURCE_FOLDER_ARRAY_MAX_ITEMS,
+              items: NON_BLANK_STRING_SCHEMA,
+            },
+            ignore: {
+              type: 'array',
+              maxItems: IGNORE_ARRAY_MAX_ITEMS,
+              items: NON_BLANK_STRING_SCHEMA,
+            },
+            maxFiles: { type: 'integer', minimum: 1, maximum: 50000 },
+            reviewMode: { type: 'string', enum: ['full'] },
+            allowLargeResponse: { type: 'boolean', enum: [true] },
+          },
+          required: ['rootPath', 'reviewMode', 'allowLargeResponse'],
+          additionalProperties: false,
+        },
+        purpose: NON_BLANK_STRING_SCHEMA,
+      },
+      required: ['tool', 'arguments', 'purpose'],
+      additionalProperties: false,
+    },
+  },
+  required: ['contract', 'filesScanned', 'fileScanLimited', 'packageImports', 'moduleEdges', 'fullEvidenceCall'],
   additionalProperties: false,
 });
 const MEANING_PROPOSAL_CONCEPT_INPUT_PROPERTIES = Object.freeze({
@@ -4341,7 +4497,7 @@ const TOOLS = [
   {
     name: 'infer_imports',
     description:
-      'R17 (autonomous ingest deeper) — walk TS/JS files in a code repo and infer file-level + module-level import edges. It also walks bounded root Python packages and bounded src/source-layout Python packages. ' +
+      'R17 (autonomous ingest deeper) — walk TS/JS files in a code repo and infer file-level + module-level import edges. It also walks bounded root Python packages and bounded src/source-layout Python packages. A valid root Go module additionally exposes typed local package-import evidence; it stays separate from legacy file edges and never self-approves a semantic relation. ' +
       'Structured `coverage` names the supported languages and, when Cargo is detected, states that Rust use/mod and macro dependency graphs are unsupported; zero edges never proves that a Rust repository has no dependencies. ' +
       'side effect 0 (vault frontmatter NOT modified). `moduleEdges` are source-backed review candidates, never self-approving semantic `depends_on` relations. ' +
       'When you know an implementation file, set `focusPath` (or `reviewMode:"focus"`) before considering `full`: Atlas returns bounded exact incoming/outgoing static import receipts, counts, and a cursor without requiring a vault. This focused source boundary is not runtime impact or a semantic relation. ' +
@@ -4564,6 +4720,8 @@ const TOOLS = [
             additionalProperties: false,
           },
         },
+        packageImportEvidence: GO_PACKAGE_IMPORT_EVIDENCE_OUTPUT_SCHEMA,
+        packageImportEvidenceSummary: GO_PACKAGE_IMPORT_EVIDENCE_SUMMARY_SCHEMA,
             reconciliation: {
           type: ['object', 'null'],
           description:
@@ -5110,6 +5268,8 @@ const TOOLS = [
           properties: {
             filesScanned: { type: 'integer', minimum: 0 },
             moduleEdges: { type: 'integer', minimum: 0 },
+            packageImports: { type: 'integer', minimum: 0 },
+            packageModuleEdges: { type: 'integer', minimum: 0 },
             coverage: IMPORT_SCAN_COVERAGE_OUTPUT_SCHEMA,
             thresholdApplied: {
               type: 'object',
@@ -5123,7 +5283,7 @@ const TOOLS = [
             reconciliationSummary: IMPORT_RECONCILIATION_SUMMARY_SCHEMA,
             staleEdgeFollowUp: IMPORT_STALE_EDGE_FOLLOW_UP_SCHEMA,
           },
-          required: ['filesScanned', 'moduleEdges', 'coverage'],
+          required: ['filesScanned', 'moduleEdges', 'packageImports', 'packageModuleEdges', 'coverage'],
           additionalProperties: false,
         },
         plan: {
@@ -9276,6 +9436,35 @@ function buildImportStaleEdgeFollowUp(result) {
   };
 }
 
+function buildGoPackageImportEvidenceSummary(
+  result,
+  { sourceFolders, ignore, maxFiles } = {},
+) {
+  const receipt = result?.packageImportEvidence;
+  if (!receipt) return undefined;
+  return {
+    contract: 'goPackageImports:v1',
+    filesScanned: receipt.filesScanned,
+    fileScanLimited: receipt.fileScanLimited,
+    packageImports: receipt.packageImports.length,
+    moduleEdges: receipt.moduleEdges.length,
+    fullEvidenceCall: {
+      tool: 'infer_imports',
+      arguments: {
+        rootPath: result.rootPath,
+        ...(sourceFolders !== undefined
+          ? { sourceFolders: [...new Set(sourceFolders)] }
+          : {}),
+        ...(ignore !== undefined ? { ignore: [...new Set(ignore)] } : {}),
+        ...(maxFiles !== undefined ? { maxFiles } : {}),
+        reviewMode: 'full',
+        allowLargeResponse: true,
+      },
+      purpose: 'Read the complete typed Go package-import evidence; focus only contains legacy file edges.',
+    },
+  };
+}
+
 function inferImportsTool({
   rootPath,
   sourceFolders,
@@ -9338,6 +9527,15 @@ function inferImportsTool({
       limit: focusLimit,
       afterEdgeId: focusAfterEdgeId ?? null,
     });
+    const packageImportEvidenceSummary = buildGoPackageImportEvidenceSummary(result, {
+      sourceFolders,
+      ignore,
+      maxFiles,
+    });
+    if (packageImportEvidenceSummary) {
+      focusReview.interpretation +=
+        ' This focus response covers legacy file edges only; use the explicit full-evidence call for typed Go package imports.';
+    }
     return {
       contract: 'inferImportsFocus:v1',
       rootPath: result.rootPath,
@@ -9349,6 +9547,7 @@ function inferImportsTool({
         unresolvedImports: result.unresolved.length,
         moduleEdges: result.moduleEdges.length,
       },
+      ...(packageImportEvidenceSummary ? { packageImportEvidenceSummary } : {}),
       focusReview,
     };
   }
@@ -9477,6 +9676,11 @@ function inferImportsTool({
       afterReviewId: afterReviewId ?? null,
       rootPath: result.rootPath,
     });
+    const packageImportEvidenceSummary = buildGoPackageImportEvidenceSummary(result, {
+      sourceFolders,
+      ignore,
+      maxFiles,
+    });
       return {
         contract: 'inferImportsReview:v1',
         ...(delivery ? { delivery } : {}),
@@ -9489,6 +9693,7 @@ function inferImportsTool({
         unresolvedImports: result.unresolved.length,
         moduleEdges: result.moduleEdges.length,
       },
+      ...(packageImportEvidenceSummary ? { packageImportEvidenceSummary } : {}),
       reconciliationSummary: result.reconciliationSummary,
       staleEdgeFollowUp: buildImportStaleEdgeFollowUp(result),
       reviewQueue: {
@@ -9521,7 +9726,8 @@ function indexProjectTool({ rootPath, maxDepth, maxFiles, threshold, skipImports
 
   const target = rootPath ? resolve(rootPath) : REPO_ROOT;
   let imports = null;
-  let pythonImportAnalysis = null;
+  let importAnalysis = null;
+  let thresholdApplied = null;
   if (!skipImports) {
     imports = inferImportsTool({
       rootPath: target,
@@ -9529,22 +9735,20 @@ function indexProjectTool({ rootPath, maxDepth, maxFiles, threshold, skipImports
       reviewMode: 'full',
       allowLargeResponse: true,
     });
-    pythonImportAnalysis = {
-      ...imports,
-      moduleEdges: [...imports.moduleEdges],
-    };
+    // Keep one full receipt: analysis consumes this exact object once, while
+    // the plan below reports bounded counters without returning the firehose.
+    importAnalysis = imports;
     if (threshold && threshold > 1 && Array.isArray(imports.moduleEdges)) {
       const before = imports.moduleEdges.length;
-      imports.moduleEdges = imports.moduleEdges.filter((edge) => Number(edge.count) >= threshold);
-      imports.thresholdApplied = {
+      thresholdApplied = {
         threshold,
-        filteredOut: before - imports.moduleEdges.length,
+        filteredOut: before - imports.moduleEdges.filter((edge) => Number(edge.count) >= threshold).length,
       };
     }
   }
   const analyze = analyzeRepoStructure(target, {
     maxDepth,
-    precomputedPythonImports: pythonImportAnalysis,
+    precomputedPythonImports: importAnalysis,
   });
   const validation = validateVaultTool({ repoRoot: target });
 
@@ -9626,7 +9830,16 @@ function indexProjectTool({ rootPath, maxDepth, maxFiles, threshold, skipImports
     sampleAmbiguousSlugs: ambiguousConceptSlugs.slice(0, 10),
     sampleNewSlugs: newConceptSlugs.slice(0, 10),
   };
-  const importRelations = imports?.moduleEdges?.length ?? 0;
+  const importModuleEdges = thresholdApplied
+    ? imports.moduleEdges.filter((edge) => Number(edge.count) >= thresholdApplied.threshold)
+    : (imports?.moduleEdges ?? []);
+  const packageImportEvidence = imports?.packageImportEvidence;
+  const packageModuleEdges = thresholdApplied
+    ? (packageImportEvidence?.moduleEdges ?? []).filter(
+        (edge) => Number(edge.count) >= thresholdApplied.threshold,
+      )
+    : (packageImportEvidence?.moduleEdges ?? []);
+  const importRelations = importModuleEdges.length + packageModuleEdges.length;
   const reviewCalls = [
     {
       tool: 'analyze_repo_structure',
@@ -9662,10 +9875,12 @@ function indexProjectTool({ rootPath, maxDepth, maxFiles, threshold, skipImports
     imports: imports
       ? {
           filesScanned: imports.filesScanned,
-          moduleEdges: importRelations,
+          moduleEdges: importModuleEdges.length,
+          packageImports: packageImportEvidence?.packageImports?.length ?? 0,
+          packageModuleEdges: packageModuleEdges.length,
           coverage: imports.coverage,
           ...(imports.staleEdgeFollowUp ? { staleEdgeFollowUp: imports.staleEdgeFollowUp } : {}),
-          ...(imports.thresholdApplied ? { thresholdApplied: imports.thresholdApplied } : {}),
+          ...(thresholdApplied ? { thresholdApplied } : {}),
           ...(imports.reconciliationSummary ? { reconciliationSummary: imports.reconciliationSummary } : {}),
         }
       : null,
