@@ -8295,6 +8295,29 @@ function queryOntologyTool(args = {}) {
   };
 }
 
+/**
+ * 처방 id 를 **할 수 있는 말**로 옮긴다.
+ *
+ * 종전에는 `assessment_input_invalid` 같은 코드 하나만 나갔다. 그 문장을 읽는
+ * 쪽은 사람이거나 에이전트인데, 둘 다 코드만으로는 아무것도 못 한다. 특히
+ * `init` 직후의 볼트가 이 자리에서 「invalid」 를 받아서, 아무 잘못도 안 한
+ * 사람이 자기가 뭘 깨뜨린 줄 알게 됐다.
+ */
+const MEANING_NEXT_ACTION_HINTS = Object.freeze({
+  // 「절이 없다」고 단정하지 않는다 — 절은 있는데 아직 확정만 안 한 볼트가
+  // 있고(이 저장소가 그렇다), 그런 볼트에 「추가하라」고 하면 틀린 안내다.
+  author_competency_answers:
+    'This project\'s five competency answers have not been finalized yet. '
+    + 'Nothing is broken. Fill in the `## Competency answers` section of the '
+    + 'project document if it is missing, then call finalize_project_meaning.',
+  repair_assessment_input:
+    'The assessment input is malformed. Inspect the project document\'s '
+    + '`## Competency answers` section and the source receipt.',
+  repair_ontology_structure: 'Fix the graph problems that query_ontology health reports first.',
+  repair_source_receipt: 'Re-bind the project to its source with connect_source.',
+  connect_source: 'Bind this project to its source with connect_source.',
+});
+
 function meaningReadinessCheck(artifact) {
   const projectSlugs = (Array.isArray(artifact?.nodes) ? artifact.nodes : [])
     .filter((node) => node?.kind === 'project' && typeof node.slug === 'string')
@@ -8310,9 +8333,17 @@ function meaningReadinessCheck(artifact) {
         projectSlug,
         status: context.meaningAssessment?.status ?? 'invalid',
         topGap: context.meaningAssessment?.topGap?.id ?? 'assessment_input_invalid',
+        // 처방은 이미 계산돼 있었는데 여기서 버려지고 있었다 (2026-08-17).
+        // 그래서 이 검사를 읽는 사람도 에이전트도 오류 코드 하나만 받았다.
+        nextAction: context.meaningAssessment?.nextAction?.id ?? 'repair_assessment_input',
       };
     } catch {
-      return { projectSlug, status: 'invalid', topGap: 'assessment_input_invalid' };
+      return {
+        projectSlug,
+        status: 'invalid',
+        topGap: 'assessment_input_invalid',
+        nextAction: 'repair_assessment_input',
+      };
     }
   });
   const unresolved = assessments.filter((assessment) => assessment.status !== 'verified_current');
@@ -8330,7 +8361,12 @@ function meaningReadinessCheck(artifact) {
   return {
     status: 'warn',
     count: unresolved.length,
-    message: `${unresolved.length} project meaning assessment(s) require review; first ${first.projectSlug}: ${first.status} (${first.topGap}).`,
+    // 진단만 주고 처방을 안 주면 읽는 쪽은 무엇을 할지 모른다 — 특히 이
+    // 문장을 읽는 쪽이 사람이 아니라 에이전트일 때(`workspace-brief`).
+    message:
+      `${unresolved.length} project meaning assessment(s) require review; `
+      + `first ${first.projectSlug}: ${first.status} (${first.topGap}). `
+      + `${MEANING_NEXT_ACTION_HINTS[first.nextAction] ?? `Next: ${first.nextAction}.`}`,
     assessments,
   };
 }
