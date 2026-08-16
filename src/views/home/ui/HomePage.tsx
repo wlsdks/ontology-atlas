@@ -142,6 +142,7 @@ import {
 import { buildDocsVaultHref, buildNewNodeDoc } from "@/entities/docs-vault";
 import {
   buildOntologyStudioNodeHrefFromGraphId,
+  buildChatNodeIndex,
   buildOntologyStudioEdgeHref,
   buildOntologyHealthSignals,
   buildOntologyInsightsReturnHref,
@@ -1858,15 +1859,27 @@ export function HomePage() {
     채팅에서 온 강조만 다르게 보이면 그것이 무슨 뜻인지 또 배워야 한다.
   */
   const chatHoverNodeIdRef = useRef<string | null>(null);
-  const handleChatHoverSlug = useCallback((slug: string | null) => {
-    chatHoverNodeIdRef.current = slug;
-  }, []);
   /* 답변에서 집을 이름들 — **실재하는 노드만**. 아무 `a/b` 나 링크로 만들면
      파일 경로와 URL 까지 링크가 되고, 눌러도 아무 데도 안 가는 링크를 한 번
-     만난 사람은 나머지도 안 누른다. */
-  const chatKnownSlugs = useMemo(
-    () => new Set((ontologyInsight?.nodes ?? []).map((n) => n.id)),
+     만난 사람은 나머지도 안 누른다.
+
+     ⚠️ **이름 공간이 둘이다** (2026-08-17 실물 실측). 종전에는 이 목록을
+     `nodes.map((n) => n.id)` 로 만들었는데, 그 id 는 `domain:example-domain`
+     꼴이고 **에이전트가 쓰는 이름은 `domains/example-domain`** 이다. 둘은
+     절대 같아지지 않으므로 채팅에 나온 어떤 이름도 안 걸렸고, 이 기능은
+     배선만 있고 죽어 있었다. 판정과 재현은 `chat-node-index.ts`. */
+  const chatNodeIndex = useMemo(
+    () => buildChatNodeIndex(ontologyInsight?.nodes),
     [ontologyInsight],
+  );
+  const chatKnownSlugs = useMemo(() => new Set(chatNodeIndex.keys()), [chatNodeIndex]);
+  /* 표가 바뀔 때만 신원이 바뀐다 — 볼트가 바뀌는 순간이라 드물다. 렌더 중에
+     ref 를 쓰는 쪽이 더 싸 보이지만 그건 동시성 렌더에서 깨지는 패턴이다. */
+  const handleChatHoverSlug = useCallback(
+    (slug: string | null) => {
+      chatHoverNodeIdRef.current = slug ? (chatNodeIndex.get(slug) ?? null) : null;
+    },
+    [chatNodeIndex],
   );
 
   // 노드 클릭 default = 컴팩트 ego 팝오버. 풀스크린 드로어는 "전체 상세" opt-in.
