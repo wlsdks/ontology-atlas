@@ -836,11 +836,23 @@ fn acp_start(
         &probe,
     )?;
 
+    // **사용자의 전역 설정을 물려받지 않는다** (결정 원장 2026-08-16 (2)).
+    // 실측: 소유자의 `~/.claude/settings.json` 이 `Bash(*)`·`Write(*)` 를 미리
+    // 허용해 두고 있어서, 그 설정을 물려받은 세션은 작업 폴더 밖에 파일을 쓰면서
+    // 한 번도 묻지 않았다. 관문은 프로토콜이 아니라 이 설정이 만든다.
+    let app_data = app
+        .path()
+        .app_data_dir()
+        .map_err(|err| format!("app-data-dir-unavailable:{err}"))?;
+    let config_dir = acp::prepare_isolated_config(&runtime_id, &app_data, home.as_deref())?;
+    let config_env = acp::config_env_for(&runtime_id).ok_or("unknown-runtime")?;
+
     let mut command = Command::new(&launch.program);
     command
         .args(&launch.args)
         .current_dir(&root)
         .env("PATH", &launch.path_env)
+        .env(config_env, &config_dir)
         .stdin(Stdio::piped())
         .stdout(Stdio::piped())
         .stderr(Stdio::piped());

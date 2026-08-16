@@ -49,7 +49,34 @@ pub(crate) struct AcpRuntimeSpec {
     pub adapter_bin: &'static str,
     /// 설치돼 있지 않을 때 `npx` 로 부를 **버전 못 박은** 패키지.
     pub adapter_package: &'static str,
+    /// 이 실행기가 「설정을 어디서 읽나」를 정하는 환경 변수.
+    pub config_env: &'static str,
+    /// 그 설정 디렉터리 안의 자격증명 파일 이름. 격리하면 로그인이 깨지므로
+    /// 이 파일만 사용자의 원본으로 **링크**한다(복사하지 않는다).
+    pub credentials_file: &'static str,
+    /// 사용자의 원본 설정 디렉터리(홈 기준 상대 경로).
+    pub user_config_dir: &'static str,
 }
+
+/// 앱이 띄우는 세션에 넣는 설정. **사용자의 전역 설정을 물려받지 않는다.**
+///
+/// 2026-08-16 실측: 소유자의 `~/.claude/settings.json` 은 `defaultMode: auto` 에
+/// `Bash(*)` · `Write(*)` · `Edit(*)` 를 포함해 15개를 미리 허용해 두고 있었다.
+/// 그 설정을 물려받은 세션은 작업 폴더 **밖**에 파일을 쓰면서 **한 번도 묻지
+/// 않았고**, 터미널까지 실행했다. 세션 모드를 「직접 확인」으로 바꿔도 같았다 —
+/// 미리 허용된 것은 모드와 무관하게 통과하기 때문이다.
+///
+/// 격리한 설정으로 같은 것을 시키니 권한 요청이 왔고, 거절하니 파일이 안 생겼다.
+/// **관문은 프로토콜이 주는 게 아니라 이 설정이 만든다.**
+const ISOLATED_CLAUDE_SETTINGS: &str = r#"{
+  "permissions": {
+    "defaultMode": "default",
+    "allow": [],
+    "deny": [],
+    "ask": []
+  }
+}
+"#;
 
 /// 이번 조각이 부르는 실행기.
 ///
@@ -63,6 +90,9 @@ pub(crate) const RUNTIMES: &[AcpRuntimeSpec] = &[
         cli: "claude",
         adapter_bin: "claude-agent-acp",
         adapter_package: "@agentclientprotocol/claude-agent-acp@0.68.0",
+        config_env: "CLAUDE_CONFIG_DIR",
+        credentials_file: ".credentials.json",
+        user_config_dir: ".claude",
     },
     AcpRuntimeSpec {
         id: "codex",
@@ -70,6 +100,11 @@ pub(crate) const RUNTIMES: &[AcpRuntimeSpec] = &[
         cli: "codex",
         adapter_bin: "codex-acp",
         adapter_package: "@agentclientprotocol/codex-acp@1.3.0",
+        // codex 는 다음 조각이다. 값만 등재해 두어 「하나만 특별 대우하는 코드」가
+        // 생기지 않게 한다 — 격리 동작은 아직 실측하지 않았다.
+        config_env: "CODEX_HOME",
+        credentials_file: "auth.json",
+        user_config_dir: ".codex",
     },
 ];
 
@@ -359,6 +394,160 @@ pub(crate) fn resolve_launch(
         args: vec!["-y".to_string(), spec.adapter_package.to_string()],
         path_env: joined,
     })
+}
+
+/// 앱이 관리하는 설정 디렉터리를 준비하고 그 경로를 준다.
+///
+/// **왜 격리하는가는 `ISOLATED_CLAUDE_SETTINGS` 주석에 있다.** 여기서는 그 결정을
+/// 디스크에 만드는 일만 한다:
+///
+/// 1. `<앱 데이터>/agent-config/<실행기>/` 를 만든다.
+/// 2. 우리 설정을 **매번 다시 쓴다.** 사용자가 그 파일을 고쳐서 관문을 열어 둔 채
+///    잊는 일이 없도록 — 이 디렉터리는 사용자의 설정 자리가 아니라 앱의 것이다.
+/// 3. 자격증명은 **링크만 건다.** 격리하면 로그인이 깨지는데(실측:
+///    `Authentication required`), 비밀을 앱 폴더로 복사하는 것은 헌장이 막는
+///    종류의 일이다. 링크는 디스크에 보이고 원본이 하나로 유지된다.
+///
+/// 원본 자격증명이 없으면 링크를 만들지 않고 그냥 둔다 — 그때는 사용자가 아직
+/// 그 도구에 로그인하지 않은 것이고, 화면이 그렇게 말해야 한다.
+pub(crate) fn prepare_isolated_config(
+    runtime_id: &str,
+    app_data_dir: &Path,
+    home: Option<&Path>,
+) -> Result<PathBuf, String> {
+    let spec = RUNTIMES
+        .iter()
+        .find(|s| s.id == runtime_id)
+        .ok_or_else(|| format!("unknown-runtime:{runtime_id}"))?;
+
+    let dir = app_data_dir.join("agent-config").join(spec.id);
+    std::fs::create_dir_all(&dir).map_err(|err| format!("config-dir-failed:{err}"))?;
+
+    if spec.id == "claude" {
+        std::fs::write(dir.join("settings.json"), ISOLATED_CLAUDE_SETTINGS)
+            .map_err(|err| format!("settings-write-failed:{err}"))?;
+    }
+
+    if let Some(home) = home {
+        let source = home.join(spec.user_config_dir).join(spec.credentials_file);
+        let link = dir.join(spec.credentials_file);
+        if source.exists() {
+            link_credentials(&source, &link)?;
+        }
+    }
+
+    Ok(dir)
+}
+
+/// 이 실행기의 「설정을 어디서 읽나」 환경 변수 이름.
+pub(crate) fn config_env_for(runtime_id: &str) -> Option<&'static str> {
+    RUNTIMES
+        .iter()
+        .find(|s| s.id == runtime_id)
+        .map(|s| s.config_env)
+}
+
+/// 자격증명 링크를 건다. 이미 올바른 곳을 가리키면 그대로 둔다.
+fn link_credentials(source: &Path, link: &Path) -> Result<(), String> {
+    if let Ok(existing) = std::fs::read_link(link) {
+        if existing == source {
+            return Ok(());
+        }
+    }
+    // 남아 있던 것은 지운다 — 예전 홈으로 가는 끊긴 링크가 남으면 로그인이
+    // 깨진 채로 「설정은 있는데 왜 안 되지」가 된다.
+    let _ = std::fs::remove_file(link);
+
+    #[cfg(unix)]
+    {
+        std::os::unix::fs::symlink(source, link)
+            .map_err(|err| format!("credentials-link-failed:{err}"))
+    }
+    #[cfg(windows)]
+    {
+        // Windows 의 심볼릭 링크는 권한이 필요하다. 실패하면 링크 없이 진행하고
+        // (로그인 화면이 뜨는 것이 조용히 비밀을 복사하는 것보다 낫다) 사유를
+        // 그대로 올린다.
+        std::os::windows::fs::symlink_file(source, link)
+            .map_err(|err| format!("credentials-link-failed:{err}"))
+    }
+    #[cfg(not(any(unix, windows)))]
+    {
+        let _ = (source, link);
+        Err("credentials-link-unsupported".into())
+    }
+}
+
+/// 권한 요청 하나를 우리 정책으로 판정한다.
+///
+/// ## 왜 제목이 아니라 경로로 보나
+///
+/// 실측(2026-08-16)에서 권한 요청의 제목은 볼트 **안**이면 상대 경로
+/// (`Write meeting-notes.md`), **밖**이면 절대 경로였다. 그 차이로 판정하면 문구가
+/// 조금만 바뀌어도 정책이 조용히 뒤집힌다. 같은 요청의 원문에
+/// `toolCall.rawInput.file_path` 가 절대 경로로 들어 있으므로 그것으로 판정한다.
+///
+/// 경로를 못 찾으면 **묻는다.** 모르는 것을 허용으로 기울이면, 판단할 수 없는
+/// 요청일수록 그냥 통과하게 된다.
+pub(crate) fn permission_verdict(vault_root: &Path, file_path: Option<&str>) -> PermissionVerdict {
+    let Some(raw) = file_path else {
+        return PermissionVerdict::Ask;
+    };
+    let resolved = resolve_for_comparison(Path::new(raw));
+    let root = resolve_for_comparison(vault_root);
+    if resolved.starts_with(&root) {
+        PermissionVerdict::AllowInsideVault
+    } else {
+        PermissionVerdict::Ask
+    }
+}
+
+/// 두 경로를 **같은 잣대로** 만든다.
+///
+/// 그냥 `canonicalize` 만 쓰면 안 되는 이유가 둘이다:
+///
+/// 1. **쓰려는 파일은 대개 아직 없다.** 없는 경로는 `canonicalize` 가 실패하므로
+///    원본이 그대로 남는데, 볼트 루트는 존재해서 정규화된다. macOS 에서 그
+///    비대칭이 바로 사고가 된다 — `/var/...` 가 `/private/var/...` 로 바뀌어,
+///    **볼트 안인데 밖으로 판정**된다(2026-08-16 이 검사가 잡았다).
+/// 2. 그렇다고 정규화를 아예 안 하면 볼트 안의 심볼릭 링크가 밖을 가리키는
+///    경우를 「안」으로 세게 된다.
+///
+/// 그래서 **존재하는 가장 깊은 조상까지 정규화하고 나머지는 이어 붙인다.**
+/// 존재하는 부분은 링크가 풀리고, 아직 없는 부분은 이름 그대로 남는다.
+fn resolve_for_comparison(path: &Path) -> PathBuf {
+    if let Ok(canonical) = std::fs::canonicalize(path) {
+        return canonical;
+    }
+    let mut rest: Vec<std::ffi::OsString> = Vec::new();
+    let mut cursor = path;
+    loop {
+        if let Ok(canonical) = std::fs::canonicalize(cursor) {
+            let mut out = canonical;
+            for part in rest.iter().rev() {
+                out.push(part);
+            }
+            return out;
+        }
+        match (cursor.file_name(), cursor.parent()) {
+            (Some(name), Some(parent)) => {
+                rest.push(name.to_os_string());
+                cursor = parent;
+            }
+            // 더 올라갈 곳이 없다 — 정규화할 수 있는 조상이 하나도 없는
+            // 경로다(상대 경로 등). 원본 그대로 비교한다.
+            _ => return path.to_path_buf(),
+        }
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, serde::Serialize)]
+#[serde(rename_all = "kebab-case")]
+pub(crate) enum PermissionVerdict {
+    /// 볼트 안이라 앱이 대신 허용한다.
+    AllowInsideVault,
+    /// 사용자에게 묻는다.
+    Ask,
 }
 
 /// 한 줄을 읽되 **길이에 상한을 둔다**.
@@ -1063,6 +1252,129 @@ mod tests {
         let pid = child.id();
         let _ = child.wait();
         assert!(terminate_tree(pid).is_ok());
+    }
+
+    /// 이 검사가 지키는 것: 앱이 띄우는 세션은 사용자의 전역 설정을 물려받지
+    /// 않는다. 실측(2026-08-16)에서 물려받은 세션은 볼트 밖에 파일을 쓰면서
+    /// **한 번도 묻지 않았다** — 소유자의 설정이 `Bash(*)`·`Write(*)` 를 미리
+    /// 허용해 두고 있었기 때문이다.
+    #[test]
+    fn isolated_config_never_inherits_a_permissive_allow_list() {
+        let settings: serde_json::Value = serde_json::from_str(ISOLATED_CLAUDE_SETTINGS)
+            .expect("격리 설정이 올바른 JSON 이어야 한다");
+        let perms = &settings["permissions"];
+        assert_eq!(perms["defaultMode"], "default", "모델이 알아서 승인하면 관문이 없다");
+        for key in ["allow", "deny", "ask"] {
+            assert_eq!(
+                perms[key].as_array().map(|a| a.len()),
+                Some(0),
+                "{key} 가 비어 있지 않다 — 미리 허용된 것은 모드와 무관하게 통과한다"
+            );
+        }
+    }
+
+    #[test]
+    fn prepare_isolated_config_writes_our_settings_and_links_credentials() {
+        let base = std::env::temp_dir().join(format!("atlas-acp-cfg-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&base);
+        let app_data = base.join("appdata");
+        let home = base.join("home");
+        std::fs::create_dir_all(home.join(".claude")).unwrap();
+        std::fs::write(home.join(".claude").join(".credentials.json"), "{\"t\":1}").unwrap();
+
+        let dir = prepare_isolated_config("claude", &app_data, Some(&home)).unwrap();
+        assert_eq!(
+            std::fs::read_to_string(dir.join("settings.json")).unwrap(),
+            ISOLATED_CLAUDE_SETTINGS
+        );
+        #[cfg(unix)]
+        {
+            let link = dir.join(".credentials.json");
+            assert_eq!(
+                std::fs::read_link(&link).unwrap(),
+                home.join(".claude").join(".credentials.json"),
+                "자격증명은 복사가 아니라 링크여야 한다"
+            );
+        }
+
+        // 사용자가 우리 설정을 고쳐 관문을 열어 둔 채 잊는 일을 막는다 —
+        // 이 디렉터리는 앱의 것이고 매번 다시 쓴다.
+        std::fs::write(dir.join("settings.json"), "{\"permissions\":{\"allow\":[\"Bash(*)\"]}}").unwrap();
+        let dir2 = prepare_isolated_config("claude", &app_data, Some(&home)).unwrap();
+        assert_eq!(
+            std::fs::read_to_string(dir2.join("settings.json")).unwrap(),
+            ISOLATED_CLAUDE_SETTINGS,
+            "다시 준비할 때 우리 설정으로 되돌아와야 한다"
+        );
+
+        let _ = std::fs::remove_dir_all(&base);
+    }
+
+    #[test]
+    fn prepare_isolated_config_without_credentials_does_not_invent_a_link() {
+        // 로그인하지 않은 사용자에게 끊긴 링크를 만들어 주면 「설정은 있는데 왜
+        // 안 되지」가 된다. 그냥 두고 화면이 로그인하라고 말해야 한다.
+        let base = std::env::temp_dir().join(format!("atlas-acp-nocred-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&base);
+        let home = base.join("home");
+        std::fs::create_dir_all(&home).unwrap();
+        let dir = prepare_isolated_config("claude", &base.join("appdata"), Some(&home)).unwrap();
+        assert!(!dir.join(".credentials.json").exists());
+        let _ = std::fs::remove_dir_all(&base);
+    }
+
+    #[test]
+    fn permission_policy_reads_the_path_not_the_title() {
+        // 실측: 볼트 안이면 제목이 상대 경로, 밖이면 절대 경로였다. 문구로
+        // 판정하면 문구가 바뀌는 날 정책이 조용히 뒤집힌다.
+        let base = std::env::temp_dir().join(format!("atlas-acp-perm-{}", std::process::id()));
+        let vault = base.join("vault");
+        let outside = base.join("outside");
+        std::fs::create_dir_all(&vault).unwrap();
+        std::fs::create_dir_all(&outside).unwrap();
+
+        assert_eq!(
+            permission_verdict(&vault, Some(vault.join("notes.md").to_str().unwrap())),
+            PermissionVerdict::AllowInsideVault
+        );
+        assert_eq!(
+            permission_verdict(&vault, Some(outside.join("notes.md").to_str().unwrap())),
+            PermissionVerdict::Ask,
+            "볼트 밖은 반드시 물어야 한다"
+        );
+        assert_eq!(
+            permission_verdict(&vault, Some("../escape.md")),
+            PermissionVerdict::Ask,
+            "상대 경로로 올라가는 것도 밖이다"
+        );
+        assert_eq!(
+            permission_verdict(&vault, None),
+            PermissionVerdict::Ask,
+            "경로를 모르면 묻는다 — 판단할 수 없는 것을 통과시키지 않는다"
+        );
+
+        let _ = std::fs::remove_dir_all(&base);
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn a_symlink_inside_the_vault_pointing_out_is_not_inside() {
+        let base = std::env::temp_dir().join(format!("atlas-acp-link-{}", std::process::id()));
+        let vault = base.join("vault");
+        let outside = base.join("outside");
+        std::fs::create_dir_all(&vault).unwrap();
+        std::fs::create_dir_all(&outside).unwrap();
+        let real = outside.join("secret.md");
+        std::fs::write(&real, "x").unwrap();
+        let trap = vault.join("looks-inside.md");
+        std::os::unix::fs::symlink(&real, &trap).unwrap();
+
+        assert_eq!(
+            permission_verdict(&vault, Some(trap.to_str().unwrap())),
+            PermissionVerdict::Ask,
+            "볼트 안처럼 보이는 링크가 밖을 가리키면 안이 아니다"
+        );
+        let _ = std::fs::remove_dir_all(&base);
     }
 
     #[test]
