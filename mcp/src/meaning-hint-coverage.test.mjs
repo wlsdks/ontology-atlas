@@ -38,6 +38,7 @@ const REMEDY_SOURCES = [
   'project-meaning-inventory.mjs',
   'project-source-receipt.mjs',
   'project-source-remedy.mjs',
+  'project-source-vocabulary.mjs',
   'project-source-mint.mjs',
 ];
 
@@ -53,9 +54,10 @@ function remedyIdsInSource() {
       found.add(m[1]);
       found.add(m[2]);
     }
-    // 선언된 목록(`ACTION_IDS` / `SOURCE_ACTION_IDS`) 도 정본이다.
-    for (const block of text.matchAll(/(?:SOURCE_)?ACTION_IDS = new Set\(\[([^\]]*)\]/g)) {
-      for (const m of block[1].matchAll(/'([a-z_]+)'/g)) found.add(m[1]);
+    // 선언된 목록도 정본이다 — 2026-08-17 부터 한 곳
+    // (`project-source-vocabulary.mjs`)에서만 선언한다.
+    for (const block of text.matchAll(/ACTION_IDS = Object\.freeze\(\s*new Set\(\[([^\]]*)\]|(?:SOURCE_)?ACTION_IDS = new Set\(\[([^\]]*)\]/g)) {
+      for (const m of (block[1] ?? block[2] ?? '').matchAll(/'([a-z_]+)'/g)) found.add(m[1]);
     }
   }
   return found;
