@@ -7,6 +7,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslations } from 'next-intl';
 
 import { Button, Chip, IconButton, RowButton, Select, Surface, Textarea } from '@/shared/ui';
+import { Tooltip, TooltipProvider } from '@/shared/ui/tooltip';
 import { badgeClass } from '@/shared/ui/badge-class';
 import { controlClass } from '@/shared/ui/control-class';
 import { ICON_SIZE } from '@/shared/ui/icon-size';
@@ -247,32 +248,56 @@ export function AcpChatPanel({
             지난 대화가 **있을 때만** 문을 낸다 — 처음 쓰는 사람에게 늘 비어
             있는 목록 버튼을 보여 줄 이유가 없다.
           */}
-          {sessions.length > 0 ? (
-            <IconButton
-              label={t('history')}
-              data-testid="acp-chat-history"
-              aria-expanded={historyOpen}
-              onClick={() => setHistoryOpen((open) => !open)}
-            >
-              <History size={ICON_SIZE.sm} aria-hidden />
-            </IconButton>
-          ) : null}
-          <IconButton
-            label={t('newChat')}
-            data-testid="acp-chat-new"
-            disabled={status === 'starting'}
-            onClick={() => {
-              setHistoryOpen(false);
-              void switchSession(null);
-            }}
-          >
-            <SquarePen size={ICON_SIZE.sm} aria-hidden />
-          </IconButton>
-          {onClose ? (
-            <IconButton label={t('close')} data-testid="acp-chat-close" onClick={onClose}>
-              <X size={ICON_SIZE.sm} aria-hidden />
-            </IconButton>
-          ) : null}
+          {/*
+            아이콘만 있는 버튼은 **이름이 안 보인다.** `title` 이 붙어 있긴 하나
+            macOS 웹뷰의 기본 툴팁은 한참 기다려야 뜨고, 그동안 사용자는 이게
+            뭐 하는 버튼인지 모른다(소유자: *"마우스 올리면 툴팁이 떠야 이게
+            뭐하는건지 이해 가능할듯"*). 저장소에 이미 있는 툴팁을 쓴다.
+
+            크기도 한 단 올린다 — 이 셋은 이 패널의 주 크롬이라 `md`(32px)로는
+            눌러야 할 것으로 안 읽힌다.
+          */}
+          <TooltipProvider delayDuration={200}>
+            {sessions.length > 0 ? (
+              <Tooltip content={t('history')} withProvider={false} side="bottom">
+                <IconButton
+                  size="lg"
+                  label={t('history')}
+                  data-testid="acp-chat-history"
+                  aria-expanded={historyOpen}
+                  onClick={() => setHistoryOpen((open) => !open)}
+                >
+                  <History size={ICON_SIZE.md} aria-hidden />
+                </IconButton>
+              </Tooltip>
+            ) : null}
+            <Tooltip content={t('newChat')} withProvider={false} side="bottom">
+              <IconButton
+                size="lg"
+                label={t('newChat')}
+                data-testid="acp-chat-new"
+                disabled={status === 'starting'}
+                onClick={() => {
+                  setHistoryOpen(false);
+                  void switchSession(null);
+                }}
+              >
+                <SquarePen size={ICON_SIZE.md} aria-hidden />
+              </IconButton>
+            </Tooltip>
+            {onClose ? (
+              <Tooltip content={t('close')} withProvider={false} side="bottom">
+                <IconButton
+                  size="lg"
+                  label={t('close')}
+                  data-testid="acp-chat-close"
+                  onClick={onClose}
+                >
+                  <X size={ICON_SIZE.md} aria-hidden />
+                </IconButton>
+              </Tooltip>
+            ) : null}
+          </TooltipProvider>
         </span>
       </header>
 
@@ -370,7 +395,15 @@ export function AcpChatPanel({
           손이 갔을 때만 띄우고, 자리는 겹쳐 두어 **줄이 흔들리지 않게** 한다
           (「치수는 우리가 정한다」).
         */}
-        {composerFocused ? (
+        {/*
+          ⚠️ **비어 있을 때만** 띄운다 (2026-08-16 소유자 실보고: *"박스 위에
+          글자에 입력한 게 겹치는데?"*).
+          종전엔 손이 가 있기만 하면 띄웠는데, 그 자리가 곧 긴 문장이 지나가는
+          자리라 **글자 위에 글자가 겹쳤다.** 「줄이 안 흔들리게」 하려고 겹쳐
+          둔 것이 더 나쁜 것을 만들었다 — 배우고 나면 사라져야 할 안내가 읽는
+          것을 가린 것이다. 한 글자라도 치면 사라진다.
+        */}
+        {composerFocused && draft.length === 0 ? (
           <span
             data-testid="acp-chat-hint"
             className={badgeClass({

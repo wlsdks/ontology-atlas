@@ -556,3 +556,56 @@ describe('대화 패널 — 어댑터를 두 개 띄우지 않는다', () => {
     expect(bridge.sent.filter((m) => m.method === 'initialize')).toHaveLength(1);
   });
 });
+
+describe('작성 칸 — 안내가 쓰는 글을 가리지 않는다', () => {
+  /*
+   * 2026-08-16 소유자 실보고: *"박스 위에 글자에 입력한 게 겹치는데?"*
+   *
+   * 내가 만든 결함이다. 「줄이 안 흔들리게」 하려고 안내를 글자 자리 위에
+   * 겹쳐 뒀는데, 그 자리가 곧 긴 문장이 지나가는 자리였다 — 배우고 나면
+   * 사라져야 할 안내가 정작 읽을 것을 가렸다.
+   */
+  it('손이 갔고 **비어 있을 때만** 안내를 띄운다', async () => {
+    await bootSession();
+    const box = screen.getByRole('textbox');
+
+    // 아직 손이 안 갔다 → 없다.
+    expect(screen.queryByTestId('acp-chat-hint')).toBeNull();
+
+    fireEvent.focus(box);
+    expect(screen.getByTestId('acp-chat-hint')).toBeInTheDocument();
+
+    // 한 글자라도 치면 사라진다 — 겹칠 일이 없어진다.
+    fireEvent.change(box, { target: { value: '가' } });
+    expect(
+      screen.queryByTestId('acp-chat-hint'),
+      '글자가 있는데 안내가 남아 있으면 그 위에 겹쳐 그려진다',
+    ).toBeNull();
+
+    // 다 지우면 다시 나온다.
+    fireEvent.change(box, { target: { value: '' } });
+    expect(screen.getByTestId('acp-chat-hint')).toBeInTheDocument();
+
+    fireEvent.blur(box);
+    expect(screen.queryByTestId('acp-chat-hint')).toBeNull();
+  });
+
+  it('머리의 아이콘 버튼은 이름을 갖고, 작지 않다', async () => {
+    /*
+     * 아이콘만 있는 버튼은 이름이 안 보인다. 접근성 이름은 타입이 강제하지만
+     * (`IconButton.label`), **눈으로 보는 사람**에게는 툴팁이 그 역할을 한다.
+     */
+    await bootSession();
+    // 닫기는 `onClose` 를 받은 자리에서만 생긴다 — 여기서는 항상 있는 것만 본다.
+    for (const id of ['acp-chat-new']) {
+      const button = screen.getByTestId(id);
+      expect(button, id).toHaveAccessibleName();
+      /*
+       * 아이콘 컨트롤의 램프는 24 / 28 / 32 이고 `lg` 가 상한이다. 이 패널의
+       * 주 크롬이므로 상한을 쓴다 — 더 키우려면 램프를 늘려야 하고, 그건
+       * 이 자리에서 혼자 정할 일이 아니다(「체계」 자리의 몫).
+       */
+      expect(button.className, `${id}: 크기가 한 단 내려갔다`).toContain('h-8 w-8');
+    }
+  });
+});
