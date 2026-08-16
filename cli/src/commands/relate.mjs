@@ -46,7 +46,21 @@ const RELATION_KEY = Object.freeze({
   domain: 'domain',
 });
 
-export async function runRelate(args) {
+const DEFAULT_RUNTIME = Object.freeze({
+  runRelationCheckQuery,
+  renderRelationCheckResult,
+  readDocFrontmatter,
+  writeFrontmatterKey,
+  writeFrontmatterKeys,
+  recordCliWrite,
+});
+
+/**
+ * `runtime` is an internal command-test seam. The executable command always
+ * uses the defaults; callers cannot supply it through CLI arguments.
+ */
+export async function runRelate(args, runtimeOverrides = {}) {
+  const runtime = { ...DEFAULT_RUNTIME, ...runtimeOverrides };
   const { from, to, type, vault, json, dryRun, why, error, help } = parseArgs(args);
   if (help) {
     printUsage(process.stdout);
@@ -62,7 +76,7 @@ export async function runRelate(args) {
 
   let check;
   try {
-    check = await runRelationCheckQuery(vaultRoot, from, to, type);
+    check = await runtime.runRelationCheckQuery(vaultRoot, from, to, type);
   } catch (err) {
     process.stderr.write(
       `${COLORS.red}error${COLORS.reset}  ${err instanceof Error ? err.message : String(err)}\n`,
@@ -70,7 +84,7 @@ export async function runRelate(args) {
     return 2;
   }
 
-  if (!json) renderRelationCheckResult(check);
+  if (!json) runtime.renderRelationCheckResult(check);
 
   if (check.exists) {
     if (json) {
@@ -86,12 +100,13 @@ export async function runRelate(args) {
     // 하고 진짜 명령이 거절하는 일이 생긴다 (2026-08-16 실측).
     let refusal = null;
     try {
-      const { frontmatter } = readDocFrontmatter(vaultRoot, check.from);
+      const { frontmatter } = runtime.readDocFrontmatter(vaultRoot, check.from);
       refusal = relationWriteRefusal({ frontmatter, relation: check.relation, to: check.to, why });
-    } catch {
-      // 파일을 못 읽는 것은 preflight 가 이미 걸렀어야 하는 일이다. 여기서
-      // 미리보기를 실패로 바꾸지 않는다 — 거절 사유를 「모른다」로 둔다.
-      refusal = null;
+    } catch (err) {
+      process.stderr.write(
+        `${COLORS.red}error${COLORS.reset}  ${err instanceof Error ? err.message : String(err)}\n`,
+      );
+      return 1;
     }
     if (refusal) {
       if (json) {
@@ -114,9 +129,13 @@ export async function runRelate(args) {
   }
 
   try {
-    const filePath = writeRelation(vaultRoot, { from: check.from, to: check.to, relation: check.relation, why });
+    const filePath = writeRelation(
+      vaultRoot,
+      { from: check.from, to: check.to, relation: check.relation, why },
+      runtime,
+    );
     // P2-① — 실제로 관계가 쓰였을 때만 감사 로그에 (dry-run·already-exists 위에서 return).
-    await recordCliWrite(vaultRoot, {
+    await runtime.recordCliWrite(vaultRoot, {
       tool: 'cli:relate',
       target: check.from,
       summary: `${check.from} --${type}--> ${check.to}`,
@@ -176,14 +195,16 @@ export function relationWriteRefusal({ frontmatter, relation, to, why = null }) 
   return null;
 }
 
-function writeRelation(rootPath, { from, to, relation, why = null }) {
+function writeRelation(rootPath, { from, to, relation, why = null }, runtime) {
   // preflight 는 이미 frontmatter 키('dependencies' 등)를 relation 으로
   // 돌려주기도 한다 — 타입/키 양쪽 표기를 수용한다.
   const key = RELATION_KEY[relation] ?? relation;
-  const { frontmatter } = readDocFrontmatter(rootPath, from);
+  const { frontmatter, revision } = runtime.readDocFrontmatter(rootPath, from);
   const refusal = relationWriteRefusal({ frontmatter, relation, to, why });
   if (refusal) throw new Error(refusal);
-  if (key === 'domain') return writeFrontmatterKey(rootPath, from, 'domain', to);
+  if (key === 'domain') {
+    return runtime.writeFrontmatterKey(rootPath, from, 'domain', to, { expectedRevision: revision });
+  }
   const existing = Array.isArray(frontmatter[key]) ? frontmatter[key] : [];
   const next = normalizeRelationRefs([...existing, to]);
   // P6 — --why: 관계와 근거를 같은 쓰기로 (MCP add_relation why 미러).
@@ -192,9 +213,14 @@ function writeRelation(rootPath, { from, to, relation, why = null }) {
       ? { ...frontmatter.relation_notes }
       : {};
     notes[to] = why.trim();
-    return writeFrontmatterKeys(rootPath, from, { [key]: next, relation_notes: notes });
+    return runtime.writeFrontmatterKeys(
+      rootPath,
+      from,
+      { [key]: next, relation_notes: notes },
+      { expectedRevision: revision },
+    );
   }
-  return writeFrontmatterKey(rootPath, from, key, next);
+  return runtime.writeFrontmatterKey(rootPath, from, key, next, { expectedRevision: revision });
 }
 
 function parseArgs(args) {

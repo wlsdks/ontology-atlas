@@ -10,6 +10,42 @@ import {
   writeFileSync,
 } from 'node:fs';
 
+export function readFileRevision(filePath) {
+  try {
+    const metadata = statSync(filePath);
+    return {
+      dev: metadata.dev,
+      ino: metadata.ino,
+      size: metadata.size,
+      mtimeMs: metadata.mtimeMs,
+      ctimeMs: metadata.ctimeMs,
+    };
+  } catch (error) {
+    if (error?.code === 'ENOENT') return null;
+    throw error;
+  }
+}
+
+export function sameFileRevision(left, right) {
+  return Boolean(
+    left
+    && right
+    && left.dev === right.dev
+    && left.ino === right.ino
+    && left.size === right.size
+    && left.mtimeMs === right.mtimeMs
+    && left.ctimeMs === right.ctimeMs,
+  );
+}
+
+function assertExpectedRevision(filePath, expectedRevision) {
+  if (!expectedRevision) return;
+  if (sameFileRevision(expectedRevision, readFileRevision(filePath))) return;
+  throw new Error(
+    `Conflict: file changed or was deleted before atomic write: ${filePath}. Re-read and retry.`,
+  );
+}
+
 function existingRegularFileMode(filePath) {
   try {
     const metadata = statSync(filePath);
@@ -43,7 +79,7 @@ function existingRegularFileMode(filePath) {
  * 이름 바꾸기는 같은 파일 시스템 안에서 원자적이다. 그래서 어느 순간에 죽어도
  * 파일은 **옛 내용 아니면 새 내용**이지, 반쪽이 되지 않는다.
  */
-export function writeFileAtomically(filePath, text) {
+export function writeFileAtomically(filePath, text, { expectedRevision = null } = {}) {
   const temporaryPath = `${filePath}.oatlas-tmp-${process.pid}`;
   const existingMode = existingRegularFileMode(filePath);
   let descriptor = null;
@@ -57,6 +93,9 @@ export function writeFileAtomically(filePath, text) {
     fsyncSync(descriptor);
     closeSync(descriptor);
     descriptor = null;
+    // 마지막 이름 교체 직전에도 최초 snapshot을 확인한다. 그렇지 않으면
+    // frontmatter를 다시 읽어 확인한 뒤 temp를 쓰는 사이의 사람 편집을 덮는다.
+    assertExpectedRevision(filePath, expectedRevision);
     renameSync(temporaryPath, filePath);
   } finally {
     if (descriptor !== null) {

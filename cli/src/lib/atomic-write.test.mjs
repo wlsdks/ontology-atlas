@@ -4,7 +4,7 @@ import { mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, statSync, wr
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
 
-import { writeFileAtomically } from './atomic-write.mjs';
+import { readFileRevision, writeFileAtomically } from './atomic-write.mjs';
 
 /**
  * **원본을 먼저 비우지 않는다.**
@@ -49,5 +49,25 @@ test('쓰다 실패해도 원본이 그대로 남는다', () => {
 
   assert.throws(() => writeFileAtomically(target, 'new'));
   assert.ok(statSync(target).isDirectory(), '대상이 파일로 바뀌었다');
+  rmSync(dir, { recursive: true, force: true });
+});
+
+test('stale revision으로는 사람의 최신 바이트를 원자 rename으로 덮지 않는다', () => {
+  const dir = mkdtempSync(join(tmpdir(), 'oatlas-atomic-conflict-'));
+  const target = join(dir, 'note.md');
+  writeFileSync(target, 'agent-before', 'utf-8');
+  const expectedRevision = readFileRevision(target);
+  writeFileSync(target, 'human-current', 'utf-8');
+
+  assert.throws(
+    () => writeFileAtomically(target, 'stale-agent-write', { expectedRevision }),
+    /changed or was deleted|conflict/i,
+  );
+  assert.equal(readFileSync(target, 'utf-8'), 'human-current');
+  assert.deepEqual(
+    readdirSync(dir).filter((name) => name.includes('oatlas-tmp')),
+    [],
+    'conflict 뒤 temp 파일이 남았다',
+  );
   rmSync(dir, { recursive: true, force: true });
 });
