@@ -1,6 +1,13 @@
 import { existsSync, mkdirSync, readFileSync, renameSync, rmSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { inspectProjectSource } from './project-source-inspection.mjs';
+// 낱말은 한 곳에서 선언한다 — 예전에는 이 목록이 여기와
+// `project-meaning-inventory.mjs` 에 두 벌 있었고, 한쪽만 고치면 다른 쪽이
+// 조용히 거절했다 (2026-08-17).
+import {
+  PROJECT_SOURCE_ACTION_IDS as ACTION_IDS,
+  PROJECT_SOURCE_GAP_IDS as GAP_IDS,
+} from './project-source-vocabulary.mjs';
 import {
   PROJECT_SOURCE_RECEIPT_VERSION,
   buildProjectSourceReceipt,
@@ -12,27 +19,7 @@ export const PROJECT_SOURCE_STATE_RELATIVE_PATH = '.ontology-atlas/project-sourc
 const SIDECAR_IGNORE_CONTENT = '# Ontology Atlas local runtime state: not for commit.\n*\n';
 
 const RECEIPT_STATUSES = new Set(['needs_evidence', 'review_required', 'verified_current']);
-const GAP_IDS = new Set([
-  'source_unbound',
-  'multiple_active_sources',
-  'receipt_missing',
-  'receipt_malformed',
-  'source_role_evidence_missing',
-  'declared_source_path_missing',
-  'source_inventory_truncated',
-  'ontology_changed',
-  'source_changed',
-]);
-const ACTION_IDS = new Set([
-  'connect_source',
-  'repair_source_binding',
-  'measure_source',
-  'record_source_role',
-  'repair_source_path',
-  'review_inventory_limit',
-  'remeasure_source',
-  'use_current_evidence',
-]);
+
 
 function base(projectSlug, bindingCardinality, status, currentness, topGap, nextAction, receipt = null) {
   return {
