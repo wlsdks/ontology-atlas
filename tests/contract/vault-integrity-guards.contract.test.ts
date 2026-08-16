@@ -184,6 +184,30 @@ describe("볼트 파일 권한 — 원자적 갱신", () => {
   });
 });
 
+/** 객체 메타키로 상속된 kind를 만들더라도 그래프 노드가 되지 않는다. */
+describe("frontmatter 객체 메타키 — 그래프 경계", () => {
+  it("probe: 정상 노드와 공격 문서를 함께 컴파일한다", () => {
+    const root = vault();
+    writeFileSync(
+      join(root, "safe.md"),
+      "---\nuid: 51890f3e-7b5d-4c0a-8f14-123456789abc\nkind: domain\ntitle: Safe\n---\n",
+    );
+    writeFileSync(
+      join(root, "forged.md"),
+      "---\n__proto__:\n  uid: 61890f3e-7b5d-4c0a-8f14-123456789abc\n  kind: domain\n  title: Forged\nsafe: value\n---\n",
+    );
+
+    const docs = loadVaultDocs(root);
+    const forged = docs.find((doc) => doc.slug === "forged");
+    const forgedFrontmatter = (forged?.frontmatter ?? {}) as Record<string, unknown>;
+    expect(Object.prototype.hasOwnProperty.call(forgedFrontmatter, "kind")).toBe(false);
+    expect(forgedFrontmatter.kind).toBeUndefined();
+
+    const summary = compileOntology(docs, { summary: true }) as { nodeCount: number };
+    expect(summary.nodeCount).toBe(1);
+  });
+});
+
 /**
  * **글자가 같으면 같은 노드다 — NFC/NFD.**
  *

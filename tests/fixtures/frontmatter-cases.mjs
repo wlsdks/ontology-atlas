@@ -86,6 +86,48 @@ export const CASES = [
     expected: { frontmatter: { kind: "project" }, body: "" },
   },
   {
+    name: "prototype key 아래 필드가 top-level schema로 승격되지 않는다",
+    input:
+      "---\n__proto__:\n  kind: project\n  title: Forged\n  uid: 01890f3e-7b5d-4c0a-8f14-123456789abc\nsafe: kept\n---\n",
+    expected: {
+      frontmatter: { safe: "kept" },
+      body: "",
+      diagnostics: [
+        {
+          code: "malformed-frontmatter-line",
+          line: 2,
+          message: "Frontmatter line 2 uses unsafe object key `__proto__`.",
+        },
+      ],
+    },
+  },
+  {
+    name: "중첩 객체의 prototype meta key도 거절한다",
+    input:
+      "---\nmetadata:\n  __proto__: blocked\n  constructor: blocked\n  prototype: blocked\n  safe: kept\n---\n",
+    expected: {
+      frontmatter: { metadata: { safe: "kept" } },
+      body: "",
+      diagnostics: [
+        {
+          code: "malformed-frontmatter-line",
+          line: 3,
+          message: "Frontmatter line 3 uses unsafe object key `__proto__`.",
+        },
+        {
+          code: "malformed-frontmatter-line",
+          line: 4,
+          message: "Frontmatter line 4 uses unsafe object key `constructor`.",
+        },
+        {
+          code: "malformed-frontmatter-line",
+          line: 5,
+          message: "Frontmatter line 5 uses unsafe object key `prototype`.",
+        },
+      ],
+    },
+  },
+  {
     name: "콜론 없는 frontmatter 선언은 구조 진단",
     input: "---\nkind: capability\nelements\n  - elements/orphan\n---\n",
     expected: {
