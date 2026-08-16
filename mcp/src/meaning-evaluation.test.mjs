@@ -17,6 +17,7 @@ const expected = JSON.parse(readFileSync(join(fixtureRoot, 'golden.json'), 'utf8
 
 function completeTypedRepositoryProposal() {
   const proposal = repositoryProposalFromGolden(expected);
+  proposal.project.evidence = ['README.md', 'docs/PRODUCT.md'];
   proposal.capabilities[0].path = 'src/features/checkout';
   proposal.capabilities[1].path = 'src/features/inventory-sync';
   proposal.relations = [
@@ -25,7 +26,7 @@ function completeTypedRepositoryProposal() {
       to: 'domains/purchase',
       type: 'domains',
       why: 'The project owns the purchase responsibility boundary.',
-      evidence: ['README.md'],
+      evidence: ['README.md', 'docs/PRODUCT.md'],
       confidence: 0.9,
     },
     {
@@ -33,7 +34,7 @@ function completeTypedRepositoryProposal() {
       to: 'domains/inventory',
       type: 'domains',
       why: 'The project owns the inventory responsibility boundary.',
-      evidence: ['README.md'],
+      evidence: ['README.md', 'docs/PRODUCT.md'],
       confidence: 0.9,
     },
     {
@@ -68,7 +69,7 @@ function completeTypedRepositoryProposal() {
       witnesses: {
         concepts: ['northstar-commerce'],
         relations: [],
-        evidence: ['README.md'],
+        evidence: ['README.md', 'docs/PRODUCT.md'],
         paths: [],
       },
     },
@@ -208,6 +209,163 @@ test('repository proposal requires typed competency witnesses before claiming a 
   assert.match(project.body, /## Competency answers/);
   assert.match(project.body, /Checkout depends on trustworthy inventory availability/);
   assert.match(project.body, /capabilities\/checkout.*depends_on.*capabilities\/inventory-sync/);
+});
+
+test('repository proposal rejects single-source high-confidence purpose and domain answers', () => {
+  const analysis = analyzeRepoStructure(fixtureRoot);
+  const proposal = completeTypedRepositoryProposal();
+
+  proposal.project.evidence = ['README.md'];
+  proposal.project.confidence = 0.95;
+  proposal.competencyAnswers.scope.witnesses.evidence = ['README.md'];
+  for (const domain of proposal.domains) {
+    domain.evidence = ['README.md'];
+    domain.confidence = 0.91;
+  }
+  for (const relation of proposal.relations.slice(0, 2)) {
+    relation.evidence = ['README.md'];
+    relation.confidence = 0.91;
+  }
+  proposal.competencyAnswers.domains.witnesses.evidence = ['README.md'];
+
+  const result = validateMeaningProposalAgainstAnalysis(analysis, proposal);
+
+  assert.equal(result.status, 'fail');
+  assert.equal(result.canWrite, false);
+  assert.equal(result.writePlan, undefined);
+  assert.ok(result.findings.some((row) =>
+    row.code === 'insufficient-purpose-authority' && row.path === 'project'));
+  assert.equal(
+    result.findings.filter((row) => row.code === 'insufficient-domain-authority').length,
+    2,
+  );
+  assert.equal(
+    result.findings.filter((row) => row.code === 'insufficient-domain-relation-authority').length,
+    2,
+  );
+  assert.ok(result.findings.some((row) =>
+    row.code === 'insufficient-competency-authority'
+      && row.path === 'competencyAnswers.scope'));
+  assert.ok(result.findings.some((row) =>
+    row.code === 'insufficient-competency-authority'
+      && row.path === 'competencyAnswers.domains'));
+});
+
+test('repository proposal keeps an honest single-source purpose and domain reviewable', () => {
+  const analysis = analyzeRepoStructure(fixtureRoot);
+  const proposal = completeTypedRepositoryProposal();
+
+  proposal.project.evidence = ['README.md'];
+  proposal.project.confidence = 0.5;
+  for (const domain of proposal.domains) {
+    domain.evidence = ['README.md'];
+    domain.confidence = 0.5;
+  }
+  for (const relation of proposal.relations.slice(0, 2)) {
+    relation.evidence = ['README.md'];
+    relation.confidence = 0.5;
+  }
+  for (const id of ['scope', 'domains']) {
+    proposal.competencyAnswers[id] = {
+      ...proposal.competencyAnswers[id],
+      status: 'partial',
+      gap: 'A separate current semantic witness has not confirmed this repository meaning.',
+      witnesses: {
+        ...proposal.competencyAnswers[id].witnesses,
+        evidence: ['README.md'],
+      },
+    };
+  }
+
+  const result = validateMeaningProposalAgainstAnalysis(analysis, proposal);
+
+  assert.equal(result.status, 'pass', JSON.stringify(result.findings));
+  assert.equal(result.canWrite, true);
+  assert.ok(result.findings.some((row) =>
+    row.code === 'partial-competency-answer'
+      && row.path === 'competencyAnswers.scope'));
+  assert.ok(result.findings.some((row) =>
+    row.code === 'partial-competency-answer'
+      && row.path === 'competencyAnswers.domains'));
+  assert.equal(
+    result.findings.some((row) => row.code.startsWith('insufficient-')),
+    false,
+  );
+});
+
+test('repository proposal does not count an unrelated trusted document as purpose authority', () => {
+  const analysis = analyzeRepoStructure(fixtureRoot);
+  const proposal = completeTypedRepositoryProposal();
+  const productEvidence = analysis.semanticEvidence.find(
+    (row) => row.source === 'docs/PRODUCT.md',
+  );
+  productEvidence.title = 'Telemetry notes';
+  productEvidence.headings = ['Telemetry'];
+  productEvidence.excerpt =
+    'Diagnostic traces rotate after seven days and expose queue latency to maintainers.';
+
+  const result = validateMeaningProposalAgainstAnalysis(analysis, proposal);
+
+  assert.equal(result.status, 'fail');
+  assert.equal(result.canWrite, false);
+  assert.ok(result.findings.some((row) =>
+    row.code === 'insufficient-purpose-authority'
+      && row.sources.includes('README.md')));
+});
+
+test('repository proposal does not count duplicated prose as independent meaning authority', () => {
+  const analysis = analyzeRepoStructure(fixtureRoot);
+  const proposal = completeTypedRepositoryProposal();
+  const readmeEvidence = analysis.semanticEvidence.find(
+    (row) => row.source === 'README.md',
+  );
+  const productEvidence = analysis.semanticEvidence.find(
+    (row) => row.source === 'docs/PRODUCT.md',
+  );
+  productEvidence.excerpt = readmeEvidence.excerpt;
+
+  const result = validateMeaningProposalAgainstAnalysis(analysis, proposal);
+
+  assert.equal(result.status, 'fail');
+  assert.equal(result.canWrite, false);
+  assert.ok(result.findings.some((row) => row.code === 'insufficient-purpose-authority'));
+});
+
+test('domain authority requires two responsibility-boundary witnesses, not one contract plus workflow prose', () => {
+  const analysis = analyzeRepoStructure(fixtureRoot);
+  const proposal = completeTypedRepositoryProposal();
+  const readmeEvidence = analysis.semanticEvidence.find(
+    (row) => row.source === 'README.md',
+  );
+  const productEvidence = analysis.semanticEvidence.find(
+    (row) => row.source === 'docs/PRODUCT.md',
+  );
+  readmeEvidence.excerpt = [
+    'Northstar Commerce is a workspace for keeping purchase completion and sellable inventory consistent.',
+    'Purchase owns turning a reviewed cart into a confirmed order.',
+    'Inventory owns maintaining trustworthy sellable stock.',
+  ].join(' ');
+  productEvidence.excerpt = [
+    'Northstar Commerce keeps purchase completion and sellable inventory consistent for merchants.',
+    'Customers review a cart and receive a confirmed order through Purchase.',
+    'Merchants see trustworthy sellable stock in Inventory.',
+  ].join(' ');
+
+  const result = validateMeaningProposalAgainstAnalysis(analysis, proposal);
+
+  assert.equal(result.status, 'fail');
+  assert.equal(result.canWrite, false);
+  assert.equal(
+    result.findings.filter((row) => row.code === 'insufficient-domain-authority').length,
+    2,
+  );
+  assert.equal(
+    result.findings.filter((row) => row.code === 'insufficient-domain-relation-authority').length,
+    2,
+  );
+  assert.ok(result.findings.some((row) =>
+    row.code === 'insufficient-competency-authority'
+      && row.path === 'competencyAnswers.domains'));
 });
 
 test('an answered abilities competency cannot cover only a strict subset of its domain targets', () => {
@@ -457,6 +615,14 @@ test('repository proposal accepts a trusted semantic source as independent corro
     answer.witnesses.evidence = ['docs/PRODUCT.md'];
   }
   proposal.capabilities[0].evidence = ['README.md', 'docs/PRODUCT.md'];
+  proposal.project.confidence = 0.5;
+  for (const domain of proposal.domains) domain.confidence = 0.5;
+  for (const relation of proposal.relations.slice(0, 2)) relation.confidence = 0.5;
+  for (const id of ['scope', 'domains']) {
+    proposal.competencyAnswers[id].status = 'partial';
+    proposal.competencyAnswers[id].gap =
+      'Only one current semantic source remains after risky evidence is excluded.';
+  }
 
   const result = validateMeaningProposalAgainstAnalysis(analysis, proposal);
 

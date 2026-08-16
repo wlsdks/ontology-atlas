@@ -152,6 +152,19 @@ claims are absent from the passed source-hidden task, fail closed; this binds
 the evaluator handoff to the proposal without claiming that the claim's
 business meaning is true.
 
+Purpose and domain authority is stricter than citation presence. A project
+purpose, proposed domain, or project-to-domain relation at confidence `0.8` or
+higher—and `scope` / `domains` marked `answered`—needs at least two distinct,
+current semantic sources whose prose actually overlaps the claim. Duplicate
+prose, unrelated trusted documents, roadmaps or negated/deprecated text,
+package manifests, and implementation paths do not count as a second meaning
+witness. For a domain, each of the two sources must name the domain and state
+its responsibility explicitly; a workflow description or matching source-path
+name is not a responsibility witness. Unqualified implementation elements stay
+project-scoped instead of being assigned to the sole or token-matching domain.
+With only one authority source, keep confidence below `0.8` and return `partial`
+with an explicit gap; that honest packet remains reviewable.
+
 Open either the codebase root or the vault folder in the agent and restart it.
 The generated root config points at `./ontology`; the vault-local config uses
 `OATLAS_VAULT=.` so the vault coordinates stay portable. The generated source

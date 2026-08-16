@@ -40,6 +40,67 @@
 **상태**: 유효 / 뒤집힘(→ 링크) / 반증됨(관측: …)
 ```
 
+## 2026-08-16 — 목적·도메인의 answered와 고신뢰는 주장에 맞는 독립 의미 근거를 요구한다
+
+**소집**: PO 카운슬 5자리 독립 1라운드 + 상호 반박 1라운드 · **트리거**:
+`analyze_repo_structure` proposal validation의 q1/q2 의미 권위 false-green
+**루브릭**: 23/24 (Problem insight 4 · User moment 4 · Differentiation 3 ·
+Ontology value 4 · Agent value 4 · Verification 4, 치명적 0: 없음)
+**서명**: 소유자 요청에 따라 집행
+
+**관찰**: 최신 held-out C proposal은 project와 domain에 `README.md` 하나만
+인용하고도 confidence 0.95/0.91, `scope`·`domains` `answered`, direct validator
+`status:pass`와 내부 write plan 생성을 얻었다. public lifecycle은 별도 qualification이
+없어 write를 열지는 않았지만, fresh source-hidden 인수자는 같은 q1을 weak, q2를
+partial/weak로 낮췄다. analyzer에는 이미 `[weak · domain-boundary]` 질문이 있으므로
+warning 또는 review question만 더하는 선택지는 관측된 응답 내 충돌을 없애지 못한다.
+
+**결정**: 기존 response shape 안에서 claim-specific semantic witness linking을 먼저
+수행하고, 그 결과만 purpose/domain authority gate가 센다. project purpose와 proposed
+domain, project→domain relation이 confidence 0.8 이상이거나 `scope`·`domains`
+competency가 `answered`이면, 서로 다른 두 current trusted semantic source가 해당
+주장의 비일반 의미를 실제로 지지해야 한다. 부족하면 기존 finding으로 실패 닫고,
+별도 의미 근거를 추가하거나 confidence를 0.8 미만으로 낮춘 `partial` + explicit gap으로
+고치게 한다. 정직한 single-source proposal 자체는 계속 reviewable이다.
+
+**적용 규칙**:
+
+1. 출처 수를 그대로 세지 않는다. 무관한 trusted 문서, 같은 파일 또는 같은 문장을
+   복제한 다른 파일, build manifest, package/path/implementation evidence는 목적·책임
+   의미의 독립 근거가 아니다.
+2. project corroboration은 선택된 목적 문장과 claim-specific term이 겹치는 별도 current
+   mission/product source만 연결한다. domain corroboration은 별도 product/architecture
+   source가 domain term과 명시적 responsibility sentence를 함께 가질 때만 연결한다.
+   고신뢰 도메인에는 이 조건을 각자 만족하는 서로 다른 두 source가 필요하다.
+3. README H2는 계속 이름 단서다. domain-specific witness가 없으면 여러 domain에 같은
+   mission 문장을 definition으로 복제하지 않고 unconfirmed-boundary fallback을 쓴다.
+4. risky/future/negated/deprecated/instruction evidence는 corroboration에서 제외한다.
+   shared authority, 자동 승인, automatic domain/capability/relation/write는 만들지 않는다.
+5. implementation element의 이름이 domain term과 겹치거나 domain 후보가 하나뿐이어도
+   역할 근거 없이 자동 귀속하지 않는다. 그런 path는 project-scoped evidence로 남긴다.
+
+**The decisive disagreement**: 별도 Sol 검토는 잘못 연결된 evidence부터 고치는 더 작은
+D-only 변경을 제안했다. 다섯 자리는 그 진단과 구현 순서에는 동의했지만, D만 배포하면
+single-source `answered`·고신뢰가 계속 pass하므로 관측된 false-green이 남는다고
+판단했다. 결론은 D를 별도 기능으로 끝내지 않고 authority gate의 판정 입력으로 포함하는
+하나의 완결된 변경이다.
+
+**기록된 반대**: 작은 저장소에서는 README 하나가 실제로 충분한 현재 권위일 수 있다.
+두 문서를 요구하면 의미 정확도 대신 문서 수를 최적화하고, 정직한 proposal의 재시도만
+늘릴 수 있다. **반증 조건**: fresh single-source 저장소에서 low-confidence partial이
+reviewable하지 않거나 사람/에이전트 왕복이 늘면서 source-hidden unsupported claim은
+줄지 않는 경우, 또는 aligned multi-source proposal이 계속 weak로 남는 경우 이 gate는
+너무 넓다. 그때 hard error 범위나 authority witness 규칙을 좁힌다.
+
+**재검토**: single-source와 aligned multi-source fresh source-hidden field trial,
+source/bundle parity, defect-reversion probe 직후
+
+**슬라이스**: IN claim linking · project/scope · domain/domains · project→domain ·
+existing finding/status/confidence · TDD/field trial · OUT 새 field/tool/schema/UI ·
+abilities/impact · NLP/LLM 판정 · C dependency graph · 자동 write · appetite 최대 하루
+
+**상태**: 유효
+
 ## 2026-08-16 — native 구현 경로는 파일 목록이 아니라 build-role 대표 집합으로 전달한다
 
 **소집**: 단독 패스 · **트리거**: held-out C field trial의 canonical capability path
