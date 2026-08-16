@@ -204,7 +204,9 @@
           "node-missing": "Node needed",
           "uvx-missing": "uv needed",
           "binary-missing": "Install yourself"
-        }
+        },
+        "notGuardedShort": "Unguarded",
+        "notGuardedExplainer": "Tools marked “{mark}” run with the settings you gave them. Atlas cannot ask on your behalf."
       }
     },
     "primaryAriaLabel": "Primary menu",
@@ -2555,7 +2557,8 @@
       "stepScaffold": "Create starter docs (one click)",
       "ctaScaffold": "Create for me",
       "ctaScaffoldBusy": "Creating…",
-      "scaffoldToast": "Created {concepts} ontology concepts and {configs} agent config files"
+      "scaffoldToast": "Created {concepts} ontology concepts and {configs} agent config files",
+      "stepAgentFound": "Found {runtime}. You can talk to it right here"
     },
     "recentChangesNeedsVault": {
       "eyebrow": "Recent changes",

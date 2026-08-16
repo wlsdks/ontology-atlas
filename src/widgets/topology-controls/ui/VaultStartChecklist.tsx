@@ -73,6 +73,15 @@ export interface VaultStartChecklistProps {
    * 곧 INDEX 가 차지한 폭이다.
    */
   indexExpanded?: boolean;
+  /**
+   * 이 기기에서 **바로 쓸 수 있는** 실행기의 이름 (없으면 null).
+   *
+   * 2026-08-16 소유자 지적: *"처음 세팅할 때 이 설정이 바로 나와야 하는데 폴더
+   * 고르고 나서? 안 그러면 사용자 입장에서 설정 들어갈 때까지는 모르는 거잖아"*.
+   * 맞는 지적이다 — 앱이 이미 알고 있는 사실을 설정 안에 숨겨 두면, 그 사실은
+   * 찾아 들어간 사람에게만 존재한다. 폴더를 연 **바로 다음 화면**에서 말한다.
+   */
+  acpRuntimeLabel?: string | null;
 }
 
 export function VaultStartChecklist({
@@ -88,6 +97,7 @@ export function VaultStartChecklist({
   docsFoundCount = 0,
   onStartFromDocs = null,
   indexExpanded = false,
+  acpRuntimeLabel = null,
 }: VaultStartChecklistProps) {
   const t = useTranslations("topology.startChecklist");
   // 문서 갈래의 제목·CTA 는 빈 상태가 이미 가진 문구를 **재사용**한다 —
@@ -130,7 +140,10 @@ export function VaultStartChecklist({
     {
       id: "agent",
       done: agentConnected,
-      label: t("stepAgent"),
+      // 앱이 이미 찾아 둔 것이 있으면 그것을 이름으로 말한다. 「AI 도구를
+      // 연결하세요」보다 「Claude Code 를 찾았어요」가 훨씬 먼 데까지 간다 —
+      // 사용자는 그게 자기가 가진 그거라는 걸 안다.
+      label: acpRuntimeLabel ? t("stepAgentFound", { runtime: acpRuntimeLabel }) : t("stepAgent"),
       cta: onOpenAgentConnect ? (
         <Chip
           size="md"

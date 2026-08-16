@@ -25,6 +25,7 @@ function makeRuntime(over: {
   state?: string;
   isolated?: boolean;
   verified?: boolean;
+  icon?: string | null;
 }) {
   return {
     id: over.id,
@@ -33,6 +34,7 @@ function makeRuntime(over: {
     website: null,
     license: null,
     verified: over.verified ?? false,
+    icon: over.icon ?? null,
     launchKind: 'npx' as const,
     state: (over.state ?? 'ready') as 'ready',
     cliPath: null,
@@ -85,7 +87,7 @@ describe('실행기 목록 — 앱이 못 막는 것은 그 줄에서 말한다'
    * 고르게 한다. 이 검사가 없으면 나중에 누가 캡션을 「잉크 낭비」로 보고
    * 지우고, 그때 화면은 못 막는다는 사실을 말하지 않게 된다.
    */
-  it('격리 못 하는 실행기는 캡션으로 그 사실을 말한다', async () => {
+  it('격리 못 하는 실행기에만 표시가 붙는다', async () => {
     bridge.detect.mockResolvedValue([
       makeRuntime({ id: 'claude-acp', isolated: true }),
       makeRuntime({ id: 'gemini', isolated: false }),
@@ -93,12 +95,36 @@ describe('실행기 목록 — 앱이 못 막는 것은 그 줄에서 말한다'
     render(<AcpRuntimeSettings />);
 
     await waitFor(() => expect(screen.getByTestId('app-settings-runtime-gemini')).toBeInTheDocument());
-    expect(screen.getByTestId('app-settings-runtime-gemini')).toHaveTextContent('notGuarded');
-    // 막아 주는 것에는 그 문구가 없다 — 있으면 그 말이 아무 뜻도 안 나른다.
-    expect(screen.getByTestId('app-settings-runtime-claude-acp')).not.toHaveTextContent('notGuarded');
+    // 문자열이 아니라 **표시 자체**로 잰다. 번역 키의 접두사가 겹쳐서 문자열
+    // 비교가 우연히 통과한 적이 있다(`notGuardedShort` ⊃ `notGuarded`).
+    expect(
+      screen.getByTestId('app-settings-runtime-gemini').querySelector('[data-runtime-unguarded]'),
+    ).not.toBeNull();
+    expect(
+      screen.getByTestId('app-settings-runtime-claude-acp').querySelector('[data-runtime-unguarded]'),
+      '막아 주는 것에 표시가 붙으면 그 표시가 아무 뜻도 안 나른다',
+    ).toBeNull();
   });
 
-  it('상태는 배지가 말하고 캡션이 되풀이하지 않는다', async () => {
+  it('같은 설명을 줄마다 반복하지 않는다 — 묶음 위에 한 번만', async () => {
+    /*
+     * 실제로 띄워 보고 잡은 결함: 20줄 중 18줄이 같은 문장이라 화면의 절반이
+     * 한 문장의 사본이었고, 읽어야 할 이름과 상태가 그 사이에 묻혔다.
+     */
+    bridge.detect.mockResolvedValue([
+      makeRuntime({ id: 'a', isolated: false }),
+      makeRuntime({ id: 'b', isolated: false }),
+      makeRuntime({ id: 'c', isolated: false }),
+    ]);
+    render(<AcpRuntimeSettings />);
+    await waitFor(() =>
+      expect(screen.getByTestId('app-settings-runtimes-guard-note')).toBeInTheDocument(),
+    );
+    expect(screen.getAllByTestId('app-settings-runtimes-guard-note')).toHaveLength(1);
+    expect(document.querySelectorAll('[data-runtime-unguarded]')).toHaveLength(3);
+  });
+
+  it('상태는 한 번만 말한다 — 배지 하나', async () => {
     // 같은 말을 두 번 쓰면 그 줄에서 새로 알게 되는 것이 없는 잉크가 된다.
     bridge.detect.mockResolvedValue([makeRuntime({ id: 'cursor', state: 'cli-missing', isolated: true })]);
     render(<AcpRuntimeSettings />);
@@ -107,6 +133,24 @@ describe('실행기 목록 — 앱이 못 막는 것은 그 줄에서 말한다'
     fireEvent.click(screen.getByTestId('app-settings-runtimes-others-toggle'));
     const row = screen.getByTestId('app-settings-runtime-cursor');
     expect(row.textContent?.match(/state\.cli-missing/g) ?? []).toHaveLength(1);
+  });
+
+  it('아이콘 자리는 아이콘이 없어도 유지된다 — 목록이 들쭉날쭉해지지 않게', async () => {
+    bridge.detect.mockResolvedValue([
+      makeRuntime({ id: 'with-icon', isolated: true, icon: '/acp-icons/with-icon.svg' }),
+      makeRuntime({ id: 'no-icon', isolated: true, icon: null }),
+    ]);
+    render(<AcpRuntimeSettings />);
+    await waitFor(() => expect(screen.getByTestId('app-settings-runtime-no-icon')).toBeInTheDocument());
+
+    expect(
+      screen.getByTestId('app-settings-runtime-with-icon').querySelector('img'),
+    ).toHaveAttribute('src', '/acp-icons/with-icon.svg');
+    // 아이콘이 없어도 같은 크기의 자리가 있다.
+    const slots = screen
+      .getByTestId('app-settings-runtime-no-icon')
+      .querySelectorAll('span.size-5');
+    expect(slots.length).toBeGreaterThan(0);
   });
 
   it('상태를 기계가 읽을 수 있게 남긴다 — 색만으로 구별하지 않는다', async () => {

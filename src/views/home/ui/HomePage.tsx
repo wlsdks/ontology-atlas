@@ -3,6 +3,7 @@
 import Image from "next/image";
 import { withBasePath } from "@/shared/lib/base-path";
 import { useHeldValue, useSurfaceSwap } from "@/shared/lib/use-presence";
+import { detectAcpRuntimes, isAcpBridgeAvailable } from "@/shared/lib/tauri-acp";
 import { cn } from "@/shared/lib/cn";
 import {
   type KeyboardEvent as ReactKeyboardEvent,
@@ -2112,6 +2113,28 @@ export function HomePage() {
    * 표면마다 다르면 그게 다시 결함이다.
    */
   const indexSlotSwap = useSurfaceSwap(renderedIndexState);
+  /*
+   * 폴더를 연 **바로 다음 화면**에서 「무엇을 쓸 수 있는지」를 말하기 위한 탐지
+   * (2026-08-16 소유자 지적). 설정 안에만 두면 그 사실은 찾아 들어간 사람에게만
+   * 존재한다.
+   *
+   * **검증된 실행기만** 이름으로 부른다 — 우리가 실제로 재 보지 않은 것을
+   * 첫 화면에서 권하면, 그 권유가 곧 보증으로 읽힌다.
+   */
+  const [acpRuntimeLabel, setAcpRuntimeLabel] = useState<string | null>(null);
+  useEffect(() => {
+    if (!isAcpBridgeAvailable()) return;
+    let cancelled = false;
+    void detectAcpRuntimes().then((list) => {
+      if (cancelled) return;
+      const best = (list ?? []).find((r) => r.state === 'ready' && r.verified && r.isolated);
+      setAcpRuntimeLabel(best?.label ?? null);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
   const indexSlotFrames: ReadonlyArray<{ state: IndexPanelState; exiting: boolean }> =
     indexSlotSwap.leaving === null
       ? [{ state: renderedIndexState, exiting: false }]
@@ -4557,6 +4580,7 @@ export function HomePage() {
                       // 뜨므로**(오른쪽 에이전트 패널은 flex 형제라 실제로 좁힌다)
                       // 카드의 중앙 계산에서 혼자 빠진다. 그 폭을 알려 준다.
                       indexExpanded={renderedIndexState === "expanded"}
+                      acpRuntimeLabel={acpRuntimeLabel}
                     />
                   ) : (
                   <TopologyEmptyState

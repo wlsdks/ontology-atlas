@@ -22,12 +22,21 @@
  *   node scripts/build-acp-registry.mjs --check   # 커밋된 것과 다르면 실패
  */
 
-import { readFileSync, writeFileSync } from 'node:fs';
+import { mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const OUT = join(ROOT, 'src-tauri', 'src', 'acp-registry.json');
+/**
+ * 아이콘도 **빌드 때 받아 번들한다.** 목록을 파일로 커밋하는 것과 같은 이유다 —
+ * 앱이 켜질 때마다 CDN 에서 이미지를 받아오면 그건 사용자가 켠 적 없는 통신이고,
+ * 비행기 안에서는 목록이 회색 네모가 된다.
+ *
+ * 남의 로고를 쓰는 것과 남의 디자인을 베끼는 것은 다르다. 이건 「이게 그 도구다」
+ * 를 말하는 식별 표시이고, 레지스트리가 클라이언트 UI 를 위해 공개한 자산이다.
+ */
+const ICON_DIR = join(ROOT, 'public', 'acp-icons');
 const SOURCE = 'https://cdn.agentclientprotocol.com/registry/v1/latest/registry.json';
 
 /**
@@ -38,6 +47,16 @@ const SOURCE = 'https://cdn.agentclientprotocol.com/registry/v1/latest/registry.
  * 있을 때만 늘린다(결정 원장 2026-08-16).
  */
 const VERIFIED = new Set(['claude-acp', 'codex-acp']);
+
+/**
+ * 화면에 쓸 이름 — 레지스트리 이름이 사람들이 부르는 이름과 다를 때만 적는다.
+ *
+ * 레지스트리의 `Claude Agent` 는 정확하지만 아무도 그렇게 안 부른다. 화면이
+ * 사용자가 쓰는 말을 써야 「내가 가진 그거」라고 알아본다.
+ */
+const DISPLAY_NAME = {
+  'claude-acp': 'Claude Code',
+};
 
 /**
  * 그 어댑터가 감싸는 **진짜 CLI** 의 실행 파일 이름. 레지스트리에는 없는
@@ -94,11 +113,12 @@ function normalize(raw) {
     if (!launch) continue; // 띄울 방법이 없으면 목록에 둘 이유가 없다.
     agents.push({
       id: agent.id,
-      name: agent.name,
+      name: DISPLAY_NAME[agent.id] ?? agent.name,
       description: agent.description ?? '',
       website: agent.website ?? agent.repository ?? null,
       license: agent.license ?? null,
       verified: VERIFIED.has(agent.id),
+      icon: agent.icon ? `/acp-icons/${agent.id}.svg` : null,
       cli: UNDERLYING_CLI[agent.id] ?? null,
       launch,
     });
@@ -108,7 +128,30 @@ function normalize(raw) {
     if (a.verified !== b.verified) return a.verified ? -1 : 1;
     return a.name.localeCompare(b.name, 'en');
   });
-  return { source: SOURCE, registryVersion: raw.version ?? null, agents };
+  return {
+    source: SOURCE,
+    registryVersion: raw.version ?? null,
+    agents,
+    // 아이콘을 받으려면 원본의 절대 URL 이 필요하다. 저장하지는 않는다.
+    __raw: (raw.agents ?? []).filter((a) => agents.some((n) => n.id === a.id)),
+  };
+}
+
+/** 아이콘 하나를 받아 저장한다. 실패하면 그 항목만 아이콘 없이 간다. */
+async function fetchIcon(agent) {
+  if (!agent.icon) return false;
+  try {
+    const res = await fetch(agent.icon);
+    if (!res.ok) return false;
+    const svg = await res.text();
+    // SVG 안의 스크립트·외부 참조를 받지 않는다. 앱 안에서 그리는 이미지가
+    // 바깥으로 나가거나 코드를 실행할 이유가 없다.
+    if (/<script|xlink:href\s*=\s*["']https?:|href\s*=\s*["']https?:/i.test(svg)) return false;
+    writeFileSync(join(ICON_DIR, `${agent.id}.svg`), svg);
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 async function main() {
@@ -119,11 +162,17 @@ async function main() {
     process.exit(1);
   }
   const normalized = normalize(await response.json());
-  const serialized = `${JSON.stringify(normalized, null, 2)}\n`;
 
   if (check) {
-    const current = readFileSync(OUT, 'utf8');
-    if (current !== serialized) {
+    // 아이콘은 받지 않는다 — 검사 모드는 **목록이 최신인가**만 본다. 커밋된
+    // 스냅샷의 아이콘 경로를 그대로 얹어 비교해야 「아이콘 하나가 실패했다」가
+    // 목록 불일치로 둔갑하지 않는다.
+    const committed = JSON.parse(readFileSync(OUT, 'utf8'));
+    const byId = new Map(committed.agents.map((a) => [a.id, a.icon ?? null]));
+    delete normalized.__raw;
+    for (const agent of normalized.agents) agent.icon = byId.get(agent.id) ?? null;
+    const serialized = `${JSON.stringify(normalized, null, 2)}\n`;
+    if (readFileSync(OUT, 'utf8') !== serialized) {
       console.error('[acp-registry] 커밋된 스냅샷이 최신과 다릅니다.');
       console.error('  node scripts/build-acp-registry.mjs 를 돌리고 diff 를 확인하세요.');
       process.exit(1);
@@ -132,8 +181,21 @@ async function main() {
     return;
   }
 
-  writeFileSync(OUT, serialized);
+  rmSync(ICON_DIR, { recursive: true, force: true });
+  mkdirSync(ICON_DIR, { recursive: true });
+  const raw = normalized.__raw;
+  delete normalized.__raw;
+  let icons = 0;
+  for (const agent of raw) {
+    if (await fetchIcon(agent)) icons += 1;
+    else {
+      const entry = normalized.agents.find((a) => a.id === agent.id);
+      if (entry) entry.icon = null;
+    }
+  }
+  writeFileSync(OUT, `${JSON.stringify(normalized, null, 2)}\n`);
   const verified = normalized.agents.filter((a) => a.verified).length;
+  console.log(`[acp-registry] 아이콘 ${icons}개 → public/acp-icons/`);
   console.log(
     `[acp-registry] ${normalized.agents.length} agents (검증됨 ${verified}) → src-tauri/src/acp-registry.json`,
   );

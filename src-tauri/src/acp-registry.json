@@ -4,11 +4,12 @@
   "agents": [
     {
       "id": "claude-acp",
-      "name": "Claude Agent",
+      "name": "Claude Code",
       "description": "ACP wrapper for Anthropic's Claude",
       "website": "https://github.com/agentclientprotocol/claude-agent-acp",
       "license": "proprietary",
       "verified": true,
+      "icon": "/acp-icons/claude-acp.svg",
       "cli": "claude",
       "launch": {
         "kind": "npx",
@@ -23,6 +24,7 @@
       "website": "https://github.com/agentclientprotocol/codex-acp",
       "license": "Apache-2.0",
       "verified": true,
+      "icon": "/acp-icons/codex-acp.svg",
       "cli": "codex",
       "launch": {
         "kind": "npx",
@@ -37,6 +39,7 @@
       "website": "https://agoragentic.com",
       "license": "MIT",
       "verified": false,
+      "icon": "/acp-icons/agoragentic-acp.svg",
       "cli": null,
       "launch": {
         "kind": "npx",
@@ -53,6 +56,7 @@
       "website": "https://github.com/tao12345666333/amp-acp",
       "license": "Apache-2.0",
       "verified": false,
+      "icon": "/acp-icons/amp-acp.svg",
       "cli": "amp",
       "launch": {
         "kind": "binary",
@@ -67,6 +71,7 @@
       "website": "https://www.augmentcode.com/",
       "license": "proprietary",
       "verified": false,
+      "icon": "/acp-icons/auggie.svg",
       "cli": null,
       "launch": {
         "kind": "npx",
@@ -83,6 +88,7 @@
       "website": "https://www.autohand.ai/cli/",
       "license": "Apache-2.0",
       "verified": false,
+      "icon": "/acp-icons/autohand.svg",
       "cli": null,
       "launch": {
         "kind": "npx",
@@ -97,6 +103,7 @@
       "website": "https://cline.bot/cli",
       "license": "Apache-2.0",
       "verified": false,
+      "icon": "/acp-icons/cline.svg",
       "cli": "cline",
       "launch": {
         "kind": "npx",
@@ -113,6 +120,7 @@
       "website": "https://www.codebuddy.cn/cli/",
       "license": "Proprietary",
       "verified": false,
+      "icon": "/acp-icons/codebuddy-code.svg",
       "cli": null,
       "launch": {
         "kind": "npx",
@@ -129,6 +137,7 @@
       "website": "https://docs.snowflake.com/en/user-guide/cortex-code/cortex-code",
       "license": "proprietary",
       "verified": false,
+      "icon": "/acp-icons/cortex-code.svg",
       "cli": null,
       "launch": {
         "kind": "binary",
@@ -146,6 +155,7 @@
       "website": "https://corust.ai/",
       "license": "GPL-3.0-or-later",
       "verified": false,
+      "icon": "/acp-icons/corust-agent.svg",
       "cli": null,
       "launch": {
         "kind": "binary",
@@ -160,6 +170,7 @@
       "website": "https://crow-ai.dev",
       "license": "Apache-2.0",
       "verified": false,
+      "icon": "/acp-icons/crow-cli.svg",
       "cli": null,
       "launch": {
         "kind": "binary",
@@ -176,6 +187,7 @@
       "website": "https://cursor.com/docs/cli/acp",
       "license": "proprietary",
       "verified": false,
+      "icon": "/acp-icons/cursor.svg",
       "cli": "cursor-agent",
       "launch": {
         "kind": "binary",
@@ -192,6 +204,7 @@
       "website": "https://docs.langchain.com/oss/javascript/deepagents/overview",
       "license": "MIT",
       "verified": false,
+      "icon": "/acp-icons/deepagents.svg",
       "cli": null,
       "launch": {
         "kind": "npx",
@@ -206,6 +219,7 @@
       "website": "https://docs.devin.ai/cli",
       "license": "proprietary",
       "verified": false,
+      "icon": "/acp-icons/devin.svg",
       "cli": null,
       "launch": {
         "kind": "binary",
@@ -222,6 +236,7 @@
       "website": "https://dimcode.dev/docs/acp.html",
       "license": "proprietary",
       "verified": false,
+      "icon": "/acp-icons/dimcode.svg",
       "cli": null,
       "launch": {
         "kind": "npx",
@@ -238,6 +253,7 @@
       "website": "https://dirac.run",
       "license": "Apache-2.0",
       "verified": false,
+      "icon": "/acp-icons/dirac.svg",
       "cli": null,
       "launch": {
         "kind": "npx",
@@ -254,6 +270,7 @@
       "website": "https://factory.ai/product/cli",
       "license": "proprietary",
       "verified": false,
+      "icon": "/acp-icons/factory-droid.svg",
       "cli": null,
       "launch": {
         "kind": "npx",
@@ -272,6 +289,7 @@
       "website": "https://fast-agent.ai",
       "license": "Apache 2.0",
       "verified": false,
+      "icon": "/acp-icons/fast-agent.svg",
       "cli": null,
       "launch": {
         "kind": "uvx",
@@ -288,6 +306,7 @@
       "website": "https://geminicli.com",
       "license": "Apache-2.0",
       "verified": false,
+      "icon": "/acp-icons/gemini.svg",
       "cli": "gemini",
       "launch": {
         "kind": "npx",
@@ -304,6 +323,7 @@
       "website": "https://github.com/features/copilot/cli/",
       "license": "proprietary",
       "verified": false,
+      "icon": "/acp-icons/github-copilot-cli.svg",
       "cli": "copilot",
       "launch": {
         "kind": "npx",
@@ -320,6 +340,7 @@
       "website": "https://github.com/stefandevo/glm-acp-agent",
       "license": "Apache-2.0",
       "verified": false,
+      "icon": "/acp-icons/glm-acp-agent.svg",
       "cli": null,
       "launch": {
         "kind": "npx",
@@ -334,6 +355,7 @@
       "website": "https://block.github.io/goose/",
       "license": "Apache-2.0",
       "verified": false,
+      "icon": "/acp-icons/goose.svg",
       "cli": "goose",
       "launch": {
         "kind": "binary",
@@ -350,6 +372,7 @@
       "website": "https://x.ai/cli",
       "license": "proprietary",
       "verified": false,
+      "icon": "/acp-icons/grok-build.svg",
       "cli": null,
       "launch": {
         "kind": "npx",
@@ -367,6 +390,7 @@
       "website": "https://harnlang.com",
       "license": "Apache-2.0",
       "verified": false,
+      "icon": "/acp-icons/harn.svg",
       "cli": null,
       "launch": {
         "kind": "binary",
@@ -384,6 +408,7 @@
       "website": "https://junie.jetbrains.com",
       "license": "proprietary",
       "verified": false,
+      "icon": "/acp-icons/junie.svg",
       "cli": "junie",
       "launch": {
         "kind": "binary",
@@ -400,6 +425,7 @@
       "website": "https://kilo.ai/",
       "license": "MIT",
       "verified": false,
+      "icon": "/acp-icons/kilo.svg",
       "cli": null,
       "launch": {
         "kind": "npx",
@@ -416,6 +442,7 @@
       "website": "https://moonshotai.github.io/kimi-cli/",
       "license": "MIT",
       "verified": false,
+      "icon": "/acp-icons/kimi.svg",
       "cli": "kimi",
       "launch": {
         "kind": "binary",
@@ -432,6 +459,7 @@
       "website": "https://github.com/femto/minion-code",
       "license": "AGPL-3.0",
       "verified": false,
+      "icon": "/acp-icons/minion-code.svg",
       "cli": null,
       "launch": {
         "kind": "uvx",
@@ -448,6 +476,7 @@
       "website": "https://mistral.ai/products/vibe",
       "license": "Apache-2.0",
       "verified": false,
+      "icon": "/acp-icons/mistral-vibe.svg",
       "cli": null,
       "launch": {
         "kind": "binary",
@@ -462,6 +491,7 @@
       "website": "https://www.compassap.ai/portfolio/nova.html",
       "license": "proprietary",
       "verified": false,
+      "icon": "/acp-icons/nova.svg",
       "cli": null,
       "launch": {
         "kind": "npx",
@@ -478,6 +508,7 @@
       "website": "https://opencode.ai",
       "license": "MIT",
       "verified": false,
+      "icon": "/acp-icons/opencode.svg",
       "cli": "opencode",
       "launch": {
         "kind": "binary",
@@ -494,6 +525,7 @@
       "website": "https://github.com/svkozak/pi-acp",
       "license": "MIT",
       "verified": false,
+      "icon": "/acp-icons/pi-acp.svg",
       "cli": null,
       "launch": {
         "kind": "npx",
@@ -508,6 +540,7 @@
       "website": "https://poolside.ai",
       "license": "proprietary",
       "verified": false,
+      "icon": "/acp-icons/poolside.svg",
       "cli": null,
       "launch": {
         "kind": "binary",
@@ -524,6 +557,7 @@
       "website": "https://qoder.com",
       "license": "proprietary",
       "verified": false,
+      "icon": "/acp-icons/qoder.svg",
       "cli": null,
       "launch": {
         "kind": "npx",
@@ -540,6 +574,7 @@
       "website": "https://qwenlm.github.io/qwen-code-docs/en/users/overview",
       "license": "Apache-2.0",
       "verified": false,
+      "icon": "/acp-icons/qwen-code.svg",
       "cli": "qwen",
       "launch": {
         "kind": "npx",
@@ -557,6 +592,7 @@
       "website": "https://github.com/getsigit/sigit",
       "license": "Apache-2.0",
       "verified": false,
+      "icon": "/acp-icons/sigit.svg",
       "cli": null,
       "launch": {
         "kind": "npx",
@@ -571,6 +607,7 @@
       "website": "https://stakpak.dev",
       "license": "Apache-2.0",
       "verified": false,
+      "icon": "/acp-icons/stakpak.svg",
       "cli": null,
       "launch": {
         "kind": "binary",
@@ -587,6 +624,7 @@
       "website": "https://github.com/vinhnx/VTCode/blob/main/docs/guides/zed-acp.md",
       "license": "MIT",
       "verified": false,
+      "icon": "/acp-icons/vtcode.svg",
       "cli": null,
       "launch": {
         "kind": "binary",

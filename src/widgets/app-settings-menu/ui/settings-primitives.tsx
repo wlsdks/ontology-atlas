@@ -114,19 +114,37 @@ export function SettingsRow({
   captionTone = 'neutral',
   control,
   testId,
+  icon,
 }: {
   label: string;
   caption?: string;
   captionTone?: 'neutral' | 'warning' | 'danger';
   control: ReactNode;
   testId?: string;
+  /**
+   * 행 왼쪽의 그림 — **번들된 이미지 경로**만 받는다(2026-08-16, 실행기 목록).
+   *
+   * 목록이 길고 항목이 서로 다른 **제품**일 때, 이름만으로는 훑기가 안 된다.
+   * 그 제품의 마크가 있으면 눈이 이름을 읽기 전에 먼저 찾는다. 자리를 항상
+   * 잡아 두는 이유는 아이콘이 없는 줄에서 글자가 왼쪽으로 밀리면 목록이
+   * 들쭉날쭉해지기 때문이다.
+   */
+  icon?: string | null;
 }) {
   return (
     <div
       className="flex min-h-12 items-center justify-between gap-3 px-3 py-2"
       data-testid={testId}
     >
-      <div className="min-w-0">
+      {icon !== undefined ? (
+        <span className="flex size-5 shrink-0 items-center justify-center">
+          {icon ? (
+            // eslint-disable-next-line @next/next/no-img-element -- 번들된 SVG 한 장. next/image 는 정적 export 에서 최적화 이득이 없다.
+            <img src={icon} alt="" aria-hidden className="size-5 object-contain" />
+          ) : null}
+        </span>
+      ) : null}
+      <div className="min-w-0 flex-1">
         <p className="text-body text-[color:var(--color-text-secondary)]">{label}</p>
         {caption ? (
           <p

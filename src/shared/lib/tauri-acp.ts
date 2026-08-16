@@ -53,6 +53,8 @@ export interface AcpRuntimeStatus {
    * 말하지 않기 위한 표시다.
    */
   verified: boolean;
+  /** 번들된 아이콘 경로(`/acp-icons/<id>.svg`). 없으면 null. */
+  icon: string | null;
   launchKind: 'npx' | 'uvx' | 'binary';
   /**
    * `ready` — 바로 쓸 수 있다

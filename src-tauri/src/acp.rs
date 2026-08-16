@@ -55,6 +55,9 @@ pub(crate) struct RegistryAgent {
     /// 그 어댑터가 감싸는 진짜 CLI 의 실행 파일 이름. 모르면 `None` —
     /// 짐작해서 채우면 화면이 없는 이유를 지어내게 된다.
     pub cli: Option<String>,
+    /// 번들된 아이콘 경로(`/acp-icons/<id>.svg`). 빌드 때 받아 두므로 앱은
+    /// 이미지를 받으러 나가지 않는다.
+    pub icon: Option<String>,
     pub launch: RegistryLaunch,
 }
 
@@ -127,15 +130,19 @@ pub(crate) const ISOLATION: &[IsolationSpec] = &[
         credentials_file: ".credentials.json",
         user_config_dir: ".claude",
     },
-    IsolationSpec {
-        // codex 의 격리는 아직 실측하지 않았다. 값만 등재해 두어 「하나만 특별
-        // 대우하는 코드」가 생기지 않게 한다.
-        id: "codex-acp",
-        config_env: "CODEX_HOME",
-        credentials_file: "auth.json",
-        user_config_dir: ".codex",
-    },
 ];
+
+// ⚠️ **codex 는 여기 없다 — 재 봤더니 안 됐다** (2026-08-16 실측).
+//
+// `CODEX_HOME` 을 격리한 디렉터리로 돌리고 `approval_policy = "on-request"` ·
+// `sandbox_mode = "workspace-write"` 를 적어 두었는데, 세션의 기본 모드는
+// `agent` 로 떴고(codex 의 모드 이름은 read-only/agent/agent-full-access 로
+// claude 와 아예 다르다) 작업 폴더 **밖**에 파일을 쓰면서 권한 요청이 **0회**
+// 였다.
+//
+// 그래서 등재하지 않는다. 등재해 두면 화면이 「이 도구는 앱이 막아 준다」고
+// 말하게 되고, 그건 우리가 확인하지 않은 것을 확인한 것처럼 말하는 것이다.
+// codex 를 막으려면 그 도구의 승인 모델을 따로 파야 하고, 그건 다음 조각이다.
 
 fn isolation_for(id: &str) -> Option<&'static IsolationSpec> {
     ISOLATION.iter().find(|s| s.id == id)
@@ -342,6 +349,7 @@ pub(crate) struct AcpRuntimeStatus {
     pub license: Option<String>,
     /// 우리가 실제로 재 본 것인가.
     pub verified: bool,
+    pub icon: Option<String>,
     /// `npx` · `uvx` · `binary`
     pub launch_kind: String,
     /// `ready` · `cli-missing` · `node-missing` · `uvx-missing` · `binary-missing`
@@ -423,6 +431,7 @@ pub(crate) fn detect_runtimes(
                 website: agent.website.clone(),
                 license: agent.license.clone(),
                 verified: agent.verified,
+                icon: agent.icon.clone(),
                 launch_kind: match agent.launch {
                     RegistryLaunch::Npx { .. } => "npx",
                     RegistryLaunch::Uvx { .. } => "uvx",

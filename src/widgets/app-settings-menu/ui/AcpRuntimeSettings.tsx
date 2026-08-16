@@ -132,6 +132,14 @@ export function AcpRuntimeSettings() {
         </SettingsGroup>
       ) : (
         <>
+          {ready.some((r) => !r.isolated) ? (
+            <p
+              data-testid="app-settings-runtimes-guard-note"
+              className="break-keep px-1 text-label leading-label text-[color:var(--color-text-tertiary)]"
+            >
+              {t('notGuardedExplainer', { mark: t('notGuardedShort') })}
+            </p>
+          ) : null}
           <SettingsGroup label={t('readyHeading', { count: ready.length })}>
             {ready.length === 0 ? (
               <SettingsRow label={t('noneReady')} caption={t('noneReadyCaption')} control={null} />
@@ -176,26 +184,43 @@ function RuntimeRow({ runtime }: { runtime: AcpRuntimeStatus }) {
   const t = useTranslations('nav.settingsMenu.runtimes');
   const isReady = runtime.state === 'ready';
 
-  // 상태는 **배지가 이미 말한다.** 캡션에 같은 말을 다시 쓰면 그 줄에서
-  // 새로 알게 되는 것이 없는 잉크가 된다. 캡션이 나르는 사실은 하나뿐이다 —
-  // 이 실행기는 앱이 못 막는다.
-  const caption = runtime.isolated ? undefined : t('notGuarded');
-
+  /*
+   * ⚠️ 처음엔 「앱이 못 막는다」를 캡션 **문장**으로 넣었다. 실제로 띄워 보니
+   * 20줄 중 18줄이 같은 문장이라 화면의 절반이 한 문장의 사본이었고, 정작
+   * 읽어야 할 이름과 상태가 그 사이에 묻혔다.
+   *
+   * 같은 사실을 **한 번은 묶음 위에서 설명하고, 줄에서는 짧게 표시**한다.
+   * 반복되는 것은 문장이 아니라 표시여야 한다.
+   */
   return (
     <SettingsRow
       label={runtime.label}
-      caption={caption}
-      captionTone={runtime.isolated ? 'neutral' : 'warning'}
       testId={`app-settings-runtime-${runtime.id}`}
+      icon={runtime.icon}
       control={
-        <span
-          data-runtime-state={runtime.state}
-          className={badgeClass({
-            shape: 'micro',
-            className: isReady ? READY_INK : NOT_READY_INK,
-          })}
-        >
-          {t(`state.${runtime.state}`)}
+        <span className="flex items-center gap-1.5">
+          {runtime.isolated ? null : (
+            <span
+              data-runtime-unguarded="true"
+              title={t('notGuarded')}
+              className={badgeClass({
+                shape: 'micro',
+                className:
+                  'bg-[color:var(--color-amber-source-a12)] text-[color:var(--color-status-warning)]',
+              })}
+            >
+              {t('notGuardedShort')}
+            </span>
+          )}
+          <span
+            data-runtime-state={runtime.state}
+            className={badgeClass({
+              shape: 'micro',
+              className: isReady ? READY_INK : NOT_READY_INK,
+            })}
+          >
+            {t(`state.${runtime.state}`)}
+          </span>
         </span>
       }
     />
