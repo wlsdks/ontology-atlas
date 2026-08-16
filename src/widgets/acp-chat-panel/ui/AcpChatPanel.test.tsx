@@ -15,6 +15,8 @@ const bridge = vi.hoisted(() => {
     listener: null as ((line: string) => void) | null,
     verdict: 'ask' as 'ask' | 'allow-inside-vault',
     stopped: [] as string[],
+    /** 어댑터 프로세스가 죽는 것을 시험이 일으킬 수 있게. */
+    exit: null as ((code: number | null) => void) | null,
   };
   return state;
 });
@@ -31,11 +33,13 @@ vi.mock('@/shared/lib/tauri-acp', () => ({
   acpPermissionVerdict: async () => bridge.verdict,
   listenToAcpSession: async (
     _id: string,
-    handlers: { onMessage?: (line: string) => void },
+    handlers: { onMessage?: (line: string) => void; onExit?: (code: number | null) => void },
   ) => {
     bridge.listener = handlers.onMessage ?? null;
+    bridge.exit = handlers.onExit ?? null;
     return () => {
       bridge.listener = null;
+      bridge.exit = null;
     };
   },
 }));
@@ -108,6 +112,7 @@ afterEach(() => {
   bridge.available = true;
   bridge.sent = [];
   bridge.listener = null;
+  bridge.exit = null;
   bridge.verdict = 'ask';
   bridge.stopped = [];
 });
@@ -1053,5 +1058,47 @@ describe('도구 줄 — 어느 노드를 만졌는지 말한다', () => {
       expect(document.querySelectorAll('[data-acp-entry="tool"]').length).toBe(1),
     );
     expect(screen.queryAllByTestId('acp-chat-slug')).toHaveLength(0);
+  });
+});
+
+describe('답하다 죽은 것과 다 끝난 것은 다른 말이다', () => {
+  /**
+   * 종전에는 어느 쪽이든 작은 칩에 「끝남」이라고만 적혔다. 반쯤 답하다
+   * 죽어도 정상 종료와 같은 화면이라, 사용자는 그게 답의 전부인 줄 안다.
+   */
+  it('차례가 도는 중에 죽으면 그렇게 말한다', async () => {
+    await bootSession();
+    fireEvent.change(screen.getByRole('textbox'), { target: { value: '봐줘' } });
+    fireEvent.click(screen.getByTestId('acp-chat-send'));
+    await waitFor(() =>
+      expect(screen.getByTestId('acp-chat-panel')).toHaveAttribute('data-acp-status', 'thinking'),
+    );
+
+    bridge.exit?.(1);
+
+    /*
+     * ⚠️ 최종 상태는 `exited` 가 아니라 `error` 다 — 진행 중이던 호출이 함께
+     * 거부되면서 그쪽이 이긴다(실측). 그래서 **상태로 판정하지 않고** 화면이
+     * 그 사실을 말했는지를 본다: 사용자에게 중요한 것은 상태 이름이 아니라
+     * 「받은 것이 전부다」라는 문장이다.
+     */
+    await waitFor(() => {
+      const said = [...document.querySelectorAll('[data-acp-entry="notice"]')].map((n) =>
+        n.getAttribute('data-notice'),
+      );
+      expect(said, '답하다 죽었는데 화면이 아무 말도 안 한다').toContain('died-mid-turn');
+    });
+  });
+
+  it('차례가 안 도는 중에 죽으면 그 말은 안 한다 — 없는 사건을 지어내지 않는다', async () => {
+    await bootSession();
+    bridge.exit?.(0);
+    await waitFor(() =>
+      expect(screen.getByTestId('acp-chat-panel')).toHaveAttribute('data-acp-status', 'exited'),
+    );
+    const said = [...document.querySelectorAll('[data-acp-entry="notice"]')].map((n) =>
+      n.getAttribute('data-notice'),
+    );
+    expect(said).not.toContain('died-mid-turn');
   });
 });

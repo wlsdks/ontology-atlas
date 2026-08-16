@@ -3721,7 +3721,8 @@
       "diagnosticsLabel": "What the tool printed"
     },
     "notice": {
-      "gateOff": "In this conversation Atlas cannot ask you before a file outside this folder is touched. The tool follows the settings you gave it directly."
+      "gateOff": "In this conversation Atlas cannot ask you before a file outside this folder is touched. The tool follows the settings you gave it directly.",
+      "diedMidTurn": "The agent stopped in the middle of answering. What you see is everything that arrived. Start a new chat above and ask again."
     },
     "suggest": {
       "heading": "Worth doing in this folder right now",
