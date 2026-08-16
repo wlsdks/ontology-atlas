@@ -301,6 +301,7 @@ const STORAGE_KEY_REGISTRY: StorageEntry[] = [
   { key: "ontology-atlas:local-endpoint-change", kind: "event", scope: "global", note: "" },
   { key: "ontology-atlas:secret-change", kind: "event", scope: "global", note: "" },
   { key: "ontology-atlas:settings-view-intent", kind: "event", scope: "global", note: "설정 시트 드릴인 요청" },
+  { key: "ontology-atlas:agent-chat-intent", kind: "event", scope: "global", note: "설정 → 대화 열기 요청 (위 신호의 반대 방향)" },
   { key: "ontology-atlas:studio-draft-change", kind: "event", scope: "global", note: "" },
   { key: "ontology-atlas:studio-url-change", kind: "event", scope: "global", note: "" },
   { key: "ontology-atlas:verify-edge-selected", kind: "event", scope: "global", note: "e2e 검증 훅" },

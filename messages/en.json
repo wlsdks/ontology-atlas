@@ -209,7 +209,9 @@
         "guardedExplainer": "Atlas can ask you before a file outside this folder is touched, but only for these: {names}. Every other tool follows the settings you gave it directly.",
         "guardedExplainerNone": "No tool here can be asked about before it touches a file outside this folder. Each one follows the settings you gave it directly.",
         "unknownExplainer": "\"Not checked\" does not mean the tool is missing. It means Atlas does not yet know how to look for it on this computer. You can still start it.",
-        "installGuide": "How to install"
+        "installGuide": "How to install",
+        "openChat": "Open a chat with this tool",
+        "loginHint": "You are not signed in to this tool. Run it once in a terminal to sign in and it will appear here."
       }
     },
     "primaryAriaLabel": "Primary menu",
@@ -546,7 +548,9 @@
     "scaffolding": "Writing starter structure…",
     "errorFallback": "Could not open the folder. Try again.",
     "errorRootRejected": "This folder can't be used as a map. Pick a folder that holds your documents, not a system folder or your whole home folder.",
-    "trustLine": "Stored only on your computer · plain markdown files · no server"
+    "trustLine": "Stored only on your computer · plain markdown files · no server",
+    "errorPathMissing": "That folder is gone. It looks like it was moved or deleted. Pick another one.",
+    "errorPermission": "Atlas cannot read this folder. Pick it again to grant access."
   },
   "firstRunStarter": {
     "brand": "Ontology Atlas",
@@ -594,7 +598,10 @@
     "reopenLabel": "Reopen the start guide",
     "sampleSourceStorefrontTip": "Products, orders, members, delivery: learn to read the map with names everyone knows",
     "sampleSourceDogfoodTip": "The map of the code that built this app: people and agents actually grew it, and the git history proves it",
-    "cliBridgeSourceOnly": "This command runs inside an ontology-atlas source checkout. You do not need it if you only use the app."
+    "cliBridgeSourceOnly": "This command runs inside an ontology-atlas source checkout. You do not need it if you only use the app.",
+    "errorRootRejected": "This folder cannot become a map. Pick a folder that holds documents, not a system folder or your whole home folder.",
+    "errorPathMissing": "That folder is gone. It looks like it was moved or deleted. Pick another one.",
+    "errorPermission": "Atlas cannot read this folder. Pick it again to grant access."
   },
   "guidedTour": {
     "progressLabel": "{current}/{total}",

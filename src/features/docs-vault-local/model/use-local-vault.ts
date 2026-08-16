@@ -769,8 +769,19 @@ export function useLocalVaultInternal() {
         createdAt: now,
         lastAccessedAt: now,
       });
-      await refreshRecentVaults();
+      /*
+       * ⚠️ **순서가 계약이다** (2026-08-16 검수에서 적발).
+       *
+       * 종전에는 최근 목록을 **먼저** 갱신했다. 그 순간 「이 컴퓨터에서 한 번도
+       * 볼트를 연 적이 없다」가 거짓이 되고, 그 값 하나가 첫 실행 카드 · 「내
+       * 데이터로 전환」 타일 · 첫 실행 판독을 **동시에 화면에서 치운다.**
+       *
+       * 그래서 바로 다음 줄의 읽기가 실패하면, 그 실패를 말해 줄 표면이 이미
+       * 사라진 뒤였다 — 사용자는 아무 말도 없는 샘플 지도를 본다. 성공한 뒤에
+       * 목록에 올린다.
+       */
       await load(handle);
+      await refreshRecentVaults();
     } catch (err) {
       // 취소는 실패가 아니다 — 선택창 직전 상태로 복귀(`isPickerAbort` 주석 참고).
       if (isPickerAbort(err)) {

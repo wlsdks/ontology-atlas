@@ -8974,7 +8974,7 @@ function validateVaultTool({ repoRoot } = {}) {
   // (default: active resolved repository root). Surfaced here because it is a vault-health signal the
   // agent already runs validate_vault for at first-contact. The agent fixes via
   // patch_concept (correct the path) or by removing the stale entry.
-  const driftRoot = repoRoot ? resolve(repoRoot) : REPO_ROOT;
+  const driftRoot = repoRoot ? assertScanRootAllowed(repoRoot, 'repoRoot') : REPO_ROOT;
   // 근거 없는 저장소 루트에 대고는 **재지 않는다.** 재면 그 볼트와 아무 상관
   // 없는 디렉터리에 없는 파일이 전부 "drift" 로 잡혀, 멀쩡한 볼트가
   // `needs_attention` 이 된다. 안 본 것은 0이 아니라 *안 봤다* 이므로
@@ -9199,11 +9199,59 @@ function isPathLikeGraphRef(ref) {
 // R16 (b3) — analyze_repo_structure thin wrapper. side effect 0 — vault
 // frontmatter 절대 안 건드림. reviewPlan + independent qualification 뒤 반환된
 // exact writePlan만 별도 batch writer의 진실 진입점이다.
+/**
+ * 훑을 수 있는 자리인가 — **볼트나 그 저장소 안이어야 한다.**
+ *
+ * ## 왜 (2026-08-16 검수, 실측으로 확인)
+ *
+ * `analyze_repo_structure` · `infer_imports` · `index_project` · `validate_vault`
+ * 는 `rootPath`(또는 `repoRoot`)를 받아 `resolve()` 만 하고 **아무 경계도 안
+ * 봤다.** 그래서 이런 호출이 그대로 성공했다:
+ *
+ * ```
+ * analyze_repo_structure {"rootPath":"/etc"}  → ok, 디렉터리 구조를 돌려줌
+ * ```
+ *
+ * 게다가 이 넷은 **읽기 도구**라 `OATLAS_READ_ONLY` 가 안 막는다. 그 모드의
+ * 설명은 「등록한 사람이 볼트 주인이 아닐 때 권한다」인데, 쓰기는 못 해도
+ * **디스크 전체를 훑을 수는 있는** 상태였다.
+ *
+ * 이건 이 제품이 사용자에게 한 약속과 정면으로 부딪힌다:
+ * *"사용자 디스크에 있는 비밀번호·인증 키 같은 파일은 절대 자동으로 훑지
+ * 않는다"* (`local-first.md`), *"사용자 디스크를 자동으로 훑지 않는다"*
+ * (신뢰 헌장). 프롬프트 한 줄로 유도되는 도구 호출이 그 약속을 깬다.
+ *
+ * 그래서 **볼트 아니면 그 볼트의 저장소** 안만 허용한다. 심볼릭 링크로
+ * 빠져나가는 길을 막으려고 비교 전에 실제 경로로 편다 — `absorb_document` 가
+ * 이미 쓰는 문법 그대로다.
+ */
+function assertScanRootAllowed(target, argName = 'rootPath') {
+  const canonical = existsSync(target) ? realpathSync(target) : resolve(target);
+  const roots = [];
+  for (const root of [VAULT_ROOT, REPO_ROOT]) {
+    try {
+      roots.push(existsSync(root) ? realpathSync(root) : resolve(root));
+    } catch {
+      roots.push(resolve(root));
+    }
+  }
+  const inside = roots.some((root) => {
+    if (canonical === root) return true;
+    const rel = relative(root, canonical);
+    return rel !== '' && rel !== '..' && !rel.startsWith(`..${sep}`) && !isAbsolute(rel);
+  });
+  if (inside) return canonical;
+  throw new Error(
+    `${argName} must be inside the vault (${roots[0]}) or its repository (${roots[1]}). ` +
+      'This server only reads the folder it was opened for.',
+  );
+}
+
 function analyzeRepoStructureTool({ rootPath, maxDepth, ignore, proposal, qualification } = {}) {
   requireOptionalNonBlankString(rootPath, 'rootPath');
   requireOptionalNonNegativeInteger(maxDepth, 'maxDepth', { max: 10 });
   requireOptionalStringArray(ignore, 'ignore', { max: IGNORE_ARRAY_MAX_ITEMS });
-  const target = rootPath ? resolve(rootPath) : REPO_ROOT;
+  const target = rootPath ? assertScanRootAllowed(rootPath) : REPO_ROOT;
   const sourceDigest = proposal == null
     ? undefined
     : inspectProjectSource(target).fingerprint;
@@ -9297,7 +9345,7 @@ function inferImportsTool({
   if (reviewMode === 'next' && reconcile === false) {
     throw new Error('reviewMode "next" requires reconcile:true because the review queue is a vault diff.');
   }
-  const target = rootPath ? resolve(rootPath) : REPO_ROOT;
+  const target = rootPath ? assertScanRootAllowed(rootPath) : REPO_ROOT;
   const result = inferImports(target, {
     sourceFolders,
     ignore,
@@ -9492,7 +9540,7 @@ function indexProjectTool({ rootPath, maxDepth, maxFiles, threshold, skipImports
   requireOptionalPositiveInteger(threshold, 'threshold');
   requireOptionalBoolean(skipImports, 'skipImports');
 
-  const target = rootPath ? resolve(rootPath) : REPO_ROOT;
+  const target = rootPath ? assertScanRootAllowed(rootPath) : REPO_ROOT;
   let imports = null;
   let pythonImportAnalysis = null;
   if (!skipImports) {

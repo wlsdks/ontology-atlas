@@ -1,5 +1,6 @@
 'use client';
 
+import { useEffect, useRef } from 'react';
 import { ShieldAlert } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 
@@ -36,10 +37,27 @@ export function AcpPermissionCard({ pending }: { pending: PendingPermission }) {
   const rejectOnce = request.options.find((o) => o.kind === 'reject_once');
   const allowAlways = request.options.find((o) => o.kind === 'allow_always');
 
+  /**
+   * **초점을 이리 데려온다** (2026-08-16 검수에서 적발).
+   *
+   * 이 카드는 `role="alertdialog"` 를 선언한다. 그 역할이 약속하는 것은
+   * 「일을 가로막고, 초점이 안으로 들어온다」인데 **둘 다 안 하고 있었다** —
+   * 초점을 옮기는 코드가 없어서, 화면을 못 보는 사람에게는 에이전트가 멈춰 선
+   * 그 순간이 **완전한 침묵**이었다. 그 상태로 계속 타이핑할 수도 있었다.
+   *
+   * 거절 쪽으로 데려간다: 아무 키나 눌러 지나가는 손이 **허용**에 닿으면 안
+   * 된다. 이 카드가 여는 것은 되돌릴 수 없는 결정이다.
+   */
+  const rejectRef = useRef<HTMLButtonElement | null>(null);
+  useEffect(() => {
+    rejectRef.current?.focus();
+  }, []);
+
   return (
     <section
       role="alertdialog"
       aria-labelledby="acp-permission-title"
+      aria-describedby="acp-permission-body"
       data-testid="acp-permission-card"
       /*
        * 구획 상자는 `rounded-panel` + `p-[var(--card-pad)]` 다 — 16px 을 손으로
@@ -62,7 +80,10 @@ export function AcpPermissionCard({ pending }: { pending: PendingPermission }) {
           >
             {t('title')}
           </p>
-          <p className="mt-1 break-keep text-label leading-label text-[color:var(--color-text-secondary)]">
+          <p
+            id="acp-permission-body"
+            className="mt-1 break-keep text-label leading-label text-[color:var(--color-text-secondary)]"
+          >
             {t('body')}
           </p>
         </div>
@@ -86,6 +107,7 @@ export function AcpPermissionCard({ pending }: { pending: PendingPermission }) {
 
       <div className="flex flex-wrap items-center justify-end gap-2">
         <Button
+          ref={rejectRef}
           variant="ghost"
           data-testid="acp-permission-reject"
           onClick={() => resolve(rejectOnce?.optionId ?? null)}

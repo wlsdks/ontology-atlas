@@ -5,6 +5,7 @@ import { withBasePath } from "@/shared/lib/base-path";
 import { useHeldValue, useSurfaceSwap } from "@/shared/lib/use-presence";
 import { detectAcpRuntimes, isAcpBridgeAvailable } from "@/shared/lib/tauri-acp";
 import { requestSettingsView } from "@/shared/lib/settings-view-intent";
+import { subscribeAgentChatIntent } from "@/shared/lib/agent-chat-intent";
 import { isGuardedRuntime } from "@/features/acp-session/model/runtime-gate";
 import { agentChatDoor } from "../model/agent-chat-door";
 import { AcpChatPanel, AcpChatResizeHandle, useChatWidth } from "@/widgets/acp-chat-panel";
@@ -2763,6 +2764,19 @@ export function HomePage() {
   }, [agentChatOpen]);
 
   /*
+   * 설정의 Agents 칸에서 「이 도구로 대화 열기」를 누르면 여기로 온다
+   * (2026-08-16 검수: 「연결」하러 간 화면에 연결로 넘어갈 문이 없었다).
+   * 문은 여전히 하나다 — 실행기만 지목하고 여는 것은 같은 함수가 한다.
+   */
+  useEffect(() => {
+    return subscribeAgentChatIntent((runtimeId) => {
+      if (runtimeId) setAcpRuntimeId(runtimeId);
+      agentDockTouchedRef.current = true;
+      openVaultAgent();
+    });
+  }, [openVaultAgent]);
+
+  /*
    * 스스로 여는 것도 **같은 문**을 탄다. 여기 있는 이유는 위 `openVaultAgent`
    * 가 실행기 상태를 읽어야 해서다 — 이 효과가 갈래를 따로 고르면 그 순간
    * 대화창이 둘이 된다.
@@ -3017,6 +3031,25 @@ export function HomePage() {
     const handler = (event: globalThis.KeyboardEvent) => {
       if (event.key !== "Escape") return;
       if (event.defaultPrevented) return;
+      /*
+       * ⚠️ **대화창 안에서 누른 Esc 는 지도의 것이 아니다** (2026-08-16 검수).
+       *
+       * 이 사다리는 `window` 에서 듣고 `event.target` 을 안 봤다. 그래서 대화
+       * 작성 칸에 글을 쓰다가 Esc 를 누르면 — 한국어 입력을 취소하려는 손이
+       * 흔히 하는 일이다 — **뒤에 있는 지도의 선택이 풀렸다.** 사용자가 보고
+       * 있지도 않은 것이 바뀌는 것은 이 사다리가 약속한 「한 단계씩」이 아니다.
+       *
+       * 대화창은 자기 안의 것을 자기가 닫는다(지난 대화 목록). 그 안에서 더
+       * 닫을 것이 없으면 아무 일도 안 일어나는 편이 맞다 — 지도를 건드리는
+       * 것보다 낫다.
+       */
+      const target = event.target;
+      if (
+        target instanceof Element &&
+        target.closest('[data-testid="acp-chat-panel"], [data-testid="vault-agent-panel"]')
+      ) {
+        return;
+      }
       const action = resolveTopologyEscLadderAction({
         realmActive: resolvedRealmSlug !== null,
         selectedEdgeActive: selectedEdge !== null,

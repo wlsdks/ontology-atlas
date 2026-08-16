@@ -209,7 +209,9 @@
         "guardedExplainer": "폴더 밖 파일을 건드릴 때 Atlas 가 대신 물어봐 줄 수 있는 건 지금 {names} 예요. 나머지 도구는 그 도구에 직접 해 둔 설정대로 움직여요.",
         "guardedExplainerNone": "지금은 폴더 밖 파일을 건드릴 때 Atlas 가 대신 물어봐 줄 수 있는 도구가 없어요. 각 도구에 직접 해 둔 설정대로 움직여요.",
         "unknownExplainer": "「확인 못 함」은 그 도구가 없다는 뜻이 아니라, 이 컴퓨터에 있는지 Atlas 가 알아볼 방법을 아직 안 갖췄다는 뜻이에요. 눌러서 띄워 보는 건 됩니다.",
-        "installGuide": "설치 방법"
+        "installGuide": "설치 방법",
+        "openChat": "이 도구로 대화 열기",
+        "loginHint": "이 도구에 로그인이 안 돼 있어요. 터미널에서 한 번 실행해 로그인하면 여기에 나타나요."
       }
     },
     "primaryAriaLabel": "주요 메뉴",
@@ -546,7 +548,9 @@
     "scaffolding": "시작 구조 작성 중…",
     "errorFallback": "폴더를 열지 못했습니다. 다시 시도해 주세요.",
     "errorRootRejected": "이 폴더는 지도로 만들 수 없어요. 시스템 폴더나 홈 폴더 전체 말고, 문서가 들어 있는 폴더를 골라 주세요.",
-    "trustLine": "내 컴퓨터에만 저장돼요 · 파일은 평범한 마크다운 · 서버 없음"
+    "trustLine": "내 컴퓨터에만 저장돼요 · 파일은 평범한 마크다운 · 서버 없음",
+    "errorPathMissing": "그 폴더를 찾지 못했어요. 옮겼거나 지워진 것 같아요. 다른 폴더를 골라 주세요.",
+    "errorPermission": "이 폴더를 읽을 권한이 없어요. 폴더를 다시 골라 권한을 주세요."
   },
   "firstRunStarter": {
     "brand": "Ontology Atlas",
@@ -594,7 +598,10 @@
     "reopenLabel": "시작 안내 다시 열기",
     "sampleSourceStorefrontTip": "상품·주문·회원·배송처럼 누구나 아는 예시로 지도 읽는 법을 익혀요",
     "sampleSourceDogfoodTip": "이 앱을 만든 코드 자신의 지도예요. 사람과 에이전트가 실제로 키웠고 git 이력까지 남아 있어요",
-    "cliBridgeSourceOnly": "ontology-atlas 소스 체크아웃 안에서 실행하는 명령이에요. 앱만 쓴다면 필요 없습니다."
+    "cliBridgeSourceOnly": "ontology-atlas 소스 체크아웃 안에서 실행하는 명령이에요. 앱만 쓴다면 필요 없습니다.",
+    "errorRootRejected": "이 폴더는 지도로 만들 수 없어요. 시스템 폴더나 홈 폴더 전체 말고, 문서가 들어 있는 폴더를 골라 주세요.",
+    "errorPathMissing": "그 폴더를 찾지 못했어요. 옮겼거나 지워진 것 같아요. 다른 폴더를 골라 주세요.",
+    "errorPermission": "이 폴더를 읽을 권한이 없어요. 폴더를 다시 골라 권한을 주세요."
   },
   "guidedTour": {
     "progressLabel": "{current}/{total}",

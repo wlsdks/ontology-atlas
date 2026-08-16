@@ -833,3 +833,27 @@ describe('대화 패널 — 오류는 사람의 말로 말하고 다음 할 일�
     expect(details?.textContent).toContain('authentication_failed');
   });
 });
+
+describe('권한 카드 — 놓칠 수 없어야 한다', () => {
+  it('카드가 뜨면 **초점이 그 안으로** 온다 — 거절 쪽으로', async () => {
+    /*
+     * 2026-08-16 검수: 이 카드는 `role="alertdialog"` 를 선언하면서 그 역할이
+     * 약속하는 것(가로막기 · 초점 이동)을 하나도 안 하고 있었다. 화면을 못 보는
+     * 사람에게는 에이전트가 멈춰 선 그 순간이 완전한 침묵이었다.
+     *
+     * 허용이 아니라 **거절**로 데려간다 — 아무 키나 눌러 지나가는 손이 되돌릴
+     * 수 없는 쪽에 닿으면 안 된다.
+     */
+    bridge.verdict = 'ask';
+    await bootSession();
+    emit(permissionRequest('/somewhere/else/notes.md'));
+
+    const card = await screen.findByTestId('acp-permission-card');
+    await waitFor(() =>
+      expect(card.contains(document.activeElement), '초점이 카드 밖에 있다').toBe(true),
+    );
+    expect(document.activeElement).toBe(screen.getByTestId('acp-permission-reject'));
+    // 역할이 약속하는 나머지 하나 — 무엇에 대한 물음인지 읽어 줄 본문.
+    expect(card.getAttribute('aria-describedby')).toBe('acp-permission-body');
+  });
+});

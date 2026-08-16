@@ -1,6 +1,6 @@
 'use client';
 
-import { ChevronDown, RefreshCw } from 'lucide-react';
+import { ChevronDown, MessageSquare, RefreshCw } from 'lucide-react';
 import { useCallback, useEffect, useState } from 'react';
 import { useTranslations } from 'next-intl';
 
@@ -10,6 +10,7 @@ import { Chip } from '@/shared/ui';
 import { ICON_SIZE } from '@/shared/ui/icon-size';
 import { detectAcpRuntimes, isAcpBridgeAvailable, type AcpRuntimeStatus } from '@/shared/lib/tauri-acp';
 import { isGuardedRuntime } from '@/features/acp-session/model/runtime-gate';
+import { requestAgentChat } from '@/shared/lib/agent-chat-intent';
 
 import { DETAIL_TOGGLE_CHIP, SettingsGroup, SettingsRow } from './settings-primitives';
 
@@ -269,6 +270,9 @@ function RuntimeRow({ runtime }: { runtime: AcpRuntimeStatus }) {
   return (
     <SettingsRow
       label={runtime.label}
+      // 로그인만 안 된 도구에는 **할 일**을 적는다 — 그 상태에는 배지만 있고
+      // 무엇을 하라는 말이 코드 어디에도 없었다(2026-08-16 검수).
+      caption={runtime.state === 'login-needed' ? t('loginHint') : undefined}
       testId={`app-settings-runtime-${runtime.id}`}
       icon={runtime.icon}
       iconInk={runtime.brandInk}
@@ -297,7 +301,34 @@ function RuntimeRow({ runtime }: { runtime: AcpRuntimeStatus }) {
            * 19번 듣는다. 묶음 위 설명은 목록 **앞에** 있으므로 순서대로 읽는
            * 사람에게 먼저 도착한다. 그거면 된다.
            */}
-          {website ? (
+          {/*
+           * ⚠️ **연결로 넘어갈 문이 없었다** (2026-08-16 검수에서 적발).
+           *
+           * 첫 걸음 카드의 1단 이름은 「AI 에이전트 연결」이고 그 버튼이 여는
+           * 곳이 여기다. 그런데 이 화면에 있던 것은 목록과 바깥 링크뿐이라,
+           * 「연결」하러 온 사람이 **연결할 수가 없었다** — 대화를 여는 유일한
+           * 자리는 그 대화창의 머리, 즉 이미 대화를 연 사람만 보는 곳이었다.
+           *
+           * 관문이 있는 도구에만 낸다. 관문이 없는 도구로 대화를 열면 이 화면이
+           * 바로 위 문장에서 한 약속(폴더 밖은 먼저 물어본다)을 못 지킨다.
+           */}
+          {isReady && isGuardedRuntime(runtime.id, runtime.isolated) ? (
+            <Chip
+              size="sm"
+              tone="accentOnTint"
+              data-testid={`app-settings-runtime-chat-${runtime.id}`}
+              onClick={() => requestAgentChat(runtime.id)}
+              className="shrink-0 border-[color:var(--color-indigo-a46)] bg-[color:var(--color-indigo-a16)] hover:bg-[color:var(--color-indigo-a24)]"
+            >
+              <MessageSquare size={ICON_SIZE.sm} aria-hidden />
+              {t('openChat')}
+            </Chip>
+          ) : null}
+          {/*
+           * ⚠️ 로그인만 안 된 도구에 「설치 방법」을 내밀고 있었다 — 이미
+           * 설치한 사람에게. 할 일이 다르므로 문장도 다르다.
+           */}
+          {runtime.state === 'login-needed' ? null : website ? (
             <a
               href={website}
               target="_blank"
