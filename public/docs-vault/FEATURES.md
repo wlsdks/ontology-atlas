@@ -1067,7 +1067,13 @@ just unmounted).
   tail of `.ontology-atlas/llm-audit.jsonl` where every call is recorded. The
   key is written once and never readable back (only its last 4 characters);
   the Rust side refuses to send at all when the audit line cannot be appended
-  (log-before-send). In the browser the key field is not rendered — the card
+  (log-before-send). Audit writes reject symbolic/hard-linked and non-regular files, hold one
+  exclusive reservation per vault, and recheck the reserved tail before
+  finalizing; existing audit files are narrowed to owner-only `0600`. This
+  native LLM path is currently enabled only on Unix/macOS;
+  the public Windows beta fails closed until equivalent reparse-point and
+  file-identity proof exists (the map, vault, and bundled MCP remain available).
+  In the browser the key field is not rendered — the card
   explains why storage is desktop-only and links to `/download`. There is no
   chat surface: the panel says in plain words that asking your vault is still
   being shaped.

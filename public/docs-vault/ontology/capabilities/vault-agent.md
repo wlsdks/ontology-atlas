@@ -2,7 +2,7 @@
 uid: a81da7e2-8ff6-46c9-a0aa-27b2948bc7b3
 slug: capabilities/vault-agent
 kind: capability
-title: Agent Connect & Vault Access
+title: "Agent Connect & Vault Access"
 domain: domains/agent-integration
 elements: [elements/agent-connect, elements/vault-agent-panel]
 path: src/features/vault-agent
@@ -26,6 +26,7 @@ ACP 로 직접 띄우는 것은 별개 능력이며 `capabilities/acp-runtime`�
 ## 근거
 - src/features/vault-agent: 제공자 중립 에이전트 루프, 도구 실행, 근거 인용
 - src-tauri/src/llm.rs: 로컬/원격 전송, 감사 로그, 분리된 timeout
+- src-tauri/src/llm_audit.rs: log-before-send 예약·확정, Unix openat/O_NOFOLLOW·link-count 경계, 볼트별 배타 잠금과 예약 꼬리 검증
 - src/widgets/vault-agent-panel: 사용자가 읽기·실패·제안을 판정하는 패널
 - src/shared/config/mcp-server-launch.ts · src/features/docs-vault-local/model/use-local-vault.ts
   : JSON/TOML launch shape와 vault readiness의 공유 판정
