@@ -1243,6 +1243,43 @@ await test('agent-activity — validates write mode before touching the vault', 
   }
 });
 
+await test('agent-activity — write, show, and clear all reject an external sidecar symlink', async () => {
+  const sandbox = mkdtempSync(join(tmpdir(), 'ontology-atlas-agent-activity-symlink-'));
+  const root = join(sandbox, 'vault');
+  const outside = join(sandbox, 'outside');
+  mkdirSync(root);
+  mkdirSync(outside);
+  const sentinel = join(outside, 'agent-activity.json');
+  writeFileSync(sentinel, 'outside-original', 'utf8');
+  symlinkSync(outside, join(root, '.ontology-atlas'), process.platform === 'win32' ? 'junction' : 'dir');
+
+  try {
+    const commands = [
+      ['agent-activity', root, '--show', '--json'],
+      [
+        'agent-activity',
+        root,
+        '--agent',
+        'codex',
+        '--state',
+        'editing',
+        '--focus',
+        'must stay inside the vault',
+        '--json',
+      ],
+      ['agent-activity', root, '--clear', '--json'],
+    ];
+    for (const command of commands) {
+      const result = await run(command);
+      assert.equal(result.code, 1, `${command.join(' ')}\nstdout: ${result.stdout}\nstderr: ${result.stderr}`);
+      assert.match(stripAnsi(result.stderr), /sidecar|symlink|junction|ontology-atlas/i);
+    }
+    assert.equal(readFileSync(sentinel, 'utf8'), 'outside-original');
+  } finally {
+    rmSync(sandbox, { recursive: true, force: true });
+  }
+});
+
 await test('agent-activity — show reports invalid sidecars as invalid activity', async () => {
   const root = withVault([]);
   try {

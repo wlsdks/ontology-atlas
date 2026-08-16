@@ -1,5 +1,13 @@
 import assert from 'node:assert/strict';
-import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import {
+  existsSync,
+  mkdirSync,
+  mkdtempSync,
+  readFileSync,
+  rmSync,
+  symlinkSync,
+  writeFileSync,
+} from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { describe, it } from 'node:test';
@@ -65,6 +73,31 @@ describe('telemetry (Slice 0 magic-moment instrumentation)', () => {
       const telemetry = readTelemetry(vaultRoot);
       assert.equal(telemetry.initCompletedAt, null);
     });
+  });
+
+  it('unsafe sidecar reads stay shaped but every telemetry stamp is blocked', () => {
+    const sandbox = mkdtempSync(join(tmpdir(), 'oatlas-telemetry-symlink-'));
+    const vaultRoot = join(sandbox, 'vault');
+    const outside = join(sandbox, 'outside');
+    mkdirSync(vaultRoot);
+    mkdirSync(outside);
+    const sentinel = join(outside, 'telemetry.local.json');
+    writeFileSync(sentinel, 'outside-original', 'utf8');
+    symlinkSync(outside, join(vaultRoot, '.ontology-atlas'), process.platform === 'win32' ? 'junction' : 'dir');
+
+    try {
+      assert.equal(readTelemetry(vaultRoot).initCompletedAt, null);
+      assert.throws(() => stampInitCompleted(vaultRoot), /sidecar|unsafe|ontology-atlas/i);
+      assert.throws(() => stampAbsorbWriteCompleted(vaultRoot), /sidecar|unsafe|ontology-atlas/i);
+      assert.throws(
+        () => stampMomentIfFirst(vaultRoot, { source: 'agent-brief' }),
+        /sidecar|unsafe|ontology-atlas/i,
+      );
+      assert.equal(readFileSync(sentinel, 'utf8'), 'outside-original');
+      assert.equal(existsSync(join(outside, '.telemetry.local.json.tmp')), false);
+    } finally {
+      rmSync(sandbox, { recursive: true, force: true });
+    }
   });
 
   it('stampMomentIfFirst records elapsed time from the init baseline and only fires once', () => {
