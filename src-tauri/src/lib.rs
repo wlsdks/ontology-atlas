@@ -10,6 +10,8 @@ use std::sync::Mutex;
 use std::time::{Duration, UNIX_EPOCH};
 use tauri::{AppHandle, Emitter, Manager, RunEvent, State};
 
+/// ACP 하네스 — 사용자가 이미 설치한 코딩 에이전트를 찾아 앱 안에서 부른다.
+mod acp;
 /// 「에이전트 연결」 — 번들 MCP 서버 경로 해석 · 설정 파일 계획/쓰기 · 자가 검증.
 mod agent_setup;
 /// Atlas Git — vault 를 git 으로 버전 기록하는 네이티브 계층 (웹 GUI 가 invoke).
@@ -754,6 +756,26 @@ fn metadata_mtime_ms(path: &Path) -> Result<u128, String> {
         .duration_since(UNIX_EPOCH)
         .map_err(|err| err.to_string())?
         .as_millis())
+}
+
+/// 이 기기에 실제로 있는 ACP 실행기를 판정해서 돌려준다.
+///
+/// **PATH 만 믿지 않는다** — Finder 로 띄운 앱은 셸 초기화를 안 거쳐서 버전
+/// 관리자(nvm 등)가 심은 경로가 통째로 없다. 무엇을 뒤지는지는 `acp.rs` 에
+/// 전부 적혀 있고 그 목록이 곧 검사 대상이다.
+///
+/// 읽기만 한다 — 이 커맨드는 아무것도 띄우지 않고 아무것도 쓰지 않는다.
+#[tauri::command]
+fn acp_detect_runtimes() -> Vec<acp::AcpRuntimeStatus> {
+    let (is_executable, list_dir) = acp::real_probe();
+    let probe = acp::FsProbe {
+        is_executable: &is_executable,
+        list_dir: &list_dir,
+    };
+    let home = std::env::var_os(if cfg!(windows) { "USERPROFILE" } else { "HOME" })
+        .map(PathBuf::from);
+    let path = std::env::var_os("PATH");
+    acp::detect_runtimes(home.as_deref(), path.as_deref(), &probe)
 }
 
 #[tauri::command]
@@ -4189,6 +4211,7 @@ pub fn run() {
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![
+            acp_detect_runtimes,
             pick_vault_directory,
             inspect_project_source,
             list_vault_directory,
