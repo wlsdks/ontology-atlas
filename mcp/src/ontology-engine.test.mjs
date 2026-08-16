@@ -2225,27 +2225,27 @@ describe('queryCompiledOntology', () => {
     assert.match(result.handoffPrompt, /query_ontology \{"operation":"explain_relation"/);
     assert.match(result.handoffPrompt, /Investigation playbooks/);
     assert.match(result.handoffPrompt, /CLI fallback commands when the MCP connector is unavailable/);
-    assert.match(result.handoffPrompt, /ontology-atlas hubs \[vault\] --plan --limit 10 --types depends_on,relates/);
-    assert.match(result.handoffPrompt, /ontology-atlas domain-matrix \[vault\] --limit 10/);
-    assert.match(result.handoffPrompt, /ontology-atlas match-nodes \[vault\] --plan --kind capability --min-degree 2 --sort degree --limit 10/);
-    assert.match(result.handoffPrompt, /ontology-atlas match-edges \[vault\] --plan --types depends_on --limit 20/);
-    assert.match(result.handoffPrompt, /ontology-atlas all-paths capabilities\/login domains\/auth \[vault\] --plan --force --max-hops 3 --types depends_on,relates --search-budget 1000 --limit 10/);
+    assert.match(result.handoffPrompt, /node .*cli\/src\/index\.mjs hubs \[vault\] --plan --limit 10 --types depends_on,relates/);
+    assert.match(result.handoffPrompt, /node .*cli\/src\/index\.mjs domain-matrix \[vault\] --limit 10/);
+    assert.match(result.handoffPrompt, /node .*cli\/src\/index\.mjs match-nodes \[vault\] --plan --kind capability --min-degree 2 --sort degree --limit 10/);
+    assert.match(result.handoffPrompt, /node .*cli\/src\/index\.mjs match-edges \[vault\] --plan --types depends_on --limit 20/);
+    assert.match(result.handoffPrompt, /node .*cli\/src\/index\.mjs all-paths capabilities\/login domains\/auth \[vault\] --plan --force --max-hops 3 --types depends_on,relates --search-budget 1000 --limit 10/);
     assert.ok(Array.isArray(result.cliFallbackCommands));
-    assert.ok(result.cliFallbackCommands.includes('ontology-atlas facets [vault] --limit 10'));
-    assert.ok(result.cliFallbackCommands.includes('ontology-atlas schema [vault] --limit 20'));
-    assert.ok(result.cliFallbackCommands.includes('ontology-atlas hubs [vault] --plan --limit 10 --types depends_on,relates'));
-    assert.ok(result.cliFallbackCommands.includes('ontology-atlas domain-matrix [vault] --limit 10'));
-    assert.ok(result.cliFallbackCommands.includes('ontology-atlas match-nodes [vault] --plan --kind capability --min-degree 2 --sort degree --limit 10'));
-    assert.ok(result.cliFallbackCommands.includes('ontology-atlas match-edges [vault] --plan --types depends_on --limit 20'));
-    assert.ok(result.cliFallbackCommands.includes('ontology-atlas all-paths capabilities/login domains/auth [vault] --plan --force --max-hops 3 --types depends_on,relates --search-budget 1000 --limit 10'));
+    assert.ok(result.cliFallbackCommands.some((c) => c.endsWith(' facets [vault] --limit 10')));
+    assert.ok(result.cliFallbackCommands.some((c) => c.endsWith(' schema [vault] --limit 20')));
+    assert.ok(result.cliFallbackCommands.some((c) => c.endsWith(' hubs [vault] --plan --limit 10 --types depends_on,relates')));
+    assert.ok(result.cliFallbackCommands.some((c) => c.endsWith(' domain-matrix [vault] --limit 10')));
+    assert.ok(result.cliFallbackCommands.some((c) => c.endsWith(' match-nodes [vault] --plan --kind capability --min-degree 2 --sort degree --limit 10')));
+    assert.ok(result.cliFallbackCommands.some((c) => c.endsWith(' match-edges [vault] --plan --types depends_on --limit 20')));
+    assert.ok(result.cliFallbackCommands.some((c) => c.endsWith(' all-paths capabilities/login domains/auth [vault] --plan --force --max-hops 3 --types depends_on,relates --search-budget 1000 --limit 10')));
     assert.ok(
       result.cliFallbackCommands
-        .filter((command) => /ontology-atlas all-paths /.test(command) && / --plan /.test(command))
+        .filter((command) => /node .*cli\/src\/index\.mjs all-paths /.test(command) && / --plan /.test(command))
         .every((command) => / --force /.test(command)),
       'all all-paths --plan fallbacks should include --force so connector-less agents can execute warning-only query plans',
     );
     assert.ok(!result.cliFallbackCommands.some((command) => command.includes('<project-slug>')));
-    assert.ok(result.cliFallbackCommands.includes('ontology-atlas explain capabilities/login domains/auth [vault] --direction undirected --max-hops 5 --types depends_on,relates --limit 10'));
+    assert.ok(result.cliFallbackCommands.some((c) => c.endsWith(' explain capabilities/login domains/auth [vault] --direction undirected --max-hops 5 --types depends_on,relates --limit 10')));
     assert.deepEqual(result.graphDbQueryPack.map((item) => item.id), [
       'graph_facets',
       'node_scan',
@@ -2484,15 +2484,9 @@ describe('queryCompiledOntology', () => {
       includeUnresolved: true,
       limit: 20,
     });
-    assert.ok(result.followUp.cliFallbackCommands.includes(
-      'ontology-atlas node capabilities/login [vault] --limit 12',
-    ));
-    assert.ok(result.followUp.cliFallbackCommands.includes(
-      'ontology-atlas match-edges [vault] --from capabilities/login --include-external --include-unresolved --limit 20',
-    ));
-    assert.ok(result.followUp.cliFallbackCommands.includes(
-      'ontology-atlas blast-radius capabilities/login [vault] --depth 2 --direction incoming',
-    ));
+    assert.ok(result.followUp.cliFallbackCommands.some((c) => c.endsWith(' node capabilities/login [vault] --limit 12')));
+    assert.ok(result.followUp.cliFallbackCommands.some((c) => c.endsWith(' match-edges [vault] --from capabilities/login --include-external --include-unresolved --limit 20')));
+    assert.ok(result.followUp.cliFallbackCommands.some((c) => c.endsWith(' blast-radius capabilities/login [vault] --depth 2 --direction incoming')));
 
     const outbound = queryCompiledOntology(artifact(), {
       operation: 'match_nodes',
@@ -2666,12 +2660,8 @@ describe('queryCompiledOntology', () => {
       maxHops: 5,
       limit: 10,
     });
-    assert.ok(result.followUp.cliFallbackCommands.includes(
-      'ontology-atlas explain capabilities/login domains/auth [vault] --direction undirected --max-hops 5 --types depends_on --limit 10',
-    ));
-    assert.ok(result.followUp.cliFallbackCommands.includes(
-      'ontology-atlas relation-check capabilities/login domains/auth depends_on [vault]',
-    ));
+    assert.ok(result.followUp.cliFallbackCommands.some((c) => c.endsWith(' explain capabilities/login domains/auth [vault] --direction undirected --max-hops 5 --types depends_on --limit 10')));
+    assert.ok(result.followUp.cliFallbackCommands.some((c) => c.endsWith(' relation-check capabilities/login domains/auth depends_on [vault]')));
 
     const external = queryCompiledOntology(artifact(), {
       operation: 'match_edges',
@@ -3822,7 +3812,7 @@ describe('queryCompiledOntology', () => {
     assert.equal(row.didYouMean, 'domains/checkout');
     assert.equal(row.proposedAction, null);
     assert.match(row.reason, /domains\/checkout/);
-    assert.match(row.reason, /ontology-atlas relate capabilities\/refund domains\/checkout relates/);
+    assert.match(row.reason, /node .*cli\/src\/index\.mjs relate capabilities\/refund domains\/checkout relates/);
   });
 
   // Two existing nodes with the same ambiguous tail must not produce a

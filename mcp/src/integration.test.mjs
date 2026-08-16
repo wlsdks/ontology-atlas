@@ -4253,16 +4253,18 @@ await test("query_ontology — compiled graph engine neighbors/path/all_paths/qu
       agentBrief.businessOntologyLens.guidance.join("\n"),
       /do not treat paths, APIs, routes, or commands as the ontology root/i,
     );
-    assert.ok(agentBrief.cliFallbackCommands.includes("ontology-atlas facets [vault] --limit 10"));
-    assert.ok(agentBrief.cliFallbackCommands.includes("ontology-atlas schema [vault] --limit 20"));
-    assert.ok(agentBrief.cliFallbackCommands.includes("ontology-atlas hubs [vault] --plan --limit 10 --types depends_on,relates"));
-    assert.ok(agentBrief.cliFallbackCommands.includes("ontology-atlas domain-matrix [vault] --limit 10"));
-    assert.ok(agentBrief.cliFallbackCommands.includes("ontology-atlas match-nodes [vault] --plan --kind capability --min-degree 2 --sort degree --limit 10"));
-    assert.ok(agentBrief.cliFallbackCommands.includes("ontology-atlas match-edges [vault] --plan --types depends_on --limit 20"));
-    assert.ok(agentBrief.cliFallbackCommands.some((command) => /ontology-atlas all-paths/.test(command)));
-    assert.ok(agentBrief.cliFallbackCommands.some((command) => /ontology-atlas pattern-walk/.test(command)));
-    assert.ok(agentBrief.cliFallbackCommands.some((command) => /ontology-atlas project-map/.test(command)));
-    assert.ok(agentBrief.cliFallbackCommands.some((command) => /ontology-atlas explain/.test(command)));
+    const hasCliFallback = (suffix) => agentBrief.cliFallbackCommands.some((command) => command.endsWith(suffix));
+    assert.ok(agentBrief.cliFallbackCommands.every((command) => !command.startsWith("ontology-atlas ")));
+    assert.ok(hasCliFallback(" facets [vault] --limit 10"));
+    assert.ok(hasCliFallback(" schema [vault] --limit 20"));
+    assert.ok(hasCliFallback(" hubs [vault] --plan --limit 10 --types depends_on,relates"));
+    assert.ok(hasCliFallback(" domain-matrix [vault] --limit 10"));
+    assert.ok(hasCliFallback(" match-nodes [vault] --plan --kind capability --min-degree 2 --sort degree --limit 10"));
+    assert.ok(hasCliFallback(" match-edges [vault] --plan --types depends_on --limit 20"));
+    assert.ok(hasCliFallback(" all-paths capabilities/login domains/auth [vault] --plan --force --max-hops 3 --types depends_on,relates --search-budget 1000 --limit 10"));
+    assert.ok(agentBrief.cliFallbackCommands.some((command) => /(?:^|\s)pattern-walk(?:\s|$)/.test(command)));
+    assert.ok(agentBrief.cliFallbackCommands.some((command) => /(?:^|\s)project-map(?:\s|$)/.test(command)));
+    assert.ok(hasCliFallback(" explain capabilities/login domains/auth [vault] --direction undirected --max-hops 5 --types depends_on,relates --limit 10"));
     assert.deepEqual(agentBrief.graphDbQueryPack.map((item) => item.id), [
       "graph_facets",
       "node_scan",

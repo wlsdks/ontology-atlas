@@ -1709,10 +1709,24 @@ function validAgentModeComparison(value) {
   return true;
 }
 
+/**
+ * 「MCP 가 없을 때 이걸 쓰세요」 줄이 **실행 가능한 모양**인가.
+ *
+ * ⚠️ 종전 검사는 `^ontology-atlas\s` 를 **요구**했다 — 그 이름의 전역 명령은
+ * 없는데(레지스트리 발행 폐기, 2026-07-27 원장), 그러니 이 검사는 거짓말을
+ * 막는 게 아니라 **강제하고 있었다.** 실제로 붙여넣으면 `command not found` 다
+ * (2026-08-17 실측).
+ *
+ * 지금 받는 것은 실행되는 모양(`node <…>/cli/src/index.mjs <sub> …`)이다.
+ * 옛 모양은 **거절한다** — 받아 주면 그 거짓말이 다시 돌아온다.
+ */
 function validAgentCliFallbackCommands(commands) {
   return Array.isArray(commands)
     && commands.length > 0
-    && commands.every((command) => hasNonEmptyString(command) && /^ontology-atlas\s/.test(command));
+    && commands.every(
+      (command) =>
+        hasNonEmptyString(command) && /^node\s+\S*cli\/src\/index\.mjs\s+\S/.test(command),
+    );
 }
 
 function validAgentTraversalStrategy(strategies) {

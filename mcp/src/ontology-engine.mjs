@@ -1,3 +1,5 @@
+import { fileURLToPath } from 'node:url';
+
 import { refMatchesOntologyAtlasIgnore } from './ontology-atlas-ignore.mjs';
 import { formatAllowedValueError, suggestCompiledSlugs } from './suggestions.mjs';
 import { buildSlugNotFoundGrowthHint } from './growth-hint.mjs';
@@ -405,7 +407,44 @@ export function queryCompiledOntology(artifact, query = {}, options = {}) {
   throw new Error(formatAllowedValueError('operation', operation, QUERY_ONTOLOGY_OPERATIONS));
 }
 
+/**
+ * 「MCP 가 없을 때 이걸 쓰세요」 줄의 **실행 가능한** 앞머리.
+ *
+ * ## 왜 기본값이 절대 경로인가 (2026-08-17 실측)
+ *
+ * 종전에는 이 자리에 `ontology-atlas` 를 그대로 적었다. **그 이름의 전역
+ * 명령은 없다**(레지스트리 발행 폐기, 2026-07-27 원장) — 붙여넣으면
+ * `command not found` 다. 정작 MCP 가 없어서 이 줄이 가장 필요한 순간에.
+ *
+ * 같은 결함이 2026-07-29 에 그래프 DB 팩에서 한 번 고쳐졌는데
+ * (`cli/src/commands/agent-brief.mjs` 주석), **이 생산자는 안 고쳐졌다.**
+ * 한 저장소에 같은 거짓말을 하는 자리가 둘이었고 하나만 고쳐졌다.
+ *
+ * 부르는 쪽이 자기 진입점을 알면 그것을 준다(CLI 는 `cliInvocation()`).
+ * 아무도 안 주면 이 파일의 위치에서 저장소의 CLI 진입점을 되짚는다 — 짐작이
+ * 아니라 **이 패키지가 사는 자리**에서 나오는 값이다.
+ */
+function defaultCliInvocation() {
+  try {
+    const entry = fileURLToPath(new URL('../../cli/src/index.mjs', import.meta.url));
+    return `node ${/[\s"'$`\\]/.test(entry) ? `'${entry.replace(/'/g, "'\\''")}'` : entry}`;
+  } catch {
+    /*
+     * 이 모듈이 파일이 아닌 자리에서 불릴 수 있다(브라우저 번들 · 시험
+     * 하네스 — 거기서는 `import.meta.url` 이 `file:` 이 아니라 위 변환이
+     * 던진다). **그때도 실행 가능한 모양으로 떨어진다**: 저장소 안에서라면
+     * 이 상대 경로가 그대로 돈다. `cli/src/lib/self-invocation.mjs` 가
+     * 진입점을 모를 때 쓰는 값과 같다.
+     */
+    return 'node cli/src/index.mjs';
+  }
+}
+
 export function createOntologyEngine(artifact, options = {}) {
+  const cliPrefix =
+    typeof options.cliInvocation === 'string' && options.cliInvocation.trim()
+      ? options.cliInvocation.trim()
+      : defaultCliInvocation();
   const ontologyAtlasIgnorePatterns = Array.isArray(options.ontologyAtlasIgnorePatterns)
     ? options.ontologyAtlasIgnorePatterns
     : [];
@@ -1629,7 +1668,7 @@ export function createOntologyEngine(artifact, options = {}) {
     rows.sort((left, right) => compareNodeRows(left, right, sort));
 
     const page = rows.slice(0, limit);
-    const followUp = buildMatchNodesFollowUp(page[0]);
+    const followUp = buildMatchNodesFollowUp(page[0], cliPrefix);
 
     return {
       operation: 'match_nodes',
@@ -1692,7 +1731,7 @@ export function createOntologyEngine(artifact, options = {}) {
     }
 
     const page = matches.slice(0, limit);
-    const followUp = buildMatchEdgesFollowUp(page[0]);
+    const followUp = buildMatchEdgesFollowUp(page[0], cliPrefix);
 
     return {
       operation: 'match_edges',
@@ -2683,7 +2722,7 @@ export function createOntologyEngine(artifact, options = {}) {
           suggestedSlug: kind ? suggestedSlugForReference(edge.ref, kind) : null,
           didYouMean: didYouMean || null,
           reason: didYouMean
-            ? `Graph reference "${edge.ref}" from "${edge.from}" via "${edge.via}" does not resolve, but "${didYouMean}" is an existing node with a matching name: likely a missing folder prefix or typo. Fix the "${edge.via}" reference on "${edge.from}" (e.g. \`ontology-atlas relate ${edge.from} ${didYouMean} ${RELATION_TYPE_FOR_KEY[edge.via] || edge.via}\`, or edit the "domain:" field directly for a scalar reference) instead of creating a duplicate node.`
+            ? `Graph reference "${edge.ref}" from "${edge.from}" via "${edge.via}" does not resolve, but "${didYouMean}" is an existing node with a matching name: likely a missing folder prefix or typo. Fix the "${edge.via}" reference on "${edge.from}" (e.g. \`${cliPrefix} relate ${edge.from} ${didYouMean} ${RELATION_TYPE_FOR_KEY[edge.via] || edge.via}\`, or edit the "domain:" field directly for a scalar reference) instead of creating a duplicate node.`
             : `Graph reference "${edge.ref}" from "${edge.from}" via "${edge.via}" does not resolve to a vault node.`,
           proposedAction: didYouMean
             ? null
@@ -4073,8 +4112,8 @@ export function createOntologyEngine(artifact, options = {}) {
       ...brief.playbooks.flatMap((playbook) => playbook.calls),
       ...brief.traversalStrategy.flatMap((strategy) => strategy.calls),
       ...brief.writeGuardrails.flatMap((guardrail) => guardrail.calls),
-    ]);
-    brief.handoffPrompt = buildAgentBriefHandoffPrompt(brief);
+    ], cliPrefix);
+    brief.handoffPrompt = buildAgentBriefHandoffPrompt(brief, cliPrefix);
     return brief;
   }
 
@@ -4684,7 +4723,7 @@ function agentToolCall(tool, args) {
   return { tool, arguments: args };
 }
 
-function buildMatchNodesFollowUp(node) {
+function buildMatchNodesFollowUp(node, cliPrefix) {
   if (!node?.slug) return null;
   const slug = node.slug;
   const calls = [
@@ -4734,11 +4773,11 @@ function buildMatchNodesFollowUp(node) {
     reason:
       'match_nodes is a scan; use these focused follow-up calls before treating a row as graph evidence.',
     calls,
-    cliFallbackCommands: uniqueCliCommands(calls),
+    cliFallbackCommands: uniqueCliCommands(calls, cliPrefix),
   };
 }
 
-function buildMatchEdgesFollowUp(edge) {
+function buildMatchEdgesFollowUp(edge, cliPrefix) {
   if (!edge?.from || !edge?.to || edge.resolved === false || edge.external === true) return null;
   const relation = edge.via === 'dependencies' ? 'depends_on' : edge.via;
   const calls = [
@@ -4787,7 +4826,7 @@ function buildMatchEdgesFollowUp(edge) {
     reason:
       'match_edges is a scan; explain and preflight the first edge before treating it as write or refactor evidence.',
     calls,
-    cliFallbackCommands: uniqueCliCommands(calls),
+    cliFallbackCommands: uniqueCliCommands(calls, cliPrefix),
   };
 }
 
@@ -4795,64 +4834,64 @@ function formatAgentToolCall(call) {
   return `${call.tool} ${JSON.stringify(call.arguments)}`;
 }
 
-function formatAgentToolCallCliCommand(call) {
+function formatAgentToolCallCliCommand(call, cliPrefix) {
   const args = call?.arguments || {};
   if (call?.tool === 'find_backlinks') {
     const slug = stringArg(args.slug, '<slug>');
-    return `ontology-atlas backlinks ${shellQuote(slug)} [vault]`;
+    return `${cliPrefix} backlinks ${shellQuote(slug)} [vault]`;
   }
   if (call?.tool === 'validate_vault') {
-    return 'ontology-atlas validate [vault]';
+    return `${cliPrefix} validate [vault]`;
   }
   if (call?.tool !== 'query_ontology') return null;
 
   switch (args.operation) {
     case 'workspace_brief':
-      return withCliFlags('ontology-atlas workspace-brief [vault]', [
+      return withCliFlags(`${cliPrefix} workspace-brief [vault]`, [
         positiveFlag('--limit', args.limit),
       ]);
     case 'health':
-      return withCliFlags('ontology-atlas health [vault]', [
+      return withCliFlags(`${cliPrefix} health [vault]`, [
         positiveFlag('--limit', args.limit),
       ]);
     case 'agent_brief':
-      return withCliFlags('ontology-atlas agent-brief [vault]', [
+      return withCliFlags(`${cliPrefix} agent-brief [vault]`, [
         positiveFlag('--limit', args.limit),
       ]);
     case 'facets':
-      return withCliFlags('ontology-atlas facets [vault]', [
+      return withCliFlags(`${cliPrefix} facets [vault]`, [
         positiveFlag('--limit', args.limit),
       ]);
     case 'schema':
-      return withCliFlags('ontology-atlas schema [vault]', [
+      return withCliFlags(`${cliPrefix} schema [vault]`, [
         positiveFlag('--limit', args.limit),
       ]);
     case 'query_plan':
       if (args.targetOperation === 'blast_radius') {
         const slug = stringArg(args.slug, '<slug>');
-        return withCliFlags(`ontology-atlas blast-radius ${shellQuote(slug)} [vault]`, [
+        return withCliFlags(`${cliPrefix} blast-radius ${shellQuote(slug)} [vault]`, [
           '--plan',
           nonNegativeFlag('--depth', args.depth),
           stringFlag('--direction', args.direction),
         ]);
       }
       if (args.targetOperation === 'centrality') {
-        return withCliFlags('ontology-atlas hubs [vault]', [
+        return withCliFlags(`${cliPrefix} hubs [vault]`, [
           '--plan',
           positiveFlag('--limit', args.limit),
           csvFlag('--types', args.types),
         ]);
       }
       if (args.targetOperation === 'match_nodes') {
-        return formatMatchNodesCliCommand(args, { plan: true });
+        return formatMatchNodesCliCommand(args, cliPrefix, { plan: true });
       }
       if (args.targetOperation === 'match_edges') {
-        return formatMatchEdgesCliCommand(args, { plan: true });
+        return formatMatchEdgesCliCommand(args, cliPrefix, { plan: true });
       }
       if (args.targetOperation === 'all_paths') {
         const from = stringArg(args.from, '<from-slug>');
         const to = stringArg(args.to, '<to-slug>');
-        return withCliFlags(`ontology-atlas all-paths ${shellQuote(from)} ${shellQuote(to)} [vault]`, [
+        return withCliFlags(`${cliPrefix} all-paths ${shellQuote(from)} ${shellQuote(to)} [vault]`, [
           '--plan',
           '--force',
           nonNegativeFlag('--max-hops', args.maxHops),
@@ -4864,21 +4903,21 @@ function formatAgentToolCallCliCommand(call) {
       return null;
     case 'node_profile': {
       const slug = stringArg(args.slug, '<slug>');
-      return withCliFlags(`ontology-atlas node ${shellQuote(slug)} [vault]`, [
+      return withCliFlags(`${cliPrefix} node ${shellQuote(slug)} [vault]`, [
         positiveFlag('--limit', args.limit),
       ]);
     }
     case 'path': {
       const from = stringArg(args.from, '<from-slug>');
       const to = stringArg(args.to, '<to-slug>');
-      return withCliFlags(`ontology-atlas path ${shellQuote(from)} ${shellQuote(to)} [vault]`, [
+      return withCliFlags(`${cliPrefix} path ${shellQuote(from)} ${shellQuote(to)} [vault]`, [
         nonNegativeFlag('--max-hops', args.maxHops),
       ]);
     }
     case 'explain_relation': {
       const from = stringArg(args.from, '<from-slug>');
       const to = stringArg(args.to, '<to-slug>');
-      return withCliFlags(`ontology-atlas explain ${shellQuote(from)} ${shellQuote(to)} [vault]`, [
+      return withCliFlags(`${cliPrefix} explain ${shellQuote(from)} ${shellQuote(to)} [vault]`, [
         stringFlag('--direction', args.direction),
         nonNegativeFlag('--max-hops', args.maxHops),
         csvFlag('--types', args.types),
@@ -4889,11 +4928,11 @@ function formatAgentToolCallCliCommand(call) {
       const from = stringArg(args.from, '<from-slug>');
       const to = stringArg(args.to, '<to-slug>');
       const type = stringArg(args.type, 'depends_on');
-      return `ontology-atlas relation-check ${shellQuote(from)} ${shellQuote(to)} ${shellQuote(type)} [vault]`;
+      return `${cliPrefix} relation-check ${shellQuote(from)} ${shellQuote(to)} ${shellQuote(type)} [vault]`;
     }
     case 'blast_radius': {
       const slug = stringArg(args.slug, '<slug>');
-      return withCliFlags(`ontology-atlas blast-radius ${shellQuote(slug)} [vault]`, [
+      return withCliFlags(`${cliPrefix} blast-radius ${shellQuote(slug)} [vault]`, [
         nonNegativeFlag('--depth', args.depth),
         stringFlag('--direction', args.direction),
       ]);
@@ -4901,7 +4940,7 @@ function formatAgentToolCallCliCommand(call) {
     case 'all_paths': {
       const from = stringArg(args.from, '<from-slug>');
       const to = stringArg(args.to, '<to-slug>');
-      return withCliFlags(`ontology-atlas all-paths ${shellQuote(from)} ${shellQuote(to)} [vault]`, [
+      return withCliFlags(`${cliPrefix} all-paths ${shellQuote(from)} ${shellQuote(to)} [vault]`, [
         '--plan',
         '--force',
         nonNegativeFlag('--max-hops', args.maxHops),
@@ -4911,16 +4950,16 @@ function formatAgentToolCallCliCommand(call) {
       ]);
     }
     case 'centrality':
-      return withCliFlags('ontology-atlas hubs [vault]', [
+      return withCliFlags(`${cliPrefix} hubs [vault]`, [
         positiveFlag('--limit', args.limit),
         csvFlag('--types', args.types),
       ]);
     case 'match_nodes':
-      return formatMatchNodesCliCommand(args);
+      return formatMatchNodesCliCommand(args, cliPrefix);
     case 'match_edges':
-      return formatMatchEdgesCliCommand(args);
+      return formatMatchEdgesCliCommand(args, cliPrefix);
     case 'domain_matrix':
-      return withCliFlags('ontology-atlas domain-matrix [vault]', [
+      return withCliFlags(`${cliPrefix} domain-matrix [vault]`, [
         stringFlag('--project', args.project),
         positiveFlag('--limit', args.limit),
         csvFlag('--types', args.types),
@@ -4928,7 +4967,7 @@ function formatAgentToolCallCliCommand(call) {
     case 'pattern_walk': {
       const slug = stringArg(args.slug, '<slug>');
       if (isPlaceholderArg(slug)) return null;
-      return withCliFlags(`ontology-atlas pattern-walk ${shellQuote(slug)} [vault]`, [
+      return withCliFlags(`${cliPrefix} pattern-walk ${shellQuote(slug)} [vault]`, [
         csvFlag('--pattern', args.pattern),
         stringFlag('--direction', args.direction),
         positiveFlag('--limit', args.limit),
@@ -4937,7 +4976,7 @@ function formatAgentToolCallCliCommand(call) {
     case 'project_map': {
       const project = stringArg(args.project ?? args.slug, '<project-slug>');
       if (isPlaceholderArg(project)) return null;
-      return withCliFlags(`ontology-atlas project-map ${shellQuote(project)} [vault]`, [
+      return withCliFlags(`${cliPrefix} project-map ${shellQuote(project)} [vault]`, [
         positiveFlag('--limit', args.limit),
         positiveFlag('--item-limit', args.itemLimit),
       ]);
@@ -4951,8 +4990,8 @@ function isPlaceholderArg(value) {
   return typeof value === 'string' && /^<[^>]+>$/.test(value);
 }
 
-function formatMatchNodesCliCommand(args, options = {}) {
-  return withCliFlags('ontology-atlas match-nodes [vault]', [
+function formatMatchNodesCliCommand(args, cliPrefix, options = {}) {
+  return withCliFlags(`${cliPrefix} match-nodes [vault]`, [
     options.plan ? '--plan' : null,
     stringFlag('--kind', args.kind),
     stringFlag('--domain', args.domain),
@@ -4968,8 +5007,8 @@ function formatMatchNodesCliCommand(args, options = {}) {
   ]);
 }
 
-function formatMatchEdgesCliCommand(args, options = {}) {
-  return withCliFlags('ontology-atlas match-edges [vault]', [
+function formatMatchEdgesCliCommand(args, cliPrefix, options = {}) {
+  return withCliFlags(`${cliPrefix} match-edges [vault]`, [
     options.plan ? '--plan' : null,
     stringFlag('--from', args.from),
     stringFlag('--to', args.to),
@@ -5018,11 +5057,11 @@ function shellQuote(value) {
   return `'${value.replace(/'/g, "'\\''")}'`;
 }
 
-function uniqueCliCommands(calls) {
+function uniqueCliCommands(calls, cliPrefix) {
   const seen = new Set();
   const commands = [];
   for (const call of calls) {
-    const command = formatAgentToolCallCliCommand(call);
+    const command = formatAgentToolCallCliCommand(call, cliPrefix);
     if (!command || seen.has(command)) continue;
     seen.add(command);
     commands.push(command);
@@ -5030,7 +5069,7 @@ function uniqueCliCommands(calls) {
   return commands;
 }
 
-function buildAgentBriefHandoffPrompt(brief) {
+function buildAgentBriefHandoffPrompt(brief, cliPrefix) {
   const firstCalls = brief.firstCalls
     .map((call, index) => `${index + 1}. ${formatAgentToolCall(call)}`)
     .join('\n');
@@ -5088,7 +5127,7 @@ function buildAgentBriefHandoffPrompt(brief) {
           ? brief.traversalStrategy.flatMap((strategy) => strategy.calls)
           : []),
         ...brief.writeGuardrails.flatMap((guardrail) => guardrail.calls),
-      ]);
+      ], cliPrefix);
   const cliFallback = cliCommands.length > 0
     ? [
         '',
