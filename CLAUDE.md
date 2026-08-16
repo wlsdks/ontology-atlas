@@ -81,7 +81,11 @@
   디자인 벤치 8석(`design-*`) · 평결을 코드로 적용하는 `design-guardian`.
   소집될 때만 로드된다.
 - `.claude/settings.json` — hooks · permissions.
-- `.claude/hooks/` — npm publish 차단 · SessionStart 볼트 census.
+- `.claude/hooks/` — 넷이고 `.codex/hooks/` 에 짝이 있다: npm publish 차단 ·
+  되돌릴 수 없는 git 명령 차단 · 생성물 손 편집 차단 · SessionStart 볼트 census.
+  **훅을 더하거나 빼면 `pnpm test:claude:hooks` 가 먼저 터진다** — 명령 목록과
+  PreToolUse 매처를 실측값으로 못박아 두었다. 2026-07-31 에 둘에서 넷으로 늘렸을
+  때 그 검사를 아무도 안 돌려서 2주간 빨간 채로 있었다(2026-08-17 발견).
 
 스킬(`/po-pass` · `/po-council` · `/design-council` · `/design-audit` ·
 `/design-system-audit` · `/design-build` ·
