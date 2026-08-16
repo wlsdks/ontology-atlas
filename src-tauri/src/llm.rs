@@ -232,7 +232,10 @@ fn is_loopback_authority(authority: &str) -> bool {
         Some(rest) => rest.split(']').next().unwrap_or(""),
         None => authority.split(':').next().unwrap_or(""),
     };
-    host == "localhost" || host == "::1" || host.starts_with("127.")
+    host.eq_ignore_ascii_case("localhost")
+        || host
+            .parse::<std::net::IpAddr>()
+            .is_ok_and(|address| address.is_loopback())
 }
 
 /// base URL + OpenAI 호환 경로. 이미 `/v1` 로 끝나면 덧붙이지 않는다 —
@@ -1578,12 +1581,17 @@ mod tests {
         for ok in [
             "http://localhost:11434",
             "http://127.0.0.1:1234",
+            "http://127.42.0.7:1234",
             "http://[::1]:11434",
             "https://box.example.com:8080",
         ] {
             assert!(normalize_base_url(ok).is_ok(), "거절하면 안 된다: {ok}");
         }
-        for bad in ["http://example.com", "http://192.168.0.9:11434"] {
+        for bad in [
+            "http://example.com",
+            "http://192.168.0.9:11434",
+            "http://127.example.invalid:11434",
+        ] {
             assert!(normalize_base_url(bad).is_err(), "통과하면 안 된다: {bad}");
         }
     }
