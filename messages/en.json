@@ -163,8 +163,8 @@
         "footprint": "Footprints",
         "notify": "Notifications",
         "workspace": "Workspace",
-        "runtimes": "Agents",
-        "agent": "MCP",
+        "runtimes": "Chat in app",
+        "agent": "Connect in terminal",
         "ai": "API Key"
       },
       "sectionGroup": {

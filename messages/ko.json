@@ -163,8 +163,8 @@
         "footprint": "발자국",
         "notify": "알림",
         "workspace": "작업 공간",
-        "runtimes": "Agents",
-        "agent": "MCP",
+        "runtimes": "앱에서 대화",
+        "agent": "터미널에서 연결",
         "ai": "API Key"
       },
       "sectionGroup": {
