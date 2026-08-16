@@ -27,7 +27,15 @@
 
 import { COLORS } from '../lib/colors.mjs';
 import { resolve, basename, relative } from 'node:path';
-import { readFileSync, writeFileSync, existsSync, copyFileSync } from 'node:fs';
+import {
+  existsSync,
+  lstatSync,
+  readFileSync,
+  renameSync,
+  unlinkSync,
+  writeFileSync,
+} from 'node:fs';
+import { randomUUID } from 'node:crypto';
 import { writeDoc, slugToPath } from '../lib/write-vault.mjs';
 import { buildFrontmatter } from '../lib/schema.mjs';
 import { buildAbsorptionPlan, buildSlimPointer } from '../lib/absorb.mjs';
@@ -67,6 +75,27 @@ export function runAbsorb(args) {
       );
       exitCode = 1;
       continue;
+    }
+    let sourceMode;
+    if (opts.write) {
+      const sourceStat = lstatSync(filePath);
+      if (sourceStat.isSymbolicLink()) {
+        process.stderr.write(
+          `${COLORS.red}error${COLORS.reset}  refusing to rewrite a symbolic link source: ` +
+            `${relative(process.cwd(), filePath)}\n`,
+        );
+        exitCode = 1;
+        continue;
+      }
+      sourceMode = sourceStat.mode & 0o777;
+      if (!sourceStat.isFile()) {
+        process.stderr.write(
+          `${COLORS.red}error${COLORS.reset}  source is not a regular file: ` +
+            `${relative(process.cwd(), filePath)}\n`,
+        );
+        exitCode = 1;
+        continue;
+      }
     }
 
     const raw = readFileSync(filePath, 'utf-8');
@@ -110,9 +139,27 @@ export function runAbsorb(args) {
 
     // Backup *after* the vault writes succeed — if a write throws above, the
     // original file is left untouched and the user can re-run safely.
-    copyFileSync(filePath, backupPath);
     const pointer = buildSlimPointer(plan);
-    writeFileSync(filePath, pointer, 'utf-8');
+    writeFileSync(backupPath, raw, { encoding: 'utf-8', flag: 'wx', mode: sourceMode });
+    const pointerTempPath = `${filePath}.ontology-atlas-${process.pid}-${randomUUID()}.tmp`;
+    try {
+      writeFileSync(pointerTempPath, pointer, {
+        encoding: 'utf-8',
+        flag: 'wx',
+        mode: sourceMode,
+      });
+      // rename replaces the path entry itself. If an attacker swaps the source
+      // to a symlink after the lstat gate, this cannot follow and overwrite the
+      // link target the way writeFileSync(filePath) would.
+      renameSync(pointerTempPath, filePath);
+    } catch (error) {
+      try {
+        unlinkSync(pointerTempPath);
+      } catch {
+        // The temp may not have been created, or rename may already have consumed it.
+      }
+      throw error;
+    }
 
     // Slice 0 magic-moment instrumentation (PRODUCT-PLAN-2026-07.md §4/§9) —
     // local-only baseline for "vault worth asking" (see lib/telemetry.mjs).

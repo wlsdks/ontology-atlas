@@ -9,6 +9,7 @@ import {
   realpathSync,
   rmSync,
   statSync,
+  symlinkSync,
   writeFileSync,
 } from 'node:fs';
 import { tmpdir } from 'node:os';
@@ -130,6 +131,25 @@ describe('runAbsorb — dry-run (default)', () => {
 });
 
 describe('runAbsorb --write', () => {
+  it('rejects a symlink source instead of rewriting its external target', () => {
+    const externalRoot = realpathSync(mkdtempSync(join(tmpdir(), 'ontology-atlas-absorb-external-')));
+    const external = join(externalRoot, 'AGENTS.md');
+    const linked = join(tmp, 'AGENTS.md');
+    writeFileSync(external, SAMPLE, 'utf-8');
+    symlinkSync(external, linked);
+    try {
+      const code = runAbsorb([linked, '--vault', vault, '--write']);
+
+      assert.equal(code, 1);
+      assert.match(stderr.join(''), /symbolic link/i);
+      assert.equal(readFileSync(external, 'utf-8'), SAMPLE);
+      assert.equal(existsSync(`${external}.pre-absorb.bak`), false);
+      assert.deepEqual(readdirRecursive(vault), []);
+    } finally {
+      rmSync(externalRoot, { recursive: true, force: true });
+    }
+  });
+
   it('creates a document node for each absorbed section', () => {
     const file = writeSource('AGENTS.md', SAMPLE);
     const code = runAbsorb([file, '--vault', vault, '--write']);
