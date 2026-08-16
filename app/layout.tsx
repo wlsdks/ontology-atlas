@@ -1,4 +1,5 @@
 import type { Metadata, Viewport } from 'next';
+import { JsonLd } from '@/shared/ui';
 import { JetBrains_Mono } from 'next/font/google';
 import localFont from 'next/font/local';
 import { SITE_URL } from '@/shared/config';
@@ -108,22 +109,20 @@ export default function RootLayout({
           표면이 소유한다(.claude/rules/design.md) — body 가 아니다.
           게이트: document-scroll-lock.spec.ts + scroll-end-gap.spec.ts. */}
       <body className="flex min-h-full flex-col overflow-x-hidden">
-        <script
-          type="application/ld+json"
-          dangerouslySetInnerHTML={{
-            __html: JSON.stringify({
-              '@context': 'https://schema.org',
-              '@type': 'WebSite',
-              name: 'Ontology Atlas',
-              alternateName: 'ontology-atlas',
-              url: SITE_URL,
-              description: 'AI-native codebase ontology workbench. Humans and AI agents author the same vault.',
-              inLanguage: ['en', 'ko'],
-              publisher: {
-                '@type': 'Organization',
-                name: 'ontology-atlas contributors',
-              },
-            }),
+        <JsonLd
+          data={{
+            '@context': 'https://schema.org',
+            '@type': 'WebSite',
+            name: 'Ontology Atlas',
+            alternateName: 'ontology-atlas',
+            url: SITE_URL,
+            description:
+              'AI-native codebase ontology workbench. Humans and AI agents author the same vault.',
+            inLanguage: ['en', 'ko'],
+            publisher: {
+              '@type': 'Organization',
+              name: 'ontology-atlas contributors',
+            },
           }}
         />
         {children}
