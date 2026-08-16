@@ -20,7 +20,7 @@ const CONFIDENCE_COLORS = {
 };
 
 export async function runConnectSource(args) {
-  const { projectSlug, vault, root, confirm, repair, json, error, help } = parseArgs(args);
+  const { projectSlug, vault, root, confirm, repair, json, error, help } = parseConnectSourceArgs(args);
   if (help) {
     printUsage(process.stdout);
     return 0;
@@ -100,7 +100,7 @@ export async function runConnectSource(args) {
   return 0;
 }
 
-function parseArgs(args) {
+export function parseConnectSourceArgs(args) {
   if (args.includes('--help') || args.includes('-h')) return { help: true };
   const flags = { vault: null, root: null, confirm: false, repair: false, json: false };
   const positional = [];
