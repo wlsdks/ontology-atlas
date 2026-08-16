@@ -3,7 +3,15 @@
 import { ArrowUp, ChevronRight, History, Square, SquarePen, X } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
-import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
+import {
+  createElement,
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+  type ReactNode,
+} from 'react';
 import { useTranslations } from 'next-intl';
 
 import { Chip, IconButton, RowButton, Select, Surface, Textarea } from '@/shared/ui';
@@ -23,6 +31,7 @@ import { cn } from '@/shared/lib/cn';
 import { useAcpSession, type AcpEvent } from '@/features/acp-session/model/use-acp-session';
 import { readAcpTrouble } from '@/features/acp-session/model/acp-trouble';
 import type { ChatSuggestion } from '@/features/acp-session/model/chat-suggestions';
+import { linkSlugs } from '@/features/acp-session/model/link-slugs';
 
 import { VAULT_MCP_SERVER_NAME } from '@/features/acp-session/model/vault-mcp-server';
 
@@ -84,6 +93,8 @@ export function AcpChatPanel({
   onRuntimeChange,
   prefillRequest,
   suggestions = [],
+  knownSlugs,
+  onHoverSlug,
   onClose,
 }: {
   runtimeId: string;
@@ -111,6 +122,19 @@ export function AcpChatPanel({
    * 온 성질이 아니다(`vaultRoot` · `runtimes` 도 전부 받아 온다).
    */
   suggestions?: readonly ChatSuggestion[];
+  /**
+   * 이 볼트에 **실재하는** 노드 이름들. 에이전트의 답에서 이 이름들만 집어
+   * 지도와 이어 준다 — 아무 `a/b` 나 링크로 만들면 파일 경로와 URL 까지
+   * 링크가 되고, 눌러도 아무 데도 안 가는 링크를 한 번 만난 사람은 나머지도
+   * 안 누른다 (`link-slugs.ts`).
+   */
+  knownSlugs?: ReadonlySet<string>;
+  /**
+   * 그 이름에 마우스를 올렸다(벗어나면 `null`). 지도가 **마우스로 올렸을 때와
+   * 똑같이** 그 노드를 밝힌다. 렌더를 돌리지 않으려고 부르는 쪽이 ref 에
+   * 담는다 — 큰 그래프에서 호버마다 렌더하면 끈적해진다.
+   */
+  onHoverSlug?: (slug: string | null) => void;
   onClose?: () => void;
 }) {
   const t = useTranslations('acpChat');
@@ -486,7 +510,11 @@ export function AcpChatPanel({
                   'mt-2 border-t border-[color:var(--color-divider)] pt-3',
               )}
             >
-              <TranscriptEntry event={item.event} />
+              <TranscriptEntry
+                event={item.event}
+                knownSlugs={knownSlugs}
+                onHoverSlug={onHoverSlug}
+              />
             </div>
           );
         })}
@@ -843,7 +871,81 @@ function ToolGroup({ events }: { events: Extract<AcpEvent, { kind: 'tool' }>[] }
   );
 }
 
-function TranscriptEntry({ event }: { event: AcpEvent }) {
+/**
+ * 에이전트의 답에서 **실재하는 노드 이름**에 표시를 달고, 마우스를 올리면
+ * 지도가 그 노드를 밝히게 한다 (2026-08-17 소유자 지시).
+ *
+ * ## 마크다운의 **출력**에 단다 (2026-08-17 실측)
+ *
+ * 처음에는 `<SlugMarks><ReactMarkdown>{text}</ReactMarkdown></SlugMarks>` 로
+ * 감쌌다. 그러면 워커가 `ReactMarkdown` 의 children — 즉 **아직 파싱 안 된
+ * 마크다운 원문 문자열** — 을 조각내서 넘기고, 그 컴포넌트는 문자열이 아닌
+ * children 을 받아 죽는다. 화면에는 대화 기록이 통째로 사라졌다.
+ *
+ * 그래서 `components` 로 붙인다: 글자를 담는 원소들이 **이미 파싱된** children
+ * 을 받은 뒤 거기서 이름을 집는다. 마크다운 문법은 건드리지 않는다.
+ *
+ * 모양은 **점선 밑줄 하나**다. 새 색을 들이지 않는 이유는 이 지도에 이미 배울
+ * 색이 충분해서고(인디고=선택 · 앰버=중심), 점선인 이유는 「누르는 링크」가
+ * 아니라 「지도에 있는 것」이라는 다른 뜻이기 때문이다.
+ */
+function markChildren(
+  children: ReactNode,
+  known: ReadonlySet<string>,
+  onHoverSlug: ((slug: string | null) => void) | undefined,
+  key: string,
+): ReactNode {
+  if (typeof children === 'string') {
+    const segments = linkSlugs(children, known);
+    if (!segments.some((seg) => 'slug' in seg)) return children;
+    return segments.map((seg, i) =>
+      'slug' in seg ? (
+        <span
+          key={`${key}-${i}`}
+          data-testid="acp-chat-slug"
+          data-slug={seg.slug}
+          className="cursor-default underline decoration-dotted decoration-[color:var(--color-border-strong)] underline-offset-2 hover:decoration-[color:var(--color-indigo-a46)]"
+          onPointerEnter={() => onHoverSlug?.(seg.slug)}
+          onPointerLeave={() => onHoverSlug?.(null)}
+        >
+          {seg.text}
+        </span>
+      ) : (
+        seg.text
+      ),
+    );
+  }
+  if (Array.isArray(children)) {
+    return children.map((child, i) => markChildren(child, known, onHoverSlug, `${key}-${i}`));
+  }
+  return children;
+}
+
+/** 글자를 담는 마크다운 원소들 — 이 안에서만 이름을 집는다. */
+const SLUG_MARKED_TAGS = ['p', 'li', 'td', 'th', 'code', 'strong', 'em'] as const;
+
+function slugMarkComponents(
+  known: ReadonlySet<string> | undefined,
+  onHoverSlug: ((slug: string | null) => void) | undefined,
+): Record<string, (props: { children?: ReactNode }) => ReactNode> | undefined {
+  if (!known || known.size === 0) return undefined;
+  const out: Record<string, (props: { children?: ReactNode }) => ReactNode> = {};
+  for (const tag of SLUG_MARKED_TAGS) {
+    out[tag] = ({ children, ...rest }) =>
+      createElement(tag, rest, markChildren(children, known, onHoverSlug, tag));
+  }
+  return out;
+}
+
+function TranscriptEntry({
+  event,
+  knownSlugs,
+  onHoverSlug,
+}: {
+  event: AcpEvent;
+  knownSlugs?: ReadonlySet<string>;
+  onHoverSlug?: (slug: string | null) => void;
+}) {
   const t = useTranslations('acpChat');
 
   if (event.kind === 'user') {
@@ -880,7 +982,12 @@ function TranscriptEntry({ event }: { event: AcpEvent }) {
      */
     return (
       <div data-acp-entry="agent" className={CHAT_MARKDOWN}>
-        <ReactMarkdown remarkPlugins={[remarkGfm]}>{event.text}</ReactMarkdown>
+        <ReactMarkdown
+          remarkPlugins={[remarkGfm]}
+          components={slugMarkComponents(knownSlugs, onHoverSlug)}
+        >
+          {event.text}
+        </ReactMarkdown>
       </div>
     );
   }

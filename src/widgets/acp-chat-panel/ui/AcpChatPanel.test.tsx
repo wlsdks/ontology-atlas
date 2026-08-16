@@ -912,3 +912,69 @@ describe('빈 대화의 추천 — 이 폴더에 대한 것만 그린다', () =>
     expect(screen.queryByTestId('acp-chat-suggestions')).toBeNull();
   });
 });
+
+describe('답변 속 노드 이름 — 지도와 잇는다', () => {
+  /**
+   * 모델(`link-slugs.ts`)이 무엇을 집을지는 자기 테스트가 잠근다. 여기서
+   * 잠그는 것은 **답변 안에서 실제로 표시가 달리고, 마우스를 올리면 그
+   * 이름이 지도 쪽으로 나가는가** 다.
+   */
+  async function agentSays(text: string, extra: Record<string, unknown> = {}) {
+    const hovered: (string | null)[] = [];
+    render(
+      <AcpChatPanel
+        runtimeId="claude-acp"
+        runtimeLabel="Claude Agent"
+        vaultRoot="/vault"
+        mcpServers={[{ name: 'atlas-vault' }]}
+        knownSlugs={new Set(['capabilities/invoice', 'domains/payment'])}
+        onHoverSlug={(s) => hovered.push(s)}
+        {...extra}
+      />,
+    );
+    await waitFor(() => expect(bridge.sent.some((m) => m.method === 'initialize')).toBe(true));
+    replyTo('initialize', { protocolVersion: 1 });
+    await waitFor(() => expect(bridge.sent.some((m) => m.method === 'session/new')).toBe(true));
+    replyTo('session/new', { sessionId: 's-1' });
+    await waitFor(() =>
+      expect(screen.getByTestId('acp-chat-panel')).toHaveAttribute('data-acp-status', 'ready'),
+    );
+    // 실제 순서대로 — 사람이 묻고 에이전트가 답한다.
+    fireEvent.change(screen.getByRole('textbox'), { target: { value: '봐줘' } });
+    fireEvent.click(screen.getByTestId('acp-chat-send'));
+    await waitFor(() => expect(screen.getByText('봐줘')).toBeInTheDocument());
+    emit({
+      jsonrpc: '2.0',
+      method: 'session/update',
+      params: { update: { sessionUpdate: 'agent_message_chunk', content: { text } } },
+    });
+    return hovered;
+  }
+
+  it('아는 이름에 표시가 달리고, 올리면 그 이름이 나간다', async () => {
+    const hovered = await agentSays('먼저 capabilities/invoice 를 봤어요.');
+
+    const mark = await screen.findByTestId('acp-chat-slug');
+    expect(mark.getAttribute('data-slug')).toBe('capabilities/invoice');
+
+    fireEvent.pointerEnter(mark);
+    expect(hovered.at(-1), '마우스를 올렸는데 지도에 아무것도 안 나갔다').toBe(
+      'capabilities/invoice',
+    );
+    fireEvent.pointerLeave(mark);
+    // 벗어나면 반드시 꺼야 한다 — 안 끄면 강조가 켜진 채로 남는다.
+    expect(hovered.at(-1), '마우스가 벗어났는데 강조가 안 꺼진다').toBeNull();
+  });
+
+  it('모르는 이름에는 표시를 달지 않는다 — 눌러도 아무 데도 안 가는 링크를 만들지 않는다', async () => {
+    await agentSays('src/features/acp-session/model/x.ts 를 고쳤어요.');
+    await waitFor(() => expect(document.querySelectorAll('[data-acp-entry="agent"]').length).toBe(1));
+    expect(screen.queryAllByTestId('acp-chat-slug')).toHaveLength(0);
+  });
+
+  it('아는 이름을 안 넘기면 아무것도 안 단다 — 볼트를 모르면 짐작하지 않는다', async () => {
+    await agentSays('먼저 capabilities/invoice 를 봤어요.', { knownSlugs: undefined });
+    await waitFor(() => expect(document.querySelectorAll('[data-acp-entry="agent"]').length).toBe(1));
+    expect(screen.queryAllByTestId('acp-chat-slug')).toHaveLength(0);
+  });
+});
