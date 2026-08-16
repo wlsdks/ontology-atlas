@@ -837,6 +837,55 @@ describe('대화 패널 — 오류는 사람의 말로 말하고 다음 할 일�
     expect(details?.hasAttribute('open')).toBe(false);
     expect(details?.textContent).toContain('authentication_failed');
   });
+
+  it('같은 실패를 두 번 말하지 않는다 — 어댑터가 메시지로도 보낸 원문은 안 그린다', async () => {
+    /*
+     * 2026-08-17 설치된 앱 실측. 위 검사는 **카드**만 봤고, 그래서 어댑터가
+     * 같은 말을 `session/update` 메시지로도 보낸다는 것을 못 봤다. 화면에는
+     * 영문 원문이 카드보다 **먼저** 서 있었다.
+     */
+    await bootSession();
+    fireEvent.change(screen.getAllByRole('textbox')[0], { target: { value: '안녕' } });
+    fireEvent.click(screen.getByTestId('acp-chat-send'));
+    await waitFor(() =>
+      expect(bridge.sent.some((m) => m.method === 'session/prompt')).toBe(true),
+    );
+
+    const echo = 'Failed to authenticate: OAuth session expired and could not be refreshed';
+    emit({
+      jsonrpc: '2.0',
+      method: 'session/update',
+      params: {
+        sessionId: 'sess-1',
+        update: {
+          sessionUpdate: 'agent_message_chunk',
+          content: { type: 'text', text: echo },
+        },
+      },
+    });
+    await screen.findByText(echo);
+
+    const call = [...bridge.sent].reverse().find((m) => m.method === 'session/prompt');
+    emit({
+      jsonrpc: '2.0',
+      id: call?.id,
+      error: {
+        code: -32603,
+        message: `Internal error: ${echo}`,
+        data: { errorKind: 'authentication_failed' },
+      },
+    });
+
+    const alert = await screen.findByTestId('acp-chat-error');
+    // 원문은 접힌 「자세히」 안에만 남는다.
+    expect(alert.textContent).toContain('authentication_failed');
+    // 대화 기록에는 더 이상 그 줄이 없다.
+    const transcript = screen.getByTestId('acp-chat-panel');
+    const outsideAlert = [...transcript.querySelectorAll('*')].filter(
+      (el) => el.textContent === echo && !alert.contains(el),
+    );
+    expect(outsideAlert, '영문 원문이 카드 밖에 또 있다').toHaveLength(0);
+  });
 });
 
 describe('권한 카드 — 놓칠 수 없어야 한다', () => {
