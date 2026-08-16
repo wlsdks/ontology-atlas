@@ -1625,8 +1625,49 @@ function buildRefResolver(docs) {
  * @param {Array<{op:'write'|'delete', path:string, content?:string}>} plan
  * @returns {{applied:number}}
  */
+/**
+ * 두 경로가 **같은 파일을 가리키는가**를 비교할 열쇠.
+ *
+ * 이미 있는 파일이면 실제 경로(심볼릭 링크를 편 것)를 쓰고, 아직 없으면 경로
+ * 문자열을 쓴다. 대소문자를 구별하지 않는 파일 시스템(macOS 기본 · Windows)을
+ * 위해 소문자로 눕힌다 — 구별하는 시스템에서는 서로 다른 두 파일이 같은 열쇠를
+ * 갖게 되지만, 그 경우 손해는 「지우기 하나를 안 한 것」뿐이고 그건 데이터가
+ * 사라지는 쪽보다 언제나 낫다.
+ */
+function sameFileKey(path) {
+  try {
+    if (existsSync(path)) return realpathSync(path).toLowerCase();
+  } catch {
+    /* 실제 경로를 못 펴면 문자열로 간다 — 판정이 없는 것보다 낫다. */
+  }
+  return resolve(path).toLowerCase();
+}
+
 export function applyAllOrNothing(plan) {
   if (!Array.isArray(plan) || plan.length === 0) return { applied: 0 };
+
+  /*
+   * ⓪ **같은 파일을 쓰고 또 지우는 계획은 지우기를 뺀다.**
+   *
+   * 이름만 대소문자가 다른 rename 은 이 계획을 만든다:
+   *   write `capabilities/auth.md` · delete `capabilities/Auth.md`
+   * 그런데 macOS·Windows 의 파일 시스템은 그 둘을 **같은 파일**로 본다. 그래서
+   * 쓰고 나서 지우면 방금 쓴 그것이 지워진다 — 노드가 통째로 사라지고, 도구는
+   * 성공이라고 답한다(2026-08-16 검수에서 재현).
+   *
+   * 앞단(`rename_concept`)에서 그 경우를 거절하지만, 같은 계획을 만드는 도구가
+   * 셋(rename · merge · reclassify)이라 **쓰기 층에도** 막아 둔다. 문자열 비교로
+   * 못 잡는 것을 여기서는 **실제 경로**로 잡는다.
+   */
+  const writeTargets = new Set();
+  for (const entry of plan) {
+    if (entry.op !== 'write') continue;
+    writeTargets.add(sameFileKey(entry.path));
+  }
+  const safePlan = plan.filter(
+    (entry) => entry.op !== 'delete' || !writeTargets.has(sameFileKey(entry.path)),
+  );
+  if (safePlan.length !== plan.length) plan = safePlan;
 
   // ① 사전 점검 — 한 글자도 쓰기 전에. 흔한 실패(읽기 전용 파일·잠긴 파일·
   //    읽기 전용 볼트)는 여기서 걸러져 되돌리기 자체가 필요 없어진다.

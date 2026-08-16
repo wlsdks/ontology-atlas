@@ -774,9 +774,13 @@ export function VaultAgentSetupPanel({
     <section aria-label={t('agentSetup.ariaLabel')} className="min-w-0">
       {/*
         **머리는 두 줄이다** (2026-08-04). 종전에는 여기에 제목 `<h3>` 이 하나 더
-        있었는데, 왼쪽 LNB 가 같은 눈높이에서 「내 에이전트 연결」을 이미 말하고
-        있었다 — 같은 이름을 두 번 쓰는 대신 한 번만 쓴다. 이름은 region 의
-        접근 이름으로 남으므로 보조기술에서도 잃지 않는다.
+        있었는데, 왼쪽 LNB 가 같은 눈높이에서 이 칸의 이름을 이미 말하고 있었다 —
+        같은 이름을 두 번 쓰는 대신 한 번만 쓴다. 이름은 region 의 접근 이름으로
+        남으므로 보조기술에서도 잃지 않는다.
+
+        ⚠️ 그 LNB 의 이름이 2026-08-16 에 「MCP」로 바뀌었다. 여기 접근 이름도
+        같이 옮겼다 — 안 옮기면 화면이 부르는 이름과 낭독기가 부르는 이름이
+        달라지고, 그 어긋남은 화면을 보는 사람에게는 영영 안 보인다.
       */}
       <p className="break-keep text-body text-[color:var(--color-text-tertiary)]">
         {publicPackagesReady

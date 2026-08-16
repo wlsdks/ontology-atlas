@@ -60,6 +60,52 @@ describe('남의 제품 이름 — 그쪽이 허용한 형태로만', () => {
     }
   });
 
+  it('**우리 목록을 설명하는 문구**도 같은 규칙을 지킨다', () => {
+    /*
+     * ⚠️ 이 게이트에는 구멍이 있었다 (2026-08-16 검수에서 적발). 레지스트리의
+     * `name` 만 보고 있어서, **화면 문구**는 사정거리 밖이었다 — 실제로
+     * 실행기 목록의 빈 상태가 「Claude Code 나 Codex 를 설치하면…」이라고 말하고
+     * 있었다. 목록 이름은 규칙을 지키는데 그 목록을 설명하는 문장이 안 지켰다.
+     *
+     * ⚠️ **사정거리를 문구 전체로 넓히지 않는다.** 이 앱에는 「Claude Code 에
+     * 연결」처럼 **그 제품 자체를 부르는** 문구가 20곳 넘게 있고, 그건 정당하다
+     * (남의 제품을 그 제품의 이름으로 부르는 것). 룰을 그렇게 켜면 정당한
+     * 20곳이 소음이 되고 진짜 위반이 그 속에 묻힌다 — 이 저장소가 「룰을 켜기
+     * 전에 위반 수를 세어 본다」고 적어 둔 그 이유다.
+     *
+     * 그래서 **우리 실행기 목록을 설명하는 자리**만 본다.
+     */
+    const NAMESPACES = [
+      ['nav', 'settingsMenu', 'runtimes'],
+      ['topology', 'startSteps', 'agent'],
+    ];
+    for (const locale of ['ko', 'en']) {
+      const catalog = JSON.parse(
+        readFileSync(join(ROOT, 'messages', `${locale}.json`), 'utf8'),
+      ) as Record<string, unknown>;
+      for (const path of NAMESPACES) {
+        let node: unknown = catalog;
+        for (const key of path) node = (node as Record<string, unknown>)?.[key];
+        const found: string[] = [];
+        const walk = (value: unknown, trail: string) => {
+          if (typeof value === 'string') {
+            if (/claude code/i.test(value)) found.push(`${trail}: ${value}`);
+            return;
+          }
+          if (value && typeof value === 'object') {
+            for (const [k, v] of Object.entries(value)) walk(v, `${trail}.${k}`);
+          }
+        };
+        walk(node, `${locale}.${path.join('.')}`);
+        expect(
+          found,
+          '우리 실행기 목록을 설명하는 문구는 레지스트리와 같은 이름을 쓴다 ' +
+            '(Anthropic Claude Agent SDK · Branding guidelines)',
+        ).toEqual([]);
+      }
+    }
+  });
+
   it('claude 어댑터는 레지스트리가 준 허용된 이름을 그대로 쓴다', () => {
     const claude = REGISTRY.agents.find((a) => a.id === 'claude-acp');
     expect(claude, 'claude-acp 가 목록에서 사라졌다면 이 계약을 다시 볼 때다').toBeDefined();

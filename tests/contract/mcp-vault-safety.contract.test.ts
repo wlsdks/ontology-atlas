@@ -1,5 +1,5 @@
 import { execFileSync } from 'node:child_process';
-import { mkdtempSync, writeFileSync } from 'node:fs';
+import { mkdirSync, mkdtempSync, readdirSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
@@ -79,6 +79,46 @@ function makeVault(): string {
   );
   return dir;
 }
+
+describe('MCP 이름 바꾸기 — 대소문자만 다른 이름은 같은 파일이다', () => {
+  /**
+   * 2026-08-16 검수가 **실제로 문서가 사라지는 것을 재현했다**:
+   *
+   * ```
+   * rename_concept{oldSlug:"Auth", newSlug:"auth", confirm:true, overwrite:true}
+   *   → ok:true, moved:true, backlinkUpdates:{totalUpdated:1}
+   *   → 디스크에서 Auth.md 도 auth.md 도 없어짐. 참조는 매달린 채 남음
+   * ```
+   *
+   * 앞단의 충돌 검사가 **문자열 비교**라 그 둘을 다른 것으로 봤고, macOS 는
+   * 같은 파일로 봤다. 그래서 새 이름으로 쓰고 옛 이름을 지우니 방금 쓴 것이
+   * 지워졌다. 그리고 도구는 성공이라고 답했다.
+   */
+  it('대소문자만 다른 이름 바꾸기는 **거절**하고, 파일은 그대로 남는다', () => {
+    const vault = mkdtempSync(join(tmpdir(), 'atlas-case-'));
+    mkdirSync(join(vault, 'capabilities'), { recursive: true });
+    writeFileSync(
+      join(vault, 'capabilities', 'Auth.md'),
+      '---\nkind: capability\ntitle: Auth\nuid: 22222222-2222-4222-8222-222222222222\n---\n\nbody\n',
+      'utf8',
+    );
+
+    const result = callTool(vault, 'rename_concept', {
+      oldSlug: 'capabilities/Auth',
+      newSlug: 'capabilities/auth',
+      confirm: true,
+      overwrite: true,
+    });
+
+    expect(result.isError, `거절되지 않았다: ${result.text.slice(0, 200)}`).toBe(true);
+    expect(result.text).toMatch(/letter case/);
+    // 그리고 무엇보다 — **파일이 그대로 있어야 한다.**
+    expect(
+      readdirSync(join(vault, 'capabilities')),
+      '문서가 사라졌다 — 이 검사가 막으려는 바로 그 일이다',
+    ).toContain('Auth.md');
+  }, 40_000);
+});
 
 describe('MCP 스캔 경계 — 열어 준 폴더만 읽는다', () => {
   it('볼트 밖 경로는 거절한다 (실제 서버에 JSON-RPC 로 물어본다)', () => {

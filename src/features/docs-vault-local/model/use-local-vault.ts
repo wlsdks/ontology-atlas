@@ -1191,6 +1191,20 @@ export function useLocalVaultInternal() {
       opts: { rewriteBacklinks?: boolean } = {},
     ) => {
       if (oldSlug === newSlug) return;
+      /*
+       * ⚠️ **대소문자만 다른 이름은 같은 파일이다** (2026-08-16 검수 — MCP 쪽에서
+       * 문서가 사라지는 것을 재현했고, 이 경로도 같은 모양이다).
+       *
+       * 아래 충돌 검사는 Map 의 키 비교라 `Payments` 와 `payments` 를 다른 것으로
+       * 본다. 그런데 macOS·Windows 의 파일 시스템은 같은 파일로 보므로, 새
+       * 이름으로 쓰고 옛 이름을 지우면 **방금 쓴 그것이 지워진다.**
+       *
+       * 그리고 이 앱의 `slugify` 가 이름을 소문자로 눕히므로, 「Payments」를
+       * 「payments」로 고치는 것은 사용자가 흔히 하는 정리다 — 드문 경우가 아니다.
+       */
+      if (oldSlug.toLowerCase() === newSlug.toLowerCase()) {
+        throw new Error(`Case-only rename is not supported: "${oldSlug}" → "${newSlug}"`);
+      }
       if (state.fileHandles.has(newSlug)) {
         throw new Error(`Document already exists: "${newSlug}"`);
       }

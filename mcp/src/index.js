@@ -9797,6 +9797,34 @@ function renameConcept({ oldSlug, newSlug, confirm = false, overwrite = false, e
   if (oldSlug === newSlug) {
     throw new Error('oldSlug and newSlug are identical.');
   }
+  /*
+   * ⚠️ **대소문자만 다른 이름은 여기서 막는다** (2026-08-16 검수 — 실제로
+   * 문서가 사라지는 것을 재현했다).
+   *
+   * 위 검사는 문자열 비교라 `Auth` 와 `auth` 를 다른 것으로 본다. 그런데
+   * macOS·Windows 의 파일 시스템은 그 둘을 **같은 파일**로 보므로, 새 이름으로
+   * 쓰고 옛 이름을 지우면 방금 쓴 그것이 지워졌다 — 그리고 이 도구는
+   * `ok: true, moved: true` 를 돌려줬다. 실측:
+   *
+   * ```
+   * rename_concept{oldSlug:"Auth", newSlug:"auth", confirm:true, overwrite:true}
+   *   → ok:true, moved:true, backlinkUpdates:{totalUpdated:1}
+   *   → 디스크에서 Auth.md 도 auth.md 도 없어짐. 참조는 매달린 채 남음
+   * ```
+   *
+   * 쓰기 층에도 막는 장치를 뒀지만(`applyAllOrNothing` 의 같은-파일 판정),
+   * 그것만 있으면 결과가 **반만 된 이름 바꾸기**가 된다: 참조는 새 이름을
+   * 가리키는데 디스크의 파일 이름은 그대로다. 반쯤 된 것을 성공이라고 말하지
+   * 않는다 — 여기서 못 한다고 분명히 말하고, 할 수 있는 길을 알려 준다.
+   */
+  if (oldSlug.toLowerCase() === newSlug.toLowerCase()) {
+    throw new Error(
+      `oldSlug and newSlug differ only in letter case ("${oldSlug}" → "${newSlug}"). ` +
+        'On macOS and Windows those are the same file, so this rename would delete the ' +
+        'document instead of renaming it. Rename through a different name first ' +
+        `(for example "${newSlug}-tmp"), then to "${newSlug}".`,
+    );
+  }
   if (!vaultSlugExists(VAULT_ROOT, oldSlug)) {
     throw new Error(missingSlugMessage('Source slug does not exist in vault', oldSlug));
   }

@@ -194,7 +194,7 @@
         "readyHeading": "Found on this computer ({count})",
         "othersHeading": "Show the other {count}",
         "noneReady": "Nothing found yet",
-        "noneReadyCaption": "Install Claude Code or Codex and it shows up here.",
+        "noneReadyCaption": "Install Claude Agent or Codex and it shows up here.",
         "webLabel": "A browser is not allowed to start programs on this computer",
         "webCaption": "Get the Mac app to use the tools installed here from inside Atlas. On this screen you can still point a tool you started yourself at this folder, from the “MCP” section.",
         "state": {
@@ -1930,7 +1930,7 @@
       "error": "Finder open failed: {message}"
     },
     "agentSetup": {
-      "ariaLabel": "My agent connection",
+      "ariaLabel": "MCP connection",
       "title": "My agent connection",
       "ready": "ready",
       "missing": "missing",

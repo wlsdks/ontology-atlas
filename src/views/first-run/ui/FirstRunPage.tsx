@@ -88,7 +88,15 @@ export function FirstRunPage() {
             // 주세요」를 띄우면 몇 번을 눌러도 같은 결과라서 화면이 거짓말을 한다.
             vault.errorCode === "root-rejected"
             ? t("errorRootRejected")
-            : vault.errorMessage ?? t("errorFallback")
+            : /*
+               * ⚠️ 「폴더가 사라짐」도 **다시 시도해서 될 일이 아니다** (2026-08-16
+               * 검수). 종전에는 이 갈래가 `errorMessage` 로 떨어졌는데 그 값은
+               * 원문을 안 흘리려고 비워 둔 값이라, 결국 「다시 시도해 주세요」가
+               * 떴다 — 몇 번을 눌러도 같은 결과다.
+               */
+              vault.errorCode === "path-missing"
+              ? t("errorPathMissing")
+              : vault.errorMessage ?? t("errorFallback")
           : null;
 
   const cardBase = controlClass({
