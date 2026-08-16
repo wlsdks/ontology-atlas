@@ -294,7 +294,7 @@ describe('query-result-contract', () => {
             },
           },
         ],
-        cliFallbackCommands: ['ontology-atlas node capabilities/login [vault] --limit 12'],
+        cliFallbackCommands: ['node /abs/cli/src/index.mjs node capabilities/login [vault] --limit 12'],
       },
       nodes: [
         {
@@ -326,7 +326,8 @@ describe('query-result-contract', () => {
         ...valid,
         followUp: {
           ...valid.followUp,
-          cliFallbackCommands: ['node cli/src/index.mjs node capabilities/login'],
+          // 2026-08-17: 계약이 뒤집혔다 — 이제 **맨몸 이름**이 거절된다(실행 불가).
+          cliFallbackCommands: ['ontology-atlas node capabilities/login'],
         },
       }),
       /match_nodes followUp must contain/,
@@ -367,7 +368,7 @@ describe('query-result-contract', () => {
           },
         ],
         cliFallbackCommands: [
-          'ontology-atlas explain capabilities/login capabilities/session [vault]',
+          'node /abs/cli/src/index.mjs explain capabilities/login capabilities/session [vault]',
         ],
       },
       edges: [
@@ -836,9 +837,9 @@ describe('query-result-contract', () => {
         'Run relation_check before add_relation.',
       ].join('\n'),
       cliFallbackCommands: [
-        'ontology-atlas workspace-brief [vault] --limit 5',
-        'ontology-atlas relation-check domains/auth capabilities/login contains [vault]',
-        'ontology-atlas all-paths domains/auth capabilities/login [vault] --plan --max-hops 3',
+        'node /abs/cli/src/index.mjs workspace-brief [vault] --limit 5',
+        'node /abs/cli/src/index.mjs relation-check domains/auth capabilities/login contains [vault]',
+        'node /abs/cli/src/index.mjs all-paths domains/auth capabilities/login [vault] --plan --max-hops 3',
       ],
       health: { checks: [{ id: 'compile_issues', status: 'pass', count: 0 }] },
       nextActions: [],
@@ -1223,8 +1224,13 @@ describe('query-result-contract', () => {
       () => assertAgentBriefShape({ ...valid, cliFallbackCommands: [] }),
       /agent_brief cliFallbackCommands must include non-empty ontology-atlas CLI fallback commands/,
     );
+    /*
+     * 2026-08-17: 계약이 뒤집혔다. 종전에는 **실행 가능한** 형태를 거절하고
+     * 맨몸 `ontology-atlas` 를 요구했다 — 그 이름의 전역 명령은 없으므로
+     * 그 검사는 거짓말을 막는 게 아니라 강제하고 있었다.
+     */
     assert.throws(
-      () => assertAgentBriefShape({ ...valid, cliFallbackCommands: ['node cli/src/index.mjs health'] }),
+      () => assertAgentBriefShape({ ...valid, cliFallbackCommands: ['ontology-atlas health'] }),
       /agent_brief cliFallbackCommands must include non-empty ontology-atlas CLI fallback commands/,
     );
     assert.throws(
