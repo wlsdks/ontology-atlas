@@ -129,6 +129,32 @@ describe('ACP 클라이언트 — 권한 정책', () => {
     expect(askUser).not.toHaveBeenCalled();
   });
 
+  it('판정이 실패해도 **답은 나간다** — 상대를 영원히 기다리게 하지 않는다', async () => {
+    /*
+     * 2026-08-16 검수에서 적발. 판정 IPC 가 거절되면(창이 내려가는 중 · 브리지
+     * 오류) 이 요청에 아무 답도 안 나갔고, 어댑터는 영원히 멈춰 있었다.
+     * 카드도 오류도 없이 대화가 죽는 모양이라 원인을 알 길도 없었다.
+     */
+    const t = fakeTransport();
+    const askUser = vi.fn(async () => null);
+    const notices: string[] = [];
+    createAcpClient(t.transport, {
+      verdict: async () => {
+        throw new Error('bridge down');
+      },
+      askUser,
+      onProtocolNotice: (m) => notices.push(m),
+    });
+
+    t.emit(permissionRequest('/vault/notes.md'));
+    await vi.waitFor(() => expect(outcomeOf(t.sent, 7)).toBeTruthy());
+
+    // 못 정하면 묻는 쪽으로 떨어지고, 사용자가 답을 안 했으므로 거절이다.
+    expect(askUser).toHaveBeenCalledTimes(1);
+    expect(outcomeOf(t.sent, 7)).toEqual({ outcome: 'selected', optionId: 'reject' });
+    expect(notices.some((m) => m.startsWith('verdict-failed'))).toBe(true);
+  });
+
   it('볼트 밖이면 사용자에게 묻고, 답을 그대로 전한다', async () => {
     const t = fakeTransport();
     const askUser = vi.fn(async (_request: AcpPermissionRequest) => 'allow');
@@ -282,6 +308,49 @@ describe('ACP 클라이언트 — 요청/응답과 잡음', () => {
     const before = t.sent.length;
     t.emit({ jsonrpc: '2.0', id: 1, method: 'fs/read_text_file', params: {} });
     expect(t.sent).toHaveLength(before);
+  });
+});
+
+describe('ACP 클라이언트 — 답이 안 오면 언젠가 끝난다', () => {
+  it('악수에 답이 없으면 시간이 지나 실패한다 — 「켜는 중」에 붙박이지 않는다', async () => {
+    /*
+     * 2026-08-16 검수에서 적발. 어댑터가 뜨긴 했는데 답을 안 하는 상태(잘못된
+     * 바이너리 · npx 가 무언가를 기다리는 중)에서 상태가 「켜는 중」에 붙박였고,
+     * 그 상태에서는 「새 대화」도 잠겨 있어 패널을 닫는 것 말고 길이 없었다.
+     */
+    vi.useFakeTimers();
+    try {
+      const t = fakeTransport();
+      const client = createAcpClient(t.transport, { verdict: alwaysAsk, askUser: async () => null });
+      const promise = client.initialize();
+      // 답을 한 줄도 안 준다.
+      await vi.advanceTimersByTimeAsync(60_000);
+      await expect(promise).rejects.toThrow(/acp-timeout/);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('대화 한 턴에는 시간을 안 준다 — 오래 걸리는 것이 정상인 일이다', async () => {
+    vi.useFakeTimers();
+    try {
+      const t = fakeTransport();
+      const client = createAcpClient(t.transport, { verdict: alwaysAsk, askUser: async () => null });
+      let settled = false;
+      void client.prompt('s-1', [{ type: 'text', text: '이 폴더를 훑어봐' }]).then(
+        () => {
+          settled = true;
+        },
+        () => {
+          settled = true;
+        },
+      );
+      await vi.advanceTimersByTimeAsync(10 * 60_000);
+      expect(settled, '오래 걸린다고 대화를 끊으면 안 된다').toBe(false);
+      client.dispose();
+    } finally {
+      vi.useRealTimers();
+    }
   });
 });
 

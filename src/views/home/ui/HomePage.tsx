@@ -11,6 +11,7 @@ import { AcpChatPanel, AcpChatResizeHandle, useChatWidth } from "@/widgets/acp-c
 import { vaultMcpServers } from "@/features/acp-session/model/vault-mcp-server";
 import { cn } from "@/shared/lib/cn";
 import {
+  type CSSProperties,
   type KeyboardEvent as ReactKeyboardEvent,
   type PointerEvent as ReactPointerEvent,
   useCallback,
@@ -226,6 +227,8 @@ import { isLlmChatBridgeAvailable } from "@/shared/lib/tauri-llm";
 import { useAgentDockDefaultOpen } from "@/shared/lib/use-agent-dock-default";
 import { getTauriVaultRootPath, isTauriVaultRuntime } from "@/shared/lib/tauri-vault-fs";
 import { buildAgentAnalyzePrompt } from "@/shared/config/agent-prompts";
+import { resolveToastRightOffset } from "@/shared/ui/toast-position";
+import { RIGHT_DOCK_WIDTH_VAR } from "@/shared/lib/right-dock-reserve";
 
 import { computeUpdatedAgo } from "../lib/format-updated-ago";
 import { buildNavRailContextHrefs } from "../lib/nav-rail-context-hrefs";
@@ -2696,6 +2699,54 @@ export function HomePage() {
     setStartStepsDismissed(true);
   }, []);
 
+  /**
+   * **오른쪽에 선 것을 알림이 비켜선다** (2026-08-16 소유자 화면).
+   *
+   * 토스트는 화면 오른쪽 아래 고정이라, 지도 오른쪽에 대화 패널이 서면 그
+   * 16px 여백이 **패널 안쪽**이 된다 — 「만들었어요」 알림이 작성 칸 위에
+   * 그대로 얹혔다. 하단에서 이미 쓰던 예약 계약을 오른쪽에도 건다.
+   *
+   * 폭을 상수로 박지 않고 **실측한다**: 이 패널의 폭은 사용자가 끌어서 정한다.
+   */
+  useEffect(() => {
+    const root = document.documentElement;
+    const clear = () => {
+      root.style.removeProperty("--app-toast-right-offset");
+      root.style.removeProperty(RIGHT_DOCK_WIDTH_VAR);
+    };
+    if (!agentChatOpen) {
+      clear();
+      return undefined;
+    }
+    const apply = () => {
+      const dock = document.querySelector<HTMLElement>("[data-right-dock]");
+      const width = dock?.getBoundingClientRect().width ?? 0;
+      if (width === 0) {
+        clear();
+        return;
+      }
+      // 폭 자체를 적어 둔다 — 지도 위의 떠 있는 카드들이 오른쪽 벽을 이 값에서
+      // 구한다(`right-dock-reserve.ts`). 알림의 오프셋은 그 위에 여백을 더한 것.
+      root.style.setProperty(RIGHT_DOCK_WIDTH_VAR, `${Math.round(width)}px`);
+      root.style.setProperty(
+        "--app-toast-right-offset",
+        `${resolveToastRightOffset(Math.round(width))}px`,
+      );
+    };
+    apply();
+    // 폭은 끌 때마다 바뀌고, 패널은 열린 뒤에 붙는다 — 한 번만 재면 낡는다.
+    const dock = document.querySelector<HTMLElement>("[data-right-dock]");
+    const observer =
+      typeof ResizeObserver === "undefined" || !dock ? null : new ResizeObserver(apply);
+    if (dock) observer?.observe(dock);
+    window.addEventListener("resize", apply);
+    return () => {
+      observer?.disconnect();
+      window.removeEventListener("resize", apply);
+      clear();
+    };
+  }, [agentChatOpen]);
+
   /*
    * 스스로 여는 것도 **같은 문**을 탄다. 여기 있는 이유는 위 `openVaultAgent`
    * 가 실행기 상태를 읽어야 해서다 — 이 효과가 갈래를 따로 고르면 그 순간
@@ -3597,6 +3648,25 @@ export function HomePage() {
       // 인스펙터)도 그만큼 안쪽으로 선다. 근거(노드)와 상대(에이전트)가 서로를
       // 덮으면 "지도를 같이 보며" 가 성립하지 않는다 — 규칙은 globals.css.
       data-agent-panel-open={agentChatOpen ? 'true' : 'false'}
+      /*
+       * ⚠️ **그 규칙이 재는 폭이 틀려 있었다** (2026-08-16 검수).
+       *
+       * globals.css 의 예약은 `var(--agent-panel-width)` — 키 갈래 패널이 쓰는
+       * `clamp(320px, 26vw, 420px)` 이다. 그런데 코딩 에이전트 갈래는 폭을
+       * **사용자가 끌어서** 정하고(320~968px) 그 토큰에 아무것도 안 쓴다.
+       * 둘 다 `data-agent-panel-open='true'` 를 켜므로, 규칙은 엉뚱한 수로
+       * 자리를 비웠다: 1512 폭에서 26vw = 393 인데 패널은 420 이라 인스펙터가
+       * 27px 겹쳐 **폭 조절 손잡이를 덮었고**, 사용자가 넓혀 두면 인스펙터가
+       * 패널 안으로 통째로 들어갔다.
+       *
+       * 규칙을 고치는 대신 **그 규칙이 읽는 값을 맞는 값으로 채운다** — 두
+       * 갈래는 동시에 열리지 않으므로 이 덮어쓰기가 키 갈래를 건드리지 않는다.
+       */
+      style={
+        runtimeChatOpen
+          ? ({ '--agent-panel-width': `${chatWidth.width}px` } as CSSProperties)
+          : undefined
+      }
       className="relative flex h-full w-full overflow-hidden bg-[color:var(--color-canvas)]"
     >
       {/* 좌측 64px 내비 레일은 perf/persistent-shell 이후 `app/[locale]/layout.tsx`
@@ -5660,6 +5730,8 @@ export function HomePage() {
            * 따른 분기가 사라지므로 `xl:` 도 없앤다.
            */
           style={{ width: chatWidth.width }}
+          /* 화면 오른쪽에 선 것 — 알림이 이 폭만큼 비켜선다(위 효과). */
+          data-right-dock="chat"
           className="relative flex min-h-0 shrink-0 flex-col border-l border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] p-4"
         >
           <AcpChatResizeHandle

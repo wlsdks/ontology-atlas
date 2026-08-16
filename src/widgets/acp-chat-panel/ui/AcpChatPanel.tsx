@@ -16,6 +16,7 @@ import { useHeldValue } from '@/shared/lib/use-presence';
 import {
   COMPOSER_MIN_ROWS,
   composerGrowth,
+  composerMaxRows,
   snapScrollTop,
 } from '@/shared/lib/composer-growth';
 import { cn } from '@/shared/lib/cn';
@@ -127,6 +128,8 @@ export function AcpChatPanel({
    * 나오고, 보이는 상자는 한 번도 되돌려지지 않는다.
    */
   const mirrorRef = useRef<HTMLTextAreaElement | null>(null);
+  /** 이 패널 자체 — 작성 칸의 상한을 **이 칸의 높이**에서 구하려고 잰다. */
+  const panelRef = useRef<HTMLElement | null>(null);
 
   /**
    * 바깥에서 건너온 문장을 작성 칸에 **앉힌다.**
@@ -199,13 +202,22 @@ export function AcpChatPanel({
     mirror.value = draft;
     const style = window.getComputedStyle(input);
     const lineHeight = Number.parseFloat(style.lineHeight);
-    const growth = composerGrowth({
-      lineHeight,
-      paddingBlock: Number.parseFloat(style.paddingTop) + Number.parseFloat(style.paddingBottom),
-      borderBlock:
-        Number.parseFloat(style.borderTopWidth) + Number.parseFloat(style.borderBottomWidth),
-      contentHeight: mirror.scrollHeight,
-    });
+    const growth = composerGrowth(
+      {
+        lineHeight,
+        paddingBlock: Number.parseFloat(style.paddingTop) + Number.parseFloat(style.paddingBottom),
+        borderBlock:
+          Number.parseFloat(style.borderTopWidth) + Number.parseFloat(style.borderBottomWidth),
+        contentHeight: mirror.scrollHeight,
+      },
+      /*
+       * 상한을 **이 패널의 높이에서** 구한다. 기본값 6줄은 좁은 띠를 기준으로
+       * 정한 수라 세로로 긴 이 칸에는 인색했다(소유자: *"어느 정도까지는
+       * 길어지면 좋겠는데"*). 그렇다고 큰 수를 박으면 창을 줄였을 때 작성 칸이
+       * 대화를 통째로 밀어낸다 — 비율이 답이다.
+       */
+      composerMaxRows(panelRef.current?.clientHeight ?? 0, lineHeight),
+    );
     // 잴 수 없는 상태(SSR·jsdom·폰트 로드 전)에서는 손대지 않는다 — 0px 로
     // 접히는 것보다 `rows` 기본값이 언제나 낫다.
     if (!growth) return;
@@ -280,6 +292,7 @@ export function AcpChatPanel({
 
   return (
     <section
+      ref={panelRef}
       data-testid="acp-chat-panel"
       data-acp-status={status}
       /*

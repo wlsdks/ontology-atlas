@@ -57,7 +57,31 @@ export interface AcpChoice {
  * **거절**한다 — 안전한 쪽으로 실패한다). 가르는 기준은 「엄격한가」가 아니라
  * **「묻지 않고 통과시키는가」**다.
  */
-const GATE_REMOVING_MODES = new Set(['bypassPermissions', 'acceptEdits', 'agent-full-access']);
+/**
+ * 답을 기다리는 상한. 대화 한 턴은 이보다 오래 걸릴 수 있으므로
+ * **악수와 조회에만** 건다(`prompt` 는 시간을 안 준다 — 아래 `prompt` 구현).
+ */
+const CALL_TIMEOUT_MS = 45_000;
+
+const GATE_REMOVING_MODES = new Set([
+  'bypassPermissions',
+  'acceptEdits',
+  'agent-full-access',
+  /*
+   * ⚠️ **`agent` 도 여기다** (2026-08-16 검수에서 적발).
+   *
+   * 이름만 보면 「보통 모드」 같지만, 이 저장소가 **직접 재 본 결과**가
+   * `src-tauri/src/acp.rs` 에 적혀 있다: codex 를 기본값(`agent`)으로 띄웠더니
+   * *"작업 폴더 밖에 파일을 쓰면서 권한 요청이 0회"* 였다. 위 기준 그대로다 —
+   * 가르는 것은 이름이 아니라 **묻지 않고 통과시키는가**다.
+   *
+   * 그걸 알고 있으면서 드롭다운에 남겨 뒀던 것이라, 사용자는 한 번의 선택으로
+   * 이 화면의 약속을 무를 수 있었다. 지금은 codex 에게 남는 것이 `read-only`
+   * 이고, 그 모드에서도 **우리가 꽂아 준 볼트 도구는 그대로 돈다**(실측) —
+   * 지도를 채우는 일은 막히지 않는다.
+   */
+  'agent',
+]);
 
 export function keepGateSafeModes(modes: AcpChoice[]): AcpChoice[] {
   return modes.filter((mode) => !GATE_REMOVING_MODES.has(mode.id));
@@ -241,14 +265,58 @@ export function createAcpClient(
   const pending = new Map<number, PendingCall>();
   let disposed = false;
 
+  /**
+   * 줄 하나를 내보낸다.
+   *
+   * ⚠️ **실패를 삼키되 조용히는 아니다** (2026-08-16 검수). 종전에는
+   * `void transport.send(...)` 였는데 `void` 는 실패를 **안 잡는다** — 어댑터가
+   * 방금 죽은 뒤 권한 카드에 답하거나 「그만」을 누르면 그 전송이 거절되고,
+   * 아무도 안 받은 거절이 콘솔로 튄다.
+   */
   const write = (payload: unknown) => {
-    void transport.send(JSON.stringify(payload));
+    // 전송이 동기일 수도 비동기일 수도 있다 — 둘 다 같은 길로 받는다.
+    void Promise.resolve(transport.send(JSON.stringify(payload))).catch((error: unknown) => {
+      // 이미 끝난 세션에 쓰는 것은 정상적인 경합이다 — 진단으로만 남긴다.
+      handlers.onProtocolNotice?.(`send-failed: ${String(error)}`);
+    });
   };
 
-  const call = (method: string, params: unknown): Promise<Record<string, unknown>> => {
+  /**
+   * 요청 하나. **답이 안 오면 영원히 안 끝난다** — 그래서 시간을 준다.
+   *
+   * 2026-08-16 검수: 어댑터가 떴는데 답을 안 하는 상태(잘못된 바이너리 · npx 가
+   * 무언가를 기다리는 중)에서 상태가 「켜는 중」에 붙박이고, 그 상태에서는
+   * 「새 대화」 버튼도 잠겨 있어서 **패널을 닫는 것 말고 나갈 길이 없었다.**
+   * 시간이 지나면 거절로 끝내고, 그 사실을 화면이 말한다.
+   */
+  const call = (
+    method: string,
+    params: unknown,
+    timeoutMs = CALL_TIMEOUT_MS,
+  ): Promise<Record<string, unknown>> => {
     const id = nextId++;
     return new Promise((resolve, reject) => {
-      pending.set(id, { resolve, reject });
+      const timer =
+        timeoutMs > 0
+          ? setTimeout(() => {
+              if (!pending.has(id)) return;
+              pending.delete(id);
+              reject(new Error(`acp-timeout: ${method}`));
+            }, timeoutMs)
+          : null;
+      const clear = () => {
+        if (timer !== null) clearTimeout(timer);
+      };
+      pending.set(id, {
+        resolve: (value) => {
+          clear();
+          resolve(value);
+        },
+        reject: (error) => {
+          clear();
+          reject(error);
+        },
+      });
       write({ jsonrpc: '2.0', id, method, params });
     });
   };
@@ -259,20 +327,46 @@ export function createAcpClient(
     const rejectOnce = request.options.find((o) => o.kind === 'reject_once');
 
     /*
-     * **우리가 꽂아 준 볼트 도구는 볼트 안이다.** 그 서버는 볼트 경로로 띄운
-     * 것이라 밖을 건드릴 수 없다 — 실측에서 이 갈래가 없어 에이전트가 지도에
-     * 아무것도 못 썼다(`isVaultMcpTool` 주석).
+     * **우리가 꽂아 준 볼트 도구는 대신 허용한다** — 실측에서 이 갈래가 없어
+     * 에이전트가 지도에 아무것도 못 썼다(`isVaultMcpTool` 주석).
+     *
+     * ⚠️ **단, 경로가 딸려 오면 그 경로도 본다** (2026-08-16 검수에서 적발).
+     * 종전에는 이름만 보고 곧바로 허용하고 경로 검사를 **건너뛰었다**. 근거는
+     * 「그 서버는 볼트 경로로 띄웠으니 밖을 건드릴 수 없다」였는데, 그게
+     * 사실이 아니었다: `absorb_document` 는 볼트가 아니라 **저장소 루트**를
+     * 기준으로 원본 파일을 제자리에서 고쳐 쓰고, 옵션 하나로 저장소 밖까지
+     * 나갈 수 있다. 이름으로만 판정하면 그 호출이 카드 없이 통과한다.
+     *
+     * 그래서 순서를 바꾼다: **경로 판정이 먼저**고, 우리 도구라는 사실은
+     * 「경로가 없을 때」만 대신 허용하는 근거가 된다.
      */
-    if (
-      allowOnce &&
-      isVaultMcpTool(request.toolName, handlers.vaultMcpServerName ?? '')
-    ) {
+    const ours = isVaultMcpTool(request.toolName, handlers.vaultMcpServerName ?? '');
+    /*
+     * ⚠️ **판정이 실패해도 답은 한다** (2026-08-16 검수에서 적발).
+     * 종전에는 `await handlers.verdict(...)` 가 감싸이지 않아서, 그 IPC 가
+     * 거절되면(창이 내려가는 중 · 브리지 오류) 이 요청에 **아무 답도 안 나갔다**.
+     * 상대는 영원히 기다리고, 사용자는 카드도 오류도 못 본다.
+     *
+     * 못 정하면 **묻는 쪽**으로 떨어진다 — 안전한 쪽이다.
+     */
+    let verdict: 'allow-inside-vault' | 'ask' = 'ask';
+    try {
+      verdict = await handlers.verdict(request.filePath);
+    } catch (error) {
+      handlers.onProtocolNotice?.(`verdict-failed: ${String(error)}`);
+    }
+    /*
+     * 우리 도구인데 **경로가 안 딸려 온다** → 대신 허용한다. 실측 그대로의
+     * 모양이고(`rawInput` 에 경로가 없다), 여기서 매번 물으면 지도를 채우는
+     * 일이 성립하지 않는다.
+     *
+     * 우리 도구인데 **경로가 딸려 온다** → 그 경로가 볼트 안일 때만 허용한다.
+     * 밖이면 아래로 흘러 사용자에게 묻는다.
+     */
+    if (ours && allowOnce && (request.filePath === null || verdict === 'allow-inside-vault')) {
       write({ jsonrpc: '2.0', id, result: selected(allowOnce.optionId) });
       return;
     }
-
-    // 볼트 안이면 앱이 대신 허용한다. 여기서 매번 물으면 대화가 성립하지 않는다.
-    const verdict = await handlers.verdict(request.filePath);
     if (verdict === 'allow-inside-vault' && allowOnce) {
       write({ jsonrpc: '2.0', id, result: selected(allowOnce.optionId) });
       return;
@@ -386,7 +480,13 @@ export function createAcpClient(
       return { sessionId, choices: readSessionChoices(result) };
     },
     prompt: async (sessionId, blocks) => {
-      const result = await call('session/prompt', { sessionId, prompt: blocks });
+      /*
+       * 대화 한 턴에는 **시간을 주지 않는다.** 에이전트가 코드베이스를 훑는
+       * 일은 몇 분이 걸릴 수 있고, 그 사이 화면은 「생각 중」과 도구 줄로
+       * 무슨 일이 일어나는지 계속 말한다 — 기다림이 설명되는 상태다.
+       * 반면 악수와 조회는 답이 곧 와야 하므로 위 상한이 걸린다.
+       */
+      const result = await call('session/prompt', { sessionId, prompt: blocks }, 0);
       return { stopReason: typeof result.stopReason === 'string' ? result.stopReason : undefined };
     },
     cancel: async (sessionId) => {

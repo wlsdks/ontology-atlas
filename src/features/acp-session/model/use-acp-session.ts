@@ -269,6 +269,15 @@ export function useAcpSession({ runtimeId, vaultRoot, mcpServers }: UseAcpSessio
           pendingResolverRef.current?.(null);
           pendingResolverRef.current = null;
           setPending(null);
+          /*
+           * ⚠️ **끝난 세션의 클라이언트를 치운다** (2026-08-16 검수에서 적발).
+           * 종전에는 상태만 `exited` 로 바꾸고 클라이언트를 그대로 뒀다. 그러면
+           * ① 답을 기다리던 호출이 **영원히** 안 끝나고 ② `clientRef` 가 차 있어서
+           * `start()` 가 잠금에 걸려 다시 못 뜬다. 어댑터가 죽은 것은 되돌릴 수
+           * 없는 사건이므로, 그 사실을 기다리는 쪽에도 전한다.
+           */
+          clientRef.current?.dispose();
+          clientRef.current = null;
         },
       });
 
@@ -283,11 +292,17 @@ export function useAcpSession({ runtimeId, vaultRoot, mcpServers }: UseAcpSessio
       const client = createAcpClient(transport, {
         onUpdate: applyUpdate,
         /*
-         * 우리가 꽂아 준 볼트 서버의 도구는 자동 허용한다 — 그 서버는 볼트
-         * 경로로 띄운 것이라 밖을 건드릴 수 없다. 이 줄이 없으면 에이전트가
-         * 지도에 **아무것도 못 쓴다**(2026-08-16 실측으로 발견).
+         * 우리가 꽂아 준 볼트 서버의 도구는 **경로가 없을 때** 대신 허용한다 —
+         * 이 줄이 없으면 에이전트가 지도에 **아무것도 못 쓴다**(2026-08-16 실측).
+         *
+         * ⚠️ **정말 꽂았을 때만 이름을 넘긴다** (2026-08-16 검수에서 적발).
+         * 종전에는 무조건 넘겼는데, 서버 목록이 비는 경우가 실제로 있다(웹 ·
+         * 번들에 MCP 바이너리가 없는 경우 · 아직 준비 중). 그때 이름만 넘기면
+         * **우리가 안 꽂은 남의 `atlas-vault` 서버**가 그 자동 허용을 물려받는다.
+         * 계약 문구가 이미 그렇게 적혀 있었다: *"안 넘기면 그 자동 허용이
+         * 꺼진다 — 없는 것을 있는 척하지 않는다"*.
          */
-        vaultMcpServerName: VAULT_MCP_SERVER_NAME,
+        vaultMcpServerName: (mcpServers?.length ?? 0) > 0 ? VAULT_MCP_SERVER_NAME : undefined,
         verdict: (filePath) => acpPermissionVerdict(vaultRoot, filePath),
         askUser,
         onProtocolNotice: (message) => push({ kind: 'notice', id: nextEventId(), text: message }),

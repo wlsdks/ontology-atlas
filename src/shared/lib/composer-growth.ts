@@ -33,10 +33,42 @@
 /** 아직 아무 말도 안 한 사람에게 내미는 최소 크기. */
 export const COMPOSER_MIN_ROWS = 2;
 /**
- * 자람의 상한. 여기를 넘으면 입력칸이 대화를 밀어내기 시작하므로, 그 위는
+ * 자람의 기본 상한. 여기를 넘으면 입력칸이 대화를 밀어내기 시작하므로, 그 위는
  * 상자를 키우는 대신 안쪽 스크롤로 넘긴다.
+ *
+ * **한 화면 안의 좁은 띠**(키 갈래 패널의 하단 바)를 기준으로 정한 값이다.
+ * 세로로 긴 칸에서는 이 수가 너무 인색하다 — 그런 자리는 아래
+ * `composerMaxRows` 로 **자기 높이에서** 상한을 구한다.
  */
 export const COMPOSER_MAX_ROWS = 6;
+
+/**
+ * 작성 칸이 차지해도 되는 **몫**. 대화가 주인공이므로 절반을 넘지 않는다.
+ *
+ * 2026-08-16 소유자 지적: *"이렇게 계속 길어지지는 않지만 어느 정도까지는
+ * 길어지면 좋겠는데"*. 맞는 요구였고, 6줄이라는 수는 좁은 띠에서 나온 값이라
+ * 세로로 긴 대화 칸에는 안 맞았다. 그렇다고 「12줄」 같은 새 상수를 박으면
+ * 그 수도 **어느 한 화면 크기에서만** 맞는다 — 창을 줄이면 작성 칸이 대화를
+ * 통째로 밀어낸다. 그래서 상한을 **비율**로 두고 그 자리의 높이에서 구한다.
+ */
+export const COMPOSER_MAX_SHARE = 0.4;
+
+/** 자람의 절대 상한. 이보다 크면 「입력칸」이 아니라 편집기다. */
+export const COMPOSER_CEILING_ROWS = 16;
+
+/**
+ * 이 자리에서 허용되는 최대 줄 수 — 쓸 수 있는 높이에서 구한다.
+ *
+ * 잴 수 없으면(SSR·마운트 직전) 기본 상한으로 돌아간다. 0줄이 되는 길은
+ * 없다: 최소값은 시작 크기보다 한 줄 크다(자랄 수 없는 「자라는 칸」은
+ * 없는 것과 같다).
+ */
+export function composerMaxRows(availableHeight: number, lineHeight: number): number {
+  if (!Number.isFinite(availableHeight) || availableHeight <= 0) return COMPOSER_MAX_ROWS;
+  if (!Number.isFinite(lineHeight) || lineHeight <= 0) return COMPOSER_MAX_ROWS;
+  const rows = Math.floor((availableHeight * COMPOSER_MAX_SHARE) / lineHeight);
+  return Math.min(Math.max(rows, COMPOSER_MIN_ROWS + 1), COMPOSER_CEILING_ROWS);
+}
 
 export interface ComposerMetrics {
   /** 계산된 줄 높이(px). */
@@ -69,19 +101,25 @@ export interface ComposerGrowth {
  * 호출자는 그때 아무것도 하지 않는다 — 0px 로 접히는 것보다 손대지 않는 편이
  * 언제나 낫다.
  */
-export function composerGrowth(metrics: ComposerMetrics): ComposerGrowth | null {
+export function composerGrowth(
+  metrics: ComposerMetrics,
+  /** 이 자리의 상한. 세로로 긴 칸은 `composerMaxRows` 로 자기 높이에서 구한다. */
+  maxRows: number = COMPOSER_MAX_ROWS,
+): ComposerGrowth | null {
   const { lineHeight, paddingBlock, borderBlock, contentHeight } = metrics;
   if (!Number.isFinite(lineHeight) || lineHeight <= 0) return null;
   if (!Number.isFinite(paddingBlock) || !Number.isFinite(borderBlock)) return null;
   if (!Number.isFinite(contentHeight) || contentHeight <= 0) return null;
 
+  // 상한이 시작 크기보다 작으면 「자라는 칸」이 오히려 줄어든다.
+  const cap = Math.max(COMPOSER_MIN_ROWS, Math.floor(maxRows));
   const textHeight = contentHeight - paddingBlock;
   const wanted = Math.max(1, Math.round(textHeight / lineHeight));
-  const rows = Math.min(Math.max(wanted, COMPOSER_MIN_ROWS), COMPOSER_MAX_ROWS);
+  const rows = Math.min(Math.max(wanted, COMPOSER_MIN_ROWS), cap);
   return {
     height: rows * lineHeight + paddingBlock + borderBlock,
     rows,
-    overflowing: wanted > COMPOSER_MAX_ROWS,
+    overflowing: wanted > cap,
   };
 }
 

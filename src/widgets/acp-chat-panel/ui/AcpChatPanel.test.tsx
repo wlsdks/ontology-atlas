@@ -58,8 +58,20 @@ function replyTo(method: string, result: unknown) {
   emit({ jsonrpc: '2.0', id: call?.id, result });
 }
 
+/**
+ * ⚠️ `mcpServers` 를 **반드시** 넘긴다. 볼트 도구 자동 허용은 「우리가 정말
+ * 꽂았을 때」만 켜진다(2026-08-16) — 안 넘기면 그 갈래가 아예 없는 세션을
+ * 재게 되고, 그건 실제 앱과 다른 것을 재는 것이다.
+ */
 async function bootSession() {
-  render(<AcpChatPanel runtimeId="claude-acp" runtimeLabel="Claude Code" vaultRoot="/vault" />);
+  render(
+    <AcpChatPanel
+      runtimeId="claude-acp"
+      runtimeLabel="Claude Code"
+      vaultRoot="/vault"
+      mcpServers={[{ name: 'atlas-vault' }]}
+    />,
+  );
   await waitFor(() => expect(bridge.sent.some((m) => m.method === 'initialize')).toBe(true));
   replyTo('initialize', { protocolVersion: 1 });
   await waitFor(() => expect(bridge.sent.some((m) => m.method === 'session/new')).toBe(true));
@@ -204,6 +216,40 @@ describe('대화 패널 — 권한 카드가 실제로 막는다', () => {
     await waitFor(() => expect(answerFor(78)).toEqual({ outcome: 'selected', optionId: 'allow' }));
     // 카드를 띄우지 않는다 — 볼트 안 파일과 같은 근거로 자동 허용이다.
     expect(screen.queryByTestId('acp-permission-card')).toBeNull();
+  });
+
+  it('**우리 도구라도 볼트 밖 경로면 묻는다** — 이름이 통행증이 아니다', async () => {
+    /*
+     * 2026-08-16 검수에서 적발한 구멍이다. 종전에는 이름이 `mcp__atlas-vault__`
+     * 로 시작하면 **경로 검사를 건너뛰고** 곧바로 허용했다. 근거는 「그 서버는
+     * 볼트 경로로 띄웠으니 밖을 건드릴 수 없다」였는데, 그게 사실이 아니다:
+     * `absorb_document` 는 볼트가 아니라 **저장소 루트**를 기준으로 원본 파일을
+     * 제자리에서 고쳐 쓴다. 그러면 이 화면이 「폴더 밖은 먼저 물어본다」고 한
+     * 약속이 카드 한 장 없이 깨진다.
+     */
+    bridge.verdict = 'ask';
+    await bootSession();
+    emit({
+      jsonrpc: '2.0',
+      id: 81,
+      method: 'session/request_permission',
+      params: {
+        sessionId: 's-1',
+        options: [
+          { kind: 'reject_once', name: 'Deny', optionId: 'reject' },
+          { kind: 'allow_once', name: 'Allow Once', optionId: 'allow' },
+        ],
+        toolCall: {
+          toolCallId: 'tc10',
+          title: 'mcp__atlas-vault__absorb_document',
+          kind: 'edit',
+          rawInput: { file_path: '/repo/AGENTS.md' },
+        },
+      },
+    });
+
+    await waitFor(() => expect(screen.getByTestId('acp-permission-card')).toBeInTheDocument());
+    expect(answerFor(81)).toBeUndefined();
   });
 
   it('남의 MCP 도구는 경로가 없으면 그대로 묻는다', async () => {

@@ -4,6 +4,7 @@ import {
   TOAST_EDGE_GAP_PX,
   resolveToastBottomOffset,
   resolveToastBottomOffsetForStack,
+  resolveToastRightOffset,
 } from "./toast-position";
 
 describe("resolveToastBottomOffset", () => {
@@ -49,5 +50,34 @@ describe("resolveToastBottomOffset", () => {
     it("스택이 화면 밖(top > viewport)이면 기본 여백으로 클램프", () => {
       expect(resolveToastBottomOffsetForStack(950, 1200)).toBe(TOAST_EDGE_GAP_PX);
     });
+  });
+});
+
+/**
+ * **알림이 오른쪽 도크를 비켜선다** (2026-08-16 소유자 화면).
+ *
+ * 「만들었어요」 토스트가 대화 패널의 작성 칸 위에 그대로 얹혔다. 하단에서
+ * 이미 풀어 둔 문제와 **같은 모양**이다 — 화면 가장자리를 기준으로 서는 것은
+ * 그 가장자리에 무엇이 서든 그 위에 앉는다.
+ */
+describe("토스트 오른쪽 오프셋 — 도크를 비켜선다", () => {
+  it("도크가 없으면 기본 여백뿐이다 — 회귀 0", () => {
+    expect(resolveToastRightOffset()).toBe(TOAST_EDGE_GAP_PX);
+    expect(resolveToastRightOffset(0)).toBe(TOAST_EDGE_GAP_PX);
+  });
+
+  it("도크 폭만큼 밀어낸다 — 기본 420px 패널", () => {
+    expect(resolveToastRightOffset(420)).toBe(TOAST_EDGE_GAP_PX + 420);
+  });
+
+  it("사용자가 끌어 넓힌 폭도 그대로 따라간다 — 상수가 아니다", () => {
+    // 이 패널의 폭은 320~968 사이에서 사용자가 정한다. 한 수를 박으면
+    // 그 수에서만 맞고 나머지 폭 전부에서 틀린다.
+    expect(resolveToastRightOffset(968)).toBe(TOAST_EDGE_GAP_PX + 968);
+    expect(resolveToastRightOffset(320)).toBe(TOAST_EDGE_GAP_PX + 320);
+  });
+
+  it("음수는 없던 일로 친다 — 화면 밖으로 밀지 않는다", () => {
+    expect(resolveToastRightOffset(-100)).toBe(TOAST_EDGE_GAP_PX);
   });
 });

@@ -58,7 +58,17 @@ describe('작업 방식 목록 — 관문을 없애는 것은 안 내놓는다',
       choice('agent', 'Agent'),
       choice('agent-full-access', 'Agent (full access)'),
     ]).map((m) => m.id);
-    expect(kept).toEqual(['read-only', 'agent']);
+    /*
+     * ⚠️ 종전 기댓값은 `['read-only', 'agent']` 였다 — **이 파일이 구멍을
+     * 못박고 있었다**(2026-08-16 검수). `agent` 는 이름만 「보통 모드」이고,
+     * 이 저장소가 직접 잰 결과가 `src-tauri/src/acp.rs` 에 적혀 있다:
+     * codex 를 그 기본 모드로 띄웠더니 *"작업 폴더 밖에 파일을 쓰면서 권한
+     * 요청이 0회"* 였다. 위 기준(「묻지 않고 통과시키는가」) 그대로 걸린다.
+     *
+     * 그래서 codex 에게 남는 것은 `read-only` 하나다. 그 모드에서도 우리가
+     * 꽂아 준 볼트 도구는 그대로 돌아서, 지도를 채우는 일은 막히지 않는다.
+     */
+    expect(kept).toEqual(['read-only']);
   });
 
   it('세션 응답을 읽는 경로가 **반드시** 이 필터를 지난다', () => {
