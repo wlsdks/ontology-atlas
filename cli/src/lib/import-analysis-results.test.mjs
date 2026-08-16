@@ -379,6 +379,24 @@ describe('import-analysis-results', () => {
     );
   });
 
+  it('accepts C as a detected unsupported import language', () => {
+    const coverage = coverageFixture();
+    coverage.detectedUnsupportedLanguages = ['c'];
+    coverage.allDetectedLanguagesSupported = false;
+
+    assert.doesNotThrow(() =>
+      assertInferImportsResult({
+        rootPath: '/repo',
+        filesScanned: 0,
+        coverage,
+        edges: [],
+        externalImports: [],
+        unresolved: [],
+        moduleEdges: [],
+      }),
+    );
+  });
+
   it('rejects malformed top-level import graph collections', () => {
     assert.throws(
       () =>

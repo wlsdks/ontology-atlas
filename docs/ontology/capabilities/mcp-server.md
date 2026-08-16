@@ -114,6 +114,10 @@ Proposal이 들어온 같은 호출은 기존 read-only import receipt도 다시
 exact endpoint와 방향을 검증한다. 이 문서와 경로는 evidence/provenance일 뿐 business
 meaning이나 `depends_on`을 자동 승인하지 않으며, maker-independent qualification과 사람의
 exact-plan 승인이 없으면 `writePlan`을 열지 않는다.
+관계 rationale이 양끝 concept의 정확한 repository `path:`를 직접 이름 붙이면 같은 관계의
+evidence에도 그 경로가 있어야 한다. 다른 문서만 인용한 경우
+`relation-path-citation-mismatch`로 실패 닫으며, 경로를 언급하지 않은 일반 의미 문장은
+파일명을 추측해 차단하지 않는다.
 
 fresh `agent_brief`가 current source와 incomplete competency를 함께 읽으면 첫
 `nextActions`를 `review_competency_repair`로 올린다. 연결된 `meaningRepair:v1`은
@@ -154,7 +158,23 @@ edge는 bounded sample이 아니라 전체 import에서 두 차원의 count와 �
 근거를 요구한다. 그 밖에도 에이전트는 양쪽 개념과 방향을 읽고 의미적 이유를 설명한
 뒤 사람에게 물어야 하며, 승인된 한 건만 비어 있지 않은 `why`와 함께 기록한다.
 
-Rust 저장소에서는 빈 import graph를 “의존 없음”으로 말하지 않는다.
+C/Autotools 저장소에서도 빈 import graph를 “의존 없음”으로 말하지 않는다. bounded
+manifest/source discovery가 실제 `.c`/`.h`를 확인하면 `infer_imports.coverage`는 `c`를
+미지원 언어로 표시하고 `allDetectedLanguagesSupported:false`를 반환한다. 실행하지 않는
+정적 `AC_INIT` 리터럴은 프로젝트 이름의 근거로 쓰고, bounded README prose에서는
+릴리스 상태보다 목적을 직접 말하는 문장을 우선한다. 이 근거만으로 domain이나
+capability를 만들지 않으며 C include/build dependency graph를 분석하거나 의미 관계로
+자동 승격하지도 않는다.
+
+같은 Autotools 분석은 정적 `AC_CONFIG_FILES`가 지목한 root 또는 한 단계 하위
+`Makefile.am`의 literal 선언을 실행 없이 읽는다. 설치 대상 header와 존재하는 `.h.in`
+template, non-`EXTRA` core source, raw/API specialized source, `EXTRA_*_SOURCES`의 선택형
+platform backend를 구분해 source 36개 안에서 역할별 대표를 먼저 보존한다. 내부
+`noinst_HEADERS`, 변수·shell·wildcard·절대/상위 경로는 역할 근거가 되지 않는다. 이
+build-role은 구현 handoff의 관측 근거이며 canonical capability나 C impact를 자동
+승인하지 않는다.
+
+Rust 저장소도 같은 원칙으로 빈 import graph를 “의존 없음”으로 말하지 않는다.
 `infer_imports.coverage`는 Cargo 감지 시 `use`/`mod`/macro dependency scan이 아직
 지원되지 않음을 명시하고, 0 edge의 뜻을 지원 언어에서 관측된 정적 import가 없다는
 범위로 제한한다. 대신 `analyze_repo_structure.configurationEvidence`와
@@ -197,7 +217,7 @@ element 관계는 `reachability`/`subgraph`의 구조 근거이며 영향이나 
   `tools/list`와 모드별 initialize 인벤토리를 함께 만드는 경계
 - `mcp/src/analyze.mjs` · `mcp/src/rust-feature-evidence.mjs` ·
   `mcp/src/infer-imports.mjs`: bounded repository 의미 ingress, Rust 구성 provenance,
-  실행 없는 TS/JS/Python import 근거와 명시적 미지원 범위
+  실행 없는 TS/JS/Python import 근거, Autotools C/Rust 미지원 범위와 exact-path 관계 근거
 - `mcp/src/vault.mjs` · `mcp/src/schema.mjs`: 파일 읽기/쓰기와 UID/slug 규격
 - `mcp/src/ontology-compiler.mjs` · `mcp/src/ontology-engine.mjs`: compile/query
 - `mcp/src/competency-coverage.mjs` · `mcp/src/meaning-evaluation.mjs`: quantified

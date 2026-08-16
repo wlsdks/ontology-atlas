@@ -1674,6 +1674,10 @@ export function makeDogfoodToolsList() {
               type: "object",
               properties: {
                 contract: { type: "string", enum: ["importScanCoverage:v1"] },
+                detectedUnsupportedLanguages: {
+                  type: "array",
+                  items: { type: "string", enum: ["c", "rust"] },
+                },
                 allDetectedLanguagesSupported: { type: "boolean" },
                 zeroEdgesMeaning: { type: "string", enum: ["no_supported_static_import_edges_observed"] },
               },

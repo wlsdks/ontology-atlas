@@ -650,7 +650,7 @@ const IMPORT_SCAN_COVERAGE_OUTPUT_SCHEMA = Object.freeze({
     detectedUnsupportedLanguages: {
       type: 'array',
       uniqueItems: true,
-      items: { type: 'string', enum: ['rust'] },
+      items: { type: 'string', enum: ['c', 'rust'] },
     },
     allDetectedLanguagesSupported: { type: 'boolean' },
     zeroEdgesMeaning: {

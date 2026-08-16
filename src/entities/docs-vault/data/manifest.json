@@ -4030,6 +4030,11 @@
         },
         {
           "depth": 2,
+          "text": "2026-08-16 · C 미지원 범위와 관계의 정확한 경로 근거를 숨기지 않는다",
+          "slug": "2026-08-16-c-미지원-범위와-관계의-정확한-경로-근거를-숨기지-않는다"
+        },
+        {
+          "depth": 2,
           "text": "2026-08-15 · source-hidden 실패가 write 경계를 우회하지 않는다",
           "slug": "2026-08-15-source-hidden-실패가-write-경계를-우회하지-않는다"
         },
@@ -6404,9 +6409,9 @@
           "slug": "2026-07-26-첫-만남은-쇼핑몰부터"
         }
       ],
-      "excerpt": "Major change history. Code commit messages answer why; this file answers when / which surface changed. Focused on user-visible changes, not PR-level granularity. Newest at the top. Entries stay date-based; the app version reached v1.0.0 on 2026-07-27, so a release tag now carries the semver promise instead. 독립 source-h",
-      "wordCount": 68167,
-      "updatedAt": "2026-08-15",
+      "excerpt": "Major change history. Code commit messages answer why; this file answers when / which surface changed. Focused on user-visible changes, not PR-level granularity. Newest at the top. Entries stay date-based; the app version reached v1.0.0 on 2026-07-27, so a release tag now carries the semver promise instead. Autotools C",
+      "wordCount": 68355,
+      "updatedAt": "2026-08-16",
       "linksOut": [
         "audits/CASE-STUDY-AGENTS-MD-DRIFT",
         "domains/catalog",
@@ -6439,6 +6444,26 @@
           "depth": 2,
           "text": "2026-08-16 — ACP 로 사용자의 에이전트를 앱 안으로 들인다: 「위임 일꾼」 경계는 뒤집고, 「지도가 주」는 유지한다",
           "slug": "2026-08-16-acp-로-사용자의-에이전트를-앱-안으로-들인다-위임-일꾼-경계는-뒤집고-지도가-주는-유지한다"
+        },
+        {
+          "depth": 2,
+          "text": "2026-08-16 — native 구현 경로는 파일 목록이 아니라 build-role 대표 집합으로 전달한다",
+          "slug": "2026-08-16-native-구현-경로는-파일-목록이-아니라-build-role-대표-집합으로-전달한다"
+        },
+        {
+          "depth": 2,
+          "text": "2026-08-16 — 미지원 C와 관계의 명시 경로는 write 전 근거 계약에서 실패 닫는다",
+          "slug": "2026-08-16-미지원-c와-관계의-명시-경로는-write-전-근거-계약에서-실패-닫는다"
+        },
+        {
+          "depth": 3,
+          "text": "먼저 — 세 줄",
+          "slug": "먼저-세-줄"
+        },
+        {
+          "depth": 2,
+          "text": "PO Council Verdict — native evidence integrity",
+          "slug": "po-council-verdict-native-evidence-integrity"
         },
         {
           "depth": 2,
@@ -7258,7 +7283,7 @@
         {
           "depth": 3,
           "text": "먼저 — 세 줄",
-          "slug": "먼저-세-줄"
+          "slug": "먼저-세-줄-2"
         },
         {
           "depth": 2,
@@ -7273,7 +7298,7 @@
         {
           "depth": 3,
           "text": "먼저 — 세 줄",
-          "slug": "먼저-세-줄-2"
+          "slug": "먼저-세-줄-3"
         },
         {
           "depth": 2,
@@ -7283,7 +7308,7 @@
         {
           "depth": 3,
           "text": "먼저 — 세 줄",
-          "slug": "먼저-세-줄-3"
+          "slug": "먼저-세-줄-4"
         },
         {
           "depth": 2,
@@ -7293,7 +7318,7 @@
         {
           "depth": 3,
           "text": "먼저 — 세 줄",
-          "slug": "먼저-세-줄-4"
+          "slug": "먼저-세-줄-5"
         },
         {
           "depth": 2,
@@ -7358,7 +7383,7 @@
         {
           "depth": 3,
           "text": "먼저 — 세 줄",
-          "slug": "먼저-세-줄-5"
+          "slug": "먼저-세-줄-6"
         },
         {
           "depth": 2,
@@ -7373,7 +7398,7 @@
         {
           "depth": 3,
           "text": "먼저 — 세 줄",
-          "slug": "먼저-세-줄-6"
+          "slug": "먼저-세-줄-7"
         },
         {
           "depth": 2,
@@ -7393,7 +7418,7 @@
         {
           "depth": 3,
           "text": "먼저 — 세 줄",
-          "slug": "먼저-세-줄-7"
+          "slug": "먼저-세-줄-8"
         },
         {
           "depth": 2,
@@ -7433,7 +7458,7 @@
         {
           "depth": 3,
           "text": "먼저 — 세 줄",
-          "slug": "먼저-세-줄-8"
+          "slug": "먼저-세-줄-9"
         },
         {
           "depth": 2,
@@ -7448,7 +7473,7 @@
         {
           "depth": 3,
           "text": "먼저 — 세 줄",
-          "slug": "먼저-세-줄-9"
+          "slug": "먼저-세-줄-10"
         },
         {
           "depth": 2,
@@ -7458,7 +7483,7 @@
         {
           "depth": 3,
           "text": "먼저 — 세 줄",
-          "slug": "먼저-세-줄-10"
+          "slug": "먼저-세-줄-11"
         },
         {
           "depth": 2,
@@ -7473,7 +7498,7 @@
         {
           "depth": 3,
           "text": "먼저 — 세 줄",
-          "slug": "먼저-세-줄-11"
+          "slug": "먼저-세-줄-12"
         },
         {
           "depth": 2,
@@ -8967,12 +8992,47 @@
         },
         {
           "depth": 2,
+          "text": "2026-08-16 — 호버 계기의 조리개: 둘은 넓혔고, 하나는 **재 보니 켜면 안 되는 것**이었다",
+          "slug": "2026-08-16-호버-계기의-조리개-둘은-넓혔고-하나는-재-보니-켜면-안-되는-것이었다"
+        },
+        {
+          "depth": 3,
+          "text": "① 라우트당 바닥 — 세웠다",
+          "slug": "라우트당-바닥-세웠다"
+        },
+        {
+          "depth": 3,
+          "text": "② 첫 뷰포트 제약 — 걷어냈다 (**+25건**)",
+          "slug": "첫-뷰포트-제약-걷어냈다-25건"
+        },
+        {
+          "depth": 3,
+          "text": "③ 포인터 주차 — 방어로 넣되, **실측 손실은 0이었다**",
+          "slug": "포인터-주차-방어로-넣되-실측-손실은-0이었다"
+        },
+        {
+          "depth": 3,
+          "text": "④ 비텍스트 대비(1.4.11) — **재 보니 켜면 안 된다**",
+          "slug": "비텍스트-대비1411-재-보니-켜면-안-된다"
+        },
+        {
+          "depth": 3,
+          "text": "이 라운드가 스스로 밟은 함정 하나",
+          "slug": "이-라운드가-스스로-밟은-함정-하나"
+        },
+        {
+          "depth": 3,
+          "text": "남은 것",
+          "slug": "남은-것"
+        },
+        {
+          "depth": 2,
           "text": "2026-08-15 (9) — 비표준 구현 루트도 의미 후보의 증거가 되되, 기능으로 자동 승격하지 않는다",
           "slug": "2026-08-15-9-비표준-구현-루트도-의미-후보의-증거가-되되-기능으로-자동-승격하지-않는다"
         }
       ],
       "excerpt": "이 파일은 결정과 그때 진 반대 의견을 남긴다. docs/CHANGELOG.md 는 무엇이 언제 바뀌었나를 답하고, 이 파일은 왜 그렇게 정했고, 무엇을 걸었나를 답한다. 최신이 위. 기록은 덧붙이기만 한다 — 지난 기록을 고치지 않는다. 판단이 바뀌었으면 새 기록을 쓰고 옛 기록을 뒤집힘 으로 표시한다. 틀린 기록도 자산이다. 1. 소집 전에 읽는다. 카운슬을 열기 전(그리고 단독 PO 패스를 쓰기 전) 같은 표면 · 같은 질문에 대한 선행 결정이 있는지 먼저 본다. 있으면 새 패스는 그것을 ① 여전히 유효하다고 인용하거나 ② 명시적으로 뒤집는다. 조용히 다시 결정",
-      "wordCount": 120699,
+      "wordCount": 122248,
       "updatedAt": "2026-08-16",
       "linksOut": [
         "slug"
@@ -12822,8 +12882,8 @@
         }
       ],
       "excerpt": "로컬 마크다운 볼트를 AI 코딩 에이전트가 읽고 안전하게 갱신하도록 제공하는 stdio JSON-RPC 인터페이스다. 사람과 에이전트가 같은 파일을 진실원으로 사용하며, 서버는 별도 데이터베이스나 모델 실행 루프를 소유하지 않는다. 에이전트는 프로젝트의 의미 노드를 정확히 찾고, 관계·근거·영향 범위를 함께 읽는다. 연결 직후 실제 vault/repository 좌표와 도구 인벤토리를 확인해 잘못된 폴더나 오래된 클라이언트 상태를 발견한다. 쓰기 전에는 현재 문서를 읽고, 동시 편집·중복·끊어진 관계·파괴적 변경을 구조화된 오류와 dry-run으로 차단한다. 도구의 ",
-      "wordCount": 1491,
-      "updatedAt": "2026-08-15",
+      "wordCount": 1650,
+      "updatedAt": "2026-08-16",
       "linksOut": []
     },
     {
@@ -14651,8 +14711,8 @@
         }
       ],
       "excerpt": "로컬 마크다운 볼트의 frontmatter를 타입이 있는 계산 가능 그래프(도메인·능력·구현 증거·의존·영향)로 바꾸는 로컬-퍼스트 온톨로지 워크벤치. 개발자는 CLI/웹으로, AI 코딩 에이전트는 MCP로 같은 파일을 읽고 쓴다. README.md: \"Your AI coding agent forgets your codebase between sessions... turns the Markdown in your repository into a graph of your product\" AGENTS.md: Project overview (\"a local-first ont",
-      "wordCount": 409,
-      "updatedAt": "2026-08-15",
+      "wordCount": 415,
+      "updatedAt": "2026-08-16",
       "linksOut": []
     },
     {

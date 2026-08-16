@@ -134,6 +134,139 @@ Verification 2(결)
 
 ---
 
+---
+
+## 2026-08-16 — native 구현 경로는 파일 목록이 아니라 build-role 대표 집합으로 전달한다
+
+**소집**: 단독 패스 · **트리거**: held-out C field trial의 canonical capability path
+오선택과 source-hidden q4 구현 역할 공백
+**루브릭**: 22/24 (Problem insight 4 · User moment 4 · Differentiation 2 ·
+Ontology value 4 · Agent value 4 · Verification 4, 치명적 0: 없음)
+**결정**: 기존 응답 shape과 source element 36개 상한 안에서 Autotools의 정적
+build 선언을 역할 근거로 읽고, 공개 interface·공통 preparation·specialized API·
+선택형 platform backend를 대표 경로로 보존한다.
+**적용 규칙**: 기존 field 재사용 · 실행 없는 literal만 · 역할별 대표 1개 예약 ·
+business capability/`depends_on`/write 자동 생성 금지
+**서명**: jinan
+
+**관찰**: 실제 held-out 저장소는 cited path 39/39가 존재했지만, 종전 36개 source
+선택의 대부분이 같은 이름의 platform 파일이었다. 공개 header template은 후보에도
+들지 않았고 `buildProposalAssessment`는 `configure.ac`까지 “implementation entry
+point”로 표현했다. source-visible proposal은 specialized raw API source를 중앙
+capability path로 골랐고, source-hidden q4는 exact path별 역할을 답하지 못했다.
+
+**세부 결정**:
+
+1. `configure.ac`/`configure.in`의 정적 `AC_CONFIG_FILES`가 지목한 root 또는 한 단계
+   하위 `Makefile`에 대응하는 `Makefile.am`만 256 KiB 안에서 읽는다. bracket 유무를
+   모두 지원하되 변수·shell·wildcard·절대 경로·`..`는 실행하거나 해석하지 않는다.
+2. 설치 대상 `*_include_HEADERS`/`*_pkginclude_HEADERS`가 이름 붙인 실제 header 또는
+   존재하는 `.h.in` template만 `Public interface contract`다. `noinst_HEADERS`는
+   내부 build 근거이지 공개 계약이 아니므로 승격하지 않는다.
+3. non-`EXTRA` `*_SOURCES`는 `Core implementation source`, raw/API filename token은
+   중앙성을 주장하지 않는 `Specialized API source`, `EXTRA_*_SOURCES`의 하위 source는
+   `Selectable platform backend`로 구분한다. 나머지는 unclassified로 남긴다.
+4. 새 필드 없이 기존 `title`·`path`·`evidence.source`를 사용한다. q4 handoff의
+   excerpt는 모든 파일을 entry point라 부르지 않고 관측된 implementation path라고
+   표현한다.
+5. 역할마다 대표 1개를 먼저 확보한 뒤 나머지를 채우며 36개 상한은 늘리지 않는다.
+   자동 domain/capability, C dependency graph, `depends_on`, `writePlan`은 만들지 않는다.
+
+**검증**: 합성 40+ source fixture는 구현 전 public template 누락으로 RED였고 수정 후
+analyzer 101/101을 통과했다. 실제 held-out 재측정은 첫 역할 집합에 public interface,
+preparation core, raw API, platform backend를 모두 보존했고 source 36 · automatic
+domain 0 · capability 0 · `depends_on` 0 · `canWrite:false` · `writePlan` 없음이었다.
+
+독립 재검토에서 fresh source-visible 제안자는 specialized API나 platform backend가
+아닌 공통 preparation 역할을 capability의 canonical path로 골랐다. 후보 packet에
+없던 임의 platform 경로는 실제 stdio MCP가 `unknown-citation`으로 차단했고, analyzer가
+공개한 platform 대표와 그 `Makefile.am` 근거를 사용한 뒤에만 review plan을 냈다.
+packet은 full body·digest·revision·8 phases를 JSON 왕복 뒤 그대로 보존했고 missing,
+foreign, truncated row 변이를 모두 거부했다. fresh source-hidden 평가는 q1/q3/q4
+3개 answered · q2/q6 2개 partial · q5 1개 unknown이었다. q4는 exact path별 core와
+selectable backend 역할을 구분했고, q5는 typed dependency 부재를 `not_measured`로
+유지했으며 source 내용이나 영향 방향을 새로 추론하지 않았다. 소스 MCP와 앱 bundle의
+같은 held-out 응답은 project·역할 경로·상한·no-write 비교 필드가 전부 일치했다.
+
+**기록된 반대**: 역할을 기존 title/excerpt에 싣는 것은 새 typed field보다 약해,
+fresh proposal agent가 여전히 specialized source를 canonical path로 고를 수 있다.
+**반증 조건**: 독립 source-visible proposal이 다시 raw/platform source를 중앙 path로
+선택하거나 source-hidden q4가 역할을 구분하지 못하면 이 최소 계약은 부족하다.
+그때만 별도 typed role contract를 재검토한다. q5 impact가 계속 unknown인 것은 이번
+실패가 아니다. C include/build dependency graph는 별도 관측 전까지 OUT이다.
+**재검토**: 같은 held-out candidate packet의 독립 proposal + source-hidden 재평가 직후
+
+**상태**: 유효 · role-evidence slice 집행 · q5 impact 미측정 유지
+
+---
+
+## 2026-08-16 — 미지원 C와 관계의 명시 경로는 write 전 근거 계약에서 실패 닫는다
+
+### 먼저 — 세 줄
+
+- **정한 것**: 실제 C/H가 있는 Autotools 저장소는 import graph 미지원으로 표시하고,
+  관계 설명이 양끝 concept의 정확한 경로를 이름 붙이면 같은 관계 evidence에도 그
+  경로가 있어야 한다.
+- **다르게 한 것**: 내부 버그 수정으로만 보지 않았다. `c`는 기존 공개 output enum의
+  값 집합을 늘리므로 MCP·CLI 계약 변경으로 기록하고 함께 검증한다.
+- **네가 할 일**: 없음 — 같은 jq 현장시험에서 두 영수증을 다시 확인한다.
+
+**소집**: PO 카운슬 5자리. 네 자리는 독립 병렬 1라운드와 상호 반박 1라운드를
+완료했다. 지렛대 자리는 두 모델 실행이 종료되지 않아 소집자가 역할 원문으로 순차
+수행했으며, 따라서 그 자리의 1라운드 독립성은 없다. · **트리거**: `importScanCoverage:v1`
+공개 enum 확장과 source-hidden field trial의 관계 근거 불일치
+**루브릭**: 22/24 (Problem insight 4 · User moment 4 · Differentiation 2 ·
+Ontology value 4 · Agent value 4 · Verification 4, 치명적 0: 없음). source/stdio
+MCP·CLI와 같은 jq 재시험에서 C false-complete 차단, exact-path 근거 실패, 수정 후
+review-only 복귀를 모두 확인했다.
+
+## PO Council Verdict — native evidence integrity
+
+| PO | 판정 | 소유 행 점수 |
+|---|---|---|
+| 근거 | Build and verify | Problem insight 4 · User moment 4 |
+| 결 | Build and verify | Verification 4 |
+| 지킴이 | Build and verify | Ontology value 4 · Agent value 4 |
+| 해자 | Build and verify — 필수 위생 | Differentiation 2 |
+| 지렛대 | Build and verify | appetite: 최대 하루 |
+
+**선행 결정 관계**: 2026-08-15의 source-hidden 실패 hard-block과 candidate-only
+no-write 결정을 유지한다. 이번 변경은 사람 승인·qualification·writePlan을 열지 않고,
+그 전에 proposal evidence와 scan coverage가 거짓 green을 내지 못하게 한다.
+
+**The decisive disagreement**: 두 검사는 복제하기 쉬운 위생이므로 차별화 투자로
+확장하지 말아야 한다는 의견과, 바로 그 false-green이 다음 source-hidden trial을
+막는 현재 구속 조건이라는 의견이 갈렸다. 가장 작은 공통 결론은 일반 C include
+graph나 자연어 검증을 만들지 않고, 이미 존재하는 typed receipt와 exact endpoint
+path만 정직하게 만드는 것이다.
+
+**Decision (accountable: 소유자 요청에 따라 집행)**:
+
+1. Autotools manifest와 bounded conventional source discovery가 실제 `.c`/`.h`를 함께
+   확인할 때만 `detectedUnsupportedLanguages`에 `c`를 추가하고
+   `allDetectedLanguagesSupported:false`를 반환한다.
+2. `importScanCoverage:v1` shape과 version은 유지하되 MCP output enum, producer,
+   CLI strict validator와 verify contract를 같은 변경에서 맞춘다.
+3. 관계 양끝의 존재하는 `path:`가 `why`에 exact token으로 나타나면 그 관계의
+   `evidence[]`에도 정확히 있어야 한다. 부분 문자열, 임의 파일명, 일반 자연어 의미는
+   추측하지 않는다.
+4. RED→GREEN 뒤 구현을 무력화해 두 gate가 실제로 RED가 되는지 probe하고, source/stdio
+   MCP·CLI와 동일 jq candidate gate를 재실행한다.
+
+**Recorded dissent**: 기존 `v1`의 rust-only enum을 exhaustive하게 소비하는 외부
+클라이언트는 `c` 추가로 깨질 수 있고, C 감지나 경로 token 경계가 넓으면 false-positive
+차단을 만들 수 있다. **falsifier**: 현재 CLI/verify parity가 새 값을 거부하거나,
+Autotools metadata-only 저장소가 `c`로 잡히거나, 더 긴 path token이 endpoint exact
+match로 차단되거나, 같은 jq 재시험이 여전히 false complete/관계 근거 불일치를
+반환하면 이 반대가 옳다. **revisit**: 위 관측 중 하나가 발생하거나 다음 C field
+trial이 일반 include graph 필요성을 독립적으로 확인할 때.
+
+**Slice**: IN C unsupported receipt · exact endpoint relation evidence · public consumer
+parity · ontology/changelog · same jq rerun · OUT C include/build graph · compiler 실행 ·
+퍼지/NLP 검증 · 새 field/tool/UI · 자동 relation/write · appetite 최대 하루
+
+**상태**: 유효
+
 ## 2026-08-15 (20) — 첫 held-out trial은 자격 미충족에서 정확히 멈춘다
 
 **소집**: 단독 field-trial pass + Sol xhigh 검토 · **트리거**: source-hidden
@@ -13263,7 +13396,83 @@ segment/icon 호출 중 호버를 켠 비율이 **80% 이상**이면 옵트인�
 (소급 자리는 오늘 기준 9곳이라 전역 변경이 아니다). — **재검토**: 신설 10곳 시.
 
 **서명 (accountable)**: jinan
-**상태**: 유효 · 다음은 **호버 게이트 구멍 다섯**(2026-08-15 (10) 이월 목록)
+**상태**: 유효 · 다음은 **호버 게이트 구멍 다섯** → 2026-08-15 (12)·(13) 이 넷을 처리
+
+---
+
+## 2026-08-16 — 호버 계기의 조리개: 둘은 넓혔고, 하나는 **재 보니 켜면 안 되는 것**이었다
+
+2026-08-15 (10) 이 남긴 「호버 게이트 구멍 다섯」 중 문서 토큰 무결성은 (12) 가
+닫았다. 나머지 넷을 실측으로 처리한 기록이다.
+
+### ① 라우트당 바닥 — 세웠다
+
+`hover-contrast.spec.ts` 는 19개 라우트에서 도는데 **비교 건수 바닥이 한
+라우트에만** 있었다. 나머지 18은 **0건을 비교하고도 초록**일 수 있었다 —
+「미달 없음」과 「아무것도 안 쟀음」이 화면에서 똑같이 생긴다. 자매 래칫 둘
+(`contrast-ratchet` `MIN_COMBINATIONS_PER_ROUTE=4` · `a11y-ratchet`
+`MIN_RULES_PASSED=15`)은 이미 그 문법을 쓰는데 이 계기만 안 쓰고 있었다.
+
+라우트별 실측(1512×900)에서 최소가 4라 **바닥을 3**으로 세웠다. 프로브 둘 다
+빨개진다: 바닥을 999로 올렸을 때 · 컨트롤 선택자를 망가뜨렸을 때.
+
+### ② 첫 뷰포트 제약 — 걷어냈다 (**+25건**)
+
+`r.top >= 0 && r.bottom <= innerHeight …` 한 줄이 **처음 보이는 화면 안**
+컨트롤만 재고 있었다. 그건 기술적 한계가 아니라 관성이었다 — Playwright 의
+`hover()` 는 대상을 알아서 스크롤해 넣는다.
+
+실측: **191 → 216건**. 정확히 census 가 센 뷰포트 밖 25개다. 새로 들어온 25건에
+미달은 없었다.
+
+### ③ 포인터 주차 — 방어로 넣되, **실측 손실은 0이었다**
+
+감사 자리가 *"자기검증 테스트가 같은 페이지에서 두 번 훑는데, 둘째 스윕의
+쉬는 상태가 첫 스윕이 마지막으로 호버한 컨트롤 위에서 읽힌다 — 스윕마다 컨트롤
+하나가 조용히 누락된다"* 고 지적했다. 구조적으로 맞는 지적이다.
+
+**그런데 재 보니 손실이 0이었다** — `/ko/` 에서 「치우지 않음 11 · 치움 11」.
+그 지적은 코드 구조에서 추론한 것이고 관측이 아니었다. `parkPointer` 는
+넣었지만(고정 좌표를 쓰지 않고 실제로 컨트롤이 없는 지점을 찾는다 — 이 파일이
+기록한 「(2,2)가 레일 위였다」 사고를 안 되풀이한다) **결함 수정이 아니라
+방어**라고 적는다. 안 그러면 다음 사람이 「고쳐진 버그」로 읽는다.
+
+### ④ 비텍스트 대비(1.4.11) — **재 보니 켜면 안 된다**
+
+호버로 보더가 바뀌는 자리를 전수해 3:1 로 판정했다: **60건 중 57건 미달**
+(1.12~2.92). 이걸 오류로 켜면 **57건 소음**이고, 그건 `design-gates.md` 가
+명시적으로 금지한 모양이다 — *"수백 건 warning 을 만드는 룰은 강제가 아니라
+소음이고, 기존에 잘 돌던 신호까지 덮는다."*
+
+그리고 이 앱의 호버는 보더 하나로 상태를 말하지 않는다. 면·잉크·보더가 **함께**
+바뀌고, 「1px 보더는 이 어두운 바탕에서 무엇을 골라도 휘도로 못 가른다」는 것은
+2026-08-15 (10) 라운드가 이미 따로 실측했다. **「보더에 3:1 을 요구할 것인가」는
+계기의 질문이 아니라 디자인 판정**이라 그 자리로 넘긴다.
+
+**대신 사각을 문서화했다** — 그 스펙 머리말이 이제 「이 계기가 안 보는 것」 셋을
+숫자와 함께 적는다(비텍스트 · `group-hover` 자식 잉크 25자리 · 볼트가 있어야
+그려지는 컨트롤).
+
+### 이 라운드가 스스로 밟은 함정 하나
+
+첫 census 가 `judgeAdjacentMarks(a, b)` 를 **위치 인자로** 불렀다. 그 함수는
+객체를 받으므로 전부 `null` 을 돌려줬고, 「60건 판정 · 미달 0」이라는 **공짜
+초록**이 나왔다. 그 숫자를 믿었으면 「켜도 소음 0」이라는 정반대 결론으로 갔을
+것이다. 객체로 고쳐 부르니 57건 미달이었다.
+
+> **판정 함수가 `null` 을 돌려주는 것과 「통과」는 다르다.** 이 저장소는 그
+> 계약을 `contrast.mjs` 안에 이미 적어 뒀는데(*"못 읽은 색은 «통과» 가 아니라
+> «미측정» 이다"*), 부르는 쪽이 그걸 안 지키면 같은 사고가 난다.
+
+### 남은 것
+
+`group-hover` 자식 잉크(25자리)와 조건부 컨트롤(≈58%)은 여전히 사각이다. 후자의
+처방은 (10) 이 이미 적었다 — **런타임 계기 확장이 아니라 소스 층의 계산 계약**.
+CDP `CSS.forcePseudoState` 로 기존 채집기를 호버 상태 위에서 돌리는 길은 조사만
+해 뒀고(이 저장소 사용 0건), 전자를 푸는 데는 그게 맞는 도구다.
+
+**서명 (accountable)**: jinan
+**상태**: 유효
 
 ---
 

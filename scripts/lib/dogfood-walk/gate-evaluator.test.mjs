@@ -256,6 +256,14 @@ describe("evaluateDogfoodGate", () => {
       evaluateDogfoodGate({ ...okShape, toolsList: inferOutputSchemaDrifted }),
       ["tools/list: infer_imports outputSchema edge kind drift"],
     );
+    const inferCoverageSchemaDrifted = makeDogfoodToolsList();
+    inferCoverageSchemaDrifted.tools.find((tool) =>
+      tool.name === "infer_imports"
+    ).outputSchema.properties.coverage.properties.detectedUnsupportedLanguages.items.enum = ["rust"];
+    assert.deepEqual(
+      evaluateDogfoodGate({ ...okShape, toolsList: inferCoverageSchemaDrifted }),
+      ["tools/list: infer_imports outputSchema coverage safety drift"],
+    );
     const inferUnresolvedReasonDrifted = makeDogfoodToolsList();
     inferUnresolvedReasonDrifted.tools.find((tool) => tool.name === "infer_imports").outputSchema.properties.unresolved.items.properties.reason = { type: "string" };
     assert.deepEqual(
