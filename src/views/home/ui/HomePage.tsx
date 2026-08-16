@@ -1848,6 +1848,27 @@ export function HomePage() {
     footprintBrushNodeIdRef.current = id;
   }, []);
 
+  /*
+    대화창에서 노드 이름에 마우스를 올렸을 때 (2026-08-17 소유자 지시:
+    *"채팅에서 마우스만 올려도 우리 노드에 표시된다거나"*).
+
+    바로 위 발자국 브러싱과 **같은 계약**이다 — 커서가 캔버스가 아니라 옆
+    패널 위에 있어 캔버스 호버와 경쟁하지 않고, ref 라 호버마다 렌더를
+    돌리지 않는다. 지도는 이것을 **마우스로 올렸을 때와 똑같이** 그린다:
+    채팅에서 온 강조만 다르게 보이면 그것이 무슨 뜻인지 또 배워야 한다.
+  */
+  const chatHoverNodeIdRef = useRef<string | null>(null);
+  const handleChatHoverSlug = useCallback((slug: string | null) => {
+    chatHoverNodeIdRef.current = slug;
+  }, []);
+  /* 답변에서 집을 이름들 — **실재하는 노드만**. 아무 `a/b` 나 링크로 만들면
+     파일 경로와 URL 까지 링크가 되고, 눌러도 아무 데도 안 가는 링크를 한 번
+     만난 사람은 나머지도 안 누른다. */
+  const chatKnownSlugs = useMemo(
+    () => new Set((ontologyInsight?.nodes ?? []).map((n) => n.id)),
+    [ontologyInsight],
+  );
+
   // 노드 클릭 default = 컴팩트 ego 팝오버. 풀스크린 드로어는 "전체 상세" opt-in.
   // overview first, details-on-demand — 설계: docs/TOPOLOGY-FOCUS-AND-SCALE.md
   // 어느 노드의 전체 상세가 열렸는지를 slug 로 들고, 현재 선택 노드와 일치할
@@ -4983,6 +5004,7 @@ export function HomePage() {
                     visitedTrail={footprintVisitedIds}
                     trailLensActiveRef={footprintLensActiveRef}
                     trailHoverNodeIdRef={footprintBrushNodeIdRef}
+                    chatHoverNodeIdRef={chatHoverNodeIdRef}
                     // 슬라이스 C — 비개발(plain) 모드는 element 티어를 도달
                     // 불가 밴드로 밀어 상시 숨김(ego 예외는 그대로).
                     tierReveal={audiencePlain ? PLAIN_TIER_REVEAL : undefined}
@@ -5822,6 +5844,8 @@ export function HomePage() {
             // 노드에서 건너온 문장은 **여기** 작성 칸에 앉는다 — 보내지는 않는다.
             prefillRequest={vaultAgentPrefill ?? askPrefill}
             suggestions={chatSuggestions}
+            knownSlugs={chatKnownSlugs}
+            onHoverSlug={handleChatHoverSlug}
             onClose={closeVaultAgent}
           />
         </Surface>
