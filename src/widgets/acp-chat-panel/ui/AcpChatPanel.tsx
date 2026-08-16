@@ -153,6 +153,26 @@ export function AcpChatPanel({
     void start();
   }, [start]);
 
+  /*
+   * 떠 있는 목록은 **Esc 로 닫힌다.** 실물에서 Esc 를 눌렀는데 목록이 그대로
+   * 남아 있었다(2026-08-16 검수) — 이 앱의 다른 표면은 전부 그 키로 닫히므로,
+   * 여기만 안 닫히면 사용자가 배운 것이 틀린 것이 된다. 뒤의 막을 누르는 길은
+   * 그대로 있고, 이건 손을 안 옮기는 두 번째 길이다.
+   */
+  useEffect(() => {
+    if (!historyOpen) return;
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key !== 'Escape') return;
+      // 이 표면이 닫히는 것으로 끝난다 — 뒤의 패널까지 같이 닫지 않는다.
+      event.stopPropagation();
+      setHistoryOpen(false);
+    };
+    // 캡처 단계에서 받는다. 위쪽에 있는 「한 단계씩 닫기」가 먼저 잡으면
+    // 이 목록 대신 패널이 닫힌다.
+    window.addEventListener('keydown', onKey, true);
+    return () => window.removeEventListener('keydown', onKey, true);
+  }, [historyOpen]);
+
   // 새 말이 오면 아래로 따라간다. 사용자가 위로 올려 읽는 중이면 방해하지
   // 않는다 — 바닥 근처일 때만 따라간다.
   useEffect(() => {

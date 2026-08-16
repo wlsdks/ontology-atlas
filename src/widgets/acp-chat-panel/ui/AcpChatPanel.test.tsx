@@ -336,6 +336,21 @@ describe('대화 패널 — 대화방처럼 관리한다', () => {
     expect(screen.queryByText('남의 폴더 작업')).toBeNull();
   });
 
+  it('Esc 로 닫힌다 — 이 앱의 다른 표면이 다 그러므로', async () => {
+    /*
+     * 실물 검수에서 걸린 자리다(2026-08-16): 목록을 열고 Esc 를 눌렀는데 그대로
+     * 있었다. 뒤의 막을 누르는 길만 있으면, 키보드로 온 사람은 나갈 길이 없다.
+     */
+    await bootSession();
+    await waitFor(() => expect(replyToList()).toBe(true));
+    fireEvent.click(await screen.findByTestId('acp-chat-history'));
+    expect(await screen.findByTestId('acp-chat-history-scrim')).toBeTruthy();
+
+    fireEvent.keyDown(window, { key: 'Escape' });
+
+    await waitFor(() => expect(screen.queryByTestId('acp-chat-history-scrim')).toBeNull());
+  });
+
   it('지난 대화를 고르면 그것을 이어 받는다', async () => {
     await bootSession();
     await waitFor(() => expect(replyToList()).toBe(true));
