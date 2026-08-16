@@ -3670,6 +3670,8 @@
       "mergeNodes": "Merged two concepts",
       "addRelation": "Linked a relation"
     },
-    "toolGroup": "{count} steps"
+    "toolGroup": "{count} steps",
+    "resize": "Resize the chat panel",
+    "resizeHint": "Drag to widen or narrow. Arrow keys work too."
   }
 }

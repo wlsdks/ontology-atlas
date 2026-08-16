@@ -6,7 +6,8 @@ import { useHeldValue, useSurfaceSwap } from "@/shared/lib/use-presence";
 import { detectAcpRuntimes, isAcpBridgeAvailable } from "@/shared/lib/tauri-acp";
 import { requestSettingsView } from "@/shared/lib/settings-view-intent";
 import { isGuardedRuntime } from "@/features/acp-session/model/runtime-gate";
-import { AcpChatPanel } from "@/widgets/acp-chat-panel";
+import { agentChatDoor } from "../model/agent-chat-door";
+import { AcpChatPanel, AcpChatResizeHandle, useChatWidth } from "@/widgets/acp-chat-panel";
 import { vaultMcpServers } from "@/features/acp-session/model/vault-mcp-server";
 import { cn } from "@/shared/lib/cn";
 import {
@@ -423,10 +424,12 @@ export function HomePage() {
    * 닫은 도크가 키 조회 한 번에 다시 열려 "닫기가 안 먹는" 것으로 읽힌다.
    */
   const agentDockTouchedRef = useRef(false);
-  useEffect(() => {
-    if (agentDockDefaultOpen !== true || agentDockTouchedRef.current) return;
-    setVaultAgentOpen(true);
-  }, [agentDockDefaultOpen]);
+  /*
+   * ⚠️ 스스로 여는 것은 **문 하나**(`openAgentChat`)를 탄다 — 그 문이 「코딩
+   * 에이전트냐 API 키냐」를 정하므로, 여기서 갈래를 다시 고르면 두 대화창이
+   * 같이 뜬다(2026-08-16 소유자 실보고: *"대화창 하나만 쓰자"*). 그 함수는
+   * 실행기 상태를 읽어야 해서 이 아래에 있고, 이 효과도 거기 붙어 있다.
+   */
   /**
    * 바깥에서 건너온 첫 마디(S7). 여기 실리는 것은 **문장 하나**뿐이고, 전송은
    * 하지 않는다 — 패널의 입력칸에 앉을 뿐이라 사용자가 고쳐 보내거나 지울 수
@@ -2153,6 +2156,12 @@ export function HomePage() {
   const [acpRuntimes, setAcpRuntimes] = useState<Array<{ id: string; label: string }>>([]);
   const [acpRuntimeId, setAcpRuntimeId] = useState<string | null>(null);
   const [acpChatOpen, setAcpChatOpen] = useState(false);
+  /**
+   * 대화 칸의 폭은 **사용자가 정하고 이 컴퓨터가 기억한다.** 어떤 사람은 지도를
+   * 보면서 짧게 묻고 어떤 사람은 코드 덩어리를 읽는다 — 그 둘에 다 맞는 한 수는
+   * 없어서, 우리는 지도가 죽지 않을 선만 지킨다.
+   */
+  const chatWidth = useChatWidth();
   useEffect(() => {
     if (!isAcpBridgeAvailable()) return;
     let cancelled = false;
@@ -2534,12 +2543,37 @@ export function HomePage() {
     };
   }, [selectedOntologyNode, spotlightOn, realmTitle, topologyV2Graph.nodes.length]);
 
+  /**
+   * ## 대화창은 **하나**다 (2026-08-16 소유자 확정)
+   *
+   * 여기에는 대화를 하는 갈래가 둘 있다 — 내 컴퓨터에 깔린 코딩 에이전트와
+   * 이야기하는 것(ACP), 그리고 내가 넣어 둔 API 키로 이야기하는 것. 종전에는
+   * **둘 다 자기 문과 자기 창을 갖고 있었고**, 열림 상태도 서로 몰랐다. 그래서
+   * 지도 오른쪽에 비슷하게 생긴 대화창이 둘 뜰 수 있었다(소유자 실보고:
+   * *"이 에이전트랑 다른 거지? 이 대화창은? 뭔가 헷갈리는데"*).
+   *
+   * 갈래가 둘인 것은 사실이고 그 자체는 문제가 아니다 — **문이 둘이고 창이
+   * 둘인 것**이 문제였다. 그래서 문을 하나로 모은다:
+   *
+   * - 코딩 에이전트가 잡히면 그쪽으로 간다(더 할 수 있는 게 많다 — 이 폴더의
+   *   MCP 도구를 그대로 쓰고, 사용자가 이미 쓰던 구독/설정을 탄다)
+   * - 없으면 키 갈래로 간다(코딩 에이전트를 안 쓰는 사람에게 남는 길)
+   * - **둘이 동시에 열리는 일은 없다**
+   */
+  const agentChatUsesRuntime = Boolean(acpRuntime && gitVaultPath);
+
   const openVaultAgent = useCallback(() => {
-    setVaultAgentOpen(true);
+    if (agentChatUsesRuntime) {
+      setAcpChatOpen(true);
+      setVaultAgentOpen(false);
+    } else {
+      setVaultAgentOpen(true);
+      setAcpChatOpen(false);
+    }
     // 물러나는 표면들 — 툭 사라지지 않게 각자의 닫힘 경로를 그대로 탄다.
     setOntologySearchOpen(false);
     setCreateNodeOpen(false);
-  }, []);
+  }, [agentChatUsesRuntime]);
 
   /**
    * 첫 마디의 화면 언어 — 패널의 빈 대화 칩과 **같은 키**를 읽는다. 두
@@ -2597,10 +2631,41 @@ export function HomePage() {
    */
   const closeVaultAgent = useCallback(() => {
     agentDockTouchedRef.current = true;
+    // 창이 하나이므로 닫는 것도 하나다 — 어느 갈래가 떠 있었든 이 한 번으로 닫힌다.
     setVaultAgentOpen(false);
+    setAcpChatOpen(false);
     setVaultAgentPrefill(null);
     setRouteState({ askIntent: null }, { replace: true });
   }, [setRouteState]);
+
+  /**
+   * 어느 갈래가 **그 하나뿐인 창**을 갖고 있나.
+   *
+   * 주소가 들고 온 「이거 물어봐」도 같은 규칙을 탄다 — 코딩 에이전트가 있으면
+   * 그 문장은 그쪽 작성 칸에 앉는다. 종전에는 이 요청만 키 갈래를 따로 열어서,
+   * 칩으로 여는 창과 노드에서 여는 창이 **서로 다른 창**이었다.
+   */
+  const {
+    runtime: runtimeChatOpen,
+    key: keyChatOpen,
+    /** 지금 대화창이 떠 있나 — 어느 갈래든. 칩의 눌림 상태가 이 값을 읽는다. */
+    open: agentChatOpen,
+  } = agentChatDoor({
+    hasRuntime: agentChatUsesRuntime,
+    runtimeOpen: acpChatOpen,
+    keyOpen: vaultAgentOpen,
+    hasAskIntent: Boolean(askPrefill),
+  });
+
+  /*
+   * 스스로 여는 것도 **같은 문**을 탄다. 여기 있는 이유는 위 `openVaultAgent`
+   * 가 실행기 상태를 읽어야 해서다 — 이 효과가 갈래를 따로 고르면 그 순간
+   * 대화창이 둘이 된다.
+   */
+  useEffect(() => {
+    if (agentDockDefaultOpen !== true || agentDockTouchedRef.current) return;
+    openVaultAgent();
+  }, [agentDockDefaultOpen, openVaultAgent]);
 
   const handleSelect = useCallback(
     (
@@ -3496,7 +3561,7 @@ export function HomePage() {
       // 에이전트 패널이 자리를 차지하면 화면 오른쪽에 붙는 고정 표면(선택-노드
       // 인스펙터)도 그만큼 안쪽으로 선다. 근거(노드)와 상대(에이전트)가 서로를
       // 덮으면 "지도를 같이 보며" 가 성립하지 않는다 — 규칙은 globals.css.
-      data-agent-panel-open={vaultAgentOpen || Boolean(askPrefill) ? 'true' : 'false'}
+      data-agent-panel-open={agentChatOpen ? 'true' : 'false'}
       className="relative flex h-full w-full overflow-hidden bg-[color:var(--color-canvas)]"
     >
       {/* 좌측 64px 내비 레일은 perf/persistent-shell 이후 `app/[locale]/layout.tsx`
@@ -3783,12 +3848,12 @@ export function HomePage() {
                         <ChromeChip
                           onClick={() =>
                             (agentDockTouchedRef.current = true,
-                            vaultAgentOpen ? setVaultAgentOpen(false) : openVaultAgent())
+                            agentChatOpen ? closeVaultAgent() : openVaultAgent())
                           }
                           aria-label={tAgent('title')}
-                          aria-pressed={vaultAgentOpen}
+                          aria-pressed={agentChatOpen}
                           data-testid="topology-vault-agent-toggle"
-                          active={vaultAgentOpen}
+                          active={agentChatOpen}
                           compact={topologyUtilityChromeCompact}
                           icon={<MessageCircle />}
                         >
@@ -5517,8 +5582,14 @@ export function HomePage() {
           곡선이 된다. 따로 맞춘 두 애니메이션이 아니라 물리적으로 하나다. */}
       {llmBridgeAvailable ? (
         <VaultAgentPanel
-          // 주소가 「이 개념을 물어보라」 를 들고 있으면 그것만으로 열린다.
-          open={vaultAgentOpen || Boolean(askPrefill)}
+          /*
+           * 주소가 「이 개념을 물어보라」 를 들고 있으면 그것만으로 열린다.
+           *
+           * ⚠️ **코딩 에이전트 갈래가 창을 갖고 있으면 이쪽은 열리지 않는다** —
+           * 대화창은 하나다(2026-08-16). 이 조건이 없으면 주소로 들어온 요청이
+           * 두 번째 창을 띄운다.
+           */
+          open={keyChatOpen}
           onClose={closeVaultAgent}
           vaultPath={gitVaultPath}
           insight={ontologyInsight}
@@ -5543,9 +5614,9 @@ export function HomePage() {
         「지도가 주」(2026-07-27 적용 규칙)는 그대로다: 이 패널은 지도 옆에
         서고, 지도를 덮지 않는다.
       */}
-      {acpChatOpen && acpRuntime && gitVaultPath ? (
+      {runtimeChatOpen && acpRuntime && gitVaultPath ? (
         <Surface
-          open={acpChatOpen}
+          open={runtimeChatOpen}
           as="aside"
           origin="right"
           onExited={() => setAcpChatOpen(false)}
@@ -5555,14 +5626,19 @@ export function HomePage() {
            * 토큰 이름이 규격처럼 보이고 있었다(`design.md`: 아무도 안 쓰는
            * 토큰은 규격이 아니라 틀린 정보다).
            *
-           * 대화는 설정 패널보다 넓어야 한다 — 말풍선·도구 줄·권한 카드가 다
-           * 여기 들어온다(소유자: *"너무 작음"*). 상한은 카운슬이 정한 바닥이
-           * 정한다: 1040 폭에서 패널을 열어도 지도 캔버스가 480px 이상 남아야
-           * 하므로 1040 − 64(레일) − 480 = **496px 이 최대**다. 420 을 기본으로
-           * 두고 넓은 화면에서만 480 으로 간다.
+           * 그다음 폭은 `w-[420px] xl:w-[480px]` 두 리터럴이었다. 그 둘도
+           * **누구의 답도 아니었다** — 이제 사용자가 왼쪽 모서리를 끌어 정하고,
+           * 우리는 지도가 지켜야 할 몫만 지킨다(`panel-width.ts`). 화면 폭에
+           * 따른 분기가 사라지므로 `xl:` 도 없앤다.
            */
-          className="flex w-[420px] min-h-0 shrink-0 flex-col border-l border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] p-4 xl:w-[480px]"
+          style={{ width: chatWidth.width }}
+          className="relative flex min-h-0 shrink-0 flex-col border-l border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] p-4"
         >
+          <AcpChatResizeHandle
+            width={chatWidth.width}
+            onWidth={chatWidth.setWidth}
+            onCommit={chatWidth.commitWidth}
+          />
           <AcpChatPanel
             /*
              * 실행기를 바꾸면 **패널을 다시 만든다.** 세션은 프로세스 하나에
@@ -5576,7 +5652,9 @@ export function HomePage() {
             onRuntimeChange={setAcpRuntimeId}
             vaultRoot={gitVaultPath}
             mcpServers={acpMcpServers}
-            onClose={() => setAcpChatOpen(false)}
+            // 노드에서 건너온 문장은 **여기** 작성 칸에 앉는다 — 보내지는 않는다.
+            prefillRequest={vaultAgentPrefill ?? askPrefill}
+            onClose={closeVaultAgent}
           />
         </Surface>
       ) : null}

@@ -3,7 +3,7 @@
 import { ArrowUp, ChevronRight, History, Square, SquarePen, X } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { useTranslations } from 'next-intl';
 
 import { Chip, IconButton, RowButton, Select, Surface, Textarea } from '@/shared/ui';
@@ -13,6 +13,11 @@ import { badgeClass } from '@/shared/ui/badge-class';
 import { controlClass } from '@/shared/ui/control-class';
 import { ICON_SIZE } from '@/shared/ui/icon-size';
 import { useHeldValue } from '@/shared/lib/use-presence';
+import {
+  COMPOSER_MIN_ROWS,
+  composerGrowth,
+  snapScrollTop,
+} from '@/shared/lib/composer-growth';
 import { cn } from '@/shared/lib/cn';
 import { useAcpSession, type AcpEvent } from '@/features/acp-session/model/use-acp-session';
 
@@ -74,6 +79,7 @@ export function AcpChatPanel({
   mcpServers,
   runtimes = [],
   onRuntimeChange,
+  prefillRequest,
   onClose,
 }: {
   runtimeId: string;
@@ -86,6 +92,11 @@ export function AcpChatPanel({
    */
   runtimes?: ReadonlyArray<{ id: string; label: string }>;
   onRuntimeChange?: (runtimeId: string) => void;
+  /**
+   * 바깥(지도의 노드·주소)에서 건너온 **문장 하나**. 앉기만 하고 보내지
+   * 않는다 — 사용자가 고쳐 보내거나 지울 수 있어야 한다.
+   */
+  prefillRequest?: { text: string; nonce: number } | null;
   onClose?: () => void;
 }) {
   const t = useTranslations('acpChat');
@@ -108,6 +119,29 @@ export function AcpChatPanel({
   /** 작성 칸에 손이 가 있나 — 단축키 안내를 그때만 띄운다. */
   const [composerFocused, setComposerFocused] = useState(false);
   const listRef = useRef<HTMLDivElement | null>(null);
+  const inputRef = useRef<HTMLTextAreaElement | null>(null);
+  /**
+   * 자람을 재는 **오프스크린 미러**. 보이는 칸의 높이를 `''` 로 되돌려
+   * `scrollHeight` 를 읽는 흔한 방법은 매 프레임 상자를 접었다 펴므로 자람이
+   * 전이가 아니라 계단이 된다. 미러는 같은 타이포·같은 폭이라 같은 줄 나눔이
+   * 나오고, 보이는 상자는 한 번도 되돌려지지 않는다.
+   */
+  const mirrorRef = useRef<HTMLTextAreaElement | null>(null);
+
+  /**
+   * 바깥에서 건너온 문장을 작성 칸에 **앉힌다.**
+   *
+   * 효과가 아니라 렌더 중 조정으로 받는다(리액트의 "prop 이 바뀌면 state 를
+   * 맞추기" 패턴) — 효과로 받으면 한 프레임은 빈 칸이 그려지고, 그 한 프레임이
+   * 정확히 「눌렀는데 늦게 반응한다」로 보인다. 옆 패널이 쓰는 문법과 같다.
+   */
+  const prefillNonce = prefillRequest?.nonce ?? null;
+  const prefillText = prefillRequest?.text ?? null;
+  const [seenPrefillNonce, setSeenPrefillNonce] = useState<number | null>(null);
+  if (prefillNonce !== null && prefillText && prefillNonce !== seenPrefillNonce) {
+    setSeenPrefillNonce(prefillNonce);
+    setDraft(prefillText);
+  }
   /*
    * 퇴장 애니메이션이 도는 동안에도 그릴 것이 있어야 한다 — `pending` 이
    * null 로 바뀌는 순간 내용이 사라지면 **빈 상자**가 사라지는 애니메이션을
@@ -127,6 +161,37 @@ export function AcpChatPanel({
     const nearBottom = list.scrollHeight - list.scrollTop - list.clientHeight < 120;
     if (nearBottom) list.scrollTop = list.scrollHeight;
   }, [events, pending]);
+
+  /**
+   * 작성 칸이 **글을 따라 자란다** (2026-08-16 소유자 지시: *"입력하고 나면
+   * 이렇게 길어지는 것도 구현해야 함"*).
+   *
+   * 줄 수가 고정이면 세 줄짜리 부탁을 쓰는 사람은 자기가 쓴 것의 3분의 2를
+   * 못 본 채 보내기를 누른다. 산수는 옆 패널이 이미 푼 것을 그대로 쓴다
+   * (`shared/lib/composer-growth` — 높이는 **정수 줄**이라 윗변에 글자가 반으로
+   * 잘리는 자리가 없다). 자람은 `transform` 이 아니라 실제 높이로 간다 —
+   * 아래의 고를 것과 보내기가 같이 밀려나야 「칸이 자랐다」로 읽힌다.
+   */
+  useLayoutEffect(() => {
+    const input = inputRef.current;
+    const mirror = mirrorRef.current;
+    if (!input || !mirror) return;
+    mirror.value = draft;
+    const style = window.getComputedStyle(input);
+    const lineHeight = Number.parseFloat(style.lineHeight);
+    const growth = composerGrowth({
+      lineHeight,
+      paddingBlock: Number.parseFloat(style.paddingTop) + Number.parseFloat(style.paddingBottom),
+      borderBlock:
+        Number.parseFloat(style.borderTopWidth) + Number.parseFloat(style.borderBottomWidth),
+      contentHeight: mirror.scrollHeight,
+    });
+    // 잴 수 없는 상태(SSR·jsdom·폰트 로드 전)에서는 손대지 않는다 — 0px 로
+    // 접히는 것보다 `rows` 기본값이 언제나 낫다.
+    if (!growth) return;
+    input.style.height = `${growth.height}px`;
+    input.scrollTop = snapScrollTop(input.scrollTop, lineHeight);
+  }, [draft]);
 
   const submit = useCallback(() => {
     const text = draft.trim();
@@ -404,28 +469,58 @@ export function AcpChatPanel({
             {t('composerHint')}
           </span>
         ) : null}
-        <Textarea
-          aria-label={t('composerLabel')}
-          placeholder={t('composerPlaceholder')}
-          frame="bare"
-          className="w-full"
-          rows={2}
-          value={draft}
-          disabled={!canType}
-          onFocus={() => setComposerFocused(true)}
-          onBlur={() => setComposerFocused(false)}
-          onChange={(e) => setDraft(e.target.value)}
-          onKeyDown={(e) => {
-            if (e.key !== 'Enter') return;
-            /*
-             * Enter 로 보내고 ⇧Enter 로 줄을 바꾼다 — 채팅의 관례이고, 사람이
-             * 이미 손에 익힌 것이다. ⌘/Ctrl+Enter 도 계속 받는다.
-             */
-            if (e.shiftKey) return;
-            e.preventDefault();
-            submit();
-          }}
-        />
+        {/*
+          미러가 실제 칸과 **같은 폭**이어야 줄 나눔이 같다. 그래서 둘을 같은
+          `relative` 상자에 넣는다 — 바깥 상자에 붙이면 안쪽 여백만큼 미러가
+          넓어져서 한 줄 늦게 자란다.
+        */}
+        <div className="relative">
+          <Textarea
+            ref={inputRef}
+            aria-label={t('composerLabel')}
+            placeholder={t('composerPlaceholder')}
+            frame="bare"
+            className="w-full"
+            rows={COMPOSER_MIN_ROWS}
+            value={draft}
+            disabled={!canType}
+            style={{
+              // 자람은 **표면 이동**이다 — 앱 공통 램프를 그대로 탄다.
+              transitionProperty: 'height',
+              transitionDuration: 'var(--motion-base)',
+              transitionTimingFunction: 'var(--motion-ease)',
+            }}
+            onFocus={() => setComposerFocused(true)}
+            onBlur={() => setComposerFocused(false)}
+            onChange={(e) => setDraft(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key !== 'Enter') return;
+              /*
+               * Enter 로 보내고 ⇧Enter 로 줄을 바꾼다 — 채팅의 관례이고, 사람이
+               * 이미 손에 익힌 것이다. ⌘/Ctrl+Enter 도 계속 받는다.
+               */
+              if (e.shiftKey) return;
+              e.preventDefault();
+              submit();
+            }}
+          />
+          {/*
+            `invisible`(visibility: hidden)이지 `opacity-0` 이 아니다 — 투명한
+            원소는 여전히 그려지는 원소라 겹침 감사에 잡히고 캐럿이 칠해질
+            여지도 남는다. 레이아웃은 그대로 도니 `scrollHeight` 는 같다.
+          */}
+          <Textarea
+            ref={mirrorRef}
+            aria-hidden
+            tabIndex={-1}
+            readOnly
+            aria-label={t('composerLabel')}
+            frame="bare"
+            rows={1}
+            data-testid="acp-chat-composer-mirror"
+            className="pointer-events-none invisible absolute inset-x-0 top-0 h-0 overflow-hidden"
+          />
+        </div>
         <div className="mt-2 flex items-center justify-between gap-2">
           <span className="flex min-w-0 flex-1 items-center gap-2">{choicesRow}</span>
           <span className="flex shrink-0 items-center gap-1.5">

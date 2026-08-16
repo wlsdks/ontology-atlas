@@ -3670,6 +3670,8 @@
       "mergeNodes": "개념 둘을 합쳤어요",
       "addRelation": "관계를 이었어요"
     },
-    "toolGroup": "{count}개 작업"
+    "toolGroup": "{count}개 작업",
+    "resize": "대화 칸 너비 조절",
+    "resizeHint": "끌어서 넓히거나 좁혀요. 화살표 키로도 돼요."
   }
 }

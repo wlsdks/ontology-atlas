@@ -7,15 +7,14 @@ import { ICON_SIZE } from '@/shared/ui/icon-size';
 
 import type { VaultManifest } from '@/entities/docs-vault';
 import type { KnowledgeProjectInsight } from '@/entities/knowledge-graph';
+import { buildFirstWords, type ScreenContextSnapshot } from '@/features/vault-agent';
+import { useVaultConceptFacts } from '@/features/vault-ontology';
 import {
-  buildFirstWords,
   COMPOSER_MIN_ROWS,
   composerGrowth,
   composerTopIsHidden,
   snapScrollTop,
-  type ScreenContextSnapshot,
-} from '@/features/vault-agent';
-import { useVaultConceptFacts } from '@/features/vault-ontology';
+} from '@/shared/lib/composer-growth';
 import {
   hostOfBaseUrl,
   isLocalEndpointReady,

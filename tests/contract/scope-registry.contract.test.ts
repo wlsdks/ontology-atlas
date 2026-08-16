@@ -150,6 +150,7 @@ const STORAGE_KEY_REGISTRY: StorageEntry[] = [
   // 확장 어포던스·구조·세 숫자. 발자국·배경과 같은 화면 취향이라 볼트와 무관하다 —
   // 폴더를 바꿔도 "펼치는 방식"에 대한 내 선호는 그대로여야 한다.
   { key: "ontology-atlas:expand:v1", kind: "storage", scope: "global", note: "확장 어포던스·구조·개수 선호" },
+  { key: "atlas.acp-chat.width", kind: "storage", scope: "global", note: "대화 칸 폭 — 이 컴퓨터의 화면 취향이라 볼트를 바꿔도 그대로다" },
   { key: "ontology-atlas:locale", kind: "storage", scope: "global", note: "화면 언어" },
   { key: "ontology-atlas:local-endpoint", kind: "storage", scope: "global", note: "LLM 로컬 엔드포인트" },
   { key: "ontology-atlas:agent-config-scope", kind: "storage", scope: "global", note: "MCP 설정 적용 범위(project|global)" },
