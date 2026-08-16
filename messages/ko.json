@@ -3608,5 +3608,41 @@
     },
     "openSample": "예시 둘러보기",
     "sampleNotice": "예시 뭉치예요. 내 폴더를 열면 내 스킬이 보여요."
+  },
+  "acpChat": {
+    "ariaLabel": "{runtime} 와의 대화",
+    "emptyHint": "이 폴더에 대해 무엇이든 물어보세요. 지도에서 보고 있는 것을 그대로 물어도 돼요.",
+    "composerLabel": "무엇을 시킬지 적어요",
+    "send": "보내기",
+    "stop": "그만",
+    "errorPrefix": "문제가 생겼어요:",
+    "status": {
+      "idle": "꺼짐",
+      "starting": "켜는 중",
+      "ready": "준비됨",
+      "thinking": "생각 중",
+      "error": "문제 있음",
+      "exited": "끝남"
+    },
+    "toolKind": {
+      "read": "읽기",
+      "edit": "고치기",
+      "delete": "지우기",
+      "move": "옮기기",
+      "search": "찾기",
+      "execute": "실행",
+      "think": "생각",
+      "fetch": "가져오기",
+      "switch_mode": "모드 변경",
+      "other": "작업"
+    },
+    "permission": {
+      "title": "이 폴더 밖을 건드리려고 해요",
+      "body": "허락하기 전에는 아무 일도 일어나지 않아요. 어디를 건드리는지 아래에서 확인하세요.",
+      "unknownTarget": "무엇을 하려는지 알 수 없어요",
+      "reject": "안 할래요",
+      "allowOnce": "이번만 허용",
+      "allowAlways": "이 폴더 전체를 이번 대화 내내 허용"
+    }
   }
 }

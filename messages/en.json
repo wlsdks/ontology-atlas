@@ -3608,5 +3608,41 @@
     },
     "openSample": "Browse the example",
     "sampleNotice": "This is the example set: open your folder to see your own skills."
+  },
+  "acpChat": {
+    "ariaLabel": "Conversation with {runtime}",
+    "emptyHint": "Ask anything about this folder. What you see on the map works too.",
+    "composerLabel": "Write what you want done",
+    "send": "Send",
+    "stop": "Stop",
+    "errorPrefix": "Something went wrong:",
+    "status": {
+      "idle": "Off",
+      "starting": "Starting",
+      "ready": "Ready",
+      "thinking": "Thinking",
+      "error": "Problem",
+      "exited": "Ended"
+    },
+    "toolKind": {
+      "read": "Read",
+      "edit": "Edit",
+      "delete": "Delete",
+      "move": "Move",
+      "search": "Search",
+      "execute": "Run",
+      "think": "Think",
+      "fetch": "Fetch",
+      "switch_mode": "Mode",
+      "other": "Task"
+    },
+    "permission": {
+      "title": "It wants to touch something outside this folder",
+      "body": "Nothing happens until you allow it. Check below where it wants to write.",
+      "unknownTarget": "Cannot tell what it wants to do",
+      "reject": "No thanks",
+      "allowOnce": "Allow once",
+      "allowAlways": "Allow this whole folder for this conversation"
+    }
   }
 }
