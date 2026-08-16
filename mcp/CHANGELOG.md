@@ -2,6 +2,22 @@
 
 ## Unreleased
 
+### Changed — bounded competency repair review pages
+
+- `agent_brief.meaningRepair:v2` is now a compact, 5 KiB-bounded manifest with
+  counts, current provenance, a typed-review revision, and the first review call.
+- The existing `query_ontology` tool adds the read-only
+  `meaning_repair_review` operation. It returns deterministic project/domain/
+  capability evidence pages of at most 20 targets and 5 KiB, with a matching
+  full-body read and an opaque stateless cursor.
+- Graph/source/review drift and malformed cursors fail closed. The install
+  verifier follows every page and its full-body read, compares kind and mtime,
+  and rejects missing, duplicate, reordered, truncated, oversized, changed, or
+  source/bundle-divergent chains before human approval.
+- Project-source witnesses now deduplicate by node plus path. A capability and
+  an element may legitimately share one implementation entrypoint without the
+  later ontology role disappearing from source-backed meaning evidence.
+
 ### Added — one-candidate import relation review
 
 - `infer_imports({ reviewMode: "next", afterReviewId? })` returns one bounded

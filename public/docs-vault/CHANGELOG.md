@@ -7,6 +7,31 @@
 
 ---
 
+## 2026-08-16 · 대형 프로젝트의 의미 검토가 5 KiB 인수인계에서 끊기지 않는다
+
+- `agent_brief.meaningRepair:v2`는 의미 검토 규모·현재성·첫 행동만 담는 compact
+  manifest가 되었고, 전체 typed evidence는 기존 `query_ontology`의 읽기 전용
+  `meaning_repair_review` operation으로 이동했다.
+- 각 review page는 project → domain → capability 결정 순서에서 최대 20개이면서
+  5 KiB 이하이고, 같은 대상의 literal full-body 읽기와 다음 opaque cursor를 제공한다.
+  graph/source/typed rows/mtime이 바뀌거나 cursor가 잘못되면 쓰기 없이 실패 닫는다.
+- 현재 dogfood에서 실제로 관측된 5,135-byte v1 hard stop을 회귀 fixture로 고정했다.
+  CLI는 다시 유효한 `agent-brief`를 출력하고, 설치 verifier는 마지막 page까지 전체
+  합집합·순서·누락·중복·크기와 각 full-body의 kind·mtime·비절단 여부,
+  source/bundle parity를 확인한다.
+- 문서화된 `connect-source --root <path>`와 `--root=<path>`가 값을 거꾸로 검사하던
+  CLI 파싱 결함도 고쳤다.
+- 자체 온톨로지는 본문에만 있던 9개 capability 구현 위치를 canonical `path:`로
+  승격해 26/26 경로를 갖췄다. 독립 source-visible/source-hidden 평가에 맞춰 7개
+  도메인·26개 typed ability는 `answered`로, 행동 근거와 도메인 간 영향 범위는
+  남은 약점을 숨기지 않는 `partial`로 바로잡았다.
+- 이전에 폴더 이름만 근거로 삼던 app update와 네 project 작업 capability는 실제
+  source/test witness, 포함·제외 경계, 미검증 runtime 범위를 갖도록 보강했다. 최종
+  source-hidden 재평가는 과장 제거와 visible gap 정합성을 PASS로 판정했다.
+- 같은 source path를 capability와 element가 함께 증명할 때 첫 노드만 남기던 receipt
+  dedupe를 node+path 기준으로 고쳤다. 실제 dogfood의 두 false-negative가 사라져
+  capability canonical-path 측정도 26/26이 됐다.
+
 ## 2026-08-16 · 목적과 도메인의 고신뢰는 독립된 의미 근거를 요구한다
 
 - `analyze_repo_structure`는 README 첫 제품 정체성 문장을 뒤쪽 확장 기능 문장보다

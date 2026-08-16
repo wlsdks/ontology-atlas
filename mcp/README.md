@@ -553,29 +553,36 @@ assessment fails closed as `review_required`; the gap is
 When current graph/source evidence can narrow an incomplete `abilities` or
 `evidence` answer, `agent_brief.nextActions[0]` is
 `review_competency_repair` and points to `agent_brief.meaningRepair`
-(`meaningRepair:v1`). The packet keeps four facts separate: what the project
-Markdown currently declares, typed-containment candidates that are ready only
-for human semantic review, canonical-path candidates supported by the current
-source receipt, and unresolved targets. It never upgrades a candidate to
-`answered`, never writes or finalizes automatically, and never exposes a
-private source root or raw inspection inventory. The typed workflow reuses
-`get_concepts`/`get_concept` → explicit human approval →
+(`meaningRepair:v2`). The compact manifest reports disposition counts while the
+read-only `query_ontology({operation:"meaning_repair_review", ...})` operation
+pages the complete typed evidence: current declarations, typed-containment
+candidates, canonical-path candidates supported by the current source receipt,
+and unresolved targets. Neither contract upgrades a candidate to `answered`,
+writes or finalizes automatically, or exposes a private source root/raw
+inspection inventory. The typed workflow reuses the paged review call → literal
+`get_concepts({body:"full"})` calls → explicit human approval →
 `patch_concept(expected_mtime)` → `validate_vault` →
 `compile_ontology({summary:true})` → reread →
 `finalize_project_meaning(expected_mtime)`. Non-current source, provenance
 change, incomplete scope/receipt, validation or compile errors, human
-non-approval, unresolved evidence promoted to answered, and mtime conflict are
-hard stops. If those prerequisites are unavailable, the packet is present as
-`status:"blocked"` and does not replace the existing source/health action queue.
-The first workflow step already materializes one stable, deduplicated union of
-`projectSlug`, sorted domain slugs, and sorted capability slugs named anywhere
-in both questions' `review` buckets, including `witnessCapabilities`. It emits
-literal `get_concepts({slugs:[...], body:"full"})` calls in deterministic
-batches of at most 20, the public full-body tool limit; a 27-target review is
-therefore executable as 20+7 without agent-authored batching or omissions.
-`derivation.slugs:"project_and_all_review_targets"` remains on the workflow
-step only as audit metadata. CLI/MCP verification rejects a missing, duplicate,
-reordered, oversized batch or a repair packet over 5 KiB.
+non-approval, incomplete review pages, changed review input, unresolved evidence
+promoted to answered, and mtime conflict are hard stops. If prerequisites are
+unavailable, the manifest is `status:"blocked"` and does not replace the existing
+source/health action queue.
+
+`meaningRepair:v2` and every `meaningRepairReviewPage:v1` stay at or below 5 KiB.
+The manifest carries `reviewRevision` and the first literal page call. Each page
+returns the next deterministic project → sorted domains → sorted capabilities
+prefix, a matching `get_concepts({slugs:[...],body:"full"})` call, and an opaque
+stateless cursor when more remains. A page has at most 20 targets and may return
+fewer to keep its byte bound; typed evidence is never truncated. The revision
+binds graph hash, source fingerprint, competency dispositions, typed witness
+rows, and target mtimes. Callers echo expected graph/source/revision on the first
+call, then follow the revision-bound `nextCall` until `hasMore:false`, execute
+each full-body read, and compare
+returned mtimes before requesting human approval. Stale provenance returns a
+blocked page; malformed/foreign cursors fail closed. CLI/MCP verification rejects
+missing, duplicate, reordered, oversized, stale, or mismatched page chains.
 
 Semantic document discovery is bounded before content enters the packet: the
 combined `docs/`·`site/`·`website/` walk stops at 200 Markdown files or 1,000

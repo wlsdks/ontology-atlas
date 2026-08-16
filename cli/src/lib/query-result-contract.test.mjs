@@ -42,15 +42,9 @@ function humanMeaningRepair(projectSlug) {
     { length: 20 },
     (_, index) => `capabilities/c${String(index + 1).padStart(2, '0')}`,
   );
-  const abilityRows = domains.map((slug, index) => ({
-    slug,
-    witnessCapabilities: capabilities.filter((_, capabilityIndex) => (
-      capabilityIndex % domains.length === index
-    )),
-  }));
-  const targets = [projectSlug, ...domains, ...capabilities];
+  const reviewRevision = `sha256:${'a'.repeat(64)}`;
   return {
-    contract: 'meaningRepair:v1',
+    contract: 'meaningRepair:v2',
     status: 'human_review_required',
     projectSlug,
     blockedBy: null,
@@ -62,38 +56,50 @@ function humanMeaningRepair(projectSlug) {
       sourceMeasuredAt: '2026-08-04T00:00:00.000Z',
       sourceCurrentness: 'current',
     },
+    reviewRevision,
     questions: {
       abilities: {
         basis: 'typed_containment',
+        answerStatus: 'partial',
         targetCount: domains.length,
         review: {
           state: 'structural_candidates_only',
-          alreadyDeclared: abilityRows.slice(0, 1),
-          candidateAdditions: abilityRows.slice(1),
-          declaredWithoutSupport: [],
-          unresolved: [],
+          alreadyDeclared: 1,
+          candidateAdditions: 5,
+          declaredWithoutSupport: 0,
+          unresolved: 0,
         },
       },
       evidence: {
         basis: 'current_source_canonical_path',
+        answerStatus: 'partial',
         targetCount: capabilities.length,
         review: {
           state: 'source_path_candidates_only',
-          alreadyDeclared: capabilities.slice(0, 2),
-          candidateAdditions: capabilities.slice(2, 11),
-          declaredWithoutSupport: [],
-          unresolved: capabilities.slice(11),
+          alreadyDeclared: 2,
+          candidateAdditions: 9,
+          declaredWithoutSupport: 0,
+          unresolved: 9,
         },
       },
     },
     workflow: [
       {
         step: 'read_review_inputs',
-        derivation: { slugs: 'project_and_all_review_targets' },
-        calls: [
-          { tool: 'get_concepts', arguments: { slugs: targets.slice(0, 20), body: 'full' } },
-          { tool: 'get_concepts', arguments: { slugs: targets.slice(20), body: 'full' } },
-        ],
+        derivation: {
+          operation: 'meaning_repair_review',
+          order: 'project_then_domains_then_capabilities',
+        },
+        calls: [{
+          tool: 'query_ontology',
+          arguments: {
+            operation: 'meaning_repair_review',
+            project: projectSlug,
+            expectedGraphHash: 'project-graph-v1:a1b2c3d4',
+            expectedSourceFingerprint: 'git:abc123:clean',
+            reviewRevision,
+          },
+        }],
       },
       { step: 'human_semantic_approval', calls: [] },
       { step: 'write_approved_project_body', calls: [] },
@@ -695,13 +701,14 @@ describe('query-result-contract', () => {
         },
       },
       meaningRepair: {
-        contract: 'meaningRepair:v1',
+        contract: 'meaningRepair:v2',
         status: 'blocked',
         projectSlug: 'project/app',
         blockedBy: 'source_not_current',
         primaryQuestion: null,
         questionsNeedingReview: [],
         provenance: null,
+        reviewRevision: null,
         questions: null,
         workflow: [],
         stopWhen: [
@@ -1098,21 +1105,21 @@ describe('query-result-contract', () => {
         deriveArguments: { slugs: 'project_and_all_review_targets' },
       }],
     };
-    const overCapRead = structuredClone(executableRepair);
-    const overCapTargets = overCapRead.workflow[0].calls.flatMap((call) => call.arguments.slugs);
-    overCapRead.workflow[0].calls = [
-      { tool: 'get_concepts', arguments: { slugs: overCapTargets.slice(0, 21), body: 'full' } },
-      { tool: 'get_concepts', arguments: { slugs: overCapTargets.slice(21), body: 'full' } },
-    ];
-    const omittedTarget = structuredClone(executableRepair);
-    omittedTarget.workflow[0].calls[1].arguments.slugs.pop();
-    const duplicatedTarget = structuredClone(executableRepair);
-    duplicatedTarget.workflow[0].calls[1].arguments.slugs.push(
-      duplicatedTarget.workflow[0].calls[0].arguments.slugs[0],
-    );
+    const mismatchedRevision = structuredClone(executableRepair);
+    mismatchedRevision.workflow[0].calls[0].arguments.reviewRevision = `sha256:${'b'.repeat(64)}`;
+    const exposedOffset = structuredClone(executableRepair);
+    exposedOffset.workflow[0].calls[0].arguments.offset = 20;
+    const wrongOperation = structuredClone(executableRepair);
+    wrongOperation.workflow[0].calls[0].arguments.operation = 'agent_brief';
     const oversizedPacket = structuredClone(executableRepair);
     oversizedPacket.provenance.sourceFingerprint = `git:${'x'.repeat(5_000)}`;
-    for (const malformed of [oldPseudoRead, overCapRead, omittedTarget, duplicatedTarget, oversizedPacket]) {
+    for (const malformed of [
+      oldPseudoRead,
+      mismatchedRevision,
+      exposedOffset,
+      wrongOperation,
+      oversizedPacket,
+    ]) {
       assert.throws(
         () => assertAgentBriefShape({ ...valid, meaningRepair: malformed }),
         /agent_brief meaningRepair must contain the action-first human review packet/,

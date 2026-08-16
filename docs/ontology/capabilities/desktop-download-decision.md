@@ -5,6 +5,7 @@ kind: capability
 title: Desktop Download Decision
 domain: domains/onboarding-and-shell
 elements: [elements/download]
+path: src/views/download
 created_by: "agent:unknown"
 ---
 

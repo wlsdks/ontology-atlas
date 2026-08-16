@@ -40,6 +40,109 @@
 **상태**: 유효 / 뒤집힘(→ 링크) / 반증됨(관측: …)
 ```
 
+## 2026-08-16 — dogfood 의미 답변은 구조 완성과 의미 미완성을 동시에 말한다
+
+**소집**: source-visible qualifier + source-hidden evaluator · **트리거**:
+현재 project competency가 7개 domain·26개 capability를 갖고도 abilities는 한 domain만
+적어 `partial`인 반면, 두 개 dependency만으로 impact를 `answered`라고 한 불일치
+**루브릭**: field trial five-CQ 판정 (scope answered · domains answered · abilities
+answered · evidence partial · impact partial)
+**결정**: 9개 capability 본문이 이미 지목하고 실제로 존재하는 구현 진입점을 canonical
+`path:`로 승격한다. project abilities는 7 domain·26 capability의 typed relation 전부를
+witness로 적어 `answered`로 고친다. evidence와 impact는 각각 folder-only/저신뢰 행동
+증거와 agent-facing schema chain 밖의 공백을 명시한 `partial`로 유지한다.
+**적용 규칙**: 경로 존재는 행동 의미 자동 승인 아님 · declared dependency에는 rationale
+필수 · 공백은 project Markdown과 meaning assessment에서 계속 보임
+**서명**: 전체 실행·자가검증을 요청한 소유자 지시에 따라 집행
+
+**관찰**: source-visible 평가는 9/9 경로가 각 capability 본문과 실제 디렉터리에
+일치한다고 판정했지만 경로 추가만으로 project CQ의 명시적 gap은 닫히지 않는다고 했다.
+source-hidden 평가는 vault가 folder map이 아니라 사업 의미 계층이라고 판정하면서도,
+project answer의 abilities 과소평가와 impact 과대평가를 false-green으로 지목했다.
+후속 source qualification은 다섯 저신뢰 capability에 행동·경계·source/test witness를
+추가했고, source-hidden 재평가는 과장 제거와 evidence/impact partial의 정합성을
+PASS로 판정했다. 남은 것은 실제 runtime/E2E와 relation-level source receipt다.
+같은 path를 다른 ontology role이 공유하면 뒤 노드를 버리던 receipt 결함도 node+path
+dedupe로 고쳤고, dogfood capability source witness는 26/26으로 재측정됐다.
+
+**기록된 반대**: beta 전에 모든 competency를 `answered`로 만들지 않으면 품질이
+미완성으로 보일 수 있다.
+**반증 조건**: partial을 숨기거나 경로 존재만으로 행동·영향을 answered로 올린 버전이
+source-hidden 평가에서 더 정확하고 누락 없는 답을 만들면 이 결정이 틀렸다.
+**재검토**: 저신뢰 capability의 행동 수준 qualification과 나머지 domain의 reviewed
+cross-domain dependency가 실제로 추가된 뒤
+
+**상태**: 유효 · 보이는 미완성을 품질 결함이 아니라 다음 검증 입력으로 유지
+
+## 2026-08-16 — 의미 수리 인수인계와 상세 검토는 고정 예산의 두 계약으로 나눈다
+
+**소집**: PO 카운슬 5자리 독립 1라운드 + 상호 반박 1라운드 · **트리거**:
+2026-08-04 결정의 5 KiB 반증 조건이 현재 dogfood에서 실제 관측됨
+**루브릭**: 23/24 (Problem insight 4 · User moment 4 · Differentiation 3 ·
+Ontology value 4 · Agent value 4 · Verification 4, 치명적 0: 없음)
+**결정**: `agent_brief.meaningRepair:v2`는 검토 규모·현재성·첫 행동만 담는 compact
+manifest로 유지하고, 전체 typed review evidence와 full-body 읽기는 기존
+`query_ontology`의 `meaning_repair_review` operation이 무상태 cursor로 나눠 제공한다.
+**적용 규칙**: manifest와 각 page 모두 UTF-8 JSON 5 KiB 이하 · page당 최대 20개 ·
+project→정렬된 domain→정렬된 capability · graph/source/typed rows/mtime 결박 ·
+사람 승인과 no-auto-write/finalize 유지
+**서명**: 소유자 요청에 따라 집행
+
+**관찰**: source-current dogfood의 raw `meaningRepair:v1`은 7 domains · 26
+capabilities · 34 unique targets를 literal `get_concepts(body:"full")` 20+14로
+정확히 만들었지만 5,135 bytes였다. 공개 CLI 검증기의 5,120-byte 상한을 15 bytes
+넘어 `agent_brief meaningRepair must contain the action-first human review packet`으로
+중단됐다. 상세 `questions`만 2,505 bytes, workflow는 1,886 bytes여서 현재 문자열을
+조금 줄이는 처방도 다음 규모에서 다시 실패한다.
+
+**선행 결정 관계**: 2026-08-04 기록의 5 KiB 상한, typed evidence, 결정적 순서,
+20개 full-body 제한, 사람 승인과 검증 순서는 유지한다. 반증된 것은 모든 상세 row와
+literal 배치를 `agent_brief` 하나에 materialize하는 방식이며 그 부분만 뒤집는다.
+2026-08-03 기록의 action-first human review, structural/source candidate 분리,
+no-auto-write/finalize는 계속 유효하다.
+
+**정확한 IN**:
+
+1. `meaningRepair:v2`는 status, 질문별 target/disposition count, provenance,
+   `reviewRevision`, stop conditions, write policy와 첫 literal
+   `query_ontology({operation:"meaning_repair_review", ...})` 호출만 가진다.
+2. `reviewRevision`은 project slug, graph hash, source fingerprint, 질문 상태,
+   결정적 typed review rows와 각 대상 mtime의 canonical digest다.
+3. `meaningRepairReviewPage:v1`은 같은 revision에서 project→domains→capabilities
+   순서의 가장 큰 non-empty prefix를 반환한다. 개수는 1..20이고 완성된 page 전체가
+   5,120 bytes를 넘기 직전 멈춘다. 단일 row도 못 담으면 evidence를 줄이지 않고
+   `review_target_too_large`로 실패 닫는다.
+4. page의 typed row slug와 literal `get_concepts({slugs,body:"full"})` slug는
+   순서까지 같아야 한다. 후속 cursor는 project/current provenance/revision/다음
+   경계에 묶인 opaque 무상태 값이다.
+5. source non-current, limited inventory, expected provenance/revision 변화, malformed·
+   foreign cursor, 사라진 경계, mtime 불일치는 targets/read/write/finalize 호출 없이
+   중단한다. 마지막 page와 각 full-body mtime을 확인하기 전에는 사람 승인으로
+   진행하지 않는다.
+
+**정확한 OUT**: 5 KiB 상향 · typed evidence 삭제/축약 · 공개 offset/임의 limit ·
+새 standalone MCP tool · 새 CLI command/flag · UI · vault schema · 저장형 review
+session · 자동 승인/write/finalize. 기존 `agent-brief`는 v2 manifest와 첫 MCP 호출을
+검증·노출하고 readiness exit 1 및 `--exit-zero` 의미를 유지한다.
+
+**The decisive disagreement**: 명시적 `afterTarget`/offset은 감사하기 쉽다는 의견과,
+호출자가 경계를 조작하면 누락을 만들 수 있다는 의견이 갈렸다. provenance는 요청과
+응답에 명시하되 위치는 서버 발급 cursor 안에 두는 것으로 결정했다. pagination
+자체는 해자가 아니라 필수 위생이며, 투자 가치는 local Markdown·git diff·typed
+evidence·사람 승인·finalization의 기존 루프가 큰 프로젝트에서도 끊기지 않는 데 있다.
+
+**기록된 반대**: 무상태 cursor는 페이지 혼합을 막아도 에이전트가 모든 page와
+full-body 호출을 실제 소비했다는 서버 영수증은 만들지 못한다. compact manifest만
+보고 승인하거나 중간 page를 생략하는 에이전트가 반복되면 이 프로토콜만으로는
+human-sovereign 경계를 지키기 부족하다.
+**반증 조건**: source-hidden field trial이 마지막 page 전에 승인/write로 진행하거나,
+34/34 복원에 5회 초과 추가 조회·2분 초과·누락·중복을 보이거나, source/bundle이 같은
+cursor에서 다른 page를 반환하면 별도 review-completion admission receipt를 새 결정으로
+검토한다. 상한을 올리거나 detail을 다시 manifest에 합치지는 않는다.
+**재검토**: current dogfood source-hidden 전 페이지 시험과 source/app-bundle parity 직후
+
+**상태**: 유효 · 2026-08-04 materialized-workflow 부분 뒤집힘
+
 ## 2026-08-16 — 목적·도메인의 answered와 고신뢰는 주장에 맞는 독립 의미 근거를 요구한다
 
 **소집**: PO 카운슬 5자리 독립 1라운드 + 상호 반박 1라운드 · **트리거**:

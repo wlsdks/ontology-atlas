@@ -57,7 +57,11 @@ import { deriveProjectSourceWitnessesFromDocs } from './project-source-witnesses
 import { projectSourceRemedy, undoPlan } from './project-source-remedy.mjs';
 import { buildProjectSourceGraphHash } from './project-source-graph-hash.mjs';
 import { buildProjectMeaningInventory } from './project-meaning-inventory.mjs';
-import { attachMeaningRepair, buildMeaningRepair } from './meaning-repair.mjs';
+import {
+  attachMeaningRepair,
+  buildMeaningRepair,
+  buildMeaningRepairReviewPage,
+} from './meaning-repair.mjs';
 import {
   finalizeProjectMeaningReceipt,
   parseProjectCompetencyMarkdown,
@@ -3910,7 +3914,7 @@ const TOOLS = [
   {
     name: 'query_ontology',
     description:
-      'Run graph-engine queries over the freshly compiled ontology artifact. Operations: `neighbors` (local graph neighborhood), `path` (one compiled-edge route between two nodes with aligned `nodes[]` summaries), `all_paths` (bounded simple paths between two nodes with per-path `nodes[]` summaries plus limit/searchBudget/exhaustive/truncatedByBudget/totalPathsExact metadata and evidence guidance), `query_plan` (EXPLAIN-style side-effect-free cost/index estimate plus execution advice before a target operation, filter-preserving suggestedQuery, and filter-aware estimate.totalMatches for match_nodes/match_edges), `centrality` (PageRank-style core-node ranking plus bridge/authority/hub lists), `communities` (label-propagation clusters inside the graph), `similar_nodes` (duplicate/overlap candidates before writes), `explain_relation` (direct edges, shortest path, and shared-neighbor explanation between two nodes), `reachability` (transitive graph closure from a start node), `pattern_walk` (explicit relation-sequence paths such as project → domains → capabilities), `impact` (incoming by default: what depends on this node), `blast_radius` (impact grouped by kind/domain with cross-domain edge risk), `subgraph` (bounded N-hop graph slice for UI/agent views), `builder_context` (persisted Workshop focus, layout positions, direct graph slice, and safe write handoff; unsaved UI drafts are explicitly excluded; operation name retained for compatibility), `overview` (counts, relation distribution, and hubs), `schema` (kind-relation-kind patterns), `facets` (filter/dashboard aggregates), `match_nodes` (graph DB-style node rows with degree filters plus a followUp packet for the first returned row), `match_edges` (graph DB-style edge pattern rows plus a followUp packet for the first returned real edge), `node_profile` (single node detail dashboard), `domain_profile` (domain detail dashboard), `domain_matrix` (domain-to-domain coupling), `project_scope` (project-contained graph slice), `project_map` (domain-by-domain project map), `relation_check` (schema-aware preflight before add_relation), `components` (connected graph islands), `lineage` and `containment_tree` (project/domain/capability containment), `cycles` (directed dependency-cycle checks), `topological_order` (prerequisite-first dependency ordering), `recommend_relations` (safe domain-containment suggestions), `growth_plan` (side-effect-free ontology expansion candidates), `maintenance_plan` (ordered post-write graph cleanup/repair actions with stable action `id`, count-safe summary fields, `byPhase` / `bySeverity` / `byKind` remaining-queue buckets, ready cursor `cursor.found=true` / `cursor.reason=null`, cursor `nextAfterActionId`/`hasMore` pagination metadata, afterActionId resume, unknown-cursor empty page with `cursor.nextAfterActionId=null` / `cursor.hasMore=false`, kind filters, executable graph-array canonicalization, `executable` flags, and current-page `nextExecutableAction` / `nextReviewAction` pointers), `agent_brief` (Claude Code/Codex handoff prompt, structured businessOntologyLens with business-first outcome → domain → capability → element read order, graphDbQueryPack for facets, schema, match_nodes, match_edges, domain_matrix, centrality, all_paths, explain_relation, and business_questions scans for outcome / domain boundary / capability claim nodes / implementation evidence edges, structured cliFallbackCommands, recipes, graph entrypoints, graph_traversal playbook, traversalStrategy plan_before_enumeration/bounded_path_evidence/containment_cross_check guidance, playbook evidence/stopWhen checklists, write guardrails, relationDecisionGuide, resultContracts for all_paths completeness and match_nodes/match_edges followUp evidence, and read-first write policy), `workspace_brief` (first-contact status + next actions), and `health` (one-shot graph integrity dashboard). ' +
+      'Run graph-engine queries over the freshly compiled ontology artifact. Operations: `neighbors` (local graph neighborhood), `path` (one compiled-edge route between two nodes with aligned `nodes[]` summaries), `all_paths` (bounded simple paths between two nodes with per-path `nodes[]` summaries plus limit/searchBudget/exhaustive/truncatedByBudget/totalPathsExact metadata and evidence guidance), `query_plan` (EXPLAIN-style side-effect-free cost/index estimate plus execution advice before a target operation, filter-preserving suggestedQuery, and filter-aware estimate.totalMatches for match_nodes/match_edges), `centrality` (PageRank-style core-node ranking plus bridge/authority/hub lists), `communities` (label-propagation clusters inside the graph), `similar_nodes` (duplicate/overlap candidates before writes), `explain_relation` (direct edges, shortest path, and shared-neighbor explanation between two nodes), `reachability` (transitive graph closure from a start node), `pattern_walk` (explicit relation-sequence paths such as project → domains → capabilities), `impact` (incoming by default: what depends on this node), `blast_radius` (impact grouped by kind/domain with cross-domain edge risk), `subgraph` (bounded N-hop graph slice for UI/agent views), `builder_context` (persisted Workshop focus, layout positions, direct graph slice, and safe write handoff; unsaved UI drafts are explicitly excluded; operation name retained for compatibility), `overview` (counts, relation distribution, and hubs), `schema` (kind-relation-kind patterns), `facets` (filter/dashboard aggregates), `match_nodes` (graph DB-style node rows with degree filters plus a followUp packet for the first returned row), `match_edges` (graph DB-style edge pattern rows plus a followUp packet for the first returned real edge), `node_profile` (single node detail dashboard), `domain_profile` (domain detail dashboard), `domain_matrix` (domain-to-domain coupling), `project_scope` (project-contained graph slice), `project_map` (domain-by-domain project map), `relation_check` (schema-aware preflight before add_relation), `components` (connected graph islands), `lineage` and `containment_tree` (project/domain/capability containment), `cycles` (directed dependency-cycle checks), `topological_order` (prerequisite-first dependency ordering), `recommend_relations` (safe domain-containment suggestions), `growth_plan` (side-effect-free ontology expansion candidates), `maintenance_plan` (ordered post-write graph cleanup/repair actions with stable action `id`, count-safe summary fields, `byPhase` / `bySeverity` / `byKind` remaining-queue buckets, ready cursor `cursor.found=true` / `cursor.reason=null`, cursor `nextAfterActionId`/`hasMore` pagination metadata, afterActionId resume, unknown-cursor empty page with `cursor.nextAfterActionId=null` / `cursor.hasMore=false`, kind filters, executable graph-array canonicalization, `executable` flags, and current-page `nextExecutableAction` / `nextReviewAction` pointers), `agent_brief` (Claude Code/Codex handoff prompt, structured businessOntologyLens with business-first outcome → domain → capability → element read order, graphDbQueryPack for facets, schema, match_nodes, match_edges, domain_matrix, centrality, all_paths, explain_relation, and business_questions scans for outcome / domain boundary / capability claim nodes / implementation evidence edges, structured cliFallbackCommands, recipes, graph entrypoints, graph_traversal playbook, traversalStrategy plan_before_enumeration/bounded_path_evidence/containment_cross_check guidance, playbook evidence/stopWhen checklists, write guardrails, relationDecisionGuide, resultContracts for all_paths completeness and match_nodes/match_edges followUp evidence, and read-first write policy), `meaning_repair_review` (provenance-bound, byte-bounded typed evidence pages and literal full-body read calls for the compact meaning repair manifest), `workspace_brief` (first-contact status + next actions), and `health` (one-shot graph integrity dashboard). ' +
       'For `impact` and `blast_radius`, only declared `depends_on` is allowed; use reachability/subgraph for structure. Blast radius reports unknown risk/completeness plus review_required or declared_with_rationale edge qualification until relation-level source receipts exist. A missing `depends_on` preflight is schema-only: `relation_check` returns `proposedAction:null` plus a non-writing `approvalGate` until the agent explains the observable ability and semantic rationale and receives explicit human approval. ' +
       'Accepts canonical slugs or unique aliases. side effect 0. Use this when you need graph-database-like answers without pulling the full compile_ontology payload.',
     inputSchema: {
@@ -3925,7 +3929,7 @@ const TOOLS = [
           ...NON_BLANK_STRING_SCHEMA,
           enum: QUERY_PLAN_TARGET_OPERATIONS,
           description:
-            'query_plan only: read-only graph operation to explain before execution. Supports every query_ontology operation except query_plan itself.',
+            'query_plan only: read-only graph operation to explain before execution. Supports every graph-engine operation except query_plan and the source-aware meaning_repair_review operation.',
         },
         iterations: {
           type: 'integer',
@@ -3948,7 +3952,19 @@ const TOOLS = [
           'Source node slug or unique alias. Required for path, all_paths, and explain_relation.',
         ),
         project: nonBlankStringSchema(
-          'domain_matrix/project_scope/project_map/agent_brief: project root slug or unique alias. Optional when exactly one kind: project node exists; pass it explicitly in multi-project vaults.',
+          'domain_matrix/project_scope/project_map/agent_brief/meaning_repair_review: project root slug or unique alias. Required for meaning_repair_review; optional when exactly one kind: project node exists for the other operations.',
+        ),
+        expectedGraphHash: nonBlankStringSchema(
+          'meaning_repair_review first page: exact graphHash from meaningRepair:v2 provenance. Later nextCall values are revision-bound and omit it.',
+        ),
+        expectedSourceFingerprint: nonBlankStringSchema(
+          'meaning_repair_review first page: exact current sourceFingerprint from meaningRepair:v2 provenance. Later nextCall values are revision-bound and omit it.',
+        ),
+        reviewRevision: nonBlankStringSchema(
+          'meaning_repair_review only: sha256 revision from meaningRepair:v2, binding graph/source/typed rows/target mtimes.',
+        ),
+        cursor: nonBlankStringSchema(
+          'meaning_repair_review only: opaque stateless cursor returned as pagination.nextCursor. Omit for the first page.',
         ),
         to: nonBlankStringSchema(
           'Target node slug or unique alias. Required for path, all_paths, and explain_relation.',
@@ -8048,6 +8064,19 @@ function queryOntologyTool(args = {}) {
   validateQueryOntologyArgs(args);
   const artifact = COMPILED_ONTOLOGY_CACHE.get({ includeIndexes: true });
   const ontologyAtlasIgnorePatterns = loadOntologyAtlasIgnore(VAULT_ROOT);
+  if (args.operation === 'meaning_repair_review') {
+    const agentBrief = queryCompiledOntology(artifact, {
+      operation: 'agent_brief',
+      project: args.project,
+    }, { ontologyAtlasIgnorePatterns });
+    const validatedBrief = attachVaultValidation(agentBrief, { operation: 'agent_brief' });
+    const context = projectMeaningContext(
+      artifact,
+      validatedBrief.projectSlug,
+      validatedBrief.readiness?.status,
+    );
+    return buildMeaningRepairReviewPage(context.meaningRepairInput, args);
+  }
   const queryResult = queryCompiledOntology(artifact, args, {
     ontologyAtlasIgnorePatterns,
     ...(args.operation === 'builder_context' ? { sourceDocs: loadVaultDocs(VAULT_ROOT) } : {}),
@@ -8229,14 +8258,15 @@ function projectMeaningContext(artifact, projectSlug, structureStatus) {
   } catch {
     // The repair projection fails closed when the human-editable competency block is unavailable.
   }
-  const meaningRepair = buildMeaningRepair({
+  const meaningRepairInput = {
     projectSlug,
     graphHash,
     meaningAssessment,
     competency,
     inventoryResult,
     scopedDocs: docs,
-  });
+  };
+  const meaningRepair = buildMeaningRepair(meaningRepairInput);
   return {
     scope,
     docs,
@@ -8247,6 +8277,7 @@ function projectMeaningContext(artifact, projectSlug, structureStatus) {
     assessmentInput,
     meaningAssessment,
     meaningRepair,
+    meaningRepairInput,
   };
 }
 
@@ -8736,6 +8767,10 @@ function validateQueryOntologyArgs(args = {}) {
     'toKind',
     'relation',
     'afterActionId',
+    'expectedGraphHash',
+    'expectedSourceFingerprint',
+    'reviewRevision',
+    'cursor',
   ]) {
     requireOptionalNonBlankString(args[key], key);
   }
@@ -8785,6 +8820,29 @@ function validateQueryOntologyArgs(args = {}) {
   requireOptionalStringArray(args.kinds, 'kinds', { max: MAINTENANCE_KIND_VALUES.length });
   requireOptionalStringArray(args.dependencyTypes, 'dependencyTypes', { max: RELATION_TYPE_VALUES.length });
   requireOptionalStringArray(args.componentTypes, 'componentTypes', { max: RELATION_TYPE_VALUES.length });
+  if (args.operation === 'meaning_repair_review') {
+    requireNonBlankString(args.project, 'project');
+    requireNonBlankString(args.reviewRevision, 'reviewRevision');
+    if (args.cursor === undefined) {
+      requireNonBlankString(args.expectedGraphHash, 'expectedGraphHash');
+      requireNonBlankString(args.expectedSourceFingerprint, 'expectedSourceFingerprint');
+    }
+    if (args.expectedGraphHash !== undefined && !/^project-graph-v1:[a-f0-9]{8}$/.test(args.expectedGraphHash)) {
+      throw new Error('expectedGraphHash must be a project-graph-v1 hash.');
+    }
+    if (!/^sha256:[a-f0-9]{64}$/.test(args.reviewRevision)) {
+      throw new Error('reviewRevision must be a sha256 digest.');
+    }
+    if (args.expectedSourceFingerprint !== undefined && args.expectedSourceFingerprint.length > 200) {
+      throw new Error('expectedSourceFingerprint must contain at most 200 characters.');
+    }
+    if (args.cursor !== undefined && args.cursor.length > 4096) {
+      throw new Error('cursor must contain at most 4096 characters.');
+    }
+    if (args.cursor !== undefined && !/^mrp1\.[a-f0-9]{32}$/.test(args.cursor)) {
+      throw new Error('cursor must be an opaque meaning repair cursor returned by nextCall.');
+    }
+  }
 }
 
 function compactPostWriteMaintenance(limit = 5) {

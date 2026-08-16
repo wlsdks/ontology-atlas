@@ -26,7 +26,7 @@ describe("deriveProjectSourceWitnesses", () => {
     ]);
   });
 
-  it("keeps a path-titled external element as implementation evidence and deduplicates it", () => {
+  it("keeps distinct project and path-titled element claims for the same implementation", () => {
     const witnesses = deriveProjectSourceWitnesses({
       projectSlug: "music",
       nodes: [
@@ -38,6 +38,7 @@ describe("deriveProjectSourceWitnesses", () => {
 
     expect(witnesses).toEqual([
       { id: "project:element:src/player.ts", nodeSlug: "project", role: "implementation", path: "src/player.ts" },
+      { id: "src/player.ts:path", nodeSlug: "src/player.ts", role: "implementation", path: "src/player.ts" },
     ]);
   });
 
