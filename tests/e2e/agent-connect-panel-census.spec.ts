@@ -98,7 +98,6 @@ test("「터미널에서 연결」 칸의 첫 화면 인구조사", async ({ pag
     contentType: "application/json",
   });
   await pane.screenshot({ path: testInfo.outputPath("agent-connect-panel.png") });
-  // eslint-disable-next-line no-console
   console.log("[census]", JSON.stringify(census));
 
   // 헛돌지 않는가 — 아무것도 못 찾고 초록으로 지나가면 이 래칫은 없는 것과 같다.
