@@ -2258,12 +2258,21 @@ export function HomePage() {
    * `vault-mcp-server.ts`.
    */
   const acpMcpServers = useMemo(() => {
-    const registeredCommand =
+    const registration =
       vaultSelfReadSlot(acpRuntimeId) === 'codex-config'
-        ? (vault.agentConfigStatus?.codexRegisteredCommand ?? null)
+        ? {
+            command: vault.agentConfigStatus?.codexRegisteredCommand ?? null,
+            validForCurrentVault: vault.agentConfigStatus?.codexConfigValid === true,
+          }
         : null;
-    return vaultMcpServers(agentServer.launch, gitVaultPath, registeredCommand);
-  }, [agentServer.launch, gitVaultPath, acpRuntimeId, vault.agentConfigStatus]);
+    return vaultMcpServers(agentServer.launch, gitVaultPath, registration);
+  }, [
+    agentServer.launch,
+    gitVaultPath,
+    acpRuntimeId,
+    vault.agentConfigStatus?.codexConfigValid,
+    vault.agentConfigStatus?.codexRegisteredCommand,
+  ]);
 
   const indexSlotFrames: ReadonlyArray<{ state: IndexPanelState; exiting: boolean }> =
     indexSlotSwap.leaving === null

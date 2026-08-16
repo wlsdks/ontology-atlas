@@ -30,6 +30,13 @@ export interface AcpMcpServer {
   env: Array<{ name: string; value: string }>;
 }
 
+export interface ExistingVaultMcpRegistration {
+  /** 설정 파일에 적힌 실행 명령. */
+  command: string | null | undefined;
+  /** 명령뿐 아니라 현재 볼트 환경까지 전체 설정 검증을 통과했는가. */
+  validForCurrentVault: boolean;
+}
+
 /**
  * 이 런타임의 CLI 가 **작업 폴더에서 스스로 읽는** 설정 파일. 볼트가 거기에
  * 이미 우리 서버를 등록해 뒀다면 앱이 또 꽂을 필요가 없다.
@@ -67,16 +74,19 @@ export function vaultSelfReadSlot(runtimeId: string | null | undefined): 'codex-
 /**
  * 볼트가 이미 등록해 둔 것이 **우리가 꽂으려던 바로 그것**인가.
  *
- * 「등록이 있다」만으로 건너뛰면 안 된다 — 볼트의 항목이 낡은 경로를 가리키고
- * 있으면 도구가 아예 없는 세션이 된다. 명령이 **글자 그대로 같을 때만** 같은
+ * 「등록이 있다」만으로 건너뛰면 안 된다 — 볼트의 항목이 낡은 경로나 다른
+ * `OATLAS_VAULT`를 가리키면 도구가 아예 없거나 엉뚱한 볼트를 읽는 세션이 된다.
+ * 현재 볼트용 전체 설정 검증을 통과하고 명령도 **글자 그대로 같을 때만** 같은
  * 것으로 본다.
  */
 export function vaultAlreadyRegisters(
   launch: McpServerLaunch | null,
-  registeredCommand: string | null | undefined,
+  registration: ExistingVaultMcpRegistration | null | undefined,
 ): boolean {
-  if (!launch || typeof registeredCommand !== 'string') return false;
-  return registeredCommand.trim().length > 0 && registeredCommand.trim() === launch.command.trim();
+  if (!launch || !registration?.validForCurrentVault) return false;
+  if (typeof registration.command !== 'string') return false;
+  const registeredCommand = registration.command.trim();
+  return registeredCommand.length > 0 && registeredCommand === launch.command.trim();
 }
 
 /**
@@ -89,10 +99,10 @@ export function vaultAlreadyRegisters(
 export function vaultMcpServers(
   launch: McpServerLaunch | null,
   vaultPath: string | null,
-  registeredCommand?: string | null,
+  registration?: ExistingVaultMcpRegistration | null,
 ): AcpMcpServer[] {
   if (!launch || !vaultPath) return [];
-  if (vaultAlreadyRegisters(launch, registeredCommand)) return [];
+  if (vaultAlreadyRegisters(launch, registration)) return [];
   return [
     {
       name: VAULT_MCP_SERVER_NAME,
