@@ -8279,11 +8279,25 @@ function queryOntologyTool(args = {}) {
   const validatedResult = ['health', 'workspace_brief', 'agent_brief'].includes(args.operation)
     ? attachVaultValidation(queryResult, args)
     : queryResult;
-  const result = args.operation === 'agent_brief'
+  const attached = args.operation === 'agent_brief'
     ? attachProjectMeaning(validatedResult, artifact)
     : ['health', 'workspace_brief'].includes(args.operation)
       ? attachMeaningReadiness(validatedResult, artifact, args)
       : validatedResult;
+  /*
+   * **수는 세어서 낸다** (2026-08-17 실측).
+   *
+   * 검사를 덧붙이는 곳이 둘인데(`attachVaultValidation` · `attachProjectMeaning`)
+   * 앞엣것만 `healthChecks` 를 손으로 +1 하고 뒤엣것은 안 했다. 그래서 한
+   * 응답 안에서 「7 health checks」라고 말하면서 8개를 싣고 있었다.
+   *
+   * 붙이는 자리마다 손으로 맞추라고 하면 다음에 붙이는 사람이 또 빠뜨린다 —
+   * 그러니 **마지막에 한 번 세어서** 낸다. 그러면 이 갈래가 통째로 사라진다.
+   * 게이트: `cli/src/lib/brief-self-consistency.test.mjs`.
+   */
+  const result = Array.isArray(attached.health?.checks) && attached.readiness
+    ? { ...attached, readiness: { ...attached.readiness, healthChecks: attached.health.checks.length } }
+    : attached;
   return {
     ...result,
     compiledSummary: {
