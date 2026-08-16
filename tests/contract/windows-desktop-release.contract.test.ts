@@ -15,6 +15,11 @@ describe('Windows desktop beta release contract', () => {
     expect(pullRequestWorkflow).not.toContain('secrets.');
     expect(workflow).toContain('runs-on: windows-2022');
     expect(workflow).toContain('rustsec/audit-check@69366f33c96575abad1ee0dba8212993eecbe998');
+    for (const source of [releaseWorkflow, pullRequestWorkflow]) {
+      expect(source).toContain(
+        'cargo audit --file src-tauri/Cargo.lock --deny unsound --ignore RUSTSEC-2024-0429',
+      );
+    }
     expect(workflow).toContain('Get-AuthenticodeSignature');
     expect(workflow).toContain('MpCmdRun.exe');
     expect(workflow).toContain("-ArgumentList '/S'");

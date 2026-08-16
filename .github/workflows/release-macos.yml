@@ -281,6 +281,12 @@ jobs:
           token: ${{ github.token }}
           working-directory: src-tauri
 
+      # audit-check reports informational advisories but does not fail on them.
+      # GTK3's glib advisory is Linux-only in Tauri's dependency tree; this
+      # native Windows lane still fails on every other Rust unsoundness warning.
+      - name: Deny unsound Rust advisories
+        run: cargo audit --file src-tauri/Cargo.lock --deny unsound --ignore RUSTSEC-2024-0429
+
       - name: Windows release contract tests
         run: node --test scripts/lib/mcp-binary.test.mjs scripts/stage-windows-release-assets.test.mjs scripts/verify-mcp-binary.test.mjs
 
