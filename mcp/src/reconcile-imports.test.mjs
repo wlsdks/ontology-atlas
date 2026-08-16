@@ -163,7 +163,9 @@ test('reconcileImportEdges — matches REAL compileOntology depends_on edges (vi
 
 test('reconcileImportEdges — empty inputs are safe', () => {
   const r = reconcileImportEdges({ moduleEdges: [], compiledEdges: [], aliasToSlug: new Map() });
-  assert.deepEqual(r, { inBoth: [], inCodeMissingFromVault: [], inCodeMissingEndpointAbsent: [], inVaultNotInCode: [] });
+  // `notJudgeableByImports` 는 2026-08-17 에 늘어난 칸이다 — 「못 읽는 언어로
+  // 구현된 관계」를 「코드에 없음」과 갈라 놓는다(reconcile-unscannable.test.mjs).
+  assert.deepEqual(r, { inBoth: [], inCodeMissingFromVault: [], inCodeMissingEndpointAbsent: [], inVaultNotInCode: [], notJudgeableByImports: [] });
 });
 
 test('reconcileImportEdges — nodeSlugs splits reviewable vs endpoint-absent without making either executable', () => {
@@ -215,7 +217,9 @@ test('reconcileImportEdges — self-edges (A→A) are dropped (no self-dependenc
     compiledEdges: [],
     aliasToSlug: new Map(),
   });
-  assert.deepEqual(r, { inBoth: [], inCodeMissingFromVault: [], inCodeMissingEndpointAbsent: [], inVaultNotInCode: [] });
+  // `notJudgeableByImports` 는 2026-08-17 에 늘어난 칸이다 — 「못 읽는 언어로
+  // 구현된 관계」를 「코드에 없음」과 갈라 놓는다(reconcile-unscannable.test.mjs).
+  assert.deepEqual(r, { inBoth: [], inCodeMissingFromVault: [], inCodeMissingEndpointAbsent: [], inVaultNotInCode: [], notJudgeableByImports: [] });
 });
 
 test('buildNextImportRelationReview — returns one non-executable review packet and a stateless cursor', () => {

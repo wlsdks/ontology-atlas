@@ -9675,11 +9675,21 @@ function inferImportsTool({
     try {
       const artifact = compileOntology(loadVaultDocs(VAULT_ROOT), { includeIndexes: true });
       const nodeSlugs = new Set((artifact.nodes ?? []).map((n) => n.slug).filter(Boolean));
+      // 각 노드가 자기 구현을 어디라고 적어 뒀는지 — **판정을 미룰지**
+      // 결정하는 데 쓴다. 스캐너가 못 읽는 언어(Rust 등)로 구현된 관계를
+      // 「코드에 없음」으로 부르면 에이전트가 맞는 관계를 지운다
+      // (2026-08-17, 이 저장소 자신에서 실측: 3개 중 3개가 그 경우였다).
+      const pathBySlug = Object.create(null);
+      for (const node of artifact.nodes ?? []) {
+        if (node?.slug && typeof node.path === 'string') pathBySlug[node.slug] = node.path;
+      }
       const r = reconcileImportEdges({
         moduleEdges: result.moduleEdges,
         compiledEdges: artifact.edges,
         aliasToSlug: artifact.indexes?.aliasToSlug,
         nodeSlugs,
+        pathBySlug,
+        scannedExtensions: result.coverage?.supportedExtensions,
       });
       result.reconciliation = r;
       // Factual, never-lie hint: only report "in sync" when there is genuinely
@@ -9698,7 +9708,15 @@ function inferImportsTool({
       }
       if (r.inVaultNotInCode.length > 0) {
         parts.push(
-          `${r.inVaultNotInCode.length} vault depends_on edge(s) have no matching code import (review for stale)`,
+          // 「오래됐다」고 단정하지 않는다. import 는 **한 종류의 근거**일 뿐이고,
+          // 의존은 프로세스를 띄우는 것일 수도 설정이 가리키는 것일 수도 있다 —
+          // 이 저장소 자신의 세 엣지가 전부 그런 경우였다(2026-08-17).
+          `${r.inVaultNotInCode.length} vault depends_on edge(s) have no matching code import. An import is only one kind of evidence: a dependency can be a process spawn, a config reference, or a runtime contract. Read the code before treating any of these as stale`,
+        );
+      }
+      if (r.notJudgeableByImports.length > 0) {
+        parts.push(
+          `${r.notJudgeableByImports.length} vault depends_on edge(s) could NOT be judged from imports because an endpoint's implementation is not in a scanned language (do not treat these as stale — read the code yourself or leave them alone)`,
         );
       }
       if (result.unresolved.length > 0) {
@@ -9711,6 +9729,7 @@ function inferImportsTool({
         inCodeMissingFromVault: r.inCodeMissingFromVault.length,
         inCodeMissingEndpointAbsent: r.inCodeMissingEndpointAbsent.length,
         inVaultNotInCode: r.inVaultNotInCode.length,
+        notJudgeableByImports: r.notJudgeableByImports.length,
         unresolvedImports: result.unresolved.length,
         hint:
           parts.length > 0
