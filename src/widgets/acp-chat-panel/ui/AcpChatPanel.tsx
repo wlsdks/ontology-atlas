@@ -596,11 +596,32 @@ export function AcpChatPanel({
           className="pointer-events-auto w-[min(320px,100%)]"
         >
           <div className="overflow-hidden rounded-card border border-[color:var(--color-border-soft)] bg-[color:var(--color-elevated)] shadow-[var(--shadow-elevation-2)]">
-            {/* 이름이 있어야 무엇의 목록인지 알 수 있다. */}
-            <p className="px-3 pb-1.5 pt-2.5 font-mono text-label uppercase tracking-[var(--tracking-caps-14)] text-[color:var(--color-text-quaternary)]">
-              {t('history')}
-            </p>
-            <ul data-testid="acp-chat-history-list" className="grid max-h-64 gap-0.5 overflow-y-auto p-1 pt-0">
+            {/*
+              이름이 있어야 무엇의 목록인지 알 수 있다.
+
+              ⚠️ 종전에는 대문자 아이브로우 규격(`font-mono` + `uppercase` +
+              넓은 자간)이었다. 그 규격은 라틴 문자를 전제한다 — 한글에는
+              대문자가 없어서 `uppercase` 는 아무 일도 안 하고, 넓은 자간만
+              남아 **「지난」과 「대화」가 다른 두 낱말처럼** 벌어져 보였다
+              (2026-08-16 소유자 화면). 그냥 라벨로 둔다.
+
+              개수를 옆에 두는 이유: 목록이 스크롤되면 몇 개인지가 안 보인다.
+            */}
+            <div className="flex items-center justify-between gap-2 border-b border-[color:var(--color-divider)] px-3 py-2">
+              <p className="text-label leading-label text-[color:var(--color-text-tertiary)]">
+                {t('history')}
+              </p>
+              <span
+                className={badgeClass({
+                  shape: 'micro',
+                  className:
+                    'bg-[color:var(--color-overlay-2)] text-[color:var(--color-text-quaternary)]',
+                })}
+              >
+                {sessions.length}
+              </span>
+            </div>
+            <ul data-testid="acp-chat-history-list" className="grid max-h-64 gap-0.5 overflow-y-auto p-1">
               {sessions.map((session) => (
                 <li key={session.sessionId}>
                   <RowButton
@@ -610,10 +631,18 @@ export function AcpChatPanel({
                       setHistoryOpen(false);
                       void switchSession(session.sessionId);
                     }}
+                    /*
+                     * 마우스가 지나가는 줄이 **반응해야** 어디를 누르는지 알 수
+                     * 있다(소유자: *"마우스 올리면 각 영역에 호버 효과 있으면"*).
+                     * 면과 글자를 함께 올린다 — 면만 밝히면 어느 줄인지는 알아도
+                     * 그 줄의 제목이 여전히 뒤로 물러나 있다.
+                     */
+                    hoverSurface="lift"
+                    hoverInk="strong"
                     className="w-full"
                   >
                     <span className="grid min-w-0 flex-1 gap-0.5 text-left">
-                      <span className="truncate text-body text-[color:var(--color-text-secondary)]">
+                      <span className="truncate text-body-lg leading-body-lg text-[color:var(--color-text-secondary)]">
                         {session.title ?? t('untitled')}
                       </span>
                       {/*
