@@ -8314,12 +8314,42 @@ const MEANING_NEXT_ACTION_HINTS = Object.freeze({
     'This project\'s five competency answers have not been finalized yet. '
     + 'Nothing is broken. Fill in the `## Competency answers` section of the '
     + 'project document if it is missing, then call finalize_project_meaning.',
+  resolve_competency_question:
+    'A competency answer is incomplete: it needs concrete witnesses (concepts, '
+    + 'relations, or evidence paths) that resolve in this vault. Fill the gap in '
+    + 'the project document, then call finalize_project_meaning again.',
+  reevaluate_competency:
+    'The graph moved since the answers were finalized. Re-check the competency '
+    + 'answers against the current graph, then call finalize_project_meaning again.',
   repair_assessment_input:
     'The assessment input is malformed. Inspect the project document\'s '
     + '`## Competency answers` section and the source receipt.',
   repair_ontology_structure: 'Fix the graph problems that query_ontology health reports first.',
-  repair_source_receipt: 'Re-bind the project to its source with connect_source.',
-  connect_source: 'Bind this project to its source with connect_source.',
+  repair_source_receipt:
+    'The source receipt is unusable. Re-bind the project to its code folder '
+    + 'with connect_project_source.',
+  record_source_role:
+    'A source file is bound but its role (production / test) is unrecorded. '
+    + 'Record it so evidence counts mean the same thing everywhere.',
+  review_inventory_limit:
+    'The source inventory hit its bound, so this evidence is partial. Narrow '
+    + 'the bound source folder, or read the limit before trusting the counts.',
+  connect_source: 'Bind this project to its source with connect_project_source.',
+  repair_source_binding:
+    'The source binding is unusable. Re-bind with connect_project_source '
+    + '({repair: true} if the sidecar is malformed).',
+  repair_source_path:
+    'A declared evidence path no longer resolves inside the bound source. Fix '
+    + 'the path on the node, or re-bind if the folder moved.',
+  measure_source: 'Measure the bound source with connect_project_source.',
+  remeasure_source: 'The source changed since it was measured. Re-run connect_project_source.',
+  verify_source_currentness:
+    'The source measurement is stale or unavailable. Re-run connect_project_source '
+    + 'before treating this evidence as current.',
+  review_source_evidence:
+    'The source moved in a way the receipt cannot judge. Look at what changed '
+    + 'before relying on the evidence.',
+  use_current_evidence: 'Nothing to repair — the measured evidence is current.',
 });
 
 function meaningReadinessCheck(artifact) {
