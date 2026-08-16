@@ -3637,7 +3637,6 @@
     "composerLabel": "Write what you want done",
     "send": "Send",
     "stop": "Stop",
-    "errorPrefix": "Something went wrong:",
     "status": {
       "idle": "Off",
       "starting": "Starting",
@@ -3676,6 +3675,33 @@
     "toolGroup": "{count} steps",
     "resize": "Resize the chat panel",
     "resizeHint": "Drag to widen or narrow. Arrow keys work too.",
-    "closeHistory": "Close the past chats list"
+    "closeHistory": "Close the past chats list",
+    "trouble": {
+      "auth": {
+        "title": "You have been signed out",
+        "hint": "Run the tool once in your terminal to sign in again, then press “New chat” above."
+      },
+      "timeout": {
+        "title": "The tool is not responding",
+        "hint": "Try “New chat”. If it keeps happening, check that the tool starts on its own in a terminal."
+      },
+      "launch": {
+        "title": "The tool could not be started",
+        "hint": "Check its state in the Agents section of settings."
+      },
+      "network": {
+        "title": "No connection to the outside",
+        "hint": "Check your internet connection, then press “New chat”. Reading and editing the map works offline."
+      },
+      "unknown": {
+        "title": "Something went wrong",
+        "hint": "Try “New chat”. If it keeps happening, the details below are what to report."
+      },
+      "details": "Details",
+      "diagnosticsLabel": "What the tool printed"
+    },
+    "notice": {
+      "gateOff": "In this conversation Atlas cannot ask you before a file outside this folder is touched. The tool follows the settings you gave it directly."
+    }
   }
 }

@@ -27,6 +27,8 @@ const bridge = vi.hoisted(() => ({
   /** 어댑터의 진단 출력 — 「켜는 중에서 안 넘어간다」를 설명하는 유일한 창구. */
   stderr: null as ((line: string) => void) | null,
   stopped: [] as string[],
+  /** 우리가 보낸 요청 — 「무엇을 실어 보냈나」를 확인할 유일한 창구. */
+  sent: [] as Array<{ id?: number; method?: string; params?: unknown }>,
 }));
 
 vi.mock('@/shared/lib/tauri-acp', () => ({
@@ -44,7 +46,8 @@ vi.mock('@/shared/lib/tauri-acp', () => ({
    * 「잠금이 걸렸는지」가 아니라 「응답이 없는지」를 재게 된다.
    */
   sendAcpLine: async (_id: string, line: string) => {
-    const message = JSON.parse(line) as { id?: number; method?: string };
+    const message = JSON.parse(line) as { id?: number; method?: string; params?: unknown };
+    bridge.sent.push(message);
     if (typeof message.id !== 'number') return;
     const result =
       message.method === 'session/new' || message.method === 'session/load'
@@ -79,6 +82,7 @@ afterEach(() => {
   bridge.listener = null;
   bridge.stderr = null;
   bridge.stopped = [];
+  bridge.sent = [];
 });
 
 describe('세션 하나 — 겹쳐 불러도 프로세스는 하나', () => {
@@ -163,13 +167,13 @@ describe('세션 하나 — 겹쳐 불러도 프로세스는 하나', () => {
   });
 });
 
-describe('진단 — 어댑터가 남긴 말이 화면에 닿는다', () => {
-  it('stderr 를 받아 알림 줄로 남긴다 — 「켜는 중」이 설명되게', async () => {
+describe('진단 — 모아 두되 평소에는 안 보여 준다', () => {
+  it('진짜 단서는 모으고, npm 경고 같은 소음은 안 모은다', async () => {
     /*
-     * 2026-08-16 검수에서 적발. 코드 주석은 「조용히 버리지 않는다」고 적어
-     * 뒀는데 정작 stderr 를 아무도 안 듣고 있었다 — Rust 는 보내고 받는 쪽이
-     * 없었다. 그래서 `Authentication required` 도 npx 설치 실패도 전부
-     * 사라졌고, 멈춘 세션의 원인을 알 길이 없었다.
+     * 이 자리는 하루에 두 번 고쳤다. 처음엔 아무도 stderr 를 안 들어서 어댑터가
+     * 남긴 마지막 말이 전부 사라졌고, 듣게 했더니 이번엔 **아무 일도 안 났는데**
+     * 대화창 맨 위에 영어 npm 경고 두 문단이 상주했다(소유자 화면).
+     * 진단은 문제가 났을 때 단서이지 평소에 읽을 것이 아니다.
      */
     const { result } = renderHook(() =>
       useAcpSession({ runtimeId: 'claude-acp', vaultRoot: '/vault' }),
@@ -183,20 +187,72 @@ describe('진단 — 어댑터가 남긴 말이 화면에 닿는다', () => {
 
     await waitFor(() => expect(bridge.stderr).toBeTruthy());
     act(() => {
+      bridge.stderr?.('npm warn Unknown env config "_jsr-registry".');
       bridge.stderr?.('Authentication required');
       bridge.stderr?.('   ');
     });
 
-    await waitFor(() =>
-      expect(
-        result.current.events.some(
-          (e) => e.kind === 'notice' && e.text === 'Authentication required',
-        ),
-        '어댑터가 남긴 말이 화면에 닿지 않는다',
-      ).toBe(true),
+    await waitFor(() => expect(result.current.diagnostics).toEqual(['Authentication required']));
+    // 진단은 **말풍선도 알림 줄도 아니다** — 대화에 섞이면 그게 소음이다.
+    expect(result.current.events.filter((e) => e.kind === 'notice')).toHaveLength(0);
+
+    await act(async () => {
+      await result.current.stop();
+    });
+  });
+});
+
+describe('볼트 서버 — 꽂았을 때만 꽂혔다고 말한다', () => {
+  it('서버를 넘기면 session/new 가 그것을 싣고, 지시문도 그렇게 말한다', async () => {
+    /*
+     * 2026-08-16 검수의 지적: 「이 앱의 에이전트가 정말 우리 MCP 도구를 받나」를
+     * **아무 검사도 확인하지 않고 있었다.** 주석 한 줄(실측 기록)이 유일한 근거였다.
+     */
+    const { result } = renderHook(() =>
+      useAcpSession({
+        runtimeId: 'claude-acp',
+        vaultRoot: '/vault',
+        mcpServers: [{ name: 'atlas-vault', command: '/app/ontology-atlas-mcp', args: [] }],
+      }),
     );
-    // 빈 줄은 싣지 않는다 — 아무것도 안 나르는 줄이다.
-    expect(result.current.events.filter((e) => e.kind === 'notice').length).toBe(1);
+    const first = result.current.start();
+    await waitFor(() => expect(bridge.starts).toBe(1));
+    await act(async () => {
+      bridge.release?.();
+      await first;
+    });
+
+    const call = bridge.sent.find((m) => m.method === 'session/new');
+    expect(call, 'session/new 자체가 안 나갔다').toBeTruthy();
+    const params = call?.params as Record<string, unknown>;
+    expect(params.mcpServers).toEqual([
+      { name: 'atlas-vault', command: '/app/ontology-atlas-mcp', args: [] },
+    ]);
+    const meta = params._meta as { systemPrompt?: { append?: string } } | undefined;
+    expect(meta?.systemPrompt?.append).toContain('atlas-vault');
+
+    await act(async () => {
+      await result.current.stop();
+    });
+  });
+
+  it('서버가 없으면 **연결됐다고 말하지 않는다** — 없는 도구를 찾게 두지 않는다', async () => {
+    const { result } = renderHook(() =>
+      useAcpSession({ runtimeId: 'claude-acp', vaultRoot: '/vault' }),
+    );
+    const first = result.current.start();
+    await waitFor(() => expect(bridge.starts).toBe(1));
+    await act(async () => {
+      bridge.release?.();
+      await first;
+    });
+
+    const call = bridge.sent.find((m) => m.method === 'session/new');
+    const params = call?.params as Record<string, unknown>;
+    const meta = params._meta as { systemPrompt?: { append?: string } } | undefined;
+    expect(meta?.systemPrompt?.append).not.toContain('atlas-vault');
+    // 나머지 규율(왜를 적어라 · 폴더 밖으로 나가지 마라)은 그대로 남는다.
+    expect(meta?.systemPrompt?.append).toContain('`why`');
 
     await act(async () => {
       await result.current.stop();

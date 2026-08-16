@@ -21,6 +21,7 @@ import {
 } from '@/shared/lib/composer-growth';
 import { cn } from '@/shared/lib/cn';
 import { useAcpSession, type AcpEvent } from '@/features/acp-session/model/use-acp-session';
+import { readAcpTrouble } from '@/features/acp-session/model/acp-trouble';
 
 import { VAULT_MCP_SERVER_NAME } from '@/features/acp-session/model/vault-mcp-server';
 
@@ -105,6 +106,7 @@ export function AcpChatPanel({
     status,
     events,
     error,
+    diagnostics,
     pending,
     sessions,
     choices,
@@ -115,6 +117,8 @@ export function AcpChatPanel({
     cancel,
     switchSession,
   } = useAcpSession({ runtimeId, vaultRoot, mcpServers });
+  /** 어댑터가 준 것을 사람이 읽는 갈래로 옮긴다 — 못 알아보면 `unknown`. */
+  const trouble = error ? readAcpTrouble(error) : null;
   const [draft, setDraft] = useState('');
   const [historyOpen, setHistoryOpen] = useState(false);
   /** 작성 칸에 손이 가 있나 — 단축키 안내를 그때만 띄운다. */
@@ -446,13 +450,59 @@ export function AcpChatPanel({
         })}
       </div>
 
+      {/*
+        오류는 **사람의 말 한 문장 + 다음에 할 일**이다.
+
+        ⚠️ 종전에는 어댑터가 준 것을 그대로 붙였다(2026-08-16 소유자 화면):
+        `문제가 생겼어요: {"code":-32603,"message":"Internal error: Failed to
+        authenticate: OAuth session expired…"}`. 소유자: *"이렇게 보여주면
+        사용자가 어떻게 알겠어."* 그 줄에는 무슨 일이 났는지도, 뭘 해야 하는지도
+        사람의 말로는 없다.
+
+        원문은 버리지 않고 **접어 둔다** — 같은 일이 반복될 때 알려 줄 것이
+        필요하고, 어댑터가 남긴 말(stderr)도 그때 같이 나온다.
+      */}
       {error ? (
-        <p
+        <div
           data-testid="acp-chat-error"
-          className="break-keep rounded-chip border border-[color:var(--color-danger-a32)] bg-[color:var(--color-danger-a08)] px-2.5 py-1.5 text-label leading-label text-[color:var(--color-status-danger)]"
+          data-trouble={trouble?.kind}
+          role="alert"
+          className="break-keep rounded-card border border-[color:var(--color-danger-a32)] bg-[color:var(--color-danger-a08)] p-[var(--card-pad)]"
         >
-          {t('errorPrefix')} {error}
-        </p>
+          <p className="text-body font-[var(--font-weight-emphasis)] text-[color:var(--color-status-danger)]">
+            {t(`trouble.${trouble?.kind ?? 'unknown'}.title`)}
+          </p>
+          <p className="mt-1 text-label leading-prose text-[color:var(--color-text-tertiary)]">
+            {t(`trouble.${trouble?.kind ?? 'unknown'}.hint`)}
+          </p>
+          <details className="mt-2">
+            <summary
+              data-testid="acp-chat-error-details"
+              className={controlClass({
+                shape: 'link',
+                size: 'sm',
+                tone: 'muted',
+                hoverInk: 'strong',
+                className: 'list-none',
+              })}
+            >
+              {t('trouble.details')}
+            </summary>
+            <p className="mt-1.5 whitespace-pre-wrap break-all font-mono text-caption leading-caption text-[color:var(--color-text-quaternary)]">
+              {error}
+            </p>
+            {diagnostics.length > 0 ? (
+              <>
+                <p className="mt-2 text-caption leading-caption text-[color:var(--color-text-quaternary)]">
+                  {t('trouble.diagnosticsLabel')}
+                </p>
+                <p className="mt-1 whitespace-pre-wrap break-all font-mono text-caption leading-caption text-[color:var(--color-text-quaternary)]">
+                  {diagnostics.join('\n')}
+                </p>
+              </>
+            ) : null}
+          </details>
+        </div>
       ) : null}
 
       {/*
@@ -833,12 +883,25 @@ function TranscriptEntry({ event }: { event: AcpEvent }) {
       </p>
     );
   }
+  /*
+   * 알림 줄에 남는 것은 **사용자에게 하는 말 하나**뿐이다 (2026-08-16 검수).
+   *
+   * 종전에는 여기로 진단이 다 흘러들어서 대화 한가운데에 이런 것이 대문자
+   * 고정폭으로 찍혔다: `UNPARSABLE:{"JSONRPC":"2.0","ID":7,…` · `SEND-FAILED: …`.
+   * 사람이 읽을 것이 아니고 읽어도 할 일이 없다 — 그것들은 이제 오류 블록의
+   * 「자세히」로 간다.
+   *
+   * 남은 하나(`gate-off`)는 진단이 아니라 **약속에 관한 사실**이다: 이 대화에서는
+   * 폴더 밖을 건드릴 때 대신 물어봐 주지 못한다. 조용히 접어 두면 화면이 지키지
+   * 못할 약속을 계속 하게 된다.
+   */
   return (
     <p
       data-acp-entry="notice"
-      className="break-all font-mono text-caption uppercase tracking-[var(--tracking-caps-10)] text-[color:var(--color-text-quaternary)]"
+      data-notice={event.text}
+      className="break-keep rounded-chip border border-[color:var(--color-amber-source-a30)] bg-[color:var(--color-amber-source-a08)] px-2.5 py-1.5 text-label leading-prose text-[color:var(--color-text-secondary)]"
     >
-      {event.text}
+      {t('notice.gateOff')}
     </p>
   );
 }

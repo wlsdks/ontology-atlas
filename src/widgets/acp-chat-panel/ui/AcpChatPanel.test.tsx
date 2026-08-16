@@ -239,17 +239,54 @@ describe('대화 패널 — 권한 카드가 실제로 막는다', () => {
           { kind: 'reject_once', name: 'Deny', optionId: 'reject' },
           { kind: 'allow_once', name: 'Allow Once', optionId: 'allow' },
         ],
+        /*
+         * ⚠️ 인자 이름은 **`filePath`** 다 — 우리 MCP 서버가 실제로 쓰는 이름
+         * (`mcp/src/index.js` 에 `file_path` 는 0회, `filePath` 는 30회).
+         * 종전 이 검사는 `file_path` 를 손으로 지어 넣었고, 그건 실제 서버가
+         * 절대 만들지 않는 모양이라 **검사는 초록인데 화면은 뚫려 있었다.**
+         */
         toolCall: {
           toolCallId: 'tc10',
           title: 'mcp__atlas-vault__absorb_document',
           kind: 'edit',
-          rawInput: { file_path: '/repo/AGENTS.md' },
+          rawInput: { filePath: '/repo/AGENTS.md', confirm: true },
         },
       },
     });
 
     await waitFor(() => expect(screen.getByTestId('acp-permission-card')).toBeInTheDocument());
     expect(answerFor(81)).toBeUndefined();
+  });
+
+  it('폴더를 훑는 도구도 볼트 밖이면 묻는다 — 인자 이름이 `rootPath` 다', async () => {
+    /*
+     * `analyze_repo_structure` · `index_project` · `infer_imports` 는 파일이
+     * 아니라 **디렉터리**를 받는다. 판정은 결국 「이 경로가 볼트 안인가」이고,
+     * 그 질문에는 폴더에도 답이 있다.
+     */
+    bridge.verdict = 'ask';
+    await bootSession();
+    emit({
+      jsonrpc: '2.0',
+      id: 82,
+      method: 'session/request_permission',
+      params: {
+        sessionId: 's-1',
+        options: [
+          { kind: 'reject_once', name: 'Deny', optionId: 'reject' },
+          { kind: 'allow_once', name: 'Allow Once', optionId: 'allow' },
+        ],
+        toolCall: {
+          toolCallId: 'tc11',
+          title: 'mcp__atlas-vault__analyze_repo_structure',
+          kind: 'other',
+          rawInput: { rootPath: '/somewhere/else' },
+        },
+      },
+    });
+
+    await waitFor(() => expect(screen.getByTestId('acp-permission-card')).toBeInTheDocument());
+    expect(answerFor(82)).toBeUndefined();
   });
 
   it('남의 MCP 도구는 경로가 없으면 그대로 묻는다', async () => {
@@ -755,5 +792,44 @@ describe('대화 패널 — 내 질문과 답이 갈린다', () => {
     await waitFor(() =>
       expect(document.querySelectorAll('[data-turn-start]'), '차례가 바뀌었는데 경계가 없다').toHaveLength(1),
     );
+  });
+});
+
+describe('대화 패널 — 오류는 사람의 말로 말하고 다음 할 일을 준다', () => {
+  it('로그인이 풀린 것을 알아보고, 원문은 접어 둔다', async () => {
+    /*
+     * 2026-08-16 소유자 화면: 이 자리가 JSON-RPC 오류를 통째로 붙여 놓고 있었다.
+     * *"이렇게 보여주면 사용자가 어떻게 알겠어."*
+     */
+    await bootSession();
+    fireEvent.change(screen.getAllByRole('textbox')[0], { target: { value: '안녕' } });
+    fireEvent.click(screen.getByTestId('acp-chat-send'));
+    await waitFor(() =>
+      expect(bridge.sent.some((m) => m.method === 'session/prompt')).toBe(true),
+    );
+
+    const call = [...bridge.sent].reverse().find((m) => m.method === 'session/prompt');
+    emit({
+      jsonrpc: '2.0',
+      id: call?.id,
+      error: {
+        code: -32603,
+        message:
+          'Internal error: Failed to authenticate: OAuth session expired and could not be refreshed',
+        data: { errorKind: 'authentication_failed' },
+      },
+    });
+
+    const alert = await screen.findByTestId('acp-chat-error');
+    // 어느 갈래로 읽었는지가 화면에 남는다 — 밖에서 검사할 수 있게.
+    expect(alert.dataset.trouble).toBe('auth');
+    // 사람이 읽는 제목과 **할 일**을 그 갈래의 키로 낸다.
+    expect(alert.textContent).toContain('trouble.auth.title');
+    expect(alert.textContent).toContain('trouble.auth.hint');
+    // 원문은 버리지 않되 접혀 있다.
+    const details = alert.querySelector('details');
+    expect(details).toBeTruthy();
+    expect(details?.hasAttribute('open')).toBe(false);
+    expect(details?.textContent).toContain('authentication_failed');
   });
 });

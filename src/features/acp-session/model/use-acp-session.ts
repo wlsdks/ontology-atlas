@@ -12,6 +12,7 @@ import {
 } from '@/shared/lib/tauri-acp';
 
 import { GATED_SESSION_MODE } from './runtime-gate';
+import { isDiagnosticStderr } from './acp-trouble';
 import { VAULT_MCP_SERVER_NAME } from './vault-mcp-server';
 import {
   createAcpClient,
@@ -84,12 +85,25 @@ export interface UseAcpSessionOptions {
  * 기본 지시를 갈아치우지 않고 덧붙이기만 한다. 그 도구를 그 도구답게 만드는
  * 것이 그 지시이고, 우리가 그걸 다시 쓸 근거가 없다.
  */
-const VAULT_HANDOFF_PROMPT = [
+const VAULT_HANDOFF_BASE = [
   'You are working inside an Ontology Atlas vault opened in the Atlas app.',
-  'The `atlas-vault` MCP server is already connected to this exact folder — use it to read and write the graph instead of parsing markdown by hand.',
   'Whenever you add or change a relation, put the reason in the `why` field, phrased from what the person actually asked. That reason is the only record of why the graph changed.',
   'Keep your work inside this folder. If something genuinely needs a path outside it, say so before trying.',
-].join(' ');
+];
+/**
+ * ⚠️ **꽂았을 때만 꽂혔다고 말한다** (2026-08-16 검수에서 적발).
+ *
+ * 이 문장은 무조건 붙고 있었다. 그런데 서버 목록이 비는 경우가 실재한다(번들에
+ * 바이너리가 없거나 아직 준비 전) — 그러면 도구가 하나도 없는 세션에 **「이미
+ * 연결돼 있다」고 우기는 지시**를 넣게 된다. 에이전트는 있지도 않은 도구를
+ * 찾다가 이상한 답을 내놓고, 사용자는 왜 그러는지 알 길이 없다.
+ */
+const VAULT_MCP_SENTENCE =
+  'The `atlas-vault` MCP server is already connected to this exact folder — use it to read and write the graph instead of parsing markdown by hand.';
+
+function vaultHandoffPrompt(hasVaultMcp: boolean): string {
+  return (hasVaultMcp ? [VAULT_HANDOFF_BASE[0], VAULT_MCP_SENTENCE, ...VAULT_HANDOFF_BASE.slice(1)] : VAULT_HANDOFF_BASE).join(' ');
+}
 
 /** 아직 아무것도 모를 때의 값. 「없음」과 「안 내놓음」을 같은 화면으로 둔다. */
 const EMPTY_CHOICES: AcpSessionChoices = {
@@ -103,15 +117,39 @@ let eventSeq = 0;
 const nextEventId = () => `acp-evt-${(eventSeq += 1)}`;
 
 /**
- * 진단으로 실어 주는 stderr 줄의 상한. 어댑터는 npx 설치 진행률까지 뱉으므로
- * 전부 실으면 그게 다시 소음이 된다 — 첫 몇 줄이 원인을 말한다.
+ * 모아 두는 stderr 줄의 상한. 어댑터는 설치 진행률까지 뱉으므로 전부 담으면
+ * 그게 다시 소음이 된다 — 첫 몇 줄이 원인을 말한다.
  */
-const STDERR_NOTICE_LIMIT = 6;
+const STDERR_KEEP_LIMIT = 8;
 
 export function useAcpSession({ runtimeId, vaultRoot, mcpServers }: UseAcpSessionOptions) {
   const [status, setStatus] = useState<AcpSessionStatus>('idle');
   const [events, setEvents] = useState<AcpEvent[]>([]);
   const [error, setError] = useState<string | null>(null);
+  /**
+   * 어댑터가 남긴 단서 — **문제가 났을 때만** 화면이 꺼내 본다.
+   * 평소에 보여 주면 그건 진단이 아니라 화면을 먹는 영어 경고다(실측).
+   */
+  const [diagnostics, setDiagnostics] = useState<readonly string[]>([]);
+  /**
+   * 진단 한 줄을 모아 둔다 — **대화에는 안 싣는다.**
+   *
+   * 이 자리에 있던 것들이 실제로 화면에 이렇게 나왔다(2026-08-16 검수):
+   * `UNPARSABLE:{"JSONRPC":"2.0","ID":7,…` · `SEND-FAILED: …` — 대문자 고정폭으로
+   * 대화 한가운데에. 사람이 읽을 것이 아니고, 읽어도 할 일이 없다.
+   */
+  const resetDiagnostics = useCallback(() => {
+    stderrRef.current = [];
+    setDiagnostics([]);
+  }, []);
+  const keepDiagnostic = useCallback((line: string) => {
+    const text = line.trim();
+    if (!text) return;
+    const kept = stderrRef.current;
+    if (kept.length >= STDERR_KEEP_LIMIT) return;
+    kept.push(text);
+    setDiagnostics([...kept]);
+  }, []);
   const [pending, setPending] = useState<PendingPermission | null>(null);
   /** 이 폴더의 지난 대화들. **이 폴더 것만** 담긴다(`keepSessionsInFolder`). */
   const [sessions, setSessions] = useState<AcpSessionSummary[]>([]);
@@ -128,8 +166,8 @@ export function useAcpSession({ runtimeId, vaultRoot, mcpServers }: UseAcpSessio
   const resumeIdRef = useRef<string | null>(null);
   /** 지금 띄우는 중인가 — `clientRef` 는 다 끝난 뒤에야 채워져서 늦다. */
   const startingRef = useRef(false);
-  /** 진단으로 실어 주는 stderr 줄 수 — 어댑터는 설치 진행률까지 뱉는다. */
-  const stderrLinesRef = useRef(0);
+  /** 모아 둔 stderr — 문제가 났을 때만 화면이 꺼내 본다. */
+  const stderrRef = useRef<string[]>([]);
   /**
    * 세대 번호 — `stop()` 이 부를 때마다 오른다.
    *
@@ -266,31 +304,31 @@ export function useAcpSession({ runtimeId, vaultRoot, mcpServers }: UseAcpSessio
         },
       };
 
-      // 새 세션이면 진단 예산도 새로 준다.
-      stderrLinesRef.current = 0;
+      // 새 세션이면 진단도 새로 모은다 — 지난 세션의 단서가 섞이면 오해를 만든다.
+      resetDiagnostics();
       unlistenRef.current = await listenToAcpSession(acpSessionId, {
         onMessage: (line) => onLine?.(line),
         // stderr 는 대화가 아니라 진단이다. 조용히 버리지 않되 말풍선으로도
         // 만들지 않는다 — 어댑터의 설치 로그가 대화에 섞이면 읽을 수 없다.
-        onNotice: (message) => push({ kind: 'notice', id: nextEventId(), text: message }),
+        onNotice: (message) => keepDiagnostic(message),
         /*
-         * ⚠️ **이 줄이 없었다** (2026-08-16 검수에서 적발). 바로 위 주석이
-         * 「조용히 버리지 않는다」고 적어 두고서, 정작 stderr 를 아무도 안 듣고
-         * 있었다 — Rust 는 보내고 있었고 받는 쪽이 없었다.
+         * ⚠️ **모아 두되 화면에 올리지 않는다** (2026-08-16, 두 번 고친 자리).
          *
-         * 그래서 `Authentication required` 도, npx 설치 실패도, 어댑터가 죽으며
-         * 남긴 마지막 말도 전부 사라졌다. 그게 「켜는 중에서 안 넘어간다」를
-         * **설명할 수 없는 상태**로 만든 원인이다.
+         * 처음엔 아무도 안 듣고 있어서 어댑터가 남긴 마지막 말이 전부
+         * 사라졌다 — 「켜는 중에서 안 넘어간다」를 설명할 수 없게 만든 원인.
+         * 그래서 듣게 했더니, 이번엔 **아무 일도 안 났는데** 대화창 맨 위에
+         * 영어 npm 경고 두 문단이 상주했다(소유자 화면):
          *
-         * 첫 줄들만 남긴다 — 어댑터는 설치 진행률 같은 것을 계속 뱉으므로,
-         * 전부 실으면 그게 다시 소음이 된다.
+         *   npm warn Unknown env config "_jsr-registry" …
+         *
+         * 어댑터를 `npx` 로 띄우니 그건 **매번** 나온다. 진단은 문제가 났을 때
+         * 단서이지, 평소에 읽을 것이 아니다. 그래서 규율 둘: 뻔한 소음은 아예
+         * 안 담고(`isDiagnosticStderr`), 담은 것도 **문제가 났을 때만** 보여
+         * 준다(`diagnostics` → 오류 블록의 「자세히」).
          */
         onStderr: (line) => {
-          if (stderrLinesRef.current >= STDERR_NOTICE_LIMIT) return;
-          const text = line.trim();
-          if (!text) return;
-          stderrLinesRef.current += 1;
-          push({ kind: 'notice', id: nextEventId(), text });
+          if (!isDiagnosticStderr(line)) return;
+          keepDiagnostic(line);
         },
         onExit: () => {
           setStatus('exited');
@@ -318,6 +356,8 @@ export function useAcpSession({ runtimeId, vaultRoot, mcpServers }: UseAcpSessio
         return;
       }
 
+      /** 우리가 정말 볼트 서버를 꽂았나 — 자동 허용과 지시문이 둘 다 이 값을 본다. */
+      const hasVaultMcp = (mcpServers?.length ?? 0) > 0;
       const client = createAcpClient(transport, {
         onUpdate: applyUpdate,
         /*
@@ -331,10 +371,10 @@ export function useAcpSession({ runtimeId, vaultRoot, mcpServers }: UseAcpSessio
          * 계약 문구가 이미 그렇게 적혀 있었다: *"안 넘기면 그 자동 허용이
          * 꺼진다 — 없는 것을 있는 척하지 않는다"*.
          */
-        vaultMcpServerName: (mcpServers?.length ?? 0) > 0 ? VAULT_MCP_SERVER_NAME : undefined,
+        vaultMcpServerName: hasVaultMcp ? VAULT_MCP_SERVER_NAME : undefined,
         verdict: (filePath) => acpPermissionVerdict(vaultRoot, filePath),
         askUser,
-        onProtocolNotice: (message) => push({ kind: 'notice', id: nextEventId(), text: message }),
+        onProtocolNotice: (message) => keepDiagnostic(message),
       });
       clientRef.current = client;
 
@@ -353,14 +393,14 @@ export function useAcpSession({ runtimeId, vaultRoot, mcpServers }: UseAcpSessio
             mcpServers,
           });
         } catch {
-          push({ kind: 'notice', id: nextEventId(), text: 'resume-failed' });
+          keepDiagnostic('resume-failed');
         }
         resumeIdRef.current = null;
       }
       session ??= await client.newSession({
         cwd: vaultRoot,
         mcpServers,
-        appendSystemPrompt: VAULT_HANDOFF_PROMPT,
+        appendSystemPrompt: vaultHandoffPrompt(hasVaultMcp),
       });
       sessionIdRef.current = session.sessionId;
 
@@ -387,7 +427,14 @@ export function useAcpSession({ runtimeId, vaultRoot, mcpServers }: UseAcpSessio
            */
           choices = { ...choices, currentModeId: gatedMode };
         } else {
-          push({ kind: 'notice', id: nextEventId(), text: `gate-mode-failed:${gatedMode}` });
+          /*
+           * ⚠️ 이것만은 **진단이 아니라 사용자에게 하는 말**이다. 이 화면이
+           * 「폴더 밖은 먼저 물어본다」고 약속했는데 그 관문이 안 걸렸다는 뜻
+           * 이므로, 조용히 접어 두면 화면이 지키지 못할 약속을 계속 하게 된다.
+           * 그래서 이 한 줄만 대화에 남고, 문구는 화면이 사람 말로 옮긴다.
+           */
+          push({ kind: 'notice', id: nextEventId(), text: 'gate-off' });
+          keepDiagnostic(`gate-mode-failed:${gatedMode}`);
         }
       }
 
@@ -429,7 +476,7 @@ export function useAcpSession({ runtimeId, vaultRoot, mcpServers }: UseAcpSessio
     } finally {
       startingRef.current = false;
     }
-  }, [applyUpdate, askUser, mcpServers, push, runtimeId, vaultRoot]);
+  }, [applyUpdate, askUser, keepDiagnostic, mcpServers, push, resetDiagnostics, runtimeId, vaultRoot]);
 
   /**
    * 대화를 갈아탄다 — 지난 것을 이어 받거나(`sessionId`), 새로 연다(`null`).
@@ -547,6 +594,7 @@ export function useAcpSession({ runtimeId, vaultRoot, mcpServers }: UseAcpSessio
     status,
     events,
     error,
+    diagnostics,
     pending,
     sessions,
     choices,

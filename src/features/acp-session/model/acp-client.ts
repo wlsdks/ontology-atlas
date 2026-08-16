@@ -628,6 +628,36 @@ export function isVaultMcpTool(toolName: string | null, serverName: string): boo
   return toolName.startsWith(`mcp__${serverName}__`);
 }
 
+/**
+ * 요청에 딸려 온 **경로**를 찾는다 — 이름이 도구마다 다르다.
+ *
+ * ## 왜 여러 이름을 보나 (2026-08-16, 두 번째 검수에서 적발)
+ *
+ * 종전에는 `file_path` **하나만** 봤다. 그건 클로드 쪽 내장 도구의 이름이고,
+ * **우리가 꽂아 준 MCP 서버는 그 이름을 한 번도 안 쓴다** — 우리 서버의 인자는
+ * `filePath` 다(실측: `mcp/src/index.js` 에 `file_path` 는 0회, `filePath` 는
+ * 30회). 그래서 우리 도구의 요청은 언제나 「경로를 모름」이 됐고, 바로 앞
+ * 커밋에서 막았다고 적어 둔 그 구멍이 **실제로는 안 막혀 있었다.**
+ *
+ * 더 나쁜 것은 그때 쓴 검사가 `file_path` 를 손으로 지어 넣었다는 것이다 —
+ * 실제 서버가 절대 만들지 않는 모양이라, 검사는 초록인데 화면은 뚫려 있었다.
+ * 이 저장소가 「지어낸 입력으로 통과하는 게이트는 게이트가 아니다」라고 적어
+ * 둔 그 실패다.
+ *
+ * 폴더를 훑는 도구들(`analyze_repo_structure` · `index_project` ·
+ * `infer_imports` · `connect_project_source`)은 파일이 아니라 **디렉터리**를
+ * 받으므로 그 이름(`rootPath`)도 같이 본다. 판정은 결국 「이 경로가 볼트
+ * 안인가」이고, 그 질문에는 파일이든 폴더든 답이 있다.
+ */
+function readPathArg(rawInput: Record<string, unknown>): string | null {
+  const KEYS = ['file_path', 'filePath', 'rootPath', 'root_path', 'path', 'targetPath'];
+  for (const key of KEYS) {
+    const value = rawInput[key];
+    if (typeof value === 'string' && value.trim()) return value;
+  }
+  return null;
+}
+
 export function toPermissionRequest(params: Record<string, unknown>): AcpPermissionRequest {
   const toolCall = asRecord(params.toolCall);
   const rawInput = asRecord(toolCall.rawInput);
@@ -638,7 +668,7 @@ export function toPermissionRequest(params: Record<string, unknown>): AcpPermiss
     toolKind: typeof toolCall.kind === 'string' ? toolCall.kind : null,
     // 제목이 아니라 이 값으로 판정한다 — 제목은 볼트 안이면 상대 경로,
     // 밖이면 절대 경로라서 문구가 바뀌는 날 정책이 조용히 뒤집힌다.
-    filePath: typeof rawInput.file_path === 'string' ? rawInput.file_path : null,
+    filePath: readPathArg(rawInput),
     options: rawOptions.flatMap((entry) => {
       const option = asRecord(entry);
       const optionId = typeof option.optionId === 'string' ? option.optionId : null;
