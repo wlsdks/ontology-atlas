@@ -13,6 +13,7 @@
 
 import { COLORS } from '../lib/colors.mjs';
 import { callMcpTool } from '../lib/mcp-call.mjs';
+import { describeExportOmissions } from '../lib/export-omissions.mjs';
 import { resolveVaultRoot } from '../lib/resolve-vault.mjs';
 import { buildGraphML, buildJsonLd } from '../lib/interop-format.mjs';
 import {
@@ -92,7 +93,57 @@ export async function runExport(args) {
     `${COLORS.dim}exported ${parsed.format} · ${artifact.nodeCount ?? artifact.nodes.length} nodes · ` +
       `${artifact.edgeCount ?? artifact.edges.length} edges · graphHash ${hash}${COLORS.reset}\n`,
   );
+
+  /*
+   * **안 담긴 것도 말한다** (2026-08-17 실측).
+   *
+   * 노드와 관계는 정말 다 나간다. 그런데 우리 볼트의 관계 이유 7개
+   * (`relation_notes`)는 하나도 안 나가고, 구현 경로도 마찬가지다. 이 저장소가
+   * 스스로 적어 둔 말이 있다 — *"근거 없는 엣지는 마인드맵 선이지 온톨로지
+   * 주장이 아니다."* Protégé 로 옮긴 사람은 「80 노드 · 174 관계」를 보고
+   * 다 가져온 줄 안다.
+   *
+   * 담는 칸 목록을 여기 손으로 적지 않는다 — 스키마가 늘면 조용히 낡는다.
+   * **방금 내놓은 payload 에서 뽑는다.**
+   */
+  const omissions = describeExportOmissions({
+    nodes: artifact.nodes,
+    edges: artifact.edges,
+    carriedKeys: carriedKeysOf(parsed.format, payload),
+    // 오늘 두 형식 모두 엣지에 이유를 안 싣는다. 담게 되면 여기만 고친다.
+    carriesEdgeRationale: false,
+  });
+  if (omissions.sentence) {
+    process.stderr.write(`${COLORS.dim}${omissions.sentence}${COLORS.reset}\n`);
+  }
   return 0;
+}
+
+/**
+ * 이 형식이 실제로 담은 노드 칸들 — **내놓은 결과에서 뽑는다.**
+ * 목록을 손으로 적으면 스키마가 늘 때 조용히 낡고, 그러면 「다 담았다」고
+ * 말하면서 안 담게 된다.
+ */
+function carriedKeysOf(format, payload) {
+  // `json` 은 컴파일 산출물 원본이라 잃는 것이 없다.
+  if (format === 'json') return null;
+  if (format === 'jsonld') {
+    try {
+      const graph = JSON.parse(payload)['@graph'];
+      const keys = new Set();
+      for (const node of Array.isArray(graph) ? graph : []) {
+        for (const key of Object.keys(node ?? {})) keys.add(key);
+      }
+      return [...keys];
+    } catch {
+      // 못 읽으면 아무것도 단정하지 않는다 — 틀린 손실 목록보다 침묵이 낫다.
+      return null;
+    }
+  }
+  if (format === 'graphml') {
+    return [...new Set([...payload.matchAll(/<key[^>]*attr\.name="([^"]+)"/g)].map((m) => m[1]))];
+  }
+  return null;
 }
 
 function parseArgs(args) {
