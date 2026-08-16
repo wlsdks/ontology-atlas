@@ -164,6 +164,7 @@ const STORAGE_KEY_REGISTRY: StorageEntry[] = [
   { key: "demo:gesture-hint:dismissed:v1", kind: "storage", scope: "global", note: "제스처 힌트 1회성" },
   { key: "demo:sample-node-hint-dismissed:v1", kind: "storage", scope: "global", note: "샘플 노드 힌트 1회성" },
   { key: "demo:first-run-starter-dismissed:v1", kind: "storage", scope: "global", note: "첫 실행 카드 1회성(세션)" },
+  { key: "demo:vault-start-steps-dismissed:v1", kind: "storage", scope: "global", note: "첫 걸음 카드 1회성(세션) — 마지막 걸음을 지나면 거둔다" },
   { key: "vault-open-guide:auto:v1", kind: "storage", scope: "global", note: "폴더 열기 안내 1회성" },
   { key: "guided-tour:v1", kind: "storage", scope: "global", note: "투어 완료 표시" },
   { key: "guided-tour:${destination}:v1", kind: "storage", scope: "global", note: "목적지별 투어 완료 표시" },

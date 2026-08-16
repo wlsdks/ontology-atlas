@@ -2539,30 +2539,7 @@
       "pastReadOnlyNotice": "This folder is open read-only, so this walk isn't being kept. Saving any document will ask for write access."
     },
     "startChecklist": {
-      "kicker": "{done}/{total} done",
-      "title": "Start checklist",
-      "subtitle": "Fastest with an AI at your side: follow the steps and the map comes alive.",
-      "stepDocs": "Put the {count} documents in this folder on the map",
-      "stepAgent": "Let AI tools read and grow this map with you",
-      "agentHintReady": "The connection setup is in this folder: AI tools read and grow this map with you.",
-      "agentHintPending": "Press \"Create starter docs\" and the connection setup is created too, so AI tools can read and grow this map.",
-      "ctaCreate": "Create",
-      "ctaAgent": "Connect an AI tool",
-      "ctaAgentChat": "Open chat",
-      "stepAnalyze": "Let AI read your code and draft the map",
-      "stepManual": "Or start by hand (optional)",
-      "ctaAnalyze": "Copy the AI instructions",
-      "ctaAnalyzeAgain": "Copy again",
-      "ctaAnalyzeFailed": "Copy failed: try again",
-      "analyzeNeedsAgent": "Connect an AI tool above first: that's where you'll paste this",
-      "analyzePromise": "This only proposes candidates: nothing is written to your folder before you approve",
-      "ctaAnalyzeCopied": "Copied: paste into your AI tool",
-      "analyzePrompt": "This folder is an ontology-atlas folder. Use the /ontology-bootstrap skill (or MCP index_project → analyze_repo_structure) to analyze my codebase, propose the project/domain/capability ontology, and write only what I approve to the folder.",
-      "stepScaffold": "Create starter docs (one click)",
-      "ctaScaffold": "Create for me",
-      "ctaScaffoldBusy": "Creating…",
-      "scaffoldToast": "Created {concepts} ontology concepts and {configs} agent config files",
-      "stepAgentFound": "{runtime} connected"
+      "scaffoldToast": "Created {concepts} ontology concepts and {configs} agent config files"
     },
     "recentChangesNeedsVault": {
       "eyebrow": "Recent changes",
@@ -2577,6 +2554,45 @@
       "body": "You're looking at the sample map, so it can't be edited. Open your folder and you can create items right here: each one lands as a markdown file in that folder.",
       "action": "Open my folder",
       "close": "Close"
+    },
+    "startSteps": {
+      "title": "Getting started",
+      "progress": "{current} / {total}",
+      "skip": "Skip",
+      "back": "Back",
+      "agent": {
+        "title": "Connect an AI agent",
+        "bodyFound": "Found {runtime} on this machine. You can chat with it right here and fill in the map together.",
+        "bodyMissing": "If you use Claude Agent or Codex, you can chat with it right here and fill in the map. Everything else works without connecting.",
+        "ctaFound": "Open the chat",
+        "ctaMissing": "Pick a tool"
+      },
+      "analyze": {
+        "title": "Let AI draft the map from your code",
+        "bodyAgent": "It reads this folder and proposes the projects, domains and capabilities it finds. Nothing is written to the folder until you approve it.",
+        "bodyCopy": "Copy the instruction and paste it into the AI tool you already use. Nothing is written to the folder until you approve it.",
+        "ctaAgent": "Ask the agent",
+        "ctaCopy": "Copy the instruction",
+        "ctaCopied": "Copied. Paste it into your tool",
+        "ctaFailed": "Copy failed. Try again"
+      },
+      "starter": {
+        "title": "Create the starter documents",
+        "body": "This folder is still empty. We can create five skeleton documents and the AI connection settings in one go. You can edit or delete them later.",
+        "cta": "Create starter documents",
+        "ctaBusy": "Creating…"
+      },
+      "manual": {
+        "title": "Start by hand",
+        "body": "You can start without AI. Create your first project and the map grows from there.",
+        "cta": "Create the first project"
+      },
+      "docs": {
+        "title": "Start from the documents in this folder",
+        "body": "Found {count} documents here that are not on the map yet. They can go on the map as they are.",
+        "cta": "Build the map from my documents"
+      },
+      "next": "Next"
     }
   },
   "fullDetailA1": {

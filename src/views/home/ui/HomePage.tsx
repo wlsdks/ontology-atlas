@@ -37,8 +37,11 @@ import {
 import {
   FirstRunReadout,
   SampleNodeHint,
+  readFirstRunStarterDismissed,
   useFirstRunSampleModeSettled,
+  writeFirstRunStarterDismissed,
 } from "@/features/first-run-starter";
+import { VAULT_START_STEPS_DISMISSED_KEY } from "@/widgets/topology-controls";
 import { useNavRailContextHrefs, useNavRailSettingsSlot } from "@/widgets/app-nav-rail";
 import dynamic from "next/dynamic";
 import { ProjectDrawer } from "@/widgets/project-drawer";
@@ -84,8 +87,8 @@ const TopologyEmptyState = dynamic(
   () => import("@/widgets/topology-controls").then((m) => m.TopologyEmptyState),
   { ssr: false },
 );
-const VaultStartChecklist = dynamic(
-  () => import("@/widgets/topology-controls").then((m) => m.VaultStartChecklist),
+const VaultStartSteps = dynamic(
+  () => import("@/widgets/topology-controls").then((m) => m.VaultStartSteps),
   { ssr: false },
 );
 const ShortcutSheet = dynamic(
@@ -2657,6 +2660,42 @@ export function HomePage() {
     hasAskIntent: Boolean(askPrefill),
   });
 
+  /**
+   * 이 폴더를 분석하라는 지시 — **볼트 경로를 아는 빌더**가 만든다. i18n 문자열로
+   * 두면 경로가 없어서, 에이전트가 어느 폴더를 보라는 것인지 문장만으로는 모른다.
+   */
+  const analyzePrompt = useMemo(
+    () =>
+      buildAgentAnalyzePrompt({
+        vaultPath:
+          (vault.handle ? getTauriVaultRootPath(vault.handle) : null) ??
+          vault.handle?.name ??
+          null,
+      }),
+    [vault.handle],
+  );
+
+  /**
+   * 그 지시를 **대화 작성 칸에 앉힌다.** 보내는 것은 여전히 사람이 한다 —
+   * 노드의 「말로 시키기」와 같은 계약이고, 같은 상태를 쓴다.
+   */
+  const sendAnalyzeToAgent = useCallback(() => {
+    setVaultAgentPrefill({ text: analyzePrompt, nonce: Date.now() });
+    openVaultAgent();
+  }, [analyzePrompt, openVaultAgent]);
+
+  /**
+   * 첫 걸음 카드를 거둔다 — 마지막 걸음을 지났다는 뜻이다. 세션 단위라 앱을
+   * 새로 열면 다시 안내한다.
+   */
+  const [startStepsDismissed, setStartStepsDismissed] = useState(() =>
+    readFirstRunStarterDismissed(VAULT_START_STEPS_DISMISSED_KEY),
+  );
+  const dismissStartSteps = useCallback(() => {
+    writeFirstRunStarterDismissed(VAULT_START_STEPS_DISMISSED_KEY);
+    setStartStepsDismissed(true);
+  }, []);
+
   /*
    * 스스로 여는 것도 **같은 문**을 탄다. 여기 있는 이유는 위 `openVaultAgent`
    * 가 실행기 상태를 읽어야 해서다 — 이 효과가 갈래를 따로 고르면 그 순간
@@ -3275,10 +3314,6 @@ export function HomePage() {
     }
   }, [vault, toast, t, activeLocale]);
 
-  const checklistProjectCount = useMemo(
-    () => ontologyInsight?.nodes.filter((node) => node.kind === "project").length ?? 0,
-    [ontologyInsight],
-  );
   // Guardian I-1 — 도메인 크기 단일 진실원(그래프 BFS). INDEX 트리 행과
   // /projects·인사이트가 같은 숫자를 말하게 한다.
   const indexDomainCensus = useMemo(
@@ -4654,16 +4689,14 @@ export function HomePage() {
                    * `docsFoundCount`). 화면을 새로 만든 게 아니라 이미 있던
                    * 화면에 도달하게 한 것이다 — 팝업 신설 0.
                    */
-                  canCreateNode ? (
-                    <VaultStartChecklist
-                      projectCount={checklistProjectCount}
-                      relationCount={topologyTotalRelations}
+                  canCreateNode && !startStepsDismissed ? (
+                    <VaultStartSteps
                       agentConnected={agentConnect.status.kind === "connected"}
+                      acpRuntimeLabel={acpRuntimeLabel}
                       onCreateNode={openCreateNodeWithKind}
-                      // '기존 폴더 선택'으로 빈 폴더를 연 사용자에게 '빈
-                      // 폴더로 새로 시작' 과 같은 스타터를 버튼으로 제공한다
-                      // (2026-07-24). 문서가 이미 있으면 미전달 → 종전
-                      // '직접 만들기' 행 유지.
+                      // '기존 폴더 선택'으로 빈 폴더를 연 사용자에게 '빈 폴더로
+                      // 새로 시작' 과 같은 스타터를 버튼으로 제공한다
+                      // (2026-07-24). 문서가 이미 있으면 미전달.
                       onScaffoldStarter={
                         (vault.manifest?.docs.length ?? 0) === 0
                           ? handleScaffoldStarter
@@ -4671,9 +4704,9 @@ export function HomePage() {
                       }
                       scaffolding={starterScaffolding}
                       /*
-                       * 문서가 있는 폴더면 1단이 「내 문서 N개로 지도 만들기」로
-                       * 바뀐다 — 빈 폴더의 1순위(에이전트 연결)는 빈 폴더 맥락의
-                       * 지시였고, 여기서는 사용자가 이미 가진 것이 첫 걸음이다.
+                       * 문서가 있는 폴더면 그것이 첫 걸음이다 — 빈 폴더의
+                       * 1순위(에이전트 연결)는 빈 폴더 맥락의 순서였고, 이미
+                       * 가진 것이 있는 사람에게 첫 걸음은 그 가진 것이다.
                        */
                       docsFoundCount={bootstrapPlan?.elements.length ?? 0}
                       onStartFromDocs={
@@ -4686,35 +4719,29 @@ export function HomePage() {
                        * 문자열이라 경로가 없었고, 그래서 에이전트가 어느 폴더를
                        * 보라는 것인지 문장만으로는 알 수 없었다.
                        */
-                      analyzePrompt={buildAgentAnalyzePrompt({
-                        vaultPath:
-                          (vault.handle ? getTauriVaultRootPath(vault.handle) : null) ??
-                          vault.handle?.name ??
-                          null,
-                      })}
-                      // C9 — 힌트가 실제 `.mcp.json` 존재를 반영하도록 실파일
-                      // 상태를 넘긴다("이미 준비됨" 허위 단언 제거).
-                      mcpConfigReady={vault.agentConfigStatus?.mcpJson ?? false}
+                      analyzePrompt={analyzePrompt}
+                      /*
+                       * 붙여넣을 곳이 **이 앱 안에** 있으면 복사를 시키지 않는다
+                       * (2026-08-16 소유자: *"두번짼 뭔지도 모르겠고"*). 지시를
+                       * 대화 작성 칸에 앉히고, 보내는 것은 여전히 사람이 한다.
+                       */
+                      onSendAnalyzeToAgent={
+                        agentChatUsesRuntime ? sendAnalyzeToAgent : null
+                      }
                       // 2026-08-16 소유자 실보고 — 카드가 INDEX 오른쪽 가장자리와
                       // 겹쳐 보였다. INDEX 는 지도 칼럼을 좁히지 않고 그 **위에
                       // 뜨므로**(오른쪽 에이전트 패널은 flex 형제라 실제로 좁힌다)
                       // 카드의 중앙 계산에서 혼자 빠진다. 그 폭을 알려 준다.
                       indexExpanded={renderedIndexState === "expanded"}
-                      acpRuntimeLabel={acpRuntimeLabel}
+                      onFinish={dismissStartSteps}
                       /*
-                       * 같은 문이 상황에 따라 다른 데로 간다 — 그 단에 **남아
-                       * 있는 일**로.
-                       *
-                       * 찾은 것이 있으면 남은 일은 「말 걸기」라 대화가 열린다.
-                       * 없으면 남은 일은 「어느 도구를 쓸지 고르기」이고, 그
-                       * 화면은 설정의 **실행기** 칸이다 — 종전에는 밖의 도구에
-                       * 이 폴더를 알려 주는 `agent` 칸으로 보냈는데, 그건 다른
-                       * 일이라 사용자가 엉뚱한 화면에서 찾게 된다(2026-08-16
-                       * 소유자 실보고).
+                       * 같은 문이 상황에 따라 다른 데로 간다 — 그 걸음에 **남아
+                       * 있는 일**로. 찾은 것이 있으면 대화가 열리고, 없으면 어느
+                       * 도구를 쓸지 고르는 화면(설정의 실행기 칸)이 열린다.
                        */
                       onOpenAgentConnect={
                         acpRuntime
-                          ? () => setAcpChatOpen(true)
+                          ? () => openVaultAgent()
                           : () => requestSettingsView("runtimes")
                       }
                     />
