@@ -13,6 +13,26 @@ const dmgNames = [
 const dmgBody = (dmgName) => Buffer.from(`fake dmg bytes for ${dmgName}`);
 const dmgHash = (dmgName) => crypto.createHash("sha256").update(dmgBody(dmgName)).digest("hex");
 const validChecksum = (dmgName) => `${dmgHash(dmgName)}  ${dmgName}\n`;
+const windowsName = "ontology-atlas_0.1.0_windows_x64-setup.exe";
+const windowsBody = (name = windowsName) => Buffer.from(`fake Windows installer bytes for ${name}`);
+
+function defaultWindowsAssets(tagName = "v0.1.0") {
+  const name = `ontology-atlas_${tagName.replace(/^v/, "")}_windows_x64-setup.exe`;
+  const body = windowsBody(name);
+  const digest = crypto.createHash("sha256").update(body).digest("hex");
+  return [
+    { name, body },
+    { name: `${name}.sha256`, body: `${digest}  ${name}\n` },
+  ];
+}
+
+function releaseExtraAssets(extraAssets = [], includeWindows = true, tagName = "v0.1.0") {
+  const assetsByName = new Map(
+    (includeWindows ? defaultWindowsAssets(tagName) : []).map((asset) => [asset.name, asset]),
+  );
+  for (const asset of extraAssets) assetsByName.set(asset.name, asset);
+  return Array.from(assetsByName.values());
+}
 
 async function withServer(handler, run) {
   const server = http.createServer(handler);
@@ -28,13 +48,20 @@ async function withServer(handler, run) {
   }
 }
 
-function releasePayload(baseUrl, checksumTextFor = validChecksum, names = dmgNames, tagName = "v0.1.0", extraAssets = []) {
+function releasePayload(
+  baseUrl,
+  checksumTextFor = validChecksum,
+  names = dmgNames,
+  tagName = "v0.1.0",
+  extraAssets = [],
+  includeWindows = true,
+) {
   return [
     {
       tag_name: tagName,
       draft: false,
       prerelease: false,
-      assets: extraAssets.map((asset) => ({
+      assets: releaseExtraAssets(extraAssets, includeWindows, tagName).map((asset) => ({
         name: asset.name,
         browser_download_url: `${baseUrl}/download/${asset.name}`,
         url: `${baseUrl}/asset-api/${asset.name}`,
@@ -63,6 +90,7 @@ function makeHandler({
   dmgContentLength = "123",
   requireAuth = false,
   extraAssets = [],
+  includeWindows = true,
 } = {}) {
   return (req, res) => {
     if (req.url === "/repos/wlsdks/ontology-atlas/releases?per_page=20") {
@@ -72,15 +100,15 @@ function makeHandler({
         return;
       }
       res.writeHead(200, { "Content-Type": "application/json" });
-      res.end(JSON.stringify(releasePayload(`http://${req.headers.host}`, checksumTextFor, names, tagName, extraAssets)));
+      res.end(JSON.stringify(releasePayload(`http://${req.headers.host}`, checksumTextFor, names, tagName, extraAssets, includeWindows)));
       return;
     }
     if (req.url === `/repos/wlsdks/ontology-atlas/releases/tags/${tagName}`) {
       res.writeHead(200, { "Content-Type": "application/json" });
-      res.end(JSON.stringify(releasePayload(`http://${req.headers.host}`, checksumTextFor, names, tagName, extraAssets)[0]));
+      res.end(JSON.stringify(releasePayload(`http://${req.headers.host}`, checksumTextFor, names, tagName, extraAssets, includeWindows)[0]));
       return;
     }
-    const extra = extraAssets.find(
+    const extra = releaseExtraAssets(extraAssets, includeWindows, tagName).find(
       (asset) => req.url === `/download/${asset.name}` || req.url === `/asset-api/${asset.name}`,
     );
     if (extra) {
@@ -183,6 +211,7 @@ test("download release verifier checks reachable DMG and checksum contents", asy
     assert.match(stdout, /exposes reachable public macOS download assets/);
     assert.match(stdout, new RegExp(`/download/${dmgNames[0]}`));
     assert.match(stdout, new RegExp(`/download/${dmgNames[1]}`));
+    assert.match(stdout, new RegExp(`/download/${windowsName}`));
   });
 });
 
@@ -209,6 +238,7 @@ test("download release verifier help describes the two architecture contract", a
   assert.match(stdout, /Intel/);
   assert.match(stdout, /x64/);
   assert.match(stdout, /exactly one DMG per architecture/);
+  assert.match(stdout, /one Windows x64 setup executable/);
   assert.match(stdout, /matching \.sha256 checksums/);
 });
 
@@ -234,6 +264,54 @@ test("download release verifier rejects DMGs whose bytes do not match the checks
       },
     );
   });
+});
+
+test("download release verifier rejects Windows installers whose bytes do not match the checksum", async () => {
+  await withServer(
+    makeHandler({
+      extraAssets: [{ name: windowsName, body: Buffer.from("tampered Windows installer") }],
+    }),
+    async (baseUrl) => {
+      await assert.rejects(
+        runVerifier(baseUrl),
+        (error) => {
+          assert.match(error.stderr, /windows_x64-setup\.exe SHA-256 .* does not match checksum/);
+          return true;
+        },
+      );
+    },
+  );
+});
+
+test("download release verifier requires exactly one Windows installer", async () => {
+  await withServer(makeHandler({ includeWindows: false }), async (baseUrl) => {
+    await assert.rejects(
+      runVerifier(baseUrl),
+      (error) => {
+        assert.match(error.stderr, /exactly one ontology-atlas_<version>_windows_x64-setup\.exe/);
+        assert.match(error.stderr, /found 0/);
+        return true;
+      },
+    );
+  });
+});
+
+test("download release verifier requires the Windows checksum sibling", async () => {
+  await withServer(
+    makeHandler({
+      includeWindows: false,
+      extraAssets: [{ name: windowsName, body: windowsBody() }],
+    }),
+    async (baseUrl) => {
+      await assert.rejects(
+        runVerifier(baseUrl),
+        (error) => {
+          assert.match(error.stderr, /is missing .*windows_x64-setup\.exe\.sha256/);
+          return true;
+        },
+      );
+    },
+  );
 });
 
 test("download release verifier requires Apple Silicon and Intel assets", async () => {

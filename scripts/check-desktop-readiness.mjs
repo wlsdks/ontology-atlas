@@ -674,13 +674,16 @@ if (
   !downloadReleaseVerifier.includes("aarch64|x64|universal") &&
   downloadReleaseVerifier.includes("duplicate macOS DMG assets") &&
   downloadReleaseVerifier.includes("Keep exactly one DMG per architecture") &&
+  downloadReleaseVerifier.includes("WINDOWS_NAME_PATTERN") &&
+  downloadReleaseVerifier.includes("exactly one ontology-atlas_<version>_windows_x64-setup.exe") &&
+  downloadReleaseVerifier.includes("verifyArtifactHash(windowsInstaller") &&
   downloadReleaseVerifier.includes("requestSha256") &&
   downloadReleaseVerifier.includes("does not match checksum")
 ) {
-  pass("desktop download verifier requires explicit one-per-architecture Apple Silicon and Intel DMGs with checksum byte verification");
+  pass("desktop download verifier re-downloads and hashes the required macOS and Windows installers");
 } else {
   fail(
-    "scripts/check-macos-download-release.mjs must require explicit one-per-architecture aarch64 and x64 ontology-atlas DMG assets, reject unsupported names such as universal/arm64/Ontology Atlas .dmg files, reject duplicate architecture DMGs, verify DMG filename versions match the release tag, verify downloaded bytes match checksums, and let --allow-draft find tagged draft pre-publish assets",
+    "scripts/check-macos-download-release.mjs must require explicit one-per-architecture aarch64 and x64 ontology-atlas DMGs plus exactly one Windows x64 setup executable, reject unsupported or duplicate DMGs, verify artifact filename versions match the release tag, re-download macOS and Windows bytes to match their checksums, and let --allow-draft find tagged draft pre-publish assets",
   );
 }
 

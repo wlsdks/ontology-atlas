@@ -140,7 +140,7 @@ test("desktop readiness check proves Tauri macOS shell prerequisites", () => {
   );
   assert.match(
     result.stdout,
-    /✓ desktop download verifier requires explicit one-per-architecture Apple Silicon and Intel DMGs with checksum byte verification/,
+    /✓ desktop download verifier re-downloads and hashes the required macOS and Windows installers/,
   );
   assert.match(
     result.stdout,

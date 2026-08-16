@@ -40,6 +40,43 @@
 **상태**: 유효 / 뒤집힘(→ 링크) / 반증됨(관측: …)
 ```
 
+## 2026-08-17 (34) — 게시된 Windows 설치 파일도 다시 받아 해시한다
+
+**소집**: 단독 PO 패스 + Sol xhigh 독립 보안 검토 · **트리거**: 공개 릴리스
+무결성 검증 공백 · **루브릭**: 20/24 (치명적 0: 없음)
+
+**관찰된 현상**: macOS DMG는 `desktop:verify-download`가 게시 자산을 실제로
+다시 받아 SHA-256을 계산했지만, Windows 경로는 `.exe.sha256`의 문자열만 읽었다.
+따라서 체크섬 파일은 그대로 두고 공개 `.exe` 바이트만 바꾼 fixture가 기존
+검증기를 통과했다. 실제 공개 자산 변조는 관측하지 않았고, 확인된 것은 자동
+검증 공백이다.
+
+**결정**:
+
+1. 같은 공개·draft 검증기가 Windows x64 installer를 정확히 한 개 요구하고,
+   릴리스 태그와 파일 버전을 대조한다.
+2. sibling `.exe.sha256`을 읽은 뒤 installer를 실제 GET해 SHA-256을 다시
+   계산한다. 빈 파일, 누락된 체크섬, 바이트 불일치는 fail-closed 한다.
+3. 기존 macOS DMG·draft·prerelease·updater 검증은 그대로 둔다.
+4. 외부 Action SHA 고정과 artifact attestation은 별도 공급망 슬라이스로 남긴다.
+
+**검증**: 새 변조 fixture는 구현 전 `Missing expected rejection`으로 RED였고,
+구현 뒤 정상 Windows pair·누락·변조와 기존 macOS/updater 전체 스위트가
+GREEN이었다.
+
+**적용 규칙**: 체크섬 문자열이 아니라 배포된 바이트를 검증한다 · 한 슬라이스에
+한 신뢰 경계만 닫는다.
+**서명**: 진안 — 소유자, Codex — TDD·구현, Sol xhigh — 독립 우선순위 검토.
+
+**기록된 반대**: verifier 이름이 역사적으로 `check-macos-*`라 Windows 책임이
+숨는다. 지금 이름까지 바꾸면 package script·release status·문서 참조를 넓게
+흔들어 무결성 수정의 검증면을 키운다.
+**반증 조건**: 다음 유지보수에서 Windows 검증이 빠지거나 운영자가 macOS 전용으로
+오해한다. 그러면 동작을 바꾸지 않는 별도 rename 슬라이스로 일반 이름을 준다.
+**재검토**: 다음 태그 릴리스 또는 위 관측 1건.
+
+**상태**: 유효
+
 ## 2026-08-17 (33) — 「Finder 에서 보기」가 프로그램을 실행할 수 있었다
 
 **소집**: 단독 패스 · **트리거**: 밖에서 쓰는 약속 변경(볼트 루트 거절 규칙
