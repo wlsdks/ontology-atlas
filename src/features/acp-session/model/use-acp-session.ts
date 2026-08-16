@@ -148,6 +148,16 @@ const STDERR_KEEP_LIMIT = 8;
 
 export function useAcpSession({ runtimeId, vaultRoot, mcpServers }: UseAcpSessionOptions) {
   const [status, setStatus] = useState<AcpSessionStatus>('idle');
+  /*
+   * 상태를 ref 로도 붙든다 — 어댑터가 죽는 순간(`onExit`)은 렌더 밖이라
+   * 클로저에 갇힌 옛 값을 보게 된다. 그때 필요한 것은 **그 순간의** 상태다:
+   * 차례가 도는 중이었나(=답하다 죽었나), 아니면 그냥 끝났나.
+   */
+  const statusRef = useRef<AcpSessionStatus>('idle');
+  const setStatusTracked = useCallback((next: AcpSessionStatus) => {
+    statusRef.current = next;
+    setStatus(next);
+  }, []);
   const [events, setEvents] = useState<AcpEvent[]>([]);
   const [error, setError] = useState<string | null>(null);
   /**
@@ -306,7 +316,7 @@ export function useAcpSession({ runtimeId, vaultRoot, mcpServers }: UseAcpSessio
     const generation = generationRef.current;
     /** 내가 시작한 뒤에 누가 닫았나. */
     const stale = () => generationRef.current !== generation;
-    setStatus('starting');
+    setStatusTracked('starting');
     setError(null);
     try {
       const acpSessionId = await startAcpSession(runtimeId, vaultRoot);
@@ -369,7 +379,21 @@ export function useAcpSession({ runtimeId, vaultRoot, mcpServers }: UseAcpSessio
           keepDiagnostic(line);
         },
         onExit: () => {
-          setStatus('exited');
+          /*
+           * ⚠️ **답하다 죽은 것과 다 끝난 것은 다른 말이다** (2026-08-17).
+           *
+           * 종전에는 어느 쪽이든 상태만 `exited` 가 됐고, 화면은 작은 칩에
+           * 「끝남」이라고만 적었다. 반쯤 답하다 죽어도 **정상 종료와 같은
+           * 화면**이라, 사용자는 그게 답의 전부인 줄 안다.
+           *
+           * 그래서 **차례가 도는 중에** 죽었으면 그렇게 말한다. 이건 진단이
+           * 아니라 「받은 것이 전부다」라는 사실이고, 접어 두면 사용자가 없는
+           * 답을 기다리거나 잘린 답을 온전한 답으로 읽는다.
+           */
+          if (statusRef.current === 'thinking') {
+            push({ kind: 'notice', id: nextEventId(), text: 'died-mid-turn' });
+          }
+          setStatusTracked('exited');
           // 끝난 세션에 답을 기다리는 카드가 떠 있으면 거절로 닫는다.
           pendingResolverRef.current?.(null);
           pendingResolverRef.current = null;
@@ -480,7 +504,7 @@ export function useAcpSession({ runtimeId, vaultRoot, mcpServers }: UseAcpSessio
 
       if (!disposedRef.current) {
         setChoices(choices);
-        setStatus('ready');
+        setStatusTracked('ready');
       }
       // 목록은 세션이 선 뒤에 채운다 — 화면이 뜨는 프레임을 목록이 붙잡지 않게.
       void client
@@ -493,7 +517,7 @@ export function useAcpSession({ runtimeId, vaultRoot, mcpServers }: UseAcpSessio
         });
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err));
-      setStatus('error');
+      setStatusTracked('error');
       /*
        * ⚠️ **띄우다 실패했으면 띄운 것을 끈다** (2026-08-16 검수에서 적발).
        * 종전에는 상태만 `error` 로 바꾸고 끝냈는데, 실패 지점에 따라 자식
@@ -516,7 +540,7 @@ export function useAcpSession({ runtimeId, vaultRoot, mcpServers }: UseAcpSessio
     } finally {
       startingRef.current = false;
     }
-  }, [applyUpdate, askUser, keepDiagnostic, mcpServers, push, resetDiagnostics, runtimeId, vaultRoot]);
+  }, [applyUpdate, askUser, keepDiagnostic, mcpServers, push, resetDiagnostics, runtimeId, vaultRoot, setStatusTracked]);
 
   /**
    * 대화를 갈아탄다 — 지난 것을 이어 받거나(`sessionId`), 새로 연다(`null`).
@@ -565,16 +589,16 @@ export function useAcpSession({ runtimeId, vaultRoot, mcpServers }: UseAcpSessio
       const sessionId = sessionIdRef.current;
       if (!client || !sessionId || !text.trim()) return;
       push({ kind: 'user', id: nextEventId(), text });
-      setStatus('thinking');
+      setStatusTracked('thinking');
       try {
         await client.prompt(sessionId, [{ type: 'text', text }]);
-        if (!disposedRef.current) setStatus('ready');
+        if (!disposedRef.current) setStatusTracked('ready');
       } catch (err) {
         setError(err instanceof Error ? err.message : String(err));
-        setStatus('error');
+        setStatusTracked('error');
       }
     },
-    [push],
+    [push, setStatusTracked],
   );
 
   const cancel = useCallback(() => {
@@ -606,8 +630,8 @@ export function useAcpSession({ runtimeId, vaultRoot, mcpServers }: UseAcpSessio
     acpSessionRef.current = null;
     sessionIdRef.current = null;
     if (acpSessionId) await stopAcpSession(acpSessionId);
-    setStatus('idle');
-  }, []);
+    setStatusTracked('idle');
+  }, [setStatusTracked]);
 
   /*
    * 최신 것을 ref 에 물려 둔다 — `switchSession` 이 순환 의존 없이 부르게.
@@ -619,7 +643,7 @@ export function useAcpSession({ runtimeId, vaultRoot, mcpServers }: UseAcpSessio
   useEffect(() => {
     startRef.current = start;
     stopRef.current = stop;
-  }, [start, stop]);
+  }, [start, stop, setStatusTracked]);
 
   useEffect(() => {
     disposedRef.current = false;
@@ -628,7 +652,7 @@ export function useAcpSession({ runtimeId, vaultRoot, mcpServers }: UseAcpSessio
       // 화면이 사라지면 프로세스도 끝낸다. 안 그러면 닫은 대화가 계속 돈다.
       void stop();
     };
-  }, [stop]);
+  }, [stop, setStatusTracked]);
 
   return {
     status,

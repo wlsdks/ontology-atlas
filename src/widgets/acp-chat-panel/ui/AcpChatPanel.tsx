@@ -1117,7 +1117,7 @@ function TranscriptEntry({
       data-notice={event.text}
       className="break-keep rounded-chip border border-[color:var(--color-amber-source-a30)] bg-[color:var(--color-amber-source-a08)] px-2.5 py-1.5 text-label leading-prose text-[color:var(--color-text-secondary)]"
     >
-      {t('notice.gateOff')}
+      {t(event.text === 'died-mid-turn' ? 'notice.diedMidTurn' : 'notice.gateOff')}
     </p>
   );
 }
