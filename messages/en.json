@@ -3669,6 +3669,7 @@
       "renameNode": "Renamed a concept",
       "mergeNodes": "Merged two concepts",
       "addRelation": "Linked a relation"
-    }
+    },
+    "toolGroup": "{count} steps"
   }
 }

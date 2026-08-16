@@ -1,6 +1,6 @@
 'use client';
 
-import { CornerDownLeft, History, Square, SquarePen, X } from 'lucide-react';
+import { ChevronRight, CornerDownLeft, History, Square, SquarePen, X } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { useCallback, useEffect, useRef, useState } from 'react';
@@ -8,6 +8,7 @@ import { useTranslations } from 'next-intl';
 
 import { Button, Chip, IconButton, RowButton, Select, Surface, Textarea } from '@/shared/ui';
 import { badgeClass } from '@/shared/ui/badge-class';
+import { controlClass } from '@/shared/ui/control-class';
 import { ICON_SIZE } from '@/shared/ui/icon-size';
 import { useHeldValue } from '@/shared/lib/use-presence';
 import { cn } from '@/shared/lib/cn';
@@ -16,6 +17,7 @@ import { useAcpSession, type AcpEvent } from '@/features/acp-session/model/use-a
 import { VAULT_MCP_SERVER_NAME } from '@/features/acp-session/model/vault-mcp-server';
 
 import { AcpPermissionCard } from './AcpPermissionCard';
+import { groupEvents } from './group-events';
 import { toolLabel } from './tool-label';
 
 /**
@@ -101,6 +103,8 @@ export function AcpChatPanel({
   } = useAcpSession({ runtimeId, vaultRoot, mcpServers });
   const [draft, setDraft] = useState('');
   const [historyOpen, setHistoryOpen] = useState(false);
+  /** 작성 칸에 손이 가 있나 — 단축키 안내를 그때만 띄운다. */
+  const [composerFocused, setComposerFocused] = useState(false);
   const listRef = useRef<HTMLDivElement | null>(null);
   /*
    * 퇴장 애니메이션이 도는 동안에도 그릴 것이 있어야 한다 — `pending` 이
@@ -128,6 +132,61 @@ export function AcpChatPanel({
     setDraft('');
     void send(text);
   }, [draft, send, status]);
+
+      {/*
+        고를 거리 — **온 것만 그린다.** 실측: codex 는 모델 33개를 내놓고,
+        claude 는 모델을 아예 안 내놓는다(`session/set_model` 이 「그런 메서드
+        없음」). 그래서 개수를 짐작해 자리를 미리 잡아 두지 않는다: 없는 도구에
+        빈 드롭다운을 남겨 두면 그건 「곧 됩니다」와 같은 거짓말이다.
+
+        ⚠️ 모드 목록에는 **권한 확인을 건너뛰는 것들이 빠져 있다**
+        (`keepGateSafeModes`). 이 화면이 「폴더 밖은 먼저 물어본다」고 약속하는데
+        그 약속을 드롭다운 한 번으로 무를 수 있으면 약속이 아니다.
+      */}
+  const choicesRow =
+    choices.models.length > 0 || choices.modes.length > 0 ? (
+        /*
+         * 고를 거리는 **한 줄에 균등하게** 놓는다 (2026-08-16 소유자 실보고:
+         * *"제대로 보이지도 않고 위치도 이상하고"*).
+         *
+         * 종전엔 `flex-wrap` 이라 각자 내용만큼만 넓어졌고, 좁아진 트리거가
+         * 목록까지 좁게 만들어 고를 것들이 잘렸다. 격자로 두면 폭이 자리에서
+         * 정해지고 개수가 하나든 둘이든 줄이 흔들리지 않는다 — 이 저장소의
+         * 「치수는 우리가 정하지 내용물이 정하지 않는다」 규율 그대로다.
+         */
+        <div
+          data-testid="acp-chat-choices"
+          className={cn(
+            'grid shrink-0 gap-2',
+            choices.models.length > 0 && choices.modes.length > 0
+              ? 'grid-cols-2'
+              : 'grid-cols-1',
+          )}
+        >
+          {choices.models.length > 0 ? (
+            <Select
+              ariaLabel={t('model')}
+              size="md"
+              value={choices.currentModelId ?? ''}
+              onChange={(value) => void chooseModel(value)}
+              options={choices.models.map((model) => ({ value: model.id, label: model.name }))}
+              data-testid="acp-chat-model"
+              className="min-w-0"
+            />
+          ) : null}
+          {choices.modes.length > 0 ? (
+            <Select
+              ariaLabel={t('mode')}
+              size="md"
+              value={choices.currentModeId ?? ''}
+              onChange={(value) => void chooseMode(value)}
+              options={choices.modes.map((mode) => ({ value: mode.id, label: mode.name }))}
+              data-testid="acp-chat-mode"
+              className="min-w-0"
+            />
+          ) : null}
+        </div>
+      ) : null;
 
   const busy = status === 'thinking';
   const canType = status === 'ready' || status === 'thinking';
@@ -249,60 +308,6 @@ export function AcpChatPanel({
         </ul>
       </Surface>
 
-      {/*
-        고를 거리 — **온 것만 그린다.** 실측: codex 는 모델 33개를 내놓고,
-        claude 는 모델을 아예 안 내놓는다(`session/set_model` 이 「그런 메서드
-        없음」). 그래서 개수를 짐작해 자리를 미리 잡아 두지 않는다: 없는 도구에
-        빈 드롭다운을 남겨 두면 그건 「곧 됩니다」와 같은 거짓말이다.
-
-        ⚠️ 모드 목록에는 **권한 확인을 건너뛰는 것들이 빠져 있다**
-        (`keepGateSafeModes`). 이 화면이 「폴더 밖은 먼저 물어본다」고 약속하는데
-        그 약속을 드롭다운 한 번으로 무를 수 있으면 약속이 아니다.
-      */}
-      {choices.models.length > 0 || choices.modes.length > 0 ? (
-        /*
-         * 고를 거리는 **한 줄에 균등하게** 놓는다 (2026-08-16 소유자 실보고:
-         * *"제대로 보이지도 않고 위치도 이상하고"*).
-         *
-         * 종전엔 `flex-wrap` 이라 각자 내용만큼만 넓어졌고, 좁아진 트리거가
-         * 목록까지 좁게 만들어 고를 것들이 잘렸다. 격자로 두면 폭이 자리에서
-         * 정해지고 개수가 하나든 둘이든 줄이 흔들리지 않는다 — 이 저장소의
-         * 「치수는 우리가 정하지 내용물이 정하지 않는다」 규율 그대로다.
-         */
-        <div
-          data-testid="acp-chat-choices"
-          className={cn(
-            'grid shrink-0 gap-2',
-            choices.models.length > 0 && choices.modes.length > 0
-              ? 'grid-cols-2'
-              : 'grid-cols-1',
-          )}
-        >
-          {choices.models.length > 0 ? (
-            <Select
-              ariaLabel={t('model')}
-              size="md"
-              value={choices.currentModelId ?? ''}
-              onChange={(value) => void chooseModel(value)}
-              options={choices.models.map((model) => ({ value: model.id, label: model.name }))}
-              data-testid="acp-chat-model"
-              className="min-w-0"
-            />
-          ) : null}
-          {choices.modes.length > 0 ? (
-            <Select
-              ariaLabel={t('mode')}
-              size="md"
-              value={choices.currentModeId ?? ''}
-              onChange={(value) => void chooseMode(value)}
-              options={choices.modes.map((mode) => ({ value: mode.id, label: mode.name }))}
-              data-testid="acp-chat-mode"
-              className="min-w-0"
-            />
-          ) : null}
-        </div>
-      ) : null}
-
       <div
         ref={listRef}
         data-testid="acp-chat-transcript"
@@ -319,9 +324,13 @@ export function AcpChatPanel({
             {t('emptyHint')}
           </p>
         ) : null}
-        {events.map((event) => (
-          <TranscriptEntry key={event.id} event={event} />
-        ))}
+        {groupEvents(events).map((item) =>
+          item.kind === 'toolGroup' ? (
+            <ToolGroup key={item.id} events={item.events} />
+          ) : (
+            <TranscriptEntry key={item.event.id} event={item.event} />
+          ),
+        )}
       </div>
 
       {error ? (
@@ -354,7 +363,27 @@ export function AcpChatPanel({
 
         `shrink-0` 이 있어야 기록이 길어져도 작성 칸이 눌리지 않는다.
       */}
-      <div className="grid shrink-0 gap-2">
+      <div className="relative grid shrink-0 gap-2">
+        {/*
+          단축키 안내는 **처음 한 번만** 필요하다. 늘 띄워 두면 매번 읽히지도
+          않으면서 자리를 먹고, 아예 없애면 아무도 모른다. 그래서 작성 칸에
+          손이 갔을 때만 띄우고, 자리는 겹쳐 두어 **줄이 흔들리지 않게** 한다
+          (「치수는 우리가 정한다」).
+        */}
+        {composerFocused ? (
+          <span
+            data-testid="acp-chat-hint"
+            className={badgeClass({
+              shape: 'micro',
+              // 기하는 값 층이 낸다. 여기 남는 것은 이 자리에서만 맞는 것 —
+              // 겹쳐 놓기(자리)와 색이다.
+              className:
+                'pointer-events-none absolute right-2 top-1.5 z-[1] bg-[color:var(--color-overlay-2)] text-[color:var(--color-text-quaternary)]',
+            })}
+          >
+            {t('composerHint')}
+          </span>
+        ) : null}
         <Textarea
           aria-label={t('composerLabel')}
           placeholder={t('composerPlaceholder')}
@@ -362,6 +391,8 @@ export function AcpChatPanel({
           rows={3}
           value={draft}
           disabled={!canType}
+          onFocus={() => setComposerFocused(true)}
+          onBlur={() => setComposerFocused(false)}
           onChange={(e) => setDraft(e.target.value)}
           onKeyDown={(e) => {
             if (e.key !== 'Enter') return;
@@ -376,8 +407,15 @@ export function AcpChatPanel({
           }}
         />
         <div className="flex items-center justify-between gap-2">
-          <span className="min-w-0 truncate text-caption text-[color:var(--color-text-quaternary)]">
-            {t('composerHint')}
+          {/*
+            고를 거리는 **작성 칸 옆**에 산다 (2026-08-16 재배치).
+            종전엔 머리 아래에 있어서, 대화가 시작되기도 전에 화면 위쪽 두 줄을
+            컨트롤이 차지했다 — 이 화면의 일은 대화인데 눈이 먼저 닿는 것이
+            설정이었다. 「지금 보낼 것」에 걸리는 설정이므로 손이 이미 가 있는
+            자리가 맞다.
+          */}
+          <span className="flex min-w-0 flex-1 items-center gap-2">
+            {choicesRow}
           </span>
           <span className="flex shrink-0 items-center gap-2">
             {busy ? (
@@ -399,6 +437,48 @@ export function AcpChatPanel({
         </div>
       </div>
     </section>
+  );
+}
+
+/**
+ * 답이 온 뒤의 도구 줄 묶음 — **접어 두고, 눌러서 편다.**
+ *
+ * 기다리는 동안에는 펼쳐져 있었다(`groupEvents` 가 마지막 덩어리는 안 묶는다).
+ * 답이 오면 그때부터는 답이 주인공이라 자리를 내준다. 숨기는 것이 아니라
+ * **한 줄로 접는 것**이라, 무슨 일이 있었는지는 언제든 볼 수 있다.
+ */
+function ToolGroup({ events }: { events: Extract<AcpEvent, { kind: 'tool' }>[] }) {
+  const t = useTranslations('acpChat');
+  const [open, setOpen] = useState(false);
+  return (
+    <div data-acp-entry="tool-group" data-tool-count={events.length}>
+      <button
+        type="button"
+        data-testid="acp-chat-tool-group"
+        aria-expanded={open}
+        onClick={() => setOpen((v) => !v)}
+        className={controlClass({
+          shape: 'link',
+          size: 'sm',
+          tone: 'muted',
+          hoverInk: 'secondary',
+        })}
+      >
+        <ChevronRight
+          size={ICON_SIZE.sm}
+          aria-hidden
+          className={open ? 'rotate-90 transition-transform' : 'transition-transform'}
+        />
+        {t('toolGroup', { count: events.length })}
+      </button>
+      {open ? (
+        <div className="mt-1 grid gap-1 pl-4">
+          {events.map((event) => (
+            <TranscriptEntry key={event.id} event={event} />
+          ))}
+        </div>
+      ) : null}
+    </div>
   );
 }
 

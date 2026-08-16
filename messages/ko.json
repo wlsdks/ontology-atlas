@@ -3669,6 +3669,7 @@
       "renameNode": "개념 이름을 바꿨어요",
       "mergeNodes": "개념 둘을 합쳤어요",
       "addRelation": "관계를 이었어요"
-    }
+    },
+    "toolGroup": "{count}개 작업"
   }
 }
