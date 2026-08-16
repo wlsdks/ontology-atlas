@@ -5,7 +5,7 @@ use sha2::{Digest, Sha256};
 use std::fs;
 use std::io::{Read, Write};
 use std::path::{Component, Path, PathBuf};
-use std::process::Command;
+use std::process::{Command, Stdio};
 use std::sync::Mutex;
 use std::time::{Duration, UNIX_EPOCH};
 use tauri::{AppHandle, Emitter, Manager, RunEvent, State};
@@ -758,6 +758,241 @@ fn metadata_mtime_ms(path: &Path) -> Result<u128, String> {
         .as_millis())
 }
 
+/// 살아 있는 ACP 세션들. 앱이 꺼질 때 여기 남은 것을 전부 끝낸다.
+#[derive(Default)]
+struct AcpSessions(Mutex<std::collections::HashMap<String, AcpSessionHandle>>);
+
+struct AcpSessionHandle {
+    pid: u32,
+    stdin: std::process::ChildStdin,
+}
+
+/// 세션 이름은 늘어나기만 하는 번호로 만든다. pid 를 이름으로 쓰면 OS 가 pid 를
+/// 재사용했을 때 방금 끝난 세션과 새 세션이 같은 이름을 갖는다.
+static ACP_SESSION_SEQ: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(1);
+
+/// 세션 하나에서 나온 한 줄.
+#[derive(Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+struct AcpLineEvent {
+    session_id: String,
+    line: String,
+}
+
+#[derive(Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+struct AcpExitEvent {
+    session_id: String,
+    code: Option<i32>,
+}
+
+#[derive(Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+struct AcpNoticeEvent {
+    session_id: String,
+    message: String,
+}
+
+/// ACP 하네스를 띄운다. 돌려주는 것은 세션 이름 하나뿐이고, 이후의 모든 주고받기는
+/// 그 이름으로 한다.
+///
+/// ## 이 커맨드가 지키는 것
+///
+/// 1. **작업 폴더는 볼트 루트 판정을 그대로 통과해야 한다.** 폴더 피커가 쓰는
+///    그 함수를 여기서도 부른다 — 판정이 두 벌이 되면 한쪽만 느슨해지는 쪽이
+///    기본값이 된다. 에이전트에게 `/` 를 넘기는 것은 실수가 아니라 사고다.
+/// 2. **자식은 자기 프로세스 그룹을 갖는다.** 어댑터가 띄우는 손자들까지 한
+///    번에 끝낼 수 있는 유일한 방법이고, 이게 없으면 앱을 꺼도 프로세스가 남는다.
+/// 3. **자식 PATH 는 우리가 찾아낸 자리로 다시 만든다.** 어댑터는 진짜 CLI 를
+///    이름으로 찾으므로, GUI 앱이 물려받은 빈약한 PATH 를 그대로 주면 어댑터가
+///    같은 자리에서 막힌다.
+#[tauri::command]
+fn acp_start(
+    app: AppHandle,
+    sessions: State<'_, AcpSessions>,
+    runtime_id: String,
+    cwd: String,
+) -> Result<String, String> {
+    let root = fs::canonicalize(&cwd).map_err(|err| format!("cwd-unreadable:{err}"))?;
+    if !root.is_dir() {
+        return Err("cwd-not-a-directory".into());
+    }
+    if let Some(reason) = vault_root_rejection(&root) {
+        return Err(format!("vault-root-rejected:{reason}"));
+    }
+
+    let (is_executable, list_dir, read_text) = acp::real_probe();
+    let probe = acp::FsProbe {
+        is_executable: &is_executable,
+        list_dir: &list_dir,
+        read_text: &read_text,
+    };
+    let home =
+        std::env::var_os(if cfg!(windows) { "USERPROFILE" } else { "HOME" }).map(PathBuf::from);
+    let launch = acp::resolve_launch(
+        &runtime_id,
+        home.as_deref(),
+        std::env::var_os("PATH").as_deref(),
+        &probe,
+    )?;
+
+    let mut command = Command::new(&launch.program);
+    command
+        .args(&launch.args)
+        .current_dir(&root)
+        .env("PATH", &launch.path_env)
+        .stdin(Stdio::piped())
+        .stdout(Stdio::piped())
+        .stderr(Stdio::piped());
+
+    #[cfg(unix)]
+    {
+        use std::os::unix::process::CommandExt;
+        command.process_group(0);
+    }
+    #[cfg(windows)]
+    {
+        // 자식이 콘솔 창을 띄우지 않게 한다. 앱 자체는 windows_subsystem 이
+        // 걸려 있지만 자식은 그것을 물려받지 않는다.
+        use std::os::windows::process::CommandExt;
+        const CREATE_NO_WINDOW: u32 = 0x0800_0000;
+        command.creation_flags(CREATE_NO_WINDOW);
+    }
+
+    let mut child = command
+        .spawn()
+        .map_err(|err| format!("spawn-failed:{err}"))?;
+    let pid = child.id();
+    let seq = ACP_SESSION_SEQ.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+    let session_id = format!("acp-{seq}-{pid}");
+
+    let stdin = child.stdin.take().ok_or("stdin-unavailable")?;
+    let stdout = child.stdout.take().ok_or("stdout-unavailable")?;
+    let stderr = child.stderr.take().ok_or("stderr-unavailable")?;
+
+    spawn_acp_line_pump(app.clone(), session_id.clone(), stdout, "acp://message");
+    spawn_acp_line_pump(app.clone(), session_id.clone(), stderr, "acp://stderr");
+
+    // 자식을 기다리는 스레드가 종료를 알리고 등록부에서 지운다. 여기서 지우지
+    // 않으면 이미 죽은 세션에 계속 쓰려 하고, 그 실패는 사용자에게 「보냈는데
+    // 답이 없다」로 보인다.
+    {
+        let app = app.clone();
+        let session_id = session_id.clone();
+        std::thread::spawn(move || {
+            let code = child.wait().ok().and_then(|status| status.code());
+            if let Some(state) = app.try_state::<AcpSessions>() {
+                if let Ok(mut map) = state.0.lock() {
+                    map.remove(&session_id);
+                }
+            }
+            let _ = app.emit("acp://exit", AcpExitEvent { session_id, code });
+        });
+    }
+
+    sessions
+        .0
+        .lock()
+        .map_err(|_| "session-registry-poisoned".to_string())?
+        .insert(session_id.clone(), AcpSessionHandle { pid, stdin });
+
+    Ok(session_id)
+}
+
+/// 자식의 한 스트림을 줄 단위로 화면에 흘린다.
+///
+/// 상한을 넘긴 줄은 **버리고 알린다**. 잘라서 넘기면 반쪽 JSON 이 파서에
+/// 들어가 더 이해하기 어려운 고장이 되고, 세션을 통째로 죽이면 큰 파일 하나가
+/// 대화를 끝내 버린다.
+fn spawn_acp_line_pump<R: std::io::Read + Send + 'static>(
+    app: AppHandle,
+    session_id: String,
+    stream: R,
+    event: &'static str,
+) {
+    std::thread::spawn(move || {
+        let mut reader = std::io::BufReader::new(stream);
+        loop {
+            match acp::read_bounded_line(&mut reader, acp::MAX_LINE_BYTES) {
+                Ok(Some(bytes)) => {
+                    let line = String::from_utf8_lossy(&bytes).to_string();
+                    let _ = app.emit(
+                        event,
+                        AcpLineEvent {
+                            session_id: session_id.clone(),
+                            line,
+                        },
+                    );
+                }
+                Ok(None) => break,
+                Err(err) => {
+                    let _ = app.emit(
+                        "acp://notice",
+                        AcpNoticeEvent {
+                            session_id: session_id.clone(),
+                            message: format!("dropped-line:{err}"),
+                        },
+                    );
+                    if err.kind() != std::io::ErrorKind::InvalidData {
+                        break; // 입출력 자체가 끊긴 것이면 더 읽을 것이 없다.
+                    }
+                }
+            }
+        }
+    });
+}
+
+/// 세션에 한 줄을 보낸다. 줄바꿈은 여기서 붙인다 — 호출자가 잊으면 상대는
+/// 영원히 기다리고, 그 증상은 「멈췄다」로만 보인다.
+#[tauri::command]
+fn acp_send(sessions: State<'_, AcpSessions>, session_id: String, line: String) -> Result<(), String> {
+    let mut map = sessions
+        .0
+        .lock()
+        .map_err(|_| "session-registry-poisoned".to_string())?;
+    let handle = map.get_mut(&session_id).ok_or("session-not-found")?;
+    handle
+        .stdin
+        .write_all(line.as_bytes())
+        .and_then(|_| handle.stdin.write_all(b"\n"))
+        .and_then(|_| handle.stdin.flush())
+        .map_err(|err| format!("write-failed:{err}"))
+}
+
+/// 세션과 그것이 띄운 모든 것을 끝낸다.
+#[tauri::command]
+fn acp_stop(sessions: State<'_, AcpSessions>, session_id: String) -> Result<(), String> {
+    let pid = {
+        let mut map = sessions
+            .0
+            .lock()
+            .map_err(|_| "session-registry-poisoned".to_string())?;
+        map.remove(&session_id).map(|handle| handle.pid)
+    };
+    match pid {
+        Some(pid) => acp::terminate_tree(pid),
+        // 이미 끝난 세션을 끝내라는 것은 실패가 아니다.
+        None => Ok(()),
+    }
+}
+
+/// 앱이 꺼질 때 남은 세션을 전부 끝낸다.
+///
+/// 이게 없으면 창을 닫아도 어댑터와 그 손자들이 계속 돈다. 사용자는 앱을 껐다고
+/// 믿는데 기계는 계속 일하고 있는 상태다.
+fn terminate_all_acp_sessions(app: &AppHandle) {
+    let Some(state) = app.try_state::<AcpSessions>() else {
+        return;
+    };
+    let handles: Vec<u32> = match state.0.lock() {
+        Ok(mut map) => map.drain().map(|(_, handle)| handle.pid).collect(),
+        Err(_) => return,
+    };
+    for pid in handles {
+        let _ = acp::terminate_tree(pid);
+    }
+}
+
 /// 이 기기에 실제로 있는 ACP 실행기를 판정해서 돌려준다.
 ///
 /// **PATH 만 믿지 않는다** — Finder 로 띄운 앱은 셸 초기화를 안 거쳐서 버전
@@ -767,10 +1002,11 @@ fn metadata_mtime_ms(path: &Path) -> Result<u128, String> {
 /// 읽기만 한다 — 이 커맨드는 아무것도 띄우지 않고 아무것도 쓰지 않는다.
 #[tauri::command]
 fn acp_detect_runtimes() -> Vec<acp::AcpRuntimeStatus> {
-    let (is_executable, list_dir) = acp::real_probe();
+    let (is_executable, list_dir, read_text) = acp::real_probe();
     let probe = acp::FsProbe {
         is_executable: &is_executable,
         list_dir: &list_dir,
+        read_text: &read_text,
     };
     let home = std::env::var_os(if cfg!(windows) { "USERPROFILE" } else { "HOME" })
         .map(PathBuf::from);
@@ -1589,6 +1825,7 @@ pub fn run() {
         .plugin(tauri_plugin_updater::Builder::new().build())
         .plugin(tauri_plugin_process::init())
         .manage(VaultWatcherState::default())
+        .manage(AcpSessions::default())
         .setup(|app| {
             #[cfg(target_os = "macos")]
             app.set_activation_policy(tauri::ActivationPolicy::Regular);
@@ -4212,6 +4449,9 @@ pub fn run() {
         })
         .invoke_handler(tauri::generate_handler![
             acp_detect_runtimes,
+            acp_start,
+            acp_send,
+            acp_stop,
             pick_vault_directory,
             inspect_project_source,
             list_vault_directory,
@@ -4258,6 +4498,10 @@ pub fn run() {
                 show_main_window(app_handle);
                 apply_verify_window_size(app_handle);
                 schedule_show_main_window(app_handle.clone());
+            }
+            // 창을 닫아도 어댑터와 그 손자들이 계속 도는 상태를 만들지 않는다.
+            RunEvent::ExitRequested { .. } | RunEvent::Exit => {
+                terminate_all_acp_sessions(app_handle);
             }
             _ => {}
         });
