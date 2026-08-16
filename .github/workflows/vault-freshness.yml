@@ -46,12 +46,12 @@ jobs:
     if: github.event.pull_request != null
     steps:
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
         with:
           fetch-depth: 0
 
       - name: Setup Node.js
-        uses: actions/setup-node@v6
+        uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
         with:
           node-version: 24
 
@@ -70,7 +70,7 @@ jobs:
           node -e "const p=require('./vault-freshness-drift.json'); console.log(p.hasDrift ? p.staleNodes.length+' node(s) may go stale' : '0 node(s) at risk ✓')"
 
       - name: Create or update PR comment
-        uses: actions/github-script@v7
+        uses: actions/github-script@f28e40c7f34bde8b3046d885e986cb6290c5673b # v7
         with:
           script: |
             const fs = require('fs');

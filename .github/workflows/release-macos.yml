@@ -36,12 +36,12 @@ jobs:
       # "마지막으로 바뀐 날" 을 git 히스토리에서 읽는다 (얕은 클론은 전 문서를
       # 같은 날짜로 뭉갠다).
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
         with:
           fetch-depth: 0
 
       - name: Setup Node.js
-        uses: actions/setup-node@v6
+        uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
         with:
           node-version: 24
 
@@ -52,14 +52,14 @@ jobs:
           pnpm --version
 
       - name: Setup Rust
-        uses: dtolnay/rust-toolchain@stable
+        uses: dtolnay/rust-toolchain@4360b52568e2003a75bf9bc1d59f33a8e3fc893c # stable
 
       # MCP 사이드카를 단일 바이너리로 굽는 컴파일러다(`bun build --compile`).
       # 러너에 기본 설치돼 있지 않아 `v1.0.0-rc.2` 가 여기서 멈췄다 — 번들링을
       # 들여올 때(#732) 이 설치 단계가 같이 안 들어왔다. 툴체인 설치는 위쪽에
       # 모아 둔다.
       - name: Setup Bun
-        uses: oven-sh/setup-bun@v2
+        uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2
         with:
           bun-version: latest
 
@@ -217,7 +217,7 @@ jobs:
         run: node scripts/stage-macos-release-assets.mjs --arch="${TAURI_ARCH}"
 
       - name: Upload workflow artifact
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
         with:
           name: ontology-atlas-macos-${{ matrix.arch }}
           # 경로는 **하나**다. 여럿이면 루트가 최소공통조상으로 정해진다.
@@ -242,12 +242,12 @@ jobs:
       checks: write
     steps:
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
         with:
           fetch-depth: 0
 
       - name: Setup Node.js
-        uses: actions/setup-node@v6
+        uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
         with:
           node-version: 24
 
@@ -259,10 +259,10 @@ jobs:
           pnpm --version
 
       - name: Setup Rust
-        uses: dtolnay/rust-toolchain@stable
+        uses: dtolnay/rust-toolchain@4360b52568e2003a75bf9bc1d59f33a8e3fc893c # stable
 
       - name: Setup Bun
-        uses: oven-sh/setup-bun@v2
+        uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2
         with:
           bun-version: latest
 
@@ -364,7 +364,7 @@ jobs:
           node scripts/stage-windows-release-assets.mjs "--version=$packageVersion"
 
       - name: Upload workflow artifact
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
         with:
           name: ontology-atlas-windows-x64
           path: release-upload
@@ -384,10 +384,10 @@ jobs:
       contents: write
     steps:
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
 
       - name: Setup Node.js
-        uses: actions/setup-node@v6
+        uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
         with:
           node-version: 24
 
@@ -401,7 +401,7 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Download macOS artifacts
-        uses: actions/download-artifact@v7
+        uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131 # v7
         with:
           pattern: ontology-atlas-macos-*
           path: release-assets
@@ -412,7 +412,7 @@ jobs:
           merge-multiple: false
 
       - name: Download Windows artifact
-        uses: actions/download-artifact@v7
+        uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131 # v7
         with:
           name: ontology-atlas-windows-x64
           path: release-assets/windows
@@ -429,7 +429,7 @@ jobs:
             --tag="${GITHUB_REF_NAME}" --repo="${GITHUB_REPOSITORY}"
 
       - name: Upload draft GitHub Release assets
-        uses: softprops/action-gh-release@v3
+        uses: softprops/action-gh-release@c12583777ecdfd3be55c69cf75464299dc01057e # v3
         with:
           draft: true
           # semver 의 프리릴리스는 하이픈 뒤에 온다 (v1.1.0-rc.1). 그 한 글자가
@@ -485,12 +485,12 @@ jobs:
       # 요구하고(`generated-vault-determinism.contract.test.ts`), 아래 main
       # 갱신도 얕은 클론에서는 안전하게 못 한다.
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
         with:
           fetch-depth: 0
 
       - name: Setup Node.js
-        uses: actions/setup-node@v6
+        uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
         with:
           node-version: 24
 
@@ -504,7 +504,7 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Download macOS artifacts
-        uses: actions/download-artifact@v7
+        uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131 # v7
         with:
           pattern: ontology-atlas-macos-*
           path: release-assets
@@ -514,7 +514,7 @@ jobs:
           merge-multiple: true
 
       - name: Download Windows artifact
-        uses: actions/download-artifact@v7
+        uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131 # v7
         with:
           name: ontology-atlas-windows-x64
           path: release-assets/windows

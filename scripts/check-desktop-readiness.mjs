@@ -636,15 +636,15 @@ if (
   /workflow_dispatch:/.test(pagesDeployWorkflow) &&
   /PAGES_BASE_URL:\s*https:\/\/wlsdks\.github\.io\/ontology-atlas/.test(pagesDeployWorkflow) &&
   /NEXT_PUBLIC_BASE_PATH:\s*\/ontology-atlas/.test(pagesDeployWorkflow) &&
-  /uses:\s*actions\/setup-node@v6/.test(pagesDeployWorkflow) &&
+  /uses:\s*actions\/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38\s+# v6/.test(pagesDeployWorkflow) &&
   /node-version:\s*24/.test(pagesDeployWorkflow) &&
   /corepack enable/.test(pagesDeployWorkflow) &&
   /corepack prepare pnpm@10\.18\.0 --activate/.test(pagesDeployWorkflow) &&
   /pnpm --version/.test(pagesDeployWorkflow) &&
   !/uses:\s*pnpm\/action-setup@/.test(pagesDeployWorkflow) &&
   /pnpm build/.test(pagesDeployWorkflow) &&
-  /actions\/upload-pages-artifact@v3/.test(pagesDeployWorkflow) &&
-  /actions\/deploy-pages@v4/.test(pagesDeployWorkflow) &&
+  /actions\/upload-pages-artifact@56afc609e74202658d3ffba0e8f6dda462b719fa\s+# v3/.test(pagesDeployWorkflow) &&
+  /actions\/deploy-pages@d6db90164ac5ed86f2b6aed7e0febac5b3c0c03e\s+# v4/.test(pagesDeployWorkflow) &&
   /pnpm desktop:verify-hosted -- --base-url="\$PAGES_BASE_URL"/.test(pagesDeployWorkflow) &&
   /pnpm desktop:verify-download -- --tag="\$PUBLISHED_RELEASE_TAG"/.test(pagesDeployWorkflow) &&
   !/FIREBASE|firebase-tools|deploy --only hosting/.test(pagesDeployWorkflow)
@@ -1115,14 +1115,14 @@ if (
 }
 
 if (
-  (releaseWorkflow.match(/uses:\s*actions\/checkout@v6/g)?.length ?? 0) >= 4 &&
-  (releaseWorkflow.match(/uses:\s*actions\/setup-node@v6/g)?.length ?? 0) >= 4 &&
+  (releaseWorkflow.match(/uses:\s*actions\/checkout@d23441a48e516b6c34aea4fa41551a30e30af803\s+# v6/g)?.length ?? 0) >= 4 &&
+  (releaseWorkflow.match(/uses:\s*actions\/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38\s+# v6/g)?.length ?? 0) >= 4 &&
   (releaseWorkflow.match(/corepack enable/g)?.length ?? 0) >= 4 &&
   (releaseWorkflow.match(/corepack prepare pnpm@10\.18\.0 --activate/g)?.length ?? 0) >= 4 &&
   (releaseWorkflow.match(/pnpm --version/g)?.length ?? 0) >= 4 &&
-  /uses:\s*actions\/upload-artifact@v7/.test(releaseWorkflow) &&
-  /uses:\s*actions\/download-artifact@v7/.test(releaseWorkflow) &&
-  /uses:\s*softprops\/action-gh-release@v3/.test(releaseWorkflow) &&
+  /uses:\s*actions\/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a\s+# v7/.test(releaseWorkflow) &&
+  /uses:\s*actions\/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131\s+# v7/.test(releaseWorkflow) &&
+  /uses:\s*softprops\/action-gh-release@c12583777ecdfd3be55c69cf75464299dc01057e\s+# v3/.test(releaseWorkflow) &&
   !/uses:\s*pnpm\/action-setup@/.test(releaseWorkflow)
 ) {
   pass("macOS release workflow uses Node 24 action majors and Corepack pnpm without pnpm/action-setup");

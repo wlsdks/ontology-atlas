@@ -39,10 +39,10 @@ jobs:
       # 매니페스트를 다시 만들고, 문서별 "마지막으로 바뀐 날" 을 git 히스토리
       # 에서 읽는다. 얕은 클론에서는 유일한 커밋이 root 로 취급돼 문서 전부가
       # 같은 날짜를 받고, 배포된 사이트의 신선도 렌즈가 통째로 평평해진다.
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
         with:
           fetch-depth: 0
-      - uses: actions/setup-node@v6
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
         with:
           node-version: 24
       - name: Enable Corepack pnpm
@@ -82,7 +82,7 @@ jobs:
           '
       - name: Disable Jekyll (serve _next/*)
         run: touch out/.nojekyll
-      - uses: actions/upload-pages-artifact@v3
+      - uses: actions/upload-pages-artifact@56afc609e74202658d3ffba0e8f6dda462b719fa # v3
         with:
           path: out
           retention-days: 1
@@ -98,7 +98,7 @@ jobs:
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - id: deployment
-        uses: actions/deploy-pages@v4
+        uses: actions/deploy-pages@d6db90164ac5ed86f2b6aed7e0febac5b3c0c03e # v4
 
   verify-hosted:
     name: Verify hosted download surface
@@ -106,8 +106,8 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
-      - uses: actions/checkout@v6
-      - uses: actions/setup-node@v6
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
         with:
           node-version: 24
       - name: Enable Corepack pnpm
