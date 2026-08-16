@@ -1,4 +1,5 @@
-import { writeFileSync, mkdirSync, existsSync, readFileSync, realpathSync } from 'node:fs';
+import { mkdirSync, existsSync, readFileSync, realpathSync } from 'node:fs';
+import { writeFileAtomically } from './atomic-write.mjs';
 import { dirname, resolve, sep } from 'node:path';
 import { buildMarkdown, parseFrontmatter } from './parse-frontmatter.mjs';
 import { flatSlugIssue, inspectMergedUids, nodeUidIssue } from './schema.mjs';
@@ -68,7 +69,7 @@ export function writeDoc(rootPath, slug, { frontmatter, body = '' }) {
   const filePath = preflightWriteDoc(rootPath, slug, frontmatter);
   mkdirSync(dirname(filePath), { recursive: true });
   const md = buildMarkdown({ frontmatter, body });
-  writeFileSync(filePath, md, 'utf-8');
+  writeFileAtomically(filePath, md);
   return filePath;
 }
 
@@ -151,7 +152,7 @@ export function writeFrontmatterKeys(rootPath, slug, patch) {
   const next = { ...frontmatter, ...patch };
   assertNodeIdentity(rootPath, slug, next);
   const md = buildMarkdown({ frontmatter: next, body });
-  writeFileSync(filePath, md, 'utf-8');
+  writeFileAtomically(filePath, md);
   return filePath;
 }
 

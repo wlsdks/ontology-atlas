@@ -3125,7 +3125,8 @@
     "scopeGlobalCopySnippet": "설정 복사",
     "scopeGlobalCopied": "복사했어요",
     "scopeGlobalLossNote": "이 파일들은 그 폴더가 아니라 홈 폴더에 있어서 git diff 에는 안 남아요. 되돌리려면 위 파일에서 ontology-atlas 항목을 지우면 됩니다. 밖으로 나가는 것은 여전히 없어요.",
-    "scopeGlobalToolLabel": "쓰는 도구"
+    "scopeGlobalToolLabel": "쓰는 도구",
+    "mergeSkipped": "이 파일들은 그대로 뒀어요: {files}. 우리가 읽을 수 없는 모양이라, 덮어쓰면 이미 등록해 두신 것이 사라집니다. 직접 열어 `ontology-atlas` 항목만 더해 주세요."
   },
   "appUpdate": {
     "availableTitle": "{version} 버전이 나왔어요",

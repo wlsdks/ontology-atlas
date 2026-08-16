@@ -20,6 +20,7 @@ import {
 
 import {
   agentConfigContents,
+  mergeMcpServersJson,
   vaultPathRelativeToConfigRoot,
 } from '../lib/agent-config-contents';
 
@@ -105,20 +106,43 @@ export function AgentConnectAction({ vaultPath, launch, onWritten, clientId }: A
        * 것이 이 결함의 정체였다.
        */
       const wanted = new Set(filesForClient(clientId));
-      await writeAgentConfig(
-        vaultPath,
-        plan.targets
-          .filter((target) => wanted.has(target.fileName))
-          .map((target) => ({
+      /*
+       * ⚠️ **이미 있던 것을 지우지 않는다** (2026-08-16 검수에서 적발).
+       *
+       * 종전에는 파일을 처음부터 새로 지어 통째로 덮어썼다. 그 저장소에 다른
+       * MCP 서버가 등록돼 있으면 **한 번의 클릭으로 전부 사라졌다.** 같은
+       * 파일에 대해 CLI 는 정확히 반대로 한다(우리 항목만 갈아 끼우고 나머지
+       * 보존) — 같은 파일, 두 표면, 반대 방향의 안전이었다.
+       *
+       * 읽을 수 없는 파일이면 **건너뛴다.** 못 읽는 파일을 덮어쓰는 것은
+       * 지우는 것과 같다.
+       */
+      const skipped: string[] = [];
+      const writes = plan.targets
+        .filter((target) => wanted.has(target.fileName))
+        .flatMap((target) => {
+          const fresh = agentConfigContents({
             fileName: target.fileName,
-            contents: agentConfigContents({
-              fileName: target.fileName,
-              launch,
-              vaultRelative,
-              vaultAbsolute: plan.vaultPath,
-            }),
-          })),
-      );
+            launch,
+            vaultRelative,
+            vaultAbsolute: plan.vaultPath,
+          });
+          // 병합 규칙을 아는 것은 `.mcp.json` 계열뿐이다. 나머지(예시 파일 ·
+          // codex toml)는 종전대로 우리가 소유한 내용으로 쓴다.
+          if (!target.fileName.endsWith('.mcp.json')) {
+            return [{ fileName: target.fileName, contents: fresh }];
+          }
+          const merged = mergeMcpServersJson(target.currentContents ?? null, fresh);
+          if (!merged.ok) {
+            skipped.push(target.fileName);
+            return [];
+          }
+          return [{ fileName: target.fileName, contents: merged.text }];
+        });
+      await writeAgentConfig(vaultPath, writes);
+      if (skipped.length > 0) {
+        setError(t('mergeSkipped', { files: skipped.join(' · ') }));
+      }
       await onWritten?.();
       setPhase('verifying');
       const result = await verifyMcpServer(vaultPath);
@@ -129,7 +153,7 @@ export function AgentConnectAction({ vaultPath, launch, onWritten, clientId }: A
       setError(cause instanceof Error ? cause.message : String(cause));
       setPhase('failed');
     }
-  }, [vaultPath, launch, plan, onWritten, clientId]);
+  }, [vaultPath, launch, plan, onWritten, clientId, t]);
 
   if (!vaultPath || !launch) return null;
 

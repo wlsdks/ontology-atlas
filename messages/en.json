@@ -3125,7 +3125,8 @@
     "scopeGlobalCopySnippet": "Copy settings",
     "scopeGlobalCopied": "Copied",
     "scopeGlobalLossNote": "These files live in your home folder, not in this folder: so a git diff will not show the change. To undo it, remove the ontology-atlas entry from the file above. Still nothing leaves this machine.",
-    "scopeGlobalToolLabel": "Your tool"
+    "scopeGlobalToolLabel": "Your tool",
+    "mergeSkipped": "Left these files untouched: {files}. We could not read them, and overwriting would remove what you already registered. Open them and add the `ontology-atlas` entry yourself."
   },
   "appUpdate": {
     "availableTitle": "Version {version} is available",
