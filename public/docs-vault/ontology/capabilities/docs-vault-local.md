@@ -5,6 +5,7 @@ kind: capability
 title: Local Folder Mounting
 domain: domains/local-vault-management
 elements: [elements/docs-vault-entity, elements/docs-vault-view, elements/docs-vault-widget, elements/local-fs-handle]
+path: src/features/docs-vault-local
 created_by: human
 ---
 

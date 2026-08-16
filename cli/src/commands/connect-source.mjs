@@ -109,11 +109,11 @@ function parseArgs(args) {
     if (a === '--vault') flags.vault = parseVaultFlag(args[++i]);
     else if (a.startsWith('--vault=')) flags.vault = parseVaultFlag(a.slice('--vault='.length));
     else if (a === '--root') {
-      const value = parseRequiredFlagValue(args[++i], '--root');
+      const value = parseRequiredFlagValue('--root', args[++i]);
       if (value instanceof Error) return { error: value.message };
       flags.root = value;
     } else if (a.startsWith('--root=')) {
-      const value = parseRequiredFlagValue(a.slice('--root='.length), '--root');
+      const value = parseRequiredFlagValue('--root', a.slice('--root='.length));
       if (value instanceof Error) return { error: value.message };
       flags.root = value;
     } else if (a === '--confirm') flags.confirm = true;

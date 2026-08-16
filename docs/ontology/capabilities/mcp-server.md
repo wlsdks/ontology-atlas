@@ -8,6 +8,7 @@ elements: []
 path: mcp/src
 created_by: "agent:unknown"
 dependencies: [capabilities/vault-ontology]
+relation_notes: { capabilities/vault-ontology: "The MCP server parses, validates, and writes the vault ontology schema, so schema changes alter the agent-facing read and write contract." }
 display_ko: AI 연결 서버
 display_en: AI Connection Server
 ---
@@ -133,15 +134,20 @@ evidence에도 그 경로가 있어야 한다. 다른 문서만 인용한 경우
 파일명을 추측해 차단하지 않는다.
 
 fresh `agent_brief`가 current source와 incomplete competency를 함께 읽으면 첫
-`nextActions`를 `review_competency_repair`로 올린다. 연결된 `meaningRepair:v1`은
-현재 project Markdown의 선언, typed containment가 만든 구조 검토 후보, current
-source receipt가 직접 지지한 canonical-path 후보, 아직 미해결인 대상을 분리한다.
+`nextActions`를 `review_competency_repair`로 올린다. 연결된 `meaningRepair:v2` compact
+manifest는 disposition count,
+provenance, `reviewRevision`, 첫 `meaning_repair_review` 호출만 담고, 별도
+`meaningRepairReviewPage:v1`이 현재 project Markdown 선언, typed containment가 만든
+구조 검토 후보, current source receipt가 직접 지지한 canonical-path 후보, 아직
+미해결인 대상 전체를 운반한다.
 containment와 path 존재는 사람의 의미 승인이나 행동 증명이 아니므로 후보를 자동으로
 `answered`로 바꾸거나 쓰지 않는다. source/provenance/scope/validation/mtime이 흔들리면
 기존 source·health 행동을 보존한 채 repair를 차단한다. 첫 review read는 project,
-domain, capability의 정확한 합집합을 공개 full-body 상한인 최대 20개 단위의 literal
-`get_concepts` 호출로 제공한다. 따라서 현재 dogfood 27개 검토 대상도 FDE가 batching을
-추측하지 않고 20+7로 실행하며, verifier는 누락·중복·순서·5 KiB 상한을 함께 검사한다.
+domain, capability의 정확한 합집합을 결정적·무상태 cursor로 나눈다. 각 page는 최대
+20개이면서 JSON 5 KiB 이하이고 같은 대상의 literal `get_concepts(body:"full")` 호출을
+제공한다. `reviewRevision`은 graph/source/typed row/mtime을 결박하며 verifier는 마지막
+page까지 누락·중복·순서·크기·현재성뿐 아니라 각 full-body의 kind·mtime·비절단 여부와
+source/bundle parity를 검사한다.
 
 Python cold start에서는 `README.rst`, 실행하지 않는 정적 `setup.py` package
 contract, 최상위 `__init__.py` package를 bounded 근거로 읽는다. `infer_imports`는

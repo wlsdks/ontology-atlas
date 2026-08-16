@@ -57,11 +57,15 @@ function graphNodeId(doc) {
 export function deriveProjectSourceWitnessesFromDocs(input) {
   const docs = Array.isArray(input?.docs) ? input.docs : [];
   const candidates = [];
-  const seenPaths = new Set();
+  const seenClaims = new Set();
   const add = (candidate) => {
     const path = normalizeWitnessPath(candidate.path);
-    if (!looksLikeSourceWitnessPath(path) || seenPaths.has(path)) return;
-    seenPaths.add(path);
+    // One implementation path may legitimately witness different ontology
+    // roles (for example a capability entrypoint and its concrete element).
+    // Deduplicate only the same node's repeated claim, never the path globally.
+    const claim = `${candidate.nodeSlug}\0${path}`;
+    if (!looksLikeSourceWitnessPath(path) || seenClaims.has(claim)) return;
+    seenClaims.add(claim);
     candidates.push({ ...candidate, path });
   };
 

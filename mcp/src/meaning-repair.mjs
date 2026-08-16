@@ -1,6 +1,12 @@
+import { createHash } from 'node:crypto';
+
 import { GET_CONCEPTS_FULL_BODY_MAX } from './vault.mjs';
 
-const CONTRACT = 'meaningRepair:v1';
+const CONTRACT = 'meaningRepair:v2';
+const REVIEW_CONTRACT = 'meaningRepairReviewPage:v1';
+const CURSOR_CONTRACT = 'meaningRepairReviewCursor:v1';
+const CURSOR_PREFIX = 'mrp1';
+const PACKET_MAX_BYTES = 5 * 1024;
 const QUESTION_IDS = ['abilities', 'evidence'];
 const STOP_CONDITIONS = Object.freeze([
   'source_not_current',
@@ -8,6 +14,8 @@ const STOP_CONDITIONS = Object.freeze([
   'scope_or_receipt_limited',
   'validation_or_compile_error',
   'human_approval_missing',
+  'review_pages_incomplete',
+  'review_inputs_changed',
   'unresolved_evidence_marked_answered',
   'mtime_conflict',
 ]);
@@ -57,6 +65,7 @@ function blocked(projectSlug, reason) {
     primaryQuestion: null,
     questionsNeedingReview: [],
     provenance: null,
+    reviewRevision: null,
     questions: null,
     workflow: [],
     stopWhen: [...STOP_CONDITIONS],
@@ -72,23 +81,60 @@ function relationKey(value) {
   return `${value.from}\0${value.to}\0${value.type}`;
 }
 
-function workflow(projectSlug, domainSlugs, capabilitySlugs) {
-  const reviewTargets = [...new Set([projectSlug, ...domainSlugs, ...capabilitySlugs])];
-  const readCalls = [];
-  for (let offset = 0; offset < reviewTargets.length; offset += GET_CONCEPTS_FULL_BODY_MAX) {
-    readCalls.push({
-      tool: 'get_concepts',
-      arguments: {
-        slugs: reviewTargets.slice(offset, offset + GET_CONCEPTS_FULL_BODY_MAX),
-        body: 'full',
-      },
-    });
+function digest(value) {
+  return `sha256:${createHash('sha256').update(value).digest('hex')}`;
+}
+
+function packetBytes(value) {
+  return Buffer.byteLength(JSON.stringify(value));
+}
+
+function normalizedMtime(value) {
+  return Number.isFinite(value) && value >= 0 ? value : null;
+}
+
+function disposition({ declared, supported }) {
+  if (declared && supported) return 'already_declared';
+  if (!declared && supported) return 'candidate_addition';
+  if (declared) return 'declared_without_support';
+  return 'unresolved';
+}
+
+function countDispositions(rows, readDisposition) {
+  const counts = {
+    alreadyDeclared: 0,
+    candidateAdditions: 0,
+    declaredWithoutSupport: 0,
+    unresolved: 0,
+  };
+  for (const row of rows) {
+    const value = readDisposition(row);
+    if (value === 'already_declared') counts.alreadyDeclared += 1;
+    else if (value === 'candidate_addition') counts.candidateAdditions += 1;
+    else if (value === 'declared_without_support') counts.declaredWithoutSupport += 1;
+    else if (value === 'unresolved') counts.unresolved += 1;
   }
+  return counts;
+}
+
+function workflow(projectSlug, provenance, reviewRevision) {
   return [
     {
       step: 'read_review_inputs',
-      derivation: { slugs: 'project_and_all_review_targets' },
-      calls: readCalls,
+      derivation: {
+        operation: 'meaning_repair_review',
+        order: 'project_then_domains_then_capabilities',
+      },
+      calls: [{
+        tool: 'query_ontology',
+        arguments: {
+          operation: 'meaning_repair_review',
+          project: projectSlug,
+          expectedGraphHash: provenance.graphHash,
+          expectedSourceFingerprint: provenance.sourceFingerprint,
+          reviewRevision,
+        },
+      }],
     },
     { step: 'human_semantic_approval', calls: [] },
     {
@@ -121,11 +167,7 @@ function workflow(projectSlug, domainSlugs, capabilitySlugs) {
   ];
 }
 
-/**
- * Project the already-loaded graph/source inventory into a bounded human review packet.
- * This function never upgrades a competency answer and never carries private source coordinates.
- */
-export function buildMeaningRepair(input = {}) {
+function buildProjection(input = {}) {
   const {
     projectSlug,
     graphHash,
@@ -135,34 +177,38 @@ export function buildMeaningRepair(input = {}) {
     scopedDocs,
   } = input;
   if (!safeSlug(projectSlug, 200) || !safeGraphHash(graphHash)) {
-    return blocked(projectSlug, 'invalid_project_context');
+    return { blockedBy: 'invalid_project_context', projectSlug };
   }
   if (
     meaningAssessment?.contract !== 'meaningAssessment:v1'
     || meaningAssessment.projectSlug !== projectSlug
     || meaningAssessment.dimensions?.source?.currentness !== 'current'
     || meaningAssessment.dimensions?.source?.status !== 'verified_current'
-  ) return blocked(projectSlug, 'source_not_current');
-  const provenance = meaningAssessment.provenance;
+  ) return { blockedBy: 'source_not_current', projectSlug };
+  const sourceProvenance = meaningAssessment.provenance;
   if (
-    provenance?.graphHash !== graphHash
-    || !nonBlank(provenance.sourceFingerprint, 200)
-    || !nonBlank(provenance.sourceMeasuredAt, 100)
-  ) return blocked(projectSlug, 'provenance_mismatch');
+    sourceProvenance?.graphHash !== graphHash
+    || !nonBlank(sourceProvenance.sourceFingerprint, 200)
+    || !nonBlank(sourceProvenance.sourceMeasuredAt, 100)
+  ) return { blockedBy: 'provenance_mismatch', projectSlug };
   if (inventoryResult?.status !== 'ready') {
-    return blocked(projectSlug, inventoryResult?.reason ?? 'witness_inventory_unavailable');
+    return {
+      blockedBy: inventoryResult?.reason ?? 'witness_inventory_unavailable',
+      projectSlug,
+    };
   }
   const inventory = inventoryResult.inventory;
   if (
     inventory?.graphHash !== graphHash
-    || inventory?.sourceFingerprint !== provenance.sourceFingerprint
+    || inventory?.sourceFingerprint !== sourceProvenance.sourceFingerprint
     || !Array.isArray(inventory.concepts)
     || !Array.isArray(inventory.relations)
     || !Array.isArray(inventoryResult.evidenceClaims)
     || !Array.isArray(scopedDocs)
-  ) return blocked(projectSlug, 'witness_inventory_mismatch');
+  ) return { blockedBy: 'witness_inventory_mismatch', projectSlug };
 
   const scope = new Set(inventory.concepts);
+  const docsBySlug = new Map(scopedDocs.map((doc) => [doc?.slug, doc]));
   const domains = scopedDocs
     .filter((doc) => scope.has(doc?.slug) && doc?.frontmatter?.kind === 'domain' && safeSlug(doc.slug))
     .map((doc) => doc.slug);
@@ -181,7 +227,7 @@ export function buildMeaningRepair(input = {}) {
   const domainSlugs = sorted(domains);
   const capabilitySlugs = sorted(capabilities.map(({ slug }) => slug));
   if (domainSlugs.length === 0 || capabilitySlugs.length === 0) {
-    return blocked(projectSlug, 'meaning_targets_unavailable');
+    return { blockedBy: 'meaning_targets_unavailable', projectSlug };
   }
   const domainSet = new Set(domainSlugs);
   const capabilityBySlug = new Map(capabilities.map((row) => [row.slug, row]));
@@ -195,6 +241,9 @@ export function buildMeaningRepair(input = {}) {
       && capabilityBySlug.get(relation.to).domain === relation.from
     ))
     .sort((left, right) => relationKey(left).localeCompare(relationKey(right)));
+  const structuralByCapability = new Map(
+    structuralRelations.map((relation) => [relation.to, relation]),
+  );
   const capabilitiesByDomain = new Map(domainSlugs.map((slug) => [slug, []]));
   for (const relation of structuralRelations) {
     capabilitiesByDomain.get(relation.from).push(relation.to);
@@ -209,7 +258,7 @@ export function buildMeaningRepair(input = {}) {
   const abilityQuestion = questionById(competency, 'abilities');
   const evidenceQuestion = questionById(competency, 'evidence');
   if (!abilityQuestion || !evidenceQuestion) {
-    return blocked(projectSlug, 'competency_questions_unavailable');
+    return { blockedBy: 'competency_questions_unavailable', projectSlug };
   }
   const abilityWitnessConcepts = new Set(abilityQuestion.witnesses?.concepts ?? []);
   const validStructuralKeys = new Set(structuralRelations.map(relationKey));
@@ -236,86 +285,245 @@ export function buildMeaningRepair(input = {}) {
     (evidenceQuestion.witnesses?.concepts ?? []).filter((slug) => capabilityBySlug.has(slug)),
   );
 
-  const abilityRow = (slug) => ({
+  const domainRows = domainSlugs.map((slug) => ({
     slug,
-    witnessCapabilities: capabilitiesByDomain.get(slug),
+    kind: 'domain',
+    expectedMtime: normalizedMtime(docsBySlug.get(slug)?.mtime),
+    abilitiesDisposition: disposition({
+      declared: declaredDomains.has(slug),
+      supported: structurallySupportedDomains.has(slug),
+    }),
+  }));
+  const capabilityRows = capabilitySlugs.map((slug) => {
+    const relation = structuralByCapability.get(slug);
+    return {
+      slug,
+      kind: 'capability',
+      expectedMtime: normalizedMtime(docsBySlug.get(slug)?.mtime),
+      abilityWitness: relation
+        ? { from: relation.from, type: relation.type }
+        : null,
+      evidenceDisposition: disposition({
+        declared: declaredEvidence.has(slug),
+        supported: supportedEvidence.has(slug),
+      }),
+    };
   });
-  const abilityAlreadyDeclared = domainSlugs
-    .filter((slug) => declaredDomains.has(slug) && structurallySupportedDomains.has(slug))
-    .map(abilityRow);
-  const abilityCandidateAdditions = domainSlugs
-    .filter((slug) => !declaredDomains.has(slug) && structurallySupportedDomains.has(slug))
-    .map(abilityRow);
-  const abilityDeclaredWithoutSupport = domainSlugs
-    .filter((slug) => declaredDomains.has(slug) && !structurallySupportedDomains.has(slug));
-  const abilityUnresolved = domainSlugs.filter((slug) => !structurallySupportedDomains.has(slug));
-
-  const evidenceAlreadyDeclared = capabilitySlugs
-    .filter((slug) => declaredEvidence.has(slug) && supportedEvidence.has(slug));
-  const evidenceCandidateAdditions = capabilitySlugs
-    .filter((slug) => !declaredEvidence.has(slug) && supportedEvidence.has(slug));
-  const evidenceDeclaredWithoutSupport = capabilitySlugs
-    .filter((slug) => declaredEvidence.has(slug) && !supportedEvidence.has(slug));
-  const evidenceUnresolved = capabilitySlugs.filter((slug) => !supportedEvidence.has(slug));
-
+  const rows = [
+    {
+      slug: projectSlug,
+      kind: 'project',
+      expectedMtime: normalizedMtime(docsBySlug.get(projectSlug)?.mtime),
+    },
+    ...domainRows,
+    ...capabilityRows,
+  ];
+  if (rows.some(({ expectedMtime }) => expectedMtime === null)) {
+    return { blockedBy: 'review_mtime_unavailable', projectSlug };
+  }
+  const abilityCounts = countDispositions(domainRows, (row) => row.abilitiesDisposition);
+  const evidenceCounts = countDispositions(capabilityRows, (row) => row.evidenceDisposition);
   const questions = {
     abilities: {
       basis: 'typed_containment',
-      targetCount: domainSlugs.length,
-      review: {
-        state: 'structural_candidates_only',
-        alreadyDeclared: abilityAlreadyDeclared,
-        candidateAdditions: abilityCandidateAdditions,
-        declaredWithoutSupport: abilityDeclaredWithoutSupport,
-        unresolved: abilityUnresolved,
-      },
+      answerStatus: abilityQuestion.status,
+      targetCount: domainRows.length,
+      review: { state: 'structural_candidates_only', ...abilityCounts },
     },
     evidence: {
       basis: 'current_source_canonical_path',
-      targetCount: capabilitySlugs.length,
-      review: {
-        state: 'source_path_candidates_only',
-        alreadyDeclared: evidenceAlreadyDeclared,
-        candidateAdditions: evidenceCandidateAdditions,
-        declaredWithoutSupport: evidenceDeclaredWithoutSupport,
-        unresolved: evidenceUnresolved,
-      },
+      answerStatus: evidenceQuestion.status,
+      targetCount: capabilityRows.length,
+      review: { state: 'source_path_candidates_only', ...evidenceCounts },
     },
   };
   const questionStatuses = new Map([
     ['abilities', abilityQuestion.status],
     ['evidence', evidenceQuestion.status],
   ]);
-  const questionsNeedingReview = QUESTION_IDS.filter((id) => (
-    questionStatuses.get(id) !== 'answered'
-    || questions[id].review.candidateAdditions.length > 0
-    || questions[id].review.declaredWithoutSupport.length > 0
-    || questions[id].review.unresolved.length > 0
-  ));
+  const questionsNeedingReview = QUESTION_IDS.filter((id) => {
+    const review = questions[id].review;
+    return questionStatuses.get(id) !== 'answered'
+      || review.candidateAdditions > 0
+      || review.declaredWithoutSupport > 0
+      || review.unresolved > 0;
+  });
   const requestedPrimary = meaningAssessment.nextAction?.target;
   const primaryQuestion = questionsNeedingReview.includes(requestedPrimary)
     ? requestedPrimary
     : questionsNeedingReview[0] ?? null;
-  return {
-    contract: CONTRACT,
-    status: questionsNeedingReview.length > 0 ? 'human_review_required' : 'not_needed',
+  const provenance = {
+    graphHash,
+    sourceFingerprint: sourceProvenance.sourceFingerprint,
+    sourceMeasuredAt: sourceProvenance.sourceMeasuredAt,
+    sourceCurrentness: 'current',
+  };
+  const reviewRevision = digest(JSON.stringify({
+    contract: REVIEW_CONTRACT,
     projectSlug,
+    provenance,
+    questionStatuses: QUESTION_IDS.map((id) => [id, questionStatuses.get(id)]),
+    rows,
+  }));
+  return {
     blockedBy: null,
-    primaryQuestion,
-    questionsNeedingReview,
-    provenance: {
-      graphHash,
-      sourceFingerprint: provenance.sourceFingerprint,
-      sourceMeasuredAt: provenance.sourceMeasuredAt,
-      sourceCurrentness: 'current',
-    },
+    projectSlug,
+    provenance,
+    reviewRevision,
     questions,
-    workflow: questionsNeedingReview.length > 0
-      ? workflow(projectSlug, domainSlugs, capabilitySlugs)
+    questionsNeedingReview,
+    primaryQuestion,
+    rows,
+  };
+}
+
+function encodeCursor(projectSlug, reviewRevision, afterTarget) {
+  const payload = JSON.stringify({
+    contract: CURSOR_CONTRACT,
+    projectSlug,
+    reviewRevision,
+    afterTarget,
+  });
+  return `${CURSOR_PREFIX}.${digest(payload).slice('sha256:'.length, 'sha256:'.length + 32)}`;
+}
+
+function decodeCursor(value, projection) {
+  if (!nonBlank(value, 4096)) throw new TypeError('cursor_invalid');
+  if (!/^mrp1\.[a-f0-9]{32}$/.test(value)) throw new TypeError('cursor_invalid');
+  return projection.rows.find(({ slug }) => (
+    encodeCursor(projection.projectSlug, projection.reviewRevision, slug) === value
+  ))?.slug ?? null;
+}
+
+function reviewBlocked(projection, reason) {
+  return {
+    operation: 'meaning_repair_review',
+    contract: REVIEW_CONTRACT,
+    sideEffect: false,
+    status: 'blocked',
+    projectSlug: safeSlug(projection?.projectSlug, 200) ? projection.projectSlug : null,
+    blockedBy: reason,
+    provenance: projection?.provenance ? {
+      graphHash: projection.provenance.graphHash,
+      sourceFingerprint: projection.provenance.sourceFingerprint,
+    } : null,
+    reviewRevision: projection?.reviewRevision ?? null,
+    pagination: {
+      total: Array.isArray(projection?.rows) ? projection.rows.length : 0,
+      returned: 0,
+      hasMore: false,
+      nextCursor: null,
+    },
+    targets: [],
+    readCall: null,
+    nextCall: null,
+  };
+}
+
+function reviewPage(projection, start, count) {
+  const targets = projection.rows.slice(start, start + count);
+  const hasMore = start + targets.length < projection.rows.length;
+  const nextCursor = hasMore
+    ? encodeCursor(projection.projectSlug, projection.reviewRevision, targets.at(-1).slug)
+    : null;
+  const nextArguments = nextCursor
+    ? {
+      operation: 'meaning_repair_review',
+      project: projection.projectSlug,
+      reviewRevision: projection.reviewRevision,
+      cursor: nextCursor,
+    }
+    : null;
+  return {
+    operation: 'meaning_repair_review',
+    contract: REVIEW_CONTRACT,
+    sideEffect: false,
+    status: 'ready',
+    projectSlug: projection.projectSlug,
+    blockedBy: null,
+    provenance: {
+      graphHash: projection.provenance.graphHash,
+      sourceFingerprint: projection.provenance.sourceFingerprint,
+    },
+    reviewRevision: projection.reviewRevision,
+    pagination: {
+      total: projection.rows.length,
+      returned: targets.length,
+      hasMore,
+      nextCursor,
+    },
+    targets,
+    readCall: {
+      tool: 'get_concepts',
+      arguments: { slugs: targets.map(({ slug }) => slug), body: 'full' },
+    },
+    nextCall: nextArguments ? { tool: 'query_ontology', arguments: nextArguments } : null,
+  };
+}
+
+/**
+ * Project the already-loaded graph/source inventory into a bounded human review packet.
+ * This function never upgrades a competency answer and never carries private source coordinates.
+ */
+export function buildMeaningRepair(input = {}) {
+  const projection = buildProjection(input);
+  if (projection.blockedBy) return blocked(projection.projectSlug, projection.blockedBy);
+  const result = {
+    contract: CONTRACT,
+    status: projection.questionsNeedingReview.length > 0 ? 'human_review_required' : 'not_needed',
+    projectSlug: projection.projectSlug,
+    blockedBy: null,
+    primaryQuestion: projection.primaryQuestion,
+    questionsNeedingReview: projection.questionsNeedingReview,
+    provenance: projection.provenance,
+    reviewRevision: projection.reviewRevision,
+    questions: projection.questions,
+    workflow: projection.questionsNeedingReview.length > 0
+      ? workflow(projection.projectSlug, projection.provenance, projection.reviewRevision)
       : [],
     stopWhen: [...STOP_CONDITIONS],
     writePolicy: writePolicy(),
   };
+  if (packetBytes(result) > PACKET_MAX_BYTES) {
+    return blocked(projection.projectSlug, 'meaning_repair_manifest_too_large');
+  }
+  return result;
+}
+
+/** Return one deterministic, provenance-bound page of typed review evidence. */
+export function buildMeaningRepairReviewPage(input = {}, args = {}) {
+  const projection = buildProjection(input);
+  if (projection.blockedBy) return reviewBlocked(projection, projection.blockedBy);
+  if (projection.questionsNeedingReview.length === 0) {
+    return reviewBlocked(projection, 'review_not_required');
+  }
+  const explicitProvenanceChanged = args.cursor === undefined
+    ? args.expectedGraphHash !== projection.provenance.graphHash
+      || args.expectedSourceFingerprint !== projection.provenance.sourceFingerprint
+    : (args.expectedGraphHash !== undefined
+        && args.expectedGraphHash !== projection.provenance.graphHash)
+      || (args.expectedSourceFingerprint !== undefined
+        && args.expectedSourceFingerprint !== projection.provenance.sourceFingerprint);
+  if (explicitProvenanceChanged || args.reviewRevision !== projection.reviewRevision) {
+    return reviewBlocked(projection, 'provenance_changed');
+  }
+
+  let start = 0;
+  if (args.cursor !== undefined) {
+    const afterTarget = decodeCursor(args.cursor, projection);
+    if (afterTarget === null) return reviewBlocked(projection, 'cursor_not_found');
+    const boundary = projection.rows.findIndex(({ slug }) => slug === afterTarget);
+    if (boundary < 0 || boundary >= projection.rows.length - 1) {
+      return reviewBlocked(projection, 'cursor_not_found');
+    }
+    start = boundary + 1;
+  }
+  const maxCount = Math.min(GET_CONCEPTS_FULL_BODY_MAX, projection.rows.length - start);
+  for (let count = maxCount; count > 0; count -= 1) {
+    const page = reviewPage(projection, start, count);
+    if (packetBytes(page) <= PACKET_MAX_BYTES) return page;
+  }
+  return reviewBlocked(projection, 'review_target_too_large');
 }
 
 /** Attach the packet while making its one human decision visible before generic health work. */

@@ -5,6 +5,7 @@ kind: capability
 title: Studio Relation Blocks
 domain: domains/graph-modeling
 elements: [elements/ontology-studio]
+path: src/features/ontology-blocks
 created_by: "agent:unknown"
 ---
 

@@ -103,7 +103,6 @@ const DIAGNOSIS_STATUSES = new Set(['healthy', 'needs_attention']);
 const HEALTH_CHECK_STATUSES = new Set(['pass', 'warn', 'fail', 'info']);
 const NEXT_ACTION_SEVERITIES = new Set(['info', 'warn', 'fail']);
 const MEANING_REPAIR_PACKET_MAX_BYTES = 5 * 1024;
-const GET_CONCEPTS_FULL_BODY_MAX = 20;
 export const TOOLS_LIST_SCHEMA_CONTRACT_SUMMARY = 'strict arguments + annotations + graph-query enums + graph kind enums/descriptions + write relation enums + health tuning + post-write maintenance schema';
 const ADD_CONCEPT_KIND_VALUES = Object.freeze(['project', 'domain', 'capability', 'element', 'document']);
 const NODE_KIND_DESCRIPTION = NODE_KIND_VALUES.join(', ');
@@ -8437,12 +8436,12 @@ function validAgentBriefMeaningAssessment(value, projectSlug) {
 function validAgentBriefMeaningRepair(value, projectSlug) {
   const rootFields = [
     'contract', 'status', 'projectSlug', 'blockedBy', 'primaryQuestion',
-    'questionsNeedingReview', 'provenance', 'questions', 'workflow',
+    'questionsNeedingReview', 'provenance', 'reviewRevision', 'questions', 'workflow',
     'stopWhen', 'writePolicy',
   ];
   if (
     !agentBriefExactKeys(value, rootFields)
-    || value.contract !== 'meaningRepair:v1'
+    || value.contract !== 'meaningRepair:v2'
     || value.projectSlug !== projectSlug
     || new TextEncoder().encode(JSON.stringify(value)).byteLength > MEANING_REPAIR_PACKET_MAX_BYTES
     || !['blocked', 'human_review_required', 'not_needed'].includes(value.status)
@@ -8465,6 +8464,7 @@ function validAgentBriefMeaningRepair(value, projectSlug) {
       && value.primaryQuestion === null
       && value.questionsNeedingReview.length === 0
       && value.provenance === null
+      && value.reviewRevision === null
       && value.questions === null
       && value.workflow.length === 0;
   }
@@ -8480,21 +8480,26 @@ function validAgentBriefMeaningRepair(value, projectSlug) {
       value.provenance.sourceMeasuredAt,
     )
     || value.provenance.sourceCurrentness !== 'current'
+    || !/^sha256:[a-f0-9]{64}$/.test(value.reviewRevision)
     || !agentBriefExactKeys(value.questions, ['abilities', 'evidence'])
   ) return false;
   const abilities = value.questions.abilities;
   const evidence = value.questions.evidence;
   if (
-    !agentBriefExactKeys(abilities, ['basis', 'targetCount', 'review'])
+    !agentBriefExactKeys(abilities, ['basis', 'answerStatus', 'targetCount', 'review'])
     || abilities.basis !== 'typed_containment'
+    || !['answered', 'partial', 'visible-gap', 'unassessed'].includes(abilities.answerStatus)
     || !Number.isInteger(abilities.targetCount)
+    || abilities.targetCount < 0
     || !agentBriefExactKeys(abilities.review, [
       'state', 'alreadyDeclared', 'candidateAdditions', 'declaredWithoutSupport', 'unresolved',
     ])
     || abilities.review.state !== 'structural_candidates_only'
-    || !agentBriefExactKeys(evidence, ['basis', 'targetCount', 'review'])
+    || !agentBriefExactKeys(evidence, ['basis', 'answerStatus', 'targetCount', 'review'])
     || evidence.basis !== 'current_source_canonical_path'
+    || !['answered', 'partial', 'visible-gap', 'unassessed'].includes(evidence.answerStatus)
     || !Number.isInteger(evidence.targetCount)
+    || evidence.targetCount < 0
     || !agentBriefExactKeys(evidence.review, [
       'state', 'alreadyDeclared', 'candidateAdditions', 'declaredWithoutSupport', 'unresolved',
     ])
@@ -8508,7 +8513,15 @@ function validAgentBriefMeaningRepair(value, projectSlug) {
       evidence.review.candidateAdditions,
       evidence.review.declaredWithoutSupport,
       evidence.review.unresolved,
-    ].every(Array.isArray)
+    ].every((count) => Number.isInteger(count) && count >= 0)
+    || abilities.review.alreadyDeclared
+      + abilities.review.candidateAdditions
+      + abilities.review.declaredWithoutSupport
+      + abilities.review.unresolved !== abilities.targetCount
+    || evidence.review.alreadyDeclared
+      + evidence.review.candidateAdditions
+      + evidence.review.declaredWithoutSupport
+      + evidence.review.unresolved !== evidence.targetCount
   ) return false;
   if (value.status === 'not_needed') {
     return value.primaryQuestion === null
@@ -8520,69 +8533,202 @@ function validAgentBriefMeaningRepair(value, projectSlug) {
     || value.primaryQuestion !== value.questionsNeedingReview[0]
     || value.workflow.length !== 6
   ) return false;
-  const abilityRows = [...abilities.review.alreadyDeclared, ...abilities.review.candidateAdditions];
-  if (!abilityRows.every((row) => (
-    agentBriefExactKeys(row, ['slug', 'witnessCapabilities'])
-    && hasNonEmptyString(row.slug)
-    && Array.isArray(row.witnessCapabilities)
-    && row.witnessCapabilities.length > 0
-    && row.witnessCapabilities.every((slug) => hasNonEmptyString(slug))
-  ))) return false;
-  const domains = [
-    ...abilityRows.map((row) => row.slug),
-    ...abilities.review.declaredWithoutSupport,
-    ...abilities.review.unresolved,
-  ];
-  const capabilities = [
-    ...abilityRows.flatMap((row) => row.witnessCapabilities),
-    ...evidence.review.alreadyDeclared,
-    ...evidence.review.candidateAdditions,
-    ...evidence.review.declaredWithoutSupport,
-    ...evidence.review.unresolved,
-  ];
-  if ([
-    ...abilities.review.declaredWithoutSupport,
-    ...abilities.review.unresolved,
-    ...evidence.review.alreadyDeclared,
-    ...evidence.review.candidateAdditions,
-    ...evidence.review.declaredWithoutSupport,
-    ...evidence.review.unresolved,
-  ].some((slug) => !hasNonEmptyString(slug))) return false;
-  const domainSlugs = [...new Set(domains)].sort((left, right) => left.localeCompare(right));
-  const capabilitySlugs = [...new Set(capabilities)].sort((left, right) => left.localeCompare(right));
-  if (
-    domainSlugs.length !== abilities.targetCount
-    || capabilitySlugs.length !== evidence.targetCount
-  ) return false;
-  const expectedTargets = [...new Set([projectSlug, ...domainSlugs, ...capabilitySlugs])];
   const readStep = value.workflow[0];
   if (
     !agentBriefExactKeys(readStep, ['step', 'derivation', 'calls'])
     || readStep.step !== 'read_review_inputs'
-    || !agentBriefExactKeys(readStep.derivation, ['slugs'])
-    || readStep.derivation.slugs !== 'project_and_all_review_targets'
+    || !agentBriefExactKeys(readStep.derivation, ['operation', 'order'])
+    || readStep.derivation.operation !== 'meaning_repair_review'
+    || readStep.derivation.order !== 'project_then_domains_then_capabilities'
     || !Array.isArray(readStep.calls)
-    || readStep.calls.length === 0
+    || readStep.calls.length !== 1
   ) return false;
-  const emittedTargets = [];
-  for (const call of readStep.calls) {
-    if (
-      !agentBriefExactKeys(call, ['tool', 'arguments'])
-      || call.tool !== 'get_concepts'
-      || !agentBriefExactKeys(call.arguments, ['slugs', 'body'])
-      || call.arguments.body !== 'full'
-      || !Array.isArray(call.arguments.slugs)
-      || call.arguments.slugs.length === 0
-      || call.arguments.slugs.length > GET_CONCEPTS_FULL_BODY_MAX
-      || call.arguments.slugs.some((slug) => !hasNonEmptyString(slug))
-    ) return false;
-    emittedTargets.push(...call.arguments.slugs);
-  }
+  const call = readStep.calls[0];
   return value.questionsNeedingReview.length > 0
     && value.primaryQuestion === value.questionsNeedingReview[0]
-    && new Set(emittedTargets).size === emittedTargets.length
-    && emittedTargets.length === expectedTargets.length
-    && emittedTargets.every((slug, index) => slug === expectedTargets[index]);
+    && agentBriefExactKeys(call, ['tool', 'arguments'])
+    && call.tool === 'query_ontology'
+    && agentBriefExactKeys(call.arguments, [
+      'operation',
+      'project',
+      'expectedGraphHash',
+      'expectedSourceFingerprint',
+      'reviewRevision',
+    ])
+    && call.arguments.operation === 'meaning_repair_review'
+    && call.arguments.project === projectSlug
+    && call.arguments.expectedGraphHash === value.provenance.graphHash
+    && call.arguments.expectedSourceFingerprint === value.provenance.sourceFingerprint
+    && call.arguments.reviewRevision === value.reviewRevision;
+}
+
+const MEANING_REVIEW_DISPOSITIONS = new Set([
+  'already_declared',
+  'candidate_addition',
+  'declared_without_support',
+  'unresolved',
+]);
+
+function validMeaningRepairReviewTarget(row) {
+  if (!agentBriefPlainObject(row) || !hasNonEmptyString(row.slug)) return false;
+  const mtimeValid = typeof row.expectedMtime === 'number'
+    && Number.isFinite(row.expectedMtime)
+    && row.expectedMtime >= 0;
+  if (!mtimeValid) return false;
+  if (row.kind === 'project') {
+    return agentBriefExactKeys(row, ['slug', 'kind', 'expectedMtime']);
+  }
+  if (row.kind === 'domain') {
+    return agentBriefExactKeys(row, ['slug', 'kind', 'expectedMtime', 'abilitiesDisposition'])
+      && MEANING_REVIEW_DISPOSITIONS.has(row.abilitiesDisposition);
+  }
+  if (row.kind !== 'capability' || !agentBriefExactKeys(row, [
+    'slug', 'kind', 'expectedMtime', 'abilityWitness', 'evidenceDisposition',
+  ])) return false;
+  const witnessValid = row.abilityWitness === null || (
+    agentBriefExactKeys(row.abilityWitness, ['from', 'type'])
+    && hasNonEmptyString(
+      row.abilityWitness.from,
+      row.abilityWitness.type,
+    )
+    && ['capabilities', 'contains'].includes(row.abilityWitness.type)
+  );
+  return witnessValid && MEANING_REVIEW_DISPOSITIONS.has(row.evidenceDisposition);
+}
+
+export function meaningRepairReviewChainFailure(agentBrief, pages, requestArguments = []) {
+  const repair = agentBrief?.meaningRepair;
+  if (repair?.status !== 'human_review_required') {
+    return pages.length === 0 ? null : 'meaning repair review pages returned when review was not required';
+  }
+  if (pages.length === 0) return 'meaning repair review page chain missing';
+  if (requestArguments.length !== pages.length) {
+    return 'meaning repair review request/page count mismatch';
+  }
+  const expectedTotal = 1
+    + repair.questions.abilities.targetCount
+    + repair.questions.evidence.targetCount;
+  const allTargets = [];
+  for (let index = 0; index < pages.length; index += 1) {
+    const page = pages[index];
+    const expectedRequest = index === 0
+      ? repair.workflow[0].calls[0].arguments
+      : pages[index - 1].nextCall?.arguments;
+    if (JSON.stringify(requestArguments[index]) !== JSON.stringify(expectedRequest)) {
+      return `meaning repair review request ${index + 1} does not match the issued call`;
+    }
+    if (
+      !agentBriefExactKeys(page, [
+        'operation', 'contract', 'sideEffect', 'status', 'projectSlug', 'blockedBy',
+        'provenance', 'reviewRevision', 'pagination', 'targets', 'readCall', 'nextCall',
+      ])
+      || page.operation !== 'meaning_repair_review'
+      || page.contract !== 'meaningRepairReviewPage:v1'
+      || page.sideEffect !== false
+      || page.status !== 'ready'
+      || page.blockedBy !== null
+      || page.projectSlug !== repair.projectSlug
+      || page.reviewRevision !== repair.reviewRevision
+      || JSON.stringify(page.provenance) !== JSON.stringify({
+        graphHash: repair.provenance.graphHash,
+        sourceFingerprint: repair.provenance.sourceFingerprint,
+      })
+      || new TextEncoder().encode(JSON.stringify(page)).byteLength > MEANING_REPAIR_PACKET_MAX_BYTES
+      || !agentBriefExactKeys(page.pagination, [
+        'total', 'returned', 'hasMore', 'nextCursor',
+      ])
+      || page.pagination.total !== expectedTotal
+      || !Number.isInteger(page.pagination.returned)
+      || page.pagination.returned < 1
+      || page.pagination.returned > 20
+      || typeof page.pagination.hasMore !== 'boolean'
+      || !Array.isArray(page.targets)
+      || page.targets.length !== page.pagination.returned
+      || page.targets.some((row) => !validMeaningRepairReviewTarget(row))
+    ) return `meaning repair review page ${index + 1} is malformed`;
+    const slugs = page.targets.map(({ slug }) => slug);
+    if (
+      !agentBriefExactKeys(page.readCall, ['tool', 'arguments'])
+      || page.readCall.tool !== 'get_concepts'
+      || !agentBriefExactKeys(page.readCall.arguments, ['slugs', 'body'])
+      || page.readCall.arguments.body !== 'full'
+      || JSON.stringify(page.readCall.arguments.slugs) !== JSON.stringify(slugs)
+    ) return `meaning repair review page ${index + 1} readCall does not match targets`;
+    const isLast = index === pages.length - 1;
+    if (page.pagination.hasMore) {
+      if (
+        !hasNonEmptyString(page.pagination.nextCursor)
+        || !agentBriefExactKeys(page.nextCall, ['tool', 'arguments'])
+        || page.nextCall.tool !== 'query_ontology'
+        || page.nextCall.arguments.cursor !== page.pagination.nextCursor
+      ) return `meaning repair review page ${index + 1} nextCall is malformed`;
+      if (isLast) return 'meaning repair review page chain ended before hasMore=false';
+    } else if (page.pagination.nextCursor !== null || page.nextCall !== null || !isLast) {
+      return `meaning repair review page ${index + 1} ended the chain early`;
+    }
+    allTargets.push(...page.targets);
+  }
+  const slugs = allTargets.map(({ slug }) => slug);
+  if (slugs.length !== expectedTotal || new Set(slugs).size !== slugs.length) {
+    return 'meaning repair review page union has missing or duplicate targets';
+  }
+  if (allTargets[0]?.kind !== 'project' || allTargets[0]?.slug !== repair.projectSlug) {
+    return 'meaning repair review page order must start with the project';
+  }
+  const domains = allTargets.filter(({ kind }) => kind === 'domain').map(({ slug }) => slug);
+  const capabilities = allTargets.filter(({ kind }) => kind === 'capability').map(({ slug }) => slug);
+  const kinds = allTargets.map(({ kind }) => kind).join(',');
+  const expectedKinds = [
+    'project',
+    ...Array(domains.length).fill('domain'),
+    ...Array(capabilities.length).fill('capability'),
+  ].join(',');
+  if (
+    domains.length !== repair.questions.abilities.targetCount
+    || capabilities.length !== repair.questions.evidence.targetCount
+    || kinds !== expectedKinds
+    || domains.some((slug, index) => index > 0 && domains[index - 1].localeCompare(slug) > 0)
+    || capabilities.some((slug, index) => index > 0 && capabilities[index - 1].localeCompare(slug) > 0)
+  ) return 'meaning repair review page union order or kind counts drifted';
+  return null;
+}
+
+export function meaningRepairFullBodyReadsFailure(pages, readPayloads) {
+  if (readPayloads.length !== pages.length) {
+    return 'meaning repair full-body read/page count mismatch';
+  }
+  for (let pageIndex = 0; pageIndex < pages.length; pageIndex += 1) {
+    const targets = pages[pageIndex]?.targets;
+    const concepts = readPayloads[pageIndex]?.concepts;
+    if (!Array.isArray(targets) || !Array.isArray(concepts) || concepts.length !== targets.length) {
+      return `meaning repair full-body read ${pageIndex + 1} row count mismatch`;
+    }
+    for (let rowIndex = 0; rowIndex < targets.length; rowIndex += 1) {
+      const target = targets[rowIndex];
+      const row = concepts[rowIndex];
+      if (
+        !agentBriefPlainObject(row)
+        || row.ok !== true
+        || row.slug !== target.slug
+        || !hasNonEmptyString(row.uid)
+        || !NODE_UID_RE.test(row.uid)
+        || !agentBriefPlainObject(row.frontmatter)
+        || row.frontmatter.kind !== target.kind
+        || typeof row.body !== 'string'
+        || !agentBriefPlainObject(row.bodyInfo)
+        || !Number.isInteger(row.bodyInfo.totalChars)
+        || row.bodyInfo.totalChars < 0
+        || !Number.isInteger(row.bodyInfo.returnedChars)
+        || row.bodyInfo.returnedChars < 0
+        || row.bodyInfo.truncated !== false
+        || row.bodyInfo.returnedChars !== row.bodyInfo.totalChars
+      ) return `meaning repair full-body read ${pageIndex + 1} row ${rowIndex + 1} is incomplete`;
+      if (row.mtime !== target.expectedMtime) {
+        return `meaning repair full-body read ${pageIndex + 1} mtime changed for ${target.slug}`;
+      }
+    }
+  }
+  return null;
 }
 
 export function agentBriefFailure(parsed) {
@@ -9209,6 +9355,15 @@ async function step2BootAndCall() {
     let sentGraphQuerySmoke = false;
     let sentDestructiveDryRunSmoke = false;
     let sentMaintenanceResumeSmoke = false;
+    let startedMeaningRepairReview = false;
+    let meaningRepairReviewRequired = false;
+    let meaningRepairReviewChainEnded = false;
+    let meaningRepairReviewFailed = false;
+    let nextMeaningRepairReviewId = 74;
+    let nextMeaningRepairReadId = 1000;
+    const meaningRepairReviewRequests = [];
+    const meaningRepairReadRequests = [];
+    const processedMeaningRepairReviewIds = new Set();
     let destructiveDryRunExpectedResponses = [];
     let earlyEmptyVaultPayload = null;
     const expectedFirstContactIds = initialExpectedFirstContactIds();
@@ -9364,7 +9519,103 @@ async function step2BootAndCall() {
           }
         }
       }
-      if (!completed && (hasAllFirstContactResponses(stdout, expectedFirstContactIds) || hasFirstContactErrorResponse(stdout, expectedFirstContactIds))) {
+      const liveResponses = parseJsonRpcResponses(stdout);
+      if (!startedMeaningRepairReview) {
+        const agentBriefResponse = liveResponses.find((response) => response?.id === 66);
+        if (agentBriefResponse) {
+          startedMeaningRepairReview = true;
+          let firstArguments = null;
+          try {
+            if (!agentBriefResponse.result) throw new TypeError('agent_brief response failed');
+            const payload = JSON.parse(agentBriefResponse.result.content?.[0]?.text || '{}');
+            if (payload?.meaningRepair?.status === 'human_review_required') {
+              meaningRepairReviewRequired = true;
+              firstArguments = payload.meaningRepair.workflow?.[0]?.calls?.[0]?.arguments ?? null;
+            }
+          } catch {
+            meaningRepairReviewFailed = true;
+            firstArguments = null;
+          }
+          if (meaningRepairReviewRequired && !firstArguments) {
+            meaningRepairReviewFailed = true;
+          }
+          if (firstArguments) {
+            const id = nextMeaningRepairReviewId++;
+            expectedFirstContactIds.add(id);
+            meaningRepairReviewRequests.push({ id, arguments: firstArguments });
+            proc.stdin.write(JSON.stringify({
+              jsonrpc: '2.0',
+              id,
+              method: 'tools/call',
+              params: { name: 'query_ontology', arguments: firstArguments },
+            }) + '\n');
+          }
+        }
+      }
+      for (const request of meaningRepairReviewRequests) {
+        if (processedMeaningRepairReviewIds.has(request.id)) continue;
+        const response = liveResponses.find((row) => row?.id === request.id);
+        if (!response) continue;
+        processedMeaningRepairReviewIds.add(request.id);
+        let nextArguments = null;
+        try {
+          const payload = JSON.parse(response.result?.content?.[0]?.text || '{}');
+          if (payload?.status === 'ready') {
+            const readArguments = payload.readCall?.arguments ?? null;
+            if (readArguments) {
+              const id = nextMeaningRepairReadId++;
+              expectedFirstContactIds.add(id);
+              meaningRepairReadRequests.push({
+                id,
+                reviewRequestId: request.id,
+                arguments: readArguments,
+              });
+              proc.stdin.write(JSON.stringify({
+                jsonrpc: '2.0',
+                id,
+                method: 'tools/call',
+                params: { name: 'get_concepts', arguments: readArguments },
+              }) + '\n');
+            }
+            if (payload.pagination?.hasMore === true) {
+              nextArguments = payload.nextCall?.arguments ?? null;
+            } else {
+              meaningRepairReviewChainEnded = true;
+            }
+          } else {
+            meaningRepairReviewFailed = true;
+          }
+        } catch {
+          meaningRepairReviewFailed = true;
+          nextArguments = null;
+        }
+        if (nextArguments) {
+          const id = nextMeaningRepairReviewId++;
+          expectedFirstContactIds.add(id);
+          meaningRepairReviewRequests.push({ id, arguments: nextArguments });
+          proc.stdin.write(JSON.stringify({
+            jsonrpc: '2.0',
+            id,
+            method: 'tools/call',
+            params: { name: 'query_ontology', arguments: nextArguments },
+          }) + '\n');
+        }
+      }
+      const meaningRepairReviewSettled = startedMeaningRepairReview && (
+        !meaningRepairReviewRequired
+        || meaningRepairReviewFailed
+        || (
+          meaningRepairReviewChainEnded
+          && meaningRepairReadRequests.length === meaningRepairReviewRequests.length
+          && meaningRepairReadRequests.every(({ id }) => liveResponses.some((row) => row?.id === id))
+        )
+      );
+      if (
+        !completed
+        && meaningRepairReviewSettled
+        && (hasAllFirstContactResponses(stdout, expectedFirstContactIds)
+          || hasFirstContactErrorResponse(stdout, expectedFirstContactIds))
+      ) {
         completed = true;
         if (timer) clearTimeout(timer);
         stopServer();
@@ -10318,9 +10569,11 @@ async function step2BootAndCall() {
         log('fail', 'no query_ontology agent_brief response');
         return res(false);
       }
+      let agentBriefPayload = null;
       try {
         const text = agentBriefRes.result.content?.[0]?.text || '';
         const parsed = JSON.parse(text);
+        agentBriefPayload = parsed;
         const failure = agentBriefFailure(parsed);
         if (failure) {
           log('fail', failure);
@@ -10335,6 +10588,78 @@ async function step2BootAndCall() {
       } catch (err) {
         log('fail', `failed to parse agent_brief response: ${err.message}`);
         return res(false);
+      }
+
+      const meaningRepairReviewPages = [];
+      for (const request of meaningRepairReviewRequests) {
+        const response = responses.find((row) => row.id === request.id);
+        if (!response?.result) {
+          log('fail', `no meaning_repair_review response for request ${request.id}`);
+          return res(false);
+        }
+        try {
+          const parsed = JSON.parse(response.result.content?.[0]?.text || '');
+          const structuredFailure = structuredContentFailure(
+            response,
+            parsed,
+            `meaning_repair_review page ${meaningRepairReviewPages.length + 1}`,
+          );
+          if (structuredFailure) {
+            log('fail', structuredFailure);
+            return res(false);
+          }
+          meaningRepairReviewPages.push(parsed);
+        } catch (err) {
+          log('fail', `failed to parse meaning_repair_review response: ${err.message}`);
+          return res(false);
+        }
+      }
+      const meaningRepairReviewFailure = meaningRepairReviewChainFailure(
+        agentBriefPayload,
+        meaningRepairReviewPages,
+        meaningRepairReviewRequests.map((request) => request.arguments),
+      );
+      if (meaningRepairReviewFailure) {
+        log('fail', meaningRepairReviewFailure);
+        return res(false);
+      }
+      const meaningRepairReadPayloads = [];
+      for (const pageRequest of meaningRepairReviewRequests) {
+        const readRequest = meaningRepairReadRequests.find(
+          (request) => request.reviewRequestId === pageRequest.id,
+        );
+        const response = readRequest
+          ? responses.find((row) => row.id === readRequest.id)
+          : null;
+        if (!response?.result) {
+          log('fail', `no meaning repair full-body read response for review request ${pageRequest.id}`);
+          return res(false);
+        }
+        try {
+          meaningRepairReadPayloads.push(JSON.parse(response.result.content?.[0]?.text || ''));
+        } catch (err) {
+          log('fail', `failed to parse meaning repair full-body read response: ${err.message}`);
+          return res(false);
+        }
+      }
+      const meaningRepairReadsFailure = meaningRepairFullBodyReadsFailure(
+        meaningRepairReviewPages,
+        meaningRepairReadPayloads,
+      );
+      if (meaningRepairReadsFailure) {
+        log('fail', meaningRepairReadsFailure);
+        return res(false);
+      }
+      if (meaningRepairReviewPages.length > 0) {
+        const totalTargets = meaningRepairReviewPages
+          .reduce((total, page) => total + page.targets.length, 0);
+        const pageSummary = meaningRepairReviewPages
+          .map((page) => `${page.targets.length}@${new TextEncoder().encode(JSON.stringify(page)).byteLength}B`)
+          .join(' + ');
+        log(
+          'ok',
+          `meaning_repair_review: ${meaningRepairReviewPages.length} page(s) (${pageSummary}), ${totalTargets}/${meaningRepairReviewPages[0].pagination.total} targets + full bodies`,
+        );
       }
 
       if (!tunedBriefRes || !tunedBriefRes.result) {

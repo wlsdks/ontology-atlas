@@ -5,6 +5,7 @@ kind: capability
 title: Topology Map Rendering & Search
 domain: domains/topology-navigation
 elements: [elements/global-search, elements/search-palette, elements/topology-controls, elements/topology-index-panel, elements/topology-map-v2]
+path: src/widgets/topology-map-v2
 created_by: "agent:unknown"
 ---
 

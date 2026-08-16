@@ -1734,6 +1734,7 @@ await test("tools/list — 단일 도구 description 이 batch 짝을 cross-refe
         "growth_plan",
         "maintenance_plan",
         "agent_brief",
+        "meaning_repair_review",
         "workspace_brief",
         "health",
       ],

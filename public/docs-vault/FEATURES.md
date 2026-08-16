@@ -40,6 +40,14 @@ Multi-project vaults use explicit selection at the agent boundary:
 `ontology-atlas agent-brief --project SLUG` forwards the same project identity
 as `query_ontology({ operation: "agent_brief", project: SLUG })`.
 
+When that brief finds incomplete `abilities` or implementation `evidence` against
+a current source receipt, `meaningRepair:v2` gives the agent a compact human-review
+manifest. The existing `query_ontology` tool's `meaning_repair_review` operation
+then serves the complete typed candidates as provenance-bound pages of at most
+20 targets and 5 KiB each, with matching full-body read calls and an opaque next
+cursor. It stays read-only: every page and target mtime must be checked before
+human approval, and Atlas still never patches or finalizes meaning automatically.
+
 ```
 input (humans + AI agents)     parse           store              output
         │                       │                │                │
