@@ -1222,7 +1222,7 @@ describe('query-result-contract', () => {
     );
     assert.throws(
       () => assertAgentBriefShape({ ...valid, cliFallbackCommands: [] }),
-      /agent_brief cliFallbackCommands must include non-empty ontology-atlas CLI fallback commands/,
+      /agent_brief cliFallbackCommands must include non-empty runnable CLI fallback commands/,
     );
     /*
      * 2026-08-17: 계약이 뒤집혔다. 종전에는 **실행 가능한** 형태를 거절하고
@@ -1231,7 +1231,14 @@ describe('query-result-contract', () => {
      */
     assert.throws(
       () => assertAgentBriefShape({ ...valid, cliFallbackCommands: ['ontology-atlas health'] }),
-      /agent_brief cliFallbackCommands must include non-empty ontology-atlas CLI fallback commands/,
+      /agent_brief cliFallbackCommands must include non-empty runnable CLI fallback commands/,
+    );
+    assert.equal(
+      assertAgentBriefShape({
+        ...valid,
+        cliFallbackCommands: ["node '/tmp/ontology atlas/cli/src/index.mjs' health [vault]"],
+      }).operation,
+      'agent_brief',
     );
     assert.throws(
       () => assertAgentBriefShape({ ...valid, firstCalls: [{ tool: 'query_ontology', arguments: {} }] }),

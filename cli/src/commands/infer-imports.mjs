@@ -56,7 +56,7 @@ export async function runInferImports(args) {
       importArgs.reviewMode = 'full';
       importArgs.allowLargeResponse = true;
     }
-    result = await callMcpTool(vaultRoot, 'infer_imports', importArgs);
+    result = await callMcpTool(vaultRoot, 'infer_imports', importArgs, { repoRoot: target });
     assertInferImportsResult(result);
   } catch (err) {
     process.stderr.write(

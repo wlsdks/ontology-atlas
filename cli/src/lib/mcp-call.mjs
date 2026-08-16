@@ -17,7 +17,7 @@
 import { spawn } from 'node:child_process';
 import { existsSync, readFileSync, statSync } from 'node:fs';
 import { isDeepStrictEqual } from 'node:util';
-import { dirname, resolve } from 'node:path';
+import { dirname, isAbsolute, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { createRequire } from 'node:module';
 
@@ -71,10 +71,15 @@ function isFile(path) {
  * @param {string} vaultRoot — passed as OATLAS_VAULT env
  * @param {string} toolName — e.g. 'find_backlinks'
  * @param {Record<string, unknown>} args — tool arguments
+ * @param {{ repoRoot?: string }} options — explicit repository boundary for scan tools
  * @returns {Promise<unknown>}
  */
-export function callMcpTool(vaultRoot, toolName, args = {}) {
+export function callMcpTool(vaultRoot, toolName, args = {}, options = {}) {
   return new Promise((resolveP, rejectP) => {
+    const repoRoot = options.repoRoot;
+    if (repoRoot !== undefined && (typeof repoRoot !== 'string' || repoRoot.trim() === '' || !isAbsolute(repoRoot))) {
+      throw new Error('repoRoot must be a non-empty absolute path when provided.');
+    }
     const entry = resolveMcpEntry();
     const timeoutMs = mcpCallTimeoutMs();
     const killGraceMs = mcpKillGraceMs();
@@ -88,7 +93,8 @@ export function callMcpTool(vaultRoot, toolName, args = {}) {
     // `needs_attention — vault_validation warn:13` 을 붙였다. 같은 볼트에
     // `validate` 는 clean 이라고 답해서, 어느 쪽이 맞는지 알 방법이 없었다.
     const env = { ...process.env, OATLAS_VAULT: vaultRoot };
-    if (!process.env.OATLAS_REPO_ROOT) delete env.OATLAS_REPO_ROOT;
+    if (repoRoot !== undefined) env.OATLAS_REPO_ROOT = repoRoot;
+    else if (!process.env.OATLAS_REPO_ROOT) delete env.OATLAS_REPO_ROOT;
     const proc = spawn(process.execPath, [entry], {
       env,
       // 서버의 마지막 fallback 도 `process.cwd()` 다. 자식의 cwd 를 볼트로

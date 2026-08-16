@@ -304,7 +304,7 @@ export function assertAgentBriefShape(result) {
     throw new Error('agent_brief handoffPrompt must be a non-empty agent handoff string');
   }
   if (!validAgentCliFallbackCommands(result.cliFallbackCommands)) {
-    throw new Error('agent_brief cliFallbackCommands must include non-empty ontology-atlas CLI fallback commands');
+    throw new Error('agent_brief cliFallbackCommands must include non-empty runnable CLI fallback commands');
   }
   if (!isPlainObject(result.health) || !Array.isArray(result.health.checks) || result.health.checks.length === 0) {
     throw new Error('agent_brief health.checks must be a non-empty array');
@@ -1723,10 +1723,17 @@ function validAgentModeComparison(value) {
 function validAgentCliFallbackCommands(commands) {
   return Array.isArray(commands)
     && commands.length > 0
-    && commands.every(
-      (command) =>
-        hasNonEmptyString(command) && /^node\s+\S*cli\/src\/index\.mjs\s+\S/.test(command),
-    );
+    && commands.every(validAgentCliFallbackCommand);
+}
+
+function validAgentCliFallbackCommand(command) {
+  if (!hasNonEmptyString(command) || /[\r\n]/.test(command)) return false;
+  const normalized = command.replaceAll('\\', '/');
+  const entryMarker = 'cli/src/index.mjs';
+  const entryIndex = normalized.indexOf(entryMarker);
+  if (!normalized.startsWith('node ') || entryIndex < 'node '.length) return false;
+  if (normalized.slice('node '.length, entryIndex).trim() === '') return false;
+  return /^(?:['"])?\s+\S/.test(normalized.slice(entryIndex + entryMarker.length));
 }
 
 function validAgentTraversalStrategy(strategies) {

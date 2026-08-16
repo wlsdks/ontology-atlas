@@ -8999,6 +8999,16 @@ export function meaningRepairFullBodyReadsFailure(pages, readPayloads) {
   return null;
 }
 
+function isRunnableAgentCliFallback(command) {
+  if (typeof command !== 'string' || command.trim() === '' || /[\r\n]/.test(command)) return false;
+  const normalized = command.replaceAll('\\', '/');
+  const entryMarker = 'cli/src/index.mjs';
+  const entryIndex = normalized.indexOf(entryMarker);
+  if (!normalized.startsWith('node ') || entryIndex < 'node '.length) return false;
+  if (normalized.slice('node '.length, entryIndex).trim() === '') return false;
+  return /^(?:['"])?\s+\S/.test(normalized.slice(entryIndex + entryMarker.length));
+}
+
 export function agentBriefFailure(parsed) {
   if (parsed?.operation !== 'agent_brief') {
     return `agent_brief returned unexpected operation: ${parsed?.operation}`;
@@ -9094,7 +9104,7 @@ export function agentBriefFailure(parsed) {
   if (
     !Array.isArray(parsed.cliFallbackCommands) ||
     parsed.cliFallbackCommands.length === 0 ||
-    parsed.cliFallbackCommands.some((command) => typeof command !== 'string' || !/^ontology-atlas\s/.test(command))
+    parsed.cliFallbackCommands.some((command) => !isRunnableAgentCliFallback(command))
   ) {
     return 'agent_brief response missing cliFallbackCommands';
   }
