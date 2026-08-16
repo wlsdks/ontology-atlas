@@ -28,6 +28,8 @@ const bridge = vi.hoisted(() => ({
   stderr: null as ((line: string) => void) | null,
   /** 껍데기가 보내는 알림 — 관문을 못 세웠다는 사실이 이 길로 온다. */
   notice: null as ((message: string) => void) | null,
+  /** 세션별 종료 콜백 — 이미 큐에 든 이전 이벤트를 다시 부를 수 있게 보관한다. */
+  exits: new Map<string, () => void>(),
   /** 세션 모드 관문 적용 실패를 재현한다. */
   failSetMode: false,
   stopped: [] as string[],
@@ -78,20 +80,23 @@ vi.mock('@/shared/lib/tauri-acp', () => ({
   },
   acpPermissionVerdict: async () => 'ask',
   listenToAcpSession: async (
-    _id: string,
+    id: string,
     handlers: {
       onMessage?: (line: string) => void;
       onStderr?: (line: string) => void;
       onNotice?: (message: string) => void;
+      onExit?: () => void;
     },
   ) => {
     bridge.listener = handlers.onMessage ?? null;
     bridge.stderr = handlers.onStderr ?? null;
     bridge.notice = handlers.onNotice ?? null;
+    if (handlers.onExit) bridge.exits.set(id, handlers.onExit);
     return () => {
       bridge.listener = null;
       bridge.stderr = null;
       bridge.notice = null;
+      bridge.exits.delete(id);
     };
   },
 }));
@@ -104,6 +109,7 @@ afterEach(() => {
   bridge.listener = null;
   bridge.stderr = null;
   bridge.notice = null;
+  bridge.exits.clear();
   bridge.failSetMode = false;
   bridge.stopped = [];
   bridge.sent = [];
@@ -187,6 +193,40 @@ describe('세션 하나 — 겹쳐 불러도 프로세스는 하나', () => {
       bridge.release?.();
       await result.current.stop();
       await second;
+    });
+  });
+
+  it('이전 세션의 늦은 종료 이벤트가 새 세션을 끝내지 않는다', async () => {
+    const { result } = renderHook(() =>
+      useAcpSession({ runtimeId: 'claude-acp', vaultRoot: '/vault' }),
+    );
+    const first = result.current.start();
+    await waitFor(() => expect(bridge.starts).toBe(1));
+    await act(async () => {
+      bridge.release?.();
+      await first;
+    });
+    const oldExit = bridge.exits.get('acp-1');
+    expect(oldExit).toBeTruthy();
+
+    const switching = result.current.switchSession(null);
+    await waitFor(() => expect(bridge.starts).toBe(2));
+    await act(async () => {
+      bridge.release?.();
+      await switching;
+    });
+    expect(result.current.status).toBe('ready');
+
+    act(() => oldExit?.());
+    expect(result.current.status, '끝난 이전 세션이 새 세션을 exited로 바꿨다').toBe('ready');
+
+    await act(async () => {
+      await result.current.send('새 세션은 살아 있어야 해');
+    });
+    expect(bridge.sent.filter((message) => message.method === 'session/prompt')).toHaveLength(1);
+
+    await act(async () => {
+      await result.current.stop();
     });
   });
 });

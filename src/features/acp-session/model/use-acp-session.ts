@@ -356,6 +356,12 @@ export function useAcpSession({ runtimeId, vaultRoot, mcpServers }: UseAcpSessio
           keepDiagnostic(line);
         },
         onExit: () => {
+          /*
+           * 이벤트 구독을 해제해도 이미 큐에 들어간 콜백은 늦게 올 수 있다.
+           * 세션을 갈아탄 뒤 예전 콜백이 현재 ref를 치우면 새 대화가 이유 없이
+           * `exited`가 된다. 이 콜백은 자신이 태어난 세대와 프로세스만 소유한다.
+           */
+          if (stale() || acpSessionRef.current !== acpSessionId) return;
           setStatus('exited');
           // 끝난 세션에 답을 기다리는 카드가 떠 있으면 거절로 닫는다.
           pendingResolverRef.current?.(null);
