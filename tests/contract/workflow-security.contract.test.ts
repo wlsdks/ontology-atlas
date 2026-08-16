@@ -26,6 +26,55 @@ function hasTrigger(source: string, trigger: string): boolean {
   return new RegExp(`^\\s{2}${trigger}:`, "m").test(source.replace(/^\s*#.*$/gm, ""));
 }
 
+function escapePattern(value: string): string {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+/** 한 job 의 정확한 들여쓰기 경계. YAML 문자열 검사는 범위를 잘못 잡으면 거짓 초록이다. */
+function jobBlock(source: string, jobName: string): string {
+  const marker = new RegExp(`^  ${escapePattern(jobName)}:\\s*$`, "m");
+  const match = marker.exec(source);
+  if (!match) throw new Error(`workflow job not found: ${jobName}`);
+  const start = match.index;
+  const afterStart = source.slice(start + match[0].length);
+  const next = /^  [A-Za-z0-9_-]+:\s*$/m.exec(afterStart);
+  return source.slice(start, next ? start + match[0].length + next.index : source.length);
+}
+
+function jobHeader(source: string, jobName: string): string {
+  const block = jobBlock(source, jobName);
+  const steps = block.indexOf("\n    steps:");
+  if (steps < 0) throw new Error(`workflow steps not found: ${jobName}`);
+  return block.slice(0, steps);
+}
+
+function stepNamesUsingSecret(source: string, secretName: string): string[] {
+  const steps = source.split(/(?=^      - (?:name|uses):)/m);
+  return steps
+    .filter((step) => step.includes(`secrets.${secretName}`))
+    .map((step) => {
+      const named = /^      - name: (.+)$/m.exec(step)?.[1];
+      const action = /^      - uses: (.+)$/m.exec(step)?.[1];
+      return named ?? action ?? "<unscoped>";
+    });
+}
+
+function writePermissionsByJob(source: string): Record<string, string[]> {
+  const jobsStart = source.indexOf("\njobs:\n");
+  if (jobsStart < 0) throw new Error("workflow jobs block not found");
+  const jobsSource = source.slice(jobsStart + 1);
+  const names = [...jobsSource.matchAll(/^  ([A-Za-z0-9_-]+):\s*$/gm)].map((match) => match[1]);
+  const writes: Record<string, string[]> = {};
+  for (const name of names) {
+    const permissions = /^    permissions:\n((?:      .*\n?)*)/m.exec(jobHeader(source, name))?.[1];
+    const keys = permissions
+      ? [...permissions.matchAll(/^      ([A-Za-z0-9-]+): write$/gm)].map((match) => match[1])
+      : [];
+    if (keys.length > 0) writes[name] = keys;
+  }
+  return writes;
+}
+
 describe("워크플로 보안 계약", () => {
   const all = workflows();
 
@@ -101,5 +150,90 @@ describe("워크플로 보안 계약", () => {
     // 확인한 뒤에만 공개된다.
     const release = all.find((w) => w.name === "release-macos.yml")!;
     expect(release.source).toMatch(/environment:\s*release/);
+  });
+
+  it("릴리스 토큰 쓰기 권한은 실제로 쓰는 job 에만 있다", () => {
+    const release = all.find((w) => w.name === "release-macos.yml")!.source;
+
+    // workflow 기본은 읽기 전용이다. job 하나가 쓰기를 이유로 전체 빌드에
+    // contents/checks write 를 물려주면 checkout·install·test 액션까지 같은
+    // 토큰을 받는다.
+    expect(release).toMatch(/^permissions:\n  contents: read\s*$/m);
+    expect(jobBlock(release, "build-macos")).not.toMatch(/^    permissions:/m);
+    expect(jobBlock(release, "build-windows")).toMatch(
+      /^    permissions:\n      contents: read\n      checks: write\s*$/m,
+    );
+    expect(jobBlock(release, "stage-macos")).toMatch(
+      /^    permissions:\n      contents: write\s*$/m,
+    );
+    expect(jobBlock(release, "publish-macos")).toMatch(
+      /^    permissions:\n(?:      .+\n)*?      contents: write\n      actions: write\s*$/m,
+    );
+    expect(writePermissionsByJob(release)).toEqual({
+      "build-windows": ["checks"],
+      "stage-macos": ["contents"],
+      "publish-macos": ["contents", "actions"],
+    });
+
+    // 새 job 이 생겨도 기존 네 이름만 검사하고 지나가지 않는지 helper 자체를
+    // 한 번 찌른다. 실제 매핑 단언은 바로 위가 맡는다.
+    const synthetic = release.replace(
+      "  build-macos:\n",
+      "  unexpected-writer:\n    permissions:\n      contents: write\n    steps:\n      - run: true\n\n  build-macos:\n",
+    );
+    expect(writePermissionsByJob(synthetic)["unexpected-writer"]).toEqual(["contents"]);
+  });
+
+  it("서명 secret 은 필요한 release step 에서만 보인다", () => {
+    const release = all.find((w) => w.name === "release-macos.yml")!.source;
+    for (const jobName of ["build-macos", "build-windows", "stage-macos", "publish-macos"]) {
+      expect(jobHeader(release, jobName), `${jobName} job env`).not.toMatch(
+        /\$\{\{\s*secrets\.(?:APPLE_|TAURI_SIGNING_)/,
+      );
+    }
+
+    const expectedSteps: Record<string, string[]> = {
+      APPLE_CERTIFICATE_P12_BASE64: [
+        "Decide signing path",
+        "Import Apple Developer ID certificate",
+        "Build signed and notarized release artifact",
+      ],
+      APPLE_CERTIFICATE_PASSWORD: [
+        "Decide signing path",
+        "Import Apple Developer ID certificate",
+        "Build signed and notarized release artifact",
+      ],
+      APPLE_ID: ["Decide signing path", "Build signed and notarized release artifact"],
+      APPLE_APP_SPECIFIC_PASSWORD: [
+        "Decide signing path",
+        "Build signed and notarized release artifact",
+      ],
+      APPLE_TEAM_ID: ["Decide signing path", "Build signed and notarized release artifact"],
+      TAURI_SIGNING_PRIVATE_KEY: [
+        "Build signed and notarized release artifact",
+        "Build unsigned release artifact",
+        "Build Windows NSIS installer",
+      ],
+      TAURI_SIGNING_PRIVATE_KEY_PASSWORD: [
+        "Build signed and notarized release artifact",
+        "Build unsigned release artifact",
+        "Build Windows NSIS installer",
+      ],
+    };
+
+    for (const [secret, steps] of Object.entries(expectedSteps)) {
+      expect(stepNamesUsingSecret(release, secret).sort(), secret).toEqual(steps.sort());
+    }
+  });
+
+  it("Pages OIDC 와 배포 권한은 deploy job 에만 있다", () => {
+    const pages = all.find((w) => w.name === "deploy-pages.yml")!.source;
+    expect(pages).toMatch(/^permissions:\n  contents: read\s*$/m);
+    expect(jobBlock(pages, "build")).not.toMatch(/^    permissions:/m);
+    expect(jobBlock(pages, "verify-hosted")).not.toMatch(/^    permissions:/m);
+    expect(jobBlock(pages, "deploy")).toMatch(
+      /^    permissions:\n      pages: write\n      id-token: write\s*$/m,
+    );
+    expect(writePermissionsByJob(pages)).toEqual({ deploy: ["pages", "id-token"] });
   });
 });
