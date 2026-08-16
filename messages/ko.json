@@ -196,7 +196,7 @@
         "noneReady": "확인된 도구가 없어요",
         "noneReadyCaption": "Claude Code 나 Codex 를 설치하면 여기에 나타나요.",
         "webLabel": "브라우저는 이 컴퓨터의 프로그램을 띄울 권한이 없어요",
-        "webCaption": "맥 앱을 받으면 이 컴퓨터에 설치된 도구를 앱 안에서 바로 쓸 수 있어요. 이 화면에서도 「내 에이전트 연결」로, 직접 띄운 도구를 이 폴더에 붙일 수 있어요.",
+        "webCaption": "맥 앱을 받으면 이 컴퓨터에 설치된 도구를 앱 안에서 바로 쓸 수 있어요. 이 화면에서도 「MCP」 칸에서, 직접 띄운 도구를 이 폴더에 붙일 수 있어요.",
         "state": {
           "ready": "준비됨",
           "cli-missing": "설치 필요",
@@ -206,7 +206,7 @@
           "cli-unknown": "확인 못 함",
           "login-needed": "로그인 필요"
         },
-        "guardedExplainer": "폴더 밖 파일을 건드릴 때 Atlas 가 대신 물어봐 줄 수 있는 건 지금 {names} 뿐이에요. 나머지 도구는 그 도구에 직접 해 둔 설정대로 움직여요.",
+        "guardedExplainer": "폴더 밖 파일을 건드릴 때 Atlas 가 대신 물어봐 줄 수 있는 건 지금 {names} 예요. 나머지 도구는 그 도구에 직접 해 둔 설정대로 움직여요.",
         "guardedExplainerNone": "지금은 폴더 밖 파일을 건드릴 때 Atlas 가 대신 물어봐 줄 수 있는 도구가 없어요. 각 도구에 직접 해 둔 설정대로 움직여요.",
         "unknownExplainer": "「확인 못 함」은 그 도구가 없다는 뜻이 아니라, 이 컴퓨터에 있는지 Atlas 가 알아볼 방법을 아직 안 갖췄다는 뜻이에요. 눌러서 띄워 보는 건 됩니다.",
         "installGuide": "설치 방법"
@@ -2539,7 +2539,7 @@
       "pastReadOnlyNotice": "이 폴더를 읽기 전용으로 열어서 지금 걷는 길이 남지 않아요. 문서를 한 번 저장하면 쓰기 권한을 물어봐요."
     },
     "startChecklist": {
-      "scaffoldToast": "온톨로지 개념 {concepts}개 · 에이전트 설정 파일 {configs}개를 만들었어요"
+      "scaffoldToast": "개념 문서 {concepts}장 · AI 연결 설정 파일 {configs}개를 만들었어요"
     },
     "recentChangesNeedsVault": {
       "eyebrow": "최근 변경",
@@ -2568,8 +2568,8 @@
       },
       "analyze": {
         "title": "코드를 읽고 지도 초안 그리기",
-        "bodyAgent": "이 폴더를 훑어보고 어떤 프로젝트·영역·기능이 있는지 AI가 제안하게 해요. 승인하기 전에는 폴더에 아무것도 쓰지 않아요.",
-        "bodyCopy": "AI에게 줄 지시를 복사해서, 쓰고 있는 도구에 붙여넣으면 돼요. 승인하기 전에는 폴더에 아무것도 쓰지 않아요.",
+        "bodyAgent": "이 폴더를 훑어보고 어떤 프로젝트·영역·기능이 있는지 AI가 제안하게 해요. 지시에 「사람이 승인하기 전에는 폴더에 쓰지 않는다」가 들어 있어요.",
+        "bodyCopy": "AI에게 줄 지시를 복사해서, 쓰고 있는 도구에 붙여넣으면 돼요. 지시에 「사람이 승인하기 전에는 폴더에 쓰지 않는다」가 들어 있어요.",
         "ctaAgent": "에이전트에게 시키기",
         "ctaCopy": "지시 복사하기",
         "ctaCopied": "복사됐어요. 도구에 붙여넣으세요",
@@ -3632,7 +3632,7 @@
     "sampleNotice": "예시 뭉치예요. 내 폴더를 열면 내 스킬이 보여요."
   },
   "acpChat": {
-    "ariaLabel": "{runtime} 와의 대화",
+    "ariaLabel": "{runtime} 대화",
     "emptyHint": "이 폴더에 대해 무엇이든 물어보세요. 지도에서 보고 있는 것을 그대로 물어도 돼요.",
     "composerLabel": "무엇을 시킬지 적어요",
     "send": "보내기",
@@ -3646,25 +3646,13 @@
       "error": "문제 있음",
       "exited": "끝남"
     },
-    "toolKind": {
-      "read": "읽기",
-      "edit": "고치기",
-      "delete": "지우기",
-      "move": "옮기기",
-      "search": "찾기",
-      "execute": "실행",
-      "think": "생각",
-      "fetch": "가져오기",
-      "switch_mode": "모드 변경",
-      "other": "작업"
-    },
     "permission": {
       "title": "이 폴더 밖을 건드리려고 해요",
       "body": "허락하기 전에는 아무 일도 일어나지 않아요. 어디를 건드리는지 아래에서 확인하세요.",
       "unknownTarget": "무엇을 하려는지 알 수 없어요",
       "reject": "안 할래요",
       "allowOnce": "이번만 허용",
-      "allowAlways": "이 폴더 전체를 이번 대화 내내 허용"
+      "allowAlways": "위 경로가 있는 폴더 전체를 이번 대화 내내 허용"
     },
     "close": "대화 닫기",
     "composerPlaceholder": "이 폴더에 대해 물어보거나 시켜요",
@@ -3687,6 +3675,7 @@
     },
     "toolGroup": "{count}개 작업",
     "resize": "대화 칸 너비 조절",
-    "resizeHint": "끌어서 넓히거나 좁혀요. 화살표 키로도 돼요."
+    "resizeHint": "끌어서 넓히거나 좁혀요. 화살표 키로도 돼요.",
+    "closeHistory": "지난 대화 목록 닫기"
   }
 }

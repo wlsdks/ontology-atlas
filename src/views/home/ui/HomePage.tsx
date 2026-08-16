@@ -2163,6 +2163,13 @@ export function HomePage() {
   const [acpRuntimeId, setAcpRuntimeId] = useState<string | null>(null);
   const [acpChatOpen, setAcpChatOpen] = useState(false);
   /**
+   * 대화 패널이 **화면에 붙어 있나** — 열림과 다른 값이다.
+   *
+   * 열림은 「보여야 하나」이고 이것은 「그려져 있나」다. 닫을 때 둘이 같은
+   * 값이면 사라지는 애니메이션이 돌 자리가 없다(그래서 종전에는 안 돌았다).
+   */
+  const [chatMounted, setChatMounted] = useState(false);
+  /**
    * 대화 칸의 폭은 **사용자가 정하고 이 컴퓨터가 기억한다.** 어떤 사람은 지도를
    * 보면서 짧게 묻고 어떤 사람은 코드 덩어리를 읽는다 — 그 둘에 다 맞는 한 수는
    * 없어서, 우리는 지도가 죽지 않을 선만 지킨다.
@@ -2570,6 +2577,7 @@ export function HomePage() {
 
   const openVaultAgent = useCallback(() => {
     if (agentChatUsesRuntime) {
+      setChatMounted(true);
       setAcpChatOpen(true);
       setVaultAgentOpen(false);
     } else {
@@ -2637,6 +2645,13 @@ export function HomePage() {
    */
   const closeVaultAgent = useCallback(() => {
     agentDockTouchedRef.current = true;
+    /*
+     * 닫는 순간에도 **그려진 채로 남는다** — 그래야 사라지는 애니메이션이 돌
+     * 자리가 있다. 다 사라지면 `Surface` 가 `onExited` 로 알려 주고 그때
+     * 언마운트한다(주소로 들어온 요청처럼 이 함수를 안 거친 경로도 있어서,
+     * 여기서 한 번 더 켜 둔다).
+     */
+    setChatMounted(true);
     // 창이 하나이므로 닫는 것도 하나다 — 어느 갈래가 떠 있었든 이 한 번으로 닫힌다.
     setVaultAgentOpen(false);
     setAcpChatOpen(false);
@@ -5712,12 +5727,23 @@ export function HomePage() {
         「지도가 주」(2026-07-27 적용 규칙)는 그대로다: 이 패널은 지도 옆에
         서고, 지도를 덮지 않는다.
       */}
-      {runtimeChatOpen && acpRuntime && gitVaultPath ? (
+      {(runtimeChatOpen || chatMounted) && acpRuntime && gitVaultPath ? (
         <Surface
           open={runtimeChatOpen}
           as="aside"
           origin="right"
-          onExited={() => setAcpChatOpen(false)}
+          /*
+           * ⚠️ **여기가 죽은 코드였다** (2026-08-16 검수에서 적발).
+           *
+           * 종전에는 이 블록의 마운트 조건과 `open` 이 **같은 값**이었다. 그래서
+           * 닫기를 누르면 같은 프레임에 통째로 사라졌고, 퇴장 애니메이션은 한
+           * 번도 재생된 적이 없으며 이 콜백도 불린 적이 없다 — 「사라지는 동안」
+           * 이 존재하지 않았다.
+           *
+           * 마운트와 열림을 갈라 둔다: 열 때 마운트하고, 다 사라진 뒤에 언마운트.
+           * 이 저장소가 표면마다 지키는 「퇴장은 두 프레임짜리 일」 그대로다.
+           */
+          onExited={() => setChatMounted(false)}
           /*
            * ⚠️ 종전 폭은 `var(--topology-agent-panel-width, 360px)` 였는데 **그
            * 토큰은 존재하지 않는다** — 늘 폴백 360px 이 쓰였고, 아무도 안 쓰는

@@ -196,7 +196,7 @@
         "noneReady": "Nothing found yet",
         "noneReadyCaption": "Install Claude Code or Codex and it shows up here.",
         "webLabel": "A browser is not allowed to start programs on this computer",
-        "webCaption": "Get the Mac app to use the tools installed here from inside Atlas. On this screen you can still point a tool you started yourself at this folder, from “Connect my agents”.",
+        "webCaption": "Get the Mac app to use the tools installed here from inside Atlas. On this screen you can still point a tool you started yourself at this folder, from the “MCP” section.",
         "state": {
           "ready": "Ready",
           "cli-missing": "Install needed",
@@ -206,7 +206,7 @@
           "cli-unknown": "Not checked",
           "login-needed": "Sign in needed"
         },
-        "guardedExplainer": "Right now {names} is the only tool Atlas can ask you about before it touches a file outside this folder. Every other tool follows the settings you gave it directly.",
+        "guardedExplainer": "Atlas can ask you before a file outside this folder is touched, but only for these: {names}. Every other tool follows the settings you gave it directly.",
         "guardedExplainerNone": "No tool here can be asked about before it touches a file outside this folder. Each one follows the settings you gave it directly.",
         "unknownExplainer": "\"Not checked\" does not mean the tool is missing. It means Atlas does not yet know how to look for it on this computer. You can still start it.",
         "installGuide": "How to install"
@@ -2539,7 +2539,7 @@
       "pastReadOnlyNotice": "This folder is open read-only, so this walk isn't being kept. Saving any document will ask for write access."
     },
     "startChecklist": {
-      "scaffoldToast": "Created {concepts} ontology concepts and {configs} agent config files"
+      "scaffoldToast": "Created {concepts} concept documents and {configs} AI connection files"
     },
     "recentChangesNeedsVault": {
       "eyebrow": "Recent changes",
@@ -2568,8 +2568,8 @@
       },
       "analyze": {
         "title": "Let AI draft the map from your code",
-        "bodyAgent": "It reads this folder and proposes the projects, domains and capabilities it finds. Nothing is written to the folder until you approve it.",
-        "bodyCopy": "Copy the instruction and paste it into the AI tool you already use. Nothing is written to the folder until you approve it.",
+        "bodyAgent": "It reads this folder and proposes the projects, domains and capabilities it finds. The instruction tells it to propose first and write nothing until you approve.",
+        "bodyCopy": "Copy the instruction and paste it into the AI tool you already use. The instruction tells it to propose first and write nothing until you approve.",
         "ctaAgent": "Ask the agent",
         "ctaCopy": "Copy the instruction",
         "ctaCopied": "Copied. Paste it into your tool",
@@ -3646,25 +3646,13 @@
       "error": "Problem",
       "exited": "Ended"
     },
-    "toolKind": {
-      "read": "Read",
-      "edit": "Edit",
-      "delete": "Delete",
-      "move": "Move",
-      "search": "Search",
-      "execute": "Run",
-      "think": "Think",
-      "fetch": "Fetch",
-      "switch_mode": "Mode",
-      "other": "Task"
-    },
     "permission": {
       "title": "It wants to touch something outside this folder",
       "body": "Nothing happens until you allow it. Check below where it wants to write.",
       "unknownTarget": "Cannot tell what it wants to do",
       "reject": "No thanks",
       "allowOnce": "Allow once",
-      "allowAlways": "Allow this whole folder for this conversation"
+      "allowAlways": "Allow the folder that path is in, for this whole conversation"
     },
     "close": "Close conversation",
     "composerPlaceholder": "Ask about this folder, or give it a task",
@@ -3687,6 +3675,7 @@
     },
     "toolGroup": "{count} steps",
     "resize": "Resize the chat panel",
-    "resizeHint": "Drag to widen or narrow. Arrow keys work too."
+    "resizeHint": "Drag to widen or narrow. Arrow keys work too.",
+    "closeHistory": "Close the past chats list"
   }
 }

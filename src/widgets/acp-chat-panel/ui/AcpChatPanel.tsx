@@ -615,7 +615,12 @@ export function AcpChatPanel({
       {historyOpen && sessions.length > 0 ? (
         <button
           type="button"
-          aria-label={t('close')}
+          /*
+           * ⚠️ 이 막의 이름은 **목록을 닫는 것**이다 (2026-08-16 검수에서 적발).
+           * 종전에는 패널 닫기와 같은 키(`close`)를 써서, 화면을 못 보는
+           * 사용자에게 「대화를 끝냅니다」라고 말하고 목록만 닫았다.
+           */
+          aria-label={t('closeHistory')}
           data-testid="acp-chat-history-scrim"
           onClick={() => setHistoryOpen(false)}
           className="absolute inset-0 cursor-default bg-[color:var(--color-overlay-1)]"
@@ -682,11 +687,16 @@ export function AcpChatPanel({
                         언제 한 대화인지는 **이미 받아 온 값**이다. 안 보여 주면
                         제목만 비슷한 대화들 사이에서 고를 근거가 없다.
                       */}
-                      {session.updatedAt ? (
-                        <span className="truncate text-label leading-label text-[color:var(--color-text-quaternary)]">
-                          {formatDate(session.updatedAt)}
-                        </span>
-                      ) : null}
+                      {/*
+                        ⚠️ 종전에는 날짜가 **있을 때만** 이 줄을 그렸다. 그러면
+                        같은 목록 안에서 행 높이가 56px 과 38px 로 갈린다 — 이
+                        저장소의 「치수는 우리가 정하지 내용물이 정하지 않는다」
+                        규율이 정확히 그것을 금지한다(2026-08-16 검수).
+                        날짜가 없어도 그 줄은 자리를 지킨다.
+                      */}
+                      <span className="truncate text-label leading-label text-[color:var(--color-text-quaternary)]">
+                        {session.updatedAt ? formatDate(session.updatedAt) : '\u00A0'}
+                      </span>
                     </span>
                   </RowButton>
                 </li>

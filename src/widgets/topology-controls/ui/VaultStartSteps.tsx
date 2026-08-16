@@ -310,10 +310,14 @@ export function VaultStartSteps({
           설명 자리는 **세 줄로 고정**한다. 걸음마다 글이 짧고 길어서 그대로 두면
           카드가 걸음마다 위아래로 뛴다 — 같은 자리에서 내용만 바뀌는 화면에서
           그 흔들림은 「다른 카드가 왔다」로 읽힌다.
+
+          `min-h-15` = 60px = 20px 짜리 세 줄. 종전에는 `calc(3*var(--leading-body))`
+          로 적었는데, 램프 토큰을 대괄호 안에서 길이로 **돌려 참조**하는 것은
+          이 저장소가 금지한 모양이다(2026-08-16 검수). 값은 픽셀까지 같다.
         */}
         <p
           data-testid="start-step-body"
-          className="mt-2 min-h-[calc(3*var(--leading-body))] break-keep text-body leading-body text-[color:var(--color-text-tertiary)]"
+          className="mt-2 min-h-15 break-keep text-body leading-body text-[color:var(--color-text-tertiary)]"
         >
           {body}
         </p>
@@ -352,6 +356,11 @@ export function VaultStartSteps({
             {/*
               채움은 **한 화면에 하나**다 — 이 카드에서 인디고 면을 갖는 것은
               지금 걸음의 주 행동뿐이다.
+
+              호버를 손으로 쓴 이유: 값 층의 `hoverSurface` 축은 무채색 `lift`
+              한 단만 갖는다. 인디고 틴트를 한 단 올리는 것은 값이 아니라
+              **위계 판정**이라 축이 일부러 안 가진다(실측에 다수파가 없었다) —
+              그래서 이 자리에 남기고 그 근거를 여기 적는다.
             */}
             <Chip
               size="lg"
