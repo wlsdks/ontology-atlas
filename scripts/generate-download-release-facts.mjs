@@ -21,6 +21,7 @@
 import { execFileSync } from "node:child_process";
 import fs from "node:fs";
 import path from "node:path";
+import { parseSha256Checksum } from "./lib/macos-checksum.mjs";
 
 const ROOT = process.cwd();
 const OUTPUT_PATH = path.join(
@@ -101,18 +102,21 @@ function gh(args) {
  * rather than recomputing it locally — means the page shows exactly the
  * checksum a user verifies against.
  */
-function sha256FromChecksumAsset(assetId) {
+function sha256FromChecksumAsset(assetId, expectedFilename) {
   const body = gh([
     "api",
     `repos/${REPOSITORY}/releases/assets/${assetId}`,
     "-H",
     "Accept: application/octet-stream",
-  ]).trim();
-  const hash = body.split(/\s+/)[0] ?? "";
-  if (!/^[0-9a-f]{64}$/i.test(hash)) {
-    fail(`checksum asset ${assetId} did not contain a SHA-256 hash, got: ${body.slice(0, 80)}`);
+  ]);
+  try {
+    return parseSha256Checksum(body, { expectedFilename }).checksum;
+  } catch (error) {
+    fail(
+      `checksum asset ${assetId} is invalid: ${error instanceof Error ? error.message : String(error)}`,
+    );
+    return "";
   }
-  return hash.toLowerCase();
 }
 
 function renderModule(release) {
@@ -311,7 +315,7 @@ const assets = release.assets
       arch: asset.name.match(DMG_NAME_PATTERN).groups.arch,
       fileName: asset.name,
       sizeBytes: asset.size,
-      sha256: sha256FromChecksumAsset(checksumAsset.id),
+      sha256: sha256FromChecksumAsset(checksumAsset.id, asset.name),
       downloadUrl: asset.browser_download_url,
     };
   })
@@ -337,7 +341,7 @@ const windowsAssets = release.assets
       arch: match.groups.arch,
       fileName: asset.name,
       sizeBytes: asset.size,
-      sha256: sha256FromChecksumAsset(checksumAsset.id),
+      sha256: sha256FromChecksumAsset(checksumAsset.id, asset.name),
       downloadUrl: asset.browser_download_url,
     };
   });

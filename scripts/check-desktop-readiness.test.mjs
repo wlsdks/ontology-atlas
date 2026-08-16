@@ -95,7 +95,7 @@ test("desktop readiness check proves Tauri macOS shell prerequisites", () => {
   );
   assert.match(
     result.stdout,
-    /✓ desktop checker tests cover the GitHub release operator, source, run-watch, checksum, and completion gates/,
+    /✓ desktop checker tests cover the GitHub release operator, source, run-watch, checksum filename, and completion gates/,
   );
   assert.match(
     result.stdout,
