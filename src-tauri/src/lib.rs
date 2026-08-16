@@ -119,11 +119,37 @@ fn canonical_root(root_path: &str) -> Result<PathBuf, String> {
 ///
 /// 「폴더가 너무 크다」 같은 발견적 판정은 일부러 넣지 않았다. 임계값을 넘는
 /// 정당한 볼트가 반드시 생기고, 그때 사용자는 이유를 알 수 없는 거절을 만난다.
+/// 이름만 보고 「이건 앱 번들이다」를 판정한다.
+///
+/// 확장자로 가르는 이유: 번들 여부를 정확히 알려면 `Info.plist` 를 읽어야
+/// 하는데, 그때는 이미 그 안을 들여다본 뒤다. 이름은 열기 전에 보인다.
+/// 목록은 macOS 가 **실행하거나 특별 취급하는** 것들이다.
+fn is_bundle_directory(root: &Path) -> bool {
+    const BUNDLE_EXTENSIONS: &[&str] = &[
+        "app", "bundle", "framework", "kext", "plugin", "prefpane", "qlgenerator",
+        "saver", "wdgt", "xpc", "appex", "component", "mdimporter",
+    ];
+    root.extension()
+        .and_then(|e| e.to_str())
+        .map(|e| e.to_ascii_lowercase())
+        .is_some_and(|e| BUNDLE_EXTENSIONS.contains(&e.as_str()))
+}
+
 fn vault_root_rejection(root: &Path) -> Option<&'static str> {
     // 부모가 없으면 파일시스템 루트다(`/`, `C:\`). 심볼릭 링크로 우회하지
     // 못하도록 호출자가 canonicalize 한 경로를 넘긴다.
     if root.parent().is_none() {
         return Some("filesystem-root");
+    }
+
+    // macOS 에서 **`.app` 은 디렉터리다** (2026-08-17). `is_dir()` 만 보면
+    // 통과하고, `open <경로>` 는 폴더를 여는 게 아니라 **그 프로그램을
+    // 실행한다** — 「Finder 에서 보기」가 절대 하면 안 되는 일이다.
+    //
+    // 볼트 루트로도 같은 이유로 막는다: 번들 안은 앱의 내부 구조이지 사람이
+    // 문서를 두는 자리가 아니고, 에이전트의 작업 폴더가 되면 더욱 아니다.
+    if is_bundle_directory(root) {
+        return Some("bundle-directory");
     }
 
     let home = std::env::var_os(if cfg!(windows) { "USERPROFILE" } else { "HOME" })
@@ -1731,10 +1757,22 @@ fn open_vault_in_finder(root_path: String) -> Result<(), String> {
     if !metadata.is_dir() {
         return Err("vault root must be a directory".into());
     }
+    // ⚠️ **`is_dir()` 로는 부족하다** (2026-08-17). macOS 에서 `.app` 은
+    // 디렉터리라 위 검사를 통과하고, 그러면 아래 `open` 이 폴더를 여는 게
+    // 아니라 **그 프로그램을 실행한다.** 같은 판정을 볼트 루트 문에서 쓰는
+    // 함수로 한다 — 판정이 두 벌이 되면 한쪽만 느슨해지는 쪽이 기본값이다.
+    if let Some(reason) = vault_root_rejection(&root) {
+        return Err(format!("refusing to open this path: {reason}"));
+    }
 
     #[cfg(target_os = "macos")]
     {
+        // `-a Finder` 로 **여는 프로그램을 못박는다.** 이것만으로도 번들이
+        // 실행되지 않지만, 위 거절과 둘 다 둔다 — 하나가 풀려도 다른 하나가
+        // 남는다.
         let status = Command::new("open")
+            .arg("-a")
+            .arg("Finder")
             .arg(&root)
             .status()
             .map_err(|err| err.to_string())?;
@@ -4692,6 +4730,36 @@ mod tests {
     /// 2026-08-16 — 폴더 피커가 `/`(Macintosh HD)를 볼트로 받아들였고, 막은 것은
     /// 우리가 아니라 macOS 의 경고 대화상자였다. 볼트 루트는 곧 에이전트의 작업
     /// 폴더가 되므로 그 문을 먼저 닫는다.
+    /// 2026-08-17 — macOS 에서 **`.app` 은 디렉터리다.** `is_dir()` 만 보면
+    /// 통과하고, `open <경로>` 는 폴더를 여는 게 아니라 **그 프로그램을
+    /// 실행한다.** 「Finder 에서 보기」가 절대 하면 안 되는 일이다.
+    ///
+    /// 볼트 루트로도 같은 이유로 막는다: 번들 안은 앱의 내부 구조이지 사람이
+    /// 문서를 두는 자리가 아니고, 에이전트의 작업 폴더가 되면 더욱 아니다.
+    #[test]
+    fn vault_root_rejection_blocks_macos_bundles() {
+        for path in [
+            "/Applications/Calculator.app",
+            "/Users/someone/Downloads/Thing.app",
+            "/tmp/Some.bundle",
+            "/tmp/Some.framework",
+        ] {
+            assert_eq!(
+                vault_root_rejection(Path::new(path)),
+                Some("bundle-directory"),
+                "{path} 이 통과하면 폴더를 여는 대신 프로그램이 실행된다"
+            );
+        }
+    }
+
+    #[test]
+    fn vault_root_rejection_allows_ordinary_folders_with_dots() {
+        // 늘 거절하면 그것도 검사가 아니다. 점이 들어간 평범한 폴더는 통과한다.
+        for path in ["/tmp/my.notes", "/tmp/v1.2.3", "/tmp/plain"] {
+            assert_eq!(vault_root_rejection(Path::new(path)), None, "{path}");
+        }
+    }
+
     #[test]
     fn vault_root_rejection_blocks_the_filesystem_root() {
         assert_eq!(
