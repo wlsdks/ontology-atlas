@@ -203,7 +203,8 @@
           "node-missing": "Node needed",
           "uvx-missing": "uv needed",
           "binary-missing": "Install yourself",
-          "cli-unknown": "Not checked"
+          "cli-unknown": "Not checked",
+          "login-needed": "Sign in needed"
         },
         "guardedExplainer": "Right now {names} is the only tool Atlas can ask you about before it touches a file outside this folder. Every other tool follows the settings you gave it directly.",
         "guardedExplainerNone": "No tool here can be asked about before it touches a file outside this folder. Each one follows the settings you gave it directly.",

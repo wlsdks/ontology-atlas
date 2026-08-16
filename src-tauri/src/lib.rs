@@ -821,11 +821,12 @@ fn acp_start(
         return Err(format!("vault-root-rejected:{reason}"));
     }
 
-    let (is_executable, list_dir, read_text) = acp::real_probe();
+    let (is_executable, list_dir, read_text, login_ok) = acp::real_probe();
     let probe = acp::FsProbe {
         is_executable: &is_executable,
         list_dir: &list_dir,
         read_text: &read_text,
+        login_ok: &login_ok,
     };
     let home =
         std::env::var_os(if cfg!(windows) { "USERPROFILE" } else { "HOME" }).map(PathBuf::from);
@@ -1044,11 +1045,12 @@ fn terminate_all_acp_sessions(app: &AppHandle) {
 /// 읽기만 한다 — 이 커맨드는 아무것도 띄우지 않고 아무것도 쓰지 않는다.
 #[tauri::command]
 fn acp_detect_runtimes() -> Vec<acp::AcpRuntimeStatus> {
-    let (is_executable, list_dir, read_text) = acp::real_probe();
+    let (is_executable, list_dir, read_text, login_ok) = acp::real_probe();
     let probe = acp::FsProbe {
         is_executable: &is_executable,
         list_dir: &list_dir,
         read_text: &read_text,
+        login_ok: &login_ok,
     };
     let home = std::env::var_os(if cfg!(windows) { "USERPROFILE" } else { "HOME" })
         .map(PathBuf::from);

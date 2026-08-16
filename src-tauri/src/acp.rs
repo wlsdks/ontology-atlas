@@ -184,6 +184,43 @@ pub(crate) struct FsProbe<'a> {
     /// 작은 텍스트 파일 읽기 (없으면 None). nvm 이 「기본 버전」을 적어 두는
     /// 파일 하나를 읽는 데만 쓴다.
     pub read_text: &'a dyn Fn(&Path) -> Option<String>,
+    /// 그 CLI 에 「로그인돼 있나」를 물어본다. `None` = 안 물어봤다(모른다).
+    ///
+    /// 실물에서는 그 CLI 를 짧게 띄워 **종료 코드만** 본다. 검사에서는 가짜를
+    /// 꽂는다 — 이 판정 하나 때문에 검사가 진짜 프로세스를 띄우게 두지 않는다.
+    pub login_ok: &'a dyn Fn(&Path, &[&str]) -> Option<bool>,
+}
+
+/**
+ * 「로그인돼 있나」를 물어보는 명령 — **우리가 실제로 재 본 것만.**
+ *
+ * ## 왜 필요한가 (2026-08-16 소유자 지적)
+ *
+ * *"나도 원래 claude code, codex 다 있는데도 각 에이전트에 버튼 눌러서
+ * 세팅했었는데? 지금 atlas 는 바로 준비됨이던데 확인이 필요할 듯"*
+ *
+ * 맞는 지적이었다. 우리 「준비됨」은 **파일이 그 자리에 있나**만 봤다. 그런데
+ * 설치는 했지만 로그인은 안 한 사람에게도 그렇게 말하고 있었고, 그 사람이
+ * 대화를 열면 `Authentication required` 로 죽는다(이미 실측해 둔 실패다).
+ *
+ * ⚠️ **출력은 읽지 않는다. 종료 코드만 본다.** `claude auth status` 는 이메일과
+ * 조직 ID 까지 돌려준다(실측). 그걸 우리가 읽을 이유가 없고, 읽으면 신뢰
+ * 헌장이 막는 종류의 일이 된다 — 화면에 안 띄우더라도 프로세스 메모리에
+ * 들어오는 것 자체를 안 한다.
+ *
+ * 재 본 값(2026-08-16): `claude auth status` 300ms · `codex login status` 45ms,
+ * 둘 다 로그인 상태에서 exit 0.
+ */
+pub(crate) const LOGIN_PROBE: &[(&str, &[&str])] = &[
+    ("claude-acp", &["auth", "status"]),
+    ("codex-acp", &["login", "status"]),
+];
+
+fn login_probe_args(runtime_id: &str) -> Option<&'static [&'static str]> {
+    LOGIN_PROBE
+        .iter()
+        .find(|(id, _)| *id == runtime_id)
+        .map(|(_, args)| *args)
 }
 
 /// nvm 이 설치한 Node 들의 `bin` 디렉터리 — **사용자가 쓰기로 한 버전이 앞**.
@@ -425,10 +462,27 @@ pub(crate) fn detect_runtimes(
                 .and_then(|name| resolve_command(name, &dirs, probe));
             let program = resolve_program(&agent.launch, &dirs, probe);
 
+            /*
+             * 도구도 있고 띄울 수도 있다 — 그런데 **로그인은 했나.** 재 본
+             * 실행기에만 물어본다(`LOGIN_PROBE`). 안 물어본 것은 `None` 이고,
+             * 그건 「로그인 안 됨」이 아니라 「모른다」다.
+             */
+            let login_ok = cli.as_deref().zip(login_probe_args(&agent.id)).and_then(
+                |(path, args)| (probe.login_ok)(path, args),
+            );
+
             let state = if agent.cli.is_some() && cli.is_none() {
                 "cli-missing"
             } else if program.is_none() {
                 launcher_missing_state(&agent.launch)
+            } else if login_ok == Some(false) {
+                /*
+                 * 도구는 있는데 로그인이 안 돼 있다. 「준비됨」이라고 말하면
+                 * 사용자가 대화를 열어 보고서야 `Authentication required` 를
+                 * 만난다 — 화면이 먼저 말해야 하는 것이고, 사용자가 할 일도
+                 * 분명하다(그 도구에서 로그인).
+                 */
+                "login-needed"
             } else if agent.cli.is_none() {
                 /*
                  * ⚠️ **여기가 「준비됨」이었다** (2026-08-16 소유자 지적:
@@ -876,6 +930,7 @@ pub(crate) fn real_probe() -> (
     impl Fn(&Path) -> bool,
     impl Fn(&Path) -> Vec<String>,
     impl Fn(&Path) -> Option<String>,
+    impl Fn(&Path, &[&str]) -> Option<bool>,
 ) {
     let is_executable = |path: &Path| -> bool {
         let Ok(meta) = std::fs::metadata(path) else {
@@ -911,8 +966,53 @@ pub(crate) fn real_probe() -> (
         }
         std::fs::read_to_string(path).ok()
     };
-    (is_executable, list_dir, read_text)
+    /*
+     * 로그인 여부는 그 CLI 에게 **직접 물어본다.** 그 자리의 파일을 뜯어보지
+     * 않는다 — 자격증명 파일의 모양은 벤더가 언제든 바꾸고, 우리가 그걸 읽는
+     * 것 자체가 신뢰 헌장이 막는 종류의 일이다.
+     *
+     * **종료 코드만** 본다(0 = 로그인됨). 출력은 파이프로 버린다: `claude auth
+     * status` 는 이메일과 조직 ID 를 돌려주는데(실측) 우리가 그것을 프로세스
+     * 메모리에 들일 이유가 없다.
+     *
+     * 못 띄우거나 시간이 지나면 `None` — 「로그인 안 됨」이 아니라 **모른다**다.
+     * 모르는 것을 「안 됨」으로 적으면 멀쩡한 도구를 못 쓰게 만든다.
+     */
+    let login_ok = |path: &Path, args: &[&str]| -> Option<bool> {
+        use std::process::{Command, Stdio};
+        let mut command = Command::new(path);
+        command
+            .args(args)
+            .stdin(Stdio::null())
+            .stdout(Stdio::null())
+            .stderr(Stdio::null());
+        let mut child = command.spawn().ok()?;
+
+        // 응답이 없으면 기다리다 화면이 멈춘다. 실측값(claude 300ms · codex
+        // 45ms)의 여러 배를 상한으로 두고, 넘으면 끝내고 「모른다」로 답한다.
+        let deadline = std::time::Instant::now() + LOGIN_PROBE_TIMEOUT;
+        loop {
+            match child.try_wait() {
+                Ok(Some(status)) => return Some(status.success()),
+                Ok(None) => {
+                    if std::time::Instant::now() >= deadline {
+                        let _ = child.kill();
+                        let _ = child.wait();
+                        return None;
+                    }
+                    std::thread::sleep(std::time::Duration::from_millis(20));
+                }
+                Err(_) => return None,
+            }
+        }
+    };
+
+    (is_executable, list_dir, read_text, login_ok)
 }
+
+/// 로그인 확인에 기다려 주는 시간. 실측(claude 300ms · codex 45ms)의 여러 배다 —
+/// 넉넉하되, 응답이 없는 도구 때문에 목록이 멈추지는 않게.
+const LOGIN_PROBE_TIMEOUT: std::time::Duration = std::time::Duration::from_secs(5);
 
 #[cfg(test)]
 mod tests {
@@ -949,6 +1049,7 @@ mod tests {
             is_executable: &is_exec,
             list_dir: &list,
             read_text: &read,
+            login_ok: &|_, _| None,
         };
         let path = std::env::join_paths([PathBuf::from("/from/path")]).unwrap();
         let out = candidate_bin_dirs(Some(Path::new("/home/me")), Some(&path), &probe);
@@ -976,6 +1077,7 @@ mod tests {
             is_executable: &is_exec,
             list_dir: &list,
             read_text: &read,
+            login_ok: &|_, _| None,
         };
         let out = nvm_bin_dirs(Path::new("/home/me"), &probe);
         assert_eq!(
@@ -1014,6 +1116,7 @@ mod tests {
             is_executable: &is_exec,
             list_dir: &list,
             read_text: &read,
+            login_ok: &|_, _| None,
         };
         let out = detect_runtimes(Some(Path::new("/home/me")), None, &probe);
         let claude = out.iter().find(|r| r.id == "claude-acp").unwrap();
@@ -1055,6 +1158,7 @@ mod tests {
             is_executable: &is_exec,
             list_dir: &list,
             read_text: &read,
+            login_ok: &|_, _| None,
         };
         let out = nvm_bin_dirs(Path::new("/home/me"), &probe);
         assert_eq!(
@@ -1075,6 +1179,7 @@ mod tests {
             is_executable: &is_exec,
             list_dir: &list,
             read_text: &read,
+            login_ok: &|_, _| None,
         };
         assert_eq!(
             resolve_command("claude", &[PathBuf::from("/usr/bin")], &probe),
@@ -1104,6 +1209,7 @@ mod tests {
             is_executable: &is_exec,
             list_dir: &list,
             read_text: &read,
+            login_ok: &|_, _| None,
         };
 
         // PATH 는 GUI 앱이 받는 최소한만 — 여기에 아무것도 없다.
@@ -1147,6 +1253,7 @@ mod tests {
                 is_executable: &is_exec,
                 list_dir: &list,
                 read_text: &read,
+                login_ok: &|_, _| None,
             };
             let out = detect_runtimes(None, None, &probe);
             let claude = out.iter().find(|r| r.id == "claude-acp").unwrap();
@@ -1160,11 +1267,104 @@ mod tests {
             is_executable: &is_exec,
             list_dir: &list,
             read_text: &read,
+            login_ok: &|_, _| None,
         };
         let out = detect_runtimes(None, None, &probe);
         let claude = out.iter().find(|r| r.id == "claude-acp").unwrap();
         assert_eq!(claude.state, "node-missing");
         assert_eq!(claude.cli_path.as_deref(), Some("/usr/local/bin/claude"));
+    }
+
+    /// **여기 있다 ≠ 로그인돼 있다.**
+    ///
+    /// 2026-08-16 소유자 지적: *"나도 원래 claude code, codex 다 있는데도 각
+    /// 에이전트에 버튼 눌러서 세팅했었는데? 지금 atlas 는 바로 준비됨이던데
+    /// 확인이 필요할 듯"*. 맞았다 — 우리 「준비됨」은 파일 존재만 봤고, 설치는
+    /// 했지만 로그인은 안 한 사람도 그렇게 불렀다. 그 사람이 대화를 열면
+    /// `Authentication required` 로 죽는다(이미 실측해 둔 실패다).
+    #[test]
+    fn installed_but_not_logged_in_is_not_ready() {
+        let mut files: HashSet<PathBuf> = HashSet::new();
+        files.insert(PathBuf::from("/usr/local/bin/claude"));
+        files.insert(PathBuf::from("/usr/local/bin/npx"));
+        let dirs = empty_dirs();
+        let (is_exec, list, read) = probe_with(&files, &dirs);
+
+        // ① 로그인돼 있다 → 준비됨.
+        let probe = FsProbe {
+            is_executable: &is_exec,
+            list_dir: &list,
+            read_text: &read,
+            login_ok: &|_, _| Some(true),
+        };
+        let out = detect_runtimes(None, None, &probe);
+        let claude = out.iter().find(|r| r.id == "claude-acp").unwrap();
+        assert_eq!(claude.state, "ready");
+
+        // ② 로그인이 안 돼 있다 → **준비됨이 아니다.** 할 일이 분명한 다른 상태다.
+        let probe = FsProbe {
+            is_executable: &is_exec,
+            list_dir: &list,
+            read_text: &read,
+            login_ok: &|_, _| Some(false),
+        };
+        let out = detect_runtimes(None, None, &probe);
+        let claude = out.iter().find(|r| r.id == "claude-acp").unwrap();
+        assert_eq!(
+            claude.state, "login-needed",
+            "설치만 하고 로그인 안 한 사람에게 준비됐다고 말하면, 그 사람은 대화를 열어 보고서야 안다",
+        );
+
+        // ③ **모르면 「안 됨」으로 적지 않는다.** 물어보지 못한 것을 실패로 세면
+        //    멀쩡한 도구를 못 쓰게 만든다.
+        let probe = FsProbe {
+            is_executable: &is_exec,
+            list_dir: &list,
+            read_text: &read,
+            login_ok: &|_, _| None,
+        };
+        let out = detect_runtimes(None, None, &probe);
+        let claude = out.iter().find(|r| r.id == "claude-acp").unwrap();
+        assert_eq!(claude.state, "ready");
+    }
+
+    /// 로그인 확인은 **재 본 실행기에만** 물어본다.
+    #[test]
+    fn we_only_ask_about_runtimes_we_measured() {
+        use std::cell::RefCell;
+        let asked: RefCell<Vec<String>> = RefCell::new(Vec::new());
+        let mut files: HashSet<PathBuf> = HashSet::new();
+        files.insert(PathBuf::from("/usr/local/bin/npx"));
+        for (id, _) in LOGIN_PROBE {
+            let cli = registry()
+                .iter()
+                .find(|a| &a.id == id)
+                .and_then(|a| a.cli.clone())
+                .unwrap();
+            files.insert(PathBuf::from(format!("/usr/local/bin/{cli}")));
+        }
+        // 재 보지 않은 것도 하나 깔아 둔다 — 그것에는 안 물어봐야 한다.
+        files.insert(PathBuf::from("/usr/local/bin/gemini"));
+
+        let dirs = empty_dirs();
+        let (is_exec, list, read) = probe_with(&files, &dirs);
+        let probe = FsProbe {
+            is_executable: &is_exec,
+            list_dir: &list,
+            read_text: &read,
+            login_ok: &|path: &Path, _| {
+                asked.borrow_mut().push(path.to_string_lossy().to_string());
+                Some(true)
+            },
+        };
+        detect_runtimes(None, None, &probe);
+
+        let asked = asked.borrow();
+        assert_eq!(asked.len(), LOGIN_PROBE.len(), "물어본 횟수가 표와 다르다: {asked:?}");
+        assert!(
+            !asked.iter().any(|p| p.ends_with("/gemini")),
+            "재 보지 않은 도구에 물어봤다 — 그 도구에서 그 인자가 무슨 뜻인지 모른다",
+        );
     }
 
     /// **띄울 수 있다 ≠ 그 도구가 여기 있다.**
@@ -1187,6 +1387,7 @@ mod tests {
             is_executable: &is_exec,
             list_dir: &list,
             read_text: &read,
+            login_ok: &|_, _| None,
         };
         let out = detect_runtimes(None, None, &probe);
 
@@ -1239,6 +1440,7 @@ mod tests {
             is_executable: &is_exec,
             list_dir: &list,
             read_text: &read,
+            login_ok: &|_, _| None,
         };
         let out = detect_runtimes(None, None, &probe);
         let claude = out.iter().find(|r| r.id == "claude-acp").unwrap();
@@ -1264,6 +1466,7 @@ mod tests {
                 is_executable: &is_exec,
                 list_dir: &list,
                 read_text: &read,
+                login_ok: &|_, _| None,
             };
             let launch = resolve_launch("claude-acp", None, None, &probe).unwrap();
             assert_eq!(launch.program, PathBuf::from("/usr/local/bin/npx"));
@@ -1283,6 +1486,7 @@ mod tests {
             is_executable: &is_exec,
             list_dir: &list,
             read_text: &read,
+            login_ok: &|_, _| None,
         };
         let launch = resolve_launch("claude-acp", None, None, &probe).unwrap();
         assert_eq!(
@@ -1314,6 +1518,7 @@ mod tests {
             is_executable: &is_exec,
             list_dir: &list,
             read_text: &read,
+            login_ok: &|_, _| None,
         };
         let launch = resolve_launch("claude-acp", Some(Path::new("/home/me")), None, &probe).unwrap();
         assert!(
@@ -1341,6 +1546,7 @@ mod tests {
             is_executable: &is_exec,
             list_dir: &list,
             read_text: &read,
+            login_ok: &|_, _| None,
         };
         assert!(resolve_launch("claude-acp", None, None, &probe)
             .unwrap_err()
@@ -1353,6 +1559,7 @@ mod tests {
             is_executable: &is_exec,
             list_dir: &list,
             read_text: &read,
+            login_ok: &|_, _| None,
         };
         assert_eq!(
             resolve_launch("claude-acp", None, None, &probe).unwrap_err(),
@@ -1681,8 +1888,13 @@ mod real_machine_probe {
     #[test]
     #[ignore]
     fn show_what_this_machine_has() {
-        let (is_executable, list_dir, read_text) = real_probe();
-        let probe = FsProbe { is_executable: &is_executable, list_dir: &list_dir, read_text: &read_text };
+        let (is_executable, list_dir, read_text, login_ok) = real_probe();
+        let probe = FsProbe {
+            is_executable: &is_executable,
+            list_dir: &list_dir,
+            read_text: &read_text,
+            login_ok: &login_ok,
+        };
         let home = std::env::var_os("HOME").map(PathBuf::from);
         // GUI 앱이 받는 빈약한 PATH 를 흉내 낸다 — 터미널 PATH 를 쓰면 이 진단이
         // 정작 재려던 것을 못 잰다.

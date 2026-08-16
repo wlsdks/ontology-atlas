@@ -68,17 +68,21 @@ export interface AcpRuntimeStatus {
    * `cli-unknown` — 띄울 수는 있는데, 그 도구가 이 컴퓨터에 있는지 **우리가
    *   알아볼 방법을 아직 안 갖췄다**(그 어댑터가 감싸는 실행 파일 이름을 안
    *   적어 뒀다). 사용자가 할 일이 아니라 **우리가 할 일**이 남은 것이다
+   * `login-needed` — 도구는 있는데 **로그인이 안 돼 있다.** 그 도구에서 한 번
+   *   로그인하면 된다. 이 갈래가 없으면 「준비됨」이라고 말해 놓고 대화를 열
+   *   때서야 `Authentication required` 로 죽는다(2026-08-16 소유자 지적)
    * `cli-missing` — 그 도구를 설치해야 한다
    * `node-missing` — 도구는 있는데 어댑터를 띄울 Node 가 없다
    * `uvx-missing` — 〃 uv 가 없다
    * `binary-missing` — 직접 설치해야 하는 실행 파일이 없다
    *
-   * 여섯을 「설치됨/아님」 둘로 뭉개지 않는다 — 각각 할 일이 다르다. 특히
+   * 일곱을 「설치됨/아님」 둘로 뭉개지 않는다 — 각각 할 일이 다르다. 특히
    * `ready` 와 `cli-unknown` 을 하나로 두면 화면이 **확인한 적 없는 것을
    * 확인한 것처럼** 말하게 된다(2026-08-16: 38개 중 20개가 그 상태였다).
    */
   state:
     | 'ready'
+    | 'login-needed'
     | 'cli-unknown'
     | 'cli-missing'
     | 'node-missing'

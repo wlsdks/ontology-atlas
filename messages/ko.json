@@ -203,7 +203,8 @@
           "node-missing": "Node 필요",
           "uvx-missing": "uv 필요",
           "binary-missing": "직접 설치",
-          "cli-unknown": "확인 못 함"
+          "cli-unknown": "확인 못 함",
+          "login-needed": "로그인 필요"
         },
         "guardedExplainer": "폴더 밖 파일을 건드릴 때 Atlas 가 대신 물어봐 줄 수 있는 건 지금 {names} 뿐이에요. 나머지 도구는 그 도구에 직접 해 둔 설정대로 움직여요.",
         "guardedExplainerNone": "지금은 폴더 밖 파일을 건드릴 때 Atlas 가 대신 물어봐 줄 수 있는 도구가 없어요. 각 도구에 직접 해 둔 설정대로 움직여요.",
