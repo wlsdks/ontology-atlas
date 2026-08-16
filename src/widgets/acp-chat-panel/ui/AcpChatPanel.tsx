@@ -279,9 +279,10 @@ export function AcpChatPanel({
         없음」). 그래서 개수를 짐작해 자리를 미리 잡아 두지 않는다: 없는 도구에
         빈 드롭다운을 남겨 두면 그건 「곧 됩니다」와 같은 거짓말이다.
 
-        ⚠️ 모드 목록에는 **권한 확인을 건너뛰는 것들이 빠져 있다**
-        (`keepGateSafeModes`). 이 화면이 「폴더 밖은 먼저 물어본다」고 약속하는데
-        그 약속을 드롭다운 한 번으로 무를 수 있으면 약속이 아니다.
+        ⚠️ 모드 목록에는 **권한 확인을 건너뛰는 것들이 빠져 있고**, 아직 재 보지
+        않은 것은 「확인 안 됨」으로 표시된다. 이 화면이 「폴더 밖은 먼저
+        물어본다」고 약속하는데 그 약속을 드롭다운 한 번으로 무르거나, 모르는 것을
+        안전한 것처럼 보이면 약속이 아니다.
       */}
   const choicesRow =
     choices.models.length > 0 || choices.modes.length > 0 ? (
@@ -320,7 +321,14 @@ export function AcpChatPanel({
               size="md"
               value={choices.currentModeId ?? ''}
               onChange={(value) => void chooseMode(value)}
-              options={choices.modes.map((mode) => ({ value: mode.id, label: mode.name }))}
+              options={choices.modes.map((mode) => {
+                const unverified = choices.unverifiedModeIds.includes(mode.id);
+                return {
+                  value: mode.id,
+                  label: unverified ? t('modeUnverified', { name: mode.name }) : mode.name,
+                  description: unverified ? t('modeUnverifiedHint') : undefined,
+                };
+              })}
               data-testid="acp-chat-mode"
               className="min-w-0"
             />

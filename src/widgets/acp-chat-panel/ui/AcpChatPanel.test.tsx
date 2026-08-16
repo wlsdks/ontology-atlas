@@ -118,6 +118,37 @@ afterEach(() => {
 });
 
 describe('대화 패널 — 일어난 일만 그린다', () => {
+  it('재 보지 않은 작업 방식은 안전한 것처럼 보이지 않는다', async () => {
+    render(
+      <AcpChatPanel
+        runtimeId="claude-acp"
+        runtimeLabel="Claude Code"
+        vaultRoot="/vault"
+        mcpServers={[{ name: 'atlas-vault' }]}
+      />,
+    );
+    await waitFor(() => expect(bridge.sent.some((m) => m.method === 'initialize')).toBe(true));
+    replyTo('initialize', { protocolVersion: 1 });
+    await waitFor(() => expect(bridge.sent.some((m) => m.method === 'session/new')).toBe(true));
+    replyTo('session/new', {
+      sessionId: 's-1',
+      modes: {
+        currentModeId: 'default',
+        availableModes: [
+          { id: 'default', name: 'Default' },
+          { id: 'turbo-yolo', name: 'Turbo' },
+        ],
+      },
+    });
+    await waitFor(() =>
+      expect(screen.getByTestId('acp-chat-panel')).toHaveAttribute('data-acp-status', 'ready'),
+    );
+
+    fireEvent.click(screen.getByTestId('acp-chat-mode'));
+    expect(screen.getByText('modeUnverified:{"name":"Turbo"}')).toBeInTheDocument();
+    expect(screen.getByText('modeUnverifiedHint')).toBeInTheDocument();
+  });
+
   it('세션이 서면 준비됨이 되고, 보낸 말과 받은 말이 각각 남는다', async () => {
     await bootSession();
 

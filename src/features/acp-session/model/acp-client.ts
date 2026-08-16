@@ -23,6 +23,8 @@
  *    없다.
  */
 
+import { partitionModes } from './mode-safety';
+
 /** 줄을 주고받는 통로. 프로세스든 가짜든 이것만 만족하면 된다. */
 export interface AcpTransport {
   send(line: string): void | Promise<void>;
@@ -38,35 +40,10 @@ export interface AcpChoice {
 }
 
 /**
- * **관문을 없애는 모드는 내놓지 않는다.**
- *
- * 실측(2026-08-16)에서 어댑터가 내놓는 모드에는 권한 확인을 통째로 건너뛰는
- * 것들이 섞여 있다:
- *
- * - `bypassPermissions` — *"Bypass all permission checks"*
- * - `acceptEdits` — *"Auto-accept file edit operations"*
- * - `agent-full-access` — codex 쪽의 같은 갈래
- *
- * 이 앱은 「폴더 밖 파일을 건드릴 때 먼저 물어본다」고 화면에서 약속한다. 그
- * 약속을 한 번의 드롭다운 선택으로 무를 수 있으면 그건 약속이 아니라 기본값이다.
- * 그래서 **여기서는 안 내놓는다** — 그 모드가 정말 필요한 사람은 그 도구를 자기
- * 터미널에서 그렇게 쓰면 된다. 우리가 막는 것이 아니라, **우리 화면이 지킬 수
- * 있는 약속만 내놓는** 것이다.
- *
- * ⚠️ 「거절로 닫히는」 모드는 막지 않는다(`dontAsk` 는 미리 허용 안 된 것을
- * **거절**한다 — 안전한 쪽으로 실패한다). 가르는 기준은 「엄격한가」가 아니라
- * **「묻지 않고 통과시키는가」**다.
- */
-/**
  * 답을 기다리는 상한. 대화 한 턴은 이보다 오래 걸릴 수 있으므로
  * **악수와 조회에만** 건다(`prompt` 는 시간을 안 준다 — 아래 `prompt` 구현).
  */
-import { partitionModes } from './mode-safety';
-
 const CALL_TIMEOUT_MS = 45_000;
-
-// 안전 판정의 정본 — 위 `keepGateSafeModes` 참고.
-
 
 /**
  * ⚠️ **판정을 여기서 다시 쓰지 않는다** (2026-08-17).
@@ -82,16 +59,17 @@ export function keepGateSafeModes(modes: AcpChoice[]): AcpChoice[] {
   return partitionModes(modes).offered;
 }
 
-/** 이 목록 중 **아직 안 재 본** 것들 — 화면이 그 사실을 말해야 한다. */
-export function unverifiedModeIds(modes: AcpChoice[]): string[] {
-  return partitionModes(modes).unverified;
+interface ParsedChoices {
+  choices: AcpChoice[];
+  dropped: number;
 }
 
 /** `{availableModels|availableModes, current…Id}` 를 화면이 쓰는 모양으로. */
-function toChoices(raw: unknown, listKey: string): AcpChoice[] {
+function toChoices(raw: unknown, listKey: string): ParsedChoices {
   const block = asRecord(raw);
   const list = block && Array.isArray(block[listKey]) ? (block[listKey] as unknown[]) : [];
   const out: AcpChoice[] = [];
+  let dropped = 0;
   for (const item of list) {
     const row = asRecord(item);
     const id =
@@ -100,14 +78,17 @@ function toChoices(raw: unknown, listKey: string): AcpChoice[] {
         : typeof row?.id === 'string'
           ? row.id
           : null;
-    if (!id) continue;
+    if (!id) {
+      dropped += 1;
+      continue;
+    }
     out.push({
       id,
       name: typeof row.name === 'string' && row.name.trim() ? row.name : id,
       description: typeof row.description === 'string' ? row.description : null,
     });
   }
-  return out;
+  return { choices: out, dropped };
 }
 
 function currentId(raw: unknown, key: string): string | null {
@@ -122,15 +103,24 @@ export interface AcpSessionChoices {
   currentModelId: string | null;
   modes: AcpChoice[];
   currentModeId: string | null;
+  /** 목록에는 남았지만 폴더 밖 작업 관문을 아직 재 보지 않은 모드들. */
+  unverifiedModeIds: string[];
+  /** 어댑터 응답 모양이 깨져 읽지 못한 모드 수. */
+  droppedModeCount: number;
 }
 
 export function readSessionChoices(result: Record<string, unknown>): AcpSessionChoices {
+  const modelChoices = toChoices(result.models, 'availableModels');
+  const modeChoices = toChoices(result.modes, 'availableModes');
+  const modePartition = partitionModes(modeChoices.choices);
   return {
-    models: toChoices(result.models, 'availableModels'),
+    models: modelChoices.choices,
     currentModelId: currentId(result.models, 'currentModelId'),
-    // 모드는 **거르고** 내보낸다 — 위 주석 참고.
-    modes: keepGateSafeModes(toChoices(result.modes, 'availableModes')),
+    // 위험한 것은 거르고, 모르는 것은 상태와 함께 내보낸다.
+    modes: modePartition.offered,
     currentModeId: currentId(result.modes, 'currentModeId'),
+    unverifiedModeIds: modePartition.unverified,
+    droppedModeCount: modeChoices.dropped + modePartition.dropped,
   };
 }
 

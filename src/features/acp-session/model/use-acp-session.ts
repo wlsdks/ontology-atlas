@@ -135,6 +135,8 @@ const EMPTY_CHOICES: AcpSessionChoices = {
   currentModelId: null,
   modes: [],
   currentModeId: null,
+  unverifiedModeIds: [],
+  droppedModeCount: 0,
 };
 
 let eventSeq = 0;

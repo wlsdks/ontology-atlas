@@ -285,6 +285,36 @@ describe('ACP 클라이언트 — 요청/응답과 잡음', () => {
     await expect(bad).rejects.toThrow(/sessionId/);
   });
 
+  it('아직 재 보지 않은 모드는 목록에 남기되 안전 상태도 함께 돌려준다', async () => {
+    const t = fakeTransport();
+    const client = createAcpClient(t.transport, { verdict: alwaysAsk, askUser: async () => null });
+
+    const pending = client.newSession({ cwd: '/vault' });
+    t.reply({
+      sessionId: 's-1',
+      modes: {
+        currentModeId: 'default',
+        availableModes: [
+          { id: 'default', name: 'Default' },
+          { id: 'turbo-yolo', name: 'Turbo' },
+          { id: 'bypassPermissions', name: 'Bypass' },
+          { name: 'No identifier' },
+        ],
+      },
+    });
+
+    await expect(pending).resolves.toMatchObject({
+      choices: {
+        modes: [
+          { id: 'default', name: 'Default' },
+          { id: 'turbo-yolo', name: 'Turbo' },
+        ],
+        unverifiedModeIds: ['turbo-yolo'],
+        droppedModeCount: 1,
+      },
+    });
+  });
+
   it('session/update 는 화면으로 흘리고 답하지 않는다', async () => {
     const t = fakeTransport();
     const updates: Array<Record<string, unknown>> = [];
