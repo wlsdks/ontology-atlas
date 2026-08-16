@@ -5,6 +5,7 @@ import {
   accessSync,
   closeSync,
   constants as fsConstants,
+  fchmodSync,
   fsyncSync,
   openSync,
   readdirSync,
@@ -1645,11 +1646,24 @@ function buildRefResolver(docs) {
  * 이름 바꾸기(rename)는 같은 파일 시스템 안에서 원자적이다. 그래서 어느
  * 순간에 죽어도 파일은 **옛 내용 아니면 새 내용**이지, 반쪽이 되지 않는다.
  */
+function existingRegularFileMode(filePath) {
+  try {
+    const metadata = statSync(filePath);
+    return metadata.isFile() ? metadata.mode & 0o777 : null;
+  } catch (error) {
+    if (error?.code === 'ENOENT') return null;
+    throw error;
+  }
+}
+
 export function writeFileAtomically(filePath, text) {
   const temporaryPath = `${filePath}.oatlas-tmp-${process.pid}`;
+  const existingMode = existingRegularFileMode(filePath);
   let descriptor = null;
   try {
     descriptor = openSync(temporaryPath, 'wx');
+    // private 원본의 권한을 temp가 잠깐이라도 넓히지 않도록 내용보다 먼저 적용한다.
+    if (existingMode !== null) fchmodSync(descriptor, existingMode);
     writeFileSync(descriptor, text, 'utf-8');
     // 이름을 바꾸기 전에 디스크에 확정한다 — 안 하면 이름만 새것이고 내용은
     // 아직 캐시에 있는 상태로 전원이 나갈 수 있다.

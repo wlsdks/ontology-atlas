@@ -4,6 +4,7 @@ import {
   mkdtempSync,
   readFileSync,
   rmSync,
+  statSync,
   symlinkSync,
   writeFileSync,
 } from "node:fs";
@@ -16,8 +17,10 @@ import {
   loadVaultDocs,
   pathToSlug,
   walkMd as mcpWalkMd,
+  writeFileAtomically as mcpWriteFileAtomically,
 } from "../../mcp/src/vault.mjs";
 import { compileOntology } from "../../mcp/src/ontology-compiler.mjs";
+import { writeFileAtomically as cliWriteFileAtomically } from "../../cli/src/lib/atomic-write.mjs";
 import { slugToPath as cliSlugToPath, writeFrontmatterKey } from "../../cli/src/lib/write-vault.mjs";
 import { walkMd as cliWalkMd } from "../../cli/src/lib/walk-vault.mjs";
 
@@ -154,6 +157,30 @@ describe("볼트 밖 읽기 — 심볼릭 링크", () => {
     expect(docs.map((doc) => doc.slug)).toEqual(["safe"]);
     expect(JSON.stringify(docs)).not.toContain("OUTSIDE_SECRET");
     expect(JSON.stringify(docs)).not.toContain("Outside secret");
+  });
+});
+
+/** 원자적 교체가 private 문서를 기본 0644 임시파일 권한으로 완화하지 않는다. */
+describe("볼트 파일 권한 — 원자적 갱신", () => {
+  const writers = [
+    ["mcp", mcpWriteFileAtomically],
+    ["cli", cliWriteFileAtomically],
+  ] as const;
+
+  it("probe: MCP와 CLI 두 writer를 모두 검사한다", () => {
+    expect(writers).toHaveLength(2);
+  });
+
+  it.each(writers)("%s: 0600 문서를 갱신해도 0600을 보존한다", (_name, write) => {
+    const root = vault();
+    const target = join(root, "private.md");
+    writeFileSync(target, "before\n");
+    chmodSync(target, 0o600);
+
+    write(target, "after\n");
+
+    expect(readFileSync(target, "utf8")).toBe("after\n");
+    expect(statSync(target).mode & 0o777).toBe(0o600);
   });
 });
 
