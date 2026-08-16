@@ -974,6 +974,26 @@ fn process_is_running(pid: u32) -> bool {
     unsafe { libc::kill(pid as i32, 0) == 0 }
 }
 
+/// 그룹 리더가 이미 회수된 뒤에도 **그 PGID에 구성원이 남았는지** 확인한다.
+///
+/// `kill(pid, 0)`은 리더 하나만 본다. 음수 PID는 프로세스 그룹 전체를 뜻하므로,
+/// TERM을 무시한 손자까지 사라졌는지는 이 판정으로만 알 수 있다.
+#[cfg(unix)]
+fn process_group_is_running(pgid: u32) -> Result<bool, String> {
+    if unsafe { libc::kill(-(pgid as i32), 0) } == 0 {
+        return Ok(true);
+    }
+    let err = std::io::Error::last_os_error();
+    match err.raw_os_error() {
+        Some(libc::ESRCH) => Ok(false),
+        // EPERM은 「없다」가 아니다. macOS에서는 방금 TERM을 받은 그룹이
+        // 회수되는 짧은 구간에도 보일 수 있으므로 grace 동안은 살아 있는 것으로
+        // 보고 다시 확인한다. 최종 신호에서도 EPERM이면 그때 오류로 올린다.
+        Some(libc::EPERM) => Ok(true),
+        _ => Err(format!("failed to inspect process group {pgid}: {err}")),
+    }
+}
+
 /// 프로세스 **그룹**에 신호를 보낸다. 그룹으로 못 보내면 리더에게라도 보낸다.
 ///
 /// 그룹이 먼저인 이유: 어댑터는 자기 자식(진짜 CLI · MCP 서버 · 서브에이전트)을
@@ -981,9 +1001,9 @@ fn process_is_running(pid: u32) -> bool {
 /// 참고 제품에서 유휴 에이전트 3개가 92 프로세스 · 7.1GB 를 쓰고 있는 것을
 /// 실측했다 — 그 트리를 확실히 끝내는 것이 이 함수의 존재 이유다.
 ///
-/// 폴백이 필요한 이유: macOS 에서 자손 하나가 다른 그룹으로 옮겨 갔거나 권한이
-/// 다르면 그룹 신호가 `EPERM` 으로 실패한다. 그때 아무것도 안 하면 우리가 띄운
-/// 프로세스가 그대로 남는다.
+/// 그룹이 이미 사라졌는데 리더만 다른 그룹에 남은 `ESRCH` 갈래에서는 리더에게
+/// 폴백한다. `EPERM`이면 리더 신호를 최선으로 시도하되 성공으로 숨기지 않는다 —
+/// 리더 하나를 끝낸 것은 트리 전체를 끝낸 증거가 아니기 때문이다.
 #[cfg(unix)]
 fn signal_group_or_leader(pid: u32, signal: i32) -> Result<(), String> {
     let group = -(pid as i32);
@@ -991,19 +1011,31 @@ fn signal_group_or_leader(pid: u32, signal: i32) -> Result<(), String> {
         return Ok(());
     }
     let group_err = std::io::Error::last_os_error();
-    if !process_is_running(pid) {
-        return Ok(()); // 이미 끝났다 — 실패가 아니다.
-    }
     match group_err.raw_os_error() {
-        Some(libc::EPERM) | Some(libc::ESRCH) => {
+        Some(libc::ESRCH) if !process_is_running(pid) => {
+            Ok(()) // 그룹도 리더도 이미 끝났다 — 실패가 아니다.
+        }
+        Some(libc::ESRCH) => {
             if unsafe { libc::kill(pid as i32, signal) } == 0 {
                 return Ok(());
             }
             let leader_err = std::io::Error::last_os_error();
-            if leader_err.raw_os_error() == Some(libc::ESRCH) || !process_is_running(pid) {
+            if leader_err.raw_os_error() == Some(libc::ESRCH) || !process_is_running(pid)
+            {
                 return Ok(());
             }
             Err(format!("failed to signal {pid}: {leader_err}"))
+        }
+        Some(libc::EPERM) => {
+            // 리더라도 끝내 보지만, 손자를 끝냈다는 증거는 없으므로 오류는 유지한다.
+            if process_is_running(pid) {
+                unsafe {
+                    libc::kill(pid as i32, signal);
+                }
+            }
+            Err(format!(
+                "failed to signal process group {pid}: {group_err}"
+            ))
         }
         _ => Err(format!("failed to signal group {pid}: {group_err}")),
     }
@@ -1024,7 +1056,7 @@ pub(crate) fn terminate_tree(pid: u32) -> Result<(), String> {
         signal_group_or_leader(pid, libc::SIGTERM)?;
         let deadline = std::time::Instant::now() + GRACEFUL_EXIT_WAIT;
         while std::time::Instant::now() < deadline {
-            if !process_is_running(pid) {
+            if !process_group_is_running(pid)? {
                 return Ok(());
             }
             std::thread::sleep(std::time::Duration::from_millis(50));
@@ -2021,11 +2053,77 @@ mod tests {
         // ② 그룹째 끝내면 손자도 함께 끝난다.
         let (mut child, grandchild) = spawn_tree();
         assert!(process_is_running(grandchild));
-        terminate_tree(child.id()).expect("트리를 끝내지 못했다");
-        let _ = child.wait();
+        let leader_pid = child.id();
+        // 실제 앱과 같이 별도 wait 스레드가 리더를 회수한다. 리더를 이 함수 뒤에
+        // 회수하면 macOS에서 죽은 그룹 리더가 EPERM 과도 상태로 남아, 앱에 없는
+        // 수명 조건을 시험하게 된다.
+        let reaper = std::thread::spawn(move || child.wait());
+        terminate_tree(leader_pid).expect("트리를 끝내지 못했다");
+        let _ = reaper.join();
         assert!(
             wait_until_gone(grandchild, std::time::Duration::from_secs(3)),
             "손자 {grandchild} 가 살아남았다 — 앱을 꺼도 계속 도는 상태"
+        );
+    }
+
+    /// 리더가 먼저 회수돼도 같은 그룹의 손자가 남아 있으면 강제 종료까지 간다.
+    ///
+    /// 실제 앱에는 자식을 기다리는 별도 스레드가 있으므로 SIGTERM 직후 리더 PID는
+    /// 사라질 수 있다. 그 순간 리더만 확인하면 TERM을 무시한 손자는 살아 있는데
+    /// 트리가 끝났다고 오판한다.
+    #[cfg(unix)]
+    #[test]
+    fn terminate_tree_escalates_after_the_group_leader_is_reaped() {
+        use std::io::{BufRead, BufReader};
+        use std::os::unix::process::CommandExt;
+        use std::process::{Command, Stdio};
+
+        let mut leader = Command::new("/bin/sh")
+            .arg("-c")
+            // 안쪽 sh 가 TERM 무시 설정을 끝낸 뒤 자기 pid 를 알린다. 바깥 sh 는
+            // 기본 TERM 동작을 유지하므로 그룹 TERM 때 리더만 먼저 끝난다.
+            .arg("/bin/sh -c 'trap \"\" TERM; echo $$; while :; do sleep 1; done' & wait")
+            .stdout(Stdio::piped())
+            .process_group(0)
+            .spawn()
+            .expect("테스트 프로세스 그룹을 띄우지 못했다");
+        let leader_pid = leader.id();
+        let mut out = BufReader::new(leader.stdout.take().unwrap());
+        let mut line = String::new();
+        out.read_line(&mut line).unwrap();
+        let grandchild: u32 = line
+            .trim()
+            .parse()
+            .expect("TERM 무시 손자의 pid 를 못 읽었다");
+        assert_eq!(
+            unsafe { libc::getpgid(grandchild as i32) },
+            leader_pid as i32,
+            "손자가 리더의 프로세스 그룹을 떠나면 이 검사는 다른 조건을 잰다"
+        );
+
+        assert_eq!(unsafe { libc::kill(-(leader_pid as i32), libc::SIGTERM) }, 0);
+        let _ = leader.wait();
+        assert!(
+            process_is_running(grandchild),
+            "손자가 TERM을 무시하지 않아 조기 반환 조건을 만들지 못했다"
+        );
+
+        let result = terminate_tree(leader_pid);
+        let gone_before_cleanup =
+            wait_until_gone(grandchild, std::time::Duration::from_millis(250));
+        // RED에서도 프로세스를 남기지 않는다. 구현이 놓쳤으면 원래 PGID 전체를
+        // 여기서 정리한 뒤에만 assertion을 실패시킨다.
+        if !gone_before_cleanup {
+            unsafe {
+                libc::kill(-(leader_pid as i32), libc::SIGKILL);
+            }
+            let _ = wait_until_gone(grandchild, std::time::Duration::from_secs(3));
+        }
+
+        result.expect("남은 프로세스 그룹을 끝내지 못했다");
+        assert!(
+            gone_before_cleanup,
+            "리더가 사라졌다는 이유로 반환해 TERM을 무시한 손자 {grandchild}가 남았다"
         );
     }
 

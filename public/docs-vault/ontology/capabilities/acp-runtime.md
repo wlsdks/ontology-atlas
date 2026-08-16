@@ -49,8 +49,10 @@ Client Protocol) v1 로 직접 띄우고, 그 세션의 설정을 격리하고, 
    `AcpSessionChoices.unverifiedModeIds`에 보존해 기존 선택기에서 「확인 안 됨」과
    그 뜻을 함께 보여 준다.
 7. **프로세스 트리 종료.** 자식은 자기 프로세스 그룹을 갖고, 종료는 SIGTERM 뒤
-   최대 1초를 기다렸다가 SIGKILL 로 그룹 전체를 끝낸다. 어댑터가 띄운 손자까지
-   같이 끝내지 않으면 앱을 꺼도 프로세스가 남는다.
+   최대 1초를 기다렸다가 SIGKILL로 그룹 전체를 끝낸다. 완료 여부도 리더 PID가
+   아니라 원래 PGID의 생존으로 판정하므로 리더가 먼저 회수돼도 TERM을 무시한
+   손자를 놓치지 않는다. 어댑터가 띄운 손자까지 같이 끝내지 않으면 앱을 꺼도
+   프로세스가 남는다.
 
 ## 경계
 - **설정의 「실행기」 절과 홈 지도 오른쪽 대화 패널이 현재 사용자 표면이다.**
@@ -86,8 +88,9 @@ Client Protocol) v1 로 직접 띄우고, 그 세션의 설정을 격리하고, 
 - src/widgets/app-settings-menu/ui/AcpRuntimeSettings.tsx: 실행기 탐지·격리 상태 표면
 - src/views/home/ui/HomePage.tsx · src/widgets/acp-chat-panel/ui/AcpChatPanel.tsx:
   지도 옆 ACP 대화 진입점과 미검증 작업 방식 표시
-- docs/DECISIONS.md 2026-08-16 ACP 도입·격리 기록과 2026-08-17 (53)·(54):
-  어댑터 갱신 안전 판정과 그 상태의 화면 전달
+- docs/DECISIONS.md 2026-08-16 ACP 도입·격리 기록과 2026-08-17 (53)·(54)·
+  (56)·(57): 어댑터 안전 상태의 화면 전달, 세션 루트 권한 경계, 프로세스 그룹
+  수명 판정
 
 ## 확신도
 medium-high (0.8): 프로토콜·프로세스 층, 설정 절, 홈의 패널 진입점과 모드 상태
