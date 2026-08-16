@@ -4552,6 +4552,11 @@ export function HomePage() {
                       // C9 — 힌트가 실제 `.mcp.json` 존재를 반영하도록 실파일
                       // 상태를 넘긴다("이미 준비됨" 허위 단언 제거).
                       mcpConfigReady={vault.agentConfigStatus?.mcpJson ?? false}
+                      // 2026-08-16 소유자 실보고 — 카드가 INDEX 오른쪽 가장자리와
+                      // 겹쳐 보였다. INDEX 는 지도 칼럼을 좁히지 않고 그 **위에
+                      // 뜨므로**(오른쪽 에이전트 패널은 flex 형제라 실제로 좁힌다)
+                      // 카드의 중앙 계산에서 혼자 빠진다. 그 폭을 알려 준다.
+                      indexExpanded={renderedIndexState === "expanded"}
                     />
                   ) : (
                   <TopologyEmptyState

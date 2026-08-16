@@ -170,3 +170,57 @@ describe("VaultStartChecklist — 안내는 화면에 있는 것만 가리킨다
     expect(screen.getByText("agentHintPending")).toBeInTheDocument();
   });
 });
+
+describe("VaultStartChecklist — 카드는 INDEX 가 가린 폭을 빼고 가운데를 잡는다", () => {
+  /*
+   * 2026-08-16 소유자 실보고: INDEX 를 펼친 상태에서 카드가 왼쪽으로 치우쳐
+   * INDEX 오른쪽 가장자리와 겹쳐 보였다.
+   *
+   * 원인은 좌우 패널이 지도 칼럼을 좁히는 **방식이 다른** 것이다 — 오른쪽
+   * 에이전트 패널은 flex 형제라 칼럼 폭을 실제로 줄이므로 `justify-center` 에
+   * 저절로 반영되는데, 왼쪽 INDEX 는 `position:absolute` 로 칼럼 위에 뜬다.
+   * 그래서 INDEX 만 중앙 계산에서 빠진다.
+   *
+   * 이 검사가 없으면 다음 사람이 "왜 패딩이 붙어 있지" 하고 지우고, 그때
+   * 화면은 조용히 예전으로 돌아간다 — 겹침은 스냅샷에도 타입에도 안 남는다.
+   */
+  const RESERVE = "md:pl-[calc(var(--topology-index-inset)+var(--topology-index-width)+1rem)]";
+
+  function reserveHost() {
+    return document.querySelector("[data-index-reserved]");
+  }
+
+  it("INDEX 가 펼쳐져 있으면 그 폭만큼 ≥md 에서 비워 둔다", () => {
+    renderChecklist({ indexExpanded: true });
+    const host = reserveHost();
+    expect(host?.getAttribute("data-index-reserved")).toBe("true");
+    expect(host?.className).toContain(RESERVE);
+  });
+
+  it("INDEX 가 접혀 있으면 아무것도 비우지 않는다 (지도 전폭 기준 중앙)", () => {
+    renderChecklist({ indexExpanded: false });
+    const host = reserveHost();
+    expect(host?.getAttribute("data-index-reserved")).toBe("false");
+    expect(host?.className).not.toContain("md:pl-[");
+  });
+
+  it("기본값은 「비우지 않음」 — prop 을 안 넘긴 호출자가 화면을 바꾸지 않는다", () => {
+    renderChecklist();
+    expect(reserveHost()?.getAttribute("data-index-reserved")).toBe("false");
+  });
+
+  it("보정은 ≥md 에서만 건다 — 767px 이하에서 INDEX 는 전폭 시트다", () => {
+    /*
+     * `app/globals.css` 의 `@media (max-width: 767px)` 가
+     * `--topology-index-width` 를 `calc(100vw - 2 * inset)` 로 바꾼다. 그
+     * 폭을 좁은 화면에서도 빼면 카드가 화면 밖으로 밀린다. 그래서 예약
+     * 클래스는 반드시 `md:` 접두사를 달고 있어야 한다.
+     */
+    renderChecklist({ indexExpanded: true });
+    const reserved = (reserveHost()?.className ?? "")
+      .split(/\s+/)
+      .filter((c) => c.includes("--topology-index-width"));
+    expect(reserved.length).toBeGreaterThan(0);
+    expect(reserved.every((c) => c.startsWith("md:"))).toBe(true);
+  });
+});

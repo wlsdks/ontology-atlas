@@ -57,6 +57,22 @@ export interface VaultStartChecklistProps {
    */
   docsFoundCount?: number;
   onStartFromDocs?: (() => void) | null;
+  /**
+   * INDEX 패널이 펼쳐져 있는가 (2026-08-16 소유자 실보고 — 카드가 INDEX 오른쪽
+   * 가장자리와 겹쳐 보임).
+   *
+   * **왜 이 prop 이 필요한가**: 이 카드는 지도 칼럼(`absolute inset-0`)의 한가운데를
+   * 잡는데, 그 칼럼을 좁히는 방식이 좌우 패널마다 다르다 — 오른쪽 에이전트 패널은
+   * **flex 형제**라 칼럼 폭을 실제로 줄이므로 중앙 계산에 저절로 반영되고, 왼쪽
+   * INDEX 는 `position:absolute` 로 칼럼 **위에 뜬다**(캔버스를 full-bleed 로 두려는
+   * 의도적 설계). 그래서 INDEX 만 중앙 계산에서 빠져 카드가 그쪽으로 치우친다.
+   *
+   * 보정은 ≥md 에서만 건다 — `max-width:767px` 에서 `--topology-index-width` 가
+   * 전폭 시트가 되므로(`app/globals.css`), 거기서 같은 값을 빼면 카드가 화면 밖으로
+   * 밀린다. 새 토큰은 만들지 않는다: 기존 `--topology-index-inset` + `-width` 조합이
+   * 곧 INDEX 가 차지한 폭이다.
+   */
+  indexExpanded?: boolean;
 }
 
 export function VaultStartChecklist({
@@ -71,6 +87,7 @@ export function VaultStartChecklist({
   mcpConfigReady,
   docsFoundCount = 0,
   onStartFromDocs = null,
+  indexExpanded = false,
 }: VaultStartChecklistProps) {
   const t = useTranslations("topology.startChecklist");
   // 문서 갈래의 제목·CTA 는 빈 상태가 이미 가진 문구를 **재사용**한다 —
@@ -212,7 +229,14 @@ export function VaultStartChecklist({
   const doneCount = steps.filter((s) => s.done).length;
 
   return (
-    <div className="pointer-events-none absolute inset-0 z-20 flex items-center justify-center px-4">
+    <div
+      data-index-reserved={indexExpanded ? "true" : "false"}
+      className={`pointer-events-none absolute inset-0 z-20 flex items-center justify-center px-4${
+        indexExpanded
+          ? " md:pl-[calc(var(--topology-index-inset)+var(--topology-index-width)+1rem)]"
+          : ""
+      }`}
+    >
       <div
         data-testid="vault-start-checklist"
         role="status"
