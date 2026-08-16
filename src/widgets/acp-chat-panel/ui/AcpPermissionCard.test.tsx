@@ -14,7 +14,11 @@ import { AcpPermissionCard } from './AcpPermissionCard';
  * `toolKind` 로 오고 있었는데 화면이 안 읽었다.
  */
 
-function card(toolKind: string | null, filePath: string | null = '/etc/hosts') {
+function card(
+  toolKind: string | null,
+  filePath: string | null = '/etc/hosts',
+  extraOptions: Array<{ optionId: string; kind: string; name: string | null }> = [],
+) {
   return (
     <NextIntlClientProvider locale="ko" messages={koMessages}>
       <AcpPermissionCard
@@ -27,6 +31,7 @@ function card(toolKind: string | null, filePath: string | null = '/etc/hosts') {
             options: [
               { optionId: 'reject', kind: 'reject_once', name: '거절' },
               { optionId: 'allow', kind: 'allow_once', name: '허용' },
+              ...extraOptions,
             ],
           },
           resolve: vi.fn(),
@@ -35,6 +40,16 @@ function card(toolKind: string | null, filePath: string | null = '/etc/hosts') {
     </NextIntlClientProvider>
   );
 }
+
+/** 어댑터가 「계속 허용」에 딸려 보내는 실측 모양. */
+const alwaysWith = (targets: unknown[]) => [
+  {
+    optionId: 'always',
+    kind: 'allow_always',
+    name: '항상',
+    _meta: { permission: { changes: [{ targets }] } },
+  },
+];
 
 describe('권한 카드 — 어디만이 아니라 무엇을 하려는지도 말한다', () => {
   it('고치려는 것과 읽으려는 것이 화면에서 다르다', () => {
@@ -71,5 +86,32 @@ describe('권한 카드 — 어디만이 아니라 무엇을 하려는지도 말
   it('경로를 모를 때도 무엇을 하려는지는 말한다', () => {
     render(card('execute', null));
     expect(screen.getByTestId('acp-permission-intent').getAttribute('data-intent')).toBe('execute');
+  });
+});
+
+describe('계속 허용 — 어댑터가 말한 범위만 적는다', () => {
+  it('도구 단위 허용이면 그 도구 이름을 화면에 적는다 (실측 모양)', () => {
+    render(
+      card('edit', '/etc/hosts', alwaysWith([
+        { type: 'tool', toolName: 'mcp__atlas-vault__add_concept' },
+      ])),
+    );
+    const scope = screen.getByTestId('acp-permission-scope');
+    expect(scope.getAttribute('data-scope')).toBe('tool');
+    expect(scope.textContent).toContain('mcp__atlas-vault__add_concept');
+  });
+
+  it('범위를 안 알려 주면 **폴더라고 단정하지 않는다**', () => {
+    // 종전 문구는 "위 경로가 있는 폴더 전체" 라고 단정했다. 우리가 정하는
+    // 범위가 아니므로, 모르면 한 번만 허용하는 쪽을 권한다.
+    render(card('edit', '/etc/hosts', alwaysWith([])));
+    const scope = screen.getByTestId('acp-permission-scope');
+    expect(scope.getAttribute('data-scope')).toBe('unknown');
+    expect(scope.textContent).not.toContain('폴더 전체');
+  });
+
+  it('계속 허용 선택지가 없으면 범위 줄도 없다 — 없는 결정을 설명하지 않는다', () => {
+    render(card('edit'));
+    expect(screen.queryByTestId('acp-permission-scope')).toBeNull();
   });
 });

@@ -3660,14 +3660,18 @@
       "unknownTarget": "Cannot tell what it wants to do",
       "reject": "No thanks",
       "allowOnce": "Allow once",
-      "allowAlways": "Allow the folder that path is in, for this whole conversation",
       "intent": {
         "read": "wants to read",
         "edit": "wants to change",
         "delete": "wants to delete",
         "execute": "wants to run",
         "unknown": "this tool did not say what it wants to do"
-      }
+      },
+      "allowAlwaysTool": "Allow this tool for the rest of this chat",
+      "allowAlwaysDirectory": "Allow this folder for the rest of this chat",
+      "allowAlwaysUnknown": "Allow for the rest of this chat",
+      "scopeHint": "Covers: {names}",
+      "scopeUnknownHint": "This tool did not say what the grant covers. Allowing once is the safer choice."
     },
     "close": "Close conversation",
     "composerPlaceholder": "Ask about this folder, or give it a task",

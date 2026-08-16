@@ -5,6 +5,7 @@ import { ShieldAlert } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 
 import { permissionIntent } from '@/features/acp-session/model/permission-intent';
+import { permissionScope } from '@/features/acp-session/model/permission-scope';
 
 import { Button } from '@/shared/ui';
 import { controlClass } from '@/shared/ui/control-class';
@@ -36,6 +37,17 @@ export function AcpPermissionCard({ pending }: { pending: PendingPermission }) {
   const { request, resolve } = pending;
   /* 어디만이 아니라 **무엇을** — 아래 주석 참고. */
   const intent = permissionIntent(request.toolKind);
+  /*
+    「계속 허용」이 **무엇을** 허용하는지 (2026-08-17).
+
+    종전 문구는 *"위 경로가 있는 폴더 전체"* 라고 **단정**했는데, 그 범위를
+    정하는 것은 우리가 아니라 어댑터다 — 실측에서 그 값은 폴더가 아니라
+    **도구**였다. 폴더를 허용한다고 적어 놓고 도구를 허용하면, 사용자는 자기가
+    준 적 없는 권한을 준 줄 알거나 그 반대로 안다.
+
+    그래서 **어댑터가 선언한 것만** 말하고, 안 주면 아무것도 단정하지 않는다.
+  */
+  const scope = permissionScope(request.options);
 
   const allowOnce = request.options.find((o) => o.kind === 'allow_once');
   const rejectOnce = request.options.find((o) => o.kind === 'reject_once');
@@ -157,8 +169,25 @@ export function AcpPermissionCard({ pending }: { pending: PendingPermission }) {
             className: 'justify-self-end',
           })}
         >
-          {t('allowAlways')}
+          {t(
+            scope.kind === 'tool'
+              ? 'allowAlwaysTool'
+              : scope.kind === 'directory'
+                ? 'allowAlwaysDirectory'
+                : 'allowAlwaysUnknown',
+          )}
         </button>
+      ) : null}
+      {allowAlways ? (
+        <p
+          data-testid="acp-permission-scope"
+          data-scope={scope.kind}
+          className="justify-self-end break-all text-right text-caption leading-caption text-[color:var(--color-text-quaternary)]"
+        >
+          {scope.kind === 'unknown'
+            ? t('scopeUnknownHint')
+            : t('scopeHint', { names: scope.names.join(' · ') })}
+        </p>
       ) : null}
     </section>
   );
