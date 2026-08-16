@@ -177,6 +177,13 @@ function run(argv, { cwd, env }) {
  * 그래서 리허설은 **버리는 키**를 하나 만들어 그 단계를 밟게 한다. 증명되는
  * 것은 "아카이브가 서명된 앱으로 다시 만들어지고 서명이 붙는가" 이지 "우리
  * 키로 서명됐는가" 가 아니다 — 후자는 실제 태그에서만 참이 된다.
+ *
+ * @param {string} root
+ * @param {{
+ *   existingKey?: string,
+ *   tempRoot?: string,
+ *   generate?: (keyPath: string) => { status: number | null },
+ * }} [options]
  */
 export function ephemeralUpdaterKey(
   root,
