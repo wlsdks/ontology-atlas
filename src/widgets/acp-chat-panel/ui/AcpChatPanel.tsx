@@ -476,18 +476,36 @@ export function AcpChatPanel({
                   {t('suggest.heading')}
                 </p>
                 {suggestions.map((s) => (
-                  <Chip
+                  /*
+                    한 줄 전체가 눌리는 것은 `RowButton` 이다 (2026-08-17,
+                    설치된 앱을 열어 보고 고침). 처음에는 `Chip` 에
+                    `w-full justify-start text-left` 를 손으로 붙였는데,
+                    그건 `row` 모양이 이미 갖고 있는 값을 베낀 것이다 —
+                    `design-build` 가 «className 에 모양을 넘기면 프리미티브가
+                    있으나 마나가 된다» 고 경고한 바로 그 자리다.
+
+                    화면에서도 티가 났다: 테두리 있는 전폭 상자가 되어서
+                    바로 아래 작성 칸과 같은 모양으로 읽혔다 — 누르는 것이
+                    아니라 또 하나의 입력칸처럼.
+                  */
+                  <RowButton
                     key={s.kind}
                     size="md"
                     tone="secondary"
+                    hoverInk="strong"
+                    hoverSurface="lift"
+                    /* 쉴 때도 면을 준다. 테두리를 주면 바로 아래 작성 칸과
+                       같은 모양이 되고(실측), 아무것도 안 주면 그냥 글자로
+                       읽힌다 — 둘 다 실물에서 확인했다. 목록 행이 쓰는
+                       `overlay-1` 을 그대로 쓴다: 새 값 0개. */
+                    className="rounded-chip bg-[color:var(--color-overlay-1)] px-2.5 py-1.5"
                     data-testid={`acp-chat-suggestion-${s.kind}`}
-                    className="w-full justify-start text-left"
                     onClick={() => setDraft(t(`suggest.${s.kind}.prompt`, s.params))}
                   >
                     <span className="min-w-0 break-keep">
                       {t(`suggest.${s.kind}.label`, s.params)}
                     </span>
-                  </Chip>
+                  </RowButton>
                 ))}
               </div>
             ) : null}
