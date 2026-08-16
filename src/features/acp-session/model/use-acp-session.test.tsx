@@ -26,6 +26,8 @@ const bridge = vi.hoisted(() => ({
   listener: null as ((line: string) => void) | null,
   /** 어댑터의 진단 출력 — 「켜는 중에서 안 넘어간다」를 설명하는 유일한 창구. */
   stderr: null as ((line: string) => void) | null,
+  /** 껍데기가 보내는 알림 — 관문을 못 세웠다는 사실이 이 길로 온다. */
+  notice: null as ((message: string) => void) | null,
   stopped: [] as string[],
   /** 우리가 보낸 요청 — 「무엇을 실어 보냈나」를 확인할 유일한 창구. */
   sent: [] as Array<{ id?: number; method?: string; params?: unknown }>,
@@ -63,13 +65,19 @@ vi.mock('@/shared/lib/tauri-acp', () => ({
   acpPermissionVerdict: async () => 'ask',
   listenToAcpSession: async (
     _id: string,
-    handlers: { onMessage?: (line: string) => void; onStderr?: (line: string) => void },
+    handlers: {
+      onMessage?: (line: string) => void;
+      onStderr?: (line: string) => void;
+      onNotice?: (message: string) => void;
+    },
   ) => {
     bridge.listener = handlers.onMessage ?? null;
     bridge.stderr = handlers.onStderr ?? null;
+    bridge.notice = handlers.onNotice ?? null;
     return () => {
       bridge.listener = null;
       bridge.stderr = null;
+      bridge.notice = null;
     };
   },
 }));
@@ -81,6 +89,7 @@ afterEach(() => {
   bridge.release = null;
   bridge.listener = null;
   bridge.stderr = null;
+  bridge.notice = null;
   bridge.stopped = [];
   bridge.sent = [];
 });
@@ -352,6 +361,47 @@ describe('세션 지시문 — 실측으로 얻은 네 줄이 실제로 실린�
     expect(prompt, '애매할 때 묻지 않고 만들게 된다').toMatch(/Ask first/);
     // ⑤ 사람이 쓴 언어로 답하기
     expect(prompt, '한국어로 물었는데 영어로 답한다').toMatch(/language the person wrote in/);
+
+    await act(async () => {
+      await result.current.stop();
+    });
+  });
+});
+
+describe('관문을 못 세웠으면 화면이 말한다', () => {
+  it('`gate-off:` 로 온 알림은 접어 두지 않고 대화에 남는다', async () => {
+    /*
+     * 2026-08-16 검수: 격리 설정을 만들다 실패해도 `.ok()` 가 그것을 삼켰고,
+     * 세션은 사용자의 전역 설정을 물려받아 떴다 — 그 상태가 무엇을 뜻하는지는
+     * `acp.rs` 가 직접 재서 적어 뒀다: "작업 폴더 밖에 파일을 쓰면서 한 번도
+     * 묻지 않았고, 터미널까지 실행했다." 그런데 화면은 그 실행기를 계속
+     * 「관문 있음」이라고 말하고 있었다.
+     */
+    const { result } = renderHook(() =>
+      useAcpSession({ runtimeId: 'claude-acp', vaultRoot: '/vault' }),
+    );
+    const first = result.current.start();
+    await waitFor(() => expect(bridge.starts).toBe(1));
+    await act(async () => {
+      bridge.release?.();
+      await first;
+    });
+
+    await waitFor(() => expect(bridge.notice).toBeTruthy());
+    act(() => {
+      bridge.notice?.('gate-off:isolation-failed:settings-write-failed');
+      bridge.notice?.('dropped-line:something');
+    });
+
+    await waitFor(() =>
+      expect(
+        result.current.events.some((e) => e.kind === 'notice' && e.text === 'gate-off'),
+        '관문이 없다는 사실이 화면에 안 나온다',
+      ).toBe(true),
+    );
+    // 나머지 진단은 여전히 접혀 있다 — 대화에 섞이면 그게 소음이다.
+    expect(result.current.events.filter((e) => e.kind === 'notice')).toHaveLength(1);
+    expect(result.current.diagnostics.join(' ')).toContain('settings-write-failed');
 
     await act(async () => {
       await result.current.stop();

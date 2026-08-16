@@ -322,7 +322,20 @@ export function useAcpSession({ runtimeId, vaultRoot, mcpServers }: UseAcpSessio
         onMessage: (line) => onLine?.(line),
         // stderr 는 대화가 아니라 진단이다. 조용히 버리지 않되 말풍선으로도
         // 만들지 않는다 — 어댑터의 설치 로그가 대화에 섞이면 읽을 수 없다.
-        onNotice: (message) => keepDiagnostic(message),
+        onNotice: (message) => {
+          /*
+           * ⚠️ **약속에 관한 사실은 진단이 아니다** (2026-08-16 검수).
+           *
+           * 대부분의 알림은 진단이라 접어 둔다. 그런데 `gate-off:` 로 시작하는
+           * 것은 다르다 — 「폴더 밖은 먼저 물어본다」는 이 화면의 약속이 이
+           * 세션에서 지켜지지 않는다는 뜻이다. 접어 두면 화면이 못 지킬 약속을
+           * 계속 하게 된다. 자세한 사연은 진단으로 같이 남긴다.
+           */
+          if (message.startsWith('gate-off')) {
+            push({ kind: 'notice', id: nextEventId(), text: 'gate-off' });
+          }
+          keepDiagnostic(message);
+        },
         /*
          * ⚠️ **모아 두되 화면에 올리지 않는다** (2026-08-16, 두 번 고친 자리).
          *

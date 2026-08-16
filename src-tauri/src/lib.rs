@@ -855,10 +855,28 @@ fn acp_start(
     // 그래서 갈래는 둘이다: 격리할 수 있으면 격리하고, 못 하면 **격리 없이
     // 띄우되 화면이 그 사실을 이미 말해 두었다**(「확인 안 됨」 표시). 알고
     // 고르게 하는 것과, 못 하게 막는 것은 다른 일이다.
+    //
+    // ⚠️ **못 하는 것과 하려다 실패한 것은 다르다** (2026-08-16 검수에서 적발).
+    //
+    // 위 문단의 판단은 「격리 표에 없는 실행기」에 대해서는 옳다 — 화면이 그것을
+    // 「확인 안 됨」이라고 이미 말해 두었으니 알고 고르는 것이다. 그런데 `.ok()`
+    // 는 **표에 있는 실행기의 실패까지** 같이 삼켰다. 그 경우는 완전히 다르다:
+    // 화면은 그 실행기를 「관문 있음」이라고 말하고 있는데, 세션은 사용자의
+    // `~/.claude/settings.json` 을 그대로 물려받아 뜬다. 이 파일이 직접 잰
+    // 결과가 `acp.rs` 에 적혀 있다 — 그 상태의 세션은 *"작업 폴더 밖에 파일을
+    // 쓰면서 한 번도 묻지 않았고, 터미널까지 실행했다."*
+    //
+    // 그래서 표에 있는데 실패한 경우는 **말한다.** 띄우기를 막지는 않는다(그건
+    // 위 판단 그대로다) — 다만 화면이 지키지 못할 약속을 계속 하게 두지 않는다.
+    let mut isolation_failure: Option<String> = None;
     let isolation = acp::config_env_for(&runtime_id).and_then(|env| {
-        acp::prepare_isolated_config(&runtime_id, &app_data, home.as_deref())
-            .ok()
-            .map(|dir| (env, dir))
+        match acp::prepare_isolated_config(&runtime_id, &app_data, home.as_deref()) {
+            Ok(dir) => Some((env, dir)),
+            Err(reason) => {
+                isolation_failure = Some(reason);
+                None
+            }
+        }
     });
 
     let mut command = Command::new(&launch.program);
@@ -930,6 +948,18 @@ fn acp_start(
             }
             let _ = app.emit("acp://exit", AcpExitEvent { session_id, code });
         });
+    }
+
+    // 관문을 세우려다 실패했으면 그 사실을 화면에 보낸다 — 등록이 끝난 뒤에
+    // 보내야 화면이 이 세션의 것으로 받는다.
+    if let Some(reason) = isolation_failure {
+        let _ = app.emit(
+            "acp://notice",
+            AcpNoticeEvent {
+                session_id: session_id.clone(),
+                message: format!("gate-off:isolation-failed:{reason}"),
+            },
+        );
     }
 
     Ok(session_id)
