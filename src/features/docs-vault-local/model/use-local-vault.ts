@@ -258,6 +258,13 @@ export interface AgentConfigStatus {
   mcpJsonValid?: boolean;
   codexConfigValid?: boolean;
   mcpExampleValid?: boolean;
+  /**
+   * `.codex/config.toml` 이 등록해 둔 **명령 문자열 그대로**. 앱이 세션에 같은
+   * 서버를 또 꽂지 않으려면 「등록이 있다」가 아니라 「무엇이 등록됐나」가
+   * 필요하다 — 낡은 경로가 적혀 있으면 건너뛰면 안 되기 때문이다
+   * (`vault-mcp-server.ts` 의 실측 주석).
+   */
+  codexRegisteredCommand?: string | null;
 }
 
 function emptyState(status: Status = 'idle'): State {
@@ -433,6 +440,12 @@ function configTomlStringArray(section: string | null, key: string): string[] | 
   }
 }
 
+/** `.codex/config.toml` 이 등록한 명령 문자열 — 없으면 `null`. */
+export function readOmotCodexCommand(raw: string | null): string | null {
+  if (!raw) return null;
+  return configTomlString(configTomlSection(raw, 'mcp_servers.ontology-atlas'), 'command');
+}
+
 export function looksLikeOmotCodexToml(
   raw: string | null,
   options: { expectedVault?: string } = {},
@@ -470,6 +483,7 @@ async function readAgentConfigStatus(
     mcpExample: mcpExampleText !== null,
     mcpJsonValid: looksLikeOmotMcpJson(mcpJsonText, { expectedVault: '.' }),
     codexConfigValid: looksLikeOmotCodexToml(codexConfigText, { expectedVault: '.' }),
+    codexRegisteredCommand: readOmotCodexCommand(codexConfigText),
     mcpExampleValid: looksLikeOmotMcpJson(mcpExampleText),
   };
 }
