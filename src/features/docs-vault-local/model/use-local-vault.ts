@@ -29,6 +29,7 @@ import {
 import type { LocalFsHandleRecord } from '@/entities/local-fs-handle';
 import {
   materializeStarterFiles,
+  vaultAgentGuideForLocale,
   buildCodexConfigToml,
   buildMcpConfigJson,
   buildVaultMcpConfigJson,
@@ -1447,6 +1448,39 @@ export function useLocalVaultInternal() {
         skipped += 1;
       }
     }
+    /*
+     * 에이전트 안내문 — **설정만으로는 부족하다** (2026-08-17 실측).
+     * MCP 가 붙어 있어도 에이전트는 `sed`/`grep` 으로 frontmatter 를 직접
+     * 읽었다(MCP 호출 0회). 볼트에 `AGENTS.md` 를 두자 같은 질문에 곧바로
+     * `list_concepts` 를 불렀다. 근거는 `ontology-starter.ts` 의
+     * `VAULT_AGENT_GUIDE_PATH` 주석.
+     *
+     * **개념이 아니므로 `markdownCreated` 에 안 센다** — 그 숫자는 화면이
+     * 「개념 문서 N개」로 쓴다.
+     */
+    const guide = vaultAgentGuideForLocale(starterLocale);
+    let guideCreated = 0;
+    try {
+      const resolved = await getParentAndName(guide.relPath.replace(/\.md$/, ''), true);
+      if (resolved) {
+        const existing = await resolved.parent
+          .getFileHandle(resolved.fileName)
+          .then(() => true)
+          .catch(() => false);
+        if (existing) {
+          skipped += 1;
+        } else {
+          const fh = await resolved.parent.getFileHandle(resolved.fileName, { create: true });
+          const writable = await fh.createWritable();
+          await writable.write(guide.content);
+          await writable.close();
+          guideCreated += 1;
+        }
+      }
+    } catch {
+      skipped += 1;
+    }
+
     // Ready-to-use agent configs for "open the vault folder itself" flows.
     // 번들 서버를 못 찾으면 fail closed: markdown starter만 만든다.
     const starterLaunch = await resolveBundledLaunch();
@@ -1459,9 +1493,9 @@ export function useLocalVaultInternal() {
       /** 온톨로지 노드가 되는 마크다운 파일 수 — 지도/설정이 세는 것과 같은 단위. */
       markdownCreated,
       /** `.mcp.json` 등 에이전트 설정 파일 수 — 개념이 아니다. */
-      agentConfigCreated: agentConfigResult.created,
+      agentConfigCreated: agentConfigResult.created + guideCreated,
       /** 하위 호환 총합. 사용자에게 보여줄 땐 위 둘을 따로 말한다. */
-      created: markdownCreated + agentConfigResult.created,
+      created: markdownCreated + agentConfigResult.created + guideCreated,
       skipped,
     };
   }, [

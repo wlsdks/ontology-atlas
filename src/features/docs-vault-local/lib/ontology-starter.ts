@@ -625,6 +625,91 @@ export function materializeStarterFiles(
 }
 
 /**
+ * 볼트 안에 두는 **에이전트 안내문**. 볼트 폴더가 곧 에이전트의 작업 폴더라
+ * codex 는 `AGENTS.md` 를, Claude Code 는 `CLAUDE.md`/`AGENTS.md` 를 여기서
+ * 스스로 읽는다.
+ *
+ * ## 왜 필요한가 (2026-08-17 실측)
+ *
+ * MCP 서버가 제대로 붙어 있어도 **에이전트가 그걸 안 집는다.** 설치된 앱에서
+ * codex 에게 *"이 폴더에 있는 개념들의 slug 를 전부 알려줘"* 라고 물었더니:
+ *
+ * | | 무엇을 했나 | MCP 호출 |
+ * |---|---|---|
+ * | 안내문 없음 | 다섯 파일을 `sed` 로 읽고 `grep '^slug:'` 로 한 번 더 | **0회** |
+ * | 안내문 있음 | *"list_concepts 를 먼저 호출하겠습니다"* → 바로 호출 | **1회** |
+ *
+ * 도구 설명은 이미 *"AI agents call this first"* 라고 적혀 있었다. 모자란 것은
+ * 설명이 아니라 **작업 폴더에서 읽히는 한 줄**이었다.
+ *
+ * 이 저장소가 정해 둔 확장 방식과도 맞는다(`forbidden.md`): *"허용되는 확장은
+ * 파일에 적어 두는 형태뿐 — vault 안의 마크다운… 코드는 한 줄도 실행하지 않고,
+ * git diff 로 무엇이 바뀌었는지 다 보여야 한다."*
+ *
+ * ⚠️ **개념 노드가 아니다.** `ONTOLOGY_STARTER_FILES` 에 넣으면 개수 계약
+ * (`starter-counts.ts`)이 5를 6으로 세게 되고, 그 숫자는 화면 문구가 쓴다.
+ * 그래서 설정 파일(`.mcp.json` · `.codex/config.toml`) 과 같은 자리에서 쓴다.
+ */
+export const VAULT_AGENT_GUIDE_PATH = "AGENTS.md";
+
+const AGENT_GUIDE_EN = `# This folder is an Ontology Atlas vault
+
+The frontmatter in each \`.md\` file *is* the graph — its nodes and edges.
+Before you scan files, **call the \`ontology-atlas\` MCP server first.** It is
+already registered for this folder (\`.mcp.json\`, \`.codex/config.toml\`) and
+answers with parsing, validation, and relation resolution already done.
+
+| What you want | First call |
+|---|---|
+| How many of what | \`list_kinds\` |
+| The whole node table | \`list_concepts\` |
+| One concept and its neighbours | \`get_concept({ slug })\` |
+| Who depends on this | \`find_backlinks(slug)\` |
+| Are these two connected | \`find_path(from, to)\` |
+| Is this vault healthy | \`validate_vault({})\` |
+
+Do not read frontmatter with \`grep\` or \`sed\`. You get the same answer more
+slowly, without relation resolution or schema validation.
+
+**Write through the same server** — \`add_concept\` · \`add_relation\` ·
+\`patch_concept\` (pass \`expected_mtime\`) · \`rename_concept\` · \`merge_concepts\`.
+A file written by hand has no \`uid:\`, and one missing \`uid:\` fails the whole
+graph compile.
+`;
+
+const AGENT_GUIDE_KO = `# 이 폴더는 Ontology Atlas 볼트입니다
+
+각 \`.md\` 의 frontmatter 가 그래프의 노드와 엣지입니다. 파일을 훑기 전에
+**MCP 서버 \`ontology-atlas\` 를 먼저 부르세요.** 이 폴더에 이미 등록돼 있고
+(\`.mcp.json\`, \`.codex/config.toml\`), 파싱·검증·관계 해석이 끝난 답을 줍니다.
+
+| 알고 싶은 것 | 첫 호출 |
+|---|---|
+| 뭐가 몇 개 있나 | \`list_kinds\` |
+| 개념 목록 전체 | \`list_concepts\` |
+| 한 개념과 그 이웃 | \`get_concept({ slug })\` |
+| 이걸 쓰는 곳 | \`find_backlinks(slug)\` |
+| 두 개념이 이어져 있나 | \`find_path(from, to)\` |
+| 이 볼트가 성한가 | \`validate_vault({})\` |
+
+\`grep\` 이나 \`sed\` 로 frontmatter 를 직접 읽지 마세요. 같은 답을 더 느리게 얻고,
+관계 해석과 스키마 검증이 빠집니다.
+
+**쓸 때도 같은 서버로** — \`add_concept\` · \`add_relation\` · \`patch_concept\`
+(\`expected_mtime\` 을 함께) · \`rename_concept\` · \`merge_concepts\`.
+손으로 만든 파일은 \`uid:\` 가 없고, \`uid:\` 하나가 없으면 그래프 전체가
+컴파일에 실패합니다.
+`;
+
+/** 이 로케일의 안내문. 모르는 로케일은 영어로 떨어진다 — 스타터와 같은 규율. */
+export function vaultAgentGuideForLocale(locale: string): StarterFile {
+  return {
+    relPath: VAULT_AGENT_GUIDE_PATH,
+    content: locale === "ko" ? AGENT_GUIDE_KO : AGENT_GUIDE_EN,
+  };
+}
+
+/**
  * 기존 소비자를 위한 영어 기본값 — 개수 계약(`starter-counts`)과 CLI 기본
  * `init` 이 이걸 기준으로 남는다.
  */
