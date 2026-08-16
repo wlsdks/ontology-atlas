@@ -196,6 +196,63 @@ fn resolve_config_root(vault: &Path) -> (PathBuf, &'static str) {
     }
 }
 
+fn reject_symbolic_link(path: &Path) -> Result<(), String> {
+    match fs::symlink_metadata(path) {
+        Ok(metadata) if metadata.file_type().is_symlink() => Err(err_str(format!(
+            "refusing to write {} — symbolic links are not config files",
+            path.display()
+        ))),
+        Ok(_) => Ok(()),
+        Err(error) if error.kind() == std::io::ErrorKind::NotFound => Ok(()),
+        Err(error) => Err(err_str(format!(
+            "could not inspect {} before writing: {error}",
+            path.display()
+        ))),
+    }
+}
+
+fn inspect_config_write_target(config_root: &Path, absolute: &Path) -> Result<(), String> {
+    reject_symbolic_link(absolute)?;
+    let parent = absolute
+        .parent()
+        .ok_or_else(|| err_str("agent config target has no parent directory"))?;
+    reject_symbolic_link(parent)?;
+
+    if parent.exists() {
+        let canonical_parent = fs::canonicalize(parent).map_err(|error| {
+            err_str(format!(
+                "could not resolve {} before writing: {error}",
+                parent.display()
+            ))
+        })?;
+        if !canonical_parent.starts_with(config_root) {
+            return Err(err_str(format!(
+                "refusing to write {} — its parent resolves outside {}",
+                absolute.display(),
+                config_root.display()
+            )));
+        }
+    }
+    Ok(())
+}
+
+fn write_config_contents(path: &Path, contents: &str) -> Result<(), String> {
+    let mut options = fs::OpenOptions::new();
+    options.write(true).create(true).truncate(true);
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::OpenOptionsExt;
+        // 사전 검사와 open 사이에 파일이 링크로 바뀌어도 마지막 경로 조각을
+        // 따라가지 않는다. 정적인 링크뿐 아니라 그 짧은 교체 창도 닫는다.
+        options.custom_flags(libc::O_NOFOLLOW);
+    }
+    let mut file = options
+        .open(path)
+        .map_err(|error| err_str(format!("could not write {}: {error}", path.display())))?;
+    file.write_all(contents.as_bytes())
+        .map_err(|error| err_str(format!("could not write {}: {error}", path.display())))
+}
+
 #[tauri::command]
 pub fn plan_agent_config(vault_path: String) -> Result<AgentConfigPlan, String> {
     let vault = canonical_dir(&vault_path)?;
@@ -243,15 +300,25 @@ pub fn write_agent_config(
         }
     }
 
+    let targets: Vec<PathBuf> = writes
+        .iter()
+        .map(|write| config_root.join(&write.file_name))
+        .collect();
+    // 파일이나 부모가 이미 링크라면 다른 설정을 하나도 쓰기 전에 전부 거절한다.
+    for absolute in &targets {
+        inspect_config_write_target(&config_root, absolute)?;
+    }
+
     let mut written = Vec::new();
-    for write in &writes {
-        let absolute = config_root.join(&write.file_name);
+    for (write, absolute) in writes.iter().zip(targets) {
         if let Some(parent) = absolute.parent() {
             fs::create_dir_all(parent)
                 .map_err(|e| err_str(format!("could not create {}: {e}", parent.display())))?;
         }
-        fs::write(&absolute, &write.contents)
-            .map_err(|e| err_str(format!("could not write {}: {e}", absolute.display())))?;
+        // create_dir_all 뒤에도 다시 본다. 없는 부모를 만든 사이에 바뀐 링크를
+        // 첫 검사 하나만으로 안전하다고 간주하지 않는다.
+        inspect_config_write_target(&config_root, &absolute)?;
+        write_config_contents(&absolute, &write.contents)?;
         written.push(absolute.to_string_lossy().into_owned());
     }
 
@@ -487,6 +554,85 @@ mod tests {
         assert!(error.contains("refusing to write"));
         assert!(!dir.join("../../.zshrc").exists());
         let _ = fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn write_agent_config_still_writes_an_allowed_nested_file() {
+        let base =
+            std::env::temp_dir().join(format!("oa-agent-setup-allowed-{}", std::process::id()));
+        let _ = fs::remove_dir_all(&base);
+        fs::create_dir_all(&base).unwrap();
+
+        let result = write_agent_config(
+            base.to_string_lossy().into_owned(),
+            vec![AgentConfigWrite {
+                file_name: ".codex/config.toml".into(),
+                contents: "[mcp_servers.ontology-atlas]".into(),
+            }],
+        )
+        .unwrap();
+
+        let root = PathBuf::from(result.config_root);
+        assert_eq!(
+            fs::read_to_string(root.join(".codex/config.toml")).unwrap(),
+            "[mcp_servers.ontology-atlas]"
+        );
+        let _ = fs::remove_dir_all(&base);
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn write_agent_config_refuses_an_allowed_file_that_links_outside() {
+        use std::os::unix::fs::symlink;
+
+        let base = std::env::temp_dir().join(format!("oa-agent-setup-link-{}", std::process::id()));
+        let vault = base.join("vault");
+        let outside = base.join("outside.json");
+        let _ = fs::remove_dir_all(&base);
+        fs::create_dir_all(&vault).unwrap();
+        fs::write(&outside, "keep-me").unwrap();
+        symlink(&outside, vault.join(".mcp.json")).unwrap();
+
+        let error = write_agent_config(
+            vault.to_string_lossy().into_owned(),
+            vec![AgentConfigWrite {
+                file_name: ".mcp.json".into(),
+                contents: "overwrite".into(),
+            }],
+        )
+        .unwrap_err();
+
+        assert!(error.contains("refusing to write"));
+        assert_eq!(fs::read_to_string(&outside).unwrap(), "keep-me");
+        let _ = fs::remove_dir_all(&base);
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn write_agent_config_refuses_an_allowed_parent_directory_that_links_outside() {
+        use std::os::unix::fs::symlink;
+
+        let base =
+            std::env::temp_dir().join(format!("oa-agent-setup-parent-link-{}", std::process::id()));
+        let vault = base.join("vault");
+        let outside = base.join("outside");
+        let _ = fs::remove_dir_all(&base);
+        fs::create_dir_all(&vault).unwrap();
+        fs::create_dir_all(&outside).unwrap();
+        symlink(&outside, vault.join(".codex")).unwrap();
+
+        let error = write_agent_config(
+            vault.to_string_lossy().into_owned(),
+            vec![AgentConfigWrite {
+                file_name: ".codex/config.toml".into(),
+                contents: "overwrite".into(),
+            }],
+        )
+        .unwrap_err();
+
+        assert!(error.contains("refusing to write"));
+        assert!(!outside.join("config.toml").exists());
+        let _ = fs::remove_dir_all(&base);
     }
 
     #[test]
