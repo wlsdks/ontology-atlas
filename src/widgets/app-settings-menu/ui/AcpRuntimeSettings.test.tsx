@@ -26,6 +26,7 @@ function makeRuntime(over: {
   isolated?: boolean;
   verified?: boolean;
   icon?: string | null;
+  brandInk?: string | null;
 }) {
   return {
     id: over.id,
@@ -35,6 +36,7 @@ function makeRuntime(over: {
     license: null,
     verified: over.verified ?? false,
     icon: over.icon ?? null,
+    brandInk: over.brandInk ?? null,
     launchKind: 'npx' as const,
     state: (over.state ?? 'ready') as 'ready',
     cliPath: null,
@@ -144,13 +146,57 @@ describe('실행기 목록 — 앱이 못 막는 것은 그 줄에서 말한다'
     await waitFor(() => expect(screen.getByTestId('app-settings-runtime-no-icon')).toBeInTheDocument());
 
     expect(
-      screen.getByTestId('app-settings-runtime-with-icon').querySelector('img'),
-    ).toHaveAttribute('src', '/acp-icons/with-icon.svg');
+      screen
+        .getByTestId('app-settings-runtime-with-icon')
+        .querySelector('[data-vendor-mark="true"]'),
+    ).toBeInTheDocument();
     // 아이콘이 없어도 같은 크기의 자리가 있다.
     const slots = screen
       .getByTestId('app-settings-runtime-no-icon')
-      .querySelectorAll('span.size-5');
-    expect(slots.length).toBeGreaterThan(0);
+      .querySelectorAll('span.size-8');
+    expect(slots.length, '마크가 없어도 같은 크기의 타일 자리가 있어야 한다').toBeGreaterThan(0);
+  });
+
+  /*
+   * 이 셋이 실제 결함을 잡는다. 처음 구현은 `<img>` 였고, 레지스트리 아이콘이
+   * 전부 `currentColor` 단색이라 **검은 판에 검은 그림**이 됐다 — 화면에는
+   * 아무것도 안 보이는데 코드에는 아무 잘못도 안 보였다(소유자가 발견).
+   */
+  it('마크는 색을 우리가 칠한다 — 벤더가 공표한 색이 있으면 그 색으로', async () => {
+    bridge.detect.mockResolvedValue([
+      makeRuntime({ id: 'claude-acp', isolated: true, icon: '/acp-icons/claude-acp.svg', brandInk: '#D97757' }),
+    ]);
+    render(<AcpRuntimeSettings />);
+    const mark = await screen.findByTestId('app-settings-runtime-claude-acp');
+
+    const ink = mark.querySelector<HTMLElement>('[data-vendor-mark-ink]');
+    expect(ink).toHaveAttribute('data-vendor-mark-ink', 'brand');
+    expect(ink?.style.backgroundColor).toBe('rgb(217, 119, 87)');
+    // 그림은 마스크로 들어간다 — SVG 안의 내용이 우리 화면에 그려지지 않는다.
+    expect(ink?.style.maskImage).toContain('/acp-icons/claude-acp.svg');
+  });
+
+  it('확인된 색이 없으면 무채색으로 그린다 — 브랜드 색을 지어내지 않는다', async () => {
+    bridge.detect.mockResolvedValue([
+      makeRuntime({ id: 'unknown', isolated: true, icon: '/acp-icons/unknown.svg', brandInk: null }),
+    ]);
+    render(<AcpRuntimeSettings />);
+    const row = await screen.findByTestId('app-settings-runtime-unknown');
+
+    const ink = row.querySelector<HTMLElement>('[data-vendor-mark-ink]');
+    expect(ink).toHaveAttribute('data-vendor-mark-ink', 'neutral');
+    expect(ink?.style.backgroundColor).toContain('--color-vendor-mark-ink');
+  });
+
+  it('번들된 마크 경로가 아니면 그리지 않는다 — CSS url() 안으로 들어가는 값이다', async () => {
+    bridge.detect.mockResolvedValue([
+      makeRuntime({ id: 'evil', isolated: true, icon: '/acp-icons/x.svg") ; background: url("http://evil' }),
+    ]);
+    render(<AcpRuntimeSettings />);
+    const row = await screen.findByTestId('app-settings-runtime-evil');
+
+    expect(row.querySelector('[data-vendor-mark="true"]')).toBeNull();
+    expect(row.querySelector('[data-vendor-mark-ink]')).toBeNull();
   });
 
   it('상태를 기계가 읽을 수 있게 남긴다 — 색만으로 구별하지 않는다', async () => {

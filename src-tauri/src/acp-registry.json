@@ -10,6 +10,7 @@
       "license": "proprietary",
       "verified": true,
       "icon": "/acp-icons/claude-acp.svg",
+      "brandInk": "#D97757",
       "cli": "claude",
       "launch": {
         "kind": "npx",
@@ -25,6 +26,7 @@
       "license": "Apache-2.0",
       "verified": true,
       "icon": "/acp-icons/codex-acp.svg",
+      "brandInk": null,
       "cli": "codex",
       "launch": {
         "kind": "npx",
@@ -40,6 +42,7 @@
       "license": "MIT",
       "verified": false,
       "icon": "/acp-icons/agoragentic-acp.svg",
+      "brandInk": null,
       "cli": null,
       "launch": {
         "kind": "npx",
@@ -57,6 +60,7 @@
       "license": "Apache-2.0",
       "verified": false,
       "icon": "/acp-icons/amp-acp.svg",
+      "brandInk": null,
       "cli": "amp",
       "launch": {
         "kind": "binary",
@@ -72,6 +76,7 @@
       "license": "proprietary",
       "verified": false,
       "icon": "/acp-icons/auggie.svg",
+      "brandInk": null,
       "cli": null,
       "launch": {
         "kind": "npx",
@@ -89,6 +94,7 @@
       "license": "Apache-2.0",
       "verified": false,
       "icon": "/acp-icons/autohand.svg",
+      "brandInk": null,
       "cli": null,
       "launch": {
         "kind": "npx",
@@ -104,6 +110,7 @@
       "license": "Apache-2.0",
       "verified": false,
       "icon": "/acp-icons/cline.svg",
+      "brandInk": "#18181B",
       "cli": "cline",
       "launch": {
         "kind": "npx",
@@ -121,6 +128,7 @@
       "license": "Proprietary",
       "verified": false,
       "icon": "/acp-icons/codebuddy-code.svg",
+      "brandInk": "#6C4DFF",
       "cli": null,
       "launch": {
         "kind": "npx",
@@ -138,6 +146,7 @@
       "license": "proprietary",
       "verified": false,
       "icon": "/acp-icons/cortex-code.svg",
+      "brandInk": null,
       "cli": null,
       "launch": {
         "kind": "binary",
@@ -156,6 +165,7 @@
       "license": "GPL-3.0-or-later",
       "verified": false,
       "icon": "/acp-icons/corust-agent.svg",
+      "brandInk": null,
       "cli": null,
       "launch": {
         "kind": "binary",
@@ -171,6 +181,7 @@
       "license": "Apache-2.0",
       "verified": false,
       "icon": "/acp-icons/crow-cli.svg",
+      "brandInk": null,
       "cli": null,
       "launch": {
         "kind": "binary",
@@ -188,6 +199,7 @@
       "license": "proprietary",
       "verified": false,
       "icon": "/acp-icons/cursor.svg",
+      "brandInk": "#000000",
       "cli": "cursor-agent",
       "launch": {
         "kind": "binary",
@@ -205,6 +217,7 @@
       "license": "MIT",
       "verified": false,
       "icon": "/acp-icons/deepagents.svg",
+      "brandInk": null,
       "cli": null,
       "launch": {
         "kind": "npx",
@@ -220,6 +233,7 @@
       "license": "proprietary",
       "verified": false,
       "icon": "/acp-icons/devin.svg",
+      "brandInk": null,
       "cli": null,
       "launch": {
         "kind": "binary",
@@ -237,6 +251,7 @@
       "license": "proprietary",
       "verified": false,
       "icon": "/acp-icons/dimcode.svg",
+      "brandInk": null,
       "cli": null,
       "launch": {
         "kind": "npx",
@@ -254,6 +269,7 @@
       "license": "Apache-2.0",
       "verified": false,
       "icon": "/acp-icons/dirac.svg",
+      "brandInk": null,
       "cli": null,
       "launch": {
         "kind": "npx",
@@ -271,6 +287,7 @@
       "license": "proprietary",
       "verified": false,
       "icon": "/acp-icons/factory-droid.svg",
+      "brandInk": null,
       "cli": null,
       "launch": {
         "kind": "npx",
@@ -290,6 +307,7 @@
       "license": "Apache 2.0",
       "verified": false,
       "icon": "/acp-icons/fast-agent.svg",
+      "brandInk": null,
       "cli": null,
       "launch": {
         "kind": "uvx",
@@ -307,6 +325,7 @@
       "license": "Apache-2.0",
       "verified": false,
       "icon": "/acp-icons/gemini.svg",
+      "brandInk": "#8E75B2",
       "cli": "gemini",
       "launch": {
         "kind": "npx",
@@ -324,6 +343,7 @@
       "license": "proprietary",
       "verified": false,
       "icon": "/acp-icons/github-copilot-cli.svg",
+      "brandInk": "#000000",
       "cli": "copilot",
       "launch": {
         "kind": "npx",
@@ -341,6 +361,7 @@
       "license": "Apache-2.0",
       "verified": false,
       "icon": "/acp-icons/glm-acp-agent.svg",
+      "brandInk": "#2D2D2D",
       "cli": null,
       "launch": {
         "kind": "npx",
@@ -356,6 +377,7 @@
       "license": "Apache-2.0",
       "verified": false,
       "icon": "/acp-icons/goose.svg",
+      "brandInk": null,
       "cli": "goose",
       "launch": {
         "kind": "binary",
@@ -373,6 +395,7 @@
       "license": "proprietary",
       "verified": false,
       "icon": "/acp-icons/grok-build.svg",
+      "brandInk": null,
       "cli": null,
       "launch": {
         "kind": "npx",
@@ -391,6 +414,7 @@
       "license": "Apache-2.0",
       "verified": false,
       "icon": "/acp-icons/harn.svg",
+      "brandInk": null,
       "cli": null,
       "launch": {
         "kind": "binary",
@@ -409,6 +433,7 @@
       "license": "proprietary",
       "verified": false,
       "icon": "/acp-icons/junie.svg",
+      "brandInk": null,
       "cli": "junie",
       "launch": {
         "kind": "binary",
@@ -426,6 +451,7 @@
       "license": "MIT",
       "verified": false,
       "icon": "/acp-icons/kilo.svg",
+      "brandInk": null,
       "cli": null,
       "launch": {
         "kind": "npx",
@@ -443,6 +469,7 @@
       "license": "MIT",
       "verified": false,
       "icon": "/acp-icons/kimi.svg",
+      "brandInk": "#000000",
       "cli": "kimi",
       "launch": {
         "kind": "binary",
@@ -460,6 +487,7 @@
       "license": "AGPL-3.0",
       "verified": false,
       "icon": "/acp-icons/minion-code.svg",
+      "brandInk": null,
       "cli": null,
       "launch": {
         "kind": "uvx",
@@ -477,6 +505,7 @@
       "license": "Apache-2.0",
       "verified": false,
       "icon": "/acp-icons/mistral-vibe.svg",
+      "brandInk": "#FA520F",
       "cli": null,
       "launch": {
         "kind": "binary",
@@ -492,6 +521,7 @@
       "license": "proprietary",
       "verified": false,
       "icon": "/acp-icons/nova.svg",
+      "brandInk": null,
       "cli": null,
       "launch": {
         "kind": "npx",
@@ -509,6 +539,7 @@
       "license": "MIT",
       "verified": false,
       "icon": "/acp-icons/opencode.svg",
+      "brandInk": "#000000",
       "cli": "opencode",
       "launch": {
         "kind": "binary",
@@ -526,6 +557,7 @@
       "license": "MIT",
       "verified": false,
       "icon": "/acp-icons/pi-acp.svg",
+      "brandInk": null,
       "cli": null,
       "launch": {
         "kind": "npx",
@@ -541,6 +573,7 @@
       "license": "proprietary",
       "verified": false,
       "icon": "/acp-icons/poolside.svg",
+      "brandInk": null,
       "cli": null,
       "launch": {
         "kind": "binary",
@@ -558,6 +591,7 @@
       "license": "proprietary",
       "verified": false,
       "icon": "/acp-icons/qoder.svg",
+      "brandInk": null,
       "cli": null,
       "launch": {
         "kind": "npx",
@@ -575,6 +609,7 @@
       "license": "Apache-2.0",
       "verified": false,
       "icon": "/acp-icons/qwen-code.svg",
+      "brandInk": "#6950EF",
       "cli": "qwen",
       "launch": {
         "kind": "npx",
@@ -593,6 +628,7 @@
       "license": "Apache-2.0",
       "verified": false,
       "icon": "/acp-icons/sigit.svg",
+      "brandInk": null,
       "cli": null,
       "launch": {
         "kind": "npx",
@@ -608,6 +644,7 @@
       "license": "Apache-2.0",
       "verified": false,
       "icon": "/acp-icons/stakpak.svg",
+      "brandInk": null,
       "cli": null,
       "launch": {
         "kind": "binary",
@@ -625,6 +662,7 @@
       "license": "MIT",
       "verified": false,
       "icon": "/acp-icons/vtcode.svg",
+      "brandInk": null,
       "cli": null,
       "launch": {
         "kind": "binary",

@@ -58,6 +58,11 @@ pub(crate) struct RegistryAgent {
     /// 번들된 아이콘 경로(`/acp-icons/<id>.svg`). 빌드 때 받아 두므로 앱은
     /// 이미지를 받으러 나가지 않는다.
     pub icon: Option<String>,
+    /// 그 벤더의 브랜드 색(`#RRGGBB`). 레지스트리 아이콘은 전부 단색이라
+    /// 색은 빌드 스크립트가 따로 붙여 준다. **사람이 확인한 짝만** 값이 있고,
+    /// 없으면 화면이 무채색으로 그린다 — 틀린 브랜드 색이 무채색보다 나쁘다.
+    #[serde(default, rename = "brandInk")]
+    pub brand_ink: Option<String>,
     pub launch: RegistryLaunch,
 }
 
@@ -350,6 +355,8 @@ pub(crate) struct AcpRuntimeStatus {
     /// 우리가 실제로 재 본 것인가.
     pub verified: bool,
     pub icon: Option<String>,
+    /// 그 벤더의 브랜드 색. 없으면 화면이 무채색으로 그린다.
+    pub brand_ink: Option<String>,
     /// `npx` · `uvx` · `binary`
     pub launch_kind: String,
     /// `ready` · `cli-missing` · `node-missing` · `uvx-missing` · `binary-missing`
@@ -432,6 +439,7 @@ pub(crate) fn detect_runtimes(
                 license: agent.license.clone(),
                 verified: agent.verified,
                 icon: agent.icon.clone(),
+                brand_ink: agent.brand_ink.clone(),
                 launch_kind: match agent.launch {
                     RegistryLaunch::Npx { .. } => "npx",
                     RegistryLaunch::Uvx { .. } => "uvx",

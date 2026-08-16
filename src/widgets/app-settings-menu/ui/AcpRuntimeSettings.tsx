@@ -197,6 +197,7 @@ function RuntimeRow({ runtime }: { runtime: AcpRuntimeStatus }) {
       label={runtime.label}
       testId={`app-settings-runtime-${runtime.id}`}
       icon={runtime.icon}
+      iconInk={runtime.brandInk}
       control={
         <span className="flex items-center gap-1.5">
           {runtime.isolated ? null : (

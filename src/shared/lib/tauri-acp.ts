@@ -55,6 +55,13 @@ export interface AcpRuntimeStatus {
   verified: boolean;
   /** 번들된 아이콘 경로(`/acp-icons/<id>.svg`). 없으면 null. */
   icon: string | null;
+  /**
+   * 그 벤더의 브랜드 색(`#RRGGBB`). 레지스트리 아이콘은 등록 규칙상 전부
+   * 단색이라 색은 빌드 때 따로 붙는다. **사람이 확인한 짝만** 값이 있다 —
+   * 이름으로 자동 매칭하면 남의 브랜드에 엉뚱한 색이 붙고, 그건 색이 없는
+   * 것보다 나쁘다. 없으면 화면이 무채색으로 그린다.
+   */
+  brandInk: string | null;
   launchKind: 'npx' | 'uvx' | 'binary';
   /**
    * `ready` — 바로 쓸 수 있다
