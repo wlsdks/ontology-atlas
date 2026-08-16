@@ -6,7 +6,7 @@ use std::fs;
 use std::io::{Read, Write};
 use std::path::{Component, Path, PathBuf};
 use std::process::{Command, Stdio};
-use std::sync::Mutex;
+use std::sync::{Arc, Mutex};
 use std::time::{Duration, UNIX_EPOCH};
 use tauri::{AppHandle, Emitter, Manager, RunEvent, State};
 
@@ -760,11 +760,81 @@ fn metadata_mtime_ms(path: &Path) -> Result<u128, String> {
 
 /// 살아 있는 ACP 세션들. 앱이 꺼질 때 여기 남은 것을 전부 끝낸다.
 #[derive(Default)]
-struct AcpSessions(Mutex<std::collections::HashMap<String, AcpSessionHandle>>);
+struct AcpSessions(Mutex<std::collections::HashMap<String, Arc<AcpSessionHandle>>>);
 
 struct AcpSessionHandle {
     pid: u32,
-    stdin: std::process::ChildStdin,
+    stdin: Mutex<Box<dyn Write + Send>>,
+}
+
+impl AcpSessions {
+    fn insert<W: Write + Send + 'static>(
+        &self,
+        session_id: String,
+        pid: u32,
+        stdin: W,
+    ) -> Result<(), String> {
+        self.0
+            .lock()
+            .map_err(|_| "session-registry-poisoned".to_string())?
+            .insert(
+                session_id,
+                Arc::new(AcpSessionHandle {
+                    pid,
+                    stdin: Mutex::new(Box::new(stdin)),
+                }),
+            );
+        Ok(())
+    }
+
+    fn send_line(&self, session_id: &str, line: &str) -> Result<(), String> {
+        // 등록부 잠금과 writer 잠금을 동시에 쥐지 않는다. 자식 하나의 stdin이
+        // 막혀도 다른 세션의 send/stop, 자식 종료 정리, 앱 종료 drain은 계속
+        // 진행되어야 막힌 프로세스 자체를 끊을 수 있다.
+        let handle = {
+            let map = self
+                .0
+                .lock()
+                .map_err(|_| "session-registry-poisoned".to_string())?;
+            Arc::clone(map.get(session_id).ok_or("session-not-found")?)
+        };
+        let mut stdin = handle
+            .stdin
+            .lock()
+            .map_err(|_| "session-stdin-poisoned".to_string())?;
+        stdin
+            .write_all(line.as_bytes())
+            .and_then(|_| stdin.write_all(b"\n"))
+            .and_then(|_| stdin.flush())
+            .map_err(|err| format!("write-failed:{err}"))
+    }
+
+    fn take_pid(&self, session_id: &str) -> Result<Option<u32>, String> {
+        Ok(self
+            .0
+            .lock()
+            .map_err(|_| "session-registry-poisoned".to_string())?
+            .remove(session_id)
+            .map(|handle| handle.pid))
+    }
+
+    fn remove(&self, session_id: &str) -> Result<(), String> {
+        self.0
+            .lock()
+            .map_err(|_| "session-registry-poisoned".to_string())?
+            .remove(session_id);
+        Ok(())
+    }
+
+    fn drain_pids(&self) -> Result<Vec<u32>, String> {
+        Ok(self
+            .0
+            .lock()
+            .map_err(|_| "session-registry-poisoned".to_string())?
+            .drain()
+            .map(|(_, handle)| handle.pid)
+            .collect())
+    }
 }
 
 /// 세션 이름은 늘어나기만 하는 번호로 만든다. pid 를 이름으로 쓰면 OS 가 pid 를
@@ -898,11 +968,7 @@ fn acp_start(
     // 영원히 남고, 앱을 끌 때 `terminate_all_acp_sessions` 가 그 pid 를 죽인다 —
     // 그때 그 번호는 **다른 프로그램**의 것일 수 있다(그리고 프로세스 그룹으로
     // 신호를 보낸다).
-    sessions
-        .0
-        .lock()
-        .map_err(|_| "session-registry-poisoned".to_string())?
-        .insert(session_id.clone(), AcpSessionHandle { pid, stdin });
+    sessions.insert(session_id.clone(), pid, stdin)?;
 
     // 자식을 기다리는 스레드가 종료를 알리고 등록부에서 지운다. 여기서 지우지
     // 않으면 이미 죽은 세션에 계속 쓰려 하고, 그 실패는 사용자에게 「보냈는데
@@ -913,9 +979,7 @@ fn acp_start(
         std::thread::spawn(move || {
             let code = child.wait().ok().and_then(|status| status.code());
             if let Some(state) = app.try_state::<AcpSessions>() {
-                if let Ok(mut map) = state.0.lock() {
-                    map.remove(&session_id);
-                }
+                let _ = state.remove(&session_id);
             }
             let _ = app.emit("acp://exit", AcpExitEvent { session_id, code });
         });
@@ -985,30 +1049,18 @@ fn acp_permission_verdict(vault_root: String, file_path: Option<String>) -> Stri
 /// 세션에 한 줄을 보낸다. 줄바꿈은 여기서 붙인다 — 호출자가 잊으면 상대는
 /// 영원히 기다리고, 그 증상은 「멈췄다」로만 보인다.
 #[tauri::command]
-fn acp_send(sessions: State<'_, AcpSessions>, session_id: String, line: String) -> Result<(), String> {
-    let mut map = sessions
-        .0
-        .lock()
-        .map_err(|_| "session-registry-poisoned".to_string())?;
-    let handle = map.get_mut(&session_id).ok_or("session-not-found")?;
-    handle
-        .stdin
-        .write_all(line.as_bytes())
-        .and_then(|_| handle.stdin.write_all(b"\n"))
-        .and_then(|_| handle.stdin.flush())
-        .map_err(|err| format!("write-failed:{err}"))
+fn acp_send(
+    sessions: State<'_, AcpSessions>,
+    session_id: String,
+    line: String,
+) -> Result<(), String> {
+    sessions.send_line(&session_id, &line)
 }
 
 /// 세션과 그것이 띄운 모든 것을 끝낸다.
 #[tauri::command]
 fn acp_stop(sessions: State<'_, AcpSessions>, session_id: String) -> Result<(), String> {
-    let pid = {
-        let mut map = sessions
-            .0
-            .lock()
-            .map_err(|_| "session-registry-poisoned".to_string())?;
-        map.remove(&session_id).map(|handle| handle.pid)
-    };
+    let pid = sessions.take_pid(&session_id)?;
     match pid {
         Some(pid) => acp::terminate_tree(pid),
         // 이미 끝난 세션을 끝내라는 것은 실패가 아니다.
@@ -1024,8 +1076,8 @@ fn terminate_all_acp_sessions(app: &AppHandle) {
     let Some(state) = app.try_state::<AcpSessions>() else {
         return;
     };
-    let handles: Vec<u32> = match state.0.lock() {
-        Ok(mut map) => map.drain().map(|(_, handle)| handle.pid).collect(),
+    let handles = match state.drain_pids() {
+        Ok(handles) => handles,
         Err(_) => return,
     };
     for pid in handles {
@@ -4608,6 +4660,137 @@ pub fn run() {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    struct ControlledWriter {
+        gate: Option<(
+            std::sync::mpsc::SyncSender<()>,
+            std::sync::mpsc::Receiver<()>,
+        )>,
+        bytes: Arc<Mutex<Vec<u8>>>,
+    }
+
+    impl ControlledWriter {
+        fn blocked(
+            entered: std::sync::mpsc::SyncSender<()>,
+            release: std::sync::mpsc::Receiver<()>,
+        ) -> Self {
+            Self {
+                gate: Some((entered, release)),
+                bytes: Arc::new(Mutex::new(Vec::new())),
+            }
+        }
+
+        fn recording() -> Self {
+            Self {
+                gate: None,
+                bytes: Arc::new(Mutex::new(Vec::new())),
+            }
+        }
+    }
+
+    impl Write for ControlledWriter {
+        fn write(&mut self, buf: &[u8]) -> std::io::Result<usize> {
+            if let Some((entered, release)) = self.gate.take() {
+                entered
+                    .send(())
+                    .map_err(|_| std::io::Error::other("test-entered-channel-closed"))?;
+                release
+                    .recv()
+                    .map_err(|_| std::io::Error::other("test-release-channel-closed"))?;
+            }
+            self.bytes
+                .lock()
+                .map_err(|_| std::io::Error::other("test-writer-poisoned"))?
+                .extend_from_slice(buf);
+            Ok(buf.len())
+        }
+
+        fn flush(&mut self) -> std::io::Result<()> {
+            Ok(())
+        }
+    }
+
+    fn while_one_session_write_is_blocked<T, F>(action: F) -> Result<T, String>
+    where
+        T: Send + 'static,
+        F: FnOnce(Arc<AcpSessions>) -> T + Send + 'static,
+    {
+        let sessions = Arc::new(AcpSessions::default());
+        let (entered_tx, entered_rx) = std::sync::mpsc::sync_channel(1);
+        let (release_tx, release_rx) = std::sync::mpsc::sync_channel(1);
+        sessions
+            .insert(
+                "blocked".to_string(),
+                11,
+                ControlledWriter::blocked(entered_tx, release_rx),
+            )
+            .unwrap();
+        sessions
+            .insert("other".to_string(), 22, ControlledWriter::recording())
+            .unwrap();
+
+        let blocked_sessions = Arc::clone(&sessions);
+        let blocked = std::thread::spawn(move || blocked_sessions.send_line("blocked", "wait"));
+        entered_rx
+            .recv_timeout(Duration::from_secs(1))
+            .map_err(|err| format!("blocked writer did not start: {err}"))?;
+
+        let (started_tx, started_rx) = std::sync::mpsc::sync_channel(1);
+        let (done_tx, done_rx) = std::sync::mpsc::sync_channel(1);
+        let action_thread = std::thread::spawn(move || {
+            let _ = started_tx.send(());
+            let result = action(sessions);
+            let _ = done_tx.send(result);
+        });
+        started_rx
+            .recv_timeout(Duration::from_secs(1))
+            .map_err(|err| format!("registry action did not start: {err}"))?;
+        let outcome = done_rx
+            .recv_timeout(Duration::from_millis(250))
+            .map_err(|err| format!("registry action waited for blocked stdin: {err}"));
+
+        let _ = release_tx.send(());
+        blocked
+            .join()
+            .map_err(|_| "blocked send thread panicked".to_string())?
+            .map_err(|err| format!("blocked send failed: {err}"))?;
+        action_thread
+            .join()
+            .map_err(|_| "registry action thread panicked".to_string())?;
+        outcome
+    }
+
+    #[test]
+    fn blocked_send_in_one_session_does_not_block_another_session() {
+        let result = while_one_session_write_is_blocked(|sessions| {
+            sessions.send_line("other", "still-live")
+        })
+        .expect("another session must not share the blocked stdin lock");
+        assert_eq!(result, Ok(()));
+    }
+
+    #[test]
+    fn blocked_send_does_not_block_stop_take() {
+        let result = while_one_session_write_is_blocked(|sessions| sessions.take_pid("blocked"))
+            .expect("stop must be able to take the pid and break the blocked pipe");
+        assert_eq!(result, Ok(Some(11)));
+    }
+
+    #[test]
+    fn blocked_send_does_not_delay_child_exit_cleanup() {
+        let result = while_one_session_write_is_blocked(|sessions| sessions.remove("blocked"))
+            .expect("child exit cleanup must not wait for stdin");
+        assert_eq!(result, Ok(()));
+    }
+
+    #[test]
+    fn blocked_send_does_not_delay_shutdown_drain() {
+        let result = while_one_session_write_is_blocked(|sessions| sessions.drain_pids())
+            .expect("shutdown must collect pids without waiting for stdin");
+        let mut pids = result.unwrap();
+        pids.sort_unstable();
+        assert_eq!(pids, vec![11, 22]);
+    }
 
     #[test]
     fn normalize_relative_path_accepts_nested_vault_paths() {
