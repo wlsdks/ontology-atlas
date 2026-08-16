@@ -61,30 +61,30 @@ export interface AcpChoice {
  * 답을 기다리는 상한. 대화 한 턴은 이보다 오래 걸릴 수 있으므로
  * **악수와 조회에만** 건다(`prompt` 는 시간을 안 준다 — 아래 `prompt` 구현).
  */
+import { partitionModes } from './mode-safety';
+
 const CALL_TIMEOUT_MS = 45_000;
 
-const GATE_REMOVING_MODES = new Set([
-  'bypassPermissions',
-  'acceptEdits',
-  'agent-full-access',
-  /*
-   * ⚠️ **`agent` 도 여기다** (2026-08-16 검수에서 적발).
-   *
-   * 이름만 보면 「보통 모드」 같지만, 이 저장소가 **직접 재 본 결과**가
-   * `src-tauri/src/acp.rs` 에 적혀 있다: codex 를 기본값(`agent`)으로 띄웠더니
-   * *"작업 폴더 밖에 파일을 쓰면서 권한 요청이 0회"* 였다. 위 기준 그대로다 —
-   * 가르는 것은 이름이 아니라 **묻지 않고 통과시키는가**다.
-   *
-   * 그걸 알고 있으면서 드롭다운에 남겨 뒀던 것이라, 사용자는 한 번의 선택으로
-   * 이 화면의 약속을 무를 수 있었다. 지금은 codex 에게 남는 것이 `read-only`
-   * 이고, 그 모드에서도 **우리가 꽂아 준 볼트 도구는 그대로 돈다**(실측) —
-   * 지도를 채우는 일은 막히지 않는다.
-   */
-  'agent',
-]);
+// 안전 판정의 정본 — 위 `keepGateSafeModes` 참고.
 
+
+/**
+ * ⚠️ **판정을 여기서 다시 쓰지 않는다** (2026-08-17).
+ *
+ * 종전에는 이 함수가 거부목록 한 줄이었다 — 이름을 적어 둔 것만 숨기니,
+ * 어댑터가 새 모드를 더하면 **우리가 모르는 채로** 사용자에게 보이고 고를 수
+ * 있었다. 안전 장치가 모르는 것을 안전한 것처럼 다루면 그건 장치가 아니다.
+ *
+ * 판정은 `mode-safety.ts` 하나가 갖는다: 재 봐서 위험한 것은 숨기고, 재 봐서
+ * 괜찮은 것은 그냥 내놓고, **안 재 본 것은 내놓되 모른다고 표시한다.**
+ */
 export function keepGateSafeModes(modes: AcpChoice[]): AcpChoice[] {
-  return modes.filter((mode) => !GATE_REMOVING_MODES.has(mode.id));
+  return partitionModes(modes).offered;
+}
+
+/** 이 목록 중 **아직 안 재 본** 것들 — 화면이 그 사실을 말해야 한다. */
+export function unverifiedModeIds(modes: AcpChoice[]): string[] {
+  return partitionModes(modes).unverified;
 }
 
 /** `{availableModels|availableModes, current…Id}` 를 화면이 쓰는 모양으로. */
