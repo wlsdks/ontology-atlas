@@ -44,7 +44,9 @@ export function stageWindowsReleaseAssets({ bundleDir, outDir, version }) {
 
   fs.rmSync(out, { recursive: true, force: true });
   fs.mkdirSync(out, { recursive: true });
-  fs.copyFileSync(sourcePath, path.join(out, publicName));
+  // 해시한 바로 그 바이트를 쓴다. sourcePath 를 다시 읽으면 둘 사이에 산출물이
+  // 교체될 때 공개 installer 와 checksum 이 서로 다른 파일을 증명하게 된다.
+  fs.writeFileSync(path.join(out, publicName), bytes);
   fs.writeFileSync(path.join(out, `${publicName}.sha256`), `${sha256}  ${publicName}\n`, 'utf8');
 
   return {
