@@ -451,11 +451,15 @@ await test("tools/list — 단일 도구 description 이 batch 짝을 cross-refe
       assert.equal(schema?.minLength, 1, `${label} minLength`);
       assert.equal(schema?.pattern, "^(?!\\s)(?!.*\\s$)(?!.*\\u0000).+$", `${label} pattern`);
     };
-    const assertCleanStringOrArraySchema = (schema, label) => {
-      assert.deepEqual(schema?.type, ["array", "string"], `${label} type`);
+    const assertCleanBacklinkValueSchema = (schema, label) => {
+      assert.deepEqual(schema?.type, ["array", "object", "string"], `${label} type`);
       assert.equal(schema?.minLength, 1, `${label} minLength`);
+      assert.equal(schema?.minItems, 1, `${label} minItems`);
+      assert.equal(schema?.minProperties, 1, `${label} minProperties`);
       assert.equal(schema?.pattern, "^(?!\\s)(?!.*\\s$)(?!.*\\u0000).+$", `${label} pattern`);
       assertCleanStringSchema(schema?.items, `${label} items`);
+      assertCleanStringSchema(schema?.propertyNames, `${label} propertyNames`);
+      assertCleanStringSchema(schema?.additionalProperties, `${label} additionalProperties`);
     };
     const listConcepts = findTool("list_concepts");
     assert.equal(listConcepts?.outputSchema?.type, "object");
@@ -1019,8 +1023,8 @@ await test("tools/list — 단일 도구 description 이 batch 짝을 cross-refe
     assert.deepEqual(renameBacklinkKeyChange?.required, ["key"]);
     assert.equal(renameBacklinkKeyChange?.additionalProperties, false);
     assertCleanStringSchema(renameBacklinkKeyChange?.properties?.key, "rename backlink key-change key");
-    assertCleanStringOrArraySchema(renameBacklinkKeyChange?.properties?.before, "rename backlink key-change before");
-    assertCleanStringOrArraySchema(renameBacklinkKeyChange?.properties?.after, "rename backlink key-change after");
+    assertCleanBacklinkValueSchema(renameBacklinkKeyChange?.properties?.before, "rename backlink key-change before");
+    assertCleanBacklinkValueSchema(renameBacklinkKeyChange?.properties?.after, "rename backlink key-change after");
     assert.equal(renameConcept?.outputSchema?.properties?.postWriteMaintenance?.type, "object");
     const mergeConcepts = findTool("merge_concepts");
     assert.equal(mergeConcepts?.outputSchema?.type, "object");
@@ -2966,11 +2970,13 @@ await test("infer_imports auto delivery — oversized omitted calls compact, exp
   const vaultRoot = makeVault([
     {
       slug: "capabilities/legacy",
-      content: "---\nkind: capability\ntitle: Legacy\ndependencies: [capabilities/target]\n---\n",
+      // 이 fixture는 "읽을 수 있는데 import가 없음"을 시험한다. path가 없으면
+      // 새 계약상 notJudgeableByImports가 맞고 stale follow-up 시험이 사라진다.
+      content: "---\nkind: capability\ntitle: Legacy\npath: src/legacy.ts\ndependencies: [capabilities/target]\n---\n",
     },
     {
       slug: "capabilities/target",
-      content: "---\nkind: capability\ntitle: Target\n---\n",
+      content: "---\nkind: capability\ntitle: Target\npath: src/target.ts\n---\n",
     },
   ]);
   const repoRoot = realpathSync(mkdtempSync(join(tmpdir(), "ontology-atlas-infer-auto-delivery-")));
@@ -7728,7 +7734,7 @@ await test("rename_concept dry-run — preview 만, 디스크 변경 0", async (
     {
       slug: "ref",
       content:
-        "---\nkind: project\ntitle: Ref\ndependencies: [old-target]\n---\n",
+        "---\nkind: project\ntitle: Ref\ndependencies: [old-target]\nrelation_notes:\n  old-target: Starts the local MCP process\n---\n",
     },
   ]);
   try {
@@ -7750,6 +7756,15 @@ await test("rename_concept dry-run — preview 만, 디스크 변경 0", async (
     });
     assert.equal(result.moved, false);
     assert.equal(result.backlinkUpdates.totalUpdated, 1);
+    assert.equal(Object.hasOwn(result.backlinkUpdates, "plan"), false);
+    const noteBefore = result.backlinkUpdates.updates[0].beforeKeys.find(
+      (row) => row.key === "relation_notes",
+    );
+    const noteAfter = result.backlinkUpdates.updates[0].afterKeys.find(
+      (row) => row.key === "relation_notes",
+    );
+    assert.deepEqual(noteBefore?.before, { "old-target": "Starts the local MCP process" });
+    assert.deepEqual(noteAfter?.after, { "new-target": "Starts the local MCP process" });
     assert.equal(result.changed, undefined);
     assert.equal(result.postWriteMaintenance, undefined);
     assert.equal(readFileSync(join(root, "old-target.md"), "utf-8"), beforeOld);
@@ -7787,6 +7802,7 @@ await test("rename_concept confirm:true — 파일 이동 + backlink redirect", 
     assert.deepEqual(result.blockedReasons, []);
     assert.equal(result.moved, true);
     assert.equal(result.backlinkUpdates.totalUpdated, 1);
+    assert.equal(Object.hasOwn(result.backlinkUpdates, "plan"), false);
     assert.equal(result.backlinkUpdates.updates[0].slug, "ref");
     assert.equal(result.backlinkUpdates.updates[0].title, "Ref");
     assert.equal(result.changed, true);
@@ -7865,6 +7881,7 @@ await test("merge_concepts confirm:true — fromSlug 삭제 + backlink redirect"
     assert.deepEqual(result.blockedReasons, []);
     assert.equal(result.deleted, true);
     assert.equal(result.backlinkUpdates.totalUpdated, 1);
+    assert.equal(Object.hasOwn(result.backlinkUpdates, "plan"), false);
     assert.equal(result.changed, true);
     assert.equal(result.capturedFrom.frontmatter.title, "From");
     assert.equal(result.capturedFrom.body, "# From\n\nMerge body for captured excerpt.");
@@ -9027,12 +9044,16 @@ await test("reclassify_concept — kind/slug/domain/body and backlinks move toge
       callTool(4, "get_concept", { slug: "elements/claim-entity" }),
       callTool(5, "get_concept", { slug: "project" }),
     ]);
-    assertDestructivePreview(getCallParsed(responses, 2), {
+    const preview = getCallParsed(responses, 2);
+    assertDestructivePreview(preview, {
       canConfirm: true,
       wouldChange: true,
       label: "reclassify_concept preview",
     });
-    assert.equal(getCallParsed(responses, 3).changed, true);
+    assert.equal(Object.hasOwn(preview.backlinkUpdates, "plan"), false);
+    const reclassified = getCallParsed(responses, 3);
+    assert.equal(reclassified.changed, true);
+    assert.equal(Object.hasOwn(reclassified.backlinkUpdates, "plan"), false);
     const claim = getCallParsed(responses, 4);
     assert.equal(claim.frontmatter.kind, "element");
     assert.equal(claim.frontmatter.domain, "domains/review");

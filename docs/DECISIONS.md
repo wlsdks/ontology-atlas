@@ -40,7 +40,59 @@
 **상태**: 유효 / 뒤집힘(→ 링크) / 반증됨(관측: …)
 ```
 
-## 2026-08-17 (30) — 릴리스 자격증명은 필요한 단계에만 보인다
+## 2026-08-17 (32) — 공개 의미 diff와 내부 쓰기 계획을 분리한다
+
+**소집**: PO Council 전체 · **트리거**: 공개 MCP 응답 계약 변경과 dogfood
+릴리스 게이트 RED · **루브릭**: 23/24 (치명적 0: 없음)
+
+| PO | 판정 | 소유 행 점수 |
+|---|---|---|
+| 근거 | Build and verify | Problem insight 4 · User moment 4 |
+| 결 | Build and verify | Verification 4 |
+| 지킴이 | Build and verify | Ontology value 4 · Agent value 4 |
+| 해자 | Build and verify | Differentiation 3 |
+| 지렛대 | Build and verify | appetite: 반나절 이내 |
+
+**관찰된 현상**: 실제 `pnpm dogfood:verify`가 `rename_concept` dry-run의
+`relation_notes` 객체 맵을 `before drift`로 거절했다. runtime은 관계 근거의
+변경 전후를 객체로 돌려주지만 공개 output schema와 검증기는 문자열 또는 문자열
+배열만 허용했다. 같은 `backlinkUpdates`에는 원자쓰기에만 필요한 `plan`도 섞일
+수 있었고, 그 안에는 절대 경로와 전체 Markdown이 들어간다. 외부 사용자 발생
+빈도와 비계약 필드 `plan`에 의존하는 클라이언트의 존재는 관측하지 못했다.
+
+**결정 (accountable: 진안)**:
+
+1. 공개 backlink 변경 값은 비어 있지 않은 문자열, 문자열 배열, 또는 공백 없는
+   문자열 키·값의 비어 있지 않은 맵만 허용한다. 빈 맵·공백 값·중첩 객체는
+   fail-closed 한다.
+2. 공개 `backlinkUpdates`는 `updates`와 `totalUpdated`만 돌려준다. 원자쓰기
+   `plan`은 `deferWrite` 내부에만 남기고 rename·reclassify·merge의 dry-run과
+   confirmed 응답에는 싣지 않는다.
+3. `relation_notes`의 before/after, text와 `structuredContent` 동치, 세 confirmed
+   경로의 plan 부재, malformed map 거절을 계약으로 고정한다.
+4. 새 도구·UI·관계 타입·범용 JSON 객체·별도 감사 API는 만들지 않는다.
+
+**검증**: 최초 dogfood RED를 보존한 뒤 focused unit/schema/integration을
+GREEN으로 만들었고, 동일 checkout의 실제 stdio `pnpm dogfood:verify`가 전체
+통과했다. `infer_imports.notJudgeableByImports`의 판정 보류 동작은 바꾸지 않았다.
+
+**적용 규칙**: 최소 공개 projection · 의미 근거 보존 · 내부 계획 비공개 ·
+계약과 실제 payload 동치.
+
+**서명**: 진안 — 소유자, Codex — TDD·구현, PO Council 다섯 좌석 — 독립 검토.
+
+**기록된 반대**: 기존 비계약 `plan`에 의존한 클라이언트가 있을 수 있고, 사람이
+쓴 `relation_notes` 값에 문자열이 아닌 유효한 구조가 있다면 string-map 계약은
+너무 좁다. 반대로 임의 JSON 객체를 허용하면 관계 근거가 아닌 frontmatter까지
+공개 계약으로 굳힌다.
+**반증 조건**: confirmed 쓰기가 내부 plan을 잃어 원자성을 깨뜨리거나, 실제
+유효한 관계 근거에서 문자열이 아닌 값이 반복 관측되거나, public payload에
+`plan`이 다시 나타나면 이 결정을 재검토한다.
+**재검토**: 위 관측 1건 또는 다음 태그 릴리스의 destructive dry-run gate 실패 시.
+
+**상태**: 유효
+
+## 2026-08-17 (31) — 릴리스 자격증명은 필요한 단계에만 보인다
 
 **소집**: 단독 패스 + Sol xhigh 독립 검토 · **트리거**: 장기 보안·소스 품질
 감사에서 릴리스 토큰과 secret의 job 전역 노출 확인 · **루브릭**: 18/24
@@ -78,6 +130,57 @@ job과 secret 소비 단계의 전체 목록을 계약 테스트로 고정하고
 실패하면 반대가 옳다. 그때 job 노출을 다시 넓히지 말고, 권한 경계를 보존하는
 재사용 workflow 또는 composite action으로 소비 단계를 중앙화한다.
 **재검토**: 다음 태그 릴리스 완료 또는 위 실패 1건 관측 시.
+
+**상태**: 유효
+
+## 2026-08-17 (30) — 「못 봤다」를 「없다」로 말하면 맞는 관계가 지워진다
+
+**소집**: 단독 패스 · **트리거**: 밖에서 쓰는 약속 변경(`infer_imports` 의
+reconciliation 에 칸 추가) · **루브릭**: 22/24 (치명적 0: 없음)
+
+**결정**: 코드 추론이 **판정할 수 없는 것**을 「오래됐을 수 있다」고 말하던 것을
+고친다.
+
+이 저장소 자신에 돌려 본 실측:
+
+```
+inBoth: 0
+inVaultNotInCode: 3  → "3 vault depends_on edge(s) have no matching
+                        code import (review for stale)"
+```
+
+**그 셋은 전부 맞는 관계였다.** 스캐너가 못 본 이유는 관계가 없어서가 아니라
+볼 수 없어서다:
+
+| 엣지 | 왜 안 보였나 |
+|---|---|
+| `acp-runtime → mcp-server` | 구현이 `src-tauri/src/acp.rs` — **Rust**, 스캐너가 안 읽는다 |
+| `cli-developer-entry → mcp-server` | 프로세스를 **띄우는** 관계라 import 가 아니다 |
+| `mcp-server → vault-ontology` | 같은 폴더 안이라 모듈 간 엣지가 안 생긴다 |
+
+에이전트가 이 답을 그대로 믿으면 **맞는 관계 셋을 지운다.** 이 저장소의
+CodeGraph 규칙이 이미 같은 말을 한다 — *"'not found' 를 부재의 증거로 쓰지
+마라."* 그리고 `mcp/README.md` 도 *"Rust coverage still fail closed"* 라고
+적어 뒀다. **의도는 있었는데 판정이 그것을 안 지켰다.**
+
+바꾼 것 둘:
+
+1. **판정을 미룰 줄 안다.** 엔드포인트의 `path:` 가 스캐너가 안 읽는 확장자거나
+   경로를 모르면 새 칸 `notJudgeableByImports` 로 간다. 실측에서 Rust 건이
+   그리로 옮겨졌다.
+2. **남은 것도 단정하지 않는다.** 「오래됐을 수 있다」 대신 *"import 는 한
+   종류의 근거일 뿐이다 — 프로세스 실행일 수도, 설정 참조일 수도, 런타임
+   계약일 수도 있다. 오래됐다고 보기 전에 코드를 읽어라"*.
+
+**적용 규칙**: 못 하는 것은 못 한다고 말한다.
+**서명**: 진안 (소유자)
+
+**기록된 반대**: 디렉터리를 가리키는 `path:`(`mcp/src`)는 여전히 「읽을 수
+있다」로 친다 — 그 안에 읽는 파일이 있을 수 있어서다. 그래서 프로세스 실행
+관계 둘은 아직 `inVaultNotInCode` 에 남는다.
+**반증 조건**: 에이전트가 그 둘을 근거로 관계를 지우려 한다. 그러면 「같은
+폴더 안이라 모듈 간 엣지가 원래 안 생기는 경우」도 판정 미루기로 넣는다.
+**재검토**: 위 관측이 나오면.
 
 **상태**: 유효
 

@@ -378,12 +378,16 @@ function nonBlankStringSchemaFailure(schema) {
   );
 }
 
-function nonBlankStringOrArraySchemaFailure(schema) {
+function backlinkRewriteValueSchemaFailure(schema) {
   return !(
-    sameArray(schema?.type, ['array', 'string']) &&
+    sameArray(schema?.type, ['array', 'object', 'string']) &&
     schema.minLength === 1 &&
+    schema.minItems === 1 &&
+    schema.minProperties === 1 &&
     schema.pattern === NON_BLANK_STRING_PATTERN &&
-    !nonBlankStringSchemaFailure(schema.items)
+    !nonBlankStringSchemaFailure(schema.items) &&
+    !nonBlankStringSchemaFailure(schema.propertyNames) &&
+    !nonBlankStringSchemaFailure(schema.additionalProperties)
   );
 }
 
@@ -532,8 +536,8 @@ function backlinkRewritePlanSchemaFailure(schema, label) {
       !sameArray(keyRows.items?.required, ['key']) ||
       keyRows.items?.additionalProperties !== false ||
       nonBlankStringSchemaFailure(keyRows.items?.properties?.key) ||
-      nonBlankStringOrArraySchemaFailure(keyRows.items?.properties?.before) ||
-      nonBlankStringOrArraySchemaFailure(keyRows.items?.properties?.after)
+      backlinkRewriteValueSchemaFailure(keyRows.items?.properties?.before) ||
+      backlinkRewriteValueSchemaFailure(keyRows.items?.properties?.after)
     ) {
       return `${label} outputSchema backlinkUpdates ${propertyName} drift`;
     }
@@ -5728,23 +5732,36 @@ function backlinkKeyChangeFailure(row) {
   }
   if (
     row.before !== undefined &&
-    !isStringOrStringArray(row.before)
+    !isBacklinkRewriteValue(row.before)
   ) {
     return 'before drift';
   }
   if (
     row.after !== undefined &&
-    !isStringOrStringArray(row.after)
+    !isBacklinkRewriteValue(row.after)
   ) {
     return 'after drift';
   }
   return null;
 }
 
-function isStringOrStringArray(value) {
+function isBacklinkRewriteValue(value) {
   return (
     isCleanNonBlankString(value) ||
-    (Array.isArray(value) && value.every((item) => isCleanNonBlankString(item)))
+    (
+      Array.isArray(value) &&
+      value.length > 0 &&
+      value.every((item) => isCleanNonBlankString(item))
+    ) ||
+    (
+      value !== null &&
+      typeof value === 'object' &&
+      !Array.isArray(value) &&
+      Object.keys(value).length > 0 &&
+      Object.entries(value).every(
+        ([key, item]) => isCleanNonBlankString(key) && isCleanNonBlankString(item),
+      )
+    )
   );
 }
 

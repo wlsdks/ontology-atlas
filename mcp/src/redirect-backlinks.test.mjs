@@ -179,6 +179,35 @@ test("객체 맵 키 rename — why 노트가 고아가 되지 않는다", () =>
   rmSync(root, { recursive: true, force: true });
 });
 
+test("객체 맵 dry-run은 감사 값을 보존하되 내부 쓰기 plan을 공개하지 않는다", () => {
+  const root = makeVault();
+  writeMd(
+    root,
+    "user-preview",
+    "---\nkind: capability\ntitle: User Preview\nrelation_notes:\n  capabilities/mcp-server: 쓰기 경로가 이 서버를 지난다\n---\n",
+  );
+  const preview = redirectBacklinks(
+    root,
+    "capabilities/mcp-server",
+    "capabilities/graph-server",
+    { dryRun: true },
+  );
+  assert.equal(Object.hasOwn(preview, "plan"), false);
+  assert.deepEqual(preview.updates[0].beforeKeys, [
+    {
+      key: "relation_notes",
+      before: { "capabilities/mcp-server": "쓰기 경로가 이 서버를 지난다" },
+    },
+  ]);
+  assert.deepEqual(preview.updates[0].afterKeys, [
+    {
+      key: "relation_notes",
+      after: { "capabilities/graph-server": "쓰기 경로가 이 서버를 지난다" },
+    },
+  ]);
+  rmSync(root, { recursive: true, force: true });
+});
+
 test("객체 맵 키 충돌 — 기존(new 키) 값이 이긴다 (조용한 덮어쓰기 금지)", () => {
   const root = makeVault();
   writeMd(

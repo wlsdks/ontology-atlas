@@ -2067,7 +2067,11 @@ export function redirectBacklinks(rootPath, targetSlug, nextSlug, options = {}) 
 
   if (!dryRun && !deferWrite) applyAllOrNothing(plan);
 
-  return { updates, totalUpdated: updates.length, plan };
+  return {
+    updates,
+    totalUpdated: updates.length,
+    ...(deferWrite ? { plan } : {}),
+  };
 }
 
 function docTitle(doc) {

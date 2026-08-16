@@ -668,19 +668,23 @@ describe('verify.mjs first-contact gates', () => {
       wouldChange: { type: 'boolean' },
       blockedReasons: { type: 'array', items: nonBlankStringSchema },
     };
-    const nonBlankStringOrArraySchema = {
-      type: ['array', 'string'],
+    const backlinkValueSchema = {
+      type: ['array', 'object', 'string'],
       minLength: 1,
+      minItems: 1,
+      minProperties: 1,
       pattern: '^(?!\\s)(?!.*\\s$)(?!.*\\u0000).+$',
       items: nonBlankStringSchema,
+      propertyNames: nonBlankStringSchema,
+      additionalProperties: nonBlankStringSchema,
     };
     const backlinkKeyChangeSchema = {
       type: 'object',
       required: ['key'],
       properties: {
         key: nonBlankStringSchema,
-        before: nonBlankStringOrArraySchema,
-        after: nonBlankStringOrArraySchema,
+        before: backlinkValueSchema,
+        after: backlinkValueSchema,
       },
       additionalProperties: false,
     };
@@ -6721,6 +6725,57 @@ describe('verify.mjs first-contact gates', () => {
       }, 'rename_concept'),
       null,
     );
+    const renamePayloadWithRelationNotes = {
+      ...renamePayload,
+      backlinkUpdates: {
+        totalUpdated: 1,
+        updates: [
+          {
+            slug: 'ref',
+            title: 'Ref',
+            beforeKeys: [{ key: 'relation_notes', before: { old: 'Starts the local MCP process' } }],
+            afterKeys: [{ key: 'relation_notes', after: { new: 'Starts the local MCP process' } }],
+            bodyChanged: false,
+          },
+        ],
+      },
+    };
+    assert.equal(
+      destructiveDryRunFailure({
+        result: {
+          content: [{ text: JSON.stringify(renamePayloadWithRelationNotes) }],
+          structuredContent: renamePayloadWithRelationNotes,
+        },
+      }, 'rename_concept'),
+      null,
+    );
+    for (const invalidBefore of [
+      {},
+      { old: ' ' },
+      { old: { nested: 'not a rationale string' } },
+    ]) {
+      const malformedMapPayload = {
+        ...renamePayloadWithRelationNotes,
+        backlinkUpdates: {
+          totalUpdated: 1,
+          updates: [
+            {
+              ...renamePayloadWithRelationNotes.backlinkUpdates.updates[0],
+              beforeKeys: [{ key: 'relation_notes', before: invalidBefore }],
+            },
+          ],
+        },
+      };
+      assert.equal(
+        destructiveDryRunFailure({
+          result: {
+            content: [{ text: JSON.stringify(malformedMapPayload) }],
+            structuredContent: malformedMapPayload,
+          },
+        }, 'rename_concept'),
+        'rename_concept dry-run response backlinkUpdates.updates[0].beforeKeys[0] before drift',
+      );
+    }
     const renamePayloadWithUpdate = {
       ...renamePayload,
       backlinkUpdates: {
