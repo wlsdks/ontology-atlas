@@ -10,6 +10,7 @@ import { isGuardedRuntime } from "@/features/acp-session/model/runtime-gate";
 import { agentChatDoor } from "../model/agent-chat-door";
 import { AcpChatPanel, AcpChatResizeHandle, useChatWidth } from "@/widgets/acp-chat-panel";
 import { vaultMcpServers } from "@/features/acp-session/model/vault-mcp-server";
+import { useChatSuggestions } from "@/features/acp-session/model/use-chat-suggestions";
 import { cn } from "@/shared/lib/cn";
 import {
   type CSSProperties,
@@ -2203,6 +2204,13 @@ export function HomePage() {
     };
   }, []);
   const acpRuntime = acpRuntimes.find((r) => r.id === acpRuntimeId) ?? null;
+  /*
+    「무엇을 물어보지」에 대한 답은 **이 폴더의 지금 상태**에서 뽑는다
+    (2026-08-17). 볼트를 읽는 것은 화면(뷰)의 일이고, 대화 패널은 결과만
+    받는다 — 패널이 볼트를 직접 읽으면 `LocalVaultProvider` 없이는 못 서게
+    되고, 그건 그 위젯이 지금까지 지켜 온 성질이 아니다.
+  */
+  const chatSuggestions = useChatSuggestions();
   const acpRuntimeLabel = acpRuntime?.label ?? null;
   /*
    * 매 렌더 새 배열을 만들면 그 값을 받는 훅의 `start` 정체가 매번 바뀌고,
@@ -5813,6 +5821,7 @@ export function HomePage() {
             mcpServers={acpMcpServers}
             // 노드에서 건너온 문장은 **여기** 작성 칸에 앉는다 — 보내지는 않는다.
             prefillRequest={vaultAgentPrefill ?? askPrefill}
+            suggestions={chatSuggestions}
             onClose={closeVaultAgent}
           />
         </Surface>

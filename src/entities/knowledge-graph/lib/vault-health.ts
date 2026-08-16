@@ -181,7 +181,32 @@ function malformedFrontmatterCount(doc: VaultHealthDoc): number {
 
 // Mirror of mcp/src/ontology-compiler.mjs compileOntology — only the parts the
 // health verdict needs (alias map, edges, resolution, issue count).
-function compile(docs: readonly VaultHealthDoc[]): CompiledGraph {
+/**
+ * `kind:` 가 없는 문서는 **온톨로지 노드가 아니다** — 디자인 문서 · 백로그 ·
+ * 릴리스 노트처럼 볼트 폴더 안에 같이 사는 평범한 마크다운이다.
+ *
+ * ## 왜 이 한 줄이 필요한가 (2026-08-17 실측)
+ *
+ * MCP 컴파일러는 이런 문서를 노드로 세지 않는데(확인: `kind:` 없는 문서 하나를
+ * 넣어도 `nodes` 는 1), 이 사본은 **전부 셌다.** 그래서 우리 자신의 문서함
+ * (163개 중 83개가 평범한 마크다운)에 대해 화면이 「고칠 곳 83군데」라고 말했고,
+ * CLI 는 같은 볼트를 「정상」이라고 답했다.
+ *
+ * 이 파일 맨 위가 그 상황을 막으려고 존재한다 — *"the insights surface must
+ * agree with the CLI"*. 그런데 정작 노드가 무엇인지에서 갈라져 있었다.
+ * 사용자에게는 이게 가장 나쁜 종류의 오답이다: **고칠 수 없는 것 83개를 고치라고
+ * 말하는 지도**는 그 뒤로 아무 말도 믿기지 않는다.
+ *
+ * 게이트: `tests/fixtures/vault-health-cases.mjs` 의
+ * `plain markdown without kind: is not a node`.
+ */
+function isOntologyNode(doc: VaultHealthDoc): boolean {
+  const kind = doc.frontmatter?.kind;
+  return typeof kind === 'string' && kind.trim().length > 0;
+}
+
+function compile(input: readonly VaultHealthDoc[]): CompiledGraph {
+  const docs = input.filter(isOntologyNode);
   const aliasEntries = new Map<string, Set<string>>();
   const addAlias = (alias: unknown, slug: string) => {
     if (typeof alias !== 'string' || !alias.trim()) return;

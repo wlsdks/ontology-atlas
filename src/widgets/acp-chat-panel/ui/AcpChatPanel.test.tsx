@@ -857,3 +857,58 @@ describe('권한 카드 — 놓칠 수 없어야 한다', () => {
     expect(card.getAttribute('aria-describedby')).toBe('acp-permission-body');
   });
 });
+
+describe('빈 대화의 추천 — 이 폴더에 대한 것만 그린다', () => {
+  /**
+   * 모델(`chat-suggestions.ts`)이 무엇을 권할지는 자기 테스트가 잠근다.
+   * 여기서 잠그는 것은 **화면이 그것을 실제로 그리고, 눌렀을 때 입력칸에
+   * 앉는가** 다. 모델만 초록이고 화면이 안 그리면 아무 일도 안 일어난다.
+   */
+  it('추천을 받으면 그려지고, 누르면 입력칸에 문장이 앉는다', async () => {
+    render(
+      <AcpChatPanel
+        runtimeId="claude-acp"
+        runtimeLabel="Claude Agent"
+        vaultRoot="/vault"
+        mcpServers={[{ name: 'atlas-vault' }]}
+        suggestions={[
+          { kind: 'island', params: { first: 'capabilities/invoice', count: 2 } },
+          { kind: 'explain', params: { count: 80 } },
+        ]}
+      />,
+    );
+    // 세션이 서기 전(`starting`)에는 빈 대화 안내 자체가 안 그려진다 —
+    // 추천도 그 안에 산다. 실제 사용자가 보는 상태까지 데려간다.
+    await waitFor(() => expect(bridge.sent.some((m) => m.method === 'initialize')).toBe(true));
+    replyTo('initialize', { protocolVersion: 1 });
+    await waitFor(() => expect(bridge.sent.some((m) => m.method === 'session/new')).toBe(true));
+    replyTo('session/new', { sessionId: 's-1' });
+
+    const island = await screen.findByTestId('acp-chat-suggestion-island');
+    // 이 폴더의 **실제 이름**이 버블에 있어야 한다 — 없으면 어느 앱에나 붙는
+    // 예시 문장이고, 그건 추천이 아니라 장식이다.
+    expect(island.textContent).toContain('capabilities/invoice');
+
+    fireEvent.click(island);
+
+    // `acp-chat-composer` 는 입력칸을 **감싸는 상자**다 — 그것을 잡으면
+    // `value` 가 undefined 라 무엇을 단언해도 통과한다. 실제 값을 가진
+    // 원소를 잡는다.
+    const composer = screen
+      .getByTestId('acp-chat-composer')
+      .querySelector('textarea') as HTMLTextAreaElement;
+    expect(composer, '작성 칸을 못 찾았다 — 이 단언은 무엇도 재지 못한다').toBeTruthy();
+    await waitFor(() =>
+      expect((composer as HTMLTextAreaElement).value).toContain('capabilities/invoice'),
+    );
+    // 앉기만 하고 **보내지는 않는다** — 사용자가 고쳐 보낼 수 있어야 한다
+    // (`prefillRequest` 와 같은 계약).
+    expect(bridge.sent.some((m) => m.method === 'session/prompt')).toBe(false);
+  });
+
+  it('추천이 없으면 그 칸 자체가 없다 — 빈 상자를 그리지 않는다', async () => {
+    await bootSession();
+    expect(screen.getByTestId('acp-chat-empty')).toBeTruthy();
+    expect(screen.queryByTestId('acp-chat-suggestions')).toBeNull();
+  });
+});
