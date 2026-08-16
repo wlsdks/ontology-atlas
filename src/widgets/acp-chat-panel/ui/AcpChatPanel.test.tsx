@@ -978,3 +978,80 @@ describe('답변 속 노드 이름 — 지도와 잇는다', () => {
     expect(screen.queryAllByTestId('acp-chat-slug')).toHaveLength(0);
   });
 });
+
+describe('도구 줄 — 어느 노드를 만졌는지 말한다', () => {
+  /**
+   * 종전에는 「개념을 읽었어요」라고만 하고 대상을 안 말했다. 값은
+   * `rawInput` 으로 오고 있었는데 세션이 버리고 있었다.
+   */
+  it('도구가 만진 노드를 적고, 올리면 지도로 나간다', async () => {
+    const hovered: (string | null)[] = [];
+    render(
+      <AcpChatPanel
+        runtimeId="claude-acp"
+        runtimeLabel="Claude Agent"
+        vaultRoot="/vault"
+        mcpServers={[{ name: 'atlas-vault' }]}
+        knownSlugs={new Set(['capabilities/invoice'])}
+        onHoverSlug={(s) => hovered.push(s)}
+      />,
+    );
+    await waitFor(() => expect(bridge.sent.some((m) => m.method === 'initialize')).toBe(true));
+    replyTo('initialize', { protocolVersion: 1 });
+    await waitFor(() => expect(bridge.sent.some((m) => m.method === 'session/new')).toBe(true));
+    replyTo('session/new', { sessionId: 's-1' });
+    emit({
+      jsonrpc: '2.0',
+      method: 'session/update',
+      params: {
+        update: {
+          sessionUpdate: 'tool_call',
+          toolCallId: 'tc-1',
+          title: 'mcp__atlas-vault__get_concept',
+          kind: 'read',
+          status: 'pending',
+          rawInput: { slug: 'capabilities/invoice' },
+        },
+      },
+    });
+
+    const mark = await screen.findByTestId('acp-chat-slug');
+    expect(mark.getAttribute('data-slug')).toBe('capabilities/invoice');
+    fireEvent.pointerEnter(mark);
+    expect(hovered.at(-1)).toBe('capabilities/invoice');
+  });
+
+  it('모르는 노드를 만지면 적지 않는다 — 없는 것을 가리키지 않는다', async () => {
+    render(
+      <AcpChatPanel
+        runtimeId="claude-acp"
+        runtimeLabel="Claude Agent"
+        vaultRoot="/vault"
+        mcpServers={[{ name: 'atlas-vault' }]}
+        knownSlugs={new Set(['capabilities/invoice'])}
+      />,
+    );
+    await waitFor(() => expect(bridge.sent.some((m) => m.method === 'initialize')).toBe(true));
+    replyTo('initialize', { protocolVersion: 1 });
+    await waitFor(() => expect(bridge.sent.some((m) => m.method === 'session/new')).toBe(true));
+    replyTo('session/new', { sessionId: 's-1' });
+    emit({
+      jsonrpc: '2.0',
+      method: 'session/update',
+      params: {
+        update: {
+          sessionUpdate: 'tool_call',
+          toolCallId: 'tc-2',
+          title: 'mcp__atlas-vault__get_concept',
+          kind: 'read',
+          status: 'pending',
+          rawInput: { slug: 'capabilities/does-not-exist' },
+        },
+      },
+    });
+    await waitFor(() =>
+      expect(document.querySelectorAll('[data-acp-entry="tool"]').length).toBe(1),
+    );
+    expect(screen.queryAllByTestId('acp-chat-slug')).toHaveLength(0);
+  });
+});
