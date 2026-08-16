@@ -188,7 +188,7 @@ pub(crate) struct FsProbe<'a> {
     ///
     /// 실물에서는 그 CLI 를 짧게 띄워 **종료 코드만** 본다. 검사에서는 가짜를
     /// 꽂는다 — 이 판정 하나 때문에 검사가 진짜 프로세스를 띄우게 두지 않는다.
-    pub login_ok: &'a dyn Fn(&Path, &[&str]) -> Option<bool>,
+    pub login_ok: &'a dyn Fn(&Path, &[&str], &str) -> Option<bool>,
 }
 
 /**
@@ -452,6 +452,11 @@ pub(crate) fn detect_runtimes(
     probe: &FsProbe<'_>,
 ) -> Vec<AcpRuntimeStatus> {
     let dirs = candidate_bin_dirs(home, path_env, probe);
+    // 로그인 확인도 어댑터를 띄울 때와 **같은 PATH** 를 본다. 안 그러면 래퍼가
+    // node 를 못 찾아 실패하고, 그 실패가 「로그인 안 됨」으로 읽힌다.
+    let child_path = std::env::join_paths(dirs.iter())
+        .map(|joined| joined.to_string_lossy().to_string())
+        .unwrap_or_default();
 
     registry()
         .iter()
@@ -468,7 +473,7 @@ pub(crate) fn detect_runtimes(
              * 그건 「로그인 안 됨」이 아니라 「모른다」다.
              */
             let login_ok = cli.as_deref().zip(login_probe_args(&agent.id)).and_then(
-                |(path, args)| (probe.login_ok)(path, args),
+                |(path, args)| (probe.login_ok)(path, args, &child_path),
             );
 
             let state = if agent.cli.is_some() && cli.is_none() {
@@ -930,7 +935,7 @@ pub(crate) fn real_probe() -> (
     impl Fn(&Path) -> bool,
     impl Fn(&Path) -> Vec<String>,
     impl Fn(&Path) -> Option<String>,
-    impl Fn(&Path, &[&str]) -> Option<bool>,
+    impl Fn(&Path, &[&str], &str) -> Option<bool>,
 ) {
     let is_executable = |path: &Path| -> bool {
         let Ok(meta) = std::fs::metadata(path) else {
@@ -978,7 +983,7 @@ pub(crate) fn real_probe() -> (
      * 못 띄우거나 시간이 지나면 `None` — 「로그인 안 됨」이 아니라 **모른다**다.
      * 모르는 것을 「안 됨」으로 적으면 멀쩡한 도구를 못 쓰게 만든다.
      */
-    let login_ok = |path: &Path, args: &[&str]| -> Option<bool> {
+    let login_ok = |path: &Path, args: &[&str], child_path: &str| -> Option<bool> {
         use std::process::{Command, Stdio};
         let mut command = Command::new(path);
         command
@@ -986,6 +991,17 @@ pub(crate) fn real_probe() -> (
             .stdin(Stdio::null())
             .stdout(Stdio::null())
             .stderr(Stdio::null());
+        /*
+         * ⚠️ **자식에게 우리가 다시 만든 PATH 를 준다** (2026-08-16 검수에서
+         * 적발). 종전에는 앱이 상속받은 환경 그대로 띄웠는데, 이 파일 맨 위가
+         * 적어 둔 바로 그 이유로 그건 절반만 푼 것이다 — Finder 로 띄운 앱의
+         * PATH 에는 nvm 자리가 없고, `claude` 는 node 를 이름으로 찾는 래퍼다.
+         * 그러면 「종료 코드 ≠ 0」이 나오고 우리는 그걸 **로그인 안 됨**으로
+         * 읽어서, 멀쩡히 로그인된 도구를 목록에서 통째로 지웠다.
+         */
+        if !child_path.is_empty() {
+            command.env("PATH", child_path);
+        }
         let mut child = command.spawn().ok()?;
 
         // 응답이 없으면 기다리다 화면이 멈춘다. 실측값(claude 300ms · codex
@@ -1049,7 +1065,7 @@ mod tests {
             is_executable: &is_exec,
             list_dir: &list,
             read_text: &read,
-            login_ok: &|_, _| None,
+            login_ok: &|_, _, _| None,
         };
         let path = std::env::join_paths([PathBuf::from("/from/path")]).unwrap();
         let out = candidate_bin_dirs(Some(Path::new("/home/me")), Some(&path), &probe);
@@ -1077,7 +1093,7 @@ mod tests {
             is_executable: &is_exec,
             list_dir: &list,
             read_text: &read,
-            login_ok: &|_, _| None,
+            login_ok: &|_, _, _| None,
         };
         let out = nvm_bin_dirs(Path::new("/home/me"), &probe);
         assert_eq!(
@@ -1116,7 +1132,7 @@ mod tests {
             is_executable: &is_exec,
             list_dir: &list,
             read_text: &read,
-            login_ok: &|_, _| None,
+            login_ok: &|_, _, _| None,
         };
         let out = detect_runtimes(Some(Path::new("/home/me")), None, &probe);
         let claude = out.iter().find(|r| r.id == "claude-acp").unwrap();
@@ -1158,7 +1174,7 @@ mod tests {
             is_executable: &is_exec,
             list_dir: &list,
             read_text: &read,
-            login_ok: &|_, _| None,
+            login_ok: &|_, _, _| None,
         };
         let out = nvm_bin_dirs(Path::new("/home/me"), &probe);
         assert_eq!(
@@ -1179,7 +1195,7 @@ mod tests {
             is_executable: &is_exec,
             list_dir: &list,
             read_text: &read,
-            login_ok: &|_, _| None,
+            login_ok: &|_, _, _| None,
         };
         assert_eq!(
             resolve_command("claude", &[PathBuf::from("/usr/bin")], &probe),
@@ -1209,7 +1225,7 @@ mod tests {
             is_executable: &is_exec,
             list_dir: &list,
             read_text: &read,
-            login_ok: &|_, _| None,
+            login_ok: &|_, _, _| None,
         };
 
         // PATH 는 GUI 앱이 받는 최소한만 — 여기에 아무것도 없다.
@@ -1253,7 +1269,7 @@ mod tests {
                 is_executable: &is_exec,
                 list_dir: &list,
                 read_text: &read,
-                login_ok: &|_, _| None,
+                login_ok: &|_, _, _| None,
             };
             let out = detect_runtimes(None, None, &probe);
             let claude = out.iter().find(|r| r.id == "claude-acp").unwrap();
@@ -1267,7 +1283,7 @@ mod tests {
             is_executable: &is_exec,
             list_dir: &list,
             read_text: &read,
-            login_ok: &|_, _| None,
+            login_ok: &|_, _, _| None,
         };
         let out = detect_runtimes(None, None, &probe);
         let claude = out.iter().find(|r| r.id == "claude-acp").unwrap();
@@ -1295,7 +1311,7 @@ mod tests {
             is_executable: &is_exec,
             list_dir: &list,
             read_text: &read,
-            login_ok: &|_, _| Some(true),
+            login_ok: &|_, _, _| Some(true),
         };
         let out = detect_runtimes(None, None, &probe);
         let claude = out.iter().find(|r| r.id == "claude-acp").unwrap();
@@ -1306,7 +1322,7 @@ mod tests {
             is_executable: &is_exec,
             list_dir: &list,
             read_text: &read,
-            login_ok: &|_, _| Some(false),
+            login_ok: &|_, _, _| Some(false),
         };
         let out = detect_runtimes(None, None, &probe);
         let claude = out.iter().find(|r| r.id == "claude-acp").unwrap();
@@ -1321,7 +1337,7 @@ mod tests {
             is_executable: &is_exec,
             list_dir: &list,
             read_text: &read,
-            login_ok: &|_, _| None,
+            login_ok: &|_, _, _| None,
         };
         let out = detect_runtimes(None, None, &probe);
         let claude = out.iter().find(|r| r.id == "claude-acp").unwrap();
@@ -1352,7 +1368,7 @@ mod tests {
             is_executable: &is_exec,
             list_dir: &list,
             read_text: &read,
-            login_ok: &|path: &Path, _| {
+            login_ok: &|path: &Path, _, _| {
                 asked.borrow_mut().push(path.to_string_lossy().to_string());
                 Some(true)
             },
@@ -1364,6 +1380,49 @@ mod tests {
         assert!(
             !asked.iter().any(|p| p.ends_with("/gemini")),
             "재 보지 않은 도구에 물어봤다 — 그 도구에서 그 인자가 무슨 뜻인지 모른다",
+        );
+    }
+
+    /// 로그인 확인도 **어댑터를 띄울 때와 같은 PATH** 를 본다.
+    ///
+    /// 2026-08-16 검수에서 적발: 종전에는 앱이 상속받은 환경 그대로 띄웠다.
+    /// 이 파일 맨 위가 적어 둔 그대로, Finder 로 띄운 앱의 PATH 에는 nvm 자리가
+    /// 없다 — `claude` 는 node 를 이름으로 찾는 래퍼라 거기서 실패하고, 우리는
+    /// 그 실패를 **로그인 안 됨**으로 읽어 멀쩡한 도구를 목록에서 지웠다.
+    #[test]
+    fn login_probe_gets_the_same_path_we_launch_with() {
+        use std::cell::RefCell;
+
+        let seen: RefCell<Vec<String>> = RefCell::new(Vec::new());
+        let mut files: HashSet<PathBuf> = HashSet::new();
+        for (id, _) in LOGIN_PROBE {
+            let cli = registry()
+                .iter()
+                .find(|a| &a.id == id)
+                .and_then(|a| a.cli.clone())
+                .unwrap();
+            files.insert(PathBuf::from(format!("/nvm/bin/{cli}")));
+        }
+
+        let dirs = empty_dirs();
+        let (is_exec, list, read) = probe_with(&files, &dirs);
+        let path_env = std::env::join_paths([PathBuf::from("/nvm/bin")]).unwrap();
+        let probe = FsProbe {
+            is_executable: &is_exec,
+            list_dir: &list,
+            read_text: &read,
+            login_ok: &|_, _, child_path: &str| {
+                seen.borrow_mut().push(child_path.to_string());
+                Some(true)
+            },
+        };
+        detect_runtimes(None, Some(path_env.as_os_str()), &probe);
+
+        let seen = seen.borrow();
+        assert!(!seen.is_empty(), "아무에게도 안 물어봤다 — 탐지기가 죽었다");
+        assert!(
+            seen.iter().all(|p| p.contains("/nvm/bin")),
+            "찾은 자리를 자식에게 안 물려줬다: {seen:?}",
         );
     }
 
@@ -1387,7 +1446,7 @@ mod tests {
             is_executable: &is_exec,
             list_dir: &list,
             read_text: &read,
-            login_ok: &|_, _| None,
+            login_ok: &|_, _, _| None,
         };
         let out = detect_runtimes(None, None, &probe);
 
@@ -1440,7 +1499,7 @@ mod tests {
             is_executable: &is_exec,
             list_dir: &list,
             read_text: &read,
-            login_ok: &|_, _| None,
+            login_ok: &|_, _, _| None,
         };
         let out = detect_runtimes(None, None, &probe);
         let claude = out.iter().find(|r| r.id == "claude-acp").unwrap();
@@ -1466,7 +1525,7 @@ mod tests {
                 is_executable: &is_exec,
                 list_dir: &list,
                 read_text: &read,
-                login_ok: &|_, _| None,
+                login_ok: &|_, _, _| None,
             };
             let launch = resolve_launch("claude-acp", None, None, &probe).unwrap();
             assert_eq!(launch.program, PathBuf::from("/usr/local/bin/npx"));
@@ -1486,7 +1545,7 @@ mod tests {
             is_executable: &is_exec,
             list_dir: &list,
             read_text: &read,
-            login_ok: &|_, _| None,
+            login_ok: &|_, _, _| None,
         };
         let launch = resolve_launch("claude-acp", None, None, &probe).unwrap();
         assert_eq!(
@@ -1518,7 +1577,7 @@ mod tests {
             is_executable: &is_exec,
             list_dir: &list,
             read_text: &read,
-            login_ok: &|_, _| None,
+            login_ok: &|_, _, _| None,
         };
         let launch = resolve_launch("claude-acp", Some(Path::new("/home/me")), None, &probe).unwrap();
         assert!(
@@ -1546,7 +1605,7 @@ mod tests {
             is_executable: &is_exec,
             list_dir: &list,
             read_text: &read,
-            login_ok: &|_, _| None,
+            login_ok: &|_, _, _| None,
         };
         assert!(resolve_launch("claude-acp", None, None, &probe)
             .unwrap_err()
@@ -1559,7 +1618,7 @@ mod tests {
             is_executable: &is_exec,
             list_dir: &list,
             read_text: &read,
-            login_ok: &|_, _| None,
+            login_ok: &|_, _, _| None,
         };
         assert_eq!(
             resolve_launch("claude-acp", None, None, &probe).unwrap_err(),
@@ -1924,7 +1983,7 @@ mod timing_probe {
         let path = std::env::var_os("PATH");
         let (is_executable, list_dir, read_text, login_ok) = real_probe();
 
-        let skip = |_: &Path, _: &[&str]| None;
+        let skip = |_: &Path, _: &[&str], _: &str| None;
         let fast = FsProbe {
             is_executable: &is_executable,
             list_dir: &list_dir,
@@ -1965,7 +2024,7 @@ mod newcomer_view {
             is_executable: &is_exec,
             list_dir: &list,
             read_text: &read,
-            login_ok: &|_, _| None,
+            login_ok: &|_, _, _| None,
         };
         let out = detect_runtimes(None, None, &probe);
         let mut by_state: std::collections::BTreeMap<&str, Vec<&str>> = Default::default();
@@ -1987,7 +2046,7 @@ mod newcomer_view {
             is_executable: &is_exec,
             list_dir: &list,
             read_text: &read,
-            login_ok: &|_, _| None,
+            login_ok: &|_, _, _| None,
         };
         let out = detect_runtimes(None, None, &probe);
         println!("── npx 만 있는 기계 ──");

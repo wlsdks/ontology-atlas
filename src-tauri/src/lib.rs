@@ -901,6 +901,20 @@ fn acp_start(
     spawn_acp_line_pump(app.clone(), session_id.clone(), stdout, "acp://message");
     spawn_acp_line_pump(app.clone(), session_id.clone(), stderr, "acp://stderr");
 
+    // ⚠️ **등록이 먼저다** (2026-08-16 검수에서 적발).
+    //
+    // 아래 스레드는 자식이 끝나면 등록부에서 지운다. 종전에는 그 스레드를 먼저
+    // 띄우고 등록을 나중에 했는데, **곧바로 죽는 자식**(잘못된 어댑터 · npx
+    // 실패)이면 지우기가 등록보다 먼저 일어난다. 그러면 죽은 pid 가 등록부에
+    // 영원히 남고, 앱을 끌 때 `terminate_all_acp_sessions` 가 그 pid 를 죽인다 —
+    // 그때 그 번호는 **다른 프로그램**의 것일 수 있다(그리고 프로세스 그룹으로
+    // 신호를 보낸다).
+    sessions
+        .0
+        .lock()
+        .map_err(|_| "session-registry-poisoned".to_string())?
+        .insert(session_id.clone(), AcpSessionHandle { pid, stdin });
+
     // 자식을 기다리는 스레드가 종료를 알리고 등록부에서 지운다. 여기서 지우지
     // 않으면 이미 죽은 세션에 계속 쓰려 하고, 그 실패는 사용자에게 「보냈는데
     // 답이 없다」로 보인다.
@@ -917,12 +931,6 @@ fn acp_start(
             let _ = app.emit("acp://exit", AcpExitEvent { session_id, code });
         });
     }
-
-    sessions
-        .0
-        .lock()
-        .map_err(|_| "session-registry-poisoned".to_string())?
-        .insert(session_id.clone(), AcpSessionHandle { pid, stdin });
 
     Ok(session_id)
 }
@@ -1062,7 +1070,7 @@ fn terminate_all_acp_sessions(app: &AppHandle) {
 #[tauri::command]
 fn acp_detect_runtimes(probe_login: Option<bool>) -> Vec<acp::AcpRuntimeStatus> {
     let (is_executable, list_dir, read_text, login_ok) = acp::real_probe();
-    let skip = |_: &std::path::Path, _: &[&str]| None;
+    let skip = |_: &std::path::Path, _: &[&str], _: &str| None;
     let probe = acp::FsProbe {
         is_executable: &is_executable,
         list_dir: &list_dir,

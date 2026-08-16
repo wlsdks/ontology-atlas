@@ -102,6 +102,12 @@ const EMPTY_CHOICES: AcpSessionChoices = {
 let eventSeq = 0;
 const nextEventId = () => `acp-evt-${(eventSeq += 1)}`;
 
+/**
+ * 진단으로 실어 주는 stderr 줄의 상한. 어댑터는 npx 설치 진행률까지 뱉으므로
+ * 전부 실으면 그게 다시 소음이 된다 — 첫 몇 줄이 원인을 말한다.
+ */
+const STDERR_NOTICE_LIMIT = 6;
+
 export function useAcpSession({ runtimeId, vaultRoot, mcpServers }: UseAcpSessionOptions) {
   const [status, setStatus] = useState<AcpSessionStatus>('idle');
   const [events, setEvents] = useState<AcpEvent[]>([]);
@@ -122,6 +128,8 @@ export function useAcpSession({ runtimeId, vaultRoot, mcpServers }: UseAcpSessio
   const resumeIdRef = useRef<string | null>(null);
   /** 지금 띄우는 중인가 — `clientRef` 는 다 끝난 뒤에야 채워져서 늦다. */
   const startingRef = useRef(false);
+  /** 진단으로 실어 주는 stderr 줄 수 — 어댑터는 설치 진행률까지 뱉는다. */
+  const stderrLinesRef = useRef(0);
   /**
    * 세대 번호 — `stop()` 이 부를 때마다 오른다.
    *
@@ -258,11 +266,32 @@ export function useAcpSession({ runtimeId, vaultRoot, mcpServers }: UseAcpSessio
         },
       };
 
+      // 새 세션이면 진단 예산도 새로 준다.
+      stderrLinesRef.current = 0;
       unlistenRef.current = await listenToAcpSession(acpSessionId, {
         onMessage: (line) => onLine?.(line),
         // stderr 는 대화가 아니라 진단이다. 조용히 버리지 않되 말풍선으로도
         // 만들지 않는다 — 어댑터의 설치 로그가 대화에 섞이면 읽을 수 없다.
         onNotice: (message) => push({ kind: 'notice', id: nextEventId(), text: message }),
+        /*
+         * ⚠️ **이 줄이 없었다** (2026-08-16 검수에서 적발). 바로 위 주석이
+         * 「조용히 버리지 않는다」고 적어 두고서, 정작 stderr 를 아무도 안 듣고
+         * 있었다 — Rust 는 보내고 있었고 받는 쪽이 없었다.
+         *
+         * 그래서 `Authentication required` 도, npx 설치 실패도, 어댑터가 죽으며
+         * 남긴 마지막 말도 전부 사라졌다. 그게 「켜는 중에서 안 넘어간다」를
+         * **설명할 수 없는 상태**로 만든 원인이다.
+         *
+         * 첫 줄들만 남긴다 — 어댑터는 설치 진행률 같은 것을 계속 뱉으므로,
+         * 전부 실으면 그게 다시 소음이 된다.
+         */
+        onStderr: (line) => {
+          if (stderrLinesRef.current >= STDERR_NOTICE_LIMIT) return;
+          const text = line.trim();
+          if (!text) return;
+          stderrLinesRef.current += 1;
+          push({ kind: 'notice', id: nextEventId(), text });
+        },
         onExit: () => {
           setStatus('exited');
           // 끝난 세션에 답을 기다리는 카드가 떠 있으면 거절로 닫는다.
@@ -378,6 +407,25 @@ export function useAcpSession({ runtimeId, vaultRoot, mcpServers }: UseAcpSessio
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err));
       setStatus('error');
+      /*
+       * ⚠️ **띄우다 실패했으면 띄운 것을 끈다** (2026-08-16 검수에서 적발).
+       * 종전에는 상태만 `error` 로 바꾸고 끝냈는데, 실패 지점에 따라 자식
+       * 프로세스는 **이미 떠 있다**(예: 구독 걸기가 실패한 경우). 그러면
+       * 다음 `start()` 가 새 프로세스를 띄우고 앞의 것은 앱이 끝날 때까지
+       * 아무도 안 끄는 유령이 된다 — 「띄우던 도중에 닫으면 스스로 끈다」와
+       * 같은 규율이 실패 경로에는 없었다.
+       */
+      const orphan = acpSessionRef.current;
+      if (orphan) {
+        acpSessionRef.current = null;
+        unlistenRef.current?.();
+        unlistenRef.current = null;
+        clientRef.current?.dispose();
+        clientRef.current = null;
+        await stopAcpSession(orphan).catch(() => {
+          /* 이미 죽었을 수 있다 — 치우는 길에서 다시 터지지 않는다. */
+        });
+      }
     } finally {
       startingRef.current = false;
     }

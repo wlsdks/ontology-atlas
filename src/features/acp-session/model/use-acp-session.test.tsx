@@ -24,6 +24,8 @@ const bridge = vi.hoisted(() => ({
   /** 프로세스 띄우기를 붙잡아 둘 손잡이 — 「띄우는 중」을 만든다. */
   release: null as (() => void) | null,
   listener: null as ((line: string) => void) | null,
+  /** 어댑터의 진단 출력 — 「켜는 중에서 안 넘어간다」를 설명하는 유일한 창구. */
+  stderr: null as ((line: string) => void) | null,
   stopped: [] as string[],
 }));
 
@@ -56,10 +58,15 @@ vi.mock('@/shared/lib/tauri-acp', () => ({
     bridge.stopped.push(id);
   },
   acpPermissionVerdict: async () => 'ask',
-  listenToAcpSession: async (_id: string, handlers: { onMessage?: (line: string) => void }) => {
+  listenToAcpSession: async (
+    _id: string,
+    handlers: { onMessage?: (line: string) => void; onStderr?: (line: string) => void },
+  ) => {
     bridge.listener = handlers.onMessage ?? null;
+    bridge.stderr = handlers.onStderr ?? null;
     return () => {
       bridge.listener = null;
+      bridge.stderr = null;
     };
   },
 }));
@@ -70,6 +77,7 @@ afterEach(() => {
   bridge.starts = 0;
   bridge.release = null;
   bridge.listener = null;
+  bridge.stderr = null;
   bridge.stopped = [];
 });
 
@@ -151,6 +159,47 @@ describe('세션 하나 — 겹쳐 불러도 프로세스는 하나', () => {
       bridge.release?.();
       await result.current.stop();
       await second;
+    });
+  });
+});
+
+describe('진단 — 어댑터가 남긴 말이 화면에 닿는다', () => {
+  it('stderr 를 받아 알림 줄로 남긴다 — 「켜는 중」이 설명되게', async () => {
+    /*
+     * 2026-08-16 검수에서 적발. 코드 주석은 「조용히 버리지 않는다」고 적어
+     * 뒀는데 정작 stderr 를 아무도 안 듣고 있었다 — Rust 는 보내고 받는 쪽이
+     * 없었다. 그래서 `Authentication required` 도 npx 설치 실패도 전부
+     * 사라졌고, 멈춘 세션의 원인을 알 길이 없었다.
+     */
+    const { result } = renderHook(() =>
+      useAcpSession({ runtimeId: 'claude-acp', vaultRoot: '/vault' }),
+    );
+    const first = result.current.start();
+    await waitFor(() => expect(bridge.starts).toBe(1));
+    await act(async () => {
+      bridge.release?.();
+      await first;
+    });
+
+    await waitFor(() => expect(bridge.stderr).toBeTruthy());
+    act(() => {
+      bridge.stderr?.('Authentication required');
+      bridge.stderr?.('   ');
+    });
+
+    await waitFor(() =>
+      expect(
+        result.current.events.some(
+          (e) => e.kind === 'notice' && e.text === 'Authentication required',
+        ),
+        '어댑터가 남긴 말이 화면에 닿지 않는다',
+      ).toBe(true),
+    );
+    // 빈 줄은 싣지 않는다 — 아무것도 안 나르는 줄이다.
+    expect(result.current.events.filter((e) => e.kind === 'notice').length).toBe(1);
+
+    await act(async () => {
+      await result.current.stop();
     });
   });
 });
