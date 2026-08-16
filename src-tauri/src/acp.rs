@@ -576,7 +576,7 @@ pub(crate) fn resolve_launch(
         RegistryLaunch::Npx { package, args } => {
             // 이미 전역 설치돼 있으면 그것을 쓴다 — npx 는 첫 실행이 느리다.
             // 패키지 이름의 마지막 조각이 대개 실행 파일 이름이다
-            // (`@agentclientprotocol/claude-agent-acp@0.68.0` → `claude-agent-acp`).
+            // (`@agentclientprotocol/claude-agent-acp@<version>` → `claude-agent-acp`).
             if let Some(installed) =
                 adapter_bin_name(package).and_then(|bin| resolve_command(&bin, &dirs, probe))
             {
@@ -834,8 +834,23 @@ pub(crate) fn permission_verdict(vault_root: &Path, file_path: Option<&str>) -> 
     let Some(raw) = file_path else {
         return PermissionVerdict::Ask;
     };
-    let resolved = resolve_for_comparison(Path::new(raw));
-    let root = resolve_for_comparison(vault_root);
+    let raw = Path::new(raw);
+    // 권한 경계의 루트는 호출자가 꾸며 낸 문자열이 아니라 `acp_start` 가 확인한
+    // 절대 디렉터리여야 한다. 빈 경로는 현재 작업 폴더로, `/` 는 모든 절대
+    // 경로의 조상으로 해석되므로 둘 중 하나라도 허용하면 관문 전체가 열린다.
+    if !vault_root.is_absolute() || !raw.is_absolute() {
+        return PermissionVerdict::Ask;
+    }
+    let Ok(root) = std::fs::canonicalize(vault_root) else {
+        return PermissionVerdict::Ask;
+    };
+    // `acp_start` 가 저장한 정규 경로와 지금 해소되는 대상이 달라졌다면 세션
+    // 시작 뒤 루트 경로가 링크로 바뀐 것이다. 새 대상을 같은 볼트로 승격하지
+    // 않는다 — 권한 경계는 세션 수명 동안 움직이지 않는다.
+    if root != vault_root || !root.is_dir() || root.parent().is_none() {
+        return PermissionVerdict::Ask;
+    }
+    let resolved = resolve_for_comparison(raw);
     if resolved.starts_with(&root) {
         PermissionVerdict::AllowInsideVault
     } else {
@@ -1141,6 +1156,16 @@ mod tests {
     use super::*;
     use std::collections::HashSet;
     use std::ffi::OsString;
+
+    fn npx_package(runtime_id: &str) -> &'static str {
+        match &registry_agent(runtime_id)
+            .unwrap_or_else(|| panic!("missing registry agent: {runtime_id}"))
+            .launch
+        {
+            RegistryLaunch::Npx { package, .. } => package,
+            _ => panic!("runtime is not backed by npx: {runtime_id}"),
+        }
+    }
 
     fn sample_parent_environment() -> Vec<(OsString, OsString)> {
         [
@@ -1511,13 +1536,10 @@ mod tests {
             Some("/home/me/.nvm/versions/node/v24.16.0/bin/npx"),
             "설치된 어댑터가 없으면 npx 로 띄운다"
         );
-        assert!(
-            claude
-                .adapter_package
-                .as_deref()
-                .is_some_and(|p| p.ends_with("@0.68.0")),
-            "어댑터 버전은 못 박혀 있어야 한다: {:?}",
-            claude.adapter_package
+        assert_eq!(
+            claude.adapter_package.as_deref(),
+            Some(npx_package("claude-acp")),
+            "탐지 결과는 현재 레지스트리에 못 박힌 패키지를 그대로 내놓아야 한다"
         );
 
         let codex = out.iter().find(|r| r.id == "codex-acp").unwrap();
@@ -1801,7 +1823,7 @@ mod tests {
                 launch.args,
                 vec![
                     "-y".to_string(),
-                    "@agentclientprotocol/claude-agent-acp@0.68.0".to_string()
+                    npx_package("claude-acp").to_string()
                 ],
                 "설치돼 있지 않으면 버전 못 박은 npx 로 띄운다"
             );
@@ -2134,25 +2156,88 @@ mod tests {
         let outside = base.join("outside");
         std::fs::create_dir_all(&vault).unwrap();
         std::fs::create_dir_all(&outside).unwrap();
+        let session_root = std::fs::canonicalize(&vault).unwrap();
 
         assert_eq!(
-            permission_verdict(&vault, Some(vault.join("notes.md").to_str().unwrap())),
+            permission_verdict(
+                &session_root,
+                Some(vault.join("notes.md").to_str().unwrap())
+            ),
             PermissionVerdict::AllowInsideVault
         );
         assert_eq!(
-            permission_verdict(&vault, Some(outside.join("notes.md").to_str().unwrap())),
+            permission_verdict(
+                &session_root,
+                Some(outside.join("notes.md").to_str().unwrap())
+            ),
             PermissionVerdict::Ask,
             "볼트 밖은 반드시 물어야 한다"
         );
         assert_eq!(
-            permission_verdict(&vault, Some("../escape.md")),
+            permission_verdict(&session_root, Some("../escape.md")),
             PermissionVerdict::Ask,
             "상대 경로로 올라가는 것도 밖이다"
         );
         assert_eq!(
-            permission_verdict(&vault, None),
+            permission_verdict(&session_root, None),
             PermissionVerdict::Ask,
             "경로를 모르면 묻는다 — 판단할 수 없는 것을 통과시키지 않는다"
+        );
+
+        let _ = std::fs::remove_dir_all(&base);
+    }
+
+    #[test]
+    fn permission_policy_rejects_invalid_vault_roots_instead_of_allowing_everything() {
+        let base = std::env::temp_dir().join(format!(
+            "atlas-acp-invalid-root-{}",
+            std::process::id()
+        ));
+        let outside = base.join("outside.md");
+        let not_a_directory = base.join("not-a-directory");
+        std::fs::create_dir_all(&base).unwrap();
+        std::fs::write(&outside, "outside").unwrap();
+        std::fs::write(&not_a_directory, "file").unwrap();
+
+        for invalid_root in [
+            Path::new(""),
+            Path::new("relative-vault"),
+            Path::new("/"),
+            base.join("missing").as_path(),
+            not_a_directory.as_path(),
+        ] {
+            assert_eq!(
+                permission_verdict(invalid_root, Some(outside.to_str().unwrap())),
+                PermissionVerdict::Ask,
+                "유효하지 않은 볼트 루트 {invalid_root:?} 는 어떤 경로도 자동 허용하면 안 된다"
+            );
+        }
+
+        let _ = std::fs::remove_dir_all(&base);
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn permission_policy_rejects_a_session_root_replaced_by_an_outside_symlink() {
+        let base = std::env::temp_dir().join(format!(
+            "atlas-acp-replaced-root-{}",
+            std::process::id()
+        ));
+        let vault = base.join("vault");
+        let outside = base.join("outside");
+        std::fs::create_dir_all(&vault).unwrap();
+        std::fs::create_dir_all(&outside).unwrap();
+        let session_root = std::fs::canonicalize(&vault).unwrap();
+        let secret = outside.join("secret.md");
+        std::fs::write(&secret, "outside").unwrap();
+
+        std::fs::remove_dir(&vault).unwrap();
+        std::os::unix::fs::symlink(&outside, &vault).unwrap();
+
+        assert_eq!(
+            permission_verdict(&session_root, Some(secret.to_str().unwrap())),
+            PermissionVerdict::Ask,
+            "세션 시작 뒤 루트 경로가 외부 링크로 바뀌어도 새 대상을 볼트로 받아들이면 안 된다"
         );
 
         let _ = std::fs::remove_dir_all(&base);
@@ -2166,13 +2251,14 @@ mod tests {
         let outside = base.join("outside");
         std::fs::create_dir_all(&vault).unwrap();
         std::fs::create_dir_all(&outside).unwrap();
+        let session_root = std::fs::canonicalize(&vault).unwrap();
         let real = outside.join("secret.md");
         std::fs::write(&real, "x").unwrap();
         let trap = vault.join("looks-inside.md");
         std::os::unix::fs::symlink(&real, &trap).unwrap();
 
         assert_eq!(
-            permission_verdict(&vault, Some(trap.to_str().unwrap())),
+            permission_verdict(&session_root, Some(trap.to_str().unwrap())),
             PermissionVerdict::Ask,
             "볼트 안처럼 보이는 링크가 밖을 가리키면 안이 아니다"
         );

@@ -9,7 +9,7 @@ import { listen } from '@tauri-apps/api/event';
  * - `acp_start(runtimeId, cwd)` → 세션 이름 — 프로세스를 띄운다
  * - `acp_send(sessionId, line)` → 한 줄 보내기 (줄바꿈은 Rust 가 붙인다)
  * - `acp_stop(sessionId)` → 그 세션과 **그것이 띄운 모든 것**을 끝낸다
- * - `acp_permission_verdict(vaultRoot, filePath)` → `allow-inside-vault` | `ask`
+ * - `acp_permission_verdict(sessionId, filePath)` → `allow-inside-vault` | `ask`
  *
  * 이벤트 넷이 자식에게서 올라온다: `acp://message`(프로토콜 한 줄) ·
  * `acp://stderr`(진단) · `acp://exit`(끝남) · `acp://notice`(버린 줄 등).
@@ -147,13 +147,13 @@ export type AcpPermissionVerdict = 'allow-inside-vault' | 'ask';
  * 그냥 통과하게 두지 않는다. 브리지가 없으면(웹) 역시 `ask`.
  */
 export async function acpPermissionVerdict(
-  vaultRoot: string,
+  sessionId: string,
   filePath: string | null,
 ): Promise<AcpPermissionVerdict> {
   const invoke = getInvoke();
   if (!invoke) return 'ask';
   return invoke<AcpPermissionVerdict>('acp_permission_verdict', {
-    vaultRoot,
+    sessionId,
     filePath,
   });
 }

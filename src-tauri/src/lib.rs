@@ -790,6 +790,8 @@ struct AcpSessions(Mutex<std::collections::HashMap<String, Arc<AcpSessionHandle>
 
 struct AcpSessionHandle {
     pid: u32,
+    /// `acp_start` 가 검사하고 정규화한 권한 경계. 화면이 다시 고를 수 없다.
+    vault_root: PathBuf,
     stdin: Mutex<Box<dyn Write + Send>>,
 }
 
@@ -798,6 +800,7 @@ impl AcpSessions {
         &self,
         session_id: String,
         pid: u32,
+        vault_root: PathBuf,
         stdin: W,
     ) -> Result<(), String> {
         self.0
@@ -807,10 +810,21 @@ impl AcpSessions {
                 session_id,
                 Arc::new(AcpSessionHandle {
                     pid,
+                    vault_root,
                     stdin: Mutex::new(Box::new(stdin)),
                 }),
             );
         Ok(())
+    }
+
+    fn vault_root(&self, session_id: &str) -> Result<PathBuf, String> {
+        let map = self
+            .0
+            .lock()
+            .map_err(|_| "session-registry-poisoned".to_string())?;
+        map.get(session_id)
+            .map(|handle| handle.vault_root.clone())
+            .ok_or_else(|| "session-not-found".to_string())
     }
 
     fn send_line(&self, session_id: &str, line: &str) -> Result<(), String> {
@@ -994,7 +1008,7 @@ fn acp_start(
     // 영원히 남고, 앱을 끌 때 `terminate_all_acp_sessions` 가 그 pid 를 죽인다 —
     // 그때 그 번호는 **다른 프로그램**의 것일 수 있다(그리고 프로세스 그룹으로
     // 신호를 보낸다).
-    sessions.insert(session_id.clone(), pid, stdin)?;
+    sessions.insert(session_id.clone(), pid, root, stdin)?;
 
     // 자식을 기다리는 스레드가 종료를 알리고 등록부에서 지운다. 여기서 지우지
     // 않으면 이미 죽은 세션에 계속 쓰려 하고, 그 실패는 사용자에게 「보냈는데
@@ -1062,10 +1076,26 @@ fn spawn_acp_line_pump<R: std::io::Read + Send + 'static>(
 /// **판정을 화면 쪽에 다시 구현하지 않는다.** 두 벌이 되면 한쪽만 느슨해지는
 /// 쪽이 기본값이 되고, 그 한쪽이 하필 사용자에게 보이는 쪽이다. 게다가 이
 /// 판정은 심볼릭 링크를 풀고 아직 없는 경로의 조상을 정규화해야 해서, 브라우저
-/// 쪽에서는 애초에 정확히 할 수 없다.
+/// 쪽에서는 애초에 정확히 할 수 없다. 더 중요하게, 볼트 루트는 화면이 보내는
+/// 문자열을 믿지 않고 `acp_start` 때 검증해 세션에 묶어 둔 값만 쓴다.
+fn permission_verdict_for_session(
+    sessions: &AcpSessions,
+    session_id: &str,
+    file_path: Option<&str>,
+) -> acp::PermissionVerdict {
+    sessions
+        .vault_root(session_id)
+        .map(|root| acp::permission_verdict(&root, file_path))
+        .unwrap_or(acp::PermissionVerdict::Ask)
+}
+
 #[tauri::command]
-fn acp_permission_verdict(vault_root: String, file_path: Option<String>) -> String {
-    let verdict = acp::permission_verdict(Path::new(&vault_root), file_path.as_deref());
+fn acp_permission_verdict(
+    sessions: State<'_, AcpSessions>,
+    session_id: String,
+    file_path: Option<String>,
+) -> String {
+    let verdict = permission_verdict_for_session(&sessions, &session_id, file_path.as_deref());
     match verdict {
         acp::PermissionVerdict::AllowInsideVault => "allow-inside-vault".to_string(),
         acp::PermissionVerdict::Ask => "ask".to_string(),
@@ -4822,11 +4852,17 @@ mod tests {
             .insert(
                 "blocked".to_string(),
                 11,
+                PathBuf::from("/vault-blocked"),
                 ControlledWriter::blocked(entered_tx, release_rx),
             )
             .unwrap();
         sessions
-            .insert("other".to_string(), 22, ControlledWriter::recording())
+            .insert(
+                "other".to_string(),
+                22,
+                PathBuf::from("/vault-other"),
+                ControlledWriter::recording(),
+            )
             .unwrap();
 
         let blocked_sessions = Arc::clone(&sessions);
@@ -4890,6 +4926,52 @@ mod tests {
         let mut pids = result.unwrap();
         pids.sort_unstable();
         assert_eq!(pids, vec![11, 22]);
+    }
+
+    #[test]
+    fn permission_verdict_uses_the_registered_session_root_and_unknown_sessions_ask() {
+        let base = std::env::temp_dir().join(format!(
+            "atlas-acp-session-root-{}",
+            std::process::id()
+        ));
+        let vault = base.join("vault");
+        let outside = base.join("outside.md");
+        std::fs::create_dir_all(&vault).unwrap();
+        std::fs::write(&outside, "outside").unwrap();
+
+        let sessions = AcpSessions::default();
+        sessions
+            .insert(
+                "bound-session".to_string(),
+                33,
+                std::fs::canonicalize(&vault).unwrap(),
+                ControlledWriter::recording(),
+            )
+            .unwrap();
+
+        assert_eq!(
+            permission_verdict_for_session(
+                &sessions,
+                "bound-session",
+                vault.join("inside.md").to_str()
+            ),
+            acp::PermissionVerdict::AllowInsideVault
+        );
+        assert_eq!(
+            permission_verdict_for_session(&sessions, "bound-session", outside.to_str()),
+            acp::PermissionVerdict::Ask
+        );
+        assert_eq!(
+            permission_verdict_for_session(
+                &sessions,
+                "caller-invented-session",
+                outside.to_str()
+            ),
+            acp::PermissionVerdict::Ask,
+            "등록되지 않은 세션은 화면이 어떤 경로를 보내도 자동 허용하면 안 된다"
+        );
+
+        let _ = std::fs::remove_dir_all(&base);
     }
 
     #[test]

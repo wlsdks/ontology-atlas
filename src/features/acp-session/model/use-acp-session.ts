@@ -441,7 +441,7 @@ export function useAcpSession({ runtimeId, vaultRoot, mcpServers }: UseAcpSessio
          * 꺼진다 — 없는 것을 있는 척하지 않는다"*.
          */
         vaultMcpServerName: hasVaultMcp ? VAULT_MCP_SERVER_NAME : undefined,
-        verdict: (filePath) => acpPermissionVerdict(vaultRoot, filePath),
+        verdict: (filePath) => acpPermissionVerdict(acpSessionId, filePath),
         askUser,
         onProtocolNotice: (message) => keepDiagnostic(message),
       });

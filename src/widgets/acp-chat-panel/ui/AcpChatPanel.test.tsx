@@ -14,6 +14,7 @@ const bridge = vi.hoisted(() => {
     sent: [] as Array<Record<string, unknown>>,
     listener: null as ((line: string) => void) | null,
     verdict: 'ask' as 'ask' | 'allow-inside-vault',
+    verdictCalls: [] as Array<{ sessionId: string; filePath: string | null }>,
     stopped: [] as string[],
     /** 어댑터 프로세스가 죽는 것을 시험이 일으킬 수 있게. */
     exit: null as ((code: number | null) => void) | null,
@@ -30,7 +31,10 @@ vi.mock('@/shared/lib/tauri-acp', () => ({
   stopAcpSession: async (id: string) => {
     bridge.stopped.push(id);
   },
-  acpPermissionVerdict: async () => bridge.verdict,
+  acpPermissionVerdict: async (sessionId: string, filePath: string | null) => {
+    bridge.verdictCalls.push({ sessionId, filePath });
+    return bridge.verdict;
+  },
   listenToAcpSession: async (
     _id: string,
     handlers: { onMessage?: (line: string) => void; onExit?: (code: number | null) => void },
@@ -112,6 +116,7 @@ afterEach(() => {
   bridge.available = true;
   bridge.sent = [];
   bridge.listener = null;
+  bridge.verdictCalls = [];
   bridge.exit = null;
   bridge.verdict = 'ask';
   bridge.stopped = [];
@@ -349,6 +354,9 @@ describe('대화 패널 — 권한 카드가 실제로 막는다', () => {
     emit(permissionRequest('/vault/notes.md'));
 
     await waitFor(() => expect(answerFor(77)).toBeTruthy());
+    expect(bridge.verdictCalls).toEqual([
+      { sessionId: 'acp-1-999', filePath: '/vault/notes.md' },
+    ]);
     expect(answerFor(77)).toEqual({ outcome: 'selected', optionId: 'allow' });
     expect(screen.queryByTestId('acp-permission-card')).toBeNull();
   });

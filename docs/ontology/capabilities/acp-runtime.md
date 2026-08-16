@@ -36,7 +36,11 @@ Client Protocol) v1 로 직접 띄우고, 그 세션의 설정을 격리하고, 
    심볼릭 링크로 원본을 가리킨다.
 4. **권한 판정.** 볼트 안이면 앱이 대신 허용하고, 밖이면 사용자에게 묻는다.
    판정 근거는 제목 문자열이 아니라 권한 요청 원문의
-   `toolCall.rawInput.file_path`(절대 경로)이며, 경로를 못 찾으면 묻는다.
+   `toolCall.rawInput.file_path`(절대 경로)이며, 경로를 못 찾으면 묻는다. 판정의
+   볼트 루트는 화면이 요청마다 보내는 값이 아니라 `acp_start`가 검증·정규화해
+   네이티브 세션에 묶은 값이다. 세션을 찾지 못하거나 루트가 유효하지 않아도
+   묻는 쪽으로 닫힌다. 세션 시작 뒤 루트 경로가 외부 심볼릭 링크로 바뀌면
+   정규 경로 불일치로 거절해 권한 경계가 세션 중에 움직이지 않게 한다.
 5. **작업 폴더 위생.** 세션의 작업 폴더는 폴더 피커가 쓰는 것과 같은 볼트 루트
    판정을 통과해야 한다. 파일시스템 루트, 홈 디렉터리 자체, OS/앱 디렉터리는
    거절한다.
@@ -59,6 +63,8 @@ Client Protocol) v1 로 직접 띄우고, 그 세션의 설정을 격리하고, 
 - 격리되지 않은 실행기는 설정에서 「확인 안 됨」으로 표시한다. 실행 가능한
   어댑터가 내놓은 미검증 **작업 방식**도 대화 패널의 모드 선택기에서 따로
   「확인 안 됨」으로 표시한다. 둘을 안전 판정 완료로 뭉개지 않는다.
+- 권한 판정 IPC는 `sessionId`와 요청 경로만 받는다. WebView가 `vaultRoot`를
+  다시 선언해 네이티브 세션의 경계를 바꾸는 인자는 없다.
 - 브라우저는 프로세스를 띄울 수 없다. `isAcpBridgeAvailable()` 이 false 이면
   화면이 왜 안 되는지와 어디서 되는지를 말한다.
 - Windows 의 프로세스 트리 소유(Job Object)는 이 조각 밖이다. `taskkill /T` 로
@@ -68,7 +74,8 @@ Client Protocol) v1 로 직접 띄우고, 그 세션의 설정을 격리하고, 
 - src-tauri/src/acp.rs: 레지스트리 파싱, 실행기 탐지, 실행 경로 해소, 설정 격리,
   권한 판정, 프로세스 그룹 종료
 - src-tauri/src/lib.rs: `acp_detect_runtimes` · `acp_start` · `acp_send` ·
-  `acp_stop` · `acp_permission_verdict` 다섯 command 와 볼트 루트 거절
+  `acp_stop` · `acp_permission_verdict` 다섯 command, 세션별 검증 루트 소유와
+  볼트 루트 거절
 - scripts/build-acp-registry.mjs: 빌드 시점 레지스트리·아이콘 스냅샷
   (`pnpm acp:registry`, `pnpm acp:registry:check`)
 - src/shared/lib/tauri-acp.ts: 능력 브리지와 웹 강등 계약
