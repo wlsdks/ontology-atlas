@@ -32,6 +32,7 @@ import { useAcpSession, type AcpEvent } from '@/features/acp-session/model/use-a
 import { readAcpTrouble } from '@/features/acp-session/model/acp-trouble';
 import type { ChatSuggestion } from '@/features/acp-session/model/chat-suggestions';
 import { linkSlugs } from '@/features/acp-session/model/link-slugs';
+import { readToolTargets } from '@/features/acp-session/model/tool-targets';
 
 import { VAULT_MCP_SERVER_NAME } from '@/features/acp-session/model/vault-mcp-server';
 
@@ -493,7 +494,15 @@ export function AcpChatPanel({
           </div>
         ) : null}
         {groupEvents(events).map((item, index) => {
-          if (item.kind === 'toolGroup') return <ToolGroup key={item.id} events={item.events} />;
+          if (item.kind === 'toolGroup')
+            return (
+              <ToolGroup
+                key={item.id}
+                events={item.events}
+                knownSlugs={knownSlugs}
+                onHoverSlug={onHoverSlug}
+              />
+            );
           /*
            * 사용자의 말 앞에 실선 하나 — **차례가 바뀐 자리**다. 첫 차례
            * 위에는 긋지 않는다(위에 아무것도 없는데 경계를 그으면 그건 경계가
@@ -836,7 +845,15 @@ export function AcpChatPanel({
  * 답이 오면 그때부터는 답이 주인공이라 자리를 내준다. 숨기는 것이 아니라
  * **한 줄로 접는 것**이라, 무슨 일이 있었는지는 언제든 볼 수 있다.
  */
-function ToolGroup({ events }: { events: Extract<AcpEvent, { kind: 'tool' }>[] }) {
+function ToolGroup({
+  events,
+  knownSlugs,
+  onHoverSlug,
+}: {
+  events: Extract<AcpEvent, { kind: 'tool' }>[];
+  knownSlugs?: ReadonlySet<string>;
+  onHoverSlug?: (slug: string | null) => void;
+}) {
   const t = useTranslations('acpChat');
   const [open, setOpen] = useState(false);
   return (
@@ -863,7 +880,12 @@ function ToolGroup({ events }: { events: Extract<AcpEvent, { kind: 'tool' }>[] }
       {open ? (
         <div className="mt-1 grid gap-1 pl-4">
           {events.map((event) => (
-            <TranscriptEntry key={event.id} event={event} />
+            <TranscriptEntry
+              key={event.id}
+              event={event}
+              knownSlugs={knownSlugs}
+              onHoverSlug={onHoverSlug}
+            />
           ))}
         </div>
       ) : null}
@@ -1009,6 +1031,7 @@ function TranscriptEntry({
      */
     const label = toolLabel(event.title, VAULT_MCP_SERVER_NAME);
     const done = event.status === 'completed';
+    const toolTargets = knownSlugs ? readToolTargets(event.rawInput, knownSlugs) : [];
     return (
       <p
         data-acp-entry="tool"
@@ -1029,6 +1052,32 @@ function TranscriptEntry({
           )}
         />
         {label.kind === 'known' ? t(`tool.${label.text}`) : label.text}
+        {/*
+          **어느 노드를 만졌나** (2026-08-17). 이 줄이 「개념을 읽었어요」라고만
+          하고 대상을 안 말하면, 나중에 기록을 읽어도 무슨 일이 있었는지 알 수
+          없고 지도와 이을 것도 없다. 값은 `rawInput` 으로 오고 있었다.
+
+          같은 점선 밑줄을 쓴다 — 답변 속 이름과 같은 뜻(지도에 있는 것)이라
+          다른 모양을 줄 이유가 없다.
+        */}
+        {toolTargets.length > 0 ? (
+          <span className="min-w-0 truncate text-[color:var(--color-text-tertiary)]">
+            {toolTargets.map((slug, i) => (
+              <span key={slug}>
+                {i === 0 ? ' · ' : ', '}
+                <span
+                  data-testid="acp-chat-slug"
+                  data-slug={slug}
+                  className="cursor-default underline decoration-dotted decoration-[color:var(--color-border-strong)] underline-offset-2 hover:decoration-[color:var(--color-indigo-a46)]"
+                  onPointerEnter={() => onHoverSlug?.(slug)}
+                  onPointerLeave={() => onHoverSlug?.(null)}
+                >
+                  {slug}
+                </span>
+              </span>
+            ))}
+          </span>
+        ) : null}
       </p>
     );
   }

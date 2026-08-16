@@ -44,7 +44,19 @@ export type AcpEvent =
   | { kind: 'user'; id: string; text: string }
   | { kind: 'agent'; id: string; text: string }
   | { kind: 'thought'; id: string; text: string }
-  | { kind: 'tool'; id: string; title: string; toolKind: string; status: string }
+  | {
+      kind: 'tool';
+      id: string;
+      title: string;
+      toolKind: string;
+      status: string;
+      /**
+       * 그 도구가 받은 인자 원본. **어느 노드를 만졌는지**가 여기에만 있다
+       * (`tool-targets.ts`). 예전에는 버렸고, 그래서 도구 줄이 「개념을
+       * 읽었어요」라고만 하고 어느 개념인지는 말하지 못했다.
+       */
+      rawInput?: unknown;
+    }
   | { kind: 'notice'; id: string; text: string };
 
 export type AcpSessionStatus =
@@ -236,6 +248,7 @@ export function useAcpSession({ runtimeId, vaultRoot, mcpServers }: UseAcpSessio
           title: typeof update.title === 'string' ? update.title : '',
           toolKind: typeof update.kind === 'string' ? update.kind : 'other',
           status: typeof update.status === 'string' ? update.status : 'pending',
+          rawInput: update.rawInput,
         });
         return;
       }
