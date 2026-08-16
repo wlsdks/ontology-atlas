@@ -1888,7 +1888,7 @@ fn start_vault_watch(
                     event
                         .paths
                         .iter()
-                        .any(|path| path.extension().map_or(false, |ext| ext == "md"))
+                        .any(|path| path.extension().is_some_and(|ext| ext == "md"))
                 });
                 if md_changed {
                     let _ = app_handle.emit("vault-changed", ());

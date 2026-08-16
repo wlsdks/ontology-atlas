@@ -262,7 +262,7 @@ fn nvm_bin_dirs(home: &Path, probe: &FsProbe<'_>) -> Vec<PathBuf> {
                 || name.trim_start_matches('v') == default.trim_start_matches('v')
                 || wanted
                     .as_ref()
-                    .is_some_and(|w| parts.len() >= w.len() && &parts[..w.len()] == &w[..])
+                    .is_some_and(|w| parts.len() >= w.len() && parts[..w.len()] == w[..])
         }) {
             let chosen = found.remove(at);
             found.insert(0, chosen);
@@ -1301,18 +1301,20 @@ mod tests {
         println!("{}", environment.join("\n"));
     }
 
+    pub(super) type ProbeClosures<'a> = (
+        Box<dyn Fn(&Path) -> bool + 'a>,
+        Box<dyn Fn(&Path) -> Vec<String> + 'a>,
+        Box<dyn Fn(&Path) -> Option<String> + 'a>,
+    );
+
     pub(super) fn probe_with<'a>(
         files: &'a HashSet<PathBuf>,
         dirs: &'a std::collections::HashMap<PathBuf, Vec<String>>,
-    ) -> (
-        impl Fn(&Path) -> bool + 'a,
-        impl Fn(&Path) -> Vec<String> + 'a,
-        impl Fn(&Path) -> Option<String> + 'a,
-    ) {
+    ) -> ProbeClosures<'a> {
         (
-            move |p: &Path| files.contains(p),
-            move |p: &Path| dirs.get(p).cloned().unwrap_or_default(),
-            move |_: &Path| None,
+            Box::new(move |p: &Path| files.contains(p)),
+            Box::new(move |p: &Path| dirs.get(p).cloned().unwrap_or_default()),
+            Box::new(move |_: &Path| None),
         )
     }
 
