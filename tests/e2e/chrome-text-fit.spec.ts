@@ -60,14 +60,59 @@ test.describe("크롬 텍스트 맞춤 — 앱이 쓴 문자열은 잘리지 않
         await page.getByTestId("first-run-starter-create").click();
         await page.getByTestId("vault-guide-create-new").click();
 
+        /*
+         * ⚠️ **볼트를 만들면 INDEX 는 접힌다** (2026-08-17 실측으로 정정).
+         *
+         * 이 설정은 「만들면 INDEX 가 펼쳐진 채로 있다」를 전제했는데, 지금은
+         * 만든 직후 `collapsed` 로 간다. 그런데도 첫 줄이 통과했던 이유가
+         * 고약하다 — 패널이 **접히는 애니메이션 동안** 잠깐 그려져서
+         * `toBeVisible` 이 0ms 에 참이 되고, 0.5초 뒤에는 패널째 사라진다.
+         * 그래서 그다음 줄이 15초를 꽉 기다리다 죽었다.
+         *
+         * 실측 대가: 이 spec 하나가 4조합 × (본 + 재시도 2) = 12회 × 18초를
+         * 태웠고, `E2E smoke` 워크플로가 **매 실행 15분에 실패**하고 있었다.
+         * main 에서도 같았다 — 내 변경이 만든 것이 아니라 이미 빨간 게이트였다.
+         *
+         * 그래서 상태가 **정착하기를 기다린 뒤** 접혀 있으면 펼친다. 재려는
+         * 것은 「펼친 푸터의 글자가 잘리지 않는가」이지 「기본이 펼침인가」가
+         * 아니므로, 기본값이 바뀌어도 이 게이트는 계속 자기 일을 한다.
+         */
+        await expect
+          .poll(
+            () => page.evaluate(() => document.documentElement.dataset.topologyIndex ?? ""),
+            { timeout: 30_000, message: "INDEX 상태가 정착하지 않았다" },
+          )
+          .toMatch(/^(collapsed|expanded)$/);
+        if (
+          (await page.evaluate(() => document.documentElement.dataset.topologyIndex)) === "collapsed"
+        ) {
+          await page.getByTestId("topology-index-tab").click();
+        }
+
         await expect(page.getByTestId("topology-index-footer")).toBeVisible({ timeout: 30_000 });
-        // **가득 찬 상태에서 재야 한다.** 푸터는 vault 를 만든 직후 먼저
-        // 뜨고, 성장 신호는 문서가 파싱된 뒤(약 1초) 뒤늦게 붙는다. 그
-        // 전에 재면 가장 빠듯한 줄을 놓친 채 통과한다 — 게이트가 있는데도
-        // 결함이 지나가는 정확한 방식이다.
+        // 늘 있는 둘은 그대로 요구한다 — 이 둘이 없으면 푸터가 덜 그려진 것이다.
         await expect(page.getByTestId("topology-index-agent-connect")).toBeVisible();
         await expect(page.getByTestId("topology-index-agent-handoff")).toBeVisible();
-        await expect(page.getByTestId("topology-index-footer-growth")).toBeVisible();
+        /*
+         * ⚠️ **성장 신호는 요구하지 않는다** (2026-08-17 정정).
+         *
+         * 종전에는 이 줄도 `toBeVisible` 로 요구했다. 그런데 그 줄은 코드상
+         * **원래 조건부**다 — `footerGrowthText` 는 `recentlyUpdatedCount > 0`
+         * 일 때만 넘어가고(HomePage), 위젯은 `footerGrowthText ? … : null` 로
+         * 그린다. 즉 「최근 7일 안에 바뀐 프로젝트가 있나」라는 **데이터·시각에
+         * 따라 달라지는 조건**을 레이아웃 게이트가 필수로 걸고 있었다.
+         *
+         * 실측(갓 만든 OPFS 볼트): 그 줄은 안 그려진다. 그래서 게이트가 15초를
+         * 기다리다 죽었고, 4조합 × (본 + 재시도 2) = 12회 × 18초를 태워
+         * `E2E smoke` 가 **매 실행 15분에 실패**했다. main 에서도 같았다.
+         *
+         * 이 게이트가 재려는 것은 「푸터의 글자가 잘리는가」이지 「이번 주에
+         * 뭔가 바뀌었는가」가 아니다. 그래서 **그려졌으면 그것도 함께 재고,
+         * 없으면 없는 대로 나머지를 잰다** — 조건부 원소를 필수로 거는 것은
+         * 게이트를 강하게 만드는 게 아니라 환경에 따라 무작위로 빨개지게 만든다.
+         */
+        const growth = page.getByTestId("topology-index-footer-growth");
+        if ((await growth.count()) > 0) await expect(growth).toBeVisible();
 
         for (const region of MEASURED_REGIONS) {
           const clipped = await page.evaluate((testId) => {

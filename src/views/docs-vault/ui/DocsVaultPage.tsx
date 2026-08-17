@@ -1940,7 +1940,20 @@ function DocsVaultContent() {
           lg → md 로 내린다. 768 실측: zone-l(~230px) + zone-r(~343px) = 573px
           로 한 행(728px)에 여유 있게 들어가는데도 2행 wrap(총 ~90px)이었다.
           <md 는 기존 2행 wrap 유지(zero-overflow 계약). */}
-      <header className="relative isolate flex min-h-14 flex-none flex-wrap items-center gap-x-3 gap-y-2 bg-[color:var(--color-panel)] px-3 py-2 md:h-11 md:min-h-0 md:flex-nowrap md:gap-2 md:px-4 md:py-0">
+      {/* `isolate` + `z-10` 은 **한 짝이다** (2026-08-17 소유자 지적: 폴더
+          드롭다운이 *"투명하게 이상하게"* 보였다).
+
+          `isolate` 는 탭 스트립의 지역 쌓임을 여기 가둔다. 그런데 그 순간
+          헤더 안의 팝오버·드롭다운도 같이 갇힌다 — 폴더 메뉴의 `z-50` 이
+          헤더 **안에서만** 유효해지고, 헤더 자신은 층이 없어서(auto) DOM 상
+          뒤에 오는 본문 읽기 칸이 헤더 전체를 덮었다. 읽기 칸은 배경이
+          투명이라 **글자만 메뉴 위에 겹쳐** 보였고, 그래서 메뉴가 반투명한
+          것처럼 읽혔다(실측: 메뉴 x128~416 위로 읽기 칸 x344~ 가 그려짐).
+
+          `z-10` 이면 충분하다 — 이겨야 할 상대가 `auto` 인 형제 하나뿐이고,
+          20 미만이라 전역 사다리(막 25 · 대화상자 60 …)를 건드리지 않는다.
+          게이트: `tests/e2e/docs-vault-chip-menu-stacking.spec.ts`. */}
+      <header className="relative isolate z-10 flex min-h-14 flex-none flex-wrap items-center gap-x-3 gap-y-2 bg-[color:var(--color-panel)] px-3 py-2 md:h-11 md:min-h-0 md:flex-nowrap md:gap-2 md:px-4 md:py-0">
         <h1 className="sr-only">{t('header.title')}</h1>
         {/* 헤더 baseline — 탭 스트립의 "한 끗"(design-prescription.md §10.2
             ⑥): 활성 탭 아래에서만 이 1px 라인이 2px 인디고 언더라인으로
