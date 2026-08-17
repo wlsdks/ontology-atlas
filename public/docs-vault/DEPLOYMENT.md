@@ -81,14 +81,17 @@ npx serve out
 # visit http://localhost:3000
 ```
 
-## macOS release — rehearse before you tag
+## macOS release — rehearse before protected dispatch
 
 ```bash
 pnpm desktop:release-rehearsal --list   # what would run, and what cannot run here
 pnpm desktop:release-rehearsal          # walk the runner's steps on this machine
+# after creating and pushing the tag at main HEAD:
+pnpm desktop:release-rehearsal --tag=vX.Y.Z
 ```
 
-**Run this before every `v*` tag push.** It walks the `build-macos` job of
+Run the untagged rehearsal before creating every `v*` tag. It walks the
+`admit-release` and `build-macos` jobs of
 `.github/workflows/release-macos.yml` **in file order** on your machine, so a
 step that would stop the runner stops you first — for free.
 
@@ -105,10 +108,11 @@ step is picked up automatically. Steps it cannot run are printed as `SKIP`
 
 | Cannot run locally | Why | Where it is first proved |
 | --- | --- | --- |
-| `Verify release source commit` | needs the tag's `GITHUB_SHA` to equal the live `main` head | the tag push itself |
-| `Decide signing path` / `Import Apple Developer ID certificate` | Apple Developer ID secrets | the runner |
+| Protected dispatch context | GitHub owns the event/ref/workflow SHA context | the `main` workflow_dispatch run |
+| Tag version and source admission | needs an existing remote tag; `--tag` rehearses both against current HEAD | the tagged rehearsal, then `admit-release` |
+| Signing credentials / `Import Apple Developer ID certificate` | protected environment secrets | the runner |
 | `Build signed and notarized release artifact` | `codesign` with a real identity + `notarytool` | the runner |
-| `Stage Draft macOS Release` / `Publish macOS Release` jobs | a real draft release and the `release` environment gate | the tag run |
+| `Stage Draft Desktop Release` / `Publish Desktop Release` jobs | a real draft release and the `release` environment gate | the dispatched run |
 
 In place of the signed build the rehearsal runs
 `desktop:release-artifact:unsigned` end to end — build, route smoke, app
@@ -119,17 +123,17 @@ notarization.
 If you have no `TAURI_SIGNING_PRIVATE_KEY` in your environment the rehearsal
 mints a **throwaway** updater key so the repack step can run. That proves the
 archive is rebuilt and signed; it does not prove it was signed with *our* key —
-only the tag run can.
+only the protected dispatched run can.
 
 ### Tagging rules the rehearsal cannot enforce
 
 - **Tag the current `main` head.** `desktop:release-source` compares the tag's
-  commit against the *live* default-branch head.
-- **Merge nothing to `main` until the release finishes.** A merge moves the head
-  and that same gate turns red on a release that was already valid when tagged.
+  commit against the live default-branch head during admission.
+- **Dispatch from `main`.** After admission, every job pins the admitted SHA;
+  later merges to `main` do not invalidate the release.
 - **A rerun needs a clean release slot.** `desktop:release-slot` fails closed if
   a release (including a draft) already exists for the tag, so delete the draft
-  from a failed attempt before pushing the tag again.
+  from a failed attempt before dispatching again.
 
 ## What's NOT needed
 

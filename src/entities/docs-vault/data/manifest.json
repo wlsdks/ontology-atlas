@@ -4035,6 +4035,16 @@
         },
         {
           "depth": 2,
+          "text": "2026-08-17 · 보호된 데스크톱 릴리스 운영 절차를 `main` 디스패치로 갱신",
+          "slug": "2026-08-17-보호된-데스크톱-릴리스-운영-절차를-main-디스패치로-갱신"
+        },
+        {
+          "depth": 2,
+          "text": "2026-08-17 · 다운로드 검증을 생략한 릴리스 상태는 ready가 아니다",
+          "slug": "2026-08-17-다운로드-검증을-생략한-릴리스-상태는-ready가-아니다"
+        },
+        {
+          "depth": 2,
           "text": "2026-08-17 · 릴리스 메타데이터가 생성 TypeScript 문법이 되지 않는다",
           "slug": "2026-08-17-릴리스-메타데이터가-생성-typescript-문법이-되지-않는다"
         },
@@ -6484,8 +6494,8 @@
           "slug": "2026-07-26-첫-만남은-쇼핑몰부터"
         }
       ],
-      "excerpt": "Major change history. Code commit messages answer why; this file answers when / which surface changed. Focused on user-visible changes, not PR-level granularity. Newest at the top. Entries stay date-based; the app version reached v1.0.0 on 2026-07-27, so a release tag now carries the semver promise instead. GitHub Rele",
-      "wordCount": 70172,
+      "excerpt": "Major change history. Code commit messages answer why; this file answers when / which surface changed. Focused on user-visible changes, not PR-level granularity. Newest at the top. Entries stay date-based; the app version reached v1.0.0 on 2026-07-27, so a release tag now carries the semver promise instead. 기존 태그를 먼저 만",
+      "wordCount": 70294,
       "updatedAt": "2026-08-17",
       "linksOut": [
         "audits/CASE-STUDY-AGENTS-MD-DRIFT",
@@ -6514,6 +6524,16 @@
           "depth": 2,
           "text": "기록 형식",
           "slug": "기록-형식"
+        },
+        {
+          "depth": 2,
+          "text": "2026-08-17 (63) — 보호된 데스크톱 릴리스는 `main`에서 디스패치하고, 서명 환경은 `main`에만 자동으로 연다",
+          "slug": "2026-08-17-63-보호된-데스크톱-릴리스는-main에서-디스패치하고-서명-환경은-main에만-자동으로-연다"
+        },
+        {
+          "depth": 2,
+          "text": "2026-08-17 (62) — 생략된 다운로드 검증은 릴리스 readiness blocker다",
+          "slug": "2026-08-17-62-생략된-다운로드-검증은-릴리스-readiness-blocker다"
         },
         {
           "depth": 2,
@@ -9427,7 +9447,7 @@
         }
       ],
       "excerpt": "이 파일은 결정과 그때 진 반대 의견을 남긴다. docs/CHANGELOG.md 는 무엇이 언제 바뀌었나를 답하고, 이 파일은 왜 그렇게 정했고, 무엇을 걸었나를 답한다. 최신이 위. 기록은 덧붙이기만 한다 — 지난 기록을 고치지 않는다. 판단이 바뀌었으면 새 기록을 쓰고 옛 기록을 뒤집힘 으로 표시한다. 틀린 기록도 자산이다. 1. 소집 전에 읽는다. 카운슬을 열기 전(그리고 단독 PO 패스를 쓰기 전) 같은 표면 · 같은 질문에 대한 선행 결정이 있는지 먼저 본다. 있으면 새 패스는 그것을 ① 여전히 유효하다고 인용하거나 ② 명시적으로 뒤집는다. 조용히 다시 결정",
-      "wordCount": 141507,
+      "wordCount": 142029,
       "updatedAt": "2026-08-17",
       "linksOut": [
         "slug"
@@ -9545,8 +9565,8 @@
         },
         {
           "depth": 2,
-          "text": "macOS release — rehearse before you tag",
-          "slug": "macos-release-rehearse-before-you-tag"
+          "text": "macOS release — rehearse before protected dispatch",
+          "slug": "macos-release-rehearse-before-protected-dispatch"
         },
         {
           "depth": 3,
@@ -9565,8 +9585,8 @@
         }
       ],
       "excerpt": "2026-05 update — Round 10 removed all backend dependencies. The OSS now builds to a pure static site (output: 'export'), deployable to any static host (GitHub Pages, Vercel, Netlify, S3 + CloudFront, …). The canonical host is GitHub Pages. The old Firebase-specific guide was deleted along with the dependency — this lin",
-      "wordCount": 964,
-      "updatedAt": "2026-07-31",
+      "wordCount": 992,
+      "updatedAt": "2026-08-17",
       "linksOut": []
     },
     {
@@ -10469,8 +10489,8 @@
         },
         {
           "depth": 2,
-          "text": "First Public Release Runbook (v1.0.0)",
-          "slug": "first-public-release-runbook-v100"
+          "text": "Protected Release Runbook (v1.0.0)",
+          "slug": "protected-release-runbook-v100"
         },
         {
           "depth": 2,
@@ -10504,8 +10524,8 @@
         },
         {
           "depth": 3,
-          "text": "4 — 남은 셋은 사람이 넣는다 (자격증명)",
-          "slug": "4-남은-셋은-사람이-넣는다-자격증명"
+          "text": "4 — 남은 다섯 값은 사람이 넣는다 (자격증명)",
+          "slug": "4-남은-다섯-값은-사람이-넣는다-자격증명"
         },
         {
           "depth": 3,
@@ -10539,7 +10559,7 @@
         }
       ],
       "excerpt": "Ontology Atlas is the user-facing macOS app name and current release asset identity for the ontology-atlas project. ontology-atlas stays the repository, CLI, and MCP package name so existing terminal and agent package contracts remain stable. The current release asset identity is ontology-atlas. ontology-atlas can beco",
-      "wordCount": 6596,
+      "wordCount": 6446,
       "updatedAt": "2026-08-17",
       "linksOut": []
     },
@@ -10627,8 +10647,8 @@
         }
       ],
       "excerpt": "Maintainer-only checks live here so the public README stays readable. Use this page when you touch mcp/, cli/, package manifests, release scripts, or the dogfood ontology. Run this before pushing broad docs, package, MCP, or web changes: For user-facing UI changes, add the relevant Playwright route check. pnpm install ",
-      "wordCount": 10261,
-      "updatedAt": "2026-08-16",
+      "wordCount": 10245,
+      "updatedAt": "2026-08-17",
       "linksOut": []
     },
     {
@@ -13100,8 +13120,8 @@
           "slug": "확신도"
         }
       ],
-      "excerpt": "플랫폼별 설치 파일과 신뢰 상태를 한 자리에서 비교하고, 설치가 막히면 웹으로 계속할 수 있게 하는 능력. macOS는 서명·공증된 Apple Silicon/Intel DMG를, Windows는 SmartScreen 위험을 먼저 밝힌 미서명 x64 베타를 제시한다. src/views/download (플랫폼 그룹·릴리스 사실·경고·CTA) .github/workflows/release-macos.yml (macOS + Windows 공개 릴리스 검증) .github/workflows/windows-beta-check.yml (비밀 키 없는 Windows PR 네이티브",
-      "wordCount": 82,
+      "excerpt": "플랫폼별 설치 파일과 신뢰 상태를 한 자리에서 비교하고, 설치가 막히면 웹으로 계속할 수 있게 하는 능력. macOS는 서명·공증된 Apple Silicon/Intel DMG를, Windows는 SmartScreen 위험을 먼저 밝힌 미서명 x64 베타를 제시한다. src/views/download (플랫폼 그룹·릴리스 사실·경고·CTA) .github/workflows/release-macos.yml (main workflowdispatch에서 태그와 SHA를 admission하고, release-signing 빌드와 별도 release 공개 승인을 거쳐 같은 SH",
+      "wordCount": 136,
       "updatedAt": "2026-08-17",
       "linksOut": []
     },
@@ -16127,8 +16147,8 @@
         }
       ],
       "excerpt": "[v10 정체성, 2026-07-18] — agent-native, human-sovereign(에이전트가 직접 쓰고, 최종 판단은 사람이 한다). 이 제품은 \"에이전트를 위한 시스템\"이 아니다. 사람과 AI 에이전트가 같이 읽고 같이 고치는 의미 계층 하나이고, 에이전트도 사람과 똑같은 정식 사용자다. 여기서 의미 계층이란 제품의 각 부분이 무엇인지 · 누가 맡는지 · 무엇이 그것을 증명하는지를 적어 둔 마크다운 폴더를 말한다. 에이전트는 이 폴더를 최신 상태로 유지하는 쪽이자 가장 많이 읽는 쪽이고 (MCP/CLI), 사람은 무엇이 맞는 뜻인지 최종적으로 정하는 ",
-      "wordCount": 5787,
-      "updatedAt": "2026-08-09",
+      "wordCount": 5796,
+      "updatedAt": "2026-08-17",
       "linksOut": [
         "ONTOLOGY-ATLAS-SPEC",
         "AGENT-MEMORY-POSITIONING"

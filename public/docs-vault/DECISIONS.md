@@ -40,6 +40,78 @@
 **상태**: 유효 / 뒤집힘(→ 링크) / 반증됨(관측: …)
 ```
 
+## 2026-08-17 (63) — 보호된 데스크톱 릴리스는 `main`에서 디스패치하고, 서명 환경은 `main`에만 자동으로 연다
+
+**소집**: 단독 패스 + 선행 코드 읽기 · **트리거**: tag-push 릴리스가 secret-bearing
+작업의 소스를 태그 ref에 맡기던 경계 제거 · **루브릭**: 23/24 (치명적 0: 없음)
+
+**관찰된 현상**: `.github/workflows/release-macos.yml`은 `workflow_dispatch`의
+`tag` 입력만 받고, admission job에서 `refs/heads/main`, workflow/event SHA,
+현재 `main` head와 요청 태그의 일치를 확인한다. `scripts/watch-macos-release-run.mjs`
+는 `--ref main`으로 디스패치하고 그 tag commit의 정확한 `workflow_dispatch` run을
+감시한다. 이후 빌드·stage·publish job은 admission이 낸 SHA를 다시 pin한다.
+
+**결정**: 운영자는 먼저 현재 `main` head에 기존 semver tag를 만들고 push한 뒤
+`pnpm desktop:release-run -- --tag=<tag> --ref=main`을 실행한다. `release-signing`
+은 Apple 5개와 Tauri updater 2개, 정확히 7개 secret만 보관한다. 이 환경의
+deployment rule은 `main` branch 하나만 허용하고 tag rule은 없으며, admin bypass는
+끄고 signing-stage reviewer는 두지 않는다. 사람의 exact-draft 설치 승인은 기존
+별도 `release` environment에 남긴다. 같은 이름의 repository-scope secret 복사본은
+삭제한다. `APPLE_KEYCHAIN_PASSWORD`와 `APPLE_SIGNING_IDENTITY`는 hosted secret이
+아니며, 코드가 GitHub 환경 설정을 자동으로 바꾸지도 않는다.
+
+**적용 규칙**: 태그 push는 dispatch가 아니다 · signing admission과 human publication
+approval을 같은 환경에 섞지 않는다 · secret은 environment scope 하나만 정본으로 둔다.
+**서명**: Codex — workflow/scripts 직접 대조 · 진안 — 장기 보안 강화 요청
+
+**기록된 반대**: tag push를 그대로 트리거로 두면 운영자가 별도 dispatch를 하지 않아도
+되어 짧다. 그러나 태그 ref에서 실행할 코드를 secret-bearing job에 바로 연결하면
+태그 시점의 source admission과 보호된 `main` 정책을 한 단계로 증명하기 어렵다.
+현재 workflow가 요구하는 explicit dispatch와 SHA pin을 되돌릴 근거가 없다.
+**반증 조건**: 실제 운영에서 `main`에서 dispatch한 run이 admission 후 다른 SHA를
+빌드하거나, 별도 `release` 승인 없이 draft가 공개되는 사례가 관측되면 이 결정을
+재검토한다.
+**외부 일회성 작업**: GitHub Settings에서 `release-signing`의 정확한 branch policy,
+admin bypass, reviewer 설정과 일곱 environment secret을 수동 구성하고 repository
+copies를 제거한다. 소스 코드는 이 설정을 변경하지 않는다.
+**상태**: 유효
+
+## 2026-08-17 (62) — 생략된 다운로드 검증은 릴리스 readiness blocker다
+
+**소집**: 단독 패스 + 선행 읽기 전용 공격 감사 · **트리거**: 릴리스 완료 관문의
+fail-open 재현 · **루브릭**: 24/24 (치명적 0: 없음)
+
+**관찰된 현상**: `check-macos-release-status`는
+`OATLAS_RELEASE_STATUS_SKIP_DOWNLOAD_VERIFY=1`이면 공개 DMG·checksum verifier를
+실행하지 않고 `download_assets`를 `skipped`로 기록했다. readiness는 `blocked` 행만
+세었으므로 나머지 fixture가 통과하면 다운로드 자산을 한 바이트도 확인하지 않고
+`ready:true`, 종료 코드 0을 반환했다. 실제 릴리스 오판은 관측하지 않았고, 기존
+테스트가 이 false-green을 성공으로 고정하고 있음을 재현했다.
+
+**결정**: skip 환경변수 자체는 네트워크 없는 focused test를 위해 유지하되, 사용된
+순간 `download_assets`를 `blocked`로 기록한다. 사람용 출력·JSON·Markdown은 같은
+blocker와 실제 `desktop:verify-download` 명령을 반환하며, child verifier가 성공한
+경우에만 해당 행이 `ok`가 된다. skip을 readiness 성공으로 바꾸는 별도 우회는 두지
+않는다.
+
+**적용 규칙**: 미측정은 통과가 아니다 · skipped 필수 증거는 blocker다 · 출력 형식이
+달라도 readiness 진실원은 하나다.
+**서명**: Codex — RED·GREEN·26개 시나리오 통합 검증 · 진안 — 장기 보안·품질 개선 승인
+
+**기록된 반대**: 상태 스크립트의 성공 경로를 네트워크 없이 한 파일에서 끝까지
+재현하기 어려워진다. 그러나 실제 다운로드 verifier는 로컬 HTTP fixture로 성공·실패
+자산을 별도 전수 검증하며, 거짓 ready fixture를 유지하는 것보다 증거 소유권을 나누는
+편이 정확하다.
+**반증 조건**: 실제 verifier가 성공했는데 상태 스크립트가 blocker를 남기거나, combined
+ready 경로의 회귀가 반복된다면 env 우회 대신 함수 경계의 명시적 verifier 결과 주입으로
+테스트 구조를 바꾼다.
+**잔여 경계**: 이 결정은 readiness의 skip 우회만 닫는다. tag-triggered workflow의
+secret-bearing code 신뢰 경계는 별도 감사·결정 대상이다.
+**재검토**: 실제 릴리스 rehearsal에서 false block 또는 combined success 경로 회귀가
+관측될 때.
+
+**상태**: 유효
+
 ## 2026-08-17 (61) — 릴리스 API 값은 생성 소스의 데이터로만 직렬화한다
 
 **소집**: 단독 패스 + 선행 읽기 전용 공격 감사 · **트리거**: 공개 다운로드 사실

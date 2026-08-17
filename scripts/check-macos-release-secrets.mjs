@@ -21,13 +21,21 @@ const releaseSecrets = [
     name: "APPLE_TEAM_ID",
     description: "Apple Developer Team ID for notarization",
   },
+  {
+    name: "TAURI_SIGNING_PRIVATE_KEY",
+    description: "private key for signing Tauri updater artifacts",
+  },
+  {
+    name: "TAURI_SIGNING_PRIVATE_KEY_PASSWORD",
+    description: "password for the Tauri updater signing key",
+  },
 ];
-// 5, not 7. The throwaway CI keychain password is generated in the workflow —
-// it protects a keychain created and deleted inside one job, so registering it
-// is a chance to fumble a secret for no security gained. The signing identity
-// is printed on the certificate we just imported, so `security find-identity`
-// derives it. What is left is only what Apple actually issues.
-const requiredSecrets = releaseSecrets.map((secret) => secret.name);
+const appleReleaseSecrets = releaseSecrets.slice(0, 5);
+const updaterReleaseSecrets = releaseSecrets.slice(5);
+const updaterOnly = process.argv.includes("--updater-only");
+const requiredSecrets = (updaterOnly ? updaterReleaseSecrets : releaseSecrets).map(
+  (secret) => secret.name,
+);
 
 function formatSecret(secret) {
   return `${secret.name} — ${secret.description}`;
@@ -41,7 +49,13 @@ required for a public macOS release is present in the environment. These are
 not Mac App Store submission credentials.
 
 Required environment:
-${releaseSecrets.map((secret) => `  ${formatSecret(secret)}`).join("\n")}
+${appleReleaseSecrets.map((secret) => `  ${formatSecret(secret)}`).join("\n")}
+
+The default mode also requires:
+${updaterReleaseSecrets.map((secret) => `  ${formatSecret(secret)}`).join("\n")}
+
+Use --updater-only for the Windows updater-signing check; that mode requires
+only the two Tauri updater secrets and does not inspect the Apple certificate.
 
 The certificate secret must be a base64-encoded Developer ID Application .p12
 export in PKCS#12 DER form.
@@ -109,27 +123,31 @@ function hasDerSequenceEnvelope(decoded) {
   return decoded.length === 2 + lengthByteCount + declaredLength;
 }
 
-const decodedCertificate = decodedPkcs12Secret(values.APPLE_CERTIFICATE_P12_BASE64);
-if (!decodedCertificate) {
-  console.error(
-    "[desktop-release-secrets] APPLE_CERTIFICATE_P12_BASE64 must be a base64-encoded .p12 export.",
-  );
-  console.error(
-    "[desktop-release-secrets] refusing to publish a macOS release that cannot import its signing certificate.",
-  );
-  process.exit(1);
-}
+if (!updaterOnly) {
+  const decodedCertificate = decodedPkcs12Secret(values.APPLE_CERTIFICATE_P12_BASE64);
+  if (!decodedCertificate) {
+    console.error(
+      "[desktop-release-secrets] APPLE_CERTIFICATE_P12_BASE64 must be a base64-encoded .p12 export.",
+    );
+    console.error(
+      "[desktop-release-secrets] refusing to publish a macOS release that cannot import its signing certificate.",
+    );
+    process.exit(1);
+  }
 
-if (!hasDerSequenceEnvelope(decodedCertificate)) {
-  console.error(
-    "[desktop-release-secrets] APPLE_CERTIFICATE_P12_BASE64 must decode to a PKCS#12 DER sequence with a valid length envelope.",
-  );
-  console.error(
-    "[desktop-release-secrets] refusing to publish a macOS release that cannot import its signing certificate.",
-  );
-  process.exit(1);
+  if (!hasDerSequenceEnvelope(decodedCertificate)) {
+    console.error(
+      "[desktop-release-secrets] APPLE_CERTIFICATE_P12_BASE64 must decode to a PKCS#12 DER sequence with a valid length envelope.",
+    );
+    console.error(
+      "[desktop-release-secrets] refusing to publish a macOS release that cannot import its signing certificate.",
+    );
+    process.exit(1);
+  }
 }
 
 console.log(
-  "[desktop-release-secrets] Developer ID direct-download signing and notarization secrets are present and structurally valid",
+  updaterOnly
+    ? "[desktop-release-secrets] updater signing secrets are present"
+    : "[desktop-release-secrets] Developer ID direct-download signing, notarization, and updater secrets are present and structurally valid",
 );

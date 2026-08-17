@@ -7,15 +7,19 @@ import {
   rmSync,
   writeFileSync,
 } from "node:fs";
+import { spawnSync } from "node:child_process";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 
 import {
+  admissionCheckCommands,
+  currentHeadSha,
   REHEARSAL_SKIPS,
   REHEARSAL_SUBSTITUTES,
   ephemeralUpdaterKey,
   localCommandFor,
+  parseAdmitReleaseSteps,
   parseBuildMacosSteps,
 } from "../../scripts/release-rehearsal.mjs";
 
@@ -140,7 +144,64 @@ describe("업데이터 아카이브는 서명된 앱을 담아야 한다", () =>
 });
 
 describe("리허설이 릴리스 잡을 빠짐없이 덮는다", () => {
+  const admissionSteps = parseAdmitReleaseSteps(workflow);
   const steps = parseBuildMacosSteps(workflow);
+
+  it("admit-release 잡의 태그 검증과 source admission 단계를 실제로 읽어 온다", () => {
+    expect(admissionSteps.map((step) => step.name)).toContain("Verify requested release version");
+    expect(admissionSteps.map((step) => step.name)).toContain("Admit tag at current main SHA");
+  });
+
+  it("기존 태그가 주어지면 현재 HEAD의 전체 SHA로 admission 명령을 만든다", () => {
+    const sha = currentHeadSha(root);
+    expect(sha).toMatch(/^[0-9a-f]{40}$/i);
+    expect(admissionCheckCommands("v1.2.3", sha)).toEqual([
+      {
+        name: "Verify requested release version",
+        argv: ["pnpm", "desktop:release-tag", "--", "--tag=v1.2.3"],
+      },
+      {
+        name: "Admit tag at current main SHA",
+        argv: [
+          "pnpm",
+          "desktop:release-source",
+          "--",
+          "--mode=admit",
+          "--tag=v1.2.3",
+          `--sha=${sha}`,
+        ],
+      },
+    ]);
+  });
+
+  it("태그 없이 목록을 보면 admission이 검증됐다고 가장하지 않고 명시적으로 SKIP 한다", () => {
+    const rehearsal = spawnSync(process.execPath, ["scripts/release-rehearsal.mjs", "--list"], {
+      cwd: root,
+      encoding: "utf8",
+    });
+
+    expect(rehearsal.status, rehearsal.stderr).toBe(0);
+    expect(rehearsal.stdout).toContain("SKIP [admit-release] Verify requested release version");
+    expect(rehearsal.stdout).toContain("SKIP [admit-release] Admit tag at current main SHA");
+    expect(rehearsal.stdout).toContain("ADMISSION SKIP");
+  });
+
+  it("태그 목록은 현재 HEAD SHA로 workflow의 admission 두 검사를 나란히 보인다", () => {
+    const sha = currentHeadSha(root);
+    const rehearsal = spawnSync(
+      process.execPath,
+      ["scripts/release-rehearsal.mjs", "--list", "--tag=v1.2.3"],
+      { cwd: root, encoding: "utf8" },
+    );
+
+    expect(rehearsal.status, rehearsal.stderr).toBe(0);
+    expect(rehearsal.stdout).toContain(
+      "RUN [admit-release] Verify requested release version — pnpm desktop:release-tag -- --tag=v1.2.3",
+    );
+    expect(rehearsal.stdout).toContain(
+      `RUN [admit-release] Admit tag at current main SHA — pnpm desktop:release-source -- --mode=admit --tag=v1.2.3 --sha=${sha}`,
+    );
+  });
 
   it("build-macos 잡의 단계를 실제로 읽어 온다", () => {
     // 파서가 조용히 0개를 돌려주면 리허설은 아무것도 안 하고 초록이 된다.
@@ -158,7 +219,7 @@ describe("리허설이 릴리스 잡을 빠짐없이 덮는다", () => {
   it("모든 단계가 실행·대체·명시적 생략 중 하나로 분류된다", () => {
     const skips = REHEARSAL_SKIPS as Record<string, string | undefined>;
     const substitutes = REHEARSAL_SUBSTITUTES as Record<string, unknown>;
-    const unclassified = steps.filter((step: { name: string; uses: string | null }) => {
+    const unclassified = [...admissionSteps, ...steps].filter((step: { name: string; uses: string | null }) => {
       if (step.uses) return false; // GitHub Action — 러너 전용
       if (skips[step.name] || substitutes[step.name]) return false;
       return localCommandFor(step) === null;

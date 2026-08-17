@@ -124,7 +124,7 @@ describe("워크플로 보안 계약", () => {
     expect(offenders).toEqual([]);
   });
 
-  it("서명 자격증명은 태그 워크플로 안에서만 쓰인다", () => {
+  it("서명 자격증명은 보호된 릴리스 워크플로 안에서만 쓰인다", () => {
     // Apple 인증서와 업데이터 개인키는 릴리스에만 필요하다. 다른 워크플로가
     // 참조하기 시작하면 그 워크플로의 트리거만큼 노출면이 넓어진다.
     const credentials = /\$\{\{\s*secrets\.(APPLE_|TAURI_SIGNING_)/;
@@ -135,14 +135,69 @@ describe("워크플로 보안 계약", () => {
     expect(offenders).toEqual([]);
   });
 
-  it("릴리스 워크플로는 태그 push 로만 시작한다", () => {
+  it("릴리스 워크플로는 보호된 기본 브랜치의 수동 dispatch 로만 시작한다", () => {
     const release = all.find((w) => w.name === "release-macos.yml");
     expect(release).toBeDefined();
-    // 태그를 밀 수 있는 사람은 write 권한자뿐이다. `pull_request` 나
-    // `workflow_dispatch` 가 붙으면 그 전제가 깨진다.
+    // tag push는 그 tag가 가리키는 commit의 workflow 파일을 실행한다. 그러면
+    // source gate 자체도 tag가 고를 수 있어 signing secret의 신뢰 경계가 아니다.
     expect(hasTrigger(release!.source, "pull_request")).toBe(false);
     expect(hasTrigger(release!.source, "pull_request_target")).toBe(false);
-    expect(release!.source).toMatch(/tags:/);
+    expect(hasTrigger(release!.source, "push")).toBe(false);
+    expect(hasTrigger(release!.source, "workflow_dispatch")).toBe(true);
+    expect(release!.source).toMatch(/workflow_dispatch:\n\s+inputs:\n\s+tag:/);
+    expect(release!.source).toMatch(/^run-name: Release Desktop \$\{\{ inputs\.tag \}\}$/m);
+  });
+
+  it("서명 job은 release-signing 환경과 기본 브랜치에서 승인된 SHA만 사용한다", () => {
+    const release = all.find((w) => w.name === "release-macos.yml")!.source;
+    const admission = jobBlock(release, "admit-release");
+    expect(jobHeader(release, "admit-release")).not.toMatch(/environment:/);
+    expect(admission).toContain("DISPATCH_EVENT: ${{ github.event_name }}");
+    expect(admission).toContain("DISPATCH_REF: ${{ github.ref }}");
+    expect(admission).toContain("DISPATCH_REF_TYPE: ${{ github.ref_type }}");
+    expect(admission).toContain("WORKFLOW_SHA: ${{ github.workflow_sha }}");
+    expect(admission).toContain('[[ "$DISPATCH_REF" == "refs/heads/main" ]]');
+    expect(admission).toContain('[[ "$WORKFLOW_SHA" == "$DISPATCH_SHA" ]]');
+    expect(admission).toContain("ref: ${{ github.sha }}");
+    expect(admission).toContain("persist-credentials: false");
+    expect(admission).toContain("--mode=admit");
+    expect(admission).toContain('--tag="$RELEASE_TAG"');
+    expect(admission).toContain('--sha="$RELEASE_SHA"');
+    expect(admission).toContain("release_sha=");
+    expect(admission).toContain("release_tag=");
+    expect(admission).not.toMatch(/\$\{\{\s*secrets\./);
+
+    for (const jobName of ["build-macos", "build-windows"]) {
+      const header = jobHeader(release, jobName);
+      const block = jobBlock(release, jobName);
+      expect(header, `${jobName} admission dependency`).toMatch(/needs:\s*admit-release/);
+      expect(header, `${jobName} secret environment`).toMatch(/environment:\s*release-signing/);
+      expect(block, `${jobName} trusted checkout`).toContain(
+        "ref: ${{ needs.admit-release.outputs.release_sha }}",
+      );
+    }
+
+    for (const jobName of ["stage-macos", "publish-macos"]) {
+      expect(jobBlock(release, jobName), `${jobName} trusted checkout`).toContain(
+        "ref: ${{ needs.admit-release.outputs.release_sha }}",
+      );
+    }
+
+    const stage = jobBlock(release, "stage-macos");
+    expect(stage).toContain("tag_name: ${{ needs.admit-release.outputs.release_tag }}");
+    expect(stage).toContain("target_commitish: ${{ needs.admit-release.outputs.release_sha }}");
+    expect(stage).toContain("--mode=pin");
+    expect(jobBlock(release, "publish-macos")).toContain("--mode=pin");
+  });
+
+  it("Windows updater 개인키는 build 직전 별도 실패-폐쇄 게이트를 지난다", () => {
+    const release = all.find((w) => w.name === "release-macos.yml")!.source;
+    const windows = jobBlock(release, "build-windows");
+    const gate = windows.indexOf("- name: Require updater signing credentials");
+    const build = windows.indexOf("- name: Build Windows NSIS installer");
+    expect(gate).toBeGreaterThan(0);
+    expect(build).toBeGreaterThan(gate);
+    expect(windows.slice(gate, build)).toContain("desktop:release-secrets -- --updater-only");
   });
 
   it("macOS 직접 다운로드 릴리스는 서명·공증 자격증명이 없으면 실패한다", () => {
@@ -201,7 +256,7 @@ describe("워크플로 보안 계약", () => {
 
   it("서명 secret 은 필요한 release step 에서만 보인다", () => {
     const release = all.find((w) => w.name === "release-macos.yml")!.source;
-    for (const jobName of ["build-macos", "build-windows", "stage-macos", "publish-macos"]) {
+    for (const jobName of ["admit-release", "build-macos", "build-windows", "stage-macos", "publish-macos"]) {
       expect(jobHeader(release, jobName), `${jobName} job env`).not.toMatch(
         /\$\{\{\s*secrets\.(?:APPLE_|TAURI_SIGNING_)/,
       );
@@ -228,11 +283,15 @@ describe("워크플로 보안 계약", () => {
         "Build signed and notarized release artifact",
       ],
       TAURI_SIGNING_PRIVATE_KEY: [
+        "Require signed release credentials",
         "Build signed and notarized release artifact",
+        "Require updater signing credentials",
         "Build Windows NSIS installer",
       ],
       TAURI_SIGNING_PRIVATE_KEY_PASSWORD: [
+        "Require signed release credentials",
         "Build signed and notarized release artifact",
+        "Require updater signing credentials",
         "Build Windows NSIS installer",
       ],
     };
@@ -240,6 +299,18 @@ describe("워크플로 보안 계약", () => {
     for (const [secret, steps] of Object.entries(expectedSteps)) {
       expect(stepNamesUsingSecret(release, secret).sort(), secret).toEqual(steps.sort());
     }
+  });
+
+  it("쓰기 토큰 job은 움직인 main 코드에서 pnpm/node를 실행하지 않는다", () => {
+    const release = all.find((w) => w.name === "release-macos.yml")!.source;
+    const publish = jobBlock(release, "publish-macos");
+    const switchAt = publish.indexOf("git switch -C release-facts-update origin/main");
+    expect(switchAt).toBeGreaterThan(0);
+    const afterSwitch = publish.slice(switchAt);
+    expect(afterSwitch).not.toMatch(/^\s*(?:pnpm|node)\b/m);
+    expect(publish.slice(0, switchAt)).toContain(
+      'cp src/views/download/model/macos-release.generated.ts "$RUNNER_TEMP/macos-release.generated.ts"',
+    );
   });
 
   it("Pages OIDC 와 배포 권한은 deploy job 에만 있다", () => {

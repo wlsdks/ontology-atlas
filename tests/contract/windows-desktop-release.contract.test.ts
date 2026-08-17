@@ -29,7 +29,8 @@ describe('Windows desktop beta release contract', () => {
     expect(workflow).toContain('verify-mcp-binary.mjs');
     expect(workflow).toContain('ontology-atlas-windows-x64');
     expect(workflow).toContain('(Get-Content package.json | ConvertFrom-Json).version');
-    expect(releaseWorkflow).toContain('needs: [build-macos, build-windows]');
+    expect(releaseWorkflow).toContain('needs: [admit-release, build-macos, build-windows]');
+    expect(releaseWorkflow).toContain('pnpm desktop:release-secrets -- --updater-only');
   });
 
   it('keeps the Windows sidecar and credential store native to Windows', () => {

@@ -4,14 +4,16 @@ import path from "node:path";
 import { spawnSync } from "node:child_process";
 
 const DEFAULT_REPO = "wlsdks/ontology-atlas";
+const SIGNING_ENVIRONMENT = "release-signing";
+const PUBLICATION_ENVIRONMENT = "release";
 const REQUIRED_SECRETS = [
   "APPLE_CERTIFICATE_P12_BASE64",
   "APPLE_CERTIFICATE_PASSWORD",
-  "APPLE_KEYCHAIN_PASSWORD",
-  "APPLE_SIGNING_IDENTITY",
   "APPLE_ID",
   "APPLE_APP_SPECIFIC_PASSWORD",
   "APPLE_TEAM_ID",
+  "TAURI_SIGNING_PRIVATE_KEY",
+  "TAURI_SIGNING_PRIVATE_KEY_PASSWORD",
 ];
 const DIRECT_DOWNLOAD_SECRET_LABEL = "Developer ID direct-download secrets";
 const CHECK_SCOPES = new Map([
@@ -46,9 +48,9 @@ function printHelp() {
 
 Checks the public macOS release completion state in one fail-closed pass:
 release tag version alignment, pull-request merge readiness, active macOS
-release workflow availability, Developer ID direct-download signing/notary
-secret names (not Mac App Store submission), public GitHub Release state, and
-downloadable DMG/checksum assets.
+release workflow availability, the main-only release-signing environment,
+Developer ID direct-download and updater signing secret names, public GitHub
+Release state, and downloadable DMG/checksum assets.
 
 This command is an operator/completion audit. It does not publish tags, set
 secrets, or edit releases.
@@ -341,11 +343,11 @@ function prReviewSatisfied(pr) {
 }
 
 function secretSetHints(repo, names) {
-  return names.map((name) => `gh secret set ${name} --repo ${repo} < /path/to/${name}`).join("; ");
+  return names.map((name) => `gh secret set ${name} --env ${SIGNING_ENVIRONMENT} --repo ${repo} < /path/to/${name}`).join("; ");
 }
 
 function secretSetCommands(repo, names) {
-  return names.map((name) => `gh secret set ${name} --repo ${repo} < /path/to/${name}`);
+  return names.map((name) => `gh secret set ${name} --env ${SIGNING_ENVIRONMENT} --repo ${repo} < /path/to/${name}`);
 }
 
 function defaultBranchCommand(repo) {
@@ -356,13 +358,13 @@ function releasePublishCommands({ repo, tag, prNumber }) {
   const defaultBranch = defaultBranchCommand(repo);
   const commands = [
     `pnpm desktop:release-github -- --repo=${repo} --tag=${tag}`,
-    `gh secret list --repo ${repo}`,
+    `gh secret list --env ${SIGNING_ENVIRONMENT} --repo ${repo}`,
     `DEFAULT_BRANCH="$(${defaultBranch})"`,
     `git fetch origin "$DEFAULT_BRANCH" --tags`,
-    `pnpm desktop:release-source -- --repo=${repo} --sha="$(git rev-parse "origin/$DEFAULT_BRANCH")"`,
     `git tag ${tag} "origin/$DEFAULT_BRANCH"`,
     `git push origin ${tag}`,
-    `pnpm desktop:release-run -- --repo=${repo} --tag=${tag}`,
+    `pnpm desktop:release-source -- --mode=admit --repo=${repo} --tag=${tag} --sha="$(git rev-parse "origin/$DEFAULT_BRANCH")"`,
+    `pnpm desktop:release-run -- --repo=${repo} --tag=${tag} --ref="$DEFAULT_BRANCH"`,
     `gh release view ${tag} --repo ${repo}`,
     `pnpm desktop:verify-download -- --repo=${repo} --tag=${tag}`,
   ];
@@ -374,9 +376,9 @@ function releasePublishCommands({ repo, tag, prNumber }) {
 
 function releaseMissingNext({ prMerged: merged, tag }) {
   if (merged) {
-    return `Add Developer ID direct-download signing/notarization secrets (not Mac App Store submission), then push ${tag} so .github/workflows/release-macos.yml can publish signed DMGs.`;
+    return `Configure the protected ${SIGNING_ENVIRONMENT} environment, create ${tag} at the current default-branch head, then dispatch .github/workflows/release-macos.yml from that branch.`;
   }
-  return `Merge the desktop PR, add Developer ID direct-download signing/notarization secrets (not Mac App Store submission), then push ${tag} so .github/workflows/release-macos.yml can publish signed DMGs.`;
+  return `Merge the desktop PR, configure the protected ${SIGNING_ENVIRONMENT} environment, create ${tag} at the current default-branch head, then dispatch .github/workflows/release-macos.yml from that branch.`;
 }
 
 function isNotFound(message) {
@@ -563,16 +565,9 @@ async function main() {
   }
 
   const localTagRef = runGitStatus(["rev-parse", "--verify", "--quiet", `refs/tags/${options.tag}`]);
-  if (localTagRef.status === 0) {
-    checks.push(blocked(
-      "release_tag_slot",
-      "Release tag slot",
-      `local git tag ${options.tag} already exists`,
-      `Delete the stale local tag with git tag -d ${options.tag} after verifying it was not pushed, or choose a new version before release.`,
-      [`git tag -d ${options.tag}`],
-      { scope: "local", owner: "developer" },
-    ));
-  } else if (localTagRef.status !== 1) {
+  const remoteTagRef = runGhStatus(["api", `repos/${options.repo}/git/ref/tags/${options.tag}`]);
+  const remoteTagOutput = statusOutput(remoteTagRef);
+  if (localTagRef.status !== 0 && localTagRef.status !== 1) {
     checks.push(blocked(
       "release_tag_slot",
       "Release tag slot",
@@ -581,59 +576,207 @@ async function main() {
       [`git rev-parse --verify --quiet refs/tags/${options.tag}`],
       { scope: "local", owner: "developer" },
     ));
+  } else if (remoteTagRef.status === 0) {
+    checks.push(ok(
+      "release_tag_slot",
+      "Release tag slot",
+      `${options.tag} exists remotely as the expected workflow_dispatch release input${localTagRef.status === 0 ? " and is also present locally" : ""}`,
+    ));
+  } else if (!isNotFound(remoteTagOutput)) {
+    checks.push(blocked(
+      "release_tag_slot",
+      "Release tag slot",
+      `gh api repos/${options.repo}/git/ref/tags/${options.tag} failed: ${remoteTagOutput || `exit ${remoteTagRef.status}`}`,
+      `Run gh api repos/${options.repo}/git/ref/tags/${options.tag} to inspect the remote tag.`,
+      [`gh api repos/${options.repo}/git/ref/tags/${options.tag}`],
+    ));
+  } else if (localTagRef.status === 0) {
+    checks.push(blocked(
+      "release_tag_slot",
+      "Release tag slot",
+      `local git tag ${options.tag} exists but the remote tag does not`,
+      `Delete the stale local tag with git tag -d ${options.tag}, or push it only after desktop:release-github succeeds.`,
+      [`git tag -d ${options.tag}`],
+      { scope: "local", owner: "developer" },
+    ));
   } else {
-    const remoteTagRef = runGhStatus(["api", `repos/${options.repo}/git/ref/tags/${options.tag}`]);
-    const remoteTagOutput = statusOutput(remoteTagRef);
-    if (remoteTagRef.status === 0) {
-      checks.push(blocked(
-        "release_tag_slot",
-        "Release tag slot",
-        `git tag ${options.tag} already exists for ${options.repo}`,
-        "Inspect the existing tag workflow run or choose a new version before pushing a macOS release tag.",
-        [
-          `gh api repos/${options.repo}/git/ref/tags/${options.tag}`,
-          `gh run list --repo ${options.repo} --workflow release-macos.yml --event push --limit 10`,
-        ],
-      ));
-    } else if (!isNotFound(remoteTagOutput)) {
-      checks.push(blocked(
-        "release_tag_slot",
-        "Release tag slot",
-        `gh api repos/${options.repo}/git/ref/tags/${options.tag} failed: ${remoteTagOutput || `exit ${remoteTagRef.status}`}`,
-        `Run gh api repos/${options.repo}/git/ref/tags/${options.tag} to inspect the remote tag slot.`,
-        [`gh api repos/${options.repo}/git/ref/tags/${options.tag}`],
-      ));
+    checks.push(ok("release_tag_slot", "Release tag slot", `${options.tag} is available for creation before protected dispatch`));
+  }
+
+  const signingCheckCommand = `pnpm desktop:release-github -- --repo=${options.repo} --tag=${options.tag}`;
+  const environmentSecretListCommand = `gh secret list --env ${SIGNING_ENVIRONMENT} --repo ${options.repo}`;
+  const defaultBranchResult = runGh([
+    "repo",
+    "view",
+    options.repo,
+    "--json",
+    "defaultBranchRef",
+  ], { parseJson: true });
+  const defaultBranch = defaultBranchResult.ok
+    ? defaultBranchResult.value?.defaultBranchRef?.name
+    : null;
+  let signingFailure = defaultBranchResult.ok
+    ? (!defaultBranch ? `GitHub did not report a default branch for ${options.repo}.` : "")
+    : defaultBranchResult.message;
+
+  let signingEnvironment = null;
+  if (!signingFailure) {
+    const environmentResult = runGh([
+      "api",
+      `repos/${options.repo}/environments/${SIGNING_ENVIRONMENT}`,
+    ], { parseJson: true });
+    if (!environmentResult.ok) {
+      signingFailure = environmentResult.message;
     } else {
-      checks.push(ok("release_tag_slot", "Release tag slot", `${options.tag} has no existing local or remote Git tag`));
+      signingEnvironment = environmentResult.value;
+      const reviewerRule = Array.isArray(signingEnvironment?.protection_rules)
+        ? signingEnvironment.protection_rules.find((rule) => rule?.type === "required_reviewers")
+        : null;
+      if (Array.isArray(reviewerRule?.reviewers) && reviewerRule.reviewers.length > 0) {
+        signingFailure = `${SIGNING_ENVIRONMENT} must keep signing automatic; retain human approval only on the separate release publication environment.`;
+      } else if (signingEnvironment?.can_admins_bypass !== false) {
+        signingFailure = `${SIGNING_ENVIRONMENT} must disable administrator bypass.`;
+      } else if (
+        signingEnvironment?.deployment_branch_policy?.protected_branches !== false ||
+        signingEnvironment?.deployment_branch_policy?.custom_branch_policies !== true
+      ) {
+        signingFailure = `${SIGNING_ENVIRONMENT} must use an exact custom branch policy for ${defaultBranch}.`;
+      }
     }
   }
 
-  let repoSecretNames = null;
-  const secrets = runGh([
-    "secret",
-    "list",
-    "--repo",
-    options.repo,
-    "--json",
-    "name",
-  ], { parseJson: true });
-  if (!secrets.ok) {
-    checks.push(blocked("apple_release_secrets", DIRECT_DOWNLOAD_SECRET_LABEL, secrets.message, `Run gh secret list --repo ${options.repo}.`, [`gh secret list --repo ${options.repo}`]));
-  } else if (!Array.isArray(secrets.value)) {
-    checks.push(blocked("apple_release_secrets", DIRECT_DOWNLOAD_SECRET_LABEL, "gh secret list did not return an array.", `Run gh secret list --repo ${options.repo}.`, [`gh secret list --repo ${options.repo}`]));
-  } else {
-    repoSecretNames = new Set(secrets.value.map((secret) => secret?.name).filter(Boolean));
-    const missing = REQUIRED_SECRETS.filter((name) => !repoSecretNames.has(name));
-    if (missing.length === 0) {
-      checks.push(ok("apple_release_secrets", DIRECT_DOWNLOAD_SECRET_LABEL, "all required Developer ID signing/notary secret names exist for direct-download DMGs"));
+  if (!signingFailure) {
+    const policies = runGh([
+      "api",
+      `repos/${options.repo}/environments/${SIGNING_ENVIRONMENT}/deployment-branch-policies`,
+    ], { parseJson: true });
+    if (!policies.ok) {
+      signingFailure = policies.message;
     } else {
+      const rows = Array.isArray(policies.value?.branch_policies)
+        ? policies.value.branch_policies.filter((policy) => typeof policy?.name === "string" && typeof policy?.type === "string")
+        : [];
+      if (rows.length !== 1 || rows[0]?.type !== "branch" || rows[0]?.name !== defaultBranch) {
+        signingFailure = `${SIGNING_ENVIRONMENT} must allow exactly branch ${defaultBranch} and no tag rules.`;
+      }
+    }
+  }
+
+  if (!signingFailure) {
+    const publicationResult = runGh([
+      "api",
+      `repos/${options.repo}/environments/${PUBLICATION_ENVIRONMENT}`,
+    ], { parseJson: true });
+    if (!publicationResult.ok) {
+      signingFailure = publicationResult.message;
+    } else {
+      const reviewerRule = Array.isArray(publicationResult.value?.protection_rules)
+        ? publicationResult.value.protection_rules.find((rule) => rule?.type === "required_reviewers")
+        : null;
+      if (!Array.isArray(reviewerRule?.reviewers) || reviewerRule.reviewers.length === 0) {
+        signingFailure = `${PUBLICATION_ENVIRONMENT} must require a publication reviewer.`;
+      } else if (publicationResult.value?.can_admins_bypass !== false) {
+        signingFailure = `${PUBLICATION_ENVIRONMENT} must disable administrator bypass.`;
+      } else if (
+        publicationResult.value?.deployment_branch_policy?.protected_branches !== false ||
+        publicationResult.value?.deployment_branch_policy?.custom_branch_policies !== true
+      ) {
+        signingFailure = `${PUBLICATION_ENVIRONMENT} must use an exact custom branch policy for ${defaultBranch}.`;
+      }
+    }
+  }
+
+  if (!signingFailure) {
+    const publicationPolicies = runGh([
+      "api",
+      `repos/${options.repo}/environments/${PUBLICATION_ENVIRONMENT}/deployment-branch-policies`,
+    ], { parseJson: true });
+    if (!publicationPolicies.ok) {
+      signingFailure = publicationPolicies.message;
+    } else {
+      const rows = Array.isArray(publicationPolicies.value?.branch_policies)
+        ? publicationPolicies.value.branch_policies.filter((policy) => typeof policy?.name === "string" && typeof policy?.type === "string")
+        : [];
+      if (rows.length !== 1 || rows[0]?.type !== "branch" || rows[0]?.name !== defaultBranch) {
+        signingFailure = `${PUBLICATION_ENVIRONMENT} must allow exactly branch ${defaultBranch} and no tag rules.`;
+      }
+    }
+  }
+
+  let environmentSecretNames = null;
+  if (!signingFailure) {
+    const secrets = runGh([
+      "secret",
+      "list",
+      "--env",
+      SIGNING_ENVIRONMENT,
+      "--repo",
+      options.repo,
+      "--json",
+      "name",
+    ], { parseJson: true });
+    if (!secrets.ok) {
+      signingFailure = secrets.message;
+    } else if (!Array.isArray(secrets.value)) {
+      signingFailure = `gh secret list --env ${SIGNING_ENVIRONMENT} did not return an array.`;
+    } else {
+      environmentSecretNames = new Set(secrets.value.map((secret) => secret?.name).filter(Boolean));
+    }
+  }
+
+  let repositorySecretNames = null;
+  if (!signingFailure) {
+    const repositorySecrets = runGh([
+      "secret",
+      "list",
+      "--repo",
+      options.repo,
+      "--json",
+      "name",
+    ], { parseJson: true });
+    if (!repositorySecrets.ok) {
+      signingFailure = repositorySecrets.message;
+    } else if (!Array.isArray(repositorySecrets.value)) {
+      signingFailure = "repository gh secret list did not return an array.";
+    } else {
+      repositorySecretNames = new Set(repositorySecrets.value.map((secret) => secret?.name).filter(Boolean));
+    }
+  }
+
+  if (signingFailure) {
+    checks.push(blocked(
+      "apple_release_secrets",
+      DIRECT_DOWNLOAD_SECRET_LABEL,
+      signingFailure,
+      `Run ${signingCheckCommand}.`,
+      [signingCheckCommand, environmentSecretListCommand],
+    ));
+  } else {
+    const missing = REQUIRED_SECRETS.filter((name) => !environmentSecretNames.has(name));
+    const leakedScope = REQUIRED_SECRETS.filter((name) => repositorySecretNames.has(name));
+    if (missing.length > 0) {
       checks.push(blocked(
         "apple_release_secrets",
         DIRECT_DOWNLOAD_SECRET_LABEL,
-        `missing ${missing.join(", ")} (Developer ID signing/notarization for direct-download DMGs, not Mac App Store submission)`,
+        `missing ${missing.join(", ")} from ${SIGNING_ENVIRONMENT} (Developer ID direct-download, not Mac App Store submission, and updater signing)`,
         secretSetHints(options.repo, missing),
         secretSetCommands(options.repo, missing),
         { missingSecrets: missing },
+      ));
+    } else if (leakedScope.length > 0) {
+      const deleteCommands = leakedScope.map((name) => `gh secret delete ${name} --repo ${options.repo}`);
+      checks.push(blocked(
+        "apple_release_secrets",
+        DIRECT_DOWNLOAD_SECRET_LABEL,
+        `repository-scoped signing secrets remain: ${leakedScope.join(", ")}`,
+        `Delete the repository copies after confirming ${SIGNING_ENVIRONMENT} contains them.`,
+        [environmentSecretListCommand, ...deleteCommands],
+      ));
+    } else {
+      checks.push(ok(
+        "apple_release_secrets",
+        DIRECT_DOWNLOAD_SECRET_LABEL,
+        `${SIGNING_ENVIRONMENT} admits only ${defaultBranch} and contains all required signing secret names`,
       ));
     }
   }
@@ -672,7 +815,13 @@ async function main() {
   } else {
     checks.push(ok("github_release", "GitHub Release", `${options.tag} is public and stable${release.value?.url ? ` (${release.value.url})` : ""}`));
     if (process.env.OATLAS_RELEASE_STATUS_SKIP_DOWNLOAD_VERIFY === "1") {
-      checks.push(skipped("download_assets", "Download assets", "skipped by OATLAS_RELEASE_STATUS_SKIP_DOWNLOAD_VERIFY=1"));
+      checks.push(blocked(
+        "download_assets",
+        "Download assets",
+        "verification skipped by OATLAS_RELEASE_STATUS_SKIP_DOWNLOAD_VERIFY=1",
+        `Run pnpm desktop:verify-download -- --repo=${options.repo} --tag=${options.tag} without the skip environment variable.`,
+        [`pnpm desktop:verify-download -- --repo=${options.repo} --tag=${options.tag}`],
+      ));
     } else {
       const download = runNode([
         "scripts/check-macos-download-release.mjs",
@@ -711,7 +860,7 @@ function renderAndExit(options, checks) {
       commands: check.commands ?? [],
     }));
   const payload = {
-    schemaVersion: 1,
+    schemaVersion: 2,
     generatedAt,
     repo: options.repo,
     tag: options.tag,
