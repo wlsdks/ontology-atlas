@@ -710,6 +710,49 @@ export function vaultAgentGuideForLocale(locale: string): StarterFile {
 }
 
 /**
+ * Claude Code 를 위한 **다리 파일**. 내용은 한 줄뿐이고 `AGENTS.md` 를 가리킨다.
+ *
+ * ## 왜 따로 필요한가
+ *
+ * 안내문을 `AGENTS.md` 하나로 두면 **Claude Code 세션은 아무것도 못 받는다** —
+ * 이 저장소 자신의 도구 표가 그렇게 적어 두었다: `AGENTS.md` 를 Codex 는 직접
+ * 읽고, Claude Code 는 `CLAUDE.md` 의 `@AGENTS.md` 임포트를 거쳐 읽는다.
+ * 이 저장소가 자기 루트에 쓰는 방식을 그대로 볼트에도 쓴다.
+ *
+ * 그리고 제품에 이미 그 판정을 하는 검사가 있다 —
+ * `cli/src/lib/agent-files.mjs` 의 `claude-agents-bridge`. 다만 `CLAUDE.md`
+ * 자체가 없으면 **「해당 없음」으로 조용히 넘어가서**, 안내가 반쪽만 닿는 상태를
+ * 아무도 못 봤다. 파일을 놓으면 그 검사가 비로소 일한다.
+ */
+export const VAULT_CLAUDE_BRIDGE_PATH = "CLAUDE.md";
+
+const CLAUDE_BRIDGE_EN = `# Ontology Atlas vault
+
+@AGENTS.md
+
+Everything an agent needs is in the file above. Claude Code reads this file;
+Codex, Cursor, and Gemini CLI read \`AGENTS.md\` directly. Keeping the guide in
+one place is why this file is only a pointer — edit \`AGENTS.md\`, not this one.
+`;
+
+const CLAUDE_BRIDGE_KO = `# Ontology Atlas 볼트
+
+@AGENTS.md
+
+에이전트에게 필요한 것은 전부 위 파일에 있습니다. Claude Code 는 이 파일을 읽고,
+Codex · Cursor · Gemini CLI 는 \`AGENTS.md\` 를 직접 읽습니다. 안내를 한 곳에만
+두려고 이 파일은 가리키기만 합니다 — 고칠 때는 \`AGENTS.md\` 를 고치세요.
+`;
+
+/** 이 로케일의 다리 파일. 모르는 로케일은 영어로 떨어진다. */
+export function vaultClaudeBridgeForLocale(locale: string): StarterFile {
+  return {
+    relPath: VAULT_CLAUDE_BRIDGE_PATH,
+    content: locale === "ko" ? CLAUDE_BRIDGE_KO : CLAUDE_BRIDGE_EN,
+  };
+}
+
+/**
  * 기존 소비자를 위한 영어 기본값 — 개수 계약(`starter-counts`)과 CLI 기본
  * `init` 이 이걸 기준으로 남는다.
  */

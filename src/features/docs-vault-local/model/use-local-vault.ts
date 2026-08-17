@@ -30,6 +30,7 @@ import type { LocalFsHandleRecord } from '@/entities/local-fs-handle';
 import {
   materializeStarterFiles,
   vaultAgentGuideForLocale,
+  vaultClaudeBridgeForLocale,
   buildCodexConfigToml,
   buildMcpConfigJson,
   buildVaultMcpConfigJson,
@@ -1458,27 +1459,32 @@ export function useLocalVaultInternal() {
      * **개념이 아니므로 `markdownCreated` 에 안 센다** — 그 숫자는 화면이
      * 「개념 문서 N개」로 쓴다.
      */
-    const guide = vaultAgentGuideForLocale(starterLocale);
     let guideCreated = 0;
-    try {
-      const resolved = await getParentAndName(guide.relPath.replace(/\.md$/, ''), true);
-      if (resolved) {
+    for (const guide of [
+      vaultAgentGuideForLocale(starterLocale),
+      // Claude Code 는 `AGENTS.md` 를 직접 안 읽는다 — `CLAUDE.md` 의 임포트를
+      // 거친다. 하나만 두면 두 런타임 중 한쪽이 안내를 통째로 못 받는다.
+      vaultClaudeBridgeForLocale(starterLocale),
+    ]) {
+      try {
+        const resolved = await getParentAndName(guide.relPath.replace(/\.md$/, ''), true);
+        if (!resolved) continue;
         const existing = await resolved.parent
           .getFileHandle(resolved.fileName)
           .then(() => true)
           .catch(() => false);
         if (existing) {
           skipped += 1;
-        } else {
-          const fh = await resolved.parent.getFileHandle(resolved.fileName, { create: true });
-          const writable = await fh.createWritable();
-          await writable.write(guide.content);
-          await writable.close();
-          guideCreated += 1;
+          continue;
         }
+        const fh = await resolved.parent.getFileHandle(resolved.fileName, { create: true });
+        const writable = await fh.createWritable();
+        await writable.write(guide.content);
+        await writable.close();
+        guideCreated += 1;
+      } catch {
+        skipped += 1;
       }
-    } catch {
-      skipped += 1;
     }
 
     // Ready-to-use agent configs for "open the vault folder itself" flows.

@@ -5,8 +5,11 @@ import { describe, expect, it } from "vitest";
 import surface from "../../docs/.generated/mcp-surface.json";
 import {
   VAULT_AGENT_GUIDE_PATH,
+  VAULT_CLAUDE_BRIDGE_PATH,
   vaultAgentGuideForLocale,
+  vaultClaudeBridgeForLocale,
 } from "@/features/docs-vault-local/lib/ontology-starter";
+import { analyzeAgentFiles } from "../../cli/src/lib/agent-files.mjs";
 
 /**
  * 볼트에 두는 **에이전트 안내문** 계약.
@@ -35,10 +38,8 @@ import {
  * `docs/.generated/mcp-surface.json` 이라 사람이 유지하지 않는다.
  */
 
-const CLI_TEMPLATE = {
-  en: join(process.cwd(), "cli", "templates", "vault", VAULT_AGENT_GUIDE_PATH),
-  ko: join(process.cwd(), "cli", "templates", "vault-ko", VAULT_AGENT_GUIDE_PATH),
-} as const;
+const templatePath = (locale: "en" | "ko", relPath: string) =>
+  join(process.cwd(), "cli", "templates", locale === "ko" ? "vault-ko" : "vault", relPath);
 
 type SurfaceTool = { name: string; arguments?: string[] };
 const surfaceTools = (surface as { mcp?: { tools?: SurfaceTool[] } }).mcp?.tools ?? [];
@@ -68,8 +69,42 @@ describe("볼트 에이전트 안내문", () => {
     describe(`locale: ${locale}`, () => {
       const guide = vaultAgentGuideForLocale(locale);
 
+      const bridge = vaultClaudeBridgeForLocale(locale);
+
       it("CLI 템플릿과 바이트 동일하다", () => {
-        expect(guide.content).toBe(readFileSync(CLI_TEMPLATE[locale], "utf8"));
+        expect(guide.content).toBe(
+          readFileSync(templatePath(locale, VAULT_AGENT_GUIDE_PATH), "utf8"),
+        );
+        expect(bridge.content).toBe(
+          readFileSync(templatePath(locale, VAULT_CLAUDE_BRIDGE_PATH), "utf8"),
+        );
+      });
+
+      /*
+       * ⚠️ **안내문 하나로는 두 런타임 중 한쪽이 아무것도 못 받는다.** 이
+       * 저장소 자신의 도구 표: `AGENTS.md` 를 Codex 는 직접 읽고, Claude Code 는
+       * `CLAUDE.md` 의 `@AGENTS.md` 임포트를 거쳐 읽는다.
+       *
+       * 판정은 **제품 자신의 검사기**(`analyzeAgentFiles` 의
+       * `claude-agents-bridge`)로 한다 — 여기서 규칙을 다시 구현하면 그 사본이
+       * 언젠가 본체와 어긋나고, 이 저장소는 그 실패를 여러 번 겪었다.
+       */
+      it("Claude Code 로 가는 다리가 실제로 이어져 있다 — 제품 자신의 검사기로 판정", () => {
+        const analysis = analyzeAgentFiles({
+          files: [
+            { path: VAULT_AGENT_GUIDE_PATH, content: guide.content },
+            { path: VAULT_CLAUDE_BRIDGE_PATH, content: bridge.content },
+          ],
+        });
+        expect(analysis.checks.claudeAgentsBridge.status).toBe("ok");
+        expect(analysis.drift).toEqual([]);
+      });
+
+      it("다리만 있고 안내문이 없으면 그 검사가 빨개진다 — 헛돌지 않는다", () => {
+        const analysis = analyzeAgentFiles({
+          files: [{ path: VAULT_CLAUDE_BRIDGE_PATH, content: bridge.content }],
+        });
+        expect(analysis.checks.claudeAgentsBridge.status).toBe("drift");
       });
 
       it("도구를 실제로 추천한다 — 안 하면 이 안내문은 있으나 마나다", () => {
