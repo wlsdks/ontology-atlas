@@ -1,4 +1,3 @@
-import { spawnSync } from "node:child_process";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
@@ -12,6 +11,7 @@ import {
   vaultClaudeBridgeForLocale,
 } from "@/features/docs-vault-local/lib/ontology-starter";
 import { analyzeAgentFiles } from "../../cli/src/lib/agent-files.mjs";
+import { runCliJson } from "../helpers/run-cli-json";
 
 /**
  * 볼트에 두는 **에이전트 안내문** 계약.
@@ -71,17 +71,13 @@ const starterFrontmatterKeys = new Set(
  * 그래서 도그푸드 볼트에 health 를 한 번 돌려서 받아 온다 — 0.2초다.
  */
 const healthCheckIds = (() => {
-  const run = spawnSync(
-    process.execPath,
-    [join(process.cwd(), "cli", "src", "index.mjs"), "health", "docs/ontology", "--json"],
-    { cwd: process.cwd(), encoding: "utf8" },
-  );
-  try {
-    const payload = JSON.parse(run.stdout) as { checks?: Array<{ id?: string }> };
-    return new Set((payload.checks ?? []).map((check) => check.id ?? ""));
-  } catch {
-    return new Set<string>();
-  }
+  const payload = runCliJson<{ checks?: Array<{ id?: string }> }>([
+    join(process.cwd(), "cli", "src", "index.mjs"),
+    "health",
+    "docs/ontology",
+    "--json",
+  ]);
+  return new Set((payload.checks ?? []).map((check) => check.id ?? ""));
 })();
 
 const knownNames = new Set([

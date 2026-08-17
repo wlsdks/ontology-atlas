@@ -1,4 +1,3 @@
-import { spawnSync } from "node:child_process";
 import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
@@ -9,6 +8,7 @@ import {
   materializeStarterFiles,
   starterFilesForLocale,
 } from "@/features/docs-vault-local/lib/ontology-starter";
+import { runCliJson } from "../helpers/run-cli-json";
 
 /**
  * CLI 템플릿 ↔ 웹 스타터 **바이트 동일** 계약 (#73).
@@ -104,14 +104,9 @@ describe("starter templates — 제품 자신의 품질 기준", () => {
           mkdirSync(dirname(target), { recursive: true });
           writeFileSync(target, file.content, "utf8");
         }
-        const run = spawnSync(
-          process.execPath,
-          [join(process.cwd(), "cli", "src", "index.mjs"), "health", dir, "--json"],
-          { encoding: "utf8" },
-        );
-        const payload = JSON.parse(run.stdout) as {
+        const payload = runCliJson<{
           checks?: Array<{ id?: string; status?: string; count?: number }>;
-        };
+        }>([join(process.cwd(), "cli", "src", "index.mjs"), "health", dir, "--json"]);
         const byId = new Map((payload.checks ?? []).map((c) => [c.id, c]));
 
         // 헛돌지 않는지 — 볼트를 실제로 읽었는가.

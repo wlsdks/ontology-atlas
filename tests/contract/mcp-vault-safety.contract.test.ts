@@ -38,30 +38,62 @@ const OUTSIDE = '/etc';
 function callTool(vaultRoot: string, name: string, args: Record<string, unknown>) {
   const script = `
     const { spawn } = require('node:child_process');
+    const { writeSync } = require('node:fs');
     const child = spawn(process.execPath, [${JSON.stringify(
       join(process.cwd(), 'mcp/src/index.js'),
     )}], {
       env: { ...process.env, OATLAS_VAULT: ${JSON.stringify(vaultRoot)} },
       stdio: ['pipe', 'pipe', 'ignore'],
     });
-    let out = '';
-    child.stdout.on('data', (d) => { out += d; });
+    let buffer = '';
+    let sentCall = false;
+    let finished = false;
     const send = (o) => child.stdin.write(JSON.stringify(o) + '\\n');
-    send({ jsonrpc: '2.0', id: 1, method: 'initialize', params: { protocolVersion: '2024-11-05', capabilities: {}, clientInfo: { name: 'probe', version: '1' } } });
-    setTimeout(() => send({ jsonrpc: '2.0', id: 2, method: 'tools/call', params: { name: ${JSON.stringify(
-      name,
-    )}, arguments: ${JSON.stringify(args)} } }), 500);
-    setTimeout(() => {
+    const timeout = setTimeout(() => {
+      if (finished) return;
+      finished = true;
       child.kill();
-      for (const line of out.split('\\n')) {
-        if (!line.trim()) continue;
-        try {
-          const m = JSON.parse(line);
-          if (m.id === 2) { process.stdout.write(JSON.stringify({ isError: Boolean(m.result?.isError), text: String(m.result?.content?.[0]?.text ?? '') })); break; }
-        } catch {}
+      writeSync(2, 'timed out waiting for MCP tools/call response');
+      process.exitCode = 2;
+    }, 25_000);
+    child.on('error', (error) => {
+      if (finished) return;
+      finished = true;
+      clearTimeout(timeout);
+      writeSync(2, 'MCP child failed to start: ' + error.message);
+      process.exitCode = 2;
+    });
+    child.on('exit', (code, signal) => {
+      if (finished) return;
+      finished = true;
+      clearTimeout(timeout);
+      writeSync(2, 'MCP child exited before response: ' + String(code) + '/' + String(signal));
+      process.exitCode = 2;
+    });
+    child.stdout.on('data', (chunk) => {
+      buffer += chunk;
+      while (buffer.includes('\\n')) {
+        const at = buffer.indexOf('\\n');
+        const line = buffer.slice(0, at).trim();
+        buffer = buffer.slice(at + 1);
+        if (!line) continue;
+        let message;
+        try { message = JSON.parse(line); } catch { continue; }
+        if (message.id === 1 && !sentCall) {
+          sentCall = true;
+          send({ jsonrpc: '2.0', id: 2, method: 'tools/call', params: { name: ${JSON.stringify(
+            name,
+          )}, arguments: ${JSON.stringify(args)} } });
+        }
+        if (message.id === 2 && !finished) {
+          finished = true;
+          clearTimeout(timeout);
+          writeSync(1, JSON.stringify({ isError: Boolean(message.result?.isError), text: String(message.result?.content?.[0]?.text ?? '') }));
+          child.kill();
+        }
       }
-      process.exit(0);
-    }, 2200);
+    });
+    send({ jsonrpc: '2.0', id: 1, method: 'initialize', params: { protocolVersion: '2024-11-05', capabilities: {}, clientInfo: { name: 'probe', version: '1' } } });
   `;
   const raw = execFileSync(process.execPath, ['-e', script], {
     encoding: 'utf8',

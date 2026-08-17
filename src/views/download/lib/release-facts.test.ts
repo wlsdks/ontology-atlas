@@ -9,6 +9,7 @@ import {
   RELEASE_VERSION,
   buildDmgName,
 } from "./release-facts";
+import { RELEASE_ARTIFACT_STEPS } from "../../../../scripts/build-macos-release-artifact.mjs";
 
 function readJson(relativePath: string): Record<string, unknown> {
   return JSON.parse(readFileSync(join(process.cwd(), relativePath), "utf8"));
@@ -75,8 +76,9 @@ describe("release-facts", () => {
   // 살아났는데 페이지가 "아직 서명되지 않음" 을 계속 말하고 있었다.)
   it("only claims signing and notarization while the release chain actually enforces them", () => {
     const pkg = readJson("package.json") as { scripts?: Record<string, string> };
-    const chain = pkg.scripts?.["desktop:release-artifact"] ?? "";
+    const chain = RELEASE_ARTIFACT_STEPS.flatMap((step) => step.args);
 
+    expect(pkg.scripts?.["desktop:release-artifact"]).toContain("build-macos-release-artifact.mjs");
     expect(RELEASE_SIGNING.developerId).toBe(chain.includes("desktop:sign"));
     expect(RELEASE_SIGNING.notarized).toBe(chain.includes("desktop:notarize"));
     // 검증 없는 서명은 주장이지 증거가 아니다.
