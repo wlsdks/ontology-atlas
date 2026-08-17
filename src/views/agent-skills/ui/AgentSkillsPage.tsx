@@ -170,15 +170,23 @@ export function AgentSkillsPage() {
                 {/* 「18 스킬」은 한국어 어순이 아니다 — 수사가 앞서면 영어를 옮긴 말로
                     읽힌다. 그런데 어순은 언어마다 다르므로 컴포넌트가 정할 수 없다:
                     문장은 번역이 갖고, 굵게 칠할 숫자만 rich 태그로 돌려준다. */}
-                {t.rich("stat.skillsCount", {
-                  count: inventory.totals.skills,
-                  b: (chunks) => <b className={numeralClass}>{chunks}</b>,
-                })}
+                {/* ⚠️ **rich 출력은 반드시 한 겹으로 싸서 넣는다.** 그냥 두면
+                    `<b>18</b>` 과 「개」가 **각각 flex 자식**이 되어 컨테이너의
+                    `gap-1.5` 가 그 사이에 끼고, 화면에 「18 개」로 벌어진다
+                    (2026-08-18 실측 — 내가 낸 회귀를 스크린샷에서 잡았다). */}
+                <span>
+                  {t.rich("stat.skillsCount", {
+                    count: inventory.totals.skills,
+                    b: (chunks) => <b className={numeralClass}>{chunks}</b>,
+                  })}
+                </span>
                 <span aria-hidden className="text-[color:var(--color-text-quaternary)]">·</span>
-                {t.rich("stat.executablesCount", {
-                  count: inventory.totals.executables,
-                  b: (chunks) => <b className={numeralClass}>{chunks}</b>,
-                })}
+                <span>
+                  {t.rich("stat.executablesCount", {
+                    count: inventory.totals.executables,
+                    b: (chunks) => <b className={numeralClass}>{chunks}</b>,
+                  })}
+                </span>
               </span>
             ) : null}
           </div>

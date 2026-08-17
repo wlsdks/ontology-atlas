@@ -81,6 +81,30 @@ test("넘김을 눌러 다음 스킬로 건너간다 — 그리고 되짚어 돌
   ).toBeVisible({ timeout: 15_000 });
 
   /*
+   * ⓪ **경고색을 쓰지 않는다.** 이 줄들은 평범한 이동이지 경고가 아니다 —
+   *    부품을 「겹쳤어요」 카드에서 물려받는 바람에 앰버 잉크가 따라와서, 이동
+   *    링크 일곱 개가 경고 일곱 개로 읽힌 적이 있다(2026-08-18). 클래스 이름이
+   *    아니라 **그려진 색**을 잰다: 클래스를 바꿔도 같은 색이면 결함 그대로다.
+   */
+  const inkVerdict = await page.evaluate(() => {
+    const root = getComputedStyle(document.documentElement);
+    const probe = document.createElement("span");
+    probe.style.color = root.getPropertyValue("--color-amber-source-text-a80").trim();
+    document.body.appendChild(probe);
+    const warnInk = getComputedStyle(probe).color;
+    probe.remove();
+    const inks = [
+      ...document.querySelectorAll('[data-testid="skill-detail-handoffs"] [data-testid="skill-jump"]'),
+    ].map((el) => getComputedStyle(el).color);
+    return { warnInk, inks };
+  });
+  expect(inkVerdict.inks.length).toBeGreaterThan(0);
+  expect(
+    inkVerdict.inks.filter((ink) => ink === inkVerdict.warnInk),
+    `넘김 줄이 경고색으로 그려졌다 (${inkVerdict.warnInk})`,
+  ).toHaveLength(0);
+
+  /*
    * ① 누르면 실제로 그 스킬로 간다. 「보인다」만 재면 글자만 띄워도 초록이라,
    *    이 검사의 요점은 도착지가 바뀌는 것이다.
    */

@@ -166,14 +166,14 @@ export function SkillDetail({
           <ul className="mt-1.5 flex flex-col gap-1">
             {rivals.map((rival) => (
               <li key={rival.origin.relativePath}>
-                <Jump onClick={() => onSelect(rival.origin.relativePath)}>
+                <Jump warn onClick={() => onSelect(rival.origin.relativePath)}>
                   {t("detail.sameName", { source: rival.origin.source })}
                 </Jump>
               </li>
             ))}
             {overlaps.map(({ other, shared }) => (
               <li key={other.origin.relativePath}>
-                <Jump onClick={() => onSelect(other.origin.relativePath)}>
+                <Jump warn onClick={() => onSelect(other.origin.relativePath)}>
                   {t("detail.sharedTrigger", {
                     name: other.name,
                     words: shared.slice(0, 4).join(" · "),
@@ -246,16 +246,43 @@ export function SkillDetail({
   );
 }
 
-function Jump({ onClick, children }: { onClick: () => void; children: React.ReactNode }) {
+/**
+ * 다른 스킬로 건너가는 줄.
+ *
+ * ⚠️ **경고색은 경고에만 쓴다** (2026-08-18, 스크린샷 실측으로 잡음). 이 부품은
+ * 「겹쳤어요」 카드에서 태어나 앰버 잉크를 몸에 지니고 있었는데, 넘김 카드가
+ * 그대로 가져다 쓰면서 **평범한 이동 링크 7개가 경고 7개로 읽혔다.** 이 화면에서
+ * 앰버가 뜻하는 것은 「둘 중 어느 것이 뜰지 모른다」 하나뿐이라, 그 뜻을 이동에
+ * 나눠 주면 정작 경고가 눈에 안 들어온다.
+ *
+ * 그래서 잉크를 **부르는 쪽이 정한다** — 경쟁 카드는 앰버, 넘김 카드는 이 앱의
+ * 평범한 글자색. 기본값은 경고가 아닌 쪽이다(기본값이 경고면 같은 사고가 다시 난다).
+ */
+function Jump({
+  onClick,
+  warn = false,
+  children,
+}: {
+  onClick: () => void;
+  warn?: boolean;
+  children: React.ReactNode;
+}) {
   return (
     <button
       type="button"
       data-testid="skill-jump"
+      data-tone={warn ? "warn" : "plain"}
       onClick={onClick}
       className={controlClass({
         shape: "link",
         size: "sm",
-        className: "text-left text-body text-[color:var(--color-amber-source-text-a80)]",
+        hoverInk: "strong",
+        className: cn(
+          "text-left text-body",
+          warn
+            ? "text-[color:var(--color-amber-source-text-a80)]"
+            : "text-[color:var(--color-text-secondary)]",
+        ),
       })}
     >
       {children}
