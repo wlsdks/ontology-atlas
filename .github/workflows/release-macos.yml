@@ -349,13 +349,13 @@ jobs:
         run: pnpm test:desktop:bridge
 
       - name: Verify release source commit
-        run: pnpm desktop:release-source -- --mode=pin --tag="${RELEASE_TAG}" --sha="${RELEASE_SHA}"
+        run: pnpm desktop:release-source -- --mode=pin --tag="$env:RELEASE_TAG" --sha="$env:RELEASE_SHA"
         env:
           GITHUB_TOKEN: ${{ github.token }}
           RELEASE_SHA: ${{ needs.admit-release.outputs.release_sha }}
 
       - name: Verify release tag version
-        run: pnpm desktop:release-tag -- --tag="${RELEASE_TAG}"
+        run: pnpm desktop:release-tag -- --tag="$env:RELEASE_TAG"
 
       - name: Require updater signing credentials
         run: pnpm desktop:release-secrets -- --updater-only

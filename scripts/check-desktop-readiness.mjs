@@ -1209,13 +1209,16 @@ if (
 if (
   pkg.scripts?.["desktop:release-source"] === "node scripts/check-macos-release-source.mjs" &&
   releaseWorkflow.includes('pnpm desktop:release-source -- --mode=pin --tag="${RELEASE_TAG}" --sha="${RELEASE_SHA}"') &&
+  buildWindowsJob.includes('pnpm desktop:release-source -- --mode=pin --tag="$env:RELEASE_TAG" --sha="$env:RELEASE_SHA"') &&
+  !buildWindowsJob.includes('--tag="${RELEASE_TAG}"') &&
+  !buildWindowsJob.includes('--sha="${RELEASE_SHA}"') &&
   releaseSourceScript.includes("default-branch head") &&
   /RELEASE_SHA:\s*\$\{\{\s*needs\.admit-release\.outputs\.release_sha\s*\}\}/.test(releaseWorkflow)
 ) {
-  pass("desktop release source gate blocks tags from unmerged or stale commits before signing");
+  pass("desktop release source gate blocks tags from unmerged or stale commits before signing on Bash and PowerShell runners");
 } else {
   fail(
-    "package.json and .github/workflows/release-macos.yml must run scripts/check-macos-release-source.mjs before signing so signed DMGs only publish from the default-branch head",
+    "package.json and .github/workflows/release-macos.yml must run scripts/check-macos-release-source.mjs with shell-native environment expansion before signing so release artifacts only publish from the default-branch head",
   );
 }
 
@@ -1253,12 +1256,14 @@ if (
 if (
   pkg.scripts?.["desktop:release-tag"] === "node scripts/check-macos-release-tag.mjs" &&
   releaseWorkflow.includes('pnpm desktop:release-tag -- --tag="${RELEASE_TAG}"') &&
+  buildWindowsJob.includes('pnpm desktop:release-tag -- --tag="$env:RELEASE_TAG"') &&
+  !buildWindowsJob.includes('pnpm desktop:release-tag -- --tag="${RELEASE_TAG}"') &&
   releaseTagScript.includes("does not match macOS app versions")
 ) {
-  pass("desktop release tag gate receives the dispatched release tag before signing");
+  pass("desktop release tag gate receives the dispatched release tag before signing on Bash and PowerShell runners");
 } else {
   fail(
-    "package.json and .github/workflows/release-macos.yml must pass RELEASE_TAG from workflow_dispatch to scripts/check-macos-release-tag.mjs before signing",
+    "package.json and .github/workflows/release-macos.yml must pass RELEASE_TAG from workflow_dispatch with shell-native environment expansion before signing",
   );
 }
 

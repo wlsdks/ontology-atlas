@@ -3,6 +3,18 @@ import { describe, expect, it } from 'vitest';
 
 const read = (path: string) => readFileSync(path, 'utf8');
 
+function workflowJob(source: string, name: string): string {
+  const heading = new RegExp(`^  ${name}:\\s*$`, 'm').exec(source);
+  expect(heading, `${name} job`).not.toBeNull();
+
+  const afterHeading = source.slice(heading!.index + heading![0].length);
+  const nextJob = /^  [A-Za-z0-9_-]+:\s*$/m.exec(afterHeading);
+  return source.slice(
+    heading!.index,
+    nextJob ? heading!.index + heading![0].length + nextJob.index : source.length,
+  );
+}
+
 describe('Windows desktop beta release contract', () => {
   it('builds, audits, scans, installs, launches, and stages on a native Windows runner', () => {
     const releaseWorkflow = read('.github/workflows/release-macos.yml');
@@ -42,6 +54,18 @@ describe('Windows desktop beta release contract', () => {
     expect(cargo).toContain("[target.'cfg(target_os = \"windows\")'.dependencies]");
     expect(cargo).toContain('features = ["windows-native"]');
     expect(rustBridge).toContain('"ontology-atlas-mcp.exe"');
+  });
+
+  it('passes admitted release values with PowerShell environment syntax on Windows', () => {
+    const releaseWorkflow = read('.github/workflows/release-macos.yml');
+    const windowsJob = workflowJob(releaseWorkflow, 'build-windows');
+
+    expect(windowsJob).toContain(
+      'pnpm desktop:release-source -- --mode=pin --tag="$env:RELEASE_TAG" --sha="$env:RELEASE_SHA"',
+    );
+    expect(windowsJob).toContain('pnpm desktop:release-tag -- --tag="$env:RELEASE_TAG"');
+    expect(windowsJob).not.toContain('--tag="${RELEASE_TAG}"');
+    expect(windowsJob).not.toContain('--sha="${RELEASE_SHA}"');
   });
 
   it('publishes Windows facts only from the real release asset and checksum pair', () => {
