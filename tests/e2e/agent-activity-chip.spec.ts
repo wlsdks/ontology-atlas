@@ -15,22 +15,27 @@ import { stubDirectoryPicker } from "./vault-picker-stub";
  *
  * 픽커만 스텁하고 그 뒤는 전부 실제 코드다(`vault-picker-stub` 머리말).
  *
- * ## 시각은 스펙 실행 시점에 만든다
+ * ## 시각은 **폴더를 고르는 순간** 에 만든다
  *
- * 「작업 중」 창은 마지막 쓰기 후 2분(`AGENT_WRITING_WINDOW_MS`)이라 고정
- * 타임스탬프는 하루만 지나도 창 밖이다. 씨앗의 `at` 은 실행 순간 기준 30초
- * 전으로 계산한다 — 페이지 로드가 2분을 넘기면 이 spec 은 시간 초과로 죽지
- * 문구가 조용히 틀리지는 않는다(그때는 「마지막 작업」 문구가 되므로 단언이
- * 명시적으로 실패한다).
+ * 「작업 중」 창은 마지막 쓰기 후 2분(`AGENT_WRITING_WINDOW_MS`)이다.
+ *
+ * ⚠️ 예전에는 spec 이 시작하자마자 「30초 전」을 계산해 씨앗에 박아 뒀다. 여유
+ * 90초 · 이 spec 의 상한 120초 — 즉 **페이지 로드가 90초를 넘기면 창을 넘긴다.**
+ * 느린 러너에서 Turbopack 이 이 라우트를 처음 컴파일하는 판이 그렇고, 그때
+ * 화면은 「마지막 작업」으로 정확히 말하는데 이 spec 만 빨개진다 — 제품이 아니라
+ * 씨앗이 낡은 것이다.
+ *
+ * 그래서 `{{NOW-30000}}` 토큰을 쓴다: 픽커 스텁이 **파일을 실제로 쓰는 순간**
+ * (사용자가 폴더를 고르는 그 순간) 시각으로 바꿔 준다. 남는 여유는 이제 페이지
+ * 로드가 아니라 «볼트를 읽고 그리는 시간» 뿐이다 (2026-08-17 검사 전수조사).
  */
 test("활동 칩은 로그의 에이전트 이름으로 「작업 중」을 말한다", async ({ page }) => {
   test.setTimeout(120_000);
   await page.setViewportSize({ width: 1512, height: 900 });
 
-  const recentAt = new Date(Date.now() - 30_000).toISOString();
   const activityLine = JSON.stringify({
     v: 1,
-    at: recentAt,
+    at: "{{NOW-30000}}",
     tool: "add_concept",
     target: "capabilities/pay",
     summary: "add_concept capability:capabilities/pay",
@@ -91,7 +96,9 @@ test("알림함의 작업 알림이 에이전트 이름으로 말한다", async 
   test.setTimeout(120_000);
   await page.setViewportSize({ width: 1512, height: 900 });
 
-  const at = (minAgo: number) => new Date(Date.now() - minAgo * 60_000).toISOString();
+  // 위 시험과 같은 이유로 시각은 **쓰는 순간** 에 만든다 — 여기는 여유가 크지만
+  // 한 파일 안에서 씨앗 만드는 법이 둘이면 다음 사람이 낡은 쪽을 베낀다.
+  const at = (minAgo: number) => `{{NOW-${minAgo * 60_000}}}`;
   const line = (iso: string) =>
     JSON.stringify({
       v: 1,

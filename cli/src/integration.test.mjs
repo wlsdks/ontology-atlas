@@ -2153,6 +2153,20 @@ await test('mcp-verify — times out a stalled verify script override', async ()
     'utf-8',
   );
 
+  /*
+   * ⚠️ 벽시계 상한은 **절대값으로 박지 않는다.** 예전에는 `< 1000ms` 였는데,
+   * 그 1초 안에 node 프로세스 둘(CLI + verify 스크립트)이 기동까지 마쳐야 했다
+   * — 재는 대상은 25ms 짜리 시간 제한인데 바닥은 기계 속도였다. 같은 경로를
+   * **즉시 끝나는** 스크립트로 한 번 돌려 이 기계의 바닥을 재고, 거기에 여유를
+   * 더해 비교한다. 그러면 「제 시간 제한을 무시하고 기본값(15초)까지 기다린다」는
+   * 진짜 회귀는 여전히 잡히고, 느린 러너는 통과한다 (2026-08-17 검사 전수조사).
+   */
+  const instantScript = join(root, 'instant-verify.mjs');
+  writeFileSync(instantScript, 'process.exit(1);', 'utf-8');
+  const baselineStarted = Date.now();
+  await run(['mcp-verify', vault], { env: { OATLAS_MCP_VERIFY_PATH: instantScript } });
+  const baselineMs = Date.now() - baselineStarted;
+
   const started = Date.now();
   const r = await run(['mcp-verify', vault, '--timeout-ms', '25'], {
     env: {
@@ -2160,9 +2174,14 @@ await test('mcp-verify — times out a stalled verify script override', async ()
       OATLAS_VERIFY_KILL_GRACE_MS: '25',
     },
   });
+  const stalledMs = Date.now() - started;
 
   assert.equal(r.code, 1);
-  assert.ok(Date.now() - started < 1000, 'wrapper should fail closed without hanging the integration suite');
+  assert.ok(
+    stalledMs < baselineMs + 2_000,
+    `wrapper should fail closed without hanging the integration suite ` +
+      `(baseline ${baselineMs}ms, stalled ${stalledMs}ms)`,
+  );
   assert.match(stripAnsi(r.stderr), /MCP verify wrapper timed out after 50ms/);
   assert.match(stripAnsi(r.stderr), /Check OATLAS_MCP_VERIFY_PATH/);
   assert.match(stripAnsi(r.stderr), /increase --timeout-ms \/ OATLAS_VERIFY_TIMEOUT_MS/);
