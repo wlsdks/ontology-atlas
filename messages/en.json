@@ -3595,7 +3595,11 @@
       "hideLoadChain": "Hide how it loads",
       "competing": "Competes with this skill",
       "sameName": "The same name also lives in {source}: which one fires is undefined",
-      "sharedTrigger": "Shares a trigger with {name}: {words}"
+      "sharedTrigger": "Shares a trigger with {name}: {words}",
+      "handsOffTitle": "Hands off to",
+      "handsOffTo": "Hands off to {name}",
+      "handedFromTitle": "Called from",
+      "handedFrom": "Called from {name}"
     },
     "process": {
       "title": "Exact process",

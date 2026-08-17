@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useTranslations } from "next-intl";
 
 import type { AgentSkill, SkillInventory } from "@/entities/agent-skill";
+import { cn } from "@/shared/lib/cn";
 import { controlClass } from "@/shared/ui/control-class";
 
 import { SkillInvocationChain } from "./SkillInvocationChain";
@@ -50,6 +51,23 @@ export function SkillDetail({
     .filter((c) => c.name === skill.name)
     .flatMap((c) => c.skills.filter((s) => s.origin.relativePath !== skill.origin.relativePath));
 
+  /*
+   * **이 화면이 여태 말할 수 있던 관계는 「경쟁」뿐이었다** (2026-08-18).
+   *
+   * 소유자: *"스킬도 그래프처럼 연결되는 걸 보여주고 싶었는데 좀 이상하다"*.
+   * 실측이 갈랐다 — 실제 스킬 18개에서 경쟁은 **1개**인데 서로 부르는 관계는
+   * **25개**다. 연결이 없어서 안 보인 게 아니라 세는 어휘가 없어서였다.
+   *
+   * 방향을 둘 다 낸다. 「어디로 넘기나」만으로는 사슬의 절반이고, 사람이
+   * 실제로 묻는 것은 *"내가 이걸 고치면 누가 영향받나"* 이기도 하다.
+   */
+  const handsOffTo = inventory.handoffs.filter(
+    (h) => h.from.origin.relativePath === skill.origin.relativePath,
+  );
+  const handedFrom = inventory.handoffs.filter(
+    (h) => h.to.origin.relativePath === skill.origin.relativePath,
+  );
+
   const overlaps = inventory.overlaps
     .filter(
       (o) =>
@@ -86,6 +104,7 @@ export function SkillDetail({
       <header className="flex flex-wrap items-baseline gap-x-2.5 gap-y-1">
         <h2
           ref={headingRef}
+          data-testid="skill-detail-heading"
           tabIndex={-1}
           className="text-title font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)]"
         >
@@ -123,6 +142,51 @@ export function SkillDetail({
               </li>
             ))}
           </ul>
+        </section>
+      ) : null}
+
+      {handsOffTo.length > 0 || handedFrom.length > 0 ? (
+        <section
+          data-testid="skill-detail-handoffs"
+          className="rounded-[var(--radius-card)] border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-3 py-2.5"
+        >
+          {handsOffTo.length > 0 ? (
+            <>
+              <p className="text-body-lg font-[var(--font-weight-emphasis)] text-[color:var(--color-text-primary)]">
+                {t("detail.handsOffTitle")}
+              </p>
+              <ul className="mt-1.5 flex flex-col gap-1">
+                {handsOffTo.map((h) => (
+                  <li key={`to-${h.to.origin.relativePath}`}>
+                    <Jump onClick={() => onSelect(h.to.origin.relativePath)}>
+                      {t("detail.handsOffTo", { name: h.to.name })}
+                    </Jump>
+                  </li>
+                ))}
+              </ul>
+            </>
+          ) : null}
+          {handedFrom.length > 0 ? (
+            <>
+              <p
+                className={cn(
+                  "text-body-lg font-[var(--font-weight-emphasis)] text-[color:var(--color-text-primary)]",
+                  handsOffTo.length > 0 && "mt-3",
+                )}
+              >
+                {t("detail.handedFromTitle")}
+              </p>
+              <ul className="mt-1.5 flex flex-col gap-1">
+                {handedFrom.map((h) => (
+                  <li key={`from-${h.from.origin.relativePath}`}>
+                    <Jump onClick={() => onSelect(h.from.origin.relativePath)}>
+                      {t("detail.handedFrom", { name: h.from.name })}
+                    </Jump>
+                  </li>
+                ))}
+              </ul>
+            </>
+          ) : null}
         </section>
       ) : null}
 

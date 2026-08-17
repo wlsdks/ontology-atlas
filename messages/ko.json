@@ -3594,8 +3594,12 @@
       "showLoadChain": "어떻게 실리는지 보기 (3단계)",
       "hideLoadChain": "어떻게 실리는지 닫기",
       "competing": "이 스킬과 경쟁하는 것",
-      "sameName": "같은 이름이 {source} 에도 있어요. 어느 쪽이 뜰지 정해져 있지 않아요",
-      "sharedTrigger": "{name} 와 뜨는 조건이 겹쳐요. {words}"
+      "sameName": "같은 이름이 {source}에도 있어요. 어느 쪽이 뜰지 정해져 있지 않아요",
+      "sharedTrigger": "{name}와(과) 뜨는 조건이 겹쳐요. {words}",
+      "handsOffTitle": "이 스킬이 넘기는 곳",
+      "handsOffTo": "{name}(으)로 넘겨요",
+      "handedFromTitle": "이 스킬을 부르는 곳",
+      "handedFrom": "{name}에서 넘어와요"
     },
     "process": {
       "title": "원문 절차",
