@@ -3700,8 +3700,8 @@
     "closeHistory": "Close the past chats list",
     "trouble": {
       "auth": {
-        "title": "You have been signed out",
-        "hint": "Run the tool once in your terminal to sign in again, then press “New chat” above."
+        "title": "The app's own sign-in has gone stale",
+        "hint": "Atlas runs Claude with its own settings folder so it asks before touching anything outside this folder. That means it also has its own sign-in, and signing in again in your terminal does not repair it. Paste the one-line command under “Details” into your terminal to sign in for the app, then press “New chat”."
       },
       "timeout": {
         "title": "The tool is not responding",
