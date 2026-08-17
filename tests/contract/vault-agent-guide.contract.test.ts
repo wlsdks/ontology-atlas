@@ -1,3 +1,4 @@
+import { spawnSync } from "node:child_process";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
@@ -64,10 +65,30 @@ const starterFrontmatterKeys = new Set(
   ),
 );
 
+/**
+ * 제품이 **실제로 내놓는** health 검사 이름. 이 목록은 코드 안에 상수로 없고
+ * (검사가 인라인으로 만들어진다) 여기서 베끼면 그 사본이 언젠가 어긋난다.
+ * 그래서 도그푸드 볼트에 health 를 한 번 돌려서 받아 온다 — 0.2초다.
+ */
+const healthCheckIds = (() => {
+  const run = spawnSync(
+    process.execPath,
+    [join(process.cwd(), "cli", "src", "index.mjs"), "health", "docs/ontology", "--json"],
+    { cwd: process.cwd(), encoding: "utf8" },
+  );
+  try {
+    const payload = JSON.parse(run.stdout) as { checks?: Array<{ id?: string }> };
+    return new Set((payload.checks ?? []).map((check) => check.id ?? ""));
+  } catch {
+    return new Set<string>();
+  }
+})();
+
 const knownNames = new Set([
   ...registeredTools,
   ...surfaceTools.flatMap((tool) => tool.arguments ?? []),
   ...starterFrontmatterKeys,
+  ...healthCheckIds,
 ]);
 
 /** 백틱 안의 `snake_case` 낱말 — 이 문서에서 도구 이름의 모양이다. */
@@ -78,6 +99,14 @@ describe("볼트 에이전트 안내문", () => {
   it("등록된 MCP 도구 목록을 실제로 읽었다 — 아니면 아래가 전부 헛돈다", () => {
     expect(registeredTools.size).toBeGreaterThan(20);
     expect(registeredTools.has("list_concepts")).toBe(true);
+  });
+
+  it("제품이 내놓는 health 검사 이름을 실제로 읽었다", () => {
+    // 안내문은 마무리 단계에서 이 검사들을 이름으로 읽으라고 시킨다.
+    // 이름이 바뀌면 그 지시가 거짓이 되므로 여기서 잠근다.
+    expect(healthCheckIds.size).toBeGreaterThan(5);
+    expect(healthCheckIds.has("components")).toBe(true);
+    expect(healthCheckIds.has("relation_recommendations")).toBe(true);
   });
 
   it("스타터의 frontmatter 칸도 실제로 읽었다", () => {

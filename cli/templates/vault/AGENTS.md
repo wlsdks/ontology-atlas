@@ -27,3 +27,16 @@ search.
 `patch_concept` (pass `expected_mtime`) · `rename_concept` · `merge_concepts`.
 A file written by hand has no `uid:`, and one missing `uid:` fails the whole
 graph compile.
+
+**When you are done, ask the graph whether it is done.** Call
+`query_ontology({operation:'health'})` and read two checks in particular:
+
+- `components` — a node that is not reachable from the project root belongs to
+  no project. New domains do not attach themselves: add
+  `add_relation(<project>, domains/<new>, 'domains')`.
+- `relation_recommendations` — a capability with `domain: X` still needs `X` to
+  list it back, via `add_relation(domains/X, capabilities/<new>, 'capabilities')`.
+
+Both were clean on the starter vault, so anything they report is something you
+added. Nodes that compile but hang off the project are invisible where it
+matters.

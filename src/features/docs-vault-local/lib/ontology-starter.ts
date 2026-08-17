@@ -211,6 +211,8 @@ display_ko: 예시 영역
 display_en: Example domain
 capabilities:
   - capabilities/example-capability
+elements:
+  - elements/example-element
 ---
 
 # Example domain
@@ -489,6 +491,8 @@ display_ko: 예시 영역
 display_en: Example domain
 capabilities:
   - capabilities/example-capability
+elements:
+  - elements/example-element
 ---
 
 # 예시 영역
@@ -681,6 +685,19 @@ search.
 \`patch_concept\` (pass \`expected_mtime\`) · \`rename_concept\` · \`merge_concepts\`.
 A file written by hand has no \`uid:\`, and one missing \`uid:\` fails the whole
 graph compile.
+
+**When you are done, ask the graph whether it is done.** Call
+\`query_ontology({operation:'health'})\` and read two checks in particular:
+
+- \`components\` — a node that is not reachable from the project root belongs to
+  no project. New domains do not attach themselves: add
+  \`add_relation(<project>, domains/<new>, 'domains')\`.
+- \`relation_recommendations\` — a capability with \`domain: X\` still needs \`X\` to
+  list it back, via \`add_relation(domains/X, capabilities/<new>, 'capabilities')\`.
+
+Both were clean on the starter vault, so anything they report is something you
+added. Nodes that compile but hang off the project are invisible where it
+matters.
 `;
 
 const AGENT_GUIDE_KO = `# 이 폴더는 Ontology Atlas 볼트입니다
@@ -710,6 +727,19 @@ const AGENT_GUIDE_KO = `# 이 폴더는 Ontology Atlas 볼트입니다
 (\`expected_mtime\` 을 함께) · \`rename_concept\` · \`merge_concepts\`.
 손으로 만든 파일은 \`uid:\` 가 없고, \`uid:\` 하나가 없으면 그래프 전체가
 컴파일에 실패합니다.
+
+**다 만들었으면 그래프에게 다 됐냐고 물어보세요.**
+\`query_ontology({operation:'health'})\` 를 부르고 특히 둘을 읽습니다:
+
+- \`components\` — 프로젝트 뿌리에서 못 닿는 노드는 어느 프로젝트에도 속하지
+  않습니다. 새 도메인은 저절로 안 붙으니
+  \`add_relation(<project>, domains/<새>, 'domains')\` 를 부르세요.
+- \`relation_recommendations\` — \`domain: X\` 를 가진 역량은 \`X\` 쪽에서도 되받아
+  걸어야 합니다. \`add_relation(domains/X, capabilities/<새>, 'capabilities')\`.
+
+둘 다 스타터 볼트에서는 깨끗하므로, 여기 뜨는 것은 전부 방금 당신이 더한
+것입니다. 컴파일은 되는데 프로젝트에 안 붙은 노드는 정작 보여야 할 곳에서
+안 보입니다.
 `;
 
 /** 이 로케일의 안내문. 모르는 로케일은 영어로 떨어진다 — 스타터와 같은 규율. */
