@@ -421,12 +421,13 @@ desktop:verify-install` then mounts the generated DMG, verifies the
 drag-to-Applications symlink target, copies the bundled app to a temporary
 install folder, opens that installed copy through LaunchServices, and requires a
 visible Ontology Atlas window plus Accessibility text before cleanup. The
-`.github/workflows/release-macos.yml` now fails closed on `v*` tags unless the
-Apple Developer ID and notary secrets are present and structurally usable, then
-passes docs-vault freshness, desktop checker tests, and native bridge tests
-before importing the certificate in both macOS lanes. It builds Apple Silicon
+`.github/workflows/release-macos.yml` accepts only a `workflow_dispatch` tag
+input from `main`. An unprivileged admission job binds that tag to the current
+`main` SHA before the main-only `release-signing` environment exposes
+Apple/Tauri credentials. It then passes docs-vault freshness, desktop checker
+tests, and native bridge tests before importing the certificate. It builds Apple Silicon
 on `macos-14` and Intel on `macos-15-intel`, route-smokes the static desktop payload,
-runs `pnpm desktop:release-source` so the tag commit is the default-branch head,
+runs `pnpm desktop:release-source -- --mode=pin` so the tag remains bound to the admitted SHA,
 runs `pnpm desktop:release-tag` so the v-prefixed tag matches package/Tauri/Cargo
 versions before signing, runs `pnpm desktop:sign`, packages the signed app, runs
 `pnpm desktop:notarize`, staples the DMG, refreshes its checksum, verifies the
@@ -444,7 +445,7 @@ matching `.sha256` checksum files that name those same-version DMGs, and it
 rejects unsupported extra `ontology-atlas_*.dmg` names so the GitHub Release
 page cannot show ambiguous macOS downloads; it also rejects duplicate architecture
 DMGs so each release has exactly one Apple Silicon and one Intel download. The
-tag workflow intentionally stops
+protected desktop release workflow intentionally stops
 there: the installed macOS app is local-only and does not require any website
 deploy secrets. The separate GitHub Pages `deploy-pages` workflow owns the
 static promo/download website and should be followed by `pnpm
@@ -483,8 +484,8 @@ release evidence has a stable contract and timestamp; `status`, `readyAt`, and
 stable machine id, `scope`, and `owner` with top-level `blockerIds` /
 `localBlockerIds` / `externalBlockerIds` / `blockersByOwner` / `nextActions` so
 automation can branch without scraping human labels; actionable blockers also
-expose `commands[]` for exact diagnostics, setup prompts, pre-tag source
-checks, the post-merge release tag push, `desktop:release-run` tag-commit-scoped workflow watch, and public
+expose `commands[]` for exact diagnostics, setup prompts, pre-dispatch source
+checks, post-merge tag creation/push, `desktop:release-run` exact workflow_dispatch watch, and public
 download verification, and Developer ID direct-download signing blockers include `missingSecrets[]` for
 release-operator reconciliation. Firebase
 Hosting remains a separate website

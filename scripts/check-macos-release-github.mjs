@@ -2,12 +2,16 @@
 import { spawnSync } from "node:child_process";
 
 const DEFAULT_REPO = "wlsdks/ontology-atlas";
+const SIGNING_ENVIRONMENT = "release-signing";
+const PUBLICATION_ENVIRONMENT = "release";
 const REQUIRED_SECRETS = [
   "APPLE_CERTIFICATE_P12_BASE64",
   "APPLE_CERTIFICATE_PASSWORD",
   "APPLE_ID",
   "APPLE_APP_SPECIFIC_PASSWORD",
   "APPLE_TEAM_ID",
+  "TAURI_SIGNING_PRIVATE_KEY",
+  "TAURI_SIGNING_PRIVATE_KEY_PASSWORD",
 ];
 const REQUIRED_WORKFLOWS = [
   {
@@ -15,24 +19,22 @@ const REQUIRED_WORKFLOWS = [
     description: "macOS release",
   },
 ];
-const DIRECT_DOWNLOAD_SECRET_LABEL = "Developer ID direct-download";
 
 function printHelp() {
   console.log(`Usage: pnpm desktop:release-github [--repo=${DEFAULT_REPO}] [--tag=vX.Y.Z]
 
-Checks GitHub-side prerequisites for the macOS release workflow before a public
-tag push: gh authentication, required release workflow file, Developer ID
-direct-download signing/notarization secret names (not Mac App Store
-submission), optional local tag/version alignment, an optional clean remote Git
-tag slot, and an optional clean same-tag GitHub Release slot. It also checks the
-local Git tag slot so stale local tags fail before the operator reaches the
-tag-push command.
+Checks GitHub-side prerequisites for the protected release workflow before a
+public workflow_dispatch release: gh authentication, the active workflow file,
+an automatic main-only ${SIGNING_ENVIRONMENT} environment with no admin bypass,
+a separately reviewed main-only ${PUBLICATION_ENVIRONMENT} publication environment,
+signing secrets stored only in ${SIGNING_ENVIRONMENT}, optional local tag/version
+alignment, and clean remote tag/Release slots.
 
-This check can only prove that required secret names exist. The tag workflow
-still runs desktop:release-secrets to verify that values are non-empty and the
-Developer ID certificate secret is structurally valid.
+This check can only prove that required environment secret names exist and no
+same-name repository secrets remain. The dispatched workflow still runs
+desktop:release-secrets to verify values and certificate structure.
 
-Required GitHub Actions secret names:
+Required ${SIGNING_ENVIRONMENT} environment secret names:
 ${REQUIRED_SECRETS.map((name) => `  ${name}`).join("\n")}
 
 The hosted website deploy is intentionally excluded from this macOS app release
@@ -47,7 +49,9 @@ function fail(message) {
 }
 
 function secretSetHints(repo, names) {
-  return names.map((name) => `  gh secret set ${name} --repo ${repo} < /path/to/${name}`).join("\n");
+  return names
+    .map((name) => `  gh secret set ${name} --env ${SIGNING_ENVIRONMENT} --repo ${repo} < /path/to/${name}`)
+    .join("\n");
 }
 
 function parseArgs(argv) {
@@ -164,9 +168,99 @@ for (const workflowInfo of REQUIRED_WORKFLOWS) {
   }
 }
 
+const defaultBranch = runGh([
+  "repo",
+  "view",
+  options.repo,
+  "--json",
+  "defaultBranchRef",
+  "--jq",
+  ".defaultBranchRef.name",
+]).trim();
+if (!defaultBranch) {
+  fail(`GitHub did not report a default branch for ${options.repo}.`);
+}
+
+const signingEnvironment = runGh([
+  "api",
+  `repos/${options.repo}/environments/${SIGNING_ENVIRONMENT}`,
+], { parseJson: true });
+const reviewerRule = Array.isArray(signingEnvironment?.protection_rules)
+  ? signingEnvironment.protection_rules.find((rule) => rule?.type === "required_reviewers")
+  : null;
+if (Array.isArray(reviewerRule?.reviewers) && reviewerRule.reviewers.length > 0) {
+  fail(`${SIGNING_ENVIRONMENT} must not require a signing-stage reviewer; keep the human approval on the separate release publication environment.`);
+}
+if (signingEnvironment?.can_admins_bypass !== false) {
+  fail(`${SIGNING_ENVIRONMENT} must disable administrator bypass.`);
+}
+if (
+  signingEnvironment?.deployment_branch_policy?.protected_branches !== false ||
+  signingEnvironment?.deployment_branch_policy?.custom_branch_policies !== true
+) {
+  fail(`${SIGNING_ENVIRONMENT} must use a custom deployment branch policy that allows only ${defaultBranch}.`);
+}
+const branchPolicies = runGh([
+  "api",
+  `repos/${options.repo}/environments/${SIGNING_ENVIRONMENT}/deployment-branch-policies`,
+], { parseJson: true });
+const admittedPolicies = Array.isArray(branchPolicies?.branch_policies)
+  ? branchPolicies.branch_policies
+      .filter((policy) => typeof policy?.name === "string" && typeof policy?.type === "string")
+      .map((policy) => ({ name: policy.name, type: policy.type }))
+      .sort((left, right) => `${left.type}:${left.name}`.localeCompare(`${right.type}:${right.name}`))
+  : [];
+if (
+  admittedPolicies.length !== 1 ||
+  admittedPolicies[0]?.type !== "branch" ||
+  admittedPolicies[0]?.name !== defaultBranch
+) {
+  fail(
+    `${SIGNING_ENVIRONMENT} must allow exactly the default branch ${defaultBranch} and no tag rules; found ${admittedPolicies.map((policy) => `${policy.type}:${policy.name}`).join(", ") || "none"}.`,
+  );
+}
+
+const publicationEnvironment = runGh([
+  "api",
+  `repos/${options.repo}/environments/${PUBLICATION_ENVIRONMENT}`,
+], { parseJson: true });
+const publicationReviewerRule = Array.isArray(publicationEnvironment?.protection_rules)
+  ? publicationEnvironment.protection_rules.find((rule) => rule?.type === "required_reviewers")
+  : null;
+if (!Array.isArray(publicationReviewerRule?.reviewers) || publicationReviewerRule.reviewers.length === 0) {
+  fail(`${PUBLICATION_ENVIRONMENT} must require a reviewer before a draft release can be published.`);
+}
+if (publicationEnvironment?.can_admins_bypass !== false) {
+  fail(`${PUBLICATION_ENVIRONMENT} must disable administrator bypass.`);
+}
+if (
+  publicationEnvironment?.deployment_branch_policy?.protected_branches !== false ||
+  publicationEnvironment?.deployment_branch_policy?.custom_branch_policies !== true
+) {
+  fail(`${PUBLICATION_ENVIRONMENT} must use a custom deployment branch policy that allows only ${defaultBranch}.`);
+}
+const publicationPolicies = runGh([
+  "api",
+  `repos/${options.repo}/environments/${PUBLICATION_ENVIRONMENT}/deployment-branch-policies`,
+], { parseJson: true });
+const admittedPublicationPolicies = Array.isArray(publicationPolicies?.branch_policies)
+  ? publicationPolicies.branch_policies
+      .filter((policy) => typeof policy?.name === "string" && typeof policy?.type === "string")
+      .map((policy) => ({ name: policy.name, type: policy.type }))
+  : [];
+if (
+  admittedPublicationPolicies.length !== 1 ||
+  admittedPublicationPolicies[0]?.type !== "branch" ||
+  admittedPublicationPolicies[0]?.name !== defaultBranch
+) {
+  fail(`${PUBLICATION_ENVIRONMENT} must allow exactly the default branch ${defaultBranch} and no tag rules.`);
+}
+
 const secrets = runGh([
   "secret",
   "list",
+  "--env",
+  SIGNING_ENVIRONMENT,
   "--repo",
   options.repo,
   "--json",
@@ -179,7 +273,26 @@ const secretNames = new Set(secrets.map((secret) => secret?.name).filter(Boolean
 const missing = REQUIRED_SECRETS.filter((name) => !secretNames.has(name));
 if (missing.length > 0) {
   fail(
-    `missing GitHub Actions secrets for ${options.repo}: ${missing.join(", ")}. Add the Apple Developer ID signing/notary secrets for direct-download DMGs (not Mac App Store submission) before pushing the release tag.\n\nSet them with:\n${secretSetHints(options.repo, missing)}`,
+    `missing ${SIGNING_ENVIRONMENT} environment secrets for ${options.repo}: ${missing.join(", ")}. Add the Developer ID signing/notary secrets for direct-download DMGs (not Mac App Store submission) and updater secrets before dispatching the release.\n\nSet them with:\n${secretSetHints(options.repo, missing)}`,
+  );
+}
+
+const repositorySecrets = runGh([
+  "secret",
+  "list",
+  "--repo",
+  options.repo,
+  "--json",
+  "name",
+], { parseJson: true });
+if (!Array.isArray(repositorySecrets)) {
+  fail("gh secret list for repository scope did not return an array.");
+}
+const repositorySecretNames = new Set(repositorySecrets.map((secret) => secret?.name).filter(Boolean));
+const leakedScope = REQUIRED_SECRETS.filter((name) => repositorySecretNames.has(name));
+if (leakedScope.length > 0) {
+  fail(
+    `repository-scoped signing secrets remain for ${options.repo}: ${leakedScope.join(", ")}. Move them to ${SIGNING_ENVIRONMENT}, then delete the repository copies:\n${leakedScope.map((name) => `  gh secret delete ${name} --repo ${options.repo}`).join("\n")}`,
   );
 }
 
@@ -209,7 +322,7 @@ if (options.tag) {
 }
 
 console.log(
-  `[desktop-release-github] ${options.repo} has the active macOS release workflow and all required ${DIRECT_DOWNLOAD_SECRET_LABEL} secret names`,
+  `[desktop-release-github] ${options.repo} has the protected ${SIGNING_ENVIRONMENT} environment, reviewed ${PUBLICATION_ENVIRONMENT} environment, and all required signing secret names`,
 );
 if (options.tag) {
   console.log(`[desktop-release-github] ${options.tag} matches package, Tauri, and Cargo versions`);

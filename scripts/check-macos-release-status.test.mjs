@@ -14,11 +14,11 @@ const APP_TAG_PATTERN = APP_TAG.replace(/\./g, "\\.");
 const requiredSecrets = [
   "APPLE_CERTIFICATE_P12_BASE64",
   "APPLE_CERTIFICATE_PASSWORD",
-  "APPLE_KEYCHAIN_PASSWORD",
-  "APPLE_SIGNING_IDENTITY",
   "APPLE_ID",
   "APPLE_APP_SPECIFIC_PASSWORD",
   "APPLE_TEAM_ID",
+  "TAURI_SIGNING_PRIVATE_KEY",
+  "TAURI_SIGNING_PRIVATE_KEY_PASSWORD",
 ];
 function writeFakeGh(root, scenario) {
   const binPath = join(root, "fake-gh.mjs");
@@ -34,6 +34,10 @@ function err(value) {
   process.stderr.write(value);
 }
 if (args[0] === "auth" && args[1] === "status") {
+  process.exit(0);
+}
+if (args[0] === "repo" && args[1] === "view") {
+  out({ defaultBranchRef: { name: "main" } });
   process.exit(0);
 }
 if (args[0] === "pr" && args[1] === "view") {
@@ -77,6 +81,47 @@ if (args[0] === "api" && args[1] === "repos/wlsdks/ontology-atlas/actions/workfl
   out({ state: scenario.workflowState ?? "active" });
   process.exit(0);
 }
+if (args[0] === "api" && args[1] === "repos/wlsdks/ontology-atlas/environments/release-signing") {
+  if (scenario.environmentCheckFails) {
+    err("release-signing environment unavailable");
+    process.exit(1);
+  }
+  out({
+    can_admins_bypass: scenario.environmentAdminBypass ?? false,
+    protection_rules: scenario.environmentReviewers
+      ? [{ type: "required_reviewers", reviewers: [{ type: "User", reviewer: { login: "owner" } }] }]
+      : [],
+    deployment_branch_policy: {
+      protected_branches: false,
+      custom_branch_policies: true,
+    },
+  });
+  process.exit(0);
+}
+if (args[0] === "api" && args[1] === "repos/wlsdks/ontology-atlas/environments/release-signing/deployment-branch-policies") {
+  out({ branch_policies: [
+    ...(scenario.environmentBranches ?? ["main"]).map((name) => ({ name, type: "branch" })),
+    ...(scenario.environmentTags ?? []).map((name) => ({ name, type: "tag" })),
+  ] });
+  process.exit(0);
+}
+if (args[0] === "api" && args[1] === "repos/wlsdks/ontology-atlas/environments/release") {
+  out({
+    can_admins_bypass: scenario.publicationAdminBypass ?? false,
+    protection_rules: scenario.publicationReviewers === false
+      ? []
+      : [{ type: "required_reviewers", reviewers: [{ type: "User", reviewer: { login: "owner" } }] }],
+    deployment_branch_policy: { protected_branches: false, custom_branch_policies: true },
+  });
+  process.exit(0);
+}
+if (args[0] === "api" && args[1] === "repos/wlsdks/ontology-atlas/environments/release/deployment-branch-policies") {
+  out({ branch_policies: [
+    ...(scenario.publicationBranches ?? ["main"]).map((name) => ({ name, type: "branch" })),
+    ...(scenario.publicationTags ?? []).map((name) => ({ name, type: "tag" })),
+  ] });
+  process.exit(0);
+}
 if (args[0] === "api" && args[1]?.startsWith("repos/wlsdks/ontology-atlas/git/ref/tags/")) {
   if (scenario.gitTagExists) {
     out({ ref: "refs/tags/" + args[1].split("/").pop(), object: { sha: "0".repeat(40) } });
@@ -90,15 +135,17 @@ if (args[0] === "api" && args[1]?.startsWith("repos/wlsdks/ontology-atlas/git/re
   process.exit(1);
 }
 if (args[0] === "secret" && args[1] === "list") {
-  if (scenario.secretListFails) {
+  if (args.includes("--env") && scenario.secretListFails) {
     err("secret API unavailable");
     process.exit(1);
   }
-  if (scenario.secretListInvalidJson) {
+  if (args.includes("--env") && scenario.secretListInvalidJson) {
     out("not-json");
     process.exit(0);
   }
-  const names = scenario.secretNames ?? ${JSON.stringify([...requiredSecrets])};
+  const names = args.includes("--env")
+    ? (scenario.secretNames ?? ${JSON.stringify([...requiredSecrets])})
+    : (scenario.repoSecretNames ?? []);
   out(names.map((name) => ({ name })));
   process.exit(0);
 }
@@ -188,7 +235,7 @@ test("desktop release status emits machine-readable blockers for automation", ()
 
       assert.equal(result.status, 1);
       const payload = JSON.parse(result.stdout);
-      assert.equal(payload.schemaVersion, 1);
+      assert.equal(payload.schemaVersion, 2);
       assert.match(payload.generatedAt, /^\d{4}-\d{2}-\d{2}T/);
       assert.equal(payload.repo, "wlsdks/ontology-atlas");
       assert.equal(payload.tag, `${APP_TAG}`);
@@ -243,20 +290,20 @@ test("desktop release status emits machine-readable blockers for automation", ()
       );
       assert.deepEqual(
         payload.nextActions.find((action) => action.id === "apple_release_secrets").commands.at(-1),
-        "gh secret set APPLE_TEAM_ID --repo wlsdks/ontology-atlas < /path/to/APPLE_TEAM_ID",
+        "gh secret set TAURI_SIGNING_PRIVATE_KEY_PASSWORD --env release-signing --repo wlsdks/ontology-atlas < /path/to/TAURI_SIGNING_PRIVATE_KEY_PASSWORD",
       );
       assert.deepEqual(
         payload.nextActions.find((action) => action.id === "github_release").commands,
         [
           "gh pr view 274 --repo wlsdks/ontology-atlas --json state,mergedAt,reviewDecision,mergeStateStatus,statusCheckRollup,url",
           `pnpm desktop:release-github -- --repo=wlsdks/ontology-atlas --tag=${APP_TAG}`,
-          "gh secret list --repo wlsdks/ontology-atlas",
+          "gh secret list --env release-signing --repo wlsdks/ontology-atlas",
           "DEFAULT_BRANCH=\"$(gh repo view wlsdks/ontology-atlas --json defaultBranchRef --jq .defaultBranchRef.name)\"",
           "git fetch origin \"$DEFAULT_BRANCH\" --tags",
-          "pnpm desktop:release-source -- --repo=wlsdks/ontology-atlas --sha=\"$(git rev-parse \"origin/$DEFAULT_BRANCH\")\"",
           `git tag ${APP_TAG} "origin/$DEFAULT_BRANCH"`,
           `git push origin ${APP_TAG}`,
-          `pnpm desktop:release-run -- --repo=wlsdks/ontology-atlas --tag=${APP_TAG}`,
+          `pnpm desktop:release-source -- --mode=admit --repo=wlsdks/ontology-atlas --tag=${APP_TAG} --sha="$(git rev-parse "origin/$DEFAULT_BRANCH")"`,
+          `pnpm desktop:release-run -- --repo=wlsdks/ontology-atlas --tag=${APP_TAG} --ref="$DEFAULT_BRANCH"`,
           `gh release view ${APP_TAG} --repo wlsdks/ontology-atlas`,
           `pnpm desktop:verify-download -- --repo=wlsdks/ontology-atlas --tag=${APP_TAG}`,
         ],
@@ -292,7 +339,7 @@ test("desktop release status emits machine-readable blockers for automation", ()
       );
       assert.match(
         payload.checks.find((check) => check.label === "Developer ID direct-download secrets").next,
-        /gh secret set APPLE_TEAM_ID --repo wlsdks\/ontology-atlas/,
+        /gh secret set APPLE_TEAM_ID --env release-signing --repo wlsdks\/ontology-atlas/,
       );
       assert.match(result.stderr, /blocked: 3 release requirement/);
     },
@@ -321,7 +368,7 @@ test("desktop release status writes machine-readable blockers to a JSON file", (
         assert.match(result.stdout, new RegExp(`\\[desktop-release-status\\] wlsdks\\/ontology-atlas ${APP_TAG_PATTERN}`));
         assert.ok(existsSync(jsonPath));
         const payload = JSON.parse(readFileSync(jsonPath, "utf8"));
-        assert.equal(payload.schemaVersion, 1);
+        assert.equal(payload.schemaVersion, 2);
         assert.match(payload.generatedAt, /^\d{4}-\d{2}-\d{2}T/);
         assert.equal(payload.ready, false);
         assert.equal(payload.status, "blocked");
@@ -407,7 +454,7 @@ test("desktop release status writes a human-readable markdown checklist", () => 
         assert.match(markdown, /- Pull request \(`pull_request`\): Resolve PR review\/merge blockers: https:\/\/github\.com\/wlsdks\/ontology-atlas\/pull\/274/);
         assert.match(markdown, /### release_operator/);
         assert.match(markdown, /- Developer ID direct-download secrets \(`apple_release_secrets`\): gh secret set APPLE_CERTIFICATE_P12_BASE64/);
-        assert.match(markdown, /  - First command:\n    - `gh secret set APPLE_CERTIFICATE_P12_BASE64 --repo wlsdks\/ontology-atlas < \/path\/to\/APPLE_CERTIFICATE_P12_BASE64`/);
+        assert.match(markdown, /  - First command:\n    - `gh secret set APPLE_CERTIFICATE_P12_BASE64 --env release-signing --repo wlsdks\/ontology-atlas < \/path\/to\/APPLE_CERTIFICATE_P12_BASE64`/);
         assert.match(markdown, /## Blockers/);
         assert.match(markdown, /- \[ \] Pull request \(`pull_request`\)/);
         assert.match(markdown, /  - Scope: external/);
@@ -417,8 +464,8 @@ test("desktop release status writes a human-readable markdown checklist", () => 
         assert.match(markdown, /- \[ \] GitHub Release \(`github_release`\)/);
         assert.match(markdown, new RegExp(`git push origin ${APP_TAG_PATTERN}`));
         assert.match(markdown, /gh repo view wlsdks\/ontology-atlas --json defaultBranchRef --jq \.defaultBranchRef\.name/);
-        assert.match(markdown, /gh secret set APPLE_TEAM_ID --repo wlsdks\/ontology-atlas/);
-        assert.match(markdown, /  - Commands \(run in one shell session\):\n    - `gh secret set APPLE_CERTIFICATE_P12_BASE64 --repo wlsdks\/ontology-atlas < \/path\/to\/APPLE_CERTIFICATE_P12_BASE64`/);
+        assert.match(markdown, /gh secret set APPLE_TEAM_ID --env release-signing --repo wlsdks\/ontology-atlas/);
+        assert.match(markdown, /  - Commands \(run in one shell session\):\n    - `gh secret set APPLE_CERTIFICATE_P12_BASE64 --env release-signing --repo wlsdks\/ontology-atlas < \/path\/to\/APPLE_CERTIFICATE_P12_BASE64`/);
         assert.match(markdown, /  - Missing secrets:\n    - `APPLE_CERTIFICATE_P12_BASE64`/);
         assert.match(markdown, /## Checks/);
         assert.match(markdown, /- \[x\] GitHub CLI auth \(`github_cli_auth`\)/);
@@ -475,9 +522,9 @@ test("desktop release status reports current completion blockers together", () =
       assert.match(result.stdout, /commands \(run in one shell session\):\n    - gh pr checks 274 --repo wlsdks\/ontology-atlas/);
       assert.match(result.stdout, /✗ Developer ID direct-download secrets: missing APPLE_CERTIFICATE_P12_BASE64/);
       assert.match(result.stdout, /not Mac App Store submission/);
-      assert.match(result.stdout, /gh secret set APPLE_TEAM_ID --repo wlsdks\/ontology-atlas/);
+      assert.match(result.stdout, /gh secret set APPLE_TEAM_ID --env release-signing --repo wlsdks\/ontology-atlas/);
       assert.match(result.stdout, /✗ GitHub Release: release not found/);
-      assert.match(result.stdout, /release-macos\.yml can publish signed DMGs/);
+      assert.match(result.stdout, /dispatch \.github\/workflows\/release-macos\.yml from that branch/);
       assert.match(result.stdout, /DEFAULT_BRANCH="\$\(gh repo view wlsdks\/ontology-atlas --json defaultBranchRef --jq \.defaultBranchRef\.name\)"/);
       assert.doesNotMatch(result.stdout, /Firebase Hosting deploy secrets/);
       assert.match(result.stderr, /blocked: 3 release requirement/);
@@ -519,13 +566,13 @@ test("desktop release status exposes command arrays for actionable blockers", ()
         [
           "gh pr view 274 --repo wlsdks/ontology-atlas --json state,mergedAt,reviewDecision,mergeStateStatus,statusCheckRollup,url",
           `pnpm desktop:release-github -- --repo=wlsdks/ontology-atlas --tag=${APP_TAG}`,
-          "gh secret list --repo wlsdks/ontology-atlas",
+          "gh secret list --env release-signing --repo wlsdks/ontology-atlas",
           "DEFAULT_BRANCH=\"$(gh repo view wlsdks/ontology-atlas --json defaultBranchRef --jq .defaultBranchRef.name)\"",
           "git fetch origin \"$DEFAULT_BRANCH\" --tags",
-          "pnpm desktop:release-source -- --repo=wlsdks/ontology-atlas --sha=\"$(git rev-parse \"origin/$DEFAULT_BRANCH\")\"",
           `git tag ${APP_TAG} "origin/$DEFAULT_BRANCH"`,
           `git push origin ${APP_TAG}`,
-          `pnpm desktop:release-run -- --repo=wlsdks/ontology-atlas --tag=${APP_TAG}`,
+          `pnpm desktop:release-source -- --mode=admit --repo=wlsdks/ontology-atlas --tag=${APP_TAG} --sha="$(git rev-parse "origin/$DEFAULT_BRANCH")"`,
+          `pnpm desktop:release-run -- --repo=wlsdks/ontology-atlas --tag=${APP_TAG} --ref="$DEFAULT_BRANCH"`,
           `gh release view ${APP_TAG} --repo wlsdks/ontology-atlas`,
           `pnpm desktop:verify-download -- --repo=wlsdks/ontology-atlas --tag=${APP_TAG}`,
         ],
@@ -549,30 +596,25 @@ test("desktop release status blocks stale local release tags", () => {
     const blocker = payload.checks.find((check) => check.id === "release_tag_slot");
     assert.equal(blocker.scope, "local");
     assert.equal(blocker.owner, "developer");
-    assert.match(blocker.detail, new RegExp(`local git tag ${APP_TAG_PATTERN} already exists`));
+    assert.match(blocker.detail, new RegExp(`local git tag ${APP_TAG_PATTERN} exists but the remote tag does not`));
     assert.deepEqual(blocker.commands, [`git tag -d ${APP_TAG}`]);
   });
 });
 
-test("desktop release status blocks existing remote release tags", () => {
+test("desktop release status accepts an existing remote tag as the dispatched release input", () => {
   withFakeGh({ gitTagExists: true }, (fakeGhPath) => {
     const result = runStatus(fakeGhPath, [`--tag=${APP_TAG}`, "--pr=274", "--json"]);
 
     assert.equal(result.status, 1);
     const payload = JSON.parse(result.stdout);
     assert.deepEqual(payload.localBlockerIds, []);
-    assert.deepEqual(payload.externalBlockerIds, ["release_tag_slot", "download_assets"]);
+    assert.deepEqual(payload.externalBlockerIds, ["download_assets"]);
     assert.deepEqual(payload.blockersByOwner, {
-      release_operator: ["release_tag_slot", "download_assets"],
+      release_operator: ["download_assets"],
     });
-    const blocker = payload.checks.find((check) => check.id === "release_tag_slot");
-    assert.equal(blocker.scope, "external");
-    assert.equal(blocker.owner, "release_operator");
-    assert.match(blocker.detail, new RegExp(`git tag ${APP_TAG_PATTERN} already exists`));
-    assert.deepEqual(blocker.commands, [
-      `gh api repos/wlsdks/ontology-atlas/git/ref/tags/${APP_TAG}`,
-      "gh run list --repo wlsdks/ontology-atlas --workflow release-macos.yml --event push --limit 10",
-    ]);
+    const tagCheck = payload.checks.find((check) => check.id === "release_tag_slot");
+    assert.equal(tagCheck.status, "ok");
+    assert.match(tagCheck.detail, new RegExp(`${APP_TAG_PATTERN} exists remotely as the expected workflow_dispatch release input`));
   });
 });
 
@@ -705,7 +747,7 @@ test("desktop release status cannot report ready when download verification is s
     assert.equal(result.status, 1, result.stdout);
     assert.match(result.stdout, new RegExp(`✓ Version alignment: ${APP_TAG_PATTERN} matches package, Tauri, Cargo, and release-facts versions`));
     assert.match(result.stdout, /✓ Pull request: PR #274 is merge-ready/);
-    assert.match(result.stdout, /✓ Developer ID direct-download secrets: all required Developer ID signing\/notary secret names exist for direct-download DMGs/);
+    assert.match(result.stdout, /✓ Developer ID direct-download secrets: release-signing admits only main and contains all required signing secret names/);
     assert.match(result.stdout, new RegExp(`✓ GitHub Release: ${APP_TAG_PATTERN} is public and stable`));
     assert.match(result.stdout, /✗ Download assets: verification skipped by OATLAS_RELEASE_STATUS_SKIP_DOWNLOAD_VERIFY=1/);
     assert.doesNotMatch(result.stdout, /Hosted website/);
@@ -719,7 +761,7 @@ test("desktop release status JSON exposes skipped download verification as a blo
 
     assert.equal(result.status, 1, result.stdout);
     const payload = JSON.parse(result.stdout);
-    assert.equal(payload.schemaVersion, 1);
+    assert.equal(payload.schemaVersion, 2);
     assert.match(payload.generatedAt, /^\d{4}-\d{2}-\d{2}T/);
     assert.equal(payload.ready, false);
     assert.equal(payload.status, "blocked");
@@ -848,6 +890,29 @@ test("desktop release status keeps Firebase out when GitHub secret JSON is malfo
   });
 });
 
+test("desktop release status rejects unsafe release-signing policy and repository secret copies", () => {
+  const scenarios = [
+    { environmentAdminBypass: true, expected: /disable administrator bypass/ },
+    { environmentReviewers: true, expected: /keep signing automatic/ },
+    { environmentBranches: ["main", "release/*"], expected: /allow exactly branch main/ },
+    { environmentTags: ["v*"], expected: /no tag rules/ },
+    { repoSecretNames: ["TAURI_SIGNING_PRIVATE_KEY"], expected: /repository-scoped signing secrets remain/ },
+    { publicationAdminBypass: true, expected: /release must disable administrator bypass/ },
+    { publicationReviewers: false, expected: /release must require a publication reviewer/ },
+    { publicationTags: ["v*"], expected: /release must allow exactly branch main and no tag rules/ },
+  ];
+
+  for (const scenario of scenarios) {
+    withFakeGh({ ...scenario, releaseMissing: true }, (fakeGhPath) => {
+      const result = runStatus(fakeGhPath, [`--tag=${APP_TAG}`, "--pr=274", "--json"]);
+      assert.equal(result.status, 1);
+      const payload = JSON.parse(result.stdout);
+      const blocker = payload.checks.find((check) => check.id === "apple_release_secrets");
+      assert.match(blocker.detail, scenario.expected);
+    });
+  }
+});
+
 test("desktop release status accepts an already merged PR", () => {
   withFakeGh(
     {
@@ -907,7 +972,7 @@ test("desktop release status skips merge advice for missing releases after PR me
       assert.equal(result.status, 1);
       const payload = JSON.parse(result.stdout);
       const blocker = payload.checks.find((check) => check.id === "github_release");
-      assert.match(blocker.next, new RegExp(`^Add Developer ID direct-download signing\\/notarization secrets \\(not Mac App Store submission\\), then push ${APP_TAG_PATTERN}`));
+      assert.match(blocker.next, new RegExp(`^Configure the protected release-signing environment, create ${APP_TAG_PATTERN} at the current default-branch head, then dispatch`));
       assert.doesNotMatch(blocker.next, /Merge the desktop PR/);
       assert.equal(
         blocker.commands[0],
@@ -946,7 +1011,7 @@ test("desktop release status handles missing releases without PR evidence", () =
         },
       );
       const blocker = payload.checks.find((check) => check.id === "github_release");
-      assert.match(blocker.next, /^Merge the desktop PR, add Developer ID direct-download signing\/notarization secrets/);
+      assert.match(blocker.next, /^Merge the desktop PR, configure the protected release-signing environment/);
       assert.deepEqual(
         blocker.commands.filter((command) => command.startsWith("gh pr view")),
         [],

@@ -3,29 +3,57 @@ import test from "node:test";
 import { readFileSync } from "node:fs";
 import {
   DEFAULT_DIR,
+  LOCAL_ONLY_VALUES,
   OWNER_ENTERED_SECRETS,
   REQUIRED_SECRETS,
   missingSecrets,
   parseArgs,
+  repositoryScopedSecrets,
+  setupSecretCommand,
 } from "./apple-signing-setup.mjs";
 
-test("required secret list mirrors the release secret gate", () => {
-  // 이 목록이 `check-macos-release-secrets.mjs` 와 어긋나면, 셋업이 "다 끝났다"
-  // 고 말한 뒤 태그 워크플로가 secret 이 없다며 실패한다 — 사람이 두 번
-  // 헤매는 실패다. 진실원은 게이트 쪽이고 여기는 거울이다.
-  const gate = readFileSync("scripts/check-macos-release-secrets.mjs", "utf8");
-  // 숫자를 포함한다 — APPLE_CERTIFICATE_P12_BASE64.
-  const gateNames = [...gate.matchAll(/name:\s*"(APPLE_[A-Z0-9_]+)"/g)].map((m) => m[1]);
-  assert.equal(gateNames.length, 5, "게이트에서 secret 이름을 못 읽었다면 이 거울은 아무것도 지키지 못한다");
-  assert.deepEqual([...REQUIRED_SECRETS].sort(), [...new Set(gateNames)].sort());
+test("required secret list mirrors the hosted workflow's seven names", () => {
+  const workflow = readFileSync(".github/workflows/release-macos.yml", "utf8");
+  const workflowNames = [...workflow.matchAll(/secrets\.([A-Z0-9_]+)/g)].map((match) => match[1]);
+  const uniqueNames = [...new Set(workflowNames)];
+
+  assert.equal(uniqueNames.length, 7, "the workflow must expose exactly five Apple and two updater secrets");
+  assert.deepEqual([...REQUIRED_SECRETS].sort(), uniqueNames.sort());
 });
 
 test("owner-entered secrets are the credential ones", () => {
-  // 나머지 셋은 스크립트가 넣는다. 자격증명 둘은 사람 몫으로 남는 것이 계약이다.
+  // 인증서 번들만 local helper가 만들고, Apple/Tauri 자격증명은 사람이 protected env에 넣는다.
   for (const name of OWNER_ENTERED_SECRETS) {
     assert.ok(REQUIRED_SECRETS.includes(name), `${name} is not in the required set`);
   }
-  assert.deepEqual(OWNER_ENTERED_SECRETS, ["APPLE_ID", "APPLE_APP_SPECIFIC_PASSWORD"]);
+  assert.deepEqual(OWNER_ENTERED_SECRETS, [
+    "APPLE_ID",
+    "APPLE_APP_SPECIFIC_PASSWORD",
+    "APPLE_TEAM_ID",
+    "TAURI_SIGNING_PRIVATE_KEY",
+    "TAURI_SIGNING_PRIVATE_KEY_PASSWORD",
+  ]);
+});
+
+test("hosted setup commands target only release-signing", () => {
+  const commands = REQUIRED_SECRETS.map((name) => setupSecretCommand(name, "me/fork"));
+
+  assert.equal(commands.length, 7);
+  for (const command of commands) {
+    assert.match(command, /gh secret set [A-Z0-9_]+ --env release-signing --repo me\/fork/);
+    for (const localOnly of LOCAL_ONLY_VALUES) {
+      assert.doesNotMatch(command, new RegExp(localOnly));
+    }
+  }
+});
+
+test("helper does not mutate GitHub while generating setup instructions", () => {
+  const source = readFileSync("scripts/apple-signing-setup.mjs", "utf8");
+  assert.doesNotMatch(source, /spawnSync\(\s*["']gh["'][\s\S]*?secret["']\s*,\s*["']set/);
+  assert.doesNotMatch(source, /execFileSync\(\s*["']gh["'][\s\S]*?secret["']\s*,\s*["']set/);
+  for (const localOnly of LOCAL_ONLY_VALUES) {
+    assert.ok(!REQUIRED_SECRETS.includes(localOnly), `${localOnly} must remain local`);
+  }
 });
 
 test("private key default location is outside the working tree", () => {
@@ -64,8 +92,24 @@ test("verify reports exactly what is still missing", () => {
 
   assert.deepEqual(
     missingSecrets(`${header}APPLE_CERTIFICATE_P12_BASE64  2026-07-27\nAPPLE_CERTIFICATE_PASSWORD  2026-07-27\n`),
-    ["APPLE_ID", "APPLE_APP_SPECIFIC_PASSWORD", "APPLE_TEAM_ID"],
+    [
+      "APPLE_ID",
+      "APPLE_APP_SPECIFIC_PASSWORD",
+      "APPLE_TEAM_ID",
+      "TAURI_SIGNING_PRIVATE_KEY",
+      "TAURI_SIGNING_PRIVATE_KEY_PASSWORD",
+    ],
   );
 
   assert.deepEqual(missingSecrets(""), REQUIRED_SECRETS);
+});
+
+test("repository copies are reported without treating them as environment secrets", () => {
+  const header = "NAME                          UPDATED\n";
+  assert.deepEqual(
+    repositoryScopedSecrets(
+      `${header}APPLE_ID  2026-07-27\nTAURI_SIGNING_PRIVATE_KEY  2026-07-27\nUNRELATED  2026-07-27\n`,
+    ),
+    ["APPLE_ID", "TAURI_SIGNING_PRIVATE_KEY"],
+  );
 });

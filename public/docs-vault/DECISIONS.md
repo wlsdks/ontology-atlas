@@ -40,6 +40,42 @@
 **상태**: 유효 / 뒤집힘(→ 링크) / 반증됨(관측: …)
 ```
 
+## 2026-08-17 (63) — 보호된 데스크톱 릴리스는 `main`에서 디스패치하고, 서명 환경은 `main`에만 자동으로 연다
+
+**소집**: 단독 패스 + 선행 코드 읽기 · **트리거**: tag-push 릴리스가 secret-bearing
+작업의 소스를 태그 ref에 맡기던 경계 제거 · **루브릭**: 23/24 (치명적 0: 없음)
+
+**관찰된 현상**: `.github/workflows/release-macos.yml`은 `workflow_dispatch`의
+`tag` 입력만 받고, admission job에서 `refs/heads/main`, workflow/event SHA,
+현재 `main` head와 요청 태그의 일치를 확인한다. `scripts/watch-macos-release-run.mjs`
+는 `--ref main`으로 디스패치하고 그 tag commit의 정확한 `workflow_dispatch` run을
+감시한다. 이후 빌드·stage·publish job은 admission이 낸 SHA를 다시 pin한다.
+
+**결정**: 운영자는 먼저 현재 `main` head에 기존 semver tag를 만들고 push한 뒤
+`pnpm desktop:release-run -- --tag=<tag> --ref=main`을 실행한다. `release-signing`
+은 Apple 5개와 Tauri updater 2개, 정확히 7개 secret만 보관한다. 이 환경의
+deployment rule은 `main` branch 하나만 허용하고 tag rule은 없으며, admin bypass는
+끄고 signing-stage reviewer는 두지 않는다. 사람의 exact-draft 설치 승인은 기존
+별도 `release` environment에 남긴다. 같은 이름의 repository-scope secret 복사본은
+삭제한다. `APPLE_KEYCHAIN_PASSWORD`와 `APPLE_SIGNING_IDENTITY`는 hosted secret이
+아니며, 코드가 GitHub 환경 설정을 자동으로 바꾸지도 않는다.
+
+**적용 규칙**: 태그 push는 dispatch가 아니다 · signing admission과 human publication
+approval을 같은 환경에 섞지 않는다 · secret은 environment scope 하나만 정본으로 둔다.
+**서명**: Codex — workflow/scripts 직접 대조 · 진안 — 장기 보안 강화 요청
+
+**기록된 반대**: tag push를 그대로 트리거로 두면 운영자가 별도 dispatch를 하지 않아도
+되어 짧다. 그러나 태그 ref에서 실행할 코드를 secret-bearing job에 바로 연결하면
+태그 시점의 source admission과 보호된 `main` 정책을 한 단계로 증명하기 어렵다.
+현재 workflow가 요구하는 explicit dispatch와 SHA pin을 되돌릴 근거가 없다.
+**반증 조건**: 실제 운영에서 `main`에서 dispatch한 run이 admission 후 다른 SHA를
+빌드하거나, 별도 `release` 승인 없이 draft가 공개되는 사례가 관측되면 이 결정을
+재검토한다.
+**외부 일회성 작업**: GitHub Settings에서 `release-signing`의 정확한 branch policy,
+admin bypass, reviewer 설정과 일곱 environment secret을 수동 구성하고 repository
+copies를 제거한다. 소스 코드는 이 설정을 변경하지 않는다.
+**상태**: 유효
+
 ## 2026-08-17 (62) — 생략된 다운로드 검증은 릴리스 readiness blocker다
 
 **소집**: 단독 패스 + 선행 읽기 전용 공격 감사 · **트리거**: 릴리스 완료 관문의

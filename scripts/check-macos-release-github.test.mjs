@@ -18,6 +18,8 @@ const requiredSecrets = [
   "APPLE_ID",
   "APPLE_APP_SPECIFIC_PASSWORD",
   "APPLE_TEAM_ID",
+  "TAURI_SIGNING_PRIVATE_KEY",
+  "TAURI_SIGNING_PRIVATE_KEY_PASSWORD",
 ];
 function writeFakeGh(root, scenario) {
   const binPath = join(root, "fake-gh.mjs");
@@ -33,6 +35,55 @@ function err(value) {
   process.stderr.write(value);
 }
 if (args[0] === "auth" && args[1] === "status") {
+  process.exit(0);
+}
+if (args[0] === "repo" && args[1] === "view") {
+  out("main");
+  process.exit(0);
+}
+if (args[0] === "api" && args[1] === "repos/wlsdks/ontology-atlas/environments/release-signing") {
+  if (scenario.environmentMissing) {
+    err("HTTP 404: Not Found");
+    process.exit(1);
+  }
+  out({
+    name: "release-signing",
+    can_admins_bypass: scenario.environmentAdminBypass ?? false,
+    protection_rules: scenario.environmentReviewers
+      ? [{ type: "required_reviewers", reviewers: [{ type: "User", reviewer: { login: "owner" } }] }]
+      : [],
+    deployment_branch_policy: {
+      protected_branches: false,
+      custom_branch_policies: true,
+    },
+  });
+  process.exit(0);
+}
+if (args[0] === "api" && args[1] === "repos/wlsdks/ontology-atlas/environments/release-signing/deployment-branch-policies") {
+  out({
+    branch_policies: [
+      ...(scenario.environmentBranches ?? ["main"]).map((name) => ({ name, type: "branch" })),
+      ...(scenario.environmentTags ?? []).map((name) => ({ name, type: "tag" })),
+    ],
+  });
+  process.exit(0);
+}
+if (args[0] === "api" && args[1] === "repos/wlsdks/ontology-atlas/environments/release") {
+  out({
+    name: "release",
+    can_admins_bypass: scenario.publicationAdminBypass ?? false,
+    protection_rules: scenario.publicationReviewers === false
+      ? []
+      : [{ type: "required_reviewers", reviewers: [{ type: "User", reviewer: { login: "owner" } }] }],
+    deployment_branch_policy: { protected_branches: false, custom_branch_policies: true },
+  });
+  process.exit(0);
+}
+if (args[0] === "api" && args[1] === "repos/wlsdks/ontology-atlas/environments/release/deployment-branch-policies") {
+  out({ branch_policies: [
+    ...(scenario.publicationBranches ?? ["main"]).map((name) => ({ name, type: "branch" })),
+    ...(scenario.publicationTags ?? []).map((name) => ({ name, type: "tag" })),
+  ] });
   process.exit(0);
 }
 if (args[0] === "api" && args[1]?.startsWith("repos/wlsdks/ontology-atlas/actions/workflows/")) {
@@ -52,7 +103,9 @@ if (args[0] === "api" && args[1]?.startsWith("repos/wlsdks/ontology-atlas/git/re
   process.exit(1);
 }
 if (args[0] === "secret" && args[1] === "list") {
-  const names = scenario.secretNames ?? ${JSON.stringify(requiredSecrets)};
+  const names = args.includes("--env")
+    ? (scenario.secretNames ?? ${JSON.stringify(requiredSecrets)})
+    : (scenario.repoSecretNames ?? []);
   out(names.map((name) => ({ name })));
   process.exit(0);
 }
@@ -127,7 +180,7 @@ test("desktop GitHub release gate proves workflows, secrets, tag version, and cl
     const result = runReleaseGithub(fakeGhPath, fakeGitPath);
 
     assert.equal(result.status, 0, result.stderr);
-    assert.match(result.stdout, /has the active macOS release workflow and all required Developer ID direct-download secret names/);
+    assert.match(result.stdout, /has the protected release-signing environment, reviewed release environment, and all required signing secret names/);
     assert.match(result.stdout, new RegExp(`${APP_TAG_PATTERN} matches package, Tauri, and Cargo versions`));
     assert.match(result.stdout, new RegExp(`${APP_TAG_PATTERN} has no existing local Git tag`));
     assert.match(result.stdout, new RegExp(`${APP_TAG_PATTERN} has no existing Git tag`));
@@ -140,11 +193,60 @@ test("desktop GitHub release gate fails before tag push when Developer ID direct
     const result = runReleaseGithub(fakeGhPath, fakeGitPath);
 
     assert.equal(result.status, 1);
-    assert.match(result.stderr, /missing GitHub Actions secrets/);
+    assert.match(result.stderr, /missing release-signing environment secrets/);
     assert.match(result.stderr, /direct-download DMGs \(not Mac App Store submission\)/);
     assert.match(result.stderr, /APPLE_TEAM_ID/);
-    assert.match(result.stderr, /gh secret set APPLE_TEAM_ID --repo wlsdks\/ontology-atlas/);
+    assert.match(result.stderr, /gh secret set APPLE_TEAM_ID --env release-signing --repo wlsdks\/ontology-atlas/);
   });
+});
+
+test("desktop GitHub release gate rejects signing secrets left at repository scope", () => {
+  withFakeGh({ repoSecretNames: ["TAURI_SIGNING_PRIVATE_KEY"] }, (fakeGhPath, fakeGitPath) => {
+    const result = runReleaseGithub(fakeGhPath, fakeGitPath);
+
+    assert.equal(result.status, 1);
+    assert.match(result.stderr, /repository-scoped signing secrets remain/);
+    assert.match(result.stderr, /gh secret delete TAURI_SIGNING_PRIVATE_KEY --repo wlsdks\/ontology-atlas/);
+  });
+});
+
+test("desktop GitHub release gate requires release-signing to admit only main", () => {
+  withFakeGh({ environmentBranches: ["main", "release/*"] }, (fakeGhPath, fakeGitPath) => {
+    const result = runReleaseGithub(fakeGhPath, fakeGitPath);
+
+    assert.equal(result.status, 1);
+    assert.match(result.stderr, /release-signing must allow exactly the default branch main/);
+  });
+});
+
+test("desktop GitHub release gate rejects admin bypass and signing-stage reviewers", () => {
+  for (const scenario of [
+    { environmentAdminBypass: true },
+    { environmentReviewers: true },
+    { environmentTags: ["v*"] },
+  ]) {
+    withFakeGh(scenario, (fakeGhPath, fakeGitPath) => {
+      const result = runReleaseGithub(fakeGhPath, fakeGitPath);
+
+      assert.equal(result.status, 1);
+      assert.match(result.stderr, /release-signing/);
+    });
+  }
+});
+
+test("desktop GitHub release gate keeps publication behind reviewed main-only release environment", () => {
+  for (const scenario of [
+    { publicationAdminBypass: true },
+    { publicationReviewers: false },
+    { publicationBranches: ["main", "release/*"] },
+    { publicationTags: ["v*"] },
+  ]) {
+    withFakeGh(scenario, (fakeGhPath, fakeGitPath) => {
+      const result = runReleaseGithub(fakeGhPath, fakeGitPath);
+      assert.equal(result.status, 1);
+      assert.match(result.stderr, /release/);
+    });
+  }
 });
 
 test("desktop GitHub release gate explains that a PR-only workflow cannot receive tag pushes yet", () => {
@@ -198,5 +300,5 @@ test("desktop GitHub release gate help lists every required Developer ID direct-
   }
   assert.doesNotMatch(stdout, /FIREBASE_SERVICE_ACCOUNT_JSON/);
   assert.doesNotMatch(stdout, /Firebase/);
-  assert.match(stdout, /hosted website deploy is intentionally excluded/);
-});
+    assert.match(stdout, /hosted website deploy is intentionally excluded/);
+  });

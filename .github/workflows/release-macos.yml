@@ -1,23 +1,90 @@
 name: Release Desktop
+run-name: Release Desktop ${{ inputs.tag }}
 
 on:
-  push:
-    tags:
-      - "v*"
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Existing v-prefixed tag whose commit must equal the current default-branch head"
+        required: true
+        type: string
 
 permissions:
   contents: read
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
+  group: ${{ github.workflow }}-${{ inputs.tag }}
   cancel-in-progress: false
 
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+  RELEASE_TAG: ${{ inputs.tag }}
 
 jobs:
+  # `workflow_dispatch` can target another ref even though the workflow must
+  # exist on the default branch. This unprivileged job proves that the selected
+  # workflow source, event SHA, default-branch head, and requested tag are the
+  # same commit before a signing environment can be reached.
+  admit-release:
+    name: Admit protected release source
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      release_sha: ${{ steps.admit.outputs.release_sha }}
+      release_tag: ${{ steps.admit.outputs.release_tag }}
+    steps:
+      - name: Require protected main dispatch context
+        env:
+          DISPATCH_EVENT: ${{ github.event_name }}
+          DISPATCH_REF: ${{ github.ref }}
+          DISPATCH_REF_TYPE: ${{ github.ref_type }}
+          DISPATCH_SHA: ${{ github.sha }}
+          WORKFLOW_SHA: ${{ github.workflow_sha }}
+        run: |
+          [[ "$DISPATCH_EVENT" == "workflow_dispatch" ]] || { echo "Unexpected release event: $DISPATCH_EVENT" >&2; exit 1; }
+          [[ "$DISPATCH_REF" == "refs/heads/main" ]] || { echo "Release must be dispatched from refs/heads/main, got $DISPATCH_REF" >&2; exit 1; }
+          [[ "$DISPATCH_REF_TYPE" == "branch" ]] || { echo "Release ref must be a branch, got $DISPATCH_REF_TYPE" >&2; exit 1; }
+          [[ "$WORKFLOW_SHA" == "$DISPATCH_SHA" ]] || { echo "Workflow source $WORKFLOW_SHA differs from event source $DISPATCH_SHA" >&2; exit 1; }
+
+      - name: Checkout admitted workflow source
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+          ref: ${{ github.sha }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
+        with:
+          node-version: 24
+
+      - name: Enable Corepack pnpm
+        run: |
+          corepack enable
+          corepack prepare pnpm@10.18.0 --activate
+          pnpm --version
+
+      - name: Verify requested release version
+        run: pnpm desktop:release-tag -- --tag="$RELEASE_TAG"
+
+      - name: Admit tag at current main SHA
+        id: admit
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_SHA: ${{ github.sha }}
+        run: |
+          pnpm desktop:release-source -- \
+            --mode=admit \
+            --repo="$GITHUB_REPOSITORY" \
+            --tag="$RELEASE_TAG" \
+            --sha="$RELEASE_SHA"
+          echo "release_sha=$RELEASE_SHA" >> "$GITHUB_OUTPUT"
+          echo "release_tag=$RELEASE_TAG" >> "$GITHUB_OUTPUT"
+
   build-macos:
     name: Build macOS DMG (${{ matrix.arch }})
+    needs: admit-release
+    environment: release-signing
     runs-on: ${{ matrix.runner }}
     timeout-minutes: 30
     strategy:
@@ -30,6 +97,7 @@ jobs:
             runner: macos-15-intel
     env:
       TAURI_ARCH: ${{ matrix.arch }}
+      RELEASE_TAG: ${{ needs.admit-release.outputs.release_tag }}
 
     steps:
       # fetch-depth: 0 필수 — 아래 `docs-vault:check` 와 `pnpm build` 가 문서별
@@ -39,6 +107,7 @@ jobs:
         uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
         with:
           fetch-depth: 0
+          ref: ${{ needs.admit-release.outputs.release_sha }}
 
       - name: Setup Node.js
         uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
@@ -110,12 +179,13 @@ jobs:
         run: pnpm desktop:doctor -- --require-runtime
 
       - name: Verify release source commit
-        run: pnpm desktop:release-source -- --sha="${GITHUB_SHA}"
+        run: pnpm desktop:release-source -- --mode=pin --tag="${RELEASE_TAG}" --sha="${RELEASE_SHA}"
         env:
           GITHUB_TOKEN: ${{ github.token }}
+          RELEASE_SHA: ${{ needs.admit-release.outputs.release_sha }}
 
       - name: Verify release tag version
-        run: pnpm desktop:release-tag -- --tag="${GITHUB_REF_NAME}"
+        run: pnpm desktop:release-tag -- --tag="${RELEASE_TAG}"
 
       # 미서명 공개 결정은 인증서 발급과 함께 같은 날 뒤집혔다
       # (`docs/DECISIONS.md`, 2026-07-27). 직접 다운로드 DMG 는 Developer ID
@@ -128,6 +198,8 @@ jobs:
           APPLE_ID: ${{ secrets.APPLE_ID }}
           APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
           APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
         run: pnpm desktop:release-secrets
 
       - name: Import Apple Developer ID certificate
@@ -207,16 +279,21 @@ jobs:
 
   build-windows:
     name: Build unsigned Windows x64 beta
+    needs: admit-release
+    environment: release-signing
     runs-on: windows-2022
     timeout-minutes: 45
     permissions:
       contents: read
       checks: write
+    env:
+      RELEASE_TAG: ${{ needs.admit-release.outputs.release_tag }}
     steps:
       - name: Checkout
         uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
         with:
           fetch-depth: 0
+          ref: ${{ needs.admit-release.outputs.release_sha }}
 
       - name: Setup Node.js
         uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
@@ -270,6 +347,21 @@ jobs:
 
       - name: Native bridge tests on Windows
         run: pnpm test:desktop:bridge
+
+      - name: Verify release source commit
+        run: pnpm desktop:release-source -- --mode=pin --tag="${RELEASE_TAG}" --sha="${RELEASE_SHA}"
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          RELEASE_SHA: ${{ needs.admit-release.outputs.release_sha }}
+
+      - name: Verify release tag version
+        run: pnpm desktop:release-tag -- --tag="${RELEASE_TAG}"
+
+      - name: Require updater signing credentials
+        run: pnpm desktop:release-secrets -- --updater-only
+        env:
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
 
       - name: Build Windows NSIS installer
         run: pnpm desktop:build:windows
@@ -354,15 +446,20 @@ jobs:
   # and verified here; nothing is visible to users yet.
   stage-macos:
     name: Stage Draft Desktop Release
-    if: ${{ always() && startsWith(github.ref, 'refs/tags/v') && needs.build-macos.result == 'success' && needs.build-windows.result == 'success' }}
+    if: ${{ always() && needs.admit-release.result == 'success' && needs.build-macos.result == 'success' && needs.build-windows.result == 'success' }}
     runs-on: ubuntu-latest
-    needs: [build-macos, build-windows]
+    needs: [admit-release, build-macos, build-windows]
     timeout-minutes: 10
     permissions:
       contents: write
+    env:
+      RELEASE_TAG: ${{ needs.admit-release.outputs.release_tag }}
+      RELEASE_SHA: ${{ needs.admit-release.outputs.release_sha }}
     steps:
       - name: Checkout
         uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          ref: ${{ needs.admit-release.outputs.release_sha }}
 
       - name: Setup Node.js
         uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
@@ -395,8 +492,13 @@ jobs:
           name: ontology-atlas-windows-x64
           path: release-assets/windows
 
+      - name: Recheck admitted release source before draft creation
+        run: pnpm desktop:release-source -- --mode=pin --tag="${RELEASE_TAG}" --sha="${RELEASE_SHA}"
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+
       - name: Require clean GitHub Release slot
-        run: pnpm desktop:release-slot -- --tag="${GITHUB_REF_NAME}"
+        run: pnpm desktop:release-slot -- --tag="${RELEASE_TAG}"
         env:
           GITHUB_TOKEN: ${{ github.token }}
 
@@ -404,16 +506,18 @@ jobs:
         run: |
           node scripts/build-updater-manifest.mjs \
             --dir=release-assets --out=release-assets/latest.json \
-            --tag="${GITHUB_REF_NAME}" --repo="${GITHUB_REPOSITORY}"
+            --tag="${RELEASE_TAG}" --repo="${GITHUB_REPOSITORY}"
 
       - name: Upload draft GitHub Release assets
         uses: softprops/action-gh-release@c12583777ecdfd3be55c69cf75464299dc01057e # v3
         with:
+          tag_name: ${{ needs.admit-release.outputs.release_tag }}
+          target_commitish: ${{ needs.admit-release.outputs.release_sha }}
           draft: true
           # semver 의 프리릴리스는 하이픈 뒤에 온다 (v1.1.0-rc.1). 그 한 글자가
           # "먼저 써볼 사람만" 과 "모두에게" 를 가른다 — GitHub 은 이 플래그로
           # Pre-release 배지를 붙이고 `releases/latest` 에서 제외한다.
-          prerelease: ${{ contains(github.ref_name, '-') }}
+          prerelease: ${{ contains(needs.admit-release.outputs.release_tag, '-') }}
           generate_release_notes: true
           files: |
             release-assets/*/*.dmg
@@ -425,13 +529,13 @@ jobs:
             release-assets/latest.json
 
       - name: Verify draft release assets
-        run: pnpm desktop:verify-download -- --tag="${GITHUB_REF_NAME}" --allow-draft --require-updater
+        run: pnpm desktop:verify-download -- --tag="${RELEASE_TAG}" --allow-draft --require-updater
         env:
           GITHUB_TOKEN: ${{ github.token }}
 
       - name: Summarize the draft awaiting approval
         run: |
-          release_url="$(gh release view "${GITHUB_REF_NAME}" --json url --jq .url)"
+          release_url="$(gh release view "${RELEASE_TAG}" --json url --jq .url)"
           {
             echo "## Draft desktop release — awaiting approval"
             echo ""
@@ -450,7 +554,7 @@ jobs:
   publish-macos:
     name: Publish Desktop Release
     runs-on: ubuntu-latest
-    needs: stage-macos
+    needs: [admit-release, stage-macos]
     timeout-minutes: 10
     environment: release
     permissions:
@@ -458,6 +562,9 @@ jobs:
       # actions:  Pages 배포를 명시적으로 깨우기 (아래 마지막 스텝의 이유 참조)
       contents: write
       actions: write
+    env:
+      RELEASE_TAG: ${{ needs.admit-release.outputs.release_tag }}
+      RELEASE_SHA: ${{ needs.admit-release.outputs.release_sha }}
     steps:
       # fetch-depth: 0 — 생성 매니페스트의 결정성 계약이 전체 히스토리를
       # 요구하고(`generated-vault-determinism.contract.test.ts`), 아래 main
@@ -466,6 +573,7 @@ jobs:
         uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
         with:
           fetch-depth: 0
+          ref: ${{ needs.admit-release.outputs.release_sha }}
 
       - name: Setup Node.js
         uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
@@ -497,26 +605,33 @@ jobs:
           name: ontology-atlas-windows-x64
           path: release-assets/windows
 
+      - name: Recheck admitted release source after publication approval
+        run: pnpm desktop:release-source -- --mode=pin --tag="${RELEASE_TAG}" --sha="${RELEASE_SHA}"
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+
       - name: Publish verified stable release
         run: |
           # 발행 시점에도 태그가 진실원이다. 여기서 --prerelease=false 를 못박으면
           # RC 태그가 draft 를 벗는 순간 정식 릴리스로 승격돼, 프리릴리스라는
           # 표시가 통째로 사라진다.
-          if [[ "${GITHUB_REF_NAME}" == *-* ]]; then
-            gh release edit "${GITHUB_REF_NAME}" --draft=false --prerelease=true
+          if [[ "${RELEASE_TAG}" == *-* ]]; then
+            gh release edit "${RELEASE_TAG}" --draft=false --prerelease=true
           else
-            gh release edit "${GITHUB_REF_NAME}" --draft=false --prerelease=false
+            gh release edit "${RELEASE_TAG}" --draft=false --prerelease=false
           fi
         env:
           GITHUB_TOKEN: ${{ github.token }}
 
       - name: Verify public download assets
-        run: pnpm desktop:verify-download -- --tag="${GITHUB_REF_NAME}" --require-updater
+        run: pnpm desktop:verify-download -- --tag="${RELEASE_TAG}" --require-updater
         env:
           GITHUB_TOKEN: ${{ github.token }}
 
-      - name: Verify public Windows asset facts
-        run: pnpm download:release-facts -- --tag="${GITHUB_REF_NAME}" --allow-prerelease
+      - name: Generate verified release facts from admitted source
+        run: |
+          pnpm download:release-facts -- --tag="${RELEASE_TAG}" --allow-prerelease
+          cp src/views/download/model/macos-release.generated.ts "$RUNNER_TEMP/macos-release.generated.ts"
         env:
           GITHUB_TOKEN: ${{ github.token }}
 
@@ -532,20 +647,12 @@ jobs:
       # 않는다(재귀 방지).
       - name: Refresh /download release facts on main
         run: |
-          # **main 위에서 만들고 main 으로 보낸다.** 이 잡은 태그를 체크아웃한
-          # 상태인데, 승인 게이트 때문에 게시는 빌드보다 한참 뒤일 수 있고 그
-          # 사이 main 은 움직인다. 태그 커밋에서 `HEAD:main` 으로 밀면 그
-          # 커밋들을 되감는다 — 릴리스가 남의 작업을 지우는 셈이다.
+          # 생성 코드는 승인된 SHA에서 이미 실행했다. 여기서는 움직일 수 있는
+          # main에 결과 파일만 복사하며, 저장소가 제공하는 pnpm/node 코드는 더
+          # 실행하지 않는다.
           git fetch --no-tags origin main
           git switch -C release-facts-update origin/main
-          if [[ "${GITHUB_REF_NAME}" == *-* ]]; then
-            # RC 는 프리릴리스라 스크립트가 기본으로 거부한다. 정식 빌드가
-            # 나올 때까지 이 구간의 사용자가 받을 수 있는 최신은 RC 뿐이므로
-            # 명시적으로 허용한다(정식 태그에는 이 플래그가 붙지 않는다).
-            pnpm download:release-facts -- --tag="${GITHUB_REF_NAME}" --allow-prerelease
-          else
-            pnpm download:release-facts -- --tag="${GITHUB_REF_NAME}"
-          fi
+          cp "$RUNNER_TEMP/macos-release.generated.ts" src/views/download/model/macos-release.generated.ts
           if git diff --quiet -- src/views/download/model/macos-release.generated.ts; then
             echo "release facts already current — nothing to commit"
             exit 0
@@ -553,7 +660,7 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add src/views/download/model/macos-release.generated.ts
-          git commit -m "chore: /download 릴리스 사실을 ${GITHUB_REF_NAME} 로 갱신 [skip ci]"
+          git commit -m "chore: /download 릴리스 사실을 ${RELEASE_TAG} 로 갱신 [skip ci]"
           # fast-forward 만 허용한다 — 그 사이 main 이 또 움직였으면 조용히
           # 덮지 않고 여기서 실패한다.
           git push origin HEAD:main
@@ -572,7 +679,7 @@ jobs:
 
       - name: Summarize published desktop release
         run: |
-          release_url="$(gh release view "${GITHUB_REF_NAME}" --json url --jq .url)"
+          release_url="$(gh release view "${RELEASE_TAG}" --json url --jq .url)"
           {
             echo "## Published desktop release"
             echo ""

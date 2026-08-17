@@ -7,6 +7,17 @@
 
 ---
 
+## 2026-08-17 · 보호된 데스크톱 릴리스 운영 절차를 `main` 디스패치로 갱신
+
+- 기존 태그를 먼저 만들고 push한 뒤 `desktop:release-run -- --ref=main`으로
+  디스패치하는 현재 workflow와 tag+main SHA admission 절차를 문서화했다.
+- `release-signing`의 Apple 5 + Tauri 2 secret, main-only/no-tag 정책, signing-stage
+  reviewer 없음과 별도 `release` 환경의 설치 승인 경계를 명시했다.
+- repository-scope secret 및 tag-ref 기반의 이전 운영 지침을 제거하고,
+  환경 secret 명령을 `gh secret set/list --env release-signing`으로 통일했다.
+
+---
+
 ## 2026-08-17 · 다운로드 검증을 생략한 릴리스 상태는 ready가 아니다
 
 - `OATLAS_RELEASE_STATUS_SKIP_DOWNLOAD_VERIFY=1`로 공개 DMG·체크섬 검증을
