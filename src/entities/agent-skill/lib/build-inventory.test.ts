@@ -1,6 +1,9 @@
 import { describe, expect, it } from "vitest";
 
 import { buildSkillInventory, sourceLabelOf } from "./build-inventory";
+import { readFileSync, readdirSync } from "node:fs";
+import { join } from "node:path";
+
 import { sampleExistingPaths, sampleSkillFiles } from "../model/sample-skills";
 
 /**
@@ -28,6 +31,74 @@ describe("스킬 인벤토리", () => {
     expect(inv.skills).toHaveLength(9);
     expect(inv.skills.every((entry) => entry.process.state === "ready")).toBe(true);
     expect(inv.skills.every((entry) => entry.process.state === "ready" && entry.process.process.steps.length >= 2)).toBe(true);
+  });
+
+  /**
+   * **볼트가 들고 나오는 스킬도 같은 기준을 지킨다** (2026-08-17).
+   *
+   * 위 시험은 `sample-skills.ts` 만 본다. 그 사정거리 밖에서 같은 결함이
+   * 그대로 재발했다 — 볼트 스타터가 깔기 시작한 세 스킬이 절차를 `## 1.`
+   * **제목**으로 써서, 절차 인식기(줄머리 순서 목록만 센다)에는 0단계로
+   * 읽혔다. 그 결과 **여섯 템플릿 전부에서 「에이전트에게 넘기기」가
+   * 비활성**이었다 — 모든 새 사용자의 볼트에서.
+   *
+   * 2026-08-14 (5) 원장이 막으려던 바로 그 결함인데, 게이트가 견본 파일만
+   * 보고 있어서 어제 태어난 템플릿은 그냥 걸어 나갔다. **사정거리를 넓히는
+   * 것이 이번 수정의 본체다** — 값을 고치는 것은 한 번이고, 게이트는 다음에도 막는다.
+   */
+  it("볼트 스타터 스킬도 번호 절차를 갖는다 — 새 볼트마다 인계가 켜져 있어야 한다", () => {
+    for (const root of ["cli/templates/vault", "cli/templates/vault-ko"]) {
+      const base = join(process.cwd(), root, ".claude/skills");
+      const dirs = readdirSync(base);
+      expect(dirs.length, `${root}: 스킬이 없다 — 이 시험이 헛돈다`).toBeGreaterThanOrEqual(3);
+      const inv = buildSkillInventory({
+        files: dirs.map((dir) => ({
+          relativePath: `.claude/skills/${dir}/SKILL.md`,
+          text: readFileSync(join(base, dir, "SKILL.md"), "utf8"),
+        })),
+      });
+      for (const entry of inv.skills) {
+        expect(
+          entry.process.state,
+          `${root}/${entry.name}: 절차를 못 읽는다 — 새 볼트에서 인계 버튼이 꺼진다`,
+        ).toBe("ready");
+      }
+    }
+  });
+
+  /**
+   * **스킬은 서로를 부른다 — 화면이 그것을 세야 한다** (2026-08-18).
+   *
+   * 소유자: *"스킬도 그래프처럼 연결되는 걸 보여주고 싶었는데 좀 이상하다"*.
+   * 재 보니 연결이 없어서가 아니라 **세는 어휘가 없어서** 안 보였다.
+   *
+   * 지금 인벤토리가 내는 관계는 둘뿐이고 **둘 다 적대적**이다 — 이름이
+   * 겹친다(`collisions`) · 발동 조건이 겹친다(`overlaps`). 그런데 실제
+   * 스킬 18개를 세어 보면 **협력적 관계가 25개** 있다: 본문이 다른 스킬을
+   * `/이름` 으로 명시해 부르는 것(`user-walkthrough` → `po-pass` →
+   * `po-council`, `design-build` → `design-audit` …). 화면은 그중 0개를 센다.
+   *
+   * 추론이 아니라 **존재 검사**다 — 본문이 이름 댄 `/이름` 이 이 목록에
+   * 실재하는 스킬일 때만 엣지가 선다. 없는 이름은 엣지가 아니다.
+   */
+  it("본문이 `/이름` 으로 부른 다른 스킬을 넘김 관계로 센다", () => {
+    const inv = buildSkillInventory({
+      files: [
+        skill(".claude/skills/a/SKILL.md", "a", "첫째", "본문에서 /b 를 부른다. 그리고 /nope 도 적는다."),
+        skill(".claude/skills/b/SKILL.md", "b", "둘째", "여기서는 /c 로 넘긴다."),
+        skill(".claude/skills/c/SKILL.md", "c", "셋째", "아무도 안 부른다."),
+      ],
+    });
+    const pairs = inv.handoffs.map((h) => `${h.from.name}->${h.to.name}`).sort();
+    // /nope 는 실재하지 않으므로 엣지가 아니다 — 지어내지 않는다.
+    expect(pairs).toEqual(["a->b", "b->c"]);
+  });
+
+  it("자기 자신을 부르는 것은 넘김이 아니다", () => {
+    const inv = buildSkillInventory({
+      files: [skill(".claude/skills/a/SKILL.md", "a", "첫째", "이 스킬은 /a 라고 자기를 적는다.")],
+    });
+    expect(inv.handoffs).toEqual([]);
   });
 
   it("frontmatter 두 값이 다 있는 것만 스킬로 센다", () => {

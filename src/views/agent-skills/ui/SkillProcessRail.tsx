@@ -12,7 +12,18 @@ import {
 import { Button } from "@/shared/ui";
 import { controlClass } from "@/shared/ui/control-class";
 
+import { StepText } from "./StepText";
+
 const testIdPart = (value: string): string => value.replace(/^[^:]+:/, "").replace(/[^a-zA-Z0-9_-]/g, "-");
+
+/**
+ * 지문을 **알아볼 만큼만** 남긴다 — `sha256:` 접두는 떼고 앞 6자.
+ *
+ * 이 값이 화면에서 하는 일은 「원문이 그대로인가」를 눈으로 대조하는 것 하나다.
+ * 전체 71자를 펴 두면 그 일은 조금도 쉬워지지 않으면서 머리글의 남는 폭을 전부
+ * 먹는다. 전체 값은 `title` 로 남아 있어 대조할 사람은 그대로 손에 넣는다.
+ */
+const shortDigest = (value: string): string => value.replace(/^sha256:/, "").slice(0, 6);
 
 export function SkillProcessRail({
   process,
@@ -69,6 +80,7 @@ export function SkillProcessRail({
   }
 
   const { process: ir } = process;
+  const skillDir = ir.source.path.replace(/\/SKILL\.md$/, "");
   return (
     <section data-testid="skill-process-rail" data-process-state="ready">
       <div className="flex flex-wrap items-baseline justify-between gap-2">
@@ -80,8 +92,15 @@ export function SkillProcessRail({
             {t("exactCount", { count: ir.steps.length })}
           </p>
         </div>
-        <span className="max-w-full break-all font-mono text-label text-[color:var(--color-text-quaternary)]">
-          {ir.source.digest}
+        {/* **71자 해시를 통째로 펴 두면 머리글이 그것으로 채워진다** — 원문이
+            안 바뀌었는지 대조할 때 쓰는 값이라 화면에 필요한 것은 «있다»와
+            «앞 몇 자»뿐이고, 대조할 사람은 전체 값을 손에 넣을 수 있어야 한다.
+            그래서 앞 6자만 그리고 전체는 title 로 남긴다. */}
+        <span
+          title={ir.source.digest}
+          className="shrink-0 font-mono text-label text-[color:var(--color-text-quaternary)]"
+        >
+          {t("digestLabel")} {shortDigest(ir.source.digest)}
         </span>
       </div>
 
@@ -112,7 +131,7 @@ export function SkillProcessRail({
                 </span>
                 <div className="min-w-0">
                   <p className="whitespace-pre-wrap break-words text-body-lg leading-prose text-[color:var(--color-text-primary)]">
-                    {step.exactText}
+                    <StepText text={step.exactText} />
                   </p>
                   {step.semanticLabels.length > 0 ? (
                     <ul className="mt-1 flex flex-col gap-0.5">
@@ -130,7 +149,16 @@ export function SkillProcessRail({
                   ) : null}
                 </div>
                 <span className="font-mono text-caption text-[color:var(--color-text-quaternary)]">
-                  {t("lines", { start: step.sourceSpan.start.line, end: step.sourceSpan.end.line })}
+                  {/* 시작과 끝이 같은 줄이면 「L38–L38」이 아니라 「L38」이다 —
+                      제목으로 적은 절차가 들어오면서 이 모양이 단계의 절반을
+                      넘게 됐다(2026-08-18). 범위가 아닌 것을 범위로 쓰면 읽는
+                      사람이 두 수를 대조하게 만든다. */}
+                  {step.sourceSpan.start.line === step.sourceSpan.end.line
+                    ? t("linesOne", { line: step.sourceSpan.start.line })
+                    : t("lines", {
+                        start: step.sourceSpan.start.line,
+                        end: step.sourceSpan.end.line,
+                      })}
                 </span>
               </div>
               {hasDetail ? (
@@ -155,7 +183,12 @@ export function SkillProcessRail({
                         <ul className="flex flex-col gap-1">
                           {resources.map((resource) => (
                             <li key={resource.path} className="text-body text-[color:var(--color-text-secondary)]">
-                              {resource.path} · {resource.kind} · {resource.exists === true
+                              {/* 앞자리(`<스킬>/`)는 바로 위 제목이 이미 말했다 —
+                                  3단 사슬이 같은 이유로 이미 떼고 있었는데 여기만
+                                  전체 경로였다. 그리고 종류는 영어 enum 이 아니라
+                                  뜻으로 적는다(`script` → 「돌아가는 것」). */}
+                              {shortenResource(resource.path, skillDir)} ·{" "}
+                              {t(resourceKindKey(resource.kind))} · {resource.exists === true
                                 ? t("resourceExists")
                                 : resource.exists === false
                                   ? t("resourceMissing")
@@ -245,7 +278,14 @@ function PacketAction({
       <p data-testid="skill-packet-status" aria-live="polite" className="text-body text-[color:var(--color-text-tertiary)]">
         {status}
       </p>
-      {digest ? <span className="break-all font-mono text-caption text-[color:var(--color-text-quaternary)]">{digest}</span> : null}
+      {digest ? (
+        <span
+          title={digest}
+          className="shrink-0 font-mono text-caption text-[color:var(--color-text-quaternary)]"
+        >
+          {shortDigest(digest)}
+        </span>
+      ) : null}
     </div>
   );
 }
@@ -283,4 +323,25 @@ function diagnosticText(
     case "semantic_ambiguous": return t("diagnosticSemanticAmbiguous");
     default: return diagnostic.message;
   }
+}
+
+/** 자료 종류를 **뜻으로** 옮기는 문구 열쇠. 영어 enum 을 화면에 그대로 두지 않는다. */
+function resourceKindKey(kind: string): string {
+  switch (kind) {
+    case "script":
+      return "resourceKindScript";
+    case "asset":
+      return "resourceKindAsset";
+    case "template":
+      return "resourceKindTemplate";
+    case "example":
+      return "resourceKindExample";
+    default:
+      return "resourceKindReference";
+  }
+}
+
+/** 스킬 폴더 앞자리를 뗀다 — 3단 사슬이 쓰는 규칙과 같다. */
+function shortenResource(path: string, skillDir: string): string {
+  return skillDir && path.startsWith(`${skillDir}/`) ? path.slice(skillDir.length + 1) : path;
 }

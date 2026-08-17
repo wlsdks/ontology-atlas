@@ -131,7 +131,7 @@ const DISABLED = CONTROL_DISABLED_CLASS;
  * 더해도 레이아웃 이동이 0 이다.
  */
 const FOCUS =
-  'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[color:var(--color-indigo-a46)]';
+  'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[color:var(--color-indigo-focus-ring)]';
 
 /**
  * 손가락 바닥 표식 — `pointer: coarse` 에서만 컨트롤을 44px 로 밀어 올린다.

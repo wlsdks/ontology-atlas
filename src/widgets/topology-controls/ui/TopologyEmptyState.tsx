@@ -77,7 +77,7 @@ export function TopologyEmptyState({
    * 폭이 아니라 **채움**이 진다(주 행동만 인디고 면).
    */
   const ACTION =
-    "w-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a46)] focus-visible:ring-offset-2 focus-visible:ring-offset-[color:var(--color-panel)]";
+    "w-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-focus-ring)] focus-visible:ring-offset-2 focus-visible:ring-offset-[color:var(--color-panel)]";
   const PRIMARY = controlClass({
     shape: 'chip',
     size: 'lg',

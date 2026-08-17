@@ -3547,13 +3547,13 @@
     "reading": "Reading the folder…",
     "unsupported": "This browser cannot open folders. The desktop app can.",
     "readError": "Could not read the folder: {error}",
-    "truncated": "The folder is large, so we read up to {count} files: the results below cover that much.",
+    "truncated": "The folder is large, so we read up to {count, plural, one {# file} other {# files}}: the results below cover that much.",
     "notInstalled": "Skipped {count} folders that are not installed: older versions and catalogs you have not installed. Those never fire.",
     "stat": {
-      "skills": "skills",
       "bundled": "bundled files",
-      "executables": "that run",
-      "folder": "Folder: {folder}"
+      "folder": "Folder: {folder}",
+      "skillsCount": "<b>{count}</b> {count, plural, one {skill} other {skills}}",
+      "executablesCount": "<b>{count}</b> {count, plural, one {executable} other {executables}}"
     },
     "collisions": {
       "title": "Names collide",
@@ -3572,7 +3572,7 @@
       "onTrigger": "Loaded when it fires",
       "onDemand": "Opened on demand",
       "chars": "{count} chars",
-      "fileCount": "{count} files",
+      "fileCount": "{count, plural, one {# file} other {# files}}",
       "noFiles": "No bundled files",
       "runs": "runs",
       "missing": "file is missing"
@@ -3585,21 +3585,24 @@
     },
     "row": {
       "collides": "name clash",
-      "metrics": "{chars} chars · {files} files · {runs} run",
-      "runs": "{count} run"
+      "metrics": "{chars} chars · {files, plural, one {# file} other {# files}} · {runs, plural, one {# run} other {# runs}}",
+      "runs": "{count, plural, one {# run} other {# runs}}"
     },
     "detail": {
       "back": "Skill list",
-      "backOverview": "All findings",
+      "backOverview": "Back to summary",
       "showLoadChain": "Show how it loads (3 stages)",
       "hideLoadChain": "Hide how it loads",
       "competing": "Competes with this skill",
       "sameName": "The same name also lives in {source}: which one fires is undefined",
-      "sharedTrigger": "Shares a trigger with {name}: {words}"
+      "sharedTrigger": "{name}: same trigger words ({words})",
+      "handsOffTitle": "Hands off to",
+      "handedFromTitle": "Called from",
+      "runsMark": "{count, plural, one {# file runs} other {# files run}}"
     },
     "process": {
       "title": "Exact process",
-      "exactCount": "{count} source steps, in source order",
+      "exactCount": "{count, plural, one {# source step} other {# source steps}}, in source order",
       "unavailable": "Process unavailable. Atlas will not guess missing or partial steps.",
       "lines": "L{start}–L{end}",
       "showDetail": "Resources and diagnostics",
@@ -3624,18 +3627,29 @@
       "packetTampered": "Integrity check failed; copying is blocked",
       "packetCopying": "Copying…",
       "packetCopied": "Packet copied",
-      "packetCopyFailed": "Copy failed"
+      "packetCopyFailed": "Copy failed",
+      "digestLabel": "source digest",
+      "linesOne": "L{line}",
+      "resourceKindReference": "reference",
+      "resourceKindScript": "script",
+      "resourceKindAsset": "asset",
+      "resourceKindTemplate": "template",
+      "resourceKindExample": "example"
     },
     "findings": {
       "alwaysTitle": "Loaded every session",
       "alwaysNote": "{chars} chars in total",
       "competingTitle": "Competing with each other",
-      "competingNote": "{names} names · {pairs} trigger pairs",
+      "competingNote": "{names, plural, one {# name} other {# names}} · {pairs, plural, one {# trigger pair} other {# trigger pairs}}",
       "noneCompeting": "Nothing competes.",
-      "sameNameCount": "{count} places",
+      "sameNameCount": "{count, plural, one {# place} other {# places}}",
       "runsTitle": "Can run on your machine",
-      "runsNote": "{count} files",
-      "noneRun": "Nothing runs."
+      "runsNote": "{count, plural, one {# file} other {# files}}",
+      "noneRun": "Nothing runs.",
+      "handoffTitle": "Hand-offs between skills",
+      "handoffNote": "{count, plural, one {# link} other {# links}}",
+      "noneHandoff": "No skill calls another.",
+      "handoffDegree": "called by {into} · hands to {out}"
     },
     "openSample": "Browse the example",
     "sampleNotice": "This is the example set: open your folder to see your own skills."

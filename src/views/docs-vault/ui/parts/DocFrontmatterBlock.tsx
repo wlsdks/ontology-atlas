@@ -583,7 +583,7 @@ export function DocFrontmatterBlock({
         <summary
           data-testid="doc-frontmatter-summary"
           aria-label={open ? t("collapseAria") : t("expandAria")}
-          className="flex list-none items-center gap-1.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-line-a45)]"
+          className="flex list-none items-center gap-1.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-focus-ring)]"
         >
           <ChevronRight
             size={ICON_SIZE.sm}

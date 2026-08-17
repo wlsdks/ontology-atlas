@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-08-17",
+  "generatedAt": "2026-08-18",
   "docs": [
     {
       "slug": "AGENT-GRAPH-WORKFLOW",
@@ -4035,6 +4035,11 @@
         },
         {
           "depth": 2,
+          "text": "2026-08-18 · 스킬 화면이 그래프가 되고, 절차를 읽는 눈이 넓어졌다",
+          "slug": "2026-08-18-스킬-화면이-그래프가-되고-절차를-읽는-눈이-넓어졌다"
+        },
+        {
+          "depth": 2,
           "text": "2026-08-17 · 새 볼트가 절차 스킬 셋을 들고 나온다",
           "slug": "2026-08-17-새-볼트가-절차-스킬-셋을-들고-나온다"
         },
@@ -6519,9 +6524,9 @@
           "slug": "2026-07-26-첫-만남은-쇼핑몰부터"
         }
       ],
-      "excerpt": "Major change history. Code commit messages answer why; this file answers when / which surface changed. Focused on user-visible changes, not PR-level granularity. Newest at the top. Entries stay date-based; the app version reached v1.0.0 on 2026-07-27, so a release tag now carries the semver promise instead. init 으로 만든 ",
-      "wordCount": 70730,
-      "updatedAt": "2026-08-17",
+      "excerpt": "Major change history. Code commit messages answer why; this file answers when / which surface changed. Focused on user-visible changes, not PR-level granularity. Newest at the top. Entries stay date-based; the app version reached v1.0.0 on 2026-07-27, so a release tag now carries the semver promise instead. 소유자: \"스킬도 그",
+      "wordCount": 71055,
+      "updatedAt": "2026-08-18",
       "linksOut": [
         "audits/CASE-STUDY-AGENTS-MD-DRIFT",
         "domains/catalog",
@@ -6549,6 +6554,31 @@
           "depth": 2,
           "text": "기록 형식",
           "slug": "기록-형식"
+        },
+        {
+          "depth": 2,
+          "text": "2026-08-18 (68) — 초점 표시는 **보여야** 한다: 알파를 뺀 전용 토큰",
+          "slug": "2026-08-18-68-초점-표시는-보여야-한다-알파를-뺀-전용-토큰"
+        },
+        {
+          "depth": 3,
+          "text": "선행 기록 — 뒤집지 않고, 그때 안 잰 축을 잰다",
+          "slug": "선행-기록-뒤집지-않고-그때-안-잰-축을-잰다"
+        },
+        {
+          "depth": 3,
+          "text": "실측 — 알파를 바탕과 합성해야 보인다",
+          "slug": "실측-알파를-바탕과-합성해야-보인다"
+        },
+        {
+          "depth": 3,
+          "text": "결정 — 색상은 그대로, 알파만 뺀다",
+          "slug": "결정-색상은-그대로-알파만-뺀다"
+        },
+        {
+          "depth": 3,
+          "text": "게이트 — 「있는가」가 아니라 「보이는가」를 잰다",
+          "slug": "게이트-있는가가-아니라-보이는가를-잰다"
         },
         {
           "depth": 2,
@@ -9492,8 +9522,8 @@
         }
       ],
       "excerpt": "이 파일은 결정과 그때 진 반대 의견을 남긴다. docs/CHANGELOG.md 는 무엇이 언제 바뀌었나를 답하고, 이 파일은 왜 그렇게 정했고, 무엇을 걸었나를 답한다. 최신이 위. 기록은 덧붙이기만 한다 — 지난 기록을 고치지 않는다. 판단이 바뀌었으면 새 기록을 쓰고 옛 기록을 뒤집힘 으로 표시한다. 틀린 기록도 자산이다. 1. 소집 전에 읽는다. 카운슬을 열기 전(그리고 단독 PO 패스를 쓰기 전) 같은 표면 · 같은 질문에 대한 선행 결정이 있는지 먼저 본다. 있으면 새 패스는 그것을 ① 여전히 유효하다고 인용하거나 ② 명시적으로 뒤집는다. 조용히 다시 결정",
-      "wordCount": 143134,
-      "updatedAt": "2026-08-17",
+      "wordCount": 143709,
+      "updatedAt": "2026-08-18",
       "linksOut": [
         "slug"
       ]
@@ -11190,8 +11220,8 @@
         }
       ],
       "excerpt": "Complete inventory of features users can actually use right now. Last updated: 2026-08-02 (지금 있는 라우트, 설치한 앱이 지키기로 한 약속, 프로젝트가 무엇을 뜻하는지 확정한 기록(project meaning receipt)을 다시 확인했다 — /ontology 는 /topology?index=expanded 로, /ontology/edit 은 /ontology/studio 로 보내는 옛 주소 호환 redirect 이고, Insights 는 할 일 · 구성 · 연결 · 경계 · 신선도 다섯 개 ",
-      "wordCount": 20116,
-      "updatedAt": "2026-08-17",
+      "wordCount": 20296,
+      "updatedAt": "2026-08-18",
       "linksOut": [
         "slug",
         "project:slug",

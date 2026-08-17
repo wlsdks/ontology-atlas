@@ -11,34 +11,34 @@ description: 다음 한 걸음. 이 볼트에 무엇을 더하면 값이 가장 
 결과다 — **틀린 지도는 없는 지도보다 나쁘다.** 없으면 사람이 직접 찾아보지만,
 틀린 것이 있으면 그걸 믿고 결정한다.
 
-## 1. 지금 어디까지 왔나
+1. **지금 어디까지 왔나**
 
 - `query_ontology({ operation: 'agent_brief' })` — 이 볼트의 시작점과 다음 행동
 - `query_ontology({ operation: 'growth_plan' })` — 무엇이 비어 있나
 
-## 2. 후보를 근거로 거른다
+2. **후보를 근거로 거른다**
 
 받은 후보를 그대로 옮기지 않는다. 하나씩 셋을 통과해야 남는다.
 
-1. **실재하는가** — 이름만 그럴듯한 게 아니라 코드나 문서에 근거가 있나.
+- **실재하는가** — 이름만 그럴듯한 게 아니라 코드나 문서에 근거가 있나.
    `find_evidence({ title })` 로 확인한다. 코드 폴더가 묶여 있으면
    `analyze_repo_structure` · `infer_imports` 가 근거를 준다.
-2. **이미 있는가** — `query_concepts({ filter })` 로 비슷한 이름을 먼저 찾는다.
+- **이미 있는가** — `query_concepts({ filter })` 로 비슷한 이름을 먼저 찾는다.
    있으면 새로 만들지 말고 그것을 `patch_concept`(`expected_mtime` 함께)로 채운다.
-3. **뜻이 있는가** — 자리 말고 다른 이유가 있어야 element 다. 파일 하나마다
+- **뜻이 있는가** — 자리 말고 다른 이유가 있어야 element 다. 파일 하나마다
    노드 하나를 만들면 그건 지도가 아니라 파일 목록이다.
 
-## 3. 사람에게 보여 준다
+3. **사람에게 보여 준다**
 
 한 번에 **다섯 개까지**. 줄마다 셋을 적는다 — ① 무엇을 ② 어디에 붙이고
 ③ 왜 그렇게 보는지(근거). 「전부 만들까요?」라고 묻지 않는다. 번호를 붙여서
 골라서 답할 수 있게 한다.
 
-## 4. 승인된 것만 쓴다 — 그리고 확인한다
+4. **승인된 것만 쓴다 — 그리고 확인한다**
 
-1. 노드: `add_concepts` (많으면 50개씩 나눠서)
-2. **노드가 전부 성공한 다음에** 관계: `add_relations`
-3. `validate_vault({})` → `query_ontology({ operation: 'health' })`
+- 노드: `add_concepts` (많으면 50개씩 나눠서)
+- **노드가 전부 성공한 다음에** 관계: `add_relations`
+- `validate_vault({})` → `query_ontology({ operation: 'health' })`
 
 **새 도메인은 저절로 프로젝트에 안 붙는다.**
 `add_relation('<project>', 'domains/<새 도메인>', 'domains')` 를 빠뜨리면

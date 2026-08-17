@@ -32,7 +32,7 @@ const PICKER_TILE_INK = (active: boolean) =>
 
 /** 격자 칸을 채우는 자리잡기 + 포커스 링 — 값 층이 안 내는 층. */
 const PICKER_TILE_FRAME =
-  'w-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a46)]';
+  'w-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-focus-ring)]';
 
 /*
  * **`size: 'md'` 인 이유 — 실측이 잡았다.**

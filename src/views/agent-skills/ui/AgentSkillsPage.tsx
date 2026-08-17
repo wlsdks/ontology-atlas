@@ -69,13 +69,45 @@ export function AgentSkillsPage() {
   );
   const view = isCompact ? (compactDetail && current ? "detail" : "list") : "split";
 
-  const selectSkill = useCallback((relativePath: string) => {
+  /*
+   * **오른쪽에서 고르면 왼쪽이 따라와야 한다** (2026-08-18 실측).
+   *
+   * 넘김 줄을 눌러 건너뛰면 상세는 바뀌는데 왼쪽 목록은 그대로였다. 실측:
+   * `design-audit` → `responsive-sweep` 으로 넘어간 뒤, 「지금 여기」 표시가 붙은
+   * 행은 y=1309 인데 목록이 보이는 칸은 197~876 이었다 — **433px 아래, 화면 밖**.
+   * 게다가 누른 버튼이 사라지면서 초점이 `<body>` 로 떨어져, 다음 Tab 이 문서
+   * 맨 위에서 다시 시작했다.
+   *
+   * 그래서 «어디서 골랐나»를 구분한다. 목록 행에서 고른 것은 이미 보이는 자리이고
+   * 초점도 그 행에 있으므로 **아무것도 하지 않는다** — 거기서 초점을 뺏으면 화살표
+   * 이동이 끊긴다. 오른쪽(넘김 · 경쟁 · 요약)에서 고른 것만 목록을 데려오고 상세
+   * 제목으로 초점을 옮긴다.
+   */
+  const cameFromRight = useRef(false);
+
+  const selectSkill = useCallback((relativePath: string, fromList = false) => {
     setSelected(relativePath);
+    cameFromRight.current = !fromList;
     if (isCompact) {
       listScrollTop.current = listScrollRef.current?.scrollTop ?? 0;
       setCompactDetail(true);
     }
   }, [isCompact]);
+
+  const selectFromList = useCallback(
+    (relativePath: string) => selectSkill(relativePath, true),
+    [selectSkill],
+  );
+
+  useEffect(() => {
+    if (isCompact || !cameFromRight.current || !selected) return;
+    cameFromRight.current = false;
+    // `nearest` — 이미 보이면 안 움직인다. 주인공은 상세이지 목록이 아니다.
+    document
+      .querySelector<HTMLElement>(`[data-skill-path="${CSS.escape(selected)}"]`)
+      ?.scrollIntoView({ block: "nearest" });
+    detailHeadingRef.current?.focus();
+  }, [isCompact, selected]);
 
   useEffect(() => {
     if (isCompact && compactDetail && current) detailHeadingRef.current?.focus();
@@ -167,10 +199,26 @@ export function AgentSkillsPage() {
                 data-testid="skills-census"
                 className="flex items-baseline gap-1.5 pb-[3px] text-label tracking-[var(--tracking-caps-08)] text-[color:var(--color-text-tertiary)]"
               >
-                <b className={numeralClass}>{inventory.totals.skills}</b> {t("stat.skills")}
+                {/* 「18 스킬」은 한국어 어순이 아니다 — 수사가 앞서면 영어를 옮긴 말로
+                    읽힌다. 그런데 어순은 언어마다 다르므로 컴포넌트가 정할 수 없다:
+                    문장은 번역이 갖고, 굵게 칠할 숫자만 rich 태그로 돌려준다. */}
+                {/* ⚠️ **rich 출력은 반드시 한 겹으로 싸서 넣는다.** 그냥 두면
+                    `<b>18</b>` 과 「개」가 **각각 flex 자식**이 되어 컨테이너의
+                    `gap-1.5` 가 그 사이에 끼고, 화면에 「18 개」로 벌어진다
+                    (2026-08-18 실측 — 내가 낸 회귀를 스크린샷에서 잡았다). */}
+                <span>
+                  {t.rich("stat.skillsCount", {
+                    count: inventory.totals.skills,
+                    b: (chunks) => <b className={numeralClass}>{chunks}</b>,
+                  })}
+                </span>
                 <span aria-hidden className="text-[color:var(--color-text-quaternary)]">·</span>
-                <b className={numeralClass}>{inventory.totals.executables}</b>{" "}
-                {t("stat.executables")}
+                <span>
+                  {t.rich("stat.executablesCount", {
+                    count: inventory.totals.executables,
+                    b: (chunks) => <b className={numeralClass}>{chunks}</b>,
+                  })}
+                </span>
               </span>
             ) : null}
           </div>
@@ -241,7 +289,7 @@ export function AgentSkillsPage() {
                     inventory={inventory}
                     groups={groups}
                     selected={selected}
-                    onSelect={selectSkill}
+                    onSelect={selectFromList}
                   />
                 </div>
               </div>

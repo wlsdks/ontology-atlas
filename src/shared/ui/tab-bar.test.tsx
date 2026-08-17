@@ -49,7 +49,7 @@ describe('TabBar', () => {
     expect(active.className).toContain('color-indigo-accent');
     expect(inactive.className).toContain('border-transparent');
     expect(active.className).toContain('focus-visible:ring-inset');
-    expect(active.className).toContain('color-indigo-ring-a46');
+    expect(active.className).toContain('color-indigo-focus-ring');
   });
 
   it('calls onSelect with the clicked tab key', () => {

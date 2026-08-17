@@ -48,7 +48,7 @@ export const Checkbox = forwardRef<HTMLInputElement, CheckboxProps>(function Che
       <input
         ref={ref}
         type="checkbox"
-        className="size-4 shrink-0 accent-[color:var(--color-indigo-brand)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a46)]"
+        className="size-4 shrink-0 accent-[color:var(--color-indigo-brand)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-focus-ring)]"
         {...rest}
       />
       {label}

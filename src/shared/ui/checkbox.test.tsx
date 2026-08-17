@@ -29,7 +29,7 @@ describe("Checkbox", () => {
     expect(box.className).toContain("accent-[color:var(--color-indigo-brand)]");
     expect(box.className).toContain("size-4");
     expect(box.className).toContain("focus-visible:ring-2");
-    expect(box.className).toContain("var(--color-indigo-a46)");
+    expect(box.className).toContain("var(--color-indigo-focus-ring)");
   });
 
   it("checked/disabled 네이티브 prop 이 그대로 흐른다", () => {

@@ -1,5 +1,6 @@
 import { expect, test } from "@playwright/test";
 
+import ko from "../../messages/ko.json";
 import { stubSkillFolder } from "./skills-folder-stub";
 import { seedFirstRunSeen } from "./first-run-seed";
 
@@ -176,7 +177,7 @@ test.describe("스킬 인벤토리", () => {
     await expect(page.getByTestId("skill-process-step").nth(2).getByTestId("skill-semantic-label")).toHaveCount(0);
     await page.getByTestId("skill-process-step").nth(2).getByTestId("skill-step-disclosure").click();
     await expect(page.getByTestId("skill-process-step").nth(2)).toContainText(
-      "뜻이 여러 갈래라 라벨을 만들지 않았습니다.",
+      ko.agentSkills.process.diagnosticSemanticAmbiguous,
     );
     expect(await page.locator("[data-process-edge]").count()).toBe(0);
   });
@@ -200,8 +201,14 @@ test.describe("스킬 인벤토리", () => {
     );
     await expect(page.getByTestId("skill-process-step")).toHaveCount(0);
     await expect(page.getByTestId("skill-packet-copy")).toBeDisabled();
+    /*
+     * 문장을 여기 베껴 두면 **문구를 다듬을 때마다 이 검사가 터진다** — 이
+     * 저장소가 문서 계약에서 이미 겪은 실패이고, 그래서 규칙이 「사람이 쓴
+     * 문장을 못박지 않는다」다. 잠글 것은 문장이 아니라 **막았다는 사실이
+     * 문구 카탈로그의 그 자리에서 온다**는 것이다.
+     */
     await expect(page.getByTestId("skill-packet-status")).toContainText(
-      "프로세스를 읽을 수 없어 복사를 막았습니다",
+      ko.agentSkills.process.packetUnavailable,
     );
   });
 
@@ -453,5 +460,27 @@ test.describe("스킬 인벤토리", () => {
 
     // ⑤ 예시라는 사실을 화면이 말한다 — 내 폴더로 착각하면 안 된다.
     await expect(page.getByTestId("skills-scan-note")).toContainText("예시");
+
+    /*
+     * ⑥ **예시가 담지 않은 상황은 첫 5분에 존재하지 않는 기능이다** (2026-08-18).
+     *
+     * 넘김을 세기 시작한 날, 이 예시 뭉치에는 서로 부르는 스킬이 하나도 없었다.
+     * 그래서 폴더를 아직 안 고른 사람 — 이 화면을 처음 여는 바로 그 사람 — 에게는
+     * 이 화면의 핵심이 「연결 0개」로 보였다. 사슬을 눌러 건너가는 것까지 잰다:
+     * 개수만 뜨고 못 누르면 예시가 기능을 절반만 보여 준 것이다.
+     */
+    await page.getByTestId("skills-detail-overview").click();
+    const linked = page.getByTestId("skills-findings-handoffs");
+    await expect(linked, "예시가 넘김을 하나도 안 담았다").toBeVisible();
+    await linked.locator("li").first().locator("button").click();
+    await expect(page.getByTestId("skill-detail-heading")).toHaveText(/commit-style/);
+    await page
+      .getByTestId("skill-detail-handoffs")
+      .getByRole("button", { name: /release-notes/ })
+      .click();
+    await expect(
+      page.getByTestId("skill-detail-heading"),
+      "예시에서 사슬을 눌렀는데 다음 스킬로 안 갔다",
+    ).toHaveText(/release-notes/);
   });
 });

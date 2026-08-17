@@ -85,7 +85,7 @@ export function InlineFieldEdit({
             shape: "icon",
             size: "sm",
             tone: "muted",
-            className: "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a46)] focus-visible:ring-inset",
+            className: "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-focus-ring)] focus-visible:ring-inset",
           })}
         >
           <PencilLine size={ICON_SIZE.sm} aria-hidden />
@@ -125,7 +125,7 @@ export function InlineFieldEdit({
           size: "md",
           tone: "accentOnTint",
           className:
-            "border border-[color:var(--color-indigo-a46)] bg-[color:var(--color-indigo-a16)] hover:bg-[color:var(--color-indigo-a24)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a46)] focus-visible:ring-inset",
+            "border border-[color:var(--color-indigo-a46)] bg-[color:var(--color-indigo-a16)] hover:bg-[color:var(--color-indigo-a24)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-focus-ring)] focus-visible:ring-inset",
         })}
       >
         <Check size={ICON_SIZE.sm} aria-hidden />
@@ -140,7 +140,7 @@ export function InlineFieldEdit({
           shape: "icon",
           size: "md",
           tone: "muted",
-          className: "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a46)] focus-visible:ring-inset",
+          className: "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-focus-ring)] focus-visible:ring-inset",
         })}
       >
         <X size={ICON_SIZE.sm} aria-hidden />

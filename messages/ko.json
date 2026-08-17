@@ -3550,10 +3550,10 @@
     "truncated": "폴더가 커서 {count}개 파일까지만 읽었어요. 아래 결과는 그 범위 안에서예요.",
     "notInstalled": "설치돼 있지 않은 사본 {count}곳은 뺐어요. 옛 버전과 아직 설치 안 한 카탈로그예요. 그건 실제로 뜨지 않아요.",
     "stat": {
-      "skills": "스킬",
       "bundled": "딸린 파일",
-      "executables": "실행되는 것",
-      "folder": "폴더: {folder}"
+      "folder": "폴더: {folder}",
+      "skillsCount": "스킬 <b>{count}</b>개",
+      "executablesCount": "실행되는 것 <b>{count}</b>개"
     },
     "collisions": {
       "title": "이름이 겹쳐요",
@@ -3590,17 +3590,20 @@
     },
     "detail": {
       "back": "스킬 목록",
-      "backOverview": "전체 진단으로",
+      "backOverview": "요약으로",
       "showLoadChain": "어떻게 실리는지 보기 (3단계)",
       "hideLoadChain": "어떻게 실리는지 닫기",
       "competing": "이 스킬과 경쟁하는 것",
-      "sameName": "같은 이름이 {source} 에도 있어요. 어느 쪽이 뜰지 정해져 있지 않아요",
-      "sharedTrigger": "{name} 와 뜨는 조건이 겹쳐요. {words}"
+      "sameName": "같은 이름이 {source}에도 있어요. 어느 쪽이 뜰지 정해져 있지 않아요",
+      "sharedTrigger": "{name}: 뜨는 조건이 겹쳐요 ({words})",
+      "handsOffTitle": "이 스킬이 넘기는 곳",
+      "handedFromTitle": "이 스킬을 부르는 곳",
+      "runsMark": "돌아가는 파일 {count}개"
     },
     "process": {
       "title": "원문 절차",
       "exactCount": "원문 순서대로 단계 {count}개",
-      "unavailable": "프로세스를 읽을 수 없습니다. 빠진 단계나 일부 단계로 추측하지 않습니다.",
+      "unavailable": "절차를 읽지 못했어요. 빠진 단계를 짐작해서 채우지 않아요.",
       "lines": "L{start}–L{end}",
       "showDetail": "자료·진단 보기",
       "hideDetail": "자료·진단 닫기",
@@ -3609,22 +3612,29 @@
       "resourceUnknown": "확인 안 됨",
       "semanticBranch": "{guard}이면 {target}단계로 분기",
       "semanticRetry": "{condition}까지 {target}단계 재시도",
-      "semanticStop": "{condition}이면 전체 프로세스 중단",
+      "semanticStop": "{condition}이면 전체 절차 중단",
       "semanticVerify": "{target}을 {action} 방식으로 검증; {criterion}이면 통과",
-      "diagnosticScanTruncated": "안전 상한에서 폴더 읽기를 멈춰 일부 프로세스는 만들지 않았습니다.",
-      "diagnosticMarkdownUnsupported": "이 SKILL.md의 프로세스 문법은 원문 그대로 읽을 수 없습니다.",
-      "diagnosticStepsUnavailable": "지원하는 번호 절차를 찾지 못했습니다.",
-      "diagnosticResourceMissing": "가리킨 자료가 없습니다.",
-      "diagnosticResourceUnchecked": "가리킨 자료가 있는지 확인하지 못했습니다.",
-      "diagnosticResourcePathUnsupported": "가리킨 자료 경로가 지원 범위 밖입니다.",
-      "diagnosticSemanticAmbiguous": "뜻이 여러 갈래라 라벨을 만들지 않았습니다.",
+      "diagnosticScanTruncated": "폴더가 커서 읽기를 멈춰, 일부 절차는 만들지 못했어요.",
+      "diagnosticMarkdownUnsupported": "이 SKILL.md 의 절차 문법은 원문 그대로 읽을 수 없어요.",
+      "diagnosticStepsUnavailable": "번호가 매겨진 절차를 찾지 못했어요.",
+      "diagnosticResourceMissing": "가리킨 자료가 없어요.",
+      "diagnosticResourceUnchecked": "가리킨 자료가 있는지 확인하지 못했어요.",
+      "diagnosticResourcePathUnsupported": "가리킨 자료 경로가 확인할 수 있는 범위 밖이에요.",
+      "diagnosticSemanticAmbiguous": "뜻이 여러 갈래라 라벨을 만들지 않았어요.",
       "packetCopy": "절차 묶음 복사",
       "packetAvailable": "절차 묶음 준비됨",
-      "packetUnavailable": "프로세스를 읽을 수 없어 복사를 막았습니다",
-      "packetTampered": "무결성 확인에 실패해 복사를 막았습니다",
+      "packetUnavailable": "절차를 읽지 못해 복사를 막았어요",
+      "packetTampered": "원문이 그대로인지 확인하지 못해 복사를 막았어요",
       "packetCopying": "복사 중…",
       "packetCopied": "절차 묶음 복사됨",
-      "packetCopyFailed": "복사 실패"
+      "packetCopyFailed": "복사 실패",
+      "digestLabel": "원문 지문",
+      "linesOne": "L{line}",
+      "resourceKindReference": "읽는 것",
+      "resourceKindScript": "돌아가는 것",
+      "resourceKindAsset": "딸린 자료",
+      "resourceKindTemplate": "서식",
+      "resourceKindExample": "예시"
     },
     "findings": {
       "alwaysTitle": "매 세션 실리는 것",
@@ -3635,7 +3645,11 @@
       "sameNameCount": "{count}곳",
       "runsTitle": "내 컴퓨터에서 돌 수 있는 것",
       "runsNote": "파일 {count}개",
-      "noneRun": "실행되는 파일이 없어요."
+      "noneRun": "실행되는 파일이 없어요.",
+      "handoffTitle": "서로 넘기는 것",
+      "handoffNote": "연결 {count}개",
+      "noneHandoff": "서로 부르는 스킬이 없어요.",
+      "handoffDegree": "부르는 곳 {into} · 넘기는 곳 {out}"
     },
     "openSample": "예시 둘러보기",
     "sampleNotice": "예시 뭉치예요. 내 폴더를 열면 내 스킬이 보여요."

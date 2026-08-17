@@ -839,7 +839,7 @@ description: Review this vault. Find what is broken or disconnected, report it i
 **This skill writes nothing.** What it produces is one page: what is off, and
 what call fixes it. Fixing happens after a person has read it and decided.
 
-## 1. Two calls
+1. **Two calls**
 
 - \`validate_vault({})\` — frontmatter and relation references
 - \`query_ontology({ operation: 'health' })\` — the graph integrity checks
@@ -847,13 +847,13 @@ what call fixes it. Fixing happens after a person has read it and decided.
 Do not \`grep\` or \`sed\` the frontmatter directly. You get the same answer more
 slowly, without relation resolution or schema validation.
 
-## 2. Do not report what passed
+2. **Do not report what passed**
 
 Listing healthy checks spends the reader's attention and buries the one thing
 they need to act on. Report **only what needs a hand**. If everything is sound,
 end in one line — "nothing to fix · N nodes · M relations".
 
-## 3. Three things per item
+3. **Three things per item**
 
 | | |
 |---|---|
@@ -870,7 +870,7 @@ The two you will see most:
   \`domain: X\` but \`X\` does not claim it back.
   → \`add_relation('domains/X', 'capabilities/<capability>', 'capabilities')\`
 
-## 4. If project meaning is yellow — stop here
+4. **If project meaning is yellow — stop here**
 
 Never finalize \`meaning_assessment\` without human approval. The project's five
 competency answers are a claim about what this project *is*, and an agent
@@ -897,35 +897,35 @@ Only what a person picked lands in the vault. An invented node is the worst
 thing this tool can produce: **a wrong map is worse than no map.** With no map
 people go look for themselves; with a wrong one they decide on it.
 
-## 1. Where does this vault stand
+1. **Where does this vault stand**
 
 - \`query_ontology({ operation: 'agent_brief' })\` — the starting point and next action
 - \`query_ontology({ operation: 'growth_plan' })\` — what is empty
 
-## 2. Filter candidates against evidence
+2. **Filter candidates against evidence**
 
 Do not relay the candidates as they arrive. Each one must survive three tests.
 
-1. **Does it exist** — is there evidence in code or docs, or does it merely
+- **Does it exist** — is there evidence in code or docs, or does it merely
    sound plausible? Check with \`find_evidence({ title })\`. If a source folder is
    bound, \`analyze_repo_structure\` and \`infer_imports\` supply the evidence.
-2. **Is it already here** — search near-names first with
+- **Is it already here** — search near-names first with
    \`query_concepts({ filter })\`. If it exists, do not create a second one; fill
    the existing node with \`patch_concept\` (pass \`expected_mtime\`).
-3. **Does it carry meaning** — an element needs a reason beyond its location.
+- **Does it carry meaning** — an element needs a reason beyond its location.
    One node per file is not a map, it is a file listing.
 
-## 3. Show it to the person
+3. **Show it to the person**
 
 **Five at a time, at most.** Each line carries three things — ① what ② where it
 attaches ③ why you believe it (the evidence). Do not ask "shall I create them
 all?" Number them so the answer can be a selection.
 
-## 4. Write only what was approved — then verify
+4. **Write only what was approved — then verify**
 
-1. Nodes: \`add_concepts\` (chunks of 50 when there are many)
-2. **Only after every node succeeded**, relations: \`add_relations\`
-3. \`validate_vault({})\` → \`query_ontology({ operation: 'health' })\`
+- Nodes: \`add_concepts\` (chunks of 50 when there are many)
+- **Only after every node succeeded**, relations: \`add_relations\`
+- \`validate_vault({})\` → \`query_ontology({ operation: 'health' })\`
 
 **A new domain does not attach itself to the project.** Skip
 \`add_relation('<project>', 'domains/<new domain>', 'domains')\` and you have
@@ -953,13 +953,13 @@ The most common failure when extracting concepts from prose is **recreating
 something that already exists under a different name**. So the order is not
 "extract, then check for duplicates" but **"check for duplicates, then extract"**.
 
-## 1. What are you reading
+1. **What are you reading**
 
 - **A file in the vault** (or one the user pointed at) → \`absorb_document({ filePath })\`.
   Call it **without \`confirm\` first** — that returns proposals and writes nothing.
 - **Prose pasted into the conversation** → read it directly and draw candidates.
 
-## 2. Check each candidate for duplicates first
+2. **Check each candidate for duplicates first**
 
 For every candidate name, make two calls.
 
@@ -970,13 +970,13 @@ If it exists, **do not create a new node.** Do one of two things: fill the
 existing node with \`patch_concept\` (pass \`expected_mtime\`), or add only the
 missing relation.
 
-## 3. Do not create what the text does not claim
+3. **Do not create what the text does not claim**
 
 Prose is written loosely. "It would be nice if…" and "this might…" are wishes,
 not facts. Only raise candidates the text **actually asserts**. When it is
 borderline, raise it but mark it "weak support in the text" so the person decides.
 
-## 4. Write only what was approved — then verify
+4. **Write only what was approved — then verify**
 
 - For a file: \`absorb_document({ filePath, confirm: true })\`
 - For pasted prose: \`add_concepts\` → (after all succeed) \`add_relations\`
@@ -1007,7 +1007,7 @@ description: 볼트 점검. 지금 어긋난 곳과 끊긴 곳을 찾아 사람 
 **아무것도 쓰지 않는다.** 이 스킬이 내놓는 것은 「무엇이 어긋났고 무엇을 부르면
 고쳐지는가」 한 장이다. 고치는 것은 사람이 보고 정한 다음이다.
 
-## 1. 두 번 부른다
+1. **두 번 부른다**
 
 - \`validate_vault({})\` — frontmatter 와 관계 참조가 성한가
 - \`query_ontology({ operation: 'health' })\` — 그래프 무결성 검사 묶음
@@ -1015,13 +1015,13 @@ description: 볼트 점검. 지금 어긋난 곳과 끊긴 곳을 찾아 사람 
 \`grep\` 이나 \`sed\` 로 frontmatter 를 직접 훑지 않는다. 같은 답을 더 느리게 얻고
 관계 해석과 스키마 검증이 빠진다.
 
-## 2. 통과한 것은 말하지 않는다
+2. **통과한 것은 말하지 않는다**
 
 성한 검사를 나열하는 보고는 읽는 사람 시간을 쓰고, 정작 손댈 것을 묻는다.
 **손댈 것이 있는 것만** 적는다. 전부 성하면 한 줄로 끝낸다 —
 「지금 손댈 곳 없음 · 노드 N · 관계 M」.
 
-## 3. 항목마다 셋을 적는다
+3. **항목마다 셋을 적는다**
 
 | | |
 |---|---|
@@ -1038,7 +1038,7 @@ description: 볼트 점검. 지금 어긋난 곳과 끊긴 곳을 찾아 사람 
   갖고 있는데 \`X\` 쪽에서 되받아 걸지 않았다.
   → \`add_relation('domains/X', 'capabilities/<역량>', 'capabilities')\`
 
-## 4. 프로젝트 의미가 노랗다면 — 여기서 멈춘다
+4. **프로젝트 의미가 노랗다면 — 여기서 멈춘다**
 
 \`meaning_assessment\` 는 **사람 승인 없이 마무리하지 않는다.** 프로젝트가 답할
 다섯 질문은 「이 프로젝트가 무엇인가」에 대한 주장이라, 에이전트가 대신 확정할
@@ -1065,34 +1065,34 @@ description: 다음 한 걸음. 이 볼트에 무엇을 더하면 값이 가장 
 결과다 — **틀린 지도는 없는 지도보다 나쁘다.** 없으면 사람이 직접 찾아보지만,
 틀린 것이 있으면 그걸 믿고 결정한다.
 
-## 1. 지금 어디까지 왔나
+1. **지금 어디까지 왔나**
 
 - \`query_ontology({ operation: 'agent_brief' })\` — 이 볼트의 시작점과 다음 행동
 - \`query_ontology({ operation: 'growth_plan' })\` — 무엇이 비어 있나
 
-## 2. 후보를 근거로 거른다
+2. **후보를 근거로 거른다**
 
 받은 후보를 그대로 옮기지 않는다. 하나씩 셋을 통과해야 남는다.
 
-1. **실재하는가** — 이름만 그럴듯한 게 아니라 코드나 문서에 근거가 있나.
+- **실재하는가** — 이름만 그럴듯한 게 아니라 코드나 문서에 근거가 있나.
    \`find_evidence({ title })\` 로 확인한다. 코드 폴더가 묶여 있으면
    \`analyze_repo_structure\` · \`infer_imports\` 가 근거를 준다.
-2. **이미 있는가** — \`query_concepts({ filter })\` 로 비슷한 이름을 먼저 찾는다.
+- **이미 있는가** — \`query_concepts({ filter })\` 로 비슷한 이름을 먼저 찾는다.
    있으면 새로 만들지 말고 그것을 \`patch_concept\`(\`expected_mtime\` 함께)로 채운다.
-3. **뜻이 있는가** — 자리 말고 다른 이유가 있어야 element 다. 파일 하나마다
+- **뜻이 있는가** — 자리 말고 다른 이유가 있어야 element 다. 파일 하나마다
    노드 하나를 만들면 그건 지도가 아니라 파일 목록이다.
 
-## 3. 사람에게 보여 준다
+3. **사람에게 보여 준다**
 
 한 번에 **다섯 개까지**. 줄마다 셋을 적는다 — ① 무엇을 ② 어디에 붙이고
 ③ 왜 그렇게 보는지(근거). 「전부 만들까요?」라고 묻지 않는다. 번호를 붙여서
 골라서 답할 수 있게 한다.
 
-## 4. 승인된 것만 쓴다 — 그리고 확인한다
+4. **승인된 것만 쓴다 — 그리고 확인한다**
 
-1. 노드: \`add_concepts\` (많으면 50개씩 나눠서)
-2. **노드가 전부 성공한 다음에** 관계: \`add_relations\`
-3. \`validate_vault({})\` → \`query_ontology({ operation: 'health' })\`
+- 노드: \`add_concepts\` (많으면 50개씩 나눠서)
+- **노드가 전부 성공한 다음에** 관계: \`add_relations\`
+- \`validate_vault({})\` → \`query_ontology({ operation: 'health' })\`
 
 **새 도메인은 저절로 프로젝트에 안 붙는다.**
 \`add_relation('<project>', 'domains/<새 도메인>', 'domains')\` 를 빠뜨리면
@@ -1120,13 +1120,13 @@ description: 글에서 개념 뽑기. 회의록·기획서·PR 설명에서 개�
 만드는 것**이다. 그래서 순서가 「뽑고 나서 중복 확인」이 아니라
 **「중복 확인하고 나서 뽑기」** 다.
 
-## 1. 무엇을 읽나
+1. **무엇을 읽나**
 
 - **볼트 안(또는 사용자가 가리킨) 파일**이면 → \`absorb_document({ filePath })\`.
   \`confirm\` 을 **빼고 먼저 부른다** — 그러면 쓰지 않고 제안만 돌려준다.
 - **대화에 붙여 넣은 글**이면 → 그 글을 직접 읽고 후보를 뽑는다.
 
-## 2. 후보마다 중복을 먼저 본다
+2. **후보마다 중복을 먼저 본다**
 
 후보 이름 하나하나에 대해 둘을 부른다.
 
@@ -1136,13 +1136,13 @@ description: 글에서 개념 뽑기. 회의록·기획서·PR 설명에서 개�
 있으면 **새로 만들지 않는다.** 둘 중 하나를 한다 —
 \`patch_concept\`(\`expected_mtime\` 함께)로 내용을 채우거나, 관계만 더한다.
 
-## 3. 글에 없는 것은 만들지 않는다
+3. **글에 없는 것은 만들지 않는다**
 
 산문은 사람이 대충 쓴다. 「~하면 좋겠다」 · 「~일 수도 있다」 는 아직 사실이
 아니라 바람이다. **글이 실제로 주장하는 것만** 후보로 올린다. 애매하면
 후보에는 올리되 「글의 근거가 약함」이라고 적어서 사람이 판단하게 한다.
 
-## 4. 승인된 것만 쓴다 — 그리고 확인한다
+4. **승인된 것만 쓴다 — 그리고 확인한다**
 
 - 파일이면 \`absorb_document({ filePath, confirm: true })\`
 - 붙여 넣은 글이면 \`add_concepts\` → (전부 성공한 뒤) \`add_relations\`
