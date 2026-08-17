@@ -314,19 +314,23 @@ export interface UseTopologyLoopArgs {
    */
   trailHoverNodeIdRef?: RefObject<string | null>;
   /**
-   * 대화창에서 노드 이름에 마우스를 올렸을 때 그 노드 (2026-08-17).
+   * **옆 패널 위에서 마우스가 가리키고 있는 노드** (2026-08-17).
+   *
+   * 쓰는 곳 둘: 대화창의 노드 이름, 그리고 데이터시트의 관계·근거·도메인 줄.
+   * 커서는 하나라 동시에 둘일 수 없으므로 통로도 하나다 (종전 이름
+   * `chatHoverNodeIdRef` — 데이터시트가 같은 통로를 쓰면서 이름이 거짓이 됐다).
    *
    * 걸어온 길 렌즈(`trailHoverNodeIdRef`)와 **같은 이유로 같은 채널을 빌린다**:
    * 커서가 캔버스가 아니라 옆 패널 위에 있어서 캔버스 호버와 경쟁하지 않는다.
    * 그래서 「포커스가 emphasis 소유권을 독점한다」는 규칙의 두 번째 예외다.
    *
    * 새 시각 언어를 만들지 않는다 — **마우스로 올렸을 때와 똑같이** 보인다.
-   * 채팅에서 온 강조만 다르게 보이면 사용자는 그것이 무슨 뜻인지 또 배워야
+   * 패널에서 온 강조만 다르게 보이면 사용자는 그것이 무슨 뜻인지 또 배워야
    * 하고, 이 지도에는 이미 배울 색이 충분하다.
    *
    * ref 인 이유도 같다: 호버마다 렌더를 돌리면 큰 그래프에서 끈적해진다.
    */
-  chatHoverNodeIdRef?: RefObject<string | null>;
+  panelHoverNodeIdRef?: RefObject<string | null>;
   /**
    * 슬라이스 C (개발/비개발 모드 토글) — 표시-렌즈 티어 게이트 config. 생략 시
    * `DEFAULT_TIER_REVEAL`(개발 모드 — capability/element 모두 정상 줌 반응).
@@ -379,7 +383,7 @@ export type UseTopologyLoopResult = TopologyPointerHandlers & {
 };
 
 export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResult {
-  const { nodes, edges, focusedSlug, emphasizedNeighborSlug = null, dataSourceKey = null, fitViewToken, spotlightFitToken = 0, relayoutToken, revealToken = 0, onSelectEdge, onHoverEdge, onSelect, onPaneClick, onVisibleCountChange, onGraphStatsChange, onZoomTierChange, onContextMenuNode, onContextMenuPane, agentFocusNodeId = null, spotlightIds = null, selectedEdge = null, expandedParents = EMPTY_EXPANDED_SET, onToggleCluster, onHoverCluster, realmRootId = null, onEnterRealm, realmEnterButtonRef, realmCaption = null, visitedTrail = EMPTY_TRAIL, trailLensActiveRef, clusterBarLabels = null, trailHoverNodeIdRef, chatHoverNodeIdRef, tierReveal = DEFAULT_TIER_REVEAL, tourAnchorNodeId = null, tourAnchorRef, glyphSet = "geometric", canvasBackground = "dot", footprint = null, expand = DEFAULT_EXPAND, wheelIntent = "zoom", ambientSleepDelayMs, onWalkDeadEnd = null } = args;
+  const { nodes, edges, focusedSlug, emphasizedNeighborSlug = null, dataSourceKey = null, fitViewToken, spotlightFitToken = 0, relayoutToken, revealToken = 0, onSelectEdge, onHoverEdge, onSelect, onPaneClick, onVisibleCountChange, onGraphStatsChange, onZoomTierChange, onContextMenuNode, onContextMenuPane, agentFocusNodeId = null, spotlightIds = null, selectedEdge = null, expandedParents = EMPTY_EXPANDED_SET, onToggleCluster, onHoverCluster, realmRootId = null, onEnterRealm, realmEnterButtonRef, realmCaption = null, visitedTrail = EMPTY_TRAIL, trailLensActiveRef, clusterBarLabels = null, trailHoverNodeIdRef, panelHoverNodeIdRef, tierReveal = DEFAULT_TIER_REVEAL, tourAnchorNodeId = null, tourAnchorRef, glyphSet = "geometric", canvasBackground = "dot", footprint = null, expand = DEFAULT_EXPAND, wheelIntent = "zoom", ambientSleepDelayMs, onWalkDeadEnd = null } = args;
 
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const containerRef = useRef<HTMLDivElement | null>(null);
@@ -664,7 +668,14 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
   /** 걸어온 길 렌즈/브러싱 prop ref 미러 — rAF 클로저가 deps 없이 최신 것을 읽게 (`tourAnchorRef` 와 같은 미러 관용). */
   const trailLensPropRef = useRef<RefObject<boolean> | null>(trailLensActiveRef ?? null);
   const trailBrushPropRef = useRef<RefObject<string | null> | null>(trailHoverNodeIdRef ?? null);
-  const chatHoverPropRef = useRef<RefObject<string | null> | null>(chatHoverNodeIdRef ?? null);
+  const panelHoverPropRef = useRef<RefObject<string | null> | null>(panelHoverNodeIdRef ?? null);
+  /**
+   * 이번 프레임이 **실제로 호버로 대접한** 노드 — 계기(`__atlasMap.hover()`)
+   * 전용 거울. 캔버스에는 DOM 이 없어서, 밖에서 「지도가 그 노드를 가리키고
+   * 있나」를 확인할 방법이 픽셀 비교밖에 없었다(그건 무엇이 왜 바뀌었는지는
+   * 말해 주지 않는다). 프레임이 쓴 값을 그대로 복사하므로 화면과 어긋날 수 없다.
+   */
+  const drawnHoveredNodeIdRef = useRef<string | null>(null);
   /** 밀도 게이트 — 펼친 부모 Set 미러(rAF + 포인터 클로저 공용). */
   const expandedParentsRef = useRef<ReadonlySet<string>>(expandedParents);
   /** S2 파트 5B — 직전 펼침 Set (새로 펼쳐진 부모 diff → 카메라 다이브용). */
@@ -928,7 +939,7 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
   useEffect(() => {
     trailLensPropRef.current = trailLensActiveRef ?? null;
     trailBrushPropRef.current = trailHoverNodeIdRef ?? null;
-    chatHoverPropRef.current = chatHoverNodeIdRef ?? null;
+    panelHoverPropRef.current = panelHoverNodeIdRef ?? null;
   });
 
   useEffect(() => {
@@ -2012,10 +2023,10 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
             panelEmphasisNodeIdRef.current !== null ||
             hoveredClusterIdRef.current !== null ||
             ((trailLensPropRef.current?.current ?? false) && (trailBrushPropRef.current?.current ?? null) !== null) ||
-            // 대화창 호버도 진행 중인 상호작용이다. 여기 안 넣으면 루프가
+            // 옆 패널 호버도 진행 중인 상호작용이다. 여기 안 넣으면 루프가
             // 유휴로 접혀서, 마우스를 올려도 **아무 일도 안 일어난다** —
             // 값은 맞는데 화면이 안 그려지는 종류의 결함이다.
-            (chatHoverPropRef.current?.current ?? null) !== null,
+            (panelHoverPropRef.current?.current ?? null) !== null,
           // 렌즈 on/off 전이 — 마지막으로 그린 상태와 다르면 한 프레임 깨워
           // 새 상태를 그린다(스포트라이트 램프 정착과 같은 계약).
           trailLensSettling:
@@ -2477,14 +2488,34 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
       // 원래 규칙으로 돌아온다.
       const trailLensActive = trailLensPropRef.current?.current ?? false;
       const trailBrushNodeId = trailLensActive ? (trailBrushPropRef.current?.current ?? null) : null;
-      // 대화창 호버는 걸어온 길 브러싱과 같은 자리에 선다 — 둘 다 커서가
-      // 캔버스 밖에 있을 때만 생기므로 서로 부딪히지 않는다.
-      const chatHoverNodeId = chatHoverPropRef.current?.current ?? null;
+      // 옆 패널(대화창·데이터시트) 호버는 걸어온 길 브러싱과 같은 자리에
+      // 선다 — 둘 다 커서가 캔버스 밖에 있을 때만 생기므로 서로 부딪히지 않는다.
+      const panelHoverNodeId = panelHoverPropRef.current?.current ?? null;
       const hoveredNodeId =
-        trailBrushNodeId ?? chatHoverNodeId ?? (focusedNodeId ? null : hoveredNodeIdRef.current);
+        trailBrushNodeId ?? panelHoverNodeId ?? (focusedNodeId ? null : hoveredNodeIdRef.current);
+      // 계기(`__atlasMap.hover()`)가 읽는 값 — **이번 프레임이 실제로 쓴 것**을
+      // 그대로 둔다. 통로별 원본 ref 를 따로 내보내면 「값은 맞는데 화면은 다른」
+      // 상태를 검사가 초록으로 통과시킨다.
+      drawnHoveredNodeIdRef.current = hoveredNodeId;
       // Panel-row emphasis only bites while a node is focused (that's the only
       // time the "연결된 노드" list exists) — otherwise hover owns the ripple.
-      const panelEmphasisNodeId = focusedNodeId ? panelEmphasisNodeIdRef.current : null;
+      //
+      // ⚠️ **호버 채널만으로는 화면에 아무것도 안 그려진다** (2026-08-17 실측).
+      // 포커스 중에는 `isNodeEmphasisActive` 가 이 값 하나만 보고 나머지를
+      // 전부 거른다. 그래서 옆 패널 호버가 `hoveredNodeId` 를 제대로 채워도
+      // emphasis 램프가 0 에 머물고, 호버 링의 알파는 그 램프를 타므로
+      // (`node-shapes.ts` — `ringAlpha = hoverEmphasis ?? 1`) 링이 **투명하게**
+      // 그려진다. 실측: 노드를 고른 상태에서 관계 행에 마우스를 올렸을 때
+      // 캔버스에서 바뀐 픽셀 **0개**(감속 모션 on, 전체 캔버스 비교).
+      //
+      // 그래서 같은 ref 가 이 입력도 먹인다. 새 통로가 아니다 — 이 입력은
+      // 애초에 *"detail panel 의 연결 목록에서 호버 중인 그 한 노드"* 를 받으려고
+      // 만들어졌고(`focus-state.ts` §isNodeEmphasisActive), 먹이는 쪽이 없어
+      // 계속 null 이었다. prop(`emphasizedNeighborSlug`)도 그대로 두어, 나중에
+      // 렌더 기반으로 먹이고 싶은 소비처가 생기면 그쪽이 이긴다.
+      const panelEmphasisNodeId = focusedNodeId
+        ? (panelEmphasisNodeIdRef.current ?? panelHoverNodeId)
+        : null;
 
       // S3 마감 폴리시 — 큐빅 카메라 전환 트윈. 진행 중이면 이번 프레임 카메라를
       // 이징으로 직접 구동하고 physics-step 의 스프링을 건너뛴다(freezeCamera).
@@ -3860,6 +3891,16 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
         if (!camera) return null;
         return { x: camera.x.value, y: camera.y.value, scale: camera.scale.value, width, height };
       },
+      /**
+       * 지금 지도가 **호버로 가리키고 있는** 노드 — 커서가 캔버스 위에 있든,
+       * 옆 패널(대화창·데이터시트)의 줄 위에 있든 같은 값이다.
+       *
+       * 왜 있어야 하나 (2026-08-17): 패널 줄에 마우스를 올리면 지도가 그
+       * 노드를 가리킨다는 계약을 밖에서 확인할 방법이 **없었다**. 캔버스에는
+       * DOM 이 없으니 남는 수단은 픽셀 비교뿐인데, 픽셀은 «뭔가 바뀌었다»만
+       * 말하고 «그 노드인가»는 말하지 못한다 — 엉뚱한 노드를 가리켜도 초록이다.
+       */
+      hover: () => drawnHoveredNodeIdRef.current,
       /** 지금 무엇이 골라져 있나 — 노드 하나 또는 엣지 한 쌍. */
       selection: () => ({
         nodeId: focusedSlugRef.current,

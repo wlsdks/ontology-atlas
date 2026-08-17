@@ -5,6 +5,8 @@ import {
   type ReactElement,
   type ReactNode,
   useCallback,
+  useEffect,
+  useRef,
   useState,
 } from "react";
 import {
@@ -320,6 +322,27 @@ export interface TopologyV2DetailPanelProps {
   studioEditHref: string;
   labels: TopologyV2DetailPanelLabels;
   onSelectConnection: (id: string) => void;
+  /**
+   * 관계 행 위에 커서가 있는 동안 그 노드를 **지도에서** 가리킨다 (2026-08-17
+   * 소유자 지시: *"이부분들 각각 마우스 올리면 옆에 지도에서 반짝이면서 표시되면
+   * 좋겠는데 가능할까? 지금은 아무 반응이 없어서.."*).
+   *
+   * **이름 공간에 주의** — 여기 넘기는 값은 `onSelectConnection` 과 같은
+   * **캔버스 노드 id**(`domain:example-domain`)다. 근거 문서 행은 다른 이름
+   * 공간(볼트 slug)이라 `onHoverEvidence` 로 따로 나간다. 둘을 한 콜백으로
+   * 합치면 `chat-node-index.ts` 가 기록한 그 사고 — 두 이름 공간이 만나는
+   * 자리에 검사가 없어 기능이 배선만 남고 죽었던 것 — 를 그대로 반복한다.
+   *
+   * 안 넘기면 아무 일도 안 일어난다(기존 동작 유지).
+   */
+  onHoverConnection?: (id: string | null) => void;
+  /**
+   * 근거 문서 행 호버 — **볼트 slug**(`capabilities/mcp-server`)를 넘긴다.
+   * 지도에 그 노드가 있으면 가리키고, 없으면(문서가 노드가 아닐 수 있다)
+   * 호출자가 null 로 접는다. 판정은 호출자의 몫이다 — 이 패널은 어느 노드가
+   * 지도에 실렸는지 모른다.
+   */
+  onHoverEvidence?: (slug: string | null) => void;
   onCopyHandoff: (text: string) => void;
   /**
    * 「이어서 새로 만들기」 — 이 개념에 붙는 새 노드를 만든다. 없으면 타일 자체가
@@ -837,6 +860,8 @@ export function TopologyV2DetailPanel({
   studioEditHref,
   labels,
   onSelectConnection,
+  onHoverConnection,
+  onHoverEvidence,
   onCopyHandoff,
   onCreateLinked,
   onAskAgent,
@@ -928,6 +953,24 @@ export function TopologyV2DetailPanel({
   // 여기 상태는 그 노드의 것만 산다.
   const [expandedGroups, setExpandedGroups] = useState<ReadonlySet<string>>(new Set());
   const [showProjectRelations, setShowProjectRelations] = useState(false);
+
+  /*
+   * 패널이 사라질 때 지도의 강조도 같이 걷는다.
+   *
+   * 행 위에 커서를 둔 채로 그 행을 **누르면** 노드가 바뀌고, 호출부가 `key` 를
+   * 갈아 패널을 통째로 다시 세운다 — 그 행은 DOM 에서 사라지므로
+   * `pointerleave` 가 오지 않는다. 그러면 지도에는 아무도 안 가리키는 강조가
+   * 남는다. 최신 콜백을 ref 로 들고 언마운트에서 한 번만 끈다(콜백 신원이
+   * 바뀔 때마다 껐다 켜지 않기 위해서다).
+   */
+  const clearHoverRef = useRef<() => void>(() => {});
+  useEffect(() => {
+    clearHoverRef.current = () => {
+      onHoverConnection?.(null);
+      onHoverEvidence?.(null);
+    };
+  });
+  useEffect(() => () => clearHoverRef.current(), []);
 
   const handleKeyDown = useCallback(
     (event: ReactKeyboardEvent<HTMLDivElement>) => {
@@ -1031,6 +1074,11 @@ export function TopologyV2DetailPanel({
                 <RowButton
                   size="md"
                   onClick={() => onSelectConnection(row.id)}
+                  /* 채팅 패널의 노드 이름 호버(`AcpChatPanel`)와 **같은 계약**:
+                     포인터가 들어오면 그 노드를, 나가면 null. 커서가 캔버스가
+                     아니라 이 패널 위에 있으므로 캔버스 호버와 경쟁하지 않는다. */
+                  onPointerEnter={() => onHoverConnection?.(row.id)}
+                  onPointerLeave={() => onHoverConnection?.(null)}
                   data-datasheet-connection={row.id}
                   className="rounded-chip hover:bg-[color:var(--topology-v2-panel-row-hover)] active:bg-[color:var(--topology-v2-panel-row-active)]"
                 >
@@ -1104,6 +1152,10 @@ export function TopologyV2DetailPanel({
               <Link
                 href={buildDocsVaultHref({ slug: row.id })}
                 data-datasheet-evidence={row.id}
+                /* 근거 문서는 **노드가 아닐 수 있다** — 지도에 없으면 호출자가
+                   null 로 접고 아무 일도 안 일어난다(에러도 없다). */
+                onPointerEnter={() => onHoverEvidence?.(row.id)}
+                onPointerLeave={() => onHoverEvidence?.(null)}
                 title={row.id}
                 // 연결 행(`RowButton`)과 **같은 램프 스텝**이어야 한다 — 한 패널
                 // 안에서 행 높이가 갈리면 「치수 규칙성」이 깨진다.
@@ -1269,6 +1321,10 @@ export function TopologyV2DetailPanel({
                 <button
                   type="button"
                   onClick={() => onSelectConnection(domain.id)}
+                  /* 관계 행과 **같은 어포던스**(누르면 그 노드로 간다)라 호버도
+                     같아야 한다 — 여기만 반응이 없으면 "왜 이 줄만 다르지"가 된다. */
+                  onPointerEnter={() => onHoverConnection?.(domain.id)}
+                  onPointerLeave={() => onHoverConnection?.(null)}
                   aria-label={`${labels.domainLabel} ${domain.title}`}
                   data-testid="topology-v2-detail-panel-domain"
                   className={controlClass({

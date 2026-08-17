@@ -1856,15 +1856,26 @@ export function HomePage() {
   }, []);
 
   /*
-    대화창에서 노드 이름에 마우스를 올렸을 때 (2026-08-17 소유자 지시:
-    *"채팅에서 마우스만 올려도 우리 노드에 표시된다거나"*).
+    **옆 패널에서 노드 이름에 마우스를 올렸을 때** 지도가 그 노드를 가리키는
+    단 하나의 통로. 쓰는 곳이 둘이다:
 
-    바로 위 발자국 브러싱과 **같은 계약**이다 — 커서가 캔버스가 아니라 옆
-    패널 위에 있어 캔버스 호버와 경쟁하지 않고, ref 라 호버마다 렌더를
-    돌리지 않는다. 지도는 이것을 **마우스로 올렸을 때와 똑같이** 그린다:
-    채팅에서 온 강조만 다르게 보이면 그것이 무슨 뜻인지 또 배워야 한다.
+    ① 대화창(2026-08-17 소유자 지시: *"채팅에서 마우스만 올려도 우리 노드에
+       표시된다거나"*)
+    ② 데이터시트의 하위/상위/근거/도메인 줄 (2026-08-17 소유자 지시:
+       *"이부분들 각각 마우스 올리면 옆에 지도에서 반짝이면서 표시되면 좋겠는데
+       가능할까? 지금은 아무 반응이 없어서.."*)
+
+    ②를 붙일 때 **새 통로를 만들지 않았다.** 「반짝」은 깜빡임·glow 를 뜻하는
+    말이 아니라 *"거기가 어디인지 보이게"* 라는 뜻이고(이 저장소는 깜빡임·
+    glow·pulse 를 금지한다 — `forbidden.md` 「디자인」절), 지도에는 이미 그
+    뜻으로 배운 표시가 있다: **마우스로 노드를 가리켰을 때 나오는 그 표시**.
+    통로를 하나로 두면 강조도 하나뿐이라 사용자가 새로 배울 것이 없다.
+
+    발자국 브러싱과 **같은 계약**이다 — 커서가 캔버스가 아니라 옆 패널 위에
+    있어 캔버스 호버와 경쟁하지 않고, ref 라 호버마다 렌더를 돌리지 않는다.
+    두 소비처가 동시에 쓸 일은 없다(커서는 하나다).
   */
-  const chatHoverNodeIdRef = useRef<string | null>(null);
+  const panelHoverNodeIdRef = useRef<string | null>(null);
   /* 답변에서 집을 이름들 — **실재하는 노드만**. 아무 `a/b` 나 링크로 만들면
      파일 경로와 URL 까지 링크가 되고, 눌러도 아무 데도 안 가는 링크를 한 번
      만난 사람은 나머지도 안 누른다.
@@ -1883,7 +1894,20 @@ export function HomePage() {
      ref 를 쓰는 쪽이 더 싸 보이지만 그건 동시성 렌더에서 깨지는 패턴이다. */
   const handleChatHoverSlug = useCallback(
     (slug: string | null) => {
-      chatHoverNodeIdRef.current = slug ? (chatNodeIndex.get(slug) ?? null) : null;
+      panelHoverNodeIdRef.current = slug ? (chatNodeIndex.get(slug) ?? null) : null;
+    },
+    [chatNodeIndex],
+  );
+  /* 데이터시트의 관계 행 — 넘어오는 값이 **이미 캔버스 노드 id** 다
+     (`onSelectConnection` 과 같은 이름 공간). 그래서 표를 거치지 않는다. */
+  const handleDatasheetHoverConnection = useCallback((id: string | null) => {
+    panelHoverNodeIdRef.current = id;
+  }, []);
+  /* 근거 문서 행 — 넘어오는 값은 **볼트 slug** 라 채팅과 같은 표를 거친다.
+     지도에 없는 문서면 표가 못 찾고 null 이 되어 아무 일도 안 일어난다. */
+  const handleDatasheetHoverEvidence = useCallback(
+    (slug: string | null) => {
+      panelHoverNodeIdRef.current = slug ? (chatNodeIndex.get(slug) ?? null) : null;
     },
     [chatNodeIndex],
   );
@@ -5091,7 +5115,7 @@ export function HomePage() {
                     visitedTrail={footprintVisitedIds}
                     trailLensActiveRef={footprintLensActiveRef}
                     trailHoverNodeIdRef={footprintBrushNodeIdRef}
-                    chatHoverNodeIdRef={chatHoverNodeIdRef}
+                    panelHoverNodeIdRef={panelHoverNodeIdRef}
                     // 슬라이스 C — 비개발(plain) 모드는 element 티어를 도달
                     // 불가 밴드로 밀어 상시 숨김(ego 예외는 그대로).
                     tierReveal={audiencePlain ? PLAIN_TIER_REVEAL : undefined}
@@ -5551,6 +5575,8 @@ export function HomePage() {
                   sourceBusy: projectSourceLabels?.busy,
                 }}
                 onSelectConnection={(id) => handleSelect(id)}
+                onHoverConnection={handleDatasheetHoverConnection}
+                onHoverEvidence={handleDatasheetHoverEvidence}
                 onCopyHandoff={copyV2NodeHandoff}
                 /*
                  * 「이어서 새로 만들기」 — **도메인 노드에서만** 넘긴다.
