@@ -30,6 +30,7 @@ import {
 import { cn } from '@/shared/lib/cn';
 import { useAcpSession, type AcpEvent } from '@/features/acp-session/model/use-acp-session';
 import { readAcpTrouble } from '@/features/acp-session/model/acp-trouble';
+import { claudeLoginRepairCommand } from '@/features/acp-session/model/claude-login-repair';
 import { withoutErrorEcho } from '@/features/acp-session/model/error-echo';
 import type { ChatSuggestion } from '@/features/acp-session/model/chat-suggestions';
 import { linkSlugs } from '@/features/acp-session/model/link-slugs';
@@ -626,6 +627,20 @@ export function AcpChatPanel({
             >
               {t('trouble.details')}
             </summary>
+            {/*
+              로그인이 낡은 갈래에는 **고치는 한 줄**을 먼저 준다. 종전 안내
+              (「터미널에서 다시 로그인하세요」)는 이 경우 막다른 길이었다 —
+              앱은 Claude 를 전용 설정 폴더로 띄우고, 로그인은 그 폴더마다
+              따로이기 때문이다. 근거와 실측: `claude-login-repair.ts`.
+            */}
+            {trouble?.kind === 'auth' ? (
+              <p
+                data-testid="acp-chat-auth-repair"
+                className="mt-1.5 whitespace-pre-wrap break-all rounded-chip bg-[color:var(--color-overlay-1)] px-2 py-1.5 font-mono text-caption leading-caption text-[color:var(--color-text-tertiary)]"
+              >
+                {claudeLoginRepairCommand()}
+              </p>
+            ) : null}
             <p className="mt-1.5 whitespace-pre-wrap break-all font-mono text-caption leading-caption text-[color:var(--color-text-quaternary)]">
               {error}
             </p>

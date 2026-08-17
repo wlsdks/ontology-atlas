@@ -136,15 +136,26 @@ export function AgentActivityChip({ suppressed = false }: { suppressed?: boolean
                   href={buildOntologyNodeHref(feed.lastNode.slug)}
                   data-testid="agent-activity-target"
                   aria-label={t('openOnMap', { name: feed.lastNode.name })}
+                  /*
+                   * ⚠️ `truncate` 축을 쓰지 않는다 (2026-08-17 소유자 지적 →
+                   * 실측). 그 축은 `block truncate` 를 내는데, `block` 이
+                   * 이 모양의 `inline-flex` 를 밀어낸다(tailwind-merge). 그러면
+                   * `items-center` 가 가운데 맞출 대상이 없어져서, 24px 짜리
+                   * `min-h-6` 상자 안에서 **글자가 위에 붙는다**.
+                   *
+                   * 실측: 같은 줄의 이웃 글자가 윗선 17~18px 인데 이 링크만
+                   * 14px 이었다 — 3px 위로 떠 있었다(글자 크기는 같다, 둘 다
+                   * 잉크 높이 9px). 그래서 자르기는 안쪽 글자에 맡기고
+                   * 모양은 그대로 둔다.
+                   */
                   className={controlClass({
                     shape: 'link',
                     tone: 'accent',
-                    truncate: true,
                     className:
                       'min-w-0 max-w-40 hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-accent)]',
                   })}
                 >
-                  {feed.lastNode.name}
+                  <span className="min-w-0 truncate">{feed.lastNode.name}</span>
                 </Link>
               </span>
             ) : null}
