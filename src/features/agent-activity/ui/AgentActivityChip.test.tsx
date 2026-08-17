@@ -33,25 +33,27 @@ function feed(overrides: Partial<AgentActivityFeed> = {}): AgentActivityFeed {
 }
 
 /**
- * 자리가 둘로 갈렸다 (2026-08-17 소유자 지시): 상태 줄은 지도 **하단**,
- * 알림 종은 위쪽 「에이전트 / 최근 변경」 **아래 줄**. 그래서 검사도 어느
- * 조각을 그리는지 밝힌다 — 안 밝히면 종 검사가 상태 줄을 뒤지게 된다.
+ * **한 줄이 한 곳에 산다** (2026-08-17, 자리를 가른 것을 되돌렸다). 상태 줄과
+ * 종이 같은 칩에 있으므로 검사도 조각을 밝히지 않는다. `renderBell` 은 이름만
+ * 남겨 둔다 — 종을 보려면 볼 알림이 있어야 한다는 조건을 그 이름이 나른다.
  */
-function renderChip(
-  next: Partial<AgentActivityFeed> = {},
-  part: 'status' | 'bell' = 'status',
-) {
+function renderChip(next: Partial<AgentActivityFeed> = {}) {
   mocks.feed = feed(next);
   return render(
     <NextIntlClientProvider locale="ko" messages={koMessages}>
-      <AgentActivityChip part={part} />
+      <AgentActivityChip />
     </NextIntlClientProvider>,
   );
 }
 
-/** 알림 종 쪽만 그린다. */
+/** 종은 **볼 알림이 있을 때만** 그려진다 — 빈 알림함을 여는 버튼은 두지 않는다. */
 function renderBell(next: Partial<AgentActivityFeed> = {}) {
-  return renderChip(next, 'bell');
+  return renderChip({
+    notifications: [
+      { id: "seed", kind: "task-end", at: NOW - 1000, node: null, counts: { added: 1, edited: 0, removed: 0 } },
+    ],
+    ...next,
+  });
 }
 
 describe("AgentActivityChip", () => {

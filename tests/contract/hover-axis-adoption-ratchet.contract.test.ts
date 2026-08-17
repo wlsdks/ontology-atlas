@@ -41,8 +41,13 @@ import { stripComments } from "../../scripts/lib/static-surface-census.mjs";
 
 const ROOT = process.cwd();
 
-/** 오늘 실측. 늘면 빨개진다. 줄면 아래 「내려라」가 빨개진다. */
-const CEILING = 387;
+/**
+ * 오늘 실측. 늘면 빨개진다. 줄면 아래 「내려라」가 빨개진다.
+ *
+ * 387 → 386 (2026-08-17): 알림 종이 손으로 쓴 `controlClass({shape:'segment'})`
+ * 버튼에서 `IconButton` 프리미티브로 옮겨 가면서 손 호버 선언 하나가 빠졌다.
+ */
+const CEILING = 386;
 
 function walk(dir: string, out: string[] = []): string[] {
   for (const name of readdirSync(dir)) {

@@ -9,6 +9,7 @@ import { Link } from '@/i18n/navigation';
 import { buildOntologyNodeHref } from '@/entities/knowledge-graph';
 import { CHROME_STATUS_CHIP_CLASS } from '@/shared/ui/chrome-chip';
 import { controlClass } from '@/shared/ui/control-class';
+import { IconButton } from '@/shared/ui/controls';
 import { Surface } from '@/shared/ui/surface';
 import { cn } from '@/shared/lib/cn';
 import type { AgentNotification, AgentNotificationKind } from '@/shared/lib/agent-notifications';
@@ -43,27 +44,55 @@ import { useAgentActivityFeed } from '../model/use-agent-activity-feed';
  * 벨 배지가 늘 때 장식 모션을 넣지 않는다(「한 입력 = 한 사건」).
  */
 /**
- * 이 부품이 그리는 **두 조각** (2026-08-17 소유자 지시로 자리를 갈랐다).
+ * **한 줄이 한 곳에 산다** (2026-08-17 소유자 지적으로 되돌렸다).
  *
- * - `status` — 「누가 · 마지막 작업 언제 · 어느 노드」. 지도 **하단**에 남는다.
- * - `bell`   — 알림 종과 알림함. 지도 **위쪽** 「에이전트 / 최근 변경」 아래로
- *   옮겼다. 소유자: *"사용자가 위는 봐도 아래는 잘 안볼듯한데"*.
+ * 처음 지시(*"사용자가 위는 봐도 아래는 잘 안볼듯한데"*)를 받고 **종만** 위로
+ * 올리고 상태 줄은 아래 남겼다. 그 결과를 소유자가 셋으로 지적했고, 셋 다 같은
+ * 뿌리였다 — **컨트롤만 옮기고 기하는 아래 있던 그대로 뒀다.**
  *
- * 두 자리가 같은 `useAgentActivityFeed()` 를 각각 부른다 — 훅이라 상태를
- * 나눠 가질 필요가 없고, 자리를 옮겨도 무엇을 세는지는 한 곳에 남는다.
+ * | 지적 | 실측 | 원인 |
+ * |---|---|---|
+ * | *"가로로 너무 길고"* | 종 40×24 (비 1.67) | 아이콘 하나가 **글줄용 칩 껍데기**에 들어 있었다 |
+ * | *"누르면 제대로 안보이고"* | 알림함 윗변이 화면 위로 **122px** 잘림 | `bottom-full` 로 **위로** 자란다. 하단에 살던 시절의 기하다 |
+ * | *"하단에는 그대로 이게 있고..? 헷갈리는데"* | 활동 줄 **2곳** | 같은 사실이 두 곳 |
+ *
+ * 그래서 지시의 「줄 전체를 하단으로」를 그대로 따른다: 상태 줄과 종이 **한
+ * 칩**으로 「에이전트 / 최근 변경」 **아래 줄**에 함께 산다. 지도 하단에는
+ * 아무것도 남기지 않는다. 게이트: `tests/e2e/agent-activity-placement.spec.ts`.
  */
-export type AgentActivityPart = 'status' | 'bell';
-
 export function AgentActivityChip({
   suppressed = false,
-  part = 'status',
-}: { suppressed?: boolean; part?: AgentActivityPart } = {}) {
+  onOpenChange,
+}: {
+  suppressed?: boolean;
+  /**
+   * 알림함이 열리고 닫힐 때 알린다.
+   *
+   * ## 왜 바깥이 알아야 하나 (2026-08-17 소유자 지적: *"알림이 위로 덮어야지?"*)
+   *
+   * 이 칩이 사는 유틸 레인은 `z-20` 이라 **쌓임 맥락을 만든다.** 그래서 알림함에
+   * `z-30` 을 줘도 그 30은 레인 **안에서만** 유효하고, 레인 밖의 오른쪽 도구
+   * 타일들(같은 `z-20` 인데 DOM 상 뒤에 있어서 이긴다)이 알림함 위에 그려졌다.
+   *
+   * 레인을 늘 올려 두면 안 된다 — 막(`--z-map-scrim`, 25)이 덮어야 할 때 레인이
+   * 막 위로 삐져나온다. 그래서 **열려 있는 동안만** 올린다. 알림함은 바깥을
+   * 누르거나 Escape 로 스스로 닫히므로 올라간 상태가 오래 남지 않는다.
+   */
+  onOpenChange?: (open: boolean) => void;
+} = {}) {
   const t = useTranslations('agentActivity');
   const format = useFormatter();
   const feed = useAgentActivityFeed();
   const [open, setOpen] = useState(false);
   const rootRef = useRef<HTMLDivElement | null>(null);
   const bellRef = useRef<HTMLButtonElement | null>(null);
+
+  useEffect(() => {
+    onOpenChange?.(open);
+  }, [open, onOpenChange]);
+  // 언마운트될 때(데이터시트가 열려 스택이 물러날 때)도 닫힘을 알린다 —
+  // 안 알리면 레인이 올라간 채로 굳는다.
+  useEffect(() => () => onOpenChange?.(false), [onOpenChange]);
 
   const close = useCallback(
     (returnFocus: boolean) => {
@@ -95,20 +124,25 @@ export function AgentActivityChip({
     };
   }, [open, close]);
 
-  const showBell = feed.notificationsEnabled && part === 'bell';
-  const showStatus = feed.showStatus && part === 'status';
+  const showBell = feed.notificationsEnabled && feed.notifications.length > 0;
+  const showStatus = feed.showStatus;
   // 스택이 물러난 동안(데이터시트 조사 중)은 **언마운트한다** — 스택은 opacity-0
   // 로만 사라지므로 남겨 두면 보이지 않는 채 클릭·포커스 가능한 컨트롤이 된다.
   if (suppressed) return null;
   // 말할 것도 없고 열 것도 없으면 자리를 차지하지 않는다.
   if (!showStatus && !showBell) return null;
-  if (part === 'bell' && feed.notifications.length === 0) return null;
 
   const relative = (at: number) => format.relativeTime(new Date(at), feed.nowMs);
 
   return (
     <div ref={rootRef} className="pointer-events-auto relative min-w-0" data-testid="agent-activity-chip">
-      <div className={CHROME_STATUS_CHIP_CLASS} data-writing={feed.writing ? 'true' : 'false'}>
+      {/* **상자는 내용이 정한다.** 칩 껍데기는 «글줄» 을 담는 것이라 좌우
+          14px 안여백을 갖는다. 말할 상태가 없어 종 하나만 남는 경우
+          (상태 표시를 끈 설정)에 그 껍데기를 씌우면 아이콘 하나가 56px 짜리
+          가로로 긴 상자에 앉는다 — 소유자가 지적한 바로 그 모양이다. */}
+      <div
+        className={showStatus ? CHROME_STATUS_CHIP_CLASS : 'pointer-events-auto flex items-center'}
+        data-writing={feed.writing ? 'true' : 'false'}>
         {showStatus ? (
           <>
             {/* 상태는 색이 아니라 **글**이 말한다 — 점은 거들 뿐이라 색을
@@ -185,9 +219,18 @@ export function AgentActivityChip({
                 className="h-4 w-px shrink-0 bg-[color:var(--color-divider)]"
               />
             ) : null}
-            <button
+            {/*
+              * 정사각 아이콘 컨트롤의 정본은 `IconButton`(shape: 'icon')이다.
+              * 종전에는 `shape: 'segment'` 였는데 그건 **가로로 늘어나는** 모양
+              * 이라 아이콘 하나를 담자 40×24(비 1.67)가 됐다.
+              *
+              * 안 읽은 개수는 **버튼 밖**에 둔다. 안에 두면 그 폭만큼 버튼이
+              * 다시 늘어나 정사각이 깨진다 — 모양을 고쳐 놓고 내용으로 되돌리는
+              * 셈이다. 칩의 `gap-1.5` 리듬을 그대로 타는 형제가 맞다.
+              */}
+            <IconButton
               ref={bellRef}
-              type="button"
+              size="sm"
               onClick={() => {
                 if (open) close(false);
                 else {
@@ -197,44 +240,42 @@ export function AgentActivityChip({
               }}
               aria-haspopup="true"
               aria-expanded={open}
-              aria-label={
+              label={
                 feed.unreadCount > 0
                   ? t('bellUnreadAria', { count: feed.unreadCount })
                   : t('bellAria')
               }
               data-testid="agent-activity-bell"
-              className={controlClass({
-                shape: "segment",
-                size: "sm",
-                className:
-                  "-mr-1 shrink-0 hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-accent)]",
-              })}
+              className="-mr-1 shrink-0 hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-accent)]"
             >
               <Bell size={ICON_SIZE.sm} aria-hidden />
-              {feed.unreadCount > 0 ? (
-                <span
-                  data-testid="agent-activity-unread"
-                  className="inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-[color:var(--color-indigo-a32)] px-1 font-mono text-caption tabular-nums text-[color:var(--color-indigo-text-soft)]"
-                >
-                  {feed.unreadCount}
-                </span>
-              ) : null}
-            </button>
+            </IconButton>
+            {feed.unreadCount > 0 ? (
+              <span
+                data-testid="agent-activity-unread"
+                className="inline-flex h-4 min-w-4 shrink-0 items-center justify-center rounded-full bg-[color:var(--color-indigo-a32)] px-1 font-mono text-caption tabular-nums text-[color:var(--color-indigo-text-soft)]"
+              >
+                {feed.unreadCount}
+              </span>
+            ) : null}
           </>
         ) : null}
       </div>
-      {/* 알림함은 종 버튼 **위**로 자란다 — 등장 원점을 트리거 방향(오른쪽
-          아래)에 맞춘다. 중앙에서 태어나면 누른 자리와 나타나는 자리가 끊긴다. */}
+      {/* 알림함은 종 버튼 **아래**로 자란다. 등장 원점을 트리거 쪽(오른쪽 위)에
+          맞춘다 — 중앙에서 태어나면 누른 자리와 나타나는 자리가 끊긴다.
+          ⚠️ 방향은 **칩이 어디 사는지**가 정한다. 이 칩이 지도 하단에 살던 시절
+          에는 위로 자랐고(`bottom-full`), 우상단으로 올라온 뒤 그 방향이 곧
+          화면 밖이 됐다 — 실측 −122px. 자리를 옮기면 이 줄도 같이 본다. */}
       <Surface
         open={open}
-        origin="bottom right"
+        origin="top right"
         role="group"
         aria-label={t('inboxTitle')}
         data-testid="agent-activity-inbox"
         // `whitespace-normal` 은 필수다 — 이 패널이 사는 판독 스택은 컨테이너에
         // `whitespace-nowrap` 을 걸어 두므로(범례·판독은 한 줄짜리 문구다),
         // 상속을 끊지 않으면 푸터 문장이 패널 밖으로 흘러나간다(1512 실측).
-        className="absolute bottom-[calc(100%+8px)] right-0 z-30 w-[280px] overflow-hidden whitespace-normal rounded-chip border border-[color:var(--topology-floating-panel-border)] bg-[color:var(--topology-floating-panel-surface)] shadow-[var(--topology-floating-panel-shadow)]"
+        className="absolute top-[calc(100%+8px)] right-0 z-30 w-[280px] overflow-hidden whitespace-normal rounded-chip border border-[color:var(--topology-floating-panel-border)] bg-[color:var(--topology-floating-panel-surface)] shadow-[var(--topology-floating-panel-shadow)]"
       >
           <div className="flex items-center justify-between gap-2 border-b border-[color:var(--topology-floating-panel-divider)] px-3 py-2 font-mono text-caption uppercase tracking-[var(--tracking-caps-14)] text-[color:var(--color-text-quaternary)]">
             <span className="min-w-0 flex-1 truncate">{t('inboxTitle')}</span>
