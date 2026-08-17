@@ -2490,7 +2490,12 @@
     --chrome-icon: 16px;
     --chrome-surface: rgba(16, 17, 24, 0.96);
     --chrome-border: var(--color-border-soft);
-    --chrome-shadow: 0 6px 20px rgba(0, 0, 0, 0.35);
+    /* 색은 램프 토큰을 가리킨다 — 바로 위 `--chrome-radius`/`--chrome-border`
+       와 같은 규율이다. 이 줄만 값을 손으로 적고 있었다(2026-08-17 릴리스 전
+       감사). `--color-shadow-a35` 가 **이미 같은 값**이라 화면은 1픽셀도 안
+       바뀌고, 소비처 18곳은 한 줄도 안 고친다. 같은 값이 두 곳에 적히면 그
+       순간부터 둘이 어긋나기 시작한다. */
+    --chrome-shadow: 0 6px 20px var(--color-shadow-a35);
     --chrome-inset: 24px;
     /* ChromeTile/ChromeChip 의 `active`(선택/진행중) 표시 — 인디고 하나만
        쓰는 단일 채색 원칙 그대로, 알파만 다르다. */

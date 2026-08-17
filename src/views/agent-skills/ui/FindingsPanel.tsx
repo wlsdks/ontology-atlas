@@ -145,10 +145,16 @@ function Row({ onClick, children }: { onClick: () => void; children: React.React
       type="button"
       data-testid="skill-jump"
       onClick={onClick}
+      /*
+        `size: "sm"` 행은 값 층에서 `min-h-7 py-1.5 text-label` 이다 — 작은
+        글자를 전제한 높이다. 여기서 `text-body-lg`(14px)로 덮으면 안쪽이
+        22px 가 되어 6+22+6 = 34px 로 밀린다(2026-08-03 에 높이 사다리에서
+        지워진 값). 행이 전제한 크기로 되돌린다 — 실측 32px, 사다리 위.
+      */
       className={controlClass({
         shape: "row",
         size: "sm",
-        className: "justify-between gap-2 text-body-lg",
+        className: "justify-between gap-2 text-body",
       })}
     >
       {children}
