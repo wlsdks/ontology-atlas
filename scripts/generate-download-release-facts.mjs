@@ -119,26 +119,40 @@ function sha256FromChecksumAsset(assetId, expectedFilename) {
   }
 }
 
+function stringLiteral(value, label) {
+  if (typeof value !== "string") {
+    fail(`${label} must be a string.`);
+  }
+  return JSON.stringify(value);
+}
+
+function sizeLiteral(value, label) {
+  if (!Number.isSafeInteger(value) || value < 0) {
+    fail(`${label} must be a non-negative safe integer.`);
+  }
+  return String(value);
+}
+
 function renderModule(release) {
   const assets = release.assets
     .map(
       (asset) => `    {
-      arch: '${asset.arch}',
-      fileName: '${asset.fileName}',
-      sizeBytes: ${asset.sizeBytes},
-      sha256: '${asset.sha256}',
-      downloadUrl: '${asset.downloadUrl}',
+      arch: ${stringLiteral(asset.arch, "macOS asset architecture")},
+      fileName: ${stringLiteral(asset.fileName, "macOS asset filename")},
+      sizeBytes: ${sizeLiteral(asset.sizeBytes, "macOS asset size")},
+      sha256: ${stringLiteral(asset.sha256, "macOS asset checksum")},
+      downloadUrl: ${stringLiteral(asset.downloadUrl, "macOS asset download URL")},
     },`,
     )
     .join("\n");
   const windowsAssets = release.windowsAssets
     .map(
       (asset) => `    {
-      arch: '${asset.arch}',
-      fileName: '${asset.fileName}',
-      sizeBytes: ${asset.sizeBytes},
-      sha256: '${asset.sha256}',
-      downloadUrl: '${asset.downloadUrl}',
+      arch: ${stringLiteral(asset.arch, "Windows asset architecture")},
+      fileName: ${stringLiteral(asset.fileName, "Windows asset filename")},
+      sizeBytes: ${sizeLiteral(asset.sizeBytes, "Windows asset size")},
+      sha256: ${stringLiteral(asset.sha256, "Windows asset checksum")},
+      downloadUrl: ${stringLiteral(asset.downloadUrl, "Windows asset download URL")},
       signed: false,
     },`,
     )
@@ -200,18 +214,18 @@ export interface WindowsRelease {
 export const MACOS_RELEASE: MacosRelease = {
   published: ${release.published},
   prerelease: ${release.prerelease === true},
-  tag: '${release.tag}',
-  publishedAt: ${release.publishedAt === null ? "null" : `'${release.publishedAt}'`},
-  releaseUrl: '${release.releaseUrl}',
+  tag: ${stringLiteral(release.tag, "release tag")},
+  publishedAt: ${release.publishedAt === null ? "null" : stringLiteral(release.publishedAt, "release publication time")},
+  releaseUrl: ${stringLiteral(release.releaseUrl, "release URL")},
   assets: [${assets ? `\n${assets}\n  ` : ""}],
 };
 
 export const WINDOWS_RELEASE: WindowsRelease = {
   published: ${release.published && release.windowsAssets.length > 0},
   prerelease: ${release.prerelease === true},
-  tag: '${release.tag}',
-  publishedAt: ${release.publishedAt === null ? "null" : `'${release.publishedAt}'`},
-  releaseUrl: '${release.releaseUrl}',
+  tag: ${stringLiteral(release.tag, "release tag")},
+  publishedAt: ${release.publishedAt === null ? "null" : stringLiteral(release.publishedAt, "release publication time")},
+  releaseUrl: ${stringLiteral(release.releaseUrl, "release URL")},
   assets: [${windowsAssets ? `\n${windowsAssets}\n  ` : ""}],
 };
 `;
@@ -307,12 +321,16 @@ const windowsChecksumAssets = new Map(
 const assets = release.assets
   .filter((asset) => DMG_NAME_PATTERN.test(asset.name))
   .map((asset) => {
+    const match = asset.name.match(DMG_NAME_PATTERN);
+    if (match.groups.version !== tag.slice(1)) {
+      fail(`release ${tag} has mismatched macOS asset version: ${asset.name}.`);
+    }
     const checksumAsset = checksumAssets.get(asset.name);
     if (!checksumAsset) {
       fail(`release ${tag} has ${asset.name} but no ${asset.name}.sha256 beside it.`);
     }
     return {
-      arch: asset.name.match(DMG_NAME_PATTERN).groups.arch,
+      arch: match.groups.arch,
       fileName: asset.name,
       sizeBytes: asset.size,
       sha256: sha256FromChecksumAsset(checksumAsset.id, asset.name),

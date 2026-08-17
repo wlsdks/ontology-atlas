@@ -7,6 +7,15 @@
 
 ---
 
+## 2026-08-17 · 릴리스 메타데이터가 생성 TypeScript 문법이 되지 않는다
+
+- GitHub Release의 macOS 자산명 버전이 요청한 태그와 정확히 다르면 생성기를
+  실패 닫는다. 따옴표와 코드 조각을 넣은 자산명을 정상 DMG로 받아들이던 경로를
+  차단했다.
+- 자산명·URL·태그·게시 시각·체크섬은 모두 JSON 문자열 리터럴로 직렬화하고,
+  바이트 크기는 음수가 아닌 safe integer만 허용한다. 외부 메타데이터의 문자가
+  `macos-release.generated.ts`의 실행 문법으로 탈출하지 않는다.
+
 ## 2026-08-17 · private sidecar가 외부 hardlink 별칭을 수정하지 않는다
 
 - `.ontology-atlas`의 로그·영수증 파일이 둘 이상의 이름을 가진 hardlink이면

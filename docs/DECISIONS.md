@@ -40,6 +40,40 @@
 **상태**: 유효 / 뒤집힘(→ 링크) / 반증됨(관측: …)
 ```
 
+## 2026-08-17 (61) — 릴리스 API 값은 생성 소스의 데이터로만 직렬화한다
+
+**소집**: 단독 패스 + 선행 읽기 전용 공격 감사 · **트리거**: 공개 다운로드 사실
+생성기의 data-to-code 경계 재현 · **루브릭**: 24/24 (치명적 0: 없음)
+
+**관찰된 현상**: `generate-download-release-facts`의 macOS 자산명 패턴은 version을
+underscore가 아닌 임의 문자열로 받았고, 자산명·URL·태그·게시 시각·체크섬을
+작은따옴표 TypeScript 안에 그대로 보간했다. version 자리에 따옴표와 실행식을 넣은
+DMG 이름을 fake GitHub Release로 주자 생성기가 성공했고, 그 문자열이 생성 모듈의
+문법 경계를 벗어났다. 실제 공개 릴리스에서 악성 자산은 관측하지 않았고 결정적
+fixture에서 acceptance와 생성 바이트를 재현했다.
+
+**결정**: macOS 자산의 version은 요청한 `v` 태그를 벗긴 값과 정확히 같아야 한다.
+GitHub API와 checksum에서 온 모든 문자열은 `JSON.stringify`가 만든 JavaScript
+문자열 리터럴로만 출력하고, 자산 크기는 음수가 아닌 safe integer만 숫자 리터럴로
+출력한다. Windows의 기존 exact version 검사와 checksum filename 검사는 유지한다.
+
+**적용 규칙**: 생성 소스에 외부 문자열을 직접 보간하지 않는다 · 파일명 형식 통과는
+태그 정합성 통과가 아니다 · 외부 숫자도 코드 리터럴 전에 범위를 검증한다.
+**서명**: Codex — RED·GREEN·구현·통합 검증 · 진안 — 장기 보안·품질 개선 승인
+
+**기록된 반대**: GitHub Release API와 소유자 업로드 자산은 보통 신뢰할 수 있어
+직렬화가 중복 방어처럼 보인다. 그러나 이 생성물은 후속 웹 빌드가 import하는 소스이고,
+JSON 직렬화 비용은 무시할 수 있으므로 데이터 경계를 코드 신뢰로 승격하지 않는다.
+**반증 조건**: 정상 태그와 동일 버전의 공식 자산 또는 정상 URL/게시 시각이 새 검증에
+거절되면 fixture와 허용 계약을 넓힌다. 직접 문자열 보간으로 되돌리지는 않는다.
+**잔여 경계**: 이 결정은 release metadata의 source injection만 닫는다. tag-triggered
+workflow가 어느 commit의 코드를 secret-bearing job에서 실행할 수 있는지는 별도
+workflow 신뢰 경계이며 이번 슬라이스가 해결했다고 주장하지 않는다.
+**재검토**: 공식 릴리스 생성 실패가 재현되거나 release facts 출력 형식이 TypeScript가
+아닌 다른 실행 형식으로 바뀔 때.
+
+**상태**: 유효
+
 ## 2026-08-17 (60) — 일반 볼트 mutation도 안정된 root·parent FD 안에서 수행한다
 
 **소집**: 단독 패스 + 선행 Sol xhigh 공격 검토 · **트리거**: (59) 후속 범용
