@@ -4,6 +4,7 @@ import { describe, expect, it } from "vitest";
 
 import surface from "../../docs/.generated/mcp-surface.json";
 import {
+  starterFilesForLocale,
   VAULT_AGENT_GUIDE_PATH,
   VAULT_CLAUDE_BRIDGE_PATH,
   vaultAgentGuideForLocale,
@@ -50,9 +51,23 @@ const registeredTools = new Set(surfaceTools.map((tool) => tool.name));
  * 인자도 이름으로 부르고, 그건 낡을 수 있는 이름이라 같이 잠근다. 둘 다 생성물
  * 에서 나오므로 사람이 유지할 목록은 없다.
  */
+/**
+ * 스타터 볼트가 **실제로 쓰는** frontmatter 칸 이름. `display_ko` 처럼 로케일이
+ * 붙는 칸은 스키마에 낱말로 안 적혀 있어서, 출하되는 데이터에서 뽑는 것이 유일
+ * 하게 낡지 않는 출처다. 오타(`dispaly_ko`)는 여기에도 없으므로 그대로 걸린다.
+ */
+const starterFrontmatterKeys = new Set(
+  (["en", "ko"] as const).flatMap((locale) =>
+    starterFilesForLocale(locale).flatMap((file) =>
+      [...file.content.matchAll(/^([a-z][a-z0-9_]*):/gmu)].map((m) => m[1]),
+    ),
+  ),
+);
+
 const knownNames = new Set([
   ...registeredTools,
   ...surfaceTools.flatMap((tool) => tool.arguments ?? []),
+  ...starterFrontmatterKeys,
 ]);
 
 /** 백틱 안의 `snake_case` 낱말 — 이 문서에서 도구 이름의 모양이다. */
@@ -63,6 +78,13 @@ describe("볼트 에이전트 안내문", () => {
   it("등록된 MCP 도구 목록을 실제로 읽었다 — 아니면 아래가 전부 헛돈다", () => {
     expect(registeredTools.size).toBeGreaterThan(20);
     expect(registeredTools.has("list_concepts")).toBe(true);
+  });
+
+  it("스타터의 frontmatter 칸도 실제로 읽었다", () => {
+    expect(starterFrontmatterKeys.has("display_ko")).toBe(true);
+    expect(starterFrontmatterKeys.has("title")).toBe(true);
+    // 헛돌지 않는지 — 오타는 여기 없어야 한다.
+    expect(starterFrontmatterKeys.has("dispaly_ko")).toBe(false);
   });
 
   for (const locale of ["en", "ko"] as const) {
@@ -130,6 +152,27 @@ describe("볼트 에이전트 안내문", () => {
       });
     });
   }
+
+  /*
+   * 안내문은 *"이 폴더의 노드는 전부 `title` 을 영어로 둔다"* 고 **주장**한다.
+   * 주장을 문장으로 못박는 대신 **출하되는 데이터에 물어본다** — 규약이 바뀌면
+   * 안내문의 그 문장이 거짓이 되고, 그날 이 검사가 먼저 터진다.
+   *
+   * 실측(2026-08-17): 이 줄이 없던 안내문으로는 codex 가
+   * `title: 결제 환불 처리`(= `display_ko` 와 같은 값)를 썼고, 넣은 뒤에는
+   * `title: Payment refund processing` 을 썼다.
+   */
+  it("스타터가 실제로 그 규약을 지킨다 — 안내문의 주장이 데이터와 맞는가", () => {
+    const named = starterFilesForLocale("ko").filter((file) =>
+      /^display_en:/m.test(file.content),
+    );
+    expect(named.length).toBeGreaterThanOrEqual(4);
+    for (const file of named) {
+      const title = /^title:\s*(.+)$/m.exec(file.content)?.[1]?.trim();
+      const displayEn = /^display_en:\s*(.+)$/m.exec(file.content)?.[1]?.trim();
+      expect(title, `${file.relPath}: title 이 정본(영어) 이름이어야 한다`).toBe(displayEn);
+    }
+  });
 
   it("두 언어가 같은 도구를 추천한다 — 한쪽만 고치면 다른 쪽이 낡는다", () => {
     const named = (locale: "en" | "ko") =>

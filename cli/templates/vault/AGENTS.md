@@ -17,6 +17,12 @@ answers with parsing, validation, and relation resolution already done.
 Do not read frontmatter with `grep` or `sed`. You get the same answer more
 slowly, without relation resolution or schema validation.
 
+**Name it the way this vault already does.** `title` is the one canonical name
+search matches on; put other languages in `display_ko` / `display_en`. Every
+node here keeps an English `title`, so a node whose `title` repeats its
+`display_ko` leaves the vault with two languages of canonical name and splits
+search.
+
 **Write through the same server** — `add_concept` · `add_relation` ·
 `patch_concept` (pass `expected_mtime`) · `rename_concept` · `merge_concepts`.
 A file written by hand has no `uid:`, and one missing `uid:` fails the whole
