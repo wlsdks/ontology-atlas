@@ -3682,7 +3682,7 @@
     "model": "Model",
     "mode": "Mode",
     "modeUnverified": "{name} · Not checked",
-    "modeUnverifiedHint": "Atlas has not yet verified whether this mode asks before working outside the folder.",
+    "modeUnverifiedHint": "Not measured yet.",
     "runtimePicker": "Which tool to chat with",
     "tool": {
       "connect": "Connected to the folder",
@@ -3748,6 +3748,20 @@
         "label": "Explain this folder from the map alone",
         "prompt": "Using only the {count} nodes on the map and their relations, explain to a newcomer what this folder is. Invent nothing that is not on the map, and point out any place the explanation stalls, because that is a hole in the map."
       }
+    },
+    "modeName": {
+      "default": "Ask first",
+      "plan": "Plan only",
+      "auto": "Decide for me",
+      "dontask": "Never ask",
+      "read-only": "Read only"
+    },
+    "modeHint": {
+      "default": "Asks you before anything that could be risky.",
+      "plan": "Plans what it would do. Nothing actually runs.",
+      "auto": "The tool decides for itself whether to ask.",
+      "dontask": "Never asks. Anything not pre-approved is refused.",
+      "read-only": "Reads only. Changes go through Atlas tools."
     }
   }
 }

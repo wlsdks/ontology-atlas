@@ -31,6 +31,7 @@ import { cn } from '@/shared/lib/cn';
 import { useAcpSession, type AcpEvent } from '@/features/acp-session/model/use-acp-session';
 import { readAcpTrouble } from '@/features/acp-session/model/acp-trouble';
 import { claudeLoginRepairCommand } from '@/features/acp-session/model/claude-login-repair';
+import { modeCopyKey } from '@/features/acp-session/model/mode-copy';
 import { withoutErrorEcho } from '@/features/acp-session/model/error-echo';
 import type { ChatSuggestion } from '@/features/acp-session/model/chat-suggestions';
 import { linkSlugs } from '@/features/acp-session/model/link-slugs';
@@ -350,10 +351,25 @@ export function AcpChatPanel({
               onChange={(value) => void chooseMode(value)}
               options={choices.modes.map((mode) => {
                 const unverified = choices.unverifiedModeIds.includes(mode.id);
+                /*
+                 * 이름과 설명은 **아는 것만** 사람 말로 옮긴다 (2026-08-17 소유자
+                 * 지적: 이름이 전부 영어이고, 정작 고를 만한 둘에는 설명이 아예
+                 * 없었다). 모르는 모드는 어댑터가 준 이름 그대로 두고 설명을 안
+                 * 붙인다 — 지어 붙인 한 줄은 우리가 확인하지 않은 약속이 된다.
+                 * 판정과 근거 표: `mode-copy.ts`.
+                 *
+                 * 「확인 안 됨」은 **다른 축**이다. 이름을 아는 것과 폴더 밖 작업
+                 * 전에 묻는지 재 본 것은 별개라, 둘을 함께 보여 준다.
+                 */
+                const copyKey = modeCopyKey(mode.id);
+                const name = copyKey ? t(`modeName.${copyKey}`) : mode.name;
+                const hint = copyKey ? t(`modeHint.${copyKey}`) : undefined;
                 return {
                   value: mode.id,
-                  label: unverified ? t('modeUnverified', { name: mode.name }) : mode.name,
-                  description: unverified ? t('modeUnverifiedHint') : undefined,
+                  label: unverified ? t('modeUnverified', { name }) : name,
+                  description: unverified
+                    ? [hint, t('modeUnverifiedHint')].filter(Boolean).join(' ')
+                    : hint,
                 };
               })}
               data-testid="acp-chat-mode"
