@@ -12,6 +12,8 @@ import {
 import { Button } from "@/shared/ui";
 import { controlClass } from "@/shared/ui/control-class";
 
+import { StepText } from "./StepText";
+
 const testIdPart = (value: string): string => value.replace(/^[^:]+:/, "").replace(/[^a-zA-Z0-9_-]/g, "-");
 
 /**
@@ -128,7 +130,7 @@ export function SkillProcessRail({
                 </span>
                 <div className="min-w-0">
                   <p className="whitespace-pre-wrap break-words text-body-lg leading-prose text-[color:var(--color-text-primary)]">
-                    {step.exactText}
+                    <StepText text={step.exactText} />
                   </p>
                   {step.semanticLabels.length > 0 ? (
                     <ul className="mt-1 flex flex-col gap-0.5">
