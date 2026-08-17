@@ -56,10 +56,17 @@ test("모두 펼치기는 주장한 수를 드러내고, 접기로 되돌린다"
 
   const selected = await nodePos();
   await page.mouse.click(selected!.px, selected!.py - (selected!.r + 32));
-  await page.waitForTimeout(1600);
-
-  const after = await visibleCount();
-  expect(after - before, "펼침이 주장한 수만큼 드러내지 않았다").toBe(chipBefore!.claimedCount);
+  /*
+   * ⚠️ 고정 1.6초 뒤 **재시도 없는** 수 비교였다 — 펼침이 아직 안 끝난
+   * 기계에서는 수가 안 맞아 그냥 터진다. 값이 도달할 때까지 기다린다
+   * (2026-08-17 검사 전수조사).
+   */
+  await expect
+    .poll(async () => (await visibleCount()) - before, {
+      timeout: 20_000,
+      message: "펼침이 주장한 수만큼 드러내지 않았다",
+    })
+    .toBe(chipBefore!.claimedCount);
   const chipAfter = await orderChip();
   expect(chipAfter!.expanded).toBe(true);
   expect(chipAfter!.shownChildren, "chips 가 화면과 다른 말을 한다").toBe(chipBefore!.claimedCount);
@@ -83,6 +90,7 @@ test("모두 펼치기는 주장한 수를 드러내고, 접기로 되돌린다"
   // 같은 바가 이제 「접기」다 — 눌러서 원상 복귀까지 잰다.
   const expanded = await nodePos();
   await page.mouse.click(expanded!.px, expanded!.py - (expanded!.r + 32));
-  await page.waitForTimeout(1600);
-  expect(await visibleCount(), "접기가 원상 복귀하지 않았다").toBe(before);
+  await expect
+    .poll(visibleCount, { timeout: 20_000, message: "접기가 원상 복귀하지 않았다" })
+    .toBe(before);
 });
