@@ -69,13 +69,45 @@ export function AgentSkillsPage() {
   );
   const view = isCompact ? (compactDetail && current ? "detail" : "list") : "split";
 
-  const selectSkill = useCallback((relativePath: string) => {
+  /*
+   * **오른쪽에서 고르면 왼쪽이 따라와야 한다** (2026-08-18 실측).
+   *
+   * 넘김 줄을 눌러 건너뛰면 상세는 바뀌는데 왼쪽 목록은 그대로였다. 실측:
+   * `design-audit` → `responsive-sweep` 으로 넘어간 뒤, 「지금 여기」 표시가 붙은
+   * 행은 y=1309 인데 목록이 보이는 칸은 197~876 이었다 — **433px 아래, 화면 밖**.
+   * 게다가 누른 버튼이 사라지면서 초점이 `<body>` 로 떨어져, 다음 Tab 이 문서
+   * 맨 위에서 다시 시작했다.
+   *
+   * 그래서 «어디서 골랐나»를 구분한다. 목록 행에서 고른 것은 이미 보이는 자리이고
+   * 초점도 그 행에 있으므로 **아무것도 하지 않는다** — 거기서 초점을 뺏으면 화살표
+   * 이동이 끊긴다. 오른쪽(넘김 · 경쟁 · 요약)에서 고른 것만 목록을 데려오고 상세
+   * 제목으로 초점을 옮긴다.
+   */
+  const cameFromRight = useRef(false);
+
+  const selectSkill = useCallback((relativePath: string, fromList = false) => {
     setSelected(relativePath);
+    cameFromRight.current = !fromList;
     if (isCompact) {
       listScrollTop.current = listScrollRef.current?.scrollTop ?? 0;
       setCompactDetail(true);
     }
   }, [isCompact]);
+
+  const selectFromList = useCallback(
+    (relativePath: string) => selectSkill(relativePath, true),
+    [selectSkill],
+  );
+
+  useEffect(() => {
+    if (isCompact || !cameFromRight.current || !selected) return;
+    cameFromRight.current = false;
+    // `nearest` — 이미 보이면 안 움직인다. 주인공은 상세이지 목록이 아니다.
+    document
+      .querySelector<HTMLElement>(`[data-skill-path="${CSS.escape(selected)}"]`)
+      ?.scrollIntoView({ block: "nearest" });
+    detailHeadingRef.current?.focus();
+  }, [isCompact, selected]);
 
   useEffect(() => {
     if (isCompact && compactDetail && current) detailHeadingRef.current?.focus();
@@ -257,7 +289,7 @@ export function AgentSkillsPage() {
                     inventory={inventory}
                     groups={groups}
                     selected={selected}
-                    onSelect={selectSkill}
+                    onSelect={selectFromList}
                   />
                 </div>
               </div>
