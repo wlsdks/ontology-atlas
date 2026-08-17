@@ -465,9 +465,11 @@ after the per-architecture artifact handoff. `desktop:release-secrets --help`
 names each direct-download secret by role: `APPLE_CERTIFICATE_P12_BASE64` and
 `APPLE_CERTIFICATE_PASSWORD` import the Developer ID Application certificate,
 `APPLE_KEYCHAIN_PASSWORD` protects only the temporary CI keychain,
-`APPLE_SIGNING_IDENTITY` is passed to `codesign`, and `APPLE_ID`,
-`APPLE_APP_SPECIFIC_PASSWORD`, plus `APPLE_TEAM_ID` are used by Apple
-`notarytool`. They are required for signed and notarized public DMGs from the
+`APPLE_SIGNING_IDENTITY` is passed to `codesign`. Hosted notarization uses
+`APPLE_API_KEY_P8_BASE64`, `APPLE_API_KEY_ID`, and `APPLE_API_ISSUER_ID`;
+the private key is materialized as a temporary `0600` file and `notarytool`
+receives only its path and identifiers, never password or private-key bytes in
+argv. They are required for signed and notarized public DMGs from the
 project website/GitHub Releases path, not for Mac App Store submission.
 For installed-app dogfood, use `pnpm desktop:deploy:app`. It calls
 `desktop:build:app:local`, which overrides only
@@ -607,11 +609,11 @@ committing or publishing changes.
 | `pnpm desktop:verify-ai-settings:ko` | Installed-app proof for the keyless connect-by-address LLM branch: opens the settings sheet, walks into AI connection, types the base URL, presses the connection check, requires a live model list and a chosen model, and then requires a matching fresh `provider: "local"` verify line in the fixture vault's `.ontology-atlas/llm-audit.jsonl`; fails with the on-screen failure sentence when no local runner answers |
 | `pnpm desktop:verify-install` | Mount the DMG, require the `/Applications` symlink target, copy the app to a temporary install folder, verify that copied app through the LaunchServices app content proof gate (`--open-app --require-window --require-owner-name="Ontology Atlas" --min-window-size=1040x720 --require-accessibility-text="Ontology Atlas"`), then clean it up |
 | `pnpm desktop:release-preflight` | Local pre-tag macOS release gate: readiness, docs-vault, checker tests, runtime split tests, bridge tests, runtime doctor, CLI/MCP handoff, agent JSON setup gate, build, route smoke, LaunchServices app content proof (`--open-app --require-window --require-owner-name="Ontology Atlas" --min-window-size=1040x720 --require-accessibility-text="Ontology Atlas"`), unsigned DMG, and install smoke |
-| `pnpm desktop:release-artifact` | Credentialed direct-download artifact command: release secrets, build, route smoke, app signing, DMG packaging, notarization, release DMG verification, and install smoke |
+| `pnpm desktop:release-artifact` | Credential-isolating direct-download orchestrator: each of 11 build/sign/package/notarize/verify steps receives only its explicit secret allowlist |
 | `pnpm desktop:goal-audit` | Full desktop goal gate: requires `--pr` and `--tag`, runs the local release preflight, then checks PR, signing, and GitHub Release / download blockers, writing default `.tmp/desktop-goal-status` evidence with `local_preflight=ok` only after the native app and DMG install proof have passed locally |
 | `pnpm test:desktop:runtime` | Hosted-vs-installed runtime split tests for `/docs?intent=local`, first-run desktop routing, and hosted download routing |
 | `pnpm test:desktop:bridge` | WebView handle-shim tests plus Rust path-guard tests for the native vault bridge |
-| `pnpm desktop:release-secrets` | Default: require Apple 5 + Tauri updater 2 and validate PKCS#12; `--updater-only`: require the two Tauri values before Windows build |
+| `pnpm desktop:release-secrets` | Default: require Apple 5 + Tauri updater 2 and validate both PKCS#12 and App Store Connect `.p8`; `--updater-only`: require the two Tauri values before Windows build |
 | `pnpm desktop:release-source` | `--mode=admit` binds tag + SHA to current default-branch head; `--mode=pin` later rejects tag retargeting while allowing main to advance |
 | `pnpm desktop:release-tag` | Fail closed before release signing when the v-prefixed Git tag does not match package.json, Tauri, Cargo, and the download page's release facts (`src/views/download/lib/release-facts.ts`) |
 | `pnpm desktop:release-slot` | Fail closed before GitHub Release upload when the same tag already has a draft, prerelease, or public release |
@@ -619,7 +621,7 @@ committing or publishing changes.
 | `pnpm desktop:release-run` | Dispatch `release-macos.yml` from protected `main` with the tag input, then select the exact tag-named workflow_dispatch run at the admitted SHA and watch it |
 | `pnpm desktop:release-status` | Completion audit for version/PR/workflow/tag state, protected environments and secrets, public stable Release/download proof, and owner-grouped handoff actions |
 | `pnpm desktop:sign` | Deeply sign the built `.app` with hardened runtime when `APPLE_SIGNING_IDENTITY` and a Developer ID certificate are available |
-| `pnpm desktop:notarize` | Submit, staple, validate, and re-checksum the DMG when Apple notary credentials are available; failed command logs redact notary credentials |
+| `pnpm desktop:notarize` | Submit, staple, validate, and re-checksum the DMG through a local keychain profile or App Store Connect API key path; password argv is rejected |
 | `pnpm desktop:verify-dmg` | Mount and named-checksum smoke for the generated macOS DMG, including app bundle presence and `/Applications` symlink target, before GitHub Release upload |
 | `pnpm desktop:verify-release-dmg` | Release-only DMG verifier that treats notarization as requiring strict app code signing, stapled notarization, and Gatekeeper assessment |
 | `pnpm desktop:verify-download` | Public GitHub Release verifier for the hosted download CTA: requires non-draft reachable same-version Apple Silicon and Intel DMG assets, rejects unsupported or duplicate-architecture `ontology-atlas_*.dmg` names, and verifies matching `.sha256` contents and downloaded bytes |

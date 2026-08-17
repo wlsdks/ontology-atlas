@@ -22,6 +22,7 @@ import {
   parseAdmitReleaseSteps,
   parseBuildMacosSteps,
 } from "../../scripts/release-rehearsal.mjs";
+import { RELEASE_ARTIFACT_STEPS } from "../../scripts/build-macos-release-artifact.mjs";
 
 /**
  * `v1.0.0-rc.2` 는 네 번 찍혔고 네 번 다 **바로 다음 칸**에서 멈췄다. 공통점은
@@ -110,19 +111,24 @@ describe("업데이터 아카이브는 서명된 앱을 담아야 한다", () =>
    *
    * 그래서 자리가 하나다 — **앱 서명 바로 뒤, DMG 패키징 앞.**
    */
-  const chains = [
-    ["desktop:release-artifact", "pnpm desktop:sign"],
-    ["desktop:release-artifact:unsigned", "pnpm desktop:sign:adhoc"],
+  const pipelines = [
+    [
+      "desktop:release-artifact",
+      RELEASE_ARTIFACT_STEPS.map((step) => [step.command, ...step.args].join(" ")),
+      "pnpm desktop:sign",
+    ],
+    [
+      "desktop:release-artifact:unsigned",
+      pkg.scripts["desktop:release-artifact:unsigned"].split(" && "),
+      "pnpm desktop:sign:adhoc",
+    ],
   ] as const;
 
-  for (const [scriptName, signStep] of chains) {
+  for (const [scriptName, commands, signStep] of pipelines) {
     it(`${scriptName} 이 앱 서명 뒤·DMG 패키징 앞에서 아카이브를 다시 만든다`, () => {
-      const chain = pkg.scripts[scriptName];
-      expect(chain, `${scriptName} 스크립트가 없다`).toBeTruthy();
-
-      const signAt = chain.indexOf(signStep);
-      const repackAt = chain.indexOf("pnpm desktop:repack-updater");
-      const dmgAt = chain.indexOf("node scripts/package-macos-dmg.mjs");
+      const signAt = commands.findIndex((command) => command === signStep);
+      const repackAt = commands.findIndex((command) => command === "pnpm desktop:repack-updater");
+      const dmgAt = commands.findIndex((command) => command.endsWith("scripts/package-macos-dmg.mjs"));
 
       expect(repackAt, `${scriptName} 에 desktop:repack-updater 가 없다`).toBeGreaterThan(-1);
       expect(
@@ -140,6 +146,13 @@ describe("업데이터 아카이브는 서명된 앱을 담아야 한다", () =>
     expect(pkg.scripts["desktop:repack-updater"]).toBe(
       "node scripts/repack-macos-updater-archive.mjs",
     );
+  });
+
+  it("credentialed release command는 비밀 격리 오케스트레이터 하나만 실행한다", () => {
+    expect(pkg.scripts["desktop:release-artifact"]).toBe(
+      "node scripts/build-macos-release-artifact.mjs",
+    );
+    expect(RELEASE_ARTIFACT_STEPS.length).toBe(11);
   });
 });
 

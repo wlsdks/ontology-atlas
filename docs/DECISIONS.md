@@ -40,6 +40,44 @@
 **상태**: 유효 / 뒤집힘(→ 링크) / 반증됨(관측: …)
 ```
 
+## 2026-08-17 (64) — hosted 공증은 API key 파일만 쓰고, 릴리스 하위 프로세스는 단계별 secret allowlist를 따른다
+
+**소집**: 기계적 보안 패스 + Apple 1차 문서·로컬 `notarytool` 도움말 대조 ·
+**트리거**: 공증 암호의 process argv 노출과 credentialed 체인의 전체 env 상속 재현 ·
+**루브릭**: CI 보안 plumbing 면제
+
+**관찰된 현상**: `scripts/notarize-macos-dmg.mjs`는
+`APPLE_APP_SPECIFIC_PASSWORD`를 `notarytool submit --password` 뒤에 직접 넣었다.
+실패 로그는 redaction했지만 실행 중 프로세스 인자에는 원문이 남았다. 또한
+`desktop:release-artifact`는 `&&`로 이어진 하나의 package script여서 인증서,
+Apple 공증, Tauri updater secret이 빌드·smoke·패키징·검증 자식 전체에 상속됐다.
+
+**결정**: hosted 공증은 App Store Connect API key만 사용한다. 일곱 environment
+secret 중 기존 `APPLE_ID`, `APPLE_APP_SPECIFIC_PASSWORD`, `APPLE_TEAM_ID`를
+`APPLE_API_KEY_P8_BASE64`, `APPLE_API_KEY_ID`, `APPLE_API_ISSUER_ID`로 교체한다.
+오케스트레이터는 `.p8` 본문을 새 `0700` 임시 디렉터리의 `0600` 파일에 쓰고
+`notarytool`에는 경로·key ID·issuer만 넘긴 뒤 성공·실패 모두에서 파일을 제거한다.
+로컬의 기존 `NOTARYTOOL_PROFILE` 모드는 유지한다. 11개 릴리스 하위 단계는
+명시적 allowlist를 사용하며, 일반 build/smoke/sign/package/verify는 릴리스 secret을
+받지 않는다.
+
+**적용 규칙**: redacted log는 argv 보호가 아니다 · parent가 받은 private key 본문은
+child argv/env 대신 권한 제한 파일로 전달한다 · credentialed parent가 모든 child에 같은 env를 물려주지
+않는다 · 구형 password mode는 hosted gate를 통과하지 못한다.
+**서명**: Codex — RED/GREEN 및 process-env 경계 검증 · 진안 — 장기 보안 강화 승인
+
+**기록된 반대**: 기존 Apple ID 앱 암호 세 값은 이미 준비돼 있고 API key 세 값으로
+바꾸면 한 번의 운영 마이그레이션이 필요하다. 그러나 secret 개수는 7개로 유지되고,
+기존 방식은 로그가 아니라 OS process table에 비밀번호를 노출한다. 호환성을 위해
+그 경로를 유지할 근거가 없다.
+**반증 조건**: 실제 `notarytool`이 App Store Connect API key로 현재 팀의 DMG를
+공증하지 못하거나, private key 임시 파일이 실패 뒤 남는 사례가 관측되면 keychain
+profile 사전 구성 방식으로 재검토한다. password argv 폴백은 두지 않는다.
+**외부 일회성 작업**: `release-signing`에 새 API key 세 값을 등록하고 구형 Apple ID
+세 값을 environment 및 repository scope에서 제거한다. 코드는 GitHub 설정을 자동으로
+변경하지 않는다.
+**상태**: 유효
+
 ## 2026-08-17 (63) — 보호된 데스크톱 릴리스는 `main`에서 디스패치하고, 서명 환경은 `main`에만 자동으로 연다
 
 **소집**: 단독 패스 + 선행 코드 읽기 · **트리거**: tag-push 릴리스가 secret-bearing

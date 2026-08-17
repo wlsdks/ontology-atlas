@@ -273,12 +273,15 @@ describe("워크플로 보안 계약", () => {
         "Import Apple Developer ID certificate",
         "Build signed and notarized release artifact",
       ],
-      APPLE_ID: ["Require signed release credentials", "Build signed and notarized release artifact"],
-      APPLE_APP_SPECIFIC_PASSWORD: [
+      APPLE_API_KEY_P8_BASE64: [
         "Require signed release credentials",
         "Build signed and notarized release artifact",
       ],
-      APPLE_TEAM_ID: [
+      APPLE_API_KEY_ID: [
+        "Require signed release credentials",
+        "Build signed and notarized release artifact",
+      ],
+      APPLE_API_ISSUER_ID: [
         "Require signed release credentials",
         "Build signed and notarized release artifact",
       ],
@@ -298,6 +301,9 @@ describe("워크플로 보안 계약", () => {
 
     for (const [secret, steps] of Object.entries(expectedSteps)) {
       expect(stepNamesUsingSecret(release, secret).sort(), secret).toEqual(steps.sort());
+    }
+    for (const legacy of ["APPLE_ID", "APPLE_APP_SPECIFIC_PASSWORD", "APPLE_TEAM_ID"]) {
+      expect(stepNamesUsingSecret(release, legacy), `${legacy} must not remain in hosted release`).toEqual([]);
     }
   });
 

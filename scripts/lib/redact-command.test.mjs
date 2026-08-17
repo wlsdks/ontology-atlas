@@ -36,6 +36,25 @@ describe("formatCommandForLog", () => {
     );
   });
 
+  it("redacts App Store Connect key paths and identifiers from failed-command logs", () => {
+    const command = formatCommandForLog("xcrun", [
+      "notarytool",
+      "submit",
+      "app.dmg",
+      "--key",
+      "/private/tmp/notary/AuthKey.p8",
+      "--key-id",
+      "KEYID12345",
+      "--issuer",
+      "11111111-2222-3333-4444-555555555555",
+    ]);
+
+    assert.equal(
+      command,
+      "xcrun notarytool submit app.dmg --key [redacted] --key-id [redacted] --issuer [redacted]",
+    );
+  });
+
   it("leaves non-secret flags visible", () => {
     const command = formatCommandForLog("codesign", [
       "--verify",

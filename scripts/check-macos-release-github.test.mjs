@@ -15,9 +15,9 @@ const APP_TAG_PATTERN = APP_TAG.replace(/\./g, "\\.");
 const requiredSecrets = [
   "APPLE_CERTIFICATE_P12_BASE64",
   "APPLE_CERTIFICATE_PASSWORD",
-  "APPLE_ID",
-  "APPLE_APP_SPECIFIC_PASSWORD",
-  "APPLE_TEAM_ID",
+  "APPLE_API_KEY_P8_BASE64",
+  "APPLE_API_KEY_ID",
+  "APPLE_API_ISSUER_ID",
   "TAURI_SIGNING_PRIVATE_KEY",
   "TAURI_SIGNING_PRIVATE_KEY_PASSWORD",
 ];
@@ -189,14 +189,14 @@ test("desktop GitHub release gate proves workflows, secrets, tag version, and cl
 });
 
 test("desktop GitHub release gate fails before tag push when Developer ID direct-download secret names are missing", () => {
-  withFakeGh({ secretNames: requiredSecrets.filter((name) => name !== "APPLE_TEAM_ID") }, (fakeGhPath, fakeGitPath) => {
+  withFakeGh({ secretNames: requiredSecrets.filter((name) => name !== "APPLE_API_ISSUER_ID") }, (fakeGhPath, fakeGitPath) => {
     const result = runReleaseGithub(fakeGhPath, fakeGitPath);
 
     assert.equal(result.status, 1);
     assert.match(result.stderr, /missing release-signing environment secrets/);
     assert.match(result.stderr, /direct-download DMGs \(not Mac App Store submission\)/);
-    assert.match(result.stderr, /APPLE_TEAM_ID/);
-    assert.match(result.stderr, /gh secret set APPLE_TEAM_ID --env release-signing --repo wlsdks\/ontology-atlas/);
+    assert.match(result.stderr, /APPLE_API_ISSUER_ID/);
+    assert.match(result.stderr, /gh secret set APPLE_API_ISSUER_ID --env release-signing --repo wlsdks\/ontology-atlas/);
   });
 });
 

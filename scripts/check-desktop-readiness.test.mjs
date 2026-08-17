@@ -10,6 +10,9 @@ import test from "node:test";
 const APP_VERSION = JSON.parse(readFileSync("package.json", "utf8")).version;
 const APP_TAG = `v${APP_VERSION}`;
 const APP_TAG_PATTERN = APP_TAG.replace(/\./g, "\\.");
+const STRUCTURALLY_VALID_P8 = Buffer.from(
+  "-----BEGIN PRIVATE KEY-----\nprivate-key-material\n-----END PRIVATE KEY-----\n",
+).toString("base64");
 
 test("desktop readiness check proves Tauri macOS shell prerequisites", () => {
   const result = spawnSync(
@@ -212,7 +215,7 @@ test("desktop readiness check proves Tauri macOS shell prerequisites", () => {
   assert.match(readinessOutput, /macOS and Windows signing builds consume the admitted commit from release-signing|build-macos and build-windows must need admit-release/);
   assert.match(readinessOutput, /staging and publication use the admitted commit and requested release tag|stage-macos and publish-macos must need admit-release/);
   assert.match(readinessOutput, /Windows checks updater-only signing credentials before its installer build|build-windows must run desktop:release-secrets -- --updater-only/);
-  assert.match(result.stdout, /✓ desktop release secret gate blocks unsigned releases and malformed PKCS#12 certificates/);
+  assert.match(result.stdout, /✓ desktop release secret gate blocks unsigned releases and malformed PKCS#12 or App Store Connect \.p8 credentials/);
   assert.match(readinessOutput, /desktop release docs and preflight route signing setup through the release-signing environment|docs\/DESKTOP-MACOS\.md, desktop:release-preflight, and desktop:release-github must describe release-signing/);
   assert.match(
     result.stdout,
@@ -392,12 +395,13 @@ test("desktop release helper scripts expose credential-aware help", () => {
   assert.match(sign.stdout, /find-identity|Required codesign identity|APPLE_SIGNING_IDENTITY/);
 
   assert.equal(notarize.status, 0, notarize.stderr);
-  assert.match(notarize.stdout, /APPLE_APP_SPECIFIC_PASSWORD/);
+  assert.match(notarize.stdout, /APPLE_API_KEY_ID/);
+  assert.match(notarize.stdout, /Password authentication is\s+not accepted/);
   assert.match(notarize.stdout, /staples the/);
 
   assert.equal(releaseSecrets.status, 0, releaseSecrets.stderr);
   assert.match(releaseSecrets.stdout, /APPLE_CERTIFICATE_P12_BASE64/);
-  assert.match(releaseSecrets.stdout, /APPLE_TEAM_ID/);
+  assert.match(releaseSecrets.stdout, /APPLE_API_ISSUER_ID/);
   assert.match(releaseSecrets.stdout, /base64-encoded Developer ID/);
 
   assert.equal(verifyDmg.status, 0, verifyDmg.stderr);
@@ -515,9 +519,9 @@ process.exit(1);
     assert.equal(result.status, 1);
     assert.match(result.stderr, /missing release-signing environment secrets/);
     assert.match(result.stderr, /APPLE_CERTIFICATE_P12_BASE64/);
-    assert.match(result.stderr, /APPLE_TEAM_ID/);
+    assert.match(result.stderr, /APPLE_API_ISSUER_ID/);
     assert.match(result.stderr, /gh secret set APPLE_CERTIFICATE_P12_BASE64 --env release-signing --repo wlsdks\/ontology-atlas/);
-    assert.match(result.stderr, /gh secret set APPLE_TEAM_ID --env release-signing --repo wlsdks\/ontology-atlas/);
+    assert.match(result.stderr, /gh secret set APPLE_API_ISSUER_ID --env release-signing --repo wlsdks\/ontology-atlas/);
   } finally {
     rmSync(dir, { recursive: true, force: true });
   }
@@ -578,9 +582,9 @@ test("desktop GitHub release readiness gate accepts active workflow and required
   const secretNames = [
     "APPLE_CERTIFICATE_P12_BASE64",
     "APPLE_CERTIFICATE_PASSWORD",
-    "APPLE_ID",
-    "APPLE_APP_SPECIFIC_PASSWORD",
-    "APPLE_TEAM_ID",
+    "APPLE_API_KEY_P8_BASE64",
+    "APPLE_API_KEY_ID",
+    "APPLE_API_ISSUER_ID",
     "TAURI_SIGNING_PRIVATE_KEY",
     "TAURI_SIGNING_PRIVATE_KEY_PASSWORD",
   ];
@@ -647,9 +651,9 @@ test("desktop GitHub release readiness gate rejects an occupied release slot", (
   const secretNames = [
     "APPLE_CERTIFICATE_P12_BASE64",
     "APPLE_CERTIFICATE_PASSWORD",
-    "APPLE_ID",
-    "APPLE_APP_SPECIFIC_PASSWORD",
-    "APPLE_TEAM_ID",
+    "APPLE_API_KEY_P8_BASE64",
+    "APPLE_API_KEY_ID",
+    "APPLE_API_ISSUER_ID",
     "TAURI_SIGNING_PRIVATE_KEY",
     "TAURI_SIGNING_PRIVATE_KEY_PASSWORD",
   ];
@@ -814,9 +818,9 @@ test("desktop release secret gate fails closed when Developer ID direct-download
   for (const key of [
     "APPLE_CERTIFICATE_P12_BASE64",
     "APPLE_CERTIFICATE_PASSWORD",
-    "APPLE_ID",
-    "APPLE_APP_SPECIFIC_PASSWORD",
-    "APPLE_TEAM_ID",
+    "APPLE_API_KEY_P8_BASE64",
+    "APPLE_API_KEY_ID",
+    "APPLE_API_ISSUER_ID",
   ]) {
     delete env[key];
   }
@@ -830,7 +834,7 @@ test("desktop release secret gate fails closed when Developer ID direct-download
   assert.equal(result.status, 1);
   assert.match(result.stderr, /missing required Developer ID direct-download secrets/);
   assert.match(result.stderr, /not Mac App Store submission/);
-  assert.match(result.stderr, /APPLE_ID — Apple Developer account email for notarytool submission/);
+  assert.match(result.stderr, /APPLE_API_KEY_P8_BASE64 — App Store Connect API private key/);
   assert.match(result.stderr, /refusing to publish an unsigned or unnotarized direct-download macOS release artifact/);
 });
 
@@ -844,9 +848,9 @@ test("desktop release secret gate help explains each direct-download secret role
   assert.match(result.stdout, /not Mac App Store submission credentials/);
   assert.match(result.stdout, /APPLE_CERTIFICATE_P12_BASE64 — Developer ID Application certificate exported as base64 PKCS#12/);
   assert.match(result.stdout, /APPLE_CERTIFICATE_PASSWORD — password for that exported \.p12 file/);
-  assert.match(result.stdout, /APPLE_ID — Apple Developer account email for notarytool submission/);
-  assert.match(result.stdout, /APPLE_APP_SPECIFIC_PASSWORD — app-specific password for notarytool/);
-  assert.match(result.stdout, /APPLE_TEAM_ID — Apple Developer Team ID for notarization/);
+  assert.match(result.stdout, /APPLE_API_KEY_P8_BASE64 — App Store Connect API private key/);
+  assert.match(result.stdout, /APPLE_API_KEY_ID — App Store Connect API key ID for notarytool/);
+  assert.match(result.stdout, /APPLE_API_ISSUER_ID — App Store Connect API issuer UUID for notarization/);
 });
 
 test("desktop release secret gate rejects invalid certificate base64", () => {
@@ -859,9 +863,9 @@ test("desktop release secret gate rejects invalid certificate base64", () => {
       APPLE_CERTIFICATE_PASSWORD: "certificate-password",
       APPLE_KEYCHAIN_PASSWORD: "keychain-password",
       APPLE_SIGNING_IDENTITY: "Developer ID Application: Example",
-      APPLE_ID: "developer@example.com",
-      APPLE_APP_SPECIFIC_PASSWORD: "app-specific-password",
-      APPLE_TEAM_ID: "ABCDE12345",
+      APPLE_API_KEY_P8_BASE64: STRUCTURALLY_VALID_P8,
+      APPLE_API_KEY_ID: "KEYID12345",
+      APPLE_API_ISSUER_ID: "11111111-2222-3333-4444-555555555555",
       TAURI_SIGNING_PRIVATE_KEY: "updater-private-key",
       TAURI_SIGNING_PRIVATE_KEY_PASSWORD: "updater-password",
     },
@@ -882,9 +886,9 @@ test("desktop release secret gate rejects base64 that is not a PKCS#12 DER certi
       APPLE_CERTIFICATE_PASSWORD: "certificate-password",
       APPLE_KEYCHAIN_PASSWORD: "keychain-password",
       APPLE_SIGNING_IDENTITY: "Developer ID Application: Example",
-      APPLE_ID: "developer@example.com",
-      APPLE_APP_SPECIFIC_PASSWORD: "app-specific-password",
-      APPLE_TEAM_ID: "ABCDE12345",
+      APPLE_API_KEY_P8_BASE64: STRUCTURALLY_VALID_P8,
+      APPLE_API_KEY_ID: "KEYID12345",
+      APPLE_API_ISSUER_ID: "11111111-2222-3333-4444-555555555555",
       TAURI_SIGNING_PRIVATE_KEY: "updater-private-key",
       TAURI_SIGNING_PRIVATE_KEY_PASSWORD: "updater-password",
     },
@@ -911,9 +915,9 @@ test("desktop release secret gate accepts structurally valid release secrets", (
       APPLE_CERTIFICATE_PASSWORD: "certificate-password",
       APPLE_KEYCHAIN_PASSWORD: "keychain-password",
       APPLE_SIGNING_IDENTITY: "Developer ID Application: Example",
-      APPLE_ID: "developer@example.com",
-      APPLE_APP_SPECIFIC_PASSWORD: "app-specific-password",
-      APPLE_TEAM_ID: "ABCDE12345",
+      APPLE_API_KEY_P8_BASE64: STRUCTURALLY_VALID_P8,
+      APPLE_API_KEY_ID: "KEYID12345",
+      APPLE_API_ISSUER_ID: "11111111-2222-3333-4444-555555555555",
       TAURI_SIGNING_PRIVATE_KEY: "updater-private-key",
       TAURI_SIGNING_PRIVATE_KEY_PASSWORD: "updater-password",
     },

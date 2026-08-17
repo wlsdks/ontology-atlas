@@ -1,5 +1,8 @@
 const DEFAULT_SECRET_FLAGS = new Set([
   "--apple-id",
+  "--issuer",
+  "--key",
+  "--key-id",
   "--keychain-profile",
   "--password",
 ]);

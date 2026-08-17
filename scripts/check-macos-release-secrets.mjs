@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+import { decodeNotaryApiKeySecret } from "./lib/notary-credentials.mjs";
 
 const releaseSecrets = [
   {
@@ -10,16 +11,16 @@ const releaseSecrets = [
     description: "password for that exported .p12 file",
   },
   {
-    name: "APPLE_ID",
-    description: "Apple Developer account email for notarytool submission",
+    name: "APPLE_API_KEY_P8_BASE64",
+    description: "App Store Connect API private key (.p8) encoded as base64",
   },
   {
-    name: "APPLE_APP_SPECIFIC_PASSWORD",
-    description: "app-specific password for notarytool",
+    name: "APPLE_API_KEY_ID",
+    description: "App Store Connect API key ID for notarytool",
   },
   {
-    name: "APPLE_TEAM_ID",
-    description: "Apple Developer Team ID for notarization",
+    name: "APPLE_API_ISSUER_ID",
+    description: "App Store Connect API issuer UUID for notarization",
   },
   {
     name: "TAURI_SIGNING_PRIVATE_KEY",
@@ -58,7 +59,8 @@ Use --updater-only for the Windows updater-signing check; that mode requires
 only the two Tauri updater secrets and does not inspect the Apple certificate.
 
 The certificate secret must be a base64-encoded Developer ID Application .p12
-export in PKCS#12 DER form.
+export in PKCS#12 DER form. The notarization key secret must be the base64 of
+the complete App Store Connect .p8 PEM file.
 `);
 }
 
@@ -141,6 +143,18 @@ if (!updaterOnly) {
     );
     console.error(
       "[desktop-release-secrets] refusing to publish a macOS release that cannot import its signing certificate.",
+    );
+    process.exit(1);
+  }
+
+  try {
+    decodeNotaryApiKeySecret(values.APPLE_API_KEY_P8_BASE64);
+  } catch (error) {
+    console.error(
+      `[desktop-release-secrets] ${error instanceof Error ? error.message : String(error)}`,
+    );
+    console.error(
+      "[desktop-release-secrets] refusing to pass malformed notarization key material to the release pipeline.",
     );
     process.exit(1);
   }

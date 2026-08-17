@@ -157,8 +157,10 @@ const codexBuildRunScript = readText("script/build_and_run.sh");
 const codexEnvironmentConfig = readText(".codex/environments/environment.toml");
 const signMacosScript = readText("scripts/sign-macos-app.mjs");
 const notarizeMacosDmgScript = readText("scripts/notarize-macos-dmg.mjs");
+const buildMacosReleaseArtifactScript = readText("scripts/build-macos-release-artifact.mjs");
 const releaseSourceScript = readText("scripts/check-macos-release-source.mjs");
 const releaseSecretsScript = readText("scripts/check-macos-release-secrets.mjs");
+const notaryCredentialsHelper = readText("scripts/lib/notary-credentials.mjs");
 const releaseTagScript = readText("scripts/check-macos-release-tag.mjs");
 const releaseSlotScript = readText("scripts/check-macos-release-slot.mjs");
 const releaseGithubScript = readText("scripts/check-macos-release-github.mjs");
@@ -701,15 +703,32 @@ if (
  *
  * 서명 뒤에 다시 담고 다시 minisign 서명하면 `valid on disk` 가 된다.
  */
-const RELEASE_ARTIFACT_PIPELINE =
-  "pnpm desktop:release-secrets && pnpm build && pnpm desktop:smoke && pnpm desktop:build:app && pnpm desktop:sign && pnpm desktop:repack-updater && node scripts/package-macos-dmg.mjs && pnpm desktop:sign:dmg && pnpm desktop:notarize && pnpm desktop:verify-release-dmg && pnpm desktop:verify-install";
+const RELEASE_ARTIFACT_COMMAND = "node scripts/build-macos-release-artifact.mjs";
+const RELEASE_ARTIFACT_STEP_MARKERS = [
+  'args: ["desktop:release-secrets"]',
+  'args: ["build"]',
+  'args: ["desktop:smoke"]',
+  'args: ["desktop:build:app"]',
+  'args: ["desktop:sign"]',
+  'args: ["desktop:repack-updater"]',
+  'args: ["scripts/package-macos-dmg.mjs"]',
+  'args: ["desktop:sign:dmg"]',
+  'args: ["desktop:notarize"]',
+  'args: ["desktop:verify-release-dmg"]',
+  'args: ["desktop:verify-install"]',
+];
 
-if (pkg.scripts?.["desktop:release-artifact"] === RELEASE_ARTIFACT_PIPELINE) {
+if (
+  pkg.scripts?.["desktop:release-artifact"] === RELEASE_ARTIFACT_COMMAND &&
+  RELEASE_ARTIFACT_STEP_MARKERS.every((marker) => buildMacosReleaseArtifactScript.includes(marker)) &&
+  buildMacosReleaseArtifactScript.includes("releaseChildEnv") &&
+  buildMacosReleaseArtifactScript.includes("withNotaryApiKeyFile")
+) {
   pass("desktop release artifact command signs the app, packages, signs the DMG container, notarizes, and verifies the direct-download DMG");
 } else {
   fail(
     "package.json must expose desktop:release-artifact as the credentialed direct-download artifact path: release secret check, build/smoke, app build, app sign, DMG package, **DMG container sign**, notarize, verify-release-dmg, and install smoke\n" +
-      `[desktop-check]   기대: ${RELEASE_ARTIFACT_PIPELINE}\n` +
+      `[desktop-check]   기대: ${RELEASE_ARTIFACT_COMMAND} + isolated 11-step pipeline\n` +
       `[desktop-check]   실제: ${pkg.scripts?.["desktop:release-artifact"] ?? "(없음)"}`,
   );
 }
@@ -1052,9 +1071,12 @@ if (
   /\{file\}/.test(enMessages.download?.trustVerifyCommand ?? "") &&
   // 서명을 주장하려면 릴리스 자산 체인이 실제로 서명·공증·검증을 해야 한다.
   (!/Developer ID/.test(enMessages.download?.proofSigned ?? "") ||
-    (pkg.scripts?.["desktop:release-artifact"]?.includes("desktop:sign") &&
-      pkg.scripts?.["desktop:release-artifact"]?.includes("desktop:notarize") &&
-      pkg.scripts?.["desktop:release-artifact"]?.includes("desktop:verify-release-dmg"))) &&
+    (pkg.scripts?.["desktop:release-artifact"] === RELEASE_ARTIFACT_COMMAND &&
+      [
+        'args: ["desktop:sign"]',
+        'args: ["desktop:notarize"]',
+        'args: ["desktop:verify-release-dmg"]',
+      ].every((marker) => buildMacosReleaseArtifactScript.includes(marker)))) &&
   // 미서명 상태를 말하는 문구라면 우회 경로를 반드시 함께 준다 — 상태만 알리고
   // 방법을 안 주면 그건 정직이 아니라 방치다. (인증서가 만료·폐기되어 문구가
   // 미서명으로 되돌아가면 이 조건이 다시 무장한다.)
@@ -1203,12 +1225,14 @@ if (
   releaseSecretsScript.includes("hasDerSequenceEnvelope") &&
   releaseSecretsScript.includes("firstLengthByte < 0x80") &&
   releaseSecretsScript.includes("PKCS#12 DER sequence with a valid length envelope") &&
-  releaseSecretsScript.includes("cannot import its signing certificate")
+  releaseSecretsScript.includes("cannot import its signing certificate") &&
+  releaseSecretsScript.includes("decodeNotaryApiKeySecret") &&
+  notaryCredentialsHelper.includes("must decode to an App Store Connect .p8 private key")
 ) {
-  pass("desktop release secret gate blocks unsigned releases and malformed PKCS#12 certificates");
+  pass("desktop release secret gate blocks unsigned releases and malformed PKCS#12 or App Store Connect .p8 credentials");
 } else {
   fail(
-    "package.json must expose desktop:release-secrets as node scripts/check-macos-release-secrets.mjs, and scripts/check-macos-release-secrets.mjs must reject missing Developer ID direct-download secrets, malformed base64, and non-PKCS#12 certificate payloads before signing",
+    "package.json must expose desktop:release-secrets as node scripts/check-macos-release-secrets.mjs, and the release credential helpers must reject missing values, malformed base64, non-PKCS#12 certificate payloads, and malformed App Store Connect .p8 keys before signing",
   );
 }
 
