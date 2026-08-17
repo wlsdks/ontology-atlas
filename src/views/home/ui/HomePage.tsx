@@ -1507,7 +1507,27 @@ export function HomePage() {
    * 그걸로 힌트가 localStorage 에 영구 소멸했다. 누른 적도 없는데 학습 완료로
    * 기록된 것이다.
    */
-  const resolvedSelectionSlug = selectedProject?.slug ?? selectedOntologyNode?.id ?? null;
+  /*
+   * ⚠️ **캔버스가 원하는 것은 슬러그가 아니라 그래프 노드 이름이다**
+   * (2026-08-17 소유자 보고로 발견).
+   *
+   * 노드 이름은 `${kind}:${슬러그}` 다(`derive-ontology-from-vault.ts`).
+   * 그런데 프로젝트 딥링크는 접두사 없는 슬러그를 보낸다
+   * (`topology-href.ts`: `kind: project` → `/topology/?p=<슬러그>`; 다른
+   * 종류는 노드 이름을 그대로 보낸다). 그래서 **프로젝트만** 캔버스에서
+   * 맞는 노드를 못 찾았고, 지도는 「하나 골랐는데 그게 어디에도 없네」를
+   * 「전부 흐리게」로 번역했다 — 실측 1.40:1(도형 최저 3:1).
+   *
+   * 프로젝트도 다른 종류와 같은 규칙을 태운다. 그래프에 그 노드가 없으면
+   * (컴파일이 프로젝트를 안 냈다면) 슬러그를 그대로 두되, 그때는 캔버스의
+   * 안전망이 「안 고름」으로 떨어뜨린다 — 화면이 죽지 않는다.
+   */
+  const selectedProjectNodeId = useMemo(() => {
+    if (!selectedProject) return null;
+    const nodeId = `project:${selectedProject.slug}`;
+    return ontologyInsight?.nodes.some((n) => n.id === nodeId) ? nodeId : selectedProject.slug;
+  }, [selectedProject, ontologyInsight]);
+  const resolvedSelectionSlug = selectedProjectNodeId ?? selectedOntologyNode?.id ?? null;
   const canvasSelectedSlug = resolveCanvasSelectedSlug({
     selectedSlug,
     resolvedSlug: resolvedSelectionSlug,

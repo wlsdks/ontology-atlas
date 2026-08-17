@@ -2480,7 +2480,31 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
         }
       }
 
-      const focusedNodeId = focusedSlugRef.current;
+      /*
+       * ⚠️ **이 그래프에 없는 이름으로는 포커스가 서지 않는다** (2026-08-17).
+       *
+       * 소유자 보고: 문서함에서 프로젝트 문서의 「지도에서 열기」를 눌렀더니
+       * 지도가 통째로 사라진 것처럼 보였다. 흐린 게 아니라 **전부 흐리게
+       * 처리된** 것이었다 — 실측으로 가장 밝은 노드가 배경 대비 1.40:1
+       * (도형 최저 기준선 3:1), 125노드 샘플 볼트에서는 밝은 픽셀 0개.
+       *
+       * 원인은 이름 체계 불일치였다(프로젝트 슬러그 `project` ↔ 노드 이름
+       * `project:project`). 그건 아래 `HomePage` 쪽에서 고쳤다. 그런데 진짜
+       * 위험은 그 한 경로가 아니라 **「없는 노드를 골랐다」가 「전부 흐리게」로
+       * 번역되는 규칙** 자체다 — 그 규칙이 남아 있는 한 다음 경로에서 또 난다.
+       *
+       * 그래서 여기서 떨어뜨린다: 포커스 이름이 이 프레임의 노드 목록에
+       * 없으면 **아무것도 안 고른 것**으로 본다. 골라 놓고 아무것도 안 보이는
+       * 것보다 안 고른 화면이 언제나 낫다.
+       *
+       * `world.nodeById` 를 쓰므로 비용은 조회 한 번이다.
+       * 게이트: `tests/e2e/map-focus-dangling.spec.ts`.
+       */
+      const requestedFocusId = focusedSlugRef.current;
+      const focusedNodeId =
+        requestedFocusId !== null && world.nodeById.has(requestedFocusId)
+          ? requestedFocusId
+          : null;
       // 포커스 중엔 호버를 널링한다("포커스가 emphasis 소유권 독점"). 걸어온 길
       // 렌즈는 이 규칙의 **유일한 예외**다 — 렌즈 동안 커서는 캔버스가 아니라
       // 팝오버 위에 있어 캔버스 호버와 경쟁하지 않고, 행 hover 가 지도 호버
