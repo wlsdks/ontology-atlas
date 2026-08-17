@@ -132,9 +132,26 @@ test.describe("포커스 반환", () => {
 
     const opener = page.getByTestId("topology-shortcuts-help-button");
     await expect(opener).toBeVisible({ timeout: 30_000 });
-    await opener.focus();
-    await page.keyboard.press("Enter");
-    await expect(page.getByTestId("shortcut-sheet-close")).toBeVisible();
+    /*
+     * ⚠️ **보인다 ≠ 키가 붙었다** (2026-08-17, CI 에서 흔들리던 자리).
+     *
+     * 버튼이 보이자마자 Enter 를 눌렀는데, 느린 러너에서는 하이드레이션이
+     * 아직이라 그 Enter 가 아무 데도 안 닿았다 — 시트가 안 열려 15초를 꽉
+     * 기다리다 죽었다(실측 16.0초). 열릴 때까지 다시 누른다.
+     */
+    const sheetClose = page.getByTestId("shortcut-sheet-close");
+    await expect
+      .poll(
+        async () => {
+          if (await sheetClose.isVisible().catch(() => false)) return true;
+          await opener.focus();
+          await page.keyboard.press("Enter");
+          await page.waitForTimeout(250);
+          return sheetClose.isVisible().catch(() => false);
+        },
+        { timeout: 25_000, message: "단축키 시트가 안 열렸다 — Enter 가 아직 안 붙었나" },
+      )
+      .toBe(true);
     await page.keyboard.press("Escape");
 
     await expect
