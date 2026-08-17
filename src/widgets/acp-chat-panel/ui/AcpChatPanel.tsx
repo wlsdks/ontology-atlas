@@ -217,6 +217,14 @@ export function AcpChatPanel({
     return query === null ? [] : matchSlashCommands(slashCommands, query).slice(0, SLASH_MENU_LIMIT);
   }, [draft, slashCommands, slashDismissed]);
   const slashOpen = slashMatches.length > 0;
+  /*
+   * 짚는 자리는 **파생값**이다 — 목록이 줄어도 없는 줄을 짚지 않게 물린다.
+   * effect 로 되돌리면 렌더가 한 번 더 돌고(래칫이 그 경고를 잡는다) 한 프레임
+   * 동안 없는 줄을 짚은 상태가 화면에 남는다.
+   */
+  const slashActiveIndex = slashOpen
+    ? Math.min(Math.max(slashActive, 0), slashMatches.length - 1)
+    : 0;
   /**
    * 바깥을 누르면 닫는다 (2026-08-17 소유자 지적: *"바닥 클릭하면 닫혀야하는데
    * 안닫힘"*).
@@ -229,28 +237,30 @@ export function AcpChatPanel({
   useEffect(() => {
     if (!slashOpen) return;
     const onDown = (event: MouseEvent) => {
-      const target = event.target as Node | null;
+      /*
+       * 작성 칸은 **ref 가 아니라 표식**으로 알아본다. ref 를 이 effect 안에서
+       * 읽으면 같은 ref 를 고치는 다른 effect(칸 높이 조절)가 lint 에 걸린다 —
+       * 실측으로 경고가 하나 늘었다. 표식이면 그 얽힘이 아예 없다.
+       */
+      const target = event.target as HTMLElement | null;
       if (slashMenuRef.current?.contains(target ?? null)) return;
-      if (inputRef.current?.contains(target ?? null)) return;
+      if (target?.closest?.('[data-acp-composer]')) return;
       setSlashDismissed(true);
     };
     document.addEventListener('mousedown', onDown);
     return () => document.removeEventListener('mousedown', onDown);
   }, [slashOpen]);
 
-  const chooseSlashCommand = useCallback(
-    (name: string) => {
-      setDraft(`/${name} `);
-      setSlashDismissed(true);
-      inputRef.current?.focus();
-    },
-    [],
-  );
-  /* 목록이 바뀌면 짚는 자리를 첫 줄로 되돌린다 — 남아 있으면 없는 줄을 짚는다. */
-  useEffect(() => {
-    setSlashActive(0);
-  }, [slashMatches.length]);
-
+  /*
+   * 평범한 함수다 — `useCallback` 으로 감싸면 그 훅이 작성 칸 ref 를 붙들고,
+   * 같은 ref 를 고치는 다른 effect(칸 높이 조절)가 lint 에 걸린다(실측).
+   * 이 함수는 렌더마다 새로 만들어도 아무 데도 전달되지 않으므로 비용이 없다.
+   */
+  const chooseSlashCommand = (name: string) => {
+    setDraft(`/${name} `);
+    setSlashDismissed(true);
+    inputRef.current?.focus();
+  };
   const [historyOpen, setHistoryOpen] = useState(false);
   /** 작성 칸에 손이 가 있나 — 단축키 안내를 그때만 띄운다. */
   const [composerFocused, setComposerFocused] = useState(false);
@@ -811,7 +821,7 @@ export function AcpChatPanel({
             className="max-h-56 shrink-0 overflow-y-auto rounded-card border border-[color:var(--color-divider)] bg-[color:var(--color-elevated)] p-1"
           >
             {slashMatches.map((command: AcpSlashCommand, index: number) => {
-              const active = index === slashActive;
+              const active = index === slashActiveIndex;
               return (
                 <li key={command.name} role="option" aria-selected={active}>
                   {/*
@@ -841,7 +851,7 @@ export function AcpChatPanel({
             })}
           </ul>
         ) : null}
-        <div className="relative">
+        <div className="relative" data-acp-composer>
           <Textarea
             ref={inputRef}
             aria-label={t('composerLabel')}
@@ -882,7 +892,7 @@ export function AcpChatPanel({
                 }
                 if (e.key === 'Enter' && !e.shiftKey) {
                   e.preventDefault();
-                  chooseSlashCommand(slashMatches[slashActive]?.name ?? slashMatches[0].name);
+                  chooseSlashCommand(slashMatches[slashActiveIndex]?.name ?? slashMatches[0].name);
                   return;
                 }
                 if (e.key === 'Escape') {
