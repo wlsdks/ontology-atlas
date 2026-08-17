@@ -1248,3 +1248,87 @@ describe('대화 패널 — 차례가 도는 동안만 알린다', () => {
     expect(seen.at(-1)).toBe(false);
   });
 });
+
+/**
+ * `/` 메뉴는 **고를 수 있어야** 한다 (2026-08-17 소유자 지적 셋):
+ * "키보드로 이동이 안된다" · "마우스 올려도 호버 효과가 없어서 어딘지 구분도
+ * 안 되고" · "바닥 클릭하면 닫혀야하는데 안닫힘".
+ */
+describe('작성 칸 — `/` 메뉴', () => {
+  async function openMenu() {
+    await bootSession();
+    emit({
+      jsonrpc: '2.0',
+      method: 'session/update',
+      params: {
+        sessionId: 's-1',
+        update: {
+          sessionUpdate: 'available_commands_update',
+          availableCommands: [
+            { name: 'alpha', description: '첫째' },
+            { name: 'beta', description: '둘째' },
+          ],
+        },
+      },
+    });
+    const box = screen.getAllByRole('textbox')[0];
+    fireEvent.change(box, { target: { value: '/' } });
+    await screen.findByTestId('acp-chat-slash-menu');
+    return box;
+  }
+
+  it('온 명령만 보여 준다', async () => {
+    await openMenu();
+    const menu = screen.getByTestId('acp-chat-slash-menu');
+    expect(menu.textContent).toContain('/alpha');
+    expect(menu.textContent).toContain('/beta');
+  });
+
+  it('아무것도 안 오면 `/` 를 쳐도 안 열린다 — 없는 기능을 지어내지 않는다', async () => {
+    await bootSession();
+    fireEvent.change(screen.getAllByRole('textbox')[0], { target: { value: '/' } });
+    expect(screen.queryByTestId('acp-chat-slash-menu')).toBeNull();
+  });
+
+  it('키보드로 옮기고 Enter 로 고른다', async () => {
+    const box = await openMenu();
+    const selected = () =>
+      [...screen.getByTestId('acp-chat-slash-menu').querySelectorAll('[role="option"]')].findIndex(
+        (el) => el.getAttribute('aria-selected') === 'true',
+      );
+    expect(selected()).toBe(0);
+    fireEvent.keyDown(box, { key: 'ArrowDown' });
+    expect(selected(), '아래로 못 옮긴다').toBe(1);
+    fireEvent.keyDown(box, { key: 'ArrowUp' });
+    expect(selected()).toBe(0);
+    fireEvent.keyDown(box, { key: 'Enter' });
+    expect((box as HTMLTextAreaElement).value).toBe('/alpha ');
+  });
+
+  it('짚은 줄이 화면에 표시된다 — 안 그러면 어디 있는지 모른다', async () => {
+    await openMenu();
+    const options = screen.getByTestId('acp-chat-slash-menu').querySelectorAll('[role="option"]');
+    expect(options[0].getAttribute('aria-selected')).toBe('true');
+    expect(options[1].getAttribute('aria-selected')).toBe('false');
+  });
+
+  it('바깥을 누르면 닫힌다', async () => {
+    await openMenu();
+    fireEvent.mouseDown(document.body);
+    await waitFor(() => expect(screen.queryByTestId('acp-chat-slash-menu')).toBeNull());
+  });
+
+  it('닫은 뒤 다시 치면 열린다 — 세션 내내 잠기지 않는다', async () => {
+    const box = await openMenu();
+    fireEvent.mouseDown(document.body);
+    await waitFor(() => expect(screen.queryByTestId('acp-chat-slash-menu')).toBeNull());
+    fireEvent.change(box, { target: { value: '/a' } });
+    await screen.findByTestId('acp-chat-slash-menu');
+  });
+
+  it('Esc 로도 닫힌다', async () => {
+    const box = await openMenu();
+    fireEvent.keyDown(box, { key: 'Escape' });
+    await waitFor(() => expect(screen.queryByTestId('acp-chat-slash-menu')).toBeNull());
+  });
+});

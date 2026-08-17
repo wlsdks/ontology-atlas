@@ -202,10 +202,55 @@ export function AcpChatPanel({
    * `/` 로 고르는 중인가. 첫 글자가 `/` 이고 아직 공백이 없을 때만이다 —
    * 인자를 치기 시작했으면 고르는 단계가 지났다(`slash-commands.ts`).
    */
+  /**
+   * 목록을 **손으로 닫았나.** 바깥을 눌러 닫은 뒤에도 작성 칸의 글자는 그대로라,
+   * 이 기억이 없으면 다음 렌더에서 곧바로 다시 열린다(2026-08-17 소유자 지적:
+   * *"바닥 클릭하면 닫혀야하는데 안닫힘"*). 글자가 바뀌면 다시 여는 것이 맞으므로
+   * 그때 이 기억을 지운다.
+   */
+  const [slashDismissed, setSlashDismissed] = useState(false);
+  /** 키보드로 짚고 있는 줄. 목록이 바뀌면 첫 줄로 돌아간다. */
+  const [slashActive, setSlashActive] = useState(0);
   const slashMatches = useMemo(() => {
+    if (slashDismissed) return [];
     const query = slashQuery(draft);
     return query === null ? [] : matchSlashCommands(slashCommands, query).slice(0, SLASH_MENU_LIMIT);
-  }, [draft, slashCommands]);
+  }, [draft, slashCommands, slashDismissed]);
+  const slashOpen = slashMatches.length > 0;
+  /**
+   * 바깥을 누르면 닫는다 (2026-08-17 소유자 지적: *"바닥 클릭하면 닫혀야하는데
+   * 안닫힘"*).
+   *
+   * `mousedown` 으로 듣는 이유: `click` 은 눌렀다 뗀 뒤에 오는데, 그 사이에
+   * 작성 칸이 초점을 잃으며 화면이 한 번 흔들린다. 목록 자신을 누른 것은
+   * 세어 주지 않는다 — 그건 고르는 동작이라 `chooseSlashCommand` 가 닫는다.
+   */
+  const slashMenuRef = useRef<HTMLUListElement | null>(null);
+  useEffect(() => {
+    if (!slashOpen) return;
+    const onDown = (event: MouseEvent) => {
+      const target = event.target as Node | null;
+      if (slashMenuRef.current?.contains(target ?? null)) return;
+      if (inputRef.current?.contains(target ?? null)) return;
+      setSlashDismissed(true);
+    };
+    document.addEventListener('mousedown', onDown);
+    return () => document.removeEventListener('mousedown', onDown);
+  }, [slashOpen]);
+
+  const chooseSlashCommand = useCallback(
+    (name: string) => {
+      setDraft(`/${name} `);
+      setSlashDismissed(true);
+      inputRef.current?.focus();
+    },
+    [],
+  );
+  /* 목록이 바뀌면 짚는 자리를 첫 줄로 되돌린다 — 남아 있으면 없는 줄을 짚는다. */
+  useEffect(() => {
+    setSlashActive(0);
+  }, [slashMatches.length]);
+
   const [historyOpen, setHistoryOpen] = useState(false);
   /** 작성 칸에 손이 가 있나 — 단축키 안내를 그때만 띄운다. */
   const [composerFocused, setComposerFocused] = useState(false);
@@ -757,31 +802,43 @@ export function AcpChatPanel({
           일어난다. 볼트 폴더가 곧 작업 폴더라, 볼트에 스킬을 두면 그대로
           여기 뜬다 — 「아틀라스 전용」은 그 길로 온다.
         */}
-        {slashMatches.length > 0 ? (
+        {slashOpen ? (
           <ul
+            ref={slashMenuRef}
             data-testid="acp-chat-slash-menu"
+            role="listbox"
+            aria-label={t('composerLabel')}
             className="max-h-56 shrink-0 overflow-y-auto rounded-card border border-[color:var(--color-divider)] bg-[color:var(--color-elevated)] p-1"
           >
-            {slashMatches.map((command: AcpSlashCommand) => (
-              <li key={command.name}>
-                <RowButton
-                  onClick={() => {
-                    setDraft(`/${command.name} `);
-                    inputRef.current?.focus();
-                  }}
-                  className="w-full gap-2"
-                >
-                  <span className="shrink-0 font-mono text-label text-[color:var(--color-text-primary)]">
-                    /{command.name}
-                  </span>
-                  {command.description ? (
-                    <span className="min-w-0 flex-1 truncate text-left text-label text-[color:var(--color-text-quaternary)]">
-                      {command.description}
-                    </span>
-                  ) : null}
-                </RowButton>
-              </li>
-            ))}
+            {slashMatches.map((command: AcpSlashCommand, index: number) => {
+              const active = index === slashActive;
+              return (
+                <li key={command.name} role="option" aria-selected={active}>
+                  {/*
+                    ⚠️ 호버 축은 **옵트인**이다 (`design-build`). 안 켜면 마우스를
+                    올려도 아무 일이 없어서 어느 줄인지 구별이 안 된다 — 소유자가
+                    정확히 그것을 지적했다(2026-08-17). 키보드로 짚은 줄
+                    (`active`)과 마우스가 올라간 줄이 **같은 표시**를 쓰도록
+                    `active` 축을 함께 준다.
+                  */}
+                  <RowButton
+                    active={active}
+                    hoverSurface="lift"
+                    hoverInk="strong"
+                    onMouseEnter={() => setSlashActive(index)}
+                    onClick={() => chooseSlashCommand(command.name)}
+                    className="w-full gap-2"
+                  >
+                    <span className="shrink-0 font-mono text-label">/{command.name}</span>
+                    {command.description ? (
+                      <span className="min-w-0 flex-1 truncate text-left text-label text-[color:var(--color-text-quaternary)]">
+                        {command.description}
+                      </span>
+                    ) : null}
+                  </RowButton>
+                </li>
+              );
+            })}
           </ul>
         ) : null}
         <div className="relative">
@@ -802,8 +859,38 @@ export function AcpChatPanel({
             }}
             onFocus={() => setComposerFocused(true)}
             onBlur={() => setComposerFocused(false)}
-            onChange={(e) => setDraft(e.target.value)}
+            onChange={(e) => {
+              setDraft(e.target.value);
+              // 다시 치기 시작하면 손으로 닫은 기억을 지운다 — 안 그러면 이
+              // 세션 내내 목록이 안 열린다.
+              setSlashDismissed(false);
+            }}
             onKeyDown={(e) => {
+              /*
+               * 목록이 열려 있으면 **목록이 키를 먼저 갖는다** (2026-08-17
+               * 소유자 지적: *"키보드로 이동이 안된다"*). 목록이 없을 때의
+               * Enter 동작(보내기)은 아래 그대로다.
+               */
+              if (slashOpen) {
+                if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+                  e.preventDefault();
+                  const step = e.key === 'ArrowDown' ? 1 : -1;
+                  setSlashActive(
+                    (prev) => (prev + step + slashMatches.length) % slashMatches.length,
+                  );
+                  return;
+                }
+                if (e.key === 'Enter' && !e.shiftKey) {
+                  e.preventDefault();
+                  chooseSlashCommand(slashMatches[slashActive]?.name ?? slashMatches[0].name);
+                  return;
+                }
+                if (e.key === 'Escape') {
+                  e.preventDefault();
+                  setSlashDismissed(true);
+                  return;
+                }
+              }
               if (e.key !== 'Enter') return;
               /*
                * Enter 로 보내고 ⇧Enter 로 줄을 바꾼다 — 채팅의 관례이고, 사람이
