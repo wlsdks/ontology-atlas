@@ -40,6 +40,42 @@
 **상태**: 유효 / 뒤집힘(→ 링크) / 반증됨(관측: …)
 ```
 
+## 2026-08-17 (62) — 생략된 다운로드 검증은 릴리스 readiness blocker다
+
+**소집**: 단독 패스 + 선행 읽기 전용 공격 감사 · **트리거**: 릴리스 완료 관문의
+fail-open 재현 · **루브릭**: 24/24 (치명적 0: 없음)
+
+**관찰된 현상**: `check-macos-release-status`는
+`OATLAS_RELEASE_STATUS_SKIP_DOWNLOAD_VERIFY=1`이면 공개 DMG·checksum verifier를
+실행하지 않고 `download_assets`를 `skipped`로 기록했다. readiness는 `blocked` 행만
+세었으므로 나머지 fixture가 통과하면 다운로드 자산을 한 바이트도 확인하지 않고
+`ready:true`, 종료 코드 0을 반환했다. 실제 릴리스 오판은 관측하지 않았고, 기존
+테스트가 이 false-green을 성공으로 고정하고 있음을 재현했다.
+
+**결정**: skip 환경변수 자체는 네트워크 없는 focused test를 위해 유지하되, 사용된
+순간 `download_assets`를 `blocked`로 기록한다. 사람용 출력·JSON·Markdown은 같은
+blocker와 실제 `desktop:verify-download` 명령을 반환하며, child verifier가 성공한
+경우에만 해당 행이 `ok`가 된다. skip을 readiness 성공으로 바꾸는 별도 우회는 두지
+않는다.
+
+**적용 규칙**: 미측정은 통과가 아니다 · skipped 필수 증거는 blocker다 · 출력 형식이
+달라도 readiness 진실원은 하나다.
+**서명**: Codex — RED·GREEN·26개 시나리오 통합 검증 · 진안 — 장기 보안·품질 개선 승인
+
+**기록된 반대**: 상태 스크립트의 성공 경로를 네트워크 없이 한 파일에서 끝까지
+재현하기 어려워진다. 그러나 실제 다운로드 verifier는 로컬 HTTP fixture로 성공·실패
+자산을 별도 전수 검증하며, 거짓 ready fixture를 유지하는 것보다 증거 소유권을 나누는
+편이 정확하다.
+**반증 조건**: 실제 verifier가 성공했는데 상태 스크립트가 blocker를 남기거나, combined
+ready 경로의 회귀가 반복된다면 env 우회 대신 함수 경계의 명시적 verifier 결과 주입으로
+테스트 구조를 바꾼다.
+**잔여 경계**: 이 결정은 readiness의 skip 우회만 닫는다. tag-triggered workflow의
+secret-bearing code 신뢰 경계는 별도 감사·결정 대상이다.
+**재검토**: 실제 릴리스 rehearsal에서 false block 또는 combined success 경로 회귀가
+관측될 때.
+
+**상태**: 유효
+
 ## 2026-08-17 (61) — 릴리스 API 값은 생성 소스의 데이터로만 직렬화한다
 
 **소집**: 단독 패스 + 선행 읽기 전용 공격 감사 · **트리거**: 공개 다운로드 사실

@@ -672,7 +672,13 @@ async function main() {
   } else {
     checks.push(ok("github_release", "GitHub Release", `${options.tag} is public and stable${release.value?.url ? ` (${release.value.url})` : ""}`));
     if (process.env.OATLAS_RELEASE_STATUS_SKIP_DOWNLOAD_VERIFY === "1") {
-      checks.push(skipped("download_assets", "Download assets", "skipped by OATLAS_RELEASE_STATUS_SKIP_DOWNLOAD_VERIFY=1"));
+      checks.push(blocked(
+        "download_assets",
+        "Download assets",
+        "verification skipped by OATLAS_RELEASE_STATUS_SKIP_DOWNLOAD_VERIFY=1",
+        `Run pnpm desktop:verify-download -- --repo=${options.repo} --tag=${options.tag} without the skip environment variable.`,
+        [`pnpm desktop:verify-download -- --repo=${options.repo} --tag=${options.tag}`],
+      ));
     } else {
       const download = runNode([
         "scripts/check-macos-download-release.mjs",

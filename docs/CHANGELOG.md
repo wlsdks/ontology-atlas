@@ -7,6 +7,14 @@
 
 ---
 
+## 2026-08-17 · 다운로드 검증을 생략한 릴리스 상태는 ready가 아니다
+
+- `OATLAS_RELEASE_STATUS_SKIP_DOWNLOAD_VERIFY=1`로 공개 DMG·체크섬 검증을
+  생략하면 `download_assets`가 명시적 blocker가 된다. 이전처럼 skip을 성공으로
+  세어 `ready: true`와 종료 코드 0을 반환하지 않는다.
+- 사람용 출력, JSON 자동화 payload, Markdown 체크리스트가 같은 blocked 상태와
+  실제 검증 명령을 제공한다. 다운로드 verifier가 성공한 경우만 이 관문을 통과한다.
+
 ## 2026-08-17 · 릴리스 메타데이터가 생성 TypeScript 문법이 되지 않는다
 
 - GitHub Release의 macOS 자산명 버전이 요청한 태그와 정확히 다르면 생성기를

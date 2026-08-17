@@ -541,8 +541,11 @@ test("desktop release status blocks stale local release tags", () => {
     assert.equal(result.status, 1);
     const payload = JSON.parse(result.stdout);
     assert.deepEqual(payload.localBlockerIds, ["release_tag_slot"]);
-    assert.deepEqual(payload.externalBlockerIds, []);
-    assert.deepEqual(payload.blockersByOwner, { developer: ["release_tag_slot"] });
+    assert.deepEqual(payload.externalBlockerIds, ["download_assets"]);
+    assert.deepEqual(payload.blockersByOwner, {
+      developer: ["release_tag_slot"],
+      release_operator: ["download_assets"],
+    });
     const blocker = payload.checks.find((check) => check.id === "release_tag_slot");
     assert.equal(blocker.scope, "local");
     assert.equal(blocker.owner, "developer");
@@ -558,8 +561,10 @@ test("desktop release status blocks existing remote release tags", () => {
     assert.equal(result.status, 1);
     const payload = JSON.parse(result.stdout);
     assert.deepEqual(payload.localBlockerIds, []);
-    assert.deepEqual(payload.externalBlockerIds, ["release_tag_slot"]);
-    assert.deepEqual(payload.blockersByOwner, { release_operator: ["release_tag_slot"] });
+    assert.deepEqual(payload.externalBlockerIds, ["release_tag_slot", "download_assets"]);
+    assert.deepEqual(payload.blockersByOwner, {
+      release_operator: ["release_tag_slot", "download_assets"],
+    });
     const blocker = payload.checks.find((check) => check.id === "release_tag_slot");
     assert.equal(blocker.scope, "external");
     assert.equal(blocker.owner, "release_operator");
@@ -578,8 +583,10 @@ test("desktop release status blocks unavailable release workflows", () => {
     assert.equal(result.status, 1);
     const payload = JSON.parse(result.stdout);
     assert.deepEqual(payload.localBlockerIds, []);
-    assert.deepEqual(payload.externalBlockerIds, ["release_workflow"]);
-    assert.deepEqual(payload.blockersByOwner, { release_operator: ["release_workflow"] });
+    assert.deepEqual(payload.externalBlockerIds, ["release_workflow", "download_assets"]);
+    assert.deepEqual(payload.blockersByOwner, {
+      release_operator: ["release_workflow", "download_assets"],
+    });
     const blocker = payload.checks.find((check) => check.id === "release_workflow");
     assert.equal(blocker.scope, "external");
     assert.equal(blocker.owner, "release_operator");
@@ -598,7 +605,7 @@ test("desktop release status blocks disabled release workflows", () => {
 
     assert.equal(result.status, 1);
     const payload = JSON.parse(result.stdout);
-    assert.deepEqual(payload.externalBlockerIds, ["release_workflow"]);
+    assert.deepEqual(payload.externalBlockerIds, ["release_workflow", "download_assets"]);
     const blocker = payload.checks.find((check) => check.id === "release_workflow");
     assert.match(blocker.detail, /workflow is disabled_manually/);
     assert.deepEqual(blocker.commands, [
@@ -614,8 +621,11 @@ test("desktop release status separates local and external blockers", () => {
     assert.equal(result.status, 1);
     const payload = JSON.parse(result.stdout);
     assert.deepEqual(payload.localBlockerIds, ["version_alignment"]);
-    assert.deepEqual(payload.externalBlockerIds, []);
-    assert.deepEqual(payload.blockersByOwner, { developer: ["version_alignment"] });
+    assert.deepEqual(payload.externalBlockerIds, ["download_assets"]);
+    assert.deepEqual(payload.blockersByOwner, {
+      developer: ["version_alignment"],
+      release_operator: ["download_assets"],
+    });
     assert.equal(
       payload.checks.find((check) => check.id === "version_alignment").scope,
       "local",
@@ -679,7 +689,7 @@ test("desktop release status accepts clean PRs when no review is required", () =
     (fakeGhPath) => {
       const result = runStatus(fakeGhPath, [`--tag=${APP_TAG}`, "--pr=274", "--json"]);
 
-      assert.equal(result.status, 0, result.stderr);
+      assert.equal(result.status, 1, result.stdout);
       const payload = JSON.parse(result.stdout);
       const check = payload.checks.find((row) => row.id === "pull_request");
       assert.equal(check.status, "ok");
@@ -688,43 +698,44 @@ test("desktop release status accepts clean PRs when no review is required", () =
   );
 });
 
-test("desktop release status passes when PR, secrets, and stable release are ready", () => {
+test("desktop release status cannot report ready when download verification is skipped", () => {
   withFakeGh({}, (fakeGhPath) => {
     const result = runStatus(fakeGhPath);
 
-    assert.equal(result.status, 0, result.stderr);
+    assert.equal(result.status, 1, result.stdout);
     assert.match(result.stdout, new RegExp(`✓ Version alignment: ${APP_TAG_PATTERN} matches package, Tauri, Cargo, and release-facts versions`));
     assert.match(result.stdout, /✓ Pull request: PR #274 is merge-ready/);
     assert.match(result.stdout, /✓ Developer ID direct-download secrets: all required Developer ID signing\/notary secret names exist for direct-download DMGs/);
     assert.match(result.stdout, new RegExp(`✓ GitHub Release: ${APP_TAG_PATTERN} is public and stable`));
-    assert.match(result.stdout, /· Download assets: skipped by OATLAS_RELEASE_STATUS_SKIP_DOWNLOAD_VERIFY=1/);
+    assert.match(result.stdout, /✗ Download assets: verification skipped by OATLAS_RELEASE_STATUS_SKIP_DOWNLOAD_VERIFY=1/);
     assert.doesNotMatch(result.stdout, /Hosted website/);
-    assert.match(result.stdout, /ready: public macOS release requirements are satisfied/);
+    assert.doesNotMatch(result.stdout, /ready: public macOS release requirements are satisfied/);
   });
 });
 
-test("desktop release status JSON reports ready when all release gates pass", () => {
+test("desktop release status JSON exposes skipped download verification as a blocker", () => {
   withFakeGh({}, (fakeGhPath) => {
     const result = runStatus(fakeGhPath, [`--tag=${APP_TAG}`, "--pr=274", "--json"]);
 
-    assert.equal(result.status, 0, result.stderr);
+    assert.equal(result.status, 1, result.stdout);
     const payload = JSON.parse(result.stdout);
     assert.equal(payload.schemaVersion, 1);
     assert.match(payload.generatedAt, /^\d{4}-\d{2}-\d{2}T/);
-    assert.equal(payload.ready, true);
-    assert.equal(payload.status, "ready");
-    assert.equal(payload.readyAt, payload.generatedAt);
-    assert.equal(payload.blockedAt, null);
-    assert.equal(payload.blockerCount, 0);
+    assert.equal(payload.ready, false);
+    assert.equal(payload.status, "blocked");
+    assert.equal(payload.readyAt, null);
+    assert.equal(payload.blockedAt, payload.generatedAt);
+    assert.equal(payload.blockerCount, 1);
     assert.deepEqual(payload.missingSecrets, []);
     assert.deepEqual(payload.localBlockerIds, []);
-    assert.deepEqual(payload.externalBlockerIds, []);
-    assert.deepEqual(payload.blockersByOwner, {});
-    assert.deepEqual(payload.blockerIds, []);
-    assert.deepEqual(payload.nextActions, []);
+    assert.deepEqual(payload.externalBlockerIds, ["download_assets"]);
+    assert.deepEqual(payload.blockersByOwner, { release_operator: ["download_assets"] });
+    assert.deepEqual(payload.blockerIds, ["download_assets"]);
+    assert.equal(payload.nextActions.length, 1);
+    assert.equal(payload.nextActions[0].id, "download_assets");
     assert.deepEqual(
       payload.checks.map((check) => check.status),
-      ["ok", "ok", "skipped", "ok", "ok", "ok", "ok", "ok", "skipped"],
+      ["ok", "ok", "skipped", "ok", "ok", "ok", "ok", "ok", "blocked"],
     );
     assert.deepEqual(
       payload.checks.map((check) => check.id),
@@ -740,7 +751,7 @@ test("desktop release status JSON reports ready when all release gates pass", ()
         "download_assets",
       ],
     );
-    assert.equal(result.stderr, "");
+    assert.match(result.stderr, /blocked: 1 release requirement/);
   });
 });
 
@@ -752,9 +763,10 @@ test("desktop release status blocks JSON readiness without PR evidence", () => {
     const payload = JSON.parse(result.stdout);
     assert.equal(payload.ready, false);
     assert.equal(payload.status, "blocked");
-    assert.deepEqual(payload.blockerIds, ["pull_request"]);
+    assert.deepEqual(payload.blockerIds, ["pull_request", "download_assets"]);
     assert.deepEqual(payload.blockersByOwner, {
       reviewer: ["pull_request"],
+      release_operator: ["download_assets"],
     });
     const blocker = payload.checks.find((check) => check.id === "pull_request");
     assert.equal(blocker.status, "blocked");
@@ -775,7 +787,7 @@ test("desktop release status records local preflight proof when goal audit passe
       { OATLAS_RELEASE_STATUS_LOCAL_PREFLIGHT: "1" },
     );
 
-    assert.equal(result.status, 0, result.stderr);
+    assert.equal(result.status, 1, result.stdout);
     const payload = JSON.parse(result.stdout);
     const preflight = payload.checks.find((check) => check.id === "local_preflight");
     assert.equal(preflight.status, "ok");
@@ -787,7 +799,7 @@ test("desktop release status records local preflight proof when goal audit passe
   });
 });
 
-test("desktop release status markdown reports ready when all release gates pass", () => {
+test("desktop release status markdown marks skipped download verification as blocked", () => {
   withFakeGh({}, (fakeGhPath) => {
     const root = mkdtempSync(join(tmpdir(), "omo-release-status-md-ready-"));
     try {
@@ -798,16 +810,16 @@ test("desktop release status markdown reports ready when all release gates pass"
         `--markdown-file=${markdownPath}`,
       ]);
 
-      assert.equal(result.status, 0, result.stderr);
+      assert.equal(result.status, 1, result.stdout);
       const markdown = readFileSync(markdownPath, "utf8");
-      assert.match(markdown, /- Status: ready/);
-      assert.match(markdown, /- Ready: yes/);
-      assert.match(markdown, /- Ready at: \d{4}-\d{2}-\d{2}T/);
-      assert.match(markdown, /- Blocked at: not blocked/);
-      assert.match(markdown, /No blockers\./);
+      assert.match(markdown, /- Status: blocked/);
+      assert.match(markdown, /- Ready: no/);
+      assert.match(markdown, /- Ready at: not ready/);
+      assert.match(markdown, /- Blocked at: \d{4}-\d{2}-\d{2}T/);
+      assert.match(markdown, /- \[ \] Download assets \(`download_assets`\)/);
       assert.match(markdown, /- \[x\] Pull request \(`pull_request`\)/);
       assert.match(markdown, /- \[-\] Local release preflight \(`local_preflight`\)/);
-      assert.match(markdown, /- \[-\] Download assets \(`download_assets`\)/);
+      assert.doesNotMatch(markdown, /No blockers\./);
     } finally {
       rmSync(root, { recursive: true, force: true });
     }
@@ -846,9 +858,9 @@ test("desktop release status accepts an already merged PR", () => {
     (fakeGhPath) => {
       const result = runStatus(fakeGhPath);
 
-      assert.equal(result.status, 0, result.stderr);
+      assert.equal(result.status, 1, result.stdout);
       assert.match(result.stdout, /✓ Pull request: PR #274 is already merged/);
-      assert.match(result.stdout, /ready: public macOS release requirements are satisfied/);
+      assert.doesNotMatch(result.stdout, /ready: public macOS release requirements are satisfied/);
     },
   );
 });
@@ -867,7 +879,7 @@ test("desktop release status blocks stale merged PR evidence", () => {
 
       assert.equal(result.status, 1);
       const payload = JSON.parse(result.stdout);
-      assert.deepEqual(payload.blockerIds, ["pull_request"]);
+      assert.deepEqual(payload.blockerIds, ["pull_request", "download_assets"]);
       const blocker = payload.checks.find((check) => check.id === "pull_request");
       assert.equal(blocker.status, "blocked");
       assert.equal(blocker.detail, "PR #274 is merged, but latest merged PR is #303: Clarify direct-download macOS release gates");
@@ -950,7 +962,7 @@ test("desktop release status blocks version-mismatched tags before completion", 
     assert.equal(result.status, 1);
     assert.match(result.stdout, /✗ Version alignment: release tag v9\.9\.9 does not match macOS app versions/);
     assert.match(result.stdout, /next: Run pnpm desktop:release-tag -- --tag=v9\.9\.9/);
-    assert.match(result.stderr, /blocked: 1 release requirement/);
+    assert.match(result.stderr, /blocked: 2 release requirement/);
   });
 });
 

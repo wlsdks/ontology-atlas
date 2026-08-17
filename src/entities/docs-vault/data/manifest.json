@@ -4035,6 +4035,11 @@
         },
         {
           "depth": 2,
+          "text": "2026-08-17 · 다운로드 검증을 생략한 릴리스 상태는 ready가 아니다",
+          "slug": "2026-08-17-다운로드-검증을-생략한-릴리스-상태는-ready가-아니다"
+        },
+        {
+          "depth": 2,
           "text": "2026-08-17 · 릴리스 메타데이터가 생성 TypeScript 문법이 되지 않는다",
           "slug": "2026-08-17-릴리스-메타데이터가-생성-typescript-문법이-되지-않는다"
         },
@@ -6484,8 +6489,8 @@
           "slug": "2026-07-26-첫-만남은-쇼핑몰부터"
         }
       ],
-      "excerpt": "Major change history. Code commit messages answer why; this file answers when / which surface changed. Focused on user-visible changes, not PR-level granularity. Newest at the top. Entries stay date-based; the app version reached v1.0.0 on 2026-07-27, so a release tag now carries the semver promise instead. GitHub Rele",
-      "wordCount": 70172,
+      "excerpt": "Major change history. Code commit messages answer why; this file answers when / which surface changed. Focused on user-visible changes, not PR-level granularity. Newest at the top. Entries stay date-based; the app version reached v1.0.0 on 2026-07-27, so a release tag now carries the semver promise instead. OATLASRELEA",
+      "wordCount": 70225,
       "updatedAt": "2026-08-17",
       "linksOut": [
         "audits/CASE-STUDY-AGENTS-MD-DRIFT",
@@ -6514,6 +6519,11 @@
           "depth": 2,
           "text": "기록 형식",
           "slug": "기록-형식"
+        },
+        {
+          "depth": 2,
+          "text": "2026-08-17 (62) — 생략된 다운로드 검증은 릴리스 readiness blocker다",
+          "slug": "2026-08-17-62-생략된-다운로드-검증은-릴리스-readiness-blocker다"
         },
         {
           "depth": 2,
@@ -9427,7 +9437,7 @@
         }
       ],
       "excerpt": "이 파일은 결정과 그때 진 반대 의견을 남긴다. docs/CHANGELOG.md 는 무엇이 언제 바뀌었나를 답하고, 이 파일은 왜 그렇게 정했고, 무엇을 걸었나를 답한다. 최신이 위. 기록은 덧붙이기만 한다 — 지난 기록을 고치지 않는다. 판단이 바뀌었으면 새 기록을 쓰고 옛 기록을 뒤집힘 으로 표시한다. 틀린 기록도 자산이다. 1. 소집 전에 읽는다. 카운슬을 열기 전(그리고 단독 PO 패스를 쓰기 전) 같은 표면 · 같은 질문에 대한 선행 결정이 있는지 먼저 본다. 있으면 새 패스는 그것을 ① 여전히 유효하다고 인용하거나 ② 명시적으로 뒤집는다. 조용히 다시 결정",
-      "wordCount": 141507,
+      "wordCount": 141745,
       "updatedAt": "2026-08-17",
       "linksOut": [
         "slug"
@@ -13101,7 +13111,7 @@
         }
       ],
       "excerpt": "플랫폼별 설치 파일과 신뢰 상태를 한 자리에서 비교하고, 설치가 막히면 웹으로 계속할 수 있게 하는 능력. macOS는 서명·공증된 Apple Silicon/Intel DMG를, Windows는 SmartScreen 위험을 먼저 밝힌 미서명 x64 베타를 제시한다. src/views/download (플랫폼 그룹·릴리스 사실·경고·CTA) .github/workflows/release-macos.yml (macOS + Windows 공개 릴리스 검증) .github/workflows/windows-beta-check.yml (비밀 키 없는 Windows PR 네이티브",
-      "wordCount": 82,
+      "wordCount": 94,
       "updatedAt": "2026-08-17",
       "linksOut": []
     },

@@ -19,6 +19,7 @@ Windows는 SmartScreen 위험을 먼저 밝힌 미서명 x64 베타를 제시한
 - .github/workflows/release-macos.yml (macOS + Windows 공개 릴리스 검증)
 - .github/workflows/windows-beta-check.yml (비밀 키 없는 Windows PR 네이티브 검증)
 - scripts/generate-download-release-facts.mjs (GitHub Release 자산에서 URL·크기·SHA-256을 생성하고, 자산 version을 태그와 대조하며 외부 문자열을 JSON 리터럴로 격리)
+- scripts/check-macos-release-status.mjs (PR·workflow·secret·공개 자산 증거를 합치며, 다운로드 검증 생략을 readiness blocker로 유지)
 - docs/FEATURES.md: "`/download`: the install decision"
 
 ## 확신도
