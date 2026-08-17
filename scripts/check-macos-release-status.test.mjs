@@ -11,12 +11,14 @@ import test from "node:test";
 const APP_TAG = `v${JSON.parse(readFileSync("package.json", "utf8")).version}`;
 const APP_TAG_PATTERN = APP_TAG.replace(/\./g, "\\.");
 
-const requiredSecrets = [
-  "APPLE_CERTIFICATE_P12_BASE64",
-  "APPLE_CERTIFICATE_PASSWORD",
+const environmentSecrets = [
   "APPLE_API_KEY_P8_BASE64",
   "APPLE_API_KEY_ID",
   "APPLE_API_ISSUER_ID",
+];
+const repositorySecrets = [
+  "APPLE_CERTIFICATE_P12_BASE64",
+  "APPLE_CERTIFICATE_PASSWORD",
   "TAURI_SIGNING_PRIVATE_KEY",
   "TAURI_SIGNING_PRIVATE_KEY_PASSWORD",
 ];
@@ -144,8 +146,8 @@ if (args[0] === "secret" && args[1] === "list") {
     process.exit(0);
   }
   const names = args.includes("--env")
-    ? (scenario.secretNames ?? ${JSON.stringify([...requiredSecrets])})
-    : (scenario.repoSecretNames ?? []);
+    ? (scenario.secretNames ?? ${JSON.stringify(environmentSecrets)})
+    : (scenario.repoSecretNames ?? ${JSON.stringify(repositorySecrets)});
   out(names.map((name) => ({ name })));
   process.exit(0);
 }
@@ -245,7 +247,7 @@ test("desktop release status emits machine-readable blockers for automation", ()
       assert.equal(payload.readyAt, null);
       assert.equal(payload.blockedAt, payload.generatedAt);
       assert.equal(payload.blockerCount, 3);
-      assert.deepEqual(payload.missingSecrets, requiredSecrets);
+      assert.deepEqual(payload.missingSecrets, environmentSecrets);
       assert.deepEqual(payload.blockerIds, [
         "pull_request",
         "apple_release_secrets",
@@ -290,7 +292,7 @@ test("desktop release status emits machine-readable blockers for automation", ()
       );
       assert.deepEqual(
         payload.nextActions.find((action) => action.id === "apple_release_secrets").commands.at(-1),
-        "gh secret set TAURI_SIGNING_PRIVATE_KEY_PASSWORD --env release-signing --repo wlsdks/ontology-atlas < /path/to/TAURI_SIGNING_PRIVATE_KEY_PASSWORD",
+        "gh secret set APPLE_API_ISSUER_ID --env release-signing --repo wlsdks/ontology-atlas < /path/to/APPLE_API_ISSUER_ID",
       );
       assert.deepEqual(
         payload.nextActions.find((action) => action.id === "github_release").commands,
@@ -375,7 +377,7 @@ test("desktop release status writes machine-readable blockers to a JSON file", (
         assert.equal(payload.readyAt, null);
         assert.equal(payload.blockedAt, payload.generatedAt);
         assert.equal(payload.blockerCount, 3);
-        assert.deepEqual(payload.missingSecrets, requiredSecrets);
+        assert.deepEqual(payload.missingSecrets, environmentSecrets);
         assert.deepEqual(payload.localBlockerIds, []);
         assert.deepEqual(payload.externalBlockerIds, [
           "pull_request",
@@ -402,7 +404,7 @@ test("desktop release status writes machine-readable blockers to a JSON file", (
         );
         assert.equal(
           payload.nextActions.find((action) => action.id === "apple_release_secrets").commands.length,
-          requiredSecrets.length,
+          environmentSecrets.length,
         );
         assert.deepEqual(
           payload.checks.filter((check) => check.status === "blocked").map((check) => check.id),
@@ -453,8 +455,8 @@ test("desktop release status writes a human-readable markdown checklist", () => 
         assert.match(markdown, /### reviewer/);
         assert.match(markdown, /- Pull request \(`pull_request`\): Resolve PR review\/merge blockers: https:\/\/github\.com\/wlsdks\/ontology-atlas\/pull\/274/);
         assert.match(markdown, /### release_operator/);
-        assert.match(markdown, /- Developer ID direct-download secrets \(`apple_release_secrets`\): gh secret set APPLE_CERTIFICATE_P12_BASE64/);
-        assert.match(markdown, /  - First command:\n    - `gh secret set APPLE_CERTIFICATE_P12_BASE64 --env release-signing --repo wlsdks\/ontology-atlas < \/path\/to\/APPLE_CERTIFICATE_P12_BASE64`/);
+        assert.match(markdown, /- Developer ID direct-download secrets \(`apple_release_secrets`\): gh secret set APPLE_API_KEY_P8_BASE64/);
+        assert.match(markdown, /  - First command:\n    - `gh secret set APPLE_API_KEY_P8_BASE64 --env release-signing --repo wlsdks\/ontology-atlas < \/path\/to\/APPLE_API_KEY_P8_BASE64`/);
         assert.match(markdown, /## Blockers/);
         assert.match(markdown, /- \[ \] Pull request \(`pull_request`\)/);
         assert.match(markdown, /  - Scope: external/);
@@ -465,8 +467,8 @@ test("desktop release status writes a human-readable markdown checklist", () => 
         assert.match(markdown, new RegExp(`git push origin ${APP_TAG_PATTERN}`));
         assert.match(markdown, /gh repo view wlsdks\/ontology-atlas --json defaultBranchRef --jq \.defaultBranchRef\.name/);
         assert.match(markdown, /gh secret set APPLE_API_ISSUER_ID --env release-signing --repo wlsdks\/ontology-atlas/);
-        assert.match(markdown, /  - Commands \(run in one shell session\):\n    - `gh secret set APPLE_CERTIFICATE_P12_BASE64 --env release-signing --repo wlsdks\/ontology-atlas < \/path\/to\/APPLE_CERTIFICATE_P12_BASE64`/);
-        assert.match(markdown, /  - Missing secrets:\n    - `APPLE_CERTIFICATE_P12_BASE64`/);
+        assert.match(markdown, /  - Commands \(run in one shell session\):\n    - `gh secret set APPLE_API_KEY_P8_BASE64 --env release-signing --repo wlsdks\/ontology-atlas < \/path\/to\/APPLE_API_KEY_P8_BASE64`/);
+        assert.match(markdown, /  - Missing secrets:\n    - `APPLE_API_KEY_P8_BASE64`/);
         assert.match(markdown, /## Checks/);
         assert.match(markdown, /- \[x\] GitHub CLI auth \(`github_cli_auth`\)/);
         assert.match(markdown, /- \[-\] Local release preflight \(`local_preflight`\) - not asserted by desktop:release-status/);
@@ -520,8 +522,8 @@ test("desktop release status reports current completion blockers together", () =
       assert.match(result.stdout, /actions\/runs\/1\/job\/2/);
       assert.match(result.stdout, /next: Run gh pr checks 274 --repo wlsdks\/ontology-atlas/);
       assert.match(result.stdout, /commands \(run in one shell session\):\n    - gh pr checks 274 --repo wlsdks\/ontology-atlas/);
-      assert.match(result.stdout, /✗ Developer ID direct-download secrets: missing APPLE_CERTIFICATE_P12_BASE64/);
-      assert.match(result.stdout, /not Mac App Store submission/);
+      assert.match(result.stdout, /✗ Developer ID direct-download secrets: missing APPLE_API_KEY_P8_BASE64/);
+      assert.match(result.stdout, /App Store Connect API notarization credentials/);
       assert.match(result.stdout, /gh secret set APPLE_API_ISSUER_ID --env release-signing --repo wlsdks\/ontology-atlas/);
       assert.match(result.stdout, /✗ GitHub Release: release not found/);
       assert.match(result.stdout, /dispatch \.github\/workflows\/release-macos\.yml from that branch/);
@@ -555,11 +557,11 @@ test("desktop release status exposes command arrays for actionable blockers", ()
       );
       assert.equal(
         payload.checks.find((check) => check.id === "apple_release_secrets").commands.length,
-        requiredSecrets.length,
+        environmentSecrets.length,
       );
       assert.deepEqual(
         payload.checks.find((check) => check.id === "apple_release_secrets").missingSecrets,
-        requiredSecrets,
+        environmentSecrets,
       );
       assert.deepEqual(
         payload.nextActions.find((action) => action.id === "github_release").commands,
@@ -747,7 +749,7 @@ test("desktop release status cannot report ready when download verification is s
     assert.equal(result.status, 1, result.stdout);
     assert.match(result.stdout, new RegExp(`✓ Version alignment: ${APP_TAG_PATTERN} matches package, Tauri, Cargo, and release-facts versions`));
     assert.match(result.stdout, /✓ Pull request: PR #274 is merge-ready/);
-    assert.match(result.stdout, /✓ Developer ID direct-download secrets: release-signing admits only main and contains all required signing secret names/);
+    assert.match(result.stdout, /✓ Developer ID direct-download secrets: release-signing admits only main; API credentials are environment-scoped and certificate\/updater identities are retained at repository scope/);
     assert.match(result.stdout, new RegExp(`✓ GitHub Release: ${APP_TAG_PATTERN} is public and stable`));
     assert.match(result.stdout, /✗ Download assets: verification skipped by OATLAS_RELEASE_STATUS_SKIP_DOWNLOAD_VERIFY=1/);
     assert.doesNotMatch(result.stdout, /Hosted website/);
@@ -896,7 +898,7 @@ test("desktop release status rejects unsafe release-signing policy and repositor
     { environmentReviewers: true, expected: /keep signing automatic/ },
     { environmentBranches: ["main", "release/*"], expected: /allow exactly branch main/ },
     { environmentTags: ["v*"], expected: /no tag rules/ },
-    { repoSecretNames: ["TAURI_SIGNING_PRIVATE_KEY"], expected: /repository-scoped signing secrets remain/ },
+    { repoSecretNames: [...repositorySecrets, "APPLE_ID"], expected: /obsolete or over-scoped repository signing secrets remain/ },
     { publicationAdminBypass: true, expected: /release must disable administrator bypass/ },
     { publicationReviewers: false, expected: /release must require a publication reviewer/ },
     { publicationTags: ["v*"], expected: /release must allow exactly branch main and no tag rules/ },

@@ -28,6 +28,37 @@
 
 ---
 
+## 2026-08-17 · 구형 Apple secret은 API-key 릴리스 성공 뒤 정리한다
+
+- 평상시 릴리스 gate는 구형 Apple ID·앱 암호·Team ID를 계속 거부한다. 첫 전환
+  릴리스만 명시적 옵션으로 미사용 이름의 존재를 경고로 낮춰, 새 API 3개와 기존
+  identity 4개만으로 서명·공증·게시가 되는지 먼저 증명한다.
+- repository의 API key 복사본은 전환 옵션으로도 실패한다. 실제 릴리스와 다운로드
+  검증이 성공한 뒤 구형 세 값만 삭제하고 옵션 없는 preflight를 다시 통과시킨다.
+
+---
+
+## 2026-08-17 · 근거 검색이 일반 문서에 그래프 identity를 요구하지 않는다
+
+- `find_evidence`의 모든 결과는 `isNode`로 그래프 노드인지 일반 마크다운인지
+  밝힌다. 그래프 노드만 영구 `uid`와 `kind`를 의무적으로 가지며, 일반 문서는
+  둘을 꾸며 내지 않고도 공개 MCP 출력 계약을 만족한다.
+- 검색 범위·점수·정렬·기본 `nodesOnly: false` 동작은 바꾸지 않았다. fresh init의
+  `AGENTS.md`가 결과에 섞여도 verifier가 노드로 오인해 실패하지 않는다.
+
+---
+
+## 2026-08-17 · 릴리스 secret의 실제 복구 가능성에 맞춰 3+4 scope 계약을 확정
+
+- App Store Connect API 3개는 main-only `release-signing` environment에 두고,
+  기존 Developer ID certificate 2개와 Tauri updater identity 2개는 읽기·복사가
+  불가능한 repository secret 원본을 유지한다.
+- preflight와 상태 감사는 이 혼합 배치를 정본으로 삼으며, API credential의 repository
+  복사본은 항상 거부한다. 구형 Apple ID·앱 암호·Team ID는 첫 API-key 릴리스가
+  실제로 성공한 뒤 삭제한다.
+
+---
+
 ## 2026-08-17 · 공증 암호 argv와 릴리스 child secret 상속을 제거
 
 - hosted 공증을 Apple ID 앱 암호에서 App Store Connect API key로 바꿨다.

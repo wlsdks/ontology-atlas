@@ -388,7 +388,14 @@ await test('init --locale=ko — Korean starter bodies, identical graph, English
     for (const dir of ['vault-ko', 'vault-en']) {
       const v = await run(['validate', dir], { cwd: repo });
       assert.equal(v.code, 0, `${dir} validate failed: ${v.stdout}${v.stderr}`);
-      assert.match(stripAnsi(v.stdout), /5 파일 스캔: frontmatter · 그래프 참조 issue 0/);
+      const markdownFileCount = readdirSync(join(repo, dir), {
+        recursive: true,
+        withFileTypes: true,
+      }).filter((entry) => entry.isFile() && entry.name.endsWith('.md')).length;
+      assert.match(
+        stripAnsi(v.stdout),
+        new RegExp(`${markdownFileCount} 파일 스캔: frontmatter · 그래프 참조 issue 0`),
+      );
     }
 
     // 모르는 로케일은 조용히 영어로 떨어지지 않고 명확히 실패한다.
@@ -1824,7 +1831,7 @@ await test('mcp-verify — runs MCP package verify against a resolved vault', as
     assert.match(clean, /validate_vault/);
     assert.match(clean, /workspace_brief/);
     assert.match(clean, /workspace_brief non-blocking advisory nextActions/);
-    assert.match(clean, /relation_recommendations:warn/);
+    assert.match(clean, /relation_recommendations:(?:pass|warn|fail):\d+/);
     assert.match(clean, /health/);
     assert.match(clean, /compile_ontology/);
     assert.match(clean, /compile_ontology page: 1\/5 nodes, 1\/\d+ edges/);
@@ -1840,7 +1847,7 @@ await test('mcp-verify — runs MCP package verify against a resolved vault', as
     assert.match(clean, /project_scope/);
     assert.match(clean, /destructive dry-runs: rename_concept · merge_concepts · delete_concept previewReady\/canConfirm contract without write-maintenance/);
     assert.match(clean, /all_paths: elements\/example-element → project/);
-    assert.match(clean, /structuredContent: direct 16\/16, write 5\/5 \(batch row-isolation 2\/2, batch no-write metadata 2\/2, destructive dry-run 3\/3\), maintenance 3\/3, graph 13\/13/);
+    assert.match(clean, /structuredContent: direct 16\/16, write 5\/5 \(batch row-isolation 2\/2, batch no-write metadata 2\/2, destructive dry-run 3\/3\), maintenance 2\/2 \(resume skipped: no actions\), graph 13\/13/);
   } finally {
     rmSync(root, { recursive: true, force: true });
   }

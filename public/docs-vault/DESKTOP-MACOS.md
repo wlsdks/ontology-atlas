@@ -175,7 +175,8 @@ for a macOS prototype:
   unsigned or unnotarized macOS artifact.
 - `scripts/check-macos-release-github.mjs` checks the GitHub-side prerequisites
   before dispatch: `gh` authentication, the active `release-macos.yml` workflow,
-  the `release-signing` environment policy, all seven environment secret names,
+  the `release-signing` environment policy, API 3 environment secret names,
+  retained certificate/updater 4 repository secret names,
   absence of same-name repository secret copies, optional tag/version alignment,
   and clean remote tag/Release slots. It cannot inspect secret values, so the
   protected workflow still runs `desktop:release-secrets` before signing.
@@ -451,29 +452,30 @@ Application certificate, export the `.p12`, and create an App Store Connect API
 key for notarization. Keep its `.p8`, key ID, and issuer ID. The repository code cannot configure GitHub
 environment settings automatically; the one-time GitHub cutover below is manual.
 
-**2 — Configure the one-time GitHub cutover.** Put exactly these seven hosted
-secrets in `release-signing`: Apple 5 (`APPLE_CERTIFICATE_P12_BASE64`,
-`APPLE_CERTIFICATE_PASSWORD`, `APPLE_API_KEY_P8_BASE64`, `APPLE_API_KEY_ID`,
-`APPLE_API_ISSUER_ID`) plus Tauri 2 (`TAURI_SIGNING_PRIVATE_KEY`,
-`TAURI_SIGNING_PRIVATE_KEY_PASSWORD`). From the repository root:
+**2 — Configure the one-time GitHub cutover.** Put the three App Store Connect
+API values in `release-signing`: `APPLE_API_KEY_P8_BASE64`,
+`APPLE_API_KEY_ID`, `APPLE_API_ISSUER_ID`. Retain the existing Developer ID
+certificate pair and Tauri updater pair as repository secrets. From the repository root:
 
 ```bash
 base64 -i DeveloperID.p12 | pbcopy
 gh secret list --env release-signing
-gh secret set APPLE_CERTIFICATE_P12_BASE64 --env release-signing < /path/to/APPLE_CERTIFICATE_P12_BASE64
-gh secret set APPLE_CERTIFICATE_PASSWORD --env release-signing < /path/to/APPLE_CERTIFICATE_PASSWORD
+gh secret set APPLE_CERTIFICATE_P12_BASE64 < /path/to/APPLE_CERTIFICATE_P12_BASE64
+gh secret set APPLE_CERTIFICATE_PASSWORD < /path/to/APPLE_CERTIFICATE_PASSWORD
 gh secret set APPLE_API_KEY_P8_BASE64 --env release-signing < /path/to/APPLE_API_KEY_P8_BASE64
 gh secret set APPLE_API_KEY_ID --env release-signing < /path/to/APPLE_API_KEY_ID
 gh secret set APPLE_API_ISSUER_ID --env release-signing < /path/to/APPLE_API_ISSUER_ID
-gh secret set TAURI_SIGNING_PRIVATE_KEY --env release-signing < /path/to/TAURI_SIGNING_PRIVATE_KEY
-gh secret set TAURI_SIGNING_PRIVATE_KEY_PASSWORD --env release-signing < /path/to/TAURI_SIGNING_PRIVATE_KEY_PASSWORD
+gh secret set TAURI_SIGNING_PRIVATE_KEY < /path/to/TAURI_SIGNING_PRIVATE_KEY
+gh secret set TAURI_SIGNING_PRIVATE_KEY_PASSWORD < /path/to/TAURI_SIGNING_PRIVATE_KEY_PASSWORD
 ```
 
 `APPLE_KEYCHAIN_PASSWORD` and `APPLE_SIGNING_IDENTITY` are not hosted secrets.
 The workflow generates the temporary keychain password and derives the signing
-identity from the imported certificate. Any same-name repository-scope copies
-must be removed after the environment values are confirmed; the GitHub-side
-release check fails closed while those copies remain.
+identity from the imported certificate. Repository copies of the API three and
+obsolete `APPLE_ID` / `APPLE_APP_SPECIFIC_PASSWORD` / `APPLE_TEAM_ID` must be
+unused by the new workflow. Keep them only through the first API-key transition
+release, then remove exactly those three after signing, notarization, publication,
+and public-download verification pass; the certificate/updater four stay.
 
 Configure `release-signing` to admit exactly the `main` branch: one custom
 deployment branch rule, branch `main`, no tag rule, administrator bypass
@@ -487,7 +489,7 @@ administrator bypass; unlike `release-signing`, it must retain a reviewer.
 creating the tag, then create and push that tag at the current `main` head:
 
 ```bash
-pnpm desktop:release-github -- --tag=v1.0.0
+pnpm desktop:release-github -- --tag=v1.0.0 --allow-obsolete-repository-secrets  # first API-key transition release only
 pnpm desktop:release-preflight
 git fetch origin main --tags
 git tag v1.0.0 origin/main
@@ -602,8 +604,8 @@ node scripts/apple-signing-setup.mjs bundle --cer=~/Downloads/developerID_applic
 gh secret set APPLE_API_KEY_P8_BASE64 --env release-signing
 gh secret set APPLE_API_KEY_ID --env release-signing
 gh secret set APPLE_API_ISSUER_ID --env release-signing
-gh secret set TAURI_SIGNING_PRIVATE_KEY --env release-signing
-gh secret set TAURI_SIGNING_PRIVATE_KEY_PASSWORD --env release-signing
+gh secret set TAURI_SIGNING_PRIVATE_KEY
+gh secret set TAURI_SIGNING_PRIVATE_KEY_PASSWORD
 ```
 
 인자 없이 실행하면 입력이 가려진 채로 값을 받는다.
@@ -642,8 +644,9 @@ GitHub secret 은 **한 번 저장하면 아무도 못 읽는다** — 그것이
 
 ### secret 은 어디에 사는가
 
-GitHub Actions **`release-signing` environment secret** 이다. 저장소 범위의
-동일한 이름 복사본은 두지 않는다. 환경 값은 워크플로가
+App Store Connect API 3개는 GitHub Actions **`release-signing` environment
+secret** 이다. Developer ID certificate 2개와 Tauri updater 2개는 복구 가능한
+원본이 없는 기존 repository secret을 유지한다. 환경 값은 워크플로가
 `release-signing` 에 도달한 뒤에만 주입되며, 저장소 설정은 이 문서의 명령으로
 확인할 수 있지만 코드가 GitHub 환경 정책을 자동으로 바꾸지는 않는다.
 
@@ -661,9 +664,10 @@ when the app is distributed like Obsidian: the website links to a signed DMG,
 the user downloads it, copies the app locally, and runs it outside the Mac App
 Store. These are Developer ID direct-download signing/notarization credentials,
 not App Store submission credentials. The protected release workflow fails closed
-unless the following seven `release-signing` environment secrets are present:
+unless the following split-scope seven secrets are present:
 
-**필요한 hosted secret 은 7개다** — Apple 5개와 Tauri updater 2개다.
+**필요한 hosted secret 은 7개다** — API 3개는 `release-signing`, certificate와
+updater identity 4개는 repository scope다.
 
 - `APPLE_CERTIFICATE_P12_BASE64`: base64-encoded Developer ID Application
   certificate export (`.p12`).
@@ -698,17 +702,21 @@ Each architecture lane writes the generated DMG filename, byte size, and SHA-256
 value to the GitHub Actions step summary before uploading artifacts, so reviewers
 can inspect the signed/notarized candidate without downloading every artifact
 first. If the tag is stale, the version drifts from package/Tauri/Cargo metadata,
-or the environment secrets are missing, blank, or structurally invalid, the
+or the required split-scope secrets are missing, blank, or structurally invalid, the
 workflow fails before uploading an unsigned or wrongly sourced candidate.
 Before creating the tag, run `pnpm desktop:release-github -- --tag=v1.0.0` to
-catch missing environment secret names, repository-scope copies, environment
-policy drift, or an inactive workflow.
+catch missing split-scope secret names, obsolete/over-scoped repository copies, environment
+policy drift, or an inactive workflow. For the first API-key transition release only,
+append `--allow-obsolete-repository-secrets`: this permits the unused legacy Apple
+ID/password/team names to remain until the release is proven, but it never permits
+repository copies of the API credentials. After the public download verifier passes,
+delete the three legacy names and rerun the command without that option.
 Use `pnpm desktop:release-status -- --pr=<number> --tag=v1.0.0` as the completion
 audit before calling the macOS app goal done: it accepts an already merged PR
   only when that PR is the latest merged PR on `main`, or checks
 tag/package/Tauri/Cargo version alignment, PR review/merge readiness,
 active macOS release workflow availability, expected release-tag presence or
-creation state, the seven `release-signing` environment secret names and policy,
+creation state, the API 3 environment + retained identity 4 repository secret names and policy,
 public stable GitHub
 Release state, then delegates to the public desktop-artifact/checksum download verifier. If PR checks are
 still blocking the release, the audit prints the failing or pending check names
@@ -758,17 +766,16 @@ additionally expose `missingSecrets[]` for direct comparison against the
 `release-signing` environment.
 The hosted website deploy is not part of the macOS app release gate;
 run `pnpm desktop:verify-hosted` after the separate GitHub Pages deploy.
-When it reports missing environment secrets, set each value through
-`gh secret set ... --env release-signing`, for example:
+When it reports missing secrets, set each value at its named scope:
 
 ```bash
-gh secret set APPLE_CERTIFICATE_P12_BASE64 --env release-signing < /path/to/APPLE_CERTIFICATE_P12_BASE64
-gh secret set APPLE_CERTIFICATE_PASSWORD --env release-signing < /path/to/APPLE_CERTIFICATE_PASSWORD
+gh secret set APPLE_CERTIFICATE_P12_BASE64 < /path/to/APPLE_CERTIFICATE_P12_BASE64
+gh secret set APPLE_CERTIFICATE_PASSWORD < /path/to/APPLE_CERTIFICATE_PASSWORD
 gh secret set APPLE_API_KEY_P8_BASE64 --env release-signing < /path/to/APPLE_API_KEY_P8_BASE64
 gh secret set APPLE_API_KEY_ID --env release-signing < /path/to/APPLE_API_KEY_ID
 gh secret set APPLE_API_ISSUER_ID --env release-signing < /path/to/APPLE_API_ISSUER_ID
-gh secret set TAURI_SIGNING_PRIVATE_KEY --env release-signing < /path/to/TAURI_SIGNING_PRIVATE_KEY
-gh secret set TAURI_SIGNING_PRIVATE_KEY_PASSWORD --env release-signing < /path/to/TAURI_SIGNING_PRIVATE_KEY_PASSWORD
+gh secret set TAURI_SIGNING_PRIVATE_KEY < /path/to/TAURI_SIGNING_PRIVATE_KEY
+gh secret set TAURI_SIGNING_PRIVATE_KEY_PASSWORD < /path/to/TAURI_SIGNING_PRIVATE_KEY_PASSWORD
 ```
 
 The protected workflow first requires a clean GitHub Release slot for the
@@ -799,7 +806,7 @@ The unsigned Apple Silicon build produces
 `src-tauri/target/release/bundle/dmg/ontology-atlas_1.0.0_aarch64.dmg`, and
 `src-tauri/target/release/bundle/dmg/ontology-atlas_1.0.0_aarch64.dmg.sha256`.
 `.github/workflows/release-macos.yml` is dispatched from `main` with an existing
-`v*` tag input, requires the seven `release-signing` environment secrets, runs
+`v*` tag input, requires the split-scope seven signing secrets, runs
 docs-vault freshness, desktop checker, and native bridge tests in
 both lanes,
 builds and route-smokes the static desktop payload, verifies the tag version

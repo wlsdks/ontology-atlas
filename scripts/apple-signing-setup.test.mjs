@@ -3,8 +3,11 @@ import test from "node:test";
 import { readFileSync } from "node:fs";
 import {
   DEFAULT_DIR,
+  ENVIRONMENT_SECRETS,
   LOCAL_ONLY_VALUES,
+  OBSOLETE_REPOSITORY_SECRETS,
   OWNER_ENTERED_SECRETS,
+  REPOSITORY_SECRETS,
   REQUIRED_SECRETS,
   missingSecrets,
   parseArgs,
@@ -35,12 +38,18 @@ test("owner-entered secrets are the credential ones", () => {
   ]);
 });
 
-test("hosted setup commands target only release-signing", () => {
+test("setup commands keep API credentials in release-signing and retained identities at repository scope", () => {
   const commands = REQUIRED_SECRETS.map((name) => setupSecretCommand(name, "me/fork"));
 
   assert.equal(commands.length, 7);
-  for (const command of commands) {
+  for (const command of ENVIRONMENT_SECRETS.map((name) => setupSecretCommand(name, "me/fork"))) {
     assert.match(command, /gh secret set [A-Z0-9_]+ --env release-signing --repo me\/fork/);
+  }
+  for (const command of REPOSITORY_SECRETS.map((name) => setupSecretCommand(name, "me/fork"))) {
+    assert.match(command, /gh secret set [A-Z0-9_]+ --repo me\/fork/);
+    assert.doesNotMatch(command, /--env/);
+  }
+  for (const command of commands) {
     for (const localOnly of LOCAL_ONLY_VALUES) {
       assert.doesNotMatch(command, new RegExp(localOnly));
     }
@@ -92,24 +101,20 @@ test("verify reports exactly what is still missing", () => {
 
   assert.deepEqual(
     missingSecrets(`${header}APPLE_CERTIFICATE_P12_BASE64  2026-07-27\nAPPLE_CERTIFICATE_PASSWORD  2026-07-27\n`),
-    [
-      "APPLE_API_KEY_P8_BASE64",
-      "APPLE_API_KEY_ID",
-      "APPLE_API_ISSUER_ID",
-      "TAURI_SIGNING_PRIVATE_KEY",
-      "TAURI_SIGNING_PRIVATE_KEY_PASSWORD",
-    ],
+    ENVIRONMENT_SECRETS,
   );
 
-  assert.deepEqual(missingSecrets(""), REQUIRED_SECRETS);
+  assert.deepEqual(missingSecrets(""), ENVIRONMENT_SECRETS);
+  assert.deepEqual(missingSecrets("", REPOSITORY_SECRETS), REPOSITORY_SECRETS);
 });
 
 test("repository copies are reported without treating them as environment secrets", () => {
   const header = "NAME                          UPDATED\n";
   assert.deepEqual(
     repositoryScopedSecrets(
-      `${header}APPLE_API_KEY_ID  2026-07-27\nTAURI_SIGNING_PRIVATE_KEY  2026-07-27\nUNRELATED  2026-07-27\n`,
+      `${header}APPLE_API_KEY_ID  2026-07-27\nAPPLE_ID  2026-07-27\nTAURI_SIGNING_PRIVATE_KEY  2026-07-27\nUNRELATED  2026-07-27\n`,
     ),
-    ["APPLE_API_KEY_ID", "TAURI_SIGNING_PRIVATE_KEY"],
+    ["APPLE_API_KEY_ID", "APPLE_ID"],
   );
+  assert.ok(OBSOLETE_REPOSITORY_SECRETS.includes("APPLE_ID"));
 });

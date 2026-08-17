@@ -857,7 +857,7 @@ export function makeDogfoodToolsList() {
               type: "array",
               items: {
                 type: "object",
-                required: ["uid", "slug", "kind", "title", "mtime", "matchedIn", "score", "excerpt"],
+                required: ["slug", "isNode", "title", "mtime", "matchedIn", "score", "excerpt"],
                 properties: {
                   uid: {
                     type: "string",
@@ -865,12 +865,23 @@ export function makeDogfoodToolsList() {
                   },
                   slug: { type: "string" },
                   kind: { type: "string" },
+                  isNode: { type: "boolean" },
                   title: { type: "string" },
                   mtime: { type: "number", minimum: 0 },
                   matchedIn: { enum: ["frontmatter", "body"] },
                   score: { type: "number", minimum: 0 },
                   excerpt: { type: "string" },
                 },
+                oneOf: [
+                  {
+                    properties: { isNode: { const: true } },
+                    required: ["uid", "kind"],
+                  },
+                  {
+                    properties: { isNode: { const: false } },
+                    not: { anyOf: [{ required: ["uid"] }, { required: ["kind"] }] },
+                  },
+                ],
                 additionalProperties: false,
               },
             },

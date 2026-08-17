@@ -47,6 +47,10 @@ stdio JSON-RPC 인터페이스다. 사람과 에이전트가 같은 파일을 �
   그래프 연산 입력은 slug를 유지한다.
 - rename/reclassify는 UID를 보존한다. merge는 대상 UID를 보존하고 흡수한 UID를
   `merged_uids`에 기록한다. 일반 patch는 `uid`와 `merged_uids`를 바꿀 수 없다.
+- `find_evidence`는 모든 검색 행에 `isNode`를 실어 그래프 노드와 일반
+  마크다운을 구분한다. `isNode:true`인 행만 영구 `uid`와 `kind`를 의무적으로
+  가지며, 일반 문서는 두 필드를 꾸며 내지 않는다. `nodesOnly:true`는 노드만 필요한
+  handoff를 위한 명시적 필터이고 기본 검색은 로컬 문서 근거를 숨기지 않는다.
 
 ## 온톨로지 구축 lifecycle
 

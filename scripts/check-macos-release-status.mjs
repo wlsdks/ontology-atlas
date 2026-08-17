@@ -6,14 +6,21 @@ import { spawnSync } from "node:child_process";
 const DEFAULT_REPO = "wlsdks/ontology-atlas";
 const SIGNING_ENVIRONMENT = "release-signing";
 const PUBLICATION_ENVIRONMENT = "release";
-const REQUIRED_SECRETS = [
-  "APPLE_CERTIFICATE_P12_BASE64",
-  "APPLE_CERTIFICATE_PASSWORD",
+const ENVIRONMENT_REQUIRED_SECRETS = [
   "APPLE_API_KEY_P8_BASE64",
   "APPLE_API_KEY_ID",
   "APPLE_API_ISSUER_ID",
+];
+const REPOSITORY_REQUIRED_SECRETS = [
+  "APPLE_CERTIFICATE_P12_BASE64",
+  "APPLE_CERTIFICATE_PASSWORD",
   "TAURI_SIGNING_PRIVATE_KEY",
   "TAURI_SIGNING_PRIVATE_KEY_PASSWORD",
+];
+const OBSOLETE_REPOSITORY_SECRETS = [
+  "APPLE_ID",
+  "APPLE_APP_SPECIFIC_PASSWORD",
+  "APPLE_TEAM_ID",
 ];
 const DIRECT_DOWNLOAD_SECRET_LABEL = "Developer ID direct-download secrets";
 const CHECK_SCOPES = new Map([
@@ -752,31 +759,51 @@ async function main() {
       [signingCheckCommand, environmentSecretListCommand],
     ));
   } else {
-    const missing = REQUIRED_SECRETS.filter((name) => !environmentSecretNames.has(name));
-    const leakedScope = REQUIRED_SECRETS.filter((name) => repositorySecretNames.has(name));
-    if (missing.length > 0) {
+    const missingEnvironment = ENVIRONMENT_REQUIRED_SECRETS.filter(
+      (name) => !environmentSecretNames.has(name),
+    );
+    const missingRepository = REPOSITORY_REQUIRED_SECRETS.filter(
+      (name) => !repositorySecretNames.has(name),
+    );
+    const forbiddenRepository = [
+      ...ENVIRONMENT_REQUIRED_SECRETS,
+      ...OBSOLETE_REPOSITORY_SECRETS,
+    ].filter((name) => repositorySecretNames.has(name));
+    if (missingEnvironment.length > 0) {
       checks.push(blocked(
         "apple_release_secrets",
         DIRECT_DOWNLOAD_SECRET_LABEL,
-        `missing ${missing.join(", ")} from ${SIGNING_ENVIRONMENT} (Developer ID direct-download, not Mac App Store submission, and updater signing)`,
-        secretSetHints(options.repo, missing),
-        secretSetCommands(options.repo, missing),
-        { missingSecrets: missing },
+        `missing ${missingEnvironment.join(", ")} from ${SIGNING_ENVIRONMENT} (App Store Connect API notarization credentials)`,
+        secretSetHints(options.repo, missingEnvironment),
+        secretSetCommands(options.repo, missingEnvironment),
+        { missingSecrets: missingEnvironment },
       ));
-    } else if (leakedScope.length > 0) {
-      const deleteCommands = leakedScope.map((name) => `gh secret delete ${name} --repo ${options.repo}`);
+    } else if (missingRepository.length > 0) {
+      const commands = missingRepository.map(
+        (name) => `gh secret set ${name} --repo ${options.repo} < /path/to/${name}`,
+      );
       checks.push(blocked(
         "apple_release_secrets",
         DIRECT_DOWNLOAD_SECRET_LABEL,
-        `repository-scoped signing secrets remain: ${leakedScope.join(", ")}`,
-        `Delete the repository copies after confirming ${SIGNING_ENVIRONMENT} contains them.`,
+        `missing retained repository signing secrets: ${missingRepository.join(", ")}`,
+        "Restore the original Developer ID certificate or updater identity; never regenerate an updater key for an already distributed app.",
+        commands,
+        { missingSecrets: missingRepository },
+      ));
+    } else if (forbiddenRepository.length > 0) {
+      const deleteCommands = forbiddenRepository.map((name) => `gh secret delete ${name} --repo ${options.repo}`);
+      checks.push(blocked(
+        "apple_release_secrets",
+        DIRECT_DOWNLOAD_SECRET_LABEL,
+        `obsolete or over-scoped repository signing secrets remain: ${forbiddenRepository.join(", ")}`,
+        `Keep API credentials in ${SIGNING_ENVIRONMENT}; delete obsolete Apple ID credentials only after the first API-key release passes, then rerun this strict completion audit.`,
         [environmentSecretListCommand, ...deleteCommands],
       ));
     } else {
       checks.push(ok(
         "apple_release_secrets",
         DIRECT_DOWNLOAD_SECRET_LABEL,
-        `${SIGNING_ENVIRONMENT} admits only ${defaultBranch} and contains all required signing secret names`,
+        `${SIGNING_ENVIRONMENT} admits only ${defaultBranch}; API credentials are environment-scoped and certificate/updater identities are retained at repository scope`,
       ));
     }
   }

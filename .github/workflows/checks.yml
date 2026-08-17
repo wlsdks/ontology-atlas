@@ -232,6 +232,12 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      # Contract tests in this job launch the real source MCP server. The root
+      # install intentionally skips mcp/node_modules, so without this lockfile
+      # install those probes exit at startup with ERR_MODULE_NOT_FOUND.
+      - name: Install MCP dependencies
+        run: pnpm --dir mcp install --frozen-lockfile
+
       # 변경이 실제로 깨뜨릴 수 있는 것만 돌린다. 실측(2026-07-27): 이 스위트가
       # 270초였고 그 세션의 변경은 거의 전부 에이전트 브리프와 문서였다. 판단이
       # 안 서면 runtime=true 로 열어둔다 — 빠뜨린 테스트는 출하되는 버그고,
