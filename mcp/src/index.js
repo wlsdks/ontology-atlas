@@ -241,11 +241,15 @@ const NON_BLANK_STRING_SCHEMA = Object.freeze({
   minLength: 1,
   pattern: '^(?!\\s)(?!.*\\s$)(?!.*\\u0000).+$',
 });
-const NON_BLANK_STRING_OR_ARRAY_SCHEMA = Object.freeze({
-  type: ['array', 'string'],
+const BACKLINK_REWRITE_VALUE_OUTPUT_SCHEMA = Object.freeze({
+  type: ['array', 'object', 'string'],
   minLength: NON_BLANK_STRING_SCHEMA.minLength,
+  minItems: 1,
+  minProperties: 1,
   pattern: NON_BLANK_STRING_SCHEMA.pattern,
   items: NON_BLANK_STRING_SCHEMA,
+  propertyNames: NON_BLANK_STRING_SCHEMA,
+  additionalProperties: NON_BLANK_STRING_SCHEMA,
 });
 const GRAPH_REF_ARRAY_MAX_ITEMS = 500;
 
@@ -1365,8 +1369,8 @@ const BACKLINK_REWRITE_KEY_CHANGE_OUTPUT_SCHEMA = Object.freeze({
   type: 'object',
   properties: {
     key: NON_BLANK_STRING_SCHEMA,
-    before: NON_BLANK_STRING_OR_ARRAY_SCHEMA,
-    after: NON_BLANK_STRING_OR_ARRAY_SCHEMA,
+    before: BACKLINK_REWRITE_VALUE_OUTPUT_SCHEMA,
+    after: BACKLINK_REWRITE_VALUE_OUTPUT_SCHEMA,
   },
   required: ['key'],
   additionalProperties: false,
@@ -8749,6 +8753,11 @@ function connectProjectSourceTool({ projectSlug, rootPath, confirm, repair } = {
   }
 
   const written = writeProjectSourceBinding(VAULT_ROOT, { ...binding, receipt }, { repair: repair === true });
+  if (written.status === 'blocked_unsafe_path') {
+    throw new Error(
+      `connect_project_source blocked: ${PROJECT_SOURCE_STATE_RELATIVE_PATH} is behind an unsafe sidecar path. repair: true cannot bypass a symlink or junction boundary.`,
+    );
+  }
   if (written.status === 'blocked_malformed') {
     throw new Error(
       `connect_project_source blocked: ${PROJECT_SOURCE_STATE_RELATIVE_PATH} is malformed. Re-run with repair: true to discard and rewrite it.`,
@@ -8785,6 +8794,11 @@ function disconnectProjectSourceTool({ projectSlug, confirm } = {}) {
   // clear it, so an unresolvable slug falls back to the literal value.
   const canonicalSlug = resolveExistingVaultSlug(projectSlug, allDocs) ?? projectSlug;
   const sidecar = readProjectSourceBindings(VAULT_ROOT);
+  if (sidecar.status === 'unsafe_path') {
+    throw new Error(
+      `disconnect_project_source blocked: ${PROJECT_SOURCE_STATE_RELATIVE_PATH} is behind an unsafe sidecar path. Replace the symlink or junction with a real vault-local directory first.`,
+    );
+  }
   if (sidecar.status === 'malformed') {
     throw new Error(
       `disconnect_project_source blocked: ${PROJECT_SOURCE_STATE_RELATIVE_PATH} is malformed. Inspect it by hand, or re-connect with repair: true to rewrite it.`,
@@ -8817,6 +8831,11 @@ function disconnectProjectSourceTool({ projectSlug, confirm } = {}) {
   }
 
   const result = removeProjectSourceBindings(VAULT_ROOT, canonicalSlug);
+  if (result.status === 'blocked_unsafe_path') {
+    throw new Error(
+      `disconnect_project_source blocked: ${PROJECT_SOURCE_STATE_RELATIVE_PATH} is behind an unsafe sidecar path.`,
+    );
+  }
   if (result.status === 'persistence_failed') {
     throw new Error('disconnect_project_source could not persist the sidecar update.');
   }
@@ -10160,6 +10179,13 @@ function summarizeProposedBusinessConceptRows(rows) {
   }));
 }
 
+function publicBacklinkUpdates(result) {
+  return {
+    updates: result.updates,
+    totalUpdated: result.totalUpdated,
+  };
+}
+
 function renameConcept({ oldSlug, newSlug, confirm = false, overwrite = false, expected_mtime }) {
   requireNonBlankString(oldSlug, 'oldSlug');
   requireNonBlankString(newSlug, 'newSlug');
@@ -10200,7 +10226,8 @@ function renameConcept({ oldSlug, newSlug, confirm = false, overwrite = false, e
   if (!vaultSlugExists(VAULT_ROOT, oldSlug)) {
     throw new Error(missingSlugMessage('Source slug does not exist in vault', oldSlug));
   }
-  if (!overwrite && vaultSlugExists(VAULT_ROOT, newSlug)) {
+  const targetExists = vaultSlugExists(VAULT_ROOT, newSlug);
+  if (!overwrite && targetExists) {
     throw new Error(
       `Target slug already exists: "${newSlug}". Pass overwrite: true to replace it.`,
     );
@@ -10209,6 +10236,7 @@ function renameConcept({ oldSlug, newSlug, confirm = false, overwrite = false, e
   const sourcePath = slugToPath(VAULT_ROOT, oldSlug);
   const targetPath = slugToPath(VAULT_ROOT, newSlug);
   const sourceDoc = readDoc(VAULT_ROOT, sourcePath);
+  const targetDoc = overwrite && targetExists ? readDoc(VAULT_ROOT, targetPath) : null;
 
   // 슬러그 평면성 — rename 은 writeDoc 을 거치지 않고 직접 쓰므로 여기서도
   // 같은 게이트를 잰다 (경로형 정체성이 rename 으로 되살아나는 문 봉쇄).
@@ -10241,7 +10269,7 @@ function renameConcept({ oldSlug, newSlug, confirm = false, overwrite = false, e
       sourcePath,
       targetPath,
       moved: false,
-      backlinkUpdates: preview,
+      backlinkUpdates: publicBacklinkUpdates(preview),
       message: `dry-run — confirm:true 를 주면 파일 이동 + ${preview.totalUpdated} 곳 backlink redirect 가 실제 적용됩니다.`,
     };
   }
@@ -10273,12 +10301,22 @@ function renameConcept({ oldSlug, newSlug, confirm = false, overwrite = false, e
       op: 'write',
       path: targetPath,
       content: buildMarkdown({ frontmatter: nextFrontmatter, body: sourceDoc.body }),
+      ...(targetDoc
+        ? { expectedRaw: targetDoc.raw, expectedMtime: targetDoc.mtime }
+        : { expectedAbsent: true }),
     },
     ...result.plan,
     // 삭제는 마지막이다 — 계획 안에서도 순서는 유지된다. 되돌리기는 역순이라
     // 옛 파일이 먼저 복원되고 새 파일이 지워진다.
-    ...(sourcePath !== targetPath ? [{ op: 'delete', path: sourcePath }] : []),
-  ]);
+    ...(sourcePath !== targetPath
+      ? [{
+          op: 'delete',
+          path: sourcePath,
+          expectedRaw: sourceDoc.raw,
+          expectedMtime: sourceDoc.mtime,
+        }]
+      : []),
+  ], { requireRevisions: true });
 
   return {
     ok: true,
@@ -10290,7 +10328,7 @@ function renameConcept({ oldSlug, newSlug, confirm = false, overwrite = false, e
     sourcePath,
     targetPath,
     moved: true,
-    backlinkUpdates: result,
+    backlinkUpdates: publicBacklinkUpdates(result),
     changed: true,
     postWriteMaintenance: compactPostWriteMaintenance(),
   };
@@ -10360,7 +10398,7 @@ function reclassifyConcept({ slug, newKind, newSlug, domain, body, confirm = fal
     sourcePath,
     targetPath,
     bodyAction,
-    backlinkUpdates,
+    backlinkUpdates: publicBacklinkUpdates(backlinkUpdates),
   };
   if (!confirm) return base;
   const nextFrontmatter = { ...sourceDoc.frontmatter, slug: canonicalNew, kind: newKind };
@@ -10376,11 +10414,28 @@ function reclassifyConcept({ slug, newKind, newSlug, domain, body, confirm = fal
       op: 'write',
       path: targetPath,
       content: buildMarkdown({ frontmatter: nextFrontmatter, body: nextBody }),
+      ...(sourcePath === targetPath
+        ? { expectedRaw: sourceDoc.raw, expectedMtime: sourceDoc.mtime }
+        : { expectedAbsent: true }),
     },
     ...(appliedBacklinks.plan ?? []),
-    ...(sourcePath !== targetPath ? [{ op: 'delete', path: sourcePath }] : []),
-  ]);
-  return { ...base, ok: true, dryRun: false, changed: true, backlinkUpdates: appliedBacklinks, postWriteMaintenance: compactPostWriteMaintenance() };
+    ...(sourcePath !== targetPath
+      ? [{
+          op: 'delete',
+          path: sourcePath,
+          expectedRaw: sourceDoc.raw,
+          expectedMtime: sourceDoc.mtime,
+        }]
+      : []),
+  ], { requireRevisions: true });
+  return {
+    ...base,
+    ok: true,
+    dryRun: false,
+    changed: true,
+    backlinkUpdates: publicBacklinkUpdates(appliedBacklinks),
+    postWriteMaintenance: compactPostWriteMaintenance(),
+  };
 }
 
 function mergeConcepts({ fromSlug, intoSlug, confirm = false, expected_mtime, expected_into_mtime }) {
@@ -10428,7 +10483,7 @@ function mergeConcepts({ fromSlug, intoSlug, confirm = false, expected_mtime, ex
       intoSlug,
       fromPath,
       deleted: false,
-      backlinkUpdates: preview,
+      backlinkUpdates: publicBacklinkUpdates(preview),
       capturedFrom: {
         frontmatter: fromDoc.frontmatter,
         bodyExcerpt: extractSummaryExcerpt(fromDoc.body, 200),
@@ -10451,6 +10506,8 @@ function mergeConcepts({ fromSlug, intoSlug, confirm = false, expected_mtime, ex
   const intoIdentityWrite = {
     op: 'write',
     path: intoPath,
+    expectedRaw: intoDoc.raw,
+    expectedMtime: intoDoc.mtime,
     content: buildMarkdown({
       frontmatter: {
         ...redirectedInto.frontmatter,
@@ -10462,7 +10519,15 @@ function mergeConcepts({ fromSlug, intoSlug, confirm = false, expected_mtime, ex
   };
   if (intoPlanIndex >= 0) result.plan[intoPlanIndex] = intoIdentityWrite;
   else result.plan.push(intoIdentityWrite);
-  applyAllOrNothing([...result.plan, { op: 'delete', path: fromPath }]);
+  applyAllOrNothing([
+    ...result.plan,
+    {
+      op: 'delete',
+      path: fromPath,
+      expectedRaw: fromDoc.raw,
+      expectedMtime: fromDoc.mtime,
+    },
+  ], { requireRevisions: true });
 
   return {
     ok: true,
@@ -10475,7 +10540,7 @@ function mergeConcepts({ fromSlug, intoSlug, confirm = false, expected_mtime, ex
     intoSlug,
     fromPath,
     deleted: true,
-    backlinkUpdates: result,
+    backlinkUpdates: publicBacklinkUpdates(result),
     changed: true,
     capturedFrom: {
       frontmatter: fromDoc.frontmatter,

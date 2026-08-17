@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import { getTranslations } from 'next-intl/server';
 import { DownloadPage, downloadStructuredData } from '@/views/download';
 import { buildPageMetadata } from '@/shared/lib/page-metadata';
+import { JsonLd } from '@/shared/ui';
 
 export async function generateMetadata({
   params,
@@ -43,14 +44,7 @@ export default async function Page({ params }: { params: Promise<{ locale: strin
        * 형제는 뒤에 선다. JSON-LD 는 문서 어디에 있든 검색엔진이 읽으므로
        * 순서 비용이 0이다.
        */}
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{
-          __html: JSON.stringify(
-            downloadStructuredData(locale, t('descriptions.download')),
-          ),
-        }}
-      />
+      <JsonLd data={downloadStructuredData(locale, t('descriptions.download'))} />
     </>
   );
 }

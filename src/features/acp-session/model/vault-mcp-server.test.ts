@@ -33,23 +33,47 @@ describe('세션에 꽂는 MCP 서버', () => {
   });
 
   it('**중복 재현** — 볼트가 같은 명령을 이미 등록했으면 안 꽂는다', () => {
-    expect(vaultMcpServers(launch, VAULT, BINARY)).toEqual([]);
+    expect(
+      vaultMcpServers(launch, VAULT, { command: BINARY, validForCurrentVault: true }),
+    ).toEqual([]);
+  });
+
+  it('명령이 같아도 현재 볼트용 설정이 아니면 앱이 다시 꽂는다', () => {
+    expect(
+      vaultMcpServers(launch, VAULT, { command: BINARY, validForCurrentVault: false }),
+    ).toHaveLength(1);
   });
 
   it('등록된 명령이 다르면 꽂는다 — 볼트 항목이 낡았을 수 있다', () => {
     // 여기서 건너뛰면 도구가 **통째로 없는** 세션이 된다. 중복보다 훨씬 나쁘다.
-    expect(vaultMcpServers(launch, VAULT, '/old/path/ontology-atlas-mcp')).toHaveLength(1);
+    expect(
+      vaultMcpServers(launch, VAULT, {
+        command: '/old/path/ontology-atlas-mcp',
+        validForCurrentVault: true,
+      }),
+    ).toHaveLength(1);
   });
 
   it('앞뒤 공백은 같은 것으로 본다 — TOML 파서마다 다듬는 정도가 다르다', () => {
-    expect(vaultAlreadyRegisters(launch, `  ${BINARY}  `)).toBe(true);
+    expect(
+      vaultAlreadyRegisters(launch, {
+        command: `  ${BINARY}  `,
+        validForCurrentVault: true,
+      }),
+    ).toBe(true);
   });
 
   it('빈 등록은 등록이 아니다', () => {
-    expect(vaultAlreadyRegisters(launch, '')).toBe(false);
-    expect(vaultAlreadyRegisters(launch, '   ')).toBe(false);
+    expect(
+      vaultAlreadyRegisters(launch, { command: '', validForCurrentVault: true }),
+    ).toBe(false);
+    expect(
+      vaultAlreadyRegisters(launch, { command: '   ', validForCurrentVault: true }),
+    ).toBe(false);
     expect(vaultAlreadyRegisters(launch, null)).toBe(false);
-    expect(vaultAlreadyRegisters(null, BINARY)).toBe(false);
+    expect(
+      vaultAlreadyRegisters(null, { command: BINARY, validForCurrentVault: true }),
+    ).toBe(false);
   });
 });
 

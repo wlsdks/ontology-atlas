@@ -668,19 +668,23 @@ describe('verify.mjs first-contact gates', () => {
       wouldChange: { type: 'boolean' },
       blockedReasons: { type: 'array', items: nonBlankStringSchema },
     };
-    const nonBlankStringOrArraySchema = {
-      type: ['array', 'string'],
+    const backlinkValueSchema = {
+      type: ['array', 'object', 'string'],
       minLength: 1,
+      minItems: 1,
+      minProperties: 1,
       pattern: '^(?!\\s)(?!.*\\s$)(?!.*\\u0000).+$',
       items: nonBlankStringSchema,
+      propertyNames: nonBlankStringSchema,
+      additionalProperties: nonBlankStringSchema,
     };
     const backlinkKeyChangeSchema = {
       type: 'object',
       required: ['key'],
       properties: {
         key: nonBlankStringSchema,
-        before: nonBlankStringOrArraySchema,
-        after: nonBlankStringOrArraySchema,
+        before: backlinkValueSchema,
+        after: backlinkValueSchema,
       },
       additionalProperties: false,
     };
@@ -6721,6 +6725,57 @@ describe('verify.mjs first-contact gates', () => {
       }, 'rename_concept'),
       null,
     );
+    const renamePayloadWithRelationNotes = {
+      ...renamePayload,
+      backlinkUpdates: {
+        totalUpdated: 1,
+        updates: [
+          {
+            slug: 'ref',
+            title: 'Ref',
+            beforeKeys: [{ key: 'relation_notes', before: { old: 'Starts the local MCP process' } }],
+            afterKeys: [{ key: 'relation_notes', after: { new: 'Starts the local MCP process' } }],
+            bodyChanged: false,
+          },
+        ],
+      },
+    };
+    assert.equal(
+      destructiveDryRunFailure({
+        result: {
+          content: [{ text: JSON.stringify(renamePayloadWithRelationNotes) }],
+          structuredContent: renamePayloadWithRelationNotes,
+        },
+      }, 'rename_concept'),
+      null,
+    );
+    for (const invalidBefore of [
+      {},
+      { old: ' ' },
+      { old: { nested: 'not a rationale string' } },
+    ]) {
+      const malformedMapPayload = {
+        ...renamePayloadWithRelationNotes,
+        backlinkUpdates: {
+          totalUpdated: 1,
+          updates: [
+            {
+              ...renamePayloadWithRelationNotes.backlinkUpdates.updates[0],
+              beforeKeys: [{ key: 'relation_notes', before: invalidBefore }],
+            },
+          ],
+        },
+      };
+      assert.equal(
+        destructiveDryRunFailure({
+          result: {
+            content: [{ text: JSON.stringify(malformedMapPayload) }],
+            structuredContent: malformedMapPayload,
+          },
+        }, 'rename_concept'),
+        'rename_concept dry-run response backlinkUpdates.updates[0].beforeKeys[0] before drift',
+      );
+    }
     const renamePayloadWithUpdate = {
       ...renamePayload,
       backlinkUpdates: {
@@ -11188,12 +11243,20 @@ Continue.`;
       'agent_brief response missing cliFallbackCommands',
     );
     assert.equal(
+      agentBriefFailure({ ...payload, cliFallbackCommands: ['node health'] }),
+      'agent_brief response missing cliFallbackCommands',
+    );
+    assert.equal(
+      agentBriefFailure({ ...payload, cliFallbackCommands: ['ontology-atlas workspace-brief [vault]'] }),
+      'agent_brief response missing cliFallbackCommands',
+    );
+    assert.equal(
       // 2026-08-17: 계약이 뒤집혔다 — 이제 **맨몸 이름**이 거절된다(실행 불가).
       agentBriefFailure({ ...payload, cliFallbackCommands: ['ontology-atlas health'] }),
       'agent_brief response missing cliFallbackCommands',
     );
     assert.equal(
-      agentBriefFailure({ ...payload, cliFallbackCommands: ['node /abs/cli/src/index.mjs workspace-brief [vault]'] }),
+      agentBriefFailure({ ...payload, cliFallbackCommands: ["node '/tmp/ontology atlas/cli/src/index.mjs' workspace-brief [vault]"] }),
       'agent_brief cliFallbackCommands missing centrality plan fallback',
     );
     assert.equal(

@@ -39,10 +39,13 @@ export function isCleanNonBlankString(value) {
  */
 export function isBacklinkKeyValue(value) {
   if (isCleanNonBlankString(value)) return true;
-  if (Array.isArray(value)) return value.every((item) => isCleanNonBlankString(item));
+  if (Array.isArray(value)) {
+    return value.length > 0 && value.every((item) => isCleanNonBlankString(item));
+  }
   if (value && typeof value === 'object') {
     // 납작한 맵만 — 값이 또 객체나 배열이면 이 화면이 설명할 수 없는 모양이다.
-    return Object.entries(value).every(
+    const entries = Object.entries(value);
+    return entries.length > 0 && entries.every(
       ([key, entry]) => isCleanNonBlankString(key) && isCleanNonBlankString(entry),
     );
   }

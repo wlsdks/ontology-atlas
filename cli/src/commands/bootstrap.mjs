@@ -57,10 +57,12 @@ export async function runBootstrap(args) {
   // Stage 1 — analyze + review. This command never applies semantic rows.
   let analyzeResult;
   try {
-    analyzeResult = await callMcpTool(vaultRoot, 'analyze_repo_structure', {
-      rootPath: target,
-      maxDepth: parsed.maxDepth,
-    });
+    analyzeResult = await callMcpTool(
+      vaultRoot,
+      'analyze_repo_structure',
+      { rootPath: target, maxDepth: parsed.maxDepth },
+      { repoRoot: target },
+    );
     assertAnalyzeRepoStructureResult(analyzeResult);
   } catch (err) {
     process.stderr.write(
@@ -112,10 +114,12 @@ async function printApprovalRequiredPlan({
   let importsResult = null;
   if (!parsed.skipImports) {
     try {
-      importsResult = await callMcpTool(vaultRoot, 'infer_imports', {
-        rootPath: target,
-        maxFiles: parsed.maxFiles,
-      });
+      importsResult = await callMcpTool(
+        vaultRoot,
+        'infer_imports',
+        { rootPath: target, maxFiles: parsed.maxFiles },
+        { repoRoot: target },
+      );
       assertInferImportsResult(importsResult);
       applyImportThreshold(importsResult, parsed.threshold);
     } catch (err) {

@@ -1,6 +1,10 @@
-import { existsSync, mkdirSync, readFileSync, renameSync, rmSync, writeFileSync } from 'node:fs';
-import { dirname, join } from 'node:path';
 import { inspectProjectSource } from './project-source-inspection.mjs';
+import {
+  SidecarPathError,
+  createVaultSidecarTextExclusive,
+  readVaultSidecarText,
+  replaceVaultSidecarText,
+} from './vault-sidecar.mjs';
 // 낱말은 한 곳에서 선언한다 — 예전에는 이 목록이 여기와
 // `project-meaning-inventory.mjs` 에 두 벌 있었고, 한쪽만 고치면 다른 쪽이
 // 조용히 거절했다 (2026-08-17).
@@ -15,6 +19,7 @@ import {
 
 export { PROJECT_SOURCE_RECEIPT_VERSION, buildProjectSourceReceipt };
 export const PROJECT_SOURCE_STATE_RELATIVE_PATH = '.ontology-atlas/project-sources.json';
+const PROJECT_SOURCE_STATE_FILENAME = 'project-sources.json';
 /** Keeps the private absolute root out of git. Mirrors the app's sidecar guard. */
 const SIDECAR_IGNORE_CONTENT = '# Ontology Atlas local runtime state: not for commit.\n*\n';
 
@@ -167,9 +172,8 @@ function sanitizeReceipt(value, projectSlug) {
 export function readProjectSourceView(vaultRoot, projectSlug, graphHash) {
   let parsed;
   try {
-    parsed = JSON.parse(readFileSync(join(vaultRoot, PROJECT_SOURCE_STATE_RELATIVE_PATH), 'utf8'));
-  } catch (error) {
-    if (error?.code === 'ENOENT') {
+    const stored = readVaultSidecarText(vaultRoot, PROJECT_SOURCE_STATE_FILENAME);
+    if (!stored) {
       return base(
         projectSlug,
         0,
@@ -179,6 +183,8 @@ export function readProjectSourceView(vaultRoot, projectSlug, graphHash) {
         { id: 'connect_source' },
       );
     }
+    parsed = JSON.parse(stored.text);
+  } catch {
     return malformed(projectSlug);
   }
   if (
@@ -299,21 +305,29 @@ function validBindingEnvelope(binding) {
  * unreadable file would silently destroy another project's measurement.
  */
 export function readProjectSourceBindings(vaultRoot) {
-  const path = join(vaultRoot, PROJECT_SOURCE_STATE_RELATIVE_PATH);
-  if (!existsSync(path)) return { status: 'missing', bindings: [] };
+  let stored;
+  try {
+    stored = readVaultSidecarText(vaultRoot, PROJECT_SOURCE_STATE_FILENAME);
+  } catch (error) {
+    if (error instanceof SidecarPathError) {
+      return { status: 'unsafe_path', bindings: [], revision: null, error };
+    }
+    return { status: 'malformed', bindings: [], revision: null, error };
+  }
+  if (!stored) return { status: 'missing', bindings: [], revision: null };
   let parsed;
   try {
-    parsed = JSON.parse(readFileSync(path, 'utf8'));
+    parsed = JSON.parse(stored.text);
   } catch {
-    return { status: 'malformed', bindings: [] };
+    return { status: 'malformed', bindings: [], revision: stored.revision };
   }
   if (
     !parsed
     || parsed.contractVersion !== PROJECT_SOURCE_RECEIPT_VERSION
     || !Array.isArray(parsed.bindings)
     || !parsed.bindings.every(validBindingEnvelope)
-  ) return { status: 'malformed', bindings: [] };
-  return { status: 'ok', bindings: parsed.bindings };
+  ) return { status: 'malformed', bindings: [], revision: stored.revision };
+  return { status: 'ok', bindings: parsed.bindings, revision: stored.revision };
 }
 
 export function serializeProjectSourceState(bindings) {
@@ -323,24 +337,14 @@ export function serializeProjectSourceState(bindings) {
   }, null, 2)}\n`;
 }
 
-function commitState(vaultRoot, bindings) {
-  const path = join(vaultRoot, PROJECT_SOURCE_STATE_RELATIVE_PATH);
-  const directory = dirname(path);
-  mkdirSync(directory, { recursive: true });
-  const ignorePath = join(directory, '.gitignore');
-  if (!existsSync(ignorePath)) writeFileSync(ignorePath, SIDECAR_IGNORE_CONTENT, 'utf8');
-  const tempPath = `${path}.tmp`;
-  try {
-    rmSync(tempPath, { force: true });
-    writeFileSync(tempPath, serializeProjectSourceState(bindings), { encoding: 'utf8', flag: 'wx' });
-    renameSync(tempPath, path);
-  } finally {
-    try {
-      rmSync(tempPath, { force: true });
-    } catch {
-      // A non-file collision is deliberately left for manual inspection.
-    }
-  }
+function commitState(vaultRoot, bindings, expectedRevision) {
+  createVaultSidecarTextExclusive(vaultRoot, '.gitignore', SIDECAR_IGNORE_CONTENT);
+  replaceVaultSidecarText(
+    vaultRoot,
+    PROJECT_SOURCE_STATE_FILENAME,
+    serializeProjectSourceState(bindings),
+    { expectedRevision },
+  );
 }
 
 /**
@@ -350,6 +354,9 @@ function commitState(vaultRoot, bindings) {
  */
 export function writeProjectSourceBinding(vaultRoot, binding, { repair = false } = {}) {
   const current = readProjectSourceBindings(vaultRoot);
+  if (current.status === 'unsafe_path') {
+    return { status: 'blocked_unsafe_path', bindings: [], replaced: 0, error: current.error };
+  }
   if (current.status === 'malformed' && !repair) {
     return { status: 'blocked_malformed', bindings: [], replaced: 0 };
   }
@@ -357,8 +364,11 @@ export function writeProjectSourceBinding(vaultRoot, binding, { repair = false }
   const retained = existing.filter((candidate) => candidate.projectSlug !== binding.projectSlug);
   const bindings = [...retained, binding];
   try {
-    commitState(vaultRoot, bindings);
+    commitState(vaultRoot, bindings, current.revision);
   } catch (error) {
+    if (error instanceof SidecarPathError) {
+      return { status: 'blocked_unsafe_path', bindings: existing, replaced: 0, error };
+    }
     return { status: 'persistence_failed', bindings: existing, replaced: 0, error };
   }
   return { status: 'written', bindings, replaced: existing.length - retained.length };
@@ -367,14 +377,20 @@ export function writeProjectSourceBinding(vaultRoot, binding, { repair = false }
 /** Undo. Removes every binding for one project and leaves the rest untouched. */
 export function removeProjectSourceBindings(vaultRoot, projectSlug) {
   const current = readProjectSourceBindings(vaultRoot);
+  if (current.status === 'unsafe_path') {
+    return { status: 'blocked_unsafe_path', bindings: [], removed: 0, error: current.error };
+  }
   if (current.status === 'malformed') return { status: 'blocked_malformed', bindings: [], removed: 0 };
   if (current.status === 'missing') return { status: 'not_bound', bindings: [], removed: 0 };
   const retained = current.bindings.filter((candidate) => candidate.projectSlug !== projectSlug);
   const removed = current.bindings.length - retained.length;
   if (removed === 0) return { status: 'not_bound', bindings: current.bindings, removed: 0 };
   try {
-    commitState(vaultRoot, retained);
+    commitState(vaultRoot, retained, current.revision);
   } catch (error) {
+    if (error instanceof SidecarPathError) {
+      return { status: 'blocked_unsafe_path', bindings: current.bindings, removed: 0, error };
+    }
     return { status: 'persistence_failed', bindings: current.bindings, removed: 0, error };
   }
   return { status: 'removed', bindings: retained, removed };

@@ -40,8 +40,9 @@ test('관계 이유 맵을 받는다 — 실측 모양 그대로', () => {
   );
 });
 
-test('빈 맵도 받는다 — 이유를 다 지운 상태가 있을 수 있다', () => {
-  assert.equal(isBacklinkKeyValue({}), true);
+test('빈 컬렉션은 거절한다 — 백링크 변경 행에 담을 값이 없다', () => {
+  assert.equal(isBacklinkKeyValue([]), false);
+  assert.equal(isBacklinkKeyValue({}), false);
 });
 
 test('중첩된 것은 여전히 거절한다 — 넓히는 것이지 푸는 것이 아니다', () => {

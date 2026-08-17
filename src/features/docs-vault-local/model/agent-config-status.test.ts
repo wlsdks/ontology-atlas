@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   looksLikeOmotCodexToml,
   looksLikeOmotMcpJson,
+  readOmotCodexCommand,
 } from './use-local-vault';
 
 function mcpJson(command: string, args: string[], vault = '.'): string {
@@ -73,6 +74,13 @@ describe('vault-local agent config validation', () => {
     expect(looksLikeOmotMcpJson(json)).toBe(true);
     expect(looksLikeOmotMcpJson(json, { expectedVault: '.' })).toBe(false);
     expect(looksLikeOmotCodexToml(toml)).toBe(true);
+    expect(looksLikeOmotCodexToml(toml, { expectedVault: '.' })).toBe(false);
+  });
+
+  it('extracts the command without mistaking it for current-vault validity', () => {
+    const toml = codexToml(bundledBinary, [], '/Users/dana/other-vault');
+
+    expect(readOmotCodexCommand(toml)).toBe(bundledBinary);
     expect(looksLikeOmotCodexToml(toml, { expectedVault: '.' })).toBe(false);
   });
 });

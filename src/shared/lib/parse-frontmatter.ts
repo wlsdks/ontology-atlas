@@ -21,6 +21,27 @@ export interface FrontmatterDiagnostic {
 
 type ParsedScalar = string | number | boolean;
 
+const UNSAFE_OBJECT_KEYS = new Set(['__proto__', 'constructor', 'prototype']);
+
+function assignParsedKey(
+  target: Record<string, unknown>,
+  key: string,
+  value: unknown,
+  diagnostics: FrontmatterDiagnostic[],
+  line: number,
+): boolean {
+  if (UNSAFE_OBJECT_KEYS.has(key)) {
+    diagnostics.push({
+      code: 'malformed-frontmatter-line',
+      line,
+      message: `Frontmatter line ${line} uses unsafe object key \`${key}\`.`,
+    });
+    return false;
+  }
+  target[key] = value;
+  return true;
+}
+
 export function parseFrontmatter(input: string): ParsedFrontmatter {
   // 줄바꿈·인코딩 정규화 — **읽기 경로에서만** (2026-07-28 실측).
   //
@@ -74,7 +95,7 @@ export function parseFrontmatter(input: string): ParsedFrontmatter {
     const scalarIndicator = /^[|>][-+]?$/.exec(value);
     if (scalarIndicator) {
       const read = readBlockScalar(lines, i + 1, scalarIndicator[0]);
-      frontmatter[key] = read.value;
+      assignParsedKey(frontmatter, key, read.value, diagnostics, i + 2);
       i = read.next - 1;
       continue;
     }
@@ -91,7 +112,7 @@ export function parseFrontmatter(input: string): ParsedFrontmatter {
           items.push(unquote(dashMatch[1].trim()));
           j += 1;
         }
-        frontmatter[key] = items;
+        assignParsedKey(frontmatter, key, items, diagnostics, i + 2);
         i = j - 1;
         continue;
       }
@@ -104,27 +125,33 @@ export function parseFrontmatter(input: string): ParsedFrontmatter {
           const childKey = m[2].trim();
           const childValue = m[3].trim();
           if (!childKey) break;
-          obj[childKey] = parseScalar(childValue);
+          assignParsedKey(obj, childKey, parseScalar(childValue), diagnostics, j + 2);
           j += 1;
         }
-        frontmatter[key] = obj;
+        assignParsedKey(frontmatter, key, obj, diagnostics, i + 2);
         i = j - 1;
         continue;
       }
-      frontmatter[key] = '';
+      assignParsedKey(frontmatter, key, '', diagnostics, i + 2);
       continue;
     }
 
     // inline 형태들
     if (value.startsWith('[') && value.endsWith(']')) {
-      frontmatter[key] = parseInlineList(value);
+      assignParsedKey(frontmatter, key, parseInlineList(value), diagnostics, i + 2);
       continue;
     }
     if (value.startsWith('{') && value.endsWith('}')) {
-      frontmatter[key] = parseInlineObject(value);
+      assignParsedKey(
+        frontmatter,
+        key,
+        parseInlineObject(value, diagnostics, i + 2),
+        diagnostics,
+        i + 2,
+      );
       continue;
     }
-    frontmatter[key] = unquote(value);
+    assignParsedKey(frontmatter, key, unquote(value), diagnostics, i + 2);
   }
   const result: ParsedFrontmatter = { frontmatter, body };
   if (diagnostics.length > 0) result.diagnostics = diagnostics;
@@ -148,7 +175,11 @@ function parseInlineList(raw: string): string[] {
     .filter(Boolean);
 }
 
-function parseInlineObject(raw: string): Record<string, ParsedScalar> {
+function parseInlineObject(
+  raw: string,
+  diagnostics: FrontmatterDiagnostic[],
+  line: number,
+): Record<string, ParsedScalar> {
   const inner = raw.slice(1, -1).trim();
   if (!inner) return {};
   const out: Record<string, ParsedScalar> = {};
@@ -158,7 +189,7 @@ function parseInlineObject(raw: string): Record<string, ParsedScalar> {
     const k = part.slice(0, cIdx).trim();
     const v = part.slice(cIdx + 1).trim();
     if (!k) continue;
-    out[k] = parseScalar(v);
+    assignParsedKey(out, k, parseScalar(v), diagnostics, line);
   }
   return out;
 }

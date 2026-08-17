@@ -4035,6 +4035,56 @@
         },
         {
           "depth": 2,
+          "text": "2026-08-17 · 릴리스 메타데이터가 생성 TypeScript 문법이 되지 않는다",
+          "slug": "2026-08-17-릴리스-메타데이터가-생성-typescript-문법이-되지-않는다"
+        },
+        {
+          "depth": 2,
+          "text": "2026-08-17 · private sidecar가 외부 hardlink 별칭을 수정하지 않는다",
+          "slug": "2026-08-17-private-sidecar가-외부-hardlink-별칭을-수정하지-않는다"
+        },
+        {
+          "depth": 2,
+          "text": "2026-08-17 · 일반 볼트 쓰기도 검증한 부모 디렉터리를 놓치지 않는다",
+          "slug": "2026-08-17-일반-볼트-쓰기도-검증한-부모-디렉터리를-놓치지-않는다"
+        },
+        {
+          "depth": 2,
+          "text": "2026-08-17 · 에이전트 설정 쓰기가 볼트 밖 inode를 건드리지 않는다",
+          "slug": "2026-08-17-에이전트-설정-쓰기가-볼트-밖-inode를-건드리지-않는다"
+        },
+        {
+          "depth": 2,
+          "text": "2026-08-17 · 같은 MCP 서버는 한 벌만 띄우되 현재 볼트를 잃지 않는다",
+          "slug": "2026-08-17-같은-mcp-서버는-한-벌만-띄우되-현재-볼트를-잃지-않는다"
+        },
+        {
+          "depth": 2,
+          "text": "2026-08-17 · ACP 리더가 먼저 끝나도 남은 하위 프로세스를 정리한다",
+          "slug": "2026-08-17-acp-리더가-먼저-끝나도-남은-하위-프로세스를-정리한다"
+        },
+        {
+          "depth": 2,
+          "text": "2026-08-17 · ACP 권한 관문은 세션이 시작된 볼트를 바꿔치기할 수 없다",
+          "slug": "2026-08-17-acp-권한-관문은-세션이-시작된-볼트를-바꿔치기할-수-없다"
+        },
+        {
+          "depth": 2,
+          "text": "2026-08-17 · 번들된 볼트 문장이 JSON-LD script 경계를 닫지 못한다",
+          "slug": "2026-08-17-번들된-볼트-문장이-json-ld-script-경계를-닫지-못한다"
+        },
+        {
+          "depth": 2,
+          "text": "2026-08-17 · 재 보지 않은 ACP 작업 방식은 화면에서도 모른다고 말한다",
+          "slug": "2026-08-17-재-보지-않은-acp-작업-방식은-화면에서도-모른다고-말한다"
+        },
+        {
+          "depth": 2,
+          "text": "2026-08-17 · LLM 감사 로그가 볼트 밖 링크와 겹친 요청을 따라가지 않는다",
+          "slug": "2026-08-17-llm-감사-로그가-볼트-밖-링크와-겹친-요청을-따라가지-않는다"
+        },
+        {
+          "depth": 2,
           "text": "2026-08-16 · 설정이 이 컴퓨터의 코딩 에이전트를 찾아 주고, 앱이 띄운 세션은 앱의 규칙을 따른다",
           "slug": "2026-08-16-설정이-이-컴퓨터의-코딩-에이전트를-찾아-주고-앱이-띄운-세션은-앱의-규칙을-따른다"
         },
@@ -6434,9 +6484,9 @@
           "slug": "2026-07-26-첫-만남은-쇼핑몰부터"
         }
       ],
-      "excerpt": "Major change history. Code commit messages answer why; this file answers when / which surface changed. Focused on user-visible changes, not PR-level granularity. Newest at the top. Entries stay date-based; the app version reached v1.0.0 on 2026-07-27, so a release tag now carries the semver promise instead. 설정에 「실행기」 절",
-      "wordCount": 69258,
-      "updatedAt": "2026-08-16",
+      "excerpt": "Major change history. Code commit messages answer why; this file answers when / which surface changed. Focused on user-visible changes, not PR-level granularity. Newest at the top. Entries stay date-based; the app version reached v1.0.0 on 2026-07-27, so a release tag now carries the semver promise instead. GitHub Rele",
+      "wordCount": 70172,
+      "updatedAt": "2026-08-17",
       "linksOut": [
         "audits/CASE-STUDY-AGENTS-MD-DRIFT",
         "domains/catalog",
@@ -6467,78 +6517,198 @@
         },
         {
           "depth": 2,
-          "text": "2026-08-17 (37) — 안전 장치가 모르는 것을 안전한 것처럼 다뤘다",
-          "slug": "2026-08-17-37-안전-장치가-모르는-것을-안전한-것처럼-다뤘다"
+          "text": "2026-08-17 (61) — 릴리스 API 값은 생성 소스의 데이터로만 직렬화한다",
+          "slug": "2026-08-17-61-릴리스-api-값은-생성-소스의-데이터로만-직렬화한다"
         },
         {
           "depth": 2,
-          "text": "2026-08-17 (36) — 맞는 동작에 켜지는 게이트는, 꺼지는 게이트다",
-          "slug": "2026-08-17-36-맞는-동작에-켜지는-게이트는-꺼지는-게이트다"
+          "text": "2026-08-17 (60) — 일반 볼트 mutation도 안정된 root·parent FD 안에서 수행한다",
+          "slug": "2026-08-17-60-일반-볼트-mutation도-안정된-rootparent-fd-안에서-수행한다"
         },
         {
           "depth": 2,
-          "text": "2026-08-17 (35) — 내보내기가 「다 나갔다」고 말하며 이유를 두고 갔다",
-          "slug": "2026-08-17-35-내보내기가-다-나갔다고-말하며-이유를-두고-갔다"
+          "text": "2026-08-17 (59) — 에이전트 설정은 새 inode를 완성한 뒤 안정된 부모 안에서 교체한다",
+          "slug": "2026-08-17-59-에이전트-설정은-새-inode를-완성한-뒤-안정된-부모-안에서-교체한다"
         },
         {
           "depth": 2,
-          "text": "2026-08-17 (34) — 브리프가 자기 안에서 모순이었다",
-          "slug": "2026-08-17-34-브리프가-자기-안에서-모순이었다"
+          "text": "2026-08-17 (58) — MCP 중복 생략은 현재 볼트용 유효 설정일 때만 한다",
+          "slug": "2026-08-17-58-mcp-중복-생략은-현재-볼트용-유효-설정일-때만-한다"
         },
         {
           "depth": 2,
-          "text": "2026-08-17 (33) — 「MCP 가 없을 때 쓰세요」가 실행 안 되는 명령이었다",
-          "slug": "2026-08-17-33-mcp-가-없을-때-쓰세요가-실행-안-되는-명령이었다"
+          "text": "2026-08-17 (57) — ACP 트리 종료 완료는 리더 PID가 아니라 프로세스 그룹으로 판정한다",
+          "slug": "2026-08-17-57-acp-트리-종료-완료는-리더-pid가-아니라-프로세스-그룹으로-판정한다"
         },
         {
           "depth": 2,
-          "text": "2026-08-17 (32) — 내가 만든 게이트가 세 번째 사본을 못 보고 있었다",
-          "slug": "2026-08-17-32-내가-만든-게이트가-세-번째-사본을-못-보고-있었다"
+          "text": "2026-08-17 (56) — ACP 권한 판정의 볼트는 화면이 고르지 않는다",
+          "slug": "2026-08-17-56-acp-권한-판정의-볼트는-화면이-고르지-않는다"
         },
         {
           "depth": 2,
-          "text": "2026-08-17 (31) — 답하다 죽은 것과 다 끝난 것이 같은 화면이었다",
-          "slug": "2026-08-17-31-답하다-죽은-것과-다-끝난-것이-같은-화면이었다"
+          "text": "2026-08-17 (55) — JSON-LD 데이터는 script 경계를 소유하지 않는다",
+          "slug": "2026-08-17-55-json-ld-데이터는-script-경계를-소유하지-않는다"
         },
         {
           "depth": 2,
-          "text": "2026-08-17 (30) — 카드가 자기가 확인 안 한 범위를 단정하고 있었다",
-          "slug": "2026-08-17-30-카드가-자기가-확인-안-한-범위를-단정하고-있었다"
+          "text": "2026-08-17 (54) — 미검증 상태는 화면에 닿아야 상태다",
+          "slug": "2026-08-17-54-미검증-상태는-화면에-닿아야-상태다"
         },
         {
           "depth": 2,
-          "text": "2026-08-17 (29) — 「어디」만 묻고 「무엇을」은 안 물었다",
-          "slug": "2026-08-17-29-어디만-묻고-무엇을은-안-물었다"
+          "text": "2026-08-17 (53) — 안전 장치가 모르는 것을 안전한 것처럼 다뤘다",
+          "slug": "2026-08-17-53-안전-장치가-모르는-것을-안전한-것처럼-다뤘다"
         },
         {
           "depth": 2,
-          "text": "2026-08-17 (28) — 낱말을 두 곳에서 선언하고 있었다",
-          "slug": "2026-08-17-28-낱말을-두-곳에서-선언하고-있었다"
+          "text": "2026-08-17 (52) — 감사 로그는 볼트 밖 링크를 따라가지 않는다",
+          "slug": "2026-08-17-52-감사-로그는-볼트-밖-링크를-따라가지-않는다"
         },
         {
           "depth": 2,
-          "text": "2026-08-17 (27) — 자기가 마주친 경우만 채운 표는 구멍이 있는 표다",
-          "slug": "2026-08-17-27-자기가-마주친-경우만-채운-표는-구멍이-있는-표다"
+          "text": "2026-08-17 (51) — 맞는 동작에 켜지는 게이트는, 꺼지는 게이트다",
+          "slug": "2026-08-17-51-맞는-동작에-켜지는-게이트는-꺼지는-게이트다"
         },
         {
           "depth": 2,
-          "text": "2026-08-17 (26) — 「Finder 에서 보기」가 프로그램을 실행할 수 있었다",
-          "slug": "2026-08-17-26-finder-에서-보기가-프로그램을-실행할-수-있었다"
+          "text": "2026-08-17 (50) — mtime 숫자가 아니라 읽은 바이트를 지킨다",
+          "slug": "2026-08-17-50-mtime-숫자가-아니라-읽은-바이트를-지킨다"
         },
         {
           "depth": 2,
-          "text": "2026-08-17 (25) — 「못 봤다」를 「없다」로 말하면 맞는 관계가 지워진다",
-          "slug": "2026-08-17-25-못-봤다를-없다로-말하면-맞는-관계가-지워진다"
+          "text": "2026-08-17 (49) — 내보내기가 「다 나갔다」고 말하며 이유를 두고 갔다",
+          "slug": "2026-08-17-49-내보내기가-다-나갔다고-말하며-이유를-두고-갔다"
         },
         {
           "depth": 2,
-          "text": "2026-08-17 (24) — 설치된 앱을 열어 보고서야 보인 것",
-          "slug": "2026-08-17-24-설치된-앱을-열어-보고서야-보인-것"
+          "text": "2026-08-17 (48) — 브리프가 자기 안에서 모순이었다",
+          "slug": "2026-08-17-48-브리프가-자기-안에서-모순이었다"
         },
         {
           "depth": 2,
-          "text": "2026-08-17 (23) — 갓 만든 볼트가 자기가 고장 났다고 말했다",
-          "slug": "2026-08-17-23-갓-만든-볼트가-자기가-고장-났다고-말했다"
+          "text": "2026-08-17 (47) — 「MCP 가 없을 때 쓰세요」가 실행 안 되는 명령이었다",
+          "slug": "2026-08-17-47-mcp-가-없을-때-쓰세요가-실행-안-되는-명령이었다"
+        },
+        {
+          "depth": 2,
+          "text": "2026-08-17 (46) — 내가 만든 게이트가 세 번째 사본을 못 보고 있었다",
+          "slug": "2026-08-17-46-내가-만든-게이트가-세-번째-사본을-못-보고-있었다"
+        },
+        {
+          "depth": 2,
+          "text": "2026-08-17 (45) — 답하다 죽은 것과 다 끝난 것이 같은 화면이었다",
+          "slug": "2026-08-17-45-답하다-죽은-것과-다-끝난-것이-같은-화면이었다"
+        },
+        {
+          "depth": 2,
+          "text": "2026-08-17 (44) — 카드가 자기가 확인 안 한 범위를 단정하고 있었다",
+          "slug": "2026-08-17-44-카드가-자기가-확인-안-한-범위를-단정하고-있었다"
+        },
+        {
+          "depth": 2,
+          "text": "2026-08-17 (43) — 검증한 ACP 구독 실행기는 부모의 임의 자격증명을 받지 않는다",
+          "slug": "2026-08-17-43-검증한-acp-구독-실행기는-부모의-임의-자격증명을-받지-않는다"
+        },
+        {
+          "depth": 2,
+          "text": "2026-08-17 (42) — CI가 실행하는 외부 코드는 전체 commit SHA로 고정한다",
+          "slug": "2026-08-17-42-ci가-실행하는-외부-코드는-전체-commit-sha로-고정한다"
+        },
+        {
+          "depth": 2,
+          "text": "2026-08-17 (41) — 「어디」만 묻고 「무엇을」은 안 물었다",
+          "slug": "2026-08-17-41-어디만-묻고-무엇을은-안-물었다"
+        },
+        {
+          "depth": 2,
+          "text": "2026-08-17 (40) — 앱의 curl은 사용자 curlrc를 읽지 않는다",
+          "slug": "2026-08-17-40-앱의-curl은-사용자-curlrc를-읽지-않는다"
+        },
+        {
+          "depth": 2,
+          "text": "2026-08-17 (39) — 체크섬은 설치 파일 이름까지 증명해야 한다",
+          "slug": "2026-08-17-39-체크섬은-설치-파일-이름까지-증명해야-한다"
+        },
+        {
+          "depth": 2,
+          "text": "2026-08-17 (38) — 해시한 Windows 설치 바이트를 그대로 스테이징한다",
+          "slug": "2026-08-17-38-해시한-windows-설치-바이트를-그대로-스테이징한다"
+        },
+        {
+          "depth": 2,
+          "text": "2026-08-17 (37) — 허용된 설정 이름도 링크라면 쓰지 않는다",
+          "slug": "2026-08-17-37-허용된-설정-이름도-링크라면-쓰지-않는다"
+        },
+        {
+          "depth": 2,
+          "text": "2026-08-17 (36) — 낱말을 두 곳에서 선언하고 있었다",
+          "slug": "2026-08-17-36-낱말을-두-곳에서-선언하고-있었다"
+        },
+        {
+          "depth": 2,
+          "text": "2026-08-17 (35) — 자기가 마주친 경우만 채운 표는 구멍이 있는 표다",
+          "slug": "2026-08-17-35-자기가-마주친-경우만-채운-표는-구멍이-있는-표다"
+        },
+        {
+          "depth": 2,
+          "text": "2026-08-17 (34) — 게시된 Windows 설치 파일도 다시 받아 해시한다",
+          "slug": "2026-08-17-34-게시된-windows-설치-파일도-다시-받아-해시한다"
+        },
+        {
+          "depth": 2,
+          "text": "2026-08-17 (33) — 「Finder 에서 보기」가 프로그램을 실행할 수 있었다",
+          "slug": "2026-08-17-33-finder-에서-보기가-프로그램을-실행할-수-있었다"
+        },
+        {
+          "depth": 2,
+          "text": "2026-08-17 (32) — 공개 의미 diff와 내부 쓰기 계획을 분리한다",
+          "slug": "2026-08-17-32-공개-의미-diff와-내부-쓰기-계획을-분리한다"
+        },
+        {
+          "depth": 2,
+          "text": "2026-08-17 (31) — 릴리스 자격증명은 필요한 단계에만 보인다",
+          "slug": "2026-08-17-31-릴리스-자격증명은-필요한-단계에만-보인다"
+        },
+        {
+          "depth": 2,
+          "text": "2026-08-17 (30) — 「못 봤다」를 「없다」로 말하면 맞는 관계가 지워진다",
+          "slug": "2026-08-17-30-못-봤다를-없다로-말하면-맞는-관계가-지워진다"
+        },
+        {
+          "depth": 2,
+          "text": "2026-08-17 (29) — 설치된 앱을 열어 보고서야 보인 것",
+          "slug": "2026-08-17-29-설치된-앱을-열어-보고서야-보인-것"
+        },
+        {
+          "depth": 2,
+          "text": "2026-08-17 (27) — 막힌 ACP 입력은 자기 세션만 멈춘다",
+          "slug": "2026-08-17-27-막힌-acp-입력은-자기-세션만-멈춘다"
+        },
+        {
+          "depth": 2,
+          "text": "2026-08-17 (26) — 읽은 상태가 사라졌으면 쓰지 않는다",
+          "slug": "2026-08-17-26-읽은-상태가-사라졌으면-쓰지-않는다"
+        },
+        {
+          "depth": 2,
+          "text": "2026-08-17 (25) — 종료 이벤트는 자신이 태어난 세션만 닫는다",
+          "slug": "2026-08-17-25-종료-이벤트는-자신이-태어난-세션만-닫는다"
+        },
+        {
+          "depth": 2,
+          "text": "2026-08-17 (24) — 보내지 못한 요청은 기다림이 아니라 실패다",
+          "slug": "2026-08-17-24-보내지-못한-요청은-기다림이-아니라-실패다"
+        },
+        {
+          "depth": 2,
+          "text": "2026-08-17 (23) — ACP 권한 관문은 알림이 아니라 시작 조건이다",
+          "slug": "2026-08-17-23-acp-권한-관문은-알림이-아니라-시작-조건이다"
+        },
+        {
+          "depth": 2,
+          "text": "2026-08-17 (28) — 갓 만든 볼트가 자기가 고장 났다고 말했다",
+          "slug": "2026-08-17-28-갓-만든-볼트가-자기가-고장-났다고-말했다"
         },
         {
           "depth": 2,
@@ -9257,7 +9427,7 @@
         }
       ],
       "excerpt": "이 파일은 결정과 그때 진 반대 의견을 남긴다. docs/CHANGELOG.md 는 무엇이 언제 바뀌었나를 답하고, 이 파일은 왜 그렇게 정했고, 무엇을 걸었나를 답한다. 최신이 위. 기록은 덧붙이기만 한다 — 지난 기록을 고치지 않는다. 판단이 바뀌었으면 새 기록을 쓰고 옛 기록을 뒤집힘 으로 표시한다. 틀린 기록도 자산이다. 1. 소집 전에 읽는다. 카운슬을 열기 전(그리고 단독 PO 패스를 쓰기 전) 같은 표면 · 같은 질문에 대한 선행 결정이 있는지 먼저 본다. 있으면 새 패스는 그것을 ① 여전히 유효하다고 인용하거나 ② 명시적으로 뒤집는다. 조용히 다시 결정",
-      "wordCount": 135026,
+      "wordCount": 141507,
       "updatedAt": "2026-08-17",
       "linksOut": [
         "slug"
@@ -10369,8 +10539,8 @@
         }
       ],
       "excerpt": "Ontology Atlas is the user-facing macOS app name and current release asset identity for the ontology-atlas project. ontology-atlas stays the repository, CLI, and MCP package name so existing terminal and agent package contracts remain stable. The current release asset identity is ontology-atlas. ontology-atlas can beco",
-      "wordCount": 6593,
-      "updatedAt": "2026-07-27",
+      "wordCount": 6596,
+      "updatedAt": "2026-08-17",
       "linksOut": []
     },
     {
@@ -10955,8 +11125,8 @@
         }
       ],
       "excerpt": "Complete inventory of features users can actually use right now. Last updated: 2026-08-02 (지금 있는 라우트, 설치한 앱이 지키기로 한 약속, 프로젝트가 무엇을 뜻하는지 확정한 기록(project meaning receipt)을 다시 확인했다 — /ontology 는 /topology?index=expanded 로, /ontology/edit 은 /ontology/studio 로 보내는 옛 주소 호환 redirect 이고, Insights 는 할 일 · 구성 · 연결 · 경계 · 신선도 다섯 개 ",
-      "wordCount": 19886,
-      "updatedAt": "2026-08-16",
+      "wordCount": 19989,
+      "updatedAt": "2026-08-17",
       "linksOut": [
         "slug",
         "project:slug",
@@ -12522,8 +12692,8 @@
           "slug": "확신도"
         }
       ],
-      "excerpt": "사용자가 이미 설치해 둔 코딩 에이전트(Claude Code, Codex 등)를 앱이 ACP(Agent Client Protocol) v1 로 직접 띄우고, 그 세션의 설정을 격리하고, 볼트 밖 파일 접근을 사람에게 되묻는 능력. 새 API 키도 새 벤더 연동도 필요 없다: 그 도구가 이미 쓰는 구독 인증을 그대로 쓴다. 이 능력이 실제로 하는 일 여섯: 1. 탐지. 이 기기의 실행기 상태를 다섯으로 갈라 판정한다: ready, cli-missing, node-missing, uvx-missing, binary-missing. 상태를 「설치됨/아님」 둘로 뭉개지 않는",
-      "wordCount": 449,
+      "excerpt": "사용자가 이미 설치해 둔 코딩 에이전트(Claude Code, Codex 등)를 앱이 ACP(Agent Client Protocol) v1 로 직접 띄우고, 그 세션의 설정을 격리하고, 볼트 밖 파일 접근을 사람에게 되묻는 능력. 새 API 키도 새 벤더 연동도 필요 없다: 그 도구가 이미 쓰는 구독 인증을 그대로 쓴다. 이 능력이 실제로 하는 일 일곱: 1. 탐지. 이 기기의 실행기 상태를 다섯으로 갈라 판정한다: ready, cli-missing, node-missing, uvx-missing, binary-missing. 상태를 「설치됨/아님」 둘로 뭉개지 않는",
+      "wordCount": 678,
       "updatedAt": "2026-08-17",
       "linksOut": []
     },
@@ -12931,8 +13101,8 @@
         }
       ],
       "excerpt": "플랫폼별 설치 파일과 신뢰 상태를 한 자리에서 비교하고, 설치가 막히면 웹으로 계속할 수 있게 하는 능력. macOS는 서명·공증된 Apple Silicon/Intel DMG를, Windows는 SmartScreen 위험을 먼저 밝힌 미서명 x64 베타를 제시한다. src/views/download (플랫폼 그룹·릴리스 사실·경고·CTA) .github/workflows/release-macos.yml (macOS + Windows 공개 릴리스 검증) .github/workflows/windows-beta-check.yml (비밀 키 없는 Windows PR 네이티브",
-      "wordCount": 73,
-      "updatedAt": "2026-08-16",
+      "wordCount": 82,
+      "updatedAt": "2026-08-17",
       "linksOut": []
     },
     {
@@ -12950,10 +13120,15 @@
           "elements/docs-vault-entity",
           "elements/docs-vault-view",
           "elements/docs-vault-widget",
-          "elements/local-fs-handle"
+          "elements/local-fs-handle",
+          "elements/native-vault-filesystem-bridge",
+          "elements/private-vault-sidecar-boundary"
         ],
         "path": "src/features/docs-vault-local",
-        "created_by": "human"
+        "created_by": "human",
+        "relation_notes": {
+          "elements/native-vault-filesystem-bridge": "설치 앱의 로컬 폴더 마운트가 실제 파일·디렉터리 mutation을 수행하는 네이티브 구현 증거다."
+        }
       },
       "headings": [
         {
@@ -12974,7 +13149,7 @@
       ],
       "excerpt": "File System Access API로 로컬 마크다운 폴더를 선택·마운트해 실시간 데이터소스로 삼는 능력. src/features/docs-vault-local (구현 증거) high (0.9): local-first 원칙 문서와 정합",
       "wordCount": 28,
-      "updatedAt": "2026-08-16",
+      "updatedAt": "2026-08-17",
       "linksOut": []
     },
     {
@@ -13571,8 +13746,8 @@
         }
       ],
       "excerpt": "AI 에이전트가 볼트를 발견·인증하고 읽고 쓸 수 있게 하는 앱 내 connect 플로우와 MCP 대면 표면. 앱 안의 대화형 에이전트는 실제 볼트 도구 근거를 수집한다. 절대 경로와 읽힌 manifest가 함께 있을 때만 활성화하여 화면의 개념, 모델이 읽는 본문, 볼트 안 감사 로그가 한 출처를 가리킨다. 로컬 러너에서는 제한된 읽기 순서와 왕복 시간 상한을 적용한다. 필수 읽기, 상세 payload에 남은 정확한 인용, 한국어 질문의 한국어 응답 중 하나를 생략하면 한 번 교정하고, 두 번째에도 따르지 않은 답은 사용자에게 싣지 않는다. 구조 감사는 census",
-      "wordCount": 368,
-      "updatedAt": "2026-08-16",
+      "wordCount": 450,
+      "updatedAt": "2026-08-17",
       "linksOut": []
     },
     {
@@ -13857,9 +14032,14 @@
           "elements/docs-vault-view",
           "elements/docs-vault-widget",
           "elements/git",
-          "elements/local-fs-handle"
+          "elements/local-fs-handle",
+          "elements/native-vault-filesystem-bridge",
+          "elements/private-vault-sidecar-boundary"
         ],
-        "created_by": "human"
+        "created_by": "human",
+        "relation_notes": {
+          "elements/native-vault-filesystem-bridge": "네이티브 vault 파일시스템 브리지는 로컬 볼트·데이터 소스 도메인의 직접 구현 요소다."
+        }
       },
       "headings": [
         {
@@ -13885,7 +14065,7 @@
       ],
       "excerpt": "로컬 디스크의 마크다운 폴더를 고르고(File System Access API), git을 진실원으로 쓰며, 데모용 샘플 볼트를 제공하는 로컬-퍼스트·백엔드 0 데이터소스 계층. README.md: \"A folder of Markdown files. Each file's frontmatter declares what it is... That is the whole database.\" docs/ARCHITECTURE.md: \"There is no backend, no server database, no auth provider. The user's markdown fo",
       "wordCount": 106,
-      "updatedAt": "2026-08-09",
+      "updatedAt": "2026-08-17",
       "linksOut": []
     },
     {
@@ -14527,6 +14707,26 @@
       "linksOut": []
     },
     {
+      "slug": "ontology/elements/native-vault-filesystem-bridge",
+      "path": "docs/ontology/elements/native-vault-filesystem-bridge.md",
+      "title": "Native Vault Filesystem Bridge",
+      "tags": [],
+      "frontmatter": {
+        "uid": "ea43fdf2-9b52-49a8-90d3-68bb9904e860",
+        "slug": "elements/native-vault-filesystem-bridge",
+        "kind": "element",
+        "title": "Native Vault Filesystem Bridge",
+        "domain": "domains/local-vault-management",
+        "path": "src-tauri/src/lib.rs",
+        "created_by": "agent:unknown"
+      },
+      "headings": [],
+      "excerpt": "Tauri WebView가 선택한 볼트 안의 파일·디렉터리를 읽고 쓰게 하는 네이티브 브리지. Unix mutation은 canonical root와 상대 부모를 no-follow 디렉터리 FD로 붙들고, 일반 파일은 umask 기반 임시 inode를 완성해 같은 부모 안에서 원자 교체하며 디렉터리는 안정된 부모에서 생성한다. 검사 뒤 부모 이름이 외부 symlink로 교체돼도 볼트 밖 side effect를 만들지 않는다. Windows reparse-point 경쟁은 아직 별도 잔여 경계다.",
+      "wordCount": 57,
+      "updatedAt": "2026-08-17",
+      "linksOut": []
+    },
+    {
       "slug": "ontology/elements/ontology-class",
       "path": "docs/ontology/elements/ontology-class.md",
       "title": "Ontology Class",
@@ -14624,6 +14824,26 @@
       "excerpt": "/ontology/studio 쓰기 표면(공방). capabilities/ontology-blocks 의 구현 증거.",
       "wordCount": 7,
       "updatedAt": "2026-08-02",
+      "linksOut": []
+    },
+    {
+      "slug": "ontology/elements/private-vault-sidecar-boundary",
+      "path": "docs/ontology/elements/private-vault-sidecar-boundary.md",
+      "title": "Private Vault Sidecar Boundary",
+      "tags": [],
+      "frontmatter": {
+        "uid": "cf8a7154-61e7-44e2-969e-b977d5019121",
+        "slug": "elements/private-vault-sidecar-boundary",
+        "kind": "element",
+        "title": "Private Vault Sidecar Boundary",
+        "domain": "domains/local-vault-management",
+        "path": "mcp/src/vault-sidecar.mjs",
+        "created_by": "agent:unknown"
+      },
+      "headings": [],
+      "excerpt": "MCP와 CLI가 .ontology-atlas 아래의 비공개 영수증·활동 로그를 다루는 공통 파일 경계다. sidecar 디렉터리와 최종 파일의 symlink/junction, 파일 identity 변경, hardlink 별칭을 실패 닫고, 원자 교체와 충돌 검사를 제공한다. 순수 Node 경로 API의 한계 때문에 동일 UID 공격자가 검사 사이에 부모 이름을 바꾸는 경쟁까지 완전한 디렉터리 핸들 격리로 주장하지 않는다.",
+      "wordCount": 49,
+      "updatedAt": "2026-08-17",
       "linksOut": []
     },
     {
@@ -17381,6 +17601,16 @@
         "linkText": "domains/local-vault-management"
       },
       {
+        "fromSlug": "ontology/elements/native-vault-filesystem-bridge",
+        "context": "frontmatter · **[domains/local-vault-management]**",
+        "linkText": "domains/local-vault-management"
+      },
+      {
+        "fromSlug": "ontology/elements/private-vault-sidecar-boundary",
+        "context": "frontmatter · **[domains/local-vault-management]**",
+        "linkText": "domains/local-vault-management"
+      },
+      {
         "fromSlug": "ontology/ontology-atlas",
         "context": "frontmatter · **[domains/local-vault-management]**",
         "linkText": "domains/local-vault-management"
@@ -17444,6 +17674,30 @@
         "fromSlug": "ontology/domains/local-vault-management",
         "context": "frontmatter · **[elements/local-fs-handle]**",
         "linkText": "elements/local-fs-handle"
+      }
+    ],
+    "ontology/elements/native-vault-filesystem-bridge": [
+      {
+        "fromSlug": "ontology/capabilities/docs-vault-local",
+        "context": "frontmatter · **[elements/native-vault-filesystem-bridge]**",
+        "linkText": "elements/native-vault-filesystem-bridge"
+      },
+      {
+        "fromSlug": "ontology/domains/local-vault-management",
+        "context": "frontmatter · **[elements/native-vault-filesystem-bridge]**",
+        "linkText": "elements/native-vault-filesystem-bridge"
+      }
+    ],
+    "ontology/elements/private-vault-sidecar-boundary": [
+      {
+        "fromSlug": "ontology/capabilities/docs-vault-local",
+        "context": "frontmatter · **[elements/private-vault-sidecar-boundary]**",
+        "linkText": "elements/private-vault-sidecar-boundary"
+      },
+      {
+        "fromSlug": "ontology/domains/local-vault-management",
+        "context": "frontmatter · **[elements/private-vault-sidecar-boundary]**",
+        "linkText": "elements/private-vault-sidecar-boundary"
       }
     ],
     "ontology/elements/first-run": [
@@ -18977,6 +19231,13 @@
                 "title": "Local Fs Handle"
               },
               {
+                "name": "native-vault-filesystem-bridge",
+                "path": "ontology/elements/native-vault-filesystem-bridge",
+                "type": "doc",
+                "slug": "ontology/elements/native-vault-filesystem-bridge",
+                "title": "Native Vault Filesystem Bridge"
+              },
+              {
                 "name": "ontology-class",
                 "path": "ontology/elements/ontology-class",
                 "type": "doc",
@@ -19010,6 +19271,13 @@
                 "type": "doc",
                 "slug": "ontology/elements/ontology-studio",
                 "title": "Ontology Studio"
+              },
+              {
+                "name": "private-vault-sidecar-boundary",
+                "path": "ontology/elements/private-vault-sidecar-boundary",
+                "type": "doc",
+                "slug": "ontology/elements/private-vault-sidecar-boundary",
+                "title": "Private Vault Sidecar Boundary"
               },
               {
                 "name": "project",

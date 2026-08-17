@@ -6,7 +6,7 @@ use std::fs;
 use std::io::{Read, Write};
 use std::path::{Component, Path, PathBuf};
 use std::process::{Command, Stdio};
-use std::sync::Mutex;
+use std::sync::{Arc, Mutex};
 use std::time::{Duration, UNIX_EPOCH};
 use tauri::{AppHandle, Emitter, Manager, RunEvent, State};
 
@@ -212,6 +212,7 @@ fn resolve_existing_inside(root_path: &str, relative_path: &str) -> Result<PathB
     ensure_inside_canonical(root_path, &path)
 }
 
+#[cfg(not(unix))]
 fn resolve_write_target_inside(root_path: &str, relative_path: &str) -> Result<PathBuf, String> {
     let path = resolve_inside(root_path, relative_path)?;
     if path.exists() {
@@ -786,11 +787,95 @@ fn metadata_mtime_ms(path: &Path) -> Result<u128, String> {
 
 /// 살아 있는 ACP 세션들. 앱이 꺼질 때 여기 남은 것을 전부 끝낸다.
 #[derive(Default)]
-struct AcpSessions(Mutex<std::collections::HashMap<String, AcpSessionHandle>>);
+struct AcpSessions(Mutex<std::collections::HashMap<String, Arc<AcpSessionHandle>>>);
 
 struct AcpSessionHandle {
     pid: u32,
-    stdin: std::process::ChildStdin,
+    /// `acp_start` 가 검사하고 정규화한 권한 경계. 화면이 다시 고를 수 없다.
+    vault_root: PathBuf,
+    stdin: Mutex<Box<dyn Write + Send>>,
+}
+
+impl AcpSessions {
+    fn insert<W: Write + Send + 'static>(
+        &self,
+        session_id: String,
+        pid: u32,
+        vault_root: PathBuf,
+        stdin: W,
+    ) -> Result<(), String> {
+        self.0
+            .lock()
+            .map_err(|_| "session-registry-poisoned".to_string())?
+            .insert(
+                session_id,
+                Arc::new(AcpSessionHandle {
+                    pid,
+                    vault_root,
+                    stdin: Mutex::new(Box::new(stdin)),
+                }),
+            );
+        Ok(())
+    }
+
+    fn vault_root(&self, session_id: &str) -> Result<PathBuf, String> {
+        let map = self
+            .0
+            .lock()
+            .map_err(|_| "session-registry-poisoned".to_string())?;
+        map.get(session_id)
+            .map(|handle| handle.vault_root.clone())
+            .ok_or_else(|| "session-not-found".to_string())
+    }
+
+    fn send_line(&self, session_id: &str, line: &str) -> Result<(), String> {
+        // 등록부 잠금과 writer 잠금을 동시에 쥐지 않는다. 자식 하나의 stdin이
+        // 막혀도 다른 세션의 send/stop, 자식 종료 정리, 앱 종료 drain은 계속
+        // 진행되어야 막힌 프로세스 자체를 끊을 수 있다.
+        let handle = {
+            let map = self
+                .0
+                .lock()
+                .map_err(|_| "session-registry-poisoned".to_string())?;
+            Arc::clone(map.get(session_id).ok_or("session-not-found")?)
+        };
+        let mut stdin = handle
+            .stdin
+            .lock()
+            .map_err(|_| "session-stdin-poisoned".to_string())?;
+        stdin
+            .write_all(line.as_bytes())
+            .and_then(|_| stdin.write_all(b"\n"))
+            .and_then(|_| stdin.flush())
+            .map_err(|err| format!("write-failed:{err}"))
+    }
+
+    fn take_pid(&self, session_id: &str) -> Result<Option<u32>, String> {
+        Ok(self
+            .0
+            .lock()
+            .map_err(|_| "session-registry-poisoned".to_string())?
+            .remove(session_id)
+            .map(|handle| handle.pid))
+    }
+
+    fn remove(&self, session_id: &str) -> Result<(), String> {
+        self.0
+            .lock()
+            .map_err(|_| "session-registry-poisoned".to_string())?
+            .remove(session_id);
+        Ok(())
+    }
+
+    fn drain_pids(&self) -> Result<Vec<u32>, String> {
+        Ok(self
+            .0
+            .lock()
+            .map_err(|_| "session-registry-poisoned".to_string())?
+            .drain()
+            .map(|(_, handle)| handle.pid)
+            .collect())
+    }
 }
 
 /// 세션 이름은 늘어나기만 하는 번호로 만든다. pid 를 이름으로 쓰면 OS 가 pid 를
@@ -854,8 +939,8 @@ fn acp_start(
         read_text: &read_text,
         login_ok: &login_ok,
     };
-    let home =
-        std::env::var_os(if cfg!(windows) { "USERPROFILE" } else { "HOME" }).map(PathBuf::from);
+    let home = std::env::var_os(if cfg!(windows) { "USERPROFILE" } else { "HOME" })
+        .map(PathBuf::from);
     let launch = acp::resolve_launch(
         &runtime_id,
         home.as_deref(),
@@ -871,48 +956,19 @@ fn acp_start(
         .path()
         .app_data_dir()
         .map_err(|err| format!("app-data-dir-unavailable:{err}"))?;
-    //
-    // ⚠️ **격리를 못 한다고 띄우기를 막지는 않는다** (2026-08-16, 문서 담당이
-    // 코드를 읽고 잡은 결함). 처음엔 격리 실패를 `?` 로 올려 버려서, 격리 표에
-    // 없는 실행기는 **띄우기 자체가 실패**했다 — 그런데 화면은 그것들을
-    // 「준비됨」이라고 말하고 있었다. 화면과 실제가 어긋나면 그건 화면이
-    // 거짓말하는 것이고, 여기서는 목록 전체가 그 상태였다.
-    //
-    // 그래서 갈래는 둘이다: 격리할 수 있으면 격리하고, 못 하면 **격리 없이
-    // 띄우되 화면이 그 사실을 이미 말해 두었다**(「확인 안 됨」 표시). 알고
-    // 고르게 하는 것과, 못 하게 막는 것은 다른 일이다.
-    //
-    // ⚠️ **못 하는 것과 하려다 실패한 것은 다르다** (2026-08-16 검수에서 적발).
-    //
-    // 위 문단의 판단은 「격리 표에 없는 실행기」에 대해서는 옳다 — 화면이 그것을
-    // 「확인 안 됨」이라고 이미 말해 두었으니 알고 고르는 것이다. 그런데 `.ok()`
-    // 는 **표에 있는 실행기의 실패까지** 같이 삼켰다. 그 경우는 완전히 다르다:
-    // 화면은 그 실행기를 「관문 있음」이라고 말하고 있는데, 세션은 사용자의
-    // `~/.claude/settings.json` 을 그대로 물려받아 뜬다. 이 파일이 직접 잰
-    // 결과가 `acp.rs` 에 적혀 있다 — 그 상태의 세션은 *"작업 폴더 밖에 파일을
-    // 쓰면서 한 번도 묻지 않았고, 터미널까지 실행했다."*
-    //
-    // 그래서 표에 있는데 실패한 경우는 **말한다.** 띄우기를 막지는 않는다(그건
-    // 위 판단 그대로다) — 다만 화면이 지키지 못할 약속을 계속 하게 두지 않는다.
-    let mut isolation_failure: Option<String> = None;
-    let isolation = acp::config_env_for(&runtime_id).and_then(|env| {
-        match acp::prepare_isolated_config(&runtime_id, &app_data, home.as_deref()) {
-            Ok(dir) => Some((env, dir)),
-            Err(reason) => {
-                isolation_failure = Some(reason);
-                None
-            }
-        }
-    });
+    // 격리를 **지원하지 않는 것**은 None 으로 정직하게 띄울 수 있다. 그러나
+    // 격리를 지원한다고 표시한 실행기의 준비 실패는 시작 실패다. 그 상태로
+    // 띄우면 사용자의 전역 허용 목록을 물려받고, 화면이 약속한 관문은 없다.
+    let isolation = acp::prepare_runtime_isolation(&runtime_id, &app_data, home.as_deref())?;
 
     let mut command = Command::new(&launch.program);
     command
         .args(&launch.args)
         .current_dir(&root)
-        .env("PATH", &launch.path_env)
         .stdin(Stdio::piped())
         .stdout(Stdio::piped())
         .stderr(Stdio::piped());
+    acp::apply_runtime_environment(&mut command, &runtime_id, &launch.path_env);
     if let Some((env, dir)) = &isolation {
         command.env(env, dir);
     }
@@ -953,11 +1009,7 @@ fn acp_start(
     // 영원히 남고, 앱을 끌 때 `terminate_all_acp_sessions` 가 그 pid 를 죽인다 —
     // 그때 그 번호는 **다른 프로그램**의 것일 수 있다(그리고 프로세스 그룹으로
     // 신호를 보낸다).
-    sessions
-        .0
-        .lock()
-        .map_err(|_| "session-registry-poisoned".to_string())?
-        .insert(session_id.clone(), AcpSessionHandle { pid, stdin });
+    sessions.insert(session_id.clone(), pid, root, stdin)?;
 
     // 자식을 기다리는 스레드가 종료를 알리고 등록부에서 지운다. 여기서 지우지
     // 않으면 이미 죽은 세션에 계속 쓰려 하고, 그 실패는 사용자에게 「보냈는데
@@ -968,24 +1020,10 @@ fn acp_start(
         std::thread::spawn(move || {
             let code = child.wait().ok().and_then(|status| status.code());
             if let Some(state) = app.try_state::<AcpSessions>() {
-                if let Ok(mut map) = state.0.lock() {
-                    map.remove(&session_id);
-                }
+                let _ = state.remove(&session_id);
             }
             let _ = app.emit("acp://exit", AcpExitEvent { session_id, code });
         });
-    }
-
-    // 관문을 세우려다 실패했으면 그 사실을 화면에 보낸다 — 등록이 끝난 뒤에
-    // 보내야 화면이 이 세션의 것으로 받는다.
-    if let Some(reason) = isolation_failure {
-        let _ = app.emit(
-            "acp://notice",
-            AcpNoticeEvent {
-                session_id: session_id.clone(),
-                message: format!("gate-off:isolation-failed:{reason}"),
-            },
-        );
     }
 
     Ok(session_id)
@@ -1039,10 +1077,26 @@ fn spawn_acp_line_pump<R: std::io::Read + Send + 'static>(
 /// **판정을 화면 쪽에 다시 구현하지 않는다.** 두 벌이 되면 한쪽만 느슨해지는
 /// 쪽이 기본값이 되고, 그 한쪽이 하필 사용자에게 보이는 쪽이다. 게다가 이
 /// 판정은 심볼릭 링크를 풀고 아직 없는 경로의 조상을 정규화해야 해서, 브라우저
-/// 쪽에서는 애초에 정확히 할 수 없다.
+/// 쪽에서는 애초에 정확히 할 수 없다. 더 중요하게, 볼트 루트는 화면이 보내는
+/// 문자열을 믿지 않고 `acp_start` 때 검증해 세션에 묶어 둔 값만 쓴다.
+fn permission_verdict_for_session(
+    sessions: &AcpSessions,
+    session_id: &str,
+    file_path: Option<&str>,
+) -> acp::PermissionVerdict {
+    sessions
+        .vault_root(session_id)
+        .map(|root| acp::permission_verdict(&root, file_path))
+        .unwrap_or(acp::PermissionVerdict::Ask)
+}
+
 #[tauri::command]
-fn acp_permission_verdict(vault_root: String, file_path: Option<String>) -> String {
-    let verdict = acp::permission_verdict(Path::new(&vault_root), file_path.as_deref());
+fn acp_permission_verdict(
+    sessions: State<'_, AcpSessions>,
+    session_id: String,
+    file_path: Option<String>,
+) -> String {
+    let verdict = permission_verdict_for_session(&sessions, &session_id, file_path.as_deref());
     match verdict {
         acp::PermissionVerdict::AllowInsideVault => "allow-inside-vault".to_string(),
         acp::PermissionVerdict::Ask => "ask".to_string(),
@@ -1052,30 +1106,18 @@ fn acp_permission_verdict(vault_root: String, file_path: Option<String>) -> Stri
 /// 세션에 한 줄을 보낸다. 줄바꿈은 여기서 붙인다 — 호출자가 잊으면 상대는
 /// 영원히 기다리고, 그 증상은 「멈췄다」로만 보인다.
 #[tauri::command]
-fn acp_send(sessions: State<'_, AcpSessions>, session_id: String, line: String) -> Result<(), String> {
-    let mut map = sessions
-        .0
-        .lock()
-        .map_err(|_| "session-registry-poisoned".to_string())?;
-    let handle = map.get_mut(&session_id).ok_or("session-not-found")?;
-    handle
-        .stdin
-        .write_all(line.as_bytes())
-        .and_then(|_| handle.stdin.write_all(b"\n"))
-        .and_then(|_| handle.stdin.flush())
-        .map_err(|err| format!("write-failed:{err}"))
+fn acp_send(
+    sessions: State<'_, AcpSessions>,
+    session_id: String,
+    line: String,
+) -> Result<(), String> {
+    sessions.send_line(&session_id, &line)
 }
 
 /// 세션과 그것이 띄운 모든 것을 끝낸다.
 #[tauri::command]
 fn acp_stop(sessions: State<'_, AcpSessions>, session_id: String) -> Result<(), String> {
-    let pid = {
-        let mut map = sessions
-            .0
-            .lock()
-            .map_err(|_| "session-registry-poisoned".to_string())?;
-        map.remove(&session_id).map(|handle| handle.pid)
-    };
+    let pid = sessions.take_pid(&session_id)?;
     match pid {
         Some(pid) => acp::terminate_tree(pid),
         // 이미 끝난 세션을 끝내라는 것은 실패가 아니다.
@@ -1091,8 +1133,8 @@ fn terminate_all_acp_sessions(app: &AppHandle) {
     let Some(state) = app.try_state::<AcpSessions>() else {
         return;
     };
-    let handles: Vec<u32> = match state.0.lock() {
-        Ok(mut map) => map.drain().map(|(_, handle)| handle.pid).collect(),
+    let handles = match state.drain_pids() {
+        Ok(handles) => handles,
         Err(_) => return,
     };
     for pid in handles {
@@ -1126,7 +1168,7 @@ fn terminate_all_acp_sessions(app: &AppHandle) {
 #[tauri::command]
 fn acp_detect_runtimes(probe_login: Option<bool>) -> Vec<acp::AcpRuntimeStatus> {
     let (is_executable, list_dir, read_text, login_ok) = acp::real_probe();
-    let skip = |_: &std::path::Path, _: &[&str], _: &str| None;
+    let skip = |_: &str, _: &std::path::Path, _: &[&str], _: &str| None;
     let probe = acp::FsProbe {
         is_executable: &is_executable,
         list_dir: &list_dir,
@@ -1137,8 +1179,8 @@ fn acp_detect_runtimes(probe_login: Option<bool>) -> Vec<acp::AcpRuntimeStatus> 
             &skip
         },
     };
-    let home = std::env::var_os(if cfg!(windows) { "USERPROFILE" } else { "HOME" })
-        .map(PathBuf::from);
+    let home =
+        std::env::var_os(if cfg!(windows) { "USERPROFILE" } else { "HOME" }).map(PathBuf::from);
     let path = std::env::var_os("PATH");
     acp::detect_runtimes(home.as_deref(), path.as_deref(), &probe)
 }
@@ -1655,16 +1697,47 @@ fn read_vault_binary_file(
 ///
 /// 이름 바꾸기는 같은 파일 시스템 안에서 원자적이다. 그래서 어느 순간에 죽어도
 /// 파일은 **옛 내용 아니면 새 내용**이지, 반쪽이 되지 않는다.
+#[cfg(any(not(unix), test))]
 fn write_text_atomically(path: &std::path::Path, content: &str) -> Result<(), String> {
     use std::io::Write;
 
-    let temporary = path.with_extension(format!(
-        "{}.oatlas-tmp-{}",
-        path.extension().and_then(|e| e.to_str()).unwrap_or(""),
-        std::process::id()
-    ));
+    static TEMP_SEQUENCE: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(0);
+
+    let parent = path
+        .parent()
+        .ok_or_else(|| "atomic write target must have a parent directory".to_string())?;
+    let file_name = path
+        .file_name()
+        .ok_or_else(|| "atomic write target must include a file name".to_string())?
+        .to_string_lossy();
+    let nonce = std::time::SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .map_err(|err| err.to_string())?
+        .as_nanos();
+    let mut created = None;
+    for _ in 0..64 {
+        let sequence = TEMP_SEQUENCE.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+        let candidate = parent.join(format!(
+            ".{file_name}.oatlas-tmp-{}-{nonce:x}-{sequence:x}",
+            std::process::id()
+        ));
+        match fs::OpenOptions::new()
+            .write(true)
+            .create_new(true)
+            .open(&candidate)
+        {
+            Ok(file) => {
+                created = Some((candidate, file));
+                break;
+            }
+            Err(err) if err.kind() == std::io::ErrorKind::AlreadyExists => continue,
+            Err(err) => return Err(err.to_string()),
+        }
+    }
+    let (temporary, mut file) = created.ok_or_else(|| {
+        "could not create a private temporary file for the atomic write".to_string()
+    })?;
     let result = (|| -> std::io::Result<()> {
-        let mut file = fs::File::create(&temporary)?;
         file.write_all(content.as_bytes())?;
         // 이름을 바꾸기 전에 디스크에 확정한다 — 안 하면 이름만 새것이고
         // 내용은 아직 캐시에 있는 상태로 전원이 나갈 수 있다.
@@ -1685,8 +1758,43 @@ fn write_vault_text_file(
     relative_path: String,
     content: String,
 ) -> Result<(), String> {
-    let path = resolve_write_target_inside(&root_path, &relative_path)?;
-    write_text_atomically(&path, &content)
+    write_vault_text_file_after_validation(root_path, relative_path, content, || {})
+}
+
+fn write_vault_text_file_after_validation(
+    root_path: String,
+    relative_path: String,
+    content: String,
+    after_validation: impl FnOnce(),
+) -> Result<(), String> {
+    #[cfg(unix)]
+    {
+        let root = canonical_root(&root_path)?;
+        let relative = normalize_relative_path(&relative_path)?;
+        let parent_relative = relative.parent().unwrap_or_else(|| Path::new(""));
+        let parent_relative = parent_relative.to_string_lossy();
+        resolve_directory_target_inside(&root_path, &parent_relative)?;
+        let target = root.join(&relative);
+        match fs::symlink_metadata(&target) {
+            Ok(metadata) if metadata.file_type().is_symlink() => {
+                return Err("resolved path must stay inside the selected vault".into());
+            }
+            Ok(_) => {}
+            Err(error) if error.kind() == std::io::ErrorKind::NotFound => {}
+            Err(error) => return Err(error.to_string()),
+        }
+        let root_handle = agent_setup::open_absolute_directory_no_follow(&root)?;
+        let (parent, file_name) = agent_setup::open_entry_parent(&root_handle, &relative_path)?;
+        after_validation();
+        agent_setup::write_entry_atomically(&parent, &file_name, &content, 0o666)
+    }
+
+    #[cfg(not(unix))]
+    {
+        let path = resolve_write_target_inside(&root_path, &relative_path)?;
+        after_validation();
+        write_text_atomically(&path, &content)
+    }
 }
 
 #[tauri::command]
@@ -1701,7 +1809,39 @@ fn remove_vault_entry(
     {
         return Err("refusing to remove the selected vault root".into());
     }
-    let path = resolve_existing_inside(&root_path, &relative_path)?;
+    let path = resolve_inside(&root_path, &relative_path)?;
+    let root = canonical_root(&root_path)?;
+    let parent = path
+        .parent()
+        .ok_or_else(|| "remove target must have a parent directory".to_string())?;
+    let canonical_parent = fs::canonicalize(parent).map_err(|err| err.to_string())?;
+    if !canonical_parent.starts_with(&root) {
+        return Err("resolved path must stay inside the selected vault".into());
+    }
+
+    let entry_metadata = fs::symlink_metadata(&path).map_err(|err| err.to_string())?;
+    if entry_metadata.file_type().is_symlink() {
+        let canonical_target = fs::canonicalize(&path).map_err(|err| err.to_string())?;
+        if !canonical_target.starts_with(&root) {
+            return Err("resolved path must stay inside the selected vault".into());
+        }
+
+        #[cfg(windows)]
+        {
+            if fs::metadata(&path)
+                .map_err(|err| err.to_string())?
+                .is_dir()
+            {
+                return fs::remove_dir(path).map_err(|err| err.to_string());
+            }
+        }
+        return fs::remove_file(path).map_err(|err| err.to_string());
+    }
+
+    let canonical_path = fs::canonicalize(&path).map_err(|err| err.to_string())?;
+    if !canonical_path.starts_with(&root) {
+        return Err("resolved path must stay inside the selected vault".into());
+    }
     let metadata = fs::metadata(&path).map_err(|err| err.to_string())?;
     if metadata.is_dir() {
         if recursive.unwrap_or(false) {
@@ -1716,10 +1856,48 @@ fn remove_vault_entry(
 
 #[tauri::command]
 fn ensure_vault_directory(root_path: String, relative_path: String) -> Result<(), String> {
-    let path = resolve_directory_target_inside(&root_path, &relative_path)?;
-    fs::create_dir_all(&path).map_err(|err| err.to_string())?;
-    ensure_inside_canonical(&root_path, &path)?;
-    Ok(())
+    ensure_vault_directory_after_validation(root_path, relative_path, || {})
+}
+
+fn ensure_vault_directory_after_validation(
+    root_path: String,
+    relative_path: String,
+    after_validation: impl FnOnce(),
+) -> Result<(), String> {
+    #[cfg(unix)]
+    {
+        let root = canonical_root(&root_path)?;
+        let relative = normalize_relative_path(&relative_path)?;
+        resolve_directory_target_inside(&root_path, &relative_path)?;
+        if relative.as_os_str().is_empty() {
+            after_validation();
+            return Ok(());
+        }
+        let directory_name = relative
+            .file_name()
+            .ok_or_else(|| "directory target must include a final name".to_string())?;
+        let parent_path = relative.parent().unwrap_or_else(|| Path::new(""));
+        let root_handle = agent_setup::open_absolute_directory_no_follow(&root)?;
+        let parent =
+            agent_setup::open_or_create_relative_directory(&root_handle, parent_path, 0o777)?;
+        after_validation();
+        let directory = agent_setup::open_or_create_relative_directory(
+            &parent,
+            Path::new(directory_name),
+            0o777,
+        )?;
+        directory.sync_all().map_err(|error| error.to_string())?;
+        parent.sync_all().map_err(|error| error.to_string())
+    }
+
+    #[cfg(not(unix))]
+    {
+        let path = resolve_directory_target_inside(&root_path, &relative_path)?;
+        after_validation();
+        fs::create_dir_all(&path).map_err(|err| err.to_string())?;
+        ensure_inside_canonical(&root_path, &path)?;
+        Ok(())
+    }
 }
 
 #[tauri::command]
@@ -1877,7 +2055,7 @@ fn start_vault_watch(
                     event
                         .paths
                         .iter()
-                        .any(|path| path.extension().map_or(false, |ext| ext == "md"))
+                        .any(|path| path.extension().is_some_and(|ext| ext == "md"))
                 });
                 if md_changed {
                     let _ = app_handle.emit("vault-changed", ());
@@ -4688,6 +4866,189 @@ pub fn run() {
 mod tests {
     use super::*;
 
+    struct ControlledWriter {
+        gate: Option<(
+            std::sync::mpsc::SyncSender<()>,
+            std::sync::mpsc::Receiver<()>,
+        )>,
+        bytes: Arc<Mutex<Vec<u8>>>,
+    }
+
+    impl ControlledWriter {
+        fn blocked(
+            entered: std::sync::mpsc::SyncSender<()>,
+            release: std::sync::mpsc::Receiver<()>,
+        ) -> Self {
+            Self {
+                gate: Some((entered, release)),
+                bytes: Arc::new(Mutex::new(Vec::new())),
+            }
+        }
+
+        fn recording() -> Self {
+            Self {
+                gate: None,
+                bytes: Arc::new(Mutex::new(Vec::new())),
+            }
+        }
+    }
+
+    impl Write for ControlledWriter {
+        fn write(&mut self, buf: &[u8]) -> std::io::Result<usize> {
+            if let Some((entered, release)) = self.gate.take() {
+                entered
+                    .send(())
+                    .map_err(|_| std::io::Error::other("test-entered-channel-closed"))?;
+                release
+                    .recv()
+                    .map_err(|_| std::io::Error::other("test-release-channel-closed"))?;
+            }
+            self.bytes
+                .lock()
+                .map_err(|_| std::io::Error::other("test-writer-poisoned"))?
+                .extend_from_slice(buf);
+            Ok(buf.len())
+        }
+
+        fn flush(&mut self) -> std::io::Result<()> {
+            Ok(())
+        }
+    }
+
+    fn while_one_session_write_is_blocked<T, F>(action: F) -> Result<T, String>
+    where
+        T: Send + 'static,
+        F: FnOnce(Arc<AcpSessions>) -> T + Send + 'static,
+    {
+        let sessions = Arc::new(AcpSessions::default());
+        let (entered_tx, entered_rx) = std::sync::mpsc::sync_channel(1);
+        let (release_tx, release_rx) = std::sync::mpsc::sync_channel(1);
+        sessions
+            .insert(
+                "blocked".to_string(),
+                11,
+                PathBuf::from("/vault-blocked"),
+                ControlledWriter::blocked(entered_tx, release_rx),
+            )
+            .unwrap();
+        sessions
+            .insert(
+                "other".to_string(),
+                22,
+                PathBuf::from("/vault-other"),
+                ControlledWriter::recording(),
+            )
+            .unwrap();
+
+        let blocked_sessions = Arc::clone(&sessions);
+        let blocked = std::thread::spawn(move || blocked_sessions.send_line("blocked", "wait"));
+        entered_rx
+            .recv_timeout(Duration::from_secs(1))
+            .map_err(|err| format!("blocked writer did not start: {err}"))?;
+
+        let (started_tx, started_rx) = std::sync::mpsc::sync_channel(1);
+        let (done_tx, done_rx) = std::sync::mpsc::sync_channel(1);
+        let action_thread = std::thread::spawn(move || {
+            let _ = started_tx.send(());
+            let result = action(sessions);
+            let _ = done_tx.send(result);
+        });
+        started_rx
+            .recv_timeout(Duration::from_secs(1))
+            .map_err(|err| format!("registry action did not start: {err}"))?;
+        let outcome = done_rx
+            .recv_timeout(Duration::from_millis(250))
+            .map_err(|err| format!("registry action waited for blocked stdin: {err}"));
+
+        let _ = release_tx.send(());
+        blocked
+            .join()
+            .map_err(|_| "blocked send thread panicked".to_string())?
+            .map_err(|err| format!("blocked send failed: {err}"))?;
+        action_thread
+            .join()
+            .map_err(|_| "registry action thread panicked".to_string())?;
+        outcome
+    }
+
+    #[test]
+    fn blocked_send_in_one_session_does_not_block_another_session() {
+        let result = while_one_session_write_is_blocked(|sessions| {
+            sessions.send_line("other", "still-live")
+        })
+        .expect("another session must not share the blocked stdin lock");
+        assert_eq!(result, Ok(()));
+    }
+
+    #[test]
+    fn blocked_send_does_not_block_stop_take() {
+        let result = while_one_session_write_is_blocked(|sessions| sessions.take_pid("blocked"))
+            .expect("stop must be able to take the pid and break the blocked pipe");
+        assert_eq!(result, Ok(Some(11)));
+    }
+
+    #[test]
+    fn blocked_send_does_not_delay_child_exit_cleanup() {
+        let result = while_one_session_write_is_blocked(|sessions| sessions.remove("blocked"))
+            .expect("child exit cleanup must not wait for stdin");
+        assert_eq!(result, Ok(()));
+    }
+
+    #[test]
+    fn blocked_send_does_not_delay_shutdown_drain() {
+        let result = while_one_session_write_is_blocked(|sessions| sessions.drain_pids())
+            .expect("shutdown must collect pids without waiting for stdin");
+        let mut pids = result.unwrap();
+        pids.sort_unstable();
+        assert_eq!(pids, vec![11, 22]);
+    }
+
+    #[test]
+    fn permission_verdict_uses_the_registered_session_root_and_unknown_sessions_ask() {
+        let base = std::env::temp_dir().join(format!(
+            "atlas-acp-session-root-{}",
+            std::process::id()
+        ));
+        let vault = base.join("vault");
+        let outside = base.join("outside.md");
+        std::fs::create_dir_all(&vault).unwrap();
+        std::fs::write(&outside, "outside").unwrap();
+
+        let sessions = AcpSessions::default();
+        sessions
+            .insert(
+                "bound-session".to_string(),
+                33,
+                std::fs::canonicalize(&vault).unwrap(),
+                ControlledWriter::recording(),
+            )
+            .unwrap();
+
+        assert_eq!(
+            permission_verdict_for_session(
+                &sessions,
+                "bound-session",
+                vault.join("inside.md").to_str()
+            ),
+            acp::PermissionVerdict::AllowInsideVault
+        );
+        assert_eq!(
+            permission_verdict_for_session(&sessions, "bound-session", outside.to_str()),
+            acp::PermissionVerdict::Ask
+        );
+        assert_eq!(
+            permission_verdict_for_session(
+                &sessions,
+                "caller-invented-session",
+                outside.to_str()
+            ),
+            acp::PermissionVerdict::Ask,
+            "등록되지 않은 세션은 화면이 어떤 경로를 보내도 자동 허용하면 안 된다"
+        );
+
+        let _ = std::fs::remove_dir_all(&base);
+    }
+
     #[test]
     fn normalize_relative_path_accepts_nested_vault_paths() {
         assert_eq!(
@@ -5039,6 +5400,34 @@ mod tests {
         fs::remove_dir_all(root).ok();
     }
 
+    #[cfg(unix)]
+    #[test]
+    fn remove_vault_entry_unlinks_an_internal_symlink_without_deleting_its_target() {
+        use std::os::unix::fs::symlink;
+
+        let nonce = std::time::SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .unwrap()
+            .as_nanos();
+        let root = std::env::temp_dir().join(format!("ontology-atlas-remove-link-{nonce}"));
+        fs::create_dir_all(&root).unwrap();
+        let target = root.join("real.md");
+        let alias = root.join("alias.md");
+        fs::write(&target, "keep me").unwrap();
+        symlink(&target, &alias).unwrap();
+
+        remove_vault_entry(
+            root.to_string_lossy().to_string(),
+            "alias.md".into(),
+            Some(false),
+        )
+        .unwrap();
+
+        assert!(!alias.exists(), "링크 엔트리가 남았다");
+        assert_eq!(fs::read_to_string(&target).unwrap(), "keep me");
+        fs::remove_dir_all(root).ok();
+    }
+
     #[test]
     fn inspect_project_source_returns_a_deterministic_bounded_folder_inventory() {
         let root = std::env::temp_dir().join(format!(
@@ -5329,7 +5718,137 @@ mod tests {
 
 #[cfg(test)]
 mod atomic_write_tests {
-    use super::write_text_atomically;
+    use super::{
+        ensure_vault_directory_after_validation, write_text_atomically,
+        write_vault_text_file_after_validation,
+    };
+
+    #[cfg(unix)]
+    #[test]
+    fn vault_write_is_not_redirected_when_parent_is_replaced_after_validation() {
+        use std::os::unix::fs::symlink;
+
+        let base = std::env::temp_dir().join(format!(
+            "oatlas-vault-parent-race-{}-{}",
+            std::process::id(),
+            std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)
+                .unwrap()
+                .as_nanos()
+        ));
+        let vault = base.join("vault");
+        let sidecar = vault.join(".ontology-atlas");
+        let original_sidecar = vault.join(".ontology-atlas-original");
+        let outside = base.join("outside");
+        std::fs::create_dir_all(&sidecar).unwrap();
+        std::fs::create_dir_all(&outside).unwrap();
+        std::fs::write(sidecar.join("project-sources.json"), "inside-old").unwrap();
+        std::fs::write(outside.join("project-sources.json"), "outside").unwrap();
+
+        let result = write_vault_text_file_after_validation(
+            vault.to_string_lossy().into_owned(),
+            ".ontology-atlas/project-sources.json".into(),
+            "inside-new".into(),
+            || {
+                std::fs::rename(&sidecar, &original_sidecar).unwrap();
+                symlink(&outside, &sidecar).unwrap();
+            },
+        );
+
+        assert!(
+            result.is_ok(),
+            "안정된 원래 부모 쓰기는 성공해야 한다: {result:?}"
+        );
+        assert_eq!(
+            std::fs::read_to_string(outside.join("project-sources.json")).unwrap(),
+            "outside",
+            "검증 뒤 생긴 부모 symlink를 따라 볼트 밖 파일을 바꿨다"
+        );
+        assert_eq!(
+            std::fs::read_to_string(original_sidecar.join("project-sources.json")).unwrap(),
+            "inside-new"
+        );
+        std::fs::remove_dir_all(&base).ok();
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn vault_mkdir_has_no_outside_effect_when_parent_is_replaced_after_validation() {
+        use std::os::unix::fs::symlink;
+
+        let base = std::env::temp_dir().join(format!(
+            "oatlas-vault-mkdir-race-{}-{}",
+            std::process::id(),
+            std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)
+                .unwrap()
+                .as_nanos()
+        ));
+        let vault = base.join("vault");
+        let sidecar = vault.join(".ontology-atlas");
+        let original_sidecar = vault.join(".ontology-atlas-original");
+        let outside = base.join("outside");
+        std::fs::create_dir_all(&sidecar).unwrap();
+        std::fs::create_dir_all(&outside).unwrap();
+
+        let result = ensure_vault_directory_after_validation(
+            vault.to_string_lossy().into_owned(),
+            ".ontology-atlas/new-dir".into(),
+            || {
+                std::fs::rename(&sidecar, &original_sidecar).unwrap();
+                symlink(&outside, &sidecar).unwrap();
+            },
+        );
+
+        assert!(
+            result.is_ok(),
+            "안정된 원래 부모 mkdir은 성공해야 한다: {result:?}"
+        );
+        assert!(
+            !outside.join("new-dir").exists(),
+            "검증 뒤 생긴 부모 symlink를 따라 볼트 밖 디렉터리를 만들었다"
+        );
+        assert!(original_sidecar.join("new-dir").is_dir());
+        std::fs::remove_dir_all(&base).ok();
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn vault_write_replaces_a_hardlink_without_modifying_its_other_path() {
+        use std::os::unix::fs::MetadataExt;
+
+        let base = std::env::temp_dir().join(format!(
+            "oatlas-vault-hardlink-{}-{}",
+            std::process::id(),
+            std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)
+                .unwrap()
+                .as_nanos()
+        ));
+        let vault = base.join("vault");
+        let outside = base.join("outside.md");
+        let target = vault.join("note.md");
+        std::fs::create_dir_all(&vault).unwrap();
+        std::fs::write(&outside, "outside").unwrap();
+        std::fs::hard_link(&outside, &target).unwrap();
+
+        write_vault_text_file_after_validation(
+            vault.to_string_lossy().into_owned(),
+            "note.md".into(),
+            "inside-new".into(),
+            || {},
+        )
+        .unwrap();
+
+        assert_eq!(std::fs::read_to_string(&outside).unwrap(), "outside");
+        assert_eq!(std::fs::read_to_string(&target).unwrap(), "inside-new");
+        assert_ne!(
+            std::fs::metadata(&outside).unwrap().ino(),
+            std::fs::metadata(&target).unwrap().ino(),
+            "vault entry가 기존 외부 inode와의 링크를 끊지 않았다"
+        );
+        std::fs::remove_dir_all(&base).ok();
+    }
 
     /// **원본을 먼저 비우지 않는다.**
     ///
@@ -5370,6 +5889,39 @@ mod atomic_write_tests {
 
         assert!(result.is_err(), "디렉터리를 파일로 덮어썼다");
         assert!(target.is_dir(), "대상이 파일로 바뀌었다");
+        std::fs::remove_dir_all(&dir).ok();
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn a_preexisting_temporary_symlink_cannot_redirect_an_atomic_write() {
+        use std::os::unix::fs::symlink;
+
+        let dir = std::env::temp_dir().join(format!(
+            "oatlas-atomic-link-{}-{}",
+            std::process::id(),
+            std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)
+                .unwrap()
+                .as_nanos()
+        ));
+        std::fs::create_dir_all(&dir).unwrap();
+        let target = dir.join("note.md");
+        let sentinel = dir.join("outside-sentinel.txt");
+        let predictable_temporary = target.with_extension(format!(
+            "{}.oatlas-tmp-{}",
+            target.extension().and_then(|e| e.to_str()).unwrap_or(""),
+            std::process::id()
+        ));
+        std::fs::write(&target, "old").unwrap();
+        std::fs::write(&sentinel, "outside").unwrap();
+        symlink(&sentinel, &predictable_temporary).unwrap();
+
+        write_text_atomically(&target, "new").unwrap();
+
+        assert_eq!(std::fs::read_to_string(&sentinel).unwrap(), "outside");
+        assert_eq!(std::fs::read_to_string(&target).unwrap(), "new");
+        assert_ne!(std::fs::canonicalize(&target).unwrap(), sentinel);
         std::fs::remove_dir_all(&dir).ok();
     }
 }

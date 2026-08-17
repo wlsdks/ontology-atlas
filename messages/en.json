@@ -3681,6 +3681,8 @@
     "untitled": "Untitled chat",
     "model": "Model",
     "mode": "Mode",
+    "modeUnverified": "{name} · Not checked",
+    "modeUnverifiedHint": "Atlas has not yet verified whether this mode asks before working outside the folder.",
     "runtimePicker": "Which tool to chat with",
     "tool": {
       "connect": "Connected to the folder",

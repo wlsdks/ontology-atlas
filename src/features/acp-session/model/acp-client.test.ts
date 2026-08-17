@@ -40,6 +40,26 @@ function fakeTransport() {
   };
 }
 
+/** WebView가 내려가는 경합처럼 모든 IPC 전송이 거절되는 통로. */
+function rejectingTransport() {
+  let listener: ((line: string) => void) | null = null;
+  const transport: AcpTransport = {
+    send: () => Promise.reject(new Error('bridge down')),
+    subscribe: (onLine) => {
+      listener = onLine;
+      return () => {
+        listener = null;
+      };
+    },
+  };
+  return {
+    transport,
+    emit(payload: unknown) {
+      listener?.(JSON.stringify(payload));
+    },
+  };
+}
+
 /** 실측(2026-08-16)에서 실제로 받은 권한 요청의 모양. */
 function permissionRequest(filePath: string, id = 7) {
   return {
@@ -265,6 +285,36 @@ describe('ACP 클라이언트 — 요청/응답과 잡음', () => {
     await expect(bad).rejects.toThrow(/sessionId/);
   });
 
+  it('아직 재 보지 않은 모드는 목록에 남기되 안전 상태도 함께 돌려준다', async () => {
+    const t = fakeTransport();
+    const client = createAcpClient(t.transport, { verdict: alwaysAsk, askUser: async () => null });
+
+    const pending = client.newSession({ cwd: '/vault' });
+    t.reply({
+      sessionId: 's-1',
+      modes: {
+        currentModeId: 'default',
+        availableModes: [
+          { id: 'default', name: 'Default' },
+          { id: 'turbo-yolo', name: 'Turbo' },
+          { id: 'bypassPermissions', name: 'Bypass' },
+          { name: 'No identifier' },
+        ],
+      },
+    });
+
+    await expect(pending).resolves.toMatchObject({
+      choices: {
+        modes: [
+          { id: 'default', name: 'Default' },
+          { id: 'turbo-yolo', name: 'Turbo' },
+        ],
+        unverifiedModeIds: ['turbo-yolo'],
+        droppedModeCount: 1,
+      },
+    });
+  });
+
   it('session/update 는 화면으로 흘리고 답하지 않는다', async () => {
     const t = fakeTransport();
     const updates: Array<Record<string, unknown>> = [];
@@ -312,6 +362,38 @@ describe('ACP 클라이언트 — 요청/응답과 잡음', () => {
 });
 
 describe('ACP 클라이언트 — 답이 안 오면 언젠가 끝난다', () => {
+  it.each([
+    ['initialize', (client: ReturnType<typeof createAcpClient>) => client.initialize()],
+    [
+      'session/prompt',
+      (client: ReturnType<typeof createAcpClient>) =>
+        client.prompt('s-1', [{ type: 'text', text: '이 폴더를 훑어봐' }]),
+    ],
+  ])('%s 전송이 거절되면 timeout 없이 즉시 실패하고 늦은 답은 무시한다', async (method, run) => {
+    const t = rejectingTransport();
+    const notices: string[] = [];
+    const client = createAcpClient(t.transport, {
+      verdict: alwaysAsk,
+      askUser: async () => null,
+      onProtocolNotice: (message) => notices.push(message),
+    });
+    let failure: unknown;
+    const settled = run(client).catch((error: unknown) => {
+      failure = error;
+    });
+
+    await vi.waitFor(() => expect(notices).toContain('send-failed: Error: bridge down'));
+    try {
+      expect(failure).toBeInstanceOf(Error);
+      expect(String(failure)).toContain(`acp-send-failed: ${method}`);
+      t.emit({ jsonrpc: '2.0', id: 1, result: { stopReason: 'late' } });
+      expect(String(failure)).toContain(`acp-send-failed: ${method}`);
+    } finally {
+      client.dispose();
+      await settled;
+    }
+  });
+
   it('악수에 답이 없으면 시간이 지나 실패한다 — 「켜는 중」에 붙박이지 않는다', async () => {
     /*
      * 2026-08-16 검수에서 적발. 어댑터가 뜨긴 했는데 답을 안 하는 상태(잘못된
@@ -322,10 +404,12 @@ describe('ACP 클라이언트 — 답이 안 오면 언젠가 끝난다', () => 
     try {
       const t = fakeTransport();
       const client = createAcpClient(t.transport, { verdict: alwaysAsk, askUser: async () => null });
-      const promise = client.initialize();
+      // 타이머를 움직이기 전에 거절 관찰자를 붙인다. 늦게 붙이면 동작은 맞아도
+      // Vitest가 그 사이의 거절을 unhandled rejection으로 판정한다.
+      const timedOut = expect(client.initialize()).rejects.toThrow(/acp-timeout/);
       // 답을 한 줄도 안 준다.
       await vi.advanceTimersByTimeAsync(60_000);
-      await expect(promise).rejects.toThrow(/acp-timeout/);
+      await timedOut;
     } finally {
       vi.useRealTimers();
     }

@@ -1,4 +1,60 @@
-import { closeSync, existsSync, fsyncSync, openSync, renameSync, unlinkSync, writeFileSync } from 'node:fs';
+import {
+  closeSync,
+  existsSync,
+  fchmodSync,
+  fsyncSync,
+  openSync,
+  renameSync,
+  statSync,
+  unlinkSync,
+  writeFileSync,
+} from 'node:fs';
+
+export function readFileRevision(filePath) {
+  try {
+    const metadata = statSync(filePath);
+    return {
+      dev: metadata.dev,
+      ino: metadata.ino,
+      size: metadata.size,
+      mtimeMs: metadata.mtimeMs,
+      ctimeMs: metadata.ctimeMs,
+    };
+  } catch (error) {
+    if (error?.code === 'ENOENT') return null;
+    throw error;
+  }
+}
+
+export function sameFileRevision(left, right) {
+  return Boolean(
+    left
+    && right
+    && left.dev === right.dev
+    && left.ino === right.ino
+    && left.size === right.size
+    && left.mtimeMs === right.mtimeMs
+    && left.ctimeMs === right.ctimeMs,
+  );
+}
+
+function assertExpectedRevision(filePath, expectedRevision) {
+  if (!expectedRevision) return;
+  if (sameFileRevision(expectedRevision, readFileRevision(filePath))) return;
+  throw new Error(
+    `Conflict: file changed or was deleted before atomic write: ${filePath}. Re-read and retry.`,
+  );
+}
+
+function existingRegularFileMode(filePath) {
+  try {
+    const metadata = statSync(filePath);
+    return metadata.isFile() ? metadata.mode & 0o777 : null;
+  } catch (error) {
+    if (error?.code === 'ENOENT') return null;
+    throw error;
+  }
+}
 
 /**
  * 파일 하나를 **끊기지 않게** 쓴다 — 임시 파일에 쓰고, 디스크에 확정하고, 이름을 바꾼다.
@@ -23,17 +79,23 @@ import { closeSync, existsSync, fsyncSync, openSync, renameSync, unlinkSync, wri
  * 이름 바꾸기는 같은 파일 시스템 안에서 원자적이다. 그래서 어느 순간에 죽어도
  * 파일은 **옛 내용 아니면 새 내용**이지, 반쪽이 되지 않는다.
  */
-export function writeFileAtomically(filePath, text) {
+export function writeFileAtomically(filePath, text, { expectedRevision = null } = {}) {
   const temporaryPath = `${filePath}.oatlas-tmp-${process.pid}`;
+  const existingMode = existingRegularFileMode(filePath);
   let descriptor = null;
   try {
     descriptor = openSync(temporaryPath, 'wx');
+    // private 원본의 권한을 temp가 잠깐이라도 넓히지 않도록 내용보다 먼저 적용한다.
+    if (existingMode !== null) fchmodSync(descriptor, existingMode);
     writeFileSync(descriptor, text, 'utf-8');
     // 이름을 바꾸기 전에 디스크에 확정한다 — 안 하면 이름만 새것이고 내용은
     // 아직 캐시에 있는 상태로 전원이 나갈 수 있다.
     fsyncSync(descriptor);
     closeSync(descriptor);
     descriptor = null;
+    // 마지막 이름 교체 직전에도 최초 snapshot을 확인한다. 그렇지 않으면
+    // frontmatter를 다시 읽어 확인한 뒤 temp를 쓰는 사이의 사람 편집을 덮는다.
+    assertExpectedRevision(filePath, expectedRevision);
     renameSync(temporaryPath, filePath);
   } finally {
     if (descriptor !== null) {

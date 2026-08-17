@@ -379,12 +379,16 @@ function nonBlankStringSchemaFailure(schema) {
   );
 }
 
-function nonBlankStringOrArraySchemaFailure(schema) {
+function backlinkRewriteValueSchemaFailure(schema) {
   return !(
-    sameArray(schema?.type, ['array', 'string']) &&
+    sameArray(schema?.type, ['array', 'object', 'string']) &&
     schema.minLength === 1 &&
+    schema.minItems === 1 &&
+    schema.minProperties === 1 &&
     schema.pattern === NON_BLANK_STRING_PATTERN &&
-    !nonBlankStringSchemaFailure(schema.items)
+    !nonBlankStringSchemaFailure(schema.items) &&
+    !nonBlankStringSchemaFailure(schema.propertyNames) &&
+    !nonBlankStringSchemaFailure(schema.additionalProperties)
   );
 }
 
@@ -533,8 +537,8 @@ function backlinkRewritePlanSchemaFailure(schema, label) {
       !sameArray(keyRows.items?.required, ['key']) ||
       keyRows.items?.additionalProperties !== false ||
       nonBlankStringSchemaFailure(keyRows.items?.properties?.key) ||
-      nonBlankStringOrArraySchemaFailure(keyRows.items?.properties?.before) ||
-      nonBlankStringOrArraySchemaFailure(keyRows.items?.properties?.after)
+      backlinkRewriteValueSchemaFailure(keyRows.items?.properties?.before) ||
+      backlinkRewriteValueSchemaFailure(keyRows.items?.properties?.after)
     ) {
       return `${label} outputSchema backlinkUpdates ${propertyName} drift`;
     }
@@ -5729,13 +5733,13 @@ function backlinkKeyChangeFailure(row) {
   }
   if (
     row.before !== undefined &&
-    !isStringOrStringArray(row.before)
+    !isBacklinkRewriteValue(row.before)
   ) {
     return 'before drift';
   }
   if (
     row.after !== undefined &&
-    !isStringOrStringArray(row.after)
+    !isBacklinkRewriteValue(row.after)
   ) {
     return 'after drift';
   }
@@ -5752,7 +5756,7 @@ function backlinkKeyChangeFailure(row) {
  * 모양 판정은 `mcp/src/backlink-key-shape.mjs` 하나가 갖고, 자기 테스트도
  * 거기 있다.
  */
-function isStringOrStringArray(value) {
+function isBacklinkRewriteValue(value) {
   return isBacklinkKeyValue(value);
 }
 
@@ -8990,6 +8994,16 @@ export function meaningRepairFullBodyReadsFailure(pages, readPayloads) {
   return null;
 }
 
+function isRunnableAgentCliFallback(command) {
+  if (typeof command !== 'string' || command.trim() === '' || /[\r\n]/.test(command)) return false;
+  const normalized = command.replaceAll('\\', '/');
+  const entryMarker = 'cli/src/index.mjs';
+  const entryIndex = normalized.indexOf(entryMarker);
+  if (!normalized.startsWith('node ') || entryIndex < 'node '.length) return false;
+  if (normalized.slice('node '.length, entryIndex).trim() === '') return false;
+  return /^(?:['"])?\s+\S/.test(normalized.slice(entryIndex + entryMarker.length));
+}
+
 export function agentBriefFailure(parsed) {
   if (parsed?.operation !== 'agent_brief') {
     return `agent_brief returned unexpected operation: ${parsed?.operation}`;
@@ -9085,17 +9099,7 @@ export function agentBriefFailure(parsed) {
   if (
     !Array.isArray(parsed.cliFallbackCommands) ||
     parsed.cliFallbackCommands.length === 0 ||
-    /*
-     * ⚠️ 종전에는 `^ontology-atlas\s` 를 **요구**했다 — 그 이름의 전역 명령은
-     * 없으므로(2026-07-27 원장) 이 검사는 거짓말을 막는 게 아니라 강제하고
-     * 있었다. 2026-08-17 에 CLI 쪽 계약을 뒤집었는데 **이 검증기는 안 고쳤고**,
-     * 그래서 도그푸드 게이트가 빨개졌다. 같은 거짓말을 하는 자리가 둘이었고
-     * 하나만 고쳐진 것 — 이 저장소가 오늘만 세 번 만난 모양이다.
-     */
-    parsed.cliFallbackCommands.some(
-      (command) =>
-        typeof command !== 'string' || !/^node\s+\S*cli\/src\/index\.mjs\s+\S/.test(command),
-    )
+    parsed.cliFallbackCommands.some((command) => !isRunnableAgentCliFallback(command))
   ) {
     return 'agent_brief response missing cliFallbackCommands';
   }

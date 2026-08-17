@@ -44,10 +44,12 @@ export async function runAnalyze(args) {
   const vaultRoot = resolve(process.cwd(), vault);
   let result;
   try {
-    result = await callMcpTool(vaultRoot, 'analyze_repo_structure', {
-      rootPath: target,
-      maxDepth,
-    });
+    result = await callMcpTool(
+      vaultRoot,
+      'analyze_repo_structure',
+      { rootPath: target, maxDepth },
+      { repoRoot: target },
+    );
     assertAnalyzeRepoStructureResult(result);
   } catch (err) {
     process.stderr.write(

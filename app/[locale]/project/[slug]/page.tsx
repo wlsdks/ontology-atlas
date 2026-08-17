@@ -5,7 +5,7 @@ import { bundledProjectSlugs, deriveBundledProjects } from '@/entities/docs-vaul
 import { ProjectDetailPage } from '@/views/project-detail';
 import { absoluteUrl } from '@/shared/config';
 import { buildPageMetadata } from '@/shared/lib/page-metadata';
-import { RouteLoadingFallback } from '@/shared/ui';
+import { JsonLd, RouteLoadingFallback } from '@/shared/ui';
 
 interface Params {
   slug: string;
@@ -170,14 +170,8 @@ export default async function Page({
   // prerender가 통과하려면 Suspense 경계가 필요.
   return (
     <>
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(creativeWorkLd) }}
-      />
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbLd) }}
-      />
+      <JsonLd data={creativeWorkLd} />
+      <JsonLd data={breadcrumbLd} />
       <Suspense fallback={<RouteLoadingFallback />}>
         <ProjectDetailPage slug={slug} initialProject={project} initialRelated={projects} />
       </Suspense>

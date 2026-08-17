@@ -282,13 +282,15 @@ function collectMarkdownFiles(paths) {
 }
 
 function walkMarkdown(dir, out) {
-  for (const entry of readdirSync(dir)) {
-    if (entry.startsWith('.') || entry === 'node_modules') continue;
-    const full = join(dir, entry);
-    const stat = statSync(full);
-    if (stat.isDirectory()) {
+  for (const entry of readdirSync(dir, { withFileTypes: true })) {
+    if (entry.name.startsWith('.') || entry.name === 'node_modules') continue;
+    const full = join(dir, entry.name);
+    // Directory ingestion is a bounded walk of the tree the user selected.
+    // Dirent reports symlinks as neither files nor directories, so nested links
+    // cannot escape that tree or create recursive traversal loops.
+    if (entry.isDirectory()) {
       walkMarkdown(full, out);
-    } else if (stat.isFile() && full.endsWith('.md')) {
+    } else if (entry.isFile() && full.endsWith('.md')) {
       out.add(full);
     }
   }

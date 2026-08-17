@@ -15,6 +15,11 @@ describe('Windows desktop beta release contract', () => {
     expect(pullRequestWorkflow).not.toContain('secrets.');
     expect(workflow).toContain('runs-on: windows-2022');
     expect(workflow).toContain('rustsec/audit-check@69366f33c96575abad1ee0dba8212993eecbe998');
+    for (const source of [releaseWorkflow, pullRequestWorkflow]) {
+      expect(source).toContain(
+        'cargo audit --file src-tauri/Cargo.lock --deny unsound --ignore RUSTSEC-2024-0429',
+      );
+    }
     expect(workflow).toContain('Get-AuthenticodeSignature');
     expect(workflow).toContain('MpCmdRun.exe');
     expect(workflow).toContain("-ArgumentList '/S'");
@@ -40,11 +45,16 @@ describe('Windows desktop beta release contract', () => {
 
   it('publishes Windows facts only from the real release asset and checksum pair', () => {
     const generator = read('scripts/generate-download-release-facts.mjs');
+    const verifier = read('scripts/check-macos-download-release.mjs');
     const generated = read('src/views/download/model/macos-release.generated.ts');
 
     expect(generator).toContain('WINDOWS_NAME_PATTERN');
     expect(generator).toContain("asset.name.endsWith('.exe.sha256')");
     expect(generator).toContain('exactly one ontology-atlas_<version>_windows_x64-setup.exe');
+    expect(verifier).toContain('WINDOWS_NAME_PATTERN');
+    expect(verifier).toContain('exactly one ontology-atlas_<version>_windows_x64-setup.exe');
+    expect(verifier).toContain('verifyArtifactHash(windowsInstaller');
+    expect(verifier).toContain('does not match checksum');
     expect(generated).toContain('export const WINDOWS_RELEASE');
   });
 });

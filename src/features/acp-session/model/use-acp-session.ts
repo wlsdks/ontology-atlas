@@ -135,6 +135,8 @@ const EMPTY_CHOICES: AcpSessionChoices = {
   currentModelId: null,
   modes: [],
   currentModeId: null,
+  unverifiedModeIds: [],
+  droppedModeCount: 0,
 };
 
 let eventSeq = 0;
@@ -380,6 +382,10 @@ export function useAcpSession({ runtimeId, vaultRoot, mcpServers }: UseAcpSessio
         },
         onExit: () => {
           /*
+           * 이벤트 구독을 해제해도 이미 큐에 들어간 콜백은 늦게 올 수 있다.
+           * 세션을 갈아탄 뒤 예전 콜백이 현재 ref를 치우면 새 대화가 이유 없이
+           * `exited`가 된다. 이 콜백은 자신이 태어난 세대와 프로세스만 소유한다.
+           *
            * ⚠️ **답하다 죽은 것과 다 끝난 것은 다른 말이다** (2026-08-17).
            *
            * 종전에는 어느 쪽이든 상태만 `exited` 가 됐고, 화면은 작은 칩에
@@ -390,6 +396,7 @@ export function useAcpSession({ runtimeId, vaultRoot, mcpServers }: UseAcpSessio
            * 아니라 「받은 것이 전부다」라는 사실이고, 접어 두면 사용자가 없는
            * 답을 기다리거나 잘린 답을 온전한 답으로 읽는다.
            */
+          if (stale() || acpSessionRef.current !== acpSessionId) return;
           if (statusRef.current === 'thinking') {
             push({ kind: 'notice', id: nextEventId(), text: 'died-mid-turn' });
           }
@@ -434,7 +441,7 @@ export function useAcpSession({ runtimeId, vaultRoot, mcpServers }: UseAcpSessio
          * 꺼진다 — 없는 것을 있는 척하지 않는다"*.
          */
         vaultMcpServerName: hasVaultMcp ? VAULT_MCP_SERVER_NAME : undefined,
-        verdict: (filePath) => acpPermissionVerdict(vaultRoot, filePath),
+        verdict: (filePath) => acpPermissionVerdict(acpSessionId, filePath),
         askUser,
         onProtocolNotice: (message) => keepDiagnostic(message),
       });
@@ -472,9 +479,8 @@ export function useAcpSession({ runtimeId, vaultRoot, mcpServers }: UseAcpSessio
        * **관문을 세운다.** codex 는 설정 격리로는 안 걸리고 세션 모드로만
        * 걸린다(실측 — `runtime-gate.ts`). 재 본 실행기에만 건다.
        *
-       * 실패해도 대화는 계속한다. 다만 화면이 「물어봐 준다」고 말한 것과
-       * 어긋나므로 **기록을 남긴다** — 조용히 넘어가면 관문이 없는 채로
-       * 있다고 말하는 화면이 된다.
+       * 실패하면 대화를 열지 않는다. 관문이 없는 채로 준비 완료를 내보내면
+       * 화면의 「폴더 밖은 먼저 물어본다」는 약속이 거짓이 된다.
        */
       const gatedMode = GATED_SESSION_MODE[runtimeId];
       let choices = session.choices;
@@ -491,14 +497,9 @@ export function useAcpSession({ runtimeId, vaultRoot, mcpServers }: UseAcpSessio
            */
           choices = { ...choices, currentModeId: gatedMode };
         } else {
-          /*
-           * ⚠️ 이것만은 **진단이 아니라 사용자에게 하는 말**이다. 이 화면이
-           * 「폴더 밖은 먼저 물어본다」고 약속했는데 그 관문이 안 걸렸다는 뜻
-           * 이므로, 조용히 접어 두면 화면이 지키지 못할 약속을 계속 하게 된다.
-           * 그래서 이 한 줄만 대화에 남고, 문구는 화면이 사람 말로 옮긴다.
-           */
-          push({ kind: 'notice', id: nextEventId(), text: 'gate-off' });
-          keepDiagnostic(`gate-mode-failed:${gatedMode}`);
+          const failure = `gate-mode-failed:${gatedMode}`;
+          keepDiagnostic(failure);
+          throw new Error(failure);
         }
       }
 

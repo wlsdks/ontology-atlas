@@ -1067,7 +1067,13 @@ just unmounted).
   tail of `.ontology-atlas/llm-audit.jsonl` where every call is recorded. The
   key is written once and never readable back (only its last 4 characters);
   the Rust side refuses to send at all when the audit line cannot be appended
-  (log-before-send). In the browser the key field is not rendered — the card
+  (log-before-send). Audit writes reject symbolic/hard-linked and non-regular files, hold one
+  exclusive reservation per vault, and recheck the reserved tail before
+  finalizing; existing audit files are narrowed to owner-only `0600`. This
+  native LLM path is currently enabled only on Unix/macOS;
+  the public Windows beta fails closed until equivalent reparse-point and
+  file-identity proof exists (the map, vault, and bundled MCP remain available).
+  In the browser the key field is not rendered — the card
   explains why storage is desktop-only and links to `/download`. There is no
   chat surface: the panel says in plain words that asking your vault is still
   being shaped.
@@ -1133,9 +1139,14 @@ just unmounted).
     요청이 오면 사용자에게 묻는다. 그 격리를 아직 재 보지 않은 줄에는
     「확인 안 됨」 표시가 붙고, 그 뜻(그 도구에 해 둔 설정을 그대로 쓴다)을 묶음
     위에서 한 번 설명한다. 표시는 반복되고 문장은 반복되지 않는다.
-  - **오늘 여기까지다.** 이 절은 무엇이 준비됐는지 말하고 앱이 어떤 규칙으로
-    띄우는지 밝히는 데까지고, **앱 안에서 그 에이전트와 대화하는 패널은 아직 열
-    수 있는 자리가 없다**(`src/widgets/acp-chat-panel/` 은 모듈로만 존재한다).
+  - **앱의 지도 옆에서 바로 대화한다.** 격리 관문을 실측한 실행기를 고르면 홈의
+    오른쪽 작업 표면에 `AcpChatPanel`이 열리고, 현재 볼트를 작업 폴더와 MCP
+    서버로 넘긴다. 별도 경로나 새 화면이 아니라 지도를 보면서 쓰는 같은
+    작업대다(`src/views/home/ui/HomePage.tsx`).
+  - 어댑터가 모델·작업 방식 목록을 제공할 때만 선택기가 나타난다. 권한 확인을
+    없애는 것으로 재 본 작업 방식은 숨기고, 아직 재 보지 않은 것은 이름 옆에
+    「확인 안 됨」과 뜻을 붙인다. 안전 판정의 `unverified` 상태는
+    `AcpSessionChoices`를 거쳐 기존 `Select`까지 보존된다.
   - 브라우저에서는 프로세스를 띄울 수 없다. 웹에서는 목록 대신 왜 안 되는지와
     어디서 되는지를 적는 한 줄이 그 자리를 대신한다.
 - The persistent shell mounts the rail settings trigger. Contextual

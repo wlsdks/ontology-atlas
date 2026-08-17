@@ -306,19 +306,23 @@ export function nonBlankStringSchemaFixture() {
 
 export function backlinkRewritePlanSchemaFixture() {
   const nonBlankString = nonBlankStringSchemaFixture();
-  const nonBlankStringOrArray = {
-    type: ["array", "string"],
+  const backlinkValue = {
+    type: ["array", "object", "string"],
     minLength: 1,
+    minItems: 1,
+    minProperties: 1,
     pattern: "^(?!\\s)(?!.*\\s$)(?!.*\\u0000).+$",
     items: nonBlankString,
+    propertyNames: nonBlankString,
+    additionalProperties: nonBlankString,
   };
   const keyChange = {
     type: "object",
     required: ["key"],
     properties: {
       key: nonBlankString,
-      before: nonBlankStringOrArray,
-      after: nonBlankStringOrArray,
+      before: backlinkValue,
+      after: backlinkValue,
     },
     additionalProperties: false,
   };

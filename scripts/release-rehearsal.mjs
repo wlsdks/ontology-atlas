@@ -41,6 +41,7 @@
  */
 import { spawnSync } from "node:child_process";
 import fs from "node:fs";
+import os from "node:os";
 import path from "node:path";
 import { pathToFileURL } from "node:url";
 
@@ -57,14 +58,14 @@ export const REHEARSAL_SKIPS = {
     "GITHUB_SHA 가 main 의 현재 head 와 같아야 통과한다. 태그를 찍는 순간의 사실이라 지금은 확인할 수 없다 — 태그는 반드시 main head 에 찍고, 찍은 뒤에는 릴리스가 끝날 때까지 main 에 아무것도 머지하지 마라(머지하면 이 게이트가 빨개진다).",
   "Verify release tag version":
     "실제 태그 이름이 필요하다. 대신 아래에서 package.json · tauri.conf.json · Cargo.toml 세 버전이 서로 맞는지 확인한다.",
-  "Decide signing path":
-    "레포에 Apple 시크릿 5종이 모두 등록돼 있으므로 러너는 **서명 경로**로 간다. 이 기계에는 Developer ID 인증서가 없어 그 경로를 밟을 수 없다.",
+  "Require signed release credentials":
+    "레포에 Apple 시크릿 5종이 모두 등록돼 있어야 러너가 이 게이트를 통과한다. 이 기계에는 Actions secret 이 없으므로 실제 값 검사는 태그 워크플로에서만 성립한다.",
   "Import Apple Developer ID certificate":
     "APPLE_CERTIFICATE_P12_BASE64 로 임시 키체인을 만드는 단계다. 시크릿 없이는 밟을 수 없고, 밟아도 이 기계의 키체인을 건드리게 되므로 리허설에서 일부러 하지 않는다.",
   "Enable Corepack pnpm":
     "러너에 pnpm 을 심는 단계다. 이 기계에는 이미 pnpm 이 있고, 버전이 러너와 같은지는 위의 도구 점검이 답한다.",
   "Build signed and notarized release artifact":
-    "codesign(Developer ID) + notarytool 이 필요하다. 대신 아래 '미서명 경로' 를 끝까지 돌려 빌드·스모크·사이드카 동봉·DMG·체크섬·설치 스모크를 증명한다. 서명·공증·DMG 컨테이너 서명 세 단계만 실제 태그에서 처음 밟힌다.",
+    "codesign(Developer ID) + notarytool 이 필요하다. 대신 같은 단계의 로컬 대체 명령이 ad-hoc 서명 경로를 끝까지 돌려 빌드·스모크·사이드카 동봉·DMG·체크섬·설치 스모크를 증명한다. Developer ID 서명·공증·DMG 컨테이너 서명만 실제 태그에서 처음 밟힌다.",
   "Summarize macOS release assets": "GITHUB_STEP_SUMMARY 에 표를 쓸 뿐이라 성립 여부가 없다.",
   "Cleanup Apple signing keychain": "서명 경로에서만 만들어진 키체인을 지운다.",
 };
@@ -80,16 +81,15 @@ export const REHEARSAL_SUBSTITUTES = {
     argv: ["node", "scripts/release-rehearsal.mjs", "--check-versions"],
     note: "태그 이름 대신 package.json · tauri.conf.json · Cargo.toml 세 버전이 서로 맞는지 본다.",
   },
-  "Build unsigned release artifact": {
+  "Build signed and notarized release artifact": {
     argv: ["pnpm", "desktop:release-artifact:unsigned"],
-    note: "러너는 시크릿이 있어 **서명 경로**로 가지만, 두 경로는 서명/공증 단계만 다르다. 이쪽을 끝까지 돌려 나머지를 증명한다.",
+    note: "공개 workflow에는 unsigned 폴백이 없다. 로컬에서만 ad-hoc 서명 대체 경로를 끝까지 돌려 Developer ID 서명·공증 외의 체인을 증명한다.",
   },
 };
 
 /** 앱 컴파일·DMG·설치 스모크는 오래 걸린다 — `--fast` 는 여기서 멈춘다. */
 export const REHEARSAL_SLOW_STEPS = new Set([
   "Build signed and notarized release artifact",
-  "Build unsigned release artifact",
 ]);
 
 /**
@@ -177,18 +177,41 @@ function run(argv, { cwd, env }) {
  * 그래서 리허설은 **버리는 키**를 하나 만들어 그 단계를 밟게 한다. 증명되는
  * 것은 "아카이브가 서명된 앱으로 다시 만들어지고 서명이 붙는가" 이지 "우리
  * 키로 서명됐는가" 가 아니다 — 후자는 실제 태그에서만 참이 된다.
+ *
+ * @param {string} root
+ * @param {{
+ *   existingKey?: string,
+ *   tempRoot?: string,
+ *   generate?: (keyPath: string) => { status: number | null },
+ * }} [options]
  */
-function ephemeralUpdaterKey(root) {
-  if ((process.env.TAURI_SIGNING_PRIVATE_KEY ?? "").trim()) return null;
-  const keyPath = path.join(root, ".tmp", "rehearsal-updater.key");
-  fs.mkdirSync(path.dirname(keyPath), { recursive: true });
-  const generated = spawnSync(
-    "pnpm",
-    ["exec", "tauri", "signer", "generate", "-w", keyPath, "--password", "", "--force"],
-    { cwd: root, encoding: "utf8" },
-  );
-  if (generated.status !== 0) return null;
-  return { TAURI_SIGNING_PRIVATE_KEY: fs.readFileSync(keyPath, "utf8"), TAURI_SIGNING_PRIVATE_KEY_PASSWORD: "" };
+export function ephemeralUpdaterKey(
+  root,
+  {
+    existingKey = process.env.TAURI_SIGNING_PRIVATE_KEY ?? "",
+    tempRoot = os.tmpdir(),
+    generate = (keyPath) =>
+      spawnSync(
+        "pnpm",
+        ["exec", "tauri", "signer", "generate", "-w", keyPath, "--password", "", "--force"],
+        { cwd: root, encoding: "utf8" },
+      ),
+  } = {},
+) {
+  if (existingKey.trim()) return null;
+  const privateDir = fs.mkdtempSync(path.join(tempRoot, "ontology-atlas-rehearsal-updater-"));
+  const keyPath = path.join(privateDir, "updater.key");
+  try {
+    const generated = generate(keyPath);
+    if (generated.status !== 0) return null;
+    fs.chmodSync(keyPath, 0o600);
+    return {
+      TAURI_SIGNING_PRIVATE_KEY: fs.readFileSync(keyPath, "utf8"),
+      TAURI_SIGNING_PRIVATE_KEY_PASSWORD: "",
+    };
+  } finally {
+    fs.rmSync(privateDir, { recursive: true, force: true });
+  }
 }
 
 function main() {

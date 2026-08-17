@@ -18,6 +18,7 @@
  */
 import { createServer } from 'node:http';
 import { writeFileSync, mkdirSync, readFileSync } from 'node:fs';
+import { randomUUID } from 'node:crypto';
 import { appIconSvg, markSvg, lockupSvg, monoIconSvg, ogImageSvg } from './build-brand-assets.mjs';
 
 const PORT = 8231;
@@ -63,6 +64,16 @@ const MONO = { 'icon-mono-light': monoIconSvg('light'), 'icon-mono-dark': monoIc
 /** 비정사각 래스터 — [이름, 폭, 높이]. OG 카드는 layout.tsx 선언과 같은 1200×630. */
 const WIDE = [['og-image', ogImageSvg(), 1200, 630]];
 
+export const RASTER_OUTPUT_NAMES = Object.freeze({
+  png: Object.freeze([
+    ...RASTER_PLAN.map(([name]) => name),
+    ...Object.keys(MONO),
+    ...WIDE.map(([name]) => name),
+    ...LOCKUP_RASTERS.map(([name]) => name),
+  ]),
+  svg: Object.freeze(Object.keys(LOCKUPS)),
+});
+
 const FONT_B64 = readFileSync('node_modules/pretendard/dist/web/variable/woff2/PretendardVariable.woff2').toString('base64');
 
 const VARIANTS = {
@@ -76,9 +87,11 @@ const VARIANTS = {
   bare: markSvg('full'),
 };
 
-const PAGE = `<!doctype html><meta charset="utf-8"><body style="background:#111;color:#888;font:13px system-ui">
+const MAX_SAVE_BODY_BYTES = 64 * 1024 * 1024;
+const pageForSaveToken = (saveToken) => `<!doctype html><meta charset="utf-8"><body style="background:#111;color:#888;font:13px system-ui">
 <p id="s">굽는 중…</p><script type="module">
 const d = await (await fetch('/data')).json();
+const saveToken = ${JSON.stringify(saveToken)};
 
 // 진짜 폰트를 먼저 심는다 — 없는 채로 재면 글자 폭이 통째로 다르다.
 const font = new FontFace('Pretendard Variable',
@@ -119,44 +132,113 @@ for (const [name, height] of d.lockupRasters) {
   const vb = svg.match(/viewBox="([^"]*)"/)[1].split(' ').map(Number);
   png[name] = await render(svg, Math.round(height * vb[2] / vb[3]), height);
 }
-await fetch('/save', { method: 'POST', body: JSON.stringify({ png, svgs }) });
+await fetch('/save?token=' + encodeURIComponent(saveToken), {
+  method: 'POST', body: JSON.stringify({ png, svgs }),
+});
 document.getElementById('s').textContent =
   '완료 — PNG ' + Object.keys(png).length + '개, SVG ' + Object.keys(svgs).length + '개. 창을 닫아도 됩니다.';
 </script></body>`;
 
-const server = createServer((req, res) => {
-  if (req.url === '/data') {
-    res.writeHead(200, { 'content-type': 'application/json' });
-    res.end(JSON.stringify({
-      variants: VARIANTS, plan: RASTER_PLAN, lockups: LOCKUPS,
-      lockupRasters: LOCKUP_RASTERS, mono: MONO, wide: WIDE, font: FONT_B64,
-    }));
-    return;
+function assertExactOutputNames(record, expectedNames, label) {
+  if (!record || typeof record !== 'object' || Array.isArray(record)) {
+    throw new Error(`${label} outputs must be an object`);
   }
-  if (req.url === '/save' && req.method === 'POST') {
-    let body = '';
-    req.on('data', (c) => { body += c; });
-    req.on('end', () => {
-      const { png, svgs } = JSON.parse(body);
-      mkdirSync(OUT, { recursive: true });
-      for (const [name, b64] of Object.entries(png)) {
-        writeFileSync(`${OUT}/${name}.png`, Buffer.from(b64, 'base64'));
-      }
-      // 뷰박스가 잉크에 맞춰진 가로형 로고를 public 으로 되돌려 쓴다.
-      mkdirSync('public/brand', { recursive: true });
-      for (const [name, text] of Object.entries(svgs)) {
-        writeFileSync(`public/brand/${name}.svg`, text.endsWith('\n') ? text : `${text}\n`);
-      }
-      console.log(`[brand-raster] PNG ${Object.keys(png).length}개 → ${OUT}, 가로형 로고 SVG ${Object.keys(svgs).length}개 → public/brand`);
-      res.writeHead(200).end('ok');
-      server.close();
-    });
-    return;
+  const expected = new Set(expectedNames);
+  for (const name of Object.keys(record)) {
+    if (!expected.has(name)) throw new Error(`unexpected ${label} output name: ${name}`);
   }
-  res.writeHead(200, { 'content-type': 'text/html; charset=utf-8' }).end(PAGE);
-});
+  for (const name of expectedNames) {
+    if (!Object.hasOwn(record, name)) throw new Error(`missing ${label} output name: ${name}`);
+  }
+}
+
+export function saveRasterPayload(payload, { pngOut = OUT, brandOut = 'public/brand' } = {}) {
+  if (!payload || typeof payload !== 'object' || Array.isArray(payload)) {
+    throw new Error('raster payload must be an object');
+  }
+  const { png, svgs } = payload;
+  assertExactOutputNames(png, RASTER_OUTPUT_NAMES.png, 'PNG');
+  assertExactOutputNames(svgs, RASTER_OUTPUT_NAMES.svg, 'SVG');
+
+  const decodedPng = new Map();
+  for (const name of RASTER_OUTPUT_NAMES.png) {
+    if (typeof png[name] !== 'string') throw new Error(`PNG output must be base64 text: ${name}`);
+    const bytes = Buffer.from(png[name], 'base64');
+    if (bytes.subarray(0, 8).toString('hex') !== '89504e470d0a1a0a') {
+      throw new Error(`PNG output has an invalid signature: ${name}`);
+    }
+    decodedPng.set(name, bytes);
+  }
+  for (const name of RASTER_OUTPUT_NAMES.svg) {
+    if (typeof svgs[name] !== 'string' || !/^\s*<svg(?:\s|>)/.test(svgs[name])) {
+      throw new Error(`SVG output is invalid: ${name}`);
+    }
+  }
+
+  mkdirSync(pngOut, { recursive: true });
+  for (const [name, bytes] of decodedPng) {
+    writeFileSync(`${pngOut}/${name}.png`, bytes);
+  }
+  mkdirSync(brandOut, { recursive: true });
+  for (const name of RASTER_OUTPUT_NAMES.svg) {
+    const text = svgs[name];
+    writeFileSync(`${brandOut}/${name}.svg`, text.endsWith('\n') ? text : `${text}\n`);
+  }
+  return { png: decodedPng.size, svg: RASTER_OUTPUT_NAMES.svg.length };
+}
+
+export function createBrandRasterServer({
+  saveToken = randomUUID(),
+  pngOut = OUT,
+  brandOut = 'public/brand',
+} = {}) {
+  const page = pageForSaveToken(saveToken);
+  const server = createServer((req, res) => {
+    const requestUrl = new URL(req.url ?? '/', 'http://127.0.0.1');
+    if (requestUrl.pathname === '/data') {
+      res.writeHead(200, { 'content-type': 'application/json' });
+      res.end(JSON.stringify({
+        variants: VARIANTS, plan: RASTER_PLAN, lockups: LOCKUPS,
+        lockupRasters: LOCKUP_RASTERS, mono: MONO, wide: WIDE, font: FONT_B64,
+      }));
+      return;
+    }
+    if (requestUrl.pathname === '/save' && req.method === 'POST') {
+      if (requestUrl.searchParams.get('token') !== saveToken) {
+        res.writeHead(403, { 'content-type': 'text/plain; charset=utf-8' }).end('forbidden');
+        return;
+      }
+      let body = '';
+      let bodyBytes = 0;
+      req.on('data', (chunk) => {
+        bodyBytes += chunk.length;
+        if (bodyBytes <= MAX_SAVE_BODY_BYTES) body += chunk;
+      });
+      req.on('end', () => {
+        if (bodyBytes > MAX_SAVE_BODY_BYTES) {
+          res.writeHead(413, { 'content-type': 'text/plain; charset=utf-8' }).end('payload too large');
+          return;
+        }
+        try {
+          const saved = saveRasterPayload(JSON.parse(body), { pngOut, brandOut });
+          console.log(`[brand-raster] PNG ${saved.png}개 → ${pngOut}, 가로형 로고 SVG ${saved.svg}개 → ${brandOut}`);
+          res.writeHead(200).end('ok');
+          server.close();
+        } catch (error) {
+          const message = error instanceof Error ? error.message : String(error);
+          console.error(`[brand-raster] save rejected: ${message}`);
+          res.writeHead(400, { 'content-type': 'text/plain; charset=utf-8' }).end('invalid payload');
+        }
+      });
+      return;
+    }
+    res.writeHead(200, { 'content-type': 'text/html; charset=utf-8' }).end(page);
+  });
+  return server;
+}
 
 if (import.meta.url === `file://${process.argv[1]}`) {
+  const server = createBrandRasterServer();
   server.listen(PORT, '127.0.0.1', () => {
     console.log(`[brand-raster] http://127.0.0.1:${PORT}/ 를 브라우저로 여세요`);
   });

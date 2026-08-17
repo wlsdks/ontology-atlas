@@ -33,6 +33,7 @@
     "src/construction-rules.mjs",
     "src/absorb.mjs",
     "src/activity-log.mjs",
+    "src/vault-sidecar.mjs",
     "src/analyze.mjs",
     "src/meaning-assessment.mjs",
     "src/meaning-evaluation.mjs",
@@ -55,6 +56,7 @@
     "src/project-source-graph-hash.mjs",
     "src/project-source-inspection.mjs",
     "src/project-source-receipt.mjs",
+    "src/project-source-vocabulary.mjs",
     "src/project-source-mint.mjs",
     "src/project-source-discovery.mjs",
     "src/project-source-inference.mjs",
@@ -73,7 +75,7 @@
   "scripts": {
     "start": "node src/index.js",
     "test": "node --test src/parser.test.mjs",
-    "test:all": "node --test src/git-tools.test.mjs src/parser.test.mjs src/query.test.mjs src/validate.test.mjs src/vault.test.mjs src/write-path-gate.test.mjs src/redirect-backlinks.test.mjs src/conflict-detection.test.mjs src/analyze.test.mjs src/analyze-golden-corpus.test.mjs src/analyze-adversarial.test.mjs src/meaning-evaluation.test.mjs src/construction-qualification.test.mjs src/construction-lifecycle.test.mjs src/meaning-repair.test.mjs src/infer-imports.test.mjs src/reconcile-imports.test.mjs src/detect-drift.test.mjs src/evidence-rank.test.mjs src/ontology-atlas-ignore.test.mjs src/compiled-cache.test.mjs src/ontology-compiler.test.mjs src/ontology-engine.test.mjs src/project-source-receipt.test.mjs src/project-source-connect.test.mjs src/project-meaning-inventory.test.mjs src/project-meaning-receipt.test.mjs src/project-meaning-restart.test.mjs src/suggestions.test.mjs src/json-rpc-lines.test.mjs src/absorb.test.mjs src/tool-inventory.test.mjs src/verify-script.test.mjs src/source-hidden-field-trial.test.mjs src/integration.test.mjs",
+    "test:all": "node --test src/git-tools.test.mjs src/parser.test.mjs src/query.test.mjs src/validate.test.mjs src/vault.test.mjs src/vault-sidecar.test.mjs src/write-path-gate.test.mjs src/redirect-backlinks.test.mjs src/conflict-detection.test.mjs src/analyze.test.mjs src/analyze-golden-corpus.test.mjs src/analyze-adversarial.test.mjs src/meaning-evaluation.test.mjs src/construction-qualification.test.mjs src/construction-lifecycle.test.mjs src/meaning-repair.test.mjs src/infer-imports.test.mjs src/reconcile-imports.test.mjs src/detect-drift.test.mjs src/evidence-rank.test.mjs src/ontology-atlas-ignore.test.mjs src/compiled-cache.test.mjs src/ontology-compiler.test.mjs src/ontology-engine.test.mjs src/project-source-receipt.test.mjs src/project-source-connect.test.mjs src/project-meaning-inventory.test.mjs src/project-meaning-receipt.test.mjs src/project-meaning-restart.test.mjs src/suggestions.test.mjs src/json-rpc-lines.test.mjs src/absorb.test.mjs src/tool-inventory.test.mjs src/verify-script.test.mjs src/source-hidden-field-trial.test.mjs src/integration.test.mjs",
     "test:smoke": "node src/parser.test.mjs",
     "verify": "node scripts/verify.mjs"
   },

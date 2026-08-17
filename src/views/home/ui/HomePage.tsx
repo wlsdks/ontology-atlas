@@ -2264,12 +2264,21 @@ export function HomePage() {
    * `vault-mcp-server.ts`.
    */
   const acpMcpServers = useMemo(() => {
-    const registeredCommand =
+    const registration =
       vaultSelfReadSlot(acpRuntimeId) === 'codex-config'
-        ? (vault.agentConfigStatus?.codexRegisteredCommand ?? null)
+        ? {
+            command: vault.agentConfigStatus?.codexRegisteredCommand ?? null,
+            validForCurrentVault: vault.agentConfigStatus?.codexConfigValid === true,
+          }
         : null;
-    return vaultMcpServers(agentServer.launch, gitVaultPath, registeredCommand);
-  }, [agentServer.launch, gitVaultPath, acpRuntimeId, vault.agentConfigStatus]);
+    return vaultMcpServers(agentServer.launch, gitVaultPath, registration);
+  }, [
+    agentServer.launch,
+    gitVaultPath,
+    acpRuntimeId,
+    vault.agentConfigStatus?.codexConfigValid,
+    vault.agentConfigStatus?.codexRegisteredCommand,
+  ]);
 
   /*
    * 앱 안 에이전트가 **자기 이름을 볼트에 등록**한다 (2026-08-17 소유자 지시).

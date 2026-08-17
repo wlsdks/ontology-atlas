@@ -55,10 +55,12 @@ export async function runIndex(args) {
 
   let analyzeResult;
   try {
-    analyzeResult = await callMcpTool(vaultRoot, 'analyze_repo_structure', {
-      rootPath: target,
-      maxDepth: parsed.maxDepth,
-    });
+    analyzeResult = await callMcpTool(
+      vaultRoot,
+      'analyze_repo_structure',
+      { rootPath: target, maxDepth: parsed.maxDepth },
+      { repoRoot: target },
+    );
     assertAnalyzeRepoStructureResult(analyzeResult);
   } catch (err) {
     process.stderr.write(
@@ -81,7 +83,7 @@ export async function runIndex(args) {
         importArgs.reviewMode = 'full';
         importArgs.allowLargeResponse = true;
       }
-      importsResult = await callMcpTool(vaultRoot, 'infer_imports', importArgs);
+      importsResult = await callMcpTool(vaultRoot, 'infer_imports', importArgs, { repoRoot: target });
       assertInferImportsResult(importsResult);
     } catch (err) {
       process.stderr.write(
@@ -94,9 +96,12 @@ export async function runIndex(args) {
 
   let validation;
   try {
-    validation = await callMcpTool(vaultRoot, 'validate_vault', {
-      repoRoot: target,
-    });
+    validation = await callMcpTool(
+      vaultRoot,
+      'validate_vault',
+      { repoRoot: target },
+      { repoRoot: target },
+    );
   } catch (err) {
     process.stderr.write(
       `${COLORS.red}error${COLORS.reset}  validate_vault: ${err instanceof Error ? err.message : String(err)}\n`,

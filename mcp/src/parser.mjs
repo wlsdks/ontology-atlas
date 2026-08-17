@@ -22,6 +22,20 @@ const GRAPH_ARRAY_KEYS = new Set([
   'describes',
   'broader',
 ]);
+const UNSAFE_OBJECT_KEYS = new Set(['__proto__', 'constructor', 'prototype']);
+
+function assignParsedKey(target, key, value, diagnostics, line) {
+  if (UNSAFE_OBJECT_KEYS.has(key)) {
+    diagnostics.push({
+      code: 'malformed-frontmatter-line',
+      line,
+      message: `Frontmatter line ${line} uses unsafe object key \`${key}\`.`,
+    });
+    return false;
+  }
+  target[key] = value;
+  return true;
+}
 
 export function parseFrontmatter(input) {
   // 줄바꿈·인코딩 정규화 — **읽기 경로에서만** (2026-07-28 실측).
@@ -75,8 +89,9 @@ export function parseFrontmatter(input) {
     const scalarIndicator = /^[|>][-+]?$/.exec(value);
     if (scalarIndicator) {
       const read = readBlockScalar(lines, i + 1, scalarIndicator[0]);
-      frontmatter[key] = read.value;
-      pushGraphArrayDiagnostic(diagnostics, key, i + 2, frontmatter[key]);
+      if (assignParsedKey(frontmatter, key, read.value, diagnostics, i + 2)) {
+        pushGraphArrayDiagnostic(diagnostics, key, i + 2, read.value);
+      }
       i = read.next - 1;
       continue;
     }
@@ -92,7 +107,7 @@ export function parseFrontmatter(input) {
           items.push(unquote(dashMatch[1].trim()));
           j += 1;
         }
-        frontmatter[key] = items;
+        assignParsedKey(frontmatter, key, items, diagnostics, i + 2);
         i = j - 1;
         continue;
       }
@@ -104,23 +119,27 @@ export function parseFrontmatter(input) {
           if (!m) break;
           const childKey = m[2].trim();
           if (!childKey) break;
-          obj[childKey] = parseScalar(m[3].trim());
+          assignParsedKey(obj, childKey, parseScalar(m[3].trim()), diagnostics, j + 2);
           j += 1;
         }
-        frontmatter[key] = obj;
-        pushGraphArrayDiagnostic(diagnostics, key, i + 2, frontmatter[key]);
+        if (assignParsedKey(frontmatter, key, obj, diagnostics, i + 2)) {
+          pushGraphArrayDiagnostic(diagnostics, key, i + 2, obj);
+        }
         i = j - 1;
         continue;
       }
-      frontmatter[key] = '';
-      pushGraphArrayDiagnostic(diagnostics, key, i + 2, frontmatter[key]);
+      if (assignParsedKey(frontmatter, key, '', diagnostics, i + 2)) {
+        pushGraphArrayDiagnostic(diagnostics, key, i + 2, '');
+      }
       continue;
     }
     if (value.startsWith('[') && value.endsWith(']')) {
-      frontmatter[key] = splitTopLevel(value.slice(1, -1), ',')
+      const items = splitTopLevel(value.slice(1, -1), ',')
         .map((s) => unquote(s.trim()))
         .filter(Boolean);
-      pushGraphArrayDiagnostic(diagnostics, key, i + 2, frontmatter[key]);
+      if (assignParsedKey(frontmatter, key, items, diagnostics, i + 2)) {
+        pushGraphArrayDiagnostic(diagnostics, key, i + 2, items);
+      }
       continue;
     }
     if (value.startsWith('{') && value.endsWith('}')) {
@@ -133,15 +152,18 @@ export function parseFrontmatter(input) {
           const k = part.slice(0, cIdx).trim();
           const v = part.slice(cIdx + 1).trim();
           if (!k) continue;
-          obj[k] = parseScalar(v);
+          assignParsedKey(obj, k, parseScalar(v), diagnostics, i + 2);
         }
       }
-      frontmatter[key] = obj;
-      pushGraphArrayDiagnostic(diagnostics, key, i + 2, frontmatter[key]);
+      if (assignParsedKey(frontmatter, key, obj, diagnostics, i + 2)) {
+        pushGraphArrayDiagnostic(diagnostics, key, i + 2, obj);
+      }
       continue;
     }
-    frontmatter[key] = unquote(value);
-    pushGraphArrayDiagnostic(diagnostics, key, i + 2, frontmatter[key]);
+    const scalar = unquote(value);
+    if (assignParsedKey(frontmatter, key, scalar, diagnostics, i + 2)) {
+      pushGraphArrayDiagnostic(diagnostics, key, i + 2, scalar);
+    }
   }
   const result = { frontmatter, body };
   if (diagnostics.length > 0) result.diagnostics = diagnostics;

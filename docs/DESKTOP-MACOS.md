@@ -713,7 +713,7 @@ tag/package/Tauri/Cargo version alignment, PR review/merge readiness,
 active macOS release workflow availability, clean local and remote same-tag Git
 ref slots, required Developer ID direct-download signing/notary secret names,
 public stable GitHub
-Release state, then delegates to the public DMG/checksum download verifier. If PR checks are
+Release state, then delegates to the public desktop-artifact/checksum download verifier. If PR checks are
 still blocking the release, the audit prints the failing or pending check names
 plus `gh pr checks <number> --repo wlsdks/ontology-atlas` as the next action.
 Use `--json` for automation that needs `ready`, `blockerCount`, and per-check
@@ -781,9 +781,9 @@ release assets as a draft, runs
 `pnpm desktop:verify-download -- --allow-draft` against those draft assets with
 `github.token`, publishes the verified release, then runs
 `pnpm desktop:verify-download` again to prove the public download surface
-exposes reachable Apple Silicon and Intel DMGs with filename versions that
-match the release tag, exactly one DMG per architecture, and checksum files that
-name and hash the same downloaded DMGs. After that public verification, the
+exposes reachable Apple Silicon and Intel DMGs plus exactly one Windows x64
+installer, with filename versions that match the release tag and checksum files
+that name and hash the same re-downloaded artifacts. After that public verification, the
 workflow writes the published GitHub Release URL plus the DMG filenames, byte
 sizes, and SHA-256 values to the GitHub Actions step summary so the release
 record is inspectable without re-running the verifier. Local runs may need
@@ -817,8 +817,8 @@ after confirming that tag has no existing Release, verifies those draft assets
 with `pnpm desktop:verify-download -- --allow-draft --require-updater`,
 publishes the release as stable, then runs
 `pnpm desktop:verify-download -- --tag="${GITHUB_REF_NAME}" --require-updater`
-so the release run itself proves the hosted CTA can reach both public release
-assets and that `latest.json` points at archives this release actually has. It then
+so the release run itself proves the hosted CTA can reach and re-hash every public
+macOS/Windows installer and that `latest.json` points at archives this release actually has. It then
 records the public GitHub Release URL plus the public asset filenames, byte
 sizes, and SHA-256 values in the GitHub Actions step summary. The workflow does
 not require any website deploy secrets; the installed app remains

@@ -1243,6 +1243,43 @@ await test('agent-activity — validates write mode before touching the vault', 
   }
 });
 
+await test('agent-activity — write, show, and clear all reject an external sidecar symlink', async () => {
+  const sandbox = mkdtempSync(join(tmpdir(), 'ontology-atlas-agent-activity-symlink-'));
+  const root = join(sandbox, 'vault');
+  const outside = join(sandbox, 'outside');
+  mkdirSync(root);
+  mkdirSync(outside);
+  const sentinel = join(outside, 'agent-activity.json');
+  writeFileSync(sentinel, 'outside-original', 'utf8');
+  symlinkSync(outside, join(root, '.ontology-atlas'), process.platform === 'win32' ? 'junction' : 'dir');
+
+  try {
+    const commands = [
+      ['agent-activity', root, '--show', '--json'],
+      [
+        'agent-activity',
+        root,
+        '--agent',
+        'codex',
+        '--state',
+        'editing',
+        '--focus',
+        'must stay inside the vault',
+        '--json',
+      ],
+      ['agent-activity', root, '--clear', '--json'],
+    ];
+    for (const command of commands) {
+      const result = await run(command);
+      assert.equal(result.code, 1, `${command.join(' ')}\nstdout: ${result.stdout}\nstderr: ${result.stderr}`);
+      assert.match(stripAnsi(result.stderr), /sidecar|symlink|junction|ontology-atlas/i);
+    }
+    assert.equal(readFileSync(sentinel, 'utf8'), 'outside-original');
+  } finally {
+    rmSync(sandbox, { recursive: true, force: true });
+  }
+});
+
 await test('agent-activity — show reports invalid sidecars as invalid activity', async () => {
   const root = withVault([]);
   try {
@@ -4244,7 +4281,7 @@ await test('CLI 쓰기(add/relate/import)는 감사 로그에 기록된다 (P2-�
   );
   try {
     // dry-run 은 기록되면 안 된다.
-    const dry = await run(['relate', 'a', 'b', 'depends_on', root, '--dry-run']);
+    const dry = await run(['relate', 'a', 'b', 'depends_on', root, '--dry-run', '--why', '감사 로그 없는 dry-run 근거']);
     assert.equal(dry.code, 0, `dry stdout: ${dry.stdout}\nstderr: ${dry.stderr}`);
     assert.equal(existsSync(join(root, '.ontology-atlas', 'activity.jsonl')), false, 'dry-run must not log');
 
@@ -5401,7 +5438,7 @@ await test('match-nodes — graph DB-style node rows with degree filters', async
       '--limit=5',
     ]);
     assert.equal(r.code, 0, `stdout: ${r.stdout}\nstderr: ${r.stderr}`);
-    const clean = stripAnsi(r.stdout);
+    const clean = stripAnsi(r.stdout).replaceAll(CLI_INVOCATION, 'ontology-atlas');
     assert.match(clean, /match_nodes 2\/2 node\(s\)/);
     assert.match(clean, /filters .*kind=capability.*minInDegree=1.*sort=inDegree/);
     assert.match(clean, /capabilities\/foo\s+· Foo.*deg 4 in 2 out 2/);
@@ -5457,7 +5494,7 @@ await test('match-edges — graph DB-style edge rows with kind/type filters', as
       '--limit=5',
     ]);
     assert.equal(r.code, 0, `stdout: ${r.stdout}\nstderr: ${r.stderr}`);
-    const clean = stripAnsi(r.stdout);
+    const clean = stripAnsi(r.stdout).replaceAll(CLI_INVOCATION, 'ontology-atlas');
     assert.match(clean, /match_edges 1\/1 edge\(s\)/);
     assert.match(clean, /filters .*fromKind=capability.*types=relates/);
     assert.match(clean, /capabilities\/bar --relates--> capabilities\/foo/);
@@ -5481,7 +5518,7 @@ await test('match-edges — renders depends_on filter using public relation name
       '--limit=1',
     ]);
     assert.equal(r.code, 0, `stdout: ${r.stdout}\nstderr: ${r.stderr}`);
-    const clean = stripAnsi(r.stdout);
+    const clean = stripAnsi(r.stdout).replaceAll(CLI_INVOCATION, 'ontology-atlas');
     assert.match(clean, /filters .*types=depends_on/);
     assert.doesNotMatch(clean, /filters .*types=dependencies/);
     assert.match(clean, /--depends_on-->/);
@@ -6260,7 +6297,7 @@ await test('agent-brief — prints agent handoff entrypoints and playbooks', asy
   try {
     const r = await run(['agent-brief', root]);
     assert.equal(r.code, 1, `stdout: ${r.stdout}\nstderr: ${r.stderr}`);
-    const clean = stripAnsi(r.stdout);
+    const clean = stripAnsi(r.stdout).replaceAll(CLI_INVOCATION, 'ontology-atlas');
     assert.match(r.stdout, /\x1b\[33mneeds_attention\x1b\[0m/);
     assert.match(clean, /agent brief/);
     assert.match(clean, /readiness needs_attention 75\/100/);
@@ -6379,7 +6416,7 @@ await test('agent-brief --json — forwards focused diagnosis tuning flags', asy
     assert.ok(data.docs.graphScanProofChecklist[2].evidence.includes('relation_check'));
     assert.ok(data.docs.graphScanProofChecklist[3].evidence.includes('evidence.pathsComplete'));
     assert.equal(data.readiness.status, 'needs_attention');
-    assert.ok(data.cliFallbackCommands.includes('ontology-atlas hubs [vault] --plan --limit 10 --types depends_on,relates'));
+    assert.ok(data.cliFallbackCommands.some((command) => command.endsWith(' hubs [vault] --plan --limit 10 --types depends_on,relates')));
     assert.ok(data.writeGuardrails.some((guardrail) => guardrail.id === 'preflight_rename'));
     assert.ok(data.writeGuardrails.some((guardrail) => guardrail.calls.some((call) => call.tool === 'validate_vault')));
     assert.deepEqual(data.relationDecisionGuide.map((row) => row.decision), [
@@ -6507,13 +6544,14 @@ await test('agent-brief --json — emits CLI fallback commands that run directly
     const data = JSON.parse(r.stdout);
     assert.ok(
       data.cliFallbackCommands
-        .filter((command) => /ontology-atlas all-paths /.test(command) && / --plan /.test(command))
+        .filter((command) => /(?:^|\s)all-paths /.test(command) && / --plan /.test(command))
         .every((command) => / --force /.test(command)),
       'all all-paths --plan fallbacks should include --force so verify-fallbacks can execute warning-only plans directly',
     );
     const commands = data.cliFallbackCommands.map((command) => command.replace('[vault]', root));
     for (const command of commands) {
-      const args = command.split(/\s+/).slice(1);
+      assert.ok(command.startsWith(`${CLI_INVOCATION} `), `unexpected CLI invocation: ${command}`);
+      const args = command.slice(CLI_INVOCATION.length + 1).split(/\s+/);
       const result = await run(args);
       assert.equal(result.code, 0, `${command}\nstdout: ${result.stdout}\nstderr: ${result.stderr}`);
     }
@@ -6527,7 +6565,7 @@ await test('agent-brief --verify-fallbacks — executes generated CLI fallback c
   try {
     const r = await run(['agent-brief', root, '--verify-fallbacks']);
     assert.equal(r.code, 1, `stdout: ${r.stdout}\nstderr: ${r.stderr}`);
-    const clean = stripAnsi(r.stdout);
+    const clean = stripAnsi(r.stdout).replaceAll(CLI_INVOCATION, 'ontology-atlas');
     assert.match(clean, /agent fallback check/);
     assert.match(clean, /setup gate ok=true performanceOk=true wall=\d+ms slow=0\/\d+ failed=0/);
     assert.match(clean, /PASS \d+ms ontology-atlas workspace-brief \[vault\] --limit 5/);
@@ -6556,11 +6594,11 @@ await test('agent-brief --verify-fallbacks --json — emits machine-readable fal
     assert.ok(Number.isInteger(data.slow));
     assert.ok(data.totalMs >= data.slowest.elapsedMs);
     assert.ok(data.wallMs <= data.totalMs);
-    assert.match(data.slowest.command, /^ontology-atlas /);
+    assert.ok(data.slowest.command.startsWith(`${CLI_INVOCATION} `));
     assert.ok(data.commands.every((row) => row.status === 'pass'));
     assert.ok(data.commands.every((row) => typeof row.elapsedMs === 'number'));
     assert.ok(data.commands.every((row) => !Object.hasOwn(row, 'outputSample')));
-    assert.ok(data.commands.some((row) => row.command === 'ontology-atlas workspace-brief [vault] --limit 5'));
+    assert.ok(data.commands.some((row) => row.command.endsWith(' workspace-brief [vault] --limit 5')));
     assert.ok(data.commands.some((row) => row.resolvedCommand.includes(root)));
   } finally {
     rmSync(root, { recursive: true, force: true });
@@ -6586,7 +6624,7 @@ await test('agent-brief --verify-fallbacks --json — advisory exit 1 (needs_att
     const data = JSON.parse(r.stdout);
     assert.equal(data.ok, true);
     assert.equal(data.failed, 0);
-    const healthRow = data.commands.find((row) => row.command.startsWith('ontology-atlas health '));
+    const healthRow = data.commands.find((row) => /(?:^|\s)health\s/.test(row.command));
     assert.ok(healthRow, 'health fallback row present');
     assert.equal(healthRow.status, 'pass');
     assert.equal(healthRow.exitCode, 1);
@@ -6685,7 +6723,7 @@ await test('agent-brief --prompt — prints only the copyable handoff prompt', a
   try {
     const r = await run(['agent-brief', root, '--prompt']);
     assert.equal(r.code, 1, `stdout: ${r.stdout}\nstderr: ${r.stderr}`);
-    const clean = stripAnsi(r.stdout);
+    const clean = stripAnsi(r.stdout).replaceAll(CLI_INVOCATION, 'ontology-atlas');
     assert.match(clean, /^Use the ontology-atlas MCP server/);
     assert.match(clean, /Feature guide: docs\/AGENT-GRAPH-WORKFLOW\.md/);
     assert.match(clean, /Business-to-code ontology lens/);
@@ -7011,7 +7049,7 @@ await test('health/agent-brief/workspace-brief --json — fail closed on malform
       "    const operation = msg.params.arguments.operation;",
       "    let payload;",
       "    if (operation === 'health') payload = { operation: 'health', status: 'healthy', summary: { nodes: 1, edges: 0 }, checks: [{ id: 'compile_issues', status: 'pass' }] };",
-      "    else if (operation === 'agent_brief') payload = { operation: 'agent_brief', sideEffect: false, status: 'healthy', projectSlug: 'project', projectSource: { contractVersion: 1, projectSlug: 'project', status: 'not_measured', currentness: 'unavailable', measuredAt: null, topGap: { id: 'source_unbound' }, nextAction: { id: 'connect_source' }, bindingCardinality: 0, receipt: null }, meaningAssessment: { contract: 'meaningAssessment:v1', projectSlug: 'project', status: 'invalid', dimensions: { structure: { status: 'ready', basis: 'structure_only' }, competency: { status: 'needs_evidence', questions: ['scope', 'domains', 'abilities', 'evidence', 'impact'].map((id) => ({ id, status: 'unassessed', witnessStatus: 'unavailable' })) }, source: { status: 'not_measured', currentness: 'unavailable' } }, topGap: { dimension: 'assessment', id: 'assessment_input_invalid' }, nextAction: { id: 'repair_assessment_input' }, provenance: { evaluator: 'meaningAssessment:v1', graphHash: null, competencyContract: null, competencyEvaluator: null, competencyGraphHash: null, witnessInventoryContract: null, witnessInventoryGraphHash: null, witnessInventorySourceFingerprint: null, sourceGraphHash: null, sourceReceiptContractVersion: null, sourceId: null, sourceRevision: null, sourceFingerprint: null, sourceMeasuredAt: null, sourceGapId: 'source_unbound' } }, meaningRepair: { contract: 'meaningRepair:v2', status: 'blocked', projectSlug: 'project', blockedBy: 'source_not_current', primaryQuestion: null, questionsNeedingReview: [], provenance: null, reviewRevision: null, questions: null, workflow: [], stopWhen: ['source_currentness_required'], writePolicy: { humanApprovalRequired: true, automaticWrite: false, automaticFinalize: false } }, readiness: { status: 'ready', score: 100, meaningfulNodes: 3, relationCount: 2, projects: 1, domains: 1, capabilities: 1, elements: 0, unresolvedEdges: 0, externalEdges: 0, growthActions: 0, healthChecks: 1 }, graph: { nodes: 3, edges: 2 }, docs: { workflowGuide: { path: 'docs/AGENT-GRAPH-WORKFLOW.md', title: 'Agent Graph Workflow', description: 'CLI-only use, MCP-connected use, graph DB differences, graph query packs, and verification checks.' }, modeComparison: [{ id: 'cli_only', label: 'CLI-only', when: 'terminal-only inspection.', gives: 'graph DB pack.' }, { id: 'mcp_connected', label: 'MCP-connected', when: 'registered.', gives: 'structured repair fields and write guardrails.' }, { id: 'graph_db_pack', label: 'Graph DB pack', when: 'database-style graph exploration.', gives: 'proof follow-ups.' }, { id: 'setup_gate', label: 'Setup gate', when: 'unclear setup.', gives: 'JSON readiness and restart guidance.' }], graphScanProofChecklist: [{ id: 'report_scan_scope', label: 'Report scan scope', evidence: ['totalMatches', 'limited'] }, { id: 'prove_node_rows', label: 'Prove node rows', evidence: ['node_profile', 'blast_radius'] }, { id: 'prove_edge_rows', label: 'Prove edge rows', evidence: ['explain_relation', 'path', 'relation_check'] }, { id: 'prove_path_completeness', label: 'Prove path completeness', evidence: ['evidence.pathsComplete'] }] }, businessOntologyLens: { policy: 'business-first', readOrder: ['outcome', 'domain', 'capability', 'element'], businessDomains: [], capabilityOutcomes: [], implementationEvidence: [], decisionQuestions: ['What business outcome should this ontology explain or improve?', 'Which business/product domain boundary does this code change?', 'What capability claim can a planner, marketer, or leader discuss?', 'Which implementation evidence proves or disproves that capability?'], guidance: ['Read the business outcome first, then business/product domains, capabilities, and implementation evidence.', 'Do not treat paths, APIs, routes, or commands as the ontology root.'] }, handoffPrompt: 'Use the ontology-atlas MCP server. Run these first-contact MCP calls in order. CLI fallback commands when the MCP connector is unavailable. Graph DB query pack. Kind classification contract before writing frontmatter. Do not classify from the label alone. domain: shared vocabulary boundary. capability: user-visible behavior. element: concrete implementation part. unknown: temporary review signal. High-confidence gate. Containment spine. Color contract. source path, symbol, route, command, or MCP tool evidence. why not the nearest adjacent kind. similar_nodes. Investigation playbooks. Traversal strategy. plan_before_enumeration. Write guardrails. Result contracts. totalPathsExact. relation_check before add_relation.', cliFallbackCommands: ['ontology-atlas health [vault]'], health: { checks: [{ id: 'compile_issues', status: 'pass', count: 0 }] }, nextActions: [], entrypoints: [], firstCalls: [{ tool: 'query_ontology', arguments: {} }], playbooks: [{ id: 'refactor_impact', goal: 'Impact.', calls: [{ tool: 'query_ontology', arguments: { operation: 'health' } }] }], writePolicy: ['Read first.'] };",
+      "    else if (operation === 'agent_brief') payload = { operation: 'agent_brief', sideEffect: false, status: 'healthy', projectSlug: 'project', projectSource: { contractVersion: 1, projectSlug: 'project', status: 'not_measured', currentness: 'unavailable', measuredAt: null, topGap: { id: 'source_unbound' }, nextAction: { id: 'connect_source' }, bindingCardinality: 0, receipt: null }, meaningAssessment: { contract: 'meaningAssessment:v1', projectSlug: 'project', status: 'invalid', dimensions: { structure: { status: 'ready', basis: 'structure_only' }, competency: { status: 'needs_evidence', questions: ['scope', 'domains', 'abilities', 'evidence', 'impact'].map((id) => ({ id, status: 'unassessed', witnessStatus: 'unavailable' })) }, source: { status: 'not_measured', currentness: 'unavailable' } }, topGap: { dimension: 'assessment', id: 'assessment_input_invalid' }, nextAction: { id: 'repair_assessment_input' }, provenance: { evaluator: 'meaningAssessment:v1', graphHash: null, competencyContract: null, competencyEvaluator: null, competencyGraphHash: null, witnessInventoryContract: null, witnessInventoryGraphHash: null, witnessInventorySourceFingerprint: null, sourceGraphHash: null, sourceReceiptContractVersion: null, sourceId: null, sourceRevision: null, sourceFingerprint: null, sourceMeasuredAt: null, sourceGapId: 'source_unbound' } }, meaningRepair: { contract: 'meaningRepair:v2', status: 'blocked', projectSlug: 'project', blockedBy: 'source_not_current', primaryQuestion: null, questionsNeedingReview: [], provenance: null, reviewRevision: null, questions: null, workflow: [], stopWhen: ['source_currentness_required'], writePolicy: { humanApprovalRequired: true, automaticWrite: false, automaticFinalize: false } }, readiness: { status: 'ready', score: 100, meaningfulNodes: 3, relationCount: 2, projects: 1, domains: 1, capabilities: 1, elements: 0, unresolvedEdges: 0, externalEdges: 0, growthActions: 0, healthChecks: 1 }, graph: { nodes: 3, edges: 2 }, docs: { workflowGuide: { path: 'docs/AGENT-GRAPH-WORKFLOW.md', title: 'Agent Graph Workflow', description: 'CLI-only use, MCP-connected use, graph DB differences, graph query packs, and verification checks.' }, modeComparison: [{ id: 'cli_only', label: 'CLI-only', when: 'terminal-only inspection.', gives: 'graph DB pack.' }, { id: 'mcp_connected', label: 'MCP-connected', when: 'registered.', gives: 'structured repair fields and write guardrails.' }, { id: 'graph_db_pack', label: 'Graph DB pack', when: 'database-style graph exploration.', gives: 'proof follow-ups.' }, { id: 'setup_gate', label: 'Setup gate', when: 'unclear setup.', gives: 'JSON readiness and restart guidance.' }], graphScanProofChecklist: [{ id: 'report_scan_scope', label: 'Report scan scope', evidence: ['totalMatches', 'limited'] }, { id: 'prove_node_rows', label: 'Prove node rows', evidence: ['node_profile', 'blast_radius'] }, { id: 'prove_edge_rows', label: 'Prove edge rows', evidence: ['explain_relation', 'path', 'relation_check'] }, { id: 'prove_path_completeness', label: 'Prove path completeness', evidence: ['evidence.pathsComplete'] }] }, businessOntologyLens: { policy: 'business-first', readOrder: ['outcome', 'domain', 'capability', 'element'], businessDomains: [], capabilityOutcomes: [], implementationEvidence: [], decisionQuestions: ['What business outcome should this ontology explain or improve?', 'Which business/product domain boundary does this code change?', 'What capability claim can a planner, marketer, or leader discuss?', 'Which implementation evidence proves or disproves that capability?'], guidance: ['Read the business outcome first, then business/product domains, capabilities, and implementation evidence.', 'Do not treat paths, APIs, routes, or commands as the ontology root.'] }, handoffPrompt: 'Use the ontology-atlas MCP server. Run these first-contact MCP calls in order. CLI fallback commands when the MCP connector is unavailable. Graph DB query pack. Kind classification contract before writing frontmatter. Do not classify from the label alone. domain: shared vocabulary boundary. capability: user-visible behavior. element: concrete implementation part. unknown: temporary review signal. High-confidence gate. Containment spine. Color contract. source path, symbol, route, command, or MCP tool evidence. why not the nearest adjacent kind. similar_nodes. Investigation playbooks. Traversal strategy. plan_before_enumeration. Write guardrails. Result contracts. totalPathsExact. relation_check before add_relation.', cliFallbackCommands: ['node /abs/cli/src/index.mjs health [vault]'], health: { checks: [{ id: 'compile_issues', status: 'pass', count: 0 }] }, nextActions: [], entrypoints: [], firstCalls: [{ tool: 'query_ontology', arguments: {} }], playbooks: [{ id: 'refactor_impact', goal: 'Impact.', calls: [{ tool: 'query_ontology', arguments: { operation: 'health' } }] }], writePolicy: ['Read first.'] };",
       "    else payload = { operation: 'workspace_brief', status: 'healthy', summary: { nodes: 1, edges: 0 }, nextActions: [{ kind: 'cleanup', severity: 'fatal' }], health: { checks: [{ id: 'compile_issues', status: 'pass', count: 0 }] } };",
       "    console.log(JSON.stringify({ jsonrpc: '2.0', id: 2, result: { content: [{ text: JSON.stringify(payload) }], structuredContent: payload } }));",
       "  }",
@@ -9029,7 +9067,7 @@ await test('index --json — analyzes and verifies a repo without mutating the v
     const data = JSON.parse(r.stdout);
     assert.equal(data.mode, 'plan');
     assert.equal(data.apply, false);
-    assert.equal(data.rootPath, repo);
+    assert.equal(data.rootPath, realpathSync(repo));
     assert.equal(data.analyze.framework, 'fsd');
     assert.equal(data.plan.concepts, 3);
     // The project containment spine includes the project node plus both FSD

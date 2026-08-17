@@ -3681,6 +3681,8 @@
     "untitled": "제목 없는 대화",
     "model": "모델",
     "mode": "작업 방식",
+    "modeUnverified": "{name} · 확인 안 됨",
+    "modeUnverifiedHint": "폴더 밖 작업 전에 묻는 방식인지 아직 재 보지 않았어요.",
     "runtimePicker": "어느 도구와 대화할지",
     "tool": {
       "connect": "폴더에 연결했어요",

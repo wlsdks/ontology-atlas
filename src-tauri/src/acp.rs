@@ -33,7 +33,7 @@
 //!
 //! 이미 설치돼 있으면 그걸 그대로 쓴다 — npx 는 첫 실행이 느리다.
 
-use std::ffi::OsStr;
+use std::ffi::{OsStr, OsString};
 use std::path::{Path, PathBuf};
 
 /// 커밋된 ACP 레지스트리 스냅샷의 항목 하나.
@@ -173,6 +173,8 @@ const ISOLATED_CLAUDE_SETTINGS: &str = r#"{
 }
 "#;
 
+pub(crate) type LoginProbe<'a> = dyn Fn(&str, &Path, &[&str], &str) -> Option<bool> + 'a;
+
 /// 파일시스템을 어떻게 들여다볼지 — 테스트가 진짜 디스크 없이 판정할 수 있게
 /// 주입한다. 「이 기기에 무엇이 있나」를 검사가 기기에 의존해서 물으면, 그
 /// 검사는 개발자 기계에서만 초록이 된다.
@@ -188,7 +190,7 @@ pub(crate) struct FsProbe<'a> {
     ///
     /// 실물에서는 그 CLI 를 짧게 띄워 **종료 코드만** 본다. 검사에서는 가짜를
     /// 꽂는다 — 이 판정 하나 때문에 검사가 진짜 프로세스를 띄우게 두지 않는다.
-    pub login_ok: &'a dyn Fn(&Path, &[&str], &str) -> Option<bool>,
+    pub login_ok: &'a LoginProbe<'a>,
 }
 
 /**
@@ -260,7 +262,7 @@ fn nvm_bin_dirs(home: &Path, probe: &FsProbe<'_>) -> Vec<PathBuf> {
                 || name.trim_start_matches('v') == default.trim_start_matches('v')
                 || wanted
                     .as_ref()
-                    .is_some_and(|w| parts.len() >= w.len() && &parts[..w.len()] == &w[..])
+                    .is_some_and(|w| parts.len() >= w.len() && parts[..w.len()] == w[..])
         }) {
             let chosen = found.remove(at);
             found.insert(0, chosen);
@@ -472,9 +474,10 @@ pub(crate) fn detect_runtimes(
              * 실행기에만 물어본다(`LOGIN_PROBE`). 안 물어본 것은 `None` 이고,
              * 그건 「로그인 안 됨」이 아니라 「모른다」다.
              */
-            let login_ok = cli.as_deref().zip(login_probe_args(&agent.id)).and_then(
-                |(path, args)| (probe.login_ok)(path, args, &child_path),
-            );
+            let login_ok = cli
+                .as_deref()
+                .zip(login_probe_args(&agent.id))
+                .and_then(|(path, args)| (probe.login_ok)(&agent.id, path, args, &child_path));
 
             let state = if agent.cli.is_some() && cli.is_none() {
                 "cli-missing"
@@ -573,7 +576,7 @@ pub(crate) fn resolve_launch(
         RegistryLaunch::Npx { package, args } => {
             // 이미 전역 설치돼 있으면 그것을 쓴다 — npx 는 첫 실행이 느리다.
             // 패키지 이름의 마지막 조각이 대개 실행 파일 이름이다
-            // (`@agentclientprotocol/claude-agent-acp@0.68.0` → `claude-agent-acp`).
+            // (`@agentclientprotocol/claude-agent-acp@<version>` → `claude-agent-acp`).
             if let Some(installed) =
                 adapter_bin_name(package).and_then(|bin| resolve_command(&bin, &dirs, probe))
             {
@@ -634,6 +637,90 @@ pub(crate) struct AcpLaunch {
     pub path_env: String,
 }
 
+/// 부모 셸의 임의 설정·자격증명을 받지 않고도 **구독 로그인**으로 동작하는 것을
+/// 실측한 실행기. 다른 36종까지 짐작으로 비우면 환경 API 키만 쓰는 도구를 조용히
+/// 망가뜨리므로, 검증한 범위에서만 자란다.
+const SANITIZED_ENV_RUNTIMES: &[&str] = &["claude-acp", "codex-acp"];
+
+/// GUI 앱이 재구축할 수 없거나 구독 로그인·기업망에 필요한 운영체제 환경.
+///
+/// 이 목록은 강한 샌드박스가 아니다. HOME 과 프록시를 보존하므로 자식은 여전히
+/// 사용자 파일과 네트워크를 쓸 수 있다. 여기서 막는 것은 부모 프로세스에 우연히
+/// 실린 API 키·라우팅·동적 로더 입력이 세션의 인증/실행 경계를 조용히 바꾸는 일이다.
+const SHARED_RUNTIME_ENV: &[&str] = &[
+    "HOME",
+    "USERPROFILE",
+    "HOMEDRIVE",
+    "HOMEPATH",
+    "APPDATA",
+    "LOCALAPPDATA",
+    "TMPDIR",
+    "TMP",
+    "TEMP",
+    "LANG",
+    "TZ",
+    "USER",
+    "USERNAME",
+    "LOGNAME",
+    "SHELL",
+    "HTTP_PROXY",
+    "HTTPS_PROXY",
+    "NO_PROXY",
+    "ALL_PROXY",
+    "SSL_CERT_FILE",
+    "SSL_CERT_DIR",
+    "NODE_EXTRA_CA_CERTS",
+    "XDG_RUNTIME_DIR",
+    "DBUS_SESSION_BUS_ADDRESS",
+    "SYSTEMROOT",
+    "WINDIR",
+    "COMSPEC",
+    "PATHEXT",
+];
+
+fn runtime_environment_key_allowed(runtime_id: &str, key: &OsStr) -> bool {
+    // Windows 환경 이름은 대소문자를 구분하지 않는다. 같은 정책을 모든 플랫폼에서
+    // 쓰면 `OpenAI_Api_Key` 같은 혼합 표기도 Windows에서 빠뜨리지 않는다.
+    let normalized = key.to_string_lossy().to_ascii_uppercase();
+    SHARED_RUNTIME_ENV.contains(&normalized.as_str())
+        || normalized.starts_with("LC_")
+        || (runtime_id == "codex-acp"
+            && matches!(normalized.as_str(), "CODEX_HOME" | "CODEX_CA_CERTIFICATE"))
+}
+
+/// 검증한 구독 실행기에 전달할 명시적 환경. `None`은 미검증 실행기의 기존 상속을
+/// 유지한다는 뜻이고, 빈 `Some`은 전부 지운다는 뜻이므로 둘을 합치지 않는다.
+pub(crate) fn sanitized_runtime_environment(
+    runtime_id: &str,
+    inherited: impl IntoIterator<Item = (OsString, OsString)>,
+) -> Option<Vec<(OsString, OsString)>> {
+    if !SANITIZED_ENV_RUNTIMES.contains(&runtime_id) {
+        return None;
+    }
+
+    Some(
+        inherited
+            .into_iter()
+            .filter(|(key, _)| runtime_environment_key_allowed(runtime_id, key))
+            .collect(),
+    )
+}
+
+/// 세션 시작과 로그인 확인이 **같은 환경 정책**을 쓰게 하는 단일 진입점.
+pub(crate) fn apply_runtime_environment(
+    command: &mut std::process::Command,
+    runtime_id: &str,
+    child_path: &str,
+) {
+    if let Some(environment) = sanitized_runtime_environment(runtime_id, std::env::vars_os()) {
+        command.env_clear();
+        command.envs(environment);
+    }
+    // PATH 는 부모 값을 허용 목록으로 통과시키지 않고, 우리가 실제 실행기와 CLI를
+    // 찾을 때 만든 경로로 마지막에 덮는다.
+    command.env("PATH", child_path);
+}
+
 /// 앱이 관리하는 설정 디렉터리를 준비하고 그 경로를 준다.
 ///
 /// **왜 격리하는가는 `ISOLATED_CLAUDE_SETTINGS` 주석에 있다.** 여기서는 그 결정을
@@ -683,6 +770,24 @@ pub(crate) fn config_env_for(runtime_id: &str) -> Option<&'static str> {
     isolation_for(runtime_id).map(|s| s.config_env)
 }
 
+/// 실행기가 설정 격리를 지원하면 **반드시** 준비하고, 실패는 시작 실패로 올린다.
+///
+/// `None` 은 검증되지 않은 실행기에 격리를 지어내지 않는다는 뜻이다. 반대로
+/// `config_env_for()` 가 값을 돌려준 실행기는 화면이 이미 「관문 있음」이라고
+/// 말하므로, 준비 실패 뒤 비격리 상태로 띄우는 선택지는 없다.
+pub(crate) fn prepare_runtime_isolation(
+    runtime_id: &str,
+    app_data_dir: &Path,
+    home: Option<&Path>,
+) -> Result<Option<(&'static str, PathBuf)>, String> {
+    let Some(env) = config_env_for(runtime_id) else {
+        return Ok(None);
+    };
+    let dir = prepare_isolated_config(runtime_id, app_data_dir, home)
+        .map_err(|reason| format!("isolation-failed:{reason}"))?;
+    Ok(Some((env, dir)))
+}
+
 /// 자격증명 링크를 건다. 이미 올바른 곳을 가리키면 그대로 둔다.
 fn link_credentials(source: &Path, link: &Path) -> Result<(), String> {
     if let Ok(existing) = std::fs::read_link(link) {
@@ -729,8 +834,23 @@ pub(crate) fn permission_verdict(vault_root: &Path, file_path: Option<&str>) -> 
     let Some(raw) = file_path else {
         return PermissionVerdict::Ask;
     };
-    let resolved = resolve_for_comparison(Path::new(raw));
-    let root = resolve_for_comparison(vault_root);
+    let raw = Path::new(raw);
+    // 권한 경계의 루트는 호출자가 꾸며 낸 문자열이 아니라 `acp_start` 가 확인한
+    // 절대 디렉터리여야 한다. 빈 경로는 현재 작업 폴더로, `/` 는 모든 절대
+    // 경로의 조상으로 해석되므로 둘 중 하나라도 허용하면 관문 전체가 열린다.
+    if !vault_root.is_absolute() || !raw.is_absolute() {
+        return PermissionVerdict::Ask;
+    }
+    let Ok(root) = std::fs::canonicalize(vault_root) else {
+        return PermissionVerdict::Ask;
+    };
+    // `acp_start` 가 저장한 정규 경로와 지금 해소되는 대상이 달라졌다면 세션
+    // 시작 뒤 루트 경로가 링크로 바뀐 것이다. 새 대상을 같은 볼트로 승격하지
+    // 않는다 — 권한 경계는 세션 수명 동안 움직이지 않는다.
+    if root != vault_root || !root.is_dir() || root.parent().is_none() {
+        return PermissionVerdict::Ask;
+    }
+    let resolved = resolve_for_comparison(raw);
     if resolved.starts_with(&root) {
         PermissionVerdict::AllowInsideVault
     } else {
@@ -854,6 +974,26 @@ fn process_is_running(pid: u32) -> bool {
     unsafe { libc::kill(pid as i32, 0) == 0 }
 }
 
+/// 그룹 리더가 이미 회수된 뒤에도 **그 PGID에 구성원이 남았는지** 확인한다.
+///
+/// `kill(pid, 0)`은 리더 하나만 본다. 음수 PID는 프로세스 그룹 전체를 뜻하므로,
+/// TERM을 무시한 손자까지 사라졌는지는 이 판정으로만 알 수 있다.
+#[cfg(unix)]
+fn process_group_is_running(pgid: u32) -> Result<bool, String> {
+    if unsafe { libc::kill(-(pgid as i32), 0) } == 0 {
+        return Ok(true);
+    }
+    let err = std::io::Error::last_os_error();
+    match err.raw_os_error() {
+        Some(libc::ESRCH) => Ok(false),
+        // EPERM은 「없다」가 아니다. macOS에서는 방금 TERM을 받은 그룹이
+        // 회수되는 짧은 구간에도 보일 수 있으므로 grace 동안은 살아 있는 것으로
+        // 보고 다시 확인한다. 최종 신호에서도 EPERM이면 그때 오류로 올린다.
+        Some(libc::EPERM) => Ok(true),
+        _ => Err(format!("failed to inspect process group {pgid}: {err}")),
+    }
+}
+
 /// 프로세스 **그룹**에 신호를 보낸다. 그룹으로 못 보내면 리더에게라도 보낸다.
 ///
 /// 그룹이 먼저인 이유: 어댑터는 자기 자식(진짜 CLI · MCP 서버 · 서브에이전트)을
@@ -861,9 +1001,9 @@ fn process_is_running(pid: u32) -> bool {
 /// 참고 제품에서 유휴 에이전트 3개가 92 프로세스 · 7.1GB 를 쓰고 있는 것을
 /// 실측했다 — 그 트리를 확실히 끝내는 것이 이 함수의 존재 이유다.
 ///
-/// 폴백이 필요한 이유: macOS 에서 자손 하나가 다른 그룹으로 옮겨 갔거나 권한이
-/// 다르면 그룹 신호가 `EPERM` 으로 실패한다. 그때 아무것도 안 하면 우리가 띄운
-/// 프로세스가 그대로 남는다.
+/// 그룹이 이미 사라졌는데 리더만 다른 그룹에 남은 `ESRCH` 갈래에서는 리더에게
+/// 폴백한다. `EPERM`이면 리더 신호를 최선으로 시도하되 성공으로 숨기지 않는다 —
+/// 리더 하나를 끝낸 것은 트리 전체를 끝낸 증거가 아니기 때문이다.
 #[cfg(unix)]
 fn signal_group_or_leader(pid: u32, signal: i32) -> Result<(), String> {
     let group = -(pid as i32);
@@ -871,19 +1011,31 @@ fn signal_group_or_leader(pid: u32, signal: i32) -> Result<(), String> {
         return Ok(());
     }
     let group_err = std::io::Error::last_os_error();
-    if !process_is_running(pid) {
-        return Ok(()); // 이미 끝났다 — 실패가 아니다.
-    }
     match group_err.raw_os_error() {
-        Some(libc::EPERM) | Some(libc::ESRCH) => {
+        Some(libc::ESRCH) if !process_is_running(pid) => {
+            Ok(()) // 그룹도 리더도 이미 끝났다 — 실패가 아니다.
+        }
+        Some(libc::ESRCH) => {
             if unsafe { libc::kill(pid as i32, signal) } == 0 {
                 return Ok(());
             }
             let leader_err = std::io::Error::last_os_error();
-            if leader_err.raw_os_error() == Some(libc::ESRCH) || !process_is_running(pid) {
+            if leader_err.raw_os_error() == Some(libc::ESRCH) || !process_is_running(pid)
+            {
                 return Ok(());
             }
             Err(format!("failed to signal {pid}: {leader_err}"))
+        }
+        Some(libc::EPERM) => {
+            // 리더라도 끝내 보지만, 손자를 끝냈다는 증거는 없으므로 오류는 유지한다.
+            if process_is_running(pid) {
+                unsafe {
+                    libc::kill(pid as i32, signal);
+                }
+            }
+            Err(format!(
+                "failed to signal process group {pid}: {group_err}"
+            ))
         }
         _ => Err(format!("failed to signal group {pid}: {group_err}")),
     }
@@ -904,7 +1056,7 @@ pub(crate) fn terminate_tree(pid: u32) -> Result<(), String> {
         signal_group_or_leader(pid, libc::SIGTERM)?;
         let deadline = std::time::Instant::now() + GRACEFUL_EXIT_WAIT;
         while std::time::Instant::now() < deadline {
-            if !process_is_running(pid) {
+            if !process_group_is_running(pid)? {
                 return Ok(());
             }
             std::thread::sleep(std::time::Duration::from_millis(50));
@@ -930,13 +1082,15 @@ pub(crate) fn terminate_tree(pid: u32) -> Result<(), String> {
     }
 }
 
+pub(crate) type RealProbe = (
+    fn(&Path) -> bool,
+    fn(&Path) -> Vec<String>,
+    fn(&Path) -> Option<String>,
+    fn(&str, &Path, &[&str], &str) -> Option<bool>,
+);
+
 /// 실제 디스크를 보는 기본 프로브.
-pub(crate) fn real_probe() -> (
-    impl Fn(&Path) -> bool,
-    impl Fn(&Path) -> Vec<String>,
-    impl Fn(&Path) -> Option<String>,
-    impl Fn(&Path, &[&str], &str) -> Option<bool>,
-) {
+pub(crate) fn real_probe() -> RealProbe {
     let is_executable = |path: &Path| -> bool {
         let Ok(meta) = std::fs::metadata(path) else {
             return false;
@@ -983,45 +1137,44 @@ pub(crate) fn real_probe() -> (
      * 못 띄우거나 시간이 지나면 `None` — 「로그인 안 됨」이 아니라 **모른다**다.
      * 모르는 것을 「안 됨」으로 적으면 멀쩡한 도구를 못 쓰게 만든다.
      */
-    let login_ok = |path: &Path, args: &[&str], child_path: &str| -> Option<bool> {
-        use std::process::{Command, Stdio};
-        let mut command = Command::new(path);
-        command
-            .args(args)
-            .stdin(Stdio::null())
-            .stdout(Stdio::null())
-            .stderr(Stdio::null());
-        /*
-         * ⚠️ **자식에게 우리가 다시 만든 PATH 를 준다** (2026-08-16 검수에서
-         * 적발). 종전에는 앱이 상속받은 환경 그대로 띄웠는데, 이 파일 맨 위가
-         * 적어 둔 바로 그 이유로 그건 절반만 푼 것이다 — Finder 로 띄운 앱의
-         * PATH 에는 nvm 자리가 없고, `claude` 는 node 를 이름으로 찾는 래퍼다.
-         * 그러면 「종료 코드 ≠ 0」이 나오고 우리는 그걸 **로그인 안 됨**으로
-         * 읽어서, 멀쩡히 로그인된 도구를 목록에서 통째로 지웠다.
-         */
-        if !child_path.is_empty() {
-            command.env("PATH", child_path);
-        }
-        let mut child = command.spawn().ok()?;
+    let login_ok =
+        |runtime_id: &str, path: &Path, args: &[&str], child_path: &str| -> Option<bool> {
+            use std::process::{Command, Stdio};
+            let mut command = Command::new(path);
+            command
+                .args(args)
+                .stdin(Stdio::null())
+                .stdout(Stdio::null())
+                .stderr(Stdio::null());
+            /*
+             * ⚠️ **자식에게 우리가 다시 만든 PATH 를 준다** (2026-08-16 검수에서
+             * 적발). 종전에는 앱이 상속받은 환경 그대로 띄웠는데, 이 파일 맨 위가
+             * 적어 둔 바로 그 이유로 그건 절반만 푼 것이다 — Finder 로 띄운 앱의
+             * PATH 에는 nvm 자리가 없고, `claude` 는 node 를 이름으로 찾는 래퍼다.
+             * 그러면 「종료 코드 ≠ 0」이 나오고 우리는 그걸 **로그인 안 됨**으로
+             * 읽어서, 멀쩡히 로그인된 도구를 목록에서 통째로 지웠다.
+             */
+            apply_runtime_environment(&mut command, runtime_id, child_path);
+            let mut child = command.spawn().ok()?;
 
-        // 응답이 없으면 기다리다 화면이 멈춘다. 실측값(claude 300ms · codex
-        // 45ms)의 여러 배를 상한으로 두고, 넘으면 끝내고 「모른다」로 답한다.
-        let deadline = std::time::Instant::now() + LOGIN_PROBE_TIMEOUT;
-        loop {
-            match child.try_wait() {
-                Ok(Some(status)) => return Some(status.success()),
-                Ok(None) => {
-                    if std::time::Instant::now() >= deadline {
-                        let _ = child.kill();
-                        let _ = child.wait();
-                        return None;
+            // 응답이 없으면 기다리다 화면이 멈춘다. 실측값(claude 300ms · codex
+            // 45ms)의 여러 배를 상한으로 두고, 넘으면 끝내고 「모른다」로 답한다.
+            let deadline = std::time::Instant::now() + LOGIN_PROBE_TIMEOUT;
+            loop {
+                match child.try_wait() {
+                    Ok(Some(status)) => return Some(status.success()),
+                    Ok(None) => {
+                        if std::time::Instant::now() >= deadline {
+                            let _ = child.kill();
+                            let _ = child.wait();
+                            return None;
+                        }
+                        std::thread::sleep(std::time::Duration::from_millis(20));
                     }
-                    std::thread::sleep(std::time::Duration::from_millis(20));
+                    Err(_) => return None,
                 }
-                Err(_) => return None,
             }
-        }
-    };
+        };
 
     (is_executable, list_dir, read_text, login_ok)
 }
@@ -1034,19 +1187,191 @@ const LOGIN_PROBE_TIMEOUT: std::time::Duration = std::time::Duration::from_secs(
 mod tests {
     use super::*;
     use std::collections::HashSet;
+    use std::ffi::OsString;
+
+    fn npx_package(runtime_id: &str) -> &'static str {
+        match &registry_agent(runtime_id)
+            .unwrap_or_else(|| panic!("missing registry agent: {runtime_id}"))
+            .launch
+        {
+            RegistryLaunch::Npx { package, .. } => package,
+            _ => panic!("runtime is not backed by npx: {runtime_id}"),
+        }
+    }
+
+    fn sample_parent_environment() -> Vec<(OsString, OsString)> {
+        [
+            ("HOME", "/home/me"),
+            ("USERPROFILE", "C:\\Users\\me"),
+            ("TMPDIR", "/tmp/runtime"),
+            ("LANG", "ko_KR.UTF-8"),
+            ("LC_CTYPE", "UTF-8"),
+            ("HTTPS_PROXY", "http://proxy.example"),
+            ("NO_PROXY", "localhost"),
+            ("SSL_CERT_FILE", "/etc/company-ca.pem"),
+            ("NODE_EXTRA_CA_CERTS", "/etc/node-ca.pem"),
+            ("CODEX_HOME", "/home/me/.codex-custom"),
+            ("CODEX_CA_CERTIFICATE", "/etc/codex-ca.pem"),
+            ("OPENAI_API_KEY", "openai-secret"),
+            ("CODEX_ACCESS_TOKEN", "codex-secret"),
+            ("ANTHROPIC_API_KEY", "anthropic-secret"),
+            ("ANTHROPIC_BASE_URL", "https://redirect.example"),
+            ("GH_TOKEN", "github-secret"),
+            ("AWS_SECRET_ACCESS_KEY", "aws-secret"),
+            ("NODE_OPTIONS", "--require=/tmp/inject.cjs"),
+            ("DYLD_INSERT_LIBRARIES", "/tmp/inject.dylib"),
+            ("BASH_ENV", "/tmp/inject.sh"),
+            ("SSH_AUTH_SOCK", "/tmp/agent.sock"),
+            ("ATLAS_TEST_SECRET", "ambient-secret"),
+        ]
+        .into_iter()
+        .map(|(key, value)| (OsString::from(key), OsString::from(value)))
+        .collect()
+    }
+
+    fn environment_keys(environment: &[(OsString, OsString)]) -> HashSet<String> {
+        environment
+            .iter()
+            .map(|(key, _)| key.to_string_lossy().to_ascii_uppercase())
+            .collect()
+    }
+
+    #[test]
+    fn verified_subscription_runtimes_drop_ambient_credentials_and_injection_inputs() {
+        for runtime_id in ["claude-acp", "codex-acp"] {
+            let environment =
+                sanitized_runtime_environment(runtime_id, sample_parent_environment())
+                    .expect("verified subscription runtime must use an explicit environment");
+            let keys = environment_keys(&environment);
+
+            for preserved in [
+                "HOME",
+                "USERPROFILE",
+                "TMPDIR",
+                "LANG",
+                "LC_CTYPE",
+                "HTTPS_PROXY",
+                "NO_PROXY",
+                "SSL_CERT_FILE",
+                "NODE_EXTRA_CA_CERTS",
+            ] {
+                assert!(keys.contains(preserved), "{runtime_id}: lost {preserved}");
+            }
+            for blocked in [
+                "OPENAI_API_KEY",
+                "CODEX_ACCESS_TOKEN",
+                "ANTHROPIC_API_KEY",
+                "ANTHROPIC_BASE_URL",
+                "GH_TOKEN",
+                "AWS_SECRET_ACCESS_KEY",
+                "NODE_OPTIONS",
+                "DYLD_INSERT_LIBRARIES",
+                "BASH_ENV",
+                "SSH_AUTH_SOCK",
+                "ATLAS_TEST_SECRET",
+            ] {
+                assert!(!keys.contains(blocked), "{runtime_id}: inherited {blocked}");
+            }
+        }
+    }
+
+    #[test]
+    fn explicit_environment_profiles_exist_only_for_verified_login_probes() {
+        assert!(!SANITIZED_ENV_RUNTIMES.is_empty());
+        for runtime_id in SANITIZED_ENV_RUNTIMES {
+            let agent = registry_agent(runtime_id).expect("environment profile needs a registry row");
+            assert!(agent.verified, "{runtime_id}: unverified runtime got an environment profile");
+            assert!(
+                LOGIN_PROBE.iter().any(|(id, _)| id == runtime_id),
+                "{runtime_id}: environment was changed without a measured login probe"
+            );
+        }
+    }
+
+    #[test]
+    fn codex_keeps_its_cached_login_location_and_ca_without_forwarding_tokens() {
+        let environment = sanitized_runtime_environment("codex-acp", sample_parent_environment())
+            .expect("codex must use an explicit environment");
+        let keys = environment_keys(&environment);
+        assert!(keys.contains("CODEX_HOME"));
+        assert!(keys.contains("CODEX_CA_CERTIFICATE"));
+
+        let claude = sanitized_runtime_environment("claude-acp", sample_parent_environment())
+            .expect("claude must use an explicit environment");
+        let claude_keys = environment_keys(&claude);
+        assert!(!claude_keys.contains("CODEX_HOME"));
+        assert!(!claude_keys.contains("CODEX_CA_CERTIFICATE"));
+    }
+
+    #[test]
+    fn environment_policy_is_case_insensitive_and_does_not_invent_profiles() {
+        let mixed_case = vec![
+            (OsString::from("cOdEx_HoMe"), OsString::from("custom")),
+            (OsString::from("OpenAI_Api_Key"), OsString::from("secret")),
+        ];
+        let codex = sanitized_runtime_environment("codex-acp", mixed_case)
+            .expect("codex must use an explicit environment");
+        let keys = environment_keys(&codex);
+        assert!(keys.contains("CODEX_HOME"));
+        assert!(!keys.contains("OPENAI_API_KEY"));
+
+        assert!(sanitized_runtime_environment("gemini", sample_parent_environment()).is_none());
+    }
+
+    #[test]
+    fn applied_runtime_environment_clears_command_overrides_before_spawn() {
+        let mut command = std::process::Command::new(std::env::current_exe().unwrap());
+        command
+            .args([
+                "--exact",
+                "acp::tests::runtime_environment_probe_child",
+                "--nocapture",
+            ])
+            .env("ATLAS_TEST_SECRET", "must-not-cross")
+            .env("NODE_OPTIONS", "--require=/tmp/inject.cjs")
+            .stdout(std::process::Stdio::piped())
+            .stderr(std::process::Stdio::piped());
+
+        apply_runtime_environment(&mut command, "claude-acp", "/atlas/verified/bin");
+        // 테스트 자식임을 알리는 값은 정책을 적용한 **뒤**에만 넣는다. 정책 전에
+        // 넣으면 env_clear가 없을 때도 자식이 안 떠서 검사가 거짓 초록이 된다.
+        command.env("ATLAS_ENV_PROBE_CHILD", "1");
+
+        let output = command.output().unwrap();
+        let stdout = String::from_utf8_lossy(&output.stdout);
+        let stderr = String::from_utf8_lossy(&output.stderr);
+        assert!(output.status.success(), "stdout={stdout}\nstderr={stderr}");
+        assert!(stdout.contains("PATH=/atlas/verified/bin"), "{stdout}");
+        assert!(!stdout.contains("ATLAS_TEST_SECRET="), "{stdout}");
+        assert!(!stdout.contains("NODE_OPTIONS="), "{stdout}");
+    }
+
+    #[test]
+    fn runtime_environment_probe_child() {
+        if std::env::var_os("ATLAS_ENV_PROBE_CHILD").is_none() {
+            return;
+        }
+        let mut environment: Vec<_> = std::env::vars_os()
+            .map(|(key, value)| format!("{}={}", key.to_string_lossy(), value.to_string_lossy()))
+            .collect();
+        environment.sort();
+        println!("{}", environment.join("\n"));
+    }
+
+    pub(super) type ProbeClosures<'a> = (
+        Box<dyn Fn(&Path) -> bool + 'a>,
+        Box<dyn Fn(&Path) -> Vec<String> + 'a>,
+        Box<dyn Fn(&Path) -> Option<String> + 'a>,
+    );
 
     pub(super) fn probe_with<'a>(
         files: &'a HashSet<PathBuf>,
         dirs: &'a std::collections::HashMap<PathBuf, Vec<String>>,
-    ) -> (
-        impl Fn(&Path) -> bool + 'a,
-        impl Fn(&Path) -> Vec<String> + 'a,
-        impl Fn(&Path) -> Option<String> + 'a,
-    ) {
+    ) -> ProbeClosures<'a> {
         (
-            move |p: &Path| files.contains(p),
-            move |p: &Path| dirs.get(p).cloned().unwrap_or_default(),
-            move |_: &Path| None,
+            Box::new(move |p: &Path| files.contains(p)),
+            Box::new(move |p: &Path| dirs.get(p).cloned().unwrap_or_default()),
+            Box::new(move |_: &Path| None),
         )
     }
 
@@ -1065,7 +1390,7 @@ mod tests {
             is_executable: &is_exec,
             list_dir: &list,
             read_text: &read,
-            login_ok: &|_, _, _| None,
+            login_ok: &|_, _, _, _| None,
         };
         let path = std::env::join_paths([PathBuf::from("/from/path")]).unwrap();
         let out = candidate_bin_dirs(Some(Path::new("/home/me")), Some(&path), &probe);
@@ -1093,7 +1418,7 @@ mod tests {
             is_executable: &is_exec,
             list_dir: &list,
             read_text: &read,
-            login_ok: &|_, _, _| None,
+            login_ok: &|_, _, _, _| None,
         };
         let out = nvm_bin_dirs(Path::new("/home/me"), &probe);
         assert_eq!(
@@ -1132,7 +1457,7 @@ mod tests {
             is_executable: &is_exec,
             list_dir: &list,
             read_text: &read,
-            login_ok: &|_, _, _| None,
+            login_ok: &|_, _, _, _| None,
         };
         let out = detect_runtimes(Some(Path::new("/home/me")), None, &probe);
         let claude = out.iter().find(|r| r.id == "claude-acp").unwrap();
@@ -1174,7 +1499,7 @@ mod tests {
             is_executable: &is_exec,
             list_dir: &list,
             read_text: &read,
-            login_ok: &|_, _, _| None,
+            login_ok: &|_, _, _, _| None,
         };
         let out = nvm_bin_dirs(Path::new("/home/me"), &probe);
         assert_eq!(
@@ -1195,7 +1520,7 @@ mod tests {
             is_executable: &is_exec,
             list_dir: &list,
             read_text: &read,
-            login_ok: &|_, _, _| None,
+            login_ok: &|_, _, _, _| None,
         };
         assert_eq!(
             resolve_command("claude", &[PathBuf::from("/usr/bin")], &probe),
@@ -1225,7 +1550,7 @@ mod tests {
             is_executable: &is_exec,
             list_dir: &list,
             read_text: &read,
-            login_ok: &|_, _, _| None,
+            login_ok: &|_, _, _, _| None,
         };
 
         // PATH 는 GUI 앱이 받는 최소한만 — 여기에 아무것도 없다.
@@ -1243,13 +1568,10 @@ mod tests {
             Some("/home/me/.nvm/versions/node/v24.16.0/bin/npx"),
             "설치된 어댑터가 없으면 npx 로 띄운다"
         );
-        assert!(
-            claude
-                .adapter_package
-                .as_deref()
-                .is_some_and(|p| p.ends_with("@0.68.0")),
-            "어댑터 버전은 못 박혀 있어야 한다: {:?}",
-            claude.adapter_package
+        assert_eq!(
+            claude.adapter_package.as_deref(),
+            Some(npx_package("claude-acp")),
+            "탐지 결과는 현재 레지스트리에 못 박힌 패키지를 그대로 내놓아야 한다"
         );
 
         let codex = out.iter().find(|r| r.id == "codex-acp").unwrap();
@@ -1269,7 +1591,7 @@ mod tests {
                 is_executable: &is_exec,
                 list_dir: &list,
                 read_text: &read,
-                login_ok: &|_, _, _| None,
+                login_ok: &|_, _, _, _| None,
             };
             let out = detect_runtimes(None, None, &probe);
             let claude = out.iter().find(|r| r.id == "claude-acp").unwrap();
@@ -1283,7 +1605,7 @@ mod tests {
             is_executable: &is_exec,
             list_dir: &list,
             read_text: &read,
-            login_ok: &|_, _, _| None,
+            login_ok: &|_, _, _, _| None,
         };
         let out = detect_runtimes(None, None, &probe);
         let claude = out.iter().find(|r| r.id == "claude-acp").unwrap();
@@ -1311,7 +1633,7 @@ mod tests {
             is_executable: &is_exec,
             list_dir: &list,
             read_text: &read,
-            login_ok: &|_, _, _| Some(true),
+            login_ok: &|_, _, _, _| Some(true),
         };
         let out = detect_runtimes(None, None, &probe);
         let claude = out.iter().find(|r| r.id == "claude-acp").unwrap();
@@ -1322,7 +1644,7 @@ mod tests {
             is_executable: &is_exec,
             list_dir: &list,
             read_text: &read,
-            login_ok: &|_, _, _| Some(false),
+            login_ok: &|_, _, _, _| Some(false),
         };
         let out = detect_runtimes(None, None, &probe);
         let claude = out.iter().find(|r| r.id == "claude-acp").unwrap();
@@ -1337,7 +1659,7 @@ mod tests {
             is_executable: &is_exec,
             list_dir: &list,
             read_text: &read,
-            login_ok: &|_, _, _| None,
+            login_ok: &|_, _, _, _| None,
         };
         let out = detect_runtimes(None, None, &probe);
         let claude = out.iter().find(|r| r.id == "claude-acp").unwrap();
@@ -1368,7 +1690,7 @@ mod tests {
             is_executable: &is_exec,
             list_dir: &list,
             read_text: &read,
-            login_ok: &|path: &Path, _, _| {
+            login_ok: &|_, path: &Path, _, _| {
                 asked.borrow_mut().push(path.to_string_lossy().to_string());
                 Some(true)
             },
@@ -1411,7 +1733,7 @@ mod tests {
             is_executable: &is_exec,
             list_dir: &list,
             read_text: &read,
-            login_ok: &|_, _, child_path: &str| {
+            login_ok: &|_, _, _, child_path: &str| {
                 seen.borrow_mut().push(child_path.to_string());
                 Some(true)
             },
@@ -1446,7 +1768,7 @@ mod tests {
             is_executable: &is_exec,
             list_dir: &list,
             read_text: &read,
-            login_ok: &|_, _, _| None,
+            login_ok: &|_, _, _, _| None,
         };
         let out = detect_runtimes(None, None, &probe);
 
@@ -1499,7 +1821,7 @@ mod tests {
             is_executable: &is_exec,
             list_dir: &list,
             read_text: &read,
-            login_ok: &|_, _, _| None,
+            login_ok: &|_, _, _, _| None,
         };
         let out = detect_runtimes(None, None, &probe);
         let claude = out.iter().find(|r| r.id == "claude-acp").unwrap();
@@ -1525,7 +1847,7 @@ mod tests {
                 is_executable: &is_exec,
                 list_dir: &list,
                 read_text: &read,
-                login_ok: &|_, _, _| None,
+                login_ok: &|_, _, _, _| None,
             };
             let launch = resolve_launch("claude-acp", None, None, &probe).unwrap();
             assert_eq!(launch.program, PathBuf::from("/usr/local/bin/npx"));
@@ -1533,7 +1855,7 @@ mod tests {
                 launch.args,
                 vec![
                     "-y".to_string(),
-                    "@agentclientprotocol/claude-agent-acp@0.68.0".to_string()
+                    npx_package("claude-acp").to_string()
                 ],
                 "설치돼 있지 않으면 버전 못 박은 npx 로 띄운다"
             );
@@ -1545,7 +1867,7 @@ mod tests {
             is_executable: &is_exec,
             list_dir: &list,
             read_text: &read,
-            login_ok: &|_, _, _| None,
+            login_ok: &|_, _, _, _| None,
         };
         let launch = resolve_launch("claude-acp", None, None, &probe).unwrap();
         assert_eq!(
@@ -1577,7 +1899,7 @@ mod tests {
             is_executable: &is_exec,
             list_dir: &list,
             read_text: &read,
-            login_ok: &|_, _, _| None,
+            login_ok: &|_, _, _, _| None,
         };
         let launch = resolve_launch("claude-acp", Some(Path::new("/home/me")), None, &probe).unwrap();
         assert!(
@@ -1605,7 +1927,7 @@ mod tests {
             is_executable: &is_exec,
             list_dir: &list,
             read_text: &read,
-            login_ok: &|_, _, _| None,
+            login_ok: &|_, _, _, _| None,
         };
         assert!(resolve_launch("claude-acp", None, None, &probe)
             .unwrap_err()
@@ -1618,7 +1940,7 @@ mod tests {
             is_executable: &is_exec,
             list_dir: &list,
             read_text: &read,
-            login_ok: &|_, _, _| None,
+            login_ok: &|_, _, _, _| None,
         };
         assert_eq!(
             resolve_launch("claude-acp", None, None, &probe).unwrap_err(),
@@ -1731,11 +2053,77 @@ mod tests {
         // ② 그룹째 끝내면 손자도 함께 끝난다.
         let (mut child, grandchild) = spawn_tree();
         assert!(process_is_running(grandchild));
-        terminate_tree(child.id()).expect("트리를 끝내지 못했다");
-        let _ = child.wait();
+        let leader_pid = child.id();
+        // 실제 앱과 같이 별도 wait 스레드가 리더를 회수한다. 리더를 이 함수 뒤에
+        // 회수하면 macOS에서 죽은 그룹 리더가 EPERM 과도 상태로 남아, 앱에 없는
+        // 수명 조건을 시험하게 된다.
+        let reaper = std::thread::spawn(move || child.wait());
+        terminate_tree(leader_pid).expect("트리를 끝내지 못했다");
+        let _ = reaper.join();
         assert!(
             wait_until_gone(grandchild, std::time::Duration::from_secs(3)),
             "손자 {grandchild} 가 살아남았다 — 앱을 꺼도 계속 도는 상태"
+        );
+    }
+
+    /// 리더가 먼저 회수돼도 같은 그룹의 손자가 남아 있으면 강제 종료까지 간다.
+    ///
+    /// 실제 앱에는 자식을 기다리는 별도 스레드가 있으므로 SIGTERM 직후 리더 PID는
+    /// 사라질 수 있다. 그 순간 리더만 확인하면 TERM을 무시한 손자는 살아 있는데
+    /// 트리가 끝났다고 오판한다.
+    #[cfg(unix)]
+    #[test]
+    fn terminate_tree_escalates_after_the_group_leader_is_reaped() {
+        use std::io::{BufRead, BufReader};
+        use std::os::unix::process::CommandExt;
+        use std::process::{Command, Stdio};
+
+        let mut leader = Command::new("/bin/sh")
+            .arg("-c")
+            // 안쪽 sh 가 TERM 무시 설정을 끝낸 뒤 자기 pid 를 알린다. 바깥 sh 는
+            // 기본 TERM 동작을 유지하므로 그룹 TERM 때 리더만 먼저 끝난다.
+            .arg("/bin/sh -c 'trap \"\" TERM; echo $$; while :; do sleep 1; done' & wait")
+            .stdout(Stdio::piped())
+            .process_group(0)
+            .spawn()
+            .expect("테스트 프로세스 그룹을 띄우지 못했다");
+        let leader_pid = leader.id();
+        let mut out = BufReader::new(leader.stdout.take().unwrap());
+        let mut line = String::new();
+        out.read_line(&mut line).unwrap();
+        let grandchild: u32 = line
+            .trim()
+            .parse()
+            .expect("TERM 무시 손자의 pid 를 못 읽었다");
+        assert_eq!(
+            unsafe { libc::getpgid(grandchild as i32) },
+            leader_pid as i32,
+            "손자가 리더의 프로세스 그룹을 떠나면 이 검사는 다른 조건을 잰다"
+        );
+
+        assert_eq!(unsafe { libc::kill(-(leader_pid as i32), libc::SIGTERM) }, 0);
+        let _ = leader.wait();
+        assert!(
+            process_is_running(grandchild),
+            "손자가 TERM을 무시하지 않아 조기 반환 조건을 만들지 못했다"
+        );
+
+        let result = terminate_tree(leader_pid);
+        let gone_before_cleanup =
+            wait_until_gone(grandchild, std::time::Duration::from_millis(250));
+        // RED에서도 프로세스를 남기지 않는다. 구현이 놓쳤으면 원래 PGID 전체를
+        // 여기서 정리한 뒤에만 assertion을 실패시킨다.
+        if !gone_before_cleanup {
+            unsafe {
+                libc::kill(-(leader_pid as i32), libc::SIGKILL);
+            }
+            let _ = wait_until_gone(grandchild, std::time::Duration::from_secs(3));
+        }
+
+        result.expect("남은 프로세스 그룹을 끝내지 못했다");
+        assert!(
+            gone_before_cleanup,
+            "리더가 사라졌다는 이유로 반환해 TERM을 무시한 손자 {grandchild}가 남았다"
         );
     }
 
@@ -1827,6 +2215,37 @@ mod tests {
     }
 
     #[test]
+    fn guarded_runtime_isolation_failure_blocks_launch_preparation() {
+        let nonce = std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .unwrap()
+            .as_nanos();
+        let base = std::env::temp_dir().join(format!("atlas-acp-gate-{nonce}"));
+        std::fs::create_dir_all(&base).unwrap();
+        let app_data_file = base.join("not-a-directory");
+        std::fs::write(&app_data_file, "blocked").unwrap();
+
+        let error = prepare_runtime_isolation("claude-acp", &app_data_file, None).unwrap_err();
+        assert!(
+            error.starts_with("isolation-failed:config-dir-failed:"),
+            "격리 준비 실패가 시작 실패로 올라오지 않았다: {error}"
+        );
+
+        let _ = std::fs::remove_dir_all(&base);
+    }
+
+    #[test]
+    fn unguarded_runtime_does_not_invent_an_isolation_requirement() {
+        let isolation = prepare_runtime_isolation(
+            "gemini-acp",
+            Path::new("/path/that/does/not/need/to/exist"),
+            None,
+        )
+        .unwrap();
+        assert!(isolation.is_none());
+    }
+
+    #[test]
     fn permission_policy_reads_the_path_not_the_title() {
         // 실측: 볼트 안이면 제목이 상대 경로, 밖이면 절대 경로였다. 문구로
         // 판정하면 문구가 바뀌는 날 정책이 조용히 뒤집힌다.
@@ -1835,25 +2254,88 @@ mod tests {
         let outside = base.join("outside");
         std::fs::create_dir_all(&vault).unwrap();
         std::fs::create_dir_all(&outside).unwrap();
+        let session_root = std::fs::canonicalize(&vault).unwrap();
 
         assert_eq!(
-            permission_verdict(&vault, Some(vault.join("notes.md").to_str().unwrap())),
+            permission_verdict(
+                &session_root,
+                Some(vault.join("notes.md").to_str().unwrap())
+            ),
             PermissionVerdict::AllowInsideVault
         );
         assert_eq!(
-            permission_verdict(&vault, Some(outside.join("notes.md").to_str().unwrap())),
+            permission_verdict(
+                &session_root,
+                Some(outside.join("notes.md").to_str().unwrap())
+            ),
             PermissionVerdict::Ask,
             "볼트 밖은 반드시 물어야 한다"
         );
         assert_eq!(
-            permission_verdict(&vault, Some("../escape.md")),
+            permission_verdict(&session_root, Some("../escape.md")),
             PermissionVerdict::Ask,
             "상대 경로로 올라가는 것도 밖이다"
         );
         assert_eq!(
-            permission_verdict(&vault, None),
+            permission_verdict(&session_root, None),
             PermissionVerdict::Ask,
             "경로를 모르면 묻는다 — 판단할 수 없는 것을 통과시키지 않는다"
+        );
+
+        let _ = std::fs::remove_dir_all(&base);
+    }
+
+    #[test]
+    fn permission_policy_rejects_invalid_vault_roots_instead_of_allowing_everything() {
+        let base = std::env::temp_dir().join(format!(
+            "atlas-acp-invalid-root-{}",
+            std::process::id()
+        ));
+        let outside = base.join("outside.md");
+        let not_a_directory = base.join("not-a-directory");
+        std::fs::create_dir_all(&base).unwrap();
+        std::fs::write(&outside, "outside").unwrap();
+        std::fs::write(&not_a_directory, "file").unwrap();
+
+        for invalid_root in [
+            Path::new(""),
+            Path::new("relative-vault"),
+            Path::new("/"),
+            base.join("missing").as_path(),
+            not_a_directory.as_path(),
+        ] {
+            assert_eq!(
+                permission_verdict(invalid_root, Some(outside.to_str().unwrap())),
+                PermissionVerdict::Ask,
+                "유효하지 않은 볼트 루트 {invalid_root:?} 는 어떤 경로도 자동 허용하면 안 된다"
+            );
+        }
+
+        let _ = std::fs::remove_dir_all(&base);
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn permission_policy_rejects_a_session_root_replaced_by_an_outside_symlink() {
+        let base = std::env::temp_dir().join(format!(
+            "atlas-acp-replaced-root-{}",
+            std::process::id()
+        ));
+        let vault = base.join("vault");
+        let outside = base.join("outside");
+        std::fs::create_dir_all(&vault).unwrap();
+        std::fs::create_dir_all(&outside).unwrap();
+        let session_root = std::fs::canonicalize(&vault).unwrap();
+        let secret = outside.join("secret.md");
+        std::fs::write(&secret, "outside").unwrap();
+
+        std::fs::remove_dir(&vault).unwrap();
+        std::os::unix::fs::symlink(&outside, &vault).unwrap();
+
+        assert_eq!(
+            permission_verdict(&session_root, Some(secret.to_str().unwrap())),
+            PermissionVerdict::Ask,
+            "세션 시작 뒤 루트 경로가 외부 링크로 바뀌어도 새 대상을 볼트로 받아들이면 안 된다"
         );
 
         let _ = std::fs::remove_dir_all(&base);
@@ -1867,13 +2349,14 @@ mod tests {
         let outside = base.join("outside");
         std::fs::create_dir_all(&vault).unwrap();
         std::fs::create_dir_all(&outside).unwrap();
+        let session_root = std::fs::canonicalize(&vault).unwrap();
         let real = outside.join("secret.md");
         std::fs::write(&real, "x").unwrap();
         let trap = vault.join("looks-inside.md");
         std::os::unix::fs::symlink(&real, &trap).unwrap();
 
         assert_eq!(
-            permission_verdict(&vault, Some(trap.to_str().unwrap())),
+            permission_verdict(&session_root, Some(trap.to_str().unwrap())),
             PermissionVerdict::Ask,
             "볼트 안처럼 보이는 링크가 밖을 가리키면 안이 아니다"
         );
@@ -1983,7 +2466,7 @@ mod timing_probe {
         let path = std::env::var_os("PATH");
         let (is_executable, list_dir, read_text, login_ok) = real_probe();
 
-        let skip = |_: &Path, _: &[&str], _: &str| None;
+        let skip = |_: &str, _: &Path, _: &[&str], _: &str| None;
         let fast = FsProbe {
             is_executable: &is_executable,
             list_dir: &list_dir,
@@ -2024,7 +2507,7 @@ mod newcomer_view {
             is_executable: &is_exec,
             list_dir: &list,
             read_text: &read,
-            login_ok: &|_, _, _| None,
+            login_ok: &|_, _, _, _| None,
         };
         let out = detect_runtimes(None, None, &probe);
         let mut by_state: std::collections::BTreeMap<&str, Vec<&str>> = Default::default();
@@ -2046,7 +2529,7 @@ mod newcomer_view {
             is_executable: &is_exec,
             list_dir: &list,
             read_text: &read,
-            login_ok: &|_, _, _| None,
+            login_ok: &|_, _, _, _| None,
         };
         let out = detect_runtimes(None, None, &probe);
         println!("── npx 만 있는 기계 ──");

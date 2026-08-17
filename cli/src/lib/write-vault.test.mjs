@@ -8,11 +8,11 @@
 // 실제로 태우는가. mcp 쪽 배선은 `mcp/src/write-path-gate.test.mjs` 가 잰다.
 import { describe, it } from 'node:test';
 import { strict as assert } from 'node:assert';
-import { mkdtempSync, rmSync, existsSync } from 'node:fs';
+import { existsSync, mkdtempSync, readFileSync, rmSync, unlinkSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
-import { writeDoc, writeFrontmatterKeys } from './write-vault.mjs';
+import { readDocFrontmatter, writeDoc, writeFrontmatterKeys } from './write-vault.mjs';
 
 function withVault(fn) {
   const root = mkdtempSync(join(tmpdir(), 'ontology-atlas-write-vault-test-'));
@@ -94,6 +94,51 @@ describe('write-vault writeDoc — UID identity gate', () => {
         () => writeFrontmatterKeys(root, 'first', { merged_uids: ['21890f3e-7b5d-4c0a-8f14-123456789abc'] }),
         /merge_concepts|merged_uids/i,
       );
+    });
+  });
+});
+
+describe('write-vault snapshot write', () => {
+  it('읽은 문서가 사람이 수정한 뒤에는 stale patch를 쓰지 않는다', () => {
+    withVault((root) => {
+      writeDoc(root, 'first', {
+        frontmatter: {
+          uid: '01890f3e-7b5d-4c0a-8f14-123456789abc',
+          slug: 'first',
+          kind: 'project',
+          title: 'Before',
+        },
+      });
+      const before = readDocFrontmatter(root, 'first');
+      const humanBytes = '---\nuid: 01890f3e-7b5d-4c0a-8f14-123456789abc\nslug: first\nkind: project\ntitle: Human edit\n---\n\n# Human edit\n';
+      writeFileSync(before.filePath, humanBytes, 'utf-8');
+
+      assert.throws(
+        () => writeFrontmatterKeys(root, 'first', { title: 'Stale agent patch' }, { expectedRevision: before.revision }),
+        /changed or was deleted|conflict/i,
+      );
+      assert.equal(readFileSync(before.filePath, 'utf-8'), humanBytes);
+    });
+  });
+
+  it('읽은 문서가 삭제된 뒤에는 stale patch로 되살리지 않는다', () => {
+    withVault((root) => {
+      writeDoc(root, 'first', {
+        frontmatter: {
+          uid: '01890f3e-7b5d-4c0a-8f14-123456789abc',
+          slug: 'first',
+          kind: 'project',
+          title: 'Before',
+        },
+      });
+      const before = readDocFrontmatter(root, 'first');
+      unlinkSync(before.filePath);
+
+      assert.throws(
+        () => writeFrontmatterKeys(root, 'first', { title: 'Stale agent patch' }, { expectedRevision: before.revision }),
+        /changed or was deleted|conflict/i,
+      );
+      assert.equal(existsSync(before.filePath), false);
     });
   });
 });

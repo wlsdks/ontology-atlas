@@ -206,10 +206,9 @@ const cargoPackageName = cargoToml.match(/\[package\][\s\S]*?\nname\s*=\s*"([^"]
 const releaseBuildOrder = orderedIndexes(releaseWorkflow, [
   "name: Verify release source commit",
   "name: Verify release tag version",
-  "name: Decide signing path",
+  "name: Require signed release credentials",
   "name: Import Apple Developer ID certificate",
   "name: Build signed and notarized release artifact",
-  "name: Build unsigned release artifact",
   "name: Stage release assets",
   "name: Upload workflow artifact",
   "name: Cleanup Apple signing keychain",
@@ -497,12 +496,13 @@ if (
   pkg.scripts?.["test:desktop:check"]?.includes("scripts/check-macos-release-source.test.mjs") &&
   pkg.scripts?.["test:desktop:check"]?.includes("scripts/check-macos-release-status.test.mjs") &&
   pkg.scripts?.["test:desktop:check"]?.includes("scripts/watch-macos-release-run.test.mjs") &&
+  pkg.scripts?.["test:desktop:check"]?.includes("scripts/generate-download-release-facts.test.mjs") &&
   pkg.scripts?.["test:desktop:check"]?.includes("scripts/lib/macos-checksum.test.mjs") &&
   pkg.scripts?.["test:desktop:check"]?.includes("scripts/lib/macos-release-names.test.mjs")
 ) {
-  pass("desktop checker tests cover the GitHub release operator, source, run-watch, checksum, and completion gates");
+  pass("desktop checker tests cover the GitHub release operator, source, run-watch, checksum filename, and completion gates");
 } else {
-  fail("package.json test:desktop:check must include scripts/check-macos-release-github.test.mjs, scripts/check-macos-release-source.test.mjs, scripts/watch-macos-release-run.test.mjs, scripts/check-macos-release-status.test.mjs, scripts/lib/macos-checksum.test.mjs, and scripts/lib/macos-release-names.test.mjs so the macOS release operator, source, run-watch, checksum, completion, and app-vs-asset naming gates stay covered");
+  fail("package.json test:desktop:check must include scripts/check-macos-release-github.test.mjs, scripts/check-macos-release-source.test.mjs, scripts/watch-macos-release-run.test.mjs, scripts/check-macos-release-status.test.mjs, scripts/generate-download-release-facts.test.mjs, scripts/lib/macos-checksum.test.mjs, and scripts/lib/macos-release-names.test.mjs so the macOS release operator, source, run-watch, checksum filename, completion, and app-vs-asset naming gates stay covered");
 }
 
 if (
@@ -635,15 +635,15 @@ if (
   /workflow_dispatch:/.test(pagesDeployWorkflow) &&
   /PAGES_BASE_URL:\s*https:\/\/wlsdks\.github\.io\/ontology-atlas/.test(pagesDeployWorkflow) &&
   /NEXT_PUBLIC_BASE_PATH:\s*\/ontology-atlas/.test(pagesDeployWorkflow) &&
-  /uses:\s*actions\/setup-node@v6/.test(pagesDeployWorkflow) &&
+  /uses:\s*actions\/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38\s+# v6/.test(pagesDeployWorkflow) &&
   /node-version:\s*24/.test(pagesDeployWorkflow) &&
   /corepack enable/.test(pagesDeployWorkflow) &&
   /corepack prepare pnpm@10\.18\.0 --activate/.test(pagesDeployWorkflow) &&
   /pnpm --version/.test(pagesDeployWorkflow) &&
   !/uses:\s*pnpm\/action-setup@/.test(pagesDeployWorkflow) &&
   /pnpm build/.test(pagesDeployWorkflow) &&
-  /actions\/upload-pages-artifact@v3/.test(pagesDeployWorkflow) &&
-  /actions\/deploy-pages@v4/.test(pagesDeployWorkflow) &&
+  /actions\/upload-pages-artifact@56afc609e74202658d3ffba0e8f6dda462b719fa\s+# v3/.test(pagesDeployWorkflow) &&
+  /actions\/deploy-pages@d6db90164ac5ed86f2b6aed7e0febac5b3c0c03e\s+# v4/.test(pagesDeployWorkflow) &&
   /pnpm desktop:verify-hosted -- --base-url="\$PAGES_BASE_URL"/.test(pagesDeployWorkflow) &&
   /pnpm desktop:verify-download -- --tag="\$PUBLISHED_RELEASE_TAG"/.test(pagesDeployWorkflow) &&
   !/FIREBASE|firebase-tools|deploy --only hosting/.test(pagesDeployWorkflow)
@@ -674,13 +674,16 @@ if (
   !downloadReleaseVerifier.includes("aarch64|x64|universal") &&
   downloadReleaseVerifier.includes("duplicate macOS DMG assets") &&
   downloadReleaseVerifier.includes("Keep exactly one DMG per architecture") &&
+  downloadReleaseVerifier.includes("WINDOWS_NAME_PATTERN") &&
+  downloadReleaseVerifier.includes("exactly one ontology-atlas_<version>_windows_x64-setup.exe") &&
+  downloadReleaseVerifier.includes("verifyArtifactHash(windowsInstaller") &&
   downloadReleaseVerifier.includes("requestSha256") &&
   downloadReleaseVerifier.includes("does not match checksum")
 ) {
-  pass("desktop download verifier requires explicit one-per-architecture Apple Silicon and Intel DMGs with checksum byte verification");
+  pass("desktop download verifier re-downloads and hashes the required macOS and Windows installers");
 } else {
   fail(
-    "scripts/check-macos-download-release.mjs must require explicit one-per-architecture aarch64 and x64 ontology-atlas DMG assets, reject unsupported names such as universal/arm64/Ontology Atlas .dmg files, reject duplicate architecture DMGs, verify DMG filename versions match the release tag, verify downloaded bytes match checksums, and let --allow-draft find tagged draft pre-publish assets",
+    "scripts/check-macos-download-release.mjs must require explicit one-per-architecture aarch64 and x64 ontology-atlas DMGs plus exactly one Windows x64 setup executable, reject unsupported or duplicate DMGs, verify artifact filename versions match the release tag, re-download macOS and Windows bytes to match their checksums, and let --allow-draft find tagged draft pre-publish assets",
   );
 }
 
@@ -1111,14 +1114,14 @@ if (
 }
 
 if (
-  (releaseWorkflow.match(/uses:\s*actions\/checkout@v6/g)?.length ?? 0) >= 4 &&
-  (releaseWorkflow.match(/uses:\s*actions\/setup-node@v6/g)?.length ?? 0) >= 4 &&
+  (releaseWorkflow.match(/uses:\s*actions\/checkout@d23441a48e516b6c34aea4fa41551a30e30af803\s+# v6/g)?.length ?? 0) >= 4 &&
+  (releaseWorkflow.match(/uses:\s*actions\/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38\s+# v6/g)?.length ?? 0) >= 4 &&
   (releaseWorkflow.match(/corepack enable/g)?.length ?? 0) >= 4 &&
   (releaseWorkflow.match(/corepack prepare pnpm@10\.18\.0 --activate/g)?.length ?? 0) >= 4 &&
   (releaseWorkflow.match(/pnpm --version/g)?.length ?? 0) >= 4 &&
-  /uses:\s*actions\/upload-artifact@v7/.test(releaseWorkflow) &&
-  /uses:\s*actions\/download-artifact@v7/.test(releaseWorkflow) &&
-  /uses:\s*softprops\/action-gh-release@v3/.test(releaseWorkflow) &&
+  /uses:\s*actions\/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a\s+# v7/.test(releaseWorkflow) &&
+  /uses:\s*actions\/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131\s+# v7/.test(releaseWorkflow) &&
+  /uses:\s*softprops\/action-gh-release@c12583777ecdfd3be55c69cf75464299dc01057e\s+# v3/.test(releaseWorkflow) &&
   !/uses:\s*pnpm\/action-setup@/.test(releaseWorkflow)
 ) {
   pass("macOS release workflow uses Node 24 action majors and Corepack pnpm without pnpm/action-setup");
@@ -1159,14 +1162,15 @@ if (
   /pnpm desktop:release-source -- --sha="\$\{GITHUB_SHA\}"/.test(releaseWorkflow) &&
   /echo "\$APPLE_CERTIFICATE_P12_BASE64" \| base64 -D > "\$CERTIFICATE_PATH"/.test(releaseWorkflow) &&
   !/base64 --decode/.test(releaseWorkflow) &&
+  /name:\s*Require signed release credentials[\s\S]*?run:\s*pnpm desktop:release-secrets/.test(
+    releaseWorkflow,
+  ) &&
   /pnpm desktop:release-artifact\b/.test(releaseWorkflow) &&
-  // 인증서가 없는 동안의 경로. 조용한 폴백은 금지 — 어느 경로로 갔는지
-  // 요약과 릴리스 본문에 크게 적혀야 한다.
-  /pnpm desktop:release-artifact:unsigned/.test(releaseWorkflow) &&
-  /UNSIGNED/.test(releaseWorkflow) &&
+  !/pnpm desktop:release-artifact:unsigned/.test(releaseWorkflow) &&
+  !/steps\.signing\.outputs\.signed/.test(releaseWorkflow) &&
   /Summarize macOS release assets/.test(releaseWorkflow) &&
   /name:\s*Cleanup Apple signing keychain/.test(releaseWorkflow) &&
-  /if:\s*\$\{\{\s*always\(\)\s*&&\s*steps\.signing\.outputs\.signed/.test(releaseWorkflow) &&
+  /if:\s*\$\{\{\s*always\(\)\s*\}\}/.test(releaseWorkflow) &&
   /security delete-keychain "\$KEYCHAIN_PATH" 2>\/dev\/null \|\| true/.test(releaseWorkflow) &&
   /rm -f "\$CERTIFICATE_PATH"/.test(releaseWorkflow) &&
   /Summarize published desktop release/.test(releaseWorkflow) &&

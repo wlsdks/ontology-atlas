@@ -307,7 +307,7 @@ export function assertAgentBriefShape(result) {
   // 머리글 숫자를 믿고 나머지를 안 세어 볼 수 있다 (2026-08-17 실측).
   assertBriefCountsAgree(result);
   if (!validAgentCliFallbackCommands(result.cliFallbackCommands)) {
-    throw new Error('agent_brief cliFallbackCommands must include non-empty ontology-atlas CLI fallback commands');
+    throw new Error('agent_brief cliFallbackCommands must include non-empty runnable CLI fallback commands');
   }
   if (!isPlainObject(result.health) || !Array.isArray(result.health.checks) || result.health.checks.length === 0) {
     throw new Error('agent_brief health.checks must be a non-empty array');
@@ -1726,10 +1726,17 @@ function validAgentModeComparison(value) {
 function validAgentCliFallbackCommands(commands) {
   return Array.isArray(commands)
     && commands.length > 0
-    && commands.every(
-      (command) =>
-        hasNonEmptyString(command) && /^node\s+\S*cli\/src\/index\.mjs\s+\S/.test(command),
-    );
+    && commands.every(validAgentCliFallbackCommand);
+}
+
+function validAgentCliFallbackCommand(command) {
+  if (!hasNonEmptyString(command) || /[\r\n]/.test(command)) return false;
+  const normalized = command.replaceAll('\\', '/');
+  const entryMarker = 'cli/src/index.mjs';
+  const entryIndex = normalized.indexOf(entryMarker);
+  if (!normalized.startsWith('node ') || entryIndex < 'node '.length) return false;
+  if (normalized.slice('node '.length, entryIndex).trim() === '') return false;
+  return /^(?:['"])?\s+\S/.test(normalized.slice(entryIndex + entryMarker.length));
 }
 
 function validAgentTraversalStrategy(strategies) {

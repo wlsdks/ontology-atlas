@@ -1,8 +1,7 @@
 // `ontology-atlas agent-activity [vault]` — write/show/clear the live agent
 // heartbeat that the desktop/web workbench reads from the opened vault.
 
-import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
-import { dirname, join, relative } from 'node:path';
+import { join, relative } from 'node:path';
 import { COLORS } from '../lib/colors.mjs';
 import {
   formatUnknownFlagError,
@@ -12,8 +11,14 @@ import {
 } from '../lib/cli-args.mjs';
 import { resolveVaultRoot } from '../lib/resolve-vault.mjs';
 import { formatAllowedValueError } from '../lib/suggestions.mjs';
+import {
+  readVaultSidecarText,
+  removeVaultSidecarFile,
+  replaceVaultSidecarText,
+} from '../lib/vault-sidecar.mjs';
 
 const ACTIVITY_RELATIVE_PATH = '.ontology-atlas/agent-activity.json';
+const ACTIVITY_FILENAME = 'agent-activity.json';
 const ACTIVITY_STALE_AFTER_MS = 5 * 60 * 1000;
 const VALID_STATES = ['planning', 'editing', 'verifying', 'blocked', 'complete'];
 const ALLOWED_FLAGS = [
@@ -102,13 +107,14 @@ function buildHeartbeat(parsed) {
 }
 
 function showActivity({ vaultRoot, activityPath, json }) {
-  if (!existsSync(activityPath)) {
+  const stored = readVaultSidecarText(vaultRoot, ACTIVITY_FILENAME);
+  if (!stored) {
     const result = baseResult({ vaultRoot, sideEffect: false, exists: false });
     if (json) process.stdout.write(JSON.stringify(result, null, 2) + '\n');
     else process.stdout.write(`${COLORS.yellow}missing${COLORS.reset} ${ACTIVITY_RELATIVE_PATH}\n`);
     return 1;
   }
-  const raw = readFileSync(activityPath, 'utf-8');
+  const raw = stored.text;
   const parsed = parseHeartbeatRaw(raw);
   const result = baseResult({
     vaultRoot,
@@ -143,9 +149,8 @@ function showActivity({ vaultRoot, activityPath, json }) {
   return 0;
 }
 
-function clearActivity({ vaultRoot, activityPath, json }) {
-  const existed = existsSync(activityPath);
-  if (existed) rmSync(activityPath);
+function clearActivity({ vaultRoot, json }) {
+  const existed = removeVaultSidecarFile(vaultRoot, ACTIVITY_FILENAME);
   const result = baseResult({ vaultRoot, sideEffect: existed, exists: false, cleared: existed });
   if (json) {
     process.stdout.write(JSON.stringify(result, null, 2) + '\n');
@@ -158,8 +163,11 @@ function clearActivity({ vaultRoot, activityPath, json }) {
 }
 
 function writeActivity({ vaultRoot, activityPath, heartbeat, json }) {
-  mkdirSync(dirname(activityPath), { recursive: true });
-  writeFileSync(activityPath, JSON.stringify(heartbeat, null, 2) + '\n', 'utf-8');
+  replaceVaultSidecarText(
+    vaultRoot,
+    ACTIVITY_FILENAME,
+    JSON.stringify(heartbeat, null, 2) + '\n',
+  );
   const result = baseResult({ vaultRoot, sideEffect: true, exists: true, heartbeat });
   if (json) {
     process.stdout.write(JSON.stringify(result, null, 2) + '\n');

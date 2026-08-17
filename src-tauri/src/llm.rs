@@ -232,7 +232,10 @@ fn is_loopback_authority(authority: &str) -> bool {
         Some(rest) => rest.split(']').next().unwrap_or(""),
         None => authority.split(':').next().unwrap_or(""),
     };
-    host == "localhost" || host == "::1" || host.starts_with("127.")
+    host.eq_ignore_ascii_case("localhost")
+        || host
+            .parse::<std::net::IpAddr>()
+            .is_ok_and(|address| address.is_loopback())
 }
 
 /// base URL + OpenAI 호환 경로. 이미 `/v1` 로 끝나면 덧붙이지 않는다 —
@@ -314,8 +317,11 @@ fn verify_request(provider: &str, target: &Target<'_>) -> Result<VerifyRequest, 
 
 /// argv 에 올라가는 인자 — **비밀이 하나도 없다**. URL·헤더·본문은 stdin 으로
 /// 간다. 대화 왕복은 제한 시간만 다르다.
-fn curl_argv_with_timeout(timeout_seconds: &'static str) -> [&'static str; 8] {
+fn curl_argv_with_timeout(timeout_seconds: &'static str) -> [&'static str; 9] {
     [
+        // curl 은 이 옵션이 **첫 인자**일 때만 ~/.curlrc 를 읽지 않는다. 사용자
+        // 설정이 redirect/proxy/header 를 보태 키의 전송 경계를 바꾸지 못하게 한다.
+        "--disable",
         "--silent",
         "--show-error",
         "--max-time",
@@ -327,7 +333,7 @@ fn curl_argv_with_timeout(timeout_seconds: &'static str) -> [&'static str; 8] {
     ]
 }
 
-fn curl_argv() -> [&'static str; 8] {
+fn curl_argv() -> [&'static str; 9] {
     curl_argv_with_timeout("20")
 }
 
@@ -383,7 +389,7 @@ fn curl_failure_message(code: Option<i32>, stderr: &str) -> String {
     }
 }
 
-fn run_curl(argv: [&'static str; 8], config: &str) -> Result<(u16, String), String> {
+fn run_curl(argv: [&'static str; 9], config: &str) -> Result<(u16, String), String> {
     let mut child = Command::new("curl")
         .args(argv)
         .stdin(Stdio::piped())
@@ -906,6 +912,13 @@ mod tests {
             assert!(!arg.contains("sk-ant"), "argv 에 키가 실렸다: {arg}");
         }
         assert!(curl_config(&request).contains("sk-ant-secret-value"));
+    }
+
+    #[test]
+    fn curl_disables_ambient_config_before_every_other_argument() {
+        let argv = curl_argv();
+        assert_eq!(argv.first(), Some(&"--disable"));
+        assert_eq!(argv.iter().filter(|arg| **arg == "--disable").count(), 1);
     }
 
     #[test]
@@ -1568,12 +1581,17 @@ mod tests {
         for ok in [
             "http://localhost:11434",
             "http://127.0.0.1:1234",
+            "http://127.42.0.7:1234",
             "http://[::1]:11434",
             "https://box.example.com:8080",
         ] {
             assert!(normalize_base_url(ok).is_ok(), "거절하면 안 된다: {ok}");
         }
-        for bad in ["http://example.com", "http://192.168.0.9:11434"] {
+        for bad in [
+            "http://example.com",
+            "http://192.168.0.9:11434",
+            "http://127.example.invalid:11434",
+        ] {
             assert!(normalize_base_url(bad).is_err(), "통과하면 안 된다: {bad}");
         }
     }
@@ -1660,8 +1678,8 @@ mod tests {
     #[test]
     fn a_local_chat_cannot_hold_the_panel_for_three_minutes() {
         assert_eq!(LOCAL_CHAT_TIMEOUT_SECONDS, "60");
-        assert_eq!(curl_argv_with_timeout(LOCAL_CHAT_TIMEOUT_SECONDS)[3], "60");
-        assert_eq!(curl_argv_with_timeout(CHAT_TIMEOUT_SECONDS)[3], "180");
+        assert_eq!(curl_argv_with_timeout(LOCAL_CHAT_TIMEOUT_SECONDS)[4], "60");
+        assert_eq!(curl_argv_with_timeout(CHAT_TIMEOUT_SECONDS)[4], "180");
     }
 
     #[test]
