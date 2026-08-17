@@ -15,7 +15,7 @@ function readText(relativePath) {
     fail(`tracked source file is missing — ${relativePath}. Point this gate at the surface that replaced it, or drop the check.`);
     return "";
   }
-  return fs.readFileSync(absolute, "utf8");
+  return fs.readFileSync(absolute, "utf8").replace(/\r\n?/g, "\n");
 }
 
 /**

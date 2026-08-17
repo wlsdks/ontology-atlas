@@ -718,6 +718,15 @@ test("desktop readiness checker defines durable protected-release markers", () =
   assert.ok(checker.includes("workflow_dispatch"));
 });
 
+// Git for Windows checks tracked YAML out with CRLF by default. The readiness
+// checker parses workflow sections with line-anchored regular expressions, so
+// its read boundary must normalize line endings before those contracts run.
+test("desktop readiness checker normalizes Windows line endings", () => {
+  const checker = readFileSync("scripts/check-desktop-readiness.mjs", "utf8");
+
+  assert.ok(checker.includes('.replace(/\\r\\n?/g, "\\n")'));
+});
+
 // 2026-07-25 (opus5 검수): 이 게이트가 삭제된 `VaultToolsMenu.tsx` 를 계속
 // readFileSync 하다 ENOENT 스택트레이스로 죽어 있었다. 크래시는 "게이트 실패"
 // 가 아니라 "게이트 부재"로 읽히기 때문에, 검사 대상 파일이 사라지면 반드시
