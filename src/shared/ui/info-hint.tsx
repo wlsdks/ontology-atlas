@@ -27,7 +27,7 @@ export function InfoHint({
         type="button"
         aria-label={label}
         aria-describedby={tooltipId}
-        className={controlClass({ shape: "icon", tone: "muted", className: "h-6 w-6 rounded-full border border-[color:var(--color-divider)] bg-[color:var(--color-overlay-1)] hover:border-[color:var(--color-indigo-a28)] hover:bg-[color:var(--color-overlay-2)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a46)] focus-visible:ring-offset-2 focus-visible:ring-offset-[color:var(--color-canvas)]" })}
+        className={controlClass({ shape: "icon", tone: "muted", className: "h-6 w-6 rounded-full border border-[color:var(--color-divider)] bg-[color:var(--color-overlay-1)] hover:border-[color:var(--color-indigo-a28)] hover:bg-[color:var(--color-overlay-2)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-focus-ring)] focus-visible:ring-offset-2 focus-visible:ring-offset-[color:var(--color-canvas)]" })}
       >
         <CircleHelp size={ICON_SIZE.md} aria-hidden="true" />
       </button>

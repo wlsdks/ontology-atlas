@@ -42,7 +42,7 @@ export interface StudioMaterializeLabels {
 const KIND_CHOICES: CreateNodeKind[] = ["domain", "capability", "element"];
 
 const FOCUS_RING =
-  "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a46)] focus-visible:ring-inset";
+  "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-focus-ring)] focus-visible:ring-inset";
 
 export function StudioMaterializeDialog({
   target,

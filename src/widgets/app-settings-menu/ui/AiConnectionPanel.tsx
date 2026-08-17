@@ -79,7 +79,7 @@ const CLEAR_ARM_MS = 3000;
  * 네 자리가 같은 문자열을 쓴다 — 손으로 네 번 쓰면 언젠가 한 벌이 갈린다.
  */
 const NEUTRAL_CHIP_HOVER =
-  'shrink-0 hover:border-[color:var(--color-border-strong)] hover:text-[color:var(--color-text-secondary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a46)] focus-visible:ring-inset';
+  'shrink-0 hover:border-[color:var(--color-border-strong)] hover:text-[color:var(--color-text-secondary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-focus-ring)] focus-visible:ring-inset';
 
 /**
  * 인디고 강조 칩의 **테두리와 호버** — 같은 이유로 한 벌이다. `tone: 'accentOnTint'`
@@ -88,7 +88,7 @@ const NEUTRAL_CHIP_HOVER =
  * 들고 있었다.
  */
 const INDIGO_CHIP =
-  'shrink-0 border-[color:var(--color-indigo-line-a32)] hover:border-[color:var(--color-indigo-line-a45)] hover:bg-[color:var(--color-indigo-line-a13)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a46)] focus-visible:ring-inset';
+  'shrink-0 border-[color:var(--color-indigo-line-a32)] hover:border-[color:var(--color-indigo-line-a45)] hover:bg-[color:var(--color-indigo-line-a13)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-focus-ring)] focus-visible:ring-inset';
 
 /** 감사 기록 파일의 볼트 상대 경로 — 경로만 mono, 곁의 한국어는 본문 서체. */
 const LLM_AUDIT_RELATIVE_PATH = '.ontology-atlas/llm-audit.jsonl';
@@ -480,7 +480,7 @@ function ProviderCard({
             // 손으로 쓴 인디고 3종 대신 램프의 눌림 한 벌이다.
             active={expanded}
             className={cn(
-              'shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a46)] focus-visible:ring-inset',
+              'shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-focus-ring)] focus-visible:ring-inset',
               expanded
                 ? null
                 : 'hover:border-[color:var(--color-indigo-line-a32)] hover:text-[color:var(--color-indigo-accent)]',
@@ -524,7 +524,7 @@ function ProviderCard({
                     data-testid={`ai-clear-${provider}`}
                     onClick={() => void handleClear()}
                     className={cn(
-                      'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a46)] focus-visible:ring-inset',
+                      'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-focus-ring)] focus-visible:ring-inset',
                       clearArmed
                         ? 'border-[color:var(--color-danger-a32)] hover:bg-[color:var(--color-danger-a10)]'
                         : 'border-[color:var(--color-border-soft)] hover:border-[color:var(--color-border-strong)] hover:text-[color:var(--color-text-secondary)]',
@@ -695,7 +695,7 @@ function LocalEndpointCard({
             aria-expanded={expanded}
             active={expanded}
             className={cn(
-              'shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a46)] focus-visible:ring-inset',
+              'shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-focus-ring)] focus-visible:ring-inset',
               expanded
                 ? null
                 : 'hover:border-[color:var(--color-indigo-line-a32)] hover:text-[color:var(--color-indigo-accent)]',
@@ -1135,7 +1135,7 @@ function AuditTail({
               shape: 'link',
               size: 'sm',
               className:
-                'touch-hit-expand hover:text-[color:var(--color-text-secondary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a46)] focus-visible:ring-inset',
+                'touch-hit-expand hover:text-[color:var(--color-text-secondary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-focus-ring)] focus-visible:ring-inset',
             })}
           >
             {t('auditOpen')}

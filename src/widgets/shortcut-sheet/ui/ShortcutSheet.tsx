@@ -438,7 +438,7 @@ export function ShortcutSheet({ open, onClose }: Props) {
                     shape: "segment",
                     active: scope === key,
                     className: cn(
-                      "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a46)]",
+                      "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-focus-ring)]",
                       scope !== key &&
                         "hover:bg-[color:var(--color-overlay-2)] hover:text-[color:var(--color-text-secondary)]",
                     ),

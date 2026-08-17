@@ -468,7 +468,7 @@ export function FirstRunStarterModule({
           onClick={() => setGuideOpen(true)}
           disabled={busy}
           data-testid="first-run-starter-open"
-          className={controlClass({ shape: "card", className: "touch-hit-expand relative h-10 w-full justify-center gap-2 border-[color:var(--color-indigo-line-a45)] bg-[color:var(--color-indigo-brand)] text-body font-[var(--font-weight-emphasis)] text-[color:var(--color-text-on-accent)] shadow-[inset_0_1px_0_var(--color-overlay-3)] hover:bg-[color:var(--color-indigo-brand-hover)]" })}
+          className={controlClass({ shape: "card", className: "touch-hit-expand relative h-10 w-full justify-center gap-2 border-[color:var(--color-indigo-line-a45)] bg-[color:var(--color-indigo-brand)] text-body font-[var(--font-weight-emphasis)] text-[color:var(--color-text-on-accent)] focus-visible:ring-[color:var(--color-text-on-accent)] shadow-[inset_0_1px_0_var(--color-overlay-3)] hover:bg-[color:var(--color-indigo-brand-hover)]" })}
         >
           <FolderOpen size={ICON_SIZE.md} aria-hidden />
           {busy && !scaffolding ? t("openBusy") : t("openLabel")}

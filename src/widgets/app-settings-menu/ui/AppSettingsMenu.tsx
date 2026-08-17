@@ -543,7 +543,7 @@ export function AppSettingsMenu({
           setOpen(!open);
         }}
         className={cn(
-          ' list-none transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a46)] focus-visible:ring-inset [&::-webkit-details-marker]:hidden',
+          ' list-none transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-focus-ring)] focus-visible:ring-inset [&::-webkit-details-marker]:hidden',
           triggerVariant === 'rail-tile'
             ? // 나브레일 유틸리티 타일 계약 — 활동(AppNavRail)·발자취
               // (GitStatusTile)와 같은 지오메트리·상태 안무.
@@ -680,7 +680,7 @@ export function AppSettingsMenu({
             <IconButton
               label={t('closeLabel')}
               onClick={() => closePanel()}
-              className="hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a46)] focus-visible:ring-inset"
+              className="hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-focus-ring)] focus-visible:ring-inset"
             >
               <X size={ICON_SIZE.md} aria-hidden />
             </IconButton>
@@ -1157,7 +1157,7 @@ export function AppSettingsMenu({
                         <Chip
                           tone="accentOnTint"
                           onClick={() => void copy(MCP_FIRST_CALLS_PACKET)}
-                          className={`mt-2 w-full justify-center font-mono ${INDIGO_ACTION_CHIP} focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a46)] focus-visible:ring-inset`}
+                          className={`mt-2 w-full justify-center font-mono ${INDIGO_ACTION_CHIP} focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-focus-ring)] focus-visible:ring-inset`}
                         >
                           {copyState === 'copied' ? (
                             <Check size={ICON_SIZE.sm} aria-hidden />

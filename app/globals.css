@@ -200,8 +200,15 @@
   --color-indigo-a42: rgba(94, 106, 210, 0.42);
   --color-indigo-a46: rgba(94, 106, 210, 0.46);
   /* border/hover:border 전용. */
-  /* focus-visible:ring 전용 utility. */
-  --color-indigo-ring-a46: rgba(94, 106, 210, 0.46);
+  /*
+   * 초점 링 전용 — **불투명하다.** 이 앱의 초점 표시는 2026-08-05 에 「있는가」로
+   * 판정하고 끝냈고(197/197), 그때 「보이는가」는 재지 않았다. 2026-08-18 에
+   * 재 보니 알파 0.46 이 바탕과 합성되어 **1.75:1** 이었다 — 상태를 알리는
+   * 시각 표시의 기준(WCAG 1.4.11 비텍스트 대비 3:1)의 절반이다. 색상(hue)은
+   * 그대로 두고 알파만 뺐다: 어두운 바탕 4.24 · 패널 3.95 · 더 밝은 면 3.66.
+   * 새 색을 들인 것이 아니라 **이미 쓰던 인디고를 가리지 않고 쓰는 것**이다.
+   */
+  --color-indigo-focus-ring: rgb(94, 106, 210);
   --color-indigo-a50: rgba(94, 106, 210, 0.5);
   --color-indigo-a55: rgba(94, 106, 210, 0.55);
   --color-indigo-a58: rgba(94, 106, 210, 0.58);
@@ -1208,7 +1215,7 @@
       [role="button"],
       [tabindex]:not([tabindex="-1"])
     ):focus-visible {
-    outline: 2px solid var(--color-indigo-a46);
+    outline: 2px solid var(--color-indigo-focus-ring);
     outline-offset: -2px;
   }
 
@@ -2070,7 +2077,7 @@
     --color-indigo-a40: rgba(94, 106, 210, 0.4);
     --color-indigo-a42: rgba(94, 106, 210, 0.42);
     --color-indigo-a46: rgba(94, 106, 210, 0.46);
-    --color-indigo-ring-a46: rgba(94, 106, 210, 0.46);
+    --color-indigo-focus-ring: rgb(94, 106, 210);
     --color-indigo-a50: rgba(94, 106, 210, 0.5);
     --color-indigo-a55: rgba(94, 106, 210, 0.55);
     --color-indigo-a58: rgba(94, 106, 210, 0.58);

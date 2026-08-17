@@ -160,7 +160,7 @@ export function StudioPracticeCleanup({
             data-testid="studio-practice-delete"
             disabled={busy}
             onClick={onDelete}
-            className={controlClass({ shape: "chip", tone: "secondary", className: "flex h-8 min-h-[var(--overlay-close-size)] flex-1 justify-center border-[color:var(--color-border-strong)] text-body tracking-body hover:bg-[color:var(--color-overlay-1)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a46)] focus-visible:ring-inset" })}
+            className={controlClass({ shape: "chip", tone: "secondary", className: "flex h-8 min-h-[var(--overlay-close-size)] flex-1 justify-center border-[color:var(--color-border-strong)] text-body tracking-body hover:bg-[color:var(--color-overlay-1)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-focus-ring)] focus-visible:ring-inset" })}
           >
             {labels.deleteLabel}
           </button>
@@ -171,7 +171,7 @@ export function StudioPracticeCleanup({
           data-testid="studio-practice-keep"
           disabled={busy}
           onClick={onKeep}
-          className={controlClass({ shape: "chip", tone: "accentOnTint", className: "flex h-8 min-h-[var(--overlay-close-size)] flex-1 justify-center border-[color:var(--color-indigo-line-a45)] bg-[color:var(--color-indigo-a16)] text-body tracking-body font-[var(--font-weight-emphasis)] hover:bg-[color:var(--color-indigo-a24)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a46)] focus-visible:ring-inset" })}
+          className={controlClass({ shape: "chip", tone: "accentOnTint", className: "flex h-8 min-h-[var(--overlay-close-size)] flex-1 justify-center border-[color:var(--color-indigo-line-a45)] bg-[color:var(--color-indigo-a16)] text-body tracking-body font-[var(--font-weight-emphasis)] hover:bg-[color:var(--color-indigo-a24)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-focus-ring)] focus-visible:ring-inset" })}
         >
           {labels.keepLabel}
         </button>
@@ -193,7 +193,7 @@ export function StudioPracticeCleanup({
                   shape: "link",
                   tone: "accent",
                   className:
-                    "font-[var(--font-weight-signature)] underline underline-offset-2 hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a46)]",
+                    "font-[var(--font-weight-signature)] underline underline-offset-2 hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-focus-ring)]",
                 })}
               >
                 {labels.agentAction}

@@ -66,7 +66,7 @@ export function SimilarNodeWarning({
           shape: "link",
           tone: "strong",
           className:
-            "shrink-0 font-[var(--font-weight-signature)] underline decoration-[color:var(--color-border-strong)] underline-offset-2 hover:text-[color:var(--color-indigo-accent)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a46)] focus-visible:ring-inset",
+            "shrink-0 font-[var(--font-weight-signature)] underline decoration-[color:var(--color-border-strong)] underline-offset-2 hover:text-[color:var(--color-indigo-accent)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-focus-ring)] focus-visible:ring-inset",
         })}
       >
         {openLabel}
@@ -80,7 +80,7 @@ export function SimilarNodeWarning({
         className={controlClass({
           shape: "link",
           className:
-            "shrink-0 underline decoration-[color:var(--color-border-soft)] underline-offset-2 hover:text-[color:var(--color-text-secondary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a46)] focus-visible:ring-inset",
+            "shrink-0 underline decoration-[color:var(--color-border-soft)] underline-offset-2 hover:text-[color:var(--color-text-secondary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-focus-ring)] focus-visible:ring-inset",
         })}
       >
         {createAnywayLabel}
