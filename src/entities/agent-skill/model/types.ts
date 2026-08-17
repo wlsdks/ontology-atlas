@@ -265,10 +265,32 @@ export interface SkillTriggerOverlap {
   readonly score: number;
 }
 
+/**
+ * **한 스킬이 다른 스킬로 넘기는 관계** (2026-08-18).
+ *
+ * 종전에 이 인벤토리가 낸 관계는 `collisions` · `overlaps` 둘뿐이고 **둘 다
+ * 적대적**이었다 — 「이름이 겹친다」 「발동 조건이 겹친다」. 그래서 화면은
+ * 스킬 사이를 «경쟁» 으로만 말할 수 있었다.
+ *
+ * 실제 스킬 18개를 세어 보면 **협력적 관계가 25개** 있다: 본문이 다른 스킬을
+ * `/이름` 으로 명시해 부른다(`user-walkthrough` → `po-pass` → `po-council`,
+ * `design-build` → `design-audit` …). 소유자가 «연결» 이라고 부른 것이 이것이고,
+ * 연결이 없어서 안 보였던 게 아니라 **세는 어휘가 없어서** 안 보였다.
+ *
+ * 추론하지 않는다 — 본문이 이름 댄 `/이름` 이 **이 목록에 실재하는 스킬일 때만**
+ * 엣지가 선다. 없는 이름은 엣지가 아니고, 자기 자신도 아니다.
+ */
+export interface SkillHandoff {
+  readonly from: AgentSkill;
+  readonly to: AgentSkill;
+}
+
 export interface SkillInventory {
   readonly skills: readonly AgentSkill[];
   readonly collisions: readonly SkillNameCollision[];
   readonly overlaps: readonly SkillTriggerOverlap[];
+  /** 본문이 `/이름` 으로 부른 다른 스킬 — 유일한 협력적 관계다. */
+  readonly handoffs: readonly SkillHandoff[];
   /** 자기 폴더 참조가 깨진 스킬. */
   readonly broken: readonly AgentSkill[];
   readonly totals: {

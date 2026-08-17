@@ -1,4 +1,5 @@
 import type {
+  SkillHandoff,
   AgentSkill,
   SkillInventory,
   SkillInvocation,
@@ -139,6 +140,45 @@ function buildSkill(
 }
 
 /** 이름이 같은 것끼리 묶는다 — 사용자는 어느 쪽이 뜰지 모른다. */
+/**
+ * 본문이 `/이름` 으로 부른 다른 스킬 (2026-08-18).
+ *
+ * **존재 검사이지 추론이 아니다.** 본문에 적힌 `/이름` 이 이 목록에 실재하는
+ * 스킬일 때만 엣지가 선다 — 경로(`/Users/...`)나 URL 이 우연히 스킬 이름과
+ * 같아지는 것을 막으려고 앞뒤로 낱말 경계를 요구한다.
+ *
+ * 자기 자신은 세지 않는다(스킬이 자기 이름을 문서에 적는 것은 흔하다).
+ */
+function findHandoffs(skills: readonly AgentSkill[]): SkillHandoff[] {
+  const byName = new Map<string, AgentSkill>();
+  for (const skill of skills) if (!byName.has(skill.name)) byName.set(skill.name, skill);
+  const out: SkillHandoff[] = [];
+  const seen = new Set<string>();
+  for (const from of skills) {
+    for (const [name, to] of byName) {
+      if (to === from || name === from.name) continue;
+      const pattern = new RegExp(`(?<![\\w/-])/${escapeForPattern(name)}(?![\\w-])`);
+      if (!pattern.test(from.body)) continue;
+      /*
+       * ⚠️ 중복 열쇠는 **`origin.relativePath`** 로 짓는다 — `AgentSkill` 에는
+       * `relativePath` 가 없다(2026-08-18 실측: 없는 속성을 쓰자 모든 열쇠가
+       * `undefined\u0000undefined` 로 같아져 **둘째 엣지부터 전부 중복으로
+       * 걸러졌다**. 매처는 처음부터 맞았는데 결과만 하나였다).
+       */
+      const key = `${from.origin.relativePath}\u0000${to.origin.relativePath}`;
+      if (seen.has(key)) continue;
+      seen.add(key);
+      out.push({ from, to });
+    }
+  }
+  return out;
+}
+
+/** 정규식 메타문자를 글자 그대로 만든다 — 스킬 이름에 `.` 이 올 수 있다. */
+function escapeForPattern(value: string): string {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
 function findCollisions(skills: readonly AgentSkill[]): SkillNameCollision[] {
   const byName = new Map<string, AgentSkill[]>();
   for (const skill of skills) {
@@ -198,6 +238,7 @@ export function buildSkillInventory({
   return {
     skills,
     collisions: findCollisions(skills),
+    handoffs: findHandoffs(skills),
     overlaps: findOverlaps(skills, 0.4),
     broken: skills.filter((s) => s.missingBundled.length > 0),
     totals: { skills: skills.length, bundledFiles, executables, alwaysLoadedChars },

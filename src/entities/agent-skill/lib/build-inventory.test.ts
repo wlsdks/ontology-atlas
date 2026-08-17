@@ -66,6 +66,41 @@ describe("스킬 인벤토리", () => {
     }
   });
 
+  /**
+   * **스킬은 서로를 부른다 — 화면이 그것을 세야 한다** (2026-08-18).
+   *
+   * 소유자: *"스킬도 그래프처럼 연결되는 걸 보여주고 싶었는데 좀 이상하다"*.
+   * 재 보니 연결이 없어서가 아니라 **세는 어휘가 없어서** 안 보였다.
+   *
+   * 지금 인벤토리가 내는 관계는 둘뿐이고 **둘 다 적대적**이다 — 이름이
+   * 겹친다(`collisions`) · 발동 조건이 겹친다(`overlaps`). 그런데 실제
+   * 스킬 18개를 세어 보면 **협력적 관계가 25개** 있다: 본문이 다른 스킬을
+   * `/이름` 으로 명시해 부르는 것(`user-walkthrough` → `po-pass` →
+   * `po-council`, `design-build` → `design-audit` …). 화면은 그중 0개를 센다.
+   *
+   * 추론이 아니라 **존재 검사**다 — 본문이 이름 댄 `/이름` 이 이 목록에
+   * 실재하는 스킬일 때만 엣지가 선다. 없는 이름은 엣지가 아니다.
+   */
+  it("본문이 `/이름` 으로 부른 다른 스킬을 넘김 관계로 센다", () => {
+    const inv = buildSkillInventory({
+      files: [
+        skill(".claude/skills/a/SKILL.md", "a", "첫째", "본문에서 /b 를 부른다. 그리고 /nope 도 적는다."),
+        skill(".claude/skills/b/SKILL.md", "b", "둘째", "여기서는 /c 로 넘긴다."),
+        skill(".claude/skills/c/SKILL.md", "c", "셋째", "아무도 안 부른다."),
+      ],
+    });
+    const pairs = inv.handoffs.map((h) => `${h.from.name}->${h.to.name}`).sort();
+    // /nope 는 실재하지 않으므로 엣지가 아니다 — 지어내지 않는다.
+    expect(pairs).toEqual(["a->b", "b->c"]);
+  });
+
+  it("자기 자신을 부르는 것은 넘김이 아니다", () => {
+    const inv = buildSkillInventory({
+      files: [skill(".claude/skills/a/SKILL.md", "a", "첫째", "이 스킬은 /a 라고 자기를 적는다.")],
+    });
+    expect(inv.handoffs).toEqual([]);
+  });
+
   it("frontmatter 두 값이 다 있는 것만 스킬로 센다", () => {
     const inv = buildSkillInventory({
       files: [
