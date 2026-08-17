@@ -29,6 +29,32 @@ export function FindingsPanel({
     .slice(0, 5);
   const runners = inventory.skills.filter((s) => s.invocation.executables.length > 0);
 
+  /*
+   * **요약이 그래프의 존재를 말하지 않고 있었다** (2026-08-18).
+   *
+   * 이 패널이 세던 셋은 값(매 세션 실리는 글자) · 충돌(경쟁) · 위험(돌아가는 것)
+   * 이다. 셋 다 「스킬 하나하나」의 성질이라, 폴더를 연 사람은 **스킬들이 서로
+   * 얽혀 있다는 사실 자체를** 여기서 알 수 없었다 — 상세로 한 번 들어가야만
+   * 보였다. 실측으로 그 얽힘은 실제 18개에서 25개다.
+   *
+   * 무엇을 세로로 세울까: **부르는 쪽과 불리는 쪽을 합친 정도**다. 그 수가 큰
+   * 스킬이 이 뭉치의 중심이고, 고칠 때 파장이 가장 큰 자리다. 줄을 누르면 그
+   * 스킬의 상세로 가고, 거기에 실제 상대들이 이름으로 있다.
+   */
+  const degrees = new Map<string, { skill: (typeof inventory.skills)[number]; into: number; out: number }>();
+  for (const handoff of inventory.handoffs) {
+    for (const [skill, key] of [
+      [handoff.from, "out"],
+      [handoff.to, "into"],
+    ] as const) {
+      const at = degrees.get(skill.origin.relativePath) ?? { skill, into: 0, out: 0 };
+      degrees.set(skill.origin.relativePath, { ...at, [key]: at[key] + 1 });
+    }
+  }
+  const linked = [...degrees.values()].sort(
+    (a, b) => b.into + b.out - (a.into + a.out) || a.skill.name.localeCompare(b.skill.name),
+  );
+
   return (
     <div className="flex flex-col gap-3" data-testid="skills-findings">
       <Block
@@ -80,6 +106,30 @@ export function FindingsPanel({
                   </span>
                   <span className="shrink-0 truncate text-[color:var(--color-text-tertiary)]">
                     {overlap.shared.slice(0, 3).join(" · ")}
+                  </span>
+                </Row>
+              </li>
+            ))}
+          </ul>
+        )}
+      </Block>
+
+      <Block
+        title={t("findings.handoffTitle")}
+        note={t("findings.handoffNote", { count: inventory.handoffs.length })}
+      >
+        {linked.length === 0 ? (
+          <p className="px-2 py-1 text-label leading-prose text-[color:var(--color-text-tertiary)]">
+            {t("findings.noneHandoff")}
+          </p>
+        ) : (
+          <ul className="flex flex-col" data-testid="skills-findings-handoffs">
+            {linked.slice(0, 8).map(({ skill, into, out }) => (
+              <li key={skill.origin.relativePath}>
+                <Row onClick={() => onSelect(skill.origin.relativePath)}>
+                  <span className="truncate">{skill.name}</span>
+                  <span className="shrink-0 tabular-nums text-[color:var(--color-text-tertiary)]">
+                    {t("findings.handoffDegree", { into, out })}
                   </span>
                 </Row>
               </li>

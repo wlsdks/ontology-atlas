@@ -3645,7 +3645,11 @@
       "sameNameCount": "{count} places",
       "runsTitle": "Can run on your machine",
       "runsNote": "{count} files",
-      "noneRun": "Nothing runs."
+      "noneRun": "Nothing runs.",
+      "handoffTitle": "Hand-offs between skills",
+      "handoffNote": "{count} links",
+      "noneHandoff": "No skill calls another.",
+      "handoffDegree": "called by {into} · hands to {out}"
     },
     "openSample": "Browse the example",
     "sampleNotice": "This is the example set: open your folder to see your own skills."

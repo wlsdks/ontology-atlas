@@ -3645,7 +3645,11 @@
       "sameNameCount": "{count}곳",
       "runsTitle": "내 컴퓨터에서 돌 수 있는 것",
       "runsNote": "파일 {count}개",
-      "noneRun": "실행되는 파일이 없어요."
+      "noneRun": "실행되는 파일이 없어요.",
+      "handoffTitle": "서로 넘기는 것",
+      "handoffNote": "연결 {count}개",
+      "noneHandoff": "서로 부르는 스킬이 없어요.",
+      "handoffDegree": "부르는 곳 {into} · 넘기는 곳 {out}"
     },
     "openSample": "예시 둘러보기",
     "sampleNotice": "예시 뭉치예요. 내 폴더를 열면 내 스킬이 보여요."
