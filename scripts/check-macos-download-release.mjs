@@ -6,16 +6,18 @@ import https from "node:https";
 const DEFAULT_REPO = "wlsdks/ontology-atlas";
 const DEFAULT_API_BASE = "https://api.github.com";
 const REQUIRED_MACOS_ARCHES = ["aarch64", "x64"];
+const WINDOWS_NAME_PATTERN = /^ontology-atlas_([^/]+)_windows_(x64)-setup\.exe$/;
 /** 설치된 앱이 `latest.json` 에서 자기 자리를 찾을 때 쓰는 키. Rust 타깃 이름이다. */
 const REQUIRED_UPDATER_PLATFORMS = ["darwin-aarch64", "darwin-x86_64"];
-const MAX_DMG_HASH_BYTES = 2 * 1024 * 1024 * 1024;
+const MAX_DOWNLOAD_HASH_BYTES = 2 * 1024 * 1024 * 1024;
 
 function printHelp() {
   console.log(`Usage: pnpm desktop:verify-download [--repo=${DEFAULT_REPO}] [--tag=vX.Y.Z] [--allow-prerelease] [--allow-draft] [--require-updater]
 
 Verifies that a public GitHub Release exposes reachable Apple Silicon
 (aarch64) and Intel (x64) macOS DMGs with exactly one DMG per architecture and
-matching .sha256 checksums. With --require-updater it also opens latest.json and
+one Windows x64 setup executable, all with matching .sha256 checksums. With
+--require-updater it also opens latest.json and
 checks that every platform URL points at an archive (and .sig) that actually
 exists in this release. Draft releases are never accepted because the
 hosted landing page cannot serve them as a real user download unless
@@ -111,6 +113,14 @@ function githubAssetHeaders() {
   return githubApiHeaders({ Accept: "application/octet-stream" });
 }
 
+function headersForRedirect(headers, fromUrl, toUrl) {
+  if (new URL(fromUrl).origin === new URL(toUrl).origin) return headers;
+  const sensitive = new Set(["authorization", "cookie", "proxy-authorization"]);
+  return Object.fromEntries(
+    Object.entries(headers).filter(([name]) => !sensitive.has(name.toLowerCase())),
+  );
+}
+
 function requestRaw(url, { headers = {}, method = "GET", maxBytes = 1024 * 1024, redirects = 5 } = {}) {
   const parsed = new URL(url);
   const client = parsed.protocol === "http:" ? http : https;
@@ -129,7 +139,12 @@ function requestRaw(url, { headers = {}, method = "GET", maxBytes = 1024 * 1024,
           return;
         }
         const nextUrl = new URL(location, url).toString();
-        requestRaw(nextUrl, { headers, method, maxBytes, redirects: redirects - 1 })
+        requestRaw(nextUrl, {
+          headers: headersForRedirect(headers, url, nextUrl),
+          method,
+          maxBytes,
+          redirects: redirects - 1,
+        })
           .then(resolve, reject);
         return;
       }
@@ -177,7 +192,7 @@ function requestJson(url) {
   });
 }
 
-function requestSha256(url, { headers = {}, maxBytes = MAX_DMG_HASH_BYTES, redirects = 5 } = {}) {
+function requestSha256(url, { headers = {}, maxBytes = MAX_DOWNLOAD_HASH_BYTES, redirects = 5 } = {}) {
   const parsed = new URL(url);
   const client = parsed.protocol === "http:" ? http : https;
   if (parsed.protocol !== "http:" && parsed.protocol !== "https:") {
@@ -197,7 +212,11 @@ function requestSha256(url, { headers = {}, maxBytes = MAX_DMG_HASH_BYTES, redir
           return;
         }
         const nextUrl = new URL(location, url).toString();
-        requestSha256(nextUrl, { headers, maxBytes, redirects: redirects - 1 })
+        requestSha256(nextUrl, {
+          headers: headersForRedirect(headers, url, nextUrl),
+          maxBytes,
+          redirects: redirects - 1,
+        })
           .then(resolve, reject);
         return;
       }
@@ -251,17 +270,32 @@ function parseDmgName(name) {
   return { version: match[1], arch: match[2] };
 }
 
+function isWindowsInstallerAsset(asset) {
+  return (
+    asset &&
+    typeof asset.name === "string" &&
+    WINDOWS_NAME_PATTERN.test(asset.name) &&
+    typeof asset.browser_download_url === "string"
+  );
+}
+
+function parseWindowsInstallerName(name) {
+  const match = name.match(WINDOWS_NAME_PATTERN);
+  if (!match) return null;
+  return { version: match[1], arch: match[2] };
+}
+
 function releaseVersionFromTag(tagName) {
   if (typeof tagName !== "string") return null;
   const match = tagName.match(/^v(.+)$/);
   return match ? match[1] : null;
 }
 
-function isChecksumFor(asset, dmgName) {
+function isChecksumFor(asset, artifactName) {
   return (
     asset &&
     typeof asset.name === "string" &&
-    asset.name === `${dmgName}.sha256` &&
+    asset.name === `${artifactName}.sha256` &&
     typeof asset.browser_download_url === "string"
   );
 }
@@ -354,6 +388,13 @@ async function verifyReachableAsset(asset, label, release) {
   if (label === "DMG" && contentType && !/application\/(x-apple-diskimage|octet-stream)|binary\/octet-stream/.test(contentType)) {
     throw new Error(`${label} asset URL returned unexpected content-type: ${contentType}.`);
   }
+  if (
+    label === "Windows installer" &&
+    contentType &&
+    !/application\/(octet-stream|x-msdownload|vnd\.microsoft\.portable-executable)|binary\/octet-stream/.test(contentType)
+  ) {
+    throw new Error(`${label} asset URL returned unexpected content-type: ${contentType}.`);
+  }
   if (label === "checksum" && contentType && !/text\/plain|application\/octet-stream/.test(contentType)) {
     throw new Error(`${label} asset URL returned unexpected content-type: ${contentType}.`);
   }
@@ -363,32 +404,32 @@ function escapeRegExp(value) {
   return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
 
-async function verifyChecksumAsset(checksum, dmgName, release) {
+async function verifyChecksumAsset(checksum, artifactName, release) {
   const target = assetRequestTarget(checksum, release);
   const { body } = await requestRaw(target.url, {
     headers: target.headers,
     maxBytes: 4096,
   });
   const text = body.toString("utf8");
-  const expectedLine = new RegExp(`^([a-fA-F0-9]{64})\\s+${escapeRegExp(dmgName)}$`);
+  const expectedLine = new RegExp(`^([a-fA-F0-9]{64})\\s+${escapeRegExp(artifactName)}$`);
   const matchingLine = text
     .split(/\r?\n/)
     .map((line) => line.trim().match(expectedLine))
     .find(Boolean);
   if (!matchingLine) {
-    throw new Error(`${checksum.name} does not contain a SHA-256 line for ${dmgName}.`);
+    throw new Error(`${checksum.name} does not contain a SHA-256 line for ${artifactName}.`);
   }
   return matchingLine[1].toLowerCase();
 }
 
-async function verifyDmgHashAsset(dmg, expectedDigest, release) {
-  const target = assetRequestTarget(dmg, release);
+async function verifyArtifactHash(asset, expectedDigest, release) {
+  const target = assetRequestTarget(asset, release);
   const { digest, size } = await requestSha256(target.url, { headers: target.headers });
   if (size === 0) {
-    throw new Error(`${dmg.name} downloaded as an empty file.`);
+    throw new Error(`${asset.name} downloaded as an empty file.`);
   }
   if (digest !== expectedDigest) {
-    throw new Error(`${dmg.name} SHA-256 ${digest} does not match checksum ${expectedDigest}.`);
+    throw new Error(`${asset.name} SHA-256 ${digest} does not match checksum ${expectedDigest}.`);
   }
 }
 
@@ -494,6 +535,20 @@ if (mismatchedReleaseVersions.length > 0) {
   );
 }
 
+const windowsInstallers = assets.filter(isWindowsInstallerAsset);
+if (windowsInstallers.length !== 1) {
+  fail(
+    `release ${release.tag_name} must have exactly one ontology-atlas_<version>_windows_x64-setup.exe asset, found ${windowsInstallers.length}.`,
+  );
+}
+const windowsInstaller = windowsInstallers[0];
+const parsedWindowsInstaller = parseWindowsInstallerName(windowsInstaller.name);
+if (parsedWindowsInstaller.version !== releaseVersion) {
+  fail(
+    `release ${release.tag_name} has a Windows installer version that does not match the tag version ${releaseVersion}: ${windowsInstaller.name}.`,
+  );
+}
+
 try {
   for (const dmg of dmgs) {
     const checksum = assets.find((asset) => isChecksumFor(asset, dmg.name));
@@ -503,8 +558,20 @@ try {
     await verifyReachableAsset(dmg, "DMG", release);
     await verifyReachableAsset(checksum, "checksum", release);
     const expectedDigest = await verifyChecksumAsset(checksum, dmg.name, release);
-    await verifyDmgHashAsset(dmg, expectedDigest, release);
+    await verifyArtifactHash(dmg, expectedDigest, release);
   }
+  const windowsChecksum = assets.find((asset) => isChecksumFor(asset, windowsInstaller.name));
+  if (!windowsChecksum) {
+    fail(`release ${release.tag_name} is missing ${windowsInstaller.name}.sha256.`);
+  }
+  await verifyReachableAsset(windowsInstaller, "Windows installer", release);
+  await verifyReachableAsset(windowsChecksum, "checksum", release);
+  const expectedWindowsDigest = await verifyChecksumAsset(
+    windowsChecksum,
+    windowsInstaller.name,
+    release,
+  );
+  await verifyArtifactHash(windowsInstaller, expectedWindowsDigest, release);
 } catch (error) {
   fail(error instanceof Error ? error.message : String(error));
 }
@@ -579,8 +646,9 @@ if (options.requireUpdater) {
 
 console.log(
   [
-    `[desktop-download-verify] ${options.repo} ${release.tag_name} exposes reachable ${release.draft ? "draft" : "public"} macOS download assets`,
+    `[desktop-download-verify] ${options.repo} ${release.tag_name} exposes reachable ${release.draft ? "draft" : "public"} macOS download assets and Windows installer`,
     `DMGs: ${dmgs.map((dmg) => dmg.browser_download_url).join(", ")}`,
+    `Windows: ${windowsInstaller.browser_download_url}`,
     ...(options.requireUpdater ? [`Updater: latest.json → ${updaterArchives.join(", ")}`] : []),
   ].join("\n"),
 );

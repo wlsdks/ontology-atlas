@@ -71,8 +71,8 @@ pnpm desktop:release-preflight         # full local pre-tag gate
 pnpm desktop:release-artifact          # credentialed signed/notarized DMG path
 pnpm desktop:goal-audit -- --pr=<number> --tag=v1.0.0  # local preflight + public release/hosted audit
 pnpm desktop:release-github -- --tag=v1.0.0  # GitHub workflow + Developer ID direct-download secret-name gate
-pnpm desktop:release-source -- --sha="$(git rev-parse HEAD)"  # tag only default-branch head
-pnpm desktop:release-run -- --tag=v1.0.0  # wait for the pushed tag workflow run
+pnpm desktop:release-source -- --mode=admit --tag=v1.0.0 --sha="$(git rev-parse origin/main)"  # tag must be main head
+pnpm desktop:release-run -- --tag=v1.0.0 --ref=main  # dispatch and watch the protected run
 pnpm desktop:release-status -- --pr=<number> --tag=v1.0.0  # completion audit
 ```
 
@@ -168,18 +168,18 @@ for a macOS prototype:
   app into a temporary install folder with `ditto`, opens that copied app through
   LaunchServices, requires a visible Ontology Atlas window plus Accessibility
   text, detaches the DMG, and removes the temp install.
-- `scripts/check-macos-release-secrets.mjs` fails the tag workflow before build
-  when any required Apple Developer ID or notary secret is missing, blank, or
+- `scripts/check-macos-release-secrets.mjs` fails the protected release workflow before build
+  when any required Apple Developer ID, notary, or Tauri updater secret is missing, blank, or
   structurally unusable, including a certificate secret that is base64 but not
   a PKCS#12 DER payload, so GitHub Releases cannot accidentally publish an
   unsigned or unnotarized macOS artifact.
 - `scripts/check-macos-release-github.mjs` checks the GitHub-side prerequisites
-  before pushing a public tag: `gh` authentication, the active
-  `release-macos.yml` release workflow, required Developer ID direct-download
-  signing/notary secret names (not Mac App Store submission), optional
-  tag/version alignment, clean local and remote same-tag Git tag slots, and a
-  clean same-tag Release slot. It cannot inspect secret values, so the tag
-  workflow still runs `desktop:release-secrets` before signing.
+  before dispatch: `gh` authentication, the active `release-macos.yml` workflow,
+  the `release-signing` environment policy, API 3 environment secret names,
+  retained certificate/updater 4 repository secret names,
+  absence of same-name repository secret copies, optional tag/version alignment,
+  and clean remote tag/Release slots. It cannot inspect secret values, so the
+  protected workflow still runs `desktop:release-secrets` before signing.
   `pnpm test:desktop:check` covers this operator-side gate with a fake `gh`
   binary, including PR-only workflow cases, missing Developer ID direct-download secret names,
   tag/version alignment, stale local/remote Git tags, and stale same-tag Release slots.
@@ -207,7 +207,7 @@ for a macOS prototype:
   assets whose contents name the same DMG files and match the downloaded DMG bytes. Any extra
   `ontology-atlas_*.dmg` asset with an unsupported architecture suffix fails
   the gate instead of being silently ignored, and duplicate architecture DMGs
-  fail so the release page cannot show ambiguous downloads. The tag workflow uses
+  fail so the release page cannot show ambiguous downloads. The protected workflow uses
   `--allow-draft` first so uploaded draft assets are byte-checked before the
   release is made public; if GitHub hides the draft from tag lookup, the
   verifier falls back to the releases list and matches the requested `tag_name`
@@ -241,8 +241,8 @@ for a macOS prototype:
   sessions keep `/docs` in the read-only packaged docs mode, disable the local
   vault source, and point users back to the macOS download path instead of
   calling the browser folder picker.
-- `pnpm desktop:release-preflight` is the local operator shortcut before a
-  public tag: it runs readiness checks, docs-vault freshness, desktop checker
+- `pnpm desktop:release-preflight` is the local operator shortcut before
+  creating the release tag: it runs readiness checks, docs-vault freshness, desktop checker
   tests, native bridge tests, runtime doctor, `cli:mcp-verify` against the
   dogfood vault, the `dogfood:agent-setup-gate` JSON fallback/performance gate,
   static build, packaged-route smoke, app/DMG build, LaunchServices app content
@@ -252,7 +252,7 @@ for a macOS prototype:
   Developer ID credentials, so it is the fast local proof for an unsigned
   prototype artifact.
 - `pnpm desktop:release-artifact` is the credentialed artifact path for direct
-  downloads: it requires Developer ID/notary secrets, rebuilds and route-smokes
+  downloads: it requires Developer ID/notary credentials, rebuilds and route-smokes
   the app, signs the `.app`, packages the DMG, notarizes/staples it, runs
   `desktop:verify-release-dmg`, and install-smokes the final DMG.
 - `pnpm desktop:goal-audit -- --pr=<number> --tag=v1.0.0` is the single goal-level
@@ -415,9 +415,10 @@ v1.1.0       →  이제 정식
 
 절차는 정식과 **완전히 같다** — 별도 워크플로도, 별도 스크립트도 없다.
 `package.json` · `src-tauri/tauri.conf.json` · `src-tauri/Cargo.toml` 세 곳의
-버전을 `1.1.0-rc.1` 로 맞추고 같은 태그를 밀면 된다. 워크플로가 태그에서
-프리릴리스 여부를 읽어 draft 단계와 발행 단계 양쪽에 적용한다
-(`prerelease: ${{ contains(github.ref_name, '-') }}`). `pnpm desktop:check` 가
+버전을 `1.1.0-rc.1` 로 맞추고 같은 태그를 만든 뒤 원격에 밀면 된다. 그 다음
+`pnpm desktop:release-run -- --tag=v1.1.0-rc.1 --ref=main` 이 `main`에서
+수동 디스패치한다. 워크플로는 입력된 `RELEASE_TAG`에서 프리릴리스 여부를 읽어
+draft 단계와 발행 단계 양쪽에 적용한다. `pnpm desktop:check` 가
 이 유도를 계약으로 잠근다 — 하드코딩으로 되돌리면 실패한다.
 
 ### `-rc.1` 과 CFBundleVersion — 실측 결과 (2026-07-27)
@@ -439,78 +440,78 @@ LaunchServices 로 띄워 창까지 확인했다.
 > 실제로 문제가 없지만, **App Store 제출 경로로 가면 거부된다.** 우리는 직접
 > 배포만 하므로 지금은 성립한다 — 앱스토어를 고려하게 되면 이 표기부터 다시 본다.
 
-## First Public Release Runbook (v1.0.0)
+## Protected Release Runbook (v1.0.0)
 
-The pipeline is complete; what gates the first public release is credentials
-the repository cannot hold for you. Work top to bottom.
+The release workflow is deliberately two-stage: unprivileged admission proves
+the requested tag and current `main` SHA agree, then the signing jobs run in the
+protected `release-signing` environment. The workflow is dispatched from
+`main`; pushing a tag alone does not start it.
 
-> **현재 경로: 미서명 (2026-07-27 소유자 결정 — `docs/DECISIONS.md`).** Apple
-> Developer 인증서가 준비될 때까지 릴리스는 **서명 없이** 나가고, 다운로드
-> 페이지가 Gatekeeper 우회 단계를 먼저 안내한다. 워크플로는 secret 5개가 다
-> 채워지는 순간 **자동으로 서명 경로로 돌아간다** — 조용히 넘어가지 않고 어느
-> 경로로 갔는지 요약과 릴리스 본문에 크게 적는다. 인증서가 생기면 페이지의
-> 신뢰 문구도 함께 되돌린다.
+**1 — Prepare Apple Developer credentials (owner-only).** Create a Developer ID
+Application certificate, export the `.p12`, and create an App Store Connect API
+key for notarization. Keep its `.p8`, key ID, and issuer ID. The repository code cannot configure GitHub
+environment settings automatically; the one-time GitHub cutover below is manual.
 
-**1 — Apple Developer credentials (owner-only, cannot be automated).**
-
-1. Join the Apple Developer Program ($99/year). Approval is instant for some
-   accounts and takes days for others — start here, it sets the schedule.
-2. In the Apple Developer portal create a **Developer ID Application**
-   certificate (not "Apple Distribution": that one is for the Mac App Store and
-   will not let a downloaded DMG launch).
-3. Download the certificate, open it in Keychain Access, and export it as
-   `.p12` with a password.
-4. Create an app-specific password at appleid.apple.com for `notarytool`.
-5. Read the Team ID from the developer portal's membership page.
-
-**2 — Register the five GitHub Secrets** (Settings → Secrets and variables →
-Actions). Base64-encode the certificate first:
+**2 — Configure the one-time GitHub cutover.** Put the three App Store Connect
+API values in `release-signing`: `APPLE_API_KEY_P8_BASE64`,
+`APPLE_API_KEY_ID`, `APPLE_API_ISSUER_ID`. Retain the existing Developer ID
+certificate pair and Tauri updater pair as repository secrets. From the repository root:
 
 ```bash
-base64 -i DeveloperID.p12 | pbcopy   # → APPLE_CERTIFICATE_P12_BASE64
-gh secret list --repo wlsdks/ontology-atlas   # verify all seven are present
+base64 -i DeveloperID.p12 | pbcopy
+gh secret list --env release-signing
+gh secret set APPLE_CERTIFICATE_P12_BASE64 < /path/to/APPLE_CERTIFICATE_P12_BASE64
+gh secret set APPLE_CERTIFICATE_PASSWORD < /path/to/APPLE_CERTIFICATE_PASSWORD
+gh secret set APPLE_API_KEY_P8_BASE64 --env release-signing < /path/to/APPLE_API_KEY_P8_BASE64
+gh secret set APPLE_API_KEY_ID --env release-signing < /path/to/APPLE_API_KEY_ID
+gh secret set APPLE_API_ISSUER_ID --env release-signing < /path/to/APPLE_API_ISSUER_ID
+gh secret set TAURI_SIGNING_PRIVATE_KEY < /path/to/TAURI_SIGNING_PRIVATE_KEY
+gh secret set TAURI_SIGNING_PRIVATE_KEY_PASSWORD < /path/to/TAURI_SIGNING_PRIVATE_KEY_PASSWORD
 ```
 
-**다섯 개다**: `APPLE_CERTIFICATE_P12_BASE64` · `APPLE_CERTIFICATE_PASSWORD` ·
-`APPLE_ID` · `APPLE_APP_SPECIFIC_PASSWORD` · `APPLE_TEAM_ID` — 전부 Apple 이
-실제로 발급하는 것들이다. 예전에 있던 둘은 사람이 등록할 이유가 없어 없앴다:
-CI 키체인 비밀번호는 한 잡 안에서 만들어졌다 지워지므로 워크플로가 생성하고,
-서명 신원은 방금 가져온 인증서에 적혀 있으므로 `security find-identity` 가
-파생한다. **등록할 secret 이 적을수록 잘못 넣을 것도 적다.**
+`APPLE_KEYCHAIN_PASSWORD` and `APPLE_SIGNING_IDENTITY` are not hosted secrets.
+The workflow generates the temporary keychain password and derives the signing
+identity from the imported certificate. Repository copies of the API three and
+obsolete `APPLE_ID` / `APPLE_APP_SPECIFIC_PASSWORD` / `APPLE_TEAM_ID` must be
+unused by the new workflow. Keep them only through the first API-key transition
+release, then remove exactly those three after signing, notarization, publication,
+and public-download verification pass; the certificate/updater four stay.
 
-**3 — Configure the `release` environment approval.** Settings → Environments →
-`release` → *Required reviewers* → add yourself. Without this the publish job
-runs unattended and the draft-install check below is skipped silently. The
-readiness gate asserts the workflow *declares* the environment; only the
-repository settings can make it actually block.
+Configure `release-signing` to admit exactly the `main` branch: one custom
+deployment branch rule, branch `main`, no tag rule, administrator bypass
+disabled, and no required reviewer on this signing environment. Keep the
+existing required-reviewer approval on the separate `release` environment: it
+is the human install approval for the exact draft bytes before publication.
+That environment also admits only branch `main`, has no tag rule, and disables
+administrator bypass; unlike `release-signing`, it must retain a reviewer.
 
-**4 — Verify locally, then tag.**
+**3 — Verify, create, and push the existing tag.** Run the local checks before
+creating the tag, then create and push that tag at the current `main` head:
 
 ```bash
-pnpm desktop:release-github -- --tag=v1.0.0   # secrets + workflow + tag slot
-pnpm desktop:release-preflight                # build, smoke, DMG, install smoke
-git tag v1.0.0 && git push origin v1.0.0
+pnpm desktop:release-github -- --tag=v1.0.0 --allow-obsolete-repository-secrets  # first API-key transition release only
+pnpm desktop:release-preflight
+git fetch origin main --tags
+git tag v1.0.0 origin/main
+git push origin v1.0.0
 ```
 
-**5 — Install the draft before it becomes public.** The workflow builds both
-architectures, signs, notarizes, verifies checksums, and uploads a **draft**
-release, then stops at the `release` environment gate. Download that draft DMG,
-install it on a real Mac, launch it, open a vault. This is the step no CI job
-can do for you — and the reason the version is not `1.0.0-rc.1`: you are
-testing the exact bytes that will ship, not a rehearsal build.
-
-**6 — Approve, then fill the download page with real facts.** Approving the
-environment flips the release to stable. The `/download` page still says
-"unpublished" until the generated release facts are refreshed:
+**4 — Dispatch and watch the protected run.** `desktop:release-run` dispatches
+`release-macos.yml` with `--ref main`, passes the tag as workflow input, and
+waits for the exact `workflow_dispatch` run. Admission pins the tag to the
+`main` SHA; build, staging, and publication keep using that admitted SHA even
+if `main` moves later.
 
 ```bash
-pnpm download:release-facts -- --tag=v1.0.0   # reads real size + SHA-256
-pnpm exec vitest run src/views/download
-git commit -am "chore: v1.0.0 릴리스 자산 사실 반영" && git push
+pnpm desktop:release-run -- --tag=v1.0.0 --ref=main
 ```
 
-GitHub Pages redeploys on push, and the page switches to per-architecture
-direct download buttons with the published size and checksum.
+**5 — Install the draft before publication.** The workflow builds and verifies
+both macOS architectures plus the Windows updater artifact, creates a verified
+draft Release, and pauses at the separate `release` environment. Install that
+exact draft DMG on a real Mac, launch it, and open a vault. Then approve the
+`release` environment. Publication rechecks the admitted source, publishes and
+verifies the Release, and refreshes the generated `/download` facts on `main`.
 
 ## Developer ID 자격증명 만들기 — 실행 가능한 절차
 
@@ -522,8 +523,8 @@ direct download buttons with the published size and checksum.
 ### 사람에게 남는 것은 두 순간뿐이다
 
 둘 다 **자격증명을 다루는 순간**이라 자동화하지 않는다: Apple 로그인(비밀번호 +
-2FA)과 앱 암호 발급. 나머지 — 키쌍 생성 · CSR 작성 · `.p12` 조립 · GitHub 등록 ·
-검증 — 은 전부 스크립트 안에 있다.
+2FA)과 App Store Connect API key 생성·`.p8` 1회 다운로드. 나머지 — 키쌍 생성 ·
+CSR 작성 · `.p12` 조립 · GitHub 등록 명령 생성 · 검증 — 은 스크립트 안에 있다.
 
 ### 왜 Keychain Access GUI 를 쓰지 않는가
 
@@ -589,18 +590,22 @@ node scripts/apple-signing-setup.mjs bundle --cer=~/Downloads/developerID_applic
 값을 사람에게 보여주는 것은 유출 경로만 늘린다. `gh` 에는 인자가 아니라
 **stdin 으로** 넘긴다 — 인자로 주면 프로세스 목록에 뜬다.
 
-### 4 — 남은 셋은 사람이 넣는다 (자격증명)
+### 4 — 남은 다섯 값은 사람이 넣는다 (자격증명)
 
 | secret | 어디서 |
 |---|---|
-| `APPLE_ID` | Apple 계정 이메일 |
-| `APPLE_APP_SPECIFIC_PASSWORD` | https://account.apple.com → 로그인 및 보안 → 앱 암호 |
-| `APPLE_TEAM_ID` | https://developer.apple.com/account → Membership details (10자리) |
+| `APPLE_API_KEY_P8_BASE64` | App Store Connect에서 한 번 내려받은 `.p8` 전체를 base64로 인코딩한 값 |
+| `APPLE_API_KEY_ID` | App Store Connect API key의 Key ID |
+| `APPLE_API_ISSUER_ID` | App Store Connect Users and Access의 Issuer ID |
+| `TAURI_SIGNING_PRIVATE_KEY` | `~/.ontology-atlas-signing/tauri-updater.key` |
+| `TAURI_SIGNING_PRIVATE_KEY_PASSWORD` | the password chosen for the updater key |
 
 ```bash
-gh secret set APPLE_ID --repo wlsdks/ontology-atlas
-gh secret set APPLE_APP_SPECIFIC_PASSWORD --repo wlsdks/ontology-atlas
-gh secret set APPLE_TEAM_ID --repo wlsdks/ontology-atlas
+gh secret set APPLE_API_KEY_P8_BASE64 --env release-signing
+gh secret set APPLE_API_KEY_ID --env release-signing
+gh secret set APPLE_API_ISSUER_ID --env release-signing
+gh secret set TAURI_SIGNING_PRIVATE_KEY
+gh secret set TAURI_SIGNING_PRIVATE_KEY_PASSWORD
 ```
 
 인자 없이 실행하면 입력이 가려진 채로 값을 받는다.
@@ -614,7 +619,7 @@ node scripts/apple-signing-setup.mjs verify
 무엇이 남았는지, 그리고 그것을 **사람이 넣는지 스크립트가 넣는지**까지 말한다.
 다 차면 다음 태그부터 워크플로가 자동으로 서명 경로로 간다 — 코드 수정은 없다.
 
-### 백업해야 할 파일은 둘뿐이다
+### 백업해야 할 파일은 셋뿐이다
 
 GitHub secret 은 **한 번 저장하면 아무도 못 읽는다** — 그것이 보호막이자,
 원본을 잃으면 되찾을 수 없다는 뜻이다. 원본은 `~/.ontology-atlas-signing/` 에 있고
@@ -623,6 +628,7 @@ GitHub secret 은 **한 번 저장하면 아무도 못 읽는다** — 그것이
 | 파일 | 유출되면 | 잃어버리면 |
 |---|---|---|
 | `developer-id.key` | 소유자 실명으로 앱 서명 가능 | Apple 에서 폐기 후 **재발급 가능** |
+| `AuthKey_*.p8` | 소유자의 App Store Connect API 권한으로 공증 요청 가능 | 기존 key를 폐기하고 **재발급 가능** |
 | `tauri-updater.key` | 가짜 업데이트를 설치된 앱에 밀어넣을 수 있음 | **복구 불가** — 이미 설치된 사용자는 갱신을 영영 못 받는다 |
 
 `.certSigningRequest` 는 이미 쓴 요청서고 `.pub` 은 설정 파일에 들어 있으므로
@@ -638,14 +644,11 @@ GitHub secret 은 **한 번 저장하면 아무도 못 읽는다** — 그것이
 
 ### secret 은 어디에 사는가
 
-GitHub Actions **repository secret** 이다. 저장소가 공개여도 노출되지 않는다:
-git 에 들어가지 않고, 클론에 딸려가지 않고, **한 번 저장하면 아무도 못 읽는다**
-(교체만 가능하다). 워크플로 실행 중에만 주입되고 로그에 찍히려 하면 GitHub 이
-가린다. 포크에서 올린 PR 에는 전달되지 않는다.
-
-**남는 위험은 하나다**: 저장소에 쓰기 권한이 있는 사람은 secret 을 빼내는
-워크플로를 추가할 수 있다. 지금은 소유자 1인이라 성립하지만, **협업자가 생기면
-이 가정이 깨진다** — 그때 다시 본다.
+App Store Connect API 3개는 GitHub Actions **`release-signing` environment
+secret** 이다. Developer ID certificate 2개와 Tauri updater 2개는 복구 가능한
+원본이 없는 기존 repository secret을 유지한다. 환경 값은 워크플로가
+`release-signing` 에 도달한 뒤에만 주입되며, 저장소 설정은 이 문서의 명령으로
+확인할 수 있지만 코드가 GitHub 환경 정책을 자동으로 바꾸지는 않는다.
 
 ### 인증서가 생긴 다음에 할 일
 
@@ -660,60 +663,62 @@ Local development does not require Apple credentials. Public macOS downloads do,
 when the app is distributed like Obsidian: the website links to a signed DMG,
 the user downloads it, copies the app locally, and runs it outside the Mac App
 Store. These are Developer ID direct-download signing/notarization credentials,
-not App Store submission credentials. The tag workflow fails closed unless these
-GitHub Secrets are all present:
+not App Store submission credentials. The protected release workflow fails closed
+unless the following split-scope seven secrets are present:
 
-**필요한 secret 은 5개다** — 그리고 5개 **전부 Apple 이 주는 값**이다.
+**필요한 hosted secret 은 7개다** — API 3개는 `release-signing`, certificate와
+updater identity 4개는 repository scope다.
 
 - `APPLE_CERTIFICATE_P12_BASE64`: base64-encoded Developer ID Application
   certificate export (`.p12`).
 - `APPLE_CERTIFICATE_PASSWORD`: password for that `.p12`.
-- `APPLE_ID`: Apple ID for `notarytool`.
-- `APPLE_APP_SPECIFIC_PASSWORD`: app-specific password for that Apple ID.
-- `APPLE_TEAM_ID`: Apple Developer Team ID.
+- `APPLE_API_KEY_P8_BASE64`: base64 of the complete App Store Connect `.p8`
+  private key. The orchestrator writes it to a `0600` temporary file only for notarization.
+- `APPLE_API_KEY_ID`: App Store Connect API key ID.
+- `APPLE_API_ISSUER_ID`: App Store Connect API issuer UUID.
+- `TAURI_SIGNING_PRIVATE_KEY`: Tauri updater private key.
+- `TAURI_SIGNING_PRIVATE_KEY_PASSWORD`: password for that updater key.
 
-한때 7개였다. 둘은 **Apple 발급물이 아니라 우리가 만들어 낸 등록 항목**이라
-지웠다 — 사람이 등록할 secret 이 적을수록 실수도 적다.
+Apple 5개 외에 Tauri updater secret 2개도 필요하다. 반대로 둘은 **hosted
+secret이 아니라 local/CI 값**이라 등록하지 않는다 — 사람이 등록할 secret 이
+적을수록 실수도 적다.
 
 - `APPLE_KEYCHAIN_PASSWORD` — 그 키체인은 잡 안에서 만들어져 잡 안에서 지워진다.
   워크플로가 `openssl rand -base64 24` 로 그때그때 만들고 `::add-mask::` 로
   가린다. 사람이 기억할 이유가 없는 값이었다.
-- `APPLE_SIGNING_IDENTITY` — 방금 가져온 인증서에 그 이름이 적혀 있다.
-  `security find-identity -v -p codesigning` 로 유도한다. 키체인에 Developer ID
-  가 둘 이상이거나 없을 때만 환경변수로 되돌아가고, 그때는 오류 메시지가
-  무엇이 없는지 정확히 말한다. 사람에게 한 번 더 타이핑시키는 것은 얻는 정보
-  없이 틀릴 기회만 늘리는 일이었다.
+`APPLE_SIGNING_IDENTITY` is derived from the imported certificate. Neither value
+is a hosted secret.
 
-The tag workflow verifies `${GITHUB_SHA}` with
-`pnpm desktop:release-source` and `${GITHUB_REF_NAME}` with
-`pnpm desktop:release-tag` before signing credentials enter the path, then runs
-`pnpm desktop:release-artifact` after importing the certificate with the macOS
-`base64 -D` decoder. That command checks release secrets, builds the `.app`,
-signs with `pnpm desktop:sign`, packages the DMG, notarizes/staples with
-`pnpm desktop:notarize`, and runs `pnpm desktop:verify-release-dmg` against the
-final artifact. Each architecture lane also writes the generated DMG filename,
-byte size, and SHA-256 value to the GitHub Actions step summary before uploading
-artifacts, so release reviewers can inspect the signed/notarized candidate
-without downloading every artifact first. If the tag was pushed from an unmerged or stale commit, the tag
-version drifts from package/Tauri/Cargo metadata, or the Developer ID direct-download secrets are not
-configured, blank, or structurally invalid, the workflow fails before uploading
-an unsigned or wrongly sourced distribution candidate.
-Before pushing the tag, run
-`pnpm desktop:release-github -- --tag=v1.0.0` to catch missing GitHub secret
-names or a disabled release workflow from the operator machine. In the current
-repo state this is a real external gate: GitHub authentication works, the
-release workflow is active on GitHub, and the `v1.0.0` tag slot is clean, but
-the Developer ID direct-download secret list is still incomplete and the
-`v1.0.0` GitHub Release does not exist, so a tag push would fail before signing.
-Configure the Developer ID direct-download secrets before pushing the release tag.
+The operator first creates and pushes the existing tag, then
+`pnpm desktop:release-run -- --tag=v1.0.0 --ref=main` dispatches
+`release-macos.yml` from `main`. The unprivileged admission job checks
+`workflow_dispatch`, `refs/heads/main`, the workflow/event SHA, and that the
+requested tag resolves to the current `main` head. It emits the admitted tag and
+SHA; later jobs pin their checkouts and recheck that tag-to-SHA binding before
+signing, draft creation, and publication. There is no tag-triggered run and no
+tag-derived release ref input.
+
+Each architecture lane writes the generated DMG filename, byte size, and SHA-256
+value to the GitHub Actions step summary before uploading artifacts, so reviewers
+can inspect the signed/notarized candidate without downloading every artifact
+first. If the tag is stale, the version drifts from package/Tauri/Cargo metadata,
+or the required split-scope secrets are missing, blank, or structurally invalid, the
+workflow fails before uploading an unsigned or wrongly sourced candidate.
+Before creating the tag, run `pnpm desktop:release-github -- --tag=v1.0.0` to
+catch missing split-scope secret names, obsolete/over-scoped repository copies, environment
+policy drift, or an inactive workflow. For the first API-key transition release only,
+append `--allow-obsolete-repository-secrets`: this permits the unused legacy Apple
+ID/password/team names to remain until the release is proven, but it never permits
+repository copies of the API credentials. After the public download verifier passes,
+delete the three legacy names and rerun the command without that option.
 Use `pnpm desktop:release-status -- --pr=<number> --tag=v1.0.0` as the completion
 audit before calling the macOS app goal done: it accepts an already merged PR
-only when that PR is the latest merged PR on the release branch, or checks
+  only when that PR is the latest merged PR on `main`, or checks
 tag/package/Tauri/Cargo version alignment, PR review/merge readiness,
-active macOS release workflow availability, clean local and remote same-tag Git
-ref slots, required Developer ID direct-download signing/notary secret names,
+active macOS release workflow availability, expected release-tag presence or
+creation state, the API 3 environment + retained identity 4 repository secret names and policy,
 public stable GitHub
-Release state, then delegates to the public DMG/checksum download verifier. If PR checks are
+Release state, then delegates to the public desktop-artifact/checksum download verifier. If PR checks are
 still blocking the release, the audit prints the failing or pending check names
 plus `gh pr checks <number> --repo wlsdks/ontology-atlas` as the next action.
 Use `--json` for automation that needs `ready`, `blockerCount`, and per-check
@@ -740,50 +745,48 @@ reviewer or release operator.
 The desktop goal audit keeps the macOS app release gate scoped to GitHub
 Releases; the hosted promo/download website deploys separately through GitHub
 Pages (`deploy-pages.yml`) and is not part of this app blocker snapshot. The
-Markdown checklist renders the Apple signing secrets under each blocked row's
+Markdown checklist renders the Apple and Tauri signing secrets under each blocked row's
 missing-secret section, so handoff reviewers do not have to cross-read the JSON
 payload. The default
 `.tmp/desktop-goal-status` artifacts include `local_preflight=ok` only because
 the goal-audit wrapper has already completed the local release preflight in the
 same process chain.
-`pnpm desktop:release-run -- --tag=v1.0.0` is the post-tag watcher used by that
-runbook. It waits until the `release-macos.yml` push run for the pushed tag
-commit appears, then runs `gh run watch --exit-status` against that exact run so
-operators do not accidentally watch an unrelated latest workflow run.
+`pnpm desktop:release-run -- --tag=v1.0.0 --ref=main` is the protected-release
+dispatcher and watcher used by that runbook. It dispatches
+`release-macos.yml` from `main`, waits for the exact `workflow_dispatch` run
+matching the admitted tag commit, then runs `gh run watch --exit-status` against
+that run so operators do not accidentally watch an unrelated latest workflow run.
 Actionable blockers also carry `commands[]` so reviewers and release operators
-can copy exact diagnostic, secret setup, pre-tag source checks, post-merge
-tag-push, tag-commit-scoped release-workflow watch, and public download verification commands from
-the default terminal output, JSON, or Markdown without parsing prose. The post-merge tag commands resolve the
-repository's current default branch through `gh repo view ... defaultBranchRef`
-before `git fetch`, `desktop:release-source`, or `git tag`, so the release
-handoff keeps following the real default branch if it is renamed. Markdown
-checklists label these commands as one-shell-session commands because
-`DEFAULT_BRANCH` is intentionally shared by the following fetch, source-check,
-and tag commands. Developer ID direct-download signing blockers additionally
-expose `missingSecrets[]` for direct comparison against GitHub Secrets.
+can copy exact diagnostic, environment-secret setup, pre-dispatch source checks,
+tag creation/push, tag-commit-scoped release-workflow dispatch/watch, and public download verification commands from
+the default terminal output, JSON, or Markdown without parsing prose. The
+release handoff fetches `main`, creates and pushes the new tag, then
+dispatches with `--ref main`. Developer ID direct-download signing blockers
+additionally expose `missingSecrets[]` for direct comparison against the
+`release-signing` environment.
 The hosted website deploy is not part of the macOS app release gate;
 run `pnpm desktop:verify-hosted` after the separate GitHub Pages deploy.
-When it reports missing secrets, set each value through `gh secret set`, for
-example:
+When it reports missing secrets, set each value at its named scope:
 
 ```bash
-gh secret set APPLE_CERTIFICATE_P12_BASE64 --repo wlsdks/ontology-atlas < /path/to/APPLE_CERTIFICATE_P12_BASE64
-gh secret set APPLE_CERTIFICATE_PASSWORD --repo wlsdks/ontology-atlas < /path/to/APPLE_CERTIFICATE_PASSWORD
-gh secret set APPLE_KEYCHAIN_PASSWORD --repo wlsdks/ontology-atlas < /path/to/APPLE_KEYCHAIN_PASSWORD
-gh secret set APPLE_SIGNING_IDENTITY --repo wlsdks/ontology-atlas < /path/to/APPLE_SIGNING_IDENTITY
-gh secret set APPLE_ID --repo wlsdks/ontology-atlas < /path/to/APPLE_ID
-gh secret set APPLE_APP_SPECIFIC_PASSWORD --repo wlsdks/ontology-atlas < /path/to/APPLE_APP_SPECIFIC_PASSWORD
-gh secret set APPLE_TEAM_ID --repo wlsdks/ontology-atlas < /path/to/APPLE_TEAM_ID
+gh secret set APPLE_CERTIFICATE_P12_BASE64 < /path/to/APPLE_CERTIFICATE_P12_BASE64
+gh secret set APPLE_CERTIFICATE_PASSWORD < /path/to/APPLE_CERTIFICATE_PASSWORD
+gh secret set APPLE_API_KEY_P8_BASE64 --env release-signing < /path/to/APPLE_API_KEY_P8_BASE64
+gh secret set APPLE_API_KEY_ID --env release-signing < /path/to/APPLE_API_KEY_ID
+gh secret set APPLE_API_ISSUER_ID --env release-signing < /path/to/APPLE_API_ISSUER_ID
+gh secret set TAURI_SIGNING_PRIVATE_KEY < /path/to/TAURI_SIGNING_PRIVATE_KEY
+gh secret set TAURI_SIGNING_PRIVATE_KEY_PASSWORD < /path/to/TAURI_SIGNING_PRIVATE_KEY_PASSWORD
 ```
 
-The tag workflow first requires a clean GitHub Release slot for the tag, uploads
+The protected workflow first requires a clean GitHub Release slot for the
+admitted tag, uploads
 release assets as a draft, runs
 `pnpm desktop:verify-download -- --allow-draft` against those draft assets with
 `github.token`, publishes the verified release, then runs
 `pnpm desktop:verify-download` again to prove the public download surface
-exposes reachable Apple Silicon and Intel DMGs with filename versions that
-match the release tag, exactly one DMG per architecture, and checksum files that
-name and hash the same downloaded DMGs. After that public verification, the
+exposes reachable Apple Silicon and Intel DMGs plus exactly one Windows x64
+installer, with filename versions that match the release tag and checksum files
+that name and hash the same re-downloaded artifacts. After that public verification, the
 workflow writes the published GitHub Release URL plus the DMG filenames, byte
 sizes, and SHA-256 values to the GitHub Actions step summary so the release
 record is inspectable without re-running the verifier. Local runs may need
@@ -802,9 +805,9 @@ The unsigned Apple Silicon build produces
 `src-tauri/target/release/bundle/macos/Ontology Atlas.app`,
 `src-tauri/target/release/bundle/dmg/ontology-atlas_1.0.0_aarch64.dmg`, and
 `src-tauri/target/release/bundle/dmg/ontology-atlas_1.0.0_aarch64.dmg.sha256`.
-`.github/workflows/release-macos.yml` builds Apple Silicon (`macos-14`) and
-Intel (`macos-15-intel`) artifacts on `v*` tags, requires Developer ID direct-download
-secrets, runs docs-vault freshness, desktop checker, and native bridge tests in
+`.github/workflows/release-macos.yml` is dispatched from `main` with an existing
+`v*` tag input, requires the split-scope seven signing secrets, runs
+docs-vault freshness, desktop checker, and native bridge tests in
 both lanes,
 builds and route-smokes the static desktop payload, verifies the tag version
 before signing, signs and notarizes each DMG, verifies the mounted
@@ -816,16 +819,15 @@ checksums, both updater archives plus `.sig` files, and `latest.json` only
 after confirming that tag has no existing Release, verifies those draft assets
 with `pnpm desktop:verify-download -- --allow-draft --require-updater`,
 publishes the release as stable, then runs
-`pnpm desktop:verify-download -- --tag="${GITHUB_REF_NAME}" --require-updater`
-so the release run itself proves the hosted CTA can reach both public release
-assets and that `latest.json` points at archives this release actually has. It then
+`pnpm desktop:verify-download -- --tag="${RELEASE_TAG}" --require-updater`
+so the release run itself proves the hosted CTA can reach and re-hash every public
+macOS/Windows installer and that `latest.json` points at archives this release actually has. It then
 records the public GitHub Release URL plus the public asset filenames, byte
 sizes, and SHA-256 values in the GitHub Actions step summary. The workflow does
 not require any website deploy secrets; the installed app remains
 local-only, and website deployment stays in `.github/workflows/deploy-pages.yml`.
-Public downloads are still a
-distribution-hardening slice until the Apple credentials are configured and the
-tag workflow runs successfully.
+Public downloads are still a distribution-hardening slice until the Apple and
+Tauri credentials are configured and the dispatched workflow runs successfully.
 
 ## Later Distribution Work
 

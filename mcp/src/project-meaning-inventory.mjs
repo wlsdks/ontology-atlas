@@ -3,33 +3,18 @@ import {
 } from './meaning-assessment.mjs';
 import { WRITE_RELATION_TYPE_VALUES } from './ontology-engine.mjs';
 import { extractProjectMeaningEvidencePaths } from './project-meaning-evidence.mjs';
+// 같은 낱말을 두 번 선언하지 않는다 (2026-08-17) — 위 파일 주석 참고.
+import {
+  PROJECT_SOURCE_ACTION_IDS as SOURCE_ACTION_IDS,
+  PROJECT_SOURCE_GAP_IDS as SOURCE_GAP_IDS,
+} from './project-source-vocabulary.mjs';
 
 const MAX_SCOPE_NODES = 500;
 const ALLOWED_RELATION_TYPES = new Set(WRITE_RELATION_TYPE_VALUES);
 const SOURCE_KINDS = new Set(['git', 'folder']);
 const SOURCE_STATUSES = new Set(['needs_evidence', 'review_required', 'verified_current']);
 const SOURCE_VIEW_CURRENTNESS = new Set(['current', 'stale', 'unavailable']);
-const SOURCE_GAP_IDS = new Set([
-  'source_unbound',
-  'multiple_active_sources',
-  'receipt_missing',
-  'receipt_malformed',
-  'source_role_evidence_missing',
-  'declared_source_path_missing',
-  'source_inventory_truncated',
-  'ontology_changed',
-  'source_changed',
-]);
-const SOURCE_ACTION_IDS = new Set([
-  'connect_source',
-  'repair_source_binding',
-  'measure_source',
-  'record_source_role',
-  'repair_source_path',
-  'review_inventory_limit',
-  'remeasure_source',
-  'use_current_evidence',
-]);
+
 
 function unavailable(reason) {
   return { status: 'unavailable', reason };

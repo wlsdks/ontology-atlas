@@ -1,11 +1,14 @@
-import { readFileSync } from "node:fs";
-import { join } from "node:path";
+import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { dirname, join } from "node:path";
 import { describe, expect, it } from "vitest";
 
 import {
   ONTOLOGY_STARTER_FILES,
+  materializeStarterFiles,
   starterFilesForLocale,
 } from "@/features/docs-vault-local/lib/ontology-starter";
+import { runCliJson } from "../helpers/run-cli-json";
 
 /**
  * CLI 템플릿 ↔ 웹 스타터 **바이트 동일** 계약 (#73).
@@ -76,4 +79,47 @@ describe("starter templates — CLI ↔ web parity (#73)", () => {
     expect(starterFilesForLocale("fr")).toBe(ONTOLOGY_STARTER_FILES);
     expect(starterFilesForLocale("")).toBe(ONTOLOGY_STARTER_FILES);
   });
+});
+
+/**
+ * **갓 만든 볼트는 제품 자신의 품질 기준을 통과해야 한다** (2026-08-17 실측).
+ *
+ * `init` 직후 `ontology-atlas health` 를 돌렸더니 사용자가 아무것도 안 했는데
+ * `relation_recommendations warn:1` 이 떴다. 우리가 쓴 파일 때문이었다 —
+ * `elements/example-element` 는 `domain: domains/example-domain` 을 선언하는데
+ * 그 도메인이 `elements:` 로 되받아 걸지 않았다.
+ *
+ * 첫 화면이 「손볼 것 있음」으로 시작하면 그 신호는 그날부터 잡음이 된다.
+ *
+ * 판정은 **제품 자신의 유지보수 계획기**를 부른다 — 여기서 규칙을 다시
+ * 구현하면 그 사본이 언젠가 본체와 어긋난다.
+ */
+describe("starter templates — 제품 자신의 품질 기준", () => {
+  for (const locale of ["en", "ko"] as const) {
+    it(`${locale}: 갓 만든 볼트에 빠진 관계가 없다`, () => {
+      const dir = mkdtempSync(join(tmpdir(), `starter-health-${locale}-`));
+      try {
+        for (const file of materializeStarterFiles(locale)) {
+          const target = join(dir, file.relPath);
+          mkdirSync(dirname(target), { recursive: true });
+          writeFileSync(target, file.content, "utf8");
+        }
+        const payload = runCliJson<{
+          checks?: Array<{ id?: string; status?: string; count?: number }>;
+        }>([join(process.cwd(), "cli", "src", "index.mjs"), "health", dir, "--json"]);
+        const byId = new Map((payload.checks ?? []).map((c) => [c.id, c]));
+
+        // 헛돌지 않는지 — 볼트를 실제로 읽었는가.
+        expect(byId.get("vault_present")?.count).toBe(5);
+        expect(byId.get("compile_issues")?.status).toBe("pass");
+        // 이 줄이 이 검사의 요점이다.
+        expect(byId.get("relation_recommendations")?.status, "우리가 쓴 파일이 손볼 거리를 남긴다").toBe(
+          "pass",
+        );
+        expect(byId.get("components")?.status).toBe("pass");
+      } finally {
+        rmSync(dir, { recursive: true, force: true });
+      }
+    });
+  }
 });

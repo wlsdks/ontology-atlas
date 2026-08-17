@@ -23,7 +23,12 @@
  *   with a non-node endpoint (a folder-derived slug that isn't a vault node) goes to `inCodeMissingEndpointAbsent`
  *   (needs the nodes modelled first). Neither category is directly landable: an import is
  *   source evidence, not by itself a semantic ontology dependency.
- * @returns {{inBoth:Array,inCodeMissingFromVault:Array,inCodeMissingEndpointAbsent:Array,inVaultNotInCode:Array}}
+ * @param {Record<string,string>|Map<string,string>} [args.pathBySlug]  슬러그 → 그 노드의 `path:`.
+ *   주면 **스캐너가 읽을 수 없는 구현**(Rust 등 지원 밖 확장자 · 경로 미상)을 가진 엣지를
+ *   `notJudgeableByImports` 로 따로 뺀다. 안 주면 예전대로 동작한다.
+ * @param {Set<string>|Array<string>} [args.scannedExtensions]  스캐너가 실제로 읽은 확장자
+ *   (`inferImports().coverage.supportedExtensions`). 없으면 기본 목록을 쓴다.
+ * @returns {{inBoth:Array,inCodeMissingFromVault:Array,inCodeMissingEndpointAbsent:Array,inVaultNotInCode:Array,notJudgeableByImports:Array}}
  */
 // The compiler canonicalizes the `depends_on` frontmatter key to the stored
 // relation key `dependencies` (NEIGHBOR_KEY_ALIASES in vault.mjs; the public
@@ -31,10 +36,62 @@
 // compiled value — matching 'depends_on' alone silently swallows every real
 // dependency edge. Accept both so a future alias can't break the contract.
 const DEPENDS_ON_VIA = new Set(['dependencies', 'depends_on']);
+/**
+ * 스캐너가 읽는 확장자의 기본값 — `infer-imports` 의 `supportedExtensions` 와 같다.
+ * 부르는 쪽이 실제 값을 주면 그것을 쓴다(둘이 어긋나는 것을 막으려고 받는다).
+ */
+const DEFAULT_SCANNED_EXTENSIONS = new Set([
+  '.cjs', '.cts', '.go', '.js', '.jsx', '.mjs', '.mts', '.py', '.ts', '.tsx',
+]);
+
+/**
+ * 이 엔드포인트의 구현을 스캐너가 **읽을 수 있나**.
+ *
+ * ## 왜 이 판정이 필요한가 (2026-08-17, 이 저장소 자신에서 실측)
+ *
+ * 우리 볼트의 `depends_on` 3개가 전부 「코드에 없음 → 오래됐는지 검토」로
+ * 나왔는데, 셋 다 맞는 관계였다. 스캐너가 못 본 이유는 관계가 없어서가 아니라
+ * **볼 수 없어서**다 — `capabilities/acp-runtime` 의 구현은
+ * `src-tauri/src/acp.rs`(Rust)이고 스캐너는 `.rs` 를 안 읽는다.
+ *
+ * **「못 봤다」를 「없다」로 말하면 에이전트가 맞는 관계를 지운다.** 이 저장소의
+ * CodeGraph 규칙이 같은 말을 이미 한다: *"'not found' 를 부재의 증거로 쓰지
+ * 마라."* 그래서 판정을 미룰 줄 알아야 한다.
+ */
+function readabilityOf(slug, pathMap, extensions) {
+  if (!pathMap) return { readable: true, reason: null };
+  const raw = pathMap instanceof Map ? pathMap.get(slug) : pathMap[slug];
+  if (typeof raw !== 'string' || raw.trim().length === 0) {
+    return { readable: false, reason: 'endpoint_path_unknown' };
+  }
+  const dot = raw.lastIndexOf('.');
+  const slash = raw.lastIndexOf('/');
+  // 확장자가 없으면 디렉터리를 가리키는 것이다 — 그 안에 읽는 파일이 있을 수
+  // 있으므로 못 읽는다고 단정하지 않는다.
+  if (dot <= slash) return { readable: true, reason: null };
+  const ext = raw.slice(dot).toLowerCase();
+  return extensions.has(ext)
+    ? { readable: true, reason: null }
+    : { readable: false, reason: 'endpoint_language_not_scanned' };
+}
+
 const SOURCE_ROLE_VALUES = ['production', 'test', 'unknown'];
 const IMPORT_USAGE_VALUES = ['value', 'type_only', 'unknown'];
 
-export function reconcileImportEdges({ moduleEdges = [], compiledEdges = [], aliasToSlug, nodeSlugs } = {}) {
+export function reconcileImportEdges({
+  moduleEdges = [],
+  compiledEdges = [],
+  aliasToSlug,
+  nodeSlugs,
+  pathBySlug,
+  scannedExtensions,
+} = {}) {
+  const extensions =
+    scannedExtensions instanceof Set
+      ? scannedExtensions
+      : Array.isArray(scannedExtensions)
+        ? new Set(scannedExtensions)
+        : DEFAULT_SCANNED_EXTENSIONS;
   const nodeSet =
     nodeSlugs instanceof Set ? nodeSlugs : Array.isArray(nodeSlugs) ? new Set(nodeSlugs) : null;
   // Normalize through the compiler's alias map so an alias edge (alias-src→b)
@@ -106,6 +163,7 @@ export function reconcileImportEdges({ moduleEdges = [], compiledEdges = [], ali
   const inCodeMissingFromVault = [];
   const inCodeMissingEndpointAbsent = [];
   const inVaultNotInCode = [];
+  const notJudgeableByImports = [];
 
   for (const [k, edge] of codeMap) {
     if (vaultMap.has(k)) {
@@ -140,9 +198,26 @@ export function reconcileImportEdges({ moduleEdges = [], compiledEdges = [], ali
     }
   }
   for (const [k, edge] of vaultMap) {
-    if (!codeMap.has(k)) {
-      inVaultNotInCode.push({ from: edge.from, to: edge.to, ref: edge.ref, via: edge.via });
+    if (codeMap.has(k)) continue;
+    // 못 읽는 구현이 한쪽에라도 끼면 **판정을 미룬다.** 여기서 「오래됐을 수
+    // 있다」로 보내면 에이전트가 맞는 관계를 지운다(2026-08-17 실측).
+    const from = readabilityOf(edge.from, pathBySlug, extensions);
+    const to = readabilityOf(edge.to, pathBySlug, extensions);
+    if (!from.readable || !to.readable) {
+      notJudgeableByImports.push({
+        from: edge.from,
+        to: edge.to,
+        ref: edge.ref,
+        via: edge.via,
+        unreadable: [
+          ...(from.readable ? [] : [edge.from]),
+          ...(to.readable ? [] : [edge.to]),
+        ],
+        reason: (from.readable ? to : from).reason,
+      });
+      continue;
     }
+    inVaultNotInCode.push({ from: edge.from, to: edge.to, ref: edge.ref, via: edge.via });
   }
 
   const byFromTo = (a, b) => key(a.from, a.to).localeCompare(key(b.from, b.to));
@@ -150,8 +225,15 @@ export function reconcileImportEdges({ moduleEdges = [], compiledEdges = [], ali
   inCodeMissingFromVault.sort(byFromTo);
   inCodeMissingEndpointAbsent.sort(byFromTo);
   inVaultNotInCode.sort(byFromTo);
+  notJudgeableByImports.sort(byFromTo);
 
-  return { inBoth, inCodeMissingFromVault, inCodeMissingEndpointAbsent, inVaultNotInCode };
+  return {
+    inBoth,
+    inCodeMissingFromVault,
+    inCodeMissingEndpointAbsent,
+    inVaultNotInCode,
+    notJudgeableByImports,
+  };
 }
 
 /**

@@ -29,6 +29,8 @@ import {
 import type { LocalFsHandleRecord } from '@/entities/local-fs-handle';
 import {
   materializeStarterFiles,
+  vaultAgentGuideForLocale,
+  vaultClaudeBridgeForLocale,
   buildCodexConfigToml,
   buildMcpConfigJson,
   buildVaultMcpConfigJson,
@@ -37,6 +39,7 @@ import {
   getTauriVaultRootPath,
   isTauriVaultRuntime,
   pickTauriVaultDirectory,
+  vaultRootRejectionReason,
   tauriVaultPathExists,
 } from '@/shared/lib/tauri-vault-fs';
 import { toErrorMessage } from '@/shared/lib/error-message';
@@ -216,8 +219,13 @@ type Status =
  *   더는 절대 경로로 접근할 수 없음. "폴더 다시 선택" 이 다음 행동.
  * - `access-failed` — 그 외 읽기/빌드 실패. `errorMessage` 에 원인 문자열이
  *   담긴다 (Tauri 커맨드의 Err(String) 포함 — 더는 침묵하지 않음).
+ * - `root-rejected` — 고른 자리가 볼트 루트로 받을 수 없는 곳(파일시스템 루트 ·
+ *   홈 디렉터리 자체 · OS/앱 디렉터리). **실패가 아니라 거절**이라서 코드를
+ *   가른다: 다시 시도해도 같은 결과이므로 "다시 시도해 주세요" 는 틀린 안내다.
+ *   `errorMessage` 는 null 이고, 화면이 사유를 자기 언어로 고른다
+ *   (`vaultRootRejectionReason`).
  */
-export type VaultErrorCode = 'path-missing' | 'access-failed';
+export type VaultErrorCode = 'path-missing' | 'access-failed' | 'root-rejected';
 
 interface State {
   status: Status;
@@ -252,6 +260,13 @@ export interface AgentConfigStatus {
   mcpJsonValid?: boolean;
   codexConfigValid?: boolean;
   mcpExampleValid?: boolean;
+  /**
+   * `.codex/config.toml` 이 등록해 둔 **명령 문자열 그대로**. 앱이 세션에 같은
+   * 서버를 또 꽂지 않으려면 「등록이 있다」가 아니라 「무엇이 등록됐나」가
+   * 필요하다 — 낡은 경로가 적혀 있으면 건너뛰면 안 되기 때문이다
+   * (`vault-mcp-server.ts` 의 실측 주석).
+   */
+  codexRegisteredCommand?: string | null;
 }
 
 function emptyState(status: Status = 'idle'): State {
@@ -427,6 +442,12 @@ function configTomlStringArray(section: string | null, key: string): string[] | 
   }
 }
 
+/** `.codex/config.toml` 이 등록한 명령 문자열 — 없으면 `null`. */
+export function readOmotCodexCommand(raw: string | null): string | null {
+  if (!raw) return null;
+  return configTomlString(configTomlSection(raw, 'mcp_servers.ontology-atlas'), 'command');
+}
+
 export function looksLikeOmotCodexToml(
   raw: string | null,
   options: { expectedVault?: string } = {},
@@ -464,6 +485,7 @@ async function readAgentConfigStatus(
     mcpExample: mcpExampleText !== null,
     mcpJsonValid: looksLikeOmotMcpJson(mcpJsonText, { expectedVault: '.' }),
     codexConfigValid: looksLikeOmotCodexToml(codexConfigText, { expectedVault: '.' }),
+    codexRegisteredCommand: readOmotCodexCommand(codexConfigText),
     mcpExampleValid: looksLikeOmotMcpJson(mcpExampleText),
   };
 }
@@ -479,6 +501,23 @@ async function readAgentActivityStatus(
   }
   const raw = await readTextFileIfPresent(activityDir, 'agent-activity.json');
   return parseAgentActivityStatus(raw);
+}
+
+/**
+ * 사이드카 상태 두 개가 **실질적으로 같은가** — 폴링이 새 객체를 만들 때마다
+ * 앱 전체를 다시 그리지 않게 하는 판정.
+ *
+ * 얕게 본다: 이 상태들은 boolean/문자열 몇 개짜리 평평한 객체다. 깊은 비교는
+ * 그 자체가 5초마다 도는 비용이 된다.
+ */
+function shallowEqualStatus(a: unknown, b: unknown): boolean {
+  if (a === b) return true;
+  if (!a || !b || typeof a !== 'object' || typeof b !== 'object') return false;
+  const left = a as Record<string, unknown>;
+  const right = b as Record<string, unknown>;
+  const keys = Object.keys(left);
+  if (keys.length !== Object.keys(right).length) return false;
+  return keys.every((key) => left[key] === right[key]);
 }
 
 async function readVaultSidecarStatuses(handle: FileSystemDirectoryHandle): Promise<{
@@ -763,12 +802,36 @@ export function useLocalVaultInternal() {
         createdAt: now,
         lastAccessedAt: now,
       });
-      await refreshRecentVaults();
+      /*
+       * ⚠️ **순서가 계약이다** (2026-08-16 검수에서 적발).
+       *
+       * 종전에는 최근 목록을 **먼저** 갱신했다. 그 순간 「이 컴퓨터에서 한 번도
+       * 볼트를 연 적이 없다」가 거짓이 되고, 그 값 하나가 첫 실행 카드 · 「내
+       * 데이터로 전환」 타일 · 첫 실행 판독을 **동시에 화면에서 치운다.**
+       *
+       * 그래서 바로 다음 줄의 읽기가 실패하면, 그 실패를 말해 줄 표면이 이미
+       * 사라진 뒤였다 — 사용자는 아무 말도 없는 샘플 지도를 본다. 성공한 뒤에
+       * 목록에 올린다.
+       */
       await load(handle);
+      await refreshRecentVaults();
     } catch (err) {
       // 취소는 실패가 아니다 — 선택창 직전 상태로 복귀(`isPickerAbort` 주석 참고).
       if (isPickerAbort(err)) {
         setState(previousState);
+        return;
+      }
+      // 「받을 수 없는 자리」 거절은 실패와 다르게 다룬다. 원인 문자열을 그대로
+      // 화면에 흘리면 사용자가 `vault-root-rejected:filesystem-root` 를 읽게 되고,
+      // 「다시 시도해 주세요」 는 몇 번을 해도 같은 결과라 거짓 안내가 된다.
+      const rejection = vaultRootRejectionReason(err);
+      if (rejection) {
+        setState((s) => ({
+          ...s,
+          status: 'error',
+          errorMessage: null,
+          errorCode: 'root-rejected',
+        }));
         return;
       }
       // 같은 이유로 ko 하드코딩 "폴더를 열지 못했습니다" 제거 — null 이면
@@ -902,7 +965,24 @@ export function useLocalVaultInternal() {
         const fp = await computeLocalVaultFingerprint(handle);
         if (fp === lastFingerprintRef.current) {
           const sidecars = await readVaultSidecarStatuses(handle);
-          setState((s) => ({ ...s, ...sidecars, lastLoadedAt: Date.now() }));
+          /*
+           * ⚠️ **안 바뀌었으면 상태도 안 건드린다** (2026-08-16 검수).
+           *
+           * 종전에는 아무것도 안 바뀐 틱에도 `setState` 로 새 객체를 만들었고,
+           * 컨텍스트 프로바이더가 그 결과를 그대로 흘려서 **5초마다 앱 전체가
+           * 다시 그려졌다** — 아무 일도 안 일어난 채로, 영원히.
+           *
+           * `lastLoadedAt` 은 화면 어디에도 안 쓰이는데(그 값을 위해 매 틱
+           * 새 객체를 만들었다), 사이드카 셋은 실제로 바뀔 수 있다. 그래서
+           * **바뀐 것이 있을 때만** 갱신한다.
+           */
+          setState((s) => {
+            const same =
+              shallowEqualStatus(s.agentConfigStatus, sidecars.agentConfigStatus) &&
+              shallowEqualStatus(s.agentActivityStatus, sidecars.agentActivityStatus) &&
+              s.agentActivityLog.length === sidecars.agentActivityLog.length;
+            return same ? s : { ...s, ...sidecars, lastLoadedAt: Date.now() };
+          });
           return false;
         }
       } catch {
@@ -1161,6 +1241,20 @@ export function useLocalVaultInternal() {
       opts: { rewriteBacklinks?: boolean } = {},
     ) => {
       if (oldSlug === newSlug) return;
+      /*
+       * ⚠️ **대소문자만 다른 이름은 같은 파일이다** (2026-08-16 검수 — MCP 쪽에서
+       * 문서가 사라지는 것을 재현했고, 이 경로도 같은 모양이다).
+       *
+       * 아래 충돌 검사는 Map 의 키 비교라 `Payments` 와 `payments` 를 다른 것으로
+       * 본다. 그런데 macOS·Windows 의 파일 시스템은 같은 파일로 보므로, 새
+       * 이름으로 쓰고 옛 이름을 지우면 **방금 쓴 그것이 지워진다.**
+       *
+       * 그리고 이 앱의 `slugify` 가 이름을 소문자로 눕히므로, 「Payments」를
+       * 「payments」로 고치는 것은 사용자가 흔히 하는 정리다 — 드문 경우가 아니다.
+       */
+      if (oldSlug.toLowerCase() === newSlug.toLowerCase()) {
+        throw new Error(`Case-only rename is not supported: "${oldSlug}" → "${newSlug}"`);
+      }
       if (state.fileHandles.has(newSlug)) {
         throw new Error(`Document already exists: "${newSlug}"`);
       }
@@ -1355,6 +1449,44 @@ export function useLocalVaultInternal() {
         skipped += 1;
       }
     }
+    /*
+     * 에이전트 안내문 — **설정만으로는 부족하다** (2026-08-17 실측).
+     * MCP 가 붙어 있어도 에이전트는 `sed`/`grep` 으로 frontmatter 를 직접
+     * 읽었다(MCP 호출 0회). 볼트에 `AGENTS.md` 를 두자 같은 질문에 곧바로
+     * `list_concepts` 를 불렀다. 근거는 `ontology-starter.ts` 의
+     * `VAULT_AGENT_GUIDE_PATH` 주석.
+     *
+     * **개념이 아니므로 `markdownCreated` 에 안 센다** — 그 숫자는 화면이
+     * 「개념 문서 N개」로 쓴다.
+     */
+    let guideCreated = 0;
+    for (const guide of [
+      vaultAgentGuideForLocale(starterLocale),
+      // Claude Code 는 `AGENTS.md` 를 직접 안 읽는다 — `CLAUDE.md` 의 임포트를
+      // 거친다. 하나만 두면 두 런타임 중 한쪽이 안내를 통째로 못 받는다.
+      vaultClaudeBridgeForLocale(starterLocale),
+    ]) {
+      try {
+        const resolved = await getParentAndName(guide.relPath.replace(/\.md$/, ''), true);
+        if (!resolved) continue;
+        const existing = await resolved.parent
+          .getFileHandle(resolved.fileName)
+          .then(() => true)
+          .catch(() => false);
+        if (existing) {
+          skipped += 1;
+          continue;
+        }
+        const fh = await resolved.parent.getFileHandle(resolved.fileName, { create: true });
+        const writable = await fh.createWritable();
+        await writable.write(guide.content);
+        await writable.close();
+        guideCreated += 1;
+      } catch {
+        skipped += 1;
+      }
+    }
+
     // Ready-to-use agent configs for "open the vault folder itself" flows.
     // 번들 서버를 못 찾으면 fail closed: markdown starter만 만든다.
     const starterLaunch = await resolveBundledLaunch();
@@ -1367,9 +1499,9 @@ export function useLocalVaultInternal() {
       /** 온톨로지 노드가 되는 마크다운 파일 수 — 지도/설정이 세는 것과 같은 단위. */
       markdownCreated,
       /** `.mcp.json` 등 에이전트 설정 파일 수 — 개념이 아니다. */
-      agentConfigCreated: agentConfigResult.created,
+      agentConfigCreated: agentConfigResult.created + guideCreated,
       /** 하위 호환 총합. 사용자에게 보여줄 땐 위 둘을 따로 말한다. */
-      created: markdownCreated + agentConfigResult.created,
+      created: markdownCreated + agentConfigResult.created + guideCreated,
       skipped,
     };
   }, [

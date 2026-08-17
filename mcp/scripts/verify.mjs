@@ -37,6 +37,7 @@
  * 모두 PASS → exit 0, 실패 → exit 1 + 진단 메시지.
  */
 
+import { isBacklinkKeyValue } from '../src/backlink-key-shape.mjs';
 import { spawn } from 'node:child_process';
 import { mkdirSync, realpathSync, rmSync, statSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
@@ -378,12 +379,16 @@ function nonBlankStringSchemaFailure(schema) {
   );
 }
 
-function nonBlankStringOrArraySchemaFailure(schema) {
+function backlinkRewriteValueSchemaFailure(schema) {
   return !(
-    sameArray(schema?.type, ['array', 'string']) &&
+    sameArray(schema?.type, ['array', 'object', 'string']) &&
     schema.minLength === 1 &&
+    schema.minItems === 1 &&
+    schema.minProperties === 1 &&
     schema.pattern === NON_BLANK_STRING_PATTERN &&
-    !nonBlankStringSchemaFailure(schema.items)
+    !nonBlankStringSchemaFailure(schema.items) &&
+    !nonBlankStringSchemaFailure(schema.propertyNames) &&
+    !nonBlankStringSchemaFailure(schema.additionalProperties)
   );
 }
 
@@ -532,8 +537,8 @@ function backlinkRewritePlanSchemaFailure(schema, label) {
       !sameArray(keyRows.items?.required, ['key']) ||
       keyRows.items?.additionalProperties !== false ||
       nonBlankStringSchemaFailure(keyRows.items?.properties?.key) ||
-      nonBlankStringOrArraySchemaFailure(keyRows.items?.properties?.before) ||
-      nonBlankStringOrArraySchemaFailure(keyRows.items?.properties?.after)
+      backlinkRewriteValueSchemaFailure(keyRows.items?.properties?.before) ||
+      backlinkRewriteValueSchemaFailure(keyRows.items?.properties?.after)
     ) {
       return `${label} outputSchema backlinkUpdates ${propertyName} drift`;
     }
@@ -1234,15 +1239,31 @@ export function toolsListSchemaFailure(tools) {
   if (
     evidenceMatchesSchema?.type !== 'array' ||
     evidenceMatchesSchema.items?.type !== 'object' ||
-    !sameArray(evidenceMatchesSchema.items?.required, ['uid', 'slug', 'kind', 'title', 'mtime', 'matchedIn', 'score', 'excerpt'])
+    !sameArray(evidenceMatchesSchema.items?.required, ['slug', 'isNode', 'title', 'mtime', 'matchedIn', 'score', 'excerpt'])
   ) {
     return 'find_evidence outputSchema matches drift';
+  }
+  const evidenceIdentityBranches = [
+    {
+      properties: { isNode: { const: true } },
+      required: ['uid', 'kind'],
+    },
+    {
+      properties: { isNode: { const: false } },
+      not: { anyOf: [{ required: ['uid'] }, { required: ['kind'] }] },
+    },
+  ];
+  if (!isDeepStrictEqual(evidenceMatchesSchema.items?.oneOf, evidenceIdentityBranches)) {
+    return 'find_evidence outputSchema match identity drift';
   }
   if (evidenceMatchesSchema.items?.additionalProperties !== false) {
     return 'find_evidence outputSchema match openness drift';
   }
   if (evidenceMatchesSchema.items?.properties?.uid?.type !== 'string' || evidenceMatchesSchema.items?.properties?.uid?.pattern !== NODE_UID_PATTERN) {
     return 'find_evidence outputSchema match uid drift';
+  }
+  if (evidenceMatchesSchema.items?.properties?.isNode?.type !== 'boolean') {
+    return 'find_evidence outputSchema match isNode drift';
   }
   for (const propertyName of ['slug', 'kind', 'title', 'excerpt']) {
     if (evidenceMatchesSchema.items?.properties?.[propertyName]?.type !== 'string') {
@@ -5728,24 +5749,31 @@ function backlinkKeyChangeFailure(row) {
   }
   if (
     row.before !== undefined &&
-    !isStringOrStringArray(row.before)
+    !isBacklinkRewriteValue(row.before)
   ) {
     return 'before drift';
   }
   if (
     row.after !== undefined &&
-    !isStringOrStringArray(row.after)
+    !isBacklinkRewriteValue(row.after)
   ) {
     return 'after drift';
   }
   return null;
 }
 
-function isStringOrStringArray(value) {
-  return (
-    isCleanNonBlankString(value) ||
-    (Array.isArray(value) && value.every((item) => isCleanNonBlankString(item)))
-  );
+/**
+ * ⚠️ **판정을 여기서 다시 쓰지 않는다** (2026-08-17).
+ *
+ * 종전에는 이 함수가 문자열/배열만 받았고, 그래서 `relation_notes`(맵)을 가진
+ * 노드의 rename 이 **정상인데도** 이 게이트를 못 넘었다. 맞는 동작에 켜지는
+ * 게이트는 꺼지는 게이트다.
+ *
+ * 모양 판정은 `mcp/src/backlink-key-shape.mjs` 하나가 갖고, 자기 테스트도
+ * 거기 있다.
+ */
+function isBacklinkRewriteValue(value) {
+  return isBacklinkKeyValue(value);
 }
 
 function isCleanNonBlankString(value) {
@@ -6016,7 +6044,21 @@ function readMatchRowFailure(label, row, index, { evidence = false, backlinks = 
   if (typeof row.slug !== 'string' || row.slug.length === 0) {
     return `${label} response missing match slug at index ${index}`;
   }
-  if (typeof row.kind !== 'string' || row.kind.length === 0) {
+  if (evidence) {
+    if (typeof row.isNode !== 'boolean') {
+      return `${label} response missing isNode: ${row.slug}`;
+    }
+    if (row.isNode) {
+      if (typeof row.uid !== 'string' || row.uid.length === 0) {
+        return `${label} response missing node uid: ${row.slug}`;
+      }
+      if (typeof row.kind !== 'string' || row.kind.length === 0) {
+        return `${label} response missing node kind: ${row.slug}`;
+      }
+    } else if (row.uid !== undefined || row.kind !== undefined) {
+      return `${label} response non-node exposes graph identity: ${row.slug}`;
+    }
+  } else if (typeof row.kind !== 'string' || row.kind.length === 0) {
     return `${label} response missing match kind: ${row.slug}`;
   }
   if (typeof row.title !== 'string' || row.title.length === 0) {
@@ -8982,6 +9024,16 @@ export function meaningRepairFullBodyReadsFailure(pages, readPayloads) {
   return null;
 }
 
+function isRunnableAgentCliFallback(command) {
+  if (typeof command !== 'string' || command.trim() === '' || /[\r\n]/.test(command)) return false;
+  const normalized = command.replaceAll('\\', '/');
+  const entryMarker = 'cli/src/index.mjs';
+  const entryIndex = normalized.indexOf(entryMarker);
+  if (!normalized.startsWith('node ') || entryIndex < 'node '.length) return false;
+  if (normalized.slice('node '.length, entryIndex).trim() === '') return false;
+  return /^(?:['"])?\s+\S/.test(normalized.slice(entryIndex + entryMarker.length));
+}
+
 export function agentBriefFailure(parsed) {
   if (parsed?.operation !== 'agent_brief') {
     return `agent_brief returned unexpected operation: ${parsed?.operation}`;
@@ -9077,7 +9129,7 @@ export function agentBriefFailure(parsed) {
   if (
     !Array.isArray(parsed.cliFallbackCommands) ||
     parsed.cliFallbackCommands.length === 0 ||
-    parsed.cliFallbackCommands.some((command) => typeof command !== 'string' || !/^ontology-atlas\s/.test(command))
+    parsed.cliFallbackCommands.some((command) => !isRunnableAgentCliFallback(command))
   ) {
     return 'agent_brief response missing cliFallbackCommands';
   }

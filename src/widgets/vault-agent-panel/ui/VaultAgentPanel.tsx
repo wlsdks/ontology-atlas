@@ -7,15 +7,14 @@ import { ICON_SIZE } from '@/shared/ui/icon-size';
 
 import type { VaultManifest } from '@/entities/docs-vault';
 import type { KnowledgeProjectInsight } from '@/entities/knowledge-graph';
+import { buildFirstWords, type ScreenContextSnapshot } from '@/features/vault-agent';
+import { useVaultConceptFacts } from '@/features/vault-ontology';
 import {
-  buildFirstWords,
   COMPOSER_MIN_ROWS,
   composerGrowth,
   composerTopIsHidden,
   snapScrollTop,
-  type ScreenContextSnapshot,
-} from '@/features/vault-agent';
-import { useVaultConceptFacts } from '@/features/vault-ontology';
+} from '@/shared/lib/composer-growth';
 import {
   hostOfBaseUrl,
   isLocalEndpointReady,
@@ -473,6 +472,11 @@ export function VaultAgentPanel({
   return (
     <aside
       data-testid="vault-agent-panel"
+      /*
+       * 화면 오른쪽에 선 것 — 알림(토스트)이 이 폭만큼 비켜선다. 열려 있을
+       * 때만 단다: 닫힌 패널은 폭 0 이라 예약할 것이 없다.
+       */
+      data-right-dock={open ? 'key-agent' : undefined}
       data-agent-panel-state={open ? 'open' : 'closed'}
       data-agent-panel-reflow-token="--agent-panel-reflow-duration"
       aria-label={t('title')}

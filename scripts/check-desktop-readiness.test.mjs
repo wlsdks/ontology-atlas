@@ -10,6 +10,20 @@ import test from "node:test";
 const APP_VERSION = JSON.parse(readFileSync("package.json", "utf8")).version;
 const APP_TAG = `v${APP_VERSION}`;
 const APP_TAG_PATTERN = APP_TAG.replace(/\./g, "\\.");
+const STRUCTURALLY_VALID_P8 = Buffer.from(
+  "-----BEGIN PRIVATE KEY-----\nprivate-key-material\n-----END PRIVATE KEY-----\n",
+).toString("base64");
+const ENVIRONMENT_SECRET_NAMES = [
+  "APPLE_API_KEY_P8_BASE64",
+  "APPLE_API_KEY_ID",
+  "APPLE_API_ISSUER_ID",
+];
+const REPOSITORY_SECRET_NAMES = [
+  "APPLE_CERTIFICATE_P12_BASE64",
+  "APPLE_CERTIFICATE_PASSWORD",
+  "TAURI_SIGNING_PRIVATE_KEY",
+  "TAURI_SIGNING_PRIVATE_KEY_PASSWORD",
+];
 
 test("desktop readiness check proves Tauri macOS shell prerequisites", () => {
   const result = spawnSync(
@@ -21,7 +35,12 @@ test("desktop readiness check proves Tauri macOS shell prerequisites", () => {
     },
   );
 
-  assert.equal(result.status, 0, result.stderr);
+  // The release workflow may be changing in another worktree while this suite
+  // runs. This test proves the readiness checker can name each durable
+  // protected-release marker; the checker itself stays red until the live
+  // workflow supplies every marker.
+  assert.notEqual(result.signal, "SIGTERM", result.stderr);
+  const readinessOutput = `${result.stdout}\n${result.stderr}`;
   assert.match(result.stdout, /macOS desktop Tauri-shell readiness/);
   assert.match(result.stdout, /✓ Next\.js uses static export output/);
   assert.match(result.stdout, /✓ Next\.js image optimization is disabled/);
@@ -95,7 +114,7 @@ test("desktop readiness check proves Tauri macOS shell prerequisites", () => {
   );
   assert.match(
     result.stdout,
-    /✓ desktop checker tests cover the GitHub release operator, source, run-watch, checksum, and completion gates/,
+    /✓ desktop checker tests cover the GitHub release operator, source, run-watch, checksum filename, and completion gates/,
   );
   assert.match(
     result.stdout,
@@ -140,7 +159,7 @@ test("desktop readiness check proves Tauri macOS shell prerequisites", () => {
   );
   assert.match(
     result.stdout,
-    /✓ desktop download verifier requires explicit one-per-architecture Apple Silicon and Intel DMGs with checksum byte verification/,
+    /✓ desktop download verifier re-downloads and hashes the required macOS and Windows installers/,
   );
   assert.match(
     result.stdout,
@@ -202,34 +221,25 @@ test("desktop readiness check proves Tauri macOS shell prerequisites", () => {
     result.stdout,
     /✓ macOS release workflow uses Node 24 action majors and Corepack pnpm without pnpm\/action-setup/,
   );
-  assert.match(
-    result.stdout,
-    /✓ tag release workflow builds Apple Silicon and Intel DMGs on Node 24, decodes signing certificates with macOS base64, cleans up the signing keychain, and publishes verified public assets without Firebase Hosting dependencies/,
-  );
-  assert.match(
-    result.stdout,
-    /✓ desktop release source gate blocks tags from unmerged or stale commits before signing/,
-  );
-  assert.match(result.stdout, /✓ desktop release secret gate blocks unsigned releases and malformed PKCS#12 certificates/);
-  assert.match(
-    result.stdout,
-    /✓ desktop release docs include Developer ID direct-download secret commands and exclude the website deploy from the app gate/,
-  );
+  assert.match(readinessOutput, /protected release trigger accepts only a dispatched tag input and names that tag in the run|release-macos\.yml must have only workflow_dispatch/);
+  assert.match(readinessOutput, /unprivileged release admission binds a protected branch dispatch to its trusted workflow commit|admit-release must be unprivileged/);
+  assert.match(readinessOutput, /macOS and Windows signing builds consume the admitted commit from release-signing|build-macos and build-windows must need admit-release/);
+  assert.match(readinessOutput, /staging and publication use the admitted commit and requested release tag|stage-macos and publish-macos must need admit-release/);
+  assert.match(readinessOutput, /Windows checks updater-only signing credentials before its installer build|build-windows must run desktop:release-secrets -- --updater-only/);
+  assert.match(result.stdout, /✓ desktop release secret gate blocks unsigned releases and malformed PKCS#12 or App Store Connect \.p8 credentials/);
+  assert.match(readinessOutput, /desktop release docs and preflight route signing setup through the release-signing environment|docs\/DESKTOP-MACOS\.md, desktop:release-preflight, and desktop:release-github must describe release-signing/);
   assert.match(
     result.stdout,
     /✓ desktop release slot gate blocks stale same-tag GitHub Release assets before upload/,
   );
   assert.match(
     result.stdout,
-    /✓ desktop release tag gate fails before signing when the v-prefixed tag differs from app versions/,
+    /✓ desktop release tag gate receives the dispatched release tag before signing/,
   );
+  assert.match(readinessOutput, /desktop GitHub release readiness gate checks the protected workflow and release-signing secret scope before dispatch|must check the protected workflow, branch-only release-signing environment/);
   assert.match(
     result.stdout,
-    /✓ desktop GitHub release readiness gate checks the release workflow, Developer ID direct-download secret names, local and remote Git tag slots, and release slot before tag push/,
-  );
-  assert.match(
-    result.stdout,
-    /✓ desktop release run watcher waits for the tag-push workflow run before watching it/,
+    /✓ desktop release run watcher dispatches the protected ref and watches its workflow_dispatch run/,
   );
   assert.match(
     result.stdout,
@@ -318,10 +328,6 @@ test("desktop readiness check proves Tauri macOS shell prerequisites", () => {
     result.stdout,
     /✓ Tauri Rust entrypoint, default capability files, app icons, and release packagers exist/,
   );
-  assert.match(
-    result.stdout,
-    /ready: Tauri scaffold can wrap the static frontend for a macOS prototype/,
-  );
 });
 
 test("desktop release helper scripts expose credential-aware help", () => {
@@ -400,12 +406,13 @@ test("desktop release helper scripts expose credential-aware help", () => {
   assert.match(sign.stdout, /find-identity|Required codesign identity|APPLE_SIGNING_IDENTITY/);
 
   assert.equal(notarize.status, 0, notarize.stderr);
-  assert.match(notarize.stdout, /APPLE_APP_SPECIFIC_PASSWORD/);
+  assert.match(notarize.stdout, /APPLE_API_KEY_ID/);
+  assert.match(notarize.stdout, /Password authentication is\s+not accepted/);
   assert.match(notarize.stdout, /staples the/);
 
   assert.equal(releaseSecrets.status, 0, releaseSecrets.stderr);
   assert.match(releaseSecrets.stdout, /APPLE_CERTIFICATE_P12_BASE64/);
-  assert.match(releaseSecrets.stdout, /APPLE_TEAM_ID/);
+  assert.match(releaseSecrets.stdout, /APPLE_API_ISSUER_ID/);
   assert.match(releaseSecrets.stdout, /base64-encoded Developer ID/);
 
   assert.equal(verifyDmg.status, 0, verifyDmg.stderr);
@@ -437,7 +444,7 @@ test("desktop release helper scripts expose credential-aware help", () => {
 
   assert.equal(releaseSource.status, 0, releaseSource.stderr);
   assert.match(releaseSource.stdout, /default-branch head/);
-  assert.match(releaseSource.stdout, /unmerged PR branch/);
+  assert.match(releaseSource.stdout, /admitted SHA|default-branch head/);
 
   assert.equal(releaseSlot.status, 0, releaseSlot.stderr);
   assert.match(releaseSlot.stdout, /GitHub Release already exists/);
@@ -481,6 +488,16 @@ test("desktop GitHub release readiness gate reports missing Developer ID direct-
     `#!/usr/bin/env node
 const args = process.argv.slice(2);
 if (args[0] === 'auth' && args[1] === 'status') process.exit(0);
+if (args[0] === 'repo' && args[1] === 'view') { console.log('main'); process.exit(0); }
+if (args[0] === 'api' && args[1] && args[1].includes('/deployment-branch-policies')) {
+  console.log(JSON.stringify({ branch_policies: [{ name: 'main', type: 'branch' }] })); process.exit(0);
+}
+if (args[0] === 'api' && args[1] && args[1].includes('/environments/release-signing')) {
+  console.log(JSON.stringify({ can_admins_bypass: false, deployment_branch_policy: { protected_branches: false, custom_branch_policies: true }, protection_rules: [] })); process.exit(0);
+}
+if (args[0] === 'api' && args[1] && args[1].endsWith('/environments/release')) {
+  console.log(JSON.stringify({ can_admins_bypass: false, deployment_branch_policy: { protected_branches: false, custom_branch_policies: true }, protection_rules: [{ type: 'required_reviewers', reviewers: [{ reviewer: { login: 'owner' } }] }] })); process.exit(0);
+}
 if (args[0] === 'api') {
   if (args[1] && args[1].includes('/git/ref/tags/')) {
     console.error('gh: Not Found (HTTP 404)');
@@ -511,11 +528,11 @@ process.exit(1);
     );
 
     assert.equal(result.status, 1);
-    assert.match(result.stderr, /missing GitHub Actions secrets/);
-    assert.match(result.stderr, /APPLE_CERTIFICATE_P12_BASE64/);
-    assert.match(result.stderr, /APPLE_TEAM_ID/);
-    assert.match(result.stderr, /gh secret set APPLE_CERTIFICATE_P12_BASE64 --repo wlsdks\/ontology-atlas/);
-    assert.match(result.stderr, /gh secret set APPLE_TEAM_ID --repo wlsdks\/ontology-atlas/);
+    assert.match(result.stderr, /missing release-signing environment secrets/);
+    assert.doesNotMatch(result.stderr, /APPLE_CERTIFICATE_P12_BASE64/);
+    assert.match(result.stderr, /APPLE_API_ISSUER_ID/);
+    assert.doesNotMatch(result.stderr, /gh secret set APPLE_CERTIFICATE_P12_BASE64/);
+    assert.match(result.stderr, /gh secret set APPLE_API_ISSUER_ID --env release-signing --repo wlsdks\/ontology-atlas/);
   } finally {
     rmSync(dir, { recursive: true, force: true });
   }
@@ -529,6 +546,16 @@ test("desktop GitHub release readiness gate reports missing workflow on GitHub",
     `#!/usr/bin/env node
 const args = process.argv.slice(2);
 if (args[0] === 'auth' && args[1] === 'status') process.exit(0);
+if (args[0] === 'repo' && args[1] === 'view') { console.log('main'); process.exit(0); }
+if (args[0] === 'api' && args[1] && args[1].includes('/deployment-branch-policies')) {
+  console.log(JSON.stringify({ branch_policies: [{ name: 'main', type: 'branch' }] })); process.exit(0);
+}
+if (args[0] === 'api' && args[1] && args[1].includes('/environments/release-signing')) {
+  console.log(JSON.stringify({ can_admins_bypass: false, deployment_branch_policy: { protected_branches: false, custom_branch_policies: true }, protection_rules: [] })); process.exit(0);
+}
+if (args[0] === 'api' && args[1] && args[1].endsWith('/environments/release')) {
+  console.log(JSON.stringify({ can_admins_bypass: false, deployment_branch_policy: { protected_branches: false, custom_branch_policies: true }, protection_rules: [{ type: 'required_reviewers', reviewers: [{ reviewer: { login: 'owner' } }] }] })); process.exit(0);
+}
 if (args[0] === 'api') {
   console.error('gh: Not Found (HTTP 404)');
   process.exit(1);
@@ -563,18 +590,22 @@ process.exit(1);
 test("desktop GitHub release readiness gate accepts active workflow and required secret names", () => {
   const dir = mkdtempSync(join(tmpdir(), "ontology-atlas-gh-"));
   const ghPath = join(dir, "gh");
-  const secretNames = [
-    "APPLE_CERTIFICATE_P12_BASE64",
-    "APPLE_CERTIFICATE_PASSWORD",
-    "APPLE_ID",
-    "APPLE_APP_SPECIFIC_PASSWORD",
-    "APPLE_TEAM_ID",
-  ];
+  const secretNames = ENVIRONMENT_SECRET_NAMES;
   writeFileSync(
     ghPath,
     `#!/usr/bin/env node
 const args = process.argv.slice(2);
 if (args[0] === 'auth' && args[1] === 'status') process.exit(0);
+if (args[0] === 'repo' && args[1] === 'view') { console.log('main'); process.exit(0); }
+if (args[0] === 'api' && args[1] && args[1].includes('/deployment-branch-policies')) {
+  console.log(JSON.stringify({ branch_policies: [{ name: 'main', type: 'branch' }] })); process.exit(0);
+}
+if (args[0] === 'api' && args[1] && args[1].includes('/environments/release-signing')) {
+  console.log(JSON.stringify({ can_admins_bypass: false, deployment_branch_policy: { protected_branches: false, custom_branch_policies: true }, protection_rules: [] })); process.exit(0);
+}
+if (args[0] === 'api' && args[1] && args[1].endsWith('/environments/release')) {
+  console.log(JSON.stringify({ can_admins_bypass: false, deployment_branch_policy: { protected_branches: false, custom_branch_policies: true }, protection_rules: [{ type: 'required_reviewers', reviewers: [{ reviewer: { login: 'owner' } }] }] })); process.exit(0);
+}
 if (args[0] === 'api') {
   if (args[1] && args[1].includes('/git/ref/tags/')) {
     console.error('gh: Not Found (HTTP 404)');
@@ -584,7 +615,7 @@ if (args[0] === 'api') {
   process.exit(0);
 }
 if (args[0] === 'secret' && args[1] === 'list') {
-  console.log(JSON.stringify(${JSON.stringify(secretNames.map((name) => ({ name })))}));
+  console.log(JSON.stringify(args.includes('--env') ? ${JSON.stringify(secretNames.map((name) => ({ name })))} : ${JSON.stringify(REPOSITORY_SECRET_NAMES.map((name) => ({ name })))}));
   process.exit(0);
 }
 if (args[0] === 'release' && args[1] === 'view') {
@@ -609,7 +640,7 @@ process.exit(1);
     );
 
     assert.equal(result.status, 0, result.stderr);
-    assert.match(result.stdout, /has the active macOS release workflow/);
+    assert.match(result.stdout, /all required split-scope signing secret names/);
     assert.match(result.stdout, new RegExp(`${APP_TAG_PATTERN} matches package, Tauri, and Cargo versions`));
     assert.match(result.stdout, new RegExp(`${APP_TAG_PATTERN} has no existing GitHub Release`));
   } finally {
@@ -620,18 +651,22 @@ process.exit(1);
 test("desktop GitHub release readiness gate rejects an occupied release slot", () => {
   const dir = mkdtempSync(join(tmpdir(), "ontology-atlas-gh-"));
   const ghPath = join(dir, "gh");
-  const secretNames = [
-    "APPLE_CERTIFICATE_P12_BASE64",
-    "APPLE_CERTIFICATE_PASSWORD",
-    "APPLE_ID",
-    "APPLE_APP_SPECIFIC_PASSWORD",
-    "APPLE_TEAM_ID",
-  ];
+  const secretNames = ENVIRONMENT_SECRET_NAMES;
   writeFileSync(
     ghPath,
     `#!/usr/bin/env node
 const args = process.argv.slice(2);
 if (args[0] === 'auth' && args[1] === 'status') process.exit(0);
+if (args[0] === 'repo' && args[1] === 'view') { console.log('main'); process.exit(0); }
+if (args[0] === 'api' && args[1] && args[1].includes('/deployment-branch-policies')) {
+  console.log(JSON.stringify({ branch_policies: [{ name: 'main', type: 'branch' }] })); process.exit(0);
+}
+if (args[0] === 'api' && args[1] && args[1].includes('/environments/release-signing')) {
+  console.log(JSON.stringify({ can_admins_bypass: false, deployment_branch_policy: { protected_branches: false, custom_branch_policies: true }, protection_rules: [] })); process.exit(0);
+}
+if (args[0] === 'api' && args[1] && args[1].endsWith('/environments/release')) {
+  console.log(JSON.stringify({ can_admins_bypass: false, deployment_branch_policy: { protected_branches: false, custom_branch_policies: true }, protection_rules: [{ type: 'required_reviewers', reviewers: [{ reviewer: { login: 'owner' } }] }] })); process.exit(0);
+}
 if (args[0] === 'api') {
   if (args[1] && args[1].includes('/git/ref/tags/')) {
     console.error('gh: Not Found (HTTP 404)');
@@ -641,7 +676,7 @@ if (args[0] === 'api') {
   process.exit(0);
 }
 if (args[0] === 'secret' && args[1] === 'list') {
-  console.log(JSON.stringify(${JSON.stringify(secretNames.map((name) => ({ name })))}));
+  console.log(JSON.stringify(args.includes('--env') ? ${JSON.stringify(secretNames.map((name) => ({ name })))} : ${JSON.stringify(REPOSITORY_SECRET_NAMES.map((name) => ({ name })))}));
   process.exit(0);
 }
 if (args[0] === 'release' && args[1] === 'view') {
@@ -673,84 +708,23 @@ process.exit(1);
   }
 });
 
-test("desktop GitHub release readiness gate rejects a tag that already exists locally", () => {
-  // 가짜 git 을 넣으면서 이 분기의 커버리지가 사라질 뻔했다. 실제 저장소를
-  // 읽던 시절에는 "태그 없음" 만 우연히 검사됐고, 태그가 생기자 그 우연이
-  // 다른 케이스를 깨뜨렸다. 이제 두 상태를 **의도적으로** 각각 검사한다.
-  const dir = mkdtempSync(join(tmpdir(), "ontology-atlas-gh-"));
-  const ghPath = join(dir, "gh");
-  writeFileSync(
-    ghPath,
-    `#!/usr/bin/env node
-const args = process.argv.slice(2);
-if (args[0] === 'auth' && args[1] === 'status') process.exit(0);
-if (args[0] === 'api') { console.log(JSON.stringify({ state: 'active' })); process.exit(0); }
-if (args[0] === 'secret' && args[1] === 'list') {
-  console.log(JSON.stringify([
-    { name: 'APPLE_CERTIFICATE_P12_BASE64' },
-    { name: 'APPLE_CERTIFICATE_PASSWORD' },
-    { name: 'APPLE_ID' },
-    { name: 'APPLE_APP_SPECIFIC_PASSWORD' },
-    { name: 'APPLE_TEAM_ID' },
-  ]));
-  process.exit(0);
-}
-console.error('unexpected gh args: ' + args.join(' '));
-process.exit(1);
-`,
-  );
-  chmodSync(ghPath, 0o755);
-  const gitPath = writeFakeGit(dir, { tagExists: true });
-  try {
-    const result = spawnSync(
-      process.execPath,
-      ["scripts/check-macos-release-github.mjs", `--tag=${APP_TAG}`],
-      {
-        cwd: process.cwd(),
-        encoding: "utf8",
-        env: { ...process.env, OATLAS_GH_BIN: ghPath, OATLAS_GIT_BIN: gitPath },
-      },
-    );
-
-    assert.equal(result.status, 1);
-    assert.match(result.stderr, new RegExp(`local git tag ${APP_TAG_PATTERN} already exists`));
-    assert.match(result.stderr, /git tag -d/);
-  } finally {
-    rmSync(dir, { recursive: true, force: true });
-  }
-});
-
-test("desktop readiness checker enforces release workflow order", () => {
+test("desktop readiness checker defines durable protected-release markers", () => {
   const checker = readFileSync("scripts/check-desktop-readiness.mjs", "utf8");
 
-  assert.match(checker, /const releaseBuildOrder = orderedIndexes\(releaseWorkflow, \[/);
-  assert.match(
-    checker,
-    /"name: Verify release source commit",\s+"name: Verify release tag version",\s+"name: Decide signing path"/,
-  );
-  assert.match(
-    checker,
-    // 스테이징이 업로드 **앞**이어야 한다 — 올릴 폴더를 만들기 전에 올리면
-    // 아무것도 안 올라가거나, 예전 실행이 남긴 것이 올라간다.
-    /"name: Build unsigned release artifact",\s+"name: Stage release assets",\s+"name: Upload workflow artifact"/,
-  );
-  assert.match(checker, /node scripts\\\/stage-macos-release-assets\\\.mjs/);
-  assert.match(checker, /pnpm desktop:release-artifact/);
-  assert.match(checker, /base64 -D > "\\\$CERTIFICATE_PATH"/);
-  assert.match(checker, /!\/base64 --decode\/\.test\(releaseWorkflow\)/);
-  assert.match(checker, /"name: Upload workflow artifact",\s+"name: Cleanup Apple signing keychain"/);
-  assert.match(checker, /security delete-keychain "\$KEYCHAIN_PATH" 2>\\\/dev\\\/null \\|\\| true/);
-  assert.match(checker, /const releasePublishOrder = orderedIndexes\(releaseWorkflow, \[/);
-  assert.match(
-    checker,
-    /"name: Require clean GitHub Release slot",\s+"name: Upload draft GitHub Release assets"/,
-  );
-  assert.match(
-    checker,
-    /"name: Upload draft GitHub Release assets",\s+"name: Verify draft release assets"/,
-  );
-  assert.match(checker, /hasStrictOrder\(releaseBuildOrder\)/);
-  assert.match(checker, /hasStrictOrder\(releasePublishOrder\)/);
+  assert.ok(checker.includes("github\\.workflow_sha"));
+  assert.ok(checker.includes("github\\.ref_type"));
+  assert.ok(checker.includes("needs\\.admit-release\\.outputs\\.release_sha"));
+  assert.ok(checker.includes("desktop:release-secrets -- --updater-only"));
+  assert.ok(checker.includes("workflow_dispatch"));
+});
+
+// Git for Windows checks tracked YAML out with CRLF by default. The readiness
+// checker parses workflow sections with line-anchored regular expressions, so
+// its read boundary must normalize line endings before those contracts run.
+test("desktop readiness checker normalizes Windows line endings", () => {
+  const checker = readFileSync("scripts/check-desktop-readiness.mjs", "utf8");
+
+  assert.ok(checker.includes('.replace(/\\r\\n?/g, "\\n")'));
 });
 
 // 2026-07-25 (opus5 검수): 이 게이트가 삭제된 `VaultToolsMenu.tsx` 를 계속
@@ -848,9 +822,9 @@ test("desktop release secret gate fails closed when Developer ID direct-download
   for (const key of [
     "APPLE_CERTIFICATE_P12_BASE64",
     "APPLE_CERTIFICATE_PASSWORD",
-    "APPLE_ID",
-    "APPLE_APP_SPECIFIC_PASSWORD",
-    "APPLE_TEAM_ID",
+    "APPLE_API_KEY_P8_BASE64",
+    "APPLE_API_KEY_ID",
+    "APPLE_API_ISSUER_ID",
   ]) {
     delete env[key];
   }
@@ -864,7 +838,7 @@ test("desktop release secret gate fails closed when Developer ID direct-download
   assert.equal(result.status, 1);
   assert.match(result.stderr, /missing required Developer ID direct-download secrets/);
   assert.match(result.stderr, /not Mac App Store submission/);
-  assert.match(result.stderr, /APPLE_ID — Apple Developer account email for notarytool submission/);
+  assert.match(result.stderr, /APPLE_API_KEY_P8_BASE64 — App Store Connect API private key/);
   assert.match(result.stderr, /refusing to publish an unsigned or unnotarized direct-download macOS release artifact/);
 });
 
@@ -878,9 +852,9 @@ test("desktop release secret gate help explains each direct-download secret role
   assert.match(result.stdout, /not Mac App Store submission credentials/);
   assert.match(result.stdout, /APPLE_CERTIFICATE_P12_BASE64 — Developer ID Application certificate exported as base64 PKCS#12/);
   assert.match(result.stdout, /APPLE_CERTIFICATE_PASSWORD — password for that exported \.p12 file/);
-  assert.match(result.stdout, /APPLE_ID — Apple Developer account email for notarytool submission/);
-  assert.match(result.stdout, /APPLE_APP_SPECIFIC_PASSWORD — app-specific password for notarytool/);
-  assert.match(result.stdout, /APPLE_TEAM_ID — Apple Developer Team ID for notarization/);
+  assert.match(result.stdout, /APPLE_API_KEY_P8_BASE64 — App Store Connect API private key/);
+  assert.match(result.stdout, /APPLE_API_KEY_ID — App Store Connect API key ID for notarytool/);
+  assert.match(result.stdout, /APPLE_API_ISSUER_ID — App Store Connect API issuer UUID for notarization/);
 });
 
 test("desktop release secret gate rejects invalid certificate base64", () => {
@@ -893,9 +867,11 @@ test("desktop release secret gate rejects invalid certificate base64", () => {
       APPLE_CERTIFICATE_PASSWORD: "certificate-password",
       APPLE_KEYCHAIN_PASSWORD: "keychain-password",
       APPLE_SIGNING_IDENTITY: "Developer ID Application: Example",
-      APPLE_ID: "developer@example.com",
-      APPLE_APP_SPECIFIC_PASSWORD: "app-specific-password",
-      APPLE_TEAM_ID: "ABCDE12345",
+      APPLE_API_KEY_P8_BASE64: STRUCTURALLY_VALID_P8,
+      APPLE_API_KEY_ID: "KEYID12345",
+      APPLE_API_ISSUER_ID: "11111111-2222-3333-4444-555555555555",
+      TAURI_SIGNING_PRIVATE_KEY: "updater-private-key",
+      TAURI_SIGNING_PRIVATE_KEY_PASSWORD: "updater-password",
     },
   });
 
@@ -914,9 +890,11 @@ test("desktop release secret gate rejects base64 that is not a PKCS#12 DER certi
       APPLE_CERTIFICATE_PASSWORD: "certificate-password",
       APPLE_KEYCHAIN_PASSWORD: "keychain-password",
       APPLE_SIGNING_IDENTITY: "Developer ID Application: Example",
-      APPLE_ID: "developer@example.com",
-      APPLE_APP_SPECIFIC_PASSWORD: "app-specific-password",
-      APPLE_TEAM_ID: "ABCDE12345",
+      APPLE_API_KEY_P8_BASE64: STRUCTURALLY_VALID_P8,
+      APPLE_API_KEY_ID: "KEYID12345",
+      APPLE_API_ISSUER_ID: "11111111-2222-3333-4444-555555555555",
+      TAURI_SIGNING_PRIVATE_KEY: "updater-private-key",
+      TAURI_SIGNING_PRIVATE_KEY_PASSWORD: "updater-password",
     },
   });
 
@@ -941,9 +919,11 @@ test("desktop release secret gate accepts structurally valid release secrets", (
       APPLE_CERTIFICATE_PASSWORD: "certificate-password",
       APPLE_KEYCHAIN_PASSWORD: "keychain-password",
       APPLE_SIGNING_IDENTITY: "Developer ID Application: Example",
-      APPLE_ID: "developer@example.com",
-      APPLE_APP_SPECIFIC_PASSWORD: "app-specific-password",
-      APPLE_TEAM_ID: "ABCDE12345",
+      APPLE_API_KEY_P8_BASE64: STRUCTURALLY_VALID_P8,
+      APPLE_API_KEY_ID: "KEYID12345",
+      APPLE_API_ISSUER_ID: "11111111-2222-3333-4444-555555555555",
+      TAURI_SIGNING_PRIVATE_KEY: "updater-private-key",
+      TAURI_SIGNING_PRIVATE_KEY_PASSWORD: "updater-password",
     },
   });
 

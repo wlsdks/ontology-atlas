@@ -22,6 +22,20 @@ const GRAPH_ARRAY_KEYS = new Set([
   'describes',
   'broader',
 ]);
+const UNSAFE_OBJECT_KEYS = new Set(['__proto__', 'constructor', 'prototype']);
+
+function assignParsedKey(target, key, value, diagnostics, line) {
+  if (UNSAFE_OBJECT_KEYS.has(key)) {
+    diagnostics.push({
+      code: 'malformed-frontmatter-line',
+      line,
+      message: `Frontmatter line ${line} uses unsafe object key \`${key}\`.`,
+    });
+    return false;
+  }
+  target[key] = value;
+  return true;
+}
 
 export function parseFrontmatter(input) {
   // 줄바꿈·인코딩 정규화 — **읽기 경로에서만** (2026-07-28 실측).
@@ -75,8 +89,9 @@ export function parseFrontmatter(input) {
     const scalarIndicator = /^[|>][-+]?$/.exec(value);
     if (scalarIndicator) {
       const read = readBlockScalar(lines, i + 1, scalarIndicator[0]);
-      frontmatter[key] = read.value;
-      pushGraphArrayDiagnostic(diagnostics, key, i + 2, frontmatter[key]);
+      if (assignParsedKey(frontmatter, key, read.value, diagnostics, i + 2)) {
+        pushGraphArrayDiagnostic(diagnostics, key, i + 2, read.value);
+      }
       i = read.next - 1;
       continue;
     }
@@ -92,7 +107,7 @@ export function parseFrontmatter(input) {
           items.push(unquote(dashMatch[1].trim()));
           j += 1;
         }
-        frontmatter[key] = items;
+        assignParsedKey(frontmatter, key, items, diagnostics, i + 2);
         i = j - 1;
         continue;
       }
@@ -104,23 +119,27 @@ export function parseFrontmatter(input) {
           if (!m) break;
           const childKey = m[2].trim();
           if (!childKey) break;
-          obj[childKey] = parseScalar(m[3].trim());
+          assignParsedKey(obj, childKey, parseScalar(m[3].trim()), diagnostics, j + 2);
           j += 1;
         }
-        frontmatter[key] = obj;
-        pushGraphArrayDiagnostic(diagnostics, key, i + 2, frontmatter[key]);
+        if (assignParsedKey(frontmatter, key, obj, diagnostics, i + 2)) {
+          pushGraphArrayDiagnostic(diagnostics, key, i + 2, obj);
+        }
         i = j - 1;
         continue;
       }
-      frontmatter[key] = '';
-      pushGraphArrayDiagnostic(diagnostics, key, i + 2, frontmatter[key]);
+      if (assignParsedKey(frontmatter, key, '', diagnostics, i + 2)) {
+        pushGraphArrayDiagnostic(diagnostics, key, i + 2, '');
+      }
       continue;
     }
     if (value.startsWith('[') && value.endsWith(']')) {
-      frontmatter[key] = splitTopLevel(value.slice(1, -1), ',')
+      const items = splitTopLevel(value.slice(1, -1), ',')
         .map((s) => unquote(s.trim()))
         .filter(Boolean);
-      pushGraphArrayDiagnostic(diagnostics, key, i + 2, frontmatter[key]);
+      if (assignParsedKey(frontmatter, key, items, diagnostics, i + 2)) {
+        pushGraphArrayDiagnostic(diagnostics, key, i + 2, items);
+      }
       continue;
     }
     if (value.startsWith('{') && value.endsWith('}')) {
@@ -133,15 +152,18 @@ export function parseFrontmatter(input) {
           const k = part.slice(0, cIdx).trim();
           const v = part.slice(cIdx + 1).trim();
           if (!k) continue;
-          obj[k] = parseScalar(v);
+          assignParsedKey(obj, k, parseScalar(v), diagnostics, i + 2);
         }
       }
-      frontmatter[key] = obj;
-      pushGraphArrayDiagnostic(diagnostics, key, i + 2, frontmatter[key]);
+      if (assignParsedKey(frontmatter, key, obj, diagnostics, i + 2)) {
+        pushGraphArrayDiagnostic(diagnostics, key, i + 2, obj);
+      }
       continue;
     }
-    frontmatter[key] = unquote(value);
-    pushGraphArrayDiagnostic(diagnostics, key, i + 2, frontmatter[key]);
+    const scalar = unquote(value);
+    if (assignParsedKey(frontmatter, key, scalar, diagnostics, i + 2)) {
+      pushGraphArrayDiagnostic(diagnostics, key, i + 2, scalar);
+    }
   }
   const result = { frontmatter, body };
   if (diagnostics.length > 0) result.diagnostics = diagnostics;
@@ -181,7 +203,18 @@ function unquote(value) {
   // 이스케이프 문법이 아니라 원문이므로 건드리지 않는다.
   const quote = trimmed.length >= 2 ? trimmed[0] : '';
   if ((quote === '"' || quote === "'") && trimmed[trimmed.length - 1] === quote) {
-    return trimmed.slice(1, -1).replace(new RegExp(`\\\\(${quote}|\\\\)`, 'g'), '$1');
+    const inner = trimmed.slice(1, -1).replace(new RegExp(`\\\\(${quote}|\\\\)`, 'g'), '$1');
+    /*
+     * 큰따옴표 안의 `\n` 은 **줄바꿈이다** (2026-08-16).
+     *
+     * 쓰는 쪽이 줄바꿈을 그대로 내보내면 그 한 글자가 frontmatter 블록을
+     * 통째로 부순다 — 다음 줄이 새 키로 읽히거나 `---` 를 만나 본문이 시작된다
+     * (실측: `note⏎kind: element` 가 **노드의 종류를 바꿨다**). 그래서 쓰는
+     * 쪽은 큰따옴표 안에 `\n` 으로 적고, 읽는 쪽인 여기서 되돌린다.
+     *
+     * 작은따옴표는 손대지 않는다 — YAML 에서 그건 이스케이프가 없는 문자열이다.
+     */
+    return quote === '"' ? inner.replace(/\\n/g, '\n').replace(/\\t/g, '\t') : inner;
   }
   return value.replace(/^["']|["']$/g, '');
 }
@@ -260,12 +293,34 @@ function serializeValue(v) {
 // 역슬래시를 먼저 이스케이프한다. 안 하면 값 안의 `\\` 가 읽을 때 한 겹
 // 벗겨져 왕복이 안 닫힌다(따옴표만 이스케이프하던 종전에는 따옴표 쪽이
 // 반대 방향으로 새어서 저장할 때마다 백슬래시가 배가됐다).
-function escapeQuoted(text) {
-  return text.replace(/\\/g, '\\\\').replace(/"/g, '\\"');
+
+/*
+ * 따옴표가 필요한 값인가 — **네 곳이 같은 답을 내야 한다.**
+ *
+ * ## 왜 규칙이 바뀌었나 (2026-08-16 검수, 재현됨)
+ *
+ * 줄바꿈이 빠져 있었다. 그 한 글자가 frontmatter 블록을 통째로 부순다:
+ * `note\nkind: element` 는 **노드의 종류를 바꾸고**, `note\n---\nx: 1` 은
+ * frontmatter 를 거기서 끝내 나머지 키를 본문으로 떨어뜨린다. 그리고 아무
+ * 경고도 안 난다.
+ *
+ * 따옴표만으로는 안 된다 — 줄이 이미 끊겼기 때문이다. 그래서 쓰는 쪽이
+ * `\n` 으로 **이스케이프**하고 읽는 쪽이 되돌린다(`unquote`).
+ *
+ * 작은따옴표도 규칙에 들어왔다. `unquote` 는 짝이 안 맞는 따옴표를 양 끝에서
+ * 벗기므로, `'지도'` 같은 값이 따옴표 없이 쓰이면 되읽을 때 `지도` 가 된다.
+ */
+function needsQuote(s) {
+  return /[:,#\[\]"'{}&|*!%@`\n\t]|^\s|\s$/.test(s);
 }
 
-function needsQuote(s) {
-  return /[:,\[\]"{}]|^\s|\s$/.test(s);
+/** 따옴표 안에 안전하게 담기도록 만든다 — 줄바꿈은 `\n` 으로 접는다. */
+function escapeQuoted(s) {
+  return s
+    .replace(/\\/g, '\\\\')
+    .replace(/"/g, '\\"')
+    .replace(/\n/g, '\\n')
+    .replace(/\t/g, '\\t');
 }
 
 // 본문 + frontmatter 합쳐서 markdown 생성.

@@ -92,6 +92,46 @@ describe('mcp-call response parsing', () => {
     );
   });
 
+  it('lets a CLI command explicitly scope the child MCP repository root', async () => {
+    const root = mkdtempSync(join(tmpdir(), 'ontology-atlas-mcp-call-repo-root-'));
+    const repoRoot = mkdtempSync(join(tmpdir(), 'ontology-atlas-mcp-call-repository-'));
+    const server = join(root, 'repo-root-mcp.mjs');
+    const previousPath = process.env.OATLAS_MCP_PATH;
+    const previousRepoRoot = process.env.OATLAS_REPO_ROOT;
+    writeFileSync(
+      server,
+      [
+        "import readline from 'node:readline';",
+        "const rl = readline.createInterface({ input: process.stdin });",
+        "rl.on('line', (line) => {",
+        "  const msg = JSON.parse(line);",
+        "  if (msg.id === 1) console.log(JSON.stringify({ jsonrpc: '2.0', id: 1, result: {} }));",
+        "  if (msg.id === 2) {",
+        "    const payload = { repoRoot: process.env.OATLAS_REPO_ROOT ?? null };",
+        "    console.log(JSON.stringify({ jsonrpc: '2.0', id: 2, result: { content: [{ text: JSON.stringify(payload) }], structuredContent: payload } }));",
+        "    rl.close();",
+        "  }",
+        "});",
+      ].join('\n'),
+      'utf-8',
+    );
+    process.env.OATLAS_MCP_PATH = server;
+    process.env.OATLAS_REPO_ROOT = '/ambient-repository-root';
+    try {
+      assert.deepEqual(
+        await callMcpTool(root, 'list_kinds', {}, { repoRoot }),
+        { repoRoot },
+      );
+    } finally {
+      if (previousPath === undefined) delete process.env.OATLAS_MCP_PATH;
+      else process.env.OATLAS_MCP_PATH = previousPath;
+      if (previousRepoRoot === undefined) delete process.env.OATLAS_REPO_ROOT;
+      else process.env.OATLAS_REPO_ROOT = previousRepoRoot;
+      rmSync(root, { recursive: true, force: true });
+      rmSync(repoRoot, { recursive: true, force: true });
+    }
+  });
+
   it('formats MCP call timeout errors with retry guidance and stderr context', () => {
     assert.equal(
       formatMcpCallTimeoutError(25, {

@@ -211,6 +211,8 @@ display_ko: 예시 영역
 display_en: Example domain
 capabilities:
   - capabilities/example-capability
+elements:
+  - elements/example-element
 ---
 
 # Example domain
@@ -489,6 +491,8 @@ display_ko: 예시 영역
 display_en: Example domain
 capabilities:
   - capabilities/example-capability
+elements:
+  - elements/example-element
 ---
 
 # 예시 영역
@@ -622,6 +626,171 @@ export function materializeStarterFiles(
       content: file.content.replace(/^---\n/, `---\nuid: ${uid}\n`),
     };
   });
+}
+
+/**
+ * 볼트 안에 두는 **에이전트 안내문**. 볼트 폴더가 곧 에이전트의 작업 폴더라
+ * codex 는 `AGENTS.md` 를, Claude Code 는 `CLAUDE.md`/`AGENTS.md` 를 여기서
+ * 스스로 읽는다.
+ *
+ * ## 왜 필요한가 (2026-08-17 실측)
+ *
+ * MCP 서버가 제대로 붙어 있어도 **에이전트가 그걸 안 집는다.** 설치된 앱에서
+ * codex 에게 *"이 폴더에 있는 개념들의 slug 를 전부 알려줘"* 라고 물었더니:
+ *
+ * | | 무엇을 했나 | MCP 호출 |
+ * |---|---|---|
+ * | 안내문 없음 | 다섯 파일을 `sed` 로 읽고 `grep '^slug:'` 로 한 번 더 | **0회** |
+ * | 안내문 있음 | *"list_concepts 를 먼저 호출하겠습니다"* → 바로 호출 | **1회** |
+ *
+ * 도구 설명은 이미 *"AI agents call this first"* 라고 적혀 있었다. 모자란 것은
+ * 설명이 아니라 **작업 폴더에서 읽히는 한 줄**이었다.
+ *
+ * 이 저장소가 정해 둔 확장 방식과도 맞는다(`forbidden.md`): *"허용되는 확장은
+ * 파일에 적어 두는 형태뿐 — vault 안의 마크다운… 코드는 한 줄도 실행하지 않고,
+ * git diff 로 무엇이 바뀌었는지 다 보여야 한다."*
+ *
+ * ⚠️ **개념 노드가 아니다.** `ONTOLOGY_STARTER_FILES` 에 넣으면 개수 계약
+ * (`starter-counts.ts`)이 5를 6으로 세게 되고, 그 숫자는 화면 문구가 쓴다.
+ * 그래서 설정 파일(`.mcp.json` · `.codex/config.toml`) 과 같은 자리에서 쓴다.
+ */
+export const VAULT_AGENT_GUIDE_PATH = "AGENTS.md";
+
+const AGENT_GUIDE_EN = `# This folder is an Ontology Atlas vault
+
+The frontmatter in each \`.md\` file *is* the graph — its nodes and edges.
+Before you scan files, **call the \`ontology-atlas\` MCP server first.** It is
+already registered for this folder (\`.mcp.json\`, \`.codex/config.toml\`) and
+answers with parsing, validation, and relation resolution already done.
+
+| What you want | First call |
+|---|---|
+| How many of what | \`list_kinds\` |
+| The whole node table | \`list_concepts\` |
+| One concept and its neighbours | \`get_concept({ slug })\` |
+| Who depends on this | \`find_backlinks(slug)\` |
+| Are these two connected | \`find_path(from, to)\` |
+| Is this vault healthy | \`validate_vault({})\` |
+
+Do not read frontmatter with \`grep\` or \`sed\`. You get the same answer more
+slowly, without relation resolution or schema validation.
+
+**Name it the way this vault already does.** \`title\` is the one canonical name
+search matches on; put other languages in \`display_ko\` / \`display_en\`. Every
+node here keeps an English \`title\`, so a node whose \`title\` repeats its
+\`display_ko\` leaves the vault with two languages of canonical name and splits
+search.
+
+**Write through the same server** — \`add_concept\` · \`add_relation\` ·
+\`patch_concept\` (pass \`expected_mtime\`) · \`rename_concept\` · \`merge_concepts\`.
+A file written by hand has no \`uid:\`, and one missing \`uid:\` fails the whole
+graph compile.
+
+**When you are done, ask the graph whether it is done.** Call
+\`query_ontology({operation:'health'})\` and read two checks in particular:
+
+- \`components\` — a node that is not reachable from the project root belongs to
+  no project. New domains do not attach themselves: add
+  \`add_relation(<project>, domains/<new>, 'domains')\`.
+- \`relation_recommendations\` — a capability with \`domain: X\` still needs \`X\` to
+  list it back, via \`add_relation(domains/X, capabilities/<new>, 'capabilities')\`.
+
+Both were clean on the starter vault, so anything they report is something you
+added. Nodes that compile but hang off the project are invisible where it
+matters.
+`;
+
+const AGENT_GUIDE_KO = `# 이 폴더는 Ontology Atlas 볼트입니다
+
+각 \`.md\` 의 frontmatter 가 그래프의 노드와 엣지입니다. 파일을 훑기 전에
+**MCP 서버 \`ontology-atlas\` 를 먼저 부르세요.** 이 폴더에 이미 등록돼 있고
+(\`.mcp.json\`, \`.codex/config.toml\`), 파싱·검증·관계 해석이 끝난 답을 줍니다.
+
+| 알고 싶은 것 | 첫 호출 |
+|---|---|
+| 뭐가 몇 개 있나 | \`list_kinds\` |
+| 개념 목록 전체 | \`list_concepts\` |
+| 한 개념과 그 이웃 | \`get_concept({ slug })\` |
+| 이걸 쓰는 곳 | \`find_backlinks(slug)\` |
+| 두 개념이 이어져 있나 | \`find_path(from, to)\` |
+| 이 볼트가 성한가 | \`validate_vault({})\` |
+
+\`grep\` 이나 \`sed\` 로 frontmatter 를 직접 읽지 마세요. 같은 답을 더 느리게 얻고,
+관계 해석과 스키마 검증이 빠집니다.
+
+**이름은 이 볼트가 이미 쓰는 방식대로.** \`title\` 은 검색이 기준으로 삼는 단
+하나의 정본 이름이고, 다른 언어 이름은 \`display_ko\` / \`display_en\` 에 넣습니다.
+이 폴더의 노드는 전부 \`title\` 을 영어로 두므로, \`title\` 에 \`display_ko\` 와 같은
+값을 쓰면 한 볼트 안에 정본 이름의 언어가 섞여 검색이 갈립니다.
+
+**쓸 때도 같은 서버로** — \`add_concept\` · \`add_relation\` · \`patch_concept\`
+(\`expected_mtime\` 을 함께) · \`rename_concept\` · \`merge_concepts\`.
+손으로 만든 파일은 \`uid:\` 가 없고, \`uid:\` 하나가 없으면 그래프 전체가
+컴파일에 실패합니다.
+
+**다 만들었으면 그래프에게 다 됐냐고 물어보세요.**
+\`query_ontology({operation:'health'})\` 를 부르고 특히 둘을 읽습니다:
+
+- \`components\` — 프로젝트 뿌리에서 못 닿는 노드는 어느 프로젝트에도 속하지
+  않습니다. 새 도메인은 저절로 안 붙으니
+  \`add_relation(<project>, domains/<새>, 'domains')\` 를 부르세요.
+- \`relation_recommendations\` — \`domain: X\` 를 가진 역량은 \`X\` 쪽에서도 되받아
+  걸어야 합니다. \`add_relation(domains/X, capabilities/<새>, 'capabilities')\`.
+
+둘 다 스타터 볼트에서는 깨끗하므로, 여기 뜨는 것은 전부 방금 당신이 더한
+것입니다. 컴파일은 되는데 프로젝트에 안 붙은 노드는 정작 보여야 할 곳에서
+안 보입니다.
+`;
+
+/** 이 로케일의 안내문. 모르는 로케일은 영어로 떨어진다 — 스타터와 같은 규율. */
+export function vaultAgentGuideForLocale(locale: string): StarterFile {
+  return {
+    relPath: VAULT_AGENT_GUIDE_PATH,
+    content: locale === "ko" ? AGENT_GUIDE_KO : AGENT_GUIDE_EN,
+  };
+}
+
+/**
+ * Claude Code 를 위한 **다리 파일**. 내용은 한 줄뿐이고 `AGENTS.md` 를 가리킨다.
+ *
+ * ## 왜 따로 필요한가
+ *
+ * 안내문을 `AGENTS.md` 하나로 두면 **Claude Code 세션은 아무것도 못 받는다** —
+ * 이 저장소 자신의 도구 표가 그렇게 적어 두었다: `AGENTS.md` 를 Codex 는 직접
+ * 읽고, Claude Code 는 `CLAUDE.md` 의 `@AGENTS.md` 임포트를 거쳐 읽는다.
+ * 이 저장소가 자기 루트에 쓰는 방식을 그대로 볼트에도 쓴다.
+ *
+ * 그리고 제품에 이미 그 판정을 하는 검사가 있다 —
+ * `cli/src/lib/agent-files.mjs` 의 `claude-agents-bridge`. 다만 `CLAUDE.md`
+ * 자체가 없으면 **「해당 없음」으로 조용히 넘어가서**, 안내가 반쪽만 닿는 상태를
+ * 아무도 못 봤다. 파일을 놓으면 그 검사가 비로소 일한다.
+ */
+export const VAULT_CLAUDE_BRIDGE_PATH = "CLAUDE.md";
+
+const CLAUDE_BRIDGE_EN = `# Ontology Atlas vault
+
+@AGENTS.md
+
+Everything an agent needs is in the file above. Claude Code reads this file;
+Codex, Cursor, and Gemini CLI read \`AGENTS.md\` directly. Keeping the guide in
+one place is why this file is only a pointer — edit \`AGENTS.md\`, not this one.
+`;
+
+const CLAUDE_BRIDGE_KO = `# Ontology Atlas 볼트
+
+@AGENTS.md
+
+에이전트에게 필요한 것은 전부 위 파일에 있습니다. Claude Code 는 이 파일을 읽고,
+Codex · Cursor · Gemini CLI 는 \`AGENTS.md\` 를 직접 읽습니다. 안내를 한 곳에만
+두려고 이 파일은 가리키기만 합니다 — 고칠 때는 \`AGENTS.md\` 를 고치세요.
+`;
+
+/** 이 로케일의 다리 파일. 모르는 로케일은 영어로 떨어진다. */
+export function vaultClaudeBridgeForLocale(locale: string): StarterFile {
+  return {
+    relPath: VAULT_CLAUDE_BRIDGE_PATH,
+    content: locale === "ko" ? CLAUDE_BRIDGE_KO : CLAUDE_BRIDGE_EN,
+  };
 }
 
 /**

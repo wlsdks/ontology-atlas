@@ -7,7 +7,7 @@ import { invoke as tauriInvoke, isTauri } from '@tauri-apps/api/core';
  * 계약 (Rust 코드가 진실원):
  * - `secret_set(provider, secret)`     → `SecretStatus`
  * - `secret_status(provider)`          → `SecretStatus` — 없음도 정상 상태
- * - `secret_clear(provider)`           → `SecretStatus` — 멱등
+ * - `secret_clear(provider)`           → `SecretStatus` — 멱등, 못 지우면 throw
  * - `secret_verify(provider, vaultPath)` → `LlmVerifyResult`
  *
  * **전체 키를 돌려주는 커맨드는 없다.** 화면이 아는 것은 `stored` 와 `last4`
@@ -152,7 +152,17 @@ export async function secretStatus(
   return invoke<SecretStatus>('secret_status', { provider });
 }
 
-/** 삭제 — 없어도 성공(멱등). */
+/**
+ * 삭제 — **없어도 성공(멱등), 다만 못 지웠으면 실패한다** (2026-08-17).
+ *
+ * 예전에는 Rust 가 삭제 결과를 통째로 버리고 무조건 「지웠다」를 돌려줬다.
+ * 키체인이 잠겨 있으면 화면은 "지웠어요" 라고 말하는데 **키는 그대로 남아
+ * 있었다.** 지워졌다는 거짓말은 사용자가 안심하고 그 자리를 떠나게 만든다 —
+ * 지워졌다고 믿고 컴퓨터를 넘긴다.
+ *
+ * 지금은 「없었다」와 「못 지웠다」를 가른다. 뒤엣것은 throw 하므로 부르는
+ * 쪽이 `secretErrorMessage` 로 사용자에게 보여 준다.
+ */
 export async function secretClear(
   provider: SecretProvider,
 ): Promise<SecretStatus | null> {

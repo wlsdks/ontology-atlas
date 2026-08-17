@@ -1141,8 +1141,7 @@ pub fn git_pull(vault_path: String) -> Result<GitPullResult, String> {
         .stdout
         .trim()
         .lines()
-        .filter(|l| !l.trim().is_empty())
-        .last()
+        .rfind(|l| !l.trim().is_empty())
         .unwrap_or("up to date")
         .to_string();
 

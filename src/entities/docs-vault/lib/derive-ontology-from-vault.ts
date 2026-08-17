@@ -155,12 +155,8 @@ function asStringArray(value: unknown): string[] {
   if (Array.isArray(value)) {
     return value.filter((v): v is string => typeof v === 'string' && v.trim() !== '');
   }
-  if (typeof value === 'string' && value.trim() !== '') {
-    return value
-      .split(/\s*,\s*/)
-      .map((s) => s.trim())
-      .filter(Boolean);
-  }
+  // 관계 키는 공개 스키마상 배열이다. 스칼라를 편의상 배열로 바꾸면
+  // MCP 컴파일러가 거절한 관계를 웹 지도만 팬텀 엣지로 만들게 된다.
   return [];
 }
 

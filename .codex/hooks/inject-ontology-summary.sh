@@ -49,7 +49,37 @@ fi
 
 # Compact census only. Keep SessionStart output short because it is injected
 # into agent context on every new session.
-JSON=$($CLI_BIN overview "$VAULT" --json 2>/dev/null) || exit 0
+#
+# ⚠️ **볼트가 깨졌을 때 침묵하면 안 된다** (2026-08-17 실측). 예전에는 이 줄이
+# `... 2>/dev/null) || exit 0` 이었다 — 도구를 못 부른 것과 **볼트를 찾았는데
+# 읽지 못한 것**이 똑같이 침묵으로 뭉개졌다. 그런데 후자는 세션이 이 사실을
+# 가장 알아야 하는 순간이다: 손으로 노드를 하나 더하면(사람이 하는 정상 경로다)
+# `uid:` 가 없어서 그래프가 통째로 컴파일 실패하고, 그 세션은 **온톨로지 맥락을
+# 하나도 못 받은 채** 시작한다. 왜 조용한지도 모른다.
+#
+# 그래서 둘을 가른다: **stderr 가 있으면 볼트를 읽다 실패한 것**이므로 한 줄로
+# 말한다. stderr 조차 없으면(도구 자체가 못 돈 것) 종전대로 침묵한다 — 볼트가
+# 없는 저장소에 잡음을 넣지 않는다는 원래 규약은 그대로다.
+CLI_STDERR="$(mktemp)"
+trap 'rm -f "$CLI_STDERR"' EXIT
+
+if ! JSON=$($CLI_BIN overview "$VAULT" --json 2>"$CLI_STDERR"); then
+  ESC=$(printf '\033')
+  REASON=$(
+    sed "s/${ESC}\[[0-9;]*m//g" "$CLI_STDERR" \
+      | sed 's/^[[:space:]]*//;s/[[:space:]]*$//' \
+      | grep -v '^$' \
+      | head -2
+  )
+  [ -z "$REASON" ] && exit 0
+  cat <<EOF
+[ontology vault @ ${VAULT}]
+Vault will not compile — no ontology context this session.
+$REASON
+Fix it before trusting any ontology answer: \`ontology-atlas health $VAULT\`.
+EOF
+  exit 0
+fi
 
 # python 으로 빠른 요약 (kind 분포 + domain 분포 + 상위 hub). python3 표준.
 SUMMARY=$(printf '%s' "$JSON" | python3 -c "$(cat <<'PY'

@@ -122,7 +122,7 @@ describe('VaultAgentSetupPanel', () => {
     const localVault = renderPanel();
 
     expect(
-      screen.getByRole('region', { name: '내 에이전트 연결' }),
+      screen.getByRole('region', { name: 'MCP 연결' }),
     ).toBeInTheDocument();
     // 같은 사실을 세 번 말하던 앰버 배지는 사라졌다 (2026-08-02 디자인 카운슬
     // S2) — 수를 말하는 줄이 바로 아래에 그대로 있고, 그것이 유일한 진술이다.
@@ -1087,7 +1087,7 @@ describe('VaultAgentSetupPanel', () => {
       },
     });
 
-    const agentSetup = screen.getByRole('region', { name: '내 에이전트 연결' });
+    const agentSetup = screen.getByRole('region', { name: 'MCP 연결' });
     fireEvent.click(
       within(agentSetup).getByRole('button', { name: '확인 명령 복사' }),
     );
@@ -1117,7 +1117,7 @@ describe('VaultAgentSetupPanel', () => {
       },
     });
 
-    const agentSetup = screen.getByRole('region', { name: '내 에이전트 연결' });
+    const agentSetup = screen.getByRole('region', { name: 'MCP 연결' });
     fireEvent.click(
       within(agentSetup).getByRole('button', { name: '맞추기 절차 복사' }),
     );

@@ -13,6 +13,7 @@ import {
   Expand,
   Footprints,
   HardDrive,
+  SquareTerminal,
   Layers,
   MessageSquare,
   Monitor,
@@ -41,6 +42,7 @@ import {
   buildRouteFocusHref,
   rememberRouteFocusIntent,
 } from '@/shared/ui/route-focus-manager';
+import { AcpRuntimeSettings } from './AcpRuntimeSettings';
 import { VaultAgentSetupPanel } from './VaultAgentSetupPanel';
 import { CanvasBackgroundPicker, GlyphSetPicker } from './AppearancePickers';
 import { FootprintSettings } from './FootprintSettings';
@@ -142,8 +144,31 @@ const SETTINGS_GROUPS = [
   // 「내 에이전트 연결」·「앱 안 에이전트」가 여기 **나란히** 있는 이유: 둘은
   // 같은 절의 두 요약 행이 아니라 서로 다른 목적지다. 하나는 밖의 도구가 이
   // 폴더를 읽게 하는 **설정 파일**이고, 하나는 앱 안에서 말을 거는 **키**다.
-  // 이름의 첫 글자가 갈리는 것이 그 차이를 나르는 채널이다.
-  { key: 'connect', items: ['workspace', 'agent', 'ai'] },
+  /*
+   * 이 셋의 이름은 **영어 그대로 둔다** (2026-08-16 소유자 확정: *"Agents 랑
+   * MCP API KEY 이렇게 3개로 분리하는 게 좋지 않을까? 한국어가 아니어도
+   * 되는데"*). 종전 이름 셋(「실행기」·「내 에이전트 연결」·「앱 안 에이전트」)은
+   * 전부 우리가 지어낸 번역어라 무슨 일을 하는 칸인지 아무것도 말하지 못했다 —
+   * 특히 「실행기」는 runtime 의 직역이라 한국어로 읽으면 뜻이 0이다.
+   *
+   * Agents · MCP · API Key 는 대상 사용자가 **이미 아는 단어**이고 서로 겹치지
+   * 않는다. 각 칸이 무엇을 하는지는 그 칸 맨 위 한 줄이 평문으로 말한다 —
+   * 이름은 찾는 데 쓰고, 설명은 안에서 한다.
+   *
+   * 순서에 뜻이 있다: **「앱에서 대화」가 앞**인 것은 이 앱 안에서 바로 말을
+   * 거는 길이라서고, **API Key 가 맨 뒤**인 것은 그 경로가 동결이라 강조하지
+   * 않기로 한 결정(2026-08-16 PO 카운슬) 때문이다.
+   *
+   * ⚠️ **이름이 「Agents」·「MCP」 였다가 바뀌었다 (2026-08-17).** 에이전트를
+   * 붙이려는 사람이 그 둘 중 뭘 눌러야 하는지 알 수 없었다 — 하나는 갈래
+   * 이름이고 하나는 프로토콜 약어라서, 둘 다 「에이전트 연결」로 읽히는데
+   * 어느 쪽이 자기 경우인지는 말하지 않았다. 지금 이름은 **어디서 쓰는가**로
+   * 갈린다: 앱 안에서 대화할 것인가, 내 터미널 도구에 물릴 것인가.
+   * 「Agents」 라벨을 놓아도 되는 이유는 목록이 `Claude Agent`(드롭다운
+   * 권장명)를 쓰기 때문이다 — 「Agents 로 이름 붙은 메뉴 안」이라는 조건에
+   * 기대고 있지 않다 (`tests/contract/vendor-naming.contract.test.ts`).
+   */
+  { key: 'connect', items: ['workspace', 'runtimes', 'agent', 'ai'] },
 ] as const;
 
 type SettingsSection = (typeof SETTINGS_GROUPS)[number]['items'][number];
@@ -162,6 +187,9 @@ const SECTION_ICON: Record<SettingsSection, typeof Monitor> = {
   // 사각 대 삼각이라 훑기에서 갈린다.
   notify: Bell,
   workspace: HardDrive,
+  // 터미널 사각형 — 이 목록에서 유일한 «실행되는 것»의 실루엣이다. 로봇(밖의
+  // 도구)·말풍선(앱 안 대화)과 훑기에서 갈린다.
+  runtimes: SquareTerminal,
   // 밖의 도구 = 로봇, 앱 안의 대화 = 말풍선. 실루엣이 갈려야 훑기 채널이 선다
   // (이름의 첫 글자를 가른 것과 같은 이유다).
   agent: Bot,
@@ -1076,6 +1104,9 @@ export function AppSettingsMenu({
                     */}
                     <BlockImportModule />
                     </>
+
+                ) : section === 'runtimes' ? (
+                  <AcpRuntimeSettings />
 
                 ) : section === 'agent' ? (
                   isLocalVaultLoaded ? (

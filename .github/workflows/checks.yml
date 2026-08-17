@@ -54,12 +54,12 @@ jobs:
       # 검증이 실제와 다른 값을 비교하게 된다. `decisions:check` 도 base ref 를
       # 필요로 한다.
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
         with:
           fetch-depth: 0
 
       - name: Setup Node.js
-        uses: actions/setup-node@v6
+        uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
         with:
           node-version: 24
 
@@ -214,12 +214,12 @@ jobs:
     steps:
       # `classify-change.mjs` 가 base ref 와 비교하므로 전체 히스토리가 필요하다.
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
         with:
           fetch-depth: 0
 
       - name: Setup Node.js
-        uses: actions/setup-node@v6
+        uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
         with:
           node-version: 24
 
@@ -231,6 +231,12 @@ jobs:
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
+
+      # Contract tests in this job launch the real source MCP server. The root
+      # install intentionally skips mcp/node_modules, so without this lockfile
+      # install those probes exit at startup with ERR_MODULE_NOT_FOUND.
+      - name: Install MCP dependencies
+        run: pnpm --dir mcp install --frozen-lockfile
 
       # 변경이 실제로 깨뜨릴 수 있는 것만 돌린다. 실측(2026-07-27): 이 스위트가
       # 270초였고 그 세션의 변경은 거의 전부 에이전트 브리프와 문서였다. 판단이
@@ -259,10 +265,10 @@ jobs:
     timeout-minutes: 20
     steps:
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
 
       - name: Setup Node.js
-        uses: actions/setup-node@v6
+        uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
         with:
           node-version: 24
 

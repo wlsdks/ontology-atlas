@@ -359,7 +359,27 @@ describe("LNB 는 크롬 치수를 빌려오지 않는다", () => {
   /** `SettingsRow` 가 인셋의 단일 출처다 — 여기가 바뀌면 위 계약의 근거가 사라진다. */
   it("오른쪽 칸 행의 인셋이 LNB 가 맞춘 그 값이다", () => {
     const primitives = sourceWithoutComments("settings-primitives.tsx");
-    expect(primitives).toMatch(/flex min-h-12 items-center justify-between gap-3 px-3 py-2/);
+    // 가로 인셋은 **조건 없이** 공유부에 있다 — LNB 가 맞춘 값이 그것이다.
+    expect(primitives).toMatch(/flex items-center justify-between gap-3 px-3/);
+    // 보통 행의 세로 치수는 그대로다.
+    expect(primitives).toMatch(/\bmin-h-12 py-2\b/);
+  });
+
+  /*
+   * 2026-08-16 — 행 높이가 둘이 됐다. **높이를 고르는 축이 생긴 게 아니라**,
+   * 남의 제품 마크가 붙는 행은 내용이 다르다: 32px 마크를 48px 행에 넣으면
+   * 위아래가 막히고, 12px 로 우겨 넣으면 알아볼 수 없어 훑기 채널이 안 된다.
+   *
+   * 그래서 두 번째 높이는 **마크의 존재가 정한다.** 이 검사가 그 묶음을 지킨다 —
+   * 마크와 무관하게 아무 행이나 키우는 데 쓰이면 여기서 걸린다.
+   */
+  it("키가 큰 행은 마크가 있는 행뿐이다 — 높이를 고르는 축이 아니다", () => {
+    const primitives = sourceWithoutComments("settings-primitives.tsx");
+    expect(primitives, "큰 치수가 사라졌다면 이 계약을 지울 때다").toMatch(
+      /\bmin-h-16 py-2\.5\b/,
+    );
+    // 큰 치수를 고르는 조건이 **마크 자리 유무**여야 한다.
+    expect(primitives).toMatch(/hasMarkSlot \? 'min-h-16 py-2\.5' : 'min-h-12 py-2'/);
   });
 });
 

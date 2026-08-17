@@ -34,6 +34,15 @@ describe("frontmatter parser contract — 4 implementations agree", () => {
           expect(parse(c.input)).toEqual(c.expected);
         });
       }
+
+      it("객체 메타키가 상속된 스키마 필드를 만들지 않는다", () => {
+        const parsed = parse(
+          "---\n__proto__:\n  kind: domain\n  title: Forged\nsafe: value\n---\n",
+        );
+        expect(Object.getPrototypeOf(parsed.frontmatter)).toBe(Object.prototype);
+        expect(Object.prototype.hasOwnProperty.call(parsed.frontmatter, "kind")).toBe(false);
+        expect(parsed.frontmatter.kind).toBeUndefined();
+      });
     });
   }
 });

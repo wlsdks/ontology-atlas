@@ -107,6 +107,69 @@ export function SettingsGroup({ label, children }: { label?: string; children: R
   );
 }
 
+/**
+ * 번들된 마크 경로만 통과시킨다. 이 값은 CSS `url()` 안으로 들어가므로,
+ * 따옴표가 섞이면 거기서 스타일을 지어낼 수 있다. 지금 오는 값은 우리 빌드
+ * 스크립트가 만든 `/acp-icons/<id>.svg` 뿐이라 **모양으로 잠그는 것이 공짜**다 —
+ * 나중에 이 자리에 다른 출처가 붙어도 구멍이 열리지 않는다.
+ */
+const BUNDLED_MARK = /^\/acp-icons\/[a-z0-9-]+\.svg$/;
+
+/**
+ * 남의 제품 마크 한 장.
+ *
+ * ## 왜 `<img>` 가 아닌가 (2026-08-16, 소유자 지적으로 발견)
+ *
+ * 레지스트리 아이콘 38개는 **전부 `fill="currentColor"`** 다(등록 규칙이 색
+ * 박은 SVG 를 거부한다). 그걸 `<img>` 로 그리면 그 지시가 닿을 글자색이 없어서
+ * 초기값인 **검정**이 되고, 어두운 판 위에서 검은 판에 검은 그림이 된다.
+ * 화면에는 아이콘이 있는데 안 보였고, 코드에는 아무 잘못도 안 보였다.
+ *
+ * 그래서 그림을 **마스크**로 쓰고 색은 우리가 칠한다 — 벤더가 브랜드 색을
+ * 공표한 것은 그 색으로, 아닌 것은 무채색으로. 덤으로 SVG 안의 내용이 화면에
+ * 그려지지 않으므로 남의 파일이 우리 화면에서 할 수 있는 일이 없어진다.
+ *
+ * ## 왜 판이 밝은가
+ *
+ * 이 앱은 어두운 화면 하나지만, 여기 놓이는 것은 우리 것이 아니라 그 벤더의
+ * 것이고 대부분 밝은 바탕 기준으로 그려져 있다(색을 확인한 11개 중 6개가
+ * 검정~#2D2D2D). 참고 제품(Buzz)도 어두운 마크에는 흰 판을 따로 깔아 준다.
+ */
+function VendorMark({ src, ink }: { src: string | null; ink: string | null }) {
+  const safe = src && BUNDLED_MARK.test(src) ? src : null;
+  return (
+    <span
+      data-vendor-mark={safe ? 'true' : 'empty'}
+      className={cn(
+        'flex size-8 shrink-0 items-center justify-center rounded-chip border',
+        safe
+          ? 'border-[color:var(--color-vendor-plate-edge)] bg-[color:var(--color-vendor-plate)]'
+          : // 그림이 없으면 판도 깔지 않는다 — 빈 흰 네모가 이름보다 눈에 띈다.
+            'border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)]',
+      )}
+    >
+      {safe ? (
+        <span
+          aria-hidden
+          data-vendor-mark-ink={ink ? 'brand' : 'neutral'}
+          className="size-5"
+          style={{
+            backgroundColor: ink ?? 'var(--color-vendor-mark-ink)',
+            maskImage: `url("${safe}")`,
+            WebkitMaskImage: `url("${safe}")`,
+            maskRepeat: 'no-repeat',
+            WebkitMaskRepeat: 'no-repeat',
+            maskPosition: 'center',
+            WebkitMaskPosition: 'center',
+            maskSize: 'contain',
+            WebkitMaskSize: 'contain',
+          }}
+        />
+      ) : null}
+    </span>
+  );
+}
+
 /** 한 행 = 라벨(+필요시 1줄 설명) 좌측, 현재값+조작 우측. */
 export function SettingsRow({
   label,
@@ -114,19 +177,51 @@ export function SettingsRow({
   captionTone = 'neutral',
   control,
   testId,
+  icon,
+  iconInk,
 }: {
   label: string;
   caption?: string;
   captionTone?: 'neutral' | 'warning' | 'danger';
   control: ReactNode;
   testId?: string;
+  /**
+   * 행 왼쪽의 그림 — **번들된 이미지 경로**만 받는다(2026-08-16, 실행기 목록).
+   *
+   * 목록이 길고 항목이 서로 다른 **제품**일 때, 이름만으로는 훑기가 안 된다.
+   * 그 제품의 마크가 있으면 눈이 이름을 읽기 전에 먼저 찾는다. 자리를 항상
+   * 잡아 두는 이유는 아이콘이 없는 줄에서 글자가 왼쪽으로 밀리면 목록이
+   * 들쭉날쭉해지기 때문이다.
+   */
+  icon?: string | null;
+  /**
+   * 그 마크를 칠할 브랜드 색. 없으면 무채색으로 그린다 — 확인 안 된 브랜드에
+   * 색을 지어 붙이지 않는다.
+   */
+  iconInk?: string | null;
 }) {
+  /*
+   * **마크가 있는 행은 자연히 커진다** — 키를 고르는 축을 새로 만들지 않는다.
+   *
+   * 제품 마크가 붙는 행은 「설정 값 한 줄」이 아니라 「그 제품 한 줄」이다.
+   * 마크를 12px 짜리로 우겨 넣으면 알아볼 수 없어서 훑기 채널이 안 되고,
+   * 32px 마크를 48px 행에 넣으면 위아래가 숨이 막힌다. 그래서 높이는 취향이
+   * 아니라 **내용이 정한다**: 마크가 있으면 64px, 없으면 종전 48px.
+   *
+   * 참고 제품(Buzz)의 같은 목록을 실측하면 행 65px · 마크 36px 이다. 그쪽이
+   * 「예뻐」 보이는 이유는 색이나 장식이 아니라 이 두 값이었다.
+   */
+  const hasMarkSlot = icon !== undefined;
   return (
     <div
-      className="flex min-h-12 items-center justify-between gap-3 px-3 py-2"
+      className={cn(
+        'flex items-center justify-between gap-3 px-3',
+        hasMarkSlot ? 'min-h-16 py-2.5' : 'min-h-12 py-2',
+      )}
       data-testid={testId}
     >
-      <div className="min-w-0">
+      {hasMarkSlot ? <VendorMark src={icon ?? null} ink={iconInk ?? null} /> : null}
+      <div className="min-w-0 flex-1">
         <p className="text-body text-[color:var(--color-text-secondary)]">{label}</p>
         {caption ? (
           <p

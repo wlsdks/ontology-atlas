@@ -75,9 +75,12 @@ export function ToastProvider({
         // 하단 오프셋만 CSS 변수로 받아, 하단에 쓰기 바가 있는 빌더 페이지가
         // 토스트를 바 위로 밀어 "vault 에 쓰기" 버튼을 가리지 않게 한다
         // (`toast-position.ts` 계약 · 빌더 감사 #5). 다른 페이지는 기본 16px.
+        // 오른쪽도 같은 계약을 쓴다 — 지도 오른쪽에 패널이 서면 화면
+        // 가장자리 기준 16px 은 **패널 안쪽**이 되어 알림이 그 위에 얹힌다
+        // (`toast-position.ts` · 2026-08-16 소유자 화면).
         offset={{
           top: 16,
-          right: 16,
+          right: 'var(--app-toast-right-offset, 16px)',
           bottom: 'var(--app-toast-bottom-offset, 16px)',
           left: 16,
         }}

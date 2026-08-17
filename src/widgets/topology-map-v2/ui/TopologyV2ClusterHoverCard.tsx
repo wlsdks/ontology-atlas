@@ -1,5 +1,6 @@
 "use client";
 import { transientSurface } from "@/shared/ui/transient-surface";
+import { currentFloatingRightBound } from "@/shared/lib/right-dock-reserve";
 
 /**
  * S2 파트 5C — 클러스터 칩 호버 마이크로카드. 소유자 실보고 "칩에 마우스
@@ -23,7 +24,12 @@ const CARD_MAX_WIDTH = 260;
 const EDGE_MARGIN = 8;
 
 export function TopologyV2ClusterHoverCard({ sentence, x, y }: TopologyV2ClusterHoverCardProps) {
-  const left = Math.min(x + OFFSET, (typeof window !== "undefined" ? window.innerWidth : 1920) - CARD_MAX_WIDTH - EDGE_MARGIN);
+  /*
+   * 오른쪽 벽은 **화면 끝이 아니라 지도의 끝**이다 (2026-08-16 검수).
+   * 지도 오른쪽에 대화 패널이 서면 `window.innerWidth` 는 패널 너머를
+   * 가리키고, 지도를 설명하는 이 카드가 패널 위에 적히게 된다.
+   */
+  const left = Math.min(x + OFFSET, currentFloatingRightBound() - CARD_MAX_WIDTH - EDGE_MARGIN);
   const top = Math.min(y + OFFSET, (typeof window !== "undefined" ? window.innerHeight : 1080) - 72 - EDGE_MARGIN);
   return (
     <div

@@ -221,7 +221,53 @@ test.describe("웹 스모크 ② 차선 워크벤치", () => {
 // 감사자가 그대로 읽는다. 폭 축의 게이트는 폭이 독립 변수인
 // `responsive-overflow-audit.spec.ts` 가 맡는다 (`.claude/rules/surfaces.md`
 // 「강등에는 축이 둘이다」, 2026-07-28).
-const DEGRADED_SURFACES = [
+type DegradedSurface = {
+  name: string;
+  url: string;
+  /**
+   * 주소만으로는 못 닿는 카드까지 가는 길. **설정 시트 안의 절처럼 눌러야
+   * 나오는 카드도 등록부에 담기 위해** 있다 — 이 칸이 없던 동안 그런 능력은
+   * 목록 밖에서 각자 스펙을 갖는 수밖에 없었고, 그건 이 목록이 막으려는
+   * 「등재 안 된 능력은 아무도 안 본다」를 뒷문으로 되살리는 길이다.
+   */
+  open?: (page: Page) => Promise<void>;
+  card: string;
+  /** ① **왜** 안 되나 — 사과문이 아니라 이유가 카드 안에 서 있다. */
+  reason: RegExp;
+  /**
+   * ② **어디서** 되나 — 누를 수 있는 링크. 눌러서 `/download/` 가 실제로
+   * 열리는지까지 본다(「죽은 CTA 0」은 이 단언이 지킨다).
+   */
+  destination?: string;
+  /**
+   * ② 의 다른 모양 — **글로만** 갈 곳을 말하는 카드. `.claude/rules/surfaces.md`
+   * 가 갈 곳을 *"보통 `/download/`, 또는 CLI 명령 한 줄"* 로 정의하므로 링크가
+   * 아닌 안내도 계약을 지킨다.
+   *
+   * ⚠️ **링크가 있는 카드는 반드시 `destination` 을 쓴다.** 이쪽으로 옮기면
+   * 그 줄만 조용히 「눌러도 아무 데도 안 간다」 검사에서 빠진다.
+   */
+  destinationText?: RegExp;
+  /**
+   * ③ **이 화면에서도 되는 것** (있을 때만). 되는 것을 안 된다고 쓰는 것도
+   * 「곧 됩니다」와 같은 갈래의 거짓말이라(2026-08-01, `surfaces.md`), 한 번
+   * 적은 뒤에는 조용히 사라지지 못하게 잠근다.
+   *
+   * ⚠️ **문구가 아니라 「가리킨 자리가 있는가」를 잰다** (2026-08-17). 종전에는
+   * `/내 에이전트 연결/` 처럼 문장을 통째로 못박았고, 문구가 바뀌자 빨간불이
+   * 되면서 **그 빨간불이 「문구가 낡았다」인지 「가리키는 곳이 없다」인지
+   * 구별되지 않았다**. 실제로는 둘 다였다 — 카드가 「MCP」 칸을 가리켰는데 그런
+   * 이름의 칸은 이 시트에 없었다. `documentation.md`: *사람이 쓴 문장을 못박지
+   * 마라, 기계가 만들어 낼 수 있는 것만 검사하라.*
+   *
+   * 그래서 여기서는 **「…」 안의 이름이 이 시트의 실제 칸 이름인지**만 본다.
+   * 번역 파일 쪽의 같은 검사는
+   * `tests/contract/settings-section-reference.contract.test.ts`.
+   */
+  alsoHereNamesSettingsSection?: true;
+};
+
+const DEGRADED_SURFACES: readonly DegradedSurface[] = [
   {
     name: "기록(git) — 브라우저는 이 컴퓨터의 git 을 실행할 수 없다",
     url: "/ko/git/?focus=main",
@@ -244,20 +290,71 @@ const DEGRADED_SURFACES = [
     reason: /브라우저는[\s\S]*설정 파일을 대신 저장하지 못합니다/,
     destination: "agent-connect-web-get-app",
   },
-] as const;
+  {
+    // **「실행기」 절** (2026-08-16 등재) — 이 기기에 설치된 코딩 에이전트를
+    // 찾아 앱 안에서 띄우는 화면. 브라우저는 이 컴퓨터의 프로그램을 띄우지
+    // 못하므로 원리적 기각이고, 그래서 「곧 됩니다」가 아니라 이유가 선다.
+    //
+    // **갈 곳이 글인 첫 줄이다** — 이 절에는 오늘 링크 원소가 없다.
+    //
+    // **셋째 항목이 실제로 있는 첫 줄이기도 하다.** 등재 전 문구는 「브라우저
+    // 에서는 도구를 실행할 수 없어요」 하나였는데, 그 문장만 읽은 웹 사용자는
+    // 「웹에서는 에이전트를 아예 못 쓴다」로 읽는다 — `agent-server-unavailable`
+    // 이 2026-08-01 에 정정당한 바로 그 거짓이다. 웹에서도 자기가 직접 띄운
+    // 에이전트를 이 폴더에 붙일 수 있고, 그 길(「MCP」)은 같은 시트 안에
+    // 있다. 그래서 그 문장을 카드에 넣고 여기서 잠근다.
+    name: "실행기 — 브라우저는 이 컴퓨터의 프로그램을 띄우지 못한다",
+    url: "/ko/topology/",
+    open: async (page) => {
+      // 설정 트리거는 레일과 지도 크롬 두 곳에 있다 — 레일 쪽 하나로 좁힌다.
+      await page
+        .getByTestId("app-nav-rail-utility-tier")
+        .getByTestId("app-settings-trigger")
+        .click();
+      await page.getByTestId("app-settings-nav-runtimes").click();
+    },
+    card: "app-settings-runtimes-web",
+    reason: /브라우저는[\s\S]*권한이 없어요/,
+    destinationText: /맥 앱을 받으면/,
+    alsoHereNamesSettingsSection: true,
+  },
+];
 
 test.describe("웹 스모크 ③ 정직한 강등", () => {
   for (const surface of DEGRADED_SURFACES) {
     test(`${surface.name} — 이유와 갈 곳이 함께 있다`, async ({ page }) => {
       await gotoSettled(page, surface.url);
+      await surface.open?.(page);
 
       const card = page.getByTestId(surface.card);
       await expect(card).toBeVisible({ timeout: 15_000 });
       await expect(card).toHaveText(surface.reason);
 
-      const destination = page.getByTestId(surface.destination);
-      await expect(destination).toBeVisible();
-      await expect(destination).toHaveAttribute("href", /\/download\//);
+      // 갈 곳이 없는 줄은 등재된 적이 없는 것과 같다 — 둘 중 하나는 있어야
+      // 하고, 어느 쪽도 없이 등재하는 길을 열어 두지 않는다.
+      expect(surface.destination ?? surface.destinationText).toBeDefined();
+
+      if (surface.destination) {
+        const destination = page.getByTestId(surface.destination);
+        await expect(destination).toBeVisible();
+        await expect(destination).toHaveAttribute("href", /\/download\//);
+      }
+      if (surface.destinationText) await expect(card).toHaveText(surface.destinationText);
+      if (surface.alsoHereNamesSettingsSection) {
+        // 「…」 안의 이름이 이 시트에 **실제로 있는 칸**이어야 한다. 문구는
+        // 얼마든지 고쳐도 되고, 없는 칸을 가리킬 때만 터진다.
+        const quoted = [...(await card.innerText()).matchAll(/[「“]([^」”]+)[」”]/gu)].map((m) =>
+          m[1].trim(),
+        );
+        expect(quoted, "이 화면에서도 되는 곳을 이름으로 대야 한다").not.toEqual([]);
+        const navLabels = (
+          await page.locator('[data-testid^="app-settings-nav-"]').allInnerTexts()
+        ).map((text) => text.trim());
+        expect(navLabels.length, "설정 칸 목록을 못 읽었다 — 이 검사가 헛돈다").toBeGreaterThan(5);
+        for (const name of quoted) {
+          expect(navLabels, `카드가 가리킨 「${name}」 칸이 이 시트에 없다`).toContain(name);
+        }
+      }
     });
   }
 

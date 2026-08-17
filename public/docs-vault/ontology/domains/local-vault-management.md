@@ -6,8 +6,9 @@ title: Local Vault & Data Source Management
 display_ko: 로컬 볼트 및 데이터소스 관리
 display_en: Local Vault & Data Source Management
 capabilities: [capabilities/data-source-mode, capabilities/docs-vault-local, capabilities/project-data-source, capabilities/vault-sample-source]
-elements: [elements/atlas-git-panel, elements/docs-vault-entity, elements/docs-vault-view, elements/docs-vault-widget, elements/git, elements/local-fs-handle]
+elements: [elements/atlas-git-panel, elements/docs-vault-entity, elements/docs-vault-view, elements/docs-vault-widget, elements/git, elements/local-fs-handle, elements/native-vault-filesystem-bridge, elements/private-vault-sidecar-boundary]
 created_by: human
+relation_notes: { elements/native-vault-filesystem-bridge: 네이티브 vault 파일시스템 브리지는 로컬 볼트·데이터 소스 도메인의 직접 구현 요소다. }
 ---
 
 ## 정의

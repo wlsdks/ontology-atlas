@@ -51,3 +51,22 @@ export function resolveToastBottomOffsetForStack(
 ): number {
   return resolveToastBottomOffset(Math.round(viewportHeight - stackTop));
 }
+
+/**
+ * **오른쪽 도크를 비켜서기 위한 오프셋.**
+ *
+ * 2026-08-16 소유자 화면: 「온톨로지 개념 5개 · 에이전트 설정 파일 3개를
+ * 만들었어요」 토스트가 대화 패널의 **작성 칸 위에 그대로 얹혔다.** 원인은
+ * 위 하단 오프셋과 같은 모양이다 — 토스트는 `bottom-right` 고정이고
+ * `right: 16` 인데, 지도 오른쪽에 패널이 서면 그 16px 은 이제 **패널 안쪽**
+ * 이다. 알림이 화면 가장자리를 기준으로 서는 한, 오른쪽에 무엇이 서든 그 위에
+ * 앉는다.
+ *
+ * 예약 폭을 상수로 박지 않고 **실측 rect 를 받는다**: 이 패널의 폭은 사용자가
+ * 끌어서 정하고(320~968px) 기억된다. 상수는 그중 한 폭에서만 맞는다.
+ *
+ * @param reservedRightPx 오른쪽에 선 도크의 실제 폭. 없으면 0.
+ */
+export function resolveToastRightOffset(reservedRightPx = 0): number {
+  return TOAST_EDGE_GAP_PX + Math.max(0, reservedRightPx);
+}

@@ -6,8 +6,11 @@ import { AUDITED_ROUTES } from "./audited-routes";
  *
  * ## 왜 손으로 만든 다섯 스펙 위에 이걸 얹는가
  *
- * `a11y-structure` · `aria-audit` · `keyboard-path` · `touch-target-contract` ·
- * `mobile-keyboard-audit` 는 전부 **사람이 알아챈 결함을 하나씩 못박은 것**이다.
+ * `a11y-structure` · `aria-audit` · `keyboard-path` · `touch-target-contract` 는
+ * 전부 **사람이 알아챈 결함을 하나씩 못박은 것**이다.
+ * (여기 있던 `mobile-keyboard-audit` 는 2026-08-16 에 지웠다 — 단언이 하나도
+ *  없어서 무엇이 깨져도 초록이었고, 그것이 덮는다던 단축키 둘은 이미 단언이
+ *  있는 다른 스펙들이 덮고 있었다.)
  * 좋은 검사지만 알아챈 것만 덮는다 — 15 케이스가 105룰 중 대여섯을 본다.
  * 실제로 이 래칫이 처음 돌자마자 그 다섯이 한 번도 못 본 결함 셋이 나왔다
  * (`aria-required-children` · `target-size` · `color-contrast` 12건).

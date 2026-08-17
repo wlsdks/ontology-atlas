@@ -1,15 +1,7 @@
-import {
-  closeSync,
-  existsSync,
-  fsyncSync,
-  openSync,
-  readFileSync,
-  renameSync,
-  unlinkSync,
-  writeFileSync,
-} from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import { visit } from 'jsonc-parser';
 import { parse as parseToml } from 'smol-toml';
+import { writeFileAtomically } from './atomic-write.mjs';
 
 export function repairMcpJsonText(text, expected) {
   try {
@@ -81,25 +73,15 @@ export function repairCodexConfigText(text, expectedText) {
   };
 }
 
+/**
+ * 설정 파일을 끊기지 않게 쓴다.
+ *
+ * 구현은 `atomic-write.mjs` 하나다 — 2026-08-16 검수가 짚은 그대로, 이 저장소는
+ * **설정 파일만** 안전하게 쓰고 사용자 마크다운은 아니었다. 같은 구현을 두 벌
+ * 두면 다음에도 한쪽만 고쳐진다.
+ */
 export function writeTextAtomically(path, text) {
-  const temporaryPath = `${path}.ontology-atlas-tmp-${process.pid}`;
-  let descriptor = null;
-  try {
-    descriptor = openSync(temporaryPath, 'wx', 0o600);
-    writeFileSync(descriptor, text, 'utf-8');
-    fsyncSync(descriptor);
-    closeSync(descriptor);
-    descriptor = null;
-    renameSync(temporaryPath, path);
-  } finally {
-    if (descriptor !== null) closeSync(descriptor);
-    try {
-      unlinkSync(temporaryPath);
-    } catch {
-      // A successful rename consumes the temporary path; a failed write is
-      // best-effort cleaned without touching the original config.
-    }
-  }
+  writeFileAtomically(path, text);
 }
 
 export function writeCurrentMcpMergeTemplate(path, expected) {

@@ -75,6 +75,26 @@ describe("relation-keys contract — 웹 derive 가 MCP 관계 키를 전부 읽
     });
   }
 
+  describe("relation array 스칼라 거절 — 웹이 컴파일러보다 관계를 더 만들지 않는다", () => {
+    for (const c of RELATION_KEY_CASES) {
+      const sourceFrontmatter = c.frontmatter as Record<string, unknown>;
+      const scalar = (sourceFrontmatter[c.key] as string[])[0];
+      const frontmatter = { ...sourceFrontmatter, [c.key]: scalar };
+
+      it(`MCP: ${c.key} 스칼라를 관계로 읽지 않는다`, () => {
+        const refs = collectNeighborRefs({ frontmatter }) as { key: string; ref: string }[];
+        expect(refs.filter((ref) => ref.key === c.key)).toEqual([]);
+      });
+
+      it(`웹 derive: ${c.key} 스칼라를 엣지로 만들지 않는다`, () => {
+        const result = deriveOntologyFromVault(
+          makeManifest([makeDoc(`fixtures/${c.key}-scalar`, frontmatter)]),
+        );
+        expect(result.edges.filter((edge) => edge.type === c.expectedEdgeType)).toEqual([]);
+      });
+    }
+  });
+
   describe("dependencies + depends_on 합집합 — 같은 대상은 한 번만", () => {
     it("MCP: canonical dependencies ref 3개", () => {
       const refs = collectNeighborRefs({ frontmatter: DEPENDS_UNION_CASE.frontmatter }) as {

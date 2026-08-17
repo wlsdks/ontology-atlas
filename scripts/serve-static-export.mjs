@@ -16,18 +16,9 @@
  */
 import { createServer } from "node:http";
 import { createReadStream } from "node:fs";
-import { stat } from "node:fs/promises";
+import { realpath, stat } from "node:fs/promises";
 import path from "node:path";
-
-const args = new Map(
-  process.argv.slice(2).map((a) => {
-    const [k, v] = a.replace(/^--/, "").split("=");
-    return [k, v ?? "true"];
-  }),
-);
-
-const port = Number(args.get("port") ?? 4173);
-const root = path.resolve(process.cwd(), args.get("dir") ?? "out");
+import { fileURLToPath } from "node:url";
 
 const TYPES = new Map(
   Object.entries({
@@ -46,46 +37,93 @@ const TYPES = new Map(
   }),
 );
 
-/** 디렉토리면 `index.html` — `trailingSlash: true` export 의 라우팅 전부다. */
-async function resolveFile(urlPath) {
-  const decoded = decodeURIComponent(urlPath.split("?")[0].split("#")[0]);
-  const target = path.join(root, decoded);
-  // 루트 밖으로 나가는 경로는 거절한다(`..` 순회).
-  if (!target.startsWith(root)) return null;
+function isInsideRoot(root, candidate) {
+  const rel = path.relative(root, candidate);
+  return rel === "" || (rel !== ".." && !rel.startsWith(`..${path.sep}`) && !path.isAbsolute(rel));
+}
+
+async function resolveExistingInside(rootReal, candidate) {
   try {
-    const info = await stat(target);
-    if (info.isDirectory()) return resolveFile(path.posix.join(decoded, "index.html"));
-    return target;
+    const candidateReal = await realpath(candidate);
+    if (!isInsideRoot(rootReal, candidateReal)) return null;
+    return { path: candidateReal, info: await stat(candidateReal) };
   } catch {
-    // 확장자 없는 경로는 `<path>.html` 도 본다 — export 가 그렇게도 낸다.
-    if (path.extname(target)) return null;
-    try {
-      await stat(`${target}.html`);
-      return `${target}.html`;
-    } catch {
-      return null;
-    }
+    return null;
   }
 }
 
-createServer(async (req, res) => {
-  const file = await resolveFile(req.url ?? "/");
-  if (!file) {
-    const notFound = await resolveFile("/404.html");
-    if (notFound) {
-      res.writeHead(404, { "content-type": TYPES.get(".html") });
-      createReadStream(notFound).pipe(res);
+/** 디렉토리면 `index.html` — `trailingSlash: true` export 의 라우팅 전부다. */
+export async function resolveStaticExportFile(rootPath, urlPath) {
+  let decoded;
+  try {
+    decoded = decodeURIComponent(urlPath.split("?")[0].split("#")[0]).replaceAll("\\", "/");
+  } catch {
+    return null;
+  }
+
+  const root = path.resolve(rootPath);
+  let rootReal;
+  try {
+    rootReal = await realpath(root);
+  } catch {
+    return null;
+  }
+
+  const rootedUrl = decoded.startsWith("/") ? decoded : `/${decoded}`;
+  const target = path.resolve(root, `.${rootedUrl}`);
+  if (!isInsideRoot(root, target)) return null;
+
+  const resolved = await resolveExistingInside(rootReal, target);
+  if (resolved?.info.isDirectory()) {
+    const index = await resolveExistingInside(rootReal, path.join(target, "index.html"));
+    return index?.info.isFile() ? index.path : null;
+  }
+  if (resolved?.info.isFile()) return resolved.path;
+
+  // 확장자 없는 경로는 `<path>.html` 도 본다 — export 가 그렇게도 낸다.
+  if (path.extname(target)) return null;
+  const html = await resolveExistingInside(rootReal, `${target}.html`);
+  return html?.info.isFile() ? html.path : null;
+}
+
+export function startStaticExportServer({ root, port, host = "127.0.0.1" }) {
+  const resolvedRoot = path.resolve(root);
+  const server = createServer(async (req, res) => {
+    const file = await resolveStaticExportFile(resolvedRoot, req.url ?? "/");
+    if (!file) {
+      const notFound = await resolveStaticExportFile(resolvedRoot, "/404.html");
+      if (notFound) {
+        res.writeHead(404, { "content-type": TYPES.get(".html") });
+        createReadStream(notFound).pipe(res);
+        return;
+      }
+      res.writeHead(404, { "content-type": "text/plain; charset=utf-8" });
+      res.end("404");
       return;
     }
-    res.writeHead(404, { "content-type": "text/plain; charset=utf-8" });
-    res.end("404");
-    return;
-  }
-  res.writeHead(200, {
-    "content-type": TYPES.get(path.extname(file)) ?? "application/octet-stream",
-    "cache-control": "no-store",
+    res.writeHead(200, {
+      "content-type": TYPES.get(path.extname(file)) ?? "application/octet-stream",
+      "cache-control": "no-store",
+    });
+    createReadStream(file).pipe(res);
   });
-  createReadStream(file).pipe(res);
-}).listen(port, () => {
-  console.log(`[serve-static-export] ${root} → http://127.0.0.1:${port}`);
-});
+  server.listen(port, host, () => {
+    const address = server.address();
+    const actualPort = typeof address === "object" && address ? address.port : port;
+    console.log(`[serve-static-export] ${resolvedRoot} → http://${host}:${actualPort}`);
+  });
+  return server;
+}
+
+const isMain = process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url);
+if (isMain) {
+  const args = new Map(
+    process.argv.slice(2).map((arg) => {
+      const [key, value] = arg.replace(/^--/, "").split("=");
+      return [key, value ?? "true"];
+    }),
+  );
+  const port = Number(args.get("port") ?? 4173);
+  const root = path.resolve(process.cwd(), args.get("dir") ?? "out");
+  startStaticExportServer({ root, port });
+}

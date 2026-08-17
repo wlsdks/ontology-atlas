@@ -6,6 +6,7 @@ import { Copy, FileText, GitBranch, Maximize2, Route } from "lucide-react";
 import { ICON_SIZE } from "@/shared/ui/icon-size";
 import { Link } from "@/i18n/navigation";
 import { controlClass, RowButton, Surface } from "@/shared/ui";
+import { currentFloatingRightBound } from "@/shared/lib/right-dock-reserve";
 
 /**
  * W2-B — node right-click context menu (`use-topology-loop.ts`'s
@@ -141,7 +142,12 @@ export function TopologyV2ContextMenu({
     typeof window === "undefined"
       ? position
       : clampContextMenuPosition(position, {
-          width: window.innerWidth,
+          /*
+           * 오른쪽 벽은 **화면 끝이 아니라 지도의 끝**이다 (2026-08-16 검수).
+           * 지도 오른쪽에 대화 패널이 서 있으면 화면 폭으로 접었을 때 메뉴가
+           * 패널 위에 올라앉는다 — 그 메뉴가 다루는 것은 지도의 노드다.
+           */
+          width: currentFloatingRightBound(),
           height: window.innerHeight,
         });
 

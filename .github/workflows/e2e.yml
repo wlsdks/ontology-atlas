@@ -63,7 +63,7 @@ jobs:
       # 베이스를 못 찾아 "전부 실행"으로 열리고 게이트가 무의미해진다. 체크아웃은
       # 복합 액션 안에 못 넣는다 — 로컬 액션은 워크스페이스에 이미 있어야 로드된다.
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
         with:
           fetch-depth: 0
 
@@ -81,7 +81,7 @@ jobs:
 
       - name: Upload Playwright report on failure
         if: failure()
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
         with:
           name: playwright-report-static-export
           path: output/playwright/test-results
@@ -105,7 +105,7 @@ jobs:
       # 베이스를 못 찾아 "전부 실행"으로 열리고 게이트가 무의미해진다. 체크아웃은
       # 복합 액션 안에 못 넣는다 — 로컬 액션은 워크스페이스에 이미 있어야 로드된다.
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
         with:
           fetch-depth: 0
 
@@ -123,7 +123,7 @@ jobs:
 
       - name: Upload Playwright report on failure
         if: failure()
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
         with:
           name: playwright-report-web-smoke
           path: output/playwright/test-results
@@ -152,7 +152,7 @@ jobs:
       # 베이스를 못 찾아 "전부 실행"으로 열리고 게이트가 무의미해진다. 체크아웃은
       # 복합 액션 안에 못 넣는다 — 로컬 액션은 워크스페이스에 이미 있어야 로드된다.
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
         with:
           fetch-depth: 0
 
@@ -171,7 +171,7 @@ jobs:
 
       - name: Upload Playwright report on failure
         if: failure()
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
         with:
           name: playwright-report-shard-${{ matrix.shard }}
           path: output/playwright/test-results

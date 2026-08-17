@@ -1,6 +1,13 @@
 import { forwardRef, type ButtonHTMLAttributes, type ReactNode } from 'react';
 
-import { controlClass, type ControlSize, type ControlTone } from './control-class';
+import {
+  controlClass,
+  type ControlHoverBorder,
+  type ControlHoverInk,
+  type ControlHoverSurface,
+  type ControlSize,
+  type ControlTone,
+} from './control-class';
 
 /**
  * 컨트롤 컴포넌트 — **값 위에 행동을 얹는 층.**
@@ -50,6 +57,17 @@ type BaseProps = Omit<ButtonHTMLAttributes<HTMLButtonElement>, 'className' | 'ty
   size?: ControlSize;
   tone?: ControlTone;
   active?: boolean;
+  /**
+   * 마우스를 올렸을 때 — **값 층의 축을 그대로 받아 넘긴다**(2026-08-16).
+   *
+   * 전부 옵트인이고 골라진 것(`active`)에는 안 걸린다. 이 셋이 없던 동안
+   * 소비처는 `className` 에 `hover:` 를 손으로 썼고(실측: `RowButton` 29곳 중
+   * 17곳), 그건 래칫이 막으려던 바로 그 모양이다. **값 층에 있는데 부품이
+   * 못 닿으면 없는 것과 같다.**
+   */
+  hoverInk?: ControlHoverInk;
+  hoverSurface?: ControlHoverSurface;
+  hoverBorder?: ControlHoverBorder;
   /** 이 **한 자리**에만 참인 것(자리잡기 · 폭 · 순서). 모양·크기·색은 위 prop 으로. */
   className?: string;
 };
@@ -62,14 +80,23 @@ type BaseProps = Omit<ButtonHTMLAttributes<HTMLButtonElement>, 'className' | 'ty
  * 스크린리더에 토글로 읽힌다.
  */
 export const Chip = forwardRef<HTMLButtonElement, BaseProps>(
-  ({ size, tone, active, className, ...rest }, ref) => (
+  ({ size, tone, active, hoverInk, hoverSurface, hoverBorder, className, ...rest }, ref) => (
     <button
       ref={ref}
       // ★ 폼 안에서 `<button>` 의 기본은 `submit` 이다. 칩 하나가 폼을 보내는
       //   사고는 className 으로는 막을 수 없다 — 이 줄이 이 컴포넌트의 존재 이유다.
       type="button"
       data-control="chip"
-      className={controlClass({ shape: 'chip', size, tone, active, className })}
+      className={controlClass({
+        shape: 'chip',
+        size,
+        tone,
+        active,
+        hoverInk,
+        hoverSurface,
+        hoverBorder,
+        className,
+      })}
       {...rest}
     />
   ),
@@ -89,14 +116,23 @@ export interface IconButtonProps extends BaseProps {
 
 /** 정사각 아이콘 컨트롤 — 전수 36. */
 export const IconButton = forwardRef<HTMLButtonElement, IconButtonProps>(
-  ({ label, size, tone, active, className, children, ...rest }, ref) => (
+  ({ label, size, tone, active, hoverInk, hoverSurface, hoverBorder, className, children, ...rest }, ref) => (
     <button
       ref={ref}
       type="button"
       aria-label={label}
       title={label}
       data-control="icon"
-      className={controlClass({ shape: 'icon', size, tone, active, className })}
+      className={controlClass({
+        shape: 'icon',
+        size,
+        tone,
+        active,
+        hoverInk,
+        hoverSurface,
+        hoverBorder,
+        className,
+      })}
       {...rest}
     >
       {children}
@@ -113,12 +149,21 @@ IconButton.displayName = 'IconButton';
  * 컨트롤로 안 읽는다. 이 컴포넌트를 쓰면 그 선택지가 없다.
  */
 export const RowButton = forwardRef<HTMLButtonElement, BaseProps>(
-  ({ size, tone, active, className, ...rest }, ref) => (
+  ({ size, tone, active, hoverInk, hoverSurface, hoverBorder, className, ...rest }, ref) => (
     <button
       ref={ref}
       type="button"
       data-control="row"
-      className={controlClass({ shape: 'row', size, tone, active, className })}
+      className={controlClass({
+        shape: 'row',
+        size,
+        tone,
+        active,
+        hoverInk,
+        hoverSurface,
+        hoverBorder,
+        className,
+      })}
       {...rest}
     />
   ),

@@ -179,6 +179,35 @@ test("객체 맵 키 rename — why 노트가 고아가 되지 않는다", () =>
   rmSync(root, { recursive: true, force: true });
 });
 
+test("객체 맵 dry-run은 감사 값을 보존하되 내부 쓰기 plan을 공개하지 않는다", () => {
+  const root = makeVault();
+  writeMd(
+    root,
+    "user-preview",
+    "---\nkind: capability\ntitle: User Preview\nrelation_notes:\n  capabilities/mcp-server: 쓰기 경로가 이 서버를 지난다\n---\n",
+  );
+  const preview = redirectBacklinks(
+    root,
+    "capabilities/mcp-server",
+    "capabilities/graph-server",
+    { dryRun: true },
+  );
+  assert.equal(Object.hasOwn(preview, "plan"), false);
+  assert.deepEqual(preview.updates[0].beforeKeys, [
+    {
+      key: "relation_notes",
+      before: { "capabilities/mcp-server": "쓰기 경로가 이 서버를 지난다" },
+    },
+  ]);
+  assert.deepEqual(preview.updates[0].afterKeys, [
+    {
+      key: "relation_notes",
+      after: { "capabilities/graph-server": "쓰기 경로가 이 서버를 지난다" },
+    },
+  ]);
+  rmSync(root, { recursive: true, force: true });
+});
+
 test("객체 맵 키 충돌 — 기존(new 키) 값이 이긴다 (조용한 덮어쓰기 금지)", () => {
   const root = makeVault();
   writeMd(
@@ -284,6 +313,27 @@ test("domain: 단일 문자열 참조는 여전히 따라간다", () => {
 
   redirectBacklinks(root, "domains/auth", "domains/identity", { dryRun: false });
   assert.match(readMd(root, "capabilities/login"), /domain: domains\/identity/);
+  rmSync(root, { recursive: true, force: true });
+});
+
+test("deferred plan은 다시 쓸 바로 그 snapshot 바이트와 mtime을 함께 싣는다", () => {
+  const root = makeVault();
+  writeMd(root, "target", "---\nkind: capability\n---\n");
+  writeMd(
+    root,
+    "ref",
+    "---\nkind: capability\nrelates: [target]\n---\n사람이 지킬 본문\n",
+  );
+  const before = readMd(root, "ref");
+
+  const result = redirectBacklinks(root, "target", "renamed", {
+    dryRun: false,
+    deferWrite: true,
+  });
+
+  assert.equal(result.plan.length, 1);
+  assert.equal(result.plan[0].expectedRaw, before);
+  assert.equal(typeof result.plan[0].expectedMtime, "number");
   rmSync(root, { recursive: true, force: true });
 });
 

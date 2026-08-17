@@ -107,8 +107,22 @@ const MIN_RULES_PASSED = 15;
  * 22 → 23 (2026-08-14): 같은 검수 artifact 안에 전문가용 세션 초안 disclosure가
  * 추가됐다. 원본 영수증을 바꾸지 않는 로컬 편집 표면이며, construction review
  * e2e가 390/1023/1024/1512에서 열림·overflow를 측정한다.
+ *
+ * 23 → 25 (2026-08-16): ACP 대화 패널과 그 안의 권한 카드가 추가됐다. 둘 다
+ * **아래 OPENERS 문법에 들어갈 수 없다** — 데스크톱 브리지(`isAcpBridgeAvailable`)가
+ * 없으면 아예 렌더되지 않으므로, 브라우저에서 도는 이 스윕이 원리적으로 못 연다.
+ * 권한 카드는 거기서 한 겹 더 들어간다: 에이전트가 볼트 밖을 건드리려 해야
+ * 나타난다. 그 사실을 분모가 말한다(위 「@ 입력」 표면과 같은 부류다). 접근성은
+ * 위젯 단위 시험이 진다 — 카드의 `role="alertdialog"` · 이름 배선 · 닫는 X 가
+ * 없다는 계약은 `AcpChatPanel.test.tsx` 가 잰다.
+ *
+ * 25 → 26 (2026-08-16): ACP 대화의 **지난 대화 목록** 팝오버. 바로 위 둘과 같은
+ * 이유로 이 스윕이 못 연다 — 데스크톱 브리지가 있어야 하고, 그 위에 **이 폴더의
+ * 지난 대화가 실제로 있어야** 버튼 자체가 생긴다(없으면 안 그린다). 접근성과
+ * 폴더 범위 계약은 `AcpChatPanel.test.tsx` 와
+ * `tests/contract/acp-session-scope.contract.test.ts` 가 진다.
  */
-const APPEARING_SURFACES_IN_SOURCE = 23;
+const APPEARING_SURFACES_IN_SOURCE = 26;
 
 interface Opener {
   readonly name: string;

@@ -41,7 +41,7 @@
     "desktop:release-github": "node scripts/check-macos-release-github.mjs",
     "desktop:release-run": "node scripts/watch-macos-release-run.mjs",
     "desktop:release-status": "node scripts/check-macos-release-status.mjs",
-    "desktop:release-artifact": "pnpm desktop:release-secrets && pnpm build && pnpm desktop:smoke && pnpm desktop:build:app && pnpm desktop:sign && pnpm desktop:repack-updater && node scripts/package-macos-dmg.mjs && pnpm desktop:sign:dmg && pnpm desktop:notarize && pnpm desktop:verify-release-dmg && pnpm desktop:verify-install",
+    "desktop:release-artifact": "node scripts/build-macos-release-artifact.mjs",
     "desktop:release-artifact:unsigned": "pnpm build && pnpm desktop:smoke && pnpm desktop:build:app && pnpm desktop:sign:adhoc && pnpm desktop:repack-updater && node scripts/package-macos-dmg.mjs && pnpm desktop:verify-dmg && pnpm desktop:verify-install",
     "desktop:verify-hosted": "node scripts/check-hosted-download-surface.mjs",
     "design:ontology": "node scripts/check-ontology-design-surface.mjs",
@@ -54,6 +54,8 @@
     "tauri": "tauri",
     "desktop:dev": "pnpm tauri dev",
     "mcp:build-binary": "node scripts/build-mcp-binary.mjs",
+    "acp:registry": "node scripts/build-acp-registry.mjs",
+    "acp:registry:check": "node scripts/build-acp-registry.mjs --check",
     "mcp:verify-binary": "node scripts/verify-mcp-binary.mjs",
     "desktop:build:app": "node scripts/clean-tauri-macos-apps.mjs && pnpm mcp:build-binary && pnpm tauri build --bundles app",
     "desktop:build:app:local": "node scripts/clean-tauri-macos-apps.mjs && pnpm mcp:build-binary && pnpm tauri build --bundles app --config '{\"bundle\":{\"createUpdaterArtifacts\":false}}'",
@@ -61,7 +63,7 @@
     "desktop:stage:windows": "node scripts/stage-windows-release-assets.mjs",
     "desktop:deploy:app": "node scripts/deploy-macos-app-local.mjs",
     "desktop:build": "pnpm desktop:build:app && node scripts/package-macos-dmg.mjs",
-    "test:desktop:check": "node --test scripts/classify-change.test.mjs scripts/check-desktop-readiness.test.mjs scripts/apple-signing-setup.test.mjs scripts/build-updater-manifest.test.mjs scripts/stage-macos-release-assets.test.mjs scripts/stage-windows-release-assets.test.mjs scripts/verify-mcp-binary.test.mjs scripts/desktop-smoke.test.mjs scripts/check-dev-locale-routes.test.mjs scripts/clean-next-dev-cache.test.mjs scripts/check-desktop-performance.test.mjs scripts/clean-tauri-macos-apps.test.mjs scripts/deploy-macos-app-local.test.mjs scripts/lib/macos-release-names.test.mjs scripts/lib/macos-dmg-layout.test.mjs scripts/lib/macos-checksum.test.mjs scripts/lib/mcp-binary.test.mjs scripts/lib/redact-command.test.mjs scripts/check-macos-download-release.test.mjs scripts/check-macos-release-github.test.mjs scripts/check-macos-release-source.test.mjs scripts/check-macos-release-status.test.mjs scripts/check-desktop-goal-audit.test.mjs scripts/verify-macos-app-launch.*.test.mjs scripts/verify-macos-install-smoke.test.mjs scripts/watch-macos-release-run.test.mjs scripts/check-hosted-download-surface.test.mjs",
+    "test:desktop:check": "node --test scripts/classify-change.test.mjs scripts/check-desktop-readiness.test.mjs scripts/apple-signing-setup.test.mjs scripts/build-macos-release-artifact.test.mjs scripts/build-updater-manifest.test.mjs scripts/generate-download-release-facts.test.mjs scripts/stage-macos-release-assets.test.mjs scripts/stage-windows-release-assets.test.mjs scripts/verify-mcp-binary.test.mjs scripts/desktop-smoke.test.mjs scripts/serve-static-export.test.mjs scripts/build-brand-raster.test.mjs scripts/check-dev-locale-routes.test.mjs scripts/clean-next-dev-cache.test.mjs scripts/check-desktop-performance.test.mjs scripts/clean-tauri-macos-apps.test.mjs scripts/deploy-macos-app-local.test.mjs scripts/lib/macos-release-names.test.mjs scripts/lib/macos-dmg-layout.test.mjs scripts/lib/macos-checksum.test.mjs scripts/lib/mcp-binary.test.mjs scripts/lib/notary-credentials.test.mjs scripts/lib/redact-command.test.mjs scripts/lib/release-secret-env.test.mjs scripts/check-macos-download-release.test.mjs scripts/check-macos-release-github.test.mjs scripts/check-macos-release-secrets.test.mjs scripts/check-macos-release-source.test.mjs scripts/check-macos-release-status.test.mjs scripts/check-desktop-goal-audit.test.mjs scripts/verify-macos-app-launch.*.test.mjs scripts/verify-macos-install-smoke.test.mjs scripts/watch-macos-release-run.test.mjs scripts/check-hosted-download-surface.test.mjs",
     "docs-vault:build": "node scripts/build-docs-vault.mjs",
     "docs-vault:check": "node scripts/build-docs-vault.mjs --check",
     "test:docs-vault": "node --test scripts/build-docs-vault.test.mjs",
@@ -222,11 +224,14 @@
   },
   "pnpm": {
     "overrides": {
-      "brace-expansion@<1.1.16": "1.1.16",
+      "brace-expansion@<1.1.18": "1.1.18",
+      "brace-expansion@>=4.0.0 <5.0.9": "5.0.9",
       "nanoid@<3.3.17": "3.3.18",
       "@hono/node-server@<2.0.5": "2.0.11",
-      "postcss@<8.5.10": "8.5.22",
+      "postcss@<8.5.23": "8.5.23",
       "sharp@<0.35.0": "0.35.3",
+      "undici@>=7.0.0 <7.29.0": "7.29.0",
+      "js-yaml@>=4.0.0 <4.3.1": "4.3.1",
       "vite@<8.0.16": "8.1.5"
     }
   }

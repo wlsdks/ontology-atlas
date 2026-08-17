@@ -25,6 +25,7 @@ interface McpCheck {
 }
 
 const CHECK_IDS = [
+  'vault_present',
   'compile_issues',
   'unresolved_edges',
   'dependency_cycles',

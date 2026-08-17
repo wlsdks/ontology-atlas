@@ -101,7 +101,7 @@ function serializeFrontmatterValue(
   v: Exclude<FrontmatterUpdateValue, null>,
 ): string {
   if (Array.isArray(v)) {
-    return `[${v.map((s) => (needsQuote(s) ? `"${s.replace(/"/g, '\\"')}"` : s)).join(', ')}]`;
+    return `[${v.map((s) => (needsQuote(s) ? `"${escapeQuoted(s)}"` : s)).join(', ')}]`;
   }
   if (typeof v === 'boolean') return v ? 'true' : 'false';
   if (typeof v === 'number') return String(v);
@@ -112,15 +112,40 @@ function serializeFrontmatterValue(
       let serialized: string;
       if (typeof val === 'boolean') serialized = val ? 'true' : 'false';
       else if (typeof val === 'number') serialized = String(val);
-      else serialized = needsQuote(val) ? `"${val.replace(/"/g, '\\"')}"` : val;
+      else serialized = needsQuote(val) ? `"${escapeQuoted(val)}"` : val;
       return `${k}: ${serialized}`;
     });
     return `{ ${entries.join(', ')} }`;
   }
-  return needsQuote(v) ? `"${v.replace(/"/g, '\\"')}"` : v;
+  return needsQuote(v) ? `"${escapeQuoted(v)}"` : v;
 }
 
+/*
+ * 따옴표가 필요한 값인가 — **네 곳이 같은 답을 내야 한다.**
+ *
+ * ## 왜 규칙이 바뀌었나 (2026-08-16 검수, 재현됨)
+ *
+ * 줄바꿈이 빠져 있었다. 그 한 글자가 frontmatter 블록을 통째로 부순다:
+ * `note\nkind: element` 는 **노드의 종류를 바꾸고**, `note\n---\nx: 1` 은
+ * frontmatter 를 거기서 끝내 나머지 키를 본문으로 떨어뜨린다. 그리고 아무
+ * 경고도 안 난다.
+ *
+ * 따옴표만으로는 안 된다 — 줄이 이미 끊겼기 때문이다. 그래서 쓰는 쪽이
+ * `\n` 으로 **이스케이프**하고 읽는 쪽이 되돌린다(`unquote`).
+ *
+ * 작은따옴표도 규칙에 들어왔다. `unquote` 는 짝이 안 맞는 따옴표를 양 끝에서
+ * 벗기므로, `'지도'` 같은 값이 따옴표 없이 쓰이면 되읽을 때 `지도` 가 된다.
+ */
 function needsQuote(s: string): boolean {
-  // 우리 파서가 감당 못 하는 문자들 (쉼표, 콜론, 대괄호, 시작 따옴표)
-  return /[:,\[\]"]|^\s|\s$/.test(s);
+  return /[:,#\[\]"'{}&|*!%@`\n\t]|^\s|\s$/.test(s);
 }
+
+/** 따옴표 안에 안전하게 담기도록 만든다 — 줄바꿈은 `\n` 으로 접는다. */
+function escapeQuoted(s: string): string {
+  return s
+    .replace(/\\/g, '\\\\')
+    .replace(/"/g, '\\"')
+    .replace(/\n/g, '\\n')
+    .replace(/\t/g, '\\t');
+}
+

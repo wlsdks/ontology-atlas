@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { useLocale } from 'next-intl';
+import { useLocale, useTranslations } from 'next-intl';
 import { useLocalVault, useVaultCreateFlow } from '@/features/docs-vault-local';
 import {
   FIRST_RUN_STARTER_DISMISSED_KEY,
@@ -63,11 +63,28 @@ export function useFirstRunStarter() {
 
   const busy =
     vault.status === 'opening' || vault.status === 'loading' || scaffolding;
+  /**
+   * 무엇이 잘못됐는지 **말할 수 있는 것부터 말한다.**
+   *
+   * ⚠️ 종전에는 `vault.errorMessage` 만 봤다. 그런데 「받을 수 없는 자리」와
+   * 「폴더가 사라짐」과 「권한 없음」은 그 값을 **일부러 `null` 로 둔다** —
+   * 원문을 화면에 흘리지 않으려고. 그래서 그 셋은 이 카드에서 **아무 말도 안
+   * 나오는 상태**가 됐다(2026-08-16 검수). 코드가 뜻을 알고 있는데 화면이
+   * 침묵하는 것은, 원문을 흘리는 것보다 나쁘다.
+   *
+   * 옆 화면(`FirstRunPage`)이 이미 이 갈래를 처리하고 있었다 — 같은 사실에
+   * 두 화면이 다르게 답하고 있었던 것이다.
+   */
+  const t = useTranslations('firstRunStarter');
   const errorText =
     actionError !== null
       ? actionError
       : vault.status === 'error'
-        ? vault.errorMessage
+        ? (vault.errorCode === 'root-rejected'
+            ? t('errorRootRejected')
+            : vault.errorCode === 'path-missing'
+              ? t('errorPathMissing')
+              : vault.errorMessage) ?? ''
         : null;
 
   useEffect(() => {

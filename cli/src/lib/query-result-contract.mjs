@@ -303,8 +303,11 @@ export function assertAgentBriefShape(result) {
   if (!validAgentHandoffPrompt(result.handoffPrompt)) {
     throw new Error('agent_brief handoffPrompt must be a non-empty agent handoff string');
   }
+  // 브리프가 자기 안에서 모순이면 여기서 막는다 — 읽는 쪽이 에이전트라
+  // 머리글 숫자를 믿고 나머지를 안 세어 볼 수 있다 (2026-08-17 실측).
+  assertBriefCountsAgree(result);
   if (!validAgentCliFallbackCommands(result.cliFallbackCommands)) {
-    throw new Error('agent_brief cliFallbackCommands must include non-empty ontology-atlas CLI fallback commands');
+    throw new Error('agent_brief cliFallbackCommands must include non-empty runnable CLI fallback commands');
   }
   if (!isPlainObject(result.health) || !Array.isArray(result.health.checks) || result.health.checks.length === 0) {
     throw new Error('agent_brief health.checks must be a non-empty array');
@@ -1709,10 +1712,31 @@ function validAgentModeComparison(value) {
   return true;
 }
 
+/**
+ * 「MCP 가 없을 때 이걸 쓰세요」 줄이 **실행 가능한 모양**인가.
+ *
+ * ⚠️ 종전 검사는 `^ontology-atlas\s` 를 **요구**했다 — 그 이름의 전역 명령은
+ * 없는데(레지스트리 발행 폐기, 2026-07-27 원장), 그러니 이 검사는 거짓말을
+ * 막는 게 아니라 **강제하고 있었다.** 실제로 붙여넣으면 `command not found` 다
+ * (2026-08-17 실측).
+ *
+ * 지금 받는 것은 실행되는 모양(`node <…>/cli/src/index.mjs <sub> …`)이다.
+ * 옛 모양은 **거절한다** — 받아 주면 그 거짓말이 다시 돌아온다.
+ */
 function validAgentCliFallbackCommands(commands) {
   return Array.isArray(commands)
     && commands.length > 0
-    && commands.every((command) => hasNonEmptyString(command) && /^ontology-atlas\s/.test(command));
+    && commands.every(validAgentCliFallbackCommand);
+}
+
+function validAgentCliFallbackCommand(command) {
+  if (!hasNonEmptyString(command) || /[\r\n]/.test(command)) return false;
+  const normalized = command.replaceAll('\\', '/');
+  const entryMarker = 'cli/src/index.mjs';
+  const entryIndex = normalized.indexOf(entryMarker);
+  if (!normalized.startsWith('node ') || entryIndex < 'node '.length) return false;
+  if (normalized.slice('node '.length, entryIndex).trim() === '') return false;
+  return /^(?:['"])?\s+\S/.test(normalized.slice(entryIndex + entryMarker.length));
 }
 
 function validAgentTraversalStrategy(strategies) {
@@ -2669,4 +2693,31 @@ function countValue(value) {
 
 function validCount(value) {
   return Number.isInteger(value) && value >= 0;
+}
+
+/**
+ * 브리프가 **자기가 싣고 있는 것과 같은 수**를 말하는가.
+ *
+ * ## 왜 (2026-08-17 실측)
+ *
+ * `agent-brief` 한 응답 안에서 `readiness.healthChecks` 는 7, `health.checks`
+ * 는 8이었다. 머리글이 「7 health checks」라고 적는데 같은 payload 가 8개를
+ * 싣고 있었다 — 8번째(`meaning_assessment`)가 **수를 센 뒤에** 붙기 때문이다.
+ *
+ * 이 문서를 읽는 쪽은 에이전트이고, 머리글 숫자를 믿고 나머지를 안 세어 볼 수
+ * 있다. 이 저장소에는 같은 규율이 이미 있다 — 관문 캡션이 자기가 그리는
+ * 그래프와 같은 수를 말하게 하는 검사. **숫자를 못박지 않고 두 값이 같은지만
+ * 본다**: 볼트가 바뀌어도 안 썩는다.
+ */
+export function assertBriefCountsAgree(result) {
+  const stated = result?.readiness?.healthChecks;
+  const carried = result?.health?.checks;
+  if (typeof stated !== 'number' || !Array.isArray(carried)) return result;
+  if (stated !== carried.length) {
+    throw new Error(
+      `agent_brief health check 수가 어긋난다: readiness.healthChecks=${stated} 인데 `
+      + `health.checks 는 ${carried.length}개다 (${carried.map((c) => c?.id).join(', ')})`,
+    );
+  }
+  return result;
 }

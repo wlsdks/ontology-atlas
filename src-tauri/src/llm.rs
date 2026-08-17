@@ -232,7 +232,10 @@ fn is_loopback_authority(authority: &str) -> bool {
         Some(rest) => rest.split(']').next().unwrap_or(""),
         None => authority.split(':').next().unwrap_or(""),
     };
-    host == "localhost" || host == "::1" || host.starts_with("127.")
+    host.eq_ignore_ascii_case("localhost")
+        || host
+            .parse::<std::net::IpAddr>()
+            .is_ok_and(|address| address.is_loopback())
 }
 
 /// base URL + OpenAI 호환 경로. 이미 `/v1` 로 끝나면 덧붙이지 않는다 —
@@ -314,8 +317,11 @@ fn verify_request(provider: &str, target: &Target<'_>) -> Result<VerifyRequest, 
 
 /// argv 에 올라가는 인자 — **비밀이 하나도 없다**. URL·헤더·본문은 stdin 으로
 /// 간다. 대화 왕복은 제한 시간만 다르다.
-fn curl_argv_with_timeout(timeout_seconds: &'static str) -> [&'static str; 8] {
+fn curl_argv_with_timeout(timeout_seconds: &'static str) -> [&'static str; 9] {
     [
+        // curl 은 이 옵션이 **첫 인자**일 때만 ~/.curlrc 를 읽지 않는다. 사용자
+        // 설정이 redirect/proxy/header 를 보태 키의 전송 경계를 바꾸지 못하게 한다.
+        "--disable",
         "--silent",
         "--show-error",
         "--max-time",
@@ -327,7 +333,7 @@ fn curl_argv_with_timeout(timeout_seconds: &'static str) -> [&'static str; 8] {
     ]
 }
 
-fn curl_argv() -> [&'static str; 8] {
+fn curl_argv() -> [&'static str; 9] {
     curl_argv_with_timeout("20")
 }
 
@@ -383,7 +389,7 @@ fn curl_failure_message(code: Option<i32>, stderr: &str) -> String {
     }
 }
 
-fn run_curl(argv: [&'static str; 8], config: &str) -> Result<(u16, String), String> {
+fn run_curl(argv: [&'static str; 9], config: &str) -> Result<(u16, String), String> {
     let mut child = Command::new("curl")
         .args(argv)
         .stdin(Stdio::piped())
@@ -909,6 +915,13 @@ mod tests {
     }
 
     #[test]
+    fn curl_disables_ambient_config_before_every_other_argument() {
+        let argv = curl_argv();
+        assert_eq!(argv.first(), Some(&"--disable"));
+        assert_eq!(argv.iter().filter(|arg| **arg == "--disable").count(), 1);
+    }
+
+    #[test]
     fn curl_config_quotes_values_so_a_key_cannot_inject_options() {
         let request = verify_request(
             "openai",
@@ -1018,6 +1031,7 @@ mod tests {
         }
     }
 
+    #[cfg(unix)]
     #[test]
     fn a_gemini_key_rejected_with_400_is_a_rejection_not_a_failure() {
         // 2026-07-26 실측: Gemini 는 틀린 키에 400(`API_KEY_INVALID`)을 준다.
@@ -1043,6 +1057,7 @@ mod tests {
         fs::remove_dir_all(&vault).ok();
     }
 
+    #[cfg(unix)]
     #[test]
     fn a_400_from_a_bearer_vendor_is_still_a_plain_failure() {
         // 거부 상태는 벤더별 목록이다 — Gemini 의 400 규칙이 다른 벤더로 새면
@@ -1062,6 +1077,7 @@ mod tests {
         fs::remove_dir_all(&vault).ok();
     }
 
+    #[cfg(unix)]
     #[test]
     fn every_recorded_call_names_the_host_it_went_to() {
         let vault = temp_vault("host");
@@ -1103,6 +1119,7 @@ mod tests {
         fs::remove_dir_all(&vault).ok();
     }
 
+    #[cfg(unix)]
     #[test]
     fn a_successful_check_leaves_exactly_one_complete_line() {
         let vault = temp_vault("ok");
@@ -1133,6 +1150,7 @@ mod tests {
         fs::remove_dir_all(&vault).ok();
     }
 
+    #[cfg(unix)]
     #[test]
     fn a_rejected_key_is_recorded_as_denied_not_as_an_error() {
         let vault = temp_vault("denied");
@@ -1151,6 +1169,7 @@ mod tests {
         fs::remove_dir_all(&vault).ok();
     }
 
+    #[cfg(unix)]
     #[test]
     fn a_network_failure_is_still_recorded() {
         // 실패한 호출도 "나갔다" 는 사실이다 — 기록에서 빠지면 감사가 거짓말이 된다.
@@ -1344,6 +1363,7 @@ mod tests {
         fs::remove_dir_all(&vault).ok();
     }
 
+    #[cfg(unix)]
     #[test]
     fn a_chat_round_trip_records_purpose_scope_and_the_tools_that_rode_along() {
         let vault = temp_vault("chat-ok");
@@ -1399,6 +1419,7 @@ mod tests {
         fs::remove_dir_all(&vault).ok();
     }
 
+    #[cfg(unix)]
     #[test]
     fn the_agent_line_this_module_writes_matches_the_shared_reader_fixture() {
         // writer(여기) ↔ reader(웹 `llm-audit-log.ts`) drift 차단. 픽스처의
@@ -1454,6 +1475,7 @@ mod tests {
         fs::remove_dir_all(&vault).ok();
     }
 
+    #[cfg(unix)]
     #[test]
     fn a_failed_chat_is_still_recorded_before_the_error_surfaces() {
         let vault = temp_vault("chat-neterr");
@@ -1481,6 +1503,7 @@ mod tests {
         fs::remove_dir_all(&vault).ok();
     }
 
+    #[cfg(unix)]
     #[test]
     fn a_rejected_chat_key_is_recorded_as_denied() {
         let vault = temp_vault("chat-denied");
@@ -1568,12 +1591,17 @@ mod tests {
         for ok in [
             "http://localhost:11434",
             "http://127.0.0.1:1234",
+            "http://127.42.0.7:1234",
             "http://[::1]:11434",
             "https://box.example.com:8080",
         ] {
             assert!(normalize_base_url(ok).is_ok(), "거절하면 안 된다: {ok}");
         }
-        for bad in ["http://example.com", "http://192.168.0.9:11434"] {
+        for bad in [
+            "http://example.com",
+            "http://192.168.0.9:11434",
+            "http://127.example.invalid:11434",
+        ] {
             assert!(normalize_base_url(bad).is_err(), "통과하면 안 된다: {bad}");
         }
     }
@@ -1660,10 +1688,11 @@ mod tests {
     #[test]
     fn a_local_chat_cannot_hold_the_panel_for_three_minutes() {
         assert_eq!(LOCAL_CHAT_TIMEOUT_SECONDS, "60");
-        assert_eq!(curl_argv_with_timeout(LOCAL_CHAT_TIMEOUT_SECONDS)[3], "60");
-        assert_eq!(curl_argv_with_timeout(CHAT_TIMEOUT_SECONDS)[3], "180");
+        assert_eq!(curl_argv_with_timeout(LOCAL_CHAT_TIMEOUT_SECONDS)[4], "60");
+        assert_eq!(curl_argv_with_timeout(CHAT_TIMEOUT_SECONDS)[4], "180");
     }
 
+    #[cfg(unix)]
     #[test]
     fn a_local_check_records_localhost_and_hands_back_the_model_list() {
         // 이 제품의 신뢰 서사가 로그로 증명되는 자리 — 목적지가 제공자 **이름**
@@ -1702,6 +1731,7 @@ mod tests {
         fs::remove_dir_all(&vault).ok();
     }
 
+    #[cfg(unix)]
     #[test]
     fn a_local_check_that_hits_the_wrong_port_returns_a_status_not_a_list() {
         // 같은 주소에 다른 프로그램이 떠 있는 흔한 경우 — 연결은 되는데 404 다.
@@ -1729,6 +1759,7 @@ mod tests {
         fs::remove_dir_all(&vault).ok();
     }
 
+    #[cfg(unix)]
     #[test]
     fn a_local_chat_round_trip_goes_to_the_compatible_endpoint_and_logs_localhost() {
         let vault = temp_vault("local-chat");

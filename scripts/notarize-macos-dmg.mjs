@@ -4,7 +4,9 @@ import path from "node:path";
 import { spawnSync } from "node:child_process";
 import crypto from "node:crypto";
 import { loadMacosReleaseNames } from "./lib/macos-release-names.mjs";
+import { resolveNotaryAuthentication } from "./lib/notary-credentials.mjs";
 import { formatCommandForLog } from "./lib/redact-command.mjs";
+import { releaseChildEnv } from "./lib/release-secret-env.mjs";
 
 const root = process.cwd();
 const names = loadMacosReleaseNames(root);
@@ -31,9 +33,12 @@ ticket, and validates the stapled artifact.
 Environment, choose one authentication mode:
   NOTARYTOOL_PROFILE             Stored notarytool keychain profile.
 
-  APPLE_ID                       Apple ID for notarytool.
-  APPLE_APP_SPECIFIC_PASSWORD    App-specific password for the Apple ID.
-  APPLE_TEAM_ID                  Apple Developer Team ID.
+  NOTARYTOOL_KEY_PATH            Path to an App Store Connect .p8 private key.
+  APPLE_API_KEY_ID               App Store Connect API key ID.
+  APPLE_API_ISSUER_ID            App Store Connect API issuer UUID.
+
+The private key bytes must stay in the 0600 file. Password authentication is
+not accepted because notarytool places --password values in process arguments.
 `);
 }
 
@@ -47,6 +52,7 @@ function run(command, args) {
     cwd: root,
     encoding: "utf8",
     stdio: "pipe",
+    env: releaseChildEnv(process.env),
   });
 
   if (result.status !== 0) {
@@ -64,28 +70,6 @@ function run(command, args) {
   return result;
 }
 
-function notaryAuthArgs() {
-  if (process.env.NOTARYTOOL_PROFILE) {
-    return ["--keychain-profile", process.env.NOTARYTOOL_PROFILE];
-  }
-
-  const { APPLE_ID, APPLE_APP_SPECIFIC_PASSWORD, APPLE_TEAM_ID } = process.env;
-  if (APPLE_ID && APPLE_APP_SPECIFIC_PASSWORD && APPLE_TEAM_ID) {
-    return [
-      "--apple-id",
-      APPLE_ID,
-      "--password",
-      APPLE_APP_SPECIFIC_PASSWORD,
-      "--team-id",
-      APPLE_TEAM_ID,
-    ];
-  }
-
-  fail(
-    "notarization requires NOTARYTOOL_PROFILE or APPLE_ID, APPLE_APP_SPECIFIC_PASSWORD, and APPLE_TEAM_ID.",
-  );
-}
-
 if (process.argv.includes("--help") || process.argv.includes("-h")) {
   printHelp();
   process.exit(0);
@@ -99,7 +83,14 @@ if (!fs.existsSync(dmgPath)) {
   fail(`missing DMG at ${dmgPath}; run pnpm desktop:build first.`);
 }
 
-run("xcrun", ["notarytool", "submit", dmgPath, "--wait", ...notaryAuthArgs()]);
+let authentication;
+try {
+  authentication = resolveNotaryAuthentication(process.env);
+} catch (error) {
+  fail(error instanceof Error ? error.message : String(error));
+}
+
+run("xcrun", ["notarytool", "submit", dmgPath, "--wait", ...authentication.args]);
 run("xcrun", ["stapler", "staple", dmgPath]);
 run("xcrun", ["stapler", "validate", dmgPath]);
 

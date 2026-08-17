@@ -1,4 +1,5 @@
-import { writeFileSync, mkdirSync, existsSync, readFileSync, realpathSync } from 'node:fs';
+import { mkdirSync, existsSync, readFileSync, realpathSync } from 'node:fs';
+import { readFileRevision, sameFileRevision, writeFileAtomically } from './atomic-write.mjs';
 import { dirname, resolve, sep } from 'node:path';
 import { buildMarkdown, parseFrontmatter } from './parse-frontmatter.mjs';
 import { flatSlugIssue, inspectMergedUids, nodeUidIssue } from './schema.mjs';
@@ -68,7 +69,7 @@ export function writeDoc(rootPath, slug, { frontmatter, body = '' }) {
   const filePath = preflightWriteDoc(rootPath, slug, frontmatter);
   mkdirSync(dirname(filePath), { recursive: true });
   const md = buildMarkdown({ frontmatter, body });
-  writeFileSync(filePath, md, 'utf-8');
+  writeFileAtomically(filePath, md);
   return filePath;
 }
 
@@ -116,17 +117,22 @@ function assertNodeIdentity(rootPath, slug, frontmatter) {
 }
 
 /**
- * 기존 doc 을 읽어 { filePath, frontmatter, body } 반환. 파일 없으면 throw.
+ * 기존 doc 을 읽어 { filePath, frontmatter, body, revision } 반환. 파일 없으면 throw.
  * patch 전 현재 상태 확인용 (R+ `relate` 커맨드).
  */
 export function readDocFrontmatter(rootPath, slug) {
   const filePath = slugToPath(rootPath, slug);
-  if (!existsSync(filePath)) {
+  const before = readFileRevision(filePath);
+  if (!before) {
     throw new Error(`Doc not found: "${slug}".`);
   }
   const raw = readFileSync(filePath, 'utf-8');
+  const revision = readFileRevision(filePath);
+  if (!sameFileRevision(before, revision)) {
+    throw new Error(`Conflict: document changed or was deleted while reading: ${filePath}. Re-read and retry.`);
+  }
   const { frontmatter, body } = parseFrontmatter(raw);
-  return { filePath, frontmatter, body };
+  return { filePath, frontmatter, body, revision };
 }
 
 /**
@@ -135,13 +141,26 @@ export function readDocFrontmatter(rootPath, slug) {
  * — CLI 는 mcp add_relation 을 spawn 하지 않고 자체 fs 로 직접 쓴다 (기존
  * `add`/`import` 커맨드와 같은 관례). R+ `relate` 커맨드가 사용.
  */
-export function writeFrontmatterKey(rootPath, slug, key, value) {
-  return writeFrontmatterKeys(rootPath, slug, { [key]: value });
+export function writeFrontmatterKey(rootPath, slug, key, value, options) {
+  return writeFrontmatterKeys(rootPath, slug, { [key]: value }, options);
 }
 
 /** 복수 키를 한 번의 파일 쓰기로: 관계+relation_notes 원자성 (P6 게이트 ③ CLI 측). */
-export function writeFrontmatterKeys(rootPath, slug, patch) {
-  const { filePath, frontmatter, body } = readDocFrontmatter(rootPath, slug);
+export function writeFrontmatterKeys(rootPath, slug, patch, { expectedRevision = null } = {}) {
+  const filePath = slugToPath(rootPath, slug);
+  let current;
+  try {
+    current = readDocFrontmatter(rootPath, slug);
+  } catch (error) {
+    if (expectedRevision && !existsSync(filePath)) {
+      throw new Error(`Conflict: document changed or was deleted before write: ${filePath}. Re-read and retry.`);
+    }
+    throw error;
+  }
+  const { frontmatter, body, revision } = current;
+  if (expectedRevision && !sameFileRevision(expectedRevision, revision)) {
+    throw new Error(`Conflict: document changed or was deleted before write: ${filePath}. Re-read and retry.`);
+  }
   if ('uid' in patch && patch.uid !== frontmatter.uid) {
     throw new Error('`uid:` is immutable and cannot be changed by a generic frontmatter writer.');
   }
@@ -151,7 +170,7 @@ export function writeFrontmatterKeys(rootPath, slug, patch) {
   const next = { ...frontmatter, ...patch };
   assertNodeIdentity(rootPath, slug, next);
   const md = buildMarkdown({ frontmatter: next, body });
-  writeFileSync(filePath, md, 'utf-8');
+  writeFileAtomically(filePath, md, { expectedRevision });
   return filePath;
 }
 

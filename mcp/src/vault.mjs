@@ -3,13 +3,20 @@
 
 import {
   accessSync,
+  closeSync,
   constants as fsConstants,
+  fchmodSync,
+  fstatSync,
+  fsyncSync,
+  openSync,
   readdirSync,
   readFileSync,
   writeFileSync,
   mkdirSync,
   existsSync,
   realpathSync,
+  renameSync,
+  rmdirSync,
   statSync,
   unlinkSync,
 } from 'node:fs';
@@ -49,7 +56,7 @@ import { hasCapabilityImplementationEvidence } from './capability-evidence.mjs';
 export class VaultConflictError extends Error {
   constructor(slug, expectedMtime, currentMtime) {
     super(
-      `Vault conflict: "${slug}" was modified externally between read and write. ` +
+      `Vault conflict: "${slug}" was modified externally (changed on disk) between read and write. ` +
         `expectedMtime=${expectedMtime} currentMtime=${currentMtime}. ` +
         // **없는 복구법을 알려주지 않는다** (2026-07-29 실측).
         //
@@ -83,17 +90,56 @@ export function getFileMtime(filePath) {
   }
 }
 
-/**
- * write 직전 mtime 검증. expected !== current 면 ConflictError throw.
- * expected 가 null/undefined 면 검증 skip.
- */
-function assertMtime(slug, filePath, expectedMtime) {
+function sameFileSnapshot(left, right) {
+  return left.dev === right.dev
+    && left.ino === right.ino
+    && left.size === right.size
+    && left.mtimeMs === right.mtimeMs
+    && left.ctimeMs === right.ctimeMs;
+}
+
+/** 같은 열린 파일에서 bytes와 metadata를 묶어 읽고, 현재 경로도 그 파일인지 확인한다. */
+function readStableFileSnapshot(filePath) {
+  let lastError = null;
+  for (let attempt = 0; attempt < 3; attempt += 1) {
+    let descriptor = null;
+    try {
+      descriptor = openSync(filePath, 'r');
+      const before = fstatSync(descriptor);
+      const raw = readFileSync(descriptor, 'utf-8');
+      const after = fstatSync(descriptor);
+      closeSync(descriptor);
+      descriptor = null;
+      const currentPath = statSync(filePath);
+      if (sameFileSnapshot(before, after) && sameFileSnapshot(after, currentPath)) {
+        return { raw, mtime: after.mtimeMs };
+      }
+    } catch (error) {
+      lastError = error;
+    } finally {
+      if (descriptor !== null) {
+        try {
+          closeSync(descriptor);
+        } catch {
+          /* 이미 닫혔다 */
+        }
+      }
+    }
+  }
+  const reason = lastError?.message ? ` (${lastError.message})` : '';
+  throw new Error(`Could not capture a stable file snapshot: ${filePath}${reason}`);
+}
+
+function assertSnapshotMtime(slug, expectedMtime, currentMtime) {
   if (expectedMtime === null || expectedMtime === undefined) return;
-  const current = getFileMtime(filePath);
-  if (current === null) return; // 파일 자체가 없으면 후속 write 가 어차피 throw
-  // mtime 비교는 1ms 미만 정밀도 차이를 무시 — 일부 fs 가 ms 미만 truncate.
-  if (Math.abs(current - expectedMtime) >= 1) {
-    throw new VaultConflictError(slug, expectedMtime, current);
+  if (currentMtime === null || Math.abs(currentMtime - expectedMtime) >= 1) {
+    throw new VaultConflictError(slug, expectedMtime, currentMtime);
+  }
+}
+
+function assertCurrentDocSnapshot(slug, filePath, expectedRaw, expectedMtime) {
+  if (!fileMatchesExpectedRaw(filePath, expectedRaw)) {
+    throw new VaultConflictError(slug, expectedMtime, getFileMtime(filePath));
   }
 }
 
@@ -403,7 +449,7 @@ export function walkMd(rootPath) {
       if (entry.isDirectory()) {
         if (SKIP_DIRS.has(entry.name)) continue;
         stack.push(join(dir, entry.name));
-      } else if (entry.name.endsWith('.md')) {
+      } else if (entry.isFile() && entry.name.endsWith('.md')) {
         out.push(join(dir, entry.name));
       }
     }
@@ -545,14 +591,15 @@ export function vaultSlugExists(rootPath, slug) {
  * 으로 전달해 conflict 감지 가능 (R11 #8).
  */
 export function readDoc(rootPath, filePath) {
-  const raw = readFileSync(filePath, 'utf-8');
+  const snapshot = readStableFileSnapshot(filePath);
+  const raw = snapshot.raw;
   const { frontmatter, body, diagnostics } = parseFrontmatter(raw);
   const result = {
     slug: pathToSlug(rootPath, filePath),
     frontmatter,
     body,
     raw,
-    mtime: getFileMtime(filePath),
+    mtime: snapshot.mtime,
   };
   if (diagnostics?.length) result.diagnostics = diagnostics;
   return result;
@@ -1029,8 +1076,27 @@ function runNodeEligibilityGate(rootPath, slug, frontmatter, { created = false }
  * `mcp/src/write-path-gate.test.mjs` fails if a door starts writing bytes
  * somewhere else.
  */
-function commitDoc(rootPath, slug, filePath, frontmatter, body, { created = false, previousFrontmatter } = {}) {
-  writeFileSync(filePath, buildMarkdown({ frontmatter, body }), 'utf-8');
+function commitDoc(
+  rootPath,
+  slug,
+  filePath,
+  frontmatter,
+  body,
+  {
+    created = false,
+    previousFrontmatter,
+    expectedRaw,
+    expectedMtime,
+    beforeCommit,
+  } = {},
+) {
+  writeFileAtomically(filePath, buildMarkdown({ frontmatter, body }), {
+    expectedRaw,
+    expectedAbsent: created,
+    conflictSlug: created ? undefined : slug,
+    expectedMtime,
+    beforeCommit,
+  });
   if (created) noteGateWrite(rootPath, slug);
   noteParentGrowth(slug, previousFrontmatter, frontmatter);
   runNodeEligibilityGate(rootPath, slug, frontmatter, { created });
@@ -1196,8 +1262,10 @@ export function deleteDoc(rootPath, slug, options = {}) {
   if (!existsSync(filePath)) {
     throw new Error(`Doc not found: "${slug}". ${notFoundSuffix(rootPath, slug)}`);
   }
-  assertMtime(slug, filePath, options.expectedMtime);
   const captured = readDoc(rootPath, filePath);
+  assertSnapshotMtime(slug, options.expectedMtime, captured.mtime);
+  options.beforeDelete?.();
+  assertCurrentDocSnapshot(slug, filePath, captured.raw, captured.mtime);
   unlinkSync(filePath);
   return { ...captured, filePath };
 }
@@ -1216,9 +1284,9 @@ export function patchFrontmatter(rootPath, slug, patch, options = {}) {
     throw new Error(`Doc not found: "${slug}". ${notFoundSuffix(rootPath, slug)}`);
   }
   assertPlainObject(patch, 'frontmatter');
-  assertMtime(slug, filePath, options.expectedMtime);
-  const raw = readFileSync(filePath, 'utf-8');
-  const { frontmatter, body } = parseFrontmatter(raw);
+  const doc = readDoc(rootPath, filePath);
+  assertSnapshotMtime(slug, options.expectedMtime, doc.mtime);
+  const { frontmatter, body } = doc;
   assertIdentityPatch(frontmatter, patch);
   const next = { ...frontmatter };
   for (const [key, value] of Object.entries(patch)) {
@@ -1230,7 +1298,12 @@ export function patchFrontmatter(rootPath, slug, patch, options = {}) {
   }
   const mintedUid = fillMissingUid(frontmatter, next);
   assertNodeIdentity(rootPath, slug, next);
-  commitDoc(rootPath, slug, filePath, next, body, { previousFrontmatter: frontmatter });
+  commitDoc(rootPath, slug, filePath, next, body, {
+    previousFrontmatter: frontmatter,
+    expectedRaw: doc.raw,
+    expectedMtime: doc.mtime,
+    beforeCommit: options.beforeCommit,
+  });
   return { filePath, frontmatter: next, mintedUid };
 }
 
@@ -1241,15 +1314,20 @@ export function patchFrontmatter(rootPath, slug, patch, options = {}) {
  *
  * 반환 계약은 `patchFrontmatter` 와 같다 — `{ filePath, frontmatter, mintedUid }`.
  */
-export function updateDoc(rootPath, slug, { frontmatter: patch, body, expectedMtime }) {
+export function updateDoc(rootPath, slug, {
+  frontmatter: patch,
+  body,
+  expectedMtime,
+  beforeCommit,
+}) {
   const filePath = slugToPath(rootPath, slug);
   if (!existsSync(filePath)) {
     throw new Error(`Doc not found: "${slug}". ${notFoundSuffix(rootPath, slug)}`);
   }
   assertOptionalPlainObject(patch, 'frontmatter');
-  assertMtime(slug, filePath, expectedMtime);
-  const raw = readFileSync(filePath, 'utf-8');
-  const { frontmatter, body: oldBody } = parseFrontmatter(raw);
+  const doc = readDoc(rootPath, filePath);
+  assertSnapshotMtime(slug, expectedMtime, doc.mtime);
+  const { frontmatter, body: oldBody } = doc;
   assertIdentityPatch(frontmatter, patch);
   const nextFm = { ...frontmatter };
   if (patch !== undefined) {
@@ -1267,7 +1345,12 @@ export function updateDoc(rootPath, slug, { frontmatter: patch, body, expectedMt
   const nextBody = body === undefined ? oldBody : body;
   const mintedUid = fillMissingUid(frontmatter, nextFm);
   assertNodeIdentity(rootPath, slug, nextFm);
-  commitDoc(rootPath, slug, filePath, nextFm, nextBody, { previousFrontmatter: frontmatter });
+  commitDoc(rootPath, slug, filePath, nextFm, nextBody, {
+    previousFrontmatter: frontmatter,
+    expectedRaw: doc.raw,
+    expectedMtime: doc.mtime,
+    beforeCommit,
+  });
   return { filePath, frontmatter: nextFm, mintedUid };
 }
 
@@ -1625,8 +1708,226 @@ function buildRefResolver(docs) {
  * @param {Array<{op:'write'|'delete', path:string, content?:string}>} plan
  * @returns {{applied:number}}
  */
-export function applyAllOrNothing(plan) {
+/**
+ * 파일 하나를 **끊기지 않게** 쓴다 — 임시 파일에 쓰고, 디스크에 확정하고, 이름을 바꾼다.
+ *
+ * ## 왜 (2026-08-16 검수)
+ *
+ * 종전에는 `writeFileSync` 하나였다. 그건 원본을 **먼저 비우고** 쓴다. 그
+ * 사이에 프로세스가 죽거나 디스크가 차면 사용자의 마크다운이 **잘린 채로**
+ * 남는다 — 그리고 그 파일은 방금 우리가 열어 준 그 폴더의 것이다.
+ *
+ * ⚠️ 이 저장소에는 안전한 쓰기가 **이미 있었다**(`cli/src/lib/agent-config.mjs`
+ * 의 `writeTextAtomically`). 그런데 쓰는 곳이 `.mcp.json` 과 `config.toml`
+ * 뿐이었다 — **설정 파일은 지키고 사용자 데이터는 안 지키는** 모양이었다.
+ *
+ * 이름 바꾸기(rename)는 같은 파일 시스템 안에서 원자적이다. 그래서 어느
+ * 순간에 죽어도 파일은 **옛 내용 아니면 새 내용**이지, 반쪽이 되지 않는다.
+ */
+function existingRegularFileMode(filePath) {
+  try {
+    const metadata = statSync(filePath);
+    return metadata.isFile() ? metadata.mode & 0o777 : null;
+  } catch (error) {
+    if (error?.code === 'ENOENT') return null;
+    throw error;
+  }
+}
+
+function fileMatchesExpectedRaw(filePath, expectedRaw) {
+  if (expectedRaw === undefined) return true;
+  try {
+    return readFileSync(filePath, 'utf-8') === expectedRaw;
+  } catch {
+    return false;
+  }
+}
+
+function entryChangedOnDisk(entry) {
+  if (entry.expectedAbsent === true) return existsSync(entry.path);
+  if (entry.expectedRaw !== undefined && !fileMatchesExpectedRaw(entry.path, entry.expectedRaw)) {
+    return true;
+  }
+  if (entry.expectedMtime === null || entry.expectedMtime === undefined) return false;
+  const current = getFileMtime(entry.path);
+  return current === null || Math.abs(current - entry.expectedMtime) >= 1;
+}
+
+function changedOnDiskError(paths) {
+  return new Error(
+    `Refused before writing anything: ${paths.length} file(s) changed on disk or were deleted since they `
+      + `were read, so this operation would overwrite someone else's edit:\n  `
+      + `${paths.join('\n  ')}\n`
+      + 'The vault is unchanged. Re-read those documents and run this again.',
+  );
+}
+
+export function writeFileAtomically(filePath, text, options = {}) {
+  const temporaryPath = `${filePath}.oatlas-tmp-${process.pid}`;
+  const existingMode = existingRegularFileMode(filePath);
+  let descriptor = null;
+  try {
+    descriptor = openSync(temporaryPath, 'wx');
+    // private 원본의 권한을 temp가 잠깐이라도 넓히지 않도록 내용보다 먼저 적용한다.
+    if (existingMode !== null) fchmodSync(descriptor, existingMode);
+    writeFileSync(descriptor, text, 'utf-8');
+    // 이름을 바꾸기 전에 디스크에 확정한다 — 안 하면 이름만 새것이고 내용은
+    // 아직 캐시에 있는 상태로 전원이 나갈 수 있다.
+    fsyncSync(descriptor);
+    closeSync(descriptor);
+    descriptor = null;
+    options.beforeCommit?.();
+    if (entryChangedOnDisk({
+      path: filePath,
+      expectedRaw: options.expectedRaw,
+      expectedAbsent: options.expectedAbsent,
+    })) {
+      if (options.conflictSlug) {
+        throw new VaultConflictError(
+          options.conflictSlug,
+          options.expectedMtime,
+          getFileMtime(filePath),
+        );
+      }
+      throw changedOnDiskError([filePath]);
+    }
+    renameSync(temporaryPath, filePath);
+  } finally {
+    if (descriptor !== null) {
+      try {
+        closeSync(descriptor);
+      } catch {
+        /* 이미 닫혔다 */
+      }
+    }
+    try {
+      // 성공하면 rename 이 가져갔으므로 여기서 지울 것이 없다. 실패했을 때만
+      // 임시 파일이 남고, 그건 원본을 건드리지 않고 치운다.
+      if (existsSync(temporaryPath)) unlinkSync(temporaryPath);
+    } catch {
+      /* 못 치워도 원본은 멀쩡하다 */
+    }
+  }
+}
+
+/**
+ * 두 경로가 **같은 파일을 가리키는가**를 비교할 열쇠.
+ *
+ * 이미 있는 파일이면 실제 경로(심볼릭 링크를 편 것)를 쓰고, 아직 없으면 경로
+ * 문자열을 쓴다. 대소문자를 구별하지 않는 파일 시스템(macOS 기본 · Windows)을
+ * 위해 소문자로 눕힌다 — 구별하는 시스템에서는 서로 다른 두 파일이 같은 열쇠를
+ * 갖게 되지만, 그 경우 손해는 「지우기 하나를 안 한 것」뿐이고 그건 데이터가
+ * 사라지는 쪽보다 언제나 낫다.
+ */
+function sameFileKey(path) {
+  try {
+    if (existsSync(path)) return realpathSync(path).toLowerCase();
+  } catch {
+    /* 실제 경로를 못 펴면 문자열로 간다 — 판정이 없는 것보다 낫다. */
+  }
+  return resolve(path).toLowerCase();
+}
+
+/** 아직 없는 쓰기 대상에서 가장 가까운 기존 부모. 사전점검은 절대 만들지 않는다. */
+function nearestExistingParent(path) {
+  let probe = dirname(path);
+  for (;;) {
+    if (existsSync(probe)) return probe;
+    const parent = dirname(probe);
+    if (parent === probe) return probe;
+    probe = parent;
+  }
+}
+
+/**
+ * 실제 적용 중에만 부모 디렉터리를 한 칸씩 만든다.
+ *
+ * `recursive:true`는 다른 프로세스가 경합으로 만든 디렉터리까지 우리가 만든
+ * 것으로 오인할 수 있다. 한 칸씩 EEXIST를 가르면 rollback이 소유한 것만 안다.
+ */
+function createMissingParents(path, createdDirectories) {
+  const missing = [];
+  let probe = dirname(path);
+  while (!existsSync(probe)) {
+    missing.push(probe);
+    const parent = dirname(probe);
+    if (parent === probe) break;
+    probe = parent;
+  }
+  for (const dir of missing.reverse()) {
+    try {
+      mkdirSync(dir);
+      createdDirectories.push(dir);
+    } catch (error) {
+      if (error?.code !== 'EEXIST') throw error;
+    }
+  }
+}
+
+export function applyAllOrNothing(plan, options = {}) {
   if (!Array.isArray(plan) || plan.length === 0) return { applied: 0 };
+
+  /*
+   * ⓪ **같은 파일을 쓰고 또 지우는 계획은 지우기를 뺀다.**
+   *
+   * 이름만 대소문자가 다른 rename 은 이 계획을 만든다:
+   *   write `capabilities/auth.md` · delete `capabilities/Auth.md`
+   * 그런데 macOS·Windows 의 파일 시스템은 그 둘을 **같은 파일**로 본다. 그래서
+   * 쓰고 나서 지우면 방금 쓴 그것이 지워진다 — 노드가 통째로 사라지고, 도구는
+   * 성공이라고 답한다(2026-08-16 검수에서 재현).
+   *
+   * 앞단(`rename_concept`)에서 그 경우를 거절하지만, 같은 계획을 만드는 도구가
+   * 셋(rename · merge · reclassify)이라 **쓰기 층에도** 막아 둔다. 문자열 비교로
+   * 못 잡는 것을 여기서는 **실제 경로**로 잡는다.
+   */
+  const writeTargets = new Set();
+  for (const entry of plan) {
+    if (entry.op !== 'write') continue;
+    writeTargets.add(sameFileKey(entry.path));
+  }
+  const safePlan = plan.filter(
+    (entry) => entry.op !== 'delete' || !writeTargets.has(sameFileKey(entry.path)),
+  );
+  if (safePlan.length !== plan.length) plan = safePlan;
+
+  if (options.requireRevisions === true) {
+    const missingRevisions = plan
+      .filter((entry) => {
+        if (existsSync(entry.path)) return entry.expectedRaw === undefined;
+        if (entry.op === 'write') return entry.expectedAbsent !== true;
+        return entry.expectedRaw === undefined;
+      })
+      .map((entry) => entry.path);
+    if (missingRevisions.length > 0) {
+      throw new Error(
+        `Refused before writing anything: ${missingRevisions.length} plan item(s) are missing snapshot revision data:\n  `
+          + `${missingRevisions.join('\n  ')}\nThe vault is unchanged. Rebuild the plan from fresh reads.`,
+      );
+    }
+  }
+
+  /*
+   * ⓪-b **남이 그 사이에 고쳤으면 한 글자도 안 쓴다.**
+   *
+   * ## 왜 (2026-08-16 검수)
+   *
+   * `expected_mtime` 검사는 **한 파일**을 고치는 길에만 있었다. 그런데 이 함수를
+   * 쓰는 셋(rename · merge · reclassify)은 참조하는 문서 N개를 **몇 분 전에 읽은
+   * 스냅샷**으로 다시 쓴다. 그 사이 사용자가 옵시디언에서 그중 하나를 고쳤으면
+   * 그 편집은 조용히 사라졌다 — 사람과 에이전트가 한 폴더를 같이 쓰는 것이
+   * 이 제품이 파는 바로 그 상황인데, 그 상황에서만 보호가 없었다.
+   *
+   * 계획을 만든 쪽이 각 항목에 `expectedMtime` 을 실어 보내면 여기서 본다.
+   * 안 실어 보내면 종전대로 검사하지 않는다(회귀 0) — 다만 그 자리는 이제
+   * 「안 넣은 것」이지 「없는 것」이 아니다.
+   */
+  const conflicts = [];
+  for (const entry of plan) {
+    if (entryChangedOnDisk(entry)) conflicts.push(entry.path);
+  }
+  if (conflicts.length > 0) {
+    throw changedOnDiskError(conflicts);
+  }
 
   // ① 사전 점검 — 한 글자도 쓰기 전에. 흔한 실패(읽기 전용 파일·잠긴 파일·
   //    읽기 전용 볼트)는 여기서 걸러져 되돌리기 자체가 필요 없어진다.
@@ -1637,8 +1938,7 @@ export function applyAllOrNothing(plan) {
       if (existsSync(entry.path)) {
         accessSync(entry.path, fsConstants.W_OK);
       } else if (entry.op === 'write') {
-        if (!existsSync(dir)) mkdirSync(dir, { recursive: true });
-        accessSync(dir, fsConstants.W_OK);
+        accessSync(nearestExistingParent(entry.path), fsConstants.W_OK);
       }
       if (entry.op === 'delete' && existsSync(entry.path)) {
         // 파일을 지우려면 **파일이 아니라 디렉터리**에 쓰기 권한이 있어야 한다.
@@ -1659,27 +1959,65 @@ export function applyAllOrNothing(plan) {
 
   // ② 적용 — 각 항목의 **직전 상태**를 들고 간다. 되돌릴 재료다.
   const done = [];
+  const createdDirectories = [];
   try {
-    for (const entry of plan) {
+    for (let index = 0; index < plan.length; index += 1) {
+      const entry = plan[index];
+      options.beforeApplyEntry?.(index, entry);
+      if (entryChangedOnDisk(entry)) throw changedOnDiskError([entry.path]);
       const existed = existsSync(entry.path);
       const before = existed ? readFileSync(entry.path, 'utf-8') : null;
       if (entry.op === 'write') {
-        mkdirSync(dirname(entry.path), { recursive: true });
-        writeFileSync(entry.path, entry.content, 'utf-8');
+        createMissingParents(entry.path, createdDirectories);
+        writeFileAtomically(entry.path, entry.content, {
+          expectedRaw: existed ? before : undefined,
+          expectedAbsent: !existed,
+        });
       } else {
-        if (existed) unlinkSync(entry.path);
+        if (existed) {
+          if (!fileMatchesExpectedRaw(entry.path, before)) throw changedOnDiskError([entry.path]);
+          unlinkSync(entry.path);
+        }
       }
-      done.push({ path: entry.path, existed, before });
+      done.push({
+        path: entry.path,
+        op: entry.op,
+        existed,
+        before,
+        after: entry.op === 'write' ? entry.content : null,
+      });
     }
     return { applied: done.length };
   } catch (error) {
     const unrecovered = [];
     for (const step of done.reverse()) {
       try {
-        if (step.existed) writeFileSync(step.path, step.before, 'utf-8');
-        else if (existsSync(step.path)) unlinkSync(step.path);
+        if (step.op === 'write') {
+          if (!fileMatchesExpectedRaw(step.path, step.after)) {
+            unrecovered.push(step.path);
+            continue;
+          }
+          if (step.existed) {
+            writeFileAtomically(step.path, step.before, { expectedRaw: step.after });
+          } else if (existsSync(step.path)) {
+            unlinkSync(step.path);
+          }
+        } else if (step.existed) {
+          if (existsSync(step.path)) {
+            unrecovered.push(step.path);
+            continue;
+          }
+          writeFileAtomically(step.path, step.before, { expectedAbsent: true });
+        }
       } catch {
         unrecovered.push(step.path);
+      }
+    }
+    for (const dir of createdDirectories.reverse()) {
+      try {
+        rmdirSync(dir);
+      } catch (rollbackError) {
+        if (rollbackError?.code !== 'ENOENT') unrecovered.push(dir);
       }
     }
     const reason = error?.message ?? String(error);
@@ -1869,12 +2207,25 @@ export function redirectBacklinks(rootPath, targetSlug, nextSlug, options = {}) 
       op: 'write',
       path: filePath,
       content: buildMarkdown({ frontmatter: nextFm, body: nextBody }),
+      /*
+       * **읽은 시점을 같이 들고 간다** (2026-08-16 검수).
+       *
+       * 이 문서는 몇 초~몇 분 전에 읽은 스냅샷이다. 그 사이 사용자가 자기
+       * 편집기에서 이 파일을 고쳤으면, 여기서 그대로 쓰는 순간 그 편집이
+       * 사라진다. 쓰기 직전에 이 값과 디스크를 대조한다.
+       */
+      expectedMtime: doc.mtime,
+      expectedRaw: doc.raw,
     });
   }
 
-  if (!dryRun && !deferWrite) applyAllOrNothing(plan);
+  if (!dryRun && !deferWrite) applyAllOrNothing(plan, { requireRevisions: true });
 
-  return { updates, totalUpdated: updates.length, plan };
+  return {
+    updates,
+    totalUpdated: updates.length,
+    ...(deferWrite ? { plan } : {}),
+  };
 }
 
 function docTitle(doc) {

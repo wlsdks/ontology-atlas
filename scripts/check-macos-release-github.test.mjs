@@ -15,9 +15,22 @@ const APP_TAG_PATTERN = APP_TAG.replace(/\./g, "\\.");
 const requiredSecrets = [
   "APPLE_CERTIFICATE_P12_BASE64",
   "APPLE_CERTIFICATE_PASSWORD",
-  "APPLE_ID",
-  "APPLE_APP_SPECIFIC_PASSWORD",
-  "APPLE_TEAM_ID",
+  "APPLE_API_KEY_P8_BASE64",
+  "APPLE_API_KEY_ID",
+  "APPLE_API_ISSUER_ID",
+  "TAURI_SIGNING_PRIVATE_KEY",
+  "TAURI_SIGNING_PRIVATE_KEY_PASSWORD",
+];
+const environmentSecrets = [
+  "APPLE_API_KEY_P8_BASE64",
+  "APPLE_API_KEY_ID",
+  "APPLE_API_ISSUER_ID",
+];
+const repositorySecrets = [
+  "APPLE_CERTIFICATE_P12_BASE64",
+  "APPLE_CERTIFICATE_PASSWORD",
+  "TAURI_SIGNING_PRIVATE_KEY",
+  "TAURI_SIGNING_PRIVATE_KEY_PASSWORD",
 ];
 function writeFakeGh(root, scenario) {
   const binPath = join(root, "fake-gh.mjs");
@@ -33,6 +46,55 @@ function err(value) {
   process.stderr.write(value);
 }
 if (args[0] === "auth" && args[1] === "status") {
+  process.exit(0);
+}
+if (args[0] === "repo" && args[1] === "view") {
+  out("main");
+  process.exit(0);
+}
+if (args[0] === "api" && args[1] === "repos/wlsdks/ontology-atlas/environments/release-signing") {
+  if (scenario.environmentMissing) {
+    err("HTTP 404: Not Found");
+    process.exit(1);
+  }
+  out({
+    name: "release-signing",
+    can_admins_bypass: scenario.environmentAdminBypass ?? false,
+    protection_rules: scenario.environmentReviewers
+      ? [{ type: "required_reviewers", reviewers: [{ type: "User", reviewer: { login: "owner" } }] }]
+      : [],
+    deployment_branch_policy: {
+      protected_branches: false,
+      custom_branch_policies: true,
+    },
+  });
+  process.exit(0);
+}
+if (args[0] === "api" && args[1] === "repos/wlsdks/ontology-atlas/environments/release-signing/deployment-branch-policies") {
+  out({
+    branch_policies: [
+      ...(scenario.environmentBranches ?? ["main"]).map((name) => ({ name, type: "branch" })),
+      ...(scenario.environmentTags ?? []).map((name) => ({ name, type: "tag" })),
+    ],
+  });
+  process.exit(0);
+}
+if (args[0] === "api" && args[1] === "repos/wlsdks/ontology-atlas/environments/release") {
+  out({
+    name: "release",
+    can_admins_bypass: scenario.publicationAdminBypass ?? false,
+    protection_rules: scenario.publicationReviewers === false
+      ? []
+      : [{ type: "required_reviewers", reviewers: [{ type: "User", reviewer: { login: "owner" } }] }],
+    deployment_branch_policy: { protected_branches: false, custom_branch_policies: true },
+  });
+  process.exit(0);
+}
+if (args[0] === "api" && args[1] === "repos/wlsdks/ontology-atlas/environments/release/deployment-branch-policies") {
+  out({ branch_policies: [
+    ...(scenario.publicationBranches ?? ["main"]).map((name) => ({ name, type: "branch" })),
+    ...(scenario.publicationTags ?? []).map((name) => ({ name, type: "tag" })),
+  ] });
   process.exit(0);
 }
 if (args[0] === "api" && args[1]?.startsWith("repos/wlsdks/ontology-atlas/actions/workflows/")) {
@@ -52,7 +114,9 @@ if (args[0] === "api" && args[1]?.startsWith("repos/wlsdks/ontology-atlas/git/re
   process.exit(1);
 }
 if (args[0] === "secret" && args[1] === "list") {
-  const names = scenario.secretNames ?? ${JSON.stringify(requiredSecrets)};
+  const names = args.includes("--env")
+    ? (scenario.secretNames ?? ${JSON.stringify(environmentSecrets)})
+    : (scenario.repoSecretNames ?? ${JSON.stringify(repositorySecrets)});
   out(names.map((name) => ({ name })));
   process.exit(0);
 }
@@ -127,7 +191,7 @@ test("desktop GitHub release gate proves workflows, secrets, tag version, and cl
     const result = runReleaseGithub(fakeGhPath, fakeGitPath);
 
     assert.equal(result.status, 0, result.stderr);
-    assert.match(result.stdout, /has the active macOS release workflow and all required Developer ID direct-download secret names/);
+    assert.match(result.stdout, /all required split-scope signing secret names/);
     assert.match(result.stdout, new RegExp(`${APP_TAG_PATTERN} matches package, Tauri, and Cargo versions`));
     assert.match(result.stdout, new RegExp(`${APP_TAG_PATTERN} has no existing local Git tag`));
     assert.match(result.stdout, new RegExp(`${APP_TAG_PATTERN} has no existing Git tag`));
@@ -135,16 +199,138 @@ test("desktop GitHub release gate proves workflows, secrets, tag version, and cl
   });
 });
 
+test("desktop GitHub release gate accepts API credentials in release-signing and legacy signing material at repository scope", () => {
+  withFakeGh(
+    { secretNames: environmentSecrets, repoSecretNames: repositorySecrets },
+    (fakeGhPath, fakeGitPath) => {
+      const result = runReleaseGithub(fakeGhPath, fakeGitPath);
+
+      assert.equal(result.status, 0, result.stderr);
+      assert.match(result.stdout, /protected release-signing environment/);
+    },
+  );
+});
+
 test("desktop GitHub release gate fails before tag push when Developer ID direct-download secret names are missing", () => {
-  withFakeGh({ secretNames: requiredSecrets.filter((name) => name !== "APPLE_TEAM_ID") }, (fakeGhPath, fakeGitPath) => {
+  withFakeGh({ secretNames: requiredSecrets.filter((name) => name !== "APPLE_API_ISSUER_ID") }, (fakeGhPath, fakeGitPath) => {
     const result = runReleaseGithub(fakeGhPath, fakeGitPath);
 
     assert.equal(result.status, 1);
-    assert.match(result.stderr, /missing GitHub Actions secrets/);
+    assert.match(result.stderr, /missing release-signing environment secrets/);
     assert.match(result.stderr, /direct-download DMGs \(not Mac App Store submission\)/);
-    assert.match(result.stderr, /APPLE_TEAM_ID/);
-    assert.match(result.stderr, /gh secret set APPLE_TEAM_ID --repo wlsdks\/ontology-atlas/);
+    assert.match(result.stderr, /APPLE_API_ISSUER_ID/);
+    assert.match(result.stderr, /gh secret set APPLE_API_ISSUER_ID --env release-signing --repo wlsdks\/ontology-atlas/);
   });
+});
+
+test("desktop GitHub release gate requires the retained certificate and updater repository secrets", () => {
+  withFakeGh({ repoSecretNames: repositorySecrets.slice(0, -1) }, (fakeGhPath, fakeGitPath) => {
+    const result = runReleaseGithub(fakeGhPath, fakeGitPath);
+
+    assert.equal(result.status, 1);
+    assert.match(result.stderr, /missing required repository signing secrets/);
+    assert.match(result.stderr, /TAURI_SIGNING_PRIVATE_KEY_PASSWORD/);
+  });
+});
+
+test("desktop GitHub release gate rejects obsolete Apple ID repository secrets", () => {
+  withFakeGh({
+    repoSecretNames: [...repositorySecrets, "APPLE_ID"],
+  }, (fakeGhPath, fakeGitPath) => {
+    const result = runReleaseGithub(fakeGhPath, fakeGitPath);
+
+    assert.equal(result.status, 1);
+    assert.match(result.stderr, /obsolete or over-scoped repository signing secrets remain/);
+    assert.match(result.stderr, /gh secret delete APPLE_ID --repo wlsdks\/ontology-atlas/);
+  });
+});
+
+test("desktop GitHub release gate allows obsolete Apple ID names only for one proven transition release", () => {
+  withFakeGh({
+    repoSecretNames: [
+      ...repositorySecrets,
+      "APPLE_ID",
+      "APPLE_APP_SPECIFIC_PASSWORD",
+      "APPLE_TEAM_ID",
+    ],
+  }, (fakeGhPath, fakeGitPath) => {
+    const result = runReleaseGithub(fakeGhPath, fakeGitPath, [
+      `--tag=${APP_TAG}`,
+      "--allow-obsolete-repository-secrets",
+    ]);
+
+    assert.equal(result.status, 0, result.stderr);
+    assert.match(result.stderr, /transition release only/);
+    assert.match(result.stderr, /not referenced by release-macos\.yml/);
+    assert.match(result.stderr, /delete them only after this release passes/);
+    assert.match(result.stderr, /gh secret delete APPLE_ID --repo wlsdks\/ontology-atlas/);
+  });
+});
+
+test("desktop GitHub release gate rejects API credential copies at repository scope", () => {
+  withFakeGh({
+    repoSecretNames: [...repositorySecrets, "APPLE_API_KEY_ID"],
+  }, (fakeGhPath, fakeGitPath) => {
+    const result = runReleaseGithub(fakeGhPath, fakeGitPath);
+
+    assert.equal(result.status, 1);
+    assert.match(result.stderr, /over-scoped repository API secrets remain/);
+    assert.match(result.stderr, /gh secret delete APPLE_API_KEY_ID --repo wlsdks\/ontology-atlas/);
+  });
+});
+
+test("desktop GitHub release transition never allows API credential copies at repository scope", () => {
+  withFakeGh({
+    repoSecretNames: [...repositorySecrets, "APPLE_API_KEY_ID"],
+  }, (fakeGhPath, fakeGitPath) => {
+    const result = runReleaseGithub(fakeGhPath, fakeGitPath, [
+      `--tag=${APP_TAG}`,
+      "--allow-obsolete-repository-secrets",
+    ]);
+
+    assert.equal(result.status, 1);
+    assert.match(result.stderr, /over-scoped repository API secrets remain/);
+    assert.match(result.stderr, /gh secret delete APPLE_API_KEY_ID --repo wlsdks\/ontology-atlas/);
+  });
+});
+
+test("desktop GitHub release gate requires release-signing to admit only main", () => {
+  withFakeGh({ environmentBranches: ["main", "release/*"] }, (fakeGhPath, fakeGitPath) => {
+    const result = runReleaseGithub(fakeGhPath, fakeGitPath);
+
+    assert.equal(result.status, 1);
+    assert.match(result.stderr, /release-signing must allow exactly the default branch main/);
+  });
+});
+
+test("desktop GitHub release gate rejects admin bypass and signing-stage reviewers", () => {
+  for (const scenario of [
+    { environmentAdminBypass: true },
+    { environmentReviewers: true },
+    { environmentTags: ["v*"] },
+  ]) {
+    withFakeGh(scenario, (fakeGhPath, fakeGitPath) => {
+      const result = runReleaseGithub(fakeGhPath, fakeGitPath);
+
+      assert.equal(result.status, 1);
+      assert.match(result.stderr, /release-signing/);
+    });
+  }
+});
+
+test("desktop GitHub release gate keeps publication behind reviewed main-only release environment", () => {
+  for (const scenario of [
+    { publicationAdminBypass: true },
+    { publicationReviewers: false },
+    { publicationBranches: ["main", "release/*"] },
+    { publicationTags: ["v*"] },
+  ]) {
+    withFakeGh(scenario, (fakeGhPath, fakeGitPath) => {
+      const result = runReleaseGithub(fakeGhPath, fakeGitPath);
+      assert.equal(result.status, 1);
+      assert.match(result.stderr, /release/);
+    });
+  }
 });
 
 test("desktop GitHub release gate explains that a PR-only workflow cannot receive tag pushes yet", () => {
@@ -198,5 +384,5 @@ test("desktop GitHub release gate help lists every required Developer ID direct-
   }
   assert.doesNotMatch(stdout, /FIREBASE_SERVICE_ACCOUNT_JSON/);
   assert.doesNotMatch(stdout, /Firebase/);
-  assert.match(stdout, /hosted website deploy is intentionally excluded/);
-});
+    assert.match(stdout, /hosted website deploy is intentionally excluded/);
+  });

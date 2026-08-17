@@ -47,6 +47,7 @@ export {
 } from "./lib/relation-quality";
 export { translateOntologyDeeplinkToTopologyParam } from "./lib/translate-ontology-deeplink";
 export { deriveCodeLocations } from "./lib/code-locations";
+export { buildChatNodeIndex } from "./lib/chat-node-index";
 export { isEvidenceOnlyConcept, resolveNodeDocument } from "./lib/node-document";
 export {
   resolveNodeAgentTarget,

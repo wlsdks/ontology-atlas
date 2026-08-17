@@ -668,19 +668,23 @@ describe('verify.mjs first-contact gates', () => {
       wouldChange: { type: 'boolean' },
       blockedReasons: { type: 'array', items: nonBlankStringSchema },
     };
-    const nonBlankStringOrArraySchema = {
-      type: ['array', 'string'],
+    const backlinkValueSchema = {
+      type: ['array', 'object', 'string'],
       minLength: 1,
+      minItems: 1,
+      minProperties: 1,
       pattern: '^(?!\\s)(?!.*\\s$)(?!.*\\u0000).+$',
       items: nonBlankStringSchema,
+      propertyNames: nonBlankStringSchema,
+      additionalProperties: nonBlankStringSchema,
     };
     const backlinkKeyChangeSchema = {
       type: 'object',
       required: ['key'],
       properties: {
         key: nonBlankStringSchema,
-        before: nonBlankStringOrArraySchema,
-        after: nonBlankStringOrArraySchema,
+        before: backlinkValueSchema,
+        after: backlinkValueSchema,
       },
       additionalProperties: false,
     };
@@ -2577,17 +2581,28 @@ describe('verify.mjs first-contact gates', () => {
               type: 'array',
               items: {
                 type: 'object',
-                required: ['uid', 'slug', 'kind', 'title', 'mtime', 'matchedIn', 'score', 'excerpt'],
+                required: ['slug', 'isNode', 'title', 'mtime', 'matchedIn', 'score', 'excerpt'],
                 properties: {
                   uid: { type: 'string', pattern: NODE_UID_PATTERN },
                   slug: { type: 'string' },
                   kind: { type: 'string' },
+                  isNode: { type: 'boolean' },
                   title: { type: 'string' },
                   mtime: { type: 'number', minimum: 0 },
                   matchedIn: { enum: ['frontmatter', 'body'] },
                   score: { type: 'number', minimum: 0 },
                   excerpt: { type: 'string' },
                 },
+                oneOf: [
+                  {
+                    properties: { isNode: { const: true } },
+                    required: ['uid', 'kind'],
+                  },
+                  {
+                    properties: { isNode: { const: false } },
+                    not: { anyOf: [{ required: ['uid'] }, { required: ['kind'] }] },
+                  },
+                ],
                 additionalProperties: false,
               },
             },
@@ -4637,6 +4652,27 @@ describe('verify.mjs first-contact gates', () => {
         },
       ]),
       'find_evidence outputSchema match matchedIn drift',
+    );
+    assert.equal(
+      toolsListSchemaFailure(withFindEvidenceTool(
+        {
+          ...findEvidenceTool,
+          outputSchema: {
+            ...findEvidenceTool.outputSchema,
+            properties: {
+              ...findEvidenceTool.outputSchema.properties,
+              matches: {
+                ...findEvidenceTool.outputSchema.properties.matches,
+                items: {
+                  ...findEvidenceTool.outputSchema.properties.matches.items,
+                  oneOf: [],
+                },
+              },
+            },
+          },
+        },
+      )),
+      'find_evidence outputSchema match identity drift',
     );
     assert.equal(
       toolsListSchemaFailure([
@@ -6721,6 +6757,57 @@ describe('verify.mjs first-contact gates', () => {
       }, 'rename_concept'),
       null,
     );
+    const renamePayloadWithRelationNotes = {
+      ...renamePayload,
+      backlinkUpdates: {
+        totalUpdated: 1,
+        updates: [
+          {
+            slug: 'ref',
+            title: 'Ref',
+            beforeKeys: [{ key: 'relation_notes', before: { old: 'Starts the local MCP process' } }],
+            afterKeys: [{ key: 'relation_notes', after: { new: 'Starts the local MCP process' } }],
+            bodyChanged: false,
+          },
+        ],
+      },
+    };
+    assert.equal(
+      destructiveDryRunFailure({
+        result: {
+          content: [{ text: JSON.stringify(renamePayloadWithRelationNotes) }],
+          structuredContent: renamePayloadWithRelationNotes,
+        },
+      }, 'rename_concept'),
+      null,
+    );
+    for (const invalidBefore of [
+      {},
+      { old: ' ' },
+      { old: { nested: 'not a rationale string' } },
+    ]) {
+      const malformedMapPayload = {
+        ...renamePayloadWithRelationNotes,
+        backlinkUpdates: {
+          totalUpdated: 1,
+          updates: [
+            {
+              ...renamePayloadWithRelationNotes.backlinkUpdates.updates[0],
+              beforeKeys: [{ key: 'relation_notes', before: invalidBefore }],
+            },
+          ],
+        },
+      };
+      assert.equal(
+        destructiveDryRunFailure({
+          result: {
+            content: [{ text: JSON.stringify(malformedMapPayload) }],
+            structuredContent: malformedMapPayload,
+          },
+        }, 'rename_concept'),
+        'rename_concept dry-run response backlinkUpdates.updates[0].beforeKeys[0] before drift',
+      );
+    }
     const renamePayloadWithUpdate = {
       ...renamePayload,
       backlinkUpdates: {
@@ -8643,7 +8730,27 @@ Continue.`;
     assert.equal(
       findEvidenceFailure({
         query: 'project',
-        matches: [{ ...match, matchedIn: 'frontmatter', excerpt: 'Project overview.' }],
+        matches: [{
+          ...match,
+          uid: '11111111-1111-4111-8111-111111111111',
+          isNode: true,
+          matchedIn: 'frontmatter',
+          excerpt: 'Project overview.',
+        }],
+      }),
+      null,
+    );
+    assert.equal(
+      findEvidenceFailure({
+        query: 'project',
+        matches: [{
+          slug: 'AGENTS',
+          isNode: false,
+          title: 'AGENTS',
+          mtime: 1,
+          matchedIn: 'body',
+          excerpt: 'Project instructions.',
+        }],
       }),
       null,
     );
@@ -9215,7 +9322,56 @@ Continue.`;
     };
     assert.equal(findEvidenceFailure({ matches: [] }), 'find_evidence response missing query');
     assert.equal(
-      findEvidenceFailure({ query: 'project', matches: [{ ...match, matchedIn: 'unknown', excerpt: '' }] }),
+      findEvidenceFailure({ query: 'project', matches: [{ ...match, matchedIn: 'frontmatter', excerpt: '' }] }),
+      'find_evidence response missing isNode: project',
+    );
+    assert.equal(
+      findEvidenceFailure({
+        query: 'project',
+        matches: [{ ...match, isNode: true, matchedIn: 'frontmatter', excerpt: '' }],
+      }),
+      'find_evidence response missing node uid: project',
+    );
+    assert.equal(
+      findEvidenceFailure({
+        query: 'project',
+        matches: [{
+          ...match,
+          uid: '11111111-1111-4111-8111-111111111111',
+          isNode: true,
+          kind: undefined,
+          matchedIn: 'frontmatter',
+          excerpt: '',
+        }],
+      }),
+      'find_evidence response missing node kind: project',
+    );
+    assert.equal(
+      findEvidenceFailure({
+        query: 'project',
+        matches: [{
+          slug: 'AGENTS',
+          uid: '11111111-1111-4111-8111-111111111111',
+          isNode: false,
+          title: 'AGENTS',
+          mtime: 1,
+          matchedIn: 'body',
+          excerpt: '',
+        }],
+      }),
+      'find_evidence response non-node exposes graph identity: AGENTS',
+    );
+    assert.equal(
+      findEvidenceFailure({
+        query: 'project',
+        matches: [{
+          ...match,
+          uid: '11111111-1111-4111-8111-111111111111',
+          isNode: true,
+          matchedIn: 'unknown',
+          excerpt: '',
+        }],
+      }),
       'find_evidence response missing matchedIn: project',
     );
     assert.equal(
@@ -10865,17 +11021,17 @@ Continue.`;
         'Run relation_check before add_relation.',
       ].join('\n'),
       cliFallbackCommands: [
-        'ontology-atlas workspace-brief [vault]',
-        'ontology-atlas facets [vault] --limit 10',
-        'ontology-atlas schema [vault] --limit 20',
-        'ontology-atlas hubs [vault] --plan --limit 10 --types depends_on,relates',
-        'ontology-atlas domain-matrix [vault] --limit 10',
-        'ontology-atlas match-nodes [vault] --plan --kind capability --min-degree 2 --sort degree --limit 10',
-        'ontology-atlas match-edges [vault] --plan --types depends_on --limit 20',
-        'ontology-atlas all-paths capability:mcp-server domain:ai-agent-partner [vault] --plan --max-hops 3 --force',
-        'ontology-atlas pattern-walk project:app [vault] --pattern domains,capabilities',
-        'ontology-atlas project-map project:app [vault]',
-        'ontology-atlas explain capability:mcp-server domain:ai-agent-partner [vault] --direction undirected',
+        'node /abs/cli/src/index.mjs workspace-brief [vault]',
+        'node /abs/cli/src/index.mjs facets [vault] --limit 10',
+        'node /abs/cli/src/index.mjs schema [vault] --limit 20',
+        'node /abs/cli/src/index.mjs hubs [vault] --plan --limit 10 --types depends_on,relates',
+        'node /abs/cli/src/index.mjs domain-matrix [vault] --limit 10',
+        'node /abs/cli/src/index.mjs match-nodes [vault] --plan --kind capability --min-degree 2 --sort degree --limit 10',
+        'node /abs/cli/src/index.mjs match-edges [vault] --plan --types depends_on --limit 20',
+        'node /abs/cli/src/index.mjs all-paths capability:mcp-server domain:ai-agent-partner [vault] --plan --max-hops 3 --force',
+        'node /abs/cli/src/index.mjs pattern-walk project:app [vault] --pattern domains,capabilities',
+        'node /abs/cli/src/index.mjs project-map project:app [vault]',
+        'node /abs/cli/src/index.mjs explain capability:mcp-server domain:ai-agent-partner [vault] --direction undirected',
       ],
       health: {
         checks: [{ id: 'compile_issues', status: 'pass', count: 0, message: 'ok' }],
@@ -11188,11 +11344,20 @@ Continue.`;
       'agent_brief response missing cliFallbackCommands',
     );
     assert.equal(
-      agentBriefFailure({ ...payload, cliFallbackCommands: ['node cli/src/index.mjs health'] }),
+      agentBriefFailure({ ...payload, cliFallbackCommands: ['node health'] }),
       'agent_brief response missing cliFallbackCommands',
     );
     assert.equal(
       agentBriefFailure({ ...payload, cliFallbackCommands: ['ontology-atlas workspace-brief [vault]'] }),
+      'agent_brief response missing cliFallbackCommands',
+    );
+    assert.equal(
+      // 2026-08-17: 계약이 뒤집혔다 — 이제 **맨몸 이름**이 거절된다(실행 불가).
+      agentBriefFailure({ ...payload, cliFallbackCommands: ['ontology-atlas health'] }),
+      'agent_brief response missing cliFallbackCommands',
+    );
+    assert.equal(
+      agentBriefFailure({ ...payload, cliFallbackCommands: ["node '/tmp/ontology atlas/cli/src/index.mjs' workspace-brief [vault]"] }),
       'agent_brief cliFallbackCommands missing centrality plan fallback',
     );
     assert.equal(

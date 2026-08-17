@@ -81,7 +81,11 @@ export function UpdateToast({ phase, onInstall, onRestart, onDismiss }: UpdateTo
       data-testid="app-update-toast"
       data-phase={phase.kind}
       className={cn(
-        'pointer-events-auto fixed bottom-4 right-4 z-50 w-[min(22rem,calc(100vw-2rem))]',
+        // 알림과 **같은 계약**을 탄다 — 화면 오른쪽에 도크가 서면 그만큼
+        // 비켜서고, 지도 우하단 계기 위에도 앉지 않는다(2026-08-16 검수:
+        // 이것만 두 오프셋을 다 무시하고 작성 칸 위에 그대로 앉았다).
+        'pointer-events-auto fixed bottom-[var(--app-toast-bottom-offset,16px)]',
+        'right-[var(--app-toast-right-offset,16px)] z-50 w-[min(22rem,calc(100vw-2rem))]',
         'flex flex-col items-start gap-2 rounded-card border border-[color:var(--color-border-strong)]',
         'bg-[color:var(--color-elevated)] p-3 shadow-[var(--shadow-elevation-2)]',
       )}

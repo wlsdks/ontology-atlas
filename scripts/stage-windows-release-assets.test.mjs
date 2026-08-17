@@ -29,6 +29,47 @@ test('stages one NSIS installer under a deterministic public name with SHA-256',
   );
 });
 
+test('stages the exact installer bytes that were hashed even if the source changes', () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'atlas-windows-stage-swap-'));
+  const bundleDir = path.join(root, 'bundle');
+  const nsisDir = path.join(bundleDir, 'nsis');
+  const outDir = path.join(root, 'release-upload');
+  const sourcePath = path.join(nsisDir, 'Ontology Atlas_1.2.3_x64-setup.exe');
+  const originalBytes = Buffer.from('installer-bytes-that-were-hashed');
+  const replacementBytes = Buffer.from('installer-bytes-swapped-after-hash');
+  fs.mkdirSync(nsisDir, { recursive: true });
+  fs.writeFileSync(sourcePath, originalBytes);
+
+  // 해시가 끝난 직후 소스를 바꿔 두 읽기 사이의 교체를 결정적으로 재현한다.
+  // 새 구현에서도 교체가 실제 일어났는지 아래에서 확인해 빈 통과를 막는다.
+  const createHash = crypto.createHash;
+  crypto.createHash = (...args) => {
+    const hash = createHash(...args);
+    const digest = hash.digest.bind(hash);
+    hash.digest = (...digestArgs) => {
+      const value = digest(...digestArgs);
+      fs.writeFileSync(sourcePath, replacementBytes);
+      return value;
+    };
+    return hash;
+  };
+  try {
+    stageWindowsReleaseAssets({ bundleDir, outDir, version: '1.2.3' });
+  } finally {
+    crypto.createHash = createHash;
+  }
+
+  const publicName = windowsInstallerName('1.2.3');
+  const stagedBytes = fs.readFileSync(path.join(outDir, publicName));
+  const checksum = fs.readFileSync(path.join(outDir, `${publicName}.sha256`), 'utf8');
+  const stagedSha = crypto.createHash('sha256').update(stagedBytes).digest('hex');
+
+  assert.deepEqual(fs.readFileSync(sourcePath), replacementBytes, 'fixture did not swap the source');
+  assert.deepEqual(stagedBytes, originalBytes);
+  assert.equal(checksum, `${stagedSha}  ${publicName}\n`);
+  fs.rmSync(root, { recursive: true, force: true });
+});
+
 test('fails closed when the NSIS output is missing or ambiguous', () => {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), 'atlas-windows-stage-'));
   const bundleDir = path.join(root, 'bundle');

@@ -20,16 +20,15 @@
 //
 // `cli/src/commands/moment.mjs` is the human-facing surface for this file.
 
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
-import { dirname, join } from 'node:path';
+import {
+  readVaultSidecarText,
+  replaceVaultSidecarText,
+} from './vault-sidecar.mjs';
 
 export const TELEMETRY_RELATIVE_PATH = '.ontology-atlas/telemetry.local.json';
+const TELEMETRY_FILENAME = 'telemetry.local.json';
 // North star (PRODUCT-PLAN-2026-07.md §4): moment reached within 5 minutes.
 export const MOMENT_TARGET_MS = 5 * 60 * 1000;
-
-function telemetryPath(vaultRoot) {
-  return join(vaultRoot, TELEMETRY_RELATIVE_PATH);
-}
 
 function defaultTelemetry() {
   return {
@@ -40,35 +39,53 @@ function defaultTelemetry() {
   };
 }
 
-export function readTelemetry(vaultRoot) {
-  const filePath = telemetryPath(vaultRoot);
-  if (!existsSync(filePath)) return defaultTelemetry();
+function readTelemetryState(vaultRoot) {
+  let stored;
   try {
-    const parsed = JSON.parse(readFileSync(filePath, 'utf-8'));
-    if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) return defaultTelemetry();
-    return { ...defaultTelemetry(), ...parsed };
+    stored = readVaultSidecarText(vaultRoot, TELEMETRY_FILENAME);
+  } catch (error) {
+    return { telemetry: defaultTelemetry(), revision: null, error };
+  }
+  if (!stored) return { telemetry: defaultTelemetry(), revision: null, error: null };
+  try {
+    const parsed = JSON.parse(stored.text);
+    const telemetry = !parsed || typeof parsed !== 'object' || Array.isArray(parsed)
+      ? defaultTelemetry()
+      : { ...defaultTelemetry(), ...parsed };
+    return { telemetry, revision: stored.revision, error: null };
   } catch {
-    return defaultTelemetry();
+    return { telemetry: defaultTelemetry(), revision: stored.revision, error: null };
   }
 }
 
-function writeTelemetry(vaultRoot, telemetry) {
-  const filePath = telemetryPath(vaultRoot);
-  mkdirSync(dirname(filePath), { recursive: true });
-  writeFileSync(filePath, `${JSON.stringify(telemetry, null, 2)}\n`, 'utf-8');
+export function readTelemetry(vaultRoot) {
+  return readTelemetryState(vaultRoot).telemetry;
+}
+
+function writeTelemetry(vaultRoot, telemetry, expectedRevision) {
+  replaceVaultSidecarText(
+    vaultRoot,
+    TELEMETRY_FILENAME,
+    `${JSON.stringify(telemetry, null, 2)}\n`,
+    { expectedRevision },
+  );
   return telemetry;
 }
 
 export function stampInitCompleted(vaultRoot, at = new Date().toISOString()) {
-  const telemetry = readTelemetry(vaultRoot);
+  const current = readTelemetryState(vaultRoot);
+  if (current.error) throw current.error;
+  const telemetry = current.telemetry;
   telemetry.initCompletedAt = at;
-  return writeTelemetry(vaultRoot, telemetry);
+  return writeTelemetry(vaultRoot, telemetry, current.revision);
 }
 
 export function stampAbsorbWriteCompleted(vaultRoot, at = new Date().toISOString()) {
-  const telemetry = readTelemetry(vaultRoot);
+  const current = readTelemetryState(vaultRoot);
+  if (current.error) throw current.error;
+  const telemetry = current.telemetry;
   telemetry.absorbWriteCompletedAt = at;
-  return writeTelemetry(vaultRoot, telemetry);
+  return writeTelemetry(vaultRoot, telemetry, current.revision);
 }
 
 function baselineMsFromTelemetry(telemetry) {
@@ -84,14 +101,16 @@ function baselineMsFromTelemetry(telemetry) {
 // re-running an agent-facing read after the moment has already fired never
 // overwrites the original measurement.
 export function stampMomentIfFirst(vaultRoot, { source, at = new Date().toISOString() } = {}) {
-  const telemetry = readTelemetry(vaultRoot);
+  const current = readTelemetryState(vaultRoot);
+  if (current.error) throw current.error;
+  const telemetry = current.telemetry;
   if (telemetry.moment) return telemetry;
   const baselineMs = baselineMsFromTelemetry(telemetry);
   const momentMs = Date.parse(at);
   const elapsedMs =
     baselineMs !== null && Number.isFinite(momentMs) ? Math.max(0, momentMs - baselineMs) : null;
   telemetry.moment = { at, source: source || 'unknown', elapsedMs };
-  return writeTelemetry(vaultRoot, telemetry);
+  return writeTelemetry(vaultRoot, telemetry, current.revision);
 }
 
 export function momentSummary(vaultRoot) {

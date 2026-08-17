@@ -53,6 +53,7 @@ paths:
 | 키체인 | `src/shared/lib/tauri-secrets.ts` | 브라우저가 원리적으로 못 함 → 강등 카드 |
 | LLM 호출 | `src/shared/lib/tauri-llm.ts` | 브라우저가 원리적으로 못 함 → 버튼 자체를 안 그림 |
 | 에이전트 연결 | `src/shared/lib/tauri-agent-setup.ts` | 절대 경로가 없어 바로 쓸 수 있는 설정을 못 만듦 → 강등 카드 |
+| **실행기(ACP)** | `src/shared/lib/tauri-acp.ts` + `src-tauri/src/acp.rs` | 브라우저는 프로그램을 띄울 권한이 없다 → 강등 카드. **단 「에이전트를 못 붙인다」가 아니다** — 사용자가 자기 쪽에서 띄운 에이전트를 이 폴더에 붙이는 길(「내 에이전트 연결」)은 웹에도 있다 |
 | **폴더 감시** | `src-tauri/src/lib.rs`(`start_vault_watch`) + `src/features/docs-vault-local/model/TauriVaultWatchBridge.tsx` | OS 워처가 없어 **주기적으로 되묻는 방식**으로 대체(burst 1500ms / idle 5000ms) → 강등이 아니라 **지연**(기능이 빠지는 게 아니라 반영이 늦을 뿐) |
 
 붙이는 방법은 하나다: `getInvoke()` 를 부르고, `isTauri()` 가 아니면 `null` 이

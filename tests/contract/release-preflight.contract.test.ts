@@ -1,13 +1,28 @@
-import { readFileSync } from "node:fs";
+import {
+  existsSync,
+  mkdirSync,
+  mkdtempSync,
+  readFileSync,
+  readdirSync,
+  rmSync,
+  writeFileSync,
+} from "node:fs";
+import { spawnSync } from "node:child_process";
+import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 
 import {
+  admissionCheckCommands,
+  currentHeadSha,
   REHEARSAL_SKIPS,
   REHEARSAL_SUBSTITUTES,
+  ephemeralUpdaterKey,
   localCommandFor,
+  parseAdmitReleaseSteps,
   parseBuildMacosSteps,
 } from "../../scripts/release-rehearsal.mjs";
+import { RELEASE_ARTIFACT_STEPS } from "../../scripts/build-macos-release-artifact.mjs";
 
 /**
  * `v1.0.0-rc.2` 는 네 번 찍혔고 네 번 다 **바로 다음 칸**에서 멈췄다. 공통점은
@@ -96,19 +111,24 @@ describe("업데이터 아카이브는 서명된 앱을 담아야 한다", () =>
    *
    * 그래서 자리가 하나다 — **앱 서명 바로 뒤, DMG 패키징 앞.**
    */
-  const chains = [
-    ["desktop:release-artifact", "pnpm desktop:sign"],
-    ["desktop:release-artifact:unsigned", "pnpm desktop:sign:adhoc"],
+  const pipelines = [
+    [
+      "desktop:release-artifact",
+      RELEASE_ARTIFACT_STEPS.map((step) => [step.command, ...step.args].join(" ")),
+      "pnpm desktop:sign",
+    ],
+    [
+      "desktop:release-artifact:unsigned",
+      pkg.scripts["desktop:release-artifact:unsigned"].split(" && "),
+      "pnpm desktop:sign:adhoc",
+    ],
   ] as const;
 
-  for (const [scriptName, signStep] of chains) {
+  for (const [scriptName, commands, signStep] of pipelines) {
     it(`${scriptName} 이 앱 서명 뒤·DMG 패키징 앞에서 아카이브를 다시 만든다`, () => {
-      const chain = pkg.scripts[scriptName];
-      expect(chain, `${scriptName} 스크립트가 없다`).toBeTruthy();
-
-      const signAt = chain.indexOf(signStep);
-      const repackAt = chain.indexOf("pnpm desktop:repack-updater");
-      const dmgAt = chain.indexOf("node scripts/package-macos-dmg.mjs");
+      const signAt = commands.findIndex((command) => command === signStep);
+      const repackAt = commands.findIndex((command) => command === "pnpm desktop:repack-updater");
+      const dmgAt = commands.findIndex((command) => command.endsWith("scripts/package-macos-dmg.mjs"));
 
       expect(repackAt, `${scriptName} 에 desktop:repack-updater 가 없다`).toBeGreaterThan(-1);
       expect(
@@ -127,10 +147,74 @@ describe("업데이터 아카이브는 서명된 앱을 담아야 한다", () =>
       "node scripts/repack-macos-updater-archive.mjs",
     );
   });
+
+  it("credentialed release command는 비밀 격리 오케스트레이터 하나만 실행한다", () => {
+    expect(pkg.scripts["desktop:release-artifact"]).toBe(
+      "node scripts/build-macos-release-artifact.mjs",
+    );
+    expect(RELEASE_ARTIFACT_STEPS.length).toBe(11);
+  });
 });
 
 describe("리허설이 릴리스 잡을 빠짐없이 덮는다", () => {
+  const admissionSteps = parseAdmitReleaseSteps(workflow);
   const steps = parseBuildMacosSteps(workflow);
+
+  it("admit-release 잡의 태그 검증과 source admission 단계를 실제로 읽어 온다", () => {
+    expect(admissionSteps.map((step) => step.name)).toContain("Verify requested release version");
+    expect(admissionSteps.map((step) => step.name)).toContain("Admit tag at current main SHA");
+  });
+
+  it("기존 태그가 주어지면 현재 HEAD의 전체 SHA로 admission 명령을 만든다", () => {
+    const sha = currentHeadSha(root);
+    expect(sha).toMatch(/^[0-9a-f]{40}$/i);
+    expect(admissionCheckCommands("v1.2.3", sha)).toEqual([
+      {
+        name: "Verify requested release version",
+        argv: ["pnpm", "desktop:release-tag", "--", "--tag=v1.2.3"],
+      },
+      {
+        name: "Admit tag at current main SHA",
+        argv: [
+          "pnpm",
+          "desktop:release-source",
+          "--",
+          "--mode=admit",
+          "--tag=v1.2.3",
+          `--sha=${sha}`,
+        ],
+      },
+    ]);
+  });
+
+  it("태그 없이 목록을 보면 admission이 검증됐다고 가장하지 않고 명시적으로 SKIP 한다", () => {
+    const rehearsal = spawnSync(process.execPath, ["scripts/release-rehearsal.mjs", "--list"], {
+      cwd: root,
+      encoding: "utf8",
+    });
+
+    expect(rehearsal.status, rehearsal.stderr).toBe(0);
+    expect(rehearsal.stdout).toContain("SKIP [admit-release] Verify requested release version");
+    expect(rehearsal.stdout).toContain("SKIP [admit-release] Admit tag at current main SHA");
+    expect(rehearsal.stdout).toContain("ADMISSION SKIP");
+  });
+
+  it("태그 목록은 현재 HEAD SHA로 workflow의 admission 두 검사를 나란히 보인다", () => {
+    const sha = currentHeadSha(root);
+    const rehearsal = spawnSync(
+      process.execPath,
+      ["scripts/release-rehearsal.mjs", "--list", "--tag=v1.2.3"],
+      { cwd: root, encoding: "utf8" },
+    );
+
+    expect(rehearsal.status, rehearsal.stderr).toBe(0);
+    expect(rehearsal.stdout).toContain(
+      "RUN [admit-release] Verify requested release version — pnpm desktop:release-tag -- --tag=v1.2.3",
+    );
+    expect(rehearsal.stdout).toContain(
+      `RUN [admit-release] Admit tag at current main SHA — pnpm desktop:release-source -- --mode=admit --tag=v1.2.3 --sha=${sha}`,
+    );
+  });
 
   it("build-macos 잡의 단계를 실제로 읽어 온다", () => {
     // 파서가 조용히 0개를 돌려주면 리허설은 아무것도 안 하고 초록이 된다.
@@ -148,7 +232,7 @@ describe("리허설이 릴리스 잡을 빠짐없이 덮는다", () => {
   it("모든 단계가 실행·대체·명시적 생략 중 하나로 분류된다", () => {
     const skips = REHEARSAL_SKIPS as Record<string, string | undefined>;
     const substitutes = REHEARSAL_SUBSTITUTES as Record<string, unknown>;
-    const unclassified = steps.filter((step: { name: string; uses: string | null }) => {
+    const unclassified = [...admissionSteps, ...steps].filter((step: { name: string; uses: string | null }) => {
       if (step.uses) return false; // GitHub Action — 러너 전용
       if (skips[step.name] || substitutes[step.name]) return false;
       return localCommandFor(step) === null;
@@ -177,6 +261,54 @@ describe("리허설이 릴리스 잡을 빠짐없이 덮는다", () => {
 
   it("desktop:release-rehearsal 이 등록돼 있다", () => {
     expect(pkg.scripts["desktop:release-rehearsal"]).toBe("node scripts/release-rehearsal.mjs");
+  });
+
+  it("버리는 업데이터 개인키를 저장소 밖에서 만들고 읽은 즉시 지운다", () => {
+    const sandbox = mkdtempSync(join(tmpdir(), "ontology-atlas-rehearsal-key-"));
+    const repoRoot = join(sandbox, "repo");
+    const tempRoot = join(sandbox, "system-temp");
+    mkdirSync(repoRoot);
+    mkdirSync(tempRoot);
+
+    try {
+      const env = ephemeralUpdaterKey(repoRoot, {
+        existingKey: "",
+        tempRoot,
+        generate(keyPath: string) {
+          expect(keyPath.startsWith(`${tempRoot}/`)).toBe(true);
+          writeFileSync(keyPath, "throwaway-private-key", { mode: 0o600 });
+          return { status: 0 };
+        },
+      });
+
+      expect(env).toEqual({
+        TAURI_SIGNING_PRIVATE_KEY: "throwaway-private-key",
+        TAURI_SIGNING_PRIVATE_KEY_PASSWORD: "",
+      });
+      expect(readdirSync(tempRoot)).toEqual([]);
+      expect(existsSync(join(repoRoot, ".tmp", "rehearsal-updater.key"))).toBe(false);
+    } finally {
+      rmSync(sandbox, { recursive: true, force: true });
+    }
+  });
+
+  it("버리는 업데이터 키 생성이 실패해도 임시 디렉터리를 남기지 않는다", () => {
+    const sandbox = mkdtempSync(join(tmpdir(), "ontology-atlas-rehearsal-key-fail-"));
+    const tempRoot = join(sandbox, "system-temp");
+    mkdirSync(tempRoot);
+
+    try {
+      expect(
+        ephemeralUpdaterKey(sandbox, {
+          existingKey: "",
+          tempRoot,
+          generate: () => ({ status: 1 }),
+        }),
+      ).toBeNull();
+      expect(readdirSync(tempRoot)).toEqual([]);
+    } finally {
+      rmSync(sandbox, { recursive: true, force: true });
+    }
   });
 });
 

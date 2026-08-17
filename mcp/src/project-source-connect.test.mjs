@@ -10,7 +10,15 @@
 import { describe, it, beforeEach, afterEach } from 'node:test';
 import { strict as assert } from 'node:assert';
 import { execFileSync } from 'node:child_process';
-import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import {
+  existsSync,
+  mkdirSync,
+  mkdtempSync,
+  readFileSync,
+  rmSync,
+  symlinkSync,
+  writeFileSync,
+} from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
@@ -274,6 +282,25 @@ describe('sidecar round trip', () => {
     writeFileSync(join(root, PROJECT_SOURCE_STATE_RELATIVE_PATH), '{ not json');
     assert.equal(writeProjectSourceBinding(root, binding()).status, 'blocked_malformed');
     assert.equal(writeProjectSourceBinding(root, binding(), { repair: true }).status, 'written');
+  });
+
+  it('never lets repair follow an external .ontology-atlas symlink', () => {
+    const vault = join(root, 'vault');
+    const outside = join(root, 'outside');
+    mkdirSync(vault);
+    mkdirSync(outside);
+    const sentinel = join(outside, 'project-sources.json');
+    writeFileSync(sentinel, 'outside-original', 'utf8');
+    symlinkSync(outside, join(vault, '.ontology-atlas'), process.platform === 'win32' ? 'junction' : 'dir');
+
+    assert.equal(readProjectSourceBindings(vault).status, 'unsafe_path');
+    assert.equal(
+      writeProjectSourceBinding(vault, binding(), { repair: true }).status,
+      'blocked_unsafe_path',
+    );
+    assert.equal(removeProjectSourceBindings(vault, 'p').status, 'blocked_unsafe_path');
+    assert.equal(readFileSync(sentinel, 'utf8'), 'outside-original');
+    assert.equal(existsSync(join(outside, '.gitignore')), false);
   });
 
   it('keeps the private absolute root out of git', () => {

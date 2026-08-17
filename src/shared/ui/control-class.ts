@@ -826,6 +826,17 @@ const control = cva(`${DISABLED} ${FOCUS}`, {
 export type ControlShape = NonNullable<VariantProps<typeof control>['shape']>;
 export type ControlSize = NonNullable<VariantProps<typeof control>['size']>;
 export type ControlTone = NonNullable<VariantProps<typeof control>['tone']>;
+/**
+ * 호버 축 셋 — **부품 층이 그대로 받아 넘긴다**(2026-08-16).
+ *
+ * 값 층에는 2026-08-15 부터 있었는데 `Chip`·`IconButton`·`RowButton` 은 그것을
+ * 받을 자리가 없었다. 그래서 호버가 필요한 자리는 전부 `className` 으로 손수
+ * 썼고(실측: `RowButton` 소비처 29곳 중 17곳), 그건 래칫이 막으려던 바로 그
+ * 모양이다 — **값 층에 있는데 부품이 못 닿으면 없는 것과 같다.**
+ */
+export type ControlHoverInk = NonNullable<VariantProps<typeof control>['hoverInk']>;
+export type ControlHoverSurface = NonNullable<VariantProps<typeof control>['hoverSurface']>;
+export type ControlHoverBorder = NonNullable<VariantProps<typeof control>['hoverBorder']>;
 
 export interface ControlClassOptions extends VariantProps<typeof control> {
   /**

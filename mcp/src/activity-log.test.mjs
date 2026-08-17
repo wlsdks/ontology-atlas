@@ -1,7 +1,15 @@
 // B3 — 활동 로그 계약: append/로테이션/tail 읽기/heartbeat agent 복사.
 import { describe, it } from 'node:test';
 import { strict as assert } from 'node:assert';
-import { mkdtempSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import {
+  existsSync,
+  mkdtempSync,
+  mkdirSync,
+  readFileSync,
+  rmSync,
+  symlinkSync,
+  writeFileSync,
+} from 'node:fs';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
 import {
@@ -87,6 +95,26 @@ describe('activity-log (B3 — 로컬 감사 로그)', () => {
       assert.equal(readHeartbeatAgent(root), 'claude-code');
     } finally {
       rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it('외부 sidecar symlink에서는 읽기와 append를 모두 best-effort로 거부한다', () => {
+    const root = tmpVault();
+    const outside = mkdtempSync(join(tmpdir(), 'activity-log-outside-'));
+    const sentinel = join(outside, 'activity.jsonl');
+    try {
+      writeFileSync(sentinel, 'outside-original\n', 'utf8');
+      symlinkSync(outside, join(root, '.ontology-atlas'), process.platform === 'win32' ? 'junction' : 'dir');
+      assert.equal(appendActivityEntry(root, buildActivityEntry({
+        tool: 'patch_concept', target: 'p', summary: 'patch p',
+      })), false);
+      assert.equal(readHeartbeatAgent(root), null);
+      assert.deepEqual(readActivityEntries(root), []);
+      assert.equal(readFileSync(sentinel, 'utf8'), 'outside-original\n');
+      assert.equal(existsSync(join(outside, 'agent-activity.json')), false);
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+      rmSync(outside, { recursive: true, force: true });
     }
   });
 });

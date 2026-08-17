@@ -8,10 +8,15 @@
 // activity-log-verdict.md — heartbeat 확장(스냅샷 계약 오염)·git 파생
 // (승인 전 활동을 못 잡음)은 반려, append JSONL 채택.
 
-import { appendFileSync, existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
-import { dirname, join } from 'node:path';
+import {
+  appendVaultSidecarLine,
+  readVaultSidecarText,
+  replaceVaultSidecarText,
+} from './vault-sidecar.mjs';
 
 export const ACTIVITY_LOG_RELATIVE_PATH = '.ontology-atlas/activity.jsonl';
+const ACTIVITY_LOG_FILENAME = 'activity.jsonl';
+const HEARTBEAT_FILENAME = 'agent-activity.json';
 
 /** 로테이션 상한: 초과 시 앞 절반 절삭 (단순·결정론). */
 export const ACTIVITY_LOG_MAX_LINES = 4000;
@@ -36,8 +41,9 @@ export function buildActivityEntry({ tool, target, summary, agent = null, why = 
 /** heartbeat 파일에서 agent 이름을 읽는다: 없거나 깨졌으면 null (조작 금지). */
 export function readHeartbeatAgent(rootPath) {
   try {
-    const raw = readFileSync(join(rootPath, '.ontology-atlas/agent-activity.json'), 'utf-8');
-    const parsed = JSON.parse(raw);
+    const stored = readVaultSidecarText(rootPath, HEARTBEAT_FILENAME);
+    if (!stored) return null;
+    const parsed = JSON.parse(stored.text);
     const agent = parsed?.agent;
     return typeof agent === 'string' && agent.trim() ? agent.trim() : null;
   } catch {
@@ -68,23 +74,24 @@ export function resolveAgentName(rootPath, clientInfo) {
  */
 export function appendActivityEntry(rootPath, entry) {
   try {
-    const filePath = join(rootPath, ACTIVITY_LOG_RELATIVE_PATH);
-    mkdirSync(dirname(filePath), { recursive: true });
-    appendFileSync(filePath, `${JSON.stringify(entry)}\n`, 'utf-8');
-    rotateIfNeeded(filePath);
+    appendVaultSidecarLine(rootPath, ACTIVITY_LOG_FILENAME, JSON.stringify(entry));
+    rotateIfNeeded(rootPath);
     return true;
   } catch {
     return false;
   }
 }
 
-function rotateIfNeeded(filePath) {
+function rotateIfNeeded(rootPath) {
   try {
-    const raw = readFileSync(filePath, 'utf-8');
-    const lines = raw.split('\n').filter(Boolean);
+    const stored = readVaultSidecarText(rootPath, ACTIVITY_LOG_FILENAME);
+    if (!stored) return;
+    const lines = stored.text.split('\n').filter(Boolean);
     if (lines.length <= ACTIVITY_LOG_MAX_LINES) return;
     const kept = lines.slice(Math.floor(lines.length / 2));
-    writeFileSync(filePath, `${kept.join('\n')}\n`, 'utf-8');
+    replaceVaultSidecarText(rootPath, ACTIVITY_LOG_FILENAME, `${kept.join('\n')}\n`, {
+      expectedRevision: stored.revision,
+    });
   } catch {
     /* best-effort */
   }
@@ -96,11 +103,10 @@ function rotateIfNeeded(filePath) {
  */
 export function readActivityEntries(rootPath, { limit = 100, sinceMs = null } = {}) {
   try {
-    const filePath = join(rootPath, ACTIVITY_LOG_RELATIVE_PATH);
-    if (!existsSync(filePath)) return [];
-    const raw = readFileSync(filePath, 'utf-8');
+    const stored = readVaultSidecarText(rootPath, ACTIVITY_LOG_FILENAME);
+    if (!stored) return [];
     const entries = [];
-    for (const line of raw.split('\n')) {
+    for (const line of stored.text.split('\n')) {
       if (!line.trim()) continue;
       try {
         const parsed = JSON.parse(line);

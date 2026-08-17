@@ -1,24 +1,90 @@
 name: Release Desktop
+run-name: Release Desktop ${{ inputs.tag }}
 
 on:
-  push:
-    tags:
-      - "v*"
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Existing v-prefixed tag whose commit must equal the current default-branch head"
+        required: true
+        type: string
 
 permissions:
-  contents: write
-  checks: write
+  contents: read
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
+  group: ${{ github.workflow }}-${{ inputs.tag }}
   cancel-in-progress: false
 
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+  RELEASE_TAG: ${{ inputs.tag }}
 
 jobs:
+  # `workflow_dispatch` can target another ref even though the workflow must
+  # exist on the default branch. This unprivileged job proves that the selected
+  # workflow source, event SHA, default-branch head, and requested tag are the
+  # same commit before a signing environment can be reached.
+  admit-release:
+    name: Admit protected release source
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      release_sha: ${{ steps.admit.outputs.release_sha }}
+      release_tag: ${{ steps.admit.outputs.release_tag }}
+    steps:
+      - name: Require protected main dispatch context
+        env:
+          DISPATCH_EVENT: ${{ github.event_name }}
+          DISPATCH_REF: ${{ github.ref }}
+          DISPATCH_REF_TYPE: ${{ github.ref_type }}
+          DISPATCH_SHA: ${{ github.sha }}
+          WORKFLOW_SHA: ${{ github.workflow_sha }}
+        run: |
+          [[ "$DISPATCH_EVENT" == "workflow_dispatch" ]] || { echo "Unexpected release event: $DISPATCH_EVENT" >&2; exit 1; }
+          [[ "$DISPATCH_REF" == "refs/heads/main" ]] || { echo "Release must be dispatched from refs/heads/main, got $DISPATCH_REF" >&2; exit 1; }
+          [[ "$DISPATCH_REF_TYPE" == "branch" ]] || { echo "Release ref must be a branch, got $DISPATCH_REF_TYPE" >&2; exit 1; }
+          [[ "$WORKFLOW_SHA" == "$DISPATCH_SHA" ]] || { echo "Workflow source $WORKFLOW_SHA differs from event source $DISPATCH_SHA" >&2; exit 1; }
+
+      - name: Checkout admitted workflow source
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+          ref: ${{ github.sha }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
+        with:
+          node-version: 24
+
+      - name: Enable Corepack pnpm
+        run: |
+          corepack enable
+          corepack prepare pnpm@10.18.0 --activate
+          pnpm --version
+
+      - name: Verify requested release version
+        run: pnpm desktop:release-tag -- --tag="$RELEASE_TAG"
+
+      - name: Admit tag at current main SHA
+        id: admit
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_SHA: ${{ github.sha }}
+        run: |
+          pnpm desktop:release-source -- \
+            --mode=admit \
+            --repo="$GITHUB_REPOSITORY" \
+            --tag="$RELEASE_TAG" \
+            --sha="$RELEASE_SHA"
+          echo "release_sha=$RELEASE_SHA" >> "$GITHUB_OUTPUT"
+          echo "release_tag=$RELEASE_TAG" >> "$GITHUB_OUTPUT"
+
   build-macos:
     name: Build macOS DMG (${{ matrix.arch }})
+    needs: admit-release
+    environment: release-signing
     runs-on: ${{ matrix.runner }}
     timeout-minutes: 30
     strategy:
@@ -31,23 +97,20 @@ jobs:
             runner: macos-15-intel
     env:
       TAURI_ARCH: ${{ matrix.arch }}
-      APPLE_CERTIFICATE_P12_BASE64: ${{ secrets.APPLE_CERTIFICATE_P12_BASE64 }}
-      APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
-      APPLE_ID: ${{ secrets.APPLE_ID }}
-      APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
-      APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+      RELEASE_TAG: ${{ needs.admit-release.outputs.release_tag }}
 
     steps:
       # fetch-depth: 0 필수 — 아래 `docs-vault:check` 와 `pnpm build` 가 문서별
       # "마지막으로 바뀐 날" 을 git 히스토리에서 읽는다 (얕은 클론은 전 문서를
       # 같은 날짜로 뭉갠다).
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
         with:
           fetch-depth: 0
+          ref: ${{ needs.admit-release.outputs.release_sha }}
 
       - name: Setup Node.js
-        uses: actions/setup-node@v6
+        uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
         with:
           node-version: 24
 
@@ -58,14 +121,14 @@ jobs:
           pnpm --version
 
       - name: Setup Rust
-        uses: dtolnay/rust-toolchain@stable
+        uses: dtolnay/rust-toolchain@4360b52568e2003a75bf9bc1d59f33a8e3fc893c # stable
 
       # MCP 사이드카를 단일 바이너리로 굽는 컴파일러다(`bun build --compile`).
       # 러너에 기본 설치돼 있지 않아 `v1.0.0-rc.2` 가 여기서 멈췄다 — 번들링을
       # 들여올 때(#732) 이 설치 단계가 같이 안 들어왔다. 툴체인 설치는 위쪽에
       # 모아 둔다.
       - name: Setup Bun
-        uses: oven-sh/setup-bun@v2
+        uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2
         with:
           bun-version: latest
 
@@ -116,30 +179,33 @@ jobs:
         run: pnpm desktop:doctor -- --require-runtime
 
       - name: Verify release source commit
-        run: pnpm desktop:release-source -- --sha="${GITHUB_SHA}"
+        run: pnpm desktop:release-source -- --mode=pin --tag="${RELEASE_TAG}" --sha="${RELEASE_SHA}"
         env:
           GITHUB_TOKEN: ${{ github.token }}
+          RELEASE_SHA: ${{ needs.admit-release.outputs.release_sha }}
 
       - name: Verify release tag version
-        run: pnpm desktop:release-tag -- --tag="${GITHUB_REF_NAME}"
+        run: pnpm desktop:release-tag -- --tag="${RELEASE_TAG}"
 
-      # 인증서가 준비되기 전까지는 미서명으로 낸다(소유자 결정 2026-07-27,
-      # docs/DECISIONS.md 기록). 조용히 넘어가지 않는다 — 어느 경로로 갔는지
-      # 요약과 릴리스 본문에 크게 적는다. secret 이 채워지는 순간 자동으로
-      # 서명 경로로 돌아간다.
-      - name: Decide signing path
-        id: signing
-        run: |
-          if pnpm desktop:release-secrets >/dev/null 2>&1; then
-            echo "signed=true" >> "$GITHUB_OUTPUT"
-            echo "::notice::Developer ID secrets present — signing and notarizing."
-          else
-            echo "signed=false" >> "$GITHUB_OUTPUT"
-            echo "::warning::Developer ID secrets absent — building an UNSIGNED release. Downloaders will need System Settings → Privacy & Security → Open Anyway on first launch."
-          fi
+      # 미서명 공개 결정은 인증서 발급과 함께 같은 날 뒤집혔다
+      # (`docs/DECISIONS.md`, 2026-07-27). 직접 다운로드 DMG 는 Developer ID
+      # 서명과 공증이 모두 가능할 때만 만든다. 이 검사를 조건문으로 감싸면
+      # 실패가 unsigned 폴백의 선택 신호가 되므로, 명령 자체를 게이트로 둔다.
+      - name: Require signed release credentials
+        env:
+          APPLE_CERTIFICATE_P12_BASE64: ${{ secrets.APPLE_CERTIFICATE_P12_BASE64 }}
+          APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
+          APPLE_API_KEY_P8_BASE64: ${{ secrets.APPLE_API_KEY_P8_BASE64 }}
+          APPLE_API_KEY_ID: ${{ secrets.APPLE_API_KEY_ID }}
+          APPLE_API_ISSUER_ID: ${{ secrets.APPLE_API_ISSUER_ID }}
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
+        run: pnpm desktop:release-secrets
 
       - name: Import Apple Developer ID certificate
-        if: steps.signing.outputs.signed == 'true' 
+        env:
+          APPLE_CERTIFICATE_P12_BASE64: ${{ secrets.APPLE_CERTIFICATE_P12_BASE64 }}
+          APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
         run: |
           CERTIFICATE_PATH="$RUNNER_TEMP/apple-developer-id.p12"
           KEYCHAIN_PATH="$RUNNER_TEMP/app-signing.keychain-db"
@@ -157,20 +223,13 @@ jobs:
           security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k "$APPLE_KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
 
       - name: Build signed and notarized release artifact
-        if: steps.signing.outputs.signed == 'true'
         run: pnpm desktop:release-artifact
         env:
-          # 업데이터 아티팩트(.app.tar.gz + .sig)는 이 키로 서명된다. Apple
-          # 인증서와 별개다 — Apple 은 "누가 만들었나" 를, 이 키는 "이 갱신
-          # 패키지가 우리 것인가" 를 보증한다. 설치된 앱은 공개키로 검증하므로,
-          # 이 키가 없는 패키지는 어떤 경로로 와도 설치되지 않는다.
-          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
-          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
-
-      - name: Build unsigned release artifact
-        if: steps.signing.outputs.signed != 'true'
-        run: pnpm desktop:release-artifact:unsigned
-        env:
+          APPLE_CERTIFICATE_P12_BASE64: ${{ secrets.APPLE_CERTIFICATE_P12_BASE64 }}
+          APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
+          APPLE_API_KEY_P8_BASE64: ${{ secrets.APPLE_API_KEY_P8_BASE64 }}
+          APPLE_API_KEY_ID: ${{ secrets.APPLE_API_KEY_ID }}
+          APPLE_API_ISSUER_ID: ${{ secrets.APPLE_API_ISSUER_ID }}
           # 업데이터 아티팩트(.app.tar.gz + .sig)는 이 키로 서명된다. Apple
           # 인증서와 별개다 — Apple 은 "누가 만들었나" 를, 이 키는 "이 갱신
           # 패키지가 우리 것인가" 를 보증한다. 설치된 앱은 공개키로 검증하므로,
@@ -179,17 +238,10 @@ jobs:
           TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
 
       - name: Summarize macOS release assets
-        env:
-          SIGNED: ${{ steps.signing.outputs.signed }}
         run: |
           {
             echo "## macOS DMG (${TAURI_ARCH})"
             echo ""
-            if [ "${SIGNED}" != "true" ]; then
-              echo "> **UNSIGNED build.** First launch needs System Settings → Privacy & Security → Open Anyway."
-              echo "> Verify the SHA-256 below — with no signature it is the only integrity check."
-              echo ""
-            fi
             echo "| Asset | Size | SHA-256 |"
             echo "| --- | ---: | --- |"
             for dmg in src-tauri/target/release/bundle/dmg/*.dmg; do
@@ -209,7 +261,7 @@ jobs:
         run: node scripts/stage-macos-release-assets.mjs --arch="${TAURI_ARCH}"
 
       - name: Upload workflow artifact
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
         with:
           name: ontology-atlas-macos-${{ matrix.arch }}
           # 경로는 **하나**다. 여럿이면 루트가 최소공통조상으로 정해진다.
@@ -218,7 +270,7 @@ jobs:
           retention-days: 1
 
       - name: Cleanup Apple signing keychain
-        if: ${{ always() && steps.signing.outputs.signed == 'true' }}
+        if: ${{ always() }}
         run: |
           CERTIFICATE_PATH="$RUNNER_TEMP/apple-developer-id.p12"
           KEYCHAIN_PATH="$RUNNER_TEMP/app-signing.keychain-db"
@@ -227,19 +279,24 @@ jobs:
 
   build-windows:
     name: Build unsigned Windows x64 beta
+    needs: admit-release
+    environment: release-signing
     runs-on: windows-2022
     timeout-minutes: 45
+    permissions:
+      contents: read
+      checks: write
     env:
-      TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
-      TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
+      RELEASE_TAG: ${{ needs.admit-release.outputs.release_tag }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
         with:
           fetch-depth: 0
+          ref: ${{ needs.admit-release.outputs.release_sha }}
 
       - name: Setup Node.js
-        uses: actions/setup-node@v6
+        uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
         with:
           node-version: 24
 
@@ -251,10 +308,10 @@ jobs:
           pnpm --version
 
       - name: Setup Rust
-        uses: dtolnay/rust-toolchain@stable
+        uses: dtolnay/rust-toolchain@4360b52568e2003a75bf9bc1d59f33a8e3fc893c # stable
 
       - name: Setup Bun
-        uses: oven-sh/setup-bun@v2
+        uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2
         with:
           bun-version: latest
 
@@ -273,6 +330,12 @@ jobs:
           token: ${{ github.token }}
           working-directory: src-tauri
 
+      # audit-check reports informational advisories but does not fail on them.
+      # GTK3's glib advisory is Linux-only in Tauri's dependency tree; this
+      # native Windows lane still fails on every other Rust unsoundness warning.
+      - name: Deny unsound Rust advisories
+        run: cargo audit --file src-tauri/Cargo.lock --deny unsound --ignore RUSTSEC-2024-0429
+
       - name: Windows release contract tests
         run: node --test scripts/lib/mcp-binary.test.mjs scripts/stage-windows-release-assets.test.mjs scripts/verify-mcp-binary.test.mjs
 
@@ -285,8 +348,26 @@ jobs:
       - name: Native bridge tests on Windows
         run: pnpm test:desktop:bridge
 
+      - name: Verify release source commit
+        run: pnpm desktop:release-source -- --mode=pin --tag="${RELEASE_TAG}" --sha="${RELEASE_SHA}"
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          RELEASE_SHA: ${{ needs.admit-release.outputs.release_sha }}
+
+      - name: Verify release tag version
+        run: pnpm desktop:release-tag -- --tag="${RELEASE_TAG}"
+
+      - name: Require updater signing credentials
+        run: pnpm desktop:release-secrets -- --updater-only
+        env:
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
+
       - name: Build Windows NSIS installer
         run: pnpm desktop:build:windows
+        env:
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
 
       - name: Require the beta installer to be unsigned
         shell: pwsh
@@ -353,7 +434,7 @@ jobs:
           node scripts/stage-windows-release-assets.mjs "--version=$packageVersion"
 
       - name: Upload workflow artifact
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
         with:
           name: ontology-atlas-windows-x64
           path: release-upload
@@ -365,16 +446,23 @@ jobs:
   # and verified here; nothing is visible to users yet.
   stage-macos:
     name: Stage Draft Desktop Release
-    if: ${{ always() && startsWith(github.ref, 'refs/tags/v') && needs.build-macos.result == 'success' && needs.build-windows.result == 'success' }}
+    if: ${{ always() && needs.admit-release.result == 'success' && needs.build-macos.result == 'success' && needs.build-windows.result == 'success' }}
     runs-on: ubuntu-latest
-    needs: [build-macos, build-windows]
+    needs: [admit-release, build-macos, build-windows]
     timeout-minutes: 10
+    permissions:
+      contents: write
+    env:
+      RELEASE_TAG: ${{ needs.admit-release.outputs.release_tag }}
+      RELEASE_SHA: ${{ needs.admit-release.outputs.release_sha }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          ref: ${{ needs.admit-release.outputs.release_sha }}
 
       - name: Setup Node.js
-        uses: actions/setup-node@v6
+        uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
         with:
           node-version: 24
 
@@ -388,7 +476,7 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Download macOS artifacts
-        uses: actions/download-artifact@v7
+        uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131 # v7
         with:
           pattern: ontology-atlas-macos-*
           path: release-assets
@@ -399,13 +487,18 @@ jobs:
           merge-multiple: false
 
       - name: Download Windows artifact
-        uses: actions/download-artifact@v7
+        uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131 # v7
         with:
           name: ontology-atlas-windows-x64
           path: release-assets/windows
 
+      - name: Recheck admitted release source before draft creation
+        run: pnpm desktop:release-source -- --mode=pin --tag="${RELEASE_TAG}" --sha="${RELEASE_SHA}"
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+
       - name: Require clean GitHub Release slot
-        run: pnpm desktop:release-slot -- --tag="${GITHUB_REF_NAME}"
+        run: pnpm desktop:release-slot -- --tag="${RELEASE_TAG}"
         env:
           GITHUB_TOKEN: ${{ github.token }}
 
@@ -413,16 +506,18 @@ jobs:
         run: |
           node scripts/build-updater-manifest.mjs \
             --dir=release-assets --out=release-assets/latest.json \
-            --tag="${GITHUB_REF_NAME}" --repo="${GITHUB_REPOSITORY}"
+            --tag="${RELEASE_TAG}" --repo="${GITHUB_REPOSITORY}"
 
       - name: Upload draft GitHub Release assets
-        uses: softprops/action-gh-release@v3
+        uses: softprops/action-gh-release@c12583777ecdfd3be55c69cf75464299dc01057e # v3
         with:
+          tag_name: ${{ needs.admit-release.outputs.release_tag }}
+          target_commitish: ${{ needs.admit-release.outputs.release_sha }}
           draft: true
           # semver 의 프리릴리스는 하이픈 뒤에 온다 (v1.1.0-rc.1). 그 한 글자가
           # "먼저 써볼 사람만" 과 "모두에게" 를 가른다 — GitHub 은 이 플래그로
           # Pre-release 배지를 붙이고 `releases/latest` 에서 제외한다.
-          prerelease: ${{ contains(github.ref_name, '-') }}
+          prerelease: ${{ contains(needs.admit-release.outputs.release_tag, '-') }}
           generate_release_notes: true
           files: |
             release-assets/*/*.dmg
@@ -434,13 +529,13 @@ jobs:
             release-assets/latest.json
 
       - name: Verify draft release assets
-        run: pnpm desktop:verify-download -- --tag="${GITHUB_REF_NAME}" --allow-draft --require-updater
+        run: pnpm desktop:verify-download -- --tag="${RELEASE_TAG}" --allow-draft --require-updater
         env:
           GITHUB_TOKEN: ${{ github.token }}
 
       - name: Summarize the draft awaiting approval
         run: |
-          release_url="$(gh release view "${GITHUB_REF_NAME}" --json url --jq .url)"
+          release_url="$(gh release view "${RELEASE_TAG}" --json url --jq .url)"
           {
             echo "## Draft desktop release — awaiting approval"
             echo ""
@@ -459,7 +554,7 @@ jobs:
   publish-macos:
     name: Publish Desktop Release
     runs-on: ubuntu-latest
-    needs: stage-macos
+    needs: [admit-release, stage-macos]
     timeout-minutes: 10
     environment: release
     permissions:
@@ -467,17 +562,21 @@ jobs:
       # actions:  Pages 배포를 명시적으로 깨우기 (아래 마지막 스텝의 이유 참조)
       contents: write
       actions: write
+    env:
+      RELEASE_TAG: ${{ needs.admit-release.outputs.release_tag }}
+      RELEASE_SHA: ${{ needs.admit-release.outputs.release_sha }}
     steps:
       # fetch-depth: 0 — 생성 매니페스트의 결정성 계약이 전체 히스토리를
       # 요구하고(`generated-vault-determinism.contract.test.ts`), 아래 main
       # 갱신도 얕은 클론에서는 안전하게 못 한다.
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
         with:
           fetch-depth: 0
+          ref: ${{ needs.admit-release.outputs.release_sha }}
 
       - name: Setup Node.js
-        uses: actions/setup-node@v6
+        uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
         with:
           node-version: 24
 
@@ -491,7 +590,7 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Download macOS artifacts
-        uses: actions/download-artifact@v7
+        uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131 # v7
         with:
           pattern: ontology-atlas-macos-*
           path: release-assets
@@ -501,31 +600,38 @@ jobs:
           merge-multiple: true
 
       - name: Download Windows artifact
-        uses: actions/download-artifact@v7
+        uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131 # v7
         with:
           name: ontology-atlas-windows-x64
           path: release-assets/windows
+
+      - name: Recheck admitted release source after publication approval
+        run: pnpm desktop:release-source -- --mode=pin --tag="${RELEASE_TAG}" --sha="${RELEASE_SHA}"
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
 
       - name: Publish verified stable release
         run: |
           # 발행 시점에도 태그가 진실원이다. 여기서 --prerelease=false 를 못박으면
           # RC 태그가 draft 를 벗는 순간 정식 릴리스로 승격돼, 프리릴리스라는
           # 표시가 통째로 사라진다.
-          if [[ "${GITHUB_REF_NAME}" == *-* ]]; then
-            gh release edit "${GITHUB_REF_NAME}" --draft=false --prerelease=true
+          if [[ "${RELEASE_TAG}" == *-* ]]; then
+            gh release edit "${RELEASE_TAG}" --draft=false --prerelease=true
           else
-            gh release edit "${GITHUB_REF_NAME}" --draft=false --prerelease=false
+            gh release edit "${RELEASE_TAG}" --draft=false --prerelease=false
           fi
         env:
           GITHUB_TOKEN: ${{ github.token }}
 
       - name: Verify public download assets
-        run: pnpm desktop:verify-download -- --tag="${GITHUB_REF_NAME}" --require-updater
+        run: pnpm desktop:verify-download -- --tag="${RELEASE_TAG}" --require-updater
         env:
           GITHUB_TOKEN: ${{ github.token }}
 
-      - name: Verify public Windows asset facts
-        run: pnpm download:release-facts -- --tag="${GITHUB_REF_NAME}" --allow-prerelease
+      - name: Generate verified release facts from admitted source
+        run: |
+          pnpm download:release-facts -- --tag="${RELEASE_TAG}" --allow-prerelease
+          cp src/views/download/model/macos-release.generated.ts "$RUNNER_TEMP/macos-release.generated.ts"
         env:
           GITHUB_TOKEN: ${{ github.token }}
 
@@ -541,20 +647,12 @@ jobs:
       # 않는다(재귀 방지).
       - name: Refresh /download release facts on main
         run: |
-          # **main 위에서 만들고 main 으로 보낸다.** 이 잡은 태그를 체크아웃한
-          # 상태인데, 승인 게이트 때문에 게시는 빌드보다 한참 뒤일 수 있고 그
-          # 사이 main 은 움직인다. 태그 커밋에서 `HEAD:main` 으로 밀면 그
-          # 커밋들을 되감는다 — 릴리스가 남의 작업을 지우는 셈이다.
+          # 생성 코드는 승인된 SHA에서 이미 실행했다. 여기서는 움직일 수 있는
+          # main에 결과 파일만 복사하며, 저장소가 제공하는 pnpm/node 코드는 더
+          # 실행하지 않는다.
           git fetch --no-tags origin main
           git switch -C release-facts-update origin/main
-          if [[ "${GITHUB_REF_NAME}" == *-* ]]; then
-            # RC 는 프리릴리스라 스크립트가 기본으로 거부한다. 정식 빌드가
-            # 나올 때까지 이 구간의 사용자가 받을 수 있는 최신은 RC 뿐이므로
-            # 명시적으로 허용한다(정식 태그에는 이 플래그가 붙지 않는다).
-            pnpm download:release-facts -- --tag="${GITHUB_REF_NAME}" --allow-prerelease
-          else
-            pnpm download:release-facts -- --tag="${GITHUB_REF_NAME}"
-          fi
+          cp "$RUNNER_TEMP/macos-release.generated.ts" src/views/download/model/macos-release.generated.ts
           if git diff --quiet -- src/views/download/model/macos-release.generated.ts; then
             echo "release facts already current — nothing to commit"
             exit 0
@@ -562,7 +660,7 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add src/views/download/model/macos-release.generated.ts
-          git commit -m "chore: /download 릴리스 사실을 ${GITHUB_REF_NAME} 로 갱신 [skip ci]"
+          git commit -m "chore: /download 릴리스 사실을 ${RELEASE_TAG} 로 갱신 [skip ci]"
           # fast-forward 만 허용한다 — 그 사이 main 이 또 움직였으면 조용히
           # 덮지 않고 여기서 실패한다.
           git push origin HEAD:main
@@ -581,7 +679,7 @@ jobs:
 
       - name: Summarize published desktop release
         run: |
-          release_url="$(gh release view "${GITHUB_REF_NAME}" --json url --jq .url)"
+          release_url="$(gh release view "${RELEASE_TAG}" --json url --jq .url)"
           {
             echo "## Published desktop release"
             echo ""

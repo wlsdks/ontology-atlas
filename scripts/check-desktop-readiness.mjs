@@ -15,7 +15,7 @@ function readText(relativePath) {
     fail(`tracked source file is missing — ${relativePath}. Point this gate at the surface that replaced it, or drop the check.`);
     return "";
   }
-  return fs.readFileSync(absolute, "utf8");
+  return fs.readFileSync(absolute, "utf8").replace(/\r\n?/g, "\n");
 }
 
 /**
@@ -69,13 +69,19 @@ function flow(text) {
   return text.replace(/\s+/g, " ");
 }
 
-function orderedIndexes(text, needles) {
-  return needles.map((needle) => text.indexOf(needle));
+function workflowJob(source, name) {
+  return source.match(
+    new RegExp(`^  ${name}:\\s*\\n[\\s\\S]*?(?=^  [A-Za-z0-9_-]+:\\s*$|(?![\\s\\S]))`, "m"),
+  )?.[0] ?? "";
 }
 
-function hasStrictOrder(indexes) {
-  return indexes.every((index) => index >= 0) &&
-    indexes.every((index, position) => position === 0 || indexes[position - 1] < index);
+function hasAdmittedCheckout(jobSource) {
+  return /uses:\s*actions\/checkout@/.test(jobSource) &&
+    /ref:\s*\$\{\{\s*needs\.admit-release\.outputs\.release_sha\s*\}\}/.test(jobSource);
+}
+
+function needsAdmission(jobSource) {
+  return /needs:\s*(?:\[[^\]]*\badmit-release\b[^\]]*\]|admit-release\b)/.test(jobSource);
 }
 
 const nextConfig = readText("next.config.ts");
@@ -151,8 +157,10 @@ const codexBuildRunScript = readText("script/build_and_run.sh");
 const codexEnvironmentConfig = readText(".codex/environments/environment.toml");
 const signMacosScript = readText("scripts/sign-macos-app.mjs");
 const notarizeMacosDmgScript = readText("scripts/notarize-macos-dmg.mjs");
+const buildMacosReleaseArtifactScript = readText("scripts/build-macos-release-artifact.mjs");
 const releaseSourceScript = readText("scripts/check-macos-release-source.mjs");
 const releaseSecretsScript = readText("scripts/check-macos-release-secrets.mjs");
+const notaryCredentialsHelper = readText("scripts/lib/notary-credentials.mjs");
 const releaseTagScript = readText("scripts/check-macos-release-tag.mjs");
 const releaseSlotScript = readText("scripts/check-macos-release-slot.mjs");
 const releaseGithubScript = readText("scripts/check-macos-release-github.mjs");
@@ -161,15 +169,6 @@ const releaseStatusScript = readText("scripts/check-macos-release-status.mjs");
 const goalAuditScript = readText("scripts/check-desktop-goal-audit.mjs");
 const macosReleaseNamesHelper = readText("scripts/lib/macos-release-names.mjs");
 const hostedDownloadSurfaceScript = readText("scripts/check-hosted-download-surface.mjs");
-const requiredAppleSecretNames = [
-  "APPLE_CERTIFICATE_P12_BASE64",
-  "APPLE_CERTIFICATE_PASSWORD",
-  "APPLE_KEYCHAIN_PASSWORD",
-  "APPLE_SIGNING_IDENTITY",
-  "APPLE_ID",
-  "APPLE_APP_SPECIFIC_PASSWORD",
-  "APPLE_TEAM_ID",
-];
 const forbiddenFirebasePackages = ["firebase", "firebase-admin", "firebase-tools"];
 const rootEntryPage = readText("src/views/root-entry/ui/RootEntryPage.tsx");
 const docsVaultPage = readText("src/views/docs-vault/ui/DocsVaultPage.tsx");
@@ -203,26 +202,6 @@ console.log("[desktop-check] macOS desktop Tauri-shell readiness");
 
 const cargoPackageVersion = cargoToml.match(/\[package\][\s\S]*?\nversion\s*=\s*"([^"]+)"/)?.[1];
 const cargoPackageName = cargoToml.match(/\[package\][\s\S]*?\nname\s*=\s*"([^"]+)"/)?.[1];
-const releaseBuildOrder = orderedIndexes(releaseWorkflow, [
-  "name: Verify release source commit",
-  "name: Verify release tag version",
-  "name: Decide signing path",
-  "name: Import Apple Developer ID certificate",
-  "name: Build signed and notarized release artifact",
-  "name: Build unsigned release artifact",
-  "name: Stage release assets",
-  "name: Upload workflow artifact",
-  "name: Cleanup Apple signing keychain",
-]);
-const releasePublishOrder = orderedIndexes(releaseWorkflow, [
-  "name: Require clean GitHub Release slot",
-  "name: Upload draft GitHub Release assets",
-  "name: Verify draft release assets",
-  "name: Summarize the draft awaiting approval",
-  "name: Publish verified stable release",
-  "name: Verify public download assets",
-  "name: Summarize published desktop release",
-]);
 if (/output\s*:\s*['"]export['"]/.test(nextConfig)) {
   pass("Next.js uses static export output");
 } else {
@@ -497,12 +476,13 @@ if (
   pkg.scripts?.["test:desktop:check"]?.includes("scripts/check-macos-release-source.test.mjs") &&
   pkg.scripts?.["test:desktop:check"]?.includes("scripts/check-macos-release-status.test.mjs") &&
   pkg.scripts?.["test:desktop:check"]?.includes("scripts/watch-macos-release-run.test.mjs") &&
+  pkg.scripts?.["test:desktop:check"]?.includes("scripts/generate-download-release-facts.test.mjs") &&
   pkg.scripts?.["test:desktop:check"]?.includes("scripts/lib/macos-checksum.test.mjs") &&
   pkg.scripts?.["test:desktop:check"]?.includes("scripts/lib/macos-release-names.test.mjs")
 ) {
-  pass("desktop checker tests cover the GitHub release operator, source, run-watch, checksum, and completion gates");
+  pass("desktop checker tests cover the GitHub release operator, source, run-watch, checksum filename, and completion gates");
 } else {
-  fail("package.json test:desktop:check must include scripts/check-macos-release-github.test.mjs, scripts/check-macos-release-source.test.mjs, scripts/watch-macos-release-run.test.mjs, scripts/check-macos-release-status.test.mjs, scripts/lib/macos-checksum.test.mjs, and scripts/lib/macos-release-names.test.mjs so the macOS release operator, source, run-watch, checksum, completion, and app-vs-asset naming gates stay covered");
+  fail("package.json test:desktop:check must include scripts/check-macos-release-github.test.mjs, scripts/check-macos-release-source.test.mjs, scripts/watch-macos-release-run.test.mjs, scripts/check-macos-release-status.test.mjs, scripts/generate-download-release-facts.test.mjs, scripts/lib/macos-checksum.test.mjs, and scripts/lib/macos-release-names.test.mjs so the macOS release operator, source, run-watch, checksum filename, completion, and app-vs-asset naming gates stay covered");
 }
 
 if (
@@ -635,15 +615,15 @@ if (
   /workflow_dispatch:/.test(pagesDeployWorkflow) &&
   /PAGES_BASE_URL:\s*https:\/\/wlsdks\.github\.io\/ontology-atlas/.test(pagesDeployWorkflow) &&
   /NEXT_PUBLIC_BASE_PATH:\s*\/ontology-atlas/.test(pagesDeployWorkflow) &&
-  /uses:\s*actions\/setup-node@v6/.test(pagesDeployWorkflow) &&
+  /uses:\s*actions\/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38\s+# v6/.test(pagesDeployWorkflow) &&
   /node-version:\s*24/.test(pagesDeployWorkflow) &&
   /corepack enable/.test(pagesDeployWorkflow) &&
   /corepack prepare pnpm@10\.18\.0 --activate/.test(pagesDeployWorkflow) &&
   /pnpm --version/.test(pagesDeployWorkflow) &&
   !/uses:\s*pnpm\/action-setup@/.test(pagesDeployWorkflow) &&
   /pnpm build/.test(pagesDeployWorkflow) &&
-  /actions\/upload-pages-artifact@v3/.test(pagesDeployWorkflow) &&
-  /actions\/deploy-pages@v4/.test(pagesDeployWorkflow) &&
+  /actions\/upload-pages-artifact@56afc609e74202658d3ffba0e8f6dda462b719fa\s+# v3/.test(pagesDeployWorkflow) &&
+  /actions\/deploy-pages@d6db90164ac5ed86f2b6aed7e0febac5b3c0c03e\s+# v4/.test(pagesDeployWorkflow) &&
   /pnpm desktop:verify-hosted -- --base-url="\$PAGES_BASE_URL"/.test(pagesDeployWorkflow) &&
   /pnpm desktop:verify-download -- --tag="\$PUBLISHED_RELEASE_TAG"/.test(pagesDeployWorkflow) &&
   !/FIREBASE|firebase-tools|deploy --only hosting/.test(pagesDeployWorkflow)
@@ -674,13 +654,16 @@ if (
   !downloadReleaseVerifier.includes("aarch64|x64|universal") &&
   downloadReleaseVerifier.includes("duplicate macOS DMG assets") &&
   downloadReleaseVerifier.includes("Keep exactly one DMG per architecture") &&
+  downloadReleaseVerifier.includes("WINDOWS_NAME_PATTERN") &&
+  downloadReleaseVerifier.includes("exactly one ontology-atlas_<version>_windows_x64-setup.exe") &&
+  downloadReleaseVerifier.includes("verifyArtifactHash(windowsInstaller") &&
   downloadReleaseVerifier.includes("requestSha256") &&
   downloadReleaseVerifier.includes("does not match checksum")
 ) {
-  pass("desktop download verifier requires explicit one-per-architecture Apple Silicon and Intel DMGs with checksum byte verification");
+  pass("desktop download verifier re-downloads and hashes the required macOS and Windows installers");
 } else {
   fail(
-    "scripts/check-macos-download-release.mjs must require explicit one-per-architecture aarch64 and x64 ontology-atlas DMG assets, reject unsupported names such as universal/arm64/Ontology Atlas .dmg files, reject duplicate architecture DMGs, verify DMG filename versions match the release tag, verify downloaded bytes match checksums, and let --allow-draft find tagged draft pre-publish assets",
+    "scripts/check-macos-download-release.mjs must require explicit one-per-architecture aarch64 and x64 ontology-atlas DMGs plus exactly one Windows x64 setup executable, reject unsupported or duplicate DMGs, verify artifact filename versions match the release tag, re-download macOS and Windows bytes to match their checksums, and let --allow-draft find tagged draft pre-publish assets",
   );
 }
 
@@ -720,15 +703,32 @@ if (
  *
  * 서명 뒤에 다시 담고 다시 minisign 서명하면 `valid on disk` 가 된다.
  */
-const RELEASE_ARTIFACT_PIPELINE =
-  "pnpm desktop:release-secrets && pnpm build && pnpm desktop:smoke && pnpm desktop:build:app && pnpm desktop:sign && pnpm desktop:repack-updater && node scripts/package-macos-dmg.mjs && pnpm desktop:sign:dmg && pnpm desktop:notarize && pnpm desktop:verify-release-dmg && pnpm desktop:verify-install";
+const RELEASE_ARTIFACT_COMMAND = "node scripts/build-macos-release-artifact.mjs";
+const RELEASE_ARTIFACT_STEP_MARKERS = [
+  'args: ["desktop:release-secrets"]',
+  'args: ["build"]',
+  'args: ["desktop:smoke"]',
+  'args: ["desktop:build:app"]',
+  'args: ["desktop:sign"]',
+  'args: ["desktop:repack-updater"]',
+  'args: ["scripts/package-macos-dmg.mjs"]',
+  'args: ["desktop:sign:dmg"]',
+  'args: ["desktop:notarize"]',
+  'args: ["desktop:verify-release-dmg"]',
+  'args: ["desktop:verify-install"]',
+];
 
-if (pkg.scripts?.["desktop:release-artifact"] === RELEASE_ARTIFACT_PIPELINE) {
+if (
+  pkg.scripts?.["desktop:release-artifact"] === RELEASE_ARTIFACT_COMMAND &&
+  RELEASE_ARTIFACT_STEP_MARKERS.every((marker) => buildMacosReleaseArtifactScript.includes(marker)) &&
+  buildMacosReleaseArtifactScript.includes("releaseChildEnv") &&
+  buildMacosReleaseArtifactScript.includes("withNotaryApiKeyFile")
+) {
   pass("desktop release artifact command signs the app, packages, signs the DMG container, notarizes, and verifies the direct-download DMG");
 } else {
   fail(
     "package.json must expose desktop:release-artifact as the credentialed direct-download artifact path: release secret check, build/smoke, app build, app sign, DMG package, **DMG container sign**, notarize, verify-release-dmg, and install smoke\n" +
-      `[desktop-check]   기대: ${RELEASE_ARTIFACT_PIPELINE}\n` +
+      `[desktop-check]   기대: ${RELEASE_ARTIFACT_COMMAND} + isolated 11-step pipeline\n` +
       `[desktop-check]   실제: ${pkg.scripts?.["desktop:release-artifact"] ?? "(없음)"}`,
   );
 }
@@ -1071,9 +1071,12 @@ if (
   /\{file\}/.test(enMessages.download?.trustVerifyCommand ?? "") &&
   // 서명을 주장하려면 릴리스 자산 체인이 실제로 서명·공증·검증을 해야 한다.
   (!/Developer ID/.test(enMessages.download?.proofSigned ?? "") ||
-    (pkg.scripts?.["desktop:release-artifact"]?.includes("desktop:sign") &&
-      pkg.scripts?.["desktop:release-artifact"]?.includes("desktop:notarize") &&
-      pkg.scripts?.["desktop:release-artifact"]?.includes("desktop:verify-release-dmg"))) &&
+    (pkg.scripts?.["desktop:release-artifact"] === RELEASE_ARTIFACT_COMMAND &&
+      [
+        'args: ["desktop:sign"]',
+        'args: ["desktop:notarize"]',
+        'args: ["desktop:verify-release-dmg"]',
+      ].every((marker) => buildMacosReleaseArtifactScript.includes(marker)))) &&
   // 미서명 상태를 말하는 문구라면 우회 경로를 반드시 함께 준다 — 상태만 알리고
   // 방법을 안 주면 그건 정직이 아니라 방치다. (인증서가 만료·폐기되어 문구가
   // 미서명으로 되돌아가면 이 조건이 다시 무장한다.)
@@ -1111,14 +1114,14 @@ if (
 }
 
 if (
-  (releaseWorkflow.match(/uses:\s*actions\/checkout@v6/g)?.length ?? 0) >= 4 &&
-  (releaseWorkflow.match(/uses:\s*actions\/setup-node@v6/g)?.length ?? 0) >= 4 &&
+  (releaseWorkflow.match(/uses:\s*actions\/checkout@d23441a48e516b6c34aea4fa41551a30e30af803\s+# v6/g)?.length ?? 0) >= 4 &&
+  (releaseWorkflow.match(/uses:\s*actions\/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38\s+# v6/g)?.length ?? 0) >= 4 &&
   (releaseWorkflow.match(/corepack enable/g)?.length ?? 0) >= 4 &&
   (releaseWorkflow.match(/corepack prepare pnpm@10\.18\.0 --activate/g)?.length ?? 0) >= 4 &&
   (releaseWorkflow.match(/pnpm --version/g)?.length ?? 0) >= 4 &&
-  /uses:\s*actions\/upload-artifact@v7/.test(releaseWorkflow) &&
-  /uses:\s*actions\/download-artifact@v7/.test(releaseWorkflow) &&
-  /uses:\s*softprops\/action-gh-release@v3/.test(releaseWorkflow) &&
+  /uses:\s*actions\/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a\s+# v7/.test(releaseWorkflow) &&
+  /uses:\s*actions\/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131\s+# v7/.test(releaseWorkflow) &&
+  /uses:\s*softprops\/action-gh-release@c12583777ecdfd3be55c69cf75464299dc01057e\s+# v3/.test(releaseWorkflow) &&
   !/uses:\s*pnpm\/action-setup@/.test(releaseWorkflow)
 ) {
   pass("macOS release workflow uses Node 24 action majors and Corepack pnpm without pnpm/action-setup");
@@ -1128,95 +1131,86 @@ if (
   );
 }
 
+const admitReleaseJob = workflowJob(releaseWorkflow, "admit-release");
+const buildMacosJob = workflowJob(releaseWorkflow, "build-macos");
+const buildWindowsJob = workflowJob(releaseWorkflow, "build-windows");
+const stageReleaseJob = workflowJob(releaseWorkflow, "stage-macos");
+const publishReleaseJob = workflowJob(releaseWorkflow, "publish-macos");
+const releaseOnSection = releaseWorkflow.match(/^on:\n([\s\S]*?)(?=^permissions:)/m)?.[1] ?? "";
+const releaseTriggers = releaseOnSection.match(/^  [A-Za-z0-9_-]+:\s*$/gm) ?? [];
+const releaseHasOnlyDispatchTag =
+  releaseTriggers.length === 1 &&
+  /^  workflow_dispatch:\s*$/.test(releaseTriggers[0]) &&
+  /^on:\n  workflow_dispatch:\n    inputs:\n      tag:\n[\s\S]*?required:\s*true[\s\S]*?type:\s*string/m.test(releaseWorkflow);
+
 if (
-  /draft:\s*true/.test(releaseWorkflow) &&
-  // 초안을 만드는 job 과 공개하는 job 이 갈라져 있고, 공개 job 이
-  // `release` 환경 뒤에 있어야 한다 — 워크플로는 앱이 깨끗한 기기에서
-  // 실행되는지 증명하지 못하므로, 사람이 그 초안을 설치해본 뒤에만
-  // 공개되게 한다. 환경의 required reviewer 설정은 저장소 Settings 몫이라
-  // 런북(docs/DESKTOP-MACOS.md)이 함께 지킨다.
-  /stage-macos:/.test(releaseWorkflow) &&
-  /publish-macos:\s*\n\s*name: Publish Desktop Release/.test(releaseWorkflow) &&
-  /needs:\s*stage-macos/.test(releaseWorkflow) &&
-  /environment:\s*release/.test(releaseWorkflow) &&
-  /pnpm desktop:release-slot -- --tag="\$\{GITHUB_REF_NAME\}"/.test(releaseWorkflow) &&
-  /Verify draft release assets/.test(releaseWorkflow) &&
-  /--allow-draft/.test(releaseWorkflow) &&
-  // 프리릴리스 여부는 **태그가 정한다**, 워크플로가 못박지 않는다. semver 의
-  // 프리릴리스는 하이픈 뒤에 오므로(v1.1.0-rc.1) 그 한 글자가 "먼저 써볼
-  // 사람만" 과 "모두에게" 를 가른다. 못박아 두면 RC 태그를 밀어도 정식
-  // 릴리스로 공개되고, RC 라는 장치가 이름만 남는다.
-  /prerelease:\s*\$\{\{\s*contains\(github\.ref_name, '-'\)\s*\}\}/.test(releaseWorkflow) &&
-  // 발행 시점에도 같은 규칙이어야 한다 — draft 를 벗기면서 정식으로 승격시키면
-  // 앞의 판정이 무의미해진다.
-  /\$\{GITHUB_REF_NAME\}" == \*-\*/.test(releaseWorkflow) &&
-  /gh release edit "\$\{GITHUB_REF_NAME\}" --draft=false --prerelease=true/.test(releaseWorkflow) &&
-  /gh release edit "\$\{GITHUB_REF_NAME\}" --draft=false --prerelease=false/.test(releaseWorkflow) &&
-  /pnpm docs-vault:check/.test(releaseWorkflow) &&
-  /pnpm test:desktop:check/.test(releaseWorkflow) &&
-  /pnpm test:desktop:runtime/.test(releaseWorkflow) &&
-  /pnpm test:desktop:bridge/.test(releaseWorkflow) &&
-  /pnpm desktop:release-source -- --sha="\$\{GITHUB_SHA\}"/.test(releaseWorkflow) &&
-  /echo "\$APPLE_CERTIFICATE_P12_BASE64" \| base64 -D > "\$CERTIFICATE_PATH"/.test(releaseWorkflow) &&
-  !/base64 --decode/.test(releaseWorkflow) &&
-  /pnpm desktop:release-artifact\b/.test(releaseWorkflow) &&
-  // 인증서가 없는 동안의 경로. 조용한 폴백은 금지 — 어느 경로로 갔는지
-  // 요약과 릴리스 본문에 크게 적혀야 한다.
-  /pnpm desktop:release-artifact:unsigned/.test(releaseWorkflow) &&
-  /UNSIGNED/.test(releaseWorkflow) &&
-  /Summarize macOS release assets/.test(releaseWorkflow) &&
-  /name:\s*Cleanup Apple signing keychain/.test(releaseWorkflow) &&
-  /if:\s*\$\{\{\s*always\(\)\s*&&\s*steps\.signing\.outputs\.signed/.test(releaseWorkflow) &&
-  /security delete-keychain "\$KEYCHAIN_PATH" 2>\/dev\/null \|\| true/.test(releaseWorkflow) &&
-  /rm -f "\$CERTIFICATE_PATH"/.test(releaseWorkflow) &&
-  /Summarize published desktop release/.test(releaseWorkflow) &&
-  /Published desktop release/.test(releaseWorkflow) &&
-  /gh release view "\$\{GITHUB_REF_NAME\}" --json url --jq \.url/.test(releaseWorkflow) &&
-  /GITHUB_STEP_SUMMARY/.test(releaseWorkflow) &&
-  /SHA-256/.test(releaseWorkflow) &&
-  /wc -c < "\$dmg"/.test(releaseWorkflow) &&
-  /cut -d ' ' -f 1 "\$checksum"/.test(releaseWorkflow) &&
-  (releaseWorkflow.match(/node-version:\s*24/g)?.length ?? 0) >= 4 &&
-  /arch:\s*aarch64/.test(releaseWorkflow) &&
-  /runner:\s*macos-14/.test(releaseWorkflow) &&
-  /arch:\s*x64/.test(releaseWorkflow) &&
-  /runner:\s*macos-15-intel/.test(releaseWorkflow) &&
-  // 업로드 전에 한 폴더로 모은다. 경로를 여럿 올리면 아티팩트 루트가 그들의
-  // 최소공통조상으로 정해져, 내려받는 쪽이 모르는 깊이가 생긴다 — v1.0.0-rc.1 이
-  // 그 어긋남으로 세 번 멈췄다. 실제 매칭 여부는
-  // `tests/contract/release-asset-paths.contract.test.ts` 가 레이아웃을 재현해
-  // 검사한다. 여기서는 그 계약이 워크플로에 남아 있는지만 본다.
-  /node scripts\/stage-macos-release-assets\.mjs/.test(releaseWorkflow) &&
-  /name: Upload workflow artifact[\s\S]{0,400}?path: release-upload/.test(releaseWorkflow) &&
-  // 초안 업로드는 아치별 하위 폴더에서 집는다. 폴더가 아치를 나르므로
-  // 합치면 어느 아카이브가 어느 아치의 것인지 알 수 없다.
-  /release-assets\/\*\/\*\.sha256/.test(releaseWorkflow) &&
-  /merge-multiple:\s*false/.test(releaseWorkflow) &&
-  // 업데이터 3종 — 아카이브 · 서명 · 매니페스트. 하나라도 빠지면 설치된 앱은
-  // 오류 없이 "갱신 없음" 으로 본다(조용히 실패하는 종류다).
-  /release-assets\/\*\/\*\.app\.tar\.gz/.test(releaseWorkflow) &&
-  /release-assets\/\*\/\*\.app\.tar\.gz\.sig/.test(releaseWorkflow) &&
-  /release-assets\/latest\.json/.test(releaseWorkflow) &&
-  /node scripts\/build-updater-manifest\.mjs/.test(releaseWorkflow) &&
-  /TAURI_SIGNING_PRIVATE_KEY:\s*\$\{\{ secrets\.TAURI_SIGNING_PRIVATE_KEY \}\}/.test(releaseWorkflow) &&
-  /for dmg in release-assets\/\*\.dmg/.test(releaseWorkflow) &&
-  /pnpm desktop:verify-download -- --tag="\$\{GITHUB_REF_NAME\}"/.test(releaseWorkflow) &&
-  !/FIREBASE_SERVICE_ACCOUNT_JSON|firebase-tools|Deploy Hosting|desktop:verify-hosted/.test(releaseWorkflow) &&
-  hasStrictOrder(releaseBuildOrder) &&
-  hasStrictOrder(releasePublishOrder)
+  releaseHasOnlyDispatchTag &&
+  /^run-name:\s*.*(?:inputs\.tag|RELEASE_TAG)/m.test(releaseWorkflow) &&
+  !/GITHUB_REF_NAME|github\.ref_name|tags:\s*\[|tags:\s*\n/.test(releaseWorkflow)
 ) {
-  pass("tag release workflow builds Apple Silicon and Intel DMGs on Node 24, decodes signing certificates with macOS base64, cleans up the signing keychain, and publishes verified public assets without Firebase Hosting dependencies");
+  pass("protected release trigger accepts only a dispatched tag input and names that tag in the run");
 } else {
-  fail(
-    ".github/workflows/release-macos.yml must build Apple Silicon and Intel DMGs on Node 24, test the desktop checker/native bridge, verify the tag commit is the default-branch head, verify the tag and secrets before signing, decode the certificate with macOS base64 -D, run desktop:release-artifact for build/smoke/sign/notarize/release verification before upload, summarize DMG names/sizes/SHA-256 values to GITHUB_STEP_SUMMARY, clean up the temporary signing keychain with always(), require a clean GitHub Release slot, upload checksum assets as a draft release, verify draft assets, publish the release as stable, verify public downloads, and summarize the published release URL/assets without requiring Firebase Hosting secrets or deploy steps",
-  );
+  fail("release-macos.yml must have only workflow_dispatch with required string tag input, a tag-bearing run-name, and no tag-push or GITHUB_REF_NAME assumptions");
+}
+
+if (
+  admitReleaseJob &&
+  !/^\s+environment:/m.test(admitReleaseJob) &&
+  /github\.event_name/.test(admitReleaseJob) &&
+  /github\.ref\s*\}\}/.test(admitReleaseJob) &&
+  /github\.ref_type/.test(admitReleaseJob) &&
+  /github\.workflow_sha/.test(admitReleaseJob) &&
+  /github\.sha/.test(admitReleaseJob) &&
+  /workflow_dispatch/.test(admitReleaseJob) &&
+  /refs\/heads\/main/.test(admitReleaseJob) &&
+  /branch/.test(admitReleaseJob) &&
+  /\$WORKFLOW_SHA"\s*==\s*"\$DISPATCH_SHA/.test(admitReleaseJob) &&
+  /uses:\s*actions\/checkout@/.test(admitReleaseJob) &&
+  /ref:\s*\$\{\{\s*github\.sha\s*\}\}/.test(admitReleaseJob)
+) {
+  pass("unprivileged release admission binds a protected branch dispatch to its trusted workflow commit");
+} else {
+  fail("admit-release must be unprivileged and explicitly require workflow_dispatch, refs/heads/main, branch ref type, github.workflow_sha == github.sha, and checkout github.sha");
+}
+
+if (
+  [buildMacosJob, buildWindowsJob].every((job) =>
+    needsAdmission(job) && /environment:\s*release-signing/.test(job) && hasAdmittedCheckout(job),
+  )
+) {
+  pass("macOS and Windows signing builds consume the admitted commit from release-signing");
+} else {
+  fail("build-macos and build-windows must need admit-release, use release-signing, and checkout needs.admit-release.outputs.release_sha");
+}
+
+if (
+  [stageReleaseJob, publishReleaseJob].every((job) =>
+    needsAdmission(job) && hasAdmittedCheckout(job) && /(?:inputs\.tag|RELEASE_TAG)/.test(job),
+  )
+) {
+  pass("staging and publication use the admitted commit and requested release tag");
+} else {
+  fail("stage-macos and publish-macos must need admit-release, checkout its release_sha, and use the workflow_dispatch tag rather than a ref-derived tag");
+}
+
+const updaterGateIndex = buildWindowsJob.indexOf("pnpm desktop:release-secrets -- --updater-only");
+const windowsBuildIndex = buildWindowsJob.indexOf("pnpm desktop:build:windows");
+if (
+  updaterGateIndex >= 0 &&
+  updaterGateIndex < windowsBuildIndex &&
+  /TAURI_SIGNING_PRIVATE_KEY:\s*\$\{\{\s*secrets\.TAURI_SIGNING_PRIVATE_KEY\s*\}\}/.test(buildWindowsJob.slice(0, windowsBuildIndex)) &&
+  !/APPLE_[A-Z_]+:\s*\$\{\{\s*secrets\./.test(buildWindowsJob)
+) {
+  pass("Windows checks updater-only signing credentials before its installer build");
+} else {
+  fail("build-windows must run desktop:release-secrets -- --updater-only with only updater secrets before desktop:build:windows");
 }
 
 if (
   pkg.scripts?.["desktop:release-source"] === "node scripts/check-macos-release-source.mjs" &&
-  releaseWorkflow.includes('pnpm desktop:release-source -- --sha="${GITHUB_SHA}"') &&
+  releaseWorkflow.includes('pnpm desktop:release-source -- --mode=pin --tag="${RELEASE_TAG}" --sha="${RELEASE_SHA}"') &&
   releaseSourceScript.includes("default-branch head") &&
-  releaseSourceScript.includes("Merge the desktop PR and tag the default-branch head")
+  /RELEASE_SHA:\s*\$\{\{\s*needs\.admit-release\.outputs\.release_sha\s*\}\}/.test(releaseWorkflow)
 ) {
   pass("desktop release source gate blocks tags from unmerged or stale commits before signing");
 } else {
@@ -1231,43 +1225,46 @@ if (
   releaseSecretsScript.includes("hasDerSequenceEnvelope") &&
   releaseSecretsScript.includes("firstLengthByte < 0x80") &&
   releaseSecretsScript.includes("PKCS#12 DER sequence with a valid length envelope") &&
-  releaseSecretsScript.includes("cannot import its signing certificate")
+  releaseSecretsScript.includes("cannot import its signing certificate") &&
+  releaseSecretsScript.includes("decodeNotaryApiKeySecret") &&
+  notaryCredentialsHelper.includes("must decode to an App Store Connect .p8 private key")
 ) {
-  pass("desktop release secret gate blocks unsigned releases and malformed PKCS#12 certificates");
+  pass("desktop release secret gate blocks unsigned releases and malformed PKCS#12 or App Store Connect .p8 credentials");
 } else {
   fail(
-    "package.json must expose desktop:release-secrets as node scripts/check-macos-release-secrets.mjs, and scripts/check-macos-release-secrets.mjs must reject missing Developer ID direct-download secrets, malformed base64, and non-PKCS#12 certificate payloads before signing",
+    "package.json must expose desktop:release-secrets as node scripts/check-macos-release-secrets.mjs, and the release credential helpers must reject missing values, malformed base64, non-PKCS#12 certificate payloads, and malformed App Store Connect .p8 keys before signing",
   );
 }
 
 if (
-  requiredAppleSecretNames.every((name) =>
-    desktopDoc.includes(`gh secret set ${name} --repo wlsdks/ontology-atlas < /path/to/${name}`),
-  ) &&
-  desktopDoc.includes("The hosted website deploy is not part of the macOS app release gate")
+  pkg.scripts?.["desktop:release-github"] === "node scripts/check-macos-release-github.mjs" &&
+  typeof pkg.scripts?.["desktop:release-preflight"] === "string" &&
+  desktopDoc.includes("release-signing") &&
+  desktopDoc.includes("--env release-signing") &&
+  desktopDoc.includes("workflow_dispatch") &&
+  releaseGithubScript.includes('"--env"') &&
+  releaseGithubScript.includes("release-signing")
 ) {
-  pass("desktop release docs include Developer ID direct-download secret commands and exclude the website deploy from the app gate");
+  pass("desktop release docs and preflight route signing setup through the release-signing environment");
 } else {
-  fail(
-    "docs/DESKTOP-MACOS.md must show a gh secret set command for every Developer ID direct-download signing/notary secret and state that the hosted website deploy is separate from the macOS app release gate",
-  );
+  fail("docs/DESKTOP-MACOS.md, desktop:release-preflight, and desktop:release-github must describe release-signing environment setup and workflow_dispatch release operation");
 }
 
 if (
   pkg.scripts?.["desktop:release-tag"] === "node scripts/check-macos-release-tag.mjs" &&
-  releaseWorkflow.includes('pnpm desktop:release-tag -- --tag="${GITHUB_REF_NAME}"') &&
+  releaseWorkflow.includes('pnpm desktop:release-tag -- --tag="${RELEASE_TAG}"') &&
   releaseTagScript.includes("does not match macOS app versions")
 ) {
-  pass("desktop release tag gate fails before signing when the v-prefixed tag differs from app versions");
+  pass("desktop release tag gate receives the dispatched release tag before signing");
 } else {
   fail(
-    "package.json and .github/workflows/release-macos.yml must run scripts/check-macos-release-tag.mjs before signing so release tags match package, Tauri, and Cargo versions",
+    "package.json and .github/workflows/release-macos.yml must pass RELEASE_TAG from workflow_dispatch to scripts/check-macos-release-tag.mjs before signing",
   );
 }
 
 if (
   pkg.scripts?.["desktop:release-slot"] === "node scripts/check-macos-release-slot.mjs" &&
-  releaseWorkflow.includes('pnpm desktop:release-slot -- --tag="${GITHUB_REF_NAME}"') &&
+  releaseWorkflow.includes('pnpm desktop:release-slot -- --tag="${RELEASE_TAG}"') &&
   releaseSlotScript.includes("already exists") &&
   releaseSlotScript.includes("Delete the existing")
 ) {
@@ -1285,15 +1282,15 @@ if (
   releaseGithubScript.includes("APPLE_CERTIFICATE_P12_BASE64") &&
   releaseGithubScript.includes("release-macos.yml") &&
   releaseGithubScript.includes("hosted website deploy is intentionally excluded") &&
-  releaseGithubScript.includes("rev-parse") &&
-  releaseGithubScript.includes("refs/tags") &&
-  releaseGithubScript.includes("git/ref/tags") &&
-  releaseGithubScript.includes("check-macos-release-slot.mjs")
+  releaseGithubScript.includes("workflow_dispatch") &&
+  releaseGithubScript.includes("deployment-branch-policies") &&
+  releaseGithubScript.includes('"branch"') &&
+  releaseGithubScript.includes("release-signing")
 ) {
-  pass("desktop GitHub release readiness gate checks the release workflow, Developer ID direct-download secret names, local and remote Git tag slots, and release slot before tag push");
+  pass("desktop GitHub release readiness gate checks the protected workflow and release-signing secret scope before dispatch");
 } else {
   fail(
-    "package.json must expose desktop:release-github and scripts/check-macos-release-github.mjs must check the release workflow, required Developer ID direct-download GitHub secret names, local and remote same-tag Git tag slots, and same-tag release slot without requiring Firebase Hosting",
+    "package.json must expose desktop:release-github and scripts/check-macos-release-github.mjs must check the protected workflow, branch-only release-signing environment, and required signing secret names before dispatch",
   );
 }
 
@@ -1302,7 +1299,9 @@ if (
   releaseRunScript.includes('"run"') &&
   releaseRunScript.includes('"list"') &&
   releaseRunScript.includes("--event") &&
-  releaseRunScript.includes("push") &&
+  releaseRunScript.includes("workflow_dispatch") &&
+  releaseRunScript.includes('"workflow"') &&
+  releaseRunScript.includes('"--ref"') &&
   releaseRunScript.includes("--commit") &&
   releaseRunScript.includes("git") &&
   releaseRunScript.includes("rev-list") &&
@@ -1312,10 +1311,10 @@ if (
   releaseRunScript.includes("interval-ms") &&
   releaseStatusScript.includes("desktop:release-run")
 ) {
-  pass("desktop release run watcher waits for the tag-push workflow run before watching it");
+  pass("desktop release run watcher dispatches the protected ref and watches its workflow_dispatch run");
 } else {
   fail(
-    "package.json must expose desktop:release-run, scripts/watch-macos-release-run.mjs must poll for the tag-commit push run before gh run watch, and desktop:release-status must route operators through that watcher",
+    "package.json must expose desktop:release-run, scripts/watch-macos-release-run.mjs must dispatch the protected ref then poll for that workflow_dispatch run before gh run watch, and desktop:release-status must route operators through that watcher",
   );
 }
 

@@ -21,6 +21,27 @@ export interface FrontmatterDiagnostic {
 
 type ParsedScalar = string | number | boolean;
 
+const UNSAFE_OBJECT_KEYS = new Set(['__proto__', 'constructor', 'prototype']);
+
+function assignParsedKey(
+  target: Record<string, unknown>,
+  key: string,
+  value: unknown,
+  diagnostics: FrontmatterDiagnostic[],
+  line: number,
+): boolean {
+  if (UNSAFE_OBJECT_KEYS.has(key)) {
+    diagnostics.push({
+      code: 'malformed-frontmatter-line',
+      line,
+      message: `Frontmatter line ${line} uses unsafe object key \`${key}\`.`,
+    });
+    return false;
+  }
+  target[key] = value;
+  return true;
+}
+
 export function parseFrontmatter(input: string): ParsedFrontmatter {
   // 줄바꿈·인코딩 정규화 — **읽기 경로에서만** (2026-07-28 실측).
   //
@@ -74,7 +95,7 @@ export function parseFrontmatter(input: string): ParsedFrontmatter {
     const scalarIndicator = /^[|>][-+]?$/.exec(value);
     if (scalarIndicator) {
       const read = readBlockScalar(lines, i + 1, scalarIndicator[0]);
-      frontmatter[key] = read.value;
+      assignParsedKey(frontmatter, key, read.value, diagnostics, i + 2);
       i = read.next - 1;
       continue;
     }
@@ -91,7 +112,7 @@ export function parseFrontmatter(input: string): ParsedFrontmatter {
           items.push(unquote(dashMatch[1].trim()));
           j += 1;
         }
-        frontmatter[key] = items;
+        assignParsedKey(frontmatter, key, items, diagnostics, i + 2);
         i = j - 1;
         continue;
       }
@@ -104,27 +125,33 @@ export function parseFrontmatter(input: string): ParsedFrontmatter {
           const childKey = m[2].trim();
           const childValue = m[3].trim();
           if (!childKey) break;
-          obj[childKey] = parseScalar(childValue);
+          assignParsedKey(obj, childKey, parseScalar(childValue), diagnostics, j + 2);
           j += 1;
         }
-        frontmatter[key] = obj;
+        assignParsedKey(frontmatter, key, obj, diagnostics, i + 2);
         i = j - 1;
         continue;
       }
-      frontmatter[key] = '';
+      assignParsedKey(frontmatter, key, '', diagnostics, i + 2);
       continue;
     }
 
     // inline 형태들
     if (value.startsWith('[') && value.endsWith(']')) {
-      frontmatter[key] = parseInlineList(value);
+      assignParsedKey(frontmatter, key, parseInlineList(value), diagnostics, i + 2);
       continue;
     }
     if (value.startsWith('{') && value.endsWith('}')) {
-      frontmatter[key] = parseInlineObject(value);
+      assignParsedKey(
+        frontmatter,
+        key,
+        parseInlineObject(value, diagnostics, i + 2),
+        diagnostics,
+        i + 2,
+      );
       continue;
     }
-    frontmatter[key] = unquote(value);
+    assignParsedKey(frontmatter, key, unquote(value), diagnostics, i + 2);
   }
   const result: ParsedFrontmatter = { frontmatter, body };
   if (diagnostics.length > 0) result.diagnostics = diagnostics;
@@ -148,7 +175,11 @@ function parseInlineList(raw: string): string[] {
     .filter(Boolean);
 }
 
-function parseInlineObject(raw: string): Record<string, ParsedScalar> {
+function parseInlineObject(
+  raw: string,
+  diagnostics: FrontmatterDiagnostic[],
+  line: number,
+): Record<string, ParsedScalar> {
   const inner = raw.slice(1, -1).trim();
   if (!inner) return {};
   const out: Record<string, ParsedScalar> = {};
@@ -158,7 +189,7 @@ function parseInlineObject(raw: string): Record<string, ParsedScalar> {
     const k = part.slice(0, cIdx).trim();
     const v = part.slice(cIdx + 1).trim();
     if (!k) continue;
-    out[k] = parseScalar(v);
+    assignParsedKey(out, k, parseScalar(v), diagnostics, line);
   }
   return out;
 }
@@ -179,7 +210,18 @@ function unquote(value: string): string {
   // 인용부호 없는 값은 이스케이프 문법이 아니라 원문이므로 건드리지 않는다.
   const quote = trimmed.length >= 2 ? trimmed[0] : '';
   if ((quote === '"' || quote === "'") && trimmed[trimmed.length - 1] === quote) {
-    return trimmed.slice(1, -1).replace(new RegExp(`\\\\(${quote}|\\\\)`, 'g'), '$1');
+    const inner = trimmed.slice(1, -1).replace(new RegExp(`\\\\(${quote}|\\\\)`, 'g'), '$1');
+    /*
+     * 큰따옴표 안의 `\n` 은 **줄바꿈이다** (2026-08-16).
+     *
+     * 쓰는 쪽이 줄바꿈을 그대로 내보내면 그 한 글자가 frontmatter 블록을
+     * 통째로 부순다 — 다음 줄이 새 키로 읽히거나 `---` 를 만나 본문이 시작된다
+     * (실측: `note⏎kind: element` 가 **노드의 종류를 바꿨다**). 그래서 쓰는
+     * 쪽은 큰따옴표 안에 `\n` 으로 적고, 읽는 쪽인 여기서 되돌린다.
+     *
+     * 작은따옴표는 손대지 않는다 — YAML 에서 그건 이스케이프가 없는 문자열이다.
+     */
+    return quote === '"' ? inner.replace(/\\n/g, '\n').replace(/\\t/g, '\t') : inner;
   }
   return value.replace(/^["']|["']$/g, '');
 }

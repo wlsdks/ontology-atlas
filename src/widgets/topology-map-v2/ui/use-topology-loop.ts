@@ -314,6 +314,20 @@ export interface UseTopologyLoopArgs {
    */
   trailHoverNodeIdRef?: RefObject<string | null>;
   /**
+   * 대화창에서 노드 이름에 마우스를 올렸을 때 그 노드 (2026-08-17).
+   *
+   * 걸어온 길 렌즈(`trailHoverNodeIdRef`)와 **같은 이유로 같은 채널을 빌린다**:
+   * 커서가 캔버스가 아니라 옆 패널 위에 있어서 캔버스 호버와 경쟁하지 않는다.
+   * 그래서 「포커스가 emphasis 소유권을 독점한다」는 규칙의 두 번째 예외다.
+   *
+   * 새 시각 언어를 만들지 않는다 — **마우스로 올렸을 때와 똑같이** 보인다.
+   * 채팅에서 온 강조만 다르게 보이면 사용자는 그것이 무슨 뜻인지 또 배워야
+   * 하고, 이 지도에는 이미 배울 색이 충분하다.
+   *
+   * ref 인 이유도 같다: 호버마다 렌더를 돌리면 큰 그래프에서 끈적해진다.
+   */
+  chatHoverNodeIdRef?: RefObject<string | null>;
+  /**
    * 슬라이스 C (개발/비개발 모드 토글) — 표시-렌즈 티어 게이트 config. 생략 시
    * `DEFAULT_TIER_REVEAL`(개발 모드 — capability/element 모두 정상 줌 반응).
    * HomePage 가 비개발(plain) 모드에서 `PLAIN_TIER_REVEAL`(element 상시 숨김)
@@ -365,7 +379,7 @@ export type UseTopologyLoopResult = TopologyPointerHandlers & {
 };
 
 export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResult {
-  const { nodes, edges, focusedSlug, emphasizedNeighborSlug = null, dataSourceKey = null, fitViewToken, spotlightFitToken = 0, relayoutToken, revealToken = 0, onSelectEdge, onHoverEdge, onSelect, onPaneClick, onVisibleCountChange, onGraphStatsChange, onZoomTierChange, onContextMenuNode, onContextMenuPane, agentFocusNodeId = null, spotlightIds = null, selectedEdge = null, expandedParents = EMPTY_EXPANDED_SET, onToggleCluster, onHoverCluster, realmRootId = null, onEnterRealm, realmEnterButtonRef, realmCaption = null, visitedTrail = EMPTY_TRAIL, trailLensActiveRef, clusterBarLabels = null, trailHoverNodeIdRef, tierReveal = DEFAULT_TIER_REVEAL, tourAnchorNodeId = null, tourAnchorRef, glyphSet = "geometric", canvasBackground = "dot", footprint = null, expand = DEFAULT_EXPAND, wheelIntent = "zoom", ambientSleepDelayMs, onWalkDeadEnd = null } = args;
+  const { nodes, edges, focusedSlug, emphasizedNeighborSlug = null, dataSourceKey = null, fitViewToken, spotlightFitToken = 0, relayoutToken, revealToken = 0, onSelectEdge, onHoverEdge, onSelect, onPaneClick, onVisibleCountChange, onGraphStatsChange, onZoomTierChange, onContextMenuNode, onContextMenuPane, agentFocusNodeId = null, spotlightIds = null, selectedEdge = null, expandedParents = EMPTY_EXPANDED_SET, onToggleCluster, onHoverCluster, realmRootId = null, onEnterRealm, realmEnterButtonRef, realmCaption = null, visitedTrail = EMPTY_TRAIL, trailLensActiveRef, clusterBarLabels = null, trailHoverNodeIdRef, chatHoverNodeIdRef, tierReveal = DEFAULT_TIER_REVEAL, tourAnchorNodeId = null, tourAnchorRef, glyphSet = "geometric", canvasBackground = "dot", footprint = null, expand = DEFAULT_EXPAND, wheelIntent = "zoom", ambientSleepDelayMs, onWalkDeadEnd = null } = args;
 
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const containerRef = useRef<HTMLDivElement | null>(null);
@@ -650,6 +664,7 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
   /** 걸어온 길 렌즈/브러싱 prop ref 미러 — rAF 클로저가 deps 없이 최신 것을 읽게 (`tourAnchorRef` 와 같은 미러 관용). */
   const trailLensPropRef = useRef<RefObject<boolean> | null>(trailLensActiveRef ?? null);
   const trailBrushPropRef = useRef<RefObject<string | null> | null>(trailHoverNodeIdRef ?? null);
+  const chatHoverPropRef = useRef<RefObject<string | null> | null>(chatHoverNodeIdRef ?? null);
   /** 밀도 게이트 — 펼친 부모 Set 미러(rAF + 포인터 클로저 공용). */
   const expandedParentsRef = useRef<ReadonlySet<string>>(expandedParents);
   /** S2 파트 5B — 직전 펼침 Set (새로 펼쳐진 부모 diff → 카메라 다이브용). */
@@ -739,6 +754,17 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
    */
   const appearRef = useRef<Map<string, number>>(new Map());
   const prevNodeIdsRef = useRef<Set<string>>(new Set());
+  /**
+   * **이번 세션에 새로 생긴 노드**의 id. 등장 램프(`appearRef`)만으로는 부족한
+   * 이유: 새 역량은 개요 배율에서 티어 알파가 0 이라 그 램프가 0 에 곱해진다 —
+   * 에이전트가 노드를 만들어도 화면에는 도메인의 자식 수만 2→3 으로 바뀌었다
+   * (2026-08-17 실측, 소유자 지시로 고침). 이 집합에 든 노드는 ego 클릭·칩
+   * 펼침과 같은 급의 티어 면제를 받아 실제로 그려진다.
+   *
+   * **세션 동안 유지된다.** 잠시 보였다 사라지면 그게 곧 깜빡임이고, 소유자가
+   * 정확히 그것을 하지 말라고 했다. 새로고침하면 원래 티어 규칙으로 돌아간다.
+   */
+  const bornNodeIdsRef = useRef<Set<string>>(new Set());
   /**
    * rank9 — 라벨별 LOD present 램프(nodeId → 0..1). `drawTopologyFrame` 이 배치
    * 결과를 알고 그 자리에서 스텝/소비한다(루프는 수명만 소유). 라벨 깜빡임을
@@ -902,6 +928,7 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
   useEffect(() => {
     trailLensPropRef.current = trailLensActiveRef ?? null;
     trailBrushPropRef.current = trailHoverNodeIdRef ?? null;
+    chatHoverPropRef.current = chatHoverNodeIdRef ?? null;
   });
 
   useEffect(() => {
@@ -1196,9 +1223,11 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
           if (!appear.has(n.id)) appear.set(n.id, 1);
         } else {
           appear.set(n.id, 0); // 신규 노드 — 0 에서 부풀며 등장.
+          bornNodeIdsRef.current.add(n.id); // 티어 게이트 면제 — 위 주석.
         }
       }
       for (const id of [...appear.keys()]) if (!nextIds.has(id)) appear.delete(id);
+      for (const id of [...bornNodeIdsRef.current]) if (!nextIds.has(id)) bornNodeIdsRef.current.delete(id);
       prevNodeIdsRef.current = nextIds;
     }
     // R6 상시 혜성 — 유휴 게이트가 코멧 상시성을 알 수 있게 depends 유무를 캐시.
@@ -1982,7 +2011,11 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
             hoveredNodeIdRef.current !== null ||
             panelEmphasisNodeIdRef.current !== null ||
             hoveredClusterIdRef.current !== null ||
-            ((trailLensPropRef.current?.current ?? false) && (trailBrushPropRef.current?.current ?? null) !== null),
+            ((trailLensPropRef.current?.current ?? false) && (trailBrushPropRef.current?.current ?? null) !== null) ||
+            // 대화창 호버도 진행 중인 상호작용이다. 여기 안 넣으면 루프가
+            // 유휴로 접혀서, 마우스를 올려도 **아무 일도 안 일어난다** —
+            // 값은 맞는데 화면이 안 그려지는 종류의 결함이다.
+            (chatHoverPropRef.current?.current ?? null) !== null,
           // 렌즈 on/off 전이 — 마지막으로 그린 상태와 다르면 한 프레임 깨워
           // 새 상태를 그린다(스포트라이트 램프 정착과 같은 계약).
           trailLensSettling:
@@ -2444,7 +2477,11 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
       // 원래 규칙으로 돌아온다.
       const trailLensActive = trailLensPropRef.current?.current ?? false;
       const trailBrushNodeId = trailLensActive ? (trailBrushPropRef.current?.current ?? null) : null;
-      const hoveredNodeId = trailBrushNodeId ?? (focusedNodeId ? null : hoveredNodeIdRef.current);
+      // 대화창 호버는 걸어온 길 브러싱과 같은 자리에 선다 — 둘 다 커서가
+      // 캔버스 밖에 있을 때만 생기므로 서로 부딪히지 않는다.
+      const chatHoverNodeId = chatHoverPropRef.current?.current ?? null;
+      const hoveredNodeId =
+        trailBrushNodeId ?? chatHoverNodeId ?? (focusedNodeId ? null : hoveredNodeIdRef.current);
       // Panel-row emphasis only bites while a node is focused (that's the only
       // time the "연결된 노드" list exists) — otherwise hover owns the ripple.
       const panelEmphasisNodeId = focusedNodeId ? panelEmphasisNodeIdRef.current : null;
@@ -3220,6 +3257,7 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
         egoRevealById: egoRevealRef.current,
         focusRampById: focusRampRef.current,
         appearById: appearRef.current,
+        bornNodeIds: bornNodeIdsRef.current,
         chipRevealById: chipRevealRef.current,
         expandRevealById: expandRevealRef.current,
         batchAppearById: batchAppearRef.current,

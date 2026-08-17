@@ -10,6 +10,21 @@
 // vs 런타임) 의 parser drift 를 줄이기 위해 ESM 모듈로 단일화. 향후 #3 task
 // 에서 ts 측도 이 모듈을 단일 진실원으로 흡수.
 
+const UNSAFE_OBJECT_KEYS = new Set(["__proto__", "constructor", "prototype"]);
+
+function assignParsedKey(target, key, value, diagnostics, line) {
+  if (UNSAFE_OBJECT_KEYS.has(key)) {
+    diagnostics.push({
+      code: "malformed-frontmatter-line",
+      line,
+      message: `Frontmatter line ${line} uses unsafe object key \`${key}\`.`,
+    });
+    return false;
+  }
+  target[key] = value;
+  return true;
+}
+
 export function parseFrontmatter(input) {
   // 줄바꿈·인코딩 정규화 — **읽기 경로에서만** (2026-07-28 실측).
   //
@@ -62,7 +77,7 @@ export function parseFrontmatter(input) {
     const scalarIndicator = /^[|>][-+]?$/.exec(value);
     if (scalarIndicator) {
       const read = readBlockScalar(lines, i + 1, scalarIndicator[0]);
-      frontmatter[key] = read.value;
+      assignParsedKey(frontmatter, key, read.value, diagnostics, i + 2);
       i = read.next - 1;
       continue;
     }
@@ -78,7 +93,7 @@ export function parseFrontmatter(input) {
           items.push(unquote(dashMatch[1].trim()));
           j += 1;
         }
-        frontmatter[key] = items;
+        assignParsedKey(frontmatter, key, items, diagnostics, i + 2);
         i = j - 1;
         continue;
       }
@@ -90,20 +105,21 @@ export function parseFrontmatter(input) {
           if (!m) break;
           const childKey = m[2].trim();
           if (!childKey) break;
-          obj[childKey] = parseScalar(m[3].trim());
+          assignParsedKey(obj, childKey, parseScalar(m[3].trim()), diagnostics, j + 2);
           j += 1;
         }
-        frontmatter[key] = obj;
+        assignParsedKey(frontmatter, key, obj, diagnostics, i + 2);
         i = j - 1;
         continue;
       }
-      frontmatter[key] = "";
+      assignParsedKey(frontmatter, key, "", diagnostics, i + 2);
       continue;
     }
     if (value.startsWith("[") && value.endsWith("]")) {
-      frontmatter[key] = splitTopLevel(value.slice(1, -1), ",")
+      const items = splitTopLevel(value.slice(1, -1), ",")
         .map((s) => unquote(s.trim()))
         .filter(Boolean);
+      assignParsedKey(frontmatter, key, items, diagnostics, i + 2);
       continue;
     }
     if (value.startsWith("{") && value.endsWith("}")) {
@@ -116,13 +132,13 @@ export function parseFrontmatter(input) {
           const k = part.slice(0, cIdx).trim();
           const v = part.slice(cIdx + 1).trim();
           if (!k) continue;
-          obj[k] = parseScalar(v);
+          assignParsedKey(obj, k, parseScalar(v), diagnostics, i + 2);
         }
       }
-      frontmatter[key] = obj;
+      assignParsedKey(frontmatter, key, obj, diagnostics, i + 2);
       continue;
     }
-    frontmatter[key] = unquote(value);
+    assignParsedKey(frontmatter, key, unquote(value), diagnostics, i + 2);
   }
   const result = { frontmatter, body };
   if (diagnostics.length > 0) result.diagnostics = diagnostics;
@@ -153,7 +169,10 @@ function unquote(value) {
   // 인용부호 없는 값은 이스케이프 문법이 아니라 원문이므로 건드리지 않는다.
   const quote = trimmed.length >= 2 ? trimmed[0] : "";
   if ((quote === '"' || quote === "'") && trimmed[trimmed.length - 1] === quote) {
-    return trimmed.slice(1, -1).replace(new RegExp(`\\\\(${quote}|\\\\)`, "g"), "$1");
+    const inner = trimmed.slice(1, -1).replace(new RegExp(`\\\\(${quote}|\\\\)`, "g"), "$1");
+    // 큰따옴표의 `\n`/`\t`는 serializer가 접은 줄바꿈·탭이다.
+    // 작은따옴표는 YAML 규칙대로 이스케이프 없는 원문으로 둔다.
+    return quote === '"' ? inner.replace(/\\n/g, "\n").replace(/\\t/g, "\t") : inner;
   }
   return value.replace(/^["']|["']$/g, "");
 }

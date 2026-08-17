@@ -241,11 +241,15 @@ const NON_BLANK_STRING_SCHEMA = Object.freeze({
   minLength: 1,
   pattern: '^(?!\\s)(?!.*\\s$)(?!.*\\u0000).+$',
 });
-const NON_BLANK_STRING_OR_ARRAY_SCHEMA = Object.freeze({
-  type: ['array', 'string'],
+const BACKLINK_REWRITE_VALUE_OUTPUT_SCHEMA = Object.freeze({
+  type: ['array', 'object', 'string'],
   minLength: NON_BLANK_STRING_SCHEMA.minLength,
+  minItems: 1,
+  minProperties: 1,
   pattern: NON_BLANK_STRING_SCHEMA.pattern,
   items: NON_BLANK_STRING_SCHEMA,
+  propertyNames: NON_BLANK_STRING_SCHEMA,
+  additionalProperties: NON_BLANK_STRING_SCHEMA,
 });
 const GRAPH_REF_ARRAY_MAX_ITEMS = 500;
 
@@ -1365,8 +1369,8 @@ const BACKLINK_REWRITE_KEY_CHANGE_OUTPUT_SCHEMA = Object.freeze({
   type: 'object',
   properties: {
     key: NON_BLANK_STRING_SCHEMA,
-    before: NON_BLANK_STRING_OR_ARRAY_SCHEMA,
-    after: NON_BLANK_STRING_OR_ARRAY_SCHEMA,
+    before: BACKLINK_REWRITE_VALUE_OUTPUT_SCHEMA,
+    after: BACKLINK_REWRITE_VALUE_OUTPUT_SCHEMA,
   },
   required: ['key'],
   additionalProperties: false,
@@ -2887,7 +2891,17 @@ const TOOLS = [
                 description: 'Only present alongside excerptTruncated — the full body length.',
               },
             },
-            required: ['uid', 'slug', 'kind', 'title', 'mtime', 'matchedIn', 'score', 'excerpt'],
+            required: ['slug', 'isNode', 'title', 'mtime', 'matchedIn', 'score', 'excerpt'],
+            oneOf: [
+              {
+                properties: { isNode: { const: true } },
+                required: ['uid', 'kind'],
+              },
+              {
+                properties: { isNode: { const: false } },
+                not: { anyOf: [{ required: ['uid'] }, { required: ['kind'] }] },
+              },
+            ],
             additionalProperties: false,
           },
         },
@@ -6203,8 +6217,39 @@ function summarizeWrite(name, args, result) {
       return okRows > 0 ? { target: '(batch)', summary: `add_concepts ${okRows}행 성공` } : null;
     }
     case 'add_relations': {
-      const okRows = (result?.relations ?? []).filter((row) => row?.ok).length;
-      return okRows > 0 ? { target: '(batch)', summary: `add_relations ${okRows}행 성공` } : null;
+      const rows = result?.relations ?? [];
+      const okRows = rows.filter((row) => row?.ok).length;
+      if (okRows === 0) return null;
+      /*
+       * ⚠️ **이유를 버리지 않는다** (2026-08-16 지킴이 자리 적발).
+       *
+       * 배치 행에도 `why` 가 있고 `depends_on` 은 런타임이 그것을 **필수로**
+       * 요구한다. 그런데 이 분기가 `{ target, summary }` 만 돌려주는 바람에,
+       * 이유가 frontmatter 에는 들어가고 활동 기록에서만 사라졌다.
+       *
+       * 그 결과가 실제로 관측됐다: 살아있는 볼트의 활동 15줄 전부 `why: null`
+       * 이었고, 그중 둘이 바로 이 경로였다. 그 상태로 「기록에 이유가 없다」를
+       * 근거 삼아 다른 결론을 낼 뻔했다.
+       *
+       * 행마다 이유가 다를 수 있으므로 **성공한 행의 이유만** 모아 잇는다.
+       * 같은 이유가 반복되면 한 번만 적는다 — 열 행이 같은 이유일 때 그것을
+       * 열 번 적으면 읽을 수 없는 줄이 된다.
+       */
+      // ⚠️ 걸러 낸 **뒤에** 번호를 매기면 원본 행과 짝이 어긋난다. 원본 순서를
+      // 유지한 채 성공한 행에서만 이유를 꺼낸다.
+      const reasons = [
+        ...new Set(
+          rows
+            .map((row, index) => (row?.ok ? args.relations?.[index]?.why : null))
+            .filter((why) => typeof why === 'string' && why.trim().length > 0)
+            .map((why) => why.trim()),
+        ),
+      ];
+      return {
+        target: '(batch)',
+        summary: `add_relations ${okRows}행 성공`,
+        why: reasons.length > 0 ? reasons.join(' · ') : null,
+      };
     }
     case 'patch_concept':
       return { target: args.slug, summary: `patch_concept ${args.slug}` };
@@ -8244,11 +8289,25 @@ function queryOntologyTool(args = {}) {
   const validatedResult = ['health', 'workspace_brief', 'agent_brief'].includes(args.operation)
     ? attachVaultValidation(queryResult, args)
     : queryResult;
-  const result = args.operation === 'agent_brief'
+  const attached = args.operation === 'agent_brief'
     ? attachProjectMeaning(validatedResult, artifact)
     : ['health', 'workspace_brief'].includes(args.operation)
       ? attachMeaningReadiness(validatedResult, artifact, args)
       : validatedResult;
+  /*
+   * **수는 세어서 낸다** (2026-08-17 실측).
+   *
+   * 검사를 덧붙이는 곳이 둘인데(`attachVaultValidation` · `attachProjectMeaning`)
+   * 앞엣것만 `healthChecks` 를 손으로 +1 하고 뒤엣것은 안 했다. 그래서 한
+   * 응답 안에서 「7 health checks」라고 말하면서 8개를 싣고 있었다.
+   *
+   * 붙이는 자리마다 손으로 맞추라고 하면 다음에 붙이는 사람이 또 빠뜨린다 —
+   * 그러니 **마지막에 한 번 세어서** 낸다. 그러면 이 갈래가 통째로 사라진다.
+   * 게이트: `cli/src/lib/brief-self-consistency.test.mjs`.
+   */
+  const result = Array.isArray(attached.health?.checks) && attached.readiness
+    ? { ...attached, readiness: { ...attached.readiness, healthChecks: attached.health.checks.length } }
+    : attached;
   return {
     ...result,
     compiledSummary: {
@@ -8263,6 +8322,59 @@ function queryOntologyTool(args = {}) {
     },
   };
 }
+
+/**
+ * 처방 id 를 **할 수 있는 말**로 옮긴다.
+ *
+ * 종전에는 `assessment_input_invalid` 같은 코드 하나만 나갔다. 그 문장을 읽는
+ * 쪽은 사람이거나 에이전트인데, 둘 다 코드만으로는 아무것도 못 한다. 특히
+ * `init` 직후의 볼트가 이 자리에서 「invalid」 를 받아서, 아무 잘못도 안 한
+ * 사람이 자기가 뭘 깨뜨린 줄 알게 됐다.
+ */
+const MEANING_NEXT_ACTION_HINTS = Object.freeze({
+  // 「절이 없다」고 단정하지 않는다 — 절은 있는데 아직 확정만 안 한 볼트가
+  // 있고(이 저장소가 그렇다), 그런 볼트에 「추가하라」고 하면 틀린 안내다.
+  author_competency_answers:
+    'This project\'s five competency answers have not been finalized yet. '
+    + 'Nothing is broken. Fill in the `## Competency answers` section of the '
+    + 'project document if it is missing, then call finalize_project_meaning.',
+  resolve_competency_question:
+    'A competency answer is incomplete: it needs concrete witnesses (concepts, '
+    + 'relations, or evidence paths) that resolve in this vault. Fill the gap in '
+    + 'the project document, then call finalize_project_meaning again.',
+  reevaluate_competency:
+    'The graph moved since the answers were finalized. Re-check the competency '
+    + 'answers against the current graph, then call finalize_project_meaning again.',
+  repair_assessment_input:
+    'The assessment input is malformed. Inspect the project document\'s '
+    + '`## Competency answers` section and the source receipt.',
+  repair_ontology_structure: 'Fix the graph problems that query_ontology health reports first.',
+  repair_source_receipt:
+    'The source receipt is unusable. Re-bind the project to its code folder '
+    + 'with connect_project_source.',
+  record_source_role:
+    'A source file is bound but its role (production / test) is unrecorded. '
+    + 'Record it so evidence counts mean the same thing everywhere.',
+  review_inventory_limit:
+    'The source inventory hit its bound, so this evidence is partial. Narrow '
+    + 'the bound source folder, or read the limit before trusting the counts.',
+  connect_source: 'Bind this project to its source with connect_project_source.',
+  repair_source_binding:
+    'The source binding is unusable. Re-bind with connect_project_source '
+    + '({repair: true} if the sidecar is malformed).',
+  repair_source_path:
+    'A declared evidence path no longer resolves inside the bound source. Fix '
+    + 'the path on the node, or re-bind if the folder moved.',
+  measure_source: 'Measure the bound source with connect_project_source.',
+  remeasure_source: 'The source changed since it was measured. Re-run connect_project_source.',
+  verify_source_currentness:
+    'The source measurement is stale or unavailable. Re-run connect_project_source '
+    + 'before treating this evidence as current.',
+  review_source_evidence:
+    'The source moved in a way the receipt cannot judge. Look at what changed '
+    + 'before relying on the evidence.',
+  use_current_evidence: 'Nothing to repair — the measured evidence is current.',
+});
 
 function meaningReadinessCheck(artifact) {
   const projectSlugs = (Array.isArray(artifact?.nodes) ? artifact.nodes : [])
@@ -8279,9 +8391,17 @@ function meaningReadinessCheck(artifact) {
         projectSlug,
         status: context.meaningAssessment?.status ?? 'invalid',
         topGap: context.meaningAssessment?.topGap?.id ?? 'assessment_input_invalid',
+        // 처방은 이미 계산돼 있었는데 여기서 버려지고 있었다 (2026-08-17).
+        // 그래서 이 검사를 읽는 사람도 에이전트도 오류 코드 하나만 받았다.
+        nextAction: context.meaningAssessment?.nextAction?.id ?? 'repair_assessment_input',
       };
     } catch {
-      return { projectSlug, status: 'invalid', topGap: 'assessment_input_invalid' };
+      return {
+        projectSlug,
+        status: 'invalid',
+        topGap: 'assessment_input_invalid',
+        nextAction: 'repair_assessment_input',
+      };
     }
   });
   const unresolved = assessments.filter((assessment) => assessment.status !== 'verified_current');
@@ -8299,7 +8419,12 @@ function meaningReadinessCheck(artifact) {
   return {
     status: 'warn',
     count: unresolved.length,
-    message: `${unresolved.length} project meaning assessment(s) require review; first ${first.projectSlug}: ${first.status} (${first.topGap}).`,
+    // 진단만 주고 처방을 안 주면 읽는 쪽은 무엇을 할지 모른다 — 특히 이
+    // 문장을 읽는 쪽이 사람이 아니라 에이전트일 때(`workspace-brief`).
+    message:
+      `${unresolved.length} project meaning assessment(s) require review; `
+      + `first ${first.projectSlug}: ${first.status} (${first.topGap}). `
+      + `${MEANING_NEXT_ACTION_HINTS[first.nextAction] ?? `Next: ${first.nextAction}.`}`,
     assessments,
   };
 }
@@ -8638,6 +8763,11 @@ function connectProjectSourceTool({ projectSlug, rootPath, confirm, repair } = {
   }
 
   const written = writeProjectSourceBinding(VAULT_ROOT, { ...binding, receipt }, { repair: repair === true });
+  if (written.status === 'blocked_unsafe_path') {
+    throw new Error(
+      `connect_project_source blocked: ${PROJECT_SOURCE_STATE_RELATIVE_PATH} is behind an unsafe sidecar path. repair: true cannot bypass a symlink or junction boundary.`,
+    );
+  }
   if (written.status === 'blocked_malformed') {
     throw new Error(
       `connect_project_source blocked: ${PROJECT_SOURCE_STATE_RELATIVE_PATH} is malformed. Re-run with repair: true to discard and rewrite it.`,
@@ -8674,6 +8804,11 @@ function disconnectProjectSourceTool({ projectSlug, confirm } = {}) {
   // clear it, so an unresolvable slug falls back to the literal value.
   const canonicalSlug = resolveExistingVaultSlug(projectSlug, allDocs) ?? projectSlug;
   const sidecar = readProjectSourceBindings(VAULT_ROOT);
+  if (sidecar.status === 'unsafe_path') {
+    throw new Error(
+      `disconnect_project_source blocked: ${PROJECT_SOURCE_STATE_RELATIVE_PATH} is behind an unsafe sidecar path. Replace the symlink or junction with a real vault-local directory first.`,
+    );
+  }
   if (sidecar.status === 'malformed') {
     throw new Error(
       `disconnect_project_source blocked: ${PROJECT_SOURCE_STATE_RELATIVE_PATH} is malformed. Inspect it by hand, or re-connect with repair: true to rewrite it.`,
@@ -8706,6 +8841,11 @@ function disconnectProjectSourceTool({ projectSlug, confirm } = {}) {
   }
 
   const result = removeProjectSourceBindings(VAULT_ROOT, canonicalSlug);
+  if (result.status === 'blocked_unsafe_path') {
+    throw new Error(
+      `disconnect_project_source blocked: ${PROJECT_SOURCE_STATE_RELATIVE_PATH} is behind an unsafe sidecar path.`,
+    );
+  }
   if (result.status === 'persistence_failed') {
     throw new Error('disconnect_project_source could not persist the sidecar update.');
   }
@@ -9161,7 +9301,7 @@ function validateVaultTool({ repoRoot } = {}) {
   // (default: active resolved repository root). Surfaced here because it is a vault-health signal the
   // agent already runs validate_vault for at first-contact. The agent fixes via
   // patch_concept (correct the path) or by removing the stale entry.
-  const driftRoot = repoRoot ? resolve(repoRoot) : REPO_ROOT;
+  const driftRoot = repoRoot ? assertScanRootAllowed(repoRoot, 'repoRoot') : REPO_ROOT;
   // 근거 없는 저장소 루트에 대고는 **재지 않는다.** 재면 그 볼트와 아무 상관
   // 없는 디렉터리에 없는 파일이 전부 "drift" 로 잡혀, 멀쩡한 볼트가
   // `needs_attention` 이 된다. 안 본 것은 0이 아니라 *안 봤다* 이므로
@@ -9386,11 +9526,59 @@ function isPathLikeGraphRef(ref) {
 // R16 (b3) — analyze_repo_structure thin wrapper. side effect 0 — vault
 // frontmatter 절대 안 건드림. reviewPlan + independent qualification 뒤 반환된
 // exact writePlan만 별도 batch writer의 진실 진입점이다.
+/**
+ * 훑을 수 있는 자리인가 — **볼트나 그 저장소 안이어야 한다.**
+ *
+ * ## 왜 (2026-08-16 검수, 실측으로 확인)
+ *
+ * `analyze_repo_structure` · `infer_imports` · `index_project` · `validate_vault`
+ * 는 `rootPath`(또는 `repoRoot`)를 받아 `resolve()` 만 하고 **아무 경계도 안
+ * 봤다.** 그래서 이런 호출이 그대로 성공했다:
+ *
+ * ```
+ * analyze_repo_structure {"rootPath":"/etc"}  → ok, 디렉터리 구조를 돌려줌
+ * ```
+ *
+ * 게다가 이 넷은 **읽기 도구**라 `OATLAS_READ_ONLY` 가 안 막는다. 그 모드의
+ * 설명은 「등록한 사람이 볼트 주인이 아닐 때 권한다」인데, 쓰기는 못 해도
+ * **디스크 전체를 훑을 수는 있는** 상태였다.
+ *
+ * 이건 이 제품이 사용자에게 한 약속과 정면으로 부딪힌다:
+ * *"사용자 디스크에 있는 비밀번호·인증 키 같은 파일은 절대 자동으로 훑지
+ * 않는다"* (`local-first.md`), *"사용자 디스크를 자동으로 훑지 않는다"*
+ * (신뢰 헌장). 프롬프트 한 줄로 유도되는 도구 호출이 그 약속을 깬다.
+ *
+ * 그래서 **볼트 아니면 그 볼트의 저장소** 안만 허용한다. 심볼릭 링크로
+ * 빠져나가는 길을 막으려고 비교 전에 실제 경로로 편다 — `absorb_document` 가
+ * 이미 쓰는 문법 그대로다.
+ */
+function assertScanRootAllowed(target, argName = 'rootPath') {
+  const canonical = existsSync(target) ? realpathSync(target) : resolve(target);
+  const roots = [];
+  for (const root of [VAULT_ROOT, REPO_ROOT]) {
+    try {
+      roots.push(existsSync(root) ? realpathSync(root) : resolve(root));
+    } catch {
+      roots.push(resolve(root));
+    }
+  }
+  const inside = roots.some((root) => {
+    if (canonical === root) return true;
+    const rel = relative(root, canonical);
+    return rel !== '' && rel !== '..' && !rel.startsWith(`..${sep}`) && !isAbsolute(rel);
+  });
+  if (inside) return canonical;
+  throw new Error(
+    `${argName} must be inside the vault (${roots[0]}) or its repository (${roots[1]}). ` +
+      'This server only reads the folder it was opened for.',
+  );
+}
+
 function analyzeRepoStructureTool({ rootPath, maxDepth, ignore, proposal, qualification } = {}) {
   requireOptionalNonBlankString(rootPath, 'rootPath');
   requireOptionalNonNegativeInteger(maxDepth, 'maxDepth', { max: 10 });
   requireOptionalStringArray(ignore, 'ignore', { max: IGNORE_ARRAY_MAX_ITEMS });
-  const target = rootPath ? resolve(rootPath) : REPO_ROOT;
+  const target = rootPath ? assertScanRootAllowed(rootPath) : REPO_ROOT;
   const sourceDigest = proposal == null
     ? undefined
     : inspectProjectSource(target).fingerprint;
@@ -9513,7 +9701,7 @@ function inferImportsTool({
   if (reviewMode === 'next' && reconcile === false) {
     throw new Error('reviewMode "next" requires reconcile:true because the review queue is a vault diff.');
   }
-  const target = rootPath ? resolve(rootPath) : REPO_ROOT;
+  const target = rootPath ? assertScanRootAllowed(rootPath) : REPO_ROOT;
   const result = inferImports(target, {
     sourceFolders,
     ignore,
@@ -9560,11 +9748,21 @@ function inferImportsTool({
     try {
       const artifact = compileOntology(loadVaultDocs(VAULT_ROOT), { includeIndexes: true });
       const nodeSlugs = new Set((artifact.nodes ?? []).map((n) => n.slug).filter(Boolean));
+      // 각 노드가 자기 구현을 어디라고 적어 뒀는지 — **판정을 미룰지**
+      // 결정하는 데 쓴다. 스캐너가 못 읽는 언어(Rust 등)로 구현된 관계를
+      // 「코드에 없음」으로 부르면 에이전트가 맞는 관계를 지운다
+      // (2026-08-17, 이 저장소 자신에서 실측: 3개 중 3개가 그 경우였다).
+      const pathBySlug = Object.create(null);
+      for (const node of artifact.nodes ?? []) {
+        if (node?.slug && typeof node.path === 'string') pathBySlug[node.slug] = node.path;
+      }
       const r = reconcileImportEdges({
         moduleEdges: result.moduleEdges,
         compiledEdges: artifact.edges,
         aliasToSlug: artifact.indexes?.aliasToSlug,
         nodeSlugs,
+        pathBySlug,
+        scannedExtensions: result.coverage?.supportedExtensions,
       });
       result.reconciliation = r;
       // Factual, never-lie hint: only report "in sync" when there is genuinely
@@ -9583,7 +9781,15 @@ function inferImportsTool({
       }
       if (r.inVaultNotInCode.length > 0) {
         parts.push(
-          `${r.inVaultNotInCode.length} vault depends_on edge(s) have no matching code import (review for stale)`,
+          // 「오래됐다」고 단정하지 않는다. import 는 **한 종류의 근거**일 뿐이고,
+          // 의존은 프로세스를 띄우는 것일 수도 설정이 가리키는 것일 수도 있다 —
+          // 이 저장소 자신의 세 엣지가 전부 그런 경우였다(2026-08-17).
+          `${r.inVaultNotInCode.length} vault depends_on edge(s) have no matching code import. An import is only one kind of evidence: a dependency can be a process spawn, a config reference, or a runtime contract. Read the code before treating any of these as stale`,
+        );
+      }
+      if (r.notJudgeableByImports.length > 0) {
+        parts.push(
+          `${r.notJudgeableByImports.length} vault depends_on edge(s) could NOT be judged from imports because an endpoint's implementation is not in a scanned language (do not treat these as stale — read the code yourself or leave them alone)`,
         );
       }
       if (result.unresolved.length > 0) {
@@ -9596,6 +9802,7 @@ function inferImportsTool({
         inCodeMissingFromVault: r.inCodeMissingFromVault.length,
         inCodeMissingEndpointAbsent: r.inCodeMissingEndpointAbsent.length,
         inVaultNotInCode: r.inVaultNotInCode.length,
+        notJudgeableByImports: r.notJudgeableByImports.length,
         unresolvedImports: result.unresolved.length,
         hint:
           parts.length > 0
@@ -9724,7 +9931,7 @@ function indexProjectTool({ rootPath, maxDepth, maxFiles, threshold, skipImports
   requireOptionalPositiveInteger(threshold, 'threshold');
   requireOptionalBoolean(skipImports, 'skipImports');
 
-  const target = rootPath ? resolve(rootPath) : REPO_ROOT;
+  const target = rootPath ? assertScanRootAllowed(rootPath) : REPO_ROOT;
   let imports = null;
   let importAnalysis = null;
   let thresholdApplied = null;
@@ -9982,6 +10189,13 @@ function summarizeProposedBusinessConceptRows(rows) {
   }));
 }
 
+function publicBacklinkUpdates(result) {
+  return {
+    updates: result.updates,
+    totalUpdated: result.totalUpdated,
+  };
+}
+
 function renameConcept({ oldSlug, newSlug, confirm = false, overwrite = false, expected_mtime }) {
   requireNonBlankString(oldSlug, 'oldSlug');
   requireNonBlankString(newSlug, 'newSlug');
@@ -9991,10 +10205,39 @@ function renameConcept({ oldSlug, newSlug, confirm = false, overwrite = false, e
   if (oldSlug === newSlug) {
     throw new Error('oldSlug and newSlug are identical.');
   }
+  /*
+   * ⚠️ **대소문자만 다른 이름은 여기서 막는다** (2026-08-16 검수 — 실제로
+   * 문서가 사라지는 것을 재현했다).
+   *
+   * 위 검사는 문자열 비교라 `Auth` 와 `auth` 를 다른 것으로 본다. 그런데
+   * macOS·Windows 의 파일 시스템은 그 둘을 **같은 파일**로 보므로, 새 이름으로
+   * 쓰고 옛 이름을 지우면 방금 쓴 그것이 지워졌다 — 그리고 이 도구는
+   * `ok: true, moved: true` 를 돌려줬다. 실측:
+   *
+   * ```
+   * rename_concept{oldSlug:"Auth", newSlug:"auth", confirm:true, overwrite:true}
+   *   → ok:true, moved:true, backlinkUpdates:{totalUpdated:1}
+   *   → 디스크에서 Auth.md 도 auth.md 도 없어짐. 참조는 매달린 채 남음
+   * ```
+   *
+   * 쓰기 층에도 막는 장치를 뒀지만(`applyAllOrNothing` 의 같은-파일 판정),
+   * 그것만 있으면 결과가 **반만 된 이름 바꾸기**가 된다: 참조는 새 이름을
+   * 가리키는데 디스크의 파일 이름은 그대로다. 반쯤 된 것을 성공이라고 말하지
+   * 않는다 — 여기서 못 한다고 분명히 말하고, 할 수 있는 길을 알려 준다.
+   */
+  if (oldSlug.toLowerCase() === newSlug.toLowerCase()) {
+    throw new Error(
+      `oldSlug and newSlug differ only in letter case ("${oldSlug}" → "${newSlug}"). ` +
+        'On macOS and Windows those are the same file, so this rename would delete the ' +
+        'document instead of renaming it. Rename through a different name first ' +
+        `(for example "${newSlug}-tmp"), then to "${newSlug}".`,
+    );
+  }
   if (!vaultSlugExists(VAULT_ROOT, oldSlug)) {
     throw new Error(missingSlugMessage('Source slug does not exist in vault', oldSlug));
   }
-  if (!overwrite && vaultSlugExists(VAULT_ROOT, newSlug)) {
+  const targetExists = vaultSlugExists(VAULT_ROOT, newSlug);
+  if (!overwrite && targetExists) {
     throw new Error(
       `Target slug already exists: "${newSlug}". Pass overwrite: true to replace it.`,
     );
@@ -10003,6 +10246,7 @@ function renameConcept({ oldSlug, newSlug, confirm = false, overwrite = false, e
   const sourcePath = slugToPath(VAULT_ROOT, oldSlug);
   const targetPath = slugToPath(VAULT_ROOT, newSlug);
   const sourceDoc = readDoc(VAULT_ROOT, sourcePath);
+  const targetDoc = overwrite && targetExists ? readDoc(VAULT_ROOT, targetPath) : null;
 
   // 슬러그 평면성 — rename 은 writeDoc 을 거치지 않고 직접 쓰므로 여기서도
   // 같은 게이트를 잰다 (경로형 정체성이 rename 으로 되살아나는 문 봉쇄).
@@ -10035,7 +10279,7 @@ function renameConcept({ oldSlug, newSlug, confirm = false, overwrite = false, e
       sourcePath,
       targetPath,
       moved: false,
-      backlinkUpdates: preview,
+      backlinkUpdates: publicBacklinkUpdates(preview),
       message: `dry-run — confirm:true 를 주면 파일 이동 + ${preview.totalUpdated} 곳 backlink redirect 가 실제 적용됩니다.`,
     };
   }
@@ -10067,12 +10311,22 @@ function renameConcept({ oldSlug, newSlug, confirm = false, overwrite = false, e
       op: 'write',
       path: targetPath,
       content: buildMarkdown({ frontmatter: nextFrontmatter, body: sourceDoc.body }),
+      ...(targetDoc
+        ? { expectedRaw: targetDoc.raw, expectedMtime: targetDoc.mtime }
+        : { expectedAbsent: true }),
     },
     ...result.plan,
     // 삭제는 마지막이다 — 계획 안에서도 순서는 유지된다. 되돌리기는 역순이라
     // 옛 파일이 먼저 복원되고 새 파일이 지워진다.
-    ...(sourcePath !== targetPath ? [{ op: 'delete', path: sourcePath }] : []),
-  ]);
+    ...(sourcePath !== targetPath
+      ? [{
+          op: 'delete',
+          path: sourcePath,
+          expectedRaw: sourceDoc.raw,
+          expectedMtime: sourceDoc.mtime,
+        }]
+      : []),
+  ], { requireRevisions: true });
 
   return {
     ok: true,
@@ -10084,7 +10338,7 @@ function renameConcept({ oldSlug, newSlug, confirm = false, overwrite = false, e
     sourcePath,
     targetPath,
     moved: true,
-    backlinkUpdates: result,
+    backlinkUpdates: publicBacklinkUpdates(result),
     changed: true,
     postWriteMaintenance: compactPostWriteMaintenance(),
   };
@@ -10154,7 +10408,7 @@ function reclassifyConcept({ slug, newKind, newSlug, domain, body, confirm = fal
     sourcePath,
     targetPath,
     bodyAction,
-    backlinkUpdates,
+    backlinkUpdates: publicBacklinkUpdates(backlinkUpdates),
   };
   if (!confirm) return base;
   const nextFrontmatter = { ...sourceDoc.frontmatter, slug: canonicalNew, kind: newKind };
@@ -10170,11 +10424,28 @@ function reclassifyConcept({ slug, newKind, newSlug, domain, body, confirm = fal
       op: 'write',
       path: targetPath,
       content: buildMarkdown({ frontmatter: nextFrontmatter, body: nextBody }),
+      ...(sourcePath === targetPath
+        ? { expectedRaw: sourceDoc.raw, expectedMtime: sourceDoc.mtime }
+        : { expectedAbsent: true }),
     },
     ...(appliedBacklinks.plan ?? []),
-    ...(sourcePath !== targetPath ? [{ op: 'delete', path: sourcePath }] : []),
-  ]);
-  return { ...base, ok: true, dryRun: false, changed: true, backlinkUpdates: appliedBacklinks, postWriteMaintenance: compactPostWriteMaintenance() };
+    ...(sourcePath !== targetPath
+      ? [{
+          op: 'delete',
+          path: sourcePath,
+          expectedRaw: sourceDoc.raw,
+          expectedMtime: sourceDoc.mtime,
+        }]
+      : []),
+  ], { requireRevisions: true });
+  return {
+    ...base,
+    ok: true,
+    dryRun: false,
+    changed: true,
+    backlinkUpdates: publicBacklinkUpdates(appliedBacklinks),
+    postWriteMaintenance: compactPostWriteMaintenance(),
+  };
 }
 
 function mergeConcepts({ fromSlug, intoSlug, confirm = false, expected_mtime, expected_into_mtime }) {
@@ -10222,7 +10493,7 @@ function mergeConcepts({ fromSlug, intoSlug, confirm = false, expected_mtime, ex
       intoSlug,
       fromPath,
       deleted: false,
-      backlinkUpdates: preview,
+      backlinkUpdates: publicBacklinkUpdates(preview),
       capturedFrom: {
         frontmatter: fromDoc.frontmatter,
         bodyExcerpt: extractSummaryExcerpt(fromDoc.body, 200),
@@ -10245,6 +10516,8 @@ function mergeConcepts({ fromSlug, intoSlug, confirm = false, expected_mtime, ex
   const intoIdentityWrite = {
     op: 'write',
     path: intoPath,
+    expectedRaw: intoDoc.raw,
+    expectedMtime: intoDoc.mtime,
     content: buildMarkdown({
       frontmatter: {
         ...redirectedInto.frontmatter,
@@ -10256,7 +10529,15 @@ function mergeConcepts({ fromSlug, intoSlug, confirm = false, expected_mtime, ex
   };
   if (intoPlanIndex >= 0) result.plan[intoPlanIndex] = intoIdentityWrite;
   else result.plan.push(intoIdentityWrite);
-  applyAllOrNothing([...result.plan, { op: 'delete', path: fromPath }]);
+  applyAllOrNothing([
+    ...result.plan,
+    {
+      op: 'delete',
+      path: fromPath,
+      expectedRaw: fromDoc.raw,
+      expectedMtime: fromDoc.mtime,
+    },
+  ], { requireRevisions: true });
 
   return {
     ok: true,
@@ -10269,7 +10550,7 @@ function mergeConcepts({ fromSlug, intoSlug, confirm = false, expected_mtime, ex
     intoSlug,
     fromPath,
     deleted: true,
-    backlinkUpdates: result,
+    backlinkUpdates: publicBacklinkUpdates(result),
     changed: true,
     capturedFrom: {
       frontmatter: fromDoc.frontmatter,

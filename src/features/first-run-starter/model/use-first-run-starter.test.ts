@@ -6,6 +6,8 @@ interface MockVault {
   status: string;
   manifest: { docs: unknown[] } | null;
   errorMessage: string | null;
+  /** 실패의 **갈래**. 원문을 안 흘리는 갈래는 이 값만 뜻을 갖는다. */
+  errorCode?: 'root-rejected' | 'path-missing' | 'access-failed' | null;
   open: ReturnType<typeof vi.fn>;
   scaffoldOntology: ReturnType<typeof vi.fn>;
 }
@@ -28,7 +30,11 @@ vi.mock('./use-first-run-sample-mode-settled', () => ({
 
 // 스타터 본문 언어는 화면 언어를 따른다 — 훅이 useLocale() 을 읽으므로
 // intl provider 없이 도는 이 단위 테스트에는 로케일 스텁이 필요하다.
-vi.mock('next-intl', () => ({ useLocale: () => 'ko' }));
+vi.mock('next-intl', () => ({
+  useLocale: () => 'ko',
+  // 문구 자체가 아니라 **어느 문구를 골랐나**를 검사한다 — 키를 그대로 돌려준다.
+  useTranslations: () => (key: string) => key,
+}));
 
 import { useFirstRunStarter } from './use-first-run-starter';
 
@@ -37,6 +43,7 @@ function makeVault(): MockVault {
     status: 'idle',
     manifest: null,
     errorMessage: null,
+    errorCode: null,
     open: vi.fn(async () => undefined),
     scaffoldOntology: vi.fn(async () => ({ created: 8, skipped: 0 })),
   };
@@ -155,5 +162,39 @@ describe('useFirstRunStarter', () => {
     window.dispatchEvent(event);
 
     expect(event.defaultPrevented).toBe(false);
+  });
+});
+
+describe('첫 실행 카드 — 말할 수 있는 실패는 말한다', () => {
+  /*
+   * 2026-08-16 검수: 「받을 수 없는 자리」와 「폴더가 사라짐」은 원문을 화면에
+   * 흘리지 않으려고 `errorMessage` 를 일부러 null 로 둔다. 그런데 이 카드는
+   * 그 값만 보고 있어서, 두 경우에 **아무 말도 안 나왔다.** 코드가 뜻을 아는데
+   * 화면이 침묵하는 것은 원문을 흘리는 것보다 나쁘다.
+   */
+  beforeEach(() => {
+    mocks.vault = makeVault();
+    mocks.vault.status = 'error';
+    mocks.vault.errorMessage = null;
+    mocks.sampleModeSettled = true;
+  });
+
+  it('받을 수 없는 자리는 그 이유를 말한다', () => {
+    mocks.vault.errorCode = 'root-rejected';
+    const { result } = renderHook(() => useFirstRunStarter());
+    expect(result.current.errorText).toBe('errorRootRejected');
+  });
+
+  it('폴더가 사라졌으면 「다시 시도」가 아니라 그 사실을 말한다', () => {
+    mocks.vault.errorCode = 'path-missing';
+    const { result } = renderHook(() => useFirstRunStarter());
+    expect(result.current.errorText).toBe('errorPathMissing');
+  });
+
+  it('그 밖의 실패는 원문을 쓰되, 비어 있어도 카드가 뜬다', () => {
+    mocks.vault.errorCode = 'access-failed';
+    const { result } = renderHook(() => useFirstRunStarter());
+    // 빈 문자열이면 화면이 `errorFallback` 으로 떨어진다 — null 이면 카드가 안 뜬다.
+    expect(result.current.errorText).toBe('');
   });
 });

@@ -156,6 +156,13 @@ function rpc(vaultRoot, requests, timeoutMs = 1500, extraEnv = {}) {
   });
 }
 
+function rpcForRepo(vaultRoot, repoRoot, requests, timeoutMs = 1500, extraEnv = {}) {
+  return rpc(vaultRoot, requests, timeoutMs, {
+    OATLAS_REPO_ROOT: repoRoot,
+    ...extraEnv,
+  });
+}
+
 /**
  * ⚠️ **`2024-11-05` 은 낡은 상수가 아니라 시험 대상이다.**
  *
@@ -444,11 +451,15 @@ await test("tools/list — 단일 도구 description 이 batch 짝을 cross-refe
       assert.equal(schema?.minLength, 1, `${label} minLength`);
       assert.equal(schema?.pattern, "^(?!\\s)(?!.*\\s$)(?!.*\\u0000).+$", `${label} pattern`);
     };
-    const assertCleanStringOrArraySchema = (schema, label) => {
-      assert.deepEqual(schema?.type, ["array", "string"], `${label} type`);
+    const assertCleanBacklinkValueSchema = (schema, label) => {
+      assert.deepEqual(schema?.type, ["array", "object", "string"], `${label} type`);
       assert.equal(schema?.minLength, 1, `${label} minLength`);
+      assert.equal(schema?.minItems, 1, `${label} minItems`);
+      assert.equal(schema?.minProperties, 1, `${label} minProperties`);
       assert.equal(schema?.pattern, "^(?!\\s)(?!.*\\s$)(?!.*\\u0000).+$", `${label} pattern`);
       assertCleanStringSchema(schema?.items, `${label} items`);
+      assertCleanStringSchema(schema?.propertyNames, `${label} propertyNames`);
+      assertCleanStringSchema(schema?.additionalProperties, `${label} additionalProperties`);
     };
     const listConcepts = findTool("list_concepts");
     assert.equal(listConcepts?.outputSchema?.type, "object");
@@ -512,9 +523,24 @@ await test("tools/list — 단일 도구 description 이 batch 짝을 cross-refe
     assert.deepEqual(findEvidence?.outputSchema?.required, ["query", "matches"]);
     assert.equal(findEvidence?.outputSchema?.additionalProperties, false);
     assert.equal(findEvidence?.outputSchema?.properties?.matches?.type, "array");
-    assert.deepEqual(findEvidence?.outputSchema?.properties?.matches?.items?.required, ["uid", "slug", "kind", "title", "mtime", "matchedIn", "score", "excerpt"]);
-    assert.equal(findEvidence?.outputSchema?.properties?.matches?.items?.additionalProperties, false);
-    assert.deepEqual(findEvidence?.outputSchema?.properties?.matches?.items?.properties?.matchedIn?.enum, ["frontmatter", "body"]);
+    const evidenceMatchSchema = findEvidence?.outputSchema?.properties?.matches?.items;
+    assert.deepEqual(evidenceMatchSchema?.required, ["slug", "isNode", "title", "mtime", "matchedIn", "score", "excerpt"]);
+    assert.equal(evidenceMatchSchema?.additionalProperties, false);
+    assert.deepEqual(evidenceMatchSchema?.properties?.matchedIn?.enum, ["frontmatter", "body"]);
+    assert.deepEqual(
+      evidenceMatchSchema?.oneOf,
+      [
+        {
+          properties: { isNode: { const: true } },
+          required: ["uid", "kind"],
+        },
+        {
+          properties: { isNode: { const: false } },
+          not: { anyOf: [{ required: ["uid"] }, { required: ["kind"] }] },
+        },
+      ],
+      "find_evidence output rows discriminate graph-node identity from ordinary markdown",
+    );
     const findBacklinks = findTool("find_backlinks");
     assert.match(
       findBacklinks?.description ?? "",
@@ -1012,8 +1038,8 @@ await test("tools/list — 단일 도구 description 이 batch 짝을 cross-refe
     assert.deepEqual(renameBacklinkKeyChange?.required, ["key"]);
     assert.equal(renameBacklinkKeyChange?.additionalProperties, false);
     assertCleanStringSchema(renameBacklinkKeyChange?.properties?.key, "rename backlink key-change key");
-    assertCleanStringOrArraySchema(renameBacklinkKeyChange?.properties?.before, "rename backlink key-change before");
-    assertCleanStringOrArraySchema(renameBacklinkKeyChange?.properties?.after, "rename backlink key-change after");
+    assertCleanBacklinkValueSchema(renameBacklinkKeyChange?.properties?.before, "rename backlink key-change before");
+    assertCleanBacklinkValueSchema(renameBacklinkKeyChange?.properties?.after, "rename backlink key-change after");
     assert.equal(renameConcept?.outputSchema?.properties?.postWriteMaintenance?.type, "object");
     const mergeConcepts = findTool("merge_concepts");
     assert.equal(mergeConcepts?.outputSchema?.type, "object");
@@ -2327,7 +2353,7 @@ await test("compile_ontology — deterministic graph artifact + indexes", async 
 
 await test("analyze_repo_structure — bootstrap candidates expose structuredContent", async () => {
   const vaultRoot = makeVault();
-  const repoRoot = mkdtempSync(join(tmpdir(), "ontology-atlas-analyze-"));
+  const repoRoot = realpathSync(mkdtempSync(join(tmpdir(), "ontology-atlas-analyze-")));
   try {
     writeFileSync(
       join(repoRoot, "package.json"),
@@ -2338,7 +2364,7 @@ await test("analyze_repo_structure — bootstrap candidates expose structuredCon
     mkdirSync(join(repoRoot, "src", "features", "auth"), { recursive: true });
     writeFileSync(join(repoRoot, "src", "features", "auth", "index.ts"), "export const auth = true;\n", "utf-8");
 
-    const { responses } = await rpc(vaultRoot, [
+    const { responses } = await rpcForRepo(vaultRoot, repoRoot, [
       ...INIT_REQUESTS,
       callTool(2, "analyze_repo_structure", { rootPath: repoRoot }),
     ]);
@@ -2368,7 +2394,7 @@ await test("analyze_repo_structure — bootstrap candidates expose structuredCon
 
 await test("analyze_repo_structure — validates a complete meaning proposal before writes", async () => {
   const vaultRoot = makeVault();
-  const repoRoot = mkdtempSync(join(tmpdir(), "ontology-atlas-proposal-"));
+  const repoRoot = realpathSync(mkdtempSync(join(tmpdir(), "ontology-atlas-proposal-")));
   try {
     writeFileSync(join(repoRoot, "package.json"), JSON.stringify({ name: "claims" }), "utf-8");
     writeFileSync(
@@ -2472,7 +2498,7 @@ await test("analyze_repo_structure — validates a complete meaning proposal bef
         },
       },
     };
-    const { responses } = await rpc(vaultRoot, [
+    const { responses } = await rpcForRepo(vaultRoot, repoRoot, [
       ...INIT_REQUESTS,
       callTool(2, "analyze_repo_structure", { rootPath: repoRoot, proposal }),
     ]);
@@ -2508,7 +2534,7 @@ await test("analyze_repo_structure — validates a complete meaning proposal bef
       ];
     });
 
-    const qualified = await rpc(vaultRoot, [
+    const qualified = await rpcForRepo(vaultRoot, repoRoot, [
       ...INIT_REQUESTS,
       callTool(2, "analyze_repo_structure", { rootPath: repoRoot, proposal, qualification }),
     ]);
@@ -2530,7 +2556,7 @@ await test("analyze_repo_structure — validates a complete meaning proposal bef
       ...proposalRefs.slice(0, -1),
       "concept:foreign-proposal",
     ];
-    const foreignProposal = await rpc(vaultRoot, [
+    const foreignProposal = await rpcForRepo(vaultRoot, repoRoot, [
       ...INIT_REQUESTS,
       callTool(2, "analyze_repo_structure", {
         rootPath: repoRoot,
@@ -2548,7 +2574,7 @@ await test("analyze_repo_structure — validates a complete meaning proposal bef
 
     const sourceHiddenMissing = structuredClone(qualification);
     sourceHiddenMissing.sourceHiddenTask.status = "not_measured";
-    const blocked = await rpc(vaultRoot, [
+    const blocked = await rpcForRepo(vaultRoot, repoRoot, [
       ...INIT_REQUESTS,
       callTool(2, "analyze_repo_structure", {
         rootPath: repoRoot,
@@ -2567,7 +2593,7 @@ await test("analyze_repo_structure — validates a complete meaning proposal bef
       ({ code }) => code === "source-hidden-not-measured",
     ));
 
-    const written = await rpc(vaultRoot, [
+    const written = await rpcForRepo(vaultRoot, repoRoot, [
       ...INIT_REQUESTS,
       callTool(2, "add_concepts", {
         concepts: qualifiedResult.proposalValidation.writePlan.concepts,
@@ -2579,7 +2605,7 @@ await test("analyze_repo_structure — validates a complete meaning proposal bef
     assert.ok(getCallParsed(written.responses, 2).concepts.every((row) => row.ok));
     assert.ok(getCallParsed(written.responses, 3).relations.every((row) => row.ok));
 
-    const connected = await rpc(vaultRoot, [
+    const connected = await rpcForRepo(vaultRoot, repoRoot, [
       ...INIT_REQUESTS,
       callTool(2, "connect_project_source", {
         projectSlug: "claims",
@@ -2589,7 +2615,7 @@ await test("analyze_repo_structure — validates a complete meaning proposal bef
     ]);
     assert.equal(getCallParsed(connected.responses, 2).projectSource.status, "verified_current");
 
-    const finalized = await rpc(vaultRoot, [
+    const finalized = await rpcForRepo(vaultRoot, repoRoot, [
       ...INIT_REQUESTS,
       callTool(2, "finalize_project_meaning", {
         projectSlug: "claims",
@@ -2607,7 +2633,7 @@ await test("analyze_repo_structure — validates a complete meaning proposal bef
       .find((row) => row.id === "scope")?.witnessStatus, "resolved");
     assert.equal(JSON.stringify(finalizedResult).includes(repoRoot), false);
 
-    const handedOff = await rpc(vaultRoot, [
+    const handedOff = await rpcForRepo(vaultRoot, repoRoot, [
       ...INIT_REQUESTS,
       callTool(2, "query_ontology", {
         operation: "agent_brief",
@@ -2624,7 +2650,9 @@ await test("analyze_repo_structure — validates a complete meaning proposal bef
       .find((row) => row.id === "scope")?.witnessStatus, "resolved");
     assert.equal(handoffBrief.meaningAssessment.topGap?.questionId, "impact");
     assert.equal(handoffBrief.meaningAssessment.dimensions.source.currentness, "current");
-    assert.equal(JSON.stringify(handoffBrief).includes(repoRoot), false);
+    assert.equal(JSON.stringify(handoffBrief.projectSource).includes(repoRoot), false);
+    assert.equal(JSON.stringify(handoffBrief.meaningAssessment).includes(repoRoot), false);
+    assert.equal(JSON.stringify(handoffBrief.meaningRepair).includes(repoRoot), false);
 
     const legacyProposal = {
       ...proposal,
@@ -2636,7 +2664,7 @@ await test("analyze_repo_structure — validates a complete meaning proposal bef
         impact: "Review decisions gate publication.",
       },
     };
-    const { responses: legacyResponses } = await rpc(vaultRoot, [
+    const { responses: legacyResponses } = await rpcForRepo(vaultRoot, repoRoot, [
       ...INIT_REQUESTS,
       callTool(2, "analyze_repo_structure", {
         rootPath: repoRoot,
@@ -2655,7 +2683,7 @@ await test("analyze_repo_structure — validates a complete meaning proposal bef
       ...proposal,
       project: { ...proposal.project, includes: "Reviewable claims." },
     };
-    const { responses: malformedBoundaryResponses } = await rpc(vaultRoot, [
+    const { responses: malformedBoundaryResponses } = await rpcForRepo(vaultRoot, repoRoot, [
       ...INIT_REQUESTS,
       callTool(2, "analyze_repo_structure", {
         rootPath: repoRoot,
@@ -2677,7 +2705,7 @@ await test("analyze_repo_structure — validates a complete meaning proposal bef
 
 await test("analyze_repo_structure — validates exact TypeScript import endpoints inside the proposal call", async () => {
   const vaultRoot = makeVault();
-  const repoRoot = mkdtempSync(join(tmpdir(), "ontology-atlas-ts-proposal-"));
+  const repoRoot = realpathSync(mkdtempSync(join(tmpdir(), "ontology-atlas-ts-proposal-")));
   try {
     writeFileSync(join(repoRoot, "package.json"), JSON.stringify({ name: "portable-reader" }), "utf-8");
     writeFileSync(
@@ -2811,7 +2839,7 @@ await test("analyze_repo_structure — validates exact TypeScript import endpoin
       type: "depends_on",
     }];
 
-    const { responses } = await rpc(vaultRoot, [
+    const { responses } = await rpcForRepo(vaultRoot, repoRoot, [
       ...INIT_REQUESTS,
       callTool(2, "analyze_repo_structure", { rootPath: repoRoot, proposal }),
       callTool(3, "analyze_repo_structure", { rootPath: repoRoot, proposal: reversedProposal }),
@@ -2842,7 +2870,7 @@ await test("analyze_repo_structure — validates exact TypeScript import endpoin
 
 await test("infer_imports — import graph exposes structuredContent", async () => {
   const vaultRoot = makeVault();
-  const repoRoot = mkdtempSync(join(tmpdir(), "ontology-atlas-infer-"));
+  const repoRoot = realpathSync(mkdtempSync(join(tmpdir(), "ontology-atlas-infer-")));
   try {
     mkdirSync(join(repoRoot, "src", "features", "auth"), { recursive: true });
     mkdirSync(join(repoRoot, "src", "entities", "user"), { recursive: true });
@@ -2862,7 +2890,7 @@ await test("infer_imports — import graph exposes structuredContent", async () 
     writeFileSync(join(repoRoot, "src", "entities", "user", "index.ts"), "export const user = true;\n", "utf-8");
     writeFileSync(join(repoRoot, "src", "shared", "api", "client.ts"), "export const client = true;\n", "utf-8");
 
-    const { responses } = await rpc(vaultRoot, [
+    const { responses } = await rpcForRepo(vaultRoot, repoRoot, [
       ...INIT_REQUESTS,
       callTool(2, "infer_imports", { rootPath: repoRoot }),
     ]);
@@ -2887,7 +2915,7 @@ await test("infer_imports — import graph exposes structuredContent", async () 
 
 await test("infer_imports — Go package evidence stays typed while focus and index return bounded summaries", async () => {
   const vaultRoot = makeVault();
-  const repoRoot = mkdtempSync(join(tmpdir(), "ontology-atlas-go-summary-"));
+  const repoRoot = realpathSync(mkdtempSync(join(tmpdir(), "ontology-atlas-go-summary-")));
   try {
     writeFileSync(join(repoRoot, "go.mod"), "module example.test/sample\n", "utf-8");
     mkdirSync(join(repoRoot, "cmd", "sample"), { recursive: true });
@@ -2899,7 +2927,7 @@ await test("infer_imports — Go package evidence stays typed while focus and in
     );
     writeFileSync(join(repoRoot, "internal", "store", "store.go"), "package store\n\nconst Ready = true\n", "utf-8");
 
-    const { responses } = await rpc(vaultRoot, [
+    const { responses } = await rpcForRepo(vaultRoot, repoRoot, [
       ...INIT_REQUESTS,
       callTool(2, "infer_imports", { rootPath: repoRoot, reconcile: false }),
       callTool(3, "infer_imports", {
@@ -2957,14 +2985,16 @@ await test("infer_imports auto delivery — oversized omitted calls compact, exp
   const vaultRoot = makeVault([
     {
       slug: "capabilities/legacy",
-      content: "---\nkind: capability\ntitle: Legacy\ndependencies: [capabilities/target]\n---\n",
+      // 이 fixture는 "읽을 수 있는데 import가 없음"을 시험한다. path가 없으면
+      // 새 계약상 notJudgeableByImports가 맞고 stale follow-up 시험이 사라진다.
+      content: "---\nkind: capability\ntitle: Legacy\npath: src/legacy.ts\ndependencies: [capabilities/target]\n---\n",
     },
     {
       slug: "capabilities/target",
-      content: "---\nkind: capability\ntitle: Target\n---\n",
+      content: "---\nkind: capability\ntitle: Target\npath: src/target.ts\n---\n",
     },
   ]);
-  const repoRoot = mkdtempSync(join(tmpdir(), "ontology-atlas-infer-auto-delivery-"));
+  const repoRoot = realpathSync(mkdtempSync(join(tmpdir(), "ontology-atlas-infer-auto-delivery-")));
   try {
     mkdirSync(join(repoRoot, "src", "shared", "runtime"), { recursive: true });
     writeFileSync(
@@ -2983,7 +3013,7 @@ await test("infer_imports auto delivery — oversized omitted calls compact, exp
     }
     const before = readdirSync(vaultRoot, { recursive: true });
 
-    const { responses } = await rpc(vaultRoot, [
+    const { responses } = await rpcForRepo(vaultRoot, repoRoot, [
       ...INIT_REQUESTS,
       callTool(2, "infer_imports", { rootPath: repoRoot }),
       callTool(3, "infer_imports", { rootPath: repoRoot, reviewMode: "next" }),
@@ -3108,7 +3138,7 @@ await test("infer_imports auto delivery — oversized omitted calls compact, exp
 
 await test("Rust and Autotools C MCP evidence — analyze, infer, and index preserve provenance and unsupported import coverage", async () => {
   const vaultRoot = makeVault();
-  const repoRoot = mkdtempSync(join(tmpdir(), "ontology-atlas-rust-evidence-"));
+  const repoRoot = realpathSync(mkdtempSync(join(tmpdir(), "ontology-atlas-rust-evidence-")));
   try {
     mkdirSync(join(repoRoot, "src"), { recursive: true });
     writeFileSync(
@@ -3133,7 +3163,7 @@ await test("Rust and Autotools C MCP evidence — analyze, infer, and index pres
     writeFileSync(join(repoRoot, "Makefile.am"), "bin_PROGRAMS = native-check\nnative_check_SOURCES = src/native.c\n", "utf-8");
     writeFileSync(join(repoRoot, "src", "native.c"), "int main(void) { return 0; }\n", "utf-8");
 
-    const { responses } = await rpc(vaultRoot, [
+    const { responses } = await rpcForRepo(vaultRoot, repoRoot, [
       ...INIT_REQUESTS,
       callTool(2, "analyze_repo_structure", { rootPath: repoRoot }),
       callTool(3, "infer_imports", { rootPath: repoRoot }),
@@ -3183,7 +3213,7 @@ await test("infer_imports reviewMode next — one bounded non-writing relation r
     { slug: "elements/client", content: "---\nkind: element\ntitle: API Client\n---\n\nCalls the remote API.\n" },
     { slug: "elements/user", content: "---\nkind: element\ntitle: User Entity\n---\n\nRepresents the signed-in user.\n" },
   ]);
-  const repoRoot = mkdtempSync(join(tmpdir(), "ontology-atlas-infer-review-"));
+  const repoRoot = realpathSync(mkdtempSync(join(tmpdir(), "ontology-atlas-infer-review-")));
   try {
     mkdirSync(join(repoRoot, "src", "features", "auth"), { recursive: true });
     mkdirSync(join(repoRoot, "src", "entities", "user"), { recursive: true });
@@ -3202,7 +3232,7 @@ await test("infer_imports reviewMode next — one bounded non-writing relation r
     ];
     const before = readReviewVault();
 
-    const { responses: firstResponses } = await rpc(vaultRoot, [
+    const { responses: firstResponses } = await rpcForRepo(vaultRoot, repoRoot, [
       ...INIT_REQUESTS,
       callTool(2, "infer_imports", { rootPath: repoRoot, reviewMode: "next" }),
     ]);
@@ -3218,7 +3248,7 @@ await test("infer_imports reviewMode next — one bounded non-writing relation r
     assert.equal(first.reconciliation, undefined);
     assert.deepEqual(readReviewVault(), before, "review must write zero vault bytes");
 
-    const { responses: secondResponses } = await rpc(vaultRoot, [
+    const { responses: secondResponses } = await rpcForRepo(vaultRoot, repoRoot, [
       ...INIT_REQUESTS,
       callTool(2, "infer_imports", {
         rootPath: repoRoot,
@@ -3238,7 +3268,7 @@ await test("infer_imports reviewMode next — one bounded non-writing relation r
 
 await test("infer_imports reviewMode next — fresh vault returns one endpoint-modelling packet without the full firehose", async () => {
   const vaultRoot = makeVault();
-  const repoRoot = mkdtempSync(join(tmpdir(), "ontology-atlas-infer-fresh-review-"));
+  const repoRoot = realpathSync(mkdtempSync(join(tmpdir(), "ontology-atlas-infer-fresh-review-")));
   try {
     mkdirSync(join(repoRoot, "source", "features", "alpha"), { recursive: true });
     mkdirSync(join(repoRoot, "source", "features", "beta"), { recursive: true });
@@ -3253,7 +3283,7 @@ await test("infer_imports reviewMode next — fresh vault returns one endpoint-m
       "utf-8",
     );
 
-    const { responses } = await rpc(vaultRoot, [
+    const { responses } = await rpcForRepo(vaultRoot, repoRoot, [
       ...INIT_REQUESTS,
       callTool(2, "infer_imports", { rootPath: repoRoot, reviewMode: "next" }),
     ]);
@@ -3317,7 +3347,7 @@ await test("infer_imports reviewMode next — test-only type evidence stays visi
     { slug: "capabilities/a", content: "---\nkind: capability\ntitle: A\n---\n\nA product ability.\n" },
     { slug: "capabilities/b", content: "---\nkind: capability\ntitle: B\n---\n\nA supporting ability.\n" },
   ]);
-  const repoRoot = mkdtempSync(join(tmpdir(), "ontology-atlas-infer-test-scope-"));
+  const repoRoot = realpathSync(mkdtempSync(join(tmpdir(), "ontology-atlas-infer-test-scope-")));
   try {
     mkdirSync(join(repoRoot, "src", "features", "a"), { recursive: true });
     mkdirSync(join(repoRoot, "src", "features", "b"), { recursive: true });
@@ -3332,7 +3362,7 @@ await test("infer_imports reviewMode next — test-only type evidence stays visi
       "utf-8",
     );
 
-    const { responses } = await rpc(vaultRoot, [
+    const { responses } = await rpcForRepo(vaultRoot, repoRoot, [
       ...INIT_REQUESTS,
       callTool(2, "infer_imports", { rootPath: repoRoot, reviewMode: "next" }),
     ]);
@@ -3357,7 +3387,7 @@ await test("index_project — repo analysis, import indexing, and vault validati
       content: "---\nslug: sample-app\nkind: project\ntitle: Existing Sample App\n---\n",
     },
   ]);
-  const repoRoot = mkdtempSync(join(tmpdir(), "ontology-atlas-index-"));
+  const repoRoot = realpathSync(mkdtempSync(join(tmpdir(), "ontology-atlas-index-")));
   try {
     writeFileSync(
       join(repoRoot, "package.json"),
@@ -3388,7 +3418,7 @@ await test("index_project — repo analysis, import indexing, and vault validati
     );
     writeFileSync(join(repoRoot, "src", "features", "billing", "index.ts"), "export const billing = true;\n", "utf-8");
 
-    const { responses } = await rpc(vaultRoot, [
+    const { responses } = await rpcForRepo(vaultRoot, repoRoot, [
       ...INIT_REQUESTS,
       callTool(2, "index_project", { rootPath: repoRoot }),
     ]);
@@ -3458,7 +3488,7 @@ await test("index_project — repo analysis, import indexing, and vault validati
 
 await test("index_project — Python package and import boundaries reach the public read-only plan", async () => {
   const vaultRoot = makeVault([]);
-  const repoRoot = mkdtempSync(join(tmpdir(), "ontology-atlas-index-python-"));
+  const repoRoot = realpathSync(mkdtempSync(join(tmpdir(), "ontology-atlas-index-python-")));
   try {
     writeFileSync(
       join(repoRoot, "README.rst"),
@@ -3491,7 +3521,7 @@ await test("index_project — Python package and import boundaries reach the pub
       "utf-8",
     );
 
-    const { responses } = await rpc(vaultRoot, [
+    const { responses } = await rpcForRepo(vaultRoot, repoRoot, [
       ...INIT_REQUESTS,
       callTool(2, "index_project", { rootPath: repoRoot }),
       callTool(3, "analyze_repo_structure", { rootPath: repoRoot }),
@@ -3562,7 +3592,7 @@ await test("index_project — Python package and import boundaries reach the pub
 
 await test("infer_imports — Python package-internal symlink escape is rejected at the MCP boundary", async () => {
   const vaultRoot = makeVault([]);
-  const repoRoot = mkdtempSync(join(tmpdir(), "ontology-atlas-index-python-symlink-"));
+  const repoRoot = realpathSync(mkdtempSync(join(tmpdir(), "ontology-atlas-index-python-symlink-")));
   const outsideRoot = mkdtempSync(join(tmpdir(), "ontology-atlas-index-python-outside-"));
   try {
     mkdirSync(join(repoRoot, "pkg"), { recursive: true });
@@ -3575,7 +3605,7 @@ await test("infer_imports — Python package-internal symlink escape is rejected
     writeFileSync(join(outsideRoot, "__init__.py"), "", "utf-8");
     symlinkSync(outsideRoot, join(repoRoot, "pkg", "escaped"));
 
-    const { responses } = await rpc(vaultRoot, [
+    const { responses } = await rpcForRepo(vaultRoot, repoRoot, [
       ...INIT_REQUESTS,
       callTool(2, "infer_imports", { rootPath: repoRoot, reconcile: false }),
     ]);
@@ -3616,14 +3646,14 @@ await test("index_project — ambiguous aliases stay in review instead of becomi
       content: "---\nkind: capability\ntitle: Shared Capability\ndomain: domains/shared\n---\n",
     },
   ]);
-  const repoRoot = mkdtempSync(join(tmpdir(), "ontology-atlas-index-ambiguous-"));
+  const repoRoot = realpathSync(mkdtempSync(join(tmpdir(), "ontology-atlas-index-ambiguous-")));
   try {
     writeFileSync(
       join(repoRoot, "package.json"),
       JSON.stringify({ name: "shared", description: "Shared" }, null, 2),
       "utf-8",
     );
-    const { responses } = await rpc(vaultRoot, [
+    const { responses } = await rpcForRepo(vaultRoot, repoRoot, [
       ...INIT_REQUESTS,
       callTool(2, "index_project", {
         rootPath: repoRoot,
@@ -4238,16 +4268,18 @@ await test("query_ontology — compiled graph engine neighbors/path/all_paths/qu
       agentBrief.businessOntologyLens.guidance.join("\n"),
       /do not treat paths, APIs, routes, or commands as the ontology root/i,
     );
-    assert.ok(agentBrief.cliFallbackCommands.includes("ontology-atlas facets [vault] --limit 10"));
-    assert.ok(agentBrief.cliFallbackCommands.includes("ontology-atlas schema [vault] --limit 20"));
-    assert.ok(agentBrief.cliFallbackCommands.includes("ontology-atlas hubs [vault] --plan --limit 10 --types depends_on,relates"));
-    assert.ok(agentBrief.cliFallbackCommands.includes("ontology-atlas domain-matrix [vault] --limit 10"));
-    assert.ok(agentBrief.cliFallbackCommands.includes("ontology-atlas match-nodes [vault] --plan --kind capability --min-degree 2 --sort degree --limit 10"));
-    assert.ok(agentBrief.cliFallbackCommands.includes("ontology-atlas match-edges [vault] --plan --types depends_on --limit 20"));
-    assert.ok(agentBrief.cliFallbackCommands.some((command) => /ontology-atlas all-paths/.test(command)));
-    assert.ok(agentBrief.cliFallbackCommands.some((command) => /ontology-atlas pattern-walk/.test(command)));
-    assert.ok(agentBrief.cliFallbackCommands.some((command) => /ontology-atlas project-map/.test(command)));
-    assert.ok(agentBrief.cliFallbackCommands.some((command) => /ontology-atlas explain/.test(command)));
+    const hasCliFallback = (suffix) => agentBrief.cliFallbackCommands.some((command) => command.endsWith(suffix));
+    assert.ok(agentBrief.cliFallbackCommands.every((command) => !command.startsWith("ontology-atlas ")));
+    assert.ok(hasCliFallback(" facets [vault] --limit 10"));
+    assert.ok(hasCliFallback(" schema [vault] --limit 20"));
+    assert.ok(hasCliFallback(" hubs [vault] --plan --limit 10 --types depends_on,relates"));
+    assert.ok(hasCliFallback(" domain-matrix [vault] --limit 10"));
+    assert.ok(hasCliFallback(" match-nodes [vault] --plan --kind capability --min-degree 2 --sort degree --limit 10"));
+    assert.ok(hasCliFallback(" match-edges [vault] --plan --types depends_on --limit 20"));
+    assert.ok(hasCliFallback(" all-paths capabilities/login domains/auth [vault] --plan --force --max-hops 3 --types depends_on,relates --search-budget 1000 --limit 10"));
+    assert.ok(agentBrief.cliFallbackCommands.some((command) => /(?:^|\s)pattern-walk(?:\s|$)/.test(command)));
+    assert.ok(agentBrief.cliFallbackCommands.some((command) => /(?:^|\s)project-map(?:\s|$)/.test(command)));
+    assert.ok(hasCliFallback(" explain capabilities/login domains/auth [vault] --direction undirected --max-hops 5 --types depends_on,relates --limit 10"));
     assert.deepEqual(agentBrief.graphDbQueryPack.map((item) => item.id), [
       "graph_facets",
       "node_scan",
@@ -4415,7 +4447,12 @@ await test("query_ontology health/workspace_brief — meaning assessment cannot 
     ]);
     const health = getCallParsed(responses, 2);
     const brief = getCallParsed(responses, 3);
-    assert.equal(health.checks.find((check) => check.id === "meaning_assessment")?.status, "warn");
+    const meaningCheck = health.checks.find((check) => check.id === "meaning_assessment");
+    assert.equal(meaningCheck?.status, "warn");
+    assert.match(meaningCheck?.message ?? "", /competency_not_authored/);
+    assert.match(meaningCheck?.message ?? "", /Nothing is broken/);
+    assert.match(meaningCheck?.message ?? "", /finalize_project_meaning/);
+    assert.doesNotMatch(meaningCheck?.message ?? "", /assessment_input_invalid/);
     assert.equal(health.status, "needs_attention");
     assert.equal(brief.status, "needs_attention");
     assert.equal(brief.health.checks.find((check) => check.id === "meaning_assessment")?.status, "warn");
@@ -4793,7 +4830,13 @@ await test("find_evidence — 같은 점수면 노드가 잡문보다 먼저, �
       assert.equal(typeof m.isNode, "boolean", `${m.slug}.isNode`);
     }
     assert.equal(all.matches.find((m) => m.slug === "aaa-meeting-note").isNode, false);
-    assert.equal(all.matches.find((m) => m.slug === "capabilities/token-issue").isNode, true);
+    const nonNode = all.matches.find((m) => m.slug === "aaa-meeting-note");
+    assert.equal(nonNode.uid, undefined, "ordinary markdown must not invent a graph UID");
+    assert.equal(nonNode.kind, undefined, "ordinary markdown must not invent a graph kind");
+    const node = all.matches.find((m) => m.slug === "capabilities/token-issue");
+    assert.equal(node.isNode, true);
+    assert.match(node.uid, /^[0-9a-f-]{36}$/);
+    assert.equal(node.kind, "capability");
     // 잡문이 섞였으면 그 사실을 말한다 — 에이전트가 좁힐 길까지 같이.
     assert.match(String(all.nonNodeHint ?? ""), /nodesOnly/);
 
@@ -6402,6 +6445,64 @@ await test("add_concept/add_concepts — 활동 기록 agent 는 하트비트 �
   }
 });
 
+// 2026-08-16 — 배치로 쓴 관계의 **이유가 활동 기록에서만 사라지던 버그**.
+// `why` 는 frontmatter 에는 들어가는데 `summarizeWrite` 의 배치 분기가
+// `{target, summary}` 만 돌려줘서 기록 줄에서 빠졌다. 실제로 그 상태에서
+// 살아있는 볼트의 활동 15줄 전부가 `why: null` 이었고, 그 사실이 「대화가
+// 앱 밖에서 일어나서 이유가 안 남는다」는 **틀린 결론의 근거**로 쓰일 뻔했다.
+await test("add_relations — 배치로 쓴 관계도 활동 기록에 이유를 남긴다", async () => {
+  const root = makeVault([
+    { slug: "capabilities/a", content: "---\nslug: capabilities/a\nkind: capability\ntitle: A\ndomain: auth\n---\n\n# A\n" },
+    { slug: "capabilities/b", content: "---\nslug: capabilities/b\nkind: capability\ntitle: B\ndomain: auth\n---\n\n# B\n" },
+    { slug: "capabilities/c", content: "---\nslug: capabilities/c\nkind: capability\ntitle: C\ndomain: auth\n---\n\n# C\n" },
+  ]);
+  try {
+    await rpc(root, [
+      ...INIT_REQUESTS,
+      callTool(2, "add_relations", {
+        relations: [
+          { from: "capabilities/a", to: "capabilities/b", type: "depends_on", why: "토큰 검증이 세션 조회를 먼저 한다" },
+          { from: "capabilities/a", to: "capabilities/c", type: "depends_on", why: "감사 줄을 남기지 못하면 보내지 않는다" },
+        ],
+      }),
+    ]);
+    const lines = readFileSync(join(root, ".ontology-atlas", "activity.jsonl"), "utf-8").trim().split("\n");
+    assert.ok(lines.length > 0, "활동 기록이 비어 있으면 이 테스트는 공회전이다");
+    const last = JSON.parse(lines[lines.length - 1]);
+    assert.equal(last.tool, "add_relations");
+    assert.ok(last.why, "배치 관계의 이유가 기록에서 사라졌다");
+    assert.match(last.why, /토큰 검증/, "첫 행의 이유가 없다");
+    assert.match(last.why, /감사 줄/, "둘째 행의 이유가 없다");
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+await test("add_relations — 같은 이유가 반복되면 한 번만 적는다", async () => {
+  // 열 행이 같은 이유일 때 그것을 열 번 적으면 읽을 수 없는 줄이 된다.
+  const root = makeVault([
+    { slug: "capabilities/a", content: "---\nslug: capabilities/a\nkind: capability\ntitle: A\ndomain: auth\n---\n\n# A\n" },
+    { slug: "capabilities/b", content: "---\nslug: capabilities/b\nkind: capability\ntitle: B\ndomain: auth\n---\n\n# B\n" },
+    { slug: "capabilities/c", content: "---\nslug: capabilities/c\nkind: capability\ntitle: C\ndomain: auth\n---\n\n# C\n" },
+  ]);
+  try {
+    await rpc(root, [
+      ...INIT_REQUESTS,
+      callTool(2, "add_relations", {
+        relations: [
+          { from: "capabilities/a", to: "capabilities/b", type: "depends_on", why: "같은 이유" },
+          { from: "capabilities/a", to: "capabilities/c", type: "depends_on", why: "같은 이유" },
+        ],
+      }),
+    ]);
+    const lines = readFileSync(join(root, ".ontology-atlas", "activity.jsonl"), "utf-8").trim().split("\n");
+    const last = JSON.parse(lines[lines.length - 1]);
+    assert.equal((last.why.match(/같은 이유/g) ?? []).length, 1);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
 await test("patch_concept — created_by 는 보존되고 덮어쓸 수 없다", async () => {
   const root = makeVault([
     {
@@ -7656,7 +7757,7 @@ await test("rename_concept dry-run — preview 만, 디스크 변경 0", async (
     {
       slug: "ref",
       content:
-        "---\nkind: project\ntitle: Ref\ndependencies: [old-target]\n---\n",
+        "---\nkind: project\ntitle: Ref\ndependencies: [old-target]\nrelation_notes:\n  old-target: Starts the local MCP process\n---\n",
     },
   ]);
   try {
@@ -7678,6 +7779,15 @@ await test("rename_concept dry-run — preview 만, 디스크 변경 0", async (
     });
     assert.equal(result.moved, false);
     assert.equal(result.backlinkUpdates.totalUpdated, 1);
+    assert.equal(Object.hasOwn(result.backlinkUpdates, "plan"), false);
+    const noteBefore = result.backlinkUpdates.updates[0].beforeKeys.find(
+      (row) => row.key === "relation_notes",
+    );
+    const noteAfter = result.backlinkUpdates.updates[0].afterKeys.find(
+      (row) => row.key === "relation_notes",
+    );
+    assert.deepEqual(noteBefore?.before, { "old-target": "Starts the local MCP process" });
+    assert.deepEqual(noteAfter?.after, { "new-target": "Starts the local MCP process" });
     assert.equal(result.changed, undefined);
     assert.equal(result.postWriteMaintenance, undefined);
     assert.equal(readFileSync(join(root, "old-target.md"), "utf-8"), beforeOld);
@@ -7715,6 +7825,7 @@ await test("rename_concept confirm:true — 파일 이동 + backlink redirect", 
     assert.deepEqual(result.blockedReasons, []);
     assert.equal(result.moved, true);
     assert.equal(result.backlinkUpdates.totalUpdated, 1);
+    assert.equal(Object.hasOwn(result.backlinkUpdates, "plan"), false);
     assert.equal(result.backlinkUpdates.updates[0].slug, "ref");
     assert.equal(result.backlinkUpdates.updates[0].title, "Ref");
     assert.equal(result.changed, true);
@@ -7793,6 +7904,7 @@ await test("merge_concepts confirm:true — fromSlug 삭제 + backlink redirect"
     assert.deepEqual(result.blockedReasons, []);
     assert.equal(result.deleted, true);
     assert.equal(result.backlinkUpdates.totalUpdated, 1);
+    assert.equal(Object.hasOwn(result.backlinkUpdates, "plan"), false);
     assert.equal(result.changed, true);
     assert.equal(result.capturedFrom.frontmatter.title, "From");
     assert.equal(result.capturedFrom.body, "# From\n\nMerge body for captured excerpt.");
@@ -8955,12 +9067,16 @@ await test("reclassify_concept — kind/slug/domain/body and backlinks move toge
       callTool(4, "get_concept", { slug: "elements/claim-entity" }),
       callTool(5, "get_concept", { slug: "project" }),
     ]);
-    assertDestructivePreview(getCallParsed(responses, 2), {
+    const preview = getCallParsed(responses, 2);
+    assertDestructivePreview(preview, {
       canConfirm: true,
       wouldChange: true,
       label: "reclassify_concept preview",
     });
-    assert.equal(getCallParsed(responses, 3).changed, true);
+    assert.equal(Object.hasOwn(preview.backlinkUpdates, "plan"), false);
+    const reclassified = getCallParsed(responses, 3);
+    assert.equal(reclassified.changed, true);
+    assert.equal(Object.hasOwn(reclassified.backlinkUpdates, "plan"), false);
     const claim = getCallParsed(responses, 4);
     assert.equal(claim.frontmatter.kind, "element");
     assert.equal(claim.frontmatter.domain, "domains/review");

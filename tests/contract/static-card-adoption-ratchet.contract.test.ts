@@ -76,7 +76,7 @@ const DEBT: ReadonlyArray<readonly [file: string, count: number]> = [
   ["src/widgets/full-detail-a1/ui/full-detail-a1-groups-panel.tsx", 1],
   ["src/widgets/full-detail-a1/ui/FullDetailA1.tsx", 2],
   ["src/widgets/project-drawer/ui/ProjectDrawer.tsx", 3],
-  ["src/widgets/topology-controls/ui/VaultStartChecklist.tsx", 1],
+  ["src/widgets/topology-controls/ui/VaultStartSteps.tsx", 1],
   ["src/widgets/vault-agent-panel/ui/AgentProposalCard.tsx", 1],
   ["src/widgets/vault-agent-panel/ui/AgentScopeSheet.tsx", 1],
 ];
