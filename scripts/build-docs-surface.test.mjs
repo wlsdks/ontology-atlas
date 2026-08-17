@@ -127,15 +127,48 @@ describe('committed surface artifact', () => {
     assert.equal(surface.mcp.readToolCount + surface.mcp.writeToolCount, surface.mcp.toolCount);
   });
 
-  it('keeps exact-selector alternatives armed in the generated MCP surface', () => {
+  /**
+   * **계약이 스키마에서 런타임으로 옮겨갔는데 이 검사만 옛 모양을 붙들고
+   * 있었다** (2026-08-17에 발견 — 이 검사는 그 전부터 빨간 채였다).
+   *
+   * 종전에는 `get_concept` 의 입력 스키마가 top-level `oneOf` 로 「slug 냐 uid 냐」
+   * 를 못박았고, 이 검사가 그 `oneOfRequired` 를 확인했다. 그런데 Claude Code 의
+   * 도구 스키마는 top-level `oneOf` 를 만나면 **그 도구를 통째로 버린다** —
+   * 그래서 `mcp/src/index.js` 가 일부러 뺐고, 「정확히 하나」는 런타임이 던진다
+   * (`get_concept requires exactly one of slug or uid.`).
+   *
+   * 즉 동작은 맞고 검사가 낡았다. 그래서 **지금 지켜야 할 것**으로 바꾼다:
+   * 두 도구가 살아 있는가 · 두 선택자가 여전히 공개되는가 · 어느 쪽도
+   * 필수가 아닌가(그게 `oneOf` 를 뺀 이유다).
+   *
+   * 「정확히 하나」 자체는 여기서 못 잰다 — 생성물은 스키마이지 동작이 아니다.
+   * 그 몫은 이미 서 있다: `mcp/src/integration.test.mjs` 의
+   * *"get_concept/get_concepts — selector one-of is enforced at runtime"* 이
+   * 네 경우(둘 다 준 경우 · 아무것도 안 준 경우 × 두 도구)를 전부 잰다.
+   */
+  it('두 선택자 도구가 살아 있고, 선택자가 여전히 공개된다', () => {
     const exactReaders = surface.mcp.tools.filter((tool) =>
       ['get_concept', 'get_concepts'].includes(tool.name),
     );
     assert.equal(exactReaders.length, 2, 'exact selector tools disappeared from the generated surface');
-    assert.deepEqual(
-      exactReaders.map((tool) => tool.oneOfRequired),
-      [[['slug'], ['uid']], [['slugs'], ['uids']]],
-    );
+    const byName = new Map(exactReaders.map((tool) => [tool.name, tool]));
+    for (const [name, selectors] of [
+      ['get_concept', ['slug', 'uid']],
+      ['get_concepts', ['slugs', 'uids']],
+    ]) {
+      const tool = byName.get(name);
+      for (const selector of selectors) {
+        assert.ok(
+          tool.arguments.includes(selector),
+          `${name} 이 ${selector} 선택자를 더 이상 공개하지 않는다`,
+        );
+      }
+      assert.deepEqual(
+        tool.required,
+        [],
+        `${name} 의 선택자는 스키마에서 선택이어야 한다 — 필수로 만들면 Claude Code 가 도구를 버린다`,
+      );
+    }
   });
 
   it('says how it is regenerated so nobody hand-edits it', () => {

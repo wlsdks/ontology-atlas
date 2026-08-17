@@ -15278,8 +15278,8 @@
         }
       ],
       "excerpt": "로컬 마크다운 볼트의 frontmatter를 타입이 있는 계산 가능 그래프(도메인·능력·구현 증거·의존·영향)로 바꾸는 로컬-퍼스트 온톨로지 워크벤치. 개발자는 CLI/웹으로, AI 코딩 에이전트는 MCP로 같은 파일을 읽고 쓴다. README.md: \"Your AI coding agent forgets your codebase between sessions... turns the Markdown in your repository into a graph of your product\" AGENTS.md: Project overview (\"a local-first ont",
-      "wordCount": 639,
-      "updatedAt": "2026-08-16",
+      "wordCount": 668,
+      "updatedAt": "2026-08-17",
       "linksOut": []
     },
     {
