@@ -20,6 +20,12 @@ import type { SkillSourceFile } from "../lib/build-inventory";
  * | 딸린 파일이 깨짐 | `api-docs` 가 없는 `references/openapi.md` 를 가리킨다 |
  * | 내가 만든 것 (남의 것과 갈려야 한다) | `commit-style` |
  * | 아무 문제 없는 평범한 것 | `sql-explain` · `flaky-test` |
+ * | **서로 넘기는 것** (2026-08-18) | `api-docs` → `commit-style` → `release-notes` 사슬 + `csv-report` → `sql-explain` · `screenshot-diff` → `flaky-test` |
+ *
+ * 마지막 줄이 늦게 들어온 이유가 그 자체로 교훈이다 — 넘김을 세기 시작한 날
+ * 예시 뭉치에는 서로 부르는 스킬이 **하나도 없었다**. 그래서 폴더를 아직 안 고른
+ * 사람에게는 이 화면의 핵심 기능이 「연결 0개」로 보였다. **예시가 담지 않은
+ * 상황은 첫 5분에 존재하지 않는 기능이다.**
  *
  * 마지막 줄이 중요하다 — 전부 문제 있는 뭉치를 보여 주면 이 화면이 **경고판**으로
  * 읽히고, 그건 우리가 지기로 되어 있는 축이다(2026-08-09 원장: 위험 점수·배지 금지).
@@ -38,7 +44,7 @@ const SAMPLES: readonly SampleSkill[] = [
     name: "commit-style",
     description:
       "Write commit messages in this repository's house style. Use when staging changes, preparing a pull request, or when the user asks how to word a commit.",
-    body: "1. Read references/prefixes.md for the allowed prefixes.\n2. Draft the subject line.\n3. Check the subject before staging.",
+    body: "1. Read references/prefixes.md for the allowed prefixes.\n2. Draft the subject line.\n3. Check the subject before staging.\n\nWhen the change is part of a release, hand off to /release-notes.",
   },
   {
     path: "plugins/cache/docs-pack/2.1.0/skills/changelog/SKILL.md",
@@ -66,7 +72,7 @@ const SAMPLES: readonly SampleSkill[] = [
     name: "csv-report",
     description:
       "Turn a CSV export into a summary table with totals and outliers. Use when the user hands over a spreadsheet dump and wants the shape of it.",
-    body: "1. Read references/columns.md.\n2. Run scripts/summarize.py to build the table.\n3. Check totals and outliers before sharing.",
+    body: "1. Read references/columns.md.\n2. Run scripts/summarize.py to build the table.\n3. Check totals and outliers before sharing.\n\nIf a total looks wrong, hand off to /sql-explain.",
   },
   {
     path: "plugins/cache/data-pack/3.0.0/skills/sql-explain/SKILL.md",
@@ -80,7 +86,7 @@ const SAMPLES: readonly SampleSkill[] = [
     name: "screenshot-diff",
     description:
       "Compare two screenshots and report which regions moved. Use when a visual regression is suspected.",
-    body: "1. Run scripts/compare.py with both paths.\n2. Read references/thresholds.md.\n3. Report only regions that exceed the threshold.",
+    body: "1. Run scripts/compare.py with both paths.\n2. Read references/thresholds.md.\n3. Report only regions that exceed the threshold.\n\nIf the difference moves between runs, hand off to /flaky-test.",
   },
   {
     path: "plugins/cache/qa-pack/0.9.0/skills/flaky-test/SKILL.md",
@@ -95,7 +101,7 @@ const SAMPLES: readonly SampleSkill[] = [
     description:
       "Generate endpoint reference pages from an OpenAPI document. Use when the user asks to document an HTTP surface.",
     // 일부러 없는 파일을 가리킨다 — 「깨진 참조」가 화면에서 어떻게 보이는지 담는다.
-    body: "1. Read references/openapi.md for the schema conventions before writing.\n2. Check the endpoint names and response shapes.\n3. Report missing source evidence instead of inventing it.",
+    body: "1. Read references/openapi.md for the schema conventions before writing.\n2. Check the endpoint names and response shapes.\n3. Report missing source evidence instead of inventing it.\n\nOnce the pages are written, hand off to /commit-style.",
   },
 ];
 

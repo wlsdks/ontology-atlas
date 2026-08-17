@@ -6525,7 +6525,7 @@
         }
       ],
       "excerpt": "Major change history. Code commit messages answer why; this file answers when / which surface changed. Focused on user-visible changes, not PR-level granularity. Newest at the top. Entries stay date-based; the app version reached v1.0.0 on 2026-07-27, so a release tag now carries the semver promise instead. 소유자: \"스킬도 그",
-      "wordCount": 71059,
+      "wordCount": 71055,
       "updatedAt": "2026-08-18",
       "linksOut": [
         "audits/CASE-STUDY-AGENTS-MD-DRIFT",
