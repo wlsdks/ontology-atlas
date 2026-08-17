@@ -300,6 +300,12 @@ import {
   PAST_WALK_MIN_ENTRIES,
   type PastWalk,
 } from "../lib/past-trail-record";
+import {
+  acpHeartbeatAgentName,
+  buildAcpTurnHeartbeat,
+  createVaultAcpHeartbeatStore,
+  type AcpHeartbeatStore,
+} from "../lib/acp-agent-heartbeat";
 import { createVaultFilePastTrailStore, type PastTrailStore } from "../lib/past-trail-store";
 import { verifyHandlePermission } from "@/entities/local-fs-handle";
 import { TopologyInsightsReturnChip } from "./TopologyInsightsReturnChip";
@@ -2273,6 +2279,35 @@ export function HomePage() {
     vault.agentConfigStatus?.codexConfigValid,
     vault.agentConfigStatus?.codexRegisteredCommand,
   ]);
+
+  /*
+   * 앱 안 에이전트가 **자기 이름을 볼트에 등록**한다 (2026-08-17 소유자 지시).
+   * 종전에는 그 에이전트가 만든 노드가 전부 `created_by: agent:unknown` 이었다 —
+   * 서버는 이름을 알았지만 그 칸은 「사람이 의도적으로 등록한 이름」만 받고,
+   * 정작 등록할 방법이 아무 데도 없었다. 사람이 어느 도구로 대화할지 고른 것이
+   * 그 의도이고, 앱은 그것을 안다. 판정과 근거는 `lib/acp-agent-heartbeat.ts`.
+   */
+  const acpHeartbeatStore = useMemo<AcpHeartbeatStore | null>(
+    () =>
+      vault.status === "loaded" && vault.handle
+        ? createVaultAcpHeartbeatStore(vault.handle)
+        : null,
+    [vault.status, vault.handle],
+  );
+  const handleAcpTurnActiveChange = useCallback(
+    (active: boolean) => {
+      const store = acpHeartbeatStore;
+      if (!store) return;
+      const agent = acpHeartbeatAgentName(acpRuntimeId);
+      // 이름을 모르면 등록하지 않는다 — 모름은 모름으로 남는 편이 낫다.
+      if (!active || !agent) {
+        void store.clear().catch(() => {});
+        return;
+      }
+      void store.write(buildAcpTurnHeartbeat({ agent, at: new Date() })).catch(() => {});
+    },
+    [acpHeartbeatStore, acpRuntimeId],
+  );
 
   const indexSlotFrames: ReadonlyArray<{ state: IndexPanelState; exiting: boolean }> =
     indexSlotSwap.leaving === null
@@ -5877,6 +5912,7 @@ export function HomePage() {
             suggestions={chatSuggestions}
             knownSlugs={chatKnownSlugs}
             onHoverSlug={handleChatHoverSlug}
+            onTurnActiveChange={handleAcpTurnActiveChange}
             onClose={closeVaultAgent}
           />
         </Surface>

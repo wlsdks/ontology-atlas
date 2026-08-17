@@ -1190,3 +1190,61 @@ describe('답하다 죽은 것과 다 끝난 것은 다른 말이다', () => {
     expect(said).not.toContain('died-mid-turn');
   });
 });
+
+/**
+ * 앱 안 에이전트가 **자기 이름을 볼트에 등록**하려면, 화면이 「지금 한 차례가
+ * 돌고 있다」를 알아야 한다 (2026-08-17 소유자 지시).
+ *
+ * ⚠️ **세션이 열려 있는 내내가 아니다.** 하트비트가 신선하면 화면이 레일에
+ * 「에이전트 활동 중」 표시를 켠다. 아무것도 안 시켰는데 그게 켜지면 화면이
+ * 일어나지 않은 일을 말하는 것이고, 이 패널은 이미 그 규율을 지킨다
+ * (*"전송 전에 「읽음」으로 찍으면 …"*).
+ */
+describe('대화 패널 — 차례가 도는 동안만 알린다', () => {
+  it('보내면 켜지고, 답이 끝나면 꺼진다', async () => {
+    const seen: boolean[] = [];
+    render(
+      <AcpChatPanel
+        runtimeId="claude-acp"
+        runtimeLabel="Claude Code"
+        vaultRoot="/vault"
+        mcpServers={[{ name: 'atlas-vault' }]}
+        onTurnActiveChange={(active) => seen.push(active)}
+      />,
+    );
+    await waitFor(() => expect(bridge.sent.some((m) => m.method === 'initialize')).toBe(true));
+    replyTo('initialize', { protocolVersion: 1 });
+    await waitFor(() => expect(bridge.sent.some((m) => m.method === 'session/new')).toBe(true));
+    replyTo('session/new', { sessionId: 's-1' });
+    await waitFor(() =>
+      expect(screen.getByTestId('acp-chat-panel')).toHaveAttribute('data-acp-status', 'ready'),
+    );
+
+    // 아직 아무것도 안 시켰다 — 켜진 적이 없어야 한다.
+    expect(seen.some(Boolean), '세션만 열었는데 활동 중이라고 말한다').toBe(false);
+
+    fireEvent.change(screen.getAllByRole('textbox')[0], { target: { value: '안녕' } });
+    fireEvent.click(screen.getByTestId('acp-chat-send'));
+    await waitFor(() => expect(seen.at(-1)).toBe(true));
+
+    const call = [...bridge.sent].reverse().find((m) => m.method === 'session/prompt');
+    emit({ jsonrpc: '2.0', id: call?.id, result: { stopReason: 'end_turn' } });
+    await waitFor(() => expect(seen.at(-1)).toBe(false));
+  });
+
+  it('패널이 사라지면 꺼 준다 — 켠 채로 남기지 않는다', async () => {
+    const seen: boolean[] = [];
+    const view = render(
+      <AcpChatPanel
+        runtimeId="claude-acp"
+        runtimeLabel="Claude Code"
+        vaultRoot="/vault"
+        mcpServers={[{ name: 'atlas-vault' }]}
+        onTurnActiveChange={(active) => seen.push(active)}
+      />,
+    );
+    await waitFor(() => expect(bridge.sent.some((m) => m.method === 'initialize')).toBe(true));
+    view.unmount();
+    expect(seen.at(-1)).toBe(false);
+  });
+});
