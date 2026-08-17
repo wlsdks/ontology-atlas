@@ -1634,7 +1634,7 @@ export function ProjectForm({
               반경을 갖고 있어서 경계는 그것으로 충분하다. 여백도 6 → 5 로
               줄인다(액자가 없으니 안쪽 여백이 그만큼 커 보인다).
             */}
-            <div className="flex items-start justify-center rounded-panel bg-[color:var(--color-canvas)] p-5">
+            <div className="flex items-start justify-center rounded-panel bg-[color:var(--color-canvas)] py-4">
               <ProjectCard
                 project={previewProject}
                 category={(() => {

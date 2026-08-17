@@ -69,8 +69,19 @@ function borderClass(borderStyle: CardCategoryMeta['borderStyle'], isHub: boolea
     return 'border-[color:var(--color-indigo-brand)] bg-[color:var(--color-indigo-a12)]';
   }
   switch (borderStyle) {
+    /*
+     * **분류 밑줄은 없앴다** (2026-08-17 소유자 지시).
+     *
+     * 이 자리는 원래 «작업중» 분류를 2px 인디고 밑줄로 표시했다(헌장의
+     * "분류는 색이 아니라 테두리 모양으로"). 세기를 낮춰 보고 소유자가 다시
+     * 봤고 판정은 그대로였다 — *"하단에 파란선도 없애 그냥"*.
+     *
+     * 그래서 다른 분류와 같은 평범한 테두리로 돌린다. 분류는 카드의 옆 라벨과
+     * 목록·상세의 카테고리 표시가 계속 말한다 — 사실이 사라지는 게 아니라
+     * 그것을 말하는 자리가 하나 줄어든다.
+     */
     case 'underline':
-      return 'border-t-[color:var(--color-border-soft)] border-x-[color:var(--color-border-soft)] border-b-[color:var(--color-indigo-brand)] border-t border-x border-b-2';
+      return 'border border-[color:var(--color-border-soft)]';
     case 'dashed':
       return 'border border-dashed border-[color:var(--color-border-strong)]';
     case 'sideLabel':
@@ -197,9 +208,23 @@ export function ProjectCard({
       }
       className={cn(
         'group relative flex flex-col rounded-sheet border bg-[color:var(--color-panel)] shadow-[var(--shadow-elevation-1)] md:rounded-sheet',
-        dense
-          ? 'h-[84px] w-[156px] px-3 py-2 md:h-[92px] md:w-[168px] md:px-3 md:py-2.5'
-          : 'h-[120px] w-[192px] px-3.5 py-3 md:h-[140px] md:w-[220px] md:px-4 md:py-3.5',
+        /*
+         * 지도 위 카드는 **고정 치수**다 — 격자가 흐트러지지 않게(치수 규칙성).
+         *
+         * 미리보기만 예외다 (2026-08-17 소유자 지적: *"카드 좌우 공백이
+         * 상당한데?"*). 실측: 카드 220px 이 260px 레일 안에 앉아 좌우로 40px 이
+         * 남았고, 바로 아래 완성도 상자는 260 을 꽉 쓴다. 그래서 카드만 안으로
+         * 움츠러든 것처럼 보였다.
+         *
+         * 폭은 레일을 채우되 **진짜 비율(220:140 = 11:7)** 을 유지한다. 캡션이
+         * *"실제 지도에 그려지는 모습"* 이라고 말하므로 비율을 바꾸면 그 말이
+         * 거짓이 된다 — 채우는 것과 정직한 것을 둘 다 지키는 방법이 비율 고정이다.
+         */
+        preview
+          ? 'aspect-[11/7] w-full px-3.5 py-3 md:px-4 md:py-3.5'
+          : dense
+            ? 'h-[84px] w-[156px] px-3 py-2 md:h-[92px] md:w-[168px] md:px-3 md:py-2.5'
+            : 'h-[120px] w-[192px] px-3.5 py-3 md:h-[140px] md:w-[220px] md:px-4 md:py-3.5',
         preview ? '' : 'cursor-pointer active:cursor-grabbing',
         borderClass(borderStyle, isHub),
         related && !selected ? 'border-[color:var(--color-indigo-a22)]' : '',
