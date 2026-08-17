@@ -48,7 +48,9 @@ const DEBT: ReadonlyArray<readonly [file: string, count: number]> = [
   ["src/features/first-run-starter/ui/FirstRunStarterModule.tsx", 1],
   ["src/features/project-edit/ui/DependencyPicker.tsx", 3],
   ["src/features/project-edit/ui/MarkdownField.tsx", 1],
-  ["src/features/project-edit/ui/ProjectForm.tsx", 8],
+  // 8 → 7 (2026-08-17): 「더 채우기」를 감싸던 패널 상자를 걷어 냈다. 접힌 줄
+  // 하나를 92px 상자가 감싸고 있었다 — 담은 것 없는 크롬.
+  ["src/features/project-edit/ui/ProjectForm.tsx", 7],
   ["src/views/agent-skills/ui/SkillProcessRail.tsx", 1],
   ["src/views/docs-vault/ui/parts/EmptyState.tsx", 1],
   ["src/views/download/ui/DownloadPage.tsx", 1],

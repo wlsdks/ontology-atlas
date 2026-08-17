@@ -1623,7 +1623,18 @@ export function ProjectForm({
             <p className="mb-3 font-mono text-caption uppercase tracking-[var(--tracking-caps-12)] text-[color:var(--color-text-quaternary)]">
               {t("preview.cardEyebrow")}
             </p>
-            <div className="flex items-start justify-center rounded-panel border border-[color:var(--color-overlay-2)] bg-[color:var(--color-canvas)] p-6">
+            {/*
+              **카드가 상자 안의 상자가 되지 않게 한다** (2026-08-17).
+
+              미리보기의 일은 *"지도에서 이렇게 보인다"* 를 보여 주는 것인데,
+              그 카드를 다시 테두리 있는 액자에 넣으면 지도에 없는 테두리가
+              하나 더 붙은 모습을 보여 주게 된다 — 미리보기가 실물과 달라진다.
+
+              액자를 걷고 **지도와 같은 바탕**만 깐다. 카드 자신이 이미 테두리와
+              반경을 갖고 있어서 경계는 그것으로 충분하다. 여백도 6 → 5 로
+              줄인다(액자가 없으니 안쪽 여백이 그만큼 커 보인다).
+            */}
+            <div className="flex items-start justify-center rounded-panel bg-[color:var(--color-canvas)] p-5">
               <ProjectCard
                 project={previewProject}
                 category={(() => {
@@ -1691,6 +1702,20 @@ export function ProjectForm({
  * 만들기 화면의 "더 채우기" 자리. 필수 4칸 밖의 모든 항목이 여기 접혀 있고,
  * 펼치는 건 사용자다. 닫힌 높이를 고정하지 않는 대신 캡션 한 줄이 늘 같은
  * 자리에서 "저장한 뒤에 채워도 된다" 를 말한다 — 이 화면의 유일한 안내다.
+ *
+ * ## 상자를 씌우지 않는다 (2026-08-17 소유자 지적)
+ *
+ * *"조금 ai디자인같고 허접한데"*. 재 보니 값은 이미 시스템대로였다 — 이 화면의
+ * 반경 이탈 0건 · 글자 크기 이탈 0건. 어긋난 것은 **위계**였다.
+ *
+ * 종전에는 접힌 줄 하나를 `rounded-panel border bg-panel` 섹션이 감쌌다.
+ * 실측(1512×900): 그 상자가 **92px 를 차지하는데 담은 것은 제목 한 줄과 캡션
+ * 한 줄**뿐이었고, 화면의 바깥 상자 넷 중 하나였다. 이 저장소가 「떠 있는 상자
+ * 수프」라고 이름 붙여 금지한 모양이다.
+ *
+ * 테두리는 «여기부터 다른 것» 을 뜻하는데 접힌 상태에는 안에 다른 것이 없다.
+ * 그래서 경계는 머리카락선 하나로 충분하고, 펼쳤을 때 비로소 내용이 자기
+ * 무게로 구분된다. 크롬을 줄이면 남은 상자(폼)가 주인공이라는 것이 저절로 선다.
  */
 function CreateExtras({
   open,
@@ -1710,14 +1735,18 @@ function CreateExtras({
   children: React.ReactNode;
 }) {
   return (
-    <section className="rounded-panel border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] p-[var(--card-pad)] md:px-5">
+    <section className="border-t border-[color:var(--color-divider)] pt-5">
       <button
         type="button"
         data-testid="project-create-extras-toggle"
         onClick={onToggle}
         aria-expanded={open}
         aria-controls="project-create-extras"
-        className={controlClass({ shape: "row", stacked: true, className: "justify-between gap-3" })}
+        className={controlClass({
+          shape: "row",
+          stacked: true,
+          className: "justify-between gap-3",
+        })}
       >
         <span className="min-w-0">
           <span className="block text-body-lg text-[color:var(--color-text-primary)]">{label}</span>
