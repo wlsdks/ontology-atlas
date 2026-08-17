@@ -7,6 +7,19 @@
 
 ---
 
+## 2026-08-17 · 공증 암호 argv와 릴리스 child secret 상속을 제거
+
+- hosted 공증을 Apple ID 앱 암호에서 App Store Connect API key로 바꿨다.
+  `.p8` 본문은 `0600` 임시 파일에만 존재하고 `notarytool` argv에는 파일 경로,
+  key ID, issuer만 들어가며 성공·실패 뒤 임시 파일은 제거된다.
+- `desktop:release-artifact`를 11단계 오케스트레이터로 바꿔 일반 build/smoke/sign/
+  package/verify에는 릴리스 secret을 주지 않고, Tauri updater와 공증 단계에만 각각
+  필요한 allowlist를 전달한다.
+- `release-signing`의 총 secret 수는 7개로 유지하되 구형 Apple ID·앱 암호·Team ID
+  세 값을 API `.p8` base64·key ID·issuer ID로 교체했다.
+
+---
+
 ## 2026-08-17 · 보호된 데스크톱 릴리스 운영 절차를 `main` 디스패치로 갱신
 
 - 기존 태그를 먼저 만들고 push한 뒤 `desktop:release-run -- --ref=main`으로

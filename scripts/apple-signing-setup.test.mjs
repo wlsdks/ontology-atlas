@@ -27,9 +27,9 @@ test("owner-entered secrets are the credential ones", () => {
     assert.ok(REQUIRED_SECRETS.includes(name), `${name} is not in the required set`);
   }
   assert.deepEqual(OWNER_ENTERED_SECRETS, [
-    "APPLE_ID",
-    "APPLE_APP_SPECIFIC_PASSWORD",
-    "APPLE_TEAM_ID",
+    "APPLE_API_KEY_P8_BASE64",
+    "APPLE_API_KEY_ID",
+    "APPLE_API_ISSUER_ID",
     "TAURI_SIGNING_PRIVATE_KEY",
     "TAURI_SIGNING_PRIVATE_KEY_PASSWORD",
   ]);
@@ -93,9 +93,9 @@ test("verify reports exactly what is still missing", () => {
   assert.deepEqual(
     missingSecrets(`${header}APPLE_CERTIFICATE_P12_BASE64  2026-07-27\nAPPLE_CERTIFICATE_PASSWORD  2026-07-27\n`),
     [
-      "APPLE_ID",
-      "APPLE_APP_SPECIFIC_PASSWORD",
-      "APPLE_TEAM_ID",
+      "APPLE_API_KEY_P8_BASE64",
+      "APPLE_API_KEY_ID",
+      "APPLE_API_ISSUER_ID",
       "TAURI_SIGNING_PRIVATE_KEY",
       "TAURI_SIGNING_PRIVATE_KEY_PASSWORD",
     ],
@@ -108,8 +108,8 @@ test("repository copies are reported without treating them as environment secret
   const header = "NAME                          UPDATED\n";
   assert.deepEqual(
     repositoryScopedSecrets(
-      `${header}APPLE_ID  2026-07-27\nTAURI_SIGNING_PRIVATE_KEY  2026-07-27\nUNRELATED  2026-07-27\n`,
+      `${header}APPLE_API_KEY_ID  2026-07-27\nTAURI_SIGNING_PRIVATE_KEY  2026-07-27\nUNRELATED  2026-07-27\n`,
     ),
-    ["APPLE_ID", "TAURI_SIGNING_PRIVATE_KEY"],
+    ["APPLE_API_KEY_ID", "TAURI_SIGNING_PRIVATE_KEY"],
   );
 });

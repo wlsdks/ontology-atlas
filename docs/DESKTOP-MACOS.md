@@ -447,14 +447,14 @@ protected `release-signing` environment. The workflow is dispatched from
 `main`; pushing a tag alone does not start it.
 
 **1 — Prepare Apple Developer credentials (owner-only).** Create a Developer ID
-Application certificate, export the `.p12`, create an app-specific notary
-password, and note the Team ID. The repository code cannot configure GitHub
+Application certificate, export the `.p12`, and create an App Store Connect API
+key for notarization. Keep its `.p8`, key ID, and issuer ID. The repository code cannot configure GitHub
 environment settings automatically; the one-time GitHub cutover below is manual.
 
 **2 — Configure the one-time GitHub cutover.** Put exactly these seven hosted
 secrets in `release-signing`: Apple 5 (`APPLE_CERTIFICATE_P12_BASE64`,
-`APPLE_CERTIFICATE_PASSWORD`, `APPLE_ID`, `APPLE_APP_SPECIFIC_PASSWORD`,
-`APPLE_TEAM_ID`) plus Tauri 2 (`TAURI_SIGNING_PRIVATE_KEY`,
+`APPLE_CERTIFICATE_PASSWORD`, `APPLE_API_KEY_P8_BASE64`, `APPLE_API_KEY_ID`,
+`APPLE_API_ISSUER_ID`) plus Tauri 2 (`TAURI_SIGNING_PRIVATE_KEY`,
 `TAURI_SIGNING_PRIVATE_KEY_PASSWORD`). From the repository root:
 
 ```bash
@@ -462,9 +462,9 @@ base64 -i DeveloperID.p12 | pbcopy
 gh secret list --env release-signing
 gh secret set APPLE_CERTIFICATE_P12_BASE64 --env release-signing < /path/to/APPLE_CERTIFICATE_P12_BASE64
 gh secret set APPLE_CERTIFICATE_PASSWORD --env release-signing < /path/to/APPLE_CERTIFICATE_PASSWORD
-gh secret set APPLE_ID --env release-signing < /path/to/APPLE_ID
-gh secret set APPLE_APP_SPECIFIC_PASSWORD --env release-signing < /path/to/APPLE_APP_SPECIFIC_PASSWORD
-gh secret set APPLE_TEAM_ID --env release-signing < /path/to/APPLE_TEAM_ID
+gh secret set APPLE_API_KEY_P8_BASE64 --env release-signing < /path/to/APPLE_API_KEY_P8_BASE64
+gh secret set APPLE_API_KEY_ID --env release-signing < /path/to/APPLE_API_KEY_ID
+gh secret set APPLE_API_ISSUER_ID --env release-signing < /path/to/APPLE_API_ISSUER_ID
 gh secret set TAURI_SIGNING_PRIVATE_KEY --env release-signing < /path/to/TAURI_SIGNING_PRIVATE_KEY
 gh secret set TAURI_SIGNING_PRIVATE_KEY_PASSWORD --env release-signing < /path/to/TAURI_SIGNING_PRIVATE_KEY_PASSWORD
 ```
@@ -521,8 +521,8 @@ verifies the Release, and refreshes the generated `/download` facts on `main`.
 ### 사람에게 남는 것은 두 순간뿐이다
 
 둘 다 **자격증명을 다루는 순간**이라 자동화하지 않는다: Apple 로그인(비밀번호 +
-2FA)과 앱 암호 발급. 나머지 — 키쌍 생성 · CSR 작성 · `.p12` 조립 · GitHub 등록 ·
-검증 — 은 전부 스크립트 안에 있다.
+2FA)과 App Store Connect API key 생성·`.p8` 1회 다운로드. 나머지 — 키쌍 생성 ·
+CSR 작성 · `.p12` 조립 · GitHub 등록 명령 생성 · 검증 — 은 스크립트 안에 있다.
 
 ### 왜 Keychain Access GUI 를 쓰지 않는가
 
@@ -592,16 +592,16 @@ node scripts/apple-signing-setup.mjs bundle --cer=~/Downloads/developerID_applic
 
 | secret | 어디서 |
 |---|---|
-| `APPLE_ID` | Apple 계정 이메일 |
-| `APPLE_APP_SPECIFIC_PASSWORD` | https://account.apple.com → 로그인 및 보안 → 앱 암호 |
-| `APPLE_TEAM_ID` | https://developer.apple.com/account → Membership details (10자리) |
+| `APPLE_API_KEY_P8_BASE64` | App Store Connect에서 한 번 내려받은 `.p8` 전체를 base64로 인코딩한 값 |
+| `APPLE_API_KEY_ID` | App Store Connect API key의 Key ID |
+| `APPLE_API_ISSUER_ID` | App Store Connect Users and Access의 Issuer ID |
 | `TAURI_SIGNING_PRIVATE_KEY` | `~/.ontology-atlas-signing/tauri-updater.key` |
 | `TAURI_SIGNING_PRIVATE_KEY_PASSWORD` | the password chosen for the updater key |
 
 ```bash
-gh secret set APPLE_ID --env release-signing
-gh secret set APPLE_APP_SPECIFIC_PASSWORD --env release-signing
-gh secret set APPLE_TEAM_ID --env release-signing
+gh secret set APPLE_API_KEY_P8_BASE64 --env release-signing
+gh secret set APPLE_API_KEY_ID --env release-signing
+gh secret set APPLE_API_ISSUER_ID --env release-signing
 gh secret set TAURI_SIGNING_PRIVATE_KEY --env release-signing
 gh secret set TAURI_SIGNING_PRIVATE_KEY_PASSWORD --env release-signing
 ```
@@ -617,7 +617,7 @@ node scripts/apple-signing-setup.mjs verify
 무엇이 남았는지, 그리고 그것을 **사람이 넣는지 스크립트가 넣는지**까지 말한다.
 다 차면 다음 태그부터 워크플로가 자동으로 서명 경로로 간다 — 코드 수정은 없다.
 
-### 백업해야 할 파일은 둘뿐이다
+### 백업해야 할 파일은 셋뿐이다
 
 GitHub secret 은 **한 번 저장하면 아무도 못 읽는다** — 그것이 보호막이자,
 원본을 잃으면 되찾을 수 없다는 뜻이다. 원본은 `~/.ontology-atlas-signing/` 에 있고
@@ -626,6 +626,7 @@ GitHub secret 은 **한 번 저장하면 아무도 못 읽는다** — 그것이
 | 파일 | 유출되면 | 잃어버리면 |
 |---|---|---|
 | `developer-id.key` | 소유자 실명으로 앱 서명 가능 | Apple 에서 폐기 후 **재발급 가능** |
+| `AuthKey_*.p8` | 소유자의 App Store Connect API 권한으로 공증 요청 가능 | 기존 key를 폐기하고 **재발급 가능** |
 | `tauri-updater.key` | 가짜 업데이트를 설치된 앱에 밀어넣을 수 있음 | **복구 불가** — 이미 설치된 사용자는 갱신을 영영 못 받는다 |
 
 `.certSigningRequest` 는 이미 쓴 요청서고 `.pub` 은 설정 파일에 들어 있으므로
@@ -667,9 +668,10 @@ unless the following seven `release-signing` environment secrets are present:
 - `APPLE_CERTIFICATE_P12_BASE64`: base64-encoded Developer ID Application
   certificate export (`.p12`).
 - `APPLE_CERTIFICATE_PASSWORD`: password for that `.p12`.
-- `APPLE_ID`: Apple ID for `notarytool`.
-- `APPLE_APP_SPECIFIC_PASSWORD`: app-specific password for that Apple ID.
-- `APPLE_TEAM_ID`: Apple Developer Team ID.
+- `APPLE_API_KEY_P8_BASE64`: base64 of the complete App Store Connect `.p8`
+  private key. The orchestrator writes it to a `0600` temporary file only for notarization.
+- `APPLE_API_KEY_ID`: App Store Connect API key ID.
+- `APPLE_API_ISSUER_ID`: App Store Connect API issuer UUID.
 - `TAURI_SIGNING_PRIVATE_KEY`: Tauri updater private key.
 - `TAURI_SIGNING_PRIVATE_KEY_PASSWORD`: password for that updater key.
 
@@ -762,9 +764,9 @@ When it reports missing environment secrets, set each value through
 ```bash
 gh secret set APPLE_CERTIFICATE_P12_BASE64 --env release-signing < /path/to/APPLE_CERTIFICATE_P12_BASE64
 gh secret set APPLE_CERTIFICATE_PASSWORD --env release-signing < /path/to/APPLE_CERTIFICATE_PASSWORD
-gh secret set APPLE_ID --env release-signing < /path/to/APPLE_ID
-gh secret set APPLE_APP_SPECIFIC_PASSWORD --env release-signing < /path/to/APPLE_APP_SPECIFIC_PASSWORD
-gh secret set APPLE_TEAM_ID --env release-signing < /path/to/APPLE_TEAM_ID
+gh secret set APPLE_API_KEY_P8_BASE64 --env release-signing < /path/to/APPLE_API_KEY_P8_BASE64
+gh secret set APPLE_API_KEY_ID --env release-signing < /path/to/APPLE_API_KEY_ID
+gh secret set APPLE_API_ISSUER_ID --env release-signing < /path/to/APPLE_API_ISSUER_ID
 gh secret set TAURI_SIGNING_PRIVATE_KEY --env release-signing < /path/to/TAURI_SIGNING_PRIVATE_KEY
 gh secret set TAURI_SIGNING_PRIVATE_KEY_PASSWORD --env release-signing < /path/to/TAURI_SIGNING_PRIVATE_KEY_PASSWORD
 ```

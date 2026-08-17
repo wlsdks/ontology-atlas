@@ -9,8 +9,8 @@
  *
  * ## 무엇을 자동화하고 무엇을 사람에게 남기는가
  *
- * 사람이 직접 다루는 것은 Apple 로그인(비밀번호 + 2FA), 앱 암호/Team ID,
- * updater key material이다. 나머지 — 키쌍 생성, CSR 작성, `.p12` 조립과
+ * 사람이 직접 다루는 것은 App Store Connect API key/issuer와 updater key
+ * material이다. 나머지 — 키쌍 생성, CSR 작성, `.p12` 조립과
  * 검증 — 은 전부 여기 있다. GitHub 변경은 사람이 명령을 검토하고 직접 실행한다.
  *
  * ## 왜 Keychain Access GUI 를 쓰지 않는가
@@ -55,18 +55,18 @@ export const LOCAL_ONLY_VALUES = ["APPLE_KEYCHAIN_PASSWORD", "APPLE_SIGNING_IDEN
 export const REQUIRED_SECRETS = [
   "APPLE_CERTIFICATE_P12_BASE64",
   "APPLE_CERTIFICATE_PASSWORD",
-  "APPLE_ID",
-  "APPLE_APP_SPECIFIC_PASSWORD",
-  "APPLE_TEAM_ID",
+  "APPLE_API_KEY_P8_BASE64",
+  "APPLE_API_KEY_ID",
+  "APPLE_API_ISSUER_ID",
   "TAURI_SIGNING_PRIVATE_KEY",
   "TAURI_SIGNING_PRIVATE_KEY_PASSWORD",
 ];
 
 /** helper가 생성하지 않는 Apple/Tauri 자격증명은 사람이 직접 넣는다. */
 export const OWNER_ENTERED_SECRETS = [
-  "APPLE_ID",
-  "APPLE_APP_SPECIFIC_PASSWORD",
-  "APPLE_TEAM_ID",
+  "APPLE_API_KEY_P8_BASE64",
+  "APPLE_API_KEY_ID",
+  "APPLE_API_ISSUER_ID",
   "TAURI_SIGNING_PRIVATE_KEY",
   "TAURI_SIGNING_PRIVATE_KEY_PASSWORD",
 ];

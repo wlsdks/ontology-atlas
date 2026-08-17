@@ -14,9 +14,9 @@ const APP_TAG_PATTERN = APP_TAG.replace(/\./g, "\\.");
 const requiredSecrets = [
   "APPLE_CERTIFICATE_P12_BASE64",
   "APPLE_CERTIFICATE_PASSWORD",
-  "APPLE_ID",
-  "APPLE_APP_SPECIFIC_PASSWORD",
-  "APPLE_TEAM_ID",
+  "APPLE_API_KEY_P8_BASE64",
+  "APPLE_API_KEY_ID",
+  "APPLE_API_ISSUER_ID",
   "TAURI_SIGNING_PRIVATE_KEY",
   "TAURI_SIGNING_PRIVATE_KEY_PASSWORD",
 ];
@@ -339,7 +339,7 @@ test("desktop release status emits machine-readable blockers for automation", ()
       );
       assert.match(
         payload.checks.find((check) => check.label === "Developer ID direct-download secrets").next,
-        /gh secret set APPLE_TEAM_ID --env release-signing --repo wlsdks\/ontology-atlas/,
+        /gh secret set APPLE_API_ISSUER_ID --env release-signing --repo wlsdks\/ontology-atlas/,
       );
       assert.match(result.stderr, /blocked: 3 release requirement/);
     },
@@ -464,7 +464,7 @@ test("desktop release status writes a human-readable markdown checklist", () => 
         assert.match(markdown, /- \[ \] GitHub Release \(`github_release`\)/);
         assert.match(markdown, new RegExp(`git push origin ${APP_TAG_PATTERN}`));
         assert.match(markdown, /gh repo view wlsdks\/ontology-atlas --json defaultBranchRef --jq \.defaultBranchRef\.name/);
-        assert.match(markdown, /gh secret set APPLE_TEAM_ID --env release-signing --repo wlsdks\/ontology-atlas/);
+        assert.match(markdown, /gh secret set APPLE_API_ISSUER_ID --env release-signing --repo wlsdks\/ontology-atlas/);
         assert.match(markdown, /  - Commands \(run in one shell session\):\n    - `gh secret set APPLE_CERTIFICATE_P12_BASE64 --env release-signing --repo wlsdks\/ontology-atlas < \/path\/to\/APPLE_CERTIFICATE_P12_BASE64`/);
         assert.match(markdown, /  - Missing secrets:\n    - `APPLE_CERTIFICATE_P12_BASE64`/);
         assert.match(markdown, /## Checks/);
@@ -522,7 +522,7 @@ test("desktop release status reports current completion blockers together", () =
       assert.match(result.stdout, /commands \(run in one shell session\):\n    - gh pr checks 274 --repo wlsdks\/ontology-atlas/);
       assert.match(result.stdout, /✗ Developer ID direct-download secrets: missing APPLE_CERTIFICATE_P12_BASE64/);
       assert.match(result.stdout, /not Mac App Store submission/);
-      assert.match(result.stdout, /gh secret set APPLE_TEAM_ID --env release-signing --repo wlsdks\/ontology-atlas/);
+      assert.match(result.stdout, /gh secret set APPLE_API_ISSUER_ID --env release-signing --repo wlsdks\/ontology-atlas/);
       assert.match(result.stdout, /✗ GitHub Release: release not found/);
       assert.match(result.stdout, /dispatch \.github\/workflows\/release-macos\.yml from that branch/);
       assert.match(result.stdout, /DEFAULT_BRANCH="\$\(gh repo view wlsdks\/ontology-atlas --json defaultBranchRef --jq \.defaultBranchRef\.name\)"/);

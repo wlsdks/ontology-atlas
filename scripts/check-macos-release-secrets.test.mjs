@@ -7,9 +7,9 @@ const SCRIPT = fileURLToPath(new URL("./check-macos-release-secrets.mjs", import
 const APPLE_SECRET_NAMES = [
   "APPLE_CERTIFICATE_P12_BASE64",
   "APPLE_CERTIFICATE_PASSWORD",
-  "APPLE_ID",
-  "APPLE_APP_SPECIFIC_PASSWORD",
-  "APPLE_TEAM_ID",
+  "APPLE_API_KEY_P8_BASE64",
+  "APPLE_API_KEY_ID",
+  "APPLE_API_ISSUER_ID",
 ];
 const TAURI_SECRET_NAMES = ["TAURI_SIGNING_PRIVATE_KEY", "TAURI_SIGNING_PRIVATE_KEY_PASSWORD"];
 const STRUCTURALLY_VALID_PKCS12 = Buffer.from([
@@ -18,6 +18,9 @@ const STRUCTURALLY_VALID_PKCS12 = Buffer.from([
   0x07, 0x01, 0xa0, 0x0c, 0x04, 0x0a, 0x30, 0x08,
   0x02, 0x01, 0x00, 0x04, 0x03, 0x70, 0x31, 0x32,
 ]).toString("base64");
+const STRUCTURALLY_VALID_P8 = Buffer.from(
+  "-----BEGIN PRIVATE KEY-----\nprivate-key-material\n-----END PRIVATE KEY-----\n",
+).toString("base64");
 
 function cleanEnv() {
   const env = { ...process.env };
@@ -52,9 +55,9 @@ test("default mode requires the five Apple secrets and both Tauri secrets", () =
   Object.assign(env, {
     APPLE_CERTIFICATE_P12_BASE64: STRUCTURALLY_VALID_PKCS12,
     APPLE_CERTIFICATE_PASSWORD: "certificate-password",
-    APPLE_ID: "developer@example.com",
-    APPLE_APP_SPECIFIC_PASSWORD: "app-specific-password",
-    APPLE_TEAM_ID: "ABCDE12345",
+    APPLE_API_KEY_P8_BASE64: STRUCTURALLY_VALID_P8,
+    APPLE_API_KEY_ID: "KEYID12345",
+    APPLE_API_ISSUER_ID: "11111111-2222-3333-4444-555555555555",
     TAURI_SIGNING_PRIVATE_KEY: "private-key",
   });
 
@@ -78,6 +81,24 @@ test("default mode accepts exactly the seven signing and notarization secrets", 
   Object.assign(env, {
     APPLE_CERTIFICATE_P12_BASE64: STRUCTURALLY_VALID_PKCS12,
     APPLE_CERTIFICATE_PASSWORD: "certificate-password",
+    APPLE_API_KEY_P8_BASE64: STRUCTURALLY_VALID_P8,
+    APPLE_API_KEY_ID: "KEYID12345",
+    APPLE_API_ISSUER_ID: "11111111-2222-3333-4444-555555555555",
+    TAURI_SIGNING_PRIVATE_KEY: "private-key",
+    TAURI_SIGNING_PRIVATE_KEY_PASSWORD: "private-key-password",
+  });
+
+  const result = run([], env);
+
+  assert.equal(result.status, 0, result.stderr);
+  assert.match(result.stdout, /signing, notarization, and updater secrets are present/);
+});
+
+test("legacy Apple ID password credentials cannot satisfy the hosted notarization gate", () => {
+  const env = cleanEnv();
+  Object.assign(env, {
+    APPLE_CERTIFICATE_P12_BASE64: STRUCTURALLY_VALID_PKCS12,
+    APPLE_CERTIFICATE_PASSWORD: "certificate-password",
     APPLE_ID: "developer@example.com",
     APPLE_APP_SPECIFIC_PASSWORD: "app-specific-password",
     APPLE_TEAM_ID: "ABCDE12345",
@@ -87,8 +108,10 @@ test("default mode accepts exactly the seven signing and notarization secrets", 
 
   const result = run([], env);
 
-  assert.equal(result.status, 0, result.stderr);
-  assert.match(result.stdout, /signing, notarization, and updater secrets are present/);
+  assert.equal(result.status, 1);
+  assert.match(result.stderr, /APPLE_API_KEY_P8_BASE64/);
+  assert.match(result.stderr, /APPLE_API_KEY_ID/);
+  assert.match(result.stderr, /APPLE_API_ISSUER_ID/);
 });
 
 test("updater-only mode fails when either Tauri secret is missing", () => {
@@ -107,9 +130,9 @@ test("default mode preserves structural PKCS#12 validation", () => {
   Object.assign(env, {
     APPLE_CERTIFICATE_P12_BASE64: "not base64",
     APPLE_CERTIFICATE_PASSWORD: "certificate-password",
-    APPLE_ID: "developer@example.com",
-    APPLE_APP_SPECIFIC_PASSWORD: "app-specific-password",
-    APPLE_TEAM_ID: "ABCDE12345",
+    APPLE_API_KEY_P8_BASE64: STRUCTURALLY_VALID_P8,
+    APPLE_API_KEY_ID: "KEYID12345",
+    APPLE_API_ISSUER_ID: "11111111-2222-3333-4444-555555555555",
     TAURI_SIGNING_PRIVATE_KEY: "private-key",
     TAURI_SIGNING_PRIVATE_KEY_PASSWORD: "private-key-password",
   });
@@ -118,6 +141,24 @@ test("default mode preserves structural PKCS#12 validation", () => {
 
   assert.equal(result.status, 1);
   assert.match(result.stderr, /must be a base64-encoded \.p12 export/);
+});
+
+test("default mode rejects base64 that is not an App Store Connect p8 key", () => {
+  const env = cleanEnv();
+  Object.assign(env, {
+    APPLE_CERTIFICATE_P12_BASE64: STRUCTURALLY_VALID_PKCS12,
+    APPLE_CERTIFICATE_PASSWORD: "certificate-password",
+    APPLE_API_KEY_P8_BASE64: Buffer.from("not-a-private-key").toString("base64"),
+    APPLE_API_KEY_ID: "KEYID12345",
+    APPLE_API_ISSUER_ID: "11111111-2222-3333-4444-555555555555",
+    TAURI_SIGNING_PRIVATE_KEY: "private-key",
+    TAURI_SIGNING_PRIVATE_KEY_PASSWORD: "private-key-password",
+  });
+
+  const result = run([], env);
+
+  assert.equal(result.status, 1);
+  assert.match(result.stderr, /must decode to an App Store Connect \.p8 private key/);
 });
 
 test("help documents the updater-only mode and both Tauri secrets", () => {
