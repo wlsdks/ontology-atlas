@@ -3550,10 +3550,10 @@
     "truncated": "The folder is large, so we read up to {count} files: the results below cover that much.",
     "notInstalled": "Skipped {count} folders that are not installed: older versions and catalogs you have not installed. Those never fire.",
     "stat": {
-      "skills": "skills",
       "bundled": "bundled files",
-      "executables": "that run",
-      "folder": "Folder: {folder}"
+      "folder": "Folder: {folder}",
+      "skillsCount": "<b>{count}</b> skills",
+      "executablesCount": "<b>{count}</b> executables"
     },
     "collisions": {
       "title": "Names collide",
@@ -3590,16 +3590,14 @@
     },
     "detail": {
       "back": "Skill list",
-      "backOverview": "All findings",
+      "backOverview": "Back to summary",
       "showLoadChain": "Show how it loads (3 stages)",
       "hideLoadChain": "Hide how it loads",
       "competing": "Competes with this skill",
       "sameName": "The same name also lives in {source}: which one fires is undefined",
-      "sharedTrigger": "Shares a trigger with {name}: {words}",
+      "sharedTrigger": "{name}: same trigger words ({words})",
       "handsOffTitle": "Hands off to",
-      "handsOffTo": "Hands off to {name}",
-      "handedFromTitle": "Called from",
-      "handedFrom": "Called from {name}"
+      "handedFromTitle": "Called from"
     },
     "process": {
       "title": "Exact process",
@@ -3628,7 +3626,8 @@
       "packetTampered": "Integrity check failed; copying is blocked",
       "packetCopying": "Copying…",
       "packetCopied": "Packet copied",
-      "packetCopyFailed": "Copy failed"
+      "packetCopyFailed": "Copy failed",
+      "digestLabel": "source digest"
     },
     "findings": {
       "alwaysTitle": "Loaded every session",

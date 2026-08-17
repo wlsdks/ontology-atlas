@@ -158,9 +158,7 @@ export function SkillDetail({
               <ul className="mt-1.5 flex flex-col gap-1">
                 {handsOffTo.map((h) => (
                   <li key={`to-${h.to.origin.relativePath}`}>
-                    <Jump onClick={() => onSelect(h.to.origin.relativePath)}>
-                      {t("detail.handsOffTo", { name: h.to.name })}
-                    </Jump>
+                    <Jump onClick={() => onSelect(h.to.origin.relativePath)}>{h.to.name}</Jump>
                   </li>
                 ))}
               </ul>
@@ -179,9 +177,7 @@ export function SkillDetail({
               <ul className="mt-1.5 flex flex-col gap-1">
                 {handedFrom.map((h) => (
                   <li key={`from-${h.from.origin.relativePath}`}>
-                    <Jump onClick={() => onSelect(h.from.origin.relativePath)}>
-                      {t("detail.handedFrom", { name: h.from.name })}
-                    </Jump>
+                    <Jump onClick={() => onSelect(h.from.origin.relativePath)}>{h.from.name}</Jump>
                   </li>
                 ))}
               </ul>

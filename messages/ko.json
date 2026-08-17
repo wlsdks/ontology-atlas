@@ -3550,10 +3550,10 @@
     "truncated": "폴더가 커서 {count}개 파일까지만 읽었어요. 아래 결과는 그 범위 안에서예요.",
     "notInstalled": "설치돼 있지 않은 사본 {count}곳은 뺐어요. 옛 버전과 아직 설치 안 한 카탈로그예요. 그건 실제로 뜨지 않아요.",
     "stat": {
-      "skills": "스킬",
       "bundled": "딸린 파일",
-      "executables": "실행되는 것",
-      "folder": "폴더: {folder}"
+      "folder": "폴더: {folder}",
+      "skillsCount": "스킬 <b>{count}</b>개",
+      "executablesCount": "실행되는 것 <b>{count}</b>개"
     },
     "collisions": {
       "title": "이름이 겹쳐요",
@@ -3590,16 +3590,14 @@
     },
     "detail": {
       "back": "스킬 목록",
-      "backOverview": "전체 진단으로",
+      "backOverview": "요약으로",
       "showLoadChain": "어떻게 실리는지 보기 (3단계)",
       "hideLoadChain": "어떻게 실리는지 닫기",
       "competing": "이 스킬과 경쟁하는 것",
       "sameName": "같은 이름이 {source}에도 있어요. 어느 쪽이 뜰지 정해져 있지 않아요",
-      "sharedTrigger": "{name}와(과) 뜨는 조건이 겹쳐요. {words}",
+      "sharedTrigger": "{name}: 뜨는 조건이 겹쳐요 ({words})",
       "handsOffTitle": "이 스킬이 넘기는 곳",
-      "handsOffTo": "{name}(으)로 넘겨요",
-      "handedFromTitle": "이 스킬을 부르는 곳",
-      "handedFrom": "{name}에서 넘어와요"
+      "handedFromTitle": "이 스킬을 부르는 곳"
     },
     "process": {
       "title": "원문 절차",
@@ -3628,7 +3626,8 @@
       "packetTampered": "무결성 확인에 실패해 복사를 막았습니다",
       "packetCopying": "복사 중…",
       "packetCopied": "절차 묶음 복사됨",
-      "packetCopyFailed": "복사 실패"
+      "packetCopyFailed": "복사 실패",
+      "digestLabel": "원문 지문"
     },
     "findings": {
       "alwaysTitle": "매 세션 실리는 것",

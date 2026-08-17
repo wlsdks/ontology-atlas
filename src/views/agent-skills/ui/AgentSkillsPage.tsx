@@ -167,10 +167,18 @@ export function AgentSkillsPage() {
                 data-testid="skills-census"
                 className="flex items-baseline gap-1.5 pb-[3px] text-label tracking-[var(--tracking-caps-08)] text-[color:var(--color-text-tertiary)]"
               >
-                <b className={numeralClass}>{inventory.totals.skills}</b> {t("stat.skills")}
+                {/* 「18 스킬」은 한국어 어순이 아니다 — 수사가 앞서면 영어를 옮긴 말로
+                    읽힌다. 그런데 어순은 언어마다 다르므로 컴포넌트가 정할 수 없다:
+                    문장은 번역이 갖고, 굵게 칠할 숫자만 rich 태그로 돌려준다. */}
+                {t.rich("stat.skillsCount", {
+                  count: inventory.totals.skills,
+                  b: (chunks) => <b className={numeralClass}>{chunks}</b>,
+                })}
                 <span aria-hidden className="text-[color:var(--color-text-quaternary)]">·</span>
-                <b className={numeralClass}>{inventory.totals.executables}</b>{" "}
-                {t("stat.executables")}
+                {t.rich("stat.executablesCount", {
+                  count: inventory.totals.executables,
+                  b: (chunks) => <b className={numeralClass}>{chunks}</b>,
+                })}
               </span>
             ) : null}
           </div>

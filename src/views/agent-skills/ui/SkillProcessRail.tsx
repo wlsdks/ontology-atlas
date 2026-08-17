@@ -14,6 +14,15 @@ import { controlClass } from "@/shared/ui/control-class";
 
 const testIdPart = (value: string): string => value.replace(/^[^:]+:/, "").replace(/[^a-zA-Z0-9_-]/g, "-");
 
+/**
+ * 지문을 **알아볼 만큼만** 남긴다 — `sha256:` 접두는 떼고 앞 6자.
+ *
+ * 이 값이 화면에서 하는 일은 「원문이 그대로인가」를 눈으로 대조하는 것 하나다.
+ * 전체 71자를 펴 두면 그 일은 조금도 쉬워지지 않으면서 머리글의 남는 폭을 전부
+ * 먹는다. 전체 값은 `title` 로 남아 있어 대조할 사람은 그대로 손에 넣는다.
+ */
+const shortDigest = (value: string): string => value.replace(/^sha256:/, "").slice(0, 6);
+
 export function SkillProcessRail({
   process,
   openStepIds,
@@ -80,8 +89,15 @@ export function SkillProcessRail({
             {t("exactCount", { count: ir.steps.length })}
           </p>
         </div>
-        <span className="max-w-full break-all font-mono text-label text-[color:var(--color-text-quaternary)]">
-          {ir.source.digest}
+        {/* **71자 해시를 통째로 펴 두면 머리글이 그것으로 채워진다** — 원문이
+            안 바뀌었는지 대조할 때 쓰는 값이라 화면에 필요한 것은 «있다»와
+            «앞 몇 자»뿐이고, 대조할 사람은 전체 값을 손에 넣을 수 있어야 한다.
+            그래서 앞 6자만 그리고 전체는 title 로 남긴다. */}
+        <span
+          title={ir.source.digest}
+          className="shrink-0 font-mono text-label text-[color:var(--color-text-quaternary)]"
+        >
+          {t("digestLabel")} {shortDigest(ir.source.digest)}
         </span>
       </div>
 
@@ -245,7 +261,14 @@ function PacketAction({
       <p data-testid="skill-packet-status" aria-live="polite" className="text-body text-[color:var(--color-text-tertiary)]">
         {status}
       </p>
-      {digest ? <span className="break-all font-mono text-caption text-[color:var(--color-text-quaternary)]">{digest}</span> : null}
+      {digest ? (
+        <span
+          title={digest}
+          className="shrink-0 font-mono text-caption text-[color:var(--color-text-quaternary)]"
+        >
+          {shortDigest(digest)}
+        </span>
+      ) : null}
     </div>
   );
 }
