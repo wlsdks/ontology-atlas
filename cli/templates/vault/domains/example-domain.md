@@ -6,6 +6,8 @@ display_ko: 예시 영역
 display_en: Example domain
 capabilities:
   - capabilities/example-capability
+elements:
+  - elements/example-element
 ---
 
 # Example domain
