@@ -13,6 +13,7 @@ import {
 
 import { GATED_SESSION_MODE } from './runtime-gate';
 import { isDiagnosticStderr } from './acp-trouble';
+import { readSlashCommands, type AcpSlashCommand } from './slash-commands';
 import { VAULT_MCP_SERVER_NAME } from './vault-mcp-server';
 import {
   createAcpClient,
@@ -162,6 +163,8 @@ export function useAcpSession({ runtimeId, vaultRoot, mcpServers }: UseAcpSessio
   }, []);
   const [events, setEvents] = useState<AcpEvent[]>([]);
   const [error, setError] = useState<string | null>(null);
+  /** 에이전트가 이 폴더에서 찾은 명령들 — 볼트에 스킬을 두면 여기 뜬다. */
+  const [slashCommands, setSlashCommands] = useState<AcpSlashCommand[]>([]);
   /**
    * 어댑터가 남긴 단서 — **문제가 났을 때만** 화면이 꺼내 본다.
    * 평소에 보여 주면 그건 진단이 아니라 화면을 먹는 영어 경고다(실측).
@@ -245,6 +248,12 @@ export function useAcpSession({ runtimeId, vaultRoot, mcpServers }: UseAcpSessio
       const content = update.content as { text?: unknown } | undefined;
       const text = typeof content?.text === 'string' ? content.text : '';
 
+      if (kind === 'available_commands_update') {
+        // `/` 로 부를 수 있는 것들. **온 것만** 들고 있는다 — 아무것도 안 오면
+        // 작성 칸에서 `/` 를 쳐도 아무 일도 안 일어난다(`slash-commands.ts`).
+        setSlashCommands(readSlashCommands(update));
+        return;
+      }
       if (kind === 'agent_message_chunk' && text) {
         push({ kind: 'agent', id: nextEventId(), text });
         return;
@@ -659,6 +668,7 @@ export function useAcpSession({ runtimeId, vaultRoot, mcpServers }: UseAcpSessio
     status,
     events,
     error,
+    slashCommands,
     diagnostics,
     pending,
     sessions,

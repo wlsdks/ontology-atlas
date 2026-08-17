@@ -8,6 +8,7 @@ import {
   useCallback,
   useEffect,
   useLayoutEffect,
+  useMemo,
   useRef,
   useState,
   type ReactNode,
@@ -30,7 +31,13 @@ import {
 import { cn } from '@/shared/lib/cn';
 import { useAcpSession, type AcpEvent } from '@/features/acp-session/model/use-acp-session';
 import { readAcpTrouble } from '@/features/acp-session/model/acp-trouble';
+import {
+  matchSlashCommands,
+  slashQuery,
+  type AcpSlashCommand,
+} from '@/features/acp-session/model/slash-commands';
 import { claudeLoginRepairCommand } from '@/features/acp-session/model/claude-login-repair';
+import { modeCopyKey } from '@/features/acp-session/model/mode-copy';
 import { withoutErrorEcho } from '@/features/acp-session/model/error-echo';
 import type { ChatSuggestion } from '@/features/acp-session/model/chat-suggestions';
 import { linkSlugs } from '@/features/acp-session/model/link-slugs';
@@ -87,6 +94,12 @@ const CHAT_MARKDOWN = [
  * 결론으로 읽는다. 그래서 흐리고 작게 둔다 — 숨기지는 않는다(무슨 일이 일어나는지
  * 보이는 것이 기다림을 견디게 한다).
  */
+/**
+ *  메뉴에 한 번에 보여 줄 개수. 실측으로 47개가 오는데 그걸 다 늘어놓으면
+ * 고르는 목록이 아니라 스크롤 벽이 된다. 더 좁히려면 계속 치면 된다.
+ */
+const SLASH_MENU_LIMIT = 8;
+
 export function AcpChatPanel({
   runtimeId,
   runtimeLabel,
@@ -152,6 +165,7 @@ export function AcpChatPanel({
   const {
     status,
     events,
+    slashCommands,
     error,
     diagnostics,
     pending,
@@ -184,6 +198,14 @@ export function AcpChatPanel({
   /** 어댑터가 준 것을 사람이 읽는 갈래로 옮긴다 — 못 알아보면 `unknown`. */
   const trouble = error ? readAcpTrouble(error) : null;
   const [draft, setDraft] = useState('');
+  /*
+   * `/` 로 고르는 중인가. 첫 글자가 `/` 이고 아직 공백이 없을 때만이다 —
+   * 인자를 치기 시작했으면 고르는 단계가 지났다(`slash-commands.ts`).
+   */
+  const slashMatches = useMemo(() => {
+    const query = slashQuery(draft);
+    return query === null ? [] : matchSlashCommands(slashCommands, query).slice(0, SLASH_MENU_LIMIT);
+  }, [draft, slashCommands]);
   const [historyOpen, setHistoryOpen] = useState(false);
   /** 작성 칸에 손이 가 있나 — 단축키 안내를 그때만 띄운다. */
   const [composerFocused, setComposerFocused] = useState(false);
@@ -350,10 +372,25 @@ export function AcpChatPanel({
               onChange={(value) => void chooseMode(value)}
               options={choices.modes.map((mode) => {
                 const unverified = choices.unverifiedModeIds.includes(mode.id);
+                /*
+                 * 이름과 설명은 **아는 것만** 사람 말로 옮긴다 (2026-08-17 소유자
+                 * 지적: 이름이 전부 영어이고, 정작 고를 만한 둘에는 설명이 아예
+                 * 없었다). 모르는 모드는 어댑터가 준 이름 그대로 두고 설명을 안
+                 * 붙인다 — 지어 붙인 한 줄은 우리가 확인하지 않은 약속이 된다.
+                 * 판정과 근거 표: `mode-copy.ts`.
+                 *
+                 * 「확인 안 됨」은 **다른 축**이다. 이름을 아는 것과 폴더 밖 작업
+                 * 전에 묻는지 재 본 것은 별개라, 둘을 함께 보여 준다.
+                 */
+                const copyKey = modeCopyKey(mode.id);
+                const name = copyKey ? t(`modeName.${copyKey}`) : mode.name;
+                const hint = copyKey ? t(`modeHint.${copyKey}`) : undefined;
                 return {
                   value: mode.id,
-                  label: unverified ? t('modeUnverified', { name: mode.name }) : mode.name,
-                  description: unverified ? t('modeUnverifiedHint') : undefined,
+                  label: unverified ? t('modeUnverified', { name }) : name,
+                  description: unverified
+                    ? [hint, t('modeUnverifiedHint')].filter(Boolean).join(' ')
+                    : hint,
                 };
               })}
               data-testid="acp-chat-mode"
@@ -710,6 +747,43 @@ export function AcpChatPanel({
           `relative` 상자에 넣는다 — 바깥 상자에 붙이면 안쪽 여백만큼 미러가
           넓어져서 한 줄 늦게 자란다.
         */}
+        {/*
+          `/` 를 치면 **에이전트가 이 폴더에서 찾은 명령들**을 보여 준다
+          (2026-08-17 소유자 문의). 어댑터는 이미 세션 중에 목록을 보내고
+          있었는데(`available_commands_update`) 우리가 그 줄을 통째로 버리고
+          있었다 — 실측 47개.
+
+          목록을 지어내지 않는다: 아무것도 안 오면 `/` 를 쳐도 아무 일도 안
+          일어난다. 볼트 폴더가 곧 작업 폴더라, 볼트에 스킬을 두면 그대로
+          여기 뜬다 — 「아틀라스 전용」은 그 길로 온다.
+        */}
+        {slashMatches.length > 0 ? (
+          <ul
+            data-testid="acp-chat-slash-menu"
+            className="max-h-56 shrink-0 overflow-y-auto rounded-card border border-[color:var(--color-divider)] bg-[color:var(--color-elevated)] p-1"
+          >
+            {slashMatches.map((command: AcpSlashCommand) => (
+              <li key={command.name}>
+                <RowButton
+                  onClick={() => {
+                    setDraft(`/${command.name} `);
+                    inputRef.current?.focus();
+                  }}
+                  className="w-full gap-2"
+                >
+                  <span className="shrink-0 font-mono text-label text-[color:var(--color-text-primary)]">
+                    /{command.name}
+                  </span>
+                  {command.description ? (
+                    <span className="min-w-0 flex-1 truncate text-left text-label text-[color:var(--color-text-quaternary)]">
+                      {command.description}
+                    </span>
+                  ) : null}
+                </RowButton>
+              </li>
+            ))}
+          </ul>
+        ) : null}
         <div className="relative">
           <Textarea
             ref={inputRef}
