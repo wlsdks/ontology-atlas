@@ -77,17 +77,52 @@ test.describe("크롬 텍스트 맞춤 — 앱이 쓴 문자열은 잘리지 않
          * 것은 「펼친 푸터의 글자가 잘리지 않는가」이지 「기본이 펼침인가」가
          * 아니므로, 기본값이 바뀌어도 이 게이트는 계속 자기 일을 한다.
          */
+        /*
+         * ⚠️ **「값이 둘 중 하나다」는 정착이 아니다.** 첫 시도는 상태가
+         * `collapsed|expanded` 이기만 하면 통과시켰는데, 이 화면은 **처음부터**
+         * `collapsed` 라 그 poll 이 즉시 끝났다. 그래서 볼트가 아직 로드되는
+         * 중에 펼침을 눌렀고, 뒤늦게 도착한 상태 전이가 다시 접었다. 로컬
+         * (빠른 dev)에서는 통과하고 CI(느린 러너)에서만 죽는 전형적인 경합이다.
+         *
+         * 정착은 **값이 머무는 것**으로 판정한다 — 같은 값이 연속으로 나올 때.
+         */
+        /*
+         * 6× CPU 스로틀로 CI 를 흉내 내 잰 타임라인:
+         *
+         * ```
+         *    0~1200ms  idx=expanded  패널 있음 · 푸터 없음   (볼트 로딩 중)
+         *      1600ms  idx=collapsed 패널·푸터·탭 모두 있음  (접히는 한 프레임)
+         *      2000ms~ idx=collapsed 탭만 남음               (여기서 끝)
+         * ```
+         *
+         * 그래서 「값이 잠깐 머문다」로 정착을 판정하면 안 된다 — 로딩 중
+         * `expanded` 가 1.2초나 유지되므로 그것을 정착으로 오해하고 일찍
+         * 재게 된다. 그리고 푸터가 `toBeVisible` 을 통과하는 그 순간은
+         * **접히는 애니메이션 한 프레임**이라 곧바로 사라진다.
+         *
+         * 그래서 「한 번 펼치고 믿는다」 대신 **펼쳐진 채 푸터가 있을 때까지
+         * 다시 시도한다.** 늦게 온 전이가 다시 접어도 다음 회차가 되돌린다.
+         */
         await expect
           .poll(
-            () => page.evaluate(() => document.documentElement.dataset.topologyIndex ?? ""),
-            { timeout: 30_000, message: "INDEX 상태가 정착하지 않았다" },
+            async () => {
+              const state = await page.evaluate(
+                () => document.documentElement.dataset.topologyIndex ?? "",
+              );
+              if (state !== "expanded") {
+                const tab = page.getByTestId("topology-index-tab");
+                if ((await tab.count()) > 0) await tab.click().catch(() => {});
+              }
+              await page.waitForTimeout(300);
+              return page.evaluate(
+                () =>
+                  document.documentElement.dataset.topologyIndex === "expanded" &&
+                  Boolean(document.querySelector('[data-testid="topology-index-footer"]')),
+              );
+            },
+            { timeout: 45_000, message: "INDEX 를 펼친 채로 붙들지 못했다" },
           )
-          .toMatch(/^(collapsed|expanded)$/);
-        if (
-          (await page.evaluate(() => document.documentElement.dataset.topologyIndex)) === "collapsed"
-        ) {
-          await page.getByTestId("topology-index-tab").click();
-        }
+          .toBe(true);
 
         await expect(page.getByTestId("topology-index-footer")).toBeVisible({ timeout: 30_000 });
         // 늘 있는 둘은 그대로 요구한다 — 이 둘이 없으면 푸터가 덜 그려진 것이다.
