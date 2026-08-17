@@ -399,6 +399,7 @@ mod tests {
         assert!(!line.contains("\"tools\""), "{line}");
     }
 
+    #[cfg(unix)]
     #[test]
     fn an_agent_line_records_which_tools_rode_along() {
         let vault = temp_vault("tools");
@@ -444,6 +445,7 @@ mod tests {
         );
     }
 
+    #[cfg(unix)]
     #[test]
     fn reserved_line_is_on_disk_before_anything_is_sent() {
         let vault = temp_vault("reserve");
@@ -457,6 +459,7 @@ mod tests {
         fs::remove_dir_all(&vault).ok();
     }
 
+    #[cfg(unix)]
     #[test]
     fn finalize_replaces_only_the_reserved_line_and_keeps_history() {
         let vault = temp_vault("finalize");
@@ -801,6 +804,7 @@ mod tests {
         assert_eq!(after, before, "실패할 때 기존 바이트를 보존해야 한다");
     }
 
+    #[cfg(unix)]
     #[test]
     fn writer_matches_the_shared_reader_fixture() {
         // writer(Rust) ↔ reader(웹 `llm-audit-log.ts`) drift 차단. 같은 픽스처를

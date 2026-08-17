@@ -1379,6 +1379,18 @@ mod tests {
         std::collections::HashMap::new()
     }
 
+    fn test_bin_dir() -> PathBuf {
+        PathBuf::from("/atlas-test-bin")
+    }
+
+    fn test_bin(name: &str) -> PathBuf {
+        test_bin_dir().join(name)
+    }
+
+    fn test_path_env() -> OsString {
+        std::env::join_paths([test_bin_dir()]).unwrap()
+    }
+
     #[test]
     fn path_entries_come_before_our_guesses() {
         // 사용자가 자기 셸에서 고른 것이 우리 추측을 이긴다. 순서가 뒤집히면
@@ -1437,6 +1449,7 @@ mod tests {
     /// bin 에만** 남아 있어서 사용자의 셸이 절대 안 쓰는 사본을 집었다
     /// (실제 `claude` 는 `~/.local/bin`). 버전 디렉터리는 전역 설치한 CLI 의
     /// 사본이 쌓이는 자리라 그렇다.
+    #[cfg(not(windows))]
     #[test]
     fn a_stale_copy_in_an_old_nvm_version_does_not_beat_the_real_one() {
         let files: HashSet<PathBuf> = [
@@ -1528,6 +1541,7 @@ mod tests {
         );
     }
 
+    #[cfg(not(windows))]
     #[test]
     fn detects_a_runtime_that_lives_only_under_nvm() {
         // 이 기기 실측 그대로: codex 와 npx 는 nvm 아래, claude 는 ~/.local/bin.
@@ -1599,7 +1613,8 @@ mod tests {
         }
 
         // ② CLI 는 있는데 npx 도 어댑터도 없다 → 띄울 방법이 없다.
-        files.insert(PathBuf::from("/usr/local/bin/claude"));
+        files.insert(test_bin("claude"));
+        let path_env = test_path_env();
         let (is_exec, list, read) = probe_with(&files, &dirs);
         let probe = FsProbe {
             is_executable: &is_exec,
@@ -1607,10 +1622,13 @@ mod tests {
             read_text: &read,
             login_ok: &|_, _, _, _| None,
         };
-        let out = detect_runtimes(None, None, &probe);
+        let out = detect_runtimes(None, Some(path_env.as_os_str()), &probe);
         let claude = out.iter().find(|r| r.id == "claude-acp").unwrap();
         assert_eq!(claude.state, "node-missing");
-        assert_eq!(claude.cli_path.as_deref(), Some("/usr/local/bin/claude"));
+        assert_eq!(
+            claude.cli_path,
+            Some(test_bin("claude").to_string_lossy().to_string())
+        );
     }
 
     /// **여기 있다 ≠ 로그인돼 있다.**
@@ -1623,8 +1641,9 @@ mod tests {
     #[test]
     fn installed_but_not_logged_in_is_not_ready() {
         let mut files: HashSet<PathBuf> = HashSet::new();
-        files.insert(PathBuf::from("/usr/local/bin/claude"));
-        files.insert(PathBuf::from("/usr/local/bin/npx"));
+        files.insert(test_bin("claude"));
+        files.insert(test_bin("npx"));
+        let path_env = test_path_env();
         let dirs = empty_dirs();
         let (is_exec, list, read) = probe_with(&files, &dirs);
 
@@ -1635,7 +1654,7 @@ mod tests {
             read_text: &read,
             login_ok: &|_, _, _, _| Some(true),
         };
-        let out = detect_runtimes(None, None, &probe);
+        let out = detect_runtimes(None, Some(path_env.as_os_str()), &probe);
         let claude = out.iter().find(|r| r.id == "claude-acp").unwrap();
         assert_eq!(claude.state, "ready");
 
@@ -1646,7 +1665,7 @@ mod tests {
             read_text: &read,
             login_ok: &|_, _, _, _| Some(false),
         };
-        let out = detect_runtimes(None, None, &probe);
+        let out = detect_runtimes(None, Some(path_env.as_os_str()), &probe);
         let claude = out.iter().find(|r| r.id == "claude-acp").unwrap();
         assert_eq!(
             claude.state, "login-needed",
@@ -1661,7 +1680,7 @@ mod tests {
             read_text: &read,
             login_ok: &|_, _, _, _| None,
         };
-        let out = detect_runtimes(None, None, &probe);
+        let out = detect_runtimes(None, Some(path_env.as_os_str()), &probe);
         let claude = out.iter().find(|r| r.id == "claude-acp").unwrap();
         assert_eq!(claude.state, "ready");
     }
@@ -1672,17 +1691,18 @@ mod tests {
         use std::cell::RefCell;
         let asked: RefCell<Vec<String>> = RefCell::new(Vec::new());
         let mut files: HashSet<PathBuf> = HashSet::new();
-        files.insert(PathBuf::from("/usr/local/bin/npx"));
+        files.insert(test_bin("npx"));
         for (id, _) in LOGIN_PROBE {
             let cli = registry()
                 .iter()
                 .find(|a| &a.id == id)
                 .and_then(|a| a.cli.clone())
                 .unwrap();
-            files.insert(PathBuf::from(format!("/usr/local/bin/{cli}")));
+            files.insert(test_bin(&cli));
         }
         // 재 보지 않은 것도 하나 깔아 둔다 — 그것에는 안 물어봐야 한다.
-        files.insert(PathBuf::from("/usr/local/bin/gemini"));
+        files.insert(test_bin("gemini"));
+        let path_env = test_path_env();
 
         let dirs = empty_dirs();
         let (is_exec, list, read) = probe_with(&files, &dirs);
@@ -1695,12 +1715,12 @@ mod tests {
                 Some(true)
             },
         };
-        detect_runtimes(None, None, &probe);
+        detect_runtimes(None, Some(path_env.as_os_str()), &probe);
 
         let asked = asked.borrow();
         assert_eq!(asked.len(), LOGIN_PROBE.len(), "물어본 횟수가 표와 다르다: {asked:?}");
         assert!(
-            !asked.iter().any(|p| p.ends_with("/gemini")),
+            !asked.iter().any(|p| Path::new(p).file_name().is_some_and(|name| name == "gemini")),
             "재 보지 않은 도구에 물어봤다 — 그 도구에서 그 인자가 무슨 뜻인지 모른다",
         );
     }
@@ -1761,7 +1781,8 @@ mod tests {
     fn we_do_not_call_a_runtime_ready_when_we_never_checked_for_it() {
         // npx 는 있고, 아는 CLI 는 하나도 없는 기기.
         let mut files: HashSet<PathBuf> = HashSet::new();
-        files.insert(PathBuf::from("/usr/local/bin/npx"));
+        files.insert(test_bin("npx"));
+        let path_env = test_path_env();
         let dirs = empty_dirs();
         let (is_exec, list, read) = probe_with(&files, &dirs);
         let probe = FsProbe {
@@ -1770,7 +1791,7 @@ mod tests {
             read_text: &read,
             login_ok: &|_, _, _, _| None,
         };
-        let out = detect_runtimes(None, None, &probe);
+        let out = detect_runtimes(None, Some(path_env.as_os_str()), &probe);
 
         for status in &out {
             let agent = registry().iter().find(|a| a.id == status.id).unwrap();
@@ -1807,14 +1828,11 @@ mod tests {
     #[test]
     fn an_installed_adapter_wins_over_npx() {
         // npx 는 첫 실행이 느리다. 이미 깔려 있으면 그걸 쓴다.
-        let files: HashSet<PathBuf> = [
-            "/usr/local/bin/claude",
-            "/usr/local/bin/claude-agent-acp",
-            "/usr/local/bin/npx",
-        ]
+        let files: HashSet<PathBuf> = ["claude", "claude-agent-acp", "npx"]
         .iter()
-        .map(PathBuf::from)
+        .map(|name| test_bin(name))
         .collect();
+        let path_env = test_path_env();
         let dirs = empty_dirs();
         let (is_exec, list, read) = probe_with(&files, &dirs);
         let probe = FsProbe {
@@ -1823,23 +1841,24 @@ mod tests {
             read_text: &read,
             login_ok: &|_, _, _, _| None,
         };
-        let out = detect_runtimes(None, None, &probe);
+        let out = detect_runtimes(None, Some(path_env.as_os_str()), &probe);
         let claude = out.iter().find(|r| r.id == "claude-acp").unwrap();
         assert_eq!(claude.state, "ready");
         assert_eq!(
-            claude.adapter_path.as_deref(),
-            Some("/usr/local/bin/claude-agent-acp"),
+            claude.adapter_path,
+            Some(test_bin("claude-agent-acp").to_string_lossy().to_string()),
             "설치된 어댑터를 찾아냈어야 한다"
         );
     }
 
     #[test]
     fn launch_prefers_an_installed_adapter_and_falls_back_to_pinned_npx() {
-        let mut files: HashSet<PathBuf> = ["/usr/local/bin/claude", "/usr/local/bin/npx"]
+        let mut files: HashSet<PathBuf> = ["claude", "npx"]
             .iter()
-            .map(PathBuf::from)
+            .map(|name| test_bin(name))
             .collect();
         let dirs = empty_dirs();
+        let path_env = test_path_env();
 
         {
             let (is_exec, list, read) = probe_with(&files, &dirs);
@@ -1849,8 +1868,14 @@ mod tests {
                 read_text: &read,
                 login_ok: &|_, _, _, _| None,
             };
-            let launch = resolve_launch("claude-acp", None, None, &probe).unwrap();
-            assert_eq!(launch.program, PathBuf::from("/usr/local/bin/npx"));
+            let launch = resolve_launch(
+                "claude-acp",
+                None,
+                Some(path_env.as_os_str()),
+                &probe,
+            )
+            .unwrap();
+            assert_eq!(launch.program, test_bin("npx"));
             assert_eq!(
                 launch.args,
                 vec![
@@ -1861,7 +1886,7 @@ mod tests {
             );
         }
 
-        files.insert(PathBuf::from("/usr/local/bin/claude-agent-acp"));
+        files.insert(test_bin("claude-agent-acp"));
         let (is_exec, list, read) = probe_with(&files, &dirs);
         let probe = FsProbe {
             is_executable: &is_exec,
@@ -1869,14 +1894,18 @@ mod tests {
             read_text: &read,
             login_ok: &|_, _, _, _| None,
         };
-        let launch = resolve_launch("claude-acp", None, None, &probe).unwrap();
-        assert_eq!(
-            launch.program,
-            PathBuf::from("/usr/local/bin/claude-agent-acp")
-        );
+        let launch = resolve_launch(
+            "claude-acp",
+            None,
+            Some(path_env.as_os_str()),
+            &probe,
+        )
+        .unwrap();
+        assert_eq!(launch.program, test_bin("claude-agent-acp"));
         assert!(launch.args.is_empty(), "설치돼 있으면 npx 를 건너뛴다");
     }
 
+    #[cfg(not(windows))]
     #[test]
     fn launch_hands_the_child_a_path_that_can_find_the_real_cli() {
         // 절반만 푼 상태를 막는 검사다. 우리가 어댑터를 절대 경로로 띄워도
@@ -1919,6 +1948,7 @@ mod tests {
     #[test]
     fn launch_reports_which_half_is_missing() {
         let dirs = empty_dirs();
+        let path_env = test_path_env();
 
         // CLI 가 없다 — 사용자가 그 도구를 깔아야 한다.
         let none: HashSet<PathBuf> = HashSet::new();
@@ -1929,12 +1959,12 @@ mod tests {
             read_text: &read,
             login_ok: &|_, _, _, _| None,
         };
-        assert!(resolve_launch("claude-acp", None, None, &probe)
+        assert!(resolve_launch("claude-acp", None, Some(path_env.as_os_str()), &probe)
             .unwrap_err()
             .starts_with("cli-missing:"));
 
         // CLI 는 있는데 띄울 방법이 없다 — 다른 처방이 필요하다.
-        let cli_only: HashSet<PathBuf> = ["/usr/local/bin/claude"].iter().map(PathBuf::from).collect();
+        let cli_only: HashSet<PathBuf> = [test_bin("claude")].into_iter().collect();
         let (is_exec, list, read) = probe_with(&cli_only, &dirs);
         let probe = FsProbe {
             is_executable: &is_exec,
@@ -1943,12 +1973,12 @@ mod tests {
             login_ok: &|_, _, _, _| None,
         };
         assert_eq!(
-            resolve_launch("claude-acp", None, None, &probe).unwrap_err(),
+            resolve_launch("claude-acp", None, Some(path_env.as_os_str()), &probe).unwrap_err(),
             "node-missing"
         );
 
         // 모르는 실행기를 조용히 통과시키지 않는다.
-        assert!(resolve_launch("nope", None, None, &probe)
+        assert!(resolve_launch("nope", None, Some(path_env.as_os_str()), &probe)
             .unwrap_err()
             .starts_with("unknown-runtime:"));
     }
