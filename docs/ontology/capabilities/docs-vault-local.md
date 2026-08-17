@@ -4,7 +4,7 @@ slug: capabilities/docs-vault-local
 kind: capability
 title: Local Folder Mounting
 domain: domains/local-vault-management
-elements: [elements/docs-vault-entity, elements/docs-vault-view, elements/docs-vault-widget, elements/local-fs-handle, elements/native-vault-filesystem-bridge]
+elements: [elements/docs-vault-entity, elements/docs-vault-view, elements/docs-vault-widget, elements/local-fs-handle, elements/native-vault-filesystem-bridge, elements/private-vault-sidecar-boundary]
 path: src/features/docs-vault-local
 created_by: human
 relation_notes: { elements/native-vault-filesystem-bridge: 설치 앱의 로컬 폴더 마운트가 실제 파일·디렉터리 mutation을 수행하는 네이티브 구현 증거다. }

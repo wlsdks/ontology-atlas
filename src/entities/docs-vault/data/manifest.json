@@ -4035,6 +4035,11 @@
         },
         {
           "depth": 2,
+          "text": "2026-08-17 · private sidecar가 외부 hardlink 별칭을 수정하지 않는다",
+          "slug": "2026-08-17-private-sidecar가-외부-hardlink-별칭을-수정하지-않는다"
+        },
+        {
+          "depth": 2,
           "text": "2026-08-17 · 일반 볼트 쓰기도 검증한 부모 디렉터리를 놓치지 않는다",
           "slug": "2026-08-17-일반-볼트-쓰기도-검증한-부모-디렉터리를-놓치지-않는다"
         },
@@ -6474,8 +6479,8 @@
           "slug": "2026-07-26-첫-만남은-쇼핑몰부터"
         }
       ],
-      "excerpt": "Major change history. Code commit messages answer why; this file answers when / which surface changed. Focused on user-visible changes, not PR-level granularity. Newest at the top. Entries stay date-based; the app version reached v1.0.0 on 2026-07-27, so a release tag now carries the semver promise instead. macOS/Linux",
-      "wordCount": 70060,
+      "excerpt": "Major change history. Code commit messages answer why; this file answers when / which surface changed. Focused on user-visible changes, not PR-level granularity. Newest at the top. Entries stay date-based; the app version reached v1.0.0 on 2026-07-27, so a release tag now carries the semver promise instead. .ontology-a",
+      "wordCount": 70116,
       "updatedAt": "2026-08-17",
       "linksOut": [
         "audits/CASE-STUDY-AGENTS-MD-DRIFT",
@@ -13106,7 +13111,8 @@
           "elements/docs-vault-view",
           "elements/docs-vault-widget",
           "elements/local-fs-handle",
-          "elements/native-vault-filesystem-bridge"
+          "elements/native-vault-filesystem-bridge",
+          "elements/private-vault-sidecar-boundary"
         ],
         "path": "src/features/docs-vault-local",
         "created_by": "human",
@@ -14017,7 +14023,8 @@
           "elements/docs-vault-widget",
           "elements/git",
           "elements/local-fs-handle",
-          "elements/native-vault-filesystem-bridge"
+          "elements/native-vault-filesystem-bridge",
+          "elements/private-vault-sidecar-boundary"
         ],
         "created_by": "human",
         "relation_notes": {
@@ -14807,6 +14814,26 @@
       "excerpt": "/ontology/studio 쓰기 표면(공방). capabilities/ontology-blocks 의 구현 증거.",
       "wordCount": 7,
       "updatedAt": "2026-08-02",
+      "linksOut": []
+    },
+    {
+      "slug": "ontology/elements/private-vault-sidecar-boundary",
+      "path": "docs/ontology/elements/private-vault-sidecar-boundary.md",
+      "title": "Private Vault Sidecar Boundary",
+      "tags": [],
+      "frontmatter": {
+        "uid": "cf8a7154-61e7-44e2-969e-b977d5019121",
+        "slug": "elements/private-vault-sidecar-boundary",
+        "kind": "element",
+        "title": "Private Vault Sidecar Boundary",
+        "domain": "domains/local-vault-management",
+        "path": "mcp/src/vault-sidecar.mjs",
+        "created_by": "agent:unknown"
+      },
+      "headings": [],
+      "excerpt": "MCP와 CLI가 .ontology-atlas 아래의 비공개 영수증·활동 로그를 다루는 공통 파일 경계다. sidecar 디렉터리와 최종 파일의 symlink/junction, 파일 identity 변경, hardlink 별칭을 실패 닫고, 원자 교체와 충돌 검사를 제공한다. 순수 Node 경로 API의 한계 때문에 동일 UID 공격자가 검사 사이에 부모 이름을 바꾸는 경쟁까지 완전한 디렉터리 핸들 격리로 주장하지 않는다.",
+      "wordCount": 49,
+      "updatedAt": "2026-08-17",
       "linksOut": []
     },
     {
@@ -17569,6 +17596,11 @@
         "linkText": "domains/local-vault-management"
       },
       {
+        "fromSlug": "ontology/elements/private-vault-sidecar-boundary",
+        "context": "frontmatter · **[domains/local-vault-management]**",
+        "linkText": "domains/local-vault-management"
+      },
+      {
         "fromSlug": "ontology/ontology-atlas",
         "context": "frontmatter · **[domains/local-vault-management]**",
         "linkText": "domains/local-vault-management"
@@ -17644,6 +17676,18 @@
         "fromSlug": "ontology/domains/local-vault-management",
         "context": "frontmatter · **[elements/native-vault-filesystem-bridge]**",
         "linkText": "elements/native-vault-filesystem-bridge"
+      }
+    ],
+    "ontology/elements/private-vault-sidecar-boundary": [
+      {
+        "fromSlug": "ontology/capabilities/docs-vault-local",
+        "context": "frontmatter · **[elements/private-vault-sidecar-boundary]**",
+        "linkText": "elements/private-vault-sidecar-boundary"
+      },
+      {
+        "fromSlug": "ontology/domains/local-vault-management",
+        "context": "frontmatter · **[elements/private-vault-sidecar-boundary]**",
+        "linkText": "elements/private-vault-sidecar-boundary"
       }
     ],
     "ontology/elements/first-run": [
@@ -19217,6 +19261,13 @@
                 "type": "doc",
                 "slug": "ontology/elements/ontology-studio",
                 "title": "Ontology Studio"
+              },
+              {
+                "name": "private-vault-sidecar-boundary",
+                "path": "ontology/elements/private-vault-sidecar-boundary",
+                "type": "doc",
+                "slug": "ontology/elements/private-vault-sidecar-boundary",
+                "title": "Private Vault Sidecar Boundary"
               },
               {
                 "name": "project",

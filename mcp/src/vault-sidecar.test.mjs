@@ -1,6 +1,7 @@
 import { strict as assert } from 'node:assert';
 import {
   existsSync,
+  linkSync,
   mkdirSync,
   mkdtempSync,
   readFileSync,
@@ -74,6 +75,22 @@ describe('vault sidecar path boundary', () => {
       assertUnsafe(() => removeVaultSidecarFile(vault, 'receipt.json'));
       assert.equal(readFileSync(sentinel, 'utf8'), 'outside-original');
       assert.equal(existsSync(join(sidecar, 'receipt.json')), true);
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it('rejects a hardlinked sidecar file without appending to its external alias', () => {
+    const { root, vault } = sandbox();
+    const sidecar = join(vault, '.ontology-atlas');
+    const sentinel = join(root, 'outside.jsonl');
+    mkdirSync(sidecar);
+    writeFileSync(sentinel, 'outside-original\n', 'utf8');
+    linkSync(sentinel, join(sidecar, 'activity.jsonl'));
+
+    try {
+      assertUnsafe(() => appendVaultSidecarLine(vault, 'activity.jsonl', 'appended'));
+      assert.equal(readFileSync(sentinel, 'utf8'), 'outside-original\n');
     } finally {
       rmSync(root, { recursive: true, force: true });
     }

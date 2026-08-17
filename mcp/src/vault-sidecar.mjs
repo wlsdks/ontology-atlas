@@ -144,6 +144,9 @@ function safeFileMetadata(context, filename) {
   if (metadata.isSymbolicLink() || !metadata.isFile()) {
     throw unsafe(`Sidecar entry is not a regular file: ${filename}`);
   }
+  if (metadata.nlink !== 1) {
+    throw unsafe(`Sidecar entry must not have hardlink aliases: ${filename}`);
+  }
   return metadata;
 }
 
@@ -162,7 +165,7 @@ function openWithoutFollowing(filePath, flags, mode = undefined) {
 
 function assertOpenedFileMatches(metadata, descriptor, filename) {
   const opened = fstatSync(descriptor);
-  if (!opened.isFile() || (metadata && !sameIdentity(metadata, opened))) {
+  if (!opened.isFile() || opened.nlink !== 1 || (metadata && !sameIdentity(metadata, opened))) {
     throw unsafe(`Sidecar file changed identity while opening: ${filename}`);
   }
   return opened;

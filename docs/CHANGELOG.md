@@ -7,6 +7,14 @@
 
 ---
 
+## 2026-08-17 · private sidecar가 외부 hardlink 별칭을 수정하지 않는다
+
+- `.ontology-atlas`의 로그·영수증 파일이 둘 이상의 이름을 가진 hardlink이면
+  읽기·교체·append·삭제를 모두 `unsafe_path`로 거절한다. activity append가 같은
+  inode를 가리키는 볼트 밖 파일까지 바꾸던 경로를 닫았다.
+- 경로 검사 때의 파일과 실제로 연 파일 양쪽에서 링크 수를 확인한다. 기존 symlink,
+  junction, 파일 identity, 원자 교체 검사는 그대로 유지한다.
+
 ## 2026-08-17 · 일반 볼트 쓰기도 검증한 부모 디렉터리를 놓치지 않는다
 
 - macOS/Linux의 일반 볼트 파일 쓰기와 디렉터리 생성은 경로를 검사한 뒤 문자열로
