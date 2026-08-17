@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-08-17",
+  "generatedAt": "2026-08-18",
   "docs": [
     {
       "slug": "AGENT-GRAPH-WORKFLOW",
@@ -4035,6 +4035,11 @@
         },
         {
           "depth": 2,
+          "text": "2026-08-18 · 스킬 화면이 그래프가 되고, 절차를 읽는 눈이 넓어졌다",
+          "slug": "2026-08-18-스킬-화면이-그래프가-되고-절차를-읽는-눈이-넓어졌다"
+        },
+        {
+          "depth": 2,
           "text": "2026-08-17 · 새 볼트가 절차 스킬 셋을 들고 나온다",
           "slug": "2026-08-17-새-볼트가-절차-스킬-셋을-들고-나온다"
         },
@@ -6519,9 +6524,9 @@
           "slug": "2026-07-26-첫-만남은-쇼핑몰부터"
         }
       ],
-      "excerpt": "Major change history. Code commit messages answer why; this file answers when / which surface changed. Focused on user-visible changes, not PR-level granularity. Newest at the top. Entries stay date-based; the app version reached v1.0.0 on 2026-07-27, so a release tag now carries the semver promise instead. init 으로 만든 ",
-      "wordCount": 70730,
-      "updatedAt": "2026-08-17",
+      "excerpt": "Major change history. Code commit messages answer why; this file answers when / which surface changed. Focused on user-visible changes, not PR-level granularity. Newest at the top. Entries stay date-based; the app version reached v1.0.0 on 2026-07-27, so a release tag now carries the semver promise instead. 소유자: \"스킬도 그",
+      "wordCount": 71059,
+      "updatedAt": "2026-08-18",
       "linksOut": [
         "audits/CASE-STUDY-AGENTS-MD-DRIFT",
         "domains/catalog",
@@ -11190,8 +11195,8 @@
         }
       ],
       "excerpt": "Complete inventory of features users can actually use right now. Last updated: 2026-08-02 (지금 있는 라우트, 설치한 앱이 지키기로 한 약속, 프로젝트가 무엇을 뜻하는지 확정한 기록(project meaning receipt)을 다시 확인했다 — /ontology 는 /topology?index=expanded 로, /ontology/edit 은 /ontology/studio 로 보내는 옛 주소 호환 redirect 이고, Insights 는 할 일 · 구성 · 연결 · 경계 · 신선도 다섯 개 ",
-      "wordCount": 20116,
-      "updatedAt": "2026-08-17",
+      "wordCount": 20296,
+      "updatedAt": "2026-08-18",
       "linksOut": [
         "slug",
         "project:slug",
