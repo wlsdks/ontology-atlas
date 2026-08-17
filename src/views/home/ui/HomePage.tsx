@@ -4062,7 +4062,7 @@ export function HomePage() {
                       // ② 칩별 라벨은 아래 max-xl/max-2xl [data-chip-label]
                       // 사다리로 축약 — 라벨 총폭 499px 가 768–1365 구간에서
                       // 중앙 검색 레인·확장 INDEX 와 겹치던 원인.
-                      className={`topology-ui-scale absolute right-4 top-4 z-20 items-center gap-[var(--topology-utility-lane-gap)] md:right-6 md:top-6 xl:right-8 xl:top-8 ${
+                      className={`topology-ui-scale absolute right-4 top-4 z-20 flex-col items-end gap-2 md:right-6 md:top-6 xl:right-8 xl:top-8 ${
                         renderedIndexState === "expanded" ? "hidden md:flex" : "flex"
                       }`}
                       data-phone-sheet-utility-contract={
@@ -4083,6 +4083,7 @@ export function HomePage() {
                       data-utility-lane-border-token="--topology-utility-lane-border"
                       data-utility-lane-shadow-token="--topology-utility-lane-shadow"
                     >
+                      <div className="flex items-center gap-[var(--topology-utility-lane-gap)]">
                     {/* 「에이전트」 — 지도를 보다가 "이거 고쳐줘" 가 되는
                         순간이 이 버튼의 자리다. 레일 목적지도 새 라우트도 만들지
                         않고 기존 유틸 레인의 칩 규격을 그대로 쓴다(표면 추가 0).
@@ -4361,6 +4362,11 @@ export function HomePage() {
                         }}
                       />
                     </div>
+                      </div>
+                      {/* 알림은 위쪽 버튼들 **아래 줄**에 산다 (2026-08-17 소유자 지시:
+                          *"사용자가 위는 봐도 아래는 잘 안볼듯한데"*). 상태 줄(누가 · 언제 ·
+                          어느 노드)은 지도 하단에 그대로 남는다. */}
+                      <AgentActivityChip part="bell" suppressed={Boolean(v2DatasheetModel)} />
                     </div>
                     </>
                   )}

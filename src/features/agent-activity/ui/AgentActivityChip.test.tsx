@@ -32,13 +32,26 @@ function feed(overrides: Partial<AgentActivityFeed> = {}): AgentActivityFeed {
   };
 }
 
-function renderChip(next: Partial<AgentActivityFeed> = {}) {
+/**
+ * 자리가 둘로 갈렸다 (2026-08-17 소유자 지시): 상태 줄은 지도 **하단**,
+ * 알림 종은 위쪽 「에이전트 / 최근 변경」 **아래 줄**. 그래서 검사도 어느
+ * 조각을 그리는지 밝힌다 — 안 밝히면 종 검사가 상태 줄을 뒤지게 된다.
+ */
+function renderChip(
+  next: Partial<AgentActivityFeed> = {},
+  part: 'status' | 'bell' = 'status',
+) {
   mocks.feed = feed(next);
   return render(
     <NextIntlClientProvider locale="ko" messages={koMessages}>
-      <AgentActivityChip />
+      <AgentActivityChip part={part} />
     </NextIntlClientProvider>,
   );
+}
+
+/** 알림 종 쪽만 그린다. */
+function renderBell(next: Partial<AgentActivityFeed> = {}) {
+  return renderChip(next, 'bell');
 }
 
 describe("AgentActivityChip", () => {
@@ -88,7 +101,7 @@ describe("AgentActivityChip", () => {
   });
 
   it("안 읽은 알림 수를 벨에 단다", () => {
-    renderChip({
+    renderBell({
       unreadCount: 2,
       notifications: [
         { id: "a", kind: "task-end", at: NOW - 1000, node: null, counts: { added: 34, edited: 2, removed: 4 } },
@@ -100,7 +113,7 @@ describe("AgentActivityChip", () => {
 
   it("벨을 누르면 알림함이 열리고 요약이 보인다", () => {
     const markAllRead = vi.fn();
-    renderChip({
+    renderBell({
       markAllRead,
       notifications: [
         { id: "a", kind: "task-end", at: NOW - 1000, node: null, counts: { added: 34, edited: 2, removed: 4 } },
@@ -116,7 +129,7 @@ describe("AgentActivityChip", () => {
   });
 
   it("이름을 아는 작업 알림은 이름으로 말한다 — 「claude-code 작업 끝」", () => {
-    renderChip({
+    renderBell({
       notifications: [
         { id: "a", kind: "task-end", at: NOW - 1000, node: null, agent: "claude-code", counts: { added: 2, edited: 0, removed: 0 } },
         { id: "b", kind: "task-start", at: NOW - 2000, node: null },
@@ -142,7 +155,7 @@ describe("AgentActivityChip", () => {
   });
 
   it("표시는 껐지만 알림이 있으면 벨만 남는다", () => {
-    renderChip({
+    renderBell({
       showStatus: false,
       unreadCount: 1,
       notifications: [{ id: "a", kind: "task-start", at: NOW - 1000, node: null }],
@@ -152,7 +165,7 @@ describe("AgentActivityChip", () => {
   });
 
   it("문제 알림만 신호 톤을 쓴다 — 나머지는 무채색", () => {
-    renderChip({
+    renderBell({
       notifications: [
         { id: "p", kind: "vault-problem", at: NOW - 1000, node: null, problems: { unresolvedEdges: 3, dependencyCycles: 1 } },
       ],
