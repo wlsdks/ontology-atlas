@@ -3628,7 +3628,13 @@
       "packetCopying": "Copying…",
       "packetCopied": "Packet copied",
       "packetCopyFailed": "Copy failed",
-      "digestLabel": "source digest"
+      "digestLabel": "source digest",
+      "linesOne": "L{line}",
+      "resourceKindReference": "reference",
+      "resourceKindScript": "runs",
+      "resourceKindAsset": "asset",
+      "resourceKindTemplate": "template",
+      "resourceKindExample": "example"
     },
     "findings": {
       "alwaysTitle": "Loaded every session",

@@ -3628,7 +3628,13 @@
       "packetCopying": "복사 중…",
       "packetCopied": "절차 묶음 복사됨",
       "packetCopyFailed": "복사 실패",
-      "digestLabel": "원문 지문"
+      "digestLabel": "원문 지문",
+      "linesOne": "L{line}",
+      "resourceKindReference": "읽는 것",
+      "resourceKindScript": "돌아가는 것",
+      "resourceKindAsset": "딸린 자료",
+      "resourceKindTemplate": "서식",
+      "resourceKindExample": "예시"
     },
     "findings": {
       "alwaysTitle": "매 세션 실리는 것",
