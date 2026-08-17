@@ -115,6 +115,16 @@ describe('cn — 행간 램프 충돌 병합', () => {
     expect(cn('leading-[1.9]', 'leading-prose')).toBe('leading-prose');
   });
 
+  /*
+   * 이 셋은 **일부러 이름 유틸리티를 쓴다.** 2026-08-17 에 그 유틸리티를 lint 로
+   * 금지했지만(제품 코드 실사용 0건이라 소음 없이 닫혔다), 여기는 「금지된 그것이
+   * 들어와도 `cn` 이 올바르게 병합하는가」를 지키는 자리다 — 남의 코드나 옛
+   * 문자열이 흘러들어도 크기·행간이 조용히 뒤섞이지 않게 하는 마지막 보루라서,
+   * 금지했다고 시험까지 지우면 그 보루가 사라진다.
+   *
+   * 파일 단위 면제는 형제 램프 룰(크기·무게·자간)이 이미 쓰는 것과 같다 —
+   * 테스트는 렌더된 className 문자열을 단언하는 자리다(`codexTestIgnores`).
+   */
   it('기존 named 행간 유틸리티와의 병합도 유지된다', () => {
     expect(cn('leading-4', 'leading-label')).toBe('leading-label');
     expect(cn('leading-prose', 'leading-relaxed')).toBe('leading-relaxed');
