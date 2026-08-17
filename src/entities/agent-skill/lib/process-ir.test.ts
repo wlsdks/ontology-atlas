@@ -265,3 +265,119 @@ describe("skill process IR", () => {
     });
   });
 });
+
+/**
+ * **절차를 제목으로 쓴 스킬** (2026-08-18).
+ *
+ * 실측이 이 갈래를 열었다 — 이 저장소의 실제 스킬 18개 중 절차가 읽히던 것은
+ * 9개였고, 못 읽은 9개 중 여덟이 `## 1.` / `### 0.` 처럼 **서수를 단 제목**으로
+ * 절차를 적고 있었다. 번호도 제목도 원문에 있는데 목록 서수만 보던 파서의 시야
+ * 밖이었을 뿐이다. 이 묶음이 잠그는 것은 셋이다: 읽는가 · **기존 결과를 안
+ * 건드리는가** · 애매한 것은 여전히 거절하는가.
+ */
+describe("제목 서수로 적은 절차", () => {
+  it("서수를 단 제목을 단계로 읽는다 — 카드에 싣는 것은 제목 한 줄", () => {
+    const result = deriveSkillProcess({
+      relativePath: "skills/process-test/SKILL.md",
+      text: skill("## 1. 잰다\n\n본문 한 줄.\n\n## 2. 고친다\n\n또 한 줄.\n"),
+    });
+
+    expect(result.state).toBe("ready");
+    if (result.state !== "ready") return;
+    expect(result.process.steps.map((step) => [step.ordinal, step.exactText])).toEqual([
+      [1, "잰다"],
+      [2, "고친다"],
+    ]);
+    // 자리는 제목 줄이다 — 본문까지 실으면 카드가 문서 전문이 된다.
+    expect(result.process.steps[0].sourceSpan.start).toEqual({ line: 6, column: 7 });
+    expect(result.process.steps[0].sourceSpan.end.line).toBe(6);
+  });
+
+  it("0 으로 시작하는 절차도 받는다 — 실재하는 관례다", () => {
+    const result = deriveSkillProcess({
+      relativePath: "skills/process-test/SKILL.md",
+      text: skill("## 0. 고정한다\n\n## 1. 잰다\n\n## 2. 고친다\n"),
+    });
+    expect(result.state).toBe("ready");
+    if (result.state !== "ready") return;
+    // 원문 번호는 제목에 그대로 남고, 화면이 세는 수는 1 부터다.
+    expect(result.process.steps.map((step) => step.ordinal)).toEqual([1, 2, 3]);
+    expect(result.process.steps[0].exactText).toBe("고정한다");
+  });
+
+  it("가장 얕은 층 하나만 센다 — 소절까지 세면 절차가 아니라 목차다", () => {
+    const result = deriveSkillProcess({
+      relativePath: "skills/process-test/SKILL.md",
+      text: skill("## 1. 잰다\n\n### 1. 준비\n\n### 2. 실행\n\n## 2. 고친다\n"),
+    });
+    expect(result.state).toBe("ready");
+    if (result.state !== "ready") return;
+    expect(result.process.steps.map((step) => step.exactText)).toEqual(["잰다", "고친다"]);
+  });
+
+  it("절 본문에서 딸린 파일을 찾는다 — 스킬이 파일 이름을 대는 곳이 거기다", () => {
+    const result = deriveSkillProcess({
+      relativePath: "skills/process-test/SKILL.md",
+      text: skill("## 1. 잰다\n\n`scripts/measure.mjs` 를 돌린다.\n\n## 2. 고친다\n"),
+      existingPaths: new Set(["skills/process-test/scripts/measure.mjs"]),
+    });
+    expect(result.state).toBe("ready");
+    if (result.state !== "ready") return;
+    expect(result.process.resources).toMatchObject([
+      { path: "skills/process-test/scripts/measure.mjs", exists: true },
+    ]);
+    expect(result.process.resources[0].referencedByStepIds).toEqual([
+      result.process.steps[0].stepId,
+    ]);
+  });
+
+  it("목록 서수가 절차를 이루면 제목은 안 본다 — 지금 읽히는 것들이 안 바뀐다", () => {
+    const result = deriveSkillProcess({
+      relativePath: "skills/process-test/SKILL.md",
+      text: skill("## 1. 머리\n\n1. 첫 단계\n2. 둘째 단계\n\n## 2. 다른 머리\n"),
+    });
+    expect(result.state).toBe("ready");
+    if (result.state !== "ready") return;
+    expect(result.process.steps.map((step) => step.exactText)).toEqual([
+      "첫 단계",
+      "둘째 단계",
+    ]);
+  });
+
+  it("절 안쪽 번호 목록이 조각날 때는 제목 절차가 이긴다", () => {
+    const result = deriveSkillProcess({
+      relativePath: "skills/process-test/SKILL.md",
+      // 절마다 1. 로 다시 시작하는 목록 — 그대로 세면 1,2,1 이라 절차가 아니다.
+      text: skill("## 1. 머리\n\n1. 가\n2. 나\n\n## 2. 다른 머리\n\n1. 다\n"),
+    });
+    expect(result.state).toBe("ready");
+    if (result.state !== "ready") return;
+    expect(result.process.steps.map((step) => step.exactText)).toEqual(["머리", "다른 머리"]);
+  });
+
+  it("코드 블록 안의 제목은 제목이 아니다", () => {
+    const result = deriveSkillProcess({
+      relativePath: "skills/process-test/SKILL.md",
+      text: skill("```sh\n# 1. 이건 주석이다\n# 2. 이것도\n```\n\n산문만 있다.\n"),
+    });
+    expect(result.state).toBe("unavailable");
+    if (result.state !== "unavailable") return;
+    expect(result.diagnostics.map((d) => d.code)).toContain("numbered_steps_unavailable");
+  });
+
+  it("건너뛰거나 되돌아가는 번호는 거절한다 — 추측해서 메우지 않는다", () => {
+    const result = deriveSkillProcess({
+      relativePath: "skills/process-test/SKILL.md",
+      text: skill("## 1. 하나\n\n## 3. 셋\n\n## 4. 넷\n"),
+    });
+    expect(result.state).toBe("unavailable");
+  });
+
+  it("제목 하나뿐이면 절차로 보지 않는다", () => {
+    const result = deriveSkillProcess({
+      relativePath: "skills/process-test/SKILL.md",
+      text: skill("## 1. 하나뿐\n\n본문.\n"),
+    });
+    expect(result.state).toBe("unavailable");
+  });
+});

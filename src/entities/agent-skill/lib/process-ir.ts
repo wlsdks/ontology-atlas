@@ -150,6 +150,82 @@ function endPosition(line: SourceLine): SkillProcessPosition {
   return { line: line.number, column: line.text.length + 1 };
 }
 
+/** `## 3. 제목` 처럼 **서수를 단 마크다운 제목**. */
+const HEADING_ORDINAL = /^(#{1,6})[ \t]+(\d{1,9})([.)])[ \t]+(\S.*)$/;
+
+interface HeadingHit {
+  readonly index: number;
+  readonly level: number;
+  readonly ordinal: number;
+  readonly title: string;
+  readonly titleColumn: number;
+}
+
+/**
+ * **절차를 제목으로 쓴 스킬을 읽는다** (2026-08-18).
+ *
+ * ## 왜 필요했나 — 실측
+ *
+ * 이 저장소의 실제 스킬 18개를 화면에 걸어 세어 보니 절차가 읽히는 것이
+ * **9개뿐**이었다. 못 읽은 9개를 열어 보니 여덟이 같은 모양이었다:
+ *
+ *     ## 1. 서버 — 남의 서버를 재면 남의 화면을 잰다
+ *     ### 0. 이 게이트가 지키는 것을 한 문장으로 쓴다
+ *
+ * 번호도 제목도 **원문에 명시**돼 있는데, 목록 서수만 보던 파서의 시야 밖이라
+ * 「번호가 매겨진 절차를 찾지 못했어요」가 떴다. 이건 애매해서 못 읽은 것이
+ * 아니라 **안 본 것**이다 — 이 스킬이 지키는 「추측하지 않는다」와는 다른 문제다.
+ *
+ * ## 어디까지만 하나
+ *
+ * - **목록 서수가 하나라도 잡히면 이 경로는 아예 안 돈다.** 지금 읽히는 9개의
+ *   결과가 한 글자도 안 바뀌어야 한다는 것이 이 변경의 상한이다.
+ * - **깊이가 섞이면 가장 얕은 층 하나만** 고른다. `##` 절 밑의 `###` 소절까지
+ *   단계로 세면 절차가 아니라 목차가 된다.
+ * - **연속해서 올라가야 하고 시작은 0 또는 1.** 「0. 준비」로 시작하는 절차는
+ *   실재하는 관례라(실측 3건) 1 로만 받으면 그것들이 또 밀려난다.
+ * - 코드 블록 안의 `# 1. …` 은 제목이 아니다 — 펜스 안은 건너뛴다.
+ */
+function headingOrdinalSteps(
+  lines: readonly SourceLine[],
+  from: number,
+): { hits: readonly HeadingHit[]; level: number } | null {
+  const hits: HeadingHit[] = [];
+  let fence: { marker: "`" | "~"; length: number } | null = null;
+  for (let index = from; index < lines.length; index += 1) {
+    const text = lines[index].text;
+    const fenceHit = text.match(/^(`{3,}|~{3,})/);
+    if (fenceHit) {
+      const marker = fenceHit[1][0] as "`" | "~";
+      if (!fence) fence = { marker, length: fenceHit[1].length };
+      else if (marker === fence.marker && fenceHit[1].length >= fence.length) fence = null;
+      continue;
+    }
+    if (fence) continue;
+    const hit = text.match(HEADING_ORDINAL);
+    if (!hit) continue;
+    hits.push({
+      index,
+      level: hit[1].length,
+      ordinal: Number(hit[2]),
+      title: hit[4],
+      titleColumn: hit[1].length + 1 + hit[2].length + hit[3].length + 1 + 1,
+    });
+  }
+  if (hits.length === 0) return null;
+
+  const levels = [...new Set(hits.map((hit) => hit.level))].sort((a, b) => a - b);
+  for (const level of levels) {
+    const atLevel = hits.filter((hit) => hit.level === level);
+    if (atLevel.length < 2) continue;
+    const first = atLevel[0].ordinal;
+    if (first !== 0 && first !== 1) continue;
+    if (!atLevel.every((hit, offset) => hit.ordinal === first + offset)) continue;
+    return { hits: atLevel, level };
+  }
+  return null;
+}
+
 /**
  * Extract only explicit top-level numbered Markdown list items. No control-flow or
  * default transition is inferred. Ambiguous or incomplete input stays unavailable.
@@ -274,6 +350,58 @@ export function deriveSkillProcess({
     return unavailable(source, false, parseDiagnostics);
   }
 
+  /*
+   * **목록 서수가 절차를 이루지 못할 때만** 제목 서수를 본다.
+   *
+   * 「하나도 없을 때만」으로 짰다가 실측에서 둘을 놓쳤다(`parallel-brief` ·
+   * `design-system-audit`). 그 둘은 절 **안쪽에** 번호 목록을 갖고 있어서 목록
+   * 경로가 조각을 주워 오고, 그 조각들이 1..N 을 못 이뤄 「서수가 잘못됐다」로
+   * 끝났다 — 정작 문서 자신은 `## 1.`~`## 7.` 로 절차를 또박또박 적어 두고
+   * 있는데도. 그래서 조건을 「비었을 때」가 아니라 **「절차가 안 될 때」**로 둔다.
+   * 지금 읽히는 9개는 전부 1..N 이 성립하므로 이 경로를 밟지 않는다.
+   */
+  const scanTextByStepId = new Map<string, string>();
+  const listIsProcess = steps.length > 0 && steps.every((step, at) => step.ordinal === at + 1);
+  if (!listIsProcess) {
+    const heading = headingOrdinalSteps(lines, frontmatterEnd + 1);
+    if (heading) {
+      steps.length = 0;
+      duplicateCounts.clear();
+      heading.hits.forEach((hit, order) => {
+        const line = lines[hit.index];
+        /*
+         * **카드에 싣는 것은 제목 한 줄이다.** 절 본문까지 실으면 카드 하나가
+         * 예순 줄이 되어 「절차」가 아니라 문서 전문이 된다. 대신 자료(딸린
+         * 파일)는 절 본문에서 찾는다 — 목록 서수 경로가 들여쓴 본문을 훑는 것과
+         * 같은 자리이고, 스킬이 파일 이름을 대는 곳이 거기이기 때문이다.
+         */
+        const nextIndex =
+          order + 1 < heading.hits.length ? heading.hits[order + 1].index : lines.length;
+        const body = lines
+          .slice(hit.index + 1, nextIndex)
+          .map((next) => next.text)
+          .join("\n");
+        const occurrenceKey = `${hit.ordinal}\0${hit.title}`;
+        const occurrence = (duplicateCounts.get(occurrenceKey) ?? 0) + 1;
+        duplicateCounts.set(occurrenceKey, occurrence);
+        const stepId = `step:${sha256Digest(`${relativePath}\0${occurrenceKey}\0${occurrence}`).slice(7, 23)}`;
+        scanTextByStepId.set(stepId, `${hit.title}\n${body}`);
+        steps.push({
+          stepId,
+          // 0 으로 시작하는 절차도 화면에서는 1 부터 센다 — 아래 연속성 검사와
+          // 「단계 N개」가 같은 수를 말해야 한다. 원문 번호는 제목에 그대로 있다.
+          ordinal: order + 1,
+          exactText: hit.title,
+          sourceSpan: {
+            start: { line: line.number, column: hit.titleColumn },
+            end: endPosition(line),
+          },
+          semanticLabels: [],
+        });
+      });
+    }
+  }
+
   if (steps.length === 0) {
     return unavailable(source, false, [
       {
@@ -307,7 +435,8 @@ export function deriveSkillProcess({
   });
   const resourcesByPath = new Map<string, SkillProcessResource>();
   for (const step of semanticSteps) {
-    for (const ref of classifyReferences(step.exactText).bundled) {
+    for (const ref of classifyReferences(scanTextByStepId.get(step.stepId) ?? step.exactText)
+      .bundled) {
       if (ref.replace(/^\.\//, "").split("/").includes("..")) {
         diagnostics.push({
           code: "resource_path_unsupported",
