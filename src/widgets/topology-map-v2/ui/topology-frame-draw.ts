@@ -344,6 +344,17 @@ export interface FrameDrawParams {
    */
   appearById?: ReadonlyMap<string, number>;
   /**
+   * **이번 세션에 새로 생긴 노드**의 id (`use-topology-loop` 의 월드 diff 가
+   * 채운다). 등장 램프(`appearById`)는 원래 있었지만, 새 역량은 개요 배율에서
+   * 티어 알파가 0 이라 **그 연출이 0 에 곱해지고 있었다** — 에이전트가 노드를
+   * 만들어도 화면에는 도메인의 자식 수 숫자만 2→3 으로 바뀌었다(2026-08-17
+   * 실측). 그래서 새로 생긴 노드는 ego 클릭·칩 펼침과 같은 급의 면제를 받아
+   * 그려지고, 이미 있던 그 램프를 타고 0.6배에서 부풀며 떠오른다.
+   *
+   * 세션 동안 유지된다 — 잠시 보였다 사라지면 그게 곧 깜빡임이다.
+   */
+  bornNodeIds?: ReadonlySet<string> | null;
+  /**
    * rank7 — cluster expand/collapse reveal ramp (parentId → 0..1), stepped by the
    * loop. The node pass multiplies a just-expanded disc child's globalAlpha by its
    * nearest expanded-ancestor parent's ramp (fade IN on expand); `drawClusterChip`
@@ -575,6 +586,7 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
     egoRevealById,
     focusRampById,
     appearById,
+    bornNodeIds,
     chipRevealById,
     batchAppearById,
     labelPresentById,
@@ -803,13 +815,19 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
     // 사용자가 칩을 눌렀다는 것은 "이걸 보겠다"는 명시적 요청이라 ego 클릭과
     // 같은 급이다. 새 개념이 아니라 **빠진 다섯 번째**다.
     const chipExpandReveal = expandRevealById?.get(node.id) ?? 0;
+    // 방금 생긴 노드 — 등장 램프를 그대로 면제 채널로 쓴다. 새 개념이 아니라
+    // 이미 있던 램프가 닿지 못하던 자리에 닿게 하는 것이다(위 `bornNodeIds`).
+    const bornReveal = bornNodeIds?.has(node.id)
+      ? Math.min(1, Math.max(0, appearById?.get(node.id) ?? 1))
+      : 0;
     const baseAlpha = effectiveNodeAlpha(
       tierAlpha,
-      isEgoMember || chipExpandReveal > 0,
+      isEgoMember || chipExpandReveal > 0 || bornReveal > 0,
       Math.max(
         isPairMember || trailKept ? 1 : (egoRevealById.get(node.id) ?? 0),
         spotlightReveal,
         chipExpandReveal,
+        bornReveal,
       ),
     );
     // S7 — 영역 퇴장 중 귀환하는 밖 노드는 이 램프로 강등(모션 감사 처방 B). 이

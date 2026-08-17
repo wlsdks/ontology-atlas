@@ -755,6 +755,17 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
   const appearRef = useRef<Map<string, number>>(new Map());
   const prevNodeIdsRef = useRef<Set<string>>(new Set());
   /**
+   * **이번 세션에 새로 생긴 노드**의 id. 등장 램프(`appearRef`)만으로는 부족한
+   * 이유: 새 역량은 개요 배율에서 티어 알파가 0 이라 그 램프가 0 에 곱해진다 —
+   * 에이전트가 노드를 만들어도 화면에는 도메인의 자식 수만 2→3 으로 바뀌었다
+   * (2026-08-17 실측, 소유자 지시로 고침). 이 집합에 든 노드는 ego 클릭·칩
+   * 펼침과 같은 급의 티어 면제를 받아 실제로 그려진다.
+   *
+   * **세션 동안 유지된다.** 잠시 보였다 사라지면 그게 곧 깜빡임이고, 소유자가
+   * 정확히 그것을 하지 말라고 했다. 새로고침하면 원래 티어 규칙으로 돌아간다.
+   */
+  const bornNodeIdsRef = useRef<Set<string>>(new Set());
+  /**
    * rank9 — 라벨별 LOD present 램프(nodeId → 0..1). `drawTopologyFrame` 이 배치
    * 결과를 알고 그 자리에서 스텝/소비한다(루프는 수명만 소유). 라벨 깜빡임을
    * 페이드로 바꾼다.
@@ -1212,9 +1223,11 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
           if (!appear.has(n.id)) appear.set(n.id, 1);
         } else {
           appear.set(n.id, 0); // 신규 노드 — 0 에서 부풀며 등장.
+          bornNodeIdsRef.current.add(n.id); // 티어 게이트 면제 — 위 주석.
         }
       }
       for (const id of [...appear.keys()]) if (!nextIds.has(id)) appear.delete(id);
+      for (const id of [...bornNodeIdsRef.current]) if (!nextIds.has(id)) bornNodeIdsRef.current.delete(id);
       prevNodeIdsRef.current = nextIds;
     }
     // R6 상시 혜성 — 유휴 게이트가 코멧 상시성을 알 수 있게 depends 유무를 캐시.
@@ -3244,6 +3257,7 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
         egoRevealById: egoRevealRef.current,
         focusRampById: focusRampRef.current,
         appearById: appearRef.current,
+        bornNodeIds: bornNodeIdsRef.current,
         chipRevealById: chipRevealRef.current,
         expandRevealById: expandRevealRef.current,
         batchAppearById: batchAppearRef.current,
