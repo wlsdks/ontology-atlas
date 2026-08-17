@@ -31,6 +31,7 @@ import {
   materializeStarterFiles,
   vaultAgentGuideForLocale,
   vaultClaudeBridgeForLocale,
+  vaultSkillFilesForLocale,
   buildCodexConfigToml,
   buildMcpConfigJson,
   buildVaultMcpConfigJson,
@@ -1465,6 +1466,12 @@ export function useLocalVaultInternal() {
       // Claude Code 는 `AGENTS.md` 를 직접 안 읽는다 — `CLAUDE.md` 의 임포트를
       // 거친다. 하나만 두면 두 런타임 중 한쪽이 안내를 통째로 못 받는다.
       vaultClaudeBridgeForLocale(starterLocale),
+      /*
+       * 절차 스킬 셋. 안내문이 「무엇을 부를지」를 준다면 이쪽은 「어떤 순서로,
+       * 어디서 멈출지」를 준다. 볼트가 곧 에이전트의 작업 폴더라 그대로 `/`
+       * 목록에 오른다 — 근거는 `ontology-starter.ts` 의 `VAULT_SKILL_NAMES` 주석.
+       */
+      ...vaultSkillFilesForLocale(starterLocale),
     ]) {
       try {
         const resolved = await getParentAndName(guide.relPath.replace(/\.md$/, ''), true);

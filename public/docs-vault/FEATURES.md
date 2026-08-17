@@ -172,8 +172,21 @@ toast names the exact path — real disk, not OPFS, so an AI agent/MCP can
 still read it; hidden when the real Tauri invoke bridge is absent, e.g. a dev
 `?shell=desktop` browser override) / open vault folder / create new vault
 (existing `scaffoldOntology()` when the picked folder is empty — 5 markdown
-seeds + agent configs) / browse the built-in demo vault — plus a local-first
-trust line. No download CTA inside the installed app.
+seeds + agent configs + the agent guide pair + 3 procedure skills) / browse the
+built-in demo vault — plus a local-first trust line. No download CTA inside the
+installed app.
+
+**Vault-carried agent skills (2026-08-17)**: every scaffolded vault — CLI `init`
+and the in-app/web starter alike — ships `.claude/skills/atlas-{review,grow,absorb}/SKILL.md`.
+The app launches the coding agent with the vault as its working folder, so these
+appear directly in the composer's `/` menu tagged `(project)`; measured on a
+freshly initialized vault, they take the first three slots of the 50 commands an
+app session offers. They encode order and stopping conditions the tool list
+alone cannot: review reads `validate_vault` + `health` and writes nothing, grow
+filters `growth_plan` candidates against evidence before proposing, absorb checks
+for duplicates before extracting. All three refuse to write until a person picks.
+Byte-parity between the CLI templates and the web starter constants is gated by
+`tests/contract/starter-templates.contract.test.ts`.
 
 **Web root-first-open (2026-07-18)**: on hosted web, `/` no longer shows a
 marketing landing page at all — with no vault selected it renders `HomePage`

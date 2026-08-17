@@ -5,8 +5,13 @@ import { describe, expect, it } from "vitest";
 
 import {
   ONTOLOGY_STARTER_FILES,
+  VAULT_SKILL_NAMES,
   materializeStarterFiles,
   starterFilesForLocale,
+  vaultAgentGuideForLocale,
+  vaultClaudeBridgeForLocale,
+  vaultSkillFilesForLocale,
+  vaultSkillPath,
 } from "@/features/docs-vault-local/lib/ontology-starter";
 import { runCliJson } from "../helpers/run-cli-json";
 
@@ -122,4 +127,81 @@ describe("starter templates — 제품 자신의 품질 기준", () => {
       }
     });
   }
+});
+
+/**
+ * 개념 노드가 **아닌** 스타터 파일도 두 경로가 같아야 한다.
+ *
+ * 위 계약은 `starterFilesForLocale` 다섯만 봤다. 그 사이에 안내문 둘
+ * (`AGENTS.md` · `CLAUDE.md`)과 절차 스킬 셋이 들어왔는데, 둘 다 CLI 템플릿과
+ * TS 상수에 **사본이 둘**이면서 아무 검사도 없었다. 사본이 둘인데 게이트가
+ * 없으면 어긋나는 쪽이 기본값이다.
+ */
+describe("starter templates — 개념이 아닌 파일도 CLI ↔ web 바이트 동일", () => {
+  for (const locale of ["en", "ko"] as const) {
+    const extras = [
+      vaultAgentGuideForLocale(locale),
+      vaultClaudeBridgeForLocale(locale),
+      ...vaultSkillFilesForLocale(locale),
+    ];
+
+    it(`${locale}: 파일 세트가 CLI 템플릿과 같다`, () => {
+      expect(extras.map((f) => f.relPath).sort()).toEqual([
+        ".claude/skills/atlas-absorb/SKILL.md",
+        ".claude/skills/atlas-grow/SKILL.md",
+        ".claude/skills/atlas-review/SKILL.md",
+        "AGENTS.md",
+        "CLAUDE.md",
+      ]);
+    });
+
+    for (const file of extras) {
+      it(`${locale}: ${file.relPath} 본문이 CLI 템플릿과 바이트 동일하다`, () => {
+        const onDisk = readFileSync(join(CLI_TEMPLATE_ROOTS[locale], file.relPath), "utf8");
+        expect(file.content).toBe(onDisk);
+      });
+    }
+  }
+});
+
+/**
+ * 스킬 frontmatter 규칙.
+ *
+ * `name` 은 폴더 이름과 같아야 Claude Code 가 그 스킬을 부른다. `description`
+ * 은 **화면에 그려진다** — 작성창 `/` 메뉴가 한 줄로 잘라서 보여 주므로
+ * (`AcpChatPanel`), 앞부분이 뜻을 날라야 하고 작대기(—)를 쓰지 않는다.
+ * 작대기 금지는 이 저장소가 화면에 그려지는 문서에 이미 건 규율과 같은 것인데,
+ * `em-dash-ratchet` 의 사정거리는 `docs/**` 이고 점으로 시작하는 폴더를
+ * 건너뛰므로 이 파일들은 그 시야 밖이다.
+ */
+describe("starter templates — 볼트 스킬 frontmatter", () => {
+  for (const locale of ["en", "ko"] as const) {
+    const skills = vaultSkillFilesForLocale(locale);
+
+    it(`${locale}: 세 개를 실제로 읽었다`, () => {
+      expect(skills.length, "스킬을 못 읽었다. 이 시험이 헛돈다").toBe(VAULT_SKILL_NAMES.length);
+    });
+
+    for (const skill of skills) {
+      const folder = skill.relPath.split("/").at(-2) ?? "";
+      const frontmatter = skill.content.split("---")[1] ?? "";
+      const name = /^name:\s*(.+)$/m.exec(frontmatter)?.[1]?.trim() ?? "";
+      const description = /^description:\s*(.+)$/m.exec(frontmatter)?.[1]?.trim() ?? "";
+
+      it(`${locale}: ${folder} 의 name 이 폴더 이름과 같다`, () => {
+        expect(name).toBe(folder);
+      });
+
+      it(`${locale}: ${folder} 의 설명이 화면에 낼 수 있는 모양이다`, () => {
+        expect(description.length, "설명이 비면 `/` 메뉴에 이름만 뜬다").toBeGreaterThan(20);
+        expect(description, "화면에 그려지는 문구다. 작대기 대신 마침표나 괄호를 쓴다").not.toContain(
+          "—",
+        );
+      });
+    }
+  }
+
+  it("스킬 자리는 Claude Code 가 읽는 그 자리다", () => {
+    expect(vaultSkillPath("atlas-review")).toBe(".claude/skills/atlas-review/SKILL.md");
+  });
 });

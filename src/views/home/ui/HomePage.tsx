@@ -2628,6 +2628,15 @@ export function HomePage() {
   const topologyUtilityChromeCompact =
     topologyUtilityChromeState === "compact-focus" ||
     topologyUtilityChromeState === "selected-node-inspector";
+  /*
+   * 알림함이 열린 동안만 유틸 레인을 한 단 올린다 (2026-08-17 소유자 지적:
+   * *"알림이 위로 덮어야지?"*). 레인의 `z-20` 이 쌓임 맥락을 만들어 그 안의
+   * 알림함이 밖으로 못 올라가고, 같은 `z-20` 이면서 DOM 상 뒤에 있는 오른쪽
+   * 도구 타일들이 알림함 위에 그려졌다. 상시로 올리지 않는 이유는 막
+   * (`--z-map-scrim`, 25)이 덮어야 할 때 레인이 그 위로 삐져나오기 때문이다.
+   * 게이트: `tests/e2e/agent-activity-placement.spec.ts`.
+   */
+  const [activityInboxOpen, setActivityInboxOpen] = useState(false);
   const topologyUtilityLaneSuppressionContract = selectedRelationActive
     ? "selected-relation-inspector-owns-right-rail"
     : selectedNodeOwnsRightRail
@@ -4062,9 +4071,9 @@ export function HomePage() {
                       // ② 칩별 라벨은 아래 max-xl/max-2xl [data-chip-label]
                       // 사다리로 축약 — 라벨 총폭 499px 가 768–1365 구간에서
                       // 중앙 검색 레인·확장 INDEX 와 겹치던 원인.
-                      className={`topology-ui-scale absolute right-4 top-4 z-20 flex-col items-end gap-2 md:right-6 md:top-6 xl:right-8 xl:top-8 ${
-                        renderedIndexState === "expanded" ? "hidden md:flex" : "flex"
-                      }`}
+                      className={`topology-ui-scale absolute right-4 top-4 flex-col items-end gap-2 md:right-6 md:top-6 xl:right-8 xl:top-8 ${
+                        activityInboxOpen ? "z-30" : "z-20"
+                      } ${renderedIndexState === "expanded" ? "hidden md:flex" : "flex"}`}
                       data-phone-sheet-utility-contract={
                         renderedIndexState === "expanded"
                           ? "hidden-below-md-while-index-sheet-owns-surface"
@@ -4363,10 +4372,16 @@ export function HomePage() {
                       />
                     </div>
                       </div>
-                      {/* 알림은 위쪽 버튼들 **아래 줄**에 산다 (2026-08-17 소유자 지시:
-                          *"사용자가 위는 봐도 아래는 잘 안볼듯한데"*). 상태 줄(누가 · 언제 ·
-                          어느 노드)은 지도 하단에 그대로 남는다. */}
-                      <AgentActivityChip part="bell" suppressed={Boolean(v2DatasheetModel)} />
+                      {/* 활동 줄 **전체**(누가 · 언제 · 어느 노드 · 종 · 알림함)가
+                          위쪽 버튼들 아래 줄에 산다. 소유자 지시 두 번:
+                          *"사용자가 위는 봐도 아래는 잘 안볼듯한데"* →
+                          *"줄 전체를 하단으로!"*. 지도 하단에는 남기지 않는다 —
+                          같은 사실이 두 곳에 있으면 헷갈린다(실측 2곳).
+                          게이트: `tests/e2e/agent-activity-placement.spec.ts`. */}
+                      <AgentActivityChip
+                        suppressed={Boolean(v2DatasheetModel)}
+                        onOpenChange={setActivityInboxOpen}
+                      />
                     </div>
                     </>
                   )}
@@ -5313,25 +5328,19 @@ export function HomePage() {
                     줄로 들어간다. 같은 성격의 읽을거리를 다른 자리에 두면 눈이
                     한 번 더 훑어야 하고, 그게 이 저장소가 경계하는 「과업이 더
                     명확해지지 않는 새 크롬」이다. */}
-                {/* 「작업 중 / 마지막 작업」 + 벨 + 알림함.
+                {/* 활동 줄은 여기 살지 않는다 (2026-08-17 소유자 지시로 옮김).
 
-                    **이 자리인 이유는 실측이다.** 처음엔 상단 중앙 상태 열
-                    (영역·경로·걸어온 길 옆)에 뒀는데, 1024 에서 재 보니 그 열은
-                    INDEX 패널 오른끝(388px)과 69px 밖에 안 떨어져 있고 이 칩은
-                    194px 이라 **32px 겹쳤다**. 우상단 유틸 레인도 같은 폭에서
-                    28px 만 남았다 — 이 저장소가 반복해 사고를 낸 바로 그 구간이다.
-                    저 열의 칩 넷은 **사용자가 자기 손으로 만든** 일시 상태라 그
-                    여유를 알고 쓰는 것이고, 이건 **상시**다.
+                    **옛 근거와 무엇이 달라졌나.** 이 자리를 고른 실측은
+                    「상단 **중앙** 상태 열」과의 비교였다: 1024 에서 그 열은
+                    INDEX 오른끝과 69px 뿐인데 칩이 194px 이라 32px 겹쳤고, 우상단
+                    유틸 레인도 **같은 줄**에는 28px 밖에 안 남았다. 지금 자리는
+                    그 둘 중 어느 쪽도 아니다 — 유틸 레인의 **아래 줄**이라
+                    가로로 다툴 상대가 애초에 없다(오른쪽 정렬이라 왼쪽 빈 지도로
+                    자란다). 그래서 옛 측정이 이 자리를 반증하지 않는다.
 
-                    이 스택은 좌우로 다툴 상대가 없고(우·하단 고정), 무엇보다
-                    토스트가 이미 이 스택의 실제 rect 를 읽어 위로 비켜선다
-                    (`resolveToastBottomOffsetForStack` + ResizeObserver) — 줄이
-                    하나 늘면 토스트가 저절로 그만큼 올라간다. 그리고 갈래도 맞다:
-                    범례·첫 실행 판독·계기가 사는 **앰비언트 판독**의 집이다.
-
-                    데이터시트가 열리면 스택 전체가 물러나므로(opacity-0) 그때
-                    보이지 않는 채 클릭 가능한 컨트롤이 남지 않게 언마운트한다. */}
-                <AgentActivityChip suppressed={Boolean(v2DatasheetModel)} />
+                    토스트는 이 스택의 실제 rect 를 읽어 비켜서므로
+                    (`resolveToastBottomOffsetForStack` + ResizeObserver) 줄이
+                    하나 빠지면 저절로 그만큼 내려온다 — 손댈 값이 없다. */}
                 <FrameMeter />
               </div>
 

@@ -388,10 +388,35 @@ await test('init --locale=ko — Korean starter bodies, identical graph, English
     for (const dir of ['vault-ko', 'vault-en']) {
       const v = await run(['validate', dir], { cwd: repo });
       assert.equal(v.code, 0, `${dir} validate failed: ${v.stdout}${v.stderr}`);
-      const markdownFileCount = readdirSync(join(repo, dir), {
+      /*
+       * **디스크의 `.md` 전부가 볼트 문서인 것은 아니다** (2026-08-17).
+       *
+       * 볼트 스캔은 점으로 시작하는 폴더를 건너뛴다(`cli/src/lib/walk-vault.mjs`
+       * 27행, 그리고 그 규율의 출처는 `.claude/rules/local-first.md` — `.git/`
+       * 같은 시스템 폴더를 훑지 않는다는 약속이다). 스타터가 볼트에 넣는
+       * 절차 스킬(`.claude/skills/**\/SKILL.md`)이 정확히 거기 산다.
+       *
+       * 그래서 그냥 빼지 않고 **둘 다** 단언한다: 디스크에는 있고(안 깔리면
+       * 그것도 결함이다), 문서 수에는 안 잡힌다(잡히면 스킬이 온톨로지 문서로
+       * 오인된 것이다).
+       */
+      const vaultRoot = join(repo, dir);
+      const markdownEntries = readdirSync(vaultRoot, {
         recursive: true,
         withFileTypes: true,
-      }).filter((entry) => entry.isFile() && entry.name.endsWith('.md')).length;
+      }).filter((entry) => entry.isFile() && entry.name.endsWith('.md'));
+      const inHiddenFolder = (entry) =>
+        entry.parentPath
+          .slice(vaultRoot.length)
+          .split(/[\\/]/)
+          .some((segment) => segment.startsWith('.'));
+      const skillFiles = markdownEntries.filter(inHiddenFolder);
+      assert.equal(
+        skillFiles.length,
+        3,
+        `${dir}: 볼트 절차 스킬 3개가 깔려야 한다 — 본 것: ${skillFiles.map((e) => e.name).join(', ') || '없음'}`,
+      );
+      const markdownFileCount = markdownEntries.length - skillFiles.length;
       assert.match(
         stripAnsi(v.stdout),
         new RegExp(`${markdownFileCount} 파일 스캔: frontmatter · 그래프 참조 issue 0`),
