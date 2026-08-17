@@ -42,7 +42,22 @@ import { useAgentActivityFeed } from '../model/use-agent-activity-feed';
  * 아니다. 문제 알림만 신호 톤 warning 을 쓴다. pulse·glow·scale-hover 없음:
  * 벨 배지가 늘 때 장식 모션을 넣지 않는다(「한 입력 = 한 사건」).
  */
-export function AgentActivityChip({ suppressed = false }: { suppressed?: boolean } = {}) {
+/**
+ * 이 부품이 그리는 **두 조각** (2026-08-17 소유자 지시로 자리를 갈랐다).
+ *
+ * - `status` — 「누가 · 마지막 작업 언제 · 어느 노드」. 지도 **하단**에 남는다.
+ * - `bell`   — 알림 종과 알림함. 지도 **위쪽** 「에이전트 / 최근 변경」 아래로
+ *   옮겼다. 소유자: *"사용자가 위는 봐도 아래는 잘 안볼듯한데"*.
+ *
+ * 두 자리가 같은 `useAgentActivityFeed()` 를 각각 부른다 — 훅이라 상태를
+ * 나눠 가질 필요가 없고, 자리를 옮겨도 무엇을 세는지는 한 곳에 남는다.
+ */
+export type AgentActivityPart = 'status' | 'bell';
+
+export function AgentActivityChip({
+  suppressed = false,
+  part = 'status',
+}: { suppressed?: boolean; part?: AgentActivityPart } = {}) {
   const t = useTranslations('agentActivity');
   const format = useFormatter();
   const feed = useAgentActivityFeed();
@@ -80,20 +95,21 @@ export function AgentActivityChip({ suppressed = false }: { suppressed?: boolean
     };
   }, [open, close]);
 
-  const showBell = feed.notificationsEnabled;
+  const showBell = feed.notificationsEnabled && part === 'bell';
+  const showStatus = feed.showStatus && part === 'status';
   // 스택이 물러난 동안(데이터시트 조사 중)은 **언마운트한다** — 스택은 opacity-0
   // 로만 사라지므로 남겨 두면 보이지 않는 채 클릭·포커스 가능한 컨트롤이 된다.
   if (suppressed) return null;
   // 말할 것도 없고 열 것도 없으면 자리를 차지하지 않는다.
-  if (!feed.showStatus && !showBell) return null;
-  if (!feed.showStatus && feed.notifications.length === 0) return null;
+  if (!showStatus && !showBell) return null;
+  if (part === 'bell' && feed.notifications.length === 0) return null;
 
   const relative = (at: number) => format.relativeTime(new Date(at), feed.nowMs);
 
   return (
     <div ref={rootRef} className="pointer-events-auto relative min-w-0" data-testid="agent-activity-chip">
       <div className={CHROME_STATUS_CHIP_CLASS} data-writing={feed.writing ? 'true' : 'false'}>
-        {feed.showStatus ? (
+        {showStatus ? (
           <>
             {/* 상태는 색이 아니라 **글**이 말한다 — 점은 거들 뿐이라 색을
                 못 보는 사람도 문구만으로 판정이 선다(WCAG 1.4.1). */}
@@ -163,7 +179,7 @@ export function AgentActivityChip({ suppressed = false }: { suppressed?: boolean
         ) : null}
         {showBell ? (
           <>
-            {feed.showStatus ? (
+            {showStatus ? (
               <span
                 aria-hidden
                 className="h-4 w-px shrink-0 bg-[color:var(--color-divider)]"
