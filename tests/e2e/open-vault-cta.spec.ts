@@ -172,7 +172,7 @@ test.describe("막다른 CTA 금지 — 폴더를 열라고 말한 자리", () =
     for (const site of SITES) {
       await page.goto(`${site.route}?guides=off`, { waitUntil: "domcontentloaded" });
       await page.evaluate(() => document.fonts.ready);
-      await page.waitForTimeout(900);
+      // 바로 아래 단언이 스스로 기다린다 — 고정 대기는 낭비였다(2026-08-17 전수조사).
 
       const cta = page.getByTestId(site.testId);
       await expect(cta, `${site.route}: 폴더 여는 길이 안 보인다`).toBeVisible();
@@ -207,7 +207,7 @@ test.describe("막다른 CTA 금지 — 폴더를 열라고 말한 자리", () =
     for (const route of ["/ko/project/new/", "/ko/project/storefront/edit/"]) {
       await page.goto(`${route}?guides=off`, { waitUntil: "domcontentloaded" });
       await page.evaluate(() => document.fonts.ready);
-      await page.waitForTimeout(900);
+      // 바로 아래 단언이 스스로 기다린다 — 고정 대기는 낭비였다(2026-08-17 전수조사).
 
       await expect(
         page.getByTestId("project-write-disabled-banner").first(),
@@ -242,7 +242,7 @@ test.describe("막다른 CTA 금지 — 폴더를 열라고 말한 자리", () =
     });
     await page.goto("/ko/ontology/insights/?guides=off", { waitUntil: "domcontentloaded" });
     await page.evaluate(() => document.fonts.ready);
-    await page.waitForTimeout(1200);
+    // 바로 아래 단언이 스스로 기다린다 — 고정 대기는 낭비였다(2026-08-17 전수조사).
 
     const cta = page.getByTestId("do-next-open-vault");
     await expect(cta).toBeVisible();
@@ -366,7 +366,7 @@ test.describe("관문은 폴더를 여는 화면이 아니다 — 대신 그 화
       // ② 눌러서 도착한다.
       await page.locator(`[data-reach-hop="${inFold[0].index}"]`).click();
       await page.waitForURL(/\/topology/, { timeout: 15_000 });
-      await page.waitForTimeout(2200);
+      // 바로 아래 단언이 스스로 기다린다 — 고정 대기는 낭비였다(2026-08-17 전수조사).
 
       // ③ 착지점의 주 행동이 그 일이다 — 시트를 거쳐 선택기를 **실제로** 부른다.
       const starter = page.getByTestId("first-run-starter-open");
