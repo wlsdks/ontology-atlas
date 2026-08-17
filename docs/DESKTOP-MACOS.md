@@ -473,7 +473,9 @@ gh secret set TAURI_SIGNING_PRIVATE_KEY_PASSWORD < /path/to/TAURI_SIGNING_PRIVAT
 The workflow generates the temporary keychain password and derives the signing
 identity from the imported certificate. Repository copies of the API three and
 obsolete `APPLE_ID` / `APPLE_APP_SPECIFIC_PASSWORD` / `APPLE_TEAM_ID` must be
-removed after the new workflow reaches `main`; the certificate/updater four stay.
+unused by the new workflow. Keep them only through the first API-key transition
+release, then remove exactly those three after signing, notarization, publication,
+and public-download verification pass; the certificate/updater four stay.
 
 Configure `release-signing` to admit exactly the `main` branch: one custom
 deployment branch rule, branch `main`, no tag rule, administrator bypass
@@ -487,7 +489,7 @@ administrator bypass; unlike `release-signing`, it must retain a reviewer.
 creating the tag, then create and push that tag at the current `main` head:
 
 ```bash
-pnpm desktop:release-github -- --tag=v1.0.0
+pnpm desktop:release-github -- --tag=v1.0.0 --allow-obsolete-repository-secrets  # first API-key transition release only
 pnpm desktop:release-preflight
 git fetch origin main --tags
 git tag v1.0.0 origin/main
@@ -704,7 +706,11 @@ or the required split-scope secrets are missing, blank, or structurally invalid,
 workflow fails before uploading an unsigned or wrongly sourced candidate.
 Before creating the tag, run `pnpm desktop:release-github -- --tag=v1.0.0` to
 catch missing split-scope secret names, obsolete/over-scoped repository copies, environment
-policy drift, or an inactive workflow.
+policy drift, or an inactive workflow. For the first API-key transition release only,
+append `--allow-obsolete-repository-secrets`: this permits the unused legacy Apple
+ID/password/team names to remain until the release is proven, but it never permits
+repository copies of the API credentials. After the public download verifier passes,
+delete the three legacy names and rerun the command without that option.
 Use `pnpm desktop:release-status -- --pr=<number> --tag=v1.0.0` as the completion
 audit before calling the macOS app goal done: it accepts an already merged PR
   only when that PR is the latest merged PR on `main`, or checks

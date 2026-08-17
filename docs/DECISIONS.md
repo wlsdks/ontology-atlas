@@ -40,6 +40,78 @@
 **상태**: 유효 / 뒤집힘(→ 링크) / 반증됨(관측: …)
 ```
 
+## 2026-08-17 (67) — 구형 Apple secret은 새 API 릴리스가 성공한 뒤 삭제한다
+
+**소집**: 소유자 운영 지시 + 기계적 릴리스 패스 · **트리거**: 읽을 수 없는 기존
+secret을 검증 전에 삭제하면 실패 시 복구할 수 없는 전환 순서 · **루브릭**: CI 운영
+plumbing 면제
+
+**관찰된 현상**: 새 App Store Connect API 3개와 유지해야 할 repository identity
+4개는 준비됐지만, repository에 구형 `APPLE_ID`, `APPLE_APP_SPECIFIC_PASSWORD`,
+`APPLE_TEAM_ID`도 남아 있다. workflow는 구형 세 값을 참조하지 않으나 기존
+`desktop:release-github`는 이름이 존재한다는 이유만으로 실제 API-key 릴리스
+증명보다 삭제를 먼저 강제했다.
+
+**결정**: 평상시 preflight와 최종 `desktop:release-status`는 구형 세 값이 남으면
+계속 실패한다. 단 한 번의 전환 릴리스에만
+`desktop:release-github -- --allow-obsolete-repository-secrets`를 명시해 그 세 이름의
+존재를 경고로 낮춘다. repository scope의 API key 복사본은 이 옵션으로도 실패한다.
+보호된 `main` workflow와 보안 계약이 구형 이름을 참조하지 않음을 먼저 증명하고,
+실제 서명·공증·게시·다운로드 검증이 끝난 뒤 구형 세 값을 삭제한다. 그 다음 옵션
+없는 preflight/status를 다시 통과시켜 3+4만 남았음을 확정한다.
+
+**적용 규칙**: 전환 옵션은 secret 사용을 허용하는 옵션이 아니라 미사용 이름의 임시
+존재만 허용한다 · 실제 Release 성공 전에는 구형 값을 삭제하지 않는다 · 성공 후
+세 값만 정확히 삭제하고 certificate/updater 4개는 유지한다 · 최종 상태 증거는 옵션
+없는 preflight와 repository/environment secret 이름 목록이다.
+**서명**: Codex — 전환 gate RED/GREEN 및 workflow 참조 대조 · 진안 — 실제 릴리스
+성공 후 삭제 순서 승인
+
+**기록된 반대**: 구형 secret이 더 오래 남아 repository-level blast radius가 한 번의
+릴리스 동안 유지된다. 그러나 workflow가 그 이름을 참조하지 않고, 원본 없는 자격증명을
+먼저 지우는 복구 불가능성보다 짧은 잔존 기간의 위험이 작다.
+**반증 조건**: 전환 릴리스 run의 어떤 step이라도 구형 세 이름을 참조하거나, 성공
+뒤 옵션 없는 preflight가 그 세 값의 잔존을 놓치면 즉시 전환 옵션을 제거하고 gate를
+재설계한다.
+**재검토**: 첫 API-key 릴리스 완료와 구형 세 값 삭제 직후.
+
+**뒤집는 범위**: Decision 65의 삭제 시점을 “workflow가 main에 도달한 뒤”에서
+“그 workflow의 실제 릴리스가 성공한 뒤”로만 뒤집는다. 3+4 최종 scope는 유지한다.
+**상태**: 유효
+
+## 2026-08-17 (66) — `find_evidence`는 모든 행의 node 여부를 말하고, graph identity는 노드에만 요구한다
+
+**소집**: PO 카운슬 · **트리거**: 공개 MCP output schema 변경 ·
+**루브릭**: 18/24 (Problem insight 2 · User moment 4 · Differentiation 2 ·
+Ontology value 4 · Agent value 4 · Verification 2, 치명적 0 없음)
+
+**관찰된 현상**: fresh init 볼트의 `find_evidence({title:"project"})`는 일반 문서인
+`AGENTS.md`를 `isNode:false`로 정직하게 반환하고 `uid`·`kind`를 만들지 않았다.
+그러나 공개 output schema와 verifier는 모든 행에 두 graph identity 필드를 요구해
+`mcp-verify`와 전체 CLI integration을 실패시켰다. 실제 외부 에이전트 사용자가
+decode 실패를 겪었다는 별도 기록은 아직 없으며, 관측된 손상은 first-party verifier와
+생성 타입의 모순까지다.
+
+**결정**: 검색 포함 범위·점수·정렬·기본 `nodesOnly:false`는 유지한다. 모든 match는
+`slug`, `isNode`, `title`, `mtime`, `matchedIn`, `score`, `excerpt`를 요구한다.
+`isNode:true` 행은 유효한 `uid`와 `kind`를 추가로 요구하고, `isNode:false` 행은
+두 필드를 생략한다. verifier도 `find_evidence`에서만 같은 판별식을 쓰며 다른 graph
+read 도구의 node identity 계약을 완화하지 않는다.
+
+**적용 규칙**: 비노드에 가짜 UID나 kind를 붙이지 않는다 · verifier 통과만 위해
+`nodesOnly:true`를 강제하지 않는다 · 공통 read-row 추상화나 검색 재설계는 이번
+수리에 넣지 않는다 · source와 app-bundled MCP의 `tools/list` schema parity를 확인한다.
+**서명**: Codex — fresh-init RED·runtime 응답·공개 schema 대조 · 진안 — main 머지 마무리 요청
+
+**기록된 반대**: 조건부 JSON Schema를 일부 MCP 클라이언트가 평탄화해 `uid`·`kind`를
+모든 행의 선택 필드로만 취급하면 node handoff 타입이 이전보다 약해질 수 있다.
+**반증 조건**: 실제 Claude Code·Codex 또는 번들 MCP의 생성 타입이 `isNode:true`를
+node identity 필수 조건으로 보존하지 못하거나 mixed 결과를 거부하면 이 계약을
+재검토한다. 그 전에는 기본 검색을 nodes-only로 바꾸지 않는다.
+**재검토**: 실제 MCP 클라이언트의 조건부 schema 호환 실패가 관측될 때.
+
+**상태**: 유효
+
 ## 2026-08-17 (65) — 공증 API 3개는 `release-signing`, 복구 불가능한 기존 identity 4개는 repository scope에 유지한다
 
 **소집**: 운영 실측 + 기계적 보안 패스 · **트리거**: GitHub secret은 저장 후

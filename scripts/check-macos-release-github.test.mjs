@@ -245,6 +245,28 @@ test("desktop GitHub release gate rejects obsolete Apple ID repository secrets",
   });
 });
 
+test("desktop GitHub release gate allows obsolete Apple ID names only for one proven transition release", () => {
+  withFakeGh({
+    repoSecretNames: [
+      ...repositorySecrets,
+      "APPLE_ID",
+      "APPLE_APP_SPECIFIC_PASSWORD",
+      "APPLE_TEAM_ID",
+    ],
+  }, (fakeGhPath, fakeGitPath) => {
+    const result = runReleaseGithub(fakeGhPath, fakeGitPath, [
+      `--tag=${APP_TAG}`,
+      "--allow-obsolete-repository-secrets",
+    ]);
+
+    assert.equal(result.status, 0, result.stderr);
+    assert.match(result.stderr, /transition release only/);
+    assert.match(result.stderr, /not referenced by release-macos\.yml/);
+    assert.match(result.stderr, /delete them only after this release passes/);
+    assert.match(result.stderr, /gh secret delete APPLE_ID --repo wlsdks\/ontology-atlas/);
+  });
+});
+
 test("desktop GitHub release gate rejects API credential copies at repository scope", () => {
   withFakeGh({
     repoSecretNames: [...repositorySecrets, "APPLE_API_KEY_ID"],
@@ -252,7 +274,22 @@ test("desktop GitHub release gate rejects API credential copies at repository sc
     const result = runReleaseGithub(fakeGhPath, fakeGitPath);
 
     assert.equal(result.status, 1);
-    assert.match(result.stderr, /obsolete or over-scoped repository signing secrets remain/);
+    assert.match(result.stderr, /over-scoped repository API secrets remain/);
+    assert.match(result.stderr, /gh secret delete APPLE_API_KEY_ID --repo wlsdks\/ontology-atlas/);
+  });
+});
+
+test("desktop GitHub release transition never allows API credential copies at repository scope", () => {
+  withFakeGh({
+    repoSecretNames: [...repositorySecrets, "APPLE_API_KEY_ID"],
+  }, (fakeGhPath, fakeGitPath) => {
+    const result = runReleaseGithub(fakeGhPath, fakeGitPath, [
+      `--tag=${APP_TAG}`,
+      "--allow-obsolete-repository-secrets",
+    ]);
+
+    assert.equal(result.status, 1);
+    assert.match(result.stderr, /over-scoped repository API secrets remain/);
     assert.match(result.stderr, /gh secret delete APPLE_API_KEY_ID --repo wlsdks\/ontology-atlas/);
   });
 });

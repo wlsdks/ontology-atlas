@@ -120,7 +120,7 @@ function printEnvironmentPolicy(repo, inputPaths = {}) {
 [apple-signing] Retain the Developer ID certificate pair and Tauri updater pair at repository scope.
 [apple-signing] Configure ${SIGNING_ENVIRONMENT} to admit main only, use no signing-stage reviewer, and keep admin bypass disabled.
 [apple-signing] Keep the human install approval on the separate release publication environment.
-[apple-signing] Remove obsolete Apple ID/password/team values and repository copies of the API credentials.
+[apple-signing] Remove repository copies of the API credentials before release. Keep obsolete Apple ID/password/team values only through the first API-key proof release, then delete them.
 
 [apple-signing] Set protected environment secrets:
 ${ENVIRONMENT_SECRETS.map((name) => `  ${setupSecretCommand(name, repo, inputPaths[name])}`).join("\n")}
@@ -128,7 +128,7 @@ ${ENVIRONMENT_SECRETS.map((name) => `  ${setupSecretCommand(name, repo, inputPat
 [apple-signing] Set retained repository secrets:
 ${REPOSITORY_SECRETS.map((name) => `  ${setupSecretCommand(name, repo, inputPaths[name])}`).join("\n")}
 
-[apple-signing] Cleanup obsolete or over-scoped repository secrets:
+[apple-signing] Cleanup commands (API copies now; obsolete Apple values only after the proof release passes):
 ${[...ENVIRONMENT_SECRETS, ...OBSOLETE_REPOSITORY_SECRETS].map((name) => `  ${repositoryCleanupCommand(name, repo)}`).join("\n")}`);
 }
 

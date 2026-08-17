@@ -1239,15 +1239,31 @@ export function toolsListSchemaFailure(tools) {
   if (
     evidenceMatchesSchema?.type !== 'array' ||
     evidenceMatchesSchema.items?.type !== 'object' ||
-    !sameArray(evidenceMatchesSchema.items?.required, ['uid', 'slug', 'kind', 'title', 'mtime', 'matchedIn', 'score', 'excerpt'])
+    !sameArray(evidenceMatchesSchema.items?.required, ['slug', 'isNode', 'title', 'mtime', 'matchedIn', 'score', 'excerpt'])
   ) {
     return 'find_evidence outputSchema matches drift';
+  }
+  const evidenceIdentityBranches = [
+    {
+      properties: { isNode: { const: true } },
+      required: ['uid', 'kind'],
+    },
+    {
+      properties: { isNode: { const: false } },
+      not: { anyOf: [{ required: ['uid'] }, { required: ['kind'] }] },
+    },
+  ];
+  if (!isDeepStrictEqual(evidenceMatchesSchema.items?.oneOf, evidenceIdentityBranches)) {
+    return 'find_evidence outputSchema match identity drift';
   }
   if (evidenceMatchesSchema.items?.additionalProperties !== false) {
     return 'find_evidence outputSchema match openness drift';
   }
   if (evidenceMatchesSchema.items?.properties?.uid?.type !== 'string' || evidenceMatchesSchema.items?.properties?.uid?.pattern !== NODE_UID_PATTERN) {
     return 'find_evidence outputSchema match uid drift';
+  }
+  if (evidenceMatchesSchema.items?.properties?.isNode?.type !== 'boolean') {
+    return 'find_evidence outputSchema match isNode drift';
   }
   for (const propertyName of ['slug', 'kind', 'title', 'excerpt']) {
     if (evidenceMatchesSchema.items?.properties?.[propertyName]?.type !== 'string') {
@@ -6028,7 +6044,21 @@ function readMatchRowFailure(label, row, index, { evidence = false, backlinks = 
   if (typeof row.slug !== 'string' || row.slug.length === 0) {
     return `${label} response missing match slug at index ${index}`;
   }
-  if (typeof row.kind !== 'string' || row.kind.length === 0) {
+  if (evidence) {
+    if (typeof row.isNode !== 'boolean') {
+      return `${label} response missing isNode: ${row.slug}`;
+    }
+    if (row.isNode) {
+      if (typeof row.uid !== 'string' || row.uid.length === 0) {
+        return `${label} response missing node uid: ${row.slug}`;
+      }
+      if (typeof row.kind !== 'string' || row.kind.length === 0) {
+        return `${label} response missing node kind: ${row.slug}`;
+      }
+    } else if (row.uid !== undefined || row.kind !== undefined) {
+      return `${label} response non-node exposes graph identity: ${row.slug}`;
+    }
+  } else if (typeof row.kind !== 'string' || row.kind.length === 0) {
     return `${label} response missing match kind: ${row.slug}`;
   }
   if (typeof row.title !== 'string' || row.title.length === 0) {

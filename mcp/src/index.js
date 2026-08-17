@@ -2891,7 +2891,17 @@ const TOOLS = [
                 description: 'Only present alongside excerptTruncated — the full body length.',
               },
             },
-            required: ['uid', 'slug', 'kind', 'title', 'mtime', 'matchedIn', 'score', 'excerpt'],
+            required: ['slug', 'isNode', 'title', 'mtime', 'matchedIn', 'score', 'excerpt'],
+            oneOf: [
+              {
+                properties: { isNode: { const: true } },
+                required: ['uid', 'kind'],
+              },
+              {
+                properties: { isNode: { const: false } },
+                not: { anyOf: [{ required: ['uid'] }, { required: ['kind'] }] },
+              },
+            ],
             additionalProperties: false,
           },
         },

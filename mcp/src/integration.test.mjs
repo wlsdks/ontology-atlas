@@ -523,9 +523,24 @@ await test("tools/list — 단일 도구 description 이 batch 짝을 cross-refe
     assert.deepEqual(findEvidence?.outputSchema?.required, ["query", "matches"]);
     assert.equal(findEvidence?.outputSchema?.additionalProperties, false);
     assert.equal(findEvidence?.outputSchema?.properties?.matches?.type, "array");
-    assert.deepEqual(findEvidence?.outputSchema?.properties?.matches?.items?.required, ["uid", "slug", "kind", "title", "mtime", "matchedIn", "score", "excerpt"]);
-    assert.equal(findEvidence?.outputSchema?.properties?.matches?.items?.additionalProperties, false);
-    assert.deepEqual(findEvidence?.outputSchema?.properties?.matches?.items?.properties?.matchedIn?.enum, ["frontmatter", "body"]);
+    const evidenceMatchSchema = findEvidence?.outputSchema?.properties?.matches?.items;
+    assert.deepEqual(evidenceMatchSchema?.required, ["slug", "isNode", "title", "mtime", "matchedIn", "score", "excerpt"]);
+    assert.equal(evidenceMatchSchema?.additionalProperties, false);
+    assert.deepEqual(evidenceMatchSchema?.properties?.matchedIn?.enum, ["frontmatter", "body"]);
+    assert.deepEqual(
+      evidenceMatchSchema?.oneOf,
+      [
+        {
+          properties: { isNode: { const: true } },
+          required: ["uid", "kind"],
+        },
+        {
+          properties: { isNode: { const: false } },
+          not: { anyOf: [{ required: ["uid"] }, { required: ["kind"] }] },
+        },
+      ],
+      "find_evidence output rows discriminate graph-node identity from ordinary markdown",
+    );
     const findBacklinks = findTool("find_backlinks");
     assert.match(
       findBacklinks?.description ?? "",
@@ -4815,7 +4830,13 @@ await test("find_evidence — 같은 점수면 노드가 잡문보다 먼저, �
       assert.equal(typeof m.isNode, "boolean", `${m.slug}.isNode`);
     }
     assert.equal(all.matches.find((m) => m.slug === "aaa-meeting-note").isNode, false);
-    assert.equal(all.matches.find((m) => m.slug === "capabilities/token-issue").isNode, true);
+    const nonNode = all.matches.find((m) => m.slug === "aaa-meeting-note");
+    assert.equal(nonNode.uid, undefined, "ordinary markdown must not invent a graph UID");
+    assert.equal(nonNode.kind, undefined, "ordinary markdown must not invent a graph kind");
+    const node = all.matches.find((m) => m.slug === "capabilities/token-issue");
+    assert.equal(node.isNode, true);
+    assert.match(node.uid, /^[0-9a-f-]{36}$/);
+    assert.equal(node.kind, "capability");
     // 잡문이 섞였으면 그 사실을 말한다 — 에이전트가 좁힐 길까지 같이.
     assert.match(String(all.nonNodeHint ?? ""), /nodesOnly/);
 

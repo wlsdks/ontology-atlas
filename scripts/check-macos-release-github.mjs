@@ -28,7 +28,7 @@ const REQUIRED_WORKFLOWS = [
 ];
 
 function printHelp() {
-  console.log(`Usage: pnpm desktop:release-github [--repo=${DEFAULT_REPO}] [--tag=vX.Y.Z]
+  console.log(`Usage: pnpm desktop:release-github [--repo=${DEFAULT_REPO}] [--tag=vX.Y.Z] [--allow-obsolete-repository-secrets]
 
 Checks GitHub-side prerequisites for the protected release workflow before a
 public workflow_dispatch release: gh authentication, the active workflow file,
@@ -39,8 +39,14 @@ material retained at repository scope, optional local tag/version
 alignment, and clean remote tag/Release slots.
 
 This check can only prove that required secret names exist at their approved
-scope and obsolete/redundant repository secrets are absent. The dispatched workflow still runs
+scope and redundant repository API secrets are absent. The dispatched workflow still runs
 desktop:release-secrets to verify values and certificate structure.
+
+For the one transition release that proves the new API-key workflow before
+deleting unreadable legacy credentials, --allow-obsolete-repository-secrets
+permits only APPLE_ID / APPLE_APP_SPECIFIC_PASSWORD / APPLE_TEAM_ID to remain.
+The release workflow contract must still prove those names are not referenced,
+and the normal gate remains red until they are deleted after the release passes.
 
 Required ${SIGNING_ENVIRONMENT} environment secret names:
 ${ENVIRONMENT_REQUIRED_SECRETS.map((name) => `  ${name}`).join("\n")}
@@ -75,6 +81,7 @@ function parseArgs(argv) {
   const options = {
     repo: DEFAULT_REPO,
     tag: "",
+    allowObsoleteRepositorySecrets: false,
   };
   for (const arg of argv) {
     if (arg === "--") continue;
@@ -88,6 +95,10 @@ function parseArgs(argv) {
     }
     if (arg.startsWith("--tag=")) {
       options.tag = arg.slice("--tag=".length).trim();
+      continue;
+    }
+    if (arg === "--allow-obsolete-repository-secrets") {
+      options.allowObsoleteRepositorySecrets = true;
       continue;
     }
     fail(`unknown argument: ${arg}`);
@@ -314,13 +325,25 @@ if (missingRepositorySecrets.length > 0) {
     `missing required repository signing secrets for ${options.repo}: ${missingRepositorySecrets.join(", ")}. Preserve the existing Developer ID certificate and Tauri updater identity; do not regenerate updater keys.\n\nSet them with:\n${repositorySecretSetHints(options.repo, missingRepositorySecrets)}`,
   );
 }
-const forbiddenRepositorySecrets = [
-  ...ENVIRONMENT_REQUIRED_SECRETS,
-  ...OBSOLETE_REPOSITORY_SECRETS,
-].filter((name) => repositorySecretNames.has(name));
-if (forbiddenRepositorySecrets.length > 0) {
+const overScopedRepositorySecrets = ENVIRONMENT_REQUIRED_SECRETS.filter(
+  (name) => repositorySecretNames.has(name),
+);
+if (overScopedRepositorySecrets.length > 0) {
   fail(
-    `obsolete or over-scoped repository signing secrets remain for ${options.repo}: ${forbiddenRepositorySecrets.join(", ")}. Keep API credentials in ${SIGNING_ENVIRONMENT} and delete obsolete Apple ID credentials after the new workflow reaches main:\n${forbiddenRepositorySecrets.map((name) => `  gh secret delete ${name} --repo ${options.repo}`).join("\n")}`,
+    `over-scoped repository API secrets remain for ${options.repo}: ${overScopedRepositorySecrets.join(", ")}. Keep API credentials only in ${SIGNING_ENVIRONMENT}:\n${overScopedRepositorySecrets.map((name) => `  gh secret delete ${name} --repo ${options.repo}`).join("\n")}`,
+  );
+}
+const obsoleteRepositorySecrets = OBSOLETE_REPOSITORY_SECRETS.filter(
+  (name) => repositorySecretNames.has(name),
+);
+if (obsoleteRepositorySecrets.length > 0 && !options.allowObsoleteRepositorySecrets) {
+  fail(
+    `obsolete or over-scoped repository signing secrets remain for ${options.repo}: ${obsoleteRepositorySecrets.join(", ")}. Prove one release with the API-key workflow by rerunning this command with --allow-obsolete-repository-secrets, then delete these unused Apple ID credentials only after that release passes:\n${obsoleteRepositorySecrets.map((name) => `  gh secret delete ${name} --repo ${options.repo}`).join("\n")}`,
+  );
+}
+if (obsoleteRepositorySecrets.length > 0) {
+  console.warn(
+    `[desktop-release-github] transition release only: ${obsoleteRepositorySecrets.join(", ")} remain at repository scope but are not referenced by release-macos.yml. The workflow security contract keeps them unused. Prove the API-key release, then delete them only after this release passes:\n${obsoleteRepositorySecrets.map((name) => `  gh secret delete ${name} --repo ${options.repo}`).join("\n")}`,
   );
 }
 

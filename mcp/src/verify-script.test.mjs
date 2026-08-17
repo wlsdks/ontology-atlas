@@ -2581,17 +2581,28 @@ describe('verify.mjs first-contact gates', () => {
               type: 'array',
               items: {
                 type: 'object',
-                required: ['uid', 'slug', 'kind', 'title', 'mtime', 'matchedIn', 'score', 'excerpt'],
+                required: ['slug', 'isNode', 'title', 'mtime', 'matchedIn', 'score', 'excerpt'],
                 properties: {
                   uid: { type: 'string', pattern: NODE_UID_PATTERN },
                   slug: { type: 'string' },
                   kind: { type: 'string' },
+                  isNode: { type: 'boolean' },
                   title: { type: 'string' },
                   mtime: { type: 'number', minimum: 0 },
                   matchedIn: { enum: ['frontmatter', 'body'] },
                   score: { type: 'number', minimum: 0 },
                   excerpt: { type: 'string' },
                 },
+                oneOf: [
+                  {
+                    properties: { isNode: { const: true } },
+                    required: ['uid', 'kind'],
+                  },
+                  {
+                    properties: { isNode: { const: false } },
+                    not: { anyOf: [{ required: ['uid'] }, { required: ['kind'] }] },
+                  },
+                ],
                 additionalProperties: false,
               },
             },
@@ -4641,6 +4652,27 @@ describe('verify.mjs first-contact gates', () => {
         },
       ]),
       'find_evidence outputSchema match matchedIn drift',
+    );
+    assert.equal(
+      toolsListSchemaFailure(withFindEvidenceTool(
+        {
+          ...findEvidenceTool,
+          outputSchema: {
+            ...findEvidenceTool.outputSchema,
+            properties: {
+              ...findEvidenceTool.outputSchema.properties,
+              matches: {
+                ...findEvidenceTool.outputSchema.properties.matches,
+                items: {
+                  ...findEvidenceTool.outputSchema.properties.matches.items,
+                  oneOf: [],
+                },
+              },
+            },
+          },
+        },
+      )),
+      'find_evidence outputSchema match identity drift',
     );
     assert.equal(
       toolsListSchemaFailure([
@@ -8698,7 +8730,27 @@ Continue.`;
     assert.equal(
       findEvidenceFailure({
         query: 'project',
-        matches: [{ ...match, matchedIn: 'frontmatter', excerpt: 'Project overview.' }],
+        matches: [{
+          ...match,
+          uid: '11111111-1111-4111-8111-111111111111',
+          isNode: true,
+          matchedIn: 'frontmatter',
+          excerpt: 'Project overview.',
+        }],
+      }),
+      null,
+    );
+    assert.equal(
+      findEvidenceFailure({
+        query: 'project',
+        matches: [{
+          slug: 'AGENTS',
+          isNode: false,
+          title: 'AGENTS',
+          mtime: 1,
+          matchedIn: 'body',
+          excerpt: 'Project instructions.',
+        }],
       }),
       null,
     );
@@ -9270,7 +9322,56 @@ Continue.`;
     };
     assert.equal(findEvidenceFailure({ matches: [] }), 'find_evidence response missing query');
     assert.equal(
-      findEvidenceFailure({ query: 'project', matches: [{ ...match, matchedIn: 'unknown', excerpt: '' }] }),
+      findEvidenceFailure({ query: 'project', matches: [{ ...match, matchedIn: 'frontmatter', excerpt: '' }] }),
+      'find_evidence response missing isNode: project',
+    );
+    assert.equal(
+      findEvidenceFailure({
+        query: 'project',
+        matches: [{ ...match, isNode: true, matchedIn: 'frontmatter', excerpt: '' }],
+      }),
+      'find_evidence response missing node uid: project',
+    );
+    assert.equal(
+      findEvidenceFailure({
+        query: 'project',
+        matches: [{
+          ...match,
+          uid: '11111111-1111-4111-8111-111111111111',
+          isNode: true,
+          kind: undefined,
+          matchedIn: 'frontmatter',
+          excerpt: '',
+        }],
+      }),
+      'find_evidence response missing node kind: project',
+    );
+    assert.equal(
+      findEvidenceFailure({
+        query: 'project',
+        matches: [{
+          slug: 'AGENTS',
+          uid: '11111111-1111-4111-8111-111111111111',
+          isNode: false,
+          title: 'AGENTS',
+          mtime: 1,
+          matchedIn: 'body',
+          excerpt: '',
+        }],
+      }),
+      'find_evidence response non-node exposes graph identity: AGENTS',
+    );
+    assert.equal(
+      findEvidenceFailure({
+        query: 'project',
+        matches: [{
+          ...match,
+          uid: '11111111-1111-4111-8111-111111111111',
+          isNode: true,
+          matchedIn: 'unknown',
+          excerpt: '',
+        }],
+      }),
       'find_evidence response missing matchedIn: project',
     );
     assert.equal(

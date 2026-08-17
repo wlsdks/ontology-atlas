@@ -796,7 +796,7 @@ async function main() {
         "apple_release_secrets",
         DIRECT_DOWNLOAD_SECRET_LABEL,
         `obsolete or over-scoped repository signing secrets remain: ${forbiddenRepository.join(", ")}`,
-        `Keep API credentials in ${SIGNING_ENVIRONMENT}; delete obsolete Apple ID credentials after the new workflow reaches main.`,
+        `Keep API credentials in ${SIGNING_ENVIRONMENT}; delete obsolete Apple ID credentials only after the first API-key release passes, then rerun this strict completion audit.`,
         [environmentSecretListCommand, ...deleteCommands],
       ));
     } else {
