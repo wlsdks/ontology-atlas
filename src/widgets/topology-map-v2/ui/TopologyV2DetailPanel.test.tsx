@@ -93,6 +93,8 @@ function renderPanel(
     onSetPathSource?: () => void;
     domain?: { id: string; title: string } | null;
     onSelectConnection?: (id: string) => void;
+    onHoverConnection?: (id: string | null) => void;
+    onHoverEvidence?: (slug: string | null) => void;
     sourceTitle?: string | null;
     showHandoff?: boolean;
     showSourcePath?: boolean;
@@ -113,7 +115,7 @@ function renderPanel(
     groups?: TopologyV2DetailPanelProps["groups"];
   } = {},
 ) {
-  render(
+  return render(
     <TopologyV2DetailPanel
       open
       nodeId="domain:views"
@@ -143,6 +145,8 @@ function renderPanel(
       lastEditSubject={overrides.lastEditSubject ?? null}
       mtimeConflict={overrides.mtimeConflict ?? false}
       onSelectConnection={overrides.onSelectConnection ?? (() => {})}
+      onHoverConnection={overrides.onHoverConnection}
+      onHoverEvidence={overrides.onHoverEvidence}
       onCopyHandoff={overrides.onCopyHandoff ?? (() => {})}
       onAskAgent={overrides.onAskAgent}
       onClose={() => {}}
@@ -1642,5 +1646,102 @@ describe("TopologyV2DetailPanel — 시안 재설계 구조", () => {
 
     await waitFor(() => expect(onExited).toHaveBeenCalledTimes(1));
     expect(screen.queryByTestId("topology-v2-detail-panel")).not.toBeInTheDocument();
+  });
+});
+
+/**
+ * 줄에 마우스를 올리면 옆 지도가 그 노드를 가리킨다 (2026-08-17 소유자 지시:
+ * *"이부분들 각각 마우스 올리면 옆에 지도에서 반짝이면서 표시되면 좋겠는데
+ * 가능할까? 지금은 아무 반응이 없어서.."*).
+ *
+ * 여기서 재는 것은 **어느 이름을 어느 콜백으로 내보내는가** 하나다. 두 줄이
+ * 서로 다른 이름 공간을 쓰기 때문이다 — 관계 행은 캔버스 노드 id, 근거 문서
+ * 행은 볼트 slug. 종전에 이 둘을 한 목록으로 합쳤다가 «배선은 있는데 아무
+ * 이름도 안 걸리는» 죽은 기능이 됐고(`chat-node-index.ts`), 그때 없던 검사가
+ * 바로 이것이다. 지도가 실제로 그려 주는지는 캔버스라 여기서 못 재고
+ * `tests/e2e/datasheet-hover-map-brush.spec.ts` 가 픽셀로 잰다.
+ */
+describe("TopologyV2DetailPanel — 줄 호버가 지도로 나가는 통로", () => {
+  const childRow = {
+    id: "capability:cart",
+    title: "장바구니",
+    kind: "capability",
+    relationType: "contains",
+    direction: "outgoing" as const,
+  };
+
+  it("관계 행은 **캔버스 노드 id** 를 내보내고, 커서가 나가면 null 로 접는다", () => {
+    const onHoverConnection = vi.fn();
+    renderPanel(undefined, undefined, {
+      onHoverConnection,
+      groups: {
+        contains: { rows: [childRow], total: 1 },
+        usedBy: { rows: [], total: 0 },
+        dependsOn: { rows: [], total: 0 },
+        belongsTo: { rows: [], total: 0 },
+      },
+    });
+
+    const row = screen.getByText("장바구니").closest("button");
+    expect(row).not.toBeNull();
+    fireEvent.pointerEnter(row!);
+    expect(onHoverConnection).toHaveBeenCalledWith("capability:cart");
+    fireEvent.pointerLeave(row!);
+    expect(onHoverConnection).toHaveBeenLastCalledWith(null);
+  });
+
+  it("근거 문서 행은 **볼트 slug** 를 내보낸다 — 캔버스 id 와 다른 이름 공간이다", () => {
+    const onHoverEvidence = vi.fn();
+    const onHoverConnection = vi.fn();
+    renderPanel(
+      undefined,
+      { rows: [{ id: "domains/order", title: "order", path: "domains/" }], total: 1 },
+      { onHoverEvidence, onHoverConnection },
+    );
+
+    const link = screen.getByText("order").closest("a");
+    expect(link).not.toBeNull();
+    fireEvent.pointerEnter(link!);
+    expect(onHoverEvidence).toHaveBeenCalledWith("domains/order");
+    // 캔버스 id 통로로 새면 호출부가 표를 안 거치고 그대로 지도에 넘긴다.
+    expect(onHoverConnection).not.toHaveBeenCalled();
+    fireEvent.pointerLeave(link!);
+    expect(onHoverEvidence).toHaveBeenLastCalledWith(null);
+  });
+
+  it("도메인 칩도 같은 통로다 — 같은 어포던스인데 여기만 반응이 없으면 안 된다", () => {
+    const onHoverConnection = vi.fn();
+    renderPanel(undefined, undefined, {
+      onHoverConnection,
+      domain: { id: "domain:order", title: "주문" },
+    });
+
+    const chip = screen.getByTestId("topology-v2-detail-panel-domain");
+    fireEvent.pointerEnter(chip);
+    expect(onHoverConnection).toHaveBeenCalledWith("domain:order");
+    fireEvent.pointerLeave(chip);
+    expect(onHoverConnection).toHaveBeenLastCalledWith(null);
+  });
+
+  it("패널이 사라지면 강조도 걷힌다 — 행을 누르면 pointerleave 가 안 온다", () => {
+    const onHoverConnection = vi.fn();
+    const onHoverEvidence = vi.fn();
+    const { unmount } = renderPanel(undefined, undefined, {
+      onHoverConnection,
+      onHoverEvidence,
+      groups: {
+        contains: { rows: [childRow], total: 1 },
+        usedBy: { rows: [], total: 0 },
+        dependsOn: { rows: [], total: 0 },
+        belongsTo: { rows: [], total: 0 },
+      },
+    });
+
+    fireEvent.pointerEnter(screen.getByText("장바구니").closest("button")!);
+    expect(onHoverConnection).toHaveBeenLastCalledWith("capability:cart");
+
+    unmount();
+    expect(onHoverConnection).toHaveBeenLastCalledWith(null);
+    expect(onHoverEvidence).toHaveBeenLastCalledWith(null);
   });
 });

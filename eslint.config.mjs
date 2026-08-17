@@ -13,6 +13,24 @@ import boundaries from 'eslint-plugin-boundaries';
 // 룰을 추가하는 config 도 이 셀렉터를 함께 실어야 scale/gradient 가드가 그
 // 파일에서 유실되지 않는다.
 const scaleGradientSelectors = [
+  /*
+   * **glassmorphism 금지 — 문서에만 있고 룰이 없었다** (2026-08-17 릴리스 전 감사).
+   *
+   * `forbidden.md` 「디자인」절과 `DESIGN-SYSTEM.md` 의 절대 금지 목록이 둘 다
+   * `backdrop-blur-*` 를 못박아 두었는데 그것을 잡는 룰은 없었다. 켤 때 실사용
+   * 위반 0건(코드에 걸린 셋은 전부 「이건 금지다」라고 적어 둔 **주석**이었다).
+   * 그래서 지금 켜면 소음 0이고, 앞으로 들어오는 것만 막는다.
+   */
+  {
+    selector: "Literal[value=/(^|\\s|:)backdrop-blur/]",
+    message:
+      '디자인 헌장 — glassmorphism 금지. 뒤를 흐리는 대신 불투명 표면 토큰(--color-panel/elevated)이나 색 알파(--color-overlay-*)를 쓴다.',
+  },
+  {
+    selector: "TemplateElement[value.raw=/(^|\\s|:)backdrop-blur/]",
+    message:
+      '디자인 헌장 — glassmorphism 금지 (template literal). 불투명 표면 토큰 또는 색 알파로.',
+  },
   {
     selector: "Literal[value=/(^|\\s)(hover|active|focus|group-hover):scale-/]",
     message: '디자인 헌장 §11 — scale hover 금지. bg/border 변경 또는 색 alpha 로 대체.',
@@ -345,6 +363,30 @@ const disabledAffordanceSelectors = [
  * ⚠️ 켜기 전 전수: 세 축 모두 먼저 0으로 만들고 켰다(lint 총계 불변).
  */
 const typographyAxisSelectors = [
+  /*
+   * **이름 붙은 행간 유틸리티 — 이관은 끝났는데 룰만 안 켰다** (2026-08-17).
+   *
+   * `design.md` 행간 램프 항목은 *"이름 유틸리티(숫자꼴 leading-4~7 · 비율꼴
+   * relaxed·snug·none·tight) 전부 금지"* 라고 적어 두었지만, 실제 룰은 대괄호
+   * 형태만 봤다. 그때는 일부러 그랬다 — 이 파일 아래 주석이 사유를 적어 두었듯
+   * 당시 named 사용이 199건이라 룰로 켜면 소음이 기존 신호를 덮었다.
+   *
+   * 그 이관은 끝났다. 지금 실사용 0건(하나 걸린 것은 「여기서 옮겨 왔다」고
+   * 적어 둔 주석이다). 소음 없이 닫을 수 있는 자리가 됐으므로 닫는다 —
+   * 「문서에만 있는 규격은 지켜지지 않는다」가 이 저장소의 규율이다.
+   */
+  {
+    selector:
+      "Literal[value=/(^|\\s|:)leading-(relaxed|snug|none|tight|loose|[3-9]|10)(\\s|$)/]",
+    message:
+      '행간도 램프다. 이름 붙은 Tailwind 행간 스텝 금지 — --leading-caption/label/body/body-lg/title/display/hero 짝과 --leading-display-tight/prose 를 쓴다. 크기 스텝이 자기 행간을 함께 싣는 자리라면 행간 클래스 자체가 필요 없다.',
+  },
+  {
+    selector:
+      "TemplateElement[value.raw=/(^|\\s|:)leading-(relaxed|snug|none|tight|loose|[3-9]|10)(\\s|$)/]",
+    message:
+      '행간도 램프다. 이름 붙은 Tailwind 행간 스텝 금지 (template literal). --leading-* 램프가 만드는 유틸리티로.',
+  },
   {
     selector: 'Literal[value=/tracking-\\[-?[0-9.]+(em|px|rem)\\]/]',
     message:

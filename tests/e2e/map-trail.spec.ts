@@ -33,16 +33,19 @@ test("걸어온 길 — 쌓이고, 목록이 맞고, 뒤로 점프하고, 지워
   });
   expect(t, "주문 도메인을 못 찾았다 — 공회전").not.toBeNull();
   await page.mouse.click(t!.px, t!.py);
-  await page.waitForTimeout(900);
-  expect(await selection()).toBe("domain:order");
+  await expect
+    .poll(selection, { timeout: 15_000, message: "domain:order 로 안 걸어갔다" })
+    .toBe("domain:order");
 
   // 2·3걸음 — 팝오버 행으로 이동
   await page.getByText("장바구니", { exact: true }).first().click();
-  await page.waitForTimeout(900);
-  expect(await selection()).toBe("capability:cart");
+  await expect
+    .poll(selection, { timeout: 15_000, message: "capability:cart 로 안 걸어갔다" })
+    .toBe("capability:cart");
   await page.getByText("주문서 작성", { exact: true }).first().click();
-  await page.waitForTimeout(900);
-  expect(await selection()).toBe("capability:checkout");
+  await expect
+    .poll(selection, { timeout: 15_000, message: "capability:checkout 로 안 걸어갔다" })
+    .toBe("capability:checkout");
 
   // 칩이 세 걸음을 센다
   const chip = page.getByText(/걸어온 길 · 3/);

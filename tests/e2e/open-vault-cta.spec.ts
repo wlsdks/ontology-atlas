@@ -67,6 +67,75 @@ const EXEMPT: ReadonlyArray<{ route: string; why: string }> = [
 ];
 const EXEMPT_ROUTES = new Set(EXEMPT.map((e) => e.route));
 
+/**
+ * **DOM 이 조용해질 때까지 기다린다** — 스캔 직전의 유일하게 정직한 기다림.
+ *
+ * ## 왜 여기만 값 판정이 어려웠나 (2026-08-17 검사 전수조사)
+ *
+ * 이 파일의 고정 대기 대부분은 다음 줄이 `page.evaluate` 로 **DOM 을 통째로
+ * 훑는** 자리였다. Playwright 의 자동 대기는 로케이터에만 붙으므로 여기엔 아무
+ * 것도 기다려 주는 것이 없고, 「무엇을 기다릴지」도 라우트마다 다르다 — 어떤
+ * 라우트는 폴더 문장이 0개인 것이 정상이라 「나타날 때까지」로도 못 쓴다.
+ *
+ * 그래서 기다릴 대상을 **「더 나타날 것이 있나」** 로 바꾼다: MutationObserver 가
+ * `quietMs` 동안 아무 변화도 못 보면 그 화면은 다 그려진 것이다.
+ *
+ * ⚠️ **`attributes` 는 보지 않는다.** 실측: 켜 두면 `/ko/topology/` 가 8초 상한을
+ * 그대로 다 쓴다(지도가 매 프레임 속성을 고친다). 끄면 746ms 에 멎고, 감사 대상
+ * 16개 라우트 전부가 280~750ms 다(고정 900ms 보다 대개 빠르고, 느린 기계에서는
+ * 900ms 보다 참을성 있다). 이 스캐너가 읽는 것은 글자와 요소이지 속성이 아니라
+ * 잃는 것도 없다.
+ */
+async function settleDom(page: import("@playwright/test").Page, quietMs = 250, capMs = 5_000) {
+  await page.evaluate(
+    ([quiet, cap]) =>
+      new Promise<void>((resolve) => {
+        let quietTimer = 0;
+        const finish = () => {
+          observer.disconnect();
+          window.clearTimeout(quietTimer);
+          window.clearTimeout(capTimer);
+          resolve();
+        };
+        const observer = new MutationObserver(() => {
+          window.clearTimeout(quietTimer);
+          quietTimer = window.setTimeout(finish, quiet);
+        });
+        const capTimer = window.setTimeout(finish, cap);
+        observer.observe(document.body, {
+          childList: true,
+          subtree: true,
+          characterData: true,
+          attributes: false,
+        });
+        quietTimer = window.setTimeout(finish, quiet);
+      }),
+    [quietMs, capMs] as [number, number],
+  );
+}
+
+/** 스텁 픽커가 실제로 불렸나 — 재시도 없이 한 번 읽으면 늦은 판을 놓친다. */
+const pickerCalls = (page: import("@playwright/test").Page) =>
+  page.evaluate(() => (window as unknown as { __picked?: number }).__picked ?? 0);
+
+/**
+ * **그려진 것만 고른다** — dev 하이드레이션 중의 0×0 유령 사본을 걸러 낸다.
+ *
+ * ⚠️ 실측(2026-08-17): `/ko/project/storefront/` 를 열면 **+100~250ms 사이에만**
+ * 같은 `data-testid` 가 둘이다 — 하나는 정상(93×32), 하나는 **0×0**. +300ms 에는
+ * 다시 하나다. `playwright.config.ts` 가 적어 둔 dev(Turbopack) 이중 마운트
+ * 아티팩트이고 정적 export 에는 없다. 그런데 그냥 `getByTestId` 는 그 창에
+ * 걸리면 strict mode 위반으로 **즉시** 죽는다(자동 대기가 구제해 주지 않는다).
+ *
+ * 앞선 판이 이 창을 우연히 비껴가고 있었을 뿐이라, 위쪽 고정 대기를 하나 줄이자
+ * 바로 드러났다 — 고정 대기가 우연히 해 주던 일이 또 이것이었다.
+ *
+ * **게이트는 그대로다**: 진짜로 «그려진» 사본이 둘이 되면 여전히 strict mode 로
+ * 터진다. 걸러 내는 것은 그리지 않는 유령뿐이다.
+ */
+const paintedTestId = (page: import("@playwright/test").Page, testId: string) =>
+  page.getByTestId(testId).filter({ visible: true });
+
 test.describe("막다른 CTA 금지 — 폴더를 열라고 말한 자리", () => {
   test.use({ viewport: { width: 1512, height: 900 } });
 
@@ -81,7 +150,7 @@ test.describe("막다른 CTA 금지 — 폴더를 열라고 말한 자리", () =
       if (route.includes("this-route-does-not-exist")) continue;
       await page.goto(`${route}?guides=off`, { waitUntil: "domcontentloaded" });
       await page.evaluate(() => document.fonts.ready);
-      await page.waitForTimeout(900);
+      await settleDom(page);
 
       const found = await page.evaluate(
         ({ promise, path }) => {
@@ -172,9 +241,9 @@ test.describe("막다른 CTA 금지 — 폴더를 열라고 말한 자리", () =
     for (const site of SITES) {
       await page.goto(`${site.route}?guides=off`, { waitUntil: "domcontentloaded" });
       await page.evaluate(() => document.fonts.ready);
-      await page.waitForTimeout(900);
+      // 바로 아래 단언이 스스로 기다린다 — 고정 대기는 낭비였다(2026-08-17 전수조사).
 
-      const cta = page.getByTestId(site.testId);
+      const cta = paintedTestId(page, site.testId);
       await expect(cta, `${site.route}: 폴더 여는 길이 안 보인다`).toBeVisible();
       await expect(
         cta,
@@ -182,11 +251,15 @@ test.describe("막다른 CTA 금지 — 폴더를 열라고 말한 자리", () =
       ).toHaveAttribute("data-open-vault-cta", "picker");
 
       await cta.click();
-      await page.waitForTimeout(400);
-      const picked = await page.evaluate(
-        () => (window as unknown as { __picked?: number }).__picked ?? 0,
-      );
-      expect(picked, `${site.route}: 눌러도 폴더 선택기가 안 열렸다`).toBeGreaterThan(0);
+      // 고정 400ms 뒤 **재시도 없이** 읽었다 — 느린 기계에서는 아직 안 열린
+      // 것을 「안 열린다」로 읽는다. 값이 도달할 때까지 기다린다
+      // (2026-08-17 검사 전수조사).
+      await expect
+        .poll(() => pickerCalls(page), {
+          timeout: 10_000,
+          message: `${site.route}: 눌러도 폴더 선택기가 안 열렸다`,
+        })
+        .toBeGreaterThan(0);
     }
   });
 
@@ -207,7 +280,7 @@ test.describe("막다른 CTA 금지 — 폴더를 열라고 말한 자리", () =
     for (const route of ["/ko/project/new/", "/ko/project/storefront/edit/"]) {
       await page.goto(`${route}?guides=off`, { waitUntil: "domcontentloaded" });
       await page.evaluate(() => document.fonts.ready);
-      await page.waitForTimeout(900);
+      // 바로 아래 단언이 스스로 기다린다 — 고정 대기는 낭비였다(2026-08-17 전수조사).
 
       await expect(
         page.getByTestId("project-write-disabled-banner").first(),
@@ -242,9 +315,9 @@ test.describe("막다른 CTA 금지 — 폴더를 열라고 말한 자리", () =
     });
     await page.goto("/ko/ontology/insights/?guides=off", { waitUntil: "domcontentloaded" });
     await page.evaluate(() => document.fonts.ready);
-    await page.waitForTimeout(1200);
+    // 바로 아래 단언이 스스로 기다린다 — 고정 대기는 낭비였다(2026-08-17 전수조사).
 
-    const cta = page.getByTestId("do-next-open-vault");
+    const cta = paintedTestId(page, "do-next-open-vault");
     await expect(cta).toBeVisible();
     await expect(cta).toHaveAttribute("data-open-vault-cta", "download");
     // 갈 곳이 실제로 열려야 한다 — 눌러도 아무 데도 안 가는 버튼 0개.
@@ -306,13 +379,77 @@ test.describe("관문은 폴더를 여는 화면이 아니다 — 대신 그 화
       await page.setViewportSize({ width: viewport.width, height: viewport.height });
       await page.goto("/ko/?guides=off", { waitUntil: "domcontentloaded" });
       await page.evaluate(() => document.fonts.ready);
-      await page.waitForTimeout(1200);
+
+      // ① 그 폭의 접힘 안에 지도로 가는 홉이 **그려져** 있다.
+      const readHops = () =>
+        page.evaluate(() => {
+          const painted = (el: Element) => {
+            const c = getComputedStyle(el);
+            const b = el.getBoundingClientRect();
+            return (
+              b.width > 2 &&
+              b.height > 2 &&
+              c.visibility !== "hidden" &&
+              c.display !== "none" &&
+              Number(c.opacity) >= 0.05
+            );
+          };
+          return [...document.querySelectorAll("a[href]")]
+            .filter(painted)
+            .filter((a) =>
+              /\/topology\/?$/.test(new URL((a as HTMLAnchorElement).href, location.href).pathname),
+            )
+            .map((a, i) => {
+              const b = a.getBoundingClientRect();
+              a.setAttribute("data-reach-hop", String(i));
+              return {
+                index: i,
+                label: (a.textContent ?? "").trim().slice(0, 24),
+                top: Math.round(b.top),
+                bottom: Math.round(b.bottom),
+                // 하단 고정 탭바는 바닥이 뷰포트와 정확히 같으므로 1px 여유를 준다.
+                inFold: b.top >= 0 && b.bottom <= innerHeight + 1,
+              };
+            });
+        });
+
+      /*
+       * ⚠️ **여기서 순서를 바꿨다** (2026-08-17 검사 전수조사).
+       *
+       * 예전에는 고정 1200ms 뒤에 ①을 한 번만 읽었다. 그걸 「DOM 이 조용해질
+       * 때까지」로 바꿨더니 **6배 스로틀에서 터졌다** — 느린 기계의 하이드레이션은
+       * 250ms 넘게 쉬었다가 이어지기도 해서, 조용한 구간을 「다 그려졌다」로
+       * 잘못 읽는다. 조용함은 «무엇이 나타날지 모를 때» 의 차선책이지, 나타날
+       * 것을 아는 자리에서 쓸 판정이 아니다.
+       *
+       * 이 자리는 기다릴 것을 안다: **접힘 안의 홉**. 그것이 나타날 때까지
+       * 기다리고, «없다» 를 세는 아래 단언은 그 뒤에 둔다 — 관문이 다 그려졌다는
+       * 가장 강한 증거가 곧 ①이기 때문이다.
+       */
+      let hops = await readHops();
+      await expect
+        .poll(
+          async () => {
+            hops = await readHops();
+            return hops.filter((h) => h.inFold).length;
+          },
+          {
+            timeout: 25_000,
+            message: `${viewport.width}: 관문 접힘 안에 지도로 가는 길이 없다 — 폴더를 열 수 있는 화면에 닿지 못한다`,
+          },
+        )
+        .toBeGreaterThan(0);
+      const inFold = hops.filter((h) => h.inFold);
 
       /**
        * **결정 자신을 검사가 진다.** 관문에 폴더 컨트롤이 생기면 여기서 빨개지고,
        * 그때 사람은 원장으로 돌아온다 — 조용히 두 번째 첫 실행 표면이 자라는 것을
        * 막는 유일한 자리다.
+       *
+       * 「없다」는 기다릴 수 없으므로, 위에서 관문이 다 그려진 것을 확인한 뒤
+       * DOM 이 조용해지기까지 한 번 더 기다리고 센다.
        */
+      await settleDom(page);
       const folderControls = await page.evaluate(
         () =>
           [...document.querySelectorAll("[data-open-vault-cta]")].filter((el) => {
@@ -325,48 +462,10 @@ test.describe("관문은 폴더를 여는 화면이 아니다 — 대신 그 화
         "관문에 폴더 여는 컨트롤이 생겼다 — 첫 실행 표면이 둘이 된다. 되돌리려면 원장부터",
       ).toBe(0);
 
-      // ① 그 폭의 접힘 안에 지도로 가는 홉이 **그려져** 있다.
-      const hops = await page.evaluate(() => {
-        const painted = (el: Element) => {
-          const c = getComputedStyle(el);
-          const b = el.getBoundingClientRect();
-          return (
-            b.width > 2 &&
-            b.height > 2 &&
-            c.visibility !== "hidden" &&
-            c.display !== "none" &&
-            Number(c.opacity) >= 0.05
-          );
-        };
-        return [...document.querySelectorAll("a[href]")]
-          .filter(painted)
-          .filter((a) =>
-            /\/topology\/?$/.test(new URL((a as HTMLAnchorElement).href, location.href).pathname),
-          )
-          .map((a, i) => {
-            const b = a.getBoundingClientRect();
-            a.setAttribute("data-reach-hop", String(i));
-            return {
-              index: i,
-              label: (a.textContent ?? "").trim().slice(0, 24),
-              top: Math.round(b.top),
-              bottom: Math.round(b.bottom),
-              // 하단 고정 탭바는 바닥이 뷰포트와 정확히 같으므로 1px 여유를 준다.
-              inFold: b.top >= 0 && b.bottom <= innerHeight + 1,
-            };
-          });
-      });
-
-      const inFold = hops.filter((h) => h.inFold);
-      expect(
-        inFold.map((h) => h.label),
-        `${viewport.width}: 관문 접힘 안에 지도로 가는 길이 없다 — 폴더를 열 수 있는 화면에 닿지 못한다 (전체 홉: ${JSON.stringify(hops)})`,
-      ).not.toEqual([]);
-
       // ② 눌러서 도착한다.
       await page.locator(`[data-reach-hop="${inFold[0].index}"]`).click();
       await page.waitForURL(/\/topology/, { timeout: 15_000 });
-      await page.waitForTimeout(2200);
+      // 바로 아래 단언이 스스로 기다린다 — 고정 대기는 낭비였다(2026-08-17 전수조사).
 
       // ③ 착지점의 주 행동이 그 일이다 — 시트를 거쳐 선택기를 **실제로** 부른다.
       const starter = page.getByTestId("first-run-starter-open");
@@ -374,23 +473,34 @@ test.describe("관문은 폴더를 여는 화면이 아니다 — 대신 그 화
         starter,
         `${viewport.width}: 착지점에 폴더 여는 주 행동이 안 보인다`,
       ).toBeVisible();
-      await starter.click();
-      await page.waitForTimeout(500);
+      /*
+       * **보인다 ≠ 눌린다.** 방금 이동해 온 화면이라 하이드레이션이 아직일 수
+       * 있고, 그때 이 클릭은 아무 데도 안 닿는다. 고정 500ms 로 갈음하던 것을
+       * 열릴 때까지 다시 누르는 것으로 바꾼다 (2026-08-17 검사 전수조사).
+       */
+      const sheet = page.getByTestId("vault-guide-sheet");
+      await expect
+        .poll(
+          async () => {
+            if (await sheet.isVisible().catch(() => false)) return true;
+            await starter.click({ timeout: 5_000 }).catch(() => {});
+            await page.waitForTimeout(250);
+            return sheet.isVisible().catch(() => false);
+          },
+          {
+            timeout: 25_000,
+            message: `${viewport.width}: 안내 시트가 안 열렸다 — 착지점의 경로가 바뀌었다`,
+          },
+        )
+        .toBe(true);
 
-      await expect(
-        page.getByTestId("vault-guide-sheet"),
-        `${viewport.width}: 안내 시트가 안 열렸다 — 착지점의 경로가 바뀌었다`,
-      ).toBeVisible();
       await page.getByTestId("vault-guide-pick-existing").click();
-      await page.waitForTimeout(500);
-
-      const picked = await page.evaluate(
-        () => (window as unknown as { __picked?: number }).__picked ?? 0,
-      );
-      expect(
-        picked,
-        `${viewport.width}: 착지점까지 갔는데 폴더 선택기가 안 열렸다 — 한 홉 뒤 막다른 길`,
-      ).toBeGreaterThan(0);
+      await expect
+        .poll(() => pickerCalls(page), {
+          timeout: 10_000,
+          message: `${viewport.width}: 착지점까지 갔는데 폴더 선택기가 안 열렸다 — 한 홉 뒤 막다른 길`,
+        })
+        .toBeGreaterThan(0);
     });
   }
 });

@@ -18,6 +18,37 @@ import { seedFirstRunSeen } from "./first-run-seed";
  * 아니라 **화면 반지름 + 32** 로 셈한다. 바가 이사가면 이 스펙이 큰 소리로
  * 죽고, 그때 오프셋 식을 함께 고친다.
  */
+/**
+ * 배치가 멈출 때까지 — **좌표가 프레임 사이에 안 변할 때**.
+ *
+ * ⚠️ 왜 필요한가 (2026-08-17, 내가 만든 회귀를 고치며 배운 것). 고정 1.6초
+ * 대기를 「수가 맞을 때까지」 폴로 바꿨더니 CI 에서 접기가 실패했다(기대 36,
+ * 실제 50). 수는 맞는 순간 바로 통과하는데 **카메라와 노드는 아직 움직이는
+ * 중**이라, 그 틈에 잰 클릭 좌표가 클릭이 도착할 때는 이미 낡아 빈 곳을
+ * 눌렀다. 고정 대기가 우연히 해 주던 일이 이것이었다.
+ *
+ * 그래서 「수」와 「자리」를 따로 기다린다 — 수는 무엇이 드러났나이고, 자리는
+ * 다음 클릭이 어디로 갈 것인가다.
+ */
+async function settleLayout(page: import("@playwright/test").Page) {
+  const snapshot = () =>
+    page.evaluate(() => {
+      const m = (window as unknown as { __atlasMap?: { nodes: () => Array<{ id: string; x: number; y: number }> } })
+        .__atlasMap;
+      return m ? m.nodes().map((n) => `${n.id}:${Math.round(n.x)},${Math.round(n.y)}`).join("|") : "";
+    });
+  await expect
+    .poll(
+      async () => {
+        const before = await snapshot();
+        await page.waitForTimeout(250);
+        return before !== "" && before === (await snapshot());
+      },
+      { timeout: 30_000, message: "배치가 멈추지 않아 클릭 좌표를 믿을 수 없다" },
+    )
+    .toBe(true);
+}
+
 test("모두 펼치기는 주장한 수를 드러내고, 접기로 되돌린다", async ({ page }) => {
   test.setTimeout(120_000);
   await page.setViewportSize({ width: 1512, height: 900 });
@@ -54,12 +85,20 @@ test("모두 펼치기는 주장한 수를 드러내고, 접기로 되돌린다"
   expect(chipBefore!.expanded).toBe(false);
   expect(chipBefore!.claimedCount).toBeGreaterThan(0);
 
+  await settleLayout(page);
   const selected = await nodePos();
   await page.mouse.click(selected!.px, selected!.py - (selected!.r + 32));
-  await page.waitForTimeout(1600);
-
-  const after = await visibleCount();
-  expect(after - before, "펼침이 주장한 수만큼 드러내지 않았다").toBe(chipBefore!.claimedCount);
+  /*
+   * ⚠️ 고정 1.6초 뒤 **재시도 없는** 수 비교였다 — 펼침이 아직 안 끝난
+   * 기계에서는 수가 안 맞아 그냥 터진다. 값이 도달할 때까지 기다린다
+   * (2026-08-17 검사 전수조사).
+   */
+  await expect
+    .poll(async () => (await visibleCount()) - before, {
+      timeout: 20_000,
+      message: "펼침이 주장한 수만큼 드러내지 않았다",
+    })
+    .toBe(chipBefore!.claimedCount);
   const chipAfter = await orderChip();
   expect(chipAfter!.expanded).toBe(true);
   expect(chipAfter!.shownChildren, "chips 가 화면과 다른 말을 한다").toBe(chipBefore!.claimedCount);
@@ -81,8 +120,11 @@ test("모두 펼치기는 주장한 수를 드러내고, 접기로 되돌린다"
   expect(overlapPairs, "펼쳐진 노드가 서로 겹쳤다").toBe(0);
 
   // 같은 바가 이제 「접기」다 — 눌러서 원상 복귀까지 잰다.
+  // 좌표를 재기 전에 배치가 멈춰야 한다(위 `settleLayout` 머리말).
+  await settleLayout(page);
   const expanded = await nodePos();
   await page.mouse.click(expanded!.px, expanded!.py - (expanded!.r + 32));
-  await page.waitForTimeout(1600);
-  expect(await visibleCount(), "접기가 원상 복귀하지 않았다").toBe(before);
+  await expect
+    .poll(visibleCount, { timeout: 20_000, message: "접기가 원상 복귀하지 않았다" })
+    .toBe(before);
 });

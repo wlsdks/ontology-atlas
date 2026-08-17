@@ -155,7 +155,7 @@ function Jump({ onClick, children }: { onClick: () => void; children: React.Reac
       className={controlClass({
         shape: "link",
         size: "sm",
-        className: "text-left text-body-lg text-[color:var(--color-amber-source-text-a80)]",
+        className: "text-left text-body text-[color:var(--color-amber-source-text-a80)]",
       })}
     >
       {children}

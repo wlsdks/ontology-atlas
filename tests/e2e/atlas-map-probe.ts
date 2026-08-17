@@ -43,6 +43,12 @@ export interface AtlasMapProbe {
   camera: () => AtlasMapCamera | null;
   selection: () => { nodeId: string | null; edge: unknown };
   nodes: () => AtlasMapNode[];
+  /**
+   * 이번 프레임이 호버로 대접한 노드 id (없으면 null). 캔버스 위 커서와 옆
+   * 패널(대화창·데이터시트) 줄 호버가 **같은 값**으로 나온다 — 프레임이 실제로
+   * 쓴 값을 그대로 복사한 것이라 화면과 어긋날 수 없다.
+   */
+  hover: () => string | null;
 }
 
 declare global {

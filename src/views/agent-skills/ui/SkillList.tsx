@@ -98,7 +98,22 @@ export function SkillList({
                     })}
                   >
                     <span className="flex min-w-0 items-center gap-1.5">
-                      <span className="truncate text-body-lg text-[color:var(--color-text-primary)]">
+                      {/*
+                        ⚠️ **행 규격이 정한 글자 크기를 소비처가 덮으면 높이가 밀린다**
+                        (2026-08-17 릴리스 전 감사).
+
+                        이 행은 `size: "sm"` 이고, 값 층에서 그 조합은
+                        `min-h-7 py-1.5 text-label` 이다 — 즉 **작은 글자를
+                        전제한 높이**다. 그런데 이름만 `text-body-lg`(14px)로
+                        덮어써서 안쪽 내용이 22px 가 됐고, 6+22+6 = **34px** 로
+                        밀렸다. 34 는 2026-08-03 에 높이 사다리에서 **지워진 값**
+                        이고, 실측에서 이 화면의 유일한 이탈이었다(18개).
+
+                        `min-h` 는 올리기만 하므로 28 은 아무 일도 못 한다.
+                        여백을 줄이면 30(역시 사다리 밖)이라, 행이 전제한 크기로
+                        되돌리는 것이 맞다 — 실측 32px, 사다리 위.
+                      */}
+                      <span className="truncate text-body text-[color:var(--color-text-primary)]">
                         {skill.name}
                       </span>
                       {collided.has(skill.name) ? (

@@ -90,9 +90,30 @@ test.describe("목적지 이동 단축키", () => {
    */
   test("이동 전후의 주소가 실제로 다르다", async ({ page }) => {
     await page.goto("/ko/topology/?guides=off");
+    /*
+     * ⚠️ **화면이 서기 전에 키를 누르면 안 된다** (2026-08-17 검사 전수조사).
+     *
+     * 이 시험만 바로 위 순회 시험이 이미 갖고 있던 둘을 안 갖고 있었다 —
+     * 막는 표면 걷기와 재시도. 그래서 도착 직후 마운트되는 표면과 경합해
+     * CI 에서 간헐적으로 실패했다(2026-08-17 06:54Z 실행). 옆 시험의 주석이
+     * 이미 그 이유를 적어 두었다: *"재시도는 결함을 감추는 것이 아니라
+     * 경합을 없애는 것"*. 같은 처방을 쓴다.
+     */
+    await page.waitForLoadState("domcontentloaded");
+    await dismissBlockingSurface(page);
     const before = page.url();
-    await go(page, "p");
-    await expect(page).toHaveURL(/\/ko\/projects\/?($|\?)/);
+    const expected = /\/ko\/projects\/?($|\?)/;
+    for (let attempt = 0; attempt < 2; attempt += 1) {
+      await dismissBlockingSurface(page);
+      await go(page, "p");
+      try {
+        await expect(page).toHaveURL(expected, { timeout: 3_000 });
+        break;
+      } catch (error) {
+        if (attempt === 1) throw error;
+      }
+    }
+    await expect(page).toHaveURL(expected);
     expect(page.url(), "주소가 안 바뀌었다").not.toBe(before);
   });
 
@@ -128,10 +149,30 @@ test.describe("목적지 이동 단축키", () => {
   });
 
   test("리더를 누른 지 오래되면 글자만으로는 이동하지 않는다", async ({ page }) => {
+    /*
+     * ⚠️ **「안 간다」를 재려면 먼저 「간다」를 증명해야 한다** (2026-08-17
+     * 검사 전수조사).
+     *
+     * 이 시험이 재는 것은 「주소가 안 바뀐다」인데, 단축키가 **아예 안 붙은**
+     * 상태에서도 주소는 안 바뀐다. 즉 기능이 통째로 죽어도 초록이었다 —
+     * 부정을 재는 검사의 전형적인 구멍이다. 같은 세션에서 먼저 실제로 옮겨
+     * 가 보고, 그다음 시간 제한을 잰다.
+     */
     await page.goto("/ko/topology/?guides=off");
+    await page.waitForLoadState("domcontentloaded");
+    await dismissBlockingSurface(page);
+    await go(page, "p");
+    await expect(page, "단축키 자체가 안 먹는다 — 아래 판정이 무의미해진다").toHaveURL(
+      /\/ko\/projects\/?($|\?)/,
+      { timeout: 5_000 },
+    );
+
+    await page.goto("/ko/topology/?guides=off");
+    await page.waitForLoadState("domcontentloaded");
+    await dismissBlockingSurface(page);
     const before = page.url();
     await page.keyboard.press("g");
-    await page.waitForTimeout(2_000); // NAV_LEADER_WINDOW_MS 보다 길게
+    await page.waitForTimeout(2_000); // NAV_LEADER_WINDOW_MS 보다 길게 — 이 대기가 곧 시험 대상이다
     await page.keyboard.press("p");
     await page.waitForTimeout(600);
     expect(page.url(), "시간 제한이 안 걸렸다").toBe(before);

@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';
-import { mkdtemp, mkdir, rm, writeFile } from 'node:fs/promises';
+import { mkdtemp, mkdir, rm, stat, writeFile } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import { after, before, describe, it } from 'node:test';
@@ -199,14 +199,20 @@ describe('build-docs-vault 결정성 계약', () => {
   });
 
   it('워킹트리에서 고치는 중인 문서는 mtime **날짜** 로 기록한다 (시각 아님)', async () => {
-    await writeFile(
-      path.join(repo, 'docs', 'GUIDE.md'),
-      '# Guide\n\n본문 두 줄.\n추가.\n',
-      'utf8',
-    );
+    const edited = path.join(repo, 'docs', 'GUIDE.md');
+    await writeFile(edited, '# Guide\n\n본문 두 줄.\n추가.\n', 'utf8');
+    /*
+     * ⚠️ 기댓값은 **그 파일의 mtime** 에서 뽑는다. 예전에는 스캔이 끝난 뒤
+     * `localDayStamp(new Date())` 를 불렀는데, 그러면 «파일을 쓴 순간» 과
+     * «기댓값을 만든 순간» 이 서로 다른 날일 수 있다 — 자정 직전에 쓰고 자정
+     * 직후에 재면 하루가 어긋나 제품과 무관하게 터진다. 스캔이 읽는 값과
+     * 같은 출처(mtime)를 쓰면 그 틈 자체가 없어진다
+     * (2026-08-17 검사 전수조사).
+     */
+    const { mtime } = await stat(edited);
     const { manifest } = await scan();
     assert.match(manifest.docs[0].updatedAt, /^\d{4}-\d{2}-\d{2}$/);
-    assert.equal(manifest.docs[0].updatedAt, localDayStamp(new Date()));
+    assert.equal(manifest.docs[0].updatedAt, localDayStamp(mtime));
   });
 
   it('localDayStamp 는 로컬 날짜만 남기고 시각을 버린다', () => {

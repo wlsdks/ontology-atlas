@@ -38,8 +38,32 @@ test("첫 화면이 노드를 거의 다 보여 준다", async ({ page }) => {
   await page.getByTestId("vault-guide-pick-existing").click();
   await expect(page.getByTestId("first-run-starter")).toHaveCount(0, { timeout: 30_000 });
   await expect(page.getByTestId("topology-map-v2-canvas")).toBeVisible({ timeout: 30_000 });
-  // 배치가 정착할 때까지 — 움직이는 중에 세면 숫자가 매번 다르다.
-  await page.waitForTimeout(8_000);
+  /*
+   * 배치가 정착할 때까지 — 움직이는 중에 세면 숫자가 매번 다르다.
+   *
+   * ⚠️ 종전에는 `waitForTimeout(8_000)` 이었다. 8초는 **어느 기계의 값**이고,
+   * 느린 기계에서는 아직 움직이는 중에 세고 빠른 기계에서는 7초를 그냥 버린다.
+   * 정착은 시간이 아니라 **값**으로 판정한다 — 노드 좌표가 프레임 사이에
+   * 거의 안 움직이면 정착이다(2026-08-17 검사 전수조사).
+   */
+  await expect
+    .poll(
+      async () => {
+        const sample = () =>
+          page.evaluate(() => {
+            const map = (
+              window as unknown as { __atlasMap?: { nodes: () => Array<{ id: string; x: number; y: number }> } }
+            ).__atlasMap;
+            return map ? map.nodes().map((n) => `${n.id}:${Math.round(n.x)},${Math.round(n.y)}`).join("|") : "";
+          });
+        const before = await sample();
+        await page.waitForTimeout(400);
+        const after = await sample();
+        return before !== "" && before === after;
+      },
+      { timeout: 60_000, message: "배치가 정착하지 않았다" },
+    )
+    .toBe(true);
 
   const census = await page.evaluate(() => {
     const map = (

@@ -31,6 +31,70 @@ const selectedId = (page: import("@playwright/test").Page) =>
   page.evaluate(() => window.__atlasMap?.selection().nodeId ?? null);
 
 /**
+ * **한 번 누르고, 옮겨 갈 때까지 기다린다.**
+ *
+ * ⚠️ 예전에는 누른 뒤 고정 250ms 를 세고 한 번만 확인했다. 250ms 는 어느 기계의
+ * 값이라 느린 쪽에서는 아직 안 옮겨 간 상태를 「이 방향엔 이웃이 없다」로 읽고,
+ * 빠른 쪽에서는 남는 시간을 그냥 버린다. 옮겨 가면 **즉시** 돌려주고, 안 옮겨
+ * 가면 `patienceMs` 까지 기다린 뒤에야 「없다」고 답한다
+ * (2026-08-17 검사 전수조사).
+ */
+async function pressAndSettle(
+  page: import("@playwright/test").Page,
+  key: string,
+  from: string | null,
+  patienceMs = 3_000,
+): Promise<string | null> {
+  await page.keyboard.press(key);
+  const deadline = Date.now() + patienceMs;
+  let now = await selectedId(page);
+  while (Date.now() < deadline) {
+    now = await selectedId(page);
+    if (now && now !== from) return now;
+    await page.waitForTimeout(50);
+  }
+  return now;
+}
+
+/**
+ * **좌표를 읽기 전에 좌표가 멈췄는지 기다린다.** 선택 노드의 화면 좌표가 두 번
+ * 연속 같아질 때까지 — 카메라 전이가 흐르는 중에 재면 「화면 밖」이 우연히
+ * 참이 된다.
+ */
+async function settleSelectedPosition(page: import("@playwright/test").Page) {
+  const snapshot = () =>
+    page.evaluate(() => {
+      const probe = window.__atlasMap;
+      const id = probe?.selection().nodeId;
+      if (!probe || !id) return "";
+      const node = probe.nodes().find((n) => n.id === id);
+      return node ? `${id}:${Math.round(node.x)},${Math.round(node.y)}` : "";
+    });
+  await expect
+    .poll(
+      async () => {
+        const before = await snapshot();
+        await page.waitForTimeout(150);
+        return before !== "" && before === (await snapshot());
+      },
+      { timeout: 20_000, message: "카메라가 멈추지 않아 좌표를 믿을 수 없다" },
+    )
+    .toBe(true);
+}
+
+/** 네 방향을 차례로 눌러 **한 번이라도** 옮겨 가는 곳을 찾는다. */
+async function walkOneStep(
+  page: import("@playwright/test").Page,
+  from: string | null,
+): Promise<string | null> {
+  for (const key of DIRECTIONS) {
+    const now = await pressAndSettle(page, key, from);
+    if (now && now !== from) return now;
+  }
+  return null;
+}
+
+/**
  * **막다른 길이 나올 때까지 한 방향으로 걷는다.**
  *
  * ⚠️ 예전에는 「여덟 번 누르고 나서 확인」이었다. 안내가 스스로 사라지게 되자 그
@@ -148,16 +212,7 @@ test.describe("지도 키보드 걷기", () => {
      * 데이터에 따라 달라진다. 이 spec 이 잠그는 성질은 「방향키로 이동한다」이지
      * 「오른쪽에 무엇이 있다」가 아니다.
      */
-    let moved: string | null = null;
-    for (const key of DIRECTIONS) {
-      await page.keyboard.press(key);
-      await page.waitForTimeout(250);
-      const now = await selectedId(page);
-      if (now && now !== first) {
-        moved = now;
-        break;
-      }
-    }
+    const moved = await walkOneStep(page, first);
     expect(moved, `네 방향 어디로도 못 걸었다 (시작: ${first})`).not.toBeNull();
   });
 
@@ -167,17 +222,15 @@ test.describe("지도 키보드 걷기", () => {
     await expect.poll(() => selectedId(page), { timeout: 5_000 }).not.toBeNull();
     const from = await selectedId(page);
 
-    let to: string | null = null;
-    for (const key of DIRECTIONS) {
-      await page.keyboard.press(key);
-      await page.waitForTimeout(250);
-      const now = await selectedId(page);
-      if (now && now !== from) {
-        to = now;
-        break;
-      }
-    }
-    test.skip(to === null, "이 볼트에서는 첫 노드에 걸어갈 이웃이 없다");
+    const to = await walkOneStep(page, from);
+    /*
+     * ⚠️ 여기는 `test.skip(to === null, …)` 이었다 — **조용히 건너뛰었다.**
+     * 바로 위 시험(「방향키가 실제로 다른 노드로 옮겨 간다」)이 같은 준비로
+     * 「걸어간다」를 이미 못박고 있으므로, 여기서 못 걷는 것은 볼트 사정이
+     * 아니라 회귀다. 건너뛴 시험은 초록으로 보이고 아무도 안 본다
+     * (2026-08-17 검사 전수조사).
+     */
+    expect(to, `첫 노드(${from})에서 네 방향 어디로도 못 걸었다`).not.toBeNull();
 
     // 둘이 정말 엣지로 이어져 있나 — 화면이 아니라 그래프에 물어본다.
     const connected = await page.evaluate(
@@ -201,9 +254,15 @@ test.describe("지도 키보드 걷기", () => {
     await page.keyboard.press("ArrowRight");
     await expect.poll(() => selectedId(page), { timeout: 5_000 }).not.toBeNull();
 
+    /*
+     * ⚠️ 예전에는 누를 때마다 고정 500ms 였다("카메라 전이가 끝나도록"). 이 시험은
+     * **좌표를 읽어** 판정하므로 기다릴 것은 시간이 아니라 «좌표가 멈췄나» 다 —
+     * 느린 기계에서는 아직 흐르는 중에 재고, 빠른 기계에서는 남는 시간을 버린다
+     * (2026-08-17 검사 전수조사, `map-expand-all` 의 `settleLayout` 과 같은 처방).
+     */
     for (const key of DIRECTIONS) {
       await page.keyboard.press(key);
-      await page.waitForTimeout(500); // 카메라 전이가 끝나도록
+      await settleSelectedPosition(page);
     }
 
     const onScreen = await page.evaluate(() => {
