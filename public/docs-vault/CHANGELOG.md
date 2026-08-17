@@ -7,6 +7,16 @@
 
 ---
 
+## 2026-08-17 · 릴리스 secret의 실제 복구 가능성에 맞춰 3+4 scope 계약을 확정
+
+- App Store Connect API 3개는 main-only `release-signing` environment에 두고,
+  기존 Developer ID certificate 2개와 Tauri updater identity 2개는 읽기·복사가
+  불가능한 repository secret 원본을 유지한다.
+- preflight와 상태 감사는 이 혼합 배치만 통과시키며, API credential의 repository
+  복사본과 구형 Apple ID·앱 암호·Team ID는 새 workflow 반영 뒤 삭제 대상으로 둔다.
+
+---
+
 ## 2026-08-17 · 공증 암호 argv와 릴리스 child secret 상속을 제거
 
 - hosted 공증을 Apple ID 앱 암호에서 App Store Connect API key로 바꿨다.

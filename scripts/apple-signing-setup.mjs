@@ -52,15 +52,23 @@ export const LOCAL_ONLY_VALUES = ["APPLE_KEYCHAIN_PASSWORD", "APPLE_SIGNING_IDEN
  * Apple 5개와 Tauri updater 2개만 hosted secret이고, local-only 값은 여기에
  * 들어오지 않는다.
  */
-export const REQUIRED_SECRETS = [
-  "APPLE_CERTIFICATE_P12_BASE64",
-  "APPLE_CERTIFICATE_PASSWORD",
+export const ENVIRONMENT_SECRETS = [
   "APPLE_API_KEY_P8_BASE64",
   "APPLE_API_KEY_ID",
   "APPLE_API_ISSUER_ID",
+];
+export const REPOSITORY_SECRETS = [
+  "APPLE_CERTIFICATE_P12_BASE64",
+  "APPLE_CERTIFICATE_PASSWORD",
   "TAURI_SIGNING_PRIVATE_KEY",
   "TAURI_SIGNING_PRIVATE_KEY_PASSWORD",
 ];
+export const OBSOLETE_REPOSITORY_SECRETS = [
+  "APPLE_ID",
+  "APPLE_APP_SPECIFIC_PASSWORD",
+  "APPLE_TEAM_ID",
+];
+export const REQUIRED_SECRETS = [...ENVIRONMENT_SECRETS, ...REPOSITORY_SECRETS];
 
 /** helper가 생성하지 않는 Apple/Tauri 자격증명은 사람이 직접 넣는다. */
 export const OWNER_ENTERED_SECRETS = [
@@ -93,7 +101,10 @@ function fail(message) {
 }
 
 export function setupSecretCommand(name, repo, inputPath = `/path/to/${name}`) {
-  return `gh secret set ${name} --env ${SIGNING_ENVIRONMENT} --repo ${repo} < ${inputPath}`;
+  const scope = ENVIRONMENT_SECRETS.includes(name)
+    ? ` --env ${SIGNING_ENVIRONMENT}`
+    : "";
+  return `gh secret set ${name}${scope} --repo ${repo} < ${inputPath}`;
 }
 
 function repositoryCleanupCommand(name, repo) {
@@ -105,16 +116,20 @@ function repositoryCleanupCommand(name, repo) {
 function printEnvironmentPolicy(repo, inputPaths = {}) {
   console.log(`
 [apple-signing] GitHub was not changed. Review and run the commands below yourself.
-[apple-signing] Store all seven values only in the protected ${SIGNING_ENVIRONMENT} environment.
+[apple-signing] Store the three App Store Connect API values in ${SIGNING_ENVIRONMENT}.
+[apple-signing] Retain the Developer ID certificate pair and Tauri updater pair at repository scope.
 [apple-signing] Configure ${SIGNING_ENVIRONMENT} to admit main only, use no signing-stage reviewer, and keep admin bypass disabled.
 [apple-signing] Keep the human install approval on the separate release publication environment.
-[apple-signing] If same-name repository-scope copies exist, remove those copies; do not remove the protected environment values.
+[apple-signing] Remove obsolete Apple ID/password/team values and repository copies of the API credentials.
 
 [apple-signing] Set protected environment secrets:
-${REQUIRED_SECRETS.map((name) => `  ${setupSecretCommand(name, repo, inputPaths[name])}`).join("\n")}
+${ENVIRONMENT_SECRETS.map((name) => `  ${setupSecretCommand(name, repo, inputPaths[name])}`).join("\n")}
 
-[apple-signing] Conditional cleanup for repository-scope copies:
-${REQUIRED_SECRETS.map((name) => `  ${repositoryCleanupCommand(name, repo)}`).join("\n")}`);
+[apple-signing] Set retained repository secrets:
+${REPOSITORY_SECRETS.map((name) => `  ${setupSecretCommand(name, repo, inputPaths[name])}`).join("\n")}
+
+[apple-signing] Cleanup obsolete or over-scoped repository secrets:
+${[...ENVIRONMENT_SECRETS, ...OBSOLETE_REPOSITORY_SECRETS].map((name) => `  ${repositoryCleanupCommand(name, repo)}`).join("\n")}`);
 }
 
 function run(command, args, options = {}) {
@@ -268,14 +283,14 @@ export function listedSecretNames(listOutput) {
   );
 }
 
-export function missingSecrets(listOutput) {
+export function missingSecrets(listOutput, requiredNames = ENVIRONMENT_SECRETS) {
   const present = listedSecretNames(listOutput);
-  return REQUIRED_SECRETS.filter((name) => !present.has(name));
+  return requiredNames.filter((name) => !present.has(name));
 }
 
 export function repositoryScopedSecrets(listOutput) {
   const present = listedSecretNames(listOutput);
-  return REQUIRED_SECRETS.filter((name) => present.has(name));
+  return [...ENVIRONMENT_SECRETS, ...OBSOLETE_REPOSITORY_SECRETS].filter((name) => present.has(name));
 }
 
 export function commandVerify({ repo, dir = DEFAULT_DIR }) {
@@ -285,19 +300,20 @@ export function commandVerify({ repo, dir = DEFAULT_DIR }) {
     { encoding: "utf8" },
   );
   const repositoryListed = execFileSync("gh", ["secret", "list", "--repo", repo], { encoding: "utf8" });
-  const missing = missingSecrets(environmentListed);
+  const missingEnvironment = missingSecrets(environmentListed, ENVIRONMENT_SECRETS);
+  const missingRepository = missingSecrets(repositoryListed, REPOSITORY_SECRETS);
   const repositoryCopies = repositoryScopedSecrets(repositoryListed);
 
-  if (missing.length === 0 && repositoryCopies.length === 0) {
-    console.log(`[apple-signing] ${REQUIRED_SECRETS.length}개 ${SIGNING_ENVIRONMENT} secret 이 모두 등록됐다 ✓`);
+  if (missingEnvironment.length === 0 && missingRepository.length === 0 && repositoryCopies.length === 0) {
+    console.log(`[apple-signing] split-scope signing secret ${REQUIRED_SECRETS.length}개가 모두 등록됐다 ✓`);
     console.log("[apple-signing] 다음 태그부터 워크플로가 서명 경로로 간다 — 코드 수정은 필요 없다.");
     console.log("[apple-signing] 확인: pnpm desktop:release-github -- --tag=<다음 태그>");
     return;
   }
 
-  if (missing.length > 0) {
-    console.error(`[apple-signing] ${SIGNING_ENVIRONMENT}에 아직 없는 secret ${missing.length}개:`);
-    for (const name of missing) {
+  if (missingEnvironment.length > 0) {
+    console.error(`[apple-signing] ${SIGNING_ENVIRONMENT}에 아직 없는 API secret ${missingEnvironment.length}개:`);
+    for (const name of missingEnvironment) {
       const who = OWNER_ENTERED_SECRETS.includes(name) ? "사람이 넣는다" : "bundle 명령이 만든 local file을 사용한다";
       console.error(`[apple-signing]   ${name} (${who})`);
     }
@@ -307,9 +323,15 @@ export function commandVerify({ repo, dir = DEFAULT_DIR }) {
     ]);
     const inputPath = (name) => (localInputNames.has(name) ? path.join(dir, name) : undefined);
     console.error(
-      `[apple-signing] protected setup commands:\n${missing
+      `[apple-signing] protected setup commands:\n${missingEnvironment
         .map((name) => `  ${setupSecretCommand(name, repo, inputPath(name))}`)
         .join("\n")}`,
+    );
+  }
+  if (missingRepository.length > 0) {
+    console.error(`[apple-signing] repository scope에 아직 없는 signing secret ${missingRepository.length}개:`);
+    console.error(
+      missingRepository.map((name) => `  ${setupSecretCommand(name, repo, path.join(dir, name))}`).join("\n"),
     );
   }
   if (repositoryCopies.length > 0) {

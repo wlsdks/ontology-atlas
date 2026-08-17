@@ -4,14 +4,21 @@ import { spawnSync } from "node:child_process";
 const DEFAULT_REPO = "wlsdks/ontology-atlas";
 const SIGNING_ENVIRONMENT = "release-signing";
 const PUBLICATION_ENVIRONMENT = "release";
-const REQUIRED_SECRETS = [
-  "APPLE_CERTIFICATE_P12_BASE64",
-  "APPLE_CERTIFICATE_PASSWORD",
+const ENVIRONMENT_REQUIRED_SECRETS = [
   "APPLE_API_KEY_P8_BASE64",
   "APPLE_API_KEY_ID",
   "APPLE_API_ISSUER_ID",
+];
+const REPOSITORY_REQUIRED_SECRETS = [
+  "APPLE_CERTIFICATE_P12_BASE64",
+  "APPLE_CERTIFICATE_PASSWORD",
   "TAURI_SIGNING_PRIVATE_KEY",
   "TAURI_SIGNING_PRIVATE_KEY_PASSWORD",
+];
+const OBSOLETE_REPOSITORY_SECRETS = [
+  "APPLE_ID",
+  "APPLE_APP_SPECIFIC_PASSWORD",
+  "APPLE_TEAM_ID",
 ];
 const REQUIRED_WORKFLOWS = [
   {
@@ -27,15 +34,19 @@ Checks GitHub-side prerequisites for the protected release workflow before a
 public workflow_dispatch release: gh authentication, the active workflow file,
 an automatic main-only ${SIGNING_ENVIRONMENT} environment with no admin bypass,
 a separately reviewed main-only ${PUBLICATION_ENVIRONMENT} publication environment,
-signing secrets stored only in ${SIGNING_ENVIRONMENT}, optional local tag/version
+API notarization secrets stored in ${SIGNING_ENVIRONMENT}, legacy certificate/updater
+material retained at repository scope, optional local tag/version
 alignment, and clean remote tag/Release slots.
 
-This check can only prove that required environment secret names exist and no
-same-name repository secrets remain. The dispatched workflow still runs
+This check can only prove that required secret names exist at their approved
+scope and obsolete/redundant repository secrets are absent. The dispatched workflow still runs
 desktop:release-secrets to verify values and certificate structure.
 
 Required ${SIGNING_ENVIRONMENT} environment secret names:
-${REQUIRED_SECRETS.map((name) => `  ${name}`).join("\n")}
+${ENVIRONMENT_REQUIRED_SECRETS.map((name) => `  ${name}`).join("\n")}
+
+Required repository secret names:
+${REPOSITORY_REQUIRED_SECRETS.map((name) => `  ${name}`).join("\n")}
 
 The hosted website deploy is intentionally excluded from this macOS app release
 gate. GitHub Pages (deploy-pages.yml) publishes the static promo/download site
@@ -51,6 +62,12 @@ function fail(message) {
 function secretSetHints(repo, names) {
   return names
     .map((name) => `  gh secret set ${name} --env ${SIGNING_ENVIRONMENT} --repo ${repo} < /path/to/${name}`)
+    .join("\n");
+}
+
+function repositorySecretSetHints(repo, names) {
+  return names
+    .map((name) => `  gh secret set ${name} --repo ${repo} < /path/to/${name}`)
     .join("\n");
 }
 
@@ -270,7 +287,7 @@ if (!Array.isArray(secrets)) {
   fail("gh secret list did not return an array.");
 }
 const secretNames = new Set(secrets.map((secret) => secret?.name).filter(Boolean));
-const missing = REQUIRED_SECRETS.filter((name) => !secretNames.has(name));
+const missing = ENVIRONMENT_REQUIRED_SECRETS.filter((name) => !secretNames.has(name));
 if (missing.length > 0) {
   fail(
     `missing ${SIGNING_ENVIRONMENT} environment secrets for ${options.repo}: ${missing.join(", ")}. Add the Developer ID signing/notary secrets for direct-download DMGs (not Mac App Store submission) and updater secrets before dispatching the release.\n\nSet them with:\n${secretSetHints(options.repo, missing)}`,
@@ -289,10 +306,21 @@ if (!Array.isArray(repositorySecrets)) {
   fail("gh secret list for repository scope did not return an array.");
 }
 const repositorySecretNames = new Set(repositorySecrets.map((secret) => secret?.name).filter(Boolean));
-const leakedScope = REQUIRED_SECRETS.filter((name) => repositorySecretNames.has(name));
-if (leakedScope.length > 0) {
+const missingRepositorySecrets = REPOSITORY_REQUIRED_SECRETS.filter(
+  (name) => !repositorySecretNames.has(name),
+);
+if (missingRepositorySecrets.length > 0) {
   fail(
-    `repository-scoped signing secrets remain for ${options.repo}: ${leakedScope.join(", ")}. Move them to ${SIGNING_ENVIRONMENT}, then delete the repository copies:\n${leakedScope.map((name) => `  gh secret delete ${name} --repo ${options.repo}`).join("\n")}`,
+    `missing required repository signing secrets for ${options.repo}: ${missingRepositorySecrets.join(", ")}. Preserve the existing Developer ID certificate and Tauri updater identity; do not regenerate updater keys.\n\nSet them with:\n${repositorySecretSetHints(options.repo, missingRepositorySecrets)}`,
+  );
+}
+const forbiddenRepositorySecrets = [
+  ...ENVIRONMENT_REQUIRED_SECRETS,
+  ...OBSOLETE_REPOSITORY_SECRETS,
+].filter((name) => repositorySecretNames.has(name));
+if (forbiddenRepositorySecrets.length > 0) {
+  fail(
+    `obsolete or over-scoped repository signing secrets remain for ${options.repo}: ${forbiddenRepositorySecrets.join(", ")}. Keep API credentials in ${SIGNING_ENVIRONMENT} and delete obsolete Apple ID credentials after the new workflow reaches main:\n${forbiddenRepositorySecrets.map((name) => `  gh secret delete ${name} --repo ${options.repo}`).join("\n")}`,
   );
 }
 
@@ -322,7 +350,7 @@ if (options.tag) {
 }
 
 console.log(
-  `[desktop-release-github] ${options.repo} has the protected ${SIGNING_ENVIRONMENT} environment, reviewed ${PUBLICATION_ENVIRONMENT} environment, and all required signing secret names`,
+  `[desktop-release-github] ${options.repo} has the protected ${SIGNING_ENVIRONMENT} environment, reviewed ${PUBLICATION_ENVIRONMENT} environment, and all required split-scope signing secret names`,
 );
 if (options.tag) {
   console.log(`[desktop-release-github] ${options.tag} matches package, Tauri, and Cargo versions`);

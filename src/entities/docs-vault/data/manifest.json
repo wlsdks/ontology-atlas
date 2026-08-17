@@ -4035,6 +4035,11 @@
         },
         {
           "depth": 2,
+          "text": "2026-08-17 · 릴리스 secret의 실제 복구 가능성에 맞춰 3+4 scope 계약을 확정",
+          "slug": "2026-08-17-릴리스-secret의-실제-복구-가능성에-맞춰-34-scope-계약을-확정"
+        },
+        {
+          "depth": 2,
           "text": "2026-08-17 · 공증 암호 argv와 릴리스 child secret 상속을 제거",
           "slug": "2026-08-17-공증-암호-argv와-릴리스-child-secret-상속을-제거"
         },
@@ -6499,8 +6504,8 @@
           "slug": "2026-07-26-첫-만남은-쇼핑몰부터"
         }
       ],
-      "excerpt": "Major change history. Code commit messages answer why; this file answers when / which surface changed. Focused on user-visible changes, not PR-level granularity. Newest at the top. Entries stay date-based; the app version reached v1.0.0 on 2026-07-27, so a release tag now carries the semver promise instead. hosted 공증을 ",
-      "wordCount": 70378,
+      "excerpt": "Major change history. Code commit messages answer why; this file answers when / which surface changed. Focused on user-visible changes, not PR-level granularity. Newest at the top. Entries stay date-based; the app version reached v1.0.0 on 2026-07-27, so a release tag now carries the semver promise instead. App Store C",
+      "wordCount": 70441,
       "updatedAt": "2026-08-17",
       "linksOut": [
         "audits/CASE-STUDY-AGENTS-MD-DRIFT",
@@ -6529,6 +6534,11 @@
           "depth": 2,
           "text": "기록 형식",
           "slug": "기록-형식"
+        },
+        {
+          "depth": 2,
+          "text": "2026-08-17 (65) — 공증 API 3개는 `release-signing`, 복구 불가능한 기존 identity 4개는 repository scope에 유지한다",
+          "slug": "2026-08-17-65-공증-api-3개는-release-signing-복구-불가능한-기존-identity-4개는-repository-scope에-유지한다"
         },
         {
           "depth": 2,
@@ -9457,7 +9467,7 @@
         }
       ],
       "excerpt": "이 파일은 결정과 그때 진 반대 의견을 남긴다. docs/CHANGELOG.md 는 무엇이 언제 바뀌었나를 답하고, 이 파일은 왜 그렇게 정했고, 무엇을 걸었나를 답한다. 최신이 위. 기록은 덧붙이기만 한다 — 지난 기록을 고치지 않는다. 판단이 바뀌었으면 새 기록을 쓰고 옛 기록을 뒤집힘 으로 표시한다. 틀린 기록도 자산이다. 1. 소집 전에 읽는다. 카운슬을 열기 전(그리고 단독 PO 패스를 쓰기 전) 같은 표면 · 같은 질문에 대한 선행 결정이 있는지 먼저 본다. 있으면 새 패스는 그것을 ① 여전히 유효하다고 인용하거나 ② 명시적으로 뒤집는다. 조용히 다시 결정",
-      "wordCount": 142327,
+      "wordCount": 142575,
       "updatedAt": "2026-08-17",
       "linksOut": [
         "slug"
@@ -10569,7 +10579,7 @@
         }
       ],
       "excerpt": "Ontology Atlas is the user-facing macOS app name and current release asset identity for the ontology-atlas project. ontology-atlas stays the repository, CLI, and MCP package name so existing terminal and agent package contracts remain stable. The current release asset identity is ontology-atlas. ontology-atlas can beco",
-      "wordCount": 6509,
+      "wordCount": 6522,
       "updatedAt": "2026-08-17",
       "linksOut": []
     },
@@ -10657,7 +10667,7 @@
         }
       ],
       "excerpt": "Maintainer-only checks live here so the public README stays readable. Use this page when you touch mcp/, cli/, package manifests, release scripts, or the dogfood ontology. Run this before pushing broad docs, package, MCP, or web changes: For user-facing UI changes, add the relevant Playwright route check. pnpm install ",
-      "wordCount": 10271,
+      "wordCount": 10277,
       "updatedAt": "2026-08-17",
       "linksOut": []
     },
@@ -13131,7 +13141,7 @@
         }
       ],
       "excerpt": "플랫폼별 설치 파일과 신뢰 상태를 한 자리에서 비교하고, 설치가 막히면 웹으로 계속할 수 있게 하는 능력. macOS는 서명·공증된 Apple Silicon/Intel DMG를, Windows는 SmartScreen 위험을 먼저 밝힌 미서명 x64 베타를 제시한다. src/views/download (플랫폼 그룹·릴리스 사실·경고·CTA) .github/workflows/release-macos.yml (main workflowdispatch에서 태그와 SHA를 admission하고, release-signing 빌드와 별도 release 공개 승인을 거쳐 같은 SH",
-      "wordCount": 171,
+      "wordCount": 177,
       "updatedAt": "2026-08-17",
       "linksOut": []
     },

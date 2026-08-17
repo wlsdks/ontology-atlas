@@ -617,7 +617,7 @@ committing or publishing changes.
 | `pnpm desktop:release-source` | `--mode=admit` binds tag + SHA to current default-branch head; `--mode=pin` later rejects tag retargeting while allowing main to advance |
 | `pnpm desktop:release-tag` | Fail closed before release signing when the v-prefixed Git tag does not match package.json, Tauri, Cargo, and the download page's release facts (`src/views/download/lib/release-facts.ts`) |
 | `pnpm desktop:release-slot` | Fail closed before GitHub Release upload when the same tag already has a draft, prerelease, or public release |
-| `pnpm desktop:release-github` | Operator-side check for active workflow, automatic main-only `release-signing`, reviewed main-only `release`, seven environment secret names, no repository copies, optional tag/version alignment, and clean pre-release tag/Release slots |
+| `pnpm desktop:release-github` | Operator-side check for active workflow, automatic main-only `release-signing`, reviewed main-only `release`, API 3 environment secrets + retained certificate/updater 4 repository secrets, no obsolete/over-scoped copies, optional tag/version alignment, and clean pre-release tag/Release slots |
 | `pnpm desktop:release-run` | Dispatch `release-macos.yml` from protected `main` with the tag input, then select the exact tag-named workflow_dispatch run at the admitted SHA and watch it |
 | `pnpm desktop:release-status` | Completion audit for version/PR/workflow/tag state, protected environments and secrets, public stable Release/download proof, and owner-grouped handoff actions |
 | `pnpm desktop:sign` | Deeply sign the built `.app` with hardened runtime when `APPLE_SIGNING_IDENTITY` and a Developer ID certificate are available |

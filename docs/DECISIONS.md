@@ -40,6 +40,40 @@
 **상태**: 유효 / 뒤집힘(→ 링크) / 반증됨(관측: …)
 ```
 
+## 2026-08-17 (65) — 공증 API 3개는 `release-signing`, 복구 불가능한 기존 identity 4개는 repository scope에 유지한다
+
+**소집**: 운영 실측 + 기계적 보안 패스 · **트리거**: GitHub secret은 저장 후
+읽기·이름 변경·scope 간 복사가 불가능하고 기존 certificate/updater 원본이 로컬에
+없다는 사실 확인 · **루브릭**: CI 보안 plumbing 면제
+
+**관찰된 현상**: repository scope에는 기존 Apple 5 + Tauri 2 secret이 남아 있었고,
+새 `release-signing`에는 App Store Connect API 3개를 등록했다. 기존 Developer ID
+certificate pair와 Tauri updater pair는 GitHub에만 남아 값을 다시 읽을 수 없었다.
+특히 updater private key를 재생성하면 기존 설치 앱의 자동 업데이트 신뢰가 끊긴다.
+
+**결정**: `APPLE_API_KEY_P8_BASE64`, `APPLE_API_KEY_ID`,
+`APPLE_API_ISSUER_ID`는 `release-signing` environment에만 둔다.
+`APPLE_CERTIFICATE_P12_BASE64`, `APPLE_CERTIFICATE_PASSWORD`,
+`TAURI_SIGNING_PRIVATE_KEY`, `TAURI_SIGNING_PRIVATE_KEY_PASSWORD`는 repository
+scope의 기존 값을 정본으로 유지한다. 새 workflow가 `main`에 도달하면 구형
+`APPLE_ID`, `APPLE_APP_SPECIFIC_PASSWORD`, `APPLE_TEAM_ID`를 repository에서
+삭제한다. release preflight는 이 3+4 배치만 통과시키고 API credential의 repository
+복사본과 구형 세 값은 실패시킨다.
+
+**적용 규칙**: 잃을 수 없는 key를 이상적 scope 이동 때문에 삭제하지 않는다 ·
+repository identity 4개를 참조하는 workflow는 release 하나뿐이어야 한다 ·
+signing job은 계속 `release-signing`의 main-only/no-tag/admin-no-bypass gate를 지난다.
+**서명**: Codex — GitHub/로컬 원본 실측 · 진안 — 혼합 구성 승인
+
+**기록된 반대**: Decision 63의 environment-only 배치가 blast radius는 더 작다. 그러나
+복사 불가능한 값을 삭제해 업데이트 identity를 잃는 것은 더 큰 실제 손실이다.
+원본 4개가 복구되면 environment-only로 다시 이동할 수 있다.
+**반증 조건**: release 이외 workflow가 repository identity 4개를 참조하거나,
+`release-signing` protection 전에 그 값이 노출되는 경로가 관측되면 즉시 재검토한다.
+**뒤집는 범위**: Decision 63·64의 secret 저장 위치만 뒤집는다. protected-main
+admission, API-key 공증, child env allowlist, 별도 publication approval은 유지한다.
+**상태**: 유효
+
 ## 2026-08-17 (64) — hosted 공증은 API key 파일만 쓰고, 릴리스 하위 프로세스는 단계별 secret allowlist를 따른다
 
 **소집**: 기계적 보안 패스 + Apple 1차 문서·로컬 `notarytool` 도움말 대조 ·

@@ -13,6 +13,17 @@ const APP_TAG_PATTERN = APP_TAG.replace(/\./g, "\\.");
 const STRUCTURALLY_VALID_P8 = Buffer.from(
   "-----BEGIN PRIVATE KEY-----\nprivate-key-material\n-----END PRIVATE KEY-----\n",
 ).toString("base64");
+const ENVIRONMENT_SECRET_NAMES = [
+  "APPLE_API_KEY_P8_BASE64",
+  "APPLE_API_KEY_ID",
+  "APPLE_API_ISSUER_ID",
+];
+const REPOSITORY_SECRET_NAMES = [
+  "APPLE_CERTIFICATE_P12_BASE64",
+  "APPLE_CERTIFICATE_PASSWORD",
+  "TAURI_SIGNING_PRIVATE_KEY",
+  "TAURI_SIGNING_PRIVATE_KEY_PASSWORD",
+];
 
 test("desktop readiness check proves Tauri macOS shell prerequisites", () => {
   const result = spawnSync(
@@ -518,9 +529,9 @@ process.exit(1);
 
     assert.equal(result.status, 1);
     assert.match(result.stderr, /missing release-signing environment secrets/);
-    assert.match(result.stderr, /APPLE_CERTIFICATE_P12_BASE64/);
+    assert.doesNotMatch(result.stderr, /APPLE_CERTIFICATE_P12_BASE64/);
     assert.match(result.stderr, /APPLE_API_ISSUER_ID/);
-    assert.match(result.stderr, /gh secret set APPLE_CERTIFICATE_P12_BASE64 --env release-signing --repo wlsdks\/ontology-atlas/);
+    assert.doesNotMatch(result.stderr, /gh secret set APPLE_CERTIFICATE_P12_BASE64/);
     assert.match(result.stderr, /gh secret set APPLE_API_ISSUER_ID --env release-signing --repo wlsdks\/ontology-atlas/);
   } finally {
     rmSync(dir, { recursive: true, force: true });
@@ -579,15 +590,7 @@ process.exit(1);
 test("desktop GitHub release readiness gate accepts active workflow and required secret names", () => {
   const dir = mkdtempSync(join(tmpdir(), "ontology-atlas-gh-"));
   const ghPath = join(dir, "gh");
-  const secretNames = [
-    "APPLE_CERTIFICATE_P12_BASE64",
-    "APPLE_CERTIFICATE_PASSWORD",
-    "APPLE_API_KEY_P8_BASE64",
-    "APPLE_API_KEY_ID",
-    "APPLE_API_ISSUER_ID",
-    "TAURI_SIGNING_PRIVATE_KEY",
-    "TAURI_SIGNING_PRIVATE_KEY_PASSWORD",
-  ];
+  const secretNames = ENVIRONMENT_SECRET_NAMES;
   writeFileSync(
     ghPath,
     `#!/usr/bin/env node
@@ -612,7 +615,7 @@ if (args[0] === 'api') {
   process.exit(0);
 }
 if (args[0] === 'secret' && args[1] === 'list') {
-  console.log(JSON.stringify(args.includes('--env') ? ${JSON.stringify(secretNames.map((name) => ({ name })))} : []));
+  console.log(JSON.stringify(args.includes('--env') ? ${JSON.stringify(secretNames.map((name) => ({ name })))} : ${JSON.stringify(REPOSITORY_SECRET_NAMES.map((name) => ({ name })))}));
   process.exit(0);
 }
 if (args[0] === 'release' && args[1] === 'view') {
@@ -637,7 +640,7 @@ process.exit(1);
     );
 
     assert.equal(result.status, 0, result.stderr);
-    assert.match(result.stdout, /has the protected release-signing environment, reviewed release environment, and all required signing secret names/);
+    assert.match(result.stdout, /all required split-scope signing secret names/);
     assert.match(result.stdout, new RegExp(`${APP_TAG_PATTERN} matches package, Tauri, and Cargo versions`));
     assert.match(result.stdout, new RegExp(`${APP_TAG_PATTERN} has no existing GitHub Release`));
   } finally {
@@ -648,15 +651,7 @@ process.exit(1);
 test("desktop GitHub release readiness gate rejects an occupied release slot", () => {
   const dir = mkdtempSync(join(tmpdir(), "ontology-atlas-gh-"));
   const ghPath = join(dir, "gh");
-  const secretNames = [
-    "APPLE_CERTIFICATE_P12_BASE64",
-    "APPLE_CERTIFICATE_PASSWORD",
-    "APPLE_API_KEY_P8_BASE64",
-    "APPLE_API_KEY_ID",
-    "APPLE_API_ISSUER_ID",
-    "TAURI_SIGNING_PRIVATE_KEY",
-    "TAURI_SIGNING_PRIVATE_KEY_PASSWORD",
-  ];
+  const secretNames = ENVIRONMENT_SECRET_NAMES;
   writeFileSync(
     ghPath,
     `#!/usr/bin/env node
@@ -681,7 +676,7 @@ if (args[0] === 'api') {
   process.exit(0);
 }
 if (args[0] === 'secret' && args[1] === 'list') {
-  console.log(JSON.stringify(args.includes('--env') ? ${JSON.stringify(secretNames.map((name) => ({ name })))} : []));
+  console.log(JSON.stringify(args.includes('--env') ? ${JSON.stringify(secretNames.map((name) => ({ name })))} : ${JSON.stringify(REPOSITORY_SECRET_NAMES.map((name) => ({ name })))}));
   process.exit(0);
 }
 if (args[0] === 'release' && args[1] === 'view') {
