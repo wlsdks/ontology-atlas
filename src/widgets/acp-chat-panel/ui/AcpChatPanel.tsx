@@ -97,6 +97,7 @@ export function AcpChatPanel({
   suggestions = [],
   knownSlugs,
   onHoverSlug,
+  onTurnActiveChange,
   onClose,
 }: {
   runtimeId: string;
@@ -137,6 +138,13 @@ export function AcpChatPanel({
    * 담는다 — 큰 그래프에서 호버마다 렌더하면 끈적해진다.
    */
   onHoverSlug?: (slug: string | null) => void;
+  /**
+   * 한 차례가 **돌기 시작했다/끝났다**. 볼트에 무엇을 적을지는 화면(뷰)의
+   * 일이라(이 패널은 `LocalVaultProvider` 없이도 서야 한다) 여기서는 사실만
+   * 알린다. 오늘의 소비처는 「에이전트가 자기 이름을 볼트에 등록」이다 —
+   * `views/home/lib/acp-agent-heartbeat.ts`.
+   */
+  onTurnActiveChange?: (active: boolean) => void;
   onClose?: () => void;
 }) {
   const t = useTranslations('acpChat');
@@ -155,6 +163,23 @@ export function AcpChatPanel({
     cancel,
     switchSession,
   } = useAcpSession({ runtimeId, vaultRoot, mcpServers });
+  /*
+   * 차례가 도는 동안만 알린다. 세션이 열려 있는 내내 알리면 화면이 「에이전트
+   * 활동 중」을 아무 일도 없을 때 켜게 된다 — 이 패널이 이미 지키는 규율과
+   * 같다(*"전송 전에 「읽음」으로 찍으면 화면이 아직 일어나지 않은 일을 말하는
+   * 것"*). 패널이 사라질 때도 꺼 준다.
+   */
+  const turnActive = status === 'thinking';
+  useEffect(() => {
+    onTurnActiveChange?.(turnActive);
+  }, [turnActive, onTurnActiveChange]);
+  useEffect(
+    () => () => {
+      onTurnActiveChange?.(false);
+    },
+    [onTurnActiveChange],
+  );
+
   /** 어댑터가 준 것을 사람이 읽는 갈래로 옮긴다 — 못 알아보면 `unknown`. */
   const trouble = error ? readAcpTrouble(error) : null;
   const [draft, setDraft] = useState('');
