@@ -1,5 +1,6 @@
 import { expect, test } from "@playwright/test";
 
+import ko from "../../messages/ko.json";
 import { stubSkillFolder } from "./skills-folder-stub";
 import { seedFirstRunSeen } from "./first-run-seed";
 
@@ -176,7 +177,7 @@ test.describe("스킬 인벤토리", () => {
     await expect(page.getByTestId("skill-process-step").nth(2).getByTestId("skill-semantic-label")).toHaveCount(0);
     await page.getByTestId("skill-process-step").nth(2).getByTestId("skill-step-disclosure").click();
     await expect(page.getByTestId("skill-process-step").nth(2)).toContainText(
-      "뜻이 여러 갈래라 라벨을 만들지 않았습니다.",
+      ko.agentSkills.process.diagnosticSemanticAmbiguous,
     );
     expect(await page.locator("[data-process-edge]").count()).toBe(0);
   });
@@ -200,8 +201,14 @@ test.describe("스킬 인벤토리", () => {
     );
     await expect(page.getByTestId("skill-process-step")).toHaveCount(0);
     await expect(page.getByTestId("skill-packet-copy")).toBeDisabled();
+    /*
+     * 문장을 여기 베껴 두면 **문구를 다듬을 때마다 이 검사가 터진다** — 이
+     * 저장소가 문서 계약에서 이미 겪은 실패이고, 그래서 규칙이 「사람이 쓴
+     * 문장을 못박지 않는다」다. 잠글 것은 문장이 아니라 **막았다는 사실이
+     * 문구 카탈로그의 그 자리에서 온다**는 것이다.
+     */
     await expect(page.getByTestId("skill-packet-status")).toContainText(
-      "프로세스를 읽을 수 없어 복사를 막았습니다",
+      ko.agentSkills.process.packetUnavailable,
     );
   });
 

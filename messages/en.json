@@ -3597,7 +3597,8 @@
       "sameName": "The same name also lives in {source}: which one fires is undefined",
       "sharedTrigger": "{name}: same trigger words ({words})",
       "handsOffTitle": "Hands off to",
-      "handedFromTitle": "Called from"
+      "handedFromTitle": "Called from",
+      "runsMark": "{count} files run"
     },
     "process": {
       "title": "Exact process",

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useTranslations } from "next-intl";
 
 import type { AgentSkill, SkillInventory } from "@/entities/agent-skill";
@@ -46,6 +46,25 @@ export function SkillDetail({
 }) {
   const t = useTranslations("agentSkills");
   const [loadChainOpen, setLoadChainOpen] = useState(false);
+  const chainRef = useRef<HTMLDivElement | null>(null);
+
+  /*
+   * **「이 스킬은 파일을 돌린다」가 접힘 뒤에 있었다** (2026-08-18 실측).
+   *
+   * 목록의 행은 `실행 3` 이라고 말하는데, 그 행을 눌러 들어온 상세에는 그 사실이
+   * **한 글자도 없다** — 「실행됨」 표시는 3단 사슬 안에 있고 그 사슬은 접혀 있다.
+   * 즉 가장 무거운 사실(남의 코드가 내 기계에서 돈다)이 이 화면에서 가장 깊었다.
+   *
+   * 그래서 머리로 끌어올리되 **누르면 그 근거로 데려간다** — 숫자만 띄우고 어디서
+   * 왔는지 못 보게 하면 그건 알림이지 설명이 아니다.
+   */
+  const runCount = skill.invocation.executables.length;
+  const openChain = () => {
+    setLoadChainOpen(true);
+    requestAnimationFrame(() => {
+      chainRef.current?.scrollIntoView({ block: "nearest", behavior: "smooth" });
+    });
+  };
 
   const rivals = inventory.collisions
     .filter((c) => c.name === skill.name)
@@ -113,6 +132,27 @@ export function SkillDetail({
         <p className="text-body text-[color:var(--color-text-tertiary)]">
           {skill.origin.personal ? t("group.mine") : skill.origin.source}
         </p>
+        {runCount > 0 ? (
+          <button
+            type="button"
+            data-testid="skill-detail-runs"
+            onClick={openChain}
+            /*
+             * ⚠️ 처음 `size: "sm"` 으로 냈다가 재 보고 고쳤다 — 그 칸은
+             * `text-caption`(9.5px) 이라, **누르는 이 표시가 바로 옆의 못 누르는
+             * 출처 이름(12.5px)보다 작아졌다.** 이 저장소가 설정 시트에서 두 번
+             * 겪은 위계 뒤집힘과 같은 모양이다(2026-08-02 · 08-09 원장).
+             * `lg` 는 같은 32px 사다리 칸에 글자만 `text-body` 로 맞춘 자리다.
+             */
+            className={controlClass({
+              shape: "chip",
+              size: "lg",
+              className: "text-[color:var(--color-text-secondary)]",
+            })}
+          >
+            {t("detail.runsMark", { count: runCount })}
+          </button>
+        ) : null}
       </header>
 
       {rivals.length > 0 || overlaps.length > 0 ? (
@@ -197,7 +237,7 @@ export function SkillDetail({
       >
         {loadChainOpen ? t("detail.hideLoadChain") : t("detail.showLoadChain")}
       </button>
-      {loadChainOpen ? <SkillInvocationChain skill={skill} /> : null}
+      <div ref={chainRef}>{loadChainOpen ? <SkillInvocationChain skill={skill} /> : null}</div>
       {/* 하단에 경로 한 줄이 더 있었는데 지웠다(2026-08-12 실측) — 2단 「뜨면
           실려요」의 경로와 **바이트 동일**한 문자열이 라벨 없이 136px 아래에 한 번
           더, 그보다 작은 9.5px 로 떠 있었다. 같은 사실을 라벨 없이 두 번 말하는
