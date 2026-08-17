@@ -212,6 +212,7 @@ fn resolve_existing_inside(root_path: &str, relative_path: &str) -> Result<PathB
     ensure_inside_canonical(root_path, &path)
 }
 
+#[cfg(not(unix))]
 fn resolve_write_target_inside(root_path: &str, relative_path: &str) -> Result<PathBuf, String> {
     let path = resolve_inside(root_path, relative_path)?;
     if path.exists() {
@@ -938,8 +939,8 @@ fn acp_start(
         read_text: &read_text,
         login_ok: &login_ok,
     };
-    let home =
-        std::env::var_os(if cfg!(windows) { "USERPROFILE" } else { "HOME" }).map(PathBuf::from);
+    let home = std::env::var_os(if cfg!(windows) { "USERPROFILE" } else { "HOME" })
+        .map(PathBuf::from);
     let launch = acp::resolve_launch(
         &runtime_id,
         home.as_deref(),
@@ -1178,8 +1179,8 @@ fn acp_detect_runtimes(probe_login: Option<bool>) -> Vec<acp::AcpRuntimeStatus> 
             &skip
         },
     };
-    let home = std::env::var_os(if cfg!(windows) { "USERPROFILE" } else { "HOME" })
-        .map(PathBuf::from);
+    let home =
+        std::env::var_os(if cfg!(windows) { "USERPROFILE" } else { "HOME" }).map(PathBuf::from);
     let path = std::env::var_os("PATH");
     acp::detect_runtimes(home.as_deref(), path.as_deref(), &probe)
 }
@@ -1696,6 +1697,7 @@ fn read_vault_binary_file(
 ///
 /// 이름 바꾸기는 같은 파일 시스템 안에서 원자적이다. 그래서 어느 순간에 죽어도
 /// 파일은 **옛 내용 아니면 새 내용**이지, 반쪽이 되지 않는다.
+#[cfg(any(not(unix), test))]
 fn write_text_atomically(path: &std::path::Path, content: &str) -> Result<(), String> {
     use std::io::Write;
 
@@ -1756,8 +1758,43 @@ fn write_vault_text_file(
     relative_path: String,
     content: String,
 ) -> Result<(), String> {
-    let path = resolve_write_target_inside(&root_path, &relative_path)?;
-    write_text_atomically(&path, &content)
+    write_vault_text_file_after_validation(root_path, relative_path, content, || {})
+}
+
+fn write_vault_text_file_after_validation(
+    root_path: String,
+    relative_path: String,
+    content: String,
+    after_validation: impl FnOnce(),
+) -> Result<(), String> {
+    #[cfg(unix)]
+    {
+        let root = canonical_root(&root_path)?;
+        let relative = normalize_relative_path(&relative_path)?;
+        let parent_relative = relative.parent().unwrap_or_else(|| Path::new(""));
+        let parent_relative = parent_relative.to_string_lossy();
+        resolve_directory_target_inside(&root_path, &parent_relative)?;
+        let target = root.join(&relative);
+        match fs::symlink_metadata(&target) {
+            Ok(metadata) if metadata.file_type().is_symlink() => {
+                return Err("resolved path must stay inside the selected vault".into());
+            }
+            Ok(_) => {}
+            Err(error) if error.kind() == std::io::ErrorKind::NotFound => {}
+            Err(error) => return Err(error.to_string()),
+        }
+        let root_handle = agent_setup::open_absolute_directory_no_follow(&root)?;
+        let (parent, file_name) = agent_setup::open_entry_parent(&root_handle, &relative_path)?;
+        after_validation();
+        agent_setup::write_entry_atomically(&parent, &file_name, &content, 0o666)
+    }
+
+    #[cfg(not(unix))]
+    {
+        let path = resolve_write_target_inside(&root_path, &relative_path)?;
+        after_validation();
+        write_text_atomically(&path, &content)
+    }
 }
 
 #[tauri::command]
@@ -1819,10 +1856,48 @@ fn remove_vault_entry(
 
 #[tauri::command]
 fn ensure_vault_directory(root_path: String, relative_path: String) -> Result<(), String> {
-    let path = resolve_directory_target_inside(&root_path, &relative_path)?;
-    fs::create_dir_all(&path).map_err(|err| err.to_string())?;
-    ensure_inside_canonical(&root_path, &path)?;
-    Ok(())
+    ensure_vault_directory_after_validation(root_path, relative_path, || {})
+}
+
+fn ensure_vault_directory_after_validation(
+    root_path: String,
+    relative_path: String,
+    after_validation: impl FnOnce(),
+) -> Result<(), String> {
+    #[cfg(unix)]
+    {
+        let root = canonical_root(&root_path)?;
+        let relative = normalize_relative_path(&relative_path)?;
+        resolve_directory_target_inside(&root_path, &relative_path)?;
+        if relative.as_os_str().is_empty() {
+            after_validation();
+            return Ok(());
+        }
+        let directory_name = relative
+            .file_name()
+            .ok_or_else(|| "directory target must include a final name".to_string())?;
+        let parent_path = relative.parent().unwrap_or_else(|| Path::new(""));
+        let root_handle = agent_setup::open_absolute_directory_no_follow(&root)?;
+        let parent =
+            agent_setup::open_or_create_relative_directory(&root_handle, parent_path, 0o777)?;
+        after_validation();
+        let directory = agent_setup::open_or_create_relative_directory(
+            &parent,
+            Path::new(directory_name),
+            0o777,
+        )?;
+        directory.sync_all().map_err(|error| error.to_string())?;
+        parent.sync_all().map_err(|error| error.to_string())
+    }
+
+    #[cfg(not(unix))]
+    {
+        let path = resolve_directory_target_inside(&root_path, &relative_path)?;
+        after_validation();
+        fs::create_dir_all(&path).map_err(|err| err.to_string())?;
+        ensure_inside_canonical(&root_path, &path)?;
+        Ok(())
+    }
 }
 
 #[tauri::command]
@@ -5643,7 +5718,137 @@ mod tests {
 
 #[cfg(test)]
 mod atomic_write_tests {
-    use super::write_text_atomically;
+    use super::{
+        ensure_vault_directory_after_validation, write_text_atomically,
+        write_vault_text_file_after_validation,
+    };
+
+    #[cfg(unix)]
+    #[test]
+    fn vault_write_is_not_redirected_when_parent_is_replaced_after_validation() {
+        use std::os::unix::fs::symlink;
+
+        let base = std::env::temp_dir().join(format!(
+            "oatlas-vault-parent-race-{}-{}",
+            std::process::id(),
+            std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)
+                .unwrap()
+                .as_nanos()
+        ));
+        let vault = base.join("vault");
+        let sidecar = vault.join(".ontology-atlas");
+        let original_sidecar = vault.join(".ontology-atlas-original");
+        let outside = base.join("outside");
+        std::fs::create_dir_all(&sidecar).unwrap();
+        std::fs::create_dir_all(&outside).unwrap();
+        std::fs::write(sidecar.join("project-sources.json"), "inside-old").unwrap();
+        std::fs::write(outside.join("project-sources.json"), "outside").unwrap();
+
+        let result = write_vault_text_file_after_validation(
+            vault.to_string_lossy().into_owned(),
+            ".ontology-atlas/project-sources.json".into(),
+            "inside-new".into(),
+            || {
+                std::fs::rename(&sidecar, &original_sidecar).unwrap();
+                symlink(&outside, &sidecar).unwrap();
+            },
+        );
+
+        assert!(
+            result.is_ok(),
+            "안정된 원래 부모 쓰기는 성공해야 한다: {result:?}"
+        );
+        assert_eq!(
+            std::fs::read_to_string(outside.join("project-sources.json")).unwrap(),
+            "outside",
+            "검증 뒤 생긴 부모 symlink를 따라 볼트 밖 파일을 바꿨다"
+        );
+        assert_eq!(
+            std::fs::read_to_string(original_sidecar.join("project-sources.json")).unwrap(),
+            "inside-new"
+        );
+        std::fs::remove_dir_all(&base).ok();
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn vault_mkdir_has_no_outside_effect_when_parent_is_replaced_after_validation() {
+        use std::os::unix::fs::symlink;
+
+        let base = std::env::temp_dir().join(format!(
+            "oatlas-vault-mkdir-race-{}-{}",
+            std::process::id(),
+            std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)
+                .unwrap()
+                .as_nanos()
+        ));
+        let vault = base.join("vault");
+        let sidecar = vault.join(".ontology-atlas");
+        let original_sidecar = vault.join(".ontology-atlas-original");
+        let outside = base.join("outside");
+        std::fs::create_dir_all(&sidecar).unwrap();
+        std::fs::create_dir_all(&outside).unwrap();
+
+        let result = ensure_vault_directory_after_validation(
+            vault.to_string_lossy().into_owned(),
+            ".ontology-atlas/new-dir".into(),
+            || {
+                std::fs::rename(&sidecar, &original_sidecar).unwrap();
+                symlink(&outside, &sidecar).unwrap();
+            },
+        );
+
+        assert!(
+            result.is_ok(),
+            "안정된 원래 부모 mkdir은 성공해야 한다: {result:?}"
+        );
+        assert!(
+            !outside.join("new-dir").exists(),
+            "검증 뒤 생긴 부모 symlink를 따라 볼트 밖 디렉터리를 만들었다"
+        );
+        assert!(original_sidecar.join("new-dir").is_dir());
+        std::fs::remove_dir_all(&base).ok();
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn vault_write_replaces_a_hardlink_without_modifying_its_other_path() {
+        use std::os::unix::fs::MetadataExt;
+
+        let base = std::env::temp_dir().join(format!(
+            "oatlas-vault-hardlink-{}-{}",
+            std::process::id(),
+            std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)
+                .unwrap()
+                .as_nanos()
+        ));
+        let vault = base.join("vault");
+        let outside = base.join("outside.md");
+        let target = vault.join("note.md");
+        std::fs::create_dir_all(&vault).unwrap();
+        std::fs::write(&outside, "outside").unwrap();
+        std::fs::hard_link(&outside, &target).unwrap();
+
+        write_vault_text_file_after_validation(
+            vault.to_string_lossy().into_owned(),
+            "note.md".into(),
+            "inside-new".into(),
+            || {},
+        )
+        .unwrap();
+
+        assert_eq!(std::fs::read_to_string(&outside).unwrap(), "outside");
+        assert_eq!(std::fs::read_to_string(&target).unwrap(), "inside-new");
+        assert_ne!(
+            std::fs::metadata(&outside).unwrap().ino(),
+            std::fs::metadata(&target).unwrap().ino(),
+            "vault entry가 기존 외부 inode와의 링크를 끊지 않았다"
+        );
+        std::fs::remove_dir_all(&base).ok();
+    }
 
     /// **원본을 먼저 비우지 않는다.**
     ///

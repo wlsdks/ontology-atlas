@@ -250,11 +250,11 @@ fn unix_name(value: &std::ffi::OsStr) -> Result<std::ffi::CString, String> {
 /// 검사 직후 링크로 바뀔 수 있다. 디렉터리 FD를 한 단계씩 이어 잡으면 이름이
 /// 나중에 교체돼도 쓰기는 이미 연 원래 트리 안에 머문다.
 #[cfg(unix)]
-fn open_absolute_directory_no_follow(path: &Path) -> Result<fs::File, String> {
+pub(crate) fn open_absolute_directory_no_follow(path: &Path) -> Result<fs::File, String> {
     use std::os::fd::{AsRawFd, FromRawFd};
 
     if !path.is_absolute() {
-        return Err(err_str("agent config root must be absolute"));
+        return Err(err_str("native write root must be absolute"));
     }
 
     let slash = std::ffi::CString::new("/").expect("slash contains no NUL");
@@ -278,7 +278,7 @@ fn open_absolute_directory_no_follow(path: &Path) -> Result<fs::File, String> {
                 continue;
             }
             return Err(err_str(
-                "agent config root contains an unsupported path component",
+                "native write root contains an unsupported path component",
             ));
         };
         let name = unix_name(part)?;
@@ -302,39 +302,29 @@ fn open_absolute_directory_no_follow(path: &Path) -> Result<fs::File, String> {
     Ok(current)
 }
 
-/// 허용된 상대 설정 경로의 부모를 안정된 디렉터리 FD로 연다. 없는 중간 폴더도
-/// 경로 문자열이 아니라 이미 연 부모 FD를 기준으로 만든다.
+/// 안정된 root FD 아래의 상대 디렉터리를 조각별로 만들고 no-follow로 연다.
 #[cfg(unix)]
-fn open_config_parent(
-    config_root: &fs::File,
-    relative_path: &str,
-) -> Result<(fs::File, std::ffi::CString), String> {
+pub(crate) fn open_or_create_relative_directory(
+    root: &fs::File,
+    relative_path: &Path,
+    create_mode: libc::mode_t,
+) -> Result<fs::File, String> {
     use std::os::fd::{AsRawFd, FromRawFd};
 
-    let mut parts = Vec::new();
-    for component in Path::new(relative_path).components() {
-        let std::path::Component::Normal(part) = component else {
-            return Err(err_str(
-                "agent config target must be a normal relative path",
-            ));
-        };
-        parts.push(part);
-    }
-    let (file_name, parents) = parts
-        .split_last()
-        .ok_or_else(|| err_str("agent config target has no file name"))?;
-    let mut current = config_root
+    let mut current = root
         .try_clone()
-        .map_err(|error| err_str(format!("could not clone config root handle: {error}")))?;
-
-    for part in parents {
+        .map_err(|error| err_str(format!("could not clone root directory handle: {error}")))?;
+    for component in relative_path.components() {
+        let std::path::Component::Normal(part) = component else {
+            return Err(err_str("directory target must be a normal relative path"));
+        };
         let name = unix_name(part)?;
-        let made = unsafe { libc::mkdirat(current.as_raw_fd(), name.as_ptr(), 0o700) };
+        let made = unsafe { libc::mkdirat(current.as_raw_fd(), name.as_ptr(), create_mode) };
         if made != 0 {
             let error = std::io::Error::last_os_error();
             if error.kind() != std::io::ErrorKind::AlreadyExists {
                 return Err(err_str(format!(
-                    "could not create config directory {:?}: {error}",
+                    "could not create target directory {:?}: {error}",
                     part
                 )));
             }
@@ -348,7 +338,7 @@ fn open_config_parent(
         };
         if next_fd < 0 {
             return Err(err_str(format!(
-                "config directory {:?} is a link or is not a directory: {}",
+                "target directory {:?} is a link or is not a directory: {}",
                 part,
                 std::io::Error::last_os_error()
             )));
@@ -356,29 +346,49 @@ fn open_config_parent(
         current = unsafe { fs::File::from_raw_fd(next_fd) };
     }
 
-    Ok((current, unix_name(file_name)?))
+    Ok(current)
+}
+
+/// 허용된 상대 설정 경로의 부모를 안정된 디렉터리 FD로 연다. 없는 중간 폴더도
+/// 경로 문자열이 아니라 이미 연 부모 FD를 기준으로 만든다.
+#[cfg(unix)]
+pub(crate) fn open_entry_parent(
+    config_root: &fs::File,
+    relative_path: &str,
+) -> Result<(fs::File, std::ffi::CString), String> {
+    let target = Path::new(relative_path);
+    if !target.is_relative() {
+        return Err(err_str("agent config target must be relative"));
+    }
+    let file_name = target
+        .file_name()
+        .ok_or_else(|| err_str("agent config target has no file name"))?;
+    let parent = target.parent().unwrap_or_else(|| Path::new(""));
+    let parent = open_or_create_relative_directory(config_root, parent, 0o700)?;
+    Ok((parent, unix_name(file_name)?))
 }
 
 /// 안정된 부모 FD 안에 새 inode를 완성한 뒤 `renameat`으로 이름만 교체한다.
 /// 기존 대상이 하드링크여도 그 inode를 truncate하지 않으므로 다른 경로는 불변이다.
 #[cfg(unix)]
-fn ensure_private_config_temporary(file: &fs::File, stage: &str) -> std::io::Result<()> {
+fn ensure_private_temporary(file: &fs::File, stage: &str) -> std::io::Result<()> {
     use std::os::unix::fs::MetadataExt;
 
     let metadata = file.metadata()?;
     if !metadata.is_file() || metadata.nlink() != 1 {
         return Err(std::io::Error::other(format!(
-            "private config temporary file was linked {stage}"
+            "private temporary file was linked {stage}"
         )));
     }
     Ok(())
 }
 
 #[cfg(unix)]
-fn write_config_entry_atomically(
+pub(crate) fn write_entry_atomically(
     parent: &fs::File,
     file_name: &std::ffi::CStr,
     contents: &str,
+    create_mode: libc::mode_t,
 ) -> Result<(), String> {
     use std::os::fd::{AsRawFd, FromRawFd};
 
@@ -402,7 +412,7 @@ fn write_config_entry_atomically(
                 parent.as_raw_fd(),
                 temporary_name.as_ptr(),
                 libc::O_WRONLY | libc::O_CREAT | libc::O_EXCL | libc::O_CLOEXEC | libc::O_NOFOLLOW,
-                0o600,
+                create_mode as libc::c_uint,
             )
         };
         if temporary_fd >= 0 {
@@ -414,19 +424,19 @@ fn write_config_entry_atomically(
         let error = std::io::Error::last_os_error();
         if error.kind() != std::io::ErrorKind::AlreadyExists {
             return Err(err_str(format!(
-                "could not create a private config temporary file: {error}"
+                "could not create a private temporary file: {error}"
             )));
         }
     }
 
     let (temporary_name, mut temporary) = created.ok_or_else(|| {
-        err_str("could not reserve a private temporary name for the agent config")
+        err_str("could not reserve a private temporary name for the native write")
     })?;
     let result = (|| -> std::io::Result<()> {
-        ensure_private_config_temporary(&temporary, "before writing")?;
+        ensure_private_temporary(&temporary, "before writing")?;
         temporary.write_all(contents.as_bytes())?;
         temporary.sync_all()?;
-        ensure_private_config_temporary(&temporary, "before commit")?;
+        ensure_private_temporary(&temporary, "before commit")?;
         let renamed = unsafe {
             libc::renameat(
                 parent.as_raw_fd(),
@@ -446,7 +456,7 @@ fn write_config_entry_atomically(
     }
     result.map_err(|error| {
         err_str(format!(
-            "could not atomically replace agent config {}: {error}",
+            "could not atomically replace {}: {error}",
             printable_name
         ))
     })
@@ -458,8 +468,8 @@ fn write_config_contents(
     relative_path: &str,
     contents: &str,
 ) -> Result<(), String> {
-    let (parent, file_name) = open_config_parent(config_root, relative_path)?;
-    write_config_entry_atomically(&parent, &file_name, contents)
+    let (parent, file_name) = open_entry_parent(config_root, relative_path)?;
+    write_entry_atomically(&parent, &file_name, contents, 0o600)
 }
 
 #[cfg(not(unix))]
@@ -878,13 +888,13 @@ mod tests {
 
         let canonical_vault = fs::canonicalize(&vault).unwrap();
         let root = open_absolute_directory_no_follow(&canonical_vault).unwrap();
-        let (parent, file_name) = open_config_parent(&root, ".codex/config.toml").unwrap();
+        let (parent, file_name) = open_entry_parent(&root, ".codex/config.toml").unwrap();
 
         // 검사/부모 open 뒤 이름을 바꿔치기한다. 문자열 경로로 다시 open하면
         // outside/config.toml을 쓰지만, 이미 연 부모 FD는 원래 디렉터리를 붙든다.
         fs::rename(vault.join(".codex"), &original_parent).unwrap();
         symlink(&outside, vault.join(".codex")).unwrap();
-        write_config_entry_atomically(&parent, &file_name, "inside").unwrap();
+        write_entry_atomically(&parent, &file_name, "inside", 0o600).unwrap();
 
         assert!(!outside.join("config.toml").exists());
         assert_eq!(
@@ -907,7 +917,7 @@ mod tests {
         fs::hard_link(&temporary, &outside_link).unwrap();
 
         let file = fs::File::open(&temporary).unwrap();
-        let error = ensure_private_config_temporary(&file, "before commit").unwrap_err();
+        let error = ensure_private_temporary(&file, "before commit").unwrap_err();
         assert!(error.to_string().contains("linked before commit"));
         let _ = fs::remove_dir_all(&base);
     }

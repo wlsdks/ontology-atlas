@@ -40,6 +40,51 @@
 **상태**: 유효 / 뒤집힘(→ 링크) / 반증됨(관측: …)
 ```
 
+## 2026-08-17 (60) — 일반 볼트 mutation도 안정된 root·parent FD 안에서 수행한다
+
+**소집**: 단독 패스 + 선행 Sol xhigh 공격 검토 · **트리거**: (59) 후속 범용
+vault/sidecar 경계 재현 · **루브릭**: 24/24 (치명적 0: 없음)
+
+**관찰된 현상**: `write_vault_text_file`은 부모를 canonicalize한 뒤 `PathBuf`로
+돌려주고, 임시 파일 생성과 rename에서 그 문자열 경로를 다시 열었다. 결정적
+fixture가 검증 직후 `.ontology-atlas`를 다른 이름으로 옮기고 같은 자리에 외부
+symlink를 두자, 밖의 `project-sources.json`이 볼트 내용으로 교체됐다.
+`ensure_vault_directory`도 같은 교체 뒤 밖에 `new-dir`을 먼저 만든 다음 사후
+경계 검사에서 오류를 반환했다. 실제 사용자 파일 변조는 관측하지 않았고,
+임시 볼트에서 검사-사용 경쟁을 재현했다.
+
+**결정**: Unix의 일반 파일 쓰기와 디렉터리 생성은 canonical root를 `/`부터
+조각별 `openat(O_DIRECTORY|O_NOFOLLOW)`으로 열고, 상대 부모도 안정된 FD를
+따라 `mkdirat`·`openat`으로 만든다. 파일은 그 부모 안에 배타적인 새 inode를
+완성하고 링크 수를 쓰기 전·commit 직전에 확인한 뒤 같은 FD 안에서 `renameat`
+한다. 디렉터리는 최종 부모 FD를 먼저 붙든 뒤 `mkdirat`한다. 파일 0666,
+디렉터리 0777을 umask에 통과시켜 기존 일반 vault 권한을 유지하고, agent config의
+0600/0700 private 정책과 섞지 않는다. public Tauri command와 WebView API는
+바꾸지 않는다.
+
+**적용 규칙**: 사후 검사는 이미 생긴 외부 side effect를 취소하지 못한다 ·
+검증한 경로가 아니라 검증해 연 객체를 사용한다 · 일반 vault와 private config의
+권한 정책을 분리한다.
+**서명**: Codex — RED·GREEN·gate probe·구현 · Sol xhigh — 선행 독립 공격 검토 ·
+진안 — 장기 보안·품질 개선 승인
+
+**기록된 반대**: native FD primitive가 현재 `agent_setup.rs`에 함께 있어 일반
+vault bridge가 설정 모듈을 재사용한다. 보안 불변식을 한 벌로 유지하는 이득은
+있지만 소유권 이름은 어색하다. 이번 슬라이스에서는 취약 경계를 먼저 닫고,
+다른 native writer까지 같은 primitive를 쓰게 될 때 별도 `secure_fs` 모듈로
+이동한다.
+**반증 조건**: 원자 교체 때문에 일반 vault 파일의 권한·확장 속성·ACL 의존이
+깨지거나, 열린 부모가 이름에서 이동된 뒤 성공 반환한 파일을 사용자가 찾지 못하는
+사례가 관측된다. 그러면 안전한 메타데이터 복제와 inode/path currentness 검사를
+별도 정책으로 추가한다.
+**잔여 경계**: Windows reparse-point 경쟁과 동일 UID가 이름 있는 임시 파일을
+두 링크 수 검사 사이에 hardlink하는 경쟁은 OS별 핸들·격리 없이는 완전히 닫히지
+않았다. Unix 보장을 Windows 또는 동일 UID 샌드박스 보장으로 확대하지 않는다.
+**재검토**: Windows 설치본 보안 검증, 위 반증 관측, 또는 세 번째 native writer가
+이 primitive를 필요로 할 때.
+
+**상태**: 유효
+
 ## 2026-08-17 (59) — 에이전트 설정은 새 inode를 완성한 뒤 안정된 부모 안에서 교체한다
 
 **소집**: 단독 패스 + Sol xhigh 읽기 전용 공격 검토 · **트리거**: (37)의 링크
