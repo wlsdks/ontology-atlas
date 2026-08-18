@@ -40,6 +40,14 @@ const INTENTIONALLY_STILL: Readonly<Record<string, string>> = {
   "studio-strut-flow": "끝없이 흐르는 장식 — 위와 같다. 멈춰도 잃는 정보가 없다.",
   "overlay-spring-surface":
     "소비처가 감속일 때 `.overlay-fade-only` 로 **클래스를 갈아 끼운다**(GlobalSearch 실측). CSS carve-out 이 아니라 다른 경로로 이미 덮여 있다.",
+  // 관문 랜딩(2026-08-18 리메이크). 끝없는 캐럿 blink 는 첫 줄의 끝없는 맥박과
+  // 같은 부류다 — 감속의 뜻이 바로 이걸 멈추는 것이고, 터미널 출력 자체는
+  // 감속에서 전 줄이 즉시 보인다(base 레이어 `.gateway-term-line` carve-out).
+  // 나머지 관문 안무(rise·헤드라인·캡션·히어로 무대)는 transition 기반이라 이
+  // 스캐너(animation:)의 후보가 아니고, base 레이어 carve-out 이 「항상 보임」
+  // 동등물을 준다 — gateway-fx-exception.contract.test.ts 가 그 존재를 잠근다.
+  "gateway-term-caret":
+    "끝없는 캐럿 blink — 감속의 뜻이 이걸 멈추는 것이다. 줄 내용은 감속에서 전부 즉시 보인다.",
 };
 
 /**

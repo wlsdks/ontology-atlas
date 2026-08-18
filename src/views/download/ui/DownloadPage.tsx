@@ -1,11 +1,12 @@
 'use client';
 
+import { useEffect, useMemo, useState } from 'react';
 import {
   Check,
-  ChevronRight,
   Clipboard,
   Download,
   ExternalLink,
+  ShieldAlert,
 } from 'lucide-react';
 import { ICON_SIZE } from '@/shared/ui/icon-size';
 import { useFormatter, useTranslations } from 'next-intl';
@@ -32,224 +33,134 @@ import {
   type DesktopArch,
 } from '../lib/release-state';
 import { StageMap, useStageGraph } from './StageMap';
+import { GatewayFx } from './GatewayFx';
+import { HeroObject } from './HeroObject';
+import { AcpChatScene } from './AcpChatScene';
+import { useInViewOnce } from '../lib/use-in-view-once';
+import { useVisitorDesktopPlatform } from '../lib/visitor-platform';
+import type { StageGraph } from '../lib/stage-graph';
+import { buildEvidenceRailModel } from '../lib/evidence-rail';
 import { controlClass } from '@/shared/ui/control-class';
 
 const GITHUB_REPOSITORY_URL = 'https://github.com/wlsdks/ontology-atlas';
 
 /**
- * **이 페이지의 그리드는 한 벌이다** (2026-07-29 카운슬 평결 ③).
+ * **이 페이지의 그리드는 한 벌이다** (2026-07-29 카운슬 평결 ③ — 리메이크에도
+ * 그대로 산다).
  *
- * 정렬 원점 하나에서 시작해 `--page-max` 에서 멈춘다. 원소는 여섯이고 x 는
- * 하나다: GNB · 헤드라인 · 판 · 캡션 · 설치 띠 · 푸터. 그 x 를 카메라도 먹는다
- * (`--topology-v2-safe-inset-left`).
- *
- * ## 그 원점이 무엇인가 — `mx-auto` 가 아니다 (2026-07-29 밤 2차 좁힘)
+ * 정렬 원점 하나에서 시작해 `--page-max` 에서 멈춘다. 원소는 일곱이고 x 는
+ * 하나다: GNB · 헤드라인 · 지도 절 · 캡션 · 설치 띠 · 판 · 푸터.
  *
  * ```
  * 원점 = max(--gateway-gutter, (뷰포트 − --page-max) / 2)   ← --gateway-origin
  * ```
  *
- * 소유자 지적: *"왼쪽이 너무 공백이 적지않아? 좌우가 같아야함"* + 상단 바
- * *"공백이 길고 왜이러지?"*. 실측 2026-07-29: 1920 에서 좌 64 · 우 256(비 4.0),
- * 2560 에서 좌 96 · 우 864(비 9.0). 컬럼이 1600 에서 멈추니 남는 폭이 전부
- * 오른쪽에 쌓인 것이다. 비대칭은 **1728 부터** 시작한다 — 그 아래는 컬럼이
- * 화면을 다 써서 저절로 대칭이었다.
+ * 소유자 지적(*"좌우가 같아야함"*)의 전말과 `mx-auto` 기각 사유는
+ * `shared/lib/gateway-frame.ts` 와 `app/globals.css` 의 원점 독블록에 있다.
+ * 이 파일이 하는 일은 하나다 — 모든 절의 내용을 `PAGE_GUTTER` + `PAGE_COLUMN`
+ * 안에 앉히는 것. 게이트: `tests/e2e/download-gateway-grid.spec.ts` (원점을
+ * 라이브로 읽고, 좌우 여백 동일 · 리사이즈 추종 · 설치 3단 접힘 금지를 잰다).
  *
- * **바깥 래퍼에 `mx-auto` 를 다는 것이 아니다.** 평결 ③ 이 `mx-auto` 를 기각한
- * 이유는 중앙정렬이 나빠서가 아니라 **원점이 둘이 되기 때문**이었다 — 래퍼는
- * 뷰포트를 보고 중앙에 서는데 카메라 인셋은 고정 544 라 1920 에서 +96,
- * 2560 에서 +416 이 어긋난다. 원점을 토큰 하나로 **승격**시키면 여섯 원소와
- * 카메라가 같은 수를 먹으므로 그 사고가 구조적으로 불가능해진다. 그래서 이
- * 파일에는 여전히 `mx-auto` 가 없다 — 대칭은 좌우 패딩이 **둘 다 원점**이고
- * 컬럼이 남는 폭을 정확히 채우는 데서 나온다.
- *
- * **원칙과 값은 다르다** (소유자 확정 2026-07-29 저녁). 평결 ③ 이 지킨 것은
- * *모든 원소가 같은 x 에 선다* 이지 *그 x 가 40 이다* 가 아니었다. 홈통은 이제
- * 원점의 **바닥**일 뿐이고(좁은 화면에서만 이긴다), 넓은 화면의 x 는 뷰포트가
- * 정한다.
- *
- * **기각된 대안**(다시 검토하지 말 것): `--page-max` 제거(치수 규칙성 위반) ·
- * 홈통 스텝 확대(어떤 고정값도 대칭을 못 만든다 — 남는 폭이 뷰포트의 함수라서).
- *
- * 게이트: `tests/e2e/download-gateway-grid.spec.ts` — 원점 값을 베끼지 않고
- * 토큰을 라이브로 읽고, 좌우 여백 동일 · 리사이즈 추종 · GNB 우측 끝까지 잰다.
- */
-/**
- * ⚠️ **md+ 좌우 패딩은 리터럴이 아니라 원점 토큰이다** (2026-07-29 「체계」 처방
- * → 같은 날 밤 원점 승격).
- *
- * 예전엔 `md:px-10` 이었고, 그 40 은 `app/globals.css` 의 카메라 예약폭
- * `544 = 40 + 480 + 24` 안에도 손으로 들어가 있었다. 두 곳이 각자 진실원이라
- * 한쪽만 고치면 판과 지도가 조용히 어긋난다.
- *
- * 이제 `--gateway-origin` 하나가 두 소비자를 먹인다 — 여기서는 길이로 그대로
- * 쓰이고, 카메라 쪽에서는 `parseFloat` 로 같은 수가 된다(`@property`
- * `<length>` 등록 덕에 계산값이 `160px` 로 굳는다). **`px-` 라 좌우 둘 다**
- * 원점을 받고, 그것이 좌우 대칭의 전부다.
- */
-// PAGE_GUTTER / PAGE_COLUMN 은 2026-07-30 에 `shared/lib/gateway-frame` 으로
-// 내려갔다 — `/guide` · `/changelog` 가 같은 프레임을 쓰게 되면서 뷰끼리
-// import 하는 모양이 됐기 때문이다. 값의 근거는 그 파일의 독블록에 있다.
-/**
- * 원점 안쪽의 단 하나뿐인 컬럼 — 왼쪽 고정, `--page-max` 에서 정지.
- *
- * 넓은 화면에서 이 상한이 **대칭의 짝**이다: 좌우 패딩이 각각 (vw−1600)/2 면
- * 남는 폭이 정확히 1600 이라 컬럼이 꽉 차고, 오른쪽 여백도 자동으로 같아진다.
- * `mx-auto` 가 필요 없는 이유가 이것이다.
+ * [은퇴 2026-08-18] 구 카메라 예약폭(`--topology-v2-safe-inset-left` 파생)은
+ * 지도가 판 뒤 배경이던 시절의 산수다. 지도가 자기 절(증거)로 내려가면서 판과
+ * 지도는 구조적으로 겹칠 수 없게 됐고, 파생(`computeGatewaySafeInset`)과 그
+ * 소비처는 삭제됐다 — 같은 게이트가 이제 rect 로 비겹침을 잰다.
  */
 
 /**
- * 무대의 말 기둥과 판이 공유하는 폭.
- *
- * 값의 진실원은 `--gateway-plate-width`(`app/globals.css` `:root`)이고, 카메라
- * 예약폭은 원점·이 폭·틈 셋에서 파생된다(`../lib/gateway-grid.ts`). 예전엔
- * 여기 주석이 `544 = 40 + 480 + 24` 라고 산수를 적어 뒀는데, 첫 항이 뷰포트의
- * 함수가 되는 순간 그 문장이 거짓말이 된다 — 그래서 산수를 문장에서 걷어냈다.
+ * 다운로드 판의 콘텐츠 폭 상한 — 값의 진실원은 `--gateway-plate-width`
+ * (`app/globals.css` `:root`, 880). 판이 컬럼 전폭(1600)으로 늘어나면 행이
+ * 데이터보다 넓어져 SHA·크기·버튼이 서로에게서 너무 멀어진다.
  */
 const STAGE_COLUMN = 'w-full max-w-[calc(var(--gateway-plate-width)*1px)]';
 
+/** 절 사이 리듬 — 값의 진실원은 `--gateway-section-gap`(160px). */
+const SECTION_GAP = 'mt-[var(--gateway-section-gap)]';
+
 /**
- * `/download` — **지도가 곧 페이지다** (2026-07-28 소유자 확정, 백지 재설계).
+ * `/download` — **살아있는 화면** (2026-08-18 소유자 승인 리메이크,
+ * `docs/DECISIONS.md`).
  *
  * ## 이 화면의 일
  *
- * > 처음 온 사람이 **제품을 보고** "이걸 내 맥에 설치해도 되는가" 를 판단하고,
- * > 맞으면 자기 기기에 맞는 파일을 헤매지 않고 받는다.
+ * > 처음 온 사람이 30초 안에 「에이전트가 코드를 쓰는 동안 쌓이는 인지 부채」
+ * > 라는 문제를 자기 문제로 알아보고, 제품이 **움직이는 것**을 본 다음,
+ * > 헤매지 않고 자기 기기의 파일을 받는다.
  *
- * 앞의 두 판(#730 유틸리티 리메이크 · 같은 날 관문형 랜딩)이 공유한 전제는
- * "제품은 **설명**하고 파일은 **제시**한다" 였다. 그래서 둘 다 상자를 쌓았고,
- * 소유자 판정은 두 번 다 같았다 — *"수준이 왜이래"*, *"너무 비슷해서 별로"*.
- * 조사한 레퍼런스 8곳(Orca · Zed · Ghostty · OrbStack · Obsidian · Cursor ·
- * Tailscale · VS Code Insiders)도 전부 같은 문법이라, 그 문법 안에서 잘 만드는
- * 것으로는 **구분이 생기지 않는다**.
+ * ## 다섯 절, 절마다 생각 하나 (소유자 확정 골격)
  *
- * 그래서 뼈대를 바꿨다: **제품이 배경이고 다운로드가 그 위에 뜬다.** 뒤에
- * 깔린 것은 목업도 일러스트도 아니라 이 저장소 vault 를 **실제 지도 엔진**
- * (`StageMap` → `TopologyMapV2`)으로 그린 것이다 — `/` 가 쓰는 그 엔진이라
- * 끌면 밀리고 노드를 누르면 초점이 잡힌다. 그래서 히어로의
- * 헤드라인이 배경을 **가리킬 수 있고**, "설치 없이 먼저 보기" 가 링크가 아니라
- * 지금 보고 있는 화면이 된다.
+ * ① 히어로 — 활자(기념비 헤드라인, 소유자의 문장 그대로) + 히어로 오브젝트
+ *    (실그래프 심도 투영) + 채운 CTA 하나. 지도는 첫 화면에서 **뺐다**(소유자
+ *    콜) — 증거 절에서 자기 자리로 돌아온다.
+ * ② 시연 — 뷰포트에 들어오면 스스로 재생. 지금 붙은 클립이 잠정본이라는 것을
+ *    화면이 정직하게 말한다.
+ * ③ 증거 — 실제 지도 엔진이 눈앞에서 1회 조립되고, census 캡션이 조립이 끝난
+ *    뒤 도착한다(숫자는 조립의 결과라서). 캡션은 지도와 같은 절에 산다.
+ * ④ 에이전트 — 앱 안 대화(ACP) 실측 왕복 1사이클 재연 + 정지 카드 3장
+ *    (2026-08-18 재작업 — 구 `mcp-verify` 터미널은 소유자 기각).
+ * ⑤ 설치·다운로드 — **완전한 정지.** 네 절이 움직인 끝의 정지가 곧 「이제
+ *    결정하라」는 위계 장치다. 사실(SHA·크기·버전)은 어디서도 움직이지 않는다.
+ *    설치 3단이 컬럼 전폭 가로 한 줄, 그 아래 왼쪽 판 + 오른쪽 검증 레일이
+ *    같은 오른끝에서 멈춘다(2026-08-18 — 오른쪽 절반이 비어 있던 것의 처방).
  *
- * ## 이 재설계가 걸고 있는 것
- *
- * 배경이 장식이면 이 페이지는 실패다 — 그래서 배경은 캡션의 숫자와 **같은
- * 출처**를 쓰고, 그 숫자가 틀리면 그림도 틀린다. 반증 조건: 방문자가 배경을
- * "예쁜 패턴" 으로 읽고 제품과 연결하지 못하면 뼈대를 다시 연다.
- *
- * ## 상자를 안 쓴다
- *
- * 위계는 여백 · 1px 괘선 · 타입 스케일이 만든다. 카드 보더는 위계를 못 정했다는
- * 자백이고, 같은 무게의 상자 나열이 앞선 두 판을 평범하게 만든 원인이다.
- * **카드/패널급 컨테이너** 보더는 다운로드 판 하나뿐이며, 그건 지도 위에 떠
- * 있어야 해서 불투명 판이 필요하기 때문이다(반투명은 헌장 금지). 칩·구분선·
- * 코드박스 같은 컴팩트 마크는 별개다 — 구 주석이 "보더 전면 금지" 로 읽혀
- * 실제 구현(신뢰 칩·체크섬 행·검증 코드박스)과 어긋났다(체계석 지적).
+ * 모션의 규율은 「정보 모션만」이다 (소유자: *"다운로드 페이지는 모션이
+ * 중요함.. 보여지는게 최선인 만큼"*) — 첫 3초 안무(150/220 헤드라인 → 700
+ * 리드 → 800 CTA → 950 사실층), 이후 전경 영구 정지. 효과층(전류장·그레인·
+ * 커서 링)은 `--gateway-fx-*` 봉인 예외다(`GatewayFx` 독블록).
  */
 export function DownloadPage() {
   const pathname = usePathname() ?? '/';
   const tFooter = useTranslations('footer');
-  /**
-   * **시연 절은 두 주소 모두에 있다** (2026-08-01 소유자 확정, 원장 「시연은
-   * 주소로 갈리지 않는다」).
-   *
-   * 종전엔 `/` 에만 붙였다 — 2026-07-29 원장이 "시연 영상은 첫 페이지로 간다"
-   * 로 서명했고, 이 뷰가 두 주소에 살기 때문에 경로로 갈랐다. 그 갈림이
-   * **실제로 만든 것은 위계가 아니라 혼란**이다: 같은 얼굴의 두 주소가 서로
-   * 다른 것을 보여 주고, `/download` 로 직접 들어온 사람은 이 제품이 움직이는
-   * 것을 한 번도 못 본 채 설치 버튼만 본다. 소유자 판정 — *"download는 결국
-   * 홍보 페이지랑 같잖아"*.
-   *
-   * 되돌리기를 막고 있던 것은 게이트 하나였다: `/download` 의 「첫 화면이
-   * 스크롤 없이 끝난다」(`tests/e2e/download-gateway-grid.spec.ts`). 그 게이트가
-   * **실제로 지키는 것**은 페이지가 한 화면인 것이 아니라 **설치 3단이 접히지
-   * 않는 것**이다(구 고정 바닥이 850 창에서 270px 을 접었고, 접힌 것이 하필
-   * 설치 단계였다). 그래서 게이트를 지우지 않고 **사정거리를 그 property 로
-   * 좁혔다** — 앞선 주석이 뒤집는 방법으로 남겨 둔 바로 그 순서다.
-   *
-   * 자산이 없으면 `DemoStage` 가 스스로 `null` 을 반환한다 — 재생할 것 없는
-   * 플레이어를 첫인상 자리에 두지 않기 위해 그 판정이 데이터에 있다.
-   */
   const published = isMacosReleasePublished();
   // Apple Silicon 이 기본 제안 — 2020년 말 이후 팔린 맥은 거의 전부 그쪽이다.
   const primaryAsset = published ? macosAssetFor('aarch64') : null;
-
   /**
-   * 하단 탭바가 서는 화면인가 — **이 뷰는 두 주소에 살고 둘이 다르다.**
-   *
-   * `/download` 는 탭바를 숨기지만 `/` 는 세운다(`shouldHideBottomTabBar` —
-   * 숨기면 `<lg` 첫 방문자가 전역 내비 없이 갇히기 때문에 의도된 것이다). 그래서
-   * 같은 바닥 띠가 `/` 에서는 탭바 **뒤로** 깔렸다: 스크롤 끝에서 마지막 줄이
-   * 탭바에 **17px 물렸다**(실측 2026-08-06, 390·768 양쪽 + 프로덕션 export).
-   * `design.md` 터치 계약대로 "탭바 뒤로 가려짐" 은 결함이다.
-   *
-   * 판정을 탭바 **자신과 같은 함수**로 한다 — 두 곳에서 각자 라우트를 나열하면
-   * 한쪽이 드리프트하고, 그때 어긋나는 쪽이 «예약고» 라 아무 에러 없이 다시
-   * 가려진다. 둘째 인자는 이 판정에 쓰이지 않는다(그 함수가 시그니처 안정성만
-   * 위해 남겨 둔 자리라고 자기 주석에 적어 뒀다).
+   * 하단 탭바가 서는 화면인가 — 이 뷰는 두 주소에 살고 둘이 다르다.
+   * `/download` 는 탭바를 숨기고 `/` 는 세운다. 판정은 탭바 자신과 같은 함수로
+   * 한다(각자 라우트를 나열하면 한쪽이 드리프트한다 — 2026-08-06 실측 17px).
    */
   const bottomTabBarPresent = !shouldHideBottomTabBar(pathname, false);
+  /**
+   * 한 훅이 히어로 오브젝트 · 증거 절 지도 · census 캡션을 전부 먹인다 —
+   * 화면이 주장하는 숫자와 그리는 그래프가 같은 객체라는 정직성 계약이
+   * 이 한 줄이다(`DownloadPage.test.tsx` 가 잠근다).
+   */
+  const graph = useStageGraph();
 
   return (
-    <div className="flex min-h-full w-full flex-col">
+    <div className="gateway-fx-stage relative flex min-h-full w-full flex-col">
+      <GatewayFx />
       <GatewayNav />
 
-      <main id="main" tabIndex={-1} className="flex min-w-0 flex-1 flex-col bg-[color:var(--color-canvas)]">
-        <PortraitStage published={published} primaryAsset={primaryAsset} />
-
-        <div className={cn(PAGE_GUTTER, 'w-full')}>
-          <div className={cn(PAGE_COLUMN, 'py-8 md:py-10')}>
-            <DemoStage />
-          </div>
-        </div>
+      <main id="main" tabIndex={-1} className="relative z-[1] flex min-w-0 flex-1 flex-col">
+        <HeroSection published={published} primaryAsset={primaryAsset} graph={graph} />
+        <DemoSection />
+        <EvidenceSection graph={graph} />
+        <AgentSection />
+        <InstallSection published={published} primaryAsset={primaryAsset} />
 
         {/*
-         * **바닥 띠** — 절이 아니라 한 벌의 꼬리다 (2026-07-29 평결 ③).
-         *
-         * 예전엔 설치 3단이 자기 괘선(`border-t pt-10`)과 64px 여백을 가진
-         * **절**이었고, 그 아래 푸터가 또 괘선을 그었다. 관문 한 장에 절이 셋
-         * (무대·설치·검증)이면 위계가 아니라 목록이다. 무대의 아래 보더가 이미
-         * "여기서부터는 부록" 을 말하므로 설치 줄은 자기 괘선을 반납한다 —
-         * 남는 괘선은 푸터의 것 하나다.
+         * **바닥 띠** — 콜로폰. 읽을거리 링크와 라이선스만 산다 (검증 목록은
+         * 2026-08-18 설치 절의 검증 레일로 올라갔다 — `VerifyRail` 독블록).
+         * 탭바 예약고 관용구는 리메이크 전과 동일하다(`/` 에만 탭바가 선다).
          */}
         <div
           data-testid="download-bottom-band"
-          // 예약고를 **어느 토큰이** 내는지 화면에 적어 둔다 — `BottomTabBar` ·
-          // `GlobalSearch` 가 쓰는 같은 관용구다. 토큰 이름이 바뀌면 이 표식이
-          // 같이 바뀌어야 하므로, 예약이 조용히 사라지지 않는다.
           data-gateway-bottom-reserve-token={
             bottomTabBarPresent ? '--topology-mobile-bottom-tab-reserve' : undefined
           }
           data-gateway-bottom-reserve-active={bottomTabBarPresent ? 'true' : undefined}
           className={cn(
             PAGE_GUTTER,
-            'shrink-0 pt-5 pb-[max(var(--page-bottom-breath),env(safe-area-inset-bottom))] [@media(min-width:64rem)_and_(max-height:56.25rem)]:pt-3 [@media(min-width:64rem)_and_(max-height:56.25rem)]:pb-6',
-            // 탭바가 서는 화면(`<lg`)에서는 그 높이를 **예약고로** 얹는다. 예약고
-            // 토큰이 safe-area 를 이미 품고 있으므로 여기서는 숨(breath)만 더한다 —
-            // 그래야 탭바 위에 남는 여백이 다른 화면과 같은 40px 이 된다.
+            'mt-24 shrink-0 pb-[max(var(--page-bottom-breath),env(safe-area-inset-bottom))]',
             bottomTabBarPresent &&
               'max-lg:pb-[calc(var(--topology-mobile-bottom-tab-reserve)+var(--page-bottom-breath))]',
           )}
         >
           <div className={PAGE_COLUMN}>
-            <InstallTrack />
-
-            {/*
-             * 콜로폰 — 라이선스와 스택**만** 산다 (2026-07-29 소유자 요청 →
-             * 카운슬 처방).
-             *
-             * 예전엔 여기 「소스 코드 보기」 링크가 11px 로 앉아 있었고, 판
-             * 안에도 같은 저장소를 가리키는 mono 주소가 따로 있었다. **한
-             * 페이지에 같은 목적지가 둘**이면 둘 다 각주가 된다 — 오픈소스
-             * 제품에서 「코드를 본다」는 신뢰를 버는 행동인데 그 행동이 어느
-             * 쪽에서도 눌러 볼 만한 것으로 안 보였다.
-             *
-             * 그래서 **더하지 않고 옮겼다**: 저장소로 가는 길은 판 안의
-             * 고스트 버튼 하나로 승격하고(`PlateExitRow`), 이 줄은 중복을
-             * 반납한다. 콜로폰이 짧아진 만큼 라이선스가 더 잘 읽힌다.
-             */}
-            <footer className="mt-4 border-t border-[color:var(--color-divider)] pt-4 text-label leading-label text-[color:var(--color-text-quaternary)] [@media(min-width:64rem)_and_(max-height:56.25rem)]:mt-3 [@media(min-width:64rem)_and_(max-height:56.25rem)]:pt-3">
-              <VerifyDetails published={published} primaryAsset={primaryAsset} />
-              <GatewayReadingLinks className="mt-3" />
+            <footer className="border-t border-[color:var(--color-divider)] pt-5 text-label leading-label text-[color:var(--color-text-quaternary)]">
+              <GatewayReadingLinks />
+              <ReleasePolicyNotes published={published} />
               <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-2">
                 <span className="font-mono uppercase tracking-[var(--tracking-caps-14)]">
                   {tFooter('license')}
@@ -265,70 +176,715 @@ export function DownloadPage() {
   );
 }
 
-// ─── GNB ────────────────────────────────────────────────────────────────────
+// ─── 절 공통 부품 ────────────────────────────────────────────────────────────
 
 /**
- * 관문 표면의 전역 내비 (2026-07-28 소유자 확정). 이 라우트는 좌측 레일을
- * 쓰지 않으므로(`isGatewayRoute`) "여기가 어디이고 어디로 갈 수 있나" 는 이
- * 상단 바가 진다.
+ * 절 머리 — 아이브로우(mono caps + 악센트 점) · 제목 · 부제.
  *
- * 지도 무대 **위에** 뜨므로 배경이 투명하면 안 된다 — 불투명 캔버스색으로
- * 깔고 아래 보더로 무대와 경계를 긋는다.
+ * 제목은 `--text-display`(23px) — 카드 제목(16px)보다 작던 구 절 제목(14px)의
+ * 위계 역전을 바로잡는 자리다(리메이크 결정). 아이브로우 라벨(Demo · Evidence
+ * · Agents · Install)은 두 로케일이 공유하는 mono 표기라 번역하지 않는다.
  *
- * ⚠️ **높이는 워크벤치 크롬 규격을 따르지 않는다** (소유자 판정 2026-07-28:
- * *"세로 길이가 너무 좁고"*). `--chrome-tile-size`(36px)는 지도 위에 떠서 화면을
- * 최대한 양보해야 하는 **도구 막대**의 치수다. 관문의 상단 바는 도구가 아니라
- * 이 사이트의 얼굴이라, 같은 값을 쓰면 랜딩이 아니라 앱 크롬처럼 읽힌다.
- * 그래서 스케일 고정 계약(`design.md`)을 어기는 것이 아니라 **다른 계약을
- * 적용하는 것**이다 — 크롬 필/타일 36px 규격은 여기 해당 없음.
+ * `still` 이면 등장 안무 없이 그린다 — 설치 절의 정지가 그 소비처다.
  */
-// ─── 무대 — 지도 위의 다운로드 ───────────────────────────────────────────────
+function SectionIntro({
+  eyebrow,
+  title,
+  sub,
+  inView,
+  still = false,
+}: {
+  eyebrow: string;
+  title: string;
+  sub?: string;
+  inView?: boolean;
+  still?: boolean;
+}) {
+  const rise = (step?: string) =>
+    still ? undefined : cn('gateway-rise', step, inView && 'is-in');
+
+  return (
+    <>
+      <p
+        className={cn(
+          rise(),
+          'flex items-center gap-2 font-mono text-label uppercase leading-label tracking-[var(--tracking-caps-16)] text-[color:var(--color-text-quaternary)]',
+        )}
+      >
+        {/* 정적 점 — 신호는 상태다. 여기 상태가 없으므로 깜빡이지 않는다. */}
+        <span aria-hidden className="h-1.5 w-1.5 rounded-full bg-[color:var(--color-indigo-brand)]" />
+        {eyebrow}
+      </p>
+      <h2
+        className={cn(
+          rise('gateway-rise-d2'),
+          'mt-4 break-keep text-display font-[var(--font-weight-signature)] tracking-[var(--tracking-display)] text-[color:var(--color-text-primary)]',
+        )}
+      >
+        {title}
+      </h2>
+      {sub ? (
+        <p
+          className={cn(
+            rise('gateway-rise-d3'),
+            'mt-3 max-w-[40rem] break-keep text-body-lg leading-body-lg text-[color:var(--color-text-tertiary)]',
+          )}
+        >
+          {sub}
+        </p>
+      ) : null}
+    </>
+  );
+}
+
+// ─── ① 히어로 — 활자 + 오브젝트 + 채운 CTA 하나 ─────────────────────────────
 
 /**
- * 히어로 전체가 하나의 무대다. 지도는 `absolute inset-0` 으로 무대를 가득
- * 채우고, 판은 그 위에 **왼쪽으로 붙어** 뜬다 — 오른쪽 절반의 지도가 판에
- * 가리지 않고 그대로 보여야 배경이 증거 노릇을 한다. 가운데 정렬이면 판이
- * 그래프의 중심(project 노드)을 정확히 덮어 버린다.
+ * 첫 3초 시간축 (소유자 확정): 0–150ms 배경이 정지 상태로 칠해지고 →
+ * 150/220ms 헤드라인 두 줄이 자기 줄 상자에서 올라오고 → 700ms 아이브로우와
+ * 리드 → 800ms CTA → 950ms 신뢰줄 + 계기 스트립. 이후 전경은 영구 정지.
+ * 지연은 전부 CSS(`gateway-t***`)에 있고 JS 는 마운트 다음 프레임에 `is-in`
+ * 클래스 하나만 단다.
  *
- * ## 높이 — 고정 바닥이 아니라 남는 자리 전부
+ * ## 헤드라인 — 소유자의 문장 그대로 (한 글자도 다듬지 않는다)
  *
- * 구 `lg:min-h-[min(46rem,88vh)]` 는 두 상수(736px · 88%)를 곱해 놓고 실제
- * 창 높이와는 무관하게 굴었다. 그래서 1512×850(실제로 가장 흔한 창)에서
- * 무대 736 + GNB 65 + 바닥 절 320 = 1121 로 **270px 이 접혔고**, 그 접힌
- * 부분이 하필 "설치 3단" 이었다.
+ * 「에이전트는 코드를 작성하고 / 사람의 인지 부채는 쌓여갑니다」. 크기는
+ * `--text-monument`(clamp 40px–96px) — 지도가 첫 화면에서 빠지면서 활자가
+ * 그 무게를 이어받는다(램프 등재는 `app/globals.css` · `cn.ts`).
  *
- * 이제는 셸이 준 높이에서 GNB 와 바닥 띠를 뺀 나머지를 무대가 **전부** 갖는다
- * (`lg:flex-1`). 바닥만 남겨 아주 낮은 창에서 무대가 찌그러지지 않게 한다.
- * 내용이 그보다 커지면(좁은 폭·긴 번역문) 무대가 늘어나야지 판이 잘리면 안 된다.
+ * ## 배치 — 기념비 단 + 분할 밴드 (승인 목업 `b-hero.html` 의 2026-08-18 2차 개정)
  *
- * ## 바닥 34rem → 40rem (2026-07-30) — **이 값이 노드 크기를 정한다**
- *
- * 소유자: *"박스랑 노드 사이에 빈 공간이 많잖아? 노드를 한 10%만 키우고 대신
- * 세로를 약간 늘리면"*. 진단이 맞았다 — 지도 레인은 그래프보다 **가로로 길어서
- * 높이가 병목**이고(1512 에서 잉크 비율 1.13 vs 레인 비율 1.41), 무대가 높아지면
- * 카메라가 그만큼 크게 프레이밍한다.
- *
- * `/` 와 `/download` 가 같은 폭인데 지도 크기가 34% 달랐던 것이 그 증거다 —
- * `/` 는 시연 절이 세로를 나눠 갖느라 무대가 짧았다(561 vs 676).
- *
- * 1512 실측:
- *
- * | 바닥 | 캔버스 | 잉크 폭 | 증가 | 시연 절 시작 y |
- * |---|---|---|---|---|
- * | 34rem | 561 | 390 | — | 667 |
- * | 37rem | 591 | 426 | +9.2% | 697 |
- * | **40rem** | **639** | **482** | **+23.6%** | **745** |
- *
- * 소유자가 40rem 을 골랐다. **대가는 시연 절이 78px 밀리는 것**이고, 그건
- * #786 이 문서화한 의도와 같은 방향이다(첫 화면은 헤드라인·다운로드가 갖고,
- * 스크롤하면 영상이 온다).
- *
- * ⚠️ **DOM 으로 높이만 바꿔서 재면 안 된다.** 카메라는 마운트 때 한 번
- * 프레이밍하고 컨테이너 높이 변화에는 다시 맞추지 않는다 — 실측 중 잉크가
- * 1px 도 안 커져서 2026-07-28 원장의 「스케일 상한」과 같은 증상으로 보였지만,
- * 상한(6)에는 닿지도 않았고 원인이 달랐다. 값을 바꿨으면 **새로고침하고** 재라.
+ * 목업의 「헤드라인 왼쪽 / 오브젝트 오른쪽」 분할을 헤드라인까지 컬럼에 넣어
+ * 구현했더니 실측이 기념비를 부쉈다: 1728 에서 텍스트 컬럼 800px 에 ko 줄 예산
+ * 916/1009px — 두 문장이 넉 줄로 갈라졌다(`작성하고` · `쌓여갑니다` 가 홀로
+ * 남는 랙 라인). 기념비는 **문장 = 줄** 일 때만 기념비다. 그래서 헤드라인은
+ * 컬럼 전폭을 단(measure)으로 쓰고(`@container` 래퍼가 단을 선언, 크기는
+ * `--text-monument` 4.8cqw 가 단에서 따진다), 분할은 그 아래 밴드부터다:
+ * 리드·CTA·신뢰줄이 왼쪽, 히어로 오브젝트(실그래프 심도 투영)가 오른쪽 기둥.
+ * `<lg` 에서는 오브젝트가 활자 아래 받침으로 내려간다.
  */
-function PortraitStage({
+function HeroSection({
+  published,
+  primaryAsset,
+  graph,
+}: {
+  published: boolean;
+  primaryAsset: ReturnType<typeof macosAssetFor>;
+  graph: StageGraph;
+}) {
+  const t = useTranslations('download');
+  const [heroIn, setHeroIn] = useState(false);
+  useEffect(() => {
+    // rAF 콜백이라 effect 본문의 동기 setState 가 아니다 — 첫 페인트(배경 정지)
+    // 가 지나간 다음 프레임에 안무가 시작된다.
+    const id = requestAnimationFrame(() => setHeroIn(true));
+    return () => cancelAnimationFrame(id);
+  }, []);
+
+  /**
+   * 히어로 CTA 의 네 목적지 (2026-08-18 소유자: *"윈도우 다운로드 하기 버튼이랑
+   * 웹 플레이그라운드 보기 버튼이 없음.. 데모 먼저 보기도 버튼인지도 모르겠고"*):
+   * ① 내 플랫폼용 받기(채움 — 유일한 주목 승자) ② 데모 먼저 보기(outline lg)
+   * ③ 나머지 데스크톱 파일 전부(outline md 한 단 아래) ④ 브라우저에서 열기
+   * (outline md). 감지는 클라이언트 한 곳(`useVisitorDesktopPlatform`)이고
+   * 실패 시 macOS 기본 — 어느 분기에서도 네 목적지 전부에 손이 닿는다.
+   *
+   * Windows 가 승자가 될 때 미서명 사실은 **누르기 전에** 신뢰줄 자리에서
+   * 말한다(`trustLineWindows`) — macOS 방문자가 같은 자리에서 서명·공증을
+   * 읽는 것과 정확히 같은 문법이다. 강등 버전(둘째 줄의 Windows 버튼)은
+   * 라벨 옆 `미서명` 표식이 같은 일을 한다. 자세한 경고 전문·체크섬은 설치
+   * 절(`PlatformStatus`)이 계속 진다 — 히어로는 요약, 판은 증명.
+   */
+  const visitorPlatform = useVisitorDesktopPlatform();
+  const windowsInstaller = windowsAsset();
+  const heroWindowsPrimary = visitorPlatform === 'windows' && windowsInstaller !== null;
+
+  const releaseTag = published
+    ? MACOS_RELEASE.tag
+    : resolveDisplayReleaseTag({
+        published: false,
+        publishedTag: MACOS_RELEASE.tag,
+        releaseVersion: RELEASE_VERSION,
+      });
+  const rise = (extra: string) => cn('gateway-rise', extra, heroIn && 'is-in');
+
+  return (
+    <section data-testid="gateway-hero" className={cn(PAGE_GUTTER, 'w-full')}>
+      {/* 기념비 단 — 헤드라인은 컬럼 전폭을 단으로 쓴다. `@container` 가 이
+          단을 선언하고 `--text-monument`(4.8cqw)가 그 폭에서 크기를 따져, 두
+          문장이 분할 히어로의 모든 폭에서 각각 한 줄에 선다(예산 산식은 토큰
+          독블록). */}
+      <div className={cn(PAGE_COLUMN, '@container min-w-0 pt-12 md:pt-16')}>
+        <p
+          className={cn(
+            rise('gateway-t700'),
+            'flex flex-wrap items-center gap-2 font-mono text-label uppercase leading-label tracking-[var(--tracking-caps-16)] text-[color:var(--color-text-quaternary)]',
+          )}
+        >
+          <span aria-hidden className="h-1.5 w-1.5 rounded-full bg-[color:var(--color-indigo-brand)]" />
+          <span>{releaseTag}</span>
+          <span aria-hidden>·</span>
+          <span>{t('eyebrow')}</span>
+        </p>
+
+        <h1
+          className={cn(
+            'mt-6 break-keep text-monument font-[var(--font-weight-signature)] tracking-[var(--tracking-monument)] text-[color:var(--color-text-primary)]',
+            heroIn && 'gateway-hero-in',
+          )}
+        >
+          {/* 첫 줄은 한 단 낮은 잉크 — 두 번째 줄(사람의 부채)이 문장의
+              주인공이라는 위계를 밝기로 만든다. */}
+          <span className="gateway-hero-line">
+            <span className="text-[color:var(--color-text-secondary)]">
+              {t('heroTitleLine1')}
+            </span>
+          </span>
+          <span className="gateway-hero-line">
+            <span>{t('heroTitleLine2')}</span>
+          </span>
+        </h1>
+      </div>
+
+      {/* 분할 밴드 — 리드·CTA·신뢰줄 왼쪽, 오브젝트 오른쪽 기둥. `items-center`
+          는 오브젝트의 질량 중심과 결정 블록(리드→CTA)을 같은 축에 놓는다. */}
+      <div
+        className={cn(
+          PAGE_COLUMN,
+          'grid min-w-0 items-center gap-x-12 gap-y-10 pb-6 pt-7 lg:pb-7',
+          'lg:grid-cols-[minmax(0,1fr)_minmax(320px,0.85fr)]',
+        )}
+      >
+        {/* 구 `lg:pb-14` 광학 보정은 반납했다 (2026-08-18 소유자: *"윗공백이
+            너무 심한데"* — 실측 1512: 보정이 결정 블록을 28px 올려 블록 하단과
+            캔버스 하단 사이 108px 의 빈 좌하단을 만들고, 상대적으로 오브젝트를
+            아래로 몰아 보이게 했다). CTA 가 두 줄이 되며 블록이 캔버스 키에
+            가까워졌으므로 순수 `items-center` 가 광학으로도 맞는다. */}
+        <div className="min-w-0">
+          <p
+            className={cn(
+              rise('gateway-t700'),
+              'max-w-[40rem] break-keep text-title font-normal leading-title text-[color:var(--color-text-secondary)]',
+            )}
+          >
+            {t('heroLead')}
+          </p>
+
+          <div className={cn(rise('gateway-t800'), 'mt-9 flex flex-wrap items-center gap-3')}>
+            {published && primaryAsset ? (
+              /* 채운 CTA — 실파일 직링크. 판(⑤)의 주 CTA 와 같은 행동이라
+                 중복이 아니라 반복이다(스크롤 4절 아래의 같은 결정). 파일은
+                 방문자의 플랫폼을 따른다 — Windows 방문자가 「Apple Silicon용
+                 받기」만 보던 것이 이 분기가 고친 결함이다. */
+              <a
+                href={heroWindowsPrimary ? windowsInstaller!.downloadUrl : primaryAsset.downloadUrl}
+                data-testid="gateway-hero-cta"
+                className={cn(buttonVariants({ size: 'lg' }), 'rounded-chip px-6')}
+              >
+                <Download size={ICON_SIZE.lg} aria-hidden />
+                {heroWindowsPrimary ? t('windowsDownloadCta') : t('primaryCtaPublished')}
+                <AssetSize
+                  bytes={heroWindowsPrimary ? windowsInstaller!.sizeBytes : primaryAsset.sizeBytes}
+                  onFill
+                />
+              </a>
+            ) : (
+              /* 받을 것이 없으면 승자는 지금 되는 것 — 브라우저의 지도다. */
+              <Link
+                href="/topology"
+                data-testid="gateway-hero-cta"
+                className={cn(buttonVariants({ size: 'lg' }), 'rounded-chip px-6')}
+              >
+                {t('webCta')}
+              </Link>
+            )}
+            {/* `outline` — ghost 는 면도 테두리도 없어 산문으로 읽혔다(소유자:
+                *"버튼인지도 모르겠고"*). 누를 수 있는 것은 누를 수 있게
+                생겨야 하고, 이 램프에서 그 최소 단위가 outline 이다. */}
+            <a
+              href="#demo"
+              data-testid="gateway-hero-demo-link"
+              className={cn(buttonVariants({ variant: 'outline', size: 'lg' }), 'rounded-chip px-4 sm:px-6')}
+            >
+              {t('heroDemoCta')}
+            </a>
+          </div>
+
+          {published && primaryAsset ? (
+            /* 둘째 줄 — 승자가 아닌 목적지 전부, 한 단 아래(`md`, h-10 vs h-11).
+               크기 표기는 주 CTA 만 갖는다(결정 재료는 승자의 것, 전 파일의
+               크기·체크섬은 판이 낸다). Windows 의 「미서명」 표식만은 여기서도
+               뗄 수 없다 — 서명 상태는 받기 전에 알아야 하는 사실이라서다. */
+            <div
+              data-testid="gateway-hero-alt-row"
+              className={cn(rise('gateway-t800'), 'mt-2.5 flex flex-wrap items-center gap-2.5')}
+            >
+              {heroWindowsPrimary ? (
+                <a
+                  href={primaryAsset.downloadUrl}
+                  data-testid="gateway-hero-macos-aarch64"
+                  className={cn(buttonVariants({ variant: 'outline', size: 'md' }), 'touch-hit-expand rounded-chip px-4')}
+                >
+                  <Download size={ICON_SIZE.md} aria-hidden />
+                  {t('primaryCtaPublished')}
+                </a>
+              ) : null}
+              <HeroIntelLink />
+              {!heroWindowsPrimary && windowsInstaller ? (
+                <a
+                  href={windowsInstaller.downloadUrl}
+                  data-testid="gateway-hero-windows"
+                  className={cn(buttonVariants({ variant: 'outline', size: 'md' }), 'touch-hit-expand rounded-chip px-4')}
+                >
+                  <Download size={ICON_SIZE.md} aria-hidden />
+                  {t('windowsDownloadCta')}
+                  <span className="font-mono text-label leading-label text-[color:var(--color-text-tertiary)]">
+                    {t('windowsUnsignedShort')}
+                  </span>
+                </a>
+              ) : null}
+              {/* 관문의 둘째 약속 — 설치 없이 보는 길이 항상 열려 있다. 종전
+                  `webCta` 는 미게시 분기에만 살아서 게시된 지금은 절대 안
+                  나왔다(소유자: *"웹 플레이그라운드 보기 버튼이 없음"*).
+                  라벨이 `webCta` 보다 짧은 것은 줄 예산이다 — 긴 라벨이면 이
+                  줄이 ko 575px 단에서 홀로 셋째 줄로 떨어진다(실측 1512). */}
+              <Link
+                href="/topology"
+                data-testid="gateway-hero-web-cta"
+                className={cn(buttonVariants({ variant: 'outline', size: 'md' }), 'touch-hit-expand rounded-chip px-4')}
+              >
+                {t('heroWebCta')}
+              </Link>
+            </div>
+          ) : null}
+
+          <p
+            className={cn(
+              rise('gateway-t950'),
+              'mt-5 break-keep text-body leading-body text-[color:var(--color-text-tertiary)]',
+            )}
+          >
+            {/* 신뢰줄 자리 = 「누르기 전에 알아야 하는 사실」. 승자가 Windows 면
+                Apple 서명 문장은 그 파일의 사실이 아니다 — 미서명·SmartScreen
+                경고가 그 자리의 정직한 문장이다. */}
+            {heroWindowsPrimary ? t('trustLineWindows') : t('trustLine')}
+          </p>
+        </div>
+
+        <div className="min-w-0">
+          <HeroObject graph={graph} />
+        </div>
+      </div>
+
+      <FactsStrip published={published} primaryAsset={primaryAsset} heroIn={heroIn} />
+    </section>
+  );
+}
+
+/**
+ * 히어로 둘째 줄의 Intel Mac 파일 — 감지 분기와 무관하게 항상 선다.
+ * 브라우저는 맥의 칩을 판별할 수 없으므로(아키텍처 안내 주석) Apple Silicon
+ * 이 기본이고 Intel 은 감지가 아니라 **상시 노출**로 손이 닿는다.
+ */
+function HeroIntelLink() {
+  const t = useTranslations('download');
+  const intel = macosAssetFor('x64');
+  if (!intel) return null;
+
+  return (
+    <a
+      href={intel.downloadUrl}
+      data-testid="gateway-hero-macos-x64"
+      className={cn(buttonVariants({ variant: 'outline', size: 'md' }), 'touch-hit-expand rounded-chip px-4')}
+    >
+      <Download size={ICON_SIZE.md} aria-hidden />
+      {t('archIntelCta')}
+    </a>
+  );
+}
+
+/**
+ * 음각 계기 스트립 — **등장(950ms) 후 영구 정지.** 사실은 절대 움직이지 않는다:
+ * 버전·날짜·최소 OS·크기·SHA-256 전부 릴리스 생성 모듈에서 온 값이고, 미게시
+ * 상태에서는 정직하게 줄어든다(없는 파일의 크기·체크섬 행은 존재하지 않는다).
+ *
+ * census 는 여기 없다 — 그 숫자의 캡션은 **자기가 세는 지도와 같은 절**(③)에
+ * 산다(소유자 확정). 한 페이지에 같은 정의가 두 번 적히면 둘 다 각주가 된다.
+ */
+function FactsStrip({
+  published,
+  primaryAsset,
+  heroIn,
+}: {
+  published: boolean;
+  primaryAsset: ReturnType<typeof macosAssetFor>;
+  heroIn: boolean;
+}) {
+  const t = useTranslations('download');
+  const format = useFormatter();
+  const publishedAt = macosPublishedDate();
+
+  const version = published
+    ? [
+        MACOS_RELEASE.tag,
+        publishedAt
+          ? format.dateTime(publishedAt, {
+              year: 'numeric',
+              month: 'short',
+              day: 'numeric',
+              timeZone: 'UTC',
+            })
+          : null,
+      ]
+        .filter(Boolean)
+        .join(' · ')
+    : `${resolveDisplayReleaseTag({
+        published: false,
+        publishedTag: MACOS_RELEASE.tag,
+        releaseVersion: RELEASE_VERSION,
+      })} · ${t('factUnpublished')}`;
+
+  const facts: { label: string; value: string }[] = [
+    { label: 'Version', value: version },
+    { label: 'Requires', value: `${RELEASE_MIN_MACOS}${t('factMinOsSuffix')}` },
+  ];
+  if (published && primaryAsset) {
+    facts.push({ label: 'DMG', value: formatAssetSize(primaryAsset.sizeBytes) });
+    facts.push({
+      label: 'SHA-256',
+      value: `${primaryAsset.sha256.slice(0, 8)}…${primaryAsset.sha256.slice(-8)}`,
+    });
+  }
+
+  return (
+    <div className={cn('gateway-rise gateway-t950', heroIn && 'is-in', 'w-full')}>
+      <dl
+        data-testid="gateway-facts"
+        className={cn(
+          PAGE_COLUMN,
+          'flex flex-wrap gap-x-12 gap-y-4 border-t border-[color:var(--color-border-soft)] py-5',
+        )}
+      >
+        {facts.map((fact) => (
+          <div key={fact.label} className="min-w-0">
+            <dt className="font-mono text-caption uppercase leading-caption tracking-[var(--tracking-caps-14)] text-[color:var(--color-text-quaternary)]">
+              {fact.label}
+            </dt>
+            <dd
+              data-token="engraved-numeral"
+              className="mt-1 font-mono text-body leading-body text-[color:var(--engraved-numeral-face)] [text-shadow:var(--engraved-numeral-text-shadow)]"
+            >
+              {fact.value}
+            </dd>
+          </div>
+        ))}
+      </dl>
+    </div>
+  );
+}
+
+// ─── ② 시연 — 보이면 스스로 재생 ────────────────────────────────────────────
+
+function DemoSection() {
+  const t = useTranslations('download');
+  const { ref, inView } = useInViewOnce<HTMLElement>();
+
+  return (
+    <section
+      id="demo"
+      ref={ref}
+      data-testid="gateway-demo-section"
+      className={cn(PAGE_GUTTER, SECTION_GAP, 'w-full scroll-mt-24')}
+    >
+      <div className={cn(PAGE_COLUMN, 'min-w-0')}>
+        <SectionIntro eyebrow="Demo" title={t('demoTitle')} sub={t('demoSub')} inView={inView} />
+        <div className={cn('gateway-rise gateway-rise-d3', inView && 'is-in', 'mt-9')}>
+          <DemoStage />
+        </div>
+      </div>
+    </section>
+  );
+}
+
+// ─── ③ 증거 — 지도가 눈앞에서 조립되고, 끝나는 순간 숫자가 온다 ─────────────
+
+/**
+ * 지도는 첫 화면에서 빠졌지만(소유자 콜) 사라진 것이 아니다 — **증거**로서
+ * 자기 절을 갖는다. 절이 뷰포트에 들어오면 실제 엔진(`StageMap` →
+ * `TopologyMapV2`)의 도착 안무(E1 호밍 스프링)가 1회 발화하고, census 캡션은
+ * 조립이 끝난 뒤(1400ms) 도착한다 — 숫자는 조립의 **결과**라서다.
+ *
+ * 캡션의 정직성 계약은 리메이크 전과 같다: 캡션이 세는 숫자와 지도가 그리는
+ * 그래프가 `useStageGraph()` 한 훅에서 나온다.
+ */
+function EvidenceSection({ graph }: { graph: StageGraph }) {
+  const t = useTranslations('download');
+  const { ref, inView } = useInViewOnce<HTMLDivElement>(0.25);
+  const [captionIn, setCaptionIn] = useState(false);
+
+  useEffect(() => {
+    if (!inView) return;
+    const reduced =
+      typeof matchMedia === 'function' &&
+      matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const id = window.setTimeout(() => setCaptionIn(true), reduced ? 0 : 1400);
+    return () => window.clearTimeout(id);
+  }, [inView]);
+
+  return (
+    <section
+      id="evidence"
+      data-testid="gateway-evidence-section"
+      className={cn(PAGE_GUTTER, SECTION_GAP, 'w-full scroll-mt-24')}
+    >
+      <div className={cn(PAGE_COLUMN, 'min-w-0')}>
+        <SectionIntro
+          eyebrow="Evidence"
+          title={t('evidenceTitle')}
+          sub={t('evidenceSub')}
+          inView={inView}
+        />
+
+        {/*
+         * 지도 55 / 실데이터 45 (2026-08-18 소유자 지적 — 전폭 프레임에서
+         * 그래프가 폭의 20%만 쓰고 80%가 빈 검정이었다). 절반은 그래프가
+         * 정방형에 가까운 틀을 얻어 bbox 맞춤으로 채우고(카메라·티어 공개는
+         * `StageMap`·`--topology-v2-overview-entry-ratio`), 나머지 절반은 같은
+         * 그래프에서 파생한 실데이터(종류 census · 관계 원문 · 영향 반경)가
+         * 채운다 — 이 절의 이름이 「증거」다.
+         */}
+        <div
+          ref={ref}
+          className="mt-9 grid min-w-0 gap-8 lg:grid-cols-[minmax(0,11fr)_minmax(0,9fr)] lg:gap-12"
+        >
+          <div
+            data-testid="download-stage-map-frame"
+            className="relative h-[24rem] min-w-0 overflow-hidden rounded-panel border border-[color:var(--color-border-soft)] md:h-[30rem] lg:h-[34rem]"
+          >
+            <StageMap graph={graph} />
+          </div>
+          <EvidenceRail graph={graph} inView={inView} />
+        </div>
+
+        {/* [download-honesty] 이 숫자는 바로 위에 그려진 그래프 자신이다 —
+            출처·범위 라벨·촉각 힌트의 계보는 리메이크 전 주석과 원장에 있다. */}
+        <p
+          data-testid="download-portrait-caption"
+          className={cn('gateway-map-after', captionIn && 'is-in', 'pointer-events-none mt-5')}
+        >
+          <span className="flex flex-wrap items-baseline gap-x-3 gap-y-1 font-mono text-caption leading-caption text-[color:var(--color-text-quaternary)]">
+            <span>docs/ontology</span>
+            <span aria-hidden>·</span>
+            <span
+              data-token="engraved-numeral"
+              className="text-[color:var(--engraved-numeral-face)] [text-shadow:var(--engraved-numeral-text-shadow)]"
+            >
+              {t('portraitCensus', {
+                concepts: graph.nodes.length,
+                relations: graph.edges.length,
+              })}
+            </span>
+            <span aria-hidden>·</span>
+            <span className="min-w-0 break-keep text-[color:var(--color-text-tertiary)]">
+              {t('portraitHint')}
+            </span>
+            <span aria-hidden>·</span>
+            <span className="min-w-0 break-keep">{t('portraitScope')}</span>
+          </span>
+        </p>
+      </div>
+    </section>
+  );
+}
+
+/**
+ * 증거 레일 — 지도 옆 절반을 채우는 **같은 그래프의 다른 표현**. 숫자·관계·
+ * 이름은 전부 `buildEvidenceRailModel` 이 왼쪽 지도와 같은 `StageGraph` 에서
+ * 파생한다(장식 0 — 이 절의 이름이 증거라서다). 표기 문법은 계기 스트립과
+ * 같다: 라벨은 본문 서체, 숫자는 음각 mono. 한글 라벨에 mono 를 걸지 않는
+ * 이유는 `ReleaseFactLine` 의 주석과 같다 — 한글은 mono 폴백으로 서체가 섞인다.
+ *
+ * ## 치수 — 각주가 아니라 둘째 리드다 (2026-08-18 소유자: *"너무 작아서"*)
+ *
+ * 첫 판은 계기 스트립의 치수(caption 9.5 · label 11 · body-lg 14)를 그대로
+ * 입었는데, 계기 스트립은 히어로의 **각주**이고 이 레일은 「증거」 절의 오른쪽
+ * **절반**이다 — 같은 옷이 여기서는 위계 미달이다. 램프 안에서 전 단을 한
+ * 칸씩 올린다(새 스텝 0): 절 머리 caption→label, 이름 label→body,
+ * 숫자 body-lg→title, 관계 원문 body→body-lg, 영향 문장 body-lg→title.
+ */
+function EvidenceRail({ graph, inView }: { graph: StageGraph; inView: boolean }) {
+  const t = useTranslations('download');
+  const tKind = useTranslations('kinds');
+  const model = useMemo(() => buildEvidenceRailModel(graph), [graph]);
+
+  return (
+    <div
+      data-testid="download-evidence-rail"
+      className={cn('gateway-rise gateway-rise-d3', inView && 'is-in', 'min-w-0 lg:self-center')}
+    >
+      <div className="border-t border-[color:var(--color-border-soft)] py-6">
+        <h3 className="font-mono text-label uppercase leading-label tracking-[var(--tracking-caps-14)] text-[color:var(--color-text-quaternary)]">
+          {t('evidenceKindsHeading')}
+        </h3>
+        <dl className="mt-4 flex flex-wrap gap-x-12 gap-y-3">
+          {model.census.map((row) => (
+            <div key={row.kind} className="min-w-0">
+              <dt className="break-keep text-body leading-body text-[color:var(--color-text-tertiary)]">
+                {tKind(row.kind)}
+              </dt>
+              <dd
+                data-token="engraved-numeral"
+                className="mt-1 font-mono text-title leading-title text-[color:var(--engraved-numeral-face)] [text-shadow:var(--engraved-numeral-text-shadow)]"
+              >
+                {row.count}
+              </dd>
+            </div>
+          ))}
+        </dl>
+      </div>
+
+      <div className="border-t border-[color:var(--color-border-soft)] py-6">
+        <h3 className="font-mono text-label uppercase leading-label tracking-[var(--tracking-caps-14)] text-[color:var(--color-text-quaternary)]">
+          {t('evidenceRelationsHeading')}
+        </h3>
+        <ul className="mt-4 grid gap-3">
+          {model.relations.map((line) => (
+            <li
+              key={`${line.source}-${line.type}-${line.target}`}
+              className="min-w-0 break-keep text-body-lg leading-body-lg text-[color:var(--color-text-secondary)]"
+            >
+              {line.source}
+              {/* 타입은 frontmatter 의 원문 그대로 — 번역하지 않는다. 타입 있는
+                  사실이 이 제품의 물건이고, 원문이 곧 증거다. */}
+              <span
+                aria-hidden
+                className="mx-1.5 font-mono text-body leading-body text-[color:var(--color-text-quaternary)]"
+              >
+                --{line.type}--&gt;
+              </span>
+              {line.target}
+            </li>
+          ))}
+        </ul>
+      </div>
+
+      {model.impact ? (
+        <div className="border-t border-[color:var(--color-border-soft)] py-6 pb-0">
+          <h3 className="font-mono text-label uppercase leading-label tracking-[var(--tracking-caps-14)] text-[color:var(--color-text-quaternary)]">
+            {t('evidenceImpactHeading')}
+          </h3>
+          <p className="mt-4 break-keep text-title font-normal leading-title text-[color:var(--color-text-secondary)]">
+            {t('evidenceImpactLine', { name: model.impact.name, count: model.impact.count })}
+          </p>
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
+// ─── ④ 에이전트 — 앱 안 대화(ACP) 실측 왕복 + 정지 카드 3장 ─────────────────
+
+/**
+ * 이 절의 생각 하나 (2026-08-18 재작업, `docs/DECISIONS.md`):
+ *
+ * > **에이전트가 앱 안에 산다 — 채팅만으로 온톨로지를 분석하고 고친다.**
+ *
+ * 직전 판은 `mcp-verify` 터미널이었고 소유자가 기각했다(*"이건 뭔말인지를
+ * 모르겠어"* — 개발자가 설정을 검증하는 장면이지 파는 장면이 아니다). 실물은
+ * 이미 있다: `AcpChatPanel`(앱 안 대화창) · `AcpRuntimeSettings` · 볼트
+ * capability 「앱 안 코딩 에이전트 실행기 (ACP)」. 장면(`AcpChatScene`)은
+ * 그 실물의 실측 왕복(원장 2026-08-16 (7)) 재연이다.
+ *
+ * 문구의 경계는 원장 2026-08-16 (5): ① 우리가 재배포하는 것 없음(어댑터는
+ * 사용자 기기에서 npx) ② 우리 실행기 목록을 설명하는 자리에 "Claude Code"
+ * 금지 — 레지스트리의 허용 이름(Claude Agent)만 ③ **「이미 쓰는 에이전트를
+ * 연결한다」** 위에만 선다 — 우리가 모델 접근을 제공한다는 인상 금지.
+ */
+function AgentSection() {
+  const t = useTranslations('download');
+  const { ref, inView } = useInViewOnce<HTMLElement>();
+
+  const columns = [
+    { title: t('col1Title'), body: t('col1Body'), code: t('col1Code') },
+    { title: t('col2Title'), body: t('col2Body'), code: t('col2Code') },
+    { title: t('col3Title'), body: t('col3Body'), code: 'git diff docs/ontology/' },
+  ];
+
+  return (
+    <section
+      id="agents"
+      ref={ref}
+      data-testid="gateway-agents-section"
+      className={cn(PAGE_GUTTER, SECTION_GAP, 'w-full scroll-mt-24')}
+    >
+      <div className={cn(PAGE_COLUMN, 'min-w-0')}>
+        <SectionIntro eyebrow="Agents" title={t('agentsTitle')} sub={t('agentsSub')} inView={inView} />
+
+        <div className={cn('gateway-rise gateway-rise-d3', inView && 'is-in', 'mt-9 max-w-[48rem]')}>
+          <AcpChatScene />
+        </div>
+        <p
+          className={cn(
+            'gateway-rise gateway-rise-d3',
+            inView && 'is-in',
+            'mt-5 max-w-[48rem] break-keep text-body-lg leading-body-lg text-[color:var(--color-text-tertiary)]',
+          )}
+        >
+          {t('agentsCap')}
+        </p>
+
+        {/* 카드 3장은 정지다 — 움직이는 것은 위 왕복 하나면 충분하다. */}
+        <div className="mt-14 grid min-w-0 gap-y-10 md:grid-cols-3">
+          {columns.map((column, i) => (
+            <div
+              key={column.title}
+              className={cn(
+                'min-w-0 md:px-8',
+                i === 0 && 'md:pl-0',
+                i > 0 && 'md:border-l md:border-[color:var(--color-border-soft)]',
+              )}
+            >
+              <h3 className="break-keep text-title font-[var(--font-weight-emphasis)] leading-title text-[color:var(--color-text-primary)]">
+                {column.title}
+              </h3>
+              <p className="mt-2.5 break-keep text-body-lg leading-body-lg text-[color:var(--color-text-secondary)]">
+                {column.body}
+              </p>
+              <code className="mt-4 block border-l border-[color:var(--color-border-strong)] pl-3 font-mono text-body leading-body text-[color:var(--color-text-tertiary)]">
+                {column.code}
+              </code>
+            </div>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+// ─── ⑤ 설치 + 다운로드 — 완전한 정지 ────────────────────────────────────────
+
+/**
+ * 네 절이 움직인 끝의 **완전한 정지**: 등장 안무 없음, 전이 없음. 정지가
+ * 「이제 결정하라」를 말하는 위계 장치다(소유자 골격 확정). 담는 것은 설치
+ * 3단 · 다운로드 판(릴리스 상태 분기 전부) · 검증 레일 · 저장소 출구다.
+ *
+ * ## 배치 — 오른쪽 절반을 비워 두지 않는다 (2026-08-18 소유자:
+ * *"우측 공백이 너무길잖아.. 아예 디자인을 다시해야함"* — 같은 병을 세 번째
+ * 지적받았다)
+ *
+ * 직전 판은 3단과 판을 판 폭(880)으로 통일했는데, 그 결과 컬럼의 오른쪽
+ * 절반이 통째로 빈 검정이 됐다. 판 폭은 게이트가 토큰으로 재는 상한이라
+ * (`--gateway-plate-width`) 답은 더 넓은 판이 아니라 **다른 배치**다:
+ *
+ * - 설치 3단은 컬럼 **전폭** 가로 한 줄로 복귀한다(원래 자기 자리).
+ * - 그 아래 [판 | 검증 레일] 두 칸 그리드가 같은 전폭을 쓴다 — 오른쪽 칸은
+ *   푸터 접이식에 접혀 있던 「받아도 되는 이유」(서명·공증·체크섬·프라이버시)
+ *   가 펼쳐진 채 올라온다. 결정하는 자리 바로 옆이 그 증명의 제자리다
+ *   (사실은 한 글자도 안 지웠다 — 자리만 옮겼다).
+ * - 모든 행의 오른끝이 컬럼 오른끝에서 멈춘다 — 「한 절 안 두 그리드」라는
+ *   직전 지적은 오른끝 정렬로 답한다.
+ */
+function InstallSection({
   published,
   primaryAsset,
 }: {
@@ -336,182 +892,30 @@ function PortraitStage({
   primaryAsset: ReturnType<typeof macosAssetFor>;
 }) {
   const t = useTranslations('download');
-  const graph = useStageGraph();
 
   return (
     <section
-      data-testid="download-stage"
-      className={cn(
-        'relative isolate flex w-full flex-col overflow-hidden border-b border-[color:var(--color-divider)] lg:flex-1',
-        // 값이 하나다 (2026-08-01). 종전엔 `/download` 만 34rem 으로 낮춰
-        // 설치 3단에 자리를 양보했는데, 그 조건부는 "이 주소에는 시연이 없다"
-        // 는 전제 위에 있었다. 시연이 두 주소 모두에 오면서 전제가 사라졌고,
-        // 접힘은 이제 높이 조건부가 아니라 게이트가 지키는 property
-        // (설치 3단이 접힘 위)로 관리된다.
-        'lg:min-h-[44rem]',
-      )}
+      id="download"
+      data-testid="gateway-install-section"
+      className={cn(PAGE_GUTTER, SECTION_GAP, 'w-full scroll-mt-24')}
     >
-      {/*
-       * 지도의 자리가 폭에 따라 **바뀐다** (위계석 P6, 2026-07-28 실측).
-       *
-       * `lg+` — 무대 전체를 덮는 배경. 판이 그 위에 뜬다.
-       * `<lg` — 판 **위**의 띠. 배경으로 두면 판이 무대의 68.7% 를 덮어서
-       *   화면에 남는 지도가 오른쪽 끝에 반쯤 잘린 클러스터 칩 하나뿐이었다.
-       *   그 위에서 리드가 "뒤에 보이는 지도는…" 이라고 말했다 — **없는 것을
-       *   가리키는 헤드라인은 죽은 CTA 와 같은 등급의 결함**이다.
-       *
-       * 리드 문구도 같이 고쳤다: "뒤에 보이는" 을 뺐다. 방위를 말하면 두 배치
-       * 중 하나에서 반드시 틀리므로, 어느 쪽에서도 참인 "이 지도는" 으로 쓴다.
-       */}
-      <div className="relative h-[17rem] w-full shrink-0 border-b border-[color:var(--color-divider)] lg:absolute lg:inset-0 lg:h-auto lg:border-b-0">
-        <StageMap graph={graph} />
-      </div>
-
-      {/* 지도의 자기 캡션 — **지도 바로 뒤**에 온다.
-
-          ⚠️ DOM 순서가 지도 다음인 이유: `<lg` 에서 지도는 흐름 안의 띠이고
-          판이 그 아래 오는데, 캡션을 무대 맨 끝에 두면 지도를 설명하는 줄이
-          판을 건너뛰어 **600px 아래 고아**가 된다(실측 390px). 데스크톱에서는
-          지도가 절대 배치(흐름 밖)라 흐름은 판 하나뿐이므로, `lg:order-last`
-          로 캡션을 판 아래 바닥에 돌려놓는다 — 두 폭 모두에서 캡션이 자기가
-          설명하는 것 옆에 붙는다. 배경이 무엇인지 말하지 않으면 그건
-          증거가 아니라 벽지다.
-
-          ⚠️ **정상 흐름**이다(absolute 아님). 절대 배치로 바닥에 붙였더니
-          390px 에서 판이 길어지면서 캡션과 11px 겹쳤다(실측 2026-07-28) —
-          겹침은 결함이고, 폭마다 판 높이가 달라지는 표면에서 절대 배치는
-          그 결함을 폭의 함수로 만든다. 흐름에 두면 어느 폭에서도 겹칠 수 없다.
-
-          [download-honesty] 이 숫자는 **바로 옆에 그려진 그래프 자신**이다
-          (2026-07-29 평결 ①). 예전엔 빌드 스크립트가 센 frontmatter 파일 수(96)를
-          적었는데, 지도가 그리는 것은 그 파일들에서 **파생된** 그래프(287 노드)라
-          한 화면에 정의가 둘이었다. 허브 각인이 `379` 를 말하고 그 옆 캡션이
-          `96` 을 말하던 4배 모순의 뿌리가 이것이다 — 재귀 버그는 그 위에 얹힌
-          두 번째 층이었을 뿐이다. 자기 폴더를 열면 자기 그래프의 숫자가
-          같은 규칙으로 나온다(그래서 뒷절이 "내 숫자가 보여요" 다).
-
-          ⚠️ **그 뒷절의 범위는 「앱」이 아니다** (2026-08-08 카운슬). 오래
-          *"앱에서"* 라고만 적혀 있었는데 FSA 를 지원하는 브라우저는 이 웹에서도
-          폴더를 연다 — `surfaces.md` 의 「되는 것을 안 된다고 쓰는 것」이다.
-          이 화면에 폴더 여는 컨트롤을 **놓지 않기로** 한 판정과 짝이 되는
-          문장이라(길은 판 안 「웹버전으로 보기」 → 지도 첫 실행이 낸다), 범위를
-          좁게 쓰면 그 판정까지 거짓말이 된다. 명사는 바로 아래 버튼의 것을
-          그대로 재사용한다 — 새 크롬 없이 길을 가리키는 직접 라벨링이다. */}
-      <p
-        data-testid="download-portrait-caption"
-        className={cn(
-          PAGE_GUTTER,
-          'pointer-events-none relative shrink-0 pt-3 pb-4 lg:order-last lg:pt-0',
-        )}
-      >
-        <span
-          className={cn(
-            PAGE_COLUMN,
-            'flex flex-wrap items-baseline gap-x-3 gap-y-1 font-mono text-caption leading-caption text-[color:var(--color-text-quaternary)]',
-          )}
-        >
-          <span>docs/ontology</span>
-          <span aria-hidden>·</span>
-          <span
-            data-token="engraved-numeral"
-            className="text-[color:var(--engraved-numeral-face)] [text-shadow:var(--engraved-numeral-text-shadow)]"
-          >
-            {t('portraitCensus', {
-              concepts: graph.nodes.length,
-              relations: graph.edges.length,
-            })}
-          </span>
-          <span aria-hidden>·</span>
-          {/* 「만질 수 있음」의 **보이는** 지시자 (2026-07-28 모션석 처방 +
-              소유자 재보고 *"드래그도 되고 그랬으면 좋겠는데"* — 캡션의
-              흐린 절로는 여전히 안 읽혔다. 그래서 다른 절보다 한 단 밝게
-              두고 문구도 명령형으로 짧게 만든다).
-              그전까지 촉각 신호 셋이 전부 정지 프레임에서 안 보였다 —
-              `cursor: grab` 은 포인터가 이미 거기 있어야 발동하고,
-              `aria-label` 은 스크린리더 전용이고, 클러스터 힌트는 sr-only 다.
-              왼쪽 판을 보고 있는 방문자는 영영 모른다. 새 크롬을 만들지 않고
-              이미 있는 캡션 줄에 절을 하나 더한다(화살표·아이콘 없음). */}
-          <span className="min-w-0 break-keep text-[color:var(--color-text-tertiary)]">
-            {t('portraitHint')}
-          </span>
-          <span aria-hidden>·</span>
-          <span className="min-w-0 break-keep">{t('portraitScope')}</span>
-        </span>
-      </p>
-      {/*
-       * ⚠️ `pointer-events-none` 이 **이 무대의 드래그를 살리는 유일한 줄**이다.
-       *
-       * 이 래퍼는 판을 컬럼 안에 앉히려고 둔 투명 상자인데, 무대 **전폭**을
-       * 덮는다. 배경이 없어 눈에는 안 보이지만 포인터는 전부 여기서 멈춘다 —
-       * 실측(2026-07-29, `elementFromPoint`): 무대의 55% · 70% · 85% 지점 전부
-       * 캔버스가 아니라 이 div 가 잡혔다. 소유자가 *"클릭해서 움직이는것도
-       * 안되고 그냥 화면에 고정된 상태"* 라고 한 것이 정확히 이것이고,
-       * **드래그는 처음부터 한 번도 가능한 적이 없었다.**
-       *
-       * 내가 앞서 "드래그 작동 확인" 이라고 보고한 것은 캔버스 엘리먼트에
-       * 이벤트를 **직접 디스패치**해 핸들러만 확인한 것이었다 — 히트 테스트를
-       * 건너뛰었으므로 통과할 수밖에 없었다. 사람이 쓰는 경로를 안 잰 검증이다.
-       */}
-      <div
-        className={cn(
-          PAGE_GUTTER,
-          // `lg` 에서 여백을 더 주지 않는다: 무대가 `flex-1` 이라 넉넉한 창에서는
-          // 컬럼이 어차피 수직 중앙에 앉고, 패딩이 실제로 무는 것은 **짧은 창**
-          // 뿐이다 — 거기서 이 40px 두 겹이 곧 스크롤이다(실측 1512×850: py-12
-          // 이면 5px 초과).
-          'pointer-events-none relative flex min-w-0 flex-1 items-center py-10 [@media(min-width:64rem)_and_(max-height:56.25rem)]:py-3',
-        )}
-      >
-        <div className={PAGE_COLUMN}>
-          {/* 말 기둥과 판은 **같은 컬럼**이다 — 둘의 왼쪽 모서리도 오른쪽
-              모서리도 같은 선에 선다(원점 / 원점+480). 그 오른끝이 곧 카메라가
-              예약한 인셋(원점+480+24)의 짝이라, 원점이 자라면 둘이 함께
-              움직인다. `pointer-events-auto` 는 이 컬럼에만 — 바깥
-              래퍼가 무대 전폭을 덮는 투명 상자라 그대로 두면 드래그를 삼킨다
-              (2026-07-29 실측 전과: `elementFromPoint` 로만 잡히는 결함). */}
-          <div className={cn(STAGE_COLUMN, 'pointer-events-auto')}>
-            <StageWordmark />
+      <div className={cn(PAGE_COLUMN, 'min-w-0')}>
+        <SectionIntro eyebrow="Install" title={t('installTitle')} still />
+        <InstallTrack />
+        {/*
+         * 7:5 — 판(결정)이 주, 레일(증명)이 부라는 위계를 폭이 말한다.
+         * 1512(컬럼 1112)에서 왼 620 · 오른 444: 판의 CTA 행(두 버튼)이 ko/en
+         * 모두 한 줄에 서고, 레일의 체크섬 행은 SHA 가 truncate 라 폭에
+         * 관대하다. `<lg` 는 판 → 레일 세로 쌓임.
+         */}
+        <div className="mt-10 grid min-w-0 items-start gap-10 lg:grid-cols-[minmax(0,7fr)_minmax(0,5fr)] lg:gap-12">
+          <div className={cn(STAGE_COLUMN, 'min-w-0')}>
             <DownloadPlate published={published} primaryAsset={primaryAsset} />
           </div>
+          <VerifyRail published={published} primaryAsset={primaryAsset} />
         </div>
       </div>
     </section>
-  );
-}
-
-/**
- * **말 기둥** — 판 밖, 지도 위 (2026-07-29 카운슬 평결 ③).
- *
- * 예전엔 헤드라인·리드가 다운로드 판 **안**에 살았다. 그러면 카드 하나가 두
- * 가지 일을 한다: 제품을 파는 일과 파일을 건네는 일. 둘의 무게가 같아지면
- * 카드는 "무엇을 결정하는 자리인지" 를 말하지 못하고, 실제로 그 판은 530px 로
- * 자라 무대의 72% 를 덮었다.
- *
- * 이제 파는 말은 캔버스 위에 직접 서고, 판은 거래만 담는다. 헤드라인이
- * **배경을 가리킬 수 있는 것**도 이 배치라야 참이다 — 카드 안에서 배경을
- * 가리키면 그건 카드 이야기지 화면 이야기가 아니다.
- *
- * 말 기둥의 리듬은 8 / 16 / 32 다: eyebrow→H1 은 한 덩어리라 가장 가깝고,
- * H1→리드는 한 호흡, 리드→판은 **말에서 거래로 넘어가는 유일한 경계**라 그
- * 두 배다.
- */
-function StageWordmark() {
-  const t = useTranslations('download');
-
-  return (
-    <div className="min-w-0">
-      <p className="font-mono text-caption uppercase leading-caption tracking-[var(--tracking-caps-16)] text-[color:var(--color-text-quaternary)]">
-        {t('eyebrow')}
-      </p>
-      {/* 헤드라인이 **배경을 가리킨다** — 이 문장이 성립하려면 뒤에 실제 지도가
-          있어야 하고, 그래서 배경은 지울 수 없는 구성 요소가 된다. */}
-      <h1 className="mt-2 whitespace-pre-line text-display leading-display-tight font-[var(--font-weight-signature)] tracking-[var(--tracking-display)] text-[color:var(--color-text-primary)] md:text-hero-lg md:leading-hero-lg md:tracking-[var(--tracking-hero)]">
-        {t('stageTitle')}
-      </h1>
-      <p className="mt-4 break-keep text-body leading-body text-[color:var(--color-text-tertiary)]">
-        {t('stageLead')}
-      </p>
-    </div>
   );
 }
 
@@ -524,7 +928,9 @@ function StageWordmark() {
  * 띄운다.
  *
  * 이제 담는 것은 **거래 다섯 줄**뿐이다: CTA 쌍 · 사실줄 · 신뢰 · 플랫폼 ·
- * 괘선+출구. 파는 말은 위 `StageWordmark` 가 가졌다.
+ * 괘선+출구. 파는 말은 위 네 절이 이미 끝냈다 — 여기서부터는 결정만 남는다.
+ * (리메이크 2026-08-18: 판은 더 이상 지도 위에 뜨지 않고 설치 절의 흐름에
+ * 앉는다. 불투명 규율은 그대로 지킨다 — 뒤에 전류장이 지나가기 때문이다.)
  */
 function DownloadPlate({
   published,
@@ -538,7 +944,7 @@ function DownloadPlate({
       data-testid="download-plate"
       // `<sm` 의 `p-4` 는 취향이 아니라 산술이다 — 320px 에서 판 실질 폭이
       // 곧 CTA 가 들어갈 자리이고, `p-6` 이면 영어 라벨이 22px 넘친다(실측).
-      className="mt-8 min-w-0 rounded-panel border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] p-4 shadow-[var(--shadow-elevation-2)] sm:p-6 md:p-7 [@media(min-width:64rem)_and_(max-height:56.25rem)]:mt-4 [@media(min-width:64rem)_and_(max-height:56.25rem)]:py-4"
+      className="min-w-0 rounded-panel border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] p-4 shadow-[var(--shadow-elevation-2)] sm:p-6 md:p-7 [@media(min-width:64rem)_and_(max-height:56.25rem)]:py-4"
     >
       {published && primaryAsset ? (
         <PublishedActions primaryAsset={primaryAsset} />
@@ -567,14 +973,38 @@ function PublishedActions({
     <div data-testid="download-hero-actions" className="min-w-0">
       <PlatformHeading title={t('macosPlatformTitle')} status={t('macosTrustBadge')} />
       <div className="flex min-w-0 flex-wrap items-center gap-2.5">
+        {/*
+         * **채운 인디고는 이 판이 아니라 히어로가 진다** (2026-08-18).
+         *
+         * 절 단위 서사로 펴면서 같은 행동·같은 라벨·같은 250×44 의 채워진
+         * 인디고가 한 문서에 **둘**이 됐다(`gateway-hero-cta` + 여기).
+         * 「주 CTA 가 둘이면 하나는 거짓말이다」에 걸린다 —
+         * `screen-hierarchy.spec.ts` ②.
+         *
+         * 어느 쪽을 내릴지는 2026-08-08 편집 화면의 선례를 그대로 따랐다:
+         * 같은 행동이 두 번 나오면 **먼저 만나는 쪽**이 채운 것을 지고 되풀이는
+         * `outline` 으로 내려온다. 여기서 먼저 만나는 것은 히어로다 — 소유자가
+         * 이 리메이크에 건 요구 자체가 「첫 화면의 인상」이었다.
+         *
+         * 이 판이 약해지지 않는 이유: 앞의 네 절이 전부 움직인 뒤 여기서 화면이
+         * 정지하고, 버튼 둘레에 체크섬·크기·최소 OS·서명 상태가 다 깔린다.
+         * 무엇을 결정하는 자리인지는 테두리가 아니라 그 정지와 사실들이 말한다.
+         *
+         * **미게시 분기(`PendingActions`)는 그대로 채운 채다** — 거기엔 히어로가
+         * 질 채운 CTA 가 없어서 이 자리가 유일한 주 CTA 다(편집/만들기 선례의
+         * 후반부와 같은 판정).
+         */}
         <a
           href={primaryAsset.downloadUrl}
           data-testid="download-primary-cta"
-          className={cn(buttonVariants({ size: 'lg' }), 'rounded-chip px-4 sm:px-6')}
+          className={cn(
+            buttonVariants({ variant: 'outline', size: 'lg' }),
+            'rounded-chip px-4 sm:px-6',
+          )}
         >
           <Download size={ICON_SIZE.lg} aria-hidden />
           {t('primaryCtaPublished')}
-          <AssetSize bytes={primaryAsset.sizeBytes} onFill />
+          <AssetSize bytes={primaryAsset.sizeBytes} />
         </a>
         {/* 채운 인디고는 화면당 하나 — Intel 은 막히면 안 되므로 같은 자리에
             두되 무게만 낮춘다. */}
@@ -732,7 +1162,15 @@ function PlateExitRow({ published }: { published: boolean }) {
        * 52rem(832px)은 실측 임계(≈825px)에 여유를 둔 값이고, 그 아래에서는
        * `<sm` 과 같은 한 줄 쌓기가 된다 — 눌러 담기보다 낫다.
        */
-      className="mt-5 grid min-w-0 grid-cols-1 gap-2.5 border-t border-[color:var(--color-divider)] pt-3.5 [@media(min-width:52rem)]:grid-cols-[1.08fr_0.92fr] [@media(min-width:64rem)_and_(max-height:56.25rem)]:mt-3 [@media(min-width:64rem)_and_(max-height:56.25rem)]:pt-2.5"
+      /*
+       * 2026-08-18: 두 칸 스트레치(1.08fr/0.92fr · h-11)를 반납했다 — 실측에서
+       * 출구 두 버튼이 판에서 가장 넓은 컨트롤이 되어 주 CTA(받기)와 경쟁했다
+       * (소유자: *"난잡한데?"* — 이 절의 주 행동은 받기 하나다). 출구는 셋째
+       * 위계이므로 `md`(h-10, 받기보다 한 단 낮음 — 2026-07-29 원 처방으로
+       * 복귀) + 내용만큼의 폭 + 왼쪽 정렬로 내려간다. 구 52rem 임계는 칸
+       * 스트레치의 여백 산수였으므로 칸과 함께 은퇴한다.
+       */
+      className="mt-5 flex min-w-0 flex-wrap items-center gap-2.5 border-t border-[color:var(--color-divider)] pt-3.5 [@media(min-width:64rem)_and_(max-height:56.25rem)]:mt-3 [@media(min-width:64rem)_and_(max-height:56.25rem)]:pt-2.5"
     >
       <a
         href={GITHUB_REPOSITORY_URL}
@@ -745,8 +1183,8 @@ function PlateExitRow({ published }: { published: boolean }) {
         // 2026-08-01 소유자 피드백으로 출구 둘을 같은 h-11 행에 올렸고, GitHub가
         // 조금 더 넓은 첫 칸을 가져 오픈소스 신뢰 경로임을 분명히 한다.
         className={cn(
-          buttonVariants({ variant: 'outline', size: 'lg' }),
-          'min-w-0 justify-center rounded-chip px-4 sm:px-6',
+          buttonVariants({ variant: 'outline', size: 'md' }),
+          'touch-hit-expand min-w-0 justify-center rounded-chip px-4',
         )}
       >
         {/* 14px 인 이유(원본은 16)는 마크 쪽 주석 — 이 자리에 있던 lucide
@@ -767,8 +1205,8 @@ function PlateExitRow({ published }: { published: boolean }) {
           href="/topology"
           data-testid="download-web-cta"
           className={cn(
-            buttonVariants({ variant: 'outline', size: 'lg' }),
-            'min-w-0 justify-center rounded-chip px-4 sm:px-6',
+            buttonVariants({ variant: 'outline', size: 'md' }),
+            'touch-hit-expand min-w-0 justify-center rounded-chip px-4',
           )}
         >
           {t('windowsBrowserFallback')}
@@ -980,21 +1418,38 @@ function InstallTrack() {
   const t = useTranslations('download');
 
   const steps = [
-    { i: '01', label: t('step1Title') },
-    { i: '02', label: t('step2Title') },
-    { i: '03', label: t('step3Title') },
+    { i: '01', label: t('step1Title'), body: t('step1Body') },
+    { i: '02', label: t('step2Title'), body: t('step2Body') },
+    { i: '03', label: t('step3Title'), body: t('step3Body') },
   ];
 
   return (
-    <section data-testid="download-install" aria-label={t('installTitle')}>
-      <ol className="grid grid-cols-1 gap-x-10 gap-y-2 sm:grid-cols-3">
+    /*
+     * 컬럼 **전폭** 복귀 (2026-08-18 3차). 직전 판이 3단을 판 폭(880)으로
+     * 내렸던 근거(*"난잡한데?"* — 한 절 안 두 그리드)는 오른쪽 절반을 통째로
+     * 비우는 대가를 치렀고, 소유자가 그 빈 공간을 다시 지적했다. 이제 절의
+     * 두 행(3단 · 판+검증 레일)이 **같은 전폭**을 쓰고 같은 오른끝에서
+     * 멈추므로, 겹치는 그리드도 빈 절반도 없다(`InstallSection` 독블록).
+     */
+    <section
+      data-testid="download-install"
+      aria-label={t('installTitle')}
+      className="mt-9 w-full min-w-0"
+    >
+      <ol className="grid min-w-0 grid-cols-1 gap-6 sm:grid-cols-3 sm:gap-9">
         {steps.map((step) => (
-          <li key={step.i} className="flex min-w-0 items-baseline gap-3">
-            <span className="shrink-0 font-mono text-label leading-label text-[color:var(--engraved-numeral-face)] [text-shadow:var(--engraved-numeral-text-shadow)]">
+          <li
+            key={step.i}
+            className="min-w-0 border-t border-[color:var(--color-border-strong)] pt-4"
+          >
+            <span className="block font-mono text-label leading-label tracking-[var(--tracking-caps-12)] text-[color:var(--engraved-numeral-face)] [text-shadow:var(--engraved-numeral-text-shadow)]">
               {step.i}
             </span>
-            <span className="min-w-0 break-keep text-label leading-label text-[color:var(--color-text-secondary)]">
+            <span className="mt-2 block min-w-0 break-keep text-title font-[var(--font-weight-emphasis)] leading-title text-[color:var(--color-text-primary)]">
               {step.label}
+            </span>
+            <span className="mt-1.5 block min-w-0 break-keep text-body-lg leading-body-lg text-[color:var(--color-text-tertiary)]">
+              {step.body}
             </span>
           </li>
         ))}
@@ -1003,16 +1458,27 @@ function InstallTrack() {
   );
 }
 
-// ─── 검증 — 푸터의 접이식 ─────────────────────────────────────────────────────
+// ─── 검증 레일 — 설치 절의 오른쪽 칸 ─────────────────────────────────────────
 
 /**
- * 벽이 아니라 **각주**다. 소유자 판정("이 페이지는 서비스를 홍보해야지")에
- * 따라 본문에서 내려왔지만 삭제하지는 않았다 — 서명·공증·체크섬은 이 제품이
- * 레퍼런스 8곳 중 유일하게 페이지에 내는 사실이라, 확인하러 온 사람에게는
- * 여전히 여기 있어야 한다. 닫힌 기본값 + 요약 한 줄이 그 둘을 다 만족한다.
+ * 「받아도 되는 이유」 — 서명·공증·체크섬·프라이버시의 증명 목록.
+ *
+ * ## 자리의 역사
+ *
+ * 2026-07-29 소유자 판정("이 페이지는 서비스를 홍보해야지")으로 본문에서
+ * 푸터 접이식으로 내려갔고, 2026-08-18 설치 절 재배치에서 **판 옆으로
+ * 돌아왔다** — 접힌 각주가 아니라 펼쳐진 레일로. 두 판정은 충돌하지 않는다:
+ * 그때 내려간 이유는 검증이 **결정을 가렸기** 때문이고(판 위에 얹힌 벽),
+ * 지금 자리는 결정(판)의 **옆**이라 가리는 것 없이 오른쪽 절반의 빈 검정을
+ * 실사실로 채운다(소유자: *"우측 공백이 너무길잖아"*). 서명·공증·체크섬은
+ * 레퍼런스 8곳 중 이 제품만 페이지에 내는 사실이다 — 각주로 접어 두기에는
+ * 아깝고, 받기 직전이 정확히 그 증명이 필요한 순간이다.
+ *
+ * 표기 문법은 증거 절 레일과 같다(mono caps 절 머리 + 괘선 행) — 두 레일이
+ * 같은 문법이면 페이지가 「왼쪽 = 물건 · 오른쪽 = 근거」 를 한 벌로 말한다.
  */
 
-function VerifyDetails({
+function VerifyRail({
   published,
   primaryAsset,
 }: {
@@ -1035,17 +1501,12 @@ function VerifyDetails({
   const verifyFileName = primaryAsset?.fileName ?? buildDmgName('aarch64');
 
   return (
-    <details data-testid="download-trust" className="group min-w-0">
-      <summary className="touch-hit-expand inline-flex list-none items-center gap-1.5 text-label leading-label text-[color:var(--color-text-tertiary)] transition-colors hover:text-[color:var(--color-text-primary)] [&::-webkit-details-marker]:hidden">
-        <ChevronRight
-          size={ICON_SIZE.sm}
-          aria-hidden
-          className="shrink-0 transition-transform group-open:rotate-90"
-        />
+    <div data-testid="download-trust" className="min-w-0 border-t border-[color:var(--color-border-soft)] pt-5">
+      <h3 className="font-mono text-label uppercase leading-label tracking-[var(--tracking-caps-14)] text-[color:var(--color-text-quaternary)]">
         {t('trustHeading')}
-      </summary>
+      </h3>
 
-      <div className="mt-3">
+      <div className="mt-4">
         <TrustFact label={t('proofSigned')} note={t('trustSignedNote')} />
         <TrustFact
           label={t('proofNotarized')}
@@ -1093,27 +1554,39 @@ function VerifyDetails({
          * 둘 다 만족한다. 결정하는 사람은 안 읽고, 막힌 사람은 찾아온다.
          */}
         <TrustFact label={t('archHelpTitle')} body={t('archHelpBody')} last />
-
-        <p className="mt-3 break-keep text-label leading-label text-[color:var(--color-text-quaternary)]">
-          {published
-            ? t('trustPolicyPublished', { tag: MACOS_RELEASE.tag })
-            : /* 위 미게시 주석과 같은 이유 — 아직 안 나온 빌드는 개발 중 버전으로 부른다. */
-              t('trustPolicyPending', {
-                  tag: resolveDisplayReleaseTag({
-                    published: false,
-                    publishedTag: MACOS_RELEASE.tag,
-                    releaseVersion: RELEASE_VERSION,
-                  }),
-                })}
-        </p>
-        {/* 판에서 내려온 정책 절 — "같은 기준을 통과할 때 올립니다" 는 결정
-            재료가 아니라 정책 산문이라 여기 산다(fable 판정 2026-07-29).
-            판에는 결정 사실 둘만 남는다: 없다 · 어디서 추적하나. */}
-        <p className="mt-2 break-keep text-label leading-label text-[color:var(--color-text-quaternary)]">
-          {t('windowsPolicy')}
-        </p>
       </div>
-    </details>
+    </div>
+  );
+}
+
+/**
+ * 릴리스 정책 산문 — 콜로폰의 것이다 (fable 판정 2026-07-29: 정책 산문은
+ * 결정 재료가 아니다). 검증 레일이 판 옆으로 올라가면서(2026-08-18) 이 두
+ * 문장까지 따라 올라가면 레일이 다시 벽이 되므로, 산문만 각주 자리에 남는다.
+ * 사실은 한 글자도 안 지웠다 — 문장 그대로 자리만 다르다.
+ */
+function ReleasePolicyNotes({ published }: { published: boolean }) {
+  const t = useTranslations('download');
+
+  return (
+    <>
+      <p className="mt-3 break-keep text-label leading-label text-[color:var(--color-text-quaternary)]">
+        {published
+          ? t('trustPolicyPublished', { tag: MACOS_RELEASE.tag })
+          : /* 미게시 태그 주석(`PendingActions`)과 같은 이유 — 아직 안 나온
+               빌드는 개발 중 버전으로 부른다. */
+            t('trustPolicyPending', {
+                tag: resolveDisplayReleaseTag({
+                  published: false,
+                  publishedTag: MACOS_RELEASE.tag,
+                  releaseVersion: RELEASE_VERSION,
+                }),
+              })}
+      </p>
+      <p className="mt-2 break-keep text-label leading-label text-[color:var(--color-text-quaternary)]">
+        {t('windowsPolicy')}
+      </p>
+    </>
   );
 }
 
@@ -1240,18 +1713,31 @@ function PlatformStatus() {
           title={t('windowsPlatformTitle')}
           status={t('windowsUnsignedBadge')}
         />
+        {/*
+          * 무채색 캡션이다 — 채운 앰버 상자가 아니다 (2026-08-18 소유자:
+          * *"어지러워"* / 디자인 처방). 이 절의 일은 「받게 하기」인데 앰버
+          * 면이 절에서 유일한 유채색이라 눈이 경고에 먼저 갔고, 맥 방문자
+          * 대부분에게는 해당조차 없는 사실이었다. 사실은 한 글자도 빼지 않고
+          * 잉크만 뺀다 — 버튼보다 먼저 온다는 DOM 순서(경고를 읽고 받는다)는
+          * 게이트가 고정한다(DownloadPage.test.tsx).
+          *
+          * `break-keep` + `break-words`: 앞은 「단어 안에서 끊지 마라」, 뒤는
+          * 「그래도 한 낱말이 칸을 넘치면 그때는 쪼개라」 (2026-08-12 실측).
+          */}
         <p
           id={warningId}
           role="note"
           data-testid="download-windows-unsigned-warning"
-          /*
-           * `break-keep` + `break-words` 는 서로 싸우지 않는다 — 앞은 「단어 안에서
-           * 끊지 마라」, 뒤는 「그래도 한 낱말이 칸을 넘치면 그때는 쪼개라」다.
-           * 이 문단은 폭 462px 에서 「실행|할」로 갈렸다(2026-08-12 실측).
-           */
-          className="mt-3 break-keep break-words rounded-card border border-[color:var(--color-amber-source-a25)] bg-[color:var(--color-amber-source-a08)] px-3.5 py-3 text-body leading-body text-[color:var(--color-amber-source-text-a95)] [@media(min-width:64rem)_and_(max-height:56.25rem)]:py-2"
+          className="mt-2.5 flex min-w-0 items-start gap-2 break-keep break-words text-label leading-label text-[color:var(--color-text-tertiary)]"
         >
-          {t('windowsUnsignedWarning')}
+          <ShieldAlert
+            size={ICON_SIZE.sm}
+            aria-hidden
+            className="mt-px shrink-0 text-[color:var(--color-text-quaternary)]"
+          />
+          <span className="min-w-0 max-w-[var(--measure-prose)]">
+            {t('windowsUnsignedWarning')}
+          </span>
         </p>
         <div className="mt-2.5 flex min-w-0 flex-col items-stretch gap-2 sm:items-start">
           <a

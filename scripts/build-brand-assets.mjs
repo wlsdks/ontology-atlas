@@ -52,11 +52,28 @@ export const STROKES = {
   microOuter: 64,
 };
 
-/** 단색 브랜드 컬러 — 브랜드 시트 명기값. 컴포넌트의 `BRAND_MARK_SOLID` 와 같다. */
-export const BRAND_SOLID = '#5E6AD2';
+/**
+ * 단색 브랜드 컬러 — 컴포넌트의 `BRAND_MARK_SOLID` 와 같다.
+ *
+ * 2026-08-18 에 인디고(`#5E6AD2`)에서 **잉걸(ember)** 로 교체했다. 근거는
+ * `docs/DECISIONS.md` 의 같은 날 기록 — 개발자 도구 랜딩 16곳을 실측하니
+ * 유채색 CTA 아홉이 전부 146°~262° 안에 몰려 있었고, 그중 우리 옛 인디고는
+ * Linear 의 브랜드 hex 와 **바이트 동일**한 데다 캔버스(`#08090a`)까지 같았다.
+ * 색상환의 따뜻한 절반(330°~120°)은 표본에서 **비어 있었다**.
+ */
+export const BRAND_SOLID = '#C14A24';
 
-export const GRADIENT_FROM = '#787EF6';
-export const GRADIENT_TO = '#3E4BDF';
+/**
+ * 브랜드 자산 전용 단일 hue 램프. `forbidden.md` 가 «앱 화면 밖(OS 아이콘 ·
+ * 파비콘 · og)에서만, 한 색의 밝기 램프까지» 로 열어 둔 그 예외다.
+ *
+ * 값은 옛 인디고 램프(`#787EF6` → `#3E4BDF`)를 **L\*(밝기)와 C\*(채도)를 보존한
+ * 채 색상각만** 잉걸(44.9°)로 돌려서 얻었다 — 그래야 마크의 명암 대비가 한 칸도
+ * 안 흔들린다. 어두운 끝은 순수 회전값(`#B52800`)이 너무 붉어서, 이미 등재된
+ * 악센트 눌림 값 `#A83E1D` 를 재사용한다(새 값을 지어내지 않는다).
+ */
+export const GRADIENT_FROM = '#E46238';
+export const GRADIENT_TO = '#A83E1D';
 
 /** 그라디언트는 userSpaceOnUse — 마크 바운딩박스 대각선을 따라 흐른다. */
 const gradientDef = (id) =>

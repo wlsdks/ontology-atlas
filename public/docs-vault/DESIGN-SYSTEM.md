@@ -741,16 +741,25 @@ Defined via Tailwind 4's CSS-based `@theme`. See `app/globals.css` for the actua
 
 ### Accent (the only color)
 
-- `--color-indigo-brand`: `#5e6ad2`
-- `--color-indigo-accent`: `#7170ff`
-- `--color-indigo-hover`: `#828fff`
+⚠️ **2026-08-18: 악센트가 인디고에서 잉걸(ember)로 바뀌었다.** 토큰 이름은
+아직 `--color-indigo-*` 인데 값은 구리 계열이다 — 이름 정리는 별도 커밋으로
+따라온다(값 변경과 식별자 변경을 한 커밋에 섞지 않는다, `git.md`). 근거와
+실측은 `docs/DECISIONS.md` 2026-08-18 기록.
 
-**악센트 알파 스텝** (2026-08-04 등재). 새 색이 아니라 위 `#7170ff` 의 투명도
-단계다 — 브랜드 인디고(`--color-indigo-a*`)와 라인 인디고(`--color-indigo-line-a*`)
+- `--color-indigo-brand`: `#c14a24` (구 `#5e6ad2`)
+- `--color-indigo-accent`: `#f0894e` (구 `#7170ff`)
+- `--color-indigo-hover`: `#f5a06b` (구 `#828fff`)
+
+값은 손으로 고른 것이 아니라 **옛 인디고 램프의 L\*(밝기)와 C\*(채도)를 보존한
+채 색상각만 44.9° 로 돌려서** 얻었다. 그래서 앱의 명암 위계가 한 칸도 안
+움직인다.
+
+**악센트 알파 스텝** (2026-08-04 등재). 새 색이 아니라 위 `#f0894e` 의 투명도
+단계다 — 브랜드 악센트(`--color-indigo-a*`)와 라인 악센트(`--color-indigo-line-a*`)
 에는 알파 사다리가 있는데 악센트에만 없어서, 필요한 자리 3곳이 전부
-`rgba(113,112,255,·)` 를 **손으로 적고** 있었다.
+`rgba(240,137,78,·)` 를 **손으로 적고** 있었다.
 
-- `--color-indigo-accent-a32`: `rgba(113, 112, 255, 0.32)`
+- `--color-indigo-accent-a32`: `rgba(240, 137, 78, 0.32)`
 - `--color-indigo-accent-a50`: `rgba(113, 112, 255, 0.5)`
 
 **검색 일치 잉크** (2026-08-04 등재).
@@ -2119,6 +2128,19 @@ Reference anchors:
 - ❌ Glow-like `boxShadow: \`0 0 ...\`` rings on ontology operation surfaces
   <!--dont:glow-boxshadow-ring-->
 - ❌ Animated gradient backgrounds / aurora <!--dont:animated-gradient-bg-->
+  - **명문 예외 1건 (2026-08-18): 관문 전류장** — 관문 랜딩(`/` 관문 얼굴 ·
+    `/download`)의 배경에서 저휘도 악센트 라디얼 광원 셋이 아주 느리게
+    떠다니는 것. `src/views/download/ui/GatewayFx.tsx` 한 표면에서만 살고
+    (gateway FX 봉인 네임스페이스), 조건 넷을 전부 지킬 때만 예외다:
+    **알파 상한**(광원 0.14 · 그레인 0.05 — 토큰으로 잠김) · **첫 1초 정지**
+    (배경은 헤드라인의 등장을 방해하지 않는다) · **reduced-motion 완전 정지**
+    (rAF 루프 자체를 돌리지 않는다) · **악센트 토큰만**(hue 를 새로 들이지
+    않고 `--color-indigo-brand` 를 읽는다 — 악센트 전환을 자동으로 따라간다).
+    게이트 둘: `eslint.config.mjs` 의 gateway-fx 스코프 셀렉터(소비처를
+    `src/views/download/**` 로 잠근다) +
+    `tests/contract/gateway-fx-exception.contract.test.ts`(단독 소비처 ·
+    알파 상한 · 감속 정지 · 문서 등재). 워크벤치·문서함 등 앱의 다른 화면으로
+    넓히는 것은 여전히 금지다. 원장: `docs/DECISIONS.md` (69).
 - ❌ Scale-based hover effects <!--dont:scale-hover-->
 - ❌ More than one color system <!--dont:multi-color-system-->
 - ❌ Floating-box soup: unrelated panels/popovers/HUD/minimap/cards at equal
@@ -2377,8 +2399,9 @@ tracking 으로 응집).
 | body-lg | `--text-body-lg` (`text-body-lg`) | 14 | `0` (`tracking-body-lg`) | 강조 본문·부제 |
 | title | `--text-title` (`text-title`) | 16 | `-0.01em` (`tracking-title`) | 패널/카드 제목 |
 | display | `--text-display` (`text-display`) | 23 | `-0.022em` (`tracking-display`) | 페이지 헤드라인 |
-| hero | `--text-hero` (`text-hero`) | 30 | `-0.022em` (`tracking-hero`) | 히어로 헤드라인 |
-| hero-lg | `--text-hero-lg` (`text-hero-lg`) | 34 | `-0.022em` (`tracking-hero` 공유) | **관문 헤드라인** — 지도가 전면을 덮는 표면 |
+| hero | `--text-hero` (`text-hero`) | 30 | (자간 짝 없음 — 소비처가 명시 tracking 을 실을 때만) | 히어로 헤드라인 |
+| hero-lg | `--text-hero-lg` (`text-hero-lg`) | 34 | (자간 짝 없음 — 구 tracking-hero 는 2026-08-18 소비처 0 으로 재은퇴) | 구 관문 헤드라인 — 지도가 전면을 덮던 시절의 상단 |
+| monument | `--text-monument` (`text-monument`) | clamp(40, 5.8cqw, 96) | `-0.018em` (`tracking-monument`) | **관문 기념비 헤드라인** (2026-08-18 리메이크) — 지도가 첫 화면에서 빠지며 활자가 그 무게를 이어받는 단 하나의 자리. 행간 짝은 비율 `--leading-monument`(1.08) — clamp 크기라 px 짝을 만들면 크기마다 토큰이 또 필요해진다(display-tight 부류) |
 
 **최근접 수렴 규칙**(치환 시): 각 리터럴 px 를 가장 가까운 단으로 스냅한다
 (±1px 은 램프로 흡수). 단 사이 정확히 중간(예: 15px)은 상위 단으로, 램프 밖
@@ -2504,9 +2527,9 @@ Tailwind v4 `--leading-*` 네임스페이스가 `leading-<step>` 유틸리티를
 **hero-lg 는 왜 34px 인가.** 지도가 전면을 덮는 표면에서 30px 헤드라인은
 배경과 무게를 다툰다. 34px 이면 리드(`text-body` 12.5)와의 비가 **2.72** 로
 레퍼런스 히어로 밴드(2.5–3.0) 안에 든다. 행간 38px 은 램프 상단으로 갈수록
-비율이 조여지는 추세를 잇는다(1.217 → 1.133 → **1.118**). tracking 은
-`--tracking-hero`(−0.022em)를 공유한다 — 같은 광학 구간이라 새 짝을 만들지
-않는다. 승격 트리거는 **두 번째 소비처**였다: `DesktopVaultWelcome` 이 이미
+비율이 조여지는 추세를 잇는다(1.217 → 1.133 → **1.118**). (자간 짝
+tracking-hero 는 2026-08-18 관문 리메이크에서 소비처 0 으로 재은퇴했다.)
+승격 트리거는 **두 번째 소비처**였다: `DesktopVaultWelcome` 이 이미
 `md:text-[34px]` + eslint-disable 로 램프를 비껴가고 있었다.
 
 #### 조건부 크기 함정 — companion 결합이 만든 새 실패 모드
@@ -2720,8 +2743,16 @@ sheet 금지**(공방 진입 카드 16 → panel, 드로어 히어로 20 → pan
 | 대상 | 토큰 | 값 |
 |---|---|---|
 | 관문 정렬 원점 | `--gateway-origin` | `max(--gateway-gutter, (100vw − --page-max) / 2)` |
-| 관문 홈통(원점의 바닥) | `--gateway-gutter` | 40 · 64(≥1536) — 무단위 |
-| 관문 판 폭 / 틈 | `--gateway-plate-width` / `--gateway-plate-gap` | 480 / 24 — 무단위 |
+| 관문 홈통(원점의 바닥) | `--gateway-gutter` | 200 — 무단위 (40→64→120→200 계보는 `app/globals.css` 독블록) |
+| 관문 판 폭 | `--gateway-plate-width` | 880 — 무단위. 2026-08-18 리메이크에서 520→880: 판이 지도 위 부유가 아니라 설치 절의 흐름에 앉으며 콘텐츠 폭 상한 하나만 진다 |
+| 관문 절 리듬 | `--gateway-section-gap` | 160px (2026-08-18) — 절 하나 = 생각 하나의 문장 부호 |
+| 관문 FX 알파 상한 | `--gateway-fx-blob-alpha` / `--gateway-fx-grain-alpha` / `--gateway-fx-dust-alpha` | 0.14 / 0.05 / 0.28 — 헌장 예외(관문 전류장)의 상한. 게이트: `tests/contract/gateway-fx-exception.contract.test.ts` |
+
+**[은퇴 2026-08-18] 판·지도 틈 토큰(gateway plate-gap)과 카메라 예약폭 파생**
+(`computeGatewaySafeInset` = 원점+판폭+틈 → `--topology-v2-safe-inset-left`).
+지도가 판 뒤 배경에서 자기 절(증거)로 내려가며 겹침의 전제가 사라졌다 —
+비겹침은 `tests/e2e/download-gateway-grid.spec.ts` 가 rect 로 직접 잰다.
+아래 두 문단의 「카메라 예약폭」 서술은 그 시절의 기록이다.
 
 **왼쪽만 맞추면 화면은 여전히 쏠린다.** 위 평결 ③ 이 여섯 원소를 같은 x 에
 세운 뒤에도, 컬럼이 `--page-max` 에서 멈추니 남는 폭이 전부 오른쪽에 쌓였다 —
@@ -3096,8 +3127,15 @@ JSX 안에 44px 정사각 버튼이나 라벨 버튼을 인라인 클래스로 �
 
 | 톤 | 토큰 | 라이선스 (합성 대비 실측) |
 |---|---|---|
-| `accent` | `--color-indigo-accent` #7170ff — 앱 전역 99줄의 링크·라벨 관용구 | **맨 어두운 바탕까지만**: canvas 5.18 · panel 4.96 · elevated 4.53. 인디고 틴트(a14+/`line-a13`)나 앰버 힌트가 깔리면 3.5~4.4 로 WCAG 1.4.3 AA(4.5) 미달 — 호버 `a24` 는 canvas 위에서도 4.13 |
-| `accentOnTint` | `--color-indigo-text-soft` rgba(188,195,255,.92) — 공방·지도 패널이 손으로 이미 쓰던 글자 인디고 | 모든 바탕 × 모든 틴트 합성에서 6.46:1 이상 — 어디서나 안전 |
+| `accent` | `--color-indigo-accent` #f0894e — 앱 전역 99줄의 링크·라벨 관용구 | **잉걸 교체 후 어디서나 통과**: canvas 7.96 · panel 7.61 · elevated 6.97, 틴트 합성(`a24`/canvas)에서도 **6.50**. ⚠️ 인디고 시절에는 틴트 위에서 3.5~4.4 로 AA 미달이었고 **그것이 아래 두 톤을 가른 이유**였다 — 그 근거가 2026-08-18 에 사라졌다 |
+| `accentOnTint` | `--color-indigo-text-soft` rgba(253,182,158,.92) — 공방·지도 패널이 손으로 이미 쓰던 글자 악센트 | 모든 바탕 × 모든 틴트 합성에서 AA 이상 — 어디서나 안전 |
+
+> **두 톤을 하나로 접을 수 있게 됐다** (미실행). 위 표대로 `accent` 가 이제
+> 틴트 위에서도 AA 를 통과하므로 분리의 근거가 없다. 접는 것은
+> `src/shared/ui/control-class.ts` 의 **축 변경**이라 「체계」 자리 소집 +
+> 원장 기재가 필요해서 색 교체 커밋에 섞지 않았다. 그때까지 두 톤은 그대로
+> 살아 있고, 이 전제가 다시 뒤집히면
+> `tests/contract/accent-ink-contrast.contract.test.ts` 가 빨개진다.
 
 전수 29곳 중 **26곳이 틴트 채움/호버 채움을 지고 있어 실측 미달 상태**였다
 (대표: 설정 시트 인디고 칩 13곳 전부 — 호버 `line-a13`/panel 4.12). 그 26곳이

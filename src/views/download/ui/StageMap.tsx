@@ -1,15 +1,28 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { useDogfoodInsight } from '@/features/vault-ontology';
-import {
-  TopologyMapV2,
-  clearTopologyV2TokensCache,
-  refreshIndexDependentTokens,
-} from '@/widgets/topology-map-v2';
+import { TopologyMapV2, clearTopologyV2TokensCache } from '@/widgets/topology-map-v2';
+import type { TierRevealConfig } from '@/widgets/topology-map-v2/model/tier-visibility';
 import { buildStageGraph, type StageGraph } from '../lib/stage-graph';
-import { computeGatewaySafeInset } from '../lib/gateway-grid';
+
+/**
+ * 관문 증거 절의 티어 공개 — **캡션이 세는 수만큼 그린다** (2026-08-18 소유자
+ * 지적: 「81 개념」 캡션 밑에 8개짜리 그림).
+ *
+ * 워크벤치의 기본 공개 밴드(capability 1.5~2.0 · element 2.3~2.85)는 「개요는
+ * 뼈대만, 줌인하면 한 단계씩」이라는 과업 화면의 문법이다. 증거 절의 일은
+ * 과업이 아니라 **증명**이다 — 캡션이 「81 개념 · 107 관계」라고 적는데 화면이
+ * 8개만 그리면, 캡션과 지도가 같은 그래프라는 이 페이지의 정직성 계약이
+ * 눈으로는 배반당한다. 그래서 진입 배율(zoomRatio 1)에서 전 티어가 이미 다
+ * 보이도록 밴드를 앞당긴다. 축소(줌아웃)하면 여전히 뼈대만 남는다 — 공개는
+ * 앞당겼지 게이트를 없앤 것이 아니다.
+ */
+const GATEWAY_TIER_REVEAL: TierRevealConfig = {
+  capability: { enterRatio: 0.35, fullRatio: 0.65 },
+  element: { enterRatio: 0.45, fullRatio: 0.8 },
+};
 
 /**
  * 무대가 그리는 그래프 — **캡션과 지도가 같은 객체를 본다**.
@@ -70,7 +83,16 @@ export function StageMap({ graph }: { graph: StageGraph }) {
    * URL 왕복은 하지 않는다 — 관문의 지도는 공유되는 상태가 아니라 만져 보는
    * 물건이라, 펼침은 이 화면을 떠나면 사라져도 되는 세션 상태다.
    */
-  const [expanded, setExpanded] = useState<ReadonlySet<string>>(() => new Set());
+  const [expanded, setExpanded] = useState<ReadonlySet<string>>(
+    /**
+     * 시작부터 전부 펼친다 (2026-08-18) — 위 GATEWAY_TIER_REVEAL 과 같은 이유다:
+     * 밀도 게이트가 자식을 칩(`+17`)으로 접으면 캡션이 세는 수와 그려지는 수가
+     * 갈라진다. 전 노드 id 를 넣는 것은 안전하다 — 게이트는 childrenByParent 에
+     * 있는 부모만 보므로 잉여 id 는 무해하고, 사용자가 칩을 눌러 도로 접으면
+     * toggleCluster 가 그대로 동작한다.
+     */
+    () => new Set(graph.nodes.map((node) => node.id)),
+  );
 
   /**
    * 첫 지도 연출 토큰 — **엔진이 이미 가진 안무를 관문에서 깨우는 것**이다
@@ -115,41 +137,18 @@ export function StageMap({ graph }: { graph: StageGraph }) {
    * 그 순서를 강제한다.
    */
   const [scoped, setScoped] = useState(false);
+  const frameRef = useRef<HTMLDivElement | null>(null);
   useEffect(() => {
     const root = document.documentElement;
     root.setAttribute('data-gateway-stage', '');
 
     /**
-     * 카메라 예약폭을 **원자값에서 파생**해 써 넣는다.
-     *
-     * 속성을 건 **직후**에 읽어야 한다 — 원자값(`--gateway-*`)이 그 속성
-     * 스코프 안에 살기 때문이다. 그리고 토큰 캐시를 지우기 **전**에 써야
-     * 아래 `clearTopologyV2TokensCache()` 이후의 첫 읽기가 파생값을 본다.
-     *
-     * 계산이 CSS `calc()` 가 아니라 여기 있는 이유는
-     * `../lib/gateway-grid.ts` 의 독블록에 있다.
+     * [은퇴 2026-08-18] 여기 있던 카메라 예약폭 파생(`computeGatewaySafeInset`
+     * 읽기 + 리사이즈 구독 + `--gateway-safe-inset-left-computed` 쓰기)은
+     * 리메이크로 삭제됐다 — 지도가 판 뒤 배경이 아니라 자기 절(증거)이 되면서
+     * 판이 지도를 덮을 수 없고, 예약할 폭 자체가 없다. 겹침 불가는
+     * `tests/e2e/download-gateway-grid.spec.ts` 가 rect 로 잰다.
      */
-    const readAtoms = () => {
-      const styles = getComputedStyle(root);
-      const read = (name: string) => Number.parseFloat(styles.getPropertyValue(name));
-      // 첫 항은 홈통이 아니라 **원점**이다 — `--gateway-origin` 은 `@property`
-      // 로 `<length>` 등록돼 있어 계산값이 `160px` 처럼 쓰인 길이로 굳는다.
-      // 그래서 `parseFloat` 가 화면이 실제로 쓰는 x 와 **같은 수**를 준다.
-      return {
-        origin: read('--gateway-origin'),
-        plateWidth: read('--gateway-plate-width'),
-        plateGap: read('--gateway-plate-gap'),
-      };
-    };
-    const writeSafeInset = (): string | null => {
-      const atoms = readAtoms();
-      if (!Object.values(atoms).every(Number.isFinite)) return null;
-      const next = String(computeGatewaySafeInset(atoms));
-      root.style.setProperty('--gateway-safe-inset-left-computed', next);
-      return next;
-    };
-    let written = writeSafeInset();
-
     clearTopologyV2TokensCache();
     // 이 setState 가 곧 **순서 계약**이다. 지도를 같은 렌더에 그리면 React 가
     // 자식 effect 를 먼저 돌려 **속성이 걸리기 전에** 토큰을 읽고 전역 캐시에
@@ -159,57 +158,49 @@ export function StageMap({ graph }: { graph: StageGraph }) {
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setScoped(true);
 
-    /**
-     * **리사이즈에 구독한다** — 원점이 뷰포트의 함수가 된 순간 필수다
-     * (2026-07-29 평결이 명시한 재발 경로).
-     *
-     * 마운트 1회 파생으로 두면 창을 넓히는 순간 예약폭이 **낡는다**: 판은
-     * CSS 가 계산한 새 원점으로 옮겨 가는데 카메라는 옛 수를 계속 피한다.
-     * 그게 아침 사고(1920 +96 · 2560 +416)와 같은 형태이고, 원점 승격이
-     * 없애려던 바로 그 어긋남이다.
-     *
-     * ## 왜 전면 무효화가 아니라 부분 갱신인가
-     *
-     * `clearTopologyV2TokensCache()` 는 다음 읽기에 `getPropertyValue` 115회를
-     * 강제해 스타일 재계산 58ms 를 태운다(2026-07-28 트레이스). 창을 끄는
-     * 동안에는 그 사건이 초당 수십 번이다. `data-gateway-stage` 가 실제로
-     * 바꾸는 토큰은 `--topology-v2-safe-inset-left` 하나뿐이라
-     * `refreshIndexDependentTokens` 가 정확히 그것만 갈아 끼운다 —
-     * `HomePage` 가 INDEX 전환에서 쓰는 것과 같은 기제다.
-     *
-     * ## rAF 코얼레싱 + 변화 없으면 아무것도 안 한다
-     *
-     * 리사이즈는 프레임당 여러 번 올 수 있고, 원점은 **이산적으로만** 바뀌는
-     * 구간이 넓다(홈통이 이기는 1536~1728). 값이 그대로면 읽기도 갱신도
-     * 건너뛴다.
-     */
-    let frame = 0;
-    const onResize = () => {
-      if (frame) return;
-      frame = requestAnimationFrame(() => {
-        frame = 0;
-        const next = writeSafeInset();
-        if (next === null || next === written) return;
-        written = next;
-        refreshIndexDependentTokens(root);
-      });
-    };
-    window.addEventListener('resize', onResize);
-
     return () => {
-      window.removeEventListener('resize', onResize);
-      if (frame) cancelAnimationFrame(frame);
       root.removeAttribute('data-gateway-stage');
-      root.style.removeProperty('--gateway-safe-inset-left-computed');
       clearTopologyV2TokensCache();
     };
   }, []);
 
+  /**
+   * 도착 안무는 **눈앞에서** 발화한다 (리메이크 2026-08-18).
+   *
+   * 종전엔 마운트 다음 프레임에 revealToken 을 올렸다 — 지도가 첫 화면의
+   * 배경이라 마운트가 곧 「보이는 순간」이었다. 이제 지도는 스크롤 아래 증거
+   * 절에 사니, 마운트에 발화하면 안무가 **아무도 안 보는 동안** 끝난다. 절이
+   * 뷰포트에 들어오는 첫 순간에 rAF 한 틱을 미뤄 올린다(같은 프레임이면
+   * 마운트가 전이를 삼키는 함정은 그대로라서다 —
+   * `tests/contract/gateway-map-reveal.contract.test.ts`).
+   *
+   * IntersectionObserver 가 없는 환경(jsdom)에서는 즉시 발화한다.
+   */
   useEffect(() => {
     if (!scoped) return;
-    // rAF 콜백이라 effect 본문의 동기 setState 가 아니다 — 억제 불필요.
-    const id = requestAnimationFrame(() => setRevealToken(1));
-    return () => cancelAnimationFrame(id);
+    let raf = 0;
+    const arm = () => {
+      raf = requestAnimationFrame(() => setRevealToken(1));
+    };
+    const el = frameRef.current;
+    if (!el || typeof IntersectionObserver === 'undefined') {
+      arm();
+      return () => cancelAnimationFrame(raf);
+    }
+    const io = new IntersectionObserver(
+      (entries) => {
+        if (entries.some((entry) => entry.isIntersecting)) {
+          arm();
+          io.disconnect();
+        }
+      },
+      { threshold: 0.25 },
+    );
+    io.observe(el);
+    return () => {
+      io.disconnect();
+      cancelAnimationFrame(raf);
+    };
   }, [scoped]);
 
   const toggleCluster = useCallback((parentId: string) => {
@@ -225,7 +216,7 @@ export function StageMap({ graph }: { graph: StageGraph }) {
   if (!scoped || graph.nodes.length === 0) return null;
 
   return (
-    <div className="download-stage-map absolute inset-0" data-testid="download-stage-map">
+    <div ref={frameRef} className="download-stage-map absolute inset-0" data-testid="download-stage-map">
       <TopologyMapV2
         nodes={graph.nodes}
         edges={graph.edges}
@@ -238,6 +229,17 @@ export function StageMap({ graph }: { graph: StageGraph }) {
         onPaneClick={() => setSelected(null)}
         expandedParents={expanded}
         onToggleCluster={toggleCluster}
+        tierReveal={GATEWAY_TIER_REVEAL}
+        /**
+         * 첫 카메라가 전 노드 bbox 를 프레임 중앙에 놓는다 (2026-08-18 소유자:
+         * *"처음 로딩될때 … 너무 아래임.. 딱 중앙이었음해"*). 워크벤치 기본
+         * (스파인 bbox 핏)은 진입에 스파인만 그릴 때의 정직한 프레임인데, 이
+         * 절은 위 tierReveal 로 진입부터 전 티어를 그린다 — 스파인 중심은 전
+         * 그래프 질량보다 위라 실측(1512) 위 143px 공백 · 아래 17px 로 낮게
+         * 앉았다. 라벨은 bbox 가 아니라 하단 여유(camera-math 의
+         * OVERVIEW_LABEL_BOTTOM_ALLOWANCE)로만 카메라에 참여한다.
+         */
+        overviewFit="full"
         clusterHint={t('stageClusterHint')}
         canvasLabel={t('stageMapLabel')}
         // 관문은 스크롤하는 문서다 — 휠과 세로 스와이프는 페이지 것이고,

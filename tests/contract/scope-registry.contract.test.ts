@@ -146,6 +146,7 @@ const STORAGE_KEY_REGISTRY: StorageEntry[] = [
   { key: "atlas.agentActivity.kinds", kind: "storage", scope: "global", note: "음소거한 알림 종류" },
   { key: "ontology-atlas:canvas-background:v1", kind: "storage", scope: "global", note: "캔버스 배경 선호" },
   { key: "ontology-atlas:glyph-set:v1", kind: "storage", scope: "global", note: "글리프 세트 선호" },
+  { key: "ontology-atlas:accent:v1", kind: "storage", scope: "global", note: "악센트 팔레트 선호(잉걸/인디고)" },
   { key: "ontology-atlas:footprint:v1", kind: "storage", scope: "global", note: "발자국 트레일 선호" },
   // 확장 어포던스·구조·세 숫자. 발자국·배경과 같은 화면 취향이라 볼트와 무관하다 —
   // 폴더를 바꿔도 "펼치는 방식"에 대한 내 선호는 그대로여야 한다.

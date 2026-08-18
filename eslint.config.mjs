@@ -497,6 +497,32 @@ const accentTintPairingSelectors = [
   },
 ];
 
+/*
+ * ── 관문 FX 네임스페이스 봉인 (2026-08-18, 관문 랜딩 리메이크) ──────────────
+ *
+ * `--gateway-fx-*` 토큰과 `gateway-fx-*` 클래스는 헌장의 「움직이는 그라디언트
+ * 배경」 금지에 대한 **명문 예외 1건**의 표면이다(`.claude/rules/forbidden.md`).
+ * 예외가 관례로 번지는 것을 막는 방법은 발자국 번짐과 같다 — 소비처를 파일
+ * 경로로 잠근다: `src/views/download/**` 와 `app/globals.css`(토큰 정의)만.
+ *
+ * 이 셀렉터는 모든 스코프 블록에 실리고, 관문 뷰 자신의 스코프 블록(아래)만
+ * 이것을 빼고 나머지 전부를 다시 싣는다. 값 층 게이트는
+ * `tests/contract/gateway-fx-exception.contract.test.ts` — 파일시스템을 직접
+ * 훑으므로 이 셀렉터가 죽어도 그쪽이 잡는다.
+ */
+const gatewayFxScopeSelectors = [
+  {
+    selector: 'Literal[value=/gateway-fx/]',
+    message:
+      '관문 FX(전류장·그레인·커서 링)는 관문 랜딩 한정 예외다 — --gateway-fx-* / gateway-fx-* 는 src/views/download/** 밖에서 쓰지 않는다. 근거: forbidden.md 「움직이는 그라디언트 배경」 예외 · tests/contract/gateway-fx-exception.contract.test.ts',
+  },
+  {
+    selector: 'TemplateElement[value.raw=/gateway-fx/]',
+    message:
+      '관문 FX 는 관문 랜딩 한정 예외다 (template literal) — src/views/download/** 밖 사용 금지.',
+  },
+];
+
 // ── Geometry & Type Codex (R5) 봉쇄 ─────────────────────────────────
 // text-[Npx] / rounded-[Npx] arbitrary 클래스 금지 — docs/DESIGN-SYSTEM.md
 // "Geometry & Type Codex" 램프(text-caption…text-hero / rounded-chip…panel)
@@ -1159,6 +1185,7 @@ const eslintConfig = defineConfig([
         ...inlineSizeSelectors,
         ...cursorAffordanceSelectors,
         ...disabledAffordanceSelectors,
+        ...gatewayFxScopeSelectors,
       ],
     },
   },
@@ -1183,6 +1210,7 @@ const eslintConfig = defineConfig([
         ...inlineSizeSelectors,
         ...cursorAffordanceSelectors,
         ...disabledAffordanceSelectors,
+        ...gatewayFxScopeSelectors,
         ...typographyAxisSelectors,
         ...layerSelectors,
       ],
@@ -1227,6 +1255,7 @@ const eslintConfig = defineConfig([
         ...inlineSizeSelectors,
         ...cursorAffordanceSelectors,
         ...disabledAffordanceSelectors,
+        ...gatewayFxScopeSelectors,
         ...typographyAxisSelectors,
         ...layerSelectors,
       ],
@@ -1255,6 +1284,7 @@ const eslintConfig = defineConfig([
         ...inlineShadowSelectors,
         ...cursorAffordanceSelectors,
         ...disabledAffordanceSelectors,
+        ...gatewayFxScopeSelectors,
         ...typographyAxisSelectors,
         ...layerSelectors,
       ],
@@ -1298,6 +1328,7 @@ const eslintConfig = defineConfig([
         ...inlineSizeSelectors,
         ...cursorAffordanceSelectors,
         ...disabledAffordanceSelectors,
+        ...gatewayFxScopeSelectors,
         ...typographyAxisSelectors,
         ...layerSelectors,
         {
@@ -1310,6 +1341,32 @@ const eslintConfig = defineConfig([
           message:
             '설정 시트에서 docs 표면 장식용 quarantine 앰버를 쓰지 않는다 (template literal). --color-amber-source-* / --color-amber-source-text-* 사다리를 쓴다.',
         },
+      ],
+    },
+  },
+  /*
+   * 관문 FX 예외의 **단독 소비처** — `src/views/download/**` (2026-08-18).
+   *
+   * gatewayFxScopeSelectors 만 빼고 **나머지 전부를 다시 싣는다** — flat config
+   * 는 rule option 배열을 병합하지 않고 교체하므로, 빼먹은 셀렉터는 이
+   * 디렉터리에서 조용히 죽는다(footprint-glyph · Satori 블록과 같은 규율).
+   * 반드시 위 램프 블록들보다 뒤에 온다.
+   */
+  {
+    files: ['src/views/download/**/*.{ts,tsx}'],
+    ignores: codexTestIgnores,
+    rules: {
+      'no-restricted-syntax': [
+        'error',
+        ...scaleGradientSelectors,
+        ...arbitrarySizeSelectors,
+        ...accentTintPairingSelectors,
+        ...inlineShadowSelectors,
+        ...inlineSizeSelectors,
+        ...cursorAffordanceSelectors,
+        ...disabledAffordanceSelectors,
+        ...typographyAxisSelectors,
+        ...layerSelectors,
       ],
     },
   },

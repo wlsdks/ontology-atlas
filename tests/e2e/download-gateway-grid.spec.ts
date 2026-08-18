@@ -39,14 +39,18 @@ import { seedFirstRunSeen } from "./first-run-seed";
  * 대칭이었다. 그래서 정렬 원점을 `max(홈통, (vw − page-max)/2)` 로 승격시키고,
  * 여섯 원소와 카메라 예약폭이 **그 하나**를 소비하게 했다.
  *
- * ## 무엇을 재나
+ * ## 무엇을 재나 (2026-08-18 리메이크 개정)
  *
- * 1. GNB 로고 · 헤드라인 · 판 · 캡션 · 설치 띠 · 푸터의 x 가 **전부 같다**.
+ * 1. GNB 로고 · 헤드라인 · **지도 절** · 판 · 캡션 · 설치 띠 · 푸터의 x 가
+ *    **전부 같다** (일곱 원소).
  * 2. **좌우 여백이 같다** — `밴드.left === vw − 밴드.right`.
  * 3. **상단 바의 우측 그룹 오른끝 === vw − 원점** (소유자의 "공백이 길고" 지적).
- * 4. 판의 오른끝이 카메라 인셋 안에 든다(`plate.right + 갭 ≤ safeInsetLeft`).
- * 5. **리사이즈 뒤에도 전부 유지된다** — 원점이 뷰포트의 함수가 된 순간
- *    마운트 1회 파생은 낡는다. 그게 이 페이지가 이미 한 번 당한 사고의 형태다.
+ * 4. **판과 지도가 겹치지 않는다** — 구 카메라 예약폭 파생(`원점+판폭+틈` →
+ *    `--topology-v2-safe-inset-left`)의 후계다. 리메이크로 지도가 판 뒤
+ *    배경에서 자기 절(증거)로 내려가며 파생의 전제(겹침 가능성)가 사라졌고,
+ *    지키던 property(그래프가 판 뒤로 파고들지 않는다)는 문서 좌표 비교로
+ *    직접 잰다.
+ * 5. **리사이즈 뒤에도 전부 유지된다.**
  * 6. **설치 3단이 접히지 않는다** — 끝까지 스크롤하면 세 단이 전부 뷰포트
  *    안에 온전히 들어오고, 조상 컨테이너가 잘라 놓지 않았다.
  * 7. 판 안의 어떤 컨트롤도 판의 안쪽 폭을 넘지 않는다(ko/en 둘 다).
@@ -133,6 +137,8 @@ async function measure(page: import("@playwright/test").Page) {
     };
     const plate = document.querySelector('[data-testid="download-plate"]');
     const plateRect = plate ? plate.getBoundingClientRect() : null;
+    const mapFrame = document.querySelector('[data-testid="download-stage-map-frame"]');
+    const mapRect = mapFrame ? mapFrame.getBoundingClientRect() : null;
     const scrollDelta = [...document.querySelectorAll("*")]
       .filter(
         (el) =>
@@ -144,14 +150,24 @@ async function measure(page: import("@playwright/test").Page) {
       xs: {
         gnb: bx('[data-testid="download-gnb"] a'),
         headline: bx("h1"),
+        // 리메이크(2026-08-18): 지도 절도 같은 원점에 선다 — 일곱째 원소.
+        map: bx('[data-testid="download-stage-map-frame"]'),
         plate: bx('[data-testid="download-plate"]'),
         caption: bx('[data-testid="download-portrait-caption"] span'),
         install: bx('[data-testid="download-install"]'),
         footer: bx("main footer > div"),
       },
       plateRight: plateRect ? Math.round(plateRect.right) : null,
+      // 판↔지도 비겹침의 새 증거 (구 카메라 예약폭의 후계) — 아래 참조.
+      plateTop: plateRect ? Math.round(plateRect.top + window.scrollY) : null,
+      mapBottom: mapRect ? Math.round(mapRect.bottom + window.scrollY) : null,
       // 밴드(=원점 안쪽 컬럼)의 오른끝 — 좌우 대칭은 이 수와 `vw` 로만 잰다.
-      bandRight: right('[data-testid="download-install"]'),
+      // ⚠️ 자(ruler)는 **컬럼 전폭을 실제로 채우는 원소**여야 한다. 종전엔
+      // 설치 3단이었는데, 2026-08-18 설치 절 정돈으로 3단이 판과 같은
+      // 880 컬럼으로 내려가면서(두 그리드 겹침 해소 — 소유자 지적) 자 노릇을
+      // 잃었다. 계기 스트립(gateway-facts)은 히어로의 바닥 괘선이라 컬럼
+      // 전폭이 정의이고, 게시/미게시 어느 분기에서도 그려진다.
+      bandRight: right('[data-testid="gateway-facts"]'),
       // 상단 바 우측 그룹의 오른끝. 소유자의 "공백이 길고 왜이러지?" 게이트.
       gnbActionsRight: right('[data-testid="download-gnb-actions"]'),
       /**
@@ -175,17 +191,12 @@ async function measure(page: import("@playwright/test").Page) {
       originToken: Number.parseFloat(
         getComputedStyle(document.documentElement).getPropertyValue("--gateway-origin").trim(),
       ),
+      // 판 폭의 진실원 — 판이 이 상한을 넘지 않는지만 잰다. (구 카메라
+      // 예약폭 파생 — plateGap · safeInsetLeft — 은 2026-08-18 리메이크에서
+      // 은퇴했다: 지도가 자기 절로 내려가 판과 겹칠 수 없다.)
       plateWidthToken: Number(
         getComputedStyle(document.documentElement)
           .getPropertyValue("--gateway-plate-width")
-          .trim(),
-      ),
-      plateGapToken: Number(
-        getComputedStyle(document.documentElement).getPropertyValue("--gateway-plate-gap").trim(),
-      ),
-      safeInsetLeft: Number(
-        getComputedStyle(document.documentElement)
-          .getPropertyValue("--topology-v2-safe-inset-left")
           .trim(),
       ),
       scrollDelta,
@@ -233,29 +244,24 @@ function assertGrid(m: Awaited<ReturnType<typeof measure>>, label: string) {
   );
 
   /**
-   * **파생이 실제로 돌았는가.**
+   * **판과 지도는 겹칠 수 없다** — 구 카메라 예약폭 단언의 후계 (2026-08-18).
    *
-   * 예약폭은 이제 리터럴이 아니라 `원점 + 판 폭 + 틈` 이다
-   * (`src/views/download/lib/gateway-grid.ts`, `StageMap` effect). 그 effect 가
-   * 삭제되거나 깨지면 CSS 폴백(544)이 살아남아 **그럴듯한 값**이 나오므로,
-   * 합을 직접 확인하지 않으면 아무도 모른다.
-   *
-   * 첫 항이 원점인 것이 핵심이다 — 홈통이면 넓은 화면에서 판은 원점에 서는데
-   * 카메라는 홈통을 피해서 1920 에 +96, 2560 에 +416 이 어긋난다.
+   * 예전엔 판이 지도 위에 떠서 `원점+판폭+틈` 파생 예약폭이 겹침을 막았고,
+   * 이 시험이 그 파생을 잤다. 리메이크로 지도(증거 절)와 판(설치 절)이 서로
+   * 다른 절이 되면서 그 전제 — 겹침 가능성 — 자체가 사라졌다. 시험이 지키던
+   * property(「그래프가 판 뒤로 파고들지 않는다」)는 그대로 살아서, 이제
+   * 문서 좌표로 직접 잰다: 지도 절의 바닥이 판의 머리보다 위다.
    */
+  expect(m.plateTop, `${label}: 판 rect 를 못 읽었다`).not.toBeNull();
+  expect(m.mapBottom, `${label}: 지도 절 rect 를 못 읽었다`).not.toBeNull();
   expect(
-    Number.isFinite(m.safeInsetLeft),
-    `${label}: 예약폭이 숫자가 아니다 — 파생이 안 돌았다`,
-  ).toBe(true);
-  expect(m.safeInsetLeft, `${label}: 예약폭이 원점+판폭+틈 이 아니다`).toBe(
-    origin + m.plateWidthToken + m.plateGapToken,
-  );
+    m.mapBottom!,
+    `${label}: 지도 절이 판을 침범했다 (지도 바닥 ${m.mapBottom} > 판 머리 ${m.plateTop})`,
+  ).toBeLessThanOrEqual(m.plateTop!);
 
-  // 판이 카메라가 예약한 영역 안에 있어야 그래프가 판 뒤로 안 파고든다.
-  // 틈도 토큰에서 읽는다 — 구 판본은 `+ 24` 리터럴이라 틈을 바꾸면
-  // 시험이 옛 값을 지키느라 빨개졌다.
+  // 판은 자기 폭 상한(토큰)을 넘지 않는다 — 값은 베끼지 않고 라이브로 읽는다.
   expect(m.plateRight, `${label}: 판 오른끝을 못 읽었다`).not.toBeNull();
-  expect(m.plateRight! + m.plateGapToken).toBeLessThanOrEqual(m.safeInsetLeft);
+  expect(m.plateRight! - m.xs.plate!).toBeLessThanOrEqual(m.plateWidthToken + 1);
 
   expect(m.overflowX, `${label}: 가로 오버플로`).toBe(0);
 }
@@ -275,18 +281,15 @@ test.describe("관문 다운로드의 그리드", () => {
   }
 
   /**
-   * **리사이즈 뒤에도 한 벌인가** — 원점이 뷰포트의 함수가 된 순간 생긴
-   * 재발 경로다 (2026-07-29 평결이 명시).
+   * **리사이즈 뒤에도 한 벌인가** (2026-07-29 평결의 재발 경로 감시).
    *
-   * CSS 쪽(여섯 원소의 x)은 `@property` 등록 덕에 공짜로 따라온다. 따라오지
-   * **않는** 것은 JS 파생인 카메라 예약폭이다 — 마운트 1회로 두면 판은 새
-   * 원점으로 옮겨 가는데 카메라는 옛 수를 계속 피한다. 그게 아침 사고
-   * (1920 +96 · 2560 +416)와 정확히 같은 형태라, 이 시험이 유일한 눈이다.
-   *
-   * 두 방향으로 잰다: 넓히기(원점이 자란다)와 좁히기(원점이 홈통으로 되돌아
-   * 간다). 한 방향만 재면 "커지기만 하는" 구현이 통과한다.
+   * [개정 2026-08-18] 구 판본의 고유 표적 — JS 파생 카메라 예약폭의 낡음 —
+   * 은 리메이크로 파생 자체가 은퇴하며 사라졌다. 남는 property 는 「CSS 원점
+   * 공식이 실제로 리사이즈를 따라간다」와 「일곱 원소가 어느 폭에서도 한
+   * 벌이다」이고, `assertGrid` 를 각 폭에서 다시 부르는 것이 그 전부다.
+   * 두 방향으로 잰다: 넓히기(원점이 자란다)와 좁히기(홈통으로 되돌아간다).
    */
-  test("리사이즈하면 여섯 원소도 카메라 예약폭도 새 원점을 따라간다", async ({ page }) => {
+  test("리사이즈하면 일곱 원소가 새 원점을 따라간다", async ({ page }) => {
     await page.setViewportSize({ width: 1440, height: 900 });
     await seedFirstRunSeen(page);
     await page.goto("/ko/download/", { waitUntil: "networkidle" });
@@ -309,24 +312,11 @@ test.describe("관문 다운로드의 그리드", () => {
       );
       const m = await measure(page);
       assertGrid(m, `${width} (리사이즈)`);
-      // 마운트 값이 그대로 남아 있으면 구독이 없는 것이다 — 단, 그렇게 말할 수
-      // 있는 것은 **원점이 실제로 달라진 폭**에서뿐이다.
-      //
-      // ⚠️ 예전엔 `width !== 1440` 이면 무조건 달라지라고 했다. 그건 "1920 의
-      // 원점은 1440 보다 크다" 는 **홈통 크기에 대한 가정**을 시험이 들고 있는
-      // 것이고, 이 파일이 맨 위에서 금지한 「원점 값 베끼기」와 같은 실수다.
-      // 원점은 `max(홈통, (vw − page-max)/2)` 라 홈통이 커지면 앞항이 이겨
-      // 넓혀도 그대로일 수 있다 — 홈통 200 에서 1440·1920 이 둘 다 200 이다.
-      // 그때 "달라져야 한다"고 우기면 시험이 제품이 아니라 옛 가정을 지킨다.
-      //
-      // 조건을 라이브 원점에 걸면 의도("원점이 움직였으면 예약폭도 움직였어야
-      // 한다")는 그대로고, 홈통을 어떻게 바꿔도 이 시험은 계속 참을 잰다.
+      // 폭 목록이 원점을 실제로 움직였는지 표시만 남긴다 — 원점 값 자체는
+      // 베끼지 않는다(맨 위 규율). 원점이 한 번도 안 움직이는 목록이면 이
+      // 시험은 «리사이즈 추종»에 대해 아무것도 안 재면서 초록이 된다.
       if (m.originToken !== mounted.originToken) {
         sawOriginChange = true;
-        expect(
-          m.safeInsetLeft,
-          `${width}: 원점은 ${mounted.originToken} → ${m.originToken} 로 움직였는데 예약폭이 마운트 값에 묶여 있다`,
-        ).not.toBe(mounted.safeInsetLeft);
       }
     }
 

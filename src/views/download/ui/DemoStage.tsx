@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useId, useRef, useState, useSyncExternalStore } from 'react';
+import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from 'react';
 import { useTranslations } from 'next-intl';
 import { withBasePath } from '@/shared/lib/base-path';
 import { type DemoClip, availableDemoClips, demoPoster, demoSources } from '../model/demo-clips';
@@ -30,21 +30,29 @@ import { controlClass } from '@/shared/ui/control-class';
  */
 export function DemoStage({ available }: { available?: readonly DemoClip['id'][] }) {
   const t = useTranslations('download');
-  const headingId = useId();
   const clip = availableDemoClips(available)[0];
 
   // 자산이 없으면 절 자체가 없다 — 재생할 것 없는 플레이어는 죽은 UI 다.
   if (!clip) return null;
 
   return (
-    <section data-testid="demo-stage" aria-labelledby={headingId} className="min-w-0">
-      <h2
-        id={headingId}
-        className="text-body-lg leading-body-lg font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)]"
-      >
-        {t('demoHeading')}
-      </h2>
+    /* 제목은 리메이크(2026-08-18)에서 절 머리(`SectionIntro`)로 올라갔다 —
+       한 절에 헤딩이 둘이면 위계가 아니라 목록이다. 이름은 aria 로 남긴다. */
+    <section data-testid="demo-stage" aria-label={t('demoHeading')} className="min-w-0">
       <DemoPlayer clip={clip} />
+      {/*
+       * **지금 붙은 클립이 무엇인지 화면이 정직하게 말한다** (2026-08-18).
+       * 두 로케일 자산이 바이트 동일한 잠정본(한국어 UI 24초)이고, 45초
+       * 언어별 촬영본(`docs/DEMO-SCENARIO.md`)이 나오면 파일 교체 +
+       * `demo-clips.ts` 의 `seconds` 갱신만으로 이 문장까지 참으로 남는다 —
+       * 마크업은 손대지 않는다.
+       */}
+      <p
+        data-testid="demo-provisional-note"
+        className="mt-3.5 break-keep font-mono text-caption leading-caption text-[color:var(--color-text-quaternary)]"
+      >
+        {t('demoProvisionalNote', { seconds: clip.seconds })}
+      </p>
     </section>
   );
 }
@@ -64,6 +72,31 @@ function DemoPlayer({ clip }: { clip: DemoClip }) {
       ?.then(() => setStarted(true))
       .catch(() => setStarted(false));
   }, []);
+
+  /**
+   * **뷰포트에 들어오면 스스로 재생, 나가면 정지** (리메이크 2026-08-18,
+   * 소유자: 시연은 버튼 뒤에 숨기지 않는다). 종전 `autoPlay` 속성은 절이
+   * 스크롤 아래로 내려간 지금 「아무도 안 보는 동안 재생을 소진」하는 형태라
+   * IO 로 바꿨다. 감속 사용자는 종전대로 포스터 + 재생 버튼으로 직접 시작한다.
+   * IO 가 없는 환경(jsdom)에서는 자동재생하지 않는다 — 시험이 재는 것은 재생
+   * 계약(무음·무루프·미리받지 않음)이지 자동재생이 아니다.
+   */
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video || reduced || typeof IntersectionObserver === 'undefined') return;
+    const io = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          void video.play?.()?.catch?.(() => undefined);
+        } else {
+          video.pause?.();
+        }
+      },
+      { threshold: 0.45 },
+    );
+    io.observe(video);
+    return () => io.disconnect();
+  }, [reduced]);
 
   return (
     <div
@@ -96,7 +129,6 @@ function DemoPlayer({ clip }: { clip: DemoClip }) {
           muted
           playsInline
           controls={started}
-          autoPlay={!reduced}
           onPlay={() => setStarted(true)}
           onEnded={() => setStarted(false)}
           className="block h-auto w-full"
@@ -106,19 +138,22 @@ function DemoPlayer({ clip }: { clip: DemoClip }) {
           ))}
         </video>
 
-        {/* 감속 사용자와 자동재생이 막힌 브라우저는 사람이 시작한다. */}
-        {!started ? (
-          <button
-            type="button"
-            onClick={play}
-            data-testid={`demo-play-${clip.id}`}
-            className={controlClass({ shape: "row", stacked: true, className: "absolute inset-0 justify-center bg-[color:var(--color-backdrop-medium)] text-body leading-body" })}
-          >
-            <span className="rounded-chip border border-[color:var(--color-border-strong)] bg-[color:var(--color-elevated)] px-4 py-2">
-              {t('demoPlay')}
-            </span>
-          </button>
-        ) : null}
+        {/* 감속 사용자와 자동재생이 막힌 브라우저는 사람이 시작한다.
+            언마운트가 아니라 `hidden` — 재생이 시작되는 순간 DOM 에서 컨트롤이
+            사라지면, 페이지의 컨트롤을 스냅숏으로 잡고 걷는 감사(hover-contrast
+            등)가 인덱스를 잃고 30초 프로토콜 대기에 걸린다(2026-08-18 실측).
+            `hidden` 은 rect 0 이라 모든 감사가 정상적으로 건너뛴다. */}
+        <button
+          type="button"
+          hidden={started}
+          onClick={play}
+          data-testid={`demo-play-${clip.id}`}
+          className={controlClass({ shape: "row", stacked: true, className: "absolute inset-0 justify-center bg-[color:var(--color-backdrop-medium)] text-body leading-body" })}
+        >
+          <span className="rounded-chip border border-[color:var(--color-border-strong)] bg-[color:var(--color-elevated)] px-4 py-2">
+            {t('demoPlay')}
+          </span>
+        </button>
       </div>
     </div>
   );

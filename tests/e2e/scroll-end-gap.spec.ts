@@ -184,8 +184,22 @@ async function measure(page: import("@playwright/test").Page): Promise<Measured>
     const bottomBar = [...document.querySelectorAll("*")].find((el) => {
       const s = getComputedStyle(el);
       if (s.position !== "fixed") return false;
+      /**
+       * 포인터를 안 받는 장식층은 바가 아니다 (2026-08-18 리메이크에서 걸림).
+       * 관문의 전류장 캔버스(`gateway-fx-field`)는 `fixed inset-0` 라 종전
+       * 판별(높이>20 · 바닥 닿음 · 폭>50%)을 전부 만족했고, top=0 이라
+       * clearance 가 -700px 대의 거짓 위반을 냈다. 진짜 바는 **바닥에 붙은
+       * 낮은 띠**다 — 화면 절반을 넘는 높이는 바가 아니라 배경이고,
+       * `pointer-events: none` 인 것은 내용을 가릴 권한 자체가 없다.
+       */
+      if (s.pointerEvents === "none") return false;
       const r = el.getBoundingClientRect();
-      return r.height > 20 && r.bottom >= window.innerHeight - 2 && r.width > window.innerWidth * 0.5;
+      return (
+        r.height > 20 &&
+        r.height < window.innerHeight * 0.5 &&
+        r.bottom >= window.innerHeight - 2 &&
+        r.width > window.innerWidth * 0.5
+      );
     });
 
     const slotRect = slot.getBoundingClientRect();

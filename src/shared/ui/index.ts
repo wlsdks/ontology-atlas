@@ -77,3 +77,4 @@ export {
 export { MtimeConflictBadge, type MtimeConflictBadgeProps } from './mtime-conflict-badge';
 export { RouteLoadingFallback } from './route-loading-fallback';
 export { JsonLd, serializeJsonForHtml, type JsonLdProps } from './json-ld';
+export { AccentBootScript } from './accent-boot-script';

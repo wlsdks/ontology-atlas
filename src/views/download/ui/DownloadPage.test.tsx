@@ -259,9 +259,16 @@ describe('DownloadPage', () => {
         'href',
         `https://github.com/wlsdks/ontology-atlas/releases/download/v${RELEASE_VERSION}/ontology-atlas_${RELEASE_VERSION}_x64.dmg`,
       );
-      // Two filled buttons would leave no winner — Intel keeps the same slot
-      // at a lower weight.
-      expect(appleSilicon.className).toMatch(/--color-indigo-brand/);
+      /*
+       * 채운 강조색은 **문서 전체에 하나**다 — 그리고 2026-08-18 부터 그 하나는
+       * 히어로가 진다. 이 판의 Apple Silicon·Intel 은 둘 다 `outline` 이고,
+       * 무엇이 먼저인지는 순서와 라벨이 말한다. 종전 단언(이 판의 주 CTA 가
+       * 채워져 있다)을 지우지 않고 **문서 단위로 올려** 적는다 — 그래야
+       * 「둘 다 안 채워졌다」와 「하나만 채워졌다」를 이 시험이 계속 구별한다.
+       */
+      const filled = Array.from(document.querySelectorAll('a[class*="--color-indigo-brand"]'));
+      expect(filled.map((el) => el.getAttribute('data-testid'))).toEqual(['gateway-hero-cta']);
+      expect(appleSilicon.className).not.toMatch(/--color-indigo-brand/);
       expect(screen.getByTestId('download-macos-x64').className).not.toMatch(
         /--color-indigo-brand/,
       );
@@ -295,6 +302,107 @@ describe('DownloadPage', () => {
         'href',
         `https://github.com/wlsdks/ontology-atlas/releases/tag/v${RELEASE_VERSION}`,
       );
+    });
+
+    /**
+     * 히어로 CTA 의 네 목적지 (2026-08-18 소유자: 히어로에 Windows 받기 버튼과
+     * 웹으로 가는 버튼이 없고, 데모는 버튼인지도 안 보였다) — ① 내 플랫폼용
+     * 받기(채움, 유일한 승자) ② 데모 ③ 나머지 데스크톱 파일 전부 ④ 브라우저
+     * 지도. 감지 실패의 기본값(macOS)에서도 넷 전부에 손이 닿아야 한다.
+     */
+    it('hero reaches every desktop file, the demo, and the browser map — one filled winner', () => {
+      publishWindowsRelease();
+      renderDownloadPage();
+
+      const primary = screen.getByTestId('gateway-hero-cta');
+      expect(primary).toHaveAttribute('href', expect.stringMatching(/_aarch64\.dmg$/));
+      expect(primary.className).toMatch(/--color-indigo-brand/);
+
+      const demo = screen.getByTestId('gateway-hero-demo-link');
+      expect(demo).toHaveAttribute('href', '#demo');
+      // ghost 가 아니다 — 면(overlay)과 테두리를 가진 outline 이어야 「누를 수
+      // 있는 것」으로 읽힌다(소유자: "버튼인지도 모르겠고").
+      expect(demo.className).toMatch(/--color-overlay-1/);
+
+      expect(screen.getByTestId('gateway-hero-macos-x64')).toHaveAttribute(
+        'href',
+        expect.stringMatching(/_x64\.dmg$/),
+      );
+
+      const windows = screen.getByTestId('gateway-hero-windows');
+      expect(windows).toHaveAttribute(
+        'href',
+        expect.stringMatching(/_windows_x64-setup\.exe$/),
+      );
+      // 서명 상태는 받기 **전에** 알아야 하는 사실 — 한 단 아래 버튼에서도
+      // 표식을 떼지 않는다(전문 경고·체크섬은 설치 절 `PlatformStatus`).
+      expect(windows).toHaveTextContent(/unsigned/i);
+
+      const web = screen.getByTestId('gateway-hero-web-cta');
+      expect(web).toHaveAttribute('href', '/topology');
+
+      // 채운 승자는 히어로에 **하나**다 — 나머지는 전부 한 단 아래.
+      for (const secondary of [demo, windows, web, screen.getByTestId('gateway-hero-macos-x64')]) {
+        expect(secondary.className).not.toMatch(/--color-indigo-brand/);
+      }
+    });
+
+    /**
+     * Windows 방문자에게는 Windows 파일이 승자다 — 그리고 그 승격은 미서명
+     * 사실을 같이 데려가야 한다: macOS 방문자가 신뢰줄에서 서명·공증을 읽는
+     * 그 자리에서, Windows 방문자는 미서명·SmartScreen 경고를 읽는다.
+     */
+    it('promotes the Windows installer for a Windows visitor, unsigned fact in the trust slot', () => {
+      publishWindowsRelease();
+      Object.defineProperty(navigator, 'userAgent', {
+        value:
+          'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36',
+        configurable: true,
+      });
+      try {
+        renderDownloadPage();
+
+        const primary = screen.getByTestId('gateway-hero-cta');
+        expect(primary).toHaveAttribute(
+          'href',
+          expect.stringMatching(/_windows_x64-setup\.exe$/),
+        );
+        // 21,500,000 B → 21.5 MB — 승자의 크기는 승자의 파일 것이어야 한다.
+        expect(primary).toHaveTextContent(/21\.5 MB/);
+        expect(screen.getByText(/Unsigned beta · SmartScreen/i)).toBeInTheDocument();
+
+        // macOS 파일들은 사라지지 않고 한 단 아래로 내려온다.
+        expect(screen.getByTestId('gateway-hero-macos-aarch64')).toHaveAttribute(
+          'href',
+          expect.stringMatching(/_aarch64\.dmg$/),
+        );
+        expect(screen.getByTestId('gateway-hero-macos-x64')).toBeInTheDocument();
+        expect(screen.queryByTestId('gateway-hero-windows')).not.toBeInTheDocument();
+      } finally {
+        // 인스턴스에 덮어쓴 own property 를 지우면 프로토타입 getter 가 돌아온다.
+        delete (navigator as { userAgent?: string }).userAgent;
+      }
+    });
+
+    // Windows 빌드가 미게시면 Windows UA 라도 승자는 여전히 macOS 다 — 없는
+    // 파일을 승격하는 것은 빈 약속이고, 그 방문자의 오늘은 브라우저 CTA 가 연다.
+    it('keeps the mac winner for a Windows visitor while the Windows build is unpublished', () => {
+      Object.defineProperty(navigator, 'userAgent', {
+        value: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+        configurable: true,
+      });
+      try {
+        renderDownloadPage();
+
+        expect(screen.getByTestId('gateway-hero-cta')).toHaveAttribute(
+          'href',
+          expect.stringMatching(/_aarch64\.dmg$/),
+        );
+        expect(screen.queryByTestId('gateway-hero-windows')).not.toBeInTheDocument();
+        expect(screen.getByTestId('gateway-hero-web-cta')).toHaveAttribute('href', '/topology');
+      } finally {
+        delete (navigator as { userAgent?: string }).userAgent;
+      }
     });
   });
 
@@ -362,7 +470,10 @@ describe('DownloadPage', () => {
     renderDownloadPage();
 
     expect(screen.getByText(/Signed with an Apple Developer ID certificate/i)).toBeInTheDocument();
-    expect(screen.getByText(/Notarized by Apple/i)).toBeInTheDocument();
+    // 리메이크 후 히어로 신뢰줄("Signed and notarized by Apple · …")이 같은
+    // 표현을 화면에 한 번 더 올린다 — 이 단언이 지키는 것은 「검증 절의 행이
+    // 공증을 스테이플 티켓과 함께 주장한다」이므로 행 문장으로 좁혀 잰다.
+    expect(screen.getByText(/Notarized by Apple, with the ticket stapled/i)).toBeInTheDocument();
     expect(screen.getByText(/codesign verified/i)).toBeInTheDocument();
     expect(screen.getByText(/stapler validate passes/i)).toBeInTheDocument();
 
@@ -492,31 +603,110 @@ describe('DownloadPage', () => {
     expect(screen.queryByText(/One folder, three views/i)).not.toBeInTheDocument();
   });
 
-  // 2026-07-28 소유자 판정("이 페이지는 서비스를 홍보해야지") 이후의 순서:
-  // 파일 → 파는 말 → 두 사용자 → 설치 → 다른 환경 → (푸터) 검증.
-  // 검증이 **맨 아래 접힌 채로** 있는 것이 이 순서의 요점이라, 그 위치를 고정한다.
-  it('puts the file first and the verification footnote last', () => {
+  /**
+   * 리메이크(2026-08-18) 순서 — **다섯 절, 절마다 생각 하나** (소유자 확정
+   * 골격): 히어로(활자+오브젝트+CTA) → 시연 → 증거(지도+census) → 에이전트
+   * 왕복 → 설치·다운로드(완전한 정지) → (푸터) 검증 접이식.
+   *
+   * 구 순서(파일 먼저, 2026-07-28 「홍보해야지」 판정)의 전제 — 판이 첫
+   * 화면의 주인공이라는 것 — 는 리메이크로 사라졌다: 이제 첫 화면은 문제
+   * 제기(헤드라인)와 제품의 실체(히어로 오브젝트)가 갖고, 파일은 네 절이
+   * 논증을 끝낸 뒤의 결정 자리(⑤)에 온다. 검증이 맨 아래 접힌 채라는 요점은
+   * 그대로 산다.
+   */
+  it('walks problem → demo → evidence → agents → decision, verification folded last', () => {
     publishRelease();
     renderDownloadPage();
 
     const heading = screen.getByRole('heading', { level: 1 });
+    const demo = screen.getByTestId('demo-stage');
+    const caption = screen.getByTestId('download-portrait-caption');
+    // 2026-08-18 재작업: 에이전트 절의 장면은 mcp-verify 터미널에서 앱 안
+    // 대화(ACP) 재연으로 바뀌었다 — 순서 계약의 넷째 자리는 그대로다.
+    const terminal = screen.getByTestId('gateway-agent-chat');
+    const install = screen.getByTestId('download-install');
     const primaryCta = screen.getByTestId('download-primary-cta');
     const windows = screen.getByTestId('download-platform-windows');
-    const install = screen.getByTestId('download-install');
     const trust = screen.getByTestId('download-trust');
 
     for (const [earlier, later] of [
-      [heading, primaryCta],
-      // 플랫폼 상태는 **받는 자리**에 있다 — 스크롤을 내려야 자기가 못 받는다는
-      // 걸 아는 것은 늦다(소유자 판정 2026-07-29).
+      [heading, demo],
+      [demo, caption],
+      [caption, terminal],
+      [terminal, install],
+      // 설치 3단이 판보다 먼저다 — 「설치가 간단하다」는 안심이 받기 결정의
+      // 재료라서다(승인 목업 b-hero 의 절 ⑤ 구조 그대로).
+      [install, primaryCta],
       [primaryCta, windows],
-      [windows, install],
-      [install, trust],
+      [windows, trust],
     ] as const) {
       expect(
         earlier.compareDocumentPosition(later) & Node.DOCUMENT_POSITION_FOLLOWING,
       ).toBeTruthy();
     }
+  });
+
+  /**
+   * 에이전트 절 (2026-08-18 재작업) — 장면은 **앱 안 대화(ACP)의 실측 왕복**
+   * 이다. 두 계약을 잠근다:
+   *
+   * 1. 재연되는 도구 호출은 원장(2026-08-16 (7))의 실측 원문이다 — 지어낸
+   *    출력으로 바뀌면 이 절의 논증(재연이지 연출이 아니다)이 무너진다.
+   * 2. 우리 실행기 목록을 설명하는 문구는 벤더가 허용한 표시 이름만 쓴다
+   *    (원장 2026-08-16 (5) · `vendor-naming.contract.test.ts` 와 같은 규칙 —
+   *    그 게이트의 사정거리는 레지스트리·설정 문구라 이 절은 여기서 잠근다).
+   */
+  it('replays the measured in-app ACP round trip verbatim, under the allowed vendor name', () => {
+    renderDownloadPage();
+
+    const chat = screen.getByTestId('gateway-agent-chat');
+    // 호출 **이름**은 프로그램 기록이라 어느 화면에서나 그대로다.
+    expect(chat).toHaveTextContent('add_relation');
+    /*
+     * `why` 페이로드는 **화면 언어를 따른다** (2026-08-18 정정). 그 문장은
+     * 프로그램이 지어낸 것이 아니라 바로 위 말풍선에 있는 사람의 문장이라,
+     * 영문 화면에서 말풍선만 영어이고 호출은 한국어이던 상태를
+     * `locale-purity` e2e 가 잡았다. 여기(영문 렌더)서는 영어를 요구하고,
+     * **날짜는 두 언어 모두에 남는다** — 재연이 어느 날의 실측인지가 이
+     * 장면의 근거이기 때문이다.
+     */
+    expect(chat).toHaveTextContent(/auth goes down payments go down with it \(2026-08-16\)/);
+
+    const section = screen.getByTestId('gateway-agents-section');
+    expect(section).not.toHaveTextContent(/Claude Code/i);
+    expect(section).toHaveTextContent(/Claude Agent/);
+    // 우리가 모델 접근을 제공한다는 인상 금지 — 「이미 쓰는 도구」 전제가 문구에 있다.
+    expect(section).toHaveTextContent(/already use/i);
+  });
+
+  /**
+   * 헤드라인은 **소유자의 문장 그대로**다 — 리메이크의 고정점이라 문장으로
+   * 잠근다(다듬어 고치는 순간 이 화면의 전제가 바뀐 것이고, 그건 원장을 거쳐야
+   * 한다). 두 줄 + 리드까지가 한 벌이다.
+   */
+  it('keeps the owner-verbatim headline and lead', () => {
+    renderDownloadPage();
+
+    const heading = screen.getByRole('heading', { level: 1 });
+    expect(heading).toHaveTextContent('Agents write the code.');
+    expect(heading).toHaveTextContent('People accumulate the cognitive debt.');
+    expect(
+      screen.getByText(/One markdown folder is where that debt gets repaid/i),
+    ).toBeInTheDocument();
+  });
+
+  /**
+   * 시연 절은 지금 붙은 자산이 무엇인지 정직하게 말한다 — 두 로케일이 같은
+   * 한국어 UI 잠정본을 공유하는 동안, 그 사실이 화면에 있어야 영어 방문자가
+   * 속지 않는다. 45초 촬영본이 붙으면 이 문장은 등록부의 `seconds` 만 따라
+   * 바뀐다(마크업 무변경 교체 계약).
+   */
+  it('states honestly that the demo clip is a provisional shared capture', () => {
+    renderDownloadPage();
+
+    const note = screen.getByTestId('demo-provisional-note');
+    expect(note).toHaveTextContent(/provisional 24s capture/i);
+    expect(note).toHaveTextContent(/Korean-UI recording/i);
   });
 
   // ─── 한 화면 = 한 버전 (2026-07-28 회귀) ──────────────────────────────────
