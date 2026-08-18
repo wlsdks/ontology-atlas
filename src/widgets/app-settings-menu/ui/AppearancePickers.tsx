@@ -4,12 +4,18 @@ import { useTranslations } from 'next-intl';
 import { cn } from '@/shared/lib/cn';
 import { useRovingRadioGroup } from '@/shared/lib/use-roving-radio-group';
 import {
+  ACCENTS,
+  ACCENT_ATTRIBUTE,
   CANVAS_BACKGROUNDS,
+  DEFAULT_ACCENT,
   GLYPH_SETS,
+  useAccent,
   useCanvasBackground,
   useGlyphSet,
+  writeAccent,
   writeCanvasBackground,
   writeGlyphSet,
+  type Accent,
   type CanvasBackground,
   type GlyphSet,
 } from '@/shared/lib/appearance-preferences';
@@ -248,6 +254,81 @@ export function GlyphSetPicker() {
                 )}
               >
                 {t(`glyphSet.${set}`)}
+              </span>
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+/**
+ * 악센트 스와치 — 실제 토큰으로 그린 정지 미리보기.
+ *
+ * `data-accent` 를 **스와치 자신에게** 걸어서, 인디고 타일은 인디고 값으로
+ * 그려진다(선택하지 않아도 진짜 색이 보인다). 앱 전역 속성과 같은 이름이라
+ * CSS 블록 하나가 두 자리를 다 먹인다 — 미리보기용 색을 따로 적지 않는다.
+ */
+function AccentSwatch({ variant }: { variant: Accent }) {
+  return (
+    <span
+      {...(variant === DEFAULT_ACCENT ? {} : { [ACCENT_ATTRIBUTE]: variant })}
+      aria-hidden
+      className="flex items-center gap-1"
+    >
+      <span className="h-4 w-4 rounded-full bg-[color:var(--color-indigo-brand)]" />
+      <span className="h-4 w-4 rounded-full bg-[color:var(--color-indigo-accent)]" />
+      <span className="h-4 w-4 rounded-full bg-[color:var(--color-indigo-a24)]" />
+    </span>
+  );
+}
+
+/**
+ * 악센트 피커 (2026-08-18) — 앱의 유일한 채색을 잉걸/인디고 중에서 고른다.
+ *
+ * 값과 «이 설정이 못 바꾸는 것»(구운 아이콘)의 설명은
+ * `src/shared/lib/appearance-preferences.ts` 의 `Accent` 주석에 있다. 여기서는
+ * 캡션 한 줄로 그 한계를 화면에도 적는다 — 안 적으면 Dock 아이콘이 안 바뀌는
+ * 것을 사용자가 결함으로 읽는다.
+ */
+export function AccentPicker() {
+  const t = useTranslations('nav.settingsMenu');
+  const value = useAccent();
+  /* 위 둘과 같은 이유로 그릇은 자리에, 행동은 훅에. */
+  const group = useRovingRadioGroup({ value, values: ACCENTS, onChange: writeAccent });
+  return (
+    <div className="px-3 py-2.5" data-testid="app-settings-accent">
+      <p className="text-body text-[color:var(--color-text-secondary)]">{t('accentLabel')}</p>
+      <p className="mt-0.5 break-keep text-label text-[color:var(--color-text-quaternary)]">
+        {t('accentCaption')}
+      </p>
+      <div {...group.groupProps} aria-label={t('accentLabel')} className="mt-2 grid grid-cols-2 gap-2">
+        {ACCENTS.map((accent: Accent, index) => {
+          const active = accent === value;
+          return (
+            <button
+              key={accent}
+              {...group.itemProps(index)}
+              type="button"
+              data-testid={`app-settings-accent-${accent}`}
+              className={controlClass({
+                shape: 'tile',
+                size: 'md',
+                className: cn(PICKER_TILE_FRAME, PICKER_TILE_INK(active)),
+              })}
+            >
+              <AccentSwatch variant={accent} />
+              <span
+                className={cn(
+                  'text-label',
+                  /* 위 두 피커와 같은 이유 — 활성 타일의 틴트 위에서는 soft 다. */
+                  active
+                    ? 'text-[color:var(--color-indigo-text-soft)]'
+                    : 'text-[color:var(--color-text-tertiary)]',
+                )}
+              >
+                {t(`accent.${accent}`)}
               </span>
             </button>
           );

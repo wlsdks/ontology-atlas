@@ -68,6 +68,12 @@
         "geometric": "Geometric (default)",
         "line": "Line"
       },
+      "accentLabel": "Accent colour",
+      "accentCaption": "Pick the app's single colour. The app icon is baked at install time, so it stays as it is",
+      "accent": {
+        "ember": "Copper (default)",
+        "indigo": "Indigo"
+      },
       "workspaceFolderLabel": "Workspace folder",
       "workspaceFolderEmpty": "None selected",
       "workspaceFolderDocCount": "{count} concept documents",

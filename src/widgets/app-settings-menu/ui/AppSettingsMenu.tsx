@@ -44,7 +44,7 @@ import {
 } from '@/shared/ui/route-focus-manager';
 import { AcpRuntimeSettings } from './AcpRuntimeSettings';
 import { VaultAgentSetupPanel } from './VaultAgentSetupPanel';
-import { CanvasBackgroundPicker, GlyphSetPicker } from './AppearancePickers';
+import { AccentPicker, CanvasBackgroundPicker, GlyphSetPicker } from './AppearancePickers';
 import { FootprintSettings } from './FootprintSettings';
 import { ExpandSettings } from './ExpandSettings';
 import { AgentActivitySettings } from './AgentActivitySettings';
@@ -795,6 +795,9 @@ export function AppSettingsMenu({
                 {/* 아이콘 세트는 지도 밖(INDEX·공방·상세 글리프)에도 적용되므로
                     지도 서브뷰가 아니라 여기 남는다. */}
                 <GlyphSetPicker />
+                {/* 악센트도 같은 이유로 여기다 — 지도만이 아니라 앱 전역의
+                    유일한 채색이라 지도 서브뷰에 두면 «지도 설정» 으로 읽힌다. */}
+                <AccentPicker />
                 {/* 화면 안내 다시 보기 (2026-07-26) — 안내는 목적지마다 한 번만
                     자동으로 뜨므로 되돌아올 길이 필요하다. 화면마다 도움말
                     버튼을 새로 만들면 화면별 크롬 수가 갈리므로(#65 계열),

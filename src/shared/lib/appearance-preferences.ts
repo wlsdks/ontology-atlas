@@ -148,6 +148,83 @@ export function useGlyphSet(): GlyphSet {
   return useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
 }
 
+/* ── 악센트 ──────────────────────────────────────────────────────────────── */
+
+/**
+ * 앱의 유일한 채색. 2026-08-18 에 인디고에서 **잉걸**(ember, `#c14a24`)로
+ * 바뀌었고(근거·실측: `docs/DECISIONS.md` 같은 날), 소유자 지시로 옛 인디고를
+ * 고를 수 있게 남겼다.
+ *
+ * ## 왜 «둘 중 하나» 이고 컬러피커가 아닌가
+ *
+ * 헌장이 *"채색은 인디고 하나"* 라고 못박은 이유는 취향이 아니라 **대비**다 —
+ * 두 값 다 채움 위 흰 글자가 AA 를 넘고, 다크 3표면 위 잉크가 전부 AA 를 넘는
+ * 것을 실측으로 확인한 팔레트다. 임의의 색을 고르게 하면 그 보증이 사라진다.
+ * 그래서 고를 수 있는 것은 **검증된 두 벌**뿐이다.
+ *
+ * ## 이 설정이 못 바꾸는 것
+ *
+ * 앱 아이콘 · 파비콘 · og 이미지는 **구운 그림**이라 런타임에 못 바꾼다
+ * (`scripts/build-brand-assets.mjs` 가 정본). Dock 에 뜨는 색은 빌드 시점에
+ * 고른 하나로 고정이다 — 설정 화면이 그 사실을 말한다.
+ *
+ * 적용은 `:root` 의 `data-accent` 속성 한 곳이고, CSS 가 그것으로 토큰 52개를
+ * 갈아끼운다(`app/globals.css` 맨 끝 블록).
+ */
+export type Accent = "ember" | "indigo";
+
+export const ACCENTS: readonly Accent[] = ["ember", "indigo"];
+
+export const DEFAULT_ACCENT: Accent = "ember";
+
+const ACCENT_KEY = "ontology-atlas:accent:v1";
+
+/** `:root` 에 실리는 속성 이름 — CSS 의 `:root[data-accent="indigo"]` 와 짝이다. */
+export const ACCENT_ATTRIBUTE = "data-accent";
+
+function isAccent(value: string | null): value is Accent {
+  return value !== null && (ACCENTS as readonly string[]).includes(value);
+}
+
+export function readAccent(): Accent {
+  if (typeof window === "undefined") return DEFAULT_ACCENT;
+  try {
+    const saved = window.localStorage.getItem(ACCENT_KEY);
+    return isAccent(saved) ? saved : DEFAULT_ACCENT;
+  } catch {
+    return DEFAULT_ACCENT;
+  }
+}
+
+/**
+ * `:root` 에 속성을 반영한다. 기본값일 때는 속성을 **지운다** — 남겨 두면
+ * 「기본값인데 속성이 있는 상태」와 「명시적으로 고른 상태」가 DOM 에서 구별되지
+ * 않아, 나중에 기본값을 바꿀 때 옛 기본값이 속성으로 굳어 버린다.
+ */
+export function applyAccentAttribute(value: Accent): void {
+  if (typeof document === "undefined") return;
+  const root = document.documentElement;
+  if (value === DEFAULT_ACCENT) root.removeAttribute(ACCENT_ATTRIBUTE);
+  else root.setAttribute(ACCENT_ATTRIBUTE, value);
+}
+
+export function writeAccent(value: Accent): void {
+  if (typeof window === "undefined") return;
+  try {
+    window.localStorage.setItem(ACCENT_KEY, value);
+  } catch {
+    // 위와 동일 — 저장이 막혀도 이벤트와 속성 반영으로 현재 세션은 갱신된다.
+  }
+  applyAccentAttribute(value);
+  notifyPreferenceChange();
+}
+
+export function useAccent(): Accent {
+  const getSnapshot = useCallback(() => readAccent(), []);
+  const getServerSnapshot = useCallback(() => DEFAULT_ACCENT, []);
+  return useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
+}
+
 /* ── 프레임 계기 ─────────────────────────────────────────────────────────── */
 
 /**

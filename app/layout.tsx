@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from 'next';
-import { JsonLd } from '@/shared/ui';
+import { AccentBootScript, JsonLd } from '@/shared/ui';
 import { JetBrains_Mono } from 'next/font/google';
 import localFont from 'next/font/local';
 import { SITE_URL } from '@/shared/config';
@@ -101,7 +101,15 @@ export default function RootLayout({
     <html
       lang="en"
       className={`${pretendard.variable} ${jetbrainsMono.variable} h-full overflow-x-hidden`}
+      suppressHydrationWarning
     >
+      {/*
+        악센트 팔레트를 첫 페인트 전에 심는다 (2026-08-18). 왜 인라인 스크립트
+        여야 하는지, 왜 자기 파일을 갖는지는 그 컴포넌트의 주석에 있다.
+        서버가 이 속성을 모르므로 `<html>` 에 `suppressHydrationWarning` 이
+        필요하다 — 속성 하나에 한정된 의도된 불일치다.
+      */}
+      <AccentBootScript />
       {/* 탭바 예약 패딩(pb-56px)을 지웠다 (2026-08-08) — 셸이 `h-dvh` 로
           뷰포트를 소유하기 전(2026-04-30 최초 임포트) 문서 스크롤 시대의
           유산이다. 지금 그 패딩은 아무것도 보호하지 않으면서 `<md` 전 페이지에

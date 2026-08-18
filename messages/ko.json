@@ -68,6 +68,12 @@
         "geometric": "기하(기본)",
         "line": "라인"
       },
+      "accentLabel": "강조 색",
+      "accentCaption": "앱에서 쓰는 색 하나를 고릅니다. 앱 아이콘은 설치할 때 색으로 고정이라 안 바뀌어요",
+      "accent": {
+        "ember": "구리(기본)",
+        "indigo": "인디고"
+      },
       "workspaceFolderLabel": "작업공간 폴더",
       "workspaceFolderEmpty": "선택 안 됨",
       "workspaceFolderDocCount": "개념 문서 {count}개",

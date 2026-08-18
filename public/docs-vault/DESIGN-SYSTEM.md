@@ -741,16 +741,25 @@ Defined via Tailwind 4's CSS-based `@theme`. See `app/globals.css` for the actua
 
 ### Accent (the only color)
 
-- `--color-indigo-brand`: `#5e6ad2`
-- `--color-indigo-accent`: `#7170ff`
-- `--color-indigo-hover`: `#828fff`
+⚠️ **2026-08-18: 악센트가 인디고에서 잉걸(ember)로 바뀌었다.** 토큰 이름은
+아직 `--color-indigo-*` 인데 값은 구리 계열이다 — 이름 정리는 별도 커밋으로
+따라온다(값 변경과 식별자 변경을 한 커밋에 섞지 않는다, `git.md`). 근거와
+실측은 `docs/DECISIONS.md` 2026-08-18 기록.
 
-**악센트 알파 스텝** (2026-08-04 등재). 새 색이 아니라 위 `#7170ff` 의 투명도
-단계다 — 브랜드 인디고(`--color-indigo-a*`)와 라인 인디고(`--color-indigo-line-a*`)
+- `--color-indigo-brand`: `#c14a24` (구 `#5e6ad2`)
+- `--color-indigo-accent`: `#f0894e` (구 `#7170ff`)
+- `--color-indigo-hover`: `#f5a06b` (구 `#828fff`)
+
+값은 손으로 고른 것이 아니라 **옛 인디고 램프의 L\*(밝기)와 C\*(채도)를 보존한
+채 색상각만 44.9° 로 돌려서** 얻었다. 그래서 앱의 명암 위계가 한 칸도 안
+움직인다.
+
+**악센트 알파 스텝** (2026-08-04 등재). 새 색이 아니라 위 `#f0894e` 의 투명도
+단계다 — 브랜드 악센트(`--color-indigo-a*`)와 라인 악센트(`--color-indigo-line-a*`)
 에는 알파 사다리가 있는데 악센트에만 없어서, 필요한 자리 3곳이 전부
-`rgba(113,112,255,·)` 를 **손으로 적고** 있었다.
+`rgba(240,137,78,·)` 를 **손으로 적고** 있었다.
 
-- `--color-indigo-accent-a32`: `rgba(113, 112, 255, 0.32)`
+- `--color-indigo-accent-a32`: `rgba(240, 137, 78, 0.32)`
 - `--color-indigo-accent-a50`: `rgba(113, 112, 255, 0.5)`
 
 **검색 일치 잉크** (2026-08-04 등재).
@@ -3096,8 +3105,15 @@ JSX 안에 44px 정사각 버튼이나 라벨 버튼을 인라인 클래스로 �
 
 | 톤 | 토큰 | 라이선스 (합성 대비 실측) |
 |---|---|---|
-| `accent` | `--color-indigo-accent` #7170ff — 앱 전역 99줄의 링크·라벨 관용구 | **맨 어두운 바탕까지만**: canvas 5.18 · panel 4.96 · elevated 4.53. 인디고 틴트(a14+/`line-a13`)나 앰버 힌트가 깔리면 3.5~4.4 로 WCAG 1.4.3 AA(4.5) 미달 — 호버 `a24` 는 canvas 위에서도 4.13 |
-| `accentOnTint` | `--color-indigo-text-soft` rgba(188,195,255,.92) — 공방·지도 패널이 손으로 이미 쓰던 글자 인디고 | 모든 바탕 × 모든 틴트 합성에서 6.46:1 이상 — 어디서나 안전 |
+| `accent` | `--color-indigo-accent` #f0894e — 앱 전역 99줄의 링크·라벨 관용구 | **잉걸 교체 후 어디서나 통과**: canvas 7.96 · panel 7.61 · elevated 6.97, 틴트 합성(`a24`/canvas)에서도 **6.50**. ⚠️ 인디고 시절에는 틴트 위에서 3.5~4.4 로 AA 미달이었고 **그것이 아래 두 톤을 가른 이유**였다 — 그 근거가 2026-08-18 에 사라졌다 |
+| `accentOnTint` | `--color-indigo-text-soft` rgba(253,182,158,.92) — 공방·지도 패널이 손으로 이미 쓰던 글자 악센트 | 모든 바탕 × 모든 틴트 합성에서 AA 이상 — 어디서나 안전 |
+
+> **두 톤을 하나로 접을 수 있게 됐다** (미실행). 위 표대로 `accent` 가 이제
+> 틴트 위에서도 AA 를 통과하므로 분리의 근거가 없다. 접는 것은
+> `src/shared/ui/control-class.ts` 의 **축 변경**이라 「체계」 자리 소집 +
+> 원장 기재가 필요해서 색 교체 커밋에 섞지 않았다. 그때까지 두 톤은 그대로
+> 살아 있고, 이 전제가 다시 뒤집히면
+> `tests/contract/accent-ink-contrast.contract.test.ts` 가 빨개진다.
 
 전수 29곳 중 **26곳이 틴트 채움/호버 채움을 지고 있어 실측 미달 상태**였다
 (대표: 설정 시트 인디고 칩 13곳 전부 — 호버 `line-a13`/panel 4.12). 그 26곳이

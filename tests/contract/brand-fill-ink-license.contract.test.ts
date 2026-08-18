@@ -89,18 +89,31 @@ describe("브랜드 면 위 잉크 — 라이선스는 값이 아니라 대비�
     }
   });
 
-  it("분리의 근거가 아직 실재한다 — text-primary 는 브랜드 면에서 실제로 AA 를 깬다", () => {
+  it("⚠️ text-primary 는 이제 브랜드 면을 통과한다 — 그러나 계약은 살아 있다", () => {
     /*
-     * `/gate-probe`: 빈 집합 위에서 공회전하는 검출기를 금지한다. 이 단언이
-     * 빨개지는 날은 두 잉크가 수렴해 아무 데나 써도 되는 날이고, 그날 이
-     * 계약은 접을 수 있다. 오늘은 4.42 대 4.70 으로 갈린다.
+     * **2026-08-18 에 방향이 뒤집힌 단언.** 원문은 *"분리의 근거가 아직
+     * 실재한다 — text-primary 는 브랜드 면에서 실제로 AA 를 깬다"* 였고
+     * `/gate-probe` 규율대로 *"이 단언이 빨개지는 날 이 계약은 접을 수 있다"* 고
+     * 적어 두었다. 악센트를 인디고(`#5e6ad2`)에서 잉걸(`#c14a24`)로 바꾸면서
+     * **4.42 → 4.62 로 통과**했다.
+     *
+     * **그런데 계약 자체는 접지 않는다.** 이 계약이 지키는 것은 「text-primary
+     * 하나」가 아니라 «브랜드 면 위에 아무 잉크나 얹지 않는다»이고, 무채색
+     * 중간 잉크(tertiary·quaternary)는 잉걸 면에서 여전히 크게 미달이다 —
+     * 같은 파일의 프로브가 그것으로 검출기를 증명한다. 접을 수 있는 것은
+     * 「primary 를 브랜드 면에서 금지한다」는 **한 줄**뿐이고, 그건 값 층의
+     * 판단이라 「체계」 자리와 원장을 거친다.
+     *
+     * 그러니 지금 이 단언이 지키는 것은 **여유가 얼마나 얇은가**다: 4.62 는
+     * AA(4.5)를 겨우 0.12 넘긴 값이라, 악센트를 조금만 밝히면 다시 미달로
+     * 떨어진다. 그 순간 여기가 빨개져서 알려 준다.
      */
     const primary = cssToken("--color-text-primary");
     const r = ratioOn(primary, SOLID_FILLS["indigo-brand"]);
     expect(
       r,
-      `text-primary 가 브랜드 면에서 ${r.toFixed(2)}:1 — AA 를 통과한다면 이 계약의 존재 이유를 재평가하라`,
-    ).toBeLessThan(AA);
+      `text-primary 가 브랜드 면에서 ${r.toFixed(2)}:1 — AA 미달로 떨어졌다. 악센트를 밝힌 변경을 되돌리거나 잉크를 on-accent 로 좁혀라`,
+    ).toBeGreaterThanOrEqual(AA);
   });
 });
 
@@ -224,9 +237,14 @@ describe("브랜드 면 × 잉크 페어링 — 소스 전수", () => {
      *
      * 이 수가 늘면 그중 하나가 「잉크를 다른 리터럴에 둔 진짜 짝」일 수 있다.
      * 그때는 상한을 올리기 전에 그 자리를 열어 봐야 한다.
+     *
+     * **2026-08-18: 17 → 18.** 악센트 팔레트 피커(`AppearancePickers.tsx` 의
+     * `AccentSwatch`)가 브랜드 면으로 그린 **미리보기 점**을 하나 더했다. 규칙대로
+     * 그 자리를 열어 확인했다 — `aria-hidden` 인 `<span>` 이고 글자가 없다(색을
+     * 보여 주는 것이 그 원소의 전부다). §1.4.3 의 대상이 아니므로 정당한 증가다.
      */
     const { inklessFills } = scan();
-    expect(inklessFills, "잉크 없는 브랜드 면 리터럴이 늘었다 — 각 자리가 정말 글자 없는 면인지 확인하라").toBeLessThanOrEqual(17);
+    expect(inklessFills, "잉크 없는 브랜드 면 리터럴이 늘었다 — 각 자리가 정말 글자 없는 면인지 확인하라").toBeLessThanOrEqual(18);
   });
 
   it("사각이 줄었으면 상한도 내린다 — 여유를 무료로 두지 않는다", () => {
@@ -238,12 +256,21 @@ describe("브랜드 면 × 잉크 페어링 — 소스 전수", () => {
     const { inklessFills } = scan();
     expect(
       inklessFills,
-      "잉크 없는 브랜드 면 리터럴이 줄었다 — 위 상한 17 도 같이 내려라.",
-    ).toBeGreaterThanOrEqual(17);
+      "잉크 없는 브랜드 면 리터럴이 줄었다 — 위 상한 18 도 같이 내려라.",
+    ).toBeGreaterThanOrEqual(18);
   });
 
   it("탐지기가 심은 위반을 잡고 정상 짝은 놓아준다", () => {
-    const bad = `rounded-full bg-[color:var(--color-indigo-brand)] text-[color:var(--color-text-primary)]`;
+    /*
+     * ⚠️ **심는 위반이 2026-08-18 에 바뀌었다.** 종전 `bad` 는
+     * `--color-text-primary`(#f7f8f8)였다 — 인디고(`#5e6ad2`) 면 위에서 4.42:1 로
+     * AA 미달이었기 때문이다(`design-gates.md` 「값이 아니라 «자리» 가 토큰을
+     * 정한다」가 기록한 그 수치). 악센트가 잉걸(`#c14a24`)로 바뀌면서 같은 짝이
+     * **4.62:1 로 통과**하게 됐고, 그래서 그 문자열은 더 이상 위반이 아니다 —
+     * 심은 위반이 위반이 아니게 되면 이 프로브는 검출기를 증명하지 못한다.
+     * 새 `bad` 는 잉걸 면 위에서 확실히 미달인 무채색 중간 잉크를 쓴다.
+     */
+    const bad = `rounded-full bg-[color:var(--color-indigo-brand)] text-[color:var(--color-text-tertiary)]`;
     const good = `rounded-full bg-[color:var(--color-indigo-brand)] text-[color:var(--color-text-on-accent)]`;
     const inkless = `h-1 w-1 rounded-full bg-[color:var(--color-indigo-brand)]`;
     const tint = `bg-[color:var(--color-indigo-a16)] text-[color:var(--color-text-primary)]`;
