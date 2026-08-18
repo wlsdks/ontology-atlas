@@ -3,6 +3,8 @@ import { resolve } from "node:path";
 
 import { describe, expect, it } from "vitest";
 
+import { realmDepthClarityAlpha } from "@/widgets/topology-map-v2/model/realm-transition";
+
 /**
  * 지도 잉크는 **WCAG 1.4.11(비텍스트 대비 3:1)** 위에 있어야 한다는 계약.
  *
@@ -147,6 +149,34 @@ describe("topology ink contrast contract", () => {
       expect(contrast(override[1], CANVAS), `${name} 관문 오버라이드`).toBeGreaterThanOrEqual(
         contrast(readToken(name), CANVAS),
       );
+    }
+  });
+
+  it("깊이 선명도 알파와 **합성해도** 잉크 사다리가 3:1 바닥 위다", () => {
+    // 도해석 실측 (2026-08-18): `--topology-v2-ink-depth-leaf`(#60606d, 단독
+    // 3.19:1)에 S5 선명도 알파 0.84 를 곱하면 지도 표면 위 합성 대비가
+    // **2.58:1** — 단독 검사(위 첫 테스트)만으로는 안 잡히는 종류의 미달이다.
+    // 렌더가 실제로 곱하는 알파(`realmDepthClarityAlpha`)로 합성한 값을 재야
+    // 화면을 잰다. (3D 돔의 깊이 안개는 소유자 유예로 이 바닥 밖에 있다 —
+    // `docs/DECISIONS.md` «3D 유예 목록». 이 계약은 2D 지도의 것이다.)
+    const surface = readToken("topology-v2-canvas-bg-near");
+    const compositeHex = (ink: string, alpha: number, bg: string): string => {
+      const ch = (hex: string, i: number) => parseInt(hex.slice(i, i + 2), 16);
+      const mix = (i: number) => Math.round(ch(ink, i) * alpha + ch(bg, i) * (1 - alpha));
+      return `#${[1, 3, 5].map((i) => mix(i).toString(16).padStart(2, "0")).join("")}`;
+    };
+    const CASES: ReadonlyArray<readonly [token: string, depth: number]> = [
+      ["topology-v2-ink-depth-top", 1],
+      ["topology-v2-ink-depth-mid", 2],
+      ["topology-v2-ink-depth-leaf", 3],
+    ];
+    for (const [token, depth] of CASES) {
+      const alpha = realmDepthClarityAlpha(depth);
+      const composed = compositeHex(readToken(token), alpha, surface);
+      expect(
+        contrast(composed, surface),
+        `${token} × 알파 ${alpha} 합성`,
+      ).toBeGreaterThanOrEqual(MIN_CONTRAST);
     }
   });
 });

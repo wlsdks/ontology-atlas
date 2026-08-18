@@ -131,6 +131,8 @@ export interface TraceDrawState {
    * depends/ego/dim 경로는 기존 그대로 (타입·주의 채널은 사다리와 직교).
    */
   level?: 0 | 1 | 2;
+  /** 3D 보기 — 선 굵기 배수(깊이 감쇠). 생략 시 1 (2D 동일). */
+  widthScale?: number;
   /**
    * `prefers-reduced-motion: reduce`. The comet tail is the one moving mark
    * this module paints, so honouring the preference here is what keeps the
@@ -299,6 +301,10 @@ export function draw(ctx: CanvasRenderingContext2D, state: TraceDrawState, token
       width = (1 + (0.45 - 1) * farT) * CONTAINS_LEVEL_WIDTH_FACTOR[level];
     }
   }
+
+  // 3D 보기 — 깊이에 따른 헤어라인 감쇠(히어로 lw 감쇠의 배수 형태).
+  // 호출부(`topology-frame-draw.ts`)가 돔 램프×깊이로 계산해 넘기고, 2D 는 1.
+  width *= state.widthScale ?? 1;
 
   ctx.strokeStyle = stroke;
   // 대칭 관계(`related_to`)는 파선을 쓰되 **테이퍼를 주지 않는다** — 양끝이

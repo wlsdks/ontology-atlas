@@ -183,8 +183,10 @@ describe("realmDepthClarity (S5 깊이 선명도)", () => {
   it("알파는 깊을수록 낮고 depth≤1 은 1.0", () => {
     expect(realmDepthClarityAlpha(0)).toBe(1);
     expect(realmDepthClarityAlpha(1)).toBe(1);
-    expect(realmDepthClarityAlpha(2)).toBeCloseTo(0.92);
-    expect(realmDepthClarityAlpha(3)).toBeCloseTo(0.84);
+    // 0.92/0.84 에서 0.98/0.96 으로 (2026-08-18) — 0.84 는 leaf 잉크와 합성해
+    // 2.58:1 로 WCAG 1.4.11 바닥(3:1) 아래였다. 최소 안전 알파 0.955 위로.
+    expect(realmDepthClarityAlpha(2)).toBeCloseTo(0.98);
+    expect(realmDepthClarityAlpha(3)).toBeCloseTo(0.96);
     expect(realmDepthClarityAlpha(7)).toBe(realmDepthClarityAlpha(3));
   });
 

@@ -21,7 +21,7 @@ import {
 
 import type { CameraAxes, CameraTarget } from "../engine/camera";
 import { MAX_FRAME_DELTA_SECONDS } from "../engine/spring";
-import { cameraTransitionDurationMs, easeCameraKeyframe, type CameraKeyframe, type CameraTween } from "../model/camera-easing";
+import { CAMERA_TRANSITION_MIN_MS, cameraTransitionDurationMs, easeCameraKeyframe, easeInOutCubic, type CameraKeyframe, type CameraTween } from "../model/camera-easing";
 import { stepTugAxis, tugFactorForHop, tugFalloffForDistance } from "../interaction/drag-tug";
 import { isCameraUnsettled, isCanvasActive, isEgoTailAnimating, shouldSkipFrame } from "../model/idle-gate";
 import { ambientSleepFactor, isAmbientAsleep } from "../model/ambient-sleep";
@@ -38,7 +38,7 @@ import { createAnimatedBackground, type AnimatedBackground } from "../render/ani
 import { buildDustPoints, buildRealmCosmosPoints, computeStarDustCount, type DustPoint } from "../render/starfield";
 import { DEFAULT_EXPAND } from "@/shared/lib/appearance-preferences";
 import type { CanvasBackground, ExpandPreference, FootprintPreference, GlyphSet } from "@/shared/lib/appearance-preferences";
-import { centerForInsets, computeClusterFitTarget, computeFocusCameraTarget, computeOverviewCameraTarget, computeOverviewFitScale, fitWorldTarget, hasAnyNodeOnScreen, worldToScreen } from "./topology-camera-math";
+import { centerForInsets, computeClusterFitTarget, computeDomeFocusCameraTarget, computeFocusCameraTarget, computeOverviewCameraTarget, computeOverviewFitScale, fitWorldTarget, hasAnyNodeOnScreen, worldToScreen } from "./topology-camera-math";
 import { drawTopologyFrame } from "./topology-frame-draw";
 import { relaxNewlyVisible } from "../model/layout";
 import { computeTopologyClusterState } from "./topology-cluster-state";
@@ -74,6 +74,27 @@ import {
   ZERO_PARALLAX,
   type DepthParallaxOffset,
 } from "../model/realm-depth-parallax";
+import {
+  buildDomeModel,
+  clampDomePitch,
+  createDomeRuntime,
+  decayOrbitVelocity,
+  DOME_ASSEMBLE_TOTAL_MS,
+  DOME_PERIOD_MS,
+  DOME_PITCH_DEFAULT,
+  DOME_POSE_MS,
+  DOME_TIER_LAG,
+  DOME_TIER_LAG_DECAY_PER_MS,
+  domeEgoWorldBounds,
+  domeFocusYaw,
+  domeNearestYawTurn,
+  domeWorldBounds,
+  ORBIT_SMOOTH_TAU_MS,
+  projectDomeCoord,
+  stepDomeDragSpring,
+  updateDomeFrame,
+  type DomeRuntime,
+} from "../model/dome-view";
 import { buildRealmRuntimeData, fallbackAngleFor, realmCameraTarget, realmVisibleBounds, type RealmRuntimeData } from "./topology-realm-runtime";
 import { computeVisibleWardingRadius } from "../model/realm";
 import { initWardingFit, stepWardingFit, type WardingFitState } from "../model/realm-warding-fit";
@@ -369,6 +390,14 @@ export interface UseTopologyLoopArgs {
    * 배경이고 앰비언트 휴면을 그대로 탄다. 생략 시 `"dot"`.
    */
   canvasBackground?: CanvasBackground;
+  /**
+   * 3D 보기 (2026-08-18, 옵트인) — 지도를 kind 동심 링의 돔으로 다시 배치해
+   * 그리는 뷰 모드(`model/dome-view.ts`). 드로우·히트테스트·DOM 앵커·검사
+   * 훅이 전부 같은 프레임 맵을 읽는다. 생략 시 false(종전 2D 그대로).
+   */
+  view3d?: boolean;
+  /** 3D 리프레임 입력 — 상세 패널이 화면을 덮고 있는가(`TopologyMapV2` JSDoc). */
+  detailPanelVisible?: boolean;
   /** 발자국 표현 설정. 생략/`null` 이면 발자국을 그리지 않는다. */
   footprint?: FootprintPreference | null;
   /**
@@ -382,6 +411,10 @@ export interface UseTopologyLoopArgs {
   ambientSleepDelayMs?: number;
 }
 
+/** 3D 돔 — 접힘/칩 소비자 비우기용 불변 상수(프레임당 할당 0). */
+const EMPTY_DOME_CLUSTERED: ReadonlySet<string> = new Set();
+const EMPTY_DOME_CHIPS: readonly ClusterChip[] = [];
+
 const EMPTY_EXPANDED_SET: ReadonlySet<string> = new Set();
 const EMPTY_TRAIL: readonly string[] = [];
 
@@ -393,7 +426,7 @@ export type UseTopologyLoopResult = TopologyPointerHandlers & {
 };
 
 export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResult {
-  const { nodes, edges, focusedSlug, emphasizedNeighborSlug = null, dataSourceKey = null, overviewFit = "spine", fitViewToken, spotlightFitToken = 0, relayoutToken, revealToken = 0, onSelectEdge, onHoverEdge, onSelect, onPaneClick, onVisibleCountChange, onGraphStatsChange, onZoomTierChange, onContextMenuNode, onContextMenuPane, agentFocusNodeId = null, spotlightIds = null, selectedEdge = null, expandedParents = EMPTY_EXPANDED_SET, onToggleCluster, onHoverCluster, realmRootId = null, onEnterRealm, realmEnterButtonRef, realmCaption = null, visitedTrail = EMPTY_TRAIL, trailLensActiveRef, clusterBarLabels = null, trailHoverNodeIdRef, panelHoverNodeIdRef, tierReveal = DEFAULT_TIER_REVEAL, tourAnchorNodeId = null, tourAnchorRef, glyphSet = "geometric", canvasBackground = "dot", footprint = null, expand = DEFAULT_EXPAND, wheelIntent = "zoom", ambientSleepDelayMs, onWalkDeadEnd = null } = args;
+  const { nodes, edges, focusedSlug, emphasizedNeighborSlug = null, dataSourceKey = null, overviewFit = "spine", fitViewToken, spotlightFitToken = 0, relayoutToken, revealToken = 0, onSelectEdge, onHoverEdge, onSelect, onPaneClick, onVisibleCountChange, onGraphStatsChange, onZoomTierChange, onContextMenuNode, onContextMenuPane, agentFocusNodeId = null, spotlightIds = null, selectedEdge = null, expandedParents = EMPTY_EXPANDED_SET, onToggleCluster, onHoverCluster, realmRootId = null, onEnterRealm, realmEnterButtonRef, realmCaption = null, visitedTrail = EMPTY_TRAIL, trailLensActiveRef, clusterBarLabels = null, trailHoverNodeIdRef, panelHoverNodeIdRef, tierReveal = DEFAULT_TIER_REVEAL, tourAnchorNodeId = null, tourAnchorRef, glyphSet = "geometric", canvasBackground = "dot", view3d = false, detailPanelVisible = false, footprint = null, expand = DEFAULT_EXPAND, wheelIntent = "zoom", ambientSleepDelayMs, onWalkDeadEnd = null } = args;
 
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const containerRef = useRef<HTMLDivElement | null>(null);
@@ -433,6 +466,25 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
   // (tierReveal 선례). 설정 변경 시 아래 effect 가 갱신한다.
   const glyphStyleRef = useRef<"fill" | "line">(glyphSet === "line" ? "line" : "fill");
   const canvasBackgroundRef = useRef<CanvasBackground>(canvasBackground);
+  /** 3D 보기 타깃 — 매 프레임(드로우)·이벤트(히트)가 읽으므로 ref 미러. */
+  const view3dRef = useRef<boolean>(view3d);
+  /**
+   * 돔 런타임(`model/dome-view.ts#DomeRuntime`) — 모델·자세(yaw/pitch)·관성·
+   * 조립 시계·이번 프레임 전달 맵을 담는 단일 상자. 루프가 매 프레임 갱신하고
+   * 포인터 핸들러(궤도·평면 드래그·히트)와 계기가 같은 상자를 읽는다.
+   */
+  const domeRuntimeRef = useRef<DomeRuntime | null>(null);
+  /** 돔 모델이 어느 월드에서 계산됐나 — 월드가 갈리면 레이아웃 재계산. */
+  const domeWorldSourceRef = useRef<unknown>(null);
+  /**
+   * 3D 선택 리프레임 대기 — 포커스 effect 가 적고 루프의 돔 스텝이 소비한다.
+   * effect 시점에는 월드가 재구축 중일 수 있어(선택이 조상 클러스터를 같이
+   * 펼친다) 거기서 직접 계산하면 조용히 무산된다 — 루프는 항상 라이브 월드를
+   * 쥐고 있으므로 다음 돔 프레임에서 확실히 처리된다.
+   */
+  const domeFocusPendingRef = useRef<{ slug: string | null } | null>(null);
+  /** 3D 켜짐 직후 1회 — 카메라를 돔 bbox 로 시네마틱 핏(끄기는 카메라 불변). */
+  const domeFitPendingRef = useRef(false);
   /** 발자국 설정 + 잉크 — 매 프레임 읽으므로 ref 미러(캔버스 배경과 같은 패턴). */
   const footprintPrefRef = useRef<FootprintPreference | null>(footprint ?? null);
   /**
@@ -975,6 +1027,40 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
   useEffect(() => {
     glyphStyleRef.current = glyphSet === "line" ? "line" : "fill";
   }, [glyphSet]);
+  // 3D 토글 — 툴바 칩에서 바꾸는 순간 다음 프레임부터 조립/해체 램프가
+  // 걸린다. 유휴 스킵 중일 수 있으므로 활동 시각을 밀어 깨운다(noteInput 계약).
+  useEffect(() => {
+    if (view3dRef.current === view3d) return;
+    view3dRef.current = view3d;
+    // 켜짐 → 다음 프레임의 돔 스텝이 돔 bbox 로 카메라를 핏한다(시네마틱
+    // 트윈). 끄기는 카메라를 건드리지 않는다 — 노드가 제자리로 morph 해
+    // 돌아오므로 화면이 튀지 않는다(2D 연속성 계약).
+    domeFitPendingRef.current = view3d;
+    // 3D 재진입은 «아직 만지지 않은 화면»의 재시작이다 — 시선 끌기 회전을
+    // 재무장한다(개입 시 내려가는 규칙은 spinArmed JSDoc).
+    if (view3d && domeRuntimeRef.current !== null) domeRuntimeRef.current.spinArmed = true;
+    lastInputMsRef.current = performance.now();
+    lastActiveMsRef.current = lastInputMsRef.current;
+  }, [view3d]);
+  // 3D — 상세 패널의 열림/닫힘은 카메라에게 「창 크기가 바뀐 사건」이다
+  // (2026-08-18 소유자: *"카메라 움직임이 패널 위치 고려해서 알아서 보기 좋은
+  // 사이즈로 변형되도록"*). 선택이 살아 있는 동안 이 플립이 오면 선택 노드를
+  // 새 보이는-영역 인셋으로 다시 프레이밍한다(같은 시네마틱 트윈 — 순간이동
+  // 없음). 값은 마운트 기준이라 닫힘은 퇴장 애니 종료 후(패널이 DOM 을 떠나
+  // 인셋 실측이 참이 된 뒤) 도착한다. 2D 는 이 사건을 쓰지 않는다 — 2D 포커스
+  // 목표는 선택 시점에 이미 패널 인셋을 반영하고, 패널 닫힘 = 선택 해제라
+  // 별도 재프레이밍 지점이 없다(바이트 동일 계약).
+  const lastDetailPanelVisibleRef = useRef(detailPanelVisible);
+  useEffect(() => {
+    if (lastDetailPanelVisibleRef.current === detailPanelVisible) return;
+    lastDetailPanelVisibleRef.current = detailPanelVisible;
+    if (!view3dRef.current || realmTransitionRef.current.phase !== "idle") return;
+    if (domeRuntimeRef.current === null) return;
+    const slug = focusedSlugRef.current;
+    if (slug === null) return;
+    domeFocusPendingRef.current = { slug };
+    lastActiveMsRef.current = performance.now();
+  }, [detailPanelVisible]);
   // 확장 설정 변경 — 다음 프레임부터 새 표시/배치/개수. 값만 갈아끼우므로
   // 월드 재빌드 없이 즉시 반영된다(배치는 아래 레이아웃 effect 가 다시 푼다).
   useEffect(() => {
@@ -1502,6 +1588,40 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
       beginCameraTween(target);
       return;
     }
+    // 3D 「제자리로」 — 요리조리 돌리다 방향을 잃었을 때의 귀환로. 자세를 기본
+    // (yaw 0.55 · pitch 0.34)으로 이징하고, 카메라는 그 자세의 돔 bbox 로 핏한다.
+    // yaw 목표는 현재 각의 가장 가까운 등가각 — 반대로 반 바퀴 돌지 않는다.
+    const dome = domeRuntimeRef.current;
+    if (dome !== null && dome.active) {
+      const targetYaw = domeNearestYawTurn(0.55, dome.yaw);
+      dome.yawVel = 0;
+      dome.pitchVel = 0;
+      dome.orbiting = false;
+      dome.poseTween = { startYaw: dome.yaw, startPitch: dome.pitch, targetYaw, targetPitch: DOME_PITCH_DEFAULT, startMs: performance.now(), durationMs: DOME_POSE_MS };
+      // 「자동 정렬」은 자세를 집으로 돌리는 명시적 리셋이다 — 여기서만 시선
+      // 끌기 회전이 재무장된다(사용자 개입으로 내려간 spinArmed 의 복귀로).
+      dome.spinArmed = true;
+      const domeBounds = domeWorldBounds(dome.model, targetYaw, DOME_PITCH_DEFAULT);
+      if (domeBounds !== null) {
+        const padX = (domeBounds.maxX - domeBounds.minX) * 0.15;
+        const padY = (domeBounds.maxY - domeBounds.minY) * 0.15;
+        const target = computeOverviewCameraTarget(
+          { minX: domeBounds.minX - padX, minY: domeBounds.minY - padY, maxX: domeBounds.maxX + padX, maxY: domeBounds.maxY + padY },
+          width,
+          height,
+          tokens,
+          world.nodes.length,
+        );
+        cameraTargetRef.current = target;
+        dome.fitScale = target.tscale;
+        userDrivenCameraRef.current = false;
+        dampingRef.current = tokens.cameraDampingDefault;
+        cameraAngularFreqRef.current = tokens.cameraSpringAngFreqTransition;
+        beginCameraTween(target);
+        lastActiveMsRef.current = performance.now();
+        return;
+      }
+    }
     // Panel-aware: spring back to the overview centered in the VISIBLE area, not
     // behind the left ReaderLens panel (Design Guardian 카메라 반려). Fits the
     // SPINE bbox (not the full 295-node bounds) so "fit view" reframes the same
@@ -1694,6 +1814,17 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
     // skipped even if the camera-target computation bails out for some
     // reason.
     selectionPulseRef.current = focusedSlug !== null ? { nodeId: focusedSlug, startAtMs: performance.now() } : null;
+
+    // 3D 돔 — 카메라 목표를 여기서 계산하지 않는다. 2D 식(`computeFocusCamera
+    // Target`)은 노드의 **2D 좌표** 기준이라 돔이 그린 자리와 다르고, 이
+    // effect 시점에는 선택이 조상 클러스터를 함께 펼치며 월드가 재구축 중일
+    // 수 있어 조용히 무산된다(2026-08-18 실측: 3D 선택 시 카메라 배율이 한
+    // 번도 움직이지 않았다). 대기표만 적고 루프의 돔 스텝이 라이브 월드로
+    // yaw 리프레임 + 카메라 트윈을 함께 세운다.
+    if (view3dRef.current && realmTransitionRef.current.phase === "idle" && domeRuntimeRef.current !== null) {
+      domeFocusPendingRef.current = { slug: focusedSlug };
+      return;
+    }
 
     const tokens = readTopologyV2TokensOrNull();
     const world = worldRef.current;
@@ -2017,6 +2148,32 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
         const ambientFactor = ambientSleepFactor(now, lastInputMsRef.current, ambientSleepDelayRef.current);
         const ambientAsleep = isAmbientAsleep(ambientFactor);
 
+        // 3D — 돔이 아직 움직여야 하는가(조립/해체 램프 · 자율 회전 · 궤도
+        // 관성 · 비틀림 스프링백 · 평면 드래그 스프링 · 「제자리로」 이징).
+        // 자율 회전은 포인터가 캔버스 위면(bgPointer 존재) 정지 — 조준한
+        // 노드가 커서 밑에서 미끄러지지 않게 한다.
+        const domeRt = domeRuntimeRef.current;
+        const domeTargetOn = view3dRef.current && realmTransitionRef.current.phase === "idle";
+        const domeMotion =
+          (domeTargetOn && (domeRt === null || domeRt.rampClock < DOME_ASSEMBLE_TOTAL_MS)) ||
+          (domeRt !== null &&
+            ((!domeTargetOn && domeRt.rampClock > 0) ||
+              domeRt.yawVel !== 0 ||
+              domeRt.pitchVel !== 0 ||
+              domeRt.drag !== null ||
+              domeRt.poseTween !== null ||
+              domeFocusPendingRef.current !== null ||
+              Math.abs(domeRt.lag.domain) + Math.abs(domeRt.lag.capability) + Math.abs(domeRt.lag.element) > 1e-4 ||
+              domeRt.pitch !== clampDomePitch(domeRt.pitch) ||
+              // 자율 회전이 돌 수 있는 조건일 때만 rAF 를 깨워 둔다 — 개입으로
+              // spinArmed 가 내려간 돔은 정지 화면이라 유휴 게이트에 맡긴다.
+              (domeTargetOn &&
+                !reducedMotionRef.current &&
+                !domeRt.orbiting &&
+                domeRt.spinArmed &&
+                bgPointerRef.current === null &&
+                domeRt.rampClock >= DOME_ASSEMBLE_TOTAL_MS)));
+
         const active = isCanvasActive({
           pointerActive: pointerMachineRef.current.phase !== "idle",
           // 드래그 grab/release 가 heat 를 충전하는 동안(또는 노드가 pin 된
@@ -2081,11 +2238,300 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
           // 둬야 안무가 유휴 게이트에 얼지 않는다.
         }) ||
         realmTransitionRef.current.phase === "entering" ||
-        realmTransitionRef.current.phase === "exiting";
+        realmTransitionRef.current.phase === "exiting" ||
+        domeMotion;
         if (active) lastActiveMsRef.current = now;
         else if (shouldSkipFrame(now, lastActiveMsRef.current, IDLE_GRACE_MS)) {
           handle = requestAnimationFrame(frame);
           return;
+        }
+      }
+
+      // --- 3D 돔 스텝 (2026-08-18) — 자세·관성·조립 시계·프레임 맵을 매
+      // 프레임 갱신한다. 값·물성은 전부 `model/dome-view.ts` 명공간 안에 산다
+      // (소유자 유예: 3D 모드는 앱 모션 규약 밖 — `docs/DECISIONS.md`). ---
+      {
+        const domeTargetOn = view3dRef.current && realmTransitionRef.current.phase === "idle";
+        let dome = domeRuntimeRef.current;
+        if (domeTargetOn || (dome !== null && dome.rampClock > 0)) {
+          if (dome === null || domeWorldSourceRef.current !== world) {
+            const model = buildDomeModel(
+              world.nodes.map((n) => ({ id: n.id, kind: n.kind, x: n.x, y: n.y, parentId: n.parentId })),
+            );
+            if (dome === null) {
+              dome = createDomeRuntime(model);
+              domeRuntimeRef.current = dome;
+              // 3D 가 켜진 채 지도가 뜨는 경우(선호 저장 후 재방문) — 토글
+              // 이펙트가 안 돌므로 여기서 첫 핏을 예약한다.
+              if (domeTargetOn) domeFitPendingRef.current = true;
+            } else {
+              // 월드가 갈렸다 — 레이아웃만 다시 풀고 자세(yaw/pitch)는 지킨다.
+              dome.model = model;
+              dome.frame.clear();
+              dome.drawnBounds = null;
+              dome.drag = null;
+            }
+            domeWorldSourceRef.current = world;
+          }
+          dome.active = domeTargetOn;
+          // 켜짐 직후 1회 — 돔 전체가 여백을 갖고 화면에 앉게 카메라 핏.
+          // 여백 15% (히어로의 «물체가 가운데, 절반은 공» 판정).
+          if (domeFitPendingRef.current && domeTargetOn) {
+            domeFitPendingRef.current = false;
+            const b = domeWorldBounds(dome.model, dome.yaw, dome.pitch);
+            if (b !== null) {
+              const padX = (b.maxX - b.minX) * 0.15;
+              const padY = (b.maxY - b.minY) * 0.15;
+              const target = computeOverviewCameraTarget(
+                { minX: b.minX - padX, minY: b.minY - padY, maxX: b.maxX + padX, maxY: b.maxY + padY },
+                width,
+                height,
+                tokens,
+                world.nodes.length,
+              );
+              cameraTargetRef.current = target;
+              // 핏 배율이 2D 하한 밑이면 그 배율까지 하한을 내린다 — 안 그러면
+              // 목표≠값이 서서 휠 앵커가 허구의 배율로 계산된다(`fitScale` JSDoc).
+              dome.fitScale = target.tscale;
+              userDrivenCameraRef.current = false;
+              dampingRef.current = tokens.cameraDampingDefault;
+              cameraAngularFreqRef.current = tokens.cameraSpringAngFreqTransition;
+              beginCameraTween(target);
+            }
+          }
+          const dtMs = dt * 1000;
+          // 조립/해체 시계 — 켬은 정방향(티어 스태거), 끔은 1.6배속 역방향.
+          // reduced-motion 은 스냅(자율 조립 연출도 앱이 만드는 모션이다).
+          if (reducedMotionRef.current) {
+            dome.rampClock = domeTargetOn ? DOME_ASSEMBLE_TOTAL_MS : 0;
+          } else {
+            dome.rampClock = Math.max(
+              0,
+              Math.min(DOME_ASSEMBLE_TOTAL_MS, dome.rampClock + (domeTargetOn ? dtMs : -dtMs * 1.6)),
+            );
+          }
+          // 3D 선택 리프레임 — 포커스 effect 가 적어 둔 대기를 이번 프레임에
+          // 소비한다(왜 effect 가 아니라 여기인가: `domeFocusPendingRef` JSDoc).
+          // 2D 포커스 다이브의 돔 등가물: 노드가 구조의 뒷면일 수 있으므로
+          // 줌·팬만으로는 대상이 가려진 채 커진다 — yaw(앞면으로) · 카메라
+          // 팬/줌(ego 투영 bbox 로)이 **같은 시계**(큐빅 ease-in-out, 같은
+          // duration)를 타고 함께 도착한다. 새 이징 문법 없음.
+          if (
+            domeFocusPendingRef.current !== null &&
+            domeTargetOn &&
+            // 제스처 우선 — 사용자가 궤도/드래그 중이면 프로그램 이동을 세우지
+            // 않고 대기표를 버린다(입력이 항상 이긴다 — 트윈 중단 계약과 대칭).
+            !dome.orbiting &&
+            pointerMachineRef.current.phase !== "dragging"
+          ) {
+            const pending = domeFocusPendingRef.current;
+            domeFocusPendingRef.current = null;
+            const { width, height } = viewportRef.current;
+            if (width > 0 && height > 0) {
+              if (pending.slug === null) {
+                // 해제 — 자세는 두고(사용자의 시점 존중) 카메라만 현재 자세의
+                // 돔 전체 프레임으로 복귀한다(2D 의 overview 복귀 등가).
+                const b = domeWorldBounds(dome.model, dome.yaw, dome.pitch);
+                if (b !== null) {
+                  const padX = (b.maxX - b.minX) * 0.15;
+                  const padY = (b.maxY - b.minY) * 0.15;
+                  const target = computeOverviewCameraTarget(
+                    { minX: b.minX - padX, minY: b.minY - padY, maxX: b.maxX + padX, maxY: b.maxY + padY },
+                    width,
+                    height,
+                    tokens,
+                    world.nodes.length,
+                  );
+                  cameraTargetRef.current = target;
+                  dome.fitScale = target.tscale;
+                  userDrivenCameraRef.current = false;
+                  dampingRef.current = tokens.cameraDampingDefault;
+                  cameraAngularFreqRef.current = tokens.cameraSpringAngFreqTransition;
+                  beginCameraTween(target);
+                }
+              } else {
+                // 선택은 개입이다 — 시선 끌기 회전은 여기서 내려간다 (①).
+                // 좌표가 없는 노드(돔 모델 밖 kind)여도 개입은 개입이다.
+                dome.spinArmed = false;
+                const coord = dome.model.coords.get(pending.slug);
+                if (coord !== undefined) {
+                  dome.orbiting = false;
+                  dome.yawVel = 0;
+                  dome.pitchVel = 0;
+                  const targetYaw = domeFocusYaw(coord, dome.yaw);
+                  const targetPitch = clampDomePitch(dome.pitch);
+                  const egoIds = [pending.slug, ...(world.neighborMap.get(pending.slug) ?? [])];
+                  const b = domeEgoWorldBounds(dome.model, egoIds, targetYaw, targetPitch);
+                  if (b !== null) {
+                    const overviewEntryScale = overviewScaleRef.current * tokens.overviewEntryRatio;
+                    const anchorAtTarget = projectDomeCoord(dome.model, coord, targetYaw, targetPitch);
+                    const target = computeDomeFocusCameraTarget(
+                      b,
+                      cameraTokens(tokens),
+                      width,
+                      height,
+                      overviewEntryScale,
+                      dome.fitScale,
+                      { x: anchorAtTarget.wx, y: anchorAtTarget.wy },
+                    );
+                    const start: CameraKeyframe = {
+                      x: cameraRef.current.x.value,
+                      y: cameraRef.current.y.value,
+                      scale: cameraRef.current.scale.value,
+                    };
+                    // duration — 카메라 항(거리 비례, 기존 식)과 자세 항(반 바퀴
+                    // = `DOME_POSE_MS`) 중 큰 쪽. 두 축이 한 시계로 함께 도착한다.
+                    const yawSpan = Math.abs(targetYaw - dome.yaw) + Math.abs(targetPitch - dome.pitch);
+                    const yawMs =
+                      CAMERA_TRANSITION_MIN_MS +
+                      Math.min(1, yawSpan / Math.PI) * (DOME_POSE_MS - CAMERA_TRANSITION_MIN_MS);
+                    const durationMs = Math.max(
+                      cameraTransitionDurationMs(start, { x: target.tx, y: target.ty, scale: target.tscale }),
+                      yawMs,
+                    );
+                    dome.poseTween = { startYaw: dome.yaw, startPitch: dome.pitch, targetYaw, targetPitch, startMs: now, durationMs };
+                    cameraTargetRef.current = target;
+                    userDrivenCameraRef.current = false;
+                    dampingRef.current = tokens.cameraDampingDefault;
+                    cameraAngularFreqRef.current = tokens.cameraSpringAngFreqTransition;
+                    beginCameraTween(target, durationMs);
+                  }
+                }
+              }
+            }
+          }
+          // 프로그램 자세 이동(「제자리로」·선택 리프레임) — 궤도 드래그가
+          // 시작되면 그쪽이 이긴다(제스처는 현재 자세에서 그대로 이어받는다).
+          const pose = dome.poseTween;
+          if (pose !== null) {
+            if (dome.orbiting) {
+              dome.poseTween = null;
+            } else {
+              const t = (now - pose.startMs) / pose.durationMs;
+              if (t >= 1 || reducedMotionRef.current) {
+                dome.yaw = pose.targetYaw;
+                dome.pitch = pose.targetPitch;
+                dome.poseTween = null;
+              } else {
+                const e = easeInOutCubic(t);
+                dome.yaw = pose.startYaw + (pose.targetYaw - pose.startYaw) * e;
+                dome.pitch = pose.startPitch + (pose.targetPitch - pose.startPitch) * e;
+              }
+              dome.yawVel = 0;
+              dome.pitchVel = 0;
+              dome.yawTarget = dome.yaw;
+              dome.pitchTarget = dome.pitch;
+            }
+          }
+          // 궤도 드래그 중 — 포인터가 민 목표를 τ=45ms 로 따라간다(이벤트
+          // 주기가 프레임 주기보다 길 때의 계단 제거 — `ORBIT_SMOOTH_TAU_MS`
+          // JSDoc). 티어 비틀림도 **실제 프레임 이동**에서 충전해야 스무딩과
+          // 박자가 맞는다. reduced-motion 은 스냅(1:1 직접 조작 유지).
+          if (dome.orbiting) {
+            const prevYaw = dome.yaw;
+            if (reducedMotionRef.current) {
+              dome.yaw = dome.yawTarget;
+              dome.pitch = dome.pitchTarget;
+            } else {
+              const k = 1 - Math.exp(-dtMs / ORBIT_SMOOTH_TAU_MS);
+              dome.yaw += (dome.yawTarget - dome.yaw) * k;
+              dome.pitch += (dome.pitchTarget - dome.pitch) * k;
+              const dYaw = dome.yaw - prevYaw;
+              dome.lag.project += dYaw * DOME_TIER_LAG.project;
+              dome.lag.domain += dYaw * DOME_TIER_LAG.domain;
+              dome.lag.capability += dYaw * DOME_TIER_LAG.capability;
+              dome.lag.element += dYaw * DOME_TIER_LAG.element;
+            }
+          }
+          if (!dome.orbiting && dome.poseTween === null) {
+            // 릴리스 관성 — 놓는 순간의 속도가 이어지다 기하 감쇠로 멎는다.
+            dome.yaw += dome.yawVel * dtMs;
+            dome.pitch += dome.pitchVel * dtMs;
+            dome.yawVel = decayOrbitVelocity(dome.yawVel, dtMs);
+            dome.pitchVel = decayOrbitVelocity(dome.pitchVel, dtMs);
+            // pitch 러버밴드 복귀 — 한계 밖이면 지수 스프링백.
+            const clampedPitch = clampDomePitch(dome.pitch);
+            if (clampedPitch !== dome.pitch) {
+              dome.pitch += (clampedPitch - dome.pitch) * (1 - Math.exp(-dtMs / 120));
+              if (Math.abs(clampedPitch - dome.pitch) < 0.0005) dome.pitch = clampedPitch;
+              dome.pitchVel = 0;
+            }
+            // 자율 회전(48s/바퀴) — 시선 끌기(attract) 루프라 **무장 상태에서만**
+            // 돈다: 사용자가 개입(궤도·줌·핀치·노드 드래그·선택)한 순간
+            // `spinArmed` 가 내려가 다시는 저절로 돌지 않는다(①, 소유자
+            // *"클릭하고 나서 좀 안돌아가게"*). 복귀는 「자동 정렬」·3D 재진입.
+            // 포인터가 캔버스 위면 정지, reduced-motion 0 은 종전 그대로.
+            if (
+              domeTargetOn &&
+              !reducedMotionRef.current &&
+              dome.spinArmed &&
+              dome.yawVel === 0 &&
+              bgPointerRef.current === null &&
+              dome.rampClock >= DOME_ASSEMBLE_TOTAL_MS
+            ) {
+              dome.yaw += (dtMs / DOME_PERIOD_MS) * Math.PI * 2;
+            }
+            // 드래그 밖 불변식 — 목표는 항상 현재 자세를 따라온다(다음 드래그
+            // 가 낡은 목표-갭을 물려받지 않게).
+            dome.yawTarget = dome.yaw;
+            dome.pitchTarget = dome.pitch;
+          }
+          // 티어 비틀림 감쇠(스프링백) — 히어로의 elastic torsion.
+          const lagDecay = Math.pow(DOME_TIER_LAG_DECAY_PER_MS, dtMs);
+          dome.lag.domain = Math.abs(dome.lag.domain) < 1e-5 ? 0 : dome.lag.domain * lagDecay;
+          dome.lag.capability = Math.abs(dome.lag.capability) < 1e-5 ? 0 : dome.lag.capability * lagDecay;
+          dome.lag.element = Math.abs(dome.lag.element) < 1e-5 ? 0 : dome.lag.element * lagDecay;
+          // 평면 내 노드 드래그 — 임계감쇠 스프링(크리스프 층 각진동수 재사용).
+          if (dome.drag !== null) {
+            const coord = dome.model.coords.get(dome.drag.nodeId);
+            if (coord === undefined) {
+              dome.drag = null;
+            } else {
+              if (reducedMotionRef.current) {
+                dome.drag.spring.px = dome.drag.targetPx;
+                dome.drag.spring.pz = dome.drag.targetPz;
+                dome.drag.spring.vx = 0;
+                dome.drag.spring.vz = 0;
+              } else {
+                stepDomeDragSpring(
+                  dome.drag.spring,
+                  dome.drag.targetPx,
+                  dome.drag.targetPz,
+                  dtMs,
+                  tokens.cameraSpringAngFreqInteractive,
+                );
+              }
+              coord.px = dome.drag.spring.px;
+              coord.pz = dome.drag.spring.pz;
+              const settled =
+                Math.abs(dome.drag.spring.px - dome.drag.targetPx) < 0.05 &&
+                Math.abs(dome.drag.spring.pz - dome.drag.targetPz) < 0.05 &&
+                Math.abs(dome.drag.spring.vx) < 0.05 &&
+                Math.abs(dome.drag.spring.vz) < 0.05;
+              if (dome.drag.released === true && (settled || reducedMotionRef.current)) dome.drag = null;
+            }
+          }
+          if (dome.rampClock > 0) {
+            // 점 반지름의 분모 — 드로우·히트가 곱하는 기본 반지름과 같은 식.
+            updateDomeFrame(dome, world.nodes, (n) => {
+              const w = world.nodeById.get(n.id);
+              return w ? radiusForKind(w.kind, tokens) * w.magnitudeScale : 1;
+            });
+          } else if (dome.frame.size > 0) {
+            dome.frame.clear();
+            dome.drawnBounds = null;
+            dome.fitScale = null;
+            dome.frameEpoch++;
+          }
+        } else if (dome !== null) {
+          dome.active = false;
+          domeFocusPendingRef.current = null;
+          if (dome.frame.size > 0) {
+            dome.frame.clear();
+            dome.drawnBounds = null;
+            dome.fitScale = null;
+            dome.frameEpoch++;
+          }
         }
       }
 
@@ -2619,6 +3065,25 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
         hoveredNodeId,
         panelEmphasisNodeId,
         isDragging: pointerMachineRef.current.phase === "dragging",
+        // 3D 돔 — 팬 리쉬 앵커를 «그려진» 돔의 bbox·포커스 노드의 그려진
+        // 자리로 넘긴다(2D `world.bounds` 앵커가 휠 줌 첫 틱에 카메라를 2D
+        // 중심으로 끌어가던 결함 — `topology-physics-step.ts` override JSDoc).
+        worldBoundsOverride:
+          domeRuntimeRef.current !== null && domeRuntimeRef.current.rampClock > 0
+            ? domeRuntimeRef.current.drawnBounds
+            : null,
+        focusAnchorOverride: (() => {
+          const dome = domeRuntimeRef.current;
+          if (dome === null || dome.rampClock <= 0 || focusedNodeId === null) return null;
+          const off = dome.frame.get(focusedNodeId);
+          const node = world.nodeById.get(focusedNodeId);
+          if (!off || !node) return null;
+          return { x: node.x + off.dx, y: node.y + off.dy };
+        })(),
+        scaleMinOverride:
+          domeRuntimeRef.current !== null && domeRuntimeRef.current.rampClock > 0
+            ? domeRuntimeRef.current.fitScale
+            : null,
         reducedMotion: reducedMotionRef.current,
         userDrivenCamera: userDrivenCameraRef.current,
         freezeCamera,
@@ -3058,8 +3523,10 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
           // TopologyMapV2 JSX). 포커스 노드가 남아 있는 한 매 프레임 transform
           // 을 계속 갱신해 페이드아웃 중에도 카메라를 따라 붙는다(위치 고정 아님).
           if (node) {
-            const rr = radiusForKind(node.kind, tokens) * node.magnitudeScale * camera.scale.value;
-            const s = worldToScreen(camera, width, height, node.x, node.y);
+            // 3D — 버튼도 노드가 실제 그려진 링 좌표·원근 배율을 따라간다.
+            const dFrame = domeRuntimeRef.current?.frame.get(node.id);
+            const rr = radiusForKind(node.kind, tokens) * node.magnitudeScale * (dFrame?.s ?? 1) * camera.scale.value;
+            const s = worldToScreen(camera, width, height, node.x + (dFrame?.dx ?? 0), node.y + (dFrame?.dy ?? 0));
             // 자리의 단일 출처 — 확장 컨트롤의 사각형 계산이 같은 함수를 본다.
             const orbit = orbitButtonRect(s.x, s.y, rr);
             const bx = orbit.x + orbit.w / 2;
@@ -3103,8 +3570,9 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
           const anchorId = tourAnchorNodeIdRef.current;
           const node = anchorId ? world.nodeById.get(anchorId) : undefined;
           if (node) {
-            const rr = radiusForKind(node.kind, tokens) * node.magnitudeScale * camera.scale.value;
-            const s = worldToScreen(camera, width, height, node.x, node.y);
+            const dFrame = domeRuntimeRef.current?.frame.get(node.id);
+            const rr = radiusForKind(node.kind, tokens) * node.magnitudeScale * (dFrame?.s ?? 1) * camera.scale.value;
+            const s = worldToScreen(camera, width, height, node.x + (dFrame?.dx ?? 0), node.y + (dFrame?.dy ?? 0));
             anchorEl.style.transform = `translate(-50%, -50%) translate(${s.x}px, ${s.y}px)`;
             anchorEl.style.setProperty("--tour-anchor-r", `${rr + 10}px`);
           }
@@ -3250,10 +3718,15 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
         }
       }
 
-      clusterChipsRef.current = frameChips;
+      // 3D — 돔은 **모든 노드가 형태를 이룬다**: 밀도 게이트의 접힘·칩을
+      // 이 프레임의 소비자(드로우·히트·계기)에서 통째로 비운다. 원본 계산
+      // (`frameClusteredIds`)은 그대로 두므로 2D 복귀 프레임에 접힘이 원래
+      // 상태로 돌아오고, relax/reveal 부기가 돔 토글로 오작동하지 않는다.
+      const domeAllVisible = domeRuntimeRef.current !== null && domeRuntimeRef.current.rampClock > 0;
+      clusterChipsRef.current = domeAllVisible ? EMPTY_DOME_CHIPS : frameChips;
       // S3 — 이번 프레임의 NOT-DRAWN 집합을 히트테스트가 볼 수 있게 공개(밀도
       // 게이트 접힘 + 선택적 ego 숨김 이웃). 드로우와 히트가 같은 집합을 본다.
-      clusteredIdsRef.current = frameClusteredIds;
+      clusteredIdsRef.current = domeAllVisible ? EMPTY_DOME_CLUSTERED : frameClusteredIds;
       // S10 결함 3 — 드로우가 이번 프레임 티어 알파 계산에 쓴 깊이 오버라이드를
       // 히트테스트에도 그대로 공개(영역 비활성이면 null). draw/hit lockstep.
       realmTierKindsRef.current = realmTierKinds;
@@ -3350,8 +3823,8 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
         pulses: pulsesRef.current,
         selectionPulse: selectionPulseRef.current,
         agentFocusNodeId: agentFocusNodeIdRef.current,
-        clusteredIds: frameClusteredIds,
-        clusterChips: frameChips,
+        clusteredIds: domeAllVisible ? EMPTY_DOME_CLUSTERED : frameClusteredIds,
+        clusterChips: domeAllVisible ? EMPTY_DOME_CHIPS : frameChips,
         hoveredClusterId: hoveredClusterIdRef.current,
         wardingRing: realmWarding,
         realmTierKinds,
@@ -3380,6 +3853,11 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
         tierReveal: tierRevealRef.current,
         glyphStyle: glyphStyleRef.current,
         backgroundVariant: canvasBackgroundRef.current,
+        domeFrame:
+          domeRuntimeRef.current !== null && domeRuntimeRef.current.rampClock > 0
+            ? domeRuntimeRef.current.frame
+            : null,
+        domeRamp: domeRuntimeRef.current !== null ? domeRuntimeRef.current.rampClock / DOME_ASSEMBLE_TOTAL_MS : 0,
         paintAnimatedBackground: animatedBgRef.current
           ? (target, w, h) => animatedBgRef.current?.paint(target, w, h)
           : null,
@@ -3400,8 +3878,9 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
         const anchorId = tourAnchorNodeIdRef.current;
         const node = anchorId ? world.nodeById.get(anchorId) : undefined;
         if (node) {
-          const rr = radiusForKind(node.kind, tokens) * node.magnitudeScale * camera.scale.value;
-          const s = worldToScreen(camera, width, height, node.x, node.y);
+          const dFrame = domeRuntimeRef.current?.frame.get(node.id);
+          const rr = radiusForKind(node.kind, tokens) * node.magnitudeScale * (dFrame?.s ?? 1) * camera.scale.value;
+          const s = worldToScreen(camera, width, height, node.x + (dFrame?.dx ?? 0), node.y + (dFrame?.dy ?? 0));
           ctx.save();
           ctx.beginPath();
           ctx.arc(s.x, s.y, rr + 10, 0, Math.PI * 2);
@@ -3450,7 +3929,10 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
       canvas.removeEventListener("contextlost", onContextLost);
       canvas.removeEventListener("contextrestored", onContextRestored);
     };
-  }, []);
+    // beginCameraTween/cameraTokens 는 deps 가 [] 인 useCallback 이라 참조가
+    // 불변이다 — 3D 켜짐-핏·선택 리프레임이 프레임 바디에서 부르게 되며 deps 에
+    // 올렸을 뿐, 이 effect 가 다시 도는 일은 없다(루프 재마운트 0).
+  }, [beginCameraTween, cameraTokens]);
 
   // refs below are only dereferenced inside the returned event-handler
   // closures (pointerdown/move/up/wheel), never synchronously during this
@@ -3494,6 +3976,7 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
     hoveredClusterIdRef,
     realmParallaxRef,
     realmTierKindsRef,
+    domeRuntimeRef,
     tierRevealRef,
     onSelect,
     onSelectEdge,
@@ -3841,13 +4324,22 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
         const tokens = readTopologyV2TokensOrNull();
         const sim = simRef.current;
         const clustered = clusteredIdsRef.current;
-        return world.nodes.map((n) => ({
+        // 3D — 계기는 **그려진** 좌표를 내보낸다. 드로우가 마지막으로 그린
+        // 프레임 맵을 그대로 읽지 않으면 계기가 화면이 아니라 자기 상상을 재게
+        // 된다(아래 엣지 계기의 원칙과 동일). 회전 중이어도 «이번 프레임» 좌표다.
+        const domeFrame =
+          domeRuntimeRef.current !== null && domeRuntimeRef.current.rampClock > 0
+            ? domeRuntimeRef.current.frame
+            : null;
+        return world.nodes.map((n) => {
+          const dOff = domeFrame?.get(n.id) ?? { dx: 0, dy: 0, s: 1 };
+          return {
           id: n.id,
           kind: n.kind,
           label: n.label,
           // screenToWorld 의 역함수 — 같은 카메라를 쓰므로 어긋날 수 없다.
-          x: (n.x - camera.x.value) * camera.scale.value + width / 2,
-          y: (n.y - camera.y.value) * camera.scale.value + height / 2,
+          x: (n.x + dOff.dx - camera.x.value) * camera.scale.value + width / 2,
+          y: (n.y + dOff.dy - camera.y.value) * camera.scale.value + height / 2,
           /** ★ 이걸 안 봐서 여섯 번 틀렸다 — 시뮬에 없으면 끌어도 팬이 된다. */
           draggable: sim?.hasNode(n.id) ?? false,
           /** W6 에이전트 링 — 그리는 쪽과 같은 판정(`agentFocusNodeIdRef`)을
@@ -3862,8 +4354,14 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
            * `radiusForKind × magnitudeScale`, 화면 반지름은 여기에 카메라 배율).
            * 식이 갈리면 계기가 화면이 아니라 자기 상상을 재게 된다.
            */
-          radius: tokens ? radiusForKind(n.kind, tokens) * n.magnitudeScale * camera.scale.value : 0,
-        }));
+          radius: tokens
+            ? radiusForKind(n.kind, tokens) *
+              n.magnitudeScale *
+              camera.scale.value *
+              dOff.s
+            : 0,
+        };
+        });
       },
       /**
        * 화면에 그려진 **엣지** — 좌표는 노드와 같은 CSS 픽셀계다.
@@ -3887,25 +4385,36 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
         const clustered = clusteredIdsRef.current;
         const toScreenX = (x: number) => (x - camera.x.value) * camera.scale.value + width / 2;
         const toScreenY = (y: number) => (y - camera.y.value) * camera.scale.value + height / 2;
+        // 3D — 드로우(`projectEdgePoints`)와 같은 끝점별 프레임 오프셋.
+        const domeFrame =
+          domeRuntimeRef.current !== null && domeRuntimeRef.current.rampClock > 0
+            ? domeRuntimeRef.current.frame
+            : null;
+        const EDGE_ZERO = { dx: 0, dy: 0, s: 1 };
+        const edgeOff = (nodeId: string) => domeFrame?.get(nodeId) ?? EDGE_ZERO;
         return world.edges
           .filter((e) => !clustered?.has(e.sourceId) && !clustered?.has(e.targetId))
-          .map((e) => ({
+          .map((e) => {
+            const offA = edgeOff(e.sourceId);
+            const offB = edgeOff(e.targetId);
+            return {
             sourceId: e.sourceId,
             targetId: e.targetId,
             kind: e.kind,
-            ax: toScreenX(e.ax),
-            ay: toScreenY(e.ay),
-            bx: toScreenX(e.bx),
-            by: toScreenY(e.by),
+            ax: toScreenX(e.ax + offA.dx),
+            ay: toScreenY(e.ay + offA.dy),
+            bx: toScreenX(e.bx + offB.dx),
+            by: toScreenY(e.by + offB.dy),
             /**
              * ★ 현선이 아니라 **그려지는 곡선**을 재기 위해서다. 드로우 경로는
              * `quadraticCurveTo(control, b)` 인데(`topology-frame-draw.ts`),
              * 계기가 끝점만 이으면 화면에 없는 교차를 세고 화면에 있는 교차를
              * 놓친다 — 즉 지도가 아니라 자기 근사치를 재게 된다.
              */
-            controlX: toScreenX(e.controlX),
-            controlY: toScreenY(e.controlY),
-          }));
+            controlX: toScreenX(e.controlX + (offA.dx + offB.dx) / 2),
+            controlY: toScreenY(e.controlY + (offA.dy + offB.dy) / 2),
+          };
+          });
       },
       /**
        * `(x, y)` 에서 **앱이 고를 엣지** — 히트 없으면 null.
@@ -3941,6 +4450,27 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
         const { width, height } = viewportRef.current;
         if (!camera) return null;
         return { x: camera.x.value, y: camera.y.value, scale: camera.scale.value, width, height };
+      },
+      /**
+       * 3D 돔 자세 — 「돔이 어디를 보고 있고 아직 저절로 도는가」. 캔버스
+       * 픽셀로는 yaw/pitch/무장 상태를 밖에서 구분할 수 없어, 자율 회전
+       * 정지(①)·pitch 개방(③)·선택 리프레임(④)의 자동 검증 창구다.
+       * 2D(돔 꺼짐)면 null — 계기가 없는 상태와 구분된다.
+       */
+      dome: () => {
+        const d = domeRuntimeRef.current;
+        if (d === null) return null;
+        return {
+          yaw: d.yaw,
+          pitch: d.pitch,
+          yawVel: d.yawVel,
+          pitchVel: d.pitchVel,
+          orbiting: d.orbiting,
+          spinArmed: d.spinArmed,
+          poseTween: d.poseTween !== null,
+          active: d.active,
+          ramp: d.rampClock / DOME_ASSEMBLE_TOTAL_MS,
+        };
       },
       /**
        * 지금 지도가 **호버로 가리키고 있는** 노드 — 커서가 캔버스 위에 있든,

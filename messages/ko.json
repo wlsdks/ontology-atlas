@@ -1072,6 +1072,10 @@
       "relayoutTitle": "노드 위치 자동 정렬",
       "relayoutLabel": "자동 정렬",
       "relayoutActiveLabel": "정렬 중",
+      "view3dLabel": "3D",
+      "view3dAriaLabel": "3D 보기",
+      "view3dTitleOn": "지도를 kind 링의 돔으로 봅니다. 빈 곳을 끌면 돌아가고, 다시 누르면 평면(2D)으로 돌아옵니다.",
+      "view3dTitleOff": "지도를 kind 링의 돔(3D)으로 봅니다",
       "searchAriaLabel": "개념 검색",
       "searchTitle": "개념 검색",
       "searchLabel": "검색"

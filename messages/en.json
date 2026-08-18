@@ -1072,6 +1072,10 @@
       "relayoutTitle": "Auto-arrange node layout",
       "relayoutLabel": "Auto-arrange",
       "relayoutActiveLabel": "Arranging",
+      "view3dLabel": "3D",
+      "view3dAriaLabel": "3D view",
+      "view3dTitleOn": "Viewing the map as a dome of kind rings. Drag empty space to orbit; press again to return to the flat (2D) map.",
+      "view3dTitleOff": "View the map as a dome of kind rings (3D)",
       "searchAriaLabel": "Concept search",
       "searchTitle": "Concept search",
       "searchLabel": "Search"

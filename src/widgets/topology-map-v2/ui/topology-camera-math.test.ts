@@ -10,6 +10,7 @@ import {
   computeOverviewFitScale,
   computeUnfocusedPanBounds,
   fitWorldTarget,
+  hitTestWorld,
   worldToScreen,
 } from "./topology-camera-math";
 import type { TopologyV2Tokens } from "../tokens/read-topology-v2-tokens";
@@ -501,5 +502,46 @@ describe("computeFocusCameraTarget — 안전 인셋", () => {
     const plain = focus(base)!;
     const tight = focus({ ...base, safeInsetRight: 900 } as TopologyV2Tokens)!;
     expect(tight.tscale).toBeLessThan(plain.tscale);
+  });
+});
+
+describe("hitTestWorld — 3D 깊이 우선 (겹친 디스크는 가까운 노드가 이긴다)", () => {
+  const camera = {
+    x: { value: 0, velocity: 0 },
+    y: { value: 0, velocity: 0 },
+    scale: { value: 1, velocity: 0 },
+  };
+  const tokens = { radiusProject: 30, radiusDomain: 17, radiusCapability: 11, radiusElement: 7 } as unknown as Parameters<typeof hitTestWorld>[4];
+  // far(dead-center) vs near(4px 비켜남) — 두 디스크 모두 커서를 덮는다.
+  const nodes = [
+    { id: "far", kind: "domain", x: 0, y: 0, magnitudeScale: 1 },
+    { id: "near", kind: "domain", x: 4, y: 0, magnitudeScale: 1 },
+  ];
+  const world = {
+    nodes,
+    nodeById: new Map(nodes.map((n) => [n.id, n])),
+  } as unknown as Parameters<typeof hitTestWorld>[0];
+  // 뷰포트 800×600 중심(400,300)이 월드 (0,0).
+
+  it("depthForNode 없이는 종전 그대로 — 중심까지 거리가 이긴다", () => {
+    expect(hitTestWorld(world, camera as never, 800, 600, tokens, 400, 300)).toBe("far");
+  });
+
+  it("depthForNode 가 있으면 가까운(u 작은) 노드가 이긴다 — 화가 순서와 같은 규칙", () => {
+    const depth = (n: { id: string }) => (n.id === "far" ? 0.9 : 0.1);
+    expect(
+      hitTestWorld(world, camera as never, 800, 600, tokens, 400, 300, undefined, undefined, undefined, depth as never),
+    ).toBe("near");
+  });
+
+  it("커서가 가까운 노드 디스크 밖이면 먼 노드가 잡힌다 — 깊이는 디스크 안에서만 겨룬다", () => {
+    const depth = (n: { id: string }) => (n.id === "far" ? 0.9 : 0.1);
+    // near(4,0) 디스크 반경 17+5=22 — x=430(월드 30)은 near 중심에서 26px, 밖.
+    // far(0,0) 중심에서 30px... 둘 다 밖이네 — 대신 far 만 덮는 지점을 고른다:
+    // x=421 → far 에서 21(안), near 에서 17... 아직 안. x=427 → far 27(밖).
+    // 반경이 같아 "far 만 덮는 지점"은 far 반대편이다: x=379 → far 21(안) · near 25(밖).
+    expect(
+      hitTestWorld(world, camera as never, 800, 600, tokens, 379, 300, undefined, undefined, undefined, depth as never),
+    ).toBe("far");
   });
 });

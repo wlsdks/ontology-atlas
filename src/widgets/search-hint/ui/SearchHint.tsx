@@ -2,9 +2,10 @@
 
 import { useEffect, useState, useSyncExternalStore, type ReactNode } from 'react';
 import { useTranslations } from 'next-intl';
-import { RefreshCcw, Search } from 'lucide-react';
+import { RefreshCcw, Rotate3d, Search } from 'lucide-react';
 import { cn } from '@/shared/lib/cn';
 import { ChromeChip } from '@/shared/ui/chrome-chip';
+import { useView3d, writeView3d } from '@/shared/lib/appearance-preferences';
 
 interface Props {
   onOpenSearch: () => void;
@@ -81,6 +82,8 @@ export function SearchHint({
 }: Props) {
   const t = useTranslations('searchWidgets.hint');
   const isMac = useSyncExternalStore(subscribe, getIsMac, getIsMacServer);
+  // 3D 보기 — 스토어를 직접 구독해 지도 캔버스(HomePage 경유)와 lockstep 토글.
+  const view3d = useView3d();
   const [arranging, setArranging] = useState(false);
   const compact = density === 'compact-focus';
 
@@ -158,6 +161,34 @@ export function SearchHint({
             title={t('relayoutTitle')}
           >
             {arranging ? t('relayoutActiveLabel') : t('relayoutLabel')}
+          </ChromeChip>
+        </div>
+        {/* 3D — 지도를 kind 링의 돔으로 다시 배치하는 옵트인 뷰(2026-08-18
+            소유자 지시 — 설정 시트가 아니라 이 툴바를 가리켰다). 지도 뷰는
+            2D(기본)/3D 딱 둘이고 토글 자리는 여기 하나다. active 인디고 틴트가
+            켜짐 상태를 말한다(제2 채색 없음). 자동 정렬과 같은 <md 강등. */}
+        <div className="hidden md:block">
+          <ChromeChip
+            type="button"
+            onClick={() => writeView3d(!view3d)}
+            data-testid="topology-view-3d"
+            data-view-3d={view3d ? 'true' : 'false'}
+            data-utility-action-token-contract="support-surface-family"
+            data-utility-action-surface-token="--chrome-surface"
+            data-utility-action-border-token="--chrome-border"
+            data-utility-action-hover-surface-token="--color-overlay-2"
+            data-utility-action-active-surface-token="--chrome-active-surface"
+            data-utility-action-active-border-token="--chrome-active-border"
+            data-utility-action-shadow-token="--chrome-shadow"
+            data-utility-action-focus-ring-token="--color-indigo-accent"
+            icon={<Rotate3d />}
+            active={view3d}
+            aria-pressed={view3d}
+            compact={compact}
+            aria-label={t('view3dAriaLabel')}
+            title={view3d ? t('view3dTitleOn') : t('view3dTitleOff')}
+          >
+            {t('view3dLabel')}
           </ChromeChip>
         </div>
         <ChromeChip

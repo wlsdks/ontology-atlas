@@ -58,7 +58,7 @@ const VaultAgentPanel = dynamic(
 import { useDocumentTitle } from "@/shared/lib/use-document-title";
 import { useLocalStorageBoolean } from "@/shared/lib/use-local-storage-boolean";
 import { useAudiencePlain } from "@/shared/lib/audience-preference";
-import { useCanvasBackground, useExpand, useFootprint, useGlyphSet } from "@/shared/lib/appearance-preferences";
+import { useCanvasBackground, useExpand, useFootprint, useGlyphSet, useView3d } from "@/shared/lib/appearance-preferences";
 
 const CREATE_NODE_DIALOG_TITLE_ID = "topology-create-node-dialog-title";
 // Bare `?p=` miss grace window — see the deeplinkMissNotifiedRef effect
@@ -366,6 +366,9 @@ export function HomePage() {
   // 아이콘 세트를 앱 전역 스토어에서 읽어 지도 캔버스에 내려보낸다. DOM 글리프는
   // 같은 스토어를 스스로 구독하므로 두 표면이 lockstep 으로 스왑된다.
   const canvasBackground = useCanvasBackground();
+  // 3D 보기 (2026-08-18, 옵트인) — 지도를 kind 동심 링의 돔으로 보는 뷰 모드.
+  // 토글 칩(SearchHint)이 같은 스토어를 스스로 구독하므로 lockstep 이다.
+  const view3d = useView3d();
   const footprint = useFootprint();
   const glyphSet = useGlyphSet();
   // 확장 설정(펼치기 표시 · 배치 · 세 숫자) — 같은 스토어, 같은 lockstep.
@@ -2371,14 +2374,25 @@ export function HomePage() {
     refreshIndexDependentTokens(root);
     let cancelled = false;
     // 동기 setState 회피(cascading-render 경고) — microtask 로 defer.
-    window.queueMicrotask(() => {
-      if (!cancelled) setFitViewToken((count) => count + 1);
-    });
+    //
+    // 3D 돔에서는 이 재핏을 쏘지 않는다 (2026-08-18 실측): 이 effect 는 노드를
+    // **선택/해제할 때마다** 돈다(INDEX 레일 강등). 2D 에선 이 fit 이 한 프레임
+    // 뒤 포커스 다이브에 덮여 무해했지만, 돔에서는 fit 토큰이 「자동 정렬」과
+    // 같은 경로(자세 홈 이징 + 자율 회전 재무장)를 타서 — 노드를 고르면 다이브
+    // 대신 돔이 제 맘대로 홈으로 돌아가고, 해제만 해도 시선 끌기 회전이
+    // 되살아났다(소유자 *"내가 조종하는 게 아니라 화면이 저 혼자 돈다"*).
+    // 돔 핏은 15% 여백이라 INDEX 레일 폭 변화는 흡수되고, 선택 리프레임은
+    // 소비 시점에 인셋을 직접 재므로 이 재핏 없이도 패널을 피한다.
+    if (!view3d) {
+      window.queueMicrotask(() => {
+        if (!cancelled) setFitViewToken((count) => count + 1);
+      });
+    }
     return () => {
       cancelled = true;
       delete root.dataset.topologyIndex;
     };
-  }, [renderedIndexState]);
+  }, [renderedIndexState, view3d]);
   const copyV2NodeHandoff = useCallback(
     async (text: string) => {
       await copyHandoffWithFeedback({
@@ -3026,12 +3040,24 @@ export function HomePage() {
 
   const handleDatasheetClose = useCallback(() => {
     const focusReturnNodeId = panelDatasheetModel?.nodeId ?? null;
-    handleClose();
+    // 3D 돔 (2026-08-18 소유자: *"x누르면 그냥 닫히거든? 선택된것도
+    // 취소되고? 그거때문에 보기가 힘들어"*) — X 는 「패널을 접는 것」이지
+    // 「고른 것을 버리는 것」이 아니다. 선택·ego 강조는 남기고 패널만 접는다
+    // — Escape 사다리 1단(`nodePopoverDismissed`)과 같은 기구 재사용, 새 상태
+    // 0개. 선택 해제는 빈 배경 클릭/Escape 2단의 몫. 다시 열기는 그 노드를
+    // 다시 클릭(돔에서는 재클릭이 해제가 아니라 재선택이다 —
+    // `topology-pointer-handlers.ts`). 2D 는 종전 그대로(닫기=접기 대칭,
+    // 2026-07 원장) — 돔은 전개·밀도 게이트가 없어 그 대칭의 전제가 없다.
+    if (view3d) {
+      setNodePopoverDismissed(true);
+    } else {
+      handleClose();
+    }
     if (typeof window === "undefined") return;
     window.requestAnimationFrame(() => {
       restoreTopologyFocusAfterDatasheetClose(focusReturnNodeId);
     });
-  }, [handleClose, panelDatasheetModel?.nodeId]);
+  }, [handleClose, panelDatasheetModel?.nodeId, view3d]);
 
   // 가이드 투어 (2026-07-23, `src/features/guided-tour`) — 지도 화면(/) 전담
   // 의미 문해 투어. `canResolveTourAnchor` 는 이 view 가 testid(DOM) 또는
@@ -5150,6 +5176,12 @@ export function HomePage() {
                     // 글리프는 스스로 같은 스토어를 읽어 lockstep 스왑된다.
                     glyphSet={glyphSet}
                     canvasBackground={canvasBackground}
+                    view3d={view3d}
+                    // 3D 선택 리프레임의 「창 크기가 바뀐 사건」 — 상세 패널이
+                    // 실제로 화면을 덮는 동안 true(퇴장 애니 종료 후 false).
+                    // 돔은 이 플립마다 보이는 영역 기준으로 부드럽게
+                    // 재프레이밍한다(2D 는 무시 — use-topology-loop 참고).
+                    detailPanelVisible={nodePanelMounted}
                     footprint={footprint}
                     expand={expand}
                   />

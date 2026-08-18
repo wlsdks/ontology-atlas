@@ -24,7 +24,33 @@ interface Point {
   y: number;
 }
 
-export function worldToScreen(camera: CameraAxes, viewportWidth: number, viewportHeight: number, wx: number, wy: number): Point {
+/**
+ * 깊이 항(depth term) — `worldToScreen` 의 선택 인자.
+ *
+ * `z` 는 노드가 레이아웃 평면 뒤로 물러난 거리(월드 단위), `focal` 은 약한
+ * 원근(weak perspective)의 초점 거리다: `s = focal / (focal + z)`. `lift` 는
+ * 층 분리(고정 틸트를 상수 평면 간격으로 부호화한 것, 월드 단위) — 깊은 층이
+ * 화면 아래로 내려앉는다. (2026-08-18 z-lift 시안의 잔류 API — 현행 3D 돔은
+ * `model/dome-view.ts` 의 오프셋 경로를 쓰고 이 항은 쓰지 않지만, 생략 시
+ * 바이트 동일 계약과 함께 `dome-view.test.ts` 가 그대로 잠근다.)
+ *
+ * **생략하면(기본 경로) 출력이 종전과 바이트 동일하다** — 기존 두 줄 식을
+ * 그대로 타며, `topology-camera-math.test.ts` 가 이 불변을 계약으로 잠근다.
+ */
+export interface DepthTerm {
+  z: number;
+  lift: number;
+  focal: number;
+}
+
+export function worldToScreen(camera: CameraAxes, viewportWidth: number, viewportHeight: number, wx: number, wy: number, depth?: DepthTerm): Point {
+  if (depth !== undefined) {
+    const s = depth.focal / (depth.focal + depth.z);
+    return {
+      x: (wx - camera.x.value) * s * camera.scale.value + viewportWidth / 2,
+      y: ((wy - camera.y.value) * s + depth.lift * s) * camera.scale.value + viewportHeight / 2,
+    };
+  }
   return {
     x: (wx - camera.x.value) * camera.scale.value + viewportWidth / 2,
     y: (wy - camera.y.value) * camera.scale.value + viewportHeight / 2,
@@ -76,9 +102,24 @@ export function hitTestWorld(
    * no offset (the common case).
    */
   renderOffsetForNode?: (node: WorldNode) => Point,
+  /**
+   * 3D 보기 — 드로우가 노드 반지름에 곱한 원근 배율(`DomeNodeFrame.s`)을
+   * 히트 디스크에도 곱한다. 생략 시 1(종전 2D 동작 그대로).
+   */
+  radiusScaleForNode?: (node: WorldNode) => number,
+  /**
+   * 3D 보기 — 노드의 정규화 깊이(0 가까움 → 1 멂, `DomeNodeFrame.u`). 주면
+   * 디스크가 겹칠 때 **가까운 노드가 이긴다**: 돔에서는 앞 링과 뒤 링이 화면
+   * 에서 자주 겹치는데, 종전의 «중심까지 거리» 단독 판정은 커서 밑의 크고
+   * 밝은 앞 노드 대신 안개 속 먼 노드를 잡아 줬다 — 그걸 끌면 화면에서는
+   * «클릭해도 제대로 안 움직이는» 것으로 읽힌다(2026-08-18 소유자 실보고).
+   * 거리는 같은 깊이끼리의 타이브레이크로 남는다. 생략 시 종전 그대로.
+   */
+  depthForNode?: (node: WorldNode) => number,
 ): string | null {
   let bestId: string | null = null;
   let bestDistance = Infinity;
+  let bestDepth = Infinity;
   for (const node of world.nodes) {
     if (isHittable && !isHittable(node)) continue;
     const off = renderOffsetForNode ? renderOffsetForNode(node) : null;
@@ -89,11 +130,16 @@ export function hitTestWorld(
       node.x + (off?.x ?? 0),
       node.y + (off?.y ?? 0),
     );
-    const effRadius = radiusForKind(node.kind, tokens) * node.magnitudeScale * camera.scale.value + 5;
+    const effRadius =
+      radiusForKind(node.kind, tokens) * node.magnitudeScale * (radiusScaleForNode ? radiusScaleForNode(node) : 1) * camera.scale.value + 5;
     const distance = Math.hypot(screenX - screen.x, screenY - screen.y);
-    if (distance <= effRadius && distance < bestDistance) {
+    // 양의 비교로 거른다 — NaN 좌표(모킹·미투영)는 `<=` 를 통과하지 못한다.
+    if (!(distance <= effRadius)) continue;
+    const depth = depthForNode ? depthForNode(node) : 0;
+    if (depth < bestDepth - 1e-6 || (Math.abs(depth - bestDepth) <= 1e-6 && distance < bestDistance)) {
       bestId = node.id;
       bestDistance = distance;
+      bestDepth = depth;
     }
   }
   return bestId;
@@ -431,6 +477,52 @@ export function computeFocusCameraTarget(
    * 배율로 나누는 이유: 같은 화면 오프셋이 배율이 클수록 더 짧은 월드 거리다.
    */
   return { ...centerForInsets(centerX, centerY, insets, scale), tscale: scale };
+}
+
+/**
+ * 3D 돔 선택 리프레임의 카메라 목표 — `computeFocusCameraTarget` 의 ego-fit
+ * 분기와 **같은 계약**(`focusBboxMargin` 곱셈 패딩 · 같은 safe-inset 문법 ·
+ * 같은 줌인 상한)인데 입력이 다르다: bbox 는 2D ego 가 아니라 **목표 자세로
+ * 투영한 돔 ego bbox**(`model/dome-view.ts#domeEgoWorldBounds`)이고, 줌아웃
+ * 바닥은 2D 의 `overviewEntryScale` 이 아니라 **돔 핏 배율**(`scaleFloor`)이다
+ * — 돔의 투영 bbox 가 2D 스파인보다 넓어 핏 배율이 2D 바닥 아래에 살기
+ * 때문이다(`DomeRuntime.fitScale` JSDoc). 인셋을 여기서 다시 읽는 이유는
+ * `readSafeInsets` 의 라벨 여유 규칙을 호출부마다 재구현하지 않기 위해서다.
+ */
+export function computeDomeFocusCameraTarget(
+  egoBounds: { minX: number; minY: number; maxX: number; maxY: number },
+  tokens: TopologyV2Tokens,
+  viewportWidth: number,
+  viewportHeight: number,
+  overviewEntryScale: number,
+  scaleFloor: number | null,
+  /** 목표 자세에서 선택 노드가 투영되는 월드 점 — 초점 팬 리쉬의 앵커와 동일. */
+  focusAnchor?: { x: number; y: number } | null,
+): CameraTarget {
+  const marginRatio = tokens.focusBboxMargin;
+  const centerX = (egoBounds.minX + egoBounds.maxX) / 2;
+  const centerY = (egoBounds.minY + egoBounds.maxY) / 2;
+  const w = Math.max(1, (egoBounds.maxX - egoBounds.minX) * marginRatio);
+  const h = Math.max(1, (egoBounds.maxY - egoBounds.minY) * marginRatio);
+  const insets = readSafeInsets(tokens);
+  const effW = Math.max(1, viewportWidth - insets.left - insets.right);
+  const effH = Math.max(1, viewportHeight - insets.top - insets.bottom);
+  const fitScale = Math.min(effW / w, effH / h);
+  const effectiveMax = computeEffectiveCameraScaleMax(overviewEntryScale, tokens.cameraMaxZoomRatio, tokens.cameraScaleMax);
+  const focusZoomInCeiling = overviewEntryScale * (tokens.focusMaxZoomRatio ?? Number.POSITIVE_INFINITY);
+  const scale = Math.min(effectiveMax, focusZoomInCeiling, Math.max(scaleFloor ?? 0, fitScale));
+  const target = { ...centerForInsets(centerX, centerY, insets, scale), tscale: scale };
+  // 초점 팬 리쉬(`cameraFocusPanMargin`)의 봉투 **안**에 목표를 둔다 — 돔의
+  // ego 이웃은 대상 주위가 아니라 위 티어에 비대칭으로 투영되므로 bbox 중심이
+  // 리쉬 밖일 수 있고, 그러면 트윈이 도착한 뒤 탄성 클램프가 카메라를 다시
+  // 끌어 «도착 후 미끄러짐»이 보인다(실측 38 유닛). 목표가 봉투 안이면 도착
+  // = 정지다.
+  if (focusAnchor && tokens.cameraFocusPanMargin > 0) {
+    const m = tokens.cameraFocusPanMargin;
+    target.tx = Math.min(focusAnchor.x + m, Math.max(focusAnchor.x - m, target.tx));
+    target.ty = Math.min(focusAnchor.y + m, Math.max(focusAnchor.y - m, target.ty));
+  }
+  return target;
 }
 
 /**

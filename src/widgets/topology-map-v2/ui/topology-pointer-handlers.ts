@@ -34,7 +34,15 @@ import { hitTestEdges, type EdgeHitCandidate } from "./topology-edge-hit";
 import { clusterBadgeLabel, clusterBadgeRect, clusterBarLabel, clusterBarRect, clusterChipLabel, clusterChipRect, clusterChipScale, clusterControlForm, type ClusterBarLabels } from "../render/cluster-chips";
 import type { ClusterChip } from "../model/density-gate";
 import { DEFAULT_EXPAND, type ExpandPreference } from "@/shared/lib/appearance-preferences";
-import { depthParallaxOffsetFor, type DepthParallaxOffset } from "../model/realm-depth-parallax";
+import { depthParallaxOffsetFor, ZERO_PARALLAX, type DepthParallaxOffset } from "../model/realm-depth-parallax";
+import {
+  ORBIT_PITCH_PER_PX,
+  ORBIT_YAW_PER_PX,
+  resistDomePitch,
+  solveDomePlanePoint,
+  type DomeNodeFrame,
+  type DomeRuntime,
+} from "../model/dome-view";
 import { computeGrabOffsetWorld, computePinWorld, type WorldOffset } from "../interaction/node-drag";
 import {
   INITIAL_POINTER_MACHINE_STATE,
@@ -222,6 +230,14 @@ export interface PointerHandlerRefs {
    */
   realmTierKindsRef?: Ref<ReadonlyMap<string, "project" | "domain" | "capability" | "element"> | null>;
   /**
+   * 3D 보기 (2026-08-18) — 루프가 소유하는 돔 런타임(`model/dome-view.ts`).
+   * 히트테스트는 드로우가 마지막으로 그린 **같은 프레임 맵**(`frame`)을 읽어
+   * 회전 중에도 클릭이 그려진 자리를 따라온다. 궤도 드래그(빈 곳)와 평면 내
+   * 노드 드래그의 상태도 이 상자 하나로 오간다 — 노드 vs 빈 곳 판정은 2D 와
+   * 같은 `hitTestWorld` 가 내린다(두 번째 진실원 금지).
+   */
+  domeRuntimeRef?: Ref<DomeRuntime | null>;
+  /**
    * 슬라이스 C (개발/비개발 모드 토글) — 티어 게이트 config 미러(드로우와
    * **같은** config 여야 히트/팬-클램프가 그려진 것과 lockstep). 생략 시
    * `DEFAULT_TIER_REVEAL`.
@@ -352,6 +368,7 @@ export function createTopologyPointerHandlers(refs: PointerHandlerRefs): Topolog
     clusterBarLabelsRef,
     realmParallaxRef,
     realmTierKindsRef,
+    domeRuntimeRef,
     tierRevealRef,
     onSelect,
     onSelectEdge,
@@ -364,6 +381,31 @@ export function createTopologyPointerHandlers(refs: PointerHandlerRefs): Topolog
     onExpandEgoNeighbors,
     onExpandClusterBatch,
   } = refs;
+
+  /**
+   * 3D 보기 — 이번 프레임의 돔 전달 맵(램프>0 일 때만). 히트/후보/칩 판정이
+   * 전부 이 하나를 읽는다 — 드로우가 마지막으로 그린 그 맵이다.
+   */
+  const domeFrameNow = (): ReadonlyMap<string, DomeNodeFrame> | null => {
+    const runtime = domeRuntimeRef?.current ?? null;
+    return runtime && runtime.frame.size > 0 && runtime.rampClock > 0 ? runtime.frame : null;
+  };
+  /** 3D 궤도/평면 드래그 분기 조건 — 타깃이 켬이고 영역 비활성. */
+  const domeInteractive = (): DomeRuntime | null => {
+    const runtime = domeRuntimeRef?.current ?? null;
+    return runtime && runtime.active ? runtime : null;
+  };
+  /**
+   * 3D — 카메라 배율 하한 덮어쓰기. 돔 핏 배율이 2D 앵커 기준 하한보다 낮으면
+   * 거기까지 내린다(`DomeRuntime.fitScale` JSDoc — 안 내리면 핏 목표가 도달
+   * 불가라 휠 앵커가 허구의 배율로 계산된다). 휠·핀치·스프링이 같은 값을
+   * 봐야 세 경로의 클램프가 어긋나지 않는다.
+   */
+  const effectiveScaleMinWithDome = (base: number): number => {
+    const runtime = domeRuntimeRef?.current ?? null;
+    const fit = runtime !== null && runtime.rampClock > 0 ? runtime.fitScale : null;
+    return fit !== null ? Math.min(base, fit) : base;
+  };
 
   /**
    * 밀도 게이트 — 클릭/호버 지점이 어떤 클러스터 칩 위인지 판정한다. 칩
@@ -386,6 +428,8 @@ export function createTopologyPointerHandlers(refs: PointerHandlerRefs): Topolog
     const batchSize = expandPrefRef?.current.batchSize ?? DEFAULT_EXPAND.batchSize;
     const barLabels = clusterBarLabelsRef?.current ?? undefined;
     const focusedSlug = focusedSlugRef.current;
+    // 3D 보기 — 드로우가 칩 앵커·부모에 더한 것과 같은 프레임 오프셋.
+    const chipDomeFrame = domeFrameNow();
     for (const chip of chips) {
       // 도킹 가능성은 **드로우와 같은 조건**이다 — 부모 노드를 그래프에서 찾을
       // 수 있는가. 배치 공개의 `+N 더보기` 칩은 부모 id 가 합성이라 못 찾고,
@@ -405,7 +449,8 @@ export function createTopologyPointerHandlers(refs: PointerHandlerRefs): Topolog
       if (form === "badge" || form === "bar") {
         // S10 결함 2 — 노드에 도킹된 형태. 드로우와 **같은** 사각형 함수로 유도.
         if (!parentNode || !tokens) continue;
-        const parentScreen = worldToScreen(camera, width, height, parentNode.x, parentNode.y);
+        const chipOff = chipDomeFrame?.get(parentNode.id);
+        const parentScreen = worldToScreen(camera, width, height, parentNode.x + (chipOff?.dx ?? 0), parentNode.y + (chipOff?.dy ?? 0));
         const nodeScreenRadius = radiusForKind(parentNode.kind, tokens) * parentNode.magnitudeScale * camera.scale.value;
         rect =
           form === "bar"
@@ -429,7 +474,8 @@ export function createTopologyPointerHandlers(refs: PointerHandlerRefs): Topolog
                 scale,
               );
       } else {
-        const screen = worldToScreen(camera, width, height, chip.anchor.x, chip.anchor.y);
+        const chipOff = chipDomeFrame?.get(chip.parentId);
+        const screen = worldToScreen(camera, width, height, chip.anchor.x + (chipOff?.dx ?? 0), chip.anchor.y + (chipOff?.dy ?? 0));
         rect = clusterChipRect(screen.x, screen.y, clusterChipLabel(chip.count, chip.expanded), scale);
       }
       if (px >= rect.x && px <= rect.x + rect.w && py >= rect.y && py <= rect.y + rect.h) {
@@ -470,11 +516,20 @@ export function createTopologyPointerHandlers(refs: PointerHandlerRefs): Topolog
     // S10 결함 3 — 영역 전개 중 깊이 기반 티어 오버라이드(드로우와 같은 맵).
     const realmTierKinds = realmTierKindsRef?.current ?? null;
     // S5 — 영역 시차가 활성이면 드로우와 같은 밴드 오프셋을 히트에도 적용.
+    // 3D 보기 — 드로우가 그린 **같은 프레임 맵**의 오프셋·원근 배율을 합성
+    // (회전 중 클릭도 이번 프레임 좌표로 판정된다).
     const parallax = realmParallaxRef?.current ?? null;
-    const renderOffsetForNode = parallax
-      ? (node: { id: string }) =>
-          depthParallaxOffsetFor(parallax.depthById.get(node.id), parallax.depth2, parallax.depth3)
-      : undefined;
+    const domeFrame = domeFrameNow();
+    const renderOffsetForNode =
+      parallax || domeFrame
+        ? (node: { id: string; x: number; y: number; kind: "project" | "domain" | "capability" | "element" }) => {
+            const pOff = parallax
+              ? depthParallaxOffsetFor(parallax.depthById.get(node.id), parallax.depth2, parallax.depth3)
+              : ZERO_PARALLAX;
+            const dOff = domeFrame?.get(node.id);
+            return { x: pOff.x + (dOff?.dx ?? 0), y: pOff.y + (dOff?.dy ?? 0) };
+          }
+        : undefined;
     return hitTestWorld(
       world,
       camera,
@@ -496,6 +551,10 @@ export function createTopologyPointerHandlers(refs: PointerHandlerRefs): Topolog
           lastDrawnNodeAlphas(),
         ),
       renderOffsetForNode,
+      // 3D 원근 배율 — 드로우가 곱한 것과 같은 s 를 히트 디스크에도.
+      domeFrame ? (node) => domeFrame.get(node.id)?.s ?? 1 : undefined,
+      // 3D 깊이 — 겹친 디스크는 가까운(밝고 큰) 노드가 이긴다.
+      domeFrame ? (node) => domeFrame.get(node.id)?.u ?? 0 : undefined,
     );
   };
 
@@ -547,6 +606,11 @@ export function createTopologyPointerHandlers(refs: PointerHandlerRefs): Topolog
     const focusedNodeId = focusedSlugRef.current;
     // 캐시 키 — 후보 목록을 정하는 모든 입력. 카메라 세 축이 들어가므로
     // 팬/줌 중에는 매 프레임 새 키가 되고, 정지 상태에서는 같은 키가 된다.
+    // 3D 보기 — 엣지 끝점도 드로우와 같은 프레임 오프셋을 받아야 호버/클릭이
+    // 그려진 커브를 따라온다. 프레임 세대(frameEpoch)가 키에 들어간다 — 회전
+    // 중에는 매 프레임 새 좌표이고, 정지 상태에서는 같은 세대가 유지된다.
+    const domeFrame = domeFrameNow();
+    const domeEpoch = domeFrame ? (domeRuntimeRef?.current?.frameEpoch ?? 0) : -1;
     const cacheKey = [
       cameraRef.current.x.value,
       cameraRef.current.y.value,
@@ -555,6 +619,7 @@ export function createTopologyPointerHandlers(refs: PointerHandlerRefs): Topolog
       height,
       zoomRatio,
       focusedNodeId ?? "",
+      domeEpoch,
     ].join("|");
     // 집합·맵은 **참조로** 비교한다 — 크기만 보면 같은 크기의 다른 내용이
     // 통과한다(가장 조용한 종류의 캐시 오류다). 이 값들은 새 객체로 교체되지
@@ -598,16 +663,24 @@ export function createTopologyPointerHandlers(refs: PointerHandlerRefs): Topolog
     const bodyRadius = (id: string): number | undefined => {
       const node = world.nodeById.get(id);
       if (!node) return undefined;
-      return radiusForKind(node.kind, tokens) * node.magnitudeScale * scale + 5;
+      // 3D — 노드 히트 디스크와 같은 원근 배율(드로우와 동일식).
+      const domeS = domeFrame?.get(id)?.s ?? 1;
+      return radiusForKind(node.kind, tokens) * node.magnitudeScale * domeS * scale + 5;
     };
     const candidates: EdgeHitCandidate[] = [];
+    // 3D 오프셋 — 드로우(`topology-frame-draw.ts#projectEdgePoints`)와 같은
+    // 식: 끝점은 자기 끝 노드의 프레임 오프셋, 제어점은 두 끝의 평균.
+    const cam = cameraRef.current;
+    const ZERO = { dx: 0, dy: 0, s: 1 };
     for (const edge of world.edges) {
       if (!hittable.has(edge.sourceId) || !hittable.has(edge.targetId)) continue;
+      const offA = domeFrame?.get(edge.sourceId) ?? ZERO;
+      const offB = domeFrame?.get(edge.targetId) ?? ZERO;
       candidates.push({
         edge,
-        a: worldToScreen(cameraRef.current, width, height, edge.ax, edge.ay),
-        b: worldToScreen(cameraRef.current, width, height, edge.bx, edge.by),
-        control: worldToScreen(cameraRef.current, width, height, edge.controlX, edge.controlY),
+        a: worldToScreen(cam, width, height, edge.ax + offA.dx, edge.ay + offA.dy),
+        b: worldToScreen(cam, width, height, edge.bx + offB.dx, edge.by + offB.dy),
+        control: worldToScreen(cam, width, height, edge.controlX + (offA.dx + offB.dx) / 2, edge.controlY + (offA.dy + offB.dy) / 2),
         aRadius: bodyRadius(edge.sourceId),
         bRadius: bodyRadius(edge.targetId),
       });
@@ -672,6 +745,23 @@ export function createTopologyPointerHandlers(refs: PointerHandlerRefs): Topolog
       }
       if (activeTouchesRef.current.size > 2) return;
     }
+    // 3D — 진행 중이던 궤도 관성을 즉시 잡는다(카메라 flick catch 와 같은
+    // iOS 계약). 잡는 행위 자체가 «지금 자리에 정지»다.
+    {
+      const dome = domeInteractive();
+      if (dome) {
+        dome.yawVel = 0;
+        dome.pitchVel = 0;
+        // 진행 중 프로그램 자세 이동(「제자리로」·선택 리프레임)도 여기서
+        // 버린다 — 포인터다운이 카메라 트윈을 버리는 것과 같은 계약: 제스처가
+        // 현재 자세에서 즉시 이어받는다(④의 중단 가능 요건).
+        dome.poseTween = null;
+        // 스무딩 목표를 현재 자세로 동기화 — 잡는 순간의 «지금 자리 정지»가
+        // 남은 목표-갭에 의해 미끄러지지 않게.
+        dome.yawTarget = dome.yaw;
+        dome.pitchTarget = dome.pitch;
+      }
+    }
     const hitNodeId = hitVisibleNode(world, cameraRef.current, tokens, point.x, point.y);
     const { next } = transitionPointerState(pointerMachineRef.current, { type: "pointerdown", point, hitNodeId }, tokens.hysteresisPx);
     pointerMachineRef.current = next;
@@ -704,11 +794,20 @@ export function createTopologyPointerHandlers(refs: PointerHandlerRefs): Topolog
           clearEdgeHover();
           clearClusterHover();
           if (cameraTweenRef) cameraTweenRef.current = null;
+          // 3D — 핀치 줌도 개입이다(휠과 같은 계약: ① 회전 해제 + ④ 자세
+          // 이동 중단).
+          {
+            const dome = domeInteractive();
+            if (dome) {
+              dome.spinArmed = false;
+              dome.poseTween = null;
+            }
+          }
           const { width, height } = viewportRef.current;
           const target = cameraTargetRef.current;
           const overviewEntryScale = overviewScaleRef.current * tokens.overviewEntryRatio;
           const effectiveScaleMax = computeEffectiveCameraScaleMax(overviewEntryScale, tokens.cameraMaxZoomRatio, tokens.cameraScaleMax);
-          const effectiveScaleMin = computeEffectiveCameraScaleMin(overviewEntryScale, tokens.cameraMinZoomRatio, tokens.cameraScaleMin);
+          const effectiveScaleMin = effectiveScaleMinWithDome(computeEffectiveCameraScaleMin(overviewEntryScale, tokens.cameraMinZoomRatio, tokens.cameraScaleMin));
           const newScale = Math.min(effectiveScaleMax, Math.max(effectiveScaleMin, target.tscale * (dist / pinch.dist)));
           const worldAtPrevMidX = (pinch.midX - width / 2) / target.tscale + target.tx;
           const worldAtPrevMidY = (pinch.midY - height / 2) / target.tscale + target.ty;
@@ -754,6 +853,50 @@ export function createTopologyPointerHandlers(refs: PointerHandlerRefs): Topolog
     if (next.phase === "dragging") {
       const sim = simRef.current;
       const { width, height } = viewportRef.current;
+      const dome = domeInteractive();
+
+      // 3D 평면 내 노드 드래그 — 노드 vs 빈 곳 판정(pressedNodeId)은 2D 와
+      // 같은 히트가 이미 내렸다. 화면 한 점에는 깊이가 무한히 대응하므로
+      // 노드는 **자기 kind 평면 안에서만** 움직인다(`solveDomePlanePoint`) —
+      // z 의 타입 사실(kind 티어) 보존. 힘 시뮬은 2D 레이아웃의 것이라 여기선
+      // 건드리지 않는다(돔 좌표만 옮긴다 — 세션 한정, 2D 배치 불변).
+      if (dome && nodeDragRef.current === null && pressedNodeId !== null && sim?.hasNode(pressedNodeId)) {
+        const grabNode = world.nodeById.get(pressedNodeId);
+        const coord = dome.model.coords.get(pressedNodeId);
+        if (grabNode && coord) {
+          const grabFrame = dome.frame.get(pressedNodeId);
+          const renderedX = grabNode.x + (grabFrame?.dx ?? 0);
+          const renderedY = grabNode.y + (grabFrame?.dy ?? 0);
+          const pw = screenToWorld(cameraRef.current, width, height, point.x, point.y);
+          const offset = computeGrabOffsetWorld(renderedX, renderedY, pw.x, pw.y);
+          // 노드를 잡는 것은 개입이다 — 시선 끌기 회전 해제 (①).
+          dome.spinArmed = false;
+          nodeDragRef.current = { nodeId: pressedNodeId, offset };
+          dome.drag = {
+            nodeId: pressedNodeId,
+            spring: { px: coord.px, pz: coord.pz, vx: 0, vz: 0 },
+            targetPx: coord.px,
+            targetPz: coord.pz,
+          };
+        }
+      }
+
+      if (dome && nodeDragRef.current !== null && dome.drag !== null) {
+        clearEdgeHover();
+        clearClusterHover();
+        const pw = screenToWorld(cameraRef.current, width, height, point.x, point.y);
+        const pin = computePinWorld(pw.x, pw.y, nodeDragRef.current.offset);
+        const coord = dome.model.coords.get(dome.drag.nodeId);
+        if (coord) {
+          const solved = solveDomePlanePoint(dome.model, coord.py, pin.x, pin.y, dome.yaw + dome.lag[world.nodeById.get(dome.drag.nodeId)?.kind ?? "element"], dome.pitch);
+          if (solved) {
+            dome.drag.targetPx = solved.px;
+            dome.drag.targetPz = solved.pz;
+          }
+        }
+        e.currentTarget.style.cursor = "grabbing";
+        return;
+      }
 
       // Start a node pin-drag the moment we cross into dragging on a node.
       if (nodeDragRef.current === null && pressedNodeId !== null && sim?.hasNode(pressedNodeId)) {
@@ -792,6 +935,29 @@ export function createTopologyPointerHandlers(refs: PointerHandlerRefs): Topolog
       // 미는 동안은 `grabbing` — 노드 드래그(위 분기)와 같은 응답이라 "지금
       // 내 손에 뭔가 잡혀 있다" 가 두 경우에 같은 글자로 읽힌다.
       e.currentTarget.style.cursor = "grabbing";
+
+      // 3D 궤도(orbit) — 빈 곳 드래그는 카메라 팬이 아니라 돔 회전이다.
+      // 수평 = yaw(감도 히어로 0.006/px), 수직 = pitch(러버밴드 한계). 깊은
+      // 티어는 비틀림(lag)으로 살짝 뒤처졌다 스프링 백 — follow-through.
+      if (dome) {
+        const history = dragHistoryRef.current;
+        const last = history[history.length - 1];
+        const dx = last ? point.x - last.x : 0;
+        const dy = last ? point.y - last.y : 0;
+        // 이벤트는 **목표**만 민다 — 실제 yaw/pitch 는 루프가 매 프레임
+        // `ORBIT_SMOOTH_TAU_MS` 로 목표를 따라간다(이벤트 주기 > 프레임
+        // 주기일 때의 계단 제거; 티어 비틀림 충전도 실제 프레임 이동에서
+        // 루프가 한다). 총량은 여전히 포인터와 1:1 이다.
+        dome.yawTarget += dx * ORBIT_YAW_PER_PX;
+        dome.pitchTarget = resistDomePitch(dome.pitchTarget + dy * ORBIT_PITCH_PER_PX);
+        dome.orbiting = true;
+        // 궤도는 개입이다 — 시선 끌기 회전은 여기서 내려가 되살아나지 않는다
+        // (①, 복귀는 「자동 정렬」·3D 재진입 — `DomeRuntime.spinArmed` JSDoc).
+        dome.spinArmed = false;
+        dragHistoryRef.current.push({ x: point.x, y: point.y, t: performance.now() });
+        if (dragHistoryRef.current.length > 10) dragHistoryRef.current.shift();
+        return;
+      }
 
       const anchor = next.downPoint ?? point;
       const worldDX = (point.x - anchor.x) / cameraRef.current.scale.value;
@@ -955,6 +1121,18 @@ export function createTopologyPointerHandlers(refs: PointerHandlerRefs): Topolog
     // camera flick, no click commit (the state machine already suppressed the
     // click for a drag).
     if (nodeDragRef.current !== null) {
+      // 3D 평면 내 드래그 릴리스 — 시뮬 핀이 없다(잡을 때 안 걸었다). 스프링이
+      // 마지막 목표점으로 이어 정착하도록 released 만 표시한다(루프가 정착을
+      // 보고 지운다) — 놓는 순간 속도가 0 으로 리셋되지 않는다.
+      {
+        const dome = domeInteractive();
+        if (dome && dome.drag !== null && dome.drag.nodeId === nodeDragRef.current.nodeId) {
+          dome.drag.released = true;
+          nodeDragRef.current = null;
+          if (canvasRef?.current) canvasRef.current.style.cursor = "";
+          return;
+        }
+      }
       simRef.current?.clearPin();
       nodeDragRef.current = null;
       heatRef.current = Math.max(heatRef.current, tokens.nodeReleaseSettleMs);
@@ -969,6 +1147,33 @@ export function createTopologyPointerHandlers(refs: PointerHandlerRefs): Topolog
     }
 
     if (wasDragging) {
+      // 3D 궤도 릴리스 — 카메라 플릭 대신 yaw/pitch 관성. 릴리스 창의 실측
+      // 속도를 드래그와 같은 감도로 각속도에 넘긴다(놓는 순간 속도 연속).
+      // reduced-motion 은 관성 0 — 사용자 개시 «드래그 자체»는 1:1 로 이미
+      // 끝났고, 이어지는 활강은 앱이 만드는 모션이라 예외 대상이 아니다.
+      {
+        const dome = domeInteractive();
+        if (dome && dome.orbiting) {
+          dome.orbiting = false;
+          // 남은 목표-갭(≤ 속도×τ)은 버리고 관성이 이어받는다 — 릴리스 후에
+          // 목표-따라가기와 관성이 동시에 자세를 밀면 이중 적분이 된다.
+          dome.yawTarget = dome.yaw;
+          dome.pitchTarget = dome.pitch;
+          if (!reducedMotionRef.current) {
+            const release = sampleReleaseVelocity({
+              history: dragHistoryRef.current,
+              releaseTime: performance.now(),
+              windowMs: tokens.cameraReleaseVelocityWindowMs,
+              minSpeedPxPerMs: tokens.cameraFlickMinSpeed,
+            });
+            if (release.isFlick) {
+              dome.yawVel = release.vx * ORBIT_YAW_PER_PX;
+              dome.pitchVel = release.vy * ORBIT_PITCH_PER_PX;
+            }
+          }
+          return;
+        }
+      }
       // 정지 릴리스 게이트 (owner spec: "드래그 후 멈추면 그 자리에 정지") — sample
       // the last ~80ms of pointer motion; a stationary release yields isFlick=false
       // and the camera holds exactly here (no momentum glide). Only a release WITH
@@ -1043,6 +1248,15 @@ export function createTopologyPointerHandlers(refs: PointerHandlerRefs): Topolog
     const action = resolveClickAction(commitClick, focusedSlugRef.current);
     if (action.type === "select") {
       onSelect?.(action.nodeId);
+      return;
+    }
+    // 3D 돔 — 선택된 노드의 재클릭은 해제가 아니라 **재선택**이다 (2026-08-18
+    // 2차): 돔에서는 패널 X 가 선택을 남긴 채 패널만 접으므로(HomePage
+    // `handleDatasheetClose`), 접힌 패널을 다시 여는 자연스러운 제스처가 그
+    // 노드 재클릭이다. 재클릭=해제 토글을 유지하면 그 길이 없다 — 해제는 빈
+    // 배경 클릭/Escape 의 몫으로 남는다. 2D 는 종전 토글 그대로.
+    if (action.type === "deselect" && commitClick !== null && commitClick.nodeId !== null && domeInteractive() !== null) {
+      onSelect?.(commitClick.nodeId);
       return;
     }
     // 밀도 게이트 — 빈 공간(노드 미히트) 클릭이 클러스터 칩 위면 확장 토글.
@@ -1123,6 +1337,22 @@ export function createTopologyPointerHandlers(refs: PointerHandlerRefs): Topolog
     clearEdgeHover();
     clearClusterHover();
     const tokens = readTopologyV2TokensOrNull();
+    // 3D — 진행 중이던 궤도/평면 드래그를 깨끗이 끝낸다(스프링은 정착까지).
+    // 시뮬 핀은 없으므로 아래 2D 핀 정리 블록에 넘기지 않는다(공짜 heat 로
+    // 숨은 2D 레이아웃이 흔들리지 않게).
+    {
+      const dome = domeInteractive();
+      if (dome) {
+        dome.orbiting = false;
+        dome.yawTarget = dome.yaw;
+        dome.pitchTarget = dome.pitch;
+        if (dome.drag !== null) {
+          dome.drag.released = true;
+          nodeDragRef.current = null;
+          if (canvasRef?.current) canvasRef.current.style.cursor = "";
+        }
+      }
+    }
     // Abort any in-flight node pin-drag cleanly (release the pin, let it settle).
     if (nodeDragRef.current !== null) {
       simRef.current?.clearPin();
@@ -1164,6 +1394,15 @@ export function createTopologyPointerHandlers(refs: PointerHandlerRefs): Topolog
     // S3 — a live wheel zoom is interactive input; abandon any programmatic
     // camera tween so the crisp interactive spring owns this gesture.
     if (cameraTweenRef) cameraTweenRef.current = null;
+    // 3D — 줌도 개입이다: 시선 끌기 회전 해제(①) + 진행 중 자세 이동도
+    // 제스처에 넘긴다(카메라 트윈과 같은 중단 계약, ④).
+    {
+      const dome = domeInteractive();
+      if (dome) {
+        dome.spinArmed = false;
+        dome.poseTween = null;
+      }
+    }
     const { width, height } = viewportRef.current;
     const rect = currentRect(e.currentTarget as HTMLCanvasElement);
     const sx = e.clientX - rect.left;
@@ -1200,7 +1439,7 @@ export function createTopologyPointerHandlers(refs: PointerHandlerRefs): Topolog
     // `topology-physics-step.ts`.
     const overviewEntryScale = overviewScaleRef.current * tokens.overviewEntryRatio;
     const effectiveScaleMax = computeEffectiveCameraScaleMax(overviewEntryScale, tokens.cameraMaxZoomRatio, tokens.cameraScaleMax);
-    const effectiveScaleMin = computeEffectiveCameraScaleMin(overviewEntryScale, tokens.cameraMinZoomRatio, tokens.cameraScaleMin);
+    const effectiveScaleMin = effectiveScaleMinWithDome(computeEffectiveCameraScaleMin(overviewEntryScale, tokens.cameraMinZoomRatio, tokens.cameraScaleMin));
     const newScale = Math.min(effectiveScaleMax, Math.max(effectiveScaleMin, target.tscale * factor));
     const afterX = beforeX - (sx - width / 2) / newScale;
     const afterY = beforeY - (sy - height / 2) / newScale;
