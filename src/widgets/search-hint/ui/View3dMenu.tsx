@@ -82,8 +82,16 @@ export function View3dMenu({ open, onClose }: { open: boolean; onClose: () => vo
    * 바깥 누름·Esc 로 닫는다. 이 표면은 **뒤를 막지 않는다** — 지도를 보면서
    * 고르는 것이 요점이라 모달로 만들면 고르는 동안 결과가 안 보인다.
    * 그래서 스크림도 트랩도 없다(모달 계약의 대상이 아니다).
+   *
+   * ⚠️ **닫혀 있으면 아무것도 듣지 않는다.** 이 컴포넌트는 칩 옆에 **항상
+   * 렌더된다**(`open` 이 false 여도). 훅은 조기 반환보다 먼저 도니, 이 가드가
+   * 없으면 **메뉴가 닫혀 있는 내내** 문서 Esc 를 가로채 `stopPropagation()`
+   * 하게 된다 — 앱 전역에서 Esc 가 죽는다. 실측(2026-08-19 CI): 노드 상세가
+   * Esc 로 안 닫히고, 키보드 경로·포커스 반환·팝오버 계약까지 다섯 스펙이
+   * 함께 빨개졌다. 조건부 표면의 전역 리스너는 **열렸을 때만** 산다.
    */
   useEffect(() => {
+    if (!open) return;
     const onKey = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
         e.stopPropagation();
@@ -102,7 +110,7 @@ export function View3dMenu({ open, onClose }: { open: boolean; onClose: () => vo
       document.removeEventListener('keydown', onKey);
       document.removeEventListener('pointerdown', onDown, true);
     };
-  }, [onClose]);
+  }, [onClose, open]);
 
   if (!presence.mounted) return null;
 

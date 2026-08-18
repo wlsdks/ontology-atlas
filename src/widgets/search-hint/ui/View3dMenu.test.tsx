@@ -20,6 +20,14 @@ function mount() {
   );
 }
 
+function mountClosed(onClose: () => void) {
+  return render(
+    <NextIntlClientProvider locale="ko" messages={ko}>
+      <View3dMenu open={false} onClose={onClose} />
+    </NextIntlClientProvider>,
+  );
+}
+
 beforeEach(() => {
   window.localStorage.clear();
 });
@@ -70,5 +78,35 @@ describe("View3dMenu — 보기 고르개", () => {
     mount();
     fireEvent.click(screen.getByTestId("topology-view-3d-choice-flat"));
     expect(window.localStorage.getItem("atlas.appearance.view3d")).toBe("off");
+  });
+
+  /**
+   * **닫혀 있는 동안 Esc 를 삼키지 않는다** (2026-08-19 회귀).
+   *
+   * 이 컴포넌트는 칩 옆에 **항상 렌더된다**. 훅은 조기 반환보다 먼저 도니,
+   * 전역 리스너를 `open` 으로 가드하지 않으면 닫혀 있는 내내 문서 Esc 를
+   * 가로채 `stopPropagation()` 한다 — 앱 전역에서 Esc 가 죽는다. CI 실측:
+   * 노드 상세가 Esc 로 안 닫히고 키보드 경로·포커스 반환·팝오버 계약까지
+   * 다섯 스펙이 함께 빨개졌다.
+   *
+   * 여기서 재는 것은 «닫는 함수가 안 불린다»와 «전파가 살아 있다» 둘이다 —
+   * 후자를 빼면 `onClose` 만 안 부르고 여전히 삼키는 구현이 통과한다.
+   */
+  it("닫혀 있으면 문서 Esc 를 삼키지 않는다 — 앱 전역 Esc 가 죽지 않는다", () => {
+    let closed = 0;
+    mountClosed(() => {
+      closed += 1;
+    });
+
+    let reachedDocument = 0;
+    const spy = () => {
+      reachedDocument += 1;
+    };
+    document.addEventListener("keydown", spy);
+    fireEvent.keyDown(document, { key: "Escape" });
+    document.removeEventListener("keydown", spy);
+
+    expect(closed, "닫혀 있는데 onClose 가 불렸다").toBe(0);
+    expect(reachedDocument, "Esc 가 문서까지 못 갔다 — 고르개가 삼키고 있다").toBe(1);
   });
 });
