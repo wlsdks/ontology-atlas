@@ -37,6 +37,7 @@ import { GatewayFx } from './GatewayFx';
 import { HeroObject } from './HeroObject';
 import { AcpChatScene } from './AcpChatScene';
 import { useInViewOnce } from '../lib/use-in-view-once';
+import { useVisitorDesktopPlatform } from '../lib/visitor-platform';
 import type { StageGraph } from '../lib/stage-graph';
 import { buildEvidenceRailModel } from '../lib/evidence-rail';
 import { controlClass } from '@/shared/ui/control-class';
@@ -280,6 +281,24 @@ function HeroSection({
     return () => cancelAnimationFrame(id);
   }, []);
 
+  /**
+   * 히어로 CTA 의 네 목적지 (2026-08-18 소유자: *"윈도우 다운로드 하기 버튼이랑
+   * 웹 플레이그라운드 보기 버튼이 없음.. 데모 먼저 보기도 버튼인지도 모르겠고"*):
+   * ① 내 플랫폼용 받기(채움 — 유일한 주목 승자) ② 데모 먼저 보기(outline lg)
+   * ③ 나머지 데스크톱 파일 전부(outline md 한 단 아래) ④ 브라우저에서 열기
+   * (outline md). 감지는 클라이언트 한 곳(`useVisitorDesktopPlatform`)이고
+   * 실패 시 macOS 기본 — 어느 분기에서도 네 목적지 전부에 손이 닿는다.
+   *
+   * Windows 가 승자가 될 때 미서명 사실은 **누르기 전에** 신뢰줄 자리에서
+   * 말한다(`trustLineWindows`) — macOS 방문자가 같은 자리에서 서명·공증을
+   * 읽는 것과 정확히 같은 문법이다. 강등 버전(둘째 줄의 Windows 버튼)은
+   * 라벨 옆 `미서명` 표식이 같은 일을 한다. 자세한 경고 전문·체크섬은 설치
+   * 절(`PlatformStatus`)이 계속 진다 — 히어로는 요약, 판은 증명.
+   */
+  const visitorPlatform = useVisitorDesktopPlatform();
+  const windowsInstaller = windowsAsset();
+  const heroWindowsPrimary = visitorPlatform === 'windows' && windowsInstaller !== null;
+
   const releaseTag = published
     ? MACOS_RELEASE.tag
     : resolveDisplayReleaseTag({
@@ -336,11 +355,12 @@ function HeroSection({
           'lg:grid-cols-[minmax(0,1fr)_minmax(320px,0.85fr)]',
         )}
       >
-        {/* `lg:pb-14` — 광학 보정이다. 오브젝트의 잉크 질량이 아래(돔)에
-            몰려 있어 수학적 중앙(items-center)은 눈에는 낮게 앉는다. 결정
-            블록에 바닥 패딩을 주면 센터링이 그 절반만큼 블록을 올려, 리드가
-            헤드라인과 이어져 읽히고 아래 공기는 돔의 질량과 짝이 된다. */}
-        <div className="min-w-0 lg:pb-14">
+        {/* 구 `lg:pb-14` 광학 보정은 반납했다 (2026-08-18 소유자: *"윗공백이
+            너무 심한데"* — 실측 1512: 보정이 결정 블록을 28px 올려 블록 하단과
+            캔버스 하단 사이 108px 의 빈 좌하단을 만들고, 상대적으로 오브젝트를
+            아래로 몰아 보이게 했다). CTA 가 두 줄이 되며 블록이 캔버스 키에
+            가까워졌으므로 순수 `items-center` 가 광학으로도 맞는다. */}
+        <div className="min-w-0">
           <p
             className={cn(
               rise('gateway-t700'),
@@ -353,15 +373,20 @@ function HeroSection({
           <div className={cn(rise('gateway-t800'), 'mt-9 flex flex-wrap items-center gap-3')}>
             {published && primaryAsset ? (
               /* 채운 CTA — 실파일 직링크. 판(⑤)의 주 CTA 와 같은 행동이라
-                 중복이 아니라 반복이다(스크롤 4절 아래의 같은 결정). */
+                 중복이 아니라 반복이다(스크롤 4절 아래의 같은 결정). 파일은
+                 방문자의 플랫폼을 따른다 — Windows 방문자가 「Apple Silicon용
+                 받기」만 보던 것이 이 분기가 고친 결함이다. */
               <a
-                href={primaryAsset.downloadUrl}
+                href={heroWindowsPrimary ? windowsInstaller!.downloadUrl : primaryAsset.downloadUrl}
                 data-testid="gateway-hero-cta"
                 className={cn(buttonVariants({ size: 'lg' }), 'rounded-chip px-6')}
               >
                 <Download size={ICON_SIZE.lg} aria-hidden />
-                {t('primaryCtaPublished')}
-                <AssetSize bytes={primaryAsset.sizeBytes} onFill />
+                {heroWindowsPrimary ? t('windowsDownloadCta') : t('primaryCtaPublished')}
+                <AssetSize
+                  bytes={heroWindowsPrimary ? windowsInstaller!.sizeBytes : primaryAsset.sizeBytes}
+                  onFill
+                />
               </a>
             ) : (
               /* 받을 것이 없으면 승자는 지금 되는 것 — 브라우저의 지도다. */
@@ -373,14 +398,65 @@ function HeroSection({
                 {t('webCta')}
               </Link>
             )}
+            {/* `outline` — ghost 는 면도 테두리도 없어 산문으로 읽혔다(소유자:
+                *"버튼인지도 모르겠고"*). 누를 수 있는 것은 누를 수 있게
+                생겨야 하고, 이 램프에서 그 최소 단위가 outline 이다. */}
             <a
               href="#demo"
               data-testid="gateway-hero-demo-link"
-              className={cn(buttonVariants({ variant: 'ghost', size: 'lg' }), 'rounded-chip px-4')}
+              className={cn(buttonVariants({ variant: 'outline', size: 'lg' }), 'rounded-chip px-4 sm:px-6')}
             >
               {t('heroDemoCta')}
             </a>
           </div>
+
+          {published && primaryAsset ? (
+            /* 둘째 줄 — 승자가 아닌 목적지 전부, 한 단 아래(`md`, h-10 vs h-11).
+               크기 표기는 주 CTA 만 갖는다(결정 재료는 승자의 것, 전 파일의
+               크기·체크섬은 판이 낸다). Windows 의 「미서명」 표식만은 여기서도
+               뗄 수 없다 — 서명 상태는 받기 전에 알아야 하는 사실이라서다. */
+            <div
+              data-testid="gateway-hero-alt-row"
+              className={cn(rise('gateway-t800'), 'mt-2.5 flex flex-wrap items-center gap-2.5')}
+            >
+              {heroWindowsPrimary ? (
+                <a
+                  href={primaryAsset.downloadUrl}
+                  data-testid="gateway-hero-macos-aarch64"
+                  className={cn(buttonVariants({ variant: 'outline', size: 'md' }), 'rounded-chip px-4')}
+                >
+                  <Download size={ICON_SIZE.md} aria-hidden />
+                  {t('primaryCtaPublished')}
+                </a>
+              ) : null}
+              <HeroIntelLink />
+              {!heroWindowsPrimary && windowsInstaller ? (
+                <a
+                  href={windowsInstaller.downloadUrl}
+                  data-testid="gateway-hero-windows"
+                  className={cn(buttonVariants({ variant: 'outline', size: 'md' }), 'rounded-chip px-4')}
+                >
+                  <Download size={ICON_SIZE.md} aria-hidden />
+                  {t('windowsDownloadCta')}
+                  <span className="font-mono text-label leading-label text-[color:var(--color-text-tertiary)]">
+                    {t('windowsUnsignedShort')}
+                  </span>
+                </a>
+              ) : null}
+              {/* 관문의 둘째 약속 — 설치 없이 보는 길이 항상 열려 있다. 종전
+                  `webCta` 는 미게시 분기에만 살아서 게시된 지금은 절대 안
+                  나왔다(소유자: *"웹 플레이그라운드 보기 버튼이 없음"*).
+                  라벨이 `webCta` 보다 짧은 것은 줄 예산이다 — 긴 라벨이면 이
+                  줄이 ko 575px 단에서 홀로 셋째 줄로 떨어진다(실측 1512). */}
+              <Link
+                href="/topology"
+                data-testid="gateway-hero-web-cta"
+                className={cn(buttonVariants({ variant: 'outline', size: 'md' }), 'rounded-chip px-4')}
+              >
+                {t('heroWebCta')}
+              </Link>
+            </div>
+          ) : null}
 
           <p
             className={cn(
@@ -388,7 +464,10 @@ function HeroSection({
               'mt-5 break-keep text-body leading-body text-[color:var(--color-text-tertiary)]',
             )}
           >
-            {t('trustLine')}
+            {/* 신뢰줄 자리 = 「누르기 전에 알아야 하는 사실」. 승자가 Windows 면
+                Apple 서명 문장은 그 파일의 사실이 아니다 — 미서명·SmartScreen
+                경고가 그 자리의 정직한 문장이다. */}
+            {heroWindowsPrimary ? t('trustLineWindows') : t('trustLine')}
           </p>
         </div>
 
@@ -399,6 +478,28 @@ function HeroSection({
 
       <FactsStrip published={published} primaryAsset={primaryAsset} heroIn={heroIn} />
     </section>
+  );
+}
+
+/**
+ * 히어로 둘째 줄의 Intel Mac 파일 — 감지 분기와 무관하게 항상 선다.
+ * 브라우저는 맥의 칩을 판별할 수 없으므로(아키텍처 안내 주석) Apple Silicon
+ * 이 기본이고 Intel 은 감지가 아니라 **상시 노출**로 손이 닿는다.
+ */
+function HeroIntelLink() {
+  const t = useTranslations('download');
+  const intel = macosAssetFor('x64');
+  if (!intel) return null;
+
+  return (
+    <a
+      href={intel.downloadUrl}
+      data-testid="gateway-hero-macos-x64"
+      className={cn(buttonVariants({ variant: 'outline', size: 'md' }), 'rounded-chip px-4')}
+    >
+      <Download size={ICON_SIZE.md} aria-hidden />
+      {t('archIntelCta')}
+    </a>
   );
 }
 

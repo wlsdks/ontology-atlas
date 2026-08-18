@@ -296,6 +296,107 @@ describe('DownloadPage', () => {
         `https://github.com/wlsdks/ontology-atlas/releases/tag/v${RELEASE_VERSION}`,
       );
     });
+
+    /**
+     * 히어로 CTA 의 네 목적지 (2026-08-18 소유자: 히어로에 Windows 받기 버튼과
+     * 웹으로 가는 버튼이 없고, 데모는 버튼인지도 안 보였다) — ① 내 플랫폼용
+     * 받기(채움, 유일한 승자) ② 데모 ③ 나머지 데스크톱 파일 전부 ④ 브라우저
+     * 지도. 감지 실패의 기본값(macOS)에서도 넷 전부에 손이 닿아야 한다.
+     */
+    it('hero reaches every desktop file, the demo, and the browser map — one filled winner', () => {
+      publishWindowsRelease();
+      renderDownloadPage();
+
+      const primary = screen.getByTestId('gateway-hero-cta');
+      expect(primary).toHaveAttribute('href', expect.stringMatching(/_aarch64\.dmg$/));
+      expect(primary.className).toMatch(/--color-indigo-brand/);
+
+      const demo = screen.getByTestId('gateway-hero-demo-link');
+      expect(demo).toHaveAttribute('href', '#demo');
+      // ghost 가 아니다 — 면(overlay)과 테두리를 가진 outline 이어야 「누를 수
+      // 있는 것」으로 읽힌다(소유자: "버튼인지도 모르겠고").
+      expect(demo.className).toMatch(/--color-overlay-1/);
+
+      expect(screen.getByTestId('gateway-hero-macos-x64')).toHaveAttribute(
+        'href',
+        expect.stringMatching(/_x64\.dmg$/),
+      );
+
+      const windows = screen.getByTestId('gateway-hero-windows');
+      expect(windows).toHaveAttribute(
+        'href',
+        expect.stringMatching(/_windows_x64-setup\.exe$/),
+      );
+      // 서명 상태는 받기 **전에** 알아야 하는 사실 — 한 단 아래 버튼에서도
+      // 표식을 떼지 않는다(전문 경고·체크섬은 설치 절 `PlatformStatus`).
+      expect(windows).toHaveTextContent(/unsigned/i);
+
+      const web = screen.getByTestId('gateway-hero-web-cta');
+      expect(web).toHaveAttribute('href', '/topology');
+
+      // 채운 승자는 히어로에 **하나**다 — 나머지는 전부 한 단 아래.
+      for (const secondary of [demo, windows, web, screen.getByTestId('gateway-hero-macos-x64')]) {
+        expect(secondary.className).not.toMatch(/--color-indigo-brand/);
+      }
+    });
+
+    /**
+     * Windows 방문자에게는 Windows 파일이 승자다 — 그리고 그 승격은 미서명
+     * 사실을 같이 데려가야 한다: macOS 방문자가 신뢰줄에서 서명·공증을 읽는
+     * 그 자리에서, Windows 방문자는 미서명·SmartScreen 경고를 읽는다.
+     */
+    it('promotes the Windows installer for a Windows visitor, unsigned fact in the trust slot', () => {
+      publishWindowsRelease();
+      Object.defineProperty(navigator, 'userAgent', {
+        value:
+          'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36',
+        configurable: true,
+      });
+      try {
+        renderDownloadPage();
+
+        const primary = screen.getByTestId('gateway-hero-cta');
+        expect(primary).toHaveAttribute(
+          'href',
+          expect.stringMatching(/_windows_x64-setup\.exe$/),
+        );
+        // 21,500,000 B → 21.5 MB — 승자의 크기는 승자의 파일 것이어야 한다.
+        expect(primary).toHaveTextContent(/21\.5 MB/);
+        expect(screen.getByText(/Unsigned beta · SmartScreen/i)).toBeInTheDocument();
+
+        // macOS 파일들은 사라지지 않고 한 단 아래로 내려온다.
+        expect(screen.getByTestId('gateway-hero-macos-aarch64')).toHaveAttribute(
+          'href',
+          expect.stringMatching(/_aarch64\.dmg$/),
+        );
+        expect(screen.getByTestId('gateway-hero-macos-x64')).toBeInTheDocument();
+        expect(screen.queryByTestId('gateway-hero-windows')).not.toBeInTheDocument();
+      } finally {
+        // 인스턴스에 덮어쓴 own property 를 지우면 프로토타입 getter 가 돌아온다.
+        delete (navigator as { userAgent?: string }).userAgent;
+      }
+    });
+
+    // Windows 빌드가 미게시면 Windows UA 라도 승자는 여전히 macOS 다 — 없는
+    // 파일을 승격하는 것은 빈 약속이고, 그 방문자의 오늘은 브라우저 CTA 가 연다.
+    it('keeps the mac winner for a Windows visitor while the Windows build is unpublished', () => {
+      Object.defineProperty(navigator, 'userAgent', {
+        value: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+        configurable: true,
+      });
+      try {
+        renderDownloadPage();
+
+        expect(screen.getByTestId('gateway-hero-cta')).toHaveAttribute(
+          'href',
+          expect.stringMatching(/_aarch64\.dmg$/),
+        );
+        expect(screen.queryByTestId('gateway-hero-windows')).not.toBeInTheDocument();
+        expect(screen.getByTestId('gateway-hero-web-cta')).toHaveAttribute('href', '/topology');
+      } finally {
+        delete (navigator as { userAgent?: string }).userAgent;
+      }
+    });
   });
 
 
