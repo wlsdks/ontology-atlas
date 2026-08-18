@@ -51,6 +51,10 @@
   ·
   <a href="#the-journey">The journey</a>
   ·
+  <a href="#where-it-stands">Where it stands</a>
+  ·
+  <a href="#what-this-is-not">What this is not</a>
+  ·
   <a href="#status--read-this-before-installing">Status</a>
 </p>
 
@@ -84,20 +88,90 @@ and standards/inference boundary live in the
 
 ## Status — read this before installing
 
-*Last updated 2026-08-03.*
+**Current tag `v1.0.0-rc.7`, published 2026-08-17.** Every public build is
+prerelease software, and the tag says so on purpose: a release candidate walks
+the same signing and notarization path as a final build, but has not been
+widely run yet.
 
-- **The current public builds are prerelease software.** Use the stable
-  [download page](https://wlsdks.github.io/ontology-atlas/en/download/) for the
-  current macOS and Windows x64 assets, checksums, sizes, and signing state.
-- **macOS builds are Developer ID signed and Apple-notarized.** The Windows x64
-  beta is intentionally unsigned, so SmartScreen may show an unknown-publisher
-  warning and managed work PCs may block it. See [Security](SECURITY.md).
-- **Installing the desktop app also installs the agent surface.** Both bundles
-  carry the compiled MCP server. There is no npm package; unsupported platforms
-  can use the browser app or run the CLI and MCP server from a source checkout.
+| Asset for this tag | Size | Signing |
+|---|---|---|
+| macOS `aarch64.dmg` (Apple silicon) | 51,405,632 B | Developer ID signed, Apple-notarized |
+| macOS `x64.dmg` (Intel) | 54,747,089 B | Developer ID signed, Apple-notarized |
+| Windows `x64-setup.exe` | 45,678,059 B | Intentionally unsigned public beta |
+
+Those figures describe `v1.0.0-rc.7` and nothing else. None of them is measured
+by hand: `pnpm download:release-facts` reads each published asset's real byte
+size and its SHA-256 from the sibling checksum asset, and the
+[download page](https://wlsdks.github.io/ontology-atlas/en/download/) renders
+that generated record. When the tag above is no longer the newest, that page and
+[GitHub Releases](https://github.com/wlsdks/ontology-atlas/releases) are the
+authority, not this table.
+
+- **The unsigned Windows beta is a real risk, not a formality.** SmartScreen
+  will warn about an unknown publisher, and a managed work PC may refuse the
+  installer outright. [Security](SECURITY.md) explains what is and is not
+  promised.
+- **Installing the desktop app installs the agent surface.** Both bundles carry
+  the compiled MCP server. There is no npm package; Linux and every other
+  platform runs the browser app, or the CLI and MCP server from a source
+  checkout.
 - **Screenshots demonstrate the product journey, not release availability.**
-  The download page and [GitHub Releases](https://github.com/wlsdks/ontology-atlas/releases)
-  remain the authority for shipped assets.
+
+## Where it stands
+
+Two tiers here, and the second is the one worth reading. Nothing below is a
+roadmap promise — each line is either shipping in the tag above or written down
+in the [feature inventory](docs/FEATURES.md), the
+[specification](docs/ONTOLOGY-ATLAS-SPEC.md), or the
+[decision ledger](docs/DECISIONS.md).
+
+### Working today
+
+- **A Markdown folder is the whole database.** Point the app at one and it reads
+  and writes in place — no import step, no index to build, no account.
+- **The macOS app**, Developer ID signed and notarized, with the compiled MCP
+  server inside its own bundle.
+- **Agent setup is a button, and it proves itself.** The app shows the exact
+  absolute paths before writing anything, writes only on confirm, then spawns
+  the server and runs a real round trip against your vault.
+- **MCP over stdio** for Claude Code, Cursor, VS Code, Codex, and any other MCP
+  client — a typed read and write surface the running server advertises through
+  `tools/list`. [Agent guide](mcp/README.md).
+- **A CLI carrying the same authority as the agent** — scaffold, validate,
+  dry-run writes, bounded traversal, blast radius, commit preflight,
+  vault-scoped git snapshots, agent handoff. [CLI reference](cli/README.md).
+- **The workbench surfaces, all reading one folder** — map, Docs, Workshop,
+  History, Insights, Projects.
+- **Export to standard graph formats.** JSON-LD and GraphML come off the same
+  deterministic compile artifact, so the vault opens in rdflib, Protégé, Gephi,
+  Cytoscape, NetworkX, or Neo4j without a converter of your own.
+- **Scaffolded vaults carry their own agent skills.** A connected coding agent
+  finds review / grow / absorb procedures in its command menu with no extra
+  setup, because `init` wrote them into the vault.
+- **The hosted web app as a gateway** — a static export that opens your local
+  folder through the File System Access API, with nothing installed.
+
+### Shipping, not settled
+
+- **Windows x64 is an intentionally unsigned public beta.** It carries the same
+  local folder and MCP surface as macOS; what it does not carry is a signature,
+  so SmartScreen warns and a managed PC may block it outright.
+- **The vault format is v2.0-rc — an RFC open for public comment.** It documents
+  behavior already enforced by contract tests in this repository, and it carries
+  its own kill criterion: no outside engagement inside the stated feedback
+  window and the standardization track is shelved rather than quietly
+  maintained.
+  [Specification §0](docs/ONTOLOGY-ATLAS-SPEC.md#0-rfc-status-and-feedback).
+- **Linux and other platforms have no packaged build.** They run the browser
+  app, or the CLI and MCP server from a source checkout — the same vault, fewer
+  screens.
+- **Web and desktop do not promise the same screens, and that is not a backlog.**
+  Git history, offline work, and remembering your folder are desktop
+  capabilities; the web says why it cannot do them rather than half-doing them.
+  The capability table is in the [feature inventory](docs/FEATURES.md).
+
+A third tier — what we have decided *not* to build, and why — is
+[What this is not](#what-this-is-not), below.
 
 ## The journey
 
@@ -376,12 +450,6 @@ The authority and verification path for each rule lives in the
 [Ontology Quality Authority Map](docs/ONTOLOGY-QUALITY.md). The practical node
 test is [What becomes a node?](docs/guide/what-becomes-a-node.md).
 
-Atlas deliberately sits *above* code intelligence. Grep, language servers, and
-AST indexes answer where a symbol lives and what calls it. Atlas answers why
-that artifact matters, which capability it serves, and what to verify before
-changing it. It replaces none of them — it tells the agent which structural
-question is worth asking.
-
 ## How relations are stored
 
 There is no relation database or sync step. The declaring Markdown file owns one
@@ -434,6 +502,37 @@ own dogfood vault in [`docs/ontology/`](docs/ontology/); run
 - **The bundled MCP server is a file, not a service.** It sits inside the app
   bundle and keeps working when the app is closed, because your agent launches
   it itself.
+
+## What this is not
+
+- **Not a wiki, and not agent memory.** A wiki only people write rots the week
+  it is written; a store only agents write drifts with nobody left to judge it.
+  Atlas is one layer both audiences read and write, and the arbiter is a git
+  diff. The side-by-side comparison is
+  [above](#why-not-just-use-a-notes-tool).
+- **Not a code index.** Grep, language servers, AST indexes, and CodeGraph
+  answer where a symbol lives and what calls it, and Atlas replaces none of
+  them. It answers why that artifact matters, which capability it serves, and
+  what to verify before changing it — it tells the agent which structural
+  question is worth asking. Curated, not exhaustive.
+- **Not an RDF, OWL, SKOS, or SHACL implementation.** Atlas exports a bounded
+  graph shape, but its Markdown vault is not an RDF serialization, its validator
+  is not a SHACL processor, and its query engine is not a reasoner. A persisted
+  relation is a declared claim, never an entailment, and an absent one is a
+  visible gap, never a negative fact. The boundary is written down instead of
+  implied:
+  [specification §5.2](docs/ONTOLOGY-ATLAS-SPEC.md#52-standards-boundary).
+- **Not a service.** No backend, no account, no telemetry, no daemon, no port.
+  The web app is a static export, and the MCP server is a file your agent
+  launches and closes again.
+- **Not on npm.** `npx ontology-atlas` is a 404 and is not a future feature. The
+  desktop bundle carries the compiled server; everything else runs from a source
+  checkout.
+- **Not extensible by running other people's code.** There will be no
+  third-party plugin runtime. Extension happens through MCP tools, agent skills,
+  and files inside your own vault — things a `git diff` can show you before they
+  run.
+- **Not finished.** Every public build so far is a release candidate.
 
 ## Running from source
 
