@@ -97,6 +97,29 @@ const SECTION_GAP = 'mt-[var(--gateway-section-gap)]';
  * 리드 → 800 CTA → 950 사실층), 이후 전경 영구 정지. 효과층(전류장·그레인·
  * 커서 링)은 `--gateway-fx-*` 봉인 예외다(`GatewayFx` 독블록).
  */
+/**
+ * 히어로의 다운로드 CTA 는 **320px 에서 접힌다**.
+ *
+ * `buttonVariants` 는 `whitespace-nowrap` 이라 라벨이 길면 버튼이 컨테이너를
+ * 뚫는다. 그 자체는 옳은 기본값이다 — 버튼 글자가 아무 데서나 접히면 컨트롤로
+ * 안 읽힌다. 문제는 **가장 좁은 폭에서 여유가 0 이었다는 것**이다: 실측
+ * (320px · en · macOS 폰트)에서 「Download Windows x64 beta + unsigned」가
+ * 폭 296px, 넘침 **정확히 0** 이었다. 0 은 통과가 아니라 **다음 한 픽셀을
+ * 기다리는 상태**다 — 리눅스 CI 의 폰트 스택에서 같은 라벨이 9px 넘쳤고
+ * 게이트가 빨개졌다(2026-08-19).
+ *
+ * 고칠 수 있는 길은 셋이었고 둘은 기각했다. ① 라벨 줄이기 — 「x64」나 「beta」를
+ * 빼면 받는 파일이 무엇인지 흐려진다. ② 좁은 폭에서 「unsigned」 감추기 —
+ * 서명이 없다는 사실은 방문자가 **누르기 전에** 알아야 하는 것이라
+ * (`surfaces.md` 의 정직한 강등 계약) 폭이 좁다고 지울 수 없다. 남은 것이
+ * ③ **접기**다: 320px 에서 두 줄이 되는 버튼은 흠이 아니고, `sm:` 부터는
+ * 원래대로 한 줄이다.
+ *
+ * `text-left` 가 같이 필요하다 — 접힌 두 줄이 가운데 정렬이면 아이콘과 글자의
+ * 왼끝이 어긋나 라벨이 두 조각으로 읽힌다.
+ */
+const HERO_CTA_WRAP = 'min-w-0 whitespace-normal text-left sm:whitespace-nowrap';
+
 export function DownloadPage() {
   const pathname = usePathname() ?? '/';
   const tFooter = useTranslations('footer');
@@ -368,7 +391,7 @@ function HeroSection({
               <a
                 href={heroWindowsPrimary ? windowsInstaller!.downloadUrl : primaryAsset.downloadUrl}
                 data-testid="gateway-hero-cta"
-                className={cn(buttonVariants({ size: 'lg' }), 'rounded-chip px-6')}
+                className={cn(buttonVariants({ size: 'lg' }), 'rounded-chip px-6', HERO_CTA_WRAP)}
               >
                 <Download size={ICON_SIZE.lg} aria-hidden />
                 {heroWindowsPrimary ? t('windowsDownloadCta') : t('primaryCtaPublished')}
@@ -382,7 +405,7 @@ function HeroSection({
               <Link
                 href="/topology"
                 data-testid="gateway-hero-cta"
-                className={cn(buttonVariants({ size: 'lg' }), 'rounded-chip px-6')}
+                className={cn(buttonVariants({ size: 'lg' }), 'rounded-chip px-6', HERO_CTA_WRAP)}
               >
                 {t('webCta')}
               </Link>
@@ -393,7 +416,7 @@ function HeroSection({
             <a
               href="#demo"
               data-testid="gateway-hero-demo-link"
-              className={cn(buttonVariants({ variant: 'outline', size: 'lg' }), 'rounded-chip px-4 sm:px-6')}
+              className={cn(buttonVariants({ variant: 'outline', size: 'lg' }), 'rounded-chip px-4 sm:px-6', HERO_CTA_WRAP)}
             >
               {t('heroDemoCta')}
             </a>
@@ -420,7 +443,7 @@ function HeroSection({
                 <a
                   href={primaryAsset.downloadUrl}
                   data-testid="gateway-hero-macos-aarch64"
-                  className={cn(buttonVariants({ variant: 'outline', size: 'md' }), 'touch-hit-expand rounded-chip px-3 sm:px-4')}
+                  className={cn(buttonVariants({ variant: 'outline', size: 'md' }), 'touch-hit-expand rounded-chip px-3 sm:px-4', HERO_CTA_WRAP)}
                 >
                   <Download size={ICON_SIZE.md} aria-hidden />
                   {t('primaryCtaPublished')}
@@ -431,7 +454,7 @@ function HeroSection({
                 <a
                   href={windowsInstaller.downloadUrl}
                   data-testid="gateway-hero-windows"
-                  className={cn(buttonVariants({ variant: 'outline', size: 'md' }), 'touch-hit-expand rounded-chip px-3 sm:px-4')}
+                  className={cn(buttonVariants({ variant: 'outline', size: 'md' }), 'touch-hit-expand rounded-chip px-3 sm:px-4', HERO_CTA_WRAP)}
                 >
                   <Download size={ICON_SIZE.md} aria-hidden />
                   {t('windowsDownloadCta')}
@@ -448,7 +471,7 @@ function HeroSection({
               <Link
                 href="/topology"
                 data-testid="gateway-hero-web-cta"
-                className={cn(buttonVariants({ variant: 'outline', size: 'md' }), 'touch-hit-expand rounded-chip px-3 sm:px-4')}
+                className={cn(buttonVariants({ variant: 'outline', size: 'md' }), 'touch-hit-expand rounded-chip px-3 sm:px-4', HERO_CTA_WRAP)}
               >
                 {t('heroWebCta')}
               </Link>
@@ -492,7 +515,7 @@ function HeroIntelLink() {
     <a
       href={intel.downloadUrl}
       data-testid="gateway-hero-macos-x64"
-      className={cn(buttonVariants({ variant: 'outline', size: 'md' }), 'touch-hit-expand rounded-chip px-3 sm:px-4')}
+      className={cn(buttonVariants({ variant: 'outline', size: 'md' }), 'touch-hit-expand rounded-chip px-3 sm:px-4', HERO_CTA_WRAP)}
     >
       <Download size={ICON_SIZE.md} aria-hidden />
       {t('archIntelCta')}
