@@ -233,21 +233,27 @@ export async function evaluateHostedSurface({ baseUrl, timeoutMs = DEFAULT_TIMEO
     // whitespace to one space. A string carrying `\n` (the headline does) can
     // never match after that, so the headline is deliberately NOT a needle —
     // the eyebrow names the platform and the product in one unbroken line.
+    //
+    // [재조준 2026-08-19] 구 바늘 셋(`sourceCta` · `windowsPlatformTitle` ·
+    // `releaseGateNote`)은 전부 설치 절 안에 살았고 소유자가 그 절을 통째로
+    // 걷어냈다(*"맨 마지막 이거는 없어도 될듯? 어차피 맨 위에 다 있어서"*).
+    // 지금 이 페이지를 이루는 것은 네 절이므로 절마다 바늘 하나를 세운다 —
+    // 한 절이 배포에서 통째로 빠지면 그 절의 바늘이 잡는다.
     downloadCopy.eyebrow,
-    downloadCopy.sourceCta,
-    downloadCopy.windowsPlatformTitle,
-    downloadCopy.releaseGateNote,
+    downloadCopy.demoTitle,
+    downloadCopy.evidenceTitle,
+    downloadCopy.agentsTitle,
+    // 정직성 사실의 **마지막** 자리다. 검증 레일이 사라진 뒤 서명·공증·「서버로
+    // 아무것도 안 보낸다」를 말하는 곳은 히어로 신뢰줄 한 줄뿐이라, 이 줄이
+    // 배포에서 빠지면 페이지에 그 주장이 하나도 없게 된다.
+    downloadCopy.trustLine,
   ]);
   // A deploy can legitimately sit on either side of the release-facts commit:
-  // pending shows status + progress; published shows the unsigned warning + EXE.
+  // published offers the real file, pending offers the browser map instead.
   // Requiring one exact branch made the post-release Pages refresh fail by design.
   assertIncludesOneOf(downloadText, downloadPath, [
-    downloadCopy.platformStatus,
-    downloadCopy.windowsUnsignedWarning,
-  ]);
-  assertIncludesOneOf(downloadText, downloadPath, [
-    downloadCopy.windowsTrackCta,
-    downloadCopy.windowsDownloadCta,
+    downloadCopy.primaryCtaPublished,
+    downloadCopy.webCta,
   ]);
   assertIncludes(download.body, downloadPath, [releasesUrl]);
   assertExcludes(`${root.body}\n${download.body}`, "hosted pages", [

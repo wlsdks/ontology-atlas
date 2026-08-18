@@ -114,35 +114,18 @@ describe("인디고 잉크 라이선스 — 값이 아니라 대비가 판정한
     }
   });
 
-  it("⚠️ 분리의 근거가 사라졌다 — 악센트가 잉걸로 바뀌면서 accent 가 틴트 위에서도 AA 를 통과한다", () => {
+  it("분리의 근거가 아직 실재한다 — accent 는 틴트 위에서 실제로 AA 를 깬다", () => {
     /*
-     * **이 단언은 2026-08-18 에 방향이 뒤집혔다.** 원래 문장은 *"분리의 근거가
-     * 아직 실재한다 — accent 는 틴트 위에서 실제로 AA 를 깬다"* 였고,
-     * `/gate-probe` 규율("빈 집합 위에서 공회전하는 검출기를 금지한다")대로
-     * **그 단언이 빨개지는 날 두 톤을 하나로 접을 수 있다**고 미리 적어 두었다.
-     *
-     * 그날이 왔다. 악센트를 인디고(`#5e6ad2`)에서 잉걸(`#c14a24`)로 바꾸자
-     * 실측이 이렇게 움직였다:
-     *
-     * | 자리 | 인디고 시절 | 잉걸 |
-     * |---|---|---|
-     * | accent × a24/canvas | 4.5 미만(분리의 근거) | **6.50** |
-     *
-     * 즉 `accent` / `accentOnTint` 두 톤으로 갈라 둔 **이유 자체가 없어졌다.**
-     * 그렇다고 이 커밋에서 접지는 않는다 — 톤 축을 줄이는 것은
-     * `src/shared/ui/control-class.ts` 의 **축 변경**이라 `design.md` 「규격을
-     * 바꾸려면 「체계」를 부른다」에 걸리고, `pnpm decisions:check` 가 원장
-     * 기재를 요구한다. 색 교체와 축 변경을 한 커밋에 섞지 않는다(`git.md`).
-     *
-     * 그래서 지금 이 단언이 지키는 것은 **뒤집힌 새 사실**이다: 악센트가
-     * 다시 대비가 나쁜 색으로 바뀌면 여기가 빨개지고, 그때는 톤을 접자는
-     * 후속 판단이 무효라는 뜻이다.
+     * `/gate-probe`: 빈 집합 위에서 공회전하는 검출기를 금지한다. 이 단언이
+     * 빨개지는 날은 토큰이 수렴해 accent 가 어디서나 통과하게 된 날이고,
+     * 그날 이 두 톤은 하나로 접을 수 있다 — scope 축의 「두 램프가 실제로
+     * 다르다」 게이트와 같은 문법이다.
      */
     expect(
       ratioOn(accent, composite(TINTS["indigo-a24"], BASES.canvas)),
-      "accent 가 a24/canvas 에서 AA 미달 — 악센트 대비가 나빠졌다. 톤 접기 후속 판단이 무효가 된다",
-    ).toBeGreaterThanOrEqual(4.5);
-    expect(ratioOn(accent, composite(TINTS["indigo-line-a13"], BASES.elevated))).toBeGreaterThanOrEqual(4.5);
+      "accent 가 a24/canvas 에서도 AA 를 통과한다 — 톤 분리를 접을 수 있는지 재평가하라",
+    ).toBeLessThan(4.5);
+    expect(ratioOn(accent, composite(TINTS["indigo-line-a13"], BASES.elevated))).toBeLessThan(4.5);
   });
 });
 
