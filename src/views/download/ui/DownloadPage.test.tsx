@@ -660,8 +660,17 @@ describe('DownloadPage', () => {
     renderDownloadPage();
 
     const chat = screen.getByTestId('gateway-agent-chat');
+    // 호출 **이름**은 프로그램 기록이라 어느 화면에서나 그대로다.
     expect(chat).toHaveTextContent('add_relation');
-    expect(chat).toHaveTextContent(/인증이 죽으면 결제도 같이 죽는다 \(2026-08-16\)/);
+    /*
+     * `why` 페이로드는 **화면 언어를 따른다** (2026-08-18 정정). 그 문장은
+     * 프로그램이 지어낸 것이 아니라 바로 위 말풍선에 있는 사람의 문장이라,
+     * 영문 화면에서 말풍선만 영어이고 호출은 한국어이던 상태를
+     * `locale-purity` e2e 가 잡았다. 여기(영문 렌더)서는 영어를 요구하고,
+     * **날짜는 두 언어 모두에 남는다** — 재연이 어느 날의 실측인지가 이
+     * 장면의 근거이기 때문이다.
+     */
+    expect(chat).toHaveTextContent(/auth goes down payments go down with it \(2026-08-16\)/);
 
     const section = screen.getByTestId('gateway-agents-section');
     expect(section).not.toHaveTextContent(/Claude Code/i);

@@ -820,6 +820,7 @@
     "acpUserLabel": "You",
     "acpUserMsg": "The payment feature leans on user auth; if auth goes down, payments go down with it",
     "acpToolCaption": "The agent's tool call · inside the vault, so the app lets it through",
+    "acpToolWhy": "user note: the payment feature leans on user auth, so if\n                auth goes down payments go down with it (2026-08-16)",
     "acpResultLine": "✓ One relation written into the vault's markdown frontmatter",
     "agentsCap": "What the agent writes is, in the end, a line in a file. git diff shows all of it.",
     "col1Title": "The agent you already use",

@@ -820,6 +820,7 @@
     "acpUserLabel": "나",
     "acpUserMsg": "결제 기능이 사용자 인증에 기대고 있어서, 인증이 죽으면 결제도 같이 죽는다",
     "acpToolCaption": "에이전트의 도구 호출 · 볼트 안이라 앱이 바로 통과",
+    "acpToolWhy": "사용자 설명: 결제 기능이 사용자 인증에 기대고 있어서,\n                인증이 죽으면 결제도 같이 죽는다 (2026-08-16)",
     "acpResultLine": "✓ 관계 1건이 볼트 마크다운 frontmatter 에 적혔습니다",
     "agentsCap": "에이전트가 쓴 것도 결국 파일 한 줄입니다. git diff 로 전부 보입니다.",
     "col1Title": "이미 쓰는 에이전트 그대로",

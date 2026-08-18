@@ -135,6 +135,27 @@ async function parkPointer(page: Page): Promise<void> {
   throw new Error("포인터를 치울 빈 지점을 못 찾았다 — 쉬는 상태가 호버된 채로 읽힐 수 있다");
 }
 
+/**
+ * **Next 개발 오버레이는 우리 UI 가 아니다** (2026-08-18).
+ *
+ * 개발 서버에서만 존재하는 도구 UI(「N Issues」 배지 · 「Collapse issues badge」)
+ * 가 이 감사에 잡혀 라우트 다섯을 빨갛게 만들었다. 그 자체는 **가짜 경보가
+ * 아니었다** — 배지가 뜬 이유가 우리가 만든 hydration 오류였고, 고치니 사라졌다.
+ * 다만 **한 라우트에서는 원리적으로 안 사라진다**: 로케일 없는 404 는 개발에서
+ * 통째로 클라이언트 렌더라, 레이아웃이 그리는 인라인 부팅 스크립트에 React 가
+ * *«scripts inside React components are never executed when rendering on the
+ * client»* 를 낸다. 프로덕션 정적 export 에서는 그 페이지도 빌드 시점에 HTML 로
+ * 구워지므로 스크립트가 정상 실행되고, 이 경고는 **사용자에게 도달하지 않는다.**
+ *
+ * 그래서 감사 대상에서 뺀다 — 규칙을 끄는 것이 아니라 **사정거리를 우리 것으로
+ * 되돌리는 것**이다. 이 게이트가 지키려는 것은 우리가 배포하는 컨트롤의 호버
+ * 대비이고, 개발 서버에만 존재하는 도구는 배포되지 않는다.
+ *
+ * ⚠️ 이 제외가 우리 컨트롤을 같이 삼키지 않는지는 아래 자기검증 테스트가 잰다 —
+ * 심어 둔 미달을 여전히 잡고, 비교한 컨트롤 수가 라우트마다 3 이상이어야 한다.
+ */
+const DEV_TOOLING_SELECTOR = "nextjs-portal, [data-nextjs-toast], [data-nextjs-dev-tools-button]";
+
 async function auditRoute(page: Page) {
   const offenders: string[] = [];
   let compared = 0;
@@ -146,7 +167,9 @@ async function auditRoute(page: Page) {
   for (let i = 0; i < n; i++) {
     const el = controls.nth(i);
     const visible = await el
-      .evaluate((node) => {
+      .evaluate((node, devTooling) => {
+        // 개발 서버에만 있는 도구 UI 는 우리 것이 아니다 — 위 상수의 주석 참고.
+        if (node.closest(devTooling)) return false;
         const c = getComputedStyle(node), r = node.getBoundingClientRect();
         /*
          * ⚠️ **첫 뷰포트 제약을 걷어냈다** (2026-08-15). 종전엔
@@ -162,7 +185,7 @@ async function auditRoute(page: Page) {
           r.width > 6 && r.height > 6 && c.visibility !== "hidden" && Number(c.opacity) > 0.05 &&
           !(node as HTMLButtonElement).disabled && node.getAttribute("aria-disabled") !== "true"
         );
-      })
+      }, DEV_TOOLING_SELECTOR)
       .catch(() => false);
     if (!visible) continue;
 

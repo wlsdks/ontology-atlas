@@ -40,12 +40,19 @@ import { cn } from '@/shared/lib/cn';
  */
 
 /**
- * 실측 왕복의 도구 호출 원문 — `docs/DECISIONS.md` 2026-08-16 (7).
- * 프로그램 기록이라 i18n 밖이다(위 독블록).
+ * 실측 왕복의 도구 호출 — `docs/DECISIONS.md` 2026-08-16 (7).
+ *
+ * **호출 이름은 프로그램 기록이라 번역하지 않고, `why` 페이로드는 번역한다**
+ * (2026-08-18 정정). 처음엔 줄 전체를 i18n 밖에 뒀는데, 그 페이로드는
+ * 프로그램이 지어낸 문자열이 아니라 **바로 위 말풍선에 있는 사람의 문장**이다.
+ * 그래서 영문 화면에서 말풍선은 영어인데 그 아래 호출은 한국어로 같은 말을
+ * 되풀이했고, `locale-purity` e2e 가 그것을 잡았다. 두 자리가 같은 문장을
+ * 보여 주는 이상 언어도 같아야 한다 — 각색을 피하려던 규율이 오히려 한 화면
+ * 안에서 같은 문장을 두 언어로 말하게 만들고 있었다.
  */
-const TOOL_CALL_LINE =
-  'add_relation | "사용자 설명: 결제 기능이 사용자 인증에 기대고 있어서,\n' +
-  '                인증이 죽으면 결제도 같이 죽는다 (2026-08-16)"';
+function toolCallLine(why: string): string {
+  return `add_relation | "${why}"`;
+}
 
 /** 도착 시각(ms) — 말풍선 → 도구 호출 → 결과. 인과가 리듬이다. */
 const STEP_AT = [250, 1050, 1750];
@@ -121,13 +128,13 @@ export function AcpChatScene() {
           </div>
         </div>
 
-        {/* ② 에이전트의 도구 호출 — 원문 그대로(번역 없음). */}
+        {/* ② 에이전트의 도구 호출 — 이름은 원문, `why` 는 화면 언어. */}
         <div className={cn('gateway-term-line', shown >= 2 && 'is-on', 'min-w-0')}>
           <p className="break-keep font-mono text-caption uppercase leading-caption tracking-[var(--tracking-caps-12)] text-[color:var(--color-text-quaternary)]">
             {t('acpToolCaption')}
           </p>
           <pre className="mt-1.5 overflow-x-auto rounded-panel border border-[color:var(--color-border-soft)] px-4 py-3 font-mono text-body leading-body text-[color:var(--color-text-tertiary)]">
-            {TOOL_CALL_LINE}
+            {toolCallLine(t('acpToolWhy'))}
           </pre>
         </div>
 

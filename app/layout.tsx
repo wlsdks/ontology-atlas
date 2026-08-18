@@ -110,20 +110,10 @@ export default function RootLayout({
           표면이 소유한다(.claude/rules/design.md) — body 가 아니다.
           게이트: document-scroll-lock.spec.ts + scroll-end-gap.spec.ts. */}
       <body className="flex min-h-full flex-col overflow-x-hidden">
-        {/*
-          악센트 팔레트를 첫 페인트 전에 심는다 (2026-08-18). 왜 인라인
-          스크립트여야 하는지, 왜 자기 파일을 갖는지는 그 컴포넌트의 주석에
-          있다. 서버가 `data-accent` 를 모르므로 `<html>` 에
-          `suppressHydrationWarning` 이 필요하다 — 속성 하나에 한정된 의도된
-          불일치다.
-
-          **`<html>` 의 직계 자식으로 두면 안 된다** (2026-08-18 실측). 거기
-          두면 React 가 «In HTML, <script> cannot be a child of <html>» 로
-          hydration 오류를 내고, 개발 오버레이가 「23 Issues」 배지를 띄운다 —
-          그 배지가 호버 대비 게이트에 잡혀 라우트 다섯 개가 빨개졌다.
-          결함은 색이 아니라 자리였다. `<body>` 의 첫 자식이면 동기 인라인
-          스크립트라 본문이 그려지기 전에 실행되므로 깜빡임도 없다.
-        */}
+        {/* 악센트 팔레트를 첫 페인트 전에 심는다 (2026-08-18). 자리를 세 번
+            시도한 기록과 왜 `next/script` 인지는 그 컴포넌트의 주석에 있다.
+            서버가 `data-accent` 를 모르므로 `<html>` 에 `suppressHydrationWarning`
+            이 필요하다 — 속성 하나에 한정된 의도된 불일치다. */}
         <AccentBootScript />
         <JsonLd
           data={{
