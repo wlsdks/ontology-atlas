@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import {
   computeDomainWatermarkAlpha,
   computeLabelAlpha,
+  DOMAIN_LABEL_HANDOFF,
   measureLabelVerticalMetrics,
   resolveLabelBaselineY,
   resolveFlippedLabelBaselineY,
@@ -41,9 +42,10 @@ describe("computeLabelAlpha", () => {
     expect(computeLabelAlpha({ ...base, kind: "project", revealAlpha: 0 })).toBe(1);
   });
 
-  it("domain reads at EVERY zoom band — full at circuit (farT=0), fading only toward the far-field handoff", () => {
+  it("domain reads at circuit (farT=0) and hands the anchor over at DOMAIN_LABEL_HANDOFF", () => {
     expect(computeLabelAlpha({ ...base, kind: "domain", farT: 0 })).toBe(1);
-    expect(computeLabelAlpha({ ...base, kind: "domain", farT: 0.5 })).toBeCloseTo(0.5, 6);
+    expect(computeLabelAlpha({ ...base, kind: "domain", farT: DOMAIN_LABEL_HANDOFF / 2 })).toBeCloseTo(0.5, 6);
+    expect(computeLabelAlpha({ ...base, kind: "domain", farT: DOMAIN_LABEL_HANDOFF })).toBe(0);
     expect(computeLabelAlpha({ ...base, kind: "domain", farT: 1 })).toBe(0);
   });
 
@@ -102,10 +104,25 @@ describe("computeLabelAlpha", () => {
  * the compact label goes to 0.
  */
 describe("computeDomainWatermarkAlpha", () => {
-  it("ramps 1:1 with farT, reaching full at the far-field constellation (where the compact label has faded to 0)", () => {
+  it("stays silent until the handoff, then ramps to full at the far-field constellation", () => {
     expect(computeDomainWatermarkAlpha(0, "normal")).toBe(0);
-    expect(computeDomainWatermarkAlpha(0.5, "normal")).toBe(0.5);
+    expect(computeDomainWatermarkAlpha(DOMAIN_LABEL_HANDOFF, "normal")).toBe(0);
     expect(computeDomainWatermarkAlpha(1, "normal")).toBe(1);
+  });
+
+  /**
+   * **한 앵커에 두 효과가 같이 있으면 안 된다** (2026-08-19, 돔 실측
+   * `AΛI에이전트 연동동`). 종전 공식은 합이 1 인 크로스페이드라 중간 대역에서
+   * 둘 다 살아 있었고, 3D 돔이 카메라를 그 대역에 세워 두면서 이름이 뭉개진
+   * 채로 화면에 남았다. 이 시험이 그 겹침을 막는다 — farT 전 구간에서 두 알파
+   * 중 **하나는 반드시 0** 이다.
+   */
+  it("never shares a frame with the compact label — one of the two is always 0", () => {
+    for (let farT = 0; farT <= 1.0001; farT += 0.05) {
+      const compact = computeLabelAlpha({ kind: "domain", farT, egoState: "normal", isHovered: false, revealAlpha: 1 });
+      const watermark = computeDomainWatermarkAlpha(farT, "normal");
+      expect(Math.min(compact, watermark), `farT=${farT.toFixed(2)} 에서 둘 다 보인다`).toBe(0);
+    }
   });
 
   it("is 0 while dim, regardless of farT", () => {

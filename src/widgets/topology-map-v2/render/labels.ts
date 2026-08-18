@@ -13,10 +13,13 @@
  *   EVERY zoom band — full at circuit (`farT=0`), fading out only as the
  *   camera pulls back toward the constellation altitude. The original
  *   tracked-caps "sky-chart" watermark is now a SEPARATE decorative
- *   atmosphere layer (`computeDomainWatermarkAlpha`, unchanged formula:
- *   alpha = farT) drawn ADDITIONALLY at the same anchor — it's the far-field
- *   flourish, not the label system, so it keeps its own low-contrast
- *   spaced-caps identity while the compact label carries readability.
+ *   atmosphere layer (`computeDomainWatermarkAlpha`) drawn at the SAME
+ *   anchor — it's the far-field flourish, not the label system, so it keeps
+ *   its own low-contrast spaced-caps identity while the compact label
+ *   carries readability. **The two never share a frame**: they hand the
+ *   anchor over at `DOMAIN_LABEL_HANDOFF` instead of crossfading (see that
+ *   constant — a crossfade painted the same name twice, tracked over
+ *   untracked, and the 3D dome parks the camera right in that band).
  * - `capability`/`element`: eligibility now ramps with the node's own
  *   `revealAlpha` (its effective/tier alpha this frame — the SAME signal
  *   `model/tier-visibility.ts#effectiveNodeAlpha` computes and
@@ -38,6 +41,35 @@
  */
 
 import { smoothstep } from "../model/altitude";
+
+/**
+ * 도메인 이름을 그리는 **두 효과가 자리를 넘겨받는 지점** (farT, 2026-08-19).
+ *
+ * ## 왜 이 상수가 생겼나 — 같은 이름이 두 번 그려지고 있었다
+ *
+ * 도메인은 한 앵커에 둘을 그린다: 읽으라고 있는 **컴팩트 라벨**과 멀리서만
+ * 나오는 **자간 넓은 워터마크**. 종전 공식은 `1 - farT` 와 `farT` 였고, 그
+ * 둘은 «구간이 갈린다»가 아니라 **합이 1 인 크로스페이드**였다 — 중간 대역
+ * (farT≈0.5)에서는 **둘 다 살아 있다.** 같은 글자가 자간만 다른 채로 겹쳐
+ * 그려지므로 이름이 뭉개진다.
+ *
+ * 종전 주석은 이것을 「겹치는 창이 짧다」고 적었는데, 그 전제는 **카메라가 그
+ * 대역을 지나간다**는 것이었다. 3D 돔은 카메라를 그 대역에 **세워 둔다** —
+ * 실측(2026-08-19, 설치본 · `docs/ontology` · 돔): 발자국 트레일이 짚은
+ * 「AI 에이전트 연동」이 화면에 `AΛI에이전트 연동동` 으로 남아 있었다.
+ *
+ * ## 그래서 크로스페이드를 **핸드오프**로 바꾼다
+ *
+ * 컴팩트는 여기서 0 이 되고, 워터마크는 여기서부터 오른다. 두 효과의 정체성은
+ * 그대로 두고 **한 프레임에 같이 있지 않게** 만드는 것이 전부다. 교차점에서
+ * 둘 다 정확히 0 인 것은 결함이 아니라 넘겨받는 자리다 — 그 farT 한 점을
+ * 지나는 동안만이고, 이름이 뭉개지는 것보다 훨씬 낫다.
+ */
+export const DOMAIN_LABEL_HANDOFF = 0.5;
+
+function clamp01(value: number): number {
+  return value < 0 ? 0 : value > 1 ? 1 : value;
+}
 
 export interface LabelDrawState {
   kind: "project" | "domain" | "capability" | "element";
@@ -288,7 +320,7 @@ export function computeLabelAlpha(input: LabelAlphaInput): number {
   if (egoState === "center" || isHovered) return 1;
 
   if (kind === "project") return 1;
-  if (kind === "domain") return Math.max(0, 1 - farT);
+  if (kind === "domain") return clamp01((DOMAIN_LABEL_HANDOFF - farT) / DOMAIN_LABEL_HANDOFF);
   return smoothstep(CHILD_LABEL_REVEAL_MIN, CHILD_LABEL_REVEAL_FULL, revealAlpha);
 }
 
@@ -316,7 +348,8 @@ export function computeLabelAlpha(input: LabelAlphaInput): number {
  * unfocused far-field view (`"normal"`) still gets the flourish.
  */
 export function computeDomainWatermarkAlpha(farT: number, egoState: LabelDrawState["egoState"]): number {
-  return egoState === "normal" ? farT : 0;
+  if (egoState !== "normal") return 0;
+  return clamp01((farT - DOMAIN_LABEL_HANDOFF) / (1 - DOMAIN_LABEL_HANDOFF));
 }
 
 /**
