@@ -141,6 +141,7 @@ const STORAGE_KEY_REGISTRY: StorageEntry[] = [
   { key: "app-update:dismissed-version", kind: "storage", scope: "global", note: "무시한 업데이트 버전" },
   { key: "app-update:last-check", kind: "storage", scope: "global", note: "업데이트 확인 시각" },
   { key: "atlas.appearance.frameMeter", kind: "storage", scope: "global", note: "프레임 미터 표시 선호" },
+  { key: "atlas.appearance.view3d", kind: "storage", scope: "global", note: "3D 보기(지도 돔 뷰) 선호 — 기본 꺼짐(2D)" },
   { key: "atlas.agentActivity.status", kind: "storage", scope: "global", note: "상태 칩 on/off 선호" },
   { key: "atlas.agentActivity.notifications", kind: "storage", scope: "global", note: "알림함 on/off 선호" },
   { key: "atlas.agentActivity.kinds", kind: "storage", scope: "global", note: "음소거한 알림 종류" },

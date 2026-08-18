@@ -57,13 +57,18 @@ describe("지도 검사 훅 (window.__atlasMap)", () => {
   it("엣지는 컨트롤 포인트까지 낸다 — 현선을 재면 화면에 없는 교차를 센다", () => {
     // 드로우 경로는 `quadraticCurveTo` 다. 끝점만 노출하면 가독성 계기가 지도가
     // 아니라 자기 근사치를 재게 되고, 그 오차는 조용하다(숫자가 나오니까).
-    expect(source).toContain("controlX: toScreenX(e.controlX)");
-    expect(source).toContain("controlY: toScreenY(e.controlY)");
+    // 3D 보기(2026-08-18)부터 컨트롤 포인트도 드로우(`projectEdgePoints`)와
+    // 같은 끝점 오프셋 평균을 탄다 — 꺼져 있으면 오프셋 0 으로 종전과 동일.
+    expect(source).toContain("controlX: toScreenX(e.controlX + (offA.dx + offB.dx) / 2)");
+    expect(source).toContain("controlY: toScreenY(e.controlY + (offA.dy + offB.dy) / 2)");
   });
 
   it("노드는 화면 반지름을 낸다 — 겹침은 반지름 없이 셀 수 없다", () => {
-    // 그리는 쪽과 **같은 식**이어야 한다: radiusForKind × magnitudeScale × 카메라 배율.
-    expect(source).toMatch(/radius:\s*tokens\s*\?\s*radiusForKind\(n\.kind, tokens\) \* n\.magnitudeScale \* camera\.scale\.value/);
+    // 그리는 쪽과 **같은 식**이어야 한다: radiusForKind × magnitudeScale × 카메라
+    // 배율 (× 3D 프레임의 원근 배율 s — 드로우와 동일, 2D 는 1).
+    expect(source).toMatch(
+      /radius:\s*tokens\s*\n?\s*\?\s*radiusForKind\(n\.kind, tokens\) \*\s*\n?\s*n\.magnitudeScale \*\s*\n?\s*camera\.scale\.value \*\s*\n?\s*dOff\.s/,
+    );
   });
 
   it("`draggable` 을 노출한다 — 호버 히트와 «잡히는지» 는 다르다", () => {

@@ -21,6 +21,7 @@ import { DEFAULT_EXPAND } from "@/shared/lib/appearance-preferences";
 import type { ExpandPreference, FootprintPreference } from "@/shared/lib/appearance-preferences";
 import { isDirectionalRelation } from "@/shared/lib/ontology-tree/relations";
 import { depthParallaxOffsetFor, ZERO_PARALLAX } from "../model/realm-depth-parallax";
+import { domeFogAlpha, domeLineWidthFactor, type DomeNodeFrame } from "../model/dome-view";
 import { realmDepthClarityAlpha, realmDepthClarityScale } from "../model/realm-transition";
 import { classifyZoomTier, DEFAULT_TIER_REVEAL, edgeTierAlpha, effectiveNodeAlpha, nodeTierAlpha, type TierRevealConfig } from "../model/tier-visibility";
 import {
@@ -552,6 +553,21 @@ export interface FrameDrawParams {
    */
   clusterBarLabels?: ClusterBarLabels | null;
   /**
+   * 3D 보기 (2026-08-18, 옵트인) — 지도를 kind 동심 링의 돔으로 다시 배치해
+   * 그리는 뷰 모드(`model/dome-view.ts`). 루프가 매 프레임 갱신하는 노드별
+   * 전달 맵(오프셋 + 원근 배율) — 노드·라벨·엣지·칩이 전부 이 맵을 지나고,
+   * 히트테스트·계기(`__atlasMap`)도 **같은 맵**을 읽어 회전 중에도 클릭이
+   * 그려진 자리를 따라온다. 영역 전개(realm) 중에는 루프가 램프를 되감아
+   * null 이 된다(영역의 S5 깊이 문법과 이중 인코딩 방지). 생략/null = 종전
+   * 화면과 픽셀 동일(회귀 0).
+   */
+  domeFrame?: ReadonlyMap<string, DomeNodeFrame> | null;
+  /**
+   * 3D 조립 시계의 전체 진행 0..1 — 표현층 전환(배경 격자 소등 등)의 보간자.
+   * 노드별 진행은 `domeFrame` 의 `a` 가 나른다. 생략/0 = 2D 표현 그대로.
+   */
+  domeRamp?: number;
+  /**
    * 「걸어온 길」 렌즈의 세기 0..1 — on/off 지수 램프(loop 가 스텝).
    *
    * 왜 boolean 이 아닌가: 렌즈가 켜지면 방문 노드와 **밟은 관계선**이 트레일
@@ -625,6 +641,8 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
     depthDotPatterns,
     expand = DEFAULT_EXPAND,
     clusterBarLabels = null,
+    domeFrame = null,
+    domeRamp = 0,
     trailLensRamp,
   } = params;
 
@@ -667,6 +685,17 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
     return depthParallaxOffsetFor(realmDepthById.get(nodeId), realmDepthParallax.depth2, realmDepthParallax.depth3);
   };
 
+  // 3D 보기 — 램프가 0 이면 루프가 null 을 넘겨 이 프레임은 종전 2D 경로다.
+  const domeOn = domeFrame !== null && domeFrame !== undefined && domeFrame.size > 0;
+  /**
+   * 한 노드의 3D 렌더 전달값(월드 오프셋 + 원근 배율). 노드·라벨·엣지 끝점·칩
+   * 앵커가 전부 이 맵을 지나므로 한 프레임의 모든 마크가 **하나의 자세**를
+   * 공유한다 — 히트테스트(`renderOffsetForNode`)·계기도 같은 맵을 읽는다.
+   */
+  const ZERO_DOME_FRAME: DomeNodeFrame = { dx: 0, dy: 0, s: 1, a: 0, u: 0 };
+  const domeFrameFor = (nodeId: string): DomeNodeFrame =>
+    (domeOn ? domeFrame.get(nodeId) : undefined) ?? ZERO_DOME_FRAME;
+
   // Where world (0,0) currently lands on screen — the blueprint grid rides
   // this so the background belongs to the world, not the display (B3).
   const gridOrigin = worldToScreen(camera, viewportWidth, viewportHeight, 0, 0);
@@ -695,17 +724,21 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
       viewportHeight,
       farT,
       variant: backgroundVariant,
-      gridPattern,
-      paintAnimated: paintAnimatedBackground,
+      // 3D — 배경 격자·도트는 **공(void)** 으로 물러난다(히어로 판정: 격자가
+      // 있으면 물체가 떠 있지 않고 바닥에 놓여 보인다). 바탕 채움·비네트는
+      // 유지 — 꺼지는 것은 무늬 층뿐이다.
+      gridPattern: domeRamp > 0.001 ? null : gridPattern,
+      paintAnimated: domeRamp > 0.001 ? null : paintAnimatedBackground,
       // 층별 시차 원점은 배경 원점이 아니라 **격자 원점**에서 각자 계산한다 —
       // 배경 원점은 이미 한 번 시차가 걸려 있어 두 번 걸면 층이 뭉친다.
-      depthLayers: depthDotPatterns
-        ? DEPTH_DOT_LAYERS.map((layer, i) => {
-            const o = backgroundParallaxOrigin(gridOrigin, { width: viewportWidth, height: viewportHeight },
-              reducedMotion ? 1 : layer.parallax);
-            return { pattern: depthDotPatterns[i] ?? null, originX: o.x, originY: o.y, spacing: layer.spacing };
-          })
-        : undefined,
+      depthLayers:
+        depthDotPatterns && domeRamp <= 0.001
+          ? DEPTH_DOT_LAYERS.map((layer, i) => {
+              const o = backgroundParallaxOrigin(gridOrigin, { width: viewportWidth, height: viewportHeight },
+                reducedMotion ? 1 : layer.parallax);
+              return { pattern: depthDotPatterns[i] ?? null, originX: o.x, originY: o.y, spacing: layer.spacing };
+            })
+          : undefined,
       originX: bgOrigin.x,
       originY: bgOrigin.y,
     },
@@ -737,6 +770,33 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
   }
 
   const project = (x: number, y: number) => worldToScreen(camera, viewportWidth, viewportHeight, x, y);
+  /**
+   * 엣지 끝점·제어점의 스크린 투영 — 3D 보기가 켜지면 **각 끝점이 자기 끝
+   * 노드의 kind 깊이 오프셋**을 따라간다(끝 노드 디스크와 같은 층). 제어점은
+   * 두 끝 오프셋의 평균 — 커브가 두 층 사이를 잇는다. 꺼져 있으면 오프셋 0
+   * (기존 경로와 동일). 엣지 드로우와 호버 펄스가 같은 함수를 쓴다.
+   */
+  const projectEdgePoints = (edge: {
+    sourceId: string;
+    targetId: string;
+    ax: number;
+    ay: number;
+    bx: number;
+    by: number;
+    controlX: number;
+    controlY: number;
+  }): { a: { x: number; y: number }; b: { x: number; y: number }; control: { x: number; y: number } } => {
+    if (!domeOn) {
+      return { a: project(edge.ax, edge.ay), b: project(edge.bx, edge.by), control: project(edge.controlX, edge.controlY) };
+    }
+    const offA = domeFrameFor(edge.sourceId);
+    const offB = domeFrameFor(edge.targetId);
+    return {
+      a: project(edge.ax + offA.dx, edge.ay + offA.dy),
+      b: project(edge.bx + offB.dx, edge.by + offB.dy),
+      control: project(edge.controlX + (offA.dx + offB.dx) / 2, edge.controlY + (offA.dy + offB.dy) / 2),
+    };
+  };
   const neighborsOfFocused = focusedNodeId ? world.neighborMap.get(focusedNodeId) ?? EMPTY_NEIGHBOR_SET : EMPTY_NEIGHBOR_SET;
   // Click-focus color signature — the ego classification for the COLOR ramp
   // uses the RETAINED focus (`colorFocusedNodeId`/`colorSelectedEdge`), which
@@ -834,7 +894,17 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
     // 노드로 향하는 엣지는 `edgeTierAlpha`(min 결합)를 통해 같은 프레임에서
     // 자동으로 따라온다 — 별도 엣지 경로 없이 노드 alpha 하나로 충분.
     const returnAlpha = realmOutsideReturnAlphaById?.get(node.id);
-    effectiveAlphaById.set(node.id, returnAlpha !== undefined ? baseAlpha * returnAlpha : baseAlpha);
+    let outAlpha = returnAlpha !== undefined ? baseAlpha * returnAlpha : baseAlpha;
+    // 3D — 돔은 **모든 티어가 형태를 이룬다**(히어로 판정): 시맨틱 줌 게이트가
+    // 숨겨 둔 capability/element 도 자기 티어의 조립 램프를 타고 떠오른다.
+    // 램프 0 이면 종전 값 그대로(2D 회귀 0), 램프 1 이면 완전 공개. 깊이에
+    // 따른 어두움은 여기가 아니라 노드/엣지의 안개(fog)가 나른다 — 이 맵은
+    // 히트 판정의 단일 출처라 안개를 섞으면 먼 노드가 안 잡히게 된다.
+    if (domeOn) {
+      const domeA = domeFrameFor(node.id).a;
+      if (domeA > 0) outAlpha = outAlpha + (1 - outAlpha) * domeA;
+    }
+    effectiveAlphaById.set(node.id, outAlpha);
   }
 
   // S8 결함 1 — 펼친 부모(파선 오라 대상) + 그 디스크(부모 + contains 하위 전이
@@ -907,9 +977,21 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
       if (clusteredIds.has(edge.sourceId) || clusteredIds.has(edge.targetId)) continue;
       const edgeAlpha = edgeTierAlpha(effectiveAlphaById.get(edge.sourceId) ?? 1, effectiveAlphaById.get(edge.targetId) ?? 1);
       if (edgeAlpha <= 0.02) continue;
-      const a = project(edge.ax, edge.ay);
-      const b = project(edge.bx, edge.by);
-      const control = project(edge.controlX, edge.controlY);
+      const { a, b, control } = projectEdgePoints(edge);
+      // 3D — 깊이 안개·헤어라인 감쇠(히어로의 fog·lw 그대로). 읽어야 할 때
+      // (호버·선택·ego)는 아래에서 면제돼 도로 밝아진다.
+      let domeEdgeFog = 1;
+      let domeWidthScale = 1;
+      if (domeOn) {
+        const fA = domeFrameFor(edge.sourceId);
+        const fB = domeFrameFor(edge.targetId);
+        const aMin = Math.min(fA.a, fB.a);
+        if (aMin > 0) {
+          const uAvg = (fA.u + fB.u) / 2;
+          domeEdgeFog = 1 + (domeFogAlpha(uAvg) - 1) * aMin;
+          domeWidthScale = 1 + (domeLineWidthFactor(uAvg) - 1) * aMin;
+        }
+      }
       // Off-screen geometry still cost a full curve + up to 3 comet arcs each
       // before this guard. Hull-based, so it only ever drops strokes that
       // could not have landed on canvas (see `render/viewport-cull.ts`).
@@ -972,7 +1054,12 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
         )
           ? trailRamp
           : 0;
-      ctx.globalAlpha = (passthrough ? edgeAlpha * tokens.edgePassthroughAlpha : edgeAlpha) * edgeSpotlightSink;
+      // 3D 안개 면제 — 상호작용이 짚은 관계는 깊이에 묻히지 않는다.
+      const domeEdgeExempt = emphasized || isSelectedEdge || edgeEgoState === "ego";
+      ctx.globalAlpha =
+        (passthrough ? edgeAlpha * tokens.edgePassthroughAlpha : edgeAlpha) *
+        edgeSpotlightSink *
+        (domeEdgeExempt ? 1 : domeEdgeFog);
       tracesDraw(
         ctx,
         {
@@ -991,6 +1078,7 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
           emphasized,
           reducedMotion,
           level: edge.level,
+          widthScale: domeEdgeExempt ? 1 : domeWidthScale,
           containsCometEligible: kind === "contains" ? egoContainsComets.has(edgePairKey(edge.sourceId, edge.targetId)) : undefined,
           dependsCometEligible:
             kind === "depends" ? ambientDependsComets.has(edgePairKey(edge.sourceId, edge.targetId)) : undefined,
@@ -1054,7 +1142,8 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
       (pulse) => {
         const edge = edgeByPair.get(pairKey(pulse.sourceId, pulse.targetId));
         if (!edge) return null;
-        return { a: project(edge.ax, edge.ay), control: project(edge.controlX, edge.controlY), b: project(edge.bx, edge.by) };
+        const points = projectEdgePoints(edge);
+        return { a: points.a, control: points.control, b: points.b };
       },
       { head: tokens.indigoBright, trail: tokens.indigo },
     );
@@ -1089,7 +1178,15 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
   // 못하게 라벨 배치기에 예약으로 넘긴다(칩 예약과 같은 메커니즘 재사용).
   const nodeDiscReservations: ReservedBox[] = [];
 
-  for (const node of world.nodes) {
+  // 3D — 화가 알고리즘: 먼 노드(u 큼)부터 그려 가까운 노드가 위에 얹힌다.
+  // 히트테스트(`hitTestWorld`의 depth 우선)가 «가까운 노드가 이긴다» 로
+  // 판정하므로, 그리는 순서가 같은 규칙을 따라야 눈에 보이는 것과 잡히는
+  // 것이 일치한다. 2D(domeOn 아님)는 종전 배열 순서 그대로 — 할당 0.
+  const nodeDrawOrder = domeOn
+    ? [...world.nodes].sort((a, b) => (domeFrameFor(b.id).u - domeFrameFor(a.id).u))
+    : world.nodes;
+
+  for (const node of nodeDrawOrder) {
     // 밀도 게이트: 접힌 부모의 서브트리 노드는 칩으로 대체되어 그리지 않는다.
     if (clusteredIds.has(node.id)) continue;
     const tierAlpha = effectiveAlphaById.get(node.id) ?? 1;
@@ -1185,10 +1282,23 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
         effRadius *= realmDepthClarityScale(depth);
       }
     }
+    // 3D 보기 — 점 반지름(원근 포함, `s` 에 역산돼 있다)은 기하라 항상 곱하고,
+    // 깊이 안개(히어로 fog: 가까움 1.0 → 멂 0.09)는 상호작용 대상(호버·ego·
+    // 트레일)을 면제한다 — «읽어야 할 때는 다시 밝아진다». 이 깊은 감쇠는
+    // 2D 잉크 대비 바닥(3:1) 밖이며 소유자가 3D 한정으로 연 유예다
+    // (`docs/DECISIONS.md` «3D 유예 목록»).
+    const nodeDome = domeFrameFor(node.id);
+    if (domeOn) {
+      effRadius *= nodeDome.s;
+      if (!isHoveredNode && !isTrailKept(node.id) && egoState === "normal") {
+        realmClarityAlpha *= 1 + (domeFogAlpha(nodeDome.u) - 1) * nodeDome.a;
+      }
+    }
 
     // S5 깊이 시차 — 렌더 좌표에만 밴드 오프셋(월드)을 더한다(월드 좌표 불변).
+    // 3D 오프셋도 같은 문법 — 히트테스트가 같은 맵을 읽는다.
     const pOff = realmParallaxOffsetFor(node.id);
-    const screen = project(node.x + pOff.x, node.y + pOff.y);
+    const screen = project(node.x + pOff.x + nodeDome.dx, node.y + pOff.y + nodeDome.dy);
     const screenRadius = effRadius * camera.scale.value;
     // Rings/pulses/labels all key off this same disc, so one guard here drops
     // the whole off-screen node cost (see `render/viewport-cull.ts`).
@@ -1228,7 +1338,9 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
     const sheenTop = lerpColorHex(visual.fill, tokens.nodeSheenTint, tokens.nodeSheenBlend);
     // Engraved numeral: project/domain only, and only when there's a count to
     // show (prototype `if (n.count && (project||domain) ...)`).
-    const showCount = (node.kind === "project" || node.kind === "domain") && node.count > 0;
+    // 3D — 점에는 숫자를 새기지 않는다(데이터 표가 아니라 형태를 보는 층).
+    const showCount =
+      (node.kind === "project" || node.kind === "domain") && node.count > 0 && !(domeOn && nodeDome.a > 0.5);
     // Canvas-emphasis slice §C — hover ring eligibility. `hoveredNodeId` is
     // already nulled by the caller (`use-topology-loop.ts`) whenever a focus
     // is active, so this is never true at the same time as `egoState ===
@@ -1495,10 +1607,12 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
         hoverT = Math.min(1, (now - clusterChipHoverAnim.startAt) / CLUSTER_CHIP_HOVER_MS);
       }
     }
-    const screen = project(chip.anchor.x, chip.anchor.y);
-    // 부모→칩 점선 커넥터의 시작점 = 부모 노드의 라이브 스크린 좌표.
+    // 3D 보기 — 칩도 부모 노드의 링을 따라간다(앵커·커넥터 둘 다).
     const parentNode = world.nodeById.get(chip.parentId);
-    const parentScreen = parentNode ? project(parentNode.x, parentNode.y) : null;
+    const chipDOff = parentNode ? domeFrameFor(parentNode.id) : ZERO_DOME_FRAME;
+    const screen = project(chip.anchor.x + chipDOff.dx, chip.anchor.y + chipDOff.dy);
+    // 부모→칩 점선 커넥터의 시작점 = 부모 노드의 라이브 스크린 좌표.
+    const parentScreen = parentNode ? project(parentNode.x + chipDOff.dx, parentNode.y + chipDOff.dy) : null;
     // S10 결함 2 — 펼침 배지는 부모 노드 base 스크린 반지름 기준으로 우상단에
     // 앉는다(히트테스트와 같은 계산). breathe/ego 배율은 배지 위치를 흔들지
     // 않도록 base 반지름만 쓴다.
@@ -1704,7 +1818,15 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
     ) {
       return;
     }
-    const compactAlpha = computeLabelAlpha({ kind: node.kind, farT, egoState, isHovered, revealAlpha });
+    let compactAlpha = computeLabelAlpha({ kind: node.kind, farT, egoState, isHovered, revealAlpha });
+    // 3D — 라벨은 **온디맨드**다(히어로 판정: 상시 라벨이 실루엣을 부수고
+    // 시선이 형태 대신 텍스트로 간다). 호버·포커스(ego)·트레일이 짚은 노드만
+    // 이름을 얻고, 나머지는 조립 램프를 따라 서서히 물러난다. 램프 0 = 2D
+    // 그대로. 라벨은 제품의 핵심이라 없애지 않는다 — 언제 보이느냐만 모드가
+    // 정한다.
+    const domeLabelKeep = egoState === "center" || egoState === "neighbor" || isHovered || trailKept;
+    const domeLabelGate = domeOn && !domeLabelKeep ? 1 - domeFrameFor(node.id).a : 1;
+    compactAlpha *= domeLabelGate;
     // Domain draws TWO effects at once (the always-readable compact label AND
     // the separate far-field watermark) — a candidate must be built whenever
     // EITHER is visible, or the watermark silently vanishes once the compact
@@ -1713,12 +1835,15 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
     // 워터마크는 그 상태에서만 켜지므로, 그대로 두면 궤적 읽기 화면에 장식
     // 잉크가 되살아난다(포커스 중 워터마크를 끄는 기존 규칙과 같은 결).
     const watermarkAlpha =
-      node.kind === "domain" && !trailLensActive ? computeDomainWatermarkAlpha(farT, egoState) : 0;
+      (node.kind === "domain" && !trailLensActive ? computeDomainWatermarkAlpha(farT, egoState) : 0) *
+      domeLabelGate;
     if (Math.max(compactAlpha, watermarkAlpha) <= 0.02) return;
 
     // S5 — 라벨도 노드 디스크와 같은 깊이 시차 오프셋으로 그려 붙어 다닌다.
+    // 3D 오프셋도 동일 — 라벨이 링으로 옮겨 간 디스크를 따라간다.
     const labelPOff = realmParallaxOffsetFor(node.id);
-    const screen = project(node.x + labelPOff.x, node.y + labelPOff.y);
+    const labelDOff = domeFrameFor(node.id);
+    const screen = project(node.x + labelPOff.x + labelDOff.dx, node.y + labelPOff.y + labelDOff.dy);
     // E-4 — 노드 패스가 실제로 그린 반지름(magnitudeScale·breathe·등장 램프·
     // 선택 성장 포함). 그 패스에서 컬링된 노드만 nominal 로 되돌린다.
     const screenRadius =

@@ -65,6 +65,29 @@ export interface PhysicsStepInput {
   /** True while the pointer is actively dragging — suppresses the elastic pan-bounds clamp (see `engine/camera.ts`). */
   isDragging: boolean;
   /**
+   * 3D 돔 보기 (2026-08-18) — **그려지는** 노드들의 월드 bbox. 돔은 2D 레이아웃
+   * 과 다른 자리(투영 중심·회전 자세)에 앉으므로, 팬 리쉬 앵커를 2D
+   * `world.bounds` 로 잡으면 첫 휠 줌/궤도 프레임에 탄성 클램프가 카메라를 2D
+   * 중심으로 끌어가 커서 앵커가 175 월드 유닛 이탈했다(실측). 돔이 켜진 동안
+   * 루프가 `DomeRuntime.drawnBounds` 를 넘긴다. null/생략 = 종전 그대로.
+   */
+  worldBoundsOverride?: { minX: number; minY: number; maxX: number; maxY: number } | null;
+  /**
+   * 3D 돔 보기 — 포커스된 노드가 **그려진** 자리(월드). 포커스 팬 리쉬는 노드
+   * 의 2D 좌표(`node.x/y`)에 카메라를 묶는데, 돔에서는 그 노드가 프레임
+   * 오프셋만큼 다른 곳에 그려져 있어 리쉬가 빈 곳을 지키게 된다. null/생략 =
+   * 종전 그대로.
+   */
+  focusAnchorOverride?: { x: number; y: number } | null;
+  /**
+   * 3D 돔 보기 — 카메라 배율 하한 덮어쓰기(`DomeRuntime.fitScale`). 돔의 투영
+   * bbox 는 2D 스파인 bbox 보다 넓어 핏 배율이 2D 앵커 기준 하한보다 낮을 수
+   * 있다 — 하한을 안 내리면 핏 목표가 도달 불가(목표≠값)가 되고 휠 앵커가
+   * 허구의 목표 배율로 계산돼 화면이 옆으로 튄다(2026-08-18 실측 175 유닛).
+   * null/생략 = 종전 그대로.
+   */
+  scaleMinOverride?: number | null;
+  /**
    * A8 — `prefers-reduced-motion: reduce`. Springs and ramps snap straight to
    * their targets: the user gets every end state (focus dive lands, ripple
    * emphasis applies, ego children appear) without the interpolated journey.
@@ -200,6 +223,9 @@ export function stepTopologyPhysics(input: PhysicsStepInput): PhysicsStepResult 
     hoveredNodeId,
     panelEmphasisNodeId,
     isDragging,
+    worldBoundsOverride = null,
+    focusAnchorOverride = null,
+    scaleMinOverride = null,
     reducedMotion,
     ambientFactor,
     userDrivenCamera = false,
@@ -241,13 +267,16 @@ export function stepTopologyPhysics(input: PhysicsStepInput): PhysicsStepResult 
   // stranded over nothing (owner's "캔버스가 사라져버림", QA 소실 A). Uses the
   // pre-step camera scale — one frame of lag is imperceptible at spring speeds.
   const preStepZoomRatio = computeZoomRatio(camera.scale.value, overviewScale * tokens.overviewEntryRatio);
-  const panBounds = focusNode
+  // 3D 돔 — 리쉬 앵커는 «그려진» 자리를 따른다(JSDoc 위 두 override 참고).
+  // 돔은 모든 티어를 항상 그리므로 spine-only 특례도 override 가 대신한다.
+  const focusAnchor = focusNode ? (focusAnchorOverride ?? { x: focusNode.x, y: focusNode.y }) : null;
+  const panBounds = focusAnchor
     ? computePanBounds(
-        { minX: focusNode.x, minY: focusNode.y, maxX: focusNode.x, maxY: focusNode.y },
+        { minX: focusAnchor.x, minY: focusAnchor.y, maxX: focusAnchor.x, maxY: focusAnchor.y },
         tokens.cameraFocusPanMargin,
       )
     : computeUnfocusedPanBounds(
-        isSpineOnlyZoom(preStepZoomRatio, tierReveal) ? world.spineBounds : world.bounds,
+        worldBoundsOverride ?? (isSpineOnlyZoom(preStepZoomRatio, tierReveal) ? world.spineBounds : world.bounds),
         camera.scale.value,
         tokens,
       );
@@ -257,7 +286,11 @@ export function stepTopologyPhysics(input: PhysicsStepInput): PhysicsStepResult 
   // `topology-camera-math.ts#computeEffectiveCameraScaleMax`'s JSDoc for the
   // audit finding this fixes (capability/element tiers were unreachable).
   const effectiveScaleMax = computeEffectiveCameraScaleMax(overviewEntryScale, tokens.cameraMaxZoomRatio, tokens.cameraScaleMax);
-  const effectiveScaleMin = computeEffectiveCameraScaleMin(overviewEntryScale, tokens.cameraMinZoomRatio, tokens.cameraScaleMin);
+  const effectiveScaleMin = Math.min(
+    computeEffectiveCameraScaleMin(overviewEntryScale, tokens.cameraMinZoomRatio, tokens.cameraScaleMin),
+    // 3D 돔 — 돔 핏 배율이 2D 하한 밑이면 거기까지 내린다(`DomeRuntime.fitScale`).
+    scaleMinOverride ?? Infinity,
+  );
   // freezeCamera: the cubic transition tween owns the camera this frame — use
   // the (already-eased) `camera` verbatim, skipping the spring + pan clamp +
   // reduced snap. Everything downstream still derives from `nextCamera`.

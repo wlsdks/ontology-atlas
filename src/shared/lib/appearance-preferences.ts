@@ -273,6 +273,40 @@ export function useFrameMeter(): boolean {
   return useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
 }
 
+/* ── 3D 보기 (지도 뷰 모드) ──────────────────────────────────────────────── */
+
+/**
+ * 지도를 kind 동심 링의 돔으로 볼까 — 소유자 요청(2026-08-18, "실제 우리
+ * 지도에서 3D 형태로" + "돔이면서 확대도 되고 요리조리 움직이면서")로 생긴
+ * 옵트인 뷰 모드. 지도는 2D(기본)와 3D 딱 두 가지 뷰만 가지며, 토글은 지도
+ * 상단 툴바의 「3D」 칩 한 곳이다(설정 시트에 중복 스위치를 두지 않는다).
+ *
+ * ## 왜 기본이 꺼짐인가 — 취향이 아니라 실측이다
+ *
+ * 같은 데이터를 돔으로 돌리면 엣지 교차가 크게 뛴다(히어로 실측 58.0 →
+ * 190.7, 3.29× — 교차 최소화가 그래프 이해도의 지배 요인, Purchase 1997).
+ * 그래서 기본 지도는 읽기 좋은 평면을 지키고, 돔은 구조를 형태로 보고 싶은
+ * 사람이 켠다. 구현과 실측 비용:
+ * `src/widgets/topology-map-v2/model/dome-view.ts` · `docs/DECISIONS.md`.
+ */
+const VIEW_3D_KEY = "atlas.appearance.view3d";
+
+export const DEFAULT_VIEW_3D = false;
+
+export function readView3d(): boolean {
+  return readOnOff(VIEW_3D_KEY, DEFAULT_VIEW_3D);
+}
+
+export function writeView3d(value: boolean): void {
+  writeOnOff(VIEW_3D_KEY, value);
+}
+
+export function useView3d(): boolean {
+  const getSnapshot = useCallback(() => readView3d(), []);
+  const getServerSnapshot = useCallback(() => DEFAULT_VIEW_3D, []);
+  return useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
+}
+
 /* ── 에이전트 활동 (작업 중 표시 · 알림) ──────────────────────────────────── */
 
 /**
