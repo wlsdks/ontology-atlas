@@ -49,7 +49,13 @@ import { seedFirstRunSeen } from "./first-run-seed";
  * ⚠️ **컨트롤 수도 같이 센다** — 갈라 놓기만 하고 한쪽을 안 보면, 새 조합이 컨트롤
  * 쪽으로 숨는다. 컨트롤은 값 층이 소유하므로 상한이 더 느슨하지만, 무한은 아니다.
  */
-const BASELINE_SURFACE_COMBOS = 14;
+/*
+ * 2026-08-18 — 관문 리메이크가 14 → **12** 로 줄였다. 판 하나에 쌓여 있던
+ * 상자들이 절 단위 서사로 펴지면서 일회성 표면 둘이 사라진 것이다. 래칫의
+ * 규율대로 **줄어든 만큼 상한도 내린다** — 안 내리면 줄인 만큼이 다시 여유가
+ * 되고, 다음 사람이 그 여유를 새 조합으로 쓴다.
+ */
+const BASELINE_SURFACE_COMBOS = 12;
 const BASELINE_CONTROL_COMBOS = 17;
 
 const ROUTES = [

@@ -60,6 +60,8 @@ export function GatewayFx() {
       ];
     };
     const accent = accentRaw.startsWith('#') ? hexRgb(accentRaw) : ([94, 106, 210] as const);
+    const dustRaw = styles.getPropertyValue('--gateway-fx-dust').trim() || '#ececf0';
+    const dustInk = dustRaw.startsWith('#') ? hexRgb(dustRaw) : ([236, 236, 240] as const);
 
     /**
      * 저해상 버퍼 (0.5×, dpr 1 고정) — 이 층의 잉크는 **본질적으로 흐린
@@ -156,7 +158,7 @@ export function GatewayFx() {
         if (d.y < 0) d.y += 1;
         const tw = 0.6 + 0.4 * Math.sin(t / 1400 + d.tw);
         const alpha = d.a * dustAlphaCeiling * tw * (0.4 + 0.6 * intensity);
-        ctx!.fillStyle = `rgba(236,236,240,${alpha})`;
+        ctx!.fillStyle = `rgba(${dustInk[0]},${dustInk[1]},${dustInk[2]},${alpha})`;
         ctx!.fillRect(d.x * W, d.y * H, d.s, d.s);
       }
       ctx!.globalCompositeOperation = 'source-over';

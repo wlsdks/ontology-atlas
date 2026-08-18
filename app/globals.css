@@ -531,6 +531,10 @@
   --gateway-fx-blob-alpha: 0.14;
   /* 성진(dust) 입자 알파 상한. */
   --gateway-fx-dust-alpha: 0.28;
+  /* 성진 잉크 — 무채색 화이트. 알파 상한과 짝이라 같은 봉인 네임스페이스에
+     둔다(원색 리터럴이 캔버스 코드에 남지 않게 하는 것이 `check:tokens` 의
+     요구다). 값은 종전 캔버스 리터럴과 바이트 동일 — 픽셀이 안 움직인다. */
+  --gateway-fx-dust: #ececf0;
   /* 커스텀 커서 링의 쉼 상태 잉크 — 기존 잉크 토큰에서 파생(새 hue 0). */
   --gateway-fx-cursor-ring: color-mix(in srgb, var(--color-text-primary) 38%, transparent);
 

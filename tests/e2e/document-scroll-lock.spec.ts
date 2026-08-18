@@ -63,19 +63,32 @@ test.describe("문서 스크롤 잠금 — 셸이 뷰포트를 소유한다", ()
       });
     }
 
-    test(`관문 「받아도 되는 이유」 펼침 @ ${w}×${h} — 펼쳐도 문서는 안 자란다`, async ({
+    test(`관문 「받아도 되는 이유」 @ ${w}×${h} — 신뢰 사실이 다 펼쳐져 있어도 문서는 안 자란다`, async ({
       page,
     }) => {
       await seedFirstRunSeen(page);
       await page.setViewportSize({ width: w, height: h });
       await page.goto("/ko/?guides=off", { waitUntil: "domcontentloaded" });
       const trust = page.getByTestId("download-trust");
-      await expect(trust, "관문 신뢰 디스클로저가 사라졌다 — 이 시험이 헛돈다").toBeVisible({
+      await expect(trust, "관문 신뢰 절이 사라졌다 — 이 시험이 헛돈다").toBeVisible({
         timeout: 20_000,
       });
-      await trust.locator("summary").click();
-      // 펼침 콘텐츠가 실제로 나타났는지 — 안 나타나면 아래 0 이 공회전이다.
-      await expect(trust).toHaveAttribute("open", "");
+      /*
+       * **2026-08-18 — 여기 있던 `summary` 클릭을 지웠다.** 관문 리메이크가
+       * 이 절의 디스클로저를 없애고 서명·공증·체크섬을 **항상 펼쳐진** 사실로
+       * 바꿨다(타입 있는 사실을 접어 두지 않는다는 헌장 쪽이 이겼다). 클릭할
+       * 것이 없어진 뒤에도 스펙이 남아 있어서 `locator.click` 이 60초 타임아웃
+       * 으로 죽었다 — 성질이 깨진 게 아니라 **재는 방법이 유물**이었다.
+       *
+       * 재는 성질은 그대로다. 오히려 사정거리가 넓어졌다: 예전에는 펼친
+       * 뒤에만 재던 「가장 긴 문서」 상태를 이제 **첫 페인트부터** 재고 있다.
+       * 그래서 아래 두 단언(문서 여유 ≤ 0 · 체크섬 복사 버튼에 내부 스크롤로
+       * 닿는다)은 한 줄도 안 물러섰다.
+       */
+      await expect(
+        trust.getByText(/체크섬|SHA/i).first(),
+        "체크섬 사실이 안 보인다 — 접혀 있으면 아래 0 이 공회전이다",
+      ).toBeVisible();
       await expect
         .poll(() => documentScrollSlack(page), { timeout: 10_000 })
         .toBeLessThanOrEqual(0);

@@ -259,9 +259,16 @@ describe('DownloadPage', () => {
         'href',
         `https://github.com/wlsdks/ontology-atlas/releases/download/v${RELEASE_VERSION}/ontology-atlas_${RELEASE_VERSION}_x64.dmg`,
       );
-      // Two filled buttons would leave no winner — Intel keeps the same slot
-      // at a lower weight.
-      expect(appleSilicon.className).toMatch(/--color-indigo-brand/);
+      /*
+       * 채운 강조색은 **문서 전체에 하나**다 — 그리고 2026-08-18 부터 그 하나는
+       * 히어로가 진다. 이 판의 Apple Silicon·Intel 은 둘 다 `outline` 이고,
+       * 무엇이 먼저인지는 순서와 라벨이 말한다. 종전 단언(이 판의 주 CTA 가
+       * 채워져 있다)을 지우지 않고 **문서 단위로 올려** 적는다 — 그래야
+       * 「둘 다 안 채워졌다」와 「하나만 채워졌다」를 이 시험이 계속 구별한다.
+       */
+      const filled = Array.from(document.querySelectorAll('a[class*="--color-indigo-brand"]'));
+      expect(filled.map((el) => el.getAttribute('data-testid'))).toEqual(['gateway-hero-cta']);
+      expect(appleSilicon.className).not.toMatch(/--color-indigo-brand/);
       expect(screen.getByTestId('download-macos-x64').className).not.toMatch(
         /--color-indigo-brand/,
       );

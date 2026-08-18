@@ -423,7 +423,7 @@ function HeroSection({
                 <a
                   href={primaryAsset.downloadUrl}
                   data-testid="gateway-hero-macos-aarch64"
-                  className={cn(buttonVariants({ variant: 'outline', size: 'md' }), 'rounded-chip px-4')}
+                  className={cn(buttonVariants({ variant: 'outline', size: 'md' }), 'touch-hit-expand rounded-chip px-4')}
                 >
                   <Download size={ICON_SIZE.md} aria-hidden />
                   {t('primaryCtaPublished')}
@@ -434,7 +434,7 @@ function HeroSection({
                 <a
                   href={windowsInstaller.downloadUrl}
                   data-testid="gateway-hero-windows"
-                  className={cn(buttonVariants({ variant: 'outline', size: 'md' }), 'rounded-chip px-4')}
+                  className={cn(buttonVariants({ variant: 'outline', size: 'md' }), 'touch-hit-expand rounded-chip px-4')}
                 >
                   <Download size={ICON_SIZE.md} aria-hidden />
                   {t('windowsDownloadCta')}
@@ -451,7 +451,7 @@ function HeroSection({
               <Link
                 href="/topology"
                 data-testid="gateway-hero-web-cta"
-                className={cn(buttonVariants({ variant: 'outline', size: 'md' }), 'rounded-chip px-4')}
+                className={cn(buttonVariants({ variant: 'outline', size: 'md' }), 'touch-hit-expand rounded-chip px-4')}
               >
                 {t('heroWebCta')}
               </Link>
@@ -495,7 +495,7 @@ function HeroIntelLink() {
     <a
       href={intel.downloadUrl}
       data-testid="gateway-hero-macos-x64"
-      className={cn(buttonVariants({ variant: 'outline', size: 'md' }), 'rounded-chip px-4')}
+      className={cn(buttonVariants({ variant: 'outline', size: 'md' }), 'touch-hit-expand rounded-chip px-4')}
     >
       <Download size={ICON_SIZE.md} aria-hidden />
       {t('archIntelCta')}
@@ -973,14 +973,38 @@ function PublishedActions({
     <div data-testid="download-hero-actions" className="min-w-0">
       <PlatformHeading title={t('macosPlatformTitle')} status={t('macosTrustBadge')} />
       <div className="flex min-w-0 flex-wrap items-center gap-2.5">
+        {/*
+         * **채운 인디고는 이 판이 아니라 히어로가 진다** (2026-08-18).
+         *
+         * 절 단위 서사로 펴면서 같은 행동·같은 라벨·같은 250×44 의 채워진
+         * 인디고가 한 문서에 **둘**이 됐다(`gateway-hero-cta` + 여기).
+         * 「주 CTA 가 둘이면 하나는 거짓말이다」에 걸린다 —
+         * `screen-hierarchy.spec.ts` ②.
+         *
+         * 어느 쪽을 내릴지는 2026-08-08 편집 화면의 선례를 그대로 따랐다:
+         * 같은 행동이 두 번 나오면 **먼저 만나는 쪽**이 채운 것을 지고 되풀이는
+         * `outline` 으로 내려온다. 여기서 먼저 만나는 것은 히어로다 — 소유자가
+         * 이 리메이크에 건 요구 자체가 「첫 화면의 인상」이었다.
+         *
+         * 이 판이 약해지지 않는 이유: 앞의 네 절이 전부 움직인 뒤 여기서 화면이
+         * 정지하고, 버튼 둘레에 체크섬·크기·최소 OS·서명 상태가 다 깔린다.
+         * 무엇을 결정하는 자리인지는 테두리가 아니라 그 정지와 사실들이 말한다.
+         *
+         * **미게시 분기(`PendingActions`)는 그대로 채운 채다** — 거기엔 히어로가
+         * 질 채운 CTA 가 없어서 이 자리가 유일한 주 CTA 다(편집/만들기 선례의
+         * 후반부와 같은 판정).
+         */}
         <a
           href={primaryAsset.downloadUrl}
           data-testid="download-primary-cta"
-          className={cn(buttonVariants({ size: 'lg' }), 'rounded-chip px-4 sm:px-6')}
+          className={cn(
+            buttonVariants({ variant: 'outline', size: 'lg' }),
+            'rounded-chip px-4 sm:px-6',
+          )}
         >
           <Download size={ICON_SIZE.lg} aria-hidden />
           {t('primaryCtaPublished')}
-          <AssetSize bytes={primaryAsset.sizeBytes} onFill />
+          <AssetSize bytes={primaryAsset.sizeBytes} />
         </a>
         {/* 채운 인디고는 화면당 하나 — Intel 은 막히면 안 되므로 같은 자리에
             두되 무게만 낮춘다. */}
@@ -1160,7 +1184,7 @@ function PlateExitRow({ published }: { published: boolean }) {
         // 조금 더 넓은 첫 칸을 가져 오픈소스 신뢰 경로임을 분명히 한다.
         className={cn(
           buttonVariants({ variant: 'outline', size: 'md' }),
-          'min-w-0 justify-center rounded-chip px-4',
+          'touch-hit-expand min-w-0 justify-center rounded-chip px-4',
         )}
       >
         {/* 14px 인 이유(원본은 16)는 마크 쪽 주석 — 이 자리에 있던 lucide
@@ -1182,7 +1206,7 @@ function PlateExitRow({ published }: { published: boolean }) {
           data-testid="download-web-cta"
           className={cn(
             buttonVariants({ variant: 'outline', size: 'md' }),
-            'min-w-0 justify-center rounded-chip px-4',
+            'touch-hit-expand min-w-0 justify-center rounded-chip px-4',
           )}
         >
           {t('windowsBrowserFallback')}
