@@ -793,7 +793,7 @@
     "factUnpublished": "아직 게시 전",
     "demoTitle": "설치 없이, 움직이는 것부터 봅니다",
     "demoSub": "폴더를 고르면 지도가 되고, 에이전트가 그 지도를 읽고 씁니다. 무편집 · 무음.",
-    "demoProvisionalNote": "atlas-tour · 잠정 {seconds}초 촬영본 · 두 언어가 아직 같은 한국어 화면 녹화를 공유합니다 · 45초 언어별 촬영본으로 교체 예정",
+    "demoProvisionalNote": "atlas-tour · {seconds}초 무컷 한 테이크 · 폴더 고르기부터 돔·구름·에이전트 왕복까지 · 두 언어가 아직 같은 한국어 화면 녹화를 공유합니다",
     "evidenceTitle": "이 지도는 이 저장소 자신입니다",
     "evidenceSub": "폴더가 그래프가 되는 그 일이, 지금 눈앞에서 일어납니다.",
     "evidenceKindsHeading": "종류별 개수",

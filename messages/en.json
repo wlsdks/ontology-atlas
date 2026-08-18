@@ -793,7 +793,7 @@
     "factUnpublished": "not published yet",
     "demoTitle": "See it moving before you install anything",
     "demoSub": "Pick a folder and it becomes a map; your agent reads and writes that map. Uncut, silent.",
-    "demoProvisionalNote": "atlas-tour · provisional {seconds}s capture · both languages currently share this Korean-UI recording · a 45-second per-language cut will replace it",
+    "demoProvisionalNote": "atlas-tour · a single uncut {seconds}s take · from picking the folder to the dome, the cloud, and an agent round trip · both languages currently share this Korean-UI recording",
     "evidenceTitle": "This map is this repository itself",
     "evidenceSub": "The folder-becomes-a-graph moment happens right here, in front of you.",
     "evidenceKindsHeading": "Concepts by kind",
