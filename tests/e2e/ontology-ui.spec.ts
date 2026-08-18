@@ -72,47 +72,28 @@ test.describe("ontology view UI", () => {
     await expect(headings).toBeVisible();
 
     // The macOS action is a single stable target across both release states:
-    // the Apple Silicon DMG once published, an honestly-labelled link to the
-    // releases page before that. Asserting the label would pin this spec to one
-    // state and break on release day — assert the role the element plays.
-    const primary = page.getByTestId("download-primary-cta");
+    // the Apple Silicon DMG once published, the browser map before that.
+    // Asserting the label would pin this spec to one state and break on
+    // release day — assert the role the element plays.
+    //
+    // [재조준 2026-08-19] 이 자리는 판(`download-primary-cta`)이었다. 소유자가
+    // 설치 절을 통째로 걷어내면서(*"맨 마지막 이거는 없어도 될듯? 어차피 맨
+    // 위에 다 있어서"*) 같은 역할을 히어로 CTA 가 진다.
+    const primary = page.getByTestId("gateway-hero-cta");
     await expect(primary).toBeVisible();
-    await expect(primary).toHaveAttribute("href", /github\.com\/wlsdks\/ontology-atlas/);
 
-    await expect(page.getByRole("link", { name: "Go to GitHub" })).toHaveAttribute(
-      "href",
-      "https://github.com/wlsdks/ontology-atlas",
-    );
-
-    // Both platforms are named. Omitting Windows left a Windows visitor unable
-    // to tell whether the product excluded them or had not got there yet.
-    await expect(page.getByTestId("download-platform-macos")).toBeVisible();
-    const windows = page.getByTestId("download-platform-windows");
-    await expect(windows).toBeVisible();
-    await expect(windows).toContainText("Windows");
-
-    // Trust facts, stated as what is true today (Developer ID signing has been
-    // live since 2026-07-27) with the proof for each. The unsigned-era detour
-    // through System Settings is false now, and it is the single most
-    // expensive thing a first-time visitor could be told to do.
-    const trust = page.getByTestId("download-trust");
-    await expect(trust).toContainText(/Developer ID/);
-    await expect(trust).toContainText(/SHA-256/);
+    /*
+     * [삭제 2026-08-19] 함께 사라진 주어들 — 저장소 출구 링크
+     * (`download-repo-link`) · 플랫폼 절 둘(`download-platform-macos` ·
+     * `download-platform-windows`) · 검증 레일(`download-trust`, Developer ID ·
+     * SHA-256) · 아키텍처 안내(`About This Mac`). 전부 다운로드 판과 검증
+     * 레일 안에 있었다. `docs/DECISIONS.md` 2026-08-19 가 그 대가를 적는다.
+     *
+     * 서명·공증 주장은 히어로 신뢰줄 한 줄로 남았으므로 그것만 잰다.
+     */
+    await expect(page.getByText(/Signed and notarized by Apple/i).first()).toBeVisible();
     await expect(page.getByText(/Open Anyway/i)).toHaveCount(0);
     await expect(page.getByText(/Not signed yet/i)).toHaveCount(0);
-
-    // A visitor who does not know which Mac they own must not be left in
-    // front of two architecture buttons with no way to choose. Before a
-    // release exists there is no choice to make, so the rule is conditional:
-    // offer both architectures, or explain how to pick — never the first
-    // without the second. (The published branch is covered as a unit test;
-    // e2e can only ever see the state actually shipped.)
-    const intelDownload = page.getByTestId("download-macos-x64");
-    const archHelp = page.getByText(/About This Mac/i);
-    expect(
-      (await intelDownload.count()) === 0 || (await archHelp.count()) > 0,
-      "offering an architecture choice requires telling visitors how to make it",
-    ).toBe(true);
 
     // Operator-only release-pipeline status must never reach the public page.
     await expect(page.getByText(/waiting on PR review/i)).toHaveCount(0);

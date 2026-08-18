@@ -63,40 +63,14 @@ test.describe("문서 스크롤 잠금 — 셸이 뷰포트를 소유한다", ()
       });
     }
 
-    test(`관문 「받아도 되는 이유」 @ ${w}×${h} — 신뢰 사실이 다 펼쳐져 있어도 문서는 안 자란다`, async ({
-      page,
-    }) => {
-      await seedFirstRunSeen(page);
-      await page.setViewportSize({ width: w, height: h });
-      await page.goto("/ko/?guides=off", { waitUntil: "domcontentloaded" });
-      const trust = page.getByTestId("download-trust");
-      await expect(trust, "관문 신뢰 절이 사라졌다 — 이 시험이 헛돈다").toBeVisible({
-        timeout: 20_000,
-      });
-      /*
-       * **2026-08-18 — 여기 있던 `summary` 클릭을 지웠다.** 관문 리메이크가
-       * 이 절의 디스클로저를 없애고 서명·공증·체크섬을 **항상 펼쳐진** 사실로
-       * 바꿨다(타입 있는 사실을 접어 두지 않는다는 헌장 쪽이 이겼다). 클릭할
-       * 것이 없어진 뒤에도 스펙이 남아 있어서 `locator.click` 이 60초 타임아웃
-       * 으로 죽었다 — 성질이 깨진 게 아니라 **재는 방법이 유물**이었다.
-       *
-       * 재는 성질은 그대로다. 오히려 사정거리가 넓어졌다: 예전에는 펼친
-       * 뒤에만 재던 「가장 긴 문서」 상태를 이제 **첫 페인트부터** 재고 있다.
-       * 그래서 아래 두 단언(문서 여유 ≤ 0 · 체크섬 복사 버튼에 내부 스크롤로
-       * 닿는다)은 한 줄도 안 물러섰다.
-       */
-      await expect(
-        trust.getByText(/체크섬|SHA/i).first(),
-        "체크섬 사실이 안 보인다 — 접혀 있으면 아래 0 이 공회전이다",
-      ).toBeVisible();
-      await expect
-        .poll(() => documentScrollSlack(page), { timeout: 10_000 })
-        .toBeLessThanOrEqual(0);
-      // 펼친 내용의 끝(체크섬 영역)이 **내부 슬롯 스크롤로** 닿는지 — 문서를
-      // 잠갔더니 내용에 못 닿는 반대 방향 회귀를 막는다.
-      const copy = trust.locator("button", { hasText: /복사/ }).first();
-      await copy.scrollIntoViewIfNeeded();
-      await expect(copy).toBeVisible();
-    });
+    /*
+     * [삭제 2026-08-19] 「관문 「받아도 되는 이유」 … 문서는 안 자란다」.
+     *
+     * 주어(`download-trust` 검증 레일 + 그 안의 체크섬 복사 버튼)가 설치 절과
+     * 함께 사라졌다 — 소유자: *"맨 마지막 이거는 없어도 될듯? 어차피 맨 위에
+     * 다 있어서"*. 이 시험이 지키던 성질(관문에서 가장 긴 상태에서도 문서
+     * 스크롤 여유가 0)은 위 루프의 `/ko/?guides=off` 시험이 그대로 진다 —
+     * 관문에서 가장 긴 상태가 이제 그 첫 페인트다.
+     */
   }
 });

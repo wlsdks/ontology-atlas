@@ -36,6 +36,11 @@ import type { ClusterChip } from "../model/density-gate";
 import { DEFAULT_EXPAND, type ExpandPreference } from "@/shared/lib/appearance-preferences";
 import { depthParallaxOffsetFor, ZERO_PARALLAX, type DepthParallaxOffset } from "../model/realm-depth-parallax";
 import {
+  commitDomeEntrySweep,
+  domeFacingYaws,
+  isInsideDomeGrip,
+  projectOrbitLanding,
+  snapOrbitLanding,
   ORBIT_PITCH_PER_PX,
   ORBIT_YAW_PER_PX,
   resistDomePitch,
@@ -238,6 +243,13 @@ export interface PointerHandlerRefs {
    */
   domeRuntimeRef?: Ref<DomeRuntime | null>;
   /**
+   * 3D — 지금 진행 중인 빈 곳 드래그가 **궤도 회전인가**(true) **카메라
+   * 팬인가**(false). `pointerdown` 이 한 번 정하고 그 제스처가 끝날 때까지
+   * 안 바뀐다 — 판정을 move 마다 하면 손이 돔 경계를 스칠 때 제스처의 정체가
+   * 뒤바뀐다. 규칙은 `model/dome-view.ts` 의 `DOME_GRIP_MARGIN`.
+   */
+  domeGripRef?: Ref<boolean>;
+  /**
    * 슬라이스 C (개발/비개발 모드 토글) — 티어 게이트 config 미러(드로우와
    * **같은** config 여야 히트/팬-클램프가 그려진 것과 lockstep). 생략 시
    * `DEFAULT_TIER_REVEAL`.
@@ -369,6 +381,7 @@ export function createTopologyPointerHandlers(refs: PointerHandlerRefs): Topolog
     realmParallaxRef,
     realmTierKindsRef,
     domeRuntimeRef,
+    domeGripRef = { current: false },
     tierRevealRef,
     onSelect,
     onSelectEdge,
@@ -751,6 +764,8 @@ export function createTopologyPointerHandlers(refs: PointerHandlerRefs): Topolog
       const dome = domeInteractive();
       if (dome) {
         dome.yawVel = 0;
+        // 착지 겨냥도 함께 버린다 — 새 입력·명시적 리셋이 언제나 이긴다.
+        dome.yawSnap = null;
         dome.pitchVel = 0;
         // 진행 중 프로그램 자세 이동(「제자리로」·선택 리프레임)도 여기서
         // 버린다 — 포인터다운이 카메라 트윈을 버리는 것과 같은 계약: 제스처가
@@ -760,6 +775,24 @@ export function createTopologyPointerHandlers(refs: PointerHandlerRefs): Topolog
         // 남은 목표-갭에 의해 미끄러지지 않게.
         dome.yawTarget = dome.yaw;
         dome.pitchTarget = dome.pitch;
+      }
+    }
+    /*
+     * 3D — **이 드래그가 회전인가 이동인가를 여기서 한 번만 정한다.**
+     *
+     * 판정을 move 마다 하면 손이 돔 경계를 스치는 순간 제스처의 정체가 바뀐다
+     * (돌리다가 갑자기 지도가 딸려 온다). 제스처의 정체는 시작할 때 정해지고
+     * 끝날 때까지 안 바뀐다 — 포인터 상태기계가 이미 쓰는 규약이다.
+     * 규칙과 근거: `model/dome-view.ts` 의 `DOME_GRIP_MARGIN` 독블록.
+     */
+    {
+      const dome = domeInteractive();
+      if (dome === null) {
+        domeGripRef.current = false;
+      } else {
+        const view = viewportRef.current;
+        const pw = screenToWorld(cameraRef.current, view.width, view.height, point.x, point.y);
+        domeGripRef.current = isInsideDomeGrip(dome.drawnBounds, pw.x, pw.y);
       }
     }
     const hitNodeId = hitVisibleNode(world, cameraRef.current, tokens, point.x, point.y);
@@ -800,6 +833,7 @@ export function createTopologyPointerHandlers(refs: PointerHandlerRefs): Topolog
             const dome = domeInteractive();
             if (dome) {
               dome.spinArmed = false;
+          commitDomeEntrySweep(dome);
               dome.poseTween = null;
             }
           }
@@ -871,6 +905,7 @@ export function createTopologyPointerHandlers(refs: PointerHandlerRefs): Topolog
           const offset = computeGrabOffsetWorld(renderedX, renderedY, pw.x, pw.y);
           // 노드를 잡는 것은 개입이다 — 시선 끌기 회전 해제 (①).
           dome.spinArmed = false;
+          commitDomeEntrySweep(dome);
           nodeDragRef.current = { nodeId: pressedNodeId, offset };
           dome.drag = {
             nodeId: pressedNodeId,
@@ -939,7 +974,9 @@ export function createTopologyPointerHandlers(refs: PointerHandlerRefs): Topolog
       // 3D 궤도(orbit) — 빈 곳 드래그는 카메라 팬이 아니라 돔 회전이다.
       // 수평 = yaw(감도 히어로 0.006/px), 수직 = pitch(러버밴드 한계). 깊은
       // 티어는 비틀림(lag)으로 살짝 뒤처졌다 스프링 백 — follow-through.
-      if (dome) {
+      // 돔 바깥에서 시작한 드래그는 2D 와 똑같이 **카메라 팬**이다(아래 기본
+      // 경로로 떨어진다). 안에서 시작했을 때만 궤도 회전.
+      if (dome && domeGripRef.current) {
         const history = dragHistoryRef.current;
         const last = history[history.length - 1];
         const dx = last ? point.x - last.x : 0;
@@ -954,6 +991,7 @@ export function createTopologyPointerHandlers(refs: PointerHandlerRefs): Topolog
         // 궤도는 개입이다 — 시선 끌기 회전은 여기서 내려가 되살아나지 않는다
         // (①, 복귀는 「자동 정렬」·3D 재진입 — `DomeRuntime.spinArmed` JSDoc).
         dome.spinArmed = false;
+          commitDomeEntrySweep(dome);
         dragHistoryRef.current.push({ x: point.x, y: point.y, t: performance.now() });
         if (dragHistoryRef.current.length > 10) dragHistoryRef.current.shift();
         return;
@@ -1077,6 +1115,23 @@ export function createTopologyPointerHandlers(refs: PointerHandlerRefs): Topolog
         }
       }
       if (chipHit !== null) e.currentTarget.style.cursor = "pointer";
+      /*
+       * 3D — 빈 곳 위에서 **커서가 두 구역을 말한다.** 규칙이 자리에 따라
+       * 갈리는데(돔 안=회전, 밖=이동) 화면에 아무 표시가 없으면 그 규칙은
+       * 존재하지 않는 것과 같다. 드래그해 봐야만 알게 되는 기능은 이 저장소가
+       * 금지하는 «drag-only discovery» 다.
+       *
+       * `grab` = 잡아서 돌린다(돔 위) · `move` = 잡아서 옮긴다(바깥).
+       * 노드·칩 위에서는 각자의 커서가 이미 이겼으므로 건드리지 않는다.
+       */
+      if (chipHit === null && hitNodeId === null) {
+        const dome = domeInteractive();
+        if (dome !== null) {
+          const view = viewportRef.current;
+          const pw = screenToWorld(cameraRef.current, view.width, view.height, point.x, point.y);
+          e.currentTarget.style.cursor = isInsideDomeGrip(dome.drawnBounds, pw.x, pw.y) ? "grab" : "move";
+        }
+      }
     }
 
     if (next.phase !== "idle" || focusedSlugRef.current) return; // 리플은 idle+비포커스 전용 (기존 계약)
@@ -1169,6 +1224,17 @@ export function createTopologyPointerHandlers(refs: PointerHandlerRefs): Topolog
             if (release.isFlick) {
               dome.yawVel = release.vx * ORBIT_YAW_PER_PX;
               dome.pitchVel = release.vy * ORBIT_PITCH_PER_PX;
+              /*
+               * **의미 있는 착지** — 관성만 두면 돔은 아무 각에서나 멎는다.
+               * 릴리스 속도로 자연 착지점을 먼저 계산하고, 그 자리가 도메인
+               * 자오선 근처면 감속의 목표를 그리로 다시 겨눈다(UIScrollView
+               * 페이징과 같은 두 걸음 — `ORBIT_SNAP_WINDOW_RAD` 독블록).
+               * 창 밖이면 `null` 이라 종전 관성 그대로다.
+               */
+              const landing = projectOrbitLanding(dome.yaw, dome.yawVel);
+              dome.yawSnap = snapOrbitLanding(landing, domeFacingYaws(dome.model));
+            } else {
+              dome.yawSnap = null;
             }
           }
           return;
@@ -1400,6 +1466,7 @@ export function createTopologyPointerHandlers(refs: PointerHandlerRefs): Topolog
       const dome = domeInteractive();
       if (dome) {
         dome.spinArmed = false;
+          commitDomeEntrySweep(dome);
         dome.poseTween = null;
       }
     }

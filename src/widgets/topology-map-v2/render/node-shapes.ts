@@ -29,6 +29,42 @@ export interface Point {
 }
 
 /** Six points of a regular hexagon, flat-top-rotated -90° (prototype: `a = i*60 - 90` degrees). */
+/**
+ * 입체 음영의 광원 오프셋(반지름 배수) — 위·왼쪽. 근거는 `depthShade` 독블록
+ * (Sun & Perona 1998 — 시각계의 «빛은 위에서, 약간 왼쪽» 가정).
+ */
+const NODE_DEPTH_SHADE_LIGHT_OFFSET = 0.4;
+/** 그늘진 쪽 가장자리의 최대 검정 알파. 이보다 세면 원판이 «구멍»으로 읽힌다. */
+const NODE_DEPTH_SHADE_MAX_ALPHA = 0.5;
+/**
+ * 이 화면 반지름(px) 아래에서는 음영을 안 그린다 — 3~4px 원판에서 기울기는
+ * 입체가 아니라 잡음이고, 노드마다 그라디언트 객체를 만드는 비용만 남는다.
+ */
+const NODE_DEPTH_SHADE_MIN_RADIUS_PX = 3.5;
+
+/**
+ * 입체 음영 그라디언트 캐시 — 키는 반올림한 (반지름, 세기). 좌표는 키에 없다:
+ * 그라디언트를 **원점 기준**으로 만들고 그릴 때 `translate` 로 옮긴다.
+ */
+const shadeGradientCache = new Map<string, CanvasGradient>();
+const SHADE_CACHE_MAX = 512;
+
+function buildDepthShade(ctx: CanvasRenderingContext2D, r: number, strength: number): CanvasGradient {
+  const shade = ctx.createRadialGradient(
+    // 빛이 오는 쪽 — 위·약간 왼쪽. 그 점 근처는 손대지 않는다.
+    -r * NODE_DEPTH_SHADE_LIGHT_OFFSET,
+    -r * NODE_DEPTH_SHADE_LIGHT_OFFSET,
+    r * 0.05,
+    0,
+    0,
+    r * 1.25,
+  );
+  shade.addColorStop(0, "rgba(0, 0, 0, 0)");
+  shade.addColorStop(0.55, `rgba(0, 0, 0, ${(NODE_DEPTH_SHADE_MAX_ALPHA * strength * 0.35).toFixed(3)})`);
+  shade.addColorStop(1, `rgba(0, 0, 0, ${(NODE_DEPTH_SHADE_MAX_ALPHA * strength).toFixed(3)})`);
+  return shade;
+}
+
 export function hexPoints(cx: number, cy: number, r: number): Point[] {
   const points: Point[] = [];
   for (let i = 0; i < 6; i += 1) {
@@ -150,6 +186,19 @@ export interface NodeShapeDrawState {
    * 생략 시 `"fill"`(회귀 0).
    */
   glyphStyle?: "fill" | "line";
+  /**
+   * 3D 보기 — **입체 음영**의 세기 0..1. 0(기본)이면 획이 하나도 안 늘어난다.
+   *
+   * 사람의 시각계는 명암의 모호함을 «빛은 위에서, 약간 왼쪽에서 온다»는 가정
+   * 으로 푼다(Sun & Perona, *Nature Neuroscience* 1(3), 1998). 그래서 원판
+   * 위에 그 방향의 명암 기울기 하나만 얹으면 원판이 **구**로 읽힌다 — 3D 에서
+   * 점이 «스티커»로 보이던 것을 없애는 가장 싼 장치다.
+   *
+   * **밝은 쪽을 밝히지 않고 어두운 쪽만 어둡게 한다.** 반대편에 하이라이트나
+   * 림 라이트를 넣으면 그것이 곧 헌장이 금지한 glow 다. 여기 쓰는 것은 검정
+   * 알파 하나뿐이라 새 색상(hue)이 0 이고, 번지지도 움직이지도 않는다.
+   */
+  depthShade?: number;
 }
 
 /** kind→실루엣 불변, 렌더 스타일만 결정하는 순수 디스크립터 (canvas 게이트). */
@@ -524,6 +573,7 @@ export function draw(ctx: CanvasRenderingContext2D, state: NodeShapeDrawState, t
     now,
     reducedMotion,
     glyphStyle,
+    depthShade = 0,
   } = state;
 
   const { lineOnly, lineWidthScale } = glyphStyleDescriptor(glyphStyle);
@@ -541,6 +591,40 @@ export function draw(ctx: CanvasRenderingContext2D, state: NodeShapeDrawState, t
   // 기존 kind fill + sheen 그라디언트. 실루엣(패스)은 위에서 이미 동일하게 그림.
   ctx.fillStyle = lineOnly ? tokens.holeFill : resolveBodyFill(ctx, x, y, r, farT, fill, sheenTop);
   ctx.fill();
+  /*
+   * 입체 음영 (3D) — 위 `depthShade` 독블록. 방금 채운 **그 패스 그대로**
+   * (canvas 의 fill 은 현재 경로를 비우지 않는다) 한 번 더 채우므로 실루엣이
+   * 어긋날 수 없다. 반지름이 몇 px 인 노드에서는 기울기가 잡음이 되므로
+   * 최소 크기 아래에서는 건너뛴다.
+   */
+  if (depthShade > 0.01 && r >= NODE_DEPTH_SHADE_MIN_RADIUS_PX) {
+    /*
+     * **그라디언트는 캐시한다.** 이 분기는 3D 에서 노드마다 도는데, 캔버스
+     * 그라디언트 객체는 만들 때마다 새로 태어난다 — 125노드 × 120Hz 면 초당
+     * 1만 5천 개고, 그 청구서는 프레임 시간이 아니라 GC 가 끼어드는 순간의
+     * 튐으로 온다.
+     *
+     * 캐시 키는 **반지름과 세기를 반올림한 값**이다. 그라디언트의 모양은 그
+     * 둘만으로 정해지고(중심 오프셋·정지점 모두 r 과 세기의 함수), 0.5px·0.05
+     * 단위 아래의 차이는 화면에서 구별되지 않는다. 좌표는 키에 안 넣는다 —
+     * 아래에서 `translate` 로 옮겨 쓰기 때문이다.
+     */
+    const key = `${Math.round(r * 2)}:${Math.round(depthShade * 20)}`;
+    let shade = shadeGradientCache.get(key);
+    if (!shade) {
+      shade = buildDepthShade(ctx, r, depthShade);
+      // 캐시가 무한히 자라지 않게 — 반지름×세기 조합은 유한하지만, 줌이
+      // 연속이라 오래 돌면 수천 칸이 된다. 넘치면 통째로 비운다(LRU 를
+      // 만들 만큼 비싼 객체가 아니다).
+      if (shadeGradientCache.size > SHADE_CACHE_MAX) shadeGradientCache.clear();
+      shadeGradientCache.set(key, shade);
+    }
+    ctx.save();
+    ctx.translate(x, y);
+    ctx.fillStyle = shade;
+    ctx.fill();
+    ctx.restore();
+  }
   ctx.strokeStyle = stroke;
   ctx.lineWidth = lineWidth * lineWidthScale;
   ctx.stroke();

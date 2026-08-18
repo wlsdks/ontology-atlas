@@ -1186,7 +1186,10 @@ const globalsCss = readFileSync(GLOBALS_CSS, 'utf8');
 // + 데모 고스트 앵커 — 셋 다 `buttonVariants`(standard-button) 등재분.
 // 2026-08-18 (2차, 소유자 지적): 히어로 둘째 줄 — Intel `<a>` · Windows `<a>` ·
 // Windows 방문자용 macOS `<a>` · 브라우저 `<Link>`. 넷 다 standard-button.
-const ANCHOR_TAG_SPLIT: Readonly<Record<string, number>> = { Link: 19, a: 17 };
+// 2026-08-19: 설치 절 삭제로 관문에서 앵커 7개가 사라졌다(판의 주 CTA · Intel ·
+// GitHub 출구 · 웹 출구 · 릴리스 노트 · Windows 받기 · Windows 추적) —
+// `Link` 19→17 · `a` 17→12.
+const ANCHOR_TAG_SPLIT: Readonly<Record<string, number>> = { Link: 17, a: 12 };
 
 /**
  * **검증된 「값 층 밖」 앵커 등록부.**
@@ -1234,17 +1237,18 @@ const OUTSIDE_VALUE_LAYER_ANCHORS: readonly OutsideEntry[] = [
   },
   {
     file: 'src/views/download/ui/DownloadPage.tsx',
-    count: 14,
+    count: 7,
     claim: 'standard-button',
     proof: 'buttonVariants',
     why:
-      '주 CTA · Intel · GitHub · 웹 진입 2 · Windows 2 + 리메이크(2026-08-18)의 히어로 CTA ' +
-      '쌍(published `<a>` · pending `<Link>`)과 데모 앵커(ghost → outline, 소유자 «버튼인지도 ' +
-      '모르겠고») + 히어로 둘째 줄 4(Intel `<a>` · Windows `<a>` · Windows 방문자용 macOS ' +
-      '`<a>` · 브라우저 `<Link>` — 소유자 지적: 히어로에서 Windows·웹으로 가는 길이 없었다). ' +
-      '전부 `cn(buttonVariants({…}), …)` 로 ' +
+      '히어로 CTA 쌍(published `<a>` · pending `<Link>`) · 데모 앵커(ghost → outline, 소유자 ' +
+      '«버튼인지도 모르겠고») · 히어로 둘째 줄 4(Intel `<a>` · Windows `<a>` · Windows ' +
+      '방문자용 macOS `<a>` · 브라우저 `<Link>`). 전부 `cn(buttonVariants({…}), …)` 로 ' +
       '**표준 버튼 프리미티브**를 지난다. `control-class.ts` 가 스스로 "표준 버튼을 대체하지 ' +
-      '않는다" 고 선언했으므로 여기를 `controlClass` 로 옮기는 것은 그 규칙 위반이다.',
+      '않는다" 고 선언했으므로 여기를 `controlClass` 로 옮기는 것은 그 규칙 위반이다.\n' +
+      '2026-08-19: 14 → 7. 설치 절(판 · 검증 레일 · 3단)이 삭제되면서 판의 주 CTA · ' +
+      'Intel · GitHub 출구 · 웹 출구 · 릴리스 노트 · Windows 받기 · Windows 추적 일곱이 ' +
+      '함께 사라졌다(`docs/DECISIONS.md` (83)).',
     conditional:
       '⚠️ 이 중 둘은 `className` 이 프리미티브의 반경·인셋을 덮는다(`rounded-chip px-4 sm:px-6`). ' +
       '그건 이 게이트가 아니라 다음 디자인 라운드의 일이다 — 등재가 그 결함을 승인하지는 않는다.',
@@ -1373,7 +1377,7 @@ const OUTSIDE_VALUE_LAYER_ANCHORS: readonly OutsideEntry[] = [
 // 32 → 36 (2026-08-18 2차): 히어로 둘째 줄 4 — 소유자 지적(히어로에 Windows
 // 받기·웹 진입 버튼이 없었다)로 목적지 넷이 전부 버튼이 됐다. 같은
 // standard-button 청구라 등재 사유도 같다.
-const BASELINE_ANCHOR_REGISTERED = 36;
+const BASELINE_ANCHOR_REGISTERED = 29;
 
 /** **이 수만 줄어야 한다.** 앵커 전수(92)에서 등재(25)를 뺀 나머지. */
 const BASELINE_ANCHOR_DEBT = 0;

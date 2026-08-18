@@ -58,7 +58,7 @@ const VaultAgentPanel = dynamic(
 import { useDocumentTitle } from "@/shared/lib/use-document-title";
 import { useLocalStorageBoolean } from "@/shared/lib/use-local-storage-boolean";
 import { useAudiencePlain } from "@/shared/lib/audience-preference";
-import { useCanvasBackground, useExpand, useFootprint, useGlyphSet, useView3d } from "@/shared/lib/appearance-preferences";
+import { useCanvasBackground, useExpand, useFootprint, useGlyphSet, useMapArrangement, useView3d } from "@/shared/lib/appearance-preferences";
 
 const CREATE_NODE_DIALOG_TITLE_ID = "topology-create-node-dialog-title";
 // Bare `?p=` miss grace window — see the deeplinkMissNotifiedRef effect
@@ -369,6 +369,8 @@ export function HomePage() {
   // 3D 보기 (2026-08-18, 옵트인) — 지도를 kind 동심 링의 돔으로 보는 뷰 모드.
   // 토글 칩(SearchHint)이 같은 스토어를 스스로 구독하므로 lockstep 이다.
   const view3d = useView3d();
+  /** 3D 돔의 방위를 무엇이 정하나 — 「소유」/「결합」(`MapArrangement` 독블록). */
+  const mapArrangement = useMapArrangement();
   const footprint = useFootprint();
   const glyphSet = useGlyphSet();
   // 확장 설정(펼치기 표시 · 배치 · 세 숫자) — 같은 스토어, 같은 lockstep.
@@ -5177,6 +5179,7 @@ export function HomePage() {
                     glyphSet={glyphSet}
                     canvasBackground={canvasBackground}
                     view3d={view3d}
+                    mapArrangement={mapArrangement}
                     // 3D 선택 리프레임의 「창 크기가 바뀐 사건」 — 상세 패널이
                     // 실제로 화면을 덮는 동안 true(퇴장 애니 종료 후 false).
                     // 돔은 이 플립마다 보이는 영역 기준으로 부드럽게

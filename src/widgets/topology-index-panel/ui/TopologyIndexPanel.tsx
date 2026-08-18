@@ -405,6 +405,9 @@ export function TopologyIndexPanel({
          * 「아무 일도 안 일어났다」로 읽지 않는다.
          */
         lensActive={lens === "recent"}
+        /* 노드를 하나라도 고르면 안내 카드는 할 일을 마쳤다 —
+           `FirstRunStarterModule` 의 `nodeSelected` 독블록. */
+        nodeSelected={selectedId !== null}
         relations={totalRelations}
         domains={domainCount}
         onStartTour={onStartTour}

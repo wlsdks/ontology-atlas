@@ -62,6 +62,7 @@ const FIXTURE_VALUES: Record<string, string> = {
   "--topology-v2-canvas-bg-far": "#050507",
   "--topology-v2-grid-minor": "#0e0e13",
   "--topology-v2-grid-major": "#121218",
+  "--topology-v2-dome-ring": "#43434f",
   "--topology-v2-vignette-base-alpha": "0.32",
   "--topology-v2-vignette-far-alpha": "0.18",
 

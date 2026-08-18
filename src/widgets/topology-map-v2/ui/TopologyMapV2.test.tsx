@@ -138,4 +138,34 @@ describe("TopologyMapV2", () => {
     const canvas = screen.getByTestId("topology-map-v2-canvas");
     expect(canvas.getAttribute("onwheel")).toBeNull();
   });
+
+  /*
+   * 궤도 「이것만 보기」 버튼의 마이크로 툴팁은 **2D 에서만** 그린다
+   * (2026-08-18 소유자 지시). 이 버튼은 매 프레임 노드의 투영 좌표로 옮겨
+   * 다니는데, 돔에서는 그 좌표가 회전·원근으로 계속 움직여 글상자가 장면 위를
+   * 미끄러진다.
+   *
+   * 두 방향을 다 잰다 — `/gate-probe` 규율: 「3D 에서 없다」만 재면 툴팁을
+   * 통째로 지워 버려도 초록이라, 검사가 아무것도 안 지킨다.
+   */
+  const realmProps: TopologyMapV2Props = {
+    ...baseProps,
+    onEnterRealm: () => {},
+    realmEnterLabel: "이것만 보기",
+    realmEnterTooltip: "이 노드 안쪽만 봐요",
+  };
+
+  it("2D 에서는 궤도 버튼에 마이크로 툴팁이 붙는다", () => {
+    render(<TopologyMapV2 {...realmProps} />);
+
+    expect(screen.getByRole("tooltip", { hidden: true })).toHaveTextContent("이 노드 안쪽만 봐요");
+  });
+
+  it("3D 에서는 같은 버튼이 툴팁 없이 그려진다 — 버튼과 접근성 이름은 남는다", () => {
+    render(<TopologyMapV2 {...realmProps} view3d />);
+
+    expect(screen.queryByRole("tooltip", { hidden: true })).toBeNull();
+    const button = screen.getByTestId("topology-realm-enter-button");
+    expect(button).toHaveAttribute("aria-label", "이것만 보기");
+  });
 });

@@ -151,9 +151,14 @@ export function useGlyphSet(): GlyphSet {
 /* ── 악센트 ──────────────────────────────────────────────────────────────── */
 
 /**
- * 앱의 유일한 채색. 2026-08-18 에 인디고에서 **잉걸**(ember, `#c14a24`)로
- * 바뀌었고(근거·실측: `docs/DECISIONS.md` 같은 날), 소유자 지시로 옛 인디고를
- * 고를 수 있게 남겼다.
+ * 앱의 유일한 채색. 기본은 **인디고**(`#5e6ad2`)이고, **잉걸**(ember,
+ * `#c14a24`)을 옵트인으로 고를 수 있다.
+ *
+ * 2026-08-18 오전에 기본을 잉걸로 바꿨다가 같은 날 소유자가 되돌렸다. 되돌릴 때
+ * 기본값 상수만 뒤집지 않고 `globals.css` 의 두 팔레트 값을 통째로 맞바꿔
+ * 인디고를 `:root` 로 올렸다 — 토큰 이름이 `--color-indigo-*` 라 기본 팔레트에
+ * 구리색이 앉아 있으면 이름이 값에 대해 거짓말을 하고, 그 거짓말은 게이트가
+ * 못 잡는다. 근거는 그 파일 맨 끝 블록의 독주석.
  *
  * ## 왜 «둘 중 하나» 이고 컬러피커가 아닌가
  *
@@ -171,15 +176,15 @@ export function useGlyphSet(): GlyphSet {
  * 적용은 `:root` 의 `data-accent` 속성 한 곳이고, CSS 가 그것으로 토큰 52개를
  * 갈아끼운다(`app/globals.css` 맨 끝 블록).
  */
-export type Accent = "ember" | "indigo";
+export type Accent = "indigo" | "ember";
 
-export const ACCENTS: readonly Accent[] = ["ember", "indigo"];
+export const ACCENTS: readonly Accent[] = ["indigo", "ember"];
 
-export const DEFAULT_ACCENT: Accent = "ember";
+export const DEFAULT_ACCENT: Accent = "indigo";
 
 const ACCENT_KEY = "ontology-atlas:accent:v1";
 
-/** `:root` 에 실리는 속성 이름 — CSS 의 `:root[data-accent="indigo"]` 와 짝이다. */
+/** `:root` 에 실리는 속성 이름 — CSS 의 `:root[data-accent="ember"]` 와 짝이다. */
 export const ACCENT_ATTRIBUTE = "data-accent";
 
 function isAccent(value: string | null): value is Accent {
@@ -304,6 +309,70 @@ export function writeView3d(value: boolean): void {
 export function useView3d(): boolean {
   const getSnapshot = useCallback(() => readView3d(), []);
   const getServerSnapshot = useCallback(() => DEFAULT_VIEW_3D, []);
+  return useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
+}
+
+/* ── 배치 기준 (지도 3D) ─────────────────────────────────────────────────── */
+
+/**
+ * 3D 돔의 **방위**를 무엇이 정하나 — 「소유」인가 「결합」인가.
+ *
+ * 이것은 스타일이 아니라 **질문**이다. 그래서 설정 문구도 두 질문으로 쓴다:
+ *
+ * - `ownership`(기본) — *누가 무엇을 담는가.* 방위가 containment 부모에게서
+ *   온다. 자식이 부모 부채꼴 안에 퍼지므로 소유 구조가 형태로 읽힌다.
+ * - `coupling` — *무엇이 무엇에 붙는가.* 방위를 **모든 관계**가 정한다(링별
+ *   각도 완화). containment 가 가려 놓은 `depends_on` 뭉침이 같은 층 안에서
+ *   드러난다.
+ *
+ * ## 왜 「자유 3D 힘 구름」이 아닌가
+ *
+ * 티어(높이)를 풀면 높이가 나르던 타입 사실이 사라지고 남는 것은 예쁜 구름이다.
+ * 여기서 바꾸는 것은 **방위 하나뿐**이고 높이는 어느 배치에서도 불변이다.
+ * 기하·결정론·기각한 계열들의 근거: `topology-map-v2/model/dome-view.ts` 의
+ * `DomeArrangement` 독블록 · `docs/DECISIONS.md`.
+ *
+ * ## 왜 설정 시트인가 (3D 칩과 다르게)
+ *
+ * 3D 켬/끔은 **지금 보는 것**을 바꾸므로 지도 위 툴바에 산다. 배치 기준은
+ * 한 번 정해 두고 잘 안 바꾸는 성향이라 설정에 둔다 — 그리고 툴바에 칩을
+ * 더하면 이 저장소가 반려해 둔 «모드 증식»이 크롬에서 시작된다.
+ */
+export type MapArrangement = "ownership" | "coupling";
+
+export const MAP_ARRANGEMENTS: readonly MapArrangement[] = ["ownership", "coupling"];
+
+export const DEFAULT_MAP_ARRANGEMENT: MapArrangement = "ownership";
+
+const MAP_ARRANGEMENT_KEY = "atlas.appearance.map-arrangement";
+
+function isMapArrangement(value: string | null): value is MapArrangement {
+  return value !== null && (MAP_ARRANGEMENTS as readonly string[]).includes(value);
+}
+
+export function readMapArrangement(): MapArrangement {
+  if (typeof window === "undefined") return DEFAULT_MAP_ARRANGEMENT;
+  try {
+    const saved = window.localStorage.getItem(MAP_ARRANGEMENT_KEY);
+    return isMapArrangement(saved) ? saved : DEFAULT_MAP_ARRANGEMENT;
+  } catch {
+    return DEFAULT_MAP_ARRANGEMENT;
+  }
+}
+
+export function writeMapArrangement(value: MapArrangement): void {
+  if (typeof window === "undefined") return;
+  try {
+    window.localStorage.setItem(MAP_ARRANGEMENT_KEY, value);
+  } catch {
+    // localStorage 불가(프라이빗 모드 등) — 세션 내 이벤트만으로도 라이브 갱신은 된다.
+  }
+  notifyPreferenceChange();
+}
+
+export function useMapArrangement(): MapArrangement {
+  const getSnapshot = useCallback(() => readMapArrangement(), []);
+  const getServerSnapshot = useCallback(() => DEFAULT_MAP_ARRANGEMENT, []);
   return useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
 }
 

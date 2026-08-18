@@ -5,7 +5,8 @@ import { useTranslations } from 'next-intl';
 import { RefreshCcw, Rotate3d, Search } from 'lucide-react';
 import { cn } from '@/shared/lib/cn';
 import { ChromeChip } from '@/shared/ui/chrome-chip';
-import { useView3d, writeView3d } from '@/shared/lib/appearance-preferences';
+import { useView3d } from '@/shared/lib/appearance-preferences';
+import { View3dMenu } from './View3dMenu';
 
 interface Props {
   onOpenSearch: () => void;
@@ -84,6 +85,7 @@ export function SearchHint({
   const isMac = useSyncExternalStore(subscribe, getIsMac, getIsMacServer);
   // 3D 보기 — 스토어를 직접 구독해 지도 캔버스(HomePage 경유)와 lockstep 토글.
   const view3d = useView3d();
+  const [view3dMenuOpen, setView3dMenuOpen] = useState(false);
   const [arranging, setArranging] = useState(false);
   const compact = density === 'compact-focus';
 
@@ -167,10 +169,18 @@ export function SearchHint({
             소유자 지시 — 설정 시트가 아니라 이 툴바를 가리켰다). 지도 뷰는
             2D(기본)/3D 딱 둘이고 토글 자리는 여기 하나다. active 인디고 틴트가
             켜짐 상태를 말한다(제2 채색 없음). 자동 정렬과 같은 <md 강등. */}
-        <div className="hidden md:block">
+        {/*
+          3D 칩은 **토글이 아니라 고르개를 연다** (2026-08-18 소유자 지시:
+          *"3D누르면 선택 팝업이 나오게 해야지?"*). 3D 에 배치가 둘 생기면서
+          켬/끔 토글로는 「지금 무엇을 보고 있나」를 말할 수 없게 됐다 —
+          근거와 세 줄의 이유는 `View3dMenu` 독블록.
+        */}
+        <div className="relative hidden md:block">
           <ChromeChip
             type="button"
-            onClick={() => writeView3d(!view3d)}
+            onClick={() => setView3dMenuOpen((open) => !open)}
+            aria-haspopup="menu"
+            aria-expanded={view3dMenuOpen}
             data-testid="topology-view-3d"
             data-view-3d={view3d ? 'true' : 'false'}
             data-utility-action-token-contract="support-surface-family"
@@ -183,13 +193,13 @@ export function SearchHint({
             data-utility-action-focus-ring-token="--color-indigo-accent"
             icon={<Rotate3d />}
             active={view3d}
-            aria-pressed={view3d}
             compact={compact}
             aria-label={t('view3dAriaLabel')}
             title={view3d ? t('view3dTitleOn') : t('view3dTitleOff')}
           >
             {t('view3dLabel')}
           </ChromeChip>
+          <View3dMenu open={view3dMenuOpen} onClose={() => setView3dMenuOpen(false)} />
         </div>
         <ChromeChip
           type="button"

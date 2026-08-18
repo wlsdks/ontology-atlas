@@ -21,7 +21,17 @@ import { DEFAULT_EXPAND } from "@/shared/lib/appearance-preferences";
 import type { ExpandPreference, FootprintPreference } from "@/shared/lib/appearance-preferences";
 import { isDirectionalRelation } from "@/shared/lib/ontology-tree/relations";
 import { depthParallaxOffsetFor, ZERO_PARALLAX } from "../model/realm-depth-parallax";
-import { domeFogAlpha, domeLineWidthFactor, type DomeNodeFrame } from "../model/dome-view";
+import {
+  DOME_HALO_ALPHA_CAP,
+  DOME_HALO_ALPHA_GAIN,
+  DOME_RING_ALPHA,
+  DOME_RING_WIDTH_PX,
+  domeFogAlpha,
+  domeHaloPx,
+  domeLineWidthFactor,
+  type DomeNodeFrame,
+} from "../model/dome-view";
+import { draw as domeRingsDraw } from "../render/dome-rings";
 import { realmDepthClarityAlpha, realmDepthClarityScale } from "../model/realm-transition";
 import { classifyZoomTier, DEFAULT_TIER_REVEAL, edgeTierAlpha, effectiveNodeAlpha, nodeTierAlpha, type TierRevealConfig } from "../model/tier-visibility";
 import {
@@ -78,7 +88,7 @@ import { worldToScreen } from "./topology-camera-math";
  */
 const EDGE_CULL_MARGIN_PX = 24;
 const NODE_CULL_SLACK = 3;
-import { isSpineNode, radiusForKind, type TopologyWorld, type WorldNode } from "./topology-world";
+import { isSpineNode, radiusForKind, type TopologyWorld, type WorldEdge, type WorldNode } from "./topology-world";
 
 /**
  * S8 결함 1 — 펼친(확장) 부모 노드를 접힘과 시각 구분하는 파선 오라 링. 선택
@@ -121,6 +131,22 @@ const EMPTY_EGO_CONTAINS_COMETS: ReadonlySet<string> = new Set();
 // site in `drawTopologyFrame` below for why this is safe.
 const tierAlphaByIdReused = new Map<string, number>();
 const effectiveAlphaByIdReused = new Map<string, number>();
+
+/*
+ * ── 프레임당 할당 0 을 향한 스크래치 버퍼들 ──────────────────────────────
+ *
+ * 3D 는 매 프레임 **깊이순으로 다시 정렬**하고 **링을 화면으로 투영**한다.
+ * 그것을 매번 새 배열·새 객체로 만들면 이 볼트에서만 프레임당 배열 2개 +
+ * 객체 291개가 태어난다(엣지 258 정렬 배열 · 노드 125 정렬 배열 · 링 3×96 점).
+ * 120Hz 에서 그것은 초당 3만 5천 개고, 그 청구서는 프레임 시간이 아니라
+ * **GC 가 끼어드는 순간의 튐**으로 온다.
+ *
+ * 이 저장소가 이미 쓰는 관용구(`tierAlphaByIdReused`)와 같다 — 드로우는 단일
+ * rAF 루프에서만 동기로 도므로 모듈 스코프 재사용이 안전하다.
+ */
+const domeEdgeOrderReused: WorldEdge[] = [];
+const domeNodeOrderReused: WorldNode[] = [];
+const domeRingScreenReused: { a: number; points: { x: number; y: number; u: number }[] }[] = [];
 
 /**
  * **이번 프레임에 실제로 그려진 노드 알파** — 히트테스트의 단일 출처.
@@ -568,6 +594,17 @@ export interface FrameDrawParams {
    */
   domeRamp?: number;
   /**
+   * 3D — 이번 프레임의 **위도 링**(월드 좌표 + 정규화 깊이). 링이 왜 필요한지는
+   * `model/dome-view.ts` 의 `DOME_RING_KINDS` 독블록. 생략/null = 안 그린다.
+   */
+  domeRings?: readonly { a: number; points: readonly { wx: number; wy: number; u: number }[] }[] | null;
+  /**
+   * 3D — 한 관계선의 **자오선 제어점**(월드 2D). 왜 직선이 아니라 휘어야
+   * 하는지는 `model/dome-view.ts` 의 `DOME_EDGE_BOW` 독블록. 생략/null 을
+   * 돌려주면 그 엣지는 2D 제어점을 그대로 쓴다(회귀 0).
+   */
+  domeControlFor?: ((sourceId: string, targetId: string) => { wx: number; wy: number } | null) | null;
+  /**
    * 「걸어온 길」 렌즈의 세기 0..1 — on/off 지수 램프(loop 가 스텝).
    *
    * 왜 boolean 이 아닌가: 렌즈가 켜지면 방문 노드와 **밟은 관계선**이 트레일
@@ -643,6 +680,8 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
     clusterBarLabels = null,
     domeFrame = null,
     domeRamp = 0,
+    domeRings = null,
+    domeControlFor = null,
     trailLensRamp,
   } = params;
 
@@ -791,10 +830,24 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
     }
     const offA = domeFrameFor(edge.sourceId);
     const offB = domeFrameFor(edge.targetId);
+    /*
+     * 제어점 — 돔에서는 «두 끝점 오프셋의 평균»이 아니라 **자오선 제어점**이다
+     * (`model/dome-view.ts` 의 `DOME_EDGE_BOW`). 평균은 곧 현(chord)이라 선이
+     * 돔 속을 가로지르고, 그 실루엣은 돔이 아니라 천막이 된다.
+     *
+     * 조립 램프(`aMin`)로 2D 제어점에서 자오선 제어점으로 **건너간다** — 3D 를
+     * 켜는 700ms 동안 곡률이 이어져야 선이 «툭» 휘지 않는다.
+     */
+    const flatControlX = edge.controlX + (offA.dx + offB.dx) / 2;
+    const flatControlY = edge.controlY + (offA.dy + offB.dy) / 2;
+    const meridian = domeControlFor === null ? null : domeControlFor(edge.sourceId, edge.targetId);
+    const aMin = Math.min(offA.a, offB.a);
+    const controlX = meridian === null ? flatControlX : flatControlX + (meridian.wx - flatControlX) * aMin;
+    const controlY = meridian === null ? flatControlY : flatControlY + (meridian.wy - flatControlY) * aMin;
     return {
       a: project(edge.ax + offA.dx, edge.ay + offA.dy),
       b: project(edge.bx + offB.dx, edge.by + offB.dy),
-      control: project(edge.controlX + (offA.dx + offB.dx) / 2, edge.controlY + (offA.dy + offB.dy) / 2),
+      control: project(controlX, controlY),
     };
   };
   const neighborsOfFocused = focusedNodeId ? world.neighborMap.get(focusedNodeId) ?? EMPTY_NEIGHBOR_SET : EMPTY_NEIGHBOR_SET;
@@ -970,8 +1023,90 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
     ),
   );
 
+  /*
+   * ── 3D 화가 정렬 + 깊이 헤일로 ────────────────────────────────────────
+   *
+   * 2D 에서 엣지는 배열 순서대로 그려도 된다 — 겹침에 앞뒤가 없다. 돔에서는
+   * 그것이 곧 결함이다: 뒤쪽 링을 잇는 선이 앞쪽 링의 선 **위에** 그려지면
+   * 깊이 단서가 매 프레임 무작위로 뒤집힌다(안개는 색만 낮추지 가리지 못한다).
+   *
+   * 그래서 노드가 이미 하는 것(`nodeDrawOrder`)을 엣지에도 한다: **먼 것부터**
+   * 그린다. 정렬은 kind 패스 **안에서** 한다 — contains 아래, depends 위라는
+   * 잉크 위계는 깊이보다 위의 규약이라 그대로 둔다.
+   *
+   * 깊이를 실제로 «가리게» 만드는 것은 정렬만으로는 안 되고 헤일로가 한다
+   * (`model/dome-view.ts` 의 `domeHaloPx` 독블록 — Everts et al. 2009).
+   * 헤일로 색은 그리드가 칠한 그 바탕과 **같은 식**으로 낸다: 값이 어긋나면
+   * 잘린 자리가 배경보다 밝거나 어두운 띠로 남는다.
+   */
+  const domeHaloColor = domeOn ? lerpColorHex(tokens.canvasBgNear, tokens.canvasBgFar, farT) : "";
+  const domeEdgeDepth = (edge: { sourceId: string; targetId: string }): number => {
+    const fA = domeFrameFor(edge.sourceId);
+    const fB = domeFrameFor(edge.targetId);
+    return (fA.u + fB.u) / 2;
+  };
+  let edgeDrawOrder: readonly WorldEdge[] = world.edges;
+  if (domeOn) {
+    domeEdgeOrderReused.length = 0;
+    for (const edge of world.edges) domeEdgeOrderReused.push(edge);
+    domeEdgeOrderReused.sort((x, y) => domeEdgeDepth(y) - domeEdgeDepth(x));
+    edgeDrawOrder = domeEdgeOrderReused;
+  }
+
+  /*
+   * ── 위도 링 — 무대를 먼저 깐다 ─────────────────────────────────────────
+   *
+   * 관계선보다 **먼저** 그린다. 링은 데이터가 아니라 좌표계라, 배우(노드·관계)
+   * 위에 오면 그 순간 데이터인 척하게 된다 — 배경 도트 격자를 노드 위에 그리지
+   * 않는 것과 같은 이유다. 3D 에서 그 도트 격자는 «공(void)» 으로 물러나 있고
+   * (위 `gridDraw` 의 `gridPattern: null`), 링이 그 빈자리를 대신한다: 3D 의
+   * 바닥은 평면이 아니라 구면이므로 좌표계도 구면의 것이어야 한다.
+   */
+  if (domeOn && domeRings !== null && domeRings.length > 0) {
+    domeRingsDraw(
+      ctx,
+      {
+        // 링 투영도 스크래치에 제자리로 쓴다 — 매 프레임 288개 객체를 새로
+        // 만들지 않는다(위 버퍼 독블록).
+        rings: (() => {
+          for (let i = 0; i < domeRings.length; i += 1) {
+            const ring = domeRings[i];
+            let out = domeRingScreenReused[i];
+            if (!out) {
+              out = { a: 0, points: [] };
+              domeRingScreenReused[i] = out;
+            }
+            out.a = ring.a;
+            for (let k = 0; k < ring.points.length; k += 1) {
+              const point = ring.points[k];
+              const screen = project(point.wx, point.wy);
+              const slot = out.points[k];
+              if (slot) {
+                slot.x = screen.x;
+                slot.y = screen.y;
+                slot.u = point.u;
+              } else {
+                out.points[k] = { x: screen.x, y: screen.y, u: point.u };
+              }
+            }
+            out.points.length = ring.points.length;
+          }
+          domeRingScreenReused.length = domeRings.length;
+          return domeRingScreenReused;
+        })(),
+        baseAlpha: DOME_RING_ALPHA,
+        baseWidthPx: DOME_RING_WIDTH_PX,
+        // 노드·엣지와 **같은 램프**를 넘긴다 — 좌표계가 데이터와 다른 안개를
+        // 쓰면 같은 깊이의 둘이 다른 밝기가 되어 깊이 단서가 서로를 부정한다.
+        fog: domeFogAlpha,
+        widthFactor: domeLineWidthFactor,
+      },
+      { stroke: tokens.domeRing },
+    );
+  }
+
   for (const kind of ["contains", "depends"] as const) {
-    for (const edge of world.edges) {
+    for (const edge of edgeDrawOrder) {
       if (edge.kind !== kind) continue;
       // 밀도 게이트: 접힌 부모 서브트리에 닿는 엣지는 그리지 않는다.
       if (clusteredIds.has(edge.sourceId) || clusteredIds.has(edge.targetId)) continue;
@@ -982,6 +1117,9 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
       // (호버·선택·ego)는 아래에서 면제돼 도로 밝아진다.
       let domeEdgeFog = 1;
       let domeWidthScale = 1;
+      // 헤일로 반폭(화면 px) — 조립 램프로 크로스페이드해 2D↔3D 전환 중에도
+      // 획이 «툭» 생기지 않는다. 알파는 아래에서 이 엣지의 최종 알파를 안 뒤에.
+      let domeHaloWidthPx = 0;
       if (domeOn) {
         const fA = domeFrameFor(edge.sourceId);
         const fB = domeFrameFor(edge.targetId);
@@ -990,6 +1128,7 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
           const uAvg = (fA.u + fB.u) / 2;
           domeEdgeFog = 1 + (domeFogAlpha(uAvg) - 1) * aMin;
           domeWidthScale = 1 + (domeLineWidthFactor(uAvg) - 1) * aMin;
+          domeHaloWidthPx = domeHaloPx(uAvg) * aMin;
         }
       }
       // Off-screen geometry still cost a full curve + up to 3 comet arcs each
@@ -1079,6 +1218,22 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
           reducedMotion,
           level: edge.level,
           widthScale: domeEdgeExempt ? 1 : domeWidthScale,
+          /*
+           * 헤일로의 진하기는 **이 선이 지금 얼마나 진한가**를 따라간다 —
+           * 가까운(=진한) 선은 세게 자르고, 안개에 묻힌 먼 선은 거의 안
+           * 자른다. 그래야 헤일로 자체가 «내가 앞에 있다»는 주장을 하지
+           * 않는다. 상호작용이 짚어 면제된 엣지는 안개를 안 받으므로 자동으로
+           * 가장 세게 자른다 — 읽으라고 밝힌 선이 뒤엉킨 실타래에 다시 묻히면
+           * 면제가 반쪽이다.
+           */
+          halo:
+            domeHaloWidthPx > 0.05
+              ? {
+                  color: domeHaloColor,
+                  px: domeHaloWidthPx,
+                  alpha: Math.min(DOME_HALO_ALPHA_CAP, ctx.globalAlpha * DOME_HALO_ALPHA_GAIN),
+                }
+              : null,
           containsCometEligible: kind === "contains" ? egoContainsComets.has(edgePairKey(edge.sourceId, edge.targetId)) : undefined,
           dependsCometEligible:
             kind === "depends" ? ambientDependsComets.has(edgePairKey(edge.sourceId, edge.targetId)) : undefined,
@@ -1182,9 +1337,13 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
   // 히트테스트(`hitTestWorld`의 depth 우선)가 «가까운 노드가 이긴다» 로
   // 판정하므로, 그리는 순서가 같은 규칙을 따라야 눈에 보이는 것과 잡히는
   // 것이 일치한다. 2D(domeOn 아님)는 종전 배열 순서 그대로 — 할당 0.
-  const nodeDrawOrder = domeOn
-    ? [...world.nodes].sort((a, b) => (domeFrameFor(b.id).u - domeFrameFor(a.id).u))
-    : world.nodes;
+  let nodeDrawOrder: readonly WorldNode[] = world.nodes;
+  if (domeOn) {
+    domeNodeOrderReused.length = 0;
+    for (const node of world.nodes) domeNodeOrderReused.push(node);
+    domeNodeOrderReused.sort((a, b) => domeFrameFor(b.id).u - domeFrameFor(a.id).u);
+    nodeDrawOrder = domeNodeOrderReused;
+  }
 
   for (const node of nodeDrawOrder) {
     // 밀도 게이트: 접힌 부모의 서브트리 노드는 칩으로 대체되어 그리지 않는다.
@@ -1355,9 +1514,34 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
     if (!reducedMotion && selectionPulse !== null && selectionPulse.nodeId === node.id) {
       selectionPulseVisual = computeSelectionPulse(now - selectionPulse.startAtMs, tokens.selectPulseDurationMs, tokens.selectPulseScaleDelta);
     }
+    /*
+     * 노드 깊이 헤일로 — 엣지와 같은 장치를 원판에 건다(`domeHaloPx` 독블록).
+     *
+     * 엣지끼리는 위에서 정렬 + 헤일로로 앞뒤가 생겼는데, 노드는 **엣지를 전부
+     * 그린 뒤** 한 번에 얹힌다. 그래서 노드 자체는 늘 선 위에 오지만, 선이
+     * 노드 원판 **가장자리에서 끊기지 않으면** 점이 선 위에 «떠» 있는 스티커로
+     * 보인다. 원판보다 조금 넓은 바탕색 원을 먼저 깔면 그 자리에서 선이 잘려,
+     * 점이 선다발 **속에** 앉는다.
+     *
+     * 진하기 규칙은 엣지와 같다 — 이 노드가 지금 그려지는 알파를 따라간다.
+     */
+    if (domeOn && nodeDome.a > 0.01) {
+      const haloPx = domeHaloPx(nodeDome.u) * nodeDome.a;
+      if (haloPx > 0.05) {
+        const prevAlpha = ctx.globalAlpha;
+        ctx.globalAlpha = Math.min(DOME_HALO_ALPHA_CAP, prevAlpha * DOME_HALO_ALPHA_GAIN);
+        ctx.fillStyle = domeHaloColor;
+        ctx.beginPath();
+        ctx.arc(screen.x, screen.y, screenRadius + haloPx, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.globalAlpha = prevAlpha;
+      }
+    }
     nodeShapesDraw(
       ctx,
       {
+        // 3D 입체 음영 — 조립 램프로 크로스페이드(2D 는 0, 획 0개 추가).
+        depthShade: domeOn ? nodeDome.a : 0,
         kind: node.kind,
         screenX: screen.x,
         screenY: screen.y,

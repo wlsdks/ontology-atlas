@@ -78,6 +78,8 @@ export interface TopologyV2Tokens {
   labelElement: string;
   labelMaxWidth: number;
   canvasBgNear: string;
+  /** 3D 돔 위도 링 잉크 — 3D 에서만 소비. 값의 근거는 `globals.css` 의 독주석. */
+  domeRing: string;
   canvasBgFar: string;
   gridMinor: string;
   gridMajor: string;
@@ -299,6 +301,7 @@ const TOKEN_SPECS: readonly TokenSpec[] = [
   { key: "canvasBgFar", cssVar: "--topology-v2-canvas-bg-far", kind: "color" },
   { key: "gridMinor", cssVar: "--topology-v2-grid-minor", kind: "color" },
   { key: "gridMajor", cssVar: "--topology-v2-grid-major", kind: "color" },
+  { key: "domeRing", cssVar: "--topology-v2-dome-ring", kind: "color" },
   { key: "vignetteBaseAlpha", cssVar: "--topology-v2-vignette-base-alpha", kind: "number" },
   { key: "vignetteFarAlpha", cssVar: "--topology-v2-vignette-far-alpha", kind: "number" },
 

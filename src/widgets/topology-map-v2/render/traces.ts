@@ -134,6 +134,17 @@ export interface TraceDrawState {
   /** 3D 보기 — 선 굵기 배수(깊이 감쇠). 생략 시 1 (2D 동일). */
   widthScale?: number;
   /**
+   * 3D 보기 — **깊이 헤일로**. 잉크를 긋기 직전에 같은 곡선을 캔버스 바탕색으로
+   * 조금 더 굵게 한 번 그어, 뒤에 이미 그려진 것을 그 폭만큼 잘라 낸다.
+   * 근거·값·왜 glow 가 아닌지: `model/dome-view.ts` 의 `domeHaloPx`
+   * (Everts et al. 2009, IEEE TVCG 15(6)).
+   *
+   * `px` 는 **반폭(화면 px)** 이고 `alpha` 는 그 자리의 최종 불투명도다 —
+   * 호출부가 깊이와 그 선의 알파를 함께 보고 계산해 넘긴다. 생략/`null` = 2D
+   * 동일(획 0개 추가).
+   */
+  halo?: { color: string; px: number; alpha: number } | null;
+  /**
    * `prefers-reduced-motion: reduce`. The comet tail is the one moving mark
    * this module paints, so honouring the preference here is what keeps the
    * canvas fully static for those users (audit A8: the tail was the largest
@@ -305,6 +316,34 @@ export function draw(ctx: CanvasRenderingContext2D, state: TraceDrawState, token
   // 3D 보기 — 깊이에 따른 헤어라인 감쇠(히어로 lw 감쇠의 배수 형태).
   // 호출부(`topology-frame-draw.ts`)가 돔 램프×깊이로 계산해 넘기고, 2D 는 1.
   width *= state.widthScale ?? 1;
+
+  /*
+   * 깊이 헤일로 — 잉크보다 **먼저** 간다. 이 한 획이 3D 의 「앞뒤」를 만든다:
+   * 이 프레임의 엣지는 먼 것부터 그려지므로(호출부의 화가 정렬), 여기서 바탕색
+   * 으로 조금 더 굵게 그으면 이미 그려진 먼 선들이 그 폭만큼 지워진다.
+   *
+   * 파선은 헤일로에 쓰지 않는다 — 파선 헤일로는 잘린 자리에 틈을 남겨서
+   * 「가림」이 아니라 「점선 그림자」로 읽힌다.
+   */
+  const halo = state.halo;
+  if (halo && halo.px > 0.05 && halo.alpha > 0.01) {
+    const prevAlpha = ctx.globalAlpha;
+    const prevCap = ctx.lineCap;
+    const prevJoin = ctx.lineJoin;
+    ctx.globalAlpha = halo.alpha;
+    ctx.strokeStyle = halo.color;
+    ctx.setLineDash([]);
+    ctx.lineCap = "round";
+    ctx.lineJoin = "round";
+    ctx.lineWidth = Math.max(0.35, width) + halo.px * 2;
+    ctx.beginPath();
+    ctx.moveTo(a.x, a.y);
+    ctx.quadraticCurveTo(control.x, control.y, b.x, b.y);
+    ctx.stroke();
+    ctx.globalAlpha = prevAlpha;
+    ctx.lineCap = prevCap;
+    ctx.lineJoin = prevJoin;
+  }
 
   ctx.strokeStyle = stroke;
   // 대칭 관계(`related_to`)는 파선을 쓰되 **테이퍼를 주지 않는다** — 양끝이
