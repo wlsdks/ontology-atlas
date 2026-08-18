@@ -362,7 +362,10 @@ describe('DownloadPage', () => {
     renderDownloadPage();
 
     expect(screen.getByText(/Signed with an Apple Developer ID certificate/i)).toBeInTheDocument();
-    expect(screen.getByText(/Notarized by Apple/i)).toBeInTheDocument();
+    // 리메이크 후 히어로 신뢰줄("Signed and notarized by Apple · …")이 같은
+    // 표현을 화면에 한 번 더 올린다 — 이 단언이 지키는 것은 「검증 절의 행이
+    // 공증을 스테이플 티켓과 함께 주장한다」이므로 행 문장으로 좁혀 잰다.
+    expect(screen.getByText(/Notarized by Apple, with the ticket stapled/i)).toBeInTheDocument();
     expect(screen.getByText(/codesign verified/i)).toBeInTheDocument();
     expect(screen.getByText(/stapler validate passes/i)).toBeInTheDocument();
 
@@ -492,31 +495,101 @@ describe('DownloadPage', () => {
     expect(screen.queryByText(/One folder, three views/i)).not.toBeInTheDocument();
   });
 
-  // 2026-07-28 소유자 판정("이 페이지는 서비스를 홍보해야지") 이후의 순서:
-  // 파일 → 파는 말 → 두 사용자 → 설치 → 다른 환경 → (푸터) 검증.
-  // 검증이 **맨 아래 접힌 채로** 있는 것이 이 순서의 요점이라, 그 위치를 고정한다.
-  it('puts the file first and the verification footnote last', () => {
+  /**
+   * 리메이크(2026-08-18) 순서 — **다섯 절, 절마다 생각 하나** (소유자 확정
+   * 골격): 히어로(활자+오브젝트+CTA) → 시연 → 증거(지도+census) → 에이전트
+   * 왕복 → 설치·다운로드(완전한 정지) → (푸터) 검증 접이식.
+   *
+   * 구 순서(파일 먼저, 2026-07-28 「홍보해야지」 판정)의 전제 — 판이 첫
+   * 화면의 주인공이라는 것 — 는 리메이크로 사라졌다: 이제 첫 화면은 문제
+   * 제기(헤드라인)와 제품의 실체(히어로 오브젝트)가 갖고, 파일은 네 절이
+   * 논증을 끝낸 뒤의 결정 자리(⑤)에 온다. 검증이 맨 아래 접힌 채라는 요점은
+   * 그대로 산다.
+   */
+  it('walks problem → demo → evidence → agents → decision, verification folded last', () => {
     publishRelease();
     renderDownloadPage();
 
     const heading = screen.getByRole('heading', { level: 1 });
+    const demo = screen.getByTestId('demo-stage');
+    const caption = screen.getByTestId('download-portrait-caption');
+    // 2026-08-18 재작업: 에이전트 절의 장면은 mcp-verify 터미널에서 앱 안
+    // 대화(ACP) 재연으로 바뀌었다 — 순서 계약의 넷째 자리는 그대로다.
+    const terminal = screen.getByTestId('gateway-agent-chat');
+    const install = screen.getByTestId('download-install');
     const primaryCta = screen.getByTestId('download-primary-cta');
     const windows = screen.getByTestId('download-platform-windows');
-    const install = screen.getByTestId('download-install');
     const trust = screen.getByTestId('download-trust');
 
     for (const [earlier, later] of [
-      [heading, primaryCta],
-      // 플랫폼 상태는 **받는 자리**에 있다 — 스크롤을 내려야 자기가 못 받는다는
-      // 걸 아는 것은 늦다(소유자 판정 2026-07-29).
+      [heading, demo],
+      [demo, caption],
+      [caption, terminal],
+      [terminal, install],
+      // 설치 3단이 판보다 먼저다 — 「설치가 간단하다」는 안심이 받기 결정의
+      // 재료라서다(승인 목업 b-hero 의 절 ⑤ 구조 그대로).
+      [install, primaryCta],
       [primaryCta, windows],
-      [windows, install],
-      [install, trust],
+      [windows, trust],
     ] as const) {
       expect(
         earlier.compareDocumentPosition(later) & Node.DOCUMENT_POSITION_FOLLOWING,
       ).toBeTruthy();
     }
+  });
+
+  /**
+   * 에이전트 절 (2026-08-18 재작업) — 장면은 **앱 안 대화(ACP)의 실측 왕복**
+   * 이다. 두 계약을 잠근다:
+   *
+   * 1. 재연되는 도구 호출은 원장(2026-08-16 (7))의 실측 원문이다 — 지어낸
+   *    출력으로 바뀌면 이 절의 논증(재연이지 연출이 아니다)이 무너진다.
+   * 2. 우리 실행기 목록을 설명하는 문구는 벤더가 허용한 표시 이름만 쓴다
+   *    (원장 2026-08-16 (5) · `vendor-naming.contract.test.ts` 와 같은 규칙 —
+   *    그 게이트의 사정거리는 레지스트리·설정 문구라 이 절은 여기서 잠근다).
+   */
+  it('replays the measured in-app ACP round trip verbatim, under the allowed vendor name', () => {
+    renderDownloadPage();
+
+    const chat = screen.getByTestId('gateway-agent-chat');
+    expect(chat).toHaveTextContent('add_relation');
+    expect(chat).toHaveTextContent(/인증이 죽으면 결제도 같이 죽는다 \(2026-08-16\)/);
+
+    const section = screen.getByTestId('gateway-agents-section');
+    expect(section).not.toHaveTextContent(/Claude Code/i);
+    expect(section).toHaveTextContent(/Claude Agent/);
+    // 우리가 모델 접근을 제공한다는 인상 금지 — 「이미 쓰는 도구」 전제가 문구에 있다.
+    expect(section).toHaveTextContent(/already use/i);
+  });
+
+  /**
+   * 헤드라인은 **소유자의 문장 그대로**다 — 리메이크의 고정점이라 문장으로
+   * 잠근다(다듬어 고치는 순간 이 화면의 전제가 바뀐 것이고, 그건 원장을 거쳐야
+   * 한다). 두 줄 + 리드까지가 한 벌이다.
+   */
+  it('keeps the owner-verbatim headline and lead', () => {
+    renderDownloadPage();
+
+    const heading = screen.getByRole('heading', { level: 1 });
+    expect(heading).toHaveTextContent('Agents write the code.');
+    expect(heading).toHaveTextContent('People accumulate the cognitive debt.');
+    expect(
+      screen.getByText(/One markdown folder is where that debt gets repaid/i),
+    ).toBeInTheDocument();
+  });
+
+  /**
+   * 시연 절은 지금 붙은 자산이 무엇인지 정직하게 말한다 — 두 로케일이 같은
+   * 한국어 UI 잠정본을 공유하는 동안, 그 사실이 화면에 있어야 영어 방문자가
+   * 속지 않는다. 45초 촬영본이 붙으면 이 문장은 등록부의 `seconds` 만 따라
+   * 바뀐다(마크업 무변경 교체 계약).
+   */
+  it('states honestly that the demo clip is a provisional shared capture', () => {
+    renderDownloadPage();
+
+    const note = screen.getByTestId('demo-provisional-note');
+    expect(note).toHaveTextContent(/provisional 24s capture/i);
+    expect(note).toHaveTextContent(/Korean-UI recording/i);
   });
 
   // ─── 한 화면 = 한 버전 (2026-07-28 회귀) ──────────────────────────────────

@@ -41,6 +41,8 @@
     파일만 통과시킨다) + `tests/contract/footprint-bloom-exception.contract.test.ts`
     (기본값이 0인가 · 상한이 6인가 · 쓰는 곳이 하나뿐인가 · 이 문서에 적혀 있는가).
 - 움직이는 그라디언트 배경 · 오로라 <!--dont:animated-gradient-bg-->
+  - 명문 예외 1건(2026-08-18): **관문 전류장** — 조건·상한·게이트:
+    `gateway-fx-exception.contract.test.ts` · 정본 Don'ts.
   - **어디까지 적용되나 (2026-07-29)**: 이 금지는 **앱 화면에 그려지는 것**에만
     적용된다. 브랜드 자산(OS 아이콘 · 파비콘 · og/마케팅 이미지)은 앱 화면 밖이라
     그라디언트를 써도 된다 — 단 **인디고 한 색만 밝기별로 늘어놓은 램프

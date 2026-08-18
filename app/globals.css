@@ -412,13 +412,13 @@
   /* Letter-spacing 스케일 */
   --tracking-display: -0.022em;
   /*
-   * #761 이 소비처 0 이라 걷어냈던 토큰이다. 관문 헤드라인(`--text-hero-lg`
-   * 34px)이 이 자간을 공유하면서 **다시 살아났다** — 죽은 토큰이 아니라
-   * 잠시 소비처가 없던 토큰이었다. 값은 `--tracking-display` 와 같지만 이름을
-   * 따로 두는 이유는 짝 계약이다: 크기 스텝이 자기 자간을 싣는다는 규율에서
-   * 34px 스텝이 23px 스텝의 자간을 빌려 쓰면 다음 사람이 둘을 같이 못 바꾼다.
+   * [재은퇴 2026-08-18] `--tracking-hero`(−0.022em) — #761 이 소비처 0 이라
+   * 걷어냈고, 구 관문 헤드라인(`--text-hero-lg`)이 되살렸다가, 관문 리메이크가
+   * 그 소비처를 기념비 스텝(`--tracking-monument`)으로 바꾸며 다시 소비처
+   * 0 이 됐다. 소비처 없는 토큰은 규격이 아니라 오정보다(unused-token-ratchet).
+   * hero/hero-lg 의 자간이 다시 필요해지면 그때 companion
+   * (`--text-hero--letter-spacing`)으로 되살린다.
    */
-  --tracking-hero: -0.022em;
   --tracking-section: -0.020em;
   --tracking-card: -0.015em;
 
@@ -432,9 +432,10 @@
   --page-max: 1600px;
 
   /*
-   * 관문(`/download`) 그리드의 **원자값 셋**. 이 셋만 손으로 정하고, 지도
-   * 카메라가 좌측에 예약할 폭은 셋에서 파생된다
-   * (`src/views/download/lib/gateway-grid.ts`). 값을 바꿀 땐 여기만 바꾼다.
+   * 관문(`/download`) 그리드의 **원자값들**. 값을 바꿀 땐 여기만 바꾼다.
+   * (구 카메라 예약폭 파생 — `computeGatewaySafeInset` — 은 2026-08-18
+   * 리메이크에서 삭제됐다: 지도가 판 뒤 배경이 아니라 자기 절이 되면서
+   * 예약할 것이 없어졌다.)
    *
    * **`:root` 에 사는 이유**: 홈통은 페이지가 그려지는 첫 프레임부터 필요한데,
    * 관문 스코프(`html[data-gateway-stage]`)는 지도가 마운트돼야 켜진다. 거기
@@ -488,43 +489,50 @@
    */
   --gateway-gutter: 200;
   /*
-   * 480 → 520 (2026-07-30, 소유자: *"이부분이 가로로 조금 더 길어도 되겠다"*).
+   * 520 → 880 (2026-08-18, 관문 랜딩 리메이크 — `docs/DECISIONS.md`).
    *
-   * **실측이 그 감각에 숫자를 줬다.** 480 에서 판 내부 폭은 422 이고, 두 다운로드
-   * 버튼(Apple Silicon 248 + Intel 194 + 틈)은 **442** 를 요구한다 — 20px 이 모자라
-   * 「같은 선택의 두 갈래」가 두 줄로 갈라져 있었다. 520 이면 내부 462 로 한 줄에
-   * 서고, 판이 한 행 짧아진다.
-   *
-   * 게이트를 깨지 않는다: `download-gateway-grid` 는 **이 토큰을 읽어** 관계
-   * (원점 · 원점+판폭+틈)만 단언하므로 값이 바뀌면 카메라 예약폭도 함께 따라간다.
-   * 하드코딩 480 이 어디에도 없는 것이 이 변경을 한 줄로 만든다.
+   * 지도가 첫 화면의 배경이던 시절 이 값은 「지도를 가리지 않는 폭」이었고
+   * 카메라 예약폭의 한 항이었다(`--gateway-plate-gap` 과 함께). 리메이크로
+   * 지도가 자기 절(증거)로 내려가면서 그 산수는 통째로 은퇴했다 — 틈 토큰과
+   * `computeGatewaySafeInset` 파생은 삭제됐고, 이 값은 이제 흐름 속 다운로드
+   * 판의 콘텐츠 폭 상한 하나만 진다. 880 은 판의 행(이름·배지·SHA·크기·받기)이
+   * 한 줄에 서는 최소 폭에 여유를 둔 값이다.
    */
-  --gateway-plate-width: 520;
+  --gateway-plate-width: 880;
+
   /*
-   * 24 → −80 (2026-07-30, 소유자: *"노드 위치를 좀만 왼쪽으로 옮기면 안되나?"*).
-   *
-   * **음수는 우회가 아니라 설계된 입력이다.** `computeGatewaySafeInset` 의
-   * 독블록이 *"음수 plateGap 은 판 뒤로 지도를 밀어 넣는 의도된 입력"* 이라고
-   * 이미 적어 두었다 — 새 토큰을 만들 이유가 없었다.
-   *
-   * **무엇이 움직이나**: 예약폭 = 원점 + 판폭 + 이 값. 지도는 예약폭 오른쪽
-   * 레인에 **가운데 정렬**되므로, 예약폭을 X 줄이면 잉크는 X/2 만큼 왼쪽으로
-   * 온다. 1512 실측(무대 40rem 기준):
-   *
-   * | 틈 | 잉크 왼끝 | 카드↔잉크 | 잉크→오른벽 |
-   * |---|---|---|---|
-   * | 24 | 886 | 166 | 144 |
-   * | −40 | 854 | 134 | 176 |
-   * | **−80** | **834** | **114** | **196** |
-   *
-   * 소유자가 −80 을 골랐다. 지도가 카드 쪽으로 붙어 둘이 한 덩어리로 읽힌다.
-   *
-   * ⚠️ **바닥은 「잉크가 판 밑으로 들어가는가」다.** 이름이 「틈」이라 0 이
-   * 바닥처럼 보이지만 아니다 — 진짜 바닥은 `잉크 왼끝 > 판 오른끝` 이고,
-   * −80 에서 여유가 114px 남는다. 더 내리려면 그 값을 다시 재라. 잉크 폭은
-   * 무대 높이의 함수라(높이가 병목) 무대를 바꾸면 이 여유도 함께 변한다.
+   * 관문 랜딩의 절 리듬 (2026-08-18 리메이크). 절 하나 = 생각 하나이고, 이
+   * 간격이 그 문장 부호다 — 값이 절마다 다르면 리듬이 아니라 우연이 된다.
    */
-  --gateway-plate-gap: -80;
+  --gateway-section-gap: 160px;
+
+  /*
+   * ── 관문 전류장(FX) 토큰 — `--gateway-fx-*` 봉인 네임스페이스 ──────────────
+   *
+   * 헌장의 「움직이는 그라디언트 배경」 금지에 대한 **명문 예외 1건**이다
+   * (`.claude/rules/forbidden.md` 「디자인」절 — 발자국 번짐과 같은 형식).
+   * 사정거리: `.gateway-fx-stage`(관문 랜딩) 안에서만, 아래 상한 알파로만,
+   * 첫 1초와 reduced-motion 에서는 정지. 게이트 둘 —
+   * `eslint.config.mjs` 의 gateway-fx 스코프 셀렉터(소비처를
+   * `src/views/download/**` 로 잠근다) +
+   * `tests/contract/gateway-fx-exception.contract.test.ts`(알파 상한 ·
+   * 단독 소비처 · reduced-motion 정지 · 문서 등재).
+   *
+   * 색은 여기서 정하지 않는다 — 광원 잉크는 소비처가
+   * `--color-indigo-brand` 를 읽어 쓴다(악센트 전환을 자동으로 따라간다).
+   */
+  /* 히어로 오브젝트 뒤만 국소적으로 캔버스(#08090a)보다 한 단 깊게 가라앉는
+     무대 바닥. 페이지 배경을 바꾸는 것이 아니라 오브젝트의 심도 연출이다. */
+  --gateway-fx-deep: #050506;
+  /* 필름 그레인 오버레이 알파 상한 — 이 위로 올리면 질감이 아니라 노이즈다. */
+  --gateway-fx-grain-alpha: 0.05;
+  /* 전류장 광원(라디얼) 알파 상한 — 배경은 분위기까지만, 본문 잉크와 다투면
+     안 된다. 계약 테스트가 0.15 이하를 강제한다. */
+  --gateway-fx-blob-alpha: 0.14;
+  /* 성진(dust) 입자 알파 상한. */
+  --gateway-fx-dust-alpha: 0.28;
+  /* 커스텀 커서 링의 쉼 상태 잉크 — 기존 잉크 토큰에서 파생(새 hue 0). */
+  --gateway-fx-cursor-ring: color-mix(in srgb, var(--color-text-primary) 38%, transparent);
 
   /*
    * **정렬 원점** — 관문의 모든 원소가 소비하는 단 하나의 x (2026-07-29 소유자
@@ -901,15 +909,51 @@
   --text-body-lg: 14px; /* 강조 본문·부제 (짝: tracking-body-lg) */
   --text-title: 16px; /* 패널/카드 제목 (짝: tracking-title) */
   --text-display: 23px; /* 페이지 헤드라인 (짝: tracking-display) */
-  --text-hero: 30px; /* 히어로 헤드라인 (짝: tracking-hero) */
+  --text-hero: 30px; /* 히어로 헤드라인 */
   /* 관문 헤드라인 — 램프 상단의 한 단 위. 지도가 전면을 덮는 표면에서 30px 은
      배경과 다투고, 34px 이면 리드(12.5px) 대비 2.72 로 레퍼런스 히어로 밴드
-     (2.5–3.0) 안에 든다. tracking 은 `--tracking-hero`(−0.022em) 를 공유한다 —
+     (2.5–3.0) 안에 든다.
      같은 광학 구간이라 새 짝을 만들지 않는다.
      승격 이유: 저장소가 이미 이 크기를 두 번 원했다 —
      `DesktopVaultWelcome` 이 `md:text-[34px]` + eslint-disable 로 램프를
      비껴가고 있었다. 두 번째 소비처가 생기는 순간이 값을 이름으로 올릴 때다. */
-  --text-hero-lg: 34px; /* 관문 헤드라인 (짝: tracking-hero) */
+  --text-hero-lg: 34px; /* 구 관문 헤드라인 */
+
+  /* 관문 랜딩의 기념비 헤드라인 (2026-08-18 리메이크, `docs/DECISIONS.md`).
+     램프 상단의 스텝 — 소유자의 두 줄 헤드라인이 첫 화면의 주인공이 되는 단
+     하나의 자리다. 34px(hero-lg)은 지도가 배경일 때의 값이었고, 지도가 첫
+     화면에서 빠지면서(리메이크 결정) 활자가 그 무게를 이어받는다.
+
+     ## 왜 vw 가 아니라 cqw 인가 (2026-08-18 2차, `docs/DECISIONS.md`)
+
+     기념비의 구속 조건은 뷰포트가 아니라 **자기 단(measure)** 이다 — 문장이
+     한 줄에 서는 것이 기념비의 정의이고, 가장 긴 문장의 글리프 예산이 실측으로
+     ko 11.68×F(「사람의 인지 부채는 쌓여갑니다」) · en 16.78×F("People
+     accumulate the cognitive debt.")라서, 크기는 단 폭 ÷ 예산에서 **따라
+     나온다**. 구 5vw 는 단이 vw 보다 훨씬 좁은
+     1512~1920 구간에서 ko 두 문장을 넉 줄로 갈랐다(실측 1728: 단 800px 에
+     줄 예산 1009px).
+
+     ## 계수 5.8 → 4.8 (2026-08-18 3차 — 소유자: *"글자 너무크고"*)
+
+     5.8cqw(단의 1/17.2)는 «한 줄 예산»의 상한 근처였다 — en 최장 줄이 단의
+     97.3% 를 채워, 1512 에서 64.5px 로 렌더됐고 소유자가 과하다고 봤다.
+     줄 수 계약과 크기는 별개다: 계수를 낮추면 여유만 넓어진다. 4.8cqw
+     (단의 1/20.8)에서 en 최장 줄은 단의 80.5%, ko 는 56.1% 에서 멈춘다 —
+     1512 실측 53.4px, 두 문장 모두 한 줄 유지(1440~2560 재측정 완료).
+
+     소비처(관문 히어로)가 `container-type: inline-size` 래퍼로 단을 선언한다.
+     컨테이너 없는 자리에서 cqw 는 small-viewport 폭으로 폴백하므로 구 5vw 와
+     같은 차수로 동작한다 — 램프가 소비처 하나에 볼모잡히지는 않는다.
+     40px 플로어는 유지: en 최장 줄은 플로어에서 671px 라 단 671px(≈뷰포트
+     1090px) 아래에서는 접힌다 — 그 아래는 스택 레이아웃(<lg)이거나 폰이고,
+     ko 최장 줄(467px)은 분할 히어로가 쓰이는 모든 폭(≥lg: 단 624px+)에서
+     한 줄이다.
+
+     짝: tracking-monument(−0.018em) · leading-monument(1.08, 비율 — clamp 크기라
+     px 짝을 만들면 크기마다 토큰이 또 필요해진다. display-tight 와 같은 부류). */
+  --text-monument: clamp(40px, 4.8cqw, 96px); /* 관문 기념비 헤드라인 (짝: tracking-monument) */
+  --tracking-monument: -0.018em;
 
   /* Type ramp letter-spacing 짝 — text-<step> 과 1:1. tracking-<step>
      유틸리티로 쓴다. --tracking-display/hero 는 위 "Letter-spacing 스케일"
@@ -981,7 +1025,9 @@
      마크다운 내부의 중첩 크기)에도 얹히는 스텝이라 px 로 고정하면 크기마다
      토큰이 또 필요해진다. 비율이 곧 의도(응집/이완)인 자리다. */
   --leading-display-tight: 1.06; /* 이름·수치처럼 한 덩어리로 읽히는 자리. 최대 2행 */
-  --leading-prose: 1.7; /* 사용자가 쓴 글(마크다운 본문·에디터·pre)의 읽기 폭 상한 */
+  --leading-prose: 1.7; /* 사용자가 쓴 글(마크다운 본문·에디터·프리포맷)의 읽기 폭 상한 */
+  /* 짝: text-monument — clamp 크기라 비율 스텝이다(위 자유 스텝과 같은 이유). */
+  --leading-monument: 1.08;
 
   /* 크기 스텝에 행간 짝을 결합한다 — Tailwind v4 companion 토큰.
      text-<스텝> 클래스 하나가 font-size 와 line-height 를 함께 싣는다.
@@ -1014,6 +1060,7 @@
      규격의 값어치다. */
   --text-hero--line-height: var(--leading-hero);
   --text-hero-lg--line-height: var(--leading-hero-lg);
+  --text-monument--line-height: var(--leading-monument);
 
   /* Radius ramp — 5단. Tailwind v4 `--radius-*` 네임스페이스가 rounded-<step>
      를 생성한다. 이 밖(헤어라인 1~3px)은 코덱스 표의 명시 예외로만 —
@@ -4005,6 +4052,32 @@
       animation-name: overlayFadeOut !important;
       animation-duration: calc(var(--motion-fast) * 0.67) !important;
     }
+
+    /*
+     * 관문 랜딩의 등장 안무 — 감속의 동등물은 **항상 보임**이다 (2026-08-18).
+     *
+     * 이 표면의 rise/헤드라인/캡션은 transition 기반이라 위 전역 kill 규칙이
+     * 시간을 이미 자르지만, 초기 상태가 `opacity: 0` 이라 시간만 자르면
+     * 「JS 가 in 클래스를 달 때까지 숨김」이 남는다. 감속 사용자에게 안무의
+     * 대체물은 짧은 안무가 아니라 **처음부터 다 보이는 화면**이다 — 잃는 것은
+     * 장식(등장 순서)뿐이고 정보는 전부 남는다.
+     *
+     * ⚠️ 반드시 `@layer base` 안, 전역 kill 규칙 **뒤**에 있어야 이긴다 —
+     * 레이어 밖의 `!important` 는 레이어 안에 진다(이 파일 위쪽 토스트 주석의
+     * 실측). 게이트: `tests/contract/gateway-fx-exception.contract.test.ts`.
+     */
+    .gateway-rise,
+    .gateway-hero-line > span,
+    .gateway-map-after,
+    .gateway-hero-stage {
+      opacity: 1 !important;
+      transform: none !important;
+      transition: none !important;
+    }
+
+    .gateway-term-line {
+      opacity: 1 !important;
+    }
   }
 
   /*
@@ -4151,6 +4224,217 @@ body[data-no-tabbar] [data-tabbar="primary"] {
 
 
 
+/* ─── 관문 랜딩 — 살아있는 화면 (2026-08-18 리메이크) ────────────────────────
+ *
+ * 원칙: **정보 모션만** 움직인다(시연 자동재생 · 지도 1회 조립 · 터미널 왕복
+ * 1사이클 · 첫 3초 등장 안무). 사실(SHA·크기·버전·census)은 절대 움직이지
+ * 않고, 다운로드 절은 완전한 정지다 — 정지가 곧 위계 장치다.
+ *
+ * 전류장·그레인·커서 링은 `--gateway-fx-*` 봉인 네임스페이스의 예외 표면이다
+ * (`:root` 토큰 블록 독블록 + `.claude/rules/forbidden.md` 참조). 이 클래스들의
+ * 소비처는 `src/views/download/**` 하나다 — eslint 스코프 셀렉터와
+ * `gateway-fx-exception.contract.test.ts` 가 잠근다.
+ */
+
+/* FX 층 — 본문 뒤에 고정. pointer-events 없음, 스크린리더에 없음(aria-hidden). */
+.gateway-fx-field {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+}
+
+.gateway-fx-grain {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  opacity: var(--gateway-fx-grain-alpha);
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='240' height='240'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/><feColorMatrix type='saturate' values='0'/></filter><rect width='240' height='240' filter='url(%23n)' opacity='0.6'/></svg>");
+}
+
+/*
+ * 커스텀 커서 링 (소유자 지시) — 네이티브 커서를 **지우지 않는다**: cursor:none
+ * 없음, pointer 어포던스 계약(`tests/e2e/cursor-affordance.spec.ts`) 그대로.
+ * 링이 나르는 정보 하나: 「확장 + 악센트 착색 = 포인터 아래가 지금 눌리는
+ * 대상」. 쉼 28px(scale .636) → 상호작용 위 44px(scale 1).
+ * z-index 는 --z-skip-link(100) 아래, 툴팁(80) 위가 맞다 — 포인터 장식은
+ * 어떤 표면에도 가려지면 안 되지만 키보드 탈출구보다 위일 이유는 없다. raw
+ * 값 90: --z-* 사다리는 표면용이고 이 링은 표면이 아니라 포인터의 그림자다.
+ */
+.gateway-cursor {
+  position: fixed;
+  left: 0;
+  top: 0;
+  z-index: 90;
+  pointer-events: none;
+  display: none;
+  will-change: transform;
+}
+
+.gateway-cursor.is-live {
+  display: block;
+}
+
+.gateway-cursor > i {
+  display: block;
+  width: 44px;
+  height: 44px;
+  margin: -22px 0 0 -22px;
+  border-radius: 9999px;
+  border: 1px solid var(--gateway-fx-cursor-ring);
+  background: transparent;
+  transform: scale(0.636);
+  opacity: 0;
+  transition:
+    transform var(--motion-fast) var(--motion-ease),
+    border-color var(--motion-fast) var(--motion-ease),
+    background-color var(--motion-fast) var(--motion-ease),
+    opacity var(--motion-fast) var(--motion-ease);
+}
+
+.gateway-cursor.is-on > i {
+  opacity: 1;
+}
+
+.gateway-cursor > i.is-hot {
+  transform: scale(1);
+  border-color: var(--color-indigo-accent);
+  background: var(--color-indigo-a12);
+}
+
+@media (pointer: coarse) {
+  .gateway-cursor {
+    display: none !important;
+  }
+}
+
+/*
+ * 등장 문법 — 밝기는 확인 램프(120ms), 이동은 확정 램프(240ms). 이동 duration
+ * 에 캔버스 전용 420ms(--topology-motion-camera)를 쓰지 않는다(design.md:
+ * DOM 표면이 참조하면 결함).
+ *
+ * 첫 3초 시간축(원장): 0–150ms 배경 정지 페인트 → 150/220ms 헤드라인 두 줄 →
+ * 700ms 아이브로우·리드 → 800ms CTA → 950ms 신뢰줄·계기 스트립. 그 뒤 전경은
+ * 영구 정지. 지연 리터럴은 이 안무의 악보 값이라 램프 토큰이 아니다.
+ */
+.gateway-rise {
+  opacity: 0;
+  transform: translateY(14px);
+  transition:
+    opacity var(--motion-fast) var(--motion-ease),
+    transform var(--motion-settle) var(--motion-ease);
+}
+
+.gateway-rise.is-in {
+  opacity: 1;
+  transform: none;
+}
+
+.gateway-rise-d2 {
+  transition-delay: 140ms;
+}
+
+.gateway-rise-d3 {
+  transition-delay: 240ms;
+}
+
+.gateway-t700 {
+  transition-delay: 700ms;
+}
+
+.gateway-t800 {
+  transition-delay: 800ms;
+}
+
+.gateway-t950 {
+  transition-delay: 950ms;
+}
+
+/* 헤드라인 두 줄 — 자기 줄 상자 안에서 올라온다(마스크 리프트). */
+.gateway-hero-line {
+  display: block;
+  overflow: hidden;
+}
+
+.gateway-hero-line > span {
+  display: block;
+  transform: translateY(103%);
+  opacity: 0;
+  transition:
+    transform var(--motion-settle) var(--motion-ease) 150ms,
+    opacity var(--motion-fast) var(--motion-ease) 150ms;
+}
+
+.gateway-hero-in .gateway-hero-line > span {
+  transform: none;
+  opacity: 1;
+}
+
+.gateway-hero-in .gateway-hero-line:nth-child(2) > span {
+  transition-delay: 220ms, 220ms;
+}
+
+/* 히어로 오브젝트 무대 — 활자(150ms)가 먼저 오고 오브젝트는 450ms 부터. */
+.gateway-hero-stage {
+  position: relative;
+  opacity: 0;
+  transition: opacity var(--motion-settle) var(--motion-ease) 450ms;
+}
+
+.gateway-hero-stage.is-in {
+  opacity: 1;
+}
+
+.gateway-hero-stage::before {
+  content: "";
+  position: absolute;
+  inset: -12%;
+  background: radial-gradient(
+    ellipse 52% 48% at 50% 47%,
+    var(--gateway-fx-deep) 0%,
+    transparent 72%
+  );
+}
+
+/* 지도 절의 캡션 — 조립이 끝나야 온다(숫자는 조립의 결과라서). */
+.gateway-map-after {
+  opacity: 0;
+  transform: translateY(6px);
+  transition:
+    opacity var(--motion-fast) var(--motion-ease),
+    transform var(--motion-settle) var(--motion-ease);
+}
+
+.gateway-map-after.is-in {
+  opacity: 1;
+  transform: none;
+}
+
+/* 에이전트 왕복 터미널 — 줄은 즉시 켜진다(타자 리듬은 JS 타이머가 만든다). */
+.gateway-term-line {
+  opacity: 0;
+}
+
+.gateway-term-line.is-on {
+  opacity: 1;
+}
+
+.gateway-term-caret {
+  display: inline-block;
+  width: 7px;
+  height: 13px;
+  background: var(--color-text-tertiary);
+  vertical-align: -2px;
+  animation: gatewayCaretBlink 1.06s steps(1) infinite;
+}
+
+@keyframes gatewayCaretBlink {
+  50% {
+    opacity: 0;
+  }
+}
+
 /* ─── 관문 무대의 지도 (`/download`) ────────────────────────────────────────
  *
  * 워크벤치의 지도는 **패널 아래 깔려 물러나는** 배경이다. 그 팔레트와 카메라
@@ -4205,17 +4489,30 @@ html[data-gateway-stage] {
    * 잘리지 않을 만큼만 올린다.
    */
   --topology-v2-camera-scale-max: 6;
-  /* 1.85 는 과했다 — 소유자: *"이제는 너무큰데? 화면에 안맞고"*. 살짝만
-     넘치게 둔다(프레임 밖으로 나가는 것이 "이 지도는 화면보다 크다" 신호이므로
-     1.0 으로 되돌리지는 않는다). */
-  --topology-v2-overview-entry-ratio: 1.15;
+  /* 1.85 는 과했고(소유자: *"이제는 너무큰데? 화면에 안맞고"*) 1.15 의
+     「살짝 넘침」은 지도가 판 뒤 배경이던 시절의 신호였다. 리메이크로 지도가
+     증거 절이 되면서 이 프레임의 일은 「그래프 전체가 증거로 보인다」로
+     바뀌었다 — 2026-08-18 소유자 지적(그래프가 프레임의 20%만 쓰던 실측)의
+     처방은 bbox 꽉 맞춤이다. 절 분할(지도 55 / 실데이터 45)과 전 티어 공개
+     (`StageMap` 의 GATEWAY_TIER_REVEAL)가 같은 지적의 나머지 절반이다.
+
+     1 → 1.12 (2026-08-18 3차): 관문 핏이 스파인 bbox 에서 **전 노드 bbox**
+     (`overviewFit="full"`)로 바뀌며 「꽉 맞춤」이 처음으로 진짜 전 그래프를
+     쟀다 — 종전의 1 은 스파인 bbox 기준이라 실제로는 넘치고 낮게 앉아 있었다
+     (소유자: *"너무 아래임"* — 실측 1512: 위 143px 공백 · 아래 17px). 전 노드
+     bbox 의 가장자리는 안개에 잠긴 흐린 element 점들이라(휘도 52~60), 정확히
+     1 이면 또렷한 시각 질량이 프레임의 절반만 쓴다. 1.12 는 그 여윳살만
+     걷는다 — 또렷한 본체는 전부 프레임 안에 커져 앉고, 넘치는 것은 안개
+     끝점 몇 픽셀뿐이다(높이-구속 핏이라 좌우는 1.12 에서도 여백이 남는다).
+     팬 목줄이 있으니 끌면 그 끝점도 보인다 — 「살짝 넘침」은 만져 보라는
+     신호이기도 하다. */
+  --topology-v2-overview-entry-ratio: 1.12;
 
   /*
-   * 판이 무대 왼쪽을 덮으므로 그만큼을 인셋으로 예약한다 — 위젯의 패널 인지
-   * 핏(`computeOverviewCameraTarget`)이 **정확히 이 문제를 위해** 만들어져
-   * 있다("the left third of the graph hid behind the ReaderLens panel").
-   * 예약하면 그래프가 판 오른쪽 영역의 중심에 앉고, 실측 32.7% 였던 우측
-   * 공백이 사라진다. 단위 없는 수 — 토큰 리더가 `parseFloat` 로 읽는다.
+   * 인셋 예약 없음 (2026-08-18 리메이크) — 지도가 판 뒤 배경이던 시절에는
+   * `≥64rem` 블록이 판 폭만큼 좌측을 예약했지만, 지도가 자기 절(증거)로
+   * 내려가 컬럼 전폭을 혼자 쓰므로 카메라는 전체 프레임에 맞춘다.
+   * 단위 없는 수 — 토큰 리더가 `parseFloat` 로 읽는다.
    */
   --topology-v2-safe-inset-left: 0;
   --topology-v2-safe-inset-right: 0;
@@ -4235,27 +4532,14 @@ html[data-gateway-stage] {
   --topology-v2-camera-pan-leash: 220;
 }
 
-@media (min-width: 64rem) {
-  html[data-gateway-stage] {
-    /*
-     * ⚠️ **이 값은 더 이상 여기서 더하지 않는다.**
-     *
-     * 예전엔 `544` 리터럴이었고 그 산수(홈통 40 + 판 폭 480 + 틈 24)는 주석에만
-     * 있었다. 세 항이 각자 다른 파일에 살아서(홈통·판 폭은 `DownloadPage.tsx`
-     * 의 Tailwind 클래스, 틈은 아무 데도 값으로 없었다) 하나만 바꾸면 나머지가
-     * 조용히 어긋났다 — 2026-07-29 평결 ③ 이 고친 사고의 근본 원인과 같은 패턴.
-     *
-     * 이제 세 원자값이 아래 `:root` 티어에 이름으로 살고, 덧셈은
-     * `src/views/download/lib/gateway-grid.ts` 한 함수에만 있다.
-     * `StageMap.tsx` 의 마운트 effect 가 원자값을 읽어 합을 여기 써 넣는다.
-     *
-     * 파생이 깨지면 이 var 가 비어 카메라가 예약을 못 한다 —
-     * `tests/e2e/download-gateway-grid.spec.ts` 가 유한값 여부를 직접 단언해서
-     * "왜 지도가 판을 덮지" 대신 "파생이 안 돌았다"로 읽히게 한다.
-     */
-    --topology-v2-safe-inset-left: var(--gateway-safe-inset-left-computed, 544);
-  }
-}
+/*
+ * [삭제됨 2026-08-18] `≥64rem` 에서 카메라 좌측 예약폭을
+ * `--gateway-safe-inset-left-computed`(원점+판폭+틈 파생)로 채우던 블록.
+ * 관문 랜딩 리메이크로 지도가 판 뒤 배경에서 자기 절(증거)로 내려가면서
+ * 판이 지도를 덮을 수 없게 됐다 — 예약폭의 전제(겹침)가 사라졌으므로 파생
+ * (`computeGatewaySafeInset` · `StageMap` 의 resize 구독)도 함께 은퇴했다.
+ * 겹침 불가는 이제 `tests/e2e/download-gateway-grid.spec.ts` 가 rect 로 잰다.
+ */
 
 /*
  * **값 층이 낸 컨트롤의 손가락 바닥 — 레이어 밖에 산다** (2026-08-05).

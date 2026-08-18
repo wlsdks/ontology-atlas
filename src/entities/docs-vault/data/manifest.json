@@ -4035,6 +4035,11 @@
         },
         {
           "depth": 2,
+          "text": "2026-08-18 · 관문 랜딩 리메이크: 살아있는 화면",
+          "slug": "2026-08-18-관문-랜딩-리메이크-살아있는-화면"
+        },
+        {
+          "depth": 2,
           "text": "2026-08-18 · 스킬 화면이 그래프가 되고, 절차를 읽는 눈이 넓어졌다",
           "slug": "2026-08-18-스킬-화면이-그래프가-되고-절차를-읽는-눈이-넓어졌다"
         },
@@ -6524,8 +6529,8 @@
           "slug": "2026-07-26-첫-만남은-쇼핑몰부터"
         }
       ],
-      "excerpt": "Major change history. Code commit messages answer why; this file answers when / which surface changed. Focused on user-visible changes, not PR-level granularity. Newest at the top. Entries stay date-based; the app version reached v1.0.0 on 2026-07-27, so a release tag now carries the semver promise instead. 소유자: \"스킬도 그",
-      "wordCount": 71055,
+      "excerpt": "Major change history. Code commit messages answer why; this file answers when / which surface changed. Focused on user-visible changes, not PR-level granularity. Newest at the top. Entries stay date-based; the app version reached v1.0.0 on 2026-07-27, so a release tag now carries the semver promise instead. /(관문 얼굴)과 /",
+      "wordCount": 71260,
       "updatedAt": "2026-08-18",
       "linksOut": [
         "audits/CASE-STUDY-AGENTS-MD-DRIFT",
@@ -6554,6 +6559,21 @@
           "depth": 2,
           "text": "기록 형식",
           "slug": "기록-형식"
+        },
+        {
+          "depth": 2,
+          "text": "2026-08-18 (72) — 에이전트 절은 검증이 아니라 **앱 안 대화**를 판다: `mcp-verify` 터미널 → ACP 채팅 실측 재연",
+          "slug": "2026-08-18-72-에이전트-절은-검증이-아니라-앱-안-대화를-판다-mcp-verify-터미널-acp-채팅-실측-재연"
+        },
+        {
+          "depth": 2,
+          "text": "2026-08-18 (71) — 기념비는 단이 크기를 정한다: `--text-monument` 5vw → 5.8cqw + 히어로 전폭 단",
+          "slug": "2026-08-18-71-기념비는-단이-크기를-정한다---text-monument-5vw-58cqw-히어로-전폭-단"
+        },
+        {
+          "depth": 2,
+          "text": "2026-08-18 (70) — 관문 랜딩 리메이크: 「살아있는 화면」 — 지도는 첫 화면에서 나가고, 활자가 기념비가 된다",
+          "slug": "2026-08-18-70-관문-랜딩-리메이크-살아있는-화면-지도는-첫-화면에서-나가고-활자가-기념비가-된다"
         },
         {
           "depth": 2,
@@ -9547,7 +9567,7 @@
         }
       ],
       "excerpt": "이 파일은 결정과 그때 진 반대 의견을 남긴다. docs/CHANGELOG.md 는 무엇이 언제 바뀌었나를 답하고, 이 파일은 왜 그렇게 정했고, 무엇을 걸었나를 답한다. 최신이 위. 기록은 덧붙이기만 한다 — 지난 기록을 고치지 않는다. 판단이 바뀌었으면 새 기록을 쓰고 옛 기록을 뒤집힘 으로 표시한다. 틀린 기록도 자산이다. 1. 소집 전에 읽는다. 카운슬을 열기 전(그리고 단독 PO 패스를 쓰기 전) 같은 표면 · 같은 질문에 대한 선행 결정이 있는지 먼저 본다. 있으면 새 패스는 그것을 ① 여전히 유효하다고 인용하거나 ② 명시적으로 뒤집는다. 조용히 다시 결정",
-      "wordCount": 144427,
+      "wordCount": 145543,
       "updatedAt": "2026-08-18",
       "linksOut": [
         "slug"
@@ -10536,7 +10556,7 @@
         }
       ],
       "excerpt": "This document is maintained based on Section 3 of the design spec. For the original Linear specification, see design-references/DESIGN-linear.md. v2 (2026-07): topology-map-v2 에서 출하된 B2+ \"Circuit × Constellation\" 시각 언어가 페이지 롤아웃(랜딩 → docs/ontology 허브 → projects/insights → download)의 규범이 되었다 — 아래 v2 — \"Circuit × Constell",
-      "wordCount": 31366,
+      "wordCount": 31641,
       "updatedAt": "2026-08-18",
       "linksOut": [
         "design-references/DESIGN-linear",
@@ -14020,7 +14040,7 @@
         "slug": "domains/design-system",
         "kind": "domain",
         "title": "Design System & Enforcement",
-        "display_ko": "디자인 시스템과 강제",
+        "display_ko": "디자인 시스템 지키기",
         "display_en": "Design System & Enforcement",
         "capabilities": [
           "capabilities/control-primitives",
@@ -14069,7 +14089,7 @@
       ],
       "excerpt": "사람과 AI 에이전트가 화면을 만들 때 고를 수 있는 값과 부품을 미리 정하고, 그 밖으로 나가면 자동으로 실패하게 만드는 책임 영역. 값(토큰 램프) · 부품(컨트롤 프리미티브) · 강제(lint 셀렉터·계약 테스트·래칫) · 조립 순서(핸드오프) 넷으로 이루어진다. 이 도메인이 다른 곳과 구별되는 지점: 문서가 아니라 게이트가 규격을 지킨다. 2026-08-03 전수 실측이 그 근거다: 디자인 시스템 문서가 이미 있는 상태에서 생 <button 419개 중 프리미티브가 덮던 것은 1개, 칩 하나의 크기 조합이 50종이었다. 게이트를 켠 뒤 손으로 쓴 버튼 74 ·",
       "wordCount": 858,
-      "updatedAt": "2026-08-15",
+      "updatedAt": "2026-08-18",
       "linksOut": []
     },
     {
@@ -14082,7 +14102,7 @@
         "slug": "domains/graph-modeling",
         "kind": "domain",
         "title": "Graph Modeling & Ontology Schema",
-        "display_ko": "그래프 모델링 및 온톨로지 스키마",
+        "display_ko": "그래프 모델과 스키마",
         "display_en": "Graph Modeling & Ontology Schema",
         "capabilities": [
           "capabilities/ontology-blocks",
@@ -14125,7 +14145,7 @@
       ],
       "excerpt": "markdown frontmatter가 인코딩하는 5개 authorable kind, 예약 reader kind, 실제 storage/query/write relation vocabulary와 비추론 경계를 정의하고 이를 결정론적 그래프로 컴파일·쿼리하는 책임 영역. docs/ONTOLOGY-ATLAS-SPEC.md §2·§5: kind와 relation 의미의 공개 정본 docs/ARCHITECTURE.md: \"compileontology turns markdown frontmatter into a deterministic graph artifact; queryon",
       "wordCount": 112,
-      "updatedAt": "2026-08-09",
+      "updatedAt": "2026-08-18",
       "linksOut": []
     },
     {

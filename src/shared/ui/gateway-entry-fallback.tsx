@@ -19,10 +19,13 @@ import { controlClass } from '@/shared/ui/control-class';
  *
  * ## 문구를 새로 쓰지 않는다
  *
- * 헤드라인·리드는 관문 페이지가 이미 쓰는 문장(`download.stageTitle` /
- * `stageLead`)을 그대로 가져온다. 이 자리에서 포지셔닝을 새로 만드는 것은 PO
- * 카운슬 트리거이고, 무엇보다 **fallback 과 실제 화면이 다른 말을 하면** 그게
- * 고치려던 결함 그 자체다.
+ * 헤드라인·리드는 관문 페이지가 이미 쓰는 문장(`download.heroTitleLine1/2` /
+ * `heroLead` — 2026-08-18 랜딩 리메이크의 기념비 헤드라인)을 그대로 가져온다.
+ * 이 자리에서 포지셔닝을 새로 만드는 것은 PO 카운슬 트리거이고, 무엇보다
+ * **fallback 과 실제 화면이 다른 말을 하면** 그게 고치려던 결함 그 자체다.
+ * (구 `stageTitle`/`stageLead` 는 리메이크에서 카탈로그를 떠났는데 이 공용
+ * 컴포넌트가 계속 불러서 `/ko/` 가 MISSING_MESSAGE 를 찍었다 — 2026-08-18
+ * 소유자 관측. 문구 키를 지울 때는 소비처 전수 grep 이 먼저다.)
  *
  * 링크 둘은 실제 목적지다 — 받는 곳과 설치 없이 보는 곳. JS 가 없어도 살아
  * 있어야 관문이다.
@@ -43,11 +46,13 @@ export async function GatewayEntryFallback({ locale }: { locale: string }) {
         <p className="font-mono text-label uppercase tracking-[var(--tracking-caps-16)] text-[color:var(--color-text-quaternary)]">
           {t('eyebrow')}
         </p>
-        <h1 className="mt-3 whitespace-pre-line text-display leading-display font-[var(--font-weight-signature)] tracking-[var(--tracking-display)] break-keep text-[color:var(--color-text-primary)]">
-          {t('stageTitle')}
+        <h1 className="mt-3 text-display leading-display font-[var(--font-weight-signature)] tracking-[var(--tracking-display)] break-keep text-[color:var(--color-text-primary)]">
+          {/* 실제 화면과 같은 두 줄 — 문장 = 줄 (기념비 계약의 축소판). */}
+          <span className="block">{t('heroTitleLine1')}</span>
+          <span className="block">{t('heroTitleLine2')}</span>
         </h1>
         <p className="mt-3 max-w-xl break-keep text-body-lg leading-body-lg text-[color:var(--color-text-secondary)]">
-          {t('stageLead')}
+          {t('heroLead')}
         </p>
       </div>
 

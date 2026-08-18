@@ -261,6 +261,16 @@ export interface TopologyMapV2Props {
    */
   tierReveal?: TierRevealConfig;
   /**
+   * 오버뷰 카메라가 맞출 bbox — `"spine"`(기본)은 project/domain/hub, `"full"`
+   * 은 전 노드. 진입에 전 티어를 그리는 소비처(관문 증거 절 —
+   * `GATEWAY_TIER_REVEAL`)만 `"full"` 을 넘긴다: 전 티어를 그리면서 스파인
+   * bbox 로 맞추면 그래프 질량이 스파인 중심 아래라 프레임에서 낮게 앉는다
+   * (실측 2026-08-18, 1512: 위 143px 공백 · 아래 17px). 워크벤치 기본은
+   * 그대로다 — 스파인만 그리는 진입에서 전 bbox 핏은 8노드를 점으로 줄이는
+   * 회귀였다(`use-topology-loop` trySnapInitialCamera 독블록).
+   */
+  overviewFit?: "spine" | "full";
+  /**
    * 가이드 투어 (2026-07-23, `src/features/guided-tour`) — 캔버스 노드 앵커
    * (2·4단계) 프로젝션 계약. DOM 이 아닌 노드를 가리키므로 realm "전개" 버튼
    * 선례(`use-topology-loop.ts` 의 매 프레임 `worldToScreen` 블록)를 그대로
@@ -326,7 +336,7 @@ export interface TopologyMapV2Props {
 }
 
 export function TopologyMapV2(props: TopologyMapV2Props) {
-  const { nodes, edges, focus, minimal, emphasizedNeighborSlug, dataSourceKey = null, fitViewToken, spotlightFitToken = 0, relayoutToken, revealToken, onSelectEdge, onSelect, onPaneClick, onVisibleCountChange, onGraphStatsChange, onZoomTierChange, onContextMenuNode, onContextMenuPane, agentFocusNodeId, spotlightIds = null, onHoverEdge, selectedEdge = null, expandedParents, onToggleCluster, onHoverCluster, clusterHint, realmRootId = null, onEnterRealm, realmEnterLabel, realmEnterTooltip, realmCaption = null, clusterBarLabels = null, canvasLabel, walkNoticeLabel, visitedTrail, trailLensActiveRef, trailHoverNodeIdRef, panelHoverNodeIdRef, tierReveal, tourAnchorNodeId = null, tourAnchorRef, overlayOpen = false, glyphSet = "geometric", canvasBackground = "dot", footprint = null, expand = DEFAULT_EXPAND, wheelIntent = "zoom", ambientSleepDelayMs, onWalkDeadEnd = null } = props;
+  const { nodes, edges, focus, minimal, emphasizedNeighborSlug, dataSourceKey = null, overviewFit = "spine", fitViewToken, spotlightFitToken = 0, relayoutToken, revealToken, onSelectEdge, onSelect, onPaneClick, onVisibleCountChange, onGraphStatsChange, onZoomTierChange, onContextMenuNode, onContextMenuPane, agentFocusNodeId, spotlightIds = null, onHoverEdge, selectedEdge = null, expandedParents, onToggleCluster, onHoverCluster, clusterHint, realmRootId = null, onEnterRealm, realmEnterLabel, realmEnterTooltip, realmCaption = null, clusterBarLabels = null, canvasLabel, walkNoticeLabel, visitedTrail, trailLensActiveRef, trailHoverNodeIdRef, panelHoverNodeIdRef, tierReveal, tourAnchorNodeId = null, tourAnchorRef, overlayOpen = false, glyphSet = "geometric", canvasBackground = "dot", footprint = null, expand = DEFAULT_EXPAND, wheelIntent = "zoom", ambientSleepDelayMs, onWalkDeadEnd = null } = props;
 
   const realmEnterButtonRef = useRef<HTMLButtonElement | null>(null);
 
@@ -465,6 +475,7 @@ export function TopologyMapV2(props: TopologyMapV2Props) {
       trailHoverNodeIdRef,
       panelHoverNodeIdRef,
       tierReveal,
+      overviewFit,
       tourAnchorNodeId,
       tourAnchorRef,
       glyphSet,

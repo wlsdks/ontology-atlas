@@ -96,6 +96,11 @@ import {
 import { readTopologyV2TokensOrNull } from "./topology-read-tokens";
 import type { TopologyMapV2Props } from "./TopologyMapV2";
 import { applyForcePositions, buildTopologyWorld, recomputeWorldGeometry, type TopologyWorld, radiusForKind } from "./topology-world";
+
+/** 오버뷰 핏 bbox 선택 — 훅 밖의 순수 함수라 effect 의존성 목록에 안 들어간다. */
+function overviewBoundsFor(fit: "spine" | "full", world: TopologyWorld) {
+  return fit === "full" ? world.bounds : world.spineBounds;
+}
 import type { TopologyV2Tokens } from "../tokens/read-topology-v2-tokens";
 
 /**
@@ -186,6 +191,11 @@ export interface UseTopologyLoopArgs {
   emphasizedNeighborSlug?: string | null;
   /** 이 그래프의 출처 정체성 — 바뀌면 오버뷰를 다시 맞춘다. `TopologyMapV2Props` 의 같은 이름 참고. */
   dataSourceKey?: string | null;
+  /**
+   * 오버뷰 카메라가 무엇에 맞추나 — `"spine"`(기본) 은 project/domain/hub
+   * bbox, `"full"` 은 전 노드 bbox. `TopologyMapV2Props` 의 같은 이름 참고.
+   */
+  overviewFit?: "spine" | "full";
   fitViewToken: number;
   /** 렌즈/기간이 바뀐 순간 강조 노드로 카메라를 맞추는 토큰(0 = 안 씀). */
   spotlightFitToken?: number;
@@ -383,7 +393,7 @@ export type UseTopologyLoopResult = TopologyPointerHandlers & {
 };
 
 export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResult {
-  const { nodes, edges, focusedSlug, emphasizedNeighborSlug = null, dataSourceKey = null, fitViewToken, spotlightFitToken = 0, relayoutToken, revealToken = 0, onSelectEdge, onHoverEdge, onSelect, onPaneClick, onVisibleCountChange, onGraphStatsChange, onZoomTierChange, onContextMenuNode, onContextMenuPane, agentFocusNodeId = null, spotlightIds = null, selectedEdge = null, expandedParents = EMPTY_EXPANDED_SET, onToggleCluster, onHoverCluster, realmRootId = null, onEnterRealm, realmEnterButtonRef, realmCaption = null, visitedTrail = EMPTY_TRAIL, trailLensActiveRef, clusterBarLabels = null, trailHoverNodeIdRef, panelHoverNodeIdRef, tierReveal = DEFAULT_TIER_REVEAL, tourAnchorNodeId = null, tourAnchorRef, glyphSet = "geometric", canvasBackground = "dot", footprint = null, expand = DEFAULT_EXPAND, wheelIntent = "zoom", ambientSleepDelayMs, onWalkDeadEnd = null } = args;
+  const { nodes, edges, focusedSlug, emphasizedNeighborSlug = null, dataSourceKey = null, overviewFit = "spine", fitViewToken, spotlightFitToken = 0, relayoutToken, revealToken = 0, onSelectEdge, onHoverEdge, onSelect, onPaneClick, onVisibleCountChange, onGraphStatsChange, onZoomTierChange, onContextMenuNode, onContextMenuPane, agentFocusNodeId = null, spotlightIds = null, selectedEdge = null, expandedParents = EMPTY_EXPANDED_SET, onToggleCluster, onHoverCluster, realmRootId = null, onEnterRealm, realmEnterButtonRef, realmCaption = null, visitedTrail = EMPTY_TRAIL, trailLensActiveRef, clusterBarLabels = null, trailHoverNodeIdRef, panelHoverNodeIdRef, tierReveal = DEFAULT_TIER_REVEAL, tourAnchorNodeId = null, tourAnchorRef, glyphSet = "geometric", canvasBackground = "dot", footprint = null, expand = DEFAULT_EXPAND, wheelIntent = "zoom", ambientSleepDelayMs, onWalkDeadEnd = null } = args;
 
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const containerRef = useRef<HTMLDivElement | null>(null);
@@ -1155,12 +1165,29 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
    * 타깃만 옮기고 값은 건드리지 않는다 — reduced-motion 은 카메라 트윈 계약이
    * 이미 존중한다.
    */
+  /**
+   * 오버뷰 핏이 맞출 bbox — 워크벤치(`"spine"`, 기본)는 진입에 스파인 티어만
+   * 그리므로 스파인 bbox 가 정직한 프레임이고, 관문 증거 절(`"full"`)은
+   * 진입부터 전 티어를 그리므로(`GATEWAY_TIER_REVEAL`) 전 노드 bbox 가 정직한
+   * 프레임이다. 실측(2026-08-18, 1512 관문): 전 티어를 그리면서 스파인 bbox 로
+   * 맞추면 그래프 질량이 스파인 중심 아래라 프레임 위 143px 이 비고 아래는
+   * 17px — 소유자의 "너무 아래임". 라벨은 bbox 에 넣지 않는다 — 하단 여유는
+   * `OVERVIEW_LABEL_BOTTOM_ALLOWANCE`(topology-camera-math)가 계속 맡는다.
+   * `overviewScaleRef` 앵커도 같은 bbox 를 써야 진입 zoomRatio 가 1 로 남는다
+   * (아래 trySnapInitialCamera 독블록의 경고와 같은 계약).
+   */
+  // 마운트 값 고정 — 두 소비처(워크벤치 기본 · 관문 `"full"`) 모두 리터럴을
+  // 넘기므로 살아 있는 전환이 없다. ref + 모듈 함수 조합인 이유: 렌더 중 ref
+  // 쓰기와 「컴포넌트 지역 함수가 effect 의존성」 둘 다 lint 가 막는다 —
+  // ref 읽기(안정)와 훅 밖 순수 함수는 어느 쪽도 걸리지 않는다.
+  const overviewFitRef = useRef(overviewFit);
+
   const rescueCameraIfEverythingOffscreen = (tokens: TopologyV2Tokens) => {
     const world = worldRef.current;
     const { width, height } = viewportRef.current;
     if (!world || width <= 0 || height <= 0) return;
     if (hasAnyNodeOnScreen(cameraRef.current, width, height, world.nodes)) return;
-    const target = computeOverviewCameraTarget(world.spineBounds, width, height, tokens, world.nodes.length);
+    const target = computeOverviewCameraTarget(overviewBoundsFor(overviewFitRef.current, world), width, height, tokens, world.nodes.length);
     cameraTargetRef.current = { tx: target.tx, ty: target.ty, tscale: target.tscale };
     userDrivenCameraRef.current = false;
   };
@@ -1181,7 +1208,7 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
     // the full bounds while the camera sits at the spine fit, zoomRatio would be
     // ≫1 at entry and capabilities would cross-fade in immediately (soup) and
     // farT would drift off circuit.
-    const target = computeOverviewCameraTarget(world.spineBounds, width, height, tokens, world.nodes.length);
+    const target = computeOverviewCameraTarget(overviewBoundsFor(overviewFitRef.current, world), width, height, tokens, world.nodes.length);
     cameraRef.current = {
       x: { value: target.tx, velocity: 0 },
       y: { value: target.ty, velocity: 0 },
@@ -1189,7 +1216,7 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
     };
     cameraTargetRef.current = target;
     userDrivenCameraRef.current = false;
-    overviewScaleRef.current = computeOverviewFitScale(world.spineBounds, width, height, tokens, world.nodes.length);
+    overviewScaleRef.current = computeOverviewFitScale(overviewBoundsFor(overviewFitRef.current, world), width, height, tokens, world.nodes.length);
     cameraAngularFreqRef.current = tokens.cameraSpringAngFreqTransition;
     hasInitializedRef.current = true;
     /*
@@ -1480,10 +1507,10 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
     // SPINE bbox (not the full 295-node bounds) so "fit view" reframes the same
     // legible 8-node spine as the initial entry — and keeps `overviewScaleRef`
     // on the same spine bounds so the zoom-ratio/altitude anchor stays at ratio 1.
-    const overviewTarget = computeOverviewCameraTarget(world.spineBounds, width, height, tokens, world.nodes.length);
+    const overviewTarget = computeOverviewCameraTarget(overviewBoundsFor(overviewFitRef.current, world), width, height, tokens, world.nodes.length);
     cameraTargetRef.current = overviewTarget;
     userDrivenCameraRef.current = false;
-    overviewScaleRef.current = computeOverviewFitScale(world.spineBounds, width, height, tokens, world.nodes.length);
+    overviewScaleRef.current = computeOverviewFitScale(overviewBoundsFor(overviewFitRef.current, world), width, height, tokens, world.nodes.length);
     dampingRef.current = tokens.cameraDampingDefault;
     // Dive-zoom fix — "fit view"/relayout is a PROGRAMMATIC camera move, so it
     // eases via the cubic transition tween (reduced-motion → spring/snap), not
@@ -1853,10 +1880,10 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
         // S8 결함 2 — 진입 시 저장한 키프레임이 있으면 그 "원래 보던 곳"으로
         // 복귀(없으면 overview fit 폴백). 750ms 트윈 유지.
         const savedEntry = realmDataRef.current?.entryCamera ?? null;
-        const target = savedEntry ?? computeOverviewCameraTarget(world.spineBounds, width, height, tokens, world.nodes.length);
+        const target = savedEntry ?? computeOverviewCameraTarget(overviewBoundsFor(overviewFitRef.current, world), width, height, tokens, world.nodes.length);
         cameraTargetRef.current = target;
         userDrivenCameraRef.current = false;
-        overviewScaleRef.current = computeOverviewFitScale(world.spineBounds, width, height, tokens, world.nodes.length);
+        overviewScaleRef.current = computeOverviewFitScale(overviewBoundsFor(overviewFitRef.current, world), width, height, tokens, world.nodes.length);
         dampingRef.current = tokens.cameraDampingDefault;
         cameraAngularFreqRef.current = tokens.cameraSpringAngFreqTransition;
         // 750ms 트윈 — 안무(안 역FLIP 660 / 밖 귀환 650)와 동기. 입장 860 패턴.
@@ -2471,12 +2498,12 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
           // 축소 프레임에 고착됐다. 역재생으로 노드가 홈으로 돌아오는 매 프레임
           // spineBounds 가 회복되므로 상한 anchor 를 라이브로 재계산해 트윈→스프링
           // 인계 시점에 상한이 목표를 누르지 않게 한다(fresh/deselect 경로와 동치).
-          overviewScaleRef.current = computeOverviewFitScale(world.spineBounds, width, height, tokens, world.nodes.length);
+          overviewScaleRef.current = computeOverviewFitScale(overviewBoundsFor(overviewFitRef.current, world), width, height, tokens, world.nodes.length);
         } else if (rt.phase === "idle" && realmDataRef.current !== null) {
           // 이탈 완료 — 역재생이 홈으로 되돌렸으니 realm 데이터 정리 + 홈 spineBounds
           // 기준으로 overview anchor 를 최종 확정(위 exiting 재계산의 마감).
           realmDataRef.current = null;
-          overviewScaleRef.current = computeOverviewFitScale(world.spineBounds, width, height, tokens, world.nodes.length);
+          overviewScaleRef.current = computeOverviewFitScale(overviewBoundsFor(overviewFitRef.current, world), width, height, tokens, world.nodes.length);
         }
       }
 

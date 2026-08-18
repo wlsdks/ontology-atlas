@@ -3,7 +3,7 @@ uid: 27e7b72d-dfec-405d-b236-3139b59cd68a
 slug: domains/design-system
 kind: domain
 title: Design System & Enforcement
-display_ko: 디자인 시스템과 강제
+display_ko: 디자인 시스템 지키기
 display_en: Design System & Enforcement
 capabilities: [capabilities/control-primitives, capabilities/design-build-handoff, capabilities/design-gate-ratchets, capabilities/design-token-ramps]
 created_by: "agent:unknown"

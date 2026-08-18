@@ -1182,7 +1182,9 @@ const globalsCss = readFileSync(GLOBALS_CSS, 'utf8');
  * 선언 하나라 `tokenIsBeyondFixedSteps` 가 거절한다. 등재가 도피처가 되지
  * 않는다는 것을 이 라운드가 실측으로 증명한 자리다.
  */
-const ANCHOR_TAG_SPLIT: Readonly<Record<string, number>> = { Link: 17, a: 12 };
+// 2026-08-18 관문 리메이크: 히어로 CTA 쌍(published `<a>` · pending `<Link>`)
+// + 데모 고스트 앵커 — 셋 다 `buttonVariants`(standard-button) 등재분.
+const ANCHOR_TAG_SPLIT: Readonly<Record<string, number>> = { Link: 18, a: 14 };
 
 /**
  * **검증된 「값 층 밖」 앵커 등록부.**
@@ -1230,11 +1232,12 @@ const OUTSIDE_VALUE_LAYER_ANCHORS: readonly OutsideEntry[] = [
   },
   {
     file: 'src/views/download/ui/DownloadPage.tsx',
-    count: 7,
+    count: 10,
     claim: 'standard-button',
     proof: 'buttonVariants',
     why:
-      '주 CTA · Intel · GitHub · 웹 진입 2 · Windows 2. 전부 `cn(buttonVariants({…}), …)` 로 ' +
+      '주 CTA · Intel · GitHub · 웹 진입 2 · Windows 2 + 리메이크(2026-08-18)의 히어로 CTA ' +
+      '쌍(published `<a>` · pending `<Link>`)과 데모 고스트 앵커. 전부 `cn(buttonVariants({…}), …)` 로 ' +
       '**표준 버튼 프리미티브**를 지난다. `control-class.ts` 가 스스로 "표준 버튼을 대체하지 ' +
       '않는다" 고 선언했으므로 여기를 `controlClass` 로 옮기는 것은 그 규칙 위반이다.',
     conditional:
@@ -1360,7 +1363,9 @@ const OUTSIDE_VALUE_LAYER_ANCHORS: readonly OutsideEntry[] = [
  * **리터럴이다.** 버튼 쪽 기준선들과 같은 이유 — 파생값으로 두면 멈춤쇠가
  * 양방향으로 헐거워진다(하드컷 래칫이 실제로 그렇게 죽었다).
  */
-const BASELINE_ANCHOR_REGISTERED = 29;
+// 29 → 32 (2026-08-18 관문 리메이크): DownloadPage 의 히어로 CTA 쌍 + 데모
+// 고스트 앵커 — 전부 standard-button(값 층이 명시적으로 양보한 모양) 청구다.
+const BASELINE_ANCHOR_REGISTERED = 32;
 
 /** **이 수만 줄어야 한다.** 앵커 전수(92)에서 등재(25)를 뺀 나머지. */
 const BASELINE_ANCHOR_DEBT = 0;

@@ -135,7 +135,13 @@ describe("라우트 진입 빈 화면 게이트", () => {
       "utf-8",
     );
     // 얼굴이 말해야 하는 것: 무엇인지(헤드라인) + 갈 수 있는 두 곳.
-    expect(source).toContain("stageTitle");
+    // 2026-08-18 리메이크: 헤드라인 키가 `stageTitle` → `heroTitleLine1/2` 로
+    // 옮겨갔다(fallback 은 실제 화면과 같은 문장을 실어야 한다는 이 파일의
+    // 계약 그대로 — 옛 키는 카탈로그에서 사라졌는데 이 소스가 계속 불러서
+    // `/ko/` 가 MISSING_MESSAGE 를 찍었다).
+    expect(source).toContain("heroTitleLine1");
+    expect(source).toContain("heroTitleLine2");
+    expect(source).toContain("heroLead");
     expect(source).toContain("download/");
     expect(source).toContain("topology/");
   });

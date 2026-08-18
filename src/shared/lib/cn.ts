@@ -23,6 +23,10 @@ export const TYPE_RAMP_STEPS = [
   'display',
   'hero',
   'hero-lg',
+  // 관문 헤드라인 전용 기념비 스텝 (2026-08-18, 관문 랜딩 리메이크).
+  // clamp(40px, 5.8cqw, 96px) — 단(measure) 비례. 값과 글리프 예산 산식은
+  // `app/globals.css` 의 `--text-monument` 독블록.
+  'monument',
 ] as const;
 
 /**
@@ -47,6 +51,7 @@ export const LEADING_RAMP_STEPS = [
   'display',
   'hero',
   'hero-lg',
+  'monument',
   'display-tight',
   'prose',
 ] as const;
