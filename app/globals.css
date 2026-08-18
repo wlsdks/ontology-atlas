@@ -73,7 +73,7 @@
    * 위에서는 하나도 못 쓴다 — 그래서 저장소의 채운 인디고 버튼 9개가 전부
    * `text-white` 리터럴을 손으로 쓰고 있었고, `controlClass` 의 `tone` 여덟에
    * 그 자리가 없어 두 라운드(features 5 · 위젯 6)가 통째로 값 층 밖에 남았다.
-   * 새 hue 가 아니다(무채 #fff). `--color-indigo-brand`(#c14a24) 위 대비
+   * 새 hue 가 아니다(무채 #fff). `--color-indigo-brand`(#5e6ad2) 위 대비
    * 4.71:1 로 WCAG AA(4.5:1) 통과 — 오늘 화면에 이미 나가 있는 조합의 등재다.
    */
   --color-text-on-accent: #ffffff;
@@ -137,9 +137,9 @@
   --z-skip-link: 100;          /* 건너뛰기 링크 — 무엇보다 위 */
 
   /* 인디고 악센트 (시스템 유일 채색) */
-  --color-indigo-brand: #c14a24;
-  --color-indigo-accent: #f0894e;
-  --color-indigo-hover: #f5a06b;
+  --color-indigo-brand: #5e6ad2;
+  --color-indigo-accent: #7170ff;
+  --color-indigo-hover: #828fff;
   /*
    * 채워진 악센트 버튼의 호버 — **어두워진다.** (2026-08-05)
    *
@@ -153,9 +153,9 @@
    * 제품의 주 CTA 들이 **호버하는 동안 AA 를 깨고 있었다.** WCAG 는 상태를
    * 가리지 않는다.
    *
-   * 밝히는 방향으로는 못 고친다 — 기준(#c14a24)이 이미 4.70 이라 AA 를 지키며
+   * 밝히는 방향으로는 못 고친다 — 기준(#5e6ad2)이 이미 4.70 이라 AA 를 지키며
    * 밝힐 여유가 **5.7%** 뿐이고, 그 정도로는 호버가 보이지 않는다. 잉크를 어둡게
-   * 바꾸는 길도 계산해 봤지만 #f0894e 위에서 4.5 를 지키려면 거의 검정이 되어
+   * 바꾸는 길도 계산해 봤지만 #7170ff 위에서 4.5 를 지키려면 거의 검정이 되어
    * 보라 버튼 위 검은 글자가 된다.
    *
    * 그래서 **채워진 버튼만** 호버에서 어두워진다(대비 5.38, 밝기 −16.3%).
@@ -164,7 +164,7 @@
    *
    * 게이트: tests/e2e/hover-contrast.spec.ts (실제로 호버해서 잰다).
    */
-  --color-indigo-brand-hover: #a83e1d;
+  --color-indigo-brand-hover: #5661c4;
 
   /* 상태 (status dot + 경고·에러·성공 서피스) — 신호 톤 3종:
      warning(amber) · error(red) · success(emerald). 각 신호는 solid dot +
@@ -182,23 +182,23 @@
    * `OntologyKindPalette.tsx` 에 인라인 hardcode 로 흩어져 있던 rgba(...) 값을
    * 그대로 1:1 추출한 토큰 — 시각 결과는 무변, 참조만 CSS 변수로 바뀐다.
    */
-  --color-indigo-a06: rgba(193, 74, 36, 0.06);
-  --color-indigo-a08: rgba(193, 74, 36, 0.08);
-  --color-indigo-a10: rgba(193, 74, 36, 0.1);
-  --color-indigo-a12: rgba(193, 74, 36, 0.12);
-  --color-indigo-a14: rgba(193, 74, 36, 0.14);
-  --color-indigo-a16: rgba(193, 74, 36, 0.16);
-  --color-indigo-a18: rgba(193, 74, 36, 0.18);
-  --color-indigo-a22: rgba(193, 74, 36, 0.22);
+  --color-indigo-a06: rgba(94, 106, 210, 0.06);
+  --color-indigo-a08: rgba(94, 106, 210, 0.08);
+  --color-indigo-a10: rgba(94, 106, 210, 0.1);
+  --color-indigo-a12: rgba(94, 106, 210, 0.12);
+  --color-indigo-a14: rgba(94, 106, 210, 0.14);
+  --color-indigo-a16: rgba(94, 106, 210, 0.16);
+  --color-indigo-a18: rgba(94, 106, 210, 0.18);
+  --color-indigo-a22: rgba(94, 106, 210, 0.22);
   /* B안 색 토큰화 (2026-07-20) — 색상 인벤토리 고빈도 orphan alpha 추가.
      기존 사다리와 같은 hue(94,106,210), 무시프트 정확 알파. */
-  --color-indigo-a26: rgba(193, 74, 36, 0.26);
-  --color-indigo-a28: rgba(193, 74, 36, 0.28);
-  --color-indigo-a32: rgba(193, 74, 36, 0.32);
-  --color-indigo-a38: rgba(193, 74, 36, 0.38);
-  --color-indigo-a40: rgba(193, 74, 36, 0.4);
-  --color-indigo-a42: rgba(193, 74, 36, 0.42);
-  --color-indigo-a46: rgba(193, 74, 36, 0.46);
+  --color-indigo-a26: rgba(94, 106, 210, 0.26);
+  --color-indigo-a28: rgba(94, 106, 210, 0.28);
+  --color-indigo-a32: rgba(94, 106, 210, 0.32);
+  --color-indigo-a38: rgba(94, 106, 210, 0.38);
+  --color-indigo-a40: rgba(94, 106, 210, 0.4);
+  --color-indigo-a42: rgba(94, 106, 210, 0.42);
+  --color-indigo-a46: rgba(94, 106, 210, 0.46);
   /* border/hover:border 전용. */
   /*
    * 초점 링 전용 — **불투명하다.** 이 앱의 초점 표시는 2026-08-05 에 「있는가」로
@@ -208,22 +208,22 @@
    * 그대로 두고 알파만 뺐다: 어두운 바탕 4.24 · 패널 3.95 · 더 밝은 면 3.66.
    * 새 색을 들인 것이 아니라 **이미 쓰던 인디고를 가리지 않고 쓰는 것**이다.
    */
-  --color-indigo-focus-ring: rgb(193, 74, 36);
-  --color-indigo-a50: rgba(193, 74, 36, 0.5);
-  --color-indigo-a55: rgba(193, 74, 36, 0.55);
-  --color-indigo-a58: rgba(193, 74, 36, 0.58);
-  --color-indigo-a66: rgba(193, 74, 36, 0.66);
+  --color-indigo-focus-ring: rgb(94, 106, 210);
+  --color-indigo-a50: rgba(94, 106, 210, 0.5);
+  --color-indigo-a55: rgba(94, 106, 210, 0.55);
+  --color-indigo-a58: rgba(94, 106, 210, 0.58);
+  --color-indigo-a66: rgba(94, 106, 210, 0.66);
   /* pale indigo text. */
-  --color-indigo-text-strong: rgba(231, 155, 129, 0.95);
+  --color-indigo-text-strong: rgba(159, 170, 235, 0.95);
   /* pale indigo text — 위 목록의 정확한 rgb 3종과 다른 tuple. */
-  --color-indigo-text-soft: rgba(253, 182, 158, 0.92);
+  --color-indigo-text-soft: rgba(188, 195, 255, 0.92);
 
-  /* 악센트(#f0894e) 알파 스텝 — 새 색이 아니라 헌장 색의 투명도 단계다.
+  /* 악센트(#7170ff) 알파 스텝 — 새 색이 아니라 헌장 색의 투명도 단계다.
      2026-08-04 감사: 이 두 값이 `rgba(113,112,255,·)` 리터럴로 3곳에 손으로
      적혀 있었고, 색 게이트가 **등록된 튜플만** 대조하는 구조라 통과했다.
      등재해서 리터럴을 없앤다(값은 그대로 — 픽셀 변화 0). */
-  --color-indigo-accent-a32: rgba(240, 137, 78, 0.32);
-  --color-indigo-accent-a50: rgba(240, 137, 78, 0.5);
+  --color-indigo-accent-a32: rgba(113, 112, 255, 0.32);
+  --color-indigo-accent-a50: rgba(113, 112, 255, 0.5);
 
   /* 검색 일치 `<mark>` 의 글자색. `--color-indigo-line-a22` 면 위에서 읽히는
      유일한 값이라 목적으로 이름 붙인다 — 소비처 3곳이 같은 리터럴을 복사하고
@@ -256,30 +256,30 @@
    * 위 A2 스케일에 없는 opacity/hue 만 추가한다 — 시각 결과 무변, 참조만
    * CSS 변수로 치환.
    */
-  --color-indigo-a20: rgba(193, 74, 36, 0.2);
-  --color-indigo-a24: rgba(193, 74, 36, 0.24);
-  --color-indigo-a30: rgba(193, 74, 36, 0.3);
-  --color-indigo-a34: rgba(193, 74, 36, 0.34);
-  --color-indigo-a60: rgba(193, 74, 36, 0.6);
+  --color-indigo-a20: rgba(94, 106, 210, 0.2);
+  --color-indigo-a24: rgba(94, 106, 210, 0.24);
+  --color-indigo-a30: rgba(94, 106, 210, 0.3);
+  --color-indigo-a34: rgba(94, 106, 210, 0.34);
+  --color-indigo-a60: rgba(94, 106, 210, 0.6);
   /* pale indigo text — text-strong(0.95) 형제, 배치 보기 라디오 점 전용. */
 
   /*
    * 시안(mockup) `--indigo-line` 계열(139,151,255) — 위 A2 인디고 스케일
    * (94,106,210) 과 다른 hue.
    */
-  --color-indigo-line-a06: rgba(242, 127, 89, 0.06);
-  --color-indigo-line-a13: rgba(242, 127, 89, 0.13);
-  --color-indigo-line-a15: rgba(242, 127, 89, 0.15);
-  --color-indigo-line-a20: rgba(242, 127, 89, 0.2);
-  --color-indigo-line-a22: rgba(242, 127, 89, 0.22);
-  --color-indigo-line-a32: rgba(242, 127, 89, 0.32);
+  --color-indigo-line-a06: rgba(139, 151, 255, 0.06);
+  --color-indigo-line-a13: rgba(139, 151, 255, 0.13);
+  --color-indigo-line-a15: rgba(139, 151, 255, 0.15);
+  --color-indigo-line-a20: rgba(139, 151, 255, 0.2);
+  --color-indigo-line-a22: rgba(139, 151, 255, 0.22);
+  --color-indigo-line-a32: rgba(139, 151, 255, 0.32);
   /* B안 색 토큰화 (2026-07-20) — 고빈도 orphan alpha 추가, 같은 hue 무시프트. */
-  --color-indigo-line-a35: rgba(242, 127, 89, 0.35);
-  --color-indigo-line-a40: rgba(242, 127, 89, 0.4);
-  --color-indigo-line-a42: rgba(242, 127, 89, 0.42);
-  --color-indigo-line-a45: rgba(242, 127, 89, 0.45);
-  --color-indigo-line-a54: rgba(242, 127, 89, 0.54);
-  --color-indigo-line-a90: rgba(242, 127, 89, 0.9);
+  --color-indigo-line-a35: rgba(139, 151, 255, 0.35);
+  --color-indigo-line-a40: rgba(139, 151, 255, 0.4);
+  --color-indigo-line-a42: rgba(139, 151, 255, 0.42);
+  --color-indigo-line-a45: rgba(139, 151, 255, 0.45);
+  --color-indigo-line-a54: rgba(139, 151, 255, 0.54);
+  --color-indigo-line-a90: rgba(139, 151, 255, 0.9);
 
   --color-danger-a12: rgba(229, 72, 77, 0.12);
   --color-danger-text-strong: rgba(236, 116, 116, 0.95);
@@ -488,18 +488,6 @@
    * 값이 바뀌면 헤드라인·판·캡션·푸터와 카메라 예약폭이 함께 따라간다.
    */
   --gateway-gutter: 200;
-  /*
-   * 520 → 880 (2026-08-18, 관문 랜딩 리메이크 — `docs/DECISIONS.md`).
-   *
-   * 지도가 첫 화면의 배경이던 시절 이 값은 「지도를 가리지 않는 폭」이었고
-   * 카메라 예약폭의 한 항이었다(`--gateway-plate-gap` 과 함께). 리메이크로
-   * 지도가 자기 절(증거)로 내려가면서 그 산수는 통째로 은퇴했다 — 틈 토큰과
-   * `computeGatewaySafeInset` 파생은 삭제됐고, 이 값은 이제 흐름 속 다운로드
-   * 판의 콘텐츠 폭 상한 하나만 진다. 880 은 판의 행(이름·배지·SHA·크기·받기)이
-   * 한 줄에 서는 최소 폭에 여유를 둔 값이다.
-   */
-  --gateway-plate-width: 880;
-
   /*
    * 관문 랜딩의 절 리듬 (2026-08-18 리메이크). 절 하나 = 생각 하나이고, 이
    * 간격이 그 문장 부호다 — 값이 절마다 다르면 리듬이 아니라 우연이 된다.
@@ -848,13 +836,13 @@
      이후 theme-aware 금지). 205,212,255 / 211,215,255 를 200,210,255 로
      수렴 — 기존 --color-indigo-text-strong/-soft 와는 다른 role(더 옅은
      surface-on-surface 텍스트)이라 별도 사다리를 둔다. */
-  --color-indigo-pale-a28: rgba(254, 200, 181, 0.28);
-  --color-indigo-pale-a82: rgba(254, 200, 181, 0.82);
-  --color-indigo-pale-a86: rgba(254, 200, 181, 0.86);
-  --color-indigo-pale-a90: rgba(254, 200, 181, 0.9);
-  --color-indigo-pale-a92: rgba(254, 200, 181, 0.92);
-  --color-indigo-pale-a94: rgba(254, 200, 181, 0.94);
-  --color-indigo-pale-a95: rgba(254, 200, 181, 0.95);
+  --color-indigo-pale-a28: rgba(200, 210, 255, 0.28);
+  --color-indigo-pale-a82: rgba(200, 210, 255, 0.82);
+  --color-indigo-pale-a86: rgba(200, 210, 255, 0.86);
+  --color-indigo-pale-a90: rgba(200, 210, 255, 0.9);
+  --color-indigo-pale-a92: rgba(200, 210, 255, 0.92);
+  --color-indigo-pale-a94: rgba(200, 210, 255, 0.94);
+  --color-indigo-pale-a95: rgba(200, 210, 255, 0.95);
 
   /* 딥 서피스 — --color-panel(15,16,17) 보다 짙은 코드블록/모달/드롭다운
      패널/ERD stroke 표면. 14,16,22 를 12,14,20 으로 수렴(ΔRGB=2, 무시). */
@@ -2113,28 +2101,28 @@
 
     /* 빌더 v2 (A2) 알파 스케일 — 위 @theme 블록과 동일한 Tailwind v4 emit
        회귀를 겪으므로 여기서도 다크 디폴트를 명시. */
-    --color-indigo-a06: rgba(193, 74, 36, 0.06);
-    --color-indigo-a08: rgba(193, 74, 36, 0.08);
-    --color-indigo-a10: rgba(193, 74, 36, 0.1);
-    --color-indigo-a12: rgba(193, 74, 36, 0.12);
-    --color-indigo-a14: rgba(193, 74, 36, 0.14);
-    --color-indigo-a16: rgba(193, 74, 36, 0.16);
-    --color-indigo-a18: rgba(193, 74, 36, 0.18);
-    --color-indigo-a22: rgba(193, 74, 36, 0.22);
-    --color-indigo-a26: rgba(193, 74, 36, 0.26);
-    --color-indigo-a28: rgba(193, 74, 36, 0.28);
-    --color-indigo-a32: rgba(193, 74, 36, 0.32);
-    --color-indigo-a38: rgba(193, 74, 36, 0.38);
-    --color-indigo-a40: rgba(193, 74, 36, 0.4);
-    --color-indigo-a42: rgba(193, 74, 36, 0.42);
-    --color-indigo-a46: rgba(193, 74, 36, 0.46);
-    --color-indigo-focus-ring: rgb(193, 74, 36);
-    --color-indigo-a50: rgba(193, 74, 36, 0.5);
-    --color-indigo-a55: rgba(193, 74, 36, 0.55);
-    --color-indigo-a58: rgba(193, 74, 36, 0.58);
-    --color-indigo-a66: rgba(193, 74, 36, 0.66);
-    --color-indigo-text-strong: rgba(231, 155, 129, 0.95);
-    --color-indigo-text-soft: rgba(253, 182, 158, 0.92);
+    --color-indigo-a06: rgba(94, 106, 210, 0.06);
+    --color-indigo-a08: rgba(94, 106, 210, 0.08);
+    --color-indigo-a10: rgba(94, 106, 210, 0.1);
+    --color-indigo-a12: rgba(94, 106, 210, 0.12);
+    --color-indigo-a14: rgba(94, 106, 210, 0.14);
+    --color-indigo-a16: rgba(94, 106, 210, 0.16);
+    --color-indigo-a18: rgba(94, 106, 210, 0.18);
+    --color-indigo-a22: rgba(94, 106, 210, 0.22);
+    --color-indigo-a26: rgba(94, 106, 210, 0.26);
+    --color-indigo-a28: rgba(94, 106, 210, 0.28);
+    --color-indigo-a32: rgba(94, 106, 210, 0.32);
+    --color-indigo-a38: rgba(94, 106, 210, 0.38);
+    --color-indigo-a40: rgba(94, 106, 210, 0.4);
+    --color-indigo-a42: rgba(94, 106, 210, 0.42);
+    --color-indigo-a46: rgba(94, 106, 210, 0.46);
+    --color-indigo-focus-ring: rgb(94, 106, 210);
+    --color-indigo-a50: rgba(94, 106, 210, 0.5);
+    --color-indigo-a55: rgba(94, 106, 210, 0.55);
+    --color-indigo-a58: rgba(94, 106, 210, 0.58);
+    --color-indigo-a66: rgba(94, 106, 210, 0.66);
+    --color-indigo-text-strong: rgba(159, 170, 235, 0.95);
+    --color-indigo-text-soft: rgba(188, 195, 255, 0.92);
     --color-danger-a08: rgba(229, 72, 77, 0.08);
     --color-danger-a10: rgba(229, 72, 77, 0.1);
     --color-danger-a32: rgba(229, 72, 77, 0.32);
@@ -2149,23 +2137,23 @@
 
     /* 빌더 A4 알파 스케일 — 위 @theme 블록과 동일한 Tailwind v4 emit
        회귀를 겪으므로 여기서도 다크 디폴트를 명시. */
-    --color-indigo-a20: rgba(193, 74, 36, 0.2);
-    --color-indigo-a24: rgba(193, 74, 36, 0.24);
-    --color-indigo-a30: rgba(193, 74, 36, 0.3);
-    --color-indigo-a34: rgba(193, 74, 36, 0.34);
-    --color-indigo-a60: rgba(193, 74, 36, 0.6);
-    --color-indigo-line-a06: rgba(242, 127, 89, 0.06);
-    --color-indigo-line-a13: rgba(242, 127, 89, 0.13);
-    --color-indigo-line-a15: rgba(242, 127, 89, 0.15);
-    --color-indigo-line-a20: rgba(242, 127, 89, 0.2);
-    --color-indigo-line-a22: rgba(242, 127, 89, 0.22);
-    --color-indigo-line-a32: rgba(242, 127, 89, 0.32);
-    --color-indigo-line-a35: rgba(242, 127, 89, 0.35);
-    --color-indigo-line-a40: rgba(242, 127, 89, 0.4);
-    --color-indigo-line-a42: rgba(242, 127, 89, 0.42);
-    --color-indigo-line-a45: rgba(242, 127, 89, 0.45);
-    --color-indigo-line-a54: rgba(242, 127, 89, 0.54);
-    --color-indigo-line-a90: rgba(242, 127, 89, 0.9);
+    --color-indigo-a20: rgba(94, 106, 210, 0.2);
+    --color-indigo-a24: rgba(94, 106, 210, 0.24);
+    --color-indigo-a30: rgba(94, 106, 210, 0.3);
+    --color-indigo-a34: rgba(94, 106, 210, 0.34);
+    --color-indigo-a60: rgba(94, 106, 210, 0.6);
+    --color-indigo-line-a06: rgba(139, 151, 255, 0.06);
+    --color-indigo-line-a13: rgba(139, 151, 255, 0.13);
+    --color-indigo-line-a15: rgba(139, 151, 255, 0.15);
+    --color-indigo-line-a20: rgba(139, 151, 255, 0.2);
+    --color-indigo-line-a22: rgba(139, 151, 255, 0.22);
+    --color-indigo-line-a32: rgba(139, 151, 255, 0.32);
+    --color-indigo-line-a35: rgba(139, 151, 255, 0.35);
+    --color-indigo-line-a40: rgba(139, 151, 255, 0.4);
+    --color-indigo-line-a42: rgba(139, 151, 255, 0.42);
+    --color-indigo-line-a45: rgba(139, 151, 255, 0.45);
+    --color-indigo-line-a54: rgba(139, 151, 255, 0.54);
+    --color-indigo-line-a90: rgba(139, 151, 255, 0.9);
     --color-danger-a12: rgba(229, 72, 77, 0.12);
     --color-danger-text-strong: rgba(236, 116, 116, 0.95);
     --color-amber-source-a07: rgba(244, 183, 49, 0.07);
@@ -2236,13 +2224,13 @@
     --color-amber-docs-a92: rgba(234, 198, 138, 0.92);
     --color-amber-docs-a95: rgba(234, 198, 138, 0.95);
     --color-amber-docs-a100: rgba(234, 198, 138, 1);
-    --color-indigo-pale-a28: rgba(254, 200, 181, 0.28);
-    --color-indigo-pale-a82: rgba(254, 200, 181, 0.82);
-    --color-indigo-pale-a86: rgba(254, 200, 181, 0.86);
-    --color-indigo-pale-a90: rgba(254, 200, 181, 0.9);
-    --color-indigo-pale-a92: rgba(254, 200, 181, 0.92);
-    --color-indigo-pale-a94: rgba(254, 200, 181, 0.94);
-    --color-indigo-pale-a95: rgba(254, 200, 181, 0.95);
+    --color-indigo-pale-a28: rgba(200, 210, 255, 0.28);
+    --color-indigo-pale-a82: rgba(200, 210, 255, 0.82);
+    --color-indigo-pale-a86: rgba(200, 210, 255, 0.86);
+    --color-indigo-pale-a90: rgba(200, 210, 255, 0.9);
+    --color-indigo-pale-a92: rgba(200, 210, 255, 0.92);
+    --color-indigo-pale-a94: rgba(200, 210, 255, 0.94);
+    --color-indigo-pale-a95: rgba(200, 210, 255, 0.95);
     --color-surface-deep-a18: rgba(12, 14, 20, 0.18);
     --color-surface-deep-a20: rgba(12, 14, 20, 0.2);
     --color-surface-deep-a40: rgba(12, 14, 20, 0.4);
@@ -2264,8 +2252,8 @@
        --topology-graph-node-dim, --topology-connector) 는 #344
        (retire-sigma-topology) 이후 consumer 0 — topology-map-v2 는 자체
        --topology-v2-edge-* 패밀리를 쓴다. */
-    --topology-relation-summary-surface: rgba(242, 127, 89, 0.18);
-    --topology-relation-summary-border: rgba(242, 127, 89, 0.42);
+    --topology-relation-summary-surface: rgba(139, 151, 255, 0.18);
+    --topology-relation-summary-border: var(--color-indigo-line-a42);
     --topology-relation-summary-text: rgba(222, 225, 255, 0.94);
     /*
      * (구 `--topology-relation-label-*` 18개는 2026-07-28 에 삭제했다.)
@@ -2283,7 +2271,7 @@
      * 크기**를 규격처럼 제시하고 있어서, 다음 사람이 근거로 삼으면 램프를
      * 벗어난 글자 크기가 정당화된다.
      */
-    --topology-relation-spine-halo: rgba(242, 127, 89, 0.34);
+    --topology-relation-spine-halo: rgba(139, 151, 255, 0.34);
     --topology-relation-spine-terminal: rgba(205, 210, 255, 0.86);
     /* R+ 기획자 감사 ①: 1.1~1.6px × 실효알파 ~0.25 는 다크 캔버스에서
        비가시 — 카드가 "허공에 뜬 라벨" 로 읽혔다. 소속/신뢰 구조가 지도의
@@ -2378,23 +2366,23 @@
     --topology-command-spine-gap: clamp(6px, 0.48vw, 8px);
     --topology-command-spine-surface: linear-gradient(
       180deg,
-      rgba(242, 127, 89, 0.085),
+      rgba(139, 151, 255, 0.085),
       rgba(255, 255, 255, 0.018) 42%,
       rgba(255, 255, 255, 0.012)
     );
-    --topology-command-spine-border: rgba(242, 127, 89, 0.16);
-    --topology-command-primary-surface: rgba(242, 127, 89, 0.105);
-    --topology-command-primary-border: rgba(242, 127, 89, 0.24);
+    --topology-command-spine-border: rgba(139, 151, 255, 0.16);
+    --topology-command-primary-surface: rgba(139, 151, 255, 0.105);
+    --topology-command-primary-border: rgba(139, 151, 255, 0.24);
     --topology-command-primary-min-height: clamp(40px, 2.6vw, 44px);
     --topology-overview-proof-summary-lines: 1;
-    --topology-path-handoff-surface: rgba(242, 127, 89, 0.045);
-    --topology-path-handoff-border: rgba(242, 127, 89, 0.16);
+    --topology-path-handoff-surface: rgba(139, 151, 255, 0.045);
+    --topology-path-handoff-border: rgba(139, 151, 255, 0.16);
     --topology-path-handoff-action-min-height: 20px;
     --topology-path-handoff-action-radius: 4px;
     --topology-path-route-surface: rgba(255, 255, 255, 0.024);
-    --topology-path-route-border: rgba(242, 127, 89, 0.14);
-    --topology-path-route-chip-surface: rgba(242, 127, 89, 0.07);
-    --topology-path-route-chip-border: rgba(242, 127, 89, 0.18);
+    --topology-path-route-border: rgba(139, 151, 255, 0.14);
+    --topology-path-route-chip-surface: rgba(139, 151, 255, 0.07);
+    --topology-path-route-chip-border: rgba(139, 151, 255, 0.18);
     --topology-floating-control-surface: rgba(15, 16, 17, 0.92);
     --topology-floating-control-border: rgba(255, 255, 255, 0.07);
     /* minimap header/border/shadow/active-border/active-shadow/grid-glow 및
@@ -2449,11 +2437,11 @@
     --topology-utility-lane-surface: rgba(15, 16, 17, 0.92);
     --topology-utility-lane-border: rgba(255, 255, 255, 0.07);
     --topology-utility-lane-shadow: 0 10px 22px rgba(0, 0, 0, 0.16);
-    --topology-utility-lane-accent-surface: rgba(193, 74, 36, 0.12);
-    --topology-utility-lane-accent-border: rgba(193, 74, 36, 0.38);
-    --topology-utility-lane-accent-hover-surface: rgba(193, 74, 36, 0.18);
-    --topology-utility-lane-focus-ring: rgba(193, 74, 36, 0.46);
-    --topology-utility-lane-count-surface: rgba(193, 74, 36, 0.28);
+    --topology-utility-lane-accent-surface: var(--color-indigo-a12);
+    --topology-utility-lane-accent-border: var(--color-indigo-a38);
+    --topology-utility-lane-accent-hover-surface: var(--color-indigo-a18);
+    --topology-utility-lane-focus-ring: var(--color-indigo-a46);
+    --topology-utility-lane-count-surface: var(--color-indigo-a28);
     --topology-utility-lane-count-text: var(--color-indigo-accent);
 
     /*
@@ -2557,8 +2545,8 @@
     --chrome-inset: 24px;
     /* ChromeTile/ChromeChip 의 `active`(선택/진행중) 표시 — 인디고 하나만
        쓰는 단일 채색 원칙 그대로, 알파만 다르다. */
-    --chrome-active-surface: rgba(193, 74, 36, 0.12);
-    --chrome-active-border: rgba(193, 74, 36, 0.4);
+    --chrome-active-surface: var(--color-indigo-a12);
+    --chrome-active-border: var(--color-indigo-a40);
 
     /*
      * Touch-target contract (반응형 감사 rank2, 2026-07-23). Width breakpoints
@@ -2610,7 +2598,7 @@
     --topology-blocking-composer-width: min(560px, calc(100vw - 2rem));
     --topology-blocking-composer-max-height: calc(100dvh - 11rem);
     --topology-blocking-composer-surface: var(--color-panel);
-    --topology-blocking-composer-border: rgba(242, 127, 89, 0.48);
+    --topology-blocking-composer-border: rgba(139, 151, 255, 0.48);
     --topology-blocking-composer-shadow:
       0 28px 72px rgba(0, 0, 0, 0.58),
       0 0 0 1px rgba(255, 255, 255, 0.08),
@@ -2949,7 +2937,7 @@
        한 색이 된다. 명도·채도를 갈라 계열은 같되 값이 다르다. 렌즈(팝오버
        열림) 한정 표기라 상시 앰버 확장이 아니다. */
     --color-footprint-trail: #e8c47a;
-    /* 발자국 인디고 — `--color-indigo-accent`(#f0894e) 를 쓰지 않는 이유는
+    /* 발자국 인디고 — `--color-indigo-accent`(#7170ff) 를 쓰지 않는 이유는
        **대비**다. 캔버스(#0a0a0d) 위에서 사용자가 고를 수 있는 최저 진하기
        (0.5)일 때 그 인디고는 2.08:1 로 3:1 을 못 넘어, "안 보이는 발자국"이라는
        고를 수 있는 결함을 만든다. 엣지 선택과 같은 pale 인디고는 같은 값에서
@@ -3004,10 +2992,10 @@
     --topology-v2-project-hairline-inner: rgba(212, 180, 120, 0.35);
     --topology-v2-project-pin-tick: rgba(212, 180, 120, 0.5);
     /* 선택 노드의 정적 이중 링(글로우 아님, 기계식 링) + 호버 미리보기 링.
-       rgb(94,106,210) = --color-indigo-brand(#c14a24) 와 동일 hue, 알파만
+       rgb(94,106,210) = --color-indigo-brand(#5e6ad2) 와 동일 hue, 알파만
        다름 — "둘 이상의 채색 시스템 금지" 위반 아님(단일 인디고 유지). */
     --topology-v2-selection-ring-indigo: var(--topology-v2-indigo-bright);
-    --topology-v2-selection-ring-hairline: rgba(193, 74, 36, 0.45);
+    --topology-v2-selection-ring-hairline: rgba(94, 106, 210, 0.45);
     /*
      * 사람이 쓴 노드의 **검수 대기** 링 (2026-08-03 소유자 지시: *"붉은색
      * 테두리… 오류는 아니라도 이건 경고성으로"*).
@@ -3023,7 +3011,7 @@
      * 때까지 상주하므로 움직이면 지도 전체가 떨린다.
      */
     --topology-v2-review-ring: rgba(255, 74, 122, 0.72);
-    --topology-v2-hover-ring: rgba(193, 74, 36, 0.55);
+    --topology-v2-hover-ring: var(--color-indigo-a55);
     /* Design Guardian 승인 처방 L — 호버 circuit-trace shimmer. 정지 호버
        링(위) 위에 저속 순회하는 밝은 아크 1개(글로우 0 — `strokeKindOutline`
        패스 재사용 + `setLineDash`/`lineDashOffset` 시간 애니메이션만). seg 는
@@ -3064,11 +3052,11 @@
        "노드 규격" 절. */
     --topology-v2-radius-magnitude-k: 0.45;
     /* B3 잔여 — dust 시차 깊이 범위 (그리드 1.0 대비 느린 흐름). */
-    /* 엣지 선택(페어 포커스) — 인디고 pale 사다리: 노드 선택(#c14a24)과
+    /* 엣지 선택(페어 포커스) — 인디고 pale 사다리: 노드 선택(#5e6ad2)과
        같은 계열, 밝은 값으로 구분 (채색 시스템 증식 없음). */
-    --topology-v2-edge-selected: rgba(254, 200, 181, 0.66);
+    --topology-v2-edge-selected: rgba(200, 210, 255, 0.66);
     /* 전개 코호트(칩으로 드러난 직속 자식) 소속 링 — 인디고 사다리 3번째 칸.
-       노드 선택 = 채도 있는 인디고(#c14a24) **실선**, 엣지 선택 = pale 인디고,
+       노드 선택 = 채도 있는 인디고(#5e6ad2) **실선**, 엣지 선택 = pale 인디고,
        전개 = **탈채도** 인디고 파선. hue 는 그대로 인디고 축이고 채도만 중립
        램프쪽으로 내려 "선택" 과 "전개" 가 실선/파선 + 채도로 갈린다 —
        새 brand color 0 (design.md 선택 색 사다리). */
@@ -3133,6 +3121,22 @@
     --topology-v2-grid-major: #121218;
     --topology-v2-vignette-base-alpha: 0.32;
     --topology-v2-vignette-far-alpha: 0.18;
+
+    /*
+     * 3D 돔의 위도 링 — **3D 에서만 그리는 좌표계 잉크**.
+     *
+     * 왜 `--topology-v2-grid-major`(#121218)를 안 쓰나: 그 값은 **평면 격자**의
+     * 것이고, 평면 격자는 화면을 가득 덮어서 아주 낮은 잉크로도 «좌표계가 있다»
+     * 가 읽힌다. 링은 화면에 세 줄뿐이라 같은 값으로는 그냥 안 보인다(실측:
+     * 캔버스 #0a0a0d 위에서 안개까지 곱하면 사실상 0). 덮는 면적이 다르면
+     * 같은 역할이어도 값이 달라야 한다.
+     *
+     * 상한은 **데이터 잉크의 바닥**(`--topology-v2-ink-depth-leaf` #60606d)이다.
+     * 링이 그것을 넘으면 좌표계가 데이터와 주목을 다툰다. 여기 값은 그 아래이고,
+     * 실제 화면에서는 여기에 기본 불투명도(0.34)와 깊이 안개가 더 곱해진다 —
+     * 가까운 호만 남고 먼 호는 사라진다. 그 비대칭이 «어디가 앞인가» 다.
+     */
+    --topology-v2-dome-ring: #43434f;
 
     /* 캔버스 배경 세트 — 도트(기본, 위 blueprint grid) + 움직이는 셋(흐름장·
        근접 성좌·중력장, render/animated-background.ts). 구 정적 타일 2종
@@ -3469,7 +3473,7 @@
     /* 연결 그룹 trace 미니라인 — 캔버스 엣지와 같은 계열(contains 실선/depends 점선) */
     /* A1 전체 상세 인디고 보더 — 기존 rgba(94,106,210,0.5) 리터럴 2곳의 토큰化
        (Guardian A1 follow-up P2). */
-    --topology-v2-indigo-border: rgba(193, 74, 36, 0.5);
+    --topology-v2-indigo-border: var(--color-indigo-a50);
 
     --topology-v2-edge-contains-mark: #4a4a54;
     --topology-v2-edge-depends-mark: #5c5c72;
@@ -4588,16 +4592,25 @@ html[data-gateway-stage] {
 }
 
 /*
- * ── 악센트 되돌림: 인디고 ─────────────────────────────────────────────────
+ * ── 악센트 대체 팔레트: 잉걸 ─────────────────────────────────────────────
  *
- * 2026-08-18 에 앱 악센트를 인디고 → **잉걸**(`#c14a24`)로 바꿨다(근거·실측은
- * `docs/DECISIONS.md` 같은 날 기록). 소유자가 *"사용자가 설정에서 변경
- * 가능하게해줘"* 라고 해서, 옛 인디고를 **되돌림 팔레트**로 남긴다.
+ * 앱의 기본 채색은 **인디고**(`#5e6ad2`)다 — 위 `@theme` 블록이 정본이고,
+ * 이 블록은 옵트인으로 고를 수 있는 두 번째 팔레트 **잉걸**(`#c14a24`)이다.
+ *
+ * 2026-08-18 오전에 기본을 인디고 → 잉걸로 바꿨다가 같은 날 **소유자가 되돌렸다**
+ * (*"인디고 색상을 기본으로 세팅"*). 되돌리는 방법은 두 가지였는데 —
+ * ① 기본값 상수만 뒤집고 인디고를 계속 덮어쓰기 블록에 두거나
+ * ② 두 벌의 값을 맞바꿔 인디고를 다시 `:root` 로 올리거나 —
+ * ②를 골랐다. 토큰 이름이 `--color-indigo-*` 라서, 기본 팔레트에 구리색이
+ * 앉아 있으면 **이름이 값에 대해 거짓말을 한다**. 그 거짓말은 lint 도 테스트도
+ * 못 잡고 다음 사람이 `--color-indigo-brand` 를 «인디고겠지» 하고 쓰는 순간
+ * 조용히 틀린다. 그리고 ①은 「기본값인데 속성이 붙어 있는 상태」를 만들어,
+ * 아래 `applyAccentAttribute` 의 계약(기본값이면 속성을 지운다)을 깬다.
  *
  * ## 왜 이 블록이 파일 맨 끝인가
  *
  * `:root` 와 이 선택자는 특이도가 같아서(둘 다 (0,1,0)) 순서가 이긴다.
- * 그래서 `:root[data-accent="indigo"]`(0,2,0)로 특이도를 한 단 올리고 **동시에**
+ * 그래서 `:root[data-accent="ember"]`(0,2,0)로 특이도를 한 단 올리고 **동시에**
  * 맨 끝에 둔다 — 둘 중 하나만으로도 이기지만, 다음 사람이 토큰을 파일 뒤쪽에
  * 더해도 안 깨지게 두 겹으로 막는다.
  *
@@ -4608,65 +4621,65 @@ html[data-gateway-stage] {
  * 보이는 색은 언제나 빌드 시점에 고른 하나다 — 이건 한계이지 결함이 아니고,
  * 설정 화면이 그 사실을 말한다.
  *
- * **값은 손으로 적지 않았다.** 잉걸 교체 때 쓴 매핑(밝기·채도 보존 + 색상각
- * 회전)을 역으로 돌려 현재 파일에서 뽑아냈다 — 52개 토큰 전부 매핑에 걸렸고
- * 누락은 0이었다. 손으로 치면 조용히 한 색만 틀린다.
+ * **값은 손으로 적지 않았다.** 두 벌을 맞바꿀 때도 스크립트가 토큰 이름마다
+ * 값을 옮겼다(98개 선언 = 52개 토큰, 알파 사다리는 `@theme` 와 emit 강제
+ * `:root` 두 곳에 있어 두 번씩). 손으로 치면 조용히 한 색만 틀린다.
  *
  * 게이트: `tests/contract/accent-palette-switch.contract.test.ts` — 두 팔레트가
  * **같은 토큰 집합**을 덮는지(한쪽에만 있는 토큰 = 그 색에서만 깨지는 화면),
  * 그리고 두 팔레트 모두에서 채움 위 잉크가 AA 를 지키는지 잰다.
  */
-:root[data-accent="indigo"] {
-  --color-indigo-brand: #5e6ad2;
-  --color-indigo-accent: #7170ff;
-  --color-indigo-hover: #828fff;
-  --color-indigo-brand-hover: #5661c4;
-  --color-indigo-a06: rgba(94, 106, 210, 0.06);
-  --color-indigo-a08: rgba(94, 106, 210, 0.08);
-  --color-indigo-a10: rgba(94, 106, 210, 0.1);
-  --color-indigo-a12: rgba(94, 106, 210, 0.12);
-  --color-indigo-a14: rgba(94, 106, 210, 0.14);
-  --color-indigo-a16: rgba(94, 106, 210, 0.16);
-  --color-indigo-a18: rgba(94, 106, 210, 0.18);
-  --color-indigo-a20: rgba(94, 106, 210, 0.2);
-  --color-indigo-a22: rgba(94, 106, 210, 0.22);
-  --color-indigo-a24: rgba(94, 106, 210, 0.24);
-  --color-indigo-a26: rgba(94, 106, 210, 0.26);
-  --color-indigo-a28: rgba(94, 106, 210, 0.28);
-  --color-indigo-a30: rgba(94, 106, 210, 0.3);
-  --color-indigo-a32: rgba(94, 106, 210, 0.32);
-  --color-indigo-a34: rgba(94, 106, 210, 0.34);
-  --color-indigo-a38: rgba(94, 106, 210, 0.38);
-  --color-indigo-a40: rgba(94, 106, 210, 0.4);
-  --color-indigo-a42: rgba(94, 106, 210, 0.42);
-  --color-indigo-a46: rgba(94, 106, 210, 0.46);
-  --color-indigo-a50: rgba(94, 106, 210, 0.5);
-  --color-indigo-a55: rgba(94, 106, 210, 0.55);
-  --color-indigo-a58: rgba(94, 106, 210, 0.58);
-  --color-indigo-a60: rgba(94, 106, 210, 0.6);
-  --color-indigo-a66: rgba(94, 106, 210, 0.66);
-  --color-indigo-focus-ring: rgb(94, 106, 210);
-  --color-indigo-text-strong: rgba(159, 170, 235, 0.95);
-  --color-indigo-text-soft: rgba(188, 195, 255, 0.92);
-  --color-indigo-accent-a32: rgba(113, 112, 255, 0.32);
-  --color-indigo-accent-a50: rgba(113, 112, 255, 0.5);
-  --color-indigo-line-a06: rgba(139, 151, 255, 0.06);
-  --color-indigo-line-a13: rgba(139, 151, 255, 0.13);
-  --color-indigo-line-a15: rgba(139, 151, 255, 0.15);
-  --color-indigo-line-a20: rgba(139, 151, 255, 0.2);
-  --color-indigo-line-a22: rgba(139, 151, 255, 0.22);
-  --color-indigo-line-a32: rgba(139, 151, 255, 0.32);
-  --color-indigo-line-a35: rgba(139, 151, 255, 0.35);
-  --color-indigo-line-a40: rgba(139, 151, 255, 0.4);
-  --color-indigo-line-a42: rgba(139, 151, 255, 0.42);
-  --color-indigo-line-a45: rgba(139, 151, 255, 0.45);
-  --color-indigo-line-a54: rgba(139, 151, 255, 0.54);
-  --color-indigo-line-a90: rgba(139, 151, 255, 0.9);
-  --color-indigo-pale-a28: rgba(200, 210, 255, 0.28);
-  --color-indigo-pale-a82: rgba(200, 210, 255, 0.82);
-  --color-indigo-pale-a86: rgba(200, 210, 255, 0.86);
-  --color-indigo-pale-a90: rgba(200, 210, 255, 0.9);
-  --color-indigo-pale-a92: rgba(200, 210, 255, 0.92);
-  --color-indigo-pale-a94: rgba(200, 210, 255, 0.94);
-  --color-indigo-pale-a95: rgba(200, 210, 255, 0.95);
+:root[data-accent="ember"] {
+  --color-indigo-brand: #c14a24;
+  --color-indigo-accent: #f0894e;
+  --color-indigo-hover: #f5a06b;
+  --color-indigo-brand-hover: #a83e1d;
+  --color-indigo-a06: rgba(193, 74, 36, 0.06);
+  --color-indigo-a08: rgba(193, 74, 36, 0.08);
+  --color-indigo-a10: rgba(193, 74, 36, 0.1);
+  --color-indigo-a12: rgba(193, 74, 36, 0.12);
+  --color-indigo-a14: rgba(193, 74, 36, 0.14);
+  --color-indigo-a16: rgba(193, 74, 36, 0.16);
+  --color-indigo-a18: rgba(193, 74, 36, 0.18);
+  --color-indigo-a20: rgba(193, 74, 36, 0.2);
+  --color-indigo-a22: rgba(193, 74, 36, 0.22);
+  --color-indigo-a24: rgba(193, 74, 36, 0.24);
+  --color-indigo-a26: rgba(193, 74, 36, 0.26);
+  --color-indigo-a28: rgba(193, 74, 36, 0.28);
+  --color-indigo-a30: rgba(193, 74, 36, 0.3);
+  --color-indigo-a32: rgba(193, 74, 36, 0.32);
+  --color-indigo-a34: rgba(193, 74, 36, 0.34);
+  --color-indigo-a38: rgba(193, 74, 36, 0.38);
+  --color-indigo-a40: rgba(193, 74, 36, 0.4);
+  --color-indigo-a42: rgba(193, 74, 36, 0.42);
+  --color-indigo-a46: rgba(193, 74, 36, 0.46);
+  --color-indigo-a50: rgba(193, 74, 36, 0.5);
+  --color-indigo-a55: rgba(193, 74, 36, 0.55);
+  --color-indigo-a58: rgba(193, 74, 36, 0.58);
+  --color-indigo-a60: rgba(193, 74, 36, 0.6);
+  --color-indigo-a66: rgba(193, 74, 36, 0.66);
+  --color-indigo-focus-ring: rgb(193, 74, 36);
+  --color-indigo-text-strong: rgba(231, 155, 129, 0.95);
+  --color-indigo-text-soft: rgba(253, 182, 158, 0.92);
+  --color-indigo-accent-a32: rgba(240, 137, 78, 0.32);
+  --color-indigo-accent-a50: rgba(240, 137, 78, 0.5);
+  --color-indigo-line-a06: rgba(242, 127, 89, 0.06);
+  --color-indigo-line-a13: rgba(242, 127, 89, 0.13);
+  --color-indigo-line-a15: rgba(242, 127, 89, 0.15);
+  --color-indigo-line-a20: rgba(242, 127, 89, 0.2);
+  --color-indigo-line-a22: rgba(242, 127, 89, 0.22);
+  --color-indigo-line-a32: rgba(242, 127, 89, 0.32);
+  --color-indigo-line-a35: rgba(242, 127, 89, 0.35);
+  --color-indigo-line-a40: rgba(242, 127, 89, 0.4);
+  --color-indigo-line-a42: rgba(242, 127, 89, 0.42);
+  --color-indigo-line-a45: rgba(242, 127, 89, 0.45);
+  --color-indigo-line-a54: rgba(242, 127, 89, 0.54);
+  --color-indigo-line-a90: rgba(242, 127, 89, 0.9);
+  --color-indigo-pale-a28: rgba(254, 200, 181, 0.28);
+  --color-indigo-pale-a82: rgba(254, 200, 181, 0.82);
+  --color-indigo-pale-a86: rgba(254, 200, 181, 0.86);
+  --color-indigo-pale-a90: rgba(254, 200, 181, 0.9);
+  --color-indigo-pale-a92: rgba(254, 200, 181, 0.92);
+  --color-indigo-pale-a94: rgba(254, 200, 181, 0.94);
+  --color-indigo-pale-a95: rgba(254, 200, 181, 0.95);
 }

@@ -148,7 +148,7 @@ test("desktop readiness check proves Tauri macOS shell prerequisites", () => {
   );
   assert.match(
     result.stdout,
-    /✓ hosted website verifier sources expected download copy from the message catalog and requires both platform statuses/,
+    /✓ hosted website verifier sources expected download copy from the message catalog and requires the trust line plus both release-state CTAs/,
   );
   // Firebase Hosting 배포 프리플라이트/폴백 워크플로 검사는 #617 (Firebase 전면
   // 제거 → GitHub Pages 단일 호스트) 에서 사라졌다. 호스팅 배포 계약은 바로 위
@@ -171,7 +171,7 @@ test("desktop readiness check proves Tauri macOS shell prerequisites", () => {
   );
   assert.match(
     result.stdout,
-    /✓ hosted download CTAs separate the GitHub Releases download path from the source-code link without a broken latest-release dependency/,
+    /✓ hosted download CTAs avoid a broken latest-release URL and never call the GitHub API from the static export/,
   );
   assert.match(
     result.stdout,

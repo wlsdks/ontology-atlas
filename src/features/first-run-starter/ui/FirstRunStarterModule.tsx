@@ -74,6 +74,18 @@ export interface FirstRunStarterModuleProps {
    * 형태다. 그래서 새 상태를 만들지 않고 같은 접힘 경로를 탄다.
    */
   lensActive?: boolean;
+  /**
+   * 지도에서 노드를 하나라도 골랐나 — 골랐으면 이 카드는 **할 일을 마쳤다**.
+   *
+   * 왜 접나 (2026-08-19 소유자: *"좌측에 이게 계속 떠있어서 보기 안좋으니"*):
+   * 이 카드는 «무엇부터 하면 되나»를 말하는 안내인데, 노드를 고른 사람은 이미
+   * 지도를 쓰고 있다. 그때부터 카드는 안내가 아니라 화면의 3분의 1을 차지한
+   * 가림막이다. 예시 전환·렌즈 켜기가 이미 같은 신호로 접히고 있었고(위 두
+   * 블록), 노드 선택은 그중 가장 분명한 신호다.
+   *
+   * 사라지는 게 아니라 접히는 것이고, 「되돌아오기」 행으로 언제든 다시 연다.
+   */
+  nodeSelected?: boolean;
   children?: ReactNode;
 }
 
@@ -115,6 +127,7 @@ export function FirstRunStarterModule({
   onEnablePlainMode,
   audiencePlain = false,
   lensActive = false,
+  nodeSelected = false,
   children,
 }: FirstRunStarterModuleProps) {
   const t = useTranslations("firstRunStarter");
@@ -199,6 +212,18 @@ export function FirstRunStarterModule({
     lensCollapsedRef.current = true;
     setCollapsed(true);
   }, [lensActive]);
+  /*
+   * 첫 노드 선택에 접는다 — 렌즈와 **같은 한 번만** 문법이다(ref 로 잠근다).
+   * 매 렌더마다 시도하면 사용자가 카드를 다시 열어도 즉시 다시 접힌다.
+   * 선택을 풀어도 되돌리지 않는다: 「이미 지도를 써 봤다」는 사실은 선택을
+   * 해제한다고 취소되지 않는다.
+   */
+  const selectionCollapsedRef = useRef(false);
+  useEffect(() => {
+    if (!nodeSelected || selectionCollapsedRef.current) return;
+    selectionCollapsedRef.current = true;
+    setCollapsed(true);
+  }, [nodeSelected]);
   // PO 카운슬 2026-08-02 — `⌘O` 배지는 **맥에서만** 참이다. 이 앱의 폴더 열기
   // 단축키는 `{ key: "o", meta: true }` 하나뿐이고(HomePage 단축키 표) 대응
   // 하는 Ctrl+O 바인딩이 없다. 웹 관문의 핵심 청중이 Windows/Linux 인데 없는

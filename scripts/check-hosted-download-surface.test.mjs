@@ -53,12 +53,11 @@ const koDownloadCopy = JSON.parse(
 const alignedDownload = `<!doctype html>
 <main>
   <p>${koDownloadCopy.eyebrow}</p>
-  <a href="https://github.com/wlsdks/ontology-atlas/releases">${koDownloadCopy.primaryCtaPending}</a>
-  <a href="https://github.com/wlsdks/ontology-atlas">${koDownloadCopy.sourceCta}</a>
-  <h2>${koDownloadCopy.windowsPlatformTitle}</h2>
-  <p>${koDownloadCopy.platformStatus}</p>
-  <a href="https://github.com/wlsdks/ontology-atlas/issues">${koDownloadCopy.windowsTrackCta}</a>
-  <p>${koDownloadCopy.releaseGateNote}</p>
+  <a href="https://github.com/wlsdks/ontology-atlas/releases">${koDownloadCopy.webCta}</a>
+  <p>${koDownloadCopy.trustLine}</p>
+  <h2>${koDownloadCopy.demoTitle}</h2>
+  <h2>${koDownloadCopy.evidenceTitle}</h2>
+  <h2>${koDownloadCopy.agentsTitle}</h2>
 </main>`;
 
 test("hosted download surface check passes for promo/download-aligned pages", async () => {
@@ -79,13 +78,11 @@ test("hosted download surface check passes for promo/download-aligned pages", as
   }
 });
 
-test("hosted download surface check accepts the published unsigned Windows beta branch", async () => {
-  const publishedDownload = alignedDownload
-    .replace(`<p>${koDownloadCopy.platformStatus}</p>`, `<p>${koDownloadCopy.windowsUnsignedWarning}</p>`)
-    .replace(
-      `<a href="https://github.com/wlsdks/ontology-atlas/issues">${koDownloadCopy.windowsTrackCta}</a>`,
-      `<a href="https://github.com/wlsdks/ontology-atlas/releases/download/v1/ontology-atlas_1_windows_x64-setup.exe">${koDownloadCopy.windowsDownloadCta}</a>`,
-    );
+test("hosted download surface check accepts the published release branch", async () => {
+  const publishedDownload = alignedDownload.replace(
+    `<a href="https://github.com/wlsdks/ontology-atlas/releases">${koDownloadCopy.webCta}</a>`,
+    `<a href="https://github.com/wlsdks/ontology-atlas/releases/download/v1/ontology-atlas_1_aarch64.dmg">${koDownloadCopy.primaryCtaPublished}</a>`,
+  );
   const server = await startServer({
     "/ko/": { body: alignedLanding },
     "/ko/download/": { body: publishedDownload },
@@ -156,24 +153,24 @@ test("hosted download surface check rejects a download page without the release 
   }
 });
 
-// Windows visitors must be told where they stand. A download page that names
-// only macOS reads as "this product is not for you" — the exact ambiguity the
-// in-preparation card exists to remove.
-test("hosted download surface check rejects a download page that drops the Windows platform status", async () => {
+// 배포된 페이지에는 어느 릴리스 상태에서든 **결정할 것**이 있어야 한다 —
+// 받을 파일이 있으면 파일, 없으면 오늘 당장 되는 브라우저 지도. 둘 다 없는
+// 페이지는 방문자를 빈손으로 돌려보낸다.
+//
+// [재조준 2026-08-19] 구 판본은 Windows 플랫폼 절이 떨어졌는지를 봤는데,
+// 그 절이 설치 절과 함께 사라졌다. 같은 「빈손으로 돌려보내지 않는다」를
+// 지금 지는 것은 릴리스 상태 두 갈래 CTA 다.
+test("hosted download surface check rejects a download page with no release-state CTA", async () => {
   const server = await startServer({
     "/ko/": { body: alignedLanding },
     "/ko/download/": {
-      // ⚠️ 문자열을 여기 베끼지 않는다. 예전엔 `.replace("<h2>Windows</h2>", "")`
-      // 였는데, 그 리터럴은 `messages/ko.json` 의 값이라 **문구를 고치는 순간
-      // 아무것도 못 지운다.** 그러면 픽스처가 멀쩡한 채로 남아 검사는 통과하고,
-      // 시험은 "떨어뜨렸는데 안 잡힌다" 며 빨개진다 — 실제로 2026-07-29 에
-      // 정확히 그렇게 됐다. 이제 메시지에서 읽어 지운다.
-      body: alignedDownload
-        .replace(`<p>${koDownloadCopy.platformStatus}</p>`, "")
-        .replace(
-          `<a href="https://github.com/wlsdks/ontology-atlas/issues">${koDownloadCopy.windowsTrackCta}</a>`,
-          "",
-        ),
+      // ⚠️ 문자열을 여기 베끼지 않는다. 리터럴로 지우면 문구를 고치는 순간
+      // **아무것도 못 지우고**, 픽스처가 멀쩡한 채로 남아 시험만 빨개진다
+      // (2026-07-29 실측 사고). 메시지에서 읽어 지운다.
+      body: alignedDownload.replace(
+        `<a href="https://github.com/wlsdks/ontology-atlas/releases">${koDownloadCopy.webCta}</a>`,
+        `<a href="https://github.com/wlsdks/ontology-atlas/releases"></a>`,
+      ),
     },
   });
   try {
@@ -182,7 +179,7 @@ test("hosted download surface check rejects a download page that drops the Windo
         baseUrl: server.baseUrl,
         timeoutMs: 5000,
       }),
-      /Windows/,
+      /Windows release-state text|missing expected text/,
     );
   } finally {
     await server.close();
@@ -209,7 +206,7 @@ test("hosted download surface check rejects a renamed-away copy key instead of s
     // 있는 페이지 — 키를 지운 다음 배포하면 정확히 이 모양이 된다.
     "/ko/download/": {
       body: alignedDownload.replace(
-        `<p>${koDownloadCopy.platformStatus}</p>`,
+        `<p>${koDownloadCopy.trustLine}</p>`,
         "<p>undefined</p>",
       ),
     },
@@ -217,7 +214,7 @@ test("hosted download surface check rejects a renamed-away copy key instead of s
   try {
     await assert.rejects(
       evaluateHostedSurface({ baseUrl: server.baseUrl, timeoutMs: 5000 }),
-      /platformStatus|missing expected text|misconfigured|Windows/,
+      /trustLine|missing expected text|misconfigured/,
     );
   } finally {
     await server.close();

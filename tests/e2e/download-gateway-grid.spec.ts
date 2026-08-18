@@ -39,36 +39,33 @@ import { seedFirstRunSeen } from "./first-run-seed";
  * 대칭이었다. 그래서 정렬 원점을 `max(홈통, (vw − page-max)/2)` 로 승격시키고,
  * 여섯 원소와 카메라 예약폭이 **그 하나**를 소비하게 했다.
  *
- * ## 무엇을 재나 (2026-08-18 리메이크 개정)
+ * ## 무엇을 재나 (2026-08-19 개정 — 설치 절 삭제)
  *
- * 1. GNB 로고 · 헤드라인 · **지도 절** · 판 · 캡션 · 설치 띠 · 푸터의 x 가
- *    **전부 같다** (일곱 원소).
+ * 1. GNB 로고 · 헤드라인 · **지도 절** · 캡션 · 푸터의 x 가 **전부 같다**
+ *    (다섯 원소).
  * 2. **좌우 여백이 같다** — `밴드.left === vw − 밴드.right`.
  * 3. **상단 바의 우측 그룹 오른끝 === vw − 원점** (소유자의 "공백이 길고" 지적).
- * 4. **판과 지도가 겹치지 않는다** — 구 카메라 예약폭 파생(`원점+판폭+틈` →
- *    `--topology-v2-safe-inset-left`)의 후계다. 리메이크로 지도가 판 뒤
- *    배경에서 자기 절(증거)로 내려가며 파생의 전제(겹침 가능성)가 사라졌고,
- *    지키던 property(그래프가 판 뒤로 파고들지 않는다)는 문서 좌표 비교로
- *    직접 잰다.
- * 5. **리사이즈 뒤에도 전부 유지된다.**
- * 6. **설치 3단이 접히지 않는다** — 끝까지 스크롤하면 세 단이 전부 뷰포트
- *    안에 온전히 들어오고, 조상 컨테이너가 잘라 놓지 않았다.
- * 7. 판 안의 어떤 컨트롤도 판의 안쪽 폭을 넘지 않는다(ko/en 둘 다).
+ * 4. **리사이즈 뒤에도 전부 유지된다.**
+ * 5. **두 주소가 같은 것을 보여준다** — `/` 와 `/download` 둘 다 시연 절을 낸다.
+ * 6. 320px 에서 가로 오버플로 0 (ko/en 둘 다).
  *
- * ## 6번의 사정거리는 2026-08-01 에 좁혀졌다 (넓힌 게 아니라 좁혔다)
+ * ## [삭제 2026-08-19] 판·설치 3단을 주어로 쓰던 단언 넷
  *
- * 종전 6번은 **「페이지 전체가 한 화면」** 이었다(`/download` 에서 세로 스크롤 0).
- * 그건 시연 절이 `/` 에만 있던 시절의 형태다 — 소유자가 두 주소를 통일하면서
- * (*"download는 결국 홍보 페이지랑 같잖아"*) `/download` 도 스크롤되는 페이지가
- * 됐고, 그 순간 옛 6번은 **제품이 아니라 자기 전제를 지키는** 시험이 됐다.
+ * 소유자가 설치 절을 통째로 걷어냈다(*"맨 마지막 이거는 없어도 될듯? 어차피
+ * 맨 위에 다 있어서"*). 함께 지운 것:
  *
- * 그래서 지우지 않고 **원래 지키던 것**으로 돌려놨다. 그 게이트가 실제로 잡은
- * 회귀는 "스크롤이 생겼다" 가 아니라 **"접힌 것이 하필 설치 3단이었다"** 다
- * (구 `min(46rem,88vh)` 고정 바닥이 850 창에서 270px 을 접었다). 스크롤 0 은
- * 그 property 를 담는 그릇이었지 property 자체가 아니었다.
+ * - 일곱 원소 중 **판**과 **설치 띠** (주어 소멸)
+ * - **판↔지도 비겹침** — 두 절이 다 없어졌으므로 겹칠 것이 없다
+ * - **판이 폭 토큰(`--gateway-plate-width`)을 안 넘는다**
+ * - **설치 3단이 접히지 않는다** · **판 안 컨트롤이 판을 안 뚫는다** ·
+ *   **판의 컨트롤이 선언한 여백을 지킨다**(눌린 여백 0)
+ *
+ * 그중 「두 주소가 같은 것을 보여준다」만은 그릇을 갈아 끼워 남긴다 — 그건
+ * 설치 3단의 성질이 아니라 **주소 통일**의 성질이고, 주어(`demo-stage`)가
+ * 그대로 살아 있다.
  *
  * ⚠️ **그릇과 내용물을 헷갈리면 게이트가 두 방향으로 틀린다.** 그릇만 지키면
- * 오늘처럼 정당한 설계 변경에 빨개지고, 그릇을 지우면 내용물까지 같이 사라진다.
+ * 정당한 설계 변경에 빨개지고, 그릇을 지우면 내용물까지 같이 사라진다.
  * 시험이 무엇을 지키는지 문장으로 못 쓰면 그건 아직 property 가 아니다.
  */
 
@@ -101,8 +98,8 @@ const WIDTHS = [
   { width: 2400, height: 1350 },
 ];
 
-/** 스크롤 0 을 약속하는 폭 — 14인치 실창과 풀스크린, 그리고 그 위. */
-const NO_SCROLL_VIEWPORTS = [
+/** 두 주소가 같은 것을 보여주는지 재는 폭 — 14인치 실창과 풀스크린, 그 위. */
+const UNIFIED_ROUTE_VIEWPORTS = [
   { width: 1512, height: 982 },
   { width: 1512, height: 850 },
   { width: 1920, height: 1080 },
@@ -135,10 +132,6 @@ async function measure(page: import("@playwright/test").Page) {
       const el = laidOut(sel);
       return el ? Math.round(el.getBoundingClientRect().right) : null;
     };
-    const plate = document.querySelector('[data-testid="download-plate"]');
-    const plateRect = plate ? plate.getBoundingClientRect() : null;
-    const mapFrame = document.querySelector('[data-testid="download-stage-map-frame"]');
-    const mapRect = mapFrame ? mapFrame.getBoundingClientRect() : null;
     const scrollDelta = [...document.querySelectorAll("*")]
       .filter(
         (el) =>
@@ -150,23 +143,16 @@ async function measure(page: import("@playwright/test").Page) {
       xs: {
         gnb: bx('[data-testid="download-gnb"] a'),
         headline: bx("h1"),
-        // 리메이크(2026-08-18): 지도 절도 같은 원점에 선다 — 일곱째 원소.
+        // 리메이크(2026-08-18): 지도 절도 같은 원점에 선다.
         map: bx('[data-testid="download-stage-map-frame"]'),
-        plate: bx('[data-testid="download-plate"]'),
         caption: bx('[data-testid="download-portrait-caption"] span'),
-        install: bx('[data-testid="download-install"]'),
         footer: bx("main footer > div"),
       },
-      plateRight: plateRect ? Math.round(plateRect.right) : null,
-      // 판↔지도 비겹침의 새 증거 (구 카메라 예약폭의 후계) — 아래 참조.
-      plateTop: plateRect ? Math.round(plateRect.top + window.scrollY) : null,
-      mapBottom: mapRect ? Math.round(mapRect.bottom + window.scrollY) : null,
       // 밴드(=원점 안쪽 컬럼)의 오른끝 — 좌우 대칭은 이 수와 `vw` 로만 잰다.
-      // ⚠️ 자(ruler)는 **컬럼 전폭을 실제로 채우는 원소**여야 한다. 종전엔
-      // 설치 3단이었는데, 2026-08-18 설치 절 정돈으로 3단이 판과 같은
-      // 880 컬럼으로 내려가면서(두 그리드 겹침 해소 — 소유자 지적) 자 노릇을
-      // 잃었다. 계기 스트립(gateway-facts)은 히어로의 바닥 괘선이라 컬럼
-      // 전폭이 정의이고, 게시/미게시 어느 분기에서도 그려진다.
+      // ⚠️ 자(ruler)는 **컬럼 전폭을 실제로 채우는 원소**여야 한다. 계기
+      // 스트립(gateway-facts)은 히어로의 바닥 괘선이라 컬럼 전폭이 정의이고,
+      // 게시/미게시 어느 분기에서도 그려진다. (구 자였던 설치 3단은
+      // 2026-08-19 에 페이지에서 사라졌다.)
       bandRight: right('[data-testid="gateway-facts"]'),
       // 상단 바 우측 그룹의 오른끝. 소유자의 "공백이 길고 왜이러지?" 게이트.
       gnbActionsRight: right('[data-testid="download-gnb-actions"]'),
@@ -190,14 +176,6 @@ async function measure(page: import("@playwright/test").Page) {
       // `parseFloat` 가 화면이 실제로 쓰는 x 와 같은 수를 준다.
       originToken: Number.parseFloat(
         getComputedStyle(document.documentElement).getPropertyValue("--gateway-origin").trim(),
-      ),
-      // 판 폭의 진실원 — 판이 이 상한을 넘지 않는지만 잰다. (구 카메라
-      // 예약폭 파생 — plateGap · safeInsetLeft — 은 2026-08-18 리메이크에서
-      // 은퇴했다: 지도가 자기 절로 내려가 판과 겹칠 수 없다.)
-      plateWidthToken: Number(
-        getComputedStyle(document.documentElement)
-          .getPropertyValue("--gateway-plate-width")
-          .trim(),
       ),
       scrollDelta,
       overflowX: document.documentElement.scrollWidth - window.innerWidth,
@@ -243,38 +221,18 @@ function assertGrid(m: Awaited<ReturnType<typeof measure>>, label: string) {
     m.layoutWidth - origin,
   );
 
-  /**
-   * **판과 지도는 겹칠 수 없다** — 구 카메라 예약폭 단언의 후계 (2026-08-18).
-   *
-   * 예전엔 판이 지도 위에 떠서 `원점+판폭+틈` 파생 예약폭이 겹침을 막았고,
-   * 이 시험이 그 파생을 잤다. 리메이크로 지도(증거 절)와 판(설치 절)이 서로
-   * 다른 절이 되면서 그 전제 — 겹침 가능성 — 자체가 사라졌다. 시험이 지키던
-   * property(「그래프가 판 뒤로 파고들지 않는다」)는 그대로 살아서, 이제
-   * 문서 좌표로 직접 잰다: 지도 절의 바닥이 판의 머리보다 위다.
-   */
-  expect(m.plateTop, `${label}: 판 rect 를 못 읽었다`).not.toBeNull();
-  expect(m.mapBottom, `${label}: 지도 절 rect 를 못 읽었다`).not.toBeNull();
-  expect(
-    m.mapBottom!,
-    `${label}: 지도 절이 판을 침범했다 (지도 바닥 ${m.mapBottom} > 판 머리 ${m.plateTop})`,
-  ).toBeLessThanOrEqual(m.plateTop!);
-
-  // 판은 자기 폭 상한(토큰)을 넘지 않는다 — 값은 베끼지 않고 라이브로 읽는다.
-  expect(m.plateRight, `${label}: 판 오른끝을 못 읽었다`).not.toBeNull();
-  expect(m.plateRight! - m.xs.plate!).toBeLessThanOrEqual(m.plateWidthToken + 1);
-
   expect(m.overflowX, `${label}: 가로 오버플로`).toBe(0);
 }
 
 test.describe("관문 다운로드의 그리드", () => {
   for (const viewport of WIDTHS) {
-    test(`${viewport.width}×${viewport.height} — 여섯 원소가 같은 x 에 서고 좌우가 같다`, async ({
+    test(`${viewport.width}×${viewport.height} — 다섯 원소가 같은 x 에 서고 좌우가 같다`, async ({
       page,
     }) => {
       await page.setViewportSize(viewport);
       await seedFirstRunSeen(page);
       await page.goto("/ko/download/", { waitUntil: "networkidle" });
-      await expect(page.getByTestId("download-plate")).toBeVisible({ timeout: 15_000 });
+      await expect(page.getByTestId("gateway-facts")).toBeVisible({ timeout: 15_000 });
 
       assertGrid(await measure(page), `${viewport.width}`);
     });
@@ -285,15 +243,15 @@ test.describe("관문 다운로드의 그리드", () => {
    *
    * [개정 2026-08-18] 구 판본의 고유 표적 — JS 파생 카메라 예약폭의 낡음 —
    * 은 리메이크로 파생 자체가 은퇴하며 사라졌다. 남는 property 는 「CSS 원점
-   * 공식이 실제로 리사이즈를 따라간다」와 「일곱 원소가 어느 폭에서도 한
+   * 공식이 실제로 리사이즈를 따라간다」와 「다섯 원소가 어느 폭에서도 한
    * 벌이다」이고, `assertGrid` 를 각 폭에서 다시 부르는 것이 그 전부다.
    * 두 방향으로 잰다: 넓히기(원점이 자란다)와 좁히기(홈통으로 되돌아간다).
    */
-  test("리사이즈하면 일곱 원소가 새 원점을 따라간다", async ({ page }) => {
+  test("리사이즈하면 다섯 원소가 새 원점을 따라간다", async ({ page }) => {
     await page.setViewportSize({ width: 1440, height: 900 });
     await seedFirstRunSeen(page);
     await page.goto("/ko/download/", { waitUntil: "networkidle" });
-    await expect(page.getByTestId("download-plate")).toBeVisible({ timeout: 15_000 });
+    await expect(page.getByTestId("gateway-facts")).toBeVisible({ timeout: 15_000 });
 
     const mounted = await measure(page);
     assertGrid(mounted, "1440 (마운트)");
@@ -329,50 +287,36 @@ test.describe("관문 다운로드의 그리드", () => {
     ).toBe(true);
   });
 
-  for (const viewport of NO_SCROLL_VIEWPORTS) {
+  /**
+   * **두 주소가 같은 것을 보여준다** (2026-08-01 소유자 확정).
+   *
+   * 종전엔 `showDemo` 한 줄이 주소로 갈랐고 아무 시험도 그 갈림을 몰랐다.
+   *
+   * [그릇 교체 2026-08-19] 이 단언은 원래 「설치 3단이 접히지 않는다」 시험의
+   * 공회전 방지 장치로 그 안에 얹혀 있었다. 설치 3단이 삭제되면서 바깥 시험은
+   * 사라졌지만 이 property 는 3단의 성질이 아니라 **주소 통일**의 성질이라,
+   * 자기 시험으로 독립시킨다.
+   */
+  for (const viewport of UNIFIED_ROUTE_VIEWPORTS) {
     for (const route of ["/ko/", "/ko/download/"]) {
-      test(`${viewport.width}×${viewport.height} ${route} — 설치 3단이 접히지 않는다`, async ({
+      test(`${viewport.width}×${viewport.height} ${route} — 시연 절이 두 주소 모두에 있다`, async ({
         page,
       }) => {
         await page.setViewportSize(viewport);
         await seedFirstRunSeen(page);
         await page.goto(route, { waitUntil: "networkidle" });
-        await expect(page.getByTestId("download-plate")).toBeVisible({ timeout: 15_000 });
 
-        /**
-         * **두 주소가 같은 것을 보여준다** (2026-08-01 소유자 확정).
-         *
-         * 이 단언이 없으면 아래 시험은 **조용히 무의미해진다** — 시연 절이
-         * 사라지면 페이지가 짧아져 설치 3단은 저절로 접힘 위에 오고, 시험은
-         * 아무것도 안 재면서 초록이 된다. 그건 통과가 아니라 시야 상실이다
-         * (이 파일의 `sawOriginChange` 와 같은 규율).
-         *
-         * 동시에 이것이 통일 자체의 게이트다. 종전엔 `showDemo` 한 줄이 주소로
-         * 갈랐고 아무 시험도 그 갈림을 몰랐다.
-         */
+        const demo = page.getByTestId("demo-stage");
+        await demo.scrollIntoViewIfNeeded();
         await expect(
-          page.getByTestId("demo-stage"),
+          demo,
           `${route} 에 시연 절이 없다 — 두 주소는 같은 것을 보여줘야 한다`,
         ).toBeVisible({ timeout: 15_000 });
 
-        const install = page.getByTestId("download-install");
-        // 스크롤되는 페이지가 됐으므로 **끝까지 가서** 잰다. 도달 자체가
-        // 시험의 일부다 — 스크롤로도 못 닿으면 그건 접힌 것보다 나쁘다.
-        await install.scrollIntoViewIfNeeded();
-        await expect(install).toBeVisible();
-
+        // 스크롤로도 못 닿거나 조상이 잘라 놓았으면 그건 없는 것과 같다.
         const cut = await page.evaluate(() => {
-          const el = document.querySelector('[data-testid="download-install"]')!;
+          const el = document.querySelector('[data-testid="demo-stage"]')!;
           const rect = el.getBoundingClientRect();
-          const vh = window.innerHeight;
-          const steps = [...el.querySelectorAll("li")].map((li) => {
-            const r = li.getBoundingClientRect();
-            return { top: Math.round(r.top), bottom: Math.round(r.bottom), h: Math.round(r.height) };
-          });
-          /**
-           * 조상이 잘라 놓았는가 — `overflow:hidden` 인 조상의 하단보다
-           * 아래로 삐져나온 픽셀. 스크롤 컨테이너와 달리 이건 **도달 불가**다.
-           */
           let clippedBy: string | null = null;
           for (let p = el.parentElement; p; p = p.parentElement) {
             const cs = getComputedStyle(p);
@@ -383,154 +327,58 @@ test.describe("관문 다운로드의 그리드", () => {
               break;
             }
           }
-          return {
-            vh,
-            bandBottom: Math.round(rect.bottom),
-            steps,
-            clippedBy,
-          };
+          return { clippedBy, height: Math.round(rect.height) };
         });
-
-        // 구 `min(46rem,88vh)` 고정 바닥이 850 창에서 접은 것이 바로 이 셋이다.
-        expect(cut.steps, "설치 단계가 셋이 아니다").toHaveLength(3);
-        for (const [i, s] of cut.steps.entries()) {
-          expect(s.h, `설치 ${i + 1}단의 높이가 0 이다`).toBeGreaterThan(0);
-          expect(
-            s.bottom,
-            `설치 ${i + 1}단이 뷰포트 아래로 잘렸다: ${JSON.stringify(cut)}`,
-          ).toBeLessThanOrEqual(cut.vh + 1);
-          expect(s.top, `설치 ${i + 1}단이 뷰포트 위로 잘렸다`).toBeGreaterThanOrEqual(-1);
-        }
-        expect(cut.clippedBy, `조상 컨테이너가 설치 띠를 잘랐다: ${cut.clippedBy}`).toBeNull();
+        expect(cut.height, "시연 절의 높이가 0 이다").toBeGreaterThan(0);
+        expect(cut.clippedBy, `조상 컨테이너가 시연 절을 잘랐다: ${cut.clippedBy}`).toBeNull();
       });
     }
   }
 
+  /**
+   * **320px 에서 가로로 넘치지 않는다** (ko/en 둘 다).
+   *
+   * [그릇 교체 2026-08-19] 종전 시험의 주어는 다운로드 판이었다. 판은
+   * 삭제됐지만 이 폭에서 진짜로 막던 것 — 라벨이 길어 컨트롤이 화면을 뚫고,
+   * 무대가 `overflow-hidden` 이라 스크롤바도 안 생긴 채 그냥 잘리는 것 — 은
+   * 페이지 전체의 성질이라 문서 단위로 잰다. `WIDTHS` 목록은 1440 이상만
+   * 보므로 이 폭은 여기서만 측정된다.
+   */
   for (const locale of ["ko", "en"]) {
-    test(`320px ${locale} — 판 안의 컨트롤이 판을 뚫지 않는다`, async ({ page }) => {
+    test(`320px ${locale} — 가로 오버플로 0`, async ({ page }) => {
       await page.setViewportSize({ width: 320, height: 720 });
       await seedFirstRunSeen(page);
       await page.goto(`/${locale}/download/`, { waitUntil: "networkidle" });
-      await expect(page.getByTestId("download-plate")).toBeVisible({ timeout: 15_000 });
+      await expect(page.getByTestId("gateway-facts")).toBeVisible({ timeout: 15_000 });
 
       const worst = await page.evaluate(() => {
-        const plate = document.querySelector('[data-testid="download-plate"]')!;
-        const cs = getComputedStyle(plate);
-        const innerLeft = plate.getBoundingClientRect().left + parseFloat(cs.paddingLeft);
-        const innerRight = plate.getBoundingClientRect().right - parseFloat(cs.paddingRight);
+        const vw = document.documentElement.clientWidth;
         let overflow = -Infinity;
         let culprit = "";
-        for (const el of plate.querySelectorAll("a, button, p, div")) {
+        for (const el of document.querySelectorAll(
+          "main a, main button, main p, main h1, main h2",
+        )) {
           const r = el.getBoundingClientRect();
           if (r.width === 0) continue;
-          const over = Math.max(r.right - innerRight, innerLeft - r.left);
+          const over = Math.max(r.right - vw, -r.left);
           if (over > overflow) {
             overflow = over;
-            culprit = (el.getAttribute("data-testid") ?? el.tagName) + ": " + el.textContent?.slice(0, 40);
+            culprit =
+              (el.getAttribute("data-testid") ?? el.tagName) + ": " + el.textContent?.slice(0, 40);
           }
         }
-        return { overflow: Math.round(overflow), culprit };
+        return {
+          overflow: Math.round(overflow),
+          culprit,
+          documentOverflow: document.documentElement.scrollWidth - vw,
+        };
       });
 
       // `buttonVariants` 는 `whitespace-nowrap` 이라 라벨이 길면 버튼이
-      // 컨테이너를 뚫는다. 무대가 `overflow-hidden` 이라 스크롤바도 안 생기고
-      // 그냥 잘렸다 — 실측(320, en): 주 CTA 가 22px 넘쳤다.
-      expect(worst.overflow, `판을 넘는 원소: ${worst.culprit}`).toBeLessThanOrEqual(0);
+      // 컨테이너를 뚫는다 — 실측(320, en): 주 CTA 가 22px 넘쳤다.
+      expect(worst.overflow, `화면을 넘는 원소: ${worst.culprit}`).toBeLessThanOrEqual(0);
+      expect(worst.documentOverflow, "문서가 가로로 넘친다").toBeLessThanOrEqual(0);
     });
   }
-});
 
-/**
- * **설계 여백은 눌러 담기의 완충재가 아니다** (2026-08-08 실측).
- *
- * 판의 출구 두 개(GitHub · 웹버전)를 640px 부터 두 칸으로 갈랐는데,
- * 640~830 구간에서는 그 칸이 내용보다 좁다. 실측(768 · ko): 행 폭 310px 인데
- * 두 버튼이 설계 여백(`px-6` = 24)을 지키려면 325px 이 필요했고, **부족분
- * 15px 이 여백에서 조용히 깎였다** — GitHub 버튼의 실효 좌우 여백 15.5,
- * 그 옆 형제 22. 나란히 선 두 출구의 여백이 서로 달라진 것이다.
- *
- * ## 왜 기존 게이트가 못 봤나 — 셋 다 각자 이유가 있다
- *
- * | 게이트 | 왜 침묵했나 |
- * |---|---|
- * | 이 파일의 x·넘침 시험 | 폭 목록이 **1440 이상**뿐이었다. 768 은 한 번도 측정된 적이 없다 |
- * | 글자 넘침 계측 | 글자가 **버튼 테두리 안에** 있다 — 잘리지도 삐져나오지도 않는다 |
- * | 단위 시험 | 담김·순서·문구만 본다. 렌더된 px 은 jsdom 에 없다 |
- *
- * 셋 다 자기 일은 했다. 아무도 «여백이 설계값대로인가» 를 묻지 않았을 뿐이다.
- *
- * ## 이 시험이 지키는 property
- *
- * *판 안의 컨트롤은 자기 내용을 담을 만큼 넓다* — 선언한 좌우 여백이 실제로
- * 그만큼 남는다. 이 성질이 깨지는 방식은 잘림이 아니라 **압축**이라, 재는
- * 방법도 rect 비교가 아니라 «content box 대 잉크 폭» 이다.
- */
-test.describe("판의 컨트롤은 선언한 여백을 지킨다", () => {
-  /** 좁은 쪽 임계 주변 — 여기가 한 번도 측정된 적 없는 구간이다. */
-  const NARROW_WIDTHS = [
-    { width: 640, height: 900 },
-    { width: 768, height: 1024 },
-    { width: 820, height: 1180 },
-    { width: 1024, height: 768 },
-  ];
-
-  for (const locale of ["ko", "en"] as const) {
-    for (const { width, height } of NARROW_WIDTHS) {
-      test(`${locale} @ ${width}×${height} — 눌린 여백 0`, async ({ page }) => {
-        await page.setViewportSize({ width, height });
-        await seedFirstRunSeen(page);
-        await page.goto(`/${locale}/download/`, { waitUntil: "networkidle" });
-        await expect(page.getByTestId("download-plate")).toBeVisible({ timeout: 15_000 });
-
-        const squeezed = await page.evaluate(() => {
-          const plate = document.querySelector('[data-testid="download-plate"]')!;
-          const rows: { id: string; declared: number; effective: number }[] = [];
-          for (const el of plate.querySelectorAll("a, button")) {
-            const box = el.getBoundingClientRect();
-            if (box.width < 40 || box.height < 20) continue;
-            const cs = getComputedStyle(el);
-            const declared = parseFloat(cs.paddingLeft);
-            if (declared < 1) continue; // 여백을 선언하지 않은 텍스트 링크는 대상 밖
-            // 실제 잉크 폭 — 자식 rect 의 합집합(텍스트 노드 포함)
-            const marks: DOMRect[] = [];
-            for (const node of el.childNodes) {
-              if (node.nodeType === Node.TEXT_NODE) {
-                if (!node.textContent?.trim()) continue;
-                const range = document.createRange();
-                range.selectNodeContents(node);
-                marks.push(range.getBoundingClientRect());
-              } else if (node instanceof Element) {
-                marks.push(node.getBoundingClientRect());
-              }
-            }
-            const painted = marks.filter((m) => m.width > 0);
-            if (!painted.length) continue;
-            const inkLeft = Math.min(...painted.map((m) => m.left));
-            const inkRight = Math.max(...painted.map((m) => m.right));
-            const effective = Math.min(inkLeft - box.left, box.right - inkRight);
-            rows.push({
-              id: el.getAttribute("data-testid") ?? el.textContent?.trim().slice(0, 24) ?? "?",
-              declared: Math.round(declared),
-              effective: Math.round(effective),
-            });
-          }
-          return rows;
-        });
-
-        // 공회전 차단 — 여백을 선언한 컨트롤을 하나도 못 찾으면 아래 0 은 무의미하다.
-        expect(
-          squeezed.length,
-          "판에서 여백을 선언한 컨트롤을 못 찾았다 — 계기가 헛돈다",
-        ).toBeGreaterThanOrEqual(2);
-
-        // 1px 은 서브픽셀 반올림 몫이다. 그보다 크게 깎였으면 압축이다.
-        const offenders = squeezed.filter((r) => r.effective < r.declared - 1);
-        expect(
-          offenders,
-          "선언한 여백보다 좁게 렌더된 컨트롤 — 칸이 내용보다 좁아 여백에서 깎인다. " +
-            "칸을 넓히거나, 그 폭에서는 한 줄로 쌓아라.",
-        ).toEqual([]);
-      });
-    }
-  }
 });

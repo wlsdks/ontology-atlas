@@ -27,6 +27,29 @@ import { controlClass } from '@/shared/ui/control-class';
  *
  * 영상을 죽이고 **포스터를 남긴다** — 재생 버튼으로 사람이 시작한다. 자동재생만
  * 끄고 내용을 빼앗지 않는 것이 감속의 뜻이다.
+ *
+ * ## [개정 2026-08-19] 무대는 48rem 에서 멈추고 가운데 선다
+ *
+ * 소유자: *"'설치 없이, 움직이는 것부터 봅니다' 이 부분 동영상도 지금 너무 커"*.
+ *
+ * 2026-07-30 판은 절의 열을 그대로 써서 상한도 가운데 정렬도 없었고, 그 근거는
+ * 「제목과 영상이 같은 x 에서 시작해 같은 x 에서 끝난다」였다. 그 정렬은 실제로
+ * 지켜졌지만 **크기**의 대가를 안 셌다: 컬럼이 `--page-max`(1600)까지 자라므로
+ * 클립(1512×918, 1.65:1)이 컬럼 전폭을 먹으면 높이가 이렇게 된다 —
+ * 1512 뷰포트에서 컬럼 1112 → **675px**, 1920 에서 1520 → **923px**,
+ * 2560 에서 1600 → **971px**. 첫인상 자리를 통째로 먹는 치수다. 시연은 무엇을
+ * 만드는 물건인지 보여 주는 **한 장면**이지 그 자체가 화면이 아니다.
+ *
+ * 실측(2026-08-19, dev · `/ko/download/`): 무대 768 · 영상 **766×465**, 세 폭
+ * 전부 같다.
+ *
+ * 상한 값은 새로 만들지 않았다 — 바로 아래 에이전트 절의 장면(`AcpChatScene`)이
+ * 이미 쓰는 `48rem` 이다. 두 장면이 같은 폭이면 페이지가 「이만큼이 무대다」를
+ * 한 번만 말한다. 가운데 정렬은 소유자 지시이고, 2026-07-30 이 기각했던
+ * `mx-auto` 를 그 지시로 되살린 것이다(`docs/DECISIONS.md` 2026-08-19).
+ *
+ * ⚠️ 상한은 **절이 소유한다** — 영상에만 걸고 캡션을 컬럼에 두면 두 오른끝이
+ * 갈려서 2026-07-30 이 막으려던 「한 절 두 그리드」가 그대로 돌아온다.
  */
 export function DemoStage({ available }: { available?: readonly DemoClip['id'][] }) {
   const t = useTranslations('download');
@@ -38,7 +61,11 @@ export function DemoStage({ available }: { available?: readonly DemoClip['id'][]
   return (
     /* 제목은 리메이크(2026-08-18)에서 절 머리(`SectionIntro`)로 올라갔다 —
        한 절에 헤딩이 둘이면 위계가 아니라 목록이다. 이름은 aria 로 남긴다. */
-    <section data-testid="demo-stage" aria-label={t('demoHeading')} className="min-w-0">
+    <section
+      data-testid="demo-stage"
+      aria-label={t('demoHeading')}
+      className="mx-auto min-w-0 max-w-[48rem]"
+    >
       <DemoPlayer clip={clip} />
       {/*
        * **지금 붙은 클립이 무엇인지 화면이 정직하게 말한다** (2026-08-18).
@@ -101,16 +128,8 @@ function DemoPlayer({ clip }: { clip: DemoClip }) {
   return (
     <div
       data-testid={`demo-panel-${clip.id}`}
-      /*
-       * **영상은 이 절의 열을 그대로 쓴다** — 별도 상한도, 가운데 정렬도 없다
-       * (2026-07-30). 제목과 같은 x 에서 시작해 같은 x 에서 끝난다.
-       *
-       * 앞서 `mx-auto max-w-4xl` 이었는데, 그러면 제목이 원점에 선 채 **영상만
-       * 188px 안쪽으로 들어가** 한 절이 두 그리드로 갈렸다(1512 실측). 뷰포트
-       * 높이로 상한을 두는 안도 시도했다가 되돌렸다 — 1920 에서 영상이 344px
-       * 좁아져 오른끝이 어긋났고, 정작 막으려던 넘침은 16px 이었다. 스크롤 한
-       * 번에 사라지는 양을 막자고 폭을 깎은 셈이라 대가가 훨씬 컸다.
-       */
+      /* 폭·정렬은 절(`DemoStage`)이 소유한다 — 여기서 다시 상한을 두면
+         영상과 캡션의 오른끝이 갈린다. */
       className="mt-4 min-w-0"
     >
       <div className="relative min-w-0 overflow-hidden rounded-panel border border-[color:var(--color-border-soft)] bg-[color:var(--color-canvas)]">

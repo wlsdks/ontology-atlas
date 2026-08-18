@@ -8,9 +8,15 @@ import { contrastRatio, parseColor } from "../../scripts/lib/contrast.mjs";
 /**
  * 악센트 팔레트 스위치의 계약 (2026-08-18).
  *
- * 앱의 유일한 채색이 **잉걸(기본)** 과 **인디고(되돌림)** 둘이 됐다. 값은
+ * 앱의 유일한 채색이 **인디고(기본)** 와 **잉걸(대체)** 둘이 됐다. 값은
  * `app/globals.css` 에 두 벌로 있고, 고른 값은 `:root[data-accent]` 속성으로
  * 반영된다(`src/shared/lib/appearance-preferences.ts`).
+ *
+ * ⚠️ **어느 쪽이 기본인지를 이 파일에 적지 않는다.** 2026-08-18 하루에 기본이
+ * 잉걸로 갔다가 인디고로 돌아왔다 — 그때 이 파일이 색 이름을 하드코딩하고
+ * 있었더라면 되돌리는 PR 마다 계약 테스트가 「값 검사」가 아니라 「이름 고치기」
+ * 로 바뀐다. 그래서 기본/대체는 `appearance-preferences.ts` 의 `DEFAULT_ACCENT`
+ * 에서 읽고, CSS 의 덮어쓰기 선택자 이름도 거기서 **유도한다**.
  *
  * ## 이 계약이 막는 세 가지
  *
@@ -34,10 +40,32 @@ const prefs = read("src/shared/lib/appearance-preferences.ts");
 const boot = read("src/shared/ui/accent-boot-script.tsx");
 const layout = read("app/layout.tsx");
 
-/** 되돌림 블록 본문 — `:root[data-accent="indigo"] { … }` 안쪽. */
+/**
+ * 기본 악센트 — 모듈이 정본. 여기서 읽어야 기본이 뒤집혀도 이 파일이 안 바뀐다.
+ */
+const DEFAULT_ACCENT = (() => {
+  const m = /export const DEFAULT_ACCENT: Accent = "([a-z]+)"/.exec(prefs);
+  expect(m, "appearance-preferences 에서 DEFAULT_ACCENT 를 못 찾는다").not.toBeNull();
+  return (m as RegExpExecArray)[1];
+})();
+
+/** 고를 수 있는 두 값 중 기본이 **아닌** 쪽 — 덮어쓰기 블록을 갖는 팔레트. */
+const ALT_ACCENT = (() => {
+  const m = /export const ACCENTS: readonly Accent\[\] = \[([^\]]+)\]/.exec(prefs);
+  expect(m, "appearance-preferences 에서 ACCENTS 를 못 찾는다").not.toBeNull();
+  const values = [...(m as RegExpExecArray)[1].matchAll(/"([a-z]+)"/g)].map((x) => x[1]);
+  expect(values, "악센트는 검증된 두 벌뿐이다").toHaveLength(2);
+  const alt = values.filter((v) => v !== DEFAULT_ACCENT);
+  expect(alt, "ACCENTS 에 DEFAULT_ACCENT 가 없다").toHaveLength(1);
+  return alt[0];
+})();
+
+const ALT_SELECTOR = `:root[data-accent="${ALT_ACCENT}"]`;
+
+/** 대체 팔레트 블록 본문 — `:root[data-accent="<대체>"] { … }` 안쪽. */
 function revertBlock(): string {
-  const start = css.indexOf(':root[data-accent="indigo"]');
-  expect(start, "되돌림 팔레트 블록이 globals.css 에 없다").toBeGreaterThan(-1);
+  const start = css.indexOf(ALT_SELECTOR);
+  expect(start, `대체 팔레트 블록(${ALT_SELECTOR})이 globals.css 에 없다`).toBeGreaterThan(-1);
   const open = css.indexOf("{", start);
   const close = css.indexOf("\n}", open);
   return css.slice(open + 1, close);
@@ -54,7 +82,7 @@ function tokenValue(source: string, name: string): string | null {
   return m ? m[1].trim() : null;
 }
 
-/** 되돌림 블록을 뺀 나머지 = 기본(잉걸) 팔레트가 정의된 곳. */
+/** 대체 블록을 뺀 나머지 = 기본 팔레트가 정의된 곳. */
 const baseSource = (() => {
   const block = revertBlock();
   return css.split(block).join("");
@@ -83,8 +111,8 @@ describe("악센트 팔레트 스위치 — 두 벌이 같은 것을 덮는다",
   it("두 팔레트 모두에서 채운 면 위 흰 글자가 AA 를 넘는다", () => {
     const white = parseColor("#ffffff")!;
     for (const [label, source] of [
-      ["잉걸(기본)", baseSource],
-      ["인디고(되돌림)", revertBlock()],
+      [`${DEFAULT_ACCENT}(기본)`, baseSource],
+      [`${ALT_ACCENT}(대체)`, revertBlock()],
     ] as const) {
       for (const token of ["--color-indigo-brand", "--color-indigo-brand-hover"]) {
         const raw = tokenValue(source, token);
@@ -124,8 +152,12 @@ describe("깜빡임 방지 스크립트가 모듈과 같은 계약을 쓴다", (
 
   it("스크립트가 심는 속성·값이 CSS 선택자와 짝이 맞는다", () => {
     expect(boot).toContain("data-accent");
-    expect(boot, "스크립트가 'indigo' 를 심지 않는다").toContain("'indigo'");
-    expect(css, "CSS 에 짝이 되는 선택자가 없다").toContain(':root[data-accent="indigo"]');
+    expect(boot, `스크립트가 '${ALT_ACCENT}' 를 심지 않는다`).toContain(`'${ALT_ACCENT}'`);
+    expect(
+      boot,
+      `스크립트가 기본값 '${DEFAULT_ACCENT}' 를 속성으로 심는다 — 기본값이 DOM 에 굳는다`,
+    ).not.toContain(`'${DEFAULT_ACCENT}'`);
+    expect(css, "CSS 에 짝이 되는 선택자가 없다").toContain(ALT_SELECTOR);
   });
 
   it("부트 스크립트는 실제로 레이아웃에 실린다", () => {

@@ -31,8 +31,8 @@ describe("relationTypeAlpha", () => {
 });
 
 describe("relationTypeIndigo", () => {
-  it("returns the shared accent hue rgb(193,74,36) with a type-scaled alpha", () => {
-    expect(relationTypeIndigo("contains")).toBe("rgba(193, 74, 36, 0.85)");
-    expect(relationTypeIndigo("depends_on")).toBe("rgba(193, 74, 36, 0.62)");
+  it("returns the shared indigo hue rgb(94,106,210) with a type-scaled alpha", () => {
+    expect(relationTypeIndigo("contains")).toBe("rgba(94, 106, 210, 0.85)");
+    expect(relationTypeIndigo("depends_on")).toBe("rgba(94, 106, 210, 0.62)");
   });
 });

@@ -7,8 +7,8 @@ import { ICON_SIZE } from "@/shared/ui/icon-size";
 import { useTopologyLoop } from "./use-topology-loop";
 import type { TierRevealConfig } from "../model/tier-visibility";
 import type { ClusterBarLabels } from "../render/cluster-chips";
-import { DEFAULT_EXPAND } from "@/shared/lib/appearance-preferences";
-import type { CanvasBackground, ExpandPreference, FootprintPreference, GlyphSet } from "@/shared/lib/appearance-preferences";
+import { DEFAULT_EXPAND, DEFAULT_MAP_ARRANGEMENT } from "@/shared/lib/appearance-preferences";
+import type { CanvasBackground, ExpandPreference, FootprintPreference, GlyphSet, MapArrangement } from "@/shared/lib/appearance-preferences";
 import { controlClass } from '@/shared/ui/control-class';
 import { usePanelPresence } from "@/shared/lib/use-presence";
 
@@ -313,6 +313,12 @@ export interface TopologyMapV2Props {
    */
   view3d?: boolean;
   /**
+   * 3D 돔의 **방위**를 무엇이 정하나 — 「소유」(containment 부모, 기본) /
+   * 「결합」(모든 관계의 각도 완화). 근거와 기하:
+   * `model/dome-view.ts` 의 `DomeArrangement` 독블록. 2D 에서는 무시된다.
+   */
+  mapArrangement?: MapArrangement;
+  /**
    * 3D 리프레임 입력 (2026-08-18 2차) — 노드 상세 패널이 실제로 화면을 덮고
    * 있는가. 패널의 열림/닫힘은 돔 카메라에게 「창 크기가 바뀐 사건」이라,
    * 이 값이 플립될 때마다 선택된 노드를 보이는 영역 기준으로 부드럽게
@@ -349,7 +355,7 @@ export interface TopologyMapV2Props {
 }
 
 export function TopologyMapV2(props: TopologyMapV2Props) {
-  const { nodes, edges, focus, minimal, emphasizedNeighborSlug, dataSourceKey = null, overviewFit = "spine", fitViewToken, spotlightFitToken = 0, relayoutToken, revealToken, onSelectEdge, onSelect, onPaneClick, onVisibleCountChange, onGraphStatsChange, onZoomTierChange, onContextMenuNode, onContextMenuPane, agentFocusNodeId, spotlightIds = null, onHoverEdge, selectedEdge = null, expandedParents, onToggleCluster, onHoverCluster, clusterHint, realmRootId = null, onEnterRealm, realmEnterLabel, realmEnterTooltip, realmCaption = null, clusterBarLabels = null, canvasLabel, walkNoticeLabel, visitedTrail, trailLensActiveRef, trailHoverNodeIdRef, panelHoverNodeIdRef, tierReveal, tourAnchorNodeId = null, tourAnchorRef, overlayOpen = false, glyphSet = "geometric", canvasBackground = "dot", view3d = false, detailPanelVisible = false, footprint = null, expand = DEFAULT_EXPAND, wheelIntent = "zoom", ambientSleepDelayMs, onWalkDeadEnd = null } = props;
+  const { nodes, edges, focus, minimal, emphasizedNeighborSlug, dataSourceKey = null, overviewFit = "spine", fitViewToken, spotlightFitToken = 0, relayoutToken, revealToken, onSelectEdge, onSelect, onPaneClick, onVisibleCountChange, onGraphStatsChange, onZoomTierChange, onContextMenuNode, onContextMenuPane, agentFocusNodeId, spotlightIds = null, onHoverEdge, selectedEdge = null, expandedParents, onToggleCluster, onHoverCluster, clusterHint, realmRootId = null, onEnterRealm, realmEnterLabel, realmEnterTooltip, realmCaption = null, clusterBarLabels = null, canvasLabel, walkNoticeLabel, visitedTrail, trailLensActiveRef, trailHoverNodeIdRef, panelHoverNodeIdRef, tierReveal, tourAnchorNodeId = null, tourAnchorRef, overlayOpen = false, glyphSet = "geometric", canvasBackground = "dot", view3d = false, mapArrangement = DEFAULT_MAP_ARRANGEMENT, detailPanelVisible = false, footprint = null, expand = DEFAULT_EXPAND, wheelIntent = "zoom", ambientSleepDelayMs, onWalkDeadEnd = null } = props;
 
   const realmEnterButtonRef = useRef<HTMLButtonElement | null>(null);
 
@@ -494,6 +500,7 @@ export function TopologyMapV2(props: TopologyMapV2Props) {
       glyphSet,
       canvasBackground,
       view3d,
+      mapArrangement,
       detailPanelVisible,
       footprint,
       expand,
@@ -608,7 +615,18 @@ export function TopologyMapV2(props: TopologyMapV2Props) {
           style={{ opacity: 0, pointerEvents: "none" }}
         >
           <Orbit size={ICON_SIZE.md} aria-hidden />
-          {realmEnterTooltip ? (
+          {/*
+           * **3D 에서는 이 툴팁을 안 그린다** (2026-08-18 소유자 지시).
+           *
+           * 이 버튼은 매 프레임 노드의 **투영된** 자리로 옮겨 다닌다. 2D 에서는
+           * 카메라가 멈춰 있으면 자리도 멈추니 그 밑에 뜬 글상자가 가만히 있는데,
+           * 돔에서는 노드가 회전·원근으로 계속 움직여서 같은 글상자가 장면 위를
+           * 미끄러진다 — 읽으려고 눈을 두면 이미 딴 데 가 있다.
+           *
+           * 기능을 끄는 것이 아니라 **설명만** 끈다: 버튼도 `aria-label`
+           * (「이것만 보기」)도 그대로라 마우스로도 보조기술로도 똑같이 닿는다.
+           */}
+          {realmEnterTooltip && !view3d ? (
             <span
               role="tooltip"
               className="pointer-events-none absolute left-1/2 top-full mt-2 hidden -translate-x-1/2 whitespace-nowrap rounded-[var(--topology-v2-panel-radius)] border border-[color:var(--topology-v2-panel-border)] bg-[color:var(--topology-v2-panel-surface)] px-2 py-1 text-label font-[var(--font-weight-signature)] text-[color:var(--topology-v2-panel-text-primary)] shadow-[var(--topology-v2-panel-shadow)] group-hover:block"

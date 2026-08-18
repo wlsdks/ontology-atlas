@@ -3,11 +3,11 @@
  *
  * ## 왜 인라인 스크립트인가
  *
- * 앱의 유일한 채색은 잉걸(기본)과 인디고(되돌림) 둘이고, 고른 값은
+ * 앱의 유일한 채색은 인디고(기본)와 잉걸(대체) 둘이고, 고른 값은
  * localStorage 에 있다(`src/shared/lib/appearance-preferences.ts`). CSS 는
- * `:root[data-accent="indigo"]` 로 읽는다.
+ * `:root[data-accent="ember"]` 로 읽는다.
  *
- * 이 속성을 React 이펙트로 붙이면 **첫 프레임이 기본값으로 그려진 뒤** 인디고로
+ * 이 속성을 React 이펙트로 붙이면 **첫 프레임이 기본값으로 그려진 뒤** 잉걸로
  * 튄다 — 사용자가 고르지 않은 색이 한 번 번쩍인다. 그래서 렌더 트리보다 먼저
  * 도는 동기 스크립트로 심는다. 다크 모드 토글이 쓰는 표준 수법이고, 여기서는
  * 바꾸는 것이 속성 하나뿐이라 더 짧다.
@@ -35,7 +35,7 @@
 const ACCENT_BOOT = [
   "try{",
   "var a=localStorage.getItem('ontology-atlas:accent:v1');",
-  "if(a==='indigo')document.documentElement.setAttribute('data-accent','indigo');",
+  "if(a==='ember')document.documentElement.setAttribute('data-accent','ember');",
   "}catch(e){}",
 ].join("");
 

@@ -162,9 +162,9 @@ test("desktop smoke copy contract refuses a message with an ICU placeholder", ()
 test("desktop smoke chunks prove current route meaning", () => {
   assert.deepEqual(DESKTOP_SMOKE_ROUTE_CHUNK_TEXT, {
     "/download": [
-      "download-trust",
-      "download-platform-macos",
-      "download-platform-windows",
+      "gateway-hero-cta",
+      "gateway-demo-section",
+      "gateway-agents-section",
     ],
     "/docs": [
       "data-docs-header-zone",

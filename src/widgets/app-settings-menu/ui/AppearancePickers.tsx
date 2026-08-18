@@ -9,15 +9,19 @@ import {
   CANVAS_BACKGROUNDS,
   DEFAULT_ACCENT,
   GLYPH_SETS,
+  MAP_ARRANGEMENTS,
   useAccent,
   useCanvasBackground,
   useGlyphSet,
+  useMapArrangement,
   writeAccent,
   writeCanvasBackground,
   writeGlyphSet,
+  writeMapArrangement,
   type Accent,
   type CanvasBackground,
   type GlyphSet,
+  type MapArrangement,
 } from '@/shared/lib/appearance-preferences';
 import { controlClass } from '@/shared/ui/control-class';
 import { TopologyV2KindGlyph } from '@/shared/ui/topology-v2-kind-glyph';
@@ -292,6 +296,77 @@ function AccentSwatch({ variant }: { variant: Accent }) {
  * 캡션 한 줄로 그 한계를 화면에도 적는다 — 안 적으면 Dock 아이콘이 안 바뀌는
  * 것을 사용자가 결함으로 읽는다.
  */
+/**
+ * 배치 기준 피커 (2026-08-18) — 3D 돔의 **방위**를 무엇이 정하나.
+ *
+ * 이 피커의 문구가 「스타일」이 아니라 **질문 둘**인 것이 설계다. 배치를
+ * 스타일로 늘어놓으면 그 순간 N개의 그저 그런 뷰가 되고, 이 저장소에는 이미
+ * 「모드 증식」을 반려한 선례가 있다. 각 항목은 자기가 답하는 질문을 달고 있고,
+ * 새 항목은 새 질문을 대야 들어온다.
+ *
+ * 기하·결정론·기각한 계열들: `topology-map-v2/model/dome-view.ts` 의
+ * `DomeArrangement` 독블록.
+ */
+export function MapArrangementPicker() {
+  const t = useTranslations('nav.settingsMenu');
+  const value = useMapArrangement();
+  const group = useRovingRadioGroup({
+    value,
+    values: MAP_ARRANGEMENTS,
+    onChange: writeMapArrangement,
+  });
+  return (
+    <div className="px-3 py-2.5" data-testid="app-settings-arrangement">
+      <p className="text-body text-[color:var(--color-text-secondary)]">{t('arrangementLabel')}</p>
+      <p className="mt-0.5 break-keep text-label text-[color:var(--color-text-quaternary)]">
+        {t('arrangementCaption')}
+      </p>
+      <div
+        {...group.groupProps}
+        aria-label={t('arrangementLabel')}
+        className="mt-2 grid grid-cols-2 gap-2"
+      >
+        {MAP_ARRANGEMENTS.map((arrangement: MapArrangement, index) => {
+          const active = arrangement === value;
+          return (
+            <button
+              key={arrangement}
+              {...group.itemProps(index)}
+              type="button"
+              data-testid={`app-settings-arrangement-${arrangement}`}
+              className={controlClass({
+                shape: 'tile',
+                size: 'md',
+                className: cn(PICKER_TILE_FRAME, PICKER_TILE_INK(active)),
+              })}
+            >
+              <span
+                className={cn(
+                  'text-label',
+                  active
+                    ? 'text-[color:var(--color-indigo-text-soft)]'
+                    : 'text-[color:var(--color-text-tertiary)]',
+                )}
+              >
+                {t(`arrangement.${arrangement}`)}
+              </span>
+              {/* 항목마다 자기가 답하는 질문을 단다 — 이 한 줄이 「스타일 메뉴」와
+                  「질문 두 개」를 가르는 것이다.
+                  `text-label`(11px)인 이유: 설정 시트의 방언은 «누르는 글자 =
+                  text-body · 설명 = text-label» 이고 `text-caption`(9.5px)은
+                  대문자 아이브로우 한 자리에만 허용된다
+                  (`settings-sheet-type-dialect` 계약). */}
+              <span className="break-keep text-label text-[color:var(--color-text-quaternary)]">
+                {t(`arrangementHint.${arrangement}`)}
+              </span>
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
 export function AccentPicker() {
   const t = useTranslations('nav.settingsMenu');
   const value = useAccent();

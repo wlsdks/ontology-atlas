@@ -46,8 +46,12 @@ const ROOT = process.cwd();
  *
  * 387 → 386 (2026-08-17): 알림 종이 손으로 쓴 `controlClass({shape:'segment'})`
  * 버튼에서 `IconButton` 프리미티브로 옮겨 가면서 손 호버 선언 하나가 빠졌다.
+ *
+ * 386 → 383 (2026-08-19): 관문의 설치 절이 통째로 삭제되면서 그 안의 손 호버
+ * 선언 셋이 함께 갔다(`docs/DECISIONS.md` (83)). 축 채택이 는 것이 아니라
+ * **자리가 없어진** 것이므로 이 감소는 공로가 아니다 — 그래도 바닥은 내린다.
  */
-const CEILING = 386;
+const CEILING = 383;
 
 function walk(dir: string, out: string[] = []): string[] {
   for (const name of readdirSync(dir)) {

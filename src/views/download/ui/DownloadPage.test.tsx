@@ -1,10 +1,10 @@
-import { fireEvent, render, renderHook, screen, waitFor } from '@testing-library/react';
+import { render, renderHook, screen } from '@testing-library/react';
 import { NextIntlClientProvider } from 'next-intl';
 import type { ReactNode } from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import enMessages from '../../../../messages/en.json';
-import { GITHUB_RELEASES_URL } from '@/features/macos-download-link';
 import { shouldHideBottomTabBar } from '@/widgets/bottom-tab-bar';
+import { DEMO_CLIPS } from '../model/demo-clips';
 import { RELEASE_VERSION } from '../lib/release-facts';
 import { DownloadPage } from './DownloadPage';
 import { useStageGraph } from './StageMap';
@@ -183,22 +183,25 @@ describe('DownloadPage', () => {
      *
      * 그래서 이 테스트는 **픽스처의 태그(`v1.0.0`)를 기대하지 않는다** — 그걸
      * 기대하는 것이 곧 옛 결함을 계약으로 굳히는 일이었다.
+     *
+     * [재조준 2026-08-19] 이 사실이 살던 미게시 안내문(`download-macos-pending`)
+     * 은 설치 절과 함께 삭제됐다. 같은 property 를 지금 지고 있는 자리는 계기
+     * 스트립이다 — 버전 행이 게시 여부로 갈려 같은 헬퍼를 부른다.
      */
     it('names the current repo version — not the stale generated tag — while unpublished', () => {
       renderDownloadPage();
 
-      const pending = screen.getByTestId('download-macos-pending');
-      expect(pending).toHaveTextContent(
-        new RegExp(`v${RELEASE_VERSION.replace(/\./g, '\\.')} has not been published yet`, 'i'),
+      const facts = screen.getByTestId('gateway-facts');
+      expect(facts).toHaveTextContent(
+        new RegExp(`v${RELEASE_VERSION.replace(/\./g, '\\.')}`),
       );
+      expect(facts).toHaveTextContent(/not published yet/i);
       // 픽스처의 생성 태그는 미게시 상태에서 화면에 나오지 않는다.
-      expect(pending).not.toHaveTextContent(/v1\.0\.0 has not been/i);
+      expect(facts).not.toHaveTextContent('v0.9.0-stale');
       // A size and a checksum are per-release facts. With no release there is
       // no honest value for either, so neither row exists at all.
-      expect(screen.queryByTestId('download-checksum-aarch64')).not.toBeInTheDocument();
-      expect(screen.queryByTestId('download-checksum-x64')).not.toBeInTheDocument();
-      expect(screen.queryByTestId('download-macos-x64')).not.toBeInTheDocument();
-      expect(screen.queryByTestId('download-release-notes-link')).not.toBeInTheDocument();
+      expect(facts).not.toHaveTextContent(/SHA-256/);
+      expect(facts).not.toHaveTextContent(/DMG/);
     });
 
     // Today the GitHub releases page has nothing on it. A filled button is the
@@ -206,25 +209,23 @@ describe('DownloadPage', () => {
     // that promise on a dead end. So the winner before publication is the
     // thing that actually works right now — the map in the browser — while
     // the releases link stays available at a lower weight.
-    it('makes the browser map the strongest action, and still links the releases page', () => {
+    // [개정 2026-08-19] 「릴리스 페이지도 여전히 링크한다」는 후반부는 삭제됐다 —
+    // 그 링크(`MacosDownloadLink`)는 판 안에만 있었고 판이 사라졌다.
+    it('makes the browser map the strongest action while nothing is published', () => {
       renderDownloadPage();
 
-      const releases = screen.getByTestId('download-primary-cta');
-      expect(releases).toHaveAttribute('href', GITHUB_RELEASES_URL);
-      expect(releases).toHaveTextContent(/Open the GitHub releases page/i);
-
-      const web = screen.getByTestId('download-web-cta');
+      const primary = screen.getByTestId('gateway-hero-cta');
       // ⚠️ `/` 가 아니라 `/topology` 다 (2026-07-29 밤). 소유자 결정으로 `/` 가
       // **마케팅 페이지**가 되므로, 「브라우저에서 써보기」가 `/` 로 가면 소개
       // 화면으로 되돌아오는 고리가 된다. 이 단언의 의도는 *"앱 없이도 오늘
       // 당장 되는 곳으로 보낸다"* 이고 그 곳은 웹 제품 — `/topology` 다.
-      // 두 주소가 같은 화면이던 시절엔 어느 쪽을 적어도 통과해서, 이 값은
-      // 의도가 아니라 우연을 굳히고 있었다.
-      expect(web).toHaveAttribute('href', '/topology');
-      expect(web).toHaveTextContent(/Try it in the browser/i);
+      expect(primary).toHaveAttribute('href', '/topology');
+      expect(primary).toHaveTextContent(/Try it in the browser/i);
       // The filled variant is the page's single attention winner.
-      expect(web.className).toMatch(/--color-indigo-brand/);
-      expect(releases.className).not.toMatch(/--color-indigo-brand/);
+      expect(primary.className).toMatch(/--color-indigo-brand/);
+      expect(
+        Array.from(document.querySelectorAll('a[class*="--color-indigo-brand"]')),
+      ).toHaveLength(1);
     });
 
     it('keeps operator-only release-pipeline status off the public page', () => {
@@ -242,65 +243,37 @@ describe('DownloadPage', () => {
   describe('once a release is published', () => {
     beforeEach(publishRelease);
 
+    /*
+     * [재조준 2026-08-19] 이 단언들이 살던 다운로드 판은 삭제됐다. 같은
+     * property — 아키텍처별 실파일 직링크 + 승자의 실제 크기 + 채운 승자 하나 —
+     * 를 지금 지고 있는 자리는 히어로다.
+     *
+     * [삭제 2026-08-19] 체크섬 행 세 시험(자산별 SHA 노출 · 복사 · 릴리스 노트
+     * 링크)은 주어가 없어져서 지운다. 체크섬은 이제 이 페이지 어디에도 없다
+     * (`docs/DECISIONS.md` 2026-08-19 — 소유자가 그 대가를 받아들였다).
+     */
     it('offers a direct per-architecture download with its real size', () => {
       renderDownloadPage();
 
-      const appleSilicon = screen.getByTestId('download-primary-cta');
+      const appleSilicon = screen.getByTestId('gateway-hero-cta');
       expect(appleSilicon).toHaveAttribute(
         'href',
         `https://github.com/wlsdks/ontology-atlas/releases/download/v${RELEASE_VERSION}/ontology-atlas_${RELEASE_VERSION}_aarch64.dmg`,
       );
-      // 크기는 이제 라벨 문자열이 아니라 **별도 스팬**이다 — Intel 버튼과 같은
+      // 크기는 라벨 문자열이 아니라 **별도 스팬**이다 — Intel 버튼과 같은
       // 문법이고, `<sm` 에서 그 스팬만 빠져 가로 오버플로가 사라진다(평결 ④).
       expect(appleSilicon).toHaveTextContent(/Download for Apple Silicon/i);
       // 13,002,342 B → 13.0 MB (십진). Finder 가 말하는 것과 같은 단위다.
       expect(appleSilicon).toHaveTextContent(/13\.0 MB/);
-      expect(screen.getByTestId('download-macos-x64')).toHaveAttribute(
+      expect(screen.getByTestId('gateway-hero-macos-x64')).toHaveAttribute(
         'href',
         `https://github.com/wlsdks/ontology-atlas/releases/download/v${RELEASE_VERSION}/ontology-atlas_${RELEASE_VERSION}_x64.dmg`,
       );
-      /*
-       * 채운 강조색은 **문서 전체에 하나**다 — 그리고 2026-08-18 부터 그 하나는
-       * 히어로가 진다. 이 판의 Apple Silicon·Intel 은 둘 다 `outline` 이고,
-       * 무엇이 먼저인지는 순서와 라벨이 말한다. 종전 단언(이 판의 주 CTA 가
-       * 채워져 있다)을 지우지 않고 **문서 단위로 올려** 적는다 — 그래야
-       * 「둘 다 안 채워졌다」와 「하나만 채워졌다」를 이 시험이 계속 구별한다.
-       */
+      // 채운 강조색은 **문서 전체에 하나**다.
       const filled = Array.from(document.querySelectorAll('a[class*="--color-indigo-brand"]'));
       expect(filled.map((el) => el.getAttribute('data-testid'))).toEqual(['gateway-hero-cta']);
-      expect(appleSilicon.className).not.toMatch(/--color-indigo-brand/);
-      expect(screen.getByTestId('download-macos-x64').className).not.toMatch(
+      expect(screen.getByTestId('gateway-hero-macos-x64').className).not.toMatch(
         /--color-indigo-brand/,
-      );
-    });
-
-    it('publishes each asset checksum next to the file it verifies', () => {
-      renderDownloadPage();
-
-      expect(screen.getByTestId('download-checksum-aarch64')).toHaveTextContent(AARCH64_SHA);
-      expect(screen.getByTestId('download-checksum-aarch64')).toHaveTextContent(
-        `ontology-atlas_${RELEASE_VERSION}_aarch64.dmg`,
-      );
-      expect(screen.getByTestId('download-checksum-x64')).toHaveTextContent(X64_SHA);
-    });
-
-    it('copies the real checksum a user verifies the DMG against', async () => {
-      renderDownloadPage();
-
-      fireEvent.click(screen.getAllByRole('button', { name: /Copy/i })[0]);
-
-      await waitFor(() => {
-        expect(navigator.clipboard.writeText).toHaveBeenCalledWith(AARCH64_SHA);
-      });
-      expect(await screen.findByText(/Checksum copied/i)).toBeInTheDocument();
-    });
-
-    it('links to the release notes themselves', () => {
-      renderDownloadPage();
-
-      expect(screen.getByTestId('download-release-notes-link')).toHaveAttribute(
-        'href',
-        `https://github.com/wlsdks/ontology-atlas/releases/tag/v${RELEASE_VERSION}`,
       );
     });
 
@@ -407,57 +380,18 @@ describe('DownloadPage', () => {
   });
 
 
-  it('tells Windows visitors where they stand instead of omitting the platform', () => {
-    renderDownloadPage();
-
-    const windowsCard = screen.getByTestId('download-platform-windows');
-    expect(windowsCard).toHaveTextContent(/Windows/);
-    expect(windowsCard).toHaveTextContent(/not out yet/i);
-    // 판에 남는 결정 사실은 둘뿐이다: **없다**(위 두 줄) · **어디서 추적하나**.
-    // "같은 기준을 통과할 때 올린다" 는 정책 산문이라 푸터 접이식으로 내려갔다
-    // (fable 판정 2026-07-29) — 받는 자리에서 정책을 읽을 이유가 없다.
-    expect(windowsCard).toHaveTextContent(/Follow progress/i);
-    expect(windowsCard).not.toHaveTextContent(/same bar/i);
-    expect(screen.getByRole('link', { name: /Follow progress/i })).toBeInTheDocument();
-  });
-
-  it('offers the published unsigned Windows x64 beta with the warning before download', () => {
-    publishRelease();
-    publishWindowsRelease();
-    renderDownloadPage();
-
-    const windowsCard = screen.getByTestId('download-platform-windows');
-    const warning = screen.getByTestId('download-windows-unsigned-warning');
-    const download = screen.getByTestId('download-windows-x64');
-
-    expect(download).toHaveAttribute(
-      'href',
-      expect.stringMatching(/ontology-atlas_.+_windows_x64-setup\.exe$/),
-    );
-    expect(download).toHaveTextContent(/Windows x64 beta/i);
-    expect(download).toHaveAttribute('aria-describedby', warning.id);
-    expect(warning).toHaveTextContent(/not code-signed/i);
-    expect(warning).toHaveTextContent(/Microsoft Defender SmartScreen/i);
-    expect(warning).toHaveTextContent(/unknown publisher/i);
-    expect(warning).toHaveTextContent(/managed work PC/i);
-    expect(
-      warning.compareDocumentPosition(download) & Node.DOCUMENT_POSITION_FOLLOWING,
-    ).toBeTruthy();
-    expect(windowsCard).not.toHaveTextContent(/not out yet/i);
-    expect(screen.getByRole('heading', { name: 'macOS' })).toBeInTheDocument();
-    expect(screen.getByRole('heading', { name: /Windows x64 beta/i })).toBeInTheDocument();
-    expect(screen.getAllByTestId('download-web-cta')).toHaveLength(1);
-
-    const exitRow = screen.getByTestId('download-exit-row');
-    const github = screen.getByTestId('download-repo-link');
-    const web = screen.getByTestId('download-web-cta');
-    expect(exitRow).toContainElement(github);
-    expect(exitRow).toContainElement(web);
-    expect(windowsCard).not.toContainElement(web);
-    expect(github).toHaveTextContent(/Go to GitHub/i);
-    expect(web).toHaveTextContent(/View web version/i);
-    expect(github.compareDocumentPosition(web) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
-  });
+  /*
+   * [삭제 2026-08-19] 플랫폼 절 두 시험 — 「미게시 Windows 방문자에게 어디쯤인지
+   * 말한다」와 「게시된 Windows 미서명 베타의 전문 경고가 버튼보다 먼저 온다」 —
+   * 은 주어(`download-platform-windows` · `download-windows-unsigned-warning` ·
+   * `download-windows-x64` · `download-exit-row` · `download-repo-link`)가
+   * 전부 설치 절 안에 있었고, 그 절이 삭제됐다.
+   *
+   * 남은 것: Windows 방문자가 승자로 승격될 때의 미서명 사실은 히어로 신뢰줄이
+   * 계속 진다(위 `promotes the Windows installer …`). **사라진 것**: 미게시
+   * Windows 안내와 진행 추적 링크, SmartScreen 전문 경고, 저장소 출구 줄.
+   * `docs/DECISIONS.md` 2026-08-19 가 그 대가를 적는다.
+   */
 
   // 2026-07-27: the Developer ID certificate exists (docs/DECISIONS.md), so
   // the release path signs and notarizes again. Until this remake the page
@@ -466,16 +400,18 @@ describe('DownloadPage', () => {
   // passes" as that same row's note. Neither the old future tense ("the gate
   // requires") nor the stale present tense survives: what ships is what is
   // true now, plus the way a visitor checks it themselves.
-  it('states the signing status that is true today, with the proof for each claim', () => {
+  /*
+   * [축소 2026-08-19] 증명 행 넷(Developer ID 서명 · 공증 + 스테이플 · `codesign
+   * verified` · `stapler validate passes`)과 `shasum -a 256 <파일>` 검증 명령은
+   * 검증 레일이 지던 것이고, 그 레일이 삭제됐다. 남은 **유일한** 주장 자리는
+   * 히어로 신뢰줄이므로 이 시험은 거기를 잰다 — 문장이 줄면 이 페이지에서 서명
+   * 사실이 통째로 사라진다는 뜻이라, 이 단언이 그 마지막 방벽이다.
+   */
+  it('states the signing status that is true today, in the one slot that still carries it', () => {
+    publishRelease();
     renderDownloadPage();
 
-    expect(screen.getByText(/Signed with an Apple Developer ID certificate/i)).toBeInTheDocument();
-    // 리메이크 후 히어로 신뢰줄("Signed and notarized by Apple · …")이 같은
-    // 표현을 화면에 한 번 더 올린다 — 이 단언이 지키는 것은 「검증 절의 행이
-    // 공증을 스테이플 티켓과 함께 주장한다」이므로 행 문장으로 좁혀 잰다.
-    expect(screen.getByText(/Notarized by Apple, with the ticket stapled/i)).toBeInTheDocument();
-    expect(screen.getByText(/codesign verified/i)).toBeInTheDocument();
-    expect(screen.getByText(/stapler validate passes/i)).toBeInTheDocument();
+    expect(screen.getByText(/Signed and notarized by Apple/i)).toBeInTheDocument();
 
     // The unsigned-era instructions are gone: they are false today, and a
     // Gatekeeper detour is the single most expensive first impression.
@@ -483,32 +419,23 @@ describe('DownloadPage', () => {
     expect(screen.queryByText(/Open Anyway/i)).not.toBeInTheDocument();
     expect(screen.queryByText(/certificate pending/i)).not.toBeInTheDocument();
     expect(screen.queryByText(/Release gate requires/i)).not.toBeInTheDocument();
-
-    // The verify command names the asset for the current version, so it does
-    // not freeze an old filename into a translation string.
-    expect(
-      screen.getByText(
-        new RegExp(
-          `shasum -a 256 .*ontology-atlas_${RELEASE_VERSION.replace(/\./g, '\\.')}_aarch64\\.dmg`,
-        ),
-      ),
-    ).toBeInTheDocument();
   });
 
   // The product's core promise is local-first. A stranger deciding whether to
   // run an unfamiliar binary needs it said plainly, next to the other facts.
-  it('states what the app does not do, not only what it does', () => {
+  /*
+   * [축소 2026-08-19] 세 문장 중 둘 — 「No account, no server」와 「This website
+   * sends nothing to a server」 — 은 검증 레일의 행이었고 함께 사라졌다. 앱 쪽
+   * 약속만 히어로 신뢰줄에 압축된 형태로 남는다. 사이트 자신에 대한 약속은
+   * 이제 이 페이지 어디에도 없다(`docs/DECISIONS.md` 2026-08-19).
+   */
+  it('states the local-first promise where the download decision is made', () => {
+    publishRelease();
     renderDownloadPage();
 
-    expect(screen.getByText(/The app sends nothing anywhere/i)).toBeInTheDocument();
-    expect(screen.getByText(/No account, no server/i)).toBeInTheDocument();
-    // This line used to read "This website never opens or edits your folders.
-    // Only the installed app can do that." Measured 2026-07-27 (web surface
-    // smoke ②): in Chromium the site opens a folder and parses it. The privacy
-    // claim was true; the capability claim was not, and it contradicted the
-    // surface contract that makes the web the second-best workbench where no
-    // app exists. Keep the privacy half, tell the truth about the other half.
-    expect(screen.getByText(/This website sends nothing to a server/i)).toBeInTheDocument();
+    expect(screen.getByText(/nothing sent to a server/i)).toBeInTheDocument();
+    // 2026-07-27 에 걷어낸 거짓 능력 주장이 돌아오지 않는지 — Chromium 웹에서는
+    // 실제로 폴더를 연다.
     expect(
       screen.queryByText(/never opens or edits your folders/i),
     ).not.toBeInTheDocument();
@@ -517,11 +444,6 @@ describe('DownloadPage', () => {
   it('keeps the hosted page focused on app releases instead of browser vault work', () => {
     renderDownloadPage();
 
-    expect(screen.getByRole('link', { name: /Go to GitHub/i })).toHaveAttribute(
-      'href',
-      'https://github.com/wlsdks/ontology-atlas',
-    );
-    expect(screen.getByText(/Connect your AI agent/i)).toBeInTheDocument();
     expect(screen.queryByRole('link', { name: /Open my markdown folder/i })).not.toBeInTheDocument();
   });
 
@@ -538,7 +460,7 @@ describe('DownloadPage', () => {
   // 빌드 스크립트의 frontmatter 파일 수(`DOGFOOD_CENSUS.concepts` = 96)를
   // 적으면서 그 옆에 파생 그래프(287 노드)를 그렸다. 한 화면에 정의가 둘이면
   // 어느 쪽도 못 믿는다 — 허브 각인 `379` vs 캡션 `96` 이 그 증상이었다.
-  it('draws the real vault behind the plate, with the same numbers the caption claims', () => {
+  it('draws the real vault in the evidence section, with the same numbers the caption claims', () => {
     renderDownloadPage();
 
     const caption = screen.getByTestId('download-portrait-caption');
@@ -584,7 +506,7 @@ describe('DownloadPage', () => {
   // 무대 지도는 **진짜 엔진**이다(2026-07-28 소유자 지시). 배경이 장식이 아니라는
   // 것을 지키는 구조적 장치는 이제 "출처가 캡션과 같은 볼트로 고정돼 있다" 는 것 —
   // `useDogfoodInsight` 는 세션의 샘플 선택을 따라가지 않는다.
-  it('mounts the real map engine behind the plate', () => {
+  it('mounts the real map engine in the evidence section', () => {
     renderDownloadPage();
 
     expect(screen.getByTestId('download-stage-map')).toBeInTheDocument();
@@ -594,7 +516,7 @@ describe('DownloadPage', () => {
   // second landing page stapled under the install decision: its own eyebrow,
   // its own h1, a four-line lead, and three value-chain cards. The remake
   // keeps only the part that is evidence rather than pitch.
-  it('does not stack a second landing page under the install decision', () => {
+  it('does not stack a second landing page under the evidence section', () => {
     renderDownloadPage();
 
     expect(screen.getAllByRole('heading', { level: 1 })).toHaveLength(1);
@@ -604,41 +526,34 @@ describe('DownloadPage', () => {
   });
 
   /**
-   * 리메이크(2026-08-18) 순서 — **다섯 절, 절마다 생각 하나** (소유자 확정
-   * 골격): 히어로(활자+오브젝트+CTA) → 시연 → 증거(지도+census) → 에이전트
-   * 왕복 → 설치·다운로드(완전한 정지) → (푸터) 검증 접이식.
+   * 순서 — **네 절, 절마다 생각 하나** (2026-08-19 개정): 히어로(활자+오브젝트+
+   * CTA) → 시연 → 증거(지도+census) → 에이전트 왕복 → (푸터) 콜로폰.
    *
-   * 구 순서(파일 먼저, 2026-07-28 「홍보해야지」 판정)의 전제 — 판이 첫
-   * 화면의 주인공이라는 것 — 는 리메이크로 사라졌다: 이제 첫 화면은 문제
-   * 제기(헤드라인)와 제품의 실체(히어로 오브젝트)가 갖고, 파일은 네 절이
-   * 논증을 끝낸 뒤의 결정 자리(⑤)에 온다. 검증이 맨 아래 접힌 채라는 요점은
-   * 그대로 산다.
+   * ⑤ 설치·다운로드는 삭제됐다(소유자: *"맨 마지막 이거는 없어도 될듯? 어차피
+   * 맨 위에 다 있어서"*). 그래서 **결정은 첫 절에 있다** — 받기 버튼이 히어로
+   * 안에 있고, 뒤의 세 절은 그 결정의 논증이다. 이 시험이 지키는 property 는
+   * 「문제 제기 → 움직이는 것 → 증거 → 에이전트」 라는 논증 순서이고, 그
+   * property 는 절 하나가 빠져도 그대로다.
    */
-  it('walks problem → demo → evidence → agents → decision, verification folded last', () => {
+  it('walks problem → demo → evidence → agents, with the decision in the first screen', () => {
     publishRelease();
     renderDownloadPage();
 
     const heading = screen.getByRole('heading', { level: 1 });
+    const primaryCta = screen.getByTestId('gateway-hero-cta');
     const demo = screen.getByTestId('demo-stage');
     const caption = screen.getByTestId('download-portrait-caption');
     // 2026-08-18 재작업: 에이전트 절의 장면은 mcp-verify 터미널에서 앱 안
     // 대화(ACP) 재연으로 바뀌었다 — 순서 계약의 넷째 자리는 그대로다.
     const terminal = screen.getByTestId('gateway-agent-chat');
-    const install = screen.getByTestId('download-install');
-    const primaryCta = screen.getByTestId('download-primary-cta');
-    const windows = screen.getByTestId('download-platform-windows');
-    const trust = screen.getByTestId('download-trust');
+    const colophon = screen.getByTestId('download-bottom-band');
 
     for (const [earlier, later] of [
-      [heading, demo],
+      [heading, primaryCta],
+      [primaryCta, demo],
       [demo, caption],
       [caption, terminal],
-      [terminal, install],
-      // 설치 3단이 판보다 먼저다 — 「설치가 간단하다」는 안심이 받기 결정의
-      // 재료라서다(승인 목업 b-hero 의 절 ⑤ 구조 그대로).
-      [install, primaryCta],
-      [primaryCta, windows],
-      [windows, trust],
+      [terminal, colophon],
     ] as const) {
       expect(
         earlier.compareDocumentPosition(later) & Node.DOCUMENT_POSITION_FOLLOWING,
@@ -691,21 +606,27 @@ describe('DownloadPage', () => {
     expect(heading).toHaveTextContent('Agents write the code.');
     expect(heading).toHaveTextContent('People accumulate the cognitive debt.');
     expect(
-      screen.getByText(/One markdown folder is where that debt gets repaid/i),
+      screen.getByText(/An ontology is how that debt gets repaid/i),
     ).toBeInTheDocument();
   });
 
   /**
    * 시연 절은 지금 붙은 자산이 무엇인지 정직하게 말한다 — 두 로케일이 같은
-   * 한국어 UI 잠정본을 공유하는 동안, 그 사실이 화면에 있어야 영어 방문자가
-   * 속지 않는다. 45초 촬영본이 붙으면 이 문장은 등록부의 `seconds` 만 따라
-   * 바뀐다(마크업 무변경 교체 계약).
+   * 한국어 UI 촬영본을 공유하는 동안, 그 사실이 화면에 있어야 영어 방문자가
+   * 속지 않는다.
+   *
+   * ⚠️ **사람이 쓴 문장을 못박지 않는다** (`documentation.md`). 2026-08-03 판은
+   * `/provisional 24s capture/` 를 통째로 걸어 뒀는데, 새 촬영본을 붙이면서
+   * 길이와 문구가 함께 바뀌자 «정직한가»가 아니라 «문장이 그대로인가»로
+   * 빨개졌다 — 그건 이 시험이 지키려던 성질이 아니다. 기계가 낼 수 있는 것만
+   * 검사한다: ① 화면의 초 수 = 등록부의 실측 `seconds` ② 두 로케일이 같은
+   * 녹화를 쓴다는 사실이 적혀 있다. 문구는 자유롭게 고쳐도 된다.
    */
-  it('states honestly that the demo clip is a provisional shared capture', () => {
+  it('states honestly that the demo clip is a shared capture, at the registry length', () => {
     renderDownloadPage();
 
     const note = screen.getByTestId('demo-provisional-note');
-    expect(note).toHaveTextContent(/provisional 24s capture/i);
+    expect(note).toHaveTextContent(new RegExp(`${DEMO_CLIPS[0].seconds}s`, 'i'));
     expect(note).toHaveTextContent(/Korean-UI recording/i);
   });
 
@@ -713,49 +634,20 @@ describe('DownloadPage', () => {
   //
   // 배포된 사이트가 실제로 이랬다: 카드 오른쪽 배지에 `v1.0.0-rc.3`
   // (package.json), 같은 카드 본문에 "v1.0.0-rc.2 는 아직 게시 전입니다"
-  // (생성 모듈의 낡은 태그), 그리고 검증 절에는
-  // `shasum -a 256 …rc.3_aarch64.dmg` — 체크섬 목록은 rc.2 파일을 세워 둔 채로.
+  // (생성 모듈의 낡은 태그).
   //
-  // 구 픽스처가 릴리스 태그를 **항상** `v${RELEASE_VERSION}` 으로 두어서 두
-  // 출처가 갈라지는 순간을 재현할 수 없었다. 갈라진 상태를 픽스처로 만든다.
-  describe('when the published release is not the version under development', () => {
-    it('verifies the file it actually published, not the one being built', () => {
-      const publishedVersion = '1.0.0-rc.2';
-      expect(publishedVersion).not.toBe(RELEASE_VERSION);
-
-      mocks.release = {
-        published: true,
-        prerelease: true,
-        tag: `v${publishedVersion}`,
-        publishedAt: '2026-07-28T01:44:03Z',
-        releaseUrl: `https://github.com/wlsdks/ontology-atlas/releases/tag/v${publishedVersion}`,
-        assets: (['aarch64', 'x64'] as const).map((arch) => ({
-          arch,
-          fileName: `ontology-atlas_${publishedVersion}_${arch}.dmg`,
-          sizeBytes: 13_002_342,
-          sha256: arch === 'aarch64' ? AARCH64_SHA : X64_SHA,
-          downloadUrl: `https://github.com/wlsdks/ontology-atlas/releases/download/v${publishedVersion}/ontology-atlas_${publishedVersion}_${arch}.dmg`,
-        })),
-      };
-      renderDownloadPage();
-
-      const trust = screen.getByTestId('download-trust');
-      // 따라 하면 실제로 되는 명령이어야 한다. 개발 중 버전의 파일명을 부르면
-      // `No such file` 이 뜨고, 신뢰를 벌겠다는 절이 유일하게 실행 가능한
-      // 지시에서 틀린다.
-      expect(trust).toHaveTextContent(`shasum -a 256 ontology-atlas_${publishedVersion}_aarch64.dmg`);
-      expect(trust).not.toHaveTextContent(`ontology-atlas_${RELEASE_VERSION}_aarch64.dmg`);
-    });
-  });
-
+  // [삭제 2026-08-19] 짝이던 시험 「실제로 게시한 파일을 검증한다」는 검증
+  // 명령(`shasum -a 256 …`)이 주어였고, 그 명령이 사라졌다. 게시된 태그와
+  // 개발 중 태그가 갈라지는 순간을 잡던 두 번째 계기는 이제 없다 — 남은
+  // 하나는 아래 미게시 시험이다.
   it('names exactly one version while no build is out', () => {
     renderDownloadPage();
 
-    const pending = screen.getByTestId('download-macos-pending');
+    const facts = screen.getByTestId('gateway-facts');
     // 아직 안 나온 것을 말하는 진실원은 개발 중 버전 하나다. 생성 모듈의
-    // 낡은 태그가 본문에 새면 한 상자가 두 버전을 말한다.
-    expect(pending).toHaveTextContent(`v${RELEASE_VERSION}`);
-    expect(pending).not.toHaveTextContent('v0.9.0-stale');
+    // 낡은 태그가 본문에 새면 한 화면이 두 버전을 말한다.
+    expect(facts).toHaveTextContent(`v${RELEASE_VERSION}`);
+    expect(facts).not.toHaveTextContent('v0.9.0-stale');
   });
 
   // The page reserves no bottom-tab-bar height because this route has no tab
@@ -808,10 +700,11 @@ describe('DownloadPage', () => {
       expect(screen.queryByTestId('download-back-to-map')).toBeNull();
     });
 
-    it('지도로 가는 유일한 길은 판 안의 웹 CTA 이고 /topology 를 가리킨다', () => {
+    it('지도로 가는 유일한 길은 히어로의 웹 CTA 이고 /topology 를 가리킨다', () => {
       mocks.pathname = '/';
+      publishRelease();
       renderDownloadPage();
-      expect(screen.getByTestId('download-web-cta')).toHaveAttribute('href', '/topology');
+      expect(screen.getByTestId('gateway-hero-web-cta')).toHaveAttribute('href', '/topology');
     });
 
     /**

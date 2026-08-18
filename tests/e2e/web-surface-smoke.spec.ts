@@ -103,8 +103,13 @@ test.describe("웹 스모크 ① 관문", () => {
     await expect(page.getByTestId("download-gnb")).toBeVisible({ timeout: 15_000 });
 
     // 방문자가 할 수 있는 두 가지가 살아 있다: 받기, 그리고 설치 없이 보기.
-    await expect(page.getByTestId("download-hero-actions")).toBeVisible();
-    const toMap = page.getByTestId("download-web-cta");
+    //
+    // [재조준 2026-08-19] 둘 다 판(`download-hero-actions` ·
+    // `download-web-cta`) 안에 있었는데 소유자가 설치 절을 통째로 걷어냈다
+    // (*"맨 마지막 이거는 없어도 될듯? 어차피 맨 위에 다 있어서"*). 두 목적지는
+    // 히어로가 전부 진다 — 그것이 그 결정의 근거이기도 하다.
+    await expect(page.getByTestId("gateway-hero-cta")).toBeVisible();
+    const toMap = page.getByTestId("gateway-hero-web-cta");
     await expect(toMap).toBeVisible();
     // **`/` 로 되돌아오는 고리가 아니어야 한다** — 그러면 「보러 가기」가 죽은
     // 약속이 된다. 전환 전에는 두 주소가 같은 화면이라 이 결함이 안 보였다.
@@ -435,34 +440,36 @@ test.describe("웹 스모크 ③ 정직한 강등", () => {
     // 정책 산문이라 접이식 안으로 내려가 **기본 상태에서 안 보인다**.
     //
     // 문자열을 되살리는 대신 **주장을 다시 쓴다**. 지켜야 할 것은 특정 문구가
-    // 아니라 "앱이 없는 OS 의 방문자가 빈손으로 돌아가지 않는다" 이고, 그
-    // 답은 이제 **펼치지 않아도 보이는 자리**(판 안)에 있다.
+    // 아니라 "앱이 없는 OS 의 방문자가 빈손으로 돌아가지 않는다" 이다.
+    //
+    // [재조준 2026-08-19] 그 답이 살던 자리(판 안 플랫폼 절)는 설치 절과 함께
+    // 사라졌다. 지금 그 일을 하는 것은 히어로의 둘째 줄이다 — Windows 파일
+    // 버튼이 미서명 표식과 **함께** 서고, 그 옆에 오늘 당장 되는 곳이 있다.
     await gotoSettled(page, "/ko/download/");
 
-    // ① 자기가 못 받는다는 사실을 **받는 자리에서** 안다 — 스크롤을 내려야
-    //    알게 되는 것은 늦다.
-    const platform = page.getByTestId("download-platform-windows");
-    await expect(platform).toBeVisible({ timeout: 15_000 });
-    await expect(platform).toContainText("Windows");
-    await expect(platform).toContainText(/아직 게시 전|코드 서명되지 않았습니다/);
+    // ① 자기 OS 의 파일이 어떤 상태인지 **받는 자리에서** 안다 — 스크롤을
+    //    내려야 알게 되는 것은 늦다.
+    const windows = page.getByTestId("gateway-hero-windows");
+    await expect(windows).toBeVisible({ timeout: 15_000 });
+    await expect(windows).toContainText("Windows");
+    await expect(windows).toContainText(/미서명/);
+    await expect(windows).toHaveAttribute("href", /github\.com/);
 
-    // ② 갈 곳이 둘 다 살아 있다: 추적할 곳과, **오늘 당장 되는 것**.
+    // ② **오늘 당장 되는 것**으로 가는 길이 같은 줄에 있다.
     //
     // ⚠️ 2026-07-29 (밤) — 목적지가 `/ko/` 에서 `/ko/topology/` 로 바뀌었다.
     // 소유자 결정으로 `/` 가 **마케팅 페이지**가 되기 때문이다(원장:
     // 「root-first-open」 뒤집기). 이 단언의 의도는 *"앱이 없는 OS 의 방문자가
     // 오늘 당장 되는 곳으로 갈 수 있다"* 이고, 그 곳은 소개 화면이 아니라 **웹
-    // 제품**이다 — `/topology`. 예전엔 두 주소가 같은 화면이라 어느 쪽을 적어도
-    // 통과했고, 그래서 이 값은 의도가 아니라 **우연**을 굳히고 있었다.
+    // 제품**이다 — `/topology`.
     //
     // 라벨과 목적지의 짝은 `tests/contract/map-destination-route.contract.test.ts`
     // 가 소스 레벨에서 따로 지킨다.
-    const platformExternal = platform.locator(
-      '[data-testid="download-windows-x64"], [data-testid="download-platform-windows-track"]',
-    );
-    await expect(platformExternal).toHaveCount(1);
-    await expect(platformExternal).toHaveAttribute("href", /github\.com/);
-    const web = page.getByTestId("download-web-cta");
+    //
+    // [삭제 2026-08-19] 「추적할 곳」(`download-platform-windows-track`) — 그
+    // 링크는 Windows 빌드가 **미게시**일 때만 서던 강등 안내이고, 판과 함께
+    // 사라졌다. 지금은 실제 파일이 있으므로 갈 곳이 추적 이슈가 아니라 파일이다.
+    const web = page.getByTestId("gateway-hero-web-cta");
     await expect(web).toBeVisible();
     await expect(web).toHaveAttribute("href", /\/ko\/topology\/?$/);
   });

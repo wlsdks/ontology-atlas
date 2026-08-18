@@ -39,7 +39,19 @@ const CSS = readFileSync(path.join(ROOT, "app/globals.css"), "utf8");
 const DOC = readFileSync(path.join(ROOT, "docs/DESIGN-SYSTEM.md"), "utf8");
 
 /** 오늘 실측. 늘면 빨개지고, 줄면 아래 「내려라」가 빨개진다. */
-const CEILING = 190;
+/**
+ * 190 → 191 (2026-08-18). **토큰을 지웠기 때문에 올라간 값이다.**
+ *
+ * `--gateway-plate-width` 는 관문 설치 절이 사라지면서 소비처를 잃었고, 정의만
+ * 남은 토큰은 규격이 아니라 오정보라 삭제했다(`unused-token-ratchet` 이 지키는
+ * 성질). 그런데 원장의 **과거 기록**(2026-08-18 (70))이 그때의 사실로 그 이름을
+ * 인용한다. 원장은 「덧붙이기만 한다 — 지난 기록을 고치지 않는다」가 계약이라,
+ * 그 줄을 고쳐서 이 수를 되돌리는 것은 **게이트를 위해 사실을 지우는 일**이다.
+ *
+ * 그래서 올린다. 이 래칫이 지키는 것은 «살아 있는 규격 문서가 없는 토큰을
+ * 근거로 들지 않는다» 이지 «과거 기록에 옛 이름이 없다» 가 아니다.
+ */
+const CEILING = 191;
 
 /** `--x: value;` 로 **정의된** 이름 전부(중첩 블록·미디어 쿼리 포함). */
 function definedTokens(): Set<string> {

@@ -42,7 +42,7 @@ import { AUDITED_ROUTES } from "./audited-routes";
  *
  * | 라우트 | 제목 | 제목≥ 위반 | 채워진 악센트 | 비고 |
  * |---|---|---|---|---|
- * | `/ko/` | 34px | 0 | 1 (`download-primary-cta`) | |
+ * | `/ko/` | 34px | 0 | 1 (`gateway-hero-cta`) | ②2026-08-19 개명 |
  * | `/ko/topology/` | **없음**(h1 = `sr-only` 1×1) | — | 1 (`first-run-starter-open`) | ①예외 |
  * | `/ko/docs/` | **없음**(h1 = `sr-only` 1×1) | — | 0 | ①예외 |
  * | `/ko/ontology/studio/` | 16px | 0 | 0 | 2026-08-08 에 14px·2건에서 고쳐짐 |
@@ -53,12 +53,16 @@ import { AUDITED_ROUTES } from "./audited-routes";
  * | `/ko/project/new/` | 30px | 0 | 1 (`project-save`) | 이 파일의 출생지 |
  * | `/ko/project/fallback/` | 23px | 0 | 0 | `/projects` 와 같은 화면 |
  * | `/ko/git/` | 23px | 0 | 1 (`atlas-git-web-get-app`) | |
- * | `/ko/download/` | 34px | 0 | 1 (`download-primary-cta`) | |
+ * | `/ko/download/` | 34px | 0 | 1 (`gateway-hero-cta`) | ②2026-08-19 개명 |
  * | `/ko/guide/` | 34px | 0 | 0 | |
  * | `/ko/guide/what-is-atlas/` | 34px | 0 | 0 | |
  * | `/ko/changelog/` | 34px | 0 | 0 | 훑은 글자 225 |
  * | `/ko/this-route-does-not-exist/` | 23px | 0 | 1 | |
  * | `/this-route-does-not-exist/` | 23px | 0 | 1 | 같은 루트 파일 |
+ *
+ * ② 2026-08-19: 설치 절이 삭제되면서 판의 `download-primary-cta` 가 사라졌다.
+ * 채워진 악센트는 여전히 라우트당 하나이고, 그 하나가 히어로 CTA 다 — 수는
+ * 안 바뀌고 이름만 바뀌었다.
  *
  * 합계: 훑은 글자 원소 **964** · 채워진 악센트 컨트롤 **8**(2026-08-08 위계 판정
  * 적용 전 9 — 편집 화면의 쌍둥이 저장 중 하나가 보조 톤으로 내려갔다).

@@ -53,7 +53,8 @@ const DEBT: ReadonlyArray<readonly [file: string, count: number]> = [
   ["src/features/project-edit/ui/ProjectForm.tsx", 7],
   ["src/views/agent-skills/ui/SkillProcessRail.tsx", 1],
   ["src/views/docs-vault/ui/parts/EmptyState.tsx", 1],
-  ["src/views/download/ui/DownloadPage.tsx", 1],
+  // 1 → 0 (2026-08-19): 그 한 장은 다운로드 판이었고, 설치 절이 통째로
+  // 삭제되면서 함께 갔다 (`docs/DECISIONS.md` (83)).
   ["src/views/home/ui/CreateNodeForm.tsx", 1],
   ["src/views/home/ui/HomePage.tsx", 1],
   ["src/views/home/ui/TopologyNoMatchesState.tsx", 1],

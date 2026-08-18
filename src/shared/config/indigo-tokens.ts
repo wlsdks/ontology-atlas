@@ -21,24 +21,24 @@
  *   highlight — 선택 노드 / context highlight (가장 lighter)
  */
 
-export const INDIGO_BRAND = "#c14a24";
-export const INDIGO_ACCENT = "#f0894e";
-export const INDIGO_HOVER = "#f5a06b";
-export const INDIGO_HUB = "#c7613f";
-export const INDIGO_FOCUS = "#da714e";
-export const INDIGO_HIGHLIGHT = "#f27f59";
+export const INDIGO_BRAND = "#5e6ad2";
+export const INDIGO_ACCENT = "#7170ff";
+export const INDIGO_HOVER = "#828fff";
+export const INDIGO_HUB = "#6c77d4";
+export const INDIGO_FOCUS = "#7c87e6";
+export const INDIGO_HIGHLIGHT = "#8b97ff";
 
 /**
  * RGB triplet — `rgba()` 합성에 사용. `indigoRgba(variant, alpha)` 헬퍼가
  * 우선이지만, 인라인 합성이 필요할 때를 위해 노출.
  */
 export const INDIGO_RGB = {
-  brand: "193, 74, 36",
-  accent: "240, 137, 78",
-  hover: "245, 160, 107",
-  hub: "199, 97, 63",
-  focus: "218, 113, 78",
-  highlight: "242, 127, 89",
+  brand: "94, 106, 210",
+  accent: "113, 112, 255",
+  hover: "130, 143, 255",
+  hub: "108, 119, 212",
+  focus: "124, 135, 230",
+  highlight: "139, 151, 255",
 } as const;
 
 export type IndigoVariant = keyof typeof INDIGO_RGB;

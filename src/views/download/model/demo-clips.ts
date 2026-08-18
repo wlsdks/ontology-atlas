@@ -59,8 +59,8 @@ export interface DemoClip {
  * 「무엇을 찍어야 하는가」가 코드에 남고, 촬영 후 게이트가 대조할 대상이 생긴다.
  */
 export const DEMO_CLIPS: readonly DemoClip[] = [
-  // `seconds` 는 새 촬영본이 붙을 때 ffprobe 실측값으로 고친다(현재는 잠정 자산의 길이).
-  { id: 'atlas-tour', seconds: 24, basename: 'atlas-tour' },
+  // `seconds` 는 ffprobe 실측값이다(2026-08-19 촬영본 88.83s → 반올림 89).
+  { id: 'atlas-tour', seconds: 89, basename: 'atlas-tour' },
 ];
 
 /**
@@ -73,11 +73,18 @@ export const DEMO_CLIPS: readonly DemoClip[] = [
  * 그대로 나간다).
  */
 /*
- * ⚠️ **지금 붙어 있는 것은 잠정 자산이다** (2026-08-03). 새 45초 시나리오
- * (`docs/DEMO-SCENARIO.md`)의 촬영본이 아직 없어서, 지난 시나리오의 24초
- * 영상을 새 이름으로 이어 두었다 — 두 로케일이 **같은 마스터**를 가리킨다.
+ * **지금 붙어 있는 것** (2026-08-19 촬영, 설치본 v1.0.0-rc.8 · 볼트
+ * `docs/ontology` 82노드): 88.83초 무컷 한 테이크. 동선은
+ * 폴더 고르기 → 지도 → 2D 노드 클릭(ego + 타입 있는 사실) → 3D **돔** 조립 ·
+ * 손으로 회전 → 왼쪽 목록에서 고르면 돔이 그쪽으로 다시 잡힘 → 3D **구름**
+ * 형성 · 회전 → 평면 복귀 → **Codex 를 ACP 로 붙여** 이 폴더에 물어보고 답을
+ * 받는 것까지.
  *
- * 왜 비워 두지 않았나: 등록부를 비우면 관문에서 시연 절이 통째로 사라지는데,
+ * ⚠️ **두 로케일이 아직 같은 마스터를 가리킨다** — 화면 글자는 한국어다.
+ * 영어 촬영본은 UI 문구 폭이 달라 좌표 동선을 다시 잡아야 해서 따로 찍는다.
+ * 화면이 그 사실을 `demoProvisionalNote` 로 정직하게 말한다.
+ *
+ * 왜 등록부를 비워 두지 않나: 비우면 관문에서 시연 절이 통째로 사라지는데,
  * 그러면 첫인상이 나빠지는 것에 더해 그 아래 「설치 3단이 접히지 않는다」
  * 시험이 **조용히 무의미해진다** — 절이 없으면 페이지가 짧아져 3단이 저절로
  * 접힘 위에 오고, 아무것도 안 재면서 초록이 된다(그 시험 자신의 주석이 이
@@ -85,8 +92,7 @@ export const DEMO_CLIPS: readonly DemoClip[] = [
  *
  * **교체 절차**: `public/demo/atlas-tour.{ko,en}.{webm,mp4}` 와
  * `atlas-tour.{ko,en}-poster.png` 를 새 촬영본으로 덮고, `seconds` 를 ffprobe
- * 실측값으로 고친다. 그때 구 자산(`one-folder.*` · `one-button.*`)을 지운다 —
- * 먼저 지우면 되돌릴 자리가 없다.
+ * 실측값으로 고친다.
  */
 export const AVAILABLE_DEMO_CLIP_IDS: readonly DemoClip['id'][] = ['atlas-tour'];
 

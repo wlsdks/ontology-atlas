@@ -593,19 +593,26 @@ if (
   // 게이트가 조용히 빨간불이 된다(실제로 그랬다 — Pages 배포 5회 연속
   // deploy 성공 + verify 실패). 진실원은 출고되는 메시지 카탈로그다.
   hostedDownloadSurfaceScript.includes('readFileSync(path.join(REPO_ROOT, "messages", "ko.json")') &&
-  // 게시 전/후 어느 release-facts 상태에서도 Windows 방문자가 자기 위치와
-  // 다음 행동을 받는다. 검증기는 두 분기를 같은 배포 계약으로 다룬다.
-  hostedDownloadSurfaceScript.includes("downloadCopy.windowsUnsignedWarning") &&
-  hostedDownloadSurfaceScript.includes("downloadCopy.windowsDownloadCta") &&
+  // 게시 전/후 어느 release-facts 상태에서도 방문자가 결정할 것을 받는다 —
+  // 받을 파일이 있으면 파일, 없으면 오늘 당장 되는 브라우저 지도. 검증기는
+  // 두 분기를 같은 배포 계약으로 다룬다.
+  //
+  // 2026-08-19: 구 바늘 쌍(Windows 미서명 경고 · Windows 받기)은 설치 절이
+  // 삭제되며 페이지에서 사라졌다. 그리고 **정직성 사실의 마지막 자리**인
+  // 히어로 신뢰줄을 필수 바늘로 올린다 — 그 한 줄이 배포에서 빠지면 서명·
+  // 공증·「서버로 아무것도 안 보낸다」가 페이지에 하나도 없게 된다.
+  hostedDownloadSurfaceScript.includes("downloadCopy.trustLine") &&
+  hostedDownloadSurfaceScript.includes("downloadCopy.primaryCtaPublished") &&
+  hostedDownloadSurfaceScript.includes("downloadCopy.webCta") &&
   hostedDownloadSurfaceScript.includes("releases/latest") &&
   hostedDownloadSurfaceScript.includes("assertIncludes(download.body, downloadPath") &&
   hostedDownloadSurfaceScript.includes("deploy-pages.yml") &&
   hostedDownloadSurfaceScript.includes("gh workflow run deploy-pages.yml")
 ) {
-  pass("hosted website verifier sources expected download copy from the message catalog and requires both platform statuses");
+  pass("hosted website verifier sources expected download copy from the message catalog and requires the trust line plus both release-state CTAs");
 } else {
   fail(
-    "package.json must expose desktop:verify-hosted, test:desktop:check must cover it, and scripts/check-hosted-download-surface.mjs must read expected download copy from messages/ko.json (not hand-copied strings), require the hosted /ko/download/ route with both platform statuses and a stable GitHub Releases CTA, reject releases/latest, and print the deploy-pages recovery path",
+    "package.json must expose desktop:verify-hosted, test:desktop:check must cover it, and scripts/check-hosted-download-surface.mjs must read expected download copy from messages/ko.json (not hand-copied strings), require the hosted /ko/download/ route with the hero trust line, both release-state CTAs, and a stable GitHub Releases CTA, reject releases/latest, and print the deploy-pages recovery path",
   );
 }
 
@@ -759,18 +766,28 @@ if (
   );
 }
 
+/*
+ * 2026-08-19: 이 게이트의 절반이 주어를 잃었다. `MacosDownloadLink`(미게시
+ * 분기의 릴리스 페이지 링크)와 저장소 출구(`GITHUB_REPOSITORY_URL` ·
+ * `sourceCta`)는 **다운로드 판 안에만** 있었고, 소유자가 설치 절을 통째로
+ * 걷어냈다(*"맨 마지막 이거는 없어도 될듯? 어차피 맨 위에 다 있어서"*).
+ * `docs/DECISIONS.md` 2026-08-19 가 그 대가 — 관문에 저장소 링크가 하나도
+ * 없어진 것 — 를 적는다.
+ *
+ * 남은 절반은 그대로 산다: 릴리스 URL 이 **깨지는 형태**(`releases/latest`
+ * 는 공개 릴리스가 없으면 404, `api.github.com` 은 정적 export 에서 못 부른다)
+ * 가 아니어야 한다. 그 property 는 컴포넌트가 어디서 쓰이든 유효하고, 실제로
+ * 이 게이트가 막던 것이 그것이다.
+ */
 if (
-  downloadPage.includes("MacosDownloadLink") &&
-  downloadPage.includes("GITHUB_REPOSITORY_URL") &&
-  downloadPage.includes("sourceCta") &&
   macosDownloadLink.includes("GITHUB_RELEASES_URL") &&
   !macosDownloadLink.includes("releases/latest") &&
   !macosDownloadLink.includes("api.github.com")
 ) {
-  pass("hosted download CTAs separate the GitHub Releases download path from the source-code link without a broken latest-release dependency");
+  pass("hosted download CTAs avoid a broken latest-release URL and never call the GitHub API from the static export");
 } else {
   fail(
-    "hosted download CTAs must avoid a broken latest-release URL before a public macOS DMG release exists and the download page must not duplicate the release CTA as its secondary action",
+    "hosted download CTAs must avoid a broken latest-release URL before a public macOS DMG release exists, and must not depend on api.github.com from a static export",
   );
 }
 
@@ -1022,12 +1039,16 @@ if (
   downloadPage.includes("isMacosReleasePublished") &&
   downloadPage.includes("macosAssetFor") &&
   downloadPage.includes("formatAssetSize") &&
-  downloadPage.includes("download-platform-macos") &&
-  downloadPage.includes("download-platform-windows") &&
-  downloadPage.includes("download-macos-pending") &&
-  // 파일명은 버전을 따라간다 — 번역 문자열에 옛 파일명을 얼려두면 검증
-  // 명령이 조용히 거짓이 된다.
-  downloadPage.includes("buildDmgName('aarch64')") &&
+  // 2026-08-19: 구 마커 넷(`download-platform-macos` · `download-platform-windows`
+  // · `download-macos-pending` · `buildDmgName('aarch64')`)은 전부 설치 절 안에
+  // 살았고, 소유자가 그 절을 통째로 걷어냈다(*"맨 마지막 이거는 없어도 될듯?
+  // 어차피 맨 위에 다 있어서"*). 남은 property 는 같다 — **페이지가 릴리스
+  // 사실을 생성 모듈에서 읽는다** — 이고, 오늘 그것을 지는 자리는 히어로다:
+  // Windows 자산을 실제로 읽고(`windowsAsset`), 미게시일 때 개발 중 버전을
+  // 정직하게 부른다(`resolveDisplayReleaseTag`).
+  downloadPage.includes("windowsAsset") &&
+  downloadPage.includes("resolveDisplayReleaseTag") &&
+  downloadPage.includes("gateway-hero-windows") &&
   internalPipelineLeaks.every(
     (marker) => !downloadPage.includes(marker) && !downloadRoute.includes(marker),
   ) &&

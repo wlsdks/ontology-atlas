@@ -71,11 +71,16 @@ export const DESKTOP_SMOKE_ROUTE_TEXT_KEYS = {
   // `eyebrow` + `stageTitle` 두 줄로 갈렸고, 후자는 줄바꿈을 품어 렌더 텍스트와
   // 원문이 다르므로 키로 고르지 않는다(위 독블록의 ICU 규칙과 같은 이유).
   // `eyebrow` 는 한 줄이고 플랫폼과 제품 성격을 함께 말해서 이 자리에 맞다.
+  //
+  // 2026-08-19: 종전 키 셋 중 둘은 설치 절이 삭제되며 화면에서 사라졌고,
+  // 나머지 하나는 **미게시 분기에서만** 렌더됐다 — 셋 다 게시된 빌드의 정적
+  // HTML 에서 못 찾는 문자열이다. 어느 릴리스 상태에서도 항상 렌더되는 세 절
+  // 제목으로 바꾼다.
   "/download": [
     "download.eyebrow",
-    "download.trustHeading",
-    "download.archHelpTitle",
-    "download.webCta",
+    "download.demoTitle",
+    "download.evidenceTitle",
+    "download.agentsTitle",
   ],
 };
 
@@ -130,15 +135,16 @@ export function resolveRouteText({
  * of a retired browse, builder, or query-cockpit chunk.
  */
 export const DESKTOP_SMOKE_ROUTE_CHUNK_TEXT = {
-  // 구 fact-strip 마커는 #730 의 리메이크에서 사라졌다. 그 자리에 오늘 실제로
-  // 렌더되는 신뢰 섹션 마커를 둔다 — 마커는 "이 라우트가 오늘 무엇인가" 를
-  // 말해야지, 어제 무엇이었는지를 말하면 안 된다. (은퇴한 마커 이름을 여기
-  // 적지 않는다: 계약 테스트가 이 파일을 문자열로 읽으므로, 설명으로 적어도
-  // "아직 남아 있다" 로 잡힌다 — 문자열 게이트는 자기 문서까지 읽는다.)
+  // 마커는 "이 라우트가 오늘 무엇인가" 를 말해야지, 어제 무엇이었는지를 말하면
+  // 안 된다. (은퇴한 마커 이름을 여기 적지 않는다: 계약 테스트가 이 파일을
+  // 문자열로 읽으므로, 설명으로 적어도 "아직 남아 있다" 로 잡힌다 — 문자열
+  // 게이트는 자기 문서까지 읽는다.) 2026-08-19 에 설치 절이 통째로 사라지면서
+  // 신뢰 섹션 마커도 함께 은퇴했고, 오늘 이 라우트를 이루는 세 절 — 히어로의
+  // 받기 · 시연 · 에이전트 — 을 마커로 세운다.
   "/download": [
-    "download-trust",
-    "download-platform-macos",
-    "download-platform-windows",
+    "gateway-hero-cta",
+    "gateway-demo-section",
+    "gateway-agents-section",
   ],
   "/docs": [
     "data-docs-header-zone",
