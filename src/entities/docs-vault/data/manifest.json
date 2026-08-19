@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-08-19",
+  "generatedAt": "2026-08-20",
   "docs": [
     {
       "slug": "AGENT-GRAPH-WORKFLOW",
@@ -473,9 +473,9 @@
       "tags": [],
       "frontmatter": {},
       "headings": [],
-      "excerpt": "Major change history. Code commit messages answer why; this file answers when / which surface changed. Focused on user-visible changes, not PR-level granularity. Newest at the top. Entries stay date-based; the app version reached v1.0.0 on 2026-07-27, so a release tag now carries the semver promise instead. 「앱에서 대화」를 처",
-      "wordCount": 73740,
-      "updatedAt": "2026-08-19",
+      "excerpt": "Major change history. Code commit messages answer why; this file answers when / which surface changed. Focused on user-visible changes, not PR-level granularity. Newest at the top. Entries stay date-based; the app version reached v1.0.0 on 2026-07-27, so a release tag now carries the semver promise instead. 종전 영상은 두 가지",
+      "wordCount": 73940,
+      "updatedAt": "2026-08-20",
       "linksOut": [
         "audits/CASE-STUDY-AGENTS-MD-DRIFT",
         "domains/catalog",
@@ -499,13 +499,13 @@
     {
       "slug": "DEMO-SCENARIO",
       "path": "docs/DEMO-SCENARIO.md",
-      "title": "시연 영상 촬영 시나리오 — `atlas-tour` (2026-08-19 개정)",
+      "title": "시연 영상 촬영 시나리오 — `atlas-tour` (2026-08-20 개정)",
       "tags": [],
       "frontmatter": {},
       "headings": [],
       "excerpt": "한 클립 · 약 155초 · 무컷 · 무음 · 루프 없음 · 한국어/영어 따로 촬영. 재생 계약의 구현은 src/views/download/ui/DemoStage.tsx, 자산 등록부는 src/views/download/model/demo-clips.ts. 종전 촬영본(88.83초)은 첫 5초에 macOS 파일 선택 대화상자를 지나갔다. 그 한 프레임에 촬영자의 개인 폴더 이름이 그대로 읽혔다 — 사이드바의 즐겨찾기와 목록에 실제 개인 프로젝트 디렉터리들이 노출됐고, 그 영상이 공개 다운로드 페이지에 실려 있었다. 이건 연출 취향 문제가 아니라 자산에 남의(촬영자의)",
-      "wordCount": 1473,
-      "updatedAt": "2026-08-19",
+      "wordCount": 1795,
+      "updatedAt": "2026-08-20",
       "linksOut": []
     },
     {
@@ -584,8 +584,8 @@
       "frontmatter": {},
       "headings": [],
       "excerpt": "Maintainer-only checks live here so the public README stays readable. Use this page when you touch mcp/, cli/, package manifests, release scripts, or the dogfood ontology. Run this before pushing broad docs, package, MCP, or web changes: For user-facing UI changes, add the relevant Playwright route check. pnpm install ",
-      "wordCount": 10303,
-      "updatedAt": "2026-08-17",
+      "wordCount": 10340,
+      "updatedAt": "2026-08-20",
       "linksOut": []
     },
     {
@@ -5594,7 +5594,7 @@
         "path": "DEMO-SCENARIO",
         "type": "doc",
         "slug": "DEMO-SCENARIO",
-        "title": "시연 영상 촬영 시나리오 — `atlas-tour` (2026-08-19 개정)"
+        "title": "시연 영상 촬영 시나리오 — `atlas-tour` (2026-08-20 개정)"
       },
       {
         "name": "DEPLOYMENT",
