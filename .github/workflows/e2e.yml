@@ -57,7 +57,12 @@ jobs:
   static-export:
     name: Playwright (static export)
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    # 20분이었다. 실측(2026-08-19)으로 통과하는 샤드가 이미 12~17분이라
+    # 여유가 3분뿐이었고, 준비 스텝이 한 번만 재시도해도 «느리지만 정상인 실행»
+    # 이 절벽에서 떨어진다. 준비 스텝의 무한 대기는 이제 `run-with-retry` 가
+    # 막으므로(setup-playwright), 이 값은 더 이상 그 안전망이 아니다 —
+    # 재시도가 들어갈 자리만큼 늘린다.
+    timeout-minutes: 30
     steps:
       # fetch-depth: 0 필수 — 변경 분류가 `git merge-base` 를 쓴다. 얕은 클론이면
       # 베이스를 못 찾아 "전부 실행"으로 열리고 게이트가 무의미해진다. 체크아웃은
@@ -99,7 +104,12 @@ jobs:
   web-smoke:
     name: Playwright (web surface)
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    # 20분이었다. 실측(2026-08-19)으로 통과하는 샤드가 이미 12~17분이라
+    # 여유가 3분뿐이었고, 준비 스텝이 한 번만 재시도해도 «느리지만 정상인 실행»
+    # 이 절벽에서 떨어진다. 준비 스텝의 무한 대기는 이제 `run-with-retry` 가
+    # 막으므로(setup-playwright), 이 값은 더 이상 그 안전망이 아니다 —
+    # 재시도가 들어갈 자리만큼 늘린다.
+    timeout-minutes: 30
     steps:
       # fetch-depth: 0 필수 — 변경 분류가 `git merge-base` 를 쓴다. 얕은 클론이면
       # 베이스를 못 찾아 "전부 실행"으로 열리고 게이트가 무의미해진다. 체크아웃은
@@ -140,7 +150,12 @@ jobs:
   suite:
     name: Playwright (chromium ${{ matrix.shard }}/3)
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    # 20분이었다. 실측(2026-08-19)으로 통과하는 샤드가 이미 12~17분이라
+    # 여유가 3분뿐이었고, 준비 스텝이 한 번만 재시도해도 «느리지만 정상인 실행»
+    # 이 절벽에서 떨어진다. 준비 스텝의 무한 대기는 이제 `run-with-retry` 가
+    # 막으므로(setup-playwright), 이 값은 더 이상 그 안전망이 아니다 —
+    # 재시도가 들어갈 자리만큼 늘린다.
+    timeout-minutes: 30
     strategy:
       # 한 샤드가 빨개도 나머지는 끝까지 돈다 — 한 번에 한 결함만 알려 주면
       # 검수가 왕복이 된다. `if: always()` 를 잡 안에서 쓰는 것과 같은 이유다.
