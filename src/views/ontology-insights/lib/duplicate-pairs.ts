@@ -39,7 +39,9 @@ export function tokenSetJaccard(
   for (const value of left) {
     if (right.has(value)) intersection += 1;
   }
-  const union = new Set([...left, ...right]).size;
+  // 합집합 크기는 |L|+|R|−|교집합| — Set 을 새로 만들던 이전 구현과 값이
+  // 정확히 같고(정수 산술), n² 쌍 비교의 안쪽 루프라 할당을 없앤다.
+  const union = left.size + right.size - intersection;
   return union === 0 ? 0 : intersection / union;
 }
 
@@ -258,16 +260,50 @@ export function buildDuplicatePairs(
   const candidates = buildSimilarityCandidates(nodes, edges);
   if (candidates.size < 2) return empty;
 
+  /**
+   * 노드당 낱말 집합을 **한 번만** 자른다. 종전에는 쌍마다
+   * `scoreNodeSimilarity` 가 slug·title 을 다시 토큰화해 Set 4개를 새로
+   * 만들었고 — 공유 폴더 낱말(`capabilities` 등)이 만드는 큰 버킷에서 이
+   * 함수 하나가 인사이트 진입 memo 시간의 74%(4x 스로틀 실측 34.8ms)를
+   * 먹었다. 점수 산식은 아래 `scorePair` 가 `scoreNodeSimilarity` 와 자리까지
+   * 같게 재현한다(반올림 순서 포함) — 어긋나면
+   * `duplicate-pairs.contract.test.ts` 의 엔진 대조가 잡는다.
+   */
+  interface PairTokens {
+    slug: Set<string>;
+    title: Set<string>;
+  }
+  const tokenSetsOf = new Map<string, PairTokens>();
+  for (const [id, candidate] of candidates) {
+    tokenSetsOf.set(id, {
+      slug: new Set(similarityTokens(candidate.slug)),
+      title: new Set(similarityTokens(candidate.title)),
+    });
+  }
+  const scorePair = (
+    leftId: string,
+    rightId: string,
+    left: SimilarityCandidate,
+    right: SimilarityCandidate,
+  ): number => {
+    const leftTokens = tokenSetsOf.get(leftId)!;
+    const rightTokens = tokenSetsOf.get(rightId)!;
+    const slug = tokenSetJaccard(leftTokens.slug, rightTokens.slug) * 0.35;
+    const title = tokenSetJaccard(leftTokens.title, rightTokens.title) * 0.35;
+    const kind = left.kind && right.kind && left.kind === right.kind ? 0.1 : 0;
+    const domain = left.domain && right.domain && left.domain === right.domain ? 0.1 : 0;
+    const neighbors = tokenSetJaccard(left.neighbors, right.neighbors) * 0.1;
+    return roundScore(slug + title + kind + domain + neighbors);
+  };
+
   // 낱말 → 노드 역색인. 임계값이 낱말 없이 도달 가능한 상한보다 낮으면
   // 좁히기가 결과를 바꿀 수 있으므로 전수 비교로 되돌린다.
   const useTokenIndex = minScore > MAX_SCORE_WITHOUT_SHARED_TOKEN;
   const nodesByToken = new Map<string, string[]>();
   if (useTokenIndex) {
-    for (const [id, candidate] of candidates) {
-      const tokens = new Set([
-        ...similarityTokens(candidate.slug),
-        ...similarityTokens(candidate.title),
-      ]);
+    for (const [id] of candidates) {
+      const sets = tokenSetsOf.get(id)!;
+      const tokens = new Set([...sets.slug, ...sets.title]);
       for (const token of tokens) {
         const bucket = nodesByToken.get(token);
         if (bucket) bucket.push(id);
@@ -277,24 +313,33 @@ export function buildDuplicatePairs(
   }
 
   const degreeOf = (id: string): number => candidates.get(id)?.neighbors.size ?? 0;
-  const seen = new Set<string>();
+  // 중복 방문 차단 키 — 두 노드가 여러 낱말을 공유하면 같은 쌍이 여러 버킷에
+  // 나타난다. 이 키는 **내부 전용**이라 후보 순번의 정수 조합이면 충분하고,
+  // 쌍마다 문자열을 만들던 이전 구현(JSON.stringify)은 n² 안쪽 루프에서
+  // 눈에 띄는 상수 비용이었다. 행 `id` 출력은 여전히 JSON 배열이다 — 그쪽
+  // 근거(NUL 합성 키가 파일을 git 에게 바이너리로 만든 2026-08-08 사고)는
+  // 소스에 찍히는 문자열의 인쇄 가능성이라 이 정수 키와는 무관하다.
+  const indexOfId = new Map<string, number>();
+  for (const id of candidates.keys()) indexOfId.set(id, indexOfId.size);
+  const indexSpan = indexOfId.size;
+  const seen = new Set<number>();
   const scored: DuplicatePairRow[] = [];
 
   const consider = (leftId: string, rightId: string) => {
-    // 합성 키에 NUL 을 쓰면 그 파일이 git 에게 **바이너리**가 되어 PR 에서
-    // diff 가 안 보이고 grep 이 파일을 건너뛴다 (2026-08-08 검수에서 실제로
-    // 사고가 났다). JSON 배열은 인쇄 가능하면서 애매함이 없다.
+    const leftIndex = indexOfId.get(leftId);
+    const rightIndex = indexOfId.get(rightId);
+    if (leftIndex === undefined || rightIndex === undefined) return;
     const pairKey =
-      leftId < rightId
-        ? JSON.stringify([leftId, rightId])
-        : JSON.stringify([rightId, leftId]);
+      leftIndex < rightIndex
+        ? leftIndex * indexSpan + rightIndex
+        : rightIndex * indexSpan + leftIndex;
     if (seen.has(pairKey)) return;
     seen.add(pairKey);
     const left = candidates.get(leftId);
     const right = candidates.get(rightId);
     if (!left || !right) return;
-    const score = scoreNodeSimilarity(left, right);
-    if (score.total < minScore) return;
+    const total = scorePair(leftId, rightId, left, right);
+    if (total < minScore) return;
 
     // 남길 쪽 = 연결이 많은 쪽. 합치면 백링크가 그쪽으로 모이므로 다시 이을
     // 관계가 가장 적다. 동률이면 이름 순으로 고정해 매번 같은 제안을 준다.
@@ -325,7 +370,7 @@ export function buildDuplicatePairs(
       dissolveSlug: dissolve.slug,
       dissolveTitle: dissolve.node.display ?? dissolve.node.title,
       kind: keep.kind === dissolve.kind ? keep.kind : null,
-      score: score.total,
+      score: total,
       sharedTokens,
     });
   };
