@@ -2,6 +2,8 @@
 
 import { useEffect, useRef } from 'react';
 
+import { registerGatewayFrameClient } from '../lib/gateway-frame-loop';
+
 /**
  * 관문 랜딩의 효과층 — **전류장(field) · 그레인 · 커스텀 커서 링.**
  *
@@ -12,6 +14,11 @@ import { useEffect, useRef } from 'react';
  * ③ 첫 1초는 정지 상태로 페인트하고 그 뒤에야 분위기 모션이 개입한다
  * (첫 3초 규칙 — 배경은 헤드라인의 등장을 방해하지 않는다) ④ reduced-motion
  * 에서는 rAF 루프 자체를 돌리지 않는다(정지 1프레임).
+ *
+ * 프레임은 관문 공용 루프(`gateway-frame-loop.ts`)가 공급한다 — 히어로
+ * 오브젝트와 같은 rAF 하나이고, 무입력 30s 뒤 2s 램프로 감속해 잠든다
+ * (지도의 `ambient-sleep.ts` 계약 그대로). 어떤 입력이든 다음 프레임에
+ * 복귀한다.
  * 게이트: `tests/contract/gateway-fx-exception.contract.test.ts` +
  * `eslint.config.mjs` 의 gateway-fx 스코프 셀렉터.
  *
@@ -164,11 +171,11 @@ export function GatewayFx() {
       ctx!.globalCompositeOperation = 'source-over';
     }
 
-    let rafId = 0;
     let startTimer = 0;
     let disposed = false;
     let cursorTick: (() => void) | null = null;
     let fxLoopLive = false;
+    let unregisterFrame: (() => void) | null = null;
 
     const onResize = (): void => {
       size();
@@ -182,13 +189,16 @@ export function GatewayFx() {
       draw(0); // 0~150ms: 정지 상태로 페인트.
       startTimer = window.setTimeout(() => {
         let ampTime = 0;
-        let last = performance.now();
         let lastPaint = 0;
-        const loop = (t: number): void => {
+        // 관문 공용 루프에 탑승한다 — 히어로 오브젝트와 같은 rAF 하나이고,
+        // 앰비언트 휴면(무입력 30s 후 2s 램프로 감속 → 정지 → 프레임 스킵)은
+        // 드라이버가 소유한다. `gateway-frame-loop.ts` 독블록.
+        unregisterFrame = registerGatewayFrameClient(({ t, dtMs, factor }) => {
           if (disposed) return;
-          ambient = Math.min(ambient + (t - last) / 1500, 1); // 1.5s ease-in
-          ampTime += (t - last) * ambient; // 위상 점프 없는 누적 시계
-          last = t;
+          ambient = Math.min(ambient + dtMs / 1500, 1); // 1.5s ease-in
+          // 위상 점프 없는 누적 시계 — 휴면 계수가 «속도»에 곱해지므로 표류·
+          // 트윙클이 감속으로 멎고, 어떤 입력이든 다음 프레임에 1 로 돌아온다.
+          ampTime += dtMs * ambient * factor;
           fxLoopLive = true;
           // 분위기층은 30fps 면 충분하다 — 수십 초 주기의 표류에 60fps 는
           // 정보가 아니라 전력이다. 커서 추종만 매 프레임(그건 손의 일이다).
@@ -197,9 +207,7 @@ export function GatewayFx() {
             draw(ampTime);
           }
           cursorTick?.(); // 커서 지연 추종 — 같은 rAF (별도 루프 없음)
-          rafId = requestAnimationFrame(loop);
-        };
-        rafId = requestAnimationFrame(loop);
+        });
       }, 1000); // 1000ms: 분위기 모션이 서서히 개입 (첫 3초 규칙)
     }
 
@@ -252,7 +260,7 @@ export function GatewayFx() {
     return () => {
       disposed = true;
       window.clearTimeout(startTimer);
-      cancelAnimationFrame(rafId);
+      unregisterFrame?.();
       removeEventListener('resize', onResize);
       cleanupCursor?.();
     };

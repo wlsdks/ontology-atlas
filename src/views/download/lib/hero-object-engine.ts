@@ -20,10 +20,16 @@
  * reduced-motion 에서는 조립이 끝난 정지 1프레임만 그린다 — 드래그(사용자
  * 개시 이동, WCAG 2.3.3 예외)만 다시 그린다.
  *
+ * 프레임은 관문 공용 루프(`gateway-frame-loop.ts`)가 공급한다 — 전류장과
+ * 같은 rAF 하나이고, 무입력 30s 뒤 2s 램프로 감속해 잠든다(지도의
+ * `ambient-sleep.ts` 계약 그대로). 어떤 입력이든 다음 프레임에 복귀한다.
+ *
  * 목업 실측(scratchpad `hero-engine.js`, 2026-08-18): draw p50 0.4ms /
  * p95 0.5ms, 프레임 드랍 0. 이 포트는 그 코드의 타입판이고 시각 문법을
  * 바꾸지 않는다.
  */
+
+import { registerGatewayFrameClient } from './gateway-frame-loop';
 
 const TAU = Math.PI * 2;
 
@@ -417,9 +423,8 @@ export function mountHeroObject(
   const containsEdges = model.edges.filter((e) => e.y === 'contains');
 
   let lastT = 0;
-  let rafT0 = 0;
-  let rafId = 0;
   let disposed = false;
+  let unregisterFrame: (() => void) | null = null;
 
   function drawAt(t: number): void {
     if (disposed) return;
@@ -615,23 +620,26 @@ export function mountHeroObject(
   if (reduced) {
     drawAt(ASSEMBLE + 601); // 조립이 끝난 정지 1프레임.
   } else {
-    const loop = (raf: number): void => {
+    // 관문 공용 루프에 탑승한다 — 전류장과 같은 rAF 하나. 자율 요(yaw)는
+    // 누적 시계에 휴면 계수를 곱해 전진하므로, 무입력 30s 뒤 2s 램프로
+    // 감속해 멎고(스텝 컷 없음) 잠들면 프레임 자체가 스킵된다. 드래그·관성은
+    // 입력 직후라 계수가 항상 1 인 구간에 산다. `gateway-frame-loop.ts` 독블록.
+    let animT = 0;
+    unregisterFrame = registerGatewayFrameClient(({ dtMs, factor }) => {
       if (disposed) return;
-      if (!rafT0) rafT0 = raf;
       if (!dragging) {
         userVel *= 0.94;
         userYaw += userVel;
       }
-      drawAt(raf - rafT0);
-      rafId = requestAnimationFrame(loop);
-    };
-    rafId = requestAnimationFrame(loop);
+      animT += dtMs * factor;
+      drawAt(animT);
+    });
   }
 
   return {
     dispose(): void {
       disposed = true;
-      cancelAnimationFrame(rafId);
+      unregisterFrame?.();
       removeEventListener('resize', onResize);
       canvas.removeEventListener('pointerdown', onPointerDown);
       canvas.removeEventListener('pointermove', onPointerMove);
