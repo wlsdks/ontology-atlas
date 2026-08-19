@@ -473,8 +473,8 @@
       "tags": [],
       "frontmatter": {},
       "headings": [],
-      "excerpt": "Major change history. Code commit messages answer why; this file answers when / which surface changed. Focused on user-visible changes, not PR-level granularity. Newest at the top. Entries stay date-based; the app version reached v1.0.0 on 2026-07-27, so a release tag now carries the semver promise instead. 돔이 도는 동안의 프",
-      "wordCount": 73575,
+      "excerpt": "Major change history. Code commit messages answer why; this file answers when / which surface changed. Focused on user-visible changes, not PR-level granularity. Newest at the top. Entries stay date-based; the app version reached v1.0.0 on 2026-07-27, so a release tag now carries the semver promise instead. 「앱에서 대화」를 처",
+      "wordCount": 73740,
       "updatedAt": "2026-08-19",
       "linksOut": [
         "audits/CASE-STUDY-AGENTS-MD-DRIFT",
@@ -499,12 +499,12 @@
     {
       "slug": "DEMO-SCENARIO",
       "path": "docs/DEMO-SCENARIO.md",
-      "title": "시연 영상 촬영 시나리오 — `atlas-tour` (2026-08-03)",
+      "title": "시연 영상 촬영 시나리오 — `atlas-tour` (2026-08-19 개정)",
       "tags": [],
       "frontmatter": {},
       "headings": [],
-      "excerpt": "한 클립 · 45초 · 무컷 · 무음 · 루프 없음 · 한국어/영어 따로 촬영. 재생 계약의 구현은 src/views/download/ui/DemoStage.tsx, 자산 등록부는 src/views/download/model/demo-clips.ts. 종전은 2클립 2탭(one-folder 24초 + one-button 14초)에 언어별 .vtt 자막이었다. 셋을 바꾼다: · 종전 · 지금 · 왜 · 클립 수 · 2 (탭) · 1 · 첫인상 자리에서 「무엇을 볼지 고르기」는 비용이지 값이 아니다. 대부분은 첫 탭만 보고 떠나므로 두 번째는 만들었지만 아무도 안 보는 ",
-      "wordCount": 1095,
+      "excerpt": "한 클립 · 약 155초 · 무컷 · 무음 · 루프 없음 · 한국어/영어 따로 촬영. 재생 계약의 구현은 src/views/download/ui/DemoStage.tsx, 자산 등록부는 src/views/download/model/demo-clips.ts. 종전 촬영본(88.83초)은 첫 5초에 macOS 파일 선택 대화상자를 지나갔다. 그 한 프레임에 촬영자의 개인 폴더 이름이 그대로 읽혔다 — 사이드바의 즐겨찾기와 목록에 실제 개인 프로젝트 디렉터리들이 노출됐고, 그 영상이 공개 다운로드 페이지에 실려 있었다. 이건 연출 취향 문제가 아니라 자산에 남의(촬영자의)",
+      "wordCount": 1473,
       "updatedAt": "2026-08-19",
       "linksOut": []
     },
@@ -5594,7 +5594,7 @@
         "path": "DEMO-SCENARIO",
         "type": "doc",
         "slug": "DEMO-SCENARIO",
-        "title": "시연 영상 촬영 시나리오 — `atlas-tour` (2026-08-03)"
+        "title": "시연 영상 촬영 시나리오 — `atlas-tour` (2026-08-19 개정)"
       },
       {
         "name": "DEPLOYMENT",
