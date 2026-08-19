@@ -5,7 +5,7 @@ import { seedFirstRunSeen } from "./first-run-seed";
 import { stubDirectoryPicker } from "./vault-picker-stub";
 
 /**
- * 「터미널에서 연결」 칸의 첫 화면이 다시 복잡해지지 못하게 잠근다.
+ * 「MCP 연결」 칸(구 「터미널에서 연결」)의 첫 화면이 다시 복잡해지지 못하게 잠근다.
  *
  * ## 왜 (2026-08-17)
  *
@@ -35,7 +35,7 @@ const CEILING = {
   /** 스크롤해야 하는 배수 — 2.0 이면 두 화면 */
   scrollRatio: 2.0,
 };
-test("「터미널에서 연결」 칸의 첫 화면 인구조사", async ({ page }, testInfo) => {
+test("「MCP 연결」 칸의 첫 화면 인구조사", async ({ page }, testInfo) => {
   test.setTimeout(300_000);
   await page.setViewportSize({ width: 1512, height: 900 });
   await stubDirectoryPicker(page, { ...FIXTURE_VAULT });

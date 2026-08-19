@@ -157,9 +157,26 @@ export function useAcpSession({ runtimeId, vaultRoot, mcpServers }: UseAcpSessio
    * 차례가 도는 중이었나(=답하다 죽었나), 아니면 그냥 끝났나.
    */
   const statusRef = useRef<AcpSessionStatus>('idle');
+  /**
+   * 첫 내려받기 표시 — `null` 이면 안 받는 중이다.
+   *
+   * ## 왜 (2026-08-19 소유자 실기계)
+   *
+   * 어댑터의 첫 실행은 npx 가 수십 MB 를 받는데, 화면은 「켜는 중」 칩 하나만
+   * 보였다. 사용자가 멈춘 줄 알고 앱을 끄고 — 그 중단이 반쯤 만들어진 npx
+   * 캐시를 남겨 다음부터 영영 못 뜨게 만들었다(자기 치유는 Rust 쪽,
+   * `acp.rs`). 그러니 이 표시는 장식이 아니라 그 사고의 방아쇠를 없애는 것이다.
+   *
+   * `mb` 는 캐시 디렉터리가 자란 실측 크기다(`acp://notice` 의
+   * `npx-download-progress:<mb>`). 전체 크기를 모르므로 퍼센트는 **지어내지
+   * 않는다** — 받은 만큼만 말한다. 아직 첫 알림만 왔으면 `mb` 는 `null`.
+   */
+  const [download, setDownload] = useState<{ mb: number | null } | null>(null);
   const setStatusTracked = useCallback((next: AcpSessionStatus) => {
     statusRef.current = next;
     setStatus(next);
+    // 내려받기 표시는 「켜는 중」에만 산다 — 준비됐든 죽었든 그 표시는 끝이다.
+    if (next !== 'starting') setDownload(null);
   }, []);
   const [events, setEvents] = useState<AcpEvent[]>([]);
   const [error, setError] = useState<string | null>(null);
@@ -357,6 +374,32 @@ export function useAcpSession({ runtimeId, vaultRoot, mcpServers }: UseAcpSessio
         // stderr 는 대화가 아니라 진단이다. 조용히 버리지 않되 말풍선으로도
         // 만들지 않는다 — 어댑터의 설치 로그가 대화에 섞이면 읽을 수 없다.
         onNotice: (message) => {
+          /*
+           * 첫 내려받기 알림 셋 (Rust `acp_start` 가 보낸다):
+           * - `npx-first-run-download[…]` — 지금 받기 시작했다. 진단에도 남긴다 —
+           *   받다가 죽으면 이 줄이 원인 단서다.
+           * - `npx-download-progress:<mb>` — 지금까지 받은 실측 MB. **진단에
+           *   안 담는다** — 매초 오는 흐름이라 8줄 상한을 이걸로 채우면 진짜
+           *   단서가 밀려난다.
+           * - `npx-download-done` — 받기 끝. 이후는 보통의 「켜는 중」이다.
+           */
+          if (message.startsWith('npx-download-progress:')) {
+            // 첫 알림을 놓쳤어도 여기서 표시를 만든다 — Rust 는 구독이 붙기 전에
+            // 첫 알림이 나갈 수 있다고 보고 진행 알림을 그 안전망으로 삼는다.
+            // 켜는 중이 아니면 화면이 안 그리므로(렌더 조건) 뒤늦은 알림은 무해하다.
+            const mb = Number(message.slice('npx-download-progress:'.length));
+            setDownload({ mb: Number.isFinite(mb) ? mb : null });
+            return;
+          }
+          if (message.startsWith('npx-download-done')) {
+            setDownload(null);
+            return;
+          }
+          if (message.startsWith('npx-first-run-download')) {
+            setDownload({ mb: null });
+            keepDiagnostic(message);
+            return;
+          }
           /*
            * ⚠️ **약속에 관한 사실은 진단이 아니다** (2026-08-16 검수).
            *
@@ -670,6 +713,7 @@ export function useAcpSession({ runtimeId, vaultRoot, mcpServers }: UseAcpSessio
     error,
     slashCommands,
     diagnostics,
+    download,
     pending,
     sessions,
     choices,

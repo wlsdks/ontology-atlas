@@ -637,6 +637,239 @@ pub(crate) struct AcpLaunch {
     pub path_env: String,
 }
 
+// ─── npx 캐시 자기 치유 ────────────────────────────────────────────────────
+//
+// ## 왜 (2026-08-19 소유자 실기계)
+//
+// 첫 실행의 npx 가 어댑터 43MB 를 받다가 중간에 끊기면(사용자가 「멈춘 줄
+// 알고」 앱을 끄는 것이 전형) `~/.npm/_npx/<해시>/` 에 **반쯤 만들어진 항목**이
+// 남는다 — `node_modules/` 는 101개 패키지로 차 있는데 `package.json` 이 없고
+// `node_modules/.bin` 이 빈 상태가 실측이다. npx 는 다음 실행에서 그 항목을
+// 재사용하려다 `npm error enoent Could not read package.json` 으로 즉사하고,
+// **스스로 낫지 않는다** — 사용자가 그 디렉터리를 손으로 지우기 전까지 매번
+// 같은 자리에서 죽는다. 그래서 npx 로 띄우기 **직전에** 그 항목 하나만 검사해
+// 깨져 있으면 지운다. 그러면 npx 가 처음부터 다시 받는다.
+//
+// ## 그 <해시> 를 우리가 어떻게 아는가
+//
+// npm(libnpmexec)의 공식은 `sha512(<패키지 스펙>)` 의 hex 앞 16자다.
+// **실측 검증 (2026-08-19, 소유자 기계의 실제 캐시와 대조)**:
+//
+// ```text
+// sha512("@agentclientprotocol/claude-agent-acp@0.69.0")[..16] = 8757e2301903ae53
+//   → 소유자 화면의 npm 오류가 가리킨 바로 그 깨진 디렉터리명
+// sha512("@agentclientprotocol/codex-acp@1.4.0")[..16]        = 8adbf6f1a7dec4e5
+//   → 같은 기계 ~/.npm/_npx/ 에 살아 있는 항목
+// ```
+//
+// 공식이 어느 날 바뀌면? 우리가 계산한 디렉터리가 그냥 **없을** 뿐이다 —
+// 검사는 조용히 통과하고 동작은 오늘과 같다(fail-open). 엉뚱한 것을 지우는
+// 방향으로는 틀릴 수 없다: 이 경로는 우리 스펙의 해시로만 만들어지기 때문이다.
+
+/// 자식 npm 이 실제로 볼 npx 캐시 루트.
+///
+/// 자식 환경은 `sanitized_runtime_environment` 가 `npm_config_*` 를 걷어내므로
+/// npm 의 캐시 위치 결정에 남는 입력은 둘뿐이다: ① `$HOME/.npmrc` 의 `cache=`
+/// ② 플랫폼 기본값(`~/.npm`, Windows 는 `~/AppData/Local/npm-cache`).
+/// 전역/내장 npmrc 의 `cache=` 는 못 본다 — 그 경우 항목을 못 찾고 fail-open.
+pub(crate) fn npx_cache_root(home: Option<&Path>) -> Option<PathBuf> {
+    let home = home?;
+    if let Ok(text) = std::fs::read_to_string(home.join(".npmrc")) {
+        for line in text.lines() {
+            let Some((key, value)) = line.split_once('=') else {
+                continue;
+            };
+            // `cache-min=` 같은 다른 열쇠가 `cache` 로 오독되면 엉뚱한 곳을
+            // 뒤진다 — 열쇠는 정확히 일치해야 한다.
+            if key.trim() != "cache" {
+                continue;
+            }
+            let value = value.trim();
+            if value.is_empty() {
+                continue;
+            }
+            let base = match value.strip_prefix("~/") {
+                Some(rest) => home.join(rest),
+                None => PathBuf::from(value),
+            };
+            return Some(base.join("_npx"));
+        }
+    }
+    let default_cache = if cfg!(windows) {
+        home.join("AppData").join("Local").join("npm-cache")
+    } else {
+        home.join(".npm")
+    };
+    Some(default_cache.join("_npx"))
+}
+
+/// 이 패키지 스펙의 npx 캐시 항목 디렉터리. 공식과 실측 근거는 위 블록 주석.
+pub(crate) fn npx_cache_entry_dir(npx_cache_root: &Path, package: &str) -> PathBuf {
+    use sha2::{Digest, Sha512};
+    let digest = Sha512::digest(package.as_bytes());
+    let hex: String = digest.iter().map(|byte| format!("{byte:02x}")).collect();
+    npx_cache_root.join(&hex[..16])
+}
+
+/// npx 캐시 항목 하나의 건강 상태.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub(crate) enum NpxEntryHealth {
+    /// 항목이 아직 없다 — 첫 실행이면 npx 가 내려받는다.
+    Missing,
+    /// npx 가 재사용하거나 **스스로 복구할 수 있는** 모양이다. 건드리지 않는다.
+    Usable,
+    /// npx 가 스스로 낫지 못하는 모양 — 사유는 사람이 읽는 코드.
+    Broken(&'static str),
+}
+
+/// npm 이 항목에 남기는 `_npx.packages` 표식이 우리 스펙을 가리키는가.
+///
+/// 표식이 없으면 소유로 본다 — 이 경로 자체가 우리 스펙의 해시에서 나왔고,
+/// 그것이 소유의 증거다. 표식이 **다른** 스펙을 가리키면(해시 공식이 바뀐
+/// 미래의 npm 등) 남의 것일 수 있으니 절대 건드리지 않는다.
+fn npx_entry_owned(manifest: &serde_json::Value, package: &str) -> bool {
+    match manifest
+        .get("_npx")
+        .and_then(|npx| npx.get("packages"))
+        .and_then(|packages| packages.as_array())
+    {
+        Some(packages) => packages.iter().any(|entry| entry.as_str() == Some(package)),
+        None => true,
+    }
+}
+
+/// 「온전함」 판정. 근거는 실측한 두 상태의 차이다:
+///
+/// - **살아 있는 항목**(소유자 기계 `8adbf6f1a7dec4e5`): `package.json`(내용은
+///   `dependencies` + `_npx.packages`) · `package-lock.json` ·
+///   `node_modules/.bin/<실행 파일>` 이 전부 있다.
+/// - **깨진 항목**(소유자가 맞은 `8757e2301903ae53`): `node_modules/` 101개
+///   패키지, `.bin` 은 **빈 디렉터리**, `package.json` **없음**.
+///
+/// 그래서 둘을 본다: ① `package.json` 이 읽히고 JSON 으로 파싱되는가 — npx 가
+/// 죽는 바로 그 지점이다. ② `node_modules` 가 있는데 `.bin` 이 비어 있는가 —
+/// 내려받기는 됐는데 실행 파일 연결 전에 끊긴 상태로, npx 는 「실행할 것을 못
+/// 찾겠다」로 멈춘다. 실행 파일 **이름**은 검사하지 않는다 — 패키지마다 bin
+/// 이름이 달라서, 이름을 짐작하면 멀쩡한 항목을 매번 지우는 루프가 된다.
+/// `package.json` 은 있는데 `node_modules` 가 없는 항목은 npx 가 스스로 다시
+/// 설치하므로 Usable 이다.
+pub(crate) fn npx_entry_health(entry: &Path, package: &str) -> NpxEntryHealth {
+    if !entry.exists() {
+        return NpxEntryHealth::Missing;
+    }
+    let text = match std::fs::read_to_string(entry.join("package.json")) {
+        Ok(text) => text,
+        Err(_) => return NpxEntryHealth::Broken("package-json-missing"),
+    };
+    let manifest: serde_json::Value = match serde_json::from_str(&text) {
+        Ok(value) => value,
+        Err(_) => return NpxEntryHealth::Broken("package-json-unparseable"),
+    };
+    if !npx_entry_owned(&manifest, package) {
+        return NpxEntryHealth::Usable;
+    }
+    let node_modules = entry.join("node_modules");
+    if !node_modules.exists() {
+        return NpxEntryHealth::Usable;
+    }
+    let has_bin = std::fs::read_dir(node_modules.join(".bin"))
+        .map(|mut entries| entries.next().is_some())
+        .unwrap_or(false);
+    if !has_bin {
+        return NpxEntryHealth::Broken("bin-links-missing");
+    }
+    NpxEntryHealth::Usable
+}
+
+/// 이 시작이 npx 갈래인가 — 그렇다면 못 박은 패키지 스펙을 돌려준다.
+/// `resolve_launch` 가 npx 폴백에서 만드는 모양(`npx -y <스펙> …`) 그대로를 본다.
+pub(crate) fn npx_launch_package(launch: &AcpLaunch) -> Option<&str> {
+    let stem = launch.program.file_stem()?.to_str()?;
+    if !stem.eq_ignore_ascii_case("npx") {
+        return None;
+    }
+    match launch.args.as_slice() {
+        [flag, package, ..] if flag == "-y" => Some(package),
+        _ => None,
+    }
+}
+
+/// 이 시작이 npx 갈래면 그 캐시 항목의 경로 — 진행 표시가 크기를 잴 자리다.
+pub(crate) fn npx_cache_entry_for_launch(
+    launch: &AcpLaunch,
+    home: Option<&Path>,
+) -> Option<PathBuf> {
+    let package = npx_launch_package(launch)?;
+    Some(npx_cache_entry_dir(&npx_cache_root(home)?, package))
+}
+
+/// npx 시작 직전 검사의 결과 — 화면이 무엇을 말할지가 여기서 갈린다.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub(crate) enum NpxCachePreflight {
+    /// npx 를 쓰지 않는 시작(전역 어댑터·binary·uvx) — 볼 것이 없다.
+    NotNpx,
+    /// 홈을 몰라 캐시를 못 봤다 — 종전과 같이 그냥 띄운다(fail-open).
+    CacheUnknown,
+    /// 항목이 살아 있다 — 내려받기 없이 바로 뜬다.
+    CacheReady,
+    /// 항목이 아직 없다 — npx 가 처음으로 내려받는다(수십 MB).
+    FirstDownload,
+    /// 깨진 항목을 지웠다 — npx 가 처음부터 다시 내려받는다.
+    HealedBrokenEntry { reason: &'static str },
+    /// 깨졌는데 지우지 못했다 — 그대로 두면 종전과 똑같이 실패한다.
+    /// 화면이 진단으로라도 알 수 있게 사유를 올린다.
+    HealFailed {
+        reason: &'static str,
+        error: String,
+    },
+}
+
+/// npx 로 띄우기 직전에 캐시 항목을 검사하고, 깨져 있으면 **그 항목 하나만**
+/// 지운다. `_npx` 전체를 지우면 사용자의 다른 npx 도구가 전부 다시 받게 되므로
+/// 범위는 항목 하나다.
+pub(crate) fn preflight_npx_cache(launch: &AcpLaunch, home: Option<&Path>) -> NpxCachePreflight {
+    let Some(package) = npx_launch_package(launch) else {
+        return NpxCachePreflight::NotNpx;
+    };
+    let Some(root) = npx_cache_root(home) else {
+        return NpxCachePreflight::CacheUnknown;
+    };
+    let entry = npx_cache_entry_dir(&root, package);
+    match npx_entry_health(&entry, package) {
+        NpxEntryHealth::Missing => NpxCachePreflight::FirstDownload,
+        NpxEntryHealth::Usable => NpxCachePreflight::CacheReady,
+        NpxEntryHealth::Broken(reason) => match std::fs::remove_dir_all(&entry) {
+            Ok(()) => NpxCachePreflight::HealedBrokenEntry { reason },
+            Err(err) => NpxCachePreflight::HealFailed {
+                reason,
+                error: err.to_string(),
+            },
+        },
+    }
+}
+
+/// 디렉터리 아래 파일 크기의 합(바이트). 내려받기 진행 표시가 「지금까지 몇 MB」
+/// 를 재는 데 쓴다 — 전체 크기는 우리가 정직하게 알 수 없으므로(패키지마다
+/// 다르고 어디에도 못 박혀 있지 않다) 받은 만큼만 말한다. 심볼릭 링크는
+/// 따라가지 않는다.
+pub(crate) fn dir_size_bytes(dir: &Path) -> u64 {
+    let Ok(entries) = std::fs::read_dir(dir) else {
+        return 0;
+    };
+    let mut total = 0u64;
+    for entry in entries.flatten() {
+        let Ok(metadata) = entry.path().symlink_metadata() else {
+            continue;
+        };
+        if metadata.is_dir() {
+            total += dir_size_bytes(&entry.path());
+        } else if metadata.is_file() {
+            total += metadata.len();
+        }
+    }
+    total
+}
+
 /// 부모 셸의 임의 설정·자격증명을 받지 않고도 **구독 로그인**으로 동작하는 것을
 /// 실측한 실행기. 다른 36종까지 짐작으로 비우면 환경 API 키만 쓰는 도구를 조용히
 /// 망가뜨리므로, 검증한 범위에서만 자란다.
@@ -2567,5 +2800,288 @@ mod newcomer_view {
         for s in &out { *by_state.entry(s.state.as_str()).or_default() += 1; }
         for (state, n) in &by_state { println!("  {state:16} {n}개"); }
         println!("  → 「확인됐어요」 = {}개", out.iter().filter(|s| s.state == "ready").count());
+    }
+}
+
+// ─── npx 캐시 자기 치유 검사 ──────────────────────────────────────────────
+//
+// 게이트 규율: 아래 검사들은 「깨진 캐시」를 임시 디렉터리에 **실측 그대로**
+// 재현한다(2026-08-19 소유자 기계에서 관찰한 모양 — node_modules 는 차 있고
+// .bin 은 비어 있고 package.json 은 없다). 치유 로직을 무력화하면 빨간불이
+// 되는 것을 확인하고 넣었다.
+#[cfg(test)]
+mod npx_cache_tests {
+    use super::*;
+
+    /// 시험용 캐시 항목을 원하는 모양으로 만든다.
+    struct EntryShape {
+        package_json: Option<&'static str>,
+        node_modules: bool,
+        bin_entries: &'static [&'static str],
+    }
+
+    fn scratch(tag: &str) -> PathBuf {
+        let dir = std::env::temp_dir().join(format!(
+            "atlas-acp-npx-{tag}-{}-{}",
+            std::process::id(),
+            ACP_SESSION_TEST_NONCE.fetch_add(1, std::sync::atomic::Ordering::Relaxed)
+        ));
+        let _ = std::fs::remove_dir_all(&dir);
+        std::fs::create_dir_all(&dir).unwrap();
+        dir
+    }
+
+    static ACP_SESSION_TEST_NONCE: std::sync::atomic::AtomicU64 =
+        std::sync::atomic::AtomicU64::new(0);
+
+    fn build_entry(entry: &Path, shape: &EntryShape) {
+        std::fs::create_dir_all(entry).unwrap();
+        if let Some(text) = shape.package_json {
+            std::fs::write(entry.join("package.json"), text).unwrap();
+        }
+        if shape.node_modules {
+            let bin = entry.join("node_modules").join(".bin");
+            std::fs::create_dir_all(&bin).unwrap();
+            std::fs::create_dir_all(
+                entry
+                    .join("node_modules")
+                    .join("@agentclientprotocol")
+                    .join("claude-agent-acp"),
+            )
+            .unwrap();
+            for name in shape.bin_entries {
+                std::fs::write(bin.join(name), "#!/bin/sh\n").unwrap();
+            }
+        }
+    }
+
+    const CLAUDE_SPEC: &str = "@agentclientprotocol/claude-agent-acp@0.69.0";
+    const HEALTHY_MANIFEST: &str = r#"{
+  "dependencies": { "@agentclientprotocol/claude-agent-acp": "^0.69.0" },
+  "_npx": { "packages": ["@agentclientprotocol/claude-agent-acp@0.69.0"] }
+}"#;
+
+    fn npx_launch(package: &str) -> AcpLaunch {
+        AcpLaunch {
+            program: PathBuf::from("/home/me/.nvm/versions/node/v24.16.0/bin/npx"),
+            args: vec!["-y".to_string(), package.to_string()],
+            path_env: String::new(),
+        }
+    }
+
+    #[test]
+    fn entry_dir_matches_npms_observed_hashes() {
+        // 공식(sha512 hex 앞 16자)을 **소유자 기계에서 실측한 두 값**에 못
+        // 박는다. 하나는 소유자 화면의 npm 오류가 가리킨 바로 그 깨진 디렉터리,
+        // 하나는 같은 기계에 살아 있던 codex 항목이다. 공식이 흔들리면 치유가
+        // 조용히 아무것도 안 하게 되므로, 여기가 가장 먼저 터져야 한다.
+        let root = PathBuf::from("/Users/me/.npm/_npx");
+        assert_eq!(
+            npx_cache_entry_dir(&root, CLAUDE_SPEC),
+            root.join("8757e2301903ae53"),
+        );
+        assert_eq!(
+            npx_cache_entry_dir(&root, "@agentclientprotocol/codex-acp@1.4.0"),
+            root.join("8adbf6f1a7dec4e5"),
+        );
+    }
+
+    #[test]
+    fn spots_the_owners_broken_cache_shape() {
+        // 실측 그대로: node_modules 는 차 있고 .bin 은 비어 있고 package.json 없음.
+        let dir = scratch("broken");
+        let entry = dir.join("8757e2301903ae53");
+        build_entry(
+            &entry,
+            &EntryShape {
+                package_json: None,
+                node_modules: true,
+                bin_entries: &[],
+            },
+        );
+        assert_eq!(
+            npx_entry_health(&entry, CLAUDE_SPEC),
+            NpxEntryHealth::Broken("package-json-missing"),
+        );
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn accepts_a_completed_install() {
+        // 살아 있는 항목의 실측 모양(package.json + _npx 표식 + .bin 연결).
+        let dir = scratch("healthy");
+        let entry = dir.join("entry");
+        build_entry(
+            &entry,
+            &EntryShape {
+                package_json: Some(HEALTHY_MANIFEST),
+                node_modules: true,
+                bin_entries: &["claude-agent-acp"],
+            },
+        );
+        assert_eq!(npx_entry_health(&entry, CLAUDE_SPEC), NpxEntryHealth::Usable);
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn spots_unlinked_bins_and_unparseable_manifests() {
+        // 내려받기는 끝났는데 실행 파일 연결 전에 끊긴 상태 —
+        // npx 는 「실행할 것을 못 찾겠다」로 멈추고 스스로 낫지 않는다.
+        let dir = scratch("nobin");
+        let entry = dir.join("entry");
+        build_entry(
+            &entry,
+            &EntryShape {
+                package_json: Some(HEALTHY_MANIFEST),
+                node_modules: true,
+                bin_entries: &[],
+            },
+        );
+        assert_eq!(
+            npx_entry_health(&entry, CLAUDE_SPEC),
+            NpxEntryHealth::Broken("bin-links-missing"),
+        );
+        // 반쪽 JSON — 쓰다가 끊긴 package.json 도 같은 막다른 길이다.
+        std::fs::write(entry.join("package.json"), "{\"dependencies\": {").unwrap();
+        assert_eq!(
+            npx_entry_health(&entry, CLAUDE_SPEC),
+            NpxEntryHealth::Broken("package-json-unparseable"),
+        );
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn leaves_a_foreign_entry_alone() {
+        // _npx 표식이 **다른** 스펙을 가리키면 남의 캐시일 수 있다 —
+        // 깨진 듯 보여도(빈 .bin) 절대 지우지 않는다.
+        let dir = scratch("foreign");
+        let entry = dir.join("entry");
+        build_entry(
+            &entry,
+            &EntryShape {
+                package_json: Some(r#"{ "_npx": { "packages": ["somebody-else@9.9.9"] } }"#),
+                node_modules: true,
+                bin_entries: &[],
+            },
+        );
+        assert_eq!(npx_entry_health(&entry, CLAUDE_SPEC), NpxEntryHealth::Usable);
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn preflight_removes_only_the_broken_entry() {
+        // 홈 전체를 흉내 낸다: 우리 항목은 깨져 있고, 옆에는 남의 항목이 산다.
+        let home = scratch("home");
+        let root = npx_cache_root(Some(&home)).unwrap();
+        let ours = npx_cache_entry_dir(&root, CLAUDE_SPEC);
+        build_entry(
+            &ours,
+            &EntryShape {
+                package_json: None,
+                node_modules: true,
+                bin_entries: &[],
+            },
+        );
+        let neighbor = root.join("deadbeefdeadbeef");
+        build_entry(
+            &neighbor,
+            &EntryShape {
+                package_json: Some(r#"{ "_npx": { "packages": ["other@1.0.0"] } }"#),
+                node_modules: true,
+                bin_entries: &["other"],
+            },
+        );
+
+        let verdict = preflight_npx_cache(&npx_launch(CLAUDE_SPEC), Some(&home));
+        assert_eq!(
+            verdict,
+            NpxCachePreflight::HealedBrokenEntry {
+                reason: "package-json-missing"
+            },
+        );
+        assert!(!ours.exists(), "깨진 항목은 지워져야 한다");
+        assert!(
+            neighbor.join("node_modules").join(".bin").join("other").exists(),
+            "옆의 남의 항목은 그대로여야 한다 — 범위는 항목 하나다"
+        );
+
+        // 지운 뒤의 다음 시작은 「처음 내려받기」다 — 화면이 그렇게 말할 근거.
+        assert_eq!(
+            preflight_npx_cache(&npx_launch(CLAUDE_SPEC), Some(&home)),
+            NpxCachePreflight::FirstDownload,
+        );
+        let _ = std::fs::remove_dir_all(&home);
+    }
+
+    #[test]
+    fn preflight_reports_a_ready_cache_and_ignores_non_npx_launches() {
+        let home = scratch("ready");
+        let root = npx_cache_root(Some(&home)).unwrap();
+        build_entry(
+            &npx_cache_entry_dir(&root, CLAUDE_SPEC),
+            &EntryShape {
+                package_json: Some(HEALTHY_MANIFEST),
+                node_modules: true,
+                bin_entries: &["claude-agent-acp"],
+            },
+        );
+        assert_eq!(
+            preflight_npx_cache(&npx_launch(CLAUDE_SPEC), Some(&home)),
+            NpxCachePreflight::CacheReady,
+        );
+
+        // 전역 어댑터로 뜨는 시작은 npx 캐시와 무관하다.
+        let installed = AcpLaunch {
+            program: PathBuf::from("/usr/local/bin/claude-agent-acp"),
+            args: vec![],
+            path_env: String::new(),
+        };
+        assert_eq!(
+            preflight_npx_cache(&installed, Some(&home)),
+            NpxCachePreflight::NotNpx,
+        );
+        // 홈을 모르면 캐시를 못 본다 — 종전과 같이 그냥 띄운다.
+        assert_eq!(
+            preflight_npx_cache(&npx_launch(CLAUDE_SPEC), None),
+            NpxCachePreflight::CacheUnknown,
+        );
+        let _ = std::fs::remove_dir_all(&home);
+    }
+
+    #[test]
+    fn cache_root_honors_the_users_npmrc_override() {
+        let home = scratch("npmrc");
+        // `cache-min` 같은 이웃 열쇠에 속으면 엉뚱한 곳을 뒤진다.
+        std::fs::write(
+            home.join(".npmrc"),
+            "cache-min=999\ncache = ~/custom-cache\n",
+        )
+        .unwrap();
+        assert_eq!(
+            npx_cache_root(Some(&home)),
+            Some(home.join("custom-cache").join("_npx")),
+        );
+
+        // npmrc 가 없으면 플랫폼 기본값.
+        let plain = scratch("plainhome");
+        let expected = if cfg!(windows) {
+            plain.join("AppData").join("Local").join("npm-cache").join("_npx")
+        } else {
+            plain.join(".npm").join("_npx")
+        };
+        assert_eq!(npx_cache_root(Some(&plain)), Some(expected));
+        let _ = std::fs::remove_dir_all(&home);
+        let _ = std::fs::remove_dir_all(&plain);
+    }
+
+    #[test]
+    fn dir_size_counts_files_under_the_entry() {
+        let dir = scratch("size");
+        std::fs::create_dir_all(dir.join("a").join("b")).unwrap();
+        std::fs::write(dir.join("a").join("one"), vec![0u8; 1000]).unwrap();
+        std::fs::write(dir.join("a").join("b").join("two"), vec![0u8; 500]).unwrap();
+        assert_eq!(dir_size_bytes(&dir), 1500);
+        assert_eq!(dir_size_bytes(&dir.join("missing")), 0);
+        let _ = std::fs::remove_dir_all(&dir);
     }
 }
