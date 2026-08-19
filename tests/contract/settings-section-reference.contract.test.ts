@@ -1,3 +1,6 @@
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
+
 import { describe, expect, it } from 'vitest';
 
 import en from '../../messages/en.json';
@@ -8,9 +11,10 @@ import ko from '../../messages/ko.json';
  *
  * ## 왜 (2026-08-17 실측)
  *
- * 설정 시트의 칸 이름은 아홉이다 — 화면 · 지도 배경 · 확장 · 발자국 · 알림 ·
- * 작업 공간 · **앱에서 대화** · **터미널에서 연결** · API Key. 그런데 두 안내가
- * 없는 이름을 대고 있었다:
+ * 설정 시트의 칸 이름은 아홉이다(당시 이름 — 두 칸은 2026-08-19 소유자
+ * 지시로 「Agents」·「MCP 연결」이 됐다) — 화면 · 지도 배경 · 확장 · 발자국 ·
+ * 알림 · 작업 공간 · **앱에서 대화** · **터미널에서 연결** · API Key. 그런데
+ * 두 안내가 없는 이름을 대고 있었다:
  *
  * | 어디 | 뭐라고 했나 | 실제 이름 |
  * |---|---|---|
@@ -99,5 +103,37 @@ describe('두 언어가 같은 자리를 가리킨다', () => {
   it('참조하는 번역 키가 같다 — 한쪽만 고치면 다른 쪽이 낡는다', () => {
     const keys = (bundle: Bundle) => sectionReferences(bundle).map((r) => r.key).sort();
     expect(keys(ko as unknown as Bundle)).toEqual(keys(en as unknown as Bundle));
+  });
+});
+
+/*
+ * ## 이름이 실재해도 칸이 안 그려지면 같은 결함이다 (2026-08-19)
+ *
+ * 위 검사는 「…」 속 이름을 `section.*` **값**과 대조한다. 그런데 값은 남았는데
+ * 그 키가 `SETTINGS_GROUPS` 에서 빠지면 — 칸을 메뉴에서 내리고 번역 키를
+ * 지우는 걸 잊으면 — 위 검사는 초록인 채로 안내가 **안 그려지는 칸**을
+ * 가리킨다. 그래서 문장을 못박지 않고 양쪽에서 **뽑아 대조**한다:
+ * messages 의 `section.*` 키 집합 == 메뉴가 실제로 그리는 items 집합.
+ */
+describe('section.* 키는 전부 실제로 그려지는 칸이다', () => {
+  const source = readFileSync(
+    join(__dirname, '../../src/widgets/app-settings-menu/ui/AppSettingsMenu.tsx'),
+    'utf8',
+  );
+  const renderedItems = [...source.matchAll(/items:\s*\[([^\]]*)\]/g)].flatMap((m) =>
+    [...m[1].matchAll(/'([^']+)'/g)].map((x) => x[1]),
+  );
+
+  it('items 추출이 헛돌지 않는다 — 0개면 아래 검사는 아무것도 안 잰다', () => {
+    expect(renderedItems.length).toBeGreaterThan(5);
+  });
+
+  it.each([
+    ['ko', ko as unknown as Bundle],
+    ['en', en as unknown as Bundle],
+  ])('%s 의 section.* 키 집합 == SETTINGS_GROUPS 의 items 집합', (_locale, bundle) => {
+    const nav = (bundle.nav as Bundle | undefined)?.settingsMenu as Bundle | undefined;
+    const keys = Object.keys((nav?.section as Record<string, string>) ?? {}).sort();
+    expect(keys).toEqual([...renderedItems].sort());
   });
 });
