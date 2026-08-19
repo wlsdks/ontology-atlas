@@ -25,7 +25,7 @@
  * 이 저장소는 그걸 결함으로 센다.
  */
 
-export type AcpTroubleKind = 'auth' | 'timeout' | 'launch' | 'network' | 'unknown';
+export type AcpTroubleKind = 'auth' | 'install' | 'timeout' | 'launch' | 'network' | 'unknown';
 
 export interface AcpTrouble {
   kind: AcpTroubleKind;
@@ -39,6 +39,21 @@ export interface AcpTrouble {
  * `Authentication required`).
  */
 const AUTH = /authentication[_ ]?(failed|required)|oauth|not logged ?in|unauthorized|401/i;
+/**
+ * 첫 내려받기가 끊겨 반쯤 남은 npx 캐시에 걸렸다 (2026-08-19 소유자 실기계).
+ * 실측 stderr 그대로의 모양을 본다:
+ *
+ * ```
+ * npm error code ENOENT
+ * npm error path /Users/…/.npm/_npx/8757e2301903ae53/package.json
+ * npm error enoent Could not read package.json …
+ * ```
+ *
+ * `_npx/<16자리 hex>` 경로, 또는 「package.json 을 못 읽었다」는 npm 문장 —
+ * 둘 다 이 고장에서만 나온다. 앱이 다음 시작에서 그 항목을 지우고 다시 받으므로
+ * (`src-tauri/src/acp.rs` npx 캐시 자기 치유), 할 일은 「새 대화」다.
+ */
+const INSTALL = /_npx[\\/][0-9a-f]{4,16}|could not read package\.json/i;
 /** 우리가 건 상한에 걸렸다. */
 const TIMEOUT = /acp-timeout|timed? ?out|ETIMEDOUT/i;
 /** 띄우지도 못했다 — 설치·경로 문제다. */
@@ -46,19 +61,30 @@ const LAUNCH = /ENOENT|command not found|spawn|cli-missing|node-missing|npx-miss
 /** 밖으로 못 나갔다. */
 const NETWORK = /ENOTFOUND|ECONNREFUSED|ECONNRESET|EAI_AGAIN|network|fetch failed|offline/i;
 
-export function readAcpTrouble(raw: string): AcpTrouble {
+/**
+ * @param diagnostics 어댑터가 stderr 에 남긴 줄들. **install 판정에만** 참여한다 —
+ * 이 고장에서는 오류 문자열이 `acp session closed` 처럼 아무것도 말하지 않고
+ * 단서가 전부 stderr 에 있었다(실측). 다른 갈래까지 stderr 로 판정하면 지나가는
+ * 낱말(「network」 등)에 오분류가 생기므로 넓히지 않는다.
+ */
+export function readAcpTrouble(raw: string, diagnostics: readonly string[] = []): AcpTrouble {
   const detail = raw.trim();
+  const stderrClues = diagnostics.join('\n');
   // 순서가 계약이다: 더 **구체적인** 것이 먼저다. 인증 실패 메시지에 「network」
   // 같은 낱말이 섞여 와도 인증 문제로 읽어야 사용자가 할 일이 맞는다.
+  // install 은 launch 보다 앞이어야 한다 — 같은 ENOENT 라도 「반쯤 남은 캐시」는
+  // 「도구가 없다」와 사용자가 할 일이 다르다.
   const kind: AcpTroubleKind = AUTH.test(detail)
     ? 'auth'
-    : TIMEOUT.test(detail)
-      ? 'timeout'
-      : LAUNCH.test(detail)
-        ? 'launch'
-        : NETWORK.test(detail)
-          ? 'network'
-          : 'unknown';
+    : INSTALL.test(detail) || INSTALL.test(stderrClues)
+      ? 'install'
+      : TIMEOUT.test(detail)
+        ? 'timeout'
+        : LAUNCH.test(detail)
+          ? 'launch'
+          : NETWORK.test(detail)
+            ? 'network'
+            : 'unknown';
   return { kind, detail };
 }
 

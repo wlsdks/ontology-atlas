@@ -29,6 +29,38 @@ describe('오류 옮기기 — 아는 것만 옮기고 모르면 원문을 접�
     expect(readAcpTrouble('cli-missing:claude').kind).toBe('launch');
   });
 
+  it('반쯤 남은 npx 캐시 — 오류 문자열이 아무 말도 안 하면 stderr 가 말한다 (2026-08-19 실기계)', () => {
+    // 소유자 화면 그대로: 오류는 이것뿐이었고,
+    const raw = 'acp session closed';
+    // 단서는 전부 stderr 에 있었다.
+    const stderr = [
+      'npm error code ENOENT',
+      'npm error path /Users/me/.npm/_npx/8757e2301903ae53/package.json',
+      'npm error enoent Could not read package.json: Error: ENOENT: no such file or directory',
+    ];
+    expect(readAcpTrouble(raw, stderr).kind).toBe('install');
+    // 원문은 그대로 접힌다 — stderr 로 바꿔치기하지 않는다.
+    expect(readAcpTrouble(raw, stderr).detail).toBe(raw);
+    // 오류 문자열 자체에 실려 와도 같은 갈래다.
+    expect(readAcpTrouble('npm error enoent Could not read package.json').kind).toBe('install');
+    // stderr 가 없으면 이 오류 문자열은 여전히 모른다고 말한다 — 지어내지 않는다.
+    expect(readAcpTrouble(raw).kind).toBe('unknown');
+  });
+
+  it('install 은 launch 보다 앞이다 — 같은 ENOENT 라도 할 일이 다르다', () => {
+    expect(
+      readAcpTrouble(
+        "npm error enoent Could not read package.json: ENOENT '/Users/me/.npm/_npx/8757e2301903ae53/package.json'",
+      ).kind,
+    ).toBe('install');
+  });
+
+  it('stderr 는 install 판정에만 참여한다 — 지나가는 낱말로 다른 갈래를 만들지 않는다', () => {
+    expect(readAcpTrouble('acp session closed', ['npm warn network is slow today']).kind).toBe(
+      'unknown',
+    );
+  });
+
   it('밖으로 못 나간 것', () => {
     expect(readAcpTrouble('FetchError: getaddrinfo ENOTFOUND api.example').kind).toBe('network');
   });

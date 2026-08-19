@@ -850,6 +850,14 @@ impl AcpSessions {
             .map_err(|err| format!("write-failed:{err}"))
     }
 
+    /// 이 세션이 아직 살아 있나 — 내려받기 진행 표시 스레드가 멈출 때를 안다.
+    fn contains(&self, session_id: &str) -> bool {
+        self.0
+            .lock()
+            .map(|map| map.contains_key(session_id))
+            .unwrap_or(false)
+    }
+
     fn take_pid(&self, session_id: &str) -> Result<Option<u32>, String> {
         Ok(self
             .0
@@ -948,6 +956,16 @@ fn acp_start(
         &probe,
     )?;
 
+    /*
+     * npx 갈래면 띄우기 **직전에** 캐시 항목을 검사한다 (2026-08-19 소유자
+     * 실기계). 첫 내려받기가 중간에 끊기면 반쯤 만들어진 항목이 남고, npx 는
+     * 그것을 재사용하려다 `Could not read package.json` 으로 매번 즉사한다 —
+     * 스스로 낫지 않는 상태다. 깨져 있으면 **그 항목 하나만** 지워서 npx 가
+     * 처음부터 다시 받게 한다. 판정 근거와 해시 유도는 `acp.rs` 의
+     * npx 캐시 자기 치유 블록에 있다.
+     */
+    let npx_preflight = acp::preflight_npx_cache(&launch, home.as_deref());
+
     // **사용자의 전역 설정을 물려받지 않는다** (결정 원장 2026-08-16 (2)).
     // 실측: 소유자의 `~/.claude/settings.json` 이 `Bash(*)`·`Write(*)` 를 미리
     // 허용해 두고 있어서, 그 설정을 물려받은 세션은 작업 폴더 밖에 파일을 쓰면서
@@ -1023,6 +1041,97 @@ fn acp_start(
                 let _ = state.remove(&session_id);
             }
             let _ = app.emit("acp://exit", AcpExitEvent { session_id, code });
+        });
+    }
+
+    /*
+     * 첫 내려받기(수십 MB)는 몇 분 걸리는데 화면은 「켜는 중」만 보였다 —
+     * 사용자가 멈춘 줄 알고 앱을 끄고, 그것이 위의 깨진 캐시를 만드는 바로 그
+     * 방아쇠였다(2026-08-19). 그래서 내려받기가 실제로 일어날 시작에만 화면에
+     * 알리고, 진행은 **지어내지 않고 잰다**: 전체 크기는 어디에도 못 박혀 있지
+     * 않아 퍼센트는 정직하게 만들 수 없고, 캐시 항목 디렉터리가 자라는 크기
+     * (지금까지 몇 MB)는 실측이다.
+     */
+    /*
+     * ⚠️ 알림은 **이 커맨드가 리턴한 뒤에** 보내야 한다. 화면은 `acp_start` 의
+     * 답(세션 이름)을 받고 나서야 `acp://notice` 를 구독하므로, 여기서 바로
+     * emit 하면 첫 알림이 허공에 사라진다. 그래서 전부 스레드로 옮기고 짧게
+     * 기다렸다 보낸다 — 혹시 그래도 놓치면, 매초 오는 진행 알림이 화면 쪽에서
+     * 표시를 새로 만들 수 있게 되어 있다(`use-acp-session.ts`).
+     */
+    let first_run_message = match &npx_preflight {
+        // 치유했다는 사실도 문구에 실어 진단에 남긴다 — 다음에 또 끊겼을 때 단서다.
+        acp::NpxCachePreflight::HealedBrokenEntry { reason } => {
+            Some(format!("npx-first-run-download:healed:{reason}"))
+        }
+        acp::NpxCachePreflight::FirstDownload => Some("npx-first-run-download".to_string()),
+        // 지우지 못했으면 종전과 똑같이 실패할 것이다 — 화면의 「자세히」가
+        // 적어도 왜인지 말할 수 있게 사유를 올린다.
+        acp::NpxCachePreflight::HealFailed { reason, error } => {
+            Some(format!("npx-cache-heal-failed:{reason}:{error}"))
+        }
+        acp::NpxCachePreflight::NotNpx
+        | acp::NpxCachePreflight::CacheUnknown
+        | acp::NpxCachePreflight::CacheReady => None,
+    };
+    let downloading = matches!(
+        npx_preflight,
+        acp::NpxCachePreflight::FirstDownload | acp::NpxCachePreflight::HealedBrokenEntry { .. }
+    );
+    if let Some(message) = first_run_message {
+        let entry = downloading
+            .then(|| acp::npx_cache_entry_for_launch(&launch, home.as_deref()))
+            .flatten();
+        let package = acp::npx_launch_package(&launch).map(str::to_string);
+        let app = app.clone();
+        let session_id = session_id.clone();
+        std::thread::spawn(move || {
+            // 화면이 구독을 붙일 시간. 놓쳐도 아래 진행 알림이 받쳐 준다.
+            std::thread::sleep(std::time::Duration::from_millis(250));
+            let _ = app.emit(
+                "acp://notice",
+                AcpNoticeEvent {
+                    session_id: session_id.clone(),
+                    message,
+                },
+            );
+            let (Some(entry), Some(package)) = (entry, package) else {
+                return; // 치유 실패 알림뿐 — 잴 내려받기가 없다.
+            };
+            let started = std::time::Instant::now();
+            loop {
+                std::thread::sleep(std::time::Duration::from_millis(1000));
+                // 내려받기가 이보다 오래 걸리면 진행 표시가 문제의 전부가
+                // 아니다 — 스레드를 영원히 남기지 않는다.
+                if started.elapsed() > std::time::Duration::from_secs(20 * 60) {
+                    break;
+                }
+                let alive = app
+                    .try_state::<AcpSessions>()
+                    .map(|sessions| sessions.contains(&session_id))
+                    .unwrap_or(false);
+                if !alive {
+                    break; // 자식이 끝났다 — 성공이든 실패든 이 표시는 끝이다.
+                }
+                if acp::npx_entry_health(&entry, &package) == acp::NpxEntryHealth::Usable {
+                    let _ = app.emit(
+                        "acp://notice",
+                        AcpNoticeEvent {
+                            session_id: session_id.clone(),
+                            message: "npx-download-done".to_string(),
+                        },
+                    );
+                    break;
+                }
+                let mb = acp::dir_size_bytes(&entry) / (1024 * 1024);
+                let _ = app.emit(
+                    "acp://notice",
+                    AcpNoticeEvent {
+                        session_id: session_id.clone(),
+                        message: format!("npx-download-progress:{mb}"),
+                    },
+                );
+            }
         });
     }
 

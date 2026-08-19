@@ -168,6 +168,7 @@ export function AcpChatPanel({
     slashCommands,
     error,
     diagnostics,
+    download,
     pending,
     sessions,
     choices,
@@ -195,8 +196,12 @@ export function AcpChatPanel({
     [onTurnActiveChange],
   );
 
-  /** 어댑터가 준 것을 사람이 읽는 갈래로 옮긴다 — 못 알아보면 `unknown`. */
-  const trouble = error ? readAcpTrouble(error) : null;
+  /**
+   * 어댑터가 준 것을 사람이 읽는 갈래로 옮긴다 — 못 알아보면 `unknown`.
+   * stderr(진단)도 같이 준다 — 깨진 npx 캐시 고장에서는 오류 문자열이
+   * `acp session closed` 뿐이고 단서가 전부 stderr 에 있었다(2026-08-19 실측).
+   */
+  const trouble = error ? readAcpTrouble(error, diagnostics) : null;
   const [draft, setDraft] = useState('');
   /*
    * `/` 로 고르는 중인가. 첫 글자가 `/` 이고 아직 공백이 없을 때만이다 —
@@ -579,6 +584,35 @@ export function AcpChatPanel({
          */
         className="flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto"
       >
+        {/*
+          첫 내려받기는 「켜는 중」 칩만으로는 안 된다 (2026-08-19 소유자
+          실기계). npx 가 수십 MB 를 받는 몇 분 동안 화면이 아무 말도 안 하니
+          사용자가 멈춘 줄 알고 앱을 껐고, 그 중단이 반쯤 만들어진 캐시를 남겨
+          다음부터 영영 못 뜨게 했다. 받는 중이라는 사실과 **실측한 만큼의**
+          진행(지금까지 몇 MB)을 말한다 — 전체 크기를 모르므로 퍼센트를
+          지어내지 않는다.
+        */}
+        {status === 'starting' && download ? (
+          <div
+            data-testid="acp-first-run-download"
+            className="m-auto grid max-w-[38ch] gap-1.5 text-center"
+          >
+            <p className="break-keep text-label leading-prose text-[color:var(--color-text-tertiary)]">
+              {t('firstRun.title')}
+            </p>
+            <p className="break-keep text-caption leading-caption text-[color:var(--color-text-quaternary)]">
+              {t('firstRun.body')}
+            </p>
+            {download.mb !== null ? (
+              <p
+                data-testid="acp-first-run-progress"
+                className="text-caption leading-caption text-[color:var(--color-text-quaternary)]"
+              >
+                {t('firstRun.progress', { mb: download.mb })}
+              </p>
+            ) : null}
+          </div>
+        ) : null}
         {events.length === 0 && status !== 'starting' ? (
           // 빈 대화의 안내는 **기록이 쌓일 그 자리 한가운데**에 둔다. 위쪽에
           // 붙여 두면 그것이 첫 번째 말풍선처럼 읽히고, 정작 대화가 시작될

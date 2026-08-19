@@ -18,6 +18,10 @@ const bridge = vi.hoisted(() => {
     stopped: [] as string[],
     /** 어댑터 프로세스가 죽는 것을 시험이 일으킬 수 있게. */
     exit: null as ((code: number | null) => void) | null,
+    /** Rust 쪽 알림(`acp://notice`) — 첫 내려받기 표시가 이 길로 온다. */
+    notice: null as ((message: string) => void) | null,
+    /** stderr 진단 — 깨진 npx 캐시의 단서가 이 길로 온다(실측). */
+    stderr: null as ((line: string) => void) | null,
   };
   return state;
 });
@@ -37,13 +41,22 @@ vi.mock('@/shared/lib/tauri-acp', () => ({
   },
   listenToAcpSession: async (
     _id: string,
-    handlers: { onMessage?: (line: string) => void; onExit?: (code: number | null) => void },
+    handlers: {
+      onMessage?: (line: string) => void;
+      onExit?: (code: number | null) => void;
+      onNotice?: (message: string) => void;
+      onStderr?: (line: string) => void;
+    },
   ) => {
     bridge.listener = handlers.onMessage ?? null;
     bridge.exit = handlers.onExit ?? null;
+    bridge.notice = handlers.onNotice ?? null;
+    bridge.stderr = handlers.onStderr ?? null;
     return () => {
       bridge.listener = null;
       bridge.exit = null;
+      bridge.notice = null;
+      bridge.stderr = null;
     };
   },
 }));
@@ -118,6 +131,8 @@ afterEach(() => {
   bridge.listener = null;
   bridge.verdictCalls = [];
   bridge.exit = null;
+  bridge.notice = null;
+  bridge.stderr = null;
   bridge.verdict = 'ask';
   bridge.stopped = [];
 });
@@ -924,6 +939,102 @@ describe('대화 패널 — 오류는 사람의 말로 말하고 다음 할 일�
       (el) => el.textContent === echo && !alert.contains(el),
     );
     expect(outsideAlert, '영문 원문이 카드 밖에 또 있다').toHaveLength(0);
+  });
+
+  it('깨진 npx 캐시로 죽은 것을 알아본다 — 오류 문자열이 아무 말도 안 해도 (2026-08-19 실기계)', async () => {
+    /*
+     * 소유자 화면 그대로: 오류는 `acp session closed` 뿐이고, 단서는 전부
+     * stderr 에 있었다. 이 조합이 `unknown`(「같은 일이 반복되면 알려주세요」)
+     * 으로 끝나면 사용자가 할 수 있는 일이 없다 — install 갈래로 읽어야
+     * 「새 대화 = 앱이 지우고 다시 받는다」는 진짜 할 일이 나온다.
+     */
+    render(
+      <AcpChatPanel
+        runtimeId="claude-acp"
+        runtimeLabel="Claude Code"
+        vaultRoot="/vault"
+        mcpServers={[{ name: 'atlas-vault' }]}
+      />,
+    );
+    await waitFor(() => expect(bridge.sent.some((m) => m.method === 'initialize')).toBe(true));
+    // 실측 stderr 세 줄.
+    bridge.stderr?.('npm error code ENOENT');
+    bridge.stderr?.('npm error path /Users/me/.npm/_npx/8757e2301903ae53/package.json');
+    bridge.stderr?.("npm error enoent Could not read package.json: Error: ENOENT: no such file or directory, open '/Users/me/.npm/_npx/8757e2301903ae53/package.json'");
+    // npx 가 죽는다 → initialize 대기가 `acp session closed` 로 끝난다.
+    bridge.exit?.(1);
+
+    const alert = await screen.findByTestId('acp-chat-error');
+    expect(alert.dataset.trouble).toBe('install');
+    expect(alert.textContent).toContain('trouble.install.title');
+    expect(alert.textContent).toContain('trouble.install.hint');
+    // 원문과 stderr 단서는 접힌 「자세히」 안에 남는다.
+    const details = alert.querySelector('details');
+    expect(details?.hasAttribute('open')).toBe(false);
+    expect(details?.textContent).toContain('acp session closed');
+    expect(details?.textContent).toContain('_npx/8757e2301903ae53');
+  });
+});
+
+describe('첫 내려받기 — 「켜는 중」만으로는 부족하다 (2026-08-19)', () => {
+  it('받는 중이라는 사실과 실측 진행(MB)을 말하고, 준비되면 거둔다', async () => {
+    render(
+      <AcpChatPanel
+        runtimeId="claude-acp"
+        runtimeLabel="Claude Code"
+        vaultRoot="/vault"
+        mcpServers={[{ name: 'atlas-vault' }]}
+      />,
+    );
+    // 켜는 중(악수 전) — Rust 가 첫 내려받기를 알린다.
+    await waitFor(() => expect(bridge.notice).toBeTruthy());
+    bridge.notice?.('npx-first-run-download');
+
+    const card = await screen.findByTestId('acp-first-run-download');
+    expect(card.textContent).toContain('firstRun.title');
+    expect(card.textContent).toContain('firstRun.body');
+    // 진행률은 아직 없다 — **지어내지 않는다.**
+    expect(screen.queryByTestId('acp-first-run-progress')).toBeNull();
+
+    // 캐시 디렉터리가 자란 실측 크기가 오면 그때만 숫자를 말한다.
+    bridge.notice?.('npx-download-progress:12');
+    await waitFor(() =>
+      expect(screen.getByTestId('acp-first-run-progress').textContent).toContain(
+        'firstRun.progress:{"mb":12}',
+      ),
+    );
+
+    // 악수가 끝나 준비되면 내려받기 표시는 사라진다.
+    replyTo('initialize', { protocolVersion: 1 });
+    await waitFor(() => expect(bridge.sent.some((m) => m.method === 'session/new')).toBe(true));
+    replyTo('session/new', { sessionId: 's-1' });
+    await waitFor(() =>
+      expect(screen.getByTestId('acp-chat-panel')).toHaveAttribute('data-acp-status', 'ready'),
+    );
+    expect(screen.queryByTestId('acp-first-run-download')).toBeNull();
+  });
+
+  it('첫 알림을 놓쳐도 진행 알림만으로 표시를 만든다 — 구독 전에 나간 알림은 유실될 수 있다', async () => {
+    render(
+      <AcpChatPanel
+        runtimeId="claude-acp"
+        runtimeLabel="Claude Code"
+        vaultRoot="/vault"
+        mcpServers={[{ name: 'atlas-vault' }]}
+      />,
+    );
+    await waitFor(() => expect(bridge.notice).toBeTruthy());
+    // `npx-first-run-download` 없이 진행 알림부터 온다.
+    bridge.notice?.('npx-download-progress:7');
+    await screen.findByTestId('acp-first-run-download');
+    expect(screen.getByTestId('acp-first-run-progress').textContent).toContain(
+      'firstRun.progress:{"mb":7}',
+    );
+  });
+
+  it('내려받기가 없는 시작에는 아무것도 더 그리지 않는다', async () => {
+    await bootSession();
+    expect(screen.queryByTestId('acp-first-run-download')).toBeNull();
   });
 });
 

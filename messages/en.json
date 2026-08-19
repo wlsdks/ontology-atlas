@@ -179,8 +179,8 @@
         "footprint": "Footprints",
         "notify": "Notifications",
         "workspace": "Workspace",
-        "runtimes": "Chat in app",
-        "agent": "Connect in terminal",
+        "runtimes": "Agents",
+        "agent": "MCP connection",
         "ai": "API Key"
       },
       "sectionGroup": {
@@ -212,7 +212,7 @@
         "noneReady": "Nothing found yet",
         "noneReadyCaption": "Install Claude Agent or Codex and it shows up here.",
         "webLabel": "A browser is not allowed to start programs on this computer",
-        "webCaption": "Get the Mac app to use the tools installed here from inside Atlas. On this screen you can still point a tool you started yourself at this folder, from the “Connect in terminal” section.",
+        "webCaption": "Get the Mac app to use the tools installed here from inside Atlas. On this screen you can still point a tool you started yourself at this folder, from the “MCP connection” section.",
         "state": {
           "ready": "Ready",
           "cli-missing": "Install needed",
@@ -3706,6 +3706,11 @@
       "error": "Problem",
       "exited": "Ended"
     },
+    "firstRun": {
+      "title": "Getting this tool ready",
+      "body": "The first run downloads the tool (a few hundred MB) and can take a few minutes. Please keep the app open.",
+      "progress": "{mb} MB downloaded so far"
+    },
     "permission": {
       "title": "It wants to touch something outside this folder",
       "body": "Nothing happens until you allow it. Check below where it wants to write.",
@@ -3755,13 +3760,17 @@
         "title": "The app's own sign-in has gone stale",
         "hint": "Atlas runs Claude with its own settings folder so it asks before touching anything outside this folder. That means it also has its own sign-in, and signing in again in your terminal does not repair it. Paste the one-line command under “Details” into your terminal to sign in for the app, then press “New chat”."
       },
+      "install": {
+        "title": "A broken piece from an interrupted download is in the way",
+        "hint": "The first-run download was cut off halfway, and the leftover pieces make it fail at the same spot every time. Press “New chat” and the app clears them and downloads again from scratch. Check your internet connection and keep the app open while it downloads (a few hundred MB)."
+      },
       "timeout": {
         "title": "The tool is not responding",
         "hint": "Try “New chat”. If it keeps happening, check that the tool starts on its own in a terminal."
       },
       "launch": {
         "title": "The tool could not be started",
-        "hint": "Check its state in the “Chat in app” section of settings."
+        "hint": "Check its state in the “Agents” section of settings."
       },
       "network": {
         "title": "No connection to the outside",
