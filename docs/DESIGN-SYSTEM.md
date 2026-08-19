@@ -2742,8 +2742,9 @@ sheet 금지**(공방 진입 카드 16 → panel, 드로어 히어로 20 → pan
 
 | 대상 | 토큰 | 값 |
 |---|---|---|
-| 관문 정렬 원점 | `--gateway-origin` | `max(--gateway-gutter, (100vw − --page-max) / 2)` |
+| 관문 정렬 원점 | `--gateway-origin` | `max(--gateway-gutter, (100vw − --gateway-page-max) / 2)` (2026-08-19 개정 — 종전 `--page-max` 자리에 관문 전용 상한) |
 | 관문 홈통(원점의 바닥) | `--gateway-gutter` | 200 — 무단위 (40→64→120→200 계보는 `app/globals.css` 독블록) |
+| 관문 본문 컬럼 상한 | `--gateway-page-max` | `1920px` (2026-08-19 넓은 폭 개정 2탄) — 관문 표면(랜딩·문서면·GNB)의 `PAGE_COLUMN` 과 정렬 원점이 함께 읽는 단일 상한. 소유자의 2560 실측(좌우 여백 각 480, 화면의 37.5%가 빈 캔버스)에서 네 안 중 「관문에서만 넓힌다」를 골랐다: 2560 에서 [320][1920][320]. **`--page-max`(1600) ≥ 불변식** — 이 값이 1600 이상인 한 vw ≤ 2000 구간의 원점·컬럼은 종전 공식과 동일해 1440–1920 렌더가 한 픽셀도 안 움직인다. 다른 화면(문서함·프로젝트·인사이트)은 `--page-max` 그대로다. 읽는 문단은 따라가지 않는다 — 히어로 리드 `max-w-[40rem]`(실측 34자/줄) · 문서면 산문 `--measure-prose`(70ch)가 각자 상한이고, 컬럼 전폭을 쓰는 것은 기념비 헤드라인(비례 활자)·계기 스트립·괘선·GNB 뿐이다. 게이트: `tests/contract/gateway-column-width.contract.test.ts` + `tests/e2e/download-gateway-grid.spec.ts` |
 | 관문 판 폭 | `--gateway-plate-width` | 880 — 무단위. 2026-08-18 리메이크에서 520→880: 판이 지도 위 부유가 아니라 설치 절의 흐름에 앉으며 콘텐츠 폭 상한 하나만 진다 |
 | 관문 절 리듬 | `--gateway-section-gap` | 160px (2026-08-18) — 절 하나 = 생각 하나의 문장 부호 |
 | 관문 무대 폭 | `--gateway-stage-max` | `clamp(48rem, 40vw, 80rem)` (2026-08-19 넓은 폭 개정) — 시연·에이전트 장면이 공유하는 무대 상한. 바닥 48rem 은 소유자 승인값(원장 (83))이고 40vw×1920 = 48rem 이라 **1920 이하에서는 종전 768px 그대로**다. 기울기 40vw 는 1440–1920 무회귀 제약이 허용하는 가장 큰 비례 계수, 상한 80rem 은 1x 밀도에서 클립 원본(1512px)을 업스케일하지 않는 마지막 정규 스텝. 게이트: `tests/contract/gateway-stage-width.contract.test.ts` + `tests/e2e/download-gateway-grid.spec.ts` |

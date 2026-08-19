@@ -22,10 +22,17 @@ export const PAGE_GUTTER =
   'px-[max(1.5rem,env(safe-area-inset-left))] pr-[max(1.5rem,env(safe-area-inset-right))] md:px-[var(--gateway-origin)]';
 
 /**
- * 원점 안쪽의 단 하나뿐인 컬럼 — 왼쪽 고정, `--page-max` 에서 정지.
+ * 원점 안쪽의 단 하나뿐인 컬럼 — 왼쪽 고정, `--gateway-page-max` 에서 정지.
  *
- * 넓은 화면에서 이 상한이 **대칭의 짝**이다: 좌우 패딩이 각각 (vw−1600)/2 면
- * 남는 폭이 정확히 1600 이라 컬럼이 꽉 차고, 오른쪽 여백도 자동으로 같아진다.
+ * 넓은 화면에서 이 상한이 **대칭의 짝**이다: 좌우 패딩이 각각 (vw−1920)/2 면
+ * 남는 폭이 정확히 1920 이라 컬럼이 꽉 차고, 오른쪽 여백도 자동으로 같아진다.
  * `mx-auto` 가 필요 없는 이유가 이것이다.
+ *
+ * [개정 2026-08-19] 상한이 `--page-max`(1600) → `--gateway-page-max`(1920).
+ * 소유자의 2560 실측(좌우 여백 각 480)에서 고른 「관문에서만 넓힌다」 —
+ * 다른 화면은 `--page-max` 그대로다. 원점 공식(`--gateway-origin`)이 같은
+ * 상한을 읽으므로 좌우 대칭은 그대로 성립한다. 값의 근거와 ≤1920 무회귀
+ * 불변식: `app/globals.css` 의 `--gateway-page-max` 독블록. 게이트:
+ * `tests/contract/gateway-column-width.contract.test.ts`.
  */
-export const PAGE_COLUMN = 'w-full max-w-[var(--page-max)]';
+export const PAGE_COLUMN = 'w-full max-w-[var(--gateway-page-max)]';
