@@ -10921,8 +10921,8 @@
         }
       ],
       "excerpt": "This document is maintained based on Section 3 of the design spec. For the original Linear specification, see design-references/DESIGN-linear.md. v2 (2026-07): topology-map-v2 에서 출하된 B2+ \"Circuit × Constellation\" 시각 언어가 페이지 롤아웃(랜딩 → docs/ontology 허브 → projects/insights → download)의 규범이 되었다 — 아래 v2 — \"Circuit × Constell",
-      "wordCount": 31663,
-      "updatedAt": "2026-08-18",
+      "wordCount": 31726,
+      "updatedAt": "2026-08-19",
       "linksOut": [
         "design-references/DESIGN-linear",
         "TOPOLOGY-V2-DESIGN",
@@ -14217,7 +14217,7 @@
       ],
       "excerpt": "볼트 전체 그래프를 커스텀 canvas-2D 엔진 위에서 렌더링·팬/줌·검색하는 능력. src/features/에 전용 폴더는 없으나 위젯 증거 + 문서 서술로 제안됨(review-required). src/widgets/topology-map-v2, topology-controls, global-search (구현 증거) AGENTS.md: Tech stack (\"The graph renderer is ours: a custom canvas-2D engine (topology-map-v2)\") 3D 보기(dome view, 2026-08-18): 지도를 kind 동",
       "wordCount": 413,
-      "updatedAt": "2026-08-18",
+      "updatedAt": "2026-08-19",
       "linksOut": []
     },
     {

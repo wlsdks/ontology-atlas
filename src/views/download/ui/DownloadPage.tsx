@@ -840,14 +840,24 @@ function AgentSection() {
       <div className={cn(PAGE_COLUMN, 'min-w-0')}>
         <SectionIntro eyebrow="Agents" title={t('agentsTitle')} sub={t('agentsSub')} inView={inView} />
 
-        <div className={cn('gateway-rise gateway-rise-d3', inView && 'is-in', 'mt-9 max-w-[48rem]')}>
+        {/* 장면 폭은 시연 절과 같은 토큰(`--gateway-stage-max`) — 「이만큼이
+            무대다」를 페이지가 한 번만 말한다. ≤1920 에서는 종전 48rem 그대로,
+            넓은 폭에서만 비례로 자란다(근거는 토큰 독블록). */}
+        <div
+          data-testid="gateway-agent-scene"
+          className={cn(
+            'gateway-rise gateway-rise-d3',
+            inView && 'is-in',
+            'mt-9 max-w-[var(--gateway-stage-max)]',
+          )}
+        >
           <AcpChatScene />
         </div>
         <p
           className={cn(
             'gateway-rise gateway-rise-d3',
             inView && 'is-in',
-            'mt-5 max-w-[48rem] break-keep text-body-lg leading-body-lg text-[color:var(--color-text-tertiary)]',
+            'mt-5 max-w-[var(--gateway-stage-max)] break-keep text-body-lg leading-body-lg text-[color:var(--color-text-tertiary)]',
           )}
         >
           {t('agentsCap')}

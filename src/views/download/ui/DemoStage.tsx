@@ -50,6 +50,17 @@ import { controlClass } from '@/shared/ui/control-class';
  *
  * ⚠️ 상한은 **절이 소유한다** — 영상에만 걸고 캡션을 컬럼에 두면 두 오른끝이
  * 갈려서 2026-07-30 이 막으려던 「한 절 두 그리드」가 그대로 돌아온다.
+ *
+ * ## [개정 2026-08-19 저녁] 상한이 넓은 폭에서 비례로 자란다
+ *
+ * 소유자가 2560 스크린샷에서 화면이 비어 보인다고 지적했다. 위 48rem 결정이
+ * 지킨 것은 「무대가 첫인상을 먹지 않는 비례」였는데 절대 px 로 굳혀서 넓은
+ * 폭에서 반대 방향으로 틀렸다 — 2560 실측에서 무대가 뷰포트의 30%(768/2560).
+ * 그래서 상한의 진실원을 `--gateway-stage-max`(`clamp(48rem, 40vw, 80rem)`)로
+ * 올렸다. **1920 이하에서는 종전과 같은 768px 다**(40vw 가 48rem 에 닿는 폭이
+ * 정확히 1920 이라 바닥이 이긴다) — 세 값의 근거와 게이트는 토큰 독블록
+ * (`app/globals.css`)에 있다. 에이전트 절 장면도 같은 토큰을 먹으므로
+ * 「이만큼이 무대다」는 여전히 한 번만 말해진다.
  */
 export function DemoStage({ available }: { available?: readonly DemoClip['id'][] }) {
   const t = useTranslations('download');
@@ -64,7 +75,7 @@ export function DemoStage({ available }: { available?: readonly DemoClip['id'][]
     <section
       data-testid="demo-stage"
       aria-label={t('demoHeading')}
-      className="mx-auto min-w-0 max-w-[48rem]"
+      className="mx-auto min-w-0 max-w-[var(--gateway-stage-max)]"
     >
       <DemoPlayer clip={clip} />
       {/*
