@@ -25,9 +25,39 @@
  * 4. **대조군을 같이 잰다** — 2D 같은 규모가 옆에 없으면 「3D 라서 그렇다」와
  *    「망가졌다」가 구별되지 않는다.
  *
+ * ## 실행 방식 — 창을 띄우느냐 (2026-08-19 실측)
+ *
+ * 기본은 창을 띄운다. 창이 뜨면 사람 화면을 가리는데, **macOS 에서는 창을 화면
+ * 밖으로 뺄 수 없다** — `--window-position=-2400,-2400` 도 CDP
+ * `Browser.setWindowBounds` 도 윈도우 서버가 화면 안으로 되돌린다(요청
+ * -2400,-2400 → 실제 0,33 · 요청 3000,60 → 실제 288,60). 「보이지 않게 띄우기」는
+ * 선택지가 아니라서, 무인 실행이나 동시 작업 중에는 `--headless` 를 쓴다.
+ *
+ * 같은 볼트(synth=2000, 3D 회전)를 두 방식으로 각 3회 잰 값:
+ *
+ * | | 프레임/5초 | `work` 중앙 | `work` p95 |
+ * |---|---|---|---|
+ * | 창 있음 (3D 회전 중) | **600** (=120fps, 이 기계 주사율) | 4.3~4.8ms | 7.4~7.6ms |
+ * | `--headless` (3D 회전 중) | **120** (=24fps) | 4.6~4.8ms | 5.0~5.4ms |
+ * | `--headless` (3D 유휴) | **600** | ~0 | ~0 |
+ *
+ * - **프레임당 `work` 중앙값은 같다.** map-perf 스킬의 "전이되는 것은 JS 계산
+ *   비용뿐"이 그대로 확인된다 — 프레임 하나가 얼마나 비싼지는 헤드리스로도 잰다.
+ * - **프레임 «수»는 못 믿는다.** 창이 있으면 주사율에 고정되는데, 헤드리스는
+ *   vsync·합성 백프레셔가 없어 부하에 따라 24fps 로도 120fps 로도 나온다
+ *   (위 표의 아래 두 줄이 같은 헤드리스인데 5배 차이다). 따라서 **초당
+ *   CPU(ms/s)를 두 방식 사이에서 비교하면 안 된다** — 그 값은 프레임 수에
+ *   비례하기 때문이다.
+ * - 그래서 **유휴 판정은 «일한 프레임 수»로 한다**(`IDLE_BUDGET_BUSY_FRAMES`).
+ *   프레임이 몇 개 오든 잠들었으면 그중 0 개가 일하고, 안 잠들었으면 전량이
+ *   일한다 — 이 비율만이 실행 방식에 흔들리지 않는다. 실측: 잠든 3D 0/600,
+ *   안 잠든 3D 300/300.
+ * - `p95` 도 두 방식 사이에서 비교하지 마라 — 표본 수가 다르면 같은 꼬리가
+ *   아니다. **한 방식 안에서 전·후**를 비교하는 데 쓴다.
+ *
  * 사용:
  *   pnpm build && node scripts/serve-static-export.mjs --port=4173 &
- *   node scripts/perf-dome.mjs [baseUrl] [--synth=2000] [--json]
+ *   node scripts/perf-dome.mjs [baseUrl] [--synth=2000] [--json] [--headless]
  *
  * 유휴 검사는 앰비언트 휴면 지연(30s)+램프(2s)를 기다려야 하므로 한 번에
  * 약 45초가 든다. `--skip-idle` 로 뺄 수 있지만, **이 하네스가 존재하는
@@ -43,6 +73,7 @@ const getArg = (name, fallback) => {
   return hit ? hit.slice(name.length + 3) : fallback;
 };
 const SYNTH = Number(getArg("synth", "2000"));
+const HEADLESS = args.includes("--headless");
 const JSON_OUT = args.includes("--json");
 const SKIP_IDLE = args.includes("--skip-idle");
 /** 유휴 관측을 시작하기까지 기다리는 시간 — 지연 30s + 램프 2s + 여유. */
@@ -50,10 +81,17 @@ const SLEEP_WAIT_MS = Number(getArg("sleep-wait-ms", "38000"));
 const IDLE_WINDOW_MS = Number(getArg("idle-window-ms", "5000"));
 
 /**
- * 예산. 2D 대조군이 유휴에서 3ms/s 이므로 3D 도 같은 자리에 있어야 한다 —
- * 잠든 캔버스의 비용은 뷰 모드와 무관하다. 드래그는 2D(2.7ms)의 여유 배수.
+ * 예산.
+ *
+ * **유휴는 «일한 프레임 수»로 잰다** — 초당 CPU 는 주사율에 비례해 실행 방식이
+ * 바뀌면 5배씩 움직이지만(위 「실행 방식」 표), 「잠들었나」는 0 이냐 전량이냐로
+ * 갈린다. 실측: 잠든 3D 0/300, 안 잠든 3D 300/300. 상한 5 는 램프가 걸치는
+ * 경계 프레임 몇 개만 허용하는 값이다.
+ *
+ * 드래그 p95 는 2D 대조군(2.7~3.6ms)의 여유 배수. **한 실행 방식 안에서만**
+ * 전·후를 비교한다.
  */
-const IDLE_BUDGET_MS_PER_S = Number(getArg("idle-budget", "20"));
+const IDLE_BUDGET_BUSY_FRAMES = Number(getArg("idle-budget-frames", "5"));
 const DRAG_BUDGET_P95_MS = Number(getArg("drag-budget", "20"));
 
 const PROFILE = `/tmp/atlas-dome-perf-${process.pid}`;
@@ -158,9 +196,13 @@ async function measureNodeDrag(page) {
 }
 
 const ctx = await chromium.launchPersistentContext(PROFILE, {
-  headless: false, // 표시 파이프라인이 있어야 실기기와 같은 경로를 탄다
-  viewport: null,
-  args: ["--start-maximized", "--force-device-scale-factor=2"],
+  // 기본은 창을 띄운다 — 표시 파이프라인이 있어야 실기기와 같은 경로를 탄다.
+  headless: HEADLESS,
+  viewport: HEADLESS ? { width: 1440, height: 900 } : null,
+  deviceScaleFactor: 2,
+  args: HEADLESS
+    ? ["--force-device-scale-factor=2"]
+    : ["--start-maximized", "--force-device-scale-factor=2"],
 });
 const page = ctx.pages()[0] ?? (await ctx.newPage());
 const rows = [];
@@ -193,7 +235,7 @@ if (JSON_OUT) {
 }
 
 let failed = 0;
-console.log(`\n  3D 돔 비용 — 볼트 ${SYNTH} 노드, 앱 rAF 콜백 시간(ms)\n`);
+console.log(`\n  3D 돔 비용 — 볼트 ${SYNTH} 노드, 앱 rAF 콜백 시간(ms) · ${HEADLESS ? "헤드리스" : "창 있음"}\n`);
 for (const row of rows) {
   if (row.error) {
     console.log(`  ${row.label.padEnd(12)} ❌ ${row.error}`);
@@ -215,12 +257,12 @@ for (const row of rows) {
     );
   }
   if (row.idle) {
-    const over = row.idle.cpuMsPerSec > IDLE_BUDGET_MS_PER_S;
+    const over = row.idle.busyFrames > IDLE_BUDGET_BUSY_FRAMES;
     if (over) failed += 1;
     console.log(
       `  ${"".padEnd(12)} 유휴(무입력 ${Math.round(SLEEP_WAIT_MS / 1000)}s 후) ` +
-        `${String(row.idle.cpuMsPerSec).padStart(6)} ms/s · 일한 프레임 ${row.idle.busyFrames}/${row.idle.frames}` +
-        (over ? `  ❌ 예산 ${IDLE_BUDGET_MS_PER_S}ms/s 초과 — 앰비언트 휴면이 깨졌다` : " ✓"),
+        `일한 프레임 ${row.idle.busyFrames}/${row.idle.frames} · ${String(row.idle.cpuMsPerSec).padStart(6)} ms/s(참고)` +
+        (over ? `  ❌ 예산 ${IDLE_BUDGET_BUSY_FRAMES}프레임 초과 — 앰비언트 휴면이 깨졌다` : " ✓"),
     );
   }
   console.log("");
