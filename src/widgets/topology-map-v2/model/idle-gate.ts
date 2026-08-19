@@ -92,6 +92,48 @@ export function isEgoTailAnimating(input: EgoTailActivityInput): boolean {
   return input.focused && input.hasContainsEdges;
 }
 
+/**
+ * 3D 돔 자율 회전이 «지금 돌아야 하는가» — 순수 판정.
+ *
+ * 왜 여기 있나 (2026-08-19 실측): 자율 회전은 상시 혜성·fresh 브리드와 같은
+ * 부류의 **앰비언트 모션**인데, 혼자만 `ambient-sleep.ts` 계약 밖에서 살고
+ * 있었다. 결과는 `isEgoTailAnimating` 독블록이 적은 실패와 **글자 그대로 같은
+ * 모양**이다: 무입력 45초가 지나도 3D 는 잠들지 않고, 2,000 노드에서 초당
+ * 520ms(코어 절반)를 영구히 태웠다 — 같은 상태의 2D 는 3ms/s 였다(170배).
+ *
+ * 이 앱의 전형 시나리오가 「에이전트 터미널 옆에 워크벤치를 띄워 두기」라는
+ * 것을 생각하면 그것이 가장 흔한 상태다. 그래서 같은 처방을 쓴다 — 끄지 않고
+ * 재운다. 술어를 뽑아 둔 이유도 같다: OR/AND 가 두 자리(활동 플래그 · 회전
+ * 적용)에 흩어져 있으면 **한쪽에만 조건이 붙는 사고**가 정확히 다시 난다.
+ *
+ * 두 자리에서 다른 항(`orbiting` · `yawVel`)은 여기 넣지 않는다 — 그건
+ * 「지금 손/관성이 이미 돌리고 있나」라 자율 회전의 조건이 아니다.
+ */
+export interface DomeSpinInput {
+  /** 3D 보기가 켜져 있고 영역 전환 중이 아님. */
+  domeOn: boolean;
+  reducedMotion: boolean;
+  /** `isAmbientAsleep(ambientSleepFactor(...))` — 계수가 0 에 닿았는가. */
+  ambientAsleep: boolean;
+  /** 개입(궤도·줌·노드 드래그·선택)으로 내려가는 무장 상태. */
+  spinArmed: boolean;
+  /** 커서가 캔버스 위 — 조준한 노드가 커서 밑에서 미끄러지지 않게 정지. */
+  pointerOverCanvas: boolean;
+  /** 조립 램프가 다 찼는가. */
+  assembled: boolean;
+}
+
+export function isDomeSpinAnimating(input: DomeSpinInput): boolean {
+  return (
+    input.domeOn &&
+    !input.reducedMotion &&
+    !input.ambientAsleep &&
+    input.spinArmed &&
+    !input.pointerOverCanvas &&
+    input.assembled
+  );
+}
+
 export function isCanvasActive(flags: CanvasActivityFlags): boolean {
   return (
     flags.pointerActive ||

@@ -216,11 +216,34 @@ export interface BackgroundTokens {
 }
 
 /** Draws the background fill, the selected background layer, and the vignette, in that order (bottom-most layer). */
+/*
+ * perf 2026-08-19 — 프레임 불변 산출물 캐시 둘.
+ *
+ * 바탕색 문자열(`lerpColorHex`)과 비네트 그라디언트는 (색 토큰, farT, 뷰포트)
+ * 만의 함수인데 매 프레임 다시 만들어지고 있었다. 입력이 지난 프레임과 같으면
+ * 같은 값을 재사용한다 — 값이 같으니 픽셀도 같고, 입력이 하나라도 바뀌면
+ * (줌 전환·리사이즈·테마) 그 프레임에 즉시 다시 만든다.
+ */
+let bgBaseCacheKeyNear = "";
+let bgBaseCacheKeyFar = "";
+let bgBaseCacheFarT = -1;
+let bgBaseCache = "";
+let vignetteCacheW = -1;
+let vignetteCacheH = -1;
+let vignetteCacheAlpha = -1;
+let vignetteCache: CanvasGradient | null = null;
+
 export function draw(ctx: CanvasRenderingContext2D, state: BackgroundDrawState, tokens: BackgroundTokens): void {
   const { viewportWidth: w, viewportHeight: h, farT, gridPattern } = state;
   const variant = state.variant ?? "dot";
 
-  const bgBase = lerpColorHex(tokens.canvasBgNear, tokens.canvasBgFar, farT);
+  if (bgBaseCacheKeyNear !== tokens.canvasBgNear || bgBaseCacheKeyFar !== tokens.canvasBgFar || bgBaseCacheFarT !== farT) {
+    bgBaseCacheKeyNear = tokens.canvasBgNear;
+    bgBaseCacheKeyFar = tokens.canvasBgFar;
+    bgBaseCacheFarT = farT;
+    bgBaseCache = lerpColorHex(tokens.canvasBgNear, tokens.canvasBgFar, farT);
+  }
+  const bgBase = bgBaseCache;
   ctx.fillStyle = bgBase;
   ctx.fillRect(0, 0, w, h);
 
@@ -255,16 +278,23 @@ export function draw(ctx: CanvasRenderingContext2D, state: BackgroundDrawState, 
 
   // transparent-center gradient — an opaque full-canvas vignette would erase
   // the grid/star-dust layers just painted above (the prototype's own noted bug).
-  const vignette = ctx.createRadialGradient(
-    w / 2,
-    h / 2,
-    Math.max(w, h) * 0.22,
-    w / 2,
-    h / 2,
-    Math.max(w, h) * 0.72,
-  );
-  vignette.addColorStop(0, "rgba(3,3,4,0)");
-  vignette.addColorStop(1, `rgba(3,3,4,${computeVignetteAlpha(tokens.vignetteBaseAlpha, tokens.vignetteFarAlpha, farT)})`);
-  ctx.fillStyle = vignette;
+  const vignetteAlpha = computeVignetteAlpha(tokens.vignetteBaseAlpha, tokens.vignetteFarAlpha, farT);
+  if (vignetteCache === null || vignetteCacheW !== w || vignetteCacheH !== h || vignetteCacheAlpha !== vignetteAlpha) {
+    const vignette = ctx.createRadialGradient(
+      w / 2,
+      h / 2,
+      Math.max(w, h) * 0.22,
+      w / 2,
+      h / 2,
+      Math.max(w, h) * 0.72,
+    );
+    vignette.addColorStop(0, "rgba(3,3,4,0)");
+    vignette.addColorStop(1, `rgba(3,3,4,${vignetteAlpha})`);
+    vignetteCacheW = w;
+    vignetteCacheH = h;
+    vignetteCacheAlpha = vignetteAlpha;
+    vignetteCache = vignette;
+  }
+  ctx.fillStyle = vignetteCache;
   ctx.fillRect(0, 0, w, h);
 }

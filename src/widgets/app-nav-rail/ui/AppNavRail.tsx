@@ -34,6 +34,7 @@ import { ICON_SIZE } from "@/shared/ui/icon-size";
 import { useLocalVault } from "@/features/docs-vault-local";
 import { formatActivityAge } from "@/features/vault-ontology";
 import { cn } from "@/shared/lib/cn";
+import { signalNavigationIntent } from "@/shared/lib/navigation-intent";
 import { BrandMark } from "@/shared/ui";
 import {
   buildRouteFocusHref,
@@ -108,6 +109,10 @@ function rememberRailRouteFocus(
   ) {
     return;
   }
+  // 이동이 «성사될» 클릭임이 확정된 자리다(위 가드가 새 탭·수식키·취소를
+  // 전부 걸러 냈다). 지도처럼 상시 루프를 가진 표면이 프레임 예산을 비켜
+  // 주도록 신호를 흘린다 — 실측 근거는 `shared/lib/navigation-intent.ts`.
+  signalNavigationIntent();
   rememberRouteFocusIntent(pathname);
 }
 

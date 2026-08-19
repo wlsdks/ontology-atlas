@@ -302,6 +302,12 @@ const STORAGE_KEY_REGISTRY: StorageEntry[] = [
   { key: "ontology-atlas:audience-preference-change", kind: "event", scope: "global", note: "" },
   { key: "ontology-atlas:guide-auto-start-change", kind: "event", scope: "global", note: "" },
   { key: "ontology-atlas:local-endpoint-change", kind: "event", scope: "global", note: "" },
+  {
+    key: "ontology-atlas:navigation-intent",
+    kind: "event",
+    scope: "global",
+    note: "이동 시작 — 상시 rAF 루프가 프레임 예산을 비켜 준다 (shared/lib/navigation-intent.ts)",
+  },
   { key: "ontology-atlas:secret-change", kind: "event", scope: "global", note: "" },
   { key: "ontology-atlas:settings-view-intent", kind: "event", scope: "global", note: "설정 시트 드릴인 요청" },
   { key: "ontology-atlas:agent-chat-intent", kind: "event", scope: "global", note: "설정 → 대화 열기 요청 (위 신호의 반대 방향)" },

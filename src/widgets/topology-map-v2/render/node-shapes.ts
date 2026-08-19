@@ -209,10 +209,13 @@ export interface GlyphStyleDescriptor {
   lineWidthScale: number;
 }
 
+// perf 2026-08-19 — 노드마다 새 객체를 만들 이유가 없는 순수 상수 둘. 공유
+// 객체를 돌려줘도 소비처는 읽기만 한다(값 동일 → 픽셀 동일).
+const GLYPH_STYLE_LINE: GlyphStyleDescriptor = { lineOnly: true, lineWidthScale: 0.8 };
+const GLYPH_STYLE_FILL: GlyphStyleDescriptor = { lineOnly: false, lineWidthScale: 1 };
+
 export function glyphStyleDescriptor(glyphStyle: "fill" | "line" | undefined): GlyphStyleDescriptor {
-  return glyphStyle === "line"
-    ? { lineOnly: true, lineWidthScale: 0.8 }
-    : { lineOnly: false, lineWidthScale: 1 };
+  return glyphStyle === "line" ? GLYPH_STYLE_LINE : GLYPH_STYLE_FILL;
 }
 
 export interface NodeShapeTokens {
@@ -427,6 +430,47 @@ export function bodyPoints(kind: NodeShapeDrawState["kind"], x: number, y: numbe
   return null;
 }
 
+/*
+ * perf 2026-08-19 — 그리기 내부 전용 스크래치판 `bodyPoints`.
+ *
+ * `hexPoints`/`squarePoints` 는 호출마다 점 객체 4~6개 + 배열 하나를 만든다.
+ * 노드 바디 + 링 오버레이가 노드마다 부르므로 2,000 노드 × 60fps 면 초당
+ * 수십만 개다. 좌표 식은 위 함수들과 **완전히 같고**(같은 각도·같은 비율),
+ * 결과는 `roundedPolygonPath` 가 즉시 소비하므로 프레임 간 공유 상태가 없다
+ * — 이 파일의 draw 경로는 단일 rAF 루프에서 동기로만 돈다. 외부 계약
+ * (`bodyPoints` export, contract test)은 그대로 할당판을 쓴다.
+ */
+const HEX_SCRATCH: Point[] = Array.from({ length: 6 }, () => ({ x: 0, y: 0 }));
+const SQUARE_SCRATCH: Point[] = Array.from({ length: 4 }, () => ({ x: 0, y: 0 }));
+
+function hexPointsScratch(cx: number, cy: number, r: number): readonly Point[] {
+  for (let i = 0; i < 6; i += 1) {
+    const a = ((i * 60 - 90) * Math.PI) / 180;
+    HEX_SCRATCH[i].x = cx + r * Math.cos(a);
+    HEX_SCRATCH[i].y = cy + r * Math.sin(a);
+  }
+  return HEX_SCRATCH;
+}
+
+function squarePointsScratch(cx: number, cy: number, s: number): readonly Point[] {
+  SQUARE_SCRATCH[0].x = cx - s;
+  SQUARE_SCRATCH[0].y = cy - s;
+  SQUARE_SCRATCH[1].x = cx + s;
+  SQUARE_SCRATCH[1].y = cy - s;
+  SQUARE_SCRATCH[2].x = cx + s;
+  SQUARE_SCRATCH[2].y = cy + s;
+  SQUARE_SCRATCH[3].x = cx - s;
+  SQUARE_SCRATCH[3].y = cy + s;
+  return SQUARE_SCRATCH;
+}
+
+function bodyPointsScratch(kind: NodeShapeDrawState["kind"], x: number, y: number, r: number): readonly Point[] | null {
+  if (kind === "project") return hexPointsScratch(x, y, r);
+  if (kind === "domain") return squarePointsScratch(x, y, r * DOMAIN_HALF_EXTENT_RATIO);
+  if (kind === "element") return squarePointsScratch(x, y, r * 0.92);
+  return null;
+}
+
 /**
  * This kind's minimum corner radius at farT=0.
  *
@@ -465,7 +509,7 @@ function strokeKindOutline(
   alpha: number,
 ): void {
   if (alpha <= 0.01 || radius <= 0) return;
-  const points = bodyPoints(kind, x, y, radius);
+  const points = bodyPointsScratch(kind, x, y, radius);
   if (points === null || farT > FULL_CIRCLE_FAR_T) {
     ctx.beginPath();
     ctx.arc(x, y, radius, 0, Math.PI * 2);
@@ -490,7 +534,7 @@ function strokeKindOutline(
  * `model/hover-shimmer.ts` time math is.
  */
 function outlinePerimeter(kind: NodeShapeDrawState["kind"], radius: number, farT: number): number {
-  const points = bodyPoints(kind, 0, 0, radius);
+  const points = bodyPointsScratch(kind, 0, 0, radius);
   if (points === null || farT > FULL_CIRCLE_FAR_T) return 2 * Math.PI * radius;
   let perimeter = 0;
   for (let i = 0; i < points.length; i += 1) {
@@ -524,7 +568,7 @@ function drawHoverShimmer(
   const perimeter = outlinePerimeter(kind, radius, farT);
   const { dash, offset } = computeHoverShimmer(now, periodMs, perimeter, segRatio);
   if (dash[0] <= 0) return;
-  const points = bodyPoints(kind, x, y, radius);
+  const points = bodyPointsScratch(kind, x, y, radius);
   if (points === null || farT > FULL_CIRCLE_FAR_T) {
     ctx.beginPath();
     ctx.arc(x, y, radius, 0, Math.PI * 2);
@@ -578,8 +622,14 @@ export function draw(ctx: CanvasRenderingContext2D, state: NodeShapeDrawState, t
 
   const { lineOnly, lineWidthScale } = glyphStyleDescriptor(glyphStyle);
 
-  ctx.setLineDash([...dash]);
-  const points = bodyPoints(kind, x, y, r);
+  // perf 2026-08-19 — 대시 없는 노드(대다수)는 대시 호출을 아예 안 낸다.
+  // 모든 painter 가 파선을 쓰고 나면 [] 로 되돌리는 규약이라(traces ·
+  // cluster-chips · dome-rings · frame-draw 링 블록 · 이 함수 자신) 진입
+  // 대시 상태는 항상 비어 있다 — 매 노드 2회이던 네이티브 호출·스프레드
+  // 할당이 fresh/stale 파선 노드에서만 남는다.
+  const hasDash = dash.length > 0;
+  if (hasDash) ctx.setLineDash([...dash]);
+  const points = bodyPointsScratch(kind, x, y, r);
   if (points === null || farT > FULL_CIRCLE_FAR_T) {
     ctx.beginPath();
     ctx.arc(x, y, r, 0, Math.PI * 2);
@@ -619,16 +669,19 @@ export function draw(ctx: CanvasRenderingContext2D, state: NodeShapeDrawState, t
       if (shadeGradientCache.size > SHADE_CACHE_MAX) shadeGradientCache.clear();
       shadeGradientCache.set(key, shade);
     }
-    ctx.save();
+    // perf 2026-08-19 — save/restore(전체 상태 스택) 대신 역이동으로 되돌린다.
+    // 기본 변환은 DPR 순수 스케일(tx=0)이라 `translate(x,y)` 후 `translate(-x,-y)`
+    // 는 부동소수점까지 정확히 원상이다(0 + d - d = 0). 이 블록이 바꾸는 다른
+    // 상태는 fillStyle 뿐이고, 다음 획이 어차피 자기 스타일을 먼저 세팅한다.
     ctx.translate(x, y);
     ctx.fillStyle = shade;
     ctx.fill();
-    ctx.restore();
+    ctx.translate(-x, -y);
   }
   ctx.strokeStyle = stroke;
   ctx.lineWidth = lineWidth * lineWidthScale;
   ctx.stroke();
-  ctx.setLineDash([]);
+  if (hasDash) ctx.setLineDash([]);
 
   // Domain chip-leg pin ticks — circuit-only detail, fades out with altitude
   // (prototype: `s > 6 && farT < 0.9`, alpha `1 - smoothstep(0.55,0.9,farT)`).

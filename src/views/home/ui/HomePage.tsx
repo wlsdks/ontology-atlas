@@ -16,6 +16,7 @@ import {
   type CSSProperties,
   type KeyboardEvent as ReactKeyboardEvent,
   type PointerEvent as ReactPointerEvent,
+  startTransition,
   useCallback,
   useEffect,
   useLayoutEffect,
@@ -343,7 +344,51 @@ const INDEX_PANEL_COLLAPSED_KEY = "demo:index-panel-collapsed:v1";
  * useState 미러 + setter 에서 setItem 동기화 패턴을 쓴다(기존
  * `setIndexPreference` 의 "저장+즉시 적용" 계약과 동일).
  */
+/**
+ * ── 부팅 렌더 게이트 (2026-08-19 실측) ──────────────────────────────────
+ *
+ * `/ko/topology/` 첫 진입의 단일 최대 long task 는 **이 뷰의 첫 클라이언트
+ * 렌더+커밋 하나**였다 — CPU 4배 스로틀 기준 324~335ms(수술 전 실측). lazy
+ * 경계의 초기 렌더는 동기 레인이라 6,000줄 트리 전체가 한 태스크로 돈다.
+ *
+ * 처방: 첫 클라이언트 커밋은 **화면에 이미 있는 서버 폴백(MapEntryFallback)의
+ * DOM 을 그대로 복제**해 픽셀 변화 없이 끝내고(수 ms), 본체는 이어지는
+ * `startTransition` 에서 렌더한다 — 전이 레인은 ~5ms 마다 양보하므로 큰
+ * 렌더가 여러 작은 태스크로 갈라지고, 화면에 보이는 순서는 종전과 같다:
+ * 폴백 → (동일한 폴백) → 완성된 페이지.
+ *
+ * 왜 복제이고 재구현이 아닌가: `MapEntryFallback` 은 서버 컴포넌트라 여기서
+ * 렌더할 수 없고, 마크업을 손으로 베끼면 두 벌이 어긋나는 순간 화면이 바뀐다.
+ * 문서에 이미 서 있는 실물 `outerHTML` 을 그대로 쓰면 구조적으로 어긋날 수
+ * 없다. 클라이언트 내비게이션 등으로 폴백 DOM 이 없으면(널) 게이트 없이
+ * 종전 경로 그대로 간다 — 이 최적화는 콜드 부트에만 뜻이 있다.
+ *
+ * SSG 는 `window` 가 없어 곧장 본체로 가고, 본체는 종전대로 `useSearchParams`
+ * 에서 서스펜드해 폴백이 HTML 에 구워진다 — 내보낸 문서는 바이트 그대로다.
+ */
 export function HomePage() {
+  // lazy initializer — 첫 렌더(커밋 전)의 문서에는 서버 폴백이 아직 서 있다.
+  const [fallbackHtml] = useState<string | null>(() => {
+    if (typeof window === "undefined") return null;
+    return document.querySelector('[data-testid="map-entry-fallback"]')?.outerHTML ?? null;
+  });
+  const [bootRenderReady, setBootRenderReady] = useState(false);
+  useEffect(() => {
+    startTransition(() => setBootRenderReady(true));
+  }, []);
+  if (!bootRenderReady && fallbackHtml !== null && fallbackHtml !== "") {
+    return (
+      <div
+        style={{ display: "contents" }}
+        // 같은 문서가 방금 그린 자기 폴백의 복제(위 독블록) — 외부 입력이 아니다.
+        dangerouslySetInnerHTML={{ __html: fallbackHtml }}
+      />
+    );
+  }
+  return <HomePageImpl />;
+}
+
+function HomePageImpl() {
   const t = useTranslations('topology');
   const siteT = useTranslations('metadata');
   // 어권별 이름 입력(create composer) 계약의 '지금 화면 언어'.
@@ -2168,13 +2213,20 @@ export function HomePage() {
         `${resolveToastBottomOffsetForStack(window.innerHeight, rect.top)}px`,
       );
     };
-    apply();
     // 스택의 줄 수는 나중에 늘어난다 — 계기 판독(`FirstRunReadout`)은 샘플
     // 모드 판정이 끝난 뒤에 붙는다. mount 시점 한 번만 재면 예약이 한 줄
     // 분량 부족한 채 굳어 토스트가 그대로 범례를 덮는다(실측 54px vs 필요 79px).
+    //
+    // 첫 실측도 RO 의 **초기 전달**에 맡긴다 (2026-08-19 부팅 실측). 종전처럼
+    // 커밋 이펙트에서 `apply()` 를 동기로 부르면 방금 DOM 을 갈아 끼운 문서에
+    // 강제 레이아웃이 걸려 — CPU 4배 스로틀 기준 36~45ms — 부팅 최대 long
+    // task 의 최대 단일 항목이었다. RO 콜백은 명세상 «레이아웃 뒤·페인트 앞»
+    // 에 돌므로 같은 rect 를 공짜로 읽고, 변수는 여전히 첫 페인트 전에 앉는다
+    // (화면 결과 동일). RO 가 없는 환경만 종전 동기 실측으로 폴백한다.
     const observer =
       typeof ResizeObserver === "undefined" ? null : new ResizeObserver(apply);
-    observer?.observe(element);
+    if (observer === null) apply();
+    else observer.observe(element);
     window.addEventListener("resize", apply);
     return () => {
       observer?.disconnect();
@@ -3696,6 +3748,21 @@ export function HomePage() {
   );
   const currentTopologyGraphStats =
     topologyGraphStats?.key === visibleTopologyStatsKey ? topologyGraphStats : null;
+  /**
+   * 부팅 long task 절단 (2026-08-19 실측). 이 페이지의 첫 클라이언트 커밋은
+   * 「페이지 크롬 + 지도 위젯 마운트 + 지도 mount 이펙트(강제 레이아웃 포함)」
+   * 를 **한 태스크**로 묶어 CPU 4배 스로틀 기준 324~335ms 를 붙잡고 있었다
+   * (`/ko/topology/` 로드의 단일 최대 long task — 실기기에서도 보이는 멈춤).
+   * 캔버스는 어차피 자기 rAF 첫 프레임 전에는 아무것도 그리지 않으므로,
+   * 마운트를 **한 rAF 뒤로** 미루면 화면에 그려지는 것은 그대로인 채(첫
+   * 페인트는 양쪽 다 빈 캔버스) 그 태스크가 「페이지 커밋」과 「지도 마운트」
+   * 둘로 갈라진다. 리빌 연출은 지도의 첫 rAF 프레임에서 시작하는 계약 그대로다.
+   */
+  const [mapMountTaskReady, setMapMountTaskReady] = useState(false);
+  useEffect(() => {
+    const id = requestAnimationFrame(() => setMapMountTaskReady(true));
+    return () => cancelAnimationFrame(id);
+  }, []);
   const topologyRenderState = resolveTopologyRenderState({
     dataReady: projectsQuery.loaded,
     totalNodes: currentTopologyGraphStats?.nodes ?? visibleTopologyNodeCount,
@@ -5077,7 +5144,7 @@ export function HomePage() {
                     variant="sparse"
                   />
                 ) : null}
-                {topologyRenderState.renderCanvas ? (
+                {topologyRenderState.renderCanvas && mapMountTaskReady ? (
                   // topology-map-v2 (docs/TOPOLOGY-V2-DESIGN.md §4 P2/P3) —
                   // unifies the map tab, graph tab, and project-detail
                   // neighbor map into one engine (§1.2); this call site is

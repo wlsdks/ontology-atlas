@@ -559,21 +559,55 @@ export const CLOUD_MAX_STEP = 9;
 export const CLOUD_FULL_ITERATION_NODE_CAP = 400;
 
 /**
+ * 결합 구름 완화의 **재개 가능한 손잡이** — `step(budgetMs)` 를 반복 호출해
+ * 예산 단위로 진행하고, 완료 프레임에 true 를 받는다.
+ *
+ * ## 왜 스텝퍼인가 (2026-08-19 실측)
+ *
+ * 완화는 O(n²)×반복이라 2,000 노드에서 **한 번에 돌리면 ~350ms** 다. 구름
+ * 배치를 켠 채 지도를 열면 그 전부가 **첫 rAF 프레임 하나**에 실려, 부팅이
+ * 단일 프레임 346~368ms 히치로 시작했다(실측, headless:false). 반복은 순수하게
+ * 순차적이라 상태(좌표 배열 + 반복 카운터)만 들고 있으면 어디서든 끊었다
+ * 이을 수 있고, **끊어 돌려도 부동소수점 연산의 순서가 완전히 같으므로 결과가
+ * 비트 단위로 동일하다** — 같은 볼트는 언제 열어도 같은 구름이라는 결정론
+ * 계약이 그대로 산다. 호출자(use-topology-loop)는 프레임마다 예산만큼 진행
+ * 시키고, 완료 전에는 돔 런타임을 만들지 않는다.
+ */
+export interface CouplingCloudRelaxer {
+  /** budgetMs 동안 반복을 진행한다. 완료(수렴 포함)면 true. */
+  step(budgetMs: number): boolean;
+}
+
+/**
  * 결합 구름 — 관계가 자리를 정하는 3D 배치. `coords` 를 제자리 갱신한다.
  *
  * 힘 셋: ① 모든 쌍 밀어냄(거리 제곱 반비례) ② 관계 스프링(자연 길이로)
  * ③ 원점으로의 아주 약한 되당김. 감쇠는 반복이 진행될수록 세져서(냉각)
  * 마지막에는 자리가 굳는다 — 냉각이 없으면 고정 반복 끝에서 여전히 떨고 있어
  * 같은 입력이 미세하게 다른 그림을 낸다.
+ *
+ * 한 번에 끝까지 돌리는 종전 진입점 — 내부는 위 스텝퍼와 같은 코드라 결과가
+ * 동일하다.
  */
 export function relaxCouplingCloud(
   coords: Map<string, DomeCoord>,
   nodes: readonly DomeInputNode[],
   edges: readonly { sourceId: string; targetId: string }[],
 ): void {
+  const relaxer = createCouplingCloudRelaxer(coords, nodes, edges);
+  while (!relaxer.step(Number.POSITIVE_INFINITY)) {
+    // step(∞) 은 한 호출에 완주한다 — 루프는 형식일 뿐 두 번 돌지 않는다.
+  }
+}
+
+export function createCouplingCloudRelaxer(
+  coords: Map<string, DomeCoord>,
+  nodes: readonly DomeInputNode[],
+  edges: readonly { sourceId: string; targetId: string }[],
+): CouplingCloudRelaxer {
   const ids = nodes.map((n) => n.id).filter((id) => coords.has(id));
   const n = ids.length;
-  if (n < 2) return;
+  if (n < 2) return { step: () => true };
   const index = new Map(ids.map((id, i) => [id, i]));
 
   const px = new Float64Array(n);
@@ -621,7 +655,12 @@ export function relaxCouplingCloud(
    */
   const settleEpsilon = 0.05;
 
-  for (let iter = 0; iter < iterations; iter += 1) {
+  let iter = 0;
+  let settled = false;
+  let done = false;
+
+  /** 원 for-루프의 한 바퀴 — 냉각 계수·수렴 판정까지 그대로다. */
+  const runIteration = (): void => {
     fx.fill(0);
     fy.fill(0);
     fz.fill(0);
@@ -714,8 +753,9 @@ export function relaxCouplingCloud(
       const moved = Math.hypot(mx2, my2, mz2);
       if (moved > maxStep) maxStep = moved;
     }
-    if (maxStep < settleEpsilon) break;
-  }
+    if (maxStep < settleEpsilon) settled = true;
+    iter += 1;
+  };
 
   /*
    * **무게중심을 원점으로 옮긴다** — 회전축이 구름 밖에 있으면 안 된다.
@@ -726,34 +766,78 @@ export function relaxCouplingCloud(
    * 12스텝 드래그에 구름이 화면 우하단으로 이탈). 돔은 애초에 원점 대칭이라
    * 이 문제가 없었고, 그래서 구름을 만들 때 처음으로 드러났다.
    */
-  let mx = 0;
-  let my = 0;
-  let mz = 0;
-  for (let i = 0; i < n; i += 1) {
-    mx += px[i];
-    my += py[i];
-    mz += pz[i];
-  }
-  mx /= n;
-  my /= n;
-  mz /= n;
+  const finalize = (): void => {
+    let mx = 0;
+    let my = 0;
+    let mz = 0;
+    for (let i = 0; i < n; i += 1) {
+      mx += px[i];
+      my += py[i];
+      mz += pz[i];
+    }
+    mx /= n;
+    my /= n;
+    mz /= n;
 
-  // 카메라 핏과 안개 정규화가 돔과 같은 스케일을 보도록 반지름을 맞춘다.
-  let maxR = 0;
-  for (let i = 0; i < n; i += 1) {
-    const r = Math.hypot(px[i] - mx, py[i] - my, pz[i] - mz);
-    if (r > maxR) maxR = r;
-  }
-  const norm = maxR > 1e-6 ? DOME_FIT_RADIUS / maxR : 1;
-  for (let i = 0; i < n; i += 1) {
-    const c = coords.get(ids[i])!;
-    c.px = (px[i] - mx) * norm;
-    c.py = (py[i] - my) * norm;
-    c.pz = (pz[i] - mz) * norm;
-  }
+    // 카메라 핏과 안개 정규화가 돔과 같은 스케일을 보도록 반지름을 맞춘다.
+    let maxR = 0;
+    for (let i = 0; i < n; i += 1) {
+      const r = Math.hypot(px[i] - mx, py[i] - my, pz[i] - mz);
+      if (r > maxR) maxR = r;
+    }
+    const norm = maxR > 1e-6 ? DOME_FIT_RADIUS / maxR : 1;
+    for (let i = 0; i < n; i += 1) {
+      const c = coords.get(ids[i])!;
+      c.px = (px[i] - mx) * norm;
+      c.py = (py[i] - my) * norm;
+      c.pz = (pz[i] - mz) * norm;
+    }
+  };
+
+  return {
+    step(budgetMs: number): boolean {
+      if (done) return true;
+      // 예산 시계 — 반복 하나(쌍 루프 O(n²))가 최소 단위라, 예산을 넘긴 채
+      // 끝난 반복까지는 인정하고 다음 호출에서 이어 간다.
+      const start = performance.now();
+      while (iter < iterations && !settled) {
+        runIteration();
+        if (performance.now() - start >= budgetMs) break;
+      }
+      if (iter >= iterations || settled) {
+        finalize();
+        done = true;
+      }
+      return done;
+    },
+  };
 }
 
-export function buildDomeModel(
+/**
+ * 프레임이 결합 구름 완화 한 슬라이스에 쓰는 예산(ms).
+ *
+ * 왜 28 인가: long task 문턱(50ms) 아래에 여유를 두면서, 종전 동기 히치
+ * (2,000 노드 ~350ms)와 총 소요가 비슷하게 유지되는 값이다 — 12 슬라이스
+ * ×28ms ≈ 340ms 계산에 프레임 경계 양보가 몇 ms 씩 더해져, 조립 시작 시점은
+ * 종전과 수십 ms 안쪽으로 같다(연출 타이밍 보존). 더 줄이면 완화가 프레임
+ * 수십 개에 걸쳐 조립 시작이 눈에 띄게 밀리고, 더 키우면 도로 히치가 된다.
+ */
+export const DOME_BUILD_SLICE_MS = 28;
+
+export interface DomeModelBuild {
+  /** 완성 전에는 쓰면 안 되는 모델 — `step` 이 true 를 낸 뒤에만 유효하다. */
+  model: DomeModel;
+  /** null 이면 이미 완성. 아니면 완료 프레임까지 예산 단위로 호출한다. */
+  step: ((budgetMs: number) => boolean) | null;
+}
+
+/**
+ * `buildDomeModel` 의 **단계형** 진입점 — 기하 씨앗(소유 배치)은 즉시 짓고,
+ * 결합 구름의 O(n²) 완화만 `step` 으로 넘긴다. 왜 필요한가:
+ * `CouplingCloudRelaxer` 독블록(부팅 단일 프레임 346~368ms 히치 실측).
+ * 슬라이스로 돌려도 결과는 비트 단위로 동일하다.
+ */
+export function beginDomeModelBuild(
   nodes: readonly DomeInputNode[],
   options?: {
     /** 방위를 무엇이 정하나 — 위 `DomeArrangement` 독블록. 생략 시 `ownership`. */
@@ -761,7 +845,7 @@ export function buildDomeModel(
     /** `coupling` 일 때 각도를 정하는 관계들. 생략하면 소유 배치와 같아진다. */
     edges?: readonly { sourceId: string; targetId: string }[];
   },
-): DomeModel {
+): DomeModelBuild {
   let cx = 0;
   let cy = 0;
   for (const n of nodes) {
@@ -861,11 +945,36 @@ export function buildDomeModel(
    * 처음부터 임의 각으로 시작하지 않는 이유는 결정론과 공간 기억이다
    * (`DomeArrangement` 독블록).
    */
+  const model: DomeModel = {
+    centerX: cx,
+    centerY: cy,
+    unit,
+    coords,
+    arrangement: options?.arrangement ?? "ownership",
+  };
   if (options?.arrangement === "coupling" && options.edges && options.edges.length > 0) {
-    relaxCouplingCloud(coords, nodes, options.edges);
+    const relaxer = createCouplingCloudRelaxer(coords, nodes, options.edges);
+    return { model, step: (budgetMs: number) => relaxer.step(budgetMs) };
   }
+  return { model, step: null };
+}
 
-  return { centerX: cx, centerY: cy, unit, coords, arrangement: options?.arrangement ?? "ownership" };
+export function buildDomeModel(
+  nodes: readonly DomeInputNode[],
+  options?: {
+    /** 방위를 무엇이 정하나 — 위 `DomeArrangement` 독블록. 생략 시 `ownership`. */
+    arrangement?: DomeArrangement;
+    /** `coupling` 일 때 각도를 정하는 관계들. 생략하면 소유 배치와 같아진다. */
+    edges?: readonly { sourceId: string; targetId: string }[];
+  },
+): DomeModel {
+  const build = beginDomeModelBuild(nodes, options);
+  if (build.step !== null) {
+    while (!build.step(Number.POSITIVE_INFINITY)) {
+      // step(∞) 은 한 호출에 완주한다 — 위 relaxCouplingCloud 와 같은 형식.
+    }
+  }
+  return build.model;
 }
 
 /**

@@ -181,6 +181,17 @@ export interface StarDustDrawState {
   radialParallax?: number;
 }
 
+/*
+ * perf 2026-08-19 — 점별 fillStyle 문자열 캐시. 알파는 점마다 다르지만
+ * (`point.alpha * farT`) **같은 점 배열·같은 farT** 인 동안은 프레임마다
+ * 같은 문자열을 다시 만들고 있었다 — 뷰포트 한 장에 수백 점 × 60fps 의
+ * 문자열 할당·파싱이다. 배열 참조나 farT 가 바뀌면 통째로 다시 만든다
+ * (문자열 값이 같으니 픽셀도 같다).
+ */
+let dustStyleSourcePoints: readonly DustPoint[] | null = null;
+let dustStyleFarT = -1;
+let dustStyles: string[] = [];
+
 /** Draws the static dust texture, fading in with `farT` (never fully at circuit altitude). */
 export function drawStarDust(ctx: CanvasRenderingContext2D, state: StarDustDrawState): void {
   if (state.farT <= 0.02) return;
@@ -193,7 +204,13 @@ export function drawStarDust(ctx: CanvasRenderingContext2D, state: StarDustDrawS
   const h = ctx.canvas.height / devicePixelRatio;
   const rp = state.radialParallax ?? 0;
   const maxShift = Math.min(w, h) * 0.03;
-  points.forEach((point) => {
+  if (dustStyleSourcePoints !== points || dustStyleFarT !== farT) {
+    dustStyleSourcePoints = points;
+    dustStyleFarT = farT;
+    dustStyles = points.map((point) => `rgba(236,236,240,${point.alpha * farT})`);
+  }
+  for (let i = 0; i < points.length; i += 1) {
+    const point = points[i];
     let px = w > 0 ? (((point.x + ox * point.depth) % w) + w) % w : point.x;
     let py = h > 0 ? (((point.y + oy * point.depth) % h) + h) % h : point.y;
     if (rp > 0) {
@@ -205,10 +222,10 @@ export function drawStarDust(ctx: CanvasRenderingContext2D, state: StarDustDrawS
       py += (dy / d) * shift;
     }
     ctx.beginPath();
-    ctx.fillStyle = `rgba(236,236,240,${point.alpha * farT})`;
+    ctx.fillStyle = dustStyles[i];
     ctx.arc(px * devicePixelRatio, py * devicePixelRatio, point.r * devicePixelRatio, 0, Math.PI * 2);
     ctx.fill();
-  });
+  }
 }
 
 export interface DiffractionSpikeDrawState {

@@ -3,9 +3,11 @@ import { describe, expect, it } from "vitest";
 import {
   isCameraUnsettled,
   isCanvasActive,
+  isDomeSpinAnimating,
   isEgoTailAnimating,
   shouldSkipFrame,
   type CanvasActivityFlags,
+  type DomeSpinInput,
   type EgoTailActivityInput,
 } from "./idle-gate";
 import { stepFocusRamp } from "./focus-state";
@@ -198,5 +200,53 @@ describe("isEgoTailAnimating — 앰비언트 휴면이 세 갈래 전부에 걸
         hasContainsEdges: false,
       }),
     ).toBe(false);
+  });
+});
+
+/**
+ * 3D 돔 자율 회전 — 앰비언트 모션 계약.
+ *
+ * 이 블록이 존재하는 이유는 2026-08-19 실측이다. 자율 회전만 `ambient-sleep`
+ * 계약 밖에 있어서 3D 는 무입력 45초가 지나도 잠들지 않았고, 2,000 노드에서
+ * 초당 520ms(코어 절반)를 영구히 태웠다 — 같은 상태의 2D 는 3ms/s.
+ * `isEgoTailAnimating` 때와 같은 실패라, 같은 자리에 같은 모양의 게이트를 둔다.
+ */
+describe("isDomeSpinAnimating", () => {
+  const SPINNING: DomeSpinInput = {
+    domeOn: true,
+    reducedMotion: false,
+    ambientAsleep: false,
+    spinArmed: true,
+    pointerOverCanvas: false,
+    assembled: true,
+  };
+
+  it("무장 + 조립 완료 + 각성 상태에서는 돈다", () => {
+    expect(isDomeSpinAnimating(SPINNING)).toBe(true);
+  });
+
+  /** ★ 이 한 줄이 이 파일에서 가장 비싼 회귀를 막는다. */
+  it("앰비언트 휴면에 들면 자율 회전은 활동이 아니다", () => {
+    expect(isDomeSpinAnimating({ ...SPINNING, ambientAsleep: true })).toBe(false);
+  });
+
+  it("3D 가 꺼져 있으면 돌지 않는다", () => {
+    expect(isDomeSpinAnimating({ ...SPINNING, domeOn: false })).toBe(false);
+  });
+
+  it("reduced-motion 이면 돌지 않는다", () => {
+    expect(isDomeSpinAnimating({ ...SPINNING, reducedMotion: true })).toBe(false);
+  });
+
+  it("개입으로 무장이 내려가면 돌지 않는다", () => {
+    expect(isDomeSpinAnimating({ ...SPINNING, spinArmed: false })).toBe(false);
+  });
+
+  it("커서가 캔버스 위면 정지한다 — 조준한 노드가 밑에서 미끄러지지 않게", () => {
+    expect(isDomeSpinAnimating({ ...SPINNING, pointerOverCanvas: true })).toBe(false);
+  });
+
+  it("조립 램프가 덜 찼으면 자율 회전은 아직 아니다", () => {
+    expect(isDomeSpinAnimating({ ...SPINNING, assembled: false })).toBe(false);
   });
 });
