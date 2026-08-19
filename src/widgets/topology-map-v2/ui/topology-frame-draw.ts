@@ -76,7 +76,7 @@ import type { ClusterChip } from "../model/density-gate";
 import { drawDiffractionSpike, drawRealmCosmos, drawStarDust, type DustPoint } from "../render/starfield";
 import { isEdgeCulled, isNodeCulled, isPassthroughEdge } from "../render/viewport-cull";
 import { draw as tracesDraw } from "../render/traces";
-import { drawPulses, edgePairKey, selectAmbientDependsComets, selectEgoContainsComets, type Pulse } from "../render/edge-fireflies";
+import { drawPulses, edgePairMeta, selectAmbientDependsComets, selectEgoContainsComets, type Pulse } from "../render/edge-fireflies";
 import type { TopologyV2Tokens } from "../tokens/read-topology-v2-tokens";
 import { worldToScreen } from "./topology-camera-math";
 
@@ -127,9 +127,8 @@ const BACKGROUND_DIM_WHEN_EXPANDED = 0.42;
 const EMPTY_NEIGHBOR_SET: ReadonlySet<string> = new Set();
 /** Design Guardian 처방 E — 포커스 없음(또는 인시던트 contains 0개)일 때 재사용하는 빈 캡 Set. */
 const EMPTY_EGO_CONTAINS_COMETS: ReadonlySet<string> = new Set();
-// perf sweep 2026-07 — reused frame-scratch Maps, see their `.clear()` call
+// perf sweep 2026-07 — reused frame-scratch Map, see its `.clear()` call
 // site in `drawTopologyFrame` below for why this is safe.
-const tierAlphaByIdReused = new Map<string, number>();
 const effectiveAlphaByIdReused = new Map<string, number>();
 
 /*
@@ -141,12 +140,86 @@ const effectiveAlphaByIdReused = new Map<string, number>();
  * 120Hz 에서 그것은 초당 3만 5천 개고, 그 청구서는 프레임 시간이 아니라
  * **GC 가 끼어드는 순간의 튐**으로 온다.
  *
- * 이 저장소가 이미 쓰는 관용구(`tierAlphaByIdReused`)와 같다 — 드로우는 단일
+ * 이 저장소가 이미 쓰는 관용구(`effectiveAlphaByIdReused`)와 같다 — 드로우는 단일
  * rAF 루프에서만 동기로 도므로 모듈 스코프 재사용이 안전하다.
  */
 const domeEdgeOrderReused: WorldEdge[] = [];
+/** 깊이 정렬 보조 — 프레임마다 재사용해 할당 0 (위 `edgeDrawOrder` 블록 참고). */
+const domeEdgeDepthReused: number[] = [];
+const domeEdgeIndexReused: number[] = [];
 const domeNodeOrderReused: WorldNode[] = [];
 const domeRingScreenReused: { a: number; points: { x: number; y: number; u: number }[] }[] = [];
+/**
+ * perf 2026-08-19 — 돔 전달값(DomeNodeFrame) **프레임당 1회 조회** 버퍼.
+ *
+ * 종전에는 같은 노드의 프레임을 알파 루프·노드 정렬 비교자(O(n log n)!)·
+ * 노드 드로우·라벨 패스가 각자 `domeFrame.get(id)`(문자열 해시 조회)로
+ * 다시 꺼냈다 — synth=2000 회전 프로파일에서 `domeFrameFor` self 2.6%.
+ * 엣지도 깊이 계산·드로우·투영이 끝점당 2~3회씩 다시 꺼냈다. 여기 원본
+ * 인덱스 기준으로 한 번만 담아 두고 전부 이 배열을 읽는다. 값이 같은
+ * 객체이므로 픽셀은 같고, 노드 정렬은 엣지 정렬과 같은 인덱스-정렬
+ * 관용구라 순서도 한 자리도 다르지 않다(안정 정렬 + 동일 비교 기준).
+ */
+const domeNodeFrameReused: DomeNodeFrame[] = [];
+const domeNodeDepthReused: number[] = [];
+const domeNodeIndexReused: number[] = [];
+const domeEdgeFrameAReused: DomeNodeFrame[] = [];
+const domeEdgeFrameBReused: DomeNodeFrame[] = [];
+/** 노드 패스가 실제 그린 반지름(E-4) — 프레임마다 `.clear()` 로 재사용. */
+const drawnScreenRadiusByIdReused = new Map<string, number>();
+/** 앰비언트 depends 코멧 캡 입력 — 매 프레임 `filter` 가 만들던 새 배열의 재사용판. */
+const ambientDependsInputReused: WorldEdge[] = [];
+/**
+ * 엣지 끝점 투영 스크래치 — `projectEdgePoints` 가 매 엣지 4개(점 3 + 래퍼 1)
+ * 만들던 임시 객체의 재사용판. 드로우는 단일 rAF 루프에서 동기로만 돌고
+ * 반환값은 다음 엣지 전에 소비되므로 안전하다(`effectiveAlphaByIdReused` 근거).
+ */
+const edgePointsScratch = {
+  a: { x: 0, y: 0 },
+  b: { x: 0, y: 0 },
+  control: { x: 0, y: 0 },
+};
+/** 노드·라벨 패스의 스크린 좌표 스크래치 — 반복당 1개씩 태어나던 점 객체의 재사용판. */
+const nodeScreenScratch = { x: 0, y: 0 };
+const labelScreenScratch = { x: 0, y: 0 };
+/*
+ * perf 2026-08-19 — 엣지 헤일로 인자의 재사용판. `tracesDraw` 는 동기적으로
+ * 읽고 보관하지 않으므로(순수 드로우) 같은 객체를 필드만 바꿔 재사용해도
+ * 값 — 그러니까 픽셀 — 은 같다. 드로우 호출의 토큰 인자도 프레임 안에서
+ * 불변이라 프레임당 1개로 족하다(`traceTokensFrame`/`nodeShapeTokensFrame`).
+ */
+const edgeHaloScratch = { color: "", px: 0, alpha: 0 };
+
+/** `lerpColorHex(fill, sheenTint, blend)` 캐시 — fill 별로 값이 불변(토큰이 바뀌면 통째 무효화). */
+const sheenTopCache = new Map<string, string>();
+let sheenTopCacheTint = "";
+let sheenTopCacheBlend = -1;
+/** kind 2패스 순서 — 프레임마다 배열 리터럴을 새로 만들지 않는다. */
+const EDGE_KIND_PASSES = ["contains", "depends"] as const;
+/**
+ * perf 2026-08-19 — 엣지 알파 사전 계산 버퍼(원본 엣지 인덱스 기준).
+ * 종전엔 앰비언트 코멧 필터와 드로우 루프가 각각 엣지당 `clusteredIds.has`
+ * 2회 + `effectiveAlphaById.get` 2회를 반복했다. 한 패스에서 계산해 두 소비처가
+ * 같은 값을 읽는다. -1 = 밀도 게이트로 접힌 엣지(그리지 않음) 표식.
+ */
+const edgeAlphaReused: number[] = [];
+/**
+ * perf 2026-08-19 — 무포커스 프레임의 노드 시각(NodeVisual) 캐시.
+ *
+ * 회전/유휴 프레임(포커스·페어·렌즈·호버 리플 없음)에서 `resolveNodeVisual`
+ * 은 (kind, fresh, stale) 만의 함수인데도 노드마다 매 프레임 freshness 객체 +
+ * NodeVisual 객체를 새로 만들었다(2,000 노드 × 60fps). 같은 입력 조합은 같은
+ * 객체를 재사용한다 — 값이 같으니 픽셀도 같다. 토큰/모션 설정이 바뀌면 통째로
+ * 무효화하고, 캐시 대상이 아닌 프레임(포커스 등)은 종전 경로 그대로다.
+ * 캐시된 객체는 어떤 소비처도 변형하지 않는다(트레일 잉크 변형은 렌즈 활성
+ * 프레임에만 있고, 그 프레임은 캐시를 안 탄다).
+ */
+const nodeVisualCache: (NodeVisual | undefined)[] = new Array(16);
+let nodeVisualCacheTokens: TopologyV2Tokens | null = null;
+let nodeVisualCacheReducedMotion: boolean | null = null;
+const KIND_CACHE_INDEX: Record<WorldNode["kind"], number> = { project: 0, domain: 1, capability: 2, element: 3 };
+/** 3D 전달값의 0 값 — 돔이 꺼진 노드·2D 경로가 공유(불변). */
+const ZERO_DOME_FRAME: DomeNodeFrame = { dx: 0, dy: 0, s: 1, a: 0, u: 0 };
 
 /**
  * **이번 프레임에 실제로 그려진 노드 알파** — 히트테스트의 단일 출처.
@@ -731,9 +804,18 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
    * 앵커가 전부 이 맵을 지나므로 한 프레임의 모든 마크가 **하나의 자세**를
    * 공유한다 — 히트테스트(`renderOffsetForNode`)·계기도 같은 맵을 읽는다.
    */
-  const ZERO_DOME_FRAME: DomeNodeFrame = { dx: 0, dy: 0, s: 1, a: 0, u: 0 };
   const domeFrameFor = (nodeId: string): DomeNodeFrame =>
     (domeOn ? domeFrame.get(nodeId) : undefined) ?? ZERO_DOME_FRAME;
+  // perf 2026-08-19 — 노드 프레임을 원본 인덱스 기준으로 한 번만 조회해 두고,
+  // 이후의 알파 루프·노드 정렬·노드 드로우·라벨 패스가 전부 이 배열을 읽는다
+  // (`domeNodeFrameReused` 독블록). 값은 `domeFrameFor` 와 동일한 객체다.
+  if (domeOn) {
+    domeNodeFrameReused.length = 0;
+    for (let i = 0; i < world.nodes.length; i += 1) {
+      domeNodeFrameReused.push(domeFrame.get(world.nodes[i].id) ?? ZERO_DOME_FRAME);
+    }
+  }
+  const nodeFrameAt = (index: number): DomeNodeFrame => (domeOn ? domeNodeFrameReused[index] : ZERO_DOME_FRAME);
 
   // Where world (0,0) currently lands on screen — the blueprint grid rides
   // this so the background belongs to the world, not the display (B3).
@@ -809,27 +891,51 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
   }
 
   const project = (x: number, y: number) => worldToScreen(camera, viewportWidth, viewportHeight, x, y);
+  // perf 2026-08-19 — 핫 패스(엣지·노드·라벨)의 투영은 `worldToScreen` 과
+  // **같은 식**을 인라인으로 계산한다: `(w - cam) * scale + viewport/2`.
+  // 함수 호출 + 반환 객체 할당(프레임당 수천 개)을 없앨 뿐 좌표는 동일하다.
+  // 드로우는 동기라 카메라 값이 프레임 중간에 변하지 않는다.
+  const camX = camera.x.value;
+  const camY = camera.y.value;
+  const camScale = camera.scale.value;
+  const halfW = viewportWidth / 2;
+  const halfH = viewportHeight / 2;
   /**
    * 엣지 끝점·제어점의 스크린 투영 — 3D 보기가 켜지면 **각 끝점이 자기 끝
    * 노드의 kind 깊이 오프셋**을 따라간다(끝 노드 디스크와 같은 층). 제어점은
    * 두 끝 오프셋의 평균 — 커브가 두 층 사이를 잇는다. 꺼져 있으면 오프셋 0
    * (기존 경로와 동일). 엣지 드로우와 호버 펄스가 같은 함수를 쓴다.
+   *
+   * perf 2026-08-19 — 반환값은 `edgePointsScratch` 재사용 객체다(다음 호출
+   * 전에 소비 완료). 엣지 드로우 루프는 깊이 정렬 때 이미 꺼낸 끝점 프레임을
+   * `offA`/`offB` 로 넘겨 Map 재조회를 없앤다(펄스 리졸버는 생략 → 자체 조회).
    */
-  const projectEdgePoints = (edge: {
-    sourceId: string;
-    targetId: string;
-    ax: number;
-    ay: number;
-    bx: number;
-    by: number;
-    controlX: number;
-    controlY: number;
-  }): { a: { x: number; y: number }; b: { x: number; y: number }; control: { x: number; y: number } } => {
+  const projectEdgePoints = (
+    edge: {
+      sourceId: string;
+      targetId: string;
+      ax: number;
+      ay: number;
+      bx: number;
+      by: number;
+      controlX: number;
+      controlY: number;
+    },
+    knownOffA?: DomeNodeFrame,
+    knownOffB?: DomeNodeFrame,
+  ): { a: { x: number; y: number }; b: { x: number; y: number }; control: { x: number; y: number } } => {
+    const out = edgePointsScratch;
     if (!domeOn) {
-      return { a: project(edge.ax, edge.ay), b: project(edge.bx, edge.by), control: project(edge.controlX, edge.controlY) };
+      out.a.x = (edge.ax - camX) * camScale + halfW;
+      out.a.y = (edge.ay - camY) * camScale + halfH;
+      out.b.x = (edge.bx - camX) * camScale + halfW;
+      out.b.y = (edge.by - camY) * camScale + halfH;
+      out.control.x = (edge.controlX - camX) * camScale + halfW;
+      out.control.y = (edge.controlY - camY) * camScale + halfH;
+      return out;
     }
-    const offA = domeFrameFor(edge.sourceId);
-    const offB = domeFrameFor(edge.targetId);
+    const offA = knownOffA ?? domeFrameFor(edge.sourceId);
+    const offB = knownOffB ?? domeFrameFor(edge.targetId);
     /*
      * 제어점 — 돔에서는 «두 끝점 오프셋의 평균»이 아니라 **자오선 제어점**이다
      * (`model/dome-view.ts` 의 `DOME_EDGE_BOW`). 평균은 곧 현(chord)이라 선이
@@ -844,11 +950,13 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
     const aMin = Math.min(offA.a, offB.a);
     const controlX = meridian === null ? flatControlX : flatControlX + (meridian.wx - flatControlX) * aMin;
     const controlY = meridian === null ? flatControlY : flatControlY + (meridian.wy - flatControlY) * aMin;
-    return {
-      a: project(edge.ax + offA.dx, edge.ay + offA.dy),
-      b: project(edge.bx + offB.dx, edge.by + offB.dy),
-      control: project(controlX, controlY),
-    };
+    out.a.x = (edge.ax + offA.dx - camX) * camScale + halfW;
+    out.a.y = (edge.ay + offA.dy - camY) * camScale + halfH;
+    out.b.x = (edge.bx + offB.dx - camX) * camScale + halfW;
+    out.b.y = (edge.by + offB.dy - camY) * camScale + halfH;
+    out.control.x = (controlX - camX) * camScale + halfW;
+    out.control.y = (controlY - camY) * camScale + halfH;
+    return out;
   };
   const neighborsOfFocused = focusedNodeId ? world.neighborMap.get(focusedNodeId) ?? EMPTY_NEIGHBOR_SET : EMPTY_NEIGHBOR_SET;
   // Click-focus color signature — the ego classification for the COLOR ramp
@@ -860,6 +968,50 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
   const colorNeighbors = colorFocusedNodeId
     ? world.neighborMap.get(colorFocusedNodeId) ?? EMPTY_NEIGHBOR_SET
     : EMPTY_NEIGHBOR_SET;
+  // perf 2026-08-19 — 포커스·페어·렌즈가 전부 없는 프레임(회전·유휴의 통상
+  // 상태)은 모든 노드의 ego 분류가 "normal" 로 정해져 있다(`resolveNodeEgoState`
+  // 첫 분기). 노드·라벨 루프가 노드마다 분류 함수를 다시 부르지 않게 한 번만
+  // 판정해 둔다 — 값이 같으므로 픽셀도 같다.
+  const egoAllNormal = focusedNodeId === null && selectedEdge === null && trailLensKeepIds === null;
+  const colorAllNormal = colorFocusedNodeId === null && colorSelectedEdge === null && trailLensKeepIds === null;
+  // perf 2026-08-19 — 무포커스 NodeVisual 캐시 무효화(토큰/모션 설정 변경 시).
+  if (nodeVisualCacheTokens !== tokens || nodeVisualCacheReducedMotion !== reducedMotion) {
+    nodeVisualCache.fill(undefined);
+    nodeVisualCacheTokens = tokens;
+    nodeVisualCacheReducedMotion = reducedMotion;
+  }
+  // perf 2026-08-19 — 드로우 호출의 토큰 인자(프레임 안 불변)를 프레임당 1개로.
+  const traceTokensFrame = {
+    edgeContains: tokens.edgeContains,
+    edgeContainsL0: tokens.edgeContainsL0,
+    edgeContainsL2: tokens.edgeContainsL2,
+    edgeDepends: tokens.edgeDepends,
+    edgeDim: tokens.edgeDim,
+    indigo: tokens.indigo,
+    indigoBright: tokens.indigoBright,
+    edgeSelected: tokens.edgeSelected,
+    // 트레일 잉크는 토큰이 아니라 **발자국이 쓰는 그 색 그대로**다 —
+    // 사용자가 설정에서 고른 노랑/인디고 2택이 자국과 선에 동시에 적용돼야
+    // 둘이 같은 사실의 두 표기로 읽힌다.
+    edgeTrail: footprintStepColor,
+  };
+  const nodeShapeTokensFrame = {
+    amberHub: tokens.amberHub,
+    recentChange: tokens.recentChange,
+    numeralShadow: tokens.numeralShadow,
+    numeralFace: tokens.numeralFace,
+    holeFill: tokens.nodeHoleFill,
+    projectHairlineInner: tokens.projectHairlineInner,
+    projectPinTick: tokens.projectPinTick,
+    selectionIndigo: tokens.selectionRingIndigo,
+    selectionHairline: tokens.selectionRingHairline,
+    reviewRing: tokens.reviewRing,
+    neighborRing: tokens.edgeSelected,
+    hoverRing: tokens.hoverRing,
+    hoverShimmerSeg: tokens.hoverShimmerSeg,
+    hoverShimmerPeriodMs: tokens.hoverShimmerPeriodMs,
+    hoverShimmerColor: tokens.indigoBright,
+  };
 
   // Semantic-zoom tier gating (`model/tier-visibility.ts`): at the overview
   // entry only project + domain + hub draw; capabilities/elements (and any edge
@@ -871,19 +1023,20 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
   // (e.g. a capability at overview zoom) still becomes visible once it's the
   // focused node or a 1-hop neighbor, via `effectiveNodeAlpha` (max of the
   // gate's own alpha and the ego-reveal ramp). `effectiveAlphaById` is what
-  // edges/nodes/labels actually draw with; `tierAlphaById` stays the raw gate
-  // value (still needed as `effectiveNodeAlpha`'s first argument).
+  // edges/nodes/labels actually draw with; the raw gate value (`tierAlpha`,
+  // still `effectiveNodeAlpha`'s first argument) stays a loop local — the old
+  // `tierAlphaById` map had no reader left, so its per-node `.set` was a dead
+  // store removed in the 2026-08-19 perf pass.
   // perf sweep 2026-07 — reused across frames (`.clear()` instead of `new
   // Map()`) to cut two allocations + hashtable growth per frame off the
   // paint hot path. Safe because `drawTopologyFrame` only ever runs
   // synchronously from the single active rAF loop (`use-topology-loop.ts`) —
   // there is no concurrent/re-entrant call that could see stale entries from
   // a previous frame between the `.clear()` below and this frame's own fill.
-  tierAlphaByIdReused.clear();
   effectiveAlphaByIdReused.clear();
-  const tierAlphaById = tierAlphaByIdReused;
   const effectiveAlphaById = effectiveAlphaByIdReused;
-  for (const node of world.nodes) {
+  for (let nodeIndex = 0; nodeIndex < world.nodes.length; nodeIndex += 1) {
+    const node = world.nodes[nodeIndex];
     // **접힌 노드는 알파를 가질 이유가 없다** — 칩 하나로 대체돼 이 프레임에
     // 그려지지 않는다(실측 synth=3000: 3000 중 2820개). 소비처 넷이 전부 이
     // 조회 «앞에서» 접힘을 이미 거른다: 엣지 루프 둘은 양 끝이 접히면 continue,
@@ -893,7 +1046,6 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
     if (clusteredIds.has(node.id)) continue;
     const tierKind = realmTierKinds?.get(node.id) ?? node.kind;
     const tierAlpha = nodeTierAlpha(tierKind, node.isHub, zoomRatio, tierReveal);
-    tierAlphaById.set(node.id, tierAlpha);
     const isPairMember =
       focusedNodeId === null &&
       selectedEdge !== null &&
@@ -954,7 +1106,7 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
     // 따른 어두움은 여기가 아니라 노드/엣지의 안개(fog)가 나른다 — 이 맵은
     // 히트 판정의 단일 출처라 안개를 섞으면 먼 노드가 안 잡히게 된다.
     if (domeOn) {
-      const domeA = domeFrameFor(node.id).a;
+      const domeA = domeNodeFrameReused[nodeIndex].a;
       if (domeA > 0) outAlpha = outAlpha + (1 - outAlpha) * domeA;
     }
     effectiveAlphaById.set(node.id, outAlpha);
@@ -1013,15 +1165,27 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
   // 입력은 "이 프레임에 실제로 그려질 depends 엣지" 다 — 드로우 루프와 같은
   // 두 게이트(밀도 게이트 · 티어 알파)를 통과한 것만 캡 슬롯을 차지해야,
   // 안 보이는 엣지가 슬롯을 물고 보이는 엣지가 코멧을 잃는 일이 없다.
-  const ambientDependsComets = selectAmbientDependsComets(
-    world.edges.filter(
-      (edge) =>
-        edge.kind === "depends" &&
-        !clusteredIds.has(edge.sourceId) &&
-        !clusteredIds.has(edge.targetId) &&
-        edgeTierAlpha(effectiveAlphaById.get(edge.sourceId) ?? 1, effectiveAlphaById.get(edge.targetId) ?? 1) > 0.02,
-    ),
-  );
+  // perf 2026-08-19 — 엣지 알파를 원본 인덱스 기준으로 한 번만 계산한다
+  // (`edgeAlphaReused` 독블록). 아래 앰비언트 코멧 필터와 엣지 드로우 루프가
+  // 같은 값을 읽는다 — 술어·값이 종전과 동일하므로 결과도 동일하다.
+  edgeAlphaReused.length = 0;
+  for (let i = 0; i < world.edges.length; i += 1) {
+    const edge = world.edges[i];
+    edgeAlphaReused.push(
+      clusteredIds.has(edge.sourceId) || clusteredIds.has(edge.targetId)
+        ? -1
+        : edgeTierAlpha(effectiveAlphaById.get(edge.sourceId) ?? 1, effectiveAlphaById.get(edge.targetId) ?? 1),
+    );
+  }
+  // `filter` 가 매 프레임 만들던 배열을 재사용 버퍼로 대체(원소·순서 동일).
+  ambientDependsInputReused.length = 0;
+  for (let i = 0; i < world.edges.length; i += 1) {
+    const edge = world.edges[i];
+    if (edge.kind === "depends" && edgeAlphaReused[i] > 0.02) {
+      ambientDependsInputReused.push(edge);
+    }
+  }
+  const ambientDependsComets = selectAmbientDependsComets(ambientDependsInputReused);
 
   /*
    * ── 3D 화가 정렬 + 깊이 헤일로 ────────────────────────────────────────
@@ -1040,16 +1204,40 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
    * 잘린 자리가 배경보다 밝거나 어두운 띠로 남는다.
    */
   const domeHaloColor = domeOn ? lerpColorHex(tokens.canvasBgNear, tokens.canvasBgFar, farT) : "";
-  const domeEdgeDepth = (edge: { sourceId: string; targetId: string }): number => {
-    const fA = domeFrameFor(edge.sourceId);
-    const fB = domeFrameFor(edge.targetId);
-    return (fA.u + fB.u) / 2;
-  };
+  /*
+   * 깊이 정렬 — **깊이를 비교자 «안» 에서 재지 않는다** (2026-08-19 실측).
+   *
+   * 종전 비교자는 호출마다 `domeFrameFor` 를 두 번 불렀다. 정렬 비교는
+   * O(n log n) 번 일어나므로 엣지 1,914개(synth=2000 의 3D) 기준 프레임당
+   * 약 42,000회의 Map 조회가 됐고, 60fps 로 초당 2.5M 회다. CPU 프로파일에서
+   * `domeFrameFor` 단독 self time 이 3D 유휴의 **7.2%** 로 잡힌 것이 이것이다.
+   *
+   * 깊이는 엣지당 «한 번»만 재고(2n 조회), 정렬은 인덱스 배열로 돌린다 —
+   * 비교자는 배열 읽기 둘뿐이다. 인덱스가 오름차순으로 들어가고 V8 정렬이
+   * 안정적이므로 **결과 순서는 종전과 한 자리도 다르지 않다**.
+   */
   let edgeDrawOrder: readonly WorldEdge[] = world.edges;
   if (domeOn) {
+    const edges = world.edges;
+    domeEdgeDepthReused.length = 0;
+    domeEdgeIndexReused.length = 0;
+    // perf 2026-08-19 — 끝점 프레임도 여기서 한 번만 꺼내 담는다(원본 인덱스
+    // 기준). 드로우 루프의 안개 계산과 `projectEdgePoints` 가 재조회하지 않고
+    // 이 두 배열을 읽는다 — 같은 객체라 값도 픽셀도 같다.
+    domeEdgeFrameAReused.length = 0;
+    domeEdgeFrameBReused.length = 0;
+    for (let i = 0; i < edges.length; i += 1) {
+      const edge = edges[i];
+      const fA = domeFrameFor(edge.sourceId);
+      const fB = domeFrameFor(edge.targetId);
+      domeEdgeFrameAReused.push(fA);
+      domeEdgeFrameBReused.push(fB);
+      domeEdgeDepthReused.push((fA.u + fB.u) / 2);
+      domeEdgeIndexReused.push(i);
+    }
+    domeEdgeIndexReused.sort((x, y) => domeEdgeDepthReused[y] - domeEdgeDepthReused[x]);
     domeEdgeOrderReused.length = 0;
-    for (const edge of world.edges) domeEdgeOrderReused.push(edge);
-    domeEdgeOrderReused.sort((x, y) => domeEdgeDepth(y) - domeEdgeDepth(x));
+    for (let i = 0; i < domeEdgeIndexReused.length; i += 1) domeEdgeOrderReused.push(edges[domeEdgeIndexReused[i]]);
     edgeDrawOrder = domeEdgeOrderReused;
   }
 
@@ -1105,14 +1293,20 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
     );
   }
 
-  for (const kind of ["contains", "depends"] as const) {
-    for (const edge of edgeDrawOrder) {
+  for (const kind of EDGE_KIND_PASSES) {
+    for (let drawPos = 0; drawPos < edgeDrawOrder.length; drawPos += 1) {
+      const edge = edgeDrawOrder[drawPos];
       if (edge.kind !== kind) continue;
-      // 밀도 게이트: 접힌 부모 서브트리에 닿는 엣지는 그리지 않는다.
-      if (clusteredIds.has(edge.sourceId) || clusteredIds.has(edge.targetId)) continue;
-      const edgeAlpha = edgeTierAlpha(effectiveAlphaById.get(edge.sourceId) ?? 1, effectiveAlphaById.get(edge.targetId) ?? 1);
+      // perf 2026-08-19 — 원본 인덱스(돔이면 정렬 인덱스 역참조, 2D 는 그대로)
+      // 로 사전 계산된 알파를 읽는다. -1 = 밀도 게이트 접힘(종전 continue 와
+      // 동일), ≤0.02 = 티어 반려(동일).
+      const edgeOrigIndex = domeOn ? domeEdgeIndexReused[drawPos] : drawPos;
+      const edgeAlpha = edgeAlphaReused[edgeOrigIndex];
       if (edgeAlpha <= 0.02) continue;
-      const { a, b, control } = projectEdgePoints(edge);
+      // 끝점 프레임은 깊이 정렬 때 담아 둔 것을 원본 인덱스로 되찾는다.
+      const edgeFrameA = domeOn ? domeEdgeFrameAReused[edgeOrigIndex] : ZERO_DOME_FRAME;
+      const edgeFrameB = domeOn ? domeEdgeFrameBReused[edgeOrigIndex] : ZERO_DOME_FRAME;
+      const { a, b, control } = projectEdgePoints(edge, edgeFrameA, edgeFrameB);
       // 3D — 깊이 안개·헤어라인 감쇠(히어로의 fog·lw 그대로). 읽어야 할 때
       // (호버·선택·ego)는 아래에서 면제돼 도로 밝아진다.
       let domeEdgeFog = 1;
@@ -1121,11 +1315,9 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
       // 획이 «툭» 생기지 않는다. 알파는 아래에서 이 엣지의 최종 알파를 안 뒤에.
       let domeHaloWidthPx = 0;
       if (domeOn) {
-        const fA = domeFrameFor(edge.sourceId);
-        const fB = domeFrameFor(edge.targetId);
-        const aMin = Math.min(fA.a, fB.a);
+        const aMin = Math.min(edgeFrameA.a, edgeFrameB.a);
         if (aMin > 0) {
-          const uAvg = (fA.u + fB.u) / 2;
+          const uAvg = (edgeFrameA.u + edgeFrameB.u) / 2;
           domeEdgeFog = 1 + (domeFogAlpha(uAvg) - 1) * aMin;
           domeWidthScale = 1 + (domeLineWidthFactor(uAvg) - 1) * aMin;
           domeHaloWidthPx = domeHaloPx(uAvg) * aMin;
@@ -1199,6 +1391,25 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
         (passthrough ? edgeAlpha * tokens.edgePassthroughAlpha : edgeAlpha) *
         edgeSpotlightSink *
         (domeEdgeExempt ? 1 : domeEdgeFog);
+      /*
+       * 헤일로의 진하기는 **이 선이 지금 얼마나 진한가**를 따라간다 —
+       * 가까운(=진한) 선은 세게 자르고, 안개에 묻힌 먼 선은 거의 안
+       * 자른다. 그래야 헤일로 자체가 «내가 앞에 있다»는 주장을 하지
+       * 않는다. 상호작용이 짚어 면제된 엣지는 안개를 안 받으므로 자동으로
+       * 가장 세게 자른다 — 읽으라고 밝힌 선이 뒤엉킨 실타래에 다시 묻히면
+       * 면제가 반쪽이다.
+       *
+       * perf 2026-08-19 — 헤일로 인자는 재사용 스크래치(`edgeHaloScratch`),
+       * 토큰 인자는 프레임당 1개(`traceTokensFrame`), 페어 키는 엣지 객체당
+       * 1회 계산 캐시(`edgePairMeta`)다. 상태 리터럴 자체는 계약 게이트
+       * (footprint-bloom-exception · review-ring-authorship)가 배선 표기를
+       * 핀으로 잡고 있어 그대로 둔다.
+       */
+      if (domeHaloWidthPx > 0.05) {
+        edgeHaloScratch.color = domeHaloColor;
+        edgeHaloScratch.px = domeHaloWidthPx;
+        edgeHaloScratch.alpha = Math.min(DOME_HALO_ALPHA_CAP, ctx.globalAlpha * DOME_HALO_ALPHA_GAIN);
+      }
       tracesDraw(
         ctx,
         {
@@ -1218,40 +1429,11 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
           reducedMotion,
           level: edge.level,
           widthScale: domeEdgeExempt ? 1 : domeWidthScale,
-          /*
-           * 헤일로의 진하기는 **이 선이 지금 얼마나 진한가**를 따라간다 —
-           * 가까운(=진한) 선은 세게 자르고, 안개에 묻힌 먼 선은 거의 안
-           * 자른다. 그래야 헤일로 자체가 «내가 앞에 있다»는 주장을 하지
-           * 않는다. 상호작용이 짚어 면제된 엣지는 안개를 안 받으므로 자동으로
-           * 가장 세게 자른다 — 읽으라고 밝힌 선이 뒤엉킨 실타래에 다시 묻히면
-           * 면제가 반쪽이다.
-           */
-          halo:
-            domeHaloWidthPx > 0.05
-              ? {
-                  color: domeHaloColor,
-                  px: domeHaloWidthPx,
-                  alpha: Math.min(DOME_HALO_ALPHA_CAP, ctx.globalAlpha * DOME_HALO_ALPHA_GAIN),
-                }
-              : null,
-          containsCometEligible: kind === "contains" ? egoContainsComets.has(edgePairKey(edge.sourceId, edge.targetId)) : undefined,
-          dependsCometEligible:
-            kind === "depends" ? ambientDependsComets.has(edgePairKey(edge.sourceId, edge.targetId)) : undefined,
+          halo: domeHaloWidthPx > 0.05 ? edgeHaloScratch : null,
+          containsCometEligible: kind === "contains" ? egoContainsComets.has(edgePairMeta(edge).key) : undefined,
+          dependsCometEligible: kind === "depends" ? ambientDependsComets.has(edgePairMeta(edge).key) : undefined,
         },
-        {
-          edgeContains: tokens.edgeContains,
-          edgeContainsL0: tokens.edgeContainsL0,
-          edgeContainsL2: tokens.edgeContainsL2,
-          edgeDepends: tokens.edgeDepends,
-          edgeDim: tokens.edgeDim,
-          indigo: tokens.indigo,
-          indigoBright: tokens.indigoBright,
-          edgeSelected: tokens.edgeSelected,
-          // 트레일 잉크는 토큰이 아니라 **발자국이 쓰는 그 색 그대로**다 —
-          // 사용자가 설정에서 고른 노랑/인디고 2택이 자국과 선에 동시에 적용돼야
-          // 둘이 같은 사실의 두 표기로 읽힌다.
-          edgeTrail: footprintStepColor,
-        },
+        traceTokensFrame,
       );
       /**
        * 선 옆 발자국 — 이 관계선을 **연달아 밟았을 때만**. 선 위가 아니라
@@ -1328,7 +1510,9 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
   // 그래서 선택 노드는 자기 라벨을 자기 테두리 위에 얹고(실측: 테두리 bottom
   // 215 vs 라벨 top 216), 큰 노드는 이름이 도형 안으로 들어갔다. 이 패스가
   // 계산한 값을 그대로 넘겨 두 패스가 같은 도형을 본다.
-  const drawnScreenRadiusById = new Map<string, number>();
+  // perf 2026-08-19 — 프레임마다 새 Map 대신 재사용(`effectiveAlphaByIdReused` 근거).
+  drawnScreenRadiusByIdReused.clear();
+  const drawnScreenRadiusById = drawnScreenRadiusByIdReused;
   // ego 멤버/호버 노드가 점유한 원판 — 수동적 라벨이 그 위에 글자를 얹지
   // 못하게 라벨 배치기에 예약으로 넘긴다(칩 예약과 같은 메커니즘 재사용).
   const nodeDiscReservations: ReservedBox[] = [];
@@ -1339,22 +1523,33 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
   // 것이 일치한다. 2D(domeOn 아님)는 종전 배열 순서 그대로 — 할당 0.
   let nodeDrawOrder: readonly WorldNode[] = world.nodes;
   if (domeOn) {
+    // perf 2026-08-19 — 엣지 정렬과 같은 인덱스-정렬 관용구(위 `edgeDrawOrder`
+    // 독블록). 종전 비교자는 호출마다 `domeFrameFor` 를 두 번 불러 O(n log n)
+    // 번의 Map 조회가 됐다. 깊이는 노드당 한 번(이미 담아 둔 프레임에서),
+    // 비교자는 배열 읽기 둘뿐 — 안정 정렬 + 동일 기준이라 순서는 종전과 같다.
+    domeNodeDepthReused.length = 0;
+    domeNodeIndexReused.length = 0;
+    for (let i = 0; i < world.nodes.length; i += 1) {
+      domeNodeDepthReused.push(domeNodeFrameReused[i].u);
+      domeNodeIndexReused.push(i);
+    }
+    domeNodeIndexReused.sort((x, y) => domeNodeDepthReused[y] - domeNodeDepthReused[x]);
     domeNodeOrderReused.length = 0;
-    for (const node of world.nodes) domeNodeOrderReused.push(node);
-    domeNodeOrderReused.sort((a, b) => domeFrameFor(b.id).u - domeFrameFor(a.id).u);
+    for (let i = 0; i < domeNodeIndexReused.length; i += 1) domeNodeOrderReused.push(world.nodes[domeNodeIndexReused[i]]);
     nodeDrawOrder = domeNodeOrderReused;
   }
 
-  for (const node of nodeDrawOrder) {
+  for (let drawPos = 0; drawPos < nodeDrawOrder.length; drawPos += 1) {
+    const node = nodeDrawOrder[drawPos];
     // 밀도 게이트: 접힌 부모의 서브트리 노드는 칩으로 대체되어 그리지 않는다.
     if (clusteredIds.has(node.id)) continue;
     const tierAlpha = effectiveAlphaById.get(node.id) ?? 1;
     if (tierAlpha <= 0.02) continue;
-    const egoState = lensNodeEgoState(node.id, focusedNodeId, neighborsOfFocused, selectedEdge);
+    const egoState = egoAllNormal ? "normal" : lensNodeEgoState(node.id, focusedNodeId, neighborsOfFocused, selectedEdge);
     // Color signature uses the RETAINED focus classification (persists through a
     // deselect fade) + this node's focus ramp — everything else keeps the live
     // `egoState`.
-    const colorEgoState = lensNodeEgoState(node.id, colorFocusedNodeId, colorNeighbors, colorSelectedEdge);
+    const colorEgoState = colorAllNormal ? "normal" : lensNodeEgoState(node.id, colorFocusedNodeId, colorNeighbors, colorSelectedEdge);
     // 렌즈는 자기 easing 을 만들지 않는다(신규 이징 0) — 스포트라이트가 이미 쓰는
     // 지수 램프(`focusDimTau`)를 그대로 색 램프로 꽂는다. 그래서 팝오버를 열면
     // 배경이 램프로 내려앉고, 닫으면 램프로 되돌아온다(하드컷 없음). 포커스가
@@ -1362,7 +1557,30 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
     const focusRamp = trailLensActive ? trailRamp : (focusRampById.get(node.id) ?? 0);
     const emphasis = emphasisById.get(node.id) ?? 0;
     const isEmphasizedNeighbor = emphasizedNeighborId !== null && node.id === emphasizedNeighborId && egoState === "neighbor";
-    const visual = resolveNodeVisual(node, colorEgoState, emphasis, colorFocusedNodeId, isEmphasizedNeighbor, tokens, reducedMotion, focusRamp);
+    // perf 2026-08-19 — 무포커스 프레임의 시각은 (kind, fresh, stale) 만의
+    // 함수라 캐시를 탄다(`nodeVisualCache` 독블록). 조건이 하나라도 어긋나면
+    // (포커스 램프·호버 리플·렌즈) 종전 경로 그대로 새로 계산한다.
+    let visual: NodeVisual;
+    const visualCacheable =
+      colorEgoState === "normal" &&
+      colorFocusedNodeId === null &&
+      !trailLensActive &&
+      emphasis <= 0.02 &&
+      focusRamp <= 0.001 &&
+      !isEmphasizedNeighbor;
+    if (visualCacheable) {
+      const cacheKey =
+        KIND_CACHE_INDEX[node.kind] * 4 + (node.fresh && !node.stale ? 2 : 0) + (node.stale ? 1 : 0);
+      const cached = nodeVisualCache[cacheKey];
+      if (cached !== undefined) {
+        visual = cached;
+      } else {
+        visual = resolveNodeVisual(node, colorEgoState, emphasis, colorFocusedNodeId, isEmphasizedNeighbor, tokens, reducedMotion, focusRamp);
+        nodeVisualCache[cacheKey] = visual;
+      }
+    } else {
+      visual = resolveNodeVisual(node, colorEgoState, emphasis, colorFocusedNodeId, isEmphasizedNeighbor, tokens, reducedMotion, focusRamp);
+    }
     /**
      * 「걸어온 길」 — **방문한 노드 자신**이 트레일 색으로 읽힌다.
      *
@@ -1375,11 +1593,16 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
      * 「빛나게」의 헌장 안 형태가 이것이다: 어두워진 장 위의 **값·색 대비**이지
      * glow 가 아니다(번짐은 발자국 글리프 한 파일의 opt-in 예외로만 존재한다).
      */
-    const trailInk = trailNodeInkStrength({
-      kept: isTrailKept(node.id),
-      ramp: trailRamp,
-      colorEgoState,
-    });
+    // perf 2026-08-19 — 렌즈가 꺼져 있으면 kept=false 라 항상 0 이다
+    // (`trailNodeInkStrength` 첫 분기). 노드마다 인자 객체를 만들지 않게
+    // 활성 프레임에서만 부른다 — 값 동일.
+    const trailInk = trailLensActive
+      ? trailNodeInkStrength({
+          kept: isTrailKept(node.id),
+          ramp: trailRamp,
+          colorEgoState,
+        })
+      : 0;
     if (trailInk > 0.001) {
       visual.stroke = lerpColorHex(visual.stroke, footprintStepColor, trailInk);
     }
@@ -1446,7 +1669,8 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
     // 트레일)을 면제한다 — «읽어야 할 때는 다시 밝아진다». 이 깊은 감쇠는
     // 2D 잉크 대비 바닥(3:1) 밖이며 소유자가 3D 한정으로 연 유예다
     // (`docs/DECISIONS.md` «3D 유예 목록»).
-    const nodeDome = domeFrameFor(node.id);
+    // perf 2026-08-19 — 정렬 인덱스로 담아 둔 프레임을 되찾는다(Map 재조회 0).
+    const nodeDome = domeOn ? domeNodeFrameReused[domeNodeIndexReused[drawPos]] : ZERO_DOME_FRAME;
     if (domeOn) {
       effRadius *= nodeDome.s;
       if (!isHoveredNode && !isTrailKept(node.id) && egoState === "normal") {
@@ -1457,7 +1681,10 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
     // S5 깊이 시차 — 렌더 좌표에만 밴드 오프셋(월드)을 더한다(월드 좌표 불변).
     // 3D 오프셋도 같은 문법 — 히트테스트가 같은 맵을 읽는다.
     const pOff = realmParallaxOffsetFor(node.id);
-    const screen = project(node.x + pOff.x + nodeDome.dx, node.y + pOff.y + nodeDome.dy);
+    // perf 2026-08-19 — `project` 인라인 + 스크래치 재사용(좌표 식 동일).
+    const screen = nodeScreenScratch;
+    screen.x = (node.x + pOff.x + nodeDome.dx - camX) * camScale + halfW;
+    screen.y = (node.y + pOff.y + nodeDome.dy - camY) * camScale + halfH;
     const screenRadius = effRadius * camera.scale.value;
     // Rings/pulses/labels all key off this same disc, so one guard here drops
     // the whole off-screen node cost (see `render/viewport-cull.ts`).
@@ -1494,7 +1721,20 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
     ctx.globalAlpha = tierAlpha * realmClarityAlpha * backgroundDim * appearRevealAlpha * nodeSpotlightSink;
     // Sheen top stop = lerp(fill, tint, blend) — resolved here (token layer)
     // so `render/node-shapes.ts` stays token-free and pure.
-    const sheenTop = lerpColorHex(visual.fill, tokens.nodeSheenTint, tokens.nodeSheenBlend);
+    // perf 2026-08-19 — fill 이 같으면 결과 문자열도 같다(tint·blend 는 토큰
+    // 상수). 노드마다 hex 파싱+문자열 조립을 반복하지 않도록 fill 별 캐시 —
+    // 토큰이 바뀌면(테마 전환) 통째로 무효화한다.
+    if (sheenTopCacheTint !== tokens.nodeSheenTint || sheenTopCacheBlend !== tokens.nodeSheenBlend) {
+      sheenTopCache.clear();
+      sheenTopCacheTint = tokens.nodeSheenTint;
+      sheenTopCacheBlend = tokens.nodeSheenBlend;
+    }
+    let sheenTop = sheenTopCache.get(visual.fill);
+    if (sheenTop === undefined) {
+      sheenTop = lerpColorHex(visual.fill, tokens.nodeSheenTint, tokens.nodeSheenBlend);
+      if (sheenTopCache.size > 256) sheenTopCache.clear();
+      sheenTopCache.set(visual.fill, sheenTop);
+    }
     // Engraved numeral: project/domain only, and only when there's a count to
     // show (prototype `if (n.count && (project||domain) ...)`).
     // 3D — 점에는 숫자를 새기지 않는다(데이터 표가 아니라 형태를 보는 층).
@@ -1537,6 +1777,9 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
         ctx.globalAlpha = prevAlpha;
       }
     }
+    // perf 2026-08-19 — 토큰 인자는 프레임당 1개(`nodeShapeTokensFrame`).
+    // 상태 리터럴은 계약 게이트(review-ring-authorship)가 배선 표기를 핀으로
+    // 잡고 있어 그대로 둔다.
     nodeShapesDraw(
       ctx,
       {
@@ -1586,23 +1829,7 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
         reducedMotion,
         glyphStyle,
       },
-      {
-        amberHub: tokens.amberHub,
-        recentChange: tokens.recentChange,
-        numeralShadow: tokens.numeralShadow,
-        numeralFace: tokens.numeralFace,
-        holeFill: tokens.nodeHoleFill,
-        projectHairlineInner: tokens.projectHairlineInner,
-        projectPinTick: tokens.projectPinTick,
-        selectionIndigo: tokens.selectionRingIndigo,
-        selectionHairline: tokens.selectionRingHairline,
-        reviewRing: tokens.reviewRing,
-        neighborRing: tokens.edgeSelected,
-        hoverRing: tokens.hoverRing,
-        hoverShimmerSeg: tokens.hoverShimmerSeg,
-        hoverShimmerPeriodMs: tokens.hoverShimmerPeriodMs,
-        hoverShimmerColor: tokens.indigoBright,
-      },
+      nodeShapeTokensFrame,
     );
 
     // Diffraction spike: the ranked "bright star" set PLUS the project node
@@ -1611,7 +1838,8 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
     // stars already get, just widening eligibility so the Layer-0 anchor
     // reads as luminous too. Color still derives from `visual.stroke`, which
     // is now hardcoded amber for project, so the spike is amber for free.
-    if ((world.brightStarIds.has(node.id) || node.kind === "project") && farT > 0.02) {
+    // perf 2026-08-19 — farT 게이트를 앞으로(회로 고도 farT=0 에선 Set 조회도 생략). 논리 동일.
+    if (farT > 0.02 && (world.brightStarIds.has(node.id) || node.kind === "project")) {
       drawDiffractionSpike(ctx, {
         screenX: screen.x,
         screenY: screen.y,
@@ -1974,17 +2202,27 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
       : null;
   const labelRankEntries: LabelRankEntry[] = [];
   const labelCandidates: LabelCandidate<LabelPayload>[] = [];
-  world.nodes.forEach((node, index) => {
+  // perf 2026-08-19 — 3D 라벨 온디맨드 조기 탈출의 성립 조건: keep(호버·ego·
+  // 트레일)이 불가능한 프레임(포커스·페어·렌즈 전부 없음)에서 조립 램프 a ≥
+  // 0.98 이면 gate = 1-a ≤ 0.02 이고, compact/watermark 알파는 둘 다 ≤1 이라
+  // 곱이 ≤0.02 — 아래 기존 `<= 0.02` 반려와 **같은 결론**이다. 그 결론을
+  // ego 분류·알파 계산·투영을 하기 전에 내려, 회전 중 2,000 노드가 매 프레임
+  // 라벨 파이프라인 앞부분을 헛돌던 것을 없앤다(결과 집합 불변).
+  const domeLabelSkipEligible =
+    domeOn && focusedNodeId === null && selectedEdge === null && trailLensKeepIds === null;
+  for (let index = 0; index < world.nodes.length; index += 1) {
+    const node = world.nodes[index];
     // 밀도 게이트: 접힌 서브트리 노드는 라벨도 그리지 않는다(노드/엣지와 동일).
-    if (clusteredIds.has(node.id)) return;
+    if (clusteredIds.has(node.id)) continue;
+    if (domeLabelSkipEligible && node.id !== hoveredNodeId && domeNodeFrameReused[index].a >= 0.98) continue;
     // Uses the SAME effective alpha as the node draw pass (C1 A2) — an
     // ego-exempt capability that's now visible must also get a label, or it
     // reads as an unlabeled ghost circle. Also the SAME signal capability/
     // element label eligibility ramps with (label-clarity — "잡을 수 있으면
     // 읽을 수 있다").
     const revealAlpha = effectiveAlphaById.get(node.id) ?? 1;
-    if (revealAlpha <= 0.02) return;
-    const egoState = lensNodeEgoState(node.id, focusedNodeId, neighborsOfFocused, selectedEdge);
+    if (revealAlpha <= 0.02) continue;
+    const egoState = egoAllNormal ? "normal" : lensNodeEgoState(node.id, focusedNodeId, neighborsOfFocused, selectedEdge);
     const trailKept = isTrailKept(node.id);
     const isHovered = hoveredNodeId !== null && node.id === hoveredNodeId;
     // High-fan disc density gate: an expanded-disc child that didn't make its
@@ -2000,7 +2238,7 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
       !isHovered &&
       !trailKept
     ) {
-      return;
+      continue;
     }
     let compactAlpha = computeLabelAlpha({ kind: node.kind, farT, egoState, isHovered, revealAlpha });
     // 3D — 라벨은 **온디맨드**다(히어로 판정: 상시 라벨이 실루엣을 부수고
@@ -2009,7 +2247,9 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
     // 그대로. 라벨은 제품의 핵심이라 없애지 않는다 — 언제 보이느냐만 모드가
     // 정한다.
     const domeLabelKeep = egoState === "center" || egoState === "neighbor" || isHovered || trailKept;
-    const domeLabelGate = domeOn && !domeLabelKeep ? 1 - domeFrameFor(node.id).a : 1;
+    // perf 2026-08-19 — 프레임 재조회 대신 인덱스 버퍼(`nodeFrameAt`) 사용.
+    const labelDome = nodeFrameAt(index);
+    const domeLabelGate = domeOn && !domeLabelKeep ? 1 - labelDome.a : 1;
     compactAlpha *= domeLabelGate;
     // Domain draws TWO effects at once (the always-readable compact label AND
     // the separate far-field watermark) — a candidate must be built whenever
@@ -2021,13 +2261,15 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
     const watermarkAlpha =
       (node.kind === "domain" && !trailLensActive ? computeDomainWatermarkAlpha(farT, egoState) : 0) *
       domeLabelGate;
-    if (Math.max(compactAlpha, watermarkAlpha) <= 0.02) return;
+    if (Math.max(compactAlpha, watermarkAlpha) <= 0.02) continue;
 
     // S5 — 라벨도 노드 디스크와 같은 깊이 시차 오프셋으로 그려 붙어 다닌다.
     // 3D 오프셋도 동일 — 라벨이 링으로 옮겨 간 디스크를 따라간다.
     const labelPOff = realmParallaxOffsetFor(node.id);
-    const labelDOff = domeFrameFor(node.id);
-    const screen = project(node.x + labelPOff.x + labelDOff.dx, node.y + labelPOff.y + labelDOff.dy);
+    const labelDOff = labelDome;
+    const screen = labelScreenScratch;
+    screen.x = (node.x + labelPOff.x + labelDOff.dx - camX) * camScale + halfW;
+    screen.y = (node.y + labelPOff.y + labelDOff.dy - camY) * camScale + halfH;
     // E-4 — 노드 패스가 실제로 그린 반지름(magnitudeScale·breathe·등장 램프·
     // 선택 성장 포함). 그 패스에서 컬링된 노드만 nominal 로 되돌린다.
     const screenRadius =
@@ -2059,7 +2301,7 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
       // 클램프 대상이 적은 두 등급뿐이라 「전부 인셋에 쌓인다」는 원래 우려는
       // 되살아나지 않고, 부딪히는 것은 여전히 greedy 억제가 가른다.
       if (!isSafeRectProtectedLabel({ egoState, isHovered, trailKept, kind: node.kind, isHub: node.isHub })) {
-        return;
+        continue;
       }
       const clamped = clampAnchorIntoSafeRect(anchorX, anchorY, safeRect, width / 2 + 4, fontSize + 4);
       anchorX = clamped.x;
@@ -2137,7 +2379,7 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
         agentFocus,
       },
     });
-  });
+  }
 
   // Apply the top-K budget over the frame's already-viewport/safe-rect-filtered
   // candidates (so "top K" means "top K currently on screen"). Skipped entirely

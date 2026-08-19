@@ -2746,6 +2746,7 @@ sheet 금지**(공방 진입 카드 16 → panel, 드로어 히어로 20 → pan
 | 관문 홈통(원점의 바닥) | `--gateway-gutter` | 200 — 무단위 (40→64→120→200 계보는 `app/globals.css` 독블록) |
 | 관문 판 폭 | `--gateway-plate-width` | 880 — 무단위. 2026-08-18 리메이크에서 520→880: 판이 지도 위 부유가 아니라 설치 절의 흐름에 앉으며 콘텐츠 폭 상한 하나만 진다 |
 | 관문 절 리듬 | `--gateway-section-gap` | 160px (2026-08-18) — 절 하나 = 생각 하나의 문장 부호 |
+| 관문 무대 폭 | `--gateway-stage-max` | `clamp(48rem, 40vw, 80rem)` (2026-08-19 넓은 폭 개정) — 시연·에이전트 장면이 공유하는 무대 상한. 바닥 48rem 은 소유자 승인값(원장 (83))이고 40vw×1920 = 48rem 이라 **1920 이하에서는 종전 768px 그대로**다. 기울기 40vw 는 1440–1920 무회귀 제약이 허용하는 가장 큰 비례 계수, 상한 80rem 은 1x 밀도에서 클립 원본(1512px)을 업스케일하지 않는 마지막 정규 스텝. 게이트: `tests/contract/gateway-stage-width.contract.test.ts` + `tests/e2e/download-gateway-grid.spec.ts` |
 | 관문 FX 알파 상한 | `--gateway-fx-blob-alpha` / `--gateway-fx-grain-alpha` / `--gateway-fx-dust-alpha` | 0.14 / 0.05 / 0.28 — 헌장 예외(관문 전류장)의 상한. 게이트: `tests/contract/gateway-fx-exception.contract.test.ts` |
 
 **[은퇴 2026-08-18] 판·지도 틈 토큰(gateway plate-gap)과 카메라 예약폭 파생**

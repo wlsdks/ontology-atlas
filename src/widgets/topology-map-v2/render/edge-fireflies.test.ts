@@ -9,6 +9,7 @@ import {
   PULSE_TRAIL_LAG,
   pulseHeadTrail,
   pulseScale,
+  edgePairMeta,
   selectEgoContainsComets,
   spawnHoverPulses,
   updateParticles,
@@ -161,6 +162,42 @@ describe("selectEgoContainsComets", () => {
 
   it("빈 입력은 빈 Set", () => {
     expect(selectEgoContainsComets([]).size).toBe(0);
+  });
+});
+
+describe("edgePairMeta — 캐시가 원본 함수와 같은 값을 낸다 (perf 2026-08-19)", () => {
+  it("seed 와 key 가 fireflySeed/edgePairKey 와 동일하고, 같은 객체엔 같은 메타를 재사용한다", () => {
+    const edge = { sourceId: "kind:alpha", targetId: "kind:beta" };
+    const meta = edgePairMeta(edge);
+    expect(meta.seed).toBe(fireflySeed(edge.sourceId, edge.targetId));
+    expect(meta.key).toBe(edgePairKey(edge.sourceId, edge.targetId));
+    expect(edgePairMeta(edge)).toBe(meta); // WeakMap 캐시 히트
+  });
+});
+
+describe("rankCometEdges 재구현 파리티 — 종전 비교자(seed→key 사전순)와 원소까지 동일", () => {
+  /** 종전 구현 그대로의 참조판 — 캐시 도입 전 코드를 전사했다. */
+  const reference = (edges: readonly { sourceId: string; targetId: string }[], limit: number): Set<string> => {
+    const ranked = [...edges].sort((a, b) => {
+      const seedDiff = fireflySeed(a.sourceId, a.targetId) - fireflySeed(b.sourceId, b.targetId);
+      if (seedDiff !== 0) return seedDiff;
+      const ka = edgePairKey(a.sourceId, a.targetId);
+      const kb = edgePairKey(b.sourceId, b.targetId);
+      return ka < kb ? -1 : ka > kb ? 1 : 0;
+    });
+    return new Set(ranked.slice(0, Math.max(0, limit)).map((e) => edgePairKey(e.sourceId, e.targetId)));
+  };
+
+  it("400개 결정론 픽스처에서 컷 안 원소가 참조판과 완전히 같다", () => {
+    const edges = Array.from({ length: 400 }, (_, i) => ({
+      sourceId: `node:${(i * 37) % 97}`,
+      targetId: `node:${(i * 61) % 89}-t`,
+    }));
+    for (const limit of [0, 1, 24, 400]) {
+      const got = selectEgoContainsComets(edges, limit);
+      const want = reference(edges, limit);
+      expect([...got].sort()).toEqual([...want].sort());
+    }
   });
 });
 

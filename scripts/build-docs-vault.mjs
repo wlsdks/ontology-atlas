@@ -3,8 +3,12 @@
 // docs/**/*.md 를 스캔해서:
 //  1. public/docs-vault/{slug}.md 로 raw 복사
 //  2. src/entities/docs-vault/data/manifest.json 생성 — tree, docs, backlinks, tags
+//     (headings 는 번들 크기 때문에 manifest.headings.json 으로 분리 — `/docs` 만
+//     동적 import 한다)
 //  3. src/entities/docs-vault/data/content.json 생성 — desktop/static export fallback
-//  4. src/entities/docs-vault/data/gateway-content.json 생성 — gateway의 동기 문서 fallback
+//  4. src/entities/docs-vault/data/gateway-content.json 생성 — gateway의 동기 guide/* fallback
+//  5. src/entities/docs-vault/data/gateway-changelog.json 생성 — /changelog 의
+//     동기 미리보기 (최근 절 + 접힌 절 수)
 // static export 빌드 중 'next build' 직전에 실행. 런타임 의존성 없음.
 
 import { readFile, writeFile, mkdir, readdir, stat, rm } from 'node:fs/promises';
@@ -35,8 +39,15 @@ const CONTENT_OUT = path.join(
   'content.json',
 );
 // Gateway 는 client surface 에서 첫 페인트 전에 본문을 동기적으로 필요로 한다.
-// 전체 content.json 을 그 경로에 끌어들이지 않도록 guide/* + CHANGELOG 만 별도
-// 작은 map 으로 만든다. 나머지 문서는 public/docs-vault raw asset 으로 읽는다.
+// 전체 content.json 을 그 경로에 끌어들이지 않도록 guide/* 만 별도 작은 map 으로
+// 만든다. 나머지 문서는 public/docs-vault raw asset 으로 읽는다.
+//
+// CHANGELOG 는 2026-08-19 부터 이 map 에 **전문으로 들어가지 않는다** — 파일이
+// 634KB 까지 자라 모든 라우트의 공통 청크를 데스크톱 성능 예산(최대 청크
+// 1.5MiB) 밖으로 밀어냈다. 관문 `/changelog` 가 첫 페인트에 동기로 필요로
+// 하는 것은 최근 절 몇 개 + 「몇 개를 접었는가」뿐이므로, 그만큼만
+// gateway-changelog.json 으로 잘라 담는다. `/docs` 의 CHANGELOG 전문은 다른
+// 문서와 똑같이 public/docs-vault/CHANGELOG.md 를 비동기로 읽는다.
 const GATEWAY_CONTENT_OUT = path.join(
   ROOT,
   'src',
@@ -44,6 +55,40 @@ const GATEWAY_CONTENT_OUT = path.join(
   'docs-vault',
   'data',
   'gateway-content.json',
+);
+const GATEWAY_CHANGELOG_OUT = path.join(
+  ROOT,
+  'src',
+  'entities',
+  'docs-vault',
+  'data',
+  'gateway-changelog.json',
+);
+// 번들에 담는 CHANGELOG 절 수. 관문 화면의 표시 상한(`app/[locale]/changelog/
+// page.tsx` 의 RECENT_SECTIONS = 12)보다 **커야 한다** — 화면은 여기서 받은
+// 것을 자기 상한으로 한 번 더 자르고, 두 절단의 접힌 수를 더해 정확한 총
+// 접힌 수를 말한다. 화면 상한을 이 값 위로 올리면 그만큼은 안 보인다.
+export const GATEWAY_CHANGELOG_KEEP_SECTIONS = 16;
+// 매니페스트의 headings 는 `/docs` 화면(목차 레일·삽입)만 쓰는데 263KB 로
+// 모든 라우트의 공통 청크에 실렸다. 번들 매니페스트에서는 비우고 slug →
+// headings 맵을 별도 파일로 내, `/docs` 가 필요할 때 동적 import 한다.
+// 로컬 모드(사용자 vault)는 매니페스트를 디스크에서 만들므로 headings 가
+// 그대로 인라인이다 — 이 분리는 번들 볼트에만 적용된다.
+const MANIFEST_HEADINGS_OUT = path.join(
+  ROOT,
+  'src',
+  'entities',
+  'docs-vault',
+  'data',
+  'manifest.headings.json',
+);
+const STOREFRONT_HEADINGS_OUT = path.join(
+  ROOT,
+  'src',
+  'entities',
+  'docs-vault',
+  'data',
+  'sample-storefront.headings.json',
 );
 // P0 공감형 샘플 vault (2026-07) — 비개발자가 dogfood(이 도구 자체 설명)
 // 대신 즉시 알아볼 수 있는 예시 비즈니스("온라인 쇼핑몰")를 볼 수 있게
@@ -400,6 +445,49 @@ export function deterministicGeneratedAt(docs) {
   return days.reduce((a, b) => (a >= b ? a : b));
 }
 
+/**
+ * `## ` 절 단위로 앞에서 `limit` 개만 남긴다 — **`src/views/gateway-doc/lib/
+ * vault-doc.ts` 의 `trimToRecentSections` 와 같은 의미론이어야 한다.** 화면이
+ * 번들된 미리보기를 자기 상한으로 한 번 더 자르므로, 두 구현의 절 경계가
+ * 어긋나면 「접힌 절 수」가 거짓말이 된다. 그 동일성은
+ * `tests/contract/gateway-changelog-preview.contract.test.ts` 가 실제
+ * CHANGELOG 로 실증한다 (parse-frontmatter 3-way 계약과 같은 패턴).
+ */
+export function trimToRecentSections(markdown, limit) {
+  const lines = markdown.split('\n');
+  const boundaries = [];
+  let inFence = false;
+  for (let i = 0; i < lines.length; i += 1) {
+    const line = lines[i];
+    if (/^\s*(```|~~~)/.test(line)) inFence = !inFence;
+    else if (!inFence && /^## (?!#)/.test(line)) boundaries.push(i);
+  }
+
+  if (boundaries.length <= limit) return { body: markdown, omittedSections: 0 };
+
+  const cutAt = boundaries[limit];
+  return {
+    body: lines.slice(0, cutAt).join('\n').trimEnd(),
+    omittedSections: boundaries.length - limit,
+  };
+}
+
+/**
+ * 번들 매니페스트에서 headings 를 떼어낸다 — 매니페스트의 docs 는
+ * `headings: []` 가 되고, 떼어낸 것은 slug → headings 맵으로 돌아온다
+ * (빈 배열은 맵에 넣지 않는다 — 바이트만 쓰고 정보가 없다).
+ */
+export function splitManifestHeadings(manifest) {
+  const headingsBySlug = {};
+  const docs = manifest.docs.map((doc) => {
+    if (Array.isArray(doc.headings) && doc.headings.length > 0) {
+      headingsBySlug[doc.slug] = doc.headings;
+    }
+    return { ...doc, headings: [] };
+  });
+  return { manifest: { ...manifest, docs }, headingsBySlug };
+}
+
 export function comparableManifest(manifest) {
   return {
     ...manifest,
@@ -434,7 +522,14 @@ export function comparableDoc(doc) {
 // Dogfood census 모듈 소스 — deterministic (timestamp 없음). vault 내용이
 // 실제로 바뀔 때만 diff 가 난다. 음각 숫자 = 실데이터 계약의 산출물.
 
-async function assertOutputsCurrent({ manifest, content, gatewayContent, publicFiles }) {
+async function assertOutputsCurrent({
+  manifest,
+  headingsBySlug,
+  content,
+  gatewayContent,
+  gatewayChangelog,
+  publicFiles,
+}) {
   const issues = [];
 
   const currentManifest = await readJsonIfExists(MANIFEST_OUT);
@@ -445,6 +540,22 @@ async function assertOutputsCurrent({ manifest, content, gatewayContent, publicF
     stableStringify(comparableManifest(manifest))
   ) {
     issues.push(`stale ${path.relative(ROOT, MANIFEST_OUT)}`);
+  }
+
+  const currentHeadings = await readJsonIfExists(MANIFEST_HEADINGS_OUT);
+  if (!currentHeadings) {
+    issues.push(`missing ${path.relative(ROOT, MANIFEST_HEADINGS_OUT)}`);
+  } else if (stableStringify(currentHeadings) !== stableStringify(headingsBySlug)) {
+    issues.push(`stale ${path.relative(ROOT, MANIFEST_HEADINGS_OUT)}`);
+  }
+
+  const currentGatewayChangelog = await readJsonIfExists(GATEWAY_CHANGELOG_OUT);
+  if (!currentGatewayChangelog) {
+    issues.push(`missing ${path.relative(ROOT, GATEWAY_CHANGELOG_OUT)}`);
+  } else if (
+    stableStringify(currentGatewayChangelog) !== stableStringify(gatewayChangelog)
+  ) {
+    issues.push(`stale ${path.relative(ROOT, GATEWAY_CHANGELOG_OUT)}`);
   }
 
   const currentContent = await readJsonIfExists(CONTENT_OUT);
@@ -696,10 +807,10 @@ export async function scanVaultDir(
     tree,
   };
 
+  // CHANGELOG 는 전문 대신 gateway-changelog.json 미리보기로 나간다 — 파일
+  // 상단의 GATEWAY_CHANGELOG_OUT 주석 참조.
   const gatewayContent = Object.fromEntries(
-    Object.entries(content).filter(
-      ([slug]) => slug === 'CHANGELOG' || slug.startsWith('guide/'),
-    ),
+    Object.entries(content).filter(([slug]) => slug.startsWith('guide/')),
   );
 
   return { manifest, content, gatewayContent, publicFiles };
@@ -720,15 +831,35 @@ async function buildDocsVault({ check = false } = {}) {
     await ensureDir(path.dirname(MANIFEST_OUT));
   }
 
-  const { manifest, content, gatewayContent, publicFiles } = await scanVaultDir(DOCS_DIR, {
+  const scanned = await scanVaultDir(DOCS_DIR, {
     rootDir: ROOT,
     publicOutDir: PUBLIC_OUT,
     check,
   });
+  const { content, gatewayContent, publicFiles } = scanned;
+  // 번들 매니페스트는 headings 를 별도 파일로 떼고 나간다 — 상단
+  // MANIFEST_HEADINGS_OUT 주석 참조.
+  const { manifest, headingsBySlug } = splitManifestHeadings(scanned.manifest);
   const { docs, backlinksDetail, tags } = manifest;
+  const changelogRaw = content['CHANGELOG'];
+  if (typeof changelogRaw !== 'string') {
+    console.error('[docs-vault] docs/CHANGELOG.md 가 스캔에 없다 — 관문 미리보기를 만들 수 없다.');
+    process.exit(1);
+  }
+  const gatewayChangelog = trimToRecentSections(
+    changelogRaw,
+    GATEWAY_CHANGELOG_KEEP_SECTIONS,
+  );
 
   if (check) {
-    await assertOutputsCurrent({ manifest, content, gatewayContent, publicFiles });
+    await assertOutputsCurrent({
+      manifest,
+      headingsBySlug,
+      content,
+      gatewayContent,
+      gatewayChangelog,
+      publicFiles,
+    });
     console.log(
       `[docs-vault] current · ${docs.length} docs · ${Object.keys(backlinksDetail).length} backlinked · ${Object.keys(tags).length} tags`,
     );
@@ -736,8 +867,10 @@ async function buildDocsVault({ check = false } = {}) {
   }
 
   await writeFile(MANIFEST_OUT, JSON.stringify(manifest, null, 2), 'utf8');
+  await writeFile(MANIFEST_HEADINGS_OUT, JSON.stringify(headingsBySlug, null, 2), 'utf8');
   await writeFile(CONTENT_OUT, JSON.stringify(content, null, 2), 'utf8');
   await writeFile(GATEWAY_CONTENT_OUT, JSON.stringify(gatewayContent, null, 2), 'utf8');
+  await writeFile(GATEWAY_CHANGELOG_OUT, JSON.stringify(gatewayChangelog, null, 2), 'utf8');
   console.log(
     `[docs-vault] ${docs.length} docs · ${Object.keys(backlinksDetail).length} backlinked · ${Object.keys(tags).length} tags → ${path.relative(ROOT, MANIFEST_OUT)}`,
   );
@@ -759,12 +892,14 @@ async function buildStorefrontSample({ check = false } = {}) {
     await ensureDir(path.dirname(STOREFRONT_MANIFEST_OUT));
   }
 
-  const { manifest, content } = await scanVaultDir(SAMPLES_STOREFRONT_DIR, {
+  const scanned = await scanVaultDir(SAMPLES_STOREFRONT_DIR, {
     rootDir: ROOT,
     publicOutDir: null,
     check,
     treeName: 'storefront',
   });
+  const { content } = scanned;
+  const { manifest, headingsBySlug } = splitManifestHeadings(scanned.manifest);
 
   if (check) {
     const issues = [];
@@ -776,6 +911,12 @@ async function buildStorefrontSample({ check = false } = {}) {
       stableStringify(comparableManifest(manifest))
     ) {
       issues.push(`stale ${path.relative(ROOT, STOREFRONT_MANIFEST_OUT)}`);
+    }
+    const currentHeadings = await readJsonIfExists(STOREFRONT_HEADINGS_OUT);
+    if (!currentHeadings) {
+      issues.push(`missing ${path.relative(ROOT, STOREFRONT_HEADINGS_OUT)}`);
+    } else if (stableStringify(currentHeadings) !== stableStringify(headingsBySlug)) {
+      issues.push(`stale ${path.relative(ROOT, STOREFRONT_HEADINGS_OUT)}`);
     }
     const currentContent = await readJsonIfExists(STOREFRONT_CONTENT_OUT);
     if (!currentContent) {
@@ -794,6 +935,7 @@ async function buildStorefrontSample({ check = false } = {}) {
   }
 
   await writeFile(STOREFRONT_MANIFEST_OUT, JSON.stringify(manifest, null, 2), 'utf8');
+  await writeFile(STOREFRONT_HEADINGS_OUT, JSON.stringify(headingsBySlug, null, 2), 'utf8');
   await writeFile(STOREFRONT_CONTENT_OUT, JSON.stringify(content, null, 2), 'utf8');
   console.log(
     `[docs-vault] storefront sample ${manifest.docs.length} docs → ${path.relative(ROOT, STOREFRONT_MANIFEST_OUT)}`,

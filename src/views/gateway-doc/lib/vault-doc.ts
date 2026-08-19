@@ -30,9 +30,25 @@ import { resolveStaticVaultSource } from '@/entities/docs-vault';
  * 아니고, 이 자리는 선택을 따르면 틀린다.
  */
 export function readVaultDoc(slug: string): string | null {
-  const { content } = resolveStaticVaultSource('dogfood');
+  const { content, contentPreviews } = resolveStaticVaultSource('dogfood');
   const doc = content[slug];
-  return typeof doc === 'string' ? doc : null;
+  if (typeof doc === 'string') return doc;
+  // CHANGELOG 처럼 전문이 번들에 없는 문서는 잘린 동기 미리보기로 그린다 —
+  // 몇 절이 접혔는지는 `readVaultDocOmittedSections` 가 같은 진실원에서 준다.
+  const preview = contentPreviews?.[slug];
+  return typeof preview?.body === 'string' ? preview.body : null;
+}
+
+/**
+ * `readVaultDoc(slug)` 가 돌려준 본문이 **번들 시점에 이미 접은** `## ` 절 수.
+ *
+ * 화면(`GatewayDocPage`)은 자기 표시 상한으로 한 번 더 자르고, 그 수와 이
+ * 수를 **더해서** 「N개 접었습니다」를 말한다 — 어느 한쪽만 세면 조용한
+ * 절단이 된다(전문이 번들에서 빠진 것을 화면이 모르는 채 0을 더한다).
+ */
+export function readVaultDocOmittedSections(slug: string): number {
+  const { contentPreviews } = resolveStaticVaultSource('dogfood');
+  return contentPreviews?.[slug]?.omittedSections ?? 0;
 }
 
 export interface TrimmedDoc {

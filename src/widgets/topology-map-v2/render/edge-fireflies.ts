@@ -68,6 +68,32 @@ export function edgePairKey(sourceId: string, targetId: string): string {
   return `${sourceId} ${targetId}`;
 }
 
+/*
+ * perf 2026-08-19 — 페어 키·시드 캐시.
+ *
+ * `edgePairKey`(문자열 결합)와 `fireflySeed`(그 문자열 전체를 한 글자씩
+ * 해싱)는 **엣지 수명 동안 값이 변하지 않는데** 매 프레임, 심지어 정렬
+ * 비교자 안에서는 O(n log n)번 다시 계산되고 있었다(3D 회전 프로파일에서
+ * `drawTopologyFrame` self 의 상당분). 엣지 객체는 월드 리빌드 때 통째로
+ * 교체되고 제자리 변형되지 않으므로(`phaseCache` 독블록과 같은 근거)
+ * WeakMap 으로 객체당 1회만 계산한다 — 값이 같으니 픽셀도 같다.
+ */
+interface EdgePairRef {
+  sourceId: string;
+  targetId: string;
+}
+const pairMetaCache = new WeakMap<EdgePairRef, { seed: number; key: string }>();
+
+/** 이 엣지 객체의 (seed, key) — 객체 수명당 1회 계산. 값은 `fireflySeed`/`edgePairKey` 와 동일. */
+export function edgePairMeta(edge: EdgePairRef): { seed: number; key: string } {
+  let meta = pairMetaCache.get(edge);
+  if (meta === undefined) {
+    meta = { seed: fireflySeed(edge.sourceId, edge.targetId), key: edgePairKey(edge.sourceId, edge.targetId) };
+    pairMetaCache.set(edge, meta);
+  }
+  return meta;
+}
+
 /**
  * Design Guardian 승인 처방 E — 선택(ego) 시 인시던트 contains 엣지 코멧 캡.
  * 포커스 노드의 팬아웃이 크면(예: 자식 90개 domain) 전부 점등이 판독 불가한
@@ -104,19 +130,26 @@ export function selectAmbientDependsComets(
   return rankCometEdges(visibleDependsEdges, limit);
 }
 
-/** 결정론 랭킹 — `fireflySeed` 오름차순, 동점은 pair key 사전순(RNG 상태 없음). */
+/**
+ * 결정론 랭킹 — `fireflySeed` 오름차순, 동점은 pair key 사전순(RNG 상태 없음).
+ *
+ * perf 2026-08-19 — 이 함수는 매 프레임 불린다. 종전 비교자는 호출마다
+ * `fireflySeed`(문자열 결합+해시)를 두 번 계산해 O(n log n)번의 문자열
+ * 해싱이 됐다. `edgePairMeta` 캐시(엣지 객체당 1회)를 정렬 앞에서 꺼내
+ * 두고 비교자는 숫자·캐시 문자열만 읽는다 — 비교 기준이 같으므로 결과
+ * 집합은 종전과 원소까지 동일하다(정렬 안정성과 무관: 전순서 비교자).
+ */
 function rankCometEdges(
   edges: readonly { sourceId: string; targetId: string }[],
   limit: number,
 ): ReadonlySet<string> {
-  const ranked = [...edges].sort((a, b) => {
-    const seedDiff = fireflySeed(a.sourceId, a.targetId) - fireflySeed(b.sourceId, b.targetId);
+  const metas = edges.map((e) => edgePairMeta(e));
+  metas.sort((a, b) => {
+    const seedDiff = a.seed - b.seed;
     if (seedDiff !== 0) return seedDiff;
-    const ka = edgePairKey(a.sourceId, a.targetId);
-    const kb = edgePairKey(b.sourceId, b.targetId);
-    return ka < kb ? -1 : ka > kb ? 1 : 0;
+    return a.key < b.key ? -1 : a.key > b.key ? 1 : 0;
   });
-  return new Set(ranked.slice(0, Math.max(0, limit)).map((e) => edgePairKey(e.sourceId, e.targetId)));
+  return new Set(metas.slice(0, Math.max(0, limit)).map((m) => m.key));
 }
 
 /**

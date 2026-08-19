@@ -23,8 +23,9 @@ import type { CameraAxes, CameraTarget } from "../engine/camera";
 import { MAX_FRAME_DELTA_SECONDS } from "../engine/spring";
 import { CAMERA_TRANSITION_MIN_MS, cameraTransitionDurationMs, easeCameraKeyframe, easeInOutCubic, type CameraKeyframe, type CameraTween } from "../model/camera-easing";
 import { stepTugAxis, tugFactorForHop, tugFalloffForDistance } from "../interaction/drag-tug";
-import { isCameraUnsettled, isCanvasActive, isEgoTailAnimating, shouldSkipFrame } from "../model/idle-gate";
+import { isCameraUnsettled, isCanvasActive, isDomeSpinAnimating, isEgoTailAnimating, shouldSkipFrame } from "../model/idle-gate";
 import { ambientSleepFactor, isAmbientAsleep } from "../model/ambient-sleep";
+import { NAVIGATION_INTENT_EVENT, NAVIGATION_YIELD_MS } from "@/shared/lib/navigation-intent";
 import { stepSpotlightPhase } from "../model/spotlight-motion";
 import { classifyZoomTier, DEFAULT_TIER_REVEAL, type TierRevealConfig, type ZoomTier } from "../model/tier-visibility";
 import { relaxNodeSeparation, type SeparationNode } from "../model/separation";
@@ -75,8 +76,10 @@ import {
   type DepthParallaxOffset,
 } from "../model/realm-depth-parallax";
 import {
+  beginDomeModelBuild,
   buildDomeModel,
   clampDomePitch,
+  DOME_BUILD_SLICE_MS,
   createDomeRuntime,
   decayOrbitVelocity,
   DOME_ASSEMBLE_TOTAL_MS,
@@ -99,6 +102,7 @@ import {
   projectDomeCoord,
   stepDomeDragSpring,
   updateDomeFrame,
+  type DomeModelBuild,
   type DomeRuntime,
 } from "../model/dome-view";
 import { buildRealmRuntimeData, fallbackAngleFor, realmCameraTarget, realmVisibleBounds, type RealmRuntimeData } from "./topology-realm-runtime";
@@ -490,6 +494,38 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
   /** 돔 모델이 어느 월드에서 계산됐나 — 월드가 갈리면 레이아웃 재계산. */
   const domeWorldSourceRef = useRef<unknown>(null);
   /**
+   * 첫 3D 프레임의 **슬라이스 중인 돔 모델 빌드** (2026-08-19 실측).
+   *
+   * 결합 구름 배치의 완화는 O(n²)×반복이라 2,000 노드에서 ~350ms 다. 종전에는
+   * 돔이 처음 필요한 프레임이 `buildDomeModel` 을 동기로 다 돌려 **부팅이
+   * 단일 프레임 346~368ms 히치**로 시작했다. 지금은 그 프레임부터 예산
+   * (`DOME_BUILD_SLICE_MS`)만큼만 진행하고 다음 프레임에서 이어 간다 — 완료
+   * 전에는 돔 런타임을 만들지 않고 그리지도 않으므로, 화면은 종전 동기 히치
+   * 동안의 정지 화면과 같고(부팅은 빈 캔버스, 중간 토글은 마지막 2D 프레임)
+   * 입력·타이머만 산다. 완화는 슬라이스로 돌려도 부동소수점 연산 순서가 같아
+   * **결과가 비트 단위로 동일하다** — 조립 연출의 모양은 그대로다.
+   *
+   * `world`/`arrangement` 를 함께 적는 이유: 슬라이스 도중 월드가 갈리거나
+   * 배치 설정이 바뀌면 이 빌드는 낡은 입력의 것이라 버리고 새로 시작해야 한다.
+   */
+  const domeModelBuildRef = useRef<{
+    world: unknown;
+    arrangement: string;
+    build: DomeModelBuild;
+  } | null>(null);
+  /**
+   * 유휴 게이트 계측 (e2e 전용) — **마지막으로 프레임을 깨운 플래그들의 이름**.
+   *
+   * 왜 있나 (2026-08-19 통합 검증): «드래그 후 지도가 다시 안 잠든다» 부류의
+   * 회귀는 증상(초당 CPU)만 보이고 원인(어느 활동 플래그가 참으로 남았나)은
+   * 캔버스 밖에서 볼 방법이 없었다 — 픽셀은 「그려졌다」만 말한다. idle-gate
+   * 독블록의 규율(진행 중인 모션은 전부 이름이 있어야 한다)을 **검증 가능**
+   * 하게 만들려면 그 이름이 창구로 나와야 한다. `?e2e=1` 로 붙는 검사 창구가
+   * 있을 때만 기록한다(아래 `idleDebugEnabledRef`) — 제품 경로 비용 0.
+   */
+  const lastActiveCausesRef = useRef<{ t: number; causes: string[] } | null>(null);
+  const idleDebugEnabledRef = useRef(false);
+  /**
    * 3D 선택 리프레임 대기 — 포커스 effect 가 적고 루프의 돔 스텝이 소비한다.
    * effect 시점에는 월드가 재구축 중일 수 있어(선택이 조상 클러스터를 같이
    * 펼친다) 거기서 직접 계산하면 조용히 무산된다 — 루프는 항상 라이브 월드를
@@ -725,6 +761,8 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
    * 3D 빈 곳 드래그의 정체 — 돔 «손잡이» 안에서 시작했으면 궤도 회전, 밖이면
    * 카메라 팬(2D 와 동일). `pointerdown` 이 한 번 정한다(`DOME_GRIP_MARGIN`).
    */
+  /** 이동 양보가 끝나는 시각 (`navigation-intent` 구독 이펙트 독블록). */
+  const navYieldUntilRef = useRef(0);
   const domeGripRef = useRef(false);
   const camStartAtDownRef = useRef({ x: 0, y: 0 });
   const canvasRectRef = useRef<{ left: number; top: number } | null>(null);
@@ -1192,9 +1230,33 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
     const onMove = (e: PointerEvent) => {
       const rect = canvas.getBoundingClientRect();
       bgPointerRef.current = { x: e.clientX - rect.left, y: e.clientY - rect.top };
+      // 지도 위에서 손이 움직였다 = 이동이 취소됐거나 여기 남기로 했다.
+      navYieldUntilRef.current = 0;
     };
     const onLeave = () => {
       bgPointerRef.current = null;
+      /*
+       * **커서가 캔버스를 떠나면 노드 호버도 떠난다** (2026-08-19 실측).
+       *
+       * 종전에는 이 핸들러가 배경 좌표만 지웠다. 노드 호버(`hoveredNodeIdRef`)
+       * 는 «캔버스 «안»에서 빈 자리로 움직인 pointermove» 로만 풀렸다. 그래서
+       * 노드 위에 커서를 둔 채 창을 벗어나면 — 창 밖으로 빠르게 빼거나,
+       * 노드를 끌다 가장자리에서 놓거나, Cmd-Tab 으로 넘어가면 — 아무도
+       * 가리키지 않는 강조가 **영원히** 남았다.
+       *
+       * 값이 틀린 것만이 문제가 아니다. `emphasisTarget` 이 그 ref 를 읽으므로
+       * 유휴 게이트가 **다시는 닫히지 않는다**: 2,000 노드 2D 에서 무입력
+       * 48초 뒤에도 초당 130ms 를 태웠다(같은 화면의 정상 유휴는 3ms/s).
+       * 노드를 한 번 끌어 본 사람은 그 뒤로 계속 그 상태였다.
+       *
+       * 지운 «뒤» 활동 시각을 미는 것이 중요하다. 안 밀면 게이트가 그 자리에서
+       * 닫혀, 강조가 걷힌 화면을 아무도 안 그린다 — 링이 켜진 채 얼어붙는,
+       * 없애려던 것보다 나쁜 결함이 된다(`focusFadeSettling` 과 같은 이유).
+       */
+      if (hoveredNodeIdRef.current !== null) {
+        hoveredNodeIdRef.current = null;
+        lastActiveMsRef.current = performance.now();
+      }
     };
     canvas.addEventListener("pointermove", onMove, { passive: true });
     canvas.addEventListener("pointerleave", onLeave, { passive: true });
@@ -1202,6 +1264,31 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
       canvas.removeEventListener("pointermove", onMove);
       canvas.removeEventListener("pointerleave", onLeave);
     };
+  }, []);
+
+  /**
+   * **떠나기로 한 화면은 그리지 않는다** (2026-08-19 실측).
+   *
+   * 레일 탭을 눌렀을 때 새 화면이 뜨는 시간이 출발지에 따라 갈렸다. 4배
+   * 스로틀에서 문서함까지: 2D 2,000 노드 194ms 인데 **3D 2,000 노드(돔이
+   * 자율 회전 중)에서는 529ms, 3,000 노드에서는 745ms**. 새 화면이 느린 게
+   * 아니라, 지도가 «떠나는 순간까지» 매 프레임 전면 재도색을 해서 새 화면의
+   * 첫 렌더와 프레임 예산을 다투는 것이었다. 그 프레임들은 아무도 보지 않는다.
+   *
+   * 신호는 shared 층의 이벤트 하나뿐이다(`shared/lib/navigation-intent.ts`) —
+   * 지도가 내비 레일을 알거나 레일이 지도의 루프를 알면 그건 FSD 역방향이다.
+   *
+   * **시각으로 기록하고 저절로 푼다.** 이동이 취소돼도(누르고 딴 데로 끌거나
+   * 라우터가 같은 주소라 아무 일도 안 일어나도) 지도가 영영 멎는 실패 모드가
+   * 원리적으로 없다 — 상한이 지나면 복귀하고, 캔버스 위 포인터 한 번이면
+   * 그 전에 즉시 풀린다. `idle-gate` 가 wake 배선 없이 설계된 것과 같은 규율.
+   */
+  useEffect(() => {
+    const onIntent = () => {
+      navYieldUntilRef.current = performance.now() + NAVIGATION_YIELD_MS;
+    };
+    window.addEventListener(NAVIGATION_INTENT_EVENT, onIntent);
+    return () => window.removeEventListener(NAVIGATION_INTENT_EVENT, onIntent);
   }, []);
 
   // 앰비언트 휴면 지연 — 표면마다 다르다(관문은 짧다). 자기 의존성으로 둔다.
@@ -2188,6 +2275,13 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
           : Math.min((now - lastFrameTimeRef.current) / 1000, MAX_FRAME_DELTA_SECONDS);
       lastFrameTimeRef.current = now;
 
+      // 이동 양보 — 유휴 게이트보다 «앞» 이다. 활동 플래그가 무엇이든
+      // (자율 회전·혜성·조립 램프) 떠나기로 한 화면은 그리지 않는다.
+      if (now < navYieldUntilRef.current) {
+        handle = requestAnimationFrame(frame);
+        return;
+      }
+
       // --- A2 유휴 게이트: 활동 플래그를 refs 에서 재평가. 전부 꺼진 채
       // grace 가 지나면 물리+페인트를 건너뛴다 (rAF 는 유지 — 어떤 상태
       // 변화든 다음 프레임에 자연 복귀, wake 배선/동결 실패 모드 없음).
@@ -2259,14 +2353,25 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
               domeRt.pitch !== clampDomePitch(domeRt.pitch) ||
               // 자율 회전이 돌 수 있는 조건일 때만 rAF 를 깨워 둔다 — 개입으로
               // spinArmed 가 내려간 돔은 정지 화면이라 유휴 게이트에 맡긴다.
-              (domeTargetOn &&
-                !reducedMotionRef.current &&
-                !domeRt.orbiting &&
-                domeRt.spinArmed &&
-                bgPointerRef.current === null &&
-                domeRt.rampClock >= DOME_ASSEMBLE_TOTAL_MS)));
+              //
+              // **`!ambientAsleep` 이 여기 있어야 하는 이유** (2026-08-19 실측):
+              // 자율 회전은 상시 혜성·fresh 브리드와 같은 부류의 앰비언트 모션
+              // 인데 혼자만 `ambient-sleep.ts` 계약 밖에 있었다. 그래서 3D 는
+              // **무입력 45초가 지나도 잠들지 않았다** — 2000노드에서 초당
+              // 520ms(코어 절반)를 영구히 태웠고, 같은 상태의 2D 는 3ms/s 였다
+              // (170배). 이 앱의 전형 시나리오가 "에이전트 터미널 옆에 띄워
+              // 두기"라는 것을 생각하면 이것이 가장 비싼 상태다.
+              (!domeRt.orbiting &&
+                isDomeSpinAnimating({
+                  domeOn: domeTargetOn,
+                  reducedMotion: reducedMotionRef.current,
+                  ambientAsleep,
+                  spinArmed: domeRt.spinArmed,
+                  pointerOverCanvas: bgPointerRef.current !== null,
+                  assembled: domeRt.rampClock >= DOME_ASSEMBLE_TOTAL_MS,
+                }))));
 
-        const active = isCanvasActive({
+        const idleFlags = {
           pointerActive: pointerMachineRef.current.phase !== "idle",
           // 드래그 grab/release 가 heat 를 충전하는 동안(또는 노드가 pin 된
           // 동안)만 시뮬을 웜으로 인정한다. 상시 물리 토글은 제거됐다(#19).
@@ -2328,12 +2433,24 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
             Math.abs(spotlightRampRef.current - (spotlightIdsRef.current !== null ? 1 : 0)) > 0.01,
           // S6 — 이탈 역재생은 홈 스프링(homing)을 안 쓰므로 여기서 직접 깨워
           // 둬야 안무가 유휴 게이트에 얼지 않는다.
-        }) ||
-        realmTransitionRef.current.phase === "entering" ||
-        realmTransitionRef.current.phase === "exiting" ||
-        domeMotion;
-        if (active) lastActiveMsRef.current = now;
-        else if (shouldSkipFrame(now, lastActiveMsRef.current, IDLE_GRACE_MS)) {
+        };
+        const active =
+          isCanvasActive(idleFlags) ||
+          realmTransitionRef.current.phase === "entering" ||
+          realmTransitionRef.current.phase === "exiting" ||
+          domeMotion;
+        if (active) {
+          lastActiveMsRef.current = now;
+          // e2e 계측 — 방금 프레임을 깨운 플래그 이름들(`lastActiveCausesRef`
+          // 독블록). 창구가 붙었을 때만 기록해 제품 경로 비용을 0 으로 유지.
+          if (idleDebugEnabledRef.current) {
+            const causes: string[] = [];
+            for (const [k, v] of Object.entries(idleFlags)) if (v === true) causes.push(k);
+            if (realmTransitionRef.current.phase !== "idle") causes.push("realmTransition");
+            if (domeMotion) causes.push("domeMotion");
+            lastActiveCausesRef.current = { t: now, causes };
+          }
+        } else if (shouldSkipFrame(now, lastActiveMsRef.current, IDLE_GRACE_MS)) {
           handle = requestAnimationFrame(frame);
           return;
         }
@@ -2347,23 +2464,55 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
         let dome = domeRuntimeRef.current;
         if (domeTargetOn || (dome !== null && dome.rampClock > 0)) {
           if (dome === null || domeWorldSourceRef.current !== world) {
-            const model = buildDomeModel(
-              world.nodes.map((n) => ({ id: n.id, kind: n.kind, x: n.x, y: n.y, parentId: n.parentId })),
-              /*
-               * 「결합」 배치는 **모든 관계**를 각도의 입력으로 받는다 — 소유
-               * 배치가 containment 부모만 보는 것과 다른 점이 정확히 이것이다.
-               */
-              { arrangement: mapArrangementRef.current, edges: world.edges },
-            );
             if (dome === null) {
-              dome = createDomeRuntime(model);
+              /*
+               * 첫 돔 — 모델 빌드를 **프레임 예산 슬라이스**로 소진한다
+               * (`domeModelBuildRef` 독블록: 종전엔 결합 구름 완화가 이 한
+               * 프레임에 346~368ms 히치를 만들었다). 소유 배치는 step 이
+               * null 이라 종전과 똑같이 이 프레임에 즉시 완성된다.
+               */
+              let pending = domeModelBuildRef.current;
+              if (
+                pending === null ||
+                pending.world !== world ||
+                pending.arrangement !== mapArrangementRef.current
+              ) {
+                pending = {
+                  world,
+                  arrangement: mapArrangementRef.current,
+                  build: beginDomeModelBuild(
+                    world.nodes.map((n) => ({ id: n.id, kind: n.kind, x: n.x, y: n.y, parentId: n.parentId })),
+                    /*
+                     * 「결합」 배치는 **모든 관계**를 각도의 입력으로 받는다 — 소유
+                     * 배치가 containment 부모만 보는 것과 다른 점이 정확히 이것이다.
+                     */
+                    { arrangement: mapArrangementRef.current, edges: world.edges },
+                  ),
+                };
+                domeModelBuildRef.current = pending;
+              }
+              if (pending.build.step !== null && !pending.build.step(DOME_BUILD_SLICE_MS)) {
+                // 아직 완화 중 — 이번 프레임은 그리지 않는다(종전 동기 히치
+                // 동안의 정지 화면과 동일). 유휴 게이트가 접지 않게 활동으로
+                // 치고, 다음 프레임에서 이어 간다.
+                lastActiveMsRef.current = now;
+                handle = requestAnimationFrame(frame);
+                return;
+              }
+              domeModelBuildRef.current = null;
+              dome = createDomeRuntime(pending.build.model);
               domeRuntimeRef.current = dome;
               // 3D 가 켜진 채 지도가 뜨는 경우(선호 저장 후 재방문) — 토글
               // 이펙트가 안 돌므로 여기서 첫 핏을 예약한다.
               if (domeTargetOn) domeFitPendingRef.current = true;
             } else {
               // 월드가 갈렸다 — 레이아웃만 다시 풀고 자세(yaw/pitch)는 지킨다.
-              dome.model = model;
+              // (돔이 이미 화면에 있으므로 종전대로 동기 재계산 — 슬라이스로
+              // 미루면 그 동안 낡은 모델이 그려져 «잠깐 옛 배치» 가 보인다.)
+              dome.model = buildDomeModel(
+                world.nodes.map((n) => ({ id: n.id, kind: n.kind, x: n.x, y: n.y, parentId: n.parentId })),
+                { arrangement: mapArrangementRef.current, edges: world.edges },
+              );
               dome.frame.clear();
               dome.drawnBounds = null;
               dome.drag = null;
@@ -2653,15 +2802,27 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
             // `spinArmed` 가 내려가 다시는 저절로 돌지 않는다(①, 소유자
             // *"클릭하고 나서 좀 안돌아가게"*). 복귀는 「자동 정렬」·3D 재진입.
             // 포인터가 캔버스 위면 정지, reduced-motion 0 은 종전 그대로.
+            //
+            // 속도에 앰비언트 휴면 계수를 곱한다 — 끄는 게 아니라 재운다
+            // (`model/ambient-sleep.ts`). 손을 놓고 30초가 지나면 2초에 걸쳐
+            // 회전이 0 으로 램프하고, 0 에 닿는 순간 위 활동 플래그가 내려가
+            // 유휴 게이트가 닫힌다. 어떤 입력이든 `lastInputMs` 를 밀어 다음
+            // 프레임에 계수가 1 로 복귀하므로 wake 배선이 필요 없다. 스텝이
+            // 아니라 램프인 이유도 혜성과 같다: 한 프레임에 끊으면 돔이
+            // 「멎은」 것으로 읽힌다.
+            const spinFactor = ambientSleepFactor(now, lastInputMsRef.current, ambientSleepDelayRef.current);
             if (
-              domeTargetOn &&
-              !reducedMotionRef.current &&
-              dome.spinArmed &&
               dome.yawVel === 0 &&
-              bgPointerRef.current === null &&
-              dome.rampClock >= DOME_ASSEMBLE_TOTAL_MS
+              isDomeSpinAnimating({
+                domeOn: domeTargetOn,
+                reducedMotion: reducedMotionRef.current,
+                ambientAsleep: isAmbientAsleep(spinFactor),
+                spinArmed: dome.spinArmed,
+                pointerOverCanvas: bgPointerRef.current !== null,
+                assembled: dome.rampClock >= DOME_ASSEMBLE_TOTAL_MS,
+              })
             ) {
-              dome.yaw += (dtMs / DOME_PERIOD_MS) * Math.PI * 2;
+              dome.yaw += (dtMs / DOME_PERIOD_MS) * Math.PI * 2 * spinFactor;
             }
             // 드래그 밖 불변식 — 목표는 항상 현재 자세를 따라온다(다음 드래그
             // 가 낡은 목표-갭을 물려받지 않게).
@@ -2800,7 +2961,37 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
           }
         }
       }
-      if (sim && (heatRef.current > 0 || pinned)) {
+      /*
+       * **완전히 조립된 돔에서는 2D 물리를 돌리지 않는다** (2026-08-19 실측).
+       *
+       * `updateDomeFrame` 이 프레임에 싣는 오프셋은 `dx = (p.wx − node.x) · r`
+       * 이고 그리는 좌표는 `node.x + dx` 다. 티어 램프가 다 찬 상태(r=1)에서
+       * 이것은 `p.wx` 로 **정확히 약분된다** — 즉 조립이 끝난 돔의 어떤 마크도
+       * 2D 월드 좌표에 의존하지 않는다. 돔 모델(`dome.model.coords`)은 `world`
+       * 객체 «정체» 가 바뀔 때만 다시 짓지 좌표가 움직였다고 다시 짓지 않으므로,
+       * 이 프레임 동안 월드 좌표를 얼려도 돔은 한 픽셀도 달라지지 않는다.
+       *
+       * 그런데 3D 노드 드래그는 `nodeDragRef` 를 세운다(돔 평면 드래그의 손잡이
+       * 로 쓴다). 그래서 `pinned` 가 참이 되어 **아무 데도 안 보이는 2D 물리가
+       * 통째로 돌고 있었다**: FA2 iterate + 겹침 완화가 2,000 노드 전체 위에서,
+       * 게다가 `dragAffectedSetRef` 는 돔 경로가 세우지 않아 활성 집합조차 없는
+       * 최악의 형태로. 프로파일에서 드래그 표본의 **73%**(resolvePair 50.9% +
+       * iterate 22.6%)가 여기였고, 3D 노드 드래그 p95 는 52.1ms(≈19fps)였다 —
+       * 같은 조건의 2D 는 2.7ms.
+       *
+       * 3D 를 나가면 2D 레이아웃은 들어가기 전 그대로다. 보이지 않는 동안 굳는
+       * 것이 오히려 계약에 맞다 — 돌아왔을 때 지도가 낯설어지지 않는다.
+       */
+      const domeAssembled =
+        view3dRef.current &&
+        realmTransitionRef.current.phase === "idle" &&
+        domeRuntimeRef.current !== null &&
+        domeRuntimeRef.current.rampClock >= DOME_ASSEMBLE_TOTAL_MS;
+      if (domeAssembled) {
+        // 건너뛰는 동안에도 heat 는 흐른다 — 3D 를 나가는 순간 낡은 정착 버스트를
+        // 물려받지 않게 (아래 블록의 A4 예산과 같은 시간 규칙).
+        if (!pinned && heatRef.current > 0) heatRef.current = Math.max(0, heatRef.current - dt * 1000);
+      } else if (sim && (heatRef.current > 0 || pinned)) {
         // C1 B2 — radius-limited release settle: restrict BOTH the live-drag
         // tick and the post-release settle burst to the dragged node's own
         // cluster (itself + 1-hop + 2-hop), so far nodes never drift via FA2
@@ -4521,7 +4712,22 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
   useEffect(() => {
     if (typeof window === "undefined") return;
     if (!new URLSearchParams(window.location.search).has("e2e")) return;
+    // 유휴 게이트 계측 기록을 켠다 — 창구가 붙은 세션에서만(`lastActiveCausesRef`).
+    idleDebugEnabledRef.current = true;
     const hook = {
+      /**
+       * 마지막으로 프레임을 깨운 활동 플래그들의 이름 + 그 시각, 그리고 유휴
+       * 게이트의 입력이 되는 원시값 몇 개. «안 잠든다» 회귀에서 증상(초당 CPU)
+       * 이 아니라 **원인(어느 플래그)** 을 밖에서 특정하는 유일한 창구다.
+       */
+      idleDebug: () => ({
+        lastActive: lastActiveCausesRef.current,
+        heat: heatRef.current,
+        lastInputMs: lastInputMsRef.current,
+        lastActiveMs: lastActiveMsRef.current,
+        hovered: hoveredNodeIdRef.current,
+        pointerPhase: pointerMachineRef.current.phase,
+      }),
       /** 화면에 그려진 노드 — 좌표는 **CSS 픽셀**(마우스 좌표계)이다. */
       nodes: () => {
         const world = worldRef.current;

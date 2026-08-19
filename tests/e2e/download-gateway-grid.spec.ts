@@ -48,6 +48,11 @@ import { seedFirstRunSeen } from "./first-run-seed";
  * 4. **리사이즈 뒤에도 전부 유지된다.**
  * 5. **두 주소가 같은 것을 보여준다** — `/` 와 `/download` 둘 다 시연 절을 낸다.
  * 6. 320px 에서 가로 오버플로 0 (ko/en 둘 다).
+ * 7. **무대 폭이 토큰을 따른다** (2026-08-19 넓은 폭 개정) — 시연 무대의
+ *    렌더 폭이 `--gateway-stage-max` 의 계산값과 같고, 컬럼 안에서 가운데
+ *    서며, 에이전트 장면이 같은 폭을 입는다. 리사이즈 시험이 무대 폭이
+ *    실제로 폭을 따라 **움직였는지**까지 잰다 — 소유자의 2560 스크린샷에서
+ *    무대가 뷰포트의 30%로 고정돼 화면이 비어 보이던 그 결함의 재발 감시다.
  *
  * ## [삭제 2026-08-19] 판·설치 3단을 주어로 쓰던 단언 넷
  *
@@ -154,6 +159,28 @@ async function measure(page: import("@playwright/test").Page) {
       // 게시/미게시 어느 분기에서도 그려진다. (구 자였던 설치 3단은
       // 2026-08-19 에 페이지에서 사라졌다.)
       bandRight: right('[data-testid="gateway-facts"]'),
+      /**
+       * 무대 폭 (2026-08-19 넓은 폭 개정). 값을 베끼지 않는 규율은 원점과
+       * 같다 — `--gateway-stage-max` 는 clamp(rem, vw, rem)라 브라우저가
+       * `max-width` 계산값을 px 로 굳혀 준다. 시험은 그 계산값과 렌더된
+       * rect 가 같은지만 잰다(공식 자체의 불변식은
+       * `tests/contract/gateway-stage-width.contract.test.ts`).
+       */
+      stage: (() => {
+        const demo = laidOut('[data-testid="demo-stage"]');
+        const agent = laidOut('[data-testid="gateway-agent-scene"]');
+        if (!demo) return null;
+        const demoRect = demo.getBoundingClientRect();
+        const colRect = demo.parentElement!.getBoundingClientRect();
+        return {
+          maxWidthPx: Number.parseFloat(getComputedStyle(demo).maxWidth),
+          demoW: Math.round(demoRect.width),
+          demoLeft: Math.round(demoRect.left),
+          colLeft: Math.round(colRect.left),
+          colW: Math.round(colRect.width),
+          agentW: agent ? Math.round(agent.getBoundingClientRect().width) : null,
+        };
+      })(),
       // 상단 바 우측 그룹의 오른끝. 소유자의 "공백이 길고 왜이러지?" 게이트.
       gnbActionsRight: right('[data-testid="download-gnb-actions"]'),
       /**
@@ -222,6 +249,33 @@ function assertGrid(m: Awaited<ReturnType<typeof measure>>, label: string) {
   );
 
   expect(m.overflowX, `${label}: 가로 오버플로`).toBe(0);
+
+  /**
+   * **무대가 토큰을 따른다** (2026-08-19 넓은 폭 개정 — 소유자의 2560
+   * 스크린샷: 무대가 768px 고정이라 뷰포트의 30%로 떠서 화면이 비어 보였다).
+   *
+   * 렌더 폭 = 토큰 계산값(컬럼이 더 좁으면 컬럼) · 컬럼 안 가운데 · 에이전트
+   * 장면과 같은 폭. 값은 브라우저가 계산한 것을 읽는다 — 여기 숫자를 베끼면
+   * 이 파일이 두 번째 진실원이 된다(맨 위 규율).
+   */
+  expect(m.stage, `${label}: 무대를 못 읽었다`).not.toBeNull();
+  const stage = m.stage!;
+  expect(Number.isFinite(stage.maxWidthPx), `${label}: 무대 상한 토큰을 못 읽었다`).toBe(true);
+  const expectedStageW = Math.round(Math.min(stage.maxWidthPx, stage.colW));
+  expect(
+    Math.abs(stage.demoW - expectedStageW),
+    `${label}: 시연 무대 폭(${stage.demoW})이 토큰 계산값(${expectedStageW})과 다르다`,
+  ).toBeLessThanOrEqual(1);
+  const centeredLeft = stage.colLeft + (stage.colW - stage.demoW) / 2;
+  expect(
+    Math.abs(stage.demoLeft - centeredLeft),
+    `${label}: 시연 무대가 컬럼 가운데에 서지 않았다`,
+  ).toBeLessThanOrEqual(1);
+  expect(
+    stage.agentW,
+    `${label}: 에이전트 장면(${stage.agentW})과 시연 무대(${stage.demoW})의 폭이 갈렸다 — ` +
+      "「이만큼이 무대다」는 한 번만 말해져야 한다",
+  ).toBe(stage.demoW);
 }
 
 test.describe("관문 다운로드의 그리드", () => {
@@ -231,7 +285,14 @@ test.describe("관문 다운로드의 그리드", () => {
     }) => {
       await page.setViewportSize(viewport);
       await seedFirstRunSeen(page);
-      await page.goto("/ko/download/", { waitUntil: "networkidle" });
+      /**
+       * `networkidle` 이 아니라 `load` + 명시적 요소 대기다 (2026-08-19 실측).
+       * 큰 뷰포트(2560×1440)에서는 시연 절이 첫 화면에 걸려 영상이 자동재생을
+       * 시작하고, 스트리밍이 이어지는 동안 `networkidle` 은 **정의상 오지
+       * 않는다** — 수정 전 빌드에서도 같은 타임아웃이 재현됐다. 시험이 재는
+       * 것은 그리드이고, 그리드는 facts 스트립이 보이면 이미 굳어 있다.
+       */
+      await page.goto("/ko/download/", { waitUntil: "load" });
       await expect(page.getByTestId("gateway-facts")).toBeVisible({ timeout: 15_000 });
 
       assertGrid(await measure(page), `${viewport.width}`);
@@ -250,14 +311,17 @@ test.describe("관문 다운로드의 그리드", () => {
   test("리사이즈하면 다섯 원소가 새 원점을 따라간다", async ({ page }) => {
     await page.setViewportSize({ width: 1440, height: 900 });
     await seedFirstRunSeen(page);
-    await page.goto("/ko/download/", { waitUntil: "networkidle" });
+    // `load` + 요소 대기 — `networkidle` 은 자동재생 시연의 스트리밍 때문에
+    // 큰 뷰포트에서 정의상 오지 않는다 (위 그리드 시험의 주석).
+    await page.goto("/ko/download/", { waitUntil: "load" });
     await expect(page.getByTestId("gateway-facts")).toBeVisible({ timeout: 15_000 });
 
     const mounted = await measure(page);
     assertGrid(mounted, "1440 (마운트)");
 
-    // 폭 목록이 원점을 한 번이라도 실제로 움직였는지 — 아래 참조.
+    // 폭 목록이 원점·무대 폭을 한 번이라도 실제로 움직였는지 — 아래 참조.
     let sawOriginChange = false;
+    let sawStageChange = false;
 
     for (const width of [2560, 1920, 1440]) {
       await page.setViewportSize({ width, height: 900 });
@@ -276,6 +340,9 @@ test.describe("관문 다운로드의 그리드", () => {
       if (m.originToken !== mounted.originToken) {
         sawOriginChange = true;
       }
+      if (m.stage!.demoW !== mounted.stage!.demoW) {
+        sawStageChange = true;
+      }
     }
 
     // 위 조건부가 **조용히 무의미해지는** 것을 막는다. 홈통이 더 커져서 폭
@@ -284,6 +351,12 @@ test.describe("관문 다운로드의 그리드", () => {
     expect(
       sawOriginChange,
       "폭 목록이 원점을 한 번도 바꾸지 못했다 — 이 시험은 지금 아무것도 지키지 않는다",
+    ).toBe(true);
+    // 무대 폭도 같은 공회전 방지 — 넓은 폭에서 무대가 768px 고정으로 되돌아가면
+    // (2026-08-19 소유자의 2560 스크린샷 결함) 여기서 빨개진다.
+    expect(
+      sawStageChange,
+      "폭 목록이 무대 폭을 한 번도 바꾸지 못했다 — 넓은 폭 비례 성장이 죽었다",
     ).toBe(true);
   });
 
@@ -304,7 +377,9 @@ test.describe("관문 다운로드의 그리드", () => {
       }) => {
         await page.setViewportSize(viewport);
         await seedFirstRunSeen(page);
-        await page.goto(route, { waitUntil: "networkidle" });
+        // `load` — 자동재생 시연 스트리밍 때문에 `networkidle` 은 큰 뷰포트에서
+        // 오지 않는다. 이 시험의 대기는 어차피 아래 `toBeVisible` 이 진다.
+        await page.goto(route, { waitUntil: "load" });
 
         const demo = page.getByTestId("demo-stage");
         await demo.scrollIntoViewIfNeeded();
@@ -348,7 +423,7 @@ test.describe("관문 다운로드의 그리드", () => {
     test(`320px ${locale} — 가로 오버플로 0`, async ({ page }) => {
       await page.setViewportSize({ width: 320, height: 720 });
       await seedFirstRunSeen(page);
-      await page.goto(`/${locale}/download/`, { waitUntil: "networkidle" });
+      await page.goto(`/${locale}/download/`, { waitUntil: "load" });
       await expect(page.getByTestId("gateway-facts")).toBeVisible({ timeout: 15_000 });
 
       const worst = await page.evaluate(() => {

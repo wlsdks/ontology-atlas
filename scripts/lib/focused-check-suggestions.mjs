@@ -100,6 +100,22 @@ const RULES = [
     ],
   },
   {
+    // 데스크톱 성능 하드 예산은 종전에 `desktop:release-preflight` 에서만
+    // 돌았고, 그 사이 번들 볼트 데이터가 자라 두 예산이 조용히 넘었다
+    // (2026-08-19 릴리스 준비에서 1.71MiB/1.50 · 8.42MiB/8.00 발견). 예산을
+    // 움직이는 경로 — 번들 데이터 JSON, 그것을 만드는 생성기, 정적 import
+    // 지점, 예산 검사 자체 — 가 바뀌면 여기서 실측을 추천한다. 빌드 없이
+    // 상시로 도는 절반은 `tests/contract/bundled-vault-budget.contract.test.ts`.
+    command: 'pnpm build && pnpm desktop:perf',
+    reason: 'bundled vault data or the desktop performance budget surface changed — re-measure the static budgets',
+    matches: [
+      /^src\/entities\/docs-vault\/data\//,
+      /^scripts\/build-docs-vault\.mjs$/,
+      /^scripts\/check-desktop-performance\.(?:mjs|test\.mjs)$/,
+      /^src\/entities\/docs-vault\/lib\/static-(?:vault-source|headings)\.ts$/,
+    ],
+  },
+  {
     command: 'pnpm test:desktop:runtime',
     reason: 'hosted-vs-installed desktop runtime split changed',
     matches: [

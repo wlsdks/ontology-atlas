@@ -182,7 +182,11 @@ import {
   buildOntologyInsightsReturnHref,
   parseInsightsReturnMarker,
 } from "@/entities/knowledge-graph";
-import { resolveStaticVaultSource } from '@/entities/docs-vault';
+import {
+  loadStaticVaultHeadings,
+  resolveStaticVaultSource,
+  type StaticVaultHeadings,
+} from '@/entities/docs-vault';
 
 function DocsVaultContent() {
   const t = useTranslations('docsVault');
@@ -662,6 +666,37 @@ function DocsVaultContent() {
     isLocalSourceLoaded && localVault.manifest
       ? localVault.manifest
       : staticVault.manifest;
+
+  /*
+   * 번들 볼트의 headings — 매니페스트에서 떼어 별도 청크로 분리됐다(263KB 가
+   * `/docs` 만 쓰는데 모든 라우트의 공통 청크에 실려 있었다,
+   * `entities/docs-vault/lib/static-headings.ts`). static 모드에서만 필요할 때
+   * 동적 import 하고, 로컬 모드 매니페스트는 headings 를 인라인으로 갖고 있다.
+   * 짝 규율: 지금 그리는 매니페스트와 같은 볼트(source)의 맵만 싣는다.
+   */
+  const [staticHeadingsBundle, setStaticHeadingsBundle] = useState<{
+    source: string;
+    map: StaticVaultHeadings;
+  } | null>(null);
+  useEffect(() => {
+    if (isLocalSourceLoaded) return undefined;
+    let cancelled = false;
+    loadStaticVaultHeadings(staticVault.source)
+      .then((map) => {
+        if (!cancelled) setStaticHeadingsBundle({ source: staticVault.source, map });
+      })
+      .catch(() => {
+        // 목차는 부가 정보다 — 로드 실패로 문서함 자체를 막지 않는다.
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [isLocalSourceLoaded, staticVault.source]);
+  // 샘플이 바뀌는 순간 낡은 맵을 쓰지 않도록 source 가 일치할 때만 소비한다.
+  const staticHeadings =
+    staticHeadingsBundle && staticHeadingsBundle.source === staticVault.source
+      ? staticHeadingsBundle.map
+      : null;
   const ontologyDerivation = useMemo(
     () => deriveOntologyFromVault(manifest),
     [manifest],
@@ -1611,8 +1646,15 @@ function DocsVaultContent() {
     ? (manifest.backlinksDetail?.[selectedSlug] ?? [])
     : [];
   const outlineHeadings = useMemo(() => {
-    const headings =
-      selectedDoc?.headings.filter((h) => h.depth >= 2 && h.depth <= 3) ?? [];
+    // 번들 매니페스트의 headings 는 비어 있다(별도 청크로 분리) — 그때는
+    // 지연 로드한 같은 볼트의 맵에서 찾는다. 로컬 매니페스트는 인라인 그대로.
+    const docHeadings =
+      selectedDoc && selectedDoc.headings.length > 0
+        ? selectedDoc.headings
+        : selectedDoc
+          ? (staticHeadings?.[selectedDoc.slug] ?? [])
+          : [];
+    const headings = docHeadings.filter((h) => h.depth >= 2 && h.depth <= 3);
     const totals = new Map<string, number>();
     for (const heading of headings) {
       totals.set(heading.text, (totals.get(heading.text) ?? 0) + 1);
@@ -1627,7 +1669,7 @@ function DocsVaultContent() {
         occurrence,
       };
     });
-  }, [selectedDoc]);
+  }, [selectedDoc, staticHeadings]);
   // 긴 문서(heading ≥ 임계)에서만 좌측 빈 띠에 상시 목차 레일 — 짧은 문서에서는
   // 노이즈가 되므로 표시하지 않는다 (po-pass.md §4 상태 계약).
   const showOutlineRail = shouldShowOutlineRail(outlineHeadings.length);

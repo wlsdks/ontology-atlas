@@ -325,6 +325,11 @@ export function draw(ctx: CanvasRenderingContext2D, state: TraceDrawState, token
    * 파선은 헤일로에 쓰지 않는다 — 파선 헤일로는 잘린 자리에 틈을 남겨서
    * 「가림」이 아니라 「점선 그림자」로 읽힌다.
    */
+  // perf 2026-08-19 — 헤일로 앞의 `setLineDash([])` 는 제거했다. 이 파일과
+  // 이웃 painter 전부가 파선을 쓰고 나면 반드시 `[]` 로 되돌리므로(아래 본체
+  // 경로 · node-shapes · cluster-chips · dome-rings · frame-draw 링 블록) 진입
+  // 시점의 대시 상태는 항상 비어 있다 — 같은 상태를 다시 쓰는 호출만 지웠고
+  // 픽셀 게이트(스크린샷 비교)로 확인한다.
   const halo = state.halo;
   if (halo && halo.px > 0.05 && halo.alpha > 0.01) {
     const prevAlpha = ctx.globalAlpha;
@@ -332,7 +337,6 @@ export function draw(ctx: CanvasRenderingContext2D, state: TraceDrawState, token
     const prevJoin = ctx.lineJoin;
     ctx.globalAlpha = halo.alpha;
     ctx.strokeStyle = halo.color;
-    ctx.setLineDash([]);
     ctx.lineCap = "round";
     ctx.lineJoin = "round";
     ctx.lineWidth = Math.max(0.35, width) + halo.px * 2;
@@ -358,41 +362,51 @@ export function draw(ctx: CanvasRenderingContext2D, state: TraceDrawState, token
     ctx.quadraticCurveTo(control.x, control.y, b.x, b.y);
     ctx.lineWidth = Math.max(0.35, width);
     ctx.stroke();
+    ctx.setLineDash([]);
   } else if (tapered) {
     // 방향 테이퍼: source→target 로 얇아지는 가변폭 폴리라인. dash 연속성은
     // 세그먼트마다 `lineDashOffset` 을 누적 길이로 이어붙여 유지하고, round
     // cap/join 으로 세그먼트 이음매를 매끄럽게 한다(화살촉 없음 — 방향은 굵기).
+    // perf 2026-08-19 — 세그먼트 점은 `bezierPoint`(객체 할당) 대신 지역
+    // 변수로 인라인 계산한다: 같은 식(u², 2ut, t²)이라 좌표가 같고, 엣지당
+    // 14개씩 태어나던 임시 객체가 0 이 된다.
     ctx.setLineDash(DEPENDS_DASH);
     const prevCap = ctx.lineCap;
     const prevJoin = ctx.lineJoin;
     ctx.lineCap = "round";
     ctx.lineJoin = "round";
-    let prev = a;
+    let prevX = a.x;
+    let prevY = a.y;
     let acc = 0;
     for (let i = 1; i <= DEPENDS_TAPER_SEGMENTS; i += 1) {
-      const point = bezierPoint(a, control, b, i / DEPENDS_TAPER_SEGMENTS);
+      const t = i / DEPENDS_TAPER_SEGMENTS;
+      const uu = 1 - t;
+      const pointX = uu * uu * a.x + 2 * uu * t * control.x + t * t * b.x;
+      const pointY = uu * uu * a.y + 2 * uu * t * control.y + t * t * b.y;
       const u = (i - 0.5) / DEPENDS_TAPER_SEGMENTS;
       ctx.beginPath();
       ctx.lineWidth = Math.max(0.35, width * dependsTaperFactor(u));
       ctx.lineDashOffset = -acc;
-      ctx.moveTo(prev.x, prev.y);
-      ctx.lineTo(point.x, point.y);
+      ctx.moveTo(prevX, prevY);
+      ctx.lineTo(pointX, pointY);
       ctx.stroke();
-      acc += Math.hypot(point.x - prev.x, point.y - prev.y);
-      prev = point;
+      acc += Math.hypot(pointX - prevX, pointY - prevY);
+      prevX = pointX;
+      prevY = pointY;
     }
     ctx.lineCap = prevCap;
     ctx.lineJoin = prevJoin;
     ctx.lineDashOffset = 0;
-  } else {
-    ctx.beginPath();
     ctx.setLineDash([]);
+  } else {
+    // 진입 대시 상태가 항상 [] 이므로(위 헤일로 주석) 여기서는 대시 호출이
+    // 아예 없다 — contains 엣지가 매 프레임 내던 `setLineDash([])` 2회가 0회.
+    ctx.beginPath();
     ctx.moveTo(a.x, a.y);
     ctx.quadraticCurveTo(control.x, control.y, b.x, b.y);
     ctx.lineWidth = Math.max(0.35, width);
     ctx.stroke();
   }
-  ctx.setLineDash([]);
 
   if (isDepends) {
     if (egoState === "dim") return;
@@ -413,16 +427,19 @@ export function draw(ctx: CanvasRenderingContext2D, state: TraceDrawState, token
     const ego = egoState === "ego" || state.selected === true;
     const baseSizes = emphasized ? COMET_TAIL_BASE_EMPHASIZED : ego ? COMET_TAIL_BASE_EGO : COMET_TAIL_BASE_NORMAL;
     const tailColor = ego ? tokens.indigoBright : tokens.indigo;
-    COMET_TAIL_STEPS.forEach((step, i) => {
-      let tt = t - step;
+    // perf 2026-08-19 — forEach 클로저·bezierPoint 객체 할당 제거(같은 식 인라인).
+    ctx.fillStyle = tailColor;
+    for (let i = 0; i < COMET_TAIL_STEPS.length; i += 1) {
+      let tt = t - COMET_TAIL_STEPS[i];
       if (tt < 0) tt += 1;
-      const point = bezierPoint(a, control, b, tt);
+      const uu = 1 - tt;
+      const px = uu * uu * a.x + 2 * uu * tt * control.x + tt * tt * b.x;
+      const py = uu * uu * a.y + 2 * uu * tt * control.y + tt * tt * b.y;
       const size = baseSizes[i] + (COMET_TAIL_FAR_SIZES[i] - baseSizes[i]) * farT;
       ctx.beginPath();
-      ctx.fillStyle = tailColor;
-      ctx.arc(point.x, point.y, size, 0, Math.PI * 2);
+      ctx.arc(px, py, size, 0, Math.PI * 2);
       ctx.fill();
-    });
+    }
     return;
   }
 
@@ -438,14 +455,16 @@ export function draw(ctx: CanvasRenderingContext2D, state: TraceDrawState, token
   // 즉시(다음 프레임) 미표시 — 별도 소멸 애니메이션 불필요.
   if (egoState !== "ego" || state.containsCometEligible !== true) return;
   if (state.reducedMotion === true) return;
-  COMET_TAIL_STEPS.forEach((step, i) => {
-    let tt = t - step;
+  ctx.fillStyle = tokens.indigo;
+  for (let i = 0; i < COMET_TAIL_STEPS.length; i += 1) {
+    let tt = t - COMET_TAIL_STEPS[i];
     if (tt < 0) tt += 1;
-    const point = bezierPoint(a, control, b, tt);
+    const uu = 1 - tt;
+    const px = uu * uu * a.x + 2 * uu * tt * control.x + tt * tt * b.x;
+    const py = uu * uu * a.y + 2 * uu * tt * control.y + tt * tt * b.y;
     const size = COMET_TAIL_BASE_NORMAL[i] + (COMET_TAIL_FAR_SIZES[i] - COMET_TAIL_BASE_NORMAL[i]) * farT;
     ctx.beginPath();
-    ctx.fillStyle = tokens.indigo;
-    ctx.arc(point.x, point.y, size, 0, Math.PI * 2);
+    ctx.arc(px, py, size, 0, Math.PI * 2);
     ctx.fill();
-  });
+  }
 }
