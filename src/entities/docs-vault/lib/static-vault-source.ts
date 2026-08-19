@@ -2,6 +2,7 @@ import type { SampleSource } from '@/shared/lib/sample-source';
 import sampleStorefrontContent from '../data/sample-storefront.content.json';
 import sampleStorefrontManifest from '../data/sample-storefront.manifest.json';
 import gatewayContent from '../data/gateway-content.json';
+import gatewayChangelog from '../data/gateway-changelog.json';
 import vaultManifest from '../data/manifest.json';
 import type { VaultManifest } from '../model/types';
 
@@ -33,11 +34,21 @@ export interface StaticVaultSource {
   manifest: VaultManifest;
   /**
    * slug → 원문 마크다운 fallback. Gateway가 첫 페인트 전에 동기적으로
-   * 필요로 하는 guide/* · CHANGELOG만 포함한다. 그 밖의 문서는
+   * 필요로 하는 guide/* 만 포함한다. 그 밖의 문서는
    * `public/docs-vault/{slug}.md` asset으로 비동기 읽기한다.
    * 매니페스트와 항상 같은 볼트에서 온다.
    */
   content: Record<string, string>;
+  /**
+   * slug → **잘린 동기 미리보기**. 전문을 번들에 담기엔 너무 커졌지만 관문이
+   * 첫 페인트에 동기로 필요로 하는 문서(지금은 CHANGELOG 하나 — 634KB 전문이
+   * 모든 라우트의 공통 청크를 성능 예산 밖으로 밀었다). `body` 는 원문의
+   * 앞부분 그대로(`## ` 절 단위 절단)이고, `omittedSections` 는 그 절단이
+   * 접은 절 수다 — 화면은 자기 상한으로 한 번 더 자른 뒤 두 수를 더해 정확한
+   * 총 접힌 수를 말한다. 전문은 `public/docs-vault/{slug}.md` 에 그대로 있다.
+   * 매니페스트와 항상 같은 볼트에서 온다 — content 와 같은 짝 규율.
+   */
+  contentPreviews?: Record<string, { body: string; omittedSections: number }>;
   /**
    * 이 매니페스트의 문서 slug 앞에 붙어 있는, **에이전트가 물린 볼트 뿌리
    * 기준으로는 없는** 조각.
@@ -59,6 +70,9 @@ const DOGFOOD: StaticVaultSource = {
   source: 'dogfood',
   manifest: vaultManifest as VaultManifest,
   content: gatewayContent as Record<string, string>,
+  contentPreviews: {
+    CHANGELOG: gatewayChangelog as { body: string; omittedSections: number },
+  },
   agentSlugPrefix: 'ontology/',
 };
 

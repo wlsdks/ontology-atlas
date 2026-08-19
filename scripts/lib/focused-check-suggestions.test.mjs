@@ -56,10 +56,25 @@ describe('focused check suggestions', () => {
       'pnpm test:docs-vault',
       'pnpm test:vault:validate',
       'pnpm test:vault:audit',
+      // 생성기는 번들 볼트 데이터의 모양을 정하므로 데스크톱 정적 예산
+      // 실측도 함께 권한다 (2026-08-19 — 예산이 릴리스에서만 재져 조용히
+      // 넘었던 사고의 재발 방지).
+      'pnpm build && pnpm desktop:perf',
       'pnpm test:vault:migrate',
       'pnpm vault:migrate --list',
       'pnpm test:contracts',
     ]);
+  });
+
+  it('suggests the desktop static budget measurement when bundled vault data changes', () => {
+    const result = suggestFocusedChecks([
+      'src/entities/docs-vault/data/gateway-content.json',
+    ]);
+
+    assert.ok(
+      result.commands.some((row) => row.command === 'pnpm build && pnpm desktop:perf'),
+      'bundled vault data must trigger the desktop budget measurement',
+    );
   });
 
   it('suggests direct locale message validation before the package shortcut', () => {

@@ -22,13 +22,7 @@
         ],
         "elements": []
       },
-      "headings": [
-        {
-          "depth": 1,
-          "text": "Account Closure · 회원 탈퇴",
-          "slug": "account-closure-회원-탈퇴"
-        }
-      ],
+      "headings": [],
       "excerpt": "고객이 「탈퇴하기」를 누르면 계정은 그 자리에서 잠기고, 이름·연락처·배송지 같은 개인정보는 지워집니다. 다만 주문과 결제 기록은 법이 정한 기간 동안 남습니다. 그래서 탈퇴는 「모든 것을 지우는 일」이 아니라 「지울 것과 남길 것을 가르는 일」입니다. 남긴 기록을 찾아볼 길이 필요하기 때문에 이 기능은 주문 조회에 기대고 있습니다. 탈퇴한 사람의 환불이 아직 진행 중일 수 있고, 그 환불은 끝까지 가야 합니다. 흔한 함정: 탈퇴 즉시 다 지웠다가 배송 중인 주문의 받는 사람 정보까지 사라지는 경우입니다. 진행 중인 주문이 있으면 탈퇴를 막는 것이 아니라, 그 주문이",
       "wordCount": 140,
       "updatedAt": "2026-08-14",
@@ -53,13 +47,7 @@
           "elements/address-record"
         ]
       },
-      "headings": [
-        {
-          "depth": 1,
-          "text": "Address Book · 배송지 주소록",
-          "slug": "address-book-배송지-주소록"
-        }
-      ],
+      "headings": [],
       "excerpt": "주문서에서 「지난번 그 주소」를 한 번에 고르게 해 주는 목록입니다. 집·회사·부모님 댁처럼 자주 보내는 곳을 저장해 두면, 주소를 다시 입력하는 대신 목록에서 하나를 누르는 것으로 끝납니다. 경계 한 줄: 여기 저장된 주소는 「앞으로 보낼 곳」의 후보일 뿐입니다. 이미 접수된 주문이 어디로 가는지는 주문 쪽에 복사된 주소가 정합니다. 주소록에서 집 주소를 고쳐도 어제 주문한 물건의 도착지는 바뀌지 않습니다. Remembers the places a shopper ships to, so the slowest step of checkout becomes a single",
       "wordCount": 103,
       "updatedAt": "2026-08-14",
@@ -88,13 +76,7 @@
           "elements/campaign-page"
         ]
       },
-      "headings": [
-        {
-          "depth": 1,
-          "text": "Campaign Planning · 기획전",
-          "slug": "campaign-planning-기획전"
-        }
-      ],
+      "headings": [],
       "excerpt": "「여름 휴가 준비전」처럼 주제를 정해 상품을 골라 묶고, 그 묶음만의 페이지를 열어 알리는 일입니다. 상품 하나하나를 할인하는 것과 달리, 이야기가 있는 진열이 목적입니다. 카테고리에서 상품을 골라 오고, 열리는 날에는 고객 메시지 발송으로 알립니다. 그래서 기획전의 실패는 대개 상품 선정이 아니라 시점에서 옵니다: 알림은 나갔는데 페이지가 아직 비어 있는 것이 대표적인 사고입니다. Assembles a themed selection with its own page and its own story, rather than discounting items one by o",
       "wordCount": 97,
       "updatedAt": "2026-08-14",
@@ -122,13 +104,7 @@
           "elements/waybill"
         ]
       },
-      "headings": [
-        {
-          "depth": 1,
-          "text": "Carrier Integration · 택배사 연동",
-          "slug": "carrier-integration-택배사-연동"
-        }
-      ],
+      "headings": [],
       "excerpt": "포장이 끝난 상자를 CJ대한통운·한진택배·우체국 같은 택배사에 넘기고, 운송장 번호와 「집화 완료」 「배송 중」 같은 상태 변화를 되받아 오는 창구입니다. 택배사마다 보내오는 말이 다릅니다. 같은 상황을 어떤 회사는 「간선 상차」라 부르고 어떤 회사는 「이동 중」이라 부릅니다. 이 창구의 일은 그 말들을 받아 오는 데까지이고, 가게의 말로 번역해 보여 주는 일은 배송 조회가 맡습니다. Hands a packed parcel to CJ Logistics, Hanjin, or Korea Post, and takes back the waybill number and eve",
       "wordCount": 98,
       "updatedAt": "2026-08-14",
@@ -156,13 +132,7 @@
           "elements/cart-session"
         ]
       },
-      "headings": [
-        {
-          "depth": 1,
-          "text": "Shopping Cart · 장바구니",
-          "slug": "shopping-cart-장바구니"
-        }
-      ],
+      "headings": [],
       "excerpt": "상품 상세에서 「담기」를 누른 것들이 모이는 곳입니다. 아직 아무것도 약속되지 않았습니다: 가격은 바뀔 수 있고 재고는 다른 사람이 가져갈 수 있습니다. 창을 닫았다가 다음 주에 와도 담아 둔 것은 그대로 있습니다. 경계: 장바구니에 담는 것은 재고를 잡는 일이 아닙니다. 재고가 잡히는 것은 결제를 시작할 때입니다. 「담아 뒀는데 품절됐어요」는 오류가 아니라 이 경계가 의도한 결과입니다. Holds what a shopper intends to buy without committing them or the store to anything, and survives th",
       "wordCount": 104,
       "updatedAt": "2026-08-14",
@@ -192,13 +162,7 @@
           "elements/checkout-draft"
         ]
       },
-      "headings": [
-        {
-          "depth": 1,
-          "text": "Checkout · 주문서 작성",
-          "slug": "checkout-주문서-작성"
-        }
-      ],
+      "headings": [],
       "excerpt": "장바구니를 구체적인 제안으로 바꿉니다. 이 상품들을, 이 주소로, 이 쿠폰을 써서, 이 수단으로. 결제 화면은 이 가게에서 사람이 가장 많이 떠나는 자리입니다. 그래서 여기서 새로 묻는 것은 하나하나가 비용입니다. 회원가입을 요구할 것인가, 주소를 다시 입력하게 할 것인가, 결제 수단을 몇 개나 보여줄 것인가. 지금 정해 둔 것: 비회원도 끝까지 갈 수 있다. 대신 주문 조회에 필요한 것(주문번호와 연락처)은 반드시 받습니다. 아직 못 정한 것: 재고가 결제 중에 떨어지면 어디서 알릴 것인가. 들어올 때 잡아 두면 장바구니에 넣고 안 사는 사람이 재고를 묶고, 나갈 ",
       "wordCount": 128,
       "updatedAt": "2026-08-14",
@@ -223,13 +187,7 @@
           "elements/coupon-policy"
         ]
       },
-      "headings": [
-        {
-          "depth": 1,
-          "text": "Coupon Issuing · 쿠폰 발급",
-          "slug": "coupon-issuing-쿠폰-발급"
-        }
-      ],
+      "headings": [],
       "excerpt": "「첫 주문 10% 할인, 5만원 이상, 이번 달까지」처럼 조건이 붙은 할인 권리를 만들어 특정한 사람이나 집단에게 나눠 주는 일입니다. 가입 축하 쿠폰처럼 자동으로 들어가는 것도, 문자로 뿌리는 것도 모두 여기서 시작합니다. 발급과 사용은 다른 일입니다. 여기서는 권리를 만들어 나눠 주기만 하고, 그 권리가 실제 장바구니에서 성립하는지 따지는 일은 쿠폰 사용이 맡습니다. 이 경계를 흐리면 「받았는데 못 쓰는 쿠폰」이 어디서 잘못됐는지 아무도 답하지 못하게 됩니다. Creates a conditional right to a discount, like 10% off a ",
       "wordCount": 119,
       "updatedAt": "2026-08-14",
@@ -257,13 +215,7 @@
           "elements/coupon-wallet"
         ]
       },
-      "headings": [
-        {
-          "depth": 1,
-          "text": "Coupon Redemption · 쿠폰 사용",
-          "slug": "coupon-redemption-쿠폰-사용"
-        }
-      ],
+      "headings": [],
       "excerpt": "쿠폰이 지금 이 장바구니에 쓸 수 있는지 따져 보고 한 번만 소진시킵니다. 규칙이 실제로 작동하는 곳입니다. 쿠폰은 쓰는 순간이 아니라 주문이 확정되는 순간에 소진됩니다. 그 사이에 결제가 실패하면 쿠폰은 돌아와야 하고, 돌아오지 않으면 고객은 아무것도 못 사고 쿠폰만 잃습니다. 겹치는 규칙도 여기서 걸립니다. 이 가게는 한 주문에 쿠폰 하나이고 등급 할인·타임세일과는 겹칠 수 있습니다. 「하나만」이 제약처럼 보이지만, 여러 장을 허용하면 최종 금액을 고객이 예측하지 못하게 됩니다. Checks a coupon against the cart it is being us",
       "wordCount": 113,
       "updatedAt": "2026-08-14",
@@ -291,13 +243,7 @@
           "elements/sms-gateway"
         ]
       },
-      "headings": [
-        {
-          "depth": 1,
-          "text": "Customer Messaging · 고객 메시지 발송",
-          "slug": "customer-messaging-고객-메시지-발송"
-        }
-      ],
+      "headings": [],
       "excerpt": "「주문이 접수됐습니다」 한 문장을 실제로 사람의 손 안까지 보내는 일입니다. 카카오 알림톡·문자·이메일·앱 푸시 가운데 그 사람에게 닿을 수 있는 통로를 고르고, 하나가 실패하면 다음 통로로 넘어갑니다. 무엇을 보낼지는 여기서 정하지 않습니다. 주문 알림·재입고 알림·기획전 홍보가 각자 문장을 만들어 오면, 여기는 배달만 책임집니다. 이 분리 덕에 보내는 통로가 하나 늘어도 문장을 만드는 쪽은 아무것도 몰라도 됩니다. Actually delivers one sentence to a person's hand, choosing among KakaoTalk notifica",
       "wordCount": 107,
       "updatedAt": "2026-08-14",
@@ -326,13 +272,7 @@
           "elements/exchange-record"
         ]
       },
-      "headings": [
-        {
-          "depth": 1,
-          "text": "Exchange Request · 교환 접수",
-          "slug": "exchange-request-교환-접수"
-        }
-      ],
+      "headings": [],
       "excerpt": "「같은 옷, 한 치수 큰 걸로 바꿔 주세요」를 처리합니다. 이미 배송된 물건을 거둬 오는 반품 회수와, 새로 내보낼 물건을 잡아 두는 재고 선점을 한 건으로 묶습니다. 돈은 오가지 않고, 고객 손에는 다른 물건이 남습니다. 함정 하나: 회수와 재발송을 따로 굴리면 「새 물건은 나갔는데 회수는 안 된」 상태가 생기고, 그 상태를 부르는 이름이 없으면 상담원마다 다르게 처리합니다. 한 건으로 묶는 이유가 그것입니다. 바꿔 줄 물건의 재고가 없으면 교환은 성립하지 않습니다. 그때는 교환을 붙들고 기다리게 하는 대신 반품과 환불로 안내하는 것이 맞습니다. Ties a ret",
       "wordCount": 128,
       "updatedAt": "2026-08-14",
@@ -355,13 +295,7 @@
         "domain": "domains/loyalty",
         "elements": []
       },
-      "headings": [
-        {
-          "depth": 1,
-          "text": "Expiry Policy · 소멸 정책",
-          "slug": "expiry-policy-소멸-정책"
-        }
-      ],
+      "headings": [],
       "excerpt": "안 쓴 포인트가 언제 사라지는지, 사라지기 전에 무엇을 알려주는지를 정합니다. 소멸은 가게 입장에서는 장부 정리지만 고객 입장에서는 통장에서 돈이 빠지는 일이라, 규칙보다 예고가 먼저 설계돼야 하는 역량입니다. 아직 계획이라 숫자가 하나도 없습니다. 유효기간(1년인지 2년인지), 예고 시점(30일 전 한 번인지, 7일 전에 한 번 더인지), 그리고 부분 소멸(먼저 쌓인 것부터 사라지는지)이 전부 미정입니다. 다만 「예고 없이 소멸시키지 않는다」 한 줄만은 규칙이 아니라 약속으로 먼저 적어 둡니다. Says when unused points disappear and w",
       "wordCount": 124,
       "updatedAt": "2026-08-14",
@@ -386,13 +320,7 @@
           "elements/faq-article"
         ]
       },
-      "headings": [
-        {
-          "depth": 1,
-          "text": "FAQ · 자주 묻는 질문",
-          "slug": "faq-자주-묻는-질문"
-        }
-      ],
+      "headings": [],
       "excerpt": "「배송은 며칠 걸리나요」처럼 가만두면 1:1 문의로 한 건씩 도착할 질문에, 미리 답을 적어 두는 게시판입니다. 상담원이 개입하지 않으니 가장 값싼 고객 지원입니다. 여기 실을 기준은 하나입니다: 같은 질문이 반복해서 들어오는가. 반대로 특정 주문에 대한 질문은 아무리 흔해도 여기 답이 없습니다. 그런 질문의 자리는 1:1 문의입니다. Answers in advance the questions that would otherwise arrive one by one as tickets, which makes it the cheapest support there is. O",
       "wordCount": 89,
       "updatedAt": "2026-08-14",
@@ -424,13 +352,7 @@
           "elements/sale-schedule"
         ]
       },
-      "headings": [
-        {
-          "depth": 1,
-          "text": "Flash Sale · 타임세일",
-          "slug": "flash-sale-타임세일"
-        }
-      ],
+      "headings": [],
       "excerpt": "「오늘 밤 9시부터 두 시간, 30% 할인」처럼 기다리면 손해가 되는 짧은 할인입니다. 시간이 끝나거나 재고가 떨어지면 그 순간 원래 가격으로 돌아갑니다. 판매가 관리에서 원래 가격을, 재고 수량 관리에서 남은 수량을 받아 옵니다. 시작을 알리는 메시지는 함께 나가야 효과가 있습니다. 아직 못 정한 것: 세일 직전에 장바구니에 담아 둔 사람에게 어느 가격을 보여 줄 것인가. 결제 시점 가격이 원칙이지만, 눈앞에서 값이 바뀌는 경험을 어떻게 설명할지는 정하지 못했습니다. Drops a price for a window short enough that waiting is",
       "wordCount": 120,
       "updatedAt": "2026-08-14",
@@ -461,13 +383,7 @@
           "elements/inquiry-ticket"
         ]
       },
-      "headings": [
-        {
-          "depth": 1,
-          "text": "Customer Inquiry · 1:1 문의",
-          "slug": "customer-inquiry-11-문의"
-        }
-      ],
+      "headings": [],
       "excerpt": "자주 묻는 질문으로 해결되지 않는 「제 주문만」의 사정을 다루는 창구입니다. 특정 주문이나 상품을 걸고 1:1 대화를 열면, 누군가 답하고 닫을 때까지 그 대화는 살아 있습니다. 답변이 달리면 고객 메시지 발송으로 알립니다. 답을 달아 놓고 알리지 않으면, 고객에게는 답이 없는 것과 같습니다. 경계: 접수 화면에 들어오기 전에 자주 묻는 질문을 먼저 보여 주는 데까지가 이 기능의 예의입니다. 그것으로 풀리면 문의는 생기지 않는 것이 최선입니다. Opens a one-to-one thread tied to a specific order or product and kee",
       "wordCount": 108,
       "updatedAt": "2026-08-14",
@@ -493,13 +409,7 @@
         ],
         "elements": []
       },
-      "headings": [
-        {
-          "depth": 1,
-          "text": "Instalment Payment · 할부 결제",
-          "slug": "instalment-payment-할부-결제"
-        }
-      ],
+      "headings": [],
       "excerpt": "50만원짜리 카드 결제를 「월 10만원씩 다섯 달」로 나누는 일입니다. 나뉘는 것은 고객이 매달 내는 돈이지, 가게가 받는 돈이 아닙니다. 가게에는 처음부터 전액이 들어옵니다. 할부는 결제 승인의 한 형태로, 카드사와의 사이에서 일어납니다. 그래서 무이자 행사를 열려면 그 이자를 누가 무는지(대개 가게)가 먼저 정해져야 합니다. 화면에 「무이자」라고 쓰는 일은 쉽고, 그 비용을 장부 어디에 적을지가 진짜 결정입니다. Splits one card payment across months. What changes is what the shopper owes each mon",
       "wordCount": 94,
       "updatedAt": "2026-08-14",
@@ -527,13 +437,7 @@
           "elements/login-session"
         ]
       },
-      "headings": [
-        {
-          "depth": 1,
-          "text": "Login · 로그인",
-          "slug": "login-로그인"
-        }
-      ],
+      "headings": [],
       "excerpt": "가입 때 만든 정체성의 주인이 지금 화면 앞에 있는 사람임을, 이번 방문에 한해 증명합니다. 증명이 끝나면 주문 내역·배송지·쿠폰이 그 사람의 것으로 열립니다. 경계 한 줄: 로그인이 확인하는 것은 「이 사람이 누구인가」까지입니다. 그 사람이 무엇을 볼 수 있는가는 각 기능이 정합니다. 함정: 비밀번호를 연속으로 틀렸을 때 얼마나 오래 잠글지는 편의와 안전 사이의 흥정입니다. 너무 짧으면 공격을 못 막고, 너무 길면 진짜 주인이 갇힙니다. Proves, for this visit only, that the person at the keyboard owns the id",
       "wordCount": 98,
       "updatedAt": "2026-08-14",
@@ -561,13 +465,7 @@
           "elements/point-ledger"
         ]
       },
-      "headings": [
-        {
-          "depth": 1,
-          "text": "Loyalty Points · 적립금",
-          "slug": "loyalty-points-적립금"
-        }
-      ],
+      "headings": [],
       "excerpt": "「구매액의 1%를 돌려드립니다」의 그 1%입니다. 현금이 아니라 이 가게 안에서만 쓸 수 있는 돈으로 돌려주기 때문에, 실제로는 다음 구매를 부르는 할인입니다. 이 기능이 고객 관리가 아니라 마케팅 영역에 있는 이유입니다. 주문이 확정되어야 쌓입니다. 함정은 취소 쪽에 있습니다: 적립금을 주고 난 뒤 주문이 취소되면 되찾아야 하는데, 이미 써 버린 뒤라면 잔액이 마이너스가 될 수 있습니다. 그 마이너스를 허용할지가 이 기능에서 가장 먼저 부딪히는 결정입니다. Gives back a fraction of what was spent as credit that only w",
       "wordCount": 118,
       "updatedAt": "2026-08-14",
@@ -598,13 +496,7 @@
           "elements/tier-rule"
         ]
       },
-      "headings": [
-        {
-          "depth": 1,
-          "text": "Membership Tier · 회원 등급",
-          "slug": "membership-tier-회원-등급"
-        }
-      ],
+      "headings": [],
       "excerpt": "석 달에 얼마를 샀는지 같은 실제 구매 실적으로 고객을 새싹·우수·VIP 같은 등급으로 나눕니다. 등급은 장식이 아니라, 그 고객이 보는 가격과 혜택을 실제로 바꿉니다. 확정된 주문의 실적이 재료이고, 적립 혜택과 자주 짝을 이룹니다. 함정: 등급 계산에 취소와 환불을 반영하지 않으면, 사고 무르기를 반복하는 것만으로 VIP가 될 수 있습니다. 실적은 「산 금액」이 아니라 「사고 무르지 않은 금액」이어야 합니다. Grades a customer by what they have actually spent over a period, and the grade really ",
       "wordCount": 104,
       "updatedAt": "2026-08-14",
@@ -633,13 +525,7 @@
         ],
         "elements": []
       },
-      "headings": [
-        {
-          "depth": 1,
-          "text": "Delivery Address Change · 배송지 변경",
-          "slug": "delivery-address-change-배송지-변경"
-        }
-      ],
+      "headings": [],
       "excerpt": "「아 참, 그거 회사로 보내 주세요」를 처리합니다. 이미 접수된 주문에서 도착지 하나만 바꿉니다. 산 물건도, 낸 돈도 건드리지 않습니다. 이 기능의 전부는 시한입니다. 창고에서 상자를 집기 전까지만 가능하고, 출고 지시가 나간 뒤에는 바꿀 수 없습니다. 그때부터는 배송지 변경이 아니라 「받아서 반품」의 문제가 됩니다. 새 주소는 배송지 주소록에서 고르게 해서, 손으로 잘못 친 주소가 들어올 길을 좁힙니다. Changes where a live order is going without touching what was bought or what was paid. It ",
       "wordCount": 107,
       "updatedAt": "2026-08-14",
@@ -669,13 +555,7 @@
         ],
         "elements": []
       },
-      "headings": [
-        {
-          "depth": 1,
-          "text": "Order Cancellation · 주문 취소",
-          "slug": "order-cancellation-주문-취소"
-        }
-      ],
+      "headings": [],
       "excerpt": "출고 전의 주문을 통째로 무릅니다. 「주문 취소」 버튼을 누르면 결제 취소로 돈이 전액 돌아가고, 잡아 두었던 수량은 재고 장부로 되돌아가며, 주문은 약속으로서 사라집니다. 경계: 이 기능은 「전부 아니면 그대로」입니다. 세 개 중 하나만 무르고 싶다면 그것은 부분 취소라는 다른 기능이고, 규칙도 훨씬 복잡합니다. 이미 출고된 뒤라면 취소가 아니라 반품의 영역입니다. 취소가 쉬운 가게가 신뢰를 얻습니다. 취소를 어렵게 만들어 지킨 매출은, 다시 오지 않는 고객으로 갚게 됩니다. Voids a whole order before it ships: money returns",
       "wordCount": 119,
       "updatedAt": "2026-08-14",
@@ -703,13 +583,7 @@
           "elements/order-status-log"
         ]
       },
-      "headings": [
-        {
-          "depth": 1,
-          "text": "Order Lookup · 주문 조회",
-          "slug": "order-lookup-주문-조회"
-        }
-      ],
+      "headings": [],
       "excerpt": "「내 주문 어디쯤 왔어요?」에 사람 없이 답하는 화면입니다. 접수·결제·출고·배송 가운데 지금 어느 단계인지, 배송 중이라면 배송 조회를 통해 어디를 지나고 있는지 보여 줍니다. 이 화면이 좋아질수록 1:1 문의가 줄어듭니다. 고객센터에 들어오는 질문의 첫 자리는 언제나 「어디쯤 왔나요」이기 때문입니다. 비회원도 주문번호와 연락처만으로 볼 수 있어야 합니다. 조회에 로그인을 요구하는 순간, 비회원 주문을 허용한 의미가 사라집니다. Shows a shopper where their order stands, from acceptance to delivery, withou",
       "wordCount": 103,
       "updatedAt": "2026-08-14",
@@ -735,13 +609,7 @@
         ],
         "elements": []
       },
-      "headings": [
-        {
-          "depth": 1,
-          "text": "Order Status Notification · 주문 상태 알림",
-          "slug": "order-status-notification-주문-상태-알림"
-        }
-      ],
+      "headings": [],
       "excerpt": "주문이 접수되고, 출고되고, 도착할 때마다 고객에게 먼저 알려 줍니다. 잘 되면 고객은 주문 조회 화면을 열 일조차 없습니다. 무엇이 「알릴 만한 변화」인지 정하는 것이 이 기능의 일이고, 실제 발송은 고객 메시지 발송에 맡깁니다. 함정: 단계를 전부 알리면 고객은 알림을 꺼 버립니다. 접수·출고·도착이면 충분하고, 나머지는 조회 화면에서 보이면 됩니다. Tells the shopper each time their order changes state, so they never need to keep checking. Deciding which changes are w",
       "wordCount": 97,
       "updatedAt": "2026-08-14",
@@ -768,13 +636,7 @@
         ],
         "elements": []
       },
-      "headings": [
-        {
-          "depth": 1,
-          "text": "Partial Cancellation · 부분 취소",
-          "slug": "partial-cancellation-부분-취소"
-        }
-      ],
+      "headings": [],
       "excerpt": "일부 품목만 빼고 나머지 주문은 살려 둡니다. 차액만 환불되고 남은 상품은 그대로 출고됩니다. 전체 취소는 쉽고 부분 취소가 어렵습니다. 세 개 중 하나만 무르면 네 가지가 한꺼번에 걸립니다: 배송비: 무료 배송 기준을 넘겨서 무료였는데, 하나 빼면 기준 아래로 내려갑니다 쿠폰: 「5만원 이상 1만원 할인」이 걸렸는데 남은 금액이 5만원 미만이 됩니다 적립: 이미 쌓인 포인트를 회수할 것인가, 쓴 뒤라면 어떻게 할 것인가 재고: 뺀 것만 되돌리면 되지만, 이미 창고에서 집었다면 되돌릴 것이 물건이 아니라 사람의 일입니다 지금 규칙: 할인은 남은 주문 기준으로 다시 계",
       "wordCount": 144,
       "updatedAt": "2026-08-14",
@@ -806,13 +668,7 @@
           "elements/order-record"
         ]
       },
-      "headings": [
-        {
-          "depth": 1,
-          "text": "Order Placement · 주문 확정",
-          "slug": "order-placement-주문-확정"
-        }
-      ],
+      "headings": [],
       "excerpt": "주문서에서 「결제하기」가 성공으로 끝나는 순간 일어나는 일입니다. 주문번호가 발급되고, 가게는 이 물건들을 이 값에 보내겠다는 빚을 진 것이 됩니다. 성립 조건은 둘 다여야 합니다: 결제 승인이 나 있고, 재고 선점이 그 몫을 붙들고 있어야 합니다. 하나라도 빠진 채 성립한 주문은 「돈만 받은 주문」이거나 「보낼 수 없는 주문」입니다. 이 순간 주문에는 그때의 가격·할인·주소가 복사되어 얼어붙습니다. 이후에 상품 가격이 바뀌어도, 이 주문은 어제의 약속 그대로 남습니다. The moment the store owes the shopper something: an or",
       "wordCount": 114,
       "updatedAt": "2026-08-14",
@@ -841,13 +697,7 @@
           "elements/virtual-account"
         ]
       },
-      "headings": [
-        {
-          "depth": 1,
-          "text": "Payment Authorization · 결제 승인",
-          "slug": "payment-authorization-결제-승인"
-        }
-      ],
+      "headings": [],
       "excerpt": "가게가 고객에게 약속하기 전에, 결제사에 그 금액을 보증받습니다. 승인은 돈을 받은 것이 아니라 붙들어 둔 것입니다. 이 구별이 이 영역 문제의 절반을 만듭니다. 붙들어 둘 수 있는 기간은 카드사마다 다르고 보통 며칠입니다. 그 안에 확정하지 못하면 자동으로 풀리는데, 그때 주문은 살아 있고 돈만 없는 상태가 됩니다. 그래서 확정하지 못할 것 같으면 먼저 풀고 주문을 세웁니다: 조용히 만료되게 두지 않습니다. 한도 초과와 승인 거절은 다릅니다. 앞은 다른 수단을 권할 수 있고 뒤는 그러면 안 됩니다. Asks the payment provider to guarante",
       "wordCount": 114,
       "updatedAt": "2026-08-14",
@@ -873,13 +723,7 @@
         ],
         "elements": []
       },
-      "headings": [
-        {
-          "depth": 1,
-          "text": "Payment Void · 결제 취소",
-          "slug": "payment-void-결제-취소"
-        }
-      ],
+      "headings": [],
       "excerpt": "붙들어만 두고 아직 정산되지 않은 승인을 놓아 주는 일입니다. 고객 눈에는 「결제가 취소됐다」로 보이지만, 돈이 이동했다가 돌아오는 것이 아니라 애초에 이동하지 않게 막는 것입니다. 그래서 환불보다 싸고 빠르며, 카드 명세서에서도 곧 사라집니다. 경계: 이미 정산이 끝난 돈을 되돌리는 일은 여기가 아니라 환불 처리입니다. 같은 「취소」라는 말이 전혀 다른 두 가지 일을 가리키기 때문에, 이 가게는 정산 전을 「결제 취소」, 정산 후를 「환불」로 부르기로 정해 두었습니다. Releases an authorisation that was never settled, so t",
       "wordCount": 115,
       "updatedAt": "2026-08-14",
@@ -905,13 +749,7 @@
         ],
         "elements": []
       },
-      "headings": [
-        {
-          "depth": 1,
-          "text": "Points Accrual · 적립",
-          "slug": "points-accrual-적립"
-        }
-      ],
+      "headings": [],
       "excerpt": "주문 하나가 포인트를 얼마나 쌓는지, 그리고 그 포인트를 언제부터 쓸 수 있는지를 정합니다. 결제 금액의 1%를 줄지, 배송비를 빼고 계산할지, 결제 완료 순간에 줄지 반품 기간이 지난 뒤에 줄지가 전부 여기서 갈립니다. 이 역량은 아직 계획입니다. 정해 둔 것은 「주문 확정에서 출발한다」는 연결 하나뿐이고, 적립 시점은 미정입니다. 결제 즉시 주면 반품 때 도로 뺏어야 하고, 반품 기간 뒤에 주면 고객은 3주 동안 「내 포인트 어디 갔지」를 묻습니다. 이 하나를 정하지 못해 나머지 설계가 멈춰 있습니다. Decides how many points an order e",
       "wordCount": 124,
       "updatedAt": "2026-08-14",
@@ -937,13 +775,7 @@
         ],
         "elements": []
       },
-      "headings": [
-        {
-          "depth": 1,
-          "text": "Points Redemption · 포인트 사용",
-          "slug": "points-redemption-포인트-사용"
-        }
-      ],
+      "headings": [],
       "excerpt": "결제할 때 돈 대신, 또는 돈과 함께 포인트를 쓰게 합니다. 결제 승인에 기대는 이유가 이 역량의 전부입니다: 포인트를 먼저 차감했는데 카드 승인이 실패하면, 고객 눈에는 산 것도 없이 포인트만 사라진 사고가 됩니다. 아직 계획 단계라 정하지 못한 것을 그대로 적어 둡니다. 최소 사용 단위(10점부터인지 1,000점부터인지), 포인트와 쿠폰을 한 주문에 겹쳐 쓸 수 있는지, 부분 취소 때 포인트와 카드 중 무엇을 먼저 돌려줄지. 셋 다 결제 화면의 모양을 바꾸는 결정이라, 정해지기 전에는 화면을 그릴 수 없습니다. Lets a shopper spend points a",
       "wordCount": 128,
       "updatedAt": "2026-08-14",
@@ -968,13 +800,7 @@
           "elements/category-tree"
         ]
       },
-      "headings": [
-        {
-          "depth": 1,
-          "text": "Category Management · 카테고리 관리",
-          "slug": "category-management-카테고리-관리"
-        }
-      ],
+      "headings": [],
       "excerpt": "의류 → 아우터 → 코트처럼 고객이 타고 내려가는 분류 나무를 가꾸는 일입니다. 가지를 만들고 순서를 정하고, 새로 등록된 상품이 어느 가지에 걸릴지 정합니다. 한 상품이 여러 가지에 걸릴 수 있습니다(같은 원피스가 「원피스」에도 「신상품」에도). 함정은 가지를 없앨 때입니다: 가지를 지우면 거기 걸려 있던 상품들이 어디에서도 안 보이게 됩니다. 지우기 전에 옮겨 심는 절차가 반드시 앞서야 합니다. Maintains the tree a shopper browses down, like clothing to outerwear to coats, and decides whe",
       "wordCount": 97,
       "updatedAt": "2026-08-14",
@@ -1002,13 +828,7 @@
         ],
         "elements": []
       },
-      "headings": [
-        {
-          "depth": 1,
-          "text": "Product Detail Page · 상품 상세",
-          "slug": "product-detail-page-상품-상세"
-        }
-      ],
+      "headings": [],
       "excerpt": "고객이 「이걸 살까」를 실제로 결정하는 화면입니다. 판매가 관리가 정한 가격, 상품 옵션이 쪼갠 사이즈·색상, 재고 수량 관리가 답하는 「살 수 있는가」, 그리고 앞서 산 사람들의 후기가 여기서 처음으로 한 화면에 모입니다. 이 화면의 규율은 하나입니다: 여기 보이는 것과 결제 화면에서 만나는 것이 달라서는 안 됩니다. 품절인데 「담기」가 눌리거나 담을 때와 다른 가격이 주문서에 나타나면, 고객은 이 화면 전체를 의심하기 시작합니다. The one page where price, options, stock, and reviews meet, and where the d",
       "wordCount": 100,
       "updatedAt": "2026-08-14",
@@ -1036,13 +856,7 @@
           "elements/sku"
         ]
       },
-      "headings": [
-        {
-          "depth": 1,
-          "text": "Product Options & SKUs · 상품 옵션",
-          "slug": "product-options-skus-상품-옵션"
-        }
-      ],
+      "headings": [],
       "excerpt": "「이 티셔츠」는 팔리는 단위가 아닙니다. 실제로 재고를 세고 파는 것은 「이 티셔츠, 검정, L」입니다. 등록된 상품 하나를 그렇게 따로 세고 따로 파는 단위로 쪼개는 일입니다. 이 단위를 어떻게 자르느냐가 재고 영역 전체의 기초가 됩니다. 색상만 있는 상품에 사이즈 축까지 미리 만들어 두면 빈 조합이 재고 관리를 어지럽히고, 반대로 따로 파는 것을 한 단위로 뭉치면 「검정만 품절」을 표현할 길이 없어집니다. Splits one registered product into the variants that are actually stocked and sold separa",
       "wordCount": 100,
       "updatedAt": "2026-08-14",
@@ -1070,13 +884,7 @@
           "elements/price-history"
         ]
       },
-      "headings": [
-        {
-          "depth": 1,
-          "text": "Price Management · 판매가 관리",
-          "slug": "price-management-판매가-관리"
-        }
-      ],
+      "headings": [],
       "excerpt": "정가와 할인가를 정하고, 지난 주문의 금액을 나중에도 설명할 수 있도록 모든 변경을 기록합니다. 가격은 상품의 속성이 아니라 상품과 시점의 짝입니다. 어제 산 사람과 오늘 산 사람이 다른 값을 냈다는 사실이 남아야 환불을 계산할 수 있습니다. 그래서 주문에는 그때의 가격을 복사해 둡니다. 상품 문서를 참조만 하면 나중에 가격이 바뀔 때 과거 주문의 금액이 같이 바뀝니다. 그건 계산이 아니라 사고입니다. Sets the list price and the discounted price, and keeps a record of every change so a past or",
       "wordCount": 106,
       "updatedAt": "2026-08-14",
@@ -1107,13 +915,7 @@
           "elements/recommendation-rule"
         ]
       },
-      "headings": [
-        {
-          "depth": 1,
-          "text": "Related Product Recommendation · 연관 상품 추천",
-          "slug": "related-product-recommendation-연관-상품-추천"
-        }
-      ],
+      "headings": [],
       "excerpt": "상품 상세 아래 「이 상품을 본 분들이 함께 본」 줄을 채우는 일입니다. 근거는 편집자의 감이 아니라 실제로 함께 팔리고 함께 조회된 기록입니다. 같은 카테고리라는 사실은 그 기록이 아직 얇을 때의 대비책입니다. 아직 못 정한 것: 품절 상품을 추천 줄에서 뺄 것인가. 빼면 줄이 빈약해지고, 두면 눌러 본 고객이 허탕을 칩니다. 재입고 알림으로 잇는 절충안이 후보로 남아 있습니다. Fills the row of what to look at next using what actually sold and was viewed together, with shared categ",
       "wordCount": 106,
       "updatedAt": "2026-08-14",
@@ -1142,13 +944,7 @@
           "elements/product-record"
         ]
       },
-      "headings": [
-        {
-          "depth": 1,
-          "text": "Product Registration · 상품 등록",
-          "slug": "product-registration-상품-등록"
-        }
-      ],
+      "headings": [],
       "excerpt": "팔 물건이 가게에 처음 생기는 순간입니다. 이름과 설명을 쓰고 사진을 올리고 카테고리의 어느 가지에 걸릴지 정하면, 그때부터 검색되고 진열될 수 있는 상품이 됩니다. 여기서 만드는 것은 「보여 줄 것」까지입니다. 얼마에 팔지는 판매가 관리가, 사이즈·색상으로 쪼개는 일은 상품 옵션이, 몇 개 팔 수 있는지는 재고가 각자 이어받습니다. 등록 화면에서 그 전부를 한 번에 요구하면 등록이 무거워지므로, 이 가게는 「일단 올리고 다듬는」 순서를 택했습니다. Creates a sellable product: name, description, photos, and a place",
       "wordCount": 100,
       "updatedAt": "2026-08-14",
@@ -1179,13 +975,7 @@
           "elements/review-record"
         ]
       },
-      "headings": [
-        {
-          "depth": 1,
-          "text": "Product Reviews · 상품 리뷰",
-          "slug": "product-reviews-상품-리뷰"
-        }
-      ],
+      "headings": [],
       "excerpt": "물건을 실제로 받아 본 사람만 별점과 후기를 남길 수 있습니다. 주문 기록이 있어야 쓸 수 있게 한 것은, 다음 고객이 가장 믿는 근거를 광고가 아니라 경험으로 채우기 위해서입니다. 후기를 쓰면 적립금을 주는 가게가 많고 이 가게도 그렇게 하려 합니다. 함정도 같은 자리에 있습니다: 보상이 걸리는 순간 「적립금을 위한 한 줄 후기」가 쏟아집니다. 사진 후기에 더 주는 식의 차등이 그 대비책입니다. 나쁜 후기를 지우고 싶은 유혹은 언제나 있습니다. 지운 것이 알려지는 순간, 남은 후기 전부가 의심받습니다. Lets only people who actually recei",
       "wordCount": 123,
       "updatedAt": "2026-08-14",
@@ -1213,13 +1003,7 @@
           "elements/search-index"
         ]
       },
-      "headings": [
-        {
-          "depth": 1,
-          "text": "Product Search · 상품 검색",
-          "slug": "product-search-상품-검색"
-        }
-      ],
+      "headings": [],
       "excerpt": "고객은 「MD-1042」가 아니라 「린넨 셔츠」라고 칩니다. 그 말로 상품을 찾아 주는 일입니다. 검색창은 카테고리를 타고 내려가는 길보다 빠른 지름길이고, 무엇을 찾다 실패했는지가 그대로 수요의 기록이 됩니다. 함정: 검색이 못 찾는 것과 없는 것을 고객은 구별하지 못합니다. 「린넨셔츠」로 못 찾으면 그 고객에게 이 가게에는 린넨 셔츠가 없는 것입니다. 띄어쓰기·오타·비슷한 말을 흡수하는 일이 검색 품질의 대부분입니다. Finds products by the words a shopper types, not the identifiers the store uses in",
       "wordCount": 102,
       "updatedAt": "2026-08-14",
@@ -1247,13 +1031,7 @@
           "elements/referral-code"
         ]
       },
-      "headings": [
-        {
-          "depth": 1,
-          "text": "Referral Programme · 친구 추천",
-          "slug": "referral-programme-친구-추천"
-        }
-      ],
+      "headings": [],
       "excerpt": "「친구 초대하고 둘 다 5천원 쿠폰 받기」입니다. 기존 고객이 자기 초대 코드를 친구에게 보내고, 그 코드로 친구가 가입하면 쿠폰 발급을 통해 양쪽에 보상이 갑니다. 이 방식의 매력은 셈이 선다는 것입니다: 새 고객 한 명을 데려오는 데 얼마가 들었는지가 사람 단위로 보입니다. 함정은 자기 자신을 초대하는 사람들입니다. 번호만 바꿔 다시 가입하는 경우를 걸러 내지 못하면, 이 제도는 할인 자판기가 됩니다. 보상 시점도 결정입니다: 가입 즉시 주면 빠르지만 가짜 가입에 약하고, 첫 구매 뒤에 주면 안전하지만 초대할 맛이 떨어집니다. Pays an existing cus",
       "wordCount": 125,
       "updatedAt": "2026-08-14",
@@ -1281,13 +1059,7 @@
           "elements/refund-record"
         ]
       },
-      "headings": [
-        {
-          "depth": 1,
-          "text": "Refund Processing · 환불 처리",
-          "slug": "refund-processing-환불-처리"
-        }
-      ],
+      "headings": [],
       "excerpt": "이미 정산된 돈을 사후에 돌려보냅니다. 원 결제와 같은 수단으로, 정해진 금액만큼. 되돌려 주는 길이 받은 길과 같지 않을 때가 있습니다. 원칙은 원래 수단이지만, 카드가 해지됐거나 상품권으로 냈거나 포인트와 섞여 있으면 그 원칙이 성립하지 않습니다. 이 가게가 정한 순서: 포인트 먼저, 그다음 원래 수단. 포인트는 되돌리기가 확실하고 즉시이기 때문입니다. 남은 금액만 카드로 갑니다. 되돌려 줄 수 없는 경우가 남습니다. 그때는 정산 문제로 넘기고 고객에게 그렇게 말합니다: 화면에서 처리되는 척하지 않습니다. Sends settled money back after t",
       "wordCount": 121,
       "updatedAt": "2026-08-14",
@@ -1313,13 +1085,7 @@
         ],
         "elements": []
       },
-      "headings": [
-        {
-          "depth": 1,
-          "text": "Refund Review · 환불 심사",
-          "slug": "refund-review-환불-심사"
-        }
-      ],
+      "headings": [],
       "excerpt": "되돌아온 물건을 열어 보고 「이건 환불해 드리는 게 맞다」를 판정하는 단계입니다. 돈이 움직이는 환불 처리 앞에 서서, 환불할지와 얼마를 돌려줄지(전액인지, 배송비를 뺄지)를 정합니다. 이 단계가 존재하는 이유는 단순합니다: 한번 나간 돈은 되찾기 어려우니, 판단은 돈보다 먼저 와야 합니다. 다만 모든 반품을 사람이 열어 보게 하면 심사가 병목이 됩니다. 소액은 자동으로 흘려보내고, 사람의 눈은 이상한 패턴에 쓰는 것이 이 가게의 방향입니다. Decides whether the returned goods justify giving money back, and how ",
       "wordCount": 108,
       "updatedAt": "2026-08-14",
@@ -1348,13 +1114,7 @@
           "elements/restock-subscription"
         ]
       },
-      "headings": [
-        {
-          "depth": 1,
-          "text": "Restock Alert · 재입고 알림",
-          "slug": "restock-alert-재입고-알림"
-        }
-      ],
+      "headings": [],
       "excerpt": "품절 상품 앞에서 돌아서는 고객에게 「들어오면 알려 드릴까요?」를 묻는 기능입니다. 신청을 기억해 두었다가, 재고 장부에서 수량이 0에서 살아나는 순간 고객 메시지 발송으로 알립니다. 놓칠 뻔한 판매가 나중의 판매로 바뀝니다. 함정: 재입고 수량보다 신청자가 많은데 전원에게 알리면, 대부분은 다시 품절을 만납니다. 두 번 실망한 고객은 알림 자체를 꺼 버립니다. 신청 순서대로 끊어 보내는 것이 대비책이고, 몇 명씩 끊을지는 아직 정하지 못했습니다. Remembers who wanted a sold-out item and tells them the moment stoc",
       "wordCount": 113,
       "updatedAt": "2026-08-14",
@@ -1382,13 +1142,7 @@
           "elements/pickup-request"
         ]
       },
-      "headings": [
-        {
-          "depth": 1,
-          "text": "Return Pickup · 반품 회수",
-          "slug": "return-pickup-반품-회수"
-        }
-      ],
+      "headings": [],
       "excerpt": "반품이 접수되면 고객에게 「상자를 문 앞에 두세요」라고 안내하고, 택배사 연동을 통해 기사를 그 집으로 보냅니다. 방향만 반대인 배송입니다: 물건이 고객에게서 창고로 옵니다. 같은 배송인데 어려운 점이 하나 다릅니다. 보낼 때는 출발지가 창고라 언제든 실을 수 있지만, 거둘 때는 출발지가 고객의 문 앞입니다. 상자가 나와 있지 않으면 기사는 헛걸음을 하고, 그 헛걸음은 「회수 실패」라는 상태로 남아야 합니다. 그 상태가 없으면 「기사가 안 왔다」와 「상자가 없었다」를 가릴 수 없습니다. Sends a courier to the shopper's door to coll",
       "wordCount": 118,
       "updatedAt": "2026-08-14",
@@ -1421,13 +1175,7 @@
           "elements/return-record"
         ]
       },
-      "headings": [
-        {
-          "depth": 1,
-          "text": "Return Request · 반품 접수",
-          "slug": "return-request-반품-접수"
-        }
-      ],
+      "headings": [],
       "excerpt": "이미 받은 물건을 돌려보내고 싶다는 요청을 접수하고, 그에 따르는 회수와 환불을 시작시킵니다. 되돌리는 이유가 처리를 정합니다. 마음이 바뀐 것과 물건이 잘못 온 것은 배송비를 누가 무는지가 다르고, 그 판단을 고객이 고른 사유에만 맡기면 전부 「불량」이 됩니다. 그래서 사유는 고객이 고르되 확인은 물건이 도착한 뒤에 합니다. 확인 전에 환불하면 빠르지만 되돌려 받지 못하는 경우가 생기고, 확인 후에 환불하면 안전하지만 고객이 오래 기다립니다. 지금은 금액을 기준으로 가릅니다. 작은 금액은 먼저 돌려주고 나중에 확인합니다. 그 기준선의 근거는 「반품 사기로 잃는 것보",
       "wordCount": 134,
       "updatedAt": "2026-08-14",
@@ -1450,13 +1198,7 @@
         "domain": "domains/loyalty",
         "elements": []
       },
-      "headings": [
-        {
-          "depth": 1,
-          "text": "Reward Catalog · 교환 상품",
-          "slug": "reward-catalog-교환-상품"
-        }
-      ],
+      "headings": [],
       "excerpt": "포인트로 무엇을 바꿀 수 있는지, 각각 몇 점인지를 담습니다. 파는 상품 목록과 닮아 보이지만 다른 물건입니다: 저쪽은 돈을 받는 목록이고, 이쪽은 포인트를 회수하는 목록입니다. 무료 배송 쿠폰처럼 재고가 없는 것도 여기서는 상품이 됩니다. 아직 계획입니다. 첫 목록을 무엇으로 채울지(할인 쿠폰만인지, 실물 사은품도인지)와 교환가를 누가 언제 바꾸는지가 미정입니다. 교환가를 내리는 날 이미 바꾼 사람들의 손해를 어떻게 다룰지는 소멸 정책과 함께 정해야 하는 문제로 적어 둡니다. Holds what points can be traded for and the point ",
       "wordCount": 115,
       "updatedAt": "2026-08-14",
@@ -1484,13 +1226,7 @@
           "elements/delivery-status-log"
         ]
       },
-      "headings": [
-        {
-          "depth": 1,
-          "text": "Shipment Tracking · 배송 조회",
-          "slug": "shipment-tracking-배송-조회"
-        }
-      ],
+      "headings": [],
       "excerpt": "택배사 연동이 받아 온 「간선 상차」 「배송 출발」 같은 회사마다 다른 말을, 이 가게의 한 가지 말로 번역해 보여 줍니다. 고객은 어느 택배사인지 몰라도 「출발했고 오늘 도착 예정」을 읽을 수 있습니다. 경계: 이 기능은 위치를 만들어 내지 못합니다. 택배사가 갱신을 멈추면 여기도 멈춥니다. 그래서 정직함이 규칙입니다: 마지막 갱신이 언제였는지를 함께 보여 주고, 오래됐으면 오래된 대로 보입니다. 「배송 중」이라는 말로 이틀의 침묵을 덮지 않습니다. Shows where the parcel is now, translating each carrier's own sta",
       "wordCount": 116,
       "updatedAt": "2026-08-14",
@@ -1518,13 +1254,7 @@
           "elements/shipping-fee-rule"
         ]
       },
-      "headings": [
-        {
-          "depth": 1,
-          "text": "Shipping Fee Policy · 배송비 정책",
-          "slug": "shipping-fee-policy-배송비-정책"
-        }
-      ],
+      "headings": [],
       "excerpt": "「3만원 이상 무료, 그 아래는 3천원, 제주·도서 지역은 3천원 추가」 같은 규칙을 정하는 일입니다. 고객이 총액을 보기 전에 계산되어 있어야 하므로, 주문서가 열리는 순간 이미 답을 갖고 있어야 합니다. 무료 배송의 문턱은 광고이기도 해서, 배송비인데도 마케팅과 얽힙니다. 무료 배송 쿠폰이 대표적인 접점입니다. 함정: 문턱 근처의 주문은 부분 취소 때 되살아납니다. 3만원을 넘겨 무료였던 주문에서 하나를 무르면 배송비가 소급으로 생기는데, 그 셈을 여기서 정해 두지 않으면 취소 쪽이 즉흥으로 정하게 됩니다. Decides who pays to move the pa",
       "wordCount": 119,
       "updatedAt": "2026-08-14",
@@ -1552,13 +1282,7 @@
           "elements/customer-account"
         ]
       },
-      "headings": [
-        {
-          "depth": 1,
-          "text": "Sign-up · 회원 가입",
-          "slug": "sign-up-회원-가입"
-        }
-      ],
+      "headings": [],
       "excerpt": "이름과 연락처, 로그인 수단을 받아 이 가게 안에서의 「나」를 만듭니다. 이후의 모든 것(주문 내역, 배송지 주소록, 적립금, 쿠폰함)이 이 정체성에 매달립니다. 가입 축하 쿠폰이 이 순간 발급되어, 첫 구매를 미루지 않을 이유가 됩니다. 다만 이 가게에는 비회원 주문이 있으므로, 가입은 문턱이 아니라 선택입니다. 함정: 가입 화면에서 생일·성별까지 다 받으려 들면, 그 문턱에서 잃는 고객이 그 정보로 버는 것보다 큽니다. 나중에 물어도 되는 것은 나중에 묻습니다. Creates the identity everything else in the store attache",
       "wordCount": 112,
       "updatedAt": "2026-08-14",
@@ -1586,13 +1310,7 @@
           "elements/purchase-order"
         ]
       },
-      "headings": [
-        {
-          "depth": 1,
-          "text": "Goods Receiving · 입고 처리",
-          "slug": "goods-receiving-입고-처리"
-        }
-      ],
+      "headings": [],
       "excerpt": "공급처 트럭이 창고에 닿으면, 발주서에는 100개라 적혀 있어도 실제로 온 것이 97개일 수 있습니다. 상자를 열어 세고, 그 실제 수량을 상품 옵션 단위로 장부에 올리는 일입니다. 이 순간부터 재고는 계획이 아니라 선반을 가리킵니다. 경계: 여기는 「들어온 것」만 다룹니다. 파손이나 수량 부족을 공급처와 정산하는 일은 별개의 대화이고, 장부에는 우선 온 만큼만 올라갑니다. 함정: 검수 없이 발주 수량대로 올리는 지름길은 3개의 유령 재고를 만들고, 그 3개는 몇 주 뒤 「있다고 해서 팔았는데 없는」 주문으로 돌아옵니다. Counts what physically ar",
       "wordCount": 121,
       "updatedAt": "2026-08-14",
@@ -1620,13 +1338,7 @@
           "elements/stock-hold"
         ]
       },
-      "headings": [
-        {
-          "depth": 1,
-          "text": "Stock Reservation · 재고 선점",
-          "slug": "stock-reservation-재고-선점"
-        }
-      ],
+      "headings": [],
       "excerpt": "결제가 진행 중인 주문 몫을 잠시 붙들어 둡니다. 마지막 한 개를 두 사람이 동시에 사는 일을 막습니다. 언제 잡을 것인가가 이 기능의 전부입니다. 장바구니에 넣을 때 잡으면 안 사는 사람이 재고를 묶습니다. 결제가 끝난 뒤 잡으면 두 사람이 마지막 하나를 동시에 삽니다. 이 가게는 결제를 시작할 때 잡고, 정해진 시간이 지나면 자동으로 풉니다. 그 시간이 짧으면 결제하다 재고를 잃고, 길면 재고가 묶입니다. 지금은 15분인데 이 값은 근거가 약합니다. 실제 결제 소요 시간을 재 본 적이 없습니다. Holds units for an order that is being",
       "wordCount": 130,
       "updatedAt": "2026-08-14",
@@ -1651,13 +1363,7 @@
           "elements/stock-ledger"
         ]
       },
-      "headings": [
-        {
-          "depth": 1,
-          "text": "Stock Level Tracking · 재고 수량 관리",
-          "slug": "stock-level-tracking-재고-수량-관리"
-        }
-      ],
+      "headings": [],
       "excerpt": "「지금 이거 몇 개까지 더 팔 수 있는가」라는 한 가지 질문에 답하는 장부입니다. 입고가 더하고, 판매와 선점이 빼고, 취소가 되돌립니다. 상품 상세의 「품절」 표시도, 재입고 알림의 출발 신호도 전부 이 숫자를 봅니다. 이 숫자가 틀리는 순간의 모양은 정해져 있습니다: 실물보다 많다고 알면 팔고 나서 보낼 것이 없고, 적다고 알면 팔 수 있는 것을 품절로 걸어 둡니다. 앞의 사고는 사과로 값을 치르고, 뒤의 사고는 조용한 기회 손실로 값을 치릅니다. 그래서 주기적으로 선반을 실제로 세어 장부를 맞추는 일까지가 이 기능의 범위입니다. Answers the one qu",
       "wordCount": 131,
       "updatedAt": "2026-08-14",
@@ -1683,13 +1389,7 @@
         ],
         "elements": []
       },
-      "headings": [
-        {
-          "depth": 1,
-          "text": "Tax Receipt Issuing · 현금영수증 발행",
-          "slug": "tax-receipt-issuing-현금영수증-발행"
-        }
-      ],
+      "headings": [],
       "excerpt": "현금이나 계좌이체로 결제한 고객이 「현금영수증 해 주세요」라고 할 때 발행하는 그 증빙입니다. 고객에게는 연말정산 자료가 되고, 가게에는 편의 기능이 아니라 법적 의무입니다. 결제 승인 기록이 있어야 발행할 수 있고, 금액은 그 기록과 정확히 같아야 합니다. 함정은 환불 쪽입니다: 결제를 되돌렸으면 발행된 영수증도 취소해야 합니다. 돈만 돌려주고 증빙을 남겨 두면, 장부와 세무 기록이 어긋난 채 연말에 발견됩니다. Issues the document a shopper needs for their own tax records after a cash or bank-tra",
       "wordCount": 107,
       "updatedAt": "2026-08-14",
@@ -1712,13 +1412,7 @@
         "domain": "domains/loyalty",
         "elements": []
       },
-      "headings": [
-        {
-          "depth": 1,
-          "text": "Tier Evaluation · 등급 산정",
-          "slug": "tier-evaluation-등급-산정"
-        }
-      ],
+      "headings": [],
       "excerpt": "일정 기간 동안 산 것을 보고 이 고객이 어느 등급인지 정합니다. 아직 정하지 못한 것이 있습니다: 등급을 내릴 때 미리 알릴 것인가, 아니면 조용히 바꿀 것인가. 올리는 쪽은 쉽습니다. 내리는 쪽이 어렵습니다. 고객은 자기가 무엇을 잃는지 알기 전에 잃고 싶어 하지 않기 때문입니다. 그래서 이 기능은 아직 만들지 않았고, 여기 적힌 것은 결정이 아니라 결정해야 할 목록입니다. 강등 예고를 며칠 전에 보낼 것인가 등급 혜택을 이미 쓴 주문이 취소되면 등급을 되돌릴 것인가 등급을 계산하는 기간을 달력 기준으로 볼 것인가, 가입일 기준으로 볼 것인가 Works out w",
       "wordCount": 108,
       "updatedAt": "2026-08-14",
@@ -1748,13 +1442,7 @@
           "elements/toss-pay"
         ]
       },
-      "headings": [
-        {
-          "depth": 1,
-          "text": "One-Tap Wallet Payment · 간편결제",
-          "slug": "one-tap-wallet-payment-간편결제"
-        }
-      ],
+      "headings": [],
       "excerpt": "결제창에서 카드번호를 치는 대신 카카오페이·네이버페이·토스 버튼 하나를 누르게 합니다. 승인은 고객이 이미 믿고 쓰는 지갑 앱 안에서 일어나고, 가게는 결과만 받습니다. 이것은 결제 승인의 한 갈래이지 다른 결제가 아닙니다: 승인·취소·환불의 규칙은 같고, 승인이 일어나는 장소만 다릅니다. 함정: 지갑 앱으로 넘어갔다가 돌아오지 않는 고객이 생깁니다. 앱을 오가는 중에 끊긴 결제를 「실패」로 정리해 두지 않으면, 붙들린 승인과 미아가 된 주문이 남습니다. Authorises a payment inside a wallet app the shopper already tr",
       "wordCount": 110,
       "updatedAt": "2026-08-14",
@@ -1782,13 +1470,7 @@
           "elements/picking-list"
         ]
       },
-      "headings": [
-        {
-          "depth": 1,
-          "text": "Warehouse Picking · 출고 지시",
-          "slug": "warehouse-picking-출고-지시"
-        }
-      ],
+      "headings": [],
       "excerpt": "확정된 주문을 창고의 노동으로 번역합니다. 「A-3 선반에서 검정 L 두 개, 5번 상자에」처럼 사람이 실제로 걸어 다니며 수행할 지시가 됩니다. 여러 주문을 한 동선으로 묶으면 걸음이 줄어듭니다. 재고 장부의 위치 정보가 재료입니다. 경계: 집어서 상자에 넣고 송장을 붙이는 데까지가 이 일이고, 상자가 택배사에 넘어가는 순간부터는 택배사 연동의 영역입니다. 이 지시가 나가는 순간이 주문의 되돌림 비용이 뛰는 순간이기도 합니다. 배송지 변경과 주문 취소가 「출고 전까지」를 시한으로 삼는 이유가 여기 있습니다. Turns a confirmed order into ins",
       "wordCount": 120,
       "updatedAt": "2026-08-14",
@@ -1816,13 +1498,7 @@
           "elements/wishlist-entry"
         ]
       },
-      "headings": [
-        {
-          "depth": 1,
-          "text": "Wishlist · 찜 목록",
-          "slug": "wishlist-찜-목록"
-        }
-      ],
+      "headings": [],
       "excerpt": "지금 사지는 않을 것을 잊지 않으려고 하트를 눌러 두는 목록입니다. 장바구니와 달리 「살까 말까」 이전의 마음이라, 몇 달을 담겨 있어도 이상하지 않습니다. 고객에게는 기억이고 가게에는 신호입니다: 많이 찜되는데 안 팔리는 상품은 가격이 문제라는 뜻일 수 있습니다. 품절 상품에 하트를 누른 고객은 재입고 알림의 첫 후보이기도 합니다. 경계: 찜은 아무것도 약속하지 않습니다. 가격이 바뀌어도, 품절이 되어도 목록은 그대로입니다. Keeps a product in reach without buying it: memory for the shopper, and a deman",
       "wordCount": 96,
       "updatedAt": "2026-08-14",
@@ -1867,13 +1543,7 @@
           "domains/marketing"
         ]
       },
-      "headings": [
-        {
-          "depth": 1,
-          "text": "Product Catalog · 상품",
-          "slug": "product-catalog-상품"
-        }
-      ],
+      "headings": [],
       "excerpt": "이 영역이 맡는 질문은 「고객에게 무엇을 보여 줄 것인가」입니다. 이 티셔츠는 오늘 얼마인지, 무슨 색과 사이즈가 있는지, 어느 분류에 들어 있는지, 먼저 산 사람들은 뭐라고 했는지. 고객이 사기로 마음먹기 전에 보는 모든 것이 여기서 정해집니다. 일은 운영자 쪽에서 시작합니다. 상품을 등록하고, 분류에 넣고, 색과 사이즈 같은 옵션을 붙이고, 가격을 정합니다. 그러면 고객 쪽 절반이 이어집니다. 검색이나 분류로 상품을 찾아 상세 화면에서 만나고, 그 옆에 연관 상품 추천과 구매 후기가 붙습니다. 여기서 가장 자주 부딪히는 것은 「같은 상품인가」입니다. 색만 다른 티",
       "wordCount": 379,
       "updatedAt": "2026-08-14",
@@ -1913,13 +1583,7 @@
           "domains/order"
         ]
       },
-      "headings": [
-        {
-          "depth": 1,
-          "text": "Customers · 회원",
-          "slug": "customers-회원"
-        }
-      ],
+      "headings": [],
       "excerpt": "이 영역이 맡는 질문은 둘입니다. 「지금 화면 앞의 사람이 그 회원이 맞는가」, 그리고 「다음 방문까지 가게가 이 사람에 대해 무엇을 기억해도 되는가」. 이름과 배송지, 찜 목록처럼 다음 방문을 편하게 만드는 기억과, 들고 있어서는 안 되는 기억을 가르는 일이 여기서 일어납니다. 일의 흐름은 회원의 일생을 그대로 따라갑니다. 가입으로 시작해, 로그인으로 본인임을 확인하고, 자주 쓰는 배송지를 주소록에 적어 두고, 사고 싶은 것을 찜 목록에 담아 두고, 구매가 쌓이면 등급이 매겨지고, 마지막은 탈퇴입니다. 이 영역의 규칙은 대부분 「기억해도 되는가」로 귀결됩니다. 기술",
       "wordCount": 362,
       "updatedAt": "2026-08-14",
@@ -1960,13 +1624,7 @@
           "domains/support"
         ]
       },
-      "headings": [
-        {
-          "depth": 1,
-          "text": "Fulfillment & Delivery · 배송",
-          "slug": "fulfillment-delivery-배송"
-        }
-      ],
+      "headings": [],
       "excerpt": "이 영역이 맡는 질문은 「이 상자는 지금 어디에 있고, 언제 도착하는가」입니다. 창고에서 물건을 꺼내 택배사에 넘기고 고객의 손에 닿기까지, 그리고 되돌려 받아야 할 때 회수하기까지가 여기의 일입니다. 일의 흐름은 이렇습니다. 주문이 확정되면 창고에서 꺼낼 목록이 만들어지고, 배송비 규칙에 따라 요금이 정해지고, 택배사 연동으로 송장이 나가고, 그때부터는 배송 조회가 상자의 이동을 지켜봅니다. 반품이 정해지면 같은 연동으로 회수 기사를 부릅니다. 배송은 이 가게가 통제하지 못하는 유일한 영역입니다. 택배사가 언제 가져가는지, 어디서 멈추는지를 우리가 정하지 못하므로,",
       "wordCount": 417,
       "updatedAt": "2026-08-14",
@@ -2008,13 +1666,7 @@
           "domains/fulfillment"
         ]
       },
-      "headings": [
-        {
-          "depth": 1,
-          "text": "Inventory · 재고",
-          "slug": "inventory-재고"
-        }
-      ],
+      "headings": [],
       "excerpt": "이 영역이 맡는 질문은 「지금 몇 개 있고, 그중 몇 개는 이미 팔린 셈 쳐야 하는가」입니다. 선반 위의 개수와 팔 수 있는 개수는 다릅니다. 방금 주문된 물건은 아직 선반에 있어도 팔린 셈 쳐야 하고, 이 둘을 섞는 순간 없는 물건을 팔게 됩니다. 일의 흐름은 넷입니다. 공급처에서 물건이 들어오면 입고가 수량을 늘리고, 재고 추적이 그 수를 계속 지켜보고, 주문이 들어오는 순간 재고 예약이 그만큼을 미리 잡아 두고, 바닥이 나면 재입고 알림이 기다리던 고객에게 소식을 보냅니다. 이 영역은 지도에서 반대 모양입니다: 하려는 일은 넷인데 실제로 다루는 대상이 열입니다.",
       "wordCount": 403,
       "updatedAt": "2026-08-14",
@@ -2049,13 +1701,7 @@
           "domains/order"
         ]
       },
-      "headings": [
-        {
-          "depth": 1,
-          "text": "Loyalty · 적립·멤버십",
-          "slug": "loyalty-적립멤버십"
-        }
-      ],
+      "headings": [],
       "excerpt": "고객이 다시 오는 이유를 다룹니다. 쌓아 둔 포인트, 잃고 싶지 않은 등급, 모아서 바꾸려는 것. 이 영역은 아직 대부분 계획입니다. 하려는 일은 다섯 가지로 적어 뒀는데 실제로 만들어 둔 것은 포인트 잔액 하나뿐입니다. 지도에서 이 영역의 막대가 한쪽으로 쏠려 보이는 것이 그 사실입니다. 말은 다섯인데 증거가 하나. 먼저 답해야 하는 것은 등급을 내릴 때의 처리입니다. 그게 정해지지 않으면 나머지 넷도 모양이 바뀝니다. Why a shopper comes back: points they have earned, a tier they do not want to lose",
       "wordCount": 89,
       "updatedAt": "2026-08-14",
@@ -2097,13 +1743,7 @@
           "elements/sms-gateway"
         ]
       },
-      "headings": [
-        {
-          "depth": 1,
-          "text": "Marketing & Promotions · 마케팅",
-          "slug": "marketing-promotions-마케팅"
-        }
-      ],
+      "headings": [],
       "excerpt": "이 영역이 맡는 질문은 「이 사람이 다시 오게 만들 이유를 무엇으로 만들 것인가」입니다. 이유를 만드는 일이 절반이고(쿠폰·적립금·타임세일·기획전), 그 이유를 문자와 알림에 실어 사람에게 닿게 하는 일이 나머지 절반입니다. 일의 흐름은 이렇습니다. 기획전을 짜고, 쿠폰을 만들어 뿌리고, 그 쿠폰이 결제에서 실제로 쓰이게 하고, 시간을 정해 타임세일을 걸고, 구매에 적립금을 얹고, 친구 추천으로 새 고객이 들어오게 합니다. 그리고 이 전부를 고객 메시지 통로가 문자·알림톡·푸시로 각자에게 전합니다. 할인은 겹칩니다. 쿠폰과 타임세일과 등급 할인이 한 주문에 동시에 걸",
       "wordCount": 381,
       "updatedAt": "2026-08-14",
@@ -2147,13 +1787,7 @@
           "domains/support"
         ]
       },
-      "headings": [
-        {
-          "depth": 1,
-          "text": "Orders · 주문",
-          "slug": "orders-주문"
-        }
-      ],
+      "headings": [],
       "excerpt": "이 영역이 맡는 질문은 「이 주문은 지금 어떤 상태이고, 아직 무엇을 바꿀 수 있는가」입니다. 구경과 구매를 가르는 선이 여기 있고, 그 선을 넘은 뒤 고객이 하는 모든 변경(취소·부분 취소·배송지 변경)까지가 여기의 일입니다. 일의 흐름은 이렇습니다. 장바구니에 담고, 주문서에서 금액과 배송지를 확인하고, 주문 생성으로 선을 넘습니다. 그 뒤로 고객은 주문 조회로 들여다보고, 상태가 바뀔 때마다 알림을 받고, 상자가 나가기 전이라면 배송지 변경과 취소, 일부만 무르는 부분 취소를 할 수 있습니다. 주문은 이 지도에서 가장 많은 영역과 맞닿습니다: 재고를 잡고, 결제",
       "wordCount": 350,
       "updatedAt": "2026-08-14",
@@ -2196,13 +1830,7 @@
           "domains/support"
         ]
       },
-      "headings": [
-        {
-          "depth": 1,
-          "text": "Payments · 결제",
-          "slug": "payments-결제"
-        }
-      ],
+      "headings": [],
       "excerpt": "이 영역이 맡는 질문은 「돈이 지금 어디에 있는가」입니다. 받은 것인지, 붙들어만 둔 것인지, 돌려준 것인지. 돈을 받고, 주문이 확정될 때까지 붙들고 있다가, 주문이 깨지면 돌려주는 일을 다룹니다. 일의 흐름은 이렇습니다. 결제 승인이 금액을 붙들어 두는 첫 단추입니다. 카드 할부도, 카카오페이·네이버페이·토스 같은 간편결제도 결국 이 승인으로 모입니다. 확정 전에 주문이 깨지면 승인 취소로 붙든 것을 풀고, 확정 뒤에 무르게 되면 환불로 돌려주고, 증빙이 필요하면 세금 증빙을 발급합니다. 돈을 받는 순간과 확정하는 순간이 다릅니다. 카드를 승인해 금액을 붙들어 두",
       "wordCount": 414,
       "updatedAt": "2026-08-14",
@@ -2236,13 +1864,7 @@
           "elements/return-record"
         ]
       },
-      "headings": [
-        {
-          "depth": 1,
-          "text": "Customer Support · 고객지원",
-          "slug": "customer-support-고객지원"
-        }
-      ],
+      "headings": [],
       "excerpt": "이 영역이 맡는 질문은 「잘못된 일을 어떻게 바로잡고, 같은 일이 두 번 생기지 않게 하는가」입니다. 문의, 반품, 교환, 그리고 돈을 돌려줄지 말지의 판단이 여기의 일입니다. 일의 흐름은 이렇습니다. 먼저 자주 묻는 질문이 고객 스스로 답을 찾게 하고, 못 찾으면 문의가 받습니다. 물건이 문제면 반품 요청과 교환 요청으로 갈라지고, 돈이 걸리면 환불 심사가 돌려줄지 말지를 판단합니다. 여기 오는 사람은 이미 한 번 실패한 사람입니다. 그래서 이 영역의 성공 기준은 「빨리 답했다」가 아니라 「같은 문의가 다시 안 온다」입니다. 문의는 대부분 다른 영역에서 생긴 일의 ",
       "wordCount": 331,
       "updatedAt": "2026-08-14",
@@ -2264,13 +1886,7 @@
         "description": "받는 사람과 연락처가 함께 붙어 있는, 소포가 갈 수 있는 저장된 장소 하나로, 주문서에서 고르는 배송지 목록의 한 줄입니다.",
         "domain": "domains/customer"
       },
-      "headings": [
-        {
-          "depth": 1,
-          "text": "Address Record · 배송지 정보",
-          "slug": "address-record-배송지-정보"
-        }
-      ],
+      "headings": [],
       "excerpt": "주문서에서 배송지를 고를 때 나오는 목록의 한 줄이 이 조각입니다. 주소만 들고 있는 것이 아니라 받는 사람 이름과 연락처까지 한 묶음으로 가지고 있어서, 같은 사람이 집과 회사와 부모님 댁을 따로 저장해 두고 골라 쓸 수 있습니다. 여기 적힌 번호가 틀리면 기사가 문 앞에서 전화를 걸어도 닿지 않고, 주소가 틀리면 물건이 엉뚱한 곳으로 갑니다. 배송 문제의 많은 수가 이 조각이 낡은 채 남아 있던 데서 시작됩니다. One saved place a parcel can go, with the recipient and phone number that belong to i",
       "wordCount": 106,
       "updatedAt": "2026-08-14",
@@ -2292,13 +1908,7 @@
         "description": "품절 상품을 기다리는 사람들이 신청한 순서대로 서 있는 줄이며, 입고되면 그 순서대로 몫이 배정되는 예약 명단입니다.",
         "domain": "domains/inventory"
       },
-      "headings": [
-        {
-          "depth": 1,
-          "text": "Backorder Queue · 입고 대기 줄",
-          "slug": "backorder-queue-입고-대기-줄"
-        }
-      ],
+      "headings": [],
       "excerpt": "품절된 상품을 기다리는 사람들이 신청한 순서대로 서 있는 줄입니다. 재입고 신청과 비슷해 보이지만 다릅니다. 재입고 신청이 「들어오면 알려 달라」는 부탁이라면, 이 줄은 「들어오면 순서대로 내 몫을 달라」는 예약입니다. 그래서 순서가 곧 약속입니다. 입고 수량이 줄 길이보다 짧은 날, 어디까지 배정할지를 정하는 것이 이 줄의 순서이고, 순서가 흐트러지면 먼저 기다린 사람이 뒤로 밀리는 사고가 됩니다. Who is waiting for an out-of-stock item, in the order they asked. Unlike a restock subscriptio",
       "wordCount": 97,
       "updatedAt": "2026-08-14",
@@ -2320,13 +1930,7 @@
         "description": "카드망을 거치지 않고 고객 계좌에서 실시간으로 돈이 빠져나가는 결제 방식이라, 성공한 순간 돈은 이미 옮겨져 있습니다.",
         "domain": "domains/payment"
       },
-      "headings": [
-        {
-          "depth": 1,
-          "text": "Bank Transfer · 계좌이체",
-          "slug": "bank-transfer-계좌이체"
-        }
-      ],
+      "headings": [],
       "excerpt": "고객 계좌에서 실시간으로 돈이 빠져나가는 결제 방식입니다. 카드처럼 승인해 두고 정산을 기다리는 단계가 없어서, 결제가 성공한 순간 돈은 이미 옮겨져 있습니다. 그래서 환불도 승인을 지우는 일이 아니라 돈을 실제로 되돌려 보내는 일이 되고, 카드 결제보다 하루 이틀 더 걸리는 이유가 그것입니다. Money pulled straight from the shopper's account in real time, with no card network in between. Because the money has already moved, a refund means actual",
       "wordCount": 80,
       "updatedAt": "2026-08-14",
@@ -2348,13 +1952,7 @@
         "description": "기획전 배너가 가리키는 도착 페이지로, 사람이 직접 고른 상품 묶음과 직접 쓴 문구를 갖고 행사와 함께 열리고 닫힙니다.",
         "domain": "domains/marketing"
       },
-      "headings": [
-        {
-          "depth": 1,
-          "text": "Campaign Page · 기획전 페이지",
-          "slug": "campaign-page-기획전-페이지"
-        }
-      ],
+      "headings": [],
       "excerpt": "「여름 세일」 배너를 눌렀을 때 도착하는 그 페이지입니다. 규칙대로 만들어지는 카테고리 화면과 달리 사람이 상품을 직접 고르고 문구도 직접 씁니다. 행사 하나가 자기 상품 묶음과 자기 말투를 가지는 것이라서, 행사가 끝나면 페이지도 함께 내려갑니다. The curated page a campaign points at, with its own selection and its own copy. It lives and dies with the campaign itself.",
       "wordCount": 63,
       "updatedAt": "2026-08-14",
@@ -2376,13 +1974,7 @@
         "description": "신용카드나 체크카드에 대한 승인으로 이루어지는 결제 방식이며, 정산은 나중이고 정산 전까지는 승인 취소만으로 되돌릴 수 있습니다.",
         "domain": "domains/payment"
       },
-      "headings": [
-        {
-          "depth": 1,
-          "text": "Card Payment · 카드 결제",
-          "slug": "card-payment-카드-결제"
-        }
-      ],
+      "headings": [],
       "excerpt": "신용카드나 체크카드로 결제 버튼을 눌렀을 때 일어나는 일입니다. 그 순간 돈이 옮겨지는 것이 아니라 「이만큼 청구해도 된다」는 승인을 받아 두는 것이고, 실제 정산은 나중에 따로 이루어집니다. 정산 전까지는 승인을 취소하는 것만으로 환불이 끝나기 때문에, 빠른 환불과 느린 환불의 차이가 여기서 갈립니다. Authorisation against a credit or debit card, settled later and reversible until it settles. That window is why some refunds are instant and others a",
       "wordCount": 73,
       "updatedAt": "2026-08-14",
@@ -2404,13 +1996,7 @@
         "description": "고객이 아직 사겠다고 정하지 않고 담아만 둔 목록으로, 사람 단위로 보관되어 브라우저 탭을 닫아도 그대로 남습니다.",
         "domain": "domains/order"
       },
-      "headings": [
-        {
-          "depth": 1,
-          "text": "Cart Session · 장바구니 세션",
-          "slug": "cart-session-장바구니-세션"
-        }
-      ],
+      "headings": [],
       "excerpt": "장바구니에 담아 둔, 아직 사겠다고 정하지 않은 목록입니다. 탭을 닫아도, 며칠 뒤에 다시 와도 담아 둔 것이 그대로 있어야 해서 사람 단위로 보관합니다. 주문서 초안과 헷갈리기 쉬운데 둘은 다른 순간을 삽니다. 장바구니는 「살까 말까」의 목록이고, 주문서 초안은 사기로 정한 뒤 조건을 채워 가는 중인 상태입니다. The shopper's in-progress selection, kept per person and outliving a browser tab. It is the 'maybe' list; the checkout draft is where 'yes' sta",
       "wordCount": 77,
       "updatedAt": "2026-08-14",
@@ -2432,13 +2018,7 @@
         "description": "「의류 > 여성 > 원피스」처럼 고객이 타고 내려가는 중첩 분류이자, 상품이 어느 가지에 걸려 있는지가 기록되는 유일한 자리입니다.",
         "domain": "domains/catalog"
       },
-      "headings": [
-        {
-          "depth": 1,
-          "text": "Category Tree · 카테고리 트리",
-          "slug": "category-tree-카테고리-트리"
-        }
-      ],
+      "headings": [],
       "excerpt": "「의류 여성 원피스」처럼 고객이 타고 내려가는 중첩 분류입니다. 상품이 이 나무의 어느 가지에 걸려 있는지는 오직 여기에만 기록됩니다. 그래서 가지를 옮기거나 없애면 거기 걸려 있던 상품들의 자리가 함께 움직이고, 여기가 어긋나면 상품은 존재하는데 어느 목록에서도 보이지 않는 상태가 됩니다. The nested classification a shopper walks down, and the only place a product's position in it is recorded. Move or delete a branch and every product hanging",
       "wordCount": 78,
       "updatedAt": "2026-08-14",
@@ -2460,13 +2040,7 @@
         "description": "장바구니에서 결제로 넘어가는 사이 아직 확정 전인 주문으로, 고른 배송지와 쿠폰과 결제 수단, 계산된 총액을 들고 있습니다.",
         "domain": "domains/order"
       },
-      "headings": [
-        {
-          "depth": 1,
-          "text": "Checkout Draft · 주문서 초안",
-          "slug": "checkout-draft-주문서-초안"
-        }
-      ],
+      "headings": [],
       "excerpt": "장바구니에서 결제로 넘어가는 사이, 아직 확정 전인 주문의 모습입니다. 고른 배송지, 고른 쿠폰, 고른 결제 수단, 그리고 그 조합으로 계산된 총액을 들고 있습니다. 결제가 성공하는 순간 이 초안은 주문 기록으로 굳고, 고객이 중간에 떠나면 그냥 사라집니다. 사라져도 아무 흔적이 남지 않는 것이 이 조각의 정상적인 수명입니다. The not-yet-committed order: chosen address, chosen coupon, chosen payment method, calculated total. When payment succeeds it hardens in",
       "wordCount": 81,
       "updatedAt": "2026-08-14",
@@ -2488,13 +2062,7 @@
         "description": "CJ대한통운에 배송을 접수하고 상태를 받아 오는 연동으로, 이 회사만의 접수 규격과 상태 코드를 따로 가집니다.",
         "domain": "domains/fulfillment"
       },
-      "headings": [
-        {
-          "depth": 1,
-          "text": "CJ Logistics Integration · CJ대한통운 연동",
-          "slug": "cj-logistics-integration-cj대한통운-연동"
-        }
-      ],
+      "headings": [],
       "excerpt": "CJ대한통운에 배송을 접수하고 상태를 받아 오는 연결 부위입니다. 택배사마다 접수 규격과 상태 코드가 달라서 회사 하나에 이런 조각이 하나씩 있습니다. 여기서 받아 오는 「간선상차」 같은 낯선 코드는 그대로 고객에게 보여 주지 않고, 가게가 정한 몇 가지 상태로 번역되어 화면에 오릅니다. The delivery-company integration for CJ Logistics: its own booking call, its own status codes. What it returns is translated before a shopper ever sees it.",
       "wordCount": 72,
       "updatedAt": "2026-08-14",
@@ -2516,13 +2084,7 @@
         "description": "쿠폰 한 장의 값어치와 쓸 수 있는 조건, 곧 최소 구매액과 대상 상품과 유효기간과 중복 사용 여부를 정해 둔 규칙서입니다.",
         "domain": "domains/marketing"
       },
-      "headings": [
-        {
-          "depth": 1,
-          "text": "Coupon Policy · 쿠폰 정책",
-          "slug": "coupon-policy-쿠폰-정책"
-        }
-      ],
+      "headings": [],
       "excerpt": "쿠폰 한 장의 규칙서입니다. 얼마 이상 사야 쓸 수 있는지, 어떤 상품에 되는지, 언제까지인지, 다른 할인과 겹쳐 쓸 수 있는지가 여기 적힙니다. 이 조각이 틀리면 손해가 조용히 쌓입니다. 최소 구매액이 빠진 채 발행된 쿠폰은 정책이 아니라 사고이고, 그 사고는 정산하는 날에야 발견됩니다. What a coupon is worth and when it may be used: minimum spend, valid products, expiry, stacking. A policy issued with a missing condition is not a policy but",
       "wordCount": 83,
       "updatedAt": "2026-08-14",
@@ -2547,13 +2109,7 @@
           "elements/coupon-policy"
         ]
       },
-      "headings": [
-        {
-          "depth": 1,
-          "text": "Coupon Wallet · 보유 쿠폰함",
-          "slug": "coupon-wallet-보유-쿠폰함"
-        }
-      ],
+      "headings": [],
       "excerpt": "한 사람이 지금 들고 있는 쿠폰들의 목록입니다. 같은 정책에서 발행됐어도 지갑에 들어온 순간부터는 한 장 한 장이 따로 삽니다. 이건 이미 썼고 저건 내일 만료되는 식으로 상태가 제각각입니다. 쿠폰 정책이 「이 쿠폰은 무엇인가」를 정한다면, 지갑은 「누가 몇 장을 어떤 상태로 들고 있나」를 기록합니다. The coupons one person currently holds, each already used or still spendable. The policy says what a coupon is; the wallet says who holds how many, in",
       "wordCount": 78,
       "updatedAt": "2026-08-14",
@@ -2575,13 +2131,7 @@
         "description": "이 사람이 가게에 누구인지와 무엇에 동의했는지를 담은 정체성 기록 그 자체로, 회원에 관한 모든 일의 출발점입니다.",
         "domain": "domains/customer"
       },
-      "headings": [
-        {
-          "depth": 1,
-          "text": "Customer Account · 회원 계정",
-          "slug": "customer-account-회원-계정"
-        }
-      ],
+      "headings": [],
       "excerpt": "이 사람이 가게에 누구인지를 담은 기록 그 자체입니다. 이름이나 연락처보다 중요한 것은 동의의 목록입니다. 마케팅 수신에 동의했는지, 언제 했는지가 여기 남고, 광고 소식을 보낼 수 있는 사람과 보내면 안 되는 사람이 이 기록 하나로 갈립니다. 탈퇴할 때 이 조각을 지우는 일이 곧 그 사람을 지우는 일입니다. The identity record itself: who this person is to the store, and the consents they have given. The consents recorded here decide who may legally r",
       "wordCount": 81,
       "updatedAt": "2026-08-14",
@@ -2603,13 +2153,7 @@
         "description": "택배사가 찍은 낯선 기록들을 가게가 고객에게 보여 주기로 한 몇 가지 상태로 번역해 쌓아 둔 배송 이력입니다.",
         "domain": "domains/fulfillment"
       },
-      "headings": [
-        {
-          "depth": 1,
-          "text": "Delivery Status Log · 배송 상태 이력",
-          "slug": "delivery-status-log-배송-상태-이력"
-        }
-      ],
+      "headings": [],
       "excerpt": "택배사가 찍는 기록은 「간선상차」 「배송출발」처럼 회사마다 다르고 낯선 말입니다. 이 조각은 그 기록들을 가게가 고객에게 보여 주기로 정한 몇 가지 상태로 번역해 쌓아 둔 이력입니다. 주문 조회 화면의 「배송 중」에서 「배송 완료」로 넘어가는 줄이 바로 이것입니다. 번역이 틀리면 물건은 잘 가고 있는데 화면이 거짓말을 하는 상태가 됩니다. Each carrier scan, translated into the handful of states the store is willing to show a shopper. If the translation is wrong, the",
       "wordCount": 87,
       "updatedAt": "2026-08-14",
@@ -2631,13 +2175,7 @@
         "description": "메일함에 닿는 발송 통로로, 긴 내용과 이미지를 실을 수 있고 받은 사람이 지우기 전까지 메일함에 그대로 남아 있습니다.",
         "domain": "domains/marketing"
       },
-      "headings": [
-        {
-          "depth": 1,
-          "text": "Email Sender · 이메일 발송기",
-          "slug": "email-sender-이메일-발송기"
-        }
-      ],
+      "headings": [],
       "excerpt": "메일함으로 보내는 발송 통로입니다. 여러 발송 통로 가운데 긴 이야기를 실을 수 있는 유일한 곳이라, 이미지가 많은 기획전 소식이나 영수증처럼 남겨 둘 내용이 이쪽으로 갑니다. 즉시성은 가장 낮습니다. 열어 보는 것은 며칠 뒤일 수도 있고 아예 안 열 수도 있습니다. 대신 지우기 전까지 메일함에 남습니다. Reaches an inbox. Carries long content and images, and stays there until the person deletes it. The slowest channel to be seen, and the only one tha",
       "wordCount": 79,
       "updatedAt": "2026-08-14",
@@ -2659,13 +2197,7 @@
         "description": "사이즈나 색을 바꿔 주는 교환 한 건의 기록으로, 무엇이 돌아오고 대신 무엇이 나가는지 두 방향을 한 건에 함께 담습니다.",
         "domain": "domains/support"
       },
-      "headings": [
-        {
-          "depth": 1,
-          "text": "Exchange Record · 교환 접수 기록",
-          "slug": "exchange-record-교환-접수-기록"
-        }
-      ],
+      "headings": [],
       "excerpt": "「사이즈만 바꿔 주세요」가 만들어 내는 기록입니다. 반품과 달리 방향이 둘입니다. 무엇이 돌아오는지와 대신 무엇이 나가는지를 한 건에 함께 담습니다. 둘을 따로 관리하면 돌아온 것은 있는데 나간 것이 없는 상태를 아무도 보지 못하게 되므로, 한 건으로 묶는 것 자체가 이 조각의 존재 이유입니다. One case holding both directions at once: what comes back and what goes out to replace it. Splitting the two directions into separate cases is how a retur",
       "wordCount": 83,
       "updatedAt": "2026-08-14",
@@ -2687,13 +2219,7 @@
         "description": "반복되는 질문에 미리 써 둔 답 하나로, 아무에게도 질문받지 않은 채 여러 번 읽히는 것을 전제로 하는 문서입니다.",
         "domain": "domains/support"
       },
-      "headings": [
-        {
-          "depth": 1,
-          "text": "FAQ Article · FAQ 문서",
-          "slug": "faq-article-faq-문서"
-        }
-      ],
+      "headings": [],
       "excerpt": "「배송은 며칠 걸리나요」처럼 반복되는 질문에 미리 써 둔 답 하나입니다. 문의 티켓이 한 사람과의 대화라면, 이 문서는 아무에게도 질문받지 않은 채 수백 번 읽히는 것을 전제로 합니다. 잘 쓰인 문서 하나가 티켓 수십 건을 대신하고, 낡은 문서 하나는 틀린 답을 수백 번 반복합니다. One written answer that is expected to be read many times without anyone being asked. One well-written article replaces dozens of tickets; one stale article repe",
       "wordCount": 81,
       "updatedAt": "2026-08-14",
@@ -2715,13 +2241,7 @@
         "description": "한진택배에 배송을 접수하고 상태를 받아 오는 연동으로, 합쳐 쓸 수 없는 이 회사만의 접수 규격과 상태 코드를 가집니다.",
         "domain": "domains/fulfillment"
       },
-      "headings": [
-        {
-          "depth": 1,
-          "text": "Hanjin Express Integration · 한진택배 연동",
-          "slug": "hanjin-express-integration-한진택배-연동"
-        }
-      ],
+      "headings": [],
       "excerpt": "한진택배에 접수를 넣고 배송 상태를 받아 오는 연결 부위입니다. 겉보기에 다른 택배사 연동과 똑같은 일을 하지만 하나로 합칠 수 없습니다. 접수 규격도 상태 코드 목록도 회사마다 달라서, 하나로 뭉치면 한 회사의 사정이 바뀔 때마다 다른 회사 배송까지 흔들립니다. 그래서 택배사 하나에 조각 하나씩 둡니다. The delivery-company integration for Hanjin Express: its own booking call, its own status codes. It cannot be merged with the other carrier integrat",
       "wordCount": 81,
       "updatedAt": "2026-08-14",
@@ -2743,13 +2263,7 @@
         "description": "한 고객과 주고받는 열린 대화 한 건으로, 어느 주문이나 상품 이야기인지가 붙어 있고 닫히기 전까지 누군가의 할 일로 남습니다.",
         "domain": "domains/support"
       },
-      "headings": [
-        {
-          "depth": 1,
-          "text": "Inquiry Ticket · 문의 티켓",
-          "slug": "inquiry-ticket-문의-티켓"
-        }
-      ],
+      "headings": [],
       "excerpt": "「주문한 게 아직 안 왔어요」가 접수되는 자리입니다. 한 고객과의 열린 대화 하나가 티켓 한 장이고, 어느 주문 어느 상품 이야기인지가 붙어 있어서 상담원이 맥락을 처음부터 다시 묻지 않아도 됩니다. 닫히기 전까지는 누군가의 할 일로 남아 있는 것이 이 조각의 성격입니다. 답을 기다리는 사람이 실제로 있다는 뜻이기 때문입니다. One open conversation with one customer, with the order or product it is about attached. Until it is closed it stays on somebody's plate",
       "wordCount": 86,
       "updatedAt": "2026-08-14",
@@ -2771,13 +2285,7 @@
         "description": "앱 설치와 무관하게 전화번호로 카카오톡에 닿는 발송 통로지만, 미리 심사받아 승인된 템플릿 문구만 보낼 수 있습니다.",
         "domain": "domains/marketing"
       },
-      "headings": [
-        {
-          "depth": 1,
-          "text": "KakaoTalk Alimtalk · 카카오 알림톡",
-          "slug": "kakaotalk-alimtalk-카카오-알림톡"
-        }
-      ],
+      "headings": [],
       "excerpt": "전화번호만 알면 카카오톡으로 닿는 발송 통로입니다. 앱을 깔았는지와 무관하게 도착하는 대신, 미리 심사받아 승인된 템플릿 문구만 보낼 수 있습니다. 그래서 「배송이 시작되었습니다」 같은 정형화된 알림에는 가장 좋은 통로이고, 그때그때 새로 쓰는 문구는 실을 수 없습니다. Reaches a phone number whether or not the app is installed, but only with templates approved in advance. Best for standard notices, useless for copy written on the spot",
       "wordCount": 70,
       "updatedAt": "2026-08-14",
@@ -2799,13 +2307,7 @@
         "description": "카카오페이 지갑 결제를 맡는 연동으로, 자기 승인 화면과 가게와 맺은 계약, 정산 주기를 카카오페이 몫으로 따로 가집니다.",
         "domain": "domains/payment"
       },
-      "headings": [
-        {
-          "depth": 1,
-          "text": "KakaoPay Integration · 카카오페이 연동",
-          "slug": "kakaopay-integration-카카오페이-연동"
-        }
-      ],
+      "headings": [],
       "excerpt": "카카오페이로 결제하겠다고 고른 순간부터의 흐름을 맡는 연동입니다. 승인 화면도, 가게와 맺은 계약도, 돈이 들어오는 정산 주기도 카카오페이 것을 따릅니다. 지갑 결제라는 점에서 네이버페이·토스페이 연동과 형제지만, 셋은 계약과 정산이 달라서 장부에서 한 줄로 뭉쳐지지 않습니다. The wallet integration for KakaoPay: its own approval screen, its own contract, its own settlement cycle. A sibling of the other wallet integrations, never a merge ",
       "wordCount": 67,
       "updatedAt": "2026-08-14",
@@ -2827,13 +2329,7 @@
         "description": "우체국택배에 배송 접수와 조회를 연결하는 연동으로, 다른 택배사와 마찬가지로 자기 접수 규격과 상태 코드를 가집니다.",
         "domain": "domains/fulfillment"
       },
-      "headings": [
-        {
-          "depth": 1,
-          "text": "Korea Post Integration · 우체국택배 연동",
-          "slug": "korea-post-integration-우체국택배-연동"
-        }
-      ],
+      "headings": [],
       "excerpt": "우체국택배에 접수와 조회를 연결하는 부위입니다. 다른 택배사가 받지 않는 도서·산간 주소까지 받아 주는 일이 많아서, 배송비에 추가 요금이 붙는 그 주소들의 물건이 주로 이 통로로 나갑니다. 나머지는 다른 택배사 연동과 같습니다. 자기 접수 규격과 자기 상태 코드를 가집니다. The delivery-company integration for Korea Post: its own booking call, its own status codes. In practice it also covers the remote addresses other carriers decline.",
       "wordCount": 70,
       "updatedAt": "2026-08-14",
@@ -2855,13 +2351,7 @@
         "description": "지금 이 브라우저가 그 계정이 맞다는 기한 있는 증거로, 시간이 지나면 스스로 만료되고 가게 쪽에서 먼저 끊을 수도 있습니다.",
         "domain": "domains/customer"
       },
-      "headings": [
-        {
-          "depth": 1,
-          "text": "Login Session · 로그인 세션",
-          "slug": "login-session-로그인-세션"
-        }
-      ],
+      "headings": [],
       "excerpt": "지금 이 브라우저를 쓰는 사람이 그 계정이 맞다는, 기한이 있는 증거입니다. 로그인할 때 만들어지고, 시간이 지나면 스스로 만료되고, 필요하면 가게 쪽에서 먼저 끊을 수도 있습니다. 회원 계정이 「이 사람이 누구인가」라면 이 조각은 「지금 화면 앞에 있는 것이 그 사람인가」입니다. 계정은 하나여도 세션은 기기마다 하나씩입니다. Proof that this browser is that account, valid for a limited time and revocable. The account says who this person is; the session says w",
       "wordCount": 85,
       "updatedAt": "2026-08-14",
@@ -2883,13 +2373,7 @@
         "description": "네이버페이 지갑 결제를 맡는 연동으로, 승인 화면과 계약과 정산 주기가 모두 네이버페이 몫으로 따로 있습니다.",
         "domain": "domains/payment"
       },
-      "headings": [
-        {
-          "depth": 1,
-          "text": "NaverPay Integration · 네이버페이 연동",
-          "slug": "naverpay-integration-네이버페이-연동"
-        }
-      ],
+      "headings": [],
       "excerpt": "네이버페이 지갑으로 결제하는 흐름을 맡는 연동입니다. 승인 화면, 가게와의 계약, 정산 주기가 모두 네이버페이 몫으로 따로 있습니다. 이 조각이 멈추면 카드 결제는 멀쩡한데 네이버페이 버튼만 실패합니다. 결제 수단마다 연동을 따로 두는 이유가 그 부분 장애를 부분으로 가두기 위해서입니다. The wallet integration for NaverPay: its own approval screen, its own contract, its own settlement cycle. When it fails, only the NaverPay button fails; one i",
       "wordCount": 77,
       "updatedAt": "2026-08-14",
@@ -2914,13 +2398,7 @@
           "elements/sku"
         ]
       },
-      "headings": [
-        {
-          "depth": 1,
-          "text": "Order Line Item · 주문 상품 항목",
-          "slug": "order-line-item-주문-상품-항목"
-        }
-      ],
+      "headings": [],
       "excerpt": "주문 안에 담긴 상품 한 줄입니다. 어느 SKU를 몇 개, 얼마에 샀는지를 들고 있는데, 여기 적히는 가격은 오늘의 판매가가 아니라 결제하던 그 순간의 가격입니다. 이 값을 따로 얼려 두지 않으면 상품 가격을 바꿀 때마다 지난 주문의 영수증 합계가 함께 바뀌는, 있어서는 안 되는 일이 생깁니다. One SKU inside one order, with the price it was actually bought at rather than today's price. Without this frozen price, changing today's price would sile",
       "wordCount": 83,
       "updatedAt": "2026-08-14",
@@ -2942,13 +2420,7 @@
         "description": "고객이 전화로 불러 주고 문자와 영수증에 찍히는 주문의 이름표라서, 짧고 헷갈리지 않는 모양이어야 하는 번호입니다.",
         "domain": "domains/order"
       },
-      "headings": [
-        {
-          "depth": 1,
-          "text": "Order Number · 주문번호",
-          "slug": "order-number-주문번호"
-        }
-      ],
+      "headings": [],
       "excerpt": "고객이 전화로 불러 주는 그 번호입니다. 상담원이 받아 적고, 문자 알림에 찍히고, 영수증에 인쇄됩니다. 사람의 입과 귀를 거치는 번호라서 짧아야 하고, 0과 O처럼 헷갈리는 글자가 없어야 합니다. 가게 안에서 기록끼리 잇는 긴 번호는 따로 있어도, 사람에게 보여 주는 번호는 이 하나입니다. The identifier a shopper reads out on the phone, which is why it must be short and unambiguous. Whatever the store uses internally, this is the one number a",
       "wordCount": 78,
       "updatedAt": "2026-08-14",
@@ -2970,13 +2442,7 @@
         "description": "결제가 성공한 순간 굳는 확정된 약속 그 자체로, 배송과 환불과 리뷰 등 이후의 모든 단계가 이 기록을 가리킵니다.",
         "domain": "domains/order"
       },
-      "headings": [
-        {
-          "depth": 1,
-          "text": "Order Record · 주문 기록",
-          "slug": "order-record-주문-기록"
-        }
-      ],
+      "headings": [],
       "excerpt": "결제가 성공한 순간 굳는, 확정된 약속 그 자체입니다. 무엇을 얼마에 어디로 보내기로 했는지가 여기 고정되고, 배송·환불·리뷰·문의까지 이후의 모든 일이 이 기록을 가리키며 진행됩니다. 그래서 이 조각은 지우지 않습니다. 취소된 주문도 「취소되었다는 사실」을 들고 그대로 남습니다. The confirmed agreement itself. Every later step (shipping, refunding, reviewing) points back at it. It is never deleted; even a cancelled order survives, carryin",
       "wordCount": 70,
       "updatedAt": "2026-08-14",
@@ -2998,13 +2464,7 @@
         "description": "주문이 거쳐 온 모든 상태와 그 시각을 쌓아 둔 이력으로, 고객과 상담원이 화면에서 실제로 읽는 것이 바로 이것입니다.",
         "domain": "domains/order"
       },
-      "headings": [
-        {
-          "depth": 1,
-          "text": "Order Status Log · 주문 상태 이력",
-          "slug": "order-status-log-주문-상태-이력"
-        }
-      ],
+      "headings": [],
       "excerpt": "주문이 접수부터 지금까지 거쳐 온 상태를 시각과 함께 쌓아 둔 이력입니다. 고객이 「내 주문 어떻게 됐지」 하고 열어 보는 화면도, 상담원이 전화를 받으며 보는 화면도 결국 이것을 읽습니다. 현재 상태 하나만 저장하고 지나온 이력을 버리면, 「언제 결제됐고 언제 출고됐나」라는 가장 흔한 질문에 답할 수 없게 됩니다. Every state the order has been in and when, which is what both the shopper and support actually read. Storing only the current state would lea",
       "wordCount": 89,
       "updatedAt": "2026-08-14",
@@ -3026,13 +2486,7 @@
         "description": "실제로 돈을 옮기는 바깥 회사로, 가게는 이 한 창구와 이야기하고 이 회사가 카드사와 은행들을 상대해 줍니다.",
         "domain": "domains/payment"
       },
-      "headings": [
-        {
-          "depth": 1,
-          "text": "Payment Gateway · 결제 대행사(PG)",
-          "slug": "payment-gateway-결제-대행사pg"
-        }
-      ],
+      "headings": [],
       "excerpt": "실제로 돈을 움직이는 바깥 회사입니다. 가게가 카드사와 은행 수십 곳과 직접 계약할 수는 없으니, 이 한 회사와 계약하고 이쪽이 그들과 이야기합니다. 결제가 실패했을 때 원인이 가게 안에 있는지 이 회사 너머에 있는지를 가르는 경계선이기도 합니다. 경계 밖의 장애는 가게가 고칠 수 없고, 기다리는 수밖에 없습니다. The outside company that actually moves money; the store talks to one interface and it talks to the banks. It is also the boundary line for fai",
       "wordCount": 89,
       "updatedAt": "2026-08-14",
@@ -3054,13 +2508,7 @@
         "description": "결제사가 무엇을 언제 말했는지를 가게가 직접 적어 둔 사본으로, 승인과 매입과 취소가 한 마디마다 한 줄씩 남습니다.",
         "domain": "domains/payment"
       },
-      "headings": [
-        {
-          "depth": 1,
-          "text": "Payment Transaction Record · 결제 거래 기록",
-          "slug": "payment-transaction-record-결제-거래-기록"
-        }
-      ],
+      "headings": [],
       "excerpt": "결제사가 무엇을 언제 말했는지를 가게가 자기 손으로 적어 둔 사본입니다. 승인됐다, 매입됐다, 취소됐다는 한 마디마다 한 줄씩 남습니다. 결제사 장부와 가게 장부가 어긋나는 날은 반드시 오는데, 그때 우리 쪽 기록으로 내밀 수 있는 것이 이것입니다. 남의 장부만 믿으면 어긋났을 때 맞춰 볼 방법이 없습니다. What the provider said and when: the store's own copy of the authorisation, capture and reversal. On the day the two ledgers disagree, this is the ",
       "wordCount": 84,
       "updatedAt": "2026-08-14",
@@ -3082,13 +2530,7 @@
         "description": "창고 한 바퀴를 도는 순서표로, 어느 선반에서 몇 개를 꺼내 어느 상자에 담을지가 걷는 동선 순서대로 적혀 있습니다.",
         "domain": "domains/fulfillment"
       },
-      "headings": [
-        {
-          "depth": 1,
-          "text": "Picking List · 피킹 리스트",
-          "slug": "picking-list-피킹-리스트"
-        }
-      ],
+      "headings": [],
       "excerpt": "주문이 몇 건 쌓이면 창고를 한 바퀴 돌며 물건을 꺼내는데, 그 한 바퀴의 순서표가 이것입니다. 어느 선반에서 몇 개를 꺼내 어느 상자에 담을지가 걷는 동선 순서로 적혀 있습니다. 보관 위치가 정확해야 이 리스트도 정확합니다. 리스트가 틀리면 창고 안에서 찾아 헤매는 시간이 그대로 출고 지연이 됩니다. The walking order for one warehouse round: which shelf, how many, into which box. Its accuracy is only as good as the shelf locations it was built fro",
       "wordCount": 79,
       "updatedAt": "2026-08-14",
@@ -3110,13 +2552,7 @@
         "description": "반품이나 교환 때 기사가 고객에게서 물건을 가져오도록 택배사에 접수한 건으로, 출발지와 도착지가 뒤바뀐 배송인 셈입니다.",
         "domain": "domains/fulfillment"
       },
-      "headings": [
-        {
-          "depth": 1,
-          "text": "Pickup Request · 회수 요청",
-          "slug": "pickup-request-회수-요청"
-        }
-      ],
+      "headings": [],
       "excerpt": "반품이나 교환이 승인되면 이번에는 기사가 고객의 문 앞으로 물건을 가지러 갑니다. 그 방문을 택배사에 접수한 건이 이 조각입니다. 출발지와 도착지가 뒤바뀐 배송인 셈이라 운송장도 새로 나오고 상태도 따로 추적됩니다. 이 접수를 빠뜨리면 고객은 상자를 든 채, 오지 않는 기사를 기다리게 됩니다. A booking for a courier to collect from the shopper. A delivery whose start and end are swapped. Forget to book it and the customer waits at the door with ",
       "wordCount": 85,
       "updatedAt": "2026-08-14",
@@ -3138,13 +2574,7 @@
         "description": "적립으로 쌓인 것과 기한이 지나 사라진 것을 모두 반영한 뒤 남은, 고객이 지금 당장 쓸 수 있는 포인트 금액입니다.",
         "domain": "domains/loyalty"
       },
-      "headings": [
-        {
-          "depth": 1,
-          "text": "Point Balance · 포인트 잔액",
-          "slug": "point-balance-포인트-잔액"
-        }
-      ],
+      "headings": [],
       "excerpt": "쌓인 것과 사라진 것을 반영하고 남은, 지금 쓸 수 있는 값입니다. What a shopper can spend right now, after accrual and expiry are applied.",
       "wordCount": 30,
       "updatedAt": "2026-08-14",
@@ -3166,13 +2596,7 @@
         "description": "포인트의 적립과 사용을 한 건씩 모두 남긴 기록으로, 잔액은 여기서 계산되고 각 적립은 자기 일정대로 소멸합니다.",
         "domain": "domains/marketing"
       },
-      "headings": [
-        {
-          "depth": 1,
-          "text": "Point Ledger · 적립금 원장",
-          "slug": "point-ledger-적립금-원장"
-        }
-      ],
+      "headings": [],
       "excerpt": "포인트가 쌓이고 쓰인 한 건 한 건을 모두 남긴 기록입니다. 잔액은 어디에 따로 저장돼 있지 않고 이 기록을 합산해서 얻습니다. 적립마다 소멸 예정일이 따로 붙어 있어서, 「이번 달에 사라질 포인트」 같은 안내도 이 원장을 읽어야 만들 수 있습니다. 잔액 숫자가 이상할 때 왜 이상한지를 설명할 수 있는 곳도 여기뿐입니다. Every point earned and spent. The balance is derived from it, and points expire on their own schedule. When the balance looks wrong, this i",
       "wordCount": 87,
       "updatedAt": "2026-08-14",
@@ -3194,13 +2618,7 @@
         "description": "이 상품이 지금까지 가졌던 모든 가격과 바뀐 시점의 목록이라, 지난 주문의 금액이 지금도 설명되게 해 주는 이력입니다.",
         "domain": "domains/catalog"
       },
-      "headings": [
-        {
-          "depth": 1,
-          "text": "Price History · 가격 변경 이력",
-          "slug": "price-history-가격-변경-이력"
-        }
-      ],
+      "headings": [],
       "excerpt": "이 상품이 지금까지 가졌던 모든 가격과 바뀐 시점의 목록입니다. 가격을 바꾸는 순간 예전 값을 버리면, 지난달에 산 사람의 주문 금액이 무엇을 근거로 그 값이었는지 아무도 설명할 수 없게 됩니다. 「최근 30일 최저가」 같은 표시도 이 이력이 있어야 정직하게 쓸 수 있습니다. Every price this product has had, with when it changed, so a past order still adds up. It is also what makes a 'lowest price in 30 days' badge honest.",
       "wordCount": 78,
       "updatedAt": "2026-08-14",
@@ -3222,13 +2640,7 @@
         "description": "상품 사진의 원본이 실제로 보관되는 자리이자, 화면마다 필요한 여러 크기의 사진을 그 원본에서 만들어 내는 곳입니다.",
         "domain": "domains/catalog"
       },
-      "headings": [
-        {
-          "depth": 1,
-          "text": "Product Image Store · 상품 이미지 저장소",
-          "slug": "product-image-store-상품-이미지-저장소"
-        }
-      ],
+      "headings": [],
       "excerpt": "상품 사진의 원본이 실제로 보관되는 자리입니다. 목록의 작은 썸네일, 상세 화면의 큰 사진, 확대해 보는 원본까지 화면마다 필요한 크기가 달라서, 원본 하나에서 여러 크기를 만들어 둡니다. 사진이 안 보이는 상품 페이지는 물건이 없는 매대와 같아서, 이 조각의 장애는 곧바로 매출 문제로 읽힙니다. Where product photos live and how each size a page needs is produced from the original. A product page without images is a shelf with nothing on it, so a",
       "wordCount": 87,
       "updatedAt": "2026-08-14",
@@ -3250,13 +2662,7 @@
         "description": "팔 수 있는 물건 하나에 대해 가게가 적어 둔 설명 전부로, 이름과 소개 문구와 사진과 소속 분류가 여기 담깁니다.",
         "domain": "domains/catalog"
       },
-      "headings": [
-        {
-          "depth": 1,
-          "text": "Product Record · 상품 정보",
-          "slug": "product-record-상품-정보"
-        }
-      ],
+      "headings": [],
       "excerpt": "팔 물건 하나에 대해 가게가 적어 둔 설명 전부입니다. 이름, 소개 문구, 사진, 어느 분류에 속하는지가 여기 담깁니다. 고객이 상세 화면에서 읽는 것도, 검색이 긁어 가는 것도 이 기록입니다. 재고와 가격의 낱낱은 옵션 SKU 쪽이 들고 있고, 이 조각은 「이 물건이 무엇인가」를 맡습니다. The stored description of one sellable thing: name, copy, photos, category. Stock and price live per SKU; this record owns what the thing is.",
       "wordCount": 73,
       "updatedAt": "2026-08-14",
@@ -3278,13 +2684,7 @@
         "description": "가게가 공급처에 무엇을 얼마나 보내 달라고 요청했는지의 기록이며, 도착한 물량을 대조하며 세는 기준이 됩니다.",
         "domain": "domains/inventory"
       },
-      "headings": [
-        {
-          "depth": 1,
-          "text": "Purchase Order · 발주서",
-          "slug": "purchase-order-발주서"
-        }
-      ],
+      "headings": [],
       "excerpt": "가게가 공급처에 「이것들을 이만큼 보내 달라」고 요청한 내용입니다. 며칠 뒤 상자가 도착했을 때 무엇과 대조하며 세는가, 그 기준이 이 문서입니다. 요청한 것과 도착한 것의 차이가 여기서 드러나고, 덜 온 것은 다시 청구할 근거가 되고 더 온 것은 돌려보낼 근거가 됩니다. What the store asked a supplier for, which is what an arriving shipment gets checked against. The gap between asked and arrived becomes the basis for claims and return",
       "wordCount": 77,
       "updatedAt": "2026-08-14",
@@ -3306,13 +2706,7 @@
         "description": "앱을 설치하고 알림을 허용한 사람에게만 보낼 수 있는 통로지만, 그 사람에게는 화면이 꺼져 있어도 즉시 닿는 가장 빠른 길입니다.",
         "domain": "domains/marketing"
       },
-      "headings": [
-        {
-          "depth": 1,
-          "text": "App Push Sender · 앱 푸시 발송기",
-          "slug": "app-push-sender-앱-푸시-발송기"
-        }
-      ],
+      "headings": [],
       "excerpt": "앱을 설치하고 알림을 허용한 사람에게만 보낼 수 있는 통로입니다. 닿는 범위는 가장 좁지만 닿는 속도는 가장 빠릅니다. 화면이 꺼져 있어도 그 자리에서 울립니다. 타임세일처럼 몇 분이 중요한 소식에 맞고, 앱이 지워지는 순간 그 사람에게 가는 길도 함께 사라진다는 것이 이 통로의 한계입니다. Reaches only people who installed the app and allowed notifications, but reaches them instantly. Delete the app and the path disappears with it.",
       "wordCount": 73,
       "updatedAt": "2026-08-14",
@@ -3334,13 +2728,7 @@
         "description": "어떤 상품을 다른 상품 옆에 보여 주는 이유를 적어 둔 규칙으로, 함께 구매나 같은 분류나 이어서 봄 같은 근거가 명시됩니다.",
         "domain": "domains/catalog"
       },
-      "headings": [
-        {
-          "depth": 1,
-          "text": "Recommendation Rule · 추천 규칙",
-          "slug": "recommendation-rule-추천-규칙"
-        }
-      ],
+      "headings": [],
       "excerpt": "「이 상품을 본 사람이 함께 본 상품」 칸이 왜 하필 그 상품을 보여 주는지, 그 이유를 적어 둔 규칙입니다. 함께 구매가 많아서인지, 같은 분류라서인지, 이어서 본 상품이라서인지가 규칙마다 명시됩니다. 이유가 적혀 있으니 「왜 이게 떴지」에 답할 수 있고, 성과가 나쁜 규칙 하나만 골라서 끌 수도 있습니다. The stated reason a product is shown next to another one: bought together, same category, viewed after. Because the reason is written down, 'why i",
       "wordCount": 91,
       "updatedAt": "2026-08-14",
@@ -3362,13 +2750,7 @@
         "description": "새 고객을 데려온 기존 고객과 묶어 주는 표식으로, 가입 때 입력되는 순간 초대 보상이 누구 몫인지가 정해집니다.",
         "domain": "domains/marketing"
       },
-      "headings": [
-        {
-          "depth": 1,
-          "text": "Referral Code · 추천인 코드",
-          "slug": "referral-code-추천인-코드"
-        }
-      ],
+      "headings": [],
       "excerpt": "「친구 초대」에서 만들어지는, 새 고객을 데려온 기존 고객과 묶어 주는 표식입니다. 가입 화면에 이 코드가 입력되는 순간 두 사람이 연결되고, 초대 보상이 누구 몫인지가 정해집니다. 이 연결이 틀리면 보상이 엉뚱한 사람에게 가므로, 코드는 서로 겹치지 않게 만들어지고 한 번 맺어진 연결은 바꾸지 않습니다. The token that ties a new customer back to the existing one who brought them. Codes never collide and a link, once made, is never rewired, because t",
       "wordCount": 81,
       "updatedAt": "2026-08-14",
@@ -3390,13 +2772,7 @@
         "description": "누구에게 얼마가 어떤 수단으로 어느 원래 결제에 대해 되돌아갔는지, 환불로 돈이 실제로 움직인 일의 기록입니다.",
         "domain": "domains/payment"
       },
-      "headings": [
-        {
-          "depth": 1,
-          "text": "Refund Record · 환불 기록",
-          "slug": "refund-record-환불-기록"
-        }
-      ],
+      "headings": [],
       "excerpt": "환불이 결정된 뒤 실제로 일어난 일의 기록입니다. 누구에게 얼마가, 어떤 수단으로, 어느 원래 결제에 대해 되돌아갔는지가 남습니다. 반품 접수 기록이 「왜 돌려주기로 했나」라면 이 조각은 「그래서 돈이 어떻게 움직였나」입니다. 둘이 어긋나면 물건은 돌아왔는데 돈은 안 돌아간 상태를 아무도 알아채지 못합니다. How much went back to whom, by which method, against which original payment. The return record is the story of the goods; this is the story of the ",
       "wordCount": 75,
       "updatedAt": "2026-08-14",
@@ -3418,13 +2794,7 @@
         "description": "품절 상품 하나가 다시 들어오면 알려 달라고 한 사람이 걸어 둔 요청으로, 알림이 나가면 할 일을 다하고 사라집니다.",
         "domain": "domains/inventory"
       },
-      "headings": [
-        {
-          "depth": 1,
-          "text": "Restock Subscription · 재입고 신청",
-          "slug": "restock-subscription-재입고-신청"
-        }
-      ],
+      "headings": [],
       "excerpt": "품절 화면의 「재입고 알림 신청」 버튼이 만들어 내는 조각입니다. 한 사람이 품절 상품 하나에 걸어 두는 「들어오면 알려 주세요」라는 요청이고, 재입고가 확인되는 순간 알림을 보내고 사라지는 것이 정상적인 수명입니다. 입고 대기 줄과 달리 물량을 예약해 주지는 않습니다. 알려 줄 뿐, 그 사람 몫을 잡아 두지는 않습니다. A standing request from one person to be told when one sold-out item returns. Unlike the backorder queue it reserves nothing; it notifies, ",
       "wordCount": 79,
       "updatedAt": "2026-08-14",
@@ -3446,13 +2816,7 @@
         "description": "반품 한 건의 기록으로, 고객이 밝힌 사유와 대상 상품, 그리고 그 건이 지금 어디까지 왔는지를 함께 들고 있습니다.",
         "domain": "domains/support"
       },
-      "headings": [
-        {
-          "depth": 1,
-          "text": "Return Record · 반품 접수 기록",
-          "slug": "return-record-반품-접수-기록"
-        }
-      ],
+      "headings": [],
       "excerpt": "「이거 반품할게요」가 만든 사건 하나의 기록입니다. 고객이 밝힌 사유, 대상 상품, 그리고 그 건이 접수·수거·검수 가운데 어디까지 왔는지를 들고 있습니다. 환불 기록과 구별하자면 이쪽은 물건의 사건이고 저쪽은 돈의 사건입니다. 물건이 돌아와 검수를 통과해야 비로소 돈 쪽 이야기가 시작됩니다. The declared reason, the items involved, and where the case currently stands. It is the goods-side case; the money side only starts once the item comes bac",
       "wordCount": 75,
       "updatedAt": "2026-08-14",
@@ -3474,13 +2838,7 @@
         "description": "한 구매자가 한 상품에 남긴 별점과 글이며, 구매를 증명하는 주문에 묶여 있어 사지 않은 사람은 남길 수 없습니다.",
         "domain": "domains/catalog"
       },
-      "headings": [
-        {
-          "depth": 1,
-          "text": "Review Record · 리뷰 기록",
-          "slug": "review-record-리뷰-기록"
-        }
-      ],
+      "headings": [],
       "excerpt": "한 구매자가 한 상품에 남긴 별점과 글입니다. 그냥 글이 아니라 구매를 증명하는 주문에 묶여 있어서, 사지 않은 사람의 리뷰가 끼어들 자리가 없습니다. 상품 화면의 평균 별점과 리뷰 수는 전부 이 기록들을 세어 만든 숫자입니다. 그래서 이 조각의 신뢰가 곧 그 숫자의 신뢰입니다. One buyer's rating and words about one item, tied to the order that proves they bought it. Every average star rating on a product page is just these records, count",
       "wordCount": 78,
       "updatedAt": "2026-08-14",
@@ -3502,13 +2860,7 @@
         "description": "할인이 언제 시작하고 언제 끝나는지, 그리고 준비한 재고를 얼마까지 쓸 수 있는지를 적어 둔 세일 하나의 시간표입니다.",
         "domain": "domains/marketing"
       },
-      "headings": [
-        {
-          "depth": 1,
-          "text": "Sale Schedule · 세일 일정",
-          "slug": "sale-schedule-세일-일정"
-        }
-      ],
+      "headings": [],
       "excerpt": "할인 하나의 시간표입니다. 언제 시작하고 언제 끝나는지, 그리고 준비한 재고를 얼마까지 쓸 수 있는지가 적혀 있습니다. 끝나는 시각이 어긋나면 자정 넘어 산 사람만 제값을 낸 억울한 상황이 생기고, 재고 상한이 없으면 준비한 물량보다 많이 팔리는 사고가 됩니다. 세일의 공정함은 이 조각의 정확함에서 나옵니다. When a discount starts, when it ends, and how much stock it is allowed to consume. A wrong end time means whoever bought after midnight paid full ",
       "wordCount": 87,
       "updatedAt": "2026-08-14",
@@ -3530,13 +2882,7 @@
         "description": "검색창에 친 낱말이 상품을 빨리 찾을 수 있게 상품 글을 다시 배열해 둔 사본으로, 상품이 바뀔 때마다 새로 만들어집니다.",
         "domain": "domains/catalog"
       },
-      "headings": [
-        {
-          "depth": 1,
-          "text": "Search Index · 상품 검색 색인",
-          "slug": "search-index-상품-검색-색인"
-        }
-      ],
+      "headings": [],
       "excerpt": "검색창에 친 낱말이 상품을 빨리 찾을 수 있도록, 상품 글을 검색에 맞는 모양으로 다시 배열해 둔 사본입니다. 원본은 어디까지나 상품 정보 쪽이고, 상품이 바뀌면 이 사본은 다시 만들어집니다. 그 갱신이 늦으면 품절된 상품이 검색에 계속 나오거나 새 상품이 검색에 안 잡히는, 사본이 원본보다 낡은 문제가 보입니다. A rebuilt-on-change copy of product text arranged so a typed word can find it fast. When the rebuild lags, sold-out products keep appearing in ",
       "wordCount": 86,
       "updatedAt": "2026-08-14",
@@ -3558,13 +2904,7 @@
         "description": "이 상품이 창고 안 어느 자리에 실제로 놓여 있는지의 기록이며, 물건을 집는 일이 찾아 헤매는 일이 되지 않게 합니다.",
         "domain": "domains/inventory"
       },
-      "headings": [
-        {
-          "depth": 1,
-          "text": "Shelf Location · 보관 위치",
-          "slug": "shelf-location-보관-위치"
-        }
-      ],
+      "headings": [],
       "excerpt": "창고 안에서 이 상품이 실제로 놓인 자리입니다. 집는 일이 찾는 일이 되지 않게 합니다. Where in the warehouse this item physically sits, so picking does not become searching.",
       "wordCount": 34,
       "updatedAt": "2026-08-14",
@@ -3586,13 +2926,7 @@
         "description": "얼마 이상이면 무료, 도서·산간이면 추가처럼 배송비를 만들어 내는 조건들이며, 주문서의 배송비 줄은 이 규칙의 결과입니다.",
         "domain": "domains/fulfillment"
       },
-      "headings": [
-        {
-          "depth": 1,
-          "text": "Shipping Fee Rule · 배송비 규칙",
-          "slug": "shipping-fee-rule-배송비-규칙"
-        }
-      ],
+      "headings": [],
       "excerpt": "배송비가 왜 그 금액인지를 정하는 조건들입니다. 얼마 이상 사면 무료, 도서·산간이면 추가 같은 규칙이 여기 적혀 있고, 주문서의 배송비 줄은 이 규칙이 계산한 결과입니다. 규칙이 틀리면 고객마다 다른 배송비가 청구되는데, 몇백 원 차이라도 「왜 나만 붙었지」라는 문의는 반드시 옵니다. The stated conditions that produce a delivery charge: free over an amount, extra for remote areas. When the rule is wrong, different shoppers get charged diffe",
       "wordCount": 78,
       "updatedAt": "2026-08-14",
@@ -3614,13 +2948,7 @@
         "description": "따로 재고를 세고 따로 값을 매겨 따로 파는 가장 작은 단위로, 한 상품의 한 색상 한 사이즈가 여기에 해당합니다.",
         "domain": "domains/catalog"
       },
-      "headings": [
-        {
-          "depth": 1,
-          "text": "SKU · 옵션 SKU",
-          "slug": "sku-옵션-sku"
-        }
-      ],
+      "headings": [],
       "excerpt": "따로 재고를 세고, 따로 값을 매기고, 따로 파는 가장 작은 단위입니다. 「이 티셔츠」가 상품이라면 「이 티셔츠의 검정 L」이 SKU 하나입니다. 재고가 세는 것도, 주문 상품 항목이 가리키는 것도 상품이 아니라 이 단위입니다. 이 구분이 무너지면 검정은 품절인데 흰색 재고로 검정을 파는 사고가 납니다. The smallest unit that is separately stocked, priced and sold: one size in one colour. Blur the line and black sells against white's inventory.",
       "wordCount": 72,
       "updatedAt": "2026-08-14",
@@ -3642,13 +2970,7 @@
         "description": "앱도 사전 승인도 없이 어느 전화기에나 닿는 문자 통로지만, 여러 발송 통로 가운데 유일하게 건당 요금이 듭니다.",
         "domain": "domains/marketing"
       },
-      "headings": [
-        {
-          "depth": 1,
-          "text": "SMS Gateway · SMS 발송",
-          "slug": "sms-gateway-sms-발송"
-        }
-      ],
+      "headings": [],
       "excerpt": "앱도 승인된 템플릿도 필요 없이 어느 전화기에나 닿는 문자 통로입니다. 대신 여러 발송 통로 가운데 유일하게 건당 요금이 나갑니다. 그래서 대량 광고보다는 꼭 닿아야 하는 짧은 소식의 마지막 수단으로 씁니다. 다른 통로가 닿지 못하는 사람에게도 닿는다는 것이 이 통로의 존재 이유입니다. Reaches any phone with no app and no approval, and is the only channel that costs money per message. The channel of last resort, for the people no other channe",
       "wordCount": 79,
       "updatedAt": "2026-08-14",
@@ -3670,13 +2992,7 @@
         "description": "재고 원장을 고칠 때 반드시 사유와 함께 남기는 부호 붙은 정정값이라, 수량이 아무 말 없이 바뀌는 일을 막아 줍니다.",
         "domain": "domains/inventory"
       },
-      "headings": [
-        {
-          "depth": 1,
-          "text": "Stock Adjustment · 재고 조정",
-          "slug": "stock-adjustment-재고-조정"
-        }
-      ],
+      "headings": [],
       "excerpt": "부호가 붙은 정정값이고 반드시 사유가 함께 붙습니다. 원장이 아무 말 없이 바뀌는 일은 없습니다. A signed correction with a reason attached, so the ledger never changes silently.",
       "wordCount": 33,
       "updatedAt": "2026-08-14",
@@ -3698,13 +3014,7 @@
         "description": "사람이 선반에서 직접 센 값을 시스템이 믿고 있던 값과 따로 보관해서, 둘이 다를 때 무엇이 틀렸는지 가려낼 수 있게 합니다.",
         "domain": "domains/inventory"
       },
-      "headings": [
-        {
-          "depth": 1,
-          "text": "Stock Count Sheet · 실사 대장",
-          "slug": "stock-count-sheet-실사-대장"
-        }
-      ],
+      "headings": [],
       "excerpt": "사람이 선반에서 직접 센 값입니다. 시스템이 믿고 있던 값과 따로 보관합니다. 둘이 다를 때 무엇이 틀렸는지 알아야 하기 때문입니다. What a person actually counted on the shelf, kept separately from what the system believed.",
       "wordCount": 41,
       "updatedAt": "2026-08-14",
@@ -3726,13 +3036,7 @@
         "description": "진행 중인 주문 몫으로 잠시 잡아 둔 재고 예약이며, 주문이 끝내 성립하지 않으면 기한이 지나 스스로 풀리는 조각입니다.",
         "domain": "domains/inventory"
       },
-      "headings": [
-        {
-          "depth": 1,
-          "text": "Stock Hold · 재고 홀드",
-          "slug": "stock-hold-재고-홀드"
-        }
-      ],
+      "headings": [],
       "excerpt": "진행 중인 주문 몫으로 잡아 둔 짧은 예약이며, 주문이 성립하지 않으면 스스로 풀립니다. A short-lived claim on units for an order in progress; it expires by itself if the order never lands.",
       "wordCount": 38,
       "updatedAt": "2026-08-14",
@@ -3754,13 +3058,7 @@
         "description": "재고의 모든 증감을 한 줄씩 남긴 기록으로, 현재 수량은 저장된 값이 아니라 이 기록을 합산해서 얻는 결과입니다.",
         "domain": "domains/inventory"
       },
-      "headings": [
-        {
-          "depth": 1,
-          "text": "Stock Ledger · 재고 원장",
-          "slug": "stock-ledger-재고-원장"
-        }
-      ],
+      "headings": [],
       "excerpt": "재고의 모든 늘어남과 줄어듦을 한 줄씩 남긴 기록입니다. 「지금 몇 개인가」는 어딘가에 저장된 숫자가 아니라 이 기록을 합산한 결과입니다. 입고도 출고도 조정도 전부 여기로 모이기 때문에, 수량이 이상할 때 언제부터 어긋났는지를 되짚을 수 있는 곳도 여기뿐입니다. The running record of every increase and decrease, from which the current count is derived rather than stored. When a count looks wrong, this is where you trace back to the",
       "wordCount": 77,
       "updatedAt": "2026-08-14",
@@ -3782,13 +3080,7 @@
         "description": "어느 시점의 재고 수량을 얼려 둔 기록이라, 그때 몇 개였는지를 원장을 처음부터 훑지 않고도 바로 답할 수 있게 합니다.",
         "domain": "domains/inventory"
       },
-      "headings": [
-        {
-          "depth": 1,
-          "text": "Stock Snapshot · 재고 스냅숏",
-          "slug": "stock-snapshot-재고-스냅숏"
-        }
-      ],
+      "headings": [],
       "excerpt": "어느 시점의 수량을 얼려 둔 것입니다. 「그때 몇 개였나」를 원장을 처음부터 다시 훑지 않고 답하려고 둡니다. The count frozen at a moment, used to answer 'what did we have then' without replaying the ledger.",
       "wordCount": 40,
       "updatedAt": "2026-08-14",
@@ -3810,13 +3102,7 @@
         "description": "이 공급처가 주문부터 입고까지 실제로 걸린 날수의 기록이며, 약속한 날수가 아니라 최근의 실제 분포로 들고 있습니다.",
         "domain": "domains/inventory"
       },
-      "headings": [
-        {
-          "depth": 1,
-          "text": "Supplier Lead Time · 입고 소요일",
-          "slug": "supplier-lead-time-입고-소요일"
-        }
-      ],
+      "headings": [],
       "excerpt": "이 공급처가 실제로 걸린 날수입니다. 약속한 날수가 아닙니다. 약속과 실제가 벌어지는 폭이 곧 안전재고의 근거가 됩니다. 그래서 이 값은 평균 하나가 아니라 최근 것들의 분포로 들고 있습니다. 평균만 보면 늦는 날을 못 봅니다. How many days this supplier has actually taken, not how many they promised.",
       "wordCount": 53,
       "updatedAt": "2026-08-14",
@@ -3838,13 +3124,7 @@
         "description": "고객을 등급 사이에서 움직이는 기준선과, 구매가 없을 때 그 등급이 얼마나 유지되는지를 함께 정해 둔 규칙입니다.",
         "domain": "domains/customer"
       },
-      "headings": [
-        {
-          "depth": 1,
-          "text": "Tier Rule · 등급 산정 규칙",
-          "slug": "tier-rule-등급-산정-규칙"
-        }
-      ],
+      "headings": [],
       "excerpt": "고객 등급이 오르내리는 기준선입니다. 얼마를 사면 다음 등급이 되는지, 구매가 없는 기간이 얼마나 이어지면 내려가는지가 여기 적힙니다. 등급에 걸린 혜택은 고객이 예민하게 기억하므로 이 규칙은 조용히 바꿀 수 없습니다. 바뀐 날짜와 바뀐 내용이 남아 있어야 「왜 내 등급이 내려갔나」에 답할 수 있습니다. The stated thresholds that move a customer between grades, and how long a grade survives without spending. Because benefits hang on it, it cannot be ",
       "wordCount": 83,
       "updatedAt": "2026-08-14",
@@ -3866,13 +3146,7 @@
         "description": "토스페이 지갑 결제를 맡는 연동으로, 계약과 정산 일정이 달라서 장부에서 다른 지갑 연동과 한 줄로 뭉쳐지지 않습니다.",
         "domain": "domains/payment"
       },
-      "headings": [
-        {
-          "depth": 1,
-          "text": "TossPay Integration · 토스페이 연동",
-          "slug": "tosspay-integration-토스페이-연동"
-        }
-      ],
+      "headings": [],
       "excerpt": "토스페이 지갑 결제를 맡는 연동입니다. 다른 지갑 연동과 하는 일은 같지만 계약서와 정산 일정이 다르고, 그 차이는 장부를 맞추는 날에 드러납니다. 어느 지갑에서 얼마가 언제 들어오는지는 이 조각 단위로 따로 계산되기 때문입니다. The wallet integration for TossPay: its own approval screen, its own contract, its own settlement cycle. The difference shows up on reconciliation day, wallet by wallet.",
       "wordCount": 64,
       "updatedAt": "2026-08-14",
@@ -3894,13 +3168,7 @@
         "description": "주문 하나를 위해 발급되는 1회용 계좌번호로, 고객의 입금이 확인될 때까지 주문은 입금 대기 상태로 멈춰 서 있습니다.",
         "domain": "domains/payment"
       },
-      "headings": [
-        {
-          "depth": 1,
-          "text": "Virtual Account · 가상계좌",
-          "slug": "virtual-account-가상계좌"
-        }
-      ],
+      "headings": [],
       "excerpt": "주문 하나를 위해 발급되는 1회용 계좌번호입니다. 고객이 그 계좌로 돈을 넣을 때까지 주문은 「입금 대기」로 멈춰 있고, 기한 안에 입금이 없으면 주문도 계좌도 함께 사라집니다. 주문과 입금 사이에 시간이 벌어지는 유일한 결제 방식이라, 그 사이 재고를 어떻게 잡아 둘지가 항상 따라붙는 문제입니다. A one-off account number issued per order; the order stays pending until a deposit lands in it. It is the one payment method with a gap between ordering",
       "wordCount": 87,
       "updatedAt": "2026-08-14",
@@ -3925,13 +3193,7 @@
           "elements/delivery-status-log"
         ]
       },
-      "headings": [
-        {
-          "depth": 1,
-          "text": "Waybill · 운송장",
-          "slug": "waybill-운송장"
-        }
-      ],
+      "headings": [],
       "excerpt": "출고할 때 택배사에서 받아 상자에 붙이는 그 번호입니다. 물건이 택배사 망을 지나는 동안 모든 기록이 이 번호로 찍히고, 가게는 이 번호로 물어봐서 배송 상태 이력을 채웁니다. 주문번호가 가게 안의 이름이라면 운송장은 택배사 세계에서 통하는 이름입니다. 번호가 잘못 짝지어지면 남의 배송이 내 주문 화면에 나타납니다. The number that follows the parcel through the carrier's network and back into the store's screens. The order number is the store's name for t",
       "wordCount": 83,
       "updatedAt": "2026-08-14",
@@ -3953,13 +3215,7 @@
         "description": "고객이 나중에 다시 보려고 표시해 둔 상품 하나로, 가게 입장에서는 돈이 되기 전에 미리 보이는 수요이기도 합니다.",
         "domain": "domains/customer"
       },
-      "headings": [
-        {
-          "depth": 1,
-          "text": "Wishlist Entry · 찜 항목",
-          "slug": "wishlist-entry-찜-항목"
-        }
-      ],
+      "headings": [],
       "excerpt": "「나중에 다시 볼래」 하고 하트를 눌러 둔 상품 하나입니다. 장바구니보다 한 걸음 앞, 살 마음이 굳기 전의 관심입니다. 가게 입장에서는 돈이 되기 전에 미리 보이는 수요라서, 찜이 많은 상품의 재입고 소식이나 할인 소식은 보낼 곳이 이미 정해져 있는 셈입니다. One product a person marked to come back to, which is demand the store can see before it is spent.",
       "wordCount": 65,
       "updatedAt": "2026-08-14",
@@ -3993,13 +3249,7 @@
         "capabilities": [],
         "elements": []
       },
-      "headings": [
-        {
-          "depth": 1,
-          "text": "Online Store · 온라인 쇼핑몰",
-          "slug": "online-store-온라인-쇼핑몰"
-        }
-      ],
+      "headings": [],
       "excerpt": "실제 회사가 아니라, 처음 온 사람이 지도 읽는 법을 배우도록 만든 예시입니다. 옷과 생활용품 같은 실물 상품을 창고 하나에서 택배로 보내는 작은 온라인 쇼핑몰을 그렸습니다. 카드와 간편결제로 돈을 받고, 택배사 세 곳으로 상자를 보내고, 쿠폰과 적립금으로 다시 부르는, 어디에나 있는 가게입니다. 아홉 영역은 「둘러본다 → 산다 → 받는다 → 다시 온다」라는 큰 흐름 위에 놓여 있습니다. 둘러보는 곳이 상품이고, 사는 곳이 주문과 결제이며 그 뒤에서 재고가 수량을 지킵니다. 받는 곳이 배송이고, 잘못되면 고객지원이 받습니다. 다시 오게 만드는 곳이 회원·마케팅·적립입",
       "wordCount": 348,
       "updatedAt": "2026-08-14",

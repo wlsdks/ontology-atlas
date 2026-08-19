@@ -17,6 +17,10 @@ export {
   type StaticVaultSource,
 } from './lib/static-vault-source';
 export {
+  loadStaticVaultHeadings,
+  type StaticVaultHeadings,
+} from './lib/static-headings';
+export {
   pinnedDocsStorageKey,
   recentDocsStorageKey,
   vaultScopeKey,

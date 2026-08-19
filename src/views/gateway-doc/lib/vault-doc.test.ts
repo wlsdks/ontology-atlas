@@ -1,5 +1,13 @@
 import { describe, expect, it } from 'vitest';
-import { extractEntries, normalizeHeadingKey, readVaultDoc, trimToRecentSections } from './vault-doc';
+import { readFileSync } from 'node:fs';
+import path from 'node:path';
+import {
+  extractEntries,
+  normalizeHeadingKey,
+  readVaultDoc,
+  readVaultDocOmittedSections,
+  trimToRecentSections,
+} from './vault-doc';
 
 /**
  * 관문 읽을거리의 **내용은 볼트에서 온다** — 이 시험이 그 계약을 잡는다.
@@ -79,11 +87,29 @@ describe('trimToRecentSections', () => {
     expect(body).not.toContain('## 두 번째 진짜 절');
   });
 
-  it('실제 CHANGELOG 를 12절로 자르면 실제로 줄어든다', () => {
-    const raw = readVaultDoc('CHANGELOG') ?? '';
-    const { body, omittedSections } = trimToRecentSections(raw, 12);
+  /**
+   * 2026-08-19 부터 `readVaultDoc('CHANGELOG')` 는 전문이 아니라 **번들
+   * 미리보기**(최근 16절, `gateway-changelog.json`)를 돌려준다 — 634KB 전문이
+   * 모든 라우트의 공통 청크를 성능 예산 밖으로 밀어서다. 그래서 이 시험은
+   * 「화면 절단이 줄이는가」에 더해 **접힌 수의 회계**를 잰다: 번들 시점 접힘
+   * + 화면 시점 접힘 + 보여준 절 = 원문의 전체 절. 어느 절단이라도 조용히
+   * 어긋나면 여기서 터진다.
+   */
+  it('실제 CHANGELOG — 번들·화면 두 절단의 접힌 수 합이 원문과 맞는다', () => {
+    const preview = readVaultDoc('CHANGELOG') ?? '';
+    const bundledOmitted = readVaultDocOmittedSections('CHANGELOG');
+    const { body, omittedSections } = trimToRecentSections(preview, 12);
     expect(omittedSections).toBeGreaterThan(0);
-    expect(body.length).toBeLessThan(raw.length / 4);
+    expect(body.length).toBeLessThan(preview.length);
+    expect(bundledOmitted).toBeGreaterThan(0);
+
+    const raw = readFileSync(
+      path.join(process.cwd(), 'docs', 'CHANGELOG.md'),
+      'utf8',
+    );
+    // limit 0 이면 모든 절이 접힌다 — 전체 절 수를 세는 가장 싼 방법이다.
+    const totalSections = trimToRecentSections(raw, 0).omittedSections;
+    expect(bundledOmitted + omittedSections + 12).toBe(totalSections);
   });
 });
 

@@ -15,6 +15,7 @@ import {
   extractEntries,
   normalizeHeadingKey,
   readVaultDoc,
+  readVaultDocOmittedSections,
   trimToRecentSections,
   type DocEntry,
 } from '../lib/vault-doc';
@@ -125,9 +126,21 @@ export function GatewayDocPage({
     const withoutPreamble = entryNav
       ? withoutH1.replace(/^(?:>.*(?:\r?\n)+)+(?:---(?:\r?\n)+)?/, '')
       : withoutH1;
-    return recentSectionLimit
-      ? trimToRecentSections(withoutPreamble, recentSectionLimit)
-      : { body: withoutPreamble, omittedSections: 0 };
+    /*
+     * 접힌 절 수는 두 절단의 합이다 — 번들 시점(전문이 너무 커서
+     * gateway-changelog.json 미리보기만 실렸다)과 화면 시점(recentSectionLimit).
+     * 번들 쪽을 더하지 않으면 「12개만 보여주고 4개 접었습니다」라고 말하게
+     * 된다 — 실제로는 200개 넘게 접혔는데.
+     */
+    const bundledOmitted = readVaultDocOmittedSections(slug);
+    if (!recentSectionLimit) {
+      return { body: withoutPreamble, omittedSections: bundledOmitted };
+    }
+    const trimmed = trimToRecentSections(withoutPreamble, recentSectionLimit);
+    return {
+      body: trimmed.body,
+      omittedSections: trimmed.omittedSections + bundledOmitted,
+    };
   }, [slug, recentSectionLimit, entryNav]);
 
   /**
