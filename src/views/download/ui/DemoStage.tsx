@@ -152,7 +152,22 @@ function DemoPlayer({ clip }: { clip: DemoClip }) {
          * 다시 보고 싶은 구간이 생기지만, 시작 전 포스터 위에 컨트롤 바가 얹히면
          * 그게 첫인상의 잉크를 가져간다.
          */}
+        {/*
+         * `key={locale}` 이 없으면 **한국어 페이지가 영어 영상을 튼다.**
+         * 이 컴포넌트의 로케일은 `document.documentElement.lang` 에서 오는데
+         * 서버 스냅숏이 `'en'` 이라, 첫 그림은 항상 영어 자산으로 나가고
+         * 수화(hydration) 때 `ko` 로 바뀐다. 그때 React 는 `poster` 속성과
+         * `<source>` 자식을 새 값으로 갈아 주지만 — **`<video>` 는 자식이
+         * 바뀌었다고 소스를 다시 고르지 않는다**(재선택은 `load()` 나 재마운트
+         * 때만 일어난다). 결과는 포스터만 한국어이고 재생되는 것은 영어인
+         * 어긋난 상태다. 지금은 두 로케일이 같은 녹화를 가리켜 눈에 안 보이지만,
+         * 영어 촬영본이 붙는 순간 그대로 드러난다(2026-08-20, 재생 계측으로 발견:
+         * `/ko/` 에서 `currentSrc` 가 `.en.webm`, `poster` 가 `.ko-poster.png`).
+         * key 를 로케일에 걸어 두면 로케일이 정해질 때 요소가 새로 마운트되어
+         * 소스 선택이 처음부터 다시 일어난다.
+         */}
         <video
+          key={locale}
           ref={videoRef}
           data-testid={`demo-video-${clip.id}`}
           poster={withBasePath(demoPoster(clip, locale))}
