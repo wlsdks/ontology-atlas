@@ -26,6 +26,7 @@ import {
   DOME_HALO_ALPHA_GAIN,
   DOME_RING_ALPHA,
   DOME_RING_WIDTH_PX,
+  domeDetailFactor,
   domeFogAlpha,
   domeHaloPx,
   domeLineWidthFactor,
@@ -1314,6 +1315,9 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
       // 헤일로 반폭(화면 px) — 조립 램프로 크로스페이드해 2D↔3D 전환 중에도
       // 획이 «툭» 생기지 않는다. 알파는 아래에서 이 엣지의 최종 알파를 안 뒤에.
       let domeHaloWidthPx = 0;
+      // 먼 쪽 상세 램프(`domeDetailFactor` 독블록) — 뒤쪽 반구에서 헤일로를
+      // 깊이 연속으로 접는다. 조립 램프와 같은 크로스페이드 문법(2D = 1).
+      let domeEdgeDetail = 1;
       if (domeOn) {
         const aMin = Math.min(edgeFrameA.a, edgeFrameB.a);
         if (aMin > 0) {
@@ -1321,6 +1325,7 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
           domeEdgeFog = 1 + (domeFogAlpha(uAvg) - 1) * aMin;
           domeWidthScale = 1 + (domeLineWidthFactor(uAvg) - 1) * aMin;
           domeHaloWidthPx = domeHaloPx(uAvg) * aMin;
+          domeEdgeDetail = 1 + (domeDetailFactor(uAvg) - 1) * aMin;
         }
       }
       // Off-screen geometry still cost a full curve + up to 3 comet arcs each
@@ -1387,6 +1392,9 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
           : 0;
       // 3D 안개 면제 — 상호작용이 짚은 관계는 깊이에 묻히지 않는다.
       const domeEdgeExempt = emphasized || isSelectedEdge || edgeEgoState === "ego";
+      // 먼 쪽 상세 생략 — 안개 면제와 같은 규칙: 읽으라고 밝힌 관계는 헤일로도
+      // 되찾는다(면제 엣지가 뒤엉킨 실타래를 자를 수 없으면 면제가 반쪽이다).
+      if (!domeEdgeExempt && domeEdgeDetail < 1) domeHaloWidthPx *= domeEdgeDetail;
       ctx.globalAlpha =
         (passthrough ? edgeAlpha * tokens.edgePassthroughAlpha : edgeAlpha) *
         edgeSpotlightSink *
@@ -1671,10 +1679,15 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
     // (`docs/DECISIONS.md` «3D 유예 목록»).
     // perf 2026-08-19 — 정렬 인덱스로 담아 둔 프레임을 되찾는다(Map 재조회 0).
     const nodeDome = domeOn ? domeNodeFrameReused[domeNodeIndexReused[drawPos]] : ZERO_DOME_FRAME;
+    // 먼 쪽 상세 램프(`domeDetailFactor` 독블록) — 뒤쪽 반구 노드의 부가 획
+    // (깊이 헤일로 · 입체 음영 · 금속 시인 · 외곽선 · 도메인 핀 틱)을 깊이
+    // 연속으로 접는다. 안개와 같은 면제 규칙: 호버·트레일·ego 노드는 1.
+    let domeDetail = 1;
     if (domeOn) {
       effRadius *= nodeDome.s;
       if (!isHoveredNode && !isTrailKept(node.id) && egoState === "normal") {
         realmClarityAlpha *= 1 + (domeFogAlpha(nodeDome.u) - 1) * nodeDome.a;
+        domeDetail = 1 + (domeDetailFactor(nodeDome.u) - 1) * nodeDome.a;
       }
     }
 
@@ -1735,6 +1748,17 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
       if (sheenTopCache.size > 256) sheenTopCache.clear();
       sheenTopCache.set(visual.fill, sheenTop);
     }
+    // 먼 쪽 상세 램프 — 금속 시인 그라디언트를 fill 로 깊이 연속 수렴시킨다.
+    // detail 0 이면 sheenTop === fill (동일 문자열) 이 되어 `resolveBodyFill`
+    // 이 그라디언트 생성 없이 평면 fill 로 조기 반환한다. 중간 구간은 블렌드
+    // 계수를 detail 로 죽이는 색 보간이라 하드컷이 없다(detail 1 = 캐시 값과
+    // 같은 식·같은 문자열).
+    if (domeDetail < 1) {
+      sheenTop =
+        domeDetail <= 0.01
+          ? visual.fill
+          : lerpColorHex(visual.fill, tokens.nodeSheenTint, tokens.nodeSheenBlend * domeDetail);
+    }
     // Engraved numeral: project/domain only, and only when there's a count to
     // show (prototype `if (n.count && (project||domain) ...)`).
     // 3D — 점에는 숫자를 새기지 않는다(데이터 표가 아니라 형태를 보는 층).
@@ -1766,7 +1790,8 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
      * 진하기 규칙은 엣지와 같다 — 이 노드가 지금 그려지는 알파를 따라간다.
      */
     if (domeOn && nodeDome.a > 0.01) {
-      const haloPx = domeHaloPx(nodeDome.u) * nodeDome.a;
+      // 먼 쪽 상세 램프 — 엣지 헤일로와 같은 감쇠(연속·앞쪽 무변).
+      const haloPx = domeHaloPx(nodeDome.u) * nodeDome.a * domeDetail;
       if (haloPx > 0.05) {
         const prevAlpha = ctx.globalAlpha;
         ctx.globalAlpha = Math.min(DOME_HALO_ALPHA_CAP, prevAlpha * DOME_HALO_ALPHA_GAIN);
@@ -1784,7 +1809,11 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
       ctx,
       {
         // 3D 입체 음영 — 조립 램프로 크로스페이드(2D 는 0, 획 0개 추가).
-        depthShade: domeOn ? nodeDome.a : 0,
+        // 먼 쪽 상세 램프가 뒤쪽 반구에서 세기를 0 으로 접는다(연속) — 0.01
+        // 게이트가 두 번째 fill + translate 쌍을 통째로 생략한다.
+        depthShade: domeOn ? nodeDome.a * domeDetail : 0,
+        // 먼 쪽 상세 램프 — 외곽선·도메인 핀 틱이 이 값으로 함께 물러난다.
+        detail: domeDetail,
         kind: node.kind,
         screenX: screen.x,
         screenY: screen.y,

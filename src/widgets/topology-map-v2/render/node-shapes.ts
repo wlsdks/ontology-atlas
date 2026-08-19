@@ -199,6 +199,14 @@ export interface NodeShapeDrawState {
    * 알파 하나뿐이라 새 색상(hue)이 0 이고, 번지지도 움직이지도 않는다.
    */
   depthShade?: number;
+  /**
+   * 3D 보기 — **먼 쪽 상세 램프** 0..1 (`model/dome-view.ts#domeDetailFactor`).
+   * 1(기본)이면 종전과 픽셀 동일. 뒤쪽 반구에서 0 으로 접히며 **부가 획**만
+   * 물러난다: 외곽선 stroke(채움 세트에서만 — 라인 세트의 외곽선은 마크
+   * 자체라 안 접는다)와 도메인 핀 틱. 원판 fill(마크)은 어느 값에서도 그대로.
+   * 감쇠는 C¹ 연속(smoothstep)이라 돔 회전 중 획이 «툭» 사라질 수 없다.
+   */
+  detail?: number;
 }
 
 /** kind→실루엣 불변, 렌더 스타일만 결정하는 순수 디스크립터 (canvas 게이트). */
@@ -359,6 +367,9 @@ function resolveBodyFill(
   sheenTop: string,
 ): string | CanvasGradient {
   if (r <= SHEEN_MIN_RADIUS || farT >= SHEEN_MAX_FAR_T) return fill;
+  // 먼 쪽 상세 램프가 sheenTop 을 fill 로 수렴시키면(동일 문자열) 두 정지점이
+  // 같은 그라디언트다 — 만들지 않고 평면 fill 로 조기 반환한다(픽셀 동일).
+  if (sheenTop === fill) return fill;
   const grad = ctx.createLinearGradient(x, y - r, x, y + r);
   grad.addColorStop(0, sheenTop);
   grad.addColorStop(1, fill);
@@ -618,6 +629,7 @@ export function draw(ctx: CanvasRenderingContext2D, state: NodeShapeDrawState, t
     reducedMotion,
     glyphStyle,
     depthShade = 0,
+    detail = 1,
   } = state;
 
   const { lineOnly, lineWidthScale } = glyphStyleDescriptor(glyphStyle);
@@ -678,17 +690,34 @@ export function draw(ctx: CanvasRenderingContext2D, state: NodeShapeDrawState, t
     ctx.fill();
     ctx.translate(-x, -y);
   }
-  ctx.strokeStyle = stroke;
-  ctx.lineWidth = lineWidth * lineWidthScale;
-  ctx.stroke();
+  /*
+   * 외곽선 — 먼 쪽 상세 램프(`detail` 독블록). 채움 세트에서 외곽선은 fill 위에
+   * 얹는 **부가 획**이라 뒤쪽 반구에서 알파로 연속 페이드 후 생략한다. 라인
+   * 세트(lineOnly)의 외곽선은 마크 자체라 어느 깊이에서도 그대로 — 「노드를
+   * 없애지 않는다」는 계약이 그 경로에서는 외곽선에 걸려 있다.
+   */
+  const strokeFade = lineOnly ? 1 : detail;
+  if (strokeFade >= 0.999) {
+    ctx.strokeStyle = stroke;
+    ctx.lineWidth = lineWidth * lineWidthScale;
+    ctx.stroke();
+  } else if (strokeFade > 0.01) {
+    const prevAlpha = ctx.globalAlpha;
+    ctx.globalAlpha = prevAlpha * strokeFade;
+    ctx.strokeStyle = stroke;
+    ctx.lineWidth = lineWidth * lineWidthScale;
+    ctx.stroke();
+    ctx.globalAlpha = prevAlpha;
+  }
   if (hasDash) ctx.setLineDash([]);
 
   // Domain chip-leg pin ticks — circuit-only detail, fades out with altitude
   // (prototype: `s > 6 && farT < 0.9`, alpha `1 - smoothstep(0.55,0.9,farT)`).
-  if (kind === "domain" && egoState !== "dim") {
+  // 먼 쪽 상세 램프 — 뒤쪽 반구에서 틱 알파를 detail 로 함께 접는다(연속).
+  if (kind === "domain" && egoState !== "dim" && detail > 0.01) {
     const s = r * DOMAIN_HALF_EXTENT_RATIO;
     if (s > DOMAIN_PIN_MIN_HALF_EXTENT && farT < DOMAIN_PIN_MAX_FAR_T) {
-      ctx.globalAlpha = 1 - smoothstep(0.55, 0.9, farT);
+      ctx.globalAlpha = (1 - smoothstep(0.55, 0.9, farT)) * detail;
       ctx.strokeStyle = stroke;
       ctx.lineWidth = 1;
       for (const t of domainPinTicks(x, y, s)) {
