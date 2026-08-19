@@ -34,11 +34,11 @@ import { buildEvidenceRailModel } from '../lib/evidence-rail';
  * **이 페이지의 그리드는 한 벌이다** (2026-07-29 카운슬 평결 ③ — 리메이크에도
  * 그대로 산다).
  *
- * 정렬 원점 하나에서 시작해 `--page-max` 에서 멈춘다. 원소는 다섯이고 x 는
+ * 정렬 원점 하나에서 시작해 `--gateway-page-max` 에서 멈춘다. 원소는 다섯이고 x 는
  * 하나다: GNB · 헤드라인 · 지도 절 · 캡션 · 푸터.
  *
  * ```
- * 원점 = max(--gateway-gutter, (뷰포트 − --page-max) / 2)   ← --gateway-origin
+ * 원점 = max(--gateway-gutter, (뷰포트 − --gateway-page-max) / 2)   ← --gateway-origin
  * ```
  *
  * 소유자 지적(*"좌우가 같아야함"*)의 전말과 `mx-auto` 기각 사유는

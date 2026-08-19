@@ -38,6 +38,9 @@ import {
   isInsideDomeGrip,
   DOME_POSE_LAG_SCALE,
   DOME_TIER_LAG,
+  DOME_DETAIL_FADE_END,
+  DOME_DETAIL_FADE_START,
+  domeDetailFactor,
   domeEdgeControl,
   domeFogAlpha,
   domeHaloPx,
@@ -527,6 +530,27 @@ describe("깊이 헤일로 — 가까운 것이 먼 것을 가린다", () => {
   it("범위 밖 입력을 클램프한다 — 정규화가 어긋난 프레임에서도 음수 폭이 안 나온다", () => {
     expect(domeHaloPx(-2)).toBeCloseTo(DOME_HALO_MAX_PX, 6);
     expect(domeHaloPx(9)).toBeCloseTo(0, 6);
+  });
+});
+
+describe("먼 쪽 상세 램프 — 뒤쪽 반구의 부가 획만 깊이 연속으로 접는다", () => {
+  it("앞쪽 반구는 정확히 1 이다 — 관찰자 쪽 픽셀은 한 자리도 달라질 수 없다", () => {
+    expect(DOME_DETAIL_FADE_START).toBeGreaterThanOrEqual(0.5);
+    for (let u = 0; u <= DOME_DETAIL_FADE_START + 1e-9; u += 0.01) {
+      expect(domeDetailFactor(u)).toBe(1);
+    }
+  });
+
+  it("END 이후 0, 사이는 단조 감소·중점 0.5 (smoothstep)", () => {
+    expect(domeDetailFactor(DOME_DETAIL_FADE_END)).toBe(0);
+    expect(domeDetailFactor(1)).toBe(0);
+    expect(domeDetailFactor((DOME_DETAIL_FADE_START + DOME_DETAIL_FADE_END) / 2)).toBeCloseTo(0.5, 9);
+    let prev = domeDetailFactor(DOME_DETAIL_FADE_START);
+    for (let u = DOME_DETAIL_FADE_START; u <= DOME_DETAIL_FADE_END; u += 0.005) {
+      const cur = domeDetailFactor(u);
+      expect(cur).toBeLessThanOrEqual(prev + 1e-12);
+      prev = cur;
+    }
   });
 });
 
