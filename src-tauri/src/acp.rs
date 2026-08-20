@@ -2798,7 +2798,15 @@ mod tests {
         let app_data = Path::new("/tmp/atlas-app-data");
         let cmd = managed_install_command("claude-acp", app_data).unwrap();
 
-        assert!(cmd.contains("--prefix /tmp/atlas-app-data/managed-node"), "{cmd}");
+        // ⚠️ 기대값을 POSIX 경로로 박아 두면 Windows 에서만 빨개진다(CI 실측).
+        // 같은 API 로 만들어 비교한다 — 재는 것은 구분자가 아니라 **그 자리에
+        // 우리 prefix 가 들어가는가**다.
+        let expected_prefix = managed_cli_prefix(app_data);
+        assert!(
+            cmd.contains(&format!("--prefix {}", expected_prefix.display())),
+            "{cmd}"
+        );
+        assert!(cmd.contains("managed-node"), "{cmd}");
         assert!(cmd.contains("@anthropic-ai/claude-code@"), "{cmd}");
         // 버전이 붙어 있어야 한다 — `@latest` 나 버전 없는 이름은 고정이 아니다.
         assert!(!cmd.contains("@latest"), "{cmd}");
