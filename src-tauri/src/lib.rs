@@ -977,7 +977,26 @@ fn acp_start(
     // 격리를 **지원하지 않는 것**은 None 으로 정직하게 띄울 수 있다. 그러나
     // 격리를 지원한다고 표시한 실행기의 준비 실패는 시작 실패다. 그 상태로
     // 띄우면 사용자의 전역 허용 목록을 물려받고, 화면이 약속한 관문은 없다.
-    let isolation = acp::prepare_runtime_isolation(&runtime_id, &app_data, home.as_deref())?;
+    // 그림자 걷기가 「이 항목이 아직 통하나」를 물어보려면 그 CLI 의 **절대
+    // 경로**가 필요하다. 이름으로 띄우면 자식이 보는 PATH 에 좌우되는데, GUI
+    // 앱의 기본 PATH 는 사용자의 셸과 다르다(이 파일 맨 위 실측).
+    let isolation_cli = acp::registry_agent(&runtime_id)
+        .and_then(|agent| agent.cli.as_deref())
+        .and_then(|name| {
+            let dirs = acp::candidate_bin_dirs(
+                home.as_deref(),
+                std::env::var_os("PATH").as_deref(),
+                &probe,
+            );
+            acp::resolve_command(name, &dirs, &probe)
+        });
+    let isolation = acp::prepare_runtime_isolation(
+        &runtime_id,
+        &app_data,
+        home.as_deref(),
+        isolation_cli.as_deref(),
+        &launch.path_env,
+    )?;
 
     let mut command = Command::new(&launch.program);
     command

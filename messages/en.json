@@ -3757,8 +3757,8 @@
     "closeHistory": "Close the past chats list",
     "trouble": {
       "auth": {
-        "title": "The app's own sign-in has gone stale",
-        "hint": "Atlas runs Claude with its own settings folder so it asks before touching anything outside this folder. That means it also has its own sign-in, and signing in again in your terminal does not repair it. Paste the one-line command under “Details” into your terminal to sign in for the app, then press “New chat”."
+        "title": "An old app-scoped sign-in is getting in the way",
+        "hint": "You do not need a separate sign-in. This app uses the same one you use in your terminal. What is in the way is a keychain entry from an earlier app-scoped sign-in: it shadows the shared one and has already expired. Press \u300cNew chat\u300d and the app clears that entry and falls back to your real sign-in. If that still fails, paste the one-line command under \u300cDetails\u300d into a terminal."
       },
       "install": {
         "title": "A broken piece from an interrupted download is in the way",

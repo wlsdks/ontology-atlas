@@ -473,8 +473,8 @@
       "tags": [],
       "frontmatter": {},
       "headings": [],
-      "excerpt": "Major change history. Code commit messages answer why; this file answers when / which surface changed. Focused on user-visible changes, not PR-level granularity. Newest at the top. Entries stay date-based; the app version reached v1.0.0 on 2026-07-27, so a release tag now carries the semver promise instead. 종전 영상은 두 가지",
-      "wordCount": 73940,
+      "excerpt": "Major change history. Code commit messages answer why; this file answers when / which surface changed. Focused on user-visible changes, not PR-level granularity. Newest at the top. Entries stay date-based; the app version reached v1.0.0 on 2026-07-27, so a release tag now carries the semver promise instead. 「앱에서 대화」를 열",
+      "wordCount": 74122,
       "updatedAt": "2026-08-20",
       "linksOut": [
         "audits/CASE-STUDY-AGENTS-MD-DRIFT",

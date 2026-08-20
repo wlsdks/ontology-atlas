@@ -43,13 +43,45 @@ describe("앱 몫 로그인 복구 명령", () => {
   it("공백이 있는 경로를 따옴표로 감싼다 — 안 그러면 붙여 넣어도 안 된다", () => {
     const cmd = claudeLoginRepairCommand();
     expect(CLAUDE_ISOLATED_CONFIG_SUBPATH).toContain("Application Support");
-    expect(cmd).toMatch(/CLAUDE_CONFIG_DIR="\$HOME\/[^"]+"/);
+    expect(cmd).toMatch(/"\$HOME\/[^"]*Application Support[^"]+"/);
   });
 
-  it("앱 몫 폴더에서 로그인시키는 명령이다 — 사용자 폴더를 건드리지 않는다", () => {
+  /**
+   * **다시 로그인시키는 명령이면 안 된다** (2026-08-20 정정).
+   *
+   * 종전 명령(`CLAUDE_CONFIG_DIR=<앱 폴더> claude /login`)이 이 결함의 원인이었다.
+   * 그 로그인이 앱 폴더 앞으로 키체인 항목을 만들고, 그 항목이 링크해 둔 사용자
+   * 자격증명을 가리고, 토큰이 회전되면 죽는다 — 그러면 화면이 같은 명령을 다시
+   * 내밀어 같은 덫을 다시 놓는다. 고치는 방향은 **항목을 없애는 것**이다.
+   */
+  it("로그인이 아니라 그림자 항목을 지우는 명령이다", () => {
     const cmd = claudeLoginRepairCommand();
-    expect(cmd).toContain("claude /login");
-    expect(cmd).not.toMatch(/\$HOME\/\.claude(\/|"|\s|$)/);
+    expect(cmd).toContain("delete-generic-password");
+    expect(cmd).toContain("Claude Code-credentials-");
+    expect(cmd, "다시 로그인시키면 같은 덫을 다시 놓는 것이다").not.toContain("claude /login");
+    expect(cmd).not.toContain("claude auth login");
+  });
+
+  /**
+   * 해시를 박아 두면 그 기계에서만 맞는다 — 홈 경로가 사람마다 다르다.
+   * 셸이 계산하게 두고, 그 계산이 Rust 와 같은 자리를 겨냥하는지 본다.
+   */
+  it("항목 이름을 셸이 계산한다 — 그 기계의 홈 경로로", () => {
+    const cmd = claudeLoginRepairCommand();
+    expect(cmd).toMatch(/shasum -a 256/);
+    expect(cmd).toMatch(/cut -c1-8/);
+    expect(cmd).not.toMatch(/Claude Code-credentials-[0-9a-f]{8}/);
+  });
+
+  /** Rust 쪽 그림자 걷기와 같은 규칙을 쓰는지 — 사본이 둘이라 묶어 둔다. */
+  it("Rust 도 같은 이름 규칙으로 그림자를 걷는다", () => {
+    expect(ACP_RS).toContain("Claude Code-credentials-");
+    expect(ACP_RS).toContain("delete-generic-password");
+    expect(ACP_RS).toContain("fn clear_shadowing_credentials");
+  });
+
+  it("사용자 폴더를 건드리지 않는다", () => {
+    expect(claudeLoginRepairCommand()).not.toMatch(/\$HOME\/\.claude(\/|"|\s|$)/);
   });
 
   /*
