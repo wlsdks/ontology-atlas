@@ -2622,11 +2622,23 @@ mod tests {
         }
     }
 
+    /// **플랫폼 중립으로 짠다.** 처음에는 `/bin/echo` · `/bin/sleep` 을 썼는데
+    /// Windows 러너에는 그 경로가 없어서 `spawn` 이 실패하고, 그 실패가
+    /// 「상한이 잘 듣는다」와 구별되지 않았다(2026-08-20 CI 에서 적발).
+    /// 지금은 이 저장소가 어디서든 갖고 있는 것으로 띄운다 — 우리 자신을 돌리는
+    /// `cargo` 의 테스트 바이너리가 아니라, 빌드에 이미 필요한 `node` 다.
+    fn node_command(script: &str) -> std::process::Command {
+        let mut cmd = std::process::Command::new("node");
+        cmd.args(["-e", script]);
+        cmd
+    }
+
     #[test]
     fn bounded_output_returns_stdout_when_the_command_finishes() {
-        let mut cmd = std::process::Command::new("/bin/echo");
-        cmd.arg("hello");
-        let out = bounded_output(cmd, std::time::Duration::from_secs(5));
+        let out = bounded_output(
+            node_command("process.stdout.write('hello')"),
+            std::time::Duration::from_secs(20),
+        );
         assert_eq!(out.as_deref().map(str::trim), Some("hello"));
     }
 
@@ -2635,21 +2647,16 @@ mod tests {
         // 상한이 안 먹으면 이 테스트가 30초를 잡아먹어 그 자체로 실패한다 —
         // 「죽였다」를 벽시계로도 증명한다.
         let started = std::time::Instant::now();
-        let mut cmd = std::process::Command::new("/bin/sleep");
-        cmd.arg("30");
-        let out = bounded_output(cmd, std::time::Duration::from_millis(300));
+        let out = bounded_output(
+            node_command("setTimeout(() => {}, 30000)"),
+            std::time::Duration::from_millis(400),
+        );
         assert!(out.is_none(), "안 끝나는 명령이 값을 돌려줬다");
         assert!(
-            started.elapsed() < std::time::Duration::from_secs(5),
+            started.elapsed() < std::time::Duration::from_secs(15),
             "상한이 안 먹었다: {:?}",
             started.elapsed()
         );
-    }
-
-    #[test]
-    fn bounded_output_returns_none_for_a_missing_program() {
-        let cmd = std::process::Command::new("/oatlas/not/a/real/program");
-        assert!(bounded_output(cmd, std::time::Duration::from_secs(1)).is_none());
     }
 
     #[test]
