@@ -306,6 +306,8 @@ pub(crate) fn candidate_bin_dirs(
     // `managed_bin` — 앱이 대신 깔아 준 것이 사는 자리. **맨 뒤에 붙는다**:
     // 사용자가 자기 손으로 깐 것이 언제나 이긴다(이 파일의 PATH 순서 계약).
     managed_bin: Option<&Path>,
+    // `managed_node_bin` — 앱이 받아 둔 Node 의 `bin`. 같은 이유로 맨 뒤다.
+    managed_node_bin: Option<&Path>,
 ) -> Vec<PathBuf> {
     let mut dirs: Vec<PathBuf> = Vec::new();
     let push = |dir: PathBuf, dirs: &mut Vec<PathBuf>| {
@@ -366,6 +368,9 @@ pub(crate) fn candidate_bin_dirs(
     // 앱이 깐 것은 **맨 뒤**다. 사용자가 자기 손으로 깐 것을 우리가 이기면,
     // 「터미널에선 되는데 앱에서만 다르다」가 그 자리에서 태어난다.
     if let Some(bin) = managed_bin {
+        push(bin.to_path_buf(), &mut dirs);
+    }
+    if let Some(bin) = managed_node_bin {
         push(bin.to_path_buf(), &mut dirs);
     }
 
@@ -470,8 +475,9 @@ pub(crate) fn detect_runtimes(
     path_env: Option<&OsStr>,
     probe: &FsProbe<'_>,
     managed_bin: Option<&Path>,
+    managed_node_bin: Option<&Path>,
 ) -> Vec<AcpRuntimeStatus> {
-    let dirs = candidate_bin_dirs(home, path_env, probe, managed_bin);
+    let dirs = candidate_bin_dirs(home, path_env, probe, managed_bin, managed_node_bin);
     // 로그인 확인도 어댑터를 띄울 때와 **같은 PATH** 를 본다. 안 그러면 래퍼가
     // node 를 못 찾아 실패하고, 그 실패가 「로그인 안 됨」으로 읽힌다.
     let child_path = std::env::join_paths(dirs.iter())
@@ -568,9 +574,10 @@ pub(crate) fn resolve_launch(
     path_env: Option<&OsStr>,
     probe: &FsProbe<'_>,
     managed_bin: Option<&Path>,
+    managed_node_bin: Option<&Path>,
 ) -> Result<AcpLaunch, String> {
     let agent = registry_agent(runtime_id).ok_or_else(|| format!("unknown-runtime:{runtime_id}"))?;
-    let dirs = candidate_bin_dirs(home, path_env, probe, managed_bin);
+    let dirs = candidate_bin_dirs(home, path_env, probe, managed_bin, managed_node_bin);
     let joined = std::env::join_paths(dirs.iter())
         .map_err(|err| format!("path-join-failed:{err}"))?
         .to_string_lossy()
@@ -1120,7 +1127,7 @@ fn clear_shadowing_credentials(config_dir: &Path, cli: Option<&Path>, path_env: 
 /// 스텝에서 이미 한 번 겪었다(2026-08-20, apt 가 20분을 먹었다).
 ///
 /// 못 띄우거나 상한을 넘기면 `None` — 「실패」가 아니라 **모른다**다.
-fn bounded_output(mut command: std::process::Command, limit: std::time::Duration) -> Option<String> {
+pub(crate) fn bounded_output(mut command: std::process::Command, limit: std::time::Duration) -> Option<String> {
     use std::io::Read;
     use std::process::Stdio;
 
@@ -1922,7 +1929,7 @@ mod tests {
             login_ok: &|_, _, _, _| None,
         };
         let path = std::env::join_paths([PathBuf::from("/from/path")]).unwrap();
-        let out = candidate_bin_dirs(Some(Path::new("/home/me")), Some(&path), &probe, None);
+        let out = candidate_bin_dirs(Some(Path::new("/home/me")), Some(&path), &probe, None, None);
         assert_eq!(out.first(), Some(&PathBuf::from("/from/path")));
         assert!(out.len() > 1, "잘 알려진 자리도 뒤에 붙어야 한다");
     }
@@ -1989,7 +1996,7 @@ mod tests {
             read_text: &read,
             login_ok: &|_, _, _, _| None,
         };
-        let out = detect_runtimes(Some(Path::new("/home/me")), None, &probe, None);
+        let out = detect_runtimes(Some(Path::new("/home/me")), None, &probe, None, None);
         let claude = out.iter().find(|r| r.id == "claude-acp").unwrap();
         assert_eq!(
             claude.cli_path.as_deref(),
@@ -2086,7 +2093,7 @@ mod tests {
 
         // PATH 는 GUI 앱이 받는 최소한만 — 여기에 아무것도 없다.
         let path = std::env::join_paths([PathBuf::from("/usr/bin"), PathBuf::from("/bin")]).unwrap();
-        let out = detect_runtimes(Some(Path::new("/home/me")), Some(&path), &probe, None);
+        let out = detect_runtimes(Some(Path::new("/home/me")), Some(&path), &probe, None, None);
 
         let claude = out.iter().find(|r| r.id == "claude-acp").unwrap();
         assert_eq!(claude.state, "ready", "PATH 밖에 있어도 찾아야 한다");
@@ -2124,7 +2131,7 @@ mod tests {
                 read_text: &read,
                 login_ok: &|_, _, _, _| None,
             };
-            let out = detect_runtimes(None, None, &probe, None);
+            let out = detect_runtimes(None, None, &probe, None, None);
             let claude = out.iter().find(|r| r.id == "claude-acp").unwrap();
             assert_eq!(claude.state, "cli-missing", "CLI 부재가 먼저다 — 할 일이 더 분명하다");
         }
@@ -2139,7 +2146,7 @@ mod tests {
             read_text: &read,
             login_ok: &|_, _, _, _| None,
         };
-        let out = detect_runtimes(None, Some(path_env.as_os_str()), &probe, None);
+        let out = detect_runtimes(None, Some(path_env.as_os_str()), &probe, None, None);
         let claude = out.iter().find(|r| r.id == "claude-acp").unwrap();
         assert_eq!(claude.state, "node-missing");
         assert_eq!(
@@ -2171,7 +2178,7 @@ mod tests {
             read_text: &read,
             login_ok: &|_, _, _, _| Some(true),
         };
-        let out = detect_runtimes(None, Some(path_env.as_os_str()), &probe, None);
+        let out = detect_runtimes(None, Some(path_env.as_os_str()), &probe, None, None);
         let claude = out.iter().find(|r| r.id == "claude-acp").unwrap();
         assert_eq!(claude.state, "ready");
 
@@ -2182,7 +2189,7 @@ mod tests {
             read_text: &read,
             login_ok: &|_, _, _, _| Some(false),
         };
-        let out = detect_runtimes(None, Some(path_env.as_os_str()), &probe, None);
+        let out = detect_runtimes(None, Some(path_env.as_os_str()), &probe, None, None);
         let claude = out.iter().find(|r| r.id == "claude-acp").unwrap();
         assert_eq!(
             claude.state, "login-needed",
@@ -2197,7 +2204,7 @@ mod tests {
             read_text: &read,
             login_ok: &|_, _, _, _| None,
         };
-        let out = detect_runtimes(None, Some(path_env.as_os_str()), &probe, None);
+        let out = detect_runtimes(None, Some(path_env.as_os_str()), &probe, None, None);
         let claude = out.iter().find(|r| r.id == "claude-acp").unwrap();
         assert_eq!(claude.state, "ready");
     }
@@ -2232,7 +2239,7 @@ mod tests {
                 Some(true)
             },
         };
-        detect_runtimes(None, Some(path_env.as_os_str()), &probe, None);
+        detect_runtimes(None, Some(path_env.as_os_str()), &probe, None, None);
 
         let asked = asked.borrow();
         assert_eq!(asked.len(), LOGIN_PROBE.len(), "물어본 횟수가 표와 다르다: {asked:?}");
@@ -2275,7 +2282,7 @@ mod tests {
                 Some(true)
             },
         };
-        detect_runtimes(None, Some(path_env.as_os_str()), &probe, None);
+        detect_runtimes(None, Some(path_env.as_os_str()), &probe, None, None);
 
         let seen = seen.borrow();
         assert!(!seen.is_empty(), "아무에게도 안 물어봤다 — 탐지기가 죽었다");
@@ -2308,7 +2315,7 @@ mod tests {
             read_text: &read,
             login_ok: &|_, _, _, _| None,
         };
-        let out = detect_runtimes(None, Some(path_env.as_os_str()), &probe, None);
+        let out = detect_runtimes(None, Some(path_env.as_os_str()), &probe, None, None);
 
         for status in &out {
             let agent = registry().iter().find(|a| a.id == status.id).unwrap();
@@ -2358,7 +2365,7 @@ mod tests {
             read_text: &read,
             login_ok: &|_, _, _, _| None,
         };
-        let out = detect_runtimes(None, Some(path_env.as_os_str()), &probe, None);
+        let out = detect_runtimes(None, Some(path_env.as_os_str()), &probe, None, None);
         let claude = out.iter().find(|r| r.id == "claude-acp").unwrap();
         assert_eq!(claude.state, "ready");
         assert_eq!(
@@ -2391,6 +2398,7 @@ mod tests {
                 Some(path_env.as_os_str()),
                 &probe,
             None,
+            None,
             )
             .unwrap();
             assert_eq!(launch.program, test_bin("npx"));
@@ -2417,6 +2425,7 @@ mod tests {
             None,
             Some(path_env.as_os_str()),
             &probe,
+            None,
             None,
         )
         .unwrap();
@@ -2450,8 +2459,7 @@ mod tests {
             login_ok: &|_, _, _, _| None,
         };
         let launch = resolve_launch("claude-acp", Some(Path::new("/home/me")), None, &probe,
-            None,
-        ).unwrap();
+            None, None).unwrap();
         assert!(
             launch.path_env.contains("/home/me/.local/bin"),
             "자식 PATH 에 CLI 가 있는 자리가 없다: {}",
@@ -2481,8 +2489,7 @@ mod tests {
             login_ok: &|_, _, _, _| None,
         };
         assert!(resolve_launch("claude-acp", None, Some(path_env.as_os_str()), &probe,
-            None,
-        )
+            None, None)
             .unwrap_err()
             .starts_with("cli-missing:"));
 
@@ -2497,15 +2504,13 @@ mod tests {
         };
         assert_eq!(
             resolve_launch("claude-acp", None, Some(path_env.as_os_str()), &probe,
-            None,
-        ).unwrap_err(),
+            None, None).unwrap_err(),
             "node-missing"
         );
 
         // 모르는 실행기를 조용히 통과시키지 않는다.
         assert!(resolve_launch("nope", None, Some(path_env.as_os_str()), &probe,
-            None,
-        )
+            None, None)
             .unwrap_err()
             .starts_with("unknown-runtime:"));
     }
@@ -2840,7 +2845,7 @@ mod tests {
         };
         let managed = PathBuf::from("/app-data/managed-node/bin");
         let path = std::env::join_paths([Path::new("/usr/local/bin")]).unwrap();
-        let dirs = candidate_bin_dirs(None, Some(&path), &probe, Some(&managed));
+        let dirs = candidate_bin_dirs(None, Some(&path), &probe, Some(&managed), None);
 
         assert_eq!(dirs.last(), Some(&managed), "앱이 깐 자리가 맨 뒤가 아니다");
         assert!(dirs.len() > 1);
@@ -3152,12 +3157,12 @@ mod real_machine_probe {
         // GUI 앱이 받는 빈약한 PATH 를 흉내 낸다 — 터미널 PATH 를 쓰면 이 진단이
         // 정작 재려던 것을 못 잰다.
         let gui_path = std::env::join_paths([PathBuf::from("/usr/bin"), PathBuf::from("/bin")]).unwrap();
-        for r in detect_runtimes(home.as_deref(), Some(&gui_path), &probe, None) {
+        for r in detect_runtimes(home.as_deref(), Some(&gui_path), &probe, None, None) {
             println!("{:>8} · {:<14} cli={:?} adapter={:?} verified={:?}", r.state, r.id, r.cli_path, r.adapter_path, r.verified);
         }
         println!("--- launch ---");
         for id in ["claude-acp", "codex-acp"] {
-            match resolve_launch(id, home.as_deref(), Some(&gui_path), &probe, None) {
+            match resolve_launch(id, home.as_deref(), Some(&gui_path), &probe, None, None) {
                 Ok(l) => println!("{id}: {:?} {:?}", l.program, l.args),
                 Err(e) => println!("{id}: 실패 {e}"),
             }
@@ -3185,7 +3190,7 @@ mod timing_probe {
             login_ok: &skip,
         };
         let t = std::time::Instant::now();
-        let out = detect_runtimes(home.as_deref(), path.as_deref(), &fast, None);
+        let out = detect_runtimes(home.as_deref(), path.as_deref(), &fast, None, None);
         println!("확인 없이: {:?} · {}개", t.elapsed(), out.len());
 
         let full = FsProbe {
@@ -3195,7 +3200,7 @@ mod timing_probe {
             login_ok: &login_ok,
         };
         let t = std::time::Instant::now();
-        let out = detect_runtimes(home.as_deref(), path.as_deref(), &full, None);
+        let out = detect_runtimes(home.as_deref(), path.as_deref(), &full, None, None);
         println!("확인 포함: {:?} · {}개", t.elapsed(), out.len());
     }
 }
@@ -3220,7 +3225,7 @@ mod newcomer_view {
             read_text: &read,
             login_ok: &|_, _, _, _| None,
         };
-        let out = detect_runtimes(None, None, &probe, None);
+        let out = detect_runtimes(None, None, &probe, None, None);
         let mut by_state: std::collections::BTreeMap<&str, Vec<&str>> = Default::default();
         for s in &out {
             by_state.entry(s.state.as_str()).or_default().push(&s.id);
@@ -3242,7 +3247,7 @@ mod newcomer_view {
             read_text: &read,
             login_ok: &|_, _, _, _| None,
         };
-        let out = detect_runtimes(None, None, &probe, None);
+        let out = detect_runtimes(None, None, &probe, None, None);
         println!("── npx 만 있는 기계 ──");
         let mut by_state: std::collections::BTreeMap<&str, usize> = Default::default();
         for s in &out { *by_state.entry(s.state.as_str()).or_default() += 1; }

@@ -19,6 +19,8 @@ const repairAgentCheck = vi.fn<(runtimeId: string, checkId: string) => Promise<A
 const resetAgentConnection = vi.fn<(runtimeId: string) => Promise<AcpCheck[]>>();
 const agentInstallPlan = vi.fn<(runtimeId: string) => Promise<string | null>>();
 const installAgentCli = vi.fn<(runtimeId: string) => Promise<AcpCheck[]>>();
+const nodeInstallPlan = vi.fn<() => Promise<string | null>>();
+const installManagedNode = vi.fn<(runtimeId: string) => Promise<AcpCheck[]>>();
 
 vi.mock('../model/acp-doctor', async () => {
   const actual = await vi.importActual<typeof import('../model/acp-doctor')>('../model/acp-doctor');
@@ -29,6 +31,8 @@ vi.mock('../model/acp-doctor', async () => {
     resetAgentConnection: (runtimeId: string) => resetAgentConnection(runtimeId),
     agentInstallPlan: (runtimeId: string) => agentInstallPlan(runtimeId),
     installAgentCli: (runtimeId: string) => installAgentCli(runtimeId),
+    nodeInstallPlan: () => nodeInstallPlan(),
+    installManagedNode: (runtimeId: string) => installManagedNode(runtimeId),
   };
 });
 
@@ -65,6 +69,9 @@ beforeEach(() => {
   agentInstallPlan.mockReset();
   agentInstallPlan.mockResolvedValue(null);
   installAgentCli.mockReset();
+  nodeInstallPlan.mockReset();
+  nodeInstallPlan.mockResolvedValue(null);
+  installManagedNode.mockReset();
 });
 
 describe('연동 점검 화면', () => {
@@ -282,6 +289,59 @@ describe('연동 점검 화면', () => {
 
     // 멀쩡한 사람에게 설치 제안을 상시로 보여 주면 그건 안내가 아니라 광고다.
     expect(screen.queryByTestId('agent-doctor-install-plan')).toBeNull();
+  });
+
+  /**
+   * **Node 도 앱이 받아 준다** — 원장 (89). 이것이 도구가 하나도 없는 사람의
+   * 마지막 막다른 길이었다: 어댑터를 띄우려면 Node 가 필요한데 없으면 화면이
+   * 할 수 있는 말이 「직접 설치하세요」뿐이었다.
+   */
+  it('Node 가 없으면 받을 주소와 해시를 보여 준다', async () => {
+    diagnoseAgent.mockResolvedValue([
+      { id: 'launcher', state: 'problem', fixable: false, blocked: false },
+    ]);
+    nodeInstallPlan.mockResolvedValue('https://nodejs.org/dist/v24.18.0/node-v24.18.0-darwin-arm64.tar.gz (e1a97e14c99c)');
+    renderHarness();
+
+    fireEvent.click(screen.getByTestId('agent-doctor-scan'));
+    await waitFor(() => expect(screen.getByTestId('agent-doctor-node-plan')).toBeVisible());
+
+    const card = screen.getByTestId('agent-doctor-node-plan').textContent ?? '';
+    // 어디서 받는지 · 무엇으로 대조하는지 둘 다 누르기 전에 읽을 수 있어야 한다.
+    expect(card).toContain('https://nodejs.org/dist/');
+    expect(card).toContain('e1a97e14c99c');
+    expect(screen.getByTestId('agent-doctor-install-node')).toBeVisible();
+  });
+
+  it('등재 안 된 플랫폼에는 Node 받기를 안 낸다', async () => {
+    diagnoseAgent.mockResolvedValue([
+      { id: 'launcher', state: 'problem', fixable: false, blocked: false },
+    ]);
+    nodeInstallPlan.mockResolvedValue(null);
+    renderHarness();
+
+    fireEvent.click(screen.getByTestId('agent-doctor-scan'));
+    await waitFor(() => expect(screen.getByTestId('agent-doctor-checks')).toBeVisible());
+
+    expect(screen.queryByTestId('agent-doctor-install-node')).toBeNull();
+    // 그래도 사람이 할 일은 남아 있어야 한다.
+    expect(screen.getByTestId('agent-doctor-next-launcher')).toBeVisible();
+  });
+
+  it('Node 를 받은 뒤에는 다시 잰 값을 그린다', async () => {
+    diagnoseAgent.mockResolvedValue([
+      { id: 'launcher', state: 'problem', fixable: false, blocked: false },
+    ]);
+    nodeInstallPlan.mockResolvedValue('https://nodejs.org/dist/v24.18.0/x.tar.gz (abc123)');
+    installManagedNode.mockResolvedValue([ok('launcher')]);
+    renderHarness();
+
+    fireEvent.click(screen.getByTestId('agent-doctor-scan'));
+    await waitFor(() => expect(screen.getByTestId('agent-doctor-install-node')).toBeVisible());
+    fireEvent.click(screen.getByTestId('agent-doctor-install-node'));
+
+    await waitFor(() => expect(screen.getByTestId('agent-doctor-all-clear')).toBeInTheDocument());
+    expect(installManagedNode).toHaveBeenCalledWith('claude-acp');
   });
 
   it('점검이 실패하면 그 사실을 말한다 — 조용히 빈 화면이 되지 않는다', async () => {

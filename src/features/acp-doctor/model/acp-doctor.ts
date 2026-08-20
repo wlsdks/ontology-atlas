@@ -98,3 +98,22 @@ export async function installAgentCli(runtimeId: string): Promise<AcpCheck[]> {
   if (!invoke) return [];
   return invoke<AcpCheck[]>('acp_install_cli', { runtimeId });
 }
+
+/**
+ * Node 를 앱이 받아 줄 수 있나 — 그렇다면 **어디서 무엇을.**
+ *
+ * 돌려주는 문자열에는 받을 주소와 해시 앞머리가 들어 있다. 화면은 누르기 전에
+ * 그것을 보여 준다 — 「검증한다」가 말뿐이 아님을 화면이 스스로 댄다.
+ */
+export async function nodeInstallPlan(): Promise<string | null> {
+  const invoke = getInvoke();
+  if (!invoke) return null;
+  return invoke<string | null>('acp_node_plan');
+}
+
+/** Node 를 앱 전용 자리에 받아 두고 해시를 대조한다. 뒤에 다시 잰 값을 돌려준다. */
+export async function installManagedNode(runtimeId: string): Promise<AcpCheck[]> {
+  const invoke = getInvoke();
+  if (!invoke) return [];
+  return invoke<AcpCheck[]>('acp_install_node', { runtimeId });
+}
