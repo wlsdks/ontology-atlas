@@ -2,6 +2,7 @@ use notify_debouncer_full::notify::{RecommendedWatcher, RecursiveMode, Watcher};
 use notify_debouncer_full::{new_debouncer, DebounceEventResult, Debouncer, FileIdMap};
 use serde::Serialize;
 use sha2::{Digest, Sha256};
+use std::collections::HashMap;
 use std::fs;
 use std::io::{Read, Write};
 use std::path::{Component, Path, PathBuf};
@@ -437,6 +438,8 @@ const ACP_INSTALL_VERIFY_SCRIPT: &str = r#"(() => {
     progressStages: [],
     progressBarWidths: [],
     lastPercentText: "",
+    reopened: "",
+    stagesBeforeReopen: [],
     attempts: 0
   };
   window.__ontologyAtlasAcpInstallVerify = result;
@@ -534,6 +537,42 @@ const ACP_INSTALL_VERIFY_SCRIPT: &str = r#"(() => {
       result.installClicked = node ? "node" : "cli";
       target.click();
       again(500);
+      return;
+    }
+
+    /*
+     * **닫았다 다시 연다** — 이 결함은 그 동작으로만 재현된다 (2026-08-20).
+     * 시트가 언마운트되면 진행 상태가 사라지고, 완료(`done`)는 단발이라
+     * 그 사이에 지나가면 영영 못 본다. Rust 가 마지막 상태를 들고 있다가
+     * 마운트 때 돌려주는지를 여기서 실제로 잰다.
+     */
+    if (!result.reopened && result.progressStages.length > 0) {
+      const sheet = find("app-settings-popover");
+      if (sheet) {
+        result.step = "close-sheet";
+        result.reopened = "closing";
+        document.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true }));
+        again(1200);
+        return;
+      }
+    }
+    if (result.reopened === "closing") {
+      result.step = "reopen-sheet";
+      result.reopened = "reopening";
+      result.stagesBeforeReopen = result.progressStages.slice();
+      // 다시 열기 전에 화면에 남은 것을 지운다 — 그래야 「되살아났다」가
+      // 진짜 복구인지 잔상인지 갈린다.
+      result.progressStages = [];
+      const trigger = find("app-settings-trigger");
+      if (trigger) trigger.click();
+      again(900);
+      return;
+    }
+    if (result.reopened === "reopening") {
+      const nav = find("app-settings-nav-runtimes");
+      if (nav) nav.click();
+      result.reopened = "reopened";
+      again(900);
       return;
     }
 
@@ -1610,6 +1649,12 @@ struct AcpInstallProgress {
     total: Option<u64>,
     /// 그 도구가 실제로 뱉은 줄. 우리가 지어낸 문장이 아니다.
     note: Option<String>,
+    /// 이 상태가 생긴 시각(epoch ms).
+    ///
+    /// **없으면 어제 끝난 설치가 오늘 「설치했어요」로 뜬다.** 화면은 이 값으로
+    /// 낡은 것을 안 그린다 — 마지막 상태를 들고 있는 것과 그것을 언제까지
+    /// 보여 줄지는 다른 질문이다.
+    at: u64,
 }
 
 /// 화면이 듣는 이름. `acp://exit` 와 같은 결로 짓는다.
@@ -1620,6 +1665,37 @@ struct AcpInstallProgress {
 /// 그래서 아래 테스트가 직렬화 결과의 키를 그대로 못박는다.
 const ACP_INSTALL_PROGRESS_EVENT: &str = "acp-install://progress";
 
+/// **마지막 진행 상태를 도구별로 들고 있는 곳.**
+///
+/// ## 왜 필요한가 (2026-08-20, 카운슬 압박으로 발견)
+///
+/// 설정 시트는 닫히면 **통째로 언마운트된다**
+/// (`AppSettingsMenu.tsx` 의 `(open || settingsMounted) && …` 조건부 포털).
+/// 그래서 화면 쪽 `useAgentDoctor` 의 상태가 전부 사라지고 이벤트 구독도 끊긴다.
+///
+/// 갈래가 셋인데 **마지막 하나가 진짜 결함**이다:
+///
+/// | 시트를 닫아 둔 사이 | 다시 열면 |
+/// |---|---|
+/// | Node 내려받는 중 | 250ms 주기라 **0.25초 안에 자가복구**된다 |
+/// | npm 설치 중 | npm 이 조용하면 다음 줄이 나올 때까지 아무것도 안 보인다 |
+/// | **`done` 이 지나감** | `done` 은 **단발**이다 → **영영 완료를 못 본다** |
+///
+/// 소유자가 이 라운드에 명시적으로 요구한 것이 그 완료 표시였다
+/// (*"완료된것도 체크해주고 하나?"*). 이벤트만으로는 그 요구를 못 지킨다.
+///
+/// ## 왜 화면이 아니라 여기인가
+///
+/// 상태를 셸(React)로 올려도 **라우트를 떠나거나 새로고침하면 같이 죽는다** —
+/// 목적지로 옮겨도 마찬가지다. 설치를 실제로 소유한 것은 이쪽 프로세스이므로,
+/// 마지막 상태도 여기 두는 것이 진실원이 하나가 되는 자리다.
+#[derive(Default)]
+struct AcpInstallProgressState {
+    /// `runtime_id` → 그 도구의 마지막 진행. 도구마다 따로 둔다 — 한 칸이면
+    /// Codex 설치가 Claude 의 완료 표시를 덮어쓴다.
+    last: Mutex<HashMap<String, AcpInstallProgress>>,
+}
+
 fn emit_install_progress(
     app: &tauri::AppHandle,
     runtime_id: &str,
@@ -1629,17 +1705,53 @@ fn emit_install_progress(
     total: Option<u64>,
     note: Option<String>,
 ) {
-    let _ = app.emit(
-        ACP_INSTALL_PROGRESS_EVENT,
-        AcpInstallProgress {
-            runtime_id: runtime_id.to_string(),
-            job,
-            stage,
-            received,
-            total,
-            note,
-        },
-    );
+    let payload = AcpInstallProgress {
+        runtime_id: runtime_id.to_string(),
+        job,
+        stage,
+        received,
+        total,
+        note,
+        at: std::time::SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .map(|d| d.as_millis() as u64)
+            .unwrap_or(0),
+    };
+    // **먼저 적어 두고 그다음에 보낸다.** 순서가 반대면, 이벤트를 받은 화면이
+    // 곧바로 물어봤을 때 아직 안 적힌 값을 읽을 수 있다.
+    if let Some(state) = app.try_state::<AcpInstallProgressState>() {
+        if let Ok(mut last) = state.last.lock() {
+            last.insert(runtime_id.to_string(), payload.clone());
+        }
+    }
+    let _ = app.emit(ACP_INSTALL_PROGRESS_EVENT, payload);
+}
+
+/// 이 도구의 **마지막 진행 상태**. 없으면 `None`.
+///
+/// 화면이 다시 마운트될 때 한 번 물어본다 — 그래야 닫아 둔 사이에 지나간
+/// 완료를 놓치지 않는다.
+#[tauri::command]
+fn acp_install_progress(
+    app: tauri::AppHandle,
+    runtime_id: String,
+) -> Option<AcpInstallProgress> {
+    let state = app.try_state::<AcpInstallProgressState>()?;
+    let last = state.last.lock().ok()?;
+    last.get(&runtime_id).cloned()
+}
+
+/// 다시 점검을 시작하면 **지난 설치 결과는 잊는다.**
+///
+/// 안 지우면, 재점검한 뒤 시트를 닫았다 열었을 때 「설치했어요」가 되살아나
+/// 방금 한 일이 아닌 것을 방금 한 것처럼 말하게 된다. 화면 쪽도 같은 순간에
+/// 자기 상태를 지우므로, 두 곳이 같은 규칙을 따른다.
+fn forget_install_progress(app: &tauri::AppHandle, runtime_id: &str) {
+    if let Some(state) = app.try_state::<AcpInstallProgressState>() {
+        if let Ok(mut last) = state.last.lock() {
+            last.remove(runtime_id);
+        }
+    }
 }
 
 /// **Node 를 앱이 받아 줄 수 있나 — 그렇다면 어디서 무엇을.**
@@ -1881,6 +1993,9 @@ pub(crate) fn is_openable_url(url: &str) -> bool {
 /// 사실만 돌려주고 문장은 화면이 만든다.
 #[tauri::command]
 fn acp_diagnose(app: tauri::AppHandle, runtime_id: String) -> Result<Vec<acp_doctor::AcpCheck>, String> {
+    // 다시 재기 시작하면 지난 설치 결과는 잊는다 — 화면도 같은 순간에 자기
+    // 상태를 지우므로 두 곳이 같은 규칙을 따른다.
+    forget_install_progress(&app, &runtime_id);
     let ctx = doctor_context(&app, &runtime_id)?;
     Ok(acp_doctor::diagnose(&ctx.borrow()))
 }
@@ -3008,6 +3123,7 @@ pub fn run() {
         .plugin(tauri_plugin_updater::Builder::new().build())
         .plugin(tauri_plugin_process::init())
         .manage(VaultWatcherState::default())
+        .manage(AcpInstallProgressState::default())
         .manage(AcpSessions::default())
         .setup(|app| {
             #[cfg(target_os = "macos")]
@@ -5663,6 +5779,7 @@ pub fn run() {
             acp_install_node,
             acp_install_plan,
             acp_install_cli,
+            acp_install_progress,
             acp_start,
             acp_send,
             acp_stop,
@@ -6830,6 +6947,7 @@ mod acp_install_progress_tests {
             received: Some(26_043_779),
             total: Some(52_087_559),
             note: None,
+            at: 1_787_000_000_000,
         })
         .expect("progress payload should serialize");
 
@@ -6838,7 +6956,7 @@ mod acp_install_progress_tests {
         keys.sort_unstable();
         assert_eq!(
             keys,
-            vec!["job", "note", "received", "runtimeId", "stage", "total"],
+            vec!["at", "job", "note", "received", "runtimeId", "stage", "total"],
             "화면이 읽는 키와 다르다 — 이러면 진행률이 조용히 사라진다"
         );
         assert_eq!(object["runtimeId"], "claude-acp");

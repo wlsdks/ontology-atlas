@@ -23,6 +23,8 @@ const nodeInstallPlan = vi.fn<() => Promise<string | null>>();
 const installManagedNode = vi.fn<(runtimeId: string) => Promise<AcpCheck[]>>();
 /** Rust 가 낼 진행 이벤트를 시험이 직접 쏜다. */
 let emitProgress: ((progress: unknown) => void) | null = null;
+/** Rust 가 들고 있는 「마지막 진행」. 시험이 직접 심는다. */
+const lastInstallProgress = vi.fn<(runtimeId: string) => Promise<unknown>>();
 
 vi.mock('../model/acp-doctor', async () => {
   const actual = await vi.importActual<typeof import('../model/acp-doctor')>('../model/acp-doctor');
@@ -35,6 +37,7 @@ vi.mock('../model/acp-doctor', async () => {
     installAgentCli: (runtimeId: string) => installAgentCli(runtimeId),
     nodeInstallPlan: () => nodeInstallPlan(),
     installManagedNode: (runtimeId: string) => installManagedNode(runtimeId),
+    lastInstallProgress: (runtimeId: string) => lastInstallProgress(runtimeId),
     listenInstallProgress: async (
       _runtimeId: string,
       onProgress: (progress: unknown) => void,
@@ -84,6 +87,8 @@ beforeEach(() => {
   nodeInstallPlan.mockResolvedValue(null);
   installManagedNode.mockReset();
   emitProgress = null;
+  lastInstallProgress.mockReset();
+  lastInstallProgress.mockResolvedValue(null);
 });
 
 describe('연동 점검 화면', () => {
@@ -399,6 +404,7 @@ describe('설치 진행', () => {
       received: 26_043_779,
       total: 52_087_559,
       note: null,
+      at: Date.now(),
     });
 
     const row = await screen.findByTestId('agent-doctor-progress');
@@ -423,6 +429,7 @@ describe('설치 진행', () => {
       received: null,
       total: null,
       note: 'added 121 packages in 8s',
+      at: Date.now(),
     });
 
     await screen.findByTestId('agent-doctor-progress');
@@ -447,6 +454,7 @@ describe('설치 진행', () => {
       received: null,
       total: null,
       note: null,
+      at: Date.now(),
     });
 
     const row = await screen.findByTestId('agent-doctor-progress');
@@ -466,6 +474,7 @@ describe('설치 진행', () => {
       received: null,
       total: null,
       note: null,
+      at: Date.now(),
     });
     await screen.findByTestId('agent-doctor-progress');
 
@@ -537,5 +546,83 @@ describe('명령 원문', () => {
     expect(code?.className).not.toContain('overflow-x-auto');
     // 경로에 공백이 있으므로(`Application Support`) 단어 경계로만 접으면 여전히 넘친다.
     expect(code?.className).toContain('break-all');
+  });
+});
+
+/**
+ * **닫아 둔 사이에 끝난 설치를 놓치지 않는가.**
+ *
+ * 설정 시트는 닫히면 통째로 언마운트되고(`AppSettingsMenu.tsx` 의 조건부 포털)
+ * 이 훅의 상태와 이벤트 구독이 함께 사라진다. Node 내려받기는 250ms 주기라
+ * 다시 열면 곧 되살아나지만, **완료(`done`)는 단발 이벤트**라 그 사이에
+ * 지나가면 영영 못 본다 — 소유자가 요구한 「완료된것도 체크」가 바로 그것이다.
+ */
+describe('언마운트를 건너뛰는 완료 표시', () => {
+  const done = {
+    runtimeId: 'claude-acp',
+    job: 'cli' as const,
+    stage: 'done' as const,
+    received: null,
+    total: null,
+    note: null,
+    at: Date.now(),
+  };
+
+  it('마운트할 때 Rust 에 마지막 진행을 물어본다', async () => {
+    diagnoseAgent.mockResolvedValue([ok('cli')]);
+    renderHarness();
+    await waitFor(() => expect(lastInstallProgress).toHaveBeenCalledWith('claude-acp'));
+  });
+
+  it('닫아 둔 사이에 끝났으면 다시 열었을 때 완료가 보인다', async () => {
+    diagnoseAgent.mockResolvedValue([ok('cli')]);
+    lastInstallProgress.mockResolvedValue(done);
+    renderHarness();
+
+    const row = await screen.findByTestId('agent-doctor-progress');
+    expect(row).toHaveAttribute('data-stage', 'done');
+    expect(row.textContent).toContain(ko.acpChat.doctor.progress.cli.done);
+  });
+
+  it('들고 있는 것이 없으면 아무것도 안 그린다 — 없는 일을 지어내지 않는다', async () => {
+    diagnoseAgent.mockResolvedValue([ok('cli')]);
+    lastInstallProgress.mockResolvedValue(null);
+    renderHarness();
+    await waitFor(() => expect(lastInstallProgress).toHaveBeenCalled());
+    expect(screen.queryByTestId('agent-doctor-progress')).toBeNull();
+  });
+
+  it('구독이 먼저 답했으면 그쪽이 이긴다 — 옛 값으로 덮지 않는다', async () => {
+    diagnoseAgent.mockResolvedValue([ok('cli')]);
+    // Rust 는 옛 완료를 들고 있는데, 지금 새 설치가 도는 중이다.
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- 해소 시점을 시험이 쥔다
+    let release!: (value: any) => void;
+    lastInstallProgress.mockReturnValue(
+      new Promise((resolve) => {
+        release = resolve;
+      }),
+    );
+    renderHarness();
+    await waitFor(() => expect(emitProgress).not.toBeNull());
+
+    emitProgress?.({
+      runtimeId: 'claude-acp',
+      job: 'cli',
+      stage: 'installing',
+      received: null,
+      total: null,
+      note: 'reify',
+      at: Date.now(),
+    });
+    await screen.findByTestId('agent-doctor-progress');
+
+    // 뒤늦게 도착한 「마지막 상태」가 지금 도는 것을 덮으면 안 된다.
+    release(done);
+    await waitFor(() =>
+      expect(screen.getByTestId('agent-doctor-progress')).toHaveAttribute(
+        'data-stage',
+        'installing',
+      ),
+    );
   });
 });
