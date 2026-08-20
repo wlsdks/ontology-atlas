@@ -81,8 +81,16 @@ pub(crate) enum RegistryLaunch {
         #[serde(default)]
         args: Vec<String>,
     },
-    /// 사용자가 이미 설치한 실행 파일. **앱이 대신 받아 오지 않는다** —
-    /// 남의 바이너리를 앱이 내려받아 실행하는 것은 이 제품이 안 하기로 한 일이다.
+    /// 사용자가 이미 설치한 실행 파일.
+    ///
+    /// ⚠️ **여기 주석이 오래 「앱이 대신 받아 오지 않는다」였다** — 2026-08-20
+    /// 에 조건부로 바뀌었다(원장 (88)). 대신 설치는 넷을 전부 갖출 때만 한다:
+    /// 사용자가 누른다 · 무엇을 실행하는지 먼저 보여 준다 · 앱 전용 자리에만
+    /// 깐다 · 버전을 고정한다. 그 조건과 근거는 `.claude/rules/forbidden.md`
+    /// 의 「에이전트 도구를 대신 설치해 주는 것」 절에 있다.
+    ///
+    /// 이 갈래(`Binary`) 자체는 그것과 무관하다 — **이미 PATH 에 있는 것을
+    /// 그대로 띄우는** 경우다.
     Binary {
         command: String,
         #[serde(default)]
@@ -295,6 +303,9 @@ pub(crate) fn candidate_bin_dirs(
     home: Option<&Path>,
     path_env: Option<&OsStr>,
     probe: &FsProbe<'_>,
+    // `managed_bin` — 앱이 대신 깔아 준 것이 사는 자리. **맨 뒤에 붙는다**:
+    // 사용자가 자기 손으로 깐 것이 언제나 이긴다(이 파일의 PATH 순서 계약).
+    managed_bin: Option<&Path>,
 ) -> Vec<PathBuf> {
     let mut dirs: Vec<PathBuf> = Vec::new();
     let push = |dir: PathBuf, dirs: &mut Vec<PathBuf>| {
@@ -350,6 +361,12 @@ pub(crate) fn candidate_bin_dirs(
         for dir in nvm_bin_dirs(home, probe) {
             push(dir, &mut dirs);
         }
+    }
+
+    // 앱이 깐 것은 **맨 뒤**다. 사용자가 자기 손으로 깐 것을 우리가 이기면,
+    // 「터미널에선 되는데 앱에서만 다르다」가 그 자리에서 태어난다.
+    if let Some(bin) = managed_bin {
+        push(bin.to_path_buf(), &mut dirs);
     }
 
     dirs
@@ -452,8 +469,9 @@ pub(crate) fn detect_runtimes(
     home: Option<&Path>,
     path_env: Option<&OsStr>,
     probe: &FsProbe<'_>,
+    managed_bin: Option<&Path>,
 ) -> Vec<AcpRuntimeStatus> {
-    let dirs = candidate_bin_dirs(home, path_env, probe);
+    let dirs = candidate_bin_dirs(home, path_env, probe, managed_bin);
     // 로그인 확인도 어댑터를 띄울 때와 **같은 PATH** 를 본다. 안 그러면 래퍼가
     // node 를 못 찾아 실패하고, 그 실패가 「로그인 안 됨」으로 읽힌다.
     let child_path = std::env::join_paths(dirs.iter())
@@ -549,9 +567,10 @@ pub(crate) fn resolve_launch(
     home: Option<&Path>,
     path_env: Option<&OsStr>,
     probe: &FsProbe<'_>,
+    managed_bin: Option<&Path>,
 ) -> Result<AcpLaunch, String> {
     let agent = registry_agent(runtime_id).ok_or_else(|| format!("unknown-runtime:{runtime_id}"))?;
-    let dirs = candidate_bin_dirs(home, path_env, probe);
+    let dirs = candidate_bin_dirs(home, path_env, probe, managed_bin);
     let joined = std::env::join_paths(dirs.iter())
         .map_err(|err| format!("path-join-failed:{err}"))?
         .to_string_lossy()
@@ -1638,6 +1657,49 @@ const LOGIN_PROBE_TIMEOUT: std::time::Duration = std::time::Duration::from_secs(
 /// 그 기다림이 세션 시작을 잡아먹으면 안 된다.
 const KEYCHAIN_PROBE_TIMEOUT: std::time::Duration = std::time::Duration::from_secs(3);
 
+/// **앱이 대신 깔아 줄 수 있는 CLI** — 넷을 다 갖춘 것만 등재한다.
+///
+/// 근거와 조건: 원장 2026-08-20 (88) · `.claude/rules/forbidden.md` 의
+/// 「에이전트 도구를 대신 설치해 주는 것」 절.
+///
+/// **버전을 고정한다.** `@latest` 로 두면 같은 앱이 어제와 오늘 다른 것을 깔고,
+/// 그러면 「앱에서만 다르게 동작한다」가 재현 불가능한 형태로 온다.
+///
+/// **전역이 아니라 앱 전용 자리에 깐다** — `--prefix <app-data>/managed-node`.
+/// 사용자의 전역 npm 도 시스템 PATH 도 안 건드리고, 그 폴더를 지우면 흔적이
+/// 남지 않는다.
+pub(crate) const INSTALLABLE_CLI: &[(&str, &str)] = &[
+    ("claude-acp", "@anthropic-ai/claude-code@2.1.236"),
+    ("codex-acp", "@openai/codex@0.66.0"),
+];
+
+pub(crate) fn installable_package(runtime_id: &str) -> Option<&'static str> {
+    INSTALLABLE_CLI
+        .iter()
+        .find(|(id, _)| *id == runtime_id)
+        .map(|(_, pkg)| *pkg)
+}
+
+/// 앱 전용 설치 자리. 여기 밖으로는 한 바이트도 안 쓴다.
+pub(crate) fn managed_cli_prefix(app_data_dir: &Path) -> PathBuf {
+    app_data_dir.join("managed-node")
+}
+
+/// 그 자리에 깔린 실행 파일들이 사는 곳 — PATH 후보에 더해진다.
+pub(crate) fn managed_cli_bin_dir(app_data_dir: &Path) -> PathBuf {
+    managed_cli_prefix(app_data_dir).join("bin")
+}
+
+/// **화면이 먼저 보여 줄 명령 원문.** 누르기 전에 이것이 그대로 화면에 있다 —
+/// 「무엇을 실행하는지 먼저 보여 준다」가 조건 ②다.
+pub(crate) fn managed_install_command(runtime_id: &str, app_data_dir: &Path) -> Option<String> {
+    let package = installable_package(runtime_id)?;
+    Some(format!(
+        "npm install --prefix {} --global {package}",
+        managed_cli_prefix(app_data_dir).display()
+    ))
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -1860,7 +1922,7 @@ mod tests {
             login_ok: &|_, _, _, _| None,
         };
         let path = std::env::join_paths([PathBuf::from("/from/path")]).unwrap();
-        let out = candidate_bin_dirs(Some(Path::new("/home/me")), Some(&path), &probe);
+        let out = candidate_bin_dirs(Some(Path::new("/home/me")), Some(&path), &probe, None);
         assert_eq!(out.first(), Some(&PathBuf::from("/from/path")));
         assert!(out.len() > 1, "잘 알려진 자리도 뒤에 붙어야 한다");
     }
@@ -1927,7 +1989,7 @@ mod tests {
             read_text: &read,
             login_ok: &|_, _, _, _| None,
         };
-        let out = detect_runtimes(Some(Path::new("/home/me")), None, &probe);
+        let out = detect_runtimes(Some(Path::new("/home/me")), None, &probe, None);
         let claude = out.iter().find(|r| r.id == "claude-acp").unwrap();
         assert_eq!(
             claude.cli_path.as_deref(),
@@ -2024,7 +2086,7 @@ mod tests {
 
         // PATH 는 GUI 앱이 받는 최소한만 — 여기에 아무것도 없다.
         let path = std::env::join_paths([PathBuf::from("/usr/bin"), PathBuf::from("/bin")]).unwrap();
-        let out = detect_runtimes(Some(Path::new("/home/me")), Some(&path), &probe);
+        let out = detect_runtimes(Some(Path::new("/home/me")), Some(&path), &probe, None);
 
         let claude = out.iter().find(|r| r.id == "claude-acp").unwrap();
         assert_eq!(claude.state, "ready", "PATH 밖에 있어도 찾아야 한다");
@@ -2062,7 +2124,7 @@ mod tests {
                 read_text: &read,
                 login_ok: &|_, _, _, _| None,
             };
-            let out = detect_runtimes(None, None, &probe);
+            let out = detect_runtimes(None, None, &probe, None);
             let claude = out.iter().find(|r| r.id == "claude-acp").unwrap();
             assert_eq!(claude.state, "cli-missing", "CLI 부재가 먼저다 — 할 일이 더 분명하다");
         }
@@ -2077,7 +2139,7 @@ mod tests {
             read_text: &read,
             login_ok: &|_, _, _, _| None,
         };
-        let out = detect_runtimes(None, Some(path_env.as_os_str()), &probe);
+        let out = detect_runtimes(None, Some(path_env.as_os_str()), &probe, None);
         let claude = out.iter().find(|r| r.id == "claude-acp").unwrap();
         assert_eq!(claude.state, "node-missing");
         assert_eq!(
@@ -2109,7 +2171,7 @@ mod tests {
             read_text: &read,
             login_ok: &|_, _, _, _| Some(true),
         };
-        let out = detect_runtimes(None, Some(path_env.as_os_str()), &probe);
+        let out = detect_runtimes(None, Some(path_env.as_os_str()), &probe, None);
         let claude = out.iter().find(|r| r.id == "claude-acp").unwrap();
         assert_eq!(claude.state, "ready");
 
@@ -2120,7 +2182,7 @@ mod tests {
             read_text: &read,
             login_ok: &|_, _, _, _| Some(false),
         };
-        let out = detect_runtimes(None, Some(path_env.as_os_str()), &probe);
+        let out = detect_runtimes(None, Some(path_env.as_os_str()), &probe, None);
         let claude = out.iter().find(|r| r.id == "claude-acp").unwrap();
         assert_eq!(
             claude.state, "login-needed",
@@ -2135,7 +2197,7 @@ mod tests {
             read_text: &read,
             login_ok: &|_, _, _, _| None,
         };
-        let out = detect_runtimes(None, Some(path_env.as_os_str()), &probe);
+        let out = detect_runtimes(None, Some(path_env.as_os_str()), &probe, None);
         let claude = out.iter().find(|r| r.id == "claude-acp").unwrap();
         assert_eq!(claude.state, "ready");
     }
@@ -2170,7 +2232,7 @@ mod tests {
                 Some(true)
             },
         };
-        detect_runtimes(None, Some(path_env.as_os_str()), &probe);
+        detect_runtimes(None, Some(path_env.as_os_str()), &probe, None);
 
         let asked = asked.borrow();
         assert_eq!(asked.len(), LOGIN_PROBE.len(), "물어본 횟수가 표와 다르다: {asked:?}");
@@ -2213,7 +2275,7 @@ mod tests {
                 Some(true)
             },
         };
-        detect_runtimes(None, Some(path_env.as_os_str()), &probe);
+        detect_runtimes(None, Some(path_env.as_os_str()), &probe, None);
 
         let seen = seen.borrow();
         assert!(!seen.is_empty(), "아무에게도 안 물어봤다 — 탐지기가 죽었다");
@@ -2246,7 +2308,7 @@ mod tests {
             read_text: &read,
             login_ok: &|_, _, _, _| None,
         };
-        let out = detect_runtimes(None, Some(path_env.as_os_str()), &probe);
+        let out = detect_runtimes(None, Some(path_env.as_os_str()), &probe, None);
 
         for status in &out {
             let agent = registry().iter().find(|a| a.id == status.id).unwrap();
@@ -2296,7 +2358,7 @@ mod tests {
             read_text: &read,
             login_ok: &|_, _, _, _| None,
         };
-        let out = detect_runtimes(None, Some(path_env.as_os_str()), &probe);
+        let out = detect_runtimes(None, Some(path_env.as_os_str()), &probe, None);
         let claude = out.iter().find(|r| r.id == "claude-acp").unwrap();
         assert_eq!(claude.state, "ready");
         assert_eq!(
@@ -2328,6 +2390,7 @@ mod tests {
                 None,
                 Some(path_env.as_os_str()),
                 &probe,
+            None,
             )
             .unwrap();
             assert_eq!(launch.program, test_bin("npx"));
@@ -2354,6 +2417,7 @@ mod tests {
             None,
             Some(path_env.as_os_str()),
             &probe,
+            None,
         )
         .unwrap();
         assert_eq!(launch.program, test_bin("claude-agent-acp"));
@@ -2385,7 +2449,9 @@ mod tests {
             read_text: &read,
             login_ok: &|_, _, _, _| None,
         };
-        let launch = resolve_launch("claude-acp", Some(Path::new("/home/me")), None, &probe).unwrap();
+        let launch = resolve_launch("claude-acp", Some(Path::new("/home/me")), None, &probe,
+            None,
+        ).unwrap();
         assert!(
             launch.path_env.contains("/home/me/.local/bin"),
             "자식 PATH 에 CLI 가 있는 자리가 없다: {}",
@@ -2414,7 +2480,9 @@ mod tests {
             read_text: &read,
             login_ok: &|_, _, _, _| None,
         };
-        assert!(resolve_launch("claude-acp", None, Some(path_env.as_os_str()), &probe)
+        assert!(resolve_launch("claude-acp", None, Some(path_env.as_os_str()), &probe,
+            None,
+        )
             .unwrap_err()
             .starts_with("cli-missing:"));
 
@@ -2428,12 +2496,16 @@ mod tests {
             login_ok: &|_, _, _, _| None,
         };
         assert_eq!(
-            resolve_launch("claude-acp", None, Some(path_env.as_os_str()), &probe).unwrap_err(),
+            resolve_launch("claude-acp", None, Some(path_env.as_os_str()), &probe,
+            None,
+        ).unwrap_err(),
             "node-missing"
         );
 
         // 모르는 실행기를 조용히 통과시키지 않는다.
-        assert!(resolve_launch("nope", None, Some(path_env.as_os_str()), &probe)
+        assert!(resolve_launch("nope", None, Some(path_env.as_os_str()), &probe,
+            None,
+        )
             .unwrap_err()
             .starts_with("unknown-runtime:"));
     }
@@ -2714,6 +2786,56 @@ mod tests {
                 "모르는 출력을 로그아웃으로 읽었다: {noise:?}"
             );
         }
+    }
+
+    /// **조건 ③④가 명령 자체에 박혀 있는가** (원장 2026-08-20 (88)).
+    ///
+    /// 이 문자열이 곧 화면이 보여 주는 것이고 곧 실행되는 것이다. 여기서
+    /// `--prefix` 가 빠지면 사용자의 전역 npm 에 깔리고, 버전이 빠지면 같은
+    /// 앱이 어제와 오늘 다른 것을 깐다.
+    #[test]
+    fn install_command_is_pinned_and_confined_to_our_own_prefix() {
+        let app_data = Path::new("/tmp/atlas-app-data");
+        let cmd = managed_install_command("claude-acp", app_data).unwrap();
+
+        assert!(cmd.contains("--prefix /tmp/atlas-app-data/managed-node"), "{cmd}");
+        assert!(cmd.contains("@anthropic-ai/claude-code@"), "{cmd}");
+        // 버전이 붙어 있어야 한다 — `@latest` 나 버전 없는 이름은 고정이 아니다.
+        assert!(!cmd.contains("@latest"), "{cmd}");
+        let package = installable_package("claude-acp").unwrap();
+        assert!(
+            package.rsplit('@').next().is_some_and(|v| v.chars().next().is_some_and(|c| c.is_ascii_digit())),
+            "버전이 고정되지 않았다: {package}"
+        );
+    }
+
+    #[test]
+    fn only_measured_runtimes_can_be_installed_for_the_user() {
+        // 등재되지 않은 것에 설치를 제안하면, 화면이 우리가 확인한 적 없는
+        // 패키지를 사용자 기계에 깔겠다고 말하는 것이 된다.
+        assert!(managed_install_command("gemini-acp", Path::new("/tmp/x")).is_none());
+        assert!(installable_package("gemini-acp").is_none());
+        for (id, _) in INSTALLABLE_CLI {
+            assert!(registry_agent(id).is_some(), "{id} 가 레지스트리에 없다");
+        }
+    }
+
+    #[test]
+    fn managed_bin_dir_is_last_so_the_users_own_tool_wins() {
+        // 사용자가 자기 손으로 깐 것을 우리가 이기면 「터미널에선 되는데
+        // 앱에서만 다르다」가 그 자리에서 태어난다.
+        let probe = FsProbe {
+            is_executable: &|_: &Path| true,
+            list_dir: &|_: &Path| Vec::new(),
+            read_text: &|_: &Path| None,
+            login_ok: &|_: &str, _: &Path, _: &[&str], _: &str| None,
+        };
+        let managed = PathBuf::from("/app-data/managed-node/bin");
+        let path = std::env::join_paths([Path::new("/usr/local/bin")]).unwrap();
+        let dirs = candidate_bin_dirs(None, Some(&path), &probe, Some(&managed));
+
+        assert_eq!(dirs.last(), Some(&managed), "앱이 깐 자리가 맨 뒤가 아니다");
+        assert!(dirs.len() > 1);
     }
 
     #[test]
@@ -3022,12 +3144,12 @@ mod real_machine_probe {
         // GUI 앱이 받는 빈약한 PATH 를 흉내 낸다 — 터미널 PATH 를 쓰면 이 진단이
         // 정작 재려던 것을 못 잰다.
         let gui_path = std::env::join_paths([PathBuf::from("/usr/bin"), PathBuf::from("/bin")]).unwrap();
-        for r in detect_runtimes(home.as_deref(), Some(&gui_path), &probe) {
+        for r in detect_runtimes(home.as_deref(), Some(&gui_path), &probe, None) {
             println!("{:>8} · {:<14} cli={:?} adapter={:?} verified={:?}", r.state, r.id, r.cli_path, r.adapter_path, r.verified);
         }
         println!("--- launch ---");
         for id in ["claude-acp", "codex-acp"] {
-            match resolve_launch(id, home.as_deref(), Some(&gui_path), &probe) {
+            match resolve_launch(id, home.as_deref(), Some(&gui_path), &probe, None) {
                 Ok(l) => println!("{id}: {:?} {:?}", l.program, l.args),
                 Err(e) => println!("{id}: 실패 {e}"),
             }
@@ -3055,7 +3177,7 @@ mod timing_probe {
             login_ok: &skip,
         };
         let t = std::time::Instant::now();
-        let out = detect_runtimes(home.as_deref(), path.as_deref(), &fast);
+        let out = detect_runtimes(home.as_deref(), path.as_deref(), &fast, None);
         println!("확인 없이: {:?} · {}개", t.elapsed(), out.len());
 
         let full = FsProbe {
@@ -3065,7 +3187,7 @@ mod timing_probe {
             login_ok: &login_ok,
         };
         let t = std::time::Instant::now();
-        let out = detect_runtimes(home.as_deref(), path.as_deref(), &full);
+        let out = detect_runtimes(home.as_deref(), path.as_deref(), &full, None);
         println!("확인 포함: {:?} · {}개", t.elapsed(), out.len());
     }
 }
@@ -3090,7 +3212,7 @@ mod newcomer_view {
             read_text: &read,
             login_ok: &|_, _, _, _| None,
         };
-        let out = detect_runtimes(None, None, &probe);
+        let out = detect_runtimes(None, None, &probe, None);
         let mut by_state: std::collections::BTreeMap<&str, Vec<&str>> = Default::default();
         for s in &out {
             by_state.entry(s.state.as_str()).or_default().push(&s.id);
@@ -3112,7 +3234,7 @@ mod newcomer_view {
             read_text: &read,
             login_ok: &|_, _, _, _| None,
         };
-        let out = detect_runtimes(None, None, &probe);
+        let out = detect_runtimes(None, None, &probe, None);
         println!("── npx 만 있는 기계 ──");
         let mut by_state: std::collections::BTreeMap<&str, usize> = Default::default();
         for s in &out { *by_state.entry(s.state.as_str()).or_default() += 1; }

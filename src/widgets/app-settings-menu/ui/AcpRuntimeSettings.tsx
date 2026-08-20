@@ -226,7 +226,9 @@ export function AcpRuntimeSettings() {
             {ready.length === 0 ? (
               <SettingsRow label={t('noneReady')} caption={t('noneReadyCaption')} control={null} />
             ) : (
-              ready.map((runtime) => <RuntimeRow key={runtime.id} runtime={runtime} />)
+              ready.map((runtime) => (
+                <RuntimeRow key={runtime.id} runtime={runtime} onRuntimesChanged={() => void refresh()} />
+              ))
             )}
           </SettingsGroup>
 
@@ -267,7 +269,11 @@ export function AcpRuntimeSettings() {
                   ) : null}
                   <SettingsGroup>
                     {others.map((runtime) => (
-                      <RuntimeRow key={runtime.id} runtime={runtime} />
+                      <RuntimeRow
+                        key={runtime.id}
+                        runtime={runtime}
+                        onRuntimesChanged={() => void refresh()}
+                      />
                     ))}
                   </SettingsGroup>
                 </>
@@ -280,7 +286,13 @@ export function AcpRuntimeSettings() {
   );
 }
 
-function RuntimeRow({ runtime }: { runtime: AcpRuntimeStatus }) {
+function RuntimeRow({
+  runtime,
+  onRuntimesChanged,
+}: {
+  runtime: AcpRuntimeStatus;
+  onRuntimesChanged?: () => void;
+}) {
   const t = useTranslations('nav.settingsMenu.runtimes');
   const isReady = runtime.state === 'ready';
 
@@ -311,7 +323,7 @@ function RuntimeRow({ runtime }: { runtime: AcpRuntimeStatus }) {
    * 자격증명 링크도 없어서 검사 목록이 거의 다 「확인 못 했어요」가 된다 —
    * 그건 도움이 아니라 소음이다. 웹에서는 프로세스도 키체인도 못 보므로 없다.
    */
-  const doctor = useAgentDoctor(runtime.id);
+  const doctor = useAgentDoctor(runtime.id, onRuntimesChanged);
   const showDoctor = isGuardedRuntime(runtime.id, runtime.isolated) && isAgentDoctorAvailable();
 
   /*

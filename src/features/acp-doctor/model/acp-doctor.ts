@@ -75,3 +75,26 @@ export async function resetAgentConnection(runtimeId: string): Promise<AcpCheck[
   if (!invoke) return [];
   return invoke<AcpCheck[]>('acp_reset_connection', { runtimeId });
 }
+
+/**
+ * 이 도구를 앱이 대신 깔아 줄 수 있나 — 그렇다면 **무슨 명령으로.**
+ *
+ * 화면은 이것을 받아 **누르기 전에 명령 원문을 보여 준다.** 그게 원장
+ * 2026-08-20 (88) 의 조건 ②다: 무엇을 실행하는지 먼저 보여 준다.
+ */
+export async function agentInstallPlan(runtimeId: string): Promise<string | null> {
+  const invoke = getInvoke();
+  if (!invoke) return null;
+  return invoke<string | null>('acp_install_plan', { runtimeId });
+}
+
+/**
+ * 앱 전용 자리에 그 도구를 깐다. 깐 뒤 **다시 잰 값**을 돌려준다.
+ *
+ * 전역 npm 도 시스템 PATH 도 안 건드린다(조건 ③). 버전은 고정돼 있다(조건 ④).
+ */
+export async function installAgentCli(runtimeId: string): Promise<AcpCheck[]> {
+  const invoke = getInvoke();
+  if (!invoke) return [];
+  return invoke<AcpCheck[]>('acp_install_cli', { runtimeId });
+}

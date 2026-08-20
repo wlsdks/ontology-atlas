@@ -950,11 +950,19 @@ fn acp_start(
     };
     let home = std::env::var_os(if cfg!(windows) { "USERPROFILE" } else { "HOME" })
         .map(PathBuf::from);
+    // 앱이 대신 깔아 준 것도 찾을 수 있어야 한다 — 안 그러면 설치해 놓고도
+    // 화면이 계속 「설치 필요」라고 말한다.
+    let managed_bin = app
+        .path()
+        .app_data_dir()
+        .ok()
+        .map(|dir| acp::managed_cli_bin_dir(&dir));
     let launch = acp::resolve_launch(
         &runtime_id,
         home.as_deref(),
         std::env::var_os("PATH").as_deref(),
         &probe,
+        managed_bin.as_deref(),
     )?;
 
     /*
@@ -988,6 +996,7 @@ fn acp_start(
                 home.as_deref(),
                 std::env::var_os("PATH").as_deref(),
                 &probe,
+                managed_bin.as_deref(),
             );
             acp::resolve_command(name, &dirs, &probe)
         });
@@ -1295,7 +1304,7 @@ fn terminate_all_acp_sessions(app: &AppHandle) {
 ///
 /// 그래서 화면은 두 번 부른다: 먼저 확인 없이 그리고, 그다음 확인해서 고친다.
 #[tauri::command]
-fn acp_detect_runtimes(probe_login: Option<bool>) -> Vec<acp::AcpRuntimeStatus> {
+fn acp_detect_runtimes(app: tauri::AppHandle, probe_login: Option<bool>) -> Vec<acp::AcpRuntimeStatus> {
     let (is_executable, list_dir, read_text, login_ok) = acp::real_probe();
     let skip = |_: &str, _: &std::path::Path, _: &[&str], _: &str| None;
     let probe = acp::FsProbe {
@@ -1311,7 +1320,96 @@ fn acp_detect_runtimes(probe_login: Option<bool>) -> Vec<acp::AcpRuntimeStatus> 
     let home =
         std::env::var_os(if cfg!(windows) { "USERPROFILE" } else { "HOME" }).map(PathBuf::from);
     let path = std::env::var_os("PATH");
-    acp::detect_runtimes(home.as_deref(), path.as_deref(), &probe)
+    // 앱이 대신 깔아 준 것도 찾는다 — 안 그러면 설치해 놓고도 「설치 필요」다.
+    let managed_bin = app
+        .path()
+        .app_data_dir()
+        .ok()
+        .map(|dir| acp::managed_cli_bin_dir(&dir));
+    acp::detect_runtimes(home.as_deref(), path.as_deref(), &probe, managed_bin.as_deref())
+}
+
+/// **이 도구를 앱이 대신 깔아 줄 수 있나 — 그렇다면 무슨 명령으로.**
+///
+/// 화면은 이것을 받아 **누르기 전에 명령 원문을 보여 준다**(조건 ②). 없으면
+/// `None` — 화면은 종전대로 설치 안내 링크만 낸다.
+#[tauri::command]
+fn acp_install_plan(app: tauri::AppHandle, runtime_id: String) -> Option<String> {
+    let app_data = app.path().app_data_dir().ok()?;
+    acp::managed_install_command(&runtime_id, &app_data)
+}
+
+/// 앱 전용 자리에 그 도구를 깐다.
+///
+/// 조건 넷(원장 2026-08-20 (88))이 여기서 지켜진다:
+/// ① 이 커맨드는 **사용자가 누를 때만** 불린다 — 앱이 켜질 때 아무것도 안 받는다.
+/// ② 명령 원문은 `acp_install_plan` 이 미리 화면에 보여 준다.
+/// ③ `--prefix <app-data>/managed-node` — 전역 npm 도 시스템 PATH 도 안 건드린다.
+/// ④ 패키지 버전은 `INSTALLABLE_CLI` 에 고정돼 있다.
+///
+/// 깐 뒤 **다시 잰 값**을 돌려준다 — 「깔았습니다」라고 말하고 실제로는 안 깔린
+/// 경우가 이 자리에서 가장 나쁜 결함이다.
+#[tauri::command]
+fn acp_install_cli(
+    app: tauri::AppHandle,
+    runtime_id: String,
+) -> Result<Vec<acp_doctor::AcpCheck>, String> {
+    let package = acp::installable_package(&runtime_id)
+        .ok_or_else(|| format!("not-installable:{runtime_id}"))?;
+    let app_data = app
+        .path()
+        .app_data_dir()
+        .map_err(|err| format!("app-data-dir-unavailable:{err}"))?;
+    let prefix = acp::managed_cli_prefix(&app_data);
+    std::fs::create_dir_all(&prefix).map_err(|err| format!("prefix-failed:{err}"))?;
+
+    let (is_executable, list_dir, read_text, login_ok) = acp::real_probe();
+    let probe = acp::FsProbe {
+        is_executable: &is_executable,
+        list_dir: &list_dir,
+        read_text: &read_text,
+        login_ok: &login_ok,
+    };
+    let home =
+        std::env::var_os(if cfg!(windows) { "USERPROFILE" } else { "HOME" }).map(PathBuf::from);
+    let dirs = acp::candidate_bin_dirs(
+        home.as_deref(),
+        std::env::var_os("PATH").as_deref(),
+        &probe,
+        None,
+    );
+    // npm 을 **이름으로** 띄우지 않는다 — GUI 앱의 PATH 는 사용자의 셸과 다르다
+    // (이 파일 맨 위의 실측이 그 이유다).
+    let npm = acp::resolve_command("npm", &dirs, &probe)
+        .ok_or_else(|| "npm-missing".to_string())?;
+    let child_path = std::env::join_paths(dirs.iter())
+        .map(|joined| joined.to_string_lossy().to_string())
+        .unwrap_or_default();
+
+    let mut command = Command::new(&npm);
+    command
+        .arg("install")
+        .arg("--prefix")
+        .arg(&prefix)
+        .arg("--global")
+        .arg(package)
+        .env("PATH", &child_path)
+        .stdin(Stdio::null())
+        .stdout(Stdio::piped())
+        .stderr(Stdio::piped());
+    let output = command
+        .output()
+        .map_err(|err| format!("install-failed:{err}"))?;
+    if !output.status.success() {
+        // 실패 사유의 **마지막 줄**만 올린다 — npm 은 수백 줄을 뱉는데 그것을
+        // 화면에 그대로 붓는 것은 안내가 아니다.
+        let stderr = String::from_utf8_lossy(&output.stderr);
+        let tail = stderr.lines().rev().find(|l| !l.trim().is_empty()).unwrap_or("");
+        return Err(format!("install-failed:{tail}"));
+    }
+
+    let after = doctor_context(&app, &runtime_id)?;
+    Ok(acp_doctor::diagnose(&after.borrow()))
 }
 
 /// 앱 **밖**으로 나가는 주소를 기본 브라우저로 연다.
@@ -1456,7 +1554,11 @@ fn doctor_context(app: &tauri::AppHandle, runtime_id: &str) -> Result<OwnedDocto
     let home =
         std::env::var_os(if cfg!(windows) { "USERPROFILE" } else { "HOME" }).map(PathBuf::from);
     let path = std::env::var_os("PATH");
-    let dirs = acp::candidate_bin_dirs(home.as_deref(), path.as_deref(), &probe);
+    let app_data_for_paths = app.path().app_data_dir().ok();
+    let managed_bin = app_data_for_paths
+        .as_deref()
+        .map(acp::managed_cli_bin_dir);
+    let dirs = acp::candidate_bin_dirs(home.as_deref(), path.as_deref(), &probe, managed_bin.as_deref());
     let path_env = std::env::join_paths(dirs.iter())
         .map(|joined| joined.to_string_lossy().to_string())
         .unwrap_or_default();
@@ -1466,7 +1568,13 @@ fn doctor_context(app: &tauri::AppHandle, runtime_id: &str) -> Result<OwnedDocto
         .cli
         .as_deref()
         .and_then(|name| acp::resolve_command(name, &dirs, &probe));
-    let launcher = acp::resolve_launch(runtime_id, home.as_deref(), path.as_deref(), &probe)
+    let launcher = acp::resolve_launch(
+        runtime_id,
+        home.as_deref(),
+        path.as_deref(),
+        &probe,
+        managed_bin.as_deref(),
+    )
         .ok()
         .map(|launch| launch.program);
 
@@ -5119,6 +5227,8 @@ pub fn run() {
             acp_repair,
             acp_reset_connection,
             open_external_url,
+            acp_install_plan,
+            acp_install_cli,
             acp_start,
             acp_send,
             acp_stop,
