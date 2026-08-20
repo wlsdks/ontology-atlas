@@ -686,6 +686,15 @@ pub(crate) struct AcpLaunch {
 //   → 소유자 화면의 npm 오류가 가리킨 바로 그 깨진 디렉터리명
 // sha512("@agentclientprotocol/codex-acp@1.4.0")[..16]        = 8adbf6f1a7dec4e5
 //   → 같은 기계 ~/.npm/_npx/ 에 살아 있는 항목
+//
+// **오늘 쓰는 스펙의 값**(2026-08-20 레지스트리 갱신 뒤 — 위 두 줄과 같은
+// 방법으로 계산했고, 옛 스펙에 그 방법을 다시 적용하면 위 실측값이 그대로
+// 재현된다):
+//
+// ```text
+// sha512("@agentclientprotocol/claude-agent-acp@0.70.0")[..16] = fca12915ff656968
+// sha512("@agentclientprotocol/codex-acp@1.6.2")[..16]         = 3eb2c53071af01af
+// ```
 // ```
 //
 // 공식이 어느 날 바뀌면? 우리가 계산한 디렉터리가 그냥 **없을** 뿐이다 —
@@ -1676,8 +1685,8 @@ const KEYCHAIN_PROBE_TIMEOUT: std::time::Duration = std::time::Duration::from_se
 /// 사용자의 전역 npm 도 시스템 PATH 도 안 건드리고, 그 폴더를 지우면 흔적이
 /// 남지 않는다.
 pub(crate) const INSTALLABLE_CLI: &[(&str, &str)] = &[
-    ("claude-acp", "@anthropic-ai/claude-code@2.1.236"),
-    ("codex-acp", "@openai/codex@0.66.0"),
+    ("claude-acp", "@anthropic-ai/claude-code@2.1.237"),
+    ("codex-acp", "@openai/codex@0.148.0"),
 ];
 
 pub(crate) fn installable_package(runtime_id: &str) -> Option<&'static str> {
