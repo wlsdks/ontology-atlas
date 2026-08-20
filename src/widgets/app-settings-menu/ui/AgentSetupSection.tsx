@@ -2,7 +2,7 @@
 
 import { useTranslations } from 'next-intl';
 
-import { useAgentServer, useLocalVault } from '@/features/docs-vault-local';
+import { OpenVaultCta, useAgentServer, useLocalVault } from '@/features/docs-vault-local';
 import { summarizeVaultValidation } from '@/shared/lib/validate-vault-document';
 
 import { VaultAgentSetupPanel } from './VaultAgentSetupPanel';
@@ -45,6 +45,15 @@ export function AgentSetupSection({ onBeforeNavigate }: { onBeforeNavigate?: () 
         <p className="mt-1 break-keep text-label leading-label text-[color:var(--color-text-tertiary)]">
           {t('agentNoVaultHint')}
         </p>
+        {/*
+          ⚠️ **말한 자리에 여는 길이 같이 있어야 한다** (2026-08-20, e2e 가 잡았다).
+          첫 판은 「폴더를 열면 …」이라는 문장만 옮기고 **버튼을 안 데려왔다** —
+          이 저장소가 이름 붙여 금지한 「막다른 CTA」 그대로다. 요구하는 행동은
+          그 자리에서 하게 한다.
+        */}
+        <div className="mt-3">
+          <OpenVaultCta testId="agents-open-vault" />
+        </div>
       </div>
     );
   }
