@@ -55,3 +55,16 @@ export async function repairAgentCheck(runtimeId: string, checkId: string): Prom
   if (!invoke) return [];
   return invoke<AcpCheck[]>('acp_repair', { runtimeId, checkId });
 }
+
+/**
+ * 연결을 처음부터 다시 맺는다 — 앱이 만든 것만 지우고 다시 만든다.
+ *
+ * 「로그아웃」이 아닌 이유: 이 앱에는 앱 몫 로그인이 없다. 사용자가 터미널에서
+ * 쓰는 그 로그인을 링크해서 그대로 쓰므로, 여기서 로그아웃을 내주면 남의 로그인을
+ * 지우거나 아무것도 안 하면서 그런 척하게 된다. 자세한 근거는 Rust 쪽 독블록.
+ */
+export async function resetAgentConnection(runtimeId: string): Promise<AcpCheck[]> {
+  const invoke = getInvoke();
+  if (!invoke) return [];
+  return invoke<AcpCheck[]>('acp_reset_connection', { runtimeId });
+}

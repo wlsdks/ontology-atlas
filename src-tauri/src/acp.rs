@@ -1133,6 +1133,33 @@ fn bounded_output(mut command: std::process::Command, limit: std::time::Duration
     Some(out)
 }
 
+/// 그 폴더 앞으로 난 키체인 항목을 **조건 없이** 지운다.
+///
+/// `clear_shadowing_credentials` 와 다른 점: 저쪽은 「아직 통하면 손대지
+/// 않는다」를 지키지만, 여기는 사용자가 **직접 「다시 맺기」를 눌렀을 때**만
+/// 불린다. 그때는 통하든 말든 지우는 것이 그 버튼의 뜻이다.
+pub(crate) fn remove_shadow_credentials(config_dir: &Path) {
+    #[cfg(target_os = "macos")]
+    {
+        let service = claude_credentials_service(config_dir);
+        let mut find = std::process::Command::new("security");
+        find.args(["find-generic-password", "-s", &service]);
+        if !bounded_output(find, KEYCHAIN_PROBE_TIMEOUT)
+            .map(|out| out.contains(&service))
+            .unwrap_or(false)
+        {
+            return;
+        }
+        let mut del = std::process::Command::new("security");
+        del.args(["delete-generic-password", "-s", &service]);
+        let _ = bounded_output(del, KEYCHAIN_PROBE_TIMEOUT);
+    }
+    #[cfg(not(target_os = "macos"))]
+    {
+        let _ = config_dir;
+    }
+}
+
 /// 앱 몫 설정 폴더가 **로그아웃 상태인가.** 못 물어보면 `None`(모른다).
 ///
 /// 화면의 「준비됨」 배지는 오래 **사용자 폴더**를 재고 있었다. 그래서 앱이 실제로

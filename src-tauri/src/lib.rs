@@ -1341,6 +1341,21 @@ fn acp_repair(
     Ok(acp_doctor::diagnose(&after.borrow()))
 }
 
+/// 연결을 처음부터 다시 맺는다 — 소유자 요청의 「재연동」.
+///
+/// 지운 뒤 **다시 잰 값**을 돌려준다. 이 자리의 가장 나쁜 결함은 「다시 맺었어요」
+/// 라고 말해 놓고 실제로는 그대로인 것이다.
+#[tauri::command]
+fn acp_reset_connection(
+    app: tauri::AppHandle,
+    runtime_id: String,
+) -> Result<Vec<acp_doctor::AcpCheck>, String> {
+    let ctx = doctor_context(&app, &runtime_id)?;
+    acp_doctor::reset_connection(&ctx.borrow())?;
+    let after = doctor_context(&app, &runtime_id)?;
+    Ok(acp_doctor::diagnose(&after.borrow()))
+}
+
 /// 진단이 볼 바깥 세계를 한 번에 모은다. 소유권 때문에 값으로 들고 다니고,
 /// `borrow()` 가 그것을 빌린 형태로 바꾼다.
 struct OwnedDoctorContext {
@@ -5041,6 +5056,7 @@ pub fn run() {
             acp_detect_runtimes,
             acp_diagnose,
             acp_repair,
+            acp_reset_connection,
             acp_start,
             acp_send,
             acp_stop,

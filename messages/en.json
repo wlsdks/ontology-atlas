@@ -3829,6 +3829,8 @@
       "scanning": "Checking",
       "fix": "Fix",
       "fixing": "Fixing",
+      "reset": "Reconnect",
+      "resetting": "Reconnecting",
       "failed": "The check could not finish. Try again in a moment.",
       "allClear": "No problems right now",
       "restFine": "The rest look fine",
@@ -3845,7 +3847,14 @@
         "config-dir": "Is the app's own config ready",
         "credentials-link": "Does it reuse your terminal sign-in",
         "shadow-keychain": "Is an old sign-in record in the way",
-        "login": "Is this folder signed in"
+        "login": "Is this folder signed in",
+        "gate": "Does it ask before touching anything outside the folder"
+      },
+      "next": {
+        "cli": "Install that tool on this computer first. Tapping its name in the list below opens the install guide.",
+        "launcher": "Launching that tool needs Node. Install Node, then press Re-check.",
+        "login": "Sign in to that tool once in your terminal. The app reuses that sign-in.",
+        "gate": "For this tool the app cannot stand in front of work outside your folder. That is ours to fix; until then another tool is the safer choice."
       }
     }
   }
