@@ -57,7 +57,7 @@ export function AgentsPage() {
       </p>
 
       <section className="mt-6 min-w-0">
-        <AcpRuntimeSettings />
+        <AcpRuntimeSettings embedded />
       </section>
     </div>
   );
