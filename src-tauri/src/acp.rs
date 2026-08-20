@@ -972,6 +972,8 @@ pub(crate) fn prepare_isolated_config(
     runtime_id: &str,
     app_data_dir: &Path,
     home: Option<&Path>,
+    cli: Option<&Path>,
+    path_env: &str,
 ) -> Result<PathBuf, String> {
     // 격리를 아직 실측하지 않은 실행기는 **격리하지 않는다고 정직하게 알린다.**
     // 짐작한 환경 변수로 설정을 옮기면 로그인이 조용히 깨지고, 사용자는 왜
@@ -992,11 +994,197 @@ pub(crate) fn prepare_isolated_config(
         let link = dir.join(spec.credentials_file);
         if source.exists() {
             link_credentials(&source, &link)?;
+            // 링크가 실제로 걸린 뒤에만 그림자를 걷는다 — 링크할 원본이 없으면
+            // 앱 몫 항목이 유일한 자격증명일 수 있고, 그걸 지우면 멀쩡한 로그인을
+            // 우리가 깨는 것이 된다.
+            clear_shadowing_credentials(&dir, cli, path_env);
         }
     }
 
     Ok(dir)
 }
+
+/// Claude Code 가 자격증명을 넣는 **키체인 항목 이름**.
+///
+/// 형식은 `Claude Code-credentials-<설정폴더 절대경로의 sha256 앞 8자>` 다.
+/// 2026-08-20 실측으로 두 자리를 확인했다 — `~/.claude` → `ce4c8c26`,
+/// 앱 전용 폴더 → `85f2eaa5`. 테스트가 그 두 값을 그대로 못박는다.
+pub(crate) fn claude_credentials_service(config_dir: &Path) -> String {
+    use sha2::{Digest, Sha256};
+    let digest = Sha256::digest(config_dir.to_string_lossy().as_bytes());
+    format!("Claude Code-credentials-{}", &hex_lower(&digest)[..8])
+}
+
+fn hex_lower(bytes: &[u8]) -> String {
+    bytes.iter().map(|b| format!("{b:02x}")).collect()
+}
+
+/// 앱 전용 폴더 앞으로 만들어진 키체인 항목을 걷는다.
+///
+/// ## 왜 이것이 필요한가 (2026-08-20 실측)
+///
+/// 이 앱은 Claude 를 전용 설정 폴더로 띄우고, 로그인이 갈라지지 않게
+/// `.credentials.json` 을 사용자의 것으로 **링크**한다. 그 설계는 실제로
+/// 동작한다 — 키체인 항목이 없는 새 폴더에 링크만 걸고 `claude auth status`
+/// 를 물으면 `loggedIn: true` 가 나온다(사용자 계정 그대로).
+///
+/// 문제는 **Claude Code 가 키체인을 파일보다 먼저 본다**는 것이다. 그래서 그
+/// 폴더 앞으로 항목이 한 번 생기면 링크는 그 순간부터 읽히지 않는다. 그리고
+/// 항목은 딱 한 경로로 생긴다 — 사람이 그 폴더로 로그인했을 때. 2026-08-17 에
+/// 넣은 안내가 정확히 그것을 시켰고(`CLAUDE_CONFIG_DIR=<앱 폴더> claude /login`),
+/// 그 토큰이 회전되면 죽고, 죽으면 화면이 같은 안내를 다시 했다.
+/// **안내가 덫을 만들고 있었다.**
+///
+/// 실측: 그 항목을 지우자 같은 폴더가 곧바로 `loggedIn: true` 로 돌아왔다.
+/// 그래서 고치는 방향은 「앱 몫으로 로그인하라」가 아니라 「앱 몫 항목을
+/// 없애라」다.
+///
+/// 실패해도 조용히 넘어간다 — 지우지 못하면 종전대로 문제 카드가 뜨고,
+/// 사용자는 아무것도 잃지 않는다. 반대로 여기서 실패를 시작 실패로 올리면
+/// 키체인 접근이 막힌 환경에서 앱이 아예 안 뜬다.
+fn clear_shadowing_credentials(config_dir: &Path, cli: Option<&Path>, path_env: &str) {
+    #[cfg(target_os = "macos")]
+    {
+        let service = claude_credentials_service(config_dir);
+        // 있는지부터 본다. 없을 때 지우기를 부르면 macOS 가 승인 창을 띄울 수
+        // 있는데, 평소(항목 없음)에 창이 뜨는 것은 관문이 아니라 마찰이다.
+        let mut find = std::process::Command::new("security");
+        find.args(["find-generic-password", "-s", &service]);
+        // 항목이 없으면 `security` 는 곧바로 비어 있는 출력으로 끝난다.
+        // 있으면 `svce` 줄이 나오므로 그것으로 존재를 판정한다.
+        let found = bounded_output(find, KEYCHAIN_PROBE_TIMEOUT);
+        if !found.map(|out| out.contains(&service)).unwrap_or(false) {
+            return;
+        }
+
+        // **그 항목이 아직 통하면 손대지 않는다.**
+        //
+        // 앱 몫 로그인만 살아 있는 사람이 있을 수 있다 — 종전 안내대로 앱
+        // 폴더에 로그인하고 그 뒤로 터미널을 안 쓴 경우다. 그 사람의 항목을
+        // 지우면 우리가 멀쩡한 로그인을 깨는 것이 된다. 그래서 「죽었나」를
+        // 시각이 아니라 **직접 물어서** 판정한다 — 시각은 실패한 갱신 시도로도
+        // 새로 찍혀서 죽은 항목이 계속 최신으로 보일 수 있다.
+        //
+        // 못 물어보면(CLI 를 못 찾음) 아무것도 안 한다. 모르는 채로 지우는 것이
+        // 이 자리에서 가장 나쁜 선택이다.
+        let Some(cli) = cli else {
+            return;
+        };
+        let mut probe = std::process::Command::new(cli);
+        probe
+            .args(["auth", "status"])
+            .env("PATH", path_env)
+            .env("CLAUDE_CONFIG_DIR", config_dir);
+        let Some(stdout) = bounded_output(probe, LOGIN_PROBE_TIMEOUT) else {
+            return;
+        };
+        if !claude_status_is_logged_out(&stdout) {
+            return;
+        }
+
+        let _ = std::process::Command::new("security")
+            .args(["delete-generic-password", "-s", &service])
+            .output();
+    }
+    #[cfg(not(target_os = "macos"))]
+    {
+        let _ = (config_dir, cli, path_env);
+    }
+}
+
+/// 명령 하나를 **시간을 묶어서** 돌리고 표준출력을 돌려준다.
+///
+/// 왜 `Command::output()` 을 그냥 쓰지 않나: 그건 자식이 끝날 때까지 **영원히**
+/// 기다린다. 여기서 부르는 것들(`security` · 실행기 CLI)은 키체인이 잠겨 있거나
+/// 래퍼가 네트워크를 물면 안 끝날 수 있고, 그러면 세션 시작이 통째로 멈춘다 —
+/// 화면에는 아무 설명 없이 「띄우는 중」만 남는다. 같은 부류의 결함을 CI 준비
+/// 스텝에서 이미 한 번 겪었다(2026-08-20, apt 가 20분을 먹었다).
+///
+/// 못 띄우거나 상한을 넘기면 `None` — 「실패」가 아니라 **모른다**다.
+fn bounded_output(mut command: std::process::Command, limit: std::time::Duration) -> Option<String> {
+    use std::io::Read;
+    use std::process::Stdio;
+
+    let mut child = command
+        .stdin(Stdio::null())
+        .stdout(Stdio::piped())
+        .stderr(Stdio::null())
+        .spawn()
+        .ok()?;
+
+    let deadline = std::time::Instant::now() + limit;
+    loop {
+        match child.try_wait() {
+            Ok(Some(_)) => break,
+            Ok(None) => {
+                if std::time::Instant::now() >= deadline {
+                    let _ = child.kill();
+                    let _ = child.wait();
+                    return None;
+                }
+                std::thread::sleep(std::time::Duration::from_millis(20));
+            }
+            Err(_) => return None,
+        }
+    }
+
+    let mut out = String::new();
+    child.stdout.take()?.read_to_string(&mut out).ok()?;
+    Some(out)
+}
+
+/// 앱 몫 설정 폴더가 **로그아웃 상태인가.** 못 물어보면 `None`(모른다).
+///
+/// 화면의 「준비됨」 배지는 오래 **사용자 폴더**를 재고 있었다. 그래서 앱이 실제로
+/// 쓰는 폴더가 로그아웃인데도 초록이었고, 사용자는 대화를 열어 보고서야 그것을
+/// 알았다(2026-08-20 실측). 재야 할 자리는 앱이 쓰는 그 폴더다.
+pub(crate) fn probe_isolated_logged_out(
+    cli: &Path,
+    config_dir: &Path,
+    path_env: &str,
+) -> Option<bool> {
+    let mut command = std::process::Command::new(cli);
+    command
+        .args(["auth", "status"])
+        .env("PATH", path_env)
+        .env("CLAUDE_CONFIG_DIR", config_dir);
+    let stdout = bounded_output(command, LOGIN_PROBE_TIMEOUT)?;
+    // 파싱조차 못 하면 「로그인됨」도 「로그아웃」도 아니다.
+    serde_json::from_str::<serde_json::Value>(stdout.trim())
+        .ok()?
+        .get("loggedIn")?
+        .as_bool()
+        .map(|logged_in| !logged_in)
+}
+
+/// 그 폴더 앞으로 난 키체인 항목이 있나. macOS 밖에서는 `None`(볼 수 없다).
+pub(crate) fn shadow_credentials_present(config_dir: &Path) -> Option<bool> {
+    #[cfg(target_os = "macos")]
+    {
+        let service = claude_credentials_service(config_dir);
+        let mut find = std::process::Command::new("security");
+        find.args(["find-generic-password", "-s", &service]);
+        let out = bounded_output(find, KEYCHAIN_PROBE_TIMEOUT)?;
+        Some(out.contains(&service))
+    }
+    #[cfg(not(target_os = "macos"))]
+    {
+        let _ = config_dir;
+        None
+    }
+}
+
+/// `claude auth status` 의 JSON 이 **로그아웃 상태**라고 말하는가.
+///
+/// 모르겠으면 `false` 다 — 판정하지 못한 것을 「죽었다」로 읽으면 멀쩡한
+/// 로그인을 지우게 된다. 그래서 `loggedIn` 이 명시적으로 `false` 일 때만 참이다.
+pub(crate) fn claude_status_is_logged_out(stdout: &str) -> bool {
+    let Ok(value) = serde_json::from_str::<serde_json::Value>(stdout.trim()) else {
+        return false;
+    };
+    value.get("loggedIn") == Some(&serde_json::Value::Bool(false))
+}
+
 
 /// 이 실행기의 「설정을 어디서 읽나」 환경 변수 이름.
 pub(crate) fn config_env_for(runtime_id: &str) -> Option<&'static str> {
@@ -1012,11 +1200,13 @@ pub(crate) fn prepare_runtime_isolation(
     runtime_id: &str,
     app_data_dir: &Path,
     home: Option<&Path>,
+    cli: Option<&Path>,
+    path_env: &str,
 ) -> Result<Option<(&'static str, PathBuf)>, String> {
     let Some(env) = config_env_for(runtime_id) else {
         return Ok(None);
     };
-    let dir = prepare_isolated_config(runtime_id, app_data_dir, home)
+    let dir = prepare_isolated_config(runtime_id, app_data_dir, home, cli, path_env)
         .map_err(|reason| format!("isolation-failed:{reason}"))?;
     Ok(Some((env, dir)))
 }
@@ -1415,6 +1605,11 @@ pub(crate) fn real_probe() -> RealProbe {
 /// 로그인 확인에 기다려 주는 시간. 실측(claude 300ms · codex 45ms)의 여러 배다 —
 /// 넉넉하되, 응답이 없는 도구 때문에 목록이 멈추지는 않게.
 const LOGIN_PROBE_TIMEOUT: std::time::Duration = std::time::Duration::from_secs(5);
+
+/// 키체인을 들여다보는 데 주는 상한. `security` 는 보통 수십 ms 에 끝나지만,
+/// 키체인이 잠겨 있으면 잠금 해제 창을 띄우고 사람이 답할 때까지 기다린다 —
+/// 그 기다림이 세션 시작을 잡아먹으면 안 된다.
+const KEYCHAIN_PROBE_TIMEOUT: std::time::Duration = std::time::Duration::from_secs(3);
 
 #[cfg(test)]
 mod tests {
@@ -2427,6 +2622,100 @@ mod tests {
         }
     }
 
+    /// **플랫폼 중립으로 짠다.** 처음에는 `/bin/echo` · `/bin/sleep` 을 썼는데
+    /// Windows 러너에는 그 경로가 없어서 `spawn` 이 실패하고, 그 실패가
+    /// 「상한이 잘 듣는다」와 구별되지 않았다(2026-08-20 CI 에서 적발).
+    /// 지금은 이 저장소가 어디서든 갖고 있는 것으로 띄운다 — 우리 자신을 돌리는
+    /// `cargo` 의 테스트 바이너리가 아니라, 빌드에 이미 필요한 `node` 다.
+    fn node_command(script: &str) -> std::process::Command {
+        let mut cmd = std::process::Command::new("node");
+        cmd.args(["-e", script]);
+        cmd
+    }
+
+    #[test]
+    fn bounded_output_returns_stdout_when_the_command_finishes() {
+        let out = bounded_output(
+            node_command("process.stdout.write('hello')"),
+            std::time::Duration::from_secs(20),
+        );
+        assert_eq!(out.as_deref().map(str::trim), Some("hello"));
+    }
+
+    #[test]
+    fn bounded_output_returns_none_when_the_program_does_not_exist() {
+        // 이 갈래가 중요하다: Windows 에서 `/bin/echo` 를 쓰던 테스트가 정확히
+        // 여기로 떨어졌는데, 상한 테스트는 None 을 기대하므로 **초록으로**
+        // 통과했다. 못 띄운 것과 상한에 걸린 것이 같은 값이라 그렇다.
+        let cmd = std::process::Command::new("oatlas-no-such-program-anywhere");
+        assert!(bounded_output(cmd, std::time::Duration::from_secs(5)).is_none());
+    }
+
+    #[test]
+    fn bounded_output_kills_a_command_that_never_finishes() {
+        // 상한이 안 먹으면 이 테스트가 30초를 잡아먹어 그 자체로 실패한다 —
+        // 「죽였다」를 벽시계로도 증명한다.
+        let started = std::time::Instant::now();
+        let out = bounded_output(
+            node_command("setTimeout(() => {}, 30000)"),
+            std::time::Duration::from_millis(400),
+        );
+        assert!(out.is_none(), "안 끝나는 명령이 값을 돌려줬다");
+        assert!(
+            started.elapsed() < std::time::Duration::from_secs(15),
+            "상한이 안 먹었다: {:?}",
+            started.elapsed()
+        );
+    }
+
+    #[test]
+    fn logged_out_is_only_true_when_the_tool_says_so() {
+        // `claude auth status` 의 실제 출력(2026-08-20 실측) 두 갈래.
+        let out = r#"{"loggedIn": false, "authMethod": "none", "apiProvider": "firstParty"}"#;
+        assert!(claude_status_is_logged_out(out));
+
+        let ok = r#"{"loggedIn": true, "authMethod": "claude.ai", "subscriptionType": "max"}"#;
+        assert!(!claude_status_is_logged_out(ok));
+    }
+
+    #[test]
+    fn unknown_status_is_never_read_as_logged_out() {
+        // 판정하지 못한 것을 「죽었다」로 읽으면 멀쩡한 로그인을 지우게 된다.
+        for noise in ["", "not json", "{}", r#"{"loggedIn": null}"#, r#"{"loggedIn": "false"}"#] {
+            assert!(
+                !claude_status_is_logged_out(noise),
+                "모르는 출력을 로그아웃으로 읽었다: {noise:?}"
+            );
+        }
+    }
+
+    #[test]
+    fn claude_keychain_service_matches_the_two_measured_items() {
+        // 2026-08-20 소유자 기계 실측. 이 두 값이 어긋나면 그림자 걷기가
+        // 엉뚱한 항목을 겨냥하게 되고, 그러면 아무것도 안 고치면서 남의
+        // 키체인 항목을 지우려 들 수 있다.
+        assert_eq!(
+            claude_credentials_service(Path::new("/Users/stark/.claude")),
+            "Claude Code-credentials-ce4c8c26"
+        );
+        assert_eq!(
+            claude_credentials_service(Path::new(
+                "/Users/stark/Library/Application Support/dev.jinan.ontology-atlas/agent-config/claude-acp"
+            )),
+            "Claude Code-credentials-85f2eaa5"
+        );
+    }
+
+    #[test]
+    fn claude_keychain_service_is_stable_and_path_sensitive() {
+        let a = claude_credentials_service(Path::new("/tmp/a"));
+        let b = claude_credentials_service(Path::new("/tmp/b"));
+        assert_ne!(a, b, "경로가 다르면 항목 이름도 달라야 한다");
+        assert_eq!(a, claude_credentials_service(Path::new("/tmp/a")));
+        assert!(a.starts_with("Claude Code-credentials-"));
+        assert_eq!(a.len(), "Claude Code-credentials-".len() + 8);
+    }
+
     #[test]
     fn prepare_isolated_config_writes_our_settings_and_links_credentials() {
         let base = std::env::temp_dir().join(format!("atlas-acp-cfg-{}", std::process::id()));
@@ -2436,7 +2725,7 @@ mod tests {
         std::fs::create_dir_all(home.join(".claude")).unwrap();
         std::fs::write(home.join(".claude").join(".credentials.json"), "{\"t\":1}").unwrap();
 
-        let dir = prepare_isolated_config("claude-acp", &app_data, Some(&home)).unwrap();
+        let dir = prepare_isolated_config("claude-acp", &app_data, Some(&home), None, "").unwrap();
         assert_eq!(
             std::fs::read_to_string(dir.join("settings.json")).unwrap(),
             ISOLATED_CLAUDE_SETTINGS
@@ -2454,7 +2743,7 @@ mod tests {
         // 사용자가 우리 설정을 고쳐 관문을 열어 둔 채 잊는 일을 막는다 —
         // 이 디렉터리는 앱의 것이고 매번 다시 쓴다.
         std::fs::write(dir.join("settings.json"), "{\"permissions\":{\"allow\":[\"Bash(*)\"]}}").unwrap();
-        let dir2 = prepare_isolated_config("claude-acp", &app_data, Some(&home)).unwrap();
+        let dir2 = prepare_isolated_config("claude-acp", &app_data, Some(&home), None, "").unwrap();
         assert_eq!(
             std::fs::read_to_string(dir2.join("settings.json")).unwrap(),
             ISOLATED_CLAUDE_SETTINGS,
@@ -2472,7 +2761,7 @@ mod tests {
         let _ = std::fs::remove_dir_all(&base);
         let home = base.join("home");
         std::fs::create_dir_all(&home).unwrap();
-        let dir = prepare_isolated_config("claude-acp", &base.join("appdata"), Some(&home)).unwrap();
+        let dir = prepare_isolated_config("claude-acp", &base.join("appdata"), Some(&home), None, "").unwrap();
         assert!(!dir.join(".credentials.json").exists());
         let _ = std::fs::remove_dir_all(&base);
     }
@@ -2488,7 +2777,7 @@ mod tests {
         let app_data_file = base.join("not-a-directory");
         std::fs::write(&app_data_file, "blocked").unwrap();
 
-        let error = prepare_runtime_isolation("claude-acp", &app_data_file, None).unwrap_err();
+        let error = prepare_runtime_isolation("claude-acp", &app_data_file, None, None, "").unwrap_err();
         assert!(
             error.starts_with("isolation-failed:config-dir-failed:"),
             "격리 준비 실패가 시작 실패로 올라오지 않았다: {error}"
@@ -2503,6 +2792,8 @@ mod tests {
             "gemini-acp",
             Path::new("/path/that/does/not/need/to/exist"),
             None,
+            None,
+            "",
         )
         .unwrap();
         assert!(isolation.is_none());

@@ -31,6 +31,8 @@ import {
 import { cn } from '@/shared/lib/cn';
 import { useAcpSession, type AcpEvent } from '@/features/acp-session/model/use-acp-session';
 import { readAcpTrouble } from '@/features/acp-session/model/acp-trouble';
+import { isAgentDoctorAvailable } from '@/features/acp-doctor/model/acp-doctor';
+import { AgentDoctor } from '@/features/acp-doctor/ui/AgentDoctor';
 import {
   matchSlashCommands,
   slashQuery,
@@ -740,6 +742,13 @@ export function AcpChatPanel({
           <p className="mt-1 text-label leading-prose text-[color:var(--color-text-tertiary)]">
             {t(`trouble.${trouble?.kind ?? 'unknown'}.hint`)}
           </p>
+          {/*
+            **막힌 사람이 이미 보고 있는 자리에 점검을 둔다.** 설정 어딘가에
+            두면 막힌 사람은 그것을 찾으러 가야 하고, 대개 안 간다. 웹에서는
+            원리적으로 못 하는 일이라(프로세스·키체인) 아예 그리지 않는다 —
+            「곧 됩니다」가 아니라 처음부터 없는 것이다.
+          */}
+          {runtimeId && isAgentDoctorAvailable() ? <AgentDoctor runtimeId={runtimeId} /> : null}
           <details className="mt-2">
             <summary
               data-testid="acp-chat-error-details"

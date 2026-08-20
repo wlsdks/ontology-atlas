@@ -3757,8 +3757,8 @@
     "closeHistory": "Close the past chats list",
     "trouble": {
       "auth": {
-        "title": "The app's own sign-in has gone stale",
-        "hint": "Atlas runs Claude with its own settings folder so it asks before touching anything outside this folder. That means it also has its own sign-in, and signing in again in your terminal does not repair it. Paste the one-line command under “Details” into your terminal to sign in for the app, then press “New chat”."
+        "title": "An old app-scoped sign-in is getting in the way",
+        "hint": "You do not need a separate sign-in. This app uses the same one you use in your terminal. What is in the way is a keychain entry from an earlier app-scoped sign-in: it shadows the shared one and has already expired. Press 「New chat」 and the app clears that entry and falls back to your real sign-in. If that still fails, paste the one-line command under 「Details」 into a terminal."
       },
       "install": {
         "title": "A broken piece from an interrupted download is in the way",
@@ -3823,6 +3823,27 @@
       "auto": "The tool decides for itself whether to ask.",
       "dontask": "Never asks. Anything not pre-approved is refused.",
       "read-only": "Reads only. Changes go through Atlas tools."
+    },
+    "doctor": {
+      "scan": "Check connection",
+      "scanning": "Checking",
+      "fix": "Fix",
+      "fixing": "Fixing",
+      "failed": "The check could not finish. Try again in a moment.",
+      "state": {
+        "ok": "fine",
+        "problem": "blocked",
+        "unknown": "could not tell"
+      },
+      "check": {
+        "cli": "Is the tool on this computer",
+        "launcher": "Can we launch it",
+        "npx-cache": "Is the downloaded copy intact",
+        "config-dir": "Is the app's own config ready",
+        "credentials-link": "Does it reuse your terminal sign-in",
+        "shadow-keychain": "Is an old sign-in record in the way",
+        "login": "Is this folder signed in"
+      }
     }
   }
 }

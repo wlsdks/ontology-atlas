@@ -12,6 +12,7 @@ use tauri::{AppHandle, Emitter, Manager, RunEvent, State};
 
 /// ACP 하네스 — 사용자가 이미 설치한 코딩 에이전트를 찾아 앱 안에서 부른다.
 mod acp;
+mod acp_doctor;
 /// 「에이전트 연결」 — 번들 MCP 서버 경로 해석 · 설정 파일 계획/쓰기 · 자가 검증.
 mod agent_setup;
 /// Atlas Git — vault 를 git 으로 버전 기록하는 네이티브 계층 (웹 GUI 가 invoke).
@@ -977,7 +978,26 @@ fn acp_start(
     // 격리를 **지원하지 않는 것**은 None 으로 정직하게 띄울 수 있다. 그러나
     // 격리를 지원한다고 표시한 실행기의 준비 실패는 시작 실패다. 그 상태로
     // 띄우면 사용자의 전역 허용 목록을 물려받고, 화면이 약속한 관문은 없다.
-    let isolation = acp::prepare_runtime_isolation(&runtime_id, &app_data, home.as_deref())?;
+    // 그림자 걷기가 「이 항목이 아직 통하나」를 물어보려면 그 CLI 의 **절대
+    // 경로**가 필요하다. 이름으로 띄우면 자식이 보는 PATH 에 좌우되는데, GUI
+    // 앱의 기본 PATH 는 사용자의 셸과 다르다(이 파일 맨 위 실측).
+    let isolation_cli = acp::registry_agent(&runtime_id)
+        .and_then(|agent| agent.cli.as_deref())
+        .and_then(|name| {
+            let dirs = acp::candidate_bin_dirs(
+                home.as_deref(),
+                std::env::var_os("PATH").as_deref(),
+                &probe,
+            );
+            acp::resolve_command(name, &dirs, &probe)
+        });
+    let isolation = acp::prepare_runtime_isolation(
+        &runtime_id,
+        &app_data,
+        home.as_deref(),
+        isolation_cli.as_deref(),
+        &launch.path_env,
+    )?;
 
     let mut command = Command::new(&launch.program);
     command
@@ -1292,6 +1312,113 @@ fn acp_detect_runtimes(probe_login: Option<bool>) -> Vec<acp::AcpRuntimeStatus> 
         std::env::var_os(if cfg!(windows) { "USERPROFILE" } else { "HOME" }).map(PathBuf::from);
     let path = std::env::var_os("PATH");
     acp::detect_runtimes(home.as_deref(), path.as_deref(), &probe)
+}
+
+/// 연동 점검 — **단계별로 재고, 고칠 수 있는 것에는 그렇다고 표시한다.**
+///
+/// 증상 하나에 문장 하나로 답하던 종전 방식은 원인이 다른 단계에 있을 때
+/// 사용자를 엉뚱한 곳으로 보냈다(2026-08-20 로그인 사고가 그랬다). 여기서는
+/// 사실만 돌려주고 문장은 화면이 만든다.
+#[tauri::command]
+fn acp_diagnose(app: tauri::AppHandle, runtime_id: String) -> Result<Vec<acp_doctor::AcpCheck>, String> {
+    let ctx = doctor_context(&app, &runtime_id)?;
+    Ok(acp_doctor::diagnose(&ctx.borrow()))
+}
+
+/// 화면이 「고치기」를 눌렀을 때. **`fixable` 이라고 말한 것만 온다.**
+#[tauri::command]
+fn acp_repair(
+    app: tauri::AppHandle,
+    runtime_id: String,
+    check_id: String,
+) -> Result<Vec<acp_doctor::AcpCheck>, String> {
+    let ctx = doctor_context(&app, &runtime_id)?;
+    acp_doctor::repair(&ctx.borrow(), &check_id)?;
+    // 고친 뒤의 상태를 **다시 재서** 돌려준다. 「고쳤습니다」라고 말하고 실제로는
+    // 안 고쳐진 경우가 이 자리에서 가장 나쁜 결함이라, 화면이 말이 아니라
+    // 다시 잰 값을 보여 주게 한다.
+    let after = doctor_context(&app, &runtime_id)?;
+    Ok(acp_doctor::diagnose(&after.borrow()))
+}
+
+/// 진단이 볼 바깥 세계를 한 번에 모은다. 소유권 때문에 값으로 들고 다니고,
+/// `borrow()` 가 그것을 빌린 형태로 바꾼다.
+struct OwnedDoctorContext {
+    runtime_id: String,
+    home: Option<PathBuf>,
+    app_data_dir: PathBuf,
+    cli: Option<PathBuf>,
+    launcher: Option<PathBuf>,
+    path_env: String,
+    isolated_logged_out: Option<bool>,
+    shadow_present: Option<bool>,
+}
+
+impl OwnedDoctorContext {
+    fn borrow(&self) -> acp_doctor::DoctorContext<'_> {
+        acp_doctor::DoctorContext {
+            runtime_id: &self.runtime_id,
+            home: self.home.as_deref(),
+            app_data_dir: &self.app_data_dir,
+            cli: self.cli.as_deref(),
+            launcher: self.launcher.as_deref(),
+            path_env: &self.path_env,
+            isolated_logged_out: self.isolated_logged_out,
+            shadow_present: self.shadow_present,
+        }
+    }
+}
+
+fn doctor_context(app: &tauri::AppHandle, runtime_id: &str) -> Result<OwnedDoctorContext, String> {
+    let (is_executable, list_dir, read_text, login_ok) = acp::real_probe();
+    let probe = acp::FsProbe {
+        is_executable: &is_executable,
+        list_dir: &list_dir,
+        read_text: &read_text,
+        login_ok: &login_ok,
+    };
+    let home =
+        std::env::var_os(if cfg!(windows) { "USERPROFILE" } else { "HOME" }).map(PathBuf::from);
+    let path = std::env::var_os("PATH");
+    let dirs = acp::candidate_bin_dirs(home.as_deref(), path.as_deref(), &probe);
+    let path_env = std::env::join_paths(dirs.iter())
+        .map(|joined| joined.to_string_lossy().to_string())
+        .unwrap_or_default();
+
+    let agent = acp::registry_agent(runtime_id).ok_or_else(|| format!("unknown-runtime:{runtime_id}"))?;
+    let cli = agent
+        .cli
+        .as_deref()
+        .and_then(|name| acp::resolve_command(name, &dirs, &probe));
+    let launcher = acp::resolve_launch(runtime_id, home.as_deref(), path.as_deref(), &probe)
+        .ok()
+        .map(|launch| launch.program);
+
+    let app_data_dir = app
+        .path()
+        .app_data_dir()
+        .map_err(|err| format!("app-data-dir-unavailable:{err}"))?;
+
+    // 앱 몫 폴더 기준으로 묻는다 — **화면이 「준비됨」이라고 말하면서 실제로는
+    // 로그아웃이던 것**이 이 결함의 절반이었다. 사용자 폴더를 물으면 앱이 쓰지도
+    // 않는 자리를 재는 것이다.
+    let isolated = app_data_dir.join("agent-config").join(runtime_id);
+    let isolated_logged_out = cli
+        .as_deref()
+        .filter(|_| acp::config_env_for(runtime_id).is_some())
+        .and_then(|path| acp::probe_isolated_logged_out(path, &isolated, &path_env));
+    let shadow_present = acp::shadow_credentials_present(&isolated);
+
+    Ok(OwnedDoctorContext {
+        runtime_id: runtime_id.to_string(),
+        home,
+        app_data_dir,
+        cli,
+        launcher,
+        path_env,
+        isolated_logged_out,
+        shadow_present,
+    })
 }
 
 #[tauri::command]
@@ -4912,6 +5039,8 @@ pub fn run() {
         })
         .invoke_handler(tauri::generate_handler![
             acp_detect_runtimes,
+            acp_diagnose,
+            acp_repair,
             acp_start,
             acp_send,
             acp_stop,

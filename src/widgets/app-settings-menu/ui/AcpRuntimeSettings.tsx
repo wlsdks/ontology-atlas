@@ -1,5 +1,7 @@
 'use client';
 
+import { isAgentDoctorAvailable } from '@/features/acp-doctor/model/acp-doctor';
+import { AgentDoctor } from '@/features/acp-doctor/ui/AgentDoctor';
 import { ChevronDown, MessageSquare, RefreshCw } from 'lucide-react';
 import { useCallback, useEffect, useState } from 'react';
 import { useTranslations } from 'next-intl';
@@ -343,6 +345,17 @@ function RuntimeRow({ runtime }: { runtime: AcpRuntimeStatus }) {
               <MessageSquare size={ICON_SIZE.sm} aria-hidden />
               {t('openChat')}
             </Chip>
+          ) : null}
+          {/*
+           * **점검은 관문 있는 도구에만 낸다.** 격리를 재 본 적 없는 도구는
+           * 앱 몫 설정도 자격증명 링크도 없어서, 검사 목록이 거의 다
+           * 「확인 못 했어요」가 된다 — 그건 도움이 아니라 소음이다.
+           *
+           * 여기 두는 이유: 문제 카드는 **이미 대화를 연 사람**만 본다.
+           * 「대화가 아예 안 열린다」로 막힌 사람이 찾아오는 곳은 이 화면이다.
+           */}
+          {isGuardedRuntime(runtime.id, runtime.isolated) && isAgentDoctorAvailable() ? (
+            <AgentDoctor runtimeId={runtime.id} />
           ) : null}
           {/*
            * ⚠️ 로그인만 안 된 도구에 「설치 방법」을 내밀고 있었다 — 이미
