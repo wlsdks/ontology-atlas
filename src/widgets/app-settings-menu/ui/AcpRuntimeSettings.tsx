@@ -1,7 +1,7 @@
 'use client';
 
 import { isAgentDoctorAvailable } from '@/features/acp-doctor/model/acp-doctor';
-import { AgentDoctor } from '@/features/acp-doctor/ui/AgentDoctor';
+import { useAgentDoctor } from '@/features/acp-doctor/ui/AgentDoctor';
 import { ChevronDown, MessageSquare, RefreshCw } from 'lucide-react';
 import { useCallback, useEffect, useState } from 'react';
 import { useTranslations } from 'next-intl';
@@ -289,110 +289,126 @@ function RuntimeRow({ runtime }: { runtime: AcpRuntimeStatus }) {
    */
   const website = isReady ? null : runtime.website;
 
+  /*
+   * **점검은 관문 있는 도구에만 낸다.** 격리를 재 본 적 없는 도구는 앱 몫 설정도
+   * 자격증명 링크도 없어서 검사 목록이 거의 다 「확인 못 했어요」가 된다 —
+   * 그건 도움이 아니라 소음이다. 웹에서는 프로세스도 키체인도 못 보므로 없다.
+   */
+  const doctor = useAgentDoctor(runtime.id);
+  const showDoctor = isGuardedRuntime(runtime.id, runtime.isolated) && isAgentDoctorAvailable();
+
+  /*
+   * ⚠️ **결과는 행 「안」이 아니라 「아래」다.** `SettingsRow` 는
+   * `flex items-center justify-between` 한 줄이라, 큰 덩어리를 컨트롤 자리에
+   * 넣으면 남는 폭이 전부 이름과 버튼 사이의 틈으로 가고 진단이 행의 주인이
+   * 된다(2026-08-20 소유자 반려). 행은 한 줄로 두고, 결과는 그 아래 전폭에
+   * 놓는다.
+   */
   return (
-    <SettingsRow
-      label={runtime.label}
-      // 로그인만 안 된 도구에는 **할 일**을 적는다 — 그 상태에는 배지만 있고
-      // 무엇을 하라는 말이 코드 어디에도 없었다(2026-08-16 검수).
-      caption={runtime.state === 'login-needed' ? t('loginHint') : undefined}
-      testId={`app-settings-runtime-${runtime.id}`}
-      icon={runtime.icon}
-      iconInk={runtime.brandInk}
-      control={
-        <span className="flex items-center gap-1.5">
-          {/*
-           * ⚠️ **배지를 세 번 고치고 결국 없앴다.** 기록해 둘 값어치가 있다:
-           *
-           * ① 못 막는 줄마다 **문장** → 20줄 중 18줄이 같은 문장이라 화면의
-           *    절반이 사본이었다.
-           * ② 못 막는 줄마다 **「확인 안 됨」 주황 배지** → 소유자: *"이게 무슨
-           *    말인지 잘 이해 안 가고"*. 「확인」이 무엇의 확인인지 알 수 없고,
-           *    19줄에 붙은 주황이 목록 전체를 결함처럼 보이게 했다.
-           * ③ 되는 줄 하나에 **「물어보고 진행」** → 소유자: *"이건 뭔 말인지도
-           *    모르겠고"*. 줄 수는 1개로 줄었지만 **말이 여전히 안 통했다.**
-           *
-           * 세 번의 공통점: 배지 한 칸(4~6글자)에 담기에는 이 사실이 너무 크다.
-           * 「폴더 밖 파일을 건드릴 때 앱이 대신 물어봐 줄 수 있느냐」는 조건과
-           * 결과가 다 있어야 뜻이 서는 문장이다. 그래서 **문장이 있어야 할
-           * 자리에 문장을 두고**(묶음 위 한 줄, 이름까지 댄다), 줄에는 배지를
-           * 안 단다. 목록은 조용해지고, 사실은 그대로 화면에 있다.
-           *
-           * ⚠️ **화면 밖에도 복사하지 않는다.** 한 번은 이 문장을 줄마다
-           * `sr-only` 로 남겼는데, 그건 「같은 문장 19개」라는 바로 그 결함을
-           * 안 보이는 층으로 옮긴 것이었다 — 낭독기로 듣는 사람은 같은 문장을
-           * 19번 듣는다. 묶음 위 설명은 목록 **앞에** 있으므로 순서대로 읽는
-           * 사람에게 먼저 도착한다. 그거면 된다.
-           */}
-          {/*
-           * ⚠️ **연결로 넘어갈 문이 없었다** (2026-08-16 검수에서 적발).
-           *
-           * 첫 걸음 카드의 1단 이름은 「AI 에이전트 연결」이고 그 버튼이 여는
-           * 곳이 여기다. 그런데 이 화면에 있던 것은 목록과 바깥 링크뿐이라,
-           * 「연결」하러 온 사람이 **연결할 수가 없었다** — 대화를 여는 유일한
-           * 자리는 그 대화창의 머리, 즉 이미 대화를 연 사람만 보는 곳이었다.
-           *
-           * 관문이 있는 도구에만 낸다. 관문이 없는 도구로 대화를 열면 이 화면이
-           * 바로 위 문장에서 한 약속(폴더 밖은 먼저 물어본다)을 못 지킨다.
-           */}
-          {isReady && isGuardedRuntime(runtime.id, runtime.isolated) ? (
-            <Chip
-              size="sm"
-              tone="accentOnTint"
-              data-testid={`app-settings-runtime-chat-${runtime.id}`}
-              onClick={() => requestAgentChat(runtime.id)}
-              className="shrink-0 border-[color:var(--color-indigo-a46)] bg-[color:var(--color-indigo-a16)] hover:bg-[color:var(--color-indigo-a24)]"
-            >
-              <MessageSquare size={ICON_SIZE.sm} aria-hidden />
-              {t('openChat')}
-            </Chip>
-          ) : null}
-          {/*
-           * **점검은 관문 있는 도구에만 낸다.** 격리를 재 본 적 없는 도구는
-           * 앱 몫 설정도 자격증명 링크도 없어서, 검사 목록이 거의 다
-           * 「확인 못 했어요」가 된다 — 그건 도움이 아니라 소음이다.
-           *
-           * 여기 두는 이유: 문제 카드는 **이미 대화를 연 사람**만 본다.
-           * 「대화가 아예 안 열린다」로 막힌 사람이 찾아오는 곳은 이 화면이다.
-           */}
-          {isGuardedRuntime(runtime.id, runtime.isolated) && isAgentDoctorAvailable() ? (
-            <AgentDoctor runtimeId={runtime.id} />
-          ) : null}
-          {/*
-           * ⚠️ 로그인만 안 된 도구에 「설치 방법」을 내밀고 있었다 — 이미
-           * 설치한 사람에게. 할 일이 다르므로 문장도 다르다.
-           */}
-          {runtime.state === 'login-needed' ? null : website ? (
-            <a
-              href={website}
-              target="_blank"
-              rel="noopener noreferrer"
-              data-testid="app-settings-runtime-install"
-              className={controlClass({
-                shape: 'link',
-                size: 'sm',
-                tone: 'secondary',
-                hoverInk: 'strong',
-                className: 'shrink-0',
+    <div className="min-w-0">
+        <SettingsRow
+        label={runtime.label}
+        // 로그인만 안 된 도구에는 **할 일**을 적는다 — 그 상태에는 배지만 있고
+        // 무엇을 하라는 말이 코드 어디에도 없었다(2026-08-16 검수).
+        caption={runtime.state === 'login-needed' ? t('loginHint') : undefined}
+        testId={`app-settings-runtime-${runtime.id}`}
+        icon={runtime.icon}
+        iconInk={runtime.brandInk}
+        control={
+          <span className="flex items-center gap-1.5">
+            {/*
+             * ⚠️ **배지를 세 번 고치고 결국 없앴다.** 기록해 둘 값어치가 있다:
+             *
+             * ① 못 막는 줄마다 **문장** → 20줄 중 18줄이 같은 문장이라 화면의
+             *    절반이 사본이었다.
+             * ② 못 막는 줄마다 **「확인 안 됨」 주황 배지** → 소유자: *"이게 무슨
+             *    말인지 잘 이해 안 가고"*. 「확인」이 무엇의 확인인지 알 수 없고,
+             *    19줄에 붙은 주황이 목록 전체를 결함처럼 보이게 했다.
+             * ③ 되는 줄 하나에 **「물어보고 진행」** → 소유자: *"이건 뭔 말인지도
+             *    모르겠고"*. 줄 수는 1개로 줄었지만 **말이 여전히 안 통했다.**
+             *
+             * 세 번의 공통점: 배지 한 칸(4~6글자)에 담기에는 이 사실이 너무 크다.
+             * 「폴더 밖 파일을 건드릴 때 앱이 대신 물어봐 줄 수 있느냐」는 조건과
+             * 결과가 다 있어야 뜻이 서는 문장이다. 그래서 **문장이 있어야 할
+             * 자리에 문장을 두고**(묶음 위 한 줄, 이름까지 댄다), 줄에는 배지를
+             * 안 단다. 목록은 조용해지고, 사실은 그대로 화면에 있다.
+             *
+             * ⚠️ **화면 밖에도 복사하지 않는다.** 한 번은 이 문장을 줄마다
+             * `sr-only` 로 남겼는데, 그건 「같은 문장 19개」라는 바로 그 결함을
+             * 안 보이는 층으로 옮긴 것이었다 — 낭독기로 듣는 사람은 같은 문장을
+             * 19번 듣는다. 묶음 위 설명은 목록 **앞에** 있으므로 순서대로 읽는
+             * 사람에게 먼저 도착한다. 그거면 된다.
+             */}
+            {/*
+             * ⚠️ **연결로 넘어갈 문이 없었다** (2026-08-16 검수에서 적발).
+             *
+             * 첫 걸음 카드의 1단 이름은 「AI 에이전트 연결」이고 그 버튼이 여는
+             * 곳이 여기다. 그런데 이 화면에 있던 것은 목록과 바깥 링크뿐이라,
+             * 「연결」하러 온 사람이 **연결할 수가 없었다** — 대화를 여는 유일한
+             * 자리는 그 대화창의 머리, 즉 이미 대화를 연 사람만 보는 곳이었다.
+             *
+             * 관문이 있는 도구에만 낸다. 관문이 없는 도구로 대화를 열면 이 화면이
+             * 바로 위 문장에서 한 약속(폴더 밖은 먼저 물어본다)을 못 지킨다.
+             */}
+            {isReady && isGuardedRuntime(runtime.id, runtime.isolated) ? (
+              <Chip
+                size="sm"
+                tone="accentOnTint"
+                data-testid={`app-settings-runtime-chat-${runtime.id}`}
+                onClick={() => requestAgentChat(runtime.id)}
+                className="shrink-0 border-[color:var(--color-indigo-a46)] bg-[color:var(--color-indigo-a16)] hover:bg-[color:var(--color-indigo-a24)]"
+              >
+                <MessageSquare size={ICON_SIZE.sm} aria-hidden />
+                {t('openChat')}
+              </Chip>
+            ) : null}
+            {/*
+             * **점검은 관문 있는 도구에만 낸다.** 격리를 재 본 적 없는 도구는
+             * 앱 몫 설정도 자격증명 링크도 없어서, 검사 목록이 거의 다
+             * 「확인 못 했어요」가 된다 — 그건 도움이 아니라 소음이다.
+             *
+             * 여기 두는 이유: 문제 카드는 **이미 대화를 연 사람**만 본다.
+             * 「대화가 아예 안 열린다」로 막힌 사람이 찾아오는 곳은 이 화면이다.
+             */}
+            {showDoctor ? doctor.scanButton : null}
+            {/*
+             * ⚠️ 로그인만 안 된 도구에 「설치 방법」을 내밀고 있었다 — 이미
+             * 설치한 사람에게. 할 일이 다르므로 문장도 다르다.
+             */}
+            {runtime.state === 'login-needed' ? null : website ? (
+              <a
+                href={website}
+                target="_blank"
+                rel="noopener noreferrer"
+                data-testid="app-settings-runtime-install"
+                className={controlClass({
+                  shape: 'link',
+                  size: 'sm',
+                  tone: 'secondary',
+                  hoverInk: 'strong',
+                  className: 'shrink-0',
+                })}
+              >
+                {/* 앱을 **떠나는** 링크라 글리프가 라벨 앞에 서고 스스로를 선언한다. */}
+                <span aria-hidden data-external-link-marker>
+                  ↗
+                </span>
+                {t('installGuide')}
+              </a>
+            ) : null}
+            <span
+              data-runtime-state={runtime.state}
+              className={badgeClass({
+                shape: 'micro',
+                className: isReady ? READY_INK : NOT_READY_INK,
               })}
             >
-              {/* 앱을 **떠나는** 링크라 글리프가 라벨 앞에 서고 스스로를 선언한다. */}
-              <span aria-hidden data-external-link-marker>
-                ↗
-              </span>
-              {t('installGuide')}
-            </a>
-          ) : null}
-          <span
-            data-runtime-state={runtime.state}
-            className={badgeClass({
-              shape: 'micro',
-              className: isReady ? READY_INK : NOT_READY_INK,
-            })}
-          >
-            {t(`state.${runtime.state}`)}
+              {t(`state.${runtime.state}`)}
+            </span>
           </span>
-        </span>
-      }
-    />
+        }
+      />
+      {showDoctor ? <div className="min-w-0 px-3 pb-2.5">{doctor.result}</div> : null}
+    </div>
   );
 }
