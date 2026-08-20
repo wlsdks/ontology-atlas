@@ -1,5 +1,7 @@
 import { defineConfig } from '@playwright/test';
 
+import { POST_MERGE_SPECS } from './tests/e2e/post-merge-specs';
+
 const baseURL = process.env.PLAYWRIGHT_BASE_URL || 'http://127.0.0.1:3100';
 const webServerOrigin = new URL(baseURL).origin;
 const webServerPort = new URL(baseURL).port || '3100';
@@ -24,6 +26,22 @@ export default defineConfig({
   // 실패한다. 로컬(retries 0)에서는 flakiness 를 그대로 노출한다.
   retries: process.env.CI ? 2 : 0,
   reporter: [['list']],
+  /**
+   * PR 게이트 / 머지 후 스위프 — 두 프로젝트, 한 목록.
+   *
+   * 경계의 정본은 `tests/e2e/post-merge-specs.ts` 하나다(왜 그 경계인지도
+   * 거기 적혀 있다). 여기서는 그 목록의 여집합(smoke)과 그 목록(post-merge)
+   * 으로 나눌 뿐이다 — 목록에 없는 새 스펙은 **자동으로 smoke**, 즉 PR 에서
+   * 돈다. 실수의 방향이 «PR 이 느려짐»이지 «게이트 소실»이 아니다.
+   *
+   * 필터 없는 `pnpm exec playwright test` 는 두 프로젝트를 다 돌린다 —
+   * 로컬과 main 푸시의 행동은 분리 전과 같다. PR 에서만 `--project=smoke`.
+   * 배선이 살아 있는지는 `tests/contract/e2e-suite-split.contract.test.ts`.
+   */
+  projects: [
+    { name: 'smoke', testIgnore: POST_MERGE_SPECS.map((file) => `**/${file}`) },
+    { name: 'post-merge', testMatch: POST_MERGE_SPECS.map((file) => `**/${file}`) },
+  ],
   outputDir: 'output/playwright/test-results',
   use: {
     baseURL,

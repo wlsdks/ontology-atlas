@@ -139,7 +139,18 @@ jobs:
           path: output/playwright/test-results
           retention-days: 1
 
-  # ── 전체 스위트 — 3 샤드 ─────────────────────────────────────────────
+  # ── 스위트 — 3 샤드. PR 은 게이트(smoke)만, main 푸시는 전부 ─────────
+  #
+  # 2026-08-21 실측: 전 스펙을 PR 마다 돌리던 때 샤드 하나가 13분이었고, 그
+  # 시간의 큰 몫이 **계측 스위프**(프레임/모션 표본 채집 · 전 라우트×전 폭
+  # 행렬 계측)였다. 그 부류는 지키는 처방이 드물게 바뀌고, 결함은 머지 직후
+  # main 런에서 똑같이 잡힌다. 그래서 둘로 갈랐다 — 경계의 정본과 근거는
+  # `tests/e2e/post-merge-specs.ts` 하나, 배선의 감시는
+  # `tests/contract/e2e-suite-split.contract.test.ts`.
+  #
+  # 미룬 것이 실제로 도는 트리거: ① main 푸시(= 머지 직후, 아래 push 분기가
+  # 프로젝트 필터 없이 전부 돌린다) ② e2e 인프라를 건드린 PR(classify 의
+  # `e2e` 출력 — 스펙을 고친 PR 이 자기 빨강을 머지 전에 본다).
   #
   # 전체 스위트가 위 웹 스모크를 한 번 더 포함하는 것은 의도적이다(약 20초).
   # 잡을 나눠야 웹이 깨졌을 때 로그를 뒤지지 않고 잡 이름만 보고 안다.
@@ -174,9 +185,15 @@ jobs:
       - uses: ./.github/actions/setup-playwright
         id: setup
 
+      # PR 은 PR 게이트(smoke)만 — 단 e2e 인프라 자체를 고친 PR 과 main
+      # 푸시는 프로젝트 필터 없이 전부(smoke + post-merge) 돈다.
       - name: Run Playwright suite (shard ${{ matrix.shard }}/3)
         if: steps.setup.outputs.browser == 'true'
-        run: pnpm exec playwright test --shard=${{ matrix.shard }}/3
+        run: >-
+          pnpm exec playwright test
+          ${{ (github.event_name == 'pull_request' && steps.setup.outputs.e2e != 'true')
+              && '--project=smoke' || '' }}
+          --shard=${{ matrix.shard }}/3
         env:
           CI: true
 

@@ -36,6 +36,14 @@ const RUNTIME = [
   /^(package\.json|pnpm-lock\.yaml|next\.config\.ts|tsconfig\.json|vitest\.config\.ts|vitest\.setup\.ts|eslint\.config\.mjs|postcss\.config\.mjs|playwright\.config\.ts)$/,
 ];
 
+/**
+ * E2E infrastructure itself. A PR that edits a spec or the Playwright config
+ * must see that spec red **in the PR**, not after merge — so when these paths
+ * change, CI runs the full suite (both projects) instead of the PR gate only.
+ * The smoke/post-merge boundary lives in `tests/e2e/post-merge-specs.ts`.
+ */
+const E2E_INFRA = [/^tests\/e2e\//, /^playwright\.config\.ts$/];
+
 /** The subset a rendered page actually depends on. */
 const BROWSER = [
   /^src\//,
@@ -60,9 +68,11 @@ export function classify(files) {
   const hit = (patterns) => meaningful.filter((file) => patterns.some((pattern) => pattern.test(file)));
   const runtimeHits = hit(RUNTIME);
   const browserHits = hit(BROWSER);
+  const e2eHits = hit(E2E_INFRA);
   return {
     runtime: runtimeHits.length > 0,
     browser: browserHits.length > 0,
+    e2e: e2eHits.length > 0,
     reason:
       runtimeHits.length > 0
         ? `runtime paths changed (${runtimeHits.length}): ${runtimeHits.slice(0, 3).join(", ")}`
@@ -95,17 +105,23 @@ export function classify(files) {
  */
 export function decide({ base, head, files }) {
   if (!base) {
-    return { runtime: true, browser: true, reason: "no comparable base ref — running everything" };
+    return {
+      runtime: true,
+      browser: true,
+      e2e: true,
+      reason: "no comparable base ref — running everything",
+    };
   }
   if (head && base === head) {
     return {
       runtime: true,
       browser: true,
+      e2e: true,
       reason: "base resolves to HEAD itself (push to the default branch) — running everything",
     };
   }
   if (files.length === 0) {
-    return { runtime: false, browser: false, reason: "no files changed" };
+    return { runtime: false, browser: false, e2e: false, reason: "no files changed" };
   }
   return classify(files);
 }
@@ -125,13 +141,13 @@ function resolveBase(explicit) {
   return null;
 }
 
-function emit({ runtime, browser, reason }) {
-  console.log(`[classify] runtime=${runtime} browser=${browser} — ${reason}`);
+function emit({ runtime, browser, e2e, reason }) {
+  console.log(`[classify] runtime=${runtime} browser=${browser} e2e=${e2e} — ${reason}`);
   const out = process.env.GITHUB_OUTPUT;
   if (out) {
     execFileSync("bash", [
       "-c",
-      `printf '%s\\n' "runtime=${runtime}" "browser=${browser}" >> "${out}"`,
+      `printf '%s\\n' "runtime=${runtime}" "browser=${browser}" "e2e=${e2e}" >> "${out}"`,
     ]);
   }
   process.exit(0);

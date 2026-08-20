@@ -15,6 +15,9 @@ outputs:
   browser:
     description: 브라우저가 의존하는 경로가 바뀌었나
     value: ${{ steps.classify.outputs.browser }}
+  e2e:
+    description: e2e 인프라(스펙·Playwright 설정) 자체가 바뀌었나
+    value: ${{ steps.classify.outputs.e2e }}
 
 runs:
   using: composite
