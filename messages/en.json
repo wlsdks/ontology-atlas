@@ -209,8 +209,9 @@
         "checking": "Looking…",
         "readyHeading": "Found on this computer ({count})",
         "othersHeading": "Show the other {count}",
+        "othersHeadingEmpty": "{count} tools you can use",
         "noneReady": "Nothing found yet",
-        "noneReadyCaption": "Install Claude Agent or Codex and it shows up here.",
+        "noneReadyCaption": "Install Claude Agent or Codex and they show up here. The install guides are in the list below.",
         "webLabel": "A browser is not allowed to start programs on this computer",
         "webCaption": "Get the Mac app to use the tools installed here from inside Atlas. On this screen you can still point a tool you started yourself at this folder, from the “MCP connection” section.",
         "state": {
@@ -3461,7 +3462,7 @@
       "noVaultTitle": "Open a document folder first",
       "noVaultBody": "The agent only reads documents in the folder you have open. Pick a folder and this picks up right here.",
       "noKeyTitle": "This needs an AI service key, once",
-      "noKeyBody": "The key stays only in this computer's keychain. Add it and you pick up right here, and you are not asked again.",
+      "noKeyBody": "The key stays in this computer's keychain only. Register it once and this spot connects right away, and you are not asked again. If you already use Claude Code or Codex, no key is needed: connect that tool from the 「Agents」 section in settings.",
       "noVaultAction": "Open a document folder",
       "noKeyAction": "Add a key in settings"
     },
@@ -3851,7 +3852,7 @@
         "gate": "Does it ask before touching anything outside the folder"
       },
       "next": {
-        "cli": "Install that tool on this computer first. Tapping its name in the list below opens the install guide.",
+        "cli": "Open that tool’s install guide from this list, install it, then press Re-check above.",
         "launcher": "Launching that tool needs Node. Install Node, then press Re-check.",
         "login": "Sign in to that tool once in your terminal. The app reuses that sign-in.",
         "gate": "For this tool the app cannot stand in front of work outside your folder. That is ours to fix; until then another tool is the safer choice."

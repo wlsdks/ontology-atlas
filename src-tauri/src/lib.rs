@@ -1314,6 +1314,67 @@ fn acp_detect_runtimes(probe_login: Option<bool>) -> Vec<acp::AcpRuntimeStatus> 
     acp::detect_runtimes(home.as_deref(), path.as_deref(), &probe)
 }
 
+/// 앱 **밖**으로 나가는 주소를 기본 브라우저로 연다.
+///
+/// ## 왜 필요한가 (2026-08-20 워크스루에서 적발)
+///
+/// 앱 안의 `<a target="_blank">` 는 **아무 일도 안 한다.** Tauri WebView 는
+/// 새 창을 열지 않고, 이 앱에는 그것을 처리하는 플러그인도 없었다. 그래서
+/// 설정의 「↗ 설치 방법」을 눌러도 조용히 아무 일도 안 일어났다 — 도구가 하나도
+/// 없는 사람에게 우리가 준 **유일한 다음 걸음**이 그것이었는데.
+///
+/// 실측: 도구 없는 새 사용자로 앱을 띄워 그 링크를 눌렀을 때 앞 프로세스 수가
+/// 그대로였고 앱이 계속 앞에 있었다. 밖으로 나가는 링크는 **10개 파일**에 있다.
+///
+/// ## 왜 플러그인을 안 들이나
+///
+/// 새 의존성은 이 저장소에서 이유를 대야 하는 일이고, 여는 일은 OS 명령 한 줄이다.
+/// 이미 프로세스를 띄우는 코드가 이 파일에 있으므로 공급망 표면이 0으로 는다.
+///
+/// ## 무엇을 막나
+///
+/// **`http`/`https` 만 연다.** 화면이 주는 주소를 그대로 OS 에 넘기는 자리라,
+/// 다른 스킴을 허용하면 링크 하나로 임의의 것을 열 수 있게 된다.
+#[tauri::command]
+fn open_external_url(url: String) -> Result<(), String> {
+    if !is_openable_url(&url) {
+        return Err(format!("refused-scheme:{url}"));
+    }
+    #[cfg(target_os = "macos")]
+    let mut command = {
+        let mut c = Command::new("/usr/bin/open");
+        c.arg(&url);
+        c
+    };
+    #[cfg(target_os = "windows")]
+    let mut command = {
+        let mut c = Command::new("cmd");
+        c.args(["/C", "start", "", &url]);
+        c
+    };
+    #[cfg(all(not(target_os = "macos"), not(target_os = "windows")))]
+    let mut command = {
+        let mut c = Command::new("xdg-open");
+        c.arg(&url);
+        c
+    };
+    command
+        .stdin(Stdio::null())
+        .stdout(Stdio::null())
+        .stderr(Stdio::null())
+        .spawn()
+        .map(|_| ())
+        .map_err(|err| format!("open-failed:{err}"))
+}
+
+/// 열어도 되는 주소인가. **허용 목록이지 금지 목록이 아니다** — 금지 목록은
+/// 새 스킴이 생길 때마다 조용히 뚫린다.
+pub(crate) fn is_openable_url(url: &str) -> bool {
+    let lowered = url.trim().to_ascii_lowercase();
+    (lowered.starts_with("https://") || lowered.starts_with("http://"))
+        && !url.chars().any(|c| c.is_whitespace())
+}
+
 /// 연동 점검 — **단계별로 재고, 고칠 수 있는 것에는 그렇다고 표시한다.**
 ///
 /// 증상 하나에 문장 하나로 답하던 종전 방식은 원인이 다른 단계에 있을 때
@@ -5057,6 +5118,7 @@ pub fn run() {
             acp_diagnose,
             acp_repair,
             acp_reset_connection,
+            open_external_url,
             acp_start,
             acp_send,
             acp_stop,
@@ -5118,6 +5180,28 @@ pub fn run() {
 
 #[cfg(test)]
 mod tests {
+    /// **허용 목록이지 금지 목록이 아니다** — 금지 목록은 새 스킴이 생길 때마다
+    /// 조용히 뚫린다. 이 자리는 화면이 준 주소를 그대로 OS 에 넘기므로,
+    /// 뚫리면 링크 하나로 임의의 것을 열 수 있게 된다.
+    #[test]
+    fn only_http_urls_are_handed_to_the_os() {
+        for good in ["https://example.com", "http://example.com/a?b=c", "HTTPS://EXAMPLE.COM"] {
+            assert!(crate::is_openable_url(good), "{good} 를 막았다");
+        }
+        for bad in [
+            "file:///etc/passwd",
+            "javascript:alert(1)",
+            "data:text/html,x",
+            "ftp://example.com",
+            "/ko/topology/",
+            "",
+            "https://exa mple.com",
+            "https://example.com\nfile:///etc/passwd",
+        ] {
+            assert!(!crate::is_openable_url(bad), "{bad:?} 를 열려고 한다");
+        }
+    }
+
     use super::*;
 
     struct ControlledWriter {
