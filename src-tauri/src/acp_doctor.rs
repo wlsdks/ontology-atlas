@@ -113,16 +113,29 @@ pub(crate) fn diagnose(ctx: &DoctorContext<'_>) -> Vec<AcpCheck> {
         });
     }
 
+    /*
+     * ⚠️ **관문을 세우는 방식이 실행기마다 다르다** (2026-08-20 정정).
+     *
+     * 아래 넷은 **설정 격리**로 관문을 세우는 실행기의 이야기다. codex 는 그
+     * 방식이 안 먹혀서(격리한 `CODEX_HOME` 을 읽기는 하는데 승인 정책만
+     * 어댑터가 덮어쓴다) 대신 **세션 모드 `read-only`** 로 관문을 세운다 —
+     * 실측으로 확인된 다른 길이지 관문이 없는 것이 아니다
+     * (`src/features/acp-session/model/runtime-gate.ts`).
+     *
+     * 그래서 격리를 안 쓰는 실행기에는 이 넷을 **아예 안 낸다.** 처음 판은
+     * `unknown` 으로 냈는데, 화면에 「앱 몫 설정이 준비됐나 — 확인 못 했어요」가
+     * 떠서 **멀쩡한 도구가 반쯤 고장 난 것처럼** 읽혔다. 해당 없는 것을 「모른다」
+     * 라고 말하는 것도 거짓말이다.
+     */
     let isolated = isolated_dir(ctx);
-    match &isolated {
-        Some(dir) if dir.join("settings.json").is_file() => {
-            out.push(AcpCheck::ok("config-dir", Some(dir.display().to_string())));
-        }
-        Some(dir) => out.push(AcpCheck::problem("config-dir", true, Some(dir.display().to_string()))),
-        // 격리를 재 본 적 없는 실행기다. 관문이 없다는 뜻이고, 그건 결함이
-        // 아니라 우리가 아직 확인 못 한 것이다.
-        None => out.push(AcpCheck::unknown("config-dir", None)),
-    }
+    let Some(dir) = isolated.clone() else {
+        return finish(out);
+    };
+    out.push(if dir.join("settings.json").is_file() {
+        AcpCheck::ok("config-dir", Some(dir.display().to_string()))
+    } else {
+        AcpCheck::problem("config-dir", true, Some(dir.display().to_string()))
+    });
 
     if let (Some(dir), Some(home)) = (&isolated, ctx.home) {
         let spec_user_dir = home.join(".claude");
@@ -151,8 +164,12 @@ pub(crate) fn diagnose(ctx: &DoctorContext<'_>) -> Vec<AcpCheck> {
         None => AcpCheck::unknown("login", None),
     });
 
-    // **놀고 있지 않다는 증거.** 등재되지 않은 id 를 돌려주면 화면이 그 줄에
-    // 대해 아무 문구도 못 찾아 빈 칸을 그린다. 목록과 실제 산출을 여기서 묶는다.
+    finish(out)
+}
+
+/// **놀고 있지 않다는 증거.** 등재되지 않은 id 를 돌려주면 화면이 그 줄에 대해
+/// 아무 문구도 못 찾아 빈 칸을 그린다. 목록과 실제 산출을 여기서 묶는다.
+fn finish(out: Vec<AcpCheck>) -> Vec<AcpCheck> {
     debug_assert!(
         out.iter().all(|check| CHECK_IDS.contains(&check.id)),
         "등재되지 않은 검사 id 를 돌려줬다"
@@ -251,6 +268,26 @@ mod tests {
         // 물어보지 못한 둘은 unknown 이어야 한다 — 「문제 없음」이 아니다.
         assert_eq!(by_id("login"), Some("unknown"));
         assert_eq!(by_id("shadow-keychain"), Some("unknown"));
+    }
+
+    /// **해당 없는 것을 「모른다」라고 말하지 않는다** (2026-08-20 정정).
+    ///
+    /// codex 는 설정 격리가 아니라 세션 모드로 관문을 세운다. 그런데 첫 판은
+    /// 격리 검사 넷을 `unknown` 으로 냈고, 화면에 「앱 몫 설정이 준비됐나 —
+    /// 확인 못 했어요」가 떠서 멀쩡한 도구가 반쯤 고장 난 것처럼 읽혔다.
+    #[test]
+    fn a_runtime_without_isolation_gets_no_isolation_checks() {
+        let base = std::env::temp_dir().join(format!("atlas-doctor-g-{}", std::process::id()));
+        let mut c = ctx(&base, None);
+        c.runtime_id = "codex-acp";
+        let ids: Vec<&str> = diagnose(&c).iter().map(|check| check.id).collect();
+
+        for absent in ["config-dir", "credentials-link", "shadow-keychain", "login"] {
+            assert!(!ids.contains(&absent), "격리를 안 쓰는 실행기에 {absent} 를 냈다");
+        }
+        // 그렇다고 빈 목록이면 안 된다 — 공통 검사는 그대로 나와야 한다.
+        assert!(ids.contains(&"cli"), "공통 검사까지 사라졌다");
+        assert!(ids.contains(&"launcher"));
     }
 
     #[test]

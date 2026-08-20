@@ -32,7 +32,7 @@ import { cn } from '@/shared/lib/cn';
 import { useAcpSession, type AcpEvent } from '@/features/acp-session/model/use-acp-session';
 import { readAcpTrouble } from '@/features/acp-session/model/acp-trouble';
 import { isAgentDoctorAvailable } from '@/features/acp-doctor/model/acp-doctor';
-import { AgentDoctor } from '@/features/acp-doctor/ui/AgentDoctor';
+import { useAgentDoctor } from '@/features/acp-doctor/ui/AgentDoctor';
 import {
   matchSlashCommands,
   slashQuery,
@@ -204,6 +204,8 @@ export function AcpChatPanel({
    * `acp session closed` 뿐이고 단서가 전부 stderr 에 있었다(2026-08-19 실측).
    */
   const trouble = error ? readAcpTrouble(error, diagnostics) : null;
+  const doctor = useAgentDoctor(runtimeId);
+  const showDoctor = Boolean(runtimeId) && isAgentDoctorAvailable();
   const [draft, setDraft] = useState('');
   /*
    * `/` 로 고르는 중인가. 첫 글자가 `/` 이고 아직 공백이 없을 때만이다 —
@@ -748,7 +750,12 @@ export function AcpChatPanel({
             원리적으로 못 하는 일이라(프로세스·키체인) 아예 그리지 않는다 —
             「곧 됩니다」가 아니라 처음부터 없는 것이다.
           */}
-          {runtimeId && isAgentDoctorAvailable() ? <AgentDoctor runtimeId={runtimeId} /> : null}
+          {showDoctor ? (
+            <div className="mt-2 min-w-0">
+              {doctor.scanButton}
+              {doctor.result}
+            </div>
+          ) : null}
           <details className="mt-2">
             <summary
               data-testid="acp-chat-error-details"

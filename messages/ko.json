@@ -3830,6 +3830,9 @@
       "fix": "고치기",
       "fixing": "고치는 중",
       "failed": "점검을 끝내지 못했어요. 잠시 뒤 다시 눌러 주세요.",
+      "allClear": "지금은 문제 없어요",
+      "restFine": "나머지는 괜찮아요",
+      "whatWeChecked": "무엇을 봤나",
       "state": {
         "ok": "괜찮아요",
         "problem": "막혀 있어요",
