@@ -119,15 +119,46 @@ export function useAgentDoctor(runtimeId: string) {
         ) : blocked.length === 0 ? (
           /*
            * **다 괜찮으면 한 줄이다.** 같은 문장 일곱 개는 정보가 아니라 사본이고,
-           * 이 화면은 그 실패를 이미 한 번 겪었다. 개수를 대므로 무엇을 쟀는지는
-           * 그대로 화면에 있다.
+           * 이 화면은 그 실패를 이미 한 번 겪었다.
+           *
+           * ⚠️ **개수를 세어 주는 것도 반려됐다** (2026-08-20, 소유자:
+           * *"3단계 괜찮아요 이런 말 뭔지 알아듣지를 못하겠어"*). 「단계」는
+           * 우리 내부 말이고, 게다가 도구마다 검사 수가 달라서(Claude 7 ·
+           * Codex 3) **사용자가 알 수 없는 이유로 숫자가 달라 보인다** — 그
+           * 숫자는 정보가 아니라 우리 구현이 새어 나온 것이었다.
+           *
+           * 그래서 상태는 사람 말로 한 줄만 하고, 무엇을 봤는지는 **접어 둔다.**
+           * 궁금한 사람은 펴 보면 되고, 아닌 사람에게는 한 줄이다.
            */
-          <p
-            data-testid="agent-doctor-all-clear"
-            className="break-keep text-label leading-prose text-[color:var(--color-text-tertiary)]"
-          >
-            {t('allClear', { count: checks?.length ?? 0 })}
-          </p>
+          <details data-testid="agent-doctor-all-clear">
+            <summary
+              className={controlClass({
+                shape: 'link',
+                size: 'sm',
+                tone: 'muted',
+                hoverInk: 'strong',
+                className: 'list-none',
+              })}
+            >
+              {t('allClear')}
+              <span className="ml-1.5 text-[color:var(--color-text-quaternary)]">
+                {t('whatWeChecked')}
+              </span>
+            </summary>
+            <ul
+              data-testid="agent-doctor-checked-list"
+              className="mt-1.5 flex min-w-0 flex-col gap-1"
+            >
+              {(checks ?? []).map((check) => (
+                <li
+                  key={check.id}
+                  className="break-keep pl-3.5 text-label leading-prose text-[color:var(--color-text-quaternary)]"
+                >
+                  {t(`check.${check.id}`)}
+                </li>
+              ))}
+            </ul>
+          </details>
         ) : (
           <ul data-testid="agent-doctor-checks" className="flex min-w-0 flex-col gap-1.5">
             {blocked.map((check) => (
@@ -174,7 +205,7 @@ export function useAgentDoctor(runtimeId: string) {
                 data-testid="agent-doctor-rest"
                 className="break-keep pl-3.5 text-label leading-prose text-[color:var(--color-text-quaternary)]"
               >
-                {t('restFine', { count: (checks?.length ?? 0) - blocked.length })}
+                {t('restFine')}
               </li>
             ) : null}
           </ul>

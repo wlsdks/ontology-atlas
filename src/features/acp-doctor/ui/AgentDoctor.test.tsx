@@ -70,10 +70,17 @@ describe('연동 점검 화면', () => {
 
     fireEvent.click(screen.getByTestId('agent-doctor-scan'));
 
-    await waitFor(() => expect(screen.getByTestId('agent-doctor-all-clear')).toBeVisible());
+    await waitFor(() => expect(screen.getByTestId('agent-doctor-all-clear')).toBeInTheDocument());
     // 이것이 첫 판의 결함이었다: 목록이 그려지면 안 된다.
     expect(screen.queryByTestId('agent-doctor-checks')).toBeNull();
-    expect(screen.getByTestId('agent-doctor-all-clear').textContent).toContain('7');
+    // ⚠️ **개수를 세어 주지 않는다** (2026-08-20 반려): 「단계」는 우리 내부
+    // 말이고, 도구마다 검사 수가 달라서 사용자가 알 수 없는 이유로 숫자가 달라
+    // 보인다. 상태는 사람 말 한 줄이고, 무엇을 봤는지는 접어 둔다.
+    const summary = screen.getByTestId('agent-doctor-all-clear').textContent ?? '';
+    expect(summary).not.toMatch(/\d/);
+    expect(summary).toContain('문제 없어요');
+    // 접혀 있어도 목록은 DOM 에 있다 — 궁금하면 펴 보면 된다.
+    expect(screen.getAllByRole('listitem')).toHaveLength(7);
   });
 
   it('막힌 것만 펴고, 통과한 것은 개수로 남긴다', async () => {
@@ -96,7 +103,7 @@ describe('연동 점검 화면', () => {
     expect(screen.getByTestId('agent-doctor-check-login')).toBeVisible();
     expect(screen.queryByTestId('agent-doctor-check-cli')).toBeNull();
     // 안 그린 다섯이 사라진 것처럼 보이면 안 된다.
-    expect(screen.getByTestId('agent-doctor-rest').textContent).toContain('5');
+    expect(screen.getByTestId('agent-doctor-rest').textContent).not.toMatch(/\d/);
   });
 
   it('고칠 수 있는 것에만 버튼이 붙는다', async () => {
@@ -124,7 +131,7 @@ describe('연동 점검 화면', () => {
 
     fireEvent.click(screen.getByTestId('agent-doctor-fix-shadow-keychain'));
 
-    await waitFor(() => expect(screen.getByTestId('agent-doctor-all-clear')).toBeVisible());
+    await waitFor(() => expect(screen.getByTestId('agent-doctor-all-clear')).toBeInTheDocument());
     expect(repairAgentCheck).toHaveBeenCalledWith('claude-acp', 'shadow-keychain');
     expect(screen.queryByTestId('agent-doctor-check-shadow-keychain')).toBeNull();
   });

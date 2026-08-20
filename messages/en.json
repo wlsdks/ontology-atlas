@@ -3830,8 +3830,9 @@
       "fix": "Fix",
       "fixing": "Fixing",
       "failed": "The check could not finish. Try again in a moment.",
-      "allClear": "All {count} steps look fine",
-      "restFine": "The other {count} steps look fine",
+      "allClear": "No problems right now",
+      "restFine": "The rest look fine",
+      "whatWeChecked": "What we looked at",
       "state": {
         "ok": "fine",
         "problem": "blocked",
