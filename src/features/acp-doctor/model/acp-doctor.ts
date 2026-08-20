@@ -148,6 +148,30 @@ export interface AcpInstallProgress {
   total: number | null;
   /** 그 도구가 실제로 뱉은 줄. 우리가 지어낸 문장이 아니다. */
   note: string | null;
+  /** 이 상태가 생긴 시각(epoch ms). 낡은 것을 안 그리기 위한 값. */
+  at: number;
+}
+
+/**
+ * **들고 있던 상태를 언제까지 보여 주나.**
+ *
+ * 마지막 상태를 보관하는 것과 그것을 계속 보여 주는 것은 다른 질문이다.
+ * 이 창이 없으면 어제 끝난 설치가 오늘 설정을 열 때 「설치했어요」로 뜬다 —
+ * 방금 한 일이 아닌 것을 방금 한 것처럼 말하는 셈이다.
+ *
+ * 5분인 이유: 시트를 닫고 딴 일 하다 돌아오는 시간은 덮되(그게 이 값이 존재하는
+ * 이유다), 다음 세션까지 넘어가지는 않는 길이다.
+ */
+export const INSTALL_PROGRESS_FRESH_MS = 5 * 60 * 1000;
+
+/** 지금 그려도 되는 상태인가. `now` 를 받는 이유는 시험이 시계를 고정하려고. */
+export function isInstallProgressFresh(
+  progress: Pick<AcpInstallProgress, 'at'>,
+  now: number = Date.now(),
+): boolean {
+  // 시계가 뒤로 간 경우(시간대 변경·수동 조정)를 낡음으로 오해하지 않는다.
+  const elapsed = now - progress.at;
+  return elapsed < 0 || elapsed <= INSTALL_PROGRESS_FRESH_MS;
 }
 
 /**
@@ -183,4 +207,31 @@ export function formatBytes(bytes: number): string {
   const mb = bytes / (1024 * 1024);
   if (mb < 1) return `${(bytes / 1024).toFixed(0)}KB`;
   return `${mb.toFixed(1)}MB`;
+}
+
+/**
+ * 이 도구의 **마지막 진행 상태**를 Rust 에 물어본다. 없으면 `null`.
+ *
+ * ## 왜 필요한가 (2026-08-20)
+ *
+ * 설정 시트는 닫히면 **통째로 언마운트된다** — 그래서 이 훅의 상태가 사라지고
+ * 이벤트 구독도 끊긴다. Node 내려받기는 250ms 주기라 다시 열면 곧 되살아나지만,
+ * **완료(`done`)는 단발 이벤트**라 닫아 둔 사이에 지나가면 **영영 못 본다.**
+ *
+ * 이벤트만으로는 「끝났다」를 못 지킨다. 그래서 마운트할 때 한 번 물어본다.
+ */
+export async function lastInstallProgress(
+  runtimeId: string,
+): Promise<AcpInstallProgress | null> {
+  const invoke = getInvoke();
+  if (!invoke) return null;
+  try {
+    const last =
+      (await invoke<AcpInstallProgress | null>('acp_install_progress', { runtimeId })) ?? null;
+    // 낡은 것은 아예 안 돌려준다 — 화면마다 판정을 다시 하게 두면 어긋난다.
+    return last && isInstallProgressFresh(last) ? last : null;
+  } catch {
+    // 못 물어봤다고 화면을 세우지 않는다 — 고치기 전과 같은 상태가 될 뿐이다.
+    return null;
+  }
 }

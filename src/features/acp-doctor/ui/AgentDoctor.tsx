@@ -17,6 +17,7 @@ import {
   formatBytes,
   installAgentCli,
   installManagedNode,
+  lastInstallProgress,
   listenInstallProgress,
   nodeInstallPlan,
   repairAgentCheck,
@@ -105,6 +106,20 @@ export function useAgentDoctor(
     }).then((unlisten) => {
       if (alive) stop = unlisten;
       else unlisten();
+    });
+    /*
+     * **닫아 둔 사이에 지나간 것을 받아 온다.**
+     *
+     * 이 시트는 닫히면 통째로 언마운트되므로(`AppSettingsMenu.tsx` 의 조건부
+     * 포털) 여기 상태가 전부 사라진다. Node 내려받기는 250ms 주기라 곧 다음
+     * 이벤트가 와서 스스로 되살아나지만, **완료는 단발**이라 그 사이에 지나가면
+     * 영영 못 본다 — 소유자가 이 라운드에 요구한 바로 그 표시가 그것이다.
+     *
+     * 이미 온 것이 있으면 덮지 않는다: 구독이 먼저 답할 수도 있고, 그때는 그쪽이
+     * 더 새 값이다.
+     */
+    void lastInstallProgress(runtimeId).then((last) => {
+      if (alive && last) setProgress((current) => current ?? last);
     });
     return () => {
       alive = false;
