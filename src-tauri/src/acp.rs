@@ -2643,6 +2643,15 @@ mod tests {
     }
 
     #[test]
+    fn bounded_output_returns_none_when_the_program_does_not_exist() {
+        // 이 갈래가 중요하다: Windows 에서 `/bin/echo` 를 쓰던 테스트가 정확히
+        // 여기로 떨어졌는데, 상한 테스트는 None 을 기대하므로 **초록으로**
+        // 통과했다. 못 띄운 것과 상한에 걸린 것이 같은 값이라 그렇다.
+        let cmd = std::process::Command::new("oatlas-no-such-program-anywhere");
+        assert!(bounded_output(cmd, std::time::Duration::from_secs(5)).is_none());
+    }
+
+    #[test]
     fn bounded_output_kills_a_command_that_never_finishes() {
         // 상한이 안 먹으면 이 테스트가 30초를 잡아먹어 그 자체로 실패한다 —
         // 「죽였다」를 벽시계로도 증명한다.
