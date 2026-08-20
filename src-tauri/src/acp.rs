@@ -1133,6 +1133,47 @@ fn bounded_output(mut command: std::process::Command, limit: std::time::Duration
     Some(out)
 }
 
+/// 앱 몫 설정 폴더가 **로그아웃 상태인가.** 못 물어보면 `None`(모른다).
+///
+/// 화면의 「준비됨」 배지는 오래 **사용자 폴더**를 재고 있었다. 그래서 앱이 실제로
+/// 쓰는 폴더가 로그아웃인데도 초록이었고, 사용자는 대화를 열어 보고서야 그것을
+/// 알았다(2026-08-20 실측). 재야 할 자리는 앱이 쓰는 그 폴더다.
+pub(crate) fn probe_isolated_logged_out(
+    cli: &Path,
+    config_dir: &Path,
+    path_env: &str,
+) -> Option<bool> {
+    let mut command = std::process::Command::new(cli);
+    command
+        .args(["auth", "status"])
+        .env("PATH", path_env)
+        .env("CLAUDE_CONFIG_DIR", config_dir);
+    let stdout = bounded_output(command, LOGIN_PROBE_TIMEOUT)?;
+    // 파싱조차 못 하면 「로그인됨」도 「로그아웃」도 아니다.
+    serde_json::from_str::<serde_json::Value>(stdout.trim())
+        .ok()?
+        .get("loggedIn")?
+        .as_bool()
+        .map(|logged_in| !logged_in)
+}
+
+/// 그 폴더 앞으로 난 키체인 항목이 있나. macOS 밖에서는 `None`(볼 수 없다).
+pub(crate) fn shadow_credentials_present(config_dir: &Path) -> Option<bool> {
+    #[cfg(target_os = "macos")]
+    {
+        let service = claude_credentials_service(config_dir);
+        let mut find = std::process::Command::new("security");
+        find.args(["find-generic-password", "-s", &service]);
+        let out = bounded_output(find, KEYCHAIN_PROBE_TIMEOUT)?;
+        Some(out.contains(&service))
+    }
+    #[cfg(not(target_os = "macos"))]
+    {
+        let _ = config_dir;
+        None
+    }
+}
+
 /// `claude auth status` 의 JSON 이 **로그아웃 상태**라고 말하는가.
 ///
 /// 모르겠으면 `false` 다 — 판정하지 못한 것을 「죽었다」로 읽으면 멀쩡한
