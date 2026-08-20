@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-08-20",
+  "generatedAt": "2026-08-21",
   "docs": [
     {
       "slug": "AGENT-GRAPH-WORKFLOW",
@@ -924,8 +924,8 @@
       },
       "headings": [],
       "excerpt": "사용자가 이미 설치해 둔 코딩 에이전트(Claude Code, Codex 등)를 앱이 ACP(Agent Client Protocol) v1 로 직접 띄우고, 그 세션의 설정을 격리하고, 볼트 밖 파일 접근을 사람에게 되묻는 능력. 새 API 키도 새 벤더 연동도 필요 없다: 그 도구가 이미 쓰는 구독 인증을 그대로 쓴다. 이 능력이 실제로 하는 일 일곱: 1. 탐지. 이 기기의 실행기 상태를 다섯으로 갈라 판정한다: ready, cli-missing, node-missing, uvx-missing, binary-missing. 상태를 「설치됨/아님」 둘로 뭉개지 않는",
-      "wordCount": 678,
-      "updatedAt": "2026-08-17",
+      "wordCount": 720,
+      "updatedAt": "2026-08-21",
       "linksOut": []
     },
     {

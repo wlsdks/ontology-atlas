@@ -16,6 +16,7 @@ vi.mock('@/widgets/app-settings-menu', () => ({
   AcpRuntimeSettings: ({ embedded }: { embedded?: boolean }) => (
     <div data-testid="acp-runtimes" data-embedded={embedded ? 'true' : 'false'} />
   ),
+  AgentSetupSection: () => <div data-testid="agent-setup-section" />,
 }));
 
 function renderPage() {
@@ -45,5 +46,55 @@ describe('에이전트 목적지', () => {
     const header = heading.closest('header');
     expect(header, '헤더가 없다').not.toBeNull();
     expect(header!.contains(lede), '설명이 헤더 안에 있다').toBe(false);
+  });
+});
+
+/**
+ * **랜드마크와 하단 예약** — 목적지가 되면서 처음으로 검사 대상이 된 것들.
+ *
+ * 첫 판은 `<div>` 로 그렸고, 접근성 래칫이
+ * *"`/ko/agents/`: `<main>` 안 요소 0"* 으로 잡았다. 그 검사의 말이 정확했다:
+ * 「위반 0」이 통과가 아니라 **미측정**이었고, 「본문으로 건너뛰기」도 이
+ * 화면에서만 갈 곳이 없었다. e2e 가 잡아 주기 전에 여기서 먼저 막는다.
+ */
+describe('목적지의 기본 골격', () => {
+  it('`<main>` 랜드마크를 소유한다 — 이 저장소는 셸이 아니라 뷰가 소유한다', () => {
+    renderPage();
+    const main = screen.getByRole('main');
+    expect(main).toHaveAttribute('id', 'main');
+    // 「본문으로 건너뛰기」가 초점을 줄 수 있어야 한다.
+    expect(main).toHaveAttribute('tabindex', '-1');
+  });
+
+  it('본문이 비어 있지 않다 — 빈 `<main>` 은 검사에 «위반 0» 으로 보인다', () => {
+    renderPage();
+    expect(screen.getByRole('main').querySelectorAll('*').length).toBeGreaterThan(3);
+  });
+
+  it('하단 탭바 자리를 예약한다 — 안 하면 마지막 줄이 탭바 뒤로 숨는다', () => {
+    renderPage();
+    expect(screen.getByRole('main').className).toContain(
+      'max-lg:pb-[calc(var(--topology-mobile-bottom-tab-reserve)+24px)]',
+    );
+  });
+});
+
+/**
+ * **강등 문장이 가리키는 곳이 실재하는가.**
+ *
+ * 실행기 칸은 웹에서 「프로그램을 못 띄운다」고 말하면서 *"이 화면에서도 「MCP
+ * 연결」 칸에서 …"* 라고 가리킨다. 그 칸이 같은 화면에 없으면 그 문장은
+ * 가리키는 곳이 없는 안내가 된다 — 이 저장소가 강등 카드에 대해 금지한 모양이다.
+ */
+describe('강등 문장이 가리키는 곳', () => {
+  it('MCP 연결 칸을 같은 화면에 데려온다', () => {
+    renderPage();
+    expect(screen.getByTestId('agent-setup-section')).toBeInTheDocument();
+  });
+
+  it('두 칸이 각자 제목을 갖는다 — 훑을 수 있어야 한다', () => {
+    renderPage();
+    const headings = screen.getAllByRole('heading', { level: 2 });
+    expect(headings.length).toBeGreaterThanOrEqual(2);
   });
 });

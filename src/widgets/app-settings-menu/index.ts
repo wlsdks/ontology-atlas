@@ -9,3 +9,6 @@ export type { AppSettingsMenuProps, AppSettingsScreenControls } from './ui/AppSe
  * (부모가 준 폭을 채운다) 목적지의 `PAGE_FRAME` 아래에서도 그대로 선다.
  */
 export { AcpRuntimeSettings } from './ui/AcpRuntimeSettings';
+
+/** 「MCP 연결」 칸 — 목적지와 설정 시트가 같이 쓴다(위 주석과 같은 이유). */
+export { AgentSetupSection } from './ui/AgentSetupSection';

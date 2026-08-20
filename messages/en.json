@@ -1064,7 +1064,8 @@
         "docs": "Docs",
         "all": "All",
         "emptyCurrent": "This screen has no dedicated shortcuts: the global ones above still work"
-      }
+      },
+      "scrollRegionLabel": "Shortcut list"
     },
     "hero": {
       "docsVault": "Ontology workspace",
@@ -3912,6 +3913,8 @@
   },
   "agents": {
     "title": "Agents",
-    "lede": "Atlas launches the AI coding tools on this computer so you can talk to them right here. If one is missing, you can fetch it from here too."
+    "lede": "Atlas launches the AI coding tools on this computer so you can talk to them right here. If one is missing, you can fetch it from here too.",
+    "runtimesHeading": "Tools on this computer",
+    "mcpHeading": "MCP connection"
   }
 }

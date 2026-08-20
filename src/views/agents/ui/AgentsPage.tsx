@@ -2,7 +2,7 @@
 
 import { useTranslations } from 'next-intl';
 
-import { AcpRuntimeSettings } from '@/widgets/app-settings-menu';
+import { AcpRuntimeSettings, AgentSetupSection } from '@/widgets/app-settings-menu';
 import { PAGE_FRAME, PAGE_HEADER_ROW, PAGE_TITLE_ROW } from '@/shared/ui/page-frame';
 
 /**
@@ -36,7 +36,25 @@ export function AgentsPage() {
   const t = useTranslations('agents');
 
   return (
-    <div className={PAGE_FRAME} data-testid="agents-page">
+    /*
+     * ⚠️ **`<main>` 이다 — `<div>` 가 아니다** (2026-08-20, 접근성 래칫이 잡았다).
+     *
+     * 이 저장소는 셸이 아니라 **각 목적지 뷰가 자기 `<main>` 을 소유한다.**
+     * 첫 판에서 그것을 몰라 `<div>` 로 그렸더니 래칫이
+     * *"`/ko/agents/`: `<main>` 안 요소 0"* 으로 터졌다 — 그 검사의 말대로
+     * 「위반 0」이 통과가 아니라 **미측정**이었다. 「본문으로 건너뛰기」도 이
+     * 화면에서만 갈 곳이 없었다.
+     *
+     * `max-lg:pb-…` 는 하단 탭바 예약이다. 스크롤되는 표면이 이것을 빠뜨리면
+     * 마지막 줄이 탭바 뒤로 숨는다 — 목적지가 되면서 `scroll-end-gap` 게이트가
+     * 이 라우트를 처음으로 보게 됐고, 그게 승격의 이득 중 하나다.
+     */
+    <main
+      id="main"
+      tabIndex={-1}
+      data-testid="agents-page"
+      className={`${PAGE_FRAME} max-lg:pb-[calc(var(--topology-mobile-bottom-tab-reserve)+24px)]`}
+    >
       {/*
         ⚠️ **설명은 헤더 «밖»이다.** `PAGE_HEADER_ROW` 는
         `justify-between` 한 줄이라, 설명을 그 안에 두면 제목의 반대쪽 끝으로
@@ -56,9 +74,26 @@ export function AgentsPage() {
         {t('lede')}
       </p>
 
-      <section className="mt-6 min-w-0">
+      <section className="mt-6 min-w-0" aria-label={t('runtimesHeading')}>
+        <h2 className="sr-only">{t('runtimesHeading')}</h2>
         <AcpRuntimeSettings embedded />
       </section>
-    </div>
+
+      {/*
+        「MCP 연결」이 같은 화면에 있는 이유는 위 칸이 웹에서 하는 말 때문이다:
+        *"이 화면에서도 「MCP 연결」 칸에서 …"*. 그 칸이 여기 없으면 그 문장이
+        **가리키는 곳이 없다.** 그리고 이건 웹에서 실제로 되는 일이다 — MCP 는
+        화면이 아니라 폴더에 붙는다(2026-08-01 원장).
+      */}
+      <section className="mt-8 min-w-0" aria-labelledby="agents-mcp-heading">
+        <h2
+          id="agents-mcp-heading"
+          className="mb-3 text-body-lg font-[var(--font-weight-signature)] text-[color:var(--color-text-secondary)]"
+        >
+          {t('mcpHeading')}
+        </h2>
+        <AgentSetupSection />
+      </section>
+    </main>
   );
 }
