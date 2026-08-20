@@ -463,9 +463,29 @@ export function ShortcutSheet({ open, onClose }: Props) {
                 것: 래퍼도 flex 컬럼이고, 스크롤 자식이 `min-h-0 flex-1` 로
                 남는 공간만 먹는다. 페이드는 래퍼(relative) 하단에 앵커. */}
             <div className="relative flex min-h-0 flex-1 flex-col">
+              {/*
+                ⚠️ **스크롤되는 영역은 키보드로도 스크롤할 수 있어야 한다**
+                (2026-08-20, 목적지가 여덟이 되며 드러났다).
+
+                이 영역은 내용이 짧을 때는 스크롤이 안 생겨서 아무 문제가 없었다.
+                그런데 「에이전트」 목적지가 늘며 이동 절이 한 줄 길어지자 실제로
+                스크롤이 생겼고, 그 순간 **마우스 휠이나 트랙패드 없이는 아래를
+                볼 수 없는 상태**가 됐다(axe `scrollable-region-focusable`).
+
+                즉 결함은 새로 생긴 게 아니라 **조건이 채워지면 나타나도록
+                잠복해 있었다.** 내용 길이에 기대는 접근성은 접근성이 아니다.
+
+                `tabIndex={0}` 이 그 영역을 탭 순서에 넣어 화살표·PageUp/Down 으로
+                스크롤하게 한다. 초점을 받는 것이 무엇인지 말해야 하므로
+                `role="group"` + 이름을 함께 준다 — 이름 없는 초점 정거장은
+                낭독기에게 「빈 그룹」으로 들린다.
+              */}
               <div
-                className="min-h-0 flex-1 overflow-y-auto"
+                className="min-h-0 flex-1 overflow-y-auto focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[color:var(--color-indigo-focus-ring)]"
                 data-testid="shortcut-sheet-scroll"
+                tabIndex={0}
+                role="group"
+                aria-label={t("scrollRegionLabel")}
               >
               {/* sm+ 는 2-column grid 로 펼쳐 세로 길이 줄임. 작은 뷰포트는
                   단일 컬럼 + 내부 스크롤로 넘침 방지. */}

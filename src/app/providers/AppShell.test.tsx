@@ -102,8 +102,18 @@ describe("셸 칼럼 — 뷰포트 소유 계약", () => {
         <div>page</div>
       </AppShell>,
     );
-    const slot = container.querySelector(".overflow-y-auto");
+    /*
+     * ⚠️ **이름으로 지목한다** (2026-08-20 정정). 종전에는
+     * `.overflow-y-auto` 첫 번째를 집었는데, 레일이 여덟 목적지가 되며 스크롤을
+     * 갖게 되자 그 선택자가 **레일의 `<nav>`** 를 집어 이 검사가 엉뚱한 원소를
+     * 재기 시작했다. 클래스는 여러 원소가 공유할 수 있으므로 「그 클래스를 가진
+     * 첫 번째」는 계약이 될 수 없다.
+     */
+    const slot = container.querySelector('[data-testid="app-shell-body-slot"]');
     expect(slot, "본문 스크롤 슬롯이 있어야 한다").not.toBeNull();
+    expect(slot?.className, "본문 슬롯이 스크롤 컨테이너가 아니다").toContain(
+      "overflow-y-auto",
+    );
     expect(
       slot?.className,
       "슬롯의 직계 자식은 압축되지 않아야 한다 — 페이지마다 shrink-0 을 기억하게 하면 다음 화면에서 또 빠진다",

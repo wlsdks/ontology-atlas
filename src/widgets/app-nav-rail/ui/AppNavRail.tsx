@@ -18,6 +18,7 @@ import { useTranslations } from "next-intl";
 import {
   Activity,
   BarChart3,
+  Bot,
   Download,
   BookOpen,
   FolderKanban,
@@ -274,6 +275,13 @@ export function AppNavRail({
     // 따로 세운 이유는 답하는 질문이 다르기 때문이다: 문서함은 「이 문서가 지도
     // 어디에 붙나」, 여기는 「이게 언제 뜨고 뜨면 뭐가 열리나」.
     { id: "skills", href: DESTINATION_HREF.skills, label: t("skills"), Icon: Wand2 },
+    // 에이전트 — 2026-08-20 목적지 신설(원장 90). 설정 시트 안의 설치·연결
+    // 화면을 여기로 뺐다.
+    //
+    // 아이콘이 `Bot` 인 이유(작업대 자리 실측): 후보였던 `SquareTerminal` 은
+    // 20px 레일에서 「마크가 든 사각」이라 `FolderKanban`(프로젝트)과 실루엣이
+    // 겹친다. `Bot` 은 이 목록에서 유일한 «머리와 귀가 있는» 윤곽이다.
+    { id: "agents", href: DESTINATION_HREF.agents, label: t("agents"), Icon: Bot },
     { id: "git", href: DESTINATION_HREF.git, label: t("git"), Icon: HistoryIcon, badgeCount: gitDirtyCount },
   ];
 
@@ -316,7 +324,23 @@ export function AppNavRail({
         </span>
       </Link>
 
-      <nav aria-label={t("ariaLabel")} className="flex w-full flex-1 flex-col gap-0.5">
+      {/*
+        ⚠️ **여덟이 되면서 레일이 넘칠 수 있게 됐다** (2026-08-20, 작업대 자리 실측).
+        최소 창(720)에서 여덟 번째 타일은 유틸리티 층 위로 8px 남기고 들어가지만,
+        폭 2400 이상에서는 UI 배율이 1.1 로 올라가 여덟이 **761px** 를 요구한다 —
+        그 창을 41px 넘긴다. 처리가 없으면 여덟 번째와 그 아래 유틸리티가
+        **잘려서 닿을 수 없게 된다**(반응형 자리가 200% 확대에서 이미 톱니 유실을
+        쟀다).
+
+        그래서 셋을 같이 건다: 목적지 칸만 스크롤하고(`min-h-0` 이 없으면
+        flex 자식은 안 줄어든다), 스크롤이 부모로 새지 않게 막고
+        (`overscroll-contain`), 유틸리티 층은 **절대 안 줄어든다**(`shrink-0`).
+        상한 자체는 계약이 지킨다(`destination-shortcuts.contract.test.ts`).
+      */}
+      <nav
+        aria-label={t("ariaLabel")}
+        className="flex w-full min-h-0 flex-1 flex-col gap-0.5 overflow-y-auto overscroll-contain"
+      >
         <ul ref={attachDestinationList} className="relative flex w-full flex-col gap-0.5">
           {/*
             활성 표시는 **하나의 원소가 옮겨 다닌다** (2026-07-28 모션 감사).
@@ -446,7 +470,7 @@ export function AppNavRail({
           같아야 한다 — 셸(AppShell)이 소유하며 페이지가 등록하지 않는다. */}
       <div
         data-testid="app-nav-rail-utility-tier"
-        className="mt-auto flex w-full flex-col items-center gap-1 pt-2"
+        className="mt-auto flex w-full shrink-0 flex-col items-center gap-1 pt-2"
       >
         {/* 에이전트 타일 — 클릭 가능. 연결됨: 활동 다이제스트(인사이트)로,
             미연결/stale: 연결 시트를 연다(P4-② 분기, AppShell 이 라우팅).
