@@ -14,7 +14,7 @@
       "cli": "claude",
       "launch": {
         "kind": "npx",
-        "package": "@agentclientprotocol/claude-agent-acp@0.69.0",
+        "package": "@agentclientprotocol/claude-agent-acp@0.70.0",
         "args": []
       }
     },
@@ -30,7 +30,7 @@
       "cli": "codex",
       "launch": {
         "kind": "npx",
-        "package": "@agentclientprotocol/codex-acp@1.4.0",
+        "package": "@agentclientprotocol/codex-acp@1.6.2",
         "args": []
       }
     },
@@ -255,7 +255,7 @@
       "cli": null,
       "launch": {
         "kind": "npx",
-        "package": "dimcode@0.3.13",
+        "package": "dimcode@0.3.17",
         "args": [
           "acp"
         ]
@@ -273,7 +273,7 @@
       "cli": null,
       "launch": {
         "kind": "npx",
-        "package": "dirac-cli@0.4.36",
+        "package": "dirac-cli@0.4.37",
         "args": [
           "--acp"
         ]
@@ -291,7 +291,7 @@
       "cli": null,
       "launch": {
         "kind": "npx",
-        "package": "droid@0.197.0",
+        "package": "droid@0.200.0",
         "args": [
           "exec",
           "--output-format",
@@ -329,7 +329,7 @@
       "cli": "gemini",
       "launch": {
         "kind": "npx",
-        "package": "@google/gemini-cli@0.55.1",
+        "package": "@google/gemini-cli@0.56.0",
         "args": [
           "--acp"
         ]
@@ -365,7 +365,7 @@
       "cli": null,
       "launch": {
         "kind": "npx",
-        "package": "glm-acp-agent@1.5.0",
+        "package": "glm-acp-agent@1.6.0",
         "args": []
       }
     },
@@ -399,7 +399,7 @@
       "cli": null,
       "launch": {
         "kind": "npx",
-        "package": "@xai-official/grok@1.0.5",
+        "package": "@xai-official/grok@1.0.7",
         "args": [
           "agent",
           "stdio"
@@ -613,7 +613,7 @@
       "cli": "qwen",
       "launch": {
         "kind": "npx",
-        "package": "@qwen-code/qwen-code@0.21.12",
+        "package": "@qwen-code/qwen-code@0.21.14",
         "args": [
           "--acp",
           "--experimental-skills"

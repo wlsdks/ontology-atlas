@@ -1557,10 +1557,30 @@ export function ProjectForm({
   );
 
   return (
-    // 640px 중앙 폼 컬럼 (docs/prototypes/project-forms-final.html · RATIO-SYSTEM.md
-    // --page-col-form). 우측 260px 는 라이브 미리보기 — 이제 필수 칸이 첫 화면에
-    // 있으므로 "왼쪽 입력" 과 "오른쪽 반영" 이 실제로 같은 화면에서 마주 본다.
-    <div className="grid grid-cols-1 gap-8 lg:grid-cols-[640px_260px]">
+    /*
+     * 왼쪽 입력 · 오른쪽 라이브 미리보기. **왼쪽은 남는 만큼 갖는다.**
+     *
+     * ⚠️ **종전 `lg:grid-cols-[640px_260px]` 는 자기 틀보다 넓었다** (2026-08-20
+     * 릴리스 검수 실측). 이 폼이 사는 틀은 `PAGE_FRAME_FORM`(max-w 960 + px-10)
+     * 이라 내용 상자가 **880px** 인데, 트랙 합이 640 + 32(gap-8) + 260 = **932px**
+     * 였다. 즉 어느 화면 폭에서든 오른쪽 열이 제 컨테이너 밖으로 **52px** 나가
+     * 있었고(1512 에서도 그렇다), 뷰포트가 ~1092px 밑으로 내려가면 그때부터
+     * 화면에서 잘려 나갔다.
+     *
+     * 인용돼 있던 근거는 둘 다 그 값을 뒷받침하지 않았다: `RATIO-SYSTEM.md` 와
+     * `--page-col-form` 토큰은 **존재하지 않고**, 살아 있는
+     * `docs/prototypes/project-forms-final.html` 의 640 은
+     * `.formcol { width: 640px; margin: 0 auto }` — **사이드바가 없는 단일 중앙
+     * 컬럼**이다(그 파일에 `260` 은 0회 나온다). 단일 컬럼용 폭을 없던 열과
+     * 나란히 세운 것이라, 지켜야 할 비율이 아니라 유래를 잃은 리터럴이었다.
+     * 형제 토큰 `--page-col-utility` 도 같은 이유로 2026-07-29 카운슬이 지웠다.
+     *
+     * 그래서 고정 폭은 **미리보기 쪽만** 남긴다(그건 자기 내용이 정하는 폭이다).
+     * 입력 열은 남는 폭을 갖고, 틀이 바뀌어도 따라간다. `minmax(0,…)` 인 이유는
+     * `1fr` 만 쓰면 안의 긴 내용이 트랙을 다시 밀어내기 때문이다.
+     * 게이트: `tests/contract/page-grid-fits-frame.contract.test.ts`.
+     */
+    <div className="grid grid-cols-1 gap-8 lg:grid-cols-[minmax(0,1fr)_260px]">
       {mode === "create" ? createForm : editForm}
 
       {/* 모바일에서는 폼 입력을 먼저 보이게 하고, 데스크톱에서만 우측 보조 패널로 유지한다. */}
