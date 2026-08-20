@@ -21,6 +21,8 @@ const agentInstallPlan = vi.fn<(runtimeId: string) => Promise<string | null>>();
 const installAgentCli = vi.fn<(runtimeId: string) => Promise<AcpCheck[]>>();
 const nodeInstallPlan = vi.fn<() => Promise<string | null>>();
 const installManagedNode = vi.fn<(runtimeId: string) => Promise<AcpCheck[]>>();
+/** Rust 가 낼 진행 이벤트를 시험이 직접 쏜다. */
+let emitProgress: ((progress: unknown) => void) | null = null;
 
 vi.mock('../model/acp-doctor', async () => {
   const actual = await vi.importActual<typeof import('../model/acp-doctor')>('../model/acp-doctor');
@@ -33,6 +35,15 @@ vi.mock('../model/acp-doctor', async () => {
     installAgentCli: (runtimeId: string) => installAgentCli(runtimeId),
     nodeInstallPlan: () => nodeInstallPlan(),
     installManagedNode: (runtimeId: string) => installManagedNode(runtimeId),
+    listenInstallProgress: async (
+      _runtimeId: string,
+      onProgress: (progress: unknown) => void,
+    ) => {
+      emitProgress = onProgress;
+      return () => {
+        emitProgress = null;
+      };
+    },
   };
 });
 
@@ -72,6 +83,7 @@ beforeEach(() => {
   nodeInstallPlan.mockReset();
   nodeInstallPlan.mockResolvedValue(null);
   installManagedNode.mockReset();
+  emitProgress = null;
 });
 
 describe('연동 점검 화면', () => {
@@ -352,5 +364,178 @@ describe('연동 점검 화면', () => {
 
     await waitFor(() => expect(screen.getByTestId('agent-doctor-failure')).toBeVisible());
     expect(screen.queryByTestId('agent-doctor-all-clear')).toBeNull();
+  });
+});
+
+
+/**
+ * **설치가 도는 동안 화면이 말을 하는가** (2026-08-20 소유자: *"버튼들만 누르면
+ * 알아서 설치되는 과정도 보여주고 완료된것도 체크해주고 하나?"*).
+ *
+ * 종전에는 커맨드가 끝나야 돌아왔으므로, 52MB 를 받는 동안 화면이 할 수 있는
+ * 일은 칩을 비활성으로 두는 것뿐이었다 — 워크스루가 **「조용한 기다림」**이라고
+ * 이름 붙여 둔 패턴이다. 그래서 여기서 재는 것은 「설치가 되나」가 아니라
+ * **「도는 동안 무엇이 보이나」** 다.
+ */
+describe('설치 진행', () => {
+  it('아무것도 시작 안 했으면 진행 줄이 없다 — 0% 막대를 미리 세우지 않는다', async () => {
+    diagnoseAgent.mockResolvedValue([ok('cli'), ok('launcher')]);
+    renderHarness();
+    fireEvent.click(screen.getByTestId('agent-doctor-scan'));
+    await waitFor(() => expect(screen.getByTestId('agent-doctor')).toBeInTheDocument());
+    expect(screen.queryByTestId('agent-doctor-progress')).toBeNull();
+  });
+
+  it('분모를 아는 동안에는 퍼센트와 막대를 그린다', async () => {
+    diagnoseAgent.mockResolvedValue([problem('launcher', false)]);
+    renderHarness();
+    fireEvent.click(screen.getByTestId('agent-doctor-scan'));
+    await waitFor(() => expect(emitProgress).not.toBeNull());
+
+    emitProgress?.({
+      runtimeId: 'claude-acp',
+      job: 'node',
+      stage: 'downloading',
+      received: 26_043_779,
+      total: 52_087_559,
+      note: null,
+    });
+
+    const row = await screen.findByTestId('agent-doctor-progress');
+    expect(row).toHaveAttribute('data-stage', 'downloading');
+    expect(row.textContent).toContain('50%');
+    // 받은 양을 사람이 읽는 크기로도 말한다 — 퍼센트만 있으면 얼마나 큰 일인지 모른다.
+    expect(row.textContent).toContain('MB');
+    const bar = screen.getByTestId('agent-doctor-progress-bar');
+    expect((bar.firstElementChild as HTMLElement).style.width).toBe('50%');
+  });
+
+  it('분모를 모르면 막대 대신 그 도구가 뱉은 줄을 보여 준다 — 가짜 퍼센트 금지', async () => {
+    diagnoseAgent.mockResolvedValue([problem('cli', false)]);
+    renderHarness();
+    fireEvent.click(screen.getByTestId('agent-doctor-scan'));
+    await waitFor(() => expect(emitProgress).not.toBeNull());
+
+    emitProgress?.({
+      runtimeId: 'claude-acp',
+      job: 'cli',
+      stage: 'installing',
+      received: null,
+      total: null,
+      note: 'added 121 packages in 8s',
+    });
+
+    await screen.findByTestId('agent-doctor-progress');
+    expect(screen.queryByTestId('agent-doctor-progress-bar')).toBeNull();
+    expect(screen.getByTestId('agent-doctor-progress-note').textContent).toBe(
+      'added 121 packages in 8s',
+    );
+    // 퍼센트를 지어내지 않았다.
+    expect(screen.getByTestId('agent-doctor-progress').textContent).not.toContain('%');
+  });
+
+  it('끝나면 끝났다고 남긴다 — 목록이 조용히 초록이 되는 것만으로는 모른다', async () => {
+    diagnoseAgent.mockResolvedValue([ok('cli')]);
+    renderHarness();
+    fireEvent.click(screen.getByTestId('agent-doctor-scan'));
+    await waitFor(() => expect(emitProgress).not.toBeNull());
+
+    emitProgress?.({
+      runtimeId: 'claude-acp',
+      job: 'cli',
+      stage: 'done',
+      received: null,
+      total: null,
+      note: null,
+    });
+
+    const row = await screen.findByTestId('agent-doctor-progress');
+    expect(row).toHaveAttribute('data-stage', 'done');
+    expect(row.textContent).toContain(ko.acpChat.doctor.progress.cli.done);
+  });
+
+  it('다시 재기 시작하면 지난 설치 결과 줄은 지운다', async () => {
+    diagnoseAgent.mockResolvedValue([ok('cli')]);
+    renderHarness();
+    fireEvent.click(screen.getByTestId('agent-doctor-scan'));
+    await waitFor(() => expect(emitProgress).not.toBeNull());
+    emitProgress?.({
+      runtimeId: 'claude-acp',
+      job: 'cli',
+      stage: 'done',
+      received: null,
+      total: null,
+      note: null,
+    });
+    await screen.findByTestId('agent-doctor-progress');
+
+    fireEvent.click(screen.getByTestId('agent-doctor-scan'));
+    await waitFor(() => expect(screen.queryByTestId('agent-doctor-progress')).toBeNull());
+  });
+});
+
+/**
+ * **앱이 대신 해 줄 수 있으면 「직접 하세요」를 말하지 않는다.**
+ *
+ * 2026-08-20 스크린샷에서 「이 앱에 설치」 버튼 바로 아래에 *"이 목록에서 그
+ * 도구의 「설치 방법」을 눌러 설치한 뒤, 위의 「다시 확인」을 눌러 주세요"* 가
+ * 같이 서 있었다. 둘 중 무엇이 진짜인지 사용자가 알 수 없다.
+ */
+describe('모순된 안내', () => {
+  it('앱 설치를 제안할 때는 「직접 설치하고 다시 확인하라」를 안 띄운다', async () => {
+    diagnoseAgent.mockResolvedValue([problem('cli', false)]);
+    agentInstallPlan.mockResolvedValue('npm install --prefix /x --global pkg@1');
+    renderHarness();
+    fireEvent.click(screen.getByTestId('agent-doctor-scan'));
+
+    await screen.findByTestId('agent-doctor-install-plan');
+    expect(screen.queryByTestId('agent-doctor-next-cli')).toBeNull();
+  });
+
+  it('앱이 내줄 길이 없으면 그때는 사람이 할 일을 말한다', async () => {
+    diagnoseAgent.mockResolvedValue([problem('cli', false)]);
+    agentInstallPlan.mockResolvedValue(null);
+    renderHarness();
+    fireEvent.click(screen.getByTestId('agent-doctor-scan'));
+
+    await screen.findByTestId('agent-doctor-next-cli');
+    expect(screen.queryByTestId('agent-doctor-install-plan')).toBeNull();
+  });
+
+  it('Node 도 같다 — 받아 줄 수 있으면 「직접 설치하라」를 안 띄운다', async () => {
+    diagnoseAgent.mockResolvedValue([problem('launcher', false)]);
+    nodeInstallPlan.mockResolvedValue('https://nodejs.org/dist/x.tar.gz (abc123)');
+    renderHarness();
+    fireEvent.click(screen.getByTestId('agent-doctor-scan'));
+
+    await screen.findByTestId('agent-doctor-node-plan');
+    expect(screen.queryByTestId('agent-doctor-next-launcher')).toBeNull();
+  });
+});
+
+/**
+ * **명령 원문이 칸보다 넓으면 조건 ②가 안 지켜진다** (원장 2026-08-20 (88):
+ * 무엇을 실행하는지 먼저 보여 준다).
+ *
+ * 실측: 이 명령은 142자이고 설정 시트의 오른쪽 칸은 698px 다. 종전에는
+ * `whitespace-pre` 로 한 줄에 묶어 넘치는 1/3 을 가로 스크롤 뒤에 뒀는데,
+ * **가로 스크롤은 아무도 발견하지 못한다.**
+ */
+describe('명령 원문', () => {
+  it('한 줄로 고정하지 않는다 — 넘치는 부분을 스크롤 뒤에 숨기지 않는다', async () => {
+    diagnoseAgent.mockResolvedValue([problem('cli', false)]);
+    agentInstallPlan.mockResolvedValue(
+      'npm install --prefix /Users/x/Library/Application Support/dev.jinan.ontology-atlas/managed-node --global @anthropic-ai/claude-code@2.1.236',
+    );
+    renderHarness();
+    fireEvent.click(screen.getByTestId('agent-doctor-scan'));
+
+    const card = await screen.findByTestId('agent-doctor-install-plan');
+    const code = card.querySelector('code');
+    expect(code).not.toBeNull();
+    expect(code?.className).not.toContain('whitespace-pre ');
+    expect(code?.className).not.toContain('overflow-x-auto');
+    // 경로에 공백이 있으므로(`Application Support`) 단어 경계로만 접으면 여전히 넘친다.
+    expect(code?.className).toContain('break-all');
   });
 });

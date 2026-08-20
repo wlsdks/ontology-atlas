@@ -75,14 +75,11 @@ export function shouldSurfaceVersion(version: string, dismissedVersion: string |
 }
 
 /**
- * 진행률 문구. 총량을 모르면 **모른다고 말한다** — 가짜 퍼센트를 그리지 않는다.
- * 이 저장소의 로딩 표면이 이미 같은 규율을 따른다(모르는 진행을 아는 척하지 않기).
+ * 진행률 문구는 **`shared/lib` 로 내려갔다** — 에이전트 도구 설치도 같은 규율이
+ * 필요해졌고, 같은 층의 두 기능이 같은 판단을 하면 한 단 아래가 그 자리다.
+ * 여기서 다시 내보내는 것은 이 모듈을 부르던 곳을 그대로 두기 위해서다.
  */
-export function formatDownloadProgress(received: number, total: number | null): string | null {
-  if (total === null || total <= 0) return null;
-  const percent = Math.min(100, Math.max(0, Math.round((received / total) * 100)));
-  return `${percent}%`;
-}
+export { formatDownloadProgress } from '@/shared/lib/progress-format';
 
 /** 릴리스 노트는 한 문단이면 충분하다. 팝오버가 읽을거리가 되면 아무도 안 읽는다. */
 export function summarizeNotes(notes: string | null | undefined, maxChars = 220): string | null {

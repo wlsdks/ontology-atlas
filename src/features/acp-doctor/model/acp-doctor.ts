@@ -117,3 +117,70 @@ export async function installManagedNode(runtimeId: string): Promise<AcpCheck[]>
   if (!invoke) return [];
   return invoke<AcpCheck[]>('acp_install_node', { runtimeId });
 }
+
+
+/**
+ * 설치가 어디까지 왔는지 — Rust `AcpInstallProgress` 와 1:1.
+ *
+ * ## 왜 이벤트인가 (2026-08-20 소유자 지적)
+ *
+ * *"버튼들만 누르면 알아서 설치되는 과정도 보여주고 완료된것도 체크해주고
+ * 하나?"* — 아니었다. `acp_install_cli` / `acp_install_node` 는 **끝나야**
+ * 돌아오므로, 52MB 를 받고 npm 이 도는 동안 화면이 할 수 있는 일은 칩을
+ * 비활성으로 두는 것뿐이었다. 이 저장소의 워크스루가 **「조용한 기다림」**
+ * 이라고 이름 붙여 둔 패턴 그대로다.
+ */
+export interface AcpInstallProgress {
+  runtimeId: string;
+  /** `node` · `cli` — 어느 일인가. */
+  job: 'node' | 'cli';
+  /** 어느 단계인가. **문구는 여기 없다** — 화면이 i18n 으로 만든다. */
+  stage:
+    | 'downloading'
+    | 'verifying'
+    | 'extracting'
+    | 'installing'
+    | 'verifying-install'
+    | 'done'
+    | 'failed';
+  /** 아는 만큼만. 모르면 `null` 이고 화면은 퍼센트를 안 그린다. */
+  received: number | null;
+  total: number | null;
+  /** 그 도구가 실제로 뱉은 줄. 우리가 지어낸 문장이 아니다. */
+  note: string | null;
+}
+
+/**
+ * 설치 진행을 듣는다. 떼는 함수를 돌려준다.
+ *
+ * 웹에서는 붙지 않는다 — 애초에 설치 버튼이 없다.
+ */
+export async function listenInstallProgress(
+  runtimeId: string,
+  onProgress: (progress: AcpInstallProgress) => void,
+): Promise<() => void> {
+  if (!isAgentDoctorAvailable()) return () => undefined;
+  try {
+    const { listen } = await import('@tauri-apps/api/event');
+    const unlisten = await listen<AcpInstallProgress>('acp-install://progress', (event) => {
+      // 한 화면에 여러 도구 줄이 있다. 남의 진행을 내 줄에 그리지 않는다.
+      if (event.payload?.runtimeId === runtimeId) onProgress(event.payload);
+    });
+    return unlisten;
+  } catch {
+    // 못 들으면 진행률이 없을 뿐, 설치 자체는 그대로 돈다.
+    return () => undefined;
+  }
+}
+
+/**
+ * 바이트를 사람이 읽는 크기로. 소수 한 자리까지 — 52MB 를 받는 동안 숫자가
+ * 실제로 움직이는 것이 보여야 한다.
+ */
+export function formatBytes(bytes: number): string {
+  if (!Number.isFinite(bytes) || bytes < 0) return '';
+  if (bytes < 1024) return `${Math.round(bytes)}B`;
+  const mb = bytes / (1024 * 1024);
+  if (mb < 1) return `${(bytes / 1024).toFixed(0)}KB`;
+  return `${mb.toFixed(1)}MB`;
+}

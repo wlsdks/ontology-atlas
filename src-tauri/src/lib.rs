@@ -30,6 +30,17 @@ const WEBVIEW_VERIFY_VAULT_ENV: &str = "ONTOLOGY_ATLAS_VERIFY_VAULT";
 const WEBVIEW_VERIFY_AI_SETTINGS_ENV: &str = "ONTOLOGY_ATLAS_VERIFY_AI_SETTINGS";
 const WEBVIEW_VERIFY_AI_BASE_URL_ENV: &str = "ONTOLOGY_ATLAS_VERIFY_AI_BASE_URL";
 const WEBVIEW_VERIFY_WINDOW_SIZE_ENV: &str = "ONTOLOGY_ATLAS_VERIFY_WINDOW_SIZE";
+/// 설치된 앱에서 **「업데이트 확인」이 실제로 도는가**를 재는 스위치.
+///
+/// 이 저장소의 규율상 업데이터는 **설치한 앱에서 잰 것만 인정**한다
+/// (`.claude/rules/testing.md`) — 브라우저에는 갱신할 자기 자신이 없다.
+const WEBVIEW_VERIFY_APP_UPDATE_ENV: &str = "ONTOLOGY_ATLAS_VERIFY_APP_UPDATE";
+/// 설치된 앱에서 **설치 진행률이 실제로 화면에 도착하는가**를 재는 스위치.
+///
+/// 단위 시험은 `listenInstallProgress` 를 통째로 흉내 내므로, Rust 의
+/// `app.emit` 이 React 의 `listen` 까지 닿는지는 **앱 안에서만** 알 수 있다.
+/// 도구가 하나도 없는 환경(`env -i HOME=<빈 곳>`)으로 띄워야 뜻이 있다.
+const WEBVIEW_VERIFY_ACP_INSTALL_ENV: &str = "ONTOLOGY_ATLAS_VERIFY_ACP_INSTALL";
 const MAIN_WINDOW_LABEL: &str = "main";
 const WEBVIEW_VERIFY_ROUTE_ATTEMPTS: usize = 20;
 const WEBVIEW_VERIFY_ROUTE_INTERVAL_MS: u64 = 400;
@@ -407,6 +418,238 @@ fn build_webview_verify_vault_bootstrap_script(root_path: &str) -> String {
 fn build_webview_verify_ai_settings_script(base_url: &str) -> String {
     AI_SETTINGS_VERIFY_SCRIPT.replace("__ATLAS_AI_BASE_URL__", &js_string_literal(base_url))
 }
+
+/// 설정 시트 → Agents → 점검 → (막혀 있으면) 앱이 내주는 설치를 실제로 누른다.
+///
+/// **재는 것은 설치 성공이 아니라 「진행이 화면에 도착하는가」** 다. 그래서
+/// 결과에 단계 목록을 그대로 쌓는다 — 하나도 안 쌓이면 이벤트가 안 온 것이고,
+/// 그건 사용자에게 종전과 똑같은 「조용한 기다림」이다.
+const ACP_INSTALL_VERIFY_SCRIPT: &str = r#"(() => {
+  const result = {
+    attempted: true,
+    step: "start",
+    reason: "scheduled",
+    sheetOpen: false,
+    sectionOpen: false,
+    scanClicked: false,
+    doctorRendered: false,
+    installClicked: "",
+    progressStages: [],
+    progressBarWidths: [],
+    lastPercentText: "",
+    attempts: 0
+  };
+  window.__ontologyAtlasAcpInstallVerify = result;
+
+  const MAX_ATTEMPTS = 220;
+  const visible = (el) => {
+    if (!el) return false;
+    const style = getComputedStyle(el);
+    const rect = el.getBoundingClientRect();
+    return style.display !== "none" &&
+      style.visibility !== "hidden" &&
+      Number(style.opacity || "1") > 0.01 &&
+      rect.width > 0 &&
+      rect.height > 0;
+  };
+  const find = (testId) =>
+    Array.from(document.querySelectorAll('[data-testid="' + testId + '"]')).find(visible) || null;
+
+  // 화면에 실제로 그려진 진행 줄을 매 tick 마다 훑는다 — 이벤트가 도착해서
+  // **렌더까지 됐을 때만** 여기 쌓인다.
+  const sample = () => {
+    const row = document.querySelector('[data-testid="agent-doctor-progress"]');
+    if (!row) return;
+    const stage = row.getAttribute("data-stage") || "";
+    if (stage && result.progressStages[result.progressStages.length - 1] !== stage) {
+      result.progressStages.push(stage);
+    }
+    const bar = row.querySelector('[data-testid="agent-doctor-progress-bar"] > *');
+    if (bar) {
+      const width = bar.style.width || "";
+      if (width && result.progressBarWidths[result.progressBarWidths.length - 1] !== width) {
+        result.progressBarWidths.push(width);
+      }
+      result.lastPercentText = width;
+    }
+  };
+
+  const step = (attempt) => {
+    result.attempts = attempt;
+    sample();
+    const again = (delay) => window.setTimeout(() => step(attempt + 1), delay || 250);
+    if (attempt >= MAX_ATTEMPTS) {
+      result.reason = "gave up at " + result.step + ": " + result.reason;
+      return;
+    }
+
+    if (!find("app-settings-popover")) {
+      result.step = "open-settings-sheet";
+      const trigger = find("app-settings-trigger");
+      if (!trigger) { result.reason = "no visible settings trigger"; again(); return; }
+      trigger.click();
+      again(220);
+      return;
+    }
+    result.sheetOpen = true;
+
+    if (!find("app-settings-runtimes")) {
+      result.step = "open-agents-section";
+      const nav = find("app-settings-nav-runtimes");
+      if (!nav) { result.reason = "settings sheet has no Agents entry"; again(); return; }
+      nav.click();
+      again(300);
+      return;
+    }
+    result.sectionOpen = true;
+
+    if (!result.scanClicked) {
+      const scan = find("agent-doctor-scan");
+      if (!scan) { result.step = "find-scan"; result.reason = "no doctor scan control"; again(400); return; }
+      result.step = "scan";
+      result.scanClicked = true;
+      scan.click();
+      again(900);
+      return;
+    }
+
+    if (!document.querySelector('[data-testid="agent-doctor"]')) {
+      result.reason = "doctor has not reported yet";
+      again(500);
+      return;
+    }
+    result.doctorRendered = true;
+
+    if (!result.installClicked) {
+      // Node 가 먼저다 — 그게 없으면 CLI 설치도 못 돈다.
+      const node = find("agent-doctor-install-node");
+      const cli = find("agent-doctor-install");
+      const target = node || cli;
+      if (!target) {
+        result.step = "nothing-to-install";
+        result.reason = "this environment has nothing blocked that the app can install";
+        return;
+      }
+      result.step = "install";
+      result.installClicked = node ? "node" : "cli";
+      target.click();
+      again(500);
+      return;
+    }
+
+    result.step = "watching-progress";
+    result.reason = "sampling the progress row";
+    again(500);
+  };
+
+  step(0);
+})()"#;
+
+/// 설정 시트를 열고 → 「앱」 절로 가서 → 「업데이트 확인」을 실제로 누른다.
+///
+/// **왜 클릭까지 하나** — 단위 시험은 버튼이 `checkNow` 를 부른다는 것까지만
+/// 증명한다. 그 뒤(플러그인 동적 import · 네트워크 왕복 · `getVersion()`)는
+/// 설치된 앱 안에만 있고, 이 저장소에서 배선이 죽어 있던 부분이 바로 그 층이다.
+const APP_UPDATE_VERIFY_SCRIPT: &str = r#"(() => {
+  const result = {
+    attempted: true,
+    step: "start",
+    reason: "scheduled",
+    sheetOpen: false,
+    sectionOpen: false,
+    versionText: "",
+    checkClicked: false,
+    resultPhase: "",
+    resultText: "",
+    attempts: 0
+  };
+  window.__ontologyAtlasAppUpdateVerify = result;
+
+  const MAX_ATTEMPTS = 80;
+  const visible = (el) => {
+    if (!el) return false;
+    const style = getComputedStyle(el);
+    const rect = el.getBoundingClientRect();
+    return style.display !== "none" &&
+      style.visibility !== "hidden" &&
+      Number(style.opacity || "1") > 0.01 &&
+      rect.width > 0 &&
+      rect.height > 0;
+  };
+  const find = (testId) =>
+    Array.from(document.querySelectorAll('[data-testid="' + testId + '"]')).find(visible) || null;
+
+  const step = (attempt) => {
+    result.attempts = attempt;
+    const again = (delay) => window.setTimeout(() => step(attempt + 1), delay || 250);
+    if (attempt >= MAX_ATTEMPTS) {
+      result.reason = "gave up at " + result.step + ": " + result.reason;
+      return;
+    }
+
+    if (!find("app-settings-popover")) {
+      result.step = "open-settings-sheet";
+      const trigger = find("app-settings-trigger");
+      if (!trigger) {
+        result.reason = "no visible settings trigger on this route";
+        again();
+        return;
+      }
+      trigger.click();
+      result.reason = "waiting for the settings sheet";
+      again(220);
+      return;
+    }
+    result.sheetOpen = true;
+
+    const section = find("app-settings-update");
+    if (!section) {
+      result.step = "open-app-section";
+      const nav = find("app-settings-nav-update");
+      if (!nav) {
+        result.reason = "settings sheet has no app/update entry";
+        again();
+        return;
+      }
+      nav.click();
+      result.reason = "waiting for the app section";
+      again(220);
+      return;
+    }
+    result.sectionOpen = true;
+    // 지금 도는 판 — `getVersion()` 이 실제로 답했는지가 이 줄로 보인다.
+    result.versionText = find("app-settings-update-version")?.innerText || "";
+
+    if (!result.checkClicked) {
+      const button = find("app-settings-update-check");
+      if (!button) {
+        result.step = "find-check-button";
+        result.reason = "app section has no check control";
+        again();
+        return;
+      }
+      result.step = "check";
+      result.checkClicked = true;
+      button.click();
+      result.reason = "waiting for the check to settle";
+      again(500);
+      return;
+    }
+
+    const outcome = find("app-settings-update-result");
+    if (!outcome) {
+      result.reason = "check has not reported yet";
+      again(500);
+      return;
+    }
+    result.resultPhase = outcome.getAttribute("data-phase") || "";
+    result.resultText = outcome.innerText || "";
+    result.step = "done";
+    result.reason = "reported";
+  };
+
+  step(0);
+})()"#;
 
 const AI_SETTINGS_VERIFY_SCRIPT: &str = r#"(() => {
   const baseUrl = __ATLAS_AI_BASE_URL__;
@@ -1339,6 +1582,66 @@ fn acp_detect_runtimes(app: tauri::AppHandle, probe_login: Option<bool>) -> Vec<
     )
 }
 
+/// 설치가 어디까지 왔는지 화면에 알리는 한 줄.
+///
+/// ## 왜 이벤트인가 (2026-08-20 소유자 지적)
+///
+/// *"버튼들만 누르면 알아서 설치되는 과정도 보여주고 완료된것도 체크해주고
+/// 하나?"* — 아니었다. 종전에는 커맨드가 **끝나야** 돌아왔으므로, 52MB 를
+/// 받고 npm 이 도는 동안 화면이 할 수 있는 일은 칩을 비활성으로 두고 「설치
+/// 중…」 글자를 띄우는 것뿐이었다. 이 저장소의 워크스루가 **「조용한 기다림」**
+/// 이라고 이름 붙여 둔 패턴 그대로다.
+///
+/// ## 무엇을 안 하나
+///
+/// **모르는 진행률을 지어내지 않는다.** `received`/`total` 은 아는 자리
+/// (Node 내려받기)에만 실리고, npm 은 분모가 없으므로 대신 **자기가 실제로
+/// 뱉은 마지막 줄**을 `note` 로 올린다. 이 앱의 업데이트 토스트가 이미 같은
+/// 규율을 따른다 — 총량을 모르면 퍼센트를 그리지 않고 그 사실을 말한다.
+#[derive(Clone, serde::Serialize)]
+#[serde(rename_all = "camelCase")]
+struct AcpInstallProgress {
+    runtime_id: String,
+    /// 어느 일인가 — `"node"` · `"cli"`. 화면이 문구를 갖는다.
+    job: &'static str,
+    /// 어느 단계인가 — 화면이 문구를 갖는다(여기서 사람 말을 만들지 않는다).
+    stage: &'static str,
+    received: Option<u64>,
+    total: Option<u64>,
+    /// 그 도구가 실제로 뱉은 줄. 우리가 지어낸 문장이 아니다.
+    note: Option<String>,
+}
+
+/// 화면이 듣는 이름. `acp://exit` 와 같은 결로 짓는다.
+///
+/// ⚠️ **이 이름과 payload 키는 TS 쪽과 맺은 계약이다.** 화면은
+/// `payload.runtimeId` 로 남의 진행을 걸러 내므로, 키 이름이 하나만 어긋나도
+/// 이벤트는 도착하는데 **전부 버려진다** — 에러 없이 진행률만 영영 안 뜬다.
+/// 그래서 아래 테스트가 직렬화 결과의 키를 그대로 못박는다.
+const ACP_INSTALL_PROGRESS_EVENT: &str = "acp-install://progress";
+
+fn emit_install_progress(
+    app: &tauri::AppHandle,
+    runtime_id: &str,
+    job: &'static str,
+    stage: &'static str,
+    received: Option<u64>,
+    total: Option<u64>,
+    note: Option<String>,
+) {
+    let _ = app.emit(
+        ACP_INSTALL_PROGRESS_EVENT,
+        AcpInstallProgress {
+            runtime_id: runtime_id.to_string(),
+            job,
+            stage,
+            received,
+            total,
+            note,
+        },
+    );
+}
+
 /// **Node 를 앱이 받아 줄 수 있나 — 그렇다면 어디서 무엇을.**
 ///
 /// 화면은 이것을 받아 누르기 전에 **주소와 해시 앞머리**를 보여 준다. 없으면
@@ -1362,8 +1665,15 @@ fn acp_install_node(
         .path()
         .app_data_dir()
         .map_err(|err| format!("app-data-dir-unavailable:{err}"))?;
-    managed_node::ensure_managed_node(&app_data)?;
+    let reporter = |stage: &'static str, received: Option<u64>, total: Option<u64>| {
+        emit_install_progress(&app, &runtime_id, "node", stage, received, total, None);
+    };
+    managed_node::ensure_managed_node(&app_data, &reporter).inspect_err(|_| {
+        emit_install_progress(&app, &runtime_id, "node", "failed", None, None, None);
+    })?;
+    emit_install_progress(&app, &runtime_id, "node", "verifying-install", None, None, None);
     let after = doctor_context(&app, &runtime_id)?;
+    emit_install_progress(&app, &runtime_id, "node", "done", None, None, None);
     Ok(acp_doctor::diagnose(&after.borrow()))
 }
 
@@ -1428,6 +1738,8 @@ fn acp_install_cli(
         .map(|joined| joined.to_string_lossy().to_string())
         .unwrap_or_default();
 
+    emit_install_progress(&app, &runtime_id, "cli", "installing", None, None, None);
+
     let mut command = Command::new(&npm);
     command
         .arg("install")
@@ -1439,18 +1751,65 @@ fn acp_install_cli(
         .stdin(Stdio::null())
         .stdout(Stdio::piped())
         .stderr(Stdio::piped());
-    let output = command
-        .output()
-        .map_err(|err| format!("install-failed:{err}"))?;
-    if !output.status.success() {
+    /*
+     * ⚠️ **`.output()` 을 안 쓴다** (2026-08-20 소유자 지적).
+     *
+     * 그 함수는 프로세스가 끝나야 돌아온다. npm 이 도는 30~90초 동안 화면은
+     * 아무것도 모르는 채 「설치 중…」 네 글자를 띄우고 있었고, 그게 이 저장소가
+     * 「조용한 기다림」이라고 부르는 결함이다.
+     *
+     * 대신 **stderr 을 줄 단위로 흘린다.** npm 은 진행 상황을 거기 쓴다.
+     * 퍼센트를 지어내지 않고 **그 도구가 실제로 뱉은 줄**을 그대로 올린다 —
+     * 우리가 만든 문장이 아니므로 낡지도 않는다.
+     */
+    let mut child = command.spawn().map_err(|err| format!("install-failed:{err}"))?;
+    let stderr_pipe = child.stderr.take();
+    let tail = std::sync::Arc::new(std::sync::Mutex::new(String::new()));
+    let pump = stderr_pipe.map(|pipe| {
+        let app = app.clone();
+        let runtime_id = runtime_id.clone();
+        let tail = std::sync::Arc::clone(&tail);
+        std::thread::spawn(move || {
+            use std::io::BufRead;
+            for line in std::io::BufReader::new(pipe).lines().map_while(Result::ok) {
+                let trimmed = line.trim();
+                if trimmed.is_empty() {
+                    continue;
+                }
+                // 실패했을 때 보여 줄 마지막 줄은 여기서 계속 갱신된다 —
+                // 종전처럼 다 모아 두었다가 뒤에서 찾을 필요가 없다.
+                if let Ok(mut slot) = tail.lock() {
+                    slot.clear();
+                    slot.push_str(trimmed);
+                }
+                emit_install_progress(
+                    &app,
+                    &runtime_id,
+                    "cli",
+                    "installing",
+                    None,
+                    None,
+                    Some(trimmed.to_string()),
+                );
+            }
+        })
+    });
+    let status = child.wait().map_err(|err| format!("install-failed:{err}"))?;
+    if let Some(handle) = pump {
+        let _ = handle.join();
+    }
+    if !status.success() {
         // 실패 사유의 **마지막 줄**만 올린다 — npm 은 수백 줄을 뱉는데 그것을
         // 화면에 그대로 붓는 것은 안내가 아니다.
-        let stderr = String::from_utf8_lossy(&output.stderr);
-        let tail = stderr.lines().rev().find(|l| !l.trim().is_empty()).unwrap_or("");
-        return Err(format!("install-failed:{tail}"));
+        let last = tail.lock().map(|slot| slot.clone()).unwrap_or_default();
+        emit_install_progress(&app, &runtime_id, "cli", "failed", None, None, None);
+        return Err(format!("install-failed:{last}"));
     }
 
+    // 「깔았습니다」로 끝내지 않는다 — **다시 재는 중**이라고 말하고, 잰 값을 준다.
+    emit_install_progress(&app, &runtime_id, "cli", "verifying-install", None, None, None);
     let after = doctor_context(&app, &runtime_id)?;
+    emit_install_progress(&app, &runtime_id, "cli", "done", None, None, None);
     Ok(acp_doctor::diagnose(&after.borrow()))
 }
 
@@ -2676,6 +3035,10 @@ pub fn run() {
                     let verify_ai_base_url = std::env::var(WEBVIEW_VERIFY_AI_BASE_URL_ENV)
                         .ok()
                         .filter(|url| is_safe_verify_base_url(url));
+                    let verify_app_update =
+                        std::env::var_os(WEBVIEW_VERIFY_APP_UPDATE_ENV).is_some();
+                    let verify_acp_install =
+                        std::env::var_os(WEBVIEW_VERIFY_ACP_INSTALL_ENV).is_some();
                     tauri::async_runtime::spawn(async move {
                         if let Some(vault_path) = verify_vault {
                             let bootstrap_script =
@@ -2700,6 +3063,19 @@ pub fn run() {
                             }
                         } else {
                             std::thread::sleep(Duration::from_millis(2000));
+                        }
+                        if verify_acp_install {
+                            let _ = verify_window.eval(ACP_INSTALL_VERIFY_SCRIPT);
+                            // 52MB 를 받는 일이라 넉넉히 준다. 재는 것은 완료가
+                            // 아니라 «진행이 도착하는가» 이므로 중간에 끊겨도
+                            // 쌓인 단계 목록이 답을 준다.
+                            std::thread::sleep(Duration::from_millis(90000));
+                        }
+                        if verify_app_update {
+                            let _ = verify_window.eval(APP_UPDATE_VERIFY_SCRIPT);
+                            // 클릭 두 단계 + 실제 네트워크 왕복 하나가 이 안에서
+                            // 끝나야 마커 수집이 최종 상태를 본다.
+                            std::thread::sleep(Duration::from_millis(12000));
                         }
                         if verify_ai_settings {
                             match verify_ai_base_url.as_deref() {
@@ -2764,6 +3140,8 @@ pub fn run() {
                                 Number(insightsSelectedPanelStyle?.opacity || "1") > 0.01
                               );
                               const aiSettingsVerification = window.__ontologyAtlasAiSettingsVerify || null;
+                              const appUpdateVerification = window.__ontologyAtlasAppUpdateVerify || null;
+                              const acpInstallVerification = window.__ontologyAtlasAcpInstallVerify || null;
                               const aiSettingsVisible = (el) => {
                                 if (!el) return false;
                                 const style = getComputedStyle(el);
@@ -3968,6 +4346,10 @@ pub fn run() {
                                 height: innerHeight,
                                 markers: {
                                   aiSettingsVerification,
+                                  appUpdateVerification,
+                                  acpInstallVerification,
+                                  appUpdateVerification,
+                                  acpInstallVerification,
                                   aiSettingsSheetOpen: aiSettingsVisible(aiSettingsPopover),
                                   aiSettingsAiViewOpen: aiSettingsVisible(aiSettingsAiView),
                                   aiSettingsBaseUrlValue: aiSettingsUrlInput?.value || "",
@@ -6423,5 +6805,52 @@ mod atomic_write_tests {
         assert_eq!(std::fs::read_to_string(&target).unwrap(), "new");
         assert_ne!(std::fs::canonicalize(&target).unwrap(), sentinel);
         std::fs::remove_dir_all(&dir).ok();
+    }
+}
+
+#[cfg(test)]
+mod acp_install_progress_tests {
+    use super::*;
+
+    /**
+     * **키 이름이 TS 와 맺은 계약이다.**
+     *
+     * 화면(`src/features/acp-doctor/model/acp-doctor.ts` 의 `AcpInstallProgress`)
+     * 은 `payload.runtimeId` 로 남의 도구 진행을 걸러 낸다. 그러니 serde 가
+     * `runtime_id` 를 그대로 내보내면 이벤트는 **도착하는데 전부 버려진다** —
+     * 콘솔에 아무 에러도 안 나고 진행률만 영영 안 뜬다. 그 조용한 실패를
+     * `rename_all = "camelCase"` 하나가 막고 있으므로, 그 한 줄을 여기서 잠근다.
+     */
+    #[test]
+    fn progress_payload_uses_the_keys_the_screen_reads() {
+        let json = serde_json::to_value(AcpInstallProgress {
+            runtime_id: "claude-acp".to_string(),
+            job: "node",
+            stage: "downloading",
+            received: Some(26_043_779),
+            total: Some(52_087_559),
+            note: None,
+        })
+        .expect("progress payload should serialize");
+
+        let object = json.as_object().expect("payload should be a JSON object");
+        let mut keys: Vec<&str> = object.keys().map(String::as_str).collect();
+        keys.sort_unstable();
+        assert_eq!(
+            keys,
+            vec!["job", "note", "received", "runtimeId", "stage", "total"],
+            "화면이 읽는 키와 다르다 — 이러면 진행률이 조용히 사라진다"
+        );
+        assert_eq!(object["runtimeId"], "claude-acp");
+        assert_eq!(object["received"], 26_043_779u64);
+        // 모르는 값은 **없는 척이 아니라 null** 이다. 화면이 그것으로 퍼센트를
+        // 그릴지 말지를 정한다.
+        assert!(object["note"].is_null());
+    }
+
+    /// 이벤트 이름도 계약이다 — 화면이 이 문자열로 듣는다.
+    #[test]
+    fn progress_event_name_matches_the_listener() {
+        assert_eq!(ACP_INSTALL_PROGRESS_EVENT, "acp-install://progress");
     }
 }

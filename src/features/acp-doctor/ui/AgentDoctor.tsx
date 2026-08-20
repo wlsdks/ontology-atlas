@@ -3,17 +3,21 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslations } from 'next-intl';
 
-import { ChevronDown, RotateCcw, Stethoscope } from 'lucide-react';
+import { CheckCircle2, ChevronDown, RotateCcw, Stethoscope } from 'lucide-react';
 
 import { Chip } from '@/shared/ui/controls';
 import { controlClass } from '@/shared/ui/control-class';
 import { ICON_SIZE } from '@/shared/ui/icon-size';
+import { formatDownloadProgress } from '@/shared/lib/progress-format';
 import {
   type AcpCheck,
+  type AcpInstallProgress,
   agentInstallPlan,
   diagnoseAgent,
+  formatBytes,
   installAgentCli,
   installManagedNode,
+  listenInstallProgress,
   nodeInstallPlan,
   repairAgentCheck,
   resetAgentConnection,
@@ -82,10 +86,38 @@ export function useAgentDoctor(
   const [checks, setChecks] = useState<AcpCheck[] | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
   const [failed, setFailed] = useState(false);
+  /*
+   * **설치가 어디까지 왔나.** `null` 이면 그린 적이 없다는 뜻이고, 아무것도
+   * 안 그린다 — 시작하지 않은 일에 0% 막대를 세우지 않는다.
+   */
+  const [progress, setProgress] = useState<AcpInstallProgress | null>(null);
+
+  /*
+   * 구독은 **한 번만** 붙인다. 설치를 누를 때마다 붙였다 떼면 Rust 가 먼저 낸
+   * 첫 이벤트를 놓친다 — 이 파일 위쪽의 `acp://exit` 배선이 같은 이유로 스레드로
+   * 옮겨진 적이 있다.
+   */
+  useEffect(() => {
+    let alive = true;
+    let stop: (() => void) | null = null;
+    void listenInstallProgress(runtimeId, (next) => {
+      if (alive) setProgress(next);
+    }).then((unlisten) => {
+      if (alive) stop = unlisten;
+      else unlisten();
+    });
+    return () => {
+      alive = false;
+      stop?.();
+    };
+  }, [runtimeId]);
 
   const run = useCallback(async () => {
     setBusy('scan');
     setFailed(false);
+    // 다시 재기 시작하면 **지난 설치의 결과 줄은 지운다** — 방금 한 일이
+    // 아닌 것을 「방금 됐어요」처럼 남겨 두지 않는다.
+    setProgress(null);
     try {
       setChecks(await diagnoseAgent(runtimeId));
     } catch {
@@ -255,13 +287,90 @@ export function useAgentDoctor(
     </>
   );
 
+  /**
+   * **설치가 도는 동안 화면이 말을 한다.**
+   *
+   * 규율 셋:
+   *
+   * ① **모르는 퍼센트를 그리지 않는다.** 분모가 있는 것은 Node 내려받기뿐이고,
+   *    npm 은 분모가 없으므로 막대 대신 **그 도구가 실제로 뱉은 줄**을 보여
+   *    준다. 이 앱의 갱신 토스트가 이미 같은 규율을 따른다.
+   * ② **끝났다는 것을 남긴다.** 소유자가 물은 「완료된것도 체크해주고 하나」의
+   *    답이 이 줄이다 — 목록이 조용히 초록으로 바뀌는 것만으로는 방금 누른
+   *    것이 됐는지 알 수 없다.
+   * ③ **장식이 없다.** 무채색 트랙 + 인디고 한 색. 이 저장소의 헌장 그대로다.
+   */
+  const percent =
+    progress && progress.received !== null
+      ? formatDownloadProgress(progress.received, progress.total)
+      : null;
+  const doneNow = progress?.stage === 'done';
+  const progressRow = progress ? (
+    <div
+      data-testid="agent-doctor-progress"
+      data-job={progress.job}
+      data-stage={progress.stage}
+      role="status"
+      aria-live="polite"
+      className="mb-2 flex min-w-0 flex-col gap-1"
+    >
+      <p className="flex min-w-0 items-center gap-1.5 break-keep text-label leading-prose text-[color:var(--color-text-secondary)]">
+        {doneNow ? (
+          <CheckCircle2
+            size={ICON_SIZE.sm}
+            aria-hidden
+            className="shrink-0 text-[color:var(--color-success-text-a90)]"
+          />
+        ) : null}
+        <span className="min-w-0 flex-1">
+          {t(`progress.${progress.job}.${progress.stage}`)}
+          {percent ? (
+            <span className="ml-1.5 text-[color:var(--color-text-tertiary)]">
+              {percent}
+              {progress.total !== null ? (
+                <span className="ml-1 text-[color:var(--color-text-quaternary)]">
+                  {formatBytes(progress.received ?? 0)} / {formatBytes(progress.total)}
+                </span>
+              ) : null}
+            </span>
+          ) : null}
+        </span>
+      </p>
+      {percent ? (
+        /* 분모를 아는 동안에만 막대를 세운다. 모르면 막대 자체가 거짓말이다. */
+        <span
+          data-testid="agent-doctor-progress-bar"
+          aria-hidden
+          className="block h-1 w-full overflow-hidden rounded-full bg-[color:var(--color-overlay-2)]"
+        >
+          <span
+            className="block h-full rounded-full bg-[color:var(--color-indigo-brand)] transition-[width]"
+            style={{ width: percent }}
+          />
+        </span>
+      ) : progress.note ? (
+        /*
+         * 퍼센트가 없을 때 보여 주는 것은 **그 도구가 뱉은 줄 그대로**다.
+         * 한 줄로 자른다 — npm 은 수백 줄을 뱉고, 그걸 다 부으면 안내가 아니다.
+         */
+        <code
+          data-testid="agent-doctor-progress-note"
+          className="block min-w-0 truncate text-caption leading-caption text-[color:var(--color-text-quaternary)]"
+        >
+          {progress.note}
+        </code>
+      ) : null}
+    </div>
+  ) : null;
+
   const result =
-    failed || checks ? (
+    failed || checks || progress ? (
       <div
         data-testid="agent-doctor"
         data-blocked={blocked.length}
         className="mt-1.5 min-w-0 border-t border-[color:var(--color-divider)] pt-2"
       >
+        {progressRow}
         {failed ? (
           <p
             data-testid="agent-doctor-failure"
@@ -378,7 +487,19 @@ export function useAgentDoctor(
                     <span className="block break-keep text-label leading-prose text-[color:var(--color-text-tertiary)]">
                       {t('installPlanTitle')}
                     </span>
-                    <code className="mt-1 block overflow-x-auto whitespace-pre text-caption leading-caption text-[color:var(--color-text-secondary)]">
+                    {/*
+                      ⚠️ **한 줄로 고정하지 않는다** (2026-08-20 소유자: *"이거 왜이래
+                      디자인"*). 실측: 이 명령은 **142자**이고 caption(11px) 기준 약
+                      900px 인데, 설정 시트의 오른쪽 칸은 **698px**(880 − LNB 180)
+                      이다. 종전에는 `whitespace-pre` 로 한 줄에 묶고 넘치는 1/3 을
+                      가로 스크롤 뒤에 뒀는데, **가로 스크롤은 아무도 발견하지
+                      못한다** — 즉 조건 ②(무엇을 실행하는지 먼저 보여 준다)를
+                      화면이 실제로는 안 지키고 있었다.
+
+                      경로에는 공백이 있으므로(`Application Support`) 단어 경계로만
+                      접으면 여전히 넘친다. `break-all` 이 어디서든 접게 한다.
+                    */}
+                    <code className="mt-1 block min-w-0 break-all whitespace-pre-wrap text-caption leading-caption text-[color:var(--color-text-secondary)]">
                       {installPlan}
                     </code>
                     <span className="mt-1.5 block break-keep text-caption leading-caption text-[color:var(--color-text-quaternary)]">
@@ -406,7 +527,7 @@ export function useAgentDoctor(
                     <span className="block break-keep text-label leading-prose text-[color:var(--color-text-tertiary)]">
                       {t('nodePlanTitle')}
                     </span>
-                    <code className="mt-1 block overflow-x-auto whitespace-pre text-caption leading-caption text-[color:var(--color-text-secondary)]">
+                    <code className="mt-1 block min-w-0 break-all whitespace-pre-wrap text-caption leading-caption text-[color:var(--color-text-secondary)]">
                       {nodePlan}
                     </code>
                     <span className="mt-1.5 block break-keep text-caption leading-caption text-[color:var(--color-text-quaternary)]">
@@ -426,7 +547,22 @@ export function useAgentDoctor(
                     </span>
                   </span>
                 ) : null}
-                {check.state === 'problem' && !check.fixable && NEXT_STEP.has(check.id) ? (
+                {/*
+                  ⚠️ **앱이 대신 해 줄 수 있으면 「직접 하세요」를 말하지 않는다.**
+
+                  2026-08-20 스크린샷에서 두 문장이 한 화면에 같이 서 있었다:
+                  바로 위 「이 앱에 설치」 버튼과, 그 아래 *"이 목록에서 그 도구의
+                  「설치 방법」을 눌러 설치한 뒤, 위의 「다시 확인」을 눌러 주세요"*.
+                  앱이 해 주겠다고 해 놓고 같은 자리에서 직접 하라고 시키는 것은
+                  안내가 아니라 **모순**이고, 사용자는 둘 중 무엇이 진짜인지 모른다.
+
+                  그래서 이 자리는 **앱이 내줄 길이 없을 때만** 말한다.
+                */}
+                {check.state === 'problem' &&
+                !check.fixable &&
+                NEXT_STEP.has(check.id) &&
+                !(check.id === 'cli' && installPlan) &&
+                !(check.id === 'launcher' && nodePlan) ? (
                   <span
                     data-testid={`agent-doctor-next-${check.id}`}
                     className="w-full basis-full break-keep pl-3.5 text-label leading-prose text-[color:var(--color-text-quaternary)]"

@@ -181,11 +181,13 @@
         "workspace": "작업 공간",
         "runtimes": "Agents",
         "agent": "MCP 연결",
-        "ai": "API Key"
+        "ai": "API Key",
+        "update": "업데이트"
       },
       "sectionGroup": {
         "look": "보이는 것",
-        "connect": "폴더와 에이전트"
+        "connect": "폴더와 에이전트",
+        "app": "앱"
       },
       "guideAutoStartLabel": "화면 안내 자동 표시",
       "guideAutoStartCaption": "처음 여는 화면마다 안내를 저절로 띄워요. 끄면 아래 「다시 보기」나 지도의 나침반으로만 열려요",
@@ -230,6 +232,18 @@
         "openChat": "이 도구로 대화 열기",
         "loginHint": "이 도구에 로그인이 안 돼 있어요. 터미널에서 한 번 실행해 로그인하면 여기에 나타나요.",
         "diskNote": "대화를 시작하면 Atlas 가 그 도구용 설정 폴더를 앱 안에 따로 만들어요. 당신이 그 도구에 해 둔 설정은 건드리지 않아요. 이미 해 둔 로그인은 복사하지 않고 링크만 걸어서, 다시 로그인하지 않아도 되게 해요. 원본은 그대로 한 곳에 있어요."
+      },
+      "appUpdate": {
+        "intro": "이 앱의 새 판이 나오면 우하단에 알려 드려요. 지금 바로 확인할 수도 있어요.",
+        "versionLabel": "지금 쓰는 판",
+        "versionValue": "{version}",
+        "check": "업데이트 확인",
+        "checking": "확인 중",
+        "resultCurrent": "최신이에요. 더 받을 것이 없어요.",
+        "resultAvailable": "{version} 이 나왔어요. 우하단 알림에서 받을 수 있어요.",
+        "resultDownloading": "{version} 을 받는 중이에요. 진행률은 우하단 알림에 있어요.",
+        "resultReady": "{version} 설치까지 끝났어요. 우하단 알림에서 다시 시작하면 적용돼요.",
+        "resultFailed": "확인하지 못했어요. 인터넷 연결이 없거나, 아직 받을 수 있는 정식 판이 올라오지 않았을 수 있어요."
       }
     },
     "primaryAriaLabel": "주요 메뉴",
@@ -3864,6 +3878,24 @@
         "launcher": "그 도구를 띄우려면 Node 가 필요해요. Node 를 설치한 뒤 「다시 확인」을 눌러 주세요.",
         "login": "터미널에서 그 도구에 한 번 로그인해 주세요. 앱은 그 로그인을 그대로 씁니다.",
         "gate": "이 도구는 폴더 밖 작업을 앱이 대신 막아 주지 못해요. 저희가 고쳐야 하는 부분이라, 그때까지는 다른 도구를 쓰시는 편이 안전해요."
+      },
+      "progress": {
+        "node": {
+          "downloading": "Node 를 받는 중",
+          "verifying": "받은 파일의 해시를 대조하는 중",
+          "extracting": "압축을 푸는 중",
+          "verifying-install": "제대로 깔렸는지 다시 재는 중",
+          "done": "Node 를 받았어요",
+          "failed": "Node 를 받지 못했어요"
+        },
+        "cli": {
+          "installing": "설치하는 중",
+          "verifying": "확인하는 중",
+          "extracting": "푸는 중",
+          "verifying-install": "제대로 깔렸는지 다시 재는 중",
+          "done": "설치했어요",
+          "failed": "설치하지 못했어요"
+        }
       }
     }
   }

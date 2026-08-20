@@ -181,11 +181,13 @@
         "workspace": "Workspace",
         "runtimes": "Agents",
         "agent": "MCP connection",
-        "ai": "API Key"
+        "ai": "API Key",
+        "update": "Updates"
       },
       "sectionGroup": {
         "look": "Appearance",
-        "connect": "Connections"
+        "connect": "Connections",
+        "app": "App"
       },
       "guideAutoStartLabel": "Show guides automatically",
       "guideAutoStartCaption": "Opens a guide the first time you visit each screen: turn off and it only opens from Replay or the map compass",
@@ -230,6 +232,18 @@
         "openChat": "Open a chat with this tool",
         "loginHint": "You are not signed in to this tool. Run it once in a terminal to sign in and it will appear here.",
         "diskNote": "Starting a chat gives Atlas its own settings folder for that tool inside the app, so your own settings for it are left alone. The login you already did is linked, not copied, so you do not have to sign in again. The original stays in one place."
+      },
+      "appUpdate": {
+        "intro": "When a new build of this app ships, we tell you in the bottom-right corner. You can also check right now.",
+        "versionLabel": "Running build",
+        "versionValue": "{version}",
+        "check": "Check for updates",
+        "checking": "Checking",
+        "resultCurrent": "You're on the newest build. Nothing to fetch.",
+        "resultAvailable": "{version} is out. Grab it from the bottom-right notice.",
+        "resultDownloading": "Fetching {version}. Progress is in the bottom-right notice.",
+        "resultReady": "{version} is installed. Restart from the bottom-right notice to use it.",
+        "resultFailed": "Couldn't check. You may be offline, or no stable build may be published yet."
       }
     },
     "primaryAriaLabel": "Primary menu",
@@ -3864,6 +3878,24 @@
         "launcher": "Launching that tool needs Node. Install Node, then press Re-check.",
         "login": "Sign in to that tool once in your terminal. The app reuses that sign-in.",
         "gate": "For this tool the app cannot stand in front of work outside your folder. That is ours to fix; until then another tool is the safer choice."
+      },
+      "progress": {
+        "node": {
+          "downloading": "Downloading Node",
+          "verifying": "Checking the downloaded file against its hash",
+          "extracting": "Unpacking",
+          "verifying-install": "Measuring again to confirm it landed",
+          "done": "Node is here",
+          "failed": "Could not download Node"
+        },
+        "cli": {
+          "installing": "Installing",
+          "verifying": "Checking",
+          "extracting": "Unpacking",
+          "verifying-install": "Measuring again to confirm it landed",
+          "done": "Installed",
+          "failed": "Could not install"
+        }
       }
     }
   }
