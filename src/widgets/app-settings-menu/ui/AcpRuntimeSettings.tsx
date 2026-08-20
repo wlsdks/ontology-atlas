@@ -82,6 +82,17 @@ export function AcpRuntimeSettings() {
   const t = useTranslations('nav.settingsMenu.runtimes');
   const [runtimes, setRuntimes] = useState<AcpRuntimeStatus[] | null>(null);
   const [checking, setChecking] = useState(false);
+  /*
+   * ⚠️ **아무것도 없는 사람에게는 처음부터 펴 둔다** (2026-08-20 워크스루).
+   *
+   * 확인된 도구가 0개면 위 칸은 「설치하면 여기에 나타나요」 한 줄뿐이고,
+   * **설치 방법은 이 접힌 목록 안에만** 있었다. 즉 답이 두 클릭 아래에 숨어
+   * 있었고, 그건 이 저장소가 강등 카드에 대해 금지한 모양 그대로다 —
+   * 왜만 말하고 어디로를 안 말한다.
+   *
+   * 위에 볼 것이 있을 때만 접는다. 접는 이유가 「긴 목록이 짧은 목록을
+   * 덮지 않게」인데, 짧은 목록이 없으면 덮을 것도 없다.
+   */
   const [othersOpen, setOthersOpen] = useState(false);
 
   /**
@@ -225,18 +236,24 @@ export function AcpRuntimeSettings() {
                 size="lg"
                 tone="secondary"
                 data-testid="app-settings-runtimes-others-toggle"
-                aria-expanded={othersOpen}
+                aria-expanded={othersOpen || ready.length === 0}
                 onClick={() => setOthersOpen((open) => !open)}
                 className={DETAIL_TOGGLE_CHIP}
               >
                 <ChevronDown
                   size={ICON_SIZE.md}
                   aria-hidden
-                  className={othersOpen ? 'rotate-180 transition-transform' : 'transition-transform'}
+                  className={
+                    othersOpen || ready.length === 0
+                      ? 'rotate-180 transition-transform'
+                      : 'transition-transform'
+                  }
                 />
-                {t('othersHeading', { count: others.length })}
+                {ready.length === 0
+                  ? t('othersHeadingEmpty', { count: others.length })
+                  : t('othersHeading', { count: others.length })}
               </Chip>
-              {othersOpen ? (
+              {othersOpen || ready.length === 0 ? (
                 <>
                   {/* 「확인 못 함」이 무슨 뜻인지는 그 줄들이 보일 때만 말한다 —
                       안 펼친 사람에게는 설명할 것이 없다. */}
@@ -315,7 +332,10 @@ function RuntimeRow({ runtime }: { runtime: AcpRuntimeStatus }) {
         icon={runtime.icon}
         iconInk={runtime.brandInk}
         control={
-          <span className="flex items-center gap-1.5">
+          /* 소유자(2026-08-20): *"너무 버튼이 붙어있어서 답답하고"*. 컨트롤 셋과
+           상태 배지가 한 줄에 서므로 `gap-1.5`(6px)로는 어디까지가 한 버튼인지
+           눈이 못 가른다. 램프의 다음 칸으로 한 단 벌린다. */
+        <span className="flex items-center gap-2">
             {/*
              * ⚠️ **배지를 세 번 고치고 결국 없앴다.** 기록해 둘 값어치가 있다:
              *
@@ -381,10 +401,14 @@ function RuntimeRow({ runtime }: { runtime: AcpRuntimeStatus }) {
                 target="_blank"
                 rel="noopener noreferrer"
                 data-testid="app-settings-runtime-install"
+                /* 소유자(2026-08-20): 박스로 둘러싼다. 옆의 두 컨트롤이 칩인데
+                   이것만 맨 글자면 **한 줄에 두 종류의 컨트롤**이 서고, 그러면
+                   이게 눌리는 것인지가 모양으로 안 읽힌다. 밖으로 나간다는
+                   사실은 글리프(↗)가 계속 말한다. */
                 className={controlClass({
-                  shape: 'link',
+                  shape: 'chip',
                   size: 'sm',
-                  tone: 'secondary',
+                  tone: 'muted',
                   hoverInk: 'strong',
                   className: 'shrink-0',
                 })}
