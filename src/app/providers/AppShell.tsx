@@ -25,7 +25,7 @@ import {
   GuideReplayProvider,
   applyGuideOverride,
 } from "@/features/guided-tour";
-import { UpdateToast, useAppUpdate } from "@/features/app-update";
+import { AppUpdateProvider, UpdateToast, useAppUpdateContext } from "@/features/app-update";
 import { useLocalVault } from "@/features/docs-vault-local";
 import { isDesktopShell } from "@/shared/lib/desktop-shell";
 import { isGatewaySurface, resolveActiveNavDestination } from "@/shared/lib/nav-destination";
@@ -81,8 +81,17 @@ export function AppShell({ children }: { children: ReactNode }) {
           더는 필요 없다(런처·패널 호스트·구 레일 타일 전부 도달 불가였다). */}
       <AgentConnectLauncherProvider>
         <GuideReplayProvider>
-          <RouteFocusManager />
-          <ShellColumn>{children}</ShellColumn>
+          {/*
+            갱신 상태 기계는 **여기 한 벌**이다 (2026-08-20). 소비처가 둘이
+            됐다 — 우하단 토스트와 설정의 「업데이트 확인」. 각자 훅을 부르면
+            상태 기계가 둘이 되어 설정과 토스트가 서로 다른 말을 하고, 하루
+            한 번 자동 확인이 두 번 돈다. 설정 시트는 레일 안에 있으므로
+            이 provider 는 레일보다 바깥이어야 한다.
+          */}
+          <AppUpdateProvider>
+            <RouteFocusManager />
+            <ShellColumn>{children}</ShellColumn>
+          </AppUpdateProvider>
         </GuideReplayProvider>
       </AgentConnectLauncherProvider>
     </NavRailShellProvider>
@@ -308,12 +317,18 @@ function AppNavRailSlot() {
 }
 
 /**
- * 훅과 표면을 한 겹으로 묶는다. `AppShell` 이 업데이트 상태 기계를 직접 들고
- * 있으면, 셸이 리렌더될 때마다 그 상태가 셸 전체를 다시 그리게 된다.
+ * 토스트는 **공용 상태 기계를 읽기만 한다.** 훅을 여기서 다시 부르지 않는
+ * 이유는 위 provider 주석에.
  */
 function AppUpdateSurface() {
-  const { phase, install, restart, dismiss } = useAppUpdate();
+  const update = useAppUpdateContext();
+  if (!update) return null;
   return (
-    <UpdateToast phase={phase} onInstall={install} onRestart={restart} onDismiss={dismiss} />
+    <UpdateToast
+      phase={update.phase}
+      onInstall={update.install}
+      onRestart={update.restart}
+      onDismiss={update.dismiss}
+    />
   );
 }

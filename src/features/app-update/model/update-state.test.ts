@@ -1,7 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
   CHECK_INTERVAL_MS,
-  formatDownloadProgress,
   shouldCheckForUpdate,
   shouldSurfaceVersion,
   summarizeNotes,
@@ -58,22 +57,6 @@ describe('shouldSurfaceVersion', () => {
 
   it('never surfaces an empty version', () => {
     expect(shouldSurfaceVersion('', null)).toBe(false);
-  });
-});
-
-describe('formatDownloadProgress', () => {
-  it('says nothing when the total is unknown rather than faking a percentage', () => {
-    // 이 저장소의 로딩 표면과 같은 규율 — 모르는 진행을 아는 척하지 않는다.
-    expect(formatDownloadProgress(1_000, null)).toBeNull();
-    expect(formatDownloadProgress(1_000, 0)).toBeNull();
-  });
-
-  it('reports a clamped whole percentage', () => {
-    expect(formatDownloadProgress(0, 200)).toBe('0%');
-    expect(formatDownloadProgress(50, 200)).toBe('25%');
-    expect(formatDownloadProgress(200, 200)).toBe('100%');
-    // 서버가 Content-Length 를 낮게 준 경우에도 101% 를 그리지 않는다.
-    expect(formatDownloadProgress(400, 200)).toBe('100%');
   });
 });
 

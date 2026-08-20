@@ -596,18 +596,19 @@ describe('AppSettingsMenu appearance pickers (#20/#21)', () => {
    * LNB 는 **묶음**을 가진다. 다섯 항목이 왜 그 순서인지를 말하는 것이 묶음의
    * 일이고, 그게 없으면 목록이 그냥 다섯 줄이다.
    */
-  it('LNB 는 두 묶음으로 나뉘고 5·4 로 갈린다', () => {
+  it('LNB 는 세 묶음으로 나뉘고 5·4·1 로 갈린다', () => {
     openSheet();
     const nav = screen.getByTestId('app-settings-nav');
     // 문구가 아니라 **구조**로 잠근다 — 라벨을 다듬을 때마다 깨지면 안 된다.
     const groups = [...nav.children];
-    expect(groups.length, '묶음이 둘이 아니다').toBe(2);
-    // 2026-08-16 에 「이어진 것」이 3 → 4 가 됐다(실행기 절 신설). 이 검사가
-    // 지키는 것은 개수가 아니라 **묶음이 둘이고 각각 제목이 있다**는 구조다 —
-    // 개수는 그 구조의 부수치라 절을 늘릴 때 같이 갱신한다.
-    expect(groups.map((g) => g.querySelectorAll('button').length)).toEqual([5, 4]);
+    expect(groups.length, '묶음이 셋이 아니다').toBe(3);
+    // 2026-08-16 에 「이어진 것」이 3 → 4 가 됐고(실행기 절 신설),
+    // 2026-08-20 에 셋째 묶음 「앱」이 생겼다(업데이트 확인 절). 이 검사가
+    // 지키는 것은 개수가 아니라 **묶음마다 제목이 있다**는 구조다 — 개수는
+    // 그 구조의 부수치라 절을 늘릴 때 같이 갱신한다.
+    expect(groups.map((g) => g.querySelectorAll('button').length)).toEqual([5, 4, 1]);
     for (const g of groups) {
-      expect(g.querySelector('p'), '묶음에 제목이 없다 — 그러면 그냥 일곱 줄이다').not.toBeNull();
+      expect(g.querySelector('p'), '묶음에 제목이 없다 — 그러면 그냥 열 줄이다').not.toBeNull();
     }
   });
 
@@ -617,7 +618,7 @@ describe('AppSettingsMenu appearance pickers (#20/#21)', () => {
    */
   it('LNB 항목마다 아이콘이 하나씩 있다', () => {
     openSheet();
-    for (const item of ['screen', 'background', 'expand', 'footprint', 'notify', 'workspace', 'runtimes', 'agent', 'ai']) {
+    for (const item of ['screen', 'background', 'expand', 'footprint', 'notify', 'workspace', 'runtimes', 'agent', 'ai', 'update']) {
       const svgs = screen.getByTestId(`app-settings-nav-${item}`).querySelectorAll('svg');
       expect(svgs.length, `${item} 항목에 아이콘이 없다`).toBe(1);
     }

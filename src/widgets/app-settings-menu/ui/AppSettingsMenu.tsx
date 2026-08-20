@@ -10,6 +10,7 @@ import {
   ChevronRight,
   Copy,
   Check,
+  DownloadCloud,
   Expand,
   Footprints,
   HardDrive,
@@ -43,6 +44,7 @@ import {
   rememberRouteFocusIntent,
 } from '@/shared/ui/route-focus-manager';
 import { AcpRuntimeSettings } from './AcpRuntimeSettings';
+import { AppUpdateSettings } from './AppUpdateSettings';
 import { VaultAgentSetupPanel } from './VaultAgentSetupPanel';
 import { AccentPicker, CanvasBackgroundPicker, GlyphSetPicker } from './AppearancePickers';
 import { FootprintSettings } from './FootprintSettings';
@@ -173,12 +175,23 @@ const SETTINGS_GROUPS = [
    * 않는다 (`tests/contract/vendor-naming.contract.test.ts`).
    */
   { key: 'connect', items: ['workspace', 'runtimes', 'agent', 'ai'] },
+  /*
+   * 「앱」이 **맨 마지막**인 이유: 앞의 두 묶음은 매일 만지는 것(지도가 어떻게
+   * 보이나 · 무엇이 이 폴더에 붙나)이고, 이 묶음은 **앱 자신**에 대한 것이라
+   * 찾을 때만 온다. macOS 의 관습(정보·갱신이 목록 끝)과도 같은 자리다.
+   *
+   * 데스크톱에만 그린다 — 브라우저 탭은 자기를 교체할 수 없어서, 웹에서 갱신을
+   * 말하는 것은 할 수 없는 일을 제안하는 것이다. 절 자체가 없다.
+   */
+  { key: 'app', items: ['update'] },
 ] as const;
 
 type SettingsSection = (typeof SETTINGS_GROUPS)[number]['items'][number];
 
 /** 절 → 아이콘. 아이콘은 항목당 하나씩 고정이라 이 표가 단일 출처다. */
 const SECTION_ICON: Record<SettingsSection, typeof Monitor> = {
+  // 아래로 향한 화살표 — 이 목록에서 유일하게 «받아 온다»는 실루엣이다.
+  update: DownloadCloud,
   screen: Monitor,
   background: Layers,
   // 네 방향으로 벌어지는 화살표 — 이 목록에서 유일하게 «바깥으로 퍼지는»
@@ -1116,6 +1129,9 @@ export function AppSettingsMenu({
                     */}
                     <BlockImportModule />
                     </>
+
+                ) : section === 'update' ? (
+                  <AppUpdateSettings />
 
                 ) : section === 'runtimes' ? (
                   <AcpRuntimeSettings />
