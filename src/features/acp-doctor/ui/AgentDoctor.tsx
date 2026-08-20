@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslations } from 'next-intl';
 
 import { ChevronDown, RotateCcw, Stethoscope } from 'lucide-react';
@@ -10,7 +10,9 @@ import { controlClass } from '@/shared/ui/control-class';
 import { ICON_SIZE } from '@/shared/ui/icon-size';
 import {
   type AcpCheck,
+  agentInstallPlan,
   diagnoseAgent,
+  installAgentCli,
   repairAgentCheck,
   resetAgentConnection,
 } from '../model/acp-doctor';
@@ -63,7 +65,17 @@ import {
  */
 const NEXT_STEP = new Set(['cli', 'launcher', 'login', 'gate']);
 
-export function useAgentDoctor(runtimeId: string) {
+export function useAgentDoctor(
+  runtimeId: string,
+  /**
+   * 앱이 뭔가 바꿨을 때 부르는 것 — 목록을 다시 재게 한다.
+   *
+   * 없으면 설치·수리 직후에 **위의 배지가 옛말을 하고 바로 아래 진단이 새 말을
+   * 한다.** 한 화면에서 두 문장이 어긋나는 것이 이 라운드 내내 고쳐 온 결함
+   * 그 자체라, 여기서 다시 만들지 않는다.
+   */
+  onChanged?: () => void,
+) {
   const t = useTranslations('acpChat.doctor');
   const [checks, setChecks] = useState<AcpCheck[] | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
@@ -87,13 +99,14 @@ export function useAgentDoctor(runtimeId: string) {
       setFailed(false);
       try {
         setChecks(await repairAgentCheck(runtimeId, checkId));
+      onChanged?.();
       } catch {
         setFailed(true);
       } finally {
         setBusy(null);
       }
     },
-    [runtimeId],
+    [runtimeId, onChanged],
   );
 
   const reset = useCallback(async () => {
@@ -101,17 +114,56 @@ export function useAgentDoctor(runtimeId: string) {
     setFailed(false);
     try {
       setChecks(await resetAgentConnection(runtimeId));
+      onChanged?.();
     } catch {
       setFailed(true);
     } finally {
       setBusy(null);
     }
-  }, [runtimeId]);
+  }, [runtimeId, onChanged]);
 
   /**
    * 앞 단계가 막혔나 — 그러면 「연결 다시 맺기」도 소용없다. 도구가 없는데
    * 설정 폴더를 다시 만들어 봐야 대화는 안 열린다(2026-08-20 워크스루).
    */
+  /**
+   * **명령 원문을 먼저 보여 준다** — 원장 2026-08-20 (88) 의 조건 ②.
+   *
+   * 점검에서 「도구가 없다」가 나왔을 때만 물어본다. 멀쩡한 사람에게 설치
+   * 제안을 상시로 보여 주면 그건 안내가 아니라 광고다.
+   */
+  const [installPlan, setInstallPlan] = useState<string | null>(null);
+  const toolMissing = useMemo(
+    () => (checks ?? []).some((check) => check.id === 'cli' && check.state === 'problem'),
+    [checks],
+  );
+  useEffect(() => {
+    // effect 본문에서 동기로 setState 하지 않는다(래칫이 잡는다) — 「도구가
+    // 멀쩡할 때 안 보인다」는 상태를 지우는 것이 아니라 **그리지 않는 것**으로
+    // 지킨다. 아래 렌더 조건이 `toolMissing` 을 함께 본다.
+    if (!toolMissing) return;
+    let alive = true;
+    void agentInstallPlan(runtimeId).then((plan) => {
+      if (alive) setInstallPlan(plan);
+    });
+    return () => {
+      alive = false;
+    };
+  }, [toolMissing, runtimeId]);
+
+  const install = useCallback(async () => {
+    setBusy('install');
+    setFailed(false);
+    try {
+      setChecks(await installAgentCli(runtimeId));
+      onChanged?.();
+    } catch {
+      setFailed(true);
+    } finally {
+      setBusy(null);
+    }
+  }, [runtimeId, onChanged]);
+
   const prerequisiteBlocked = useMemo(
     () => (checks ?? []).some((check) => check.blocked),
     [checks],
@@ -277,6 +329,38 @@ export function useAgentDoctor(runtimeId: string) {
                   >
                     {busy === check.id ? t('fixing') : t('fix')}
                   </Chip>
+                ) : null}
+                {check.id === 'cli' && check.state === 'problem' && toolMissing && installPlan ? (
+                  /*
+                    조건 ②④ 가 화면에 보인다: 무엇을 실행하는지 원문 그대로,
+                    그리고 어디에만 깔리는지. 누르기 전에 둘 다 읽을 수 있다.
+                  */
+                  <span
+                    data-testid="agent-doctor-install-plan"
+                    className="w-full basis-full min-w-0 rounded-card border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] p-2.5"
+                  >
+                    <span className="block break-keep text-label leading-prose text-[color:var(--color-text-tertiary)]">
+                      {t('installPlanTitle')}
+                    </span>
+                    <code className="mt-1 block overflow-x-auto whitespace-pre text-caption leading-caption text-[color:var(--color-text-secondary)]">
+                      {installPlan}
+                    </code>
+                    <span className="mt-1.5 block break-keep text-caption leading-caption text-[color:var(--color-text-quaternary)]">
+                      {t('installPlanNote')}
+                    </span>
+                    <span className="mt-2 block">
+                      <Chip
+                        size="sm"
+                        tone="accentOnTint"
+                        data-testid="agent-doctor-install"
+                        disabled={busy !== null}
+                        onClick={() => void install()}
+                        className="border-[color:var(--color-indigo-a46)] bg-[color:var(--color-indigo-a16)] hover:bg-[color:var(--color-indigo-a24)]"
+                      >
+                        {busy === 'install' ? t('installing') : t('install')}
+                      </Chip>
+                    </span>
+                  </span>
                 ) : null}
                 {check.state === 'problem' && !check.fixable && NEXT_STEP.has(check.id) ? (
                   <span

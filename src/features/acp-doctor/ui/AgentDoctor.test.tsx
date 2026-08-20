@@ -17,6 +17,8 @@ import { useAgentDoctor } from './AgentDoctor';
 const diagnoseAgent = vi.fn<(runtimeId: string) => Promise<AcpCheck[]>>();
 const repairAgentCheck = vi.fn<(runtimeId: string, checkId: string) => Promise<AcpCheck[]>>();
 const resetAgentConnection = vi.fn<(runtimeId: string) => Promise<AcpCheck[]>>();
+const agentInstallPlan = vi.fn<(runtimeId: string) => Promise<string | null>>();
+const installAgentCli = vi.fn<(runtimeId: string) => Promise<AcpCheck[]>>();
 
 vi.mock('../model/acp-doctor', async () => {
   const actual = await vi.importActual<typeof import('../model/acp-doctor')>('../model/acp-doctor');
@@ -25,6 +27,8 @@ vi.mock('../model/acp-doctor', async () => {
     diagnoseAgent: (runtimeId: string) => diagnoseAgent(runtimeId),
     repairAgentCheck: (runtimeId: string, checkId: string) => repairAgentCheck(runtimeId, checkId),
     resetAgentConnection: (runtimeId: string) => resetAgentConnection(runtimeId),
+    agentInstallPlan: (runtimeId: string) => agentInstallPlan(runtimeId),
+    installAgentCli: (runtimeId: string) => installAgentCli(runtimeId),
   };
 });
 
@@ -58,6 +62,9 @@ beforeEach(() => {
   diagnoseAgent.mockReset();
   repairAgentCheck.mockReset();
   resetAgentConnection.mockReset();
+  agentInstallPlan.mockReset();
+  agentInstallPlan.mockResolvedValue(null);
+  installAgentCli.mockReset();
 });
 
 describe('연동 점검 화면', () => {
@@ -215,6 +222,66 @@ describe('연동 점검 화면', () => {
     expect(screen.queryByTestId('agent-doctor-reset')).toBeNull();
     // 그래도 **무엇을 하면 되는지**는 남아 있어야 한다.
     expect(screen.getByTestId('agent-doctor-next-cli')).toBeVisible();
+  });
+
+  /**
+   * **명령 원문을 먼저 보여 준다** — 원장 2026-08-20 (88) 의 조건 ②.
+   *
+   * 「이 앱에 설치」 버튼만 있고 무엇을 실행하는지 안 보여 주면, 그건 사용자가
+   * 자기 기계에서 무슨 일이 일어나는지 모른 채 누르는 것이다.
+   */
+  it('설치 버튼 옆에 실행할 명령이 그대로 적힌다', async () => {
+    diagnoseAgent.mockResolvedValue([{ id: 'cli', state: 'problem', fixable: false, blocked: false }]);
+    agentInstallPlan.mockResolvedValue('npm install --prefix /app/managed-node --global @anthropic-ai/claude-code@2.1.236');
+    renderHarness();
+
+    fireEvent.click(screen.getByTestId('agent-doctor-scan'));
+    await waitFor(() => expect(screen.getByTestId('agent-doctor-install-plan')).toBeVisible());
+
+    const card = screen.getByTestId('agent-doctor-install-plan').textContent ?? '';
+    expect(card).toContain('--prefix');
+    expect(card).toContain('@anthropic-ai/claude-code@2.1.236');
+    expect(screen.getByTestId('agent-doctor-install')).toBeVisible();
+  });
+
+  it('깔 수 없는 도구에는 설치 제안을 안 낸다', async () => {
+    diagnoseAgent.mockResolvedValue([{ id: 'cli', state: 'problem', fixable: false, blocked: false }]);
+    agentInstallPlan.mockResolvedValue(null);
+    renderHarness();
+
+    fireEvent.click(screen.getByTestId('agent-doctor-scan'));
+    await waitFor(() => expect(screen.getByTestId('agent-doctor-checks')).toBeVisible());
+
+    // 확인한 적 없는 패키지를 사용자 기계에 깔겠다고 말하면 안 된다.
+    expect(screen.queryByTestId('agent-doctor-install')).toBeNull();
+    // 그래도 사람이 할 일은 남아 있어야 한다.
+    expect(screen.getByTestId('agent-doctor-next-cli')).toBeVisible();
+  });
+
+  it('설치한 뒤에는 다시 잰 값을 그린다', async () => {
+    diagnoseAgent.mockResolvedValue([{ id: 'cli', state: 'problem', fixable: false, blocked: false }]);
+    agentInstallPlan.mockResolvedValue('npm install --prefix /app/managed-node --global x@1.0.0');
+    installAgentCli.mockResolvedValue([ok('cli')]);
+    renderHarness();
+
+    fireEvent.click(screen.getByTestId('agent-doctor-scan'));
+    await waitFor(() => expect(screen.getByTestId('agent-doctor-install')).toBeVisible());
+    fireEvent.click(screen.getByTestId('agent-doctor-install'));
+
+    await waitFor(() => expect(screen.getByTestId('agent-doctor-all-clear')).toBeInTheDocument());
+    expect(installAgentCli).toHaveBeenCalledWith('claude-acp');
+  });
+
+  it('도구가 멀쩡하면 설치 제안이 안 나온다', async () => {
+    diagnoseAgent.mockResolvedValue([ok('cli')]);
+    agentInstallPlan.mockResolvedValue('npm install --prefix /app/managed-node --global x@1.0.0');
+    renderHarness();
+
+    fireEvent.click(screen.getByTestId('agent-doctor-scan'));
+    await waitFor(() => expect(screen.getByTestId('agent-doctor-all-clear')).toBeInTheDocument());
+
+    // 멀쩡한 사람에게 설치 제안을 상시로 보여 주면 그건 안내가 아니라 광고다.
+    expect(screen.queryByTestId('agent-doctor-install-plan')).toBeNull();
   });
 
   it('점검이 실패하면 그 사실을 말한다 — 조용히 빈 화면이 되지 않는다', async () => {

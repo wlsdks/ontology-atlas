@@ -25,21 +25,10 @@
 - glow pulse · neon · halo animation <!--dont:glow-pulse-neon-->
   - 사방으로 번지는 색 테두리(`boxShadow: 0 0 …` glow 링)도 같은 금지다.
     <!--dont:glow-boxshadow-ring-->
-  - **명문 예외 1건 (2026-07-29): 발자국 트레일 번짐** — 지도 위에 찍히는 발자국
-    자국 둘레를 흐릿하게 밝히는 것. canvas 2D 의 `ctx.shadowBlur` 로만 존재하고
-    `src/shared/lib/footprint-glyph.ts` **한 파일 안에서만** 산다.
-    조건: **정적**(깜빡이거나 움직이면 안 된다) · **opt-in**(설정에서 사용자가
-    직접 켠다) · **기본 0**(아무도 켜지 않으면 화면에 아무것도 안 생긴다) ·
-    **상한 6px**(그보다 크면 번짐이 발자국 자체보다 커져서, 결국 여기서 금지한
-    그 glow 가 된다).
-    소유자가 *"노란색으로 빛나게"* 라고 지시했을 때, 위 금지를 깨지 않고 들어줄
-    수 있는 가장 작은 형태가 이것이다. "기본값이 0이니까 규칙을 지킨 셈"이라는
-    변명은 **명시적으로 기각**됐다 — 금지된 것을 설정 뒤에 숨겨 두는 건 지킨
-    게 아니므로, 이렇게 예외로 드러내 적었다.
-    이 예외를 지키는 게이트(gate — 어기면 CI 가 자동으로 실패하는 검사) 둘:
-    `eslint.config.mjs` 의 `shadowBlur` 셀렉터(위 한
-    파일만 통과시킨다) + `tests/contract/footprint-bloom-exception.contract.test.ts`
-    (기본값이 0인가 · 상한이 6인가 · 쓰는 곳이 하나뿐인가 · 이 문서에 적혀 있는가).
+  - **명문 예외 1건 (2026-07-29): 발자국 트레일 번짐.** 조건(정적 · opt-in ·
+    기본 0 · 상한 6px)과 사는 곳(`footprint-glyph.ts` 한 파일)과 근거는
+    `docs/DESIGN-SYSTEM.md` Don'ts. 게이트: `eslint.config.mjs` 의 `shadowBlur`
+    셀렉터 + `footprint-bloom-exception.contract.test.ts`.
 - 움직이는 그라디언트 배경 · 오로라 <!--dont:animated-gradient-bg-->
   - 명문 예외 1건(2026-08-18): **관문 전류장** — 조건·상한·게이트:
     `gateway-fx-exception.contract.test.ts` · 정본 Don'ts.
@@ -109,8 +98,7 @@ aura/particle/rarity(gold)/shimmer 를 허용했었다. fable 의 판정 B 와 �
 ## 문서
 
 - 작업 순서를 적어 둔 주석 (`audit A2`, `iter 18`, `Track D-cont-1` 처럼 그때만 뜻이 통하는 표시) 을 코드에 남기기.
-- README / CLAUDE.md 의 링크가 깨진 채 두기 (파일 이름을 바꾸고 링크를 안 고침).
-- AGENTS.md 와 CLAUDE.md 의 내용이 서로 어긋난 채 두기.
+- README / CLAUDE.md 의 링크를 깨진 채 두기. AGENTS.md 와 CLAUDE.md 를 어긋난 채 두기.
 
 ## 플러그인 / 확장 (2026-07-23 소유자 승인 노선)
 
@@ -124,6 +112,14 @@ aura/particle/rarity(gold)/shimmer 를 허용했었다. fable 의 판정 B 와 �
 - 허용되는 확장은 **파일에 적어 두는 형태뿐**이다: vault 안의 마크다운이나 설정
   파일로 표현되는 것(저장해 둔 검색, 템플릿, `.ontology-atlasignore` 처럼).
   코드는 한 줄도 실행하지 않고, git diff 로 무엇이 바뀌었는지 다 보여야 한다.
+
+### 에이전트 도구를 대신 설치해 주는 것 (2026-08-20)
+
+위 세 줄은 **Atlas 에 남의 코드를 꽂는 플러그인 시장** 이야기다. 에이전트 CLI 를
+앱이 대신 깔아 주는 것은 해당하지 않되, **넷을 전부 갖출 때만** 한다: ① 사용자가
+누른다 ② 실행할 명령 원문을 먼저 보여 준다 ③ 앱 전용 자리에만 깐다 ④ 버전을
+고정한다. 하나라도 빠지면 금지. Node 런타임을 받아 오는 것은 범위 밖(새 기록
+필요). 근거·조사·진 반대: 원장 2026-08-20 (88).
 
 ## 의존성
 
