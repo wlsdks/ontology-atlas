@@ -13,6 +13,7 @@ use tauri::{AppHandle, Emitter, Manager, RunEvent, State};
 /// ACP 하네스 — 사용자가 이미 설치한 코딩 에이전트를 찾아 앱 안에서 부른다.
 mod acp;
 mod acp_doctor;
+mod managed_node;
 /// 「에이전트 연결」 — 번들 MCP 서버 경로 해석 · 설정 파일 계획/쓰기 · 자가 검증.
 mod agent_setup;
 /// Atlas Git — vault 를 git 으로 버전 기록하는 네이티브 계층 (웹 GUI 가 invoke).
@@ -952,17 +953,19 @@ fn acp_start(
         .map(PathBuf::from);
     // 앱이 대신 깔아 준 것도 찾을 수 있어야 한다 — 안 그러면 설치해 놓고도
     // 화면이 계속 「설치 필요」라고 말한다.
-    let managed_bin = app
-        .path()
-        .app_data_dir()
-        .ok()
-        .map(|dir| acp::managed_cli_bin_dir(&dir));
+    let app_data_for_paths = app.path().app_data_dir().ok();
+    let managed_bin = app_data_for_paths.as_deref().map(acp::managed_cli_bin_dir);
+    // 앱이 받아 둔 Node 도 후보에 넣는다 — 안 그러면 받아 놓고도 「Node 필요」다.
+    let managed_node_bin = app_data_for_paths
+        .as_deref()
+        .and_then(managed_node::managed_node_bin_dir);
     let launch = acp::resolve_launch(
         &runtime_id,
         home.as_deref(),
         std::env::var_os("PATH").as_deref(),
         &probe,
         managed_bin.as_deref(),
+        managed_node_bin.as_deref(),
     )?;
 
     /*
@@ -997,6 +1000,7 @@ fn acp_start(
                 std::env::var_os("PATH").as_deref(),
                 &probe,
                 managed_bin.as_deref(),
+                managed_node_bin.as_deref(),
             );
             acp::resolve_command(name, &dirs, &probe)
         });
@@ -1321,12 +1325,46 @@ fn acp_detect_runtimes(app: tauri::AppHandle, probe_login: Option<bool>) -> Vec<
         std::env::var_os(if cfg!(windows) { "USERPROFILE" } else { "HOME" }).map(PathBuf::from);
     let path = std::env::var_os("PATH");
     // 앱이 대신 깔아 준 것도 찾는다 — 안 그러면 설치해 놓고도 「설치 필요」다.
-    let managed_bin = app
+    let app_data_for_paths = app.path().app_data_dir().ok();
+    let managed_bin = app_data_for_paths.as_deref().map(acp::managed_cli_bin_dir);
+    let managed_node_bin = app_data_for_paths
+        .as_deref()
+        .and_then(managed_node::managed_node_bin_dir);
+    acp::detect_runtimes(
+        home.as_deref(),
+        path.as_deref(),
+        &probe,
+        managed_bin.as_deref(),
+        managed_node_bin.as_deref(),
+    )
+}
+
+/// **Node 를 앱이 받아 줄 수 있나 — 그렇다면 어디서 무엇을.**
+///
+/// 화면은 이것을 받아 누르기 전에 **주소와 해시 앞머리**를 보여 준다. 없으면
+/// 등재 안 된 플랫폼이고, 화면은 종전대로 공식 안내로 보낸다.
+#[tauri::command]
+fn acp_node_plan() -> Option<String> {
+    managed_node::managed_node_plan()
+}
+
+/// Node 를 앱 전용 자리에 받아 두고 **해시를 대조한다.**
+///
+/// 조건 넷(원장 (88)(89))이 여기서 지켜진다: 사용자가 누를 때만 · 어디서
+/// 무엇을 받는지 먼저 보여 준다 · `<app-data>/runtimes/node` 안에만 ·
+/// 버전을 고정하고 **받은 뒤 해시를 대조한다**(안 맞으면 지우고 실패).
+#[tauri::command]
+fn acp_install_node(
+    app: tauri::AppHandle,
+    runtime_id: String,
+) -> Result<Vec<acp_doctor::AcpCheck>, String> {
+    let app_data = app
         .path()
         .app_data_dir()
-        .ok()
-        .map(|dir| acp::managed_cli_bin_dir(&dir));
-    acp::detect_runtimes(home.as_deref(), path.as_deref(), &probe, managed_bin.as_deref())
+        .map_err(|err| format!("app-data-dir-unavailable:{err}"))?;
+    managed_node::ensure_managed_node(&app_data)?;
+    let after = doctor_context(&app, &runtime_id)?;
+    Ok(acp_doctor::diagnose(&after.borrow()))
 }
 
 /// **이 도구를 앱이 대신 깔아 줄 수 있나 — 그렇다면 무슨 명령으로.**
@@ -1372,11 +1410,15 @@ fn acp_install_cli(
     };
     let home =
         std::env::var_os(if cfg!(windows) { "USERPROFILE" } else { "HOME" }).map(PathBuf::from);
+    // 앱이 받아 둔 Node 의 npm 도 후보다 — 시스템에 npm 이 없는 사람이
+    // 여기까지 왔다면 그게 유일한 길이다.
+    let managed_node_bin = managed_node::managed_node_bin_dir(&app_data);
     let dirs = acp::candidate_bin_dirs(
         home.as_deref(),
         std::env::var_os("PATH").as_deref(),
         &probe,
         None,
+        managed_node_bin.as_deref(),
     );
     // npm 을 **이름으로** 띄우지 않는다 — GUI 앱의 PATH 는 사용자의 셸과 다르다
     // (이 파일 맨 위의 실측이 그 이유다).
@@ -1555,10 +1597,17 @@ fn doctor_context(app: &tauri::AppHandle, runtime_id: &str) -> Result<OwnedDocto
         std::env::var_os(if cfg!(windows) { "USERPROFILE" } else { "HOME" }).map(PathBuf::from);
     let path = std::env::var_os("PATH");
     let app_data_for_paths = app.path().app_data_dir().ok();
-    let managed_bin = app_data_for_paths
+    let managed_bin = app_data_for_paths.as_deref().map(acp::managed_cli_bin_dir);
+    let managed_node_bin = app_data_for_paths
         .as_deref()
-        .map(acp::managed_cli_bin_dir);
-    let dirs = acp::candidate_bin_dirs(home.as_deref(), path.as_deref(), &probe, managed_bin.as_deref());
+        .and_then(managed_node::managed_node_bin_dir);
+    let dirs = acp::candidate_bin_dirs(
+        home.as_deref(),
+        path.as_deref(),
+        &probe,
+        managed_bin.as_deref(),
+        managed_node_bin.as_deref(),
+    );
     let path_env = std::env::join_paths(dirs.iter())
         .map(|joined| joined.to_string_lossy().to_string())
         .unwrap_or_default();
@@ -1574,6 +1623,7 @@ fn doctor_context(app: &tauri::AppHandle, runtime_id: &str) -> Result<OwnedDocto
         path.as_deref(),
         &probe,
         managed_bin.as_deref(),
+        managed_node_bin.as_deref(),
     )
         .ok()
         .map(|launch| launch.program);
@@ -5227,6 +5277,8 @@ pub fn run() {
             acp_repair,
             acp_reset_connection,
             open_external_url,
+            acp_node_plan,
+            acp_install_node,
             acp_install_plan,
             acp_install_cli,
             acp_start,

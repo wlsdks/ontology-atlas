@@ -13,6 +13,8 @@ import {
   agentInstallPlan,
   diagnoseAgent,
   installAgentCli,
+  installManagedNode,
+  nodeInstallPlan,
   repairAgentCheck,
   resetAgentConnection,
 } from '../model/acp-doctor';
@@ -150,6 +152,40 @@ export function useAgentDoctor(
       alive = false;
     };
   }, [toolMissing, runtimeId]);
+
+  /**
+   * **Node 도 앱이 받아 줄 수 있다** — 원장 (89). 「도구를 띄울 수 있나」가
+   * 막혔을 때만 물어본다. 이것이 도구가 하나도 없는 사람의 마지막 막다른
+   * 길이었다.
+   */
+  const [nodePlan, setNodePlan] = useState<string | null>(null);
+  const launcherMissing = useMemo(
+    () => (checks ?? []).some((check) => check.id === 'launcher' && check.state === 'problem'),
+    [checks],
+  );
+  useEffect(() => {
+    if (!launcherMissing) return;
+    let alive = true;
+    void nodeInstallPlan().then((plan) => {
+      if (alive) setNodePlan(plan);
+    });
+    return () => {
+      alive = false;
+    };
+  }, [launcherMissing]);
+
+  const getNode = useCallback(async () => {
+    setBusy('node');
+    setFailed(false);
+    try {
+      setChecks(await installManagedNode(runtimeId));
+      onChanged?.();
+    } catch {
+      setFailed(true);
+    } finally {
+      setBusy(null);
+    }
+  }, [runtimeId, onChanged]);
 
   const install = useCallback(async () => {
     setBusy('install');
@@ -358,6 +394,34 @@ export function useAgentDoctor(
                         className="border-[color:var(--color-indigo-a46)] bg-[color:var(--color-indigo-a16)] hover:bg-[color:var(--color-indigo-a24)]"
                       >
                         {busy === 'install' ? t('installing') : t('install')}
+                      </Chip>
+                    </span>
+                  </span>
+                ) : null}
+                {check.id === 'launcher' && check.state === 'problem' && launcherMissing && nodePlan ? (
+                  <span
+                    data-testid="agent-doctor-node-plan"
+                    className="w-full basis-full min-w-0 rounded-card border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] p-2.5"
+                  >
+                    <span className="block break-keep text-label leading-prose text-[color:var(--color-text-tertiary)]">
+                      {t('nodePlanTitle')}
+                    </span>
+                    <code className="mt-1 block overflow-x-auto whitespace-pre text-caption leading-caption text-[color:var(--color-text-secondary)]">
+                      {nodePlan}
+                    </code>
+                    <span className="mt-1.5 block break-keep text-caption leading-caption text-[color:var(--color-text-quaternary)]">
+                      {t('nodePlanNote')}
+                    </span>
+                    <span className="mt-2 block">
+                      <Chip
+                        size="sm"
+                        tone="accentOnTint"
+                        data-testid="agent-doctor-install-node"
+                        disabled={busy !== null}
+                        onClick={() => void getNode()}
+                        className="border-[color:var(--color-indigo-a46)] bg-[color:var(--color-indigo-a16)] hover:bg-[color:var(--color-indigo-a24)]"
+                      >
+                        {busy === 'node' ? t('installingNode') : t('installNode')}
                       </Chip>
                     </span>
                   </span>
