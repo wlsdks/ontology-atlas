@@ -133,12 +133,18 @@ test("이동 신호가 오면 지도가 그리기를 멈추고, 손이 움직이
   };
 
   // 전제 ①: 3D 가 정말 켜졌나. (2D 였다면 이 검사는 다른 것을 재고 있다.)
-  await page.waitForTimeout(1_000);
-  const dome = await page.evaluate(
-    () =>
-      (window as unknown as { __atlasMap?: { dome: () => unknown } }).__atlasMap?.dome() ?? null,
-  );
-  expect(dome, "3D 가 켜지지 않았다 — 이 표본은 처방이 겨냥한 구간이 아니다").not.toBeNull();
+  // 고정 대기가 아니라 폴링이다 — 지도 초기화 시간도 기계마다 다르다.
+  await expect
+    .poll(
+      () =>
+        page.evaluate(
+          () =>
+            (window as unknown as { __atlasMap?: { dome: () => unknown } }).__atlasMap?.dome() ??
+            null,
+        ),
+      { message: "3D 가 켜지지 않았다 — 이 표본은 처방이 겨냥한 구간이 아니다", timeout: 15_000 },
+    )
+    .not.toBeNull();
 
   // 전제 ②: 신호 «전» 에 지도가 실제로 그리고 있어야 한다. 잠들어 있으면
   // 「양보했다」와 「원래 안 그렸다」가 같은 초록이 된다 — 공회전 차단.
