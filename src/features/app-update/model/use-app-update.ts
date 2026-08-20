@@ -54,28 +54,44 @@ export function useAppUpdate() {
       return;
     }
 
-    setPhase({ kind: 'checking' });
+    /*
+     * ⚠️ **자동 확인은 「새 버전이 있다」일 때만 말한다** (2026-08-20 실측으로
+     * 정정). 그 밖의 경우에는 상태를 **아예 건드리지 않는다.**
+     *
+     * 종전에는 자동 경로도 `checking` 과 `idle` 을 썼다. 그래서 사용자가
+     * 「업데이트 확인」을 누른 직후 예약된 자동 확인이 발화하면, 방금 받은 답을
+     * **조용히 지웠다** — 눌렀더니 뭔가 떴다가 아무 말 없이 사라지는 화면이 된다.
+     *
+     * 하필 **실패일 때만** 그랬다: 성공하면 `LAST_CHECK_KEY` 가 쓰여 자동 확인이
+     * 간격에 걸려 건너뛰는데, 실패는 그 값을 안 쓰므로 자동 확인이 그대로 돈다.
+     * 그리고 오늘 이 저장소의 엔드포인트는 정식 릴리스가 없어 **항상 실패**다 —
+     * 즉 이 결함은 예외가 아니라 기본 경로였다.
+     *
+     * 이건 원래 의도이기도 하다. 토스트가 자기 문서에 적어 둔 그대로:
+     * *"`checking` 단계는 그리지 않는다 … 결과가 「새 버전 있음」일 때 처음
+     * 말을 건다."* 코드가 그 약속을 안 지키고 있었다.
+     */
+    if (manual) setPhase({ kind: 'checking' });
     try {
       const { check: checkForUpdate } = await import('@tauri-apps/plugin-updater');
       const update = await checkForUpdate();
       write(LAST_CHECK_KEY, String(Date.now()));
 
       if (!update) {
-        setPhase(manual ? { kind: 'current' } : { kind: 'idle' });
+        if (manual) setPhase({ kind: 'current' });
         return;
       }
       if (!manual && !shouldSurfaceVersion(update.version, read(DISMISSED_VERSION_KEY))) {
-        setPhase({ kind: 'idle' });
+        // 이미 거절한 버전이다. 조용히 넘어가되 **화면은 그대로 둔다.**
         return;
       }
       setPhase({ kind: 'available', version: update.version, notes: update.body ?? null });
     } catch (error) {
       // 자동 확인의 실패는 조용히 넘긴다 — 네트워크가 없다는 이유로 사용자에게
       // 말을 걸 이유가 없다. 사용자가 직접 눌렀을 때만 실패를 보고한다.
+      // **「조용히」는 「지운다」가 아니다** — 위 주석의 결함이 그 혼동이었다.
       if (manual) {
         setPhase({ kind: 'failed', message: error instanceof Error ? error.message : String(error) });
-      } else {
-        setPhase({ kind: 'idle' });
       }
     }
   }, []);
