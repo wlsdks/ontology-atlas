@@ -16,6 +16,7 @@ import { useAgentDoctor } from './AgentDoctor';
 
 const diagnoseAgent = vi.fn<(runtimeId: string) => Promise<AcpCheck[]>>();
 const repairAgentCheck = vi.fn<(runtimeId: string, checkId: string) => Promise<AcpCheck[]>>();
+const resetAgentConnection = vi.fn<(runtimeId: string) => Promise<AcpCheck[]>>();
 
 vi.mock('../model/acp-doctor', async () => {
   const actual = await vi.importActual<typeof import('../model/acp-doctor')>('../model/acp-doctor');
@@ -23,6 +24,7 @@ vi.mock('../model/acp-doctor', async () => {
     ...actual,
     diagnoseAgent: (runtimeId: string) => diagnoseAgent(runtimeId),
     repairAgentCheck: (runtimeId: string, checkId: string) => repairAgentCheck(runtimeId, checkId),
+    resetAgentConnection: (runtimeId: string) => resetAgentConnection(runtimeId),
   };
 });
 
@@ -55,6 +57,7 @@ const unknown = (id: string): AcpCheck => ({ id, state: 'unknown', fixable: fals
 beforeEach(() => {
   diagnoseAgent.mockReset();
   repairAgentCheck.mockReset();
+  resetAgentConnection.mockReset();
 });
 
 describe('연동 점검 화면', () => {
@@ -148,6 +151,47 @@ describe('연동 점검 화면', () => {
     // 모르는 것에 「고치기」를 달면 앱이 못 하는 일을 하겠다고 말하는 것이다.
     expect(screen.queryByTestId('agent-doctor-fix-login')).toBeNull();
     expect(screen.queryByTestId('agent-doctor-all-clear')).toBeNull();
+  });
+
+  it('앱이 못 고치는 문제에는 **사람이 할 일**을 적는다', async () => {
+    diagnoseAgent.mockResolvedValue([
+      { id: 'cli', state: 'problem', fixable: false },
+      problem('shadow-keychain'),
+    ]);
+    renderHarness();
+
+    fireEvent.click(screen.getByTestId('agent-doctor-scan'));
+    await waitFor(() => expect(screen.getByTestId('agent-doctor-checks')).toBeVisible());
+
+    // 왜 안 되는지만 말하고 어디로 가면 되는지를 안 말하면 막다른 길이다.
+    expect(screen.getByTestId('agent-doctor-next-cli')).toBeVisible();
+    // 앱이 고칠 수 있는 것에는 버튼이 답이므로 문장을 더하지 않는다.
+    expect(screen.queryByTestId('agent-doctor-next-shadow-keychain')).toBeNull();
+  });
+
+  it('「연결 다시 맺기」는 점검을 본 뒤에만 나온다', async () => {
+    diagnoseAgent.mockResolvedValue([ok('cli')]);
+    renderHarness();
+
+    // 아무 문제 없는 사람에게 상시로 보여 주면 뭔가 잘못됐다는 신호로 읽힌다.
+    expect(screen.queryByTestId('agent-doctor-reset')).toBeNull();
+
+    fireEvent.click(screen.getByTestId('agent-doctor-scan'));
+    await waitFor(() => expect(screen.getByTestId('agent-doctor-reset')).toBeVisible());
+  });
+
+  it('다시 맺으면 **다시 잰 값**을 그린다', async () => {
+    diagnoseAgent.mockResolvedValue([problem('config-dir')]);
+    resetAgentConnection.mockResolvedValue([ok('config-dir')]);
+    renderHarness();
+
+    fireEvent.click(screen.getByTestId('agent-doctor-scan'));
+    await waitFor(() => expect(screen.getByTestId('agent-doctor-reset')).toBeVisible());
+
+    fireEvent.click(screen.getByTestId('agent-doctor-reset'));
+
+    await waitFor(() => expect(screen.getByTestId('agent-doctor-all-clear')).toBeInTheDocument());
+    expect(resetAgentConnection).toHaveBeenCalledWith('claude-acp');
   });
 
   it('점검이 실패하면 그 사실을 말한다 — 조용히 빈 화면이 되지 않는다', async () => {

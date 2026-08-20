@@ -3,8 +3,17 @@
 import { useCallback, useMemo, useState } from 'react';
 import { useTranslations } from 'next-intl';
 
+import { ChevronDown, RotateCcw, Stethoscope } from 'lucide-react';
+
+import { Chip } from '@/shared/ui/controls';
 import { controlClass } from '@/shared/ui/control-class';
-import { type AcpCheck, diagnoseAgent, repairAgentCheck } from '../model/acp-doctor';
+import { ICON_SIZE } from '@/shared/ui/icon-size';
+import {
+  type AcpCheck,
+  diagnoseAgent,
+  repairAgentCheck,
+  resetAgentConnection,
+} from '../model/acp-doctor';
 
 /**
  * 연동 점검 — **왜 안 되는지 단계별로 재고, 고칠 수 있는 것은 여기서 고친다.**
@@ -46,6 +55,14 @@ import { type AcpCheck, diagnoseAgent, repairAgentCheck } from '../model/acp-doc
  * 행 안에, 결과는 행 아래여야 하는데 한 덩어리면 그게 불가능하다. 그게 첫 판이
  * 무너진 구조적 이유다.
  */
+/**
+ * 사람이 할 일을 적어 둔 검사. 앱이 못 고치는 문제에만 뜻이 있다.
+ *
+ * 여기 없는 id 는 문구도 없으므로 아무것도 안 그린다 — 없는 문구를 부르면
+ * 화면에 키가 그대로 찍힌다.
+ */
+const NEXT_STEP = new Set(['cli', 'launcher', 'login', 'gate']);
+
 export function useAgentDoctor(runtimeId: string) {
   const t = useTranslations('acpChat.doctor');
   const [checks, setChecks] = useState<AcpCheck[] | null>(null);
@@ -79,27 +96,66 @@ export function useAgentDoctor(runtimeId: string) {
     [runtimeId],
   );
 
+  const reset = useCallback(async () => {
+    setBusy('reset');
+    setFailed(false);
+    try {
+      setChecks(await resetAgentConnection(runtimeId));
+    } catch {
+      setFailed(true);
+    } finally {
+      setBusy(null);
+    }
+  }, [runtimeId]);
+
   const blocked = useMemo(
     () => (checks ?? []).filter((check) => check.state !== 'ok'),
     [checks],
   );
 
   const scanButton = (
-    <button
-      type="button"
+    <>
+    {/*
+      ⚠️ **프리미티브로 쓴다** (2026-08-20 소유자: *"버튼은 사이즈 통일좀"*).
+      손으로 쓴 `<button>` + `controlClass` 는 크기 클래스가 같아도 옆의
+      `Chip`(아이콘을 안고 있다)과 **다른 물건으로 읽힌다** — 그리고 이
+      저장소에는 손으로 쓴 컨트롤을 늘리지 못하게 하는 래칫이 이미 있다.
+    */}
+    <Chip
+      size="sm"
+      tone="muted"
+      hoverInk="strong"
       data-testid="agent-doctor-scan"
       disabled={busy !== null}
       onClick={() => void run()}
-      className={controlClass({
-        shape: 'chip',
-        size: 'sm',
-        tone: 'muted',
-        hoverInk: 'strong',
-        className: 'shrink-0',
-      })}
+      className="shrink-0"
     >
+      <Stethoscope size={ICON_SIZE.sm} aria-hidden />
       {busy === 'scan' ? t('scanning') : t('scan')}
-    </button>
+    </Chip>
+    {/*
+      **「로그아웃」이 아니라 「다시 맺기」다.** 이 앱에는 앱 몫 로그인이 없어서
+      로그아웃을 내주면 남의 로그인을 지우거나 그런 척하게 된다. 앱이 만든 것만
+      지우고 다시 만드는 것이 이 구조에서 「재연동」의 정확한 뜻이다.
+
+      **점검 결과를 본 뒤에만 낸다.** 아무 문제 없는 사람에게 「다시 맺기」를
+      상시로 보여 주면, 그건 뭔가 잘못됐다는 신호로 읽힌다.
+    */}
+    {checks ? (
+      <Chip
+        size="sm"
+        tone="muted"
+        hoverInk="strong"
+        data-testid="agent-doctor-reset"
+        disabled={busy !== null}
+        onClick={() => void reset()}
+        className="ml-1.5 shrink-0"
+      >
+        <RotateCcw size={ICON_SIZE.sm} aria-hidden />
+        {busy === 'reset' ? t('resetting') : t('reset')}
+      </Chip>
+    ) : null}
+    </>
   );
 
   const result =
@@ -129,8 +185,13 @@ export function useAgentDoctor(runtimeId: string) {
            *
            * 그래서 상태는 사람 말로 한 줄만 하고, 무엇을 봤는지는 **접어 둔다.**
            * 궁금한 사람은 펴 보면 되고, 아닌 사람에게는 한 줄이다.
+           *
+           * ⚠️ **누를 수 있다는 것이 보여야 한다** (2026-08-20 소유자:
+           * *"이게 열었다 닫았다가 가능한건지?"*). 글자만 두면 `<details>` 여도
+           * 아무도 그것을 모른다. 이 화면이 이미 쓰는 표시를 그대로 쓴다 —
+           * 열리면 도는 갈매기표.
            */
-          <details data-testid="agent-doctor-all-clear">
+          <details data-testid="agent-doctor-all-clear" className="group">
             <summary
               className={controlClass({
                 shape: 'link',
@@ -141,8 +202,13 @@ export function useAgentDoctor(runtimeId: string) {
               })}
             >
               {t('allClear')}
-              <span className="ml-1.5 text-[color:var(--color-text-quaternary)]">
+              <span className="ml-1.5 inline-flex items-center gap-1 text-[color:var(--color-text-quaternary)]">
                 {t('whatWeChecked')}
+                <ChevronDown
+                  size={ICON_SIZE.sm}
+                  aria-hidden
+                  className="transition-transform group-open:rotate-180"
+                />
               </span>
             </summary>
             <ul
@@ -166,7 +232,7 @@ export function useAgentDoctor(runtimeId: string) {
                 key={check.id}
                 data-testid={`agent-doctor-check-${check.id}`}
                 data-state={check.state}
-                className="flex min-w-0 items-start gap-2 break-keep text-label leading-prose"
+                className="flex min-w-0 flex-wrap items-start gap-x-2 gap-y-1 break-keep text-label leading-prose"
               >
                 {/*
                   점 하나로 상태를 말하되 **색만으로 구분하지 않는다** — 바로 옆
@@ -186,16 +252,30 @@ export function useAgentDoctor(runtimeId: string) {
                     {t(`state.${check.state}`)}
                   </span>
                 </span>
+                {/*
+                  **앱이 못 고치는 것에는 사람이 할 일을 적는다.** 이 저장소가
+                  강등 카드에 대해 정해 둔 것과 같은 규율이다 — 왜 안 되는지만
+                  말하고 어디로 가면 되는지를 안 말하면, 그건 막다른 길이다.
+                */}
                 {check.state === 'problem' && check.fixable ? (
-                  <button
-                    type="button"
+                  <Chip
+                    size="sm"
+                    tone="accentOnTint"
                     data-testid={`agent-doctor-fix-${check.id}`}
                     disabled={busy !== null}
                     onClick={() => void fix(check.id)}
-                    className={controlClass({ shape: 'chip', size: 'sm', tone: 'accent', className: 'shrink-0' })}
+                    className="shrink-0 border-[color:var(--color-indigo-a46)] bg-[color:var(--color-indigo-a16)] hover:bg-[color:var(--color-indigo-a24)]"
                   >
                     {busy === check.id ? t('fixing') : t('fix')}
-                  </button>
+                  </Chip>
+                ) : null}
+                {check.state === 'problem' && !check.fixable && NEXT_STEP.has(check.id) ? (
+                  <span
+                    data-testid={`agent-doctor-next-${check.id}`}
+                    className="w-full basis-full break-keep pl-3.5 text-label leading-prose text-[color:var(--color-text-quaternary)]"
+                  >
+                    {t(`next.${check.id}`)}
+                  </span>
                 ) : null}
               </li>
             ))}
