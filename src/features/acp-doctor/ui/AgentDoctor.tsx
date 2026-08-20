@@ -386,6 +386,19 @@ export function useAgentDoctor(
         className="mt-1.5 min-w-0 border-t border-[color:var(--color-divider)] pt-2"
       >
         {progressRow}
+        {/*
+          ⚠️ **`checks` 가 없다는 것은 「괜찮다」가 아니라 「안 쟀다」다.**
+
+          #1175 로 진행 상태만 있어도 이 블록이 그려지게 되면서, 점검을 한 번도
+          안 돌린 화면이 `blocked.length === 0` 을 타고 「지금은 문제 없어요」를
+          말하게 됐다 — 재지도 않고 초록을 그리는 것이고, 이 화면이 지키기로 한
+          두 규율 중 첫째("모르는 것을 초록으로 그리지 않는다")를 정면으로 어긴다.
+          (2026-08-20 설치 앱 스크린샷에서 「설치 필요」 배지 바로 아래
+          「지금은 문제 없어요」가 같이 서 있는 것으로 드러났다.)
+
+          그래서 판정 문장은 **잰 것이 있을 때만** 낸다. 진행 줄은 위에 그대로
+          남으므로 완료 표시는 잃지 않는다.
+        */}
         {failed ? (
           <p
             data-testid="agent-doctor-failure"
@@ -393,7 +406,7 @@ export function useAgentDoctor(
           >
             {t('failed')}
           </p>
-        ) : blocked.length === 0 ? (
+        ) : !checks ? null : blocked.length === 0 ? (
           /*
            * **다 괜찮으면 한 줄이다.** 같은 문장 일곱 개는 정보가 아니라 사본이고,
            * 이 화면은 그 실패를 이미 한 번 겪었다.

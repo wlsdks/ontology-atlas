@@ -626,3 +626,40 @@ describe('언마운트를 건너뛰는 완료 표시', () => {
     );
   });
 });
+
+/**
+ * **모르는 것을 초록으로 그리지 않는다.**
+ *
+ * #1175 가 「닫아 둔 사이의 완료」를 살리려고 마운트 시 진행 상태를 받아 오게
+ * 했는데, 그러면서 결과 블록이 **검사 없이도** 그려지게 됐다. 그때
+ * `blocked.length === 0` 은 「다 괜찮다」가 아니라 **「아직 아무것도 안 쟀다」**
+ * 인데, 화면은 그것을 「지금은 문제 없어요」라고 말한다 — 재지도 않고 초록을
+ * 그리는 것이라 이 화면이 지키기로 한 두 규율 중 첫째를 정면으로 어긴다.
+ */
+describe('재지 않은 것을 괜찮다고 말하지 않는다', () => {
+  it('진행 상태만 있고 점검을 안 했으면 「문제 없어요」를 안 그린다', async () => {
+    lastInstallProgress.mockResolvedValue({
+      runtimeId: 'claude-acp',
+      job: 'node',
+      stage: 'done',
+      received: null,
+      total: null,
+      note: null,
+      at: Date.now(),
+    });
+    renderHarness();
+
+    // 완료는 보여 준다 — 그게 이 배선의 존재 이유다.
+    await screen.findByTestId('agent-doctor-progress');
+    // 그런데 검사는 한 번도 안 돌았다. 그것을 「괜찮다」로 바꾸면 안 된다.
+    expect(screen.queryByTestId('agent-doctor-all-clear')).toBeNull();
+    expect(screen.queryByTestId('agent-doctor-checks')).toBeNull();
+  });
+
+  it('점검을 돌린 뒤에는 평소대로 말한다', async () => {
+    diagnoseAgent.mockResolvedValue([ok('cli'), ok('launcher')]);
+    renderHarness();
+    fireEvent.click(screen.getByTestId('agent-doctor-scan'));
+    await screen.findByTestId('agent-doctor-all-clear');
+  });
+});
