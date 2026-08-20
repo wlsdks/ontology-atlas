@@ -38,21 +38,34 @@ pub(crate) struct AcpCheck {
     pub state: &'static str,
     /// 앱이 이 문제를 스스로 고칠 수 있나. `problem` 일 때만 뜻이 있다.
     pub fixable: bool,
+    /// **앞 단계가 막혀서 이 단계는 손대도 소용없다.**
+    ///
+    /// 2026-08-20 워크스루에서 잡혔다: 도구가 아예 없는 사람에게 화면이
+    /// 「앱 몫 설정이 준비됐나 — 고치기」를 권하고 있었다. 눌러도 아무 소용이
+    /// 없다 — 띄울 도구 자체가 없으니까. 검사 순서가 의존 순서라고 이 파일이
+    /// 적어 두고서 화면은 그것을 안 쓰고 있었다.
+    ///
+    /// 패턴 이름: **무너진 앞단 위에 세운 고치기 버튼.**
+    pub blocked: bool,
     /// 기계가 잰 사실 한 조각(경로 · 사유). 없으면 `None` — 지어내지 않는다.
     pub detail: Option<String>,
 }
 
 impl AcpCheck {
     fn ok(id: &'static str, detail: Option<String>) -> Self {
-        Self { id, state: "ok", fixable: false, detail }
+        Self { id, state: "ok", fixable: false, blocked: false, detail }
     }
     fn problem(id: &'static str, fixable: bool, detail: Option<String>) -> Self {
-        Self { id, state: "problem", fixable, detail }
+        Self { id, state: "problem", fixable, blocked: false, detail }
     }
     fn unknown(id: &'static str, detail: Option<String>) -> Self {
-        Self { id, state: "unknown", fixable: false, detail }
+        Self { id, state: "unknown", fixable: false, blocked: false, detail }
     }
 }
+
+/// 이 둘이 막히면 **뒤의 모든 것이 소용없다.** 도구가 없거나 띄울 수 없으면
+/// 설정 폴더를 아무리 고쳐도 대화는 안 열린다.
+const PREREQUISITE_IDS: &[&str] = &["cli", "launcher"];
 
 /// 이 파일이 아는 검사 전부. **순서가 곧 의존 순서다** — 앞의 것이 무너지면
 /// 뒤의 것은 재도 뜻이 없으므로 화면이 위에서부터 읽으면 된다.
@@ -200,11 +213,27 @@ pub(crate) fn diagnose(ctx: &DoctorContext<'_>) -> Vec<AcpCheck> {
 
 /// **놀고 있지 않다는 증거.** 등재되지 않은 id 를 돌려주면 화면이 그 줄에 대해
 /// 아무 문구도 못 찾아 빈 칸을 그린다. 목록과 실제 산출을 여기서 묶는다.
-fn finish(out: Vec<AcpCheck>) -> Vec<AcpCheck> {
+fn finish(mut out: Vec<AcpCheck>) -> Vec<AcpCheck> {
     debug_assert!(
         out.iter().all(|check| CHECK_IDS.contains(&check.id)),
         "등재되지 않은 검사 id 를 돌려줬다"
     );
+
+    // 선행 조건이 막혔으면 뒤의 것들은 **고칠 수 있다고 말하지 않는다.**
+    // 상태는 그대로 둔다 — 잰 것을 감추는 것이 아니라, 소용없는 행동을 권하지
+    // 않는 것이 요점이다.
+    let blocked_upstream = out
+        .iter()
+        .any(|check| PREREQUISITE_IDS.contains(&check.id) && check.state == "problem");
+    if blocked_upstream {
+        for check in out.iter_mut() {
+            if PREREQUISITE_IDS.contains(&check.id) {
+                continue;
+            }
+            check.blocked = true;
+            check.fixable = false;
+        }
+    }
     out
 }
 
@@ -314,6 +343,61 @@ mod tests {
             isolated_logged_out: None,
             shadow_present: None,
         }
+    }
+
+    /// **무너진 앞단 위에 고치기 버튼을 세우지 않는다** (2026-08-20 워크스루).
+    ///
+    /// 도구가 아예 없는 사람에게 「앱 몫 설정이 준비됐나 — 고치기」를 권하고
+    /// 있었다. 눌러도 소용없다 — 띄울 도구 자체가 없으니까.
+    #[test]
+    fn nothing_downstream_is_offered_as_fixable_when_the_tool_is_missing() {
+        let base = std::env::temp_dir().join(format!("atlas-doctor-l-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&base);
+        let home = base.join("home");
+        std::fs::create_dir_all(&home).unwrap();
+
+        // cli 도 launcher 도 없는 사람 = 워크스루의 그 사람.
+        let app_data = base.join("appdata");
+        let c = ctx(&app_data, Some(&home));
+        assert!(c.cli.is_none() && c.launcher.is_none(), "이 시험의 전제가 깨졌다");
+
+        let checks = diagnose(&c);
+        let missing_tool = checks.iter().find(|x| x.id == "cli").unwrap();
+        assert_eq!(missing_tool.state, "problem");
+        assert!(!missing_tool.blocked, "선행 조건 자신이 막혔다고 표시되면 안 된다");
+
+        for check in checks.iter().filter(|x| !PREREQUISITE_IDS.contains(&x.id)) {
+            assert!(check.blocked, "{} 가 막힌 표시가 없다", check.id);
+            assert!(
+                !check.fixable,
+                "{} 에 고치기를 권하고 있다 — 눌러도 소용없다",
+                check.id
+            );
+        }
+        let _ = std::fs::remove_dir_all(&base);
+    }
+
+    /// 반대 방향: 선행 조건이 멀쩡하면 뒤의 수리는 그대로 살아 있어야 한다.
+    #[test]
+    fn downstream_repairs_survive_when_prerequisites_are_fine() {
+        let base = std::env::temp_dir().join(format!("atlas-doctor-m-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&base);
+        let home = base.join("home");
+        std::fs::create_dir_all(&home).unwrap();
+        let tool = base.join("fake-claude");
+        std::fs::create_dir_all(&base).unwrap();
+        std::fs::write(&tool, "").unwrap();
+
+        let app_data = base.join("appdata");
+        let mut c = ctx(&app_data, Some(&home));
+        c.cli = Some(&tool);
+        c.launcher = Some(&tool);
+
+        let cfg = diagnose(&c).into_iter().find(|x| x.id == "config-dir").unwrap();
+        assert_eq!(cfg.state, "problem");
+        assert!(!cfg.blocked);
+        assert!(cfg.fixable, "선행 조건이 멀쩡한데 수리를 막았다");
+        let _ = std::fs::remove_dir_all(&base);
     }
 
     #[test]
@@ -454,7 +538,14 @@ mod tests {
         let home = base.join("home");
         std::fs::create_dir_all(&home).unwrap();
 
-        let c = ctx(&app_data, Some(&home));
+        // 선행 조건(도구·실행기)을 세워 둔다 — 그것이 없으면 뒤의 수리는 이제
+        // 「소용없음」으로 막히고, 그건 이 시험이 재려는 것이 아니다.
+        let tool = base.join("fake-cli");
+        std::fs::write(&tool, "").unwrap();
+        let mut c = ctx(&app_data, Some(&home));
+        c.cli = Some(&tool);
+        c.launcher = Some(&tool);
+
         let before = diagnose(&c);
         let cfg = before.iter().find(|c| c.id == "config-dir").unwrap();
         assert_eq!(cfg.state, "problem", "설정 폴더가 없는데 문제로 안 봤다");

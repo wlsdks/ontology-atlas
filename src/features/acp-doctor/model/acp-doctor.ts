@@ -25,6 +25,13 @@ export interface AcpCheck {
   state: 'ok' | 'problem' | 'unknown';
   /** 앱이 스스로 고칠 수 있나. `problem` 일 때만 뜻이 있다. */
   fixable: boolean;
+  /**
+   * 앞 단계가 막혀서 이 단계는 손대도 소용없다.
+   *
+   * 도구가 아예 없는 사람에게 「앱 몫 설정 고치기」를 권하던 것을 막는다
+   * (2026-08-20 워크스루). 상태는 그대로 보여 주되 **행동은 권하지 않는다.**
+   */
+  blocked: boolean;
   /** 기계가 잰 사실 한 조각(경로 · 사유). 지어내지 않으므로 없을 수 있다. */
   detail?: string | null;
 }

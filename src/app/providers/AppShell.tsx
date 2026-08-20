@@ -1,9 +1,10 @@
 "use client";
 
-import { useCallback, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useState, type ReactNode } from "react";
 import { useRouter, usePathname } from "@/i18n/navigation";
 import { useDestinationShortcuts } from "@/shared/lib/use-destination-shortcuts";
 import { focusMapCanvasWhenReady } from "@/shared/lib/focus-map-canvas";
+import { installExternalLinkOpener } from "@/shared/lib/tauri-external-link";
 import { useToast } from "@/shared/ui";
 import { useTranslations } from "next-intl";
 import {
@@ -61,6 +62,18 @@ import { useHydrated } from "@/shared/lib/use-hydrated";
  */
 export function AppShell({ children }: { children: ReactNode }) {
   useGuideOverride();
+  /*
+   * **앱 안의 밖으로 나가는 링크를 여기 한 곳에서 살린다** (2026-08-20).
+   *
+   * Tauri WebView 는 `target="_blank"` 를 열지 않는다. 그래서 「↗ 설치 방법」
+   * 같은 링크가 **아무 소리 없이** 죽어 있었다 — 도구가 하나도 없는 사람에게
+   * 우리가 준 유일한 다음 걸음이 그것이었는데.
+   *
+   * 링크마다 고치지 않는 이유: 밖으로 나가는 링크는 10개 파일에 흩어져 있고,
+   * 하나씩 고치면 열한 번째를 빠뜨린다. 셸에서 한 번 가로채면 새로 만드는
+   * 링크도 저절로 덮인다. 웹에서는 붙지도 않는다(브라우저가 이미 연다).
+   */
+  useEffect(() => installExternalLinkOpener(), []);
   return (
     <NavRailShellProvider>
       {/* 2026-07-25 — 기록 모달 런처 제거. 목적지(`/git/`)가 lg+ 레일과

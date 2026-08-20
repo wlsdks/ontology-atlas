@@ -108,6 +108,15 @@ export function useAgentDoctor(runtimeId: string) {
     }
   }, [runtimeId]);
 
+  /**
+   * 앞 단계가 막혔나 — 그러면 「연결 다시 맺기」도 소용없다. 도구가 없는데
+   * 설정 폴더를 다시 만들어 봐야 대화는 안 열린다(2026-08-20 워크스루).
+   */
+  const prerequisiteBlocked = useMemo(
+    () => (checks ?? []).some((check) => check.blocked),
+    [checks],
+  );
+
   const blocked = useMemo(
     () => (checks ?? []).filter((check) => check.state !== 'ok'),
     [checks],
@@ -141,7 +150,7 @@ export function useAgentDoctor(runtimeId: string) {
       **점검 결과를 본 뒤에만 낸다.** 아무 문제 없는 사람에게 「다시 맺기」를
       상시로 보여 주면, 그건 뭔가 잘못됐다는 신호로 읽힌다.
     */}
-    {checks ? (
+    {checks && !prerequisiteBlocked ? (
       <Chip
         size="sm"
         tone="muted"

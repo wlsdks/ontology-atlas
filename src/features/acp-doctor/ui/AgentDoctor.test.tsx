@@ -50,9 +50,9 @@ function renderHarness(runtimeId = 'claude-acp') {
   );
 }
 
-const ok = (id: string): AcpCheck => ({ id, state: 'ok', fixable: false });
-const problem = (id: string, fixable = true): AcpCheck => ({ id, state: 'problem', fixable });
-const unknown = (id: string): AcpCheck => ({ id, state: 'unknown', fixable: false });
+const ok = (id: string): AcpCheck => ({ id, state: 'ok', fixable: false, blocked: false });
+const problem = (id: string, fixable = true): AcpCheck => ({ id, state: 'problem', fixable, blocked: false });
+const unknown = (id: string): AcpCheck => ({ id, state: 'unknown', fixable: false, blocked: false });
 
 beforeEach(() => {
   diagnoseAgent.mockReset();
@@ -94,7 +94,7 @@ describe('연동 점검 화면', () => {
       ok('config-dir'),
       ok('credentials-link'),
       problem('shadow-keychain'),
-      { id: 'login', state: 'problem', fixable: false },
+      { id: 'login', state: 'problem', fixable: false, blocked: false },
     ]);
     renderHarness();
 
@@ -112,7 +112,7 @@ describe('연동 점검 화면', () => {
   it('고칠 수 있는 것에만 버튼이 붙는다', async () => {
     diagnoseAgent.mockResolvedValue([
       problem('shadow-keychain', true),
-      { id: 'login', state: 'problem', fixable: false },
+      { id: 'login', state: 'problem', fixable: false, blocked: false },
     ]);
     renderHarness();
 
@@ -155,7 +155,7 @@ describe('연동 점검 화면', () => {
 
   it('앱이 못 고치는 문제에는 **사람이 할 일**을 적는다', async () => {
     diagnoseAgent.mockResolvedValue([
-      { id: 'cli', state: 'problem', fixable: false },
+      { id: 'cli', state: 'problem', fixable: false, blocked: false },
       problem('shadow-keychain'),
     ]);
     renderHarness();
@@ -192,6 +192,29 @@ describe('연동 점검 화면', () => {
 
     await waitFor(() => expect(screen.getByTestId('agent-doctor-all-clear')).toBeInTheDocument());
     expect(resetAgentConnection).toHaveBeenCalledWith('claude-acp');
+  });
+
+  /**
+   * **무너진 앞단 위에 고치기 버튼을 세우지 않는다** (2026-08-20 워크스루).
+   *
+   * 도구가 아예 없는 사람에게 「앱 몫 설정 고치기」와 「연결 다시 맺기」를
+   * 권하고 있었다. 눌러도 소용없다 — 띄울 도구 자체가 없으니까.
+   */
+  it('앞 단계가 막히면 뒷 단계의 수리를 권하지 않는다', async () => {
+    diagnoseAgent.mockResolvedValue([
+      { id: 'cli', state: 'problem', fixable: false, blocked: false },
+      { id: 'config-dir', state: 'problem', fixable: false, blocked: true },
+    ]);
+    renderHarness();
+
+    fireEvent.click(screen.getByTestId('agent-doctor-scan'));
+    await waitFor(() => expect(screen.getByTestId('agent-doctor-checks')).toBeVisible());
+
+    expect(screen.queryByTestId('agent-doctor-fix-config-dir')).toBeNull();
+    // 「연결 다시 맺기」도 같다 — 도구가 없는데 설정을 다시 만들어 봐야 소용없다.
+    expect(screen.queryByTestId('agent-doctor-reset')).toBeNull();
+    // 그래도 **무엇을 하면 되는지**는 남아 있어야 한다.
+    expect(screen.getByTestId('agent-doctor-next-cli')).toBeVisible();
   });
 
   it('점검이 실패하면 그 사실을 말한다 — 조용히 빈 화면이 되지 않는다', async () => {
