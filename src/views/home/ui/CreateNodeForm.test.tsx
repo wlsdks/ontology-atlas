@@ -1,6 +1,8 @@
 import { describe, expect, it, vi } from "vitest";
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { NextIntlClientProvider } from "next-intl";
 import { CreateNodeForm, type CreateNodeFormLabels } from "./CreateNodeForm";
+import koMessages from "../../../../messages/ko.json";
 
 const labels: CreateNodeFormLabels = {
   heading: "노드 추가",
@@ -12,6 +14,10 @@ const labels: CreateNodeFormLabels = {
   domainHelper: "도메인 = 관련 기능을 묶는 큰 영역이에요.",
   create: "만들기",
   cancel: "취소",
+  reviewHeading: "변경안 확인",
+  reviewBack: "다시 고치기",
+  reviewConfirm: "확인하고 쓰기",
+  reviewConfirming: "쓰는 중",
   kindLabels: { project: "프로젝트", domain: "도메인", capability: "역량", element: "요소" },
   primaryNamePlaceholder: "개념 이름 (한국어)",
   secondaryNamePlaceholder: "English name (선택)",
@@ -96,6 +102,50 @@ describe("CreateNodeForm", () => {
     fireEvent.change(titleInput, { target: { value: "Auth" } });
     fireEvent.keyDown(titleInput, { key: "Enter" });
     await waitFor(() => expect(onCreate).toHaveBeenCalled());
+  });
+
+  it("검토 단계로 넘어가면 입력을 지우지 않는다", async () => {
+    const onCreate = vi.fn().mockResolvedValue(false);
+    render(<CreateNodeForm onCreate={onCreate} labels={labels} />);
+    const titleInput = screen.getByTestId("create-node-title");
+    fireEvent.change(titleInput, { target: { value: "Contextual Editing" } });
+    fireEvent.click(screen.getByTestId("create-node-submit"));
+    await waitFor(() => expect(onCreate).toHaveBeenCalledTimes(1));
+    expect(titleInput).toHaveValue("Contextual Editing");
+  });
+
+  it("변경안에서는 확인 전까지 쓰기 콜백만 제공한다", () => {
+    const onConfirm = vi.fn();
+    const onBack = vi.fn();
+    render(
+      <NextIntlClientProvider locale="ko" messages={koMessages}>
+        <CreateNodeForm
+          onCreate={() => false}
+          labels={labels}
+          review={{
+            changeSet: {
+              toolName: "add_concept",
+              operation: "create",
+              target: "capabilities/contextual-editing",
+              exact: true,
+              destructive: false,
+              relation: null,
+              fields: [{ key: "title", after: "Contextual Editing" }],
+              itemCount: 1,
+            },
+            confirming: false,
+            onBack,
+            onConfirm,
+          }}
+        />
+      </NextIntlClientProvider>,
+    );
+
+    expect(screen.getByTestId("create-node-change-review")).toBeInTheDocument();
+    fireEvent.click(screen.getByTestId("create-node-confirm"));
+    expect(onConfirm).toHaveBeenCalledTimes(1);
+    fireEvent.click(screen.getByText("다시 고치기"));
+    expect(onBack).toHaveBeenCalledTimes(1);
   });
 
   it("onCancel 제공 시 취소 버튼 노출 + 호출", () => {

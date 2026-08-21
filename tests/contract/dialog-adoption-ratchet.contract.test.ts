@@ -81,11 +81,6 @@ const REGISTERED: ReadonlyArray<readonly [file: string, count: number, why: stri
     3,
     "지도 컴포저 — --z-map-scrim(25) 층·지도 좌표계 내부에 산다. body 포털(--z-dialog 60)로 올리면 지도 위 다른 크롬과의 층 계약이 깨진다.",
   ],
-  [
-    "src/views/ontology-studio/ui/StudioDeltaPreview.tsx",
-    1,
-    "나침 무대 내부 absolute 스태킹 — 무대 좌표계 안에서만 유효한 지역 표면이라 화면 기준 포털이 아니다.",
-  ],
 ];
 
 /**
@@ -111,8 +106,6 @@ const DEBT: ReadonlyArray<readonly [file: string, count: number]> = [
   ["src/features/vault-ontology/ui/RecentChangesNeedsVaultDialog.tsx", 1],
   ["src/features/vault-ontology/ui/LiveActivityIndicator.tsx", 1],
   ["src/views/docs-vault/ui/parts/DocsVaultAuditModal.tsx", 1],
-  ["src/views/ontology-studio/ui/StudioEntryChoice.tsx", 1],
-  ["src/views/ontology-studio/ui/StudioCompass.tsx", 1],
   ["src/widgets/topology-map-v2/ui/TopologyV2EdgePanel.tsx", 1],
   ["src/widgets/docs-quick-drawer/ui/DocsQuickDrawer.tsx", 1],
   // 2026-08-21 — 그 시트는 은퇴했다(원장 90 · 붙이는 일이 목적지가 됐다).

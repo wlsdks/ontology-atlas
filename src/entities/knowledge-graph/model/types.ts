@@ -36,7 +36,7 @@ export const KNOWLEDGE_EDGE_TYPES: readonly KnowledgeEdgeType[] = [
 ] as const;
 
 /**
- * 나침 무대(`/ontology/studio` CREATE) 가 손으로 만들 수 있는 ontology 노드
+ * 지도 contextual editor가 손으로 만들 수 있는 ontology 노드
  * kind. document kind 는 frontmatter 진실원에서 derive 되므로 사용자가 직접
  * 만드는 대상이 아니다 — 본 union 에 포함되지 않는다.
  */

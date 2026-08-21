@@ -59,6 +59,12 @@ interface CapabilityOptions {
   readonly desc?: string;
 }
 
+/** 슬러그마다 고정된 UUIDv4 — 픽스처도 실제 writer의 신원 가드를 통과해야 한다. */
+function fixtureUid(identity: string): string {
+  const hex = createHash("sha256").update(identity).digest("hex");
+  return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-4${hex.slice(13, 16)}-a${hex.slice(17, 20)}-${hex.slice(20, 32)}`;
+}
+
 function capability(
   slug: string,
   title: string,
@@ -67,6 +73,7 @@ function capability(
 ): string {
   return [
     "---",
+    `uid: ${fixtureUid(`capability:${slug}`)}`,
     "kind: capability",
     `slug: capabilities/${slug}`,
     `title: ${title}`,
@@ -90,6 +97,7 @@ function capability(
 function element(slug: string, title: string, path: string): string {
   return [
     "---",
+    `uid: ${fixtureUid(`element:${slug}`)}`,
     "kind: element",
     `slug: elements/${slug}`,
     `title: ${title}`,
@@ -107,6 +115,7 @@ function element(slug: string, title: string, path: string): string {
 function domain(slug: string, title: string, capabilities: readonly string[]): string {
   return [
     "---",
+    `uid: ${fixtureUid(`domain:${slug}`)}`,
     "kind: domain",
     `slug: domains/${slug}`,
     `title: ${title}`,
@@ -125,6 +134,7 @@ function domain(slug: string, title: string, capabilities: readonly string[]): s
 export const FIXTURE_VAULT: Readonly<Record<string, string>> = {
   "storefront.md": [
     "---",
+    `uid: ${fixtureUid("project:storefront")}`,
     "kind: project",
     "slug: storefront",
     "title: Online Store",
@@ -233,3 +243,4 @@ export const FIXTURE_VAULT: Readonly<Record<string, string>> = {
 
 /** 픽스처가 실제로 담고 있는 노드 수 — 스펙이 「빈 볼트를 물렸다」와 구별할 때 쓴다. */
 export const FIXTURE_VAULT_NODE_COUNT = Object.keys(FIXTURE_VAULT).length;
+import { createHash } from "node:crypto";

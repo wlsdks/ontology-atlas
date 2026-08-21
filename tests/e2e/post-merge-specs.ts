@@ -36,7 +36,6 @@ export const POST_MERGE_SPECS = [
   "map-trail.spec.ts",
   "nav-yield-map-frames.spec.ts",
   "offscreen-node-census.spec.ts",
-  "studio-stage-motion.spec.ts",
   // ── 전 라우트 × 전 폭 행렬 계측 — 레이아웃·스타일 드리프트 스위프 ────
   "cursor-affordance.spec.ts",
   "focus-ring-contrast.spec.ts",

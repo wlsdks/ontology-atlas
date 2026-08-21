@@ -3,6 +3,12 @@
 import { useEffect, useRef } from "react";
 import { X } from "lucide-react";
 import { ICON_SIZE } from "@/shared/ui/icon-size";
+
+const EDIT_RELATION_ACTION_CLASS = controlClass({
+  shape: "chip",
+  className:
+    "h-8 justify-center border-[color:var(--topology-v2-panel-action-border)] bg-[color:var(--topology-v2-panel-action-surface)] text-label text-[color:var(--topology-v2-panel-text-secondary)] hover:bg-[color:var(--topology-v2-panel-row-hover)] hover:text-[color:var(--topology-v2-panel-text-primary)]",
+});
 import { Link } from "@/i18n/navigation";
 import { IconButton, RowButton } from "@/shared/ui";
 import { controlClass } from '@/shared/ui/control-class';
@@ -36,7 +42,7 @@ export interface TopologyV2EdgePanelProps {
    * 엣지(describes·도메인 멤버십 등)이라 "고치기" 액션을 렌더하지 않는다
    * (dead affordance 금지).
    */
-  studioEditHref: string | null;
+  meaningEditHref: string | null;
   labels: {
     kicker: string;
     declaredByLabel: string;
@@ -45,6 +51,7 @@ export interface TopologyV2EdgePanelProps {
     openDoc: string;
   };
   onSelectNode: (id: string) => void;
+  onEditRelation?: () => void;
   fromId: string;
   toId: string;
   onClose: () => void;
@@ -59,9 +66,10 @@ export function TopologyV2EdgePanel({
   why = null,
   declaredBy,
   updatedAtLabel,
-  studioEditHref,
+  meaningEditHref,
   labels,
   onSelectNode,
+  onEditRelation,
   fromId,
   toId,
   onClose,
@@ -157,11 +165,20 @@ export function TopologyV2EdgePanel({
         </div>
       ) : null}
 
-      {studioEditHref ? (
-        <Link
-          href={studioEditHref}
+      {onEditRelation ? (
+        <button
+          type="button"
+          onClick={onEditRelation}
           data-testid="topology-v2-edge-edit"
-          className={controlClass({ shape: "chip", className: "h-8 justify-center border-[color:var(--topology-v2-panel-action-border)] bg-[color:var(--topology-v2-panel-action-surface)] text-label text-[color:var(--topology-v2-panel-text-secondary)] hover:bg-[color:var(--topology-v2-panel-row-hover)] hover:text-[color:var(--topology-v2-panel-text-primary)]" })}
+          className={EDIT_RELATION_ACTION_CLASS}
+        >
+          {labels.editRelation}
+        </button>
+      ) : meaningEditHref ? (
+        <Link
+          href={meaningEditHref}
+          data-testid="topology-v2-edge-edit"
+          className={EDIT_RELATION_ACTION_CLASS}
         >
           {labels.editRelation}
         </Link>

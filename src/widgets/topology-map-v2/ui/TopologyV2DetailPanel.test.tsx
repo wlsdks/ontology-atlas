@@ -105,6 +105,7 @@ function renderPanel(
     projectSource?: ProjectSourceView | null;
     onProjectSourceAction?: () => void | Promise<void>;
     onAskAgent?: () => void;
+    onEditRelations?: () => void;
     onEnterRealm?: () => void;
     projectSourceBusy?: boolean;
     projectSourceError?: string | null;
@@ -140,7 +141,7 @@ function renderPanel(
           ? overrides.documentHref
           : "/docs/domains/views"
       }
-      studioEditHref="/ontology/studio/?node=domains%2Fviews"
+      meaningEditHref="/ontology/studio/?node=domains%2Fviews"
       labels={labels}
       lastEditSubject={overrides.lastEditSubject ?? null}
       mtimeConflict={overrides.mtimeConflict ?? false}
@@ -149,6 +150,7 @@ function renderPanel(
       onHoverEvidence={overrides.onHoverEvidence}
       onCopyHandoff={overrides.onCopyHandoff ?? (() => {})}
       onAskAgent={overrides.onAskAgent}
+      onEditRelations={overrides.onEditRelations}
       onClose={() => {}}
       onSetPathSource={overrides.onSetPathSource ?? (() => {})}
       onEnterRealm={overrides.onEnterRealm}
@@ -908,7 +910,7 @@ describe("TopologyV2DetailPanel — sticky 푸터 slug 평문화 (Toss C2)", () 
         codeLocations={[]}
         handoffText="node: ontology/capabilities/mcp-server"
         documentHref={null}
-        studioEditHref="/ontology/studio/?node=ontology%2Fcapabilities%2Fmcp-server"
+        meaningEditHref="/ontology/studio/?node=ontology%2Fcapabilities%2Fmcp-server"
         labels={labels}
         onSelectConnection={() => {}}
         onCopyHandoff={() => {}}
@@ -1021,7 +1023,7 @@ describe("TopologyV2DetailPanel — M-2 typed containment split", () => {
         codeLocations={[]}
         handoffText="node: domains/ai-agent-partner"
         documentHref={null}
-        studioEditHref="/ontology/studio/?node=domains%2Fai-agent-partner"
+        meaningEditHref="/ontology/studio/?node=domains%2Fai-agent-partner"
         labels={labels}
         onSelectConnection={() => {}}
         onCopyHandoff={() => {}}
@@ -1101,7 +1103,7 @@ describe("TopologyV2DetailPanel — 부모만 있는 노드의 이어진 곳", (
         codeLocations={[]}
         handoffText="node: src/entities/docs-vault/lib/derive-ontology-from-vault.ts"
         documentHref={null}
-        studioEditHref="/ontology/studio/?node=element%3Aderive-ontology-from-vault"
+        meaningEditHref="/ontology/studio/?node=element%3Aderive-ontology-from-vault"
         labels={labels}
         onSelectConnection={onSelectConnection}
         onCopyHandoff={() => {}}
@@ -1154,7 +1156,7 @@ describe("TopologyV2DetailPanel — 부모만 있는 노드의 이어진 곳", (
         codeLocations={[]}
         handoffText="node: ontology/capabilities/mcp-server"
         documentHref={null}
-        studioEditHref="/ontology/studio/?node=capability%3Amcp-server"
+        meaningEditHref="/ontology/studio/?node=capability%3Amcp-server"
         labels={labels}
         onSelectConnection={() => {}}
         onCopyHandoff={() => {}}
@@ -1195,7 +1197,7 @@ describe("TopologyV2DetailPanel — P3-① 미기록 관계 empty-state (0 vs �
         codeLocations={[]}
         handoffText="node: src/widgets/global-search"
         documentHref={null}
-        studioEditHref="/ontology/studio/?node=src%2Fwidgets%2Fglobal-search"
+        meaningEditHref="/ontology/studio/?node=src%2Fwidgets%2Fglobal-search"
         labels={labels}
         onSelectConnection={() => {}}
         onCopyHandoff={() => {}}
@@ -1254,6 +1256,15 @@ describe("TopologyV2DetailPanel — W2-A action row", () => {
     renderPanel();
     const link = screen.getByTestId("topology-v2-detail-panel-action-edit");
     expect(link).toHaveAttribute("href", expect.stringContaining("/ontology/studio/"));
+  });
+
+  it("keeps 관계 편집 in place when a contextual editor callback is available", () => {
+    const onEditRelations = vi.fn();
+    renderPanel(undefined, undefined, { onEditRelations });
+    const action = screen.getByTestId("topology-v2-detail-panel-action-edit");
+    expect(action.tagName).toBe("BUTTON");
+    fireEvent.click(action);
+    expect(onEditRelations).toHaveBeenCalledTimes(1);
   });
 
   it("copies the handoff text when the 인계 복사 tile is clicked", () => {
@@ -1317,7 +1328,7 @@ describe("TopologyV2DetailPanel — W2-A action row", () => {
         codeLocations={[]}
         handoffText="node: domains/cli"
         documentHref={null}
-        studioEditHref="/ontology/studio/?node=domains%2Fcli"
+        meaningEditHref="/ontology/studio/?node=domains%2Fcli"
         labels={labels}
         onSelectConnection={() => {}}
         onCopyHandoff={() => {}}
@@ -1365,7 +1376,7 @@ describe("TopologyV2DetailPanel — W2-A action row", () => {
         codeLocations={[]}
         handoffText="node: domains/small"
         documentHref={null}
-        studioEditHref="/ontology/studio/?node=domains%2Fsmall"
+        meaningEditHref="/ontology/studio/?node=domains%2Fsmall"
         labels={labels}
         onSelectConnection={() => {}}
         onCopyHandoff={() => {}}
@@ -1411,7 +1422,7 @@ describe("TopologyV2DetailPanel — W2-A action row", () => {
         codeLocations={[]}
         handoffText="node: domains/flat"
         documentHref={null}
-        studioEditHref="/ontology/studio/?node=domains%2Fflat"
+        meaningEditHref="/ontology/studio/?node=domains%2Fflat"
         labels={labels}
         onSelectConnection={() => {}}
         onCopyHandoff={() => {}}
@@ -1520,7 +1531,7 @@ describe("TopologyV2DetailPanel — 시안 재설계 구조", () => {
         codeLocations={[]}
         handoffText="node: domains/ai-agent-partner"
         documentHref={null}
-        studioEditHref="/ontology/studio/?node=domains%2Fai-agent-partner"
+        meaningEditHref="/ontology/studio/?node=domains%2Fai-agent-partner"
         labels={labels}
         onSelectConnection={() => {}}
         onCopyHandoff={() => {}}
@@ -1564,7 +1575,7 @@ describe("TopologyV2DetailPanel — 시안 재설계 구조", () => {
         codeLocations={[]}
         handoffText="node: domains/ai-agent-partner"
         documentHref={null}
-        studioEditHref="/ontology/studio/?node=domains%2Fai-agent-partner"
+        meaningEditHref="/ontology/studio/?node=domains%2Fai-agent-partner"
         labels={labels}
         onSelectConnection={() => {}}
         onCopyHandoff={() => {}}
@@ -1627,7 +1638,7 @@ describe("TopologyV2DetailPanel — 시안 재설계 구조", () => {
         codeLocations={[]}
         handoffText="node: domains/views"
         documentHref={null}
-        studioEditHref="/ontology/studio/?node=domains%2Fviews"
+        meaningEditHref="/ontology/studio/?node=domains%2Fviews"
         labels={labels}
         onSelectConnection={() => {}}
         onCopyHandoff={() => {}}

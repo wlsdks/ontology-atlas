@@ -51,7 +51,7 @@ const DOC = readFileSync(path.join(ROOT, "docs/DESIGN-SYSTEM.md"), "utf8");
  * 그래서 올린다. 이 래칫이 지키는 것은 «살아 있는 규격 문서가 없는 토큰을
  * 근거로 들지 않는다» 이지 «과거 기록에 옛 이름이 없다» 가 아니다.
  */
-const CEILING = 191;
+const CEILING = 188;
 
 /** `--x: value;` 로 **정의된** 이름 전부(중첩 블록·미디어 쿼리 포함). */
 function definedTokens(): Set<string> {

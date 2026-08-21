@@ -36,6 +36,8 @@ export interface AtlasMapNode {
   y: number;
   draggable: boolean;
   hidden: boolean;
+  /** contextual relation preview가 밀도 게이트 밖으로 잠시 공개한 두 끝점인가. */
+  previewEndpoint: boolean;
   radius: number;
 }
 

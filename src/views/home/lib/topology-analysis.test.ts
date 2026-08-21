@@ -277,7 +277,7 @@ describe("formatTopologyHealthBrief", () => {
         "- URL: http://localhost:3000/en/topology?mode=health",
         "- Inspect URL: http://localhost:3000/en/topology?mode=health&p=capability%3Atopology-analysis-modes",
         "- Ontology URL: /ontology/?node=capability%3Atopology-analysis-modes",
-        "- Repair URL: /ontology/studio/?node=capability%3Atopology-analysis-modes",
+        "- Repair URL: /topology/?p=capability%3Atopology-analysis-modes&workbench=edit",
         "- Next action: Review whether this high-signal node should become a domain or capability entrypoint.",
         "- Agent check: node $ATLAS/cli/src/index.mjs node capability:topology-analysis-modes [vault] --limit 12",
         '- MCP check: query_ontology({"operation":"node_profile","slug":"capability:topology-analysis-modes","depth":2,"limit":12})',
@@ -357,11 +357,11 @@ describe("formatTopologyHealthBrief", () => {
 
   it("maps graph ids to canonical builder repair URLs (H5 발신 문법 통일)", () => {
     expect(buildTopologyHealthRepairHref("domain:views")).toBe(
-      "/ontology/studio/?node=domain%3Aviews",
+      "/topology/?p=domain%3Aviews&workbench=edit",
     );
     // 복수-슬래시 레거시 입력도 canonical 로 승격해 발신.
     expect(buildTopologyHealthRepairHref("capabilities/topology-analysis-modes")).toBe(
-      "/ontology/studio/?node=capability%3Atopology-analysis-modes",
+      "/topology/?p=capability%3Atopology-analysis-modes&workbench=edit",
     );
   });
 });
@@ -434,8 +434,8 @@ describe("formatTopologyPathAgentPacket", () => {
         "- Hops: 2",
         "- Source ontology URL: /ontology/?node=domains%2Fviews",
         "- Target ontology URL: /ontology/?node=capability%3Atopology-analysis-modes",
-        "- Source builder URL: /ontology/studio/?node=domain%3Aviews",
-        "- Target builder URL: /ontology/studio/?node=capability%3Atopology-analysis-modes",
+        "- Source builder URL: /topology/?p=domain%3Aviews&workbench=edit",
+        "- Target builder URL: /topology/?p=capability%3Atopology-analysis-modes&workbench=edit",
         '- MCP check: query_ontology({"operation":"path","from":"domains/views","to":"capability:topology-analysis-modes","maxHops":5})',
       ].join("\n"),
     );

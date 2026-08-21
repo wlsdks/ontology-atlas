@@ -121,8 +121,14 @@ const MIN_RULES_PASSED = 15;
  * 지난 대화가 실제로 있어야** 버튼 자체가 생긴다(없으면 안 그린다). 접근성과
  * 폴더 범위 계약은 `AcpChatPanel.test.tsx` 와
  * `tests/contract/acp-session-scope.contract.test.ts` 가 진다.
+ *
+ * 26 → 29 (2026-08-21): 지도 안 관계 편집기 하나와 「새 개념」의 입력→변경안
+ * 교체 표면 둘. 셋 모두 로컬 쓰기 가능한 vault가 있어야 하므로 이 정적 브라우저
+ * 스윕의 단일-click OPENERS로는 열 수 없다. 관계 편집기의 키보드·검토·쓰기 전
+ * 정지는 `MeaningEditorPanel.test.tsx`, 생성 교체는 `CreateNodeForm.test.tsx`가
+ * 맡고, 설치 앱 검증에서 실제 표면을 연다.
  */
-const APPEARING_SURFACES_IN_SOURCE = 26;
+const APPEARING_SURFACES_IN_SOURCE = 29;
 
 interface Opener {
   readonly name: string;

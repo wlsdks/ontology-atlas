@@ -5,12 +5,12 @@ import { extname, join, relative } from "node:path";
 export const DEFAULT_ONTOLOGY_DESIGN_TARGET_DIRS = [
   "src/views/docs-vault",
   "src/widgets/docs-vault",
-  // #611 (2026-07-24) retired the xyflow ERD builder at src/views/ontology-edit.
-  // The write surface is now the 공방 (Compass Stage) at src/views/ontology-studio,
-  // with a thin client redirect at src/views/ontology-edit-redirect. Scanning the
-  // studio matters more than ever — the old --studio-* game exception was retired,
-  // so this surface must pass the same charter (no glow/gradient/scale-hover).
-  "src/views/ontology-studio",
+  // Manual writing now lives in the selected map inspector; ACP writing pauses
+  // inside its existing conversation card. The old Studio route is a redirect.
+  "src/views/home",
+  "src/features/ontology-meaning-editor",
+  "src/features/ontology-change-review",
+  "src/widgets/acp-chat-panel",
   "src/views/ontology-edit-redirect",
   "src/views/ontology-insights",
   // feat/rail-rollout retired `operations-nav` (top tab bar) and
@@ -193,28 +193,28 @@ export const ONTOLOGY_DESIGN_REQUIRED_SURFACE_MARKERS = [
       "/docs must read as Workspace with Files / Graph / Agent execution contract and a copyable graph check.",
   },
   {
-    // [교체, 2026-07-24] 구 "builder-write-verify-loop" 체크 — 대상이던 xyflow
-    // ERD 빌더(src/views/ontology-edit/*)가 #611 로 은퇴했다. 쓰기 표면은 이제
-    // 공방(Compass Stage, src/views/ontology-studio)이다: 관계 종류별 고정
-    // 방위(CompassBearingView) + 라인아트 소켓 채우기 → 실제 frontmatter 관계
-    // 쓰기(buildFillPacket) 또는 읽기전용 vault 의 MCP 패킷 핸드오프
-    // (buildMcpPacket), 그리고 진행도 캡션(bottomProgress).
-    id: "studio-write-verify-loop",
+    id: "contextual-write-review-loop",
     files: [
-      "src/views/ontology-studio/ui/OntologyStudioPage.tsx",
-      "src/views/ontology-studio/ui/StudioCompass.tsx",
-      "src/views/ontology-studio/lib/build-create-node.ts",
+      "src/views/home/ui/HomePage.tsx",
+      "src/views/home/ui/CreateNodeForm.tsx",
+      "src/features/ontology-meaning-editor/ui/MeaningEditorPanel.tsx",
+      "src/features/ontology-change-review/ui/OntologyChangeReview.tsx",
+      "src/widgets/acp-chat-panel/ui/AcpPermissionCard.tsx",
+      "src/features/acp-session/model/acp-client.ts",
     ],
     markers: [
-      "function OntologyStudioPage",
-      "StudioCompass",
-      "CompassBearingView",
-      "buildFillPacket",
-      "buildMcpPacket",
-      "bottomProgress",
+      "MeaningEditorPanel",
+      "buildOntologyRelationEditPlan",
+      "meaning-editor-change-review",
+      "create-node-change-review",
+      "previewEdge={meaningPreview}",
+      "acp-ontology-change-review",
+      "reviewKind === 'ontology-write'",
+      "allowAlways && !ontologyWrite",
+      "atlasMode === 'write'",
     ],
     reason:
-      "/ontology/studio (공방) must expose fixed compass bearings, fillable sockets that write a real relation (or an MCP packet in a read-only vault), and a plain progress caption.",
+      "Map and ACP writes must both stop on a typed pre-write change review; the map must preview the proposed relation without mutating layout, and ontology writes must never expose allow-always.",
   },
   // [교체, 2026-07-27] 구 3탭 "insights-tabbed-handoff" 체크 — current
   // Insights는 다섯 사용자 질문(할 일/구성/연결/경계/신선도)을 한 탭에 하나씩

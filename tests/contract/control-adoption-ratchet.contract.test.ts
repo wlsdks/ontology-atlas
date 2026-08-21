@@ -693,25 +693,6 @@ const OUTSIDE_VALUE_LAYER: readonly OutsideEntry[] = [
     conditional: '값 층이 포인터 승격 축(coarse 에서 44px)을 얻으면 다시 연다.',
   },
   {
-    file: 'src/views/ontology-studio/ui/StudioCompass.tsx',
-    count: 2,
-    claim: 'stage-geometry',
-    proof: 'layout.socket',
-    why:
-      '레인 접기 · 「더 잇기」 · 소켓. 셋 다 absolute + style={{left, top, width, height}} ' +
-      '로 **JS 가 계산한 무대 좌표**를 받는다(layout.fold · layout.addChip · ' +
-      'layout.socket). className 램프는 style 을 낼 수 없다.',
-  },
-  {
-    file: 'src/views/ontology-studio/ui/StudioMaterializeDialog.tsx',
-    count: 1,
-    claim: 'chrome-token',
-    proof: '--overlay-close-size',
-    why: '오버레이 닫기 — 32px 이고 coarse 포인터에서 44px 로 승격한다.',
-    conditional: '값 층이 포인터 승격 축을 얻으면 다시 연다.',
-  },
-
-  {
     file: 'src/shared/ui/button.tsx',
     count: 1,
     claim: 'value-layer-peer',
@@ -827,7 +808,7 @@ const OUTSIDE_VALUE_LAYER: readonly OutsideEntry[] = [
  * 올라가 멈춤쇠가 양방향으로 헐거워진다. 등재를 늘리려면 이 수를 **손으로**
  * 올려야 하고, 그 diff 가 곧 「왜」를 적을 자리다.
  */
-const BASELINE_REGISTERED = 32;
+const BASELINE_REGISTERED = 29;
 
 /**
  * **이 수만 줄어야 한다.** 전수(108)에서 등재(30)와 근거 없음(4)을 뺀 나머지.
@@ -1535,17 +1516,6 @@ const OUTSIDE_VALUE_LAYER_FIELDS: readonly OutsideEntry[] = [
       '컴포저의 **높이 계측용 숨김 미러**. 사용자에게 안 보이고 `scrollHeight` 를 ' +
       '재려고만 존재한다 — 컨트롤이 아니라 계측 장치라 씌울 규격이 없다.',
     conditional: '오토그로우를 CSS 로 대체해 미러가 사라지면 이 줄도 지운다.',
-  },
-  {
-    file: 'src/views/ontology-studio/ui/StudioCompass.tsx',
-    count: 2,
-    claim: 'stage-geometry',
-    proof: 'text-display',
-    why:
-      '공방 무대의 이름·부제 입력. **크기가 장식이 아니라 정보를 나른다** — 23px 은 ' +
-      '폼의 타입이 아니라 **만들어질 카드의 타입**이고, 상자에 넣는 순간 그 정보가 ' +
-      '지워진다(2026-08-06 「위계」 판정, `DESIGN-SYSTEM.md` 「폼 필드」 절에 등재).',
-    conditional: '무대 미리보기가 카드 타입을 미러링하지 않게 되면 부채로 내린다.',
   },
 ];
 

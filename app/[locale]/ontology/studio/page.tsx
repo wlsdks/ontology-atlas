@@ -1,7 +1,7 @@
 import { Suspense } from "react";
 import type { Metadata } from "next";
 import { getTranslations } from "next-intl/server";
-import { OntologyStudioPage } from "@/views/ontology-studio";
+import { OntologyEditRedirectPage } from "@/views/ontology-edit-redirect";
 import { RouteLoadingFallback } from "@/shared/ui";
 import { buildPageMetadata } from "@/shared/lib/page-metadata";
 
@@ -15,29 +15,20 @@ export async function generateMetadata({
   return buildPageMetadata({
     locale,
     path: 'ontology/studio',
-    title: t("pages.ontologyStudio"),
-    description: t('descriptions.ontologyStudio'),
+    title: t("pages.topology"),
+    description: t('descriptions.topology'),
   });
 }
 
 /**
- * /ontology/studio — 공방, the 나침 무대 (Compass Stage). The vault WRITE
- * surface: one node at the center, the four relation types nailed to fixed
- * compass bearings, and every missing relation a dashed line-art socket you
- * fill through an inline picker.
- *
- * Restrained, no exceptions. The old "game-styled surface (sanctioned scoped
- * design exception)" was RETIRED on 2026-07-24 — glow / rarity / particle /
- * gem are forbidden here exactly as they are app-wide, and the `--studio-*`
- * game token block was deleted (see `.claude/rules/design.md` and
- * `.claude/rules/forbidden.md`). The pull comes from the loop, not from bling.
- *
- * Static-export compatible (no server APIs).
+ * Compatibility entry only. The map now owns manual ontology writing through
+ * its contextual editor; old node/edit/create query strings are translated by
+ * the same redirect component as `/ontology/edit`.
  */
 export default function Page() {
   return (
     <Suspense fallback={<RouteLoadingFallback />}>
-      <OntologyStudioPage />
+      <OntologyEditRedirectPage />
     </Suspense>
   );
 }

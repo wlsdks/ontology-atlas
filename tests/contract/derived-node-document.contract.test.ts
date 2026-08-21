@@ -11,7 +11,6 @@ import {
   buildDuplicatePairs,
   buildSimilarityCandidates,
 } from "@/views/ontology-insights/lib/duplicate-pairs";
-import { buildStudioItem } from "@/views/ontology-studio/lib/build-studio-item";
 
 /**
  * 파생 노드(다른 문서의 관계 키에서 이름만 불린 개념)와 문서 노드의 구분 계약.
@@ -138,53 +137,5 @@ describe("파생 노드와 문서 노드의 구분 (번들 샘플)", () => {
     // 동일성이 이미 잡는다. 여기서는 자료형 계약만 남긴다.
     expect(buildDuplicatePairs(insight.nodes, insight.edges, 3).suspectCount)
       .toBeGreaterThanOrEqual(0);
-  });
-});
-
-/**
- * 읽기보다 비싼 쪽 — **쓰기**. 위 계약이 "파생 노드의 근거 slug 는 남의 문서"
- * 임을 고정한다면, 여기서는 공방의 저장이 그 남의 문서로 가지 않는다는 것을
- * 볼트 전체에 대해 고정한다.
- *
- * 2026-07-26 재현: `payment-gateway`(자기 `.md` 없음)를 공방에서 열고 관계를
- * 저장하니 `capabilities/card-payment.md` 에 `dependencies: [capabilities/refund]`
- * 가 적혔다. 사용자가 한 적 없는 주장이 남의 문서에 사실로 앉은 것이고,
- * 되돌리려면 남의 파일을 손으로 고쳐야 한다.
- */
-describe("공방 쓰기 대상 (번들 샘플)", () => {
-  it("공방에서 열 수 있는 모든 노드의 쓰기 대상이 남의 문서가 아니다", () => {
-    // [수술 2026-08-01] 문서 없는 노드(missing writeTarget)를 dogfood 결함으로
-    // 요구하던 것을 합성 표본(ghost 문서)으로 바꿨다 — 깨끗한 볼트에서도
-    // missing 분기가 항상 검증된다.
-    const insight = derivationToInsight(
-      deriveOntologyFromVault(
-        withGhostDoc(resolveStaticVaultSource("dogfood").manifest),
-      ),
-    );
-    // 자기 문서 slug → 그 문서를 소유한 노드 id.
-    const ownerOfDoc = new Map<string, string>();
-    for (const node of insight.nodes) {
-      const own = resolveNodeDocument(node).ownSlug;
-      if (own) ownerOfDoc.set(own, node.id);
-    }
-
-    let missingCount = 0;
-    for (const node of insight.nodes) {
-      const item = buildStudioItem(node.id, insight.nodes, insight.edges);
-      expect(item).not.toBeNull();
-      const target = item!.node.writeTarget;
-      if (target.status === "missing") {
-        missingCount += 1;
-        // 문서가 없는 개념의 예정 경로는 아직 아무도 안 쓰는 자리여야 한다.
-        expect(ownerOfDoc.has(target.slug)).toBe(false);
-        continue;
-      }
-      // 문서가 있는 개념은 **자기** 문서를 가리켜야 한다.
-      expect(ownerOfDoc.get(target.slug)).toBe(node.id);
-    }
-
-    // 합성 ghost 참조가 missing 분기를 최소 1회 강제로 태운다 — dogfood 가
-    // 깨끗해도 이 게이트는 공회전하지 않는다.
-    expect(missingCount).toBeGreaterThan(0);
   });
 });

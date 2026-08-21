@@ -1,6 +1,5 @@
 import { test, expect } from "@playwright/test";
 import { seedFirstRunSeen } from "./first-run-seed";
-import { STOREFRONT_STUDIO_NODE_PARAM } from "./storefront-node";
 
 /**
  * 키보드 경로 계약 — **합성 이벤트로는 잴 수 없는 층**.
@@ -105,26 +104,6 @@ test.describe("키보드 경로 (신뢰 이벤트)", () => {
  * 다시 걷는 것보다 낫다. 살아남은 트리거가 있으면 그쪽이 언제나 이긴다.
  */
 test.describe("포커스 반환", () => {
-  test("공방 피커를 Escape 로 닫으면 연 소켓으로 돌아온다", async ({ page }) => {
-    await seedFirstRunSeen(page);
-    await page.setViewportSize({ width: 1440, height: 900 });
-    await page.goto(`/ko/ontology/studio/?node=${STOREFRONT_STUDIO_NODE_PARAM}&guides=off`, {
-      waitUntil: "domcontentloaded",
-    });
-
-    const socket = page.getByTestId("studio-socket-up");
-    await expect(socket).toBeVisible({ timeout: 30_000 });
-    await socket.focus();
-    await page.keyboard.press("Enter");
-    await expect(page.getByTestId("studio-picker")).toBeVisible();
-    await page.keyboard.type("결제");
-    await page.keyboard.press("Escape");
-
-    await expect
-      .poll(() => page.evaluate(() => document.activeElement?.getAttribute("data-testid")))
-      .toBe("studio-socket-up");
-  });
-
   test("단축키 시트를 닫으면 body 가 아니라 본문으로 간다", async ({ page }) => {
     await seedFirstRunSeen(page);
     await page.setViewportSize({ width: 1440, height: 900 });

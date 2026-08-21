@@ -17,7 +17,7 @@ const labels: ImpactRankingLabels = {
   directLabel: "direct",
   transitiveLabel: "indirect",
   empty: "Nothing ripples yet",
-  emptyHint: "Connect relations in the workshop.",
+  emptyHint: "Connect relations on the map.",
   truncated: (shown, total) => `Top ${shown} / ${total} total`,
   evidenceShow: (count) => `Show ${count} names without a document`,
   evidenceHide: "Hide names without a document",
@@ -133,7 +133,7 @@ describe("ImpactRankingCard", () => {
     );
 
     expect(screen.getByText("Nothing ripples yet")).toBeInTheDocument();
-    expect(screen.getByText("Connect relations in the workshop.")).toBeInTheDocument();
+    expect(screen.getByText("Connect relations on the map.")).toBeInTheDocument();
     expect(screen.queryByTestId("insights-impact-row-link")).toBeNull();
   });
 

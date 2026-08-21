@@ -62,7 +62,7 @@ const labels: DoNextTabLabels = {
   cycleMetric: (length) => `${length} nodes`,
   openMap: "Inspect on map",
   openSource: "Open source",
-  openBuilder: "Edit in workshop",
+  openBuilder: "Edit on map",
   handoffCopy: "Verify with agent",
   handoffCopied: "Copied",
   handoffCopyFailed: '복사 실패',
@@ -74,7 +74,7 @@ const labels: DoNextTabLabels = {
   digestWhyPrefix: "Why · ",
   touchUpBandTitle: "Review first today",
   touchUpPriorityCount: (count) => `${count} priorities`,
-  touchUpFlowHint: "Inspect on map → open source → edit in workshop → verify with agent",
+  touchUpFlowHint: "Inspect on map → open source → edit on map → verify with agent",
   rowMenuTrigger: "More actions",
   reviewChecking: (title) => `Checking ${title ?? "selected signal"}`,
   reviewActive: (title) => `Still detected: ${title ?? "selected signal"}`,
@@ -82,7 +82,7 @@ const labels: DoNextTabLabels = {
   evidenceBadge: "No document",
   evidenceBadgeHint: "Another document wrote this name down.",
   reviewUnverified: (title) => `Could not verify: ${title ?? "selected signal"}`,
-  openBuilderReadOnly: "View in workshop",
+  openBuilderReadOnly: "View on map",
   handoffCopyIdle: "Copy the command",
   handoffCopiedHint: "Copied — paste it into your AI tool.",
   groupMeaningTitle: "You can fix these right now",
@@ -661,7 +661,7 @@ describe("DoNextTab — 오늘의 손질 밴드 (③)", () => {
       "3 priorities",
     );
     expect(within(band).getByTestId("do-next-touchups-flow")).toHaveTextContent(
-      "Inspect on map → open source → edit in workshop → verify with agent",
+      "Inspect on map → open source → edit on map → verify with agent",
     );
     // 각 행: 지도 링크 1 + 케밥 1
     expect(within(rows[0]).getByText("Inspect on map")).toBeInTheDocument();

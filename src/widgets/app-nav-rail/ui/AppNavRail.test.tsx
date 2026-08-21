@@ -74,13 +74,14 @@ describe("AppNavRail", () => {
     expect(wordmark).toHaveAttribute("translate", "no");
   });
 
-  it("renders all 5 destinations with i18n labels", () => {
+  it("renders all 6 destinations with i18n labels", () => {
     renderRail();
     expect(screen.getByTestId("app-nav-rail-item-map")).toBeInTheDocument();
     expect(screen.getByTestId("app-nav-rail-item-docs")).toBeInTheDocument();
-    expect(screen.getByTestId("app-nav-rail-item-studio")).toBeInTheDocument();
     expect(screen.getByTestId("app-nav-rail-item-insights")).toBeInTheDocument();
     expect(screen.getByTestId("app-nav-rail-item-projects")).toBeInTheDocument();
+    expect(screen.getByTestId("app-nav-rail-item-agents")).toBeInTheDocument();
+    expect(screen.getByTestId("app-nav-rail-item-git")).toBeInTheDocument();
     // 은퇴한 ERD 빌더(2026-07-24) — 레일에서 제거됨.
     expect(screen.queryByTestId("app-nav-rail-item-builder")).not.toBeInTheDocument();
   });
@@ -88,19 +89,19 @@ describe("AppNavRail", () => {
   it("carries the destination reading-start intent across installed-app navigation", () => {
     window.sessionStorage.clear();
     renderRail();
-    const studio = screen.getByTestId("app-nav-rail-item-studio");
+    const insights = screen.getByTestId("app-nav-rail-item-insights");
 
-    expect(studio).toHaveAttribute("href", "/ontology/studio/?focus=main");
-    fireEvent.click(studio);
+    expect(insights).toHaveAttribute("href", "/ontology/insights/?focus=main");
+    fireEvent.click(insights);
 
     expect(
       JSON.parse(
         window.sessionStorage.getItem("ontology-atlas:route-focus-intent") ?? "null",
       ),
-    ).toMatchObject({ surfacePath: "/ontology/studio" });
+    ).toMatchObject({ surfacePath: "/ontology/insights" });
 
     window.sessionStorage.clear();
-    fireEvent.click(studio, { metaKey: true });
+    fireEvent.click(insights, { metaKey: true });
     expect(
       window.sessionStorage.getItem("ontology-atlas:route-focus-intent"),
     ).toBeNull();
@@ -119,16 +120,16 @@ describe("AppNavRail", () => {
    */
   it("이동이 성사되는 클릭에서만 이동 신호를 쏜다", () => {
     renderRail();
-    const studio = screen.getByTestId("app-nav-rail-item-studio");
+    const insights = screen.getByTestId("app-nav-rail-item-insights");
     const seen: Event[] = [];
     const listener = (event: Event) => seen.push(event);
     window.addEventListener("ontology-atlas:navigation-intent", listener);
     try {
-      fireEvent.click(studio);
+      fireEvent.click(insights);
       expect(seen).toHaveLength(1);
 
       // 새 탭으로 여는 클릭은 이 화면을 떠나지 않는다 — 지도를 재울 이유가 없다.
-      fireEvent.click(studio, { metaKey: true });
+      fireEvent.click(insights, { metaKey: true });
       expect(seen).toHaveLength(1);
     } finally {
       window.removeEventListener("ontology-atlas:navigation-intent", listener);
@@ -269,10 +270,6 @@ describe("AppNavRail", () => {
       "href",
       "/topology/?focus=main",
     );
-    expect(screen.getByTestId("app-nav-rail-item-studio")).toHaveAttribute(
-      "href",
-      "/ontology/studio/?focus=main",
-    );
     expect(screen.getByTestId("app-nav-rail-item-insights")).toHaveAttribute(
       "href",
       "/ontology/insights/?focus=main",
@@ -280,6 +277,14 @@ describe("AppNavRail", () => {
     expect(screen.getByTestId("app-nav-rail-item-projects")).toHaveAttribute(
       "href",
       "/projects/?focus=main",
+    );
+    expect(screen.getByTestId("app-nav-rail-item-agents")).toHaveAttribute(
+      "href",
+      "/agents/?focus=main",
+    );
+    expect(screen.getByTestId("app-nav-rail-item-git")).toHaveAttribute(
+      "href",
+      "/git/?focus=main",
     );
   });
 });

@@ -41,6 +41,8 @@ import { DEFAULT_EXPAND, DEFAULT_MAP_ARRANGEMENT } from "@/shared/lib/appearance
 import type { CanvasBackground, ExpandPreference, FootprintPreference, GlyphSet, MapArrangement } from "@/shared/lib/appearance-preferences";
 import { centerForInsets, computeClusterFitTarget, computeDomeFocusCameraTarget, computeFocusCameraTarget, computeOverviewCameraTarget, computeOverviewFitScale, fitWorldTarget, hasAnyNodeOnScreen, worldToScreen } from "./topology-camera-math";
 import { drawTopologyFrame } from "./topology-frame-draw";
+import { MOTION } from "@/shared/motion";
+import { isPreviewEndpoint, isPreviewEndpointHidden } from "../render/preview-edge";
 import { relaxNewlyVisible } from "../model/layout";
 import { computeTopologyClusterState } from "./topology-cluster-state";
 import type { ClusterChip } from "../model/density-gate";
@@ -283,6 +285,7 @@ export interface UseTopologyLoopArgs {
   spotlightIds?: ReadonlySet<string> | null;
   /** 엣지 선택 = 페어 포커스 (양끝만 표시, 선택 엣지 pale 인디고). */
   selectedEdge?: { sourceId: string; targetId: string } | null;
+  previewEdge?: TopologyMapV2Props["previewEdge"];
   /**
    * 밀도 게이트 (fable 설계) — 사용자가 펼친 부모 slug Set(URL `?open=`).
    * 임계 초과 부모의 자식은 기본 접힘(클러스터 칩)이고, 여기 담긴 부모만
@@ -438,13 +441,30 @@ export type UseTopologyLoopResult = TopologyPointerHandlers & {
 };
 
 export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResult {
-  const { nodes, edges, focusedSlug, emphasizedNeighborSlug = null, dataSourceKey = null, overviewFit = "spine", fitViewToken, spotlightFitToken = 0, relayoutToken, revealToken = 0, onSelectEdge, onHoverEdge, onSelect, onPaneClick, onVisibleCountChange, onGraphStatsChange, onZoomTierChange, onContextMenuNode, onContextMenuPane, agentFocusNodeId = null, spotlightIds = null, selectedEdge = null, expandedParents = EMPTY_EXPANDED_SET, onToggleCluster, onHoverCluster, realmRootId = null, onEnterRealm, realmEnterButtonRef, realmCaption = null, visitedTrail = EMPTY_TRAIL, trailLensActiveRef, clusterBarLabels = null, trailHoverNodeIdRef, panelHoverNodeIdRef, tierReveal = DEFAULT_TIER_REVEAL, tourAnchorNodeId = null, tourAnchorRef, glyphSet = "geometric", canvasBackground = "dot", view3d = false, mapArrangement = DEFAULT_MAP_ARRANGEMENT, detailPanelVisible = false, footprint = null, expand = DEFAULT_EXPAND, wheelIntent = "zoom", ambientSleepDelayMs, onWalkDeadEnd = null } = args;
+  const { nodes, edges, focusedSlug, emphasizedNeighborSlug = null, dataSourceKey = null, overviewFit = "spine", fitViewToken, spotlightFitToken = 0, relayoutToken, revealToken = 0, onSelectEdge, onHoverEdge, onSelect, onPaneClick, onVisibleCountChange, onGraphStatsChange, onZoomTierChange, onContextMenuNode, onContextMenuPane, agentFocusNodeId = null, spotlightIds = null, selectedEdge = null, previewEdge = null, expandedParents = EMPTY_EXPANDED_SET, onToggleCluster, onHoverCluster, realmRootId = null, onEnterRealm, realmEnterButtonRef, realmCaption = null, visitedTrail = EMPTY_TRAIL, trailLensActiveRef, clusterBarLabels = null, trailHoverNodeIdRef, panelHoverNodeIdRef, tierReveal = DEFAULT_TIER_REVEAL, tourAnchorNodeId = null, tourAnchorRef, glyphSet = "geometric", canvasBackground = "dot", view3d = false, mapArrangement = DEFAULT_MAP_ARRANGEMENT, detailPanelVisible = false, footprint = null, expand = DEFAULT_EXPAND, wheelIntent = "zoom", ambientSleepDelayMs, onWalkDeadEnd = null } = args;
 
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const containerRef = useRef<HTMLDivElement | null>(null);
   const gridCanvasRef = useRef<HTMLCanvasElement | null>(null);
 
   const viewportRef = useRef({ width: 0, height: 0, dpr: 1 });
+  const previewEdgePropRef = useRef(previewEdge);
+  const previewEdgeHeldRef = useRef(previewEdge);
+  const previewSignatureRef = useRef<string | null>(null);
+  const previewAlphaRef = useRef(previewEdge ? 1 : 0);
+  const previewCommitRef = useRef(previewEdge?.phase === "committing" ? 1 : 0);
+  const previewTransitionRef = useRef<{
+    start: number;
+    duration: number;
+    fromAlpha: number;
+    toAlpha: number;
+    fromCommit: number;
+    toCommit: number;
+  } | null>(null);
+  useEffect(() => {
+    previewEdgePropRef.current = previewEdge;
+    if (previewEdge) previewEdgeHeldRef.current = previewEdge;
+  }, [previewEdge]);
   /**
    * ResizeObserver 가 **잰** 최신 크기. 커밋(캔버스 백킹 크기 교체)은 여기서
    * 하지 않고 rAF 프레임이 가져간다 — 이유는 아래 리사이즈 effect 의 주석.
@@ -2275,6 +2295,46 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
           : Math.min((now - lastFrameTimeRef.current) / 1000, MAX_FRAME_DELTA_SECONDS);
       lastFrameTimeRef.current = now;
 
+      const previewProp = previewEdgePropRef.current;
+      const previewSignature = previewProp
+        ? `${previewProp.sourceId}>${previewProp.targetId}:${previewProp.relationType}:${previewProp.phase}`
+        : "none";
+      if (previewSignatureRef.current !== previewSignature) {
+        const firstAppearance = previewSignatureRef.current === null || previewSignatureRef.current === "none";
+        previewSignatureRef.current = previewSignature;
+        if (previewProp) previewEdgeHeldRef.current = previewProp;
+        const durationSeconds = previewProp === null
+          ? MOTION.fast.duration
+          : previewProp.phase === "committing"
+            ? MOTION.settle.duration
+            : MOTION.base.duration;
+        previewTransitionRef.current = {
+          start: now,
+          duration: durationSeconds * 1000,
+          fromAlpha: previewProp && !firstAppearance
+            ? Math.min(previewAlphaRef.current, 0.45)
+            : previewAlphaRef.current,
+          toAlpha: previewProp ? 1 : 0,
+          fromCommit: previewCommitRef.current,
+          toCommit: previewProp?.phase === "committing" ? 1 : 0,
+        };
+      }
+      const previewTransition = previewTransitionRef.current;
+      if (previewTransition) {
+        const progress = reducedMotionRef.current
+          ? 1
+          : Math.min(1, Math.max(0, (now - previewTransition.start) / previewTransition.duration));
+        const eased = easeInOutCubic(progress);
+        previewAlphaRef.current = previewTransition.fromAlpha +
+          (previewTransition.toAlpha - previewTransition.fromAlpha) * eased;
+        previewCommitRef.current = previewTransition.fromCommit +
+          (previewTransition.toCommit - previewTransition.fromCommit) * eased;
+        if (progress >= 1) {
+          previewTransitionRef.current = null;
+          if (previewTransition.toAlpha === 0) previewEdgeHeldRef.current = null;
+        }
+      }
+
       // 이동 양보 — 유휴 게이트보다 «앞» 이다. 활동 플래그가 무엇이든
       // (자율 회전·혜성·조립 램프) 떠나기로 한 화면은 그리지 않는다.
       if (now < navYieldUntilRef.current) {
@@ -2436,6 +2496,7 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
         };
         const active =
           isCanvasActive(idleFlags) ||
+          previewTransitionRef.current !== null ||
           realmTransitionRef.current.phase === "entering" ||
           realmTransitionRef.current.phase === "exiting" ||
           domeMotion;
@@ -2448,6 +2509,7 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
             for (const [k, v] of Object.entries(idleFlags)) if (v === true) causes.push(k);
             if (realmTransitionRef.current.phase !== "idle") causes.push("realmTransition");
             if (domeMotion) causes.push("domeMotion");
+            if (previewTransitionRef.current !== null) causes.push("previewEdge");
             lastActiveCausesRef.current = { t: now, causes };
           }
         } else if (shouldSkipFrame(now, lastActiveMsRef.current, IDLE_GRACE_MS)) {
@@ -4197,6 +4259,13 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
         emphasizedNeighborId: panelEmphasisNodeId,
         hoveredEdge: hoveredEdgeRef.current,
         selectedEdge: selectedEdgeRef.current,
+        previewEdge: previewEdgeHeldRef.current && previewAlphaRef.current > 0.001
+          ? {
+              ...previewEdgeHeldRef.current,
+              alpha: previewAlphaRef.current,
+              commitProgress: previewCommitRef.current,
+            }
+          : null,
         emphasisById: emphasisRef.current,
         egoRevealById: egoRevealRef.current,
         focusRampById: focusRampRef.current,
@@ -4737,6 +4806,7 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
         const tokens = readTopologyV2TokensOrNull();
         const sim = simRef.current;
         const clustered = clusteredIdsRef.current;
+        const preview = previewEdgeHeldRef.current;
         // 3D — 계기는 **그려진** 좌표를 내보낸다. 드로우가 마지막으로 그린
         // 프레임 맵을 그대로 읽지 않으면 계기가 화면이 아니라 자기 상상을 재게
         // 된다(아래 엣지 계기의 원칙과 동일). 회전 중이어도 «이번 프레임» 좌표다.
@@ -4760,7 +4830,8 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
            *  「링이 실제로 이 노드에 붙었나」의 관측 창구다. */
           agentFocus: agentFocusNodeIdRef.current === n.id,
           /** 접힌 서브트리는 칩으로 대체돼 화면에 없다. */
-          hidden: clustered?.has(n.id) ?? false,
+          hidden: isPreviewEndpointHidden(clustered?.has(n.id) ?? false, preview, n.id),
+          previewEndpoint: isPreviewEndpoint(preview, n.id),
           /**
            * ★ 그래프 가독성 계기용 — 겹침은 반지름 없이 못 센다.
            * 그리는 쪽과 **같은 식**을 쓴다(`topology-frame-draw.ts` 의

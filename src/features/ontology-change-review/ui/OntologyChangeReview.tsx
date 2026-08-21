@@ -15,14 +15,20 @@ function formatValue(value: unknown): string {
   }
 }
 
-export function OntologyChangeReview({ changeSet }: { changeSet: OntologyChangeSet }) {
-  const t = useTranslations('acpChat.permission.changeReview');
+export function OntologyChangeReview({
+  changeSet,
+  testId = 'acp-ontology-change-review',
+}: {
+  changeSet: OntologyChangeSet;
+  testId?: string;
+}) {
+  const t = useTranslations('ontologyChangeReview');
   const visibleFields = changeSet.fields.slice(0, 8);
   const hiddenCount = Math.max(0, changeSet.fields.length - visibleFields.length);
 
   return (
     <div
-      data-testid="acp-ontology-change-review"
+      data-testid={testId}
       data-change-operation={changeSet.operation}
       data-change-exact={String(changeSet.exact)}
       className="grid gap-2"

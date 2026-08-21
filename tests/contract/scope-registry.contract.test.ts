@@ -100,6 +100,8 @@ const URL_KEY_REGISTRY: Record<string, { scope: Scope; note: string }> = {
   pulse: { scope: "global", note: "all|7d|30d" },
   mode: { scope: "global", note: "overview|focus|path|health" },
   create: { scope: "global", note: "concept 하나뿐인 의도 플래그" },
+  workbench: { scope: "global", note: "edit|create 작업대 의도" },
+  edit: { scope: "vault-scoped", note: "관계 타입과 대상 노드 슬러그" },
   index: { scope: "global", note: "expanded|collapsed" },
   recent: { scope: "global", note: "auto|1|7|30" },
   via: { scope: "global", note: "인사이트 복귀 마커 — 탭 이름(볼트 무관)" },
@@ -255,20 +257,6 @@ const STORAGE_KEY_REGISTRY: StorageEntry[] = [
     note: "에디터 초안 — 데이터 손실 경로. PR #827 이 고치는 중",
   },
   {
-    key: "ontology-atlas:studio-drafts:v1",
-    kind: "storage",
-    scope: "vault-scoped",
-    file: "src/views/ontology-studio/lib/studio-draft-store.ts",
-    note: "공방 초안 — 소비처가 현재 그래프와 교집합으로 걸러 피해가 작다",
-  },
-  {
-    key: "ontology-atlas:studio-create-draft",
-    kind: "storage",
-    scope: "vault-scoped",
-    file: "src/views/ontology-studio/lib/create-draft-store.ts",
-    note: "공방 생성 초안 — 세션 저장이라 탭과 함께 죽지만, 같은 탭에서 볼트를 바꾸면 남의 초안이 뜬다",
-  },
-  {
     key: "demo:recent-search-slugs:v1",
     kind: "storage",
     scope: "vault-scoped",
@@ -311,8 +299,6 @@ const STORAGE_KEY_REGISTRY: StorageEntry[] = [
   { key: "ontology-atlas:secret-change", kind: "event", scope: "global", note: "" },
   { key: "ontology-atlas:settings-view-intent", kind: "event", scope: "global", note: "설정 시트 드릴인 요청" },
   { key: "ontology-atlas:agent-chat-intent", kind: "event", scope: "global", note: "설정 → 대화 열기 요청 (위 신호의 반대 방향)" },
-  { key: "ontology-atlas:studio-draft-change", kind: "event", scope: "global", note: "" },
-  { key: "ontology-atlas:studio-url-change", kind: "event", scope: "global", note: "" },
   { key: "ontology-atlas:verify-edge-selected", kind: "event", scope: "global", note: "e2e 검증 훅" },
   { key: "ontology-atlas:verify-select-edge", kind: "event", scope: "global", note: "e2e 검증 훅" },
 ];
@@ -328,14 +314,10 @@ const STORAGE_KEY_REGISTRY: StorageEntry[] = [
 const KNOWN_UNPROTECTED: Record<string, string> = {
   "ontology-atlas:docs-vault-editor-draft:":
     "PR #827 이 볼트 범위를 넣는 중 — 이 브랜치의 base(origin/main)에는 아직 없다",
-  "ontology-atlas:studio-drafts:v1":
-    "소비처가 현재 그래프와 교집합으로 걸러 화면에 거짓이 안 뜬다 — 수리 우선순위 낮음",
-  "ontology-atlas:studio-create-draft":
-    "세션 저장이라 탭과 함께 죽는다 — 같은 탭 안 볼트 전환에서만 샌다",
   "demo:recent-search-slugs:v1":
     "소비처가 현재 노드와 교집합으로 걸러 화면에 거짓이 안 뜬다 — 수리 우선순위 낮음",
 };
-const MAX_KNOWN_UNPROTECTED = 4;
+const MAX_KNOWN_UNPROTECTED = 2;
 
 // ────────────────────────────────────────────────────────────────────────────
 // 스캐너 — 코드에 실재하는 키 리터럴

@@ -28,7 +28,7 @@ describe("canAutoStartGuidedTour (stacked-transient guard)", () => {
     // <lg 의 공방처럼 "여긴 못 와요" 를 말하는 화면. 그 위에 "여기가 공방이에요"
     // 가 뜨면 안내가 아니라 거짓말이다.
     document.body.innerHTML =
-      '<main data-surface-role="degraded-surface" data-testid="studio-too-narrow"></main>';
+      '<main data-surface-role="degraded-surface" data-testid="degraded-surface"></main>';
     expect(canAutoStartGuidedTour(document)).toBe(false);
   });
 

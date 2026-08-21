@@ -100,24 +100,22 @@ export function resolveOntologyBuilderNodeSlugFromGraphId(nodeId: string): strin
 }
 
 /**
- * 공방 딥링크 발신자 (지도·인사이트·팝오버 → `/ontology/studio`) — URL
- * 계약의 공통 id 문법인 canonical `<kind>:<slug>` 를 실어 보낸다. 은퇴한 ERD
- * 빌더(`/ontology/edit`)를 대체한 나침 무대(Compass Stage)가 이 `?node=` 를
- * 받아 해당 노드를 ENHANCE 모드로 열고 관계 소켓을 채우게 한다.
+ * 지도 contextual editor 딥링크 발신자 — URL 계약의 공통 id 문법인
+ * canonical `<kind>:<slug>` 를 `?p=`에 싣고 `workbench=edit`를 연다.
  *
  * `translateOntologyDeeplinkToTopologyParam` 로 정규화하는 이유: 입력이 이미
  * canonical(`capability:foo`)이면 그대로, 복수-슬래시(`capabilities/foo`)면
- * `capability:foo` 로 승격, bare/evidence-path 는 통과 — 공방의
+ * `capability:foo` 로 승격, bare/evidence-path 는 통과 — 지도의
  * `n.id === requestedNode` 매칭이 두 문법 모두에서 성립하도록 한 문법으로
  * 수렴한다(지도 `?p=`·온톨로지 리다이렉트와 같은 정규화기 재사용).
  */
-export function buildOntologyStudioNodeHrefFromGraphId(
+export function buildTopologyMeaningEditorNodeHref(
   nodeId: string,
   options?: { via?: string | null; reviewId?: string | null },
 ): string {
-  const base = `/ontology/studio/?node=${encodeURIComponent(
+  const base = `/topology/?p=${encodeURIComponent(
     translateOntologyDeeplinkToTopologyParam(nodeId),
-  )}`;
+  )}&workbench=edit`;
   const params: string[] = [];
   if (options?.via) {
     params.push(
@@ -133,14 +131,11 @@ export function buildOntologyStudioNodeHrefFromGraphId(
 }
 
 /**
- * 공방(Compass Stage) 편집 딥링크의 canonical 관계 키 — 네 개의 편집 가능한
- * 나침 방향(bearing). `views/ontology-studio` 의 `StudioRelation` 과 문자열이
- * 동일하다: 지도(`views/home`)와 공방(`views/ontology-studio`) 두 뷰가 서로를
- * import 하지 않고 이 entity 레이어의 브리지를 통해 같은 어휘를 공유하도록
- * 여기(한 단계 아래)에 정의한다 (FSD view→view import 금지).
+ * 지도 contextual editor가 다루는 네 관계. URL, 미리보기, frontmatter 쓰기가
+ * 이 entity 레이어의 한 어휘를 공유하므로 서로 다른 표면이 병렬 정의하지 않는다.
  */
-export type StudioEditRelation = "isA" | "dependsOn" | "contains" | "relates";
-const STUDIO_EDIT_RELATIONS: readonly StudioEditRelation[] = [
+export type MeaningEditRelation = "isA" | "dependsOn" | "contains" | "relates";
+const MEANING_EDIT_RELATIONS: readonly MeaningEditRelation[] = [
   "isA",
   "dependsOn",
   "contains",
@@ -148,14 +143,14 @@ const STUDIO_EDIT_RELATIONS: readonly StudioEditRelation[] = [
 ];
 
 /**
- * 지도 엣지의 relationType(derive-ontology edge `type`)을 공방의 편집 가능한
- * bearing 관계로 매핑한다. 네 bearing 밖의 타입(`describes`, `belongs_to`,
- * 도메인 멤버십 등)은 null → "공방에서 고치기" 액션을 노출하지 않는다(dead
+ * 지도 엣지의 relationType(derive-ontology edge `type`)을 편집 가능한 관계로
+ * 매핑한다. 네 타입 밖의 값(`describes`, `belongs_to`, 도메인 멤버십 등)은
+ * null → "지도에서 고치기" 액션을 노출하지 않는다(dead
  * affordance 금지). `dependencies`/`relates` 등 프론트매터 키 별칭도 관용적으로 흡수.
  */
-export function studioEditRelationForEdgeType(
+export function meaningEditRelationForEdgeType(
   edgeType: string,
-): StudioEditRelation | null {
+): MeaningEditRelation | null {
   switch (edgeType) {
     case "is_a":
       return "isA";
@@ -175,7 +170,7 @@ export function studioEditRelationForEdgeType(
 }
 
 /** 딥링크 편집 타깃의 query key — `edit=<relation>:<targetId>`. */
-export const ONTOLOGY_STUDIO_EDIT_KEY = "edit";
+export const ONTOLOGY_MEANING_EDIT_KEY = "edit";
 
 /**
  * 엣지 A→B 가 정말 `from` 노드의 프론트매터에서 authored 됐는가 —
@@ -198,43 +193,45 @@ export function edgeAuthoredByFromNode(
 }
 
 /**
- * 공방 엣지 딥링크 발신자 (지도 엣지 선택 → `/ontology/studio`). Focal(`?node=`)
- * 은 관계를 authored 한 노드(네 bearing 모두 엣지의 `from`), `edit=<relation>:
- * <targetId>` 은 공방에 "그 관계의 편집 카드를 열고 위성을 강조하라"고 지시한다.
+ * 지도 엣지 딥링크 발신자. Focal(`?p=`)은 관계를 authored 한 노드,
+ * `edit=<relation>:<targetId>` 은 같은 지도 안 편집기에 관계와 타깃을 전달한다.
  * 두 id 는 노드 변형과 동일하게 canonical `<kind>:<slug>` 로 정규화한다.
  *
  * `edit` 값은 target id 안의 `kind:slug` 콜론과 구분되도록 relation 뒤 첫
- * 콜론으로만 나뉜다(소비자 `parseOntologyStudioEditParam` 가 첫 콜론 split).
+ * 콜론으로만 나뉜다(소비자 `parseOntologyMeaningEditParam` 가 첫 콜론 split).
  */
-export function buildOntologyStudioEdgeHref(
+export function buildTopologyMeaningEditorEdgeHref(
   fromId: string,
   toId: string,
-  relation: StudioEditRelation,
+  relation: MeaningEditRelation,
 ): string {
   const focal = translateOntologyDeeplinkToTopologyParam(fromId);
   const target = translateOntologyDeeplinkToTopologyParam(toId);
-  return `/ontology/studio/?node=${encodeURIComponent(
+  return `/topology/?p=${encodeURIComponent(
     focal,
-  )}&${ONTOLOGY_STUDIO_EDIT_KEY}=${relation}:${encodeURIComponent(target)}`;
+  )}&workbench=edit&${ONTOLOGY_MEANING_EDIT_KEY}=${relation}:${encodeURIComponent(target)}`;
+}
+
+export function buildTopologyMeaningCreateHref(): string {
+  return "/topology/?workbench=create";
 }
 
 /**
- * `edit=<relation>:<targetId>` 파싱 (공방 소비자). target 자신의 `kind:slug`
+ * `edit=<relation>:<targetId>` 파싱. target 자신의 `kind:slug`
  * 콜론을 보존하도록 **첫 콜론**으로만 나눈다. 값이 없거나(null) 형식이
- * 어긋나거나 relation 이 네 bearing 밖이면 null — 공방은 그때 카드 없이 focal
- * 노드만 보여준다.
+ * 어긋나거나 relation 이 네 편집 타입 밖이면 null이다.
  */
-export function parseOntologyStudioEditParam(
+export function parseOntologyMeaningEditParam(
   raw: string | null | undefined,
-): { relation: StudioEditRelation; targetId: string } | null {
+): { relation: MeaningEditRelation; targetId: string } | null {
   if (!raw) return null;
   const colon = raw.indexOf(":");
   if (colon <= 0) return null;
   const relation = raw.slice(0, colon);
   const targetId = raw.slice(colon + 1).trim();
   if (!targetId) return null;
-  if (!STUDIO_EDIT_RELATIONS.includes(relation as StudioEditRelation)) return null;
-  return { relation: relation as StudioEditRelation, targetId };
+  if (!MEANING_EDIT_RELATIONS.includes(relation as MeaningEditRelation)) return null;
+  return { relation: relation as MeaningEditRelation, targetId };
 }
 
 export function resolveOntologyBuilderNodeSlug(

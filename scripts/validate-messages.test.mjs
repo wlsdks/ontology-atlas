@@ -162,14 +162,13 @@ describe('i18n message catalog', () => {
      * 규격을 좋게 바꾸는 것을 막는 모양이고, 이 저장소가 문서 게이트에서 이미 내린
      * 결론(사람이 쓴 문장을 못박지 않는다)과 같은 자리다.
      *
-     * 그래서 잠그는 것을 성질로 바꾼다: ① 다섯 자리가 다 채워져 있다 ② 전문용어와
+     * 그래서 잠그는 것을 성질로 바꾼다: ① 여섯 자리가 다 채워져 있다 ② 전문용어와
      * **알아듣기 어려운 외래어**가 없다 ③ 라벨은 짧다(레일 폭에 들어간다).
      * 무슨 단어를 고르는지는 사람의 판단이고, 이 시험이 대신하지 않는다.
      */
     const railLabels = [
       ko.navRail.map,
       ko.navRail.docs,
-      ko.navRail.studio,
       ko.navRail.insights,
       ko.navRail.projects,
       ko.navRail.agents,

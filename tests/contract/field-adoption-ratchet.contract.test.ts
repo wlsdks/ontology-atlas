@@ -102,8 +102,6 @@ const TEXT_CAP: ReadonlyArray<readonly [file: string, count: number]> = [
   ["src/views/home/ui/InlineFieldEdit.tsx", 1],
   ["src/views/home/ui/OntologyBootstrapForm.tsx", 1],
   ["src/views/ontology-insights/ui/tabs/MeaningGapSection.tsx", 1],
-  ["src/views/ontology-studio/ui/StudioCompass.tsx", 3],
-  ["src/views/ontology-studio/ui/StudioPicker.tsx", 2],
   ["src/views/project-detail/ui/ProjectDetailPage.tsx", 1],
   ["src/views/project-detail/ui/construction-review/ConstructionReviewPanel.tsx", 3],
   ["src/widgets/app-settings-menu/ui/AiConnectionPanel.tsx", 2],

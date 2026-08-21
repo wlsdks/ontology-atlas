@@ -1,7 +1,7 @@
 import { formatQueryOntologyCall } from "@/shared/lib/ontology-query-call";
 import type { TopologyAnalysisMode } from "../model/url-state";
 import {
-  buildOntologyStudioNodeHrefFromGraphId,
+  buildTopologyMeaningEditorNodeHref,
   buildOntologyHealthActionTarget,
   buildOntologyNodeHref,
   classifyRelationQuality,
@@ -529,7 +529,7 @@ export function formatTopologyPathAgentPacket({
 }
 
 export function buildTopologyHealthRepairHref(slug: string): string {
-  return buildOntologyStudioNodeHrefFromGraphId(slug);
+  return buildTopologyMeaningEditorNodeHref(slug);
 }
 
 export function getTopologyHealthNextAction(

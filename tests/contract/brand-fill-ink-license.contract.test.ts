@@ -240,7 +240,7 @@ describe("브랜드 면 × 잉크 페어링 — 소스 전수", () => {
      * 브랜드 면 위에 글자를 얹은 것이 아니다.
      */
     const { inklessFills } = scan();
-    expect(inklessFills, "잉크 없는 브랜드 면 리터럴이 늘었다 — 각 자리가 정말 글자 없는 면인지 확인하라").toBeLessThanOrEqual(21);
+    expect(inklessFills, "잉크 없는 브랜드 면 리터럴이 늘었다 — 각 자리가 정말 글자 없는 면인지 확인하라").toBeLessThanOrEqual(15);
   });
 
   it("사각이 줄었으면 상한도 내린다 — 여유를 무료로 두지 않는다", () => {
@@ -252,8 +252,8 @@ describe("브랜드 면 × 잉크 페어링 — 소스 전수", () => {
     const { inklessFills } = scan();
     expect(
       inklessFills,
-      "잉크 없는 브랜드 면 리터럴이 줄었다 — 위 상한 21 도 같이 내려라.",
-    ).toBeGreaterThanOrEqual(21);
+      "잉크 없는 브랜드 면 리터럴이 줄었다 — 위 상한 15 도 같이 내려라.",
+    ).toBeGreaterThanOrEqual(15);
   });
 
   it("탐지기가 심은 위반을 잡고 정상 짝은 놓아준다", () => {

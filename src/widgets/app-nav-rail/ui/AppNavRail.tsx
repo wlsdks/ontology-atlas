@@ -22,7 +22,6 @@ import {
   Download,
   BookOpen,
   FolderKanban,
-  Gem,
   // `History as HistoryIcon` — bare `History` 는 특정 HMR/번들 상태에서 전역
   // DOM History 생성자로 해석돼 "Illegal constructor" 로 화면을 추락시킨다
   // (AtlasGitPanel 이 같은 사고를 겪었다). 전역과 충돌 없는 별칭으로 고정.
@@ -267,7 +266,6 @@ export function AppNavRail({
   const destinations: RailDestination[] = [
     { id: "map", href: DESTINATION_HREF.map, label: t("map"), Icon: MapIcon },
     { id: "docs", href: contextHrefs?.docs ?? DESTINATION_HREF.docs, label: t("docs"), Icon: BookOpen },
-    { id: "studio", href: DESTINATION_HREF.studio, label: t("studio"), Icon: Gem },
     { id: "insights", href: DESTINATION_HREF.insights, label: t("insights"), Icon: BarChart3 },
     { id: "projects", href: DESTINATION_HREF.projects, label: t("projects"), Icon: FolderKanban },
     // 발자취 — 2026-07-25 목적지 승격. 구 "레일 하단 유틸 타일 + 560px 모달"

@@ -16,19 +16,19 @@ vi.mock("next/navigation", () => ({
 }));
 
 describe("OntologyEditRedirectPage", () => {
-  it("redirects the bare builder route to the studio", () => {
+  it("redirects the bare compatibility route to the map", () => {
     mocks.replace.mockClear();
     mocks.searchParams = new URLSearchParams();
     render(<OntologyEditRedirectPage />);
-    expect(mocks.replace).toHaveBeenCalledWith("/ontology/studio/");
+    expect(mocks.replace).toHaveBeenCalledWith("/topology/");
   });
 
-  it("forwards a canonical ?node= deep-link to the studio unchanged", () => {
+  it("translates a canonical ?node= deep-link to the contextual editor", () => {
     mocks.replace.mockClear();
     mocks.searchParams = new URLSearchParams("node=capability:mcp-server");
     render(<OntologyEditRedirectPage />);
     expect(mocks.replace).toHaveBeenCalledWith(
-      "/ontology/studio/?node=capability%3Amcp-server",
+      "/topology/?p=capability%3Amcp-server&workbench=edit",
     );
   });
 
@@ -37,7 +37,24 @@ describe("OntologyEditRedirectPage", () => {
     mocks.searchParams = new URLSearchParams("node=capabilities/mcp-server");
     render(<OntologyEditRedirectPage />);
     expect(mocks.replace).toHaveBeenCalledWith(
-      "/ontology/studio/?node=capability%3Amcp-server",
+      "/topology/?p=capability%3Amcp-server&workbench=edit",
+    );
+  });
+
+  it("translates create mode and preserves edge/review context", () => {
+    mocks.replace.mockClear();
+    mocks.searchParams = new URLSearchParams("mode=create");
+    const { unmount } = render(<OntologyEditRedirectPage />);
+    expect(mocks.replace).toHaveBeenCalledWith("/topology/?workbench=create");
+    unmount();
+
+    mocks.replace.mockClear();
+    mocks.searchParams = new URLSearchParams(
+      "node=capability:a&edit=dependsOn:capability:b&via=insights:do-next&review=row-1",
+    );
+    render(<OntologyEditRedirectPage />);
+    expect(mocks.replace).toHaveBeenCalledWith(
+      "/topology/?p=capability%3Aa&workbench=edit&edit=dependsOn%3Acapability%3Ab&via=insights%3Ado-next&review=row-1",
     );
   });
 });

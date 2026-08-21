@@ -85,6 +85,13 @@ export interface TopologyV2Focus {
   selectedSlug: string | null;
 }
 
+export interface TopologyV2PreviewEdge {
+  sourceId: string;
+  targetId: string;
+  relationType: string;
+  phase: "draft" | "committing";
+}
+
 /**
  * Adapter contract (`docs/plans/TOPOLOGY-V2-PHASE0.md` §4.2, confirmed unchanged
  * by `docs/TOPOLOGY-V2-DESIGN.md` §5.3 — v2 only replaces rendering, not
@@ -116,6 +123,8 @@ export interface TopologyMapV2Props {
   onSelectEdge?: (edge: { sourceId: string; targetId: string; relationType: string; declaredBySlug: string | null }) => void;
   /** 엣지 선택 = 페어 포커스 — 양끝만 밝히고 나머지 dim, 선택 엣지는 pale 인디고. */
   selectedEdge?: { sourceId: string; targetId: string } | null;
+  /** Pre-write relation overlay. It never enters the force/layout graph. */
+  previewEdge?: TopologyV2PreviewEdge | null;
   /** P3c — 엣지 호버 마이크로카드 (식별 변경 시 발화, null=해제). */
   onHoverEdge?: (
     edge: { sourceId: string; targetId: string; relationType: string; declaredBySlug: string | null } | null,
@@ -355,7 +364,7 @@ export interface TopologyMapV2Props {
 }
 
 export function TopologyMapV2(props: TopologyMapV2Props) {
-  const { nodes, edges, focus, minimal, emphasizedNeighborSlug, dataSourceKey = null, overviewFit = "spine", fitViewToken, spotlightFitToken = 0, relayoutToken, revealToken, onSelectEdge, onSelect, onPaneClick, onVisibleCountChange, onGraphStatsChange, onZoomTierChange, onContextMenuNode, onContextMenuPane, agentFocusNodeId, spotlightIds = null, onHoverEdge, selectedEdge = null, expandedParents, onToggleCluster, onHoverCluster, clusterHint, realmRootId = null, onEnterRealm, realmEnterLabel, realmEnterTooltip, realmCaption = null, clusterBarLabels = null, canvasLabel, walkNoticeLabel, visitedTrail, trailLensActiveRef, trailHoverNodeIdRef, panelHoverNodeIdRef, tierReveal, tourAnchorNodeId = null, tourAnchorRef, overlayOpen = false, glyphSet = "geometric", canvasBackground = "dot", view3d = false, mapArrangement = DEFAULT_MAP_ARRANGEMENT, detailPanelVisible = false, footprint = null, expand = DEFAULT_EXPAND, wheelIntent = "zoom", ambientSleepDelayMs, onWalkDeadEnd = null } = props;
+  const { nodes, edges, focus, minimal, emphasizedNeighborSlug, dataSourceKey = null, overviewFit = "spine", fitViewToken, spotlightFitToken = 0, relayoutToken, revealToken, onSelectEdge, onSelect, onPaneClick, onVisibleCountChange, onGraphStatsChange, onZoomTierChange, onContextMenuNode, onContextMenuPane, agentFocusNodeId, spotlightIds = null, onHoverEdge, selectedEdge = null, previewEdge = null, expandedParents, onToggleCluster, onHoverCluster, clusterHint, realmRootId = null, onEnterRealm, realmEnterLabel, realmEnterTooltip, realmCaption = null, clusterBarLabels = null, canvasLabel, walkNoticeLabel, visitedTrail, trailLensActiveRef, trailHoverNodeIdRef, panelHoverNodeIdRef, tierReveal, tourAnchorNodeId = null, tourAnchorRef, overlayOpen = false, glyphSet = "geometric", canvasBackground = "dot", view3d = false, mapArrangement = DEFAULT_MAP_ARRANGEMENT, detailPanelVisible = false, footprint = null, expand = DEFAULT_EXPAND, wheelIntent = "zoom", ambientSleepDelayMs, onWalkDeadEnd = null } = props;
 
   const realmEnterButtonRef = useRef<HTMLButtonElement | null>(null);
 
@@ -472,6 +481,7 @@ export function TopologyMapV2(props: TopologyMapV2Props) {
       onSelectEdge,
       onHoverEdge,
       selectedEdge,
+      previewEdge,
       onSelect,
       onPaneClick,
       onVisibleCountChange,
@@ -512,6 +522,12 @@ export function TopologyMapV2(props: TopologyMapV2Props) {
       data-testid="topology-map-v2"
       data-map-engine="v2"
       data-minimal={minimal ? "true" : "false"}
+      data-preview-edge={
+        previewEdge
+          ? `${previewEdge.sourceId}>${previewEdge.targetId}:${previewEdge.relationType}`
+          : undefined
+      }
+      data-preview-phase={previewEdge?.phase}
       // rank18 — 오버레이가 열린 동안 캔버스를 aria 트리 + Tab 순회에서
       // 제외(inert 는 포인터도 함께 막는다). INDEX/데이터시트가 대체 목록.
       aria-hidden={overlayOpen}

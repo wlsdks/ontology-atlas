@@ -100,7 +100,6 @@ export const TOUR_STEPS: readonly TourStep[] = [
  */
 export type DestinationTourId =
   | "docs"
-  | "studio"
   | "insights"
   | "projects"
   | "agents"
@@ -114,19 +113,6 @@ export const DESTINATION_TOURS: Record<DestinationTourId, readonly TourStep[]> =
       anchor: { type: "testid", value: "docs-vault-doc-list" },
       persona: "all",
       copyKey: "docsList",
-    },
-  ],
-  studio: [
-    { id: "studio-what", anchor: null, persona: "all", copyKey: "studioWhat" },
-    {
-      // 진입 선택(`studio-entry-choice`)이 아니라 **선택이 끝난 뒤의 작업
-      // 표면**을 가리킨다. 진입 선택은 그 자체가 결정 모달이라 그 위에 안내를
-      // 쏘면 카드가 선택지를 덮고 `aria-modal` 이 둘이 된다(2026-07-26 실측).
-      // 자동 시작 가드가 결정이 끝날 때까지 기다렸다가 여기서 뜬다.
-      id: "studio-card",
-      anchor: { type: "testid", value: "studio-center-card" },
-      persona: "all",
-      copyKey: "studioCard",
     },
   ],
   /*
