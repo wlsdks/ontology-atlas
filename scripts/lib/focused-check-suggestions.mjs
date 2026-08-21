@@ -426,12 +426,28 @@ const RULES = [
   {
     command: 'pnpm exec tsc --noEmit',
     reason: 'TypeScript or Next.js static export config changed',
+    /*
+     * ⚠️ **테스트 파일을 빼면 안 된다** (2026-08-21 정정).
+     *
+     * 종전에는 `src/**` 의 `.test.`/`.spec.` 를 부정 전방탐색으로 빼고
+     * `tests/**` 는 아예 안 봤다. 「테스트는 제품 타입에 영향이 없다」는 전제였을
+     * 텐데, **`tsconfig.json` 의 `include` 는 `**\/*.ts` 전부**라 CI 의
+     * `tsc --noEmit` 은 그것들을 검사한다. 그리고 **vitest 는 타입을 안 본다** —
+     * 즉 테스트만 고친 사람은 로컬에서 타입 오류를 만날 방법이 아예 없었고,
+     * `Types · Lint · Docs` 잡에서야 처음 빨개졌다.
+     *
+     * 실제로 그렇게 터졌다(2026-08-21 `#1180`): 계약 시험에 가짜 `spawn` 스텁을
+     * 넣었는데 `SpawnSyncReturns` 와 안 맞았다. 단위 시험 25개는 전부 초록이었다.
+     *
+     * 이 저장소가 게이트에 대해 정해 둔 것 그대로다: **검사가 보는 범위와
+     * 추천기가 보는 범위가 다르면, 그 차이만큼이 CI 에서야 터진다.**
+     */
     matches: [
       /^app\/.*\.(?:ts|tsx)$/,
       /^next\.config\.ts$/,
       /^next-env\.d\.ts$/,
-      /^src\/(?!.*\.(?:test|spec)\.).*\.(?:ts|tsx)$/,
-      /^src\/i18n\/.*\.ts$/,
+      /^src\/.*\.(?:ts|tsx)$/,
+      /^tests\/.*\.(?:ts|tsx)$/,
       /^tsconfig\.json$/,
     ],
   },
