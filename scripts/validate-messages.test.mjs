@@ -172,7 +172,7 @@ describe('i18n message catalog', () => {
       ko.navRail.studio,
       ko.navRail.insights,
       ko.navRail.projects,
-      ko.navRail.skills,
+      ko.navRail.agents,
       ko.navRail.git,
     ];
     for (const label of railLabels) {

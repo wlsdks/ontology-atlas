@@ -2674,8 +2674,8 @@
     },
     {
       "depth": 2,
-      "text": "활성 실행 트랙 — 신뢰 계약 → 의미 계약 → Skills process (2026-08-09)",
-      "slug": "활성-실행-트랙-신뢰-계약-의미-계약-skills-process-2026-08-09"
+      "text": "활성 실행 트랙 — 신뢰 계약 → 의미 계약 (2026-08-09)",
+      "slug": "활성-실행-트랙-신뢰-계약-의미-계약-2026-08-09"
     },
     {
       "depth": 3,
@@ -2761,21 +2761,6 @@
       "depth": 4,
       "text": "U1.3 — progressive-disclosure construction UX",
       "slug": "u13-progressive-disclosure-construction-ux"
-    },
-    {
-      "depth": 4,
-      "text": "K1.1 — Skills lossless happy-path rail",
-      "slug": "k11-skills-lossless-happy-path-rail"
-    },
-    {
-      "depth": 4,
-      "text": "K1.2 — narrow semantic overlay",
-      "slug": "k12-narrow-semantic-overlay"
-    },
-    {
-      "depth": 4,
-      "text": "K1.3 — authorized source-hidden process packet",
-      "slug": "k13-authorized-source-hidden-process-packet"
     },
     {
       "depth": 4,
@@ -3594,6 +3579,11 @@
       "depth": 1,
       "text": "CHANGELOG",
       "slug": "changelog"
+    },
+    {
+      "depth": 2,
+      "text": "2026-08-21 · 스킬 검사 화면을 없앴습니다",
+      "slug": "2026-08-21-스킬-검사-화면을-없앴습니다"
     },
     {
       "depth": 2,
@@ -6226,6 +6216,11 @@
       "depth": 2,
       "text": "기록 형식",
       "slug": "기록-형식"
+    },
+    {
+      "depth": 2,
+      "text": "2026-08-21 (91) — Skills 제품 표면을 완전히 은퇴시키고, 레일 상한을 일곱으로 닫는다",
+      "slug": "2026-08-21-91-skills-제품-표면을-완전히-은퇴시키고-레일-상한을-일곱으로-닫는다"
     },
     {
       "depth": 2,
@@ -11100,11 +11095,6 @@
       "depth": 3,
       "text": "`/agents` — 에이전트 (신설 2026-08-20, 원장 90)",
       "slug": "agents-에이전트-신설-2026-08-20-원장-90"
-    },
-    {
-      "depth": 3,
-      "text": "`/skills` — 스킬 (에이전트 스킬 인벤토리, 신설 2026-08-09)",
-      "slug": "skills-스킬-에이전트-스킬-인벤토리-신설-2026-08-09"
     },
     {
       "depth": 2,

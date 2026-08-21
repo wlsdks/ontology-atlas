@@ -65,7 +65,7 @@ aura/particle/rarity(gold)/shimmer 를 허용했었다. fable 의 판정 B 와 �
 
 ## 라우팅
 
-- 없앤 라우트를 되살리기 — `/admin/*`, `/login`, `/signup`, `/account`, `/reset-password`, `/settings/*`, `/knowledge/*`, `/review/*`, `/diagnostics/*` 는 R10 (로그인과 클라우드 화면을 영구히 제거한 라운드) 에서 지웠다. 새 라우트는 `/`, `/topology`, `/docs`, `/ontology`, `/projects`, `/project/[slug]` 와 나머지 5개 화면 안에서 설계한다.
+- 없앤 라우트를 되살리기 — `/admin/*`, `/login`, `/signup`, `/account`, `/reset-password`, `/settings/*`, `/knowledge/*`, `/review/*`, `/diagnostics/*` 는 R10 에서, `/skills` 는 2026-08-21 원장 (91)에서 지웠다. 새 라우트는 기존 목적지 안에서 먼저 설계한다.
 - `pages/` 라우터 도입 — App Router 만 사용.
 - 정적 export 와 호환 안 되는 server-only API 라우트 (dynamic API endpoints, server actions).
 

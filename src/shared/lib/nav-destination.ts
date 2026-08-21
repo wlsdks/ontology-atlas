@@ -4,7 +4,6 @@ export type AppNavDestinationId =
   | "studio"
   | "insights"
   | "projects"
-  | "skills"
   | "agents"
   | "git";
 
@@ -31,7 +30,6 @@ export function resolveActiveNavDestination(pathname: string): AppNavDestination
     return "studio";
   if (path.startsWith("/ontology/insights")) return "insights";
   if (path.startsWith("/git")) return "git";
-  if (path.startsWith("/skills")) return "skills";
   // 「에이전트」 — 2026-08-20 목적지 신설(원장 90). `/agents` 하나뿐이라
   // 사다리 어디에 놓아도 같지만, 레일 순서와 같은 자리에 둔다.
   if (path.startsWith("/agents")) return "agents";

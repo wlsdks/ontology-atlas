@@ -102,7 +102,7 @@ test("커서가 캔버스를 벗어나면 지도가 프레임을 그만 그린�
    * 레일 위로 옮기면 캔버스는 `pointerleave` 만 받고 pointermove 는 못 받는다 —
    * 「노드를 보다가 사이드바로 간다」는 가장 흔한 이탈이 정확히 그 모양이다.
    */
-  const rail = page.getByTestId("app-nav-rail-item-skills");
+  const rail = page.getByTestId("app-nav-rail-item-agents");
   const railBox = await rail.boundingBox();
   expect(railBox).not.toBeNull();
   await page.mouse.move(railBox!.x + railBox!.width / 2, railBox!.y + railBox!.height / 2);

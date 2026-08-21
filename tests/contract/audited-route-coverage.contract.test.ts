@@ -8,7 +8,7 @@ import { AUDITED_ROUTES, EXCLUDED_ROUTES } from "../e2e/audited-routes";
  * **접근성 게이트가 라우트를 놓치지 못하게 한다.**
  *
  * 이 계약이 있는 이유는 실제 사고다. 두 래칫(`a11y-ratchet` · `contrast-ratchet`)
- * 이 각자 손으로 쓴 라우트 배열을 갖고 있었고 — 8개와 5개 — 정본은 17개였다.
+ * 이 각자 손으로 쓴 라우트 배열을 갖고 있었고 — 8개와 5개 — 당시 정본은 17개였다.
  * 어느 목록도 왜 그만큼인지 안 적었고, 빠진 자리에 **404 두 페이지의 AA 미달
  * (4.42:1)** 이 숨어 있었다. 기준선이 전부 0 이 됐지만 그 0 은 «8개 라우트의 0»
  * 이었다.
@@ -55,8 +55,8 @@ describe("접근성 래칫의 라우트 커버리지", () => {
 
   it("정본 인벤토리를 실제로 찾아낸다 — 탐지기가 빈 집합 위에서 놀지 않는다", () => {
     // 이 단언이 없으면 `discoverRoutes` 가 0개를 돌려줘도 아래 검사가 전부
-    // 초록이다(빈 집합은 모든 全稱 명제를 만족한다). 정본은 17개다.
-    expect(routes.length).toBeGreaterThanOrEqual(17);
+    // 초록이다(빈 집합은 모든 全稱 명제를 만족한다). 현재 정본은 18개다.
+    expect(routes.length).toBeGreaterThanOrEqual(18);
     expect(routes).toContain("/topology");
     expect(routes).toContain("/git");
     expect(routes).toContain("/project/[slug]");

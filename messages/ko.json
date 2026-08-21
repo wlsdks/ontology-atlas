@@ -256,7 +256,6 @@
     "studio": "스튜디오",
     "insights": "분석",
     "projects": "프로젝트",
-    "skills": "스킬",
     "agents": "에이전트",
     "git": "기록",
     "getApp": "앱 받기",
@@ -687,14 +686,6 @@
         "title": "왼쪽이 내 폴더 목록",
         "body": "폴더에 있는 글이 전부 여기 나와요. 눌러서 열고, 여러 편을 탭으로 띄워 둘 수 있어요. 위쪽에서 내 폴더를 고르면 그때부터 내 글이 보여요."
       },
-      "skillsWhat": {
-        "title": "에이전트가 가진 스킬을 여기서 봐요",
-        "body": "스킬은 「이럴 때 이렇게 해라」를 적어 둔 마크다운이에요. 하나둘 늘다 보면 뭐가 뭔지, 언제 뜨는지 알기 어려워져요. 여기서는 어떤 스킬이 있고 언제 뜨는지, 뜨면 무엇이 열리고 무엇이 실행되는지 봐요."
-      },
-      "skillsOpen": {
-        "title": "폴더를 하나 고르면 시작돼요",
-        "body": "스킬이 든 폴더를 고르면 그 안의 SKILL.md 를 전부 찾아요. 읽기만 하고 아무것도 고치지 않아요. 스킬 파일도, 내 지도도 그대로예요."
-      },
       "studioWhat": {
         "title": "글끼리 이어 붙이는 작업대예요",
         "body": "글은 썼는데 이게 무엇의 일부인지, 무엇에 기대고 있는지가 비어 있을 때가 많아요. 여기서 그 빈칸을 하나씩 채워요. 채운 만큼 지도의 선이 늘어나요."
@@ -1000,7 +991,6 @@
         "goTo_studio": "스튜디오로",
         "goTo_insights": "분석으로",
         "goTo_projects": "프로젝트로",
-        "goTo_skills": "스킬로",
         "goTo_agents": "에이전트로",
         "goTo_git": "Git 기록으로",
         "openProjectPalette": "검색 팔레트 열기",
@@ -3594,129 +3584,6 @@
     "label": "내 폴더 열기",
     "busyLabel": "여는 중…",
     "unsupportedLabel": "앱에서 열기"
-  },
-  "agentSkills": {
-    "title": "스킬",
-    "subtitle": "에이전트가 가진 스킬이 언제 뜨고, 뜨면 무엇이 열리고 무엇이 돌아가는지 본다.",
-    "stageTitle": "스킬을 살펴볼까요?",
-    "openCardTitle": "내 스킬 폴더 열기",
-    "openCardDesc": "폴더 안의 SKILL.md 를 전부 찾아 읽어요. 파일은 읽기만 하고 아무것도 고치지 않아요.",
-    "openCardNote": "프로젝트나 홈 폴더의 .claude 를 고르면 돼요",
-    "sampleCardTitle": "예시로 둘러보기",
-    "sampleCardDesc": "설치 없이 견본 뭉치로 이 화면이 무엇을 보여주는지 봐요.",
-    "stageCaption": "언제 뜨나 · 왜 엉뚱한 게 뜨나 · 뜨면 뭐가 일어나나. 폴더를 열면 바로 보여요.",
-    "openFolder": "스킬 폴더 열기",
-    "openAnother": "다른 폴더 열기",
-    "pickerTitle": "스킬이 든 폴더를 고르세요",
-    "reading": "폴더를 읽는 중…",
-    "unsupported": "이 브라우저는 폴더 열기를 지원하지 않아요. 데스크톱 앱에서는 됩니다.",
-    "readError": "폴더를 읽지 못했어요. {error}",
-    "truncated": "폴더가 커서 {count}개 파일까지만 읽었어요. 아래 결과는 그 범위 안에서예요.",
-    "notInstalled": "설치돼 있지 않은 사본 {count}곳은 뺐어요. 옛 버전과 아직 설치 안 한 카탈로그예요. 그건 실제로 뜨지 않아요.",
-    "stat": {
-      "bundled": "딸린 파일",
-      "folder": "폴더: {folder}",
-      "skillsCount": "스킬 <b>{count}</b>개",
-      "executablesCount": "실행되는 것 <b>{count}</b>개"
-    },
-    "collisions": {
-      "title": "이름이 겹쳐요",
-      "hint": "이름이 같으면 어느 쪽이 뜰지 정해져 있지 않아요.",
-      "competing": "설명까지 달라요. 발동 조건이 경쟁해요"
-    },
-    "overlaps": {
-      "title": "뜨는 조건이 겹쳐요",
-      "hint": "이름은 다른데 설명이 비슷하면, 원하지 않은 쪽이 뜰 수 있어요."
-    },
-    "list": {
-      "title": "스킬 목록"
-    },
-    "chain": {
-      "always": "항상 실려요",
-      "onTrigger": "뜨면 실려요",
-      "onDemand": "필요하면 열려요",
-      "chars": "{count}자",
-      "fileCount": "파일 {count}개",
-      "noFiles": "딸린 파일 없음",
-      "runs": "실행됨",
-      "missing": "파일이 없어요"
-    },
-    "searchLabel": "이름으로 찾기",
-    "searchPlaceholder": "이름으로 찾기…",
-    "noMatch": "찾는 이름이 없어요.",
-    "group": {
-      "mine": "내 폴더"
-    },
-    "row": {
-      "collides": "이름겹침",
-      "metrics": "{chars}자 · 파일 {files} · 실행 {runs}",
-      "runs": "실행 {count}"
-    },
-    "detail": {
-      "back": "스킬 목록",
-      "backOverview": "요약으로",
-      "showLoadChain": "어떻게 실리는지 보기 (3단계)",
-      "hideLoadChain": "어떻게 실리는지 닫기",
-      "competing": "이 스킬과 경쟁하는 것",
-      "sameName": "같은 이름이 {source}에도 있어요. 어느 쪽이 뜰지 정해져 있지 않아요",
-      "sharedTrigger": "{name}: 뜨는 조건이 겹쳐요 ({words})",
-      "handsOffTitle": "이 스킬이 넘기는 곳",
-      "handedFromTitle": "이 스킬을 부르는 곳",
-      "runsMark": "돌아가는 파일 {count}개"
-    },
-    "process": {
-      "title": "원문 절차",
-      "exactCount": "원문 순서대로 단계 {count}개",
-      "unavailable": "절차를 읽지 못했어요. 빠진 단계를 짐작해서 채우지 않아요.",
-      "lines": "L{start}–L{end}",
-      "showDetail": "자료·진단 보기",
-      "hideDetail": "자료·진단 닫기",
-      "resourceExists": "있음",
-      "resourceMissing": "없음",
-      "resourceUnknown": "확인 안 됨",
-      "semanticBranch": "{guard}이면 {target}단계로 분기",
-      "semanticRetry": "{condition}까지 {target}단계 재시도",
-      "semanticStop": "{condition}이면 전체 절차 중단",
-      "semanticVerify": "{target}을 {action} 방식으로 검증; {criterion}이면 통과",
-      "diagnosticScanTruncated": "폴더가 커서 읽기를 멈춰, 일부 절차는 만들지 못했어요.",
-      "diagnosticMarkdownUnsupported": "이 SKILL.md 의 절차 문법은 원문 그대로 읽을 수 없어요.",
-      "diagnosticStepsUnavailable": "번호가 매겨진 절차를 찾지 못했어요.",
-      "diagnosticResourceMissing": "가리킨 자료가 없어요.",
-      "diagnosticResourceUnchecked": "가리킨 자료가 있는지 확인하지 못했어요.",
-      "diagnosticResourcePathUnsupported": "가리킨 자료 경로가 확인할 수 있는 범위 밖이에요.",
-      "diagnosticSemanticAmbiguous": "뜻이 여러 갈래라 라벨을 만들지 않았어요.",
-      "packetCopy": "절차 묶음 복사",
-      "packetAvailable": "절차 묶음 준비됨",
-      "packetUnavailable": "절차를 읽지 못해 복사를 막았어요",
-      "packetTampered": "원문이 그대로인지 확인하지 못해 복사를 막았어요",
-      "packetCopying": "복사 중…",
-      "packetCopied": "절차 묶음 복사됨",
-      "packetCopyFailed": "복사 실패",
-      "digestLabel": "원문 지문",
-      "linesOne": "L{line}",
-      "resourceKindReference": "읽는 것",
-      "resourceKindScript": "돌아가는 것",
-      "resourceKindAsset": "딸린 자료",
-      "resourceKindTemplate": "서식",
-      "resourceKindExample": "예시"
-    },
-    "findings": {
-      "alwaysTitle": "매 세션 실리는 것",
-      "alwaysNote": "모두 합쳐 {chars}자",
-      "competingTitle": "서로 경쟁하는 것",
-      "competingNote": "이름 {names}건 · 조건 {pairs}쌍",
-      "noneCompeting": "겹치는 게 없어요.",
-      "sameNameCount": "{count}곳",
-      "runsTitle": "내 컴퓨터에서 돌 수 있는 것",
-      "runsNote": "파일 {count}개",
-      "noneRun": "실행되는 파일이 없어요.",
-      "handoffTitle": "서로 넘기는 것",
-      "handoffNote": "연결 {count}개",
-      "noneHandoff": "서로 부르는 스킬이 없어요.",
-      "handoffDegree": "부르는 곳 {into} · 넘기는 곳 {out}"
-    },
-    "openSample": "예시 둘러보기",
-    "sampleNotice": "예시 뭉치예요. 내 폴더를 열면 내 스킬이 보여요."
   },
   "acpChat": {
     "ariaLabel": "{runtime} 대화",

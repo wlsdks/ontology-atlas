@@ -33,15 +33,12 @@ export const DESTINATION_IDS = [
   'studio',
   'insights',
   'projects',
-  'skills',
   /*
    * 「에이전트」 — 2026-08-20 신설(원장 90). 설정 시트 안의 설치·연결 화면을
-   * 여기로 뺐다. 스킬이 문서함과 갈라선 것과 같은 문법이다: **답하는 질문이
-   * 다르다.** 설정은 값을 고르는 자리이고, 이쪽은 진행 상태가 있는 운영
+   * 여기로 뺐다. 설정은 값을 고르는 자리이고, 이쪽은 진행 상태가 있는 운영
    * 작업(받고 · 깔고 · 로그인하고 · 고치고 · 대화를 연다)이다.
    *
-   * ⚠️ **여덟이 상한이다** (소유자 확정 2026-08-20). 최소 창(높이 720)에서
-   * 여덟 번째 타일이 유틸리티 층 위로 8px 남기고 들어간다. 아홉 번째를 넣으려면
+   * ⚠️ **일곱이 상한이다** (소유자 확정 2026-08-21). 여덟 번째를 넣으려면
    * 무엇을 뺄지 먼저 대야 한다 — 계약이 그것을 강제한다.
    */
   'agents',
@@ -61,7 +58,6 @@ export const DESTINATION_HREF: Record<DestinationId, string> = {
   studio: '/ontology/studio/',
   insights: '/ontology/insights/',
   projects: '/projects/',
-  skills: '/skills/',
   agents: '/agents/',
   git: '/git/',
 };
@@ -69,17 +65,13 @@ export const DESTINATION_HREF: Record<DestinationId, string> = {
 /** 리더 키 — 이것을 누른 다음 아래 글자를 누르면 이동한다. */
 export const NAV_LEADER_KEY = 'g';
 
-/**
- * 리더 다음에 오는 글자. 첫 글자를 쓰되 겹치면 뜻이 남는 다른 글자로 간다 —
- * `studio` 가 `s` 를 가져가므로 `skills` 는 s**k**ills 의 `k`.
- */
+/** 리더 다음에 오는 글자. 첫 글자를 쓰되 겹치면 뜻이 남는 다른 글자로 간다. */
 export const DESTINATION_KEY: Record<DestinationId, string> = {
   map: 'm',
   docs: 'd',
   studio: 's',
   insights: 'i',
   projects: 'p',
-  skills: 'k',
   // `a` — 겹치는 것이 없다.
   agents: 'a',
   git: 'g',

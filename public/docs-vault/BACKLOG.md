@@ -11,17 +11,16 @@
 
 ---
 
-## 활성 실행 트랙 — 신뢰 계약 → 의미 계약 → Skills process (2026-08-09)
+## 활성 실행 트랙 — 신뢰 계약 → 의미 계약 (2026-08-09)
 
 이 트랙은 2026-08-09 설치 앱 Codex Computer Use 감사와 서로 격리된
-`gpt-5.6-sol` MCP/ontology/Skills 감사 결과를 현재 HEAD와 다시 대조해 만든다.
+`gpt-5.6-sol` MCP/ontology 감사 결과를 현재 HEAD와 다시 대조해 만든다.
 **이 절 하나만 상태를 관리한다.** `docs/plans/`에 같은 체크리스트를 복제하지
 않는다.
 
 ### PO 패스 — 구현 전에 문서를 정본으로 만든다
 
-**선행 기록**: 2026-08-09 `/skills`는 읽기 전용이며 vault write·`kind:` 승격·
-위험 점수·스킬 편집을 하지 않는다는 결정은 유효하다. project meaning receipt는
+**선행 기록**: project meaning receipt는
 구조·competency·source currentness를 분리한다는 결정도 유효하다. 다만 실제
 field trial에서 proposal이 승인한 witness를 finalizer가 거절했고, 이 관측은
 두 단계가 동일한 증거 의미를 공유한다는 전제를 반증했다.
@@ -33,7 +32,6 @@ field trial에서 proposal이 승인한 witness를 finalizer가 거절했고, �
   문자열은 valid가 될 수 있다.
 - quick-start는 실패 code를 반환하면서도 성공·연결 완료 문구를 출력한다.
 - Workshop은 같은 domain의 sibling을 `is_a` 추천으로 오도한다.
-- Skills 상세는 3단 load chain만 보여 주며, 번호 절차·근거 line을 보존하지 않는다.
 
 **사용자 문제**: 새 제품을 처음 연결하는 사람과 에이전트가 “설정이 실제로
 실행 가능한가, 승인한 의미가 확정 가능한가, 추천 관계가 믿을 만한가, 다음
@@ -45,11 +43,11 @@ source-hidden handoff 실패가 생긴다.
 source-hidden answer loss) · 해법 독립 통과(컴포넌트나 parser 이름 없이도 성립).
 
 **대상과 모먼트**: 처음 vault를 만드는 개발자/FDE, 현재 의미를 승인하는 사람,
-그 vault 또는 Skill process를 넘겨받는 새 AI agent. **현재 대안**: raw Markdown,
+그 vault를 넘겨받는 새 AI agent. **현재 대안**: raw Markdown,
 source search, 수동 config 검사, 세션 대화 재설명. **온톨로지 가치**: concept·typed
 relation·evidence witness·currentness의 의미를 writer와 reader가 동일하게 해석한다.
 **에이전트 가치**: first contact부터 finalize와 handoff까지 다음 MCP/CLI 행동이
-실행 가능한 상태로 남는다. **단순화**: 새 kind·새 topology mode·Skills vault
+실행 가능한 상태로 남는다. **단순화**: 새 kind·새 topology mode
 영속화 없이 기존 spine과 읽기 전용 표면을 강화한다. **검증**: Node 24 fresh
 fixture, source-hidden evaluator, focused contract, 설치 앱, 실제 motion/perf proof.
 
@@ -102,9 +100,6 @@ RDF/OWL/SKOS/SHACL 구현으로 소개하지 않는다. **적용 원칙**: LLM�
 | 8 | M1.5 | done(030269632) | MCP/skill/prompt가 같은 ontology-construction lifecycle을 강제한다. |
 | 9 | O1.5 | done(0ef1c5aa4) | human-owned exact plan이 qualification→write→finalize→source-hidden 재사용을 닫았다. |
 | 10 | U1.3 | done(84fb9d177) | 같은 ontology-construction을 기본/전문가 깊이로 쉽게 사용한다. |
-| 11 | K1.1 | done(84fb9d177) | Skill 번호 절차를 손실 없이 source-bound rail로 읽는다. |
-| 12 | K1.3 | done(892a0beb6) | canonical packet·tamper gate와 clipboard UI를 구현했고, fresh source-hidden consumer가 독립적으로 27/27 재현·tamper 거부를 검증했다. |
-| 13 | K1.2 | done(892a0beb6) | 독립 gold corpus가 명시 grammar 4종을 precision 100%로 고정하고 ambiguous 문장은 diagnostic으로 남긴다. |
 | 14 | U1.1 | done(0b8406b39; merged 8667c5c3a) | Projects가 lifecycle 질문을 category/status로 두 번 묻지 않는다. |
 | 15 | U1.2 | done(350163ce2; merged 8667c5c3a) | spotlight가 bounded motion 뒤 idle로 돌아간다. |
 | gate | O1.4 | hold(repeated missing primitive) | missing primitive가 반복 입증될 때만 schema 확장을 상정한다. |
@@ -353,35 +348,6 @@ write→source-hidden reuse다. 그 여정이 성공한 뒤 서로 다른 두 �
   diff를 만들며, design audit·responsive sweep·재빌드한 설치 앱 WebView 검증이 green이다.
   Codex Computer Use 커넥터가 제공되는 환경에서는 같은 설치 앱 여정을 추가 증거로 남긴다.
 
-#### K1.1 — Skills lossless happy-path rail
-
-- **사용자 변화**: 기존 3단 load chain 아래에서 번호 절차를 원문 순서·line과
-  함께 읽는다.
-- **최소 IR**: `irVersion`, source path+digest, scanTruncated, diagnostics,
-  stable stepId/ordinal/exactText/sourceSpan, resource exists/kind/backlinks.
-- **금지**: 기본 transition edge, branch/retry 추측, ontology node/vault write,
-  script content security scoring.
-- **완료**: trial fixture 27/27 exact steps, unsupported/truncated Markdown fail-closed,
-  load chain과 process rail이 시각·접근성상 다른 것임이 증명된다.
-
-#### K1.2 — narrow semantic overlay
-
-- **진입 조건**: K1.1 IR과 독립 gold corpus가 고정돼 있어야 한다.
-- **허용**: exact syntactic marker와 literal guard/target이 있는 branch/retry/stop/
-  verify만. derived fact마다 exact span+digest.
-- **금지**: substring keyword, ambiguous default edge, `rollback deadline` terminal,
-  `stop mutation` whole-process stop, 명사 `checksum`만으로 verify.
-- **완료**: gold-reviewed admitted set precision 100%; 애매한 문장은 edge 대신
-  diagnostic이고 false positive 0.
-
-#### K1.3 — authorized source-hidden process packet
-
-- **사용자 변화**: 사용자가 명시적으로 복사한 packet을 새 agent가 원본
-  폴더 없이 읽고 exact steps와 diagnostics를 인용한다.
-- **금지**: 자동 vault 저장, 무단 외부 전송, packet 부재를 process 없음으로 해석.
-- **완료**: digest tamper fail-closed, authorized packet handoff의 supported claims
-  100%, 미승인 vault-only handoff는 `process unavailable`을 정직하게 반환한다.
-
 #### U1.1 — Projects taxonomy contract
 
 - **진입 조건**: PO Council + decision ledger. 공개 frontmatter 호환과 실제 사용자
@@ -412,7 +378,6 @@ kind 묶음이 아니라 qualified statement/provenance envelope다.
 - relation rationale 유실: 현재 vault·handoff·focused roundtrip에서 재현되지
   않았다. 특정 consumer의 byte-level 재현 전에는 task가 아니다.
 - workspace stale slug와 Insights evidence 문구: 현 HEAD의 구현·E2E가 이미 있다.
-- Skill step ontology node, Skills 위험 점수/배지, SKILL.md 편집, 자동 vault 저장.
 - OWL reasoner·일반 process ontology·outcome/role/process root kind 선행 추가.
 - spotlight always-on repaint, 전면 UI redesign, Orca 제거.
 - C-level Insights hierarchy: declared-knowledge walkthrough에서 같은 stall이 두 번
@@ -437,9 +402,6 @@ kind 묶음이 아니라 qualified statement/provenance envelope다.
 | M1.5 | `030269632` | lifecycle module 부재와 purpose/regression 없는 packet의 통과를 RED로 시작; executable 강제-true mutation 5건, focused-advisor mapping 제거, 예전 direct-add 설명을 각각 RED로 증명 후 복구 | Node 24 lifecycle+qualification 22, analyzer 55, MCP unit 622, integration 116, verify 126, advisor 69; package·docs·agents·decision·ESLint; gate-probe RED→GREEN | source와 bundled MCP가 모두 8단계, 첫 호출 `canWrite:false`, 승인 호출 `canWrite:true`, `reviewPlan === writePlan`; public source-hidden `not_measured`는 writePlan 없이 차단; live MCP 35/35, dogfood 71 nodes/154 edges, validation·compile·maintenance issue 0 | detailed lifecycle/approval transcript는 재시작 뒤 영속 복원하지 않고 기존 competency body+finalizer receipt만 남김; fixture/parity는 세 실제 제품 품질 증거가 아니므로 다음은 O1.5; UI/design/app 변경 없음 |
 | O1.5 | `0ef1c5aa4` | fresh maker/evaluator의 과장·잘못된 evidence·stale owner receipt·schema/closure 우회를 fail-closed로 반복 수리하고 exact current-source human approval 전에는 write 0을 유지 | current qualification 48/48 claim·citation, 4 CQ, 7 targets, 7 axes; exact analyzer `canWrite:true`; lifecycle executable; post-write validate errors/warnings 0; compile issue 0; 독립 final audit GO | 승인한 9 concepts/9 relations를 unchanged writePlan으로 저장하고 source connect·finalizer 성공; 19-read/0-write source-hidden handoff에 private absolute path 0; current source와 exact four-kind path 재검증 | `needs_evidence/structure_not_ready`는 승인 밖 starter island·relation maintenance이며 자동 보완하지 않음; U1.3이 같은 artifact의 disclosure를 소유 |
 | U1.3 | `84fb9d177` | malformed envelope, project/source/plan digest mismatch, review/write inequality를 각각 fail-closed fixture로 고정하고 digest gate mutation을 RED로 재현 | construction entity·session·panel·project detail focused 31; combined browser E2E 15; a11y opener 6/22; TypeScript·ESLint·surface-motion/control ratchet; full Vitest 6,665 pass | project detail의 한 로컬 JSON이 session-only summary와 동일 artifact의 `근거·진단 보기`를 열며 write/vault/URL 저장 0; 재빌드한 `/Applications/Ontology Atlas.app` 1512×917 route/WebView와 bundled MCP 35 tools 확인 | Codex Computer Use native pipe는 이 환경에서 시작되지 않아 Orca로 대체하지 않음; 공식 WebView·DOM·E2E를 출하 증거로 사용하고 connector가 제공될 때 같은 여정을 추가 관찰 |
-| K1.1 | `84fb9d177` | parser module 부재, 빈·10자리 marker, scan truncation을 차례로 RED로 고정; truncation 전달 mutation도 RED | agent-skill IR/inventory/UI focused와 full Vitest; responsive E2E 390/1023/1024/1512; source order/span/resource corpus | 3 SKILL의 27/27 ordinal·exact text·line을 source digest와 함께 복원하고 unsupported/truncated는 partial rail 없이 unavailable; load chain과 flat `<ol>` rail 분리, transition edge 0 | column-1 CommonMark ordered item만 lossless contract로 인정하며 unsupported Markdown은 추론하지 않고 diagnostic으로 남김 |
-| K1.3 | `892a0beb6` | packet digest 검사를 제거한 mutation과 tampered/noncanonical/forged-edge fixture가 RED | canonical packet unit·UI clipboard tests; 독립 source-hidden consumer 3/3; packet 9/9; gold 3/3; contract 1,660/1,660 | source-hidden packet에서 27/27 step/order/line, semantic label 4, ambiguous diagnostic 2, resource 2, edge 0, private absolute path 0; exact text·noncanonical·forged edge·source digest tamper 거부 | 사용자가 누른 `packet 복사`만 제공; file export·자동 vault 저장·외부 전송·새 MCP/CLI command 0 |
-| K1.2 | `892a0beb6` | branch/retry/stop/verify 각 tracer와 adversarial 7종을 RED→GREEN; ambiguous diagnostic 제거 mutation RED | semantic/IR/packet focused 74; independent gold 3/3; TypeScript·ESLint; K1.3 strict roundtrip regression | exact whole-step 문법만 source span+digest를 가진 보조 label로 표시; invalid target·ambiguous 문장은 label 0 + diagnostic 1; source-hidden gold에서 admitted label 4, edge 0 | precision 우선의 좁은 grammar이며 default/추론 edge, 색 범례, generic workflow editor는 계속 OUT |
 | U1.1 | `0b8406b39` → `8667c5c3a` | category/status 기본값을 되살리는 mutation이 omitted field를 다시 발명하는지 RED로 확인 | Node 24 project 21 files/126 tests; contract 142 files/1665 tests; TypeScript; docs-vault surface/links | 최신 main에서 omitted category/status 보존, old vault roundtrip 유지; static studio E2E 5/5; desktop smoke 282/282 | category/status 의미 중복을 해소하는 전체 schema migration은 별도 PO 판단 전 OUT; 이번 slice는 호환성과 암묵 default 제거만 다룬다 |
 | U1.2 | `350163ce2` → `8667c5c3a` | spotlight phase를 idle에서도 계속 진행시키는 mutation이 3개 contract 중 1개를 RED로 만들고 원복 후 GREEN | Node 24 topology 61 files/898 tests (+3 todo); TypeScript; desktop contract 282/282; map-perf node drag real mouse | main 기준 새 static export/Tauri app 재빌드·배포; installed app route/window/WebView/screenshot pass; 30fps macOS recording에서 toggle transition 후 idle 안정 구간 확인(활성 crop mean 1.059, idle 0.032); 실제 node drag `노드 잡음 ✓`, 3000-node p95 3.4ms/max 6.9ms, 31-node p95 1.5ms/max 1.9ms | reduced-motion은 pure contract로 0 rotation을 닫았고 별도 시스템 설정 녹화는 아직 없다; spotlight 재설계·always-on repaint는 계속 OUT |
 

@@ -40,6 +40,82 @@
 **상태**: 유효 / 뒤집힘(→ 링크) / 반증됨(관측: …)
 ```
 
+## 2026-08-21 (91) — Skills 제품 표면을 완전히 은퇴시키고, 레일 상한을 일곱으로 닫는다
+
+**소집**: PO 카운슬 5인 2라운드 → 디자인 벤치 8석 2라운드 → design-guardian.
+동시 슬롯 상한 때문에 1라운드는 격리된 두 묶음으로 실행했으며, 뒤 묶음에는 앞
+결과를 전달하지 않았다. **트리거**: 사용자 표면과 라우트 제거 + LNB 축 변경.
+**소유자 결정**: *"그럼 없애는 걸로"*를 네 차례의 실물·구조 재검토 뒤 확정하고
+구현을 명시적으로 요청했다.
+
+**선행 기록**: 2026-08-09 「스킬은 별도 목적지」의 **목적지 승격을 뒤집는다.**
+읽기 전용 · vault write 0 · `kind:` 승격 금지 · 위험 점수/편집 금지 경계는 실제
+스킬 트리와 `skills:audit`/`agent-files`/Docs `skillParity`에 그대로 남는다.
+2026-08-20 (90) `/agents` 최상위 목적지와 2026-08-21 #1183 「붙이는 일의 주소는
+`/agents` 하나」는 **유효**하다. 다만 (90)의 「여덟이 상한」은 이번 소유자 결정으로
+**일곱이 상한**으로 바뀐다.
+
+**관찰된 현상**: `/skills`는 활성 vault와 무관한 임의 폴더를 매번 다시 고르고,
+폴더를 기억하지 않으며, vault 의미를 읽거나 쓰지 않은 채 검사와 packet 복사로
+끝난다. 독립 구현은 route + entity/feature/view + gold fixture와 전용 E2E까지
+38파일·6,778줄이었다. 소유자는 이 표면을 직접 사용한 뒤 핵심 목적지로서의 필요를
+재검토했고 완전 제거를 반복 선택했다. 제거 전 기준은 LNB 8개, locale route pattern
+19개, dogfood 82노드·180엣지·issue 0이었다.
+
+**사용자 문제**: 활성 vault에서 다음 작업을 고르는 개발자가 최상위 목적지만 보고
+공유 의미 모델을 읽고·고치고·에이전트에 연결하는 경로를 구별해야 하는 순간,
+비영속 외부 런타임 검사기가 같은 위계에 서면 제품 경계와 다음 행동을 다시 해석해야
+한다. **현상↔문제 판별**: 차이 통과 · 제2 관측은 대상 개발자인 소유자의 사용 후
+반복 판단과 독립 실물 검토로 충족 · 해법 독립 통과.
+
+**PO 카운슬**: Problem insight 4 · User moment 4 · Differentiation 3 · Ontology
+value 4 · Agent value 2 · Verification 4 = **21/24**, 치명적 0 없음. 다섯 자리
+최종 판정은 `Build and verify`. Agent value가 2인 이유는 아래 packet 손실이 실제이기
+때문이다. appetite 최대 1일; redirect·대체 화면·`/agents` 병합은 no-go.
+
+**결정**:
+
+1. `/skills` route, LNB 타일, `G K`, 목적지 tour, UI 전용 번역, agent-skill
+   entity/feature/view, process IR·semantic overlay·canonical packet·gold fixture를
+   완전히 삭제한다.
+2. 동등한 후속 표면이 없으므로 redirect나 묘비 화면을 만들지 않는다. 기존 주소는
+   locale 404로 정직하게 끝난다.
+3. 목적지 정본은 `map · docs · studio · insights · projects · agents · git` 정확히
+   일곱이며 상한도 일곱이다. 여덟째를 넣으려면 무엇을 뺄지 먼저 정한다.
+4. `/agents`의 설치·연결·재연동·대화·완료 배지, 하단 상태 타일의
+   연결됨→Insights / 미연결·stale→Agents 분기, `G A`를 그대로 보존한다.
+5. 실제 `.claude/skills`·`.agents/skills`, `pnpm skills:audit`, Docs `skillParity`,
+   CLI `agent-files`, MCP/CLI `connection_info`·`workspace-brief`·`agent-brief`·`health`
+   를 보존한다.
+6. dogfood의 `capabilities/skill-process-handoff`와
+   `elements/agent-skill-process-contract`를 backlink-safe 순서로 삭제하고,
+   `domains/agent-integration`과 project competency evidence를 현재 코드에 맞춘다.
+
+**의도적으로 잃는 것**: 삭제되는 packet은 장식이 아니었다. 원문 ordinal·order·line,
+source digest, resource, canonical UTF-8 packet을 독립 source-hidden consumer가 27/27로
+재현했고 tamper를 실패 닫은 실제 핸드오프였다. 이것은 `/agents`나 일반 MCP/CLI로
+이전되지 않고 **은퇴한다.** 이 손실을 “중복 정리”나 “기능 이동”으로 표현하지 않는다.
+
+**디자인 카운슬**: 새 UI·토큰·모션을 만들지 않고 Skills 표면을 제거한다. 공통
+page-frame·단축키·대비·macOS WebView 검수의 Skills 자리는 Agents로 옮긴다. 최종
+승인은 ① exact 7 destinations/18 route pattern 계약 ② `G A` 성공 후 `G K` no-op
+③ `/skills` 실제 404와 focus ④ 600–2560 responsive rect sweep ⑤ 설치 앱
+1512×900·높이720·1920·2560 ⑥ overflow 상태에서 Projects→Agents→Git 활성 지표
+녹화 ⑦ exact two nodes/five incident edges 삭제와 무재배정 증거를 요구한다.
+
+**기록된 반대** (근거·지킴이·핸드오프): 사용량 계측 없이 검증된 canonical packet과
+무리디렉트 주소를 지우는 것은 한 대상 사용자의 취향을 일반화한 과잉 삭제일 수 있다.
+**반증 조건**: 제거 뒤 exact Skill ordinal·line·digest packet 또는 `/skills`를 찾는
+실제 행동이 한 번이라도 관측되면 packet을 결손 primitive로 재검토한다. 그때도 옛
+LNB 복귀나 `/agents` 병합을 자동 해법으로 삼지 않는다.
+
+**검증 기준선**: 구현 전 Skills unit/UI 103, 목적지·Agents·계약 72, macOS payload
+12, i18n 16, 독립 skills audit 13, focused E2E 7이 GREEN이었다. 새 retirement
+contract는 route·구현층·UI 문구가 살아 있는 세 원인으로 RED 후 삭제에서 GREEN을
+증명한다.
+
+**서명 (accountable)**: 소유자 승인 — 완전 은퇴. **상태**: 유효.
+
 ## 2026-08-20 (90) — 「에이전트」는 최상위 목적지다: `/agents/` 신설, 설정 시트에서 이관
 
 **소집**: PO 카운슬 5인(2라운드) → 디자인 벤치 5석(위계·체계·작업대·반응형·핸드오프)

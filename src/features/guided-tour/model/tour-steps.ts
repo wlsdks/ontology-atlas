@@ -103,7 +103,6 @@ export type DestinationTourId =
   | "studio"
   | "insights"
   | "projects"
-  | "skills"
   | "agents"
   | "git";
 
@@ -130,21 +129,9 @@ export const DESTINATION_TOURS: Record<DestinationTourId, readonly TourStep[]> =
       copyKey: "studioCard",
     },
   ],
-  skills: [
-    { id: "skills-what", anchor: null, persona: "all", copyKey: "skillsWhat" },
-    {
-      // 「폴더 열기」를 가리킨다 — 이 화면은 폴더를 고르기 전에는 아무것도 없어서,
-      // 안내가 가리킬 것이 그 버튼 하나뿐이다.
-      id: "skills-open",
-      anchor: { type: "testid", value: "skills-open-folder" },
-      persona: "all",
-      copyKey: "skillsOpen",
-    },
-  ],
   /*
    * 「에이전트」 — 2026-08-20 목적지 신설(원장 90). 두 장이다: 이 화면이 무엇을
-   * 하는지, 그리고 도구가 없을 때 어디를 누르면 되는지. 스킬 안내와 같은 모양이다
-   * (그 화면도 폴더를 고르기 전에는 가리킬 것이 버튼 하나뿐이다).
+   * 하는지, 그리고 도구가 없을 때 어디를 누르면 되는지.
    */
   agents: [
     { id: "agents-what", anchor: null, persona: "all", copyKey: "agentsWhat" },

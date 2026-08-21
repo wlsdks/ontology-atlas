@@ -19,7 +19,7 @@ const DESTINATIONS = [
   { key: "s", path: "/ontology/studio" },
   { key: "i", path: "/ontology/insights" },
   { key: "p", path: "/projects" },
-  { key: "k", path: "/skills" },
+  { key: "a", path: "/agents" },
   { key: "g", path: "/git" },
 ] as const;
 
@@ -115,6 +115,23 @@ test.describe("목적지 이동 단축키", () => {
     }
     await expect(page).toHaveURL(expected);
     expect(page.url(), "주소가 안 바뀌었다").not.toBe(before);
+  });
+
+  test("G A 는 살아 있고, 은퇴한 G K 는 어디에도 가지 않는다", async ({ page }) => {
+    await page.goto("/ko/topology/?guides=off");
+    await page.waitForLoadState("domcontentloaded");
+    await dismissBlockingSurface(page);
+
+    await go(page, "a");
+    await expect(page, "살아 있는 단축키가 먼저 성공해야 G K 무동작 판정이 유효하다").toHaveURL(
+      /\/ko\/agents\/?($|\?)/,
+      { timeout: 5_000 },
+    );
+
+    const before = page.url();
+    await go(page, "k");
+    await page.waitForTimeout(600);
+    expect(page.url(), "은퇴한 G K 가 다른 화면으로 이동했다").toBe(before);
   });
 
   /*

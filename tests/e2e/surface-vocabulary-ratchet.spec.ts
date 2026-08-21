@@ -65,7 +65,7 @@ const ROUTES = [
   "/ko/ontology/insights/",
   "/ko/projects/",
   "/ko/project/storefront/",
-  "/ko/skills/",
+  "/ko/agents/",
   "/ko/git/",
   "/ko/",
   "/ko/download/",
@@ -82,15 +82,6 @@ test("표면 조합이 늘지 않는다", async ({ page }) => {
   for (const route of ROUTES) {
     await page.goto(`${route}?guides=off`);
     await page.waitForTimeout(900);
-    // 스킬은 예시를 켜야 채워진 화면이 된다 — 빈 화면만 재면 그 목적지를 안 본 셈이다.
-    if (route === "/ko/skills/") {
-      await page
-        .getByTestId("skills-open-sample")
-        .click()
-        .catch(() => undefined);
-      await page.waitForTimeout(500);
-    }
-
     const found = await page.evaluate(() => {
       const out: { key: string; interactive: boolean }[] = [];
       for (const el of document.querySelectorAll("main *")) {

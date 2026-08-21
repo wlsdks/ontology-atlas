@@ -35,7 +35,7 @@ import { AUDITED_ROUTES } from "./audited-routes";
  * 목록에 없는 것은 언제나 새로 만든 것이다.**
  *
  * 그래서 라우트 목록은 여기서 손으로 쓰지 않는다 — 정본
- * (`audited-routes.ts`, 17개)을 import 하고, 빠지는 자리는 **「없음」이 아니라
+ * (`audited-routes.ts`)을 import 하고, 빠지는 자리는 **「없음」이 아니라
  * 「예외 + 실측치 + 무엇이 대신 재는가」**로 아래에 적는다.
  *
  * ## 전수 측정 (2026-08-08 · 정적 export · 1512×900 · `?guides=off`)

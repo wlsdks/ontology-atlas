@@ -256,7 +256,6 @@
     "studio": "Workshop",
     "insights": "Insights",
     "projects": "Projects",
-    "skills": "Skills",
     "agents": "Agents",
     "git": "History",
     "getApp": "Get the app",
@@ -687,14 +686,6 @@
         "title": "Your folder, listed on the left",
         "body": "Everything in the folder shows up here. Click to open, and keep several open as tabs. Pick your own folder up top and your own writing shows up instead."
       },
-      "skillsWhat": {
-        "title": "See the skills your agent has",
-        "body": "A skill is markdown that says \"in this situation, do this.\" Once you have a few, it gets hard to tell what is what or when each one fires. Here you see which skills exist, when each fires, and what opens or runs when it does."
-      },
-      "skillsOpen": {
-        "title": "Pick a folder to start",
-        "body": "Choose a folder that holds skills and we find every SKILL.md inside. We only read: nothing is changed, not the skill files and not your map."
-      },
       "studioWhat": {
         "title": "A bench for joining pieces together",
         "body": "You wrote the piece, but what it is part of and what it leans on are often still blank. This is where you fill those blanks in, one at a time. Every blank you fill adds a line to the map."
@@ -1000,7 +991,6 @@
         "goTo_studio": "Go to studio",
         "goTo_insights": "Go to insights",
         "goTo_projects": "Go to projects",
-        "goTo_skills": "Go to skills",
         "goTo_agents": "Go to Agents",
         "goTo_git": "Go to git history",
         "openProjectPalette": "Open the search palette",
@@ -3594,129 +3584,6 @@
     "label": "Open my folder",
     "busyLabel": "Opening…",
     "unsupportedLabel": "Open in the app"
-  },
-  "agentSkills": {
-    "title": "Skills",
-    "subtitle": "See when each agent skill fires, and what opens or runs when it does.",
-    "stageTitle": "Shall we look at your skills?",
-    "openCardTitle": "Open my skills folder",
-    "openCardDesc": "Finds and reads every SKILL.md inside. Read-only: nothing is modified.",
-    "openCardNote": "Pick .claude in your project or home folder",
-    "sampleCardTitle": "Browse the sample",
-    "sampleCardDesc": "See what this screen shows using a sample pack, no setup.",
-    "stageCaption": "When it fires · why the wrong one fires · what opens when it does. Visible as soon as you open a folder.",
-    "openFolder": "Open skill folder",
-    "openAnother": "Open another folder",
-    "pickerTitle": "Choose a folder that contains skills",
-    "reading": "Reading the folder…",
-    "unsupported": "This browser cannot open folders. The desktop app can.",
-    "readError": "Could not read the folder: {error}",
-    "truncated": "The folder is large, so we read up to {count, plural, one {# file} other {# files}}: the results below cover that much.",
-    "notInstalled": "Skipped {count} folders that are not installed: older versions and catalogs you have not installed. Those never fire.",
-    "stat": {
-      "bundled": "bundled files",
-      "folder": "Folder: {folder}",
-      "skillsCount": "<b>{count}</b> {count, plural, one {skill} other {skills}}",
-      "executablesCount": "<b>{count}</b> {count, plural, one {executable} other {executables}}"
-    },
-    "collisions": {
-      "title": "Names collide",
-      "hint": "When two skills share a name, which one fires is undefined.",
-      "competing": "descriptions differ: the triggers compete"
-    },
-    "overlaps": {
-      "title": "Triggers overlap",
-      "hint": "Different names but similar descriptions: the wrong one can fire."
-    },
-    "list": {
-      "title": "All skills"
-    },
-    "chain": {
-      "always": "Always loaded",
-      "onTrigger": "Loaded when it fires",
-      "onDemand": "Opened on demand",
-      "chars": "{count} chars",
-      "fileCount": "{count, plural, one {# file} other {# files}}",
-      "noFiles": "No bundled files",
-      "runs": "runs",
-      "missing": "file is missing"
-    },
-    "searchLabel": "Find by name",
-    "searchPlaceholder": "Find by name…",
-    "noMatch": "No skill by that name.",
-    "group": {
-      "mine": "My folder"
-    },
-    "row": {
-      "collides": "name clash",
-      "metrics": "{chars} chars · {files, plural, one {# file} other {# files}} · {runs, plural, one {# run} other {# runs}}",
-      "runs": "{count, plural, one {# run} other {# runs}}"
-    },
-    "detail": {
-      "back": "Skill list",
-      "backOverview": "Back to summary",
-      "showLoadChain": "Show how it loads (3 stages)",
-      "hideLoadChain": "Hide how it loads",
-      "competing": "Competes with this skill",
-      "sameName": "The same name also lives in {source}: which one fires is undefined",
-      "sharedTrigger": "{name}: same trigger words ({words})",
-      "handsOffTitle": "Hands off to",
-      "handedFromTitle": "Called from",
-      "runsMark": "{count, plural, one {# file runs} other {# files run}}"
-    },
-    "process": {
-      "title": "Exact process",
-      "exactCount": "{count, plural, one {# source step} other {# source steps}}, in source order",
-      "unavailable": "Process unavailable. Atlas will not guess missing or partial steps.",
-      "lines": "L{start}–L{end}",
-      "showDetail": "Resources and diagnostics",
-      "hideDetail": "Hide resources and diagnostics",
-      "resourceExists": "exists",
-      "resourceMissing": "missing",
-      "resourceUnknown": "not checked",
-      "semanticBranch": "Branch if {guard} → step {target}",
-      "semanticRetry": "Retry step {target} until {condition}",
-      "semanticStop": "Stop the process if {condition}",
-      "semanticVerify": "Verify {target} by {action}; accept when {criterion}",
-      "diagnosticScanTruncated": "The folder scan stopped at its safety limit, so Atlas did not build a partial process.",
-      "diagnosticMarkdownUnsupported": "This SKILL.md uses process Markdown Atlas cannot read exactly.",
-      "diagnosticStepsUnavailable": "No supported numbered process steps were found.",
-      "diagnosticResourceMissing": "A referenced resource is missing.",
-      "diagnosticResourceUnchecked": "A referenced resource could not be checked.",
-      "diagnosticResourcePathUnsupported": "A referenced resource path is outside the supported boundary.",
-      "diagnosticSemanticAmbiguous": "Semantic syntax is ambiguous; no label was derived.",
-      "packetCopy": "Copy process packet",
-      "packetAvailable": "Packet available",
-      "packetUnavailable": "Process unavailable; copying is blocked",
-      "packetTampered": "Integrity check failed; copying is blocked",
-      "packetCopying": "Copying…",
-      "packetCopied": "Packet copied",
-      "packetCopyFailed": "Copy failed",
-      "digestLabel": "source digest",
-      "linesOne": "L{line}",
-      "resourceKindReference": "reference",
-      "resourceKindScript": "script",
-      "resourceKindAsset": "asset",
-      "resourceKindTemplate": "template",
-      "resourceKindExample": "example"
-    },
-    "findings": {
-      "alwaysTitle": "Loaded every session",
-      "alwaysNote": "{chars} chars in total",
-      "competingTitle": "Competing with each other",
-      "competingNote": "{names, plural, one {# name} other {# names}} · {pairs, plural, one {# trigger pair} other {# trigger pairs}}",
-      "noneCompeting": "Nothing competes.",
-      "sameNameCount": "{count, plural, one {# place} other {# places}}",
-      "runsTitle": "Can run on your machine",
-      "runsNote": "{count, plural, one {# file} other {# files}}",
-      "noneRun": "Nothing runs.",
-      "handoffTitle": "Hand-offs between skills",
-      "handoffNote": "{count, plural, one {# link} other {# links}}",
-      "noneHandoff": "No skill calls another.",
-      "handoffDegree": "called by {into} · hands to {out}"
-    },
-    "openSample": "Browse the example",
-    "sampleNotice": "This is the example set: open your folder to see your own skills."
   },
   "acpChat": {
     "ariaLabel": "Conversation with {runtime}",

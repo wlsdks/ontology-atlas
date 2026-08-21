@@ -75,11 +75,11 @@ test("payload contract · 워크벤치 마커가 현행 한국어 셸을 받는�
   );
 });
 
-test("payload contract · Skills 라우트는 지도 문구 없이 자기 본문으로 증명한다", () => {
-  const markers = webviewWorkbenchMarkersForPath("/ko/skills/");
+test("payload contract · Agents 라우트는 지도 문구 없이 자기 본문으로 증명한다", () => {
+  const markers = webviewWorkbenchMarkersForPath("/ko/agents/");
   assert.equal(
     markers.every((marker) =>
-      marker.test("스킬\n스킬을 살펴볼까요?"),
+      marker.test("에이전트\n이 컴퓨터의 도구\nMCP 연결"),
     ),
     true,
   );
@@ -88,7 +88,7 @@ test("payload contract · Skills 라우트는 지도 문구 없이 자기 본문
 
 test("payload contract · topology route accepts the current map shell", () => {
   const markers = webviewWorkbenchMarkersForPath("/en/topology/");
-  const currentMapBody = "Atlas\nMap\nDocs\nWorkshop\nInsights\nProjects\nSkills\nHistory\nINDEX";
+  const currentMapBody = "Atlas\nMap\nDocs\nWorkshop\nInsights\nProjects\nAgents\nHistory\nINDEX";
   assert.equal(markers.every((marker) => marker.test(currentMapBody)), true);
   assert.equal(markers.every((marker) => marker.test("Atlas\nDocs\nWorkshop")), false);
 });
