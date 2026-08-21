@@ -170,6 +170,23 @@ interface VaultState {
 }
 
 /**
+ * `toBeVisible()` 는 opacity 등장 모션의 첫 프레임에서도 참이다. 그 순간 axe 를
+ * 실행하면 최종 토큰 대비가 아니라 반투명 중간 프레임을 재서, 같은 화면이 실행
+ * 타이밍에 따라 초록/빨강을 오간다. 증거를 품은 가장 가까운 Surface 의 유한 모션만
+ * 끝까지 기다린다. heartbeat 같은 무한 애니메이션은 기다리지 않는다.
+ */
+async function waitForEvidenceMotionToSettle(page: Page, evidence: string): Promise<void> {
+  await page.locator(evidence).first().evaluate(async (node) => {
+    const motionRoot = node.closest('[data-surface-state]') ?? node;
+    const finiteAnimations = motionRoot.getAnimations({ subtree: true }).filter((animation) => {
+      const iterations = animation.effect?.getTiming().iterations;
+      return iterations !== Infinity && animation.playState !== 'finished';
+    });
+    await Promise.all(finiteAnimations.map((animation) => animation.finished.catch(() => undefined)));
+  });
+}
+
+/**
  * 재는 상태들. **라우트가 아니라 상태 단위**다 — 같은 URL 이라도 탭/펼침에 따라
  * 다른 DOM 이 태어나고, 그 차이가 정확히 첫 화면 래칫이 못 보던 것이다.
  */
@@ -317,6 +334,7 @@ test("볼트를 물린 접근성·대비 래칫 — 데이터가 있어야 존�
     try {
       if (state.act) await state.act(page);
       await expect(page.locator(state.evidence).first()).toBeVisible({ timeout: EVIDENCE_TIMEOUT });
+      await waitForEvidenceMotionToSettle(page, state.evidence);
     } catch {
       opened = false;
     }
