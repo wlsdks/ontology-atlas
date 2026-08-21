@@ -27,7 +27,8 @@ describe('focused check suggestions', () => {
       'pnpm docs-vault:check',
       'pnpm docs:links',
       'pnpm test:mcp:docs',
-      'pnpm dogfood:status',
+      'pnpm vault:validate',
+      'pnpm test:run tests/contract/em-dash-ratchet.contract.test.ts',
     ]);
   });
 
@@ -93,6 +94,7 @@ describe('focused check suggestions', () => {
       'pnpm docs-vault:check',
       'pnpm docs:links',
       'pnpm test:guide-examples',
+      'pnpm test:run tests/contract/em-dash-ratchet.contract.test.ts',
     ]);
   });
 
@@ -111,7 +113,7 @@ describe('focused check suggestions', () => {
       'pnpm test:contracts',
       'pnpm exec tsc --noEmit',
       'pnpm test:cli:lib',
-      'pnpm dogfood:status',
+      'pnpm vault:validate',
     ]);
   });
 
@@ -132,7 +134,7 @@ describe('focused check suggestions', () => {
       'pnpm integration:mcp:repo-analysis',
       'pnpm integration:mcp:vault-read',
       'pnpm integration:mcp:write',
-      'pnpm dogfood:status',
+      'pnpm vault:validate',
     ]);
     assert.deepEqual(result.escalations.map((row) => row.command), ['pnpm dogfood:verify']);
   });
@@ -150,7 +152,7 @@ describe('focused check suggestions', () => {
       'pnpm exec node --test mcp/src/meaning-evaluation.test.mjs',
       'pnpm test:mcp:unit',
       'pnpm integration:mcp:repo-analysis',
-      'pnpm dogfood:status',
+      'pnpm vault:validate',
     ]);
     assert.deepEqual(result.escalations.map((row) => row.command), ['pnpm dogfood:verify']);
   });
@@ -164,7 +166,7 @@ describe('focused check suggestions', () => {
     assert.deepEqual(result.commands.map((row) => row.command), [
       'pnpm exec node --test mcp/src/source-hidden-field-trial.test.mjs',
       'pnpm test:mcp:unit',
-      'pnpm dogfood:status',
+      'pnpm vault:validate',
     ]);
     assert.deepEqual(result.escalations.map((row) => row.command), ['pnpm dogfood:verify']);
   });
@@ -177,7 +179,7 @@ describe('focused check suggestions', () => {
       'pnpm test:mcp:unit',
       'pnpm integration:mcp:surface',
       'pnpm integration:mcp:write',
-      'pnpm dogfood:status',
+      'pnpm vault:validate',
     ]);
     assert.deepEqual(result.escalations.map((row) => row.command), ['pnpm dogfood:verify']);
   });
@@ -187,7 +189,7 @@ describe('focused check suggestions', () => {
 
     assert.deepEqual(result.commands.map((row) => row.command), [
       'pnpm integration:mcp',
-      'pnpm dogfood:status',
+      'pnpm vault:validate',
     ]);
     assert.deepEqual(result.escalations.map((row) => row.command), ['pnpm dogfood:verify']);
   });
@@ -218,7 +220,7 @@ describe('focused check suggestions', () => {
       'pnpm integration:mcp:vault-read',
       'pnpm integration:mcp:read',
       'pnpm integration:mcp:write',
-      'pnpm dogfood:status',
+      'pnpm vault:validate',
     ]);
     assert.deepEqual(result.escalations.map((row) => row.command), ['pnpm dogfood:verify']);
   });
@@ -234,7 +236,7 @@ describe('focused check suggestions', () => {
       'pnpm exec node --test mcp/src/ontology-engine.test.mjs',
       'pnpm test:mcp:unit',
       'pnpm integration:mcp:graph',
-      'pnpm dogfood:status',
+      'pnpm vault:validate',
     ]);
     assert.deepEqual(result.escalations.map((row) => row.command), ['pnpm dogfood:verify']);
   });
@@ -246,7 +248,7 @@ describe('focused check suggestions', () => {
       'pnpm exec node --test mcp/src/query.test.mjs',
       'pnpm test:mcp:unit',
       'pnpm integration:mcp:read',
-      'pnpm dogfood:status',
+      'pnpm vault:validate',
     ]);
     assert.deepEqual(result.escalations.map((row) => row.command), ['pnpm dogfood:verify']);
   });
@@ -262,7 +264,7 @@ describe('focused check suggestions', () => {
       'pnpm exec node --test mcp/src/infer-imports.test.mjs',
       'pnpm test:mcp:unit',
       'pnpm integration:mcp:repo-analysis',
-      'pnpm dogfood:status',
+      'pnpm vault:validate',
     ]);
     assert.deepEqual(result.escalations.map((row) => row.command), ['pnpm dogfood:verify']);
   });
@@ -284,7 +286,7 @@ describe('focused check suggestions', () => {
       'pnpm integration:mcp:surface',
       'pnpm integration:mcp:vault-read',
       'pnpm integration:mcp:write',
-      'pnpm dogfood:status',
+      'pnpm vault:validate',
     ]);
     assert.deepEqual(result.escalations.map((row) => row.command), ['pnpm dogfood:verify']);
   });
@@ -302,7 +304,7 @@ describe('focused check suggestions', () => {
       'pnpm test:mcp:unit',
       'pnpm integration:mcp:vault-read',
       'pnpm integration:mcp:write',
-      'pnpm dogfood:status',
+      'pnpm vault:validate',
     ]);
     assert.deepEqual(result.escalations.map((row) => row.command), ['pnpm dogfood:verify']);
   });
@@ -317,7 +319,7 @@ describe('focused check suggestions', () => {
       'pnpm exec node --test mcp/src/infer-imports.test.mjs',
       'pnpm test:mcp:unit',
       'pnpm integration:mcp:repo-analysis',
-      'pnpm dogfood:status',
+      'pnpm vault:validate',
     ]);
     assert.deepEqual(result.commands[0].paths, [
       'mcp/src/infer-imports.mjs',
@@ -334,7 +336,7 @@ describe('focused check suggestions', () => {
     assert.deepEqual(result.commands.map((row) => row.command), [
       'pnpm exec node --test mcp/src/suggestions.test.mjs',
       'pnpm test:mcp:suggestions',
-      'pnpm dogfood:status',
+      'pnpm vault:validate',
     ]);
     assert.deepEqual(result.commands[0].paths, [
       'mcp/src/suggestions.mjs',
@@ -352,7 +354,7 @@ describe('focused check suggestions', () => {
       'pnpm exec node --test cli/src/lib/batch-results.test.mjs',
       'pnpm exec node --test cli/src/lib/query-result-contract.test.mjs',
       'pnpm test:cli:lib',
-      'pnpm dogfood:status',
+      'pnpm vault:validate',
     ]);
   });
 
@@ -366,7 +368,7 @@ describe('focused check suggestions', () => {
       'pnpm test:cli:mcp-call',
       'pnpm exec node --test cli/src/lib/mcp-call.test.mjs',
       'pnpm test:cli:lib',
-      'pnpm dogfood:status',
+      'pnpm vault:validate',
     ]);
     assert.deepEqual(result.commands[1].paths, [
       'cli/src/lib/mcp-call.mjs',
@@ -383,7 +385,7 @@ describe('focused check suggestions', () => {
     assert.deepEqual(result.commands.map((row) => row.command), [
       'pnpm exec node --test cli/src/lib/vault-census.test.mjs',
       'pnpm test:cli:lib',
-      'pnpm dogfood:status',
+      'pnpm vault:validate',
     ]);
     assert.deepEqual(result.commands[0].paths, [
       'cli/src/lib/vault-census.mjs',
@@ -403,7 +405,7 @@ describe('focused check suggestions', () => {
       'pnpm exec node --test cli/src/lib/cli-commands.test.mjs',
       'pnpm test:cli:lib',
       'pnpm integration:cli:entry',
-      'pnpm dogfood:status',
+      'pnpm vault:validate',
     ]);
   });
 
@@ -412,7 +414,7 @@ describe('focused check suggestions', () => {
 
     assert.deepEqual(result.commands.map((row) => row.command), [
       'pnpm integration:cli',
-      'pnpm dogfood:status',
+      'pnpm vault:validate',
     ]);
   });
 
@@ -426,7 +428,7 @@ describe('focused check suggestions', () => {
     assert.deepEqual(result.commands.map((row) => row.command), [
       'pnpm test:cli:lib',
       'pnpm integration:cli:setup',
-      'pnpm dogfood:status',
+      'pnpm vault:validate',
     ]);
   });
 
@@ -448,7 +450,7 @@ describe('focused check suggestions', () => {
       'pnpm test:dogfood:status',
       'pnpm test:dogfood:graph-db',
       'pnpm test:mcp:maintenance',
-      'pnpm dogfood:status',
+      'pnpm vault:validate',
     ]);
   });
 
@@ -488,7 +490,7 @@ describe('focused check suggestions', () => {
       'pnpm test:dogfood:script-refs',
       'pnpm test:mcp:dogfood:timeout',
       'pnpm test:mcp:dogfood',
-      'pnpm dogfood:status',
+      'pnpm vault:validate',
     ]);
   });
 
@@ -848,7 +850,7 @@ describe('focused check suggestions', () => {
       'pnpm vault:migrate --list',
       'pnpm test:dogfood:script-refs',
       'pnpm test:mcp:docs',
-      'pnpm dogfood:status',
+      'pnpm vault:validate',
     ]);
   });
 
@@ -866,7 +868,7 @@ describe('focused check suggestions', () => {
       'pnpm test:mcp:verify',
       'pnpm integration:cli:mcp-verify',
       'pnpm test:mcp:package',
-      'pnpm dogfood:status',
+      'pnpm vault:validate',
     ]);
     assert.deepEqual(result.escalations.map((row) => row.command), [
       'pnpm package:check',
@@ -885,7 +887,7 @@ describe('focused check suggestions', () => {
 
     const packageLockCommands = [
       'pnpm test:mcp:package',
-      'pnpm dogfood:status',
+      'pnpm vault:validate',
     ];
     const mcpPackageLockEscalations = [
       'pnpm package:check',
@@ -910,7 +912,7 @@ describe('focused check suggestions', () => {
       'pnpm test:mcp:verify:first-contact',
       'pnpm test:mcp:verify:timeout',
       'pnpm test:mcp:verify',
-      'pnpm dogfood:status',
+      'pnpm vault:validate',
     ]);
     assert.deepEqual(result.escalations.map((row) => row.command), ['pnpm dogfood:verify']);
   });
@@ -924,7 +926,7 @@ describe('focused check suggestions', () => {
 
     assert.deepEqual(result.commands.map((row) => row.command), [
       'pnpm integration:cli:diagnosis',
-      'pnpm dogfood:status',
+      'pnpm vault:validate',
     ]);
   });
 
@@ -940,7 +942,7 @@ describe('focused check suggestions', () => {
 
     assert.deepEqual(result.commands.map((row) => row.command), [
       'pnpm integration:cli:graph-read',
-      'pnpm dogfood:status',
+      'pnpm vault:validate',
     ]);
   });
 
@@ -951,7 +953,7 @@ describe('focused check suggestions', () => {
       'pnpm exec node --test cli/src/lib/query-plan-output.test.mjs',
       'pnpm test:cli:lib',
       'pnpm integration:cli:graph-read',
-      'pnpm dogfood:status',
+      'pnpm vault:validate',
     ]);
   });
 
@@ -964,7 +966,7 @@ describe('focused check suggestions', () => {
 
     assert.deepEqual(result.commands.map((row) => row.command), [
       'pnpm integration:cli:graph-write',
-      'pnpm dogfood:status',
+      'pnpm vault:validate',
     ]);
   });
 
@@ -977,7 +979,7 @@ describe('focused check suggestions', () => {
 
     assert.deepEqual(result.commands.map((row) => row.command), [
       'pnpm integration:cli:repo-analysis',
-      'pnpm dogfood:status',
+      'pnpm vault:validate',
     ]);
   });
 
@@ -993,7 +995,7 @@ describe('focused check suggestions', () => {
     assert.deepEqual(result.commands.map((row) => row.command), [
       'pnpm test:contracts',
       'pnpm integration:cli:local-vault',
-      'pnpm dogfood:status',
+      'pnpm vault:validate',
     ]);
   });
 
@@ -1034,7 +1036,7 @@ describe('focused check suggestions', () => {
     assert.match(output, /\[focused-checks\] 1 changed path/);
     assert.match(output, /pnpm test:dogfood:status/);
     assert.match(output, /pnpm test:mcp:maintenance/);
-    assert.match(output, /pnpm dogfood:status/);
+    assert.match(output, /pnpm vault:validate/);
   });
 
   it('관문의 판·크롬·원점을 고치면 그 격자 검사를 권한다', () => {
@@ -1113,5 +1115,45 @@ describe('focused check suggestions', () => {
       );
     assert.ok(!typecheck('docs/DECISIONS.md'));
     assert.ok(!typecheck('scripts/build-docs-vault.mjs'));
+  });
+
+  /**
+   * **읽을거리를 게이트로 쓰지 않는다** (2026-08-21).
+   *
+   * `dogfood:status` 는 그래프가 덜 여물었을 때도 1 로 끝난다 — main 에서도
+   * 그렇다. 그 출력 자신이 *"Nothing is broken"* 이라고 적는다. 그것을 푸시
+   * 게이트에 걸면 볼트를 고친 모든 푸시가 아무 관계 없는 이유로 막힌다.
+   */
+  it('화면에 그려지는 마크다운에는 문구 게이트도 권한다', () => {
+    // 무결성 검사와 문구 검사는 **다른 것을 잰다**. 2026-08-21 에 볼트 산문의
+    // 작대기가 `vault:validate` 를 통과하고 CI 에서야 잡혔다.
+    const prose = 'pnpm test:run tests/contract/em-dash-ratchet.contract.test.ts';
+    for (const path of [
+      'docs/ontology/elements/agents-destination.md',
+      'docs/guide/getting-started.md',
+      'samples/storefront/domains/catalog.md',
+      'docs/CHANGELOG.md',
+    ]) {
+      const commands = suggestFocusedChecks([path]).commands.map((row) => row.command);
+      assert.ok(commands.includes(prose), `${path} 에 문구 게이트를 안 권한다`);
+    }
+    // 볼트의 마크다운 아닌 파일까지 끌어들이지 않는다.
+    const other = suggestFocusedChecks(['src/views/agents/ui/AgentsPage.tsx']).commands.map(
+      (row) => row.command,
+    );
+    assert.ok(!other.includes(prose), '관계없는 코드 변경에 문구 게이트를 권한다');
+  });
+
+  it('볼트 변경에는 깨진 것만 말하는 검사를 권한다', () => {
+    const commands = suggestFocusedChecks(['docs/ontology/README.md']).commands.map(
+      (row) => row.command,
+    );
+    assert.ok(commands.includes('pnpm vault:validate'), '무결성 검사를 안 권한다');
+    assert.ok(
+      // `test:dogfood:status`(그 스크립트의 단위 시험)는 정당한 게이트다 —
+      // 재는 것이 「그래프가 여물었나」가 아니라 「그 스크립트가 맞게 도나」다.
+      !commands.includes('pnpm dogfood:status'),
+      '준비도 읽을거리를 게이트로 권한다 — 그것은 덜 여물어도 1 이다',
+    );
   });
 });
