@@ -668,7 +668,26 @@ const RULES = [
     ],
   },
   {
-    command: 'pnpm dogfood:status',
+    /*
+     * ⚠️ **읽을거리를 게이트로 쓰지 않는다** (2026-08-21 실측으로 정정).
+     *
+     * 여기 있던 것은 `pnpm dogfood:status` 였다. 그런데 그 명령은 **그래프가
+     * 덜 여물었을 때도 1** 로 끝난다 — 자식 중 `health` 가 「이 프로젝트의
+     * competency 답이 아직 안 채워졌다」로 `needs_attention` 을 내고, 그 출력
+     * 자신이 ***"Nothing is broken"*** 이라고 적는다.
+     *
+     * 실측: **main 에서도 1** 이다. 그래서 볼트를 고친 모든 푸시가 **아무
+     * 관계 없는 이유로** 막혔다(이 규칙이 pre-push 훅에 걸리면서 실제로 막혔다).
+     * 그리고 그 상태를 푸는 일(`finalize_project_meaning`)은 도구 자신이
+     * **사람 승인 없이 하지 말라**고 못박은 것이라, 에이전트가 조용히 지나갈
+     * 수도 없다.
+     *
+     * 대신 **깨진 것만 말하는 검사**를 건다: `vault:validate` 는 frontmatter
+     * 무결성과 그래프 참조를 재고 실제로 깨졌을 때만 실패한다(CI 도 이것을
+     * 쓴다). `dogfood:status` 는 사람이 손으로 읽는 읽을거리로 남는다 —
+     * 없애는 게 아니라 **게이트 자리에서 빼는 것**이다.
+     */
+    command: 'pnpm vault:validate',
     reason: 'dogfood ontology or MCP/CLI dogfood surface changed',
     matches: [/^docs\/ontology\//, /^mcp\//, /^cli\//, /^scripts\/dogfood/],
   },
