@@ -12,10 +12,6 @@ import {
   NavRailShellProvider,
   useNavRailShellValue,
 } from "@/widgets/app-nav-rail";
-import {
-  AgentConnectLauncherProvider,
-  useAgentConnectLauncher,
-} from "@/widgets/agent-connect";
 import { AppSettingsMenu } from "@/widgets/app-settings-menu";
 import { useAtlasGitContext } from "@/widgets/atlas-git-panel";
 import { useDataSourceMode } from "@/features/data-source-mode";
@@ -57,9 +53,10 @@ import { useHydrated } from "@/shared/lib/use-hydrated";
  * 페이지가 기억해야 하는 구조는 #65 계열의 drift 를 부른다.
  * 새 페이지에서 `h-screen`/`min-h-screen` 은 결함이다.
  *
- * `AgentConnectLauncherProvider` 도 여기서 상주한다 — 레일의 에이전트 타일이
- * 어느 페이지에서든 연결 시트를 "열려는 의도" 를 세우면, 지형도로 이동한 뒤에도
- * (레이아웃 상주라) 그 의도가 살아남아 HomePage 가 마운트 직후 소비한다.
+ * ⚠️ `AgentConnectLauncherProvider` 는 **2026-08-21 에 사라졌다**(원장 90).
+ * 그것은 「어느 페이지에서든 연결 시트를 열려는 의도」를 지형도까지 실어 나르는
+ * 장치였는데, 붙이는 일이 목적지(`/agents/`)가 되면서 그 의도가 필요 없어졌다 —
+ * 이제는 그냥 그 주소로 간다.
  */
 export function AppShell({ children }: { children: ReactNode }) {
   useGuideOverride();
@@ -80,8 +77,7 @@ export function AppShell({ children }: { children: ReactNode }) {
       {/* 2026-07-25 — 기록 모달 런처 제거. 목적지(`/git/`)가 lg+ 레일과
           `<lg` 크롬 타일 양쪽에서 같은 표면을 담당하므로 셸에 상주하는 모달이
           더는 필요 없다(런처·패널 호스트·구 레일 타일 전부 도달 불가였다). */}
-      <AgentConnectLauncherProvider>
-        <GuideReplayProvider>
+      <GuideReplayProvider>
           {/*
             갱신 상태 기계는 **여기 한 벌**이다 (2026-08-20). 소비처가 둘이
             됐다 — 우하단 토스트와 설정의 「업데이트 확인」. 각자 훅을 부르면
@@ -93,8 +89,7 @@ export function AppShell({ children }: { children: ReactNode }) {
             <RouteFocusManager />
             <ShellColumn>{children}</ShellColumn>
           </AppUpdateProvider>
-        </GuideReplayProvider>
-      </AgentConnectLauncherProvider>
+      </GuideReplayProvider>
     </NavRailShellProvider>
   );
 }
@@ -210,7 +205,6 @@ function resolveIsProjectListPath(pathname: string): boolean {
 
 function AppNavRailSlot() {
   const { settingsSlot, hidden, contextHrefs } = useNavRailShellValue();
-  const launcher = useAgentConnectLauncher();
   const router = useRouter();
   const pathname = usePathname() ?? "/";
   const dataSourceMode = useDataSourceMode();
@@ -331,7 +325,6 @@ function AppNavRailSlot() {
       gitDirtyCount={gitDirtyCount}
       agentsNoticeCount={installNotice.count}
       onAgentTileActivate={onAgentTileActivate}
-      agentConnectOpen={launcher.wantOpen}
     />
   );
 }

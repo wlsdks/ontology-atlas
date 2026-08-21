@@ -270,6 +270,8 @@ type DegradedSurface = {
    * `tests/contract/settings-section-reference.contract.test.ts`.
    */
   alsoHereNamesSettingsSection?: true;
+  /** 이 카드는 볼트를 연 뒤에만 그려진다 — 픽스처 폴더를 먼저 물린다. */
+  needsVault?: true;
 };
 
 const DEGRADED_SURFACES: readonly DegradedSurface[] = [
@@ -289,8 +291,25 @@ const DEGRADED_SURFACES: readonly DegradedSurface[] = [
     // 범위를 실제보다 좁게 말하는 것도 정직 위반이라, 이 정규식은 그 좁은
     // 주장(자동 저장)을 겨냥한다. 그 자리에서 끝나는 길이 살아 있는지는 아래
     // 별도 스펙이 본다.
+    // ⚠️ **2026-08-21 재조준** (원장 90). 이 카드는 연결 시트가 열어 주던
+    // 것이었는데 그 시트가 은퇴했다. 이제 「에이전트」 목적지의 「MCP 연결」
+    // 절이 그린다 — **볼트를 연 뒤에.**
+    //
+    // 소유자 확정: *"볼트 있어야 그리는게 맞지"*. 그게 더 정확하기도 하다 —
+    // **볼트가 없으면 저장할 설정 자체가 없다.** 시트 시절에는 볼트 없이도
+    // 이 카드를 보여 줬는데, 그때 그 문장은 아직 존재하지 않는 파일에 대해
+    // 못 한다고 말하는 것이었다.
     name: "에이전트 연결 — 브라우저는 폴더의 절대 경로를 몰라 설정을 대신 저장하지 못한다",
-    url: "/ko/topology/?agentConnect=1",
+    url: "/ko/topology/",
+    open: async (page) => {
+      // 볼트를 먼저 연다 — 그래야 설정판이 그려지고, 그 안에 이 카드가 있다.
+      await page.getByTestId("first-run-starter-open").click();
+      await page.getByTestId("vault-guide-pick-existing").click();
+      await page.getByTestId("first-run-starter").waitFor({ state: "detached", timeout: 20_000 });
+      await page.getByTestId("app-nav-rail").getByRole("link", { name: "에이전트" }).click();
+      await page.getByTestId("agent-setup-section").waitFor({ timeout: 15_000 });
+    },
+    needsVault: true,
     card: "agent-server-unavailable",
     reason: /브라우저는[\s\S]*설정 파일을 대신 저장하지 못합니다/,
     destination: "agent-connect-web-get-app",
@@ -325,6 +344,7 @@ const DEGRADED_SURFACES: readonly DegradedSurface[] = [
 test.describe("웹 스모크 ③ 정직한 강등", () => {
   for (const surface of DEGRADED_SURFACES) {
     test(`${surface.name} — 이유와 갈 곳이 함께 있다`, async ({ page }) => {
+      if (surface.needsVault) await stubDirectoryPicker(page, SEED_VAULT);
       await gotoSettled(page, surface.url);
       await surface.open?.(page);
 
@@ -377,7 +397,15 @@ test.describe("웹 스모크 ③ 정직한 강등", () => {
    * **덜 채운 설정은 손에 쥐어 주지 않는다**는 계약이다.
    */
   test("에이전트 연결 — 웹에서도 그 자리에서 붙는 설정을 만든다", async ({ page }) => {
-    await gotoSettled(page, "/ko/topology/?agentConnect=1");
+    // 2026-08-21 — 연결 시트가 은퇴했다(원장 90). 이 길은 목적지의 「MCP 연결」
+    // 절에 있고, 볼트를 연 뒤에 그려진다(볼트가 없으면 만들 설정이 없다).
+    await stubDirectoryPicker(page, SEED_VAULT);
+    await gotoSettled(page, "/ko/topology/");
+    await page.getByTestId("first-run-starter-open").click();
+    await page.getByTestId("vault-guide-pick-existing").click();
+    await page.getByTestId("first-run-starter").waitFor({ state: "detached", timeout: 20_000 });
+    await page.getByTestId("app-nav-rail").getByRole("link", { name: "에이전트" }).click();
+    await page.getByTestId("agent-setup-section").waitFor({ timeout: 15_000 });
 
     const panel = page.getByTestId("web-manual-connect");
     await expect(panel).toBeVisible({ timeout: 15_000 });
@@ -408,8 +436,15 @@ test.describe("웹 스모크 ③ 정직한 강등", () => {
     await expect(page.getByTestId("web-manual-connect-copy-config")).toBeEnabled();
     await expect(page.getByTestId("web-manual-connect-copy-cli")).toBeEnabled();
 
-    // 문서 링크는 남되 **주 경로가 아니다** — 시트를 떠나지 않고 끝난다.
-    await expect(page.getByTestId("agent-connect-sheet")).toBeVisible();
+    /*
+     * 문서 링크는 남되 **주 경로가 아니다** — 그 자리를 떠나지 않고 끝난다.
+     *
+     * 2026-08-21: 재는 대상이 시트에서 **목적지**로 바뀌었다(원장 90). 잠그는
+     * 뜻은 그대로다 — 연결하려던 사람이 설정을 만들다 말고 문서 한가운데로
+     * 떨어지면 안 된다.
+     */
+    await expect(page.getByTestId("agent-setup-section")).toBeVisible();
+    expect(new URL(page.url()).pathname).toBe("/ko/agents/");
   });
 
   /**

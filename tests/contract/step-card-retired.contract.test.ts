@@ -52,7 +52,15 @@ import { describe, expect, it } from "vitest";
  */
 
 const PANEL = "src/widgets/app-settings-menu/ui/VaultAgentSetupPanel.tsx";
-const SHEET = "src/widgets/agent-connect/ui/AgentConnectSheet.tsx";
+/*
+ * ⚠️ **연결 시트는 2026-08-21 에 은퇴했다** (원장 90 — 붙이는 일이 「에이전트」
+ * 목적지가 됐다). 그래서 이 계약이 재던 「두 벌」은 이제 **한 벌**이다:
+ * 설정판(`PANEL`) 하나. 승격된 `StepRow` 는 그대로 살아 있고, 그것이 두 표면을
+ * 잇던 이유(사본을 만들지 않는다)는 표면이 하나가 돼도 유효하다.
+ *
+ * 없는 파일을 계속 읽으면 이 검사는 **읽기 실패로 터지거나**, 더 나쁘게는
+ * 예외를 삼키고 조용히 초록이 된다.
+ */
 const PROMOTED = "src/features/docs-vault-local/ui/StepRow.tsx";
 const COLLAPSIBLE = "src/widgets/app-settings-menu/ui/AgentSetupStep.tsx";
 
@@ -68,13 +76,10 @@ describe("StepCard 는 은퇴했다 — 3단계 문법은 두 벌이고 그 이�
   });
 
   it("the map sheet keeps the promoted StepRow", () => {
-    const source = read(SHEET);
-    expect(source, `${SHEET} 가 StepRow 를 다시 선언한다`).not.toMatch(
-      /function\s+StepRow\b/,
-    );
-    expect(source, `${SHEET} 가 StepRow 를 import 하지 않는다`).toMatch(/StepRow,?\n/);
-    expect(source).toMatch(/<StepRow\b/);
+    // 시트가 은퇴하면서 이 자리의 검사 대상도 사라졌다 — 승격된 `StepRow` 를
+    // 다시 선언하지 않는지는 아래 「자리마다 자기 표식」이 계속 지킨다.
   });
+
 
   it("the settings panel uses the collapsible variant, and the variant is the only third file", () => {
     expect(read(PANEL)).toMatch(/<AgentSetupStep\b/);
@@ -100,7 +105,6 @@ describe("StepCard 는 은퇴했다 — 3단계 문법은 두 벌이고 그 이�
 
   it("keeps each surface's own step marker — merging the names would silently repoint e2e and the installed-app verifier", () => {
     expect(read(PANEL)).toContain('testId="agent-setup-step-1"');
-    expect(read(SHEET)).toMatch(/<StepRow\s+n=\{1\}/);
     expect(read(PROMOTED)).toContain("agent-connect-step-");
   });
 
@@ -130,7 +134,7 @@ describe("StepCard 는 은퇴했다 — 3단계 문법은 두 벌이고 그 이�
 
   /** 공회전 차단 — 탐지기가 실제로 무엇인가를 읽었는지 본다. */
   it("게이트가 빈 파일 위에서 돌지 않는다", () => {
-    for (const path of [PANEL, SHEET, PROMOTED, COLLAPSIBLE]) {
+    for (const path of [PANEL, PROMOTED, COLLAPSIBLE]) {
       expect(read(path).length, `${path} 을 못 읽었다`).toBeGreaterThan(400);
     }
     // 탐지기가 살아 있다 — 같은 관용구를 넣은 문자열은 잡힌다.

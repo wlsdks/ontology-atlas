@@ -47,6 +47,11 @@ const ROOT = process.cwd();
  * 387 → 386 (2026-08-17): 알림 종이 손으로 쓴 `controlClass({shape:'segment'})`
  * 버튼에서 `IconButton` 프리미티브로 옮겨 가면서 손 호버 선언 하나가 빠졌다.
  *
+ * 381 → 376 (2026-08-21): 연결 시트가 은퇴했다(원장 90). 붙이는 일이 목적지가
+ * 되면서 그 위젯이 통째로 사라졌고, 그 안의 손 호버 다섯도 같이 갔다. 고친 게
+ * 아니라 **없어진 것**이라 이 줄에 그대로 적는다 — 다음 사람이 「누가 축으로
+ * 옮겼나」를 찾다 헛수고하지 않게.
+ *
  * 383 → 381 (2026-08-21): 설정 시트의 LNB 행 호버가 상수 하나로 모였다. 이정표
  * 행이 생기며 같은 문자열이 두 벌이 될 뻔했는데, 값 층의 `hoverSurface: 'lift'`
  * 는 행에 `overlay-1` 을 줘서 이 시트의 형제 행들(`overlay-2`)과 어긋난다 —
@@ -56,7 +61,7 @@ const ROOT = process.cwd();
  * 선언 셋이 함께 갔다(`docs/DECISIONS.md` (83)). 축 채택이 는 것이 아니라
  * **자리가 없어진** 것이므로 이 감소는 공로가 아니다 — 그래도 바닥은 내린다.
  */
-const CEILING = 381;
+const CEILING = 376;
 
 function walk(dir: string, out: string[] = []): string[] {
   for (const name of readdirSync(dir)) {

@@ -115,7 +115,9 @@ const DEBT: ReadonlyArray<readonly [file: string, count: number]> = [
   ["src/views/ontology-studio/ui/StudioCompass.tsx", 1],
   ["src/widgets/topology-map-v2/ui/TopologyV2EdgePanel.tsx", 1],
   ["src/widgets/docs-quick-drawer/ui/DocsQuickDrawer.tsx", 1],
-  ["src/widgets/agent-connect/ui/AgentConnectSheet.tsx", 1],
+  // 2026-08-21 — 그 시트는 은퇴했다(원장 90 · 붙이는 일이 목적지가 됐다).
+  // 회수분은 장부에서 지운다: 실재하지 않는 파일을 들고 있으면 「감소」가
+  // 이사·개명만으로도 성립해 래칫이 헐거워진다.
   ["src/widgets/docs-vault/ui/DocsVaultUnifiedPalette.tsx", 1],
   ["src/widgets/search-palette/ui/SearchPalette.tsx", 1],
   ["src/widgets/shortcut-sheet/ui/ShortcutSheet.tsx", 1],

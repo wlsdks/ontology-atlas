@@ -229,7 +229,7 @@ import {
 } from "@/features/vault-agent";
 import { isLlmChatBridgeAvailable } from "@/shared/lib/tauri-llm";
 import { useAgentDockDefaultOpen } from "@/shared/lib/use-agent-dock-default";
-import { getTauriVaultRootPath, isTauriVaultRuntime } from "@/shared/lib/tauri-vault-fs";
+import { getTauriVaultRootPath } from "@/shared/lib/tauri-vault-fs";
 import { buildAgentAnalyzePrompt } from "@/shared/config/agent-prompts";
 import { resolveToastRightOffset } from "@/shared/ui/toast-position";
 import { RIGHT_DOCK_WIDTH_VAR } from "@/shared/lib/right-dock-reserve";
@@ -239,11 +239,6 @@ import { buildNavRailContextHrefs } from "../lib/nav-rail-context-hrefs";
 import { restoreTopologyFocusAfterDatasheetClose } from "../lib/topology-focus-return";
 import { CreateNodeForm, type CreateNodeKind } from "./CreateNodeForm";
 import { OntologyBootstrapForm } from "./OntologyBootstrapForm";
-import {
-  AgentConnectSheet,
-  consumeAgentConnectRouteIntent,
-  useAgentConnectLauncher,
-} from "@/widgets/agent-connect";
 import { TopologyV2EdgePanel } from "@/widgets/topology-map-v2/ui/TopologyV2EdgePanel";
 import { PLAIN_TIER_REVEAL } from "@/widgets/topology-map-v2/model/tier-visibility";
 import { parseFrontmatter } from "@/shared/lib/parse-frontmatter";
@@ -395,7 +390,6 @@ function HomePageImpl() {
   const activeLocale = useLocale();
   const tKinds = useTranslations('kinds');
   const tTopologyKeyboardWalk = useTranslations('topologyWidgets.keyboardWalk');
-  const tAgentConnect = useTranslations('agentConnect');
   // P2 결함⑤ — <lg 기록 chrome-tile 진입점의 aria-label/title (`atlasGit`
   // 네임스페이스는 이미 `GitStatusTile` 이 쓰는 것과 같은 키를 재사용한다).
   const tAtlasGit = useTranslations('atlasGit');
@@ -1196,34 +1190,14 @@ function HomePageImpl() {
   // HomePage 모듈화 2차 — 에이전트 연결 시트 조립은 use-agent-connect-model 소유.
   // 번들 MCP 서버가 있는가 — 설정 스니펫·딥링크·연결 버튼이 전부 여기서 갈린다.
   const agentServer = useAgentServer();
-  const agentConnect = useAgentConnectModel({
-    agentActivityStatus,
-    vaultHandle: vault.handle,
-    serverAvailability: agentServer,
-    insightNodes: ontologyInsight?.nodes ?? null,
-    // 키는 top-level `agentConnect` 네임스페이스 (시트 위젯과 동일 출처) —
-    // topology.* 의 t 로 읽으면 MISSING_MESSAGE (e2e 가 잡은 잠복 버그).
-    defaultAgentLabel: tAgentConnect("defaultAgentLabel"),
-  });
+  // 「지금 붙어 있나」 하나만 묻는다 — 등록 스니펫·도메인 이름은 시트가
+  // 은퇴하며 이 모델을 떠났다(원장 90).
+  const agentConnect = useAgentConnectModel({ agentActivityStatus });
   // LNB(AppShell 상주) 에이전트 타일 → 전역 "열려는 의도". 어느 페이지에서
   // 눌렸든 지형도로 이동해 오면 레이아웃 상주 launcher 의 wantOpen 이 살아
   // 있어 여기서 시트를 연다. static-export/WebView 가 그 state commit 보다
   // 먼저 route 를 바꾸는 경우에는 일회성 URL marker 를 소비한다. openSheet 는
   // "N분 전" 기준 시각도 함께 스냅한다.
-  const agentConnectLauncher = useAgentConnectLauncher();
-  const agentConnectWantOpen = agentConnectLauncher.wantOpen;
-  const requestAgentConnectOpen = agentConnectLauncher.open;
-  const openAgentConnectSheet = agentConnect.openSheet;
-  useEffect(() => {
-    const arrivedFromGlobalTile = consumeAgentConnectRouteIntent();
-    if (arrivedFromGlobalTile && !agentConnectWantOpen) {
-      // 일부 static-export/WebView 전환은 layout provider 상태 commit 전에 새
-      // route 를 마운트한다. URL marker 를 소비한 도착 화면이 launcher 의
-      // aria-expanded/focus-return 계약까지 다시 세워 전환 방식에 의존하지 않는다.
-      requestAgentConnectOpen();
-    }
-    if (agentConnectWantOpen || arrivedFromGlobalTile) openAgentConnectSheet();
-  }, [agentConnectWantOpen, openAgentConnectSheet, requestAgentConnectOpen]);
   // 폴더를 연 직후 AI 연결 시트를 **자동으로 열지 않는다**. 한때 1200ms 뒤
   // 1회 자동 발화가 있었지만, 방금 만든 자기 지도와의 첫 대면을 요청하지 않은
   // 모달이 덮어 첫 상호작용이 '닫기'가 됐다(2026-07-26 실측). 안내는 이미
@@ -4851,7 +4825,8 @@ function HomePageImpl() {
                     // `canCreateNode`(= vault.manifest !== null)가 이미 이
                     // 페이지의 "vault 로드됨" 단일 진실원이므로 그대로 재사용.
                     vaultLoaded={canCreateNode}
-                    onOpenAgentConnect={agentConnectLauncher.open}
+                    // 2026-08-21 — 붙이는 일의 주소는 「에이전트」 목적지 하나다(원장 90).
+                    onOpenAgentConnect={() => router.push(DESTINATION_HREF.agents)}
                     // P4-② (2026-07-21 리텐션 라운드) — 이미 연결된
                     // 에이전트가 있는 2일차+ 사용자에게 "Updated with AI"
                     // 클릭이 "AI 에이전트 연결" 등록 모달(어제 이미 끝낸
@@ -5918,49 +5893,6 @@ function HomePageImpl() {
           }}
           onSelectNode={(node) => handleSelect(node.id)}
           onSelectProject={(project) => handleSelect(project.slug)}
-        />
-        {/* 기록(Atlas Git) 시트 — 레일 타일이 연다. AgentConnectSheet 와
-            같은 scrim+중앙 카드 모달 골격(같은 토큰, modality 증명 — 스크림
-            클릭 닫기). 패널 내용/조회는 위젯 자기완결. */}
-        <AgentConnectSheet
-          serverAvailability={agentServer}
-          vaultPath={vault.handle ? (getTauriVaultRootPath(vault.handle) ?? null) : null}
-          open={agentConnect.open}
-          onClose={() => {
-            agentConnect.closeSheet();
-            // 전역 열기 의도도 리셋 — 안 하면 지형도 밖으로 나갔다 돌아올 때
-            // wantOpen 이 남아 시트가 재오픈된다.
-            agentConnectLauncher.close();
-          }}
-          status={agentConnect.status}
-          snippets={agentConnect.snippets}
-          domainTitles={agentConnect.domainTitles}
-          handoffText={indexAgentHandoffBriefText}
-          /*
-           * **도구를 그대로 넘긴다.** 종전엔 `() => void vault.ensureAgentConfigs()`
-           * 로 인자를 삼켰다 — 그래서 「Claude Code에 연결」이 Codex 설정까지 썼다.
-           * 타입은 통과했고(인자를 안 쓰는 함수는 인자를 받는 자리에 들어간다) 화면만
-           * 거짓말했다. 여기가 그 사슬의 마지막 고리였다.
-           */
-          onWriteConfigs={
-            isTauriVaultRuntime() && vault.manifest
-              ? (client) => void vault.ensureAgentConfigs(client)
-              : null
-          }
-          mcpJsonState={
-            !vault.agentConfigStatus?.mcpJson
-              ? 'missing'
-              : vault.agentConfigStatus.mcpJsonValid === false
-                ? 'invalid'
-                : 'ready'
-          }
-          codexConfigState={
-            !vault.agentConfigStatus?.codexConfig
-              ? 'missing'
-              : vault.agentConfigStatus.codexConfigValid === false
-                ? 'invalid'
-                : 'ready'
-          }
         />
         <ShortcutSheet
           open={!createNodeOpen && shortcutsOpen}

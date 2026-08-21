@@ -85,7 +85,6 @@ export interface AppNavRailProps {
   onAgentTileActivate?: ((connected: boolean) => void) | null;
   /** 연결 시트가 현재 열려 있는지 — 타일의 `aria-expanded` 진실원(전역
    *  launcher `wantOpen`). */
-  agentConnectOpen?: boolean;
   className?: string;
 }
 
@@ -146,7 +145,6 @@ export function AppNavRail({
   gitDirtyCount = 0,
   agentsNoticeCount = 0,
   onAgentTileActivate = null,
-  agentConnectOpen = false,
   className,
 }: AppNavRailProps) {
   const t = useTranslations("navRail");
@@ -493,10 +491,15 @@ export function AppNavRail({
           type="button"
           title={agentTitle}
           aria-label={agentTitle}
-          aria-haspopup={onAgentTileActivate && !hasFreshHeartbeat ? "dialog" : undefined}
-          aria-expanded={
-            onAgentTileActivate && !hasFreshHeartbeat ? agentConnectOpen : undefined
-          }
+          /*
+           * ⚠️ **`aria-haspopup="dialog"` 를 뗐다** (2026-08-21, 원장 90).
+           *
+           * 이 타일은 미연결일 때 지도 위의 연결 시트를 열었다 — 그래서 대화상자를
+           * 연다고 광고하는 것이 맞았다. 이제는 **「에이전트」 목적지로 이동한다.**
+           * 이동하는 버튼이 대화상자를 연다고 말하면 낭독기 사용자는 열리지 않을
+           * 창을 기다린다. 되는 것을 안 된다고 말하는 것만 거짓이 아니라,
+           * 하는 일을 다르게 말하는 것도 거짓이다.
+           */
           onClick={onAgentTileActivate ? () => onAgentTileActivate(hasFreshHeartbeat) : undefined}
           disabled={!onAgentTileActivate}
           data-testid="app-nav-rail-agent-status"
