@@ -61,7 +61,7 @@ tags: [design, ux, linear, circuit-constellation, overview]
 - [Absolute rules (Don'ts)](#absolute-rules-donts)
 - [Arrows carry information or they don't ship](#arrows-carry-information-or-they-dont-ship)
 - [Dimensional regularity — when content length varies](#dimensional-regularity-when-content-length-varies)
-- [Ontology Workshop — 공방 (Compass Stage); game exception RETIRED 2026-07-24](#ontology-workshop-공방-compass-stage-game-exception-retired-2026-07-24)
+- [Contextual ontology writing; Studio surface retired 2026-08-21](#contextual-ontology-writing-studio-surface-retired-2026-08-21)
 - [Motion principles](#motion-principles)
 - [Page header — English caption + Korean h1](#page-header-english-caption-korean-h1)
 - [Geometry & Type Codex (R5, 2026-07)](#geometry-type-codex-r5-2026-07)
@@ -1551,7 +1551,7 @@ that only makes the screen feel busy fails the design system.
 
 ### 모션 문법 (usability motion family, Phase 3 2026-07-25)
 
-공방(`/ontology/studio`)·인사이트(`/ontology/insights`)의 "의미를 확인하는"
+지도 contextual editor·인사이트(`/ontology/insights`)의 "의미를 확인하는"
 사용성 모션은 아래 **단일 duration/easing 패밀리** 위에서만 만든다. 전부
 transform/opacity 만 쓰고, glow·bounce-loop·ambient 반복은 금지,
 3-스텝 램프는 ≤240ms(그 위는 **이름과 이유를 가진 예외 토큰만** — 현재 2개:
@@ -1689,18 +1689,11 @@ important 선언끼리는 레이어 순서가 역전돼 레이어에 든 쪽이 
 
 캐노니컬 유틸리티 클래스(globals.css `@layer base`):
 
-- `.studio-stage-in` — 무대 등장(opacity + 6px 상승). 소비처가
-  `--studio-stagger` 인라인 변수로 요소별 지연(≈40ms 간격 = 센터 카드 → 레인
-  순차)을 준다.
-- `.studio-picker-pop` — 피커 열림 원점 스케일(scale 0.96→1 + opacity).
-  `transform-origin` 은 `--studio-picker-origin`(소켓 로컬 좌표) 주입.
-- `.studio-summary-converge` — 저장 커밋 시 요약 칩이 저장 버튼 방향으로
-  옅어지며 미끄러진다(한 박자). 이동 벡터는 `--studio-converge-x/y`.
-- 위성 재배치(FLIP)는 JS(Web Animations API)로 old→new 레인 위치를
-  transform-only 로 태운다(`--motion-settle`) — 순간이동 대신 이동을 보여
-  "어디로 갔는지"를 눈이 따라간다.
-- 소켓 채움 안착(파선→실선)은 기존 `.studio-strut-flow`/보더 전환이 담당 —
-  같은 토큰 패밀리로 정렬.
+- `MeaningEditorPanel`은 선택 inspector와 같은 origin에서 공용 `Surface`의
+  `--motion-base` 등장/퇴장을 쓴다. 새 easing이나 패널 토큰을 만들지 않는다.
+- canvas preview는 force graph 밖의 overlay다. draft는 dashed directional edge,
+  confirm은 `MOTION.settle`로 dash를 solid에 수렴시키며, cancel은 `MOTION.fast`로
+  사라진다. reduced motion은 위치 이동 없이 최종 상태를 즉시 그린다.
 - `.insights-tab-crossfade` — 인사이트 탭 전환 콘텐츠 크로스페이드
   (`panelCrossfadeIn` 재사용 + `--motion-fast`). 히어로 숫자 카운트업은 JS
   훅(`useCountUp`, `prefers-reduced-motion` 이면 즉시 최종값), 바 채움은 width
@@ -2250,14 +2243,16 @@ repeating field the eye scans. **A one-off card should size to its content** —
 regularity is for repetition.
 
 > There is no carve-out. Every Don't above holds **app-wide, including the
-> Ontology Workshop (공방)** — the old game-energy exception was retired 2026-07-24 (see
-> the next section).
+> contextual editor and change-review surfaces**.
 
-## Ontology Workshop — 공방 (Compass Stage); game exception RETIRED 2026-07-24
+## Contextual ontology writing; Studio surface retired 2026-08-21
 
-`/ontology/studio` is the vault **write surface** — where a human or AI agent
-completes a node's meaning by filling its missing typed relations, and creates
-new nodes. It once carried a **game-energy exception** (a node as a hexagon
+`/topology` is the vault's visual read/write workbench. A selected node's
+inspector swaps at the same anchor into a one-relation editor; creation and ACP
+writes use the same typed pre-write review. `/ontology/studio` is a compatibility
+redirect and has no rail item, dedicated UI, or design-token namespace.
+
+The removed Studio once carried a **game-energy exception** (a node as a hexagon
 "item" you socket meaning-"gems" into: focal glow, gold rarity, light rays,
 particles, gradient frames). **That exception is retired.**
 
@@ -2270,7 +2265,27 @@ the energy to `--studio-*` tokens was itself an admission that it could never
 fully commit. The exception was a considered mistake; removing it makes the
 workshop finally look like this app.
 
-**What the Workshop is now (restrained, full charter):**
+**What replaced it (restrained, full charter):**
+
+- **One relation at a time.** Type, target, and rationale sit in the compact
+  contextual editor; there is no radial stage or second dock.
+- **The map is the preview.** A dashed arrow uses live endpoint geometry without
+  entering force/layout input. A target hidden by density gating is temporarily
+  rendered at its real coordinate with its label; its surrounding graph stays
+  folded. Relation text and the arrow shape keep colour from becoming the only
+  channel.
+- **Review before bytes.** `OntologyChangeReview` shows exact fields before
+  `createDoc`/`updateFrontmatter` or ACP `allow_once`. Semantic writes never show
+  `allow_always`.
+- **Motion uses the existing three-step ramp.** inspector/editor swap=`base`,
+  cancel=`fast`, confirmed dashed↔solid crossfade=`settle`; no bounce, glow, or
+  camera jump. Reduced motion snaps the canvas state and adds no settle delay.
+- **The editor owns enough map.** INDEX folds only while `workbench=edit` is
+  active and restores afterward; at 1024px the measured center map gap stays at
+  least 480px. Below `lg`, one centered sheet stays above the bottom-tab reserve.
+
+The following bullets describe the retired Compass shape for historical design
+comparison, not current implementation:
 
 - **Compass Stage.** The focal node is the center hero card; relation *types* are
   nailed to fixed bearings — UP = 상위 개념 (is_a), DOWN = 하위 항목 (contains),
@@ -2299,8 +2314,8 @@ workshop finally look like this app.
   tabs). Enhance = partially filled existing node (`?node=`); Create
   (`?mode=create`) = all-empty draft card.
 
-The `--studio-*` game token block and `.studio-*` game classes were **removed
-from `app/globals.css`**. is_a is a real writable relation via the `broader`
+The `--studio-*` token block and every `.studio-*` motion class are **removed
+from `app/globals.css`**. is_a remains a real writable relation via the `broader`
 (SKOS) frontmatter key (derive → `is_a` edge; registered in mcp/cli schema +
 validator). Addictiveness comes from the **loop** (next action → immediate
 reflection → accumulating progress), not from bling — Duolingo/Oura/Linear make

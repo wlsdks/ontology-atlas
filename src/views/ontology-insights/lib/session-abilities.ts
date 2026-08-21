@@ -43,7 +43,7 @@ export interface SessionAbilityInput {
 }
 
 /**
- * 세 사실 중 세션 단위 둘을 뽑는다. 공방(`OntologyStudioPage`)이 쓰기 가능
+ * 세 사실 중 세션 단위 둘을 뽑는다. 지도 contextual editor가 쓰기 가능
  * 판정에 쓰는 식과 **같은 식**이다 — 한 앱 안에서 "쓸 수 있다" 의 뜻이 표면마다
  * 갈라지면 한쪽은 폼을 내밀고 다른 쪽은 복사 버튼을 내민다.
  */

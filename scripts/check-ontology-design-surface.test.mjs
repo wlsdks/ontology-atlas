@@ -47,29 +47,45 @@ function writeCleanWorkbenchFixtures(root) {
   );
   writeFixture(
     root,
-    "src/views/ontology-studio/ui/OntologyStudioPage.tsx",
+    "src/views/home/ui/HomePage.tsx",
     [
-      "export function OntologyStudioPage() {}",
-      "<StudioCompass",
-      "buildFillPacket(sourceSlug, c.relation, c.target.ref)",
-      "await navigator.clipboard.writeText(buildMcpPacket(draft));",
+      "<MeaningEditorPanel",
+      "create-node-change-review",
+      "previewEdge={meaningPreview}",
     ].join("\n"),
   );
   writeFixture(
     root,
-    "src/views/ontology-studio/ui/StudioCompass.tsx",
+    "src/views/home/ui/CreateNodeForm.tsx",
+    "create-node-change-review",
+  );
+  writeFixture(
+    root,
+    "src/features/ontology-meaning-editor/ui/MeaningEditorPanel.tsx",
     [
-      "export interface CompassBearingView {}",
-      "bottomProgress: (filled, total) => string;",
+      "export function MeaningEditorPanel() {}",
+      "buildOntologyRelationEditPlan",
+      "meaning-editor-change-review",
     ].join("\n"),
   );
   writeFixture(
     root,
-    "src/views/ontology-studio/lib/build-create-node.ts",
+    "src/features/ontology-change-review/ui/OntologyChangeReview.tsx",
+    "function OntologyChangeReview() {}",
+  );
+  writeFixture(
+    root,
+    "src/widgets/acp-chat-panel/ui/AcpPermissionCard.tsx",
     [
-      "export function buildMcpPacket() {}",
-      "export function buildFillPacket() {}",
+      "acp-ontology-change-review",
+      "request.reviewKind === 'ontology-write'",
+      "allowAlways && !ontologyWrite",
     ].join("\n"),
+  );
+  writeFixture(
+    root,
+    "src/features/acp-session/model/acp-client.ts",
+    "const ontologyWrite = atlasMode === 'write';",
   );
   writeFixture(
     root,
@@ -242,7 +258,7 @@ test("ontology design surface passes when visual and workbench contracts are pre
       "src/views/docs-vault",
       "src/widgets/docs-vault",
       "src/views/ontology-view",
-      "src/views/ontology-studio",
+      "src/features/ontology-meaning-editor",
       "src/views/ontology-insights",
     ],
   });
@@ -270,7 +286,7 @@ test("ontology design surface ignores test fixtures when scanning forbidden visu
       "src/views/docs-vault",
       "src/widgets/docs-vault",
       "src/views/ontology-view",
-      "src/views/ontology-studio",
+      "src/features/ontology-meaning-editor",
       "src/views/ontology-insights",
     ],
   });
@@ -290,7 +306,7 @@ test("ontology design surface reports forbidden visual drift", () => {
 
   const report = evaluateOntologyDesignSurface({
     root,
-    targetDirs: ["src/views/ontology-view", "src/views/ontology-studio", "src/views/ontology-insights"],
+    targetDirs: ["src/views/ontology-view", "src/features/ontology-meaning-editor", "src/views/ontology-insights"],
   });
 
   assert.equal(report.ok, false);
@@ -349,7 +365,7 @@ test("ontology design surface reports missing workbench structure markers", () =
 
   const report = evaluateOntologyDesignSurface({
     root,
-    targetDirs: ["src/views/ontology-view", "src/views/ontology-studio", "src/views/ontology-insights"],
+    targetDirs: ["src/views/ontology-view", "src/features/ontology-meaning-editor", "src/views/ontology-insights"],
   });
 
   assert.equal(report.ok, false);
@@ -425,7 +441,7 @@ test("ontology design surface reports missing workspace execution cells", () => 
 
   const report = evaluateOntologyDesignSurface({
     root,
-    targetDirs: ["src/views/ontology-view", "src/views/ontology-studio", "src/views/ontology-insights"],
+    targetDirs: ["src/views/ontology-view", "src/features/ontology-meaning-editor", "src/views/ontology-insights"],
   });
 
   assert.equal(report.ok, false);

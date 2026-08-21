@@ -55,11 +55,11 @@
 aura/particle/rarity(gold)/shimmer 를 허용했었다. fable 의 판정 B 와 소유자 확정으로
 **되돌렸다** — "게임처럼 중독되게" 는 비유였지 만들라는 사양이 아니었고, 게임 같은
 겉모습은 이 화면이 내놓는 의사결정 자료를 덜 믿게 만들었다(예외를 연 것이 실수였다).
-이 화면은 이제 절제된 **나침 무대(Compass Stage)** 이고, 앱의 나머지와 똑같이
-무채색 + 인디고 한 색 + `--color-*` 토큰만 쓴다. **glow/rarity/particle/gem 은 여기서도
-금지**다. `--studio-*` 게임 토큰 블록은 `app/globals.css` 에서 지웠다. 사람을 붙잡는
-것은 반짝이는 효과가 아니라 「다음 할 일이 보인다 → 고치면 바로 반영된다 → 진전이
-쌓인다」는 반복이다. 배경: `[[ontology-studio-game-direction]]`.
+2026-08-21에는 Studio 표면도 은퇴했다. 현재 쓰기 표면은 지도 안 contextual editor와
+ACP 변경안 카드이며, 앱의 나머지와 똑같이 무채색 + 인디고 한 색 + `--color-*`
+토큰만 쓴다. **glow/rarity/particle/gem은 여기서도 금지**다. `--studio-*` 토큰과
+`.studio-*` 모션 클래스는 `app/globals.css`에서 지웠다. 사람을 붙잡는 것은
+「다음 할 일이 보인다 → 고치면 바로 반영된다 → 진전 누적」이라는 반복이다.
 
 세부: `@.claude/rules/design.md` · `@docs/DESIGN-SYSTEM.md`.
 

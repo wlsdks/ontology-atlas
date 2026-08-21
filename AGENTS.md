@@ -92,8 +92,7 @@ read off the manifest:
   rendering dependency needs a decision record, not a preference.
 - **State has no store** — in-memory + React local state + URL state, with IndexedDB
   holding only the vault handle. The vault's markdown is the single source of truth.
-- **`/ontology/studio` is the write surface.** The old ERD builder at `/ontology/edit`
-  is a redirect.
+- **`/topology` is read/write; `/ontology/studio` and `/ontology/edit` only redirect legacy links.**
 
 ## Folder map
 
@@ -133,9 +132,9 @@ What you can't derive from `app/[locale]/`:
   (gate: `tests/contract/map-destination-route.contract.test.ts`).
 - **`/ontology` and `/ontology/edit` are redirects**, kept so old bookmarks and
   agent-handoff links land somewhere real instead of a 404.
-- **`/ontology/studio` is the write surface** — relation types at fixed compass
-  bearings (UP=is_a · DOWN=contains · RIGHT=depends · LEFT=relates), empty ones dashed
-  sockets that write a real frontmatter relation when filled.
+- **`/topology` contextual writing** — edit one relation beside its node; a directional
+  preview and exact change review precede the write. ACP reads continue; writes wait for
+  `allow_once`/`reject_once`.
 - **Adding or removing a route needs a `docs/DECISIONS.md` entry in the same change** —
   `pnpm decisions:check` enforces it. Retired namespaces (`/login`, `/signup`,
   `/account`, `/reset-password`, `/settings/*`, `/admin/*`, `/review/*`,

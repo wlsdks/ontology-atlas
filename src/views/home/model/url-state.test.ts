@@ -35,6 +35,8 @@ describe("parseHomeRouteState", () => {
       pathSourceSlug: "domain:views",
       pathTargetSlug: "capability:topology-analysis-modes",
       createNodeIntent: true,
+      meaningEditorIntent: false,
+      meaningEditParam: null,
       indexState: null,
       insightsReturnTab: null,
       insightsReturnReviewId: null,
@@ -42,6 +44,29 @@ describe("parseHomeRouteState", () => {
       expandedParents: [],
       realmSlug: null,
       recentWindow: null,
+    });
+  });
+
+  it("round-trips the contextual editor and legacy create workbench intents", () => {
+    const edit = parseHomeRouteState(
+      new URLSearchParams(
+        "p=capability%3Acontextual-editing&workbench=edit&edit=dependsOn%3Acapability%3Amcp-server",
+      ),
+    );
+    expect(edit).toMatchObject({
+      selectedSlug: "capability:contextual-editing",
+      meaningEditorIntent: true,
+      meaningEditParam: "dependsOn:capability:mcp-server",
+      createNodeIntent: false,
+    });
+    expect(applyHomeRouteState(new URLSearchParams(), edit).toString()).toContain(
+      "workbench=edit",
+    );
+
+    expect(parseHomeRouteState(new URLSearchParams("workbench=create"))).toMatchObject({
+      createNodeIntent: true,
+      meaningEditorIntent: false,
+      meaningEditParam: null,
     });
   });
 
@@ -221,6 +246,8 @@ describe("applyHomeRouteState", () => {
       pathSourceSlug: null,
       pathTargetSlug: null,
       createNodeIntent: true,
+      meaningEditorIntent: false,
+      meaningEditParam: null,
       indexState: null,
       insightsReturnTab: null,
       insightsReturnReviewId: null,
@@ -231,7 +258,7 @@ describe("applyHomeRouteState", () => {
     });
 
     expect(params.toString()).toBe(
-      "p=pick&c=planned&hub=reactor&impact=network&pulse=7d&mode=health&create=concept",
+      "p=pick&c=planned&hub=reactor&impact=network&pulse=7d&mode=health&workbench=create",
     );
   });
 
@@ -246,6 +273,8 @@ describe("applyHomeRouteState", () => {
       pathSourceSlug: "domain:views",
       pathTargetSlug: "capability:topology-analysis-modes",
       createNodeIntent: false,
+      meaningEditorIntent: false,
+      meaningEditParam: null,
       indexState: null,
       insightsReturnTab: null,
       insightsReturnReviewId: null,
@@ -269,6 +298,8 @@ describe("applyHomeRouteState", () => {
       pathSourceSlug: "domain:views",
       pathTargetSlug: "capability:topology-analysis-modes",
       createNodeIntent: false,
+      meaningEditorIntent: false,
+      meaningEditParam: null,
       indexState: null,
       insightsReturnTab: null,
       insightsReturnReviewId: null,
@@ -294,6 +325,8 @@ describe("applyHomeRouteState", () => {
         pathSourceSlug: "domain:views",
         pathTargetSlug: "capability:topology-analysis-modes",
         createNodeIntent: false,
+        meaningEditorIntent: false,
+        meaningEditParam: null,
         indexState: null,
         insightsReturnTab: null,
         insightsReturnReviewId: null,

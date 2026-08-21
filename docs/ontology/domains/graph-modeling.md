@@ -2,11 +2,11 @@
 uid: c42d7066-a77e-45f5-89bb-e78a4adeb660
 slug: domains/graph-modeling
 kind: domain
-title: Graph Modeling & Ontology Schema
+title: "Graph Modeling & Ontology Schema"
 display_ko: 그래프 모델과 스키마
-display_en: Graph Modeling & Ontology Schema
-capabilities: [capabilities/ontology-blocks, capabilities/taxonomy, capabilities/vault-ontology]
-elements: [elements/category, elements/knowledge-graph, elements/ontology-class, elements/ontology-edit-redirect, elements/ontology-insights, elements/ontology-redirect, elements/ontology-studio, elements/status]
+display_en: "Graph Modeling & Ontology Schema"
+capabilities: [capabilities/reviewed-ontology-writing, capabilities/taxonomy, capabilities/vault-ontology]
+elements: [elements/acp-ontology-write-review, elements/category, elements/knowledge-graph, elements/ontology-change-review, elements/ontology-class, elements/ontology-edit-redirect, elements/ontology-insights, elements/ontology-meaning-editor, elements/ontology-redirect, elements/status]
 created_by: human
 ---
 

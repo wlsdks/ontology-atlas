@@ -40,7 +40,6 @@ const ROUTES = [
   "/ko/",
   "/ko/topology/",
   "/ko/docs/",
-  "/ko/ontology/studio/",
   "/ko/ontology/insights/",
   "/ko/projects/",
   "/ko/project/new/",

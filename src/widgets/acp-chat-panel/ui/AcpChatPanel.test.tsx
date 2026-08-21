@@ -248,7 +248,11 @@ describe('대화 패널 — 권한 카드가 실제로 막는다', () => {
    * 단위 검사는 전부 통과하고 있었다. 파일 경로가 있는 요청만 넣어 봤기
    * 때문이다 — **없는 입력은 검사도 없었다.**
    */
-  function mcpPermissionRequest(toolName: string, id = 78) {
+  function mcpPermissionRequest(
+    toolName: string,
+    id = 78,
+    rawInput: Record<string, unknown> = { summary: true },
+  ) {
     return {
       jsonrpc: '2.0',
       id,
@@ -260,18 +264,36 @@ describe('대화 패널 — 권한 카드가 실제로 막는다', () => {
           { kind: 'allow_once', name: 'Allow Once', optionId: 'allow' },
         ],
         // 실측 그대로: `rawInput` 에 경로가 없고 이름이 `title` 에 온다.
-        toolCall: { toolCallId: 'tc9', title: toolName, kind: 'other', rawInput: { summary: true } },
+        toolCall: { toolCallId: 'tc9', title: toolName, kind: 'other', rawInput },
       },
     };
   }
 
-  it('우리가 꽂아 준 볼트 도구는 경로가 없어도 막지 않는다', async () => {
+  it('우리가 꽂아 준 볼트의 읽기 도구는 경로가 없어도 막지 않는다', async () => {
     await bootSession();
-    emit(mcpPermissionRequest('mcp__atlas-vault__add_concept'));
+    emit(mcpPermissionRequest('mcp__atlas-vault__list_concepts'));
 
     await waitFor(() => expect(answerFor(78)).toEqual({ outcome: 'selected', optionId: 'allow' }));
-    // 카드를 띄우지 않는다 — 볼트 안 파일과 같은 근거로 자동 허용이다.
+    // 읽기는 카드를 띄우지 않는다 — 대화 중 조회마다 사람을 막지 않는다.
     expect(screen.queryByTestId('acp-permission-card')).toBeNull();
+  });
+
+  it('우리 볼트의 쓰기 도구는 경로가 없어도 변경안을 보여 주고 답을 기다린다', async () => {
+    await bootSession();
+    emit(
+      mcpPermissionRequest('mcp__atlas-vault__add_concept', 83, {
+        slug: 'capabilities/contextual-editing',
+        kind: 'capability',
+        title: 'Contextual Meaning Editing',
+        domain: 'domains/graph-modeling',
+      }),
+    );
+
+    await waitFor(() => expect(screen.getByTestId('acp-ontology-change-review')).toBeInTheDocument());
+    expect(answerFor(83), '사람이 답하기 전에 ACP 세션을 이어가면 안 된다').toBeUndefined();
+    expect(screen.getByText('capabilities/contextual-editing')).toBeInTheDocument();
+    expect(screen.getByText('Contextual Meaning Editing')).toBeInTheDocument();
+    expect(screen.queryByTestId('acp-permission-allow-always')).toBeNull();
   });
 
   it('**우리 도구라도 볼트 밖 경로면 묻는다** — 이름이 통행증이 아니다', async () => {

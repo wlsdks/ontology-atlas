@@ -45,7 +45,7 @@
       },
       "headings": [],
       "excerpt": "2026-07-27 update — the current architecture is a local-first, git-backed meaning layer: a folder of markdown files that records what each part of the product is, who owns it, what it depends on, and what proves it. People and AI coding agents read and write that same folder. Round 10 permanently removed every login an",
-      "wordCount": 3827,
+      "wordCount": 3784,
       "updatedAt": "2026-08-21",
       "linksOut": [
         "../AGENTS",
@@ -473,8 +473,8 @@
       "tags": [],
       "frontmatter": {},
       "headings": [],
-      "excerpt": "Major change history. Code commit messages answer why; this file answers when / which surface changed. Focused on user-visible changes, not PR-level granularity. Newest at the top. Entries stay date-based; the app version reached v1.0.0 on 2026-07-27, so a release tag now carries the semver promise instead. 왼쪽의 「스킬」은 현",
-      "wordCount": 74971,
+      "excerpt": "Major change history. Code commit messages answer why; this file answers when / which surface changed. Focused on user-visible changes, not PR-level granularity. Newest at the top. Entries stay date-based; the app version reached v1.0.0 on 2026-07-27, so a release tag now carries the semver promise instead. 지도를 보다가 관계를",
+      "wordCount": 75201,
       "updatedAt": "2026-08-21",
       "linksOut": [
         "audits/CASE-STUDY-AGENTS-MD-DRIFT",
@@ -490,7 +490,7 @@
       "frontmatter": {},
       "headings": [],
       "excerpt": "이 파일은 결정과 그때 진 반대 의견을 남긴다. docs/CHANGELOG.md 는 무엇이 언제 바뀌었나를 답하고, 이 파일은 왜 그렇게 정했고, 무엇을 걸었나를 답한다. 최신이 위. 기록은 덧붙이기만 한다 — 지난 기록을 고치지 않는다. 판단이 바뀌었으면 새 기록을 쓰고 옛 기록을 뒤집힘 으로 표시한다. 틀린 기록도 자산이다. 1. 소집 전에 읽는다. 카운슬을 열기 전(그리고 단독 PO 패스를 쓰기 전) 같은 표면 · 같은 질문에 대한 선행 결정이 있는지 먼저 본다. 있으면 새 패스는 그것을 ① 여전히 유효하다고 인용하거나 ② 명시적으로 뒤집는다. 조용히 다시 결정",
-      "wordCount": 156973,
+      "wordCount": 157905,
       "updatedAt": "2026-08-21",
       "linksOut": [
         "slug"
@@ -555,8 +555,8 @@
       },
       "headings": [],
       "excerpt": "This document is maintained based on Section 3 of the design spec. For the original Linear specification, see design-references/DESIGN-linear.md. v2 (2026-07): topology-map-v2 에서 출하된 B2+ \"Circuit × Constellation\" 시각 언어가 페이지 롤아웃(랜딩 → docs/ontology 허브 → projects/insights → download)의 규범이 되었다 — 아래 v2 — \"Circuit × Constell",
-      "wordCount": 31835,
-      "updatedAt": "2026-08-19",
+      "wordCount": 31969,
+      "updatedAt": "2026-08-21",
       "linksOut": [
         "design-references/DESIGN-linear",
         "TOPOLOGY-V2-DESIGN",
@@ -595,8 +595,8 @@
       "tags": [],
       "frontmatter": {},
       "headings": [],
-      "excerpt": "Complete inventory of features users can actually use right now. Last updated: 2026-08-02 (지금 있는 라우트, 설치한 앱이 지키기로 한 약속, 프로젝트가 무엇을 뜻하는지 확정한 기록(project meaning receipt)을 다시 확인했다 — /ontology 는 /topology?index=expanded 로, /ontology/edit 은 /ontology/studio 로 보내는 옛 주소 호환 redirect 이고, Insights 는 할 일 · 구성 · 연결 · 경계 · 신선도 다섯 개 ",
-      "wordCount": 19948,
+      "excerpt": "Complete inventory of features users can actually use right now. Last updated: 2026-08-21 (지금 있는 라우트, 설치한 앱이 지키기로 한 약속, 프로젝트가 무엇을 뜻하는지 확정한 기록(project meaning receipt)을 다시 확인했다 — /ontology 는 /topology?index=expanded 로, /ontology/edit 과 /ontology/studio 는 지도 안 contextual writer로 보내는 호환 redirect 이고, Insights 는 할 일 · 구성 · ",
+      "wordCount": 20196,
       "updatedAt": "2026-08-21",
       "linksOut": [
         "slug",
@@ -718,13 +718,13 @@
     {
       "slug": "guide/studio",
       "path": "docs/guide/studio.md",
-      "title": "스튜디오에서 노드 완성하기",
+      "title": "지도에서 개념과 관계 고치기",
       "tags": [],
       "frontmatter": {},
       "headings": [],
-      "excerpt": "관계는 어떻게 생기나 는 관계가 .md 맨 위 한 줄이라고 말했습니다. 그 줄을 YAML 을 치지 않고 쓰는 화면이 스튜디오입니다. 스튜디오는 왼쪽 레일의 「스튜디오」 이고, 주소는 /ontology/studio 입니다. 가로 1024px 미만에서는 열리지 않습니다. 그 폭에서는 「스튜디오는 넓은 화면에서 열려요」 라고 말하고 지도로 보내 줍니다. 관계를 네 방향으로 펼쳐 놓는 화면이라 좁은 창에서는 방향이 무너집니다. 열면 「무엇을 할까요?」 하나가 뜹니다. · 고르는 것 · 하는 일 · 「기존 노드 강화」 · 이미 있는 노드를 무대에 올리고 빠진 관계를 채웁니다.",
-      "wordCount": 963,
-      "updatedAt": "2026-08-14",
+      "excerpt": "관계는 .md 맨 위 frontmatter에 적힌 한 줄이지만, 직접 YAML을 입력할 필요는 없습니다. 이제 별도 스튜디오로 이동하지 않고 지도에서 고른 개념 곁에서 고칩니다. 옛 /ontology/studio 주소는 없어지지 않았습니다. 기존 북마크의 node, mode, edit 값을 읽어 /topology의 같은 개념과 편집 상태로 옮깁니다. 다만 왼쪽 레일의 독립 목적지는 아닙니다. 1. 지도에서 개념을 고릅니다. 2. 오른쪽 작은 정보창에서 「관계 편집」을 누릅니다. 3. 관계 종류와 이어질 개념을 고르고, 왜 이어지는지 적습니다. 4. 지도에 생긴 파선 ",
+      "wordCount": 458,
+      "updatedAt": "2026-08-21",
       "linksOut": []
     },
     {
@@ -919,8 +919,12 @@
           "capabilities/mcp-server"
         ],
         "relation_notes": {
-          "capabilities/mcp-server": "ACP 세션은 session/new 의 mcpServers 로 이 서버를 주입받아 볼트 도구를 얻는다 (src/features/acp-session/model/vault-mcp-server.ts). 그래서 ACP 는 MCP 서버를 대체하는 경로가 아니라 그 위에 서는 경로다."
-        }
+          "capabilities/mcp-server": "ACP 세션은 session/new 의 mcpServers 로 이 서버를 주입받아 볼트 도구를 얻는다 (src/features/acp-session/model/vault-mcp-server.ts). 그래서 ACP 는 MCP 서버를 대체하는 경로가 아니라 그 위에 서는 경로다.",
+          "capabilities/reviewed-ontology-writing": "ACP permission requests reuse the reviewed ontology writing contract: read tools continue, while write tools pause on the shared typed change review before allow_once or reject_once."
+        },
+        "relates": [
+          "capabilities/reviewed-ontology-writing"
+        ]
       },
       "headings": [],
       "excerpt": "사용자가 이미 설치해 둔 코딩 에이전트(Claude Code, Codex 등)를 앱이 ACP(Agent Client Protocol) v1 로 직접 띄우고, 그 세션의 설정을 격리하고, 볼트 밖 파일 접근을 사람에게 되묻는 능력. 새 API 키도 새 벤더 연동도 필요 없다: 그 도구가 이미 쓰는 구독 인증을 그대로 쓴다. 이 능력이 실제로 하는 일 일곱: 1. 탐지. 이 기기의 실행기 상태를 다섯으로 갈라 판정한다: ready, cli-missing, node-missing, uvx-missing, binary-missing. 상태를 「설치됨/아님」 둘로 뭉개지 않는",
@@ -1271,29 +1275,6 @@
       "linksOut": []
     },
     {
-      "slug": "ontology/capabilities/ontology-blocks",
-      "path": "docs/ontology/capabilities/ontology-blocks.md",
-      "title": "Studio Relation Blocks",
-      "tags": [],
-      "frontmatter": {
-        "uid": "fa08540f-a6c0-4a13-8dd9-b43df420534f",
-        "slug": "capabilities/ontology-blocks",
-        "kind": "capability",
-        "title": "Studio Relation Blocks",
-        "domain": "domains/graph-modeling",
-        "elements": [
-          "elements/ontology-studio"
-        ],
-        "path": "src/features/ontology-blocks",
-        "created_by": "agent:unknown"
-      },
-      "headings": [],
-      "excerpt": "Studio의 나침반 방위 관계 블록(UP=isa, DOWN=contains, RIGHT=depends, LEFT=relates): 채우면 실제 frontmatter 관계를 쓴다. 빈 소켓은 관계를 추가할 수 있다는 중립 affordance이지, 그 관계가 필요하거나 특정 후보가 옳다는 뜻이 아니다. 추천 상태는 대상별 rationale, evidence reference, source/target/relation이 일치하는 safetoadd preflight 영수증이 모두 있을 때만 성립한다. 현재 graph projection과 picker scorer는 그 se",
-      "wordCount": 147,
-      "updatedAt": "2026-08-16",
-      "linksOut": []
-    },
-    {
       "slug": "ontology/capabilities/project-data-source",
       "path": "docs/ontology/capabilities/project-data-source.md",
       "title": "Project Data Access",
@@ -1401,6 +1382,31 @@
       "excerpt": "project 노드 하나에 Git 저장소 또는 로컬 폴더 하나를 연결하고, 온톨로지가 선언한 capability/element 구현 경로를 실제 소스 목록과 대조해 버전이 붙은 범주형 영수증으로 남기는 능력. 지도 데이터시트·전체 상세·CLI·MCP agentbrief가 같은 상태·현재성·첫 빈틈·다음 행동을 읽는다. 연결 자체는 설치 앱·MCP·CLI 세 표면 모두에서 가능하다. connectprojectsource (CLI connect-source)는 rootPath를 생략하면 볼트를 감싸는 git 저장소를, 없으면 가장 가까운 조상 매니페스트 폴더를 후보로 지",
       "wordCount": 629,
       "updatedAt": "2026-08-09",
+      "linksOut": []
+    },
+    {
+      "slug": "ontology/capabilities/reviewed-ontology-writing",
+      "path": "docs/ontology/capabilities/reviewed-ontology-writing.md",
+      "title": "Reviewed Ontology Writing",
+      "tags": [],
+      "frontmatter": {
+        "uid": "fa08540f-a6c0-4a13-8dd9-b43df420534f",
+        "slug": "capabilities/reviewed-ontology-writing",
+        "kind": "capability",
+        "title": "Reviewed Ontology Writing",
+        "domain": "domains/graph-modeling",
+        "elements": [
+          "elements/acp-ontology-write-review",
+          "elements/ontology-change-review",
+          "elements/ontology-meaning-editor"
+        ],
+        "path": "src/features/ontology-meaning-editor",
+        "created_by": "agent:unknown"
+      },
+      "headings": [],
+      "excerpt": "지도에서 사람이 직접 고치거나 ACP 에이전트가 요청한 온톨로지 쓰기를, 정확한 typed 변경안 검토 뒤에만 마크다운 frontmatter에 적용하는 능력. 지도 선택 맥락과 사람의 최종 의미 결정권을 같은 흐름에 남긴다. 변경안은 휘발성 pre-write 상태이며 별도 승인 원장이나 두 번째 정본이 아니다. 확인 뒤 쓰인 마크다운이 즉시 정본이다. 지도 편집기는 한 번에 관계 하나만 다루고, ACP read tool은 자동 진행하지만 write tool은 allowonce 또는 rejectonce를 기다린다. 의미 쓰기에는 allowalways를 제공하지 않는다.",
+      "wordCount": 125,
+      "updatedAt": "2026-08-21",
       "linksOut": []
     },
     {
@@ -1595,18 +1601,20 @@
         "display_ko": "그래프 모델과 스키마",
         "display_en": "Graph Modeling & Ontology Schema",
         "capabilities": [
-          "capabilities/ontology-blocks",
+          "capabilities/reviewed-ontology-writing",
           "capabilities/taxonomy",
           "capabilities/vault-ontology"
         ],
         "elements": [
+          "elements/acp-ontology-write-review",
           "elements/category",
           "elements/knowledge-graph",
+          "elements/ontology-change-review",
           "elements/ontology-class",
           "elements/ontology-edit-redirect",
           "elements/ontology-insights",
+          "elements/ontology-meaning-editor",
           "elements/ontology-redirect",
-          "elements/ontology-studio",
           "elements/status"
         ],
         "created_by": "human"
@@ -1614,7 +1622,7 @@
       "headings": [],
       "excerpt": "markdown frontmatter가 인코딩하는 5개 authorable kind, 예약 reader kind, 실제 storage/query/write relation vocabulary와 비추론 경계를 정의하고 이를 결정론적 그래프로 컴파일·쿼리하는 책임 영역. docs/ONTOLOGY-ATLAS-SPEC.md §2·§5: kind와 relation 의미의 공개 정본 docs/ARCHITECTURE.md: \"compileontology turns markdown frontmatter into a deterministic graph artifact; queryon",
       "wordCount": 112,
-      "updatedAt": "2026-08-18",
+      "updatedAt": "2026-08-21",
       "linksOut": []
     },
     {
@@ -1767,6 +1775,26 @@
       "excerpt": "canvas-2D 그래프 브라우징 표면(지도·검색·인덱스 패널): 볼트 전체를 시각적으로 탐색하는 제품의 1차 진입 경로. docs/ARCHITECTURE.md: \"the current route model converges browsing on Topology, writing on Workshop, maintenance on five-question Insights\" (risky-citation 경고: AGENTS.md와 함께 인용하여 상호 검증) AGENTS.md: Routes (\"/topology is the map's address, not /\") 포함: to",
       "wordCount": 79,
       "updatedAt": "2026-08-09",
+      "linksOut": []
+    },
+    {
+      "slug": "ontology/elements/acp-ontology-write-review",
+      "path": "docs/ontology/elements/acp-ontology-write-review.md",
+      "title": "ACP Ontology Write Review",
+      "tags": [],
+      "frontmatter": {
+        "uid": "5792b459-345c-469c-8342-7e2b902cffa3",
+        "slug": "elements/acp-ontology-write-review",
+        "kind": "element",
+        "title": "ACP Ontology Write Review",
+        "domain": "domains/graph-modeling",
+        "path": "src/widgets/acp-chat-panel/ui/AcpPermissionCard.tsx",
+        "created_by": "agent:unknown"
+      },
+      "headings": [],
+      "excerpt": "The ACP permission boundary that lets Atlas read tools continue automatically but pauses every Atlas write tool on a typed change review. It offers allowonce or rejectonce and deliberately hides allowalways for semantic writes.",
+      "wordCount": 34,
+      "updatedAt": "2026-08-21",
       "linksOut": []
     },
     {
@@ -2232,6 +2260,26 @@
       "linksOut": []
     },
     {
+      "slug": "ontology/elements/ontology-change-review",
+      "path": "docs/ontology/elements/ontology-change-review.md",
+      "title": "Ontology Change Review",
+      "tags": [],
+      "frontmatter": {
+        "uid": "25c4e564-92e3-4274-8ec4-ab6bb3a27eeb",
+        "slug": "elements/ontology-change-review",
+        "kind": "element",
+        "title": "Ontology Change Review",
+        "domain": "domains/graph-modeling",
+        "path": "src/features/ontology-change-review",
+        "created_by": "agent:unknown"
+      },
+      "headings": [],
+      "excerpt": "A transient pre-write review that renders the exact typed ontology change requested by either the map editor or ACP. It never persists a second approval record: confirmed Markdown frontmatter remains the source of truth.",
+      "wordCount": 34,
+      "updatedAt": "2026-08-21",
+      "linksOut": []
+    },
+    {
       "slug": "ontology/elements/ontology-class",
       "path": "docs/ontology/elements/ontology-class.md",
       "title": "Ontology Class",
@@ -2254,21 +2302,21 @@
     {
       "slug": "ontology/elements/ontology-edit-redirect",
       "path": "docs/ontology/elements/ontology-edit-redirect.md",
-      "title": "Ontology Edit Redirect",
+      "title": "Ontology Workbench Compatibility Redirect",
       "tags": [],
       "frontmatter": {
         "uid": "1b3e2a6f-46d8-47b5-8764-299ec2767fe7",
         "slug": "elements/ontology-edit-redirect",
         "kind": "element",
-        "title": "Ontology Edit Redirect",
+        "title": "Ontology Workbench Compatibility Redirect",
         "domain": "domains/graph-modeling",
         "path": "src/views/ontology-edit-redirect",
         "created_by": "agent:unknown"
       },
       "headings": [],
-      "excerpt": "/ontology/edit → /ontology/studio 호환 리다이렉트.",
-      "wordCount": 5,
-      "updatedAt": "2026-08-02",
+      "excerpt": "/ontology/edit and /ontology/studio are static-export compatibility entries. OntologyEditRedirectPage translates legacy node/mode/edit/via/review parameters into /topology p/workbench/edit state; neither old address is a navigation destination or write surface.",
+      "wordCount": 26,
+      "updatedAt": "2026-08-21",
       "linksOut": []
     },
     {
@@ -2292,6 +2340,26 @@
       "linksOut": []
     },
     {
+      "slug": "ontology/elements/ontology-meaning-editor",
+      "path": "docs/ontology/elements/ontology-meaning-editor.md",
+      "title": "Ontology Meaning Editor",
+      "tags": [],
+      "frontmatter": {
+        "uid": "eb2a7d5e-0050-4043-b8ae-1300046d7e21",
+        "slug": "elements/ontology-meaning-editor",
+        "kind": "element",
+        "title": "Ontology Meaning Editor",
+        "domain": "domains/graph-modeling",
+        "path": "src/features/ontology-meaning-editor",
+        "created_by": "agent:unknown"
+      },
+      "headings": [],
+      "excerpt": "지도에서 선택한 노드의 compact inspector와 같은 자리를 쓰는 contextual relation editor. 관계 종류·대상·이유를 고르면 실제 map geometry 위에 dashed directional preview를 그리고, Ontology Change Review를 통과한 뒤 expectedMtime으로 frontmatter를 쓴다. 한 번에 관계 하나만 다뤄 별도 Studio를 작은 패널 안에 재현하지 않는다.",
+      "wordCount": 42,
+      "updatedAt": "2026-08-21",
+      "linksOut": []
+    },
+    {
       "slug": "ontology/elements/ontology-redirect",
       "path": "docs/ontology/elements/ontology-redirect.md",
       "title": "Ontology Redirect",
@@ -2308,26 +2376,6 @@
       "headings": [],
       "excerpt": "/ontology → /topology?index=expanded 호환 리다이렉트.",
       "wordCount": 5,
-      "updatedAt": "2026-08-02",
-      "linksOut": []
-    },
-    {
-      "slug": "ontology/elements/ontology-studio",
-      "path": "docs/ontology/elements/ontology-studio.md",
-      "title": "Ontology Studio",
-      "tags": [],
-      "frontmatter": {
-        "uid": "eb2a7d5e-0050-4043-b8ae-1300046d7e21",
-        "slug": "elements/ontology-studio",
-        "kind": "element",
-        "title": "Ontology Studio",
-        "domain": "domains/graph-modeling",
-        "path": "src/views/ontology-studio",
-        "created_by": "agent:unknown"
-      },
-      "headings": [],
-      "excerpt": "/ontology/studio 쓰기 표면(공방). capabilities/ontology-blocks 의 구현 증거.",
-      "wordCount": 7,
       "updatedAt": "2026-08-02",
       "linksOut": []
     },
@@ -3354,6 +3402,18 @@
         "linkText": "capabilities/mcp-server"
       }
     ],
+    "ontology/capabilities/reviewed-ontology-writing": [
+      {
+        "fromSlug": "ontology/capabilities/acp-runtime",
+        "context": "frontmatter · **[capabilities/reviewed-ontology-writing]**",
+        "linkText": "capabilities/reviewed-ontology-writing"
+      },
+      {
+        "fromSlug": "ontology/domains/graph-modeling",
+        "context": "frontmatter · **[capabilities/reviewed-ontology-writing]**",
+        "linkText": "capabilities/reviewed-ontology-writing"
+      }
+    ],
     "ontology/domains/agent-integration": [
       {
         "fromSlug": "ontology/capabilities/acp-runtime",
@@ -3749,80 +3809,6 @@
         "linkText": "capabilities/vault-ontology"
       }
     ],
-    "ontology/elements/ontology-studio": [
-      {
-        "fromSlug": "ontology/capabilities/ontology-blocks",
-        "context": "frontmatter · **[elements/ontology-studio]**",
-        "linkText": "elements/ontology-studio"
-      },
-      {
-        "fromSlug": "ontology/domains/graph-modeling",
-        "context": "frontmatter · **[elements/ontology-studio]**",
-        "linkText": "elements/ontology-studio"
-      }
-    ],
-    "ontology/domains/graph-modeling": [
-      {
-        "fromSlug": "ontology/capabilities/ontology-blocks",
-        "context": "frontmatter · **[domains/graph-modeling]**",
-        "linkText": "domains/graph-modeling"
-      },
-      {
-        "fromSlug": "ontology/capabilities/taxonomy",
-        "context": "frontmatter · **[domains/graph-modeling]**",
-        "linkText": "domains/graph-modeling"
-      },
-      {
-        "fromSlug": "ontology/capabilities/vault-ontology",
-        "context": "frontmatter · **[domains/graph-modeling]**",
-        "linkText": "domains/graph-modeling"
-      },
-      {
-        "fromSlug": "ontology/elements/category",
-        "context": "frontmatter · **[domains/graph-modeling]**",
-        "linkText": "domains/graph-modeling"
-      },
-      {
-        "fromSlug": "ontology/elements/knowledge-graph",
-        "context": "frontmatter · **[domains/graph-modeling]**",
-        "linkText": "domains/graph-modeling"
-      },
-      {
-        "fromSlug": "ontology/elements/ontology-class",
-        "context": "frontmatter · **[domains/graph-modeling]**",
-        "linkText": "domains/graph-modeling"
-      },
-      {
-        "fromSlug": "ontology/elements/ontology-edit-redirect",
-        "context": "frontmatter · **[domains/graph-modeling]**",
-        "linkText": "domains/graph-modeling"
-      },
-      {
-        "fromSlug": "ontology/elements/ontology-insights",
-        "context": "frontmatter · **[domains/graph-modeling]**",
-        "linkText": "domains/graph-modeling"
-      },
-      {
-        "fromSlug": "ontology/elements/ontology-redirect",
-        "context": "frontmatter · **[domains/graph-modeling]**",
-        "linkText": "domains/graph-modeling"
-      },
-      {
-        "fromSlug": "ontology/elements/ontology-studio",
-        "context": "frontmatter · **[domains/graph-modeling]**",
-        "linkText": "domains/graph-modeling"
-      },
-      {
-        "fromSlug": "ontology/elements/status",
-        "context": "frontmatter · **[domains/graph-modeling]**",
-        "linkText": "domains/graph-modeling"
-      },
-      {
-        "fromSlug": "ontology/ontology-atlas",
-        "context": "frontmatter · **[domains/graph-modeling]**",
-        "linkText": "domains/graph-modeling"
-      }
-    ],
     "ontology/elements/project": [
       {
         "fromSlug": "ontology/capabilities/project-data-source",
@@ -3845,6 +3831,114 @@
         "fromSlug": "ontology/domains/project-portfolio",
         "context": "frontmatter · **[elements/project-editor]**",
         "linkText": "elements/project-editor"
+      }
+    ],
+    "ontology/elements/acp-ontology-write-review": [
+      {
+        "fromSlug": "ontology/capabilities/reviewed-ontology-writing",
+        "context": "frontmatter · **[elements/acp-ontology-write-review]**",
+        "linkText": "elements/acp-ontology-write-review"
+      },
+      {
+        "fromSlug": "ontology/domains/graph-modeling",
+        "context": "frontmatter · **[elements/acp-ontology-write-review]**",
+        "linkText": "elements/acp-ontology-write-review"
+      }
+    ],
+    "ontology/elements/ontology-change-review": [
+      {
+        "fromSlug": "ontology/capabilities/reviewed-ontology-writing",
+        "context": "frontmatter · **[elements/ontology-change-review]**",
+        "linkText": "elements/ontology-change-review"
+      },
+      {
+        "fromSlug": "ontology/domains/graph-modeling",
+        "context": "frontmatter · **[elements/ontology-change-review]**",
+        "linkText": "elements/ontology-change-review"
+      }
+    ],
+    "ontology/elements/ontology-meaning-editor": [
+      {
+        "fromSlug": "ontology/capabilities/reviewed-ontology-writing",
+        "context": "frontmatter · **[elements/ontology-meaning-editor]**",
+        "linkText": "elements/ontology-meaning-editor"
+      },
+      {
+        "fromSlug": "ontology/domains/graph-modeling",
+        "context": "frontmatter · **[elements/ontology-meaning-editor]**",
+        "linkText": "elements/ontology-meaning-editor"
+      }
+    ],
+    "ontology/domains/graph-modeling": [
+      {
+        "fromSlug": "ontology/capabilities/reviewed-ontology-writing",
+        "context": "frontmatter · **[domains/graph-modeling]**",
+        "linkText": "domains/graph-modeling"
+      },
+      {
+        "fromSlug": "ontology/capabilities/taxonomy",
+        "context": "frontmatter · **[domains/graph-modeling]**",
+        "linkText": "domains/graph-modeling"
+      },
+      {
+        "fromSlug": "ontology/capabilities/vault-ontology",
+        "context": "frontmatter · **[domains/graph-modeling]**",
+        "linkText": "domains/graph-modeling"
+      },
+      {
+        "fromSlug": "ontology/elements/acp-ontology-write-review",
+        "context": "frontmatter · **[domains/graph-modeling]**",
+        "linkText": "domains/graph-modeling"
+      },
+      {
+        "fromSlug": "ontology/elements/category",
+        "context": "frontmatter · **[domains/graph-modeling]**",
+        "linkText": "domains/graph-modeling"
+      },
+      {
+        "fromSlug": "ontology/elements/knowledge-graph",
+        "context": "frontmatter · **[domains/graph-modeling]**",
+        "linkText": "domains/graph-modeling"
+      },
+      {
+        "fromSlug": "ontology/elements/ontology-change-review",
+        "context": "frontmatter · **[domains/graph-modeling]**",
+        "linkText": "domains/graph-modeling"
+      },
+      {
+        "fromSlug": "ontology/elements/ontology-class",
+        "context": "frontmatter · **[domains/graph-modeling]**",
+        "linkText": "domains/graph-modeling"
+      },
+      {
+        "fromSlug": "ontology/elements/ontology-edit-redirect",
+        "context": "frontmatter · **[domains/graph-modeling]**",
+        "linkText": "domains/graph-modeling"
+      },
+      {
+        "fromSlug": "ontology/elements/ontology-insights",
+        "context": "frontmatter · **[domains/graph-modeling]**",
+        "linkText": "domains/graph-modeling"
+      },
+      {
+        "fromSlug": "ontology/elements/ontology-meaning-editor",
+        "context": "frontmatter · **[domains/graph-modeling]**",
+        "linkText": "domains/graph-modeling"
+      },
+      {
+        "fromSlug": "ontology/elements/ontology-redirect",
+        "context": "frontmatter · **[domains/graph-modeling]**",
+        "linkText": "domains/graph-modeling"
+      },
+      {
+        "fromSlug": "ontology/elements/status",
+        "context": "frontmatter · **[domains/graph-modeling]**",
+        "linkText": "domains/graph-modeling"
+      },
+      {
+        "fromSlug": "ontology/ontology-atlas",
+        "context": "frontmatter · **[domains/graph-modeling]**",
+        "linkText": "domains/graph-modeling"
       }
     ],
     "ontology/elements/category": [
@@ -4081,13 +4175,6 @@
         "fromSlug": "ontology/domains/design-system",
         "context": "frontmatter · **[capabilities/design-token-ramps]**",
         "linkText": "capabilities/design-token-ramps"
-      }
-    ],
-    "ontology/capabilities/ontology-blocks": [
-      {
-        "fromSlug": "ontology/domains/graph-modeling",
-        "context": "frontmatter · **[capabilities/ontology-blocks]**",
-        "linkText": "capabilities/ontology-blocks"
       }
     ],
     "ontology/capabilities/taxonomy": [
@@ -4727,7 +4814,7 @@
             "path": "guide/studio",
             "type": "doc",
             "slug": "guide/studio",
-            "title": "스튜디오에서 노드 완성하기"
+            "title": "지도에서 개념과 관계 고치기"
           },
           {
             "name": "trust",
@@ -4917,13 +5004,6 @@
                 "title": "MCP Server"
               },
               {
-                "name": "ontology-blocks",
-                "path": "ontology/capabilities/ontology-blocks",
-                "type": "doc",
-                "slug": "ontology/capabilities/ontology-blocks",
-                "title": "Studio Relation Blocks"
-              },
-              {
                 "name": "project-data-source",
                 "path": "ontology/capabilities/project-data-source",
                 "type": "doc",
@@ -4957,6 +5037,13 @@
                 "type": "doc",
                 "slug": "ontology/capabilities/project-source-evidence",
                 "title": "Project Source Evidence Receipt"
+              },
+              {
+                "name": "reviewed-ontology-writing",
+                "path": "ontology/capabilities/reviewed-ontology-writing",
+                "type": "doc",
+                "slug": "ontology/capabilities/reviewed-ontology-writing",
+                "title": "Reviewed Ontology Writing"
               },
               {
                 "name": "taxonomy",
@@ -5056,6 +5143,13 @@
             "path": "ontology/elements",
             "type": "dir",
             "children": [
+              {
+                "name": "acp-ontology-write-review",
+                "path": "ontology/elements/acp-ontology-write-review",
+                "type": "doc",
+                "slug": "ontology/elements/acp-ontology-write-review",
+                "title": "ACP Ontology Write Review"
+              },
               {
                 "name": "agents-destination",
                 "path": "ontology/elements/agents-destination",
@@ -5218,6 +5312,13 @@
                 "title": "Native Vault Filesystem Bridge"
               },
               {
+                "name": "ontology-change-review",
+                "path": "ontology/elements/ontology-change-review",
+                "type": "doc",
+                "slug": "ontology/elements/ontology-change-review",
+                "title": "Ontology Change Review"
+              },
+              {
                 "name": "ontology-class",
                 "path": "ontology/elements/ontology-class",
                 "type": "doc",
@@ -5229,7 +5330,7 @@
                 "path": "ontology/elements/ontology-edit-redirect",
                 "type": "doc",
                 "slug": "ontology/elements/ontology-edit-redirect",
-                "title": "Ontology Edit Redirect"
+                "title": "Ontology Workbench Compatibility Redirect"
               },
               {
                 "name": "ontology-insights",
@@ -5239,18 +5340,18 @@
                 "title": "Ontology Insights"
               },
               {
+                "name": "ontology-meaning-editor",
+                "path": "ontology/elements/ontology-meaning-editor",
+                "type": "doc",
+                "slug": "ontology/elements/ontology-meaning-editor",
+                "title": "Ontology Meaning Editor"
+              },
+              {
                 "name": "ontology-redirect",
                 "path": "ontology/elements/ontology-redirect",
                 "type": "doc",
                 "slug": "ontology/elements/ontology-redirect",
                 "title": "Ontology Redirect"
-              },
-              {
-                "name": "ontology-studio",
-                "path": "ontology/elements/ontology-studio",
-                "type": "doc",
-                "slug": "ontology/elements/ontology-studio",
-                "title": "Ontology Studio"
               },
               {
                 "name": "private-vault-sidecar-boundary",

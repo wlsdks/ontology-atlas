@@ -18,7 +18,7 @@ type LocalVaultValue = ReturnType<typeof useLocalVaultInternal>;
  * 보이지만 100+ 파일 vault 에선 cold-load latency 가 비례 증가.
  *
  * Provider 가 layout 에서 1 회 mount → 단일 state. 현재 AppShell,
- * AppNavRail, OntologyStudioPage, DocsVaultPage 등 모든 consumer는
+ * AppNavRail, HomePage, DocsVaultPage 등 모든 consumer는
  * 시그니처 동일한 useLocalVault() 로 context 만 읽는다.
  */
 const LocalVaultContext = createContext<LocalVaultValue | null>(null);

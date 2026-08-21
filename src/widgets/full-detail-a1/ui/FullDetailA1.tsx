@@ -8,7 +8,7 @@ import { Link } from "@/i18n/navigation";
 import ReactMarkdown from "react-markdown";
 import {
   buildOntologyNodeHref,
-  buildOntologyStudioNodeHrefFromGraphId,
+  buildTopologyMeaningEditorNodeHref,
 } from "@/entities/knowledge-graph";
 import { useOntologyKindLabel } from "@/entities/ontology-class";
 import { useCopyFeedback } from "@/shared/lib/use-copy-feedback";
@@ -552,7 +552,7 @@ export function FullDetailA1({
           </Link>
         ) : null}
         <Link
-          href={buildOntologyStudioNodeHrefFromGraphId(node.id)}
+          href={buildTopologyMeaningEditorNodeHref(node.id)}
           data-testid="full-detail-a1-open-studio"
           className={controlClass({
             shape: "link",

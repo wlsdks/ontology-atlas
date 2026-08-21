@@ -78,7 +78,6 @@ const EXEMPT_DEBT: ReadonlyArray<readonly [string, number]> = [];
 const FORMERLY_EXEMPT = [
   "src/entities/project/ui/ProjectCard.tsx",
   "src/features/vault-ontology/ui/LiveActivityIndicator.tsx",
-  "src/views/ontology-studio/ui/StudioCompass.tsx",
   "src/views/root-entry/ui/RootEntryPage.tsx",
 ] as const;
 

@@ -152,7 +152,7 @@ export function TopologyEmptyState({
             <Network size={ICON_SIZE.md} aria-hidden="true" />
             {t('ctaTree')}
           </Link>
-          <Link href="/ontology/studio/" className={SECONDARY}>
+          <Link href="/topology/?workbench=create" className={SECONDARY}>
             <GitBranch size={ICON_SIZE.md} aria-hidden="true" />
             {t(isNoProjects ? 'ctaBuilder' : 'ctaBuilderNoDeps')}
           </Link>

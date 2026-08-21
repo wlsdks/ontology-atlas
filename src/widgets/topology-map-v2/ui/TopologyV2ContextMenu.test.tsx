@@ -36,7 +36,7 @@ function renderMenu(overrides: {
       position={{ x: 100, y: 200 }}
       documentHref={overrides.documentHref !== undefined ? overrides.documentHref : "/docs/domains/views"}
       mentionDocumentHref={overrides.mentionDocumentHref ?? null}
-      studioEditHref="/ontology/studio/?node=domains%2Fviews"
+      meaningEditHref="/ontology/studio/?node=domains%2Fviews"
       labels={labels}
       onCopyHandoff={overrides.onCopyHandoff ?? (() => {})}
       onSetPathSource={overrides.onSetPathSource ?? (() => {})}

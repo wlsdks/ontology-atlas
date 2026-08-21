@@ -24,6 +24,7 @@
  */
 
 import { partitionModes } from './mode-safety';
+import { atlasToolMode } from './atlas-tool-policy';
 
 /** 줄을 주고받는 통로. 프로세스든 가짜든 이것만 만족하면 된다. */
 export interface AcpTransport {
@@ -179,6 +180,10 @@ export interface AcpPermissionRequest {
   toolKind: string | null;
   /** 있으면 절대 경로. 정책 판정의 근거이자 화면이 보여 줄 대상. */
   filePath: string | null;
+  /** 도구가 실제로 요청한 인자. 의미 쓰기는 이 값으로 typed change를 만든다. */
+  rawInput: Record<string, unknown>;
+  /** 일반 파일 권한인지, 사람의 의미 결정권이 필요한 ontology write인지. */
+  reviewKind: 'permission' | 'ontology-write';
   /** 고를 수 있는 것들 — `kind` 로만 다룬다. */
   options: Array<{ optionId: string; kind: string; name: string | null }>;
 }
@@ -187,9 +192,9 @@ export interface AcpClientHandlers {
   /** 스트리밍 갱신 — 텍스트 청크·툴콜·계획 등. */
   onUpdate?: (update: Record<string, unknown>) => void;
   /**
-   * 우리가 세션에 꽂아 준 볼트 MCP 서버의 이름. 그 서버의 도구는 볼트 밖을
-   * 건드릴 수 없으므로 자동 허용한다(`isVaultMcpTool`). 안 넘기면 그 자동
-   * 허용이 꺼진다 — 없는 것을 있는 척하지 않는다.
+   * 우리가 세션에 꽂아 준 볼트 MCP 서버의 이름. 그 서버의 read 도구만 자동
+   * 허용하고 write 도구는 사람의 변경안 확인을 거친다. 안 넘기면 이 분류를
+   * 끈다 — 없는 것을 있는 척하지 않는다.
    */
   vaultMcpServerName?: string;
   /** 이 경로가 볼트 안인가. Rust 판정으로 간다. */
@@ -335,20 +340,15 @@ export function createAcpClient(
     const rejectOnce = request.options.find((o) => o.kind === 'reject_once');
 
     /*
-     * **우리가 꽂아 준 볼트 도구는 대신 허용한다** — 실측에서 이 갈래가 없어
-     * 에이전트가 지도에 아무것도 못 썼다(`isVaultMcpTool` 주석).
-     *
-     * ⚠️ **단, 경로가 딸려 오면 그 경로도 본다** (2026-08-16 검수에서 적발).
-     * 종전에는 이름만 보고 곧바로 허용하고 경로 검사를 **건너뛰었다**. 근거는
-     * 「그 서버는 볼트 경로로 띄웠으니 밖을 건드릴 수 없다」였는데, 그게
-     * 사실이 아니었다: `absorb_document` 는 볼트가 아니라 **저장소 루트**를
-     * 기준으로 원본 파일을 제자리에서 고쳐 쓰고, 옵션 하나로 저장소 밖까지
-     * 나갈 수 있다. 이름으로만 판정하면 그 호출이 카드 없이 통과한다.
-     *
-     * 그래서 순서를 바꾼다: **경로 판정이 먼저**고, 우리 도구라는 사실은
-     * 「경로가 없을 때」만 대신 허용하는 근거가 된다.
+     * 우리가 꽂은 Atlas read는 대화를 막지 않는다. write는 같은 서버·같은
+     * 볼트여도 사람이 typed change를 본 뒤에만 이어간다. 경로 안전과 의미
+     * 승인은 다른 질문이다: 앞엣것이 참이라고 뒤엣것까지 대신 답할 수 없다.
      */
-    const ours = isVaultMcpTool(request.toolName, handlers.vaultMcpServerName ?? '');
+    const atlasMode = atlasToolMode(
+      request.toolName,
+      handlers.vaultMcpServerName ?? '',
+    );
+    const ontologyWrite = atlasMode === 'write';
     /*
      * ⚠️ **판정이 실패해도 답은 한다** (2026-08-16 검수에서 적발).
      * 종전에는 `await handlers.verdict(...)` 가 감싸이지 않아서, 그 IPC 가
@@ -363,27 +363,27 @@ export function createAcpClient(
     } catch (error) {
       handlers.onProtocolNotice?.(`verdict-failed: ${String(error)}`);
     }
-    /*
-     * 우리 도구인데 **경로가 안 딸려 온다** → 대신 허용한다. 실측 그대로의
-     * 모양이고(`rawInput` 에 경로가 없다), 여기서 매번 물으면 지도를 채우는
-     * 일이 성립하지 않는다.
-     *
-     * 우리 도구인데 **경로가 딸려 온다** → 그 경로가 볼트 안일 때만 허용한다.
-     * 밖이면 아래로 흘러 사용자에게 묻는다.
-     */
-    if (ours && allowOnce && (request.filePath === null || verdict === 'allow-inside-vault')) {
+    /* read는 경로가 없거나 볼트 안일 때만 자동 허용한다. 밖을 읽는 read도
+       일반 권한 카드로 내려간다. */
+    if (
+      atlasMode === 'read' &&
+      allowOnce &&
+      (request.filePath === null || verdict === 'allow-inside-vault')
+    ) {
       write({ jsonrpc: '2.0', id, result: selected(allowOnce.optionId) });
       return;
     }
-    if (verdict === 'allow-inside-vault' && allowOnce) {
+    if (!ontologyWrite && verdict === 'allow-inside-vault' && allowOnce) {
       write({ jsonrpc: '2.0', id, result: selected(allowOnce.optionId) });
       return;
     }
 
-    // 밖이거나 경로를 모르면 사용자에게 묻는다.
+    // Atlas write, 볼트 밖 접근, 또는 경로를 모르는 일반 도구는 사람에게 묻는다.
     let chosen: string | null = null;
     try {
-      chosen = await handlers.askUser(request);
+      chosen = await handlers.askUser(
+        ontologyWrite ? { ...request, reviewKind: 'ontology-write' } : request,
+      );
     } catch {
       chosen = null; // 물어보다 실패하면 거절이다.
     }
@@ -688,6 +688,8 @@ export function toPermissionRequest(params: Record<string, unknown>): AcpPermiss
     // 제목이 아니라 이 값으로 판정한다 — 제목은 볼트 안이면 상대 경로,
     // 밖이면 절대 경로라서 문구가 바뀌는 날 정책이 조용히 뒤집힌다.
     filePath: readPathArg(rawInput),
+    rawInput,
+    reviewKind: 'permission',
     options: rawOptions.flatMap((entry) => {
       const option = asRecord(entry);
       const optionId = typeof option.optionId === 'string' ? option.optionId : null;

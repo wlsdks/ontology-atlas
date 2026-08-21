@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { fireEvent, render, screen } from "@testing-library/react";
 import type React from "react";
 import { describe, expect, it, vi } from "vitest";
 import { TopologyV2EdgePanel } from "./TopologyV2EdgePanel";
@@ -21,7 +21,7 @@ const labels = {
   openDoc: "Open doc",
 };
 
-function renderPanel(studioEditHref: string | null = "/ontology/studio") {
+function renderPanel(meaningEditHref: string | null = "/ontology/studio") {
   return render(
     <TopologyV2EdgePanel
       sentence="A depends on B"
@@ -33,7 +33,7 @@ function renderPanel(studioEditHref: string | null = "/ontology/studio") {
       why={null}
       declaredBy={null}
       updatedAtLabel={null}
-      studioEditHref={studioEditHref}
+      meaningEditHref={meaningEditHref}
       labels={labels}
       onSelectNode={() => {}}
       onClose={() => {}}
@@ -80,6 +80,32 @@ describe("TopologyV2EdgePanel — 공방 편집 딥링크 (Slice 6)", () => {
       "href",
       "/ontology/studio/?node=capability%3Aa&edit=dependsOn:capability%3Ab",
     );
+  });
+
+  it("uses the contextual editor callback instead of leaving the map", () => {
+    const onEditRelation = vi.fn();
+    render(
+      <TopologyV2EdgePanel
+        sentence="A depends on B"
+        typeLabel="depends"
+        fromId="a"
+        toId="b"
+        fromTitle="A"
+        toTitle="B"
+        why={null}
+        declaredBy={null}
+        updatedAtLabel={null}
+        meaningEditHref="/ontology/studio"
+        labels={labels}
+        onSelectNode={() => {}}
+        onEditRelation={onEditRelation}
+        onClose={() => {}}
+      />,
+    );
+    const action = screen.getByTestId("topology-v2-edge-edit");
+    expect(action.tagName).toBe("BUTTON");
+    fireEvent.click(action);
+    expect(onEditRelation).toHaveBeenCalledTimes(1);
   });
 
   it("omits the action for a non-editable edge (null href) — no dead affordance", () => {

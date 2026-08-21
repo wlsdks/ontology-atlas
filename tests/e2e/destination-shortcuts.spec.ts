@@ -2,7 +2,7 @@ import { expect, test } from "@playwright/test";
 import { seedFirstRunSeen } from "./first-run-seed";
 
 /**
- * 목적지 이동 단축키 — **키보드만으로 일곱 목적지를 다 간다.**
+ * 목적지 이동 단축키 — **키보드만으로 여섯 목적지를 다 간다.**
  *
  * 이 spec 이 곧 그 기능의 값어치다. 소유자가 요구한 것이 *"단축키만으로도 다
  * 이동하면서 테스트 가능"* 이었고, 그 문장을 증명하는 자리가 여기다. 통과하면
@@ -16,7 +16,6 @@ import { seedFirstRunSeen } from "./first-run-seed";
 const DESTINATIONS = [
   { key: "m", path: "/topology" },
   { key: "d", path: "/docs" },
-  { key: "s", path: "/ontology/studio" },
   { key: "i", path: "/ontology/insights" },
   { key: "p", path: "/projects" },
   { key: "a", path: "/agents" },
@@ -28,18 +27,7 @@ async function go(page: import("@playwright/test").Page, key: string) {
   await page.keyboard.press(key);
 }
 
-/**
- * ⚠️ **공방은 도착하면 막는 선택 창을 띄운다** (2026-08-09, 이 spec 이 찾아냈다).
- *
- * `aria-label="공방을 어떻게 시작할지 고르기"` 가 `aria-modal="true"` 로 떠서,
- * 이동 단축키가 **규칙대로** 거부된다(막는 표면이 있으면 뒤 화면을 바꾸지 않는다).
- * 즉 키보드만 쓰는 사람은 공방에 도착한 순간 **다른 곳으로 못 나간다** — 먼저
- * Esc 를 눌러야 한다.
- *
- * 훅을 고쳐서 우회하지 않는다. 모달이 안 막으면 그건 모달이 아니고, 그 금지는
- * 헌장에 있다. **이건 공방 첫 화면의 설계 질문**이라 소유자 몫으로 넘긴다 —
- * 여기서는 사실을 그대로 적고, 순회가 실제 사람이 하는 것과 같은 순서를 밟게 한다.
- */
+/** 도착 직후 나타난 막는 표면은 실제 사용자처럼 Escape로 닫고 계속 순회한다. */
 async function dismissBlockingSurface(page: import("@playwright/test").Page) {
   const visibleModal = page.locator('[aria-modal="true"]:visible').first();
   if (await visibleModal.isVisible().catch(() => false)) {
@@ -57,7 +45,7 @@ test.describe("목적지 이동 단축키", () => {
     await seedFirstRunSeen(page);
   });
 
-  test("G + 글자로 일곱 목적지를 전부 간다", async ({ page }) => {
+  test("G + 글자로 여섯 목적지를 전부 간다", async ({ page }) => {
     await page.goto("/ko/topology/?guides=off");
     await page.waitForLoadState("domcontentloaded");
 
@@ -65,7 +53,7 @@ test.describe("목적지 이동 단축키", () => {
       const expected = new RegExp(`/ko${path.replace(/\//g, "\\/")}/?($|\\?)`);
       /*
        * **한 번 더 시도한다.** 막는 표면은 도착 직후 마운트되면서 뜨는 것이 있어
-       * (공방의 시작 선택), 닫기를 «누르기 전에» 확인해도 그 사이에 뜰 수 있다.
+       * 닫기를 «누르기 전에» 확인해도 그 사이에 뜰 수 있다.
        * 그러면 첫 시도가 규칙대로 거절되고 순회가 간헐적으로 깨진다 — 실제로 그
        * 흔들림을 봤다. 재시도는 결함을 감추는 것이 아니라 **경합을 없애는 것**이고,
        * 두 번째 시도도 안 가면 그때는 진짜로 실패한다.
@@ -117,7 +105,7 @@ test.describe("목적지 이동 단축키", () => {
     expect(page.url(), "주소가 안 바뀌었다").not.toBe(before);
   });
 
-  test("G A 는 살아 있고, 은퇴한 G K 는 어디에도 가지 않는다", async ({ page }) => {
+  test("G A 는 살아 있고, 은퇴한 G K · G S 는 어디에도 가지 않는다", async ({ page }) => {
     await page.goto("/ko/topology/?guides=off");
     await page.waitForLoadState("domcontentloaded");
     await dismissBlockingSurface(page);
@@ -129,9 +117,11 @@ test.describe("목적지 이동 단축키", () => {
     );
 
     const before = page.url();
-    await go(page, "k");
-    await page.waitForTimeout(600);
-    expect(page.url(), "은퇴한 G K 가 다른 화면으로 이동했다").toBe(before);
+    for (const retired of ["k", "s"]) {
+      await go(page, retired);
+      await page.waitForTimeout(600);
+      expect(page.url(), `은퇴한 G ${retired.toUpperCase()} 가 다른 화면으로 이동했다`).toBe(before);
+    }
   });
 
   /*
@@ -195,7 +185,7 @@ test.describe("목적지 이동 단축키", () => {
     expect(page.url(), "시간 제한이 안 걸렸다").toBe(before);
   });
 
-  test("단축키 시트가 일곱 목적지를 전부 안내한다", async ({ page }) => {
+  test("단축키 시트가 여섯 목적지를 전부 안내한다", async ({ page }) => {
     await page.goto("/ko/topology/?guides=off");
     await dismissBlockingSurface(page);
     // `?` 는 지도(HomePage)가 `useTypingShortcuts` 로 잇는다. 입력칸에 초점이

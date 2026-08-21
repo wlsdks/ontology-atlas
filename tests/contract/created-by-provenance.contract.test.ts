@@ -20,7 +20,7 @@ import {
   VAULT_KIND_SCHEMA as SCHEMA_CLI,
 } from "../../cli/src/lib/schema.mjs";
 import { parseFilter } from "../../mcp/src/query.mjs";
-import { buildCreateNodeDoc } from "@/views/ontology-studio/lib/build-create-node";
+import { buildNewNodeDoc } from "@/entities/docs-vault";
 import { buildProposal } from "@/features/vault-agent/model/proposal-builder";
 import { VAULT_CREATED_BY_HUMAN } from "@/entities/docs-vault";
 
@@ -140,25 +140,22 @@ describe("질의 필터 — 「사람이 만든 것만 모아보기」", () => {
   });
 });
 
-describe("웹 공방 컴포저 — 사람이 만든 노드", () => {
+describe("지도 개념 생성 — 사람이 만든 노드", () => {
   it("직접 저장 문서에 created_by: human 이 실린다", () => {
-    const { markdown } = buildCreateNodeDoc({
+    const { markdown } = buildNewNodeDoc({
       kind: "capability",
       title: "토큰 발급",
-      domainValue: "auth",
-      definition: "",
-      relations: [],
+      domain: "auth",
+      createdBy: "human",
     });
     expect(markdown).toContain("created_by: human");
   });
 
   it("사람 스탬프는 frontmatter 안에만 있고 본문을 오염시키지 않는다", () => {
-    const { markdown } = buildCreateNodeDoc({
+    const { markdown } = buildNewNodeDoc({
       kind: "domain",
       title: "Auth",
-      domainValue: null,
-      definition: "인증 도메인",
-      relations: [],
+      createdBy: "human",
     });
     const [, frontmatter, body] = markdown.split("---");
     expect(frontmatter).toContain("created_by: human");

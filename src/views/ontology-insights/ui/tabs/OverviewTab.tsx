@@ -158,7 +158,7 @@ export function OverviewTab({
                 {labels.noDomainsBody}
               </p>
               <Link
-                href="/ontology/studio/?mode=create"
+                href="/topology/?workbench=create"
                 data-testid="domain-capacity-empty-action"
                 className={controlClass({ hoverInk: 'strong', shape: "link", tone: "accent", className: "mt-3 rounded-chip hover:underline" })}
               >

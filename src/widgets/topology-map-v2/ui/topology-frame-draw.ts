@@ -77,6 +77,11 @@ import type { ClusterChip } from "../model/density-gate";
 import { drawDiffractionSpike, drawRealmCosmos, drawStarDust, type DustPoint } from "../render/starfield";
 import { isEdgeCulled, isNodeCulled, isPassthroughEdge } from "../render/viewport-cull";
 import { draw as tracesDraw } from "../render/traces";
+import {
+  drawPreviewEdge,
+  isPreviewEndpoint,
+  isPreviewEndpointHidden,
+} from "../render/preview-edge";
 import { drawPulses, edgePairMeta, selectAmbientDependsComets, selectEgoContainsComets, type Pulse } from "../render/edge-fireflies";
 import type { TopologyV2Tokens } from "../tokens/read-topology-v2-tokens";
 import { worldToScreen } from "./topology-camera-math";
@@ -425,6 +430,14 @@ export interface FrameDrawParams {
   hoveredEdge: { sourceId: string; targetId: string; relationType: string } | null;
   /** 엣지 선택 = 페어 포커스 — 양끝만 밝히고 나머지 dim, 선택 엣지는 pale 인디고. */
   selectedEdge: EdgePairFocus | null;
+  previewEdge: {
+    sourceId: string;
+    targetId: string;
+    relationType: string;
+    phase: "draft" | "committing";
+    alpha: number;
+    commitProgress: number;
+  } | null;
   emphasisById: ReadonlyMap<string, number>;
   /** C1 A2 — ego tier-reveal ramp (`topology-physics-step.ts` steps it), consumed by `effectiveNodeAlpha`. */
   egoRevealById: ReadonlyMap<string, number>;
@@ -709,6 +722,7 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
     emphasizedNeighborId,
     hoveredEdge,
     selectedEdge,
+    previewEdge,
     emphasisById,
     egoRevealById,
     focusRampById,
@@ -816,6 +830,7 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
       domeNodeFrameReused.push(domeFrame.get(world.nodes[i].id) ?? ZERO_DOME_FRAME);
     }
   }
+
   const nodeFrameAt = (index: number): DomeNodeFrame => (domeOn ? domeNodeFrameReused[index] : ZERO_DOME_FRAME);
 
   // Where world (0,0) currently lands on screen — the blueprint grid rides
@@ -1038,13 +1053,14 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
   const effectiveAlphaById = effectiveAlphaByIdReused;
   for (let nodeIndex = 0; nodeIndex < world.nodes.length; nodeIndex += 1) {
     const node = world.nodes[nodeIndex];
+    const previewEndpoint = isPreviewEndpoint(previewEdge, node.id);
     // **접힌 노드는 알파를 가질 이유가 없다** — 칩 하나로 대체돼 이 프레임에
     // 그려지지 않는다(실측 synth=3000: 3000 중 2820개). 소비처 넷이 전부 이
     // 조회 «앞에서» 접힘을 이미 거른다: 엣지 루프 둘은 양 끝이 접히면 continue,
     // 노드/라벨 루프는 첫 줄이 같은 가드, 히트 판정(`isNodeHittable`)은 알파
     // 맵을 읽기 전에 접힘으로 false 를 낸다. 칩 부모는 정의상 접히지 않으며
     // 그마저 `?? 1` 기본값을 갖는다.
-    if (clusteredIds.has(node.id)) continue;
+    if (isPreviewEndpointHidden(clusteredIds.has(node.id), previewEdge, node.id)) continue;
     const tierKind = realmTierKinds?.get(node.id) ?? node.kind;
     const tierAlpha = nodeTierAlpha(tierKind, node.isHub, zoomRatio, tierReveal);
     const isPairMember =
@@ -1059,6 +1075,7 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
     const isEgoMember =
       isPairMember ||
       trailKept ||
+      previewEndpoint ||
       (focusedNodeId !== null && (node.id === focusedNodeId || neighborsOfFocused.has(node.id)));
     // 스포트라이트 티어 관통 공개 (소유자: "눈으로 보는 노드를 보고 바로
     // 파악") — 변경 노드가 줌 티어 아래(element 등)에 숨어 있으면 렌즈가
@@ -1094,6 +1111,7 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
         spotlightReveal,
         chipExpandReveal,
         bornReveal,
+        previewEndpoint ? previewEdge?.alpha ?? 1 : 0,
       ),
     );
     // S7 — 영역 퇴장 중 귀환하는 밖 노드는 이 램프로 강등(모션 감사 처방 B). 이
@@ -1474,6 +1492,29 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
     }
   }
 
+  // Draft relation uses the live endpoint geometry but never enters `world.edges`.
+  // It therefore cannot pull nodes, heat physics, or alter graph statistics.
+  if (previewEdge) {
+    const source = world.nodeById.get(previewEdge.sourceId);
+    const target = world.nodeById.get(previewEdge.targetId);
+    if (source && target) {
+      const sourceFrame = domeFrameFor(source.id);
+      const targetFrame = domeFrameFor(target.id);
+      drawPreviewEdge(ctx, {
+        source: project(source.x + sourceFrame.dx, source.y + sourceFrame.dy),
+        target: project(target.x + targetFrame.dx, target.y + targetFrame.dy),
+        sourceRadius:
+          radiusForKind(source.kind, tokens) * source.magnitudeScale * sourceFrame.s * camera.scale.value,
+        targetRadius:
+          radiusForKind(target.kind, tokens) * target.magnitudeScale * targetFrame.s * camera.scale.value,
+        alpha: previewEdge.alpha,
+        solid: previewEdge.phase === "committing",
+        solidProgress: previewEdge.commitProgress,
+        color: tokens.selectionRingIndigo,
+      });
+    }
+  }
+
   // R6 호버 펄스 — 노드 호버가 발사한 일회성 신호(420ms). 엣지 커브 위, 노드
   // 아래. reduced-motion 이면 애초에 발사가 없어 pulses 가 비므로 자연히 미표시.
   // 곡선은 라이브 엣지 좌표를 스크린으로 투영(드래그/살아있는 그래프 추종).
@@ -1549,15 +1590,25 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
 
   for (let drawPos = 0; drawPos < nodeDrawOrder.length; drawPos += 1) {
     const node = nodeDrawOrder[drawPos];
+    const previewEndpoint = isPreviewEndpoint(previewEdge, node.id);
+    const previewTarget = node.id === previewEdge?.targetId;
     // 밀도 게이트: 접힌 부모의 서브트리 노드는 칩으로 대체되어 그리지 않는다.
-    if (clusteredIds.has(node.id)) continue;
+    if (isPreviewEndpointHidden(clusteredIds.has(node.id), previewEdge, node.id)) continue;
     const tierAlpha = effectiveAlphaById.get(node.id) ?? 1;
     if (tierAlpha <= 0.02) continue;
-    const egoState = egoAllNormal ? "normal" : lensNodeEgoState(node.id, focusedNodeId, neighborsOfFocused, selectedEdge);
+    const egoState = previewTarget
+      ? "neighbor"
+      : egoAllNormal
+        ? "normal"
+        : lensNodeEgoState(node.id, focusedNodeId, neighborsOfFocused, selectedEdge);
     // Color signature uses the RETAINED focus classification (persists through a
     // deselect fade) + this node's focus ramp — everything else keeps the live
     // `egoState`.
-    const colorEgoState = colorAllNormal ? "normal" : lensNodeEgoState(node.id, colorFocusedNodeId, colorNeighbors, colorSelectedEdge);
+    const colorEgoState = previewTarget
+      ? "neighbor"
+      : colorAllNormal
+        ? "normal"
+        : lensNodeEgoState(node.id, colorFocusedNodeId, colorNeighbors, colorSelectedEdge);
     // 렌즈는 자기 easing 을 만들지 않는다(신규 이징 0) — 스포트라이트가 이미 쓰는
     // 지수 램프(`focusDimTau`)를 그대로 색 램프로 꽂는다. 그래서 팝오버를 열면
     // 배경이 램프로 내려앉고, 닫으면 램프로 되돌아온다(하드컷 없음). 포커스가
@@ -1665,7 +1716,7 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
     // ego 멤버(center/neighbor)는 100% 복귀 — 상호작용 대상은 항상 또렷하게.
     const isHoveredNode = node.id === hoveredNodeId;
     let realmClarityAlpha = 1;
-    if (realmDepthById !== null && !isHoveredNode && !isTrailKept(node.id) && egoState === "normal") {
+    if (realmDepthById !== null && !isHoveredNode && !previewEndpoint && !isTrailKept(node.id) && egoState === "normal") {
       const depth = realmDepthOf(node.id);
       if (depth !== undefined) {
         realmClarityAlpha = realmDepthClarityAlpha(depth);
@@ -1685,7 +1736,7 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
     let domeDetail = 1;
     if (domeOn) {
       effRadius *= nodeDome.s;
-      if (!isHoveredNode && !isTrailKept(node.id) && egoState === "normal") {
+      if (!isHoveredNode && !previewEndpoint && !isTrailKept(node.id) && egoState === "normal") {
         realmClarityAlpha *= 1 + (domeFogAlpha(nodeDome.u) - 1) * nodeDome.a;
         domeDetail = 1 + (domeDetailFactor(nodeDome.u) - 1) * nodeDome.a;
       }
@@ -1723,13 +1774,13 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
 
     // S8 결함 1 — 확장 중 무관 배경 노드 미세 dim(디스크 멤버·스파인·ego 제외).
     const backgroundDim =
-      anyExpanded && egoState === "normal" && !isTrailKept(node.id) && !expandedDiscIds.has(node.id) && !isSpineNode(node)
+      anyExpanded && !previewEndpoint && egoState === "normal" && !isTrailKept(node.id) && !expandedDiscIds.has(node.id) && !isSpineNode(node)
         ? BACKGROUND_DIM_WHEN_EXPANDED
         : 1;
 
     // 스포트라이트 — 창 밖 노드 침강(호버는 면제: 상호작용 대상은 또렷).
     const nodeSpotlightSink = spotlightSink(
-      (spotlightIds !== null && spotlightIds.has(node.id)) || isHoveredNode,
+      (spotlightIds !== null && spotlightIds.has(node.id)) || isHoveredNode || previewEndpoint,
     );
     ctx.globalAlpha = tierAlpha * realmClarityAlpha * backgroundDim * appearRevealAlpha * nodeSpotlightSink;
     // Sheen top stop = lerp(fill, tint, blend) — resolved here (token layer)
@@ -2241,9 +2292,11 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
     domeOn && focusedNodeId === null && selectedEdge === null && trailLensKeepIds === null;
   for (let index = 0; index < world.nodes.length; index += 1) {
     const node = world.nodes[index];
+    const previewEndpoint = isPreviewEndpoint(previewEdge, node.id);
+    const previewTarget = node.id === previewEdge?.targetId;
     // 밀도 게이트: 접힌 서브트리 노드는 라벨도 그리지 않는다(노드/엣지와 동일).
-    if (clusteredIds.has(node.id)) continue;
-    if (domeLabelSkipEligible && node.id !== hoveredNodeId && domeNodeFrameReused[index].a >= 0.98) continue;
+    if (isPreviewEndpointHidden(clusteredIds.has(node.id), previewEdge, node.id)) continue;
+    if (domeLabelSkipEligible && !previewEndpoint && node.id !== hoveredNodeId && domeNodeFrameReused[index].a >= 0.98) continue;
     // Uses the SAME effective alpha as the node draw pass (C1 A2) — an
     // ego-exempt capability that's now visible must also get a label, or it
     // reads as an unlabeled ghost circle. Also the SAME signal capability/
@@ -2251,7 +2304,11 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
     // 읽을 수 있다").
     const revealAlpha = effectiveAlphaById.get(node.id) ?? 1;
     if (revealAlpha <= 0.02) continue;
-    const egoState = egoAllNormal ? "normal" : lensNodeEgoState(node.id, focusedNodeId, neighborsOfFocused, selectedEdge);
+    const egoState = previewTarget
+      ? "neighbor"
+      : egoAllNormal
+        ? "normal"
+        : lensNodeEgoState(node.id, focusedNodeId, neighborsOfFocused, selectedEdge);
     const trailKept = isTrailKept(node.id);
     const isHovered = hoveredNodeId !== null && node.id === hoveredNodeId;
     // High-fan disc density gate: an expanded-disc child that didn't make its
@@ -2265,6 +2322,7 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
       egoState !== "center" &&
       egoState !== "neighbor" &&
       !isHovered &&
+      !previewEndpoint &&
       !trailKept
     ) {
       continue;

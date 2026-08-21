@@ -170,10 +170,32 @@ interface VaultState {
 }
 
 /**
+ * `toBeVisible()` 는 opacity 등장 모션의 첫 프레임에서도 참이다. 그 순간 axe 를
+ * 실행하면 최종 토큰 대비가 아니라 반투명 중간 프레임을 재서, 같은 화면이 실행
+ * 타이밍에 따라 초록/빨강을 오간다. 증거를 품은 가장 가까운 Surface 의 유한 모션만
+ * 끝까지 기다린다. heartbeat 같은 무한 애니메이션은 기다리지 않는다.
+ */
+async function waitForEvidenceMotionToSettle(page: Page, evidence: string): Promise<void> {
+  await page.locator(evidence).first().evaluate(async (node) => {
+    const motionRoot = node.closest('[data-surface-state]') ?? node;
+    const finiteAnimations = motionRoot.getAnimations({ subtree: true }).filter((animation) => {
+      const iterations = animation.effect?.getTiming().iterations;
+      return iterations !== Infinity && animation.playState !== 'finished';
+    });
+    await Promise.all(finiteAnimations.map((animation) => animation.finished.catch(() => undefined)));
+  });
+}
+
+/**
  * 재는 상태들. **라우트가 아니라 상태 단위**다 — 같은 URL 이라도 탭/펼침에 따라
  * 다른 DOM 이 태어나고, 그 차이가 정확히 첫 화면 래칫이 못 보던 것이다.
  */
 const STATES: readonly VaultState[] = [
+  {
+    name: "지도 · 관계 contextual editor",
+    url: "/ko/topology/?p=capability%3Acheckout&workbench=edit&edit=relates%3Acapability%3Ainvoice",
+    evidence: '[data-testid="meaning-editor-panel"]',
+  },
   {
     name: "지도 — 볼트 축척",
     url: "/ko/topology/",
@@ -247,23 +269,22 @@ const STATES: readonly VaultState[] = [
     evidence: '[data-testid="docs-vault-doc-list"]',
   },
   {
-    // 공방의 **첫 화면은 선택지 카드**다(요소 24). 나침 무대는 한 번 더 눌러야
-    // 태어나고, 빈 소켓의 AA 미달 2건이 정확히 거기 있었다.
-    name: "공방 · 나침 무대 (빈 소켓)",
-    url: "/ko/ontology/studio/",
-    evidence: '[data-testid="studio-compass-stage"]',
+    // 지도 생성은 입력 다음에 **변경안 검토**가 한 번 더 열린다. 즉시 쓰기였던
+    // 구 경로가 돌아오면 이 증거가 사라져 공회전 대신 빨개진다.
+    name: "지도 · 새 개념 변경안 검토",
+    url: "/ko/topology/?workbench=create",
+    evidence: '[data-testid="create-node-change-review"]',
     async act(page) {
-      const create = page.getByTestId("studio-entry-create");
-      if (await create.count()) await create.click({ timeout: EVIDENCE_TIMEOUT });
-      await expect(page.getByTestId("studio-compass-stage")).toBeVisible({ timeout: EVIDENCE_TIMEOUT });
-      // 소켓이 실제로 그려질 때까지 — 무대만 뜨고 소켓이 없으면 잴 것이 없다.
-      await expect(page.locator('[data-testid^="studio-socket-"]').first()).toBeVisible({ timeout: EVIDENCE_TIMEOUT });
+      await expect(page.getByTestId("create-node-form")).toBeVisible({ timeout: EVIDENCE_TIMEOUT });
+      await page.getByTestId("create-node-title").fill("접근성 검토 임시 개념");
+      await page.getByTestId("create-node-submit").click({ timeout: EVIDENCE_TIMEOUT });
+      await expect(page.getByTestId("create-node-change-review")).toBeVisible({ timeout: EVIDENCE_TIMEOUT });
     },
   },
 ];
 
 test("볼트를 물린 접근성·대비 래칫 — 데이터가 있어야 존재하는 상태를 잰다", async ({ page }) => {
-  // 상태 13개 × (수렴 대기 + axe) — 기본 60초를 크게 넘는다.
+  // 상태 14개 × (수렴 대기 + axe) — 기본 60초를 크게 넘는다.
   //
   // ⚠️ **여유를 크게 잡는 이유는 실패 경로다** (프로브 실측): 빈 볼트를 물려
   // 모든 상태가 안 열리게 만들었더니, 상태마다 증거 대기가 최대치까지 흐르며
@@ -292,7 +313,7 @@ test("볼트를 물린 접근성·대비 래칫 — 데이터가 있어야 존�
   // ★ 빈 집합 위에서 놀지 않는다 — `STATES` 를 비우면 아래 루프가 0회 돌고
   //   모든 단언이 초록이 된다(빈 집합은 모든 全稱 명제를 만족한다). 리터럴로
   //   못박아 둔다: 실측에서 파생하면 「줄지 않는다」가 원리적으로 실패 불가가 된다.
-  expect(STATES.length, "재는 상태가 줄었다 — 지웠다면 왜 지웠는지가 diff 에 보여야 한다").toBeGreaterThanOrEqual(13);
+  expect(STATES.length, "재는 상태가 줄었다 — 지웠다면 왜 지웠는지가 diff 에 보여야 한다").toBeGreaterThanOrEqual(14);
 
   const axeCounts = new Map<string, number>();
   const axeSamples = new Map<string, string>();
@@ -313,6 +334,7 @@ test("볼트를 물린 접근성·대비 래칫 — 데이터가 있어야 존�
     try {
       if (state.act) await state.act(page);
       await expect(page.locator(state.evidence).first()).toBeVisible({ timeout: EVIDENCE_TIMEOUT });
+      await waitForEvidenceMotionToSettle(page, state.evidence);
     } catch {
       opened = false;
     }

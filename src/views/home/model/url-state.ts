@@ -34,6 +34,10 @@ export interface HomeRouteState {
   pathSourceSlug: string | null;
   pathTargetSlug: string | null;
   createNodeIntent: boolean;
+  /** 지도 안 의미 편집기를 여는 URL intent (`?workbench=edit`). */
+  meaningEditorIntent: boolean;
+  /** `edit=<relation>:<targetId>` — 첫 콜론 파싱은 entity parser가 맡는다. */
+  meaningEditParam: string | null;
   /**
    * INDEX panel expand/collapse deep-link intent (B3 허브가 곧 지도,
    * `?index=expanded|collapsed`). `null` = not specified in THIS url — the
@@ -127,6 +131,8 @@ export const HOME_QUERY_KEYS = {
   pathSourceAlias: "from",
   pathTargetAlias: "to",
   create: "create",
+  workbench: "workbench",
+  edit: "edit",
   index: "index",
   open: "open",
   realm: "realm",
@@ -170,6 +176,7 @@ export const VAULT_SCOPED_HOME_QUERY_KEYS = [
   "to",
   "open",
   "realm",
+  "edit",
 ] as const;
 
 /**
@@ -196,6 +203,8 @@ export function clearVaultScopedRouteState(current: HomeRouteState): HomeRouteSt
     pathTargetSlug: null,
     expandedParents: [],
     realmSlug: null,
+    meaningEditorIntent: false,
+    meaningEditParam: null,
     analysisMode: current.analysisMode === "path" ? "overview" : current.analysisMode,
   };
 }
@@ -224,6 +233,8 @@ export const DEFAULT_HOME_ROUTE_STATE: HomeRouteState = {
   pathSourceSlug: null,
   pathTargetSlug: null,
   createNodeIntent: false,
+  meaningEditorIntent: false,
+  meaningEditParam: null,
   indexState: null,
   insightsReturnTab: null,
   insightsReturnReviewId: null,
@@ -478,6 +489,8 @@ export function parseHomeRouteState(
   const insightsReturnTab = parseInsightsReturnMarker(
     searchParams.get(HOME_QUERY_KEYS.via),
   );
+  const workbench = searchParams.get(HOME_QUERY_KEYS.workbench);
+  const meaningEditorIntent = workbench === "edit";
 
   return {
     selectedSlug,
@@ -492,7 +505,12 @@ export function parseHomeRouteState(
     analysisMode,
     pathSourceSlug,
     pathTargetSlug,
-    createNodeIntent: searchParams.get(HOME_QUERY_KEYS.create) === "concept",
+    createNodeIntent:
+      searchParams.get(HOME_QUERY_KEYS.create) === "concept" || workbench === "create",
+    meaningEditorIntent,
+    meaningEditParam: meaningEditorIntent
+      ? searchParams.get(HOME_QUERY_KEYS.edit)
+      : null,
     indexState: parseIndexPanelStateParam(searchParams.get(HOME_QUERY_KEYS.index)),
     insightsReturnTab,
     insightsReturnReviewId: insightsReturnTab
@@ -517,6 +535,8 @@ export function selectTopologyNodeRouteState(
     selectedSlug: slug,
     focusedHubSlug: options?.isHub ? slug : null,
     impactMode: options?.preserveImpact ? current.impactMode : "none",
+    meaningEditorIntent: false,
+    meaningEditParam: null,
     // 클릭 = 선택(안전한 탐색)만 — 어떤 모드에서도 mode 를 바꾸지 않는다.
     // 이전의 overview→focus 자동 승격은 [선택+확장+재배치+카메라핏]을 한
     // 클릭에 겹쳐 인과를 지웠다 (R+ 소유자 피드백 "클릭하면 그냥 바뀌어서
@@ -540,6 +560,8 @@ export function selectTopologyPathRouteState(
     impactMode: hasCompletePath ? "none" : current.impactMode,
     pathSourceSlug: selection.sourceSlug,
     pathTargetSlug: selection.targetSlug,
+    meaningEditorIntent: false,
+    meaningEditParam: null,
   };
 }
 
@@ -620,10 +642,20 @@ export function applyHomeRouteState(
   );
   next.delete(HOME_QUERY_KEYS.pathSourceAlias);
   next.delete(HOME_QUERY_KEYS.pathTargetAlias);
+  next.delete(HOME_QUERY_KEYS.create);
   setOrDelete(
     next,
-    HOME_QUERY_KEYS.create,
-    state.createNodeIntent ? "concept" : null,
+    HOME_QUERY_KEYS.workbench,
+    state.meaningEditorIntent
+      ? "edit"
+      : state.createNodeIntent
+        ? "create"
+        : null,
+  );
+  setOrDelete(
+    next,
+    HOME_QUERY_KEYS.edit,
+    state.meaningEditorIntent ? state.meaningEditParam : null,
   );
   setOrDelete(next, HOME_QUERY_KEYS.index, state.indexState);
   setOrDelete(

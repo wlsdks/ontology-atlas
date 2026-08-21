@@ -28,6 +28,8 @@ function card(
             toolName: 'Write',
             toolKind,
             filePath,
+            rawInput: {},
+            reviewKind: 'permission',
             options: [
               { optionId: 'reject', kind: 'reject_once', name: '거절' },
               { optionId: 'allow', kind: 'allow_once', name: '허용' },
@@ -113,5 +115,45 @@ describe('계속 허용 — 어댑터가 말한 범위만 적는다', () => {
   it('계속 허용 선택지가 없으면 범위 줄도 없다 — 없는 결정을 설명하지 않는다', () => {
     render(card('edit'));
     expect(screen.queryByTestId('acp-permission-scope')).toBeNull();
+  });
+});
+
+describe('온톨로지 쓰기 검토 — 한 번의 정확한 결정만 제공한다', () => {
+  it('typed change를 보여 주고 계속 허용은 숨긴다', () => {
+    render(
+      <NextIntlClientProvider locale="ko" messages={koMessages}>
+        <AcpPermissionCard
+          pending={{
+            request: {
+              title: 'mcp__atlas-vault__add_relation',
+              toolName: 'mcp__atlas-vault__add_relation',
+              toolKind: 'other',
+              filePath: null,
+              reviewKind: 'ontology-write',
+              rawInput: {
+                from: 'capabilities/contextual-editing',
+                to: 'domains/graph-modeling',
+                type: 'depends_on',
+                why: '지도 안 편집이 graph modeling 계약을 따른다.',
+              },
+              options: [
+                { optionId: 'reject', kind: 'reject_once', name: '거절' },
+                { optionId: 'allow', kind: 'allow_once', name: '허용' },
+                ...alwaysWith([
+                  { type: 'tool', toolName: 'mcp__atlas-vault__add_relation' },
+                ]),
+              ],
+            },
+            resolve: vi.fn(),
+          }}
+        />
+      </NextIntlClientProvider>,
+    );
+
+    const review = screen.getByTestId('acp-ontology-change-review');
+    expect(review.textContent).toContain('capabilities/contextual-editing');
+    expect(review.textContent).toContain('depends_on');
+    expect(review.textContent).toContain('domains/graph-modeling');
+    expect(screen.queryByTestId('acp-permission-allow-always')).toBeNull();
   });
 });

@@ -152,7 +152,7 @@ const BASELINE_HARD_CUTS = 0;
  * 분모도 같이 올리되, 그쪽 목록에 넣을 수 없는 이유를 거기 적는다(권한 카드가
  * 2026-08-16 에 같은 이유로 간 길이다).
  */
-const BASELINE_APPEARING_SURFACES = 26;
+const BASELINE_APPEARING_SURFACES = 29;
 
 const SELF = 'tests/contract/surface-motion-ratchet.contract.test.ts';
 const FIXTURES = 'tests/fixtures/surface-motion';

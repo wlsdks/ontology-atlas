@@ -315,11 +315,9 @@ export interface TopologyV2DetailPanelProps {
    * (the tile renders disabled rather than linking to a guessed URL).
    */
   documentHref: string | null;
-  /** W2-A "관계 편집" action tile target — the 나침 무대(Compass Stage) deep
-   * link (`/ontology/studio/?node=<id>`, ENHANCE mode opens this node with its
-   * relation sockets). Replaced the retired ERD builder (2026-07-24). Always
-   * available (any id resolves or the studio falls back to its default node). */
-  studioEditHref: string;
+  /** W2-A "관계 편집" action tile target — the contextual editor deep link
+   * (`/topology/?p=<id>&workbench=edit`). */
+  meaningEditHref: string;
   labels: TopologyV2DetailPanelLabels;
   onSelectConnection: (id: string) => void;
   /**
@@ -344,6 +342,8 @@ export interface TopologyV2DetailPanelProps {
    */
   onHoverEvidence?: (slug: string | null) => void;
   onCopyHandoff: (text: string) => void;
+  /** 지도 안 contextual editor가 있으면 링크 대신 같은 자리에서 연다. */
+  onEditRelations?: () => void;
   /**
    * 「이어서 새로 만들기」 — 이 개념에 붙는 새 노드를 만든다. 없으면 타일 자체가
    * 안 그려진다(못 하는 자리에 문을 그리지 않는다).
@@ -857,12 +857,13 @@ export function TopologyV2DetailPanel({
   mtimeConflict = false,
   handoffText,
   documentHref,
-  studioEditHref,
+  meaningEditHref,
   labels,
   onSelectConnection,
   onHoverConnection,
   onHoverEvidence,
   onCopyHandoff,
+  onEditRelations,
   onCreateLinked,
   onAskAgent,
   onClose,
@@ -1539,14 +1540,26 @@ export function TopologyV2DetailPanel({
               : null}
             {withActionTip(
               labels.actionEditRelationsTip,
-              <Link
-                href={studioEditHref}
-                data-testid="topology-v2-detail-panel-action-edit"
-                className={controlClass({ shape: "tile", size: "md", className: ACTION_TILE_INK })}
-              >
-                <GitBranch size={ICON_SIZE.lg} aria-hidden="true" />
-                <span>{labels.actionEditRelations}</span>
-              </Link>,
+              onEditRelations ? (
+                <button
+                  type="button"
+                  onClick={onEditRelations}
+                  data-testid="topology-v2-detail-panel-action-edit"
+                  className={controlClass({ shape: "tile", size: "md", className: ACTION_TILE_INK })}
+                >
+                  <GitBranch size={ICON_SIZE.lg} aria-hidden="true" />
+                  <span>{labels.actionEditRelations}</span>
+                </button>
+              ) : (
+                <Link
+                  href={meaningEditHref}
+                  data-testid="topology-v2-detail-panel-action-edit"
+                  className={controlClass({ shape: "tile", size: "md", className: ACTION_TILE_INK })}
+                >
+                  <GitBranch size={ICON_SIZE.lg} aria-hidden="true" />
+                  <span>{labels.actionEditRelations}</span>
+                </Link>
+              ),
             )}
           </div>
           {/* 2층 — 지도를 이 노드 기준으로 바꾸는 일. 둘 다 없으면 층 자체가 없다. */}

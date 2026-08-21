@@ -25,7 +25,7 @@ const labels: DomainCouplingCardLabels = {
   boundaryCountUnit: "domains",
   emptyTitle: "Not enough coupling data yet",
   emptyDescription: "Needs 2+ domains and a cross-domain relation.",
-  emptyAction: "Connect concepts in the workshop",
+  emptyAction: "Connect concepts on the map",
   emptyActionHref: "/ontology/studio/",
   boundaryTitle: "Boundary pressure",
   boundarySelfLabel: "self",

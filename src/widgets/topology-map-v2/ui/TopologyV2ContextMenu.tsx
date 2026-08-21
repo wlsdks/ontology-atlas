@@ -55,7 +55,7 @@ export interface TopologyV2ContextMenuProps {
   documentHref: string | null;
   /** 자기 문서가 없을 때, 이 노드를 적어 둔 다른 문서. 있으면 정직한 라벨로 렌더. */
   mentionDocumentHref?: string | null;
-  studioEditHref: string;
+  meaningEditHref: string;
   labels: TopologyV2ContextMenuLabels;
   onCopyHandoff: () => void;
   onSetPathSource: () => void;
@@ -108,7 +108,7 @@ export function TopologyV2ContextMenu({
   position,
   documentHref,
   mentionDocumentHref = null,
-  studioEditHref,
+  meaningEditHref,
   labels,
   onCopyHandoff,
   onSetPathSource,
@@ -200,7 +200,7 @@ export function TopologyV2ContextMenu({
         </span>
       )}
       <Link
-        href={studioEditHref}
+        href={meaningEditHref}
         role="menuitem"
         data-testid="topology-v2-context-menu-edit"
         className={MENU_ITEM_CLASS}

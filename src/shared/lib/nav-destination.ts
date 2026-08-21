@@ -1,7 +1,6 @@
 export type AppNavDestinationId =
   | "map"
   | "docs"
-  | "studio"
   | "insights"
   | "projects"
   | "agents"
@@ -12,12 +11,9 @@ export type AppNavDestinationId =
  * `#375` + feat/rail-rollout `#377`) — `AppNavRail` (desktop, `lg`+) and
  * `BottomTabBar` (mobile, `<lg`) share this ladder and MUST agree on which one
  * is "active" for a given pathname, so it lives here once instead of being
- * duplicated per widget. Order matters: `studio`/`insights` both live under
- * `/ontology/*` so they're checked before the generic `map` root-match. The
- * retired ERD builder route (`/ontology/edit`, now a redirect to the studio)
- * folds into `studio` so the rail stays highlighted through the redirect.
- * `studio` (the 나침 무대 / Compass Stage) and `git` are desktop-rail
- * destinations; the mobile `BottomTabBar` renders the four core destinations
+ * duplicated per widget. Compatibility routes under `/ontology/edit` and
+ * `/ontology/studio` fold into `map`, while `/ontology/insights` keeps its own
+ * destination. The mobile `BottomTabBar` renders the four core destinations
  * Map / Docs / Insights / Projects.
  */
 export function resolveActiveNavDestination(pathname: string): AppNavDestinationId | null {
@@ -27,7 +23,7 @@ export function resolveActiveNavDestination(pathname: string): AppNavDestination
   // never silently misses on a locale-prefixed path.
   const path = stripLocalePrefix(pathname || "/");
   if (path.startsWith("/ontology/edit") || path.startsWith("/ontology/studio"))
-    return "studio";
+    return "map";
   if (path.startsWith("/ontology/insights")) return "insights";
   if (path.startsWith("/git")) return "git";
   // 「에이전트」 — 2026-08-20 목적지 신설(원장 90). `/agents` 하나뿐이라
@@ -58,7 +54,7 @@ const GATEWAY_ROUTE_PREFIXES = ["/download", "/guide", "/changelog"] as const;
  *
  * `surfaces.md` 가 웹의 1번 일을 **관문**(설치 없이 열어보는 자리, 링크 공유)
  * 으로 못박았는데, 좌측 레일은 "이미 볼트에서 일하는 사람" 의 크롬이다. 아직
- * 아무것도 안 연 방문자에게 지도·문서함·공방·인사이트·프로젝트·기록 6개
+ * 아무것도 안 연 방문자에게 지도·문서함·인사이트·프로젝트·에이전트·기록 6개
  * 목적지를 세워 두면 그건 관문이 아니라 워크벤치이고, 방문자는 자기가 아직
  * 아무 데도 못 가는 6개의 문을 본다.
  *

@@ -14,23 +14,24 @@ export {
 export type { EdgeTypeRow, RelationRegister } from "./model";
 export {
   buildInsightsReturnMarker,
-  buildOntologyStudioNodeHrefFromGraphId,
-  buildOntologyStudioEdgeHref,
+  buildTopologyMeaningEditorNodeHref,
+  buildTopologyMeaningEditorEdgeHref,
+  buildTopologyMeaningCreateHref,
   buildOntologyInsightsNodeHref,
   buildOntologyInsightsReturnHref,
   buildOntologyNodeHref,
   edgeAuthoredByFromNode,
-  studioEditRelationForEdgeType,
-  parseOntologyStudioEditParam,
+  meaningEditRelationForEdgeType,
+  parseOntologyMeaningEditParam,
   ONTOLOGY_DEEPLINK_VIA_KEY,
   ONTOLOGY_DEEPLINK_REVIEW_KEY,
   ONTOLOGY_DEEPLINK_ASK_KEY,
-  ONTOLOGY_STUDIO_EDIT_KEY,
+  ONTOLOGY_MEANING_EDIT_KEY,
   parseInsightsReturnMarker,
   resolveOntologyBuilderNodeSlug,
   resolveOntologyBuilderNodeSlugFromGraphId,
 } from "./lib/ontology-node-href";
-export type { StudioEditRelation } from "./lib/ontology-node-href";
+export type { MeaningEditRelation } from "./lib/ontology-node-href";
 export {
   buildOntologyHealthActionTarget,
   buildOntologyHealthSignals,
@@ -46,6 +47,21 @@ export {
   type RelationQualityBreakdown,
 } from "./lib/relation-quality";
 export { translateOntologyDeeplinkToTopologyParam } from "./lib/translate-ontology-deeplink";
+export {
+  buildOntologyChangeSet,
+  type OntologyChangeField,
+  type OntologyChangeOperation,
+  type OntologyChangeSet,
+  type OntologyRelationChange,
+} from "./lib/ontology-change-set";
+export {
+  buildOntologyRelationEditPlan,
+  buildOntologyRelationRemovalPlan,
+  RELATION_EDGE_TYPE,
+  RELATION_FRONTMATTER_KEY,
+  type OntologyRelationEditPlan,
+  type OntologyRelationFrontmatterUpdate,
+} from "./lib/ontology-relation-edit";
 export { deriveCodeLocations } from "./lib/code-locations";
 export { buildChatNodeIndex } from "./lib/chat-node-index";
 export { isEvidenceOnlyConcept, resolveNodeDocument } from "./lib/node-document";

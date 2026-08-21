@@ -132,6 +132,8 @@ const importFullDetailA1 = () => import("@/widgets/full-detail-a1");
 type FullDetailA1Component = Awaited<ReturnType<typeof importFullDetailA1>>["FullDetailA1"];
 import { GestureHint } from "@/widgets/gesture-hint";
 import { ChromeChip, LiveAnnouncer, Surface, Tooltip, controlClass, useToast } from "@/shared/ui";
+import { MOTION } from "@/shared/motion";
+import { usePrefersReducedMotion } from "@/shared/lib/use-prefers-reduced-motion";
 import { resolveToastBottomOffsetForStack } from "@/shared/ui/toast-position";
 import {
   detectOrphanProjects,
@@ -142,17 +144,27 @@ import {
 } from "@/entities/project";
 import { buildDocsVaultHref, buildNewNodeDoc } from "@/entities/docs-vault";
 import {
-  buildOntologyStudioNodeHrefFromGraphId,
+  buildOntologyChangeSet,
+  buildTopologyMeaningEditorNodeHref,
   buildChatNodeIndex,
-  buildOntologyStudioEdgeHref,
+  buildTopologyMeaningEditorEdgeHref,
   buildOntologyHealthSignals,
   buildOntologyInsightsReturnHref,
   edgeAuthoredByFromNode,
   resolveNodeDocument,
   resolveNodeAgentTarget,
-  studioEditRelationForEdgeType,
+  resolveOntologyBuilderNodeSlug,
+  parseOntologyMeaningEditParam,
+  meaningEditRelationForEdgeType,
+  type OntologyRelationEditPlan,
+  type OntologyChangeSet,
+  type MeaningEditRelation,
   useRelationVocabulary,
 } from "@/entities/knowledge-graph";
+import {
+  MeaningEditorPanel,
+  type MeaningEditorPreview,
+} from "@/features/ontology-meaning-editor";
 import { copyText } from "@/shared/lib/copy-text";
 import { copyHandoffWithFeedback } from "../lib/copy-handoff-with-feedback";
 import { formatProjectSourceHandoff } from "@/shared/lib/project-source-receipt";
@@ -385,6 +397,8 @@ export function HomePage() {
 
 function HomePageImpl() {
   const t = useTranslations('topology');
+  const tMeaningEditor = useTranslations('meaningEditor');
+  const reducedMotion = usePrefersReducedMotion();
   const siteT = useTranslations('metadata');
   // 어권별 이름 입력(create composer) 계약의 '지금 화면 언어'.
   const activeLocale = useLocale();
@@ -553,6 +567,8 @@ function HomePageImpl() {
     pathSourceSlug,
     pathTargetSlug,
     createNodeIntent,
+    meaningEditorIntent,
+    meaningEditParam,
     indexState,
     insightsReturnTab,
     insightsReturnReviewId,
@@ -993,6 +1009,131 @@ function HomePageImpl() {
         : null,
     [selectedOntologyNode, vault.manifest],
   );
+  const [meaningEditorState, setMeaningEditorState] = useState<{
+    sourceId: string;
+    initialRelation: MeaningEditRelation;
+    initialTargetId: string | null;
+    initialWhy: string;
+  } | null>(null);
+  const heldMeaningEditorState = useHeldValue(
+    meaningEditorState,
+    meaningEditorState
+      ? `${meaningEditorState.sourceId}:${meaningEditorState.initialRelation}:${meaningEditorState.initialTargetId ?? "new"}`
+      : null,
+  );
+  const [meaningPreview, setMeaningPreview] = useState<MeaningEditorPreview | null>(null);
+  const meaningEditorSource = useMemo(() => {
+    if (!selectedOntologyNode || !nodeEditTarget) return null;
+    return {
+      id: selectedOntologyNode.id,
+      slug: nodeEditTarget.vaultSlug.replace(/^ontology\//, ""),
+      title: selectedOntologyNode.display ?? selectedOntologyNode.title,
+      kind: selectedOntologyNode.kind,
+      frontmatter: nodeEditTarget.frontmatter,
+    };
+  }, [nodeEditTarget, selectedOntologyNode]);
+  const meaningEditorCandidates = useMemo(
+    () =>
+      (ontologyInsight?.nodes ?? [])
+        .filter((node) => ["project", "domain", "capability", "element"].includes(node.kind))
+        .map((node) => ({
+          id: node.id,
+          slug: (resolveNodeAgentTarget(node)?.ref ?? resolveOntologyBuilderNodeSlug(node)).replace(
+            /^ontology\//,
+            "",
+          ),
+          title: node.display ?? node.title,
+          kind: node.kind,
+        }))
+        .sort((a, b) => a.title.localeCompare(b.title)),
+    [ontologyInsight],
+  );
+  const openMeaningEditor = useCallback(
+    ({
+      sourceId,
+      relation = "dependsOn",
+      targetId = null,
+    }: {
+      sourceId: string;
+      relation?: MeaningEditRelation;
+      targetId?: string | null;
+    }) => {
+      setRouteState((current) => ({
+        ...selectTopologyNodeRouteState(current, sourceId),
+        createNodeIntent: false,
+        meaningEditorIntent: true,
+        meaningEditParam: targetId ? `${relation}:${targetId}` : null,
+      }));
+    },
+    [setRouteState],
+  );
+  const closeMeaningEditor = useCallback(() => {
+    setMeaningEditorState(null);
+    setMeaningPreview(null);
+    setRouteState((current) => ({
+      ...current,
+      meaningEditorIntent: false,
+      meaningEditParam: null,
+    }));
+  }, [setRouteState]);
+  useEffect(() => {
+    let cancelled = false;
+    window.queueMicrotask(() => {
+      if (cancelled) return;
+      if (!meaningEditorIntent || !meaningEditorSource) {
+        if (!meaningEditorIntent) setMeaningEditorState(null);
+        return;
+      }
+      const parsed = parseOntologyMeaningEditParam(meaningEditParam);
+      const initialWhy = parsed
+        ? ontologyInsight?.edges.find(
+            (edge) =>
+              edge.from === meaningEditorSource.id &&
+              edge.to === parsed.targetId &&
+              meaningEditRelationForEdgeType(edge.type) === parsed.relation,
+          )?.label?.trim() ?? ""
+        : "";
+      const next = {
+        sourceId: meaningEditorSource.id,
+        initialRelation: parsed?.relation ?? ("dependsOn" as const),
+        initialTargetId: parsed?.targetId ?? null,
+        initialWhy,
+      };
+      setMeaningEditorState((current) =>
+        current &&
+        current.sourceId === next.sourceId &&
+        current.initialRelation === next.initialRelation &&
+        current.initialTargetId === next.initialTargetId &&
+        current.initialWhy === next.initialWhy
+          ? current
+          : next,
+      );
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [meaningEditParam, meaningEditorIntent, meaningEditorSource, ontologyInsight]);
+  const applyMeaningEditor = useCallback(
+    async (plan: OntologyRelationEditPlan) => {
+      if (!nodeEditTarget || !meaningEditorState) throw new Error("missing edit target");
+      try {
+        if (!reducedMotion) {
+          await new Promise<void>((resolve) => {
+            window.setTimeout(resolve, MOTION.settle.duration * 1000);
+          });
+        }
+        await vault.updateFrontmatter(nodeEditTarget.vaultSlug, plan.updates, {
+          expectedMtime: nodeEditTarget.mtime,
+        });
+        toast.show(tMeaningEditor("saved"), "success");
+        closeMeaningEditor();
+      } catch (error) {
+        toast.show(tMeaningEditor("saveError"), "error");
+        throw error;
+      }
+    },
+    [closeMeaningEditor, meaningEditorState, nodeEditTarget, reducedMotion, tMeaningEditor, toast, vault],
+  );
   // W6 agent visibility — "the agent's last-touched node, shown on the map
   // itself" (the product's own agent-native identity, not just a rail dot).
   // Only while the heartbeat is FRESH (same `hasFreshHeartbeat` bar the rail
@@ -1026,9 +1167,23 @@ function HomePageImpl() {
   );
   // S2 — 토폴로지에서 새 노드를 직접 생성. writable 로컬 vault 일 때만.
   const [createNodeOpen, setCreateNodeOpen] = useState(false);
+  const [createNodeProposal, setCreateNodeProposal] = useState<{
+    input: {
+      title: string;
+      kind: CreateNodeKind;
+      domain?: string;
+      localeLabels?: Record<string, string>;
+    };
+    slug: string;
+    markdown: string;
+    changeSet: OntologyChangeSet;
+  } | null>(null);
+  const [createNodeConfirming, setCreateNodeConfirming] = useState(false);
   const createNodeToggleRef = useRef<HTMLButtonElement | null>(null);
   const createNodePanelRef = useRef<HTMLDivElement | null>(null);
   const closeCreateNode = useCallback(() => {
+    setCreateNodeProposal(null);
+    setCreateNodeConfirming(false);
     setCreateNodeOpen(false);
     setRouteState((current) => ({
       ...current,
@@ -1078,10 +1233,18 @@ function HomePageImpl() {
     // 노드의 프론트매터에서 authored 됐을 때만 "이 관계 고치기" 딥링크를
     // 만든다. focal = 저자(`from`), 편집 카드는 `to` 위성에 열린다. 편집 불가면
     // null → EdgePanel 이 액션을 렌더하지 않는다(dead affordance 금지).
-    const studioRelation = studioEditRelationForEdgeType(selectedEdge.relationType);
-    const studioEditHref =
-      studioRelation && edgeAuthoredByFromNode(selectedEdge.declaredBySlug, from.evidenceIds[0])
-        ? buildOntologyStudioEdgeHref(from.id, to.id, studioRelation)
+    const meaningRelation = meaningEditRelationForEdgeType(selectedEdge.relationType);
+    const authoredByFrom = edgeAuthoredByFromNode(
+      selectedEdge.declaredBySlug,
+      from.evidenceIds[0],
+    );
+    const meaningEditHref =
+      meaningRelation && authoredByFrom
+        ? buildTopologyMeaningEditorEdgeHref(from.id, to.id, meaningRelation)
+        : null;
+    const contextualEditTarget =
+      meaningRelation && authoredByFrom
+        ? resolveTopologyNodeEditTarget(from, vault.manifest?.docs ?? [])
         : null;
     return {
       sentence,
@@ -1094,10 +1257,12 @@ function HomePageImpl() {
         ? { slug: selectedEdge.declaredBySlug, href: buildDocsVaultHref({ slug: selectedEdge.declaredBySlug }) }
         : null,
       updatedAtLabel: ago ? t(`nodeDatasheet.updated_${ago.key}`, { count: ago.count }) : null,
-      studioEditHref,
+      meaningEditHref,
+      meaningRelation,
+      contextualEditable: contextualEditTarget !== null,
       why,
     };
-  }, [selectedEdge, ontologyInsight, docFreshnessIndex, updatedAgoNowMs, t, relationVocabulary, relationRegister]);
+  }, [selectedEdge, ontologyInsight, docFreshnessIndex, updatedAgoNowMs, t, relationVocabulary, relationRegister, vault.manifest]);
 
   /**
    * 엣지 패널의 **열림**과 **내용**을 가른다 — 그래야 퇴장이 성립한다.
@@ -1223,7 +1388,7 @@ function HomePageImpl() {
       kind: CreateNodeKind;
       domain?: string;
       localeLabels?: Record<string, string>;
-    }) => {
+    }): Promise<false> => {
       try {
         /*
          * **사람이 만든 노드**라고 적는다. 이 경로는 화면의 「개념 만들기」
@@ -1232,39 +1397,51 @@ function HomePageImpl() {
          * 지도에서 검수 대기 링을 못 받는다(2026-08-03 실측).
          */
         const { slug, markdown } = buildNewNodeDoc({ ...input, createdBy: "human" });
-        await vault.createDoc(slug, markdown);
-        /*
-         * **1일차의 싼 시험** (PO 카운슬 평결 ⑤, 2026-08-03).
-         *
-         * 소유자는 「노드가 지도에 나오면서 위치를 정하고 확대되는」 생성을
-         * 원했다. 근거석이 그보다 싼 가설을 냈다 — 문제가 「모션이 없다」가
-         * 아니라 **「만든 게 어디 갔는지 모른다」** 일 수 있다. 해자석이 2라운드
-         * 에서 승복하며 *"싼 시험을 슬라이스 밖이 아니라 **앞**에 넣어라"* 고
-         * 했고, 그래서 이 링크가 1일차다.
-         *
-         * **누르는지가 관측이다.** 자동 포커스로 만들면 훨씬 싸지만 시험 자체가
-         * 사라진다 — 필요했는지 아무도 모르게 된다.
-         *
-         * 반증 조건: 이 링크를 눌러 보고도 「무엇에 붙었는지 모르겠다」가 나오면
-         * 부착 표시가 필요했던 것이고, 안 나오면 나머지 날은 반납한다.
-         */
-        const tail = slug.includes("/") ? slug.slice(slug.lastIndexOf("/") + 1) : slug;
-        toast.show(t("createNode.toastSaved", { slug }), "success", {
-          label: t("createNode.toastSavedAction"),
-          onClick: () =>
-            setRouteState((current) => ({
-              ...current,
-              selectedSlug: `${input.kind}:${tail}`,
-            })),
+        if (vault.fileHandles.has(slug)) {
+          toast.show(t("createNode.toastExists"), "error");
+          return false;
+        }
+        const frontmatter = parseFrontmatter(markdown).frontmatter;
+        setCreateNodeProposal({
+          input,
+          slug,
+          markdown,
+          changeSet: buildOntologyChangeSet("add_concept", {
+            slug,
+            ...frontmatter,
+          }),
         });
-        closeCreateNode();
       } catch (err) {
         const exists = err instanceof Error && err.message.includes("already exists");
         toast.show(exists ? t("createNode.toastExists") : t("createNode.toastError"), "error");
       }
+      return false;
     },
-    [closeCreateNode, vault, toast, t, setRouteState],
+    [t, toast, vault.fileHandles],
   );
+  const confirmCreateNode = useCallback(async () => {
+    if (!createNodeProposal || createNodeConfirming) return;
+    setCreateNodeConfirming(true);
+    try {
+      await vault.createDoc(createNodeProposal.slug, createNodeProposal.markdown);
+      const tail = createNodeProposal.slug.includes("/")
+        ? createNodeProposal.slug.slice(createNodeProposal.slug.lastIndexOf("/") + 1)
+        : createNodeProposal.slug;
+      toast.show(t("createNode.toastSaved", { slug: createNodeProposal.slug }), "success", {
+        label: t("createNode.toastSavedAction"),
+        onClick: () =>
+          setRouteState((current) => ({
+            ...current,
+            selectedSlug: `${createNodeProposal.input.kind}:${tail}`,
+          })),
+      });
+      closeCreateNode();
+    } catch (err) {
+      const exists = err instanceof Error && err.message.includes("already exists");
+      toast.show(exists ? t("createNode.toastExists") : t("createNode.toastError"), "error");
+      setCreateNodeConfirming(false);
+    }
+  }, [closeCreateNode, createNodeConfirming, createNodeProposal, setRouteState, t, toast, vault]);
   // #8 평문화 — "개념 추가" 도메인 피커 옵션. 자유 입력 slug 대신 기존 도메인
   // 노드를 이름으로 고른다. value = bare tail-slug(`domain:auth` → `auth`),
   // 저장 시 buildNewNodeDoc 이 canonicalizeDomainRef 로 한 번 더 정규화한다.
@@ -2059,6 +2236,8 @@ function HomePageImpl() {
     setRouteState((current) => ({
       ...current,
       createNodeIntent: true,
+      meaningEditorIntent: false,
+      meaningEditParam: null,
     }));
   }, [setRouteState]);
   const openCreateNodeWithKind = useCallback(
@@ -2245,7 +2424,8 @@ function HomePageImpl() {
   const topologyGraphEmpty = (ontologyInsight?.nodes.length ?? 0) === 0;
   const renderedIndexState: IndexPanelState =
     baseRenderedIndexState === "expanded" &&
-    ((topologySelectionActive && !indexManualExpandDuringSelection) ||
+    (meaningEditorIntent ||
+      (topologySelectionActive && !indexManualExpandDuringSelection) ||
       (topologyGraphEmpty && !indexManualExpandWhileEmpty))
       ? "collapsed"
       : baseRenderedIndexState;
@@ -2578,7 +2758,7 @@ function HomePageImpl() {
     [setRouteState],
   );
   // W2-B context menu quick-action model — same construction as
-  // `v2DatasheetModel` (documentHref/studioEditHref/handoffText), but keyed
+  // `v2DatasheetModel` (documentHref/meaningEditHref/handoffText), but keyed
   // off whichever node was right-clicked rather than the current selection,
   // since the context menu is reachable without selecting the node first.
   // `domainTitle: null` in the handoff payload is a deliberate simplification
@@ -2624,7 +2804,7 @@ function HomePageImpl() {
         ? buildDocsVaultHref({ slug: mentionedInSlug })
         : null,
       // 빌더 딥링크는 canonical `<kind>:<slug>`(그래프 node id)로 통일(H5).
-      studioEditHref: buildOntologyStudioNodeHrefFromGraphId(node.id),
+      meaningEditHref: buildTopologyMeaningEditorNodeHref(node.id),
       handoffText,
     };
   }, [contextMenuNode, handoffSource, ontologyInsight]);
@@ -2672,8 +2852,17 @@ function HomePageImpl() {
         ontologyInsight &&
         nodeFocus &&
         !fullDetailOpen &&
-        analysisMode !== "path",
+      analysisMode !== "path",
     );
+  const meaningEditorOpen = Boolean(
+    meaningEditorState &&
+      meaningEditorSource &&
+      meaningEditorState.sourceId === meaningEditorSource.id &&
+      selectedNodeFocusActive &&
+      !selectedRelationActive &&
+      !createNodeOpen &&
+      !nodePopoverDismissed,
+  );
   // M-7 — the compact node popover is actually on screen (same condition the
   // popover JSX renders under). Drives both the Escape ladder's
   // `nodePopoverOpen` rung and the popover's own render guard, so the two can
@@ -2695,11 +2884,11 @@ function HomePageImpl() {
   // 남는 것은 **포지셔너를 언제 내리는가** 하나뿐이고, 그 답은 퇴장이 끝났다는
   // 패널의 통보(`onExited`)다 — 한 표면에 퇴장 타이머가 둘이면 어느 쪽이
   // 진실인지 알 수 없다.
-  const panelOpen = nodePopoverVisible && Boolean(v2DatasheetModel);
+  const panelOpen = nodePopoverVisible && Boolean(v2DatasheetModel) && !meaningEditorOpen;
   const [nodePanelMounted, setNodePanelMounted] = useState(false);
   // 렌더 중 조정 — effect 로 올리면 열린 첫 프레임에 포지셔너가 없어 등장이
   // 한 프레임 늦는다(`useHeldValue` 가 같은 이유로 렌더 중에 붙든다).
-  if (panelOpen && !nodePanelMounted) setNodePanelMounted(true);
+  if ((panelOpen || meaningEditorOpen) && !nodePanelMounted) setNodePanelMounted(true);
   const retainedDatasheetRef = useRef(v2DatasheetModel);
   if (v2DatasheetModel) retainedDatasheetRef.current = v2DatasheetModel;
   const panelDatasheetModel = v2DatasheetModel ?? retainedDatasheetRef.current;
@@ -3059,6 +3248,8 @@ function HomePageImpl() {
       selectedSlug: null,
       focusedHubSlug: null,
       impactMode: "none",
+      meaningEditorIntent: false,
+      meaningEditParam: null,
       // 펼침(초점)의 닫기 = 지도 복귀. 배경 클릭/Esc/팝오버 X 가 전개를
       // 접는다 — 클릭=선택, 배지=펼치기, 닫기=접기의 대칭 완성.
       analysisMode:
@@ -4600,6 +4791,10 @@ function HomePageImpl() {
                       domainHelper: t('createNode.domainHelper'),
                       create: t('createNode.create'),
                       cancel: t('createNode.cancel'),
+                      reviewHeading: t('createNode.reviewHeading'),
+                      reviewBack: t('createNode.reviewBack'),
+                      reviewConfirm: t('createNode.reviewConfirm'),
+                      reviewConfirming: t('createNode.reviewConfirming'),
                       kindLabels: {
                         project: t('createNode.kindProject'),
                         domain: t('createNode.kindDomain'),
@@ -4619,6 +4814,16 @@ function HomePageImpl() {
                       primaryLocale: activeLocale,
                       secondaryLocale: activeLocale === 'ko' ? 'en' : 'ko',
                     }}
+                    review={
+                      createNodeProposal
+                        ? {
+                            changeSet: createNodeProposal.changeSet,
+                            confirming: createNodeConfirming,
+                            onBack: () => setCreateNodeProposal(null),
+                            onConfirm: confirmCreateNode,
+                          }
+                        : null
+                    }
                   />
                 </div>
               </>
@@ -5172,12 +5377,15 @@ function HomePageImpl() {
                     }}
                     onHoverEdge={handleHoverEdge}
                     selectedEdge={selectedEdge ? { sourceId: selectedEdge.sourceId, targetId: selectedEdge.targetId } : null}
+                    previewEdge={meaningPreview}
                     onSelect={(slug) => {
+                      setMeaningEditorState(null);
                       setSelectedEdge(null);
                       handleSelect(slug);
                     }}
                     onOpen={handleExpandRequest}
                     onPaneClick={() => {
+                      setMeaningEditorState(null);
                       setSelectedEdge(null);
                       handleClose();
                     }}
@@ -5565,13 +5773,16 @@ function HomePageImpl() {
             // 클래스라 항상 붙인다(zoom:1 기본, ≥1920px/≥2400px 에서만
             // 실제 zoom) — 브랜드 pill 과 같은 비율로 커져야 --topology-
             // index-top 과의 겹침 회피 gap 이 그 폭에서도 유지된다.
-            className="topology-ui-scale fixed inset-x-3 top-[72px] z-50 flex justify-center lg:inset-x-auto lg:right-[var(--topology-node-popover-right-inset)] lg:top-[var(--topology-node-popover-top)] lg:block"
+            className="topology-ui-scale fixed inset-x-3 top-[72px] z-30 flex justify-center lg:inset-x-auto lg:right-[var(--topology-node-popover-right-inset)] lg:top-[var(--topology-node-popover-top)] lg:block"
           >
+            <div className="grid">
             {panelDatasheetModel ? (
               <TopologyV2DetailPanel
                 key={panelDatasheetModel.slug}
                 open={panelOpen}
-                onExited={() => setNodePanelMounted(false)}
+                onExited={() => {
+                  if (!meaningEditorOpen) setNodePanelMounted(false);
+                }}
                 nodeId={panelDatasheetModel.nodeId}
                 slug={panelDatasheetModel.slug}
                 title={panelDatasheetModel.title}
@@ -5589,7 +5800,7 @@ function HomePageImpl() {
                   ? `${panelDatasheetModel.handoffText}\n\n${formatProjectSourceHandoff(projectSource.view)}`
                   : panelDatasheetModel.handoffText}
                 documentHref={panelDatasheetModel.documentHref}
-                studioEditHref={panelDatasheetModel.studioEditHref}
+                meaningEditHref={panelDatasheetModel.meaningEditHref}
                 labels={{
                   kindLabel: tKinds(normalizeKindLabelKey(panelDatasheetModel.kind)),
                   domainLabel: t("nodeDatasheet.domainLabel"),
@@ -5674,10 +5885,26 @@ function HomePageImpl() {
                   sourceOntologyDocument: t("nodeDatasheet.sourceOntologyDocument"),
                   sourceBusy: projectSourceLabels?.busy,
                 }}
-                onSelectConnection={(id) => handleSelect(id)}
+                onSelectConnection={(id) => {
+                  setMeaningEditorState(null);
+                  handleSelect(id);
+                }}
                 onHoverConnection={handleDatasheetHoverConnection}
                 onHoverEvidence={handleDatasheetHoverEvidence}
                 onCopyHandoff={copyV2NodeHandoff}
+                onEditRelations={
+                  () => {
+                    if (meaningEditorSource) {
+                      openMeaningEditor({
+                          sourceId: meaningEditorSource.id,
+                          relation: "dependsOn",
+                          targetId: null,
+                      });
+                    } else {
+                      setCreateNeedsVaultOpen(true);
+                    }
+                  }
+                }
                 /*
                  * 「이어서 새로 만들기」 — **도메인 노드에서만** 넘긴다.
                  *
@@ -5744,9 +5971,28 @@ function HomePageImpl() {
                 // 경로 서브라인(슬라이스 B)을 개발자 크롬으로 간주해 숨긴다.
                 showHandoff={!audiencePlain}
                 showSourcePath={!audiencePlain}
-                className="max-lg:w-[min(520px,calc(100vw-1.5rem))]"
+                className="col-start-1 row-start-1 max-lg:w-[min(520px,calc(100vw-1.5rem))]"
               />
             ) : null}
+            {meaningEditorSource && heldMeaningEditorState ? (
+              <MeaningEditorPanel
+                key={`meaning:${meaningEditorSource.id}`}
+                open={meaningEditorOpen}
+                source={meaningEditorSource}
+                candidates={meaningEditorCandidates}
+                initialRelation={heldMeaningEditorState.initialRelation}
+                initialTargetId={heldMeaningEditorState.initialTargetId}
+                initialWhy={heldMeaningEditorState.initialWhy}
+                onPreview={setMeaningPreview}
+                onApply={applyMeaningEditor}
+                onClose={closeMeaningEditor}
+                onExited={() => {
+                  if (!panelOpen) setNodePanelMounted(false);
+                }}
+                className="col-start-1 row-start-1 max-lg:w-[min(520px,calc(100vw-1.5rem))]"
+              />
+            ) : null}
+            </div>
           </div>
         ) : null}
         {/* P3b — 엣지 팝오버: 노드 팝오버와 같은 포지셔너 계약, 배타 렌더. */}
@@ -5779,7 +6025,7 @@ function HomePageImpl() {
           <Surface
             open={edgePanelOpen}
             data-testid="topology-edge-popover-positioner"
-            className="topology-ui-scale fixed inset-x-3 top-[72px] z-50 flex justify-center lg:inset-x-auto lg:right-[var(--topology-node-popover-right-inset)] lg:top-[var(--topology-node-popover-top)] lg:block"
+            className="topology-ui-scale fixed inset-x-3 top-[72px] z-30 flex justify-center lg:inset-x-auto lg:right-[var(--topology-node-popover-right-inset)] lg:top-[var(--topology-node-popover-top)] lg:block"
           >
             <TopologyV2EdgePanel
               sentence={heldEdgePanelModel.sentence}
@@ -5791,7 +6037,23 @@ function HomePageImpl() {
               why={heldEdgePanelModel.why}
               declaredBy={heldEdgePanelModel.declaredBy}
               updatedAtLabel={heldEdgePanelModel.updatedAtLabel}
-              studioEditHref={heldEdgePanelModel.studioEditHref}
+              meaningEditHref={heldEdgePanelModel.meaningEditHref}
+              onEditRelation={
+                heldEdgePanelModel.meaningRelation
+                  ? () => {
+                      if (heldEdgePanelModel.contextualEditable) {
+                        openMeaningEditor({
+                          sourceId: heldEdgePanelModel.fromId,
+                          relation: heldEdgePanelModel.meaningRelation!,
+                          targetId: heldEdgePanelModel.toId,
+                        });
+                      } else {
+                        setCreateNeedsVaultOpen(true);
+                      }
+                      setSelectedEdge(null);
+                    }
+                  : undefined
+              }
               labels={{
                 kicker: t("edgePanel.kicker"),
                 declaredByLabel: t("edgePanel.declaredBy"),
@@ -5800,6 +6062,7 @@ function HomePageImpl() {
                 openDoc: t("edgePanel.openDoc"),
               }}
               onSelectNode={(id) => {
+                setMeaningEditorState(null);
                 setSelectedEdge(null);
                 handleSelect(id);
               }}
@@ -5818,7 +6081,7 @@ function HomePageImpl() {
             position={heldContextMenu.anchor}
             documentHref={heldContextMenu.model.documentHref}
             mentionDocumentHref={heldContextMenu.model.mentionDocumentHref}
-            studioEditHref={heldContextMenu.model.studioEditHref}
+            meaningEditHref={heldContextMenu.model.meaningEditHref}
             labels={{
               actionDocument: t("nodeDatasheet.actionDocument"),
               actionMentionDocument: t("nodeDatasheet.actionMentionDocument"),

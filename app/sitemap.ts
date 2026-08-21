@@ -6,10 +6,8 @@ import { routing } from '@/i18n/routing';
 // Static export — must resolve at build time.
 export const dynamic = 'force-static';
 
-// 사용자가 직접 진입 가능한 모든 정적 surface. /ontology/studio(나침 무대)는
-// AGENTS.md routes 표의 1급 write surface 이고 데모 모드에서도 read-only 로
-// 로드 가능 → 색인 가치 충분(은퇴한 /ontology/edit 빌더 자리를 대체).
-// /project/new 는 vault-mode 진입 후만 의미 있어 제외.
+// 사용자가 직접 진입 가능한 정본 surface. 호환 redirect와 /project/new 같은
+// vault-mode 전용 진입점은 제외한다.
 const STATIC_ROUTES = [
   '',
   'projects',
@@ -19,7 +17,6 @@ const STATIC_ROUTES = [
   // 'ontology' 는 제외 — `/topology` 로 보내는 리다이렉트라 정본이 자기가
   // 아니다(`app/[locale]/ontology/page.tsx`). 정본이 남을 가리키는 주소를
   // 사이트맵에 넣으면 두 신호가 서로 다른 말을 한다.
-  'ontology/studio',
   'ontology/insights',
 ];
 

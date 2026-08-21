@@ -4,7 +4,9 @@ import { useState } from "react";
 import { fieldClass } from '@/shared/ui/control-class';
 import { Plus, X } from "lucide-react";
 import { ICON_SIZE } from "@/shared/ui/icon-size";
-import { Select, controlClass } from "@/shared/ui";
+import { Button, Select, Surface, controlClass } from "@/shared/ui";
+import { OntologyChangeReview } from "@/features/ontology-change-review";
+import type { OntologyChangeSet } from "@/entities/knowledge-graph";
 
 /**
  * S2.1a — 토폴로지에서 새 온톨로지 노드를 만드는 작은 form (presentational).
@@ -33,6 +35,10 @@ export interface CreateNodeFormLabels {
   domainHelper: string;
   create: string;
   cancel: string;
+  reviewHeading: string;
+  reviewBack: string;
+  reviewConfirm: string;
+  reviewConfirming: string;
   kindLabels: Record<CreateNodeKind, string>;
   /** 어권별 이름 UI — `localeNames` 를 넘길 때만 쓰인다. */
   primaryNamePlaceholder: string;
@@ -55,6 +61,7 @@ export function CreateNodeForm({
   defaultKind = "capability",
   defaultDomain = "",
   domainOptions = [],
+  review = null,
 }: {
   onCreate: (input: {
     title: string;
@@ -62,9 +69,15 @@ export function CreateNodeForm({
     domain?: string;
     /** 어권별 표시 이름 — `{ ko, en }` → `display_ko` / `display_en`. */
     localeLabels?: Record<string, string>;
-  }) => void | Promise<void>;
+  }) => boolean | void | Promise<boolean | void>;
   onCancel?: () => void;
   labels: CreateNodeFormLabels;
+  review?: {
+    changeSet: OntologyChangeSet;
+    confirming: boolean;
+    onBack: () => void;
+    onConfirm: () => void | Promise<void>;
+  } | null;
   defaultKind?: CreateNodeKind;
   /**
    * 미리 고른 도메인 (2026-08-03) — 지도의 도메인 노드에서 「이어서 새로
@@ -114,15 +127,17 @@ export function CreateNodeForm({
               : {}),
           }
         : undefined;
-      await onCreate({
+      const shouldReset = await onCreate({
         title: title.trim(),
         kind,
         domain: domain.trim() || undefined,
         localeLabels,
       });
-      setTitle("");
-      setDomain("");
-      setSecondaryName("");
+      if (shouldReset !== false) {
+        setTitle("");
+        setDomain("");
+        setSecondaryName("");
+      }
     } finally {
       setCreating(false);
     }
@@ -130,7 +145,7 @@ export function CreateNodeForm({
 
   return (
     <section
-      aria-label={labels.heading}
+      aria-label={review ? labels.reviewHeading : labels.heading}
       data-testid="create-node-form"
       data-surface-role="blocking-edit-surface"
       data-elevation-contract="solid-panel-over-dimmed-map"
@@ -144,7 +159,7 @@ export function CreateNodeForm({
           id={labels.headingId}
           className="font-mono text-label uppercase tracking-[var(--tracking-caps-14)] text-[color:var(--color-indigo-accent)]"
         >
-          {labels.heading}
+          {review ? labels.reviewHeading : labels.heading}
         </p>
         {onCancel ? (
           <button
@@ -164,6 +179,8 @@ export function CreateNodeForm({
           </button>
         ) : null}
       </div>
+      <div className="grid">
+      <Surface open={!review} className="col-start-1 row-start-1">
       <div className="mt-3.5 flex flex-col gap-3.5">
         <input
           type="text"
@@ -260,6 +277,36 @@ export function CreateNodeForm({
           <Plus size={ICON_SIZE.sm} aria-hidden />
           {labels.create}
         </button>
+      </div>
+      </Surface>
+      <Surface open={Boolean(review)} className="col-start-1 row-start-1">
+        {review ? (
+          <div className="mt-3.5 grid gap-4">
+            <OntologyChangeReview
+              changeSet={review.changeSet}
+              testId="create-node-change-review"
+            />
+            <div className="flex justify-end gap-2">
+              <Button
+                variant="ghost"
+                autoFocus
+                disabled={review.confirming}
+                onClick={review.onBack}
+              >
+                {labels.reviewBack}
+              </Button>
+              <Button
+                variant="primary"
+                data-testid="create-node-confirm"
+                disabled={review.confirming}
+                onClick={() => void review.onConfirm()}
+              >
+                {review.confirming ? labels.reviewConfirming : labels.reviewConfirm}
+              </Button>
+            </div>
+          </div>
+        ) : null}
+      </Surface>
       </div>
     </section>
   );

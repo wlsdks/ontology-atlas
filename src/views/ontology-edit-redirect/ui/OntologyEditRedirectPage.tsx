@@ -3,35 +3,46 @@
 import { useEffect } from "react";
 import { useSearchParams } from "next/navigation";
 import { useRouter } from "@/i18n/navigation";
-import { translateOntologyDeeplinkToTopologyParam } from "@/entities/knowledge-graph";
+import {
+  buildTopologyMeaningCreateHref,
+  buildTopologyMeaningEditorNodeHref,
+} from "@/entities/knowledge-graph";
 
 /**
- * `/ontology/edit` — retired ERD builder. The 나침 무대(Compass Stage,
- * `/ontology/studio`) now covers node assembly, relation connecting, live
- * preview, and real frontmatter writes, so the ERD builder was removed
- * (master-plan follow-up, 2026-07-24). This route stays as a thin client
- * redirect so bookmarks / agent-handoff deep-links to the old builder land in
- * the studio instead of 404-ing.
+ * `/ontology/edit` and `/ontology/studio` are compatibility entries. The map
+ * now owns node creation and relation editing, so this component translates
+ * legacy query strings into the canonical contextual-workbench URL.
  *
- * A `?node=<id>` deep-link is forwarded to the studio's own `?node=` contract
- * (ENHANCE mode opens that node with its relation sockets), normalizing the
- * id through `translateOntologyDeeplinkToTopologyParam` so the studio's
- * `n.id === requestedNode` match holds for both canonical (`capability:foo`)
- * and legacy plural-slash (`capabilities/foo`) forms.
+ * A `?node=<id>` deep-link becomes `?p=<id>&workbench=edit`, preserving the
+ * canonical (`capability:foo`) and legacy plural-slash (`capabilities/foo`)
+ * forms through the shared node-href normalizer.
  */
 export function OntologyEditRedirectPage() {
   const searchParams = useSearchParams();
   const router = useRouter();
 
   useEffect(() => {
-    const node = searchParams.get("node");
-    const target = node
-      ? `/ontology/studio/?node=${encodeURIComponent(
-          translateOntologyDeeplinkToTopologyParam(node),
-        )}`
-      : "/ontology/studio/";
-    router.replace(target);
+    router.replace(buildTopologyWorkbenchRedirect(searchParams));
   }, [router, searchParams]);
 
   return null;
+}
+
+export function buildTopologyWorkbenchRedirect(searchParams: URLSearchParams): string {
+  if (
+    searchParams.get("mode") === "create" ||
+    searchParams.get("workbench") === "create"
+  ) {
+    return buildTopologyMeaningCreateHref();
+  }
+  const node = searchParams.get("node") ?? searchParams.get("p");
+  if (!node) return "/topology/";
+
+  const base = buildTopologyMeaningEditorNodeHref(node);
+  const query = new URLSearchParams(base.slice(base.indexOf("?") + 1));
+  for (const key of ["edit", "via", "review"] as const) {
+    const value = searchParams.get(key);
+    if (value) query.set(key, value);
+  }
+  return `/topology/?${query.toString()}`;
 }

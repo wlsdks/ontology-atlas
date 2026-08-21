@@ -18,7 +18,7 @@ const labels: ConnectionsTabLabels = {
   relationTypesTitle: "Relation types",
   relationTypesCaption: "What kind of relations you have.",
   noRelationTypes: "No relations connected yet",
-  noRelationTypesHint: "Connect them in the workshop.",
+  noRelationTypesHint: "Connect them on the map.",
   hubsTitle: "Hubs",
   noHubs: "No hubs yet",
   noHubsHint: "Add relations to grow hubs.",
@@ -41,7 +41,7 @@ const impactLabels: ImpactRankingLabels = {
   directLabel: "direct",
   transitiveLabel: "indirect",
   empty: "Nothing ripples yet",
-  emptyHint: "Connect relations in the workshop.",
+  emptyHint: "Connect relations on the map.",
   truncated: (shown, total) => `Top ${shown} / ${total} total`,
   evidenceShow: (count) => `Show ${count} names without a document`,
   evidenceHide: "Hide names without a document",
@@ -180,7 +180,7 @@ describe("ConnectionsTab", () => {
     );
 
     expect(screen.getByText("No relations connected yet")).toBeInTheDocument();
-    expect(screen.getByText("Connect them in the workshop.")).toBeInTheDocument();
+    expect(screen.getByText("Connect them on the map.")).toBeInTheDocument();
   });
 
   it("절단 문구와 각주를 한 줄로 합쳐 카드 해부구조를 흔들지 않는다", () => {

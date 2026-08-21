@@ -13,14 +13,14 @@ describe("resolveActiveNavRailItem", () => {
     expect(resolveActiveNavRailItem("/docs/")).toBe("docs");
   });
 
-  it("folds the retired /ontology/edit builder route into studio (it redirects there)", () => {
-    expect(resolveActiveNavRailItem("/ontology/edit")).toBe("studio");
-    expect(resolveActiveNavRailItem("/ontology/edit/")).toBe("studio");
+  it("folds the retired /ontology/edit builder route into the map workbench", () => {
+    expect(resolveActiveNavRailItem("/ontology/edit")).toBe("map");
+    expect(resolveActiveNavRailItem("/ontology/edit/")).toBe("map");
   });
 
-  it("matches /ontology/studio to studio, not the generic /ontology prefix", () => {
-    expect(resolveActiveNavRailItem("/ontology/studio")).toBe("studio");
-    expect(resolveActiveNavRailItem("/ontology/studio/")).toBe("studio");
+  it("folds /ontology/studio compatibility links into the map workbench", () => {
+    expect(resolveActiveNavRailItem("/ontology/studio")).toBe("map");
+    expect(resolveActiveNavRailItem("/ontology/studio/")).toBe("map");
   });
 
   it("matches /ontology/insights to insights", () => {

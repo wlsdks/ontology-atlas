@@ -149,10 +149,9 @@ export function DocsVaultEditor({
 }: Props) {
   const t = useTranslations('vaultWidgets.editor');
   const locale = useLocale();
-  // 관계 어휘는 공방이 소유한다 — 두 화면이 같은 일에 다른 말을 쓰지 않게
-  // 여기서 새 문구를 만들지 않고 그 네임스페이스를 그대로 읽는다.
-  const tStudio = useTranslations('ontologyStudio');
-  // 종류 이름은 지도·공방·새 문서 대화상자가 쓰는 것 하나를 그대로 쓴다.
+  // 관계 어휘는 지도 편집기와 문서 편집기가 같은 네임스페이스를 읽는다.
+  const tRelations = useTranslations('ontologyRelations');
+  // 종류 이름은 지도·새 문서 대화상자가 쓰는 것 하나를 그대로 쓴다.
   const kindLabel = useOntologyKindLabel();
   const [content, setContent] = useState<string | null>(null);
   const [savedContent, setSavedContent] = useState<string | null>(null);
@@ -1123,7 +1122,7 @@ export function DocsVaultEditor({
                       className="hover:bg-[color:var(--color-overlay-1)] hover:text-[color:var(--color-text-primary)]"
                     >
                       <span className="truncate text-body">
-                        {tStudio(`relationShort.${RELATION_LABEL_KEY[relation.id]}`)}
+                        {tRelations(`relationShort.${RELATION_LABEL_KEY[relation.id]}`)}
                       </span>
                     </RowButton>
                   </li>

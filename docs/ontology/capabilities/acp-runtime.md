@@ -10,7 +10,8 @@ elements: []
 path: src-tauri/src/acp.rs
 created_by: human
 dependencies: [capabilities/mcp-server]
-relation_notes: { capabilities/mcp-server: ACP 세션은 session/new 의 mcpServers 로 이 서버를 주입받아 볼트 도구를 얻는다 (src/features/acp-session/model/vault-mcp-server.ts). 그래서 ACP 는 MCP 서버를 대체하는 경로가 아니라 그 위에 서는 경로다. }
+relation_notes: { capabilities/mcp-server: ACP 세션은 session/new 의 mcpServers 로 이 서버를 주입받아 볼트 도구를 얻는다 (src/features/acp-session/model/vault-mcp-server.ts). 그래서 ACP 는 MCP 서버를 대체하는 경로가 아니라 그 위에 서는 경로다., capabilities/reviewed-ontology-writing: "ACP permission requests reuse the reviewed ontology writing contract: read tools continue, while write tools pause on the shared typed change review before allow_once or reject_once." }
+relates: [capabilities/reviewed-ontology-writing]
 ---
 
 ## 정의

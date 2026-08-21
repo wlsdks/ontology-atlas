@@ -9,7 +9,7 @@ import { useTranslations } from "next-intl";
 import {
   buildEdgeTypeRows,
   buildInsightsReturnMarker,
-  buildOntologyStudioNodeHrefFromGraphId,
+  buildTopologyMeaningEditorNodeHref,
   buildOntologyHealthActionTarget,
   buildOntologyHealthSignals,
   buildOntologyNodeHref,
@@ -308,7 +308,7 @@ export function OntologyInsightsPage() {
       // signals — they're what flip the CLI to needs_attention.
       actionTarget: healthRepair.actionTarget ?? buildOntologyHealthActionTarget(healthSignals),
       actionTargets: healthRepair.actionTargets,
-      builderHref: buildOntologyStudioNodeHrefFromGraphId,
+      builderHref: buildTopologyMeaningEditorNodeHref,
       ontologyHref: mapNodeHref,
     }),
     [healthSignals, healthRepair, mapNodeHref],
@@ -492,7 +492,7 @@ export function OntologyInsightsPage() {
         })
       : null;
   const builderHref = (nodeId: string, exactReviewId?: string): string =>
-    buildOntologyStudioNodeHrefFromGraphId(nodeId, {
+    buildTopologyMeaningEditorNodeHref(nodeId, {
       via: exactReviewId ? buildInsightsReturnMarker("do-next") : null,
       reviewId: exactReviewId,
     });
@@ -712,7 +712,7 @@ export function OntologyInsightsPage() {
     emptyTitle: t("domainCouplingEmptyTitle"),
     emptyDescription: t("domainCouplingEmptyDescription"),
     emptyAction: t("domainCouplingEmptyAction"),
-    emptyActionHref: "/ontology/studio/",
+    emptyActionHref: "/topology/?workbench=create",
     boundaryTitle: t("domainCouplingBoundaryTitle"),
     boundarySelfLabel: t("domainCouplingSelfLabel"),
     boundaryCrossLabel: t("domainCouplingCrossLabel"),

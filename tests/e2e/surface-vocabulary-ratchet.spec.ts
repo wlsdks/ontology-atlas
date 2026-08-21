@@ -12,7 +12,7 @@ import { seedFirstRunSeen } from "./first-run-seed";
  * 안내 — 에는 주인이 없다. `surface.tsx` 는 이름과 달리 **모션만** 소유한다
  * (등장·퇴장 클래스).
  *
- * 그래서 10개 화면에서 그려진 상자 76개를 재니 **서로 다른 조합이 30종**이었다.
+ * 그래서 당시 10개 화면에서 그려진 상자 76개를 재니 **서로 다른 조합이 30종**이었다.
  * 값은 전부 램프 안이다(반경 6/9/12px, 색은 전부 토큰) — 어긋난 것은 **조합**이다.
  * 같은 9px 카드가 `border-soft + panel` 이기도 하고 `border-soft + overlay-1`
  * 이기도 하고 `border-soft + rgba(16,17,24,.96)` 이기도 하다.
@@ -61,7 +61,6 @@ const BASELINE_CONTROL_COMBOS = 17;
 const ROUTES = [
   "/ko/topology/",
   "/ko/docs/",
-  "/ko/ontology/studio/",
   "/ko/ontology/insights/",
   "/ko/projects/",
   "/ko/project/storefront/",

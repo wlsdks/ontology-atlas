@@ -40,7 +40,6 @@ export const AUDITED_ROUTES = [
   "/ko/",
   "/ko/topology/",
   "/ko/docs/",
-  "/ko/ontology/studio/",
   "/ko/ontology/insights/",
   "/ko/projects/",
   // ⚠️ 슬러그는 **빌드 산출물이 아니라 실행 중인 데이터 소스**에 있어야 한다
@@ -107,9 +106,10 @@ export const AUDITED_ROUTES = [
  */
 export const EXCLUDED_ROUTES: Readonly<Record<string, string>> = {
   // 얇은 클라이언트 리다이렉트라 **자기 화면이 없다**. 열면 목적지가 뜨므로
-  // 재 봐야 목적지를 두 번 재는 것이다(실측 2026-08-04: `/ko/ontology/` 의
-  // axe 프로필이 `/ko/topology/` 와, `/ko/ontology/edit/` 이
-  // `/ko/ontology/studio/` 와 같았다 — 둘 다 이미 목록에 있다).
+  // 재 봐야 목적지를 두 번 재는 것이다. 구 편집 주소 둘은 쿼리를 지도 contextual
+  // workbench 주소로 번역한다. 지도 기본 상태는 위 목록이, 볼트가 필요한 관계 편집
+  // 상태는 `a11y-vault-backed.spec.ts` 가 따로 연다.
   "/ontology": "리다이렉트 → /topology?index=expanded — 목적지를 이미 잰다",
-  "/ontology/edit": "리다이렉트 → /ontology/studio — 목적지를 이미 잰다",
+  "/ontology/edit": "호환 리다이렉트 → /topology contextual workbench — 목적지와 편집 상태를 이미 잰다",
+  "/ontology/studio": "호환 리다이렉트 → /topology contextual workbench — 자기 화면이 없다",
 };

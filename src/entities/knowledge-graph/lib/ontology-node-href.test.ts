@@ -2,17 +2,17 @@ import { describe, expect, it } from "vitest";
 import type { KnowledgeGraphNode } from "../model";
 import {
   buildInsightsReturnMarker,
-  buildOntologyStudioNodeHrefFromGraphId,
-  buildOntologyStudioEdgeHref,
+  buildTopologyMeaningEditorNodeHref,
+  buildTopologyMeaningEditorEdgeHref,
   buildOntologyInsightsNodeHref,
   buildOntologyInsightsReturnHref,
   buildOntologyNodeHref,
   edgeAuthoredByFromNode,
   parseInsightsReturnMarker,
-  parseOntologyStudioEditParam,
+  parseOntologyMeaningEditParam,
   resolveOntologyBuilderNodeSlug,
   resolveOntologyBuilderNodeSlugFromGraphId,
-  studioEditRelationForEdgeType,
+  meaningEditRelationForEdgeType,
 } from "./ontology-node-href";
 
 describe("buildOntologyNodeHref", () => {
@@ -182,21 +182,21 @@ describe("resolveOntologyBuilderNodeSlug", () => {
   });
 });
 
-describe("buildOntologyStudioNodeHrefFromGraphId", () => {
-  // URL 계약: 공방 발신 링크는 canonical `<kind>:<slug>` 로 통일한다.
+describe("buildTopologyMeaningEditorNodeHref", () => {
+  // URL 계약: 지도 편집기 발신 링크는 canonical `<kind>:<slug>` 로 통일한다.
   it("canonical graph id 를 그대로 실어 보낸다", () => {
     expect(resolveOntologyBuilderNodeSlugFromGraphId("domain:views")).toBe(
       "domains/views",
     );
     expect(
-      buildOntologyStudioNodeHrefFromGraphId("capability:topology-analysis-modes"),
+      buildTopologyMeaningEditorNodeHref("capability:topology-analysis-modes"),
     ).toBe(
-      `/ontology/studio/?node=${encodeURIComponent(
+      `/topology/?p=${encodeURIComponent(
         "capability:topology-analysis-modes",
-      )}`,
+      )}&workbench=edit`,
     );
     expect(
-      buildOntologyStudioNodeHrefFromGraphId(
+      buildTopologyMeaningEditorNodeHref(
         "capability:topology-analysis-modes",
         {
           via: "insights:do-next",
@@ -204,9 +204,9 @@ describe("buildOntologyStudioNodeHrefFromGraphId", () => {
         },
       ),
     ).toBe(
-      `/ontology/studio/?node=${encodeURIComponent(
+      `/topology/?p=${encodeURIComponent(
         "capability:topology-analysis-modes",
-      )}&via=${encodeURIComponent("insights:do-next")}` +
+      )}&workbench=edit&via=${encodeURIComponent("insights:do-next")}` +
         `&review=${encodeURIComponent("promotion:element:x")}`,
     );
   });
@@ -215,8 +215,8 @@ describe("buildOntologyStudioNodeHrefFromGraphId", () => {
     expect(resolveOntologyBuilderNodeSlugFromGraphId("project:ontology-atlas")).toBe(
       "ontology-atlas",
     );
-    expect(buildOntologyStudioNodeHrefFromGraphId("project:ontology-atlas")).toBe(
-      `/ontology/studio/?node=${encodeURIComponent("project:ontology-atlas")}`,
+    expect(buildTopologyMeaningEditorNodeHref("project:ontology-atlas")).toBe(
+      `/topology/?p=${encodeURIComponent("project:ontology-atlas")}&workbench=edit`,
     );
   });
 
@@ -227,34 +227,34 @@ describe("buildOntologyStudioNodeHrefFromGraphId", () => {
       ),
     ).toBe("capabilities/topology-analysis-modes");
     expect(
-      buildOntologyStudioNodeHrefFromGraphId("capabilities/topology-analysis-modes"),
+      buildTopologyMeaningEditorNodeHref("capabilities/topology-analysis-modes"),
     ).toBe(
-      `/ontology/studio/?node=${encodeURIComponent(
+      `/topology/?p=${encodeURIComponent(
         "capability:topology-analysis-modes",
-      )}`,
+      )}&workbench=edit`,
     );
   });
 });
 
-describe("studioEditRelationForEdgeType (Slice 6 — 지도 엣지 → bearing)", () => {
+describe("meaningEditRelationForEdgeType (Slice 6 — 지도 엣지 → bearing)", () => {
   it("maps the four editable bearings (+ frontmatter-key aliases)", () => {
-    expect(studioEditRelationForEdgeType("is_a")).toBe("isA");
-    expect(studioEditRelationForEdgeType("depends_on")).toBe("dependsOn");
-    expect(studioEditRelationForEdgeType("dependencies")).toBe("dependsOn");
-    expect(studioEditRelationForEdgeType("contains")).toBe("contains");
-    expect(studioEditRelationForEdgeType("related_to")).toBe("relates");
-    expect(studioEditRelationForEdgeType("relates")).toBe("relates");
-    expect(studioEditRelationForEdgeType("uses")).toBe("relates");
-    expect(studioEditRelationForEdgeType("implements")).toBe("relates");
+    expect(meaningEditRelationForEdgeType("is_a")).toBe("isA");
+    expect(meaningEditRelationForEdgeType("depends_on")).toBe("dependsOn");
+    expect(meaningEditRelationForEdgeType("dependencies")).toBe("dependsOn");
+    expect(meaningEditRelationForEdgeType("contains")).toBe("contains");
+    expect(meaningEditRelationForEdgeType("related_to")).toBe("relates");
+    expect(meaningEditRelationForEdgeType("relates")).toBe("relates");
+    expect(meaningEditRelationForEdgeType("uses")).toBe("relates");
+    expect(meaningEditRelationForEdgeType("implements")).toBe("relates");
   });
 
   it("returns null for edge types outside the four bearings — no dead action", () => {
-    // describes / belongs_to / domain-membership aren't editable in the 공방.
-    expect(studioEditRelationForEdgeType("describes")).toBeNull();
-    expect(studioEditRelationForEdgeType("belongs_to")).toBeNull();
-    expect(studioEditRelationForEdgeType("domain")).toBeNull();
-    expect(studioEditRelationForEdgeType("")).toBeNull();
-    expect(studioEditRelationForEdgeType("whatever")).toBeNull();
+    // describes / belongs_to / domain-membership aren't editable in the 지도 편집기.
+    expect(meaningEditRelationForEdgeType("describes")).toBeNull();
+    expect(meaningEditRelationForEdgeType("belongs_to")).toBeNull();
+    expect(meaningEditRelationForEdgeType("domain")).toBeNull();
+    expect(meaningEditRelationForEdgeType("")).toBeNull();
+    expect(meaningEditRelationForEdgeType("whatever")).toBeNull();
   });
 });
 
@@ -280,57 +280,57 @@ describe("edgeAuthoredByFromNode (Slice 6 — direction / authorship)", () => {
   });
 });
 
-describe("buildOntologyStudioEdgeHref (Slice 6 — 공방 엣지 딥링크)", () => {
+describe("buildTopologyMeaningEditorEdgeHref (Slice 6 — 지도 관계 편집 딥링크)", () => {
   it("carries focal (from) + edit=<relation>:<target>, both canonical", () => {
     expect(
-      buildOntologyStudioEdgeHref("capability:token-issue", "capability:jwt", "dependsOn"),
+      buildTopologyMeaningEditorEdgeHref("capability:token-issue", "capability:jwt", "dependsOn"),
     ).toBe(
-      `/ontology/studio/?node=${encodeURIComponent("capability:token-issue")}&edit=dependsOn:${encodeURIComponent("capability:jwt")}`,
+      `/topology/?p=${encodeURIComponent("capability:token-issue")}&workbench=edit&edit=dependsOn:${encodeURIComponent("capability:jwt")}`,
     );
   });
 
   it("promotes folder-prefixed ids to canonical <kind>:<slug> like the node variant", () => {
     expect(
-      buildOntologyStudioEdgeHref("capabilities/parent", "elements/parser", "contains"),
+      buildTopologyMeaningEditorEdgeHref("capabilities/parent", "elements/parser", "contains"),
     ).toBe(
-      `/ontology/studio/?node=${encodeURIComponent("capability:parent")}&edit=contains:${encodeURIComponent("element:parser")}`,
+      `/topology/?p=${encodeURIComponent("capability:parent")}&workbench=edit&edit=contains:${encodeURIComponent("element:parser")}`,
     );
   });
 
   it("emits each relation with a single relation-colon before the encoded target", () => {
     for (const rel of ["isA", "dependsOn", "contains", "relates"] as const) {
-      const href = buildOntologyStudioEdgeHref("capability:a", "capability:b", rel);
+      const href = buildTopologyMeaningEditorEdgeHref("capability:a", "capability:b", rel);
       // relation colon is literal; the target's own kind:slug colon is encoded.
       expect(href).toContain(`&edit=${rel}:${encodeURIComponent("capability:b")}`);
     }
   });
 
-  it("round-trips through parseOntologyStudioEditParam (first-colon split keeps kind:slug)", () => {
-    const href = buildOntologyStudioEdgeHref("capability:a", "capability:b", "isA");
+  it("round-trips through parseOntologyMeaningEditParam (first-colon split keeps kind:slug)", () => {
+    const href = buildTopologyMeaningEditorEdgeHref("capability:a", "capability:b", "isA");
     const raw = new URL(href, "https://x").searchParams.get("edit");
-    expect(parseOntologyStudioEditParam(raw)).toEqual({ relation: "isA", targetId: "capability:b" });
+    expect(parseOntologyMeaningEditParam(raw)).toEqual({ relation: "isA", targetId: "capability:b" });
   });
 });
 
-describe("parseOntologyStudioEditParam (Slice 6 — 공방 소비자)", () => {
+describe("parseOntologyMeaningEditParam (Slice 6 — 지도 편집기 소비자)", () => {
   it("splits on the FIRST colon so the target's kind:slug colon survives", () => {
-    expect(parseOntologyStudioEditParam("dependsOn:capability:jwt")).toEqual({
+    expect(parseOntologyMeaningEditParam("dependsOn:capability:jwt")).toEqual({
       relation: "dependsOn",
       targetId: "capability:jwt",
     });
-    expect(parseOntologyStudioEditParam("contains:element:parser")).toEqual({
+    expect(parseOntologyMeaningEditParam("contains:element:parser")).toEqual({
       relation: "contains",
       targetId: "element:parser",
     });
   });
 
   it("rejects an unknown relation, malformed, or empty value", () => {
-    expect(parseOntologyStudioEditParam("belongsTo:capability:x")).toBeNull();
-    expect(parseOntologyStudioEditParam("isA")).toBeNull();
-    expect(parseOntologyStudioEditParam(":capability:x")).toBeNull();
-    expect(parseOntologyStudioEditParam("relates:")).toBeNull();
-    expect(parseOntologyStudioEditParam("")).toBeNull();
-    expect(parseOntologyStudioEditParam(null)).toBeNull();
+    expect(parseOntologyMeaningEditParam("belongsTo:capability:x")).toBeNull();
+    expect(parseOntologyMeaningEditParam("isA")).toBeNull();
+    expect(parseOntologyMeaningEditParam(":capability:x")).toBeNull();
+    expect(parseOntologyMeaningEditParam("relates:")).toBeNull();
+    expect(parseOntologyMeaningEditParam("")).toBeNull();
+    expect(parseOntologyMeaningEditParam(null)).toBeNull();
   });
 });
 

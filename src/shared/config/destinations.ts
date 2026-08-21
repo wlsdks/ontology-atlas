@@ -3,7 +3,7 @@
  *
  * ## 왜 이 파일이 생겼나
  *
- * 목적지 일곱의 주소가 `AppNavRail` **컴포넌트 안에** 인라인으로 있었다. 화면을
+ * 목적지 여섯의 주소가 `AppNavRail` **컴포넌트 안에** 인라인으로 있었다. 화면을
  * 그리는 데는 충분했지만, 그 목록을 **데이터로 읽어야 하는 두 번째 소비처**
  * (키보드 이동 · 단축키 시트)가 생기면서 문제가 됐다 — 컴포넌트 안의 배열은
  * `t()` 와 아이콘이 섞여 있어 import 할 수 없고, 사본을 만들면 그 순간부터
@@ -30,7 +30,6 @@
 export const DESTINATION_IDS = [
   'map',
   'docs',
-  'studio',
   'insights',
   'projects',
   /*
@@ -38,7 +37,7 @@ export const DESTINATION_IDS = [
    * 여기로 뺐다. 설정은 값을 고르는 자리이고, 이쪽은 진행 상태가 있는 운영
    * 작업(받고 · 깔고 · 로그인하고 · 고치고 · 대화를 연다)이다.
    *
-   * ⚠️ **일곱이 상한이다** (소유자 확정 2026-08-21). 여덟 번째를 넣으려면
+   * ⚠️ **여섯이 상한이다** (소유자 확정 2026-08-21). 일곱 번째를 넣으려면
    * 무엇을 뺄지 먼저 대야 한다 — 계약이 그것을 강제한다.
    */
   'agents',
@@ -55,7 +54,6 @@ export type DestinationId = (typeof DESTINATION_IDS)[number];
 export const DESTINATION_HREF: Record<DestinationId, string> = {
   map: '/topology/',
   docs: '/docs/',
-  studio: '/ontology/studio/',
   insights: '/ontology/insights/',
   projects: '/projects/',
   agents: '/agents/',
@@ -69,7 +67,6 @@ export const NAV_LEADER_KEY = 'g';
 export const DESTINATION_KEY: Record<DestinationId, string> = {
   map: 'm',
   docs: 'd',
-  studio: 's',
   insights: 'i',
   projects: 'p',
   // `a` — 겹치는 것이 없다.

@@ -15,8 +15,8 @@ vi.mock("@/shared/lib/copy-text", () => ({ copyText: vi.fn(async () => true) }))
 
 const labels: MeaningGapLabels = {
   openSource: "Open source",
-  openBuilder: "Edit in workshop",
-  openBuilderReadOnly: "View in workshop",
+  openBuilder: "Edit on map",
+  openBuilderReadOnly: "View on map",
   handoffCopy: "Verify with agent",
   handoffCopyIdle: "Copy the command",
   handoffCopied: "Copied",

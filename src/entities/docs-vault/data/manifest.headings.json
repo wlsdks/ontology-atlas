@@ -3582,6 +3582,11 @@
     },
     {
       "depth": 2,
+      "text": "2026-08-21 · 관계 편집을 지도 안으로 옮기고, 모든 쓰기 전에 변경안을 보여 줍니다",
+      "slug": "2026-08-21-관계-편집을-지도-안으로-옮기고-모든-쓰기-전에-변경안을-보여-줍니다"
+    },
+    {
+      "depth": 2,
       "text": "2026-08-21 · 스킬 검사 화면을 없앴습니다",
       "slug": "2026-08-21-스킬-검사-화면을-없앴습니다"
     },
@@ -6216,6 +6221,16 @@
       "depth": 2,
       "text": "기록 형식",
       "slug": "기록-형식"
+    },
+    {
+      "depth": 2,
+      "text": "2026-08-21 (92) — 지도 안에서 뜻을 고치고, ACP 쓰기는 사람의 변경안 확인 뒤에만 이어간다",
+      "slug": "2026-08-21-92-지도-안에서-뜻을-고치고-acp-쓰기는-사람의-변경안-확인-뒤에만-이어간다"
+    },
+    {
+      "depth": 3,
+      "text": "PO Pass",
+      "slug": "po-pass"
     },
     {
       "depth": 2,
@@ -10187,8 +10202,8 @@
     },
     {
       "depth": 2,
-      "text": "Ontology Workshop — 공방 (Compass Stage); game exception RETIRED 2026-07-24",
-      "slug": "ontology-workshop-공방-compass-stage-game-exception-retired-2026-07-24"
+      "text": "Contextual ontology writing; Studio surface retired 2026-08-21",
+      "slug": "contextual-ontology-writing-studio-surface-retired-2026-08-21"
     },
     {
       "depth": 2,
@@ -10908,13 +10923,13 @@
     },
     {
       "depth": 3,
-      "text": "`/ontology/studio` — 공방 (Compass Stage), the vault write surface",
-      "slug": "ontologystudio-공방-compass-stage-the-vault-write-surface"
+      "text": "`/topology?workbench=edit` — contextual meaning editor and change review",
+      "slug": "topologyworkbenchedit-contextual-meaning-editor-and-change-review"
     },
     {
       "depth": 3,
-      "text": "`/ontology/edit` — RETIRED (2026-07-24) → redirects to `/ontology/studio`",
-      "slug": "ontologyedit-retired-2026-07-24-redirects-to-ontologystudio"
+      "text": "`/ontology/edit` and `/ontology/studio` — compatibility redirects",
+      "slug": "ontologyedit-and-ontologystudio-compatibility-redirects"
     },
     {
       "depth": 3,
@@ -11723,43 +11738,33 @@
   "guide/studio": [
     {
       "depth": 1,
-      "text": "스튜디오에서 노드 완성하기",
-      "slug": "스튜디오에서-노드-완성하기"
+      "text": "지도에서 개념과 관계 고치기",
+      "slug": "지도에서-개념과-관계-고치기"
     },
     {
       "depth": 2,
-      "text": "1. 무대에 무엇을 올릴지 먼저 고른다",
-      "slug": "1-무대에-무엇을-올릴지-먼저-고른다"
+      "text": "관계 하나 고치기",
+      "slug": "관계-하나-고치기"
+    },
+    {
+      "depth": 3,
+      "text": "네 관계",
+      "slug": "네-관계"
     },
     {
       "depth": 2,
-      "text": "2. 방향이 곧 관계의 종류다",
-      "slug": "2-방향이-곧-관계의-종류다"
+      "text": "새 개념 만들기",
+      "slug": "새-개념-만들기"
     },
     {
       "depth": 2,
-      "text": "3. 빈 자리는 **아직 안 쓴 한 줄**이다",
-      "slug": "3-빈-자리는-아직-안-쓴-한-줄이다"
+      "text": "에이전트에게 시킬 때",
+      "slug": "에이전트에게-시킬-때"
     },
     {
       "depth": 2,
-      "text": "4. 저장하기 전에 무엇이 변하는지 본다",
-      "slug": "4-저장하기-전에-무엇이-변하는지-본다"
-    },
-    {
-      "depth": 2,
-      "text": "5. 저장은 두 갈래다. 어느 폴더를 열었나에 따라",
-      "slug": "5-저장은-두-갈래다-어느-폴더를-열었나에-따라"
-    },
-    {
-      "depth": 2,
-      "text": "6. 이미 이어진 것 고치기",
-      "slug": "6-이미-이어진-것-고치기"
-    },
-    {
-      "depth": 2,
-      "text": "7. 걸어다니면서 채운다",
-      "slug": "7-걸어다니면서-채운다"
+      "text": "충돌과 정본",
+      "slug": "충돌과-정본"
     },
     {
       "depth": 2,
@@ -12773,23 +12778,6 @@
       "slug": "확신도"
     }
   ],
-  "ontology/capabilities/ontology-blocks": [
-    {
-      "depth": 2,
-      "text": "정의",
-      "slug": "정의"
-    },
-    {
-      "depth": 2,
-      "text": "근거",
-      "slug": "근거"
-    },
-    {
-      "depth": 2,
-      "text": "확신도",
-      "slug": "확신도"
-    }
-  ],
   "ontology/capabilities/project-data-source": [
     {
       "depth": 2,
@@ -12893,6 +12881,28 @@
       "depth": 2,
       "text": "경계",
       "slug": "경계"
+    }
+  ],
+  "ontology/capabilities/reviewed-ontology-writing": [
+    {
+      "depth": 2,
+      "text": "정의",
+      "slug": "정의"
+    },
+    {
+      "depth": 2,
+      "text": "경계",
+      "slug": "경계"
+    },
+    {
+      "depth": 2,
+      "text": "근거",
+      "slug": "근거"
+    },
+    {
+      "depth": 2,
+      "text": "확신도",
+      "slug": "확신도"
     }
   ],
   "ontology/capabilities/taxonomy": [

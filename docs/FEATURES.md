@@ -1,10 +1,10 @@
 # FEATURES — ontology-atlas
 
 > Complete inventory of features users can **actually use right now**.
-> Last updated: 2026-08-02 (지금 있는 라우트, 설치한 앱이 지키기로 한 약속,
+> Last updated: 2026-08-21 (지금 있는 라우트, 설치한 앱이 지키기로 한 약속,
 > 프로젝트가 무엇을 뜻하는지 확정한 기록(project meaning receipt)을 다시
-> 확인했다 — `/ontology` 는 `/topology?index=expanded` 로, `/ontology/edit` 은
-> `/ontology/studio` 로 보내는 옛 주소 호환 redirect 이고, Insights 는
+> 확인했다 — `/ontology` 는 `/topology?index=expanded` 로, `/ontology/edit` 과
+> `/ontology/studio` 는 지도 안 contextual writer로 보내는 호환 redirect 이고, Insights 는
 > 할 일 · 구성 · 연결 · 경계 · 신선도 다섯 개 질문 탭으로 된 정비 화면이다.
 > 데스크톱 정적 스모크 테스트와 설치한 앱 검증기/Computer Use 가 같은 것을
 > 확인했다 — 자세한 것은 §2 의 각 라우트 절에).
@@ -31,7 +31,7 @@ diff review -> better next agent task`.
 
 | Surface | Entry | Audience |
 |---|---|---|
-| **Desktop app** (macOS · Windows x64 beta) | signed/notarized macOS DMG or unsigned Windows beta NSIS → installed local workbench; first run opens `/docs/?intent=local` vault setup welcome; visual routes `/docs`, `/ontology`, `/topology`, `/projects`, `/ontology/studio`, `/ontology/insights` | daily visual ontology work — pick a local vault folder, edit markdown-backed nodes/relations, reopen recent vaults without visiting the hosted site |
+| **Desktop app** (macOS · Windows x64 beta) | signed/notarized macOS DMG or unsigned Windows beta NSIS → installed local workbench; first run opens `/docs/?intent=local` vault setup welcome; visual routes `/docs`, `/ontology`, `/topology`, `/projects`, `/ontology/insights` | daily visual ontology work — pick a local vault folder, edit markdown-backed nodes/relations, reopen recent vaults without visiting the hosted site |
 | **CLI** (R12 / R14 / R15+ · 54 commands) | `init / agent-setup / agent-files / agent-activity / add / import / list / find / validate / mcp-verify / query / compile / export` (vault basics + existing-vault Claude/Codex config repair + read-only agent-file map/drift readout + explicit live activity heartbeat + installed MCP health/graph-query smoke + deterministic graph compile + standard-format interop export) · `index / analyze / infer-imports / bootstrap / preflight / snapshot` (autonomous ingest, project ontology indexing, commit preflight, and vault-scoped git snapshot commits) · `backlinks / orphans / path / explain / all-paths / reachability / relation-check / relate / rename / merge / delete` (graph CRUD + direct/path/common-neighbor explanation + bounded traversal + transitive closure + write preflight + write) · `match-nodes / match-edges / domain-matrix / facets / schema / pattern-walk / project-map / overview / hubs / blast-radius / cycles / components / topological-order / health / agent-brief / workspace-brief / growth / maintenance / node / similar` (graph deep dive — `query_ontology` ops, including graph DB-style node/edge scans, relation dashboard facets, relation schema patterns, explicit traversal and project maps, connected island checks, prerequisite ordering, relationship explanation, domain coupling matrix, agent handoff, and growth/maintenance queues) | developer terminal — vault scaffold, daily exploration, bulk import, MCP sanity check, live agent activity handoff, commit-time vault impact preview, graph deep dive (same authority as AI agent via MCP) |
 | **MCP** (R5 / R7 / R11 / R14 / R16 / R17) | current runtime read/write inventory over JSON-RPC (`tools/list`; prove with `mcp-verify`) | AI agent (Claude Code, Codex, Cursor) — explicit vault/repo root proof · read for context · write back findings · vault-scoped Git status/local snapshots · safe relation removal/replacement and concept reclassification · bootstrap/index projects · finalize project competency receipts · compile/query/validator-backed health and fresh categorical meaning assessment |
 | **Website** | GitHub Pages static export / `/` + `/download` | `/` renders the topology map directly and lets you open your own local vault folder from the browser (File System Access API, no install); `/download` is the product intro + release download path. Only `/docs`'s own separate local-source *browsing* tab stays desktop-only. |
@@ -53,10 +53,10 @@ input (humans + AI agents)     parse           store              output
         │                       │                │                │
         ▼                       ▼                ▼                ▼
   .md in vault  →          frontmatter   →  user disk      →  Topology (/, /topology) map + INDEX
-  (frontmatter)                              (vault)           Workshop (/ontology/studio) write surface
+  (frontmatter)                              (vault)           Topology contextual write + review
   + AI agent (MCP)                                            Docs workspace (/docs)
                                                               Insights (/ontology/insights) maintenance board
-                                                              compatibility redirects (/ontology, /ontology/edit)
+                                                              compatibility redirects (/ontology, /ontology/edit, /ontology/studio)
 ```
 
 ### Web and app do not promise the same screens (2026-07-27)
@@ -97,7 +97,7 @@ the web still does not offer BYOK or MCP registration.
 | **local** | a vault folder is active — picked in the installed app, or in an FSA-capable browser | vault manifest is the source of truth |
 | **static** | no active vault | build-time dogfood manifest (this project's own ontology) |
 
-**Effect**: when a user opens a vault folder in the installed app, `/`, `/topology`, `/projects`, `/project/[slug]`, `/ontology`, `/ontology/insights`, and `/ontology/studio` all switch to vault data instantly. Mutations (create / edit / delete / connect) are mode-aware: local → write to vault `.md`; static → rejected with toast (read-only) and routed toward the desktop app download on hosted web.
+**Effect**: when a user opens a vault folder in the installed app, `/`, `/topology`, `/projects`, `/project/[slug]`, `/ontology`, and `/ontology/insights` all switch to vault data instantly. Mutations (create / edit / connect) are mode-aware: local → show an exact change review, then write to vault `.md`; static → ask for a writable folder instead of presenting a dead editor.
 
 **Bootstrap from existing docs (2026-07-20, Slice 1)**: opening a folder that
 already has markdown but no `kind:` frontmatter used to strand the user on a
@@ -159,7 +159,7 @@ dialog never says "온톨로지" (map-building framing for non-experts).
   feeds the map legend, Insights, Workshop, and datasheet (contract-tested);
   the "?" sheet footer defines 도메인/역량/요소 in plain language.
 
-**Single source of truth (R8)**: `LocalVaultProvider` mounts once in `app/[locale]/layout.tsx`. Its many `useLocalVault()` consumers (`RootEntryPage` / `AppNavRail` / `OntologyStudioPage` / `DocsVaultPage` / `useDataSourceMode` / `useProjects` / `useProjectMutations` / `useVaultOntology` and the persistent app shell) share one state instance, one IDB rehydrate, one filesystem walk.
+**Single source of truth (R8)**: `LocalVaultProvider` mounts once in `app/[locale]/layout.tsx`. Its many `useLocalVault()` consumers (`RootEntryPage` / `AppNavRail` / `HomePage` / `DocsVaultPage` / `useDataSourceMode` / `useProjects` / `useProjectMutations` / `useVaultOntology` and the persistent app shell) share one state instance, one IDB rehydrate, one filesystem walk.
 
 **Desktop first-run (2026-07-18)**: in the installed app (Tauri — detected via
 `isDesktopShell()`, `src/shared/lib/desktop-shell.ts`), `/` with no vault
@@ -517,8 +517,8 @@ that floats over the map, reusing the same `buildOntologyTree` /
 `filterTreeByQuery` the old tree page used, so row search/select behavior is
 unchanged even though the surface is.
 
-`/ontology/studio` (공방 / Compass Stage) is the write surface and
-`/ontology/insights` is the five-question maintenance board. The old
+`/topology` is the read/write workbench and `/ontology/insights` is the
+five-question maintenance board. The old
 Browse/Write/Query labels are historical shorthand, not current navigation or
 surface chrome.
 
@@ -550,13 +550,13 @@ different questions and grew to 2.2× the 14-inch viewport, so it was split into
 - **Domain capacity** card — domain → bar (capability/element sub-counts), hidden when there are no domains
 
 #### Tab 3 — 연결 Connections
-- **Relation breakdown** — every edge type as a bar row with a `TopologyV2TraceMark` (solid=containment, dashed=depends/relates) + count + percent of total; empty vault gets a "connect them in the workshop" hint
+- **Relation breakdown** — every edge type as a bar row with a `TopologyV2TraceMark` (solid=containment, dashed=depends/relates) + count + percent of total; empty vault gets a "connect them on the map" hint
 - **Hubs** — top nodes by degree: kind glyph + title + relative bar + degree, map deeplink per row, "top N / M total" folded into the single footnote line
 
 #### Tab 4 — 경계 Boundaries
 - **Domain coupling** — a domain×domain **heat grid** (rows send, columns receive; the diagonal is inside-one-domain connections in neutral). Cell shade is a 4-step indigo alpha ladder and every non-zero cell keeps its number, so the card never speaks in colour alone. Picking a cell opens that pair's relation-type counts and real example edges (map deeplinks) in a slot that is reserved whether or not anything is selected. Top 6 domains by cross activity; beyond that the footnote says "top N of M domains" and how many cross links fall outside the grid. Same `computeDomainCouplingMatrix` output as MCP `domain_matrix` — no new calculation.
 - **Boundary pressure** — per-domain inside vs cross ratio; a high cross share signals a leaking boundary
-- Cold start (fewer than 2 domains or no cross edges) shows one explicit empty state **with a next step** (workshop link) instead of a misleading table
+- Cold start (fewer than 2 domains or no cross edges) shows one explicit empty state **with a next step** (map editor link) instead of a misleading table
 
 #### Tab 5 — 신선도 Freshness
 - **Domain freshness heatstrip** — one row per domain, a week-by-week heat strip (neutral ramp, current week in indigo) built from real vault `updatedAt` values (`FRESHNESS_WINDOW_WEEKS`); domains with no dated docs are excluded from the stale count rather than counted as stale ("unknown" ≠ "old"); stale domains get a dashed "stale" tag
@@ -569,7 +569,40 @@ Empty state (0 nodes): link to `/docs` (open vault).
 
 ---
 
-### `/ontology/studio` — 공방 (Compass Stage), the vault write surface
+### `/topology?workbench=edit` — contextual meaning editor and change review
+
+- A selected node keeps its map context while its compact inspector swaps, at the
+  same anchor, into `MeaningEditorPanel`. There is no second right dock and no
+  separate review route.
+- One edit handles **one relation**. The user chooses type, target, and rationale,
+  or removes that existing relation from the same review path;
+  `depends_on` requires a rationale. Invalid `is_a` and containment target kinds
+  are filtered before selection.
+- The real map draws a dashed directional preview between the live endpoint
+  coordinates. This overlay never enters the force graph, so it cannot pull nodes
+  or change graph statistics. A density-hidden target is temporarily rendered at
+  its real coordinate and label. Confirming crossfades the same mark to solid,
+  then the local writer applies the reviewed frontmatter arrays with `expectedMtime`.
+- INDEX folds only during `workbench=edit` and restores after close. The responsive
+  contract keeps at least 480px of map between left chrome and editor from 1024px
+  upward; below `lg`, the editor is the single centered sheet above the tab bar.
+- New concept creation uses `workbench=create`. It no longer calls `createDoc`
+  from the first button press: the generated UID, slug, kind, display labels,
+  domain, and authorship fields are shown in `OntologyChangeReview`, and only
+  「확인하고 쓰기」 creates the file.
+- ACP keeps read tools frictionless. Every Atlas write tool pauses the same
+  conversation on a typed change card, hides `allow_always`, and resumes only on
+  `allow_once`; rejection is `reject_once`. The tool-mode policy is checked against
+  the generated `tools/list` surface so a new tool fails closed as a write.
+- `/ontology/studio` and `/ontology/edit` remain only as compatibility addresses.
+  `node/mode/edit/via/review` are translated to `p/workbench/edit` on `/topology`.
+
+<details>
+<summary>Retired Compass Stage details (historical reference)</summary>
+
+The following behavior described the removed Studio UI. It is retained only to
+explain old screenshots and decisions; none of it is a current destination.
+
 - 개념 하나의 설명과 관계를 **채워 넣는 쓰기 화면**이다. 지금 작업 중인 노드를 화면 한가운데 크게 놓고, 관계 종류마다 방향을 고정해 둔다 — 위=상위 개념(is_a) · 아래=이 개념이 담는 것(contains) · 오른쪽=이 개념이 기대는 곳(depends) · 왼쪽=비슷한 것(relates). 방향이 늘 같아야 사용자가 매번 다시 읽지 않아도 된다. 왼쪽 세로 메뉴의 "공방" 으로 들어간다. **화면은 하나이고, 얼마나 채워졌는지만 두 가지이며, 모드를 고르는 탭은 없다.**
 - **이미 있는 노드 채우기(enhance)**: 기존 노드를 열어(`?node=<id>` 링크로 지정하며, 지정이 없으면 관계가 가장 많은 역량을 자동으로 고른다) 빠진 관계를 채운다. 이미 채워진 관계는 인디고 실선과 그 끝의 작은 카드로 그리고, 아직 빈 관계는 파선으로 그린 **빈 자리**로 그린다(장식용 아이콘이 아니라 선만 있는 빈 칸이다). 그중 하나에만 "여기부터 채워요" 안내를 붙인다.
 - **새로 만들기(create, `?mode=create`)**: 같은 화면을 전부 빈 상태로 연다 — 종류(kind)/이름/도메인/정의를 적는 초안 카드와, 네 방향의 빈 관계 자리. 저장하기 전에 "새 노드 1개, 관계 N개" 처럼 둘을 나눠서 미리 알려 준다. 이름이 기존 노드와 비슷하면 "기존 노드 열기" 와 "그래도 새로 만들기" 중 고를 수 있다. 다만 종류와 이름이 같아서 파일 주소(slug)까지 겹쳐 버리면 "기존 노드 열기" 만 남기고 저장 · 저장 예고 · 변경 미리보기를 모두 막는다. 이름 입력칸은 그 경고와 연결돼 있어 화면 낭독기에서도 같이 읽힌다. 입력하는 동안 결과를 바로 미리 보여 준다.
@@ -581,17 +614,14 @@ Empty state (0 nodes): link to `/docs` (open vault).
 - **가로 1024px 미만에서는 열지 않고 이유를 말한다 (2026-07-28)**: 이 화면은 폭이 고정된 카드와 그 둘레에 놓이는 관계 자리로 되어 있어 좁은 화면에서는 성립하지 않는다(설치한 앱은 최소 폭이 `minWidth 1040` 이라 이런 폭이 아예 나오지 않고, 모바일 하단 탭바에서도 공방은 뺐다). `<lg` 폭에서 들어오는 링크 세 갈래(노드 상세의 「관계 편집」 · 인사이트 · 문서함 frontmatter)는 이제 **왜**(가로 1024px 이 필요하고, 창을 넓히면 바로 열린다는 것)와 **어디로 가면 되는지**(지도 · 데스크톱 앱)를 함께 적은 카드 한 장을 받는다. 공방 화면 자체는 그리지 않고, 그 위에서는 첫 방문 안내도 뜨지 않는다 — 없는 화면을 소개하는 안내는 거짓말이기 때문이다.
 - **디자인**: 앱 전체와 같은 규칙을 따른다 — 무채색 + 인디고 한 가지 + `--color-*` 토큰만 쓴다. 앰버(주황)는 "당연히 채워져 있어야 하는데 비어 있는 자리" 신호로만 쓴다. **빛 번짐 · 그라디언트 · 보석 · 파티클 · 금색은 금지**다(예전에 있던 게임풍 예외는 2026-07-24 에 폐기됐다). 움직임은 관계 자리를 채울 때 200ms 동안 투명도와 색이 바뀌는 것 하나뿐이고, `prefers-reduced-motion` 설정에서는 그것도 멈춘다. 화면 문구는 전부 쉬운 말이다("이 노드는 무엇의 한 종류인가요?").
 
-### `/ontology/edit` — RETIRED (2026-07-24) → redirects to `/ontology/studio`
+</details>
 
-The xyflow ERD canvas builder was removed once the 공방(Compass Stage,
-`/ontology/studio`) covered node assembly (CREATE mode), relation connecting
-(inline picker + real frontmatter writes), and live preview. `/ontology/edit`
-is now a thin client redirect to `/ontology/studio` that forwards any `?node=`
-deep-link (normalized to the canonical `<kind>:<slug>` id) into the workshop's
-ENHANCE mode — old bookmarks and agent-handoff links land in the workshop, not a
-404. The `@xyflow/react` dependency, the builder view, its keyboard shortcuts,
-and the builder-only i18n strings were all removed. See `/ontology/studio`
-above for the surviving write surface.
+### `/ontology/edit` and `/ontology/studio` — compatibility redirects
+
+Both old addresses now use `OntologyEditRedirectPage` to translate legacy
+`?node=`, `?mode=create`, and `?edit=` values into `/topology` workbench state.
+The routes remain in the static export so old bookmarks do not 404; neither is
+a navigation destination or a product screen.
 
 
 ---

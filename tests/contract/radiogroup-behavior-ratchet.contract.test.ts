@@ -75,8 +75,6 @@ const REGISTERED: ReadonlyArray<readonly [file: string, why: string]> = [
    * 그래서 그릇 수렴은 **hover 축 판정 뒤**로 미룬다. 행동은 지금 다 붙였다.
    */
   ["src/views/ontology-insights/ui/tabs/MeaningGapSection.tsx", "비활성 칩 hover — 값 층에 칩 hover 가 없다"],
-  ["src/views/ontology-studio/ui/StudioMaterializeDialog.tsx", "flex-1 균등폭 + tracking-body + 비활성 hover"],
-  ["src/views/ontology-studio/ui/StudioCompass.tsx", "비활성 세그먼트 hover"],
   ["src/features/ontology-blocks/ui/BlockImportModule.tsx", "p-1/gap-1 인셋 + 비활성 세그먼트 hover"],
   ["src/features/first-run-starter/ui/FirstRunStarterModule.tsx", "패널 스코프 hover 잉크"],
 ];

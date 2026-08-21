@@ -37,7 +37,6 @@ const CSS = readFileSync(path.join(process.cwd(), 'app/globals.css'), 'utf8');
  */
 const INTENTIONALLY_STILL: Readonly<Record<string, string>> = {
   "agent-pending-dot": "끝없이 도는 맥박 — 감속의 뜻이 바로 이걸 멈추는 것이다. 상태는 옆의 글자가 말한다.",
-  "studio-strut-flow": "끝없이 흐르는 장식 — 위와 같다. 멈춰도 잃는 정보가 없다.",
   "overlay-spring-surface":
     "소비처가 감속일 때 `.overlay-fade-only` 로 **클래스를 갈아 끼운다**(GlobalSearch 실측). CSS carve-out 이 아니라 다른 경로로 이미 덮여 있다.",
   // 관문 랜딩(2026-08-18 리메이크). 끝없는 캐럿 blink 는 첫 줄의 끝없는 맥박과
@@ -124,11 +123,11 @@ describe('reduced-motion 동등물 계약', () => {
   const requiresEquivalent = animatedClasses.filter((cls) => !(cls in INTENTIONALLY_STILL));
 
   it('후보를 CSS 에서 실제로 뽑아냈다 — 빈손으로 통과하지 않는다', () => {
-    // 2026-08-11 실측 31개(면제 3 · 덮어야 할 28). 줄어들면 스캐너가 눈이 먼 것이다.
+    // Studio 전용 모션 은퇴 뒤 실측 27개. 줄어들면 스캐너가 눈이 먼 것이다.
     expect(
       animatedClasses.length,
       `애니메이션 클래스를 ${animatedClasses.length}개만 찾았다 — 스캐너가 헛돈다`,
-    ).toBeGreaterThanOrEqual(28);
+    ).toBeGreaterThanOrEqual(27);
     for (const cls of Object.keys(INTENTIONALLY_STILL)) {
       expect(
         animatedClasses,
