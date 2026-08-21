@@ -13169,6 +13169,38 @@
       "slug": "확신도"
     }
   ],
+  "ontology/elements/agents-destination": [
+    {
+      "depth": 2,
+      "text": "정의",
+      "slug": "정의"
+    },
+    {
+      "depth": 2,
+      "text": "왜 목적지인가 (2026-08-20, 원장 90)",
+      "slug": "왜-목적지인가-2026-08-20-원장-90"
+    },
+    {
+      "depth": 2,
+      "text": "이 자리가 담는 것",
+      "slug": "이-자리가-담는-것"
+    },
+    {
+      "depth": 2,
+      "text": "경계",
+      "slug": "경계"
+    },
+    {
+      "depth": 2,
+      "text": "근거",
+      "slug": "근거"
+    },
+    {
+      "depth": 2,
+      "text": "확신도",
+      "slug": "확신도"
+    }
+  ],
   "ontology/ontology-atlas": [
     {
       "depth": 2,

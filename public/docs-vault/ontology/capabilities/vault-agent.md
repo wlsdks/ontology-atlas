@@ -2,9 +2,9 @@
 uid: a81da7e2-8ff6-46c9-a0aa-27b2948bc7b3
 slug: capabilities/vault-agent
 kind: capability
-title: Agent Connect & Vault Access
+title: "Agent Connect & Vault Access"
 domain: domains/agent-integration
-elements: [elements/agent-connect, elements/vault-agent-panel]
+elements: [elements/agents-destination, elements/vault-agent-panel]
 path: src/features/vault-agent
 created_by: human
 ---
