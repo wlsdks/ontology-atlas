@@ -240,14 +240,13 @@ particle·rarity(gold)·shimmer 를 `--studio-*` 토큰과 `.studio-stage` 안�
 정체성인 앱에서 게임 미학은 "잘 만든 게임" 이 아니라 "흉내" 로 읽히며,
 기획자·임원·개발자·에이전트가 보고 판단하는 자료의 신뢰를 갉아먹었다.
 
-- 이 화면(현 공방)은 이제 절제된 **나침 무대(Compass Stage)** 다 — 관계 종류마다
-  방위가 고정돼 있고, 소켓은 선으로만 그리고, 진행은 인디고로 표시하며, 확정될
-  때 200ms 동안 투명도와 색만 바뀐다. **앱 전체와 같은 헌장**(무채색 + 인디고
-  하나 + `--color-*` 토큰)만 쓴다.
-- **glow/rarity/particle/gem 은 공방에서도 금지.** `--studio-*` 게임 토큰
-  블록은 `app/globals.css` 에서 지웠다. 앰버는 "비어 있는(꼭 채워야 하는) 소켓"
-  을 알릴 때만 쓴다.
-- design-guardian 은 이제 공방 화면에서도 glow/rarity/particle 을 **반려**한다.
+- 2026-08-21에는 **Studio 표면 자체도 은퇴했다.** 관계 쓰기는 지도 선택
+  inspector와 같은 자리의 contextual editor가 한 번에 관계 하나를 다룬다.
+- draft는 실제 지도 좌표의 파선 화살표, confirm은 같은 선의 실선 수렴이다.
+  force/layout 입력에는 들어가지 않고 `--motion-fast/base/settle`만 쓴다.
+- **glow/rarity/particle/gem은 contextual editor와 변경안 검토에서도 금지.**
+  `--studio-*` 토큰과 `.studio-*` 모션 클래스는 `app/globals.css`에서 지웠다.
+- design-guardian은 새 패널이 축소판 Studio나 두 번째 dock이 되는 것도 반려한다.
 - 배경과 KEEP/KILL/BUILD 판단: `[[ontology-studio-game-direction]]`. 사람을
   붙잡는 것은 파티클이 아니라 루프(다음 할 일 → 즉시 반영 → 진전 누적)다.
 

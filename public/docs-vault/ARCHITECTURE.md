@@ -9,9 +9,10 @@ tags: [architecture, infra, overview]
 > **meaning layer**: a folder of markdown files that records what each part of
 > the product is, who owns it, what it depends on, and what proves it. People
 > and AI coding agents read and write that same folder. Round 10 permanently
-> removed every login and cloud-data screen. In today's route model, browsing
-> happens on Topology, writing on Workshop, and upkeep on the five-question
-> Insights page; the old `/ontology*` URLs stay only so old links still work.
+> removed every login and cloud-data screen. In today's route model, reading and
+> contextual writing happen together on Topology, ACP writes pause in the same
+> conversation for human review, and upkeep lives on the five-question Insights
+> page. The old `/ontology/studio` and `/ontology/edit` URLs only translate old links.
 > Earlier cloud and retired-workbench design notes are in `docs/archive/`.
 
 ## High-level shape
@@ -23,11 +24,11 @@ tags: [architecture, infra, overview]
 │ │                          gateway face for a vault-   │
 │ │                          less web visitor, map for   │
 │ │                          the app and vault users     │
-│ ├─ /topology               the map (hub + INDEX + data)│
+│ ├─ /topology               map + contextual write     │
 │ ├─ /docs                   vault picker + editor       │
 │ ├─ /ontology               thin redirect → /topology   │
 │ ├─ /ontology/edit          compatibility redirect      │
-│ ├─ /ontology/studio        Compass write workbench     │
+│ ├─ /ontology/studio        compatibility → topology    │
 │ ├─ /ontology/insights      five-question maintenance   │
 │ ├─ /git                    vault Git workbench         │
 │ ├─ /agents                 fetch · install · connect   │
@@ -307,13 +308,13 @@ project's own — before they have picked any folder of their own.
                            installed app must never offer "download this app" to someone who is
                            already running it. One function decides: isGatewaySurface() in
                            shared/lib/nav-destination
-/topology                  the map — canvas-2D hub (map + INDEX + datasheet). Any link labelled
-                           "map" points here, not at / (gate:
+/topology                  map + contextual relation editor + change review. Any link labelled
+                           "map" or "edit relation" points here, not at / (gate:
                            tests/contract/map-destination-route.contract.test.ts)
 /docs                      vault picker / editor / unified palette
 /ontology                  thin redirect → /topology?index=expanded (old tree/ego hub retired, B3)
-/ontology/edit             compatibility redirect → /ontology/studio (normalizes and forwards ?node=)
-/ontology/studio           Compass Stage write surface (ENHANCE / CREATE)
+/ontology/edit             compatibility redirect → /topology contextual workbench
+/ontology/studio           compatibility redirect; translates node/mode/edit/via/review to /topology
 /ontology/insights         five-question maintenance board
 /git                       local vault git history / snapshot workbench (desktop-only destination)
 /agents                    coding agents this computer can run — the app launches them and
@@ -348,9 +349,9 @@ All routes are wrapped under `/[locale]/` by next-intl (en, ko).
 
 **One piece of code decides which nav item is active; each screen size shows a
 different list of buttons.** The desktop rail shows six destinations: Map, Docs,
-Workshop, Insights, Projects, and Git. The mobile bottom bar shows four: Map,
-Docs, Insights, and Projects — Workshop is a full-screen desktop writing
-destination and Git is desktop-only. Both read the same rules in
+Insights, Projects, Agents, and Git. The mobile bottom bar shows four: Map,
+Docs, Insights, and Projects — contextual writing stays inside Map, while Agents
+and Git are desktop-only. Both read the same rules in
 `src/shared/lib/nav-destination.ts`, so every route belongs to exactly one
 destination even on a screen size that deliberately hides that button. The
 retired
@@ -377,44 +378,39 @@ to an agent.
 | `realm` | `/`, `/topology` | "realm" containment-subtree root | canonical `<kind>:<slug>` (bare slug promoted) |
 | `mode` | `/`, `/topology` | analysis mode | `overview` \| `focus` \| `path` \| `health` |
 | `pathFrom` / `pathTo` (aliases `from` / `to`) | `/`, `/topology` | path source / target | node id |
-| `hub` · `c` · `impact` · `pulse` · `index` · `create` | `/`, `/topology` | focused hub · category · impact mode · pulse window · INDEX panel state · create-node intent | see `src/views/home/model/url-state.ts` |
+| `hub` · `c` · `impact` · `pulse` · `index` · `create` | `/`, `/topology` | focused hub · category · impact mode · pulse window · INDEX panel state · legacy create-node intent | see `src/views/home/model/url-state.ts` |
+| `workbench` · `edit` | `/topology` | contextual writer state · optional relation/target | `edit` \| `create`; `edit=<relation>:<targetId>` |
 | `recent` · `ask` | `/`, `/topology` | recent-change lens · agent first-words intent | typed parsers in `src/views/home/model/url-state.ts` |
 | `via` | `/`, `/topology`, `/ontology` | origin marker for the return chip | `insights:<tab>` |
-| `review` | `/`, `/topology`, `/ontology/studio`, `/ontology/insights` | exact Do-next review row carried across handoff | stable review id, only meaningful with the matching handoff |
+| `review` | `/`, `/topology`, `/ontology/insights` | exact Do-next review row carried across handoff | stable review id, only meaningful with the matching handoff |
 | `node` | `/ontology` (redirect) | node to focus after redirect → `?p=` | node id (translated by `translateOntologyDeeplinkToTopologyParam`) |
-| `node` | `/ontology/edit` (redirect), `/ontology/studio` | node to open in Workshop ENHANCE | canonical `<kind>:<slug>` first-class; plural-folder, bare-tail, and Unicode-normalized legacy inputs tolerated |
-| `mode` | `/ontology/studio` | Workshop fill state | `create` for CREATE; omitted for ENHANCE |
-| `from` · `rel` · `name` · `edit` | `/ontology/studio` | create-from-relation bridge and bearing edit intent | normalized node/relation/name values owned by Workshop |
+| `node` · `mode` · `edit` | `/ontology/edit`, `/ontology/studio` | legacy write deep link translated to `p/workbench/edit` | canonical and plural-folder node forms tolerated; `mode=create` → `workbench=create` |
 | `slug` | `/docs` | vault file to open | vault file path (`ontology/capabilities/foo`), not a node id — file paths are the docs vault's own address space |
 | `tab` | `/ontology/insights` | active maintenance question | `do-next` \| `composition` \| `connections` \| `boundaries` \| `freshness` |
 
 ### One place builds node ids, one place reads them
 
-- **Building a link** (map · Insights · the popover's "관계 편집" and the
-  datasheet, all pointing at Workshop):
-  `buildOntologyStudioNodeHrefFromGraphId` in
+- **Building a link** (map · Insights · popovers · datasheets, all staying in
+  the map workbench): `buildTopologyMeaningEditorNodeHref` and
+  `buildTopologyMeaningEditorEdgeHref` in
   `src/entities/knowledge-graph/lib/ontology-node-href.ts`. It normalizes any
   input to canonical via `translateOntologyDeeplinkToTopologyParam`
   (`capabilities/foo` → `capability:foo`; already-canonical / bare /
   evidence-path pass through).
-- **Compatibility redirect**: `OntologyEditRedirectPage` normalizes a legacy
-  `/ontology/edit?node=...` value and replaces the route with
-  `/ontology/studio?node=...`.
-- **Reading a link** (Workshop's `?node=`): `resolveStudioFocalId` in
-  `src/views/ontology-studio/lib/resolve-studio-focal.ts` accepts the standard
-  form, the plural-folder form, a bare tail when only one node matches it, and
-  ids that differ only by Unicode normalization (NFC/NFD). If a bare tail
-  matches more than one node, Workshop opens nothing rather than guessing, and
-  a link to a node that no longer exists never quietly opens some other node
-  instead.
+- **Compatibility redirect**: `OntologyEditRedirectPage` normalizes legacy
+  `/ontology/edit` and `/ontology/studio` query values and replaces the route
+  with `/topology?p=...&workbench=edit` or `/topology?workbench=create`.
+- **Reading a link**: `parseHomeRouteState` owns `p/workbench/edit`, and
+  `parseOntologyStudioEditParam` remains only as the compatibility parser for
+  the relation/target pair. Unknown relation values open no editor rather than guessing.
 - **Turning a node id into a docs file path** happens in exactly one place: the
   popover and the datasheet pass the focus model's `sourceSlug` (a path to a
   file in the vault) straight into `buildDocsVaultHref({ slug })`. `/docs`
   addresses files, not nodes, so its `?slug=` deliberately stays a file path.
 - Both the building and the reading side are pinned by `ontology-node-href.test.ts`,
   `translate-ontology-deeplink.test.ts`, and
-  `resolve-studio-focal.test.ts`. Insights tab serialization is separately
-  pinned by `insights-tab-state.test.ts`.
+  `url-state.test.ts`, and `OntologyEditRedirectPage.test.tsx`. Insights tab
+  serialization is separately pinned by `insights-tab-state.test.ts`.
 
 ## Build pipeline
 
