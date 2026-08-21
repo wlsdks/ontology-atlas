@@ -83,8 +83,9 @@ vi.mock('@/features/docs-vault-local', () => ({
   }),
 }));
 
+const routerPush = vi.fn();
 vi.mock('@/i18n/navigation', () => ({
-  useRouter: () => ({ push: vi.fn() }),
+  useRouter: () => ({ push: routerPush }),
   Link: ({
     href,
     children,
@@ -119,7 +120,7 @@ vi.mock('next-intl', () => ({
  */
 function openSheet(
   ui?: ReactNode,
-  section?: 'screen' | 'background' | 'expand' | 'footprint' | 'workspace' | 'agent' | 'ai',
+  section?: 'screen' | 'background' | 'expand' | 'footprint' | 'workspace' | 'ai',
 ) {
   render(ui ?? <AppSettingsMenu mode="static" />);
   fireEvent.click(screen.getByTestId('app-settings-trigger'));
@@ -226,16 +227,39 @@ describe('AppSettingsMenu single-sheet recomposition', () => {
    * 이 검사가 잠그는 것 셋: ① MCP 증명 장문은 첫 화면에 없다 ② 한 번의 클릭으로
    * 도착한다 ③ **도착해도 LNB 가 그대로 있다**(뒤로가기 계단 0).
    */
-  it('lands the agent destination in one LNB click with the list still on screen', () => {
+  /**
+   * ⚠️ **이 절은 2026-08-21 에 시트를 떠났다** (원장 90). 종전 검사는 「한 번의
+   * 클릭으로 이 시트 안의 에이전트 절에 도착한다」였는데, 이제 그 자리는
+   * 「에이전트」 목적지다.
+   *
+   * 그래서 여기서 잠그는 것이 바뀐다: **빠져나간 자리에 이정표가 서 있고, 그것이
+   * 목적지로 보내는가.** `surfaces.md` 의 「반만 막는 것이 가장 나쁘다」가 근거다 —
+   * 내비에서 지웠으면 들어오던 길에도 답해야 한다.
+   */
+  it('빠져나간 자리에 이정표가 서서 목적지로 보낸다', () => {
     openSheet();
+    // 절 자체는 더 이상 시트에 없다.
+    expect(screen.queryByTestId('app-settings-nav-runtimes')).toBeNull();
+    expect(screen.queryByTestId('app-settings-pane-agent')).toBeNull();
+    // 장문 증명 패킷도 시트에 없다 — 목적지가 들고 갔다.
     expect(screen.queryByText('nav.settingsMenu.mcpProofTitle')).not.toBeInTheDocument();
-    fireEvent.click(screen.getByTestId('app-settings-nav-agent'));
-    expect(screen.getByTestId('app-settings-pane-agent')).toBeInTheDocument();
-    expect(screen.getByText('nav.settingsMenu.mcpProofTitle')).toBeInTheDocument();
-    // 복도도, 뒤로가기도 없다.
-    expect(screen.queryByTestId('app-settings-agent-drillin')).toBeNull();
-    expect(screen.queryByTestId('app-settings-agent-back')).toBeNull();
-    expect(screen.getByTestId('app-settings-nav')).toBeInTheDocument();
+
+    routerPush.mockClear();
+    fireEvent.click(screen.getByTestId('app-settings-nav-agents'));
+    expect(routerPush).toHaveBeenCalledTimes(1);
+    expect(String(routerPush.mock.calls[0][0])).toContain('/agents/');
+  });
+
+  /**
+   * 위계석 처방: **이 행은 이 시트의 주인공이 아니다.** 승자는 목적지 안의
+   * 「대화 열기」이고, 이정표가 그것과 경쟁하면 안 된다.
+   */
+  it('이정표 행은 인디고를 쓰지 않는다', () => {
+    openSheet();
+    const row = screen.getByTestId('app-settings-nav-agents');
+    // 초점 링의 인디고는 앱 공통 규격이라 재지 않는다 — 재는 것은 **면과 글자**다.
+    expect(row.className).not.toMatch(/bg-\[color:var\(--color-indigo/);
+    expect(row.className).not.toMatch(/text-\[color:var\(--color-indigo/);
   });
 
   it('targets the packaged Agent Graph Workflow instead of the active local README', () => {
@@ -244,26 +268,12 @@ describe('AppSettingsMenu single-sheet recomposition', () => {
     );
   });
 
-  it('says the workspace is not connected instead of drawing an empty setup panel', () => {
-    openSheet(undefined, 'agent');
-    expect(screen.getByText('nav.settingsMenu.agentStatusNoVault')).toBeInTheDocument();
-  });
-
-  /**
-   * **요구하는 행동을 그 자리에서 할 수 있어야 한다** (2026-08-11, 북극성 워크스루 실측).
-   *
-   * 이 카드는 *"작업공간 폴더를 열면 …"* 이라고 폴더를 열라고 말하는데, 그 칸에서 누를
-   * 수 있는 것은 「첫 호출 안내 복사」 하나뿐이었다(실측: 그 밖 컨트롤 2개, 폴더 열기 0개).
-   * 폴더 열기는 **옆 칸**(작업 공간)에 있었다 — 화면이 시킨 일을 그 화면에서 못 한다.
-   *
-   * 이 저장소가 이미 정해 둔 강등 카드 계약이 「왜 + **어디서 되는지**」인데, 이 카드는
-   * 왜만 말하고 어디로는 안 말했다. 한 번 더 찾게 만들 이유가 없으니 **그 자리에서**
-   * 열게 한다.
+  /*
+   * ⚠️ 「볼트 없음 안내」와 「그 자리에서 폴더 열기」 두 검사는 2026-08-21 에
+   * `AgentSetupSection.test.tsx` 로 **옮겨 갔다** — 그 화면이 시트를 떠났기
+   * 때문이다(원장 90). 지운 것이 아니라 따라간 것이고, 여기 남겨 두면 이 시트가
+   * 안 그리는 것을 계속 재게 된다.
    */
-  it('폴더를 열라고 말하는 카드는 그 자리에서 폴더를 열 수 있다', () => {
-    openSheet(undefined, 'agent');
-    expect(screen.getByTestId('app-settings-agent-open-folder')).toBeInTheDocument();
-  });
 
   /**
    * #80 — [AI 연결]은 새 라우트가 아니라 이 시트의 서브뷰다. 브라우저(브리지
@@ -372,7 +382,7 @@ describe('AppSettingsMenu single-sheet recomposition', () => {
 
   /** 모달이면 초점도 안에 머문다 — 딤 뒤로 Tab 이 빠져나가면 차단이 반쪽이다. */
   it('모달이므로 Tab 이 창 안에 머문다', async () => {
-    openSheet(undefined, 'agent');
+    openSheet(undefined, 'ai');
     const panel = screen.getByTestId('app-settings-popover');
     // 마지막 초점 대상은 절마다 다르므로 **DOM 순서의 끝**을 그때그때 고른다 —
     // 특정 컨트롤을 이름으로 박으면 절 구성이 바뀔 때마다 테스트가 거짓으로 깨진다.
@@ -538,8 +548,8 @@ describe('AppSettingsMenu controlled open (P3 결함⑥)', () => {
   it('Escape from an agent section closes at once — no intermediate step remains', () => {
     const onOpenChange = vi.fn();
     render(<AppSettingsMenu mode="static" open onOpenChange={onOpenChange} />);
-    fireEvent.click(screen.getByTestId('app-settings-nav-agent'));
-    expect(screen.getByTestId('app-settings-pane-agent')).toBeInTheDocument();
+    fireEvent.click(screen.getByTestId('app-settings-nav-ai'));
+    expect(screen.getByTestId('app-settings-pane-ai')).toBeInTheDocument();
     fireEvent.keyDown(screen.getByTestId('app-settings-popover'), {
       key: 'Escape',
       bubbles: true,
@@ -586,7 +596,7 @@ describe('AppSettingsMenu appearance pickers (#20/#21)', () => {
     const baseline = sizeClasses();
     expect(baseline, '고정 높이가 없다 — 내용이 창 크기를 정하고 있다').toMatch(/h-\[\d+px\]/);
     expect(baseline, '고정 폭이 없다').toMatch(/w-\[\d+px\]/);
-    for (const item of ['background', 'expand', 'footprint', 'notify', 'workspace', 'runtimes', 'agent', 'ai']) {
+    for (const item of ['background', 'expand', 'footprint', 'notify', 'workspace', 'ai']) {
       fireEvent.click(screen.getByTestId(`app-settings-nav-${item}`));
       expect(sizeClasses(), `${item} 절에서 창 크기가 바뀐다`).toBe(baseline);
     }
@@ -596,7 +606,7 @@ describe('AppSettingsMenu appearance pickers (#20/#21)', () => {
    * LNB 는 **묶음**을 가진다. 다섯 항목이 왜 그 순서인지를 말하는 것이 묶음의
    * 일이고, 그게 없으면 목록이 그냥 다섯 줄이다.
    */
-  it('LNB 는 세 묶음으로 나뉘고 5·4·1 로 갈린다', () => {
+  it('LNB 는 세 묶음으로 나뉘고 5·2·1 로 갈린다 (이정표 행 별도)', () => {
     openSheet();
     const nav = screen.getByTestId('app-settings-nav');
     // 문구가 아니라 **구조**로 잠근다 — 라벨을 다듬을 때마다 깨지면 안 된다.
@@ -606,7 +616,9 @@ describe('AppSettingsMenu appearance pickers (#20/#21)', () => {
     // 2026-08-20 에 셋째 묶음 「앱」이 생겼다(업데이트 확인 절). 이 검사가
     // 지키는 것은 개수가 아니라 **묶음마다 제목이 있다**는 구조다 — 개수는
     // 그 구조의 부수치라 절을 늘릴 때 같이 갱신한다.
-    expect(groups.map((g) => g.querySelectorAll('button').length)).toEqual([5, 4, 1]);
+    // 「연결」 묶음은 항목 2 + **이정표 행 1** = 버튼 3 이다. 이정표는 pane 을
+    // 여는 항목이 아니라 목적지로 보내는 행이라, 항목 수와 버튼 수가 갈린다.
+    expect(groups.map((g) => g.querySelectorAll('button').length)).toEqual([5, 3, 1]);
     for (const g of groups) {
       expect(g.querySelector('p'), '묶음에 제목이 없다 — 그러면 그냥 열 줄이다').not.toBeNull();
     }
@@ -618,7 +630,7 @@ describe('AppSettingsMenu appearance pickers (#20/#21)', () => {
    */
   it('LNB 항목마다 아이콘이 하나씩 있다', () => {
     openSheet();
-    for (const item of ['screen', 'background', 'expand', 'footprint', 'notify', 'workspace', 'runtimes', 'agent', 'ai', 'update']) {
+    for (const item of ['screen', 'background', 'expand', 'footprint', 'notify', 'workspace', 'ai', 'update']) {
       const svgs = screen.getByTestId(`app-settings-nav-${item}`).querySelectorAll('svg');
       expect(svgs.length, `${item} 항목에 아이콘이 없다`).toBe(1);
     }
@@ -626,7 +638,7 @@ describe('AppSettingsMenu appearance pickers (#20/#21)', () => {
 
   it('LNB 여덟 절을 모두 싣는다', () => {
     openSheet();
-    for (const item of ['screen', 'background', 'expand', 'footprint', 'notify', 'workspace', 'agent', 'ai']) {
+    for (const item of ['screen', 'background', 'expand', 'footprint', 'notify', 'workspace', 'ai']) {
       expect(screen.getByTestId(`app-settings-nav-${item}`)).toBeInTheDocument();
     }
   });

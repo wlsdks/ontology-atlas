@@ -4,7 +4,6 @@ import Image from "next/image";
 import { withBasePath } from "@/shared/lib/base-path";
 import { useHeldValue, useSurfaceSwap } from "@/shared/lib/use-presence";
 import { detectAcpRuntimes, isAcpBridgeAvailable } from "@/shared/lib/tauri-acp";
-import { requestSettingsView } from "@/shared/lib/settings-view-intent";
 import { subscribeAgentChatIntent } from "@/shared/lib/agent-chat-intent";
 import { isGuardedRuntime } from "@/features/acp-session/model/runtime-gate";
 import { agentChatDoor } from "../model/agent-chat-door";
@@ -25,6 +24,7 @@ import {
   useState,
 } from "react";
 import { Link, useRouter } from "@/i18n/navigation";
+import { DESTINATION_HREF } from "@/shared/config/destinations";
 import { useLocale, useTranslations } from "next-intl";
 // `History as HistoryIcon` — 전역 DOM History 생성자와의 충돌 원천 차단
 // (사용성 검수 P0, AtlasGitPanel 과 동일 처방).
@@ -5117,7 +5117,10 @@ function HomePageImpl() {
                        * 일이 어긋난다. 대화로 가는 문은 따로 있다(유틸 레인의
                        * 「에이전트」 칩 · 다음 걸음의 「에이전트에게 시키기」).
                        */
-                      onOpenAgentConnect={() => requestSettingsView("runtimes")}
+                      /* 2026-08-21 — 실행기 목록이 「에이전트」 목적지로 나갔다
+                         (원장 90). 시트를 열어 달라고 신호를 보내면 이제 그 자리가
+                         없어서 아무 일도 안 일어난다. 목적지로 보낸다. */
+                      onOpenAgentConnect={() => router.push(DESTINATION_HREF.agents)}
                     />
                   ) : (
                   <TopologyEmptyState
