@@ -64,7 +64,9 @@ done
 # 파일 읽는 도구(eslint 등)에 넘기면 그냥 고장난다(2026-08-21 실측: 연결 시트를
 # 은퇴시킨 푸시가 여기서 막혔다). 「무엇이 지워졌나」는 계약 검사가 본다.
 paths=$(printf '%s\n' "$paths" | sed '/^$/d' | sort -u | while read -r f; do
-  [ -e "$f" ] && printf '%s\n' "$f"
+  if [ -e "$f" ]; then
+    printf '%s\n' "$f"
+  fi
 done)
 [ -n "$paths" ] || exit 0
 
