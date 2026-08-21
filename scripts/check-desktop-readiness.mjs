@@ -1946,15 +1946,29 @@ if (
 // 남는다 — 실제로 `VaultToolsMenu` 삭제 후 `LocalVaultPicker` 가 고아가 됐는데도
 // 이 스크립트는 그 파일 내용을 계속 통과시켰다. 그래서 표면 계약은 "내용 + 마운트"
 // 두 가지를 함께 요구한다.
+//
+// ⚠️ **마운트하는 자리가 2026-08-21 에 바뀌었다** (원장 90). 이 패널은 설정
+// 시트를 떠나 「에이전트」 목적지(`/agents/`)로 갔고, 그 사이의 접착제가
+// `AgentSetupSection` 이다. 검사가 여전히 `AppSettingsMenu` 를 보고 있어서
+// **이관 직후 정확히 여기서 빨개졌다** — 이 게이트가 하려던 일 그대로다.
+//
+// 그래서 「어느 파일이 그리나」를 못박지 않고 **체인이 이어지는가**를 잰다:
+// 패널이 절대 경로를 뽑고 → 접착제가 그 패널을 그리고 → 목적지가 그 접착제를
+// 그린다. 자리가 또 바뀌어도 체인만 이어져 있으면 통과하고, 끊기면 터진다.
+const agentSetupSection = readText("src/widgets/app-settings-menu/ui/AgentSetupSection.tsx");
+const agentsPage = readText("src/views/agents/ui/AgentsPage.tsx");
+
 if (
   vaultAgentSetupPanel.includes("getTauriVaultRootPath") &&
-  appSettingsMenu.includes("import { VaultAgentSetupPanel }") &&
-  appSettingsMenu.includes("<VaultAgentSetupPanel")
+  agentSetupSection.includes("import { VaultAgentSetupPanel }") &&
+  agentSetupSection.includes("<VaultAgentSetupPanel") &&
+  agentsPage.includes("AgentSetupSection") &&
+  agentsPage.includes("<AgentSetupSection")
 ) {
-  pass("desktop agent setup surface derives the absolute Tauri vault path and is actually mounted by the settings sheet");
+  pass("desktop agent setup surface derives the absolute Tauri vault path and is actually mounted by the Agents destination");
 } else {
   fail(
-    "the desktop agent setup surface must derive the selected absolute Tauri vault path AND be mounted by AppSettingsMenu — a file that no surface renders is not a shipped contract",
+    "the desktop agent setup surface must derive the selected absolute Tauri vault path AND be mounted through AgentSetupSection into the Agents destination — a file that no surface renders is not a shipped contract",
   );
 }
 
