@@ -132,6 +132,18 @@ describe('워크플로 분기가 살아 있다', () => {
     );
   });
 
+  it('CI 스위트는 dev 가 아니라 빌드된 정적 export 를 상대한다', () => {
+    // dev 는 라우트를 첫 요청 때 컴파일한다 — 그 비용을 무는 스펙이 샤드
+    // 구성과 실행 순서에 따라 바뀌어, 실행마다 다른 스펙이 30초 타임아웃으로
+    // 죽었다(#1178 첫 런 실측). 이 두 조각이 지워지면 그 부류가 돌아온다.
+    for (const block of suiteBlocks) {
+      expect(block.text, '빌드 없이 돈다 — 정적 서버가 낡은 out/ 을 서빙한다').toContain('pnpm build');
+      expect(block.text, 'PLAYWRIGHT_STATIC=1 이 지워졌다 — dev 온디맨드 컴파일 복귀').toContain(
+        'PLAYWRIGHT_STATIC=1',
+      );
+    }
+  });
+
   it('샤드 블록에 더 들여쓴 연속 줄이 없다 — 접힘 스칼라의 literal 함정', () => {
     // #1178 첫 런이 정확히 이 모양으로 죽었다: 더 들여쓴 줄이 literal 로
     // 남아 스크립트가 두 줄이 되고, 2줄 `--shard=…` 가 exit 127. 이 단언이

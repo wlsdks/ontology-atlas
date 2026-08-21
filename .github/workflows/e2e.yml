@@ -122,12 +122,14 @@ jobs:
       - uses: ./.github/actions/setup-playwright
         id: setup
 
+      # 배포되는 웹이 곧 정적 export 다(deploy-pages) — 스모크도 그것을 상대한다.
+      # dev 상대일 때는 온디맨드 컴파일이 첫 요청 스펙에 수십 초를 물렸다.
       - name: Web surface smoke
         if: >-
           steps.setup.outputs.runtime == 'true'
           || steps.setup.outputs.browser == 'true'
           || github.event_name != 'pull_request'
-        run: pnpm exec playwright test tests/e2e/web-surface-smoke.spec.ts
+        run: pnpm build && PLAYWRIGHT_STATIC=1 pnpm exec playwright test tests/e2e/web-surface-smoke.spec.ts
         env:
           CI: true
 
@@ -152,6 +154,16 @@ jobs:
   # 미룬 것이 실제로 도는 트리거: ① main 푸시(= 머지 직후, 아래 push 분기가
   # 프로젝트 필터 없이 전부 돌린다) ② e2e 인프라를 건드린 PR(classify 의
   # `e2e` 출력 — 스펙을 고친 PR 이 자기 빨강을 머지 전에 본다).
+  #
+  # **CI 는 dev 가 아니라 빌드된 정적 export 를 상대한다** (2026-08-21).
+  # dev(Turbopack)는 라우트를 첫 요청 때 컴파일하므로, 어떤 라우트를 처음
+  # 건드리는 스펙이 그 비용을 통째로 물었다 — 누가 무는지는 샤드 구성과 실행
+  # 순서가 정해서 **실행마다 다른 스펙이 30초 타임아웃으로 죽었다**(#1178 첫
+  # 런: dialog-responsive 32.6s ✘ 등, 혼자 돌리면 2.0s ✓). 정적 export 는
+  # 첫 요청 비용이 없어 시간이 결정적이고, 진단력도 더 높다(2026-07-28 실측:
+  # 공방 같은-라우트 이동은 export 에서만 죽었다). 전 스위트 350개를 정적
+  # 상대로 돌린 census: 0 실패 · 0 flaky · 직렬 15.7분(dev 16.8분). 로컬
+  # 기본값은 여전히 dev 재사용이다 — 이 전환은 CI 의 두 잡에만 있다.
   #
   # 전체 스위트가 위 웹 스모크를 한 번 더 포함하는 것은 의도적이다(약 20초).
   # 잡을 나눠야 웹이 깨졌을 때 로그를 뒤지지 않고 잡 이름만 보고 안다.
@@ -197,7 +209,7 @@ jobs:
       # 실측). env 값은 한 줄 표현식이라 이 함정이 없다.
       - name: Run Playwright suite (shard ${{ matrix.shard }}/3)
         if: steps.setup.outputs.browser == 'true'
-        run: pnpm exec playwright test $PLAYWRIGHT_PROJECT_ARGS --shard=${{ matrix.shard }}/3
+        run: pnpm build && PLAYWRIGHT_STATIC=1 pnpm exec playwright test $PLAYWRIGHT_PROJECT_ARGS --shard=${{ matrix.shard }}/3
         env:
           CI: true
           PLAYWRIGHT_PROJECT_ARGS: ${{ (github.event_name == 'pull_request' && steps.setup.outputs.e2e != 'true') && '--project=smoke' || '' }}
