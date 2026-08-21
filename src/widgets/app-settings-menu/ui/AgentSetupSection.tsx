@@ -105,6 +105,15 @@ export function AgentSetupSection({ onBeforeNavigate }: { onBeforeNavigate?: () 
 
   return (
     <>
+    {/*
+      `agent-setup-section` 은 **설정판만** 감싼다. 아래 증명 패킷 카드는 밖에
+      둔다 — 이 이름을 재는 e2e 인구조사(`agent-connect-panel-census`)의 대상이
+      「붙이는 칸의 첫 화면」이기 때문이다. 패킷을 그 안에 넣었더니 복사 버튼이
+      4 → 5 가 되어 래칫이 터졌고, **래칫이 옳았다**: 그 검사가 세려던 것은
+      「붙이려는 사람이 첫 화면에서 만나는 복사 버튼 수」이지 이 페이지 전체가
+      아니다.
+    */}
+    <div data-testid="agent-setup-section" className="min-w-0">
     <VaultAgentSetupPanel
       canEditCurrent
       localVault={localVault}
@@ -115,6 +124,7 @@ export function AgentSetupSection({ onBeforeNavigate }: { onBeforeNavigate?: () 
       // 부르는 쪽이 «없어도 되나» 를 매번 다시 판단하게 된다.
       onOpenWorkflowGuide={onBeforeNavigate ?? (() => undefined)}
     />
+    </div>
     {/*
       **첫 접촉 증명 패킷** — 에이전트가 붙었는지 사람이 눈으로 확인하는 대신,
       그대로 붙여넣어 **에이전트가 스스로 증명하게** 한다. 이 절이 시트에서
