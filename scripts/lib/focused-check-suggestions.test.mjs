@@ -769,9 +769,18 @@ describe('focused check suggestions', () => {
       'tests/e2e/local-vault-picker.spec.ts',
     ]);
 
+    /*
+     * ⚠️ `tsc` 가 뒤에 붙는다 (2026-08-21 추가). e2e 스펙도 TypeScript 이고
+     * `tsconfig.json` 의 `include` 는 `**\/*.ts` 전부라, CI 의 `tsc --noEmit`
+     * 이 이 파일들을 실제로 검사한다. 종전에는 추천기만 그것을 몰라서, 스펙을
+     * 고친 사람은 타입 오류를 CI 에서야 만났다(`#1180`).
+     *
+     * 순서는 그대로다 — 직접 스펙이 먼저다.
+     */
     assert.deepEqual(result.commands.map((row) => row.command), [
       'pnpm exec playwright test tests/e2e/ontology-ui.spec.ts',
       'pnpm exec playwright test tests/e2e/local-vault-picker.spec.ts',
+      'pnpm exec tsc --noEmit',
     ]);
   });
 
@@ -1068,5 +1077,41 @@ describe('focused check suggestions', () => {
       ),
       '문구와 무관한 화면에도 데스크톱 게이트를 권한다 — 규칙이 너무 넓다',
     );
+  });
+
+  /**
+   * **타입 검사의 사정거리는 `tsconfig` 가 정한다 — 추천기가 아니라.**
+   *
+   * 2026-08-21 `#1180` 에서 터졌다: 계약 시험 파일만 고쳤는데 CI 의
+   * `Types · Lint · Docs` 가 타입 오류로 빨개졌다. 로컬에서는 만날 방법이
+   * 없었다 — 추천기가 테스트 파일에 `tsc` 를 안 권했고, **vitest 는 타입을 안
+   * 본다.** 그런데 `tsconfig.json` 의 `include` 는 `**\/*.ts` 전부다.
+   *
+   * 검사가 보는 범위와 추천기가 보는 범위가 다르면, **그 차이만큼이 CI 에서야
+   * 터진다.**
+   */
+  it('타입 검사를 tsconfig 가 보는 곳 전부에 권한다 — 테스트 파일도 포함', () => {
+    const typecheck = (path) =>
+      suggestFocusedChecks([path]).commands.some(
+        (s) => s.command === 'pnpm exec tsc --noEmit',
+      );
+
+    // 종전에 빠져 있던 둘 — 이것이 이 시험의 존재 이유다.
+    assert.ok(typecheck('tests/contract/release-preflight.contract.test.ts'), 'tests/**');
+    assert.ok(typecheck('src/shared/lib/cn.test.ts'), 'src 의 테스트 파일');
+
+    // 종전에도 되던 것이 그대로 되는지 — 좁히면서 넓힌 게 아님을 확인한다.
+    assert.ok(typecheck('src/shared/lib/cn.ts'), 'src 의 제품 코드');
+    assert.ok(typecheck('app/[locale]/agents/page.tsx'), 'app/**');
+    assert.ok(typecheck('tsconfig.json'), 'tsconfig 자신');
+  });
+
+  it('타입이 없는 파일에는 타입 검사를 권하지 않는다 — 넓히기만 한 게 아니다', () => {
+    const typecheck = (path) =>
+      suggestFocusedChecks([path]).commands.some(
+        (s) => s.command === 'pnpm exec tsc --noEmit',
+      );
+    assert.ok(!typecheck('docs/DECISIONS.md'));
+    assert.ok(!typecheck('scripts/build-docs-vault.mjs'));
   });
 });

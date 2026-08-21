@@ -134,6 +134,23 @@ export const PROBE_TIMEOUT_MS = Number(process.env.RELEASE_REHEARSAL_PROBE_TIMEO
 /**
  * 도구 하나를 불러 본다. **셋 중 하나**를 돌려준다 — `ok` · `missing` ·
  * `unknown`(상한에 걸림). 「모른다」를 「없다」로 접지 않는 것이 이 함수의 요점이다.
+ *
+ * ⚠️ `spawn` 의 타입을 **이 함수가 실제로 읽는 네 자리로만** 좁혀 둔다.
+ * `typeof spawnSync` 로 두면 시험이 스텁을 넣을 때 `pid`·`output`·`stderr`
+ * 처럼 **여기서 안 보는 필드까지** 채워야 하고, 그러면 스텁이 사실이 아닌 값을
+ * 지어내게 된다. 이음매는 그것을 쓰는 쪽의 실제 요구만큼만 넓은 것이 맞다.
+ *
+ * @param {string} tool
+ * @param {string[]} args
+ * @param {{
+ *   spawn?: (tool: string, args: string[], options: Record<string, unknown>) => {
+ *     status?: number | null,
+ *     signal?: NodeJS.Signals | string | null,
+ *     stdout?: string | null,
+ *     error?: { code?: string } | null,
+ *   },
+ *   timeout?: number,
+ * }} [options]
  */
 export function probeTool(tool, args, { spawn = spawnSync, timeout = PROBE_TIMEOUT_MS } = {}) {
   const probe = spawn(tool, args, { encoding: "utf8", timeout });
