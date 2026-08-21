@@ -40,6 +40,119 @@
 **상태**: 유효 / 뒤집힘(→ 링크) / 반증됨(관측: …)
 ```
 
+## 2026-08-21 (92) — 지도 안에서 뜻을 고치고, ACP 쓰기는 사람의 변경안 확인 뒤에만 이어간다
+
+**소집**: 단독 PO 패스 → PO 카운슬 5자리 순차 수행 → 디자인 방향 4안 중 소유자가
+`B. 지도 안의 contextual editor` 선택 → 디자인 벤치 8자리 순차 수행 →
+design-guardian. **소유자가 서브에이전트를 쓰지 말라고 요청해 두 카운슬 모두
+순차 수행했고, 1라운드 독립성은 없다.** · **트리거**: 최상위 사용자 표면 강등,
+쓰기 승인 경계 변경, 지도·ACP·모션·반응형·설치 앱 작업대 변경, 소유자 요청.
+
+### PO Pass
+
+- **User/moment**: Atlas를 dogfood하는 개발자가 지도에서 노드·관계를 읽고 ACP에게
+  수정을 부탁하거나 직접 뜻을 고치려는 순간.
+- **Current alternative**: 지도에서 별도 Studio 라우트로 이동해 나침반 폼에서 즉시
+  쓰거나, ACP의 Atlas MCP 쓰기를 별도 변경안 없이 자동 허용한다.
+- **Observed phenomenon**: 설치 앱 실측에서 Studio의 `확인하고 저장`은 별도 검토
+  단계 없이 새 markdown을 만들었다. 지도 생성도 `createDoc`을 즉시 호출하고,
+  `AcpChatPanel` 계약 테스트는 `mcp__atlas-vault__add_concept`를 카드 없이 자동
+  허용하는 동작을 명시한다. 지도 노드·엣지의 편집 링크는 모두
+  `/ontology/studio`로 이동한다.
+- **Problem**: 개발자가 지도에서 읽던 이웃·방향·ACP 대화 맥락을 잃고, 어떤
+  frontmatter 변경을 에이전트가 실행하는지 판단하기 전에 디스크가 바뀐다. 이는
+  사람의 의미 결정권과 다음 에이전트 핸드오프의 신뢰를 함께 끊는다.
+- **Ontology value**: 변경 전/후, kind, 관계 타입·방향, source/target, why/evidence,
+  mtime 충돌을 쓰기 전에 같은 상태로 보여 관계와 provenance를 더 명확하게 한다.
+- **Agent value**: Atlas read tool은 그대로 이어가되 write tool은 ACP permission
+  경계에서 정확한 변경안을 보여 주고 `allow_once` 뒤 같은 세션을 재개한다. 거절은
+  `reject_once`로 끝나며 영구 자동 허용은 제공하지 않는다.
+- **Riskiest assumption**: ACP permission의 tool input만으로 사람이 판단할 정확한
+  변경 전/후를 만들 수 있고, 허용 뒤 실행 결과를 같은 변경안에 결산할 수 있다.
+- **Appetite/slice**: 최대 개발 4일. 공통 ChangeSet, ACP Atlas-write 검토, 지도
+  contextual editor, 기존 딥링크 번역, Studio 최상위 목적지 강등까지 한 덩어리다.
+- **Simplification**: 새 라우트·두 번째 우측 dock·영구 제안함·새 ontology kind·
+  backend·자동 승인을 만들지 않는다. 옛 방사형 Studio UI와 전용 agent panel은
+  제거하고 `/ontology/studio`는 호환 번역기만 남긴다.
+- **Verification**: RED/GREEN unit·contract·E2E, 일부러 되돌리는 gate probe,
+  1024/1280/1512/1920/2560 rect sweep, reduced motion, map interaction cost, 재빌드한
+  설치 앱의 Codex Computer Use 캡처와 실제 ACP allow/reject 왕복.
+
+**현상↔문제 판별**: 차이 통과 — 문제는 라우트나 패널 이름 없이도 의미 결정권과
+핸드오프 손상으로 남는다. 제2 관측 통과 — 설치 앱의 즉시 파일 생성과 ACP 자동 허용
+테스트가 서로 다른 두 채널이다. 해법 독립 통과 — inline editor 대신 별도 review
+sheet여도 같은 문제다.
+
+**PO 카운슬** (순차 수행 — 1라운드 독립성 없음): Problem insight 4 · User moment 4 ·
+Differentiation 4 · Ontology value 4 · Agent value 4 · Verification 2 = **22/24**,
+치명적 0 없음. Verification은 구현 전이라 의도적으로 2다. 가장 강한 반대는
+“Studio는 이미 타입 있는 쓰기를 정확히 수행하며, ACP permission과 지도 편집을 한 번에
+바꾸면 잘 작동하는 두 경로를 동시에 불안정하게 만든다”였다. 2라운드에서 이를 받아
+**공통 변경안 모델을 먼저 만들고 ACP→수동 편집→호환 번역 순서로 세로 조각마다
+증명한다**는 조건으로 `Build and verify`를 유지했다.
+
+**결정**:
+
+1. 주 작업대는 지도와 ACP다. 수동 쓰기는 선택 노드 inspector가 같은 자리에서
+   `MeaningEditorPanel`로 바뀌어 수행하며 새 dock이나 별도 페이지를 만들지 않는다.
+2. 모든 지도 생성·편집은 `OntologyChangeSet`을 만들고, 정확한 변경 전/후를 확인한
+   뒤에만 기존 로컬 writer가 실행된다. markdown frontmatter가 쓰인 순간 바로
+   정본이라는 계약은 유지하며 별도 review 상태 파일은 만들지 않는다.
+3. ACP Atlas read tool은 자동 허용을 유지한다. write tool은 permission input을
+   ChangeSet으로 번역해 ACP 안에서 확인하고 `allow_once`/`reject_once`로 같은 세션을
+   이어간다. `allow_always`는 의미 쓰기에 제공하지 않는다. 정확한 preview를 만들 수
+   없는 쓰기는 자동 허용하지 않고 일반 권한 확인으로 낮춘다.
+4. 지도 preview는 실제 node/edge geometry를 쓴다. 제안 관계는 dashed ghost edge,
+   승인되면 같은 자리에서 solid edge, 거절되면 사라진다. kind·관계·방향을 색 하나에만
+   맡기지 않고 라벨·선 스타일을 함께 쓴다.
+5. `/ontology/studio?node=…&edit=…`와 `/ontology/edit`는
+   `/topology?p=…&workbench=edit&edit=…`로 번역하는 호환 진입점으로 남긴다. Studio는
+   LNB·단축키·tour·sitemap에서 빠지고 옛 Compass 화면과 전용 대화창은 삭제한다.
+
+**디자인 방향 한 줄**: *지도와 ACP가 주 작업대이며, 온톨로지 쓰기는 지도 안
+contextual editor와 변경안 검토를 거친다. Studio는 호환 진입점만 남기고 최상위
+목적지에서 내려간다.*
+
+**디자인 카운슬** (순차 수행 — 1라운드 독립성 없음):
+
+- Primary moment: 지도에서 선택한 의미를 보면서 직접 또는 ACP를 통해 수정하고,
+  디스크에 쓰기 전 정확한 변화만 판단한다.
+- Attention stack: base=지도 · support=이웃 노드/엣지 · focus=선택 노드와
+  contextual editor 또는 ACP 변경안 · blocking=없음(ACP 세션만 대기) ·
+  utility=검색·Git 상태·agent 상태.
+- Graph fact: kind, authored relation direction, source/target, why/evidence, before/after,
+  conflict가 지도와 검토 카드 양쪽에서 같은 값이어야 한다.
+- Responsive rule: 1040px 이상에서 지도 유효 폭 480px을 지키며 ACP와 editor가
+  겹치지 않는다. 그 아래에서는 두 보조 표면을 동시에 띄우지 않고 상태를 보존한 채
+  최근 사용 표면만 기존 mobile sheet 자리에 둔다. 44px·bottom-tab reserve를 지킨다.
+- Motion: node는 고정하고 inspector→editor를 같은 origin에서 `--motion-base`로
+  교체한다. ghost edge는 한 번 나타나고, 승인은 `--motion-settle`로 solid가 되며,
+  거절은 `--motion-fast`로 사라진다. 반복·glow·gradient·bounce·camera jump는 없다.
+  reduced motion에서는 위치 이동 없이 opacity와 dash/solid 상태만 즉시 바꾼다.
+- Tokens: 기존 topology surface/border/shadow, typography, control, field,
+  `--motion-fast/base/settle`만 재사용한다. 새 램프 값은 만들지 않는다.
+- Proof before final approval: `/design-audit`, `/responsive-sweep`,
+  `/motion-verify`, graph readability, map perf, 설치 앱 캡처. 구현 전 측정 자리는
+  조건부 승인이고 이 증거 없이는 완료로 바뀌지 않는다.
+
+**Removed / dimmed / collapsed / aligned**: Studio rail·Compass·전용 agent panel을
+제거한다. 편집 중 이웃은 support로 낮추되 숨기지 않는다. 좁은 폭에서는 ACP와 editor
+중 하나만 접는다. inspector와 editor의 origin·폭·타이포·행 정렬을 맞춘다.
+
+**서명**: 진안 — B안 선택 및 구현 승인; Codex — 현재 main 실측, 순차 솔로 검토,
+구현·검증 책임.
+
+**기록된 반대**: 독립된 Studio는 지도 밀도와 ACP 대화에 방해받지 않고 복잡한
+관계 편집을 집중해서 할 수 있었다. contextual editor가 네 관계·이름·domain·근거를
+한꺼번에 담으려 하면 작은 inspector가 다시 축소판 Studio가 되고 지도까지 가린다.
+**반증 조건**: 1512×900에서 editor+ACP가 핵심 노드 또는 480px 이상의 유효 지도를
+가리거나, 한 변경을 끝내는 데 editor 내부 scroll/단계 전환이 반복되거나, 사용자가
+호환 Studio 주소로 돌아가려는 행동이 한 번이라도 관측된다. 그러면 독립 페이지를
+복구하지 말고 먼저 편집 범위를 한 번에 한 relation/field로 더 줄인다.
+**재검토**: 설치 앱 dogfood 10회 변경 또는 위 관측 1건.
+
+**상태**: 유효
+
 ## 2026-08-21 (91) — Skills 제품 표면을 완전히 은퇴시키고, 레일 상한을 일곱으로 닫는다
 
 **소집**: PO 카운슬 5인 2라운드 → 디자인 벤치 8석 2라운드 → design-guardian.
