@@ -17,7 +17,7 @@ import { expect, test } from "@playwright/test";
  *  3. `role="dialog"` 가 동시에 둘 이상 열려 있지 않다(#62 오버레이 배타).
  *
  * 폭 선정: 1512(14인치 기준 계약) · 1024(lg 경계) · 834(태블릿 포트레이트) ·
- * 390(모바일). 각 폭에서 살아있는 5개 표면 + 다운로드를 돈다.
+ * 390(모바일). 각 폭에서 살아있는 4개 표면 + 다운로드를 돈다.
  */
 
 const WIDTHS = [
@@ -30,7 +30,6 @@ const WIDTHS = [
 const ROUTES = [
   "/ko/topology/",
   "/ko/docs/",
-  "/ko/ontology/studio/",
   "/ko/ontology/insights/",
   "/ko/projects/",
   "/ko/download/",

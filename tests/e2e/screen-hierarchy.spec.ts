@@ -45,7 +45,6 @@ import { AUDITED_ROUTES } from "./audited-routes";
  * | `/ko/` | 34px | 0 | 1 (`gateway-hero-cta`) | ②2026-08-19 개명 |
  * | `/ko/topology/` | **없음**(h1 = `sr-only` 1×1) | — | 1 (`first-run-starter-open`) | ①예외 |
  * | `/ko/docs/` | **없음**(h1 = `sr-only` 1×1) | — | 0 | ①예외 |
- * | `/ko/ontology/studio/` | 16px | 0 | 0 | 2026-08-08 에 14px·2건에서 고쳐짐 |
  * | `/ko/ontology/insights/` | 23px | 0 | 0 | |
  * | `/ko/projects/` | 23px | 0 | 0 | 용량 막대 10개는 data-mark(h≤8) |
  * | `/ko/project/storefront/` | 23px | 0 | 0 | h1 이 둘(23·16) — a11y 소관 |
@@ -64,8 +63,8 @@ import { AUDITED_ROUTES } from "./audited-routes";
  * 채워진 악센트는 여전히 라우트당 하나이고, 그 하나가 히어로 CTA 다 — 수는
  * 안 바뀌고 이름만 바뀌었다.
  *
- * 합계: 훑은 글자 원소 **964** · 채워진 악센트 컨트롤 **8**(2026-08-08 위계 판정
- * 적용 전 9 — 편집 화면의 쌍둥이 저장 중 하나가 보조 톤으로 내려갔다).
+ * 구 Studio 주소는 자기 화면이 없는 지도 호환 리다이렉트가 되어 이 표와 공유
+ * 감사 목록에서 빠졌다. 지도 contextual editor는 볼트 기반 상태 감사가 따로 연다.
  *
  * ## 예외가 셋에서 둘로 줄었다 (2026-08-08, 같은 날 오후)
  *
@@ -362,14 +361,6 @@ const TITLE_EXEMPT: ReadonlyArray<{ route: string; why: string }> = [
     route: "/ko/docs/",
     why: "지도와 같다 — h1 「문서함」이 `sr-only` 1×1. 같은 검사가 못박는다",
   },
-  /*
-   * 공방(`/ko/ontology/studio/`) 예외는 **지웠다** (2026-08-08 위계 판정 적용).
-   * h1 「무엇을 할까요?」가 `text-body-lg`(14px) + `text-secondary` 라 입구 카드
-   * 라벨(같은 14px + `text-primary`)에 크기는 동률·색은 열세였다. 대화상자 제목
-   * 관례(`text-title` 16px + `text-primary`)로 올려서 규칙을 **켰다** — 예외가
-   * 아니라 통과다. 자기 감시 장치였던 「공방의 동률 2건이 그대로다」도 같이
-   * 지웠다(고쳐졌으므로 그 검사는 이제 빨강이 정상이 아니라 존재 이유가 없다).
-   */
 ];
 const TITLE_EXEMPT_ROUTES = new Set(TITLE_EXEMPT.map((e) => e.route));
 
