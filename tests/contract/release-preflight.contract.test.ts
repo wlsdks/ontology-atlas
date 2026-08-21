@@ -21,6 +21,8 @@ import {
   localCommandFor,
   parseAdmitReleaseSteps,
   parseBuildMacosSteps,
+  PROBE_TIMEOUT_MS,
+  probeTool,
 } from "../../scripts/release-rehearsal.mjs";
 import { RELEASE_ARTIFACT_STEPS } from "../../scripts/build-macos-release-artifact.mjs";
 
@@ -187,7 +189,19 @@ describe("리허설이 릴리스 잡을 빠짐없이 덮는다", () => {
     ]);
   });
 
-  it("태그 없이 목록을 보면 admission이 검증됐다고 가장하지 않고 명시적으로 SKIP 한다", () => {
+  /*
+   * ⚠️ **이 시험은 한때 무작위로 빨갰다** (2026-08-21, `#1178` 에서 관측).
+   *
+   * `--list` 는 도구 넷을 실제로 불러 본다(그게 「이 기계에서 무엇이 안 되나」의
+   * 답이다). 그런데 상한이 없어서, 러너에서 rustup 심을 거치는 `cargo`/`rustc`
+   * 첫 호출이 느릴 때 **9.75초**가 걸렸다 — vitest 기본 상한 5초를 넘겨 계약이
+   * 터졌다(이 기계에서는 0.18초라 로컬에서는 절대 안 보인다).
+   *
+   * 고친 곳은 둘이다: 스크립트가 도구마다 상한을 두고(`PROBE_TIMEOUT_MS`),
+   * 여기서는 **재는 것이 「빠른가」가 아니라 「무엇을 출력하나」임을 명시**한다.
+   * 기본 상한에 기대면 이 계약은 다시 기계 속도에 매인 게이트가 된다.
+   */
+  it("태그 없이 목록을 보면 admission이 검증됐다고 가장하지 않고 명시적으로 SKIP 한다", { timeout: 60_000 }, () => {
     const rehearsal = spawnSync(process.execPath, ["scripts/release-rehearsal.mjs", "--list"], {
       cwd: root,
       encoding: "utf8",
@@ -199,7 +213,7 @@ describe("리허설이 릴리스 잡을 빠짐없이 덮는다", () => {
     expect(rehearsal.stdout).toContain("ADMISSION SKIP");
   });
 
-  it("태그 목록은 현재 HEAD SHA로 workflow의 admission 두 검사를 나란히 보인다", () => {
+  it("태그 목록은 현재 HEAD SHA로 workflow의 admission 두 검사를 나란히 보인다", { timeout: 60_000 }, () => {
     const sha = currentHeadSha(root);
     const rehearsal = spawnSync(
       process.execPath,
@@ -331,5 +345,55 @@ describe("다운로드 스모크 문구는 살아 있는 카탈로그에서 온�
         retired,
       );
     }
+  });
+});
+
+/**
+ * **도구 확인은 셋을 말한다 — `ok` · 없음 · 「확인 못 함」.**
+ *
+ * 「모른다」를 「없다」로 접으면 다음 사람이 멀쩡한 도구를 설치하러 간다. 그리고
+ * 상한이 없으면 이 확인이 시험 전체를 기계 속도에 묶는다(위 주석의 사고).
+ */
+describe("릴리스 리허설의 도구 확인", () => {
+  it("답한 도구는 버전을 그대로 돌려준다", () => {
+    const result = probeTool("x", ["--version"], {
+      spawn: () => ({ status: 0, stdout: "1.2.3\n다음 줄" }),
+    });
+    expect(result).toEqual({ state: "ok", version: "1.2.3" });
+  });
+
+  it("실행 파일이 없으면 `missing` 이다", () => {
+    const result = probeTool("x", ["--version"], {
+      spawn: () => ({ status: null, error: { code: "ENOENT" } }),
+    });
+    expect(result.state).toBe("missing");
+  });
+
+  it("상한에 걸리면 `unknown` 이다 — 없다고 말하지 않는다", () => {
+    // Node 는 상한에 걸린 자식을 신호로 죽인다. 그것을 「없음」으로 접는 것이
+    // 이 저장소가 로딩·진행 표면 전반에서 금지해 온 「모르는 것을 아는 척」이다.
+    expect(probeTool("x", [], { spawn: () => ({ status: null, signal: "SIGTERM" }) }).state).toBe(
+      "unknown",
+    );
+    expect(
+      probeTool("x", [], { spawn: () => ({ status: null, error: { code: "ETIMEDOUT" } }) }).state,
+    ).toBe("unknown");
+  });
+
+  it("상한을 실제로 넘겨 준다 — 안 넘기면 스크립트가 영영 기다릴 수 있다", () => {
+    let seen: Record<string, unknown> | undefined;
+    probeTool("x", [], {
+      timeout: 1234,
+      spawn: (_tool: string, _args: string[], options: Record<string, unknown>) => {
+        seen = options;
+        return { status: 0, stdout: "" };
+      },
+    });
+    expect(seen?.timeout).toBe(1234);
+  });
+
+  it("기본 상한이 유한하고 0 이 아니다 — 그래야 상한이 상한이다", () => {
+    expect(PROBE_TIMEOUT_MS).toBeGreaterThan(0);
+    expect(Number.isFinite(PROBE_TIMEOUT_MS)).toBe(true);
   });
 });

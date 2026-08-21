@@ -108,6 +108,44 @@ export const REHEARSAL_SLOW_STEPS = new Set([
  * (`- name:` 다음 `run:`), 의존 하나를 더 지는 것보다 이 파일이 스스로
  * 설명되는 편이 낫다. 뽑히는 단계 수는 계약 테스트가 지킨다.
  */
+/**
+ * 도구 확인에 두는 상한(ms).
+ *
+ * ## 왜 상한이 필요했나 (2026-08-21)
+ *
+ * `--list` 는 「무엇이 돌 것이고, 이 기계에서 무엇이 안 되나」를 보여 준다
+ * (`docs/DEPLOYMENT.md`). 그래서 도구 넷을 실제로 불러 본다 — 그 자체는 옳다.
+ * 문제는 **상한이 없었다**는 것이다.
+ *
+ * 실측: 이 기계 **0.18초**, CI 러너 **9.75초**. 러너에서 `cargo`/`rustc` 는
+ * rustup 심을 거쳐 뜨느라 첫 호출이 느리다. 그리고 그 9.75초가
+ * vitest 의 기본 시험 상한(5초)을 넘겨, **계약 하나가 무작위로 빨개졌다**
+ * (2026-08-21 `#1178` 에서 관측 → 재실행하니 통과).
+ *
+ * 이 저장소의 규율 그대로다: **기계 속도에 매인 게이트는 게이트가 아니다**
+ * (`.claude/rules/architecture.md`). 도구가 느린 것은 이 검사가 답할 질문이
+ * 아니므로, 못 기다린 것은 **못 기다렸다고** 말하고 넘어간다.
+ *
+ * 시험이 이 값을 낮춰 세 번째 상태를 실제로 만들 수 있어야 해서 env 로 연다 —
+ * 만들 수 없는 상태는 검사할 수 없고, 검사 못 하는 분기는 조용히 썩는다.
+ */
+export const PROBE_TIMEOUT_MS = Number(process.env.RELEASE_REHEARSAL_PROBE_TIMEOUT_MS) || 5_000;
+
+/**
+ * 도구 하나를 불러 본다. **셋 중 하나**를 돌려준다 — `ok` · `missing` ·
+ * `unknown`(상한에 걸림). 「모른다」를 「없다」로 접지 않는 것이 이 함수의 요점이다.
+ */
+export function probeTool(tool, args, { spawn = spawnSync, timeout = PROBE_TIMEOUT_MS } = {}) {
+  const probe = spawn(tool, args, { encoding: "utf8", timeout });
+  if (probe.status === 0) {
+    return { state: "ok", version: String(probe.stdout ?? "").trim().split("\n")[0] };
+  }
+  // Node 는 상한에 걸리면 자식을 신호로 죽인다(`SIGTERM`). 실행 파일이 아예
+  // 없을 때는 `error.code === 'ENOENT'` 다 — 둘은 다른 사실이다.
+  const timedOut = probe.signal != null || probe.error?.code === "ETIMEDOUT";
+  return { state: timedOut ? "unknown" : "missing" };
+}
+
 export function parseReleaseJobSteps(workflow, jobName) {
   const jobStart = workflow.indexOf(`\n  ${jobName}:`);
   if (jobStart < 0) throw new Error(`release-macos.yml 에 ${jobName} 잡이 없다.`);
@@ -416,11 +454,21 @@ function main() {
   console.log(color(1, "[rehearsal] release-macos.yml · admit-release + build-macos — 이 기계에서 순서대로"));
   console.log("");
   for (const [tool, args] of tools) {
-    const probe = spawnSync(tool, args, { encoding: "utf8" });
-    const ok = probe.status === 0;
-    console.log(
-      `${ok ? color(32, "  tool ok  ") : color(31, "  tool MISSING")} ${tool}${ok ? ` — ${probe.stdout.trim().split("\n")[0]}` : " — 러너에는 설치 단계가 있다. 이 기계에 없으면 아래 단계가 여기서 멈춘다."}`,
-    );
+    const probe = probeTool(tool, args);
+    if (probe.state === "ok") {
+      console.log(`${color(32, "  tool ok  ")} ${tool} — ${probe.version}`);
+    } else if (probe.state === "unknown") {
+      // **모르는 것을 없다고 말하지 않는다.** 상한에 걸린 것은 「이 기계에 없다」가
+      // 아니라 「제때 답을 못 받았다」다. 둘을 같은 말로 쓰면 다음 사람이 멀쩡한
+      // 도구를 설치하러 간다.
+      console.log(
+        `${color(33, "  tool ?    ")} ${tool} — ${PROBE_TIMEOUT_MS}ms 안에 답이 없어 확인 못 했다(없다는 뜻이 아니다).`,
+      );
+    } else {
+      console.log(
+        `${color(31, "  tool MISSING")} ${tool} — 러너에는 설치 단계가 있다. 이 기계에 없으면 아래 단계가 여기서 멈춘다.`,
+      );
+    }
   }
   console.log("");
 
