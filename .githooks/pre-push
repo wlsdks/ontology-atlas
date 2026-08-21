@@ -60,7 +60,12 @@ for range in $ranges; do
 $(git diff --name-only "$range" --)"
 done
 
-paths=$(printf '%s\n' "$paths" | sed '/^$/d' | sort -u)
+# 지워진 파일은 뺀다 — `git diff --name-only` 는 삭제된 경로도 주는데, 그것을
+# 파일 읽는 도구(eslint 등)에 넘기면 그냥 고장난다(2026-08-21 실측: 연결 시트를
+# 은퇴시킨 푸시가 여기서 막혔다). 「무엇이 지워졌나」는 계약 검사가 본다.
+paths=$(printf '%s\n' "$paths" | sed '/^$/d' | sort -u | while read -r f; do
+  [ -e "$f" ] && printf '%s\n' "$f"
+done)
 [ -n "$paths" ] || exit 0
 
 echo "[pre-push] 푸시되는 범위의 변경으로 검사를 고른다 ($(printf '%s\n' "$paths" | wc -l | tr -d ' ') 파일)"

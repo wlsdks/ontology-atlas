@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 import { spawnSync } from 'node:child_process';
+import { existsSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -15,10 +16,35 @@ const SHARED_AGENT_CONFIG_PATTERNS = [
 ];
 const LOCAL_AGENT_STATE_PREFIXES = ['.agents/', '.codex/'];
 
-export function changedPathsFromGit({ cwd = process.cwd(), spawn = spawnSync } = {}) {
+/**
+ * 지워진 파일은 검사 대상이 아니다.
+ *
+ * ⚠️ **2026-08-21 실측**: `git diff --name-only` 는 **삭제된 경로도 준다.**
+ * 그것을 그대로 추천기에 넣으면 `eslint <지워진 파일>` 이 만들어지고, 그 명령은
+ * 「존재하지 않는 파일」로 죽는다 — 연결 시트를 은퇴시킨 푸시가 정확히 그렇게
+ * 막혔다(훅이 16초 만에 빨개졌다).
+ *
+ * 무엇이 지워졌는지는 여전히 중요하다(그 파일을 가리키던 장부·계약이 터져야
+ * 한다). 다만 그건 **계약 검사의 일**이고, 파일을 읽는 도구에 없는 경로를
+ * 넘기는 것은 그냥 고장이다.
+ */
+function existingPaths(paths, { cwd = process.cwd(), exists = existsSync } = {}) {
+  return paths.filter((path) => exists(resolve(cwd, path)));
+}
+
+export function changedPathsFromGit({
+  cwd = process.cwd(),
+  spawn = spawnSync,
+  // 실재 판정을 주입할 수 있게 연다 — 그래야 「중복 제거」와 「지워진 것 거르기」를
+  // **따로** 잴 수 있다. 섞어 두면 한쪽을 시험하려고 디스크에 파일을 만들게 된다.
+  exists = existsSync,
+} = {}) {
   const tracked = spawnGit({ cwd, spawn, args: ['diff', '--name-only', 'HEAD', '--'] });
   const untracked = spawnGit({ cwd, spawn, args: ['ls-files', '--others', '--exclude-standard'] });
-  return uniqueLines(`${tracked}\n${untrackedPathsForAdvisor(untracked).join('\n')}`);
+  return existingPaths(
+    uniqueLines(`${tracked}\n${untrackedPathsForAdvisor(untracked).join('\n')}`),
+    { cwd, exists },
+  );
 }
 
 function spawnGit({ cwd, spawn, args }) {
