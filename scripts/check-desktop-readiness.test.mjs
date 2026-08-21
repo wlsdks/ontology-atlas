@@ -318,7 +318,7 @@ test("desktop readiness check proves Tauri macOS shell prerequisites", () => {
   );
   assert.match(
     result.stdout,
-    /✓ desktop agent setup surface derives the absolute Tauri vault path and is actually mounted by the settings sheet/,
+    /✓ desktop agent setup surface derives the absolute Tauri vault path and is actually mounted by the Agents destination/,
   );
   assert.match(
     result.stdout,

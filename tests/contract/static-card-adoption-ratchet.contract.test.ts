@@ -72,7 +72,10 @@ const DEBT: ReadonlyArray<readonly [file: string, count: number]> = [
   ["src/views/project-editor/ui/ProjectEditorPage.tsx", 2],
   ["src/views/project-selector/ui/ProjectSelectorPage.tsx", 3],
   ["src/widgets/app-settings-menu/ui/AiConnectionPanel.tsx", 1],
-  ["src/widgets/app-settings-menu/ui/AppSettingsMenu.tsx", 2],
+  // 2026-08-21: 실행기·MCP 연결 절이 「에이전트」 목적지로 나가며 이 파일의
+  // 손 카드 둘이 함께 나갔다(원장 90). 회수분은 장부에서 내린다 — 실측보다
+  // 후한 장부는 래칫이 아니다.
+  ["src/widgets/app-settings-menu/ui/AppSettingsMenu.tsx", 0],
   ["src/widgets/app-settings-menu/ui/ExpandSettings.tsx", 3],
   ["src/widgets/app-settings-menu/ui/FootprintSettings.tsx", 1],
   ["src/widgets/docs-quick-drawer/ui/DocsQuickDrawer.tsx", 2],

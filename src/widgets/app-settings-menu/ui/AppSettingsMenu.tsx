@@ -8,13 +8,10 @@ import {
   Bell,
   Bot,
   ChevronRight,
-  Copy,
-  Check,
   DownloadCloud,
   Expand,
   Footprints,
   HardDrive,
-  SquareTerminal,
   Layers,
   MessageSquare,
   Monitor,
@@ -25,7 +22,7 @@ import { ICON_SIZE } from '@/shared/ui/icon-size';
 import { useLocale, useTranslations } from 'next-intl';
 import { Link, useRouter } from '@/i18n/navigation';
 import { LocaleSwitch } from '@/features/locale-switch';
-import { useAgentServer, useLocalVault } from '@/features/docs-vault-local';
+import { useLocalVault } from '@/features/docs-vault-local';
 import { useGuideAutoStart, useGuideReplay, writeGuideAutoStart } from '@/features/guided-tour';
 import {
   getTauriVaultRootPath,
@@ -43,9 +40,9 @@ import {
   buildRouteFocusHref,
   rememberRouteFocusIntent,
 } from '@/shared/ui/route-focus-manager';
-import { AcpRuntimeSettings } from './AcpRuntimeSettings';
+import { DESTINATION_HREF } from '@/shared/config/destinations';
+
 import { AppUpdateSettings } from './AppUpdateSettings';
-import { VaultAgentSetupPanel } from './VaultAgentSetupPanel';
 import { AccentPicker, CanvasBackgroundPicker, GlyphSetPicker } from './AppearancePickers';
 import { FootprintSettings } from './FootprintSettings';
 import { ExpandSettings } from './ExpandSettings';
@@ -174,7 +171,18 @@ const SETTINGS_GROUPS = [
    * 권장명)를 쓰므로 「Agents 로 이름 붙은 메뉴 안」이라는 조건에 기대지
    * 않는다 (`tests/contract/vendor-naming.contract.test.ts`).
    */
-  { key: 'connect', items: ['workspace', 'runtimes', 'agent', 'ai'] },
+  /*
+   * ⚠️ **`runtimes` 와 `agent` 는 2026-08-20 에 「에이전트」 목적지로 나갔다**
+   * (원장 90). 설정은 값을 고르는 자리이고, 도구를 받고 깔고 붙이고 고치는 것은
+   * **진행 상태가 있는 운영 작업**이라 뒤를 막는 모달이 그릇으로 맞지 않았다.
+   *
+   * 그래서 남는 것은 「폴더」와 「키」다 — 둘 다 한 번 정하면 되는 값이다.
+   * (`ai` 는 2026-08-16 「경로 동결·비강조」가 서 있어 목적지로 안 올린다.)
+   *
+   * 빠져나간 자리를 찾을 사람을 위해 이 묶음 **맨 앞에 이정표 행 하나**가 선다 —
+   * 내용은 안 그리고 목적지로만 보낸다.
+   */
+  { key: 'connect', items: ['workspace', 'ai'] },
   /*
    * 「앱」이 **맨 마지막**인 이유: 앞의 두 묶음은 매일 만지는 것(지도가 어떻게
    * 보이나 · 무엇이 이 폴더에 붙나)이고, 이 묶음은 **앱 자신**에 대한 것이라
@@ -204,14 +212,20 @@ const SECTION_ICON: Record<SettingsSection, typeof Monitor> = {
   // 사각 대 삼각이라 훑기에서 갈린다.
   notify: Bell,
   workspace: HardDrive,
-  // 터미널 사각형 — 이 목록에서 유일한 «실행되는 것»의 실루엣이다. 로봇(밖의
-  // 도구)·말풍선(앱 안 대화)과 훑기에서 갈린다.
-  runtimes: SquareTerminal,
-  // 밖의 도구 = 로봇, 앱 안의 대화 = 말풍선. 실루엣이 갈려야 훑기 채널이 선다
-  // (이름의 첫 글자를 가른 것과 같은 이유다).
-  agent: Bot,
   ai: MessageSquare,
 };
+/**
+ * LNB 행의 호버 — **한 곳에만 적는다** (2026-08-21).
+ *
+ * 이정표 행이 생기면서 같은 호버가 두 벌이 됐다. 값 층의 `hoverSurface: 'lift'`
+ * 는 행에 `overlay-1` 을 주는데, 이 시트의 형제 행들은 `overlay-2` 라 축을 쓰면
+ * **이 행만 다르게 밝아진다.** 그래서 축으로 옮기는 대신 사본을 없앤다 —
+ * 래칫이 막으려는 것이 「손으로 쓴 호버가 **느는 것**」이고, 이 상수는 그것을
+ * 줄인다.
+ */
+const SETTINGS_NAV_ROW_HOVER =
+  'hover:bg-[color:var(--color-overlay-2)] hover:text-[color:var(--color-text-primary)]';
+
 type SettingsTriggerVariant = 'header-pill' | 'rail-tile' | 'chrome-tile';
 
 const SETTINGS_LOCALE_FOCUS_KEY = 'ontology-atlas:settings-locale-focus';
@@ -307,35 +321,6 @@ export interface AppSettingsMenuProps {
   triggerVariant?: SettingsTriggerVariant;
 }
 
-/** AI 에이전트 첫 접촉 증명 패킷 — 사람이 읽는 카드 대신 에이전트에 그대로
- *  붙여넣는 typed handoff. 구 5탭 시절 mcpAgents 탭의 정적 교육 카드 그리드가
- *  하던 말이 전부 이 패킷 안에 있다(표면은 죽고 handoff 는 산다). */
-const MCP_FIRST_CALLS_PACKET = [
-  'Ontology Atlas MCP first-contact proof packet',
-  '',
-  'Direct MCP proof inside the current agent session:',
-  '1. codex mcp list',
-  '2. tools/list -> read toolCount from connection_info for the current number; finalize_project_meaning and query_ontology must be present',
-  '3. query_ontology({"operation":"agent_brief"})',
-  '4. query_ontology({"operation":"workspace_brief"})',
-  '5. query_ontology({"operation":"health"})',
-  '',
-  'If direct MCP tools are missing, this is CLI fallback proof only:',
-  'pnpm cli:mcp-verify docs/ontology --timeout-ms 15000',
-  '',
-  'Stale client cache hint:',
-  'If the client still says 23 tools or query_ontology is not callable, reload/restart the agent or refresh cached MCP tools.',
-  '',
-  'Project ontology indexing checkpoint (side effect 0):',
-  'Replace [codebase-root] with the current checkout path before running project indexing.',
-  'index_project({"rootPath":"[codebase-root]"})',
-  'node cli/src/index.mjs index [codebase-root] --vault docs/ontology --json --threshold 2',
-  '',
-  'Meaning gate: report the business/product domain and capability first, then cite code index rows as implementation evidence.',
-  'Business evidence: include meaningGate.businessOntology.evidence rows from README and docs/ontology.',
-  'Review queue: include meaningGate.implementationEvidence.reviewRequiredRows so humans can name folders that still lack product meaning.',
-  'Do not promote source folders to capabilities when existing ontology evidence maps them through matching slugs or capability elements.',
-].join('\n');
 
 export function AppSettingsMenu({
   mode,
@@ -353,7 +338,6 @@ export function AppSettingsMenu({
   const router = useRouter();
   const localVault = useLocalVault();
   // 번들 MCP 서버 유무 — 설정 패널의 원클릭 성립 여부.
-  const agentServer = useAgentServer();
   // 지금 화면이 등록한 "안내 다시 열기" — 등록이 없는 화면에서는 행 자체가
   // 없다(빈 행/비활성 버튼을 남기지 않는다).
   const replayGuide = useGuideReplay();
@@ -409,14 +393,6 @@ export function AppSettingsMenu({
     return { errorCount: summary.errorCount, warningCount: summary.warningCount };
   })();
 
-  // 설치 앱의 local vault 가 활성 상태여도 제품에 내장된 현재 runbook 을 연다.
-  // source=server 는 사용자 vault README 와 같은 slug fallback 으로 조용히
-  // 바뀌는 일을 막되, 저장된 local source 선호 자체는 덮어쓰지 않는다.
-  const handleOpenWorkflowGuide = () => {
-    setOpen(false);
-    rememberRouteFocusIntent(AGENT_GRAPH_WORKFLOW_HREF);
-    router.push(buildRouteFocusHref(AGENT_GRAPH_WORKFLOW_HREF));
-  };
   const vaultHref =
     mode === 'local' ? '/docs/' : isDesktopRuntime ? '/docs/?intent=local' : '/download/';
   const vaultNavigationHref = buildRouteFocusHref(vaultHref);
@@ -725,6 +701,46 @@ export function AppSettingsMenu({
                     <p className="px-2.5 pb-1 font-mono text-label uppercase tracking-[var(--tracking-caps-14)] text-[color:var(--color-text-quaternary)]">
                       {t(`sectionGroup.${group.key}`)}
                     </p>
+                    {/*
+                      **이정표 행** — 「연결」 묶음 맨 앞 (2026-08-21, 원장 90 · 위계석 처방).
+
+                      실행기와 MCP 연결이 목적지로 나가면서, 그것을 여기서 찾던
+                      사람에게 **빠져나간 자리를 말해 줄 것**이 필요해졌다.
+                      `surfaces.md` 의 「반만 막는 것이 가장 나쁘다」가 이 자리의
+                      근거다 — 내비에서 지웠으면 들어오던 길에도 답해야 한다.
+
+                      위계 처방 셋을 그대로 지킨다: **인디고 0**(이 시트의 주인공이
+                      아니다. 승자는 목적지 안의 「대화 열기」다) · 컨트롤 자리엔
+                      글자 없이 **이동 글리프 하나** · 목적지 pane 을 시트 안에
+                      그리지 않고 **시트를 닫고 간다**.
+
+                      뷰포트로 분기하지 않는다 — 같은 시트가 두 모양이 되는 것이
+                      더 비싸다(위계석 단서).
+                    */}
+                    {group.key === 'connect' ? (
+                      <button
+                        type="button"
+                        data-testid="app-settings-nav-agents"
+                        onClick={() => {
+                          setOpen(false);
+                          router.push(buildRouteFocusHref(DESTINATION_HREF.agents));
+                        }}
+                        className={controlClass({
+                          shape: 'row',
+                          size: 'md',
+                          tone: 'muted',
+                          className: `gap-2.5 rounded-card px-3 py-2 text-body-lg ${SETTINGS_NAV_ROW_HOVER}`,
+                        })}
+                      >
+                        <Bot size={16} aria-hidden className="shrink-0" />
+                        <span className="min-w-0 flex-1 text-left">{t('goToAgents')}</span>
+                        <ChevronRight
+                          size={16}
+                          aria-hidden
+                          className="shrink-0 text-[color:var(--color-text-quaternary)]"
+                        />
+                      </button>
+                    ) : null}
                     {group.items.map((item) => {
                       const active = item === section;
                       const Icon = SECTION_ICON[item];
@@ -742,7 +758,7 @@ export function AppSettingsMenu({
                             className: `gap-2.5 rounded-card px-3 py-2 text-body-lg ${
                               active
                                 ? 'bg-[color:var(--color-indigo-line-a13)]'
-                                : 'hover:bg-[color:var(--color-overlay-2)] hover:text-[color:var(--color-text-primary)]'
+                                : SETTINGS_NAV_ROW_HOVER
                             }`,
                           })}
                         >
@@ -1133,70 +1149,6 @@ export function AppSettingsMenu({
                 ) : section === 'update' ? (
                   <AppUpdateSettings />
 
-                ) : section === 'runtimes' ? (
-                  <AcpRuntimeSettings />
-
-                ) : section === 'agent' ? (
-                  isLocalVaultLoaded ? (
-                    <VaultAgentSetupPanel
-                      canEditCurrent={isLocalVaultLoaded}
-                      localVault={localVault}
-                      serverAvailability={agentServer}
-                      validationSummary={localVaultValidationSummary}
-                      onOpenWorkflowGuide={handleOpenWorkflowGuide}
-                    />
-                  ) : (
-                    <>
-                      <div className="rounded-card border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-3 py-2.5">
-                        <p className="text-body font-[var(--font-weight-signature)] text-[color:var(--color-text-secondary)]">
-                          {t('agentStatusNoVault')}
-                        </p>
-                        <p className="mt-1 break-keep text-label leading-label text-[color:var(--color-text-tertiary)]">
-                          {t('agentNoVaultHint')}
-                        </p>
-                        {/*
-                          **요구하는 행동을 그 자리에서 하게 한다** (2026-08-11, 북극성
-                          워크스루 실측). 이 카드는 「폴더를 열면 …」이라고 말하는데,
-                          이 칸에서 누를 수 있는 것은 「첫 호출 안내 복사」 하나뿐이었다 —
-                          폴더 열기는 옆 칸에 있었다. 이 저장소의 강등 카드 계약이
-                          「왜 + 어디서 되는지」인데 왜만 말하고 있었던 것이다.
-
-                          같은 동작을 부른다(`localVault.open()`) — 두 번째 경로를 만들지
-                          않는다. 작업 공간 칸의 버튼과 문구도 같은 키를 쓴다.
-                        */}
-                        <Chip
-                          size="lg"
-                          tone="accentOnTint"
-                          onClick={() => void localVault.open()}
-                          disabled={vaultBusy}
-                          data-testid="app-settings-agent-open-folder"
-                          className={`mt-2.5 ${INDIGO_ACTION_CHIP}`}
-                        >
-                          {vaultBusy ? t('workspaceFolderOpening') : t('workspaceFolderOpen')}
-                        </Chip>
-                      </div>
-                      <div className="rounded-card border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-3 py-2.5">
-                        <p className="text-body font-[var(--font-weight-signature)] text-[color:var(--color-text-secondary)]">
-                          {t('mcpProofTitle')}
-                        </p>
-                        <p className="mt-1 break-keep text-label leading-label text-[color:var(--color-text-tertiary)]">
-                          {t('mcpProofBody')}
-                        </p>
-                        <Chip
-                          tone="accentOnTint"
-                          onClick={() => void copy(MCP_FIRST_CALLS_PACKET)}
-                          className={`mt-2 w-full justify-center font-mono ${INDIGO_ACTION_CHIP} focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-focus-ring)] focus-visible:ring-inset`}
-                        >
-                          {copyState === 'copied' ? (
-                            <Check size={ICON_SIZE.sm} aria-hidden />
-                          ) : (
-                            <Copy size={ICON_SIZE.sm} aria-hidden />
-                          )}
-                          {copyState === 'copied' ? t('mcpProofCopied') : t('mcpProofCopy')}
-                        </Chip>
-                      </div>
-                    </>
-                  )
                 ) : (
                   <AiConnectionPanel
                     connection={aiConnection}

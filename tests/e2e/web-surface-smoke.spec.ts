@@ -308,16 +308,13 @@ const DEGRADED_SURFACES: readonly DegradedSurface[] = [
     // 이 2026-08-01 에 정정당한 바로 그 거짓이다. 웹에서도 자기가 직접 띄운
     // 에이전트를 이 폴더에 붙일 수 있고, 그 길(「MCP」)은 같은 시트 안에
     // 있다. 그래서 그 문장을 카드에 넣고 여기서 잠근다.
+    // ⚠️ **2026-08-21 재조준** (원장 90). 이 절은 설정 시트를 떠나 「에이전트」
+    // 목적지가 됐다. 검사를 지우지 않고 **주소만 옮긴다** — 강등 문장이 살아
+    // 있는지는 표면이 어디로 가든 물어야 하는 질문이다.
+    //
+    // 그리고 이제 시트를 열 필요가 없다: 목적지는 주소로 바로 열린다.
     name: "실행기 — 브라우저는 이 컴퓨터의 프로그램을 띄우지 못한다",
-    url: "/ko/topology/",
-    open: async (page) => {
-      // 설정 트리거는 레일과 지도 크롬 두 곳에 있다 — 레일 쪽 하나로 좁힌다.
-      await page
-        .getByTestId("app-nav-rail-utility-tier")
-        .getByTestId("app-settings-trigger")
-        .click();
-      await page.getByTestId("app-settings-nav-runtimes").click();
-    },
+    url: "/ko/agents/",
     card: "app-settings-runtimes-web",
     reason: /브라우저는[\s\S]*권한이 없어요/,
     destinationText: /맥 앱을 받으면/,
@@ -346,18 +343,25 @@ test.describe("웹 스모크 ③ 정직한 강등", () => {
       }
       if (surface.destinationText) await expect(card).toHaveText(surface.destinationText);
       if (surface.alsoHereNamesSettingsSection) {
-        // 「…」 안의 이름이 이 시트에 **실제로 있는 칸**이어야 한다. 문구는
-        // 얼마든지 고쳐도 되고, 없는 칸을 가리킬 때만 터진다.
+        /*
+         * 「…」 안의 이름이 **같은 화면에 실제로 있는 자리**여야 한다. 문구는
+         * 얼마든지 고쳐도 되고, 없는 곳을 가리킬 때만 터진다.
+         *
+         * ⚠️ **2026-08-21 재조준**: 종전에는 «설정 시트의 칸 목록»에서 찾았다.
+         * 이 절이 목적지로 옮겨 오면서 가리키는 대상도 **이 페이지의 절 제목**이
+         * 됐다 — 그게 더 강한 계약이기도 하다. 「이 화면에서도 되는 것」이라고
+         * 말했으면 그 자리는 **이 화면**에 있어야 한다.
+         */
         const quoted = [...(await card.innerText()).matchAll(/[「“]([^」”]+)[」”]/gu)].map((m) =>
           m[1].trim(),
         );
         expect(quoted, "이 화면에서도 되는 곳을 이름으로 대야 한다").not.toEqual([]);
-        const navLabels = (
-          await page.locator('[data-testid^="app-settings-nav-"]').allInnerTexts()
-        ).map((text) => text.trim());
-        expect(navLabels.length, "설정 칸 목록을 못 읽었다 — 이 검사가 헛돈다").toBeGreaterThan(5);
+        const headings = (await page.getByRole("heading").allInnerTexts()).map((text) =>
+          text.trim(),
+        );
+        expect(headings.length, "이 화면의 제목을 못 읽었다 — 이 검사가 헛돈다").toBeGreaterThan(1);
         for (const name of quoted) {
-          expect(navLabels, `카드가 가리킨 「${name}」 칸이 이 시트에 없다`).toContain(name);
+          expect(headings, `카드가 가리킨 「${name}」 자리가 이 화면에 없다`).toContain(name);
         }
       }
     });

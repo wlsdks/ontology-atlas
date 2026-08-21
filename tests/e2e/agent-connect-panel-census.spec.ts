@@ -35,6 +35,11 @@ const CEILING = {
   /** 스크롤해야 하는 배수 — 2.0 이면 두 화면 */
   scrollRatio: 2.0,
 };
+
+/**
+ * 칸이 스스로 스크롤하지 않으면(목적지처럼 페이지가 스크롤하면) 스크롤 배수는
+ * **칸 높이 ÷ 뷰포트**로 잰다 — 「몇 화면을 넘겨야 끝인가」가 재려던 뜻이다.
+ */
 test("「MCP 연결」 칸의 첫 화면 인구조사", async ({ page }, testInfo) => {
   test.setTimeout(300_000);
   await page.setViewportSize({ width: 1512, height: 900 });
@@ -50,21 +55,38 @@ test("「MCP 연결」 칸의 첫 화면 인구조사", async ({ page }, testInf
     "볼트가 안 물렸다 — 아래 측정은 전부 무의미하다.",
   ).toHaveCount(0, { timeout: 30_000 });
 
-  await page.getByTestId("app-settings-trigger").first().click();
-  const nav = page.getByTestId("app-settings-nav-agent");
-  await expect(nav).toBeVisible({ timeout: 10_000 });
-  await nav.click();
+  /*
+   * ⚠️ **2026-08-21 재조준** (원장 90). 이 칸은 설정 시트를 떠나 「에이전트」
+   * 목적지가 됐다. 종전에는 시트를 열고 `app-settings-nav-agent` 를 눌렀는데
+   * 그 자리가 없어져서 이 검사가 CI 에서 터졌다 — **검사가 옳았다.**
+   *
+   * 볼트를 물린 상태는 그대로 필요하다(그래야 설정판이 그려진다). 물린 뒤
+   * 레일의 「에이전트」 타일로 간다 — 사용자가 실제로 가는 길과 같다.
+   */
+  await page.getByTestId("app-nav-rail").getByRole("link", { name: "에이전트" }).click();
+  await expect(page.getByTestId("agents-page")).toBeVisible({ timeout: 10_000 });
 
-  const pane = page.getByTestId("app-settings-pane-agent");
+  const pane = page.getByTestId("agent-setup-section");
   await expect(pane).toBeVisible({ timeout: 10_000 });
 
   const census = await pane.evaluate((root) => {
-    const paneRect = root.getBoundingClientRect();
+    /*
+     * ⚠️ **「첫 화면」의 기준이 2026-08-21 에 바뀌었다** (원장 90).
+     *
+     * 시트 시절에는 **칸이 스크롤**했으므로 pane 의 보이는 영역과 겹치는지가
+     * 곧 「스크롤 없이 보이는가」였다. 목적지에서는 **페이지가 스크롤**하고 칸은
+     * 제 내용만큼 길어진다 — 그 상태로 pane 을 기준 삼으면 칸 안의 모든 것이
+     * 「첫 화면」이 되어 버린다(실측: 4/4 가 보이는 것으로 잡혔고, 실제로는
+     * 뷰포트 밖이었다).
+     *
+     * 재는 뜻은 그대로다: **사용자가 스크롤하지 않고 만나는 것.** 기준만
+     * 뷰포트로 옮긴다.
+     */
+    const viewportHeight = window.innerHeight;
     const visibleInPane = (el: Element) => {
       const r = el.getBoundingClientRect();
       if (r.width === 0 || r.height === 0) return false;
-      // 칸이 스크롤되므로 「첫 화면」은 pane 의 보이는 영역과 겹치는 것.
-      return r.bottom > paneRect.top && r.top < paneRect.bottom;
+      return r.bottom > 0 && r.top < viewportHeight;
     };
     const buttons = [...root.querySelectorAll("button")];
     const copyish = buttons.filter((b) =>

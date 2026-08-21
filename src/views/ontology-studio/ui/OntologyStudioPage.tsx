@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import { useRouter } from "@/i18n/navigation";
+import { DESTINATION_HREF } from "@/shared/config/destinations";
 import {
   buildOntologyInsightsReturnHref,
   ONTOLOGY_DEEPLINK_REVIEW_KEY,
@@ -16,7 +17,6 @@ import { useLocalVault } from "@/features/docs-vault-local";
 import { useOntologyKindLabel } from "@/entities/ontology-class";
 import { findSimilarNodeByTitle, type SimilarNodeCandidate } from "@/shared/lib/similar-node-title";
 import { LG_BREAKPOINT_PX, useViewportBelow } from "@/shared/lib/use-viewport-below";
-import { requestSettingsView } from "@/shared/lib/settings-view-intent";
 import { useAgentDockDefaultOpen } from "@/shared/lib/use-agent-dock-default";
 import { isLlmChatBridgeAvailable } from "@/shared/lib/tauri-llm";
 import { getTauriVaultRootPath } from "@/shared/lib/tauri-vault-fs";
@@ -1515,6 +1515,8 @@ function StudioStage({
  * 그래서 조건부 렌더 위가 아니라 **밖**에 둔다. 분기 수가 몇이든 이 자리는 하나다.
  */
 export function OntologyStudioPage() {
+  // 실습 마무리의 「에이전트에게 시키기」가 목적지로 간다(원장 90).
+  const router = useRouter();
   /**
    * **무대는 한 번만 들어온다** (2026-08-12 실측).
    *
@@ -1809,9 +1811,10 @@ export function OntologyStudioPage() {
           // 모달 위 모달은 modality 계약 위반이니 순차가 답이다.
           onAgentAction={() => {
             keepPractice();
-            // 문장이 먼저 약속하는 것은 **에이전트 연결**이다. API 키는 그
-            // 다음이고, 같은 시트 안에서 한 걸음이다.
-            requestSettingsView("agent");
+            // 문장이 먼저 약속하는 것은 **에이전트 연결**이다. 그 자리는
+            // 2026-08-21 에 시트를 떠나 목적지가 됐다(원장 90) — 시트를 열어
+            // 달라고 신호를 보내면 이제 아무 일도 안 일어난다.
+            router.push(DESTINATION_HREF.agents);
           }}
         />
       ) : null}

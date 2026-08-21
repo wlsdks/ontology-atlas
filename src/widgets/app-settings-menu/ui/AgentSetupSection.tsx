@@ -2,6 +2,11 @@
 
 import { useTranslations } from 'next-intl';
 
+import { Chip } from '@/shared/ui';
+import { ICON_SIZE } from '@/shared/ui/icon-size';
+import { useCopyFeedback } from '@/shared/lib/use-copy-feedback';
+import { Check, Copy } from 'lucide-react';
+
 import { OpenVaultCta, useAgentServer, useLocalVault } from '@/features/docs-vault-local';
 import { summarizeVaultValidation } from '@/shared/lib/validate-vault-document';
 
@@ -28,9 +33,49 @@ import { VaultAgentSetupPanel } from './VaultAgentSetupPanel';
  * 연결」 칸에서 …"* 라고 가리키는데, 그 칸이 같은 화면에 없으면 **그 문장이
  * 가리키는 곳이 없다.** 목적지가 이 칸을 같이 데려가는 이유가 그것이다.
  */
+/**
+ * AI 에이전트 첫 접촉 증명 패킷 — 사람이 읽는 카드 대신 에이전트에 그대로
+ * 붙여넣는 typed handoff.
+ *
+ * ⚠️ **이 파일로 옮겨 왔다** (2026-08-21, 원장 90). 종전에는 설정 시트의
+ * MCP 절 안에 살았는데, 그 절이 「에이전트」 목적지로 나가면서 **하마터면 같이
+ * 사라질 뻔했다** — 지운 분기 안의 「복사」 버튼만 이 상수를 쓰고 있었고,
+ * lint 의 「안 쓰는 변수」 경고가 그 사실을 알려 줬다.
+ *
+ * 표면은 옮겨도 **핸드오프는 산다** — 이 저장소가 구 5탭 시절에 같은 문장을
+ * 이미 적어 뒀다.
+ */
+const MCP_FIRST_CALLS_PACKET = [
+  'Ontology Atlas MCP first-contact proof packet',
+  '',
+  'Direct MCP proof inside the current agent session:',
+  '1. codex mcp list',
+  '2. tools/list -> read toolCount from connection_info for the current number; finalize_project_meaning and query_ontology must be present',
+  '3. query_ontology({"operation":"agent_brief"})',
+  '4. query_ontology({"operation":"workspace_brief"})',
+  '5. query_ontology({"operation":"health"})',
+  '',
+  'If direct MCP tools are missing, this is CLI fallback proof only:',
+  'pnpm cli:mcp-verify docs/ontology --timeout-ms 15000',
+  '',
+  'Stale client cache hint:',
+  'If the client still says 23 tools or query_ontology is not callable, reload/restart the agent or refresh cached MCP tools.',
+  '',
+  'Project ontology indexing checkpoint (side effect 0):',
+  'Replace [codebase-root] with the current checkout path before running project indexing.',
+  'index_project({"rootPath":"[codebase-root]"})',
+  'node cli/src/index.mjs index [codebase-root] --vault docs/ontology --json --threshold 2',
+  '',
+  'Meaning gate: report the business/product domain and capability first, then cite code index rows as implementation evidence.',
+  'Business evidence: include meaningGate.businessOntology.evidence rows from README and docs/ontology.',
+  'Review queue: include meaningGate.implementationEvidence.reviewRequiredRows so humans can name folders that still lack product meaning.',
+  'Do not promote source folders to capabilities when existing ontology evidence maps them through matching slugs or capability elements.',
+].join('\n');
+
 export function AgentSetupSection({ onBeforeNavigate }: { onBeforeNavigate?: () => void } = {}) {
   const t = useTranslations('nav.settingsMenu');
   const localVault = useLocalVault();
+  const { state: copyState, copy } = useCopyFeedback();
   const serverAvailability = useAgentServer();
   const isLoaded = localVault.status === 'loaded';
 
@@ -59,6 +104,16 @@ export function AgentSetupSection({ onBeforeNavigate }: { onBeforeNavigate?: () 
   }
 
   return (
+    <>
+    {/*
+      `agent-setup-section` 은 **설정판만** 감싼다. 아래 증명 패킷 카드는 밖에
+      둔다 — 이 이름을 재는 e2e 인구조사(`agent-connect-panel-census`)의 대상이
+      「붙이는 칸의 첫 화면」이기 때문이다. 패킷을 그 안에 넣었더니 복사 버튼이
+      4 → 5 가 되어 래칫이 터졌고, **래칫이 옳았다**: 그 검사가 세려던 것은
+      「붙이려는 사람이 첫 화면에서 만나는 복사 버튼 수」이지 이 페이지 전체가
+      아니다.
+    */}
+    <div data-testid="agent-setup-section" className="min-w-0">
     <VaultAgentSetupPanel
       canEditCurrent
       localVault={localVault}
@@ -69,6 +124,34 @@ export function AgentSetupSection({ onBeforeNavigate }: { onBeforeNavigate?: () 
       // 부르는 쪽이 «없어도 되나» 를 매번 다시 판단하게 된다.
       onOpenWorkflowGuide={onBeforeNavigate ?? (() => undefined)}
     />
+    </div>
+    {/*
+      **첫 접촉 증명 패킷** — 에이전트가 붙었는지 사람이 눈으로 확인하는 대신,
+      그대로 붙여넣어 **에이전트가 스스로 증명하게** 한다. 이 절이 시트에서
+      목적지로 옮겨 올 때 함께 왔다.
+    */}
+    <div className="mt-4 rounded-panel border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] p-[var(--card-pad)]">
+      <p className="text-body font-[var(--font-weight-signature)] text-[color:var(--color-text-secondary)]">
+        {t('mcpProofTitle')}
+      </p>
+      <p className="mt-1 break-keep text-label leading-label text-[color:var(--color-text-tertiary)]">
+        {t('mcpProofBody')}
+      </p>
+      <Chip
+        tone="accentOnTint"
+        data-testid="agents-mcp-proof-copy"
+        onClick={() => void copy(MCP_FIRST_CALLS_PACKET)}
+        className="mt-2 w-full justify-center border-[color:var(--color-indigo-a46)] bg-[color:var(--color-indigo-a16)] font-mono hover:bg-[color:var(--color-indigo-a24)]"
+      >
+        {copyState === 'copied' ? (
+          <Check size={ICON_SIZE.sm} aria-hidden />
+        ) : (
+          <Copy size={ICON_SIZE.sm} aria-hidden />
+        )}
+        {copyState === 'copied' ? t('mcpProofCopied') : t('mcpProofCopy')}
+      </Chip>
+    </div>
+    </>
   );
 }
 

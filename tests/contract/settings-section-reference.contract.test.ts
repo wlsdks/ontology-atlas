@@ -44,10 +44,35 @@ const SECTION_REFERENCE_PATTERNS = [
 
 type Bundle = Record<string, unknown>;
 
-function sectionNames(bundle: Bundle): Set<string> {
+/**
+ * **가리킬 수 있는 자리는 두 표에 산다** (2026-08-21, 원장 90).
+ *
+ * 실행기와 MCP 연결이 시트를 떠나 「에이전트」 목적지가 됐다. 그래서 안내가
+ * 가리키는 곳이 시트 칸일 수도, **목적지의 절**일 수도 있다. 한쪽 표만 보면
+ * 멀쩡한 안내를 결함이라고 말하게 된다.
+ *
+ * 표를 늘리면 검사가 헐거워지는 것 아닌가 — 아니다. **둘 다 화면에 실재하는
+ * 이름의 집합**이고, 이 검사가 막는 것은 「없는 이름을 대는 것」이지 「어느
+ * 표에 있는가」가 아니다. 대신 아래에 **표마다 공회전 바닥**을 따로 둔다.
+ */
+function sheetSectionNames(bundle: Bundle): Set<string> {
   const nav = (bundle.nav as Bundle | undefined)?.settingsMenu as Bundle | undefined;
   const section = nav?.section as Record<string, string> | undefined;
   return new Set(Object.values(section ?? {}));
+}
+
+/** 「에이전트」 목적지가 화면에 그리는 절 제목들. */
+function destinationSectionNames(bundle: Bundle): Set<string> {
+  const agents = bundle.agents as Record<string, string> | undefined;
+  return new Set(
+    Object.entries(agents ?? {})
+      .filter(([key]) => key.endsWith('Heading'))
+      .map(([, value]) => value),
+  );
+}
+
+function sectionNames(bundle: Bundle): Set<string> {
+  return new Set([...sheetSectionNames(bundle), ...destinationSectionNames(bundle)]);
 }
 
 function sectionReferences(bundle: Bundle): Array<{ key: string; name: string }> {
@@ -82,12 +107,27 @@ describe.each([
   });
 
   /*
+   * **표마다 바닥을 따로 둔다.** 합쳐서만 세면 한쪽이 통째로 사라져도 다른
+   * 쪽 숫자에 가려 안 보인다 — 이 저장소가 게이트에 대해 반복해서 겪은
+   * 「합계가 구멍을 덮는」 모양이다.
+   */
+  it('두 표가 각각 비어 있지 않다 — 합계가 한쪽의 소실을 덮지 않는다', () => {
+    expect(sheetSectionNames(bundle).size, '시트 칸 이름이 0개다').toBeGreaterThan(5);
+    expect(
+      destinationSectionNames(bundle).size,
+      '「에이전트」 목적지의 절 제목이 0개다',
+    ).toBeGreaterThan(1);
+  });
+
+  /*
    * ⚠️ **이 검사가 두 번째로 중요하다.** 「가리키는 안내」가 0건이면 본 검사는
    * 빈 배열을 돌며 늘 초록이다. 오늘 2건(실행기 강등 카드 · 대화 실행 실패
    * 안내)이 실측이고, 안내를 지웠으면 이 줄을 같이 내리면 된다.
    */
   it('가리키는 안내가 실제로 있다 — 없으면 본 검사가 헛돈다', () => {
-    expect(refs.length).toBeGreaterThanOrEqual(2);
+    // 2026-08-21: 실행기 강등 카드 한 줄이 목적지의 절을 가리킨다. 안내를
+    // 지웠으면 이 줄을 같이 내린다.
+    expect(refs.length).toBeGreaterThanOrEqual(1);
   });
 
   it('가리킨 칸이 전부 실재한다', () => {

@@ -180,8 +180,6 @@
         "footprint": "Footprints",
         "notify": "Notifications",
         "workspace": "Workspace",
-        "runtimes": "Agents",
-        "agent": "MCP connection",
         "ai": "API Key",
         "update": "Updates"
       },
@@ -216,7 +214,7 @@
         "noneReady": "Nothing found yet",
         "noneReadyCaption": "Install Claude Agent or Codex and they show up here. The install guides are in the list below.",
         "webLabel": "A browser is not allowed to start programs on this computer",
-        "webCaption": "Get the Mac app to use the tools installed here from inside Atlas. On this screen you can still point a tool you started yourself at this folder, from the “MCP connection” section.",
+        "webCaption": "Install the macOS app to run the tools on this computer from inside Atlas. Even here, the “MCP connection” section below lets you point a tool you started yourself at this folder.",
         "state": {
           "ready": "Ready",
           "cli-missing": "Install needed",
@@ -245,7 +243,8 @@
         "resultDownloading": "Fetching {version}. Progress is in the bottom-right notice.",
         "resultReady": "{version} is installed. Restart from the bottom-right notice to use it.",
         "resultFailed": "Couldn't check. You may be offline, or no stable build may be published yet."
-      }
+      },
+      "goToAgents": "Agents"
     },
     "primaryAriaLabel": "Primary menu",
     "notificationsAriaLabel": "Notifications"
@@ -3488,7 +3487,7 @@
       "noVaultTitle": "Open a document folder first",
       "noVaultBody": "The agent only reads documents in the folder you have open. Pick a folder and this picks up right here.",
       "noKeyTitle": "This needs an AI service key, once",
-      "noKeyBody": "The key stays in this computer's keychain only. Register it once and this spot connects right away, and you are not asked again. If you already use Claude Code or Codex, no key is needed: connect that tool from the 「Agents」 section in settings.",
+      "noKeyBody": "The key stays in this computer's keychain only. Register it once and this spot connects right away, and you are not asked again. If you already use Claude Code or Codex, no key is needed: connect that tool from the Agents destination on the left.",
       "noVaultAction": "Open a document folder",
       "noKeyAction": "Add a key in settings"
     },
@@ -3797,7 +3796,7 @@
       },
       "launch": {
         "title": "The tool could not be started",
-        "hint": "Check its state in the “Agents” section of settings."
+        "hint": "Open the Agents destination on the left to see this tool's state."
       },
       "network": {
         "title": "No connection to the outside",

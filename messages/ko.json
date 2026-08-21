@@ -180,14 +180,12 @@
         "footprint": "발자국",
         "notify": "알림",
         "workspace": "작업 공간",
-        "runtimes": "Agents",
-        "agent": "MCP 연결",
         "ai": "API Key",
         "update": "업데이트"
       },
       "sectionGroup": {
         "look": "보이는 것",
-        "connect": "폴더와 에이전트",
+        "connect": "연결",
         "app": "앱"
       },
       "guideAutoStartLabel": "화면 안내 자동 표시",
@@ -216,7 +214,7 @@
         "noneReady": "확인된 도구가 없어요",
         "noneReadyCaption": "Claude Agent 나 Codex 를 설치하면 여기에 나타나요. 설치 방법은 아래 목록에 있어요.",
         "webLabel": "브라우저는 이 컴퓨터의 프로그램을 띄울 권한이 없어요",
-        "webCaption": "맥 앱을 받으면 이 컴퓨터에 설치된 도구를 앱 안에서 바로 쓸 수 있어요. 이 화면에서도 「MCP 연결」 칸에서, 직접 띄운 도구를 이 폴더에 붙일 수 있어요.",
+        "webCaption": "맥 앱을 받으면 이 컴퓨터에 설치된 도구를 앱 안에서 바로 쓸 수 있어요. 이 화면 아래 「MCP 연결」 칸에서, 직접 띄운 도구를 이 폴더에 붙일 수 있어요.",
         "state": {
           "ready": "준비됨",
           "cli-missing": "설치 필요",
@@ -245,7 +243,8 @@
         "resultDownloading": "{version} 을 받는 중이에요. 진행률은 우하단 알림에 있어요.",
         "resultReady": "{version} 설치까지 끝났어요. 우하단 알림에서 다시 시작하면 적용돼요.",
         "resultFailed": "확인하지 못했어요. 인터넷 연결이 없거나, 아직 받을 수 있는 정식 판이 올라오지 않았을 수 있어요."
-      }
+      },
+      "goToAgents": "에이전트"
     },
     "primaryAriaLabel": "주요 메뉴",
     "notificationsAriaLabel": "작업 알림"
@@ -3488,7 +3487,7 @@
       "noVaultTitle": "먼저 문서 폴더를 열어주세요",
       "noVaultBody": "에이전트는 지금 열려 있는 폴더의 문서만 읽어요. 폴더를 고르면 여기서 바로 이어져요.",
       "noKeyTitle": "쓰려면 AI 서비스 키가 한 번 필요해요",
-      "noKeyBody": "키는 이 컴퓨터의 키체인에만 있어요. 등록하면 이 자리에서 바로 이어지고, 다시 묻지 않아요. 이미 Claude Code 나 Codex 를 쓰고 계시면 키 없이도 됩니다. 설정의 「Agents」 칸에서 그 도구를 붙이세요.",
+      "noKeyBody": "키는 이 컴퓨터의 키체인에만 있어요. 등록하면 이 자리에서 바로 이어지고, 다시 묻지 않아요. 이미 Claude Code 나 Codex 를 쓰고 계시면 키 없이도 됩니다. 왼쪽 「에이전트」 화면에서 그 도구를 붙이세요.",
       "noVaultAction": "문서 폴더 열기",
       "noKeyAction": "설정에서 키 등록"
     },
@@ -3797,7 +3796,7 @@
       },
       "launch": {
         "title": "도구를 띄우지 못했어요",
-        "hint": "설정의 「Agents」 칸에서 이 도구가 어떤 상태인지 확인해 주세요."
+        "hint": "왼쪽 「에이전트」 화면에서 이 도구가 어떤 상태인지 확인해 주세요."
       },
       "network": {
         "title": "바깥과 연결되지 않았어요",
