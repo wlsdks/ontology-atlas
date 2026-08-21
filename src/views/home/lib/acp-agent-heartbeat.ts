@@ -28,15 +28,15 @@
  * 그래서 **말을 보내는 순간 쓰고, 차례가 끝나면 지운다.** 쓰기는 차례 안에서만
  * 일어나므로 `created_by` 는 이름을 얻고, 쉬는 동안에는 아무 표시도 안 남는다.
  *
- * ## 지도에 링을 켜지 않는다
+ * ## 지도 링은 도구가 밝힌 실재 대상에만 켠다
  *
  * 지도의 에이전트 포커스 링은 `heartbeat.focus.ontologySlug` 를 본다. 앱은
- * 에이전트가 지금 어느 노드를 만지는지 모르므로 그 칸을 비워 둔다 — 모르는 것을
- * 아는 척하지 않는다. 링은 여전히 실데이터(에이전트가 실제로 쓴 노드)에서만
- * 나온다.
+ * ACP 도구 입력과 현재 볼트의 slug가 일치할 때만 그 칸을 채운다. 도구가 대상을
+ * 밝히지 않았거나 지도에 없는 값이면 null — 모르는 것을 아는 척하지 않는다.
  */
 
 import type { AgentActivityHeartbeat } from "@/features/docs-vault-local";
+import type { AcpTurnActivity } from "@/features/acp-session/model/acp-turn-activity";
 
 /** 하트비트가 사는 곳 — `agent-activity.json` 과 같은 사이드카 폴더. */
 export const AGENT_HEARTBEAT_VAULT_DIR = ".ontology-atlas";
@@ -45,23 +45,33 @@ export const AGENT_HEARTBEAT_VAULT_FILE = "agent-activity.json";
 /**
  * 한 차례가 도는 동안의 하트비트.
  *
- * `state: "editing"` 인 이유: 다섯 상태(planning/editing/verifying/blocked/
- * complete) 중 「지금 이 폴더에 일하는 중」에 가장 가깝다. 앱은 그 차례가
- * 읽기인지 쓰기인지 미리 모르지만, **차례가 돌고 있다는 것**은 확실히 안다.
+ * ACP가 실제로 내놓은 도구 종류와 권한 대기 상태를 planning/editing/verifying/
+ * blocked로 좁혀 싣는다. 계획과 파일은 ACP가 밝히지 않으므로 비워 둔다.
  */
 export function buildAcpTurnHeartbeat({
   agent,
   at,
+  activity,
 }: {
   agent: string;
   at: Date;
+  activity: AcpTurnActivity;
 }): AgentActivityHeartbeat {
   return {
     agent,
-    state: "editing",
-    focus: { summary: null, ontologySlug: null, files: [] },
+    state: activity.state,
+    focus: {
+      summary: activity.summary,
+      ontologySlug: activity.ontologySlug,
+      files: [],
+    },
     plan: [],
-    evidence: { mcp: [], source: [], codegraph: [], verification: [] },
+    evidence: {
+      mcp: activity.toolName ? [activity.toolName] : [],
+      source: [],
+      codegraph: [],
+      verification: [],
+    },
     updatedAt: at.toISOString(),
   };
 }
@@ -89,20 +99,31 @@ export function createVaultAcpHeartbeatStore(
 ): AcpHeartbeatStore {
   const dir = (create: boolean) =>
     handle.getDirectoryHandle(AGENT_HEARTBEAT_VAULT_DIR, { create });
+  // 단계 갱신과 turn 종료 clear가 파일 I/O에서 추월하지 않게 호출 순서를 보존한다.
+  let tail: Promise<void> = Promise.resolve();
+  const enqueue = (operation: () => Promise<void>): Promise<void> => {
+    const next = tail.catch(() => undefined).then(operation);
+    tail = next;
+    return next;
+  };
   return {
-    async write(heartbeat) {
-      const sidecar = await dir(true);
-      const file = await sidecar.getFileHandle(AGENT_HEARTBEAT_VAULT_FILE, { create: true });
-      const writable = await file.createWritable();
-      await writable.write(`${JSON.stringify(heartbeat, null, 2)}\n`);
-      await writable.close();
+    write(heartbeat) {
+      return enqueue(async () => {
+        const sidecar = await dir(true);
+        const file = await sidecar.getFileHandle(AGENT_HEARTBEAT_VAULT_FILE, { create: true });
+        const writable = await file.createWritable();
+        await writable.write(`${JSON.stringify(heartbeat, null, 2)}\n`);
+        await writable.close();
+      });
     },
-    async clear() {
-      try {
-        await (await dir(false)).removeEntry(AGENT_HEARTBEAT_VAULT_FILE);
-      } catch {
-        /* 이미 없음 — 지우는 것은 실패해도 해로울 게 없다 */
-      }
+    clear() {
+      return enqueue(async () => {
+        try {
+          await (await dir(false)).removeEntry(AGENT_HEARTBEAT_VAULT_FILE);
+        } catch {
+          /* 이미 없음 — 지우는 것은 실패해도 해로울 게 없다 */
+        }
+      });
     },
   };
 }

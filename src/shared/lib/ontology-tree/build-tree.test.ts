@@ -49,6 +49,7 @@ describe("buildOntologyTree — happy path", () => {
     makeNode("e1", "element", "LoginAction"),
     makeNode("e2", "element", "ReviewWorkspace"),
     makeNode("doc1", "document", "spec.md"), // should be excluded
+    makeNode("readme", "vault-readme", "Vault guide"), // reader sentinel, not a graph row
   ];
   const edges = [
     makeEdge("e-p1-d1", "p1", "d1", "contains"),
@@ -64,6 +65,7 @@ describe("buildOntologyTree — happy path", () => {
     const result = buildOntologyTree(nodes, edges);
     const flat = flattenTree(result.roots);
     expect(flat.find((t) => t.node.id === "doc1")).toBeUndefined();
+    expect(flat.find((t) => t.node.id === "readme")).toBeUndefined();
   });
 
   it("makes project the root", () => {

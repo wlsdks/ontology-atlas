@@ -11,8 +11,7 @@ import { describe, expect, it } from "vitest";
  * 「남의 문서 수정」이 되고, 그건 다른 일이다.
  *
  * 이 게이트가 잠그는 것 셋: ① 도메인 조건 ② 도메인 미리 고르기(사람이 방금
- * 누른 노드를 다시 고르게 하지 않는다) ③ 사람이 만든 노드에 `created_by` 스탬프
- * (없으면 방금 만든 노드가 검수 대기 링을 못 받는다 — 2026-08-03 실측).
+ * 누른 노드를 다시 고르게 하지 않는다) ③ 사람이 만든 노드에 `created_by` 스탬프.
  */
 const ROOT = process.cwd();
 const read = (rel: string) => readFileSync(join(ROOT, rel), "utf8");
@@ -38,7 +37,7 @@ describe("「이어서 새로 만들기」 — 어포던스 계약", () => {
     /*
      * 스탬프는 **쓰기 시점에, 호출 경로가 증명하는 행위자에게만** 찍는다
      * (2026-07-31 원장). 이 경로는 화면의 「개념 만들기」 하나뿐이라 그 조건을
-     * 만족한다. 빠지면 방금 만든 노드가 지도에서 검수 대기 링을 못 받는다.
+     * 만족한다. 출처는 MCP/CLI와 사람이 같은 그래프를 감사하는 사실로 남는다.
      */
     expect(home).toMatch(/buildNewNodeDoc\(\{ \.\.\.input, createdBy: "human" \}\)/);
     expect(read("src/entities/docs-vault/lib/build-vault-markdown.ts")).toMatch(
@@ -49,28 +48,5 @@ describe("「이어서 새로 만들기」 — 어포던스 계약", () => {
   it("타일은 핸들러가 있을 때만 그려진다 — 라벨만 있고 문이 없으면 안 된다", () => {
     const panel = read("src/widgets/topology-map-v2/ui/TopologyV2DetailPanel.tsx");
     expect(panel).toMatch(/onCreateLinked && labels\.actionCreateLinked/);
-  });
-});
-
-describe("「사람이 쓴 것」 렌즈 — 지도의 링과 같은 사실", () => {
-  /*
-   * 검수 대기 링은 «어디에 있나»를, 이 렌즈는 «전부 몇 개인가»를 답한다. 둘이
-   * **같은 판정식**(`created_by === "human"`)을 써야 한 화면 안에서 수가 갈리지
-   * 않는다 — 지도가 셋을 붉게 그렸는데 렌즈가 다섯을 세면 사용자는 어느 쪽을
-   * 믿을지 모른다.
-   */
-  it("렌즈와 링이 같은 판정식을 쓴다", () => {
-    const home = read("src/views/home/ui/HomePage.tsx");
-    expect(home).toMatch(/node\.createdBy === "human"/);
-    expect(read("src/widgets/topology-map-v2/ui/topology-frame-draw.ts")).toMatch(
-      /node\.createdBy === "human"/,
-    );
-  });
-
-  it("하나도 없으면 세그먼트를 안 그린다 — 빈 렌즈는 죽은 컨트롤이다", () => {
-    const home = read("src/views/home/ui/HomePage.tsx");
-    expect(home).toMatch(/ids\.size > 0 \? \{ ids \} : null/);
-    const panel = read("src/widgets/topology-index-panel/ui/TopologyIndexPanel.tsx");
-    expect(panel).toMatch(/humanAuthored && labels\.segmentHuman/);
   });
 });

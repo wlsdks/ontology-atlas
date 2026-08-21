@@ -61,7 +61,7 @@ const ROOT = process.cwd();
  * 선언 셋이 함께 갔다(`docs/DECISIONS.md` (83)). 축 채택이 는 것이 아니라
  * **자리가 없어진** 것이므로 이 감소는 공로가 아니다 — 그래도 바닥은 내린다.
  */
-const CEILING = 331;
+const CEILING = 328;
 
 function walk(dir: string, out: string[] = []): string[] {
   for (const name of readdirSync(dir)) {

@@ -31,7 +31,7 @@ test("활동 줄은 한 곳에만 있고, 알림함은 열었을 때 다 보인�
   test.setTimeout(120_000);
   await page.setViewportSize({ width: 1512, height: 900 });
 
-  // 「작업 중」 창(2분) 밖이면서 24시간 창 안 — 소유자 화면과 같은 「마지막 작업」 상태.
+  // heartbeat 없이 24시간 창 안의 완료 로그 — 「마지막 작업」 상태.
   const at = new Date(Date.now() - 20 * 60_000).toISOString();
   const line = JSON.stringify({
     v: 1,
@@ -135,5 +135,28 @@ test("활동 줄은 한 곳에만 있고, 알림함은 열었을 때 다 보인�
   expect(
     topAtInbox.covered,
     "알림함 위에 다른 것이 그려졌다 — 유틸 레인의 쌓임 맥락에 갇힌 것이다",
+  ).toEqual([]);
+
+  // 반투명 패널은 z-index가 이겨도 뒤 컨트롤과 rect가 겹치면 아이콘이 행 액션처럼
+  // 비쳐 보인다. 카드 밖 컨트롤과 기하 자체가 겹치지 않아야 한다.
+  const outsideControlOverlaps = await page.evaluate(() => {
+    const inbox = document.querySelector('[data-testid="agent-activity-inbox"]');
+    if (!inbox) return [{ reason: "inbox-missing" }];
+    const a = inbox.getBoundingClientRect();
+    return [...document.querySelectorAll<HTMLElement>('button, a')]
+      .filter((element) => !inbox.contains(element) && !element.contains(inbox))
+      .map((element) => {
+        const b = element.getBoundingClientRect();
+        const width = Math.min(a.right, b.right) - Math.max(a.left, b.left);
+        const height = Math.min(a.bottom, b.bottom) - Math.max(a.top, b.top);
+        return width > 0.5 && height > 0.5
+          ? { aria: element.getAttribute('aria-label'), width, height }
+          : null;
+      })
+      .filter(Boolean);
+  });
+  expect(
+    outsideControlOverlaps,
+    "알림함 뒤의 지도 도구가 비쳐 행 액션처럼 보인다 — 도구 열과 rect를 갈라야 한다",
   ).toEqual([]);
 });

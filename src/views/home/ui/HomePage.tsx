@@ -10,6 +10,7 @@ import { agentChatDoor } from "../model/agent-chat-door";
 import { AcpChatPanel, AcpChatResizeHandle, useChatWidth } from "@/widgets/acp-chat-panel";
 import { vaultMcpServers, vaultSelfReadSlot } from "@/features/acp-session/model/vault-mcp-server";
 import { useChatSuggestions } from "@/features/acp-session/model/use-chat-suggestions";
+import type { AcpTurnActivity } from "@/features/acp-session/model/acp-turn-activity";
 import { cn } from "@/shared/lib/cn";
 import {
   type CSSProperties,
@@ -229,7 +230,6 @@ import {
 } from "../lib/topology-path-chip-state";
 import { shouldSuppressGlobalShortcuts } from "../lib/blocking-surface";
 import { resolveAgentFocusNodeId } from "../lib/resolve-agent-focus-node";
-import { useAgentWritingFocusSlug } from "../model/use-agent-writing-focus";
 import { resolveTopologyNodeEditTarget } from "../lib/topology-node-edit";
 import { computeCanonicalCensus } from "@/shared/lib/ontology-tree/canonical-census";
 import {
@@ -270,6 +270,7 @@ import {
 import { AppSettingsMenu } from "@/widgets/app-settings-menu";
 import { buildTopologyV2Graph } from "../lib/topology-v2-adapter";
 import { deriveDustySlugs } from "../lib/topology-dusty";
+import { resolveContextualIndexState } from "../lib/resolve-contextual-index-state";
 import { clampSynthSize, synthesizeVaultGraph } from "../lib/synth-vault";
 import {
   TopologyIndexPanel,
@@ -486,6 +487,8 @@ function HomePageImpl() {
    * 지도 위에서 주의를 요구하는 표면이라 겹치면 무엇이 주 표면인지 사라진다.
    */
   const [vaultAgentOpen, setVaultAgentOpen] = useState(false);
+  const [acpChatOpen, setAcpChatOpen] = useState(false);
+  const [acpDockFrameOpen, setAcpDockFrameOpen] = useState(false);
   /**
    * 처음부터 열어 둘 것인가 — 설치 앱 + 키가 있을 때만 참이다(`null` 은 아직
    * 모름). 소유자 요구는 "시야로 보이면서" 인데, 키 없는 컴퓨터에서 잠긴
@@ -789,7 +792,7 @@ function HomePageImpl() {
       ...current,
       recentWindow: current.recentWindow === null ? "auto" : null,
     }));
-  }, [spotlightNeedsVault, setRouteState]);
+  }, [spotlightNeedsVault, setRouteState, setRecentNeedsVaultOpen]);
   // 소유자 지시 (Image #14): "전체 변경점을 보여주는 거면 아예 zoom out 을
   // 크게" — 렌즈가 켜지는 순간 카메라를 전체 fit 으로 물러나 변경 지점
   // 전부(자동 전개 포함)가 한 화면에 들어오게 한다. off→on 전이에서만 1회
@@ -998,7 +1001,7 @@ function HomePageImpl() {
       return;
     }
     void vault.open();
-  }, [fsaUnsupported, vault]);
+  }, [fsaUnsupported, vault, setUnsupportedGuideOpen]);
   // 자동 투어는 샘플/내 폴더 **양쪽** 정착을 다 받는다 — 예전 조건은 샘플만
   // 봐서 폴더를 고른 사용자가 투어를 못 받았다 (`use-auto-start-ready.ts`).
   const tourAutoStartReady = useGuidedTourAutoStartReady();
@@ -1075,7 +1078,7 @@ function HomePageImpl() {
       meaningEditorIntent: false,
       meaningEditParam: null,
     }));
-  }, [setRouteState]);
+  }, [setRouteState, setMeaningEditorState, setMeaningPreview]);
   useEffect(() => {
     let cancelled = false;
     window.queueMicrotask(() => {
@@ -1134,8 +1137,8 @@ function HomePageImpl() {
     },
     [closeMeaningEditor, meaningEditorState, nodeEditTarget, reducedMotion, tMeaningEditor, toast, vault],
   );
-  // W6 agent visibility — "the agent's last-touched node, shown on the map
-  // itself" (the product's own agent-native identity, not just a rail dot).
+  // W6 agent visibility — the fresh heartbeat's declared current target,
+  // shown on the map itself (not just a rail dot).
   // Only while the heartbeat is FRESH (same `hasFreshHeartbeat` bar the rail
   // dot/popover already use) — a stale heartbeat's stale focus would mislead
   // more than help. Real heartbeat data only: no slug, no match, or no fresh
@@ -1144,20 +1147,14 @@ function HomePageImpl() {
   const hasFreshAgentHeartbeat = Boolean(
     agentActivityStatus?.heartbeat && agentActivityStatus.valid && !agentActivityStatus.stale,
   );
-  // 둘째 소스(2026-08-13, 실시간 표시 3번 조각): 하트비트를 등록하지 않고 MCP 로만
-  // 붙는 에이전트의 쓰기는 activity.jsonl 에만 남는다 — 쓰는-중 창(2분) 안이면
-  // 그 마지막 대상이 같은 링을 받는다. 하트비트(의도 선언)가 있으면 그쪽이
-  // 이긴다. 어느 쪽이든 실데이터 1노드 · 해석 실패는 조용히 무(無)다.
-  const agentWritingSlug = useAgentWritingFocusSlug(vault.agentActivityLog);
   const agentFocusNodeId = useMemo(() => {
-    const fromHeartbeat = hasFreshAgentHeartbeat
+    return hasFreshAgentHeartbeat
       ? resolveAgentFocusNodeId(
           agentActivityStatus?.heartbeat?.focus.ontologySlug ?? null,
           ontologyInsight?.nodes,
         )
       : null;
-    return fromHeartbeat ?? resolveAgentFocusNodeId(agentWritingSlug, ontologyInsight?.nodes);
-  }, [hasFreshAgentHeartbeat, agentActivityStatus, ontologyInsight, agentWritingSlug]);
+  }, [hasFreshAgentHeartbeat, agentActivityStatus, ontologyInsight]);
   // P4b — "에이전트가 방금" INDEX 배지. 이미 fresh-게이트를 통과한
   // `agentFocusNodeId`(W6 지도 링과 같은 소스)가 최근-변경 렌즈 안에도 있을
   // 때만 — 두 번째 매치 휴리스틱을 새로 만들지 않고 기존 신호를 그대로 재사용.
@@ -1192,7 +1189,7 @@ function HomePageImpl() {
     window.requestAnimationFrame(() => {
       createNodeToggleRef.current?.focus();
     });
-  }, [setRouteState]);
+  }, [setRouteState, setCreateNodeProposal, setCreateNodeOpen]);
   const canCreateNode = vault.manifest !== null;
   // Slice 1 (discovery.md F1~F6) — "내 문서로 지도 만들기". 열린 vault 에
   // .md 는 있는데 지도 노드가 0 인 순간의 부트스트랩 다이얼로그.
@@ -1288,7 +1285,7 @@ function HomePageImpl() {
     ) => {
       setHoverEdge(edge && position ? { edge, x: position.x, y: position.y } : null);
     },
-    [],
+    [setHoverEdge],
   );
   const hoverEdgeCardModel = useMemo(() => {
     if (!hoverEdge || !ontologyInsight) return null;
@@ -1417,7 +1414,7 @@ function HomePageImpl() {
       }
       return false;
     },
-    [t, toast, vault.fileHandles],
+    [t, toast, vault.fileHandles, setCreateNodeProposal],
   );
   const confirmCreateNode = useCallback(async () => {
     if (!createNodeProposal || createNodeConfirming) return;
@@ -1737,19 +1734,6 @@ function HomePageImpl() {
     ontologyLoaded: ontologyInsight !== null,
   });
   /** 지금 고른 노드의 그래프 원본 — 「이어서 새로 만들기」가 kind 를 본다. */
-  /**
-   * `created_by: human` 인 노드 집합 — INDEX 렌즈가 쓴다. 하나도 없으면 `null`
-   * 이라 세그먼트 자체가 안 뜬다(볼트에 없는 것을 거를 칸은 만들지 않는다).
-   */
-  const humanAuthoredLens = useMemo(() => {
-    const ids = new Set(
-      (ontologyInsight?.nodes ?? [])
-        .filter((node) => node.createdBy === "human")
-        .map((node) => node.id),
-    );
-    return ids.size > 0 ? { ids } : null;
-  }, [ontologyInsight]);
-
   const canvasSelectedGraphNode = useMemo(
     () =>
       canvasSelectedSlug
@@ -1977,7 +1961,7 @@ function HomePageImpl() {
     setSessionWalkId(newPastWalkId());
     const store = pastTrailSaveRef.current.store;
     if (store) void store.remove(sessionWalkId).then(setPastWalks);
-  }, [sessionWalkId]);
+  }, [sessionWalkId, setFootprintTrail, setSessionWalkId]);
   const handleDeletePastWalk = useCallback(
     (walkId: string) => {
       if (!pastTrailStore) return;
@@ -1989,7 +1973,7 @@ function HomePageImpl() {
     if (!pastTrailStore) return;
     setSessionWalkId(newPastWalkId());
     void pastTrailStore.clear().then(setPastWalks);
-  }, [pastTrailStore]);
+  }, [pastTrailStore, setSessionWalkId]);
   // 보관된 길을 살아있는 지도 기준으로 정제해 둔다 — 목록 문구(제목·개수)와
   // 다시 펼 때 적재되는 걸음이 **같은 것**이어야 한다. 목록엔 12곳이라고 써
   // 놓고 9곳만 펴지면 그게 조용한 거짓말이다.
@@ -2239,13 +2223,13 @@ function HomePageImpl() {
       meaningEditorIntent: false,
       meaningEditParam: null,
     }));
-  }, [setRouteState]);
+  }, [setRouteState, setCreateNodeDefaultKind, setFullDetailSlug, setCreateNodeOpen]);
   const openCreateNodeWithKind = useCallback(
     (kind: CreateNodeKind) => {
       openCreateNode();
       setCreateNodeDefaultKind(kind);
     },
-    [openCreateNode],
+    [openCreateNode, setCreateNodeDefaultKind],
   );
   useEffect(() => {
     if (!createNodeIntent) return;
@@ -2422,13 +2406,25 @@ function HomePageImpl() {
   // Esc 가 유지하므로 원장 상시 노출이 필수는 아니다. 선택 해제 시 복귀.
   /** 담을 개념이 아직 하나도 없는 지도인가. 위 `indexManualExpandWhileEmpty` 참고. */
   const topologyGraphEmpty = (ontologyInsight?.nodes.length ?? 0) === 0;
-  const renderedIndexState: IndexPanelState =
-    baseRenderedIndexState === "expanded" &&
-    (meaningEditorIntent ||
-      (topologySelectionActive && !indexManualExpandDuringSelection) ||
-      (topologyGraphEmpty && !indexManualExpandWhileEmpty))
-      ? "collapsed"
-      : baseRenderedIndexState;
+  /*
+   * 우측 에이전트가 열리면 INDEX도 같은 세션 강등을 탄다. 둘을 동시에 두면
+   * 에이전트가 바꾸는 대상을 판단해야 할 지도만 가운데 좁은 통로로 남는다.
+   * 저장 선호를 쓰지 않으므로 대화를 닫는 순간 사용자의 INDEX 상태가 복구된다.
+   * 주소로 들어온 ask intent도 첫 프레임부터 같은 공간 계약을 지킨다.
+   */
+  const agentDockRequestedOpen =
+    acpDockFrameOpen ||
+    vaultAgentOpen ||
+    Boolean(llmBridgeAvailable && routeState.askIntent);
+  const renderedIndexState = resolveContextualIndexState({
+    baseState: baseRenderedIndexState,
+    meaningEditorOpen: Boolean(meaningEditorIntent),
+    selectionActive: topologySelectionActive,
+    selectionManualExpand: indexManualExpandDuringSelection,
+    graphEmpty: topologyGraphEmpty,
+    emptyManualExpand: indexManualExpandWhileEmpty,
+    agentDockOpen: agentDockRequestedOpen,
+  });
   /**
    * 접힘 ↔ 펼침은 한 번의 클릭이 낳은 **하나의 사건**이다. 지금까지는 도착
    * 표면만 시간을 받고 떠나는 표면은 0프레임이었다(위 `useSurfaceSwap` 주석의
@@ -2458,7 +2454,6 @@ function HomePageImpl() {
    */
   const [acpRuntimes, setAcpRuntimes] = useState<Array<{ id: string; label: string }>>([]);
   const [acpRuntimeId, setAcpRuntimeId] = useState<string | null>(null);
-  const [acpChatOpen, setAcpChatOpen] = useState(false);
   /**
    * 대화 패널이 **화면에 붙어 있나** — 열림과 다른 값이다.
    *
@@ -2549,17 +2544,17 @@ function HomePageImpl() {
         : null,
     [vault.status, vault.handle],
   );
-  const handleAcpTurnActiveChange = useCallback(
-    (active: boolean) => {
+  const handleAcpTurnActivityChange = useCallback(
+    (activity: AcpTurnActivity | null) => {
       const store = acpHeartbeatStore;
       if (!store) return;
       const agent = acpHeartbeatAgentName(acpRuntimeId);
       // 이름을 모르면 등록하지 않는다 — 모름은 모름으로 남는 편이 낫다.
-      if (!active || !agent) {
+      if (!activity || !agent) {
         void store.clear().catch(() => {});
         return;
       }
-      void store.write(buildAcpTurnHeartbeat({ agent, at: new Date() })).catch(() => {});
+      void store.write(buildAcpTurnHeartbeat({ agent, at: new Date(), activity })).catch(() => {});
     },
     [acpHeartbeatStore, acpRuntimeId],
   );
@@ -2591,7 +2586,7 @@ function HomePageImpl() {
     // 되살아났다(소유자 *"내가 조종하는 게 아니라 화면이 저 혼자 돈다"*).
     // 돔 핏은 15% 여백이라 INDEX 레일 폭 변화는 흡수되고, 선택 리프레임은
     // 소비 시점에 인셋을 직접 재므로 이 재핏 없이도 패널을 피한다.
-    if (!view3d) {
+    if (!view3d && !acpDockFrameOpen) {
       window.queueMicrotask(() => {
         if (!cancelled) setFitViewToken((count) => count + 1);
       });
@@ -2600,7 +2595,7 @@ function HomePageImpl() {
       cancelled = true;
       delete root.dataset.topologyIndex;
     };
-  }, [renderedIndexState, view3d]);
+  }, [renderedIndexState, view3d, acpDockFrameOpen]);
   const copyV2NodeHandoff = useCallback(
     async (text: string) => {
       await copyHandoffWithFeedback({
@@ -2636,7 +2631,7 @@ function HomePageImpl() {
     ) {
       setFullDetailSlug(v2DatasheetModel.nodeId);
     }
-  }, [projectSource, v2DatasheetModel, copyV2NodeHandoff, projectAwareHandoffText]);
+  }, [projectSource, v2DatasheetModel, copyV2NodeHandoff, projectAwareHandoffText, setFullDetailSlug]);
   const projectSourceNextAction = projectSource.view?.nextAction.id ?? null;
   const projectSourceNextActionAvailable = Boolean(
     // 추정이 아직 안 끝났으면 **아무 처방도 안 그린다.** 먼저 그리면 그 버튼이
@@ -2755,7 +2750,7 @@ function HomePageImpl() {
         }),
       );
     },
-    [setRouteState],
+    [setRouteState, setFullDetailSlug, setSelectedRelationActive],
   );
   // W2-B context menu quick-action model — same construction as
   // `v2DatasheetModel` (documentHref/meaningEditHref/handoffText), but keyed
@@ -2958,16 +2953,18 @@ function HomePageImpl() {
   const openVaultAgent = useCallback(() => {
     if (agentChatUsesRuntime) {
       setChatMounted(true);
-      setAcpChatOpen(true);
+      setAcpChatOpen(false);
+      setAcpDockFrameOpen(true);
       setVaultAgentOpen(false);
     } else {
+      setAcpDockFrameOpen(false);
       setVaultAgentOpen(true);
       setAcpChatOpen(false);
     }
     // 물러나는 표면들 — 툭 사라지지 않게 각자의 닫힘 경로를 그대로 탄다.
     setOntologySearchOpen(false);
     setCreateNodeOpen(false);
-  }, [agentChatUsesRuntime]);
+  }, [agentChatUsesRuntime, setCreateNodeOpen]);
 
   /**
    * 첫 마디의 화면 언어 — 패널의 빈 대화 칩과 **같은 키**를 읽는다. 두
@@ -3031,13 +3028,14 @@ function HomePageImpl() {
      * 언마운트한다(주소로 들어온 요청처럼 이 함수를 안 거친 경로도 있어서,
      * 여기서 한 번 더 켜 둔다).
      */
-    setChatMounted(true);
+    setChatMounted(acpChatOpen);
     // 창이 하나이므로 닫는 것도 하나다 — 어느 갈래가 떠 있었든 이 한 번으로 닫힌다.
+    setAcpDockFrameOpen(false);
     setVaultAgentOpen(false);
     setAcpChatOpen(false);
     setVaultAgentPrefill(null);
     setRouteState({ askIntent: null }, { replace: true });
-  }, [setRouteState]);
+  }, [acpChatOpen, setRouteState]);
 
   /**
    * 어느 갈래가 **그 하나뿐인 창**을 갖고 있나.
@@ -3057,6 +3055,17 @@ function HomePageImpl() {
     keyOpen: vaultAgentOpen,
     hasAskIntent: Boolean(askPrefill),
   });
+  const agentDockOpen = agentChatOpen || acpDockFrameOpen;
+
+  /**
+   * 접힌 INDEX 탭은 좌측 작업대로 돌아가겠다는 명시적 선택이다. 에이전트가
+   * 열린 동안 탭만 펼치면 다시 양쪽 패널이 지도를 압축하므로, 같은 입력에서
+   * 에이전트는 퇴장하고 INDEX는 등장한다. 두 표면의 기존 모션을 그대로 쓴다.
+   */
+  const handleIndexTabExpandFromAgent = useCallback(() => {
+    if (agentDockOpen) closeVaultAgent();
+    handleIndexTabExpand();
+  }, [agentDockOpen, closeVaultAgent, handleIndexTabExpand]);
 
   /**
    * 이 폴더를 분석하라는 지시 — **볼트 경로를 아는 빌더**가 만든다. i18n 문자열로
@@ -3109,7 +3118,7 @@ function HomePageImpl() {
       root.style.removeProperty("--app-toast-right-offset");
       root.style.removeProperty(RIGHT_DOCK_WIDTH_VAR);
     };
-    if (!agentChatOpen) {
+    if (!agentDockOpen) {
       clear();
       return undefined;
     }
@@ -3140,7 +3149,7 @@ function HomePageImpl() {
       window.removeEventListener("resize", apply);
       clear();
     };
-  }, [agentChatOpen]);
+  }, [agentDockOpen]);
 
   /*
    * 설정의 Agents 칸에서 「이 도구로 대화 열기」를 누르면 여기로 온다
@@ -3206,7 +3215,14 @@ function HomePageImpl() {
         }),
       );
     },
-    [projectBySlug, setRouteState],
+    [
+      projectBySlug,
+      setRouteState,
+      setIndexManualExpandDuringSelection,
+      setFullDetailSlug,
+      setSelectedRelationActive,
+      setNodePopoverDismissed,
+    ],
   );
 
   /**
@@ -3236,7 +3252,7 @@ function HomePageImpl() {
       lastVisitedNodeRef.current = last;
       handleSelect(last);
     },
-    [refinedPastWalks, flushPastTrail, handleSelect],
+    [refinedPastWalks, flushPastTrail, handleSelect, setSessionWalkId, setFootprintTrail],
   );
 
   const handleClose = useCallback(() => {
@@ -3255,7 +3271,7 @@ function HomePageImpl() {
       analysisMode:
         current.analysisMode === "focus" ? "overview" : current.analysisMode,
     }));
-  }, [setRouteState]);
+  }, [setRouteState, setFullDetailSlug, setSelectedRelationActive]);
 
   const handleDatasheetClose = useCallback(() => {
     const focusReturnNodeId = panelDatasheetModel?.nodeId ?? null;
@@ -3276,7 +3292,7 @@ function HomePageImpl() {
     window.requestAnimationFrame(() => {
       restoreTopologyFocusAfterDatasheetClose(focusReturnNodeId);
     });
-  }, [handleClose, panelDatasheetModel?.nodeId, view3d]);
+  }, [handleClose, panelDatasheetModel?.nodeId, view3d, setNodePopoverDismissed]);
 
   // 가이드 투어 (2026-07-23, `src/features/guided-tour`) — 지도 화면(/) 전담
   // 의미 문해 투어. `canResolveTourAnchor` 는 이 view 가 testid(DOM) 또는
@@ -3309,7 +3325,7 @@ function HomePageImpl() {
     if (!tourAnchorNodeId) return;
     setSelectedEdge(null);
     handleSelect(tourAnchorNodeId);
-  }, [handleSelect, tourAnchorNodeId]);
+  }, [handleSelect, tourAnchorNodeId, setSelectedEdge]);
   // 투어를 열 때 다른 전이 표면을 강등한다(§4 "열림 시" 계약) — create-node
   // composer 와 같은 "openX 가 나머지를 닫는다" 관례를 그대로 따른다.
   const openGuidedTour = useCallback(() => {
@@ -4045,7 +4061,7 @@ function HomePageImpl() {
         analysisMode: "focus",
       }));
     },
-    [projectBySlug, setRouteState],
+    [projectBySlug, setRouteState, setFullDetailSlug, setSelectedRelationActive],
   );
 
   const preloadProjectAsset = useCallback(
@@ -4103,7 +4119,7 @@ function HomePageImpl() {
       // 에이전트 패널이 자리를 차지하면 화면 오른쪽에 붙는 고정 표면(선택-노드
       // 인스펙터)도 그만큼 안쪽으로 선다. 근거(노드)와 상대(에이전트)가 서로를
       // 덮으면 "지도를 같이 보며" 가 성립하지 않는다 — 규칙은 globals.css.
-      data-agent-panel-open={agentChatOpen ? 'true' : 'false'}
+      data-agent-panel-open={agentDockOpen ? 'true' : 'false'}
       /*
        * ⚠️ **그 규칙이 재는 폭이 틀려 있었다** (2026-08-16 검수).
        *
@@ -4410,12 +4426,12 @@ function HomePageImpl() {
                         <ChromeChip
                           onClick={() =>
                             (agentDockTouchedRef.current = true,
-                            agentChatOpen ? closeVaultAgent() : openVaultAgent())
+                            agentDockOpen ? closeVaultAgent() : openVaultAgent())
                           }
                           aria-label={tAgent('title')}
-                          aria-pressed={agentChatOpen}
+                          aria-pressed={agentDockOpen}
                           data-testid="topology-vault-agent-toggle"
-                          active={agentChatOpen}
+                          active={agentDockOpen}
                           compact={topologyUtilityChromeCompact}
                           icon={<MessageCircle />}
                         >
@@ -4685,6 +4701,7 @@ function HomePageImpl() {
                       <AgentActivityChip
                         suppressed={Boolean(v2DatasheetModel)}
                         onOpenChange={setActivityInboxOpen}
+                        onOpenNode={handleSelect}
                       />
                     </div>
                     </>
@@ -5063,12 +5080,6 @@ function HomePageImpl() {
                     onWindowChange={(next) =>
                       setRouteState((current) => ({ ...current, recentWindow: next }))
                     }
-                    /*
-                     * 「사람이 쓴 것」 렌즈 — 지도의 검수 대기 링과 같은 사실을
-                     * 세는 자리. 하나도 없으면 `null` 이라 세그먼트가 안 뜬다:
-                     * 빈 렌즈는 누르면 아무 일도 안 일어나는 죽은 컨트롤이다.
-                     */
-                    humanAuthored={humanAuthoredLens}
                     // P4c — "지도에 없는 문서 N개 · 올리기". `bootstrapPlan` 은
                     // vault 가 로드되기만 하면(빈 지도든 아니든) 항상 계산돼
                     // 있으므로 새 파생 없이 그 카운트를 그대로 노출한다 —
@@ -5142,9 +5153,6 @@ function HomePageImpl() {
                         days: recentChanges.windowDays,
                       }),
                       segmentRecentAria: t("index.segmentRecentAria"),
-                      segmentHuman: humanAuthoredLens
-                        ? t("index.segmentHuman", { count: humanAuthoredLens.ids.size })
-                        : undefined,
                       recentEmptyHint: t("index.recentEmptyHint", { days: recentChanges.windowDays }),
                       // 스포트라이트 창 프리셋 칩 라벨 (협의회 §②).
                       windowChipAuto: t("index.windowChipAuto"),
@@ -5171,7 +5179,7 @@ function HomePageImpl() {
                   </div>
                 ) : (
                   <TopologyIndexTab
-                    onExpand={handleIndexTabExpand}
+                    onExpand={handleIndexTabExpandFromAgent}
                     labels={{
                       expandAria: t("index.expandAria"),
                       agentSyncTitle: t("index.agentSync"),
@@ -6217,11 +6225,31 @@ function HomePageImpl() {
         「지도가 주」(2026-07-27 적용 규칙)는 그대로다: 이 패널은 지도 옆에
         서고, 지도를 덮지 않는다.
       */}
-      {(runtimeChatOpen || chatMounted) && acpRuntime && gitVaultPath ? (
-        <Surface
-          open={runtimeChatOpen}
-          as="aside"
-          origin="right"
+      {gitVaultPath ? (
+        <div
+          data-agent-dock-frame="true"
+          data-right-dock={acpDockFrameOpen || chatMounted ? "chat" : undefined}
+          style={{
+            width: acpDockFrameOpen ? `${chatWidth.width}px` : "0px",
+            transitionProperty: "width",
+            // 키 갈래 `VaultAgentPanel`과 같은 역할·같은 클럭. 두 대화창이
+            // 갈래에 따라 서로 다른 속도로 지도를 밀면 한 문이라는 뜻이 깨진다.
+            transitionDuration: "var(--agent-panel-reflow-duration)",
+            transitionTimingFunction: "var(--topology-motion-ease-out)",
+          }}
+          onTransitionEnd={(event) => {
+            if (event.target !== event.currentTarget || event.propertyName !== "width") return;
+            // 공간이 먼저 자리를 잡은 뒤 세션을 띄운다. ACP 프로세스 시작이
+            // WebKit main thread를 잠깐 점유해도 이미 끝난 layout 모션은 안 끊긴다.
+            if (acpDockFrameOpen && !acpChatOpen) setAcpChatOpen(true);
+          }}
+          className="relative min-h-0 shrink-0 overflow-hidden border-l border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)]"
+        >
+          {(runtimeChatOpen || chatMounted) && acpRuntime ? (
+          <Surface
+            open={runtimeChatOpen}
+            as="aside"
+            origin="right"
           /*
            * ⚠️ **여기가 죽은 코드였다** (2026-08-16 검수에서 적발).
            *
@@ -6245,11 +6273,13 @@ function HomePageImpl() {
            * 우리는 지도가 지켜야 할 몫만 지킨다(`panel-width.ts`). 화면 폭에
            * 따른 분기가 사라지므로 `xl:` 도 없앤다.
            */
-          style={{ width: chatWidth.width }}
-          /* 화면 오른쪽에 선 것 — 알림이 이 폭만큼 비켜선다(위 효과). */
-          data-right-dock="chat"
-          className="relative flex min-h-0 shrink-0 flex-col border-l border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] p-4"
-        >
+            style={{ width: chatWidth.width }}
+            /*
+             * 고정 폭 내용은 오른쪽에 붙이고, 바깥 frame만 0→저장 폭으로 연다.
+             * 내용 폭까지 매 프레임 바꾸면 문장이 계속 다시 줄바꿈돼 더 버벅인다.
+             */
+            className="absolute inset-y-0 right-0 flex min-h-0 shrink-0 flex-col bg-[color:var(--color-panel)] p-4"
+          >
           <AcpChatResizeHandle
             width={chatWidth.width}
             onWidth={chatWidth.setWidth}
@@ -6273,10 +6303,12 @@ function HomePageImpl() {
             suggestions={chatSuggestions}
             knownSlugs={chatKnownSlugs}
             onHoverSlug={handleChatHoverSlug}
-            onTurnActiveChange={handleAcpTurnActiveChange}
+            onTurnActivityChange={handleAcpTurnActivityChange}
             onClose={closeVaultAgent}
           />
-        </Surface>
+          </Surface>
+          ) : null}
+        </div>
       ) : null}
     </main>
   );

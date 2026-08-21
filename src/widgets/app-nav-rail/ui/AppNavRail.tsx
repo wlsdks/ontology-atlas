@@ -42,6 +42,7 @@ import {
 import { resolveActiveNavRailItem, type AppNavRailItemId } from "../lib/resolve-active-item";
 import { shouldShowGetAppTile } from "@/shared/lib/show-get-app-tile";
 import { isTauriVaultRuntime } from "@/shared/lib/tauri-vault-fs";
+import { agentDisplayName } from "@/shared/lib/agent-display-name";
 
 /** 런타임은 로드 뒤 바뀌지 않는다 — 구독은 형식상 필요할 뿐이라 no-op 이다. */
 const subscribeToRuntime = () => () => {};
@@ -226,6 +227,9 @@ export function AppNavRail({
   const vault = useLocalVault();
   const agentStatus = vault.agentActivityStatus;
   const heartbeat = agentStatus?.heartbeat ?? null;
+  const heartbeatAgentName = heartbeat
+    ? (agentDisplayName(heartbeat.agent) ?? heartbeat.agent)
+    : null;
   const hasFreshHeartbeat = Boolean(heartbeat && agentStatus?.valid && !agentStatus.stale);
   const stateLabel = heartbeat
     ? ({
@@ -243,7 +247,7 @@ export function AppNavRail({
       : agentStatus.stale
         ? tLive("agentStale")
         : heartbeat
-          ? `${tLive("agentTitle")} — ${heartbeat.agent} · ${stateLabel}`
+          ? `${tLive("agentTitle")} — ${heartbeatAgentName} · ${stateLabel}`
           : tLive("agentMissing");
   // W6 agent visibility — rail tile title enhancement: append "last activity"
   // (which ontology node the agent last touched, and how long ago) whenever

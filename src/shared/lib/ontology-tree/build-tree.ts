@@ -4,7 +4,7 @@
  * KnowledgeGraphNode + KnowledgeGraphEdge → 트리 구조.
  *
  * 알고리즘:
- *   1. document 노드는 트리에서 제외 (근거 노드. orphans 에 들어가지도 않음).
+ *   1. document / vault-readme 노드는 트리에서 제외 (reader/evidence docs).
  *   2. `contains` 엣지로 부모→자식 관계 구성.
  *      `belongs_to` 는 역방향이라 자식→부모로 해석해도 같은 결과.
  *   3. 부모가 없으면 root. (보통 `kind=project`)
@@ -29,6 +29,7 @@ const KIND_SORT_ORDER: Record<string, number> = {
   capability: 2,
   element: 3,
   document: 4,
+  'vault-readme': 5,
 };
 
 function compareNodes(a: KnowledgeGraphNode, b: KnowledgeGraphNode): number {
@@ -44,8 +45,8 @@ export function buildOntologyTree(
 ): OntologyTreeBuildResult {
   const warnings: string[] = [];
 
-  // 1. document 제외.
-  const treeNodes = nodes.filter((n) => n.kind !== "document");
+  // 1. graph reader/evidence docs 제외.
+  const treeNodes = nodes.filter((n) => n.kind !== "document" && n.kind !== "vault-readme");
   const nodeById = new Map(treeNodes.map((n) => [n.id, n] as const));
 
   // 2. parent 맵 — contains 엣지의 from = parent, to = child.

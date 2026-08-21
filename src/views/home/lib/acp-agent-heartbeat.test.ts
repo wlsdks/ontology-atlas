@@ -1,8 +1,9 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
 import {
   acpHeartbeatAgentName,
   buildAcpTurnHeartbeat,
+  createVaultAcpHeartbeatStore,
 } from "./acp-agent-heartbeat";
 
 /**
@@ -13,33 +14,34 @@ import {
  */
 describe("앱 안 에이전트의 볼트 등록", () => {
   const at = new Date("2026-08-17T01:23:45.000Z");
+  const activity = {
+    state: "verifying" as const,
+    summary: "관계 편집 흐름을 확인해줘",
+    ontologySlug: "capabilities/reviewed-ontology-writing",
+    toolName: "validate_vault",
+  };
 
   it("이름과 시각을 그대로 싣는다", () => {
-    const beat = buildAcpTurnHeartbeat({ agent: "codex-acp", at });
+    const beat = buildAcpTurnHeartbeat({ agent: "codex-acp", at, activity });
     expect(beat.agent).toBe("codex-acp");
     expect(beat.updatedAt).toBe("2026-08-17T01:23:45.000Z");
   });
 
-  /*
-   * ⚠️ 이 검사가 지키는 것은 「지도에 거짓말을 안 한다」다. 지도의 에이전트
-   * 포커스 링은 `focus.ontologySlug` 를 보고 켜진다. 앱은 에이전트가 지금 어느
-   * 노드를 만지는지 모르므로 그 칸은 비어 있어야 한다.
-   */
-  it("어느 노드를 만지는지는 **모른다고 적는다** — 링을 지어내지 않는다", () => {
-    const beat = buildAcpTurnHeartbeat({ agent: "codex-acp", at });
-    expect(beat.focus.ontologySlug).toBeNull();
-    expect(beat.focus.summary).toBeNull();
+  it("ACP 도구가 실제로 밝힌 목표와 대상을 싣는다", () => {
+    const beat = buildAcpTurnHeartbeat({ agent: "codex-acp", at, activity });
+    expect(beat.focus.ontologySlug).toBe("capabilities/reviewed-ontology-writing");
+    expect(beat.focus.summary).toBe("관계 편집 흐름을 확인해줘");
     expect(beat.focus.files).toEqual([]);
   });
 
-  it("증거와 계획도 지어내지 않는다", () => {
-    const beat = buildAcpTurnHeartbeat({ agent: "codex-acp", at });
+  it("관측한 도구만 증거로 싣고 계획은 지어내지 않는다", () => {
+    const beat = buildAcpTurnHeartbeat({ agent: "codex-acp", at, activity });
     expect(beat.plan).toEqual([]);
-    expect(beat.evidence).toEqual({ mcp: [], source: [], codegraph: [], verification: [] });
+    expect(beat.evidence).toEqual({ mcp: ["validate_vault"], source: [], codegraph: [], verification: [] });
   });
 
-  it("차례가 도는 동안임을 상태로 적는다", () => {
-    expect(buildAcpTurnHeartbeat({ agent: "codex-acp", at }).state).toBe("editing");
+  it("ACP가 관측한 현재 단계를 상태로 적는다", () => {
+    expect(buildAcpTurnHeartbeat({ agent: "codex-acp", at, activity }).state).toBe("verifying");
   });
 });
 
@@ -66,5 +68,47 @@ describe("볼트에 적을 이름", () => {
   it("지나치게 긴 이름도 거절한다", () => {
     expect(acpHeartbeatAgentName("a".repeat(101))).toBeNull();
     expect(acpHeartbeatAgentName("a".repeat(100))).toBe("a".repeat(100));
+  });
+});
+
+describe("하트비트 파일 쓰기 순서", () => {
+  it("마지막 clear가 느린 write를 추월하지 않는다", async () => {
+    const calls: string[] = [];
+    let releaseWrite: () => void = () => {};
+    const writeGate = new Promise<void>((resolve) => {
+      releaseWrite = resolve;
+    });
+    const writable = {
+      write: vi.fn(async () => {
+        calls.push("write");
+        await writeGate;
+      }),
+      close: vi.fn(async () => {
+        calls.push("close");
+      }),
+    };
+    const sidecar = {
+      getFileHandle: vi.fn(async () => ({ createWritable: async () => writable })),
+      removeEntry: vi.fn(async () => {
+        calls.push("clear");
+      }),
+    };
+    const root = {
+      getDirectoryHandle: vi.fn(async () => sidecar),
+    } as unknown as FileSystemDirectoryHandle;
+    const store = createVaultAcpHeartbeatStore(root);
+    const writing = store.write(
+      buildAcpTurnHeartbeat({
+        agent: "codex-acp",
+        at: new Date("2026-08-17T01:23:45.000Z"),
+        activity: { state: "planning", summary: "확인", ontologySlug: null, toolName: null },
+      }),
+    );
+    await vi.waitFor(() => expect(writable.write).toHaveBeenCalledOnce());
+    const clearing = store.clear();
+    expect(sidecar.removeEntry).not.toHaveBeenCalled();
+    releaseWrite();
+    await Promise.all([writing, clearing]);
+    expect(calls).toEqual(["write", "close", "clear"]);
   });
 });

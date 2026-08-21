@@ -36,6 +36,10 @@ import {
   useAgentNotificationsEnabled,
   useMutedAgentNotificationKinds,
 } from '@/shared/lib/appearance-preferences';
+import {
+  deriveAgentWorkProjection,
+  type AgentWorkProjection,
+} from './agent-work-projection';
 
 /**
  * 「지금 내 폴더에서 뭐가 벌어지고 있나」 한 곳 — 상태 칩과 알림함이 **같은
@@ -93,13 +97,14 @@ export interface AgentActivityFeed {
   showStatus: boolean;
   /** 화면이 「N분 전」을 계산할 기준 시각. 렌더 중 `Date.now()` 를 부르지 않기 위해. */
   nowMs: number;
-  /** 마지막 쓰기가 「쓰는 중」 창(2분) 안인가. */
+  /** fresh heartbeat가 실제 진행 중이라고 밝히는가. */
   writing: boolean;
+  /** heartbeat와 쓰기 로그를 거짓 진행형 없이 합친 현재 작업 판독. */
+  work: AgentWorkProjection;
   lastAt: number | null;
   /**
-   * 마지막 작업에서 이름을 밝힌 에이전트 (하트비트 > MCP 연결 인사 이름 순 —
-   * 로그가 이미 그 우선순위로 기록한다). 모르면 null 이고, 화면은 이름 없이
-   * 상태만 말한다 — 지어내지 않는다.
+   * 마지막 작업에서 이름을 밝힌 에이전트의 사람용 제품명. 원본 client/runtime
+   * id는 `work.rawAgentName`에 남고, 모르면 null이다.
    */
   agentName: string | null;
   /** 마지막 대상 — **매니페스트에 실재하는 슬러그일 때만** 채워진다. */
@@ -113,7 +118,7 @@ export interface AgentActivityFeed {
 }
 
 export function useAgentActivityFeed(): AgentActivityFeed {
-  const { agentActivityLog, manifest, status } = useLocalVault();
+  const { agentActivityLog, agentActivityStatus, manifest, status } = useLocalVault();
   const locale = useLocale();
   const statusEnabled = useAgentActivityStatusEnabled();
   const notificationsEnabled = useAgentNotificationsEnabled();
@@ -141,6 +146,10 @@ export function useAgentActivityFeed(): AgentActivityFeed {
   const sessions = useMemo(
     () => deriveAgentWorkSessions(agentActivityLog ?? [], nowMs),
     [agentActivityLog, nowMs],
+  );
+  const work = useMemo(
+    () => deriveAgentWorkProjection(agentActivityStatus, sessions, nowMs),
+    [agentActivityStatus, sessions, nowMs],
   );
   const last = sessions[sessions.length - 1] ?? null;
   const busy = Boolean(activeSession(sessions));
@@ -239,9 +248,9 @@ export function useAgentActivityFeed(): AgentActivityFeed {
     }
   }, [settledId, settledEndAt, snapshot, docs]);
 
-  const lastAt = last?.endAt ?? null;
+  const lastAt = work.updatedAt;
   const fresh = lastAt !== null && nowMs - lastAt <= AGENT_TASK_VISIBLE_WINDOW_MS;
-  const lastSlug = last?.lastTarget ?? null;
+  const lastSlug = work.targetSlug;
   // 죽은 링크를 만들지 않는 마지막 관문 — 매니페스트에 없으면 링크가 아니다.
   const lastNode = lastSlug ? (snapshot?.nodes.get(lastSlug) ?? null) : null;
 
@@ -268,11 +277,12 @@ export function useAgentActivityFeed(): AgentActivityFeed {
   }, [vaultScope]);
 
   return {
-    showStatus: statusEnabled && fresh,
+    showStatus: statusEnabled && work.mode !== 'idle' && fresh,
     nowMs,
-    writing: busy,
+    writing: work.mode === 'live',
+    work,
     lastAt,
-    agentName: last?.agent ?? null,
+    agentName: work.agentName,
     lastNode,
     lastTargetUnnamed: lastAt !== null && lastNode === null,
     notifications: notificationsEnabled ? notifications : [],

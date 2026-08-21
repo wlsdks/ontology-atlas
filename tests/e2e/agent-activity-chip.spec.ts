@@ -3,7 +3,7 @@ import { seedFirstRunSeen } from "./first-run-seed";
 import { stubDirectoryPicker } from "./vault-picker-stub";
 
 /**
- * **「누가 작업 중인지」 칩이 실제 로그에서 이름을 읽는가** (2026-08-13).
+ * **검증된 live heartbeat와 최근 쓰기 로그를 화면이 구분하는가.**
  *
  * ## 왜 이 spec 이 생겼나
  *
@@ -17,19 +17,11 @@ import { stubDirectoryPicker } from "./vault-picker-stub";
  *
  * ## 시각은 **폴더를 고르는 순간** 에 만든다
  *
- * 「작업 중」 창은 마지막 쓰기 후 2분(`AGENT_WRITING_WINDOW_MS`)이다.
- *
- * ⚠️ 예전에는 spec 이 시작하자마자 「30초 전」을 계산해 씨앗에 박아 뒀다. 여유
- * 90초 · 이 spec 의 상한 120초 — 즉 **페이지 로드가 90초를 넘기면 창을 넘긴다.**
- * 느린 러너에서 Turbopack 이 이 라우트를 처음 컴파일하는 판이 그렇고, 그때
- * 화면은 「마지막 작업」으로 정확히 말하는데 이 spec 만 빨개진다 — 제품이 아니라
- * 씨앗이 낡은 것이다.
- *
- * 그래서 `{{NOW-30000}}` 토큰을 쓴다: 픽커 스텁이 **파일을 실제로 쓰는 순간**
- * (사용자가 폴더를 고르는 그 순간) 시각으로 바꿔 준다. 남는 여유는 이제 페이지
- * 로드가 아니라 «볼트를 읽고 그리는 시간» 뿐이다 (2026-08-17 검사 전수조사).
+ * `activity.jsonl`은 이미 일어난 쓰기 사실이라 live를 증명하지 않는다. fresh
+ * `agent-activity.json` heartbeat만 현재 단계를 말하고, 그것을 지우면 같은 화면이
+ * `변경 감지`로 내려가며 지도 focus ring도 함께 사라져야 한다.
  */
-test("활동 칩은 로그의 에이전트 이름으로 「작업 중」을 말한다", async ({ page }) => {
+test("fresh heartbeat만 현재 단계와 지도 대상을 말하고, 제거되면 변경 감지로 내린다", async ({ page }) => {
   test.setTimeout(120_000);
   await page.setViewportSize({ width: 1512, height: 900 });
 
@@ -39,8 +31,20 @@ test("활동 칩은 로그의 에이전트 이름으로 「작업 중」을 말�
     tool: "add_concept",
     target: "capabilities/pay",
     summary: "add_concept capability:capabilities/pay",
-    agent: "claude-code",
+    agent: "codex-mcp-client",
     why: null,
+  });
+  const heartbeat = JSON.stringify({
+    agent: "codex-acp",
+    state: "verifying",
+    focus: {
+      summary: "결제 역량 관계를 검증해줘",
+      ontologySlug: "capabilities/pay",
+      files: [],
+    },
+    plan: ["변경 결과 확인"],
+    evidence: { mcp: ["validate_vault"], source: [], codegraph: [], verification: [] },
+    updatedAt: "{{NOW-1000}}",
   });
 
   await seedFirstRunSeen(page);
@@ -48,6 +52,7 @@ test("활동 칩은 로그의 에이전트 이름으로 「작업 중」을 말�
     "shop.md": `---\nuid: 11111111-1111-4111-8111-111111111111\nslug: shop\nkind: project\ntitle: Chip Shop\ncontains:\n  - capabilities/pay\n---\n\n# Chip Shop\n`,
     "capabilities/pay.md": `---\nuid: 22222222-2222-4222-8222-222222222222\nslug: capabilities/pay\nkind: capability\ntitle: Pay\n---\n\n# Pay\n`,
     ".ontology-atlas/activity.jsonl": `${activityLine}\n`,
+    ".ontology-atlas/agent-activity.json": `${heartbeat}\n`,
   });
 
   await page.goto("/ko/topology/?e2e=1&guides=off", { waitUntil: "domcontentloaded" });
@@ -55,36 +60,52 @@ test("활동 칩은 로그의 에이전트 이름으로 「작업 중」을 말�
   await page.getByTestId("vault-guide-pick-existing").click();
 
   const status = page.getByTestId("agent-activity-status");
-  await expect(status, "활동 칩이 안 떴다 — 30초 전 쓰기는 24시간 창 안이다").toBeVisible({
+  await expect(status, "fresh heartbeat가 상태 칩에 닿지 않았다").toBeVisible({
     timeout: 30_000,
   });
-  // 이름이 로그에 있으면 화면도 이름으로 말한다. 「작업 중」만 남고 이름이
-  // 빠지면 파서→세션→피드 어딘가에서 agent 칸이 떨어진 것이다.
-  await expect(status).toHaveText(/claude-code 작업 중/);
-  // 대상 링크도 같은 줄에서 산다 — 매니페스트에 실재하는 슬러그라 링크여야 한다.
-  await expect(page.getByTestId("agent-activity-target")).toHaveText("Pay");
+  await expect(status).toHaveText("Codex · 검증 중");
+  await expect(page.getByTestId("agent-activity-target")).toContainText("현재 대상:");
+  await expect(page.getByTestId("agent-activity-target")).toContainText("Pay");
+  await page.getByTestId("agent-activity-status-trigger").click();
+  const current = page.getByTestId("agent-activity-current-work");
+  await expect(current).toContainText("결제 역량 관계를 검증해줘");
+  await expect(current).toContainText("validate_vault");
+  await page.keyboard.press("Escape");
 
-  // 지도도 같은 사실을 말한다(3번 조각) — 하트비트 없이 activity.jsonl 만으로
-  // 쓰는-중 대상 노드에 W6 링이 붙는다. 캔버스 픽셀은 못 읽으므로
-  // `__atlasMap.nodes()` 의 typed 신호로 잰다(그리는 쪽과 같은 판정).
-  await expect
-    .poll(
-      () =>
-        page.evaluate(() => {
-          const map = (
-            window as unknown as {
-              __atlasMap?: { nodes: () => Array<{ id: string; agentFocus: boolean }> };
-            }
-          ).__atlasMap;
-          if (!map) return null;
-          return map
-            .nodes()
-            .filter((node) => node.agentFocus)
-            .map((node) => node.id);
-        }),
-      { timeout: 30_000, message: "쓰는-중 대상 노드에 에이전트 링이 안 붙었다" },
-    )
-    .toEqual(["capability:pay"]);
+  const focused = () =>
+    page.evaluate(() => {
+      const map = (
+        window as unknown as {
+          __atlasMap?: { nodes: () => Array<{ id: string; agentFocus: boolean }> };
+        }
+      ).__atlasMap;
+      if (!map) return null;
+      return map.nodes().filter((node) => node.agentFocus).map((node) => node.id);
+    });
+  await expect.poll(focused, { timeout: 30_000 }).toEqual(["capability:pay"]);
+
+  const cleared = await page.evaluate(async () => {
+    const root = await navigator.storage.getDirectory();
+    const names: string[] = [];
+    for await (const key of (root as unknown as { keys: () => AsyncIterable<string> }).keys()) {
+      if (key.startsWith("stub-vault-")) names.push(key);
+    }
+    names.sort();
+    const dirName = names.at(-1);
+    if (!dirName) return false;
+    const dir = await root.getDirectoryHandle(dirName);
+    const sidecar = await dir.getDirectoryHandle(".ontology-atlas");
+    await sidecar.removeEntry("agent-activity.json");
+    return true;
+  });
+  expect(cleared).toBe(true);
+  await expect(status).toHaveText(/Codex · 변경 감지/, { timeout: 30_000 });
+  await expect(page.getByTestId("agent-activity-target")).toContainText("마지막 변경:");
+  await expect.poll(focused, { timeout: 30_000 }).toEqual([]);
+
+  await page.getByTestId("agent-activity-target").click();
+  await expect(page).toHaveURL(/\/ko\/topology\/?\?.*p=capabilities%2Fpay/);
+  await expect(page.getByRole("heading", { name: "Pay" })).toBeVisible();
 });
 
 /**
@@ -133,5 +154,5 @@ test("알림함의 작업 알림이 에이전트 이름으로 말한다", async 
     .getByTestId("agent-activity-inbox-row")
     .and(page.locator('[data-kind="task-end"]'));
   await expect(endRow).toHaveCount(1);
-  await expect(endRow, "끝난 작업 줄이 이름을 잃었다").toContainText("claude-code 작업 끝");
+  await expect(endRow, "끝난 작업 줄이 이름을 잃었다").toContainText("Claude Code 작업 끝");
 });

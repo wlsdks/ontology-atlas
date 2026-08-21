@@ -260,7 +260,7 @@ describe("LiveActivityBadge", () => {
 
     const activity = screen.getByTestId("live-agent-activity");
     expect(activity).toHaveTextContent("Current");
-    expect(activity).toHaveTextContent("codex · editing");
+    expect(activity).toHaveTextContent("Codex · editing");
     expect(activity).toHaveTextContent("Wire heartbeat into Live popover");
     expect(activity).toHaveTextContent("source · .ontology-atlas/agent-activity.json");
     expect(activity).toHaveTextContent("review · ontology-focus");
@@ -693,7 +693,8 @@ describe("LiveActivityBadge", () => {
 
     const activity = screen.getByTestId("live-agent-activity");
     expect(activity).toHaveTextContent("Stale");
-    expect(activity).toHaveTextContent("claude-code · verifying");
+    expect(activity).toHaveTextContent("Claude Code · verifying");
+    expect(activity).not.toHaveTextContent("claude-code");
     expect(activity).toHaveTextContent("updated · 6m ago");
     expect(activity).toHaveTextContent(
       "Last heartbeat only. Ask the agent to publish a fresh focus before trusting this lane.",

@@ -124,6 +124,15 @@ function answerFor(id: number) {
   return (answer?.result as { outcome?: { outcome?: string; optionId?: string } })?.outcome;
 }
 
+/** 작업 상세는 기본 접힘이다. 도구 행 자체를 재는 검사는 먼저 명시적으로 편다. */
+async function openLatestWorkGroup() {
+  const groups = await screen.findAllByTestId('acp-chat-work-group');
+  const group = groups.at(-1)!;
+  if (group.getAttribute('aria-expanded') !== 'true') fireEvent.click(group);
+  await waitFor(() => expect(group).toHaveAttribute('aria-expanded', 'true'));
+  return group;
+}
+
 afterEach(() => {
   cleanup();
   bridge.available = true;
@@ -197,12 +206,20 @@ describe('대화 패널 — 일어난 일만 그린다', () => {
     emit({
       jsonrpc: '2.0',
       method: 'session/update',
-      params: { update: { sessionUpdate: 'agent_thought_chunk', content: { text: '어디부터 볼까' } } },
+      params: { update: { sessionUpdate: 'agent_thought_chunk', content: { text: '**어디부터** 볼까' } } },
     });
+    await waitFor(() => expect(screen.getByTestId('acp-chat-work-group')).toBeInTheDocument());
+    expect(screen.getByTestId('acp-chat-work-group')).toHaveAttribute('aria-expanded', 'false');
+    expect(document.querySelector('[data-acp-entry="thought"]')).toBeNull();
+    expect(document.querySelector('[data-acp-entry="agent"]')).toBeNull();
+
+    fireEvent.click(screen.getByTestId('acp-chat-work-group'));
     await waitFor(() =>
       expect(document.querySelector('[data-acp-entry="thought"]')).toBeInTheDocument(),
     );
-    expect(document.querySelector('[data-acp-entry="agent"]')).toBeNull();
+    expect(screen.getByTestId('acp-chat-work-group')).toHaveAttribute('aria-expanded', 'true');
+    expect(screen.queryByText('**어디부터** 볼까')).toBeNull();
+    expect(screen.getByText('어디부터').tagName).toBe('STRONG');
   });
 
   it('도구 줄은 부른 뒤에 생기고, 상태는 알려 준 대로만 바뀐다', async () => {
@@ -214,6 +231,7 @@ describe('대화 패널 — 일어난 일만 그린다', () => {
         update: { sessionUpdate: 'tool_call', toolCallId: 'tc1', title: 'Read notes.md', kind: 'read', status: 'pending' },
       },
     });
+    await openLatestWorkGroup();
     await waitFor(() => {
       const row = document.querySelector('[data-acp-entry="tool"]');
       expect(row).toHaveAttribute('data-tool-status', 'pending');
@@ -641,6 +659,7 @@ describe('대화 패널 — 사람이 읽는 화면이다', () => {
         },
       },
     });
+    await openLatestWorkGroup();
 
     const row = await waitFor(() => {
       const el = document.querySelector('[data-acp-entry="tool"]');
@@ -668,6 +687,7 @@ describe('대화 패널 — 사람이 읽는 화면이다', () => {
         },
       },
     });
+    await openLatestWorkGroup();
     const row = await waitFor(() => {
       const el = document.querySelector('[data-acp-entry="tool"]');
       expect(el).not.toBeNull();
@@ -1241,6 +1261,8 @@ describe('도구 줄 — 어느 노드를 만졌는지 말한다', () => {
       },
     });
 
+    await openLatestWorkGroup();
+
     const mark = await screen.findByTestId('acp-chat-slug');
     expect(mark.getAttribute('data-slug')).toBe('capabilities/invoice');
     fireEvent.pointerEnter(mark);
@@ -1275,6 +1297,7 @@ describe('도구 줄 — 어느 노드를 만졌는지 말한다', () => {
         },
       },
     });
+    await openLatestWorkGroup();
     await waitFor(() =>
       expect(document.querySelectorAll('[data-acp-entry="tool"]').length).toBe(1),
     );
@@ -1335,14 +1358,14 @@ describe('답하다 죽은 것과 다 끝난 것은 다른 말이다', () => {
  */
 describe('대화 패널 — 차례가 도는 동안만 알린다', () => {
   it('보내면 켜지고, 답이 끝나면 꺼진다', async () => {
-    const seen: boolean[] = [];
+    const seen: Array<{ state: string; summary: string | null } | null> = [];
     render(
       <AcpChatPanel
         runtimeId="claude-acp"
         runtimeLabel="Claude Code"
         vaultRoot="/vault"
         mcpServers={[{ name: 'atlas-vault' }]}
-        onTurnActiveChange={(active) => seen.push(active)}
+        onTurnActivityChange={(activity) => seen.push(activity)}
       />,
     );
     await waitFor(() => expect(bridge.sent.some((m) => m.method === 'initialize')).toBe(true));
@@ -1358,27 +1381,27 @@ describe('대화 패널 — 차례가 도는 동안만 알린다', () => {
 
     fireEvent.change(screen.getAllByRole('textbox')[0], { target: { value: '안녕' } });
     fireEvent.click(screen.getByTestId('acp-chat-send'));
-    await waitFor(() => expect(seen.at(-1)).toBe(true));
+    await waitFor(() => expect(seen.at(-1)).toMatchObject({ state: 'planning', summary: '안녕' }));
 
     const call = [...bridge.sent].reverse().find((m) => m.method === 'session/prompt');
     emit({ jsonrpc: '2.0', id: call?.id, result: { stopReason: 'end_turn' } });
-    await waitFor(() => expect(seen.at(-1)).toBe(false));
+    await waitFor(() => expect(seen.at(-1)).toBeNull());
   });
 
   it('패널이 사라지면 꺼 준다 — 켠 채로 남기지 않는다', async () => {
-    const seen: boolean[] = [];
+    const seen: Array<{ state: string } | null> = [];
     const view = render(
       <AcpChatPanel
         runtimeId="claude-acp"
         runtimeLabel="Claude Code"
         vaultRoot="/vault"
         mcpServers={[{ name: 'atlas-vault' }]}
-        onTurnActiveChange={(active) => seen.push(active)}
+        onTurnActivityChange={(activity) => seen.push(activity)}
       />,
     );
     await waitFor(() => expect(bridge.sent.some((m) => m.method === 'initialize')).toBe(true));
     view.unmount();
-    expect(seen.at(-1)).toBe(false);
+    expect(seen.at(-1)).toBeNull();
   });
 });
 

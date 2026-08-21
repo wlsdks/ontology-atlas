@@ -22,6 +22,18 @@ function feed(overrides: Partial<AgentActivityFeed> = {}): AgentActivityFeed {
     writing: false,
     lastAt: NOW - 5 * 60_000,
     agentName: null,
+    work: {
+      mode: 'completed',
+      agentName: null,
+      rawAgentName: null,
+      phase: null,
+      summary: null,
+      targetSlug: 'capabilities/checkout',
+      files: [],
+      nextStep: null,
+      lastTool: 'patch_concept',
+      updatedAt: NOW - 5 * 60_000,
+    },
     lastNode: { slug: "capabilities/checkout", name: "주문서 작성", kind: "capability" },
     lastTargetUnnamed: false,
     notifications: [],
@@ -59,26 +71,47 @@ function renderBell(next: Partial<AgentActivityFeed> = {}) {
 describe("AgentActivityChip", () => {
   beforeEach(() => vi.clearAllMocks());
 
-  it("쓰는 중이면 「작업 중」과 대상을 말한다", () => {
-    renderChip({ writing: true });
-    expect(screen.getByTestId("agent-activity-status")).toHaveTextContent("작업 중");
-    expect(screen.getByTestId("agent-activity-target")).toHaveTextContent("주문서 작성");
+  it("fresh heartbeat만 현재 단계와 대상으로 말한다", () => {
+    renderChip({
+      writing: true,
+      agentName: 'Codex',
+      work: {
+        ...feed().work,
+        mode: 'live',
+        agentName: 'Codex',
+        rawAgentName: 'codex-mcp-client',
+        phase: 'verifying',
+        summary: '관계 편집 흐름 확인',
+      },
+    });
+    expect(screen.getByTestId("agent-activity-chip")).toHaveAttribute('data-work-mode', 'live');
+    expect(screen.getByTestId("agent-activity-status")).toHaveTextContent("Codex · 검증 중");
+    expect(screen.getByTestId("agent-activity-target")).toHaveTextContent("현재 대상:주문서 작성");
   });
 
-  it("이름을 아는 에이전트는 이름으로 말한다 — 「claude-code 작업 중」", () => {
-    renderChip({ writing: true, agentName: "claude-code" });
-    expect(screen.getByTestId("agent-activity-status")).toHaveTextContent("claude-code 작업 중");
+  it("로그만 최근이면 작업 중이라고 단정하지 않는다", () => {
+    renderChip({
+      writing: false,
+      agentName: 'Codex',
+      work: { ...feed().work, mode: 'recent-write', agentName: 'Codex', rawAgentName: 'codex-mcp-client' },
+    });
+    expect(screen.getByTestId("agent-activity-status")).toHaveTextContent(/Codex · 변경 감지/);
+    expect(screen.getByTestId("agent-activity-status")).not.toHaveTextContent('작업 중');
   });
 
-  it("조용해진 뒤에도 이름은 남는다 — 「codex · 마지막 작업 N분 전」", () => {
-    renderChip({ writing: false, agentName: "codex" });
+  it("조용해진 뒤에도 정규화한 이름은 남는다 — 「Codex · 마지막 작업 N분 전」", () => {
+    renderChip({ writing: false, agentName: "Codex", work: { ...feed().work, agentName: 'Codex' } });
     const status = screen.getByTestId("agent-activity-status");
-    expect(status.textContent).toMatch(/^codex · 마지막 작업/);
+    expect(status.textContent).toMatch(/^Codex · 마지막 작업/);
   });
 
   it("이름을 모르면 이름 없이 상태만 — 지어내지 않는다", () => {
-    renderChip({ writing: true, agentName: null });
-    expect(screen.getByTestId("agent-activity-status")).toHaveTextContent(/^작업 중$/);
+    renderChip({
+      writing: true,
+      agentName: null,
+      work: { ...feed().work, mode: 'live', phase: 'editing', updatedAt: NOW - 1_000 },
+    });
+    expect(screen.getByTestId("agent-activity-status")).toHaveTextContent(/^편집 중$/);
   });
 
   it("조용하면 마지막 작업 시각을 말한다 — 「연결됨」이라고 쓰지 않는다", () => {
@@ -98,8 +131,46 @@ describe("AgentActivityChip", () => {
     renderChip();
     expect(screen.getByTestId("agent-activity-target")).toHaveAttribute(
       "href",
-      expect.stringContaining("node=capabilities%2Fcheckout"),
+      expect.stringContaining("/topology?mode=focus&p=capabilities%2Fcheckout"),
     );
+  });
+
+  it('이미 지도 위에서는 route 링크 대신 같은 화면의 노드 선택을 호출한다', () => {
+    const onOpenNode = vi.fn();
+    mocks.feed = feed();
+    render(
+      <NextIntlClientProvider locale="ko" messages={koMessages}>
+        <AgentActivityChip onOpenNode={onOpenNode} />
+      </NextIntlClientProvider>,
+    );
+    const target = screen.getByTestId('agent-activity-target');
+    expect(target.tagName).toBe('BUTTON');
+    expect(target).not.toHaveAttribute('href');
+    fireEvent.click(target);
+    expect(onOpenNode).toHaveBeenCalledWith('capabilities/checkout');
+  });
+
+  it('상태 줄을 누르면 현재 작업 목표·단계·다음 행동을 한곳에서 보여준다', () => {
+    renderChip({
+      writing: true,
+      agentName: 'Codex',
+      work: {
+        ...feed().work,
+        mode: 'live',
+        agentName: 'Codex',
+        phase: 'verifying',
+        summary: '관계 편집 흐름 확인',
+        nextStep: '변경 결과 확인',
+        lastTool: 'validate_vault',
+        updatedAt: NOW - 1_000,
+      },
+    });
+    fireEvent.click(screen.getByTestId('agent-activity-status-trigger'));
+    const current = screen.getByTestId('agent-activity-current-work');
+    expect(current).toHaveTextContent('관계 편집 흐름 확인');
+    expect(current).toHaveTextContent('검증 중');
+    expect(current).toHaveTextContent('변경 결과 확인');
+    expect(current).toHaveTextContent('validate_vault');
   });
 
   it("안 읽은 알림 수를 벨에 단다", () => {
@@ -130,19 +201,19 @@ describe("AgentActivityChip", () => {
     expect(markAllRead).toHaveBeenCalledOnce();
   });
 
-  it("이름을 아는 작업 알림은 이름으로 말한다 — 「claude-code 작업 끝」", () => {
+  it("작업 알림도 내부 client id를 제품 이름으로 바꿔 말한다", () => {
     renderBell({
       notifications: [
-        { id: "a", kind: "task-end", at: NOW - 1000, node: null, agent: "claude-code", counts: { added: 2, edited: 0, removed: 0 } },
+        { id: "a", kind: "task-end", at: NOW - 1000, node: null, agent: "codex-mcp-client", counts: { added: 2, edited: 0, removed: 0 } },
         { id: "b", kind: "task-start", at: NOW - 2000, node: null },
       ],
     });
     fireEvent.click(screen.getByTestId("agent-activity-bell"));
     const rows = screen.getAllByTestId("agent-activity-inbox-row");
-    expect(rows[0].textContent).toContain("claude-code 작업 끝");
+    expect(rows[0].textContent).toContain("Codex 작업 끝");
     // 이름 모르는 줄은 예전 문구 그대로 — 지어내지 않는다.
     expect(rows[1].textContent).toContain("작업 시작");
-    expect(rows[1].textContent).not.toContain("claude-code");
+    expect(rows[1].textContent).not.toContain("Codex");
   });
 
   it("설정에서 알림을 끄면 벨 자체가 없다", () => {
