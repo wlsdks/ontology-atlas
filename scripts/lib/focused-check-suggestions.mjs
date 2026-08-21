@@ -691,6 +691,27 @@ const RULES = [
     reason: 'dogfood ontology or MCP/CLI dogfood surface changed',
     matches: [/^docs\/ontology\//, /^mcp\//, /^cli\//, /^scripts\/dogfood/],
   },
+  {
+    /*
+     * **볼트 마크다운은 화면에 그려진다.** `/docs` 가 이 폴더를 그대로 렌더하고,
+     * `samples/storefront` 와 `docs/guide` 도 마찬가지다. 그래서 여기 쓰는 글은
+     * 코드가 아니라 **제품 문구**이고, 문구 게이트(작대기 금지)의 사정거리 안이다.
+     *
+     * ⚠️ 이 규칙이 없어서 실제로 뚫렸다 (2026-08-21): 볼트 노드 두 개를 쓰면서
+     * 산문에 작대기를 넣었는데 `vault:validate` 는 frontmatter 무결성만 보므로
+     * 통과했고, pre-push 훅도 통과시켰다. **CI 의 Unit·Contract 가 7분을 돌고
+     * 나서야** 빨개졌다. 무결성 검사와 문구 검사는 **다른 것을 재는 검사**라
+     * 하나가 다른 하나를 대신하지 못한다.
+     */
+    command: 'pnpm test:run tests/contract/em-dash-ratchet.contract.test.ts',
+    reason: 'rendered doc markdown changed (vault, guide, sample)',
+    matches: [
+      /^docs\/ontology\/.*\.md$/,
+      /^docs\/guide\/.*\.md$/,
+      /^docs\/CHANGELOG\.md$/,
+      /^samples\/storefront\/.*\.md$/,
+    ],
+  },
 ];
 
 const ESCALATIONS = [

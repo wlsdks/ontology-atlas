@@ -924,7 +924,7 @@
       },
       "headings": [],
       "excerpt": "사용자가 이미 설치해 둔 코딩 에이전트(Claude Code, Codex 등)를 앱이 ACP(Agent Client Protocol) v1 로 직접 띄우고, 그 세션의 설정을 격리하고, 볼트 밖 파일 접근을 사람에게 되묻는 능력. 새 API 키도 새 벤더 연동도 필요 없다: 그 도구가 이미 쓰는 구독 인증을 그대로 쓴다. 이 능력이 실제로 하는 일 일곱: 1. 탐지. 이 기기의 실행기 상태를 다섯으로 갈라 판정한다: ready, cli-missing, node-missing, uvx-missing, binary-missing. 상태를 「설치됨/아님」 둘로 뭉개지 않는",
-      "wordCount": 838,
+      "wordCount": 836,
       "updatedAt": "2026-08-21",
       "linksOut": [
         "ontology/elements/agents-destination"
@@ -1840,8 +1840,8 @@
         "display_en": "Agents Destination"
       },
       "headings": [],
-      "excerpt": "이 컴퓨터의 AI 코딩 도구를 받고 · 깔고 · 붙이고 · 고치고 · 대화를 여는 한 자리(/agents/). 레일의 여덟 번째 목적지다. 이 일은 2026-08-20 까지 설정 시트의 두 칸(「실행기」·「MCP 연결」)이었고, 지도 위에는 같은 일을 하는 연결 시트가 따로 있었다 — 한 가지 일에 주소가 셋이었다. 옮긴 근거는 화면 폭이 아니다(설치 앱 실측: 정상 경로에서 시트의 46~47%가 오히려 빈다). 근거는 그릇이다: 모달이 뒤를 딤으로 막고 Esc 를 소유한다 — 52MB 를 받는 동안 지도를 못 본다. 설정은 값을 고르는 자리이고, 이것은 진행 상태가",
-      "wordCount": 373,
+      "excerpt": "이 컴퓨터의 AI 코딩 도구를 받고 · 깔고 · 붙이고 · 고치고 · 대화를 여는 한 자리(/agents/). 레일의 여덟 번째 목적지다. 이 일은 2026-08-20 까지 설정 시트의 두 칸(「실행기」·「MCP 연결」)이었고, 지도 위에는 같은 일을 하는 연결 시트가 따로 있었다. 한 가지 일에 주소가 셋이었다. 옮긴 근거는 화면 폭이 아니다(설치 앱 실측: 정상 경로에서 시트의 46~47%가 오히려 빈다). 근거는 그릇이다: 모달이 뒤를 딤으로 막고 Esc 를 소유한다. 52MB 를 받는 동안 지도를 못 본다. 설정은 값을 고르는 자리이고, 이것은 진행 상태가 있",
+      "wordCount": 364,
       "updatedAt": "2026-08-21",
       "linksOut": []
     },
@@ -3377,7 +3377,7 @@
     "ontology/elements/agents-destination": [
       {
         "fromSlug": "ontology/capabilities/acp-runtime",
-        "context": "표면 (목적지와 설정 시트가 같이 쓴다 — 소개 줄을 그릴지는 부르는 쪽이 정한다) - src/views/agents/ui/AgentsPage.tsx: 「에이전트」 목적지 — 이 능력의 현재 사용자 표면 (`**[elements/agents-destination]**`) - src/views/home/ui/HomePage.tsx · src/widgets/acp-chat-panel/ui/AcpChatPanel.tsx: 지도 옆 ACP 대화 진입점과 미검증 작업 방식 표시 -",
+        "context": "태 표면 (목적지와 설정 시트가 같이 쓴다. 소개 줄을 그릴지는 부르는 쪽이 정한다) - src/views/agents/ui/AgentsPage.tsx: 「에이전트」 목적지, 이 능력의 현재 사용자 표면 (`**[elements/agents-destination]**`) - src/views/home/ui/HomePage.tsx · src/widgets/acp-chat-panel/ui/AcpChatPanel.tsx: 지도 옆 ACP 대화 진입점과 미검증 작업 방식 표시 -",
         "linkText": "elements/agents-destination"
       },
       {

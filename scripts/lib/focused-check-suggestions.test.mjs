@@ -28,6 +28,7 @@ describe('focused check suggestions', () => {
       'pnpm docs:links',
       'pnpm test:mcp:docs',
       'pnpm vault:validate',
+      'pnpm test:run tests/contract/em-dash-ratchet.contract.test.ts',
     ]);
   });
 
@@ -93,6 +94,7 @@ describe('focused check suggestions', () => {
       'pnpm docs-vault:check',
       'pnpm docs:links',
       'pnpm test:guide-examples',
+      'pnpm test:run tests/contract/em-dash-ratchet.contract.test.ts',
     ]);
   });
 
@@ -1122,6 +1124,26 @@ describe('focused check suggestions', () => {
    * 그렇다. 그 출력 자신이 *"Nothing is broken"* 이라고 적는다. 그것을 푸시
    * 게이트에 걸면 볼트를 고친 모든 푸시가 아무 관계 없는 이유로 막힌다.
    */
+  it('화면에 그려지는 마크다운에는 문구 게이트도 권한다', () => {
+    // 무결성 검사와 문구 검사는 **다른 것을 잰다**. 2026-08-21 에 볼트 산문의
+    // 작대기가 `vault:validate` 를 통과하고 CI 에서야 잡혔다.
+    const prose = 'pnpm test:run tests/contract/em-dash-ratchet.contract.test.ts';
+    for (const path of [
+      'docs/ontology/elements/agents-destination.md',
+      'docs/guide/getting-started.md',
+      'samples/storefront/domains/catalog.md',
+      'docs/CHANGELOG.md',
+    ]) {
+      const commands = suggestFocusedChecks([path]).commands.map((row) => row.command);
+      assert.ok(commands.includes(prose), `${path} 에 문구 게이트를 안 권한다`);
+    }
+    // 볼트의 마크다운 아닌 파일까지 끌어들이지 않는다.
+    const other = suggestFocusedChecks(['src/views/agents/ui/AgentsPage.tsx']).commands.map(
+      (row) => row.command,
+    );
+    assert.ok(!other.includes(prose), '관계없는 코드 변경에 문구 게이트를 권한다');
+  });
+
   it('볼트 변경에는 깨진 것만 말하는 검사를 권한다', () => {
     const commands = suggestFocusedChecks(['docs/ontology/README.md']).commands.map(
       (row) => row.command,

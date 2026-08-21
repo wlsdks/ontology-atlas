@@ -102,8 +102,8 @@ Client Protocol) v1 로 직접 띄우고, 그 세션의 설정을 격리하고, 
   src/features/acp-session/model/use-acp-session.ts: 모드 안전 분류, JSON-RPC
   클라이언트와 상태가 보존되는 세션 수명
 - src/widgets/app-settings-menu/ui/AcpRuntimeSettings.tsx: 실행기 탐지·격리 상태 표면
-  (목적지와 설정 시트가 같이 쓴다 — 소개 줄을 그릴지는 부르는 쪽이 정한다)
-- src/views/agents/ui/AgentsPage.tsx: 「에이전트」 목적지 — 이 능력의 현재 사용자
+  (목적지와 설정 시트가 같이 쓴다. 소개 줄을 그릴지는 부르는 쪽이 정한다)
+- src/views/agents/ui/AgentsPage.tsx: 「에이전트」 목적지, 이 능력의 현재 사용자
   표면 (`[[elements/agents-destination]]`)
 - src/views/home/ui/HomePage.tsx · src/widgets/acp-chat-panel/ui/AcpChatPanel.tsx:
   지도 옆 ACP 대화 진입점과 미검증 작업 방식 표시
