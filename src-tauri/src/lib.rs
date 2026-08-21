@@ -438,8 +438,7 @@ const ACP_INSTALL_VERIFY_SCRIPT: &str = r#"(() => {
     progressStages: [],
     progressBarWidths: [],
     lastPercentText: "",
-    reopened: "",
-    stagesBeforeReopen: [],
+
     attempts: 0
   };
   window.__ontologyAtlasAcpInstallVerify = result;
@@ -486,22 +485,22 @@ const ACP_INSTALL_VERIFY_SCRIPT: &str = r#"(() => {
       return;
     }
 
-    if (!find("app-settings-popover")) {
-      result.step = "open-settings-sheet";
-      const trigger = find("app-settings-trigger");
-      if (!trigger) { result.reason = "no visible settings trigger"; again(); return; }
-      trigger.click();
-      again(220);
-      return;
-    }
-    result.sheetOpen = true;
+    /*
+     * ⚠️ **2026-08-21: 설정 시트를 거치지 않는다** (원장 90). 실행기 목록이
+     * 「에이전트」 목적지로 나가면서 시트에는 그 칸이 없다 — 종전 드라이버는
+     * `app-settings-nav-runtimes` 를 계속 찾다가 아무것도 못 하고 끝났다
+     * (실측: `progressStages` 가 빈 채로 통과했다. 검사가 조용히 무력해진 것이고,
+     * 그 자체가 이 이관이 남긴 잔재였다).
+     *
+     * 이제 목적지에서 곧바로 재고, 거기가 아니면 그 사실을 말한다 —
+     * `ONTOLOGY_ATLAS_VERIFY_ROUTE=/ko/agents/` 로 띄우면 된다.
+     */
+    result.sheetOpen = !!find("app-settings-popover");
 
     if (!find("app-settings-runtimes")) {
-      result.step = "open-agents-section";
-      const nav = find("app-settings-nav-runtimes");
-      if (!nav) { result.reason = "settings sheet has no Agents entry"; again(); return; }
-      nav.click();
-      again(300);
+      result.step = "reach-agents-destination";
+      result.reason = "not on the Agents destination (run with ONTOLOGY_ATLAS_VERIFY_ROUTE=/ko/agents/)";
+      again(400);
       return;
     }
     result.sectionOpen = true;
@@ -546,36 +545,6 @@ const ACP_INSTALL_VERIFY_SCRIPT: &str = r#"(() => {
      * 그 사이에 지나가면 영영 못 본다. Rust 가 마지막 상태를 들고 있다가
      * 마운트 때 돌려주는지를 여기서 실제로 잰다.
      */
-    if (!result.reopened && result.progressStages.length > 0) {
-      const sheet = find("app-settings-popover");
-      if (sheet) {
-        result.step = "close-sheet";
-        result.reopened = "closing";
-        document.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true }));
-        again(1200);
-        return;
-      }
-    }
-    if (result.reopened === "closing") {
-      result.step = "reopen-sheet";
-      result.reopened = "reopening";
-      result.stagesBeforeReopen = result.progressStages.slice();
-      // 다시 열기 전에 화면에 남은 것을 지운다 — 그래야 「되살아났다」가
-      // 진짜 복구인지 잔상인지 갈린다.
-      result.progressStages = [];
-      const trigger = find("app-settings-trigger");
-      if (trigger) trigger.click();
-      again(900);
-      return;
-    }
-    if (result.reopened === "reopening") {
-      const nav = find("app-settings-nav-runtimes");
-      if (nav) nav.click();
-      result.reopened = "reopened";
-      again(900);
-      return;
-    }
-
     result.step = "watching-progress";
     result.reason = "sampling the progress row";
     again(500);

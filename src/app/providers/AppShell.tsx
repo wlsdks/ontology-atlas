@@ -13,7 +13,6 @@ import {
   useNavRailShellValue,
 } from "@/widgets/app-nav-rail";
 import {
-  AGENT_CONNECT_ROUTE_HREF,
   AgentConnectLauncherProvider,
   useAgentConnectLauncher,
 } from "@/widgets/agent-connect";
@@ -29,6 +28,8 @@ import { AppUpdateProvider, UpdateToast, useAppUpdateContext } from "@/features/
 import { useLocalVault } from "@/features/docs-vault-local";
 import { isDesktopShell } from "@/shared/lib/desktop-shell";
 import { isGatewaySurface, resolveActiveNavDestination } from "@/shared/lib/nav-destination";
+import { DESTINATION_HREF } from "@/shared/config/destinations";
+import { useInstallNotice } from "@/features/acp-doctor/model/use-install-notice";
 import { RouteFocusManager } from "@/shared/ui/route-focus-manager";
 import { useHydrated } from "@/shared/lib/use-hydrated";
 
@@ -207,11 +208,6 @@ function resolveIsProjectListPath(pathname: string): boolean {
   return pathname.replace(/^\/(?:en|ko)(?=\/|$)/, "").startsWith("/projects");
 }
 
-/** `/` 와 `/topology*` 는 둘 다 HomePage(연결 시트 소유자)를 렌더한다. */
-function isTopologyHubPath(pathname: string): boolean {
-  return pathname === "/" || pathname.startsWith("/topology");
-}
-
 function AppNavRailSlot() {
   const { settingsSlot, hidden, contextHrefs } = useNavRailShellValue();
   const launcher = useAgentConnectLauncher();
@@ -254,12 +250,24 @@ function AppNavRailSlot() {
         router.push("/ontology/insights/");
         return;
       }
-      launcher.open();
-      if (!isTopologyHubPath(pathname)) {
-        router.push(AGENT_CONNECT_ROUTE_HREF);
-      }
+      /*
+       * ⚠️ **미연결이면 목적지로 간다** (2026-08-21, 원장 90).
+       *
+       * 종전에는 지도 위의 연결 시트를 열었다 — 지형도 밖이면 지형도로 먼저
+       * 옮기고 나서. 그래서 같은 일을 하는 자리가 **셋**이었다: 시트 · 설정 칸 ·
+       * (지금은) 목적지. 붙이는 일의 주소는 하나여야 한다.
+       */
+      router.push(DESTINATION_HREF.agents);
     },
-    [launcher, router, pathname],
+    [router],
+  );
+
+  /*
+   * 설치가 끝났는데 다른 화면에 있었다면 레일이 알려 준다. **종단 상태만**
+   * 세고(진행률 금지), 그 화면에 가면 사라진다 — 기록 배지와 같은 문법이다.
+   */
+  const installNotice = useInstallNotice(
+    resolveActiveNavDestination(pathname) === "agents",
   );
 
   // #65 — 레일 하단 유틸 티어는 셸이 기본으로 채운다. 예전엔 페이지마다
@@ -321,6 +329,7 @@ function AppNavRailSlot() {
       hidden={hidden || gateway}
       contextHrefs={contextHrefs}
       gitDirtyCount={gitDirtyCount}
+      agentsNoticeCount={installNotice.count}
       onAgentTileActivate={onAgentTileActivate}
       agentConnectOpen={launcher.wantOpen}
     />
