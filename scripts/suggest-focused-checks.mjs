@@ -46,6 +46,51 @@ export function untrackedPathsForAdvisor(output) {
   );
 }
 
+/**
+ * 추천을 **그대로 실행**한다 — 첫 실패에서 멈춘다.
+ *
+ * ## 왜 이 모드가 생겼나 (2026-08-21)
+ *
+ * 이 도구는 무엇을 돌릴지 **정확히** 지목해 왔다. 그런데 사람(과 에이전트)이
+ * 그 목록을 받아 **일부만 골라 돌렸다.** 2026-08-20 하루에 CI 두 라운드가
+ * 그렇게 탔다 — `test:contracts` 만 돌리고 `test:run` 과 e2e 를 건너뛰었고,
+ * 건너뛴 자리에서 정확히 터졌다.
+ *
+ * 같은 저장소의 `pre-commit` 훅이 그 교훈을 이미 적어 뒀다: *"기억에 의존하는
+ * 규율은 세 번 이상 반복되면 규율이 아니라 사고 대기열이다."* 고르는 여지를
+ * 없애는 것이 답이고, 그 자리는 **추천기 자신**이다.
+ *
+ * 첫 실패에서 멈추는 이유: 뒤의 검사는 대개 같은 원인으로 무너져서, 다 돌리면
+ * 화면이 길어질 뿐 새 정보가 없다. 고칠 것 하나를 정확히 준다.
+ */
+export function runFocusedChecks({
+  commands = [],
+  cwd = process.cwd(),
+  stdout = process.stdout,
+  spawn = spawnSync,
+} = {}) {
+  if (commands.length === 0) {
+    stdout.write('[focused-checks] 돌릴 것이 없다 — 바뀐 경로에 걸리는 검사가 없다.\n');
+    return 0;
+  }
+  for (const [index, suggestion] of commands.entries()) {
+    stdout.write(`\n[focused-checks] (${index + 1}/${commands.length}) ${suggestion.command}\n`);
+    const result = spawn(suggestion.command, {
+      cwd,
+      shell: true,
+      stdio: 'inherit',
+    });
+    const code = result.status ?? 1;
+    if (code !== 0) {
+      stdout.write(`\n[focused-checks] 실패: ${suggestion.command}\n`);
+      stdout.write('[focused-checks] 고치고 다시 돌려라. 남은 검사는 안 돌렸다.\n');
+      return code;
+    }
+  }
+  stdout.write(`\n[focused-checks] ${commands.length}개 통과\n`);
+  return 0;
+}
+
 export function runSuggestFocusedChecks({
   argv = process.argv.slice(2),
   cwd = process.cwd(),
@@ -58,10 +103,15 @@ export function runSuggestFocusedChecks({
     stdout.write(`${suggestFocusedChecksUsage()}\n`);
     return 0;
   }
+  // `--run` 은 경로가 아니다. 안 걸러내면 그 문자열이 바뀐 파일로 취급된다.
+  const run = args.includes('--run');
+  const pathArgs = args.filter((arg) => arg !== '--run');
   try {
-    const paths = args.length > 0 ? args : changedPathsFromGit({ cwd, spawn });
-    stdout.write(`${formatFocusedCheckSuggestions(suggestFocusedChecks(paths))}\n`);
-    return 0;
+    const paths = pathArgs.length > 0 ? pathArgs : changedPathsFromGit({ cwd, spawn });
+    const suggestions = suggestFocusedChecks(paths);
+    stdout.write(`${formatFocusedCheckSuggestions(suggestions)}\n`);
+    if (!run) return 0;
+    return runFocusedChecks({ commands: suggestions.commands, cwd, stdout, spawn });
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
     stderr.write(`[focused-checks] ${message}\n`);
@@ -78,6 +128,7 @@ export function suggestFocusedChecksUsage() {
   return `Usage:
   pnpm checks:changed
   pnpm checks:changed -- <path...>
+  pnpm checks:changed -- --run          # 추천을 그대로 실행 (첫 실패에서 멈춘다)
 
 Suggests the first focused checks for changed files so agents avoid full-suite
 verification by default. With no path arguments it

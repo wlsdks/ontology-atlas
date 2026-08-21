@@ -46,6 +46,10 @@
 | 새 capability / domain / element 노드 | `docs/ontology/<kind>s/<slug>.md` (dogfood) |
 | `.claude/rules/` 로드 조건 변경 | `CLAUDE.md` 표 + `tests/contract/rules-path-scope.contract.test.ts` |
 
+> **`checks:changed` 목록에서 골라 돌리지 마라** (2026-08-21). 실패는 목록이
+> 아니라 **고른 것**에서 났다 — 08-20 하루에 CI 두 라운드가 그렇게 탔다.
+> `pnpm checks:changed -- --run` 이 전부 돌리고 첫 실패에서 멈춘다.
+
 ## PR
 
 - 제목은 위의 영문 prefix 로 시작. 본문은 `Summary` 와 `Test plan` 두 섹션.
@@ -55,11 +59,11 @@
 ## 함부로 하지 말 것
 
 - `--no-verify` 로 hook 을 건너뛰지 말 것. **이 저장소의 hook 은 실제로 돌아간다**
-  — `pnpm install` 이 git 의 hook 위치를 `.githooks/` 로 바꿔 두고, 거기 있는
-  `pre-commit` 이 "생성된 파일이 원본과 어긋난 채 커밋되는 것"을 커밋하는 순간
-  막는다. 예전에는 이 어긋남이 CI 에서야 터져서 이틀에 세 번 실패했고, 그걸
-  커밋 시점으로 앞당긴 것이다 (`docs/DEVELOPMENT-CHECKS.md`). 막히면 hook 이
-  시키는 명령을 그대로 돌린다.
+  — `pnpm install` 이 git 의 hook 위치를 `.githooks/` 로 바꿔 두고, `pre-commit`
+  이 "생성된 파일이 원본과 어긋난 채 커밋되는 것"을, `pre-push` 가 "`checks:changed`
+  가 지목한 검사가 빨간 채 푸시되는 것"을 그 자리에서 막는다. 예전에는 둘 다
+  CI 에서야 터졌다 (`docs/DEVELOPMENT-CHECKS.md`). 막히면 hook 이 시키는 명령을
+  그대로 돌린다.
 - `git reset --hard` / `git push --force` 는 사용자가 직접 시켰을 때만.
 - main 에 force push 절대 금지.
 - **자동 생성된 JSON 의 충돌을 손으로 고치지 말 것.** `src/entities/docs-vault/data/*`
