@@ -85,6 +85,12 @@ Client Protocol) v1 로 직접 띄우고, 그 세션의 설정을 격리하고, 
 ## 근거
 - src-tauri/src/acp.rs: 레지스트리 파싱, 실행기 탐지, 실행 경로 해소, 설정 격리,
   권한 판정, 프로세스 그룹 종료
+- src-tauri/src/acp_doctor.rs: 여덟 검사(도구·실행기·관문·npx 캐시·앱 몫 설정·
+  자격증명 링크·옛 키체인·로그인)와 수리, 앞 단계가 막히면 뒤를 「막혀 있음」으로
+  닫는 선행 판정 (2026-08-20)
+- src-tauri/src/managed_node.rs: Node 런타임을 앱 전용 자리에 받아 두고 **해시를
+  대조한다**. 버전 고정 · 받은 뒤 SHA-256 대조 · 안 맞으면 지우고 실패 ·
+  `<app-data>/runtimes/node` 밖으로는 한 바이트도 안 쓴다 (원장 89)
 - src-tauri/src/lib.rs: `acp_detect_runtimes` · `acp_start` · `acp_send` ·
   `acp_stop` · `acp_permission_verdict` 다섯 command, 세션별 검증 루트 소유와
   볼트 루트 거절
@@ -96,11 +102,18 @@ Client Protocol) v1 로 직접 띄우고, 그 세션의 설정을 격리하고, 
   src/features/acp-session/model/use-acp-session.ts: 모드 안전 분류, JSON-RPC
   클라이언트와 상태가 보존되는 세션 수명
 - src/widgets/app-settings-menu/ui/AcpRuntimeSettings.tsx: 실행기 탐지·격리 상태 표면
+  (목적지와 설정 시트가 같이 쓴다 — 소개 줄을 그릴지는 부르는 쪽이 정한다)
+- src/views/agents/ui/AgentsPage.tsx: 「에이전트」 목적지 — 이 능력의 현재 사용자
+  표면 (`[[elements/agents-destination]]`)
 - src/views/home/ui/HomePage.tsx · src/widgets/acp-chat-panel/ui/AcpChatPanel.tsx:
   지도 옆 ACP 대화 진입점과 미검증 작업 방식 표시
 - docs/DECISIONS.md 2026-08-16 ACP 도입·격리 기록과 2026-08-17 (53)·(54)·
   (56)·(57)·(58): 어댑터 안전 상태의 화면 전달, 세션 루트 권한 경계, 프로세스
   그룹 수명 판정, 현재 볼트에 유효한 MCP 서버의 단일 실행
+- docs/DECISIONS.md 2026-08-20 (88)·(89)·(90): 에이전트 CLI 를 앱이 대신 깔아
+  주는 조건 넷(사용자가 누른다 · 명령 원문을 먼저 보여 준다 · 앱 전용 자리 ·
+  버전 고정), Node 런타임의 고정·검증·격리, 그리고 이 능력의 사용자 표면이
+  설정 시트에서 「에이전트」 목적지로 옮겨 간 결정
 
 ## 확신도
 medium-high (0.8): 프로토콜·프로세스 층, 설정 절, 홈의 패널 진입점과 모드 상태
