@@ -52,7 +52,7 @@ describe('focused check suggestion CLI', () => {
       stdout: { write: (text) => output.push(text) },
       spawn(command, args, options) {
         calls.push({ command, args, options });
-        if (args[0] === 'diff') return { status: 0, stdout: 'docs/ontology/project.md\n' };
+        if (args[0] === 'diff') return { status: 0, stdout: 'docs/ontology/README.md\n' };
         return { status: 0, stdout: '.codex/config.toml\n.codex/cache/session.json\nscripts/suggest-focused-checks.mjs\n' };
       },
     });
@@ -84,6 +84,8 @@ describe('focused check suggestion CLI', () => {
     const calls = [];
     assert.deepEqual(
       changedPathsFromGit({
+        // 이 시험이 재는 것은 **중복 제거와 순서**다 — 실재 판정은 옆 시험이 잰다.
+        exists: () => true,
         spawn(command, args) {
           calls.push(args);
           assert.equal(command, 'git');
@@ -204,5 +206,41 @@ describe('focused checks --run', () => {
       },
     });
     assert.equal(spawned, 0);
+  });
+});
+
+/**
+ * **지워진 파일은 검사 대상이 아니다.**
+ *
+ * 2026-08-21 실측: `git diff --name-only` 는 삭제된 경로도 준다. 그것을 그대로
+ * 넘기면 `eslint <지워진 파일>` 이 만들어지고 그 명령이 죽는다 — 연결 시트를
+ * 은퇴시킨 푸시가 정확히 그렇게 막혔다.
+ */
+describe('deleted paths', () => {
+  it('git 이 준 목록에서 실재하지 않는 경로를 뺀다', () => {
+    const paths = changedPathsFromGit({
+      cwd: process.cwd(),
+      exists: (path) => !String(path).includes('gone'),
+      spawn: (_git, args) => ({
+        status: 0,
+        stdout: args.includes('--others')
+          ? ''
+          : ['scripts/suggest-focused-checks.mjs', 'src/widgets/gone/Deleted.tsx'].join('\n'),
+      }),
+    });
+    assert.ok(paths.includes('scripts/suggest-focused-checks.mjs'), '살아 있는 파일이 빠졌다');
+    assert.ok(!paths.includes('src/widgets/gone/Deleted.tsx'), '지워진 파일이 남았다');
+  });
+
+  it('손으로 준 경로는 거르지 않는다 — 아직 없는 파일 세트를 미리 물어볼 수 있다', () => {
+    // `pnpm checks:changed -- <path...>` 는 **계획 중인** 파일에 대해 묻는 용도가
+    // 문서에 있다. 거기까지 실재를 요구하면 그 용도가 죽는다.
+    const output = [];
+    runSuggestFocusedChecks({
+      argv: ['--', 'src/views/not-yet/NewPage.tsx'],
+      stdout: { write: (text) => output.push(text) },
+      spawn: () => ({ status: 0, stdout: '' }),
+    });
+    assert.match(output.join(''), /1 changed path/);
   });
 });
