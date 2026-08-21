@@ -59,9 +59,9 @@ export const WEBVIEW_WORKBENCH_MARKERS = [
   /Workspace|작업공간|저장소|문서함|Source Vault|Documents|Relief|Concept map|개념/,
 ];
 
-const WEBVIEW_SKILLS_WORKBENCH_MARKERS = [
-  /스킬|Skills/,
-  /에이전트가 가진 스킬|스킬을 살펴볼까요|See when each agent skill/,
+const WEBVIEW_AGENTS_WORKBENCH_MARKERS = [
+  /에이전트|Agents/,
+  /이 컴퓨터의 도구|MCP 연결|Tools on this computer|MCP connection/,
 ];
 
 const WEBVIEW_TOPOLOGY_WORKBENCH_MARKERS = [
@@ -77,8 +77,8 @@ const WEBVIEW_TOPOLOGY_WORKBENCH_MARKERS = [
 export function webviewWorkbenchMarkersForPath(expectedPath = null) {
   if (typeof expectedPath === "string") {
     const pathname = new URL(expectedPath, "tauri://localhost/").pathname;
-    if (/\/(?:ko|en)\/skills\/?$/.test(pathname)) {
-      return WEBVIEW_SKILLS_WORKBENCH_MARKERS;
+    if (/\/(?:ko|en)\/agents\/?$/.test(pathname)) {
+      return WEBVIEW_AGENTS_WORKBENCH_MARKERS;
     }
     if (/\/(?:ko|en)\/topology\/?$/.test(pathname)) {
       return WEBVIEW_TOPOLOGY_WORKBENCH_MARKERS;

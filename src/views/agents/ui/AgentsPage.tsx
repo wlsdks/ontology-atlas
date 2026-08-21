@@ -22,8 +22,8 @@ import { PAGE_FRAME, PAGE_HEADER_ROW, PAGE_TITLE_ROW } from '@/shared/ui/page-fr
  *   (그 결함 자체는 이동과 독립이라 별도로 고쳤다. 목적지도 라우트를 떠나면 같다).
  * - **설정은 값을 고르는 자리**이고, 이것은 **진행 상태가 있는 운영 작업**이다.
  *
- * 스킬이 문서함과 갈라선 것과 같은 문법이다(2026-08-09): 답하는 질문이 다르면
- * 목적지가 다르다.
+ * 설정값 선택과 진행 상태가 있는 운영 작업은 답하는 질문이 다르므로 목적지가
+ * 다르다.
  *
  * ## 이 화면이 담는 것과 담지 않는 것
  *
@@ -58,13 +58,12 @@ export function AgentsPage() {
       {/*
         ⚠️ **설명은 헤더 «밖»이다.** `PAGE_HEADER_ROW` 는
         `justify-between` 한 줄이라, 설명을 그 안에 두면 제목의 반대쪽 끝으로
-        밀려 오른쪽 정렬처럼 보인다(첫 판에서 실제로 그랬다). 스킬 화면이 자기
-        주석에 같은 함정을 적어 뒀는데 그대로 밟았다 — 헤더의 오른쪽 자리는
+        밀려 오른쪽 정렬처럼 보인다(첫 판에서 실제로 그랬다). 헤더의 오른쪽 자리는
         «제목과 나란히 서는 컨트롤» 의 것이다.
       */}
       <header className={PAGE_HEADER_ROW}>
         <div className={PAGE_TITLE_ROW}>
-          {/* 형제 목적지(스킬)와 같은 헤드라인 규격 — 새 값을 만들지 않는다. */}
+          {/* 목록형 목적지의 헤드라인 규격 — 새 값을 만들지 않는다. */}
           <h1 className="text-display font-[var(--font-weight-signature)] tracking-[var(--tracking-card)] text-[color:var(--color-text-primary)]">
             {t('title')}
           </h1>

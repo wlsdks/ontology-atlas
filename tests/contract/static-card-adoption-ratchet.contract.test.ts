@@ -51,7 +51,6 @@ const DEBT: ReadonlyArray<readonly [file: string, count: number]> = [
   // 8 → 7 (2026-08-17): 「더 채우기」를 감싸던 패널 상자를 걷어 냈다. 접힌 줄
   // 하나를 92px 상자가 감싸고 있었다 — 담은 것 없는 크롬.
   ["src/features/project-edit/ui/ProjectForm.tsx", 7],
-  ["src/views/agent-skills/ui/SkillProcessRail.tsx", 1],
   ["src/views/docs-vault/ui/parts/EmptyState.tsx", 1],
   // 1 → 0 (2026-08-19): 그 한 장은 다운로드 판이었고, 설치 절이 통째로
   // 삭제되면서 함께 갔다 (`docs/DECISIONS.md` (83)).

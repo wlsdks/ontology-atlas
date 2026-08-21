@@ -42,7 +42,7 @@ const TOP_PAD_MEMBERS = ["src/views/project-detail/ui/ProjectDetailPage.tsx"] as
 const MEMBERS = [
   "src/views/project-selector/ui/ProjectSelectorPage.tsx",
   "src/views/ontology-insights/ui/OntologyInsightsPage.tsx",
-  "src/views/agent-skills/ui/AgentSkillsPage.tsx",
+  "src/views/agents/ui/AgentsPage.tsx",
 ] as const;
 
 const read = (relative: string) => readFileSync(join(REPO_ROOT, relative), "utf8");

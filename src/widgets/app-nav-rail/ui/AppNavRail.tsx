@@ -28,7 +28,6 @@ import {
   // (AtlasGitPanel 이 같은 사고를 겪었다). 전역과 충돌 없는 별칭으로 고정.
   History as HistoryIcon,
   Map as MapIcon,
-  Wand2,
 } from "lucide-react";
 import { DESTINATION_HREF } from "@/shared/config/destinations";
 import { ICON_SIZE } from "@/shared/ui/icon-size";
@@ -275,10 +274,6 @@ export function AppNavRail({
     // 은 흡수됐다(입구가 둘이면 #65 계열 결함 재발). 아이콘은 History 유지 —
     // git 3-노드 그래프 글리프는 이 레일에서 "온톨로지 그래프" 로 읽혀 지도
     // 아이콘·브랜드 육각과 충돌한다(Design Guardian 반려).
-    // 스킬 — 2026-08-09 소유자 확정으로 목적지 신설. 문서함과 나란히 두지 않고
-    // 따로 세운 이유는 답하는 질문이 다르기 때문이다: 문서함은 「이 문서가 지도
-    // 어디에 붙나」, 여기는 「이게 언제 뜨고 뜨면 뭐가 열리나」.
-    { id: "skills", href: DESTINATION_HREF.skills, label: t("skills"), Icon: Wand2 },
     // 에이전트 — 2026-08-20 목적지 신설(원장 90). 설정 시트 안의 설치·연결
     // 화면을 여기로 뺐다.
     //
@@ -337,14 +332,8 @@ export function AppNavRail({
       </Link>
 
       {/*
-        ⚠️ **여덟이 되면서 레일이 넘칠 수 있게 됐다** (2026-08-20, 작업대 자리 실측).
-        최소 창(720)에서 여덟 번째 타일은 유틸리티 층 위로 8px 남기고 들어가지만,
-        폭 2400 이상에서는 UI 배율이 1.1 로 올라가 여덟이 **761px** 를 요구한다 —
-        그 창을 41px 넘긴다. 처리가 없으면 여덟 번째와 그 아래 유틸리티가
-        **잘려서 닿을 수 없게 된다**(반응형 자리가 200% 확대에서 이미 톱니 유실을
-        쟀다).
-
-        그래서 셋을 같이 건다: 목적지 칸만 스크롤하고(`min-h-0` 이 없으면
+        목적지 수와 창 높이·UI 배율이 바뀌어도 레일의 소유권은 같다. 목적지 칸만
+        스크롤하고(`min-h-0` 이 없으면
         flex 자식은 안 줄어든다), 스크롤이 부모로 새지 않게 막고
         (`overscroll-contain`), 유틸리티 층은 **절대 안 줄어든다**(`shrink-0`).
         상한 자체는 계약이 지킨다(`destination-shortcuts.contract.test.ts`).
@@ -485,8 +474,7 @@ export function AppNavRail({
         className="mt-auto flex w-full shrink-0 flex-col items-center gap-1 pt-2"
       >
         {/* 에이전트 타일 — 클릭 가능. 연결됨: 활동 다이제스트(인사이트)로,
-            미연결/stale: 연결 시트를 연다(P4-② 분기, AppShell 이 라우팅).
-            aria: 미연결일 때만 dialog 를 여므로 그때만 haspopup/expanded. */}
+            미연결/stale: 「에이전트」 목적지로 간다(AppShell 이 라우팅). */}
         <button
           type="button"
           title={agentTitle}

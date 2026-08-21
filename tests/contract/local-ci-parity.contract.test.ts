@@ -51,6 +51,15 @@ describe('로컬 훅과 CI 가 같은 방식으로 e2e 를 돈다', () => {
     expect(hook).toMatch(/grep -q "playwright test"/);
   });
 
+  it('삭제 경로가 정렬의 마지막이어도 set -e 로 조용히 끝나지 않는다', () => {
+    /*
+     * `[ -e "$f" ] && printf …` 는 마지막 경로가 삭제 파일이면 상태 1을 남긴다.
+     * 훅의 `set -e` 가 그 상태를 받아 실제 검사 전에 종료한 회귀를 막는다.
+     */
+    expect(hook).not.toMatch(/\[ -e "\$f" \] && printf/);
+    expect(hook).toMatch(/if \[ -e "\$f" \]; then[\s\S]*printf[\s\S]*fi/);
+  });
+
   it('검사기가 헛돌지 않는다 — 두 파일을 실제로 읽어 왔다', () => {
     expect(workflow.length).toBeGreaterThan(1000);
     expect(hook).toContain('suggest-focused-checks');

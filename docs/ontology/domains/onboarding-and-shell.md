@@ -15,7 +15,7 @@ created_by: human
 
 ## 근거
 - README.md: "One download installs both surfaces. The macOS app carries a compiled MCP server inside its own bundle."
-- AGENTS.md: Routes ("`/` is decided by who is asking", "Seventeen routes, all [locale] prefixed by next-intl")
+- AGENTS.md: Routes ("`/` is decided by who is asking", "The current routes are all [locale] prefixed by next-intl")
 
 ## 포함 / 제외
 - 포함: 첫 실행, 가이드 투어, 다운로드 결정, 앱 업데이트, 로케일 전환, 내비 셸

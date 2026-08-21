@@ -25,7 +25,7 @@ import { seedFirstRunSeen } from "./first-run-seed";
  * 「아무것도 안 봐서 0」인지 갈리지 않는다.
  */
 
-const ROUTES = ["/ko/", "/ko/topology/", "/ko/docs/", "/ko/projects/", "/ko/skills/"];
+const ROUTES = ["/ko/", "/ko/topology/", "/ko/docs/", "/ko/projects/", "/ko/agents/"];
 const FLOOR = 3;
 
 /*

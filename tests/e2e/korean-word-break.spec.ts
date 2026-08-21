@@ -34,7 +34,7 @@ import { seedFirstRunSeen } from "./first-run-seed";
 
 const ROUTES = [
   "/ko/ontology/insights/",
-  "/ko/skills/",
+  "/ko/agents/",
   "/ko/projects/",
   "/ko/docs/",
   "/ko/",

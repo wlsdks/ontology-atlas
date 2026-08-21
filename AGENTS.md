@@ -117,7 +117,7 @@ What the tree doesn't tell you:
 
 ## Routes
 
-Seventeen routes, all `[locale]` prefixed by next-intl; in-app links use
+The current routes are all `[locale]` prefixed by next-intl; in-app links use
 `@/i18n/navigation`. The annotated list is `docs/ARCHITECTURE.md` — read it there
 rather than from a copy that drifts (it did: three copies existed and all three
 disagreed with the filesystem, 2026-07-31).
@@ -139,7 +139,7 @@ What you can't derive from `app/[locale]/`:
 - **Adding or removing a route needs a `docs/DECISIONS.md` entry in the same change** —
   `pnpm decisions:check` enforces it. Retired namespaces (`/login`, `/signup`,
   `/account`, `/reset-password`, `/settings/*`, `/admin/*`, `/review/*`,
-  `/diagnostics/*`, `/knowledge/*`) stay retired; `.claude/rules/forbidden.md` says why.
+  `/diagnostics/*`, `/knowledge/*`, `/skills`) stay retired; `.claude/rules/forbidden.md` says why.
 
 ## Working principles
 

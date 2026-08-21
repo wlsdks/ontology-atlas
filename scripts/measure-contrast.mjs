@@ -61,7 +61,6 @@ export const DEFAULT_ROUTES = [
   "/ko/guide/",
   "/ko/guide/what-is-atlas/",
   "/ko/git/",
-  "/ko/skills/",
   // 에이전트 (2026-08-20 신설, 원장 90) — 목적지 승격으로 감사 대상이 됐다.
   "/ko/agents/",
   // 404 는 **두 페이지**다 — 로케일이 붙은 것과 안 붙은 것. 2026-08-03 에

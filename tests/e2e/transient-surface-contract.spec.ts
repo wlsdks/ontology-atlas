@@ -44,7 +44,7 @@ const ROUTES = [
   "/ko/ontology/insights/",
   "/ko/projects/",
   "/ko/project/new/",
-  "/ko/skills/",
+  "/ko/agents/",
   "/ko/git/",
 ] as const;
 

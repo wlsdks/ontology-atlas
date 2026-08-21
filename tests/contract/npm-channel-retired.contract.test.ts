@@ -177,6 +177,9 @@ describe("npm 채널은 폐기됐다 — 죽은 npx 안내 차단", () => {
     })
       .split("\n")
       .filter((f) => /\.(ts|tsx)$/.test(f))
+      // `git ls-files` 는 아직 stage 하지 않은 삭제 파일도 index 에 남긴다.
+      // 게이트가 현재 작업 트리를 읽게 해야 삭제 자체를 검증할 수 있다.
+      .filter((f) => existsSync(join(process.cwd(), f)))
       .filter((f) => !f.includes(".test."))
       // 생성 미러는 저장소 산문을 담고 있어 **문서를 소스로 오인**하게 만든다.
       .filter((f) => !f.includes("docs-vault/data"))
