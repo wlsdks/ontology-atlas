@@ -179,8 +179,12 @@ export function isInstallProgressFresh(
  *
  * 웹에서는 붙지 않는다 — 애초에 설치 버튼이 없다.
  */
+/**
+ * @param runtimeId 이 도구의 진행만 받는다. `null` 이면 **전부** 받는다 —
+ *   레일 배지처럼 「어느 도구든 끝났나」를 보는 소비처가 쓴다.
+ */
 export async function listenInstallProgress(
-  runtimeId: string,
+  runtimeId: string | null,
   onProgress: (progress: AcpInstallProgress) => void,
 ): Promise<() => void> {
   if (!isAgentDoctorAvailable()) return () => undefined;
@@ -188,7 +192,8 @@ export async function listenInstallProgress(
     const { listen } = await import('@tauri-apps/api/event');
     const unlisten = await listen<AcpInstallProgress>('acp-install://progress', (event) => {
       // 한 화면에 여러 도구 줄이 있다. 남의 진행을 내 줄에 그리지 않는다.
-      if (event.payload?.runtimeId === runtimeId) onProgress(event.payload);
+      if (!event.payload) return;
+      if (runtimeId === null || event.payload.runtimeId === runtimeId) onProgress(event.payload);
     });
     return unlisten;
   } catch {
@@ -234,4 +239,11 @@ export async function lastInstallProgress(
     // 못 물어봤다고 화면을 세우지 않는다 — 고치기 전과 같은 상태가 될 뿐이다.
     return null;
   }
+}
+
+/** 더는 바뀌지 않는 단계 — 「끝났다」와 「실패했다」. */
+export const TERMINAL_INSTALL_STAGES = ['done', 'failed'] as const;
+
+export function isTerminalInstallStage(stage: AcpInstallProgress['stage']): boolean {
+  return (TERMINAL_INSTALL_STAGES as readonly string[]).includes(stage);
 }

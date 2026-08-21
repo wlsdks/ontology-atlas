@@ -73,6 +73,11 @@ export interface AppNavRailProps {
    * 않게). `0` 이면 뱃지가 소멸한다.
    */
   gitDirtyCount?: number;
+  /**
+   * 설치가 끝났는데 사용자가 다른 화면에 있었던 도구 수. **종단 상태만** 센다
+   * (진행률은 여기 안 그린다 — 곁눈으로 보는 자리다).
+   */
+  agentsNoticeCount?: number;
   /** 하단 에이전트 타일 클릭 핸들러 — `connected` 는 레일이 자신의 heartbeat
    *  상태로 판정해 넘긴다(P4-② 분기). `AppShell` 이 연결됨→인사이트 이동,
    *  미연결→연결 시트 열기(전역 launcher)로 라우팅한다. 미지정 시 타일은
@@ -139,6 +144,7 @@ export function AppNavRail({
   hidden,
   contextHrefs,
   gitDirtyCount = 0,
+  agentsNoticeCount = 0,
   onAgentTileActivate = null,
   agentConnectOpen = false,
   className,
@@ -281,7 +287,15 @@ export function AppNavRail({
     // 아이콘이 `Bot` 인 이유(작업대 자리 실측): 후보였던 `SquareTerminal` 은
     // 20px 레일에서 「마크가 든 사각」이라 `FolderKanban`(프로젝트)과 실루엣이
     // 겹친다. `Bot` 은 이 목록에서 유일한 «머리와 귀가 있는» 윤곽이다.
-    { id: "agents", href: DESTINATION_HREF.agents, label: t("agents"), Icon: Bot },
+    {
+      id: "agents",
+      href: DESTINATION_HREF.agents,
+      label: t("agents"),
+      Icon: Bot,
+      // 설치가 끝났는데 다른 화면에 있었으면 여기 배지가 선다 — **종단 상태만**
+      // 이고 진행률은 안 그린다(곁눈으로 보는 자리라 초마다 바뀌면 못 읽는다).
+      badgeCount: agentsNoticeCount,
+    },
     { id: "git", href: DESTINATION_HREF.git, label: t("git"), Icon: HistoryIcon, badgeCount: gitDirtyCount },
   ];
 
