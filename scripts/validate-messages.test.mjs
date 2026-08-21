@@ -282,6 +282,7 @@ describe('i18n message catalog', () => {
     // 얼린 문장 대신 **절 이름 전체**를 스캔한다.
     const visibleCopy = [
       JSON.stringify(settings.section),
+      settings.goToAgents,
       settings.agentStatusNoVault,
       settings.agentNoVaultHint,
       settings.mcpProofTitle,
@@ -292,9 +293,15 @@ describe('i18n message catalog', () => {
 
     assert.equal(settings.mcpProofTitle, 'MCP 첫 호출');
     assert.match(visibleCopy, /에이전트/);
-    // 두 목적지의 이름이 **첫 글자로** 갈린다 — 같은 글자로 시작하면 눈이 못
-    // 가른다는 것이 이 개명의 근거였으므로, 그 성질을 그대로 잠근다.
-    assert.notEqual(settings.section.agent[0], settings.section.ai[0]);
+    /*
+     * ⚠️ **2026-08-21 재조준** (원장 90). 종전에는 `section.agent` 와
+     * `section.ai` 의 첫 글자를 갈랐다. 그런데 `agent` 절은 「에이전트」
+     * 목적지로 나갔다 — 시트에 남은 것은 그리로 보내는 **이정표 행**이다.
+     *
+     * 잠그는 **성질은 그대로**다: 「연결」 묶음 안에서 눈이 두 줄을 첫 글자로
+     * 가를 수 있는가. 같은 글자로 시작하면 못 가른다는 것이 이 개명의 근거였다.
+     */
+    assert.notEqual(settings.goToAgents[0], settings.section.ai[0]);
     assert.doesNotMatch(visibleCopy, /\bAgent\b|\bFallback\b|\bclient\b|\bnamespace\b|\breload\b|\brestart\b|graph DB gate/);
   });
 
