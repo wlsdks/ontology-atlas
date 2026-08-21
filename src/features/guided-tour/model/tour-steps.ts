@@ -104,6 +104,7 @@ export type DestinationTourId =
   | "insights"
   | "projects"
   | "skills"
+  | "agents"
   | "git";
 
 export const DESTINATION_TOURS: Record<DestinationTourId, readonly TourStep[]> = {
@@ -138,6 +139,20 @@ export const DESTINATION_TOURS: Record<DestinationTourId, readonly TourStep[]> =
       anchor: { type: "testid", value: "skills-open-folder" },
       persona: "all",
       copyKey: "skillsOpen",
+    },
+  ],
+  /*
+   * 「에이전트」 — 2026-08-20 목적지 신설(원장 90). 두 장이다: 이 화면이 무엇을
+   * 하는지, 그리고 도구가 없을 때 어디를 누르면 되는지. 스킬 안내와 같은 모양이다
+   * (그 화면도 폴더를 고르기 전에는 가리킬 것이 버튼 하나뿐이다).
+   */
+  agents: [
+    { id: "agents-what", anchor: null, persona: "all", copyKey: "agentsWhat" },
+    {
+      id: "agents-check",
+      anchor: { type: "testid", value: "app-settings-runtimes-recheck" },
+      persona: "all",
+      copyKey: "agentsCheck",
     },
   ],
   insights: [

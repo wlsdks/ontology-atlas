@@ -31,6 +31,7 @@ tags: [architecture, infra, overview]
 │ ├─ /ontology/insights      five-question maintenance   │
 │ ├─ /git                    vault Git workbench         │
 │ ├─ /skills                 agent skill inventory       │
+│ ├─ /agents                 fetch · install · connect   │
 │ ├─ /projects               project list                │
 │ ├─ /project/[slug]         project detail              │
 │ ├─ /download               gateway as an explicit link │
@@ -322,6 +323,15 @@ project's own — before they have picked any folder of their own.
                            trigger / bundled files on demand) with executables marked. Writes
                            nothing: not to the vault, not to the skill files. Remembers no
                            folder handle. 2026-08-09 ledger
+/agents                    coding agents this computer can run — the app launches them and
+                           you talk to them here. Fetches Node and the pinned CLI into an
+                           app-only folder when they are missing, runs the eight-step
+                           connection check, and repairs what it can. Moved out of the
+                           settings sheet 2026-08-20 (ledger 90): settings is where you pick
+                           values, this is operational work with progress state. API Key and
+                           Workspace stay in settings (the 2026-08-16 freeze and a different
+                           owning domain). Desktop launches the tools; on the web the page
+                           still renders and says what it cannot do, plus what it can.
 /projects                  project list (cards)
 /project/[slug]            project detail (inline edit when vault loaded)
 /project/[slug]/edit       full project editor

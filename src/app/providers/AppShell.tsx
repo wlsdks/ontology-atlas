@@ -169,7 +169,18 @@ function ShellColumn({ children }: { children: ReactNode }) {
             다음에 만드는 화면이 또 빠뜨린다. 스크롤 컨테이너를 소유한 셸이 한 번
             선언한다. 자식이 늘어나는 건 그대로 두므로(`grow` 미변경) 짧은 내용의
             세로 중앙 정렬과 `h-full` 페이지는 영향받지 않는다. */}
-        <div className="flex min-w-0 flex-1 flex-col overflow-y-auto [&>*]:shrink-0">
+        {/*
+          `data-testid` 가 있는 이유: 이 슬롯을 재는 계약이 종전에는
+          `.overflow-y-auto` **첫 번째**를 집었는데, 2026-08-20 에 레일이 여덟
+          목적지가 되면서 스크롤을 갖게 되자 그 선택자가 **레일의 `<nav>` 를**
+          집었다. 검사는 초록이 아니라 빨개져서 알려 줬지만(다행이다), 반대
+          방향으로 틀렸다면 아무 말 없이 엉뚱한 원소를 재고 있었을 것이다.
+          이름으로 지목하면 그 부류가 원리적으로 안 생긴다.
+        */}
+        <div
+          data-testid="app-shell-body-slot"
+          className="flex min-w-0 flex-1 flex-col overflow-y-auto [&>*]:shrink-0"
+        >
           {children}
         </div>
       </div>

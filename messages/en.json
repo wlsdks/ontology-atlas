@@ -12,7 +12,8 @@
       "ontologyInsights": "Graph Insights",
       "projectNew": "New project",
       "guide": "Guide",
-      "changelog": "Changelog"
+      "changelog": "Changelog",
+      "agents": "Agents"
     },
     "descriptions": {
       "home": "Code survives; context does not. Ontology Atlas keeps your project's context (what depends on what, and why it was built this way) in one markdown folder. Prose a person can read, and a structure an AI agent reads and writes over MCP. Local-first, no backend, open source.",
@@ -257,6 +258,7 @@
     "insights": "Insights",
     "projects": "Projects",
     "skills": "Skills",
+    "agents": "Agents",
     "git": "History",
     "getApp": "Get the app",
     "getAppTitle": "The Mac app remembers your folder, opens offline, and handles history and AI connections: Windows is in progress"
@@ -725,6 +727,14 @@
       "gitChanges": {
         "title": "Start with what changed",
         "body": "Everything you edited is listed here. Look it over, then save it and that moment is on the record. In a browser you can look; install the app and you can save from here too."
+      },
+      "agentsWhat": {
+        "title": "Connect your AI coding tools here",
+        "body": "Atlas launches the tools installed on this computer so you can talk to them right here. If one is missing you can fetch it from here. It lands in an app-only folder and goes away with the app."
+      },
+      "agentsCheck": {
+        "title": "If nothing connects, measure it here",
+        "body": "“Check again” re-scans this computer. Each tool also has its own connection check that measures where things are stuck, step by step, and repairs what it can."
       }
     }
   },
@@ -992,6 +1002,7 @@
         "goTo_insights": "Go to insights",
         "goTo_projects": "Go to projects",
         "goTo_skills": "Go to skills",
+        "goTo_agents": "Go to Agents",
         "goTo_git": "Go to git history",
         "openProjectPalette": "Open the search palette",
         "openGlobalPalette": "Search concepts, docs, and projects together",
@@ -1053,7 +1064,8 @@
         "docs": "Docs",
         "all": "All",
         "emptyCurrent": "This screen has no dedicated shortcuts: the global ones above still work"
-      }
+      },
+      "scrollRegionLabel": "Shortcut list"
     },
     "hero": {
       "docsVault": "Ontology workspace",
@@ -3898,5 +3910,11 @@
         }
       }
     }
+  },
+  "agents": {
+    "title": "Agents",
+    "lede": "Atlas launches the AI coding tools on this computer so you can talk to them right here. If one is missing, you can fetch it from here too.",
+    "runtimesHeading": "Tools on this computer",
+    "mcpHeading": "MCP connection"
   }
 }

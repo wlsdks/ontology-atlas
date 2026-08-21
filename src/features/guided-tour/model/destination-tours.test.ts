@@ -7,20 +7,33 @@ import {
   type DestinationTourId,
 } from "./tour-steps";
 import { destinationTourStatusKey } from "./tour-storage";
+import { DESTINATION_IDS } from "@/shared/config/destinations";
 
 const DESTINATIONS = Object.keys(DESTINATION_TOURS) as DestinationTourId[];
 
-/** 레일 목적지 6개 중 지도를 뺀 다섯 — 하나라도 빠지면 그 화면만 안내가 없다. */
+/**
+ * 레일 목적지 중 지도를 뺀 전부 — 하나라도 빠지면 **그 화면만 안내가 없다.**
+ *
+ * ⚠️ **손으로 적은 목록에서 도출로 바꿨다** (2026-08-20). 종전에는 기대값이
+ * 문자열 배열로 박혀 있었다. 그게 목적지를 늘릴 때 신호를 주기는 했지만
+ * (「에이전트」 신설 때 실제로 여기서 먼저 터졌다), **다음 사람이 할 일은
+ * 「안내를 만든다」가 아니라 「목록에 한 줄 더한다」가 되기 쉽다** — 그러면
+ * 게이트가 스스로 무력해진다.
+ *
+ * 이제 `DESTINATION_IDS`(레일의 정본)에서 지도를 빼고 도출한다. 목적지를
+ * 늘리면 이 검사가 **안내가 없다고** 말하지, 목록이 다르다고 말하지 않는다.
+ */
 describe("목적지 안내", () => {
-  it("지도를 뺀 여섯 목적지가 모두 자기 안내를 갖는다", () => {
-    expect(DESTINATIONS.sort()).toEqual([
-      "docs",
-      "git",
-      "insights",
-      "projects",
-      "skills",
-      "studio",
-    ]);
+  it("지도를 뺀 모든 레일 목적지가 자기 안내를 갖는다", () => {
+    // 지도는 캔버스 앵커·인터랙티브 클릭이 있는 8단계라 `TOUR_STEPS` 가 소유한다.
+    const expected = DESTINATION_IDS.filter((id) => id !== "map").slice().sort();
+    expect(DESTINATIONS.slice().sort()).toEqual(expected);
+  });
+
+  it("검사기가 헛돌지 않는다 — 목적지를 실제로 읽어 왔다", () => {
+    // 정본이 비면 위 시험은 「빈 배열 == 빈 배열」로 통과해 버린다.
+    expect(DESTINATION_IDS.length).toBeGreaterThan(5);
+    expect(DESTINATION_IDS).toContain("map");
   });
 
   it("각 안내는 '무엇을 하는 곳' 한 장 + 실제 요소 한 장이다", () => {

@@ -78,7 +78,7 @@ const NOT_READY_INK =
   'bg-[color:var(--color-overlay-2)] text-[color:var(--color-text-tertiary)]';
 
 
-export function AcpRuntimeSettings() {
+export function AcpRuntimeSettings({ embedded = false }: { embedded?: boolean } = {}) {
   const t = useTranslations('nav.settingsMenu.runtimes');
   const [runtimes, setRuntimes] = useState<AcpRuntimeStatus[] | null>(null);
   const [checking, setChecking] = useState(false);
@@ -168,10 +168,23 @@ export function AcpRuntimeSettings() {
 
   return (
     <div className="grid min-w-0 gap-3" data-testid="app-settings-runtimes">
-      <div className="flex items-start justify-between gap-3 px-1">
-        <p className="min-w-0 break-keep text-label leading-label text-[color:var(--color-text-quaternary)]">
-          {t('intro')}
-        </p>
+      {/*
+        ⚠️ **목적지에서는 이 소개를 안 그린다** (2026-08-20, 설치 앱 캡처에서 적발).
+        페이지가 자기 lede 로 같은 말을 이미 했고, 둘을 겹쳐 놓으면 거의 같은
+        문장이 위아래로 선다 — 이 화면이 이미 한 번 겪은 「같은 문장 사본」
+        결함이고, 카운슬 처방도 「설명 문단 3→1」이었다.
+
+        시트에서는 제목이 없으므로 이 줄이 그 자리를 대신한다. 그래서 지우지
+        않고 **부르는 쪽이 정한다.**
+      */}
+      <div
+        className={`flex items-start gap-3 px-1 ${embedded ? 'justify-end' : 'justify-between'}`}
+      >
+        {embedded ? null : (
+          <p className="min-w-0 break-keep text-label leading-label text-[color:var(--color-text-quaternary)]">
+            {t('intro')}
+          </p>
+        )}
         <Chip
           size="lg"
           tone="secondary"
