@@ -46,6 +46,13 @@ export {
   type RelationQualityBreakdown,
 } from "./lib/relation-quality";
 export { translateOntologyDeeplinkToTopologyParam } from "./lib/translate-ontology-deeplink";
+export {
+  buildOntologyChangeSet,
+  type OntologyChangeField,
+  type OntologyChangeOperation,
+  type OntologyChangeSet,
+  type OntologyRelationChange,
+} from "./lib/ontology-change-set";
 export { deriveCodeLocations } from "./lib/code-locations";
 export { buildChatNodeIndex } from "./lib/chat-node-index";
 export { isEvidenceOnlyConcept, resolveNodeDocument } from "./lib/node-document";

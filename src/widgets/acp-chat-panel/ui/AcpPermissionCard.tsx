@@ -1,11 +1,13 @@
 'use client';
 
 import { useEffect, useRef } from 'react';
-import { ShieldAlert } from 'lucide-react';
+import { GitCompareArrows, ShieldAlert } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 
 import { permissionIntent } from '@/features/acp-session/model/permission-intent';
 import { permissionScope } from '@/features/acp-session/model/permission-scope';
+import { OntologyChangeReview } from '@/features/ontology-change-review';
+import { buildOntologyChangeSet } from '@/entities/knowledge-graph';
 
 import { Button } from '@/shared/ui';
 import { controlClass } from '@/shared/ui/control-class';
@@ -35,6 +37,10 @@ import type { PendingPermission } from '@/features/acp-session/model/use-acp-ses
 export function AcpPermissionCard({ pending }: { pending: PendingPermission }) {
   const t = useTranslations('acpChat.permission');
   const { request, resolve } = pending;
+  const ontologyWrite = request.reviewKind === 'ontology-write' && Boolean(request.toolName);
+  const changeSet = ontologyWrite
+    ? buildOntologyChangeSet(request.toolName!, request.rawInput)
+    : null;
   /* 어디만이 아니라 **무엇을** — 아래 주석 참고. */
   const intent = permissionIntent(request.toolKind);
   /*
@@ -81,26 +87,36 @@ export function AcpPermissionCard({ pending }: { pending: PendingPermission }) {
        * 잡았다). 이건 한 항목이 아니라 **하나의 구획**이다: 제목 · 근거 · 선택지가
        * 함께 서서 한 결정을 이룬다.
        */
-      className="grid gap-3 rounded-panel border border-[color:var(--color-amber-source-a35)] bg-[color:var(--color-amber-source-a08)] p-[var(--card-pad)]"
+      className={ontologyWrite
+        ? 'grid gap-3 rounded-panel border border-[color:var(--color-indigo-a28)] bg-[color:var(--color-indigo-a08)] p-[var(--card-pad)]'
+        : 'grid gap-3 rounded-panel border border-[color:var(--color-amber-source-a35)] bg-[color:var(--color-amber-source-a08)] p-[var(--card-pad)]'}
     >
       <div className="flex items-start gap-2.5">
-        <ShieldAlert
-          size={ICON_SIZE.md}
-          aria-hidden
-          className="mt-0.5 shrink-0 text-[color:var(--color-status-warning)]"
-        />
+        {ontologyWrite ? (
+          <GitCompareArrows
+            size={ICON_SIZE.md}
+            aria-hidden
+            className="mt-0.5 shrink-0 text-[color:var(--color-indigo-accent)]"
+          />
+        ) : (
+          <ShieldAlert
+            size={ICON_SIZE.md}
+            aria-hidden
+            className="mt-0.5 shrink-0 text-[color:var(--color-status-warning)]"
+          />
+        )}
         <div className="min-w-0">
           <p
             id="acp-permission-title"
             className="break-keep text-body font-[var(--font-weight-emphasis)] text-[color:var(--color-text-primary)]"
           >
-            {t('title')}
+            {t(ontologyWrite ? 'ontologyWriteTitle' : 'title')}
           </p>
           <p
             id="acp-permission-body"
             className="mt-1 break-keep text-label leading-label text-[color:var(--color-text-secondary)]"
           >
-            {t('body')}
+            {t(ontologyWrite ? 'ontologyWriteBody' : 'body')}
           </p>
         </div>
       </div>
@@ -113,29 +129,33 @@ export function AcpPermissionCard({ pending }: { pending: PendingPermission }) {
 
         모르면 모른다고 한다. 「읽기」로 짐작하면 가장 위험한 쪽으로 틀린다.
       */}
-      <p
-        data-testid="acp-permission-intent"
-        data-intent={intent}
-        className="break-keep text-label leading-label text-[color:var(--color-text-primary)]"
-      >
-        {t(`intent.${intent}`)}
-      </p>
+      {changeSet ? (
+        <OntologyChangeReview changeSet={changeSet} />
+      ) : (
+        <p
+          data-testid="acp-permission-intent"
+          data-intent={intent}
+          className="break-keep text-label leading-label text-[color:var(--color-text-primary)]"
+        >
+          {t(`intent.${intent}`)}
+        </p>
+      )}
 
       {/* 경로는 판단의 근거라 줄이지 않는다. `break-all` 은 긴 경로가 칸 밖으로
           나가지 않게 하고, mono 는 여기서 장식이 아니라 «이건 파일 경로다» 를
           나르는 채널이다. */}
-      {request.filePath ? (
+      {!ontologyWrite && request.filePath ? (
         <p
           data-testid="acp-permission-path"
           className="break-all rounded-chip border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-2.5 py-1.5 font-mono text-label text-[color:var(--color-text-secondary)]"
         >
           {request.filePath}
         </p>
-      ) : (
+      ) : !ontologyWrite ? (
         <p className="break-keep text-label leading-label text-[color:var(--color-text-tertiary)]">
           {request.title ?? t('unknownTarget')}
         </p>
-      )}
+      ) : null}
 
       <div className="flex flex-wrap items-center justify-end gap-2">
         <Button
@@ -156,7 +176,7 @@ export function AcpPermissionCard({ pending }: { pending: PendingPermission }) {
         </Button>
       </div>
 
-      {allowAlways ? (
+      {allowAlways && !ontologyWrite ? (
         <button
           type="button"
           data-testid="acp-permission-allow-always"
@@ -178,7 +198,7 @@ export function AcpPermissionCard({ pending }: { pending: PendingPermission }) {
           )}
         </button>
       ) : null}
-      {allowAlways ? (
+      {allowAlways && !ontologyWrite ? (
         <p
           data-testid="acp-permission-scope"
           data-scope={scope.kind}

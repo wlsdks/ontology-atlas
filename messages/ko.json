@@ -3607,6 +3607,8 @@
     "permission": {
       "title": "이 폴더 밖을 건드리려고 해요",
       "body": "허락하기 전에는 아무 일도 일어나지 않아요. 어디를 건드리는지 아래에서 확인하세요.",
+      "ontologyWriteTitle": "변경안을 확인해 주세요",
+      "ontologyWriteBody": "허용하면 아래 변경을 이 폴더의 Markdown에 씁니다. 그전에는 아무것도 바뀌지 않아요.",
       "unknownTarget": "무엇을 하려는지 알 수 없어요",
       "reject": "안 할래요",
       "allowOnce": "이번만 허용",
@@ -3621,7 +3623,24 @@
       "allowAlwaysDirectory": "이 폴더를 이번 대화 내내 허용",
       "allowAlwaysUnknown": "이번 대화 내내 허용",
       "scopeHint": "허용 범위: {names}",
-      "scopeUnknownHint": "이 도구가 허용 범위를 알려 주지 않았어요. 한 번만 허용하는 쪽이 안전해요."
+      "scopeUnknownHint": "이 도구가 허용 범위를 알려 주지 않았어요. 한 번만 허용하는 쪽이 안전해요.",
+      "changeReview": {
+        "operation": {
+          "create": "새 개념 만들기",
+          "update": "개념 고치기",
+          "relate": "관계 쓰기",
+          "remove": "기존 사실 지우기",
+          "rename": "개념 이름 바꾸기",
+          "merge": "개념 합치기",
+          "write": "볼트 고치기"
+        },
+        "from": "시작",
+        "relation": "관계",
+        "to": "도착",
+        "why": "이유",
+        "itemCount": "{count}건",
+        "moreFields": "그 밖의 필드 {count}개"
+      }
     },
     "close": "대화 닫기",
     "composerPlaceholder": "이 폴더에 대해 물어보거나 시켜요",

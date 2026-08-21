@@ -450,6 +450,8 @@ describe('toPermissionRequest — 제목이 아니라 경로를 본다', () => {
     });
     expect(parsed.filePath).toBe('/vault/notes.md');
     expect(parsed.toolKind).toBe('edit');
+    expect(parsed.rawInput).toEqual({ file_path: '/vault/notes.md' });
+    expect(parsed.reviewKind).toBe('permission');
     expect(parsed.options).toEqual([{ optionId: 'a', kind: 'allow_once', name: 'Allow' }]);
   });
 
@@ -460,6 +462,8 @@ describe('toPermissionRequest — 제목이 아니라 경로를 본다', () => {
       toolName: null,
       toolKind: null,
       filePath: null,
+      rawInput: {},
+      reviewKind: 'permission',
       options: [],
     });
   });
