@@ -41,12 +41,17 @@ test("center Dialog 는 세 폭에서 스크림·폭 공식·수납을 지킨다
   // 실제 문서가 잡힐 때까지 기다린 뒤 연다.
   await page.goto("/ko/docs/", { waitUntil: "domcontentloaded" });
   const seedCta = page.getByRole("button", { name: "시작 시드 만들기" });
-  if (await seedCta.isVisible().catch(() => false)) {
+  const treeButton = page.getByRole("navigation", { name: "문서 목록" }).getByRole("button").first();
+  // ⚠️ `isVisible()` 은 **기다리지 않는다**. 예전에는 goto 직후 그것으로 CTA 를
+  // 물었는데, 아직 안 그려진 그 순간이면 false 가 나와 **클릭을 건너뛰고** 빈
+  // 폴더인 채로 트리를 30초 기다리다 죽었다(2026-08-21 CI 3회 재시도 전부 실패,
+  // 로컬 정적 빌드에서도 재현). 둘 중 무엇이든 먼저 나타날 때까지 기다린 뒤
+  // 판단한다 — 빈 폴더면 CTA, 이미 문서가 있으면 트리다.
+  await expect(seedCta.or(treeButton).first()).toBeVisible({ timeout: 30_000 });
+  if (await seedCta.isVisible()) {
     await seedCta.click();
   }
-  await expect(page.getByRole("navigation", { name: "문서 목록" }).getByRole("button").first()).toBeVisible({
-    timeout: 30_000,
-  });
+  await expect(treeButton).toBeVisible({ timeout: 30_000 });
   await page.getByTestId("docs-sidebar-new-doc").click();
   const dialog = page.getByRole("dialog");
   await expect(dialog, `pageerrors: ${pageErrors.join(" | ") || "(none)"}`).toBeVisible();
