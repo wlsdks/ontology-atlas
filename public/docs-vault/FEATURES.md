@@ -1,7 +1,7 @@
 # FEATURES — ontology-atlas
 
 > Complete inventory of features users can **actually use right now**.
-> Last updated: 2026-08-21 (지금 있는 라우트, 설치한 앱이 지키기로 한 약속,
+> Last updated: 2026-08-22 (지금 있는 라우트, 설치한 앱이 지키기로 한 약속,
 > 프로젝트가 무엇을 뜻하는지 확정한 기록(project meaning receipt)을 다시
 > 확인했다 — `/ontology` 는 `/topology?index=expanded` 로, `/ontology/edit` 과
 > `/ontology/studio` 는 지도 안 contextual writer로 보내는 호환 redirect 이고, Insights 는
@@ -314,6 +314,8 @@ Both routes render the same `HomePage` (R3 keep-both decision: `/` = home/back-l
 
 #### 에이전트 패널 — 처음 무슨 말을 걸지부터 다음 할 일까지 (2026-07-27, 데스크톱 앱 전용)
 - 화면 위쪽 도구 줄의 **「에이전트」** 버튼을 누르면 지도 오른쪽에 세로로 긴 패널이 열린다. 패널이 열리면 지도와 노드 정보 칸이 함께 밀려나며 폭을 다시 잡는다. 데스크톱 앱에서만 쓸 수 있다 — 브라우저에는 API 키를 안전하게 둘 곳도, 요청을 보낼 경로도 없어서, 눌러도 아무 일이 일어나지 않을 버튼은 아예 그리지 않는다
+- 에이전트 패널이 열리는 동안 왼쪽 INDEX는 저장된 기본 상태를 바꾸지 않고 잠시 접혀 지도 폭을 내준다. 대화를 닫으면 원래 INDEX 선호가 복구되고, 접힌 INDEX 탭을 직접 열면 에이전트 패널이 닫혀 두 보조 패널이 동시에 지도를 압축하지 않는다
+- 사용자의 말 한 차례에서 생긴 생각 조각과 도구 호출은 기본 접힌 **「작업 과정 · N단계」** 한 줄로 모인다. 실행 중에는 인디고 점과 단계 수만 갱신하고, 에이전트 답변은 별도 본문으로 읽힌다. 필요할 때 펼치면 기존 순서와 대상 노드를 모두 볼 수 있고, 생각의 Markdown도 실제 굵게·코드·목록으로 렌더된다
 - **처음 걸 말 3개** (`buildFirstWords`) — 대화가 비어 있을 때, 이 폴더의 실제 상태에서 뽑은 문장이 최대 3개 뜬다: ① 지금 보고 있는 개념에서 가장 크게 빠진 것 ② 「할 일」 목록이 첫 번째로 지목한 개념(판정에 쓰는 함수는 같은 `detectMeaningGaps`) ③ 언제나 뜨는 「이 지도에서 지금 제일 이상한 곳이 어디야?」
 - **이 문장을 만들 때 모델 호출은 0이다** — 이 문장들은 사용자가 [보내기]를 누르기 *전에* 이미 화면에 그려진다. 그러니 문장을 만들려고 밖으로 요청을 보내면 그것은 동의 없는 전송이고, 사용자 본인이 내는 API 요금(BYOK)을 허락 없이 쓰는 일이다. 문장을 만드는 코드는 순수 함수라서 전송 코드를 아예 import 하지 않는다 (`tests/contract/agent-first-words-local.contract.test.ts`)
 - **누르면 입력칸에 채워질 뿐, 보내지지 않는다** — 누르면 그 문장이 입력칸에 들어가고 전체 선택 + 포커스가 된다. 고쳐서 보내도 되고 지워도 된다. 눌러도 그 버튼은 사라지지 않는다
@@ -329,6 +331,30 @@ Both routes render the same `HomePage` (R3 keep-both decision: `/` = home/back-l
 - **저장 전에 물어본다는 약속을, 정하는 화면에서 읽게 한다 (2026-07-28)** — "문서를 고칠 일이 생기면 바뀔 내용을 먼저 보여주고, 확인해야 저장돼요" 라는 문장이 API 키를 맡길지 정하는 화면과 동의를 묻는 시트 **양쪽 모두**에 나온다. 예전에는 제안 카드가 뜨기 전까지 화면 어디에도 이 말이 없었다
 - **"확인 안 된 말" 경고는 그 턴의 최종 답변에만 (2026-07-28)** — 도구를 부르기 전에 모델이 하는 중간 말("먼저 읽어볼게요")은 볼트 내용에 대한 주장이 아니다. 그래서 한 턴에 세 번씩 반복되던 최고 수위 경고를 한 번으로 줄였다
 - **실패했을 때 돌아갈 길 (2026-07-28)** — 실패 알림을 본문과 같은 무게로 그린다(예전에는 화면에서 가장 눈에 안 띄는 줄이었다). 그리고 방금 보낸 말을 입력칸에 다시 넣어 주는 버튼이 함께 붙는다 — 넣어 주기만 하고 보내지는 않는다
+
+#### Agent work visibility
+
+- 지도 utility lane의 상태 줄은 raw transport 이름을 그대로 노출하지 않는다.
+  감사용 `codex-mcp-client`/`codex-acp`는 로그에 보존하고 화면에서는 `Codex`로,
+  Claude/Cursor/기타는 각 제품·에이전트 이름으로 표시한다.
+- **fresh valid heartbeat만 live다.** live 상태는 planning/editing/verifying/blocked를
+  계획 중/편집 중/검증 중/승인 기다림으로 보여 준다. 성공 쓰기 로그만 최근이면
+  `변경 감지`, 작업이 닫혔으면 `마지막 작업`이므로 조용한 로그를 현재 실행으로
+  추측하지 않는다.
+- 상태 줄을 누르면 actor, phase, 요청 summary, 실재 target, next step, last tool을
+  먼저 보여 주고 작업 단위 알림 기록을 그 아래에 둔다. 알림은 종전처럼 task와
+  구조 변화 단위로 집계하며 raw tool-call stream을 그리지 않는다. anchored surface는
+  오른쪽 지도 도구 열에서 `--chrome-tile-size + 8px`만큼 떨어져, 반투명 표면 뒤의
+  도구 아이콘이 작업 행과 섞이지 않는다.
+- 대상 링크는 `현재 대상:`/`마지막 변경:` 역할을 눈에 보이게 말하고
+  이미 지도 위에서는 `HomePage`의 node selection을 직접 갱신한다. route remount로
+  현재 볼트가 sample graph로 잠깐 바뀌지 않으며, 독립 소비처만
+  `/topology?mode=focus&p=…` fallback을 쓴다. heartbeat/tool input이 현재 볼트의
+  실재 slug를 밝힌 경우에만 기존 amber agent-focus ring을 그린다.
+- `created_by`는 query 가능한 provenance 데이터지만 검토 상태가 아니다. 따라서
+  사람 저작 INDEX lens와 red review ring은 없다. `vault-readme`는 Docs reader guide로
+  읽히지만 topology adapter, INDEX, canonical concept census, editor target에서는
+  제외된다.
 
 #### 어권별 노드 이름 (`display_<locale>`, 2026-07-24)
 - 한 노드에 언어마다 다른 이름을 달아 두는 기능이다. frontmatter 의 `display_ko` / `display_en` 에 적은 이름을 지도 라벨 · INDEX · 팝오버가 화면 언어에 맞춰 그린다. 그 언어의 이름이 없으면 다음 순서로 찾아 내려간다: `display_<화면 언어>` → `display` → `title`. 검색과 이름 대조는 언제나 `title` 전체를 쓴다 — 라벨을 붙였다고 검색되는 범위가 좁아지지는 않는다

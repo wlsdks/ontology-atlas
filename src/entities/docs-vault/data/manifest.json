@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-08-21",
+  "generatedAt": "2026-08-22",
   "docs": [
     {
       "slug": "AGENT-GRAPH-WORKFLOW",
@@ -473,9 +473,9 @@
       "tags": [],
       "frontmatter": {},
       "headings": [],
-      "excerpt": "Major change history. Code commit messages answer why; this file answers when / which surface changed. Focused on user-visible changes, not PR-level granularity. Newest at the top. Entries stay date-based; the app version reached v1.0.0 on 2026-07-27, so a release tag now carries the semver promise instead. 지도를 보다가 관계를",
-      "wordCount": 75201,
-      "updatedAt": "2026-08-21",
+      "excerpt": "Major change history. Code commit messages answer why; this file answers when / which surface changed. Focused on user-visible changes, not PR-level granularity. Newest at the top. Entries stay date-based; the app version reached v1.0.0 on 2026-07-27, so a release tag now carries the semver promise instead. 상단의 codex-m",
+      "wordCount": 75491,
+      "updatedAt": "2026-08-22",
       "linksOut": [
         "audits/CASE-STUDY-AGENTS-MD-DRIFT",
         "domains/catalog",
@@ -490,8 +490,8 @@
       "frontmatter": {},
       "headings": [],
       "excerpt": "이 파일은 결정과 그때 진 반대 의견을 남긴다. docs/CHANGELOG.md 는 무엇이 언제 바뀌었나를 답하고, 이 파일은 왜 그렇게 정했고, 무엇을 걸었나를 답한다. 최신이 위. 기록은 덧붙이기만 한다 — 지난 기록을 고치지 않는다. 판단이 바뀌었으면 새 기록을 쓰고 옛 기록을 뒤집힘 으로 표시한다. 틀린 기록도 자산이다. 1. 소집 전에 읽는다. 카운슬을 열기 전(그리고 단독 PO 패스를 쓰기 전) 같은 표면 · 같은 질문에 대한 선행 결정이 있는지 먼저 본다. 있으면 새 패스는 그것을 ① 여전히 유효하다고 인용하거나 ② 명시적으로 뒤집는다. 조용히 다시 결정",
-      "wordCount": 157905,
-      "updatedAt": "2026-08-21",
+      "wordCount": 158561,
+      "updatedAt": "2026-08-22",
       "linksOut": [
         "slug"
       ]
@@ -595,9 +595,9 @@
       "tags": [],
       "frontmatter": {},
       "headings": [],
-      "excerpt": "Complete inventory of features users can actually use right now. Last updated: 2026-08-21 (지금 있는 라우트, 설치한 앱이 지키기로 한 약속, 프로젝트가 무엇을 뜻하는지 확정한 기록(project meaning receipt)을 다시 확인했다 — /ontology 는 /topology?index=expanded 로, /ontology/edit 과 /ontology/studio 는 지도 안 contextual writer로 보내는 호환 redirect 이고, Insights 는 할 일 · 구성 · ",
-      "wordCount": 20196,
-      "updatedAt": "2026-08-21",
+      "excerpt": "Complete inventory of features users can actually use right now. Last updated: 2026-08-22 (지금 있는 라우트, 설치한 앱이 지키기로 한 약속, 프로젝트가 무엇을 뜻하는지 확정한 기록(project meaning receipt)을 다시 확인했다 — /ontology 는 /topology?index=expanded 로, /ontology/edit 과 /ontology/studio 는 지도 안 contextual writer로 보내는 호환 redirect 이고, Insights 는 할 일 · 구성 · ",
+      "wordCount": 20471,
+      "updatedAt": "2026-08-22",
       "linksOut": [
         "slug",
         "project:slug",
@@ -933,6 +933,29 @@
       "linksOut": [
         "ontology/elements/agents-destination"
       ]
+    },
+    {
+      "slug": "ontology/capabilities/agent-work-visibility",
+      "path": "docs/ontology/capabilities/agent-work-visibility.md",
+      "title": "Agent Work Visibility",
+      "tags": [],
+      "frontmatter": {
+        "uid": "12dfb05e-c76a-4d1c-b24d-e4c80db2be04",
+        "slug": "capabilities/agent-work-visibility",
+        "kind": "capability",
+        "title": "Agent Work Visibility",
+        "display_ko": "에이전트 작업 가시화",
+        "display_en": "Agent Work Visibility",
+        "domain": "domains/agent-integration",
+        "elements": [],
+        "path": "src/features/agent-activity",
+        "created_by": "agent:unknown"
+      },
+      "headings": [],
+      "excerpt": "사람이 지도에서 AI 에이전트의 제품명, 검증된 현재 단계, 작업 목표와 대상, 다음 행동을 한 흐름으로 판독하는 능력. fresh heartbeat가 있을 때만 계획·편집·검증·승인 대기를 현재형으로 말하고, 쓰기 로그만 최근이면 작업 중이라고 추측하지 않고 변경 감지 또는 마지막 작업으로 구분한다. 화면은 codex-mcp-client·codex-acp 같은 감사용 client/runtime ID를 Codex·Claude Code 같은 사람용 제품명으로 바꾸지만, 원본 로그와 heartbeat 값은 그대로 보존한다. 지도 상태 줄뿐 아니라 전역 레일과 상세 act",
+      "wordCount": 353,
+      "updatedAt": "2026-08-22",
+      "linksOut": []
     },
     {
       "slug": "ontology/capabilities/app-update",
@@ -1543,6 +1566,7 @@
         "display_en": "AI Agent Integration",
         "capabilities": [
           "capabilities/acp-runtime",
+          "capabilities/agent-work-visibility",
           "capabilities/cli-developer-entry",
           "capabilities/mcp-server",
           "capabilities/vault-agent"
@@ -1553,13 +1577,14 @@
         ],
         "created_by": "human",
         "relation_notes": {
-          "capabilities/acp-runtime": "Agent integration owns launching the user's already-installed coding agent inside the app over ACP with an isolated config and a vault-scoped permission gate."
+          "capabilities/acp-runtime": "Agent integration owns launching the user's already-installed coding agent inside the app over ACP with an isolated config and a vault-scoped permission gate.",
+          "capabilities/agent-work-visibility": "Agent integration owns the human-visible projection of current and recent AI-agent work across ACP heartbeats and vault activity logs."
         }
       },
       "headings": [],
       "excerpt": "AI 코딩 에이전트(Claude Code, Codex, Cursor)와 개발자가 사람과 같은 온톨로지 볼트를 읽고 쓸 수 있게 하는 표면들: MCP 서버, 터미널 CLI, 앱 내 connect 플로우, 그리고 사용자가 이미 설치해 둔 코딩 에이전트를 앱이 직접 띄우는 ACP 실행기 층. README.md: \"Your agent reads and maintains it over MCP... one button writes your agent's config and proves the connection.\" mcp/src/index.js · mcp/src/tool-inv",
       "wordCount": 213,
-      "updatedAt": "2026-08-21",
+      "updatedAt": "2026-08-22",
       "linksOut": []
     },
     {
@@ -3421,6 +3446,11 @@
         "linkText": "domains/agent-integration"
       },
       {
+        "fromSlug": "ontology/capabilities/agent-work-visibility",
+        "context": "frontmatter · **[domains/agent-integration]**",
+        "linkText": "domains/agent-integration"
+      },
+      {
         "fromSlug": "ontology/capabilities/cli-developer-entry",
         "context": "frontmatter · **[domains/agent-integration]**",
         "linkText": "domains/agent-integration"
@@ -4133,6 +4163,13 @@
         "fromSlug": "ontology/domains/agent-integration",
         "context": "frontmatter · **[capabilities/acp-runtime]**",
         "linkText": "capabilities/acp-runtime"
+      }
+    ],
+    "ontology/capabilities/agent-work-visibility": [
+      {
+        "fromSlug": "ontology/domains/agent-integration",
+        "context": "frontmatter · **[capabilities/agent-work-visibility]**",
+        "linkText": "capabilities/agent-work-visibility"
       }
     ],
     "ontology/capabilities/cli-developer-entry": [
@@ -4904,6 +4941,13 @@
                 "type": "doc",
                 "slug": "ontology/capabilities/acp-runtime",
                 "title": "In-App Coding Agent Runtime (ACP)"
+              },
+              {
+                "name": "agent-work-visibility",
+                "path": "ontology/capabilities/agent-work-visibility",
+                "type": "doc",
+                "slug": "ontology/capabilities/agent-work-visibility",
+                "title": "Agent Work Visibility"
               },
               {
                 "name": "app-update",
