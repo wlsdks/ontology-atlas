@@ -25,23 +25,34 @@ const ROOT = process.cwd();
 const E2E_DIR = join(ROOT, 'tests', 'e2e');
 const workflow = readFileSync(join(ROOT, '.github', 'workflows', 'e2e.yml'), 'utf8');
 
-/** `run:` 블록 하나하나를 한 줄로 눌러 돌려준다 — 주석은 여기 못 들어온다. */
-function runBlocks(source: string): string[] {
-  const blocks: string[] = [];
+/**
+ * `run:` 블록 하나하나를 {접힌 한 줄, 연속 줄 들여쓰기 목록} 으로 돌려준다 —
+ * 주석은 여기 못 들어온다.
+ *
+ * 들여쓰기를 같이 돌려주는 이유(#1178 첫 런 실측): 접힘 스칼라(>-) 안에서
+ * **더 들여쓴 연속 줄은 접히지 않고 literal 줄로 남는다.** 이 파서는 전부
+ * 이어 붙이므로 그 함정을 못 보고 초록을 줬고, 실제 러너에서는 스크립트가
+ * 두 줄이 되어 1줄이 샤드 없이 전체를 돌고 2줄이 exit 127 로 죽었다.
+ * 그래서 «내용» 단언과 별개로 «모양»(균일 들여쓰기)을 단언한다.
+ */
+function runBlocks(source: string): { text: string; indents: number[] }[] {
+  const blocks: { text: string; indents: number[] }[] = [];
   const lines = source.split('\n');
   for (let i = 0; i < lines.length; i += 1) {
     const match = /^(\s*)run:\s*(.*)$/.exec(lines[i]);
     if (!match) continue;
     const [, indent, inline] = match;
     const body: string[] = inline && !['|', '>-', '>', '|-'].includes(inline.trim()) ? [inline] : [];
+    const indents: number[] = [];
     for (let j = i + 1; j < lines.length; j += 1) {
       const line = lines[j];
       if (line.trim() === '') continue;
       const lineIndent = line.length - line.trimStart().length;
       if (lineIndent <= indent.length) break;
       body.push(line.trim());
+      indents.push(lineIndent);
     }
-    blocks.push(body.join(' '));
+    blocks.push({ text: body.join(' '), indents });
   }
   return blocks;
 }
@@ -94,20 +105,43 @@ describe('Playwright 프로젝트가 그 목록에서 나온다', () => {
 
 describe('워크플로 분기가 살아 있다', () => {
   const blocks = runBlocks(workflow);
-  const suiteBlocks = blocks.filter((b) => b.includes('--shard='));
+  const suiteBlocks = blocks.filter((b) => b.text.includes('--shard='));
 
   it('샤드 실행 블록을 실제로 찾았다 — 빈 집합 위의 초록이 아니다', () => {
     expect(suiteBlocks.length, 'e2e.yml 에서 --shard 실행 블록을 못 찾았다').toBeGreaterThan(0);
   });
 
-  it('PR 은 smoke 프로젝트만, e2e 인프라 변경과 push 는 전부 돈다', () => {
+  it('PR 은 smoke 프로젝트만 돈다 — 선택 변수와 그 정의가 둘 다 있다', () => {
     for (const block of suiteBlocks) {
-      // GitHub 표현식째로 본다 — run 블록 안에 있으니 주석이 만족시킬 수 없다.
-      expect(block, 'PR 분기(--project=smoke)가 지워졌다').toContain("'--project=smoke'");
-      expect(block, "pull_request 조건이 지워졌다").toContain("github.event_name == 'pull_request'");
-      expect(block, 'e2e 인프라 예외가 지워졌다 — 스펙을 고친 PR 이 자기 빨강을 못 본다').toContain(
-        "steps.setup.outputs.e2e != 'true'",
+      expect(block.text, '프로젝트 선택 변수가 명령에서 지워졌다').toContain(
+        '$PLAYWRIGHT_PROJECT_ARGS',
       );
+    }
+    // 변수의 정의(env) — GitHub 표현식째로 본다. 주석이 아니라 `KEY: 값` 꼴의
+    // 줄이어야 한다.
+    const envLine = workflow
+      .split('\n')
+      .find((line) => /^\s*PLAYWRIGHT_PROJECT_ARGS:/.test(line));
+    expect(envLine, 'PLAYWRIGHT_PROJECT_ARGS 정의(env)가 없다').toBeTruthy();
+    expect(envLine!, 'PR 분기(--project=smoke)가 지워졌다').toContain("'--project=smoke'");
+    expect(envLine!, 'pull_request 조건이 지워졌다').toContain(
+      "github.event_name == 'pull_request'",
+    );
+    expect(envLine!, 'e2e 인프라 예외가 지워졌다 — 스펙을 고친 PR 이 자기 빨강을 못 본다').toContain(
+      "steps.setup.outputs.e2e != 'true'",
+    );
+  });
+
+  it('샤드 블록에 더 들여쓴 연속 줄이 없다 — 접힘 스칼라의 literal 함정', () => {
+    // #1178 첫 런이 정확히 이 모양으로 죽었다: 더 들여쓴 줄이 literal 로
+    // 남아 스크립트가 두 줄이 되고, 2줄 `--shard=…` 가 exit 127. 이 단언이
+    // 있으면 그 diff 는 CI 에 닿기 전에 여기서 빨갛다.
+    for (const block of suiteBlocks) {
+      expect(
+        new Set(block.indents).size,
+        `샤드 실행 블록의 연속 줄 들여쓰기가 균일하지 않다(${block.indents.join(',')}) — ` +
+          'YAML 접힘에서 더 들여쓴 줄은 별도의 literal 줄이 된다',
+      ).toBeLessThanOrEqual(1);
     }
   });
 });

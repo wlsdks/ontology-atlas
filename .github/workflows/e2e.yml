@@ -188,15 +188,19 @@ jobs:
 
       # PR 은 PR 게이트(smoke)만 — 단 e2e 인프라 자체를 고친 PR 과 main
       # 푸시는 프로젝트 필터 없이 전부(smoke + post-merge) 돈다.
+      #
+      # ⚠️ 프로젝트 선택은 run 이 아니라 env 에 있다. 처음엔 run 의 접힘
+      # 스칼라(>-) 안에 표현식을 두 줄로 적었는데, **더 들여쓴 연속 줄은
+      # 접히지 않고 literal 줄로 남는** YAML 규칙 때문에 스크립트가 두 줄이
+      # 됐다 — 1줄이 샤드 없이 전체를 돌리고 2줄 `--shard=…` 가 exit 127 로
+      # 죽어, 세 샤드가 각각 348개 전부를 27분씩 돌고도 빨갰다(#1178 첫 런
+      # 실측). env 값은 한 줄 표현식이라 이 함정이 없다.
       - name: Run Playwright suite (shard ${{ matrix.shard }}/3)
         if: steps.setup.outputs.browser == 'true'
-        run: >-
-          pnpm exec playwright test
-          ${{ (github.event_name == 'pull_request' && steps.setup.outputs.e2e != 'true')
-              && '--project=smoke' || '' }}
-          --shard=${{ matrix.shard }}/3
+        run: pnpm exec playwright test $PLAYWRIGHT_PROJECT_ARGS --shard=${{ matrix.shard }}/3
         env:
           CI: true
+          PLAYWRIGHT_PROJECT_ARGS: ${{ (github.event_name == 'pull_request' && steps.setup.outputs.e2e != 'true') && '--project=smoke' || '' }}
 
       - name: Skip note
         if: steps.setup.outputs.browser != 'true'
