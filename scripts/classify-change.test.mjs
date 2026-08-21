@@ -110,6 +110,26 @@ test("decide — 계기가 살아 있다: 진짜 산문 변경은 여전히 빠�
   );
 });
 
+/*
+ * e2e — 스펙이나 Playwright 설정을 고친 PR 은 **그 PR 에서** 전체 스위트를
+ * 본다. 머지 후 스위프로 미룬 스펙(post-merge 프로젝트)을 고치면서 자기
+ * 빨강을 못 보는 구멍을 막는 출력이다.
+ */
+test("classify — e2e 인프라 변경은 e2e=true, 그 밖은 false", () => {
+  assert.equal(classify(["tests/e2e/nav-yield-map-frames.spec.ts"]).e2e, true);
+  assert.equal(classify(["playwright.config.ts"]).e2e, true);
+  // 렌더 코드는 browser=true 지만 e2e 인프라는 아니다 — PR 게이트(smoke)로 충분.
+  assert.equal(classify(["src/app/providers.tsx"]).e2e, false);
+  assert.equal(classify(["tests/contract/po-council.contract.test.ts"]).e2e, false);
+});
+
+test("decide — 비교 불가면 e2e 도 전부 돌린다 (생략과 통과를 섞지 않는다)", () => {
+  const sha = "b85e4eaa9c0ffee0000000000000000000000000";
+  assert.equal(decide({ base: sha, head: sha, files: [] }).e2e, true);
+  assert.equal(decide({ base: null, head: "abc", files: [] }).e2e, true);
+  assert.equal(decide({ base: "aaa", head: "bbb", files: ["README.md"] }).e2e, false);
+});
+
 function pick({ runtime, browser }) {
   return { runtime, browser };
 }
