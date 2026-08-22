@@ -17,6 +17,16 @@ export interface AgentWorkProjection {
   updatedAt: number | null;
 }
 
+/** 인앱 ACP가 이미 관측한 현재 상태. sidecar 폴링보다 먼저 도착하는 세션 메모리다. */
+export interface AgentLiveWorkInput {
+  rawAgentName: string | null;
+  phase: Exclude<AgentActivityState, 'complete'>;
+  summary: string | null;
+  targetSlug: string | null;
+  lastTool: string | null;
+  updatedAt: number;
+}
+
 const IDLE: AgentWorkProjection = {
   mode: 'idle',
   agentName: null,
@@ -39,7 +49,22 @@ export function deriveAgentWorkProjection(
   status: AgentActivityStatus | null | undefined,
   sessions: readonly AgentWorkSession[],
   _nowMs: number,
+  liveWork: AgentLiveWorkInput | null = null,
 ): AgentWorkProjection {
+  if (liveWork) {
+    return {
+      mode: 'live',
+      agentName: agentDisplayName(liveWork.rawAgentName),
+      rawAgentName: liveWork.rawAgentName,
+      phase: liveWork.phase,
+      summary: liveWork.summary,
+      targetSlug: liveWork.targetSlug,
+      files: [],
+      nextStep: null,
+      lastTool: liveWork.lastTool,
+      updatedAt: liveWork.updatedAt,
+    };
+  }
   const beat = status?.valid && !status.stale ? status.heartbeat : null;
   const last = sessions[sessions.length - 1] ?? null;
 

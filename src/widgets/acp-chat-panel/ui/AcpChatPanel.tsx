@@ -29,6 +29,12 @@ import {
   snapScrollTop,
 } from '@/shared/lib/composer-growth';
 import { cn } from '@/shared/lib/cn';
+import { MOTION } from '@/shared/motion';
+import { usePrefersReducedMotion } from '@/shared/lib/use-prefers-reduced-motion';
+import {
+  buildOntologyChangeSet,
+  type OntologyChangeSet,
+} from '@/entities/knowledge-graph';
 import { useRowDisclosure } from '@/shared/lib/use-row-disclosure';
 import { useAcpSession, type AcpEvent } from '@/features/acp-session/model/use-acp-session';
 import { readAcpTrouble } from '@/features/acp-session/model/acp-trouble';
@@ -120,6 +126,37 @@ const WORK_MARKDOWN = [
 const SLASH_MENU_LIMIT = 8;
 const EMPTY_KNOWN_SLUGS: ReadonlySet<string> = new Set();
 
+/** 지도에 그릴 수 있는 단일 ACP 관계 변경안. vault slug는 Home이 실제 node id로 해석한다. */
+export interface AcpOntologyRelationPreview {
+  sourceSlug: string;
+  targetSlug: string;
+  relationType: string;
+  phase: 'draft' | 'committing';
+}
+
+function relationPreviewForChangeSet(
+  changeSet: OntologyChangeSet | null,
+  phase: AcpOntologyRelationPreview['phase'],
+): AcpOntologyRelationPreview | null {
+  const relation = changeSet?.relation;
+  // 배치는 한 줄로 축약하지 않는다. 첫 항목만 보여 주면 나머지를 숨긴 승인이다.
+  if (
+    !changeSet ||
+    changeSet.operation !== 'relate' ||
+    !changeSet.exact ||
+    changeSet.itemCount !== 1 ||
+    !relation
+  ) {
+    return null;
+  }
+  return {
+    sourceSlug: relation.from,
+    targetSlug: relation.to,
+    relationType: relation.type,
+    phase,
+  };
+}
+
 export function AcpChatPanel({
   runtimeId,
   runtimeLabel,
@@ -132,6 +169,7 @@ export function AcpChatPanel({
   knownSlugs,
   onHoverSlug,
   onTurnActivityChange,
+  onOntologyRelationPreviewChange,
   onClose,
 }: {
   runtimeId: string;
@@ -174,9 +212,12 @@ export function AcpChatPanel({
   onHoverSlug?: (slug: string | null) => void;
   /** 한 차례의 관측 가능한 단계·목표·대상. 끝나거나 닫히면 `null`. */
   onTurnActivityChange?: (activity: AcpTurnActivity | null) => void;
+  /** 승인 전 점선, 승인 후 해당 ACP 도구가 끝날 때까지 실선인 단일 관계 변경안. */
+  onOntologyRelationPreviewChange?: (preview: AcpOntologyRelationPreview | null) => void;
   onClose?: () => void;
 }) {
   const t = useTranslations('acpChat');
+  const reducedMotion = usePrefersReducedMotion();
   const {
     status,
     events,
@@ -185,6 +226,7 @@ export function AcpChatPanel({
     diagnostics,
     download,
     pending,
+    approvedOntologyWrite,
     sessions,
     choices,
     chooseModel,
@@ -193,7 +235,59 @@ export function AcpChatPanel({
     send,
     cancel,
     switchSession,
-  } = useAcpSession({ runtimeId, vaultRoot, mcpServers });
+  } = useAcpSession({
+    runtimeId,
+    vaultRoot,
+    mcpServers,
+    approvalSettleMs: reducedMotion ? 0 : MOTION.settle.duration * 1000,
+  });
+  const pendingChangeSet = useMemo(
+    () =>
+      pending?.request.reviewKind === 'ontology-write' && pending.request.toolName
+        ? buildOntologyChangeSet(pending.request.toolName, pending.request.rawInput)
+        : null,
+    [pending],
+  );
+  const approvedChangeSet = useMemo(
+    () =>
+      approvedOntologyWrite?.toolName
+        ? buildOntologyChangeSet(approvedOntologyWrite.toolName, approvedOntologyWrite.rawInput)
+        : null,
+    [approvedOntologyWrite],
+  );
+  const relationPreview = useMemo(
+    () =>
+      approvedOntologyWrite
+        ? relationPreviewForChangeSet(approvedChangeSet, 'committing')
+        : relationPreviewForChangeSet(pendingChangeSet, 'draft'),
+    [approvedChangeSet, approvedOntologyWrite, pendingChangeSet],
+  );
+  const previewSourceSlug = relationPreview?.sourceSlug ?? null;
+  const previewTargetSlug = relationPreview?.targetSlug ?? null;
+  const previewRelationType = relationPreview?.relationType ?? null;
+  const previewPhase = relationPreview?.phase ?? null;
+  useEffect(() => {
+    onOntologyRelationPreviewChange?.(
+      previewSourceSlug && previewTargetSlug && previewRelationType && previewPhase
+        ? {
+            sourceSlug: previewSourceSlug,
+            targetSlug: previewTargetSlug,
+            relationType: previewRelationType,
+            phase: previewPhase,
+          }
+        : null,
+    );
+  }, [
+    onOntologyRelationPreviewChange,
+    previewPhase,
+    previewRelationType,
+    previewSourceSlug,
+    previewTargetSlug,
+  ]);
+  useEffect(
+    () => () => onOntologyRelationPreviewChange?.(null),
+    [onOntologyRelationPreviewChange],
+  );
   const turnActivity = useMemo(
     () => deriveAcpTurnActivity(status, events, pending, knownSlugs ?? EMPTY_KNOWN_SLUGS),
     [status, events, pending, knownSlugs],
@@ -325,9 +419,20 @@ export function AcpChatPanel({
   /*
    * 퇴장 애니메이션이 도는 동안에도 그릴 것이 있어야 한다 — `pending` 이
    * null 로 바뀌는 순간 내용이 사라지면 **빈 상자**가 사라지는 애니메이션을
-   * 하게 된다. 키는 요청의 파일 경로다(같은 카드인지 가르는 값).
+   * 하게 된다. 키는 ACP `toolCallId`가 우선이고, 없는 일반 요청만 파일 경로를
+   * 쓴다 — 경로가 없는 ontology write 둘을 같은 카드로 붙들면 안 된다.
    */
-  const pendingHeld = useHeldValue(pending, pending?.request.filePath ?? null);
+  const pendingHeld = useHeldValue(
+    pending,
+    pending?.request.toolCallId ?? pending?.request.filePath ?? null,
+  );
+  const pendingHeldChangeSet = useMemo(
+    () =>
+      pendingHeld?.request.reviewKind === 'ontology-write' && pendingHeld.request.toolName
+        ? buildOntologyChangeSet(pendingHeld.request.toolName, pendingHeld.request.rawInput)
+        : null,
+    [pendingHeld],
+  );
 
   useEffect(() => {
     void start();
@@ -838,7 +943,9 @@ export function AcpChatPanel({
         손이 이미 가 있는 자리에서 태어나야 한다.
       */}
       <Surface open={Boolean(pending)} origin="bottom center" motion="overlay">
-        {pendingHeld ? <AcpPermissionCard pending={pendingHeld} /> : null}
+        {pendingHeld ? (
+          <AcpPermissionCard pending={pendingHeld} changeSet={pendingHeldChangeSet} />
+        ) : null}
       </Surface>
 
       {/*

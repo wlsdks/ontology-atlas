@@ -446,8 +446,14 @@ describe('toPermissionRequest — 제목이 아니라 경로를 본다', () => {
         { kind: 'reject_once' }, // optionId 없음 — 못 쓴다
         { optionId: 'x' }, // kind 없음 — 못 쓴다
       ],
-      toolCall: { title: 'Write notes.md', kind: 'edit', rawInput: { file_path: '/vault/notes.md' } },
+      toolCall: {
+        toolCallId: 'tool-write-notes',
+        title: 'Write notes.md',
+        kind: 'edit',
+        rawInput: { file_path: '/vault/notes.md' },
+      },
     });
+    expect(parsed.toolCallId).toBe('tool-write-notes');
     expect(parsed.filePath).toBe('/vault/notes.md');
     expect(parsed.toolKind).toBe('edit');
     expect(parsed.rawInput).toEqual({ file_path: '/vault/notes.md' });
@@ -458,6 +464,7 @@ describe('toPermissionRequest — 제목이 아니라 경로를 본다', () => {
   it('모양이 달라도 터지지 않는다 — 어댑터가 바뀌어도 대화가 죽지 않아야 한다', () => {
     expect(toPermissionRequest({})).toEqual({
       title: null,
+      toolCallId: null,
       // 도구 이름도 모르면 null 이다 — MCP 도구 자동 허용 판정이 이 값을 본다.
       toolName: null,
       toolKind: null,

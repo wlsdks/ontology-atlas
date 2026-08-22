@@ -1,4 +1,5 @@
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import type { ComponentProps } from 'react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 /**
@@ -66,7 +67,10 @@ vi.mock('next-intl', () => ({
     values ? `${key}:${JSON.stringify(values)}` : key,
 }));
 
-import { AcpChatPanel } from './AcpChatPanel';
+import {
+  AcpChatPanel,
+  type AcpOntologyRelationPreview,
+} from './AcpChatPanel';
 
 /** 에이전트가 한 줄 보낸다. */
 function emit(payload: unknown) {
@@ -84,13 +88,16 @@ function replyTo(method: string, result: unknown) {
  * 꽂았을 때」만 켜진다(2026-08-16) — 안 넘기면 그 갈래가 아예 없는 세션을
  * 재게 되고, 그건 실제 앱과 다른 것을 재는 것이다.
  */
-async function bootSession() {
+async function bootSession(
+  props: Partial<ComponentProps<typeof AcpChatPanel>> = {},
+) {
   render(
     <AcpChatPanel
       runtimeId="claude-acp"
       runtimeLabel="Claude Code"
       vaultRoot="/vault"
       mcpServers={[{ name: 'atlas-vault' }]}
+      {...props}
     />,
   );
   await waitFor(() => expect(bridge.sent.some((m) => m.method === 'initialize')).toBe(true));
@@ -286,6 +293,128 @@ describe('대화 패널 — 권한 카드가 실제로 막는다', () => {
       },
     };
   }
+
+  it('단일 관계 변경안을 지도에 즉시 내보내고 승인부터 도구 완료까지 실선 단계로 잇는다', async () => {
+    const previews: Array<{
+      sourceSlug: string;
+      targetSlug: string;
+      relationType: string;
+      phase: 'draft' | 'committing';
+    } | null> = [];
+    await bootSession({
+      onOntologyRelationPreviewChange: (preview) => previews.push(preview),
+    });
+    fireEvent.change(screen.getByRole('textbox'), { target: { value: '관계를 추가해줘' } });
+    fireEvent.click(screen.getByTestId('acp-chat-send'));
+    await waitFor(() =>
+      expect(screen.getByTestId('acp-chat-panel')).toHaveAttribute('data-acp-status', 'thinking'),
+    );
+
+    const rawInput = {
+      from: 'capabilities/contextual-editing',
+      to: 'domains/graph-modeling',
+      type: 'depends_on',
+      why: '지도 안 쓰기 흐름이 graph modeling 계약을 따른다.',
+    };
+    emit({
+      jsonrpc: '2.0',
+      method: 'session/update',
+      params: {
+        update: {
+          sessionUpdate: 'tool_call',
+          toolCallId: 'tc9',
+          title: 'mcp__atlas-vault__add_relation',
+          kind: 'other',
+          status: 'pending',
+          rawInput,
+        },
+      },
+    });
+    emit(mcpPermissionRequest('mcp__atlas-vault__add_relation', 89, rawInput));
+
+    await waitFor(() =>
+      expect(previews.at(-1)).toEqual({
+        sourceSlug: 'capabilities/contextual-editing',
+        targetSlug: 'domains/graph-modeling',
+        relationType: 'depends_on',
+        phase: 'draft',
+      }),
+    );
+
+    fireEvent.click(screen.getByTestId('acp-permission-allow'));
+    await waitFor(() =>
+      expect(previews.at(-1)).toEqual({
+        sourceSlug: 'capabilities/contextual-editing',
+        targetSlug: 'domains/graph-modeling',
+        relationType: 'depends_on',
+        phase: 'committing',
+      }),
+    );
+    await new Promise((resolve) => window.setTimeout(resolve, 80));
+    expect(
+      answerFor(89),
+      '확정 모션이 끝나기 전에 ACP 도구를 진행하면 빠른 쓰기에서 실선이 보이지 않는다',
+    ).toBeUndefined();
+    await waitFor(() =>
+      expect(answerFor(89)).toEqual({ outcome: 'selected', optionId: 'allow' }),
+    );
+
+    emit({
+      jsonrpc: '2.0',
+      method: 'session/update',
+      params: {
+        update: { sessionUpdate: 'tool_call_update', toolCallId: 'some-other-tool', status: 'completed' },
+      },
+    });
+    await waitFor(() => expect(previews.at(-1)?.phase).toBe('committing'));
+
+    emit({
+      jsonrpc: '2.0',
+      method: 'session/update',
+      params: {
+        update: { sessionUpdate: 'tool_call_update', toolCallId: 'tc9', status: 'completed' },
+      },
+    });
+    await waitFor(() => expect(previews.at(-1)).toBeNull());
+  });
+
+  it('관계 변경을 거절하면 실선 단계 없이 지도 변경안을 즉시 거둔다', async () => {
+    const previews: Array<AcpOntologyRelationPreview | null> = [];
+    await bootSession({
+      onOntologyRelationPreviewChange: (preview) => previews.push(preview),
+    });
+    emit(
+      mcpPermissionRequest('mcp__atlas-vault__add_relation', 91, {
+        from: 'capabilities/contextual-editing',
+        to: 'domains/graph-modeling',
+        type: 'depends_on',
+      }),
+    );
+    await waitFor(() => expect(previews.at(-1)?.phase).toBe('draft'));
+
+    fireEvent.click(screen.getByTestId('acp-permission-reject'));
+
+    await waitFor(() => expect(previews.at(-1)).toBeNull());
+    expect(previews.some((preview) => preview?.phase === 'committing')).toBe(false);
+    expect(answerFor(91)).toEqual({ outcome: 'selected', optionId: 'reject' });
+  });
+
+  it('여러 관계 요청의 첫 항목만 골라 지도에 내보내지 않는다', async () => {
+    const previews: Array<unknown> = [];
+    await bootSession({
+      onOntologyRelationPreviewChange: (preview) => previews.push(preview),
+    });
+    emit(
+      mcpPermissionRequest('mcp__atlas-vault__add_relations', 90, {
+        relations: [
+          { from: 'capabilities/a', to: 'domains/one', type: 'depends_on' },
+          { from: 'capabilities/a', to: 'domains/two', type: 'depends_on' },
+        ],
+      }),
+    );
+    await waitFor(() => expect(screen.getByTestId('acp-permission-card')).toBeInTheDocument());
+    expect(previews.filter(Boolean)).toHaveLength(0);
+  });
 
   it('우리가 꽂아 준 볼트의 읽기 도구는 경로가 없어도 막지 않는다', async () => {
     await bootSession();

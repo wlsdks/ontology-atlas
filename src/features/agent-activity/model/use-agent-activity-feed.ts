@@ -38,6 +38,7 @@ import {
 } from '@/shared/lib/appearance-preferences';
 import {
   deriveAgentWorkProjection,
+  type AgentLiveWorkInput,
   type AgentWorkProjection,
 } from './agent-work-projection';
 
@@ -117,7 +118,7 @@ export interface AgentActivityFeed {
   markAllRead: () => void;
 }
 
-export function useAgentActivityFeed(): AgentActivityFeed {
+export function useAgentActivityFeed(liveWork: AgentLiveWorkInput | null = null): AgentActivityFeed {
   const { agentActivityLog, agentActivityStatus, manifest, status } = useLocalVault();
   const locale = useLocale();
   const statusEnabled = useAgentActivityStatusEnabled();
@@ -148,8 +149,8 @@ export function useAgentActivityFeed(): AgentActivityFeed {
     [agentActivityLog, nowMs],
   );
   const work = useMemo(
-    () => deriveAgentWorkProjection(agentActivityStatus, sessions, nowMs),
-    [agentActivityStatus, sessions, nowMs],
+    () => deriveAgentWorkProjection(agentActivityStatus, sessions, nowMs, liveWork),
+    [agentActivityStatus, liveWork, sessions, nowMs],
   );
   const last = sessions[sessions.length - 1] ?? null;
   const busy = Boolean(activeSession(sessions));

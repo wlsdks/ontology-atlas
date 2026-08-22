@@ -171,6 +171,8 @@ function normalizeFolder(value: unknown): string | null {
 export interface AcpPermissionRequest {
   /** 사람이 읽는 한 줄. 어댑터가 준 그대로. */
   title: string | null;
+  /** 같은 도구의 진행·완료 갱신과 이 결정을 잇는 ACP 식별자. */
+  toolCallId: string | null;
   /**
    * 부른 도구의 **식별자**(`mcp__atlas-vault__add_concept` 같은). 정책이 이걸
    * 본다 — MCP 도구 호출에는 파일 경로가 없기 때문이다.
@@ -683,6 +685,7 @@ export function toPermissionRequest(params: Record<string, unknown>): AcpPermiss
   const rawOptions = Array.isArray(params.options) ? params.options : [];
   return {
     title: typeof toolCall.title === 'string' ? toolCall.title : null,
+    toolCallId: typeof toolCall.toolCallId === 'string' ? toolCall.toolCallId : null,
     toolName: readToolName(params),
     toolKind: typeof toolCall.kind === 'string' ? toolCall.kind : null,
     // 제목이 아니라 이 값으로 판정한다 — 제목은 볼트 안이면 상대 경로,

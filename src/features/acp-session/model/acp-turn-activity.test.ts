@@ -30,6 +30,7 @@ describe('deriveAcpTurnActivity', () => {
     const pending = {
       request: {
         title: null,
+        toolCallId: 'tool-relation',
         toolName: 'mcp__atlas-vault__add_relation',
         toolKind: 'write',
         filePath: null,

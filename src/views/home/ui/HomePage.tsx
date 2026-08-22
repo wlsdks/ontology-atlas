@@ -7,7 +7,12 @@ import { detectAcpRuntimes, isAcpBridgeAvailable } from "@/shared/lib/tauri-acp"
 import { subscribeAgentChatIntent } from "@/shared/lib/agent-chat-intent";
 import { isGuardedRuntime } from "@/features/acp-session/model/runtime-gate";
 import { agentChatDoor } from "../model/agent-chat-door";
-import { AcpChatPanel, AcpChatResizeHandle, useChatWidth } from "@/widgets/acp-chat-panel";
+import {
+  AcpChatPanel,
+  AcpChatResizeHandle,
+  useChatWidth,
+  type AcpOntologyRelationPreview,
+} from "@/widgets/acp-chat-panel";
 import { vaultMcpServers, vaultSelfReadSlot } from "@/features/acp-session/model/vault-mcp-server";
 import { useChatSuggestions } from "@/features/acp-session/model/use-chat-suggestions";
 import type { AcpTurnActivity } from "@/features/acp-session/model/acp-turn-activity";
@@ -229,7 +234,10 @@ import {
   resolveTopologyPathChipState,
 } from "../lib/topology-path-chip-state";
 import { shouldSuppressGlobalShortcuts } from "../lib/blocking-surface";
-import { resolveAgentFocusNodeId } from "../lib/resolve-agent-focus-node";
+import {
+  resolveAgentFocusNodeId,
+  resolveOntologyRelationPreview,
+} from "../lib/resolve-agent-focus-node";
 import { resolveTopologyNodeEditTarget } from "../lib/topology-node-edit";
 import { computeCanonicalCensus } from "@/shared/lib/ontology-tree/canonical-census";
 import {
@@ -319,7 +327,10 @@ import { createVaultFilePastTrailStore, type PastTrailStore } from "../lib/past-
 import { verifyHandlePermission } from "@/entities/local-fs-handle";
 import { TopologyInsightsReturnChip } from "./TopologyInsightsReturnChip";
 import { TopologyRelationLegend } from "./TopologyRelationLegend";
-import { AgentActivityChip } from "@/features/agent-activity";
+import {
+  AgentActivityChip,
+  type AgentLiveWorkInput,
+} from "@/features/agent-activity";
 import { FrameMeter } from "@/shared/ui/frame-meter";
 import { TopologyChangeAnnouncement } from "./TopologyChangeAnnouncement";
 import { TopologyNoMatchesState } from "./TopologyNoMatchesState";
@@ -1025,6 +1036,12 @@ function HomePageImpl() {
       : null,
   );
   const [meaningPreview, setMeaningPreview] = useState<MeaningEditorPreview | null>(null);
+  const [acpRelationPreview, setAcpRelationPreview] =
+    useState<AcpOntologyRelationPreview | null>(null);
+  const [acpTurnActivityFrame, setAcpTurnActivityFrame] = useState<{
+    activity: AcpTurnActivity;
+    at: number;
+  } | null>(null);
   const meaningEditorSource = useMemo(() => {
     if (!selectedOntologyNode || !nodeEditTarget) return null;
     return {
@@ -1148,13 +1165,28 @@ function HomePageImpl() {
     agentActivityStatus?.heartbeat && agentActivityStatus.valid && !agentActivityStatus.stale,
   );
   const agentFocusNodeId = useMemo(() => {
+    // 인앱 ACP가 한 차례를 진행 중이면 그것이 현재다. 대상이 아직 없을 때도
+    // 이전 sidecar 대상에 되돌아가면 거짓 포커스가 되므로 null을 그대로 존중한다.
+    if (acpTurnActivityFrame) {
+      return resolveAgentFocusNodeId(
+        acpTurnActivityFrame.activity.ontologySlug,
+        ontologyInsight?.nodes,
+      );
+    }
     return hasFreshAgentHeartbeat
       ? resolveAgentFocusNodeId(
           agentActivityStatus?.heartbeat?.focus.ontologySlug ?? null,
           ontologyInsight?.nodes,
         )
       : null;
-  }, [hasFreshAgentHeartbeat, agentActivityStatus, ontologyInsight]);
+  }, [acpTurnActivityFrame, hasFreshAgentHeartbeat, agentActivityStatus, ontologyInsight]);
+  const resolvedAcpRelationPreview = useMemo(
+    () => resolveOntologyRelationPreview(acpRelationPreview, ontologyInsight?.nodes),
+    [acpRelationPreview, ontologyInsight],
+  );
+  // 권한 카드가 떠 있는 순간에는 그 결정이 가장 급하다. 끝나면 수동 편집기의
+  // 기존 미리보기가 다시 이어진다 — 캔버스에는 언제나 관계 한 줄만 그린다.
+  const mapRelationPreview = resolvedAcpRelationPreview ?? meaningPreview;
   // P4b — "에이전트가 방금" INDEX 배지. 이미 fresh-게이트를 통과한
   // `agentFocusNodeId`(W6 지도 링과 같은 소스)가 최근-변경 렌즈 안에도 있을
   // 때만 — 두 번째 매치 휴리스틱을 새로 만들지 않고 기존 신호를 그대로 재사용.
@@ -2544,8 +2576,23 @@ function HomePageImpl() {
         : null,
     [vault.status, vault.handle],
   );
+  const acpLiveWork = useMemo<AgentLiveWorkInput | null>(() => {
+    const frame = acpTurnActivityFrame;
+    if (!frame) return null;
+    return {
+      rawAgentName: acpHeartbeatAgentName(acpRuntimeId),
+      phase: frame.activity.state,
+      summary: frame.activity.summary,
+      targetSlug: frame.activity.ontologySlug,
+      lastTool: frame.activity.toolName,
+      updatedAt: frame.at,
+    };
+  }, [acpRuntimeId, acpTurnActivityFrame]);
   const handleAcpTurnActivityChange = useCallback(
     (activity: AcpTurnActivity | null) => {
+      // 화면은 이미 이 이벤트를 받았다. React 메모리를 먼저 갱신하고 sidecar는
+      // 외부 소비자와 재시작 연속성을 위해 뒤따라 기록한다.
+      setAcpTurnActivityFrame(activity ? { activity, at: Date.now() } : null);
       const store = acpHeartbeatStore;
       if (!store) return;
       const agent = acpHeartbeatAgentName(acpRuntimeId);
@@ -2556,7 +2603,7 @@ function HomePageImpl() {
       }
       void store.write(buildAcpTurnHeartbeat({ agent, at: new Date(), activity })).catch(() => {});
     },
-    [acpHeartbeatStore, acpRuntimeId],
+    [acpHeartbeatStore, acpRuntimeId, setAcpTurnActivityFrame],
   );
 
   const indexSlotFrames: ReadonlyArray<{ state: IndexPanelState; exiting: boolean }> =
@@ -4700,6 +4747,7 @@ function HomePageImpl() {
                           게이트: `tests/e2e/agent-activity-placement.spec.ts`. */}
                       <AgentActivityChip
                         suppressed={Boolean(v2DatasheetModel)}
+                        liveWork={acpLiveWork}
                         onOpenChange={setActivityInboxOpen}
                         onOpenNode={handleSelect}
                       />
@@ -5385,7 +5433,7 @@ function HomePageImpl() {
                     }}
                     onHoverEdge={handleHoverEdge}
                     selectedEdge={selectedEdge ? { sourceId: selectedEdge.sourceId, targetId: selectedEdge.targetId } : null}
-                    previewEdge={meaningPreview}
+                    previewEdge={mapRelationPreview}
                     onSelect={(slug) => {
                       setMeaningEditorState(null);
                       setSelectedEdge(null);
@@ -6304,6 +6352,7 @@ function HomePageImpl() {
             knownSlugs={chatKnownSlugs}
             onHoverSlug={handleChatHoverSlug}
             onTurnActivityChange={handleAcpTurnActivityChange}
+            onOntologyRelationPreviewChange={setAcpRelationPreview}
             onClose={closeVaultAgent}
           />
           </Surface>

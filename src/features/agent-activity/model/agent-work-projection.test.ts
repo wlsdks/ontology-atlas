@@ -77,6 +77,27 @@ describe('deriveAgentWorkProjection', () => {
     });
   });
 
+  it('인앱 ACP 이벤트는 다음 sidecar 폴링을 기다리지 않고 현재 상태를 이긴다', () => {
+    expect(
+      deriveAgentWorkProjection(heartbeat(), [session()], NOW, {
+        rawAgentName: 'codex-acp',
+        phase: 'editing',
+        summary: '관계 변경안을 준비하고 있어요',
+        targetSlug: 'capabilities/contextual-editing',
+        lastTool: 'add_relation',
+        updatedAt: NOW,
+      }),
+    ).toMatchObject({
+      mode: 'live',
+      agentName: 'Codex',
+      phase: 'editing',
+      summary: '관계 변경안을 준비하고 있어요',
+      targetSlug: 'capabilities/contextual-editing',
+      lastTool: 'add_relation',
+      updatedAt: NOW,
+    });
+  });
+
   it('heartbeat 없이 최근 쓰기만 있으면 작업 중이라고 단정하지 않는다', () => {
     expect(deriveAgentWorkProjection(null, [session()], NOW)).toMatchObject({
       mode: 'recent-write',

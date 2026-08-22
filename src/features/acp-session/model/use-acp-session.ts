@@ -80,6 +80,8 @@ export interface UseAcpSessionOptions {
   vaultRoot: string | null;
   /** 세션에 자동으로 꽂을 MCP 서버 — 사용자가 설정 파일을 안 만져도 되게. */
   mcpServers?: unknown[];
+  /** 승인 직후 확정 모션이 끝난 다음 도구를 진행할 시간. reduced motion이면 0. */
+  approvalSettleMs?: number;
 }
 
 /**
@@ -148,8 +150,14 @@ const nextEventId = () => `acp-evt-${(eventSeq += 1)}`;
  * 그게 다시 소음이 된다 — 첫 몇 줄이 원인을 말한다.
  */
 const STDERR_KEEP_LIMIT = 8;
+const TERMINAL_TOOL_STATES = new Set(['completed', 'failed', 'cancelled']);
 
-export function useAcpSession({ runtimeId, vaultRoot, mcpServers }: UseAcpSessionOptions) {
+export function useAcpSession({
+  runtimeId,
+  vaultRoot,
+  mcpServers,
+  approvalSettleMs = 0,
+}: UseAcpSessionOptions) {
   const [status, setStatus] = useState<AcpSessionStatus>('idle');
   /*
    * 상태를 ref 로도 붙든다 — 어댑터가 죽는 순간(`onExit`)은 렌더 밖이라
@@ -207,6 +215,9 @@ export function useAcpSession({ runtimeId, vaultRoot, mcpServers }: UseAcpSessio
     setDiagnostics([...kept]);
   }, []);
   const [pending, setPending] = useState<PendingPermission | null>(null);
+  /** 사람이 허용했고 해당 ACP 도구의 완료 신호를 기다리는 ontology write. */
+  const [approvedOntologyWrite, setApprovedOntologyWrite] =
+    useState<AcpPermissionRequest | null>(null);
   /** 이 폴더의 지난 대화들. **이 폴더 것만** 담긴다(`keepSessionsInFolder`). */
   const [sessions, setSessions] = useState<AcpSessionSummary[]>([]);
   /**
@@ -246,6 +257,18 @@ export function useAcpSession({ runtimeId, vaultRoot, mcpServers }: UseAcpSessio
   const disposedRef = useRef(false);
   /** 답을 기다리는 권한 요청의 해결자 — 정리할 때 거절로 닫는다. */
   const pendingResolverRef = useRef<((optionId: string | null) => void) | null>(null);
+  /** 승인 확정 모션 뒤에 ACP를 이어 주는 타이머. 창이 닫히면 반드시 취소한다. */
+  const permissionDecisionTimerRef = useRef<number | null>(null);
+  /** `tool_call_update` 콜백이 최신 승인 대상을 읽도록 state와 함께 붙든다. */
+  const approvedOntologyWriteRef = useRef<AcpPermissionRequest | null>(null);
+
+  const setApprovedOntologyWriteTracked = useCallback(
+    (request: AcpPermissionRequest | null) => {
+      approvedOntologyWriteRef.current = request;
+      setApprovedOntologyWrite(request);
+    },
+    [],
+  );
 
   const push = useCallback((event: AcpEvent) => {
     setEvents((prev) => {
@@ -297,9 +320,15 @@ export function useAcpSession({ runtimeId, vaultRoot, mcpServers }: UseAcpSessio
         setEvents((prev) =>
           prev.map((e) => (e.kind === 'tool' && e.id === id ? { ...e, status: nextStatus } : e)),
         );
+        if (
+          TERMINAL_TOOL_STATES.has(nextStatus) &&
+          approvedOntologyWriteRef.current?.toolCallId === id
+        ) {
+          setApprovedOntologyWriteTracked(null);
+        }
       }
     },
-    [push],
+    [push, setApprovedOntologyWriteTracked],
   );
 
   /** 화면이 답할 때까지 기다리는 약속을 만든다. */
@@ -309,13 +338,31 @@ export function useAcpSession({ runtimeId, vaultRoot, mcpServers }: UseAcpSessio
       setPending({
         request,
         resolve: (optionId) => {
-          pendingResolverRef.current = null;
+          const selectedKind = request.options.find((option) => option.optionId === optionId)?.kind;
+          const settlesBeforeWrite =
+            request.reviewKind === 'ontology-write' &&
+            selectedKind === 'allow_once' &&
+            approvalSettleMs > 0;
+          setApprovedOntologyWriteTracked(
+            request.reviewKind === 'ontology-write' && selectedKind === 'allow_once'
+              ? request
+              : null,
+          );
           setPending(null);
+          if (settlesBeforeWrite) {
+            permissionDecisionTimerRef.current = window.setTimeout(() => {
+              permissionDecisionTimerRef.current = null;
+              pendingResolverRef.current = null;
+              resolve(optionId);
+            }, approvalSettleMs);
+            return;
+          }
+          pendingResolverRef.current = null;
           resolve(optionId);
         },
       });
     });
-  }, []);
+  }, [approvalSettleMs, setApprovedOntologyWriteTracked]);
 
   const start = useCallback(async () => {
     if (!isAcpBridgeAvailable() || !vaultRoot) return;
@@ -454,9 +501,14 @@ export function useAcpSession({ runtimeId, vaultRoot, mcpServers }: UseAcpSessio
           }
           setStatusTracked('exited');
           // 끝난 세션에 답을 기다리는 카드가 떠 있으면 거절로 닫는다.
+          if (permissionDecisionTimerRef.current !== null) {
+            window.clearTimeout(permissionDecisionTimerRef.current);
+            permissionDecisionTimerRef.current = null;
+          }
           pendingResolverRef.current?.(null);
           pendingResolverRef.current = null;
           setPending(null);
+          setApprovedOntologyWriteTracked(null);
           /*
            * ⚠️ **끝난 세션의 클라이언트를 치운다** (2026-08-16 검수에서 적발).
            * 종전에는 상태만 `exited` 로 바꾸고 클라이언트를 그대로 뒀다. 그러면
@@ -593,7 +645,18 @@ export function useAcpSession({ runtimeId, vaultRoot, mcpServers }: UseAcpSessio
     } finally {
       startingRef.current = false;
     }
-  }, [applyUpdate, askUser, keepDiagnostic, mcpServers, push, resetDiagnostics, runtimeId, vaultRoot, setStatusTracked]);
+  }, [
+    applyUpdate,
+    askUser,
+    keepDiagnostic,
+    mcpServers,
+    push,
+    resetDiagnostics,
+    runtimeId,
+    setApprovedOntologyWriteTracked,
+    setStatusTracked,
+    vaultRoot,
+  ]);
 
   /**
    * 대화를 갈아탄다 — 지난 것을 이어 받거나(`sessionId`), 새로 연다(`null`).
@@ -606,12 +669,13 @@ export function useAcpSession({ runtimeId, vaultRoot, mcpServers }: UseAcpSessio
     async (sessionId: string | null) => {
       await stopRef.current?.();
       setEvents([]);
+      setApprovedOntologyWriteTracked(null);
       setError(null);
       resumeIdRef.current = sessionId;
       setChoices(EMPTY_CHOICES);
       await startRef.current?.();
     },
-    [],
+    [setApprovedOntologyWriteTracked],
   );
 
   /**
@@ -645,13 +709,17 @@ export function useAcpSession({ runtimeId, vaultRoot, mcpServers }: UseAcpSessio
       setStatusTracked('thinking');
       try {
         await client.prompt(sessionId, [{ type: 'text', text }]);
-        if (!disposedRef.current) setStatusTracked('ready');
+        if (!disposedRef.current) {
+          setApprovedOntologyWriteTracked(null);
+          setStatusTracked('ready');
+        }
       } catch (err) {
+        setApprovedOntologyWriteTracked(null);
         setError(err instanceof Error ? err.message : String(err));
         setStatusTracked('error');
       }
     },
-    [push, setStatusTracked],
+    [push, setApprovedOntologyWriteTracked, setStatusTracked],
   );
 
   const cancel = useCallback(() => {
@@ -670,9 +738,14 @@ export function useAcpSession({ runtimeId, vaultRoot, mcpServers }: UseAcpSessio
 
     // 순서가 중요하다: 기다리는 권한부터 닫고, 그다음 프로세스를 끝낸다.
     // 반대로 하면 이미 죽은 상대에게 답을 보내려 한다.
+    if (permissionDecisionTimerRef.current !== null) {
+      window.clearTimeout(permissionDecisionTimerRef.current);
+      permissionDecisionTimerRef.current = null;
+    }
     pendingResolverRef.current?.(null);
     pendingResolverRef.current = null;
     setPending(null);
+    setApprovedOntologyWriteTracked(null);
     // 띄우는 중이었더라도 잠금을 푼다 — 안 그러면 다시 못 띄운다.
     startingRef.current = false;
     clientRef.current?.dispose();
@@ -684,7 +757,7 @@ export function useAcpSession({ runtimeId, vaultRoot, mcpServers }: UseAcpSessio
     sessionIdRef.current = null;
     if (acpSessionId) await stopAcpSession(acpSessionId);
     setStatusTracked('idle');
-  }, [setStatusTracked]);
+  }, [setApprovedOntologyWriteTracked, setStatusTracked]);
 
   /*
    * 최신 것을 ref 에 물려 둔다 — `switchSession` 이 순환 의존 없이 부르게.
@@ -715,6 +788,7 @@ export function useAcpSession({ runtimeId, vaultRoot, mcpServers }: UseAcpSessio
     diagnostics,
     download,
     pending,
+    approvedOntologyWrite,
     sessions,
     choices,
     chooseModel,

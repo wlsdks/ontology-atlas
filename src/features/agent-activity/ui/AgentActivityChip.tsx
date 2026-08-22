@@ -15,6 +15,7 @@ import { cn } from '@/shared/lib/cn';
 import { agentDisplayName } from '@/shared/lib/agent-display-name';
 import type { AgentNotification, AgentNotificationKind } from '@/shared/lib/agent-notifications';
 import { useAgentActivityFeed } from '../model/use-agent-activity-feed';
+import type { AgentLiveWorkInput } from '../model/agent-work-projection';
 
 /**
  * 「작업 중 / 마지막 작업」 칩 + 벨 + 알림함.
@@ -63,10 +64,13 @@ import { useAgentActivityFeed } from '../model/use-agent-activity-feed';
  */
 export function AgentActivityChip({
   suppressed = false,
+  liveWork = null,
   onOpenChange,
   onOpenNode,
 }: {
   suppressed?: boolean;
+  /** 오른쪽 인앱 ACP가 이미 아는 현재 상태. 파일 폴링 전에도 같은 칩을 갱신한다. */
+  liveWork?: AgentLiveWorkInput | null;
   /**
    * 알림함이 열리고 닫힐 때 알린다.
    *
@@ -86,7 +90,7 @@ export function AgentActivityChip({
 } = {}) {
   const t = useTranslations('agentActivity');
   const format = useFormatter();
-  const feed = useAgentActivityFeed();
+  const feed = useAgentActivityFeed(liveWork);
   const [open, setOpen] = useState(false);
   const rootRef = useRef<HTMLDivElement | null>(null);
   const statusRef = useRef<HTMLButtonElement | null>(null);
