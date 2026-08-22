@@ -65,7 +65,7 @@ Client Protocol) v1 로 직접 띄우고, 그 세션의 설정을 격리하고, 
   진행 상태가 있는 운영 작업이라, 뒤를 막는 모달이 그릇으로 맞지 않았다. 같은
   부품(`AcpRuntimeSettings`)이 목적지와 설정 시트 양쪽에 서고, 소개 줄을 그릴지는
   부르는 쪽이 정한다.
-- **세션의 볼트 MCP 서버는 한 벌만 유지한다.** Codex가 현재 볼트의 유효한
+- **starter vault의 project source가 먼저다.** source binding이 없으면 빈 대화 추천은 에이전트 분석 대신 project 데이터시트의 코드 폴더 연결을 열고, sidecar 전환을 같은 화면에서 다시 읽은 뒤에만 source-evidence-first 구축 prompt를 제공한다.\n- **세션의 볼트 MCP 서버는 한 벌만 유지한다.** Codex가 현재 볼트의 유효한
   `.codex/config.toml`에서 앱이 주입하려는 것과 같은 명령을 스스로 읽는 경우에만
   중복 주입을 생략한다. 명령이 같아도 현재 볼트용 전체 설정 검증이 실패하면 앱이
   검증된 서버를 주입한다. self-read를 실측하지 않은 런타임도 종전 주입을 유지한다.
@@ -106,7 +106,7 @@ Client Protocol) v1 로 직접 띄우고, 그 세션의 설정을 격리하고, 
   (목적지와 설정 시트가 같이 쓴다. 소개 줄을 그릴지는 부르는 쪽이 정한다)
 - src/views/agents/ui/AgentsPage.tsx: 「에이전트」 목적지, 이 능력의 현재 사용자
   표면 (`[[elements/agents-destination]]`)
-- src/views/home/ui/HomePage.tsx · src/widgets/acp-chat-panel/ui/AcpChatPanel.tsx:
+- src/features/acp-session/model/chat-suggestions.ts · src/views/home/model/use-unbound-project-source.ts: source unbound→bound 준비도와 starter 구축 CTA 순서\n- src/views/home/ui/HomePage.tsx · src/widgets/acp-chat-panel/ui/AcpChatPanel.tsx:
   지도 옆 ACP 대화 진입점과 미검증 작업 방식 표시
 - docs/DECISIONS.md 2026-08-16 ACP 도입·격리 기록과 2026-08-17 (53)·(54)·
   (56)·(57)·(58): 어댑터 안전 상태의 화면 전달, 세션 루트 권한 경계, 프로세스

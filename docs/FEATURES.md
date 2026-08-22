@@ -316,6 +316,11 @@ Both routes render the same `HomePage` (R3 keep-both decision: `/` = home/back-l
 - 화면 위쪽 도구 줄의 **「에이전트」** 버튼을 누르면 지도 오른쪽에 세로로 긴 패널이 열린다. 패널이 열리면 지도와 노드 정보 칸이 함께 밀려나며 폭을 다시 잡는다. 데스크톱 앱에서만 쓸 수 있다 — 브라우저에는 API 키를 안전하게 둘 곳도, 요청을 보낼 경로도 없어서, 눌러도 아무 일이 일어나지 않을 버튼은 아예 그리지 않는다
 - 에이전트 패널이 열리는 동안 왼쪽 INDEX는 저장된 기본 상태를 바꾸지 않고 잠시 접혀 지도 폭을 내준다. 대화를 닫으면 원래 INDEX 선호가 복구되고, 접힌 INDEX 탭을 직접 열면 에이전트 패널이 닫혀 두 보조 패널이 동시에 지도를 압축하지 않는다
 - 사용자의 말 한 차례에서 생긴 생각 조각과 도구 호출은 기본 접힌 **「작업 과정 · N단계」** 한 줄로 모인다. 실행 중에는 인디고 점과 단계 수만 갱신하고, 에이전트 답변은 별도 본문으로 읽힌다. 필요할 때 펼치면 기존 순서와 대상 노드를 모두 볼 수 있고, 생각의 Markdown도 실제 굵게·코드·목록으로 렌더된다
+- 에이전트 답변의 GFM 표는 헤더·행 구분·셀 여백이 있는 실제 표로 보인다. 긴 표는
+  대화 도크 전체를 넓히지 않고 표 안에서만 가로로 스크롤한다.
+- starter vault에 연결된 project source가 없으면 「코드 훑기」를 먼저 실행하지
+  않는다. 「먼저 코드 폴더 연결하기」가 project 데이터시트로 이동하고, 연결을
+  같은 화면에서 다시 읽은 뒤에만 source-evidence-first 구축 prompt가 나타난다.
 - **처음 걸 말 3개** (`buildFirstWords`) — 대화가 비어 있을 때, 이 폴더의 실제 상태에서 뽑은 문장이 최대 3개 뜬다: ① 지금 보고 있는 개념에서 가장 크게 빠진 것 ② 「할 일」 목록이 첫 번째로 지목한 개념(판정에 쓰는 함수는 같은 `detectMeaningGaps`) ③ 언제나 뜨는 「이 지도에서 지금 제일 이상한 곳이 어디야?」
 - **이 문장을 만들 때 모델 호출은 0이다** — 이 문장들은 사용자가 [보내기]를 누르기 *전에* 이미 화면에 그려진다. 그러니 문장을 만들려고 밖으로 요청을 보내면 그것은 동의 없는 전송이고, 사용자 본인이 내는 API 요금(BYOK)을 허락 없이 쓰는 일이다. 문장을 만드는 코드는 순수 함수라서 전송 코드를 아예 import 하지 않는다 (`tests/contract/agent-first-words-local.contract.test.ts`)
 - **누르면 입력칸에 채워질 뿐, 보내지지 않는다** — 누르면 그 문장이 입력칸에 들어가고 전체 선택 + 포커스가 된다. 고쳐서 보내도 되고 지워도 된다. 눌러도 그 버튼은 사라지지 않는다
@@ -351,6 +356,10 @@ Both routes render the same `HomePage` (R3 keep-both decision: `/` = home/back-l
   현재 볼트가 sample graph로 잠깐 바뀌지 않으며, 독립 소비처만
   `/topology?mode=focus&p=…` fallback을 쓴다. heartbeat/tool input이 현재 볼트의
   실재 slug를 밝힌 경우에만 기존 amber agent-focus ring을 그린다.
+- 앱 안 ontology 쓰기의 허용·거절과 최종 상태는 볼트 안
+  `.ontology-atlas/acp-work.jsonl`에 제한된 작업 영수증으로 남는다. 전체 대화·thought·
+  tool output·절대 경로는 저장하지 않는다. activity popover에서 최근 영수증을
+  접어 보고 요청·agent·도구·결정·결과·typed 변경 항목을 다시 확인할 수 있다.
 - `created_by`는 query 가능한 provenance 데이터지만 검토 상태가 아니다. 따라서
   사람 저작 INDEX lens와 red review ring은 없다. `vault-readme`는 Docs reader guide로
   읽히지만 topology adapter, INDEX, canonical concept census, editor target에서는
@@ -620,6 +629,10 @@ Empty state (0 nodes): link to `/docs` (open vault).
   conversation on a typed change card, hides `allow_always`, and resumes only on
   `allow_once`; rejection is `reject_once`. The tool-mode policy is checked against
   the generated `tools/list` surface so a new tool fails closed as a write.
+- Batch writers preserve and display every requested row in protocol order. The
+  review accordion selects one exact item at a time for the map preview, while
+  allow/reject applies honestly to the whole batch; the first item is never used
+  as a stand-in for hidden rows.
 - `/ontology/studio` and `/ontology/edit` remain only as compatibility addresses.
   `node/mode/edit/via/review` are translated to `p/workbench/edit` on `/topology`.
 
