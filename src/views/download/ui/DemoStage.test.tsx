@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react';
+import { act, render, screen } from '@testing-library/react';
 import { NextIntlClientProvider } from 'next-intl';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import messages from '../../../../messages/en.json';
@@ -98,6 +98,57 @@ describe('DemoStage', () => {
     const video = screen.getByTestId('demo-video-atlas-tour');
     expect(video.querySelector('track')).toBeNull();
     expect(screen.queryByTestId('demo-caption-atlas-tour')).toBeNull();
+  });
+
+  /**
+   * **The observer must follow the `<video>` across the locale remount.**
+   *
+   * The element is keyed on the locale, and the locale arrives late: static export freezes the
+   * first paint as `en` and hydration corrects it, so on a Korean page React throws the first
+   * `<video>` away and mounts a second one. An effect that does not list `locale` keeps observing
+   * the discarded node, and a detached node never intersects — the clip simply never starts.
+   *
+   * This is not hypothetical. Measured 2026-08-22 in Chromium at 1512×982 with the section fully
+   * in view: `/en/` reached `currentTime` 2.97s, `/ko/` sat at 0 and paused. It had been live
+   * since `key={locale}` landed on 2026-08-20.
+   *
+   * What is asserted is the property, not the dependency array: **whatever is being observed is
+   * the element that is actually in the document.** Writing it the other way — grepping the deps —
+   * would pass for any spelling that happens to include the word and fail for a correct rewrite.
+   */
+  it('로케일이 늦게 도착해 video 가 다시 태어나도 관찰 대상이 따라온다', () => {
+    const observed: Element[] = [];
+    const disconnect = vi.fn();
+    vi.stubGlobal(
+      'IntersectionObserver',
+      class {
+        observe(target: Element) {
+          observed.push(target);
+        }
+        disconnect = disconnect;
+        unobserve = vi.fn();
+        takeRecords = vi.fn(() => []);
+      },
+    );
+
+    document.documentElement.lang = 'en';
+    const { rerender } = render(wrap(<DemoStage available={['atlas-tour']} />));
+    const first = screen.getByTestId('demo-video-atlas-tour');
+    expect(observed.at(-1), '첫 그림에서 video 를 관찰하지 않았다 — 이 시험이 헛돈다').toBe(first);
+
+    // Hydration corrects `lang`; the component re-reads it on its next render and the key flips.
+    act(() => {
+      document.documentElement.lang = 'ko';
+    });
+    rerender(wrap(<DemoStage available={['atlas-tour']} />));
+
+    const second = screen.getByTestId('demo-video-atlas-tour');
+    expect(second, 'key 가 안 바뀌어 remount 가 안 일어났다 — 이 시험이 헛돈다').not.toBe(first);
+    expect(
+      observed.at(-1),
+      '버려진 video 를 계속 보고 있다 — 떨어져 나간 노드는 절대 교차하지 않으므로 재생이 시작되지 않는다',
+    ).toBe(second);
+    expect(observed.at(-1)?.isConnected).toBe(true);
   });
 
   it('등록부와 자산 목록이 둘 다 있어야 켜진다', () => {

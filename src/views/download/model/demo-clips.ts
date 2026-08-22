@@ -55,8 +55,8 @@ export interface DemoClip {
  * gate has something to compare against.
  */
 export const DEMO_CLIPS: readonly DemoClip[] = [
-  // `seconds` is measured with ffprobe (2026-08-20 footage: 199.13s → rounded to 199).
-  { id: 'atlas-tour', seconds: 199, basename: 'atlas-tour' },
+  // `seconds` is measured with ffprobe (2026-08-22 footage: 9.000s).
+  { id: 'atlas-tour', seconds: 9, basename: 'atlas-tour' },
 ];
 
 /**
@@ -69,16 +69,23 @@ export const DEMO_CLIPS: readonly DemoClip[] = [
  * into the first-impression slot).
  */
 /*
- * **What is attached now** (filmed 2026-08-20, installed build v1.0.0-rc.9, vault `docs/ontology`
- * with 82 nodes): one 199.13-second take. The path: map settles → auto-layout → the 3D **dome**
- * assembles and is rotated by hand → the 3D **cloud** forms and rotates → back to the plane →
- * **a Claude Agent is attached over ACP**, asked about this folder's domains, and while the answer
- * streams a node is pressed to open its typed facts. The answer returns seven domains as a table
- * and points out two asymmetries in the graph.
+ * **What is attached now** (filmed 2026-08-22, installed build, vault `docs/ontology` with 82
+ * nodes): one 9.000-second take. The path: the app opens on a folder it already knows → the map
+ * draws itself and settles → a domain node is clicked → everything that is not its neighbour dims
+ * out and the panel names what sits under it (16), above it (1), and which document evidences it.
  *
- * **Dead time was sped up, not cut** — a jump cut would break this asset's defining property of
- * being one uncut take. Every real action (assembly, rotation, the answer streaming) runs at normal
- * speed; the only accelerated stretches are where nothing happens.
+ * **Why the folder picking is not in frame** (owner, 2026-08-22): the vault is already connected
+ * when the take starts. A picker sheet puts a real disk path on screen, and the scene it buys
+ * ("choose a folder") is the one thing a viewer already assumes works.
+ *
+ * **Why it is nine seconds and not the previous 199.** The old take was a full feature tour —
+ * dome, cloud, an ACP round trip — filmed when this slot was the page's argument. It is now one
+ * scene above the install steps, and a tour asks for three minutes of attention before the viewer
+ * has any reason to give it. What replaced it is the single claim the map makes: *click one thing
+ * and the graph answers with its neighbourhood.*
+ *
+ * **No cuts and no speed-up** — the whole nine seconds runs at capture speed, so the assembly and
+ * the click take exactly as long here as they do on a real machine.
  *
  * ⚠️ **Both locales still point at the same master** — the on-screen text is Korean. The English
  * footage has to be filmed separately because the UI copy widths differ and the coordinate path
@@ -91,7 +98,9 @@ export const DEMO_CLIPS: readonly DemoClip[] = [
  * test's own comment names this trap).
  *
  * **Replacement procedure**: overwrite `public/demo/atlas-tour.{ko,en}.{webm,mp4}` and
- * `atlas-tour.{ko,en}-poster.png` with the new footage, and update `seconds` to the ffprobe measurement.
+ * `atlas-tour.{ko,en}-poster.png` with the new footage, update `seconds` to the ffprobe
+ * measurement, **and rewrite `demoProvisionalNote` to describe what was actually filmed** — the
+ * length has a gate, the sentence does not.
  */
 export const AVAILABLE_DEMO_CLIP_IDS: readonly DemoClip['id'][] = ['atlas-tour'];
 

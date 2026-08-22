@@ -126,6 +126,15 @@ function DemoPlayer({ clip }: { clip: DemoClip }) {
    * IntersectionObserver. Reduced-motion users still start it themselves from the poster and play
    * button. Where IO is unavailable (jsdom) it does not autoplay — the tests measure the playback
    * contract (muted, no loop, no preload), not autoplay.
+   *
+   * ⚠️ **`locale` is a dependency because the `<video>` below is keyed on it.** Without it this
+   * effect ran once against the element of the first paint and then kept observing it after React
+   * had thrown it away — a detached node never intersects, so the callback fired once at
+   * `ratio: 0` and never again. That is not a theoretical hazard: it took out **the Korean page
+   * only**, because `en` is the server snapshot and so only `ko` remounts. Measured 2026-08-22 at
+   * 1512×982 with the section scrolled fully into view — `/en/` reached `currentTime` 2.97s while
+   * `/ko/` sat at 0 and paused. It arrived with `key={locale}` on 2026-08-20 and shipped, because
+   * the fix and the breakage are twenty lines apart and neither has anything to do with the other.
    */
   useEffect(() => {
     const video = videoRef.current;
@@ -142,7 +151,7 @@ function DemoPlayer({ clip }: { clip: DemoClip }) {
     );
     io.observe(video);
     return () => io.disconnect();
-  }, [reduced]);
+  }, [reduced, locale]);
 
   return (
     <div
@@ -155,9 +164,10 @@ function DemoPlayer({ clip }: { clip: DemoClip }) {
         {/*
          * `preload="none"` — the gateway's first bytes belong to the map and the download button.
          * `muted` + `playsInline` are the conditions for silent autoplay, and the sound is **zero,
-         * including any BGM**. `controls` is enabled only after playback starts: the clip runs long
-         * enough that people want to scrub back, but a control bar over the poster before it starts
-         * takes ink from the first impression.
+         * including any BGM**. `controls` is enabled only after playback starts, so that a control
+         * bar over the poster does not take ink from the first impression. (It used to be
+         * justified by "the clip is long enough to want to scrub"; at nine seconds that is no
+         * longer the reason — what it still buys is replay without a reload.)
          */}
         {/*
          * Without `key={locale}`, **a Korean page plays the English video.**
