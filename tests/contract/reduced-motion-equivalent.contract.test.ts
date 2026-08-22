@@ -47,7 +47,36 @@ const INTENTIONALLY_STILL: Readonly<Record<string, string>> = {
   // 동등물을 준다 — gateway-fx-exception.contract.test.ts 가 그 존재를 잠근다.
   "gateway-term-caret":
     "끝없는 캐럿 blink — 감속의 뜻이 이걸 멈추는 것이다. 줄 내용은 감속에서 전부 즉시 보인다.",
+  // ── 스크롤 타임라인 둘 (2026-08-22) ─────────────────────────────────────
+  //
+  // 이 스캐너의 모형은 「시간이 굴리는 애니메이션은 감속에서도 시간을 가져야
+  // 한다(하드컷 금지)」다. 이 둘은 그 모형 밖이다 — **시간이 굴리지 않는다.**
+  // 진행도의 유일한 입력이 `animation-timeline: view()`, 즉 스크롤 위치이고,
+  // duration 은 아예 존재하지 않는다(`auto`). 그래서 여기에 「감속용 짧은
+  // 시간」을 줄 대상 자체가 없다.
+  //
+  // 감속에서 무슨 일이 일어나는지가 이 등재의 근거다: **선언이 존재하지
+  // 않는다.** 둘 다 `@media (prefers-reduced-motion: no-preference)` 안에만
+  // 있으므로 감속 사용자에게는 규칙이 파싱되지 않고, 남는 것은
+  // `.gateway-rise` 의 쉬는 상태 — **처음부터 전부 보임**이다. 그것이 관문의
+  // 다른 안무가 감속에 주는 것과 정확히 같은 대체물이고(base 레이어
+  // carve-out), 잃는 것은 등장 순서뿐 정보는 하나도 없다.
+  //
+  // ⚠️ 이 면제의 조건은 **`no-preference` 안에 있다는 것 하나**다. 누군가 이
+  // 선언을 그 미디어 쿼리 밖으로 옮기면 이 사유는 그 순간 거짓이 된다 —
+  // 바로 아래 시험이 그 조건을 실제로 재므로 옮기면 빨개진다.
+  "gateway-scroll-rise":
+    "스크롤이 굴린다(view() 타임라인) — duration 이 없어 감속용 시간을 줄 대상이 없다. 감속에서는 선언 자체가 존재하지 않고 절은 처음부터 전부 보인다.",
+  "gateway-scroll-stage":
+    "같은 이유 — 무대(영상·지도·ACP 장면)의 스크롤 연동. 감속에서는 선언이 없고 무대는 처음부터 전부 보인다.",
 };
+
+/**
+ * 위 두 등재의 사유는 「`no-preference` 안에만 있다」에 통째로 걸려 있다.
+ * 사유를 글로만 적어 두면 다음 사람이 선언을 밖으로 옮겨도 아무도 모르므로,
+ * 그 조건을 여기서 **잰다**.
+ */
+const SCROLL_TIMELINE_CLASSES = ["gateway-scroll-rise", "gateway-scroll-stage"] as const;
 
 /**
  * 동등물이 실제로 붙어 있어야 하는 표면 — **CSS 에서 뽑아낸다.**
@@ -147,6 +176,56 @@ describe('reduced-motion 동등물 계약', () => {
       `감속 동등물도 없고 이유도 없다 — 감속 사용자에게 통째로 하드컷이다:\n${naked.join('\n')}\n` +
         `덮거나, INTENTIONALLY_STILL 에 이유를 적어라.`,
     ).toEqual([]);
+  });
+
+  /**
+   * 스크롤 타임라인 둘의 면제는 **한 조건 위에 서 있다** — 선언이
+   * `@media (prefers-reduced-motion: no-preference)` 안에만 있다는 것. 그래야
+   * 감속 사용자에게 규칙이 아예 파싱되지 않고 「처음부터 전부 보임」이 된다.
+   * 조건을 글로만 적어 두면 다음 사람이 밖으로 옮겨도 아무 신호가 없으므로
+   * 여기서 잰다.
+   */
+  it('스크롤 타임라인 안무는 no-preference 안에만 산다', () => {
+    const marker = '@media (prefers-reduced-motion: no-preference)';
+    const noPreferenceBlocks: string[] = [];
+    for (let from = 0; ; ) {
+      const at = CSS.indexOf(marker, from);
+      if (at === -1) break;
+      const open = CSS.indexOf('{', at);
+      let depth = 0;
+      let i = open;
+      for (; i < CSS.length; i += 1) {
+        if (CSS[i] === '{') depth += 1;
+        else if (CSS[i] === '}') {
+          depth -= 1;
+          if (depth === 0) break;
+        }
+      }
+      noPreferenceBlocks.push(CSS.slice(open + 1, i));
+      from = i + 1;
+    }
+    expect(
+      noPreferenceBlocks.length,
+      'no-preference 블록이 하나도 없다 — 이 시험이 빈손으로 통과하고 있다',
+    ).toBeGreaterThan(0);
+
+    for (const cls of SCROLL_TIMELINE_CLASSES) {
+      const selector = new RegExp(`\\.${cls}(?![\\w-])`);
+      // 선언이 나오는 자리는 전부 no-preference 안이어야 한다: 파일 전체에서
+      // 센 등장 횟수와, no-preference 블록 안에서 센 등장 횟수가 같아야 한다.
+      const total = [...CSS_CODE.matchAll(new RegExp(`\\.${cls}(?![\\w-])`, 'g'))].length;
+      const inside = noPreferenceBlocks
+        .map((block) => [...block.matchAll(new RegExp(`\\.${cls}(?![\\w-])`, 'g'))].length)
+        .reduce((a, b) => a + b, 0);
+      expect(total, `.${cls} 가 CSS 에 없다 — 죽은 면제다`).toBeGreaterThan(0);
+      expect(
+        inside,
+        `.${cls} 의 선언 ${total}건 중 ${inside}건만 no-preference 안이다 — ` +
+          `밖으로 샌 선언은 감속 사용자에게 그대로 적용된다. ` +
+          `INTENTIONALLY_STILL 의 사유가 거짓이 됐으므로 되돌리거나 사유를 다시 써라.`,
+      ).toBe(total);
+      expect(selector.test(CSS_CODE), 'selector 정규식이 헛돌고 있다').toBe(true);
+    }
   });
 
   for (const cls of requiresEquivalent) {

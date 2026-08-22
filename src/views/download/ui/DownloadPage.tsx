@@ -93,9 +93,36 @@ const SECTION_GAP = 'mt-[var(--gateway-section-gap)]';
  * (`docs/DECISIONS.md` 2026-08-19). 릴리스 정책 두 문장만 콜로폰에 남는다.
  *
  * 모션의 규율은 「정보 모션만」이다 (소유자: *"다운로드 페이지는 모션이
- * 중요함.. 보여지는게 최선인 만큼"*) — 첫 3초 안무(150/220 헤드라인 → 700
- * 리드 → 800 CTA → 950 사실층), 이후 전경 영구 정지. 효과층(전류장·그레인·
- * 커서 링)은 `--gateway-fx-*` 봉인 예외다(`GatewayFx` 독블록).
+ * 중요함.. 보여지는게 최선인 만큼"*). 효과층(전류장·그레인·커서 링)은
+ * `--gateway-fx-*` 봉인 예외다(`GatewayFx` 독블록).
+ *
+ * ## 시계가 둘이다 — 첫 화면은 시간, 그 아래는 스크롤 (2026-08-22)
+ *
+ * ① **히어로는 시간이 진다.** 첫 3초 안무(150/220 헤드라인 → 700 리드 →
+ *    800 CTA → 950 사실층)는 그대로다. 바뀐 것은 방아쇠 하나 — 시작 프레임이
+ *    `@starting-style` 로 옮겨가면서 **첫 스타일 계산**이 안무를 시작한다
+ *    (종전에는 하이드레이션 뒤의 rAF). 그래서 JS 가 늦거나 실패해도 히어로가
+ *    백지가 되지 않는다. 종전에는 됐다 — 실측으로 첫 스크린샷에 GNB 만
+ *    있었고, 그 뒤에 서 있던 것이 JS 32파일·디코드 2,572KB 다.
+ *    자세한 사연은 `app/globals.css` 의 `.gateway-rise` 독블록.
+ *
+ * ② **아래 세 절은 스크롤이 진다.** 소유자: *"부드러운 모션같은거 우리도
+ *    하고싶거든? 스크롤하면서 멋지게"*. `animation-timeline: view()` 라
+ *    진행도의 유일한 입력이 「이 원소가 스크롤포트에 얼마나 들어왔는가」다 —
+ *    천천히 굴리면 천천히 도착하고, 멈추면 멈춘다. rAF 도 스크롤 리스너도
+ *    쓰지 않으므로 이 페이지의 단일 프레임 루프에 한 프레임도 더하지 않는다.
+ *    `useInViewOnce` 는 **떼지 않았다** — `view()` 를 못 쓰는 브라우저에서
+ *    같은 등장을 지는 것이 그쪽이다(한 안무의 두 경로).
+ *
+ * 그러니 「등장 후 전경 영구 정지」는 여전히 참이다. 다시 흐려지거나 되감기는
+ * 원소는 없고, 한 번 도착한 것은 그 자리에 선다 — 무엇이 도착을 **부르는지**만
+ * 절마다 다르다. 실측(1512·834·390 세 폭 × 21 스크롤 지점): 화면 안에 완전히
+ * 들어왔는데 흐린 채로 멈춘 원소 **0건**.
+ *
+ * 감속(`prefers-reduced-motion: reduce`)에서는 스크롤 안무 선언이 **존재하지
+ * 않는다** — 절이 처음부터 전부 보인다(실측: 해당 원소의 애니메이션 0개).
+ * 계약: `tests/contract/reduced-motion-equivalent.contract.test.ts` 가 그
+ * 선언이 `no-preference` 밖으로 새면 빨개진다.
  */
 /**
  * 히어로의 다운로드 CTA 는 **320px 에서 접힌다**.
@@ -211,8 +238,17 @@ function SectionIntro({
   inView?: boolean;
   still?: boolean;
 }) {
+  /**
+   * 절 머리의 등장은 **스크롤이 진다** (2026-08-22).
+   *
+   * `gateway-scroll-rise` 가 붙는 브라우저에서는 `view()` 타임라인이 진행도를
+   * 소유하므로 `is-in` 은 아무 일도 하지 않는다(애니메이션이 평범한 선언을
+   * 이긴다). 안 붙는 브라우저에서는 `is-in` 이 종전 그대로 등장을 진다 —
+   * **그래서 `useInViewOnce` 를 떼지 않았다.** 둘은 같은 안무의 두 경로이지
+   * 두 벌의 안무가 아니다.
+   */
   const rise = (step?: string) =>
-    still ? undefined : cn('gateway-rise', step, inView && 'is-in');
+    still ? undefined : cn('gateway-rise', 'gateway-scroll-rise', step, inView && 'is-in');
 
   return (
     <>
@@ -657,7 +693,13 @@ function DemoSection() {
     >
       <div className={cn(PAGE_COLUMN, 'min-w-0')}>
         <SectionIntro eyebrow="Demo" title={t('demoTitle')} sub={t('demoSub')} inView={inView} />
-        <div className={cn('gateway-rise gateway-rise-d3', inView && 'is-in', 'mt-9')}>
+        <div
+          className={cn(
+            'gateway-rise gateway-scroll-stage gateway-rise-d3',
+            inView && 'is-in',
+            'mt-9',
+          )}
+        >
           <DemoStage />
         </div>
       </div>
@@ -714,7 +756,10 @@ function EvidenceSection({ graph }: { graph: StageGraph }) {
          */}
         <div
           ref={ref}
-          className="mt-9 grid min-w-0 gap-8 lg:grid-cols-[minmax(0,11fr)_minmax(0,9fr)] lg:gap-12"
+          className={cn(
+            'gateway-scroll-stage',
+            'mt-9 grid min-w-0 gap-8 lg:grid-cols-[minmax(0,11fr)_minmax(0,9fr)] lg:gap-12',
+          )}
         >
           <div
             data-testid="download-stage-map-frame"
@@ -885,7 +930,7 @@ function AgentSection() {
         <div
           data-testid="gateway-agent-scene"
           className={cn(
-            'gateway-rise gateway-rise-d3',
+            'gateway-rise gateway-scroll-stage gateway-rise-d3',
             inView && 'is-in',
             'mt-9 max-w-[var(--gateway-stage-max)]',
           )}
