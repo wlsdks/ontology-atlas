@@ -5,6 +5,10 @@ import { describe, expect, it, vi } from 'vitest';
 import ko from '../../../../messages/ko.json';
 import { AgentsPage } from './AgentsPage';
 
+vi.mock('@/i18n/navigation', () => ({
+  useRouter: () => ({ push: vi.fn() }),
+}));
+
 /**
  * The "agents" destination — **does it say the same thing twice?**
  *
