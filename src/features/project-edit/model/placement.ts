@@ -104,8 +104,8 @@ export function findProjectPlacement(category: Category | undefined, projects: P
 
   const occupied = projects
     .filter((project) => project.category === category.id)
-    // R15 — position undefined 인 project (vault 가 명시 안 함) 는 placement
-    // 에서 제외 (좌표 없으니 overlap 계산 불가).
+    // A project whose position is undefined (the vault does not state one) is excluded from
+    // placement — with no coordinates, overlap cannot be computed.
     .filter((project) => project.position !== undefined)
     .map((project) => expandRect(toRect(project.position!), OVERLAP_PADDING));
 
@@ -131,8 +131,8 @@ export function buildOutOfBoundsRepairUpdates(
 
   for (const category of [...categories].sort((a, b) => a.order - b.order)) {
     const categoryProjects = projects.filter((project) => project.category === category.id);
-    // R15 — position 없는 project 는 inside 판단 불가 → misplaced 로 취급
-    // (placement 강제 적용).
+    // A project with no position cannot be judged inside, so it counts as misplaced and
+    // placement is applied.
     const placedProjects = categoryProjects.filter(
       (project) =>
         project.position !== undefined &&

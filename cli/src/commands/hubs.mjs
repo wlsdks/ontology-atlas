@@ -1,5 +1,5 @@
-// `ontology-atlas hubs [vault]` — centrality 기반 hub 노드 ranking.
-// MCP `query_ontology({operation: 'centrality'})` thin wrapper.
+// `ontology-atlas hubs [vault]` — hub node ranking by centrality.
+// Thin wrapper over MCP `query_ontology({operation: 'centrality'})`.
 
 import { COLORS, KIND_COLORS } from '../lib/colors.mjs';
 import { callMcpTool } from '../lib/mcp-call.mjs';

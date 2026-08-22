@@ -1,17 +1,17 @@
 import type { KnowledgeGraphEdge, KnowledgeGraphNode } from "@/entities/knowledge-graph";
 import { buildContainmentParents, nearestDomainId } from "@/shared/lib/ontology-tree";
 
-/** 탭1 히어로 "건강" 게이지 — insights-final.html 의 4 stats 전부 real 유도. */
+/** The overview tab's hero "health" gauge — all four stats derived from real data. */
 export interface CensusHealthSummary {
-  /** 개념당 관계 수 — `edges / nodes`, 소수 둘째 자리. `nodes` 가 0 이면 0. */
+  /** Relations per concept — `edges / nodes` to two decimal places. Zero when `nodes` is 0. */
   edgesPerConcept: number;
-  /** `buildOntologyTree` 의 orphans — containment 체인이 끊긴 노드 수. */
+  /** `buildOntologyTree`'s orphans — nodes whose containment chain is broken. */
   orphanCount: number;
-  /** 같은 트리 빌드의 `warnings` 중 cycle 감지 건수. */
+  /** Cycle detections among the `warnings` of the same tree build. */
   cycleCount: number;
-  /** capability/element 중 domain 조상이 있는 비율 (0-100, 반올림). */
+  /** The share of capability/element nodes with a domain ancestor (0–100, rounded). */
   domainMembershipPct: number;
-  /** capability/element/domain 중 evidenceIds 가 있는 비율 (0-100, 반올림). */
+  /** The share of capability/element/domain nodes with `evidenceIds` (0–100, rounded). */
   evidenceLinkedPct: number;
 }
 
@@ -23,10 +23,10 @@ function pct(numerator: number, denominator: number): number {
 }
 
 /**
- * `insight.nodes`/`insight.edges` + 이미 만든 `treeResult` (orphans/warnings)
- * 로부터 히어로 "건강" 세그먼트 4 통계를 유도한다. 트리를 다시 빌드하지
- * 않도록 호출자가 만든 `treeResult` 를 그대로 받는다 — 페이지에서 이미
- * `buildOntologyTree` 를 한 번 호출하므로 중복 계산 회피.
+ * Derives the hero "health" segment's four statistics from `insight.nodes`/`insight.edges` plus the
+ * already-built `treeResult` (orphans and warnings). It takes the caller's `treeResult` rather than
+ * rebuilding the tree — the page already calls `buildOntologyTree` once, so this avoids duplicating
+ * that computation.
  */
 export function computeCensusHealth(
   nodes: readonly KnowledgeGraphNode[],

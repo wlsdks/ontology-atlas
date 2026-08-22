@@ -3,28 +3,32 @@ import { readFileSync } from 'node:fs';
 import path from 'node:path';
 
 /**
- * 생성 매니페스트 결정성 가드 — 커밋되는 생성물 안에 **생성 시점** 이 새어
- * 들어오지 못하게 한다.
+ * Generated-manifest determinism guard — stops **generation time** leaking into
+ * committed build output.
  *
- * 실측 결함(2026-07-27): `manifest.json` 의 `generatedAt` 과 문서별
- * `updatedAt` 이 git 커밋 **시각** 정밀도(`%cI`)로 기록되고, 커밋 시각을 못
- * 찾으면 파일시스템 mtime(벽시계)으로 폴백했다. 그런데 이 값들은 자신을
- * 담은 커밋을 묘사하는데, 그 커밋의 시각은 생성 시점에 알 수 없다 —
- * GitHub squash-merge 는 PR 브랜치 커밋을 버리고 새 커밋에 새 시각을 찍고,
- * rebase·amend 도 같은 일을 한다. 그래서 main 에 들어간 기준선은 **태어날
- * 때부터** 문서 1~32건이 틀려 있었고(최근 커밋 25개 중 24개), 나중에 누가
- * 재생성하면 자기가 고치지도 않은 줄이 diff 로 올라왔다. 결과는 매 PR 리베이스
- * 충돌 + 리뷰 불가능한 유령 diff + JSON 에 남은 충돌 마커로 인한 tsc 파손.
+ * Measured defect (2026-07-27): `manifest.json`'s `generatedAt` and each document's
+ * `updatedAt` were recorded at git commit **timestamp** precision (`%cI`), falling
+ * back to filesystem mtime (wall clock) when no commit time was found. But those
+ * values describe the commit that contains them, and that commit's timestamp is
+ * unknowable at generation time — GitHub squash-merge discards the PR branch's
+ * commits and stamps a new one with a new time, and rebase and amend do the same.
+ * So the baseline that landed on main was wrong for 1–32 documents **from birth**
+ * (24 of the last 25 commits), and anyone regenerating later saw lines they had not
+ * touched appear in their diff. The result was rebase conflicts on every PR,
+ * unreviewable phantom diffs, and tsc breakage from conflict markers left inside
+ * the JSON.
  *
- * 처방은 **날짜 정밀도** 다: 병합이 시각을 다시 찍어도 같은 날이면 값이
- * 그대로고, 같은 날 갈라진 두 브랜치는 같은 문자열을 써서 git 이 자동
- * 병합한다. 소비처는 전부 일 단위 이상이라(“N일 전” 사다리 · 최근 7일 렌즈 ·
- * 주별 히트맵 · 정렬) 정확성 손실이 없다.
+ * The prescription is **date precision**: a merge restamping the time leaves the
+ * value unchanged as long as it is the same day, and two branches that diverged on
+ * the same day write the same string so git merges them automatically. Every
+ * consumer works at day granularity or coarser ("N days ago" ladder, the last-7-days
+ * lens, the weekly heatmap, sorting), so no accuracy is lost.
  *
- * 이 가드는 그 규격을 코드로 강제한다 — 문서에만 있는 규격은 지켜지지 않는다.
- * 파생 로직 자체의 결정성(같은 소스 → 같은 바이트, 커밋 시각 재기록 내성)은
- * `scripts/build-docs-vault.test.mjs` 의 "결정성 계약" 스위트가 임시 git
- * 저장소로 실증한다.
+ * This guard enforces that spec in code — a spec that lives only in a document is
+ * not enforced. The determinism of the derivation itself (same source → same bytes,
+ * resilience to commit-time restamping) is demonstrated against a temporary git
+ * repository by the determinism-contract suite in
+ * `scripts/build-docs-vault.test.mjs`.
  */
 
 const DAY_ONLY = /^\d{4}-\d{2}-\d{2}$/;
@@ -86,8 +90,8 @@ describe('build-docs-vault.mjs — 생성기가 벽시계를 읽지 않는다', 
   );
 
   it('현재 시각을 읽는 호출이 없다', () => {
-    // 생성기가 "지금" 을 읽는 순간 산출물은 실행 시점에 의존하고, 커밋되는
-    // 기준선은 재생성마다 흔들린다.
+    // The moment the generator reads "now", its output depends on when it ran and the
+    // committed baseline shifts on every regeneration.
     const wallClockCalls = ['Date.now(', 'new Date()', 'toISOString('].filter(
       (needle) => source.includes(needle),
     );
@@ -95,37 +99,37 @@ describe('build-docs-vault.mjs — 생성기가 벽시계를 읽지 않는다', 
   });
 
   it('git 날짜를 시각 정밀도로 읽지 않는다', () => {
-    // `%cI`/`%aI` 는 시각까지 준다 — squash-merge 가 다시 찍는 바로 그 부분.
-    // 날짜만 주는 `%cs` 를 쓴다.
+    // `%cI`/`%aI` include the time — exactly the part squash-merge restamps. Use
+    // `%cs`, which gives the date only.
     expect(source).not.toMatch(/%[ca]I/);
     expect(source).toContain('%cs');
   });
 
   it('직전 생성물을 입력으로 되먹이지 않는다', () => {
-    // 생성물이 자기 직전 생성물에 의존하면 "같은 입력 → 같은 바이트" 가
-    // 성립하지 않는다 (기준선이 유실되면 값이 갈린다).
+    // If output depends on the previous output, "same input → same bytes" does not
+    // hold (losing the baseline changes the values).
     expect(source).not.toContain('previousManifest');
   });
 });
 
 /**
- * 매니페스트를 만들거나 검증하는 워크플로는 **전체 히스토리**로 체크아웃해야
- * 한다. GitHub 기본값은 depth 1 이고, 그러면 유일한 커밋이 부모 없는 root 로
- * 취급돼 `git log --name-only` 가 전체 트리를 그 한 커밋에 귀속시킨다 — 실측
- * 결과 문서 247 경로가 **서로 다른 날짜 1개**를 공유했다. 그 상태로 배포되면
- * 사이트의 모든 문서가 "오늘 바뀐" 것으로 보인다.
+ * Any workflow that builds or verifies the manifest must check out **the full
+ * history**. GitHub's default is depth 1, which makes the single commit a parentless
+ * root, so `git log --name-only` attributes the entire tree to that one commit —
+ * measured, 247 document paths all shared **one identical date**. Deployed in that
+ * state, every document on the site looks like it changed today.
  */
 describe('워크플로 — 매니페스트를 만지는 잡은 전체 히스토리를 받는다', () => {
   const WORKFLOW_DIR = path.join(process.cwd(), '.github', 'workflows');
 
-  /** 생성기를 직접(또는 `pnpm build` 를 통해) 실행하는 워크플로. */
+  /** Workflows that run the generator directly (or via `pnpm build`). */
   const MANIFEST_WORKFLOWS = [
     'checks.yml',
     'deploy-pages.yml',
     'release-macos.yml',
   ] as const;
 
-  /** `jobs:` 아래 2-space 잡 헤더 기준으로 잡 본문을 쪼갠다. */
+  /** Splits job bodies on the 2-space job headers under `jobs:`. */
   function splitJobs(yaml: string): Array<{ name: string; body: string }> {
     const jobsAt = yaml.indexOf('\njobs:\n');
     const region = jobsAt === -1 ? yaml : yaml.slice(jobsAt);
@@ -139,7 +143,7 @@ describe('워크플로 — 매니페스트를 만지는 잡은 전체 히스토�
     }));
   }
 
-  /** 생성기를 직접(또는 `pnpm build` 를 통해) 실행하는 스텝이 있는가. */
+  /** Does it have a step that runs the generator directly (or via `pnpm build`)? */
   const RUNS_GENERATOR = /docs-vault:(build|check)|pnpm build\b/;
 
   it.each(MANIFEST_WORKFLOWS)('%s', (name) => {
@@ -148,8 +152,8 @@ describe('워크플로 — 매니페스트를 만지는 잡은 전체 히스토�
     expect(jobs.length).toBeGreaterThan(0);
 
     const generatorJobs = jobs.filter((job) => RUNS_GENERATOR.test(job.body));
-    // 이 워크플로가 목록에 있는 이유 자체가 생성기를 돌리기 때문이다 — 하나도
-    // 없으면 목록이 낡았다는 뜻이라 먼저 터져야 한다.
+    // The reason a workflow is on this list is that it runs the generator — finding
+    // none means the list is stale, which must fail first.
     expect(generatorJobs.map((job) => job.name).length).toBeGreaterThan(0);
 
     for (const job of generatorJobs) {

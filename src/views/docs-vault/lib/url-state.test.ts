@@ -1,8 +1,8 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { replaceDocsVaultUrlState } from './url-state';
 
-// jsdom 의 same-origin replaceState 만 허용 — window.location.origin 으로
-// fixture URL 구성.
+// jsdom allows only same-origin replaceState — the fixture URL is built from
+// `window.location.origin`.
 const ORIGINAL_HREF = `${window.location.origin}/docs/`;
 
 afterEach(() => {
@@ -25,9 +25,9 @@ describe('replaceDocsVaultUrlState', () => {
     expect(currentSearch()).toBe('');
   });
 
-  // P5a — folder-topology 제거 이후 'doc' 이 유일 view 값이라 항상 default 로
-  // query 에서 제거된다. non-default view 값이 없어 "?view=X 셋" 케이스는
-  // 더 이상 존재하지 않는다.
+  // Since folder-topology was removed, 'doc' is the only view value, so it is always removed from
+  // the query as the default. With no non-default view value, the "?view=X is set" case no longer
+  // exists.
   it('view=doc → query 제거 (default)', () => {
     window.history.replaceState({}, '', `${ORIGINAL_HREF}?view=doc`);
     replaceDocsVaultUrlState({ view: 'doc' });

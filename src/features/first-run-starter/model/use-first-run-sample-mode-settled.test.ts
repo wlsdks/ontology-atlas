@@ -4,7 +4,7 @@ import { describe, expect, it, vi } from 'vitest';
 const mocks = vi.hoisted(() => ({
   restoreAttempted: true,
   mode: 'static' as 'static' | 'local',
-  /** 「한 번이라도 연결했나」 — 비어 있으면 아직 한 번도 안 열어 본 사람. */
+  /** "Has a vault ever been connected?" — empty means someone who has never opened one. */
   recentVaults: [] as unknown[],
 }));
 
@@ -37,11 +37,13 @@ describe('useFirstRunSampleModeSettled', () => {
   });
 
   /**
-   * 샘플 안내는 **한 번도 연결 안 해 본 사람**의 것이다 (2026-08-02, 소유자:
-   * *"한번이라도 연결했으면 이 샘플은 안나와야하는데?"*).
+   * The sample guidance is for **someone who has never connected** (2026-08-02, owner:
+   * *"한번이라도 연결했으면 이 샘플은 안나와야하는데?"* — if they connected even once
+   * this sample should not appear).
    *
-   * 종전 판정은 「지금 볼트가 열려 있나」뿐이라, 예전에 폴더를 연결했던 사람도
-   * 볼트를 닫으면 첫 방문자와 같은 화면을 봤다. 이 케이스가 그 회귀를 막는다.
+   * The old verdict was only "is a vault open right now", so someone who had connected
+   * a folder previously saw the first-time visitor's screen whenever they closed the
+   * vault. This case blocks that regression.
    */
   it('연결 이력이 있으면 static 모드여도 샘플 안내를 띄우지 않는다', () => {
     mocks.restoreAttempted = true;

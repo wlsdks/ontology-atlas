@@ -1,23 +1,22 @@
-// 「아직 안 적었다」와 「망가졌다」는 다른 말이다.
+// "Not written yet" and "broken" are different statements.
 //
-// ## 왜 (2026-08-17 실측)
-//
-// 볼트를 **방금 만들고** 바로 검사하면 이렇게 나왔다:
+// Why (measured 2026-08-17): checking a vault **immediately after creating it**
+// produced:
 //
 //   vault health  needs_attention
 //     ⚠ meaning_assessment  1 project meaning assessment(s) require review;
 //                           first project: invalid (assessment_input_invalid)
 //
-// 사용자는 아무 잘못도 안 했다. `init` 이 역량 질문 블록을 안 만들어 두고,
-// 그 블록이 **없는 것**과 **망가진 것**이 코드 안에서 같은 값(`malformed`)이
-// 되기 때문이다. 그래서 갓 태어난 볼트가 자기가 고장 났다고 말한다.
+// The user did nothing wrong. `init` does not create the competency question
+// block, and in the code **absent** and **broken** collapsed to the same value
+// (`malformed`) — so a newborn vault reports itself as faulty.
 //
-// 이건 2026-08-17 (19) 의 반대 모양이다. 그때는 아무것도 없는 것을 「정상」
-// 이라 했고, 여기서는 아직 안 한 것을 「잘못됐다」고 한다. 둘 다 **아직 하지
-// 않은 일**을 다른 무엇으로 부른 것이다.
+// This is the mirror image of 2026-08-17 (19). There, "nothing at all" was called
+// "healthy"; here, "not done yet" is called "wrong". Both name **work not yet
+// done** as something else.
 //
-// 고칠 것은 판정이 아니라 **이름과 처방**이다: 안 적었으면 안 적었다고 하고,
-// 무엇을 하면 되는지 같이 준다.
+// What needs fixing is not the verdict but **the name and the remedy**: if it was
+// not written, say so, and say what to do about it.
 
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
@@ -55,7 +54,7 @@ test('그리고 무엇을 하면 되는지 같이 준다 — 처방 없는 진�
 });
 
 test('블록이 **있는데 틀린** 것은 여전히 「입력이 잘못됐다」다', () => {
-  // 이걸 같이 뭉개면 고친 의미가 없다 — 진짜 깨진 입력은 그렇게 불러야 한다.
+  // Collapsing this back together undoes the fix — genuinely broken input must still be called that.
   const assessment = deriveMeaningAssessment(
     baseInput({
       contract: 'wrong-contract',
@@ -70,7 +69,7 @@ test('블록이 **있는데 틀린** 것은 여전히 「입력이 잘못됐다�
 });
 
 test('다른 것이 틀렸으면 그것을 먼저 말한다 — 역량 부재가 다른 결함을 가리지 않는다', () => {
-  // 프로젝트 슬러그 자체가 틀렸다. 그건 「안 적었다」보다 앞선 문제다.
+  // The project slug itself is wrong. That is a problem that precedes "not written".
   const assessment = deriveMeaningAssessment({ ...baseInput(null), projectSlug: '' });
   assert.equal(assessment.topGap.id, 'assessment_input_invalid');
 });

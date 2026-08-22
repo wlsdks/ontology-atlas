@@ -4,7 +4,9 @@
  * ⊃ capability ⊃ element) → deterministic `{x, y}` world coordinates.
  *
  * Contract (`docs/TOPOLOGY-V2-DESIGN.md` §4 P2 — "layout.test.ts: 고정 vault
- * 픽스처 → 결정론적 좌표, 겹침 없음, aspectX 계열 왜곡 상수 부재"):
+ * 픽스처 → 결정론적 좌표, 겹침 없음, aspectX 계열 왜곡 상수 부재" — a fixed vault
+ * fixture yields deterministic coordinates, no overlap, and no aspectX-style
+ * distortion constant):
  * - The project sits at the origin.
  * - Domains are placed evenly around a circle of radius
  *   `--topology-v2-layout-ring-domain` (250) centered on the project.
@@ -83,32 +85,36 @@ export interface LayoutOptions {
    */
   relaxStrategy?: "grid" | "bruteforce";
   /**
-   * 충돌 완화를 **이 집합 안의 노드에만** 적용한다. 밖의 노드는 씨앗 좌표에
-   * 고정된 채 장애물 역할만 한다(밀되 밀리지 않는다). 생략하면 전부 완화 —
-   * 종전 동작 그대로다.
+   * Apply collision relaxation **only to nodes in this set**. Nodes outside stay
+   * pinned at their seed coordinates and act purely as obstacles (they push, they
+   * are not pushed). Omitted, everything relaxes — the earlier behaviour.
    *
-   * **왜 필요한가**: 씨앗 배치(부채꼴 + phyllotaxis)는 싸고 완화가 비싸다 —
-   * 실측(2026-07-31) N=3,000 에서 씨앗 4.3ms 대 전체 2,253ms 로 **완화가
-   * 99.8%** 다. 그런데 그 완화의 대부분은 **화면에 한 번도 그려지지 않는
-   * 노드**를 위한 것이다: 밀도 게이트가 자식 12개 초과 부모를 접어 element
-   * 의 95%가 칩 뒤로 숨는다(N=3,000 → 2,954개 중 2,806개).
+   * **Why it exists**: seeding (fan + phyllotaxis) is cheap and relaxation is
+   * expensive — measured 2026-07-31 at N=3,000: seed 4.3ms against 2,253ms total,
+   * so **relaxation is 99.8%** of it. And most of that relaxation is for nodes
+   * that are **never drawn**: the density conditional collapses parents with more
+   * than 12 children, hiding 95% of elements behind chips (N=3,000 → 2,806 of
+   * 2,954).
    *
-   * 안 그리는 것을 위해 겹침을 푸는 계산이 **느린 PC 에서 13.5초 프리즈**를
-   * 만들었다(CPU 6배 스로틀 실측). 범위를 「이번에 그려질 것」으로 좁히면
-   * 같은 볼트가 7.5ms 다 — **284배**. 10,000노드에서는 417배이고, 겹침 품질도
-   * 오히려 낫다(오늘 14 → 0): 보이지 않는 노드의 혼잡이 보이는 노드의 자리를
-   * 갉아먹지 않기 때문이다.
+   * Resolving overlaps for what is not drawn produced a **13.5s freeze on a slow
+   * machine** (measured under 6× CPU throttling). Narrowing the scope to "what
+   * will be drawn this time" puts the same vault at 7.5ms — **284×**. At 10,000
+   * nodes it is 417×, and the overlap quality is better rather than worse
+   * (14 → 0 today), because congestion among invisible nodes no longer eats the
+   * space visible nodes need.
    *
-   * 씨앗 좌표는 **전부** 계산한다 — 티어가 열리거나 칩을 펼칠 때 좌표가
-   * 비어 있지 않아야 줌 공개가 그대로 동작한다.
+   * Seed coordinates are still computed for **everything** — a tier opening or a
+   * chip expanding must find coordinates already there for zoom reveal to work.
    */
   relaxScope?: ReadonlySet<string>;
   /**
-   * 임계 초과 부모의 자식을 **어떻게 놓나** (설정 「확장 → 확장 구조」).
-   * 생략 시 `"disc"` — 오늘의 배치(황금각 phyllotaxis 나선)라 회귀 0.
+   * **How** an over-threshold parent's children are placed (the 「확장 → 확장
+   * 구조」 — expand → expand structure — setting). Omitted means `"disc"`,
+   * today's placement (golden-angle phyllotaxis spiral), so zero regression.
    *
-   * 임계 **이하** 부모는 이 값과 무관하게 종전 부채꼴을 바이트 동일하게 탄다 —
-   * 이 설정이 말하는 「확장」이 정확히 밀도 게이트가 접는 그 부모들이기 때문이다.
+   * Parents **at or below** the threshold take the earlier fan path
+   * byte-identically regardless of this value — the "expand" this setting names
+   * is exactly the set of parents the density conditional collapses.
    */
   expandStructure?: ExpandStructure;
 }
@@ -123,8 +129,8 @@ const DEFAULT_RELAX_PADDING = 6;
  * fixture, land on EXACTLY the ring token, `layout.test.ts`'s contract). Above
  * the threshold the ring is pushed out and the arc widened, proportional to the
  * child count, so a high-child-count domain's arc has room before the
- * collision-relax even runs (Design Guardian 충실도 반려: 295 concepts vs the
- * prototype's 40 overflow the base arcs).
+ * collision-relax even runs (Design Guardian rejected the earlier fidelity: 295
+ * concepts against the prototype's 40 overflow the base arcs).
  */
 const CAP_DENSITY_THRESHOLD = 4;
 const ELEMENT_DENSITY_THRESHOLD = 4;
@@ -133,19 +139,21 @@ const CAP_SPREAD_MAX = 1.5;
 const ELEMENT_SPREAD_MAX = 1.6;
 
 /**
- * 밀도 게이트 슬라이스 (fable 설계) — 자식 수가 이 값을 **초과**하는 부모는
- * 폭주하는 부채꼴(반지름이 n 에 비례: n=100 → r 2250) 대신 **phyllotaxis
- * 디스크**(황금각 나선)로 자식을 배치해 풋프린트를 유계로 만든다. 임계는
- * `density-gate.ts` 와 공유한다 — 접히는 부모와 디스크로 배치되는 부모는 정확히
- * 같아야 "접힌 칩을 펼치면 유계 디스크가 나온다"가 성립한다. 임계 이하 부모는
- * 기존 부채꼴 경로를 **바이트 동일**하게 탄다 (`layout.test.ts` 계약).
+ * A parent with **more** children than this places them on a **phyllotaxis disc**
+ * (golden-angle spiral) instead of a runaway fan whose radius grows with n
+ * (n=100 → r 2250), which keeps the footprint bounded. The threshold is shared
+ * with `density-gate.ts`: the parents that collapse and the parents placed on a
+ * disc must be exactly the same set for "expanding a collapsed chip yields a
+ * bounded disc" to hold. Parents at or below it take the existing fan path
+ * **byte-identically** (`layout.test.ts` contract).
  */
 const PHYLLOTAXIS_THRESHOLD = DENSITY_GATE_THRESHOLD;
 /**
- * 나선 점 간 간격(월드 유닛). Vogel 나선 `r = spacing·√i` 의 최근접 이웃
- * 거리 ≈ spacing 이므로, element 지름(14) + 여유를 덮도록 26 으로 둔다.
- * 디스크 최대 반지름 = shift + spacing·√(n−0.5) → n=108, shift=145 기준
- * ≈ 145 + 26·10.35 ≈ 414 로 유계(부채꼴의 2250 대비 극적 축소).
+ * Spacing between spiral points (world units). In a Vogel spiral
+ * `r = spacing·√i` the nearest-neighbour distance ≈ spacing, so 26 covers the
+ * element diameter (14) plus clearance. Max disc radius = shift + spacing·√(n−0.5)
+ * → at n=108, shift=145 that is ≈ 145 + 26·10.35 ≈ 414, bounded (against the
+ * fan's 2250).
  */
 const PHYLLOTAXIS_SPACING = 26;
 
@@ -173,19 +181,22 @@ export function computeConcentricLayout(
   const placed = new Map<string, PlacedPoint>();
   const expandStructure = options.expandStructure ?? DEFAULT_EXPAND.structure;
 
-  // 각 노드의 containment 자식 수 — phyllotaxis 디스크 자식을 DOI 로 정렬할 때
-  // "허브도(度)" 프록시로 쓴다(layout 은 전체 엣지를 모르므로 자식 수가 유일한
-  // 구조적 허브 신호). i=0(중심 최근접)에 최고 DOI 허브 capability 가 오도록.
+  // Containment child count per node — the hub-degree proxy used to order the
+  // disc's children by DOI. Layout does not know the full edge set, so child
+  // count is the only structural hub signal available. It puts the highest-DOI
+  // hub capability at i=0, nearest the centre.
   const childCount = new Map<string, number>();
   for (const n of nodes) {
     if (n.parentId !== null) childCount.set(n.parentId, (childCount.get(n.parentId) ?? 0) + 1);
   }
   /**
-   * phyllotaxis 디스크에 얹기 직전 자식을 rankEgoNeighborsByDOI(domain3 >
-   * capability2 > element1 → degree → slug)로 안정 정렬한다. Vogel 나선
-   * r=spacing·√i 라 중심 최근접(i=0)=최고 DOI 허브, rim=저차수 leaf → 중심→바깥
-   * 자연 읽기 순서. slug tiebreak 로 결정론(byte-identical). 임계 이하 부채꼴
-   * 경로는 이 정렬을 타지 않아 종전 좌표와 바이트 동일.
+   * Stable-sort children by `rankEgoNeighborsByDOI` (domain 3 > capability 2 >
+   * element 1 → degree → slug) just before they go on the phyllotaxis disc.
+   * Because the Vogel spiral is r=spacing·√i, i=0 is nearest the centre and gets
+   * the highest-DOI hub while the rim gets low-degree leaves — a natural
+   * centre-outwards reading order. The slug tiebreak keeps it deterministic
+   * (byte-identical). The below-threshold fan path never takes this sort, so its
+   * coordinates stay byte-identical to before.
    */
   const rankDiscChildren = (children: readonly LayoutGraphNode[]): LayoutGraphNode[] => {
     const byId = new Map(children.map((c) => [c.id, c]));
@@ -213,14 +224,16 @@ export function computeConcentricLayout(
     const domainPoint = placed.get(domain.id);
     if (!domainPoint) return;
     const caps = nodes.filter((n) => n.kind === "capability" && n.parentId === domain.id);
-    // 도메인이 element 를 직접 담는 vault(capability 경유 없음)도 실존한다 —
-    // 이들을 빼먹으면 (0,0) 적층 후 라이브 물리가 허브 쪽으로 끌어가 "블롭"
-    // 결함이 된다 (2026-07 소유자 실보고). capability 팬과 한 부채꼴로 합쳐
-    // 배치하되, 직접 element 가 없으면 기존 출력과 바이트 동일하다.
+    // Vaults where a domain holds elements directly (no capability in between)
+    // exist. Leaving them out stacks them at (0,0), and live physics then drags
+    // the stack toward the hub — the "blob" defect the owner reported in 2026-07.
+    // They join the capability fan as one arc; with no direct elements the output
+    // is byte-identical to before.
     const directElements = nodes.filter((n) => n.kind === "element" && n.parentId === domain.id);
     const fan = [...caps, ...directElements];
-    // 밀도 게이트: 초대형 부채꼴은 반지름이 폭주하므로 phyllotaxis 디스크로
-    // 유계 배치한다 (임계 이하 부모는 아래 부채꼴 경로를 바이트 동일하게 탄다).
+    // Density conditional: a very large fan's radius runs away, so it is placed
+    // on a bounded phyllotaxis disc instead. Parents at or below the threshold
+    // take the fan path below byte-identically.
     if (fan.length > PHYLLOTAXIS_THRESHOLD) {
       placeExpandedChildren(domainPoint, rankDiscChildren(fan), rings.capability, placed, expandStructure);
       return;
@@ -249,7 +262,7 @@ export function computeConcentricLayout(
     if (!capPoint) return;
     const elements = nodes.filter((n) => n.kind === "element" && n.parentId === cap.id);
     if (!elements.length) return;
-    // 밀도 게이트: element 도 임계 초과 시 phyllotaxis 디스크 (부채꼴 폭주 방지).
+    // Density conditional: elements also go on a phyllotaxis disc past the threshold.
     if (elements.length > PHYLLOTAXIS_THRESHOLD) {
       placeExpandedChildren(capPoint, rankDiscChildren(elements), rings.element, placed, expandStructure);
       return;
@@ -279,10 +292,11 @@ export function computeConcentricLayout(
 }
 
 /**
- * 잔여 배치 1 — 부모는 배치됐지만 위 표준 팬(project→domain→capability→element)
- * 이 다루지 않는 계보(element ⊃ element, project 직속 element, capability ⊃
- * capability 등)를 부모 기준 부채꼴로 배치한다. 표준형 vault 에서는 아무것도
- * 남지 않아 no-op — 기존 픽스처 좌표가 바이트 동일하게 유지된다.
+ * Leftovers, pass 1 — lineages whose parent is placed but which the standard fan
+ * (project→domain→capability→element) does not cover: element ⊃ element,
+ * elements directly under a project, capability ⊃ capability. They fan out from
+ * their parent. On a standard vault nothing is left, so this is a no-op and the
+ * existing fixture coordinates stay byte-identical.
  */
 function placeRemainingByParentChain(
   nodes: readonly LayoutGraphNode[],
@@ -291,7 +305,7 @@ function placeRemainingByParentChain(
   rankDiscChildren: (children: readonly LayoutGraphNode[]) => LayoutGraphNode[],
   expandStructure: ExpandStructure,
 ): void {
-  // 깊은 체인도 수렴하도록 진행이 있는 동안 반복 (입력 순서 고정 → 결정론).
+  // Repeat while progress is made so deep chains converge (fixed input order → deterministic).
   for (let pass = 0; pass < nodes.length; pass += 1) {
     const pending = nodes.filter((n) => !placed.has(n.id) && n.parentId !== null && placed.has(n.parentId));
     if (pending.length === 0) return;
@@ -304,7 +318,7 @@ function placeRemainingByParentChain(
     for (const [parentId, kids] of byParent) {
       const parentPoint = placed.get(parentId);
       if (!parentPoint) continue;
-      // 밀도 게이트: 비표준 계보의 대량 자식도 phyllotaxis 디스크로 유계 배치.
+      // Density conditional: bulk children of a non-standard lineage also go on a disc.
       if (kids.length > PHYLLOTAXIS_THRESHOLD) {
         placeExpandedChildren(parentPoint, rankDiscChildren(kids), rings.element, placed, expandStructure);
         continue;
@@ -324,16 +338,16 @@ function placeRemainingByParentChain(
   }
 }
 
-/** 황금각 — 고아 나선 배치의 각 간격 (phyllotaxis, 결정론). */
+/** Golden angle — the angular step of the orphan spiral (phyllotaxis, deterministic). */
 const GOLDEN_ANGLE = Math.PI * (3 - Math.sqrt(5));
 
 /**
- * 밀도 게이트 슬라이스 (fable 설계) — 임계 초과 부모의 자식을 황금각
- * phyllotaxis 디스크에 얹는다. 디스크 중심은 부모 outward 방향으로
- * `ringRadius` 만큼 밀어(부모의 부모 쪽을 피함), 각 자식은
- * `r = spacing·√(i+0.5)` (부모 부채꼴 폭주 대신 √ 성장이라 풋프린트 유계).
- * 결정론: 입력 순서 고정 → 바이트 동일. 겹침은 상위 `relaxCollisions` 가
- * 마무리한다.
+ * Lay an over-threshold parent's children on a golden-angle phyllotaxis disc.
+ * The disc centre is pushed `ringRadius` along the parent's outward direction so
+ * it avoids the grandparent's side, and each child sits at
+ * `r = spacing·√(i+0.5)` — √ growth instead of the fan's runaway, so the
+ * footprint stays bounded. Deterministic: fixed input order → byte-identical.
+ * `relaxCollisions` above finishes off any remaining overlap.
  */
 function placePhyllotaxisDisk(
   parent: PlacedPoint,
@@ -354,48 +368,50 @@ function placePhyllotaxisDisk(
   });
 }
 
-/* ── 확장 구조 3안 (시안 `.qa-scratch/proto-expand.html` 좌측 「확장 구조」) ──
+/* ── Three expand structures ────────────────────────────────────────────────
  *
- * 시안은 **자리를 이름까지 포함해서** 잡았다(자식 한 개가 실제로 차지하는 폭은
- * `max(몸통 지름, 이름 폭)`). 이 모듈은 캔버스를 모르는 순수 함수라 글자 폭을
- * 잴 수 없다 — 그래서 여기서는 **기하만** 옮기고, 이름은 상위의 greedy 라벨
- * 배치기(`render/label-layout.ts`)와 「이름을 시도할 개수」 예산이 계속 맡는다.
- * 시안의 폭 실측을 그대로 옮긴 것이 아니라는 뜻이고, 그건 정직하게 적어 둔다.
+ * The mockup reserved space **including the label** (one child's real width is
+ * `max(body diameter, label width)`). This module is a pure function with no
+ * canvas, so it cannot measure text — only the **geometry** is carried over, and
+ * labels stay the job of the greedy label placer (`render/label-layout.ts`) and
+ * its "how many labels to attempt" budget. So these are not the mockup's
+ * measured widths, and that is stated rather than glossed over.
  *
- * 셋 다 결정론이다 — 같은 입력 순서 → 같은 좌표. 남는 겹침은 상위
- * `relaxCollisions` 가 마무리하는 것도 나선 원반과 같다.
+ * All three are deterministic — same input order → same coordinates — and, like
+ * the spiral disc, leave any residual overlap to `relaxCollisions` above.
  */
 
 /**
- * 부챗살 — 바깥쪽으로 부채꼴. 한 층이 차면 다음 층으로 올라간다.
- *
- * 반지름이 개수에 **비례**해 자라므로(나선의 √ 성장과 대비) 층이 쌓이며 넓어져
- * 형제 도메인과 부딪힐 수 있다 — 시안이 이 안의 대가로 적어 둔 그 성질이다.
- * 쐐기 폭은 부모의 outward 방향 기준 ±`FAN_SPREAD/2` 로 가둔다.
+ * Fan — an outward arc; when one row fills, the next starts further out. The
+ * radius grows **proportionally** with the count (against the spiral's √
+ * growth), so stacked rows widen and can collide with sibling domains — the
+ * trade-off the mockup recorded for this option. The wedge is bounded to
+ * ±`FAN_SPREAD/2` around the parent's outward direction.
  */
 const FAN_SPREAD = Math.PI * 0.62;
 
 /**
- * 이웃한 두 자식의 **호 위 간격**(월드). 나선 원반의 26 을 그대로 쓰다가
- * 올렸다 — 실측(2026-08-02, 1512×982, 부모 셋 펼침 48자식): 부챗살에서 마크가
- * **26쌍** 겹쳤고 나선·고리는 0쌍이었다. 원인은 값 하나다: 자식 반지름은
- * `magnitudeScale` 로 최대 1.4배까지 자라(역량 11 → 15.4) 두 개가 나란히
- * 서려면 30.8 이 필요한데 26 을 줬다. `relaxCollisions` 는 **기본 반지름**만
- * 보고 밀어서 이 초과분을 못 되돌린다.
+ * **Arc spacing** between two neighbouring children (world units). It started as
+ * the spiral disc's 26 and was raised — measured 2026-08-02 at 1512×982 with
+ * three parents expanded (48 children): the fan overlapped **26 pairs** of marks
+ * while spiral and ring overlapped 0. One value caused it: a child's radius grows
+ * up to 1.4× under `magnitudeScale` (capability 11 → 15.4), so two side by side
+ * need 30.8 and were given 26. `relaxCollisions` pushes using the **base radius**
+ * only, so it cannot recover that excess.
  */
 const FAN_ARC_SPACING = 34;
-/** 층 간 간격 — 같은 이유로 호 간격과 같은 값을 쓴다(층끼리도 나란히 선다). */
+/** Row spacing — the same value for the same reason (rows also stand side by side). */
 const FAN_ROW_GAP = 34;
 
 /**
- * 한 층에 자식을 **일정 간격으로, 가운데부터** 앉힌다.
+ * Seat a row's children at a **fixed spacing, centred**.
  *
- * 종전엔 `k/(take-1) - 0.5` 로 그 층의 자식을 쐐기 **폭 전체**에 늘였다. 층이
- * 꽉 찼을 때는 같은 답이지만 **마지막 층**에서 갈렸다 — 남은 두 개가 부챗살의
- * 양 끝으로 날아가 부모에서 가장 먼 두 점에 홀로 섰다(부채가 아니라 부스러기로
- * 읽히는 자리이고, 형제 도메인에 가장 먼저 닿는 자리이기도 하다). 간격을
- * 고정하고 가운데 정렬하면 마지막 층이 중심선 옆에 모인다 — 시안이 폭을 재서
- * 얻던 성질을, 글자를 못 재는 이 모듈에서 낼 수 있는 만큼.
+ * It used to stretch them across the **whole** wedge with `k/(take-1) - 0.5`.
+ * For a full row that is the same answer, but the **last row** diverged: the two
+ * remaining children flew to the ends of the fan and stood alone at the points
+ * furthest from the parent — reading as debris rather than a fan, and the first
+ * to reach a sibling domain. Fixed spacing plus centring keeps the last row
+ * beside the centre line.
  */
 function placeExpandedFan(
   parent: PlacedPoint,
@@ -407,8 +423,8 @@ function placeExpandedFan(
   let row = 0;
   while (index < children.length) {
     const r = ringRadius + row * FAN_ROW_GAP;
-    const step = FAN_ARC_SPACING / r; // 라디안 — 이 반지름에서 간격 고정
-    // 이 층이 담을 수 있는 개수 — 적어도 하나는 놓는다(무한 루프 방지).
+    const step = FAN_ARC_SPACING / r; // radians — fixed spacing at this radius
+    // How many this row holds — at least one, or the loop never terminates.
     const capacity = Math.max(1, Math.floor(FAN_SPREAD / step) + 1);
     const take = Math.min(capacity, children.length - index);
     for (let k = 0; k < take; k += 1) {
@@ -425,9 +441,10 @@ function placeExpandedFan(
 }
 
 /**
- * 고리 — 부모를 **감싼다**. 사방을 쓰니 같은 개수를 더 좁은 면적에 담는다.
- * 대신 부모가 자식에 둘러싸여 「어디서 왔는지」가 약해진다(시안의 대가).
- * 각 고리는 바깥쪽(부모의 outward 방향 반대편)에서 시작해 한 바퀴 돈다.
+ * Ring — **surrounds** the parent. Using every direction fits the same count in
+ * a smaller area, at the cost of "where this came from" reading more weakly
+ * (the mockup's recorded trade-off). Each ring starts opposite the parent's
+ * outward direction and goes all the way round.
  */
 function placeExpandedRing(
   parent: PlacedPoint,
@@ -454,13 +471,14 @@ function placeExpandedRing(
 }
 
 /**
- * 기둥 — 바깥으로 **줄 세우기**. 이름이 옆으로 나란해 읽기가 가장 쉽고 겹칠
- * 여지가 거의 없다. 대신 길어져서 화면 밖으로 나가기 쉽다(시안의 대가).
- * 열은 부모의 outward 방향으로 나아가고, 각 열은 그 수직 방향으로 늘어선다.
+ * Columns — **lined up** outwards. Labels stand side by side, so it reads most
+ * easily and has almost no room to overlap; the cost is length running off
+ * screen (the mockup's recorded trade-off). Columns advance along the parent's
+ * outward direction, each running perpendicular to it.
  */
 const COLUMN_LENGTH = 6;
 const COLUMN_GAP = FAN_ARC_SPACING * 1.6;
-/** 한 줄 안에서 위아래 간격 — 부챗살과 같은 이유로 26 이 아니라 34 다. */
+/** Vertical spacing within a column — 34, not 26, for the same reason as the fan. */
 const COLUMN_ROW_GAP = FAN_ARC_SPACING;
 
 function placeExpandedColumns(
@@ -471,7 +489,7 @@ function placeExpandedColumns(
 ): void {
   const dirX = Math.cos(parent.angle);
   const dirY = Math.sin(parent.angle);
-  // 열이 늘어서는 방향 = outward 의 수직.
+  // Columns run perpendicular to outward.
   const perpX = -dirY;
   const perpY = dirX;
   children.forEach((child, i) => {
@@ -488,8 +506,9 @@ function placeExpandedColumns(
 }
 
 /**
- * 임계 초과 부모의 자식 배치 — 설정이 고른 구조로 위임한다. `disc` 가 기본이자
- * 오늘의 배치라, 설정을 안 건드린 화면은 좌표가 바이트 동일하다.
+ * Place an over-threshold parent's children — delegates to the structure the
+ * setting chose. `disc` is both the default and today's placement, so a screen
+ * that never touched the setting keeps byte-identical coordinates.
  */
 function placeExpandedChildren(
   parent: PlacedPoint,
@@ -505,9 +524,10 @@ function placeExpandedChildren(
 }
 
 /**
- * 잔여 배치 2 — 부모가 끝내 배치되지 않는 고아(containment 밖 노드)를
- * 도메인 링 바깥의 황금각 나선에 얹는다. 종전에는 전원 (0,0) 적층 →
- * 라이브 물리가 끌어간 자리에서 라벨까지 겹치는 블롭이 됐다.
+ * Leftovers, pass 2 — orphans whose parent never gets placed (nodes outside
+ * containment) go on a golden-angle spiral beyond the domain ring. They used to
+ * stack at (0,0), and live physics dragged that stack into a blob where even the
+ * labels overlapped.
  */
 function placeOrphans(
   nodes: readonly LayoutGraphNode[],
@@ -550,9 +570,10 @@ function coincidentSeparation(id: string): { x: number; y: number } {
  * "circuit" star-chart survives, the dense fans stop piling.
  */
 /**
- * 충돌 해소가 실제로 만지는 최소 형태 — `x`/`y` 뿐이다. `PlacedPoint`(angle
- * 포함)와 `LayoutPoint`(id 포함) 둘 다 이 형태를 만족하므로, 최초 배치와
- * 증분 재완화가 **같은 완화 코드**를 쓴다(두 벌로 갈라지면 드리프트한다).
+ * The minimum shape collision resolution actually mutates — `x`/`y` only. Both
+ * `PlacedPoint` (with angle) and `LayoutPoint` (with id) satisfy it, so the
+ * initial placement and the incremental re-relax run the **same relaxation
+ * code**; two copies would drift.
  */
 interface MutablePoint {
   x: number;
@@ -631,10 +652,11 @@ function relaxCollisions(
   const strategy = options.relaxStrategy ?? "grid";
 
   const scope = options.relaxScope;
-  // 범위 밖 노드는 **items 에서 아예 뺀다** — 고정 장애물로 남겨 두면 이동은
-  // 막히지만 그리드 재구축과 쌍 열거는 그대로 돌아 비용이 안 준다(실측:
-  // 핀만 걸었을 때 N=3,000 이 2,081ms 로 변동 없음). 범위 밖은 이 볼트에서
-  // 한 번도 그려지지 않으므로 범위 안 노드가 그 위에 겹쳐도 화면에 영향이 없다.
+  // Out-of-scope nodes are **dropped from items entirely**. Keeping them as
+  // pinned obstacles stops them moving but leaves grid rebuild and pair
+  // enumeration running, so the cost does not fall (measured: pinning alone left
+  // N=3,000 at 2,081ms, unchanged). Out-of-scope nodes are never drawn in this
+  // vault, so an in-scope node overlapping one has no effect on screen.
   const items: RelaxItem[] = [];
   for (const n of nodes) {
     if (scope !== undefined && !scope.has(n.id)) continue;
@@ -674,25 +696,27 @@ function relaxBruteForce(
 }
 
 /**
- * 공간 그리드 해싱 de-pileup (topology-map-v2 S1) — `relaxBruteForce` 의
- * O(n²)×iterations 를 O(n)×iterations 근처로 낮춘다 (실측: n=5000 ~20s → 수백 ms).
+ * Spatial grid-hashing de-pileup — brings `relaxBruteForce`'s O(n²)×iterations
+ * down to roughly O(n)×iterations (measured: n=5000 ~20s → a few hundred ms).
  *
- * 바이트 동일 계약: 매 iteration 시작 시점 좌표로 그리드를 재구축하고, 행 `i`
- * 오름차순으로 3×3 셀 이웃에서 파트너 `j > i` 를 모아 **`j` 오름차순 정렬** 후
- * `resolveCollisionPair` 로 즉시 처리한다. 이는 브루트포스의 `for i: for j>i`
- * 와 동일한 lexicographic 순서다(바깥 i 오름차순 · 안쪽 j 오름차순, 앞 행의
- * push 가 이미 반영된 좌표에서 처리). 각 쌍은 처리 시점 거리를 다시 검사하므로,
- * 그리드가 **브루트포스가 실제로 밀어내는 쌍의 상위집합**이기만 하면 결과가
- * 바이트 동일하다 — 초과 포함 후보는 no-op.
+ * Byte-identity contract: the grid is rebuilt from each iteration's starting
+ * coordinates; then, walking rows `i` ascending, partners `j > i` are gathered
+ * from the 3×3 cell neighbourhood, **sorted ascending by `j`**, and handed to
+ * `resolveCollisionPair`. That is brute force's `for i: for j>i` lexicographic
+ * order, each pair seeing the coordinates earlier rows already pushed. Every
+ * pair re-checks its distance at resolution time, so the grid only has to be a
+ * **superset of the pairs brute force actually pushes** — over-included
+ * candidates are no-ops.
  *
- * 셀 크기 = 최대 충돌거리(`2·maxRadius + padding`) + 이동 마진(같은 값 한 번 더,
- * 총 `2×`). 3×3 이웃은 시작 좌표 체비쇼프 거리 < cellSize 인 모든 쌍을 포착하므로,
- * 한 iteration 안에서 노드가 (대략) 최대 충돌거리만큼 움직여 새로 충돌하게 되는
- * 쌍까지 여유롭게 상위집합에 포함된다.
+ * Cell size = max collision distance (`2·maxRadius + padding`) + a movement
+ * margin (the same value again, `2×` in total). The 3×3 neighbourhood catches
+ * every pair whose starting Chebyshev distance is < cellSize, which comfortably
+ * covers pairs that only start colliding after a node moves (roughly) the max
+ * collision distance within one iteration.
  *
- * 성능: 전역 쌍 배열/전역 정렬 대신 행별 스크래치 버퍼(재사용)로 후보를 모아
- * 짧은 로컬 정렬만 하고, 정수 셀 키(문자열 할당 없음)와 제곱거리 fast-reject 로
- * 상수 인자를 낮춘다.
+ * Performance: candidates go into a reused per-row scratch buffer with one short
+ * local sort rather than a global pair array and global sort; integer cell keys
+ * (no string allocation) and a squared-distance fast-reject cut the constant.
  */
 function relaxGrid(
   items: readonly RelaxItem[],
@@ -703,22 +727,24 @@ function relaxGrid(
   const n = items.length;
   const maxRadius = Math.max(radii.project, radii.domain, radii.capability, radii.element);
   const maxMinDist = 2 * maxRadius + padding;
-  // 셀 크기 = 최대 충돌거리 + 이동 마진. maxMinDist 가 0 이하로 떨어질 일은
-  // 없지만(반지름·padding 모두 ≥0, 최소 1), 방어적으로 하한을 둔다.
+  // Cell size = max collision distance + movement margin. `maxMinDist` cannot
+  // drop to 0 or below (radii and padding are ≥0, minimum 1), but the floor is
+  // kept defensively.
   const cellSize = Math.max(1, maxMinDist * 2);
 
-  // 정수 셀 키: (cx, cy) 를 하나의 정수 `cx*STRIDE + cy` 로 접는다. 셀 좌표는
-  // 유계라(coord/cellSize, 실측 수백 이하) |cy| ≪ STRIDE → 서로 다른 (cx,cy)
-  // 가 항상 다른 키를 준다(문자열 키 대비 GC 압력 제거). cx/cy 는 따로 보관해
-  // 이웃 키 계산 시 디코딩(음수에서 깨짐)을 피한다.
+  // Integer cell key: fold (cx, cy) into one integer `cx*STRIDE + cy`. Cell
+  // coordinates are bounded (coord/cellSize, measured in the hundreds at most)
+  // so |cy| ≪ STRIDE and distinct (cx,cy) always give distinct keys — with none
+  // of the GC pressure of string keys. cx/cy are kept separately so neighbour
+  // keys never need decoding, which breaks for negative values.
   const CELL_STRIDE = 1 << 22;
   const cellX = new Int32Array(n);
   const cellY = new Int32Array(n);
   const grid = new Map<number, number[]>();
-  const neighbors: number[] = []; // 행별 후보 스크래치(재사용)
+  const neighbors: number[] = []; // reused per-row candidate scratch
 
   for (let iter = 0; iter < iterations; iter += 1) {
-    // 1) 매 iteration 시작 좌표로 그리드 재구축.
+    // 1) Rebuild the grid from this iteration's starting coordinates.
     grid.clear();
     for (let i = 0; i < n; i += 1) {
       const cx = Math.floor(items[i].point.x / cellSize);
@@ -731,8 +757,9 @@ function relaxGrid(
       else grid.set(key, [i]);
     }
 
-    // 2) 행 i 오름차순 — 3×3 이웃에서 j>i 후보를 모아 j 오름차순 정렬 후 즉시 처리.
-    //    이웃 대칭성 덕분에 파트너>현재 조건만으로 각 쌍이 정확히 한 번 처리된다.
+    // 2) Rows i ascending — gather j>i candidates from the 3×3 neighbourhood,
+    //    sort by j ascending, resolve immediately. Neighbourhood symmetry means
+    //    the partner>current test alone visits each pair exactly once.
     for (let i = 0; i < n; i += 1) {
       const baseX = cellX[i];
       const baseY = cellY[i];
@@ -768,25 +795,26 @@ function relaxGrid(
 }
 
 /**
- * 펼침으로 **새로 보이게 된 노드**만 국소 완화한다 (2026-07-31).
+ * Locally relax only the nodes an expand made **newly visible** (2026-07-31).
  *
- * `relaxScope` 는 월드를 지을 때 한 번 정해진다 — 그때는 아무것도 펼쳐져 있지
- * 않으므로, 칩을 펼치면 그 자식들이 **씨앗 자리 그대로** 나타난다. 한 부모의
- * 자식끼리는 phyllotaxis 간격이 이미 충돌을 막지만(실측: 겹침 0), **다른
- * 부모의 부채와는 겹친다** — 3개 펼침에서 5건, 6개에서 18건, 12개에서 70건.
+ * `relaxScope` is fixed once, when the world is built and nothing is expanded,
+ * so expanding a chip makes its children appear **on their raw seed
+ * coordinates**. Phyllotaxis spacing already keeps one parent's children apart
+ * (measured: 0 overlaps), but they **do overlap other parents' fans**: 5 cases
+ * at 3 expands, 18 at 6, 70 at 12.
  *
- * 전체를 다시 완화하면 두 가지가 나빠진다: ① 비용이 누적된다(12개 펼침에서
- * 141ms, 24개에서 341ms) ② **이미 보고 있던 노드가 움직인다**(최대 15 유닛) —
- * 사용자 발밑이 흔들린다.
+ * Relaxing everything again makes two things worse: ① the cost accumulates
+ * (141ms at 12 expands, 341ms at 24) and ② **nodes the user was already looking
+ * at move** (up to 15 units), so the ground shifts under them. So items holds
+ * exactly two groups — newly visible nodes, which are relaxed, and already-placed
+ * nodes near that bbox, which are pinned obstacles.
  *
- * 그래서 items 를 둘로만 채운다:
- * - **새로 보이는 노드** — 완화 대상(움직인다)
- * - **그 bbox 근처의 이미 놓인 노드** — 고정 장애물(안 움직인다)
+ * The spatial neighbourhood is **constant** regardless of how many expands have
+ * happened (measured: 107–134 items per click, the same on the 2nd as the 12th),
+ * because fans are bounded (phyllotaxis disc).
  *
- * 공간 이웃은 클릭 수와 무관하게 **상수**다(실측: 클릭당 107~134 items,
- * 2번째 클릭이든 12번째든 같다). 부채가 유계(phyllotaxis 디스크)라서 그렇다.
- *
- * `points` 를 **제자리에서 수정**한다 — 호출부가 월드 좌표를 그대로 쓰기 때문.
+ * `points` is mutated **in place** — the caller uses those world coordinates
+ * directly.
  */
 export function relaxNewlyVisible(
   points: Map<string, LayoutPoint>,
@@ -800,7 +828,7 @@ export function relaxNewlyVisible(
   const iterations = options.relaxIterations ?? DEFAULT_RELAX_ITERATIONS;
   const padding = options.relaxPadding ?? DEFAULT_RELAX_PADDING;
 
-  // 1) 새로 보이는 것들의 bbox — 이 근처만 충돌할 수 있다.
+  // 1) bbox of the newly visible nodes — only this neighbourhood can collide.
   let minX = Infinity;
   let minY = Infinity;
   let maxX = -Infinity;
@@ -814,11 +842,11 @@ export function relaxNewlyVisible(
     if (p.y > maxY) maxY = p.y;
   }
   if (!Number.isFinite(minX)) return;
-  // 여백 = 가장 큰 두 반지름 + padding. 이보다 먼 노드는 원리적으로 못 닿는다.
+  // Margin = the two largest radii + padding. Anything further cannot reach, in principle.
   const maxRadius = Math.max(radii.project, radii.domain, radii.capability, radii.element);
   const margin = 2 * maxRadius + padding;
 
-  // 2) items = 새로 보이는 것(자유) + bbox 이웃(고정).
+  // 2) items = newly visible (free) + bbox neighbours (pinned).
   const kindById = new Map(nodes.map((n) => [n.id, n.kind]));
   const items: RelaxItem[] = [];
   for (const id of newlyVisibleIds) {

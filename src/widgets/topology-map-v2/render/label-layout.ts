@@ -1,5 +1,5 @@
 /**
- * Pure label-placement helpers (Design Guardian 가독성 반려) — no canvas, no
+ * Pure label-placement helpers (from a Design Guardian legibility rejection) — no canvas, no
  * tokens, unit-tested in `label-layout.test.ts`:
  *
  * - `isWithinSafeRect` — the anchor must sit inside the VISIBLE area (viewport
@@ -43,9 +43,10 @@ export function isWithinSafeRect(x: number, y: number, rect: SafeRect): boolean 
  * ego-protected labels (selected/hovered/ego member) whose node sits under a
  * chrome inset. Guardian follow-up A (label-clarity): the safe-rect cull ran
  * BEFORE the selected/hovered alpha floor, so a focused domain's fan children
- * under the left panel lost their labels — recreating the "이름 없는 도형"
- * symptom the slice existed to fix. A clamped label sits at the inset edge
- * nearest its node ("이 패널 밑에 이 노드가 있다"), which beats silence.
+ * under the left panel lost their labels — recreating the 「이름 없는 도형」
+ * (nameless shapes) symptom the slice existed to fix. A clamped label sits at
+ * the inset edge nearest its node, saying "this node is under this panel", which
+ * beats silence.
  * `marginX`/`marginY` keep the text box itself inside the rect (width/2, font).
  */
 export function clampAnchorIntoSafeRect(
@@ -65,30 +66,34 @@ export function clampAnchorIntoSafeRect(
 export interface SafeRectProtectionInput {
   egoState: "center" | "neighbor" | "dim" | "normal";
   isHovered: boolean;
-  /** 발자국 렌즈가 켜져 있고 이 노드가 방문 노드인가. */
+  /** Whether the footprint lens is on and this node is one of the visited ones. */
   trailKept: boolean;
   kind: "project" | "domain" | "capability" | "element";
   isHub: boolean;
 }
 
 /**
- * **크롬 인셋 밖으로 나간 라벨을 버리는 대신 인셋 가장자리로 당겨 살릴 것인가.**
+ * **Whether a label pushed outside the chrome inset is clamped to the inset edge
+ * rather than dropped.**
  *
- * 컬 자체는 있어야 한다 — 그것이 없으면 화면 밖 이름들이 인셋 가장자리에 쌓인다.
- * 그래서 판정은 「이 이름이 없으면 화면이 거짓말을 하는가」다:
+ * The cull itself has to exist — without it, off-screen names pile up along the
+ * inset edge. So the question is: would the screen lie if this name were missing?
  *
- * - 사용자가 지금 보고 있는 것 — 포커스 중심 · ego 이웃 · 호버 · 발자국 방문
- *   (Guardian follow-up A: 컬이 «선택 → 알파 1» 보장보다 먼저 돌아서 왼쪽 패널
- *   밑의 ego 자식이 이름을 잃었다).
- * - **오버뷰 스파인의 두 등급 — project 와 hub** (원장 2026-08-08 (3) ②).
- *   노드 패스는 뷰포트 전체로 컬하는데 이 패스는 안전영역으로 컬하므로, 최외곽
- *   스파인 노드가 «그려지지만 이름만 없는» 상태가 됐다. 이름 없는 앰버 허브 링은
- *   `render/labels.ts` 의 계약(*"잡을 수 있으면 읽을 수 있다"* · *nameless
- *   circle 금지*)과 `resolveLabelPriority`(허브는 이미 project 와 **같은 등급**)를
- *   동시에 어기고, 개요 고도에서 독자가 묻는 질문이 바로 *"무엇이 허브인가"*
- *   (`model/label-lod.ts`)다.
+ * - What the user is looking at right now — the focus centre, ego neighbours,
+ *   hover, footprint visits. (Guardian follow-up: the cull ran before the
+ *   "selected ⇒ alpha 1" guarantee, so ego children under the left panel lost
+ *   their names.)
+ * - **The two overview-spine ranks, project and hub** (decision ledger
+ *   2026-08-08 (3) ②). The node path culls against the whole viewport while this
+ *   path culls against the safe rect, which left the outermost spine nodes drawn
+ *   but nameless. A nameless amber hub ring breaks both the contract in
+ *   `render/labels.ts` (*"if you can click it, you can read it"*, no nameless
+ *   circles) and `resolveLabelPriority`, where a hub already ranks **equal to a
+ *   project** — and at overview altitude the reader's question is precisely
+ *   *which one is the hub* (`model/label-lod.ts`).
  *
- * 그 밖(`dim`/`normal` 의 평범한 도메인·역량·요소)은 종전대로 떨어진다.
+ * Everything else — ordinary `dim`/`normal` domains, capabilities, elements —
+ * still drops.
  */
 export function isSafeRectProtectedLabel(input: SafeRectProtectionInput): boolean {
   if (input.egoState === "center" || input.egoState === "neighbor") return true;
@@ -108,9 +113,10 @@ export interface LabelCandidate<T> {
   order: number;
   bbox: LabelBBox;
   /**
-   * 이 라벨의 주인 노드 id. `ReservedBox.ownerId` 와 짝을 이뤄 **자기 노드의
-   * 예약 영역에는 굴복하지 않게** 한다 — 노드 디스크를 예약하기 시작하면
-   * 모든 라벨이 (자기 노드 바로 아래 붙으므로) 자기 예약에 걸려 사라진다.
+   * The id of this label's own node. Paired with `ReservedBox.ownerId` so a
+   * label never yields to **its own** node's reservation — once node discs are
+   * reserved, every label sits directly under its own node and would otherwise
+   * suppress itself.
    */
   ownerId?: string;
   payload: T;
@@ -153,15 +159,15 @@ export function resolveLabelPriority(input: LabelPriorityInput): number {
 export interface ReservedBox {
   bbox: LabelBBox;
   priority: number;
-  /** 이 영역의 주인 노드 id — 같은 주인의 라벨은 이 예약을 무시한다. */
+  /** The id of the node owning this area; that node's own label ignores the reservation. */
   ownerId?: string;
 }
 
 /**
  * Cluster chips sit at the project/hub tier (2) of the label ladder.
  *
- * rationale: a chip is an interactive affordance carrying a typed fact ("N개가
- * 접혀 있다, 눌러서 열기") — losing it to a passive element label costs the user a
+ * rationale: a chip is an interactive affordance carrying a typed fact ("N are
+ * collapsed here, click to open") — losing it to a passive element label costs the user a
  * control, while losing an element label costs one name that hover/ego restores.
  * Above 2 sit only selected/hovered labels, which the user is actively attending
  * to and which must never be silenced by a chip.
@@ -169,25 +175,28 @@ export interface ReservedBox {
 export const CLUSTER_CHIP_LABEL_PRIORITY = 2;
 
 /**
- * 그려진 노드 디스크가 라벨 사다리에서 갖는 등급 (진입 검수 E-4).
+ * Where a drawn node disc ranks in the label priority ladder.
  *
- * 검수 실측: 상품 노드를 클릭한 ego 포커스에서 자식 라벨 「상품 등록」이 선택
- * 노드의 박스를 **15px 관통**했고, 그 옆 라벨은 펼침 배지에 삼켜져 「재」 한 자만
- * 남았다. greedy 억제는 라벨 ↔ 라벨 겹침만 알았고 라벨 ↔ **노드 도형** 겹침은
- * 아예 몰랐다 — 이름이 도형 위에 얹히면 둘 다 못 읽는다(Tufte: 그래픽 정직성).
+ * Measured during review: with ego focus on a product node, the child label
+ * 「상품 등록」 cut **15px into** the selected node's box, and the label beside it
+ * was swallowed by an expand badge down to a single character. Greedy
+ * suppression only knew label ↔ label overlap, never label ↔ **node shape** —
+ * and a name laid over a shape makes both unreadable (Tufte: graphical
+ * integrity).
  *
- * 등급 1 의 뜻: 선택(0)·호버(1) 라벨은 디스크보다 굴복하지 않는다 — 사용자가
- * 지금 보고 있는 이름이 남의 도형 때문에 사라지면 그게 더 나쁘다. 수동적인
- * 프로젝트/도메인/역량/요소 라벨(2~5)은 비켜선다(먼저 노드 위쪽으로 뒤집어
- * 보고, 거기도 막히면 떨어진다 — `topology-frame-draw.ts` 의 flip 로직).
+ * Rank 1 means selected (0) and hovered (1) labels do not yield to a disc: the
+ * name the user is looking at right now disappearing behind someone else's shape
+ * is the worse outcome. Passive project/domain/capability/element labels (2–5)
+ * step aside — first by flipping above the node, then dropping if that is
+ * blocked too (the flip logic in `topology-frame-draw.ts`).
  */
 export const NODE_DISC_LABEL_PRIORITY = 1;
 
 /**
- * 이 bbox 가 **남의** 예약 영역과 겹치는가(자기 주인의 예약은 제외).
- * `greedyPlaceLabels` 가 쓰는 것과 같은 판정을 프레임 빌드 단계에서 재사용해
- * "아래가 막혔으면 위로 뒤집는" 결정을 내린다 — 두 곳이 다른 규칙을 쓰면
- * 뒤집어 놓고 다시 떨어지는 낭비가 난다.
+ * Whether this bbox overlaps a **foreign** reservation, ignoring its own owner's.
+ * The frame build reuses the exact test `greedyPlaceLabels` applies, so the
+ * "blocked below, flip above" decision agrees with the placement — two different
+ * rules here would flip a label only to drop it anyway.
  */
 export function overlapsForeignReserved(
   bbox: LabelBBox,
@@ -197,9 +206,10 @@ export function overlapsForeignReserved(
 ): boolean {
   if (!reserved) return false;
   return reserved.some((box) => {
-    // 주인이 **둘 다 정해져 있고 같을 때만** 자기 예약으로 본다. `undefined ===
-    // undefined` 를 같은 주인으로 읽으면 주인 없는 예약(클러스터 칩)이 주인 없는
-    // 후보를 통과시켜 버린다 — 칩 억제가 조용히 무력화된다.
+    // A reservation counts as one's own only when **both** owners are defined and
+    // equal. Reading `undefined === undefined` as the same owner would let an
+    // ownerless reservation (a cluster chip) pass an ownerless candidate through,
+    // silently disabling chip suppression.
     const ownedBySameNode = box.ownerId !== undefined && box.ownerId === ownerId;
     if (ownedBySameNode) return false;
     return priority > box.priority && bboxesOverlap(box.bbox, bbox);

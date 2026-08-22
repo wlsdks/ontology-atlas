@@ -68,8 +68,9 @@ test('resolveVaultRoot — explicit/env vault paths must exist and be directorie
 });
 
 test('resolveVaultRoot — cwd/docs/ontology 자동 감지 (3 순위)', () => {
-  // 임시 cwd 에 docs/ontology 디렉토리 만들고 chdir. macOS 의 tmp 는 symlink
-  // (`/var/folders` → `/private/var/folders`) 라 realpathSync 로 정규화 후 비교.
+  // Create docs/ontology under a temporary cwd and chdir into it. macOS tmp is a
+  // symlink (`/var/folders` → `/private/var/folders`), so compare after
+  // normalising with realpathSync.
   const tmp = realpathSync(mkdtempSync(resolve(tmpdir(), 'ontology-atlas-vault-test-')));
   const vaultDir = resolve(tmp, 'docs/ontology');
   mkdirSync(vaultDir, { recursive: true });
@@ -86,7 +87,7 @@ test('resolveVaultRoot — cwd/docs/ontology 자동 감지 (3 순위)', () => {
 });
 
 test('resolveVaultRoot — fallback 은 cwd (4 순위, 아무것도 없을 때)', () => {
-  // cwd 에 docs/ontology 없는 임시 디렉토리 — realpathSync 로 정규화.
+  // A temporary directory with no docs/ontology in cwd — normalised with realpathSync.
   const tmp = realpathSync(mkdtempSync(resolve(tmpdir(), 'ontology-atlas-vault-test-')));
   const prevCwd = process.cwd();
   process.chdir(tmp);

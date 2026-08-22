@@ -8,7 +8,7 @@ tags: [design, ux, linear, circuit-constellation, overview]
 > This document is maintained based on Section 3 of the design spec. For the original Linear specification, see [`design-references/DESIGN-linear.md`](design-references/DESIGN-linear.md).
 >
 > **v2 (2026-07)**: topology-map-v2 에서 출하된 B2+ "Circuit × Constellation"
-> 시각 언어가 페이지 롤아웃(랜딩 → docs/ontology 허브 → projects/insights →
+> 시각 언어가 페이지 롤아웃(관문 → docs/ontology 허브 → projects/insights →
 > download)의 규범이 되었다 — 아래 *v2 — "Circuit × Constellation" (B2+) 시각
 > 언어* 절 참조. v2 는 v1 헌장(무채색 + 단일 인디고 + 금지 패턴)을 **확장**하며
 > 대체하지 않는다.
@@ -165,7 +165,7 @@ Topology inspection, Workshop writing, Insights maintenance, and source docs.
 
 ### 페이지 롤아웃 적용 규칙
 
-롤아웃 순서: 랜딩 → docs(`/docs` Source Vault)/ontology 허브(`/ontology`) →
+롤아웃 순서: 관문 → docs(`/docs` Source Vault)/ontology 허브(`/ontology`) →
 projects(`/projects`, `/project/[slug]`)/insights(`/ontology/insights`) →
 download(`/download`).
 
@@ -187,10 +187,10 @@ download(`/download`).
 - 실물 크기 캔버스 노드 도형(모핑 포함), comet signal pulse, 4-point
   diffraction spike, star dust, blueprint grid, vignette, altitude
   crossfade, breathe, amber hub 링, domain hull.
-- 이것들을 DOM/CSS 로 흉내내는 순간 "AI 데모 배경"이 된다 — 랜딩 히어로에
+- 이것들을 DOM/CSS 로 흉내내는 순간 "AI 데모 배경"이 된다 — 관문 히어로에
   constellation 배경을 깔고 싶다는 충동이 대표적 반례다.
 
-**전역 승격 완료 토큰** (랜딩 롤아웃, 2026-07-18 — `app/globals.css`):
+**전역 승격 완료 토큰** (관문 롤아웃, 2026-07-18 — `app/globals.css`):
 
 - `--engraved-numeral-face` / `--engraved-numeral-text-shadow` — 음각 mono
   숫자. v2 numeral 값을 그대로 복사한 다크 전용 값.
@@ -226,7 +226,7 @@ download(`/download`).
   **재확산의 역사**: 이 사다리는 한 번 8종을 3단으로 수렴시켰다가 **23종으로
   다시 흩어졌다**. lint 가 값 안에 `var(` 가 있으면 통과시켜서 *색만 토큰이고
   기하는 자유*인 상태가 됐기 때문이다. 그 안에 광원 역전 2건과 계층 역전
-  1건(blur 90 > dialog 80)이 있었다. 이제 게이트는 `var(` 유무가 아니라
+  1건(blur 90 > dialog 80)이 있었다. 이제 게이트(위반을 자동으로 막는 검사)는 `var(` 유무가 아니라
   **어느 토큰인가**(기하 허용목록)를 본다 — 23 → 0.
 
   JSX 에 새 drop-shadow 를 손으로 적지 않는다. 새 역할이 정말 필요하면
@@ -236,7 +236,7 @@ download(`/download`).
 
 | Surface | Do | Don't |
 |---|---|---|
-| Hero (랜딩) | 실제 dogfood vault 를 그리는 topology 미니어처 1개를 증거로 배치 (live 또는 정적 캡처). 카피는 Korean h1 + 영문 caption 패턴 | 장식용 constellation/grid 배경, 오로라, 움직이는 배경, 스크롤 연동 캔버스 애니메이션 |
+| Hero (관문) | 실제 dogfood vault 를 그리는 topology 미니어처 1개를 증거로 배치 (live 또는 정적 캡처). 카피는 Korean h1 + 영문 caption 패턴 | 장식용 constellation/grid 배경, 오로라, 움직이는 배경, 스크롤 연동 캔버스 애니메이션 |
 | Card grid (projects/허브) | machined 카드 + kind 글리프 + 음각 mono 카운트. hover 는 보더 밝기 상승만 | kind 별 채색 카드 배경, full-height colored rail, scale hover, 카드 내 그라디언트 |
 | Data table (insights) | hairline divider, mono 숫자 우측 정렬, 관계 의미가 있는 실선/점선 구분, 신호는 인디고 dot/bar 하나 | zebra 줄무늬 틴트, 셀 배경 채색, 상태별 다색 뱃지 시스템 |
 | Nav / chrome | `--topology-chrome-*` 밀도 상속. 데스크톱은 정밀 계기(32~36px 컨트롤), 터치 브레이크포인트에서만 확대 | 데스크톱에 터치 밀도(48px+) chrome, 페이지마다 다른 컨트롤 높이/radius 임의 정의 |
@@ -394,7 +394,7 @@ element, 아래 "지도 잉크 사다리" 절)를, 색 자체로 **상태**(신�
 정사각형이 원보다 눈에 커 보이는 문제를 반지름 축소로 보정한다 —
 `DOMAIN_HALF_EXTENT_RATIO = 0.86`(도형 반각 = 원 반지름의 86%), element 는
 92%. 같은 `r` 값이어도 사각형의 코너 면적이 원보다 커서 광학적으로 부풀어
-보이기 때문이다 — 광학 보정이라 램프가 아니라 상수로 남는다(spacing 광학
+보이기 때문이다 — 광학 보정이라 램프(값이 단계별로 늘어선 목록)가 아니라 상수로 남는다(spacing 광학
 보정을 강제하지 않는 것과 같은 이유, §"규격은 lint 로 강제된다" "spacing 은
 강제하지 않는다" 참고).
 
@@ -692,7 +692,7 @@ Defined via Tailwind 4's CSS-based `@theme`. See `app/globals.css` for the actua
 
 주의: 타입 램프 유틸은 `cn()`(`src/shared/lib/cn.ts`)의 extendTailwindMerge
 등록과 **반드시 동기** — 미등록 스텝은 색상으로 오분류되어 크기가 조용히
-드롭된다(2026-07-23 크롬 16px 렌더 사고의 근본 원인, cn.test.ts 가 가드).
+드롭된다(2026-07-23 크롬 16px 렌더 사고의 근본 원인, cn.test.ts 가 게이트).
 행간 램프도 같은 파일에 등록한다(`LEADING_RAMP_STEPS`) — 이쪽은 드롭이 아니라
 **충돌 병합 실패**라 조건부 분기가 조용히 안 먹는다. 크롬 라벨의 `leading-4`
 (16px)는 `--leading-label` 과 같은 값이라 잠금 계약이 그대로 유지된다.
@@ -1765,7 +1765,7 @@ important 선언끼리는 레이어 순서가 역전돼 레이어에 든 쪽이 
    `.rail-status-dot-in` 은 `animation-name: panelCrossfadeIn`(opacity 전용)로
    갈아타고 자기 duration 토큰을 그대로 탄다. **새 키프레임 0 · 새 duration 0.**
 4. **되받는 블록은 전역 블록보다 소스 순서상 뒤.** 앞에 오면 조용히 무력화된다.
-5. **리터럴 ms 재기입 금지.** 동등물도 토큰으로만 시간을 되찾는다(가드가 검사).
+5. **리터럴 ms 재기입 금지.** 동등물도 토큰으로만 시간을 되찾는다(게이트가 검사).
 
 실측 결과(설정 시트 열기, reduced-motion): 1프레임 98.9% 하드컷 →
 `1.217 → 1.664 → 1.731(3프레임째 피크) → 1.591 → 1.217 → 0.961 → 0.913 → 0.155`
@@ -1843,7 +1843,7 @@ fine-pointer 노트북일 수도, coarse-pointer 12.9" iPad 일 수도 있다. �
   화면은 "한 번에 하나의 주 뷰": 펼치면 시트(지도는 컨텍스트), 접으면 지도
   전폭. 경계는 GlobalSearch 의 시트↔플로팅 분기와 같은 md(768) — 시트류
   표면은 이 경계를 공유한다.
-- **정직한 강등** — 데스크톱 워크벤치 표면(빌더 3-pane 등)을 태블릿 폭에
+- **정직한 강등** — 데스크톱 작업대(macOS 앱 창) 표면(빌더 3-pane 등)을 태블릿 폭에
   억지로 밀어넣지 않는다. 빌더 캔버스 게이트는 lg(1024)+; 그 아래는 트리
   편집 + 토폴로지 fallback 이 정답이다.
 
@@ -1911,7 +1911,7 @@ fine-pointer 노트북일 수도, coarse-pointer 12.9" iPad 일 수도 있다. �
 `--terminal-*` · `--agent-terminal-*` 토큰군과 `.agent-terminal-dock` 표면은
 하단 터미널 도크와 함께 제거됐다. 근거는 `docs/AGENT-GRAPH-WORKFLOW.md` 의
 번복 기록 절 — 도크는 사용자 자신의 터미널의 진부분집합이었고, 유일한 우위로
-꼽던 "에이전트가 고치면 지도가 반응한다" 는 볼트 워처가 위치와 무관하게
+꼽던 "에이전트가 고치면 지도가 반응한다" 는 볼트(사용자가 고른 마크다운 폴더) 워처가 위치와 무관하게
 이미 주고 있었다.
 
 **되살리지 않는다.** 이 자리에 셀 타이포·ANSI 팔레트·그립 폭 토큰을 다시
@@ -2121,7 +2121,7 @@ Reference anchors:
 - ❌ Glow-like `boxShadow: \`0 0 ...\`` rings on ontology operation surfaces
   <!--dont:glow-boxshadow-ring-->
 - ❌ Animated gradient backgrounds / aurora <!--dont:animated-gradient-bg-->
-  - **명문 예외 1건 (2026-08-18): 관문 전류장** — 관문 랜딩(`/` 관문 얼굴 ·
+  - **명문 예외 1건 (2026-08-18): 관문 전류장** — 관문(`/` 관문 얼굴 ·
     `/download`)의 배경에서 저휘도 악센트 라디얼 광원 셋이 아주 느리게
     떠다니는 것. `src/views/download/ui/GatewayFx.tsx` 한 표면에서만 살고
     (gateway FX 봉인 네임스페이스), 조건 넷을 전부 지킬 때만 예외다:
@@ -2132,7 +2132,7 @@ Reference anchors:
     게이트 둘: `eslint.config.mjs` 의 gateway-fx 스코프 셀렉터(소비처를
     `src/views/download/**` 로 잠근다) +
     `tests/contract/gateway-fx-exception.contract.test.ts`(단독 소비처 ·
-    알파 상한 · 감속 정지 · 문서 등재). 워크벤치·문서함 등 앱의 다른 화면으로
+    알파 상한 · 감속 정지 · 문서 등재). 작업대·문서함 등 앱의 다른 화면으로
     넓히는 것은 여전히 금지다. 원장: `docs/DECISIONS.md` (69).
 - ❌ Scale-based hover effects <!--dont:scale-hover-->
 - ❌ More than one color system <!--dont:multi-color-system-->
@@ -2488,7 +2488,7 @@ Tailwind v4 `--leading-*` 네임스페이스가 `leading-<step>` 유틸리티를
 등록하지 않으면 클래스가 드롭되지는 않지만 **충돌 병합이 일어나지 않는다** —
 `cn('leading-body', cond && 'leading-prose')` 에서 둘 다 살아남고 CSS 소스
 순서가 승자를 정한다. 크기 램프의 드롭 사고보다 조용해서 화면을 봐도 원인을
-못 찾는다. 가드: `cn.test.ts`.
+못 찾는다. 게이트: `cn.test.ts`.
 
 **companion 자동 결합 — 켰다 (B2, 2026-07-27).** Tailwind v4 의
 `--text-<step>--line-height` 를 7단 전부에 정의해, `text-<step>` 하나가 행간까지
@@ -2523,7 +2523,7 @@ Tailwind v4 `--leading-*` 네임스페이스가 `leading-<step>` 유틸리티를
 그대로 방패로 작동한다. 단 `cn()` 안에서는 **순서가 중요하다**: tailwind-merge
 는 "크기가 행간도 정한다"고 보므로 뒤따르는 `text-<스텝>` 이 앞선 `leading-*` 을
 흡수한다. 결합 전엔 그 가정이 거짓이라 흡수된 자리가 상속 1.5 로 조용히
-떨어졌고, 결합 후에야 참이 됐다. 권장 표기는 크기 먼저 · 행간 나중. 가드:
+떨어졌고, 결합 후에야 참이 됐다. 권장 표기는 크기 먼저 · 행간 나중. 게이트:
 `cn.test.ts`.
 
 **`--leading-hero` 는 오늘 1픽셀도 만들지 않는다 — 그래도 유지한다.** 저장소의
@@ -2681,7 +2681,7 @@ Tailwind v4 `--radius-*` 네임스페이스가 `rounded-<step>` 를 생성한다
 **`micro` 는 2026-08-03 체계석 등재다.** 램프가 3단이던 동안 화면에는 4px 반경이
 **96곳**(Tailwind 기본 `rounded-sm` 59 + 무접미 `rounded` 37) 살아 있었다 —
 마이크로 배지·명령 태그·kbd 급, 즉 칩(6px) 아래에 실재하는 한 층이 램프에 이름이
-없어 기본 스케일로 새고 있던 것이다. 96번 반복되는 값은 명시 예외가 아니라
+없어 기본 램프로 새고 있던 것이다. 96번 반복되는 값은 명시 예외가 아니라
 빠진 스텝이다. 등재와 함께 전량을 `rounded-micro` 로 기계 치환했으므로 픽셀
 이동은 0이고, 그 뒤로 `rounded-sm`·무접미 `rounded` 는 eslint 셀렉터가, 이름
 있는 Tailwind 기본 스텝 전체는 per-family 래칫
@@ -2759,7 +2759,7 @@ sheet 금지**(공방 진입 카드 16 → panel, 드로어 히어로 20 → pan
 |---|---|---|
 | 관문 정렬 원점 | `--gateway-origin` | `max(--gateway-gutter, (100vw − --gateway-page-max) / 2)` (2026-08-19 개정 — 종전 `--page-max` 자리에 관문 전용 상한) |
 | 관문 홈통(원점의 바닥) | `--gateway-gutter` | 200 — 무단위 (40→64→120→200 계보는 `app/globals.css` 독블록) |
-| 관문 본문 컬럼 상한 | `--gateway-page-max` | `1920px` (2026-08-19 넓은 폭 개정 2탄) — 관문 표면(랜딩·문서면·GNB)의 `PAGE_COLUMN` 과 정렬 원점이 함께 읽는 단일 상한. 소유자의 2560 실측(좌우 여백 각 480, 화면의 37.5%가 빈 캔버스)에서 네 안 중 「관문에서만 넓힌다」를 골랐다: 2560 에서 [320][1920][320]. **`--page-max`(1600) ≥ 불변식** — 이 값이 1600 이상인 한 vw ≤ 2000 구간의 원점·컬럼은 종전 공식과 동일해 1440–1920 렌더가 한 픽셀도 안 움직인다. 다른 화면(문서함·프로젝트·인사이트)은 `--page-max` 그대로다. 읽는 문단은 따라가지 않는다 — 히어로 리드 `max-w-[40rem]`(실측 34자/줄) · 문서면 산문 `--measure-prose`(70ch)가 각자 상한이고, 컬럼 전폭을 쓰는 것은 기념비 헤드라인(비례 활자)·계기 스트립·괘선·GNB 뿐이다. 게이트: `tests/contract/gateway-column-width.contract.test.ts` + `tests/e2e/download-gateway-grid.spec.ts` |
+| 관문 본문 컬럼 상한 | `--gateway-page-max` | `1920px` (2026-08-19 넓은 폭 개정 2탄) — 관문 표면(관문 얼굴·문서면·GNB)의 `PAGE_COLUMN` 과 정렬 원점이 함께 읽는 단일 상한. 소유자의 2560 실측(좌우 여백 각 480, 화면의 37.5%가 빈 캔버스)에서 네 안 중 「관문에서만 넓힌다」를 골랐다: 2560 에서 [320][1920][320]. **`--page-max`(1600) ≥ 불변식** — 이 값이 1600 이상인 한 vw ≤ 2000 구간의 원점·컬럼은 종전 공식과 동일해 1440–1920 렌더가 한 픽셀도 안 움직인다. 다른 표면(문서함·프로젝트·인사이트)은 `--page-max` 그대로다. 읽는 문단은 따라가지 않는다 — 히어로 리드 `max-w-[40rem]`(실측 34자/줄) · 문서면 산문 `--measure-prose`(70ch)가 각자 상한이고, 컬럼 전폭을 쓰는 것은 기념비 헤드라인(비례 활자)·계기 스트립·괘선·GNB 뿐이다. 게이트: `tests/contract/gateway-column-width.contract.test.ts` + `tests/e2e/download-gateway-grid.spec.ts` |
 | 관문 판 폭 | `--gateway-plate-width` | 880 — 무단위. 2026-08-18 리메이크에서 520→880: 판이 지도 위 부유가 아니라 설치 절의 흐름에 앉으며 콘텐츠 폭 상한 하나만 진다 |
 | 관문 절 리듬 | `--gateway-section-gap` | 160px (2026-08-18) — 절 하나 = 생각 하나의 문장 부호 |
 | 관문 무대 폭 | `--gateway-stage-max` | `clamp(48rem, 40vw, 80rem)` (2026-08-19 넓은 폭 개정) — 시연·에이전트 장면이 공유하는 무대 상한. 바닥 48rem 은 소유자 승인값(원장 (83))이고 40vw×1920 = 48rem 이라 **1920 이하에서는 종전 768px 그대로**다. 기울기 40vw 는 1440–1920 무회귀 제약이 허용하는 가장 큰 비례 계수, 상한 80rem 은 1x 밀도에서 클립 원본(1512px)을 업스케일하지 않는 마지막 정규 스텝. 게이트: `tests/contract/gateway-stage-width.contract.test.ts` + `tests/e2e/download-gateway-grid.spec.ts` |
@@ -3283,7 +3283,7 @@ quaternary 였는데 **바로 아래 각주가 11px** 이었다 — 필드의 �
 | **24** | (토큰 없음 — 규격 상수) | `chip`/`pill`/`icon` 의 `sm`, `segment` 의 `sm`·`md`, **`link` 전 크기(`min-h-6`, 2026-08-04)** | **WCAG 2.5.8 (AA, Target Size Minimum) 24×24** — 사다리의 바닥이다. 이 아래는 규격 미달이지 「작은 단」이 아니다 |
 | **28** | `--control-h-sm` | `row` 의 `sm`, `icon` 의 `md`(`h-7 w-7`) | 한 줄 목록 행과 28px 정사각 아이콘 |
 | **32** | `--control-h-md` | `chip`/`pill` 의 `md`·`lg`, `segment` 의 `lg`, `card` 의 `sm`, `icon` 의 `lg`, `--app-nav-rail-tile-height` | **이 앱의 기본 컨트롤 높이.** 값 층은 `min-h-8` 로 이 값에 선다 |
-| **36** | `--chrome-tile-size` | 크롬 필·타일, **문서함 헤더 타일**, `row` 의 `md`, `card` 의 `md` | 「스케일 고정 계약」이 못박은 워크벤치 크롬 치수 |
+| **36** | `--chrome-tile-size` | 크롬 필·타일, **문서함 헤더 타일**, `row` 의 `md`, `card` 의 `md` | 「스케일 고정 계약」이 못박은 작업대 크롬 치수 |
 | **40** | `--control-h-lg` | Select, 큰 폼 컨트롤, `card` 의 `lg` | 글자를 입력받는 상자 |
 | **44** | `--touch-target-min` | `row` 의 `lg`, `--control-row-h`, `pointer: coarse` 승격(토큰 재정의 + `.touch-hit-expand`) | Apple HIG / Material / WCAG **2.5.5(AAA)** 의 터치 값 — **coarse 단일 출처**다. `link` 의 fine 전면 44(`min-h-11`)는 2026-08-04 에 24 로 재설정됐다(아래 「link 바닥」 절) |
 

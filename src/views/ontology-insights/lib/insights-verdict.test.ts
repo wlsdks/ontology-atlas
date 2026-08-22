@@ -3,9 +3,9 @@ import { describe, expect, it } from "vitest";
 import { buildInsightsVerdict, type InsightsSignalCounts } from "./insights-verdict";
 
 /**
- * 섹션 총계는 **전부** 적는다 — `Record<QueueSectionKey, number>` 라 하나라도
- * 빠지면 타입 검사가 막는다. 그게 이 모양을 고른 이유다(2026-08-07: 중복 쌍이
- * 판정에서 빠져 탭 배지 7 · 묶음 배지 8 이 한 화면에 같이 떠 있었다).
+ * Every section total is written out — being a `Record<QueueSectionKey, number>`, omitting even one
+ * fails type checking. That is why this shape was chosen (2026-08-07: duplicate pairs were missing
+ * from the verdict, so a tab badge of 7 and a group badge of 8 appeared on one screen).
  */
 const NO_SECTIONS: InsightsSignalCounts["sections"] = {
   "missing-definition": 0,
@@ -23,7 +23,7 @@ const NONE: InsightsSignalCounts = {
   sections: NO_SECTIONS,
 };
 
-/** 섹션 몇 개만 채운 입력. */
+/** An input with only some sections filled. */
 const withSections = (
   partial: Partial<InsightsSignalCounts["sections"]>,
   rest: Partial<Omit<InsightsSignalCounts, "sections">> = {},
@@ -40,9 +40,9 @@ describe("buildInsightsVerdict", () => {
     });
   });
 
-  // opus5 검수 실측 모순: 스타터 볼트에서 신호가 '누락된 연결 1건' 뿐이었는데
-  // `할 일 0` + "그래프가 건강합니다" + `누락된 연결 1` 이 동시에 떴다.
-  // 같은 데이터에 MCP health 는 needs_attention 을 반환했다.
+  // The measured contradiction found in review: on a starter vault whose only signal was one
+  // missing containment, `to do 0` + "the graph is healthy" + `missing containment 1` appeared at
+  // once, while MCP health returned needs_attention for the same data.
   it("누락된 연결 1건이면 할 일도 1 · 건강하지 않음 · CLI 와 같은 needs_attention", () => {
     const verdict = buildInsightsVerdict({ ...NONE, missingContainment: 1 });
 
@@ -68,7 +68,7 @@ describe("buildInsightsVerdict", () => {
     expect(verdict.blocking).toBe(0);
     expect(verdict.advisory).toBe(7);
     expect(verdict.status).toBe("healthy");
-    // 바로 아래 큐가 7건을 보여주는데 "손볼 것이 없어요" 라고 하면 자기모순.
+    // Saying "nothing to fix" while the queue directly below shows seven is self-contradiction.
     expect(verdict.healthy).toBe(false);
   });
 
@@ -89,7 +89,7 @@ describe("buildInsightsVerdict", () => {
     expect(verdict.total).toBe(3);
     expect(verdict.advisory).toBe(3);
     expect(verdict.blocking).toBe(0);
-    // 손볼 것이 남아 있으면 어떤 표면도 "건강합니다" 라고 말하면 안 된다.
+    // While anything remains to fix, no surface may say "healthy".
     expect(verdict.healthy).toBe(false);
     expect(verdict.status).toBe("healthy");
   });

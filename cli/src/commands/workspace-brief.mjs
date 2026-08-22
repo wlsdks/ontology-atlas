@@ -61,7 +61,7 @@ function render(result) {
       ` · ${sum.projects ?? 0} 프로젝트 · ${sum.domains ?? 0} 도메인${COLORS.reset}\n\n`,
   );
 
-  // Hotspots (degree 상위)
+  // Hotspots (highest degree)
   const hotspots = Array.isArray(result?.hotspots) ? result.hotspots : [];
   if (hotspots.length > 0) {
     process.stdout.write(`${COLORS.dim}HOTSPOTS${COLORS.reset} ${COLORS.dim}(degree 상위)${COLORS.reset}\n`);
@@ -78,7 +78,7 @@ function render(result) {
     process.stdout.write('\n');
   }
 
-  // Projects 요약
+  // Projects summary
   const projects = result?.projects?.maps ?? [];
   if (projects.length > 0) {
     process.stdout.write(`${COLORS.dim}PROJECT별 포함 노드 수 (project_scope)${COLORS.reset}\n`);

@@ -58,9 +58,10 @@ test("desktop readiness check proves Tauri macOS shell prerequisites", () => {
     result.stdout,
     /✓ Tauri Rust package builds a ontology-atlas executable, not an ontology-atlas app binary/,
   );
-  // 구 `bundle guard covers the hosted download and local-first app routes` 는
-  // 웹 호스팅이 GitHub Pages 단일로 정리되면서 `check-bundle.mjs` 와 함께
-  // 제거됐다(architecture.md 참고). SDK 재도입 금지는 아래 의존성 검사가 잡는다.
+  // The old `bundle guard covers the hosted download and local-first app routes`
+  // was removed together with `check-bundle.mjs` when web hosting collapsed to
+  // GitHub Pages alone (see docs/ARCHITECTURE.md). The ban on reintroducing SDKs is
+  // caught by the dependency check below.
   assert.match(
     result.stdout,
     /✓ root package dependencies stay Firebase SDK and Firebase CLI free for the local-only app/,
@@ -150,9 +151,10 @@ test("desktop readiness check proves Tauri macOS shell prerequisites", () => {
     result.stdout,
     /✓ hosted website verifier sources expected download copy from the message catalog and requires the trust line plus both release-state CTAs/,
   );
-  // Firebase Hosting 배포 프리플라이트/폴백 워크플로 검사는 #617 (Firebase 전면
-  // 제거 → GitHub Pages 단일 호스트) 에서 사라졌다. 호스팅 배포 계약은 바로 위
-  // hosted website verifier 와 아래 Pages 워크플로 검사가 대신 잡는다.
+  // The Firebase Hosting deploy preflight and fallback workflow checks went away in
+  // #617 (Firebase removed entirely, GitHub Pages as the single host). The hosting
+  // deployment contract is now covered by the hosted website verifier just above and
+  // the Pages workflow check below.
   assert.match(
     result.stdout,
     /✓ GitHub Pages workflow builds the base-path static export, deploys the sole hosted download site on push\/release, and verifies the hosted download route/,
@@ -179,10 +181,12 @@ test("desktop readiness check proves Tauri macOS shell prerequisites", () => {
   );
   assert.match(
     result.stdout,
-    // 문장이 아니라 **표식**을 본다. 2026-08-08 에 이 줄이 문구를 통째로 못박고
-  // 있어서, 강등 고지와 단축키 설명을 성격에 맞게 가르는 정당한 개선에서
-  // 빨개졌다 — `documentation.md` 가 금지한 방향(문구가 나아졌는데 게이트가
-  // 막는 것)이다. 검사기 자신이 그 실패를 자기 머리말에 적어 두고 있었다.
+    // Check the **marker**, not the sentence. On 2026-08-08 this line pinned the
+    // whole wording and went red on a legitimate improvement — splitting the
+    // degradation notice from the shortcut description according to their different
+    // natures. That is the direction .claude/rules/documentation.md forbids: better
+    // copy blocked by the gate. The gate had written that very failure into its own
+    // preamble.
   /✓ .*(?:강등 고지|degrad).*(?:FSA|File System Access)/,
   );
   assert.match(
@@ -199,10 +203,11 @@ test("desktop readiness check proves Tauri macOS shell prerequisites", () => {
   );
   assert.match(
     result.stdout,
-    // [개정 2026-08-01] 종전 라벨은 「dogfood ontology docs mirror the
-    // desktop-app and hosted-download split」 였고, 그 검사는 사라진 두 볼트
-    // 파일의 **정확한 문장**을 핀했다. 볼트는 에이전트가 자기 말로 쓰는
-    // 표면이라 문장 핀이 유지되지 않는다 — 이제 개념의 존재만 본다.
+    // [revised 2026-08-01] The old label was "dogfood ontology docs mirror the
+    // desktop-app and hosted-download split", and that check pinned the **exact
+    // sentences** of two vault files that no longer exist. The vault is a surface
+    // agents write in their own words, so sentence pins do not survive — this now
+    // checks only that the concept exists.
     /✓ dogfood ontology carries the desktop-app install decision/,
   );
   assert.match(
@@ -402,7 +407,8 @@ test("desktop release helper scripts expose credential-aware help", () => {
 
   assert.equal(sign.status, 0, sign.stderr);
   assert.match(sign.stdout, /hardened runtime/);
-  // 신원은 인증서에서 파생한다 — 사람이 등록할 secret 이 하나 줄었다.
+  // The identity is derived from the certificate — one fewer secret for a person to
+  // register.
   assert.match(sign.stdout, /find-identity|Required codesign identity|APPLE_SIGNING_IDENTITY/);
 
   assert.equal(notarize.status, 0, notarize.stderr);
@@ -452,16 +458,17 @@ test("desktop release helper scripts expose credential-aware help", () => {
 });
 
 /**
- * 이 게이트는 **로컬 git 태그**도 본다 — 그리고 그 부분만 실제 저장소를 읽고
- * 있었다. `APP_TAG` 는 package.json 버전에서 나오므로, 저장소가 실제로 그
- * 버전을 태깅하는 순간(v1.0.0, 2026-07-27) 픽스처가 현실과 충돌해 케이스가
- * 깨졌다 — 하필 릴리스 워크플로 안에서, 릴리스를 막으면서.
+ * This gate also reads **local git tags** — and that was the one part still
+ * reading the real repository. `APP_TAG` comes from the package.json version, so
+ * the moment the repository actually tagged that version (v1.0.0, 2026-07-27) the
+ * fixture collided with reality and the case broke — inside the release workflow,
+ * blocking the release.
  *
- * 원격은 가짜 `gh` 로 이미 격리돼 있었는데 git 만 새고 있었다. 스크립트가
- * `OATLAS_GIT_BIN` 주입을 이미 지원하므로 여기서도 그걸 쓴다. 테스트는 이제
- * 이 머신의 태그 상태가 아니라 **스크립트의 논리**를 검사한다.
+ * The remote was already isolated behind a fake `gh`; only git was leaking. The
+ * script already supports injecting `OATLAS_GIT_BIN`, so that is used here too.
+ * The test now checks **the script's logic** rather than this machine's tag state.
  *
- * `tagExists: false` → `git rev-parse --verify --quiet` 가 1(없음)로 답한다.
+ * `tagExists: false` → `git rev-parse --verify --quiet` answers 1 (absent).
  */
 function writeFakeGit(dir, { tagExists = false } = {}) {
   const gitPath = join(dir, "git");
@@ -727,20 +734,22 @@ test("desktop readiness checker normalizes Windows line endings", () => {
   assert.ok(checker.includes('.replace(/\\r\\n?/g, "\\n")'));
 });
 
-// 2026-07-25 (opus5 검수): 이 게이트가 삭제된 `VaultToolsMenu.tsx` 를 계속
-// readFileSync 하다 ENOENT 스택트레이스로 죽어 있었다. 크래시는 "게이트 실패"
-// 가 아니라 "게이트 부재"로 읽히기 때문에, 검사 대상 파일이 사라지면 반드시
-// 읽을 수 있는 [desktop-check] 실패 메시지로 끝나야 한다.
+// 2026-07-25 (review): this gate kept readFileSync-ing the deleted
+// `VaultToolsMenu.tsx` and died on an ENOENT stack trace. A crash reads as "no
+// gate", not "gate failed", so a missing target file must always end in a readable
+// [desktop-check] failure message.
 test("desktop readiness check fails readably when a tracked source file disappears", () => {
   const checker = readFileSync("scripts/check-desktop-readiness.mjs", "utf8");
 
-  // readText 는 파일 부재를 fail() 로 강등해야 한다 — raw readFileSync 크래시 금지.
+  // readText must downgrade a missing file to fail() — never a raw readFileSync
+  // crash.
   assert.match(checker, /function readText\(relativePath\)/);
   assert.match(checker, /existsSync\(absolute\)/);
   assert.match(checker, /tracked source file is missing/);
 
-  // 이 게이트가 실제로 이동한 표면(설정 메뉴의 에이전트 패널)을 겨냥해야 한다.
-  // 삭제 경위를 설명하는 주석 언급은 허용하되, 그 경로를 *읽는* 것은 금지.
+  // The gate must aim at the surface that actually replaced it (the agent panel in
+  // the settings menu). Mentioning the old path in a comment that explains the
+  // deletion is allowed; *reading* that path is not.
   assert.doesNotMatch(checker, /readText\([^)]*VaultToolsMenu/);
   assert.match(
     checker,

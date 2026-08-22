@@ -17,32 +17,32 @@ import { collectSubtreeNodeIds, selectRealmBlockDocs } from "../model/collect-re
 import { controlClass } from '@/shared/ui/control-class';
 
 export interface RealmBlockExportActionProps {
-  /** 영역 루트 제목 — 블록 이름이 된다. */
+  /** The realm root's title — this becomes the block name. */
   rootTitle: string;
-  /** 영역 census — 매니페스트에 그대로 실린다 (TopologyRealmLedger 와 같은 출처). */
+  /** The realm census, carried into the manifest verbatim (same source as `TopologyRealmLedger`). */
   census: BlockCensus;
-  /** 영역 서브트리 — export 대상 노드 집합의 진실원. */
+  /** The realm subtree — the source of truth for which nodes are exported. */
   subtree: OntologyTreeNode;
 }
 
 type ExportPhase = "idle" | "exporting" | "done" | "error";
 
 /**
- * 온톨로지 블록 Slice A — "이 영역을 블록으로 내보내기". realm 활성 좌측
- * 패널(`TopologyRealmLedger`) 헤더의 조용한 텍스트 액션으로 산다. 블록 =
- * 그냥 .md 폴더: realm 서브트리에 속한 노드의 **원본 .md 를 그대로 복사**
- * 하고 `block-manifest.json` 명함 하나만 곁들인다 (새 파일 포맷 금지 —
- * AGENTS.md 로컬-퍼스트 헌장).
+ * "Export this realm as a block", living as a quiet text action in the header of the
+ * active realm's left panel (`TopologyRealmLedger`). A block is just a folder of `.md`:
+ * the **original `.md` of every node in the realm subtree is copied verbatim**, with a
+ * single `block-manifest.json` calling card alongside (no new file format — the
+ * local-first charter in AGENTS.md).
  *
- * FirstRunStarterModule 과 같은 자립 모듈 계약 — vault 상태(`useLocalVault`)
- * 와 라벨(`ontologyBlocks` i18n)을 스스로 읽어, 호스트 위젯의 prop 표면을
- * 늘리지 않는다.
+ * The same self-contained module contract as `FirstRunStarterModule` — it reads vault
+ * state (`useLocalVault`) and labels (the `ontologyBlocks` i18n namespace) itself, so it
+ * does not grow the host widget's prop surface.
  *
- * P1 결함② (사용성 전수 검수 2026-07-23) — 로컬 vault 미로드(정적 샘플)일 때
- * 이 액션이 흔적 없이 사라져 "기능 존재 은폐"로 읽혔다. 이제 같은 자리에
- * disabled + "내 폴더를 열면 쓸 수 있어요" 힌트로 남는다 — G1 이 이미 세운
- * "디렉터리 picker 없는 환경은 비활성 + 힌트" 사전 강등 패턴과 동일 문법을
- * vault-미로드 사유로 확장한 것뿐, 새 패턴 아님.
+ * Defect found in the 2026-07-23 usability sweep: with no local vault loaded (the static
+ * sample) this action vanished without a trace, which read as hiding that the feature
+ * exists. It now stays in the same place, disabled with a hint that opening your own folder
+ * enables it — the same "no directory picker means disabled plus a hint" degradation
+ * pattern already established, just extended to the vault-not-loaded reason. Not a new pattern.
  */
 export function RealmBlockExportAction({
   rootTitle,
@@ -55,8 +55,8 @@ export function RealmBlockExportAction({
   const [exportedCount, setExportedCount] = useState(0);
 
   const vaultLoaded = status === "loaded" && Boolean(manifest);
-  // 키 존재(`in`)가 아니라 호출 가능한지로 판정하고, 설치 앱에서는 같은
-  // FileSystemDirectoryHandle 계약을 구현한 Tauri picker/shim을 사용한다.
+  // Decided by whether it can be called, not by key presence (`in`); the installed app uses
+  // a Tauri picker/shim implementing the same `FileSystemDirectoryHandle` contract.
   const supported =
     (typeof window !== "undefined" && typeof window.showDirectoryPicker === "function") ||
     isTauriVaultRuntime();
@@ -83,7 +83,7 @@ export function RealmBlockExportAction({
       const files: { slug: string; content: string }[] = [];
       for (const doc of realmDocs) {
         const fh = fileHandles.get(doc.slug);
-        if (!fh) continue; // 정적 fallback doc 등 파일 핸들 없는 항목은 건너뜀
+        if (!fh) continue; // skip entries with no file handle, such as a static fallback doc
         files.push({ slug: doc.slug, content: await (await fh.getFile()).text() });
       }
       const projectDoc = manifest.docs.find(
@@ -92,7 +92,7 @@ export function RealmBlockExportAction({
       const blockManifest = buildBlockManifest({
         blockName: rootTitle,
         sourceProject: projectDoc?.title?.trim() || handle?.name || "",
-        // 앱 코드 — 워크플로 결정론 규율 비적용, Date.now 기반 ISO 직렬화.
+        // App code — the workflow determinism rule does not apply here, so ISO serialization from Date.now.
         exportedAt: new Date(Date.now()).toISOString(),
         census,
         nodes: realmDocs,

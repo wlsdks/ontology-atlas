@@ -3,18 +3,21 @@ import { transientSurface } from "@/shared/ui/transient-surface";
 import { currentFloatingRightBound } from "@/shared/lib/right-dock-reserve";
 
 /**
- * S2 파트 5C — 클러스터 칩 호버 마이크로카드. 소유자 실보고 "칩에 마우스
- * 올리면 툴팁으로 의미를 알려달라". 엣지 호버 카드(`TopologyV2EdgeHoverCard`)와
- * 같은 계약: 비인터랙티브(pointer-events-none — 클릭을 훔치지 않는다), 뷰포트
- * 클램프, 적당한 사이즈. 접힘/펼침에 따라 다른 평문 한 줄만.
+ * S2 part 5C — the cluster chip hover microcard. Owner report: *"칩에 마우스
+ * 올리면 툴팁으로 의미를 알려달라"* (hovering a chip should tell me what it means
+ * in a tooltip). Same contract as the edge hover card
+ * (`TopologyV2EdgeHoverCard`): non-interactive (pointer-events-none — it never
+ * steals a click), clamped to the viewport, modestly sized. One plain sentence,
+ * differing only by collapsed or expanded.
  *
- * 문구는 i18n(`topology.cluster.tooltipCollapsed/Expanded`) — HomePage 가 부모
- * 노드 제목/카운트를 넣어 완성한 문장을 주입한다(이 카드는 표시만).
+ * The copy is i18n (`topology.cluster.tooltipCollapsed/Expanded`) — HomePage
+ * injects the finished sentence with the parent node's title and count, and this
+ * card only displays it.
  */
 export interface TopologyV2ClusterHoverCardProps {
-  /** 평문 문장 (i18n 완성본) — "「Onboarding & UX」의 요소 63개가 접혀 있어요…". */
+  /** The finished plain sentence (i18n) — "「Onboarding & UX」의 요소 63개가 접혀 있어요…". */
   sentence: string;
-  /** 커서 뷰포트 좌표 — 카드는 우하단 오프셋 + 뷰포트 클램프. */
+  /** Cursor viewport coordinates — the card offsets to the bottom right and clamps to the viewport. */
   x: number;
   y: number;
 }
@@ -25,9 +28,10 @@ const EDGE_MARGIN = 8;
 
 export function TopologyV2ClusterHoverCard({ sentence, x, y }: TopologyV2ClusterHoverCardProps) {
   /*
-   * 오른쪽 벽은 **화면 끝이 아니라 지도의 끝**이다 (2026-08-16 검수).
-   * 지도 오른쪽에 대화 패널이 서면 `window.innerWidth` 는 패널 너머를
-   * 가리키고, 지도를 설명하는 이 카드가 패널 위에 적히게 된다.
+   * The right wall is **the map's edge, not the screen's** (review, 2026-08-16).
+   * With a conversation panel standing to the right of the map,
+   * `window.innerWidth` points past that panel, and this card — which explains
+   * the map — ends up written on top of it.
    */
   const left = Math.min(x + OFFSET, currentFloatingRightBound() - CARD_MAX_WIDTH - EDGE_MARGIN);
   const top = Math.min(y + OFFSET, (typeof window !== "undefined" ? window.innerHeight : 1080) - 72 - EDGE_MARGIN);

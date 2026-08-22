@@ -1,5 +1,5 @@
-// 다음 한 걸음의 계약: 표지는 화면에 안 보인다 · 마지막 줄만 표지다 ·
-// 칩은 한 줄이다.
+// The next step's contract: the marker is never shown on screen, only the last line is a
+// marker, and a chip is one line.
 import { describe, expect, it } from 'vitest';
 
 import { NEXT_STEP_MAX_CHARS, splitNextStep } from './next-step';

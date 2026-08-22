@@ -11,38 +11,34 @@ const RENDERABLE_KINDS = new Set<string>(RENDERABLE_KIND_LIST);
 type RenderableKind = (typeof RENDERABLE_KIND_LIST)[number];
 
 /**
- * `/download` 무대에 **진짜 지도 엔진**을 태우기 위한 어댑터.
+ * The adapter that puts the **real map engine** on the `/download` stage.
  *
- * ## 왜 이게 따로 있나 (HomePage 것을 안 쓰고)
+ * **Why this exists separately** (rather than reusing HomePage's). `buildTopologyV2Graph` does the
+ * same job in `views/home/lib`, but that is **another view's internals**. Importing it from
+ * `views/download` violates FSD's ban on same-layer cross-imports, and the chain it drags in
+ * (`topology-ontology-skeleton`, `topology-analysis` → `views/home/model/url-state`) brings home's
+ * URL state with it. Conversely, refactoring that adapter down into a widget would move things
+ * **this page does not need** (change pulses, dusty verdicts, relation-quality classification) and
+ * touch the wiring of the most important map in the app.
  *
- * 같은 일을 하는 `buildTopologyV2Graph` 가 `views/home/lib` 에 있지만, 그건
- * **다른 뷰의 내부**다. `views/download` 가 그걸 import 하면 FSD 의 동일 레이어
- * cross-import 금지에 걸리고, 끌려오는 사슬(`topology-ontology-skeleton` ·
- * `topology-analysis` → `views/home/model/url-state`)이 홈의 URL 상태까지
- * 딸려 온다. 반대로 그 어댑터를 위젯으로 내리는 리팩터는 **지금 이 페이지가
- * 필요로 하지 않는 것들**(변경 펄스 · dusty 판정 · 관계 품질 분류)까지 옮기며
- * 앱에서 가장 중요한 지도의 배선을 건드린다.
+ * So only what this screen actually uses is built here. Engine fields with no meaning on this
+ * stage (`recentlyUpdated`, `stale`, `ownerKey`, `relationQuality`) are left at **neutral values
+ * rather than fabricated** — the gateway has neither a "recently changed" baseline nor vault
+ * mtimes, so any value would be false.
  *
- * 그래서 이 화면이 실제로 쓰는 것만 여기서 만든다. 엔진이 요구하는 필드 중
- * 이 무대에 의미가 없는 것(`recentlyUpdated` · `stale` · `ownerKey` ·
- * `relationQuality`)은 **꾸며내지 않고 중립값**으로 둔다 — 관문에는 "최근 변경"
- * 기준선도, 볼트 mtime 도 없어서 어떤 값을 넣든 거짓이기 때문이다.
+ * ⚠️ **That rationale applies only to view-layer functions.** An older version read it broadly and
+ * reimplemented descendant counting with its own recursion, and that recursion counted
+ * **containment paths rather than unique nodes**, so the hub engraved `379` — a **4× contradiction**
+ * on a screen whose caption right beside it read `96 concepts` (domain badges inflated up to 2.9×
+ * too: views 129 vs a real 46; onboarding-ux 119 vs 15). This page's honesty contract is that the
+ * background shares the caption's source, and the background itself was breaking it. The single
+ * source for descendant counts, `computeDomainCensusRows`, lives in `shared/lib` and therefore
+ * **never had a cross-import problem** — the INDEX tree, `/projects`, and the home adapter all
+ * already use it (infoviz seat's finding, 2026-07-29).
  *
- * ⚠️ **위 사유는 뷰 레이어 함수에만 적용된다.** 구 판본은 이 사유를 넓게 읽어
- * 자손 수까지 자체 재귀로 다시 구현했고, 그 재귀가 **고유 노드가 아니라
- * 컨테인먼트 경로 합**을 세는 바람에 허브 각인이 `379` 로 그려졌다 — 바로 그
- * 옆 캡션이 `96 개념` 이라고 적은 화면에서 **4배 모순**이다(도메인 배지도 최대
- * 2.9배 부풀었다: views 129/실제 46 · onboarding-ux 119/15). 배경이 캡션과 같은
- * 출처를 쓴다는 것이 이 페이지가 거는 정직성 계약인데, 그 계약을 배경 자신이
- * 깨고 있었다. 자손 수의 단일 진실원 `computeDomainCensusRows` 는
- * `shared/lib` 에 있어 **크로스임포트 문제가 처음부터 없었다** — INDEX 트리 ·
- * `/projects` · 홈 어댑터가 이미 전부 그것을 쓴다(도해석 지적 2026-07-29).
- *
- * ## 좌표를 안 만드는 이유
- *
- * 엔진(`topology-world.ts`)이 `contains` 엣지에서 결정적 동심 배치를 스스로
- * 계산하고 들어온 `x`/`y` 는 무시한다. 그래서 0 을 넘긴다 — 홈의 어댑터가
- * 하는 것과 같다.
+ * **Why no coordinates are produced.** The engine (`topology-world.ts`) computes a deterministic
+ * concentric layout from `contains` edges and ignores incoming `x`/`y`. So zeros are passed — the
+ * same as home's adapter.
  */
 export interface StageGraph {
   nodes: TopologyV2Node[];
@@ -56,8 +52,8 @@ export function buildStageGraph(
   const included = nodes.filter((node) => RENDERABLE_KINDS.has(node.kind));
   const includedIds = new Set(included.map((node) => node.id));
   const includedEdges = edges.filter(
-    // 자기참조 엣지는 제외 — 이 볼트에는 사이클이 실존하고(`cycles` 질의가
-    // 세는 그것), 자기 자신을 가리키는 엣지는 렌더에서 0 길이 선이 된다.
+    // Self-referencing edges are excluded — cycles genuinely exist in this vault (the `cycles`
+    // query counts them), and an edge pointing at itself renders as a zero-length line.
     (edge) => edge.from !== edge.to && includedIds.has(edge.from) && includedIds.has(edge.to),
   );
 
@@ -70,15 +66,15 @@ export function buildStageGraph(
   }
 
   /**
-   * 하위 자손 수 — 노드 크기와 각인 숫자의 출처. 표면마다 다시 세지 않는다:
-   * containment 를 parent→child 로 정규화한 뒤 **노드별 유일 집계**로 BFS 하는
-   * 공유 census 하나가 INDEX 트리 · `/projects` · 홈 지도 · 이 무대의 진실원이다.
-   * 사이클 안전(visited)도 그쪽이 이미 가진다.
+   * The descendant count — the source for node size and the engraved number. It is not recounted
+   * per surface: one shared census, which normalizes containment to parent→child and BFSes with a
+   * **unique per-node tally**, is the source of truth for the INDEX tree, `/projects`, the home
+   * map, and this stage. Cycle safety (visited) already lives there too.
    *
-   * 기본 대상은 domain/project 지만 여기서는 **그리는 네 kind 전부**를 넘긴다 —
-   * 각인 숫자는 project/domain 에만 그려지지만(`topology-frame-draw.ts`),
-   * `size`(시각 규모 · 라벨 우선순위)는 capability 도 쓰기 때문이다. `?? 0`
-   * 으로 뭉개면 capability 의 규모 채널이 통째로 죽는다.
+   * Its default subjects are domain and project, but **all four drawn kinds** are passed here —
+   * the engraved number is drawn only on project and domain (`topology-frame-draw.ts`), but `size`
+   * (visual scale and label priority) is used by capability as well. Collapsing that with `?? 0`
+   * would kill capability's scale channel entirely.
    */
   const censusById = domainCensusById(
     computeDomainCensusRows(nodes, edges, RENDERABLE_KIND_LIST),
@@ -86,20 +82,20 @@ export function buildStageGraph(
   const descendantCountOf = (id: string) => censusById.get(id)?.total ?? 0;
 
   /**
-   * 허브는 **정확히 하나**다 — 헌장의 앰버 링이 단일 노드 강조이기 때문이다.
-   * 동점은 id 오름차순으로 깨서 빌드마다 같은 노드가 뽑히게 한다.
+   * There is **exactly one** hub — the charter's amber ring is a single-node emphasis. Ties break
+   * by ascending id so the same node is picked on every build.
    */
   let hubId: string | null = null;
   let hubIncoming = 0;
   for (const node of included) {
     const count = incoming.get(node.id) ?? 0;
     /**
-     * ⚠️ `incoming === 0` 은 건너뛴다. 시작값이 `-1` 이면 **아무도 참조되지
-     * 않은 그래프**(고립 노드만 있는 볼트)에서도 배열 첫 노드가 허브로 뽑혀
-     * 앰버 링이 근거 없이 켜진다. 헌장은 "허브는 정확히 하나" 이면서 동시에
-     * "허브가 없을 수 있다" — 없는데 그리는 것은 데이터에 없는 사실을
-     * 그리는 것이다. 홈의 어댑터가 같은 가드를 갖고 있고, 이쪽에 없어서
-     * 두 곳이 같은 불변식을 다르게 구현하고 있었다 (체계석 지적 2026-07-28).
+     * ⚠️ `incoming === 0` is skipped. With a starting value of `-1`, a graph where **nothing is
+     * referenced** (a vault of only isolated nodes) would pick the array's first node as the hub
+     * and light the amber ring with no basis. The charter says both "there is exactly one hub" and
+     * "there may be no hub" — drawing one that does not exist is drawing a fact absent from the
+     * data. Home's adapter has the same guard, and its absence here meant two places implementing
+     * one invariant differently (design-system seat's finding, 2026-07-28).
      */
     if (count === 0) continue;
     if (count > hubIncoming || (count === hubIncoming && hubId !== null && node.id < hubId)) {
@@ -111,8 +107,8 @@ export function buildStageGraph(
   return {
     nodes: included.map((node) => ({
       id: node.id,
-      // 캔버스 라벨은 표시용 짧은 제목 — 긴 title(괄호 부연 포함)을 그대로
-      // 그리면 잘리고 지저분하다.
+    // The canvas label is the short display title — drawing the full title (parenthetical asides
+    // included) gets clipped and looks messy.
       label: node.display ?? node.title,
       kind: node.kind as RenderableKind,
       size: descendantCountOf(node.id),

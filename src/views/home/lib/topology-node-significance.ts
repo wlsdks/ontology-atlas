@@ -6,9 +6,8 @@ import type { TopologyOntologyDrawerModel } from "./topology-ontology-drawer";
 
 /**
  * How load-bearing a node is, in plain terms a non-developer can read:
- * - `core`: many places depend on it (fan-in >= {@link PROMOTION_MIN_FAN_IN}) —
- *   the "핵심 축".
- * - `leaf`: barely connected (total degree <= 1) — a말단 조각.
+ * - `core`: many places depend on it (fan-in >= {@link PROMOTION_MIN_FAN_IN}).
+ * - `leaf`: barely connected (total degree <= 1).
  * - `supporting`: everything in between.
  */
 export type NodeSignificanceLevel = "core" | "supporting" | "leaf";
@@ -20,24 +19,23 @@ export type NodeSignificanceLevel = "core" | "supporting" | "leaf";
  * structured model into i18n sentences; this module stays prose-free so it is
  * locale-agnostic and unit-testable on structure alone.
  *
- * approach C: an authored `significance` frontmatter override (when present)
- * wins for the "why it matters" line via {@link buildNodeSignificance} options.
+ * An authored `significance` frontmatter override, when present, wins for the
+ * "why it matters" line via {@link buildNodeSignificance} options.
  */
 export interface NodeSignificanceModel {
   /** Raw kind token — UI resolves via `t("kinds.{key}")`; see {@link normalizeKindLabelKey}. */
   kind: string;
-  /** Owning domain title for the "무엇인가" line, or null when none. */
+  /** Owning domain title for the "what is this" line, or null when none. */
   ownerDomainTitle: string | null;
-  /** Owning domain's graph node id — N6, lets the datasheet's "도메인 · X"
-   *  first-class fact focus the domain on click (`onSelectConnection`
-   *  reuse), not just display its name. Null in lockstep with
-   *  {@link ownerDomainTitle}. */
+  /** Owning domain's graph node id, so the datasheet's domain line can focus
+   *  the domain on click (reusing `onSelectConnection`) rather than only naming
+   *  it. Null in lockstep with {@link ownerDomainTitle}. */
   ownerDomainId: string | null;
   importance: {
     level: NodeSignificanceLevel;
     /** Direct incoming = how many places depend on it. */
     usedByCount: number;
-    /** Authored override prose (trimmed) for the "왜 중요한가" line; null when derived. */
+    /** Authored override prose (trimmed) for the "why it matters" line; null when derived. */
     authored: string | null;
   };
   dependsOn: {

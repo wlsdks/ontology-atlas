@@ -3,24 +3,26 @@ import { transientSurface } from "@/shared/ui/transient-surface";
 import { currentFloatingRightBound } from "@/shared/lib/right-dock-reserve";
 
 /**
- * P3c — 엣지 호버 마이크로카드. 클릭 팝오버(P3b, TopologyV2EdgePanel)의
- * 가벼운 전신: 커서 근처에 평문 문장 + 타입 + (있으면) 근거 한 줄만.
- * 게이트 해제 근거: 소유자 사용 신호("연결선에 호버하면 의미 표시") —
- * 원래 P3c 는 3b 사용 검증 후로 보류돼 있었다.
+ * P3c — the edge hover microcard. A lighter predecessor of the click popover
+ * (P3b, TopologyV2EdgePanel): near the cursor, one plain sentence plus the type
+ * plus one evidence line when there is one. What opened the gate was an owner
+ * usage signal (*"연결선에 호버하면 의미 표시"* — hovering a line should show its
+ * meaning); P3c had originally been held back pending proof that 3b was used.
  *
- * 계약: 비인터랙티브(pointer-events-none — 클릭을 훔치지 않는다), 뷰포트
- * 클램프, 팝오버와 상호배제(엣지 선택 중엔 렌더하지 않음 — 호출자 책임).
+ * Contract: non-interactive (pointer-events-none — it never steals a click),
+ * clamped to the viewport, and mutually exclusive with the popover (not rendered
+ * while an edge is selected — the caller's responsibility).
  */
 export interface TopologyV2EdgeHoverCardProps {
-  /** 평문 문장 — "A 가 B 에 기대요" (P3b 와 같은 어휘 사전 출처). */
+  /** The plain sentence — "A 가 B 에 기대요" (from the same relation lexicon as P3b). */
   sentence: string;
-  /** formal 타입 라벨 — "의존". */
+  /** The formal type label — "의존" (depends). */
   typeLabel: string;
-  /** P6 relation_notes — 있으면 1줄 truncate. */
+  /** P6 relation_notes — truncated to one line when present. */
   why: string | null;
-  /** 클릭 안내 힌트 (i18n). */
+  /** The click hint (i18n). */
   clickHint: string;
-  /** 커서 뷰포트 좌표 — 카드는 우하단 오프셋 + 뷰포트 클램프. */
+  /** Cursor viewport coordinates — the card offsets to the bottom right and clamps to the viewport. */
   x: number;
   y: number;
 }
@@ -31,9 +33,10 @@ const EDGE_MARGIN = 8;
 
 export function TopologyV2EdgeHoverCard({ sentence, typeLabel, why, clickHint, x, y }: TopologyV2EdgeHoverCardProps) {
   /*
-   * 오른쪽 벽은 **화면 끝이 아니라 지도의 끝**이다 (2026-08-16 검수).
-   * 지도 오른쪽에 대화 패널이 서면 `window.innerWidth` 는 패널 너머를
-   * 가리키고, 지도를 설명하는 이 카드가 패널 위에 적히게 된다.
+   * The right wall is **the map's edge, not the screen's** (review, 2026-08-16).
+   * With a conversation panel standing to the right of the map,
+   * `window.innerWidth` points past that panel, and this card — which explains
+   * the map — ends up written on top of it.
    */
   const left = Math.min(x + OFFSET, currentFloatingRightBound() - CARD_MAX_WIDTH - EDGE_MARGIN);
   const top = Math.min(y + OFFSET, (typeof window !== "undefined" ? window.innerHeight : 1080) - 120 - EDGE_MARGIN);

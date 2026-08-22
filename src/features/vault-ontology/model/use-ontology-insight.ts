@@ -18,18 +18,18 @@ import {
 import { isContainmentRelation } from '@/shared/lib/ontology-tree';
 import { useVaultOntology } from './use-vault-ontology';
 
-// vault / dogfood 모드 노드는 frontmatter 가 진실원이라 시간 정보를 갖지
-// 않아 KnowledgeGraphNode.lastApprovedAt 에 sentinel 값 (epoch 0) 을 채워
-// 넣는다. cycle 21 에서 isVaultSentinelDate 가드와 외부 export 는 호출자
-// 0 으로 정리 — 필요해지면 재추가.
+// Vault and dogfood nodes have frontmatter as their source of truth and carry no
+// time information, so `KnowledgeGraphNode.lastApprovedAt` is filled with a sentinel
+// (epoch 0).
 const VAULT_SENTINEL_DATE = new Date(0);
 const VAULT_SENTINEL_AUTHOR = 'vault-frontmatter';
 
-// 번들 샘플 볼트 — mode === 'static' 일 때 진실원. local 모드와는 별 path.
-// 매니페스트는 리졸버를 통해서만 받는다: JSON 을 직접 import 하면 매니페스트와
-// 본문이 서로 다른 볼트에서 오는 사고가 다시 열린다(단일 진입점 계약,
+// The bundled sample vault — the source of truth when mode === 'static', a separate
+// path from local mode. The manifest is only ever taken through the resolver:
+// importing the JSON directly reopens the accident where the manifest and the content
+// come from different vaults (single-entry-point contract,
 // tests/contract/static-vault-source.contract.test.ts).
-// 둘 다 빌드타임 JSON 이라 module-load 1 회만 derive 하고 재사용한다.
+// Both are build-time JSON, so derivation runs once at module load and is reused.
 const STATIC_DERIVATION: VaultOntologyDerivation = deriveOntologyFromVault(
   resolveStaticVaultSource('dogfood').manifest,
 );
@@ -40,16 +40,17 @@ const STOREFRONT_DERIVATION: VaultOntologyDerivation = deriveOntologyFromVault(
 export function derivationToInsight(
   d: VaultOntologyDerivation,
   /**
-   * 어권별 표시 이름 해석 (소유자 지시 2026-07-24) — stub 이 수집해 둔
-   * `display_<locale>` 중 화면 로케일과 일치하는 값을 display 로 승격.
-   * 없으면 종전 display 그대로(하위호환). 매칭의 진실원은 여전히 title 이고,
-   * 표시 이름은 검색 범위에 더해진다 — 그래서 원본 map 도 함께 실어 보낸다.
+   * Resolves the per-locale display name (owner instruction, 2026-07-24): whichever
+   * `display_<locale>` the stub collected matches the screen locale is promoted to
+   * `display`. With none, the existing `display` is kept. `title` remains the source
+   * of truth for matching, and the display name is *added* to what search covers —
+   * which is why the original map travels along too.
    */
   locale?: string,
   /**
-   * 에이전트에게 건넬 이름을 만들 때 문서 slug 앞에서 뺄 조각
-   * (`StaticVaultSource.agentSlugPrefix`). 로컬 볼트는 폴더가 곧 뿌리라
-   * 넘기지 않는다.
+   * The segment to strip from the front of a doc slug when building the name handed
+   * to an agent (`StaticVaultSource.agentSlugPrefix`). A local vault's folder is its
+   * own root, so nothing is passed.
    */
   options?: { agentSlugPrefix?: string },
 ): KnowledgeProjectInsight {
@@ -58,21 +59,21 @@ export function derivationToInsight(
     id: stub.id,
     title: stub.title,
     display: (locale && stub.displayLocales?.[locale]) || stub.display,
-    // 화면 언어와 무관하게 어느 어권 이름으로도 검색되게 원본을 그대로 전달.
+    // Passed through verbatim so a node is findable by its name in any locale, whatever the screen's language.
     displayLocales: stub.displayLocales,
     kind: stub.kind,
     projectIds: [],
-    // canonical 노드는 sourceSlug = 자기 자신 doc.slug, 합성 노드 (참조만 받고
-    // 자체 doc 이 없는 stub) 는 sourceSlug = 처음 참조한 doc.slug. 둘 다
-    // 사용자가 "근거 문서" 로 점프하면 맥락이 잡히므로 그대로 첫번째
-    // evidenceId 로 노출. 없으면 빈 배열.
+    // A canonical node's sourceSlug is its own doc.slug; a synthetic node (a stub that
+    // is only referenced and has no document of its own) carries the doc.slug that
+    // first referenced it. Either way jumping to the "evidence document" gives context,
+    // so it is exposed as the first evidenceId. Empty array when absent.
     evidenceIds: stub.sourceSlug ? [stub.sourceSlug] : [],
-    // 그 둘을 evidenceIds 만으로는 구분할 수 없어 "이 노드의 문서" 를 그리는
-    // 표면이 남의 문서를 열어 왔다 — 구분 플래그를 그대로 넘긴다.
+    // `evidenceIds` alone cannot tell those two apart, which is how surfaces drawing
+    // "this node's document" ended up opening someone else's — the flag is passed through.
     hasOwnDocument: stub.hasOwnDocument,
-    // 에이전트에게 보여줄 이름 — 문서 노드는 볼트 뿌리 기준 slug, 파생
-    // 노드는 볼트가 적어 둔 참조 원문. 화면이 복사해 주는 MCP/CLI 호출은
-    // 전부 이 값을 쓴다(`resolveNodeAgentTarget`).
+    // The name to show an agent — a vault-root-relative slug for a document node, and
+    // the vault's own reference string for a derived one. Every MCP/CLI call the screen
+    // offers to copy uses this value (`resolveNodeAgentTarget`).
     agentSlug:
       stub.hasOwnDocument && stub.sourceSlug
         ? stripVaultSlugPrefix(stub.sourceSlug, agentSlugPrefix)
@@ -80,7 +81,7 @@ export function derivationToInsight(
     ref: stub.ref,
     lastApprovedAt: VAULT_SENTINEL_DATE,
     lastApprovedBy: VAULT_SENTINEL_AUTHOR,
-    // 저작 출처는 파생이 프론트매터에서 읽어 온 값을 **그대로** 나른다.
+    // Authorship carries **verbatim** whatever derivation read from the frontmatter.
     createdBy: stub.createdBy,
     summary: stub.summary,
   }));
@@ -96,20 +97,18 @@ export function derivationToInsight(
     lastApprovedBy: VAULT_SENTINEL_AUTHOR,
   }));
 
-  // R+ projectIds 채우기 — vault frontmatter 에 `project:` 키가 없어도
-  // contains 관계를 BFS 로 transitive closure 잡아 각 project 노드의 후손
-  // 에 그 project slug 매달기. dogfood 처럼 single-project vault 에서
-  // ProjectSelector 카드의 도메인/역량/요소 fact strip 이 빈 map 으로
-  // 빠져 hide 되던 회귀 차단. UI fallback (PR #252) 도 유지 — 정확한 fix
-  // 가 데이터 보강 끝나면 조건 false 가 되어 자동 skip.
+  // Fill `projectIds` even when the vault frontmatter has no `project:` key: BFS the
+  // transitive closure of `contains` and attach each project's slug to its descendants.
+  // Without it, a single-project vault such as dogfood left the domain/capability/element
+  // fact strip on ProjectSelector cards with an empty map, and the strip was hidden.
   const projectNodes = nodes.filter((n) => n.kind === 'project');
   if (projectNodes.length > 0) {
     const containsAdj = new Map<string, string[]>();
     for (const e of edges) {
       const isContains = isContainmentRelation(e.type);
       if (!isContains) continue;
-      // belongs_to 는 contains 의 역방향 — 일관되게 container → contained
-      // 로 정규화.
+      // `belongs_to` is the reverse of `contains` — normalized consistently to
+      // container → contained.
       const [from, to] = e.type === 'contains' ? [e.from, e.to] : [e.to, e.from];
       const arr = containsAdj.get(from);
       if (arr) arr.push(to);
@@ -120,8 +119,8 @@ export function derivationToInsight(
       const projectSlug = p.id.replace(/^project:/, '');
       const visited = new Set<string>([p.id]);
       const queue: string[] = [p.id];
-      // head pointer 로 dequeue O(1) — `Array.shift()` 는 O(n) 이라 큰 vault
-      // 에서 O(n²) (depth.ts / reachability.ts 와 동일 패턴).
+      // Head pointer for O(1) dequeue — `Array.shift()` is O(n), which makes this O(n²)
+      // on a large vault (same pattern as depth.ts / reachability.ts).
       let head = 0;
       while (head < queue.length) {
         const cur = queue[head++];
@@ -148,8 +147,7 @@ export function derivationToInsight(
   };
 }
 
-// 로케일별 1회 계산 캐시 — 모듈-로드 단일 값이던 것을 locale 차원으로 확장
-// (derive 는 여전히 1회, insight 매핑만 로케일별).
+// Cached once per locale. Derivation still runs once; only the insight mapping is per locale.
 const staticInsightByLocale = new Map<string, { insight: KnowledgeProjectInsight; error: null }>();
 function sampleInsight(
   source: 'dogfood' | 'storefront',
@@ -172,25 +170,25 @@ function sampleInsight(
 }
 
 /**
- * Mode-aware ontology insight 어댑터. 2 모드:
+ * Mode-aware ontology insight adapter, with two modes:
  *
- * - **local** → `useVaultOntology` 결과를 `KnowledgeProjectInsight` shape 로
- *   변환. 사용자 디스크의 frontmatter 가 진실원.
- * - **static** → 빌드타임 내장 샘플 매니페스트 derivation. JSON import 라
- *   module-load 에 1 회 derive (메모이즈). `useSampleSource` 가 dogfood(기본)
- *   /storefront 둘 중 어느 샘플을 보여줄지 고른다 — local 모드에서는 이
- *   선택이 아예 읽히지 않는다(사용자 vault 가 항상 우선).
+ * - **local** → converts `useVaultOntology`'s result into the
+ *   `KnowledgeProjectInsight` shape. Frontmatter on the user's disk is the source of truth.
+ * - **static** → derivation of the build-time bundled sample manifest. It is a JSON
+ *   import, so derivation runs once at module load (memoized). `useSampleSource` picks
+ *   dogfood (the default) or storefront — in local mode that choice is never read, since
+ *   the user's vault always wins.
  */
 /**
- * 이 저장소 자신의 볼트(`docs/ontology`) 인사이트 — **출처가 고정**이다.
+ * Insight for this repository's own vault (`docs/ontology`) — **the source is pinned.**
  *
- * `useOntologyInsight` 는 사용자가 고른 것(로컬 볼트 · 스토어프론트 샘플)을
- * 돌려주는 것이 맞다. 하지만 `/download` 관문의 무대는 캡션으로 "이 저장소의
- * docs/ontology · 96 개념" 이라고 **주장**한다 — 그 문장이 참이려면 그리는
- * 그래프도 그것이어야 한다. 세션의 샘플 선택을 따라가면 스토어프론트(7 노드)를
- * 그려 놓고 96 개념이라고 적는 일이 벌어진다(실측 2026-07-28).
+ * `useOntologyInsight` returning whatever the user picked (a local vault, the storefront
+ * sample) is correct. But the `/download` gateway's stage **claims** in its caption that
+ * this is "this repository's docs/ontology · 96 concepts", and for that sentence to be
+ * true the graph it draws must be that too. Following the session's sample choice draws
+ * the storefront (7 nodes) under a caption saying 96 concepts (measured 2026-07-28).
  *
- * 같은 캐시(`sampleInsight`)를 쓰므로 파생 비용은 추가되지 않는다.
+ * It uses the same cache (`sampleInsight`), so no extra derivation cost.
  */
 export function useDogfoodInsight(): KnowledgeProjectInsight {
   const locale = useLocale();

@@ -3,9 +3,9 @@
 import { useCallback } from 'react';
 import { useTranslations } from 'next-intl';
 
-// vault-readme: scaffold 한 vault root 의 README.md 가 갖는 sentinel kind.
-// 6 정식 kind 외 i18n 라벨이 잡히지 않으면 사용자가 raw "vault-readme" 텍스트를
-// 보던 회귀 — i18n 키는 messages 에 이미 있어서 단순 list 추가로 wire.
+// `vault-readme` is the sentinel kind on the README.md at a scaffolded vault root.
+// Without it in this list the i18n label did not resolve and the user saw the raw
+// "vault-readme" string; the message key already existed, so listing it is the wiring.
 const KNOWN_KINDS = ['project', 'domain', 'capability', 'element', 'document', 'vault-readme', 'unknown'] as const;
 type KnownKind = (typeof KNOWN_KINDS)[number];
 

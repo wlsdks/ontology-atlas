@@ -6,30 +6,33 @@ import { describe, expect, it } from "vitest";
 import { contrastRatio, parseColor } from "../../scripts/lib/contrast.mjs";
 
 /**
- * 악센트 팔레트 스위치의 계약 (2026-08-18).
+ * The accent palette switch contract (2026-08-18).
  *
- * 앱의 유일한 채색이 **인디고(기본)** 와 **잉걸(대체)** 둘이 됐다. 값은
- * `app/globals.css` 에 두 벌로 있고, 고른 값은 `:root[data-accent]` 속성으로
- * 반영된다(`src/shared/lib/appearance-preferences.ts`).
+ * The app's single colour is now two: **indigo (default)** and **ember
+ * (alternate)**. The values exist twice in `app/globals.css`, and the choice is
+ * reflected through the `:root[data-accent]` attribute
+ * (`src/shared/lib/appearance-preferences.ts`).
  *
- * ⚠️ **어느 쪽이 기본인지를 이 파일에 적지 않는다.** 2026-08-18 하루에 기본이
- * 잉걸로 갔다가 인디고로 돌아왔다 — 그때 이 파일이 색 이름을 하드코딩하고
- * 있었더라면 되돌리는 PR 마다 계약 테스트가 「값 검사」가 아니라 「이름 고치기」
- * 로 바뀐다. 그래서 기본/대체는 `appearance-preferences.ts` 의 `DEFAULT_ACCENT`
- * 에서 읽고, CSS 의 덮어쓰기 선택자 이름도 거기서 **유도한다**.
+ * ⚠️ **Which one is the default is not written in this file.** On 2026-08-18 the
+ * default moved to ember and back to indigo within a day — had this file hard-coded
+ * a colour name, every reverting PR would turn the contract test from "check the
+ * values" into "fix the names". So default and alternate are read from
+ * `DEFAULT_ACCENT` in `appearance-preferences.ts`, and the CSS override selector
+ * name is **derived** from it.
  *
- * ## 이 계약이 막는 세 가지
+ * **The three things this contract blocks:**
  *
- * 1. **한쪽에만 있는 토큰.** 되돌림 블록이 기본 팔레트의 토큰 하나를 빠뜨리면,
- *    인디고를 고른 사람의 화면에서 그 자리만 구리색으로 남는다 — 그리고 그건
- *    기본값으로 쓰는 사람에게는 **영원히 안 보인다.** 두 팔레트의 토큰 집합이
- *    같은지 세는 것이 이 파일의 첫 번째 일이다.
- * 2. **한쪽만 대비를 지키는 것.** 색을 고르는 설정이 접근성을 고르는 설정이
- *    되면 안 된다. 두 팔레트 모두에서 채운 면 위 잉크가 AA(4.5:1)를 넘어야 한다.
- * 3. **깜빡임 방지 스크립트와 모듈의 어긋남.** `app/layout.tsx` 의 인라인
- *    스크립트는 페인트 전에 도는 대신 **문자열로 하드코딩된 키**를 쓴다. 모듈이
- *    키나 값을 바꾸면 그 스크립트가 조용히 아무것도 안 하게 되고, 증상은
- *    「가끔 색이 한 번 번쩍인다」라 아무도 버그로 안 적는다.
+ * 1. **A token present on only one side.** If the override block omits one token
+ *    from the default palette, that one place stays copper on the screen of anyone
+ *    who chose indigo — and it is **invisible forever** to anyone on the default.
+ *    Counting that both palettes carry the same token set is this file's first job.
+ * 2. **Contrast held on only one side.** Choosing a colour must not become choosing
+ *    accessibility. Ink on a filled surface must clear AA (4.5:1) in both palettes.
+ * 3. **Drift between the anti-flash script and the module.** The inline script in
+ *    `app/layout.tsx` runs before paint and therefore uses a **hard-coded string
+ *    key**. If the module changes the key or the values, that script quietly stops
+ *    doing anything, and the symptom — "the colour flashes once sometimes" — is
+ *    something nobody files as a bug.
  */
 
 const ROOT = process.cwd();
@@ -41,7 +44,8 @@ const boot = read("src/shared/ui/accent-boot-script.tsx");
 const layout = read("app/layout.tsx");
 
 /**
- * 기본 악센트 — 모듈이 정본. 여기서 읽어야 기본이 뒤집혀도 이 파일이 안 바뀐다.
+ * The default accent — the module is authoritative. Reading it here means this file
+ * does not change when the default flips.
  */
 const DEFAULT_ACCENT = (() => {
   const m = /export const DEFAULT_ACCENT: Accent = "([a-z]+)"/.exec(prefs);
@@ -49,7 +53,7 @@ const DEFAULT_ACCENT = (() => {
   return (m as RegExpExecArray)[1];
 })();
 
-/** 고를 수 있는 두 값 중 기본이 **아닌** 쪽 — 덮어쓰기 블록을 갖는 팔레트. */
+/** Of the two selectable values, the one that is **not** the default — the palette with the override block. */
 const ALT_ACCENT = (() => {
   const m = /export const ACCENTS: readonly Accent\[\] = \[([^\]]+)\]/.exec(prefs);
   expect(m, "appearance-preferences 에서 ACCENTS 를 못 찾는다").not.toBeNull();
@@ -62,7 +66,7 @@ const ALT_ACCENT = (() => {
 
 const ALT_SELECTOR = `:root[data-accent="${ALT_ACCENT}"]`;
 
-/** 대체 팔레트 블록 본문 — `:root[data-accent="<대체>"] { … }` 안쪽. */
+/** The alternate palette block body — inside `:root[data-accent="<alternate>"] { … }`. */
 function revertBlock(): string {
   const start = css.indexOf(ALT_SELECTOR);
   expect(start, `대체 팔레트 블록(${ALT_SELECTOR})이 globals.css 에 없다`).toBeGreaterThan(-1);
@@ -82,7 +86,7 @@ function tokenValue(source: string, name: string): string | null {
   return m ? m[1].trim() : null;
 }
 
-/** 대체 블록을 뺀 나머지 = 기본 팔레트가 정의된 곳. */
+/** Everything outside the alternate block = where the default palette is defined. */
 const baseSource = (() => {
   const block = revertBlock();
   return css.split(block).join("");
@@ -130,8 +134,9 @@ describe("악센트 팔레트 스위치 — 두 벌이 같은 것을 덮는다",
 
   it("두 팔레트의 값이 실제로 다르다 — 스위치가 아무것도 안 바꾸고 있지 않다", () => {
     /*
-     * `/gate-probe`: 빈 집합 위에서 공회전하는 검출기를 금지한다. 되돌림 블록을
-     * 실수로 기본값과 같게 채워 넣으면 위 세 검사는 전부 초록인데 설정만 죽는다.
+     * `/gate-probe`: no detector may idle on an empty set. Filling the override block
+     * with the same values as the default keeps all three checks above green while the
+     * setting itself is dead.
      */
     const base = tokenValue(baseSource, "--color-indigo-brand");
     const revert = tokenValue(revertBlock(), "--color-indigo-brand");
@@ -169,10 +174,10 @@ describe("깜빡임 방지 스크립트가 모듈과 같은 계약을 쓴다", (
 
   it("부트 스크립트 본문에 데이터 보간이 없다 — script 경계를 닫을 수 없다", () => {
     /*
-     * `json-ld-script-safety` 가 지키는 것과 같은 성질이다: 문자열이 전부
-     * 상수이고 보간이 없으면 데이터가 `</script>` 로 경계를 닫는 사고를
-     * 원리적으로 못 낸다. 값을 받는 스크립트가 필요해지면 이 파일이 아니라
-     * `JsonLd` 처럼 이스케이프를 책임지는 경계를 새로 만들어야 한다.
+     * The same property `json-ld-script-safety` guards: when every string is a constant
+     * and nothing is interpolated, data cannot close the boundary with `</script>` even
+     * in principle. If a script that takes values becomes necessary, the answer is a new
+     * boundary that owns escaping (like `JsonLd`), not this file.
      */
     const body = /const ACCENT_BOOT = \[([\s\S]*?)\]\.join/.exec(boot);
     expect(body, "부트 스크립트 본문을 못 찾는다").not.toBeNull();
@@ -184,9 +189,10 @@ describe("깜빡임 방지 스크립트가 모듈과 같은 계약을 쓴다", (
 
   it("기본값은 속성을 심지 않는다 — 기본값이 DOM 에 굳지 않게", () => {
     /*
-     * `applyAccentAttribute` 가 기본값에서 속성을 **지우는** 계약. 남겨 두면
-     * 「기본값이라 속성이 있는 상태」와 「명시적으로 고른 상태」가 구별되지 않아,
-     * 나중에 기본값을 바꿀 때 옛 기본값이 속성으로 굳는다.
+     * The contract that `applyAccentAttribute` **removes** the attribute for the
+     * default. Leaving it makes "has the attribute because it is the default"
+     * indistinguishable from "explicitly chosen", so a later change of default freezes
+     * the old default into the attribute.
      */
     expect(prefs).toMatch(/if \(value === DEFAULT_ACCENT\) root\.removeAttribute/);
   });

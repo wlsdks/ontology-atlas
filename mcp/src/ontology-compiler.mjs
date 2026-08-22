@@ -6,13 +6,14 @@ import { GRAPH_ARRAY_KEYS, collectNeighborRefs, normalizeRelationRefs } from './
 const COMPILER_VERSION = 2;
 
 /**
- * `summary: true` 면 nodes / edges / aliases 배열을 생략하고 카운트/aggregate
- * 만 반환 — AI agent 가 graphHash 변화 감지 + 사이즈 판단용 cheap call. 큰
- * vault (100+ 노드) 에서 토큰 한도 초과 회피.
+ * With `summary: true` the nodes / edges / aliases arrays are omitted and only
+ * counts and aggregates are returned — a cheap call for an agent detecting a
+ * graphHash change or judging size, which keeps a large vault (100+ nodes) under
+ * the token limit.
  *
- * `nodesLimit / nodesOffset` (또는 `edgesLimit / edgesOffset`) 가 있으면 그
- * 배열을 slice 해서 `nodesPagination: { offset, limit, total, hasMore,
- * nextOffset }` 메타와 함께 반환. summary 가 우선 (둘 다 주면 summary 만).
+ * With `nodesLimit / nodesOffset` (or `edgesLimit / edgesOffset`) that array is
+ * sliced and returned with `nodesPagination: { offset, limit, total, hasMore,
+ * nextOffset }` metadata. `summary` wins when both are given.
  */
 export function compileOntology(docs, options = {}) {
   const includeIndexes = optionalBoolean(options.includeIndexes, 'includeIndexes') ?? false;
@@ -25,23 +26,24 @@ export function compileOntology(docs, options = {}) {
   const aliasEntries = new Map();
 
   /**
-   * **`kind:` 없는 `.md` 는 노드가 아니다** (2026-07-29 실측).
+   * **A `.md` without `kind:` is not a node** (measured 2026-07-29).
    *
-   * `AGENTS.md` 가 계약을 이렇게 적는다: *"each `.md` with a frontmatter
-   * `kind:` is an ontology node"*. `list`·`validate`·웹 런타임
-   * (`deriveDocNode` 는 kind 가 비면 `null` 을 낸다)은 그 계약을 지켰는데,
-   * 컴파일러만 모든 `.md` 를 노드로 받았다. 그래서 볼트에 평범한 메모 한 장만
-   * 있어도:
+   * `AGENTS.md` writes the contract as *"each `.md` with a frontmatter `kind:` is
+   * an ontology node"*. `list`, `validate`, and the web runtime (`deriveDocNode`
+   * returns `null` on an empty kind) all honoured it; only the compiler accepted
+   * every `.md` as a node. So one ordinary memo in the vault produced:
    *
-   *   list 97 · compile 98 · overview 98      ← 같은 볼트, 다른 숫자
-   *   compile --summary: nodeCount 4, byKind { domain: 1 }   ← 한 산출물 안에서 모순
+   *   list 97 · compile 98 · overview 98      ← same vault, different numbers
+   *   compile --summary: nodeCount 4, byKind { domain: 1 }   ← self-contradictory in one artifact
    *
-   * 게다가 kind 없는 노드가 `overview`/`hubs` 의 결과 계약(비어 있지 않은
-   * `kind` 요구)에 걸려 **명령 전체가 exit 2** 로 죽었다 — 파일 이름도 안
-   * 알려주는 내부 문자열과 함께, 방금 `validate` 가 통과시킨 볼트에서.
+   * Worse, a kind-less node tripped the result contract of `overview` and `hubs`
+   * (which require a non-empty `kind`) and killed **the whole command with exit
+   * 2** — with an internal string that did not even name the file, on a vault
+   * `validate` had just passed.
    *
-   * 문서·검증기·웹이 이미 한쪽에 서 있으므로 컴파일러를 그쪽으로 옮긴다.
-   * 세는 범위가 달라지는 것이 아니라, **원래 계약이던 범위로 돌아간다.**
+   * The docs, the validator, and the web already stood on one side, so the
+   * compiler moves there. This does not change what is counted; it **returns to
+   * the scope the contract always had.**
    */
   const graphDocs = docs.filter((doc) => {
     const kind = doc?.frontmatter?.kind;
@@ -257,19 +259,21 @@ export function compileOntology(docs, options = {}) {
     (edge) => !edge.resolved && !edge.external,
   ).length;
   const maxMtime = Math.max(0, ...nodes.map((node) => Number(node.mtime) || 0));
-  // 문서가 없어 노드가 되지 못한, 그러나 볼트가 이름을 적어 둔 개념의 수.
-  // 웹 지도/인사이트는 이것들도 개념으로 그리므로(도그푸드 96 문서 + 193
-  // 참조 = 289) 이 수를 같이 내지 않으면 화면과 CLI 가 서로 다른 총계를
-  // 말하는데 어느 쪽도 그 차이를 설명하지 않는다. 노드로 승격하지는 않는다 —
-  // census·중심성·health 는 여전히 "문서가 있는 개념" 만 센다.
+  // The count of concepts the vault names but that have no document, so never
+  // became nodes. The web map and insights draw these as concepts too (96 dogfood
+  // documents + 193 references = 289), so without this number the screen and the
+  // CLI report different totals and neither explains the gap. They are not
+  // promoted to nodes — inventory, centrality, and health still count only
+  // concepts that have a document.
   const referencedOnlyCount = new Set(
     edges.filter((edge) => !edge.resolved).map((edge) => edge.ref),
   ).size;
 
-  // summary mode — 배열 전부 omit, 카운트와 aggregate 만. 큰 vault 에서
-  // AI agent 가 토큰 한도 초과 없이 graphHash / 변화 감지 / 사이즈 판단 가능.
-  // byKind / byDomain 은 *slug list* 가 아닌 *count* 로 응축.
-  // 응답에 marker 안 둠 — 호출자가 자기가 요청한 거 안다.
+  // Summary mode — omit every array, return counts and aggregates only, so an
+  // agent on a large vault can read graphHash, detect change, and judge size
+  // without exceeding the token limit. byKind / byDomain condense to a *count*
+  // rather than a *slug list*. No marker in the response: the caller knows what it
+  // asked for.
   if (summary) {
     return {
       version: COMPILER_VERSION,
@@ -277,8 +281,9 @@ export function compileOntology(docs, options = {}) {
       maxMtime,
       nodeCount,
     skippedNonNodeCount,
-      // 노드가 아닌 `.md`(kind 없음) 몇 장을 지나쳤는지 — 조용히 건너뛰지
-      // 않는다. 볼트에 평범한 메모가 섞이는 건 정상이라 issue 는 아니다.
+      // How many `.md` files were passed over for not being nodes (no kind) — they
+      // are not skipped silently. Ordinary memos mixing into a vault is normal, so
+      // this is not an issue.
       skippedNonNodeCount,
       edgeCount,
       resolvedEdgeCount,
@@ -294,7 +299,7 @@ export function compileOntology(docs, options = {}) {
     };
   }
 
-  // Pagination — slice + meta. 미지정 시 전체 반환 (backward compat).
+  // Pagination — slice plus metadata. Unspecified returns everything (backward compat).
   const slicedNodes = sliceWithMeta(nodes, nodesOffset, nodesLimit);
   const slicedEdges = sliceWithMeta(edges, edgesOffset, edgesLimit);
 
@@ -372,7 +377,7 @@ function countByGroup(nodes, key) {
     if (typeof value !== 'string' || !value.trim()) continue;
     counts[value] = (counts[value] || 0) + 1;
   }
-  // 알파벳 sort — deterministic
+  // Alphabetical sort — deterministic
   return Object.fromEntries(
     Object.entries(counts).sort(([a], [b]) => a.localeCompare(b)),
   );
@@ -548,14 +553,15 @@ function validateGraphIdentity(graphDocs) {
 }
 
 /**
- * 신원 오류 하나가 **볼트 전체의 그래프 명령을 멈춘다** — 컴파일이 여기서
- * 끝나므로 `overview` · `health` · `agent-brief` · `query_ontology` 가 전부
- * 같은 에러를 낸다. 그 판정 자체는 옳다(신원이 흔들리는 그래프를 반쯤 그려
- * 주는 것이 더 나쁘다). 다만 **막다른 곳이면 나가는 길을 함께 말해야 한다.**
+ * One identity error **stops every graph command on the whole vault** — the
+ * compile ends here, so `overview`, `health`, `agent-brief`, and `query_ontology`
+ * all raise the same error. That verdict is correct in itself (half-drawing a
+ * graph whose identity is unstable would be worse). But **a dead end has to name
+ * the way out.**
  *
- * 2026-08-08 실측: 사람이 에디터에서 `uid:` 없이 노드를 적으면 이 에러가
- * 나는데, 그때 화면이 알려 주는 것은 «무엇이 잘못됐나» 뿐이었다. 「어떻게
- * 고치나」가 없어서, 손으로 쓴 노드 하나가 볼트를 죽인 채로 남는다.
+ * Measured 2026-08-08: a person writing a node in an editor without `uid:` hits
+ * this error, and all the screen said was «what is wrong». With no «how to fix
+ * it», one hand-authored node leaves the vault dead.
  */
 const IDENTITY_REPAIR_HINT = Object.freeze({
   'missing-uid':

@@ -19,9 +19,9 @@ import { searchProjects } from '../model/fuzzy-search';
 import { fieldClass } from '@/shared/ui/control-class';
 import { transientSurface } from "@/shared/ui/transient-surface";
 
-// Source Vault 매칭 — 가볍게 title/excerpt/slug includes. ⌘K 팔레트는
-// 프로젝트 검색이 메인이고 문서는 보조 섹션이므로 score 정렬 없이 단순
-// 매치 top 3 만 보여준다.
+// Source vault matching — a light title/excerpt/slug includes. The ⌘K palette is
+// primarily project search with documents as a supporting section, so it shows the
+// top 3 plain matches with no score sorting.
 function matchVaultDocs(query: string, docs: VaultDoc[]): VaultDoc[] {
   const q = query.trim().toLowerCase();
   if (!q) return [];
@@ -45,7 +45,7 @@ interface Props {
   onClose: () => void;
   projects: Project[];
   onSelect: (slug: string) => void;
-  /** 활성 컨테이너 이름. truthy 면 헤더에 "Project · {name}" 배지 노출. */
+  /** The active container's name. Truthy shows a "Project · {name}" badge in the header. */
   containerLabel?: string | null;
 }
 
@@ -86,8 +86,8 @@ function pushRecentSlug(slug: string) {
 }
 
 /**
- * query 에 매칭되는 부분을 <mark> 로 감싸 하이라이트. 대소문자 무시, 첫 매치만.
- * 매치 없거나 query 비면 원문 반환.
+ * Wrap the part matching the query in <mark>. Case-insensitive, first match only.
+ * Returns the source text on no match or an empty query.
  */
 function highlightMatch(text: string, query: string): React.ReactNode {
   const q = query.trim().toLowerCase();
@@ -106,8 +106,9 @@ function highlightMatch(text: string, query: string): React.ReactNode {
 }
 
 /**
- * 외부에서 open을 토글받는 래퍼. 실제 다이얼로그는 open=true일 때만 mount
- * 하여 내부 state(query, activeIndex)가 매 열림마다 자동으로 초기화된다.
+ * A wrapper whose open state is toggled externally. The dialog itself mounts only
+ * while open=true, so the internal state (query, activeIndex) resets automatically on
+ * every open.
  */
 export function SearchPalette({
   open,
@@ -151,7 +152,7 @@ const LAYER_FILTERS: { value: LayerFilter; labelKey: 'layerAll' | 'layerHub' | '
 
 function matchesLayerFilter(project: Project, filter: LayerFilter): boolean {
   if (filter === 'all') return true;
-  // R15 — isHub undefined 는 hub 아님으로 취급 (vault frontmatter 명시만 hub).
+  // R15 — an undefined isHub counts as not a hub (only explicit vault frontmatter makes one).
   const isHub = Boolean(project.isHub);
   if (filter === 'hub') return isHub;
   return !isHub;
@@ -173,8 +174,8 @@ function SearchPaletteDialog({
   const listRef = useRef<HTMLDivElement | null>(null);
   const previousFocusRef = useRef<HTMLElement | null>(null);
   const { categoryLabel, statusLabel } = useTaxonomy();
-  // rank2 — 임계감쇠 오버레이 스프링(오버슈트 0) 단일 통일. reduced-motion
-  // 사용자는 translate 없이 120ms opacity 크로스페이드만.
+  // rank2 — one critically damped overlay spring (zero overshoot) throughout. A
+  // reduced-motion user gets a 120ms opacity crossfade with no translate.
   const reducedMotion = useReducedMotion();
   const panelTransition = reducedMotion ? OVERLAY_SPRING_REDUCED : OVERLAY_SPRING;
   const [recentSlugs] = useState<string[]>(() => readRecentSlugs());
@@ -188,8 +189,8 @@ function SearchPaletteDialog({
 
   useBodyScrollLock(true);
 
-  // 검색 대상을 layer filter 로 먼저 좁힌 뒤 query 매칭. filter='all'
-  // 이면 모든 project. container/hub/node 선택 시 해당 계층만.
+  // Narrow the search set by the layer filter first, then match the query. With
+  // filter='all', every project; container/hub/node restricts to that layer.
   const filteredProjects = useMemo(
     () => projects.filter((p) => matchesLayerFilter(p, layerFilter)),
     [projects, layerFilter],
@@ -205,10 +206,10 @@ function SearchPaletteDialog({
     return searchProjects(filteredProjects, query).slice(0, 20);
   }, [filteredProjects, query]);
 
-  // Vault 문서 매칭 — 쿼리 있을 때 top 3.
-  // 매니페스트를 직접 import 하면 "예시 비즈니스 보기" 선택을 무시하고 늘
-  // dogfood 를 뒤진다 — 팔레트가 화면에 안 보이는 볼트를 검색하는 셈이다.
-  // 훅은 훅 규칙상 useMemo 밖에서 부르고 값만 의존성으로 넘긴다.
+  // Vault document matching — the top 3 when there is a query. Importing the manifest
+  // directly would ignore the "view the example business" choice and always search the
+  // dogfood — the palette searching a vault that is not on screen. Hook rules mean the
+  // hook is called outside useMemo and only its value passed as a dependency.
   const { manifest: staticManifest } = useStaticVaultSource();
   const docResults = useMemo(() => {
     if (!query.trim()) return [];
@@ -223,8 +224,8 @@ function SearchPaletteDialog({
   );
   const activeRow = rows[activeIndex] ?? null;
 
-  // mount 직후 focus (input ref가 연결된 다음 프레임). rank18 — preventScroll
-  // 로 배경 스크롤 점프 방지.
+  // Focus right after mount (the frame after the input ref connects). rank18 —
+  // preventScroll avoids a background scroll jump.
   useEffect(() => {
     const id = requestAnimationFrame(() =>
       inputRef.current?.focus({ preventScroll: true }),
@@ -265,7 +266,7 @@ function SearchPaletteDialog({
     };
   }, []);
 
-  // 키보드 핸들링
+  // Keyboard handling
   useEffect(() => {
     const handleKey = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
@@ -301,13 +302,13 @@ function SearchPaletteDialog({
     return () => window.removeEventListener('keydown', handleKey);
   }, [activeRow, rows.length, onClose, onSelect, router]);
 
-  // query 변경 시 activeIndex 리셋 — onChange 핸들러에서 처리(effect 불필요)
+  // Reset activeIndex on a query change — handled in the onChange handler (no effect needed).
   const handleQueryChange = (next: string) => {
     setQuery(next);
     setActiveIndex(0);
   };
 
-  // active item이 보이도록 스크롤
+  // Scroll so the active item is visible.
   useEffect(() => {
     if (!listRef.current) return;
     const el = listRef.current.querySelector<HTMLElement>(`[data-index="${activeIndex}"]`);
@@ -319,8 +320,8 @@ function SearchPaletteDialog({
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
-      // rank2 — 스크림은 --topology-motion-panel-duration(180ms)과 값을
-      // 맞춘 opacity 크로스페이드. reduced-motion 은 120ms(OVERLAY_SPRING_REDUCED).
+  // rank2 — the scrim is an opacity crossfade matched to
+  // --topology-motion-panel-duration (180ms). reduced-motion uses 120ms (OVERLAY_SPRING_REDUCED).
       transition={reducedMotion ? SCRIM_FADE_REDUCED : SCRIM_FADE}
       data-interactive-overlay="true"
       data-overlay-spring="true"
@@ -332,13 +333,14 @@ function SearchPaletteDialog({
         onClick={onClose}
       />
 
-      {/* 모바일은 풀스크린 시트 (반경 없이 inset-0 가득 채움), md+ 는
-          기존 floating 카드 (max-w-xl, rounded-sheet, 위에서 슬라이드).
-          rank2 — 3종 오버레이 공용 임계감쇠 스프링(OVERLAY_SPRING, 오버슈트
-          0). 진입은 opacity 0→1 + translateY 8px→0 만 — scale 없음
-          (hover:scale-* 혼동 방지). 캔버스 2-param 물리 모델과는 별도
-          튜닝(app/globals.css `--overlay-spring-*` 토큰 주석의 변환식 참조,
-          "동일 스프링 상속" 아님). */}
+      {/* Mobile is a full-screen sheet (inset-0, filling with no radius); md+ keeps the
+          floating card (max-w-xl, rounded-sheet, sliding from above).
+          rank2 — the shared critically damped spring across all three overlays
+          (OVERLAY_SPRING, zero overshoot). Entry is opacity 0→1 plus translateY 8px→0
+          only — no scale (avoiding confusion with hover:scale-*). Tuned separately from
+          the canvas's 2-parameter physics model (see the conversion formula in the
+          `--overlay-spring-*` token comments in app/globals.css) — not "inheriting the
+          same spring". */}
       <motion.div
         ref={dialogRef}
         initial={{ y: 8, opacity: 0 }}
@@ -379,9 +381,10 @@ function SearchPaletteDialog({
                   ? `search-result-project-${activeRow.result.project.slug}`
                   : undefined
             }
-            // 타입은 값 층(bare=text-body)이 정한다 — 종전 `text-title`(16px)
-            // 덮어쓰기는 조회 규격 위반이었다(조회는 입력이 결과를 이기면 안
-            // 된다, 2026-08-06 필드 규격). 문서함 팔레트와 같은 칸이 된다.
+            // The type is decided by the value layer (bare = text-body) — the old
+            // `text-title` (16px) override violated the lookup specification (a lookup's
+            // input must not beat its results, 2026-08-06 field specification). It is now
+            // the same field as the docs palette.
             className={fieldClass({ frame: "bare", className: "flex-1" })}
           />
           <kbd className="hidden rounded-micro border border-[color:var(--color-divider)] px-1.5 py-0.5 font-mono text-caption uppercase tracking-wider text-[color:var(--color-text-quaternary)] sm:inline-block">
@@ -418,8 +421,8 @@ function SearchPaletteDialog({
             {t('rowsCount', { count: rows.length })}
           </span>
         </div>
-        {/* Layer filter chip row — 전체/컨테이너/허브/노드 중 선택. 선택 시
-            results 가 해당 계층만 포함. 기본 '전체'. */}
+        {/* Layer filter chip row — pick between all, container, hub and node. A
+            selection restricts results to that layer. Defaults to '전체' (all). */}
         <div
           role="tablist"
           aria-label={t('layerFilterAriaLabel')}
@@ -569,7 +572,7 @@ function SearchPaletteDialog({
                 </button>
               </div>
             ) : filteredProjects.length === 0 && layerFilter !== 'all' ? (
-              // 쿼리 없어도 layer filter 가 너무 좁아 결과 0. filter 리셋 CTA.
+              // Even with no query, the layer filter is narrow enough for 0 results. A filter-reset CTA.
               <div className="flex flex-col items-center px-4 py-8 text-center">
                 <p className="text-body-lg text-[color:var(--color-text-secondary)]">
                   {t('emptyLayerTitle')}

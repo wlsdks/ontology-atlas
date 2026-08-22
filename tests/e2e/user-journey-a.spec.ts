@@ -2,15 +2,17 @@ import { expect, test } from "@playwright/test";
 import { useDogfoodSample } from "./sample-source";
 
 /**
- * T-10. 지침서 §2.A 공개 방문자 여정을 하나의 플로우로 재현한다.
- * audit-only: 치명적 단절(상세가 안 열림, Cmd+K가 안 열림 등)만 실패시키고,
- * 체감 지연이나 문구 결손은 console 리포트로 남겨 다음 사이클 티켓 후보로 쓴다.
+ * Replays the public-visitor journey (guide §2.A) as one flow.
  *
- * 다루는 구간:
- *   A1. 공유 링크(`/en/project/ontology-atlas/`)로 진입 → 상세가 즉시 읽힘
- *   A2. 루트(`/en/`) 진입 → 지도(HomePage)가 곧 첫 화면 — 별도 마케팅 랜딩
- *       경유 없이 10초 안에 INDEX/브랜드 pill 이 뜬다 (root-first-open B3).
- *   A5. 상세에서 Cmd+K 검색 팔레트가 열림·닫힘
+ * Fatal breaks (the detail page not opening, Cmd+K not opening) fail the test;
+ * perceived latency and missing copy are reported to the console as candidates for
+ * the next cycle.
+ *
+ * Segments covered:
+ *   A1. Enter via a shared link (`/en/project/ontology-atlas/`) → the detail reads immediately
+ *   A2. Enter at the root (`/en/`) → the map (HomePage) is the first screen — the
+ *       INDEX / brand pill appears within 10s with no marketing-landing detour.
+ *   A5. Cmd+K opens and closes the search palette from the detail page
  *
  * A3/A4 topology interaction is covered by topology-drag.
  */
@@ -18,20 +20,21 @@ import { useDogfoodSample } from "./sample-source";
 const FINDING_LIMIT = 15;
 
 test("A1·A2·A5 공개 여정 한 플로우", async ({ page }) => {
-  // 이 여정은 dogfood 프로젝트(`/project/ontology-atlas/`)를 밟는다 — 2026-07-26
-  // 기본 샘플이 예시 비즈니스로 바뀌었으니 명시 선택한다.
+  // This journey walks the dogfood project (`/project/ontology-atlas/`) — the default
+  // sample became an example business on 2026-07-26, so it is selected explicitly.
   await useDogfoodSample(page);
   const consoleErrors: string[] = [];
   const pageErrors: string[] = [];
-  /** 시간 예산 — 기계 속도를 타므로 **보고만** 한다. */
+  /** Time budgets — machine-dependent, so they are **reported only**. */
   const findings: string[] = [];
   /*
-   * **결정론적 사실 — 이쪽은 실패시킨다** (2026-08-17 검사 전수조사).
+   * **Deterministic facts — these fail the test** (check inventory, 2026-08-17).
    *
-   * 이 spec 은 이름이 「여정」인데 여정 단언이 전부 `console.log` 였다.
-   * *"A2 root map INDEX panel missing — landing detour regression?"* 같은
-   * 문장은 기계 속도와 무관한 사실인데도 찍고 통과했다. 기계 속도를 타는
-   * 것(TTFB 예산)만 보고로 남기고, 있고 없음이 갈리는 것은 실패로 올린다.
+   * This spec is named for a journey, yet every journey assertion was a
+   * `console.log`. A sentence like *"A2 root map INDEX panel missing — landing detour
+   * regression?"* is a fact independent of machine speed, and it was printed while
+   * passing. Only the machine-dependent parts (TTFB budgets) stay as reports;
+   * presence-or-absence is raised to a failure.
    */
   const defects: string[] = [];
 
@@ -40,9 +43,9 @@ test("A1·A2·A5 공개 여정 한 플로우", async ({ page }) => {
     if (msg.type() === "error") consoleErrors.push(msg.text());
   });
 
-  // ── A1. 공유 링크 → 상세 ────────────────────────────────────────────────
-  // URL slug 는 `ontology-atlas`, 화면에 세우는 이름은 `Ontology Atlas`.
-  // 여기서 볼 것은 표기법이 아니라 "그 프로젝트가 렌더됐는가" 다.
+  // ── A1. Shared link → detail ────────────────────────────────────────────
+  // The URL slug is `ontology-atlas`; the on-screen name is `Ontology Atlas`. What
+  // matters here is whether that project rendered, not the notation.
   const EXPECTED_DETAIL_NAME = "Ontology Atlas";
   const DETAIL_NAME_RE = /ontology[- ]atlas/i;
   const detailStart = Date.now();
@@ -57,9 +60,10 @@ test("A1·A2·A5 공개 여정 한 플로우", async ({ page }) => {
   if (detailTtfb > 5_000) {
     findings.push(`A1 상세 첫 heading까지 ${detailTtfb}ms (5s 초과)`);
   }
-  // 상세 body 가 실제로 hydrate 돼서 프로젝트 이름이 본문에 나타나는지 확인.
-  // server HTML 은 client-side rendering 으로 비어있으므로 hydration 후에만
-  // 보인다. 이 assertion 은 "메타데이터만 있고 본문 비어있는" 회귀를 잡는다.
+  // Confirms the detail body really hydrated and the project name appears in it. The
+  // server HTML is empty because rendering is client-side, so it appears only after
+  // hydration. This assertion catches the "metadata present, body empty"
+  // regression.
   const nameInBody = await page
     .getByText(EXPECTED_DETAIL_NAME)
     .first()
@@ -72,7 +76,7 @@ test("A1·A2·A5 공개 여정 한 플로우", async ({ page }) => {
     );
   }
 
-  // ── A2. 루트 = 지도 (root-first-open B3, 별도 마케팅 랜딩 없음) ──────────
+  // ── A2. Root = the map (no separate marketing landing) ──────────────────
   // `getByText("Ontology Atlas", { exact: true })` used to match visible
   // hero copy on the old marketing LandingPage. Root-first-open moved that
   // copy to `/download` — the only surviving "Ontology Atlas" mark on `/`
@@ -87,24 +91,27 @@ test("A1·A2·A5 공개 여정 한 플로우", async ({ page }) => {
     findings.push(`A2 root map product mark까지 ${landingTtfb}ms (5s 초과)`);
   }
   /*
-   * **여기서 INDEX 를 요구하던 검사를 지웠다** (2026-08-17 검사 전수조사).
+   * **The check that demanded INDEX here was deleted** (check inventory,
+   * 2026-08-17).
    *
-   * 종전에는 `/` 에 지도 INDEX 가 없으면 *"landing detour regression?"* 을
-   * 찍었다. 그런데 그 기대는 **뒤집힌 계약**이다 — 2026-07-30 결정으로 볼트를
-   * 아직 안 고른 웹 방문자의 `/` 는 관문(`/download` 와 같은 얼굴)이고
-   * INDEX 는 없는 것이 맞다(`.claude/rules/architecture.md` 「URL 계약」).
-   * 지금 그 계약을 지키는 검사는 따로 있다 —
-   * `ontology-ui.spec.ts` 의 "root renders the gateway face": `download-gnb`
-   * 가 보이고 `topology-index-panel` 은 0개.
+   * It used to print *"landing detour regression?"* when `/` had no map INDEX. That
+   * expectation is **an inverted contract** — by the 2026-07-30 decision, `/` for a
+   * web visitor who has not chosen a vault is the gateway (the same face as
+   * `/download`), and having no INDEX is correct
+   * (`.claude/rules/architecture.md` 「URL 계약」 — the URL contract). A separate
+   * check guards that contract now: `ontology-ui.spec.ts`'s "root renders the gateway
+   * face", where `download-gnb` is visible and `topology-index-panel` count is 0.
    *
-   * 이 줄이 **로그로만 찍혀서** 계약이 뒤집힌 뒤로도 계속 「결함」이라고
-   * 말하고 있었고 아무도 못 봤다. 실패로 올리자마자 그 사실이 드러났다.
-   * 남의 계약을 여기서 다시 재지 않는다.
+   * Because this line **only ever printed to the log**, it kept calling correct
+   * behaviour a defect long after the contract was inverted, and nobody saw it. The
+   * moment it was raised to a failure, that became visible. Another check's contract
+   * is not re-measured here.
    */
 
-  // ── A5. 상세 Cmd+K → 같은 페이지에서 검색 팔레트 ───────────────────────
-  // T-11 이후, 상세에서 Cmd+K는 `/`로 튕기지 않고 상세 페이지 안에 SearchPalette를
-  // 바로 연다. URL은 그대로, Escape로 닫히며 다시 Cmd+K로 토글된다.
+  // ── A5. Cmd+K on the detail page → the search palette, in place ─────────
+  // Cmd+K on a detail page opens the SearchPalette inside that page rather than
+  // bouncing to `/`. The URL stays put, Escape closes it, and Cmd+K toggles it
+  // again.
   await page.goto("/en/project/ontology-atlas/", { waitUntil: "domcontentloaded" });
   await expect(page.getByRole("heading").first()).toBeVisible({ timeout: 10_000 });
   await page.waitForTimeout(600); // hydration + useTypingShortcuts bind
@@ -113,14 +120,14 @@ test("A1·A2·A5 공개 여정 한 플로우", async ({ page }) => {
   await page.keyboard.press(isMac ? "Meta+k" : "Control+k");
   const paletteInput = page.locator("input#project-search-input");
   await expect(paletteInput).toBeVisible({ timeout: 3_000 });
-  // URL이 상세에서 벗어나지 않아야 한다.
+  // The URL must not leave the detail page.
   expect(new URL(page.url()).pathname).toBe(detailPathBefore);
   await page.keyboard.press("Escape");
   await expect(paletteInput).toHaveCount(0, { timeout: 3_000 });
 
-  // ── A5'. 상세 ? → 상세 페이지 안에서 ShortcutSheet 토글 (T-16) ─────────
-  // useTypingShortcuts 는 event.key === '?' 을 보므로 KeyboardEvent 로 직접
-  // 발사해 Playwright의 키맵 의존을 피한다.
+  // ── A5'. `?` on the detail page → toggles the ShortcutSheet in place ────
+  // `useTypingShortcuts` matches on `event.key === '?'`, so a KeyboardEvent is
+  // dispatched directly to avoid depending on Playwright's keymap.
   await page.evaluate(() => {
     window.dispatchEvent(new KeyboardEvent("keydown", { key: "?" }));
   });
@@ -130,7 +137,7 @@ test("A1·A2·A5 공개 여정 한 플로우", async ({ page }) => {
   await page.keyboard.press("Escape");
   await expect(shortcutDialog).toHaveCount(0, { timeout: 3_000 });
 
-  // ── 리포트 ──────────────────────────────────────────────────────────────
+  // ── Report ─────────────────────────────────────────────────────────────
   console.log(`[JOURNEY-A] A1 detail heading ${detailTtfb}ms`);
   console.log(`[JOURNEY-A] A2 root map product mark ${landingTtfb}ms`);
   console.log(`[JOURNEY-A] findings=${findings.length} pageerror=${pageErrors.length} console.error=${consoleErrors.length}`);
@@ -141,7 +148,7 @@ test("A1·A2·A5 공개 여정 한 플로우", async ({ page }) => {
   console.log(`[JOURNEY-A] defects=${defects.length}`);
   for (const d of defects) console.log(`[JOURNEY-A]   ✗ ${d}`);
 
-  // pageerror 와 **결정론적 사실**은 실패. 시간 예산(findings)과 console.error 는 보고용.
+  // pageerror and **deterministic facts** fail. Time budgets (findings) and console.error are reports.
   expect(pageErrors, `공개 여정 중 pageerror ${pageErrors.length}건:\n${pageErrors.slice(0, 5).join("\n")}`).toHaveLength(0);
   expect(
     defects,

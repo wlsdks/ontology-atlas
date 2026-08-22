@@ -4,8 +4,8 @@ import { ONTOLOGY_STARTER_FILES } from './ontology-starter';
 import { STARTER_CONCEPT_COUNT } from './starter-counts';
 
 describe('스타터 개수 의미 (#70)', () => {
-  // 온보딩 문구가 "마크다운 시드 5개" 라고 약속한다. 파일 목록이 늘거나 줄면
-  // 그 문구도 함께 고쳐야 하므로 여기서 잠근다.
+  // The onboarding copy promises "5 markdown seeds". If the file list grows or shrinks that copy has
+  // to change with it, so it is locked here.
   it('스타터 개념 수는 마크다운 파일 수와 같다', () => {
     expect(STARTER_CONCEPT_COUNT).toBe(ONTOLOGY_STARTER_FILES.length);
     expect(STARTER_CONCEPT_COUNT).toBe(5);
@@ -15,8 +15,8 @@ describe('스타터 개수 의미 (#70)', () => {
     for (const file of ONTOLOGY_STARTER_FILES) {
       expect(file.relPath).toMatch(/\.md$/);
     }
-    // `.mcp.json` / `.codex/config.toml` 은 개념이 아니라 설정이다 — 개념 수에
-    // 섞이면 "개념 8개" 라는 거짓말이 된다.
+  // `.mcp.json` and `.codex/config.toml` are configuration, not concepts — mixed into the concept
+  // count they become the lie "8 concepts".
     expect(ONTOLOGY_STARTER_FILES.some((f) => f.relPath.includes('.mcp.json'))).toBe(false);
     expect(ONTOLOGY_STARTER_FILES.some((f) => f.relPath.includes('config.toml'))).toBe(false);
   });

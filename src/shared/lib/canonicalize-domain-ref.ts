@@ -5,12 +5,12 @@ import { slugify } from "./slugify";
  *
  * WHY: two writers produced different serializations of the same domain — the
  * map "새 노드" form wrote the folder-prefixed picker value (`domains/문의-처리`)
- * while the 공방 CREATE form wrote the bare tail-slug (`문의-처리`). Both resolve
+ * while the studio CREATE form wrote the bare tail-slug (`문의-처리`). Both resolve
  * to the same node in the compiler/derivation, but any analytics that key on the
  * raw frontmatter string aggregate them as two different domains.
  *
  * Canonical form = the bare tail-slug (`문의-처리`). This matches the entire
- * existing dogfood vault (every `domain:` there is a bare slug), the 공방 writer,
+ * existing dogfood vault (every `domain:` there is a bare slug), the studio writer,
  * and what the derivation resolves to — so routing every NEW write through this
  * needs zero rewrite of existing files.
  *

@@ -7,19 +7,20 @@ import type { Project } from "@/entities/project";
 import { ProjectForm } from "./ProjectForm";
 
 /**
- * 만들기/편집 레이아웃 계약 (2026-07-27 재구성).
+ * The create/edit layout contract (restructured 2026-07-27).
  *
- * 소유자 지적: 만들기 화면이 스크롤만 길고, 저장 버튼이 입력 칸보다 먼저
- * 나오고, 같은 안내를 네 번 반복했다. 재구성 후 계약은 두 줄이다.
+ * Owner's report: the create screen was nothing but a long scroll, the save button came
+ * before the input fields, and the same guidance repeated four times. After the
+ * restructure the contract is two lines:
  *
- * 1. **만들기** — 필수 4칸(이름·카테고리·상태·짧은 설명)만 펼쳐져 있고,
- *    액션은 폼 **뒤**에만 있다(상단 저장 클러스터 없음). 나머지 항목은
- *    "더 채우기" 안에 접혀 있고 사용자가 펼친다.
- * 2. **편집** — 회귀 금지. 모든 항목이 펼침 없이 도달 가능하고, 상단 sticky
- *    저장 클러스터·섹션 이동·삭제 줄이 그대로 있다.
+ * 1. **Create** — only the four required fields (name, category, status, short description)
+ *    are expanded, and actions exist **after** the form only (no top save cluster).
+ *    Everything else folds into "add more" and the user expands it.
+ * 2. **Edit** — no regression. Every item is reachable without expanding, and the top
+ *    sticky save cluster, section navigation, and delete row all remain.
  *
- * 접힌 자리에 검증 에러가 나면 스스로 펼쳐야 한다 — 안 그러면 "고치라는데
- * 그 칸이 없는" 막다른 길이 된다.
+ * A validation error inside a collapsed section must expand it — otherwise it is the dead
+ * end of "fix this field" with no such field on screen.
  */
 
 const fields = koMessages.settings.projectForm.fields;
@@ -82,7 +83,7 @@ describe("ProjectForm 만들기 레이아웃", () => {
 
   it("선택 항목은 접혀 있고, 펼치면 전부 도달 가능하다", () => {
     renderCreate();
-    // 접힌 상태 — DOM 에 없다.
+    // Collapsed — not in the DOM.
     expect(screen.queryByLabelText(fields.tagsCsv)).not.toBeInTheDocument();
     expect(screen.queryByLabelText(fields.detail)).not.toBeInTheDocument();
     expect(screen.queryByLabelText(fields.owner)).not.toBeInTheDocument();
@@ -127,8 +128,8 @@ describe("ProjectForm 만들기 레이아웃", () => {
 
   it("접힌 자리의 필수 항목이 비어 제출이 막히면 그 자리를 스스로 펼친다", () => {
     renderCreate();
-    // 이름/설명이 비어 있으므로 제출은 실패한다. 첫 에러가 이름이라
-    // 접힌 자리는 열리지 않아야 하고, 에러 배너는 떠야 한다.
+    // Name and description are empty, so submit fails. The first error is the name, so the
+    // collapsed section must stay closed while the error banner appears.
     fireEvent.click(screen.getByTestId("project-save"));
     expect(
       screen.getByText(koMessages.settings.projectForm.validation.globalErrorBanner),

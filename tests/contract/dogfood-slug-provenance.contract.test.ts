@@ -8,21 +8,23 @@ import {
 } from "../../mcp/src/schema.mjs";
 
 /**
- * 도그푸드 볼트의 두 규격 (2026-08-01):
+ * Two rules for the dogfood vault (2026-08-01):
  *
- * 1. **슬러그는 평평한 식별자다** (`docs/DECISIONS.md` 판정). 재생성 볼트가
- *    `elements/src/views/home` 류 경로형 슬러그 43개를 실었고, 꼬리 별칭
- *    충돌로 화면에서 노드 3→1 접힘 + 관계 4개 소실이 실측됐다. 쓰기 관문
- *    (`flatSlugIssue`) 이 새 유입을 막지만, 관문을 우회한 손 편집이 여기서
- *    잡힌다.
+ * 1. **A slug is a flat identifier** (`docs/DECISIONS.md` verdict). A regenerated
+ *    vault carried 43 path-shaped slugs such as `elements/src/views/home`, and
+ *    tail-alias collisions were measured as 3 nodes folding into 1 on screen plus 4
+ *    relations lost. The write checkpoint (`flatSlugIssue`) blocks new arrivals;
+ *    hand edits that bypass it are caught here.
  *
- * 2. **저작 출처는 전 노드에 있다** (소유자 지시 — human 은 「사람 판단이
- *    성립 조건인 노드」: 프로젝트 정의 · 도메인 경계 · 방향 약속 capability.
- *    나머지는 agent:*). 개수는 못 박지 않는다 — 고정 숫자는 볼트가 자랄
- *    때마다 깨지는 소음이다. 값의 형태와 전수(全數) 존재만 계약이다.
+ * 2. **Every node carries authorship provenance** (owner instruction — `human` means
+ *    a node whose existence depends on human judgement: the project definition,
+ *    domain boundaries, and direction-promise capabilities; everything else is
+ *    `agent:*`). The count is not pinned — a fixed number is noise that breaks every
+ *    time the vault grows. Only the value's shape and its presence on every node are
+ *    the contract.
  *
- * 이 계약은 dogfood 볼트에만 적용된다 — 일반 사용자 볼트에서 `created_by`
- * 부재는 결함이 아니라 unknown 이다 (2026-07-31 원장).
+ * This contract applies to the dogfood vault only — in an ordinary user's vault a
+ * missing `created_by` is unknown, not a defect (decision ledger, 2026-07-31).
  */
 
 const VAULT_ROOT = join(process.cwd(), "docs/ontology");

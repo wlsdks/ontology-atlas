@@ -1,6 +1,7 @@
-// `ontology-atlas moment [vault]` — Slice 0 magic-moment instrumentation
-// readout (docs/plans/PRODUCT-PLAN-2026-07.md §4/§9 북극성: "흡수/init 직후
-// 에이전트가 vault 노드를 인용하며 답하는 첫 순간" ≤5분 도달).
+// `ontology-atlas moment [vault]` — Slice 0 magic-moment instrumentation readout.
+// North star (docs/plans/PRODUCT-PLAN-2026-07.md §4/§9): reaching "the first
+// moment, right after absorb or init, when an agent answers by citing vault
+// nodes" in ≤5 minutes.
 //
 // Reads `.ontology-atlas/telemetry.local.json` (written by `init`, `absorb
 // --write`, and `agent-brief` — see ../lib/telemetry.mjs) and prints the

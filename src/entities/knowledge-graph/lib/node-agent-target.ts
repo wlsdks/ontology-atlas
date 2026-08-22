@@ -1,36 +1,38 @@
 import type { KnowledgeGraphNode } from "../model/types";
 
 /**
- * 이 노드를 **에이전트에게 건넬 때 쓰는 이름** 하나를 정하는 단일 출처.
+ * The single source for the one name to hand an agent for a node.
  *
- * 왜 한 곳이어야 하나 (2026-07-26 실측) — 화면이 복사해 주는 MCP 호출은
- * "붙여넣으면 동작한다" 가 존재 이유다. 그런데 각 표면이 저마다
- * `node.evidenceIds[0]` 를 그대로 박아 넣고 있었고, 그 값은 두 가지 이유로
- * 에이전트가 받는 이름과 달랐다:
+ * Why it must be one place (measured 2026-07-26): an MCP call the screen offers to
+ * copy exists to work when pasted. Each surface was inlining
+ * `node.evidenceIds[0]`, which differed from the agent's name for two reasons:
  *
- * 1. **볼트 뿌리가 다르다.** 번들 dogfood 매니페스트는 `docs/` 를 뿌리로
- *    빌드돼 온톨로지 문서 slug 가 `ontology/elements/…` 인데, 저장소가
- *    에이전트에 물리는 볼트 뿌리는 `docs/ontology` 다. 그래서 인사이트의
- *    「에이전트로 검증」이 복사해 준 `merge_concepts({fromSlug:"ontology/
- *    elements/topology-ontology-drawer-model"…})` 가 실행 즉시 실패했다 —
- *    앞 조각 하나 차이였다.
- * 2. **문서 없는 노드에서는 남의 이름이다.** 파생 노드의 `evidenceIds[0]` 은
- *    *자기를 인용한 다른 문서* 의 slug다. 그대로 넘기면 에이전트가 엉뚱한
- *    문서를 고치게 된다 — #688 이 공방에서 막은 것과 같은 계열의 사고다.
+ * 1. **Different vault roots.** The bundled dogfood manifest is built with `docs/`
+ *    as its root, so ontology doc slugs read `ontology/elements/…`, while the vault
+ *    root this repository hands an agent is `docs/ontology`. Insights' "verify with
+ *    an agent" therefore copied
+ *    `merge_concepts({fromSlug:"ontology/elements/topology-ontology-drawer-model"…})`,
+ *    which failed on execution — one leading segment.
+ * 2. **On a node with no document it is someone else's name.** A derived node's
+ *    `evidenceIds[0]` is the slug of *another document that cited it*. Passing it
+ *    through has the agent edit the wrong document.
  *
- * 그래서 표면마다 각자 판단하지 않고 여기서만 답한다. 문서가 없으면
- * `documented: false` 와 볼트가 적어 둔 참조 원문을 돌려주므로, 호출자는
- * "먼저 문서를 만들어야 한다" 는 사실을 숨기지 않고 인계문을 쓸 수 있다.
+ * So surfaces do not decide this themselves; the answer comes only from here. With
+ * no document it returns `documented: false` plus the reference string the vault
+ * wrote, so the caller can write a handoff that does not hide the fact that the
+ * document has to be created first.
  */
 export interface NodeAgentTarget {
   /**
-   * MCP/CLI 가 그대로 받아들이는 이름. 문서 노드면 볼트 뿌리 기준 문서 slug,
-   * 문서 없는 노드면 볼트가 적어 둔 참조 원문. 둘 다 없으면 null.
+   * The name MCP and the CLI accept verbatim: the vault-root-relative doc slug for a
+   * document node, or the reference string the vault wrote for one without a
+   * document. Null when neither exists.
    */
   ref: string | null;
   /**
-   * 이 이름으로 조회·수정이 되는가. `false` 면 `add_concept` 로 문서를 먼저
-   * 만들어야 `patch_concept` / `merge_concepts` / `get_concept` 이 성립한다.
+   * Whether this name can be read and written. When `false`, `add_concept` must
+   * create the document before `patch_concept` / `merge_concepts` / `get_concept`
+   * will work.
    */
   documented: boolean;
 }
@@ -43,8 +45,8 @@ export function resolveNodeAgentTarget(
   node: AgentTargetInput | null | undefined,
 ): NodeAgentTarget {
   if (!node) return { ref: null, documented: false };
-  // 하위 호환: `hasOwnDocument` 를 안 채우는 생산 경로(테스트 픽스처 · 수동
-  // 조립)는 종전대로 문서 노드로 읽는다.
+  // Backwards compatibility: production paths that do not fill `hasOwnDocument`
+  // (test fixtures, hand assembly) still read as document nodes.
   const documented = node.hasOwnDocument !== false;
   if (!documented) {
     const derivedRef = node.ref?.trim();
@@ -57,10 +59,11 @@ export function resolveNodeAgentTarget(
 }
 
 /**
- * 번들 dogfood 매니페스트가 `docs/` 를 뿌리로 빌드된 결과로 온톨로지 문서
- * slug 앞에 남는 조각. 이 저장소의 빌드 산출물에 대한 **사실**이지 사용자
- * 볼트에 대한 추측이 아니다 — 사용자가 자기 폴더를 열면 그 폴더가 곧 볼트
- * 뿌리라 뺄 조각이 없다(그래서 로컬 모드에는 접두사를 주지 않는다).
+ * The segment left on ontology doc slugs because the bundled dogfood manifest is
+ * built with `docs/` as its root. This is a **fact about this repository's build
+ * output**, not a guess about a user's vault — a user who opens their own folder has
+ * that folder as the vault root, with nothing to strip, which is why local mode
+ * passes no prefix.
  */
 export function stripVaultSlugPrefix(slug: string, prefix: string | undefined): string {
   if (!prefix) return slug;

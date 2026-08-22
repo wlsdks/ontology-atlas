@@ -16,7 +16,7 @@ describe("parseProjectDetailTab", () => {
   });
 
   it("없음·빈값·모르는 값은 기본 탭으로 떨어진다 — 화면을 막지 않는다", () => {
-    // 공유 링크는 남의 손에서 편집된다. 오타가 에러 화면이 되면 안 된다.
+    // A share link gets edited in other people's hands. A typo must not become an error screen.
     for (const raw of [null, undefined, "", "activity", "Overview", "../x"]) {
       expect(parseProjectDetailTab(raw)).toBe(DEFAULT_PROJECT_DETAIL_TAB);
     }

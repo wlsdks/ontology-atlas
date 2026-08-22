@@ -21,29 +21,29 @@ import {
 } from './types';
 
 /**
- * 한 턴의 상태 기계.
+ * One turn's state machine.
  *
- * ## 세 가지가 계약이다
+ * **Three contracts:**
  *
- * 1. **누른 프레임에 반응한다.** `startTurn` 은 네트워크를 기다리지 않고
- *    사용자 말풍선이 앉은 턴을 **동기적으로** 돌려준다. 화면은 그 결과를
- *    바로 그린다.
- * 2. **모든 진행은 끊을 수 있다.** `abort()` 는 진행 중 요청을 그 자리에서
- *    끊고 "여기까지 읽었어요" 정리 행을 남긴다. 패널을 닫는 것도 같은
- *    경로다 — 닫힘 = 중단이지 백그라운드 계속이 아니다.
- * 3. **사용자 턴 없이 도는 경로가 없다.** 왕복은 `run()` 안에서만 일어나고
- *    상한(6)이 있다. 자율 실행 0.
+ * 1. **It responds on the frame it was pressed.** `startTurn` does not wait for
+ *    the network; it returns **synchronously** with the turn holding the user's
+ *    bubble, and the screen draws that result immediately.
+ * 2. **Every run can be interrupted.** `abort()` cuts an in-flight request where
+ *    it stands and leaves a "read this far" closing row. Closing the panel takes
+ *    the same path — closing is stopping, not continuing in the background.
+ * 3. **There is no path that runs without a user turn.** Round trips happen only
+ *    inside `run()` and are capped (6). Zero autonomous execution.
  *
- * ## 진행 표시는 실제 사건만
- *
- * 도구 행은 **왕복이 끝난 뒤** 확정된다. 전송 전에 "읽음" 으로 찍으면 화면이
- * 아직 일어나지 않은 일을 말하는 것이다. 진행 중에는 pending 점 하나뿐이고,
- * 가짜 진행바는 만들지 않는다.
+ * **Progress shows only what has actually happened.** A tool row is confirmed
+ * only **after its round trip completes**. Marking something "read" before it is
+ * sent makes the screen state something that has not happened yet. While in
+ * flight there is one pending dot and nothing else — no fake progress bar is
+ * ever built.
  */
 
 export interface AgentLoopDeps {
   adapter: ProviderAdapter;
-  /** Rust 브리지. 실패하면 throw. */
+  /** The Rust bridge. Throws on failure. */
   send(args: {
     body: string;
     scope: LlmChatScope;
@@ -51,17 +51,17 @@ export interface AgentLoopDeps {
     model: string;
   }): Promise<LlmChatEcho>;
   execute(call: NormalizedToolCall): Promise<ToolExecution>;
-  /** 이 턴에 실어 보낼 도구 목록. */
+  /** The tool list carried in this turn. */
   tools: readonly AgentToolDefinition[];
   system: string;
   model: string;
-  /** 상한 도달·중단·오류 문구는 화면 언어로 온다 — 모델이 짓지 않는다. */
+  /** Cap-reached, aborted, and error copy arrive in the screen's language — the model does not write them. */
   notices: {
     roundCap: string;
     /**
-     * 도구를 한 번도 안 부르고 멈춘 턴의 한 줄. 라운드 수를 실어 보내는
-     * 이유는 상한 도달 문구와 **대칭**이 되게 하기 위해서다 — 둘 다
-     * "몇 번째에서 멈췄나" 를 말한다.
+     * The single line for a turn that stopped without calling a tool. The round
+     * number is carried so it is **symmetric** with the cap-reached copy — both
+     * say "which round it stopped at".
      */
     noToolCall: (args: { round: number; cap: number }) => string;
     aborted: string;
@@ -82,17 +82,17 @@ export interface StartTurnInput {
 
 export interface TurnRunResult {
   turn: AgentTurn;
-  /** 이 턴에 실제로 읽은 노드 slug 들 — 제안 카드의 경고 행 판정에 쓴다. */
+  /** The node slugs actually read this turn — used to decide the proposal card's warning row. */
   readSlugs: string[];
-  /** 모델이 시도한 쓰기들 — 호출자가 제안 카드로 바꾼다. */
+  /** The writes the model attempted — the caller turns these into proposal cards. */
   writeIntents: Array<{ name: string; args: unknown }>;
 }
 
 let turnSeq = 0;
 
 /**
- * [보내기] 를 누른 **그 프레임**에 만들어지는 턴. 네트워크는 아직 없다.
- * 화면은 이 값을 그대로 그려 입력칸을 잠그고 말풍선을 앉힌다.
+ * The turn created on **the very frame** [send] was pressed. There is no network
+ * yet. The screen draws this value as is, locking the input and seating the bubble.
  */
 export function startTurn(input: StartTurnInput): AgentTurn {
   turnSeq += 1;
@@ -123,10 +123,11 @@ function noticeFor(deps: AgentLoopDeps, status: number | null, message: string):
 }
 
 /**
- * 한 턴을 끝까지 돈다. `signal` 이 끊기면 그 자리에서 정리하고 돌아온다.
+ * Runs one turn to completion. If `signal` is cut it tidies up where it stands and
+ * returns.
  *
- * 반환값은 **새 턴 객체**다 — 화면이 매 왕복마다 다시 그릴 수 있도록
- * `onProgress` 로 중간 상태도 흘려준다.
+ * The return value is **a new turn object**, and intermediate states are streamed
+ * through `onProgress` so the screen can redraw on every round trip.
  */
 export async function runTurn(
   deps: AgentLoopDeps,
@@ -191,7 +192,7 @@ export async function runTurn(
         question,
         scope: {
           nodes: [...new Set(readSlugs)],
-          // 실측만 — 이 왕복에 실제로 나간 바이트 길이.
+          // Measured only — the byte length actually sent in this round trip.
           promptChars: payload.length,
           vaultChars,
           tools: [...toolRefs],
@@ -259,15 +260,17 @@ export async function runTurn(
     if (parsed.toolCalls.length === 0) {
       pushAssistant(parsed.text);
       /**
-       * **도구를 한 번도 안 부르고 끝난 턴은 조용히 죽으면 안 된다.**
+       * **A turn that ended without calling a single tool must not die quietly.**
        *
-       * 이 분기는 두 가지를 동시에 받는다: ① 도구를 쓰고 나서 마무리하는
-       * 정상 종료(그때 `toolRefs` 는 차 있다) ② 볼트를 아예 안 열고 멈춘 턴.
-       * ②는 상한 도달과 똑같이 "여기서 멈췄다" 인데 `round-cap` 과 달리
-       * 아무 알림도 없어서, 화면이 정상 완료와 구별되지 않았다. 실측 감사
-       * 로그에 `agent ok tools=[]` 로 남은 그 턴들이다.
+       * This branch catches two things at once: ① a normal finish that wraps up
+       * after using tools (where `toolRefs` is populated) ② a turn that stopped
+       * without ever opening the vault. ② is "it stopped here" exactly as the cap
+       * is, but unlike `round-cap` it gave no notice at all, so the screen could
+       * not be told apart from a normal completion. Those are the turns that
+       * appear in the measured audit log as `agent ok tools=[]`.
        *
-       * 알림은 ②에만 붙인다 — ①에 붙이면 모든 정상 턴에 벽지가 하나 는다.
+       * The notice attaches to ② only — attaching it to ① adds wallpaper to every
+       * normal turn.
        */
       if (toolRefs.length === 0) {
         events.push({
@@ -281,13 +284,13 @@ export async function runTurn(
       return { turn: snapshot(), readSlugs, writeIntents };
     }
 
-    // 텍스트가 함께 왔으면 도구 행보다 먼저 앉힌다 — 모델이 무엇을 하려는지
-    // 말한 순서 그대로 읽혀야 한다.
+    // If text arrived alongside, seat it before the tool rows — it must read in the
+    // order the model said what it was going to do.
     if (parsed.text.trim()) pushAssistant(parsed.text);
 
     const results: ToolResultPayload[] = [];
-    // 병렬 tool call 도 **순차** 실행한다 — 화면 행도 순차라야 사용자가
-    // 무엇이 언제 나갔는지 따라갈 수 있다.
+    // Parallel tool calls are executed **sequentially** — the screen's rows are
+    // sequential too, so the user can follow what went out when.
     for (const call of parsed.toolCalls) {
       if (options.signal.aborted) break;
       const execution = await deps.execute(call);
@@ -296,7 +299,7 @@ export async function runTurn(
         name: call.name,
         args: call.args,
         target: execution.target,
-        // 이 결과가 다음 왕복에 실려 나갈 글자수 — 실측.
+    // The character count this result will carry into the next round trip — measured.
         sentChars: execution.content.length,
         outcome: execution.outcome,
         summary: execution.summary,
@@ -335,7 +338,7 @@ export async function runTurn(
     }
   }
 
-  // 상한 도달 — 마무리 한 번만 더 청한다 (도구 없이).
+  // Cap reached — ask once more to wrap up (with no tools).
   if (!options.signal.aborted) {
     try {
       const closingAssembly = {
@@ -375,7 +378,7 @@ export async function runTurn(
       }
       if (parsed.text.trim()) pushAssistant(parsed.text);
     } catch {
-      // 마무리 실패는 턴 자체의 실패가 아니다 — 읽은 것은 이미 화면에 있다.
+    // A failed wrap-up is not a failure of the turn — what was read is already on screen.
     }
   }
   status = 'done';
@@ -384,16 +387,17 @@ export async function runTurn(
   return { turn: snapshot(), readSlugs, writeIntents };
 
   function pushAssistant(text: string) {
-    // 다음 걸음 줄을 **먼저** 떼어낸다 — 인용 검증에 들어가면 표지가 문단으로
-    // 그려지고, 그러면 화면이 모델의 내부 표기를 사용자에게 보여주게 된다.
+    // Split off the next-step line **first** — letting it into citation validation
+    // draws the marker as a paragraph, showing the model's internal notation to the user.
     const { body, nextStep } = splitNextStep(text);
     const cited = extractCitations(body, readSlugs);
     events.push({
       kind: 'assistant',
       paragraphs: cited.paragraphs,
       grounding: cited.grounding,
-      // 화면이 인용 표기 없이도 근거를 그릴 수 있게, 이 시점의 읽은 목록을
-      // 그대로 실어 보낸다 (모델 순응에 기대지 않는 보정의 재료).
+    // Carry the read list as of this moment so the screen can draw evidence even
+    // with no citation notation (the material for compensation that does not rely
+    // on the model complying).
       sources: [...readSlugs],
       nextStep,
     });

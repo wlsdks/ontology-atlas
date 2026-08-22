@@ -2,13 +2,12 @@ import { render } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 /**
- * 위험 경로 — poll 로 감지한 vault 변화를 사용자에게 알리는 표면.
+ * Risk path — the surface that tells the user about vault changes detected by polling.
  *
- * 데이터 손실 자체를 일으키는 컴포넌트는 아니지만(순수 알림), 첫 로드를
- * "변경"으로 오판(false positive)하면 사용자가 매 vault 오픈마다 잘못된
- * "Edited: ..." 토스트를 보게 되고, 반대로 실제 외부 편집을 놓치면 조용히
- * 자신의 화면이 stale 해진 것도 모른 채 편집을 이어가다 conflict 를 늦게
- * 발견한다 — 그래서 baseline vs diff 판정 경계가 핵심 위험 경로.
+ * This component causes no data loss itself (it is a pure notification), but misjudging the first
+ * load as a "change" (a false positive) shows a wrong "Edited: …" toast on every vault open, while
+ * missing a real external edit lets the user keep editing a silently stale screen and discover the
+ * conflict late. So the baseline-versus-diff boundary is the core risk path.
  */
 
 const localVaultMocks = vi.hoisted(() => ({
@@ -27,10 +26,10 @@ vi.mock('@/shared/ui/toast', () => ({
   useToast: () => ({ show: toastMocks.show }),
 }));
 
-// N10 — VaultDiffToaster 는 `featuresMisc.vaultDiffToaster.*` 로 문구를
-// 조립한다(diff-manifest.ts 는 구조만 반환). **실제 ko 메시지 문자열을 그대로**
-// 여기 넣는다 — 문구가 슬러그를 다시 노출하면 이 mock 을 통과한 결과 문자열에
-// 그대로 나타나므로 아래 계약 테스트가 잡는다.
+// `VaultDiffToaster` assembles its text from `featuresMisc.vaultDiffToaster.*` (diff-manifest.ts
+// returns structure only). **The real Korean message strings** go in here verbatim — if the copy
+// exposes a slug again, it appears in the result string that passes through this mock, and the
+// contract tests below catch it.
 const KO_MESSAGES: Record<string, string> = {
   'vaultDiffToaster.added': '추가 — {name}',
   'vaultDiffToaster.addedKind': '{kind} 추가 — {name}',
@@ -82,7 +81,7 @@ function manifestWith(docs: TestDoc[]) {
   };
 }
 
-/** 마지막으로 화면에 나간 문자열. */
+/** The last string that reached the screen. */
 function lastMessage(): string {
   const calls = toastMocks.show.mock.calls;
   return String(calls[calls.length - 1]?.[0] ?? '');
@@ -176,8 +175,8 @@ describe('VaultDiffToaster', () => {
     });
     const { rerender } = render(<VaultDiffToaster />);
 
-    // 부트스트랩이 b/c 를 쓰고 외부 에이전트가 d 를 쓴 다음 리로드 —
-    // 자기 쓰기(b/c)는 침묵, 외부 변화(d)만 토스트.
+    // Bootstrap wrote b and c, an external agent wrote d, then a reload — the app's own writes (b/c)
+    // stay silent and only the external change (d) is toasted.
     localVaultMocks.useLocalVault.mockReturnValue({
       status: 'loaded',
       manifest: manifestWith([
@@ -195,10 +194,10 @@ describe('VaultDiffToaster', () => {
   });
 
   /**
-   * **알림은 정보를 날라야 한다** (2026-08-01 소유자 지시). 소유자가 화면에서
-   * 잡은 실물은 `✓ 편집됨: capabilities/payment-authorization` 이었다 —
-   * `capabilities/` 는 개발자 폴더 이름이고, 슬러그는 사람이 그 개념을 부르는
-   * 이름이 아니다. 아래 셋이 그 되돌림을 막는 계약이다.
+   * **A notification has to carry information** (owner instruction, 2026-08-01). What the owner
+   * caught on screen was `✓ 편집됨: capabilities/payment-authorization` — `capabilities/` is a
+   * developer folder name, and a slug is not what a person calls the concept. The three below are the
+   * contract against reverting that.
    */
   describe('문구 계약 — 슬러그가 아니라 종류 + 사람 이름', () => {
     function burst(second: TestDoc[], first: TestDoc[] = [{ slug: 'seed', mtime: 1 }]) {
@@ -287,8 +286,8 @@ describe('VaultDiffToaster', () => {
         { slug: 'notes/n2', mtime: 2000, title: '메모 2' },
         { slug: 'notes/n3', mtime: 2000, title: '메모 3' },
       ]);
-      // 종류 미상은 개수와 무관하게 늘 맨 끝이다 — 「그 외」가 앞에 서면
-      // 아는 것보다 모르는 것이 먼저 읽힌다.
+      // The unknown kind is always last regardless of count — with "other" first, what is unknown
+      // would be read before what is known.
       expect(lastMessage()).toBe('역량 1 · 그 외 3 추가');
     });
   });

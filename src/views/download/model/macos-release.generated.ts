@@ -21,9 +21,10 @@ export interface MacosReleaseAsset {
 export interface MacosRelease {
   readonly published: boolean;
   /**
-   * 이 릴리스가 정식이 아니라 **후보**인가. 페이지는 이걸 숨기지 않고 말한다 —
-   * 서명·공증은 정식과 같은 경로를 통과했지만 아직 넓게 쓰이지 않은 빌드라는
-   * 사실은, 받는 사람이 받기 전에 알아야 하는 것이다.
+   * Whether this release is a **candidate** rather than a final one. The page says
+   * so rather than hiding it: that a build passed the same signing and
+   * notarisation path but has not been widely used yet is something the person
+   * downloading needs to know beforehand.
    */
   readonly prerelease: boolean;
   readonly tag: string;

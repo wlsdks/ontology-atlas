@@ -1,14 +1,14 @@
-// R+ — commit preflight (`ontology-atlas preflight`) 매칭 로직.
+// Matching logic for the commit preflight (`ontology-atlas preflight`).
 //
-// vault 노드 frontmatter 는 두 field 로 source 파일을 가리킨다:
-//   - `path:` (element) — 단일 source-file path
-//   - `elements:` (capability) — source path 목록 (OR ontology slug 참조)
-// `mcp/src/detect-drift.mjs` 가 이 규약을 정방향(노드→경로가 fs 에 존재하는지)
-// 으로 쓰는 반면, 여기서는 반대 방향 — git 이 바꾼 파일 목록을 받아 그 경로를
-// 참조하는 vault 노드를 찾는다. cli 는 별도 publish package라 mcp/src 를
-// 직접 import 하지 않고(모노레포 dev 상대 경로가 항상 있는 게 아님) 같은
-// looksLikePath/isOntologySlug 판정만 소규모로 mirror한다 — 값을 바꾸면
-// mcp/src/detect-drift.mjs 쪽도 함께 확인할 것.
+// A vault node's frontmatter points at source files through two fields:
+//   - `path:` (element) — a single source-file path
+//   - `elements:` (capability) — a list of source paths (or ontology slug refs)
+// `mcp/src/detect-drift.mjs` uses that convention forwards (does the node's path
+// exist on disk); this goes backwards — given the files git changed, find the vault
+// nodes referencing those paths. The CLI ships separately and cannot import
+// mcp/src directly (the monorepo relative path is not always there), so it mirrors
+// just the looksLikePath / isOntologySlug decisions. **Change a value here and
+// check mcp/src/detect-drift.mjs in the same pass.**
 
 const ONTOLOGY_SLUG_PREFIXES = ['capabilities/', 'domains/', 'elements/', 'documents/'];
 
@@ -35,8 +35,8 @@ function normalizePath(value) {
     .replace(/\/+$/, '');
 }
 
-// changed 파일이 entry 파일과 정확히 같거나, entry 가 changed 를 담는
-// 디렉터리 경로일 때 매칭 (entry 가 디렉터리를 frontmatter 에 적어둔 경우).
+// Matches when the changed file equals the entry exactly, or when the entry is a
+// directory path containing it (frontmatter is allowed to name a directory).
 function pathMatches(changedFile, entryPath) {
   const changed = normalizePath(changedFile);
   const entry = normalizePath(entryPath);

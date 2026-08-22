@@ -13,9 +13,9 @@ vi.mock("@/i18n/navigation", () => ({
   ),
 }));
 
-// jsdom 에는 실동작 clipboard 가 없어 케밥 "에이전트에게" 완료 경로가
-// 비결정적이 된다 — copyText 를 성공(true)으로 고정한다(CopyAgentTextButton
-// 테스트와 같은 관례).
+// jsdom has no working clipboard, which makes the kebab's "hand to an agent" completion path
+// non-deterministic — `copyText` is pinned to success (true), the same convention as the
+// CopyAgentTextButton tests.
 vi.mock("@/shared/lib/copy-text", () => ({ copyText: vi.fn(async () => true) }));
 
 const labels: DoNextTabLabels = {
@@ -168,12 +168,12 @@ describe("DoNextTab", () => {
     expect(rows).toHaveLength(2);
     expect(rows[0]).toHaveTextContent("MCP Server");
     expect(rows[0]).toHaveTextContent("12 links · 45d");
-    // ⑨.2 버튼 다이어트 — 행당 주 액션(지도) 1개 + 케밥. 빌더/에이전트에게는
-    // 케밥 안으로 접혀 닫힌 상태에선 DOM 에 없다.
+    // One primary action per row (the map) plus a kebab. Builder and hand-to-agent are folded into
+    // the kebab and are absent from the DOM while it is closed.
     expect(within(rows[0]).getByText("Inspect on map")).toBeInTheDocument();
     expect(screen.getAllByTestId("do-next-row-menu")).toHaveLength(2);
     expect(screen.queryByTestId("do-next-handoff-copy")).toBeNull();
-    // 케밥을 열면 빌더 + 에이전트에게가 드러난다.
+    // Opening the kebab reveals builder and hand-to-agent.
     fireEvent.click(within(rows[0]).getByTestId("do-next-row-menu"));
     const menu = screen.getByTestId("do-next-row-menu-popover");
     expect(menu.className).not.toContain("animate-");
@@ -182,10 +182,10 @@ describe("DoNextTab", () => {
       "/docs/?slug=capability%3Ahub",
     );
     expect(within(menu).getByTestId("do-next-row-menu-builder")).toBeInTheDocument();
-    // 에이전트가 관측되지 않은 세션의 기본값 — "검증" 이 아니라 "인계" 로
-    // 번역된다(완결할 수 없는 문을 내밀지 않는다).
+    // The default for a session where no agent was observed — it reads "hand off" rather than
+    // "verify" (no door is offered that cannot be walked through).
     expect(within(menu).getByTestId("do-next-row-menu-handoff")).toHaveTextContent("Copy the command");
-    // 잘린 만큼 정직 표기 (+2 more = counts 3 - rows 1)
+    // Truncation stated honestly (+2 more = counts 3 - rows 1)
     expect(screen.getByText("+2 more")).toBeInTheDocument();
   });
 
@@ -228,7 +228,7 @@ describe("DoNextTab", () => {
     expect(screen.getByTestId("do-next-group-meaning")).toHaveTextContent(
       "You can fix these right now",
     );
-    // 묶음 규모 = 그 묶음 섹션 총계의 합 (중복 1 + 승격 0 / 방치 3 + 고아 1).
+    // Group scale = the sum of that group's section totals (duplicate 1 + promotion 0 / neglected 3 + orphan 1).
     expect(screen.getByTestId("do-next-group-meaning-count")).toHaveTextContent("1");
     expect(screen.getByTestId("do-next-group-code-count")).toHaveTextContent("4");
     writable.unmount();
@@ -240,7 +240,7 @@ describe("DoNextTab", () => {
       .filter((element) => !element.getAttribute("data-testid")!.endsWith("-count"))
       .map((element) => element.getAttribute("data-testid"));
     expect(readOnlyHeadings).toEqual(["do-next-group-code", "do-next-group-meaning"]);
-    // 읽기 전용에서도 의미 작업은 사라지지 않고, 무엇을 하면 고칠 수 있는지 말한다.
+    // Even read-only, the meaning work does not disappear — it states what would make it fixable.
     expect(screen.getByTestId("do-next-group-meaning")).toHaveTextContent(
       "Open your own folder to fix these",
     );
@@ -260,7 +260,7 @@ describe("DoNextTab", () => {
         {...cycleProps}
       />,
     );
-    // 중복/승격/의미 공백이 모두 0 이라 의미 묶음은 없다.
+    // Duplicates, promotions, and meaning gaps are all zero, so there is no meaning group.
     expect(screen.queryByTestId("do-next-group-meaning")).toBeNull();
     expect(screen.getByTestId("do-next-group-code")).toBeInTheDocument();
   });
@@ -287,10 +287,10 @@ describe("DoNextTab", () => {
   });
 
   /**
-   * 「0 이 아닌데 0px」 — 미터가 «위험 없음»과 «위험이 아주 작음»을 같은 그림으로
-   * 그리면 계기가 아니라 장식이다. 실측 비율(오류 1 / 준비 200)에서 flexGrow 만
-   * 쓰면 390px 폭에서 그 조각이 2px 아래로 내려가 사라진다. e2e 는 5/11 비율을
-   * 재므로 이 규칙을 **구조적으로 못 잡는다** — 그래서 여기서 기제를 직접 잰다.
+   * "Non-zero but 0px" — a meter drawing «no risk» and «very little risk» as the same picture is
+   * decoration, not an instrument. At the measured ratio (1 error / 200 ready), `flexGrow` alone
+   * shrinks that piece below 2px at a 390px width and it disappears. The e2e measures a 5/11
+   * ratio and so **structurally cannot catch** this rule — hence the mechanism is measured directly here.
    */
   it("아주 작은 위험 몫도 최소 폭을 갖고, 0 은 0 으로 남는다", () => {
     const { rerender } = render(
@@ -308,7 +308,7 @@ describe("DoNextTab", () => {
     const segments = () =>
       Array.from(screen.getByTestId("insights-agent-readiness-meter").children) as HTMLElement[];
     expect(segments()[2].style.minWidth).toBe("4px");
-    // 0 인 세그먼트는 정말로 0 이어야 한다 — 안 그러면 항상-빨강이 된다.
+    // A zero segment really must be zero — otherwise it becomes permanently red.
     expect(segments()[1].style.minWidth).toBe("0px");
 
     rerender(
@@ -415,13 +415,13 @@ describe("DoNextTab", () => {
     const section = screen.getByTestId("do-next-cycles");
     expect(section).toBeInTheDocument();
     const row = screen.getByTestId("do-next-cycle-row");
-    // "A → B → C → A" (닫힘) — 첫 노드가 시작·끝에 두 번 나온다.
+    // "A → B → C → A" (closed) — the first node appears twice, at the start and the end.
     expect(row).toHaveTextContent("A → B → C → A");
     expect(row).toHaveTextContent("3 nodes");
-    // 첫 노드 지도 딥링크
+    // Deeplink to the first node on the map.
     expect(within(row).getByRole("link")).toHaveAttribute("href", "/ontology/?node=capability%3Aa");
     expect(within(row).getByTestId("do-next-handoff-copy")).toBeInTheDocument();
-    // 손볼 것 없음 메시지는 사이클이 있으면 안 뜬다
+    // The "nothing needs attention" message must not appear while cycles exist.
     expect(screen.queryByText("Nothing needs attention.")).not.toBeInTheDocument();
   });
 
@@ -450,18 +450,18 @@ describe("DoNextTab", () => {
     );
 
     const row = screen.getByTestId("do-next-cycle-row");
-    // 잘린 노드는 "+3 more" (cycleMoreNodes), 총 노드 수는 정직하게 11
+    // Truncated nodes read "+3 more" (cycleMoreNodes); the total node count stays an honest 11.
     expect(row).toHaveTextContent("+3 more");
     expect(row).toHaveTextContent("11 nodes");
-    // 사이클 5개 초과 → "+2 more" (moreCount, 7 - 5 표기)
+    // More than five cycles → "+2 more" (moreCount, printing 7 - 5).
     expect(screen.getByText("+2 more")).toBeInTheDocument();
   });
 });
 
 describe("DoNextTab — 근거 계층", () => {
   it("문서 없는 개념 행은 무채색 배지로 첫 걸음이 다르다는 것을 밝힌다", () => {
-    // 이 행의 인계문은 이미 「문서부터 만들기」인데 화면은 그 사실을 말하지
-    // 않았다 — 사용자는 고칠 문서가 있다고 믿고 눌렀다.
+    // This row's handoff already reads "create the document first" while the screen did not say so —
+    // the user pressed it believing there was a document to fix.
     render(
       <DoNextTab
         queue={{
@@ -482,7 +482,7 @@ describe("DoNextTab — 근거 계층", () => {
     expect(row).toHaveTextContent("Integration Test");
     const badge = within(row).getByTestId("evidence-only-badge");
     expect(badge).toHaveTextContent("No document");
-    // 한 화면에 수십 개가 뜨는 배지라 신호 톤을 쓰지 않는다(헌장).
+    // Dozens of these badges appear on one screen, so no signal tone is used (the charter).
     expect(badge.className).not.toContain("amber");
   });
 
@@ -538,9 +538,8 @@ describe("DoNextTab — 활동 다이제스트 (B3)", () => {
     expect(digest).toHaveTextContent("Review via git diff");
   });
 
-  // P4-② (2026-07-21 리텐션 라운드) — add_relation --why 는 activity.jsonl 에
-  // 저장은 됐지만 어떤 화면에도 안 보였다. 다이제스트 행에 why 가 있으면
-  // 함께 나와야 한다.
+    // `add_relation --why` was stored in activity.jsonl but appeared on no screen. When a digest
+    // row has a `why`, it must appear alongside.
   it("why 가 있는 항목은 요약 아래에 truncate 된 이유 줄을 함께 보여준다", () => {
     render(
       <DoNextTab
@@ -576,7 +575,7 @@ describe("DoNextTab — 활동 다이제스트 (B3)", () => {
     expect(within(entries[0]).getByTestId("do-next-digest-why")).toHaveTextContent(
       "Why · reminder-worker reads offline-sync's queue directly",
     );
-    // why 없는 두 번째 항목엔 why 줄 자체가 없다.
+    // The second item has no `why`, so it has no why row at all.
     expect(within(entries[1]).queryByTestId("do-next-digest-why")).toBeNull();
   });
 
@@ -663,7 +662,7 @@ describe("DoNextTab — 오늘의 손질 밴드 (③)", () => {
     expect(within(band).getByTestId("do-next-touchups-flow")).toHaveTextContent(
       "Inspect on map → open source → edit on map → verify with agent",
     );
-    // 각 행: 지도 링크 1 + 케밥 1
+    // Per row: one map link plus one kebab.
     expect(within(rows[0]).getByText("Inspect on map")).toBeInTheDocument();
     expect(within(rows[0]).getByTestId("do-next-row-menu")).toBeInTheDocument();
   });
@@ -802,11 +801,11 @@ describe("DoNextTab — 오늘의 손질 밴드 (③)", () => {
     fireEvent.click(trigger);
     expect(screen.getByTestId("do-next-row-menu-popover")).toBeInTheDocument();
     fireEvent.keyDown(document, { key: "Escape" });
-    // ★ 「닫혔다」는 즉시 언마운트가 아니다 (2026-08-04) — 이 메뉴는 `Surface`
-    //   위에 살아서 퇴장 창(≈140ms) 동안 남고, 그동안 `inert` +
-    //   `pointer-events-none` 이라 키보드에도 포인터에도 잡히지 않는다.
-    //   즉시 소멸을 요구하는 단언은 하드컷을 요구하는 것이다.
-    //   포커스 복귀는 퇴장과 무관하게 **닫는 즉시** 일어나야 한다(아래).
+    // ★ "Closed" is not an immediate unmount (2026-08-04) — this menu lives on a `Surface` and
+    //   stays through the exit window (≈140ms), during which `inert` and `pointer-events-none`
+    //   make it unreachable by keyboard and pointer alike.
+    //   An assertion demanding instant removal is demanding a hard cut.
+    //   Focus return must happen **the moment it closes**, independent of the exit (below).
     const menu = screen.getByTestId("do-next-row-menu-popover");
     expect(menu).toHaveAttribute("data-surface-state", "exiting");
     expect(menu).toHaveAttribute("inert");
@@ -814,9 +813,9 @@ describe("DoNextTab — 오늘의 손질 밴드 (③)", () => {
   });
 });
 
-// #63 — 판정 모델 단일화. opus5 검수 실측 모순: 신호가 '누락된 연결 1건' 뿐인
-// 볼트에서 `할 일 0` + "그래프가 건강합니다" + `누락된 연결 1` 이 동시에 떴고,
-// 같은 데이터에 MCP health 는 needs_attention 을 반환했다.
+// A single verdict model. The measured contradiction found in review: on a vault whose only signal
+// was one missing containment, `to do 0` + "the graph is healthy" + `missing containment 1`
+// appeared at once, while MCP health returned needs_attention for the same data.
 describe("DoNextTab — 건강 주장은 CLI-parity 신호까지 0일 때만 (#63)", () => {
   const emptyQueue: DoNextQueue = {
     rows: [],
@@ -898,12 +897,12 @@ describe("DoNextTab — 중복 의심 쌍", () => {
     expect(row).toHaveTextContent("Node drawer");
     expect(row).toHaveTextContent("Node drawer model");
     expect(row).toHaveTextContent("79% overlap");
-    // 남길 쪽으로 지도를 연다 — 합치면 백링크가 그쪽으로 모인다.
+    // Open the map on the side being kept — merging gathers the backlinks there.
     expect(within(row).getByText("Inspect on map")).toHaveAttribute(
       "href",
       "/ontology/?node=element%3Anode-drawer",
     );
-    // 절단 전 규모는 헤더 숫자가 말한다.
+    // The pre-truncation scale is stated by the header number.
     expect(screen.getByTestId("do-next-duplicates")).toHaveTextContent("3");
     expect(within(row).getByTestId("do-next-handoff-copy")).toBeInTheDocument();
   });
@@ -919,8 +918,8 @@ describe("DoNextTab — 중복 의심 쌍", () => {
   });
 
   /**
-   * 2026-07-27 실측 회귀 — 배지는 10건이라 말하는데 3행만 그리고 더 보기도
-   * 절단 문구도 없었다. 7건이 이 화면에서 발견될 방법 자체가 없었다.
+   * Measured regression 2026-07-27 — the badge said 10 while only three rows were drawn, with
+   * neither a "show more" nor truncation copy. Seven had no way to be discovered on this screen.
    */
   it("배지가 말한 나머지에 닿을 길이 있다 — 펼침 + 절단 문구", () => {
     const rest = [2, 3, 4].map((n) => ({
@@ -937,13 +936,13 @@ describe("DoNextTab — 중복 의심 쌍", () => {
       duplicateHandoff: () => "merge_concepts",
     });
 
-    // 접힌 기본 상태: 상위 행 + 남은 규모를 밝히는 문구.
+    // The default folded state: the top rows plus copy stating the remaining scale.
     expect(screen.getAllByTestId("do-next-duplicate-row")).toHaveLength(1);
     expect(screen.getByTestId("do-next-duplicates")).toHaveTextContent("Top 1 / 6");
 
     fireEvent.click(screen.getByTestId("do-next-duplicate-rest-toggle"));
     expect(screen.getAllByTestId("do-next-duplicate-row")).toHaveLength(4);
-    // 다 펼쳐도 남는 절단은 계속 정직하게 말한다.
+    // Truncation that remains even when fully expanded is still stated honestly.
     expect(screen.getByTestId("do-next-duplicates")).toHaveTextContent("Top 4 / 6");
   });
 

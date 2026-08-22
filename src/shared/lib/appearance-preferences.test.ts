@@ -69,15 +69,16 @@ describe("appearance-preferences", () => {
 });
 
 /**
- * 폐기된 배경 값 — 조용히 기본값으로 떨어뜨리면 **사용자가 고른 것이 소리 없이
- * 사라진다.** 계승자로 데려가는지 값별로 잠근다. 이 표를 지우면 다음 사람이
- * "구값은 그냥 기본값으로" 라는 더 싼 길을 택하게 되므로 표가 곧 계약이다.
+ * Retired background values. Dropping them silently to the default makes **the
+ * user's own choice disappear without a sound**, so each value is locked to its
+ * successor. Delete this table and the next person takes the cheaper route of
+ * "old values just become the default" — the table is the contract.
  */
 describe("폐기된 캔버스 배경 값의 계승", () => {
   it.each([
     ["constellation", "web"],
     ["contour", "dot"],
-    // 2026-07-29 — 움직임을 고른 사람이므로 살아남은 움직이는 배경으로 데려간다.
+    // 2026-07-29 — this user chose motion, so carry them to the surviving animated background.
     ["flow", "web"],
     ["gravity", "web"],
   ] as const)("%s → %s", (retired, heir) => {
@@ -95,9 +96,9 @@ describe("폐기된 캔버스 배경 값의 계승", () => {
 });
 
 /**
- * 발자국 설정 — 손으로 편집된 localStorage 나 구버전 값이 렌더러에 `NaN` 을
- * 흘리면 발자국이 **통째로 사라지고 아무 에러도 안 난다.** 그 조용한 실패를
- * 여기서 막는다.
+ * Footprint settings. A hand-edited localStorage entry or an old-version value
+ * leaking `NaN` into the renderer makes the footprints **vanish entirely with no
+ * error at all**. This is where that silent failure is blocked.
  */
 describe("발자국 설정 정규화", () => {
   it("범위 밖 숫자는 잘라 넣는다", () => {

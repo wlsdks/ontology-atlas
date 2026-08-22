@@ -2,18 +2,19 @@ import { describe, expect, it } from "vitest";
 import { DEPENDS_UNION_CASE, RELATION_KEY_CASES } from "../fixtures/relation-keys-cases.mjs";
 import { deriveOntologyFromVault } from "@/entities/docs-vault/lib/derive-ontology-from-vault";
 import type { VaultDoc, VaultManifest } from "@/entities/docs-vault/model/types";
-// MCP 는 정본 (읽기 전용) — 웹이 이쪽을 따라간다.
+// MCP is canonical (read-only) — the web follows it.
 import { GRAPH_ARRAY_KEYS, collectNeighborRefs } from "../../mcp/src/vault.mjs";
 
 /**
- * 2-way 계약 — 관계 키를 읽는 곳이 두 패키지에 산다:
- *   - mcp/src/vault.mjs (AI agent surface — 정본, GRAPH_ARRAY_KEYS)
- *   - src/entities/docs-vault/lib/derive-ontology-from-vault.ts (웹 지도·공방·인사이트)
+ * A 2-way contract — relation keys are read in two packages:
+ *   - mcp/src/vault.mjs (the AI agent surface — canonical, GRAPH_ARRAY_KEYS)
+ *   - src/entities/docs-vault/lib/derive-ontology-from-vault.ts (the web map, studio,
+ *     and insights)
  *
- * 웹 derive 가 MCP 의 관계 키 하나를 안 읽으면, 에이전트가 정본 키로 쓴
- * 관계가 사람 화면에서 소실된다 — describes(2026-07-27) 와 depends_on
- * (2026-08-12) 이 정확히 그렇게 새어 나갔다. 같은 fixture 표
- * (`tests/fixtures/relation-keys-cases.mjs`) 를 양쪽에 넣어 대조한다.
+ * If the web derive fails to read one of MCP's relation keys, a relation an agent
+ * wrote under the canonical key is lost on the human screen — describes (2026-07-27)
+ * and depends_on (2026-08-12) leaked exactly that way. The same fixture table
+ * (`tests/fixtures/relation-keys-cases.mjs`) is fed to both sides and compared.
  */
 
 function makeDoc(slug: string, frontmatter: Record<string, unknown>): VaultDoc {
@@ -50,7 +51,7 @@ describe("relation-keys contract — 웹 derive 가 MCP 관계 키를 전부 읽
     expect(fixtureKeys).toEqual(mcpKeys);
   });
 
-  // 공회전 방지 — 표가 비어 있으면 아래 루프는 아무것도 증명하지 않는다.
+  // Idling guard — with an empty table the loop below proves nothing.
   it("fixture 표는 공집합이 아니다", () => {
     expect(RELATION_KEY_CASES.length).toBeGreaterThanOrEqual(9);
   });

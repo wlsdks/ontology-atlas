@@ -5,30 +5,34 @@ import { seedFirstRunSeen } from "./first-run-seed";
 import { stubDirectoryPicker } from "./vault-picker-stub";
 
 /**
- * 에이전트가 노드를 쓰면 **지도가 따라오는가**, 그리고 **그게 보이는가**.
+ * When an agent writes a node, **does the map follow**, and **is that visible**?
  *
- * ## 왜 이 스펙이 있나 (2026-08-17 소유자 지시)
+ * ## Why this spec exists (owner request, 2026-08-17)
  *
- * 소유자: *"실시간으로 좌측 지도에 온톨로지가 그려지는게 보이도록 하는것도
- * 필요할듯? 이제 상호작용이 가능하게 되었으니? 그걸 검증해보기도 해야함"*
+ * Owner: *"실시간으로 좌측 지도에 온톨로지가 그려지는게 보이도록 하는것도 필요할듯?
+ * 이제 상호작용이 가능하게 되었으니? 그걸 검증해보기도 해야함"*
+ * (the ontology should be visibly drawn on the left map in real time now that
+ * interaction works — and that should be verified)
  *
- * 배관은 이미 있다 — 폴더가 바뀌면 다시 읽는다. 그런데 **배관이 있다는 것과
- * 화면이 따라온다는 것은 다른 말**이고, 이 저장소는 그 차이로 이미 여러 번
- * 다쳤다(값은 맞는데 루프가 잠들어 안 그려진다 · 훅 개수는 화면이 아니다).
- * 그래서 짐작하지 않고 **파일을 진짜로 하나 더 쓰고** 화면을 본다.
+ * The plumbing already exists: a folder change triggers a reread. But **plumbing
+ * existing and the screen following are different claims**, and this repository has
+ * been hurt by that difference several times (correct values that never draw because
+ * the loop is asleep; a hook count is not a screen). So instead of guessing, this
+ * spec **really writes one more file** and looks at the screen.
  *
- * ## 무엇을 재고 무엇을 안 재나
+ * ## What is and is not measured
  *
- * **잰다**: 브라우저 경로에서 새 노드가 목록에 실제로 도착하는가, 그리고 몇
- * 초 안에 오는가(상한만).
+ * **Measured**: whether a new node actually arrives in the list on the browser path,
+ * and within how many seconds (an upper bound only).
  *
- * **안 잰다**: 설치된 앱의 OS 파일워처. 그건 브라우저에 없다 —
- * `.claude/rules/surfaces.md` 가 데스크톱 전용 동작은 설치본에서만 증명된다고
- * 정해 뒀다. 여기서 잠그는 것은 **웹 경로(되묻기)** 이고, 그것이 죽으면 앱도
- * 같은 재독해 코드를 쓰므로 같이 죽는다.
+ * **Not measured**: the installed app's OS file watcher. That does not exist in a
+ * browser — `.claude/rules/surfaces.md` establishes that desktop-only behaviour is
+ * proven only on an installed build. What is locked here is **the web path
+ * (polling)**, and if it dies the app dies with it since both use the same reread
+ * code.
  */
 
-/** 웹은 방금 바뀐 직후 1.5초 / 잠잠하면 5초 간격으로 되묻는다. 여유를 준다. */
+/** The web polls at 1.5s right after a change and 5s when quiet. Allow slack. */
 const ARRIVAL_BUDGET_MS = 20_000;
 
 const NEW_NODE_SLUG = "capabilities/live-arrival-probe";
@@ -66,11 +70,11 @@ test("에이전트가 쓴 노드가 지도 목록에 실제로 도착한다", as
   const before = await rows.count();
   expect(before, "픽스처 볼트가 너무 얇다").toBeGreaterThan(3);
 
-  // ── 에이전트가 쓴 것처럼 폴더에 파일을 하나 더 쓴다 ────────────────────
+  // ── Write one more file into the folder, as an agent would ────────────────
   const wrote = await page.evaluate(
     async ([slug, body]) => {
       const root = await navigator.storage.getDirectory();
-      // 스텁이 만든 볼트 폴더를 찾는다(이름에 시각이 붙어 있어 가장 최근 것).
+      // Find the vault folder the stub created (its name carries a timestamp, so take the newest).
       const names: string[] = [];
       for await (const key of (
         root as unknown as { keys: () => AsyncIterable<string> }
@@ -97,7 +101,7 @@ test("에이전트가 쓴 노드가 지도 목록에 실제로 도착한다", as
   );
   expect(wrote, "스텁 볼트 폴더를 못 찾았다 — 아무것도 안 썼다").not.toBeNull();
 
-  // ── 화면이 따라오는가 ──────────────────────────────────────────────
+  // ── Does the screen follow? ────────────────────────────────────────
   const startedAt = Date.now();
   await expect(
     page.getByText(NEW_NODE_TITLE).first(),

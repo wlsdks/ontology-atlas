@@ -19,15 +19,16 @@ import { parseFrontmatter } from '../../mcp/src/parser.mjs';
 import { queryCompiledOntology } from '../../mcp/src/ontology-engine.mjs';
 
 /**
- * S3 — 중복 의심 contract. 「비슷한 이름 — 같은 걸까요?」 카드가 매기는
- * 유사도와 에이전트가 `query_ontology({operation:'similar_nodes'})` 로 받는
- * 유사도는 **같은 볼트에서 같아야 한다**. 다르면 사람은 화면이 지목한 쌍을,
- * 에이전트는 다른 쌍을 합치게 되고 — 중복 정리는 되돌리기 가장 비싼 쓰기다.
+ * The duplicate-suspect contract. The similarity scored by the "similar names — are
+ * these the same?" card and the similarity an agent receives from
+ * `query_ontology({operation:'similar_nodes'})` **must match on the same vault**.
+ * If they differ, a person merges the pair the screen named while an agent merges a
+ * different one — and duplicate cleanup is the most expensive write to undo.
  *
- * parser 3-way / validator 2-way / impact-ranking contract 와 같은 패턴:
- * 하나의 fixture 를 양쪽 파이프라인에 흘리고 결과를 strict 비교한다.
- * 정규화(낱말 자르기)·가중치·반올림까지 전부 비교 대상이다 — 그 셋 중 하나만
- * 어긋나도 순위가 뒤집힌다.
+ * The same pattern as the 3-way parser, 2-way validator, and impact-ranking
+ * contracts: one fixture flows through both pipelines and the results are compared
+ * strictly. Normalisation (token splitting), weighting, and rounding are all
+ * compared — a divergence in any one of the three inverts the ranking.
  */
 
 function uidForSlug(slug: string): string {
@@ -89,7 +90,7 @@ function agentSimilarNodes(
   return new Map(result.matches.map((match) => [match.node.slug, match]));
 }
 
-/** 화면이 쓰는 것과 같은 환산기로 문서 slug 하나를 유사도 입력으로 되돌린다. */
+/** Turns one document slug back into similarity input, using the same converter the screen uses. */
 function candidateOf(insight: KnowledgeProjectInsight, slug: string) {
   const candidates = buildSimilarityCandidates(insight.nodes, insight.edges);
   for (const candidate of candidates.values()) {
@@ -102,9 +103,9 @@ describe('duplicate-pairs contract — 화면의 유사도 == MCP similar_nodes'
   for (const testCase of DUPLICATE_PAIR_CASES) {
     it(`${testCase.name} — 쌍마다 점수와 신호가 같다`, () => {
       const insight = derivationToInsight(deriveOntologyFromVault(manifestOf(testCase.docs)));
-      // 카드가 쓰는 것과 같은 진입점으로 후보를 만든다. 임계값 0 · 상한을
-      // 넉넉히 줘서 점수가 붙는 모든 쌍을 비교 대상으로 올린다. 엔진은 점수
-      // 0인 쌍을 아예 내보내지 않으므로(비교 대상이 없다) 그 구간은 뺀다.
+      // Builds candidates through the same entry point the card uses. Threshold 0 and a
+      // generous limit bring every scored pair into the comparison. The engine never emits
+      // pairs scoring 0 (there is nothing to compare), so that range is excluded.
       const rows = buildDuplicatePairs(insight.nodes, insight.edges, 500, 0).rows.filter(
         (row) => row.score > 0,
       );
@@ -123,8 +124,8 @@ describe('duplicate-pairs contract — 화면의 유사도 == MCP similar_nodes'
             '한쪽 정규화·가중치가 바뀌었다면 다른 쪽도 같이 바꾸세요.',
         ).toBe(agent!.score);
 
-        // 총점만 맞고 내부 배분이 어긋나면 다른 볼트에서 순위가 뒤집힌다 —
-        // 신호 5종을 하나씩 못 박는다.
+        // Matching totals with a divergent internal split inverts the ranking on a different
+        // vault — so all five signals are pinned individually.
         const web = scoreNodeSimilarity(candidateOf(insight, row.keepSlug), candidateOf(insight, row.dissolveSlug));
         expect({
           slug: web.slug,
@@ -139,7 +140,7 @@ describe('duplicate-pairs contract — 화면의 유사도 == MCP similar_nodes'
 
   it('낱말 자르기 규칙이 엔진과 같다 — 소문자·영숫자·2자 이상', () => {
     expect(similarityTokens('Ontology-Drawer Model')).toEqual(['ontology', 'drawer', 'model']);
-    // 1자 토큰과 한글은 엔진에서도 떨어져 나간다(영숫자만 본다).
+    // Single-character tokens and Hangul drop out in the engine too (it looks at alphanumerics only).
     expect(similarityTokens('a b 온톨로지 v2')).toEqual(['v2']);
     expect(similarityTokens(null)).toEqual([]);
   });
@@ -164,10 +165,11 @@ describe('duplicate-pairs contract — 화면의 유사도 == MCP similar_nodes'
 
     const insight = derivationToInsight(deriveOntologyFromVault(manifestOf(docs)));
 
-    // 중복 섹션: 0건 → DoNextTab 이 섹션 자체를 그리지 않는다(빈 성공 카드 금지).
+    // Duplicates section: at 0 cases DoNextTab does not draw the section at all (no empty success cards).
     expect(buildDuplicatePairs(insight.nodes, insight.edges, 3).rows).toHaveLength(0);
-    // 결합 카드: 도메인 1개뿐이라 콜드스타트 → 격자 대신 다음 한 걸음이 있는
-    // 빈 상태 한 장(`DomainCouplingCard` 테스트가 그 내용을 지킨다).
+    // Coupling card: with a single domain this is a cold start → one empty state
+    // carrying the next step instead of a grid (its content is guarded by the
+    // `DomainCouplingCard` test).
     expect(buildDomainCouplingSummary(insight.nodes, insight.edges).isColdStart).toBe(true);
   });
 
@@ -179,8 +181,9 @@ describe('duplicate-pairs contract — 화면의 유사도 == MCP similar_nodes'
     expect(capped.rows).toHaveLength(1);
     expect(capped.suspectCount).toBeGreaterThan(1);
 
-    // 이름이 안 겹치는 볼트는 한 쌍도 의심하지 않는다 — 카드가 렌더되지 않는
-    // 조건이 계산 쪽에서 이미 참이어야 한다(빈 성공 카드 금지).
+    // A vault with no overlapping names suspects no pair — the condition under which the
+    // card does not render must already be true on the computation side (no empty
+    // success cards).
     const quiet = derivationToInsight(
       deriveOntologyFromVault(manifestOf(DUPLICATE_PAIR_CASES[4].docs)),
     );

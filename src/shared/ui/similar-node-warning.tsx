@@ -6,8 +6,8 @@ import { cn } from "@/shared/lib/cn";
 import { controlClass } from "./control-class";
 
 export interface SimilarNodeWarningProps {
-  /** 이미 보간된 메시지 — 예: `비슷한 노드가 이미 있어요 — 사용자 인증 흐름`.
-   *  i18n 은 caller(view) 가 소유 — shared/ui 는 문자열을 그대로 그린다. */
+  /** An already-interpolated message. i18n belongs to the calling view; `shared/ui` renders
+   *  the string as given. */
   message: string;
   openLabel: string;
   createAnywayLabel: string;
@@ -17,20 +17,20 @@ export interface SimilarNodeWarningProps {
 }
 
 /**
- * GUI 노드 생성 근접 중복 — design-council B2 rank4 의 비차단 인라인 경고.
+ * Non-blocking inline warning that a node being created closely duplicates an existing one.
  *
- * - **비차단**: 렌더 자체가 아무것도 막지 않는다 — 두 버튼 모두 명시적
- *   선택지("그 노드 열기" / "그래도 새로 만들기")이지 승인 게이트가 아니다.
- *   human-sovereign 원칙 — 생성 권한은 항상 사용자에게 남는다.
- * - **포커스 강탈 금지**: autoFocus 없음, 렌더만으로 activeElement 가 바뀌지
- *   않는다 — 타이핑 중이던 title input 이 포커스를 유지한다.
- * - solid dot 없음(인라인 텍스트 + 링크만) — amber 예산 감사 대상 표면이
- *   아니라 인라인 1개 취급(council guardianRisk).
- * - 토큰: `--color-amber-signal-*` (warning, `--color-amber-source-*`
- *   quarantine 토큰과는 다른 계열 — docs/DESIGN-SYSTEM.md 참고).
- * - 모션: opacity 0→1 + translateY 4px→0, 150ms ease-out. reduced-motion 은
- *   앱 전역 `MotionProvider`(`reducedMotion="user"`) 가 transform 만 걸러내고
- *   opacity 전환은 유지 — 이 컴포넌트가 따로 분기할 필요 없음.
+ * - **Non-blocking**: rendering this blocks nothing. Both buttons are explicit choices, not
+ *   an approval checkpoint — under the human-sovereign principle the authority to create
+ *   always stays with the user.
+ * - **Never steals focus**: no autoFocus, and rendering alone does not move `activeElement`,
+ *   so the title input the user is typing in keeps focus.
+ * - No solid dot (inline text plus links only), so this counts as one inline use rather than
+ *   a surface audited against the amber budget.
+ * - Tokens: `--color-amber-signal-*` (warning). A different family from the
+ *   `--color-amber-source-*` quarantine tokens — see `docs/DESIGN-SYSTEM.md`.
+ * - Motion: opacity 0→1 plus translateY 4px→0. Under reduced-motion the app-wide
+ *   `MotionProvider` (`reducedMotion="user"`) strips the transform and keeps the opacity
+ *   transition, so this component needs no branch of its own.
  */
 export function SimilarNodeWarning({
   message,
@@ -46,7 +46,8 @@ export function SimilarNodeWarning({
       initial={{ opacity: 0, y: 4 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: 0, transition: MOTION.fast }}
-      // 0.15 는 램프에 없는 값이었다 — 등장은 "이동" 이라 base (2026-07-28).
+      // 0.15 was not on the ramp. An entrance is a surface moving into place, so it takes
+      // `base` (2026-07-28).
       transition={MOTION.base}
       className={cn(
         "flex flex-wrap items-center gap-x-2 gap-y-1 rounded-chip border border-[color:var(--color-amber-signal-a28)] bg-[color:var(--color-amber-signal-a07)] px-2.5 py-2 text-label leading-label text-[color:var(--color-text-secondary)]",
@@ -58,9 +59,10 @@ export function SimilarNodeWarning({
         type="button"
         onClick={onOpen}
         /*
-         * 문장(경고 행) 속 컨트롤 — 램프 바닥 24(`min-h-6`)가 줄을 16→24 로
-         * 세운다. WCAG 2.5.8 은 문장 속을 면제하지만 이 행은 산문이 아니라
-         * 액션 행이라 24 타깃이 맞고, 44 였다면 경고가 배너가 된다.
+         * A control inside a sentence (the warning row). The ramp floor of 24 (`min-h-6`)
+         * raises the line from 16 to 24. WCAG 2.5.8 exempts inline text, but this row is an
+         * action row rather than prose, so 24 is the right target — at 44 the warning would
+         * become a banner.
          */
         className={controlClass({
           shape: "link",

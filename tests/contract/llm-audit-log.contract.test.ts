@@ -1,10 +1,10 @@
-// #80 S2 — 감사 로그 writer(Rust) ↔ reader(웹) drift 차단.
+// Blocks drift between the audit log's writer (Rust) and its reader (web).
 //
-// writer 는 `src-tauri/src/llm_audit.rs`(Rust)라 같은 프로세스에서 import 할 수
-// 없다. 대신 **양쪽이 같은 픽스처 파일을 본다**: Rust 쪽
-// `writer_matches_the_shared_reader_fixture` 가 "내가 쓰는 줄 == 이 픽스처"를
-// 증명하고, 이 테스트가 "이 픽스처 == 화면이 읽는 사실"을 증명한다. 둘 중 한
-// 쪽만 바꾸면 반대편이 즉시 깨진다.
+// The writer is `src-tauri/src/llm_audit.rs`, so it cannot be imported into the same
+// process. Instead **both sides read the same fixture file**: on the Rust side
+// `writer_matches_the_shared_reader_fixture` proves "the line I write == this
+// fixture", and this test proves "this fixture == the facts the screen reads".
+// Changing one side breaks the other immediately.
 import { describe, expect, it } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
@@ -27,8 +27,8 @@ describe('llm-audit.jsonl 계약 (Rust writer ↔ web reader)', () => {
       purpose: 'verify',
       question: null,
       scope: { nodes: [], promptChars: 0, vaultChars: 0 },
-      // 연결 확인 줄에는 `tools` 필드가 아예 없다 — 빈 배열("도구 0개 사용")
-      // 이라는 하지도 않은 주장 대신 null 로 읽힌다.
+      // A connection-check line has no `tools` field at all — it reads as null rather than
+      // as an empty array asserting "0 tools used", a claim nobody made.
       tools: null,
       payloadSha256:
         'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855',
@@ -49,32 +49,32 @@ describe('llm-audit.jsonl 계약 (Rust writer ↔ web reader)', () => {
     expect(agent.tools).toEqual([
       { name: 'get_concept', target: 'capabilities/payment' },
     ]);
-    // 응답 본문은 여기에도 없다 — 길이만.
+    // The response body is absent here too — only its length.
     expect(agent.responseChars).toBe(812);
   });
 
   it('전송 직전 예약 줄(결과 필드 없음)은 unknown 으로 읽힌다', () => {
-    // 이 줄은 "보내기 전에 기록했다" 의 물증이자, 응답 전에 프로세스가 죽었을
-    // 때 파일에 남는 모습이다.
+    // This line is the evidence that the record was written before sending, and it is
+    // what remains in the file if the process dies before the response.
     expect(entries[1].outcome).toBe('unknown');
     expect(entries[1].httpStatus).toBeNull();
-    // 예약 줄도 목적지를 안다 — 목적지는 전송 **전에** 확정되는 사실이라
-    // 응답이 오지 않아도 "어디로 갔나" 가 기록에 남는다.
+    // The reservation line knows its destination too — the destination is settled
+    // **before** sending, so "where it went" survives even when no response arrives.
     expect(entries[1].host).toBe('api.anthropic.com');
   });
 
   it('host 가 없던 시절의 줄도 그대로 읽힌다 — 기록은 소급해 고치지 않는다', () => {
-    // 헌장 ⑤. `host` 는 추가형이라 `v` 는 1 그대로고, 이미 사용자 디스크에
-    // 앉아 있는 줄은 손대지 않는다. 파서는 부재를 null 로 말할 뿐 provider
-    // 이름으로 목적지를 지어내지 않는다.
+    // Charter ⑤. `host` is additive, so `v` stays 1 and lines already sitting on a
+    // user's disk are untouched. The parser reports absence as null; it never invents a
+    // destination from the provider name.
     expect(entries[2].provider).toBe('openai');
     expect(entries[2].host).toBeNull();
     expect(entries[2].outcome).toBe('ok');
   });
 
   it('벤더마다 다른 거부 상태 코드가 같은 결과 어휘로 읽힌다', () => {
-    // Gemini 는 틀린 키에 400 을 준다(2026-07-26 실측). 상태 코드는 그대로
-    // 남기되, 화면이 읽는 결론은 벤더와 무관하게 `denied` 하나다.
+    // Gemini returns 400 for a wrong key (measured 2026-07-26). The status code is kept
+    // verbatim, but the conclusion the screen reads is `denied` regardless of vendor.
     expect(entries[3].provider).toBe('gemini');
     expect(entries[3].host).toBe('generativelanguage.googleapis.com');
     expect(entries[3].outcome).toBe('denied');
@@ -82,7 +82,7 @@ describe('llm-audit.jsonl 계약 (Rust writer ↔ web reader)', () => {
   });
 
   it('픽스처의 모든 줄이 응답 본문을 담지 않는다', () => {
-    // 헌장 ④ — 감사 로그는 "무엇이 얼마나 나갔나" 이지 대화 저장소가 아니다.
+    // Charter ④ — the audit log records what went out and how much, not the conversation.
     for (const line of raw.split('\n').filter(Boolean)) {
       const parsed = JSON.parse(line) as Record<string, unknown>;
       expect(Object.keys(parsed)).not.toContain('response');

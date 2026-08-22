@@ -6,11 +6,12 @@ import ko from "../../../../messages/ko.json";
 import { View3dMenu } from "./View3dMenu";
 
 /**
- * 「3D」 칩이 여는 보기 고르개의 계약.
+ * The contract for the view picker the 「3D」 chip opens.
  *
- * 이 검사가 지키는 것은 값이 아니라 **자리와 개수**다. 배치를 설정 시트에 두고
- * 이름을 「소유/결합」으로 썼을 때 소유자가 두 번 다 못 찾았다(원장 (84)) —
- * 그 회귀는 코드에 아무 값도 안 남기므로 렌더된 결과로만 잡을 수 있다.
+ * What this check holds is not values but **position and count**. When the
+ * arrangements lived in the settings sheet under the names 「소유/결합」, the owner
+ * failed to find them twice (ledger (84)) — that regression leaves no value in the
+ * code, so only the rendered result can catch it.
  */
 function mount() {
   return render(
@@ -41,8 +42,9 @@ describe("View3dMenu — 보기 고르개", () => {
   });
 
   /*
-   * 이름이 추상 명사면 그 개념을 아는 사람에게만 이름이다. 화면에 뜨는 말이
-   * 눈에 보이는 것(돔·구름)이어야 한다는 것이 (84) 의 두 번째 교정이다.
+   * An abstract noun is only a name to someone who already knows the concept. The
+   * words on screen have to be the visible things (dome, cloud) — that was (84)'s
+   * second correction.
    */
   it("눈에 보이는 것으로 부른다 — 화면에 「소유」·「결합」이 없다", () => {
     mount();
@@ -56,7 +58,7 @@ describe("View3dMenu — 보기 고르개", () => {
     mount();
     for (const id of ["flat", "ownership", "coupling"]) {
       const row = screen.getByTestId(`topology-view-3d-choice-${id}`);
-      // 제목 + 힌트 두 줄. 한 줄뿐이면 힌트가 빠진 것이다.
+      // Title plus hint, two lines. One line means the hint is missing.
       expect(row.querySelectorAll("span").length).toBeGreaterThanOrEqual(2);
     }
   });
@@ -81,16 +83,17 @@ describe("View3dMenu — 보기 고르개", () => {
   });
 
   /**
-   * **닫혀 있는 동안 Esc 를 삼키지 않는다** (2026-08-19 회귀).
+   * **It does not swallow Esc while closed** (regression, 2026-08-19).
    *
-   * 이 컴포넌트는 칩 옆에 **항상 렌더된다**. 훅은 조기 반환보다 먼저 도니,
-   * 전역 리스너를 `open` 으로 가드하지 않으면 닫혀 있는 내내 문서 Esc 를
-   * 가로채 `stopPropagation()` 한다 — 앱 전역에서 Esc 가 죽는다. CI 실측:
-   * 노드 상세가 Esc 로 안 닫히고 키보드 경로·포커스 반환·팝오버 계약까지
-   * 다섯 스펙이 함께 빨개졌다.
+   * This component is **always rendered** beside the chip. Hooks run before any early
+   * return, so without guarding the global listener on `open` it intercepts document
+   * Esc and calls `stopPropagation()` the whole time it is closed — killing Esc across
+   * the app. Measured in CI: node detail stopped closing on Esc, and five specs went
+   * red together, covering the keyboard path, focus return and the popover contract.
    *
-   * 여기서 재는 것은 «닫는 함수가 안 불린다»와 «전파가 살아 있다» 둘이다 —
-   * 후자를 빼면 `onClose` 만 안 부르고 여전히 삼키는 구현이 통과한다.
+   * Two things are measured here: «the close function is not called» and «propagation
+   * is alive». Drop the latter and an implementation that merely skips `onClose` while
+   * still swallowing would pass.
    */
   it("닫혀 있으면 문서 Esc 를 삼키지 않는다 — 앱 전역 Esc 가 죽지 않는다", () => {
     let closed = 0;

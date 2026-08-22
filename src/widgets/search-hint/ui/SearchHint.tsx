@@ -10,7 +10,7 @@ import { View3dMenu } from './View3dMenu';
 
 interface Props {
   onOpenSearch: () => void;
-  /** 자동 정렬 트리거 — 토폴로지 physics reheat. */
+  /** Auto-arrange trigger — reheats the topology physics. */
   onRelayout: () => void;
   /** 모든 고팬아웃 부모를 한 번에 펼치거나 다시 접는다. */
   onToggleExpandAll?: () => void;
@@ -23,10 +23,11 @@ interface Props {
    */
   phoneFocusSuppressed?: boolean;
   /**
-   * `<md` 확장 INDEX = 풀-블리드 시트 (반응형 감사 rank7). 시트가 주 표면인
-   * 동안 상단 크롬은 시트 뒤에 깔린 채 상단 8px 만 삐져나와 보였다(겹침
-   * 소탕 실측 600×900). 시트가 열려 있으면 이 레인은 <md 에서 완전히
-   * 물러난다 — utility lane 과 같은 "시트가 주 표면, 크롬은 강등" 문법.
+   * Below `md` the expanded INDEX is a full-bleed sheet (responsive audit rank7).
+   * While the sheet was the primary surface, the top chrome lay behind it with only
+   * its top 8px poking out (overlap sweep, measured at 600×900). With the sheet open
+   * this lane withdraws entirely below `md` — the same "sheet is primary, chrome
+   * demotes" grammar as the utility lane.
    */
   phoneSheetSuppressed?: boolean;
   /**
@@ -43,21 +44,23 @@ interface Props {
    */
   pathChip?: ReactNode;
   /**
-   * 인사이트발 딥링크 복귀 칩(`TopologyInsightsReturnChip`) — pathChip 과 같은
-   * "상단 중앙 크롬 열" 문법. 두 칩이 공존해도 같은 flex 열 안에 grouped 로
-   * 남아 부유 패널이 늘지 않는다. 슬롯이 비면 렌더 비용 0.
+   * The insights deeplink return chip (`TopologyInsightsReturnChip`) — the same
+   * "top-centre chrome column" grammar as pathChip. With both present they stay grouped
+   * in the same flex column, so no floating panel is added. An empty slot costs nothing
+   * to render.
    */
   returnChip?: ReactNode;
   /**
-   * S4 "영역 전개" 상태 칩 — pathChip/returnChip 과 같은 "상단 중앙 크롬 열"
-   * 문법. 영역 활성일 때만 렌더돼 "영역: {title} ✕" 로 현재 세계를 알리고
-   * ✕ 로 전체 지도 복귀한다. 슬롯이 비면 렌더 비용 0.
+   * The S4 "realm expansion" status chip — the same "top-centre chrome column" grammar
+   * as pathChip/returnChip. Rendered only while a realm is active, announcing the current
+   * world as "영역: {title} ✕" with ✕ returning to the full map. An empty slot costs
+   * nothing to render.
    */
   realmChip?: ReactNode;
   /**
-   * "걸어온 길" 칩(`TopologyTrailChip`, fable 설계) — pathChip/realmChip 과
-   * 같은 "상단 중앙 크롬 열" 문법. 세션 방문이 2개 이상일 때만 렌더돼
-   * "걸어온 길 · N" 으로 지나온 경로를 알린다. 슬롯이 비면 렌더 비용 0.
+   * The "걸어온 길" (trail) chip (`TopologyTrailChip`) — the same "top-centre chrome
+   * column" grammar as pathChip/realmChip. Rendered only with 2 or more session visits,
+   * announcing the route taken as "걸어온 길 · N". An empty slot costs nothing to render.
    */
   trailChip?: ReactNode;
 }
@@ -68,14 +71,14 @@ const getIsMacServer = () => false;
 const ARRANGE_FEEDBACK_MS = 950;
 
 /**
- * 상단 중앙 툴바. 자동 정렬 · 검색 2버튼.
- * glassmorphism(backdrop-blur) 금지 룰 준수 — solid panel bg만 사용.
+ * The top-centre toolbar — two buttons, auto-arrange and search. It honours the
+ * glassmorphism (backdrop-blur) ban and uses a solid panel background only.
  *
- * feat/chrome-system §6 — ChromeChip(44px·10px radius) 재스킨. 우상단
- * "작업공간" 칩(`HomePage`)도 이후 슬라이스에서 같은 ChromeChip 으로
- * 이관되어 상단 열 전체가 44px 로 수렴했다(feat/chrome-finish — 남은
- * TopologyReviewLink/Create-Node 버튼의 --topology-utility-lane-height
- * 잔재도 같은 슬라이스에서 --chrome-tile-size 로 정리).
+ * feat/chrome-system §6 — reskinned as ChromeChip (44px, 10px radius). The
+ * top-right 「작업공간」 chip (`HomePage`) later moved onto the same ChromeChip, so the
+ * whole top row converged on 44px (feat/chrome-finish, which also cleaned the
+ * remaining TopologyReviewLink/Create-Node buttons' `--topology-utility-lane-height`
+ * leftovers over to `--chrome-tile-size`).
  */
 export function SearchHint({
   onOpenSearch,
@@ -93,7 +96,7 @@ export function SearchHint({
 }: Props) {
   const t = useTranslations('searchWidgets.hint');
   const isMac = useSyncExternalStore(subscribe, getIsMac, getIsMacServer);
-  // 3D 보기 — 스토어를 직접 구독해 지도 캔버스(HomePage 경유)와 lockstep 토글.
+  // 3D view — subscribes to the store directly so it toggles in lockstep with the map canvas (via HomePage).
   const view3d = useView3d();
   const [view3dMenuOpen, setView3dMenuOpen] = useState(false);
   const [arranging, setArranging] = useState(false);
@@ -201,15 +204,17 @@ export function SearchHint({
             {arranging ? t('relayoutActiveLabel') : t('relayoutLabel')}
           </ChromeChip>
         </div>
-        {/* 3D — 지도를 kind 링의 돔으로 다시 배치하는 옵트인 뷰(2026-08-18
-            소유자 지시 — 설정 시트가 아니라 이 툴바를 가리켰다). 지도 뷰는
-            2D(기본)/3D 딱 둘이고 토글 자리는 여기 하나다. active 인디고 틴트가
-            켜짐 상태를 말한다(제2 채색 없음). 자동 정렬과 같은 <md 강등. */}
+        {/* 3D — the opt-in view that rearranges the map into a dome of kind rings
+            (2026-08-18 owner instruction, which pointed at this toolbar rather than the
+            settings sheet). The map has exactly two views, 2D (default) and 3D, and this
+            is the one place it toggles. The active indigo tint states that it is on (no
+            second colour). Same <md demotion as auto-arrange. */}
         {/*
-          3D 칩은 **토글이 아니라 고르개를 연다** (2026-08-18 소유자 지시:
-          *"3D누르면 선택 팝업이 나오게 해야지?"*). 3D 에 배치가 둘 생기면서
-          켬/끔 토글로는 「지금 무엇을 보고 있나」를 말할 수 없게 됐다 —
-          근거와 세 줄의 이유는 `View3dMenu` 독블록.
+          The 3D chip **opens a picker rather than toggling** (owner instruction,
+          2026-08-18: *"3D누르면 선택 팝업이 나오게 해야지?"* — pressing 3D should bring
+          up a selection popup). With two arrangements inside 3D, an on/off toggle can no
+          longer say 「what am I looking at」 — the rationale and the three reasons are in
+          the `View3dMenu` doc-block.
         */}
         <div className="relative hidden md:block">
           <ChromeChip
@@ -250,10 +255,11 @@ export function SearchHint({
           compact={compact}
           icon={<Search />}
           kbd={isMac ? '⌘K' : 'CtrlK'}
-          // 검수 1바퀴 결함 1 (2026-07-23) — EN 로케일 1440 폭에서 중앙 레인의
-          // 오른끝(검색 필)이 우측 클러스터("Switch to my data")와 겹쳤다.
-          // 영어 라벨이 길어질 때 예약 폭이 밀어내는 문제라, min-width 와 ⌘K
-          // 캡 예약을 2xl(1536+ — 1440 은 xl 이라 겹침 구간)부터로 미룬다.
+          // Review round defect 1 (2026-07-23) — at 1440 width in the EN locale, the
+          // centre lane's right end (the search pill) overlapped the right cluster
+          // ("Switch to my data"). It is the reserved width pushing out as English
+          // labels grow, so the min-width and the ⌘K cap reservation are deferred to
+          // 2xl (1536+ — 1440 is xl, the overlapping band).
           className={compact ? undefined : '2xl:min-w-[208px] max-2xl:[&_[data-chip-kbd]]:hidden'}
           aria-label={t('searchAriaLabel')}
           title={t('searchTitle')}

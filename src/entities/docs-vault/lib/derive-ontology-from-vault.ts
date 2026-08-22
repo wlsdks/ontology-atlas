@@ -4,106 +4,102 @@ import { humanizeCodePathTitle } from '@/shared/lib/humanize-code-path-title';
 import type { VaultDoc, VaultManifest } from '../model/types';
 
 /**
- * 로컬 vault 의 frontmatter 가 명시한 ontology 후보를 *AI 추출 거치지 않고*
- * 즉시 stub 으로 변환. mission 의 "글을 쓰면 ontology 가 자라난다" 약속의
- * **로컬 모드 fast path** — V2 spec 의 V1.x ActionType 도입 전에도 사용자가
- * 작성한 frontmatter 만으로 ontology surface 가 보이도록.
+ * Turns the frontmatter of a local vault into ontology stubs directly — no AI
+ * extraction step. The vault's frontmatter is the source of truth, so there is
+ * no promote/approve stage: what this returns surfaces as the graph.
  *
- * 입력 frontmatter 인식 키:
- * - `kind` — 노드 종류 (project / domain / capability / element / document)
- * - `title` — 노드 제목 (없으면 firstHeading 또는 slug 의 마지막 segment)
- * - `domain` — 단일 domain 노드 후보 (string). docNode 의 부모로 매달림.
- * - `domains` — string[] domain 노드 후보. 보통 project.md 가 자기가 포함하는
- *   도메인 목록을 노출할 때. docNode 가 도메인의 부모로 매달림.
- * - `capabilities` — string[] (capability 노드 후보)
- * - `elements` — string[] (element 노드 후보)
- * - `relates` — string[] (related_to edge 후보)
- * - `dependencies` — string[] (depends_on edge 후보)
- * - `contains` — string[] (contains edge 후보, CLI/MCP add_relation 이 쓰는 키)
- * - `broader` — string[] (is_a edge 후보 — 상위 개념 / SKOS skos:broader)
- *
- * mission v2: vault frontmatter 자체가 진실원이라 별도 promote / 승격 단계
- * 없음. 출력 stub 은 즉시 ontology 그래프로 surface (\`/ontology\` 트리,
- * 빌더 캔버스, /insights / /relations 등).
+ * Frontmatter keys read here:
+ * - `kind` — project / domain / capability / element / document
+ * - `title` — falls back to the first heading, then the last slug segment
+ * - `domain` (string) — the doc hangs under that domain
+ * - `domains` (string[]) — the doc is the parent; typically a project listing
+ *   the domains it contains. Note the direction is the reverse of `domain`
+ * - `capabilities`, `elements` (string[]) — child nodes
+ * - `relates` (string[]) — related_to
+ * - `dependencies` / `depends_on` (string[]) — depends_on
+ * - `contains` (string[]) — contains, the key CLI/MCP `add_relation` writes
+ * - `describes` (string[]) — describes
+ * - `broader` (string[]) — is_a (SKOS skos:broader)
  */
 
 export type OntologyStubSource = 'frontmatter';
 
 /**
- * frontmatter 참조 문자열 → 이미 등록된 문서 노드 id 의 색인.
+ * Index from a frontmatter reference string to an already-registered document
+ * node id.
  *
- * 왜 필요한가 (2026-07-26 실측) — 컴파일러(`mcp/src/ontology-compiler.mjs`)는
- * 문서를 alias 3벌(문서 slug 전체 · 마지막 조각 · frontmatter `slug:`)로
- * 등록해 두고 참조를 그중 하나에 맞춘다. 웹 derive 는 그 alias 표가 없어
- * 참조를 매번 slugify 로 뭉갰고, 그래서 **`slug:` 로 코드 경로를 선언한 문서
- * 7개가 자기 참조에 못 맞고 유령 쌍둥이를 낳았다** — 지도에는 같은 개념이
- * 문서 있는 노드 하나와 문서 없는 노드 하나로 두 번 그려졌고, 사용자가 고를
- * 확률이 높은 쪽(참조에서 태어난 쪽)에는 문서가 없었다.
+ * Measured 2026-07-26: the compiler (`mcp/src/ontology-compiler.mjs`) registers
+ * each document under three aliases (full doc slug, last segment, frontmatter
+ * `slug:`) and matches references against them. The web derivation had no alias
+ * table and slugified every reference instead, so **seven documents that
+ * declared a code path via `slug:` failed to match their own references and
+ * spawned ghost twins** — the map drew one concept as a node with a document
+ * and a second node without one, and the copy a user was more likely to click
+ * (the one born from the reference) had no document behind it.
  *
- * 같은 질문("이 참조는 이미 있는 문서인가")에 두 곳이 각자 답하면 반드시
- * 갈라진다. 그래서 웹도 컴파일러와 **같은 alias 규칙**을 쓴다. 한 alias 가
- * 두 문서에 걸리면(컴파일러의 `ambiguous-alias`) 추측하지 않고 버린다.
+ * Two places answering "is this reference an existing document?" will always
+ * diverge, so the web uses the compiler's alias rules verbatim. When one alias
+ * claims two documents (the compiler's `ambiguous-alias`) it is dropped rather
+ * than guessed.
  */
 type DocAliasIndex = ReadonlyMap<string, string>;
 
 export interface OntologyStubNode {
-  /** `<kind>:<slug>` 또는 fallback `unknown:<slug>`. */
+  /** `<kind>:<slug>`, or `unknown:<slug>` as a fallback. */
   id: string;
   title: string;
   /**
-   * 표시용 짧은 제목 — 과제 ⑩. `deriveDisplayTitle` 로 계산 (frontmatter
-   * `display:` 필드 우선, 없으면 title 의 괄호 부연 설명 컷). 토폴로지
-   * 라벨 / INDEX 행 / 팝오버 / 상세 헤더는 이 필드를 렌더한다. 검색/매칭은
-   * 여전히 `title` 전체로 — 이 필드는 렌더 전용이라 매칭 범위를 줄이지
-   * 않는다.
+   * Short title for display, from `deriveDisplayTitle` (frontmatter `display:`
+   * wins, otherwise the parenthetical tail of `title` is cut). Search and
+   * matching still run against the full `title` — this field is render-only and
+   * must never narrow what can be found.
    */
   display: string;
   /**
-   * 어권별 표시 이름 (소유자 지시 2026-07-24) — frontmatter 의
-   * `display_ko:` / `display_en:` 등 `display_<locale>` 키를 그대로 수집.
-   * 해석(어느 로케일을 보여줄지)은 렌더 경계(`derivationToInsight`)가
-   * 담당 — derive 는 로케일을 모른다(모듈-로드 캐시와 충돌 방지).
-   * 검색/매칭은 여전히 `title` 전체로.
+   * Per-locale display names (owner instruction, 2026-07-24) — every
+   * `display_<locale>` frontmatter key, collected verbatim. Choosing which one
+   * to show belongs to the render boundary (`derivationToInsight`): derivation
+   * itself is locale-blind, because it is cached at module load.
    */
   displayLocales?: Readonly<Record<string, string>>;
   kind: string;
-  /** 어느 vault 문서 (slug) 에서 유래했는지 — evidence chain 의 시작점. */
+  /** The vault document (slug) this came from — the start of the evidence chain. */
   sourceSlug: string;
   /**
-   * 이 노드가 **자기 `.md` 문서를 가졌는지**. `sourceSlug` 만으로는 구분할 수
-   * 없다 — 문서 노드(Pass 1)는 자기 slug 를, 관계에서만 참조된 파생 노드
-   * (Pass 2)는 *자기를 인용한 남의 문서* slug 를 같은 필드에 담기 때문이다.
-   * 그래서 "이 노드의 문서 열기" 를 그리는 표면이 `sourceSlug` 를 그대로
-   * 쓰면 남의 문서를 자기 문서인 양 연다(막힘 결함).
+   * Whether this node has **its own `.md` document**. `sourceSlug` cannot answer
+   * that: a document node (pass 1) carries its own slug, while a node that was
+   * only named by a relation (pass 2) carries the slug of *whichever other
+   * document cited it*. A surface that renders "open this node's document" from
+   * `sourceSlug` alone therefore opens someone else's document.
    *
-   * `true` = frontmatter 에 `kind:` 가 있는 실제 문서. `false` = 관계
-   * (`domain`/`capabilities`/`elements`/`contains`/`relates`/`dependencies`/
-   * `broader`)에서 이름만 불린 파생 노드 — 문서는 아직 없다.
+   * `true` = a real document with `kind:` in its frontmatter. `false` = named
+   * only from a relation key and not written yet.
    */
   hasOwnDocument: boolean;
   /**
-   * **누가 이 노드를 썼나** — `human` 또는 `agent:<name>`. 2026-07-31 원장의
-   * 값 규약 그대로다(`mcp/src/schema.mjs`).
+   * Who wrote this node — `human` or `agent:<name>`, the value convention from
+   * the 2026-07-31 ledger entry (`mcp/src/schema.mjs`).
    *
-   * **부재는 결함이 아니라 unknown 이다.** 어떤 경로도 부재를 `human` 으로
-   * 기본값 처리하지 않는다 — 소급 추론(「로그 없음 = 사람」)으로는 출처가
-   * 존재하지 않기 때문이다. 그래서 optional 이고, 화면은 값이 **정확히**
-   * `human` 일 때만 검수 표시를 그린다.
+   * **Absence is unknown, not a defect.** No path defaults a missing value to
+   * `human`: inferring "no record, therefore a person" would invent a provenance
+   * that does not exist. Hence optional, and screens draw the reviewed marker
+   * only when the value is exactly `human`.
    */
   createdBy?: string;
   /**
-   * 문서 없는 파생 노드가 **볼트에 실제로 적혀 있는 참조 문자열** 원문.
-   * 예: `src/entities/docs-vault/lib/derive-ontology-from-vault.ts`.
+   * For a node with no document of its own, the reference string **as actually
+   * written in the vault** — e.g. `src/entities/docs-vault/lib/derive-ontology-from-vault.ts`.
    *
-   * id 는 그 문자열을 slugify 로 뭉갠 값이라(`element:srcentitiesdocs-...`)
-   * 되돌릴 수 없다 — 사용자가 화면에서 그걸 베껴 CLI·MCP 에 넣으면 볼트
-   * 어디에도 없는 이름이 된다. 에이전트에게 이 개념을 가리켜 보일 때는 항상
-   * 이 원문을 쓴다(컴파일러가 엣지의 `ref` 로 들고 있는 바로 그 값).
-   * 자기 문서가 있는 노드는 문서 slug 가 그 역할을 하므로 비어 있다.
+   * The id slugifies that string (`element:srcentitiesdocs-...`) and cannot be
+   * reversed, so a user copying the id into the CLI or MCP would be naming
+   * something the vault has never heard of. Always hand an agent this string
+   * instead — it is the same value the compiler carries as the edge's `ref`.
+   * Empty for nodes that have their own document, where the doc slug plays this
+   * role.
    */
   ref?: string;
   source: OntologyStubSource;
-  /** 자유 요약 — 본문 첫 단락 또는 description 키. */
+  /** Free-text summary — the first body paragraph, or the `description` key. */
   summary?: string;
 }
 
@@ -112,11 +108,10 @@ export interface OntologyStubEdge {
   id: string;
   from: string;
   to: string;
-  /** 'contains' | 'depends_on' | 'describes' | 'related_to' | 'is_a' (V1.0 7-relation 부분집합 + is-a 상위개념 축). */
   type: 'contains' | 'depends_on' | 'describes' | 'related_to' | 'is_a';
   source: OntologyStubSource;
   sourceSlug: string;
-  /** P6 — 이 관계의 근거 한 줄 (`relation_notes: {ref: why}`). 엣지 팝오버가 문장 아래 보여준다. */
+  /** Why this relation exists, from `relation_notes: {ref: why}`. Shown under the edge popover. */
   label?: string;
 }
 
@@ -127,7 +122,7 @@ export interface VaultOntologyDerivation {
   sourceConceptCount: number;
   /** Frontmatter `kind:` docs by kind before relation-derived stubs are added. */
   sourceKindCounts: Record<string, number>;
-  /** vault 의 어떤 doc 도 ontology 후보가 안 만들어진 경우 진단 메시지 — UI 빈 상태에 노출. */
+  /** Diagnostics when no doc in the vault produced a candidate — rendered in the empty state. */
   warnings: string[];
 }
 
@@ -139,8 +134,9 @@ const VALID_RELATION_TYPES = new Set([
   'is_a',
 ]);
 
-// export — 부트스트랩(도메인 파일화)이 같은 규칙으로 파일 tail 을 만들어야
-// derive 의 ref resolve(`domain:slugifyName(name)`)와 그래프가 이어진다.
+// Exported because bootstrap (writing domains out as files) must build file
+// tails by the same rule, or derivation's `domain:slugifyName(name)` resolution
+// will not meet the graph.
 export function slugifyName(input: string): string {
   return input
     .toLowerCase()
@@ -155,13 +151,14 @@ function asStringArray(value: unknown): string[] {
   if (Array.isArray(value)) {
     return value.filter((v): v is string => typeof v === 'string' && v.trim() !== '');
   }
-  // 관계 키는 공개 스키마상 배열이다. 스칼라를 편의상 배열로 바꾸면
-  // MCP 컴파일러가 거절한 관계를 웹 지도만 팬텀 엣지로 만들게 된다.
+  // Relation keys are arrays in the public schema. Coercing a scalar into an
+  // array for convenience would make the web map draw phantom edges the MCP
+  // compiler rejects.
   return [];
 }
 
-// vault folder 이름 → kind 매핑. \`relates: [capabilities/mcp-server]\` 같은
-// folder-prefixed 슬러그를 단수 kind 로 정확히 변환할 때 사용.
+// Vault folder name → kind. Converts a folder-prefixed slug such as
+// `relates: [capabilities/mcp-server]` to the singular kind.
 const FOLDER_TO_KIND: Record<string, string> = {
   projects: 'project',
   domains: 'domain',
@@ -188,10 +185,9 @@ function resolveFolderPrefixedRef(ref: string): { id: string; kind: string; titl
 }
 
 /**
- * \`relates: ['capabilities/mcp-server', 'auth-platform']\` 같은 ref 를 기존
- * 노드 ID 로 resolve. 형식:
- * - \`folder/slug\` → \`${kind}:${slug}\` (folder 가 알려진 vault 폴더면)
- * - 그 외 → \`unknown:${slugified}\` fallback
+ * Resolves a ref such as `capabilities/mcp-server` or `auth-platform` to an
+ * existing node id: `folder/slug` → `<kind>:<slug>` when the folder is known,
+ * anything else → `unknown:<slugified>`.
  */
 function resolveRelatesRef(rel: string): string | null {
   const trimmed = rel.trim();
@@ -210,11 +206,10 @@ function deriveDocNode(doc: VaultDoc): OntologyStubNode | null {
   const rawKind = typeof fm.kind === 'string' ? fm.kind.trim() : '';
   if (!rawKind) return null;
   const title = doc.title?.trim() || doc.slug.split('/').pop() || doc.slug;
-  // project kind 는 *user-facing slug* (frontmatter.slug 우선) 로 id 형성 —
-  // computeProjectSlug 와 정합. 그래서 PR #253 의 BFS 가 매다는 projectIds
-  // 값이 Project.slug 와 match → /projects 카드 fact strip / /ontology/
-  // insights projectRows 모두 정확한 매핑. 다른 kind 는 file slug 그대로
-  // (relates/depends_on 의 외부 ref 호환).
+  // A project's id uses the *user-facing slug* (frontmatter `slug:` wins), which
+  // keeps it equal to `computeProjectSlug` and therefore to the `projectIds` the
+  // containment BFS attaches. Every other kind keeps the file slug, so external
+  // refs in `relates`/`depends_on` still resolve.
   let idSlug: string;
   const fmSlug = typeof fm.slug === 'string' ? fm.slug.trim() : '';
   if (rawKind === 'project' && fmSlug) {
@@ -224,17 +219,17 @@ function deriveDocNode(doc: VaultDoc): OntologyStubNode | null {
   }
   const id = `${rawKind}:${idSlug}`;
   const baseDisplay = deriveDisplayTitle(fm, title);
-  // element 노드는 title 이 코드 경로 원문(`src/foo/bar-baz.ts`)인 경우가
-  // 많아 비개발자에게 그대로 노출하면 가독성이 떨어진다. display 필드도
-  // 괄호 컷도 없어 baseDisplay 가 title 그대로일 때만 경로 → 사람 이름
-  // 변환을 시도한다 (명시적 display: 는 여전히 최우선).
+  // Element titles are often a raw code path (`src/foo/bar-baz.ts`), unreadable
+  // for a non-developer. Only when neither an explicit `display:` nor a
+  // parenthetical cut applied — i.e. the display is still the title verbatim —
+  // is the path rewritten into a human name.
   const display =
     rawKind === 'element' && baseDisplay === title
       ? humanizeCodePathTitle(title) ?? baseDisplay
       : baseDisplay;
-  // 어권별 표시 이름 — 규칙은 `shared/lib/locale-display-name` 한 곳.
-  // 문서함 목록·빠른 검색도 같은 함수를 써야 "지도는 내 프로젝트, 검색은
-  // My project" 같은 어긋남이 안 생긴다.
+  // Per-locale display names come from one place, `shared/lib/locale-display-name`.
+  // The doc list and quick search must call the same function, or the map says
+  // "내 프로젝트" while search says "My project".
   const displayLocales = readDisplayLocales(fm);
   return {
     id,
@@ -243,9 +238,7 @@ function deriveDocNode(doc: VaultDoc): OntologyStubNode | null {
     displayLocales,
     kind: rawKind,
     sourceSlug: doc.slug,
-    // Pass 1 = 실제 문서. sourceSlug 가 자기 자신이므로 "이 노드의 문서" 가 성립.
     hasOwnDocument: true,
-    // 프론트매터가 적어 둔 값만 싣는다 — 없으면 없는 채로 둔다(unknown).
     createdBy: typeof fm.created_by === 'string' ? fm.created_by.trim() : undefined,
     source: 'frontmatter',
     summary: doc.description ?? doc.excerpt ?? undefined,
@@ -259,13 +252,13 @@ function deriveOntologyFromVaultUncached(
   const edges: OntologyStubEdge[] = [];
   const warnings: string[] = [];
 
-  // Pass 1: 모든 docNode 를 먼저 등록 — relates 처리 시 (Pass 2 안 inline)
-  // 다른 doc 의 noderef 를 정확히 resolve 할 수 있게 한다 (\`relates:
-  // [capabilities/mcp-server]\` → \`capability:mcp-server\` 정확 매칭).
+  // Pass 1 registers every document node first, so pass 2 can resolve a
+  // reference like `relates: [capabilities/mcp-server]` to the real
+  // `capability:mcp-server` instead of minting a duplicate.
   let sourceConceptCount = 0;
   const sourceKindCounts: Record<string, number> = {};
-  // 컴파일러와 같은 alias 3벌. 한 alias 가 두 문서에 걸리면 null 로 표시해
-  // 두고 해석하지 않는다 — 추측한 연결은 잘못된 연결이다.
+  // The compiler's three aliases. An alias claimed by two documents is marked
+  // null and left unresolved — a guessed link is a wrong link.
   const aliasClaims = new Map<string, string | null>();
   const claimAlias = (alias: string | undefined, nodeId: string) => {
     const key = alias?.trim();
@@ -289,22 +282,19 @@ function deriveOntologyFromVaultUncached(
   const docAliases: DocAliasIndex = new Map(
     [...aliasClaims].filter((entry): entry is [string, string] => entry[1] !== null),
   );
-  /** 이 참조가 이미 있는 문서를 가리키는가. 가리키면 그 문서 노드 id. */
+  /** Does this reference point at an existing document? If so, its node id. */
   const existingNodeIdFor = (ref: string): string | null =>
     docAliases.get(ref.trim()) ?? null;
 
-  // Pass 2: 각 doc 의 frontmatter array/relation 키를 순회하며 edge / 합성
-  // 노드 추가.
   for (const doc of manifest.docs) {
     const docNode = deriveDocNode(doc);
     if (!docNode) continue;
 
     const fm = doc.frontmatter;
 
-    // domain (단일 string) — \`domain: X\` 는 \"이 문서가 X 도메인에 속한다\"
-    // 의미. \`contains\` edge 의 from 이 부모 (parent), to 가 자식 (child) 이라
-    // edge 는 domain → docNode 방향이어야 트리에서 도메인 아래에 capability /
-    // element 가 매달리는 기대 구조가 만들어진다.
+    // `domain: X` means "this document belongs to domain X". A `contains` edge
+    // runs parent → child, so the edge must point domain → docNode for
+    // capabilities and elements to hang under the domain in the tree.
     if (typeof fm.domain === 'string' && fm.domain.trim() !== '') {
       const folderRef = resolveFolderPrefixedRef(fm.domain);
       const domainSlug = folderRef?.kind === 'domain'
@@ -319,8 +309,6 @@ function deriveOntologyFromVaultUncached(
             display: deriveDisplayTitle(undefined, folderRef?.kind === 'domain' ? folderRef.title : fm.domain.trim()),
             kind: 'domain',
             sourceSlug: doc.slug,
-            // Pass 2 = 관계에서만 이름이 불린 파생 노드. sourceSlug 는 *자기를
-            // 인용한 남의 문서* 라 '이 노드의 문서' 가 아니다.
             hasOwnDocument: false,
             ref: fm.domain.trim(),
             source: 'frontmatter',
@@ -337,16 +325,15 @@ function deriveOntologyFromVaultUncached(
       }
     }
 
-    // domains[] — \`domains: ['auth', 'billing']\` 식 plural array. 보통
-    // project.md 가 자기가 포함하는 도메인 목록을 노출할 때. \`contains\` edge
-    // 의 from = parent (docNode = project), to = child (domain). \`domain:\`
-    // singular 와 방향이 반대 — 주체가 누가 누구를 포함하는지가 다르다.
+    // `domains: [...]` is the reverse direction of singular `domain:` — here the
+    // document (usually a project) is the parent listing what it contains, so
+    // the `contains` edge runs docNode → domain.
     for (const dom of asStringArray(fm.domains)) {
-      // 리텐션 라운드 P4-①: folder-prefixed ref('domains/tasks' — init 스타터
-      // 의 기본 형식)가 이 분기에서만 미해석돼 slugify 가 슬래시까지 뭉갠
-      // `domain:domainstasks` 팬텀을 민팅했다 (실 노드 `domain:tasks` 와
-      // 병합 실패 → 신규 vault 전원 count 왜곡). 단수 `domain:` 분기와
-      // 같은 resolveFolderPrefixedRef 우선 규칙을 적용한다.
+      // A folder-prefixed ref (`domains/tasks`, the format the init starter
+      // writes) went unresolved in this branch only, and slugify flattened the
+      // slash into a phantom `domain:domainstasks` that never merged with the
+      // real `domain:tasks` — skewing counts for every new vault. Apply the same
+      // resolveFolderPrefixedRef precedence the singular branch uses.
       const folderRef = resolveFolderPrefixedRef(dom);
       const domId =
         existingNodeIdFor(dom) ??
@@ -359,8 +346,6 @@ function deriveOntologyFromVaultUncached(
           display: deriveDisplayTitle(undefined, folderRef?.kind === 'domain' ? folderRef.title : dom),
           kind: 'domain',
           sourceSlug: doc.slug,
-          // Pass 2 = 관계에서만 이름이 불린 파생 노드. sourceSlug 는 *자기를
-          // 인용한 남의 문서* 라 '이 노드의 문서' 가 아니다.
           hasOwnDocument: false,
           ref: dom.trim(),
           source: 'frontmatter',
@@ -391,8 +376,6 @@ function deriveOntologyFromVaultUncached(
           display: deriveDisplayTitle(undefined, folderRef?.kind === 'capability' ? folderRef.title : cap),
           kind: 'capability',
           sourceSlug: doc.slug,
-          // Pass 2 = 관계에서만 이름이 불린 파생 노드. sourceSlug 는 *자기를
-          // 인용한 남의 문서* 라 '이 노드의 문서' 가 아니다.
           hasOwnDocument: false,
           ref: cap.trim(),
           source: 'frontmatter',
@@ -425,8 +408,6 @@ function deriveOntologyFromVaultUncached(
             deriveDisplayTitle(undefined, folderRef?.kind === 'element' ? folderRef.title : el),
           kind: 'element',
           sourceSlug: doc.slug,
-          // Pass 2 = 관계에서만 이름이 불린 파생 노드. sourceSlug 는 *자기를
-          // 인용한 남의 문서* 라 '이 노드의 문서' 가 아니다.
           hasOwnDocument: false,
           ref: el.trim(),
           source: 'frontmatter',
@@ -442,9 +423,10 @@ function deriveOntologyFromVaultUncached(
       });
     }
 
-    // contains[] — CLI/MCP add_relation({type:'contains'}) 가 쓰는 direct
-    // parent→child 관계. `capabilities/foo` 같은 folder-prefixed ref 는
-    // 실제 kind 로 resolve 해야 웹이 duplicate unknown 노드를 만들지 않는다.
+    // `contains[]` is the direct parent→child relation written by CLI/MCP
+    // `add_relation({type:'contains'})`. A folder-prefixed ref such as
+    // `capabilities/foo` must resolve to its real kind or the web mints a
+    // duplicate `unknown:` node.
     for (const contained of asStringArray(fm.contains)) {
       const folderRef = resolveFolderPrefixedRef(contained);
       const containedSlug = folderRef
@@ -459,8 +441,6 @@ function deriveOntologyFromVaultUncached(
           display: deriveDisplayTitle(undefined, folderRef?.title ?? contained),
           kind: folderRef?.kind ?? 'unknown',
           sourceSlug: doc.slug,
-          // Pass 2 = 관계에서만 이름이 불린 파생 노드. sourceSlug 는 *자기를
-          // 인용한 남의 문서* 라 '이 노드의 문서' 가 아니다.
           hasOwnDocument: false,
           ref: contained.trim(),
           source: 'frontmatter',
@@ -476,11 +456,10 @@ function deriveOntologyFromVaultUncached(
       });
     }
 
-    // relates[] — related_to edge. \`folder/slug\` 형태 (예:
-    // \`capabilities/mcp-server\`) 면 기존 docNode (\`capability:mcp-server\`)
-    // 와 연결하려고 시도하고, 실패하면 \`unknown:slug\` stub. 단순 slugify
-    // 만 하면 \`/\` 가 사라져 \`capabilitiesmcp-server\` 같은 mangled ID 가
-    // 됐던 회귀 차단.
+    // `relates[]` → related_to. A `folder/slug` form (`capabilities/mcp-server`)
+    // is matched against the existing doc node first, falling back to an
+    // `unknown:` stub. Plain slugify would drop the `/` and produce mangled ids
+    // like `capabilitiesmcp-server`.
     for (const rel of asStringArray(fm.relates)) {
       const relId = existingNodeIdFor(rel) ?? resolveRelatesRef(rel);
       if (!relId) continue;
@@ -491,8 +470,6 @@ function deriveOntologyFromVaultUncached(
           display: deriveDisplayTitle(undefined, rel),
           kind: 'unknown',
           sourceSlug: doc.slug,
-          // Pass 2 = 관계에서만 이름이 불린 파생 노드. sourceSlug 는 *자기를
-          // 인용한 남의 문서* 라 '이 노드의 문서' 가 아니다.
           hasOwnDocument: false,
           ref: rel.trim(),
           source: 'frontmatter',
@@ -508,15 +485,15 @@ function deriveOntologyFromVaultUncached(
       });
     }
 
-    // describes[] — describes edge (문서 → 그 문서가 설명하는 개념).
+    // `describes[]` → describes (document → the concept it explains).
     //
-    // 왜 뒤늦게 들어왔나 (2026-07-27 실측): 컴파일러(CLI·MCP)는 이 키를 처음부터
-    // 읽어 `documents/agent-practice-research → capabilities/mcp-server` 같은
-    // 근거 관계를 그래프에 넣고 있었는데, 웹 derive 만 이 키를 통째로 건너뛰었다.
-    // 그래서 세 입구의 관계 수가 갈렸고(웹 448 vs CLI·MCP 542 중 10건이 이것),
-    // 지도에서는 `document` 노드가 자기가 설명하는 개념과 이어지지 않았다.
-    // 관계 타입 자체는 웹의 타입 유니온·라벨·건강 검사에 이미 있었다 — 빠진
-    // 것은 읽는 자리 하나뿐이었다.
+    // Measured 2026-07-27: the CLI/MCP compiler had always read this key and put
+    // edges like `documents/agent-practice-research → capabilities/mcp-server`
+    // into the graph, while the web derivation skipped it entirely. The three
+    // entry points therefore disagreed on relation count (web 448 vs 542; 10 of
+    // the difference was this key) and `document` nodes sat unconnected to what
+    // they describe. The relation type itself already existed in the web's union,
+    // labels, and health checks — the only thing missing was the read.
     for (const described of asStringArray(fm.describes)) {
       const folderRef = resolveFolderPrefixedRef(described);
       const describedId = existingNodeIdFor(described) ?? folderRef?.id ?? resolveRelatesRef(described);
@@ -528,8 +505,6 @@ function deriveOntologyFromVaultUncached(
           display: deriveDisplayTitle(undefined, folderRef?.title ?? described),
           kind: folderRef?.kind ?? 'unknown',
           sourceSlug: doc.slug,
-          // Pass 2 = 관계에서만 이름이 불린 파생 노드. sourceSlug 는 *자기를
-          // 인용한 남의 문서* 라 '이 노드의 문서' 가 아니다.
           hasOwnDocument: false,
           ref: described.trim(),
           source: 'frontmatter',
@@ -545,14 +520,14 @@ function deriveOntologyFromVaultUncached(
       });
     }
 
-    // dependencies[] + depends_on[] — depends_on edge. 스키마 정본
-    // (mcp/src/schema.mjs)은 capability/element 의 캐논 키가 `depends_on`,
-    // project 가 `dependencies` 이고, MCP 는 alias 로 둘 다 읽는다
-    // (vault.mjs NEIGHBOR_KEY_ALIASES). 웹 derive 만 `dependencies` 하나를
-    // 읽어서 에이전트가 정본 키로 쓴 의존 관계가 지도·캡션에서 통째로
-    // 소실됐다(2026-08-12) — describes(2026-07-27)와 같은 부류의 구멍.
-    // 같은 대상이 두 키에 있으면 resolve 된 depId 기준으로 한 번만.
-    // 게이트: tests/contract/derive-relation-keys.contract.test.ts.
+    // `dependencies[]` + `depends_on[]` → depends_on. The schema (`mcp/src/schema.mjs`)
+    // makes `depends_on` canonical for capability/element and `dependencies`
+    // canonical for project, and MCP reads both as aliases (vault.mjs
+    // NEIGHBOR_KEY_ALIASES). The web derivation read only `dependencies`, so a
+    // dependency an agent wrote under the canonical key vanished from the map and
+    // the captions (2026-08-12) — the same shape of hole as `describes` above.
+    // The same target under both keys counts once, by resolved depId.
+    // Gate: tests/contract/derive-relation-keys.contract.test.ts.
     const seenDepIds = new Set<string>();
     for (const dep of [...asStringArray(fm.dependencies), ...asStringArray(fm.depends_on)]) {
       const folderRef = resolveFolderPrefixedRef(dep);
@@ -560,7 +535,7 @@ function deriveOntologyFromVaultUncached(
         ? folderRef.id.split(':').at(-1)
         : slugifyName(dep);
       if (!depSlug) continue;
-      // dependencies 는 같은 종 (project) 사이를 가리키는 게 일반적이라 추측.
+      // Dependencies usually point between nodes of the same kind, so guess that.
       const depId = existingNodeIdFor(dep) ?? folderRef?.id ?? `${docNode.kind}:${depSlug}`;
       if (seenDepIds.has(depId)) continue;
       seenDepIds.add(depId);
@@ -571,8 +546,6 @@ function deriveOntologyFromVaultUncached(
           display: deriveDisplayTitle(undefined, folderRef?.title ?? dep),
           kind: folderRef?.kind ?? docNode.kind,
           sourceSlug: doc.slug,
-          // Pass 2 = 관계에서만 이름이 불린 파생 노드. sourceSlug 는 *자기를
-          // 인용한 남의 문서* 라 '이 노드의 문서' 가 아니다.
           hasOwnDocument: false,
           ref: dep.trim(),
           source: 'frontmatter',
@@ -588,10 +561,9 @@ function deriveOntologyFromVaultUncached(
       });
     }
 
-    // broader[] — is_a edge (상위 개념 / SKOS skos:broader). `이 노드 IS-A 상위`
-    // 이므로 from = docNode, to = 상위 개념. Studio 나침 무대의 UP 방위가
-    // 채워지면 이 키가 쓰이고, 채워진 뒤엔 실선 strut + 위성으로 그려진다.
-    // folder-prefixed ref(`capabilities/foo`)는 실 kind 로 resolve.
+    // `broader[]` → is_a (SKOS skos:broader). The node IS-A the broader concept,
+    // so from = docNode, to = the broader one. A folder-prefixed ref
+    // (`capabilities/foo`) resolves to its real kind.
     for (const broaderRef of asStringArray(fm.broader)) {
       const folderRef = resolveFolderPrefixedRef(broaderRef);
       const broaderSlug = folderRef
@@ -607,8 +579,6 @@ function deriveOntologyFromVaultUncached(
           display: deriveDisplayTitle(undefined, folderRef?.title ?? broaderRef),
           kind: folderRef?.kind ?? docNode.kind,
           sourceSlug: doc.slug,
-          // Pass 2 = 관계에서만 이름이 불린 파생 노드. sourceSlug 는 *자기를
-          // 인용한 남의 문서* 라 '이 노드의 문서' 가 아니다.
           hasOwnDocument: false,
           ref: broaderRef.trim(),
           source: 'frontmatter',
@@ -631,19 +601,18 @@ function deriveOntologyFromVaultUncached(
     );
   }
 
-  // edge type 화이트리스트 검증 (방어) + id 기반 dedup.
-  // vault 가 양방향으로 같은 관계를 표현하면 (예: domain.capabilities[] +
-  // capability.domain:) 같은 edge id 가 두 번 push 된다. 그래프 입장에서는
-  // 같은 edge 라 first-wins 로 합쳐 React duplicate-key 경고와 ego graph 의
-  // silent edge 누락을 차단.
+  // Whitelist the edge type (defensively) and dedupe by id. A vault can state the
+  // same relation from both ends (`domain.capabilities[]` plus `capability.domain:`),
+  // pushing the same edge id twice. First one wins, which stops React duplicate-key
+  // warnings and edges silently dropped from the ego graph.
   const dedupedById = new Map<string, OntologyStubEdge>();
   for (const e of edges) {
     if (!VALID_RELATION_TYPES.has(e.type)) continue;
     if (!dedupedById.has(e.id)) dedupedById.set(e.id, e);
   }
 
-  // P6 — relation_notes: {ref: "왜"} 를 해당 엣지의 label 로 승격. 키는
-  // 선언 문서의 frontmatter ref 표기(canonical slug)와 tail 양쪽을 본다.
+  // Promote `relation_notes: {ref: why}` onto the matching edge's label. The key is
+  // matched against both the declaring document's canonical ref and its tail.
   {
     const noteByDoc = new Map<string, Record<string, string>>();
     for (const doc of manifest.docs) {

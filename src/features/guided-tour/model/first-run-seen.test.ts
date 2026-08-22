@@ -15,9 +15,8 @@ describe("first-run-seen", () => {
   });
 
   describe("FIRST_RUN_SEEN_ENTRIES", () => {
-    // 이 목록이 목적지에서 파생되지 않으면, 안내를 새로 만든 사람이 목록을
-    // 빠뜨려도 아무 검사도 실패하지 않는다 — 그 감사 세션에서만 조용히 안내가
-    // 뜬다.
+    // If this list is not derived from the destinations, someone adding a new guide can
+    // omit it and no check fails — the guidance simply appears in that audit session.
     it("모든 목적지 안내를 덮는다 (파생 계약)", () => {
       const keys = new Set(FIRST_RUN_SEEN_ENTRIES.map(([key]) => key));
       for (const id of Object.keys(DESTINATION_TOURS)) {
@@ -25,7 +24,7 @@ describe("first-run-seen", () => {
       }
       expect(keys).toContain("guided-tour:v1");
       expect(keys).toContain("vault-open-guide:auto:v1");
-      // 목적지 5 + 지도 1 + 폴더 시트 1.
+      // 5 destinations + the map + the folder sheet.
       expect(keys.size).toBe(Object.keys(DESTINATION_TOURS).length + 2);
     });
   });
@@ -36,7 +35,7 @@ describe("first-run-seen", () => {
       expect(resolveGuideOverride("?guides=reset")).toBe("reset");
     });
 
-    // 오타가 조용히 안내를 끄면, 안내가 안 뜨는 이유를 아무도 못 찾는다.
+    // If a typo quietly disabled the guidance, nobody could find out why it stopped appearing.
     it("모르는 값·없는 값은 null", () => {
       expect(resolveGuideOverride("?guides=nope")).toBeNull();
       expect(resolveGuideOverride("?guides=")).toBeNull();
@@ -53,7 +52,7 @@ describe("first-run-seen", () => {
       }
     });
 
-    // 끄는 문만 있고 켜는 문이 없으면 감사자가 안내 자체를 다시는 못 본다.
+    // With only a door to turn it off and none to turn it back on, an auditor could never see the guidance again.
     it("reset 은 되돌린다", () => {
       applyFirstRunSeen();
       expect(applyGuideOverride("?guides=reset")).toBe("reset");

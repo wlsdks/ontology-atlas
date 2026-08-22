@@ -34,7 +34,7 @@ afterEach(() => {
 
 describe("useViewportBelow", () => {
   it("matchMedia 가 없으면 넓은 화면으로 답한다 — 정적 prerender 안전값", () => {
-    // @ts-expect-error — 정적 export prerender 환경 재현.
+    // @ts-expect-error — reproduces the static-export prerender environment.
     window.matchMedia = undefined;
     const { result } = renderHook(() => useViewportBelow(LG_BREAKPOINT_PX));
     expect(result.current).toBe(false);

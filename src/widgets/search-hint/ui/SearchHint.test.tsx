@@ -137,8 +137,9 @@ describe("SearchHint", () => {
   });
 
   it("demotes below md while the expanded INDEX sheet owns the surface", () => {
-    // <md 확장 INDEX 는 풀-블리드 시트 — 시트가 주 표면인 동안 크롬 열은
-    // 물러난다 (utility lane 의 hidden md:flex 와 같은 계약).
+    // Below `md` the expanded INDEX is a full-bleed sheet — while the sheet is the
+    // primary surface the chrome column withdraws (the same contract as the utility
+    // lane's hidden md:flex).
     render(
       <SearchHint phoneSheetSuppressed onOpenSearch={vi.fn()} onRelayout={vi.fn()} />,
     );

@@ -1,11 +1,11 @@
-// 도구 버튼 렌더 순서 계약 — 「하나의 목록, 두 진실」 재발 차단.
+// The tool-button render order contract — blocking a recurrence of "one list, two truths".
 //
-// 2026-07-30 실측: 이 컴포넌트는 도구 버튼을 JSX 로 Claude Code → Cursor →
-// Antigravity → Codex 순서로 하드코딩했고, 같은 시트의 전역 스코프 탭은
-// `AGENT_CLIENTS`(Claude Code → Codex → Cursor → Antigravity)를 그대로 썼다 —
-// 한 시트 안에서 같은 목록이 두 순서를 가졌다. 수선은 렌더 순서를 그 배열에서
-// 파생시키는 것이고, 이 테스트가 그 파생이 계속 참인지 잠근다: 배열 순서가
-// 바뀌면 화면 순서도 따라 바뀌어야 하고, 화면이 배열을 무시하면 여기서 빨개진다.
+// Measured 2026-07-30: this component hardcoded the tool buttons in JSX as Claude Code → Cursor →
+// Antigravity → Codex, while the global scope tab in the same sheet used `AGENT_CLIENTS`
+// (Claude Code → Codex → Cursor → Antigravity) — one list with two orders inside one sheet. The
+// repair is to derive render order from that array, and this test locks that derivation as still
+// true: change the array order and the screen order must follow, and a screen that ignores the array
+// turns this red.
 import { describe, expect, it } from "vitest";
 import { render, screen } from "@testing-library/react";
 import { NextIntlClientProvider } from "next-intl";
@@ -49,13 +49,13 @@ describe("AgentClientButtons — 렌더 순서는 AGENT_CLIENTS 에서 파생된
     );
     const renderedIds = controls.map((el) => el.getAttribute("data-testid"));
     const expectedIds = AGENT_CLIENTS.map((client) => CLIENT_TESTID[client.id]);
-    // 순서까지 포함한 동등 비교 — 집합이 같아도 순서가 다르면 결함이다.
+    // Equality including order — the same set in a different order is still a defect.
     expect(renderedIds).toEqual(expectedIds);
   });
 
   it("probe: the expected order really comes from the array, not a copy", () => {
-    // 배열이 바뀌면 기대값도 자동으로 바뀌는 구조인지 스스로 증명한다 —
-    // 기대값을 리터럴로 복제하면 이 테스트가 두 번째 진실이 된다.
+    // Proves for itself that the expectation follows the array automatically — duplicating the
+    // expectation as a literal would make this test a second truth.
     const expectedIds = AGENT_CLIENTS.map((client) => CLIENT_TESTID[client.id]);
     expect(expectedIds).toHaveLength(AGENT_CLIENTS.length);
     expect(new Set(expectedIds).size).toBe(AGENT_CLIENTS.length);
@@ -63,13 +63,13 @@ describe("AgentClientButtons — 렌더 순서는 AGENT_CLIENTS 에서 파생된
 });
 
 /**
- * 넷은 **동등한 선택지**다 (2026-08-02, 디자인 카운슬 S2).
+ * The four are **equal options** (2026-08-02, design council).
  *
- * 종전엔 `claudeCode` 렌더 함수만 `primary` 를 무조건 참으로 하드코딩했고,
- * 나머지 셋에는 그 값을 넘기는 경로 자체가 없었다. 실측: 넷 다 `750×38, x=407`
- * 로 치수 분산이 0인데 하나만 `rgba(94,106,210,0.24)` 채움 — 「선택지 넷」이
- * 아니라 **「정답 하나 + 탈락 셋」**으로 읽혔다. 넷은 서로 다른 파일에 쓰므로
- * 배타적 단일 선택이 아니고, 그래서 «정답» 이 있을 수 없다.
+ * Only the `claudeCode` render function used to hardcode `primary` to true, and the other three had
+ * no path to receive that value at all. Measured: all four were `750×38, x=407` with zero
+ * dimensional variance, and one alone was filled `rgba(94,106,210,0.24)` — reading as **"one right
+ * answer and three rejects"** rather than four options. They write to different files, so this is not
+ * an exclusive single choice and there cannot be a "right answer".
  */
 describe("AgentClientButtons — 넷은 같은 무게다", () => {
   it("gives no client a filled treatment the others cannot get", () => {
@@ -77,18 +77,18 @@ describe("AgentClientButtons — 넷은 같은 무게다", () => {
     const classNames = AGENT_CLIENTS.map(
       (client) => screen.getByTestId(CLIENT_TESTID[client.id]).className,
     );
-    // 한 벌로 읽혀야 하는 세트라 표면 클래스가 **한 종류**여야 한다.
+    // A set meant to read as one unit must have **one** surface class.
     expect(new Set(classNames).size).toBe(1);
-    // 그리고 그 한 종류에 인디고 채움 워시가 없다.
+    // And that one class carries no indigo fill wash.
     for (const className of classNames) {
       expect(className).not.toContain("--color-indigo-a24");
     }
   });
 
   /**
-   * 「>_」 터미널 글리프 ×4 제거. 같은 자리가 상태에 따라 Check(완료)·
-   * Copy(복사)·Loader(진행)를 그리는데 Terminal 만 아무 상태도 안 날랐다 —
-   * 잉크는 데이터에 쓴다(Tufte).
+   * The four `>_` terminal glyphs were removed. The same slot draws Check (done), Copy (copied), and
+   * Loader (in progress) depending on state, while Terminal carried no state at all — ink is spent on
+   * data (Tufte).
    */
   it("draws no glyph on the connect action — only state carries one", () => {
     renderButtons();

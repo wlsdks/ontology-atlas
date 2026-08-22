@@ -1,25 +1,23 @@
 /**
- * 그래프 가독성 실측 — 지도가 **그래프로서** 읽히는지의 수치.
+ * Graph readability measurement — numbers for whether the map reads **as a graph**.
  *
- * ## 왜 이 파일이 필요한가
+ * **Why this exists.** From the 2026-08-03 audit: this app's primary surface is a
+ * node-link graph, and there was **not one number** for whether it read as one.
+ * Node specs (shape, radius, parity) had contract tests, the type ramp had lint,
+ * motion had frame measurements — but **the layout occupying most of the screen**
+ * had no verdict tool beyond "looks complicated".
  *
- * 2026-08-03 감사에서 나온 한 줄: **이 앱의 주 표면이 노드-링크 그래프인데,
- * 그것이 그래프로서 읽히는지에 대한 수치가 하나도 없었다.** 노드 규격(형태 ·
- * 반지름 · parity)에는 계약 테스트가, 타입 램프에는 lint 가, 모션에는 프레임
- * 실측이 있는데 **정작 화면 대부분을 차지하는 배치**에는 "복잡해 보인다" 외에
- * 판정 수단이 없었다.
+ * **What this file does — collection, not judgement.** It pulls **coordinates
+ * only** from the page. The metrics are computed by
+ * `scripts/lib/graph-readability.mjs`, which is pure and therefore probeable with
+ * fixtures (`tests/contract/graph-readability.contract.test.ts`). Computing inside
+ * the page means **you cannot feed in a known answer**, so "the score is 0 — is the
+ * detector idle or is the map good?" can never be settled; the first measurement
+ * stood in exactly that spot.
  *
- * ## 이 파일이 하는 일 — 판정이 아니라 채집
+ * **Usage**
  *
- * 페이지에서 **좌표만** 꺼내 온다. 지표 계산은 `scripts/lib/graph-readability.mjs`
- * 가 하고, 그건 순수 함수라 fixture 로 프로브할 수 있다
- * (`tests/contract/graph-readability.contract.test.ts`). 계산을 페이지 안에 두면
- * **아는 답을 넣어 볼 수 없어** 「0 이 나왔는데 탐지기가 논 건지 지도가 좋은
- * 건지」를 영원히 구분 못 한다 — 첫 실측에서 실제로 그 자리에 섰다.
- *
- * ## 쓰는 법
- *
- *   node scripts/serve-static-export.mjs --port=4173 &   # 먼저 pnpm build
+ *   node scripts/serve-static-export.mjs --port=4173 &   # after pnpm build
  *   node scripts/measure-graph-readability.mjs [baseUrl]
  */
 
@@ -32,8 +30,8 @@ const BASE = process.argv[2] ?? "http://localhost:4173";
 const PROFILE = `/tmp/atlas-readability-${process.pid}`;
 
 /**
- * 재는 규모. **실제 도그푸드 볼트가 첫 줄**이다 — 합성만 재면 우리가 매일 보는
- * 화면은 한 번도 안 잰 것이 된다.
+ * The sizes measured. **The real dogfood vault is the first row** — measuring only
+ * synthetic graphs would leave the screen we look at daily never measured.
  */
 const CASES = [
   { q: "", label: "도그푸드 볼트" },
@@ -41,10 +39,10 @@ const CASES = [
   { q: "synth=3000", label: "합성 3000" },
 ];
 
-/** 뷰포트 고정 — 교차는 화면 좌표에서 세므로 창 크기가 곧 측정 조건이다. */
-const VIEWPORT = { width: 1512, height: 900 }; // 14" MacBook 논리 해상도
+/** Fixed viewport — crossings are counted in screen coordinates, so the window size is part of the measurement condition. */
+const VIEWPORT = { width: 1512, height: 900 }; // 14" MacBook logical resolution
 
-/** 페이지에서 좌표를 꺼내 온다. 판정하지 않는다. */
+/** Pulls coordinates out of the page. Makes no judgement. */
 function collectInPage() {
   const api = window.__atlasMap;
   if (!api) return { error: "__atlasMap 없음 — ?e2e=1 가 빠졌거나 빌드가 옛것이다" };
@@ -59,7 +57,7 @@ function collectInPage() {
 }
 
 const ctx = await chromium.launchPersistentContext(PROFILE, {
-  headless: true, // 배치는 결정론적이고 진짜 입력이 필요 없다
+  headless: true, // The layout is deterministic and needs no real input
   viewport: VIEWPORT,
   deviceScaleFactor: 2,
 });
@@ -70,7 +68,8 @@ const rows = [];
 for (const { q, label } of CASES) {
   const query = ["guides=off", "e2e=1", q].filter(Boolean).join("&");
   await page.goto(`${BASE}/ko/topology?${query}`, { waitUntil: "networkidle" });
-  // 물리 시뮬 수렴 대기. **수렴 전에 재면 배치가 아니라 중간 상태를 잰다.**
+  // Wait for the physics simulation to converge. **Measuring before convergence
+  // measures an intermediate state, not the layout.**
   await page.waitForTimeout(6000);
   const raw = await page.evaluate(collectInPage);
   if (raw.error) {
@@ -102,9 +101,10 @@ for (const r of rows) {
     r.crossingMeasurable
       ? `  ${"".padEnd(14)} 교차 ${String(r.crossings).padStart(6)} / 가능 ${String(r.maxCrossings).padStart(8)}` +
           `  → 품질 ${r.crossingQuality}   (1 이 무교차)`
-      : // 만점이 아니라 **잴 수 없음**이다. 밀도 게이트가 접어 별 모양만 남으면
-        // 교차가 원천적으로 불가능해져 «가장 큰 볼트가 가장 좋다» 는 정반대
-        // 결론이 나온다.
+      : // Not a perfect score but **not measurable**. When the density gate folds
+        // the graph down to a star shape, crossings become impossible by
+        // construction and you get the inverted conclusion that the largest vault
+        // is the best.
         `  ${"".padEnd(14)} 교차 잴 수 없음 — 화면에 남은 엣지가 전부 끝점을 공유한다 (접힘)`,
   );
   console.log(

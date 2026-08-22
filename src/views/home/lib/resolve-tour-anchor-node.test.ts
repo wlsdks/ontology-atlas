@@ -32,10 +32,10 @@ describe("resolveTourAnchorNodeId", () => {
     expect(resolveTourAnchorNodeId(nodes, "domain")).toBe("domain:a");
   });
 
-  // 2026-07-23 Guardian 정정 회귀 가드 — isHub 는 스파인 뷰에서 "+N" 클러스터
-  // 칩으로 접혀 클릭이 select 가 아니라 클러스터 확장(element view 전면
-  // 재배치)을 일으킨다. 어떤 target 도 hub 를 이유로 domain/project 보다
-  // 앞세우지 않는다.
+  // Regression guard for the 2026-07-23 correction: an `isHub` node folds into
+  // a "+N" cluster chip in the spine view, so clicking it expands the cluster (a
+  // full relayout into element view) instead of selecting. No target may prefer
+  // a hub over a domain or project.
   it("target 'domain': never prefers an isHub capability over a spine-visible domain", () => {
     const nodes = [
       { id: "capability:mcp-server", kind: "capability", isHub: true },

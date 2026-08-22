@@ -13,30 +13,30 @@ import { useVaultIdentityScope } from "@/features/vault-scope";
 import { useOntologyInsight } from "../model/use-ontology-insight";
 
 /**
- * live-web — 로컬 vault 가 로드되면 변경 baseline 을 처리한다(마운트당 1회):
+ * Once a local vault loads, handles the change baseline (once per vault):
  *
- * 1. **복원 우선** — reload 전 영속된 baseline 이 있고 현재 그래프와 충분히 겹치면
- *    그걸 복원(restorePersistedBaseline). 그러면 "자리 비운 사이 무엇이 바뀌었나"
- *    (영속 baseline vs 현재 디스크 상태)가 새로고침 후에도 보이고, push-move #1 의
- *    "리뷰함" 승인도 보존된다.
- * 2. **없으면 auto-mark** — 복원할 게 없으면 기존처럼 자동으로 baseline 을 1회 잡는다.
+ * 1. **Restore first** — if a baseline persisted before the reload overlaps the current
+ *    graph enough, restore it (`restorePersistedBaseline`). Then "what changed while I
+ *    was away" (persisted baseline vs the current disk state) survives a refresh, and
+ *    "reviewed" approvals are preserved.
+ * 2. **Otherwise auto-mark** — with nothing to restore, a baseline is captured once.
  *
- * 그래야 이후 에이전트(MCP)·사람의 vault 편집이 클릭 없이 토폴로지 fresh
- * 채널, INDEX, 리뷰 링크, 기록 workbench와 activity count에 같은 changeset으로
- * 뜬다.
+ * That way later vault edits by an agent (MCP) or a person appear without a click, as
+ * the same changeset, in the topology's fresh channel, INDEX, the review link, the git
+ * workbench, and the activity count.
  *
- * **볼트당 1회** 처리(handledScopeRef) — 사용자가 명시적으로 Clear 하면 곧장
- * 다시 잡히지 않게(수동 의도 존중). static/dogfood 모드는 변하지 않으니
- * auto-mark 없음. 헤드리스(렌더 없음) — layout 의 vault provider 안에 마운트.
+ * Handled **once per vault** (`handledScopeRef`), so an explicit Clear is not
+ * immediately undone (respecting manual intent). Static/dogfood mode never changes, so
+ * there is no auto-mark. Headless (renders nothing) — mounted inside the layout's vault provider.
  *
- * ## 왜 "마운트당" 이 아니라 "볼트당" 인가 (2026-08-01 수리)
+ * ## Why "per vault" rather than "per mount" (fix, 2026-08-01)
  *
- * 종전엔 `handledRef` 가 boolean 이라 **세션 중 폴더 전환을 못 봤다**. 복원
- * 가드(`snapshotMatchesGraph`)는 이 effect 안에서만 도는데 그 effect 가 다시
- * 안 돌았으니, 메모리에 남은 볼트 A 의 기준이 볼트 B 의 그래프와 대조돼
- * 「자리 비운 사이 N개 바뀜」의 N 이 **B 전체**가 됐다. 범위가 바뀌면 다시
- * 처리한다 — 그리고 스토어는 `setChangeBaselineScope` 를 받는 즉시 앞 볼트의
- * 기준을 버린다.
+ * `handledRef` used to be a boolean, so **a folder switch mid-session went unseen**. The
+ * restore guard (`snapshotMatchesGraph`) runs only inside this effect and the effect did
+ * not re-run, so vault A's baseline left in memory was compared against vault B's graph
+ * and "N changed while you were away" reported **all of B**. A scope change re-runs the
+ * handling — and the store discards the previous vault's baseline the moment it receives
+ * `setChangeBaselineScope`.
  */
 export function OntologyLiveBaselineInit() {
   const mode = useDataSourceMode();
@@ -48,14 +48,14 @@ export function OntologyLiveBaselineInit() {
     if (!insight) return;
     if (handledScopeRef.current === vaultScope) return;
     handledScopeRef.current = vaultScope;
-    // 0) 스토어에 활성 볼트를 알린다 — 범위가 바뀌었으면 여기서 앞 볼트의
-    //    기준이 버려지고, 저장/복원 키도 이 볼트의 것으로 바뀐다.
+    // 0) Tell the store which vault is active — a scope change discards the previous
+    //    vault's baseline here, and the save/restore key switches to this vault's.
     setChangeBaselineScope(vaultScope);
-    // 1) 영속 baseline 복원 시도(겹침 가드) — 복원되면 auto-mark 건너뜀.
+    // 1) Try restoring a persisted baseline (overlap-guarded); on success, skip auto-mark.
     const restored = restorePersistedBaseline(insight.nodes);
-    // 2) 복원 못 했고 auto-mark 조건이면 새로 baseline 을 잡는다.
-    //    `getChangeBaseline()` 을 직접 읽는다 — 바로 위에서 범위 전환이
-    //    기준을 버렸을 수 있는데, 렌더에 실린 값은 아직 앞 볼트의 것이다.
+    // 2) With nothing restored and the auto-mark condition met, capture a new baseline.
+    //    `getChangeBaseline()` is read directly — the scope switch just above may have
+    //    discarded the baseline, while the value carried in this render is still the previous vault's.
     if (
       !restored &&
       shouldAutoMarkBaseline({

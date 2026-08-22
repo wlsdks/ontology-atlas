@@ -1,9 +1,8 @@
-// 모든 CLI 명령이 공유하는 단일 ANSI 색 팔레트.
-//
-// 이전엔 44개 명령/엔트리 파일이 각자 동일한 `const COLORS = {...}` 를 인라인
-// 정의(~300 줄 중복)했다. 색 값/키가 전부 동일했으므로 단일 진실원으로 통합 —
-// 새 색을 추가하거나 톤을 바꿀 때 한 곳만 고친다. diagnosis-colors.mjs 의
-// 헬퍼들이 이미 `colors` 파라미터를 받도록 설계돼 있어 이 객체를 그대로 넘긴다.
+// **The single ANSI palette every CLI command shares.** 44 command and entry files
+// each inlined an identical `const COLORS = {...}` (~300 duplicated lines) with the
+// same values and keys, so they were folded into one source: adding a colour or
+// changing a tone is one edit. The helpers in diagnosis-colors.mjs already take a
+// `colors` parameter, so this object is passed straight through.
 export const COLORS = {
   reset: '\x1b[0m',
   bold: '\x1b[1m',
@@ -16,13 +15,14 @@ export const COLORS = {
   cyan: '\x1b[36m',
 };
 
-// 노드 kind(+ edge endpoint 상태) → 표시 색. 모든 CLI 명령이 *같은* 색으로 kind
-// 를 그려 일관된 시각 언어를 준다. 이전엔 16개 명령이 각자 KIND_COLORS 를 정의해
-// drift 가 생겼다: pattern-walk 는 element 를 cyan(=capability 와 충돌)으로,
-// find/orphans/list 는 document 를 white 로 칠해 명령마다 같은 kind 가 다른 색.
-// 단일 진실원으로 통합해 그 drift 를 제거하고 재발을 막는다. external/unresolved
-// 는 edge endpoint 상태(노드 kind 아님)지만 일부 그래프 명령이 같은 map 으로
-// 칠하므로 포함 — 미사용 명령에선 그냥 안 쓰이는 키.
+// Node kind (plus edge-endpoint state) → display colour, so every CLI command
+// draws a kind in the *same* colour and the visual language stays consistent.
+// 16 commands each defined their own KIND_COLORS and drifted: pattern-walk painted
+// element cyan (colliding with capability), and find/orphans/list painted document
+// white — the same kind looked different per command. `external` and `unresolved`
+// are edge-endpoint states rather than node kinds, but some graph commands colour
+// them from this map, so they live here; commands that do not use them simply
+// ignore the keys.
 export const KIND_COLORS = {
   project: COLORS.magenta,
   domain: COLORS.blue,

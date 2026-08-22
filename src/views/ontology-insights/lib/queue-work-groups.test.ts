@@ -44,7 +44,7 @@ describe("queue-work-groups", () => {
         { section: "promotion", total: 2 },
         { section: "neglected-hub", total: 5 },
         { section: "cycle", total: 1 },
-        // 음수는 신호가 아니라 계산 사고다 — 0 으로 눌러 합계를 갉지 않게.
+        // A negative is not a signal but a computation accident — clamped to 0 so it cannot eat into the total.
         { section: "orphan", total: -3 },
       ]),
     ).toEqual({ meaning: 9, code: 6 });

@@ -13,36 +13,37 @@ import { AGENT_CLIENTS, type AgentClientId } from '../lib/agent-clients';
 import { globalScopeInstruction } from '../lib/agent-global-scope';
 
 /**
- * **이 컴퓨터 전체** 스코프 — 네 도구의 전역 설정을 한 화면에서.
+ * **Whole-computer** scope — the global config for all four tools on one screen.
  *
- * 앱이 홈 디렉토리를 대신 고치지 않는 이유는 `lib/agent-global-scope.ts` 의 머리말에
- * 있다(감사 가능성 · `~/.claude.json` lost-update · 업계 선례 0/12). 여기서는 그
- * 결론의 **화면 쪽 계약** 둘만 지킨다:
+ * Why the app does not edit the home directory on the user's behalf is in the preamble of
+ * `lib/agent-global-scope.ts` (auditability, the `~/.claude.json` lost update, 0/12 industry
+ * precedent). Here only the two **screen-side contracts** of that conclusion are kept:
  *
- * 1. **사용자가 조립하지 않는다.** 볼트 절대 경로가 이미 박힌 완성된 한 줄을 준다.
- *    "경로를 당신 것으로 바꾸세요" 는 앱이 할 일을 사용자에게 넘기는 것이다.
- * 2. **상실을 말한다.** 홈 폴더에 쓰면 `git diff` 에 남지 않는다. 이 제품이 감사
- *    가능성을 주장하므로, 그 주장이 성립하지 않는 자리에서는 화면이 먼저 말해야
- *    한다 — 사과문이 아니라 사실로.
+ * 1. **The user does not assemble anything.** A finished line with the vault's absolute path already
+ *    embedded. "Replace the path with your own" hands the app's job to the user.
+ * 2. **The loss is stated.** Writing into the home folder leaves no trace in `git diff`. This product
+ *    claims auditability, so where that claim does not hold the screen has to say so first — as a
+ *    fact, not an apology.
  */
 
 export interface AgentGlobalScopePanelProps {
-  /** 볼트 절대 경로. 전역 설정은 볼트 옆이 아니라서 상대 경로가 성립하지 않는다. */
+  /** The vault's absolute path. A global config does not sit beside the vault, so relative paths cannot work. */
   vaultPath: string | null;
-  /** 번들 서버 실행 계약. 없으면(웹) 실행 가능한 값을 만들 수 없어 그리지 않는다. */
+  /** The bundled server's launch contract. Without it (the web) no runnable value can be built, so nothing is drawn. */
   launch: McpServerLaunch | null;
 }
 
 export function AgentGlobalScopePanel({ vaultPath, launch }: AgentGlobalScopePanelProps) {
   const t = useTranslations('agentConnect');
   /**
-   * **한 번에 한 도구.** 넷을 동시에 펼쳤더니 실측(1512×917)에서 이 패널만 977px 이
-   * 돼 시트(836px)를 넘겼다 — 단계 ① 하나가 시트 전체를 먹고 ②(재시작)·③(확인)이
-   * 스크롤 밖으로 밀렸다. 3단계라고 말하는 화면에서 2·3단계가 없는 것처럼 됐다.
+   * **One tool at a time.** With all four expanded, this panel measured 977px at 1512×917 and
+   * overflowed the sheet (836px) — step ① alone ate the whole sheet and ② (restart) and ③ (verify)
+   * were pushed out of scroll. On a screen that says "three steps", steps 2 and 3 effectively did not
+   * exist.
    *
-   * 사용자는 자기 도구 **하나**만 쓴다. 그래서 프로젝트 스코프와 같은 구조로
-   * 맞췄다 — 도구를 고르고, 고른 것만 본다. 부수 효과로 높이 편차(154px)도
-   * 사라진다: 반복 세트가 아니라 슬롯 하나가 되기 때문이다.
+   * A user uses **one** tool. So it matches the project scope's structure — pick a tool, see only the
+   * one you picked. As a side effect the 154px height variance disappears too, because it becomes one
+   * slot rather than a repeated set.
    */
   const [selected, setSelected] = useState<AgentClientId>(AGENT_CLIENTS[0].id);
   const [copied, setCopied] = useState<AgentClientId | null>(null);
@@ -63,7 +64,7 @@ export function AgentGlobalScopePanel({ vaultPath, launch }: AgentGlobalScopePan
         {t('scopeGlobalIntro')}
       </p>
 
-      {/* 도구 고르기 — 프로젝트 스코프의 도구별 버튼과 같은 구조. */}
+      {/* Tool selection — the same structure as the project scope's per-tool buttons. */}
       <div
         role="tablist"
         aria-label={t('scopeGlobalToolLabel')}
@@ -102,10 +103,10 @@ export function AgentGlobalScopePanel({ vaultPath, launch }: AgentGlobalScopePan
             : t('scopeGlobalPasteHint', { path: instruction.path })}
         </p>
         {/*
-          * **줄바꿈으로 전체를 보인다.** `overflow-x: auto` 로 뒀더니 넷 다 잘렸고
-          * (실측), 잘린 자리가 정확히 **볼트 절대 경로**였다 — 이 패널의 값이
-          * "경로가 이미 채워져 있다" 인데 그 값이 화면에서 안 보였다. 복사 버튼은
-          * 전체를 복사하지만, 사용자는 화면에서 확인할 수 없는 것을 믿지 않는다.
+          * **Wrapping shows the whole thing.** With `overflow-x: auto` all four were clipped
+          * (measured), and what was clipped was exactly the **vault's absolute path** — while this
+          * panel's whole value is "the path is already filled in". The copy button copies all of it,
+          * but a user does not trust what they cannot see on screen.
           */}
         <pre
           data-testid={`agent-global-scope-body-${client.id}`}
@@ -137,9 +138,9 @@ export function AgentGlobalScopePanel({ vaultPath, launch }: AgentGlobalScopePan
       </div>
 
       {/*
-        * **상실 문장.** 프로젝트 스코프의 `connectPlanAuditNote` 와 짝이다 — 한쪽은
-        * "git diff 로 확인된다"고 말하고, 이쪽은 "여기서는 그게 안 된다"고 말한다.
-        * 짝 없이 한쪽만 있으면 사용자는 감사 가능성이 어디서 끝나는지 모른다.
+        * **The loss sentence.** It pairs with the project scope's `connectPlanAuditNote` — one says
+        * "this is verifiable with git diff", this one says "that does not work here". With only one
+        * of the pair, a user cannot tell where auditability ends.
         */}
       <p
         data-testid="agent-global-scope-loss"

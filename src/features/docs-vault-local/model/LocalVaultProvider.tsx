@@ -8,18 +8,15 @@ import { TauriVaultWatchBridge } from "./TauriVaultWatchBridge";
 type LocalVaultValue = ReturnType<typeof useLocalVaultInternal>;
 
 /**
- * Round 8 cut R — Single source of truth 화.
+ * Makes the local vault a single source of truth.
  *
- * 이전엔 useLocalVault 가 8 곳 (RootEntryPage / 구 OperationsNav /
- * 구 OntologyEditPage / DocsVaultPage / useDataSourceMode / useProjects /
- * useProjectMutations / useVaultOntology) 에서 독립 호출 → 한 페이지
- * mount 시 2-3 인스턴스 동시 존재. 같은 IDB 키 N 번 rehydrate, 같은 폴더
- * N 번 buildLocalManifest (전체 FS walk). 18 노드 dogfood 에선 측정 안
- * 보이지만 100+ 파일 vault 에선 cold-load latency 가 비례 증가.
+ * `useLocalVault` used to be called independently from eight places, so a single page mount held two
+ * or three hook instances at once — rehydrating the same IDB key N times and running
+ * `buildLocalManifest` (a full FS walk) on the same folder N times. On an 18-node dogfood vault that
+ * is not measurable, but on a 100+ file vault the cold-load latency grows proportionally.
  *
- * Provider 가 layout 에서 1 회 mount → 단일 state. 현재 AppShell,
- * AppNavRail, HomePage, DocsVaultPage 등 모든 consumer는
- * 시그니처 동일한 useLocalVault() 로 context 만 읽는다.
+ * The provider mounts once in the layout, giving one state. Every consumer reads the context through
+ * `useLocalVault()`, whose signature is unchanged.
  */
 const LocalVaultContext = createContext<LocalVaultValue | null>(null);
 
@@ -35,12 +32,9 @@ export function LocalVaultProvider({ children }: { children: ReactNode }) {
 }
 
 /**
- * 로컬 vault state + actions 접근. LocalVaultProvider 안에서만 호출 가능.
- * Provider 외부 (예: 단위 테스트의 plain render) 에선 throw — 의도적으로
- * silent fallback 하지 않음 (vault 가 SSoT 인 앱에서 stub state 가 더
- * 위험).
- *
- * 시그니처는 이전 useLocalVault 와 동일 — 8 callsite 변경 없음.
+ * Access to local vault state and actions. Callable only inside `LocalVaultProvider`; outside it
+ * (a plain render in a unit test, say) it throws. The silent fallback is deliberately refused — in an
+ * app where the vault is the source of truth, stub state is more dangerous than an immediate throw.
  */
 export function useLocalVault(): LocalVaultValue {
   const value = useContext(LocalVaultContext);

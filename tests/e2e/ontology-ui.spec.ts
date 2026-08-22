@@ -26,35 +26,36 @@ import { useDogfoodSample } from "./sample-source";
  * if broken.
  */
 test.describe("ontology view UI", () => {
-  // 이 파일의 단언은 전부 dogfood 볼트 데이터(프로젝트 이름 · 딥링크 슬러그 ·
-  // 노드 라벨)에 기댄다. 2026-07-26 기본 샘플이 예시 비즈니스로 바뀌었으니
-  // 기본값에 기대지 않고 파일 단위로 명시 선택한다.
+  // Every assertion in this file depends on dogfood vault data (project name, deep-link
+  // slug, node labels). Since the default sample became the example business on
+  // 2026-07-26, this selects explicitly per file rather than relying on the default.
   test.beforeEach(async ({ page }) => {
     await useDogfoodSample(page);
   });
 
   /**
-   * **이 검사는 2026-07-30 에 주소가 갈렸다.**
+   * **This check's address split on 2026-07-30.**
    *
-   * 원래 문장은 *"root renders the topology map directly (no marketing landing
-   * detour)"* — 2026-07 root-first-open 결정을 그대로 인코딩했다. 소유자 서명으로
-   * 그 결정이 뒤집혀 `/` 는 웹 방문자의 얼굴이 됐고 지도는 `/topology` 로 갔다.
+   * The original sentence was *"root renders the topology map directly (no marketing
+   * landing detour)"*, encoding the 2026-07 root-first-open decision. The owner signed a
+   * reversal: `/` became the web visitor's face and the map moved to `/topology`.
    *
-   * **검사를 지우지 않고 둘로 옮겼다.** 지도가 곧장 뜬다는 보증은 그대로 있고,
-   * 묻는 주소만 바뀐다. 지웠다면 이 전환이 보증 하나를 없앤 일이 됐을 것이다.
+   * **The check was not deleted but moved into two.** The guarantee that the map appears
+   * directly still stands; only the address it asks about changed. Deleting it would have
+   * made this transition remove a guarantee.
    */
   test("desktop: /topology renders the map directly (no detour)", async ({ page }) => {
     await page.setViewportSize({ width: 1280, height: 800 });
     await page.goto("/en/topology/");
     await expect(page.getByTestId("topology-index-panel")).toBeVisible();
-    // 옛 마케팅 랜딩의 히어로 문구는 어느 주소에도 남아 있지 않다.
+    // The old marketing landing's hero copy remains at no address.
     await expect(page.getByText("Codebase ontology that grows with AI")).toHaveCount(0);
   });
 
   test("desktop: root renders the gateway face, not the workbench", async ({ page }) => {
     await page.setViewportSize({ width: 1280, height: 800 });
     await page.goto("/en/");
-    // 얼굴의 상단 바가 뜨고, 워크벤치의 INDEX 는 없다.
+    // The face's top bar appears, and the workbench's INDEX does not.
     await expect(page.getByTestId("download-gnb")).toBeVisible();
     await expect(page.getByTestId("topology-index-panel")).toHaveCount(0);
   });
@@ -76,20 +77,23 @@ test.describe("ontology view UI", () => {
     // Asserting the label would pin this spec to one state and break on
     // release day — assert the role the element plays.
     //
-    // [재조준 2026-08-19] 이 자리는 판(`download-primary-cta`)이었다. 소유자가
-    // 설치 절을 통째로 걷어내면서(*"맨 마지막 이거는 없어도 될듯? 어차피 맨
-    // 위에 다 있어서"*) 같은 역할을 히어로 CTA 가 진다.
+    // [re-aimed 2026-08-19] This site used to be the panel (`download-primary-cta`).
+    // After the owner removed the install section entirely (*"맨 마지막 이거는 없어도
+    // 될듯? 어차피 맨 위에 다 있어서"* — the last section is probably unnecessary, it is
+    // all at the top anyway), the hero CTA carries the same role.
     const primary = page.getByTestId("gateway-hero-cta");
     await expect(primary).toBeVisible();
 
     /*
-     * [삭제 2026-08-19] 함께 사라진 주어들 — 저장소 출구 링크
-     * (`download-repo-link`) · 플랫폼 절 둘(`download-platform-macos` ·
-     * `download-platform-windows`) · 검증 레일(`download-trust`, Developer ID ·
-     * SHA-256) · 아키텍처 안내(`About This Mac`). 전부 다운로드 판과 검증
-     * 레일 안에 있었다. `docs/DECISIONS.md` 2026-08-19 가 그 대가를 적는다.
+     * [deleted 2026-08-19] The subjects that disappeared with it — the repository exit
+     * link (`download-repo-link`), the two platform sections (`download-platform-macos`,
+     * `download-platform-windows`), the verification rail (`download-trust`, Developer ID,
+     * SHA-256), and the architecture guidance (`About This Mac`). All lived inside the
+     * download panel and the verification rail. `docs/DECISIONS.md` 2026-08-19 records the
+     * cost.
      *
-     * 서명·공증 주장은 히어로 신뢰줄 한 줄로 남았으므로 그것만 잰다.
+     * The signing and notarisation claim survives as the hero's single trust line, so that
+     * is all this measures.
      */
     await expect(page.getByText(/Signed and notarized by Apple/i).first()).toBeVisible();
     await expect(page.getByText(/Open Anyway/i)).toHaveCount(0);
@@ -100,8 +104,9 @@ test.describe("ontology view UI", () => {
     await expect(page.getByText(/version alignment/i)).toHaveCount(0);
   });
 
-  // #712 회귀 가드의 형제 — 이 라우트는 하단 탭바가 없는 유일한 라우트라
-  // 예약고를 잡지 않는다. 브라우저 없이는 잴 수 없는 층이므로 여기서 잰다.
+  // A sibling of the #712 regression guard — this is the only route without a bottom
+  // tab bar, so it reserves no height for one. That layer cannot be measured without a
+  // browser, so it is measured here.
   test("desktop: /download keeps breathing room at the scroll end and never scrolls sideways", async ({
     page,
   }) => {
@@ -125,29 +130,29 @@ test.describe("ontology view UI", () => {
         }
         scroller.scrollTop = scroller.scrollHeight;
         /**
-         * ⚠️ **박스가 있다고 잉크가 아니다.**
+         * ⚠️ **A box is not ink.**
          *
-         * 닫힌 `<details>` 의 내용은 최신 Chromium 에서 `display: none` 이
-         * 아니라 **`content-visibility: hidden`** 으로 처리된다(전개 애니메이션을
-         * 가능하게 하려고 바뀐 동작). 그래서 칠해지지도 않고 히트 테스트도 안
-         * 되는데 **레이아웃 박스는 그대로 남는다** — 높이만 보고 세면 화면에
-         * 없는 561px 짜리 유령이 "마지막 잉크"가 된다(실측 2026-07-29:
-         * `/download` 의 「받아도 되는 이유」 접힘이 여백 -505px 를 만들었다).
+         * In recent Chromium the contents of a closed `<details>` are handled with
+         * **`content-visibility: hidden`** rather than `display: none` (changed to make
+         * expansion animations possible). So they are neither painted nor hit-tested while
+         * **the layout box remains** — counting by height alone makes a 561px ghost that is not
+         * on screen into the "last ink" (measured 2026-07-29: the "why it is safe to download"
+         * disclosure on `/download` produced a margin of −505px).
          *
-         * `checkVisibility()` 가 이 구분의 표준 답이다. 이 검사의 이름이
-         * *잉크* 인 이상, 판정 기준도 칠해지는가여야 한다.
+         * `checkVisibility()` is the standard answer to this distinction. As long as this
+         * check is named for *ink*, its predicate must be whether it paints.
          */
         const lastInk = [...main.querySelectorAll("*")]
           .filter((element) => {
-            // ② **잎만 본다.** 컨테이너의 하단 패딩은 여백이지 내용이 아니다 —
-            // 형제 스펙(`scroll-end-gap.spec.ts`)이 이미 같은 규칙을 쓴다. 이걸
-            // 안 하면 바깥 래퍼의 `pb-…` 가 그대로 "마지막 잉크" 가 되어, 여백을
-            // 정확히 그 여백만큼 **없다고** 보고한다(실측 2026-07-29: 실제 글자는
-            // 760 에서 끝나는데 래퍼 박스가 800 이라 gap 0 으로 읽혔다).
+            // ② **Leaves only.** A container's bottom padding is margin, not content — the
+            // sibling spec (`scroll-end-gap.spec.ts`) already uses the same rule. Without it the
+            // outer wrapper's `pb-…` becomes the "last ink" and the gap is reported as **absent**
+            // by exactly the size of that padding (measured 2026-07-29: real text ended at 760
+            // while the wrapper box reached 800, so the gap read as 0).
             if (element.children.length > 0) return false;
             const rect = element.getBoundingClientRect();
             if (rect.height <= 2 || rect.width <= 2) return false;
-            // ① 칠해지는가 — 위 주석 참고.
+            // ① Does it paint — see the comment above.
             return typeof element.checkVisibility === "function" ? element.checkVisibility() : true;
           })
           .reduce((max, element) => Math.max(max, element.getBoundingClientRect().bottom), 0);
@@ -212,8 +217,8 @@ test.describe("ontology view UI", () => {
     await page.setViewportSize({ width: 390, height: 844 });
     await page.goto("/en/ontology/");
 
-    // 화면 표기(`Ontology Atlas`)와 slug(`ontology-atlas`) 둘 다 허용 —
-    // 이 테스트가 보는 건 도그푸드 내용이 렌더되는가이지 표기법이 아니다.
+    // Both the on-screen form (`Ontology Atlas`) and the slug (`ontology-atlas`) are
+    // accepted — this test watches whether dogfood content renders, not its notation.
     await expect(page.getByText(/ontology[- ]atlas/i).first()).toBeVisible();
     const overflow = await page.evaluate(
       () => document.documentElement.scrollWidth > document.documentElement.clientWidth,

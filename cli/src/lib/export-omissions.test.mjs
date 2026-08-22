@@ -1,25 +1,24 @@
-// 내보내기가 **무엇을 안 담았는지** 말해야 한다.
+// An export must state **what it did not carry**.
 //
-// ## 왜 (2026-08-17 실측)
-//
-// `export --format jsonld` 는 이렇게 끝난다:
+// **Why** (measured 2026-08-17): `export --format jsonld` ends like this:
 //
 //   exported jsonld · 80 nodes · 174 edges · graphHash 0fbd9b66
 //
-// 노드와 관계는 정말 다 나간다(174 = 174, 확인함). 그런데 우리 볼트의
-// **관계 이유 7개**(`relation_notes`)는 **하나도 안 나간다.** 구현 경로(`path`)
-// 와 설명(`description`)도 마찬가지다.
+// Nodes and relations really do all go out (174 = 174, confirmed). But **none** of
+// our vault's 7 relation rationales (`relation_notes`) go, and neither do the
+// implementation paths (`path`) or the descriptions (`description`).
 //
-// 이 저장소가 스스로 적어 둔 말이 있다: *"근거 없는 엣지는 마인드맵 선이지
-// 온톨로지 주장이 아니다."* Protégé 나 트리플스토어로 옮긴 사람은 「80 노드 ·
-// 174 관계」를 보고 온톨로지를 다 가져온 줄 안다 — 실제로는 이 제품을 이
-// 제품이게 하는 것이 빠진 채다.
+// This repository wrote the rule itself: *"an edge with no rationale is a mind-map
+// line, not an ontology claim."* Someone moving to Protégé or a triplestore sees
+// "80 nodes · 174 relations" and believes the whole ontology came across — while
+// what makes this product this product is missing.
 //
-// 그래서 **payload 는 그대로 두고**(유효한 JSON-LD 여야 한다) 상태 줄이
-// 말한다. `surfaces.md` 의 강등 규율과 같다: 못 하는 것은 못 한다고, 왜 그런지
-// 함께.
+// So **the payload is left alone** (it must stay valid JSON-LD) and the status line
+// says it. Same degradation discipline as `.claude/rules/surfaces.md`: say what
+// cannot be done, and why.
 //
-// 판정은 **세어서** 한다. 목록을 손으로 적으면 스키마가 늘 때 조용히 낡는다.
+// The verdict is reached **by counting**. A hand-written list rots silently as the
+// schema grows.
 
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
@@ -87,8 +86,8 @@ test('노드가 없으면 아무 말도 안 한다', () => {
 });
 
 test('그래프 내부용 칸은 손실로 세지 않는다 — 사용자 데이터가 아니다', () => {
-  // 컴파일러가 붙이는 파생 칸(`mtime` 같은)을 「잃었다」고 하면, 상태 줄이
-  // 매번 시끄러워지고 진짜 손실이 그 속에 묻힌다.
+  // Reporting compiler-derived fields (`mtime` and the like) as "lost" makes the
+  // status line noisy every time and buries the real losses in it.
   const out = describeExportOmissions({
     nodes: [node({ mtime: 123, filePath: '/abs/x.md' })],
     carriedKeys: ['uid', 'slug', 'kind', 'title'],

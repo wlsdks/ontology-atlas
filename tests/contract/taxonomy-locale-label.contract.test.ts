@@ -6,32 +6,33 @@ import { DEFAULT_STATUSES } from "@/entities/status";
 import { pickTaxonomyLabel } from "@/shared/lib/taxonomy-label";
 
 /**
- * 분류(category / status) 라벨 어권 게이트.
+ * Locale gate for taxonomy (category / status) labels.
  *
- * 2026-07-28 실사용 스윕: `/en/project/new` 의 카테고리·상태 드롭다운과 카드
- * 미리보기가 영문 화면에서도 한국어를 그렸다(렌더된 한글 12건). 원인은 두
- * 겹이었다 — ① `Status` 에는 영문 라벨 필드 자체가 없었고, ② 있는
- * `Category.labelEn` 조차 옵션 빌더가 안 쓰고 `.label` 을 직접 읽었다.
+ * Real-use sweep 2026-07-28: the category and status dropdowns and the card
+ * preview on `/en/project/new` drew Korean even on the English screen (12 rendered
+ * Hangul strings). There were two layers of cause — ① `Status` had no English
+ * label field at all, and ② even the existing `Category.labelEn` went unused
+ * because the option builder read `.label` directly.
  *
- * `pnpm test:i18n:messages` 는 이걸 못 잡는다 — 그건 **메시지 카탈로그**의
- * 키 대칭을 보지, 카탈로그 밖(코드 상수)에서 온 문자열은 보지 않는다.
- * 카탈로그 밖에 사람 말이 있으면 카탈로그 게이트의 사정거리 밖이다.
+ * `pnpm test:i18n:messages` cannot catch this — it checks key symmetry in the
+ * **message catalogue**, not strings originating outside it (code constants).
+ * Human-facing words outside the catalogue are outside that gate's reach.
  *
- * 그래서 여기서 두 층을 잠근다:
- *   (a) **데이터** — defaults 의 모든 항목이 두 어권 라벨을 다 갖는다.
- *       영문 라벨 없는 항목이 새로 추가되면 여기서 막힌다(①의 뿌리).
- *   (b) **배선** — 호출부가 `.label` 을 직접 읽지 않는다. 라벨을 고르는
- *       자리는 `TaxonomyProvider` 하나다(②의 뿌리).
+ * So two layers are locked here:
+ *   (a) **Data** — every entry in the defaults carries labels for both locales. A
+ *       new entry without an English label is blocked here (the root of ①).
+ *   (b) **Wiring** — call sites never read `.label` directly. There is exactly one
+ *       place that picks a label, `TaxonomyProvider` (the root of ②).
  *
- * 화면에 실제로 그려진 문자열까지 보는 층은 e2e
- * (`tests/e2e/locale-purity.spec.ts`)가 맡는다 — 렌더 결과는 lint 도 vitest
- * 도 못 보는 층이라 브라우저가 있어야 한다.
+ * The layer that checks what is actually rendered on screen belongs to e2e
+ * (`tests/e2e/locale-purity.spec.ts`) — render output is a layer neither lint nor
+ * vitest can see, so it needs a browser.
  */
 
 const HANGUL = /[ㄱ-ㆎ가-힣]/;
 const SRC_DIR = path.join(process.cwd(), "src");
 
-/** 라벨을 고르는 자리 — 여기서만 `.label` 을 직접 읽어도 된다. */
+/** Where a label is chosen — the only place allowed to read `.label` directly. */
 const RESOLVER_PATHS = [
   path.join("src", "features", "taxonomy"),
   path.join("src", "entities", "category"),
@@ -40,9 +41,10 @@ const RESOLVER_PATHS = [
 ];
 
 /**
- * 분류 항목에서 라벨을 직접 꺼내는 모양. 결함 당시 코드가 정확히 이랬다:
- * `category.label` · `status.label`. 다른 도메인의 `.label`(엣지 라벨 ·
- * 문서 행 라벨 …)까지 잡지 않도록 식별자를 분류 이름으로 한정한다.
+ * The shape of reading a label straight off a taxonomy entry. The defective code
+ * looked exactly like this: `category.label`, `status.label`. The identifier is
+ * restricted to the taxonomy names so `.label` in other domains (edge labels,
+ * document row labels, …) is not caught.
  */
 const DIRECT_LABEL_READ = /\b(category|status)\.label\b/g;
 

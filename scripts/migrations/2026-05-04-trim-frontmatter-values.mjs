@@ -1,13 +1,13 @@
-// Reference migration #1 — frontmatter scalar 의 trailing whitespace 정리.
+// Reference migration — trims trailing whitespace from frontmatter scalars.
 //
-// 예: `kind: project    ` → `kind: project`
+// e.g. `kind: project    ` → `kind: project`
 //     `title: Foo     `  → `title: Foo`
 //
-// 동작 범위: frontmatter 블록 (--- 사이) 의 `key: value` 라인만. body 는 손대지
-// 않음. inline list / inline object / block list 의 dash item 은 보수적으로
-// skip (의도적 들여쓰기 가능성).
+// Scope: only `key: value` lines inside the frontmatter block (between the `---`).
+// The body is untouched. Inline lists, inline objects, and dash items of block lists
+// are conservatively skipped (their indentation may be deliberate).
 //
-// idempotent — 두 번 돌려도 결과 동일.
+// Idempotent — running it twice gives the same result.
 
 export const id = "2026-05-04-trim-frontmatter-values";
 export const description =

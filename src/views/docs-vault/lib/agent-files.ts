@@ -361,13 +361,13 @@ export function analyzeAgentFiles({
     };
   })();
 
-  // ②-b duplicated agent-brief byte diff
+  // Duplicated agent-brief byte diff.
   //
-  // 스킬과 따로 있는 이유: `.claude/agents/*.md` 는 서브에이전트 **소환 등록부**
-  // (없으면 자리를 못 띄운다)이고, 그 짝은 서브에이전트가 없는 도구가 카운슬을
-  // 순차로 돌 때 **여는 참고 문서**다. 목적이 달라도 내용은 같아야 한다.
-  // 한쪽에만 있는 자리는 스킬과 달리 informational 이 아니라 **drift** 다 —
-  // 그 도구에서는 프로토콜 자체가 성립하지 않기 때문이다.
+  // Separate from skills because `.claude/agents/*.md` is the subagent **summoning registry**
+  // (without it a seat cannot be launched), while its counterpart is the **reference document** a
+  // tool without subagents opens when walking a council sequentially. The purposes differ but the
+  // contents must match. Unlike skills, a seat present on one side only is **drift**, not
+  // informational — in that tool the protocol itself does not hold.
   const agentCopy = (() => {
     const claudeByName = new Map<string, InternalRecord>();
     const agentsByName = new Map<string, InternalRecord>();

@@ -34,7 +34,7 @@ describe("buildTopologyDeeplinkForDoc", () => {
   });
 
   it("domain/capability/element 도 토폴로지 노드 — ?mode=focus&p=<slug> 로 focus 직링크", () => {
-    // 토폴로지가 이제 전체 ontology 를 렌더하므로 project 외 노드도 focus 가능.
+    // The topology renders the whole ontology now, so non-project nodes can be focused too.
     expect(
       buildTopologyDeeplinkForDoc(
         makeDoc({ slug: "domains/views", frontmatter: { kind: "domain" } }),

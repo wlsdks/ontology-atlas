@@ -9,25 +9,27 @@ import { summarizeChangeVolume } from '@/features/vault-agent/model/proposal-app
 import { Checkbox, controlClass } from '@/shared/ui';
 
 /**
- * 제안 카드 — #688 동의 문법의 일반화.
+ * The proposal card — a generalisation of #688's consent grammar.
  *
- * 바뀔 파일 경로를 전부 밝히고, 한 번 묻고, **취소하면 파일 0개 변경**이다.
+ * It reveals every file path that will change, asks once, and **cancelling changes
+ * 0 files**.
  *
- * 세 가지가 접힌 diff 에 도장 찍는 것을 막는다:
- * ① 헤더가 총량을 말한다 ("파일 3개 · +42줄 −3줄")
- * ② 행 요약이 필드 수준까지 구체적이다
- * ③ **세션 첫 적용은 diff 가 펼쳐진 상태로 시작한다**
+ * Three things stop a collapsed diff being rubber-stamped:
+ * ① the header states the totals ("3 files · +42 −3 lines")
+ * ② row summaries are specific down to the field level
+ * ③ **the session's first apply starts with the diff expanded**
  *
- * 그리고 이 턴에 읽지 않은 파일을 고치는 제안에는 경고 행이 붙는다 —
- * 볼트 본문에 심긴 지시가 "그럴듯한 제안" 으로 세탁되는 길을 좁힌다.
- * (완전 방어가 아니다. 인젝션은 산업 미해결이다.)
+ * And a proposal editing a file not read in this turn carries a warning row — it
+ * narrows the path by which an instruction planted in vault prose gets laundered
+ * into a "plausible proposal". (This is not complete protection. Injection is an
+ * unsolved industry problem.)
  */
 
 export interface AgentProposalLabels {
   title: (count: number) => string;
   volume: (args: { files: number; added: number; removed: number }) => string;
   apply: (count: number) => string;
-  /** 쓰기가 도는 동안의 라벨 — 화면이 "지금 무슨 일이 일어나는가" 를 말한다. */
+  /** The label while a write is running — the screen states "what is happening right now". */
   applying: string;
   cancel: string;
   copy: string;
@@ -82,13 +84,13 @@ export function AgentProposalCard({
   );
 
   /**
-   * 쓰기가 **도는 중** — 아직 끝나지 않았다. 초안에서 이 상태를 `settled` 에
-   * 넣었더니 종료 문구 분기의 fallback 으로 떨어져 화면이 **"취소됨"** 이라고
-   * 말했다. 쓰는 중인데 취소됐다고 하는 것은 잠그지 않은 것보다 나쁘다.
+   * The write is **in flight** — not finished. Putting this state in `settled` in the
+   * draft made it fall through to the terminal-copy branch's fallback, and the screen
+   * said **"cancelled"**. Saying it was cancelled mid-write is worse than not locking.
    *
-   * 그래서 둘을 가른다: 동작 줄은 그대로 두되(사용자가 무엇을 눌렀는지 자리가
-   * 유지된다) 두 버튼을 함께 잠그고 라벨만 "적용 중…" 으로 바꾼다 — 마무리
-   * 대화상자의 `busy` 와 같은 문법이다.
+   * So the two are separated: the action row stays (the position of what the user
+   * pressed is preserved) while both buttons lock together and only the label changes
+   * to "applying…" — the same grammar as the finishing dialog's `busy`.
    */
   const busy = proposal.status === 'applying';
   const settled = proposal.status !== 'pending' && !busy;
@@ -245,14 +247,15 @@ function ChangeRow({
     <li className="rounded-chip border border-[color:var(--color-divider)] bg-[color:var(--color-panel)]">
       <div className="flex items-center gap-2 px-2 py-1.5">
         {/*
-         * 이 체크박스는 **라벨이 없었다.** 그래서 결함이 둘이었다 — 접근 이름이
-         * 없어(스크린 리더가 "체크박스"라고만 읽는다) 무엇을 고르는지 알 수 없고,
-         * 타깃이 14px 뿐이라 WCAG 2.5.8(AA, 24px)에 미달이었다. 파일 이름을 라벨로
-         * 감싸면 **둘이 한 번에 풀린다** — 라벨이 접근 이름이 되고, 라벨 전체가
-         * 하나의 타깃이 된다(라벨 클릭이 곧 토글이라는 네이티브 동작).
+         * This checkbox **had no label**, so there were two defects — with no
+         * accessible name (a screen reader reads only "checkbox") there is no telling
+         * what is being selected, and at a 14px target it fell short of WCAG 2.5.8 (AA,
+         * 24px). Wrapping the file name as the label **solves both at once** — the
+         * label becomes the accessible name, and the whole label becomes one target
+         * (the native behaviour where clicking a label toggles).
          *
-         * 펼침 버튼은 라벨 **밖**에 남는다 — 안에 넣으면 「자세히」를 누를 때마다
-         * 선택이 뒤집힌다.
+         * The expand button stays **outside** the label — inside it, every press of
+         * 「자세히」 (details) would flip the selection.
          */}
         <Checkbox
           className="min-w-0 flex-1"
@@ -312,8 +315,8 @@ function ChangeRow({
 }
 
 /**
- * 줄 단위 diff. +/- 는 **신호톤이 아니라 데이터**다 — 새 채색 시스템을
- * 만들지 않고 기존 텍스트 위계로만 구분한다.
+ * Line-level diff. +/- is **data, not a signal tone** — no new colour system is
+ * created; they are distinguished by the existing text hierarchy alone.
  */
 function renderDiff(before: string | null, after: string) {
   const beforeLines = before === null ? [] : before.split('\n');

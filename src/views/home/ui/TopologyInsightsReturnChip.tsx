@@ -7,26 +7,25 @@ import { CHROME_STATUS_CHIP_CLASS } from "@/shared/ui/chrome-chip";
 import { controlClass } from "@/shared/ui/control-class";
 
 export interface TopologyInsightsReturnChipProps {
-  /** 복귀 목적지 — 원래 보던 인사이트 탭 (`buildOntologyInsightsReturnHref`). */
+  /** Where to return to — the insights tab they came from (`buildOntologyInsightsReturnHref`). */
   href: string;
   label: string;
   ariaLabel: string;
   dismissAriaLabel: string;
-  /** 명시 dismiss — URL 의 `via` 마커를 지운다 (칩 수명 계약의 유일한 제거 경로). */
+  /** Explicit dismiss: clears the `via` marker in the URL. The only way this chip goes away. */
   onDismiss: () => void;
 }
 
 /**
- * 인사이트발 딥링크(`?via=insights:<tab>`)로 지도에 진입했을 때만 뜨는
- * "인사이트로 돌아가기" 복귀 칩 — `TopologyPathChip` 과 같은 상단 중앙
- * "chrome grammar" 열(`SearchHint` 슬롯)에 마운트되는 transient chrome 이다.
- * 브라우저 뒤로가기는 지도 안 상호작용마다 history 가 쌓여 복귀 비용이
- * 커지므로, 원래 탭으로 한 번에 돌아가는 화면 내 어포던스를 제공한다.
+ * The "back to insights" chip, shown only when the map was entered through an
+ * insights deep link (`?via=insights:<tab>`). Transient chrome in the same
+ * top-centre row as `TopologyPathChip`. Browser back is not enough here: every
+ * interaction on the map pushes history, so returning costs many steps.
  *
- * 수명 계약(url-state `insightsReturnTab` 참조): 지도 탐색 중에는 유지,
- * 제거는 X dismiss 뿐. 칩 클릭(복귀 Link)은 마커를 지우지 않는다. Esc
- * 사다리(M-7, `topology-esc-ladder.ts`)에는 불참 — 포커스를 소유하는
- * 표면이 아니다.
+ * Lifetime contract (see url-state `insightsReturnTab`): it survives map
+ * exploration and goes away only through the X. Following the link does not clear
+ * the marker. It sits out the Esc ladder (`topology-esc-ladder.ts`) because it
+ * owns no focus.
  */
 export function TopologyInsightsReturnChip({
   href,

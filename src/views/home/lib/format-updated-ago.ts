@@ -1,10 +1,11 @@
 /**
- * S-C1 — 노드 데이터시트의 "언제 바뀌었나" 사다리 (순수 함수).
+ * Relative-time buckets for the node datasheet's "when did this change" line.
  *
- * AI 에이전트가 vault 를 계속 갱신하는 제품에서 시간 차원이 안 보이면
- * 사람이 변경을 구분할 수 없다 (소유자 2026-07-20). manifest 문서의
- * `updatedAt` (local: file.lastModified · static: 빌드타임) 을 i18n 키 +
- * count 로 환원한다 — 문자열 조립은 호출자의 next-intl 이 담당.
+ * In a product where an AI agent keeps updating the vault, a person cannot tell
+ * changes apart without the time dimension on screen (owner, 2026-07-20).
+ * Reduces a document's `updatedAt` (`file.lastModified` locally, build time for
+ * the static manifest) to an i18n key plus a count; the caller's next-intl
+ * assembles the string.
  */
 
 export interface UpdatedAgo {

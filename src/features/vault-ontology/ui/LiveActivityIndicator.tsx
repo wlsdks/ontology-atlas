@@ -23,9 +23,9 @@ import { useOntologyInsight } from "../model/use-ontology-insight";
 import { ATLAS_CLI } from "@/shared/config/cli-invocation";
 import { agentDisplayName } from "@/shared/lib/agent-display-name";
 
-// P4b — heartbeat 신호를 지우는 CLI 명령. `<vault>` 는 `agent-activity-status.ts`
-// 의 `formatRefreshCommand` 와 같은 관례로 실제 경로가 아니라 자리표시자 —
-// 값이 정적이라 shellArg 이스케이프가 필요 없다(동적 인자 없음).
+// The CLI command that clears the heartbeat signal. `<vault>` is a placeholder rather than
+// a real path, by the same convention as `formatRefreshCommand` in
+// `agent-activity-status.ts` — the value is static, so no shellArg escaping is needed.
 const CLEAR_SIGNAL_COMMAND = `${ATLAS_CLI} agent-activity <vault> --clear`;
 
 type LiveAgentActivityState =
@@ -91,15 +91,15 @@ interface LiveAgentActivityStatus {
 }
 
 /**
- * live-web — 상시 ambient "Live" indicator (operations-nav).
+ * The always-on ambient "Live" indicator (operations nav).
  *
- * baseline 이 잡혀 있으면(=live 추적 중) 항상 "LIVE" 를 표시하고, 그 이후
- * 변경된 노드 수를 옆에 단다. transient toast 와 달리 사라지지 않아 "지금
- * 에이전트 작업이 화면에 추적되고 있다" 를 항상 인지하게 한다. baseline 없으면
- * (static/데모 또는 미추적) 아무것도 안 보임.
+ * While a baseline is set (i.e. live tracking is on) it always shows "LIVE" with the number
+ * of nodes changed since. Unlike a transient toast it does not disappear, so "agent work is
+ * being tracked on screen right now" stays visible. With no baseline (static/demo, or not
+ * tracking) nothing is shown.
  *
- * 디자인 헌장 준수: 무채색 + 인디고 pill, 신호용 green dot(status-success).
- * glow/neon/scale 없음 — 정적 dot.
+ * Follows the design charter: neutrals plus an indigo pill, with a signal green dot
+ * (status-success). No glow, neon, or scale — a static dot.
  */
 export function LiveActivityBadge({
   changedCount,
@@ -157,7 +157,7 @@ export function LiveActivityBadge({
     agentCodegraph: string;
     agentVerification: string;
     agentProofTrail: string;
-    /** P4b — heartbeat 상시 노출 "이 신호 지우기" 투명성 카피(전략 메모 조건). */
+    /** The always-visible "clear this signal" transparency copy for the heartbeat. */
     clearSignalHint: string;
     clearSignalCopy: string;
     clearSignalCopied: string;
@@ -364,7 +364,7 @@ export function LiveActivityBadge({
             : "text-[color:var(--color-text-tertiary)] transition-transform"}
         />
       </button>
-      {/* 칩 바로 아래 오른쪽 정렬로 열린다 — 등장 원점도 그 모서리다. */}
+      {/* Opens right-aligned directly beneath the chip — its entrance origin is that corner too. */}
       <Surface
         open={open}
         origin="top right"
@@ -564,10 +564,10 @@ export function LiveActivityBadge({
                   </div>
                 </>
               ) : null}
-              {/* P4b — 전략 메모 투명성 조건: heartbeat 가 있는 한 상태(fresh/stale
-                  무관) 항상 "이 신호 지우기" 안내 + 복사 가능한 CLI 명령을 노출한다
-                  — 얕게(안내 카피만)도 허용되는 조건이라 실제 파일 삭제는 하지
-                  않는다(로컬 쓰기는 CLI/에이전트의 역할). */}
+              {/* Transparency condition: as long as a heartbeat exists, the "clear this signal"
+                  guidance and a copyable CLI command are shown regardless of state (fresh or
+                  stale). The condition allows a shallow form (guidance copy only), so no file is
+                  actually deleted here — local writes are the CLI's and the agent's role. */}
               <div className="grid gap-1 rounded-chip border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-2 py-1.5">
                 <p className="break-keep text-caption leading-label text-[color:var(--color-text-tertiary)]">
                   {labels.clearSignalHint}

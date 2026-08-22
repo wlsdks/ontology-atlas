@@ -10,9 +10,9 @@ import {
 } from "./read-topology-v2-tokens";
 
 /**
- * §2 값 전부를 프로토타입 상수와 1:1 대조하는 fixture. app/globals.css 의
- * `--topology-v2-*` 선언과 정확히 같은 이름/값 집합이어야 한다 — 여기 목록이
- * 곧 토큰 계약이다.
+ * A fixture matching every §2 value 1:1 against the prototype's constants. It has to
+ * be exactly the same set of names and values as the `--topology-v2-*` declarations
+ * in app/globals.css — this list *is* the token contract.
  */
 const FIXTURE_VALUES: Record<string, string> = {
   "--topology-v2-node-fill-project": "#1c1c22",
@@ -95,8 +95,9 @@ const FIXTURE_VALUES: Record<string, string> = {
   "--topology-v2-camera-max-zoom-ratio": "3.2",
   "--topology-v2-camera-min-zoom-ratio": "0.5",
   "--topology-v2-camera-focus-pan-margin": "180",
-  // 목줄의 기본값은 **0(꺼짐)** 이다 — 워크벤치의 팬 봉투가 종전 그대로라는
-  // 계약이 이 한 줄이다. 켜는 곳은 관문 스코프(`html[data-gateway-stage]`) 하나.
+  // The leash defaults to **0 (off)** — this one line is the contract that the
+  // workbench's pan envelope is unchanged. The only place it is switched on is the
+  // gateway scope (`html[data-gateway-stage]`).
   "--topology-v2-camera-pan-leash": "0",
   "--topology-v2-altitude-far-high-ratio": "0.92",
   "--topology-v2-altitude-far-low-ratio": "0.62",
@@ -238,11 +239,11 @@ describe("resolveTopologyV2Tokens", () => {
 
 describe("refreshIndexDependentTokens — 표적 갱신", () => {
   /**
-   * 왜 이 함수가 생겼나 (2026-07-28 성능 트레이스):
-   * `HomePage` 가 INDEX 상태 전환마다 캐시를 **통째로** 버렸는데, 노드를
-   * 선택하면 그 상태가 바뀐다. 그래서 클릭 1회마다 다음 프레임이
-   * `getPropertyValue` 115회를 돌아 스타일 재계산을 강제했다(ForcedReflow
-   * 1위, 58ms). 실제로 `data-topology-index` 에 의존하는 토큰은 하나뿐이다.
+   * Why this function exists (performance trace, 2026-07-28): `HomePage` threw away
+   * **the whole** cache on every INDEX state transition, and selecting a node changes
+   * that state. So every single click made the next frame run `getPropertyValue` 115
+   * times and force a style recalculation (the top ForcedReflow entry, 58ms). Exactly
+   * one token actually depends on `data-topology-index`.
    */
   it("캐시가 없으면 아무것도 하지 않는다 (다음 읽기가 최신을 가져간다)", () => {
     clearTopologyV2TokensCache();
@@ -258,10 +259,10 @@ describe("refreshIndexDependentTokens — 표적 갱신", () => {
     const before = getTopologyV2Tokens(root);
     expect(before.safeInsetLeft).toBe(344);
 
-    // INDEX 가 접히면 이 토큰만 바뀐다(globals.css 의
-    // `html[data-topology-index="collapsed"]` 블록).
+    // Collapsing INDEX changes only this token (the
+    // `html[data-topology-index="collapsed"]` block in globals.css).
     root.style.setProperty("--topology-v2-safe-inset-left", "78");
-    // 다른 토큰도 바꿔 두고 **안 따라오는지** 확인한다 — 표적 갱신이니까.
+    // Change another token too and confirm it does **not** follow — this is a targeted refresh.
     root.style.setProperty("--topology-v2-label-max-width", "999");
 
     refreshIndexDependentTokens(root);

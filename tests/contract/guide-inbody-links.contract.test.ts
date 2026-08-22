@@ -5,39 +5,41 @@ import { describe, expect, it } from 'vitest';
 import { GUIDE_PAGES } from '@/views/gateway-doc/model/guide-pages';
 
 /**
- * 가이드 **본문**의 내부 링크가 실재하는 라우트를 가리키는지.
+ * Whether internal links in the guide **body** point at routes that exist.
  *
- * ## 왜 이 계약이 생겼나 (2026-08-07 사용성 감사)
+ * ## Why this contract exists (2026-08-07 usability audit)
  *
- * 가이드 13장의 본문 내부 링크 **34개 전부가 404** 였다. 마크다운 원본이
- * `[지도 읽는 법](/guide/reading-the-map)` 처럼 **로케일 접두사 없이** 쓰는데
- * (한 벌이 `/ko`·`/en` 을 함께 서빙하므로 원본에 로케일을 박을 수 없다)
- * 본문 렌더러가 그 값을 그대로 `<a href>` 에 실었다. 그런 라우트는 없다.
+ * **All 34** in-body internal links across the guide's 13 chapters were 404s. The
+ * markdown source writes them **without a locale prefix**, e.g.
+ * `[지도 읽는 법](/guide/reading-the-map)` (one copy serves both `/ko` and `/en`,
+ * so the source cannot hardcode a locale), and the body renderer put that value
+ * straight into `<a href>`. No such route exists.
  *
- * 같은 화면의 왼쪽 차례는 처음부터 `Link`(로케일이 붙는다)를 썼다 — 로케일이
- * 붙는 링크와 안 붙는 링크가 한 화면에 공존했고, 사람이 주로 누르는 쪽이
- * 멀쩡한 쪽이라 눈에 안 띄었다.
+ * The table of contents on the left of the same screen used `Link` (which adds the
+ * locale) from the start — locale-prefixed and non-prefixed links coexisted on one
+ * screen, and the side people mostly click was the working one, so it went
+ * unnoticed.
  *
- * ## 왜 `docs:links` 가 못 잡나
+ * ## Why `docs:links` cannot catch it
  *
- * 그 검사는 문서가 가리키는 **파일 경로**가 실재하는지를 본다. `/guide/relations`
- * 는 파일 경로가 아니라 **라우트**이고, 파일로는 아무 데도 없으니 애초에 검사
- * 대상이 아니다. 「가리키는 대상이 실재하는가」라는 같은 갈래인데 **대상의
- * 종류가 다르다** — 그래서 검사도 따로 있어야 한다.
+ * That check asks whether the **file path** a document cites exists.
+ * `/guide/relations` is a **route**, not a file path, and exists nowhere as a file,
+ * so it was never in scope. Same family of question — does the target exist — but
+ * **a different kind of target**, so it needs its own check.
  *
- * ## 무엇을 재나
+ * ## What is measured
  *
- * 마크다운 원본에서 내부 절대경로 링크를 뽑아, 각각이 **코드에서 파생한**
- * 목적지 집합에 있는지 본다. 목적지는 손으로 적지 않는다:
- * `GUIDE_PAGES`(가이드 세그먼트의 정본)와 `app/[locale]/**` 의 실제 라우트에서
- * 뽑는다.
+ * Internal absolute-path links are extracted from the markdown source and checked
+ * against a destination set **derived from code**. The destinations are not written
+ * by hand: they come from `GUIDE_PAGES` (the authoritative list of guide segments)
+ * and the real routes under `app/[locale]/**`.
  */
 
 const ROOT = process.cwd();
 const GUIDE_DIR = join(ROOT, 'docs/guide');
 const APP_LOCALE_DIR = join(ROOT, 'app/[locale]');
 
-/** `app/[locale]/**` 의 `page.tsx` 에서 라우트를 뽑는다. 동적 구간은 제외. */
+/** Extracts routes from `page.tsx` files under `app/[locale]/**`. Dynamic segments excluded. */
 function appRoutes(): Set<string> {
   const out = new Set<string>(['/']);
   const walk = (dir: string, prefix: string) => {
@@ -53,7 +55,7 @@ function appRoutes(): Set<string> {
   return out;
 }
 
-/** 마크다운 본문의 내부 절대경로 링크 — `](/…)` 꼴만. */
+/** Internal absolute-path links in the markdown body — the `](/…)` form only. */
 function inBodyInternalLinks(): Array<{ file: string; href: string }> {
   const out: Array<{ file: string; href: string }> = [];
   for (const name of readdirSync(GUIDE_DIR)) {
@@ -65,20 +67,22 @@ function inBodyInternalLinks(): Array<{ file: string; href: string }> {
 }
 
 /**
- * 마크다운 본문의 **모든** 링크 — 종류를 가리지 않고 뽑는다.
+ * **Every** link in the markdown body — extracted regardless of kind.
  *
- * ## 왜 두 번째 스캐너인가 (2026-08-14 걷기 실측)
+ * ## Why a second scanner (measured during the 2026-08-14 walkthrough)
  *
- * 위 `inBodyInternalLinks` 는 `](/…)` 꼴만 본다. 그래서
- * `[명세](../ONTOLOGY-ATLAS-SPEC.md#…)` 같은 **상대 경로 링크는 검사 자체를
- * 통과했다** — e2e 도 `a[href^="/"]` 만 봐서 마찬가지였다. 그 링크를 누르면
- * `/ko/guide/ONTOLOGY-ATLAS-SPEC.md` 로 가고, `findGuidePage()` 폴백이 1장을
- * **말없이** 그렸다: 404 가 아니라 **오배송**이라 두 게이트 다 못 봤다.
+ * `inBodyInternalLinks` above sees only the `](/…)` form, so a **relative-path
+ * link** such as `[명세](../ONTOLOGY-ATLAS-SPEC.md#…)` passed unchecked — and the
+ * e2e spec only looked at `a[href^="/"]`, so it did too. Clicking such a link goes
+ * to `/ko/guide/ONTOLOGY-ATLAS-SPEC.md`, where the `findGuidePage()` fallback
+ * **silently** rendered chapter 1: a **misdelivery**, not a 404, which is why
+ * neither gate saw it.
  *
- * 전수 측정(켜기 전): 가이드 13장의 상대 링크는 정확히 2개였고 둘 다 이
- * 결함이었다 — 가이드 장 사이를 상대 경로로 잇는 정당한 관례는 **없다**.
- * 그래서 허용목록 없이 전부 막는다: 내부는 `/guide/<장>` 절대 경로로,
- * 저장소 문서는 GitHub 로(위 규율과 같다).
+ * Inventory before switching it on: the 13 guide chapters contained exactly 2
+ * relative links and both were this defect — there is **no** legitimate convention
+ * for linking between guide chapters by relative path. So all of them are blocked
+ * with no allowlist: internal links use the absolute `/guide/<chapter>` form, and
+ * repository documents go to GitHub (the same discipline as above).
  */
 function inBodyAllLinks(): Array<{ file: string; href: string }> {
   const out: Array<{ file: string; href: string }> = [];
@@ -90,7 +94,7 @@ function inBodyAllLinks(): Array<{ file: string; href: string }> {
   return out;
 }
 
-/** 쿼리·해시·후행 슬래시를 떼어 라우트 경로만 남긴다. */
+/** Strips query, hash, and trailing slash, leaving the route path. */
 function toRoutePath(href: string): string {
   const path = href.split(/[?#]/)[0];
   return path.length > 1 ? path.replace(/\/$/, '') : path;
@@ -102,7 +106,7 @@ describe('가이드 본문 링크 — 실재하는 라우트만 가리킨다', (
   const routes = appRoutes();
 
   it('링크와 목적지 집합을 실제로 뽑아낸다 (공회전 차단)', () => {
-    // 0개를 뽑고 «어긋난 것 없음» 으로 통과하는 것이 이 계약의 유일한 실패 모드다.
+    // Extracting 0 links and passing as "nothing mismatched" is this contract's only failure mode.
     expect(links.length, '가이드 본문에서 내부 링크를 하나도 못 찾았다 — 스캔이 깨졌다').toBeGreaterThan(10);
     expect(segments.size, '가이드 세그먼트를 못 읽었다').toBeGreaterThan(5);
     expect(routes.has('/guide'), 'app/[locale] 라우트 스캔이 깨졌다').toBe(true);
@@ -110,20 +114,23 @@ describe('가이드 본문 링크 — 실재하는 라우트만 가리킨다', (
 
   it('내부 링크는 실재하는 가이드 장만 가리킨다', () => {
     /**
-     * **가이드 본문의 내부 링크는 가이드 장뿐이다.**
+     * **Internal links in the guide body point only at guide chapters.**
      *
-     * 여기까지 오는 데 두 번 틀렸고 둘 다 기록해 둔다:
+     * Getting here took two wrong turns, both recorded:
      *
-     * ① 처음엔 «앱 라우트여야 한다» 로 썼다. `/ONTOLOGY-QUALITY` 에서 틀렸다 —
-     *    루트 절대 링크를 `docs:links` 는 **볼트 슬러그**로 해석하므로 원본
-     *    표기는 맞았고, 계약이 관례를 잘못 읽어 멀쩡한 원본을 고치게 만들었다.
-     * ② 그래서 «볼트 슬러그도 허용» 으로 넓히고 렌더러가 `?slug=` 로 풀게 했다.
-     *    이것도 틀렸다 — 볼트를 안 고른 웹 방문자가 보는 것은 **샘플 볼트**이고
-     *    그 문서는 **도그푸드 볼트에만** 있다. 결과는 **200 인데 아무것도 안
-     *    열리는** 화면이었다. 404 보다 알아채기 어렵다.
+     * ① The first version required "it must be an app route". That was wrong for
+     *    `/ONTOLOGY-QUALITY` — `docs:links` interprets a root-absolute link as a
+     *    **vault slug**, so the source was correct and the contract, misreading the
+     *    convention, made a healthy source get "fixed".
+     * ② So it was widened to "vault slugs are allowed too", with the renderer
+     *    resolving them via `?slug=`. That was also wrong — a web visitor who has not
+     *    picked a vault sees the **sample vault**, and that document exists **only in
+     *    the dogfood vault**. The result was a screen that returned **200 and opened
+     *    nothing**, which is harder to notice than a 404.
      *
-     * 그래서 규칙을 좁혔다: 가이드가 볼트 문서를 가리켜야 하면 **GitHub 로**
-     * 보낸다(외부 링크는 이 검사 대상이 아니다). 첫 방문자에게 항상 열린다.
+     * So the rule was narrowed: when the guide needs to point at a vault document it
+     * sends the reader **to GitHub** (external links are out of this check's scope).
+     * That always opens for a first-time visitor.
      */
     const dead = links.filter(({ href }) => {
       const guide = /^\/guide\/([^/]+)$/.exec(toRoutePath(href));
@@ -138,30 +145,32 @@ describe('가이드 본문 링크 — 실재하는 라우트만 가리킨다', (
   });
 
   /**
-   * ⚠️ **여기서 렌더러를 검사하지 않는다.**
+   * ⚠️ **The renderer is not checked here.**
    *
-   * 처음에는 이 파일에서 `GatewayDocPage.tsx` 소스를 읽어 «내부 링크가 `Link` 를
-   * 거치는가» 를 정규식으로 봤다. **프로브에서 안 빨개졌다** — 분기를
-   * `if (false && internalRoute)` 로 막아도 소스에는 그 두 낱말이 그대로 남아
-   * 정규식이 통과한다. 소스 문자열은 «무엇이 적혀 있나» 를 말하지 «무엇이
-   * 일어나나» 를 말하지 않는다(`documentation.md`: 사람이 쓴 문장을 못박지
-   * 마라 — 그 실패의 다른 얼굴이다).
+   * The first attempt read `GatewayDocPage.tsx`'s source from this file and used a
+   * regex to ask whether internal links go through `Link`. **The probe never turned
+   * it red** — disabling the branch with `if (false && internalRoute)` leaves both
+   * words in the source and the regex still passes. A source string says **what is
+   * written**, not **what happens** (`documentation.md`: never pin a sentence a human
+   * wrote — this is the same failure wearing a different face).
    *
-   * 그 층은 실제로 열어서 재야 하므로 `tests/e2e/guide-inbody-links.spec.ts`
-   * 가 맡는다: 가이드 전 장을 열어 본문 내부 링크가 로케일 접두사를 갖는지,
-   * 그리고 그 주소가 실제로 200 인지 확인한다. 이 계약은 **원본 마크다운의
-   * 목적지**만 본다.
+   * That layer has to be opened and measured, so
+   * `tests/e2e/guide-inbody-links.spec.ts` owns it: it opens every guide chapter and
+   * checks that in-body internal links carry the locale prefix and that those
+   * addresses really return 200. This contract looks only at **the destinations in
+   * the source markdown.**
    */
 
   it('상대 경로 링크를 두지 않는다 — 내부는 절대 경로, 저장소 문서는 GitHub 로', () => {
     /**
-     * 사연은 `inBodyAllLinks` 의 주석에. 요지: 상대 `.md` 링크는 라우터가
-     * `/guide/<파일명>` 으로 풀고, 그 세그먼트는 실재하지 않아 폴백이 다른
-     * 장을 그린다 — 404 없이 틀린 문서가 나오는 **조용한 오배송**이다.
+     * The full story is in `inBodyAllLinks`'s comment. In short: the router resolves a
+     * relative `.md` link to `/guide/<filename>`, that segment does not exist, and the
+     * fallback renders a different chapter — **a silent misdelivery**, a wrong document
+     * with no 404.
      */
     const all = inBodyAllLinks();
-    // 공회전 차단: 이 스캐너가 절대·외부 링크를 실제로 보고 있어야
-    // «상대 링크 없음» 이 빈 집합 위의 통과가 아니다.
+    // Idling guard: this scanner must actually be seeing absolute and external links,
+    // otherwise "no relative links" is a pass over an empty set.
     expect(all.length, '전체 링크 스캔이 깨졌다').toBeGreaterThan(links.length);
     const relative = all.filter(({ href }) => !/^(\/|https?:\/\/)/.test(href));
     expect(
@@ -174,8 +183,9 @@ describe('가이드 본문 링크 — 실재하는 라우트만 가리킨다', (
 
   it('마크다운 원본에 로케일을 박지 않는다', () => {
     /**
-     * `/ko/guide/…` 로 고치는 것은 이 결함의 «되돌아오는» 수정이다 — 같은 한 벌이
-     * `/en` 도 서빙하므로 그 순간 영어 독자가 한국어로 끌려간다.
+     * "Fixing" this by writing `/ko/guide/…` is the repair that brings the defect
+     * back — the same copy also serves `/en`, so English readers would be dragged into
+     * Korean.
      */
     const hardcoded = links.filter(({ href }) => /^\/(ko|en)\//.test(href));
     expect(

@@ -29,8 +29,8 @@ const PASSING_MARKERS = {
     modelListOpened: true,
     modelOptionCount: 7,
     models: ["qwen3:8b"],
-    // 목록이 잘리지 않고, 보인다고 주장하는 옵션이 전부 눌리고,
-    // 행 상한 아래라 스크롤이 아예 없다.
+    // The list is not clipped, every option it claims is visible is clickable, and it is
+    // under the row ceiling so there is no scrolling at all.
     modelListHeight: 259,
     modelListVisibleHeight: 259,
     modelListOverflowing: false,
@@ -50,7 +50,8 @@ test("AI settings markers pass only when the whole flow left positive proof", ()
 });
 
 test("AI settings verification fails loudly instead of passing on missing elements", () => {
-  // 이 저장소가 여러 번 데인 실패 모드 — 못 찾았는데 「위반 0」 으로 초록.
+  // The failure mode this repository has been burned by repeatedly: nothing was found,
+  // reported as "zero violations", green.
   const cases = [
     [{}, /never reported the AI settings verifier/],
     [
@@ -111,10 +112,10 @@ test("AI settings verification fails loudly instead of passing on missing elemen
       },
       /offered no model to choose/,
     ],
-    // 2026-08-02 설치 앱 실측 — **세는 것과 보이는 것은 다르다.** 러너가 준
-    // 7개가 role/aria/텍스트 마커를 전부 통과하는 동안 화면에는 1개만 있었다
-    // (264px 목록이 조상 overflow 에 39px 로 잘렸다). 종전 판정은 여기서
-    // 초록이었고, 그래서 이 결함은 어느 게이트에도 안 걸렸다.
+    // Measured in the installed app, 2026-08-02 — **counted is not the same as visible.**
+    // The 7 the runner returned all passed the role/aria/text markers while only 1 was on
+    // screen (a 264px list clipped to 39px by an ancestor's overflow). The old verdict was
+    // green here, so this defect was caught by no gate at all.
     [
       {
         ...PASSING_MARKERS,
@@ -158,8 +159,8 @@ test("AI settings verification fails loudly instead of passing on missing elemen
       },
       /not one option landed inside its own scroll view/,
     ],
-    // 상한 규칙 — 7개는 행 상한(8) 아래이므로 한 번에 다 보여야 하고,
-    // 스크롤은 «더 있다» 를 뜻하므로 그때 켜져 있으면 거짓말이다.
+    // The ceiling rule: 7 is under the row ceiling (8), so all of them must show at once,
+    // and since scrolling means "there is more", having it on here would be a lie.
     [
       {
         ...PASSING_MARKERS,
@@ -271,7 +272,7 @@ test("AI settings audit trail requires a fresh local verify line pointed at the 
     /no local verify entry from this run/,
   );
 
-  // 이전 실행의 줄은 이번 실행의 증거가 아니다.
+  // A line from a previous run is not evidence about this run.
   assert.match(
     String(
       validateAiSettingsAuditTrail(
@@ -302,7 +303,7 @@ test("AI settings audit trail requires a fresh local verify line pointed at the 
     /recorded outcome error/,
   );
 
-  // 명명 벤더의 확인 줄은 로컬 갈래의 증거가 아니다.
+  // A named vendor's confirmation line is not evidence about the local branch.
   assert.match(
     String(
       validateAiSettingsAuditTrail([line({ provider: "anthropic" })], {
@@ -348,7 +349,8 @@ test("AI settings flag carries the typed base URL into the WebView env patch", (
     },
   );
 
-  // 플래그가 없으면 주소도 안 실린다 — 켜지 않은 검증기가 env 를 남기지 않는다.
+  // Without the flag the address is not loaded either — a verifier that was not enabled
+  // leaves no env behind.
   assert.deepEqual(webviewVerifyEnvPatch({ aiSettingsBaseUrl: "http://127.0.0.1:1234" }), {
     ONTOLOGY_ATLAS_VERIFY_WEBVIEW: "1",
   });
@@ -385,10 +387,10 @@ test("installed-app AI settings driver walks the real settings testids", () => {
     );
   }
 
-  // 토글 컨트롤을 폴링마다 다시 누르면 열고 닫기를 반복한다.
+  // Re-clicking a toggle control on every poll just opens and closes it repeatedly.
   assert.equal(tauriLib.includes("CLICK_COOLDOWN"), true);
-  // 목록을 **재는** 코드가 실제로 실려 있다 — 계약만 있고 마커를 만드는 쪽이
-  // 없으면 판정은 영원히 `undefined` 위에서 돈다.
+  // The code that **measures** the list is actually loaded — with the contract present
+  // but nothing producing the marker, the verdict runs forever over `undefined`.
   for (const marker of [
     "modelListVisibleHeight",
     "modelListOverflowing",
@@ -398,7 +400,7 @@ test("installed-app AI settings driver walks the real settings testids", () => {
   ]) {
     assert.equal(tauriLib.includes(marker), true, `verifier should measure ${marker}`);
   }
-  // 주소가 없으면 조용히 건너뛰지 않고 마커로 실패를 남긴다.
+  // A missing address is not skipped quietly; it leaves a failure marker.
   assert.equal(
     tauriLib.includes("ONTOLOGY_ATLAS_VERIFY_AI_BASE_URL was missing or unsafe"),
     true,
@@ -406,9 +408,10 @@ test("installed-app AI settings driver walks the real settings testids", () => {
 });
 
 /**
- * 행 상한은 두 곳에 적혀 있다 — 앱(`select-growth.ts`)과 이 검증기. 이
- * 스크립트는 앱 번들을 import 하지 않으므로 복제가 불가피하고, 그러면 드리프트는
- * 시간 문제다. 값이 갈리는 순간 게이트가 **틀린 기준으로 초록**이 된다.
+ * The row ceiling is written in two places — the app (`select-growth.ts`) and this
+ * verifier. This script does not import the app bundle, so duplication is unavoidable
+ * and drift is only a matter of time. The moment the values diverge, the gate goes
+ * **green against the wrong standard.**
  */
 test("model list row cap matches the shipped rule", () => {
   const source = fs.readFileSync("src/shared/ui/select-growth.ts", "utf8");

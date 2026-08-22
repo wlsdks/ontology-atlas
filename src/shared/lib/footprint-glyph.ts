@@ -1,37 +1,38 @@
 import { FONT_WEIGHT } from "@/shared/ui/font-weight";
 
 /**
- * 발자국 글리프 — 「걸어온 길」의 시각 표기.
+ * Footprint glyph — the visual notation for the path you walked.
  *
- * `shared` 에 있는 이유: 지도 캔버스와 **설정 미리보기**가 같은 그림을 그려야
- * 한다. 미리보기가 별도 구현이면 둘이 조용히 갈라지고, 그러면 미리보기가
- * 미리보기가 아니게 된다.
+ * It lives in `shared` because the map canvas and the **settings preview** must
+ * draw the same picture. A second implementation for the preview would drift, and
+ * a preview that drifts is not a preview.
  *
- * ## 왜 링이 아니라 발자국인가 (소유자 확정 2026-07-29)
+ * **Why footprints and not a ring** (owner decision, 2026-07-29). The previous
+ * notation was a concentric hairline ring on visited nodes (the old
+ * `model/footprint-ring.ts` under `widgets/topology-map-v2`). Its structural limit
+ * was that a ring shares the grammar of the node outline — the selection ring, the
+ * expansion aura and the boundary are already circles, so the footprint ring became
+ * a fourth circle whose meaning the user had to re-learn each time. Owner:
+ * *"걸어왔던 길 노드들에 순서가 뜨고"* · *"연결된 선에도 작은 발자국이 지나간
+ * 흔적처럼"* (show the visit order on the nodes you walked, and leave small
+ * footprints along the connecting lines too). A footprint sits **outside the circle
+ * grammar**, so that collision cannot arise, and it carries what a ring could not:
+ * direction (the toes point the way of travel) and order (the step number beside
+ * the node).
  *
- * 종전 표기는 방문 노드에 얹는 **동심 헤어라인 링**이었다(`widgets/topology-map-v2` 의 구 `model/footprint-ring.ts`).
- * 그 표기의 구조적 한계는 링이 노드 테두리와 **같은 문법**이라는 것이다 — 선택
- * 링·확장 오라·결계가 이미 원이라, 발자국 링은 넷째 원이 되어 "이건 무슨 원인가"를
- * 사용자가 매번 다시 배워야 했다. 소유자: *"걸어왔던 길 노드들에 순서가 뜨고"* ·
- * *"연결된 선에도 작은 발자국이 지나간 흔적처럼"*.
+ * **The shape is not a setting.** Both-feet shoe prints, fixed. Letting users pick
+ * the shape means different people see different pictures, and the screen can no
+ * longer state what the mark means. The only thing a user chooses is **how loudly
+ * the same meaning is stated** (`FootprintPreference`).
  *
- * 발자국은 **원 문법 밖**이라 그 충돌이 구조적으로 없다. 그리고 링이 못 나르던 것을
- * 나른다: 방향(발끝이 진행 방향을 본다)과 순서(노드 옆 순번).
+ * **Beside the line, not on it.** Owner: *"선에 겹치게 말고"* (don't overlap the
+ * line). A relation line is the channel carrying a typed fact (containment /
+ * dependency); a mark laid on top makes two facts fight over one ink. Footprints
+ * are offset along the normal and say only "someone passed along here".
  *
- * ## 모양은 설정이 아니다
- *
- * 신발 자국(양발) 고정이다. 모양까지 고르게 하면 사용자마다 다른 그림을 보게 되고,
- * 그러면 화면이 "이 표시가 무슨 뜻인가"를 더 이상 말할 수 없다. 사용자가 정하는
- * 것은 **같은 뜻을 얼마나 세게 말하느냐**뿐이다(`FootprintPreference`).
- *
- * ## 선 위가 아니라 선 옆이다
- *
- * 소유자: *"선에 겹치게 말고"*. 관계선은 타입 있는 사실(포함/의존)을 나르는
- * 채널이라, 그 위에 마크를 얹으면 두 사실이 한 잉크를 다툰다. 발자국은 법선
- * 방향으로 비켜 찍혀 "이 길을 따라 지나갔다"만 말한다.
- *
- * 관계가 **있는** 쌍에만 그린다 — 연속 방문한 두 노드 사이에 관계가 없을 수도
- * 있는데, 거기에 선을 따라가는 자국을 찍으면 "선 = 관계"라는 계약이 깨진다.
+ * Drawn only for pairs that **have** a relation. Two consecutively visited nodes
+ * may have none, and tracing prints between them would break the contract that a
+ * line means a relation.
  */
 
 import {
@@ -40,7 +41,7 @@ import {
   type FootprintPreference,
 } from "./appearance-preferences";
 
-/** 발자국 잉크(RGB 3원소) — 호출부가 토큰에서 읽어 넘긴다. */
+/** Footprint ink as an RGB triple — the caller reads it from a token and passes it in. */
 export type FootprintInk = readonly [number, number, number];
 
 export interface FootprintPaintContext {
@@ -48,36 +49,37 @@ export interface FootprintPaintContext {
   pref: FootprintPreference;
   ink: FootprintInk;
   /**
-   * 카메라 배율에서 온 크기 계수 — 축소하면 자국도 함께 작아진다.
+   * Size factor taken from camera zoom — zooming out shrinks the prints too.
    *
-   * 소유자 확정: *"겹쳐지는건 없게 하고싶은데? 노드가 멀어지면 발자국도 조금
-   * 작아져도 괜찮으니"*. 겹침이 가장 심한 곳은 **줌 아웃**이다 — 노드와 관계선이
-   * 화면에 몰리는데 자국만 고정 픽셀 크기면 자국이 그래프를 덮는다. 자국을
-   * 배율에 매달면 그 상황에서 자국이 먼저 물러난다.
+   * Owner decision: *"겹쳐지는건 없게 하고싶은데? 노드가 멀어지면 발자국도 조금
+   * 작아져도 괜찮으니"* (nothing should overlap; it is fine for footprints to shrink
+   * as nodes recede). Overlap is worst when **zoomed out**: nodes and relation lines
+   * crowd the screen, and prints held at a fixed pixel size would bury the graph.
+   * Tying them to zoom makes the prints retreat first.
    *
-   * 생략 시 1(종전 동작).
+   * Defaults to 1.
    */
   scale?: number;
   /**
-   * 방금 찍힌 자국의 등장 진행 [0,1]. 1 이면 정착.
+   * Entrance progress [0,1] of a freshly stamped print. 1 means settled.
    *
-   * **루프가 아니라 도착이다.** 상시 애니메이션은 헌장이 금지하는 장식 모션이고
-   * 앰비언트 휴면도 무력화한다. 이 값은 걸음이 하나 **생긴 그 순간**에만 0→1 로
-   * 올라가고 끝난다 — 사용자가 방금 한 일에 화면이 답하는 것이지, 배경이 혼자
-   * 움직이는 것이 아니다.
+   * **An arrival, not a loop.** A permanent animation is the decorative motion the
+   * charter forbids, and it also defeats ambient sleep. This rises 0→1 only at the
+   * moment a step is created — the screen answering what the user just did, not a
+   * background moving on its own.
    */
   appear?: number;
 }
 
-/** 배율 계수의 허용 범위 — 너무 작으면 모양 채널이 죽고, 너무 크면 그래프를 덮는다. */
+/** Bounds for the size factor — too small kills the shape channel, too large buries the graph. */
 export const FOOTPRINT_SCALE_RANGE = { min: 0.55, max: 1.1 } as const;
 
 /**
- * 카메라 배율 → 자국 크기 계수. 순수 함수(테스트 대상).
+ * Camera zoom → footprint size factor. Pure function (under test).
  *
- * 1.0 배율에서 1.0 이고, 축소할수록 함께 줄되 하한에서 멈춘다. 완전 비례로
- * 두지 않는 것은 깊이 줌아웃했을 때 자국이 **한 점**이 되어 "여기 걸었다"를
- * 아예 못 말하게 되기 때문이다.
+ * 1.0 at zoom 1.0, shrinking as you zoom out but stopping at the floor. Not left
+ * strictly proportional, because at deep zoom-out the print collapses to **a single
+ * dot** and can no longer say "you walked here".
  */
 export function footprintScaleFor(cameraScale: number): number {
   if (!Number.isFinite(cameraScale) || cameraScale <= 0) return 1;
@@ -86,46 +88,50 @@ export function footprintScaleFor(cameraScale: number): number {
 }
 
 /**
- * 자국은 **자기가 표시하는 노드보다 커지지 않는다** (2026-08-02, 소유자 지적:
- * *"화면 작아졌을때 발걸음 사이즈같은거 조절도 좀 꼼꼼히"*).
+ * A print **never grows larger than the node it marks** (2026-08-02, owner:
+ * *"화면 작아졌을때 발걸음 사이즈같은거 조절도 좀 꼼꼼히"* — tighten how the
+ * footprint size adapts when the window gets small).
  *
- * 위 `footprintScaleFor` 는 카메라 배율의 **제곱근**이고 노드는 **선형**이라,
- * 줌아웃할수록 자국이 노드보다 상대적으로 커진다. 실측:
+ * `footprintScaleFor` above is the **square root** of camera zoom while node radius
+ * is **linear**, so the further you zoom out the larger a print gets relative to its
+ * node. Measured:
  *
- * | 카메라 배율 | 노드 대비 자국 |
+ * | Camera zoom | Print vs node |
  * |---|---|
- * | 1.0 | 1.00배 |
- * | 0.5 | 1.41배 |
- * | 0.3 | 1.83배 |
- * | 0.2 | 2.75배 |
+ * | 1.0 | 1.00× |
+ * | 0.5 | 1.41× |
+ * | 0.3 | 1.83× |
+ * | 0.2 | 2.75× |
  *
- * 제곱근 자체는 옳다 — 완전 비례로 두면 깊이 줌아웃했을 때 자국이 한 점이 되어
- * "여기 걸었다"를 못 말한다(위 주석). **고칠 것은 기울기가 아니라 상한**이다:
- * 자국의 반경이 노드 반경의 `FOOTPRINT_NODE_RATIO` 배를 넘지 않게 자른다.
- * 그러면 큰 노드(도메인·프로젝트)에서는 아무것도 안 바뀌고 — 거기서는 이미
- * 상한 아래다 — 작은 요소 노드에서만 줄어든다. 문제가 있던 자리에서만 움직인다.
+ * The square root itself is right — strict proportionality collapses the print to a
+ * dot at deep zoom-out (see above). **What needs fixing is the cap, not the slope**:
+ * clamp the print radius to `FOOTPRINT_NODE_RATIO` × the node radius. Large nodes
+ * (domains, projects) are already under the cap and do not move at all; only small
+ * element nodes shrink. The change lands only where the problem was.
  *
- * 하한(`FOOTPRINT_MIN_SIZE`)이 따로 있는 이유: 노드가 2px 이 되는 깊은 줌아웃에서
- * 상한만 걸면 자국이 소멸해, 제곱근이 막으려던 바로 그 실패로 되돌아간다.
+ * The separate floor (`FOOTPRINT_MIN_SIZE`) exists because at deep zoom-out, where a
+ * node is 2px, a cap alone erases the print — returning to the exact failure the
+ * square root was there to prevent.
  */
 export const FOOTPRINT_NODE_RATIO = 1.0;
-/** 자국이 이보다 작아지면 실루엣(앞꿈치·뒤꿈치 두 덩어리)이 죽는다. */
+/** Below this the silhouette — ball and heel as two blobs — stops reading. */
 export const FOOTPRINT_MIN_SIZE = 3.5;
 
-/** 노드 반경(화면 공간)에 맞춰 자른 자국 크기. 순수 함수(테스트 대상). */
+/** Print size clamped to the node radius in screen space. Pure function (under test). */
 export function footprintSizeFor(baseSize: number, screenNodeRadius: number): number {
   if (!Number.isFinite(screenNodeRadius) || screenNodeRadius <= 0) return baseSize;
-  // `footprintPairRadius(size) = size * 0.9` 이므로 그 반경 기준으로 자른다.
+  // `footprintPairRadius(size) = size * 0.9`, so clamp against that radius.
   const capped = (FOOTPRINT_NODE_RATIO * screenNodeRadius) / 0.9;
   return Math.max(FOOTPRINT_MIN_SIZE, Math.min(baseSize, capped));
 }
 
 /**
- * 신발 자국 실루엣 — 앞꿈치와 뒤꿈치가 **끊어진 두 덩어리**다. 그게 이 실루엣의
- * 핵심이고, 이어 붙이면 그냥 타원이 된다. 프로시저럴 경로만 쓴다(에셋 import 0).
+ * The shoe-print silhouette — ball and heel are **two separate blobs**. That gap is
+ * the whole silhouette; joined up it is just an ellipse. Procedural paths only, no
+ * asset imports.
  *
- * 반환값은 뒤꿈치를 그리는 함수 — 앞꿈치를 먼저 칠하고(fill/stroke) 나서 호출해야
- * 두 덩어리가 각각 닫힌 도형이 된다.
+ * Returns the function that draws the heel: fill/stroke the ball first, then call it,
+ * so each blob ends up its own closed shape.
  */
 function shoeSole(ctx: CanvasRenderingContext2D, s: number, mirror: boolean): () => void {
   const m = mirror ? -1 : 1;
@@ -139,15 +145,15 @@ function shoeSole(ctx: CanvasRenderingContext2D, s: number, mirror: boolean): ()
   };
 }
 
-/** 노드 옆 양발 배치 오프셋 — 한 발은 앞, 한 발은 뒤로 어긋나야 "걸음"으로 읽힌다. */
+/** Offsets for the pair beside a node — one foot ahead, one behind, or it does not read as a stride. */
 const PAIR_OFFSET = [
   { dx: -0.3, dy: 0.1, mirror: false },
   { dx: 0.3, dy: -0.1, mirror: true },
 ] as const;
 
 /**
- * 현재 변환 원점에 발자국을 그린다. `singleFoot` 이 주어지면 한 발만(선 위용),
- * 없으면 양발(노드 옆용).
+ * Draws a footprint at the current transform origin. With `singleFoot`, one foot (for
+ * edges); without it, both (for nodes).
  */
 function drawSoles(ctx: CanvasRenderingContext2D, pref: FootprintPreference, size: number, singleFoot?: boolean): void {
   const paint = () => (pref.filled ? ctx.fill() : ctx.stroke());
@@ -165,11 +171,11 @@ function drawSoles(ctx: CanvasRenderingContext2D, pref: FootprintPreference, siz
 }
 
 /**
- * 잉크·굵기·번짐을 세팅하고 `draw` 를 실행한다.
+ * Sets ink, stroke width and bloom, then runs `draw`.
  *
- * ⚠️ `bloom` 은 `shadowBlur` 로 나간다. 헌장은 글로우를 금지하므로 **기본값은
- * 항상 0** 이고, 0 인 동안 이 분기는 아예 실행되지 않는다 — 켜는 것은 사용자의
- * 명시적 선택이다.
+ * ⚠️ `bloom` goes out as `shadowBlur`. The charter forbids glow, so the **default is
+ * always 0** and this branch never executes while it is 0 — turning it on is an
+ * explicit user choice.
  */
 function withFootprintInk(
   { ctx, pref, ink }: FootprintPaintContext,
@@ -193,19 +199,22 @@ function withFootprintInk(
 }
 
 /**
- * 양발 자국이 차지하는 반지름(px) — 두 발이 어긋나 놓이므로 대각으로 잰다.
- * `PAIR_OFFSET` 의 최대 이탈(0.3)에 한 발의 반높이(0.6)를 더한 값이다.
+ * Radius (px) a pair of prints occupies — measured on the diagonal, since the feet are
+ * offset from each other. `PAIR_OFFSET`'s largest excursion (0.3) plus one foot's
+ * half-height (0.6).
  */
 export function footprintPairRadius(size: number): number {
   return size * 0.9;
 }
 
 /**
- * 노드 옆 발자국이 앉는 자리 — 노드 우상단, 라벨(아래)과 겹치지 않는 사분면.
+ * Where the pair sits beside a node — upper right, the quadrant the label (below) does
+ * not use.
  *
- * ⚠️ 거리에 **자국 반지름을 포함**한다. 그러지 않으면 `gap` 은 자국 *중심*까지의
- * 거리라, 자국이 노드 원판을 파고든다(설치 앱 실측 — 소유자: *"겹쳐지는건
- * 없게 하고싶은데"*). 겹침은 중심이 아니라 가장자리 조건이다.
+ * ⚠️ The distance **includes the print radius**. Without it `gap` is the distance to the
+ * print's *centre*, and the print bites into the node disc (measured in the installed
+ * app — owner: *"겹쳐지는건 없게 하고싶은데"*, nothing should overlap). Overlap is an
+ * edge condition, not a centre condition.
  */
 export function footprintAnchor(
   x: number,
@@ -214,12 +223,13 @@ export function footprintAnchor(
   gap: number,
   size: number,
 ): { x: number; y: number } {
-  // 대각(45°)으로 놓으므로 축별 성분은 1/√2. 중심 거리 = 노드 반지름 + 여백 + 자국 반지름.
+  // Placed on the 45° diagonal, so each axis gets 1/√2. Centre distance = node radius +
+  // gap + print radius.
   const off = (nodeRadius + gap + footprintPairRadius(size)) * Math.SQRT1_2;
   return { x: x + off, y: y - off };
 }
 
-/** 노드 옆에 양발 자국 하나를 찍는다. */
+/** Stamps one pair of prints beside a node. */
 export function drawNodeFootprint(
   paint: FootprintPaintContext,
   x: number,
@@ -230,8 +240,8 @@ export function drawNodeFootprint(
   const k = paint.scale ?? 1;
   const size = footprintSizeFor(paint.pref.size * k, nodeRadius);
   const at = footprintAnchor(x, y, nodeRadius, paint.pref.gap * k, size);
-  // 등장은 **자리로** 표현한다 — 발이 노드 쪽에서 바깥으로 내딛듯 짧게 밀려난다.
-  // 크기를 키우며 등장시키면 "커지는 표시"가 되어 상시 애니메이션처럼 읽힌다.
+  // The entrance is expressed as **position**: the foot slides out from the node as if
+  // stepping away. Growing it in would read as a marker that keeps animating.
   const appear = paint.appear ?? 1;
   const slide = (1 - appear) * size * 0.45;
   withFootprintInk(paint, alpha * appear, () => {
@@ -241,15 +251,15 @@ export function drawNodeFootprint(
 }
 
 /**
- * 방문 순번의 표시 문자열. 재방문 노드는 순번이 여럿이라 그대로 이으면 라벨을
- * 덮는다 — 3개를 넘으면 **처음·…·마지막 + 총 횟수**로 줄인다.
+ * Display string for visit-order numbers. A revisited node has several, and joining them
+ * all buries the label — past 3 it collapses to **first · … · last + total**.
  *
- * 총 횟수를 병기하는 이유: `1·…·9` 만 쓰면 그 사이에 몇 번 들렀는지가 **사라진다**.
- * 그런데 "여기 자주 돌아왔다"는 것이 이 표기가 나르려던 사실 자체다 — 축약이
- * 정보를 줄이는 것은 괜찮지만 **없애면** 축약이 아니라 손실이다.
+ * The total is spelled out because `1·…·9` alone **erases** how many stops happened in
+ * between, and "I keep coming back here" is the fact this notation exists to carry.
+ * Abbreviating may reduce information; erasing it is loss, not abbreviation.
  *
- * 순수 함수(테스트 대상). 첫 방문과 마지막 방문을 남기는 것은 "언제 처음 왔고
- * 언제 마지막에 왔나"가 중간 방문보다 답할 가치가 큰 질문이기 때문이다.
+ * Pure function (under test). First and last survive because "when did I first arrive
+ * and when was I last here" is worth more than the middle visits.
  */
 export function formatStepNumbers(steps: readonly number[], totalLabel = "총 %d회"): string {
   if (steps.length === 0) return "";
@@ -258,7 +268,7 @@ export function formatStepNumbers(steps: readonly number[], totalLabel = "총 %d
   return `${steps[0]}·…·${steps[steps.length - 1]} (${total})`;
 }
 
-/** 노드 옆 순번 — 발자국 자국 바로 위. */
+/** Step numbers beside a node — just above the prints. */
 export function drawFootprintSteps(
   paint: FootprintPaintContext,
   x: number,
@@ -277,7 +287,7 @@ export function drawFootprintSteps(
   ctx.save();
   ctx.globalAlpha = alpha * (paint.appear ?? 1);
   ctx.fillStyle = color;
-  // 숫자는 배율을 그대로 따르지 않는다 — 11px 아래로 내려가면 못 읽는다.
+  // The digits do not follow zoom all the way down — under 11px they stop being readable.
   ctx.font = `${FONT_WEIGHT.strong} ${Math.max(10, Math.round(11 * Math.max(k, 0.85)))}px ui-monospace, SFMono-Regular, monospace`;
   ctx.textAlign = "left";
   ctx.textBaseline = "middle";
@@ -286,9 +296,9 @@ export function drawFootprintSteps(
 }
 
 /**
- * 한 관계선을 따라 남는 자국들의 위치·각도. 렌더와 분리해 순수 함수로 둔다 —
- * "선 위에 겹치지 않는가", "노드에 붙지 않는가"는 그림이 아니라 **좌표**로만
- * 검증되는 성질이라 캔버스 없이 잠글 수 있다.
+ * Positions and angles of the prints left along one relation line. Kept pure and apart
+ * from rendering: "does it clear the line" and "does it touch the node" are properties
+ * of **coordinates**, not of the picture, so they can be locked down without a canvas.
  */
 export function edgeFootprintPlacements(
   ax: number,
@@ -305,20 +315,20 @@ export function edgeFootprintPlacements(
   const nx = Math.cos(angle + Math.PI / 2);
   const ny = Math.sin(angle + Math.PI / 2);
   const len = Math.hypot(bx - ax, by - ay);
-  // 양끝을 비운다 — 노드에 붙은 자국은 노드 장식으로 오독된다.
+  // Leave both ends empty — a print touching a node is misread as node decoration.
   const pad = size * 1.6;
   const usable = len - pad * 2;
   if (usable <= 0) return [];
 
   /**
-   * 자국이 선에서 실제로 비켜 앉으려면 **띄우는 거리에 자국 반폭을 더해야** 한다.
-   * 그냥 `gap` 만 쓰면 자국의 중심이 그만큼 떨어질 뿐이라, 폭이 그보다 넓으면
-   * 선이 자국 한가운데를 관통한다 — 설치 앱 실측에서 정확히 그랬다(gap 8px,
-   * 자국 반폭 약 3px 이상). 소유자 요구는 *"선에 겹치게 말고"* 이고, 그건
-   * 중심 거리가 아니라 **가장자리** 조건이다.
+   * For a print to actually clear the line the offset must be **the gap plus the print's
+   * half-width**. `gap` alone only moves the print's centre, so anything wider gets the
+   * line running through its middle — exactly what the installed app showed (gap 8px,
+   * print half-width ~3px and up). The owner's requirement *"선에 겹치게 말고"* (don't
+   * overlap the line) is an **edge** condition, not a centre-distance one.
    *
-   * 반폭은 앞꿈치 타원의 x 반지름(`size * 0.26`)에 크기 배율과 테두리 굵기 절반을
-   * 더해 잡는다 — 크기를 키워도 겹침이 다시 생기지 않게 자국 크기에 따라 함께 큰다.
+   * Half-width is the ball ellipse's x radius (`size * 0.26`) scaled, plus half the stroke
+   * width — it grows with the print, so enlarging the glyph cannot bring the overlap back.
    */
   const glyphHalfWidth = size * FOOTPRINT_EDGE_SCALE * 0.26 + pref.strokeWidth / 2;
   const offset = gap + glyphHalfWidth;
@@ -327,21 +337,21 @@ export function edgeFootprintPlacements(
   for (let i = 0; i < count; i += 1) {
     const t = (pad + (usable * (i + 0.5)) / count) / len;
     const alt = i % 2 === 0 ? 1 : -1;
-    // 한쪽(right): 선의 오른쪽 한 줄. 양쪽(both): 선을 사이에 두고 좌우 번갈아.
+    // "right": a single row on one side. "both": alternating either side of the line.
     const d = pref.placement === "both" ? alt * offset : offset;
     out.push({
       x: ax + (bx - ax) * t + nx * d,
       y: ay + (by - ay) * t + ny * d,
       angle: angle + Math.PI / 2,
       mirror: alt < 0,
-      // 앞쪽 자국이 진하다 — 최근성이 아니라 "어느 쪽에서 왔나"라는 방향감.
+      // Leading prints are darker — direction ("which end did I come from"), not recency.
       fade: 0.5 + 0.5 * (1 - i / Math.max(1, count - 1)),
     });
   }
   return out;
 }
 
-/** 한 관계선 옆에 자국들을 찍는다. */
+/** Stamps prints alongside one relation line. */
 export function drawEdgeFootprints(
   paint: FootprintPaintContext,
   ax: number,

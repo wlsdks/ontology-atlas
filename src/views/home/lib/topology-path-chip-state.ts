@@ -1,38 +1,33 @@
 /**
- * 경로 칩이 **무엇을 말해야 하는가** — 순수 판정.
+ * What the path chip is allowed to claim — a pure decision.
  *
- * ## 화면이 하던 거짓말 (2026-08-01 수리)
+ * **The lie this fixed (2026-08-01).** Endpoint titles came from
+ * `resolveTopologyNodeTitle`, which returned the slug as a title when it found
+ * nothing. So with two nodes absent from this vault the chip drew two plausible
+ * names and then asserted "no path". The truth was "neither is here" while the
+ * screen said "both are here and unconnected" — worse than silence, because the
+ * user then reasons about a relation that does not exist. The copy-packet button
+ * stayed available in that state too, handing an agent two non-existent slugs
+ * and a "no path" conclusion: the point where a fooled human passes it on to a
+ * machine as fact.
  *
- * 끝점의 제목은 `resolveTopologyNodeTitle` 이 냈고, 그 함수는 못 찾으면
- * **슬러그를 그대로 제목으로** 돌려줬다. 그래서 이 볼트에 없는 노드 둘을
- * 놓고도 칩은 이름 두 개를 멀쩡히 그린 뒤 「경로 없음」이라고 **단언**했다.
- * 진실은 *"둘 다 여기 없다"* 인데 화면은 *"둘 다 있고 안 이어져 있다"* 고
- * 말한 것이다 — 이건 침묵보다 나쁘다. 사용자는 존재하지 않는 관계에 대해
- * 판단을 내리게 된다.
- *
- * 게다가 그 상태에서 **「경로 패킷 복사」** 버튼이 그대로 떠 있었다. 그
- * 패킷은 존재하지 않는 슬러그 둘과 「경로 없음」이라는 결론을 에이전트에게
- * 넘긴다 — 사람이 속은 것을 기계에게 사실로 전달하는 자리다.
- *
- * ## 규칙
- *
- * 끝점 중 하나라도 이 볼트에서 해석되지 않으면 **그 사실만 말한다.** 홉 수도,
- * 「경로 없음」도, 복사 버튼도 없다 — 셋 다 "두 노드가 실재한다" 를 전제로
- * 하는 주장이라서다.
+ * **The rule:** if either endpoint fails to resolve in this vault, say only
+ * that. No hop count, no "no path", no copy button — all three presuppose that
+ * both nodes exist.
  */
 export type TopologyPathChipState =
-  /** 소스만 골랐다 — 대상을 기다리는 정상 상태. */
+  /** Only the source is picked — the normal state, waiting for a target. */
   | { kind: "awaiting-target"; sourceTitle: string }
-  /** 끝점이 이 볼트에 없다. `missing` 은 주소가 실어 온 원본 슬러그. */
+  /** An endpoint is absent from this vault; `missing` holds the raw slug the address carried. */
   | { kind: "missing-endpoints"; missing: readonly string[] }
-  /** 둘 다 실재하는데 잇는 길이 없다 — 참인 「경로 없음」. */
+  /** Both exist and nothing connects them — a true "no path". */
   | { kind: "no-path"; sourceTitle: string; targetTitle: string }
   | { kind: "resolved"; sourceTitle: string; targetTitle: string; hops: number };
 
 export interface TopologyPathChipInput {
   sourceSlug: string | null;
   targetSlug: string | null;
-  /** 해석된 제목. 해석 실패면 null — **슬러그를 대신 넣지 말 것.** */
+  /** The resolved title, or null on failure — **never substitute the slug.** */
   sourceTitle: string | null;
   targetTitle: string | null;
   hopCount: number | null;
@@ -52,7 +47,7 @@ export function resolveTopologyPathChipState({
   if (targetSlug && !targetTitle) missing.push(targetSlug);
   if (missing.length > 0) return { kind: "missing-endpoints", missing };
 
-  // 위 분기를 지났으면 sourceTitle 은 반드시 있다.
+  // Past the branches above, `sourceTitle` is guaranteed present.
   const resolvedSourceTitle = sourceTitle as string;
   if (!targetSlug || !targetTitle) {
     return { kind: "awaiting-target", sourceTitle: resolvedSourceTitle };
@@ -69,8 +64,8 @@ export function resolveTopologyPathChipState({
 }
 
 /**
- * 에이전트에게 넘겨도 되는 상태인가 — **두 끝점이 실재할 때만.** 「경로 없음」
- * 도 넘길 수 있다: 그건 두 노드가 있다는 전제 위의 참인 사실이다.
+ * Whether this state may be handed to an agent — only when both endpoints exist.
+ * "No path" qualifies: it is a true fact given that both nodes are there.
  */
 export function canCopyTopologyPathPacket(
   state: TopologyPathChipState | null,

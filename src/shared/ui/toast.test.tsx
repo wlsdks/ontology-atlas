@@ -2,14 +2,16 @@ import { describe, expect, it, vi, beforeEach } from 'vitest';
 import { renderHook } from '@testing-library/react';
 
 /*
- * 토스트의 **후속 동작(action)** 계약 (2026-08-03, PO 카운슬 평결 ⑤).
+ * The contract for a toast's **follow-up action** (2026-08-03, PO council
+ * verdict ⑤).
  *
- * 이 파일이 생긴 이유: `show()` 는 앱의 단일 알림 경로이고 호출부가 ~50곳인데
- * 단위 테스트가 하나도 없었다. 액션 인자를 더하면서 **기존 호출부가 한 톨도
- * 안 바뀐다**는 것을 말로만 주장할 수 없어서 그 주장을 게이트로 만든다.
+ * Why this file exists: `show()` is the app's single notification path with ~50
+ * call sites and had no unit tests at all. Adding the action argument came with
+ * the claim that **not one existing call site changes**, and a claim like that
+ * has to be a gate rather than a sentence.
  *
- * sonner 를 목으로 세우는 이유: 실제 렌더가 아니라 **우리가 sonner 에 무엇을
- * 넘기는지**가 계약이다. 렌더는 sonner 의 책임이고 그건 우리 게이트가 아니다.
+ * sonner is mocked because the contract is **what we hand to sonner**, not the
+ * rendered result — rendering is sonner's responsibility and not our gate.
  */
 const sonnerToast = vi.hoisted(() => ({
   success: vi.fn(),
@@ -39,9 +41,9 @@ beforeEach(() => {
 
 describe('useToast — 후속 동작 계약', () => {
   /*
-   * 가장 중요한 단언. 액션을 안 주면 sonner 에 **옵션 객체 자체를 넘기지
-   * 않는다** — `undefined` 를 명시적으로 넘기는 것과 다르다. 기존 호출부
-   * ~50곳의 동작을 바꾸지 않겠다는 약속이 이 줄이다.
+   * The most important assertion. With no action, **no options object is passed
+   * to sonner at all**, which differs from explicitly passing `undefined`. This
+   * line is the promise that the ~50 existing call sites do not change behaviour.
    */
   it('액션이 없으면 sonner 에 옵션을 아예 넘기지 않는다', () => {
     show('저장됨');
@@ -62,8 +64,9 @@ describe('useToast — 후속 동작 계약', () => {
     expect(sonnerToast.success).toHaveBeenCalledWith('만들었어요', {
       action: { label: '지도에서 보기', onClick },
     });
-    // 핸들러는 **호출되지 않는다** — 토스트를 띄우는 것이 곧 실행이면
-    // 사용자가 누를 기회가 없고, 그러면 「눌렀는지」를 관측할 수 없다.
+    // The handler is **not called**: if showing the toast were also running it,
+    // the user never gets the chance to press, and "did they press" becomes
+    // unobservable.
     expect(onClick).not.toHaveBeenCalled();
   });
 

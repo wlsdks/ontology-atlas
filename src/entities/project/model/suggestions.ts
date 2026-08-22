@@ -3,7 +3,7 @@ import type { Project } from "./types";
 export interface SuggestedDependency {
   slug: string;
   name: string;
-  /** 매칭이 일어난 이유 표시용 짧은 발췌. */
+  /** A short excerpt showing why the match fired. */
   excerpt: string;
 }
 
@@ -21,7 +21,7 @@ function isAsciiAlphaNumeric(value: string): boolean {
 function findMatchIndex(haystack: string, needle: string): number {
   const trimmed = needle.trim();
   if (trimmed.length < MIN_NAME_LENGTH) return -1;
-  // 영문/ascii 전용 이름은 단어 경계 기준으로. 한글·혼합은 단순 포함.
+  // ASCII-only names match on word boundaries; Korean or mixed names match by containment.
   if (isAsciiAlphaNumeric(trimmed)) {
     const regex = new RegExp(`\\b${escapeRegExp(trimmed)}\\b`, "i");
     const match = regex.exec(haystack);
@@ -39,14 +39,15 @@ function extractExcerpt(corpus: string, index: number, needleLength: number): st
 }
 
 /**
- * 프로젝트의 description/detail 문자열에서 다른 프로젝트의 name/nameEn 을
- * 정확히 언급한 후보를 찾아 의존성 제안으로 반환한다.
+ * Finds other projects whose name (or English name) is mentioned verbatim in this
+ * project's description/detail, and returns them as dependency suggestions.
  *
- * 설계 원칙:
- * - 자기 자신, 이미 dependencies 에 포함된 slug 는 제외.
- * - name 길이 3자 미만은 오검출(AI/UI 등)을 피하려 건너뜀.
- * - ASCII 이름은 단어 경계 기준(영단어 부분 일치 방지), 한글 포함 이름은 단순 포함.
- * - slug 기준으로 중복 제거해 첫 매칭 1회만 반환.
+ * Rules:
+ * - excludes itself and any slug already in `dependencies`
+ * - skips names shorter than three characters, which produce false hits (AI, UI)
+ * - ASCII names match on word boundaries so they do not match inside a longer word;
+ *   names containing Korean match by containment
+ * - deduplicates by slug, returning only the first match
  */
 export function computeSuggestedDependencies(
   current: Pick<Project, "slug" | "dependencies" | "description" | "detail">,

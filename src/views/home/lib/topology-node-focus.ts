@@ -7,7 +7,7 @@ import {
 import type { TopologyOntologyDrawerModel } from "./topology-ontology-drawer";
 
 /**
- * 컴팩트 노드 포커스(팝오버)용 단일 연결 행. ego(직접 이웃) 한 개.
+ * One connection row in the compact node popover — a single direct neighbour.
  */
 export interface TopologyNodeFocusConnection {
   id: string;
@@ -21,37 +21,37 @@ export interface TopologyNodeFocusConnection {
 }
 
 /**
- * 토폴로지 노드 클릭 시 노드 옆에 뜨는 *컴팩트* 팝오버의 view-model.
+ * View-model for the compact popover that opens beside a clicked topology node.
  *
- * 풀스크린 드로어(`TopologyOntologyDrawerModel`)의 *투영*이다 — 재계산 0,
- * 따라서 카운트/연결이 드로어와 drift 하지 않는다. 팝오버는 "그 노드 +
- * 연결된 것만" 을 보여주고, 전체 상세는 `전체 상세` opt-in 으로 둔다.
- * 설계 근거: `docs/TOPOLOGY-FOCUS-AND-SCALE.md`.
+ * It is a projection of `TopologyOntologyDrawerModel` with zero recompute, so
+ * its counts and connections cannot drift from the drawer's. The popover shows
+ * the node and what it connects to; everything else stays behind the
+ * full-detail opt-in. Rationale: `docs/TOPOLOGY-FOCUS-AND-SCALE.md`.
  */
 export interface TopologyNodeFocusModel {
   id: string;
   title: string;
   /**
-   * 과제 ⑩ — 표시용 짧은 제목. 컴팩트 팝오버 헤더는 이것을 그린다(전체
-   * `title` 은 "전체 상세" opt-in 표면에서만 secondary 로 보존).
+   * Short display title, drawn by the compact popover header. The full `title`
+   * survives as secondary text on the full-detail surface only.
    */
   displayTitle: string;
   kind: string;
   summary: string | null;
   sourceSlug: string | null;
-  /** 이 노드 자신의 `.md` slug — 없으면 null (드로어 모델의 순수 투영). */
+  /** This node's own `.md` slug, or null — projected straight from the drawer model. */
   ownDocumentSlug: string | null;
-  /** 자기 문서가 없을 때, 이 노드를 적어 둔 다른 문서의 slug. */
+  /** When the node has no document, the slug of the document that mentions it. */
   mentionedInSlug: string | null;
-  /** 직접 incoming — 평문 "이 노드를 쓰는 곳". */
+  /** Direct incoming — what uses this node. */
   usedByCount: number;
-  /** 직접 outgoing — 평문 "이 노드가 기대는 곳". */
+  /** Direct outgoing — what this node leans on. */
   dependsOnCount: number;
-  /** ego 직접 이웃(드로어 previewLimit 까지). */
+  /** Direct ego neighbours, up to the drawer's `previewLimit`. */
   connections: TopologyNodeFocusConnection[];
-  /** 직접 관계의 handoff 품질 — 유사도 점수가 아니라 edge 근거/승인 상태. */
+  /** Handoff quality of the direct relations — edge evidence and approval state, not a similarity score. */
   relationQuality: TopologyRelationQualityBreakdown;
-  /** 표시 못 한 나머지 직접 연결 수 — "… +N". */
+  /** Direct connections that did not fit, shown as "+N". */
   hiddenConnectionCount: number;
 }
 

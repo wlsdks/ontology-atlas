@@ -19,10 +19,10 @@ export async function generateMetadata({
 }
 
 /**
- * `/guide` — **리다이렉트하지 않고 첫 장을 그 자리에서 그린다.**
+ * `/guide` — **renders the first chapter in place rather than redirecting.**
  *
- * `/guide` 는 공유되는 주소인데 리다이렉트로 URL 이 바뀌면 링크를 받은 사람이
- * 자기가 뭘 눌렀는지 모르게 된다. 왼쪽 차례가 어느 장인지 이미 말해 준다.
+ * `/guide` is a shared address, and a redirect that changes the URL leaves whoever received the link
+ * unsure what they clicked. The table of contents on the left already says which chapter this is.
  */
 export default async function Page({ params }: { params: Promise<{ locale: string }> }) {
   const { locale } = await params;

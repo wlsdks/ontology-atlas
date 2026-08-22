@@ -1,143 +1,162 @@
 import { expect, test, type Page } from "@playwright/test";
 
 /**
- * 접근성 래칫 — **열린 표면**.
+ * Accessibility ratchet — **open surfaces**.
  *
  * ════════════════════════════════════════════════════════════════════
- * ## 왜 이 파일이 따로 있나 (2026-08-04)
+ * ## Why this file is separate (2026-08-04)
  * ════════════════════════════════════════════════════════════════════
  *
- * `a11y-ratchet.spec.ts` 는 감사 대상 URL 을 열고 **첫 화면만** 잰다. 그래서 오버레이·
- * 패널·시트·메뉴처럼 **눌러야 나타나는 표면**은 한 번도 측정된 적이 없다. 그 게이트의
- * 기준선 셋이 전부 0 인 것은 사실이지만, 그 0 은 «닫힌 화면의 0» 이었다 —
- * `audited-routes.ts` 머리말이 라우트에 대해 적어 둔 문장이 표면에도 그대로 적용된다:
- * **재지 않은 화면은 통과한 화면이 아니다.**
+ * `a11y-ratchet.spec.ts` opens the audited URLs and measures **the first screen
+ * only**, so surfaces that **appear on a press** — overlays, panels, sheets, menus —
+ * had never been measured at all. Its three baselines really are 0, but that 0 was
+ * «the closed screen's 0». The sentence `audited-routes.ts`'s preamble records about
+ * routes applies to surfaces unchanged: **a screen that was not measured is not a
+ * screen that passed.**
  *
- * 2026-08-04 시스템 감사가 그 사각지대에서 AA 미달을 찾아내면서 이 파일이 생겼다.
- * 첫 실행이 즉시 **7건**을 냈고, 전부 닫힌 화면에서는 존재하지 않는 원소들이다.
+ * This file exists because the 2026-08-04 system audit found AA failures in that
+ * blind spot. Its first run produced **7** immediately, all of them elements that do
+ * not exist on a closed screen.
  *
- * ### 첫 전수 — 5개 표면, 위반 7 (2026-08-04, 1512×900)
+ * ### First sweep — 5 surfaces, 7 violations (2026-08-04, 1512×900)
  *
- * | 표면 | 룰 | 실측 | 무엇인가 |
+ * | Surface | Rule | Measured | What |
  * |---|---|---:|---|
- * | 설정 시트 | `color-contrast` | 2 | `#7170ff`(표식 인디고)가 `#1f2230` 위 **4.1:1** · `#232634` 위 **3.9:1** |
- * | 글로벌 검색 | `color-contrast` | 3 | `#82828a`(`--color-text-quaternary`)가 오버레이 위 **4.38 · 4.14 · 4.38** |
- * | 다음 할 일 행 메뉴 | `target-size` | 2→0 | 메뉴가 행 액션을 가려 남는 자리가 81.8×17 · 32×17 이었는데, 2026-08-13 분석 산문 한 단 올림(11→12.5px)이 행 높이를 키워 24×24 를 되찾았다 |
- * | 단축키 시트 · 문서 정렬 메뉴 | — | 0 | |
+ * | settings sheet | `color-contrast` | 2 | `#7170ff` (marker indigo) at **4.1:1** on `#1f2230` and **3.9:1** on `#232634` |
+ * | global search | `color-contrast` | 3 | `#82828a` (`--color-text-quaternary`) at **4.38 · 4.14 · 4.38** on overlays |
+ * | next-action row menu | `target-size` | 2→0 | the menu covered the row actions, leaving 81.8×17 and 32×17; the 2026-08-13 one-step lift of the analysis prose (11→12.5px) grew the row height and recovered 24×24 |
+ * | shortcut sheet · document sort menu | — | 0 | |
  *
- * **셋 다 그 라운드가 고치지 않았다 — 규격의 일이기 때문이다.** 그리고 규격
- * 라운드(2026-08-04 「체계」 잉크 라운드)가 둘을 갚았다: 인디고 5건은 손글씨
- * accent×틴트 23곳 전수 이관(`accent-ink-contrast` 기준선 23 → 0)에 포함됐고,
- * `#82828a` 3건은 「올라선 바탕 위의 글자는 tertiary 부터」 라이선스로 치환됐다
- * (`tests/contract/quaternary-ink-surface.contract.test.ts`). 그래서 아래
- * `color-contrast` 기준선이 5 → 0 이다. `target-size` 2건도 2026-08-13
- * 글자 한 단 올림이 행을 키우면서 0 이 됐다.
+ * **That round fixed none of the three, because they are the spec's work.** The spec
+ * round (the 체계 ink round, 2026-08-04) then repaid two of them: the 5 indigo
+ * findings were covered by the exhaustive migration of 23 hand-written accent×tint
+ * sites (`accent-ink-contrast` baseline 23 → 0), and the 3 `#82828a` findings were
+ * replaced under the "text on a raised background starts at tertiary" licence
+ * (`tests/contract/quaternary-ink-surface.contract.test.ts`). Hence the
+ * `color-contrast` baseline below is 5 → 0. The 2 `target-size` findings also reached
+ * 0 when the 2026-08-13 one-step type lift grew the row.
  *
- * - 인디고 5건은 **잉크 램프 판정**이다. `--color-indigo-accent` 는 「맨 어두운
- *   바탕만」이 라이선스인데(`accent-ink-contrast.contract.test.ts`) 여기서는 틴트
- *   위에 있다. 자리마다 치환할지 값을 올릴지는 「체계」의 소집 사안이고,
- *   `design.md` 가 그 목록을 명시적으로 이름 붙여 뒀다.
- * - `#82828a` 3건은 **이미 알려진 한계**다. `a11y-ratchet.spec.ts` 머리말이
- *   *"⚠️ hover/선택(overlay-2, 4.36)에서는 여전히 미달 — 누를 수 있는 행 위의
- *   글자는 tertiary 부터다"* 라고 적어 뒀고, 이 게이트가 그 문장을 **처음으로 실제
- *   화면에서 확인**했다. 산문으로만 있던 경고가 이제 숫자를 갖는다.
- * - `target-size` 2건은 겹침이라 값이 아니라 **레이아웃** 결정이다.
+ * - The 5 indigo findings are an **ink ramp verdict**. `--color-indigo-accent` is
+ *   licensed for "darkest backgrounds only" (`accent-ink-contrast.contract.test.ts`)
+ *   and here it sits on a tint. Whether each site is replaced or the value lifted is
+ *   a matter for convening 체계, and .claude/rules/design.md names that list
+ *   explicitly.
+ * - The 3 `#82828a` findings are an **already known limit**.
+ *   `a11y-ratchet.spec.ts`'s preamble records *"⚠️ still failing on hover/selected
+ *   (overlay-2, 4.36) — text on a pressable row starts at tertiary"*, and this gate
+ *   **confirmed that sentence on a real screen for the first time**. A warning that
+ *   existed only in prose now has numbers.
+ * - The 2 `target-size` findings are overlap, so they are a **layout** decision, not
+ *   a value one.
  *
- * 그래서 **래칫으로 등재한다**: 오늘 수를 상한으로 잠그고, 새 위반은 못 들어오게
- * 한다. 안 치운 채 0 을 요구하면 첫날부터 빨갛고, 빨간 게이트는 곧 꺼진다.
- *
- * ════════════════════════════════════════════════════════════════════
- * ## 열 수 있는 표면은 몇 개인가 — 분모
- * ════════════════════════════════════════════════════════════════════
- *
- * 소스 전수로 **22개**다(`censusAppearingSurfaces`, 조건부로 나타나는 표면).
- * 이 파일은 그중 **6개**를 연다. 나머지가 안 열리는 이유는 대부분 **볼트가
- * 필요**하거나(문서 편집기 자동완성 · 에이전트 패널) 캔버스 좌표를 짚어야 해서다
- * (지도 노드 팝오버 · 우클릭 메뉴 — `?e2e=1` 의 `window.__atlasMap` 으로 여는
- * 경로는 이 라운드에서 좌표 변환까지 갔으나 클릭이 노드에 안 닿아 보류했다).
- *
- * **분모를 코드에 적어 두는 이유**: 6/22 라고 쓰면 다음 사람이 «나머지 16은
- * 왜 안 재나» 를 물을 수 있다. 그냥 6개를 열고 말면 그 질문 자체가 사라진다.
- * 분모가 늘어나면 `surface-motion-ratchet` 의 「열 수 있는 표면이 늘지 않는다」가
- * 먼저 빨개진다 — 그때 이 목록도 같이 본다.
+ * So they are **registered as a ratchet**: today's counts are locked as the ceiling
+ * and no new violation may enter. Demanding 0 without clearing them first would be
+ * red from day one, and a red gate is soon switched off.
  *
  * ════════════════════════════════════════════════════════════════════
- * ## 이 게이트가 공회전하지 않는다는 증명
+ * ## How many surfaces can be opened — the denominator
  * ════════════════════════════════════════════════════════════════════
  *
- * 「열린 표면에서 위반 0」과 「사실은 아무것도 안 열렸다」는 화면에서 구별되지
- * 않는다 — 그게 이 라운드가 존재하는 이유 자체다. 그래서 표면마다 **두 겹**을 건다:
+ * The exhaustive source count is **22** (`censusAppearingSurfaces`, surfaces that
+ * appear conditionally). This file opens **6** of them. Most of the rest cannot be
+ * opened here because they **need a vault** (document editor autocomplete, the agent
+ * panel) or require canvas coordinates (map node popover, right-click menu — the
+ * route through `?e2e=1`'s `window.__atlasMap` reached coordinate conversion this
+ * round, but the click never landed on a node, so it was deferred).
  *
- * 1. **열렸다는 증거** — 트리거를 누른 뒤 그 표면의 셀렉터가 실제로 보여야 한다.
- *    testid 가 컴포넌트보다 오래 살아남는 사고(2026-08 릴리스)를 여기서 막는다.
- * 2. **채집이 살아 있다** — axe 가 내용에 적용해 통과시킨 룰이 바닥 위여야 한다.
- *    빈 문서에서 이 값은 2 다.
+ * **Why the denominator is written into the code**: writing 6/22 lets the next person
+ * ask "why are the other 16 not measured". Opening 6 and saying nothing makes that
+ * question disappear. When the denominator grows, `surface-motion-ratchet`'s "openable
+ * surfaces never grow" turns red first — and that is the moment to review this list
+ * too.
+ *
+ * ════════════════════════════════════════════════════════════════════
+ * ## Proof that this gate is not idling
+ * ════════════════════════════════════════════════════════════════════
+ *
+ * "0 violations on open surfaces" and "in fact nothing was opened" are
+ * indistinguishable on screen — which is the very reason this round exists. So every
+ * surface carries **two layers**:
+ *
+ * 1. **Evidence that it opened** — after pressing the trigger, that surface's selector
+ *    must actually be visible. This blocks the accident where a testid outlives its
+ *    component (the 2026-08 release).
+ * 2. **Collection is alive** — the number of rules axe applied to the content and
+ *    passed must be above a floor. On an empty document that number is 2.
  */
 
 const AXE_PATH = require.resolve("axe-core/axe.min.js");
 
 const WCAG_TAGS = ["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "wcag22aa"];
 
-/** `a11y-ratchet.spec.ts` 와 같은 바닥. 빈 문서는 2, 실제 화면은 25~30. */
+/** The same floor as `a11y-ratchet.spec.ts`. An empty document gives 2; a real screen 25–30. */
 const MIN_RULES_PASSED = 15;
 
 /**
- * 소스 전수 — `censusAppearingSurfaces()` 가 낸 수. 위 「분모」 절.
+ * The exhaustive source count from `censusAppearingSurfaces()`. See "the
+ * denominator" above.
  *
- * 20 → 22 (2026-08-04): 「내 에이전트 연결」이 단계 진행형이 되면서 접힘 두
- * 갈래(단계 본문 · 「잘 안 되나요?」 서랍)가 생겼다. 둘 다 볼트가 있어야 열리는
- * 부류라 이 파일이 여는 5개에는 아직 안 들어간다 — 그 사실을 분모가 말한다.
+ * 20 → 22 (2026-08-04): "connect my agent" became a stepped flow, adding two collapse
+ * branches (the step body and the "not working?" drawer). Both need a vault to open,
+ * so they are not yet among the surfaces this file opens — which is what the
+ * denominator says.
  *
- * 22 → 20 (2026-08-04 저녁): 그 두 갈래가 목록 행 펼침 문법(`.ai-row-disclosure`,
- * 상자 상시 렌더 + 내용만 접힘)으로 옮겨 가면서 조건부 «등장 표면» 이 아니게
- * 됐다 — 접힌 내용의 접근성(탭 순서·AT 노출 없음)은 상자의 `inert` 가 지고,
- * 그 계약은 `AgentSetupStep.test.tsx` 가 잰다.
+ * 22 → 20 (evening of 2026-08-04): those two branches moved to the list-row
+ * disclosure grammar (`.ai-row-disclosure`, box always rendered with only the content
+ * collapsing) and stopped being conditional *appearing surfaces*. Accessibility of the
+ * collapsed content (tab order, no AT exposure) is carried by the box's `inert`, and
+ * `AgentSetupStep.test.tsx` measures that contract.
  *
- * 20 → 21 (2026-08-08): 에디터의 `@` 멘션이 **관계 고르기 2단계**를 얻었다.
- * 1단계(개념 고르기)는 종전 위키링크 팝오버 자리를 물려받은 것이라 수가 그대로였고,
- * 새로 는 것은 그 2단계 하나다. 이 표면은 **로컬 볼트 + 문서 열기 + 편집 진입 +
- * `@` 입력 + 개념 고르기**를 지나야 나오므로 아래 한 번 클릭짜리 `OPENERS` 문법에
- * 안 들어간다 — 그 사실을 분모가 말한다. 대신 키보드 계약(↑↓·Enter·Esc)은
- * 이 파일이 아니라 위젯 단위 시험이 진다.
+ * 20 → 21 (2026-08-08): the editor's `@` mention gained a **relation-picking second
+ * step**. The first step (picking a concept) inherited the old wiki-link popover's
+ * slot so the count was unchanged; only that second step is new. This surface appears
+ * only after **a local vault + opening a document + entering edit + typing `@` +
+ * picking a concept**, so it does not fit the single-click `OPENERS` grammar below —
+ * which is what the denominator says. Its keyboard contract (↑↓, Enter, Esc) is
+ * carried by widget-level tests rather than this file.
  *
- * 21 → 22 (2026-08-12): 프로젝트 검수 결과의 근거 disclosure가 추가됐다. 로컬
- * JSON을 주입한 뒤 실제 toggle을 눌러 여는 경로가 아래 OPENERS에 들어가므로,
- * 새 표면은 분모뿐 아니라 axe 측정에도 포함된다.
+ * 21 → 22 (2026-08-12): the evidence disclosure in project review results. The route
+ * that injects local JSON and then presses the real toggle fits OPENERS below, so this
+ * surface is included in the axe measurement as well as the denominator.
  *
- * 22 → 23 (2026-08-14): 같은 검수 artifact 안에 전문가용 세션 초안 disclosure가
- * 추가됐다. 원본 영수증을 바꾸지 않는 로컬 편집 표면이며, construction review
- * e2e가 390/1023/1024/1512에서 열림·overflow를 측정한다.
+ * 22 → 23 (2026-08-14): a specialist session-draft disclosure was added inside the
+ * same review artifact. It is a local editing surface that does not modify the
+ * original receipt, and the construction review e2e measures its opening and overflow
+ * at 390/1023/1024/1512.
  *
- * 23 → 25 (2026-08-16): ACP 대화 패널과 그 안의 권한 카드가 추가됐다. 둘 다
- * **아래 OPENERS 문법에 들어갈 수 없다** — 데스크톱 브리지(`isAcpBridgeAvailable`)가
- * 없으면 아예 렌더되지 않으므로, 브라우저에서 도는 이 스윕이 원리적으로 못 연다.
- * 권한 카드는 거기서 한 겹 더 들어간다: 에이전트가 볼트 밖을 건드리려 해야
- * 나타난다. 그 사실을 분모가 말한다(위 「@ 입력」 표면과 같은 부류다). 접근성은
- * 위젯 단위 시험이 진다 — 카드의 `role="alertdialog"` · 이름 배선 · 닫는 X 가
- * 없다는 계약은 `AcpChatPanel.test.tsx` 가 잰다.
+ * 23 → 25 (2026-08-16): the ACP chat panel and the permission card inside it. Neither
+ * **can fit the OPENERS grammar below** — without the desktop bridge
+ * (`isAcpBridgeAvailable`) they do not render at all, so this browser-run sweep cannot
+ * open them in principle. The permission card goes one layer deeper still: it appears
+ * only when the agent tries to touch something outside the vault. The denominator says
+ * so (the same class as the "@ typing" surface above). Accessibility is carried by
+ * widget-level tests — `AcpChatPanel.test.tsx` measures the card's
+ * `role="alertdialog"`, its name wiring, and the contract that it has no closing X.
  *
- * 25 → 26 (2026-08-16): ACP 대화의 **지난 대화 목록** 팝오버. 바로 위 둘과 같은
- * 이유로 이 스윕이 못 연다 — 데스크톱 브리지가 있어야 하고, 그 위에 **이 폴더의
- * 지난 대화가 실제로 있어야** 버튼 자체가 생긴다(없으면 안 그린다). 접근성과
- * 폴더 범위 계약은 `AcpChatPanel.test.tsx` 와
- * `tests/contract/acp-session-scope.contract.test.ts` 가 진다.
+ * 25 → 26 (2026-08-16): the ACP chat's **past-conversation list** popover. This sweep
+ * cannot open it for the same reason as the two above — it needs the desktop bridge,
+ * and beyond that the button only exists when **this folder really has past
+ * conversations** (with none, nothing is drawn). Accessibility and the folder-scope
+ * contract are carried by `AcpChatPanel.test.tsx` and
+ * `tests/contract/acp-session-scope.contract.test.ts`.
  *
- * 26 → 29 (2026-08-21): 지도 안 관계 편집기 하나와 「새 개념」의 입력→변경안
- * 교체 표면 둘. 셋 모두 로컬 쓰기 가능한 vault가 있어야 하므로 이 정적 브라우저
- * 스윕의 단일-click OPENERS로는 열 수 없다. 관계 편집기의 키보드·검토·쓰기 전
- * 정지는 `MeaningEditorPanel.test.tsx`, 생성 교체는 `CreateNodeForm.test.tsx`가
- * 맡고, 설치 앱 검증에서 실제 표면을 연다.
+ * 26 → 29 (2026-08-21): one in-map relation editor plus the two input→changeset swap
+ * surfaces of "new concept". All three need a locally writable vault, so this static
+ * browser sweep's single-click OPENERS cannot open them. The relation editor's
+ * keyboard handling, review step, and pre-write pause are carried by
+ * `MeaningEditorPanel.test.tsx`, the creation swap by `CreateNodeForm.test.tsx`, and
+ * the installed-app verification opens the real surfaces.
  */
 const APPEARING_SURFACES_IN_SOURCE = 29;
 
 interface Opener {
   readonly name: string;
   readonly route: string;
-  /** 누를 트리거의 testid. */
+  /** The testid of the trigger to press. */
   readonly trigger: string;
-  /** 눌린 뒤 **반드시 보여야 하는** 것. 안 보이면 이 게이트는 아무것도 안 잰 것이다. */
+  /** What **must be visible** after the press. If it is not, this gate measured nothing. */
   readonly surface: string;
-  /** 보이지 않는 local file transport를 먼저 채워야 trigger가 생기는 표면. */
+  /** Surfaces whose trigger only exists after an invisible local file transport is filled first. */
   readonly fileInput?: {
     readonly testId: string;
     readonly name: string;
@@ -245,8 +264,9 @@ const OPENERS: readonly Opener[] = [
 ];
 
 /**
- * **이 숫자는 내려가기만 한다.** 리터럴이다 — 실측에서 파생하면 「늘지 않는다」가
- * 원리적으로 실패 불가가 된다(하드컷 래칫이 정확히 그렇게 죽었다).
+ * **This number only goes down.** It is a literal — derived from the measurement,
+ * "it never grows" would be impossible to fail in principle (exactly how the hard-cut
+ * ratchet died).
  */
 const BASELINE: Readonly<Record<string, number>> = {
   "color-contrast": 0,
@@ -255,7 +275,7 @@ const BASELINE: Readonly<Record<string, number>> = {
 
 async function openAndAudit(page: Page, o: Opener) {
   await page.goto(`${o.route}?guides=off`, { waitUntil: "domcontentloaded" });
-  // 지도는 물리 시뮬이 수렴해야 화면이 정해진다.
+  // The map's screen is only settled once the physics simulation converges.
   await page.waitForTimeout(2500);
 
   if (o.fileInput) {
@@ -269,8 +289,9 @@ async function openAndAudit(page: Page, o: Opener) {
   await page.getByTestId(o.trigger).first().click({ timeout: 8000 });
   await page.waitForTimeout(800);
 
-  // ★ 열렸다는 증거. 이게 없으면 아래 axe 는 «닫힌 화면» 을 한 번 더 재는 것이고,
-  //   그 결과는 첫 화면 래칫과 중복이면서 «열린 표면 위반 0» 이라고 거짓 보고한다.
+  // Evidence that it opened. Without this, the axe run below measures the *closed*
+  // screen once more — duplicating the first-screen ratchet while falsely reporting
+  // "0 violations on open surfaces".
   await expect(
     page.locator(o.surface).first(),
     `«${o.name}» 트리거를 눌렀는데 표면이 안 열렸다 — 이 게이트는 아무것도 재지 않았다. ` +
@@ -316,7 +337,7 @@ test("접근성 래칫(열린 표면) — 새 룰 위반 0, 기존 개수는 늘
     }
   }
 
-  // ★ 「위반 0」과 「아무것도 안 쟀다」를 가른다.
+  // Separates "0 violations" from "nothing was measured".
   expect(
     thin,
     `axe 가 표면당 ${MIN_RULES_PASSED}개 룰도 내용에 적용하지 못했다 — 위반이 없는 게 아니라 ` +
@@ -339,7 +360,8 @@ test("접근성 래칫(열린 표면) — 새 룰 위반 0, 기존 개수는 늘
     ).toBeLessThanOrEqual(max);
   }
 
-  // ★ 고쳤는데 기준선을 안 내리면 그만큼이 **다시 나빠질 여유**로 남는다.
+  // Fixing something without lowering the baseline leaves that much as **room to
+  // regress**.
   const slack = Object.entries(BASELINE)
     .filter(([id, max]) => (counts.get(id) ?? 0) < max)
     .map(([id, max]) => `  ${id}: 기준선 ${max} · 실측 ${counts.get(id) ?? 0}`);
@@ -355,6 +377,7 @@ test("측정 목록이 분모를 잃지 않는다 — 6/22 라고 말할 수 있
     new Set(OPENERS.map((o) => o.route)).size,
     "전부 한 라우트에서만 열면 다른 축의 표면은 여전히 아무도 안 본다",
   ).toBeGreaterThanOrEqual(3);
-  // 분모가 코드에 남아 있어야 «나머지는 왜 안 재나» 를 물을 수 있다.
+  // The denominator must stay in the code so "why are the rest not measured" can be
+  // asked.
   expect(APPEARING_SURFACES_IN_SOURCE).toBeGreaterThan(OPENERS.length);
 });

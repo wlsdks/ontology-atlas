@@ -1,5 +1,6 @@
-// B3 — 활동 로그 파서 2-way drift 차단: mcp 리더(파일 기반, CLI --log 공용)
-// 와 웹 파서(shared/lib)가 같은 줄 집합에서 같은 항목을 복원해야 한다.
+// Blocks 2-way drift in the activity log parser: the mcp reader (file-based, shared
+// with the CLI's --log) and the web parser (shared/lib) must reconstruct the same
+// entries from the same set of lines.
 import { describe, expect, it } from "vitest";
 import { mkdtempSync, mkdirSync, rmSync, writeFileSync } from "node:fs";
 import { join } from "node:path";

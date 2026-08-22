@@ -15,10 +15,11 @@ import { TopologyInsightsReturnChip } from "./TopologyInsightsReturnChip";
 import { TopologyPathChip } from "./TopologyPathChip";
 
 /**
- * S10 결함 1 — 상단 중앙 크롬 열의 상태 칩(영역·복귀·경로)이 `ChromeChip` 과
- * **같은 규격**(높이 `--chrome-tile-size` · radius `--chrome-radius`)을 공유하고,
- * `SearchHint` 래퍼가 이미 거는 `topology-ui-scale`(zoom)을 **자기 자신에 다시
- * 걸지 않는지**(중첩 zoom = 형제보다 커지는 결함의 원인) 회귀 핀.
+ * Regression pin for the top-centre status chips (realm, return, path): they must
+ * share `ChromeChip`'s spec (`--chrome-tile-size` height, `--chrome-radius`) and
+ * must not re-apply `topology-ui-scale` to themselves — the `SearchHint` wrapper
+ * already applies it, and nesting the zoom is what made a chip grow past its
+ * siblings.
  */
 describe("상단 크롬 상태 칩 규격 (S10 결함 1)", () => {
   it("공유 규격 클래스가 chrome-tile-size 높이·chrome-radius·chrome-border 토큰을 담는다", () => {

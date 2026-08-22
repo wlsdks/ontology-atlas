@@ -24,10 +24,10 @@ function makeProject(slug: string, name: string): Project {
 }
 
 /**
- * #74 — 정적 모드 fallback(`SEED_PROJECTS` 15건)은 제거됐다. 그 시드는
- * Firebase Hosting · Sigma/WebGL · 화이트리스트 어드민처럼 **이미 제거된 기능을
- * 사실처럼** 서술했고, `/project/[slug]` 라우트가 vault 에서 생성되므로 그
- * slug 들은 애초에 도달 불가였다. 없는 제품을 설명하느니 "없다" 고 말한다.
+ * The static-mode fallback (15 `SEED_PROJECTS`) was removed. Those seeds described **already-removed
+ * features as fact** (Firebase Hosting, Sigma/WebGL, a whitelist admin), and since `/project/[slug]`
+ * routes are generated from the vault those slugs were unreachable to begin with. Better to say "it does
+ * not exist" than to describe a product that does not.
  */
 describe("resolveSubscribeUpdate", () => {
   it("현재 목록에 slug 가 없으면 next=null — 호출부의 not-found 상태가 뜬다", () => {

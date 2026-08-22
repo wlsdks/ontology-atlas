@@ -1306,7 +1306,7 @@ export async function runDogfoodWalk() {
   }
   failures.push(...stderrWarningFailures(stderr));
 
-  // 분석
+  // Analysis
   header("Analysis — AI agent quality assessment");
   const total = kinds?.total || 0;
   const orphCount = orph?.total || 0;

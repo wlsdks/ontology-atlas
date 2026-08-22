@@ -31,7 +31,7 @@
  *   slug!=README AND has(depends_on)
  *   (kind=domain OR kind=capability) AND has(elements)
  *
- * Returns: { match: (doc) => boolean, repr: string } — repr 은 디버그용.
+ * Returns: { match: (doc) => boolean, repr: string } — `repr` is for debugging.
  */
 
 import { NODE_KIND_VALUES } from './ontology-engine.mjs';
@@ -39,10 +39,10 @@ import { formatAllowedValueError } from './suggestions.mjs';
 import { GRAPH_ARRAY_KEYS } from './vault.mjs';
 
 const KEY_RE = /^[a-z_][a-z0-9_]*$/i;
-// `created_by` — 2026-07-31 원장의 「사람이 만든 것만 모아보기」가 성립하는
-// 자리. 값이 `agent:codex` 처럼 콜론을 품으면 따옴표로 감싼다
-// (`created_by="agent:codex"`) — 토크나이저의 맨몸 낱말에는 콜론이 없다.
-// 스탬프가 없는 노드는 어느 쪽에도 안 걸린다. 그것이 unknown 의 뜻이다.
+// `created_by` — the key that makes "show only what a human made" work (decision
+// ledger, 2026-07-31). A value containing a colon (`agent:codex`) must be quoted
+// (`created_by="agent:codex"`), because the tokenizer's bare words hold no colon.
+// A node with no stamp matches neither side. That is what unknown means.
 const EQUALITY_KEYS = Object.freeze(['kind', 'domain', 'slug', 'title', 'created_by']);
 const HAS_KEY_ALIASES = Object.freeze({
   depends_on: 'dependencies',
@@ -142,9 +142,9 @@ function tokenize(input) {
 
 // ── parser ────────────────────────────────────────────────────────────────
 //
-// precedence 분리: parseExpr → parseOr → parseAnd → parseAtom → parsePrimary.
-// 이전 단일-함수 구현은 AND / OR 를 동급 left-associative 로 처리해 문서가
-// 광고하던 `NOT > AND > OR` 와 mismatch 였음.
+// Precedence is split across parseExpr → parseOr → parseAnd → parseAtom →
+// parsePrimary. The earlier single-function implementation treated AND and OR as
+// equal left-associative operators, contradicting the documented `NOT > AND > OR`.
 
 function parseExpr(tokens, pos) {
   return parseOr(tokens, pos);
@@ -260,9 +260,9 @@ function evaluate(node, doc) {
     case 'cmp': {
       const actual = readField(doc, node.key);
       const target = node.value;
-      // Panel E T1-2 (2026-05-02): 대소문자 무시 비교. 사용자 / LLM 둘 다
-      // `kind=Capability` 같은 표기를 자주 쓰는데 frontmatter 는 `kind: capability`
-      // 라 silent 0-match 됐던 foot-gun 제거.
+      // Case-insensitive comparison. Users and LLMs alike often write
+      // `kind=Capability` while the frontmatter says `kind: capability`, which
+      // used to be a silent 0-match foot-gun.
       const matches =
         String(actual ?? '').toLowerCase() === target.toLowerCase();
       return node.op === '=' ? matches : !matches;

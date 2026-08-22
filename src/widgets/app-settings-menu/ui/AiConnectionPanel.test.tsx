@@ -82,8 +82,8 @@ beforeEach(() => {
 });
 
 /**
- * 웹 강등 — 브라우저에는 키를 안전하게 둘 곳이 없다. 조용히 실패하거나 숨기지
- * 않고, 입력 필드를 아예 만들지 않은 채 이유를 설명한다.
+ * Web degradation — a browser has nowhere safe to keep a key. Rather than failing
+ * silently or hiding, it builds no input field at all and explains why.
  */
 describe('AiConnectionPanel web degradation', () => {
   it('renders no key input at all when the desktop bridge is absent', () => {
@@ -92,12 +92,12 @@ describe('AiConnectionPanel web degradation', () => {
     expect(screen.queryByTestId('ai-key-input-anthropic')).toBeNull();
     expect(screen.queryByTestId('ai-key-input-openai')).toBeNull();
     expect(screen.queryByTestId('ai-key-input-gemini')).toBeNull();
-    // 접힌 행조차 없다 — 브라우저에는 키를 받을 자리 자체가 없다.
+    // Not even a collapsed row — a browser has no place to receive a key.
     expect(screen.queryByTestId('ai-register-anthropic')).toBeNull();
     expect(screen.queryByTestId('ai-verify-anthropic')).toBeNull();
-    // 키가 필요 없는 갈래(주소로 연결)도 마찬가지다 — 그리고 **왜 그것도
-    // 안 되는지**를 따로 적는다. 안 적으면 강등이 절반만 정직해진다:
-    // "키가 문제라면 키가 필요 없는 Ollama 는 되겠지" 로 읽히기 때문이다.
+    // The same holds for the key-less path (connect by address) — and **why that
+    // does not work either** is stated separately. Without it the degradation is only
+    // half honest: it reads as "if keys are the problem, then key-less Ollama works".
     expect(screen.queryByTestId('ai-register-local')).toBeNull();
     expect(screen.queryByTestId('ai-local-url')).toBeNull();
     expect(screen.getByTestId('ai-connection-web-degraded-local')).toBeInTheDocument();
@@ -113,9 +113,9 @@ describe('AiConnectionPanel web degradation', () => {
 });
 
 /**
- * 미등록 행 접기 — 벤더가 셋이 되면 상시 노출된 password 입력 셋이 설정 시트를
- * 폼 관문처럼 만든다. 접힌 행은 "미등록" 이라는 상태를 그대로 말하면서 시각
- * 무게만 줄인다.
+ * Collapsing unregistered rows — with three vendors, three permanently visible
+ * password inputs make the settings sheet a form gate. A collapsed row still states
+ * the "unregistered" status and only sheds visual weight.
  */
 describe('AiConnectionPanel unregistered rows', () => {
   it('lists every named vendor without opening three key fields at once', () => {
@@ -132,9 +132,9 @@ describe('AiConnectionPanel unregistered rows', () => {
     expect(screen.getByTestId('ai-key-input-anthropic')).toBeInTheDocument();
     expect(screen.queryByTestId('ai-key-input-gemini')).toBeNull();
 
-    // 다른 행을 열면 앞 행은 접힌다 — 붙여넣기 직전의 안전 문구가 어느 키에
-    // 대한 말인지 화면에 하나뿐이어야 한다. 접힘은 **같은 프레임에 시작**하고
-    // (data-state) 전이가 끝나면 DOM 에서 사라진다.
+    // Opening another row collapses the previous one — the screen must show exactly
+    // one key so the safety copy beside the paste field is unambiguous. The collapse
+    // starts **in the same frame** (data-state) and leaves the DOM when the transition ends.
     fireEvent.click(screen.getByTestId('ai-register-gemini'));
     expect(screen.getByTestId('ai-key-input-gemini')).toBeInTheDocument();
     expect(screen.getByTestId('ai-detail-anthropic')).toHaveAttribute(
@@ -147,9 +147,10 @@ describe('AiConnectionPanel unregistered rows', () => {
   });
 
   it('drops an unsaved draft when another row takes the open slot', () => {
-    // 접기가 만든 새 노출 창 — 행은 접혀도 컴포넌트는 살아 있으므로, 붙여넣었다가
-    // 그만둔 키가 화면에서만 사라진 채 상태에 남을 수 있다. 사용자는 포기했다고
-    // 믿는데 남아 있으면 "저장 전까지만 화면에 있다" 는 계약이 깨진다.
+    // The exposure window collapsing creates — the row collapses but the component
+    // lives on, so a key pasted and abandoned could disappear from the screen while
+    // remaining in state. The user believes they gave up, and "on screen only until
+    // saved" is broken.
     renderPanel(makeConnection());
     fireEvent.click(screen.getByTestId('ai-register-anthropic'));
     fireEvent.change(screen.getByTestId('ai-key-input-anthropic'), {
@@ -166,8 +167,8 @@ describe('AiConnectionPanel unregistered rows', () => {
   });
 
   it('collapses the row again once the key lands — no lingering open field', async () => {
-    // 저장·삭제 직후에도 입력칸이 열려 있으면 화면이 "하나 더 넣으라" 고
-    // 재촉하는 것처럼 읽힌다.
+    // An input still open right after a save or delete reads as the screen pressing
+    // you to enter another one.
     mocks.secretSet.mockResolvedValue({
       provider: 'gemini',
       stored: true,
@@ -180,7 +181,7 @@ describe('AiConnectionPanel unregistered rows', () => {
     });
     fireEvent.click(screen.getByTestId('ai-save-gemini'));
 
-    // 부모가 statuses 를 들고 있으므로 이 렌더에서는 다시 접힌 행으로 돌아온다.
+    // The parent holds statuses, so this render returns to the collapsed row.
     await waitFor(() =>
       expect(screen.getByTestId('ai-detail-gemini')).toHaveAttribute(
         'data-state',
@@ -216,11 +217,12 @@ describe('AiConnectionPanel key lifecycle', () => {
     fireEvent.click(screen.getByTestId('ai-save-anthropic'));
 
     await waitFor(() => expect(applyStatus).toHaveBeenCalled());
-    // 전체 키가 화면 상태에 남아 있는 유일한 순간이 저장으로 끝난다.
+    // The only moment the full key exists in screen state ends with the save.
     expect(document.body.innerHTML).not.toContain('sk-ant-secret-value');
 
-    // 행을 다시 펼쳐도 비어 있다 — 입력칸이 접혀 사라진 것과 상태가 비워진
-    // 것은 다른 사실이고, 여기서 확인해야 하는 것은 뒤쪽이다.
+    // Re-expanding the row leaves it empty — the input collapsing out of sight and
+    // the state being cleared are different facts, and it is the latter that has to
+    // be confirmed here.
     fireEvent.click(screen.getByTestId('ai-register-anthropic'));
     expect(
       (screen.getByTestId('ai-key-input-anthropic') as HTMLInputElement).value,
@@ -228,9 +230,10 @@ describe('AiConnectionPanel key lifecycle', () => {
   });
 
   it('confirms a save in words as well as in the row itself', async () => {
-    // 행이 스스로 바뀌는 것이 1차 증거지만, 그 변화는 스크롤 밖일 수도 있고
-    // 눈이 다른 데 가 있을 수도 있다. 삭제(`cleared`)와 같은 대칭으로 말로도
-    // 확인해 준다 — 둘 중 하나만 있으면 "눌렀는데 뭐가 됐지" 가 남는다.
+    // The row changing itself is the primary evidence, but that change may be off
+    // screen or the eye may be elsewhere. Words confirm it too, symmetric with
+    // clearing (`cleared`) — with only one of the two, "I pressed it, so what
+    // happened?" remains.
     mocks.secretSet.mockResolvedValue({
       provider: 'openai',
       stored: true,
@@ -291,7 +294,7 @@ describe('AiConnectionPanel key lifecycle', () => {
 
 describe('AiConnectionPanel connection check', () => {
   it('cannot send without a vault to record the call in', () => {
-    // log-before-send 의 화면 쪽 얼굴: 기록할 곳이 없으면 보낼 수도 없다.
+    // The screen-side face of log-before-send: with nowhere to log, there is no sending either.
     renderPanel(
       makeConnection({
         statuses: {
@@ -307,8 +310,8 @@ describe('AiConnectionPanel connection check', () => {
   });
 
   it('names the destination host before the user ever presses check', () => {
-    // 헌장 ⑥ — 명명 벤더에서 우리가 증명할 수 있는 주장은 "코드에 박힌 공식
-    // 주소로만 간다" 까지다. 그 주소를 이름으로 말하는 것이 그 주장의 전부다.
+    // Charter ⑥ — for a named vendor the only claim we can prove is "it only goes to
+    // the official address hard-coded here". Naming that address is the whole of the claim.
     renderPanel(
       makeConnection({
         statuses: {
@@ -349,7 +352,7 @@ describe('AiConnectionPanel connection check', () => {
     await waitFor(() =>
       expect(screen.getByText('settings.ai.verifyDenied:401')).toBeInTheDocument(),
     );
-    // 거부된 호출도 기록됐다 — 기록 표면을 즉시 다시 읽는다.
+    // A denied call was logged too — the log surface is re-read immediately.
     expect(refreshAudit).toHaveBeenCalled();
     expect(mocks.secretVerify).toHaveBeenCalledWith('anthropic', '/vault');
   });
@@ -380,9 +383,9 @@ describe('AiConnectionPanel connection check', () => {
   });
 
   it('trusts the rust verdict over the status code — gemini rejects with 400', async () => {
-    // 화면이 401/403 만 거부로 읽으면 Gemini 사용자는 틀린 키를 넣고도
-    // "확인하지 못했어요" 를 보고 앱이 고장난 줄 안다(2026-07-26 실측: Gemini
-    // 는 틀린 키에 400 `API_KEY_INVALID` 를 준다).
+    // If the screen read only 401/403 as denial, a Gemini user entering a wrong key
+    // sees "could not verify" and thinks the app is broken (measured 2026-07-26:
+    // Gemini answers a wrong key with 400 `API_KEY_INVALID`).
     mocks.secretVerify.mockResolvedValue({
       provider: 'gemini',
       ok: false,
@@ -418,7 +421,7 @@ describe('AiConnectionPanel audit tail', () => {
     purpose: 'verify',
     question: null,
     scope: { nodes: [], promptChars: 0, vaultChars: 0 },
-    // 연결 확인 줄에는 `tools` 필드가 없다 — 리더가 null 로 읽는 자리.
+    // A connection-check line has no `tools` field — the position the reader reads as null.
     tools: null,
     payloadSha256: 'e3b0',
     outcome: 'ok',
@@ -448,8 +451,9 @@ describe('AiConnectionPanel audit tail', () => {
   });
 
   it('keeps the mono face on the path only — the sentence beside it is prose', () => {
-    // 한 줄을 통째로 mono 로 두면 한글 낱말 사이가 벌어져 소유자가 이중 공백으로
-    // 읽었다. 경로는 기계 문자열이라 mono 가 정보지만, 그 옆 문장은 아니다.
+    // A whole line in mono widens Hangul word gaps, which the owner read as double
+    // spaces. A path is a machine string, so mono is information there — the sentence
+    // beside it is not.
     renderPanel(makeConnection({ auditEntries: [entry] }));
     const path = screen.getByText('.ontology-atlas/llm-audit.jsonl');
     expect(path.className).toContain('font-mono');
@@ -458,9 +462,10 @@ describe('AiConnectionPanel audit tail', () => {
 });
 
 /**
- * 되돌릴 수 있는 펼침 — [키 등록]을 눌러 본 사람이 아무것도 넣지 않고 나갈 길.
- * 소유자 실측 지적(2026-07-26): "입력 안하고 닫고싶을수도 있잖아?" 당시 펼친
- * 카드에는 [저장] 하나뿐이었고, 접는 방법이 화면에 없었다.
+ * A reversible expansion — the way out for someone who pressed [키 등록] and enters
+ * nothing. Owner report from measurement (2026-07-26): "입력 안하고 닫고싶을수도
+ * 있잖아?" (you might want to close it without entering anything). At the time the
+ * expanded card had only [저장] and no way to collapse it on screen.
  */
 describe('AiConnectionPanel draft cancel', () => {
   it('offers a visible way out of an expanded row, not just Save', () => {
@@ -478,14 +483,14 @@ describe('AiConnectionPanel draft cancel', () => {
 
     fireEvent.click(screen.getByTestId('ai-cancel-openai'));
 
-    // 되돌리기는 **그 프레임에** 시작한다 — 확인창도, 지연도 없다.
+    // Undoing starts **in that frame** — no confirmation dialog, no delay.
     expect(screen.getByTestId('ai-detail-openai')).toHaveAttribute(
       'data-state',
       'closed',
     );
-    // 초안은 전이가 끝나기를 기다리지 않는다. 접힘이 눈에 보이게 하려고 컴포넌트를
-    // 180ms 더 살려 뒀지만, "붙여넣은 키는 저장 전까지만 화면에 있다" 는 계약이
-    // 그만큼 늘어나면 모션을 얻자고 약속을 깎은 것이다.
+    // The draft does not wait for the transition. The component is kept alive 180ms
+    // longer so the collapse is visible, but stretching "a pasted key is on screen
+    // only until it is saved" by that much would be shaving the promise to buy a motion.
     expect(document.body.innerHTML).not.toContain('sk-openai-abandoned');
     expect(screen.getByTestId('ai-register-openai')).toBeInTheDocument();
 
@@ -493,8 +498,8 @@ describe('AiConnectionPanel draft cancel', () => {
   });
 
   it('keeps the collapsing region out of tab order the moment it starts closing', () => {
-    // 퇴장 모션의 대가를 접근성으로 치르지 않는다 — 보이지 않는 입력칸이
-    // 180ms 동안 탭 순서와 스크린 리더에 남아 있으면 안 된다.
+    // The price of an exit motion is not paid in accessibility — an invisible input
+    // must not stay in tab order and the screen reader for 180ms.
     renderPanel(makeConnection());
     fireEvent.click(screen.getByTestId('ai-register-openai'));
     expect(screen.getByTestId('ai-detail-openai')).not.toHaveAttribute('inert');
@@ -504,8 +509,8 @@ describe('AiConnectionPanel draft cancel', () => {
   });
 
   it('sends the row out the same way it came in — one surface, two states', () => {
-    // 나가는 길이 들어온 길과 달라지려면 표면이 둘이어야 한다. 하나뿐이면
-    // 방향별로 다른 커브가 생길 자리가 없다.
+    // For the way out to differ from the way in there have to be two surfaces. With
+    // one, there is nowhere for a direction-specific curve to live.
     renderPanel(makeConnection());
     const region = screen.getByTestId('ai-detail-openai');
     expect(region).toHaveAttribute('data-state', 'closed');
@@ -520,8 +525,8 @@ describe('AiConnectionPanel draft cancel', () => {
   });
 
   it('keeps the row header fixed while the detail region grows', () => {
-    // 형제 셋이 한 목록이라는 사실은 "펼친 행만 아래로 자란다" 로 읽힌다.
-    // 헤더가 교체되면 그건 자란 게 아니라 다른 것으로 바뀐 것이다.
+    // That the three siblings are one list reads as "only the expanded row grows
+    // downward". A replaced header is not growth but a swap for something else.
     renderPanel(makeConnection());
     const trigger = screen.getByTestId('ai-register-openai');
     expect(trigger).toHaveAttribute('aria-expanded', 'false');
@@ -532,8 +537,8 @@ describe('AiConnectionPanel draft cancel', () => {
   });
 
   it('honours the aria-expanded promise — the trigger closes what it opened', () => {
-    // `aria-expanded` 를 달아 놓고 두 번째 클릭이 아무것도 안 하면 스크린 리더
-    // 사용자에게 한 약속이 거짓말이 된다.
+    // Declaring `aria-expanded` and then having the second click do nothing makes the
+    // promise to a screen-reader user a lie.
     renderPanel(makeConnection());
     const trigger = screen.getByTestId('ai-register-openai');
     fireEvent.click(trigger);
@@ -560,8 +565,8 @@ describe('AiConnectionPanel draft cancel', () => {
   });
 
   it('returns focus to the register button it came from', async () => {
-    // 포커스가 body 로 떨어지면 사용자는 있던 자리를 잃고, 바깥 다이얼로그의
-    // Esc 사다리(서브뷰 → 루트 → 닫기)도 함께 죽는다.
+    // Focus falling to body loses the user's place, and it also kills the outer
+    // dialog's Esc order (subview → root → close).
     renderPanel(makeConnection());
     fireEvent.click(screen.getByTestId('ai-register-openai'));
     fireEvent.click(screen.getByTestId('ai-cancel-openai'));
@@ -572,8 +577,9 @@ describe('AiConnectionPanel draft cancel', () => {
   });
 
   it('lets Escape collapse the row without letting the settings sheet see it', () => {
-    // Esc 사다리의 가장 안쪽 칸. 가로채지 않으면 같은 keypress 로 설정 시트가
-    // 루트 뷰까지 물러나, 키 하나 취소하려던 사람이 서브뷰까지 잃는다.
+    // The innermost rung of the Esc order. Without interception the same keypress
+    // retreats the settings sheet all the way to the root view, so someone cancelling
+    // one key loses the subview too.
     const outerEscape = vi.fn();
     render(
       <div onKeyDown={(event) => event.key === 'Escape' && outerEscape()}>
@@ -589,7 +595,7 @@ describe('AiConnectionPanel draft cancel', () => {
     fireEvent.click(screen.getByTestId('ai-register-openai'));
     fireEvent.keyDown(screen.getByTestId('ai-key-input-openai'), { key: 'Escape' });
 
-    // 버튼과 완전히 같은 경로 — Esc 도 그 프레임에 접기 시작한다.
+    // Exactly the same path as the button — Esc also begins collapsing in that frame.
     expect(screen.getByTestId('ai-detail-openai')).toHaveAttribute(
       'data-state',
       'closed',
@@ -598,8 +604,8 @@ describe('AiConnectionPanel draft cancel', () => {
   });
 
   it('passes Escape up to the sheet when no row is expanded', () => {
-    // 사다리의 다음 칸은 살아 있어야 한다 — 안쪽 칸이 비었을 때까지 삼키면
-    // 설정 서브뷰에서 Esc 가 먹통이 된다.
+    // The next rung of the order has to stay alive — swallowing it even when the
+    // inner rung is empty makes Esc dead in the settings subview.
     const outerEscape = vi.fn();
     render(
       <div onKeyDown={(event) => event.key === 'Escape' && outerEscape()}>
@@ -618,8 +624,9 @@ describe('AiConnectionPanel draft cancel', () => {
 });
 
 /**
- * 시각 위계 — 채워진 테두리 상자는 조작하는 블록(벤더 목록) 하나뿐이다.
- * 셋이 같은 무게로 쌓이면 사람이 여기 온 이유(키 등록)가 첫 번째로 안 읽힌다.
+ * Visual hierarchy — the only filled bordered box is the block you operate (the
+ * vendor list). With all three stacked at equal weight, the reason people came here
+ * (registering a key) is not what reads first.
  */
 describe('AiConnectionPanel hierarchy', () => {
   it('gives the filled container to the vendor list and to nothing else', () => {
@@ -630,8 +637,8 @@ describe('AiConnectionPanel hierarchy', () => {
   });
 
   it('keeps every trust fact on screen while demoting its weight', () => {
-    // 위계 조정이 정보 삭제로 새지 않았는지 — 헌장 한 줄과 "무엇이 나가는가"
-    // 세 행, 기록 파일 이름이 모두 남아 있어야 한다.
+    // Whether the hierarchy adjustment leaked into deleting information — the
+    // charter line, the three "what goes out" rows and the log file name must all remain.
     renderPanel(makeConnection());
     for (const key of [
       'settings.ai.principle',
@@ -647,10 +654,10 @@ describe('AiConnectionPanel hierarchy', () => {
   });
 
   /**
-   * 「연결하면 뭐가 되나」 는 「어떻게 연결하나」 보다 먼저다 — 그 문장이
-   * 목록 아래 각주로 있던 동안, 그 각주는 **이미 출시된 에이전트**를
-   * "준비 중" 이라고 부정하고 있었고 자기를 여기로 보낸 CTA
-   * (`vaultAgentPanel.degraded.noKeyAction`)를 무효화했다.
+   * 「what do I get if I connect」 comes before 「how do I connect」 — while that
+   * sentence sat as a footnote below the list, the footnote was denying an
+   * **already-shipped agent** as "coming soon" and invalidating the CTA that sent
+   * people here (`vaultAgentPanel.degraded.noKeyAction`).
    */
   it('연결이 무엇을 여는지를 벤더 목록보다 먼저 말한다', () => {
     const { container } = renderPanel(makeConnection());
@@ -658,7 +665,7 @@ describe('AiConnectionPanel hierarchy', () => {
     const list = container.querySelector('.bg-\\[color\\:var\\(--color-overlay-1\\)\\]');
     expect(unlocks).toBeInTheDocument();
     expect(list).not.toBeNull();
-    // DOM 순서가 읽는 순서다.
+    // DOM order is reading order.
     expect(
       unlocks.compareDocumentPosition(list as Node) & Node.DOCUMENT_POSITION_FOLLOWING,
     ).toBeTruthy();
@@ -671,12 +678,12 @@ describe('AiConnectionPanel hierarchy', () => {
 });
 
 /**
- * 네 번째 행 — 키가 아니라 **주소**를 적는 갈래.
+ * The fourth row — the path where you enter an **address** rather than a key.
  *
- * 여기서 지키려는 것은 셋이다: ① 실패가 이유별로 다른 문장을 받는다(꺼져
- * 있음 · 포트 다름 · 모델 없음), ② 모델은 손으로 타이핑하지 않고 목록에서
- * 고른다, ③ 전송 범위 문구가 루프백일 때만 "이 컴퓨터 밖으로 안 나간다" 고
- * 말한다.
+ * Three things are held here: ① each failure reason gets its own sentence (not
+ * running · wrong port · no such model), ② the model is chosen from a list rather
+ * than typed by hand, and ③ the transmission-scope copy says "nothing leaves this
+ * computer" only on loopback.
  */
 describe('AiConnectionPanel — 주소로 연결', () => {
   function verifyResult(overrides: Record<string, unknown>) {
@@ -698,7 +705,7 @@ describe('AiConnectionPanel — 주소로 연결', () => {
   });
 
   it('명명 벤더 셋과 같은 상자 안에 네 번째 행으로 산다', () => {
-    // 상자를 하나 더 세우면 이 패널의 시선 승자가 둘이 되어 위계가 무너진다.
+    // Standing up a second box would give this panel two attention winners and collapse the hierarchy.
     const { container } = renderPanel(makeConnection());
     const filled = container.querySelectorAll('.bg-\\[color\\:var\\(--color-overlay-1\\)\\]');
     expect(filled).toHaveLength(1);
@@ -718,16 +725,16 @@ describe('AiConnectionPanel — 주소로 연결', () => {
     fireEvent.click(screen.getByTestId('ai-verify-local'));
 
     await waitFor(() => expect(screen.getByTestId('ai-local-verified')).toBeInTheDocument());
-    // 주소는 **주소 갈래로만** 넘어간다 — 키체인 벤더에 주소가 실리면 Rust 가
-    // 거절하는 것과 같은 계약이 화면 쪽에서도 지켜져야 한다.
+    // The address is passed **only through the address path** — the same contract Rust
+    // enforces by rejecting an address on a keychain vendor has to hold on screen too.
     expect(mocks.secretVerify).toHaveBeenCalledWith('local', '/vault', 'http://localhost:11434');
-    // 모델 칸은 고를 것이 생겼을 때만 나타난다.
+    // The model field appears only once there is something to choose.
     expect(screen.getByTestId('ai-local-model-row')).toBeInTheDocument();
 
     fireEvent.click(screen.getByTestId('ai-local-model'));
     fireEvent.click(screen.getByText('qwen3:8b'));
     await waitFor(() => expect(screen.getByTestId('ai-local-connected')).toBeInTheDocument());
-    // 고른 결과가 이 브라우저에 남아, 지도 오른쪽 도크가 새로고침 없이 살아난다.
+    // The choice persists in this browser, so the map's right dock comes alive without a reload.
     expect(window.localStorage.getItem('ontology-atlas:local-endpoint')).toContain('qwen3:8b');
   });
 
@@ -747,13 +754,13 @@ describe('AiConnectionPanel — 주소로 연결', () => {
       seen.add(marker);
       view.unmount();
     }
-    // 셋이 서로 다른 문장이어야 사용자가 다음에 무엇을 할지 안다.
+    // Three distinct sentences are what tell the user what to do next.
     expect(seen.size).toBe(3);
   });
 
   it('"이 컴퓨터 밖으로 안 나간다" 는 루프백일 때만 말한다', async () => {
-    // 사용자가 https 로 다른 기계를 가리킬 수도 있다(허용한다). 참이 아닌
-    // 자리에 그 문장을 쓰면 이 제품의 신뢰 서사 자체가 거짓말이 된다.
+    // A user may point at another machine over https (which is allowed). Writing that
+    // sentence where it is not true makes this product's whole trust story a lie.
     window.localStorage.setItem(
       'ontology-atlas:local-endpoint',
       JSON.stringify({ baseUrl: 'https://box.example.com:8080', model: 'qwen3:8b' }),
@@ -764,10 +771,10 @@ describe('AiConnectionPanel — 주소로 연결', () => {
   });
 
   /**
-   * 알파벳 정렬이 `embeddinggemma:latest` 를 1번에 올렸고, 소유자가 실제로
-   * 그것을 골라 「연결됨」으로 저장됐다 — **첫 질문에서 실패할 상태가 성공
-   * 이라고 표시된다.** 지우지 않고(라벨링은 은닉이 아니다) 순서와 설명으로
-   * 고친다.
+   * Alphabetical order put `embeddinggemma:latest` first, and the owner actually
+   * chose it and had it saved as 「연결됨」 — **a state that will fail on the first
+   * question was displayed as success.** It is fixed by ordering and annotation, not
+   * by deletion (labelling is not hiding).
    */
   it('대화 못 하는 모델을 1번에 올리지 않고, 그 사실을 행에 적는다', async () => {
     mocks.secretVerify.mockResolvedValue(
@@ -784,11 +791,11 @@ describe('AiConnectionPanel — 주소로 연결', () => {
 
     fireEvent.click(screen.getByTestId('ai-local-model'));
     const options = screen.getAllByRole('option').map((node) => node.textContent ?? '');
-    // 1번은 대화가 되는 것이다.
+    // The first entry is one that can hold a conversation.
     expect(options[0]).toContain('qwen3:8b');
-    // 임베딩 둘은 사라지지 않는다 — 없다고 말하는 것이 더 큰 거짓말이다.
+    // The two embedding models do not disappear — saying they are absent is the bigger lie.
     expect(options).toHaveLength(3);
-    // 못 쓰는 행만 두 번째 줄로 그 사실을 적는다.
+    // Only the unusable rows state that fact on a second line.
     expect(options[1]).toContain('settings.ai.localModelEmbeddingOnly');
     expect(options[0]).not.toContain('settings.ai.localModelEmbeddingOnly');
   });

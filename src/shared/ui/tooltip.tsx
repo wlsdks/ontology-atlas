@@ -8,18 +8,19 @@ import {
 import * as TooltipPrimitive from "@radix-ui/react-tooltip";
 
 /**
- * Radix UI 기반 tooltip wrapper.
+ * A tooltip wrapper built on Radix UI.
  *
- * Tailwind `title` HTML 속성 대신 사용 — 모바일 터치 호환 + 스타일 일관성 +
- * keyboard focus 시 표시. 단일 mount 만 필요한 사이트는 `Tooltip` 컴포넌트로,
- * 여러 tooltip 을 한 트리에서 쓰면 `TooltipProvider` 한 번만 감싸면 된다.
+ * Used instead of the HTML `title` attribute: it works with touch, keeps styling
+ * consistent, and shows on keyboard focus. A site needing a single mount uses the
+ * `Tooltip` component; several tooltips in one tree need `TooltipProvider`
+ * wrapped once.
  *
- * 디자인 헌장 §11 준수:
- * - solid 무채색 panel (rgba 0,0,0 alpha) + indigo border alpha
- * - glow / scale / 그라디언트 없음
+ * Follows the design charter:
+ * - solid neutral panel (rgba 0,0,0 alpha) + indigo border alpha
+ * - no glow, scale, or gradient
  * - sideOffset 6 + small radius
  *
- * 사용:
+ * Usage:
  *   <Tooltip content="중앙 정렬">
  *     <button>...</button>
  *   </Tooltip>
@@ -43,24 +44,24 @@ export const TooltipContent = forwardRef<
 TooltipContent.displayName = "TooltipContent";
 
 export interface TooltipProps {
-  /** 툴팁 텍스트. ReactNode 도 OK 지만 무거운 트리는 비추 (a11y aria-label). */
+  /** Tooltip text. A ReactNode works, but a heavy tree is discouraged (a11y aria-label). */
   content: ReactNode;
-  /** trigger element. 보통 button / Link / icon. */
+  /** The trigger element — usually a button, Link, or icon. */
   children: ReactNode;
-  /** Radix Side. 기본 'top'. */
+  /** Radix side; defaults to 'top'. */
   side?: TooltipPrimitive.TooltipContentProps["side"];
-  /** 자체 Provider 없이 단발 사용 시 true (default). 트리에 이미
-   *  `TooltipProvider` 가 있으면 false 로 두어 중복 wrap 회피. */
+  /** True (the default) for one-off use with no Provider of its own. Set false
+   *  when the tree already has a `TooltipProvider`, to avoid wrapping twice. */
   withProvider?: boolean;
-  /** 표시 지연 ms. 기본 300. */
+  /** Show delay in ms; defaults to 300. */
   delayMs?: number;
 }
 
 /**
- * 단발 사용 — provider 까지 포함한 한 줄 wrapper.
+ * One-off use — a single wrapper that includes the provider.
  *
- * 다수 사이트에서 쓸 땐 상위 layout 에 `<TooltipProvider>` 한 번 두고 본
- * 컴포넌트는 `withProvider={false}` 로 사용해 dom 중복 회피.
+ * For many sites, place `<TooltipProvider>` once in a parent layout and use this
+ * component with `withProvider={false}` to avoid duplicate DOM.
  */
 export function Tooltip({
   content,

@@ -8,27 +8,27 @@ const HEATSTRIP_WEEKS = 12;
 export const FRESHNESS_WINDOW_WEEKS = HEATSTRIP_WEEKS;
 const STALE_DAYS = 90;
 
-/** 한 주의 갱신 강도 — 0(없음)~3(3건 이상). 실제 카운트에서 유도, 장식용 난수 없음. */
+/** A week's update intensity — 0 (none) to 3 (three or more). Derived from real counts; no decorative randomness. */
 export type FreshnessLevel = 0 | 1 | 2 | 3;
 
 export interface FreshnessWeekCell {
   level: FreshnessLevel;
-  /** 가장 최근 주(이번 주) 여부 — 인디고로 별도 강조. */
+  /** Whether this is the most recent week (this week) — emphasized separately in indigo. */
   isCurrentWeek: boolean;
-  /** 그 주의 실제 갱신 건수 — 셀 툴팁("N주 전 · 갱신 M건")의 진실원.
-   * level 은 3에서 포화되므로 원본 카운트를 함께 노출한다. */
+  /** The week's real update count — the source of truth for the cell tooltip ("N weeks ago · M updates").
+   * `level` saturates at 3, so the raw count is exposed alongside. */
   count: number;
 }
 
 export interface DomainFreshnessRow {
   domainId: string;
   domainTitle: string;
-  /** 오래된 주 → 최신 주 순, 길이 = HEATSTRIP_WEEKS. */
+  /** Oldest week → newest, with length HEATSTRIP_WEEKS. */
   weeks: FreshnessWeekCell[];
-  /** 이 도메인에서 가장 최근 갱신된 시각 — 알려진 날짜가 하나도 없으면 null. */
+  /** The most recent update time in this domain — null when no date is known at all. */
   mostRecentUpdatedAt: string | null;
   daysAgo: number | null;
-  /** 가장 최근 갱신도 STALE_DAYS 보다 오래됐으면 true. */
+  /** True when even the most recent update is older than STALE_DAYS. */
   stale: boolean;
 }
 
@@ -39,10 +39,10 @@ export interface RecentUpdateRow {
   domainTitle: string | null;
   updatedAt: string;
   /**
-   * 이 이름을 적어 둔 문서 slug. **근거 계층 행에서만** 채워진다 — 같은 제목의
-   * 파생 노드가 둘 이상일 때 두 행을 가르는 유일한 사실이다(실측: `.claude/`
-   * 와 `.codex/` 두 훅 경로가 basename 만으로 「Inject Ontology Summary」 두
-   * 노드를 만들어 8행 중 두 행이 글자까지 같았다).
+   * The slug of the document that wrote this name down. Filled **only on evidence-layer rows** —
+   * it is the single fact separating two derived nodes with the same title (measured: the two hook
+   * paths `.claude/` and `.codex/` produced two "Inject Ontology Summary" nodes from the basename
+   * alone, making two of eight rows identical down to the characters).
    */
   ref?: string;
 }
@@ -50,29 +50,30 @@ export interface RecentUpdateRow {
 export interface FreshnessSummary {
   domainRows: DomainFreshnessRow[];
   /**
-   * **개념 계층** — 자기 `.md` 를 가진 노드만. 「최근 갱신」이 말하는 "누가
-   * 언제 고쳤다" 가 성립하는 유일한 계층이다.
+   * **The concept layer** — only nodes with their own `.md`. The only layer where "recently
+   * updated" meaning "someone changed this, then" actually holds.
    */
   recent: RecentUpdateRow[];
   /**
-   * **근거 계층** — 다른 문서가 이름만 적어 둔 파생 노드. 「연결」 탭의 영향
-   * 랭킹과 **같은 판정**(`isEvidenceOnlyConcept`)으로 갈라 접힌 자리로 내린다.
+   * **The evidence layer** — derived nodes whose names another document merely wrote down. Split
+   * off into a folded area by **the same verdict** (`isEvidenceOnlyConcept`) as the impact ranking
+   * on the "connections" tab.
    *
-   * 왜 이 계층을 따로 두는가: 파생 노드의 "갱신일" 은 자기 것이 아니라 **자기를
-   * 인용한 문서의 mtime** 이다. 그걸 개념과 같은 무게로 세우면 화면이 "이 개념이
-   * 오늘 고쳐졌다" 고 말하는데 사실은 남의 문서가 고쳐진 것이다(실측 2026-07-26
-   * 도그푸드: 8행 중 7행이 파생, 그중 둘은 바이트까지 동일했다).
+   * Why the layer is separate: a derived node's "update date" is not its own but **the mtime of
+   * the document that cited it**. Standing that at the same weight as a concept makes the screen
+   * say "this concept was changed today" when in fact someone else's document was (measured
+   * 2026-07-26 against the dogfood vault: 7 of 8 rows were derived, two of them byte-identical).
    */
   recentEvidence: RecentUpdateRow[];
-  /** 근거 계층 전체 수 — 접힌 토글이 규모를 라벨에 실어 말한다. */
+  /** The evidence layer's total — the folded toggle carries the scale in its label. */
   recentEvidenceTotal: number;
-  /** domain/capability/element 중 알려진 갱신일이 있고 STALE_DAYS 보다 오래된 노드 수.
-   * 갱신일을 모르는 노드는 "모른다"이지 "오래됐다"가 아니므로 집계에서 제외 — 데이터
-   * 없는 걸 부정확한 값으로 단정 짓지 않는다. */
+  /** How many domain/capability/element nodes have a known update date older than STALE_DAYS.
+   * A node with an unknown date is "unknown", not "old", so it is excluded from the tally — missing
+   * data is not asserted as an inaccurate value. */
   staleCount: number;
-  /** 전 도메인 합산 주간 갱신 건수 — 히트스트립과 같은 12주 창, 같은 카운트
-   * 소스(각 도메인의 주간 버킷을 합산). 신선도 탭 스파크라인의 진실원 —
-   * 하드코딩 배열이 아니라 이 함수가 이미 계산한 값을 그대로 노출한다. */
+  /** Weekly update counts summed across all domains — the same 12-week window and the same count
+   * source as the heat strip (summing each domain's weekly buckets). The source of truth for the
+   * freshness tab's sparkline: not a hardcoded array but the value this function already computed. */
   weeklyTotals: number[];
 }
 
@@ -84,10 +85,11 @@ function levelFromCount(count: number): FreshnessLevel {
 }
 
 /**
- * 노드 → 갱신일(ISO string) 해석. `node.evidenceIds[0]` 이 곧 그 노드가 유래한
- * vault 문서 slug (`derivationToInsight` 계약 — 근거 문서 = 최초 등장 문서).
- * `docUpdatedAtBySlug` 는 `VaultManifest.docs[].updatedAt` 에서 만든 lookup —
- * local 모드는 실제 file.lastModified, static(dogfood) 모드는 빌드타임 값.
+ * Resolves a node to its update date (an ISO string). `node.evidenceIds[0]` is the vault document
+ * slug the node originated from (the `derivationToInsight` contract — the evidence document is the
+ * document of first appearance). `docUpdatedAtBySlug` is a lookup built from
+ * `VaultManifest.docs[].updatedAt` — the real `file.lastModified` in local mode, and a build-time
+ * value in static (dogfood) mode.
  */
 function resolveNodeUpdatedAt(
   node: KnowledgeGraphNode,
@@ -101,9 +103,9 @@ function resolveNodeUpdatedAt(
 const CONTENT_KINDS = new Set(["domain", "capability", "element"]);
 
 /**
- * 탭3 신선도 — 히트스트립(도메인 x 12주) + 최근 갱신 목록 + 90일 미갱신
- * 카운트. `visual-richness-sampler.html` §3 grammar 그대로, 다만 셀 값은
- * 하드코딩 배열이 아니라 실제 문서 갱신일에서 집계한다.
+ * Tab 3, freshness — a heat strip (domain × 12 weeks), the recently-updated list, and the count of
+ * nodes not updated in 90 days. Cell values are aggregated from real document update dates rather
+ * than a hardcoded array.
  */
 export function computeFreshnessSummary(
   nodes: readonly KnowledgeGraphNode[],
@@ -115,10 +117,10 @@ export function computeFreshnessSummary(
   const nodeById = new Map(nodes.map((n) => [n.id, n]));
   const parentOf = buildContainmentParents(edges, nodeById);
   const domainNodes = nodes.filter((n) => n.kind === "domain");
-  // 과제 ⑩ — 도메인 표시용 짧은 제목.
+  // The short display title for a domain.
   const domainTitleById = new Map(domainNodes.map((d) => [d.id, d.display ?? d.title]));
 
-  // 노드별 (updatedAt, domainId) 해석 — 한 번만.
+  // Resolve (updatedAt, domainId) per node — once.
   type Resolved = { node: KnowledgeGraphNode; updatedAt: string | null; domainId: string | null };
   const resolved: Resolved[] = nodes.map((node) => ({
     node,
@@ -126,9 +128,9 @@ export function computeFreshnessSummary(
     domainId: nearestDomainId(node, parentOf, nodeById),
   }));
 
-  // 도메인별 주간 버킷 카운트. weeksAgo=0 은 referenceDate 로부터 최근 7일 —
-  // epoch-aligned 주 경계 대신 referenceDate 기준 상대 주로 계산해 "1일 전"
-  // 같은 값이 경계 우연으로 지난 주에 떨어지는 걸 피한다.
+  // Weekly bucket counts per domain. `weeksAgo=0` is the last seven days from `referenceDate` —
+  // relative weeks from `referenceDate` rather than epoch-aligned week boundaries, so a value like
+  // "1 day ago" does not fall into last week by boundary coincidence.
   const nowMs = referenceDate.getTime();
   const countsByDomain = new Map<string, number[]>();
   const latestByDomain = new Map<string, number>();
@@ -175,7 +177,7 @@ export function computeFreshnessSummary(
       };
     })
     .sort((a, b) => {
-      // 알려진 최근일이 있는 도메인 먼저(최신순), 알 수 없는 건 뒤로.
+  // Domains with a known recent date first (newest first); unknown ones last.
       if (a.daysAgo === null && b.daysAgo === null) return a.domainTitle.localeCompare(b.domainTitle);
       if (a.daysAgo === null) return 1;
       if (b.daysAgo === null) return -1;
@@ -191,13 +193,13 @@ export function computeFreshnessSummary(
     );
   const toRow = (r: Resolved & { updatedAt: string }, withRef: boolean): RecentUpdateRow => ({
     nodeId: r.node.id,
-    // 과제 ⑩ — 최근 갱신 목록도 표시용 짧은 제목.
+    // The recently-updated list uses the short display title too.
     title: r.node.display ?? r.node.title,
     kind: r.node.kind,
     domainTitle: r.domainId ? (domainTitleById.get(r.domainId) ?? null) : null,
     updatedAt: r.updatedAt,
-    // 파생 행만 참조 원문을 싣는다 — 개념 행에는 이미 자기 문서가 있어서
-    // 같은 정보가 두 번 나온다.
+    // Only derived rows carry the reference string — a concept row already has its own document,
+    // so the same information would appear twice.
     ref: withRef ? (r.node.ref ?? r.node.evidenceIds[0]) : undefined,
   });
   const recentLimit = options?.recentLimit ?? 8;

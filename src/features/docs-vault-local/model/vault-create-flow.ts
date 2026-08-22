@@ -1,30 +1,28 @@
 /**
- * "새 vault 만들기" 카드의 결정 로직 — 순수 함수로 분리해 테스트.
+ * The decision logic of the "create a new vault" card, extracted as pure functions so it can be tested.
  *
- * 별도의 "create" 파이프라인을 만들지 않는다. 기존 open() (폴더 선택) 뒤에
- * 기존 scaffoldOntology() (starter 5 md + agent config 시드, `/docs` 의
- * OntologyStarterCta 와 동일 액션) 를 잇는 조합일 뿐 — 단일 진실원 유지.
+ * No separate "create" pipeline is built. This is only the composition of the existing `open()`
+ * (folder selection) followed by the existing `scaffoldOntology()` (seeding five starter md files plus
+ * the agent config — the same action as `/docs`'s OntologyStarterCta), keeping one source of truth.
  *
- * features 레이어에 있는 이유: `FirstRunPage`(데스크톱 first-run) 와
- * `FirstRunChooser`(웹 vault-미선택 첫 화면) 둘 다 이 조합을 그대로 재사용한다
- * — 두 view 가 서로를 import 하지 않도록(FSD 동일 레이어 cross-import 회피) 한
- * 단계 아래인 features 로 끌어내렸다. 원래 `src/views/first-run/model/` 에
- * 있던 걸 이관 (R+ root-first-open).
+ * Why it lives at the features layer: `FirstRunPage` (desktop first run) and `FirstRunChooser` (the
+ * web's no-vault first screen) both reuse this composition as-is, so it moved one layer down to avoid
+ * a same-layer cross-import between two views (FSD).
  */
 export function shouldScaffoldAfterOpen(args: {
-  /** 사용자가 "새 볼트 만들기" 카드로 open 을 시작했는가. */
+  /** Did the user start `open` from the "create a new vault" card? */
   createIntent: boolean;
   /** useLocalVault().status */
   status: string;
-  /** 열린 manifest 의 doc 수. manifest 없으면 null. */
+  /** The opened manifest's document count; null when there is no manifest. */
   docCount: number | null;
 }): boolean {
   return args.createIntent && args.status === 'loaded' && args.docCount === 0;
 }
 
 /**
- * create intent 를 접어야 하는 시점 — open 이 끝(성공/취소/실패)났을 때.
- * 'opening' / 'loading' 동안만 intent 유지.
+ * When the create intent must be folded away — once `open` has finished (success, cancel, or failure).
+ * The intent is held only during 'opening' and 'loading'.
  */
 export function shouldClearCreateIntent(status: string): boolean {
   return status !== 'opening' && status !== 'loading';

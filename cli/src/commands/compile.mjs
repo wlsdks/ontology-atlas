@@ -1,6 +1,7 @@
 // `ontology-atlas compile [vault]` — deterministic graph compile surface.
-// 기본은 side-effect 없는 compiler summary. `--fix` 는 compiler 가 산출한
-// canonicalizationActions 만 patch_concept 로 적용해 relation 배열을 재정렬한다.
+// The default is a side-effect-free compiler summary. `--fix` applies only the
+// canonicalizationActions the compiler produced, via patch_concept, reordering the
+// relation arrays.
 
 import { COLORS } from '../lib/colors.mjs';
 import { callMcpTool } from '../lib/mcp-call.mjs';
@@ -24,10 +25,11 @@ const CANONICALIZATION_GRAPH_ARRAY_KEYS = Object.freeze([
   'contains',
   'describes',
   'depends_on',
-  // `broader` (is_a / SKOS) — 공방과 함께 도입됐는데 이 리스트에서 빠져
-  // 있었다(감사 2026-07-25). 이 리스트는 canonical 정렬 검사와 dangling ref
-  // 검사를 **동시에** 구동하므로, 누락은 에이전트가 broader 에 오타 슬러그를
-  // 써도 CI 는 green 을 뜻했다. contract fixture 가 이 drift 를 고정한다.
+  // `broader` (is_a / SKOS) was introduced with the studio surface but left out of
+  // this list (audit 2026-07-25). The list drives the canonical-ordering check and
+  // the dangling-reference check **at the same time**, so the omission meant CI
+  // stayed green even when an agent wrote a typo slug into `broader`. A contract
+  // fixture pins this drift.
   'broader',
 ]);
 const CANONICALIZATION_GRAPH_ARRAY_KEY_SET = new Set(CANONICALIZATION_GRAPH_ARRAY_KEYS);

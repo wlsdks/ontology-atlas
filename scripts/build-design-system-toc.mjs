@@ -1,27 +1,27 @@
 #!/usr/bin/env node
 /**
- * `docs/DESIGN-SYSTEM.md` 의 목차를 **헤딩에서 생성**하고, `--check` 로 커밋된
- * 것과 대조한다.
+ * **Generates** the table of contents for `docs/DESIGN-SYSTEM.md` from its
+ * headings, and with `--check` compares it against the committed one.
  *
- * ## 왜 손으로 안 쓰나
+ * **Why not hand-written.** The document is 254KB across 23 sections, and of
+ * **151 inbound references not one pointed at a section** (measured 2026-08-05) —
+ * all of them said only "see DESIGN-SYSTEM.md", so readers either opened the whole
+ * thing (≈60k tokens) without knowing where to look, or gave up.
  *
- * 이 문서는 254KB · 23개 절이고, **인바운드 참조 151개 중 절을 가리키는 것은
- * 0개**였다(2026-08-05 실측) — 전부 「DESIGN-SYSTEM.md 참조」라고만 적혀 있어서,
- * 읽는 쪽은 어디를 봐야 할지 모른 채 통째로 열거나(≈6만 토큰) 포기했다.
+ * A hand-written table of contents drifts every time a section is added, and that
+ * drift emits no signal. `documentation.md`'s contract allows only three kinds of
+ * check, one of which is **"generate then compare"** — the same method
+ * `docs:surface:check` uses for the MCP surface. No human-written sentence is
+ * pinned: this script reads only the `## ` heading text, so the body can be
+ * rewritten freely without breaking the table of contents.
  *
- * 목차를 손으로 쓰면 절을 하나 더할 때마다 어긋나고, 그 어긋남은 아무 신호도
- * 내지 않는다. `documentation.md` 의 계약이 허용하는 검사 갈래는 셋뿐이고 그중
- * 하나가 **«생성한 뒤 대조»** 다 — `docs:surface:check` 가 MCP 표면에 쓰는 바로
- * 그 방식이다. 사람이 쓴 문장은 하나도 고정하지 않는다: 이 스크립트가 읽는 것은
- * `## ` 헤딩 텍스트뿐이고, 본문을 아무리 고쳐 써도 목차는 안 깨진다.
- *
- * ## 왜 파일을 쪼개지 않았나
- *
- * 쪼개는 것도 검토했고 반려했다(`docs/DECISIONS.md` 2026-08-05). 이 문서는
- * **docs-vault 노드**라 23개로 쪼개면 앱의 `/docs` 목록에 23개가 생긴다 —
- * 문서 정리가 아니라 제품 표면 변경이다. 게다가 이 저장소에서 더 큰 문서 둘
- * (`CHANGELOG.md` 8,100줄 · `DECISIONS.md` 7,300줄)은 쪼개지 않고도 잘 굴러간다.
- * 그것들이 굴러가는 방식이 **grep 먼저**이고, 목차는 그 grep 에 줄 단어를 준다.
+ * **Why the file was not split.** Splitting was considered and rejected
+ * (`docs/DECISIONS.md` 2026-08-05). The document is a **docs-vault node**, so
+ * splitting it into 23 would create 23 entries in the app's `/docs` list — a
+ * product-surface change, not a documentation tidy-up. Besides, the two larger
+ * documents in this repository (`CHANGELOG.md` at 8,100 lines and `DECISIONS.md`
+ * at 7,300) work fine unsplit. The way they work is **grep first**, and a table of
+ * contents supplies the words to grep for.
  */
 import { readFileSync, writeFileSync } from 'node:fs';
 import path from 'node:path';

@@ -6,10 +6,10 @@ import { flatSlugIssue, inspectMergedUids, nodeUidIssue } from './schema.mjs';
 import { walkMd, pathToSlug } from './walk-vault.mjs';
 
 /**
- * vault-relative slug → file path. AI agent / prompt injection 으로 악의적인
- * slug ('../../etc/passwd' 등) 가 들어와도 vault root 바깥의 파일을 가리키지
- * 못하도록 normalize 후 root 포함 검사. mcp/src/vault.mjs 의 slugToPath 와
- * 같은 contract.
+ * Vault-relative slug → file path. Normalises and then checks containment in the
+ * vault root, so a malicious slug arriving through an agent or prompt injection
+ * ('../../etc/passwd' and the like) cannot name a file outside it. Same contract
+ * as slugToPath in mcp/src/vault.mjs.
  */
 export function slugToPath(rootPath, slug) {
   if (typeof slug !== 'string' || slug.length === 0) {
@@ -26,15 +26,17 @@ export function slugToPath(rootPath, slug) {
   ) {
     throw new Error(`slug points outside the vault root: "${slug}"`);
   }
-  // 문자열 검사만으로는 심볼릭 링크를 못 막는다 — `mcp/src/vault.mjs` 와 같은
-  // 계약. 실측(2026-07-29): vault 안 `escape.md` 가 밖을 가리키면 문자열은
-  // 완벽히 root 안인데 `writeFileSync` 가 링크를 따라 **밖에 썼고**, 성공 줄은
-  // vault 안 경로를 보고했다.
+  // A string check alone cannot stop a symlink — same contract as
+  // `mcp/src/vault.mjs`. Measured 2026-07-29: with an `escape.md` inside the vault
+  // pointing outside it, the string was perfectly inside the root while
+  // `writeFileSync` followed the link and **wrote outside**, and the success line
+  // reported the path inside the vault.
   assertRealPathInside(candidate, normalizedRoot, slug);
   return candidate;
 }
 
-/** 링크 해소 후에도 vault 안인지. 아직 없는 경로는 가장 가까운 존재 조상 기준. */
+/** Still inside the vault after link resolution. A path that does not exist yet is
+ * judged by its nearest existing ancestor. */
 function assertRealPathInside(candidate, normalizedRoot, slug) {
   let realRoot;
   try {
@@ -62,8 +64,9 @@ function assertRealPathInside(candidate, normalizedRoot, slug) {
 }
 
 /**
- * 새 doc 작성. 디렉토리 자동 생성. 기존 파일 있으면 throw (덮어쓰기 절대
- * 안 함 — 사용자 작업 보호). mcp/src/vault.mjs 의 writeDoc 와 같은 contract.
+ * Writes a new doc, creating directories as needed. Throws when the file already
+ * exists — it never overwrites, because that would destroy the user's work. Same
+ * contract as writeDoc in mcp/src/vault.mjs.
  */
 export function writeDoc(rootPath, slug, { frontmatter, body = '' }) {
   const filePath = preflightWriteDoc(rootPath, slug, frontmatter);
@@ -73,7 +76,8 @@ export function writeDoc(rootPath, slug, { frontmatter, body = '' }) {
   return filePath;
 }
 
-/** dry-run과 실제 write가 동일한 slug·UID 계약을 검사하는 단일 preflight. */
+/** The single preflight through which a dry run and a real write check the same
+ * slug and UID contract. */
 export function preflightWriteDoc(rootPath, slug, frontmatter) {
   const filePath = slugToPath(rootPath, slug);
   if (existsSync(filePath)) {
@@ -117,8 +121,8 @@ function assertNodeIdentity(rootPath, slug, frontmatter) {
 }
 
 /**
- * 기존 doc 을 읽어 { filePath, frontmatter, body, revision } 반환. 파일 없으면 throw.
- * patch 전 현재 상태 확인용 (R+ `relate` 커맨드).
+ * Reads an existing doc and returns { filePath, frontmatter, body, revision };
+ * throws when the file is missing. Used to read current state before a patch.
  */
 export function readDocFrontmatter(rootPath, slug) {
   const filePath = slugToPath(rootPath, slug);
@@ -136,16 +140,19 @@ export function readDocFrontmatter(rootPath, slug) {
 }
 
 /**
- * 기존 doc 의 frontmatter 한 key 만 교체 저장 (나머지 frontmatter + body 보존).
- * mcp/src/vault.mjs 의 patchFrontmatter 와 같은 "read → merge → rewrite" 계약
- * — CLI 는 mcp add_relation 을 spawn 하지 않고 자체 fs 로 직접 쓴다 (기존
- * `add`/`import` 커맨드와 같은 관례). R+ `relate` 커맨드가 사용.
+ * Replaces one frontmatter key of an existing doc, preserving the rest of the
+ * frontmatter and the body. Same "read → merge → rewrite" contract as
+ * patchFrontmatter in mcp/src/vault.mjs — the CLI writes through its own fs calls
+ * rather than spawning the MCP `add_relation`, the same convention `add` and
+ * `import` already follow.
  */
 export function writeFrontmatterKey(rootPath, slug, key, value, options) {
   return writeFrontmatterKeys(rootPath, slug, { [key]: value }, options);
 }
 
-/** 복수 키를 한 번의 파일 쓰기로: 관계+relation_notes 원자성 (P6 게이트 ③ CLI 측). */
+/** Several keys in one file write, so a relation and its relation_notes land
+ * atomically — written separately, a failure between them leaves one without the
+ * other. */
 export function writeFrontmatterKeys(rootPath, slug, patch, { expectedRevision = null } = {}) {
   const filePath = slugToPath(rootPath, slug);
   let current;
@@ -175,10 +182,11 @@ export function writeFrontmatterKeys(rootPath, slug, patch, { expectedRevision =
 }
 
 /**
- * relation array 값 정규화 — string 중복 제거 + locale 정렬, non-string 값
- * (레거시 object 항목 등) 은 그대로 뒤에 붙인다. mcp/src/vault.mjs 의
- * normalizeRelationRefs 와 같은 contract — `relate` 로 쓴 배열이 MCP
- * `add_relation` 이 쓴 배열과 같은 모양(정렬·중복제거)이 되도록.
+ * Normalises a relation array — strings are deduplicated and locale-sorted, and
+ * non-string values (legacy object entries and the like) are appended unchanged.
+ * Same contract as normalizeRelationRefs in mcp/src/vault.mjs, so an array written
+ * by `relate` has the same shape (sorted, deduplicated) as one written by the MCP
+ * `add_relation`.
  */
 export function normalizeRelationRefs(values) {
   if (!Array.isArray(values)) return [];

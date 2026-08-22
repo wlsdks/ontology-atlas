@@ -1,23 +1,24 @@
-// R+ — `ontology-atlas bootstrap [rootPath]`
+// `ontology-atlas bootstrap [rootPath]`
 //
-// 1줄 review plan. analyzer가 제안한 노드/containment를 검토 후보로 반환한다.
-// 의미 노드 write는 constructionQualification:v1 + human acceptance 로 해제되는
-// MCP 경로만 사용한다. CLI cold-start가 승인 없이 semantic graph를 만들면 안 된다.
+// A one-line review plan. Returns the analyzer's proposed nodes and containment as
+// review candidates. Writing a meaning node uses only the MCP path, which unlocks
+// on constructionQualification:v1 plus human acceptance — a CLI cold start must
+// not build a semantic graph without approval.
 //
-// 흐름:
+// Flow:
 //   1. analyze_repo_structure → review-only candidates
-//   2. infer_imports → exact evidence + rationale review required (write 0)
-//   3. 통합 review summary 출력 (landed 0, explicit approval required)
+//   2. infer_imports → exact evidence + rationale review required (zero writes)
+//   3. combined review summary (landed 0, explicit approval required)
 //
-// 옵션:
-//   --vault path             vault 위치 (default cwd)
+// Options:
+//   --vault path             vault location (default cwd)
 //   --max-depth N            analyze folder depth
 //   --max-files N            infer-imports file cap
-//   --threshold N            infer-imports 약한 edge 차단 (cycle 33, default 없음)
-//   --skip-imports           1단계 (analyze) 만 — import graph 안 건드림
-//   --json                   머신 가독 출력 (모든 단계 결과 합쳐 한 JSON)
+//   --threshold N            blocks weak infer-imports edges (no default)
+//   --skip-imports           stage 1 (analyze) only — the import graph is untouched
+//   --json                   machine-readable output (every stage in one JSON)
 //
-// exit: 3 if semantic approval is required, 1 if input errors, 2 if mcp 실패.
+// exit: 3 if semantic approval is required, 1 on input errors, 2 on MCP failure.
 
 import { COLORS } from '../lib/colors.mjs';
 import { resolve } from 'node:path';
@@ -174,28 +175,30 @@ async function printApprovalRequiredPlan({
 }
 
 /**
- * README 제목에서만 나온 도메인과, 코드 구조가 뒷받침하는 도메인을 가른다.
+ * Separates domains that appeared only in a README heading from domains the code
+ * structure corroborates.
  *
- * ## 왜 (2026-08-08 실사용 검수 — attunegraph, TS 113파일 · src 평평)
+ * **Why** (field review 2026-08-08 — attunegraph, 113 TS files, a flat `src`):
+ * analyze's README H2 heuristic carried a hand-sewn stopword sieve, and a sieve
+ * loses structurally — every new README invents a heading the list does not know.
+ * Measured: 「Quick start **from source**」 (evading the exact match), 「Current
+ * measured baseline」, and 「Benchmarks and verification」 all passed, so **11
+ * document sections landed as domains**, and the result was a star graph with a
+ * single relation type. In that star the hub amber reached a test fixture and
+ * contaminated the workbench's first recommendation — garbage flows downstream
+ * with confidence.
  *
- * analyze 의 README H2 휴리스틱에는 손으로 기운 금지어 체가 있는데, 체는
- * 구조적으로 진다 — 새 README 마다 목록이 모르는 제목을 만든다. 실측:
- * 「Quick start **from source**」(정확 일치 회피) · 「Current measured
- * baseline」 · 「Benchmarks and verification」이 전부 통과해 **11개 문서 절이
- * 도메인으로 착지**했고, 결과는 관계 1종짜리 별 그래프였다. 그 별에서 허브
- * 앰버가 테스트 픽스처에 갔고 공방 첫 추천까지 오염됐다 — 쓰레기가 확신을
- * 갖고 하류 전체로 흐른다.
- *
- * 그래서 체를 더 기우지 않고 **확증(corroboration)으로 가른다**: 코드에서
- * 나온 후보(디렉터리 evidence)거나, 코드에서 나온 다른 후보가 그 도메인을
- * 부모로 지목하면 확증이다. README 로만 존재하는 도메인은 — bootstrap 이
- * 임포트 단계에 이미 쓰는 원칙 그대로 — **자동으로 심지 않고 검토 후보로
- * 남긴다**. 옛 동작은 `--apply-readme-domains` 로 남겨 되돌릴 수 있다.
+ * So instead of sewing the sieve wider, **corroboration decides**: a candidate is
+ * corroborated when it came from the code (directory evidence), or when another
+ * code-derived candidate names it as a parent. A domain that exists only in the
+ * README is **left as a review candidate rather than planted automatically** —
+ * the same principle bootstrap already applies at the import stage. The old
+ * behaviour remains available via `--apply-readme-domains`.
  */
 export function partitionReadmeOnlyDomains(analyzeResult) {
   const domains = analyzeResult.domains ?? [];
   const isReadmeSource = (src) => typeof src === 'string' && /^readme(\.(md|rst))?$/i.test(src);
-  // 코드에서 나온 후보가 부모로 지목한 도메인 = 확증
+  // A domain named as a parent by a code-derived candidate is corroborated
   const referenced = new Set();
   for (const list of [analyzeResult.capabilities ?? [], analyzeResult.elements ?? []]) {
     for (const c of list) {

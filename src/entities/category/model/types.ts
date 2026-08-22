@@ -1,15 +1,11 @@
 /**
- * 프로젝트 카테고리(=영역) 도메인 모델.
+ * A project category — one cluster box on the topology map. Admin owns its
+ * coordinates, size, and border style.
  *
- * 각 카테고리는 토폴로지에서 하나의 클러스터 박스에 해당한다.
- * 좌표·크기·보더 스타일까지 admin이 관리한다.
- *
- * 디자인 시스템 제약:
- * - 색 추가 금지. borderStyle은 preset 4개 중 택일.
- * - 인디고는 허브 노드 전용.
+ * Design-system constraint: no new colours. `borderStyle` picks one of four
+ * presets, and indigo stays reserved for hub nodes.
  */
 
-/** 노드 카드의 보더 표현 방식 — design system preset. */
 export type BorderStyle = 'underline' | 'dashed' | 'sideLabel' | 'solid';
 
 export interface CategoryPosition {
@@ -23,25 +19,22 @@ export interface CategorySize {
 }
 
 export interface Category {
-  /** Stable ID. 소문자·숫자·하이픈. 예: 'in-progress'. */
+  /** Stable ID: lowercase, digits, hyphens — e.g. 'in-progress'. */
   id: string;
-  /** 한국어 라벨 (UI 기본 표시). */
+  /** Korean label — the default shown in the UI. */
   label: string;
-  /** 영문 라벨 (툴팁·Legend 부기 등 선택). */
+  /** English label, used on English screens. */
   labelEn?: string;
-  /** 정렬 순서 (placement / Legend / filters 공통). */
   order: number;
-  /** 클러스터 박스 중심 좌표. */
   position: CategoryPosition;
-  /** 클러스터 박스 크기. 노드가 이 안에 머문다. */
+  /** Cluster box size. Nodes stay inside it. */
   size: CategorySize;
-  /** 네비게이션 zoom 계산용 대략 반경. */
+  /** Approximate radius, used to compute navigation zoom. */
   radius: number;
-  /** 카테고리 내 노드의 보더 표현 방식. */
   borderStyle: BorderStyle;
   /**
-   * borderStyle='sideLabel'일 때 노드 좌측에 세로로 표시될 짧은 텍스트.
-   * 미설정 시 labelEn 또는 label을 사용.
+   * Vertical text shown left of the node when `borderStyle` is 'sideLabel'.
+   * Falls back to `labelEn`, then `label`.
    */
   sideLabelText?: string;
 }

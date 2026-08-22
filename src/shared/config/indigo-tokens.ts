@@ -1,24 +1,20 @@
 /**
- * 인디고 단일 진실원 (JS-only).
+ * The JS-side source of truth for indigo, for the places CSS variables
+ * (`--color-indigo-*`) cannot reach: the canvas renderer and OpenGraph images.
  *
- * 디자인 헌장 (CLAUDE.md §11) — "단일 인디고 (`#5e6ad2`)" 라는 시스템 약속을
- * 코드에서 흩뿌리지 않게 한 곳에 모음. CSS variable (`--color-indigo-*`) 가
- * 닿지 않는 영역 (Sigma WebGL renderer, Canvas API, OpenGraph 이미지) 에서
- * 같은 hex 를 가져다 쓰도록.
+ * Tailwind arbitrary values (`bg-[color:rgba(94,106,210,0.x)]`) do **not** import
+ * this module — those are matched as strings at build time and cannot reference a
+ * runtime const. They stay consistent as long as they use the same RGB triplet
+ * (`94,106,210` = `#5e6ad2`).
  *
- * Tailwind arbitrary value (`bg-[color:rgba(94,106,210,0.x)]`) 사이트는 이
- * 모듈을 import 하지 않는다 — 빌드 타임 문자열 매칭이라 런타임 const 참조
- * 불가. 그 사이트들은 동일한 RGB triplet (`94,106,210` = `#5e6ad2`) 을 쓰는
- * 한 일관성 보장.
- *
- * 6 variant 의 hue 는 모두 chroma ≤ 8% 검증됨 (LCH 좌표 기준 — `OWNER_TONE_
- * PALETTE` 와 동일 제약). variant 명은 hex 순이 아닌 **용도 (purpose)** 기준:
- *   brand     — canonical 채색 (Linear-base 단일 인디고)
- *   accent    — 강조 텍스트 / strong button
- *   hover     — hover state (좀 더 vivid)
- *   hub       — Sigma 허브 노드 fill (brand 보다 살짝 lighter)
- *   focus     — 포커스 시 1-hop hub 톤
- *   highlight — 선택 노드 / context highlight (가장 lighter)
+ * All six variants are verified at chroma ≤ 8% in LCH. They are named by
+ * **purpose**, not by lightness order:
+ *   brand     — the canonical accent
+ *   accent    — emphasised text, strong buttons
+ *   hover     — hover state (more vivid)
+ *   hub       — hub node fill (slightly lighter than brand)
+ *   focus     — one-hop hub tone while focused
+ *   highlight — selected node / context highlight (lightest)
  */
 
 export const INDIGO_BRAND = "#5e6ad2";
@@ -28,10 +24,7 @@ export const INDIGO_HUB = "#6c77d4";
 export const INDIGO_FOCUS = "#7c87e6";
 export const INDIGO_HIGHLIGHT = "#8b97ff";
 
-/**
- * RGB triplet — `rgba()` 합성에 사용. `indigoRgba(variant, alpha)` 헬퍼가
- * 우선이지만, 인라인 합성이 필요할 때를 위해 노출.
- */
+/** Exported for inline composition; prefer the `indigoRgba` helper below. */
 export const INDIGO_RGB = {
   brand: "94, 106, 210",
   accent: "113, 112, 255",
@@ -44,8 +37,7 @@ export const INDIGO_RGB = {
 export type IndigoVariant = keyof typeof INDIGO_RGB;
 
 /**
- * `rgba()` 문자열 합성. Sigma reducer / SVG fill / Canvas paint 등 alpha 가
- * 필요한 사이트에서.
+ * For SVG fills and canvas paints that need an alpha.
  *
  * @example
  *   indigoRgba("highlight", 0.95) // "rgba(139, 151, 255, 0.95)"

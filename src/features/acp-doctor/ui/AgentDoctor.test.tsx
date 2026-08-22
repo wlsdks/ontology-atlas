@@ -7,11 +7,11 @@ import type { AcpCheck } from '../model/acp-doctor';
 import { useAgentDoctor } from './AgentDoctor';
 
 /**
- * 연동 점검 화면 — **소음이 되지 않는가**가 이 시험의 주제다.
+ * The connection-check screen — the subject of these tests is **whether it becomes noise.**
  *
- * 첫 판이 소유자에게 반려된 이유는 기능이 아니라 화면이었다: 「괜찮아요」가 일곱
- * 줄이었고, 그 목록이 행의 오른쪽 절반을 먹었다. 그래서 여기서 재는 것은
- * 「값을 잘 돌려주나」가 아니라 **「몇 줄을 그리나」** 다.
+ * The owner rejected the first version over the screen rather than the behaviour: "everything is
+ * fine" was seven lines long, and that list ate the row's right half. So what is measured here is
+ * not "does it return good values" but **"how many lines does it draw"**.
  */
 
 const diagnoseAgent = vi.fn<(runtimeId: string) => Promise<AcpCheck[]>>();
@@ -21,9 +21,9 @@ const agentInstallPlan = vi.fn<(runtimeId: string) => Promise<string | null>>();
 const installAgentCli = vi.fn<(runtimeId: string) => Promise<AcpCheck[]>>();
 const nodeInstallPlan = vi.fn<() => Promise<string | null>>();
 const installManagedNode = vi.fn<(runtimeId: string) => Promise<AcpCheck[]>>();
-/** Rust 가 낼 진행 이벤트를 시험이 직접 쏜다. */
+/** The test fires the progress events Rust would emit. */
 let emitProgress: ((progress: unknown) => void) | null = null;
-/** Rust 가 들고 있는 「마지막 진행」. 시험이 직접 심는다. */
+/** The "last progress" Rust holds. The test plants it directly. */
 const lastInstallProgress = vi.fn<(runtimeId: string) => Promise<unknown>>();
 
 vi.mock('../model/acp-doctor', async () => {
@@ -63,8 +63,8 @@ function Harness({ runtimeId = 'claude-acp' }: { runtimeId?: string }) {
 }
 
 function renderHarness(runtimeId = 'claude-acp') {
-  // `useTranslations` 는 provider 안에서만 산다 — 훅을 부르는 컴포넌트 자체가
-  // provider 밖이면 안 되므로 한 겹 더 감싼다.
+  // `useTranslations` lives only inside a provider, and the component calling the hook must not be
+  // outside one — hence the extra wrapper.
   return render(
     <NextIntlClientProvider locale="ko" messages={ko}>
       <Harness runtimeId={runtimeId} />
@@ -105,15 +105,15 @@ describe('연동 점검 화면', () => {
     fireEvent.click(screen.getByTestId('agent-doctor-scan'));
 
     await waitFor(() => expect(screen.getByTestId('agent-doctor-all-clear')).toBeInTheDocument());
-    // 이것이 첫 판의 결함이었다: 목록이 그려지면 안 된다.
+    // This was the first version's defect: the list must not be drawn.
     expect(screen.queryByTestId('agent-doctor-checks')).toBeNull();
-    // ⚠️ **개수를 세어 주지 않는다** (2026-08-20 반려): 「단계」는 우리 내부
-    // 말이고, 도구마다 검사 수가 달라서 사용자가 알 수 없는 이유로 숫자가 달라
-    // 보인다. 상태는 사람 말 한 줄이고, 무엇을 봤는지는 접어 둔다.
+    // ⚠️ **No count is given** (rejected 2026-08-20): "step" is our internal word, and the check
+    // count differs per tool, so the number looks different for reasons the user cannot know. The
+    // status is one sentence in plain language and what was examined is folded away.
     const summary = screen.getByTestId('agent-doctor-all-clear').textContent ?? '';
     expect(summary).not.toMatch(/\d/);
     expect(summary).toContain('문제 없어요');
-    // 접혀 있어도 목록은 DOM 에 있다 — 궁금하면 펴 보면 된다.
+    // Folded, the list is still in the DOM — unfold it if curious.
     expect(screen.getAllByRole('listitem')).toHaveLength(7);
   });
 
@@ -132,11 +132,11 @@ describe('연동 점검 화면', () => {
     fireEvent.click(screen.getByTestId('agent-doctor-scan'));
     await waitFor(() => expect(screen.getByTestId('agent-doctor-checks')).toBeVisible());
 
-    // 막힌 둘만 줄이 된다.
+    // Only the two blocked ones become rows.
     expect(screen.getByTestId('agent-doctor-check-shadow-keychain')).toBeVisible();
     expect(screen.getByTestId('agent-doctor-check-login')).toBeVisible();
     expect(screen.queryByTestId('agent-doctor-check-cli')).toBeNull();
-    // 안 그린 다섯이 사라진 것처럼 보이면 안 된다.
+    // The five that are not drawn must not look as though they vanished.
     expect(screen.getByTestId('agent-doctor-rest').textContent).not.toMatch(/\d/);
   });
 
@@ -151,7 +151,7 @@ describe('연동 점검 화면', () => {
     await waitFor(() => expect(screen.getByTestId('agent-doctor-checks')).toBeVisible());
 
     expect(screen.getByTestId('agent-doctor-fix-shadow-keychain')).toBeVisible();
-    // 앱이 못 고치는 것에 버튼을 달면, 눌렀는데 아무 일도 안 나는 화면이 된다.
+    // A button on something the app cannot fix produces a screen where pressing does nothing.
     expect(screen.queryByTestId('agent-doctor-fix-login')).toBeNull();
   });
 
@@ -179,7 +179,7 @@ describe('연동 점검 화면', () => {
 
     const row = screen.getByTestId('agent-doctor-check-login');
     expect(row.dataset.state).toBe('unknown');
-    // 모르는 것에 「고치기」를 달면 앱이 못 하는 일을 하겠다고 말하는 것이다.
+    // "Fix" on something unknown claims the app will do what it cannot.
     expect(screen.queryByTestId('agent-doctor-fix-login')).toBeNull();
     expect(screen.queryByTestId('agent-doctor-all-clear')).toBeNull();
   });
@@ -194,9 +194,9 @@ describe('연동 점검 화면', () => {
     fireEvent.click(screen.getByTestId('agent-doctor-scan'));
     await waitFor(() => expect(screen.getByTestId('agent-doctor-checks')).toBeVisible());
 
-    // 왜 안 되는지만 말하고 어디로 가면 되는지를 안 말하면 막다른 길이다.
+    // Saying only why it does not work, without saying where to go, is a dead end.
     expect(screen.getByTestId('agent-doctor-next-cli')).toBeVisible();
-    // 앱이 고칠 수 있는 것에는 버튼이 답이므로 문장을 더하지 않는다.
+    // Where the app can fix it, the button is the answer, so no sentence is added.
     expect(screen.queryByTestId('agent-doctor-next-shadow-keychain')).toBeNull();
   });
 
@@ -204,7 +204,7 @@ describe('연동 점검 화면', () => {
     diagnoseAgent.mockResolvedValue([ok('cli')]);
     renderHarness();
 
-    // 아무 문제 없는 사람에게 상시로 보여 주면 뭔가 잘못됐다는 신호로 읽힌다.
+    // Shown permanently to someone with no problem, it reads as a signal that something is wrong.
     expect(screen.queryByTestId('agent-doctor-reset')).toBeNull();
 
     fireEvent.click(screen.getByTestId('agent-doctor-scan'));
@@ -226,10 +226,10 @@ describe('연동 점검 화면', () => {
   });
 
   /**
-   * **무너진 앞단 위에 고치기 버튼을 세우지 않는다** (2026-08-20 워크스루).
+   * **No fix button is raised on a collapsed foundation** (walkthrough 2026-08-20).
    *
-   * 도구가 아예 없는 사람에게 「앱 몫 설정 고치기」와 「연결 다시 맺기」를
-   * 권하고 있었다. 눌러도 소용없다 — 띄울 도구 자체가 없으니까.
+   * Someone with no tool at all was being offered "fix the app's config" and "reconnect". Pressing
+   * them is useless — there is no tool to launch in the first place.
    */
   it('앞 단계가 막히면 뒷 단계의 수리를 권하지 않는다', async () => {
     diagnoseAgent.mockResolvedValue([
@@ -242,17 +242,17 @@ describe('연동 점검 화면', () => {
     await waitFor(() => expect(screen.getByTestId('agent-doctor-checks')).toBeVisible());
 
     expect(screen.queryByTestId('agent-doctor-fix-config-dir')).toBeNull();
-    // 「연결 다시 맺기」도 같다 — 도구가 없는데 설정을 다시 만들어 봐야 소용없다.
+    // The same for "reconnect" — rebuilding the config with no tool present achieves nothing.
     expect(screen.queryByTestId('agent-doctor-reset')).toBeNull();
-    // 그래도 **무엇을 하면 되는지**는 남아 있어야 한다.
+    // But **what to do about it** must still remain.
     expect(screen.getByTestId('agent-doctor-next-cli')).toBeVisible();
   });
 
   /**
-   * **명령 원문을 먼저 보여 준다** — 원장 2026-08-20 (88) 의 조건 ②.
+   * **Show the command text first** — condition ② of ledger entry 2026-08-20 (88).
    *
-   * 「이 앱에 설치」 버튼만 있고 무엇을 실행하는지 안 보여 주면, 그건 사용자가
-   * 자기 기계에서 무슨 일이 일어나는지 모른 채 누르는 것이다.
+   * With only an "install into this app" button and no view of what will be run, the user presses
+   * without knowing what happens on their own machine.
    */
   it('설치 버튼 옆에 실행할 명령이 그대로 적힌다', async () => {
     diagnoseAgent.mockResolvedValue([{ id: 'cli', state: 'problem', fixable: false, blocked: false }]);
@@ -276,9 +276,9 @@ describe('연동 점검 화면', () => {
     fireEvent.click(screen.getByTestId('agent-doctor-scan'));
     await waitFor(() => expect(screen.getByTestId('agent-doctor-checks')).toBeVisible());
 
-    // 확인한 적 없는 패키지를 사용자 기계에 깔겠다고 말하면 안 된다.
+    // Never claim a package that was never verified will be installed on the user's machine.
     expect(screen.queryByTestId('agent-doctor-install')).toBeNull();
-    // 그래도 사람이 할 일은 남아 있어야 한다.
+    // But what the person can do must still remain.
     expect(screen.getByTestId('agent-doctor-next-cli')).toBeVisible();
   });
 
@@ -304,14 +304,14 @@ describe('연동 점검 화면', () => {
     fireEvent.click(screen.getByTestId('agent-doctor-scan'));
     await waitFor(() => expect(screen.getByTestId('agent-doctor-all-clear')).toBeInTheDocument());
 
-    // 멀쩡한 사람에게 설치 제안을 상시로 보여 주면 그건 안내가 아니라 광고다.
+    // Showing an install offer permanently to someone with no problem is advertising, not guidance.
     expect(screen.queryByTestId('agent-doctor-install-plan')).toBeNull();
   });
 
   /**
-   * **Node 도 앱이 받아 준다** — 원장 (89). 이것이 도구가 하나도 없는 사람의
-   * 마지막 막다른 길이었다: 어댑터를 띄우려면 Node 가 필요한데 없으면 화면이
-   * 할 수 있는 말이 「직접 설치하세요」뿐이었다.
+   * **The app fetches Node too** — ledger entry (89). This was the final dead end for someone with
+   * no tooling at all: launching the adapter needs Node, and without it all the screen could say was
+   * "install it yourself".
    */
   it('Node 가 없으면 받을 주소와 해시를 보여 준다', async () => {
     diagnoseAgent.mockResolvedValue([
@@ -324,7 +324,7 @@ describe('연동 점검 화면', () => {
     await waitFor(() => expect(screen.getByTestId('agent-doctor-node-plan')).toBeVisible());
 
     const card = screen.getByTestId('agent-doctor-node-plan').textContent ?? '';
-    // 어디서 받는지 · 무엇으로 대조하는지 둘 다 누르기 전에 읽을 수 있어야 한다.
+    // Where it is downloaded from and what it is checked against must both be readable before pressing.
     expect(card).toContain('https://nodejs.org/dist/');
     expect(card).toContain('e1a97e14c99c');
     expect(screen.getByTestId('agent-doctor-install-node')).toBeVisible();
@@ -341,7 +341,7 @@ describe('연동 점검 화면', () => {
     await waitFor(() => expect(screen.getByTestId('agent-doctor-checks')).toBeVisible());
 
     expect(screen.queryByTestId('agent-doctor-install-node')).toBeNull();
-    // 그래도 사람이 할 일은 남아 있어야 한다.
+    // But what the person can do must still remain.
     expect(screen.getByTestId('agent-doctor-next-launcher')).toBeVisible();
   });
 
@@ -374,13 +374,13 @@ describe('연동 점검 화면', () => {
 
 
 /**
- * **설치가 도는 동안 화면이 말을 하는가** (2026-08-20 소유자: *"버튼들만 누르면
- * 알아서 설치되는 과정도 보여주고 완료된것도 체크해주고 하나?"*).
+ * **Does the screen speak while the install runs** (owner, 2026-08-20: *"버튼들만 누르면 알아서
+ * 설치되는 과정도 보여주고 완료된것도 체크해주고 하나?"* — does pressing the buttons show the
+ * install progress and check off completion?).
  *
- * 종전에는 커맨드가 끝나야 돌아왔으므로, 52MB 를 받는 동안 화면이 할 수 있는
- * 일은 칩을 비활성으로 두는 것뿐이었다 — 워크스루가 **「조용한 기다림」**이라고
- * 이름 붙여 둔 패턴이다. 그래서 여기서 재는 것은 「설치가 되나」가 아니라
- * **「도는 동안 무엇이 보이나」** 다.
+ * The command used to return only when finished, so while 52MB downloaded all the screen could do
+ * was leave the chip disabled — the pattern the walkthrough named **"the silent wait"**. So what is
+ * measured here is not "does the install work" but **"what is visible while it runs"**.
  */
 describe('설치 진행', () => {
   it('아무것도 시작 안 했으면 진행 줄이 없다 — 0% 막대를 미리 세우지 않는다', async () => {
@@ -410,7 +410,7 @@ describe('설치 진행', () => {
     const row = await screen.findByTestId('agent-doctor-progress');
     expect(row).toHaveAttribute('data-stage', 'downloading');
     expect(row.textContent).toContain('50%');
-    // 받은 양을 사람이 읽는 크기로도 말한다 — 퍼센트만 있으면 얼마나 큰 일인지 모른다.
+    // The amount received is stated in a human-readable size too — a percentage alone does not convey scale.
     expect(row.textContent).toContain('MB');
     const bar = screen.getByTestId('agent-doctor-progress-bar');
     expect((bar.firstElementChild as HTMLElement).style.width).toBe('50%');
@@ -437,7 +437,7 @@ describe('설치 진행', () => {
     expect(screen.getByTestId('agent-doctor-progress-note').textContent).toBe(
       'added 121 packages in 8s',
     );
-    // 퍼센트를 지어내지 않았다.
+    // No percentage was invented.
     expect(screen.getByTestId('agent-doctor-progress').textContent).not.toContain('%');
   });
 
@@ -484,11 +484,11 @@ describe('설치 진행', () => {
 });
 
 /**
- * **앱이 대신 해 줄 수 있으면 「직접 하세요」를 말하지 않는다.**
+ * **When the app can do it for you, do not say "do it yourself".**
  *
- * 2026-08-20 스크린샷에서 「이 앱에 설치」 버튼 바로 아래에 *"이 목록에서 그
- * 도구의 「설치 방법」을 눌러 설치한 뒤, 위의 「다시 확인」을 눌러 주세요"* 가
- * 같이 서 있었다. 둘 중 무엇이 진짜인지 사용자가 알 수 없다.
+ * In a 2026-08-20 screenshot, directly beneath the "install into this app" button stood *"press
+ * 「install instructions」 for that tool in this list, install it, then press 「check again」 above"*.
+ * The user cannot tell which of the two is real.
  */
 describe('모순된 안내', () => {
   it('앱 설치를 제안할 때는 「직접 설치하고 다시 확인하라」를 안 띄운다', async () => {
@@ -523,12 +523,12 @@ describe('모순된 안내', () => {
 });
 
 /**
- * **명령 원문이 칸보다 넓으면 조건 ②가 안 지켜진다** (원장 2026-08-20 (88):
- * 무엇을 실행하는지 먼저 보여 준다).
+ * **A command text wider than its column breaks condition ②** (ledger 2026-08-20 (88): show what
+ * will be run, first).
  *
- * 실측: 이 명령은 142자이고 설정 시트의 오른쪽 칸은 698px 다. 종전에는
- * `whitespace-pre` 로 한 줄에 묶어 넘치는 1/3 을 가로 스크롤 뒤에 뒀는데,
- * **가로 스크롤은 아무도 발견하지 못한다.**
+ * Measured: this command is 142 characters and the settings sheet's right pane is 698px. It used to
+ * be bound to one line with `whitespace-pre`, putting the overflowing third behind a horizontal
+ * scroll — and **nobody ever discovers a horizontal scroll.**
  */
 describe('명령 원문', () => {
   it('한 줄로 고정하지 않는다 — 넘치는 부분을 스크롤 뒤에 숨기지 않는다', async () => {
@@ -544,18 +544,19 @@ describe('명령 원문', () => {
     expect(code).not.toBeNull();
     expect(code?.className).not.toContain('whitespace-pre ');
     expect(code?.className).not.toContain('overflow-x-auto');
-    // 경로에 공백이 있으므로(`Application Support`) 단어 경계로만 접으면 여전히 넘친다.
+    // The path contains a space (`Application Support`), so wrapping only at word boundaries still overflows.
     expect(code?.className).toContain('break-all');
   });
 });
 
 /**
- * **닫아 둔 사이에 끝난 설치를 놓치지 않는가.**
+ * **Is an install that finished while closed still caught?**
  *
- * 설정 시트는 닫히면 통째로 언마운트되고(`AppSettingsMenu.tsx` 의 조건부 포털)
- * 이 훅의 상태와 이벤트 구독이 함께 사라진다. Node 내려받기는 250ms 주기라
- * 다시 열면 곧 되살아나지만, **완료(`done`)는 단발 이벤트**라 그 사이에
- * 지나가면 영영 못 본다 — 소유자가 요구한 「완료된것도 체크」가 바로 그것이다.
+ * The settings sheet unmounts entirely when closed (the conditional portal in
+ * `AppSettingsMenu.tsx`), taking this hook's state and its event subscription with it. The Node
+ * download ticks every 250ms and revives on reopening, but **completion (`done`) is a single event**
+ * and going past in the meantime means it is never seen — which is exactly the "check off completion"
+ * the owner asked for.
  */
 describe('언마운트를 건너뛰는 완료 표시', () => {
   const done = {
@@ -594,8 +595,8 @@ describe('언마운트를 건너뛰는 완료 표시', () => {
 
   it('구독이 먼저 답했으면 그쪽이 이긴다 — 옛 값으로 덮지 않는다', async () => {
     diagnoseAgent.mockResolvedValue([ok('cli')]);
-    // Rust 는 옛 완료를 들고 있는데, 지금 새 설치가 도는 중이다.
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- 해소 시점을 시험이 쥔다
+    // Rust holds an old completion while a new install is running right now.
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- the test controls when it resolves
     let release!: (value: any) => void;
     lastInstallProgress.mockReturnValue(
       new Promise((resolve) => {
@@ -616,7 +617,7 @@ describe('언마운트를 건너뛰는 완료 표시', () => {
     });
     await screen.findByTestId('agent-doctor-progress');
 
-    // 뒤늦게 도착한 「마지막 상태」가 지금 도는 것을 덮으면 안 된다.
+    // A late-arriving "last state" must not overwrite what is running now.
     release(done);
     await waitFor(() =>
       expect(screen.getByTestId('agent-doctor-progress')).toHaveAttribute(
@@ -628,13 +629,13 @@ describe('언마운트를 건너뛰는 완료 표시', () => {
 });
 
 /**
- * **모르는 것을 초록으로 그리지 않는다.**
+ * **Never draw the unknown as green.**
  *
- * #1175 가 「닫아 둔 사이의 완료」를 살리려고 마운트 시 진행 상태를 받아 오게
- * 했는데, 그러면서 결과 블록이 **검사 없이도** 그려지게 됐다. 그때
- * `blocked.length === 0` 은 「다 괜찮다」가 아니라 **「아직 아무것도 안 쟀다」**
- * 인데, 화면은 그것을 「지금은 문제 없어요」라고 말한다 — 재지도 않고 초록을
- * 그리는 것이라 이 화면이 지키기로 한 두 규율 중 첫째를 정면으로 어긴다.
+ * Reviving "completion while closed" made progress state load on mount, and with it the result block
+ * began rendering **even with no checks**. At that point `blocked.length === 0` does not mean
+ * "everything is fine" but **"nothing has been measured yet"**, while the screen says "no problems
+ * right now" — drawing green without measuring, in direct violation of the first of this screen's
+ * two rules.
  */
 describe('재지 않은 것을 괜찮다고 말하지 않는다', () => {
   it('진행 상태만 있고 점검을 안 했으면 「문제 없어요」를 안 그린다', async () => {
@@ -649,9 +650,9 @@ describe('재지 않은 것을 괜찮다고 말하지 않는다', () => {
     });
     renderHarness();
 
-    // 완료는 보여 준다 — 그게 이 배선의 존재 이유다.
+    // Completion is shown — that is what this wiring exists for.
     await screen.findByTestId('agent-doctor-progress');
-    // 그런데 검사는 한 번도 안 돌았다. 그것을 「괜찮다」로 바꾸면 안 된다.
+    // But the checks never ran once. That must not be turned into "fine".
     expect(screen.queryByTestId('agent-doctor-all-clear')).toBeNull();
     expect(screen.queryByTestId('agent-doctor-checks')).toBeNull();
   });

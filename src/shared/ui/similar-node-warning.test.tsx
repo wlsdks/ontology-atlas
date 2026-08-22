@@ -95,8 +95,8 @@ describe('SimilarNodeWarning', () => {
       />,
     );
     expect(screen.getByRole('status')).toBeInTheDocument();
-    // solid dot 없이 인라인 텍스트+링크만(council decision) — rounded-full 점
-    // 마커가 없어야 한다.
+    // Inline text plus links only, no solid dot (council decision) — there must be no
+    // rounded-full dot marker.
     expect(container.querySelector('[aria-hidden] + .rounded-full')).toBeNull();
     expect(container.querySelector('span.rounded-full')).toBeNull();
   });

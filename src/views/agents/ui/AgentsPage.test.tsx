@@ -6,11 +6,12 @@ import ko from '../../../../messages/ko.json';
 import { AgentsPage } from './AgentsPage';
 
 /**
- * 「에이전트」 목적지 — **같은 말을 두 번 하지 않는가.**
+ * The "agents" destination — **does it say the same thing twice?**
  *
- * 2026-08-20 설치 앱 캡처에서 잡혔다: 페이지의 lede 와 패널의 소개 줄이 거의
- * 같은 문장이라 위아래로 겹쳐 섰다. 이 화면이 이미 한 번 겪은 「같은 문장 사본」
- * 결함이고(실행기 목록의 20줄 중 18줄), 카운슬 처방도 「설명 문단 3→1」이었다.
+ * Caught in a 2026-08-20 capture of the installed app: the page's lede and the panel's intro line were
+ * near-identical sentences stacked one above the other. This screen had already suffered that
+ * same-sentence-copy defect once (18 of the runner list's 20 lines), and the council's prescription was
+ * "three explanatory paragraphs down to one".
  */
 vi.mock('@/widgets/app-settings-menu', () => ({
   AcpRuntimeSettings: ({ embedded }: { embedded?: boolean }) => (
@@ -50,19 +51,19 @@ describe('에이전트 목적지', () => {
 });
 
 /**
- * **랜드마크와 하단 예약** — 목적지가 되면서 처음으로 검사 대상이 된 것들.
+ * **Landmarks and the bottom reserve** — things that became checkable only once this became a destination.
  *
- * 첫 판은 `<div>` 로 그렸고, 접근성 래칫이
- * *"`/ko/agents/`: `<main>` 안 요소 0"* 으로 잡았다. 그 검사의 말이 정확했다:
- * 「위반 0」이 통과가 아니라 **미측정**이었고, 「본문으로 건너뛰기」도 이
- * 화면에서만 갈 곳이 없었다. e2e 가 잡아 주기 전에 여기서 먼저 막는다.
+ * The first draft drew a `<div>`, and the accessibility ratchet caught it with
+ * *"`/ko/agents/`: 0 elements inside `<main>`"*. That check's wording was exact: "zero violations" was
+ * not a pass but **nothing measured**, and "skip to content" had nowhere to go on this screen alone.
+ * It is blocked here before e2e has to catch it.
  */
 describe('목적지의 기본 골격', () => {
   it('`<main>` 랜드마크를 소유한다 — 이 저장소는 셸이 아니라 뷰가 소유한다', () => {
     renderPage();
     const main = screen.getByRole('main');
     expect(main).toHaveAttribute('id', 'main');
-    // 「본문으로 건너뛰기」가 초점을 줄 수 있어야 한다.
+    // "Skip to content" has to be able to give it focus.
     expect(main).toHaveAttribute('tabindex', '-1');
   });
 
@@ -80,11 +81,11 @@ describe('목적지의 기본 골격', () => {
 });
 
 /**
- * **강등 문장이 가리키는 곳이 실재하는가.**
+ * **Does what the degradation sentence points at actually exist?**
  *
- * 실행기 칸은 웹에서 「프로그램을 못 띄운다」고 말하면서 *"이 화면에서도 「MCP
- * 연결」 칸에서 …"* 라고 가리킨다. 그 칸이 같은 화면에 없으면 그 문장은
- * 가리키는 곳이 없는 안내가 된다 — 이 저장소가 강등 카드에 대해 금지한 모양이다.
+ * On the web the runner section says it cannot launch a program and points at
+ * *"in this screen too, from the «MCP connection» section …"*. Without that section on the same screen,
+ * the sentence is guidance pointing nowhere — the shape this repository forbids for degradation cards.
  */
 describe('강등 문장이 가리키는 곳', () => {
   it('MCP 연결 칸을 같은 화면에 데려온다', () => {

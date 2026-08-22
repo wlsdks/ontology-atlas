@@ -25,10 +25,10 @@ import { githubBlobUrl } from '../lib/resolve-doc-link';
 import type { VaultCommand } from '../model/command';
 import { resolveLocaleDisplayName } from '@/shared/lib/locale-display-name';
 
-// 제목·태그·요약·본문 전부에서 0건이 났을 때 안내하는 캐노니컬 문서 바로가기.
-// vault 바깥(repo)에 사는 관문 문서라 GitHub blob 외부 링크로 연다 —
-// DocsVaultViewer 의 vault-외부 링크 처리와 같은 방식
-// (resolve-doc-link.githubBlobUrl) 재사용.
+// Canonical document shortcuts offered when title, tag, excerpt and body all return
+// zero. These gateway documents live outside the vault (in the repo), so they open as
+// GitHub blob external links — reusing the same handling as DocsVaultViewer's
+// vault-external links (resolve-doc-link.githubBlobUrl).
 const CANONICAL_DOC_LINKS: Array<{ labelKey: string; repoPath: string }> = [
   { labelKey: 'canonicalMcp', repoPath: 'mcp/README.md' },
   { labelKey: 'canonicalCli', repoPath: 'cli/README.md' },
@@ -42,22 +42,22 @@ interface Props {
   pinnedSlugs: string[];
   commands: VaultCommand[];
   tagCounts: Array<{ tag: string; count: number }>;
-  /** 문서 선택 핸들러. 두 번째 인자 query 는 매치어 하이라이트 용도. */
+  /** Document selection handler. The second argument, query, is for match highlighting. */
   onDocSelect: (slug: string, query?: string) => void;
-  /** 태그 선택 핸들러 — 트리 필터에 즉시 반영. */
+  /** Tag selection handler — applied to the tree filter immediately. */
   onTagSelect: (tag: string) => void;
-  /** 초기 쿼리 — `> ` (명령) / `#` (태그) / '' (기본). */
+  /** The initial query — `> ` (commands) / `#` (tags) / '' (default). */
   initialQuery?: string;
   getDocHref?: (slug: string) => string;
-  /** 본문 검색 인덱스 (`use-docs-body-index`). 미제공 시 본문 티어 비활성. */
+  /** The body search index (`use-docs-body-index`). Without it the body tier is off. */
   bodyIndex?: DocsBodyIndex;
-  /** 본문 인덱스 구축 중 여부 — 0건 안내에 "곧 보강" 힌트를 덧붙인다. */
+  /** Whether the body index is still building — adds a "coming shortly" hint to the zero-result notice. */
   bodyIndexing?: boolean;
 }
 
-// combobox aria-activedescendant 가 가리킬 option id — listbox 옵션 li 와
-// 입력의 active descendant 를 같은 규칙으로 묶어 스크린리더가 방향키 이동 시
-// 활성 항목을 읽게 한다 (WAI-ARIA combobox 패턴).
+// The option id a combobox's aria-activedescendant points at — the listbox option li
+// and the input's active descendant are bound by the same rule so a screen reader
+// reads the active item on arrow-key movement (the WAI-ARIA combobox pattern).
 const PALETTE_LISTBOX_ID = 'docs-vault-palette-listbox';
 const paletteOptionId = (idx: number) => `docs-vault-palette-option-${idx}`;
 
@@ -68,9 +68,9 @@ interface PaletteRow {
   key: string;
   label: React.ReactNode;
   hint?: string;
-  /** 오른쪽에 표시할 보조 텍스트. 단축키·slug·count. */
+  /** Supporting text shown on the right — shortcut, slug or count. */
   meta?: string;
-  /** label 아래 둘째 줄 — 본문 히트 스니펫 등. */
+  /** A second line below the label — a body hit snippet, for instance. */
   sub?: React.ReactNode;
   icon: React.ReactNode;
   onRun: () => void;
@@ -96,16 +96,16 @@ function Highlight({
 }
 
 /**
- * 통합 팔레트 — VSCode/Spotlight 관례 + Obsidian 의 multi-section.
+ * The unified palette — VSCode/Spotlight convention plus Obsidian's multi-section.
  *
- *  - 빈 쿼리: 고정 → 최근 → 추천 명령 순 세 섹션
- *  - `>` 시작: 명령 퍼지 매칭
- *  - `#` 시작: 태그 매칭
- *  - 일반 쿼리: 문서 title/slug/tags/excerpt 혼합 검색 (+ 명령 적합 매치
- *    섞기)
+ *  - empty query: three sections, pinned → recent → suggested commands
+ *  - starts with `>`: fuzzy command matching
+ *  - starts with `#`: tag matching
+ *  - a plain query: mixed search over document title/slug/tags/excerpt (plus
+ *    well-matching commands)
  *
- * 기존 SearchPalette (전문) / QuickSwitcher (제목) / CommandPalette
- * (명령) 세 개를 이 하나로 대체.
+ * This one palette replaced the previous three (SearchPalette for full text,
+ * QuickSwitcher for titles, CommandPalette for commands).
  */
 export function DocsVaultUnifiedPalette({
   onClose,
@@ -135,15 +135,15 @@ export function DocsVaultUnifiedPalette({
     return m;
   }, [docs]);
 
-  // mount 시 input focus + caret 을 prefix 뒤로 + unmount 에 trigger 로 focus 복원.
-  // 다른 modal (SearchPalette / ProjectDrawer / DocsQuickDrawer / ShortcutSheet)
-  // 와 동일한 a11y 패턴 — 키보드 사용자가 ⌘K 로 열고 Esc 로 닫을 때 원래
-  // 작업하던 element 로 돌아가도록.
+  // On mount, focus the input, put the caret after the prefix, and restore focus to
+  // the trigger on unmount. The same a11y pattern as the other modals (SearchPalette /
+  // ProjectDrawer / DocsQuickDrawer / ShortcutSheet) — a keyboard user opening with ⌘K
+  // and closing with Esc returns to the element they were working in.
   useEffect(() => {
     previousFocusRef.current = document.activeElement as HTMLElement | null;
     const handle = requestAnimationFrame(() => {
       inputRef.current?.focus();
-      // `> ` prefix 주입 시 caret 을 prefix 뒤로 배치
+      // With a `> ` prefix injected, put the caret after it.
       const ql = initialQuery.length;
       inputRef.current?.setSelectionRange(ql, ql);
     });
@@ -153,7 +153,7 @@ export function DocsVaultUnifiedPalette({
     };
   }, [initialQuery]);
 
-  // activeIdx 이 변경되면 리스트 스크롤 따라가기
+  // Scroll the list to follow activeIdx.
   useEffect(() => {
     const list = listRef.current;
     if (!list) return;
@@ -161,7 +161,7 @@ export function DocsVaultUnifiedPalette({
     el?.scrollIntoView({ block: 'nearest' });
   }, [activeIdx]);
 
-  // ─ 결과 빌드 ─────────────────────────────────────────────────────────
+  // ─ Build results ─────────────────────────────────────────────────────
   const { rows, sections } = useMemo(() => {
     const trimmed = query.trim();
     const mode: 'commands' | 'tags' | 'mixed' | 'empty' =
@@ -177,7 +177,7 @@ export function DocsVaultUnifiedPalette({
     const sections: Array<{ title: string; icon: React.ReactNode; size: number }> = [];
 
     if (mode === 'empty') {
-      // 고정
+      // Pinned
       const pinnedRows: PaletteRow[] = [];
       for (const slug of pinnedSlugs) {
         const d = bySlug.get(slug);
@@ -202,7 +202,7 @@ export function DocsVaultUnifiedPalette({
         sections.push({ title: t('secPinned'), icon: <Pin size={ICON_SIZE.sm} aria-hidden />, size: pinnedRows.length });
         out.push(...pinnedRows);
       }
-      // 최근
+      // Recent
       const recentRows: PaletteRow[] = [];
       for (const slug of recentSlugs) {
         if (pinnedSlugs.includes(slug)) continue;
@@ -227,7 +227,7 @@ export function DocsVaultUnifiedPalette({
         sections.push({ title: t('secRecent'), icon: <Clock size={ICON_SIZE.sm} aria-hidden />, size: recentRows.length });
         out.push(...recentRows);
       }
-      // 추천 명령 (top 5 visible)
+      // Suggested commands (top 5 visible)
       const cmdRows: PaletteRow[] = commands
         .filter((c) => c.visible !== false)
         .slice(0, 5)
@@ -327,20 +327,20 @@ export function DocsVaultUnifiedPalette({
       return { rows: out, sections };
     }
 
-    // mixed 모드 — 문서 먼저, 명령 보조로. bodyIndex 가 있으면 본문 티어까지
-    // 검색 (제목 히트가 항상 위 — search.ts 의 최하위 티어 점수 계약).
+    // Mixed mode — documents first, commands as support. With a bodyIndex, search the
+    // body tier too (a title hit is always above it — the lowest-tier score contract in search.ts).
     const docMatches: DocsSearchMatch[] = searchDocs(trimmed, docs, 15, bodyIndex);
     const docRows: PaletteRow[] = docMatches.map((m) => {
-      // 화면 언어로 부르는 이름을 그린다 — 지도 팝오버와 같은 규칙.
-      // 표시 이름이 canonical title 과 다르면 하이라이트 오프셋이 어긋나므로
-      // 그 행만 강조를 접는다: 이름이 맞는 것이 강조보다 중요하다.
+      // Draw the name in the screen's language — the same rule as the map popover. If
+      // the display name differs from the canonical title the highlight offsets are
+      // wrong, so that row alone drops the emphasis: the right name matters more.
       const displayTitle = resolveLocaleDisplayName(m.doc.frontmatter, locale, m.doc.title);
       const sameAsTitle = displayTitle === m.doc.title;
       return {
       kind: 'doc' as const,
       key: `doc:${m.doc.slug}`,
       label: sameAsTitle ? <Highlight text={m.doc.title} hit={m.titleHit} /> : displayTitle,
-      // 본문 히트 스니펫 — 제목이 이미 매치를 보여주는 행에는 중복 표시 안 함.
+      // Body hit snippet — not shown on a row whose title already shows the match.
       sub:
         m.bodyHit && !m.titleHit ? (
           <Highlight text={m.bodyHit.text} hit={m.bodyHit.hit} />
@@ -364,7 +364,7 @@ export function DocsVaultUnifiedPalette({
       });
       out.push(...docRows);
     }
-    // 명령도 부분 매치 있으면 뒤에 보여주기 (최대 5)
+    // Commands with a partial match are shown after (up to 5).
     const qLc = trimmed.toLowerCase();
     const cmdMatches = commands
       .filter((c) => c.visible !== false)
@@ -414,7 +414,7 @@ export function DocsVaultUnifiedPalette({
     t,
   ]);
 
-  // 섹션 별 시작 인덱스 계산 — 렌더 시 헤더를 어디에 끼울지.
+    // Per-section start indices — where to insert headers at render time.
   const sectionOffsets = useMemo(() => {
     const offsets = new Map<number, { title: string; icon: React.ReactNode }>();
     let offset = 0;
@@ -425,10 +425,10 @@ export function DocsVaultUnifiedPalette({
     return offsets;
   }, [sections]);
 
-  // 검색어가 있을 때만 결과 수를 스크린리더에 알린다 (combobox 표준 관행).
-  // aria-activedescendant 만으로는 "몇 건 나왔는지"가 전달되지 않아, 타이핑
-  // 중 결과 0건/N건 변화를 polite live-region 으로 announce. 빈 쿼리(기본
-  // recent/pinned 뷰)에서는 알리지 않아 첫 오픈 시 소음 방지.
+  // Announce the result count to screen readers only while a query is present
+  // (standard combobox practice). aria-activedescendant alone does not convey "how
+  // many results", so a polite live region announces the 0/N change while typing. The
+  // empty query (the default recent/pinned view) stays silent to avoid noise on first open.
   const resultAnnouncement =
     query.trim() === ''
       ? ''
@@ -436,10 +436,10 @@ export function DocsVaultUnifiedPalette({
         ? t('noMatches')
         : t('resultsAnnounce', { count: rows.length });
 
-  // 문서 검색(mixed) 모드에서 0건일 때만 확장 안내(어디까지 검색했는지 +
-  // 캐노니컬 문서 바로가기)를 띄운다. 본문 인덱스가 아직 구축 중이면 "곧
-  // 보강될 수 있음" 힌트를 덧붙인다. 명령(`>`)·태그(`#`) 모드의 0건은 기존
-  // noMatches 로 충분.
+  // The extended notice (how far the search reached, plus canonical document
+  // shortcuts) appears only on zero results in document (mixed) mode. While the body
+  // index is still building, a "may be filled in shortly" hint is added. Zero results
+  // in command (`>`) and tag (`#`) modes are served well enough by the existing noMatches.
   const trimmedQuery = query.trim();
   const isDocSearchZero =
     trimmedQuery !== '' &&
@@ -471,7 +471,7 @@ export function DocsVaultUnifiedPalette({
       e.preventDefault();
       onClose();
     } else if (e.key === 'Tab') {
-      // Tab 으로 prefix 순환 전환 — '' → '>' → '#' → ''
+      // Tab cycles the prefix — '' → '>' → '#' → ''
       e.preventDefault();
       const t = query.trim();
       if (t.startsWith('>')) setQuery('#');
@@ -502,7 +502,7 @@ export function DocsVaultUnifiedPalette({
         initial={{ opacity: 0, y: -8, scale: 0.98 }}
         animate={{ opacity: 1, y: 0, scale: 1 }}
         exit={{ opacity: 0, y: -8, scale: 0.98 }}
-        // 0.14 + 무명 이징 곡선 → 램프의 "이동" 단으로 (2026-07-28).
+      // 0.14 with an unnamed easing curve → the ramp's "movement" step (2026-07-28).
         transition={MOTION.base}
         onClick={(e) => e.stopPropagation()}
         role="dialog"
@@ -669,8 +669,8 @@ function ResultRow({
   onClose: () => void;
   getDocHref: (slug: string) => string;
 }) {
-  // 같은 행이 문서면 <Link>, 아니면 <button> 으로 난다 — 둘 다 같은 값 층을
-  // 통과해야 팔레트 안에서 행 높이가 갈리지 않는다.
+  // The same row renders as <Link> for a document and <button> otherwise — both must
+  // pass through the same value layer so row heights do not diverge inside the palette.
   const base = controlClass({
     shape: 'row',
     active,
@@ -705,7 +705,7 @@ function ResultRow({
       ) : null}
     </>
   );
-  // 문서 행은 Link 로 render — 새탭 가능 + prefetch.
+  // Document rows render as Link — new-tab capable plus prefetch.
   if (row.kind === 'doc' && typeof row.meta === 'string') {
     return (
       <Link
@@ -713,8 +713,8 @@ function ResultRow({
         className={base}
         onMouseEnter={onHover}
         onClick={(e) => {
-          // 수식어(⌘ click 등) 은 Link 기본 동작 (새 탭) 로 두고, 일반 클릭만
-          // 내부 핸들러 실행해 팔레트 닫음.
+  // Modifier clicks (⌘ click and friends) keep Link's default behaviour (new tab);
+  // only a plain click runs the internal handler and closes the palette.
           if (e.metaKey || e.ctrlKey || e.shiftKey) return;
           e.preventDefault();
           row.onRun();

@@ -48,8 +48,8 @@ export function buildProjectCardFacts(
     else if (node.kind === "element") facts.element += 1;
   }
 
-  // P-2 — document 는 containment 스탬핑 밖(관례상 relates 로만 연결)이라
-  // projectIds 로는 영원히 0 이다. 상세와 같은 1-hop 연결 규칙(shared)로 센다.
+  // A document sits outside containment stamping (by convention it is only linked through `relates`), so
+  // `projectIds` would count it as zero forever. It uses the same shared one-hop rule as the detail page.
   facts.document = countConnectedDocuments(nodes, edges, ownedIds);
 
   for (const edge of edges) {

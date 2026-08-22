@@ -32,7 +32,7 @@ const LABELS = {
   elementUnit: "요소",
 } as unknown as OverviewTabLabels;
 
-/** 페이지가 내리는 것과 같은 계약 — 주소는 실제 빌더, 이름은 행의 수치를 싣는다. */
+/** The same contract the page supplies — the address is the real builder, and the name carries the row's figures. */
 const DOMAIN_LINK = {
   href: (nodeId: string) => buildOntologyNodeHref(nodeId, { via: "insights:composition" }),
   ariaLabel: (row: { title: string; total: number; capabilityCount: number; elementCount: number }) =>
@@ -70,9 +70,10 @@ const AUTH_ROW = {
 };
 
 /**
- * **「구성」 탭의 도메인 용량 — 빈 상태와 채워진 상태가 서로의 것을 말하지 않는다**
- * (2026-08-12 census: 이 탭은 다섯 탭 중 유일하게 누를 수 있는 것이 0개였고,
- * 빈 상태가 가장 흔한 첫 화면이다 — 갓 만든 볼트는 도메인이 없다).
+ * **The "composition" tab's domain capacity — the empty and filled states never state each other's
+ * content** (census 2026-08-12: this was the only one of the five tabs with zero pressable
+ * controls, and its empty state is the most common first screen — a freshly created vault has no
+ * domains).
  */
 describe("OverviewTab — 도메인 용량", () => {
   it("도메인이 없으면 만들 길을 내민다 — 「없습니다」로 끝나는 것은 다음 단계가 없음이다", () => {
@@ -94,8 +95,8 @@ describe("OverviewTab — 도메인 용량", () => {
   });
 
   /**
-   * 행이 지도로 가는 문인가 — 이 카드가 여섯 행을 그려 놓고 **아무것도 누를 수
-   * 없던** 것이 2026-08-12 census 의 지적이다. 「연결」 탭 허브 행과 같은 문법.
+   * Is the row a door to the map? That this card drew six rows with **nothing pressable** was the
+   * finding of the 2026-08-12 census. Same grammar as the hub rows on the "connections" tab.
    */
   it("도메인 행이 그 도메인의 지도 주소로 간다", () => {
     render(
@@ -117,8 +118,9 @@ describe("OverviewTab — 도메인 용량", () => {
   });
 
   /**
-   * 막대·열쇠가 `aria-hidden` 이라, 화면에 보이는 세 수(합계 · 역량 · 요소)가
-   * 링크 이름에 실려야 한다 — 실리지 않으면 스크린리더에서는 이름만 남는다.
+   * The bar and the key are `aria-hidden`, so the three numbers visible on screen (total,
+   * capabilities, elements) must be carried in the link name — otherwise only the name survives for
+   * a screen reader.
    */
   it("링크 이름이 그 행의 수치를 싣는다", () => {
     render(<OverviewTab {...BASE} domainRows={[AUTH_ROW]} />);
@@ -129,12 +131,12 @@ describe("OverviewTab — 도메인 용량", () => {
   });
 
   /**
-   * **감싼 링크는 행의 치수를 바꾸지 않는다.** 이 카드의 여섯 행은 높이가
-   * 같아야 경계 자리를 나란히 비교할 수 있다(치수 규칙성). 값 층의 `row` 는
-   * 세로 인셋(`py-1.5`)과 flex 배치(`flex w-full`)를 싣는데, 안쪽 막대가 자기
-   * 배치를 이미 갖고 있으므로 둘 다 비워야 한다 — 이 단언이 그 세 값이 병합
-   * 결과에 되살아나는 것을 막는다. jsdom 은 레이아웃을 계산하지 않으니 재는
-   * 것은 클래스이고, 그것이 이 층에서 결정론적으로 잴 수 있는 전부다.
+   * **The wrapping link does not change the row's dimensions.** The six rows of this card must share
+   * one height for boundary positions to be compared side by side (dimensional regularity). The
+   * value layer's `row` carries a vertical inset (`py-1.5`) and a flex layout (`flex w-full`), and
+   * since the bar inside already has its own layout, both must be emptied — this assertion stops
+   * those three values reappearing in the merged result. jsdom does not compute layout, so what is
+   * measured is the classes, and that is all this layer can measure deterministically.
    */
   it("링크가 행 높이를 늘리지 않는다 — 세로 인셋 0 · 배치는 막대의 것", () => {
     render(<OverviewTab {...BASE} domainRows={[AUTH_ROW]} />);
@@ -145,12 +147,12 @@ describe("OverviewTab — 도메인 용량", () => {
     expect(classes).not.toContain("py-1.5");
     expect(classes).not.toContain("flex");
     expect(classes).not.toContain("w-full");
-    // 좌우는 허브 행과 같은 상쇄쌍 — 인셋만 밖으로 나가고 축은 그대로다.
+    // Horizontally it is the same offset pair as the hub rows — only the inset extends outward while the axis stays.
     expect(classes).toContain("-mx-1.5");
     expect(classes).toContain("px-1.5");
     expect(classes).not.toContain("px-2");
-    // 배치를 비워도 값 층이 주는 나머지는 남아야 한다 — 초점 링(OS 하늘색이
-    // 아니라 인디고)과 손가락 바닥. 이 둘이 없으면 손으로 쓴 링크와 같다.
+    // Emptying the layout must still leave what the value layer gives — the focus ring (indigo
+    // rather than the OS blue) and the finger floor. Without those it is the same as a hand-written link.
     expect(classes).toContain("focus-visible:ring-2");
     expect(classes).toContain("atlas-touch-floor");
   });

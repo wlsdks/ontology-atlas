@@ -1,30 +1,33 @@
 /**
- * 대비 계산 — **순수 함수**. DOM 도 브라우저도 모른다.
+ * Contrast calculation — **pure functions**. It knows nothing of the DOM or the
+ * browser.
  *
- * ## 왜 이 파일이 필요한가
+ * **Why this file exists.** `/design-council` instructs the 「도해」 (infoviz) seat
+ * that *"design-infoviz must measure contrast"*, and that seat's brief makes
+ * *"measure contrast — take the composited contrast of adjacent segments, and below
+ * 3:1 there must be a colour-independent distinguisher"* a precondition of any
+ * verdict. **But there was no instrument to measure with.** As of 2026-08-03 no
+ * script in this repository computed contrast, and `/design-audit` only **checked
+ * colours against the token set** without producing a ratio — whether a token was
+ * used and whether it is legible are different questions.
  *
- * `/design-council` 은 「도해」석에게 *"design-infoviz must measure contrast"* 라고
- * 명령하고, 그 자리의 브리프도 *"대비를 실측한다 — 인접 세그먼트의 합성 대비를
- * 재고 3:1 미만이면 색-무관 구분자가 있어야 한다"* 를 판정 전 필수로 건다.
- * **그런데 잴 도구가 없었다.** 2026-08-03 기준 이 저장소의 어떤 스크립트도 대비를
- * 계산하지 않았고, `/design-audit` 은 색을 **토큰 집합과 대조**할 뿐 비율을 내지
- * 않았다 — 토큰을 썼는지와 읽히는지는 다른 질문이다.
+ * An instruction with no instrument turns that seat into eyeballing, with "looks
+ * fine" called a measurement. That cost was paid on 2026-07-26: the amber /
+ * eucalyptus pair had a composited contrast of **1.14:1** on the track, so they did
+ * not separate by luminance at all and separated only by hue — and hue is precisely
+ * the axis red-green colour blindness (about 8% of men) separates worst. The premise
+ * that colour carried identity was itself wrong, and what revealed it was a number,
+ * not an eye.
  *
- * 명령만 있고 계기가 없으면 그 자리는 눈으로 재고 「괜찮아 보인다」를 실측이라
- * 부르게 된다. 실제로 2026-07-26 에 그 비용을 냈다: 앰버/유칼립투스 쌍이 트랙 위
- * 합성 대비 **1.14:1** 이라 휘도로는 전혀 안 갈리고 hue 로만 갈렸는데, 그 hue 축이
- * 적록 색약(남성 약 8%)이 가장 못 가르는 축이었다. 색이 정체를 나른다는 전제
- * 자체가 틀렸고, 그걸 밝힌 것은 눈이 아니라 숫자였다.
+ * **Basis:** WCAG 2.2's relative luminance and contrast ratio definitions
+ * (§ Relative luminance · Contrast ratio). Thresholds are 1.4.3 Contrast (Minimum)
+ * — body text 4.5:1, large text (18.66px+bold or 24px+) 3:1 — and 1.4.11 Non-text
+ * Contrast 3:1.
  *
- * ## 근거
- *
- * WCAG 2.2 상대 휘도와 대비 비율 정의(§ Relative luminance · Contrast ratio),
- * 판정 문턱은 1.4.3 Contrast (Minimum) — 본문 4.5:1, 큰 글자(18.66px+bold 또는
- * 24px+) 3:1 — 과 1.4.11 Non-text Contrast 3:1.
- *
- * ⚠️ **알파를 합성하지 않으면 이 계산은 거짓말을 한다.** 이 앱은 텍스트와 보더를
- * 알파 토큰(`--color-overlay-*` · `--color-border-soft`)으로 쓴다. 합성 전 색으로
- * 재면 실제보다 좋게 나온다 — 그래서 여기 합성이 들어 있다.
+ * ⚠️ **Without compositing alpha this calculation lies.** This app uses alpha tokens
+ * for text and borders (`--color-overlay-*`, `--color-border-soft`). Measuring the
+ * pre-composite colour reports better than reality — which is why compositing lives
+ * here.
  */
 
 /** `rgb(r, g, b)` · `rgba(r, g, b, a)` · `#rgb` · `#rrggbb` → `[r, g, b, a]`. */
@@ -49,10 +52,11 @@ export function parseColor(input) {
 }
 
 /**
- * 반투명 전경을 불투명 배경 위에 **합성**한다 — source-over.
+ * **Composites** a translucent foreground over an opaque background (source-over).
  *
- * 이 앱의 텍스트·보더는 알파 토큰이다. 합성 없이 재면 실제보다 좋은 수치가 나오고,
- * 그 낙관은 조용하다(숫자가 나오니까).
+ * This app's text and borders are alpha tokens. Measuring without compositing
+ * reports better than reality, and that optimism is silent because a number still
+ * comes out.
  */
 export function composite(fg, bg) {
   const a = fg[3];
@@ -65,7 +69,7 @@ export function composite(fg, bg) {
   ];
 }
 
-/** WCAG 2.2 상대 휘도. */
+/** WCAG 2.2 relative luminance. */
 export function relativeLuminance([r, g, b]) {
   const lin = (v) => {
     const c = v / 255;
@@ -75,8 +79,8 @@ export function relativeLuminance([r, g, b]) {
 }
 
 /**
- * 대비 비율. 두 색 모두 **불투명이어야 한다** — 반투명이면 `composite` 를 먼저.
- * 흰↔검은 21:1, 같은 색끼리는 1:1.
+ * Contrast ratio. Both colours **must be opaque** — run `composite` first if either
+ * is translucent. White against black is 21:1; a colour against itself is 1:1.
  */
 export function contrastRatio(a, b) {
   const l1 = relativeLuminance(a);
@@ -86,8 +90,8 @@ export function contrastRatio(a, b) {
 }
 
 /**
- * WCAG 1.4.3 의 「큰 글자」 정의 — 18.66px 이상 bold, 또는 24px 이상.
- * (문서상 14pt bold / 18pt 이고 CSS px 환산이 이 값이다.)
+ * WCAG 1.4.3's definition of large text — 18.66px+ bold, or 24px+. (The spec says
+ * 14pt bold / 18pt; these are the CSS px equivalents.)
  */
 export function isLargeText(fontSizePx, fontWeight) {
   const weight = Number(fontWeight) || (fontWeight === "bold" ? 700 : 400);
@@ -95,11 +99,11 @@ export function isLargeText(fontSizePx, fontWeight) {
 }
 
 /**
- * 한 텍스트에 대한 판정.
+ * The verdict for one piece of text.
  *
  * @param {{ fg: string, bg: string, fontSizePx: number, fontWeight: string|number }} input
- *   `fg`/`bg` 는 computed style 문자열. `bg` 는 **이미 불투명하게 해결된** 배경
- *   (조상까지 거슬러 합성한 것) 이어야 한다.
+ *   `fg`/`bg` are computed-style strings. `bg` must be a background **already
+ *   resolved to opaque** (composited back through its ancestors).
  */
 export function judgeText({ fg, bg, fontSizePx, fontWeight }) {
   const bgc = parseColor(bg);
@@ -113,12 +117,14 @@ export function judgeText({ fg, bg, fontSizePx, fontWeight }) {
 }
 
 /**
- * 인접한 두 데이터 마크가 **휘도로** 갈리는가 (WCAG 1.4.11 비텍스트 3:1).
+ * Do two adjacent data marks separate **by luminance**? (WCAG 1.4.11 non-text,
+ * 3:1.)
  *
- * 이 저장소가 이 함수를 특별히 필요로 하는 이유: 2026-07-26 에 인접 세그먼트가
- * hue 로만 갈리고 휘도로는 1.14:1 이던 사고가 있었다. **hue 는 8% 의 사용자에게
- * 채널이 아니다** — 그래서 「구분된다」의 판정은 hue 가 아니라 이 비율이다.
- * 3:1 미만이면 색-무관 구분자(심 · 라벨 · 패턴 · 순서)가 반드시 있어야 한다.
+ * Why this repository specifically needs this function: on 2026-07-26 adjacent
+ * segments separated only by hue, at 1.14:1 by luminance. **Hue is not a channel for
+ * 8% of users**, so the verdict on "are they distinguishable" is this ratio, not
+ * hue. Below 3:1 a colour-independent distinguisher (a seam, label, pattern, or
+ * order) must exist.
  */
 export function judgeAdjacentMarks({ a, b, over }) {
   const base = parseColor(over) ?? [0, 0, 0, 1];
@@ -126,18 +132,19 @@ export function judgeAdjacentMarks({ a, b, over }) {
   const ma = parseColor(a);
   const mb = parseColor(b);
   /**
-   * **못 읽은 색은 «통과» 가 아니라 «미측정» 이다** — `judgeText` 와 같은 계약
-   * (2026-08-07 코드 리뷰).
+   * **An unparseable colour is "not measured", not "passed"** — the same contract as
+   * `judgeText` (code review, 2026-08-07).
    *
-   * 종전에는 이 가드가 없어서 `parseColor` 가 `null` 을 내면 바로 아래
-   * `composite` 가 `fg[3]` 을 읽다 **TypeError 를 던졌다.** 형제 함수는 같은
-   * 자리에서 `null` 을 돌려주는데 이쪽만 죽는다. `parseColor` 는 `#hex` 와
-   * `rgb()/rgba()` 만 읽으므로, 크로미움이 `color(srgb …)` 나 `oklch(…)` 로
-   * 직렬화하는 값(색 공간이 넓은 화면·`color-mix()`)이 그 입력이 된다.
+   * Without this guard, a `null` from `parseColor` made the `composite` just below
+   * read `fg[3]` and **throw a TypeError**. The sibling function returns `null` at the
+   * same point; only this one died. `parseColor` reads `#hex` and `rgb()/rgba()` only,
+   * so its input becomes whatever Chromium serialises as `color(srgb …)` or
+   * `oklch(…)` (wide-gamut displays, `color-mix()`).
    *
-   * 이 함수가 수동 계기 안에만 있을 때는 사람이 보고 있었지만, 2026-08-06 에
-   * CI 래칫으로 들어가면서 **게이트가 크래시하는 경로**가 됐다. 부르는 쪽은
-   * 이미 `if (!judged) continue` 로 미측정을 세고 있었는데 그 줄이 죽어 있었다.
+   * While this function lived only inside a manual instrument a person was watching,
+   * but when it entered a CI ratchet on 2026-08-06 it became **a path where the gate
+   * crashes**. The caller already counted unmeasured cases with
+   * `if (!judged) continue`, and that line was dead.
    */
   if (!ma || !mb) return null;
   const ca = composite(ma, solidBase);
@@ -146,7 +153,7 @@ export function judgeAdjacentMarks({ a, b, over }) {
   return {
     ratio: +ratio.toFixed(2),
     passes: ratio >= 3,
-    /** 3:1 미만이면 «색-무관 구분자가 있는가» 를 사람이 확인해야 한다는 신호. */
+    /** Below 3:1, the signal that a person must confirm a colour-independent distinguisher exists. */
     needsNonColorChannel: ratio < 3,
   };
 }

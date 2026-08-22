@@ -4,12 +4,14 @@ import { useEffect, useRef } from 'react';
 import { controlClass } from '@/shared/ui';
 
 /**
- * 첫 턴 전 범위 시트 — 보내기 전에 **무엇이 어디로 가는지** 한 번 말한다.
+ * The scope sheet before the first turn — it states once, before sending, **what
+ * goes where**.
  *
- * 도구 루프에서는 다음 왕복에 무엇이 실릴지 모델이 정하므로 사전 전문
- * 미리보기가 구조적으로 불가능하다. 헌장의 목적(조용한 수집 0 · 사용자가
- * 범위를 앎 · 감사 가능)을 지키는 등가물은 ① 이 시트의 사전 고지 ② 왕복마다
- * 실시간으로 붙는 도구 행 ③ 볼트 안 감사 로그의 사후 대조다.
+ * In a tool loop the model decides what rides on the next round trip, so a full
+ * preview beforehand is structurally impossible. The equivalent that keeps the
+ * charter's aims (zero silent collection, the user knowing the scope, auditability)
+ * is ① this sheet's advance notice ② the tool rows appended live each round trip
+ * ③ after-the-fact comparison against the audit log inside the vault.
  */
 export function AgentScopeSheet({
   provider,
@@ -27,10 +29,11 @@ export function AgentScopeSheet({
     body: (args: { provider: string; host: string }) => string;
     liveRows: string;
     /**
-     * 쓰기 동의 약속. 이 시트는 사람이 **전체를 승낙하는** 자리인데, 구
-     * 문구는 읽기·전송·기록만 말하고 "문서를 고칠 수도 있다" 는 사실과 그
-     * 안전장치를 말하지 않았다. 승낙의 범위에 쓰기가 들어 있다면 그 자리에서
-     * 말해야 승낙이 승낙이다.
+     * The write-consent promise. This sheet is where a person **consents to the
+     * whole**, yet the old copy spoke only of reading, sending and logging and never
+     * of the fact that documents can be edited, nor of the safeguards. If writing is
+     * within the scope of the consent, it has to be stated there for the consent to
+     * be consent.
      */
     consent: string;
     recorded: (path: string) => string;

@@ -9,7 +9,7 @@ interface MockVault {
   manifest: { docs: unknown[] } | null;
   errorMessage: string | null;
   restoreAttempted: boolean;
-  /** 「한 번이라도 연결했나」 — 샘플 안내 대상 판정의 입력(2026-08-02). */
+  /** "Has a vault ever been connected?" — the input deciding who the sample notice targets (2026-08-02). */
   recentVaults: unknown[];
   open: ReturnType<typeof vi.fn>;
   scaffoldOntology: ReturnType<typeof vi.fn>;
@@ -62,28 +62,30 @@ describe('FirstRunStarterModule', () => {
     mocks.mode = 'static';
     window.sessionStorage.removeItem(FIRST_RUN_STARTER_DISMISSED_KEY);
     window.localStorage.removeItem('demo:sample-source:v1');
-    // 저장소를 지웠으면 모듈 캐시도 지운다 — 안 그러면 앞 테스트가 남긴 값에
-    // 기대게 되고, 그건 격리가 아니라 우연이다.
+    // Clearing storage clears the module cache too — otherwise a test leans on
+    // whatever the previous one left behind, which is coincidence, not isolation.
     resetSampleSourceCacheForTests();
     window.localStorage.setItem('vault-open-guide:auto:v1', '1');
   });
 
-  // PO 카운슬 2026-08-02 — 계기 블록(19px mono)을 탭 아래 캡션 1행으로
-  // 강등했다. **숫자의 출처는 그대로다** — 고정 숫자 금지(2026-08-01 원장)에
-  // 걸리지 않도록, props 로 들어온 실census 가 그대로 그려지는지 고정한다.
+  // PO council 2026-08-02 — the instrument block (19px mono) was demoted to a
+  // single caption line under the tabs. **The numbers' source is unchanged**, so
+  // this pins that the real census arriving as props is what gets drawn, keeping
+  // the ban on hardcoded numbers (2026-08-01 ledger) satisfied.
   it('renders the real census as a caption line, not a meter block', () => {
     render(<FirstRunStarterModule concepts={102} relations={478} domains={6} />);
 
     expect(screen.getByTestId('first-run-starter')).toBeInTheDocument();
     const scale = screen.getByTestId('first-run-starter-sample-scale');
     expect(scale).toHaveTextContent('sampleScale');
-    // 19px mono 계기 셀은 사라졌다 — 숫자만 홀로 선 원소가 없어야 한다.
+    // The 19px mono instrument cell is gone — no element may stand as a bare number.
     expect(screen.queryByText('102')).not.toBeInTheDocument();
     expect(screen.queryByText('478')).not.toBeInTheDocument();
   });
 
-  // 첫 접점에서 이 제품이 남과 다른 이유(사람 + 에이전트가 같은 폴더를
-  // 읽고 쓴다)를 한 문장으로 말한다 — 33개 문자열에 「에이전트」가 0회였다.
+  // The first point of contact states in one sentence why this product differs
+  // (a person and an agent read and write the same folder) — 「에이전트」 appeared
+  // zero times across its 33 strings.
   it('names the agent audience once in the lead paragraph', () => {
     render(<FirstRunStarterModule concepts={1} relations={1} domains={1} />);
     expect(screen.getByTestId('first-run-starter-agent-clause')).toHaveTextContent(
@@ -91,10 +93,11 @@ describe('FirstRunStarterModule', () => {
     );
   });
 
-  // PO 카운슬 2026-08-02 — `⌘O` 는 이 앱에서 meta 키에만 묶여 있고
-  // (HomePage 단축키 표) 대응하는 Ctrl+O 바인딩이 없다. 웹 관문의 핵심
-  // 청중인 Windows/Linux 사용자에게 없는 키를 광고하면 그건 힌트가 아니라
-  // 거짓 글리프다. 플랫폼을 실제로 갈라 두 방향 다 고정한다.
+  // PO council 2026-08-02 — `⌘O` is bound to the meta key only in this app (the
+  // HomePage shortcut table) with no matching Ctrl+O binding. Advertising a key
+  // that does not exist to Windows/Linux users — the web gateway's core audience —
+  // is a false glyph, not a hint. The platform is split for real and both
+  // directions are pinned.
   it('hides the ⌘O badge on non-Apple platforms', () => {
     render(<FirstRunStarterModule concepts={1} relations={1} domains={1} />);
     expect(screen.getByTestId('first-run-starter-open')).not.toHaveTextContent('⌘O');
@@ -114,9 +117,9 @@ describe('FirstRunStarterModule', () => {
     }
   });
 
-  // 2026-07-24 온보딩 라운드 — 투어 진입점이 우측 레일 아이콘뿐이라
-  // 발견되지 않았다. onStartTour 가 주어지면 2차 CTA 로 렌더되고 클릭이
-  // 콜백을 부르는지, 생략 시 렌더되지 않는지 고정한다.
+  // The tour's only entry point was an icon in the right rail and went
+  // undiscovered. Pins that supplying `onStartTour` renders a secondary CTA whose
+  // click reaches the callback, and that omitting it renders nothing.
   it('renders the tour CTA when onStartTour is provided and routes the click', () => {
     const onStartTour = vi.fn();
     render(
@@ -132,9 +135,9 @@ describe('FirstRunStarterModule', () => {
     expect(screen.queryByTestId('first-run-tour-cta')).not.toBeInTheDocument();
   });
 
-  // 2026-07-24 온보딩 라운드 — 톱니 속 '일반' 토글의 원거리 힌트를 1클릭
-  // 토글로 승격. 콜백이 있으면 버튼, 이미 켜져 있으면 비노출, 콜백이 없으면
-  // 종전 힌트 문장 유지(P2 결함③ 하위호환).
+  // The distant hint about the plain-mode toggle in the gear menu was promoted to
+  // a one-click toggle. With the callback it is a button; when plain mode is
+  // already on nothing shows; without the callback the old hint sentence remains.
   it('promotes the plain-mode hint to a one-click toggle when the callback is provided', () => {
     const onEnablePlainMode = vi.fn();
     render(
@@ -164,9 +167,9 @@ describe('FirstRunStarterModule', () => {
     expect(screen.queryByTestId('first-run-starter-plain-mode-hint')).not.toBeInTheDocument();
   });
 
-  // 페르소나 재조사 개선 후보 2 (2026-07-23) — 완전 초심자는 카드에서
-  // 화면 설명은 읽지만 제품 이름을 알 방법이 없었다. 브랜드 워드마크
-  // 한 줄이 캡션 위에 항상 렌더되는지 고정한다.
+  // A complete beginner could read the card's description of the screen but had
+  // no way to learn the product's name. Pins that one brand wordmark line always
+  // renders above the caption.
   it('renders a brand wordmark line above the first-run caption', () => {
     render(<FirstRunStarterModule concepts={1} relations={1} domains={1} />);
 
@@ -188,8 +191,8 @@ describe('FirstRunStarterModule', () => {
     expect(screen.queryByTestId('first-run-starter')).not.toBeInTheDocument();
   });
 
-  // 2026-07-24 온보딩 라운드 — 폴더 CTA 는 OS 선택창 직행 대신 사전 안내
-  // 시트를 먼저 연다. "기존 폴더 선택" 확정 후에만 vault.open() 이 불린다.
+  // The folder CTA opens a guidance sheet first rather than going straight to the
+  // OS picker. `vault.open()` is called only after "choose an existing folder" is confirmed.
   it('opens the guide sheet first, then wires "choose existing" to vault.open()', () => {
     render(<FirstRunStarterModule concepts={1} relations={1} domains={1} />);
 
@@ -234,8 +237,9 @@ describe('FirstRunStarterModule', () => {
     expect(screen.queryByTestId('first-run-starter')).not.toBeInTheDocument();
   });
 
-  // 되돌아오기 (소유자 실사용 지적 2026-07-24) — 닫힌 카드 자리에 조용한
-  // "시작 안내 다시 열기" 행이 남고, 클릭하면 카드가 세션 내 복귀한다.
+  // Back to the guide (owner report from real use, 2026-07-24) — a quiet "reopen
+  // the starter guide" row stays where the closed card was, and clicking it
+  // restores the card for the session.
   it('leaves a quiet reopen row after dismiss and restores the card on click', () => {
     render(<FirstRunStarterModule concepts={1} relations={1} domains={1} />);
     fireEvent.click(screen.getByTestId('first-run-starter-dismiss'));
@@ -248,35 +252,37 @@ describe('FirstRunStarterModule', () => {
   });
 
   /*
-   * PO 카운슬 평결 ③ (2026-08-03) — 「지금은 샘플」 신호가 **카드 수명이 아니라
-   * 연결 상태 수명**을 따라야 한다.
+   * PO council verdict ③ (2026-08-03) — the "지금은 샘플" signal must follow
+   * **the lifetime of the connection state, not the lifetime of the card**.
    *
-   * 이 게이트가 막는 실제 사고: 샘플 소스 탭을 누르면 카드가 접히는데
-   * (`setCollapsed(true)`), 신호가 카드 **안에만** 있어서 함께 사라졌다. 그
-   * 순간 화면이 실제 볼트 연결 상태와 구조적으로 구분되지 않게 되고, 소유자가
-   * 「이 앱의 코드」 탭을 **연결의 증거로 읽었다.**
+   * The real accident this gate prevents: pressing a sample source tab collapses
+   * the card (`setCollapsed(true)`), and with the signal living **inside** the
+   * card it disappeared too. At that moment the screen became structurally
+   * indistinguishable from a real connected vault, and the owner read the
+   * "이 앱의 코드" tab **as evidence of a connection.**
    *
-   * 두 경로를 다 잠근다 — dismiss 로 접힌 경우와 탭 전환으로 접힌 경우.
+   * Both paths are locked — collapsed by dismiss, and collapsed by a tab switch.
    */
   it('keeps the sample signal alive after the card collapses — both ways', () => {
     render(<FirstRunStarterModule concepts={1} relations={1} domains={1} />);
     expect(screen.getByTestId('first-run-starter')).toBeInTheDocument();
 
-    // ① dismiss 로 접기
+    // ① collapse by dismiss
     fireEvent.click(screen.getByTestId('first-run-starter-dismiss'));
     expect(screen.queryByTestId('first-run-starter')).not.toBeInTheDocument();
     expect(screen.getByTestId('first-run-starter-sample-signal')).toBeInTheDocument();
 
-    // ② 되돌린 뒤 샘플 소스 탭 전환으로 접기 — 사고가 났던 바로 그 경로
+    // ② reopen, then collapse by switching the sample source — the exact path the accident took
     fireEvent.click(screen.getByTestId('first-run-starter-reopen'));
     fireEvent.click(screen.getByTestId('first-run-starter-sample-source-dogfood'));
     expect(screen.queryByTestId('first-run-starter')).not.toBeInTheDocument();
     expect(screen.getByTestId('first-run-starter-sample-signal')).toBeInTheDocument();
   });
 
-  // 폴더-우선 첫 방문 (소유자 지시 2026-07-24) — 첫 화면을 열자마자 폴더
-  // 지정 유도 시트가 1회 자동으로 열리고, 플래그가 있으면 다시 안 뜬다.
-  // 2026-08-13 부터 자동 표시는 전역 기본 끔(opt-in)이라 켠 상태를 전제한다.
+  // Folder-first first visit (owner instruction 2026-07-24) — the folder guidance
+  // sheet auto-opens once on the very first screen and never again once the flag
+  // is set. Since 2026-08-13 auto-display is off by default globally (opt-in), so
+  // this assumes it has been turned on.
   it('auto-opens the folder guide sheet once on the very first visit', () => {
     vi.useFakeTimers();
     window.localStorage.setItem('ontology-atlas:guide-auto-start:v1', '1');
@@ -302,8 +308,9 @@ describe('FirstRunStarterModule', () => {
     vi.useRealTimers();
   });
 
-  // 2026-07-24 QA 실측 회귀 — 사전 안내 시트가 열린 동안 Esc 는 시트만
-  // 닫아야 한다. 캡처 단계 dismiss 핸들러가 모달에 양보하는지 고정한다.
+  // Measured regression 2026-07-24 — while the guidance sheet is open, Escape
+  // must close only the sheet. Pins that the capture-phase dismiss handler yields
+  // to the modal.
   it('Escape while the guide sheet is open closes the sheet, not the card', () => {
     render(<FirstRunStarterModule concepts={1} relations={1} domains={1} />);
     fireEvent.click(screen.getByTestId('first-run-starter-open'));
@@ -323,14 +330,13 @@ describe('FirstRunStarterModule', () => {
     expect(screen.queryByTestId('first-run-starter')).not.toBeInTheDocument();
   });
 
-  // P1-① (2026-07-21 리텐션 라운드) — 웹 첫 화면에서 코드베이스 자동
-  // 부트스트랩(CLI/에이전트 전용)으로 가는 다리가 전혀 없어 "내 리포를
-  // 5분 만에 지도로" 여정이 완결되지 않았다. 카드 안 명령 복사 한 줄로
-  // 그 다리를 놓는다.
+  // The web's first screen had no bridge at all to automatic codebase bootstrap
+  // (CLI/agent only), so the "my repo to a map in five minutes" journey never
+  // completed. One copyable command line in the card builds that bridge.
   //
-  // 온보딩 디자이너 지적(H4) — 그 npx 블록이 비개발자 첫 시선을 뺏어
-  // 기본 접힘 disclosure 뒤로 옮겼다. 기본 상태에선 명령이 보이지 않고,
-  // "개발자라면 —" 토글을 펼쳐야 나온다.
+  // That npx block stole a non-developer's first attention, so it moved behind a
+  // disclosure that is collapsed by default: the command is invisible in the
+  // default state and appears only when the developer toggle is expanded.
   it('keeps the CLI bootstrap command collapsed behind a developer disclosure by default', () => {
     render(<FirstRunStarterModule concepts={1} relations={1} domains={1} />);
 
@@ -357,9 +363,10 @@ describe('FirstRunStarterModule', () => {
     ).not.toBeInTheDocument();
   });
 
-  // 소유자 실보고 2026-07-23 — 라벨·명령·복사가 한 행을 3분할해 명령이
-  // "npx ontology-atlas i…" 로 잘렸다. 코드 라인은 말줄임 대신 전폭 +
-  // 단어 경계 줄바꿈이어야 명령 전문이 복사 전에 눈으로 검증된다.
+  // Owner report 2026-07-23 — the label, command, and copy button split one row
+  // three ways and the command was truncated to "npx ontology-atlas i…". The code
+  // line must be full width and wrap at word boundaries, not ellipsize, so the
+  // full command can be verified by eye before copying.
   it('renders the command as a full-width wrapping code line — never mid-word ellipsis', () => {
     render(<FirstRunStarterModule concepts={1} relations={1} domains={1} />);
     fireEvent.click(screen.getByTestId('first-run-starter-cli-toggle'));
@@ -373,9 +380,10 @@ describe('FirstRunStarterModule', () => {
     expect(code.className).toContain('break-words');
   });
 
-  // ease-of-use G1 (2026-07-23) — Safari/Firefox 는 FSA 가 없어 가장 눈에
-  // 띄는 인디고 CTA 가 "눌러야 실패"였다. 미지원 상태에선 사전에 정직하게
-  // 강등: 폴더 열기·새 vault 만들기 대신 고지 한 줄 + /download 링크.
+  // Safari and Firefox have no File System Access API, so the most prominent
+  // indigo CTA "failed only once pressed". When unsupported, degrade honestly up
+  // front: one notice line plus a /download link instead of open-folder and
+  // create-new-vault.
   it('demotes both FSA CTAs to an honest notice + download link when the browser is unsupported', () => {
     mocks.vault.status = 'unsupported';
     render(<FirstRunStarterModule concepts={1} relations={1} domains={1} />);
@@ -387,12 +395,12 @@ describe('FirstRunStarterModule', () => {
       'href',
       '/download/',
     );
-    // "여기서 둘러볼게요"(dismiss) 는 미지원과 무관하게 유지.
+    // "Look around here" (dismiss) stays regardless of support.
     expect(screen.getByTestId('first-run-starter-dismiss')).toBeInTheDocument();
   });
 
-  // P2 결함③ (사용성 전수 검수 2026-07-23) — 비개발자가 "일반" 보기 모드
-  // 토글의 존재를 알 방법이 없었다. dismiss 행 근처에 조용한 유도 한 줄.
+  // A non-developer had no way to discover the "plain" view-mode toggle. One
+  // quiet nudge line sits near the dismiss row.
   it('P2 결함③ — renders a quiet nudge toward the plain-mode gear toggle near the dismiss row', () => {
     render(<FirstRunStarterModule concepts={1} relations={1} domains={1} />);
 
@@ -400,25 +408,26 @@ describe('FirstRunStarterModule', () => {
     expect(hint).toHaveTextContent('plainModeHint');
   });
 
-  // P0 공감형 샘플 vault (2026-07) — dogfood(이 도구 자기 설명)가 비개발자에게
-  // 와닿지 않는다는 문제의 완화책. "이 도구 살펴보기"/"예시 비즈니스 보기"
-  // 세그먼트가 렌더되고, 클릭이 localStorage 선호도(`useSampleSource` 의
-  // 진실원)를 갱신하는지 고정한다.
-  // 2026-07-26 기본값 전환 — 처음 온 사람은 예시 비즈니스부터 본다. dogfood 를
-  // 첫 화면에 두면 `Dev Route Smoke` 류 이름부터 만나 "나와 상관있나" 를 판단할
-  // 수 없었다. dogfood 의 설득력은 존재한다는 사실에서 오지 기본 자리에서 오지
-  // 않는다 — 한 클릭 뒤 정직한 이름으로 남긴다.
+  // The empathetic sample vault, mitigating the fact that the dogfood vault (this
+  // tool describing itself) does not land with a non-developer. Pins that the
+  // "look at this tool" / "see an example business" segment renders and that a
+  // click updates the localStorage preference (`useSampleSource`'s source of truth).
+  // Default flipped 2026-07-26 — a newcomer sees the example business first.
+  // Leading with the dogfood vault meant meeting names like `Dev Route Smoke`
+  // before being able to judge "is this relevant to me". The dogfood vault's
+  // persuasiveness comes from existing, not from being the default — it stays one
+  // click away under its honest name.
   it('renders the sample-source segment defaulting to "storefront" and persists a switch to "dogfood"', () => {
     render(<FirstRunStarterModule concepts={1} relations={1} domains={1} />);
 
     const dogfoodTab = screen.getByTestId('first-run-starter-sample-source-dogfood');
     const storefrontTab = screen.getByTestId('first-run-starter-sample-source-storefront');
-    // 2026-08-15 (8) — 배타 단일선택이라 radiogroup + aria-checked 다.
+    // 2026-08-15 — an exclusive single selection, hence radiogroup + aria-checked.
     expect(storefrontTab).toHaveAttribute('aria-checked', 'true');
     expect(dogfoodTab).toHaveAttribute('aria-checked', 'false');
 
-    // 2026-07-24 구조 개편 — 샘플 선택은 "무엇을 볼지 골랐다"는 신호라
-    // 카드가 접히고 INDEX 에 자리를 넘긴다(되돌아오기 1행이 항상 남는다).
+    // Choosing a sample is the signal "I have chosen what to look at", so the card
+    // collapses and hands the space to the INDEX (the single reopen row always remains).
     fireEvent.click(dogfoodTab);
 
     expect(window.localStorage.getItem('demo:sample-source:v1')).toBe('dogfood');
@@ -426,7 +435,7 @@ describe('FirstRunStarterModule', () => {
     expect(screen.getByTestId('first-run-starter-reopen')).toBeInTheDocument();
   });
 
-  // 기본값이 바뀌었다고 남이 고른 걸 되돌리지 않는다 — 명시 선택은 그대로다.
+  // A changed default does not undo someone else's choice — an explicit selection stands.
   it('keeps an explicitly persisted "dogfood" choice after the default flipped', () => {
     window.localStorage.setItem('demo:sample-source:v1', 'dogfood');
 
@@ -438,10 +447,11 @@ describe('FirstRunStarterModule', () => {
     );
   });
 
-  // PO 카운슬 2026-08-02 실측 결함 — `role="tab"` 인데 클릭이 탭 패널을
-  // 바꾸는 게 아니라 카드를 접었고, **이미 선택된 탭을 눌러도 접혔다**.
-  // 자기 화면을 없애는 탭은 tablist 계약이 아니다. 같은 선택의 재클릭은
-  // 아무 일도 하지 않는다(전환 시 접힘은 유지 — 2026-07-24 핸드오프 설계).
+  // Measured defect (PO council 2026-08-02) — it was `role="tab"`, but clicking
+  // collapsed the card rather than changing a tab panel, **and pressing the
+  // already-selected tab collapsed it too**. A tab that removes its own screen is
+  // not the tablist contract. Re-clicking the current selection now does nothing
+  // (collapse-on-switch is kept, per the 2026-07-24 handoff design).
   it('does not collapse the card when the already-selected source is clicked again', () => {
     render(
       <FirstRunStarterModule concepts={1} relations={1} domains={1}>
@@ -460,19 +470,20 @@ describe('FirstRunStarterModule', () => {
 
     const group = screen.getByTestId('first-run-starter-sample-source');
     /*
-     * 2026-08-02 PO 카운슬이 `role="tab"` 을 반납한 판단은 그대로 유효하다 —
-     * 다만 그때 검토한 대안이 tablist 였지 radiogroup 이 아니었다. 형제에
-     * `aria-pressed` 를 나란히 걸면 배타성이 접근성 트리에 안 실린다.
+     * The 2026-08-02 PO council's decision to give back `role="tab"` still holds —
+     * but the alternative considered then was tablist, not radiogroup. Putting
+     * `aria-pressed` on siblings side by side never puts the exclusivity into the
+     * accessibility tree.
      */
     expect(group).toHaveAttribute('role', 'radiogroup');
     expect(group.querySelectorAll('[role="tab"]')).toHaveLength(0);
-    // 탭 스톱은 체크된 하나뿐이다(roving) — 종전엔 둘 다 탭 스톱이었다.
+    // There is one tab stop, the checked radio (roving) — both used to be tab stops.
     const radios = [...group.querySelectorAll<HTMLElement>('[role="radio"]')];
     expect(radios).toHaveLength(2);
     expect(radios.filter((r) => r.tabIndex === 0)).toHaveLength(1);
   });
 
-  // 왼쪽부터 읽는다 — 순서가 곧 "무엇을 먼저 권하는가" 다.
+    // People read left first — the order is "what we recommend first".
   it('renders the storefront tab before the dogfood tab', () => {
     render(<FirstRunStarterModule concepts={1} relations={1} domains={1} />);
 
@@ -522,11 +533,12 @@ describe('FirstRunStarterModule', () => {
   });
 });
 
-// 2026-07-24 구조 개편 (소유자 지적: "상단 스크롤 따로 하단 스크롤 따로") —
-// 가이드 카드와 INDEX(children)는 배타적으로 그려 패널 스크롤이 항상 1개다.
+// Structure change 2026-07-24 (owner report: "상단 스크롤 따로 하단 스크롤 따로",
+// separate scrollbars top and bottom) — the guide card and the INDEX (children)
+// render exclusively, so the panel always has exactly one scroller.
 describe('FirstRunStarterModule — 가이드/INDEX 배타 렌더', () => {
-  // 이 describe 는 위 블록 밖이라 자체 초기화가 필요하다(세션 dismiss 는
-  // 파일 전체에 남는다).
+  // This describe sits outside the block above and needs its own reset (a session
+  // dismiss persists across the whole file).
   beforeEach(() => {
     mocks.vault = makeVault();
     mocks.mode = 'static';
@@ -585,20 +597,25 @@ describe('FirstRunStarterModule — 가이드/INDEX 배타 렌더', () => {
 });
 
 /**
- * 렌즈를 켜면 카드가 자리를 넘긴다 (2026-08-02, 소유자 실보고: *"시작 안내
- * 패널이 열린 상태에서 최근 변경 버튼 누르면 왼쪽 패널이 안바뀌는 오류"*).
+ * Turning the lens on makes the card hand over its space (2026-08-02, owner
+ * report: *"시작 안내 패널이 열린 상태에서 최근 변경 버튼 누르면 왼쪽 패널이
+ * 안바뀌는 오류"* — pressing the recent-changes button while the starter panel is
+ * open leaves the left panel unchanged).
  *
- * 카드와 INDEX 는 **배타적 두 상태**다 — 카드가 펼쳐져 있으면 children(INDEX)이
- * 아예 렌더되지 않으므로, 렌즈를 켜도 세그먼트·기간 칩이 나올 자리가 없었다.
- * URL 과 지도만 바뀌고 왼쪽은 그대로였다.
+ * The card and the INDEX are **two exclusive states** — while the card is
+ * expanded, children (the INDEX) are not rendered at all, so turning on the lens
+ * had nowhere to put the segment and period chips. Only the URL and the map
+ * changed while the left side stayed put.
  *
- * 되돌아갈 길이 넓어서 게이트가 필요하다: 이 접힘은 **부수 효과**라, 다음
- * 사람이 `lensActive` 배선을 지워도 타입도 lint 도 아무 말을 안 한다.
+ * A gate is needed because the way back is wide: this collapse is a **side
+ * effect**, so the next person deleting the `lensActive` wiring gets no complaint
+ * from either types or lint.
  */
 describe('FirstRunStarterModule — 렌즈가 켜지면 INDEX 에 자리를 넘긴다', () => {
   beforeEach(() => {
-    // 이 파일의 다른 describe 들이 공유 목을 바꾼다(로컬 모드·restore 미완 등).
-    // 렌즈 접힘은 **카드가 실제로 보이는 상태**에서만 의미가 있으므로 명시한다.
+    // Other describes in this file mutate the shared mocks (local mode, restore
+    // incomplete, and so on). Lens collapse is meaningful only while the card is
+    // actually visible, so it is stated explicitly.
     mocks.vault = makeVault();
     mocks.mode = 'static';
     window.sessionStorage.removeItem(FIRST_RUN_STARTER_DISMISSED_KEY);

@@ -1,5 +1,5 @@
-// `ontology-atlas cycles [vault]` — dependency cycle 검출.
-// MCP `query_ontology({operation: 'cycles'})` thin wrapper.
+// `ontology-atlas cycles [vault]` — dependency cycle detection.
+// Thin wrapper over MCP `query_ontology({operation: 'cycles'})`.
 
 import { COLORS } from '../lib/colors.mjs';
 import { callMcpTool } from '../lib/mcp-call.mjs';

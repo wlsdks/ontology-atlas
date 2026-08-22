@@ -28,7 +28,7 @@ describe("depthParallaxFactorForDepth", () => {
 describe("stepDepthParallax", () => {
   it("factor 0 이면 항상 0 (depth≤1 밴드)", () => {
     const next = stepDepthParallax({ x: 5, y: -3 }, { x: 100, y: 100 }, 0, 1 / 60);
-    // 이전 오프셋은 감쇠만, 새 충전은 0.
+    // The previous offset only decays; nothing new is charged.
     expect(next.x).toBeCloseTo(5 * Math.exp(-(1 / 60) / REALM_PARALLAX_TAU_S));
     expect(next.y).toBeCloseTo(-3 * Math.exp(-(1 / 60) / REALM_PARALLAX_TAU_S));
   });
@@ -44,20 +44,21 @@ describe("stepDepthParallax", () => {
     for (let i = 0; i < 120; i += 1) {
       off = stepDepthParallax(off, { x: 0, y: 0 }, 0.06, 1 / 60);
     }
-    // 2 초(=grace 이상) 후 사실상 0.
+    // After 2 s (beyond the grace period) it is effectively 0.
     expect(Math.hypot(off.x, off.y)).toBeLessThan(0.001);
   });
 
   it("등속 팬은 작은 정상상태 랙으로 수렴한다 (factor·v·tau 근처)", () => {
     const dt = 1 / 60;
-    const vWorldPerFrame = 30; // 프레임당 월드 이동
+    const vWorldPerFrame = 30; // world movement per frame
     let off = ZERO_PARALLAX;
     for (let i = 0; i < 600; i += 1) {
       off = stepDepthParallax(off, { x: vWorldPerFrame, y: 0 }, 0.06, dt);
     }
     const velWorldPerSec = vWorldPerFrame / dt;
     const expected = 0.06 * velWorldPerSec * REALM_PARALLAX_TAU_S;
-    // 이산 근사라 정확값이 아니라 같은 자릿수(±20%) 안이면 통과.
+    // A discrete approximation, so passing means the same order of magnitude (±20%),
+    // not an exact value.
     expect(off.x).toBeGreaterThan(expected * 0.8);
     expect(off.x).toBeLessThan(expected * 1.2);
   });

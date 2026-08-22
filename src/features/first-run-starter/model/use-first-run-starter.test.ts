@@ -6,7 +6,7 @@ interface MockVault {
   status: string;
   manifest: { docs: unknown[] } | null;
   errorMessage: string | null;
-  /** 실패의 **갈래**. 원문을 안 흘리는 갈래는 이 값만 뜻을 갖는다. */
+  /** The **variant** of the failure. For variants that leak no raw string, this value is the only meaning. */
   errorCode?: 'root-rejected' | 'path-missing' | 'access-failed' | null;
   open: ReturnType<typeof vi.fn>;
   scaffoldOntology: ReturnType<typeof vi.fn>;
@@ -28,11 +28,11 @@ vi.mock('./use-first-run-sample-mode-settled', () => ({
   useFirstRunSampleModeSettled: () => mocks.sampleModeSettled,
 }));
 
-// 스타터 본문 언어는 화면 언어를 따른다 — 훅이 useLocale() 을 읽으므로
-// intl provider 없이 도는 이 단위 테스트에는 로케일 스텁이 필요하다.
+// The starter body's language follows the screen's, and the hook reads `useLocale()`,
+// so this unit test — which runs without an intl provider — needs a locale stub.
 vi.mock('next-intl', () => ({
   useLocale: () => 'ko',
-  // 문구 자체가 아니라 **어느 문구를 골랐나**를 검사한다 — 키를 그대로 돌려준다.
+  // Checks **which string was chosen**, not the string itself — the key is returned verbatim.
   useTranslations: () => (key: string) => key,
 }));
 
@@ -112,8 +112,8 @@ describe('useFirstRunStarter', () => {
     await waitFor(() => {
       expect(mocks.vault.scaffoldOntology).toHaveBeenCalledTimes(1);
     });
-    // 흐름 점검 2026-07-26 D2 — INDEX 의 "새 vault 만들기" 도 화면 언어의
-    // 스타터를 만든다(체크리스트/문서함 CTA 와 같은 결과).
+  // Walkthrough 2026-07-26 — the INDEX's "create a new vault" also produces a starter
+  // in the screen's language (the same result as the checklist and docs CTAs).
     expect(mocks.vault.scaffoldOntology).toHaveBeenCalledWith('ko');
   });
 
@@ -133,9 +133,9 @@ describe('useFirstRunStarter', () => {
   });
 
   it('yields Escape to the guided tour while its overlay is open (no silent permanent dismiss)', () => {
-    // 2026-07-23 Guardian 실측 회귀 가드 — 투어 스크림 아래에 덮인 카드가
-    // 캡처 단계에서 Escape 를 삼켜 영구 dismiss 되고, 투어의 `close-tour`
-    // 사다리 단이 그 keypress 를 영영 못 받았다.
+  // Measured regression guard 2026-07-23 — a card covered beneath the tour scrim
+  // swallowed Escape in the capture phase and was permanently dismissed, while the
+  // tour's `close-tour` ladder rung never received that keypress.
     const overlay = document.createElement('div');
     overlay.setAttribute('data-testid', 'guided-tour-overlay');
     document.body.appendChild(overlay);
@@ -167,10 +167,10 @@ describe('useFirstRunStarter', () => {
 
 describe('첫 실행 카드 — 말할 수 있는 실패는 말한다', () => {
   /*
-   * 2026-08-16 검수: 「받을 수 없는 자리」와 「폴더가 사라짐」은 원문을 화면에
-   * 흘리지 않으려고 `errorMessage` 를 일부러 null 로 둔다. 그런데 이 카드는
-   * 그 값만 보고 있어서, 두 경우에 **아무 말도 안 나왔다.** 코드가 뜻을 아는데
-   * 화면이 침묵하는 것은 원문을 흘리는 것보다 나쁘다.
+   * Review 2026-08-16: "not a valid root" and "the folder is gone" deliberately leave
+   * `errorMessage` null so no raw string reaches the screen. But this card looked only
+   * at that value, so in both cases it **said nothing at all**. Silence on screen while
+   * the code knows the meaning is worse than leaking the raw string.
    */
   beforeEach(() => {
     mocks.vault = makeVault();
@@ -194,7 +194,7 @@ describe('첫 실행 카드 — 말할 수 있는 실패는 말한다', () => {
   it('그 밖의 실패는 원문을 쓰되, 비어 있어도 카드가 뜬다', () => {
     mocks.vault.errorCode = 'access-failed';
     const { result } = renderHook(() => useFirstRunStarter());
-    // 빈 문자열이면 화면이 `errorFallback` 으로 떨어진다 — null 이면 카드가 안 뜬다.
+    // An empty string drops the screen to `errorFallback` — null would show no card at all.
     expect(result.current.errorText).toBe('');
   });
 });

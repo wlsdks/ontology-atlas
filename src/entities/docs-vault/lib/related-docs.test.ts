@@ -77,7 +77,7 @@ describe('findRelatedDocs', () => {
       projectSlug: 'reactor',
       projectName: 'Demo Reactor',
     });
-    // 제목 매치가 excerpt 보다 높음
+    // A title match outranks an excerpt match.
     expect(result[0].doc.slug).toBe('a');
     expect(result[0].reasons).toContain('title');
     expect(result[1].reasons).toContain('excerpt');

@@ -1,14 +1,14 @@
 #!/usr/bin/env node
-// Vault migrator — frontmatter schema 진화를 안전하게 적용.
+// Vault migrator — applies frontmatter schema evolution safely.
 //
-// 사용법:
+// Usage:
 //   pnpm vault:migrate --list
 //   pnpm vault:migrate <id>                    # dry-run (default)
-//   pnpm vault:migrate <id> --write            # 실제 디스크 기록
-//   pnpm vault:migrate <id> --vault <dir>      # 다른 vault 경로 지정
+//   pnpm vault:migrate <id> --write            # actually write to disk
+//   pnpm vault:migrate <id> --vault <dir>      # point at another vault
 //
-// dry-run 이 default — 사용자가 `--write` 를 명시해야 변경됨.
-// 자세한 가이드는 scripts/migrations/README.md.
+// dry-run is the default — nothing changes unless the user passes `--write`.
+// Full guide: scripts/migrations/README.md.
 
 import { readFile, writeFile, readdir } from "node:fs/promises";
 import { spawnSync } from "node:child_process";
@@ -90,9 +90,9 @@ function parseArgs(argv) {
 }
 
 /**
- * vault 가 git repo 안인지 + uncommitted .md 변경이 있는지 확인.
- * 결과: { isRepo, dirtyMdFiles: string[] } — git 미설치/non-repo 면
- * isRepo:false 로 무해히 통과 (현재 디렉토리만 dirty 검사 안 함).
+ * Reports whether the vault sits inside a git repo and whether it has
+ * uncommitted .md changes. With git missing or outside a repo it returns
+ * isRepo:false and passes harmlessly.
  */
 function checkGitState(vaultDir) {
   const isRepoCheck = spawnSync(
@@ -103,7 +103,7 @@ function checkGitState(vaultDir) {
   if (isRepoCheck.status !== 0) {
     return { isRepo: false, dirtyMdFiles: [] };
   }
-  // vault 안의 .md 만 본다 — 다른 파일 의 dirty 는 마이그레이션과 무관.
+  // Only .md inside the vault — other dirty files are unrelated to a migration.
   const status = spawnSync(
     "git",
     ["status", "--porcelain", "--", "*.md"],
@@ -150,8 +150,8 @@ async function main() {
 
   const mod = await loadMigration(args.id);
 
-  // R11 #21 — write 모드에서 vault 가 git repo + uncommitted .md 가 있으면
-  // 안전망. dry-run 은 디스크 변경 0 이라 검사 skip.
+  // Safety net for write mode when the vault is a git repo with uncommitted .md.
+  // dry-run touches no disk, so it skips the check.
   if (args.write && !args.force) {
     const { isRepo, dirtyMdFiles } = checkGitState(args.vault);
     if (isRepo && dirtyMdFiles.length > 0) {

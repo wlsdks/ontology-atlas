@@ -74,19 +74,20 @@ describe("DocsVaultViewer", () => {
     expect(anchor.className).not.toContain("sm:h-5");
     expect(anchor.className).not.toContain("sm:w-5");
     /*
-     * 2026-08-15 — 숨김의 기준이 **폭에서 호버 능력으로** 바뀌었다.
-     * 종전 `sm:opacity-0` 은 「좁으면 터치일 것」이라는 짐작이고, 터치 계약이
-     * 정확히 그것을 금지한다(`design.md`: *"화면 폭으로 터치인지 짐작하지
-     * 말 것"*). 실제 결함은 **넓은 터치 기기**(태블릿·터치 노트북)였다 —
-     * 거기서는 이 앵커가 호버 전까지 안 보이는데 호버가 일어나지 않는다.
+     * 2026-08-15 — the basis for hiding changed **from width to hover capability**.
+     * The old `sm:opacity-0` guessed "narrow means touch", which the touch contract
+     * forbids precisely (`design.md`: *"화면 폭으로 터치인지 짐작하지 말 것"* — do not
+     * guess touch from viewport width). The real defect was on **wide touch devices**
+     * (tablets, touch laptops), where this anchor stays invisible until a hover that
+     * never happens.
      *
-     * `[@media(hover:hover)]:opacity-0` 은 호버가 실제로 되는 기기에서만
-     * 숨긴다. 좁은 화면의 동작은 그대로다(거기도 대개 호버가 없다).
+     * `[@media(hover:hover)]:opacity-0` hides it only on devices that really hover.
+     * Behaviour on narrow screens is unchanged (they mostly lack hover too).
      */
     expect(anchor.className).not.toContain("sm:opacity-0");
     expect(anchor.className).toContain("[@media(hover:hover)]:opacity-0");
     expect(anchor.className).toContain("group-hover:opacity-100");
-    // 키보드가 안 보이는 칸에 멈추지 않는다.
+    // The keyboard does not stop on an invisible cell.
     expect(anchor.className).toContain("focus-visible:opacity-100");
   });
 
@@ -101,8 +102,8 @@ describe("DocsVaultViewer", () => {
   });
 
   it("routes a vault-external relative .md link to GitHub blob instead of a dead app 404", async () => {
-    // docs/README.md 의 `../mcp/README.md` — vault(docs/) 밖. 예전엔 앱
-    // 라우팅으로 넘겨 /mcp/README.md 404 로 죽었다.
+    // `../mcp/README.md` in docs/README.md — outside the vault (docs/). It used to be
+    // handed to app routing and died as a /mcp/README.md 404.
     renderViewer("See [MCP docs](../mcp/README.md) for setup.", {
       repoBlobBase: "https://github.com/wlsdks/ontology-atlas/blob/main",
       vaultRepoRoot: "docs",
@@ -117,8 +118,8 @@ describe("DocsVaultViewer", () => {
   });
 
   it("renders a vault-external link as non-routing text when repo location is unknown (local vault)", async () => {
-    // repoBlobBase 미지정(로컬 vault) → GitHub URL 을 만들 수 없다. 죽은 404
-    // 대신 라우팅하지 않는 텍스트로 렌더(href 없음).
+    // Without repoBlobBase (a local vault) no GitHub URL can be built. Rendered as
+    // non-routing text (no href) rather than a dead 404.
     renderViewer("See [MCP docs](../mcp/README.md) for setup.");
 
     const label = await screen.findByText("MCP docs");
@@ -126,10 +127,10 @@ describe("DocsVaultViewer", () => {
     expect(screen.queryByRole("link", { name: /MCP docs/ })).toBeNull();
   });
 
-  // 착지 결함 (P1 검수) — 팔레트에서 넘어온 highlightQuery 로 본문 content
-  // 가 비동기 로드된 *이후* 정확히 1회 mark+scrollIntoView 되는 계약.
-  // 콘텐츠 도착 전에는 mark 자체가 존재할 수 없으므로, 이 test 는 async
-  // fetcher (findByText 로 로드 완료를 기다림)를 써서 그 타이밍을 실측한다.
+  // Landing defect (P1 review) — the contract that a highlightQuery arriving from the
+  // palette produces exactly one mark plus scrollIntoView *after* the body content
+  // loads asynchronously. No mark can exist before the content arrives, so this test
+  // uses an async fetcher (awaiting findByText for load completion) to measure that timing.
   describe("highlightQuery 착지 — 본문 로드 후 mark + scrollIntoView", () => {
     it("본문 로드 완료 후 매치어를 mark 로 감싸고 스크롤한다", async () => {
       const scrollSpy = vi.fn();
@@ -145,8 +146,9 @@ describe("DocsVaultViewer", () => {
       await vi.waitFor(() => expect(scrollSpy).toHaveBeenCalled());
     });
 
-    // 실측 회귀 재현: 본문이 ~80자에서 줄바꿈돼 매치 구절 중간에 개행이
-    // 끼어드는 실제 vault 문서 형태(AGENTS.md 컨벤션)에서도 착지돼야 한다.
+    // Reproducing a measured regression: it must land even in a real vault document
+    // whose body wraps at ~80 characters so a newline falls inside the matched phrase
+    // (the AGENTS.md convention).
     it("본문이 줄바꿈으로 쪼개진 구절(line-wrap)도 mark + 스크롤된다", async () => {
       const scrollSpy = vi.fn();
       Element.prototype.scrollIntoView = scrollSpy;

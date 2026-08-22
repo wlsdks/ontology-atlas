@@ -107,16 +107,18 @@ export async function runAgentBrief(args) {
   render(result);
   const exitCode = readinessExitCode(result, exitZero);
   /*
-   * **1을 내는 그 순간에, 그게 실패가 아니라고 말한다** (2026-08-11 워크스루 실측).
+   * **Say that exit 1 is not a failure, at the moment it is emitted** (walkthrough
+   * measurement 2026-08-11).
    *
-   * 이 종료코드는 「명령이 실패했다」가 아니라 「그래프가 아직 덜 여물었다」는 신호다 —
-   * 그 판단은 위 `readinessExitCode` 주석이 이미 적어 두었고 `--help` 에도 있다. 그런데
-   * **정작 1이 나는 화면에는 그 말이 없었다.** 사람은 `--help` 를 다시 읽지 않고,
-   * 에이전트는 1을 보면 대개 멈춘다(그 주석 자신이 기록한 오독이 정확히 그것이다).
+   * This exit code signals «the graph is not ripe yet», not «the command failed».
+   * The `readinessExitCode` comment above already records that, and so does
+   * `--help`. But **the screen that actually emits 1 never said it.** A person does
+   * not reread `--help`, and an agent seeing 1 usually stops — which is exactly the
+   * misreading that comment itself recorded.
    *
-   * 그래서 계약은 손대지 않고 화면에 한 줄만 붙인다 — 왜 1인지와 어디로 가면 되는지.
-   * JSON·프롬프트·팩 출력에는 붙이지 않는다: 그쪽은 기계가 읽는 자리이고 `status` ·
-   * `readiness` 를 직접 본다.
+   * So the contract is untouched and one line is added to the screen: why it is 1,
+   * and where to go. Not added to JSON, prompt, or pack output — those are read by
+   * machines, which look at `status` and `readiness` directly.
    */
   if (exitCode === 1 && !exitZero) {
     process.stdout.write(
@@ -366,22 +368,22 @@ function stripAnsi(value) {
 }
 
 /**
- * 폴백 명령 한 줄에서 **하위 명령 이후**만 뽑는다.
+ * Extracts **everything after the subcommand** from a one-line fallback command.
  *
- * 2026-07-29: 이 팩이 찍는 명령이 `ontology-atlas …` 였다. 그 이름은 어디에도
- * 설치되지 않아서(레지스트리 발행 폐기, `docs/DECISIONS.md` 2026-07-27) 19줄
- * 전부 복사하면 `command not found` 였다 — 헤더는 "Run these commands" 라고
- * 적혀 있는데도. `cliInvocation()` 으로 바꾸면서 이 파서도 새 형태를 받아야
- * 한다: `node <abs>/cli/src/index.mjs <sub> …`.
+ * 2026-07-29: the commands this pack printed read `ontology-atlas …`. That name is
+ * installed nowhere (registry publication was abandoned, `docs/DECISIONS.md`
+ * 2026-07-27), so copying all 19 lines produced `command not found` — under a
+ * header reading "Run these commands". Moving to `cliInvocation()` means this
+ * parser must accept the new form too: `node <abs>/cli/src/index.mjs <sub> …`.
  *
- * 옛 형태도 계속 받는다 — 사용자가 예전 출력을 붙여넣을 수 있고, 여기서
- * 거절하면 `--verify-fallbacks` 가 자기 팩을 못 읽는다.
+ * The old form is still accepted — a user may paste older output, and refusing it
+ * here would leave `--verify-fallbacks` unable to read its own pack.
  */
 function parseFallbackCommand(command) {
   const tokens = splitShellWords(command);
   if (tokens.length === 0) return { error: 'empty fallback command' };
   if (tokens[0] === 'ontology-atlas') return { args: tokens.slice(1) };
-  // `node <entry> <sub> …` — entry 는 절대 경로일 수도, 상대 경로일 수도 있다.
+  // `node <entry> <sub> …` — entry may be an absolute or a relative path.
   if (tokens[0] === 'node' && tokens.length >= 2 && /index\.mjs$/.test(tokens[1])) {
     return { args: tokens.slice(2) };
   }

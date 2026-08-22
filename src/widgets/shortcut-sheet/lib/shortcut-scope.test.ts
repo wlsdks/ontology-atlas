@@ -18,7 +18,7 @@ describe("surfaceForPathname", () => {
     expect(surfaceForPathname("/en/docs/")).toBe("docs");
   });
 
-  // 공방/인사이트/프로젝트는 전용 단축키가 없다 — 없는 걸 있다고 하지 않는다.
+  // Studio, insights and projects have no dedicated shortcuts — we do not claim what is not there.
   it("전용 단축키가 없는 화면은 전역만", () => {
     expect(surfaceForPathname("/ko/ontology/studio/")).toBe("global");
     expect(surfaceForPathname("/ko/projects/")).toBe("global");

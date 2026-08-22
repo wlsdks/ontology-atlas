@@ -44,7 +44,7 @@ describe("past-trail-record — 매체와 무관한 형식 규칙", () => {
   });
 
   it("맨 앞이 아닌 줄과 경로가 같아도 줄을 늘리지 않는다 — 지난 길을 다시 편 경우", () => {
-    // 어제 걸은 길(w1) 위에 오늘 다른 길(w2)이 쌓인 상태에서 w1 을 다시 편다.
+    // Reopen w1 (walked yesterday) with a different walk w2 stacked on top today.
     const yesterday = upsertPastWalk([], "w1", entries("domain:a", "capability:b"), { now: 1_000 });
     const today = upsertPastWalk(yesterday, "w2", entries("element:c", "element:d"), { now: 2_000 });
     const replayed = upsertPastWalk(today, "w3", entries("domain:a", "capability:b"), {
@@ -113,8 +113,9 @@ describe("past-trail-record — 매체와 무관한 형식 규칙", () => {
       expect(Object.keys(entry).sort()).toEqual(["id", "kind", "title"]);
     }
 
-    // 전수 감사 — 저장된 트리 안의 숫자값은 `v: 1` 과 `endedAt` 둘뿐이다.
-    // 걸음이 3개인데도 숫자가 늘지 않는다는 것이 "걸음당 시각 0"의 직접 증거다.
+    // Exhaustive audit: the only numbers anywhere in the stored tree are `v: 1`
+    // and `endedAt`. Three steps not raising that count is direct evidence that
+    // no per-step timestamp is recorded.
     const numbers: number[] = [];
     const walkTree = (node: unknown): void => {
       if (typeof node === "number") numbers.push(node);

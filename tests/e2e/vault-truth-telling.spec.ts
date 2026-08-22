@@ -4,22 +4,24 @@ import { stubDirectoryPicker } from "./vault-picker-stub";
 import { BROKEN_VAULT, HEALTHY_VAULT } from "./fixtures/broken-vault";
 
 /**
- * 화면이 검사 결과에 대해 **거짓을 말하지 않는가** — 결함 볼트로 재는 게이트.
+ * Does the screen **tell the truth about validation results** — a gate measured
+ * with a defective vault.
  *
- * ## 왜 결함 볼트여야 하나
+ * ## Why it has to be a defective vault
  *
- * dogfood 볼트도 샘플 볼트도 이슈가 0 이다. 그래서 "검사 결과가 화면에 보이는가"
- * 를 묻는 게이트는 **볼 것이 없는 채로** 영원히 초록이었다. 2026-08-04 실측에서
- * 오류 5개짜리 폴더를 열자 네 자리가 동시에 거짓을 말했다:
+ * Both the dogfood vault and the sample vault have 0 issues, so a gate asking
+ * whether validation results appear on screen stayed green forever **with nothing to
+ * see**. Measured 2026-08-04: opening a folder with 5 errors made four places lie at
+ * once:
  *
- *   ① 준비도 미터가 100% 인디고(위험 세그먼트 실측 0px)
- *   ② 파일 옆 진단이 경고만 보여 주고 **오류는 감춤**
- *   ③ `kind` 없는 문서는 진단 블록 자체가 안 그려짐
- *   ④ 지도에 없는 문서가 「지도 근거」라고 말함
+ *   ① the readiness meter was 100% indigo (the danger segment measured 0px)
+ *   ② the per-file diagnostics showed warnings and **hid errors**
+ *   ③ documents without a `kind` had no diagnostics block rendered at all
+ *   ④ a document absent from the map claimed to be "map evidence"
  *
- * 넷 다 정상 볼트에서는 재현 자체가 불가능하다. 그래서 이 스펙은 결함을
- * **데이터로 재현한 다음** 화면을 잰다 — 그리고 같은 측정을 정상 볼트에도
- * 돌려 탐지기가 항상-빨강이 아님을 확인한다.
+ * None of the four can be reproduced on a healthy vault. So this spec **reproduces
+ * the defects as data** and then measures the screen — and runs the same measurement
+ * against a healthy vault to confirm the detector is not always-red.
  */
 
 const READINESS_MIN_SEGMENT_PX = 4;
@@ -35,7 +37,7 @@ async function loadVault(page: Page, seed: Record<string, string>) {
   await expect(page.getByTestId("first-run-starter")).toHaveCount(0, { timeout: 20_000 });
 }
 
-/** 미터 세그먼트의 실측 폭 + 배경색. 「0이 아닌데 0px」 를 잡는 유일한 방법. */
+/** The meter segment's measured width and background colour. The only way to catch "non-zero but 0px". */
 async function measureMeter(page: Page) {
   await page.goto("/ko/ontology/insights/?tab=do-next&guides=off");
   await page.waitForLoadState("networkidle");
@@ -57,13 +59,14 @@ async function measureMeter(page: Page) {
 }
 
 /**
- * 문서함을 열고 폴더를 전부 펼친다.
+ * Opens the docs surface and expands every folder.
  *
- * ⚠️ **`?slug=` 딥링크로 고르지 않는다.** 로컬 볼트에서 그 파라미터는 첫 선택을
- * 못 이긴다(실측 2026-08-04: 어느 슬러그를 넣어도 알파벳 첫 문서가 열렸다).
- * 이 스펙의 대상은 그 결함이 아니므로 사람이 실제로 하는 동작 — 트리 클릭 —
- * 으로 고른다. 계측이 자기가 재려는 화면을 열었는지는 아래 `openedFile` 이
- * 매번 확인한다.
+ * ⚠️ **Do not select via a `?slug=` deep link.** On a local vault that parameter
+ * cannot beat the initial selection (measured 2026-08-04: whatever slug was given,
+ * the alphabetically first document opened). That defect is not this spec's subject,
+ * so selection happens the way a person does it — by clicking the tree. Whether the
+ * instrument opened the screen it meant to measure is verified every time by
+ * `openedFile` below.
  */
 async function openDocsTree(page: Page) {
   await page.goto("/ko/docs/?guides=off");
@@ -74,10 +77,10 @@ async function openDocsTree(page: Page) {
   }
 }
 
-/** 한 문서를 열고 "이 파일이 자기 문제를 말하는가" 를 잰다. */
+/** Opens one document and measures whether that file states its own problems. */
 async function measureDoc(page: Page, title: string, expectFile: string) {
   await page.getByRole("button", { name: title, exact: false }).first().click();
-  // validator 는 400ms debounce 뒤에 돈다.
+  // The validator runs after a 400ms debounce.
   await page.waitForTimeout(700);
   const measured = await page.evaluate(() => {
     const block = document.querySelector('[data-testid="doc-frontmatter-block"]');
@@ -104,8 +107,9 @@ async function measureDoc(page: Page, title: string, expectFile: string) {
       stripMapHref: stripLink?.getAttribute("href") ?? null,
     };
   });
-  // 계측이 자기가 재려던 화면을 실제로 열었는지 — 이 한 줄이 없으면 이 스펙은
-  // 엉뚱한 문서를 여덟 번 재고 초록일 수 있다(실제로 그럴 뻔했다).
+  // Did the instrument really open the screen it meant to measure? Without this line
+  // the spec could measure the wrong document eight times and stay green (it nearly
+  // did).
   expect(measured.openedFile, "계측 대상 문서가 열렸는가").toBe(expectFile);
   return measured;
 }
@@ -118,8 +122,8 @@ test.describe("결함 볼트 — 화면이 검사 결과를 말하는가", () =>
 
     const danger = broken.segments.at(-1);
     expect(danger, "미터에 위험 세그먼트가 있어야 한다").toBeTruthy();
-    // 0 이 아닌 값이 0px 로 렌더되면 안 된다 — 390px 폭에서 오류1/준비200 이면
-    // flexGrow 만으로는 3px 가 되어 소멸한다.
+    // A non-zero value must not render as 0px — at 390px wide, 1 error against 200
+    // ready would be 3px on flexGrow alone and vanish.
     expect(
       danger!.width,
       `오류 5건인데 위험 세그먼트 폭이 ${danger!.width}px — 가장 강한 요소가 반대로 말한다`,
@@ -173,20 +177,20 @@ test.describe("결함 볼트 — 화면이 검사 결과를 말하는가", () =>
   }) => {
     await loadVault(page, BROKEN_VAULT);
     await openDocsTree(page);
-    // `notes/handover` 는 kind 가 없어 그래프 노드가 아니다.
+    // `notes/handover` has no kind, so it is not a graph node.
     const note = await measureDoc(page, "인수인계 메모", "notes/handover.md");
     console.log("[doc/handover-map]", JSON.stringify(note));
     expect(note.proofState, "그래프에 없는 문서다").toBe("false");
     expect(note.mapHref, "?p= 를 못 만들면 「지도에서 열기」 자체를 렌더하지 않는다").toBeNull();
-    // 하단 백링크 스트립의 「지도에서 열기」가 **원본 실측 결함**이다:
-    // `?? '/topology/'` 폴백 때문에 `?p=` 없는 주소로 렌더돼 눌러도 아무것도
-    // 안 잡혔다.
+    // The bottom backlink strip's "open in map" is **the originally measured defect**:
+    // a `?? '/topology/'` fallback rendered an address with no `?p=`, so pressing it
+    // selected nothing.
     expect(
       note.stripMapHref,
       "하단 스트립도 같은 규칙 — 잡을 노드가 없으면 링크가 없다",
     ).toBeNull();
 
-    // 그래프에 실재하는 노드는 반대로 말해야 한다.
+    // A node that really exists in the graph must say the opposite.
     const domain = await measureDoc(page, "주문", "domains/orders.md");
     console.log("[doc/orders]", JSON.stringify(domain));
     expect(domain.proofState).toBe("true");

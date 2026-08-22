@@ -58,7 +58,7 @@ function readStoredSlugs(key: string, limit: number): string[] {
   }
 }
 
-/** docs-vault widget 의 togglePinnedDoc 과 동일 동작 — 고정 추가 시 맨 앞. */
+/** Same behaviour as the docs-vault widget's togglePinnedDoc — pinning inserts at the front. */
 function togglePinnedInStorage(pinnedKey: string, slug: string): string[] {
   if (typeof window === "undefined") return [];
   const current = readStoredSlugs(pinnedKey, 500);
@@ -76,10 +76,10 @@ function togglePinnedInStorage(pinnedKey: string, slug: string): string[] {
 interface Props {
   open: boolean;
   onClose: () => void;
-  /** 드로어 내 링크가 붙는 Vault 경로 prefix. 기본 `/docs`. */
+  /** The vault path prefix the drawer's links attach to. Defaults to `/docs`. */
   basePath?: string;
   getDocHref?: (slug?: string | null) => string;
-  /** 토폴로지에서 선택된 프로젝트 맥락. 있으면 드로어 상단에 관련 문서 섹션 표시. */
+  /** The project context selected on the map. When present, a related-documents section shows at the top. */
   contextProject?: {
     slug: string;
     name: string;
@@ -128,11 +128,11 @@ function TreeBranch({
   getDocHref: (slug?: string | null) => string;
   onPick: () => void;
   depth: number;
-  /** 검색 중이거나 depth 0 일 때 열어둠. */
+  /** Held open while searching or at depth 0. */
   forceOpen: boolean;
-  /** 검색어 소문자 — 있으면 제목의 매치 부분 하이라이트. */
+  /** The lowercased search text — highlights the matching part of the title when present. */
   needle: string;
-  /** 키보드 nav 로 선택된 slug — indigo 하이라이트 + scrollIntoView. */
+  /** The slug selected by keyboard nav — indigo highlight plus scrollIntoView. */
   focusedSlug: string | null;
 }) {
   const [open, setOpen] = useState(depth === 0);
@@ -274,8 +274,8 @@ function DocRow({
         </IconButton>
       </div>
       {hasExcerpt && (
-        // hover 시에만 렌더되는 본문 첫 단락 프리뷰. 터치 기기 (hover: none)
-        // 에선 안 뜨게 hover: hover 미디어 쿼리로 게이팅.
+        // A preview of the body's first paragraph, rendered on hover only. Gated
+        // behind a hover: hover media query so it never appears on touch devices.
         <p className="hidden line-clamp-2 px-2 pb-1.5 text-label leading-label text-[color:var(--color-text-quaternary)] [@media(hover:hover)]:group-hover:block">
           {doc.excerpt}
         </p>
@@ -295,22 +295,25 @@ export function DocsQuickDrawer({
   contextProject,
 }: Props) {
   const t = useTranslations("vaultWidgets.docsDrawer");
-  // 진입 검수 E-10 — 문서함/작업공간 드로어의 한국어 섹션 라벨에 얹힌 라틴
-  // 아이브로. 「폴더별  ·  31」처럼 공백만 벌어졌다. 폴더 이름 행(TreeBranch)은
-  // 기계 문자열이라 mono 를 유지한다 — 금지는 한글 문장에 얹는 것이다.
+  // Entry review E-10 — a Latin eyebrow laid over the Korean section labels of the
+  // docs-vault and workspace drawers. It only widened the spaces, as in
+  // 「폴더별  ·  31」. The folder name rows (TreeBranch) keep mono because they are
+  // machine strings — what is forbidden is laying it over a Korean sentence.
   const eyebrow14 = useLatinEyebrow("tracking-[var(--tracking-caps-14)]");
   const eyebrow08 = useLatinEyebrow("tracking-[var(--tracking-caps-08)]");
   const locale = useLocale();
   const router = useRouter();
 
-  // #61 — 이 드로어는 **활성 볼트**의 빠른 접근이다(라벨도 "문서함 빠른 접근",
-  // '전체' 는 /docs 로 간다). 예전엔 빌드타임 번들 `vaultManifest` 를 직접
-  // 읽어, 5개짜리 로컬 볼트를 선택해도 Atlas 번들 문서가 나왔다. 고정/최근도
-  // `:server` 로 고정돼 다른 볼트의 목록이 섞였다 (opus5 검수 2026-07-25).
+  // #61 — this drawer is quick access to **the active vault** (the label says so
+  // too, and '전체' goes to /docs). It used to read the build-time bundled
+  // `vaultManifest` directly, so selecting a 5-document local vault still produced
+  // Atlas bundle documents, and pinned/recent were fixed at `:server`, mixing in
+  // another vault's lists (review 2026-07-25).
   //
-  // 이제 /docs 와 같은 규칙을 쓴다: 로컬 볼트가 로드돼 있으면 그 manifest 와
-  // 그 볼트 범위의 고정/최근을, 아니면 사용자가 고른 번들 샘플(도그푸드 /
-  // 예시 쇼핑몰)을 본다 — 번들을 직접 읽으면 샘플 선택이 여기서만 무시된다.
+  // It now follows the same rule as /docs: with a local vault loaded, that
+  // manifest and that vault's scoped pinned/recent; otherwise the bundled sample
+  // the user chose (dogfood or the example shop) — reading the bundle directly
+  // would make the sample choice ignored here alone.
   const mode = useDataSourceMode();
   const localVault = useLocalVault();
   const staticVault = useStaticVaultSource();
@@ -346,7 +349,7 @@ export function DocsQuickDrawer({
       });
       return;
     }
-    // 열릴 때마다 다시 읽어 /docs 에서 방금 pin 한 것도 즉시 반영.
+    // Re-read on every open, so something just pinned in /docs shows immediately.
     queueMicrotask(() => {
       setPinnedSlugs(readStoredSlugs(pinnedKey, 50));
       setRecentSlugs(readStoredSlugs(recentKey, 5));
@@ -356,7 +359,7 @@ export function DocsQuickDrawer({
     return () => {
       window.clearTimeout(t);
     };
-    // 볼트가 바뀌면 그 볼트 범위의 고정/최근을 다시 읽는다.
+    // A vault change re-reads that vault's scoped pinned and recent.
   }, [open, pinnedKey, recentKey]);
 
   useEffect(() => {
@@ -382,9 +385,9 @@ export function DocsQuickDrawer({
         const canonical = n.title ?? n.name;
         return {
           slug: n.slug as string,
-          // 지도 팝오버와 같은 규칙으로 이름을 고른다 — 예전엔 여기만
-          // canonical title 을 그려서, 한국어 화면에서 방금 `내 프로젝트`
-          // 로 읽은 문서가 검색 목록엔 `My project` 로 떴다.
+          // Pick the name by the same rule as the map popover — this was the only
+          // place drawing the canonical title, so a document just read as
+          // `내 프로젝트` on a Korean screen appeared as `My project` in the search list.
           title: resolveLocaleDisplayName(meta?.frontmatter, locale, canonical),
           path: n.path,
           updatedAt: meta?.updatedAt ?? "",
@@ -395,8 +398,9 @@ export function DocsQuickDrawer({
     return all;
   }, [activeManifest, locale]);
 
-  // 태그별 문서 slug set. manifest.tags 는 이미 역색인이지만 JSON 로딩시
-  // readonly 로 취급 — FlatDoc.tags 에서 다시 쌓아 O(1) 조회용 Set 화.
+  // Document slug sets per tag. `manifest.tags` is already an inverted index but is
+  // treated as readonly when loaded from JSON — rebuilt from FlatDoc.tags into a Set
+  // for O(1) lookup.
   const tagIndex = useMemo(() => {
     const map = new Map<string, Set<string>>();
     for (const d of docs) {
@@ -409,7 +413,7 @@ export function DocsQuickDrawer({
     return map;
   }, [docs]);
 
-  // 상위 12개 태그 — 개수 순 내림차순. 화면 상단에 칩으로 노출.
+  // The top 12 tags, by descending count. Exposed as chips at the top of the screen.
   const topTags = useMemo(() => {
     const counts: { tag: string; count: number }[] = [];
     tagIndex.forEach((slugs, tag) => counts.push({ tag, count: slugs.size }));
@@ -449,9 +453,9 @@ export function DocsQuickDrawer({
     [recentSlugs, docBySlug],
   );
 
-  // 토폴로지에서 선택된 프로젝트가 있으면 관련 문서 상위 N 개 계산.
-  // findRelatedDocs 는 frontmatter projects / wikilink / url / title / tag 신호
-  // 를 종합한 score 를 반환 — ProjectDrawer 와 동일 로직.
+  // With a project selected on the map, compute the top N related documents.
+  // findRelatedDocs returns a score combining the frontmatter projects, wikilink,
+  // url, title and tag signals — the same logic as ProjectDrawer.
   const relatedDocs = useMemo(() => {
     if (!contextProject) return [];
     const manifest = activeManifest;
@@ -481,16 +485,16 @@ export function DocsQuickDrawer({
     [trimmedQuery, activeTagSlugs, activeManifest],
   );
 
-  // 검색/태그 모드에서 키보드 ↑/↓ 가 순회할 대상 slug 평면 리스트.
-  // trimmedQuery/activeTag 아무것도 없으면 비활성 (normal 모드는 섹션 분리돼
-  // 있어 flat 순서가 모호함).
+  // The flat list of slugs ↑/↓ cycles through in search and tag mode. Inactive when
+  // there is neither a trimmedQuery nor an activeTag (normal mode is split into
+  // sections, so a flat order would be ambiguous).
   const flatTreeSlugs = useMemo(() => {
     if (!trimmedQuery && !activeTag) return [];
     return flattenTreeSlugs(filteredTree);
   }, [filteredTree, trimmedQuery, activeTag]);
 
-  // 필터 결과가 바뀌면 focused 를 첫 항목으로 리셋 — 사용자가 타이핑 하면서
-  // 기대하는 동작.
+  // Reset focus to the first item when the filter results change — what the user
+  // expects while typing.
   useEffect(() => {
     queueMicrotask(() => setFocusedSlug(flatTreeSlugs[0] ?? null));
   }, [flatTreeSlugs]);
@@ -524,8 +528,8 @@ export function DocsQuickDrawer({
             dragElastic={{ left: 0, right: 0.4 }}
             dragMomentum={false}
             onDragEnd={(_, info) => {
-              // 오른쪽으로 120px 이상 또는 빠른 flick (속도 450+) 이면 닫기.
-              // 모바일에서 overlay 탭 대신 자연스러운 swipe-to-dismiss 지원.
+              // Close on 120px+ to the right, or a fast flick (velocity 450+).
+              // Supports natural swipe-to-dismiss on mobile instead of an overlay tap.
               if (info.offset.x > 120 || info.velocity.x > 450) {
                 onClose();
               }
@@ -568,7 +572,7 @@ export function DocsQuickDrawer({
                 role="search"
                 onSubmit={(e) => {
                   e.preventDefault();
-                  // Enter → focused slug 우선, 없으면 첫 매치.
+                  // Enter → the focused slug first, otherwise the first match.
                   const slug = focusedSlug ?? firstDocSlug(filteredTree);
                   if (!slug) return;
                   router.push(getDocHref(slug));
@@ -650,12 +654,12 @@ export function DocsQuickDrawer({
                           size: "sm",
                           active: selected,
                           /*
-                           * hover 보더는 **안 골라진 것에만** 준다 (2026-08-15).
-                           * 종전엔 무조건 걸어서, 골라진 칩에 마우스를 올리면
-                           * hover 가 선택 보더를 덮었다 — 선택 신호가 오히려
-                           * 약해진다(실측: `indigo-pale-a28` 2.09 → `a34` 1.48).
-                           * 같은 파일 계열의 `CommitDetail` 은 이미 이 가드를
-                           * 주석과 함께 갖고 있었다.
+                           * The hover border is given **only to unselected chips**
+                           * (2026-08-15). It used to apply unconditionally, so
+                           * hovering a selected chip let hover cover the selection
+                           * border — weakening the selection signal (measured:
+                           * `indigo-pale-a28` 2.09 → `a34` 1.48). `CommitDetail` in
+                           * the same family already had this guard, with a comment.
                            */
                           className: selected
                             ? "shrink-0 gap-1"

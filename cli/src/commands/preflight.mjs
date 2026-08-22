@@ -1,16 +1,16 @@
 // `ontology-atlas preflight [vault] [--staged] [--depth N] [--json]`
 //
-// 커밋 프리플라이트 — git staged 파일 목록을 vault capability/element 노드로
-// 역매칭한 뒤, 각 노드의 blast-radius(query_ontology 재사용)를 요약해 "이
-// 커밋이 어떤 ontology 노드에 닿는지"를 커밋 *전에* 보여준다. pre-commit
-// hook 에서 호출되도록 설계 — `agent-setup --install-pre-commit-hook`.
+// Commit preflight — reverse-matches the git staged file list onto vault
+// capability and element nodes, then summarises each node's blast radius (reusing
+// query_ontology) to show which ontology nodes a commit touches *before* it lands.
+// Designed to be called from a pre-commit hook: `agent-setup --install-pre-commit-hook`.
 //
-// 정보 제공 전용, non-blocking: git/vault/matching 어느 단계가 비어 있어도
-// (git repo 아님, vault 없음, staged 파일이 vault 노드를 안 건드림) 조용히
-// exit 0 — disable fatigue 방지가 pre-commit hook 의 첫째 요건이다. blast
-// radius 개별 호출이 실패해도 그 행만 error 로 표시하고 계속 진행한다.
-// kind: decision 노드가 blast radius 안에 걸리면 ⚠ 로 표시만 — 커밋을
-// 막지 않는다 (같은 이유 — 커밋 훅은 안내자이지 게이트가 아니다).
+// Informational and non-blocking: if any stage comes up empty (not a git
+// repository, no vault, no staged file touching a vault node) it exits 0 quietly —
+// avoiding disable fatigue is a pre-commit hook's first requirement. A failed
+// individual blast-radius call marks that row as an error and carries on. A
+// `kind: decision` node inside the blast radius is only flagged with ⚠; it never
+// blocks the commit, for the same reason — a commit hook is a guide, not a gate.
 
 import { readFileSync } from 'node:fs';
 import { COLORS, KIND_COLORS } from '../lib/colors.mjs';
@@ -30,8 +30,8 @@ import {
 
 const DEPTH_CAP = 20;
 const DEFAULT_DEPTH = 1;
-// blast-radius 는 노드마다 별도 mcp spawn — 커밋 하나가 수백 개 노드를
-// 건드리는 극단적 케이스에서 hook 이 몇 초 안에 끝나도록 상한.
+// blast-radius spawns a separate MCP process per node, so this caps the extreme
+// case of one commit touching hundreds of nodes to keep the hook within seconds.
 const NODE_CAP = 25;
 const ALLOWED_FLAGS = ['--vault', '--staged', '--depth', '--json'];
 const RISK_COLORS = { low: COLORS.green, medium: COLORS.yellow, high: COLORS.red };
@@ -138,9 +138,10 @@ async function buildRow(vaultRoot, match, depth) {
   }
 }
 
-// vault 미존재 / staged 파일 0 / 매칭 노드 0 — 모두 "이 훅이 할 일이 없다"는
-// 뜻. --json 이면 machine-readable skip 사유만 남기고, 사람용 출력은 완전히
-// 비운다(노이즈 금지가 disable fatigue 를 막는 유일한 방법).
+// No vault, zero staged files, zero matched nodes — all mean "this hook has
+// nothing to do". With --json only the machine-readable skip reason remains, and
+// the human output is left completely empty: no noise is the only thing that
+// prevents disable fatigue.
 function emitSkip(json, reason, extra = {}) {
   if (json) {
     process.stdout.write(JSON.stringify({ skipped: true, reason, ...extra }, null, 2) + '\n');

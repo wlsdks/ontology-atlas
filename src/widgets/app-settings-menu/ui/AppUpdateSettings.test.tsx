@@ -8,13 +8,15 @@ import type { UpdatePhase } from '@/features/app-update';
 import { AppUpdateSettings } from './AppUpdateSettings';
 
 /**
- * 「업데이트 확인」 — **이 절이 없던 동안 무엇이 막혀 있었나**가 이 시험의 주제다.
+ * 「업데이트 확인」 (check for updates) — this test's subject is **what was blocked
+ * while this section did not exist**.
  *
- * 자동 확인과 우하단 토스트는 2026-07-27 부터 있었다. 그런데 사용자가 직접
- * 누를 길이 **없었다**: `check(manual)` 을 부르는 곳이 저장소 전체에서 0곳이었고
- * 「최신이에요」는 토스트가 `null` 로 되돌려 그려질 수조차 없었다. 자동 확인은
- * 하루 한 번이고 거절은 그 버전에 한해 기억되므로, 한 번 「나중에」를 누른
- * 사람은 **다음 버전이 나오기 전까지 갱신에 접근할 방법이 아예 없었다.**
+ * Automatic checking and the bottom-right toast have existed since 2026-07-27, but
+ * there was **no way for the user to press it**: `check(manual)` had 0 callers in
+ * the whole repository, and 「최신이에요」 could not even be drawn because the toast
+ * returned `null` for it. Automatic checks run once a day and a dismissal is
+ * remembered for that version, so anyone who pressed 「나중에」 once had **no way to
+ * reach an update at all until the next version shipped.**
  */
 
 const checkNow = vi.fn();

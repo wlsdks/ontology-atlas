@@ -1,6 +1,6 @@
-// File System Access API 타입 augmentation. 일부 브라우저 API (entries,
-// queryPermission, requestPermission, showDirectoryPicker) 가 lib.dom 에
-// 아직 완전히 포함되지 않아 here minimal 선언.
+// File System Access API augmentation. `entries`, `queryPermission`,
+// `requestPermission` and `showDirectoryPicker` are not fully in `lib.dom` yet,
+// so a minimal declaration lives here.
 
 interface FileSystemPermissionDescriptor {
   mode?: 'read' | 'readwrite';

@@ -79,8 +79,8 @@ describe("TopologyReviewLink — 재진입 훅 (Self-Drawing Diff #5)", () => {
   });
 
   it("엣지만 바뀌어도 노드 변경 0 이면 렌더 안 함 (패널 칩과 같은 셈법)", () => {
-    // 실전에선 엣지 변경이 from-노드를 changed 로 만들지만, 노드 변경 0 인 합성
-    // changeset 으로 가드를 직접 검증.
+    // In practice an edge change marks its from-node changed; this synthetic
+    // changeset with zero node changes exercises the guard clause directly.
     render(
       <TopologyReviewLink
         changeset={changeset({ addedEdges: ["abx"], total: 1 })}

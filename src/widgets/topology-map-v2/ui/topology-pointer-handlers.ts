@@ -15,7 +15,8 @@
  * projection genuinely EXCEEDS the bounds, so within-bounds flicks glide freely
  * and only edge-exceeding flicks rubber-band (the seeded velocity overshoots the
  * clamped bound, then `stepCamera`'s per-frame `clampAxisToPanBounds` elastically
- * returns it — INTERACTION-DESIGN §1 "경계는 러버밴드"). The old port inflated
+ * returns it — INTERACTION-DESIGN §1 「경계는 러버밴드」 —
+ * the boundary rubber-bands). The old port inflated
  * the projection ~60× so EVERY flick slammed to the same edge (the reported
  * snap); see `engine/momentum.ts`.
  */
@@ -85,27 +86,30 @@ interface Ref<T> {
 
 export interface PointerHandlerRefs {
   /**
-   * 휠이 누구 것인가 — **표면마다 다르다** (2026-07-28 모션석 실측).
+   * Who owns the wheel — **it differs per surface** (measured by the motion seat,
+   * 2026-07-28).
    *
-   * `'zoom'`(기본, 워크벤치): 지도가 화면 전체이고 스크롤할 페이지가 없으므로
-   * 휠은 전부 줌이고 `preventDefault` 로 페이지 유출을 막는 것이 맞다.
+   * `'zoom'` (default, the workbench): the map is the whole screen and there is no
+   * page to scroll, so every wheel is zoom and `preventDefault` rightly stops it
+   * leaking to the page.
    *
-   * `'page-scroll'`(관문): 지도가 **스크롤하는 문서 안의 밴드**다. 같은 줄이
-   * 여기서는 트랩으로 뒤집힌다 — 실측: `/download` 의 캔버스가 뷰포트의
-   * **62.1%** 인데 휠을 무조건 삼켜서, 랜딩에 착지한 방문자가 가장 먼저 하는
-   * 행동(스크롤)이 아무것도 안 하고 지도만 줌됐다. 접힘 아래에 판매 논증이
-   * 전부 있는데 거기 도달할 수 없었다. 이 모드에서 평 휠은 페이지에 양보하고,
-   * 줌은 **명시적 핀치**(`ctrlKey` wheel)에만 반응한다.
+   * `'page-scroll'` (the gateway): the map is **a band inside a scrolling
+   * document**, and the same line inverts into a trap here — measured: `/download`'s
+   * canvas is **62.1%** of the viewport and swallowed the wheel unconditionally, so
+   * the first thing a visitor landing on the gateway does (scroll) did nothing and
+   * only zoomed the map. The entire sales argument sits below the fold and was
+   * unreachable. In this mode a plain wheel yields to the page and zoom responds
+   * only to an **explicit pinch** (`ctrlKey` wheel).
    *
-   * 한 표면을 위한 결정이 그 전제가 성립하지 않는 표면으로 새어 나간 형태라,
-   * 상수가 아니라 계약으로 올린다.
+   * A decision made for one surface leaked into a surface where its premise does not
+   * hold, so it is raised from a constant to a contract.
    */
   wheelIntent?: "zoom" | "page-scroll";
   worldRef: Ref<TopologyWorld | null>;
   cameraRef: Ref<CameraAxes>;
   cameraTargetRef: Ref<CameraTarget>;
   /**
-   * S3 마감 폴리시 — the live cubic camera transition (`model/camera-easing.ts`).
+   * S3 finishing polish — the live cubic camera transition (`model/camera-easing.ts`).
    * Any interactive gesture (wheel zoom, pointer-down for pan/select) clears it
    * so the spring immediately regains control from wherever the ease left the
    * camera. Optional — omitted keeps the pre-tween behavior.
@@ -113,7 +117,7 @@ export interface PointerHandlerRefs {
   cameraTweenRef?: Ref<CameraTween | null>;
   dampingRef: Ref<number>;
   /**
-   * Dive-zoom fix (owner: "줌 인/아웃이 느림") — `handleWheel` sets this to
+   * Dive-zoom fix (owner: *"줌 인/아웃이 느림"* — zoom in/out is slow) — `handleWheel` sets this to
    * `--topology-v2-camera-spring-angfreq-interactive` on every live wheel
    * tick, so the scale axis (and pan while wheel-zooming) settles crisp
    * instead of at the slower cinematic rate programmatic camera moves use.
@@ -173,54 +177,59 @@ export interface PointerHandlerRefs {
   /** The altitude band's "100%" fit scale — used to derive farT for tier-aware (visible-only) hit-testing. */
   overviewScaleRef: Ref<number>;
   /**
-   * 터치 핀치줌 (반응형 감사 rank4, 2026-07-23) — 활성 터치 포인터
-   * (pointerId → 캔버스 좌표). 훅이 소유하는 ref 여야 한다: 이 팩토리는 매
-   * 렌더 재호출되므로 팩토리-로컬 상태는 제스처 중 리렌더에 증발한다.
-   * 생략 시 핀치 비활성(하위호환 — 기존 테스트/호출부 무변경).
+   * Touch pinch zoom (responsive audit rank4, 2026-07-23) — the active touch
+   * pointers (pointerId → canvas coordinates). It has to be a ref the hook owns:
+   * this factory is re-invoked on every render, so factory-local state evaporates on
+   * a re-render mid-gesture. Omitting it disables pinch (backwards compatible — no
+   * existing test or call site changes).
    */
   activeTouchesRef?: Ref<Map<number, { x: number; y: number }>>;
   /**
-   * rank4 — 진행 중 핀치의 직전 프레임 상태(두 손가락 거리 + 중점). null =
-   * 핀치 아님. 줌 배율은 거리 비율, 팬은 중점 이동에서 유도한다.
+   * rank4 — the previous frame's state of an in-flight pinch (two-finger distance
+   * plus midpoint). null means no pinch. The zoom factor derives from the distance
+   * ratio and the pan from the midpoint's movement.
    */
   pinchRef?: Ref<{ dist: number; midX: number; midY: number } | null>;
   onSelect?: (slug: string) => void;
-  /** P3b — 노드가 잡히지 않은 지점의 클릭이 엣지 근접일 때. */
+  /** P3b — a click at a point with no node hit that is close to an edge. */
   onSelectEdge?: (edge: { sourceId: string; targetId: string; relationType: string; declaredBySlug: string | null }) => void;
   /**
-   * P3c — 엣지 호버 마이크로카드. idle 이동 중 노드 미히트 지점이 엣지
-   * 근접이면 발화(식별 변경 시에만), 벗어나면 null. 드로우 패스의 hover
-   * 잉크 강조가 같은 ref 를 읽는다. 클릭(P3b 상세)과 별개의 가벼운 의미
-   * 미리보기 — 사용 신호(소유자 요청) 확인 후 게이트 해제.
+   * P3c — the edge hover microcard. Fires when an idle move lands on a
+   * node-miss point close to an edge (only when the identity changes) and null on
+   * leaving. The draw pass's hover ink emphasis reads the same ref. A light meaning
+   * preview separate from the click (P3b detail) — gated open after confirming usage
+   * signals (owner request).
    */
   hoveredEdgeRef?: Ref<{ sourceId: string; targetId: string; relationType: string; declaredBySlug: string | null } | null>;
-  /** 엣지 선택(페어 포커스) 상태 미러 — 바닥 클릭 해제 판정에 필요. */
+  /** Mirror of the edge-selection (pair focus) state — needed to decide ground-click deselection. */
   selectedEdgeRef?: Ref<{ sourceId: string; targetId: string } | null>;
-  /** 밀도 게이트 — 이번 프레임의 클러스터 칩(월드 anchor). 칩 히트테스트용. */
+  /** Density gate — this frame's cluster chips (world anchors), for chip hit testing. */
   clusterChipsRef?: Ref<readonly ClusterChip[]>;
   /**
-   * S3 마감 폴리시 (S2 known gap) — 이번 프레임에 그리지 않은 노드 집합(밀도
-   * 게이트 접힘 + 선택적 ego 숨김 이웃). 노드/엣지 히트테스트가 이 집합을
-   * 제외해 숨은 노드가 클릭·호버되지 않게 한다. 생략 시 전부 히트 대상.
+   * S3 finishing polish (an S2 known gap) — the set of nodes not drawn this frame
+   * (density-gate collapsed plus optionally hidden ego neighbours). Node and edge hit
+   * tests exclude this set so a hidden node cannot be clicked or hovered. Omitted
+   * means everything is hittable.
    */
   clusteredIdsRef?: Ref<ReadonlySet<string>>;
-  /** 밀도 게이트 — 호버 중 클러스터 부모 id 미러(커서 + 보더 강조). */
+  /** Density gate — mirror of the cluster parent id under hover (cursor plus border emphasis). */
   hoveredClusterIdRef?: Ref<string | null>;
   /**
-   * 확장 설정 미러 — 히트테스트가 **드로우와 같은 어포던스**로 사각형을 만든다.
-   * 생략 시 `"pill"`(종전 동작).
+   * Mirror of the expand preference — the hit test builds its rectangle with **the
+   * same affordance as the draw**. Omitted defaults to `"pill"` (the previous behaviour).
    */
   expandPrefRef?: Ref<ExpandPreference>;
   /**
-   * 막대 문구(번역문) 미러 — 히트 사각형의 폭은 **글자가 정하므로**, 히트가
-   * 드로우와 같은 문자열을 봐야 한다. 문구가 갈리면 사각형이 갈리고, 그게
-   * 「보이는데 안 눌리는 버튼」의 생성 경로다.
+   * Mirror of the bar copy (translated) — the hit rectangle's width is **decided by
+   * the text**, so the hit test has to see the same string as the draw. Diverging
+   * copy diverges the rectangle, and that is how a "visible but unpressable button"
+   * gets created.
    */
   clusterBarLabelsRef?: Ref<ClusterBarLabels | null>;
   /**
-   * S5 깊이 시차 — 영역 active 중 rAF 가 채우는 밴드별 렌더 오프셋 + depthById.
-   * 히트테스트가 드로우와 **같은** 오프셋을 노드에 적용해 클릭 어긋남을 막는다.
-   * null(정지/미영역)이면 오프셋 없음.
+   * S5 depth parallax — the per-band render offsets plus depthById the rAF loop fills
+   * while a realm is active. The hit test applies **the same** offsets to nodes to
+   * avoid click misalignment. null (still, or no realm) means no offset.
    */
   realmParallaxRef?: Ref<{
     depthById: ReadonlyMap<string, number>;
@@ -228,31 +237,34 @@ export interface PointerHandlerRefs {
     depth3: DepthParallaxOffset;
   } | null>;
   /**
-   * S10 결함 3 — 영역 전개 중 이번 프레임의 **깊이 기반 티어 kind** 오버라이드
-   * (`topology-realm-runtime.ts#tierKindById`). 드로우가 이 맵으로 티어 알파를
-   * 계산하므로 히트도 같은 맵을 써야 depth1 element 자식이 잡힌다. 루프가 매
-   * 프레임 드로우와 **같은 게이트**로 채운다(영역 비활성이면 null).
+   * S10 defect 3 — this frame's depth-based **tier kind** override during realm
+   * expansion (`topology-realm-runtime.ts#tierKindById`). The draw computes tier alpha
+   * from this map, so the hit test must use the same map for depth-1 element children
+   * to be catchable. The loop fills it with **the same gate** as the draw every frame
+   * (null while no realm is active).
    */
   realmTierKindsRef?: Ref<ReadonlyMap<string, "project" | "domain" | "capability" | "element"> | null>;
   /**
-   * 3D 보기 (2026-08-18) — 루프가 소유하는 돔 런타임(`model/dome-view.ts`).
-   * 히트테스트는 드로우가 마지막으로 그린 **같은 프레임 맵**(`frame`)을 읽어
-   * 회전 중에도 클릭이 그려진 자리를 따라온다. 궤도 드래그(빈 곳)와 평면 내
-   * 노드 드래그의 상태도 이 상자 하나로 오간다 — 노드 vs 빈 곳 판정은 2D 와
-   * 같은 `hitTestWorld` 가 내린다(두 번째 진실원 금지).
+   * 3D view (2026-08-18) — the dome runtime the loop owns (`model/dome-view.ts`). The
+   * hit test reads the **same frame map** (`frame`) the draw last rendered, so clicks
+   * follow the drawn positions even mid-rotation. The state for both orbit dragging
+   * (empty space) and in-plane node dragging passes through this one box — the node
+   * vs empty-space decision is made by the same `hitTestWorld` as 2D (no second
+   * source of truth).
    */
   domeRuntimeRef?: Ref<DomeRuntime | null>;
   /**
-   * 3D — 지금 진행 중인 빈 곳 드래그가 **궤도 회전인가**(true) **카메라
-   * 팬인가**(false). `pointerdown` 이 한 번 정하고 그 제스처가 끝날 때까지
-   * 안 바뀐다 — 판정을 move 마다 하면 손이 돔 경계를 스칠 때 제스처의 정체가
-   * 뒤바뀐다. 규칙은 `model/dome-view.ts` 의 `DOME_GRIP_MARGIN`.
+   * 3D — whether the empty-space drag in flight is **an orbit rotation** (true) or
+   * **a camera pan** (false). `pointerdown` decides once and it does not change until
+   * that gesture ends — deciding per move flips the gesture's identity whenever the
+   * hand grazes the dome's boundary. The rule is `DOME_GRIP_MARGIN` in
+   * `model/dome-view.ts`.
    */
   domeGripRef?: Ref<boolean>;
   /**
-   * 슬라이스 C (개발/비개발 모드 토글) — 티어 게이트 config 미러(드로우와
-   * **같은** config 여야 히트/팬-클램프가 그려진 것과 lockstep). 생략 시
-   * `DEFAULT_TIER_REVEAL`.
+   * Slice C (the dev/non-dev mode toggle) — a mirror of the tier gate config (it has
+   * to be **the same** config as the draw for hit testing and pan clamping to stay in
+   * lockstep with what was drawn). Omitted defaults to `DEFAULT_TIER_REVEAL`.
    */
   tierRevealRef?: Ref<TierRevealConfig>;
   onHoverEdge?: (
@@ -260,30 +272,32 @@ export interface PointerHandlerRefs {
     position: { x: number; y: number } | null,
   ) => void;
   onPaneClick?: () => void;
-  /** 밀도 게이트 — 클러스터 칩 클릭 → 부모 확장 토글(URL 왕복). */
+  /** Density gate — a cluster chip click toggles the parent's expansion (a URL round trip). */
   onToggleCluster?: (parentId: string) => void;
   /**
-   * S2 파트 5C — 클러스터 칩 호버 툴팁. 호버 대상이 바뀔 때만 발화(식별 변경),
-   * 벗어나면 null. HomePage 가 부모 제목/카운트로 문장을 만들어 마이크로카드로
-   * 렌더한다(엣지 호버 카드와 같은 계약).
+   * S2 part 5C — the cluster chip hover tooltip. Fires only when the hover target
+   * changes (an identity change) and null on leaving. HomePage builds the sentence
+   * from the parent's title and count and renders it as a microcard (the same
+   * contract as the edge hover card).
    */
   onHoverCluster?: (
     info: {
       parentId: string;
-      /** 이 티어에서 접힌(숨김) 직속 게이트 자식 수 — 칩의 `+N`. */
+      /** Direct gated children collapsed (hidden) at this tier — the chip's `+N`. */
       count: number;
-      /** 패널3-S6 숫자 계약 — 부모의 하위 전체 자손 수(노드 뱃지와 같은 출처). */
+      /** Panel3-S6 number contract — the parent's total descendant count (the same source as the node badge). */
       descendantTotal: number;
       expanded: boolean;
       position: { x: number; y: number };
     } | null,
   ) => void;
-  /** S2 파트 3a — `이웃 +N` 칩 클릭 → 다음 이웃 배치 점등(URL 토글과 별개). */
+  /** S2 part 3a — clicking the `이웃 +N` chip lights the next batch of neighbours (separate from the URL toggle). */
   onExpandEgoNeighbors?: () => void;
   /**
-   * 고팬아웃 배치-공개(2026-07) — 펼친 클러스터 부모의 `+N 더보기` 칩 클릭 →
-   * 그 부모의 다음 배치 점등(URL 토글=접기 와 별개, 세션 임시). 인자는 합성
-   * 칩 id 에서 해석한 **실제 부모** id.
+   * High-fanout batch reveal (2026-07) — clicking an expanded cluster parent's
+   * `+N 더보기` chip lights that parent's next batch (separate from the URL toggle,
+   * which collapses; session-only). The argument is the **real parent** id parsed out
+   * of the synthetic chip id.
    */
   onExpandClusterBatch?: (parentId: string) => void;
   /**
@@ -295,13 +309,14 @@ export interface PointerHandlerRefs {
    */
   onContextMenuNode?: (slug: string, position: { x: number; y: number }) => void;
   /**
-   * **빈 캔버스 우클릭** — 노드가 없는 자리에서 부른다 (2026-08-03).
+   * **Right-click on empty canvas** — called at a point with no node (2026-08-03).
    *
-   * 종전엔 이 자리가 그냥 무시됐다(`if (!hitNodeId) return;`). 그런데 빈
-   * 캔버스 우클릭은 어느 도구에서나 «여기에 새로 만들기»의 관용구이고, 무엇보다
-   * **클릭한 좌표가 곧 새 노드의 자리**라 상단 크롬 버튼보다 뜻이 분명하다.
+   * This position used to be simply ignored (`if (!hitNodeId) return;`). But a
+   * right-click on empty canvas is the idiom for «create something here» in every
+   * tool, and above all **the clicked coordinate is where the new node goes**, which
+   * is more definite than a button in the top chrome.
    *
-   * 생략하면 종전처럼 no-op — 브라우저 기본 메뉴도 그대로 뜬다.
+   * Omitted, it is a no-op as before, and the browser's default menu still appears.
    */
   onContextMenuPane?: (position: { x: number; y: number }) => void;
 }
@@ -310,8 +325,9 @@ export interface TopologyPointerHandlers {
   handlePointerDown: (e: ReactPointerEvent<HTMLCanvasElement>) => void;
   handlePointerMove: (e: ReactPointerEvent<HTMLCanvasElement>) => void;
   /**
-   * rank4 — 이벤트는 optional: JSX 배선(onPointerUp)은 이벤트를 넘겨 터치
-   * 부기가 돌고, 내부 no-arg 호출(stuck-drag guard 등)은 부기를 생략한다.
+   * rank4 — the event is optional: the JSX wiring (onPointerUp) passes it so the
+   * touch bookkeeping runs, while internal no-arg calls (the stuck-drag guard and the
+   * like) skip that bookkeeping.
    */
   handlePointerUp: (e?: ReactPointerEvent<HTMLCanvasElement>) => void;
   handlePointerCancel: (e?: ReactPointerEvent<HTMLCanvasElement>) => void;
@@ -329,15 +345,16 @@ export interface TopologyPointerHandlers {
   handleWheel: (e: WheelEvent) => void;
   /**
    * W2-B — native browser context menu is suppressed ONLY when the
-   * right-click lands on a hittable node (design gate: "캔버스 기본 브라우저
-   * 컨텍스트 메뉴 억제는 노드 위에서만"). Off-node right-clicks fall through
+   * right-click lands on a hittable node (design gate
+   * 「캔버스 기본 브라우저 컨텍스트 메뉴 억제는 노드 위에서만」 — suppress the
+   * canvas default browser context menu only over a node). Off-node right-clicks fall through
    * to the OS/browser menu unchanged — panning/empty-canvas right-click
    * behavior is untouched.
    */
   handleContextMenu: (e: ReactMouseEvent<HTMLCanvasElement>) => void;
   /**
-   * 검사용 — `(screenX, screenY)` 에서 **앱이 고를 엣지**. 히트 없으면 null.
-   * `__atlasMap.edgeAt()` 이 이걸 그대로 내보낸다.
+   * For instrumentation — **the edge the app would pick** at `(screenX, screenY)`, or
+   * null on no hit. `__atlasMap.edgeAt()` exports this directly.
    */
   probeEdgeAt: (screenX: number, screenY: number, thresholdPx?: number) => WorldEdge | null;
 }
@@ -396,23 +413,25 @@ export function createTopologyPointerHandlers(refs: PointerHandlerRefs): Topolog
   } = refs;
 
   /**
-   * 3D 보기 — 이번 프레임의 돔 전달 맵(램프>0 일 때만). 히트/후보/칩 판정이
-   * 전부 이 하나를 읽는다 — 드로우가 마지막으로 그린 그 맵이다.
+   * 3D view — this frame's dome delivery map (only while the ramp is > 0). Hit
+   * testing, candidate building and chip decisions all read this one thing — the map
+   * the draw last rendered.
    */
   const domeFrameNow = (): ReadonlyMap<string, DomeNodeFrame> | null => {
     const runtime = domeRuntimeRef?.current ?? null;
     return runtime && runtime.frame.size > 0 && runtime.rampClock > 0 ? runtime.frame : null;
   };
-  /** 3D 궤도/평면 드래그 분기 조건 — 타깃이 켬이고 영역 비활성. */
+  /** The branch condition for 3D orbit vs in-plane drag — the target is on and no realm is active. */
   const domeInteractive = (): DomeRuntime | null => {
     const runtime = domeRuntimeRef?.current ?? null;
     return runtime && runtime.active ? runtime : null;
   };
   /**
-   * 3D — 카메라 배율 하한 덮어쓰기. 돔 핏 배율이 2D 앵커 기준 하한보다 낮으면
-   * 거기까지 내린다(`DomeRuntime.fitScale` JSDoc — 안 내리면 핏 목표가 도달
-   * 불가라 휠 앵커가 허구의 배율로 계산된다). 휠·핀치·스프링이 같은 값을
-   * 봐야 세 경로의 클램프가 어긋나지 않는다.
+   * 3D — overrides the camera's minimum zoom. When the dome's fit zoom is below the
+   * 2D anchor-based minimum, it drops that far (see the `DomeRuntime.fitScale` JSDoc:
+   * without it the fit target is unreachable and the wheel anchor computes against a
+   * fictional zoom). The wheel, the pinch and the spring must all see the same value
+   * so their three clamps cannot diverge.
    */
   const effectiveScaleMinWithDome = (base: number): number => {
     const runtime = domeRuntimeRef?.current ?? null;
@@ -421,9 +440,10 @@ export function createTopologyPointerHandlers(refs: PointerHandlerRefs): Topolog
   };
 
   /**
-   * 밀도 게이트 — 클릭/호버 지점이 어떤 클러스터 칩 위인지 판정한다. 칩
-   * anchor(월드)를 스크린으로 투영하고 드로우와 **같은** `clusterChipRect` 로
-   * 사각형을 만들어 point-in-rect 테스트한다(좌표 어긋남 0). 히트 시 부모 id.
+   * Density gate — decides which cluster chip a click or hover point is over. It
+   * projects the chip's world anchor to screen and builds the rectangle with **the
+   * same** `clusterChipRect` as the draw, then runs a point-in-rect test (zero
+   * coordinate drift). A hit returns the parent id.
    */
   const hitTestClusterChip = (px: number, py: number): string | null => {
     const chips = clusterChipsRef?.current;
@@ -432,35 +452,36 @@ export function createTopologyPointerHandlers(refs: PointerHandlerRefs): Topolog
     const camera = cameraRef.current;
     const world = worldRef.current;
     const tokens = readTopologyV2TokensOrNull();
-    // 드로우(`topology-frame-draw.ts`)와 **같은** 줌 스케일을 써 사각형이 어긋나지 않게.
+    // Use **the same** zoom scale as the draw (`topology-frame-draw.ts`) so the rectangle cannot drift.
     const scale = clusterChipScale(camera.scale.value);
-    // 히트는 드로우와 **같은 판정 함수**를 본다 — 어포던스가 바뀌면 그려지는
-    // 형태와 눌리는 사각형이 함께 바뀌어야 한다(둘이 갈라지면 「보이는데 안
-    // 눌리는 버튼」이 생긴다).
+    // The hit test reads **the same decision function** as the draw — when the
+    // affordance changes, the drawn shape and the pressable rectangle have to change
+    // together (diverging, they create a "visible but unpressable button").
     const affordance = expandPrefRef?.current.affordance ?? "pill";
     const batchSize = expandPrefRef?.current.batchSize ?? DEFAULT_EXPAND.batchSize;
     const barLabels = clusterBarLabelsRef?.current ?? undefined;
     const focusedSlug = focusedSlugRef.current;
-    // 3D 보기 — 드로우가 칩 앵커·부모에 더한 것과 같은 프레임 오프셋.
+    // 3D view — the same frame offset the draw added to the chip anchor and parent.
     const chipDomeFrame = domeFrameNow();
     for (const chip of chips) {
-      // 도킹 가능성은 **드로우와 같은 조건**이다 — 부모 노드를 그래프에서 찾을
-      // 수 있는가. 배치 공개의 `+N 더보기` 칩은 부모 id 가 합성이라 못 찾고,
-      // 그때 형태는 사라지는 게 아니라 알약으로 남는다(그 판정도 한 함수).
+      // Dockability is **the same condition as the draw**: can the parent node be
+      // found in the graph. A batch-reveal `+N 더보기` chip has a synthetic parent id
+      // and cannot be found, and then the shape does not disappear but stays a pill
+      // (that decision is also one function).
       const parentNode = world?.nodeById.get(chip.parentId);
       const dockable = parentNode !== undefined && tokens !== null;
       const form = clusterControlForm({
         affordance,
         expanded: chip.expanded,
-        // ego 합성 칩(`이웃 +N`)은 부모 노드가 곧 고른 노드다 — 그 칩까지
-        // 「안 고르면 없음」에 걸리면 배치 공개 자체가 닫힌다.
+        // For a synthetic ego chip (`이웃 +N`) the parent node *is* the chosen node —
+        // subjecting that chip to "absent unless chosen" would close batch reveal entirely.
         focused: chip.ego === true || focusedSlug === chip.parentId,
         dockable,
       });
       if (form === "none") continue;
       let rect: ReturnType<typeof clusterChipRect>;
       if (form === "badge" || form === "bar") {
-        // S10 결함 2 — 노드에 도킹된 형태. 드로우와 **같은** 사각형 함수로 유도.
+    // S10 defect 2 — the node-docked shape. Derived with **the same** rectangle function as the draw.
         if (!parentNode || !tokens) continue;
         const chipOff = chipDomeFrame?.get(parentNode.id);
         const parentScreen = worldToScreen(camera, width, height, parentNode.x + (chipOff?.dx ?? 0), parentNode.y + (chipOff?.dy ?? 0));
@@ -523,14 +544,16 @@ export function createTopologyPointerHandlers(refs: PointerHandlerRefs): Topolog
     // unclickable, defeating the entire "click a domain to expand it" flow.
     const focusedNodeId = focusedSlugRef.current;
     const neighborsOfFocused = focusedNodeId ? world.neighborMap.get(focusedNodeId) : undefined;
-    // S3 — 이번 프레임에 그리지 않은(밀도게이트 접힘 + 선택적 ego 숨김) 노드는
-    // 히트 대상에서 제외 — 숨은 ego 이웃이 클릭되던 S2 갭 차단.
+    // S3 — nodes not drawn this frame (density-gate collapsed plus optionally hidden
+    // ego neighbours) are excluded from hit testing, closing the S2 gap where a hidden
+    // ego neighbour could be clicked.
     const clusteredIds = clusteredIdsRef?.current;
-    // S10 결함 3 — 영역 전개 중 깊이 기반 티어 오버라이드(드로우와 같은 맵).
+    // S10 defect 3 — the depth-based tier override during realm expansion (the same map as the draw).
     const realmTierKinds = realmTierKindsRef?.current ?? null;
-    // S5 — 영역 시차가 활성이면 드로우와 같은 밴드 오프셋을 히트에도 적용.
-    // 3D 보기 — 드로우가 그린 **같은 프레임 맵**의 오프셋·원근 배율을 합성
-    // (회전 중 클릭도 이번 프레임 좌표로 판정된다).
+    // S5 — with realm parallax active, apply the same band offsets to hit testing as
+    // the draw. 3D view — compose the offsets and perspective factor from the **same
+    // frame map** the draw rendered (so a click mid-rotation is judged in this
+    // frame's coordinates).
     const parallax = realmParallaxRef?.current ?? null;
     const domeFrame = domeFrameNow();
     const renderOffsetForNode =
@@ -560,13 +583,13 @@ export function createTopologyPointerHandlers(refs: PointerHandlerRefs): Topolog
           tierRevealRef?.current ?? DEFAULT_TIER_REVEAL,
           clusteredIds,
           realmTierKinds,
-          // 드로우가 이번 프레임에 쓴 알파 — 관통 채널 전부를 단일 출처로 본다.
+          // The alpha the draw used this frame — every see-through channel from one source.
           lastDrawnNodeAlphas(),
         ),
       renderOffsetForNode,
-      // 3D 원근 배율 — 드로우가 곱한 것과 같은 s 를 히트 디스크에도.
+          // 3D perspective factor — the same s the draw multiplied by, applied to the hit disc too.
       domeFrame ? (node) => domeFrame.get(node.id)?.s ?? 1 : undefined,
-      // 3D 깊이 — 겹친 디스크는 가까운(밝고 큰) 노드가 이긴다.
+          // 3D depth — among overlapping discs the nearer (brighter, larger) node wins.
       domeFrame ? (node) => domeFrame.get(node.id)?.u ?? 0 : undefined,
     );
   };
@@ -583,20 +606,23 @@ export function createTopologyPointerHandlers(refs: PointerHandlerRefs): Topolog
 
 
   /**
-   * 후보 캐시 — **같은 입력이면 다시 만들지 않는다** (2026-07-28 코드 리뷰 수정).
+   * The candidate cache — **the same input is never rebuilt** (code review fix,
+   * 2026-07-28).
    *
-   * 이 함수는 노드 전량 필터(O(N)) + 엣지 전량 투영(O(E), 엣지마다 좌표 변환
-   * 세 번 + Map 조회 두 번) + 배열 전량 할당을 한다. 그런데 호출 지점이
-   * **노드에 안 걸린 지점의 모든 `pointermove`** 다 — 최대 ~125Hz. 배경 위에서
-   * 마우스를 움직이는 것만으로 프레임마다 그래프 전체를 훑고 새 배열을 만든다.
-   * 97노드 도그푸드에선 안 보이지만 이 엔진의 설계 목표는 2~3k 노드다.
+   * This function filters every node (O(N)), projects every edge (O(E), three
+   * coordinate transforms and two Map lookups per edge) and allocates whole arrays.
+   * And its call site is **every `pointermove` that missed a node** — up to ~125Hz.
+   * Simply moving the mouse over the background walks the entire graph and allocates
+   * new arrays every frame. The 97-node dogfood does not show it, but this engine is
+   * designed for 2–3k nodes.
    *
-   * 그런데 그 프레임들의 입력은 **대부분 같다** — 카메라가 멈춰 있으면 후보도
-   * 그대로다. 그래서 입력이 하나라도 달라질 때만 다시 만든다. 팬·줌 중에는
-   * 카메라 값이 매 프레임 달라지므로 자연히 매번 재계산되고(그때는 정확성이
-   * 우선), 정지 상태의 호버에서는 첫 프레임 이후 전부 캐시 적중이다.
+   * Yet most of those frames have **the same input** — with the camera still, the
+   * candidates are unchanged. So it rebuilds only when at least one input differs.
+   * During a pan or zoom the camera values differ every frame, so it naturally
+   * recomputes each time (accuracy first there), and hovering while still is all
+   * cache hits after the first frame.
    *
-   * 키에 `world` 참조가 들어가므로 그래프가 갈리면 즉시 무효화된다.
+   * The key holds the `world` reference, so a changed graph invalidates immediately.
    */
   let edgeCandidateCache: {
     key: string;
@@ -607,7 +633,7 @@ export function createTopologyPointerHandlers(refs: PointerHandlerRefs): Topolog
     value: EdgeHitCandidate[];
   } | null = null;
 
-  /** P3b/P3c 공용 — 현재 tier 에서 양 끝이 히트 가능한 엣지의 스크린 투영 후보. */
+  /** Shared by P3b/P3c — screen projections of edges whose ends are both hittable at the current tier. */
   const buildEdgeCandidates = (): EdgeHitCandidate[] => {
     const world = worldRef.current;
     if (!world) return [];
@@ -617,11 +643,12 @@ export function createTopologyPointerHandlers(refs: PointerHandlerRefs): Topolog
     const overviewEntryScale = overviewScaleRef.current * tokens.overviewEntryRatio;
     const zoomRatio = computeZoomRatio(cameraRef.current.scale.value, overviewEntryScale);
     const focusedNodeId = focusedSlugRef.current;
-    // 캐시 키 — 후보 목록을 정하는 모든 입력. 카메라 세 축이 들어가므로
-    // 팬/줌 중에는 매 프레임 새 키가 되고, 정지 상태에서는 같은 키가 된다.
-    // 3D 보기 — 엣지 끝점도 드로우와 같은 프레임 오프셋을 받아야 호버/클릭이
-    // 그려진 커브를 따라온다. 프레임 세대(frameEpoch)가 키에 들어간다 — 회전
-    // 중에는 매 프레임 새 좌표이고, 정지 상태에서는 같은 세대가 유지된다.
+    // The cache key — every input that decides the candidate list. It holds all three
+    // camera axes, so a pan or zoom makes a new key every frame while a still camera
+    // keeps the same one. 3D view — edge endpoints also need the same frame offsets as
+    // the draw for hover and clicks to follow the drawn curve. The frame generation
+    // (frameEpoch) is in the key: mid-rotation every frame has new coordinates, while a
+    // still view keeps the same generation.
     const domeFrame = domeFrameNow();
     const domeEpoch = domeFrame ? (domeRuntimeRef?.current?.frameEpoch ?? 0) : -1;
     const cacheKey = [
@@ -634,9 +661,10 @@ export function createTopologyPointerHandlers(refs: PointerHandlerRefs): Topolog
       focusedNodeId ?? "",
       domeEpoch,
     ].join("|");
-    // 집합·맵은 **참조로** 비교한다 — 크기만 보면 같은 크기의 다른 내용이
-    // 통과한다(가장 조용한 종류의 캐시 오류다). 이 값들은 새 객체로 교체되지
-    // 제자리에서 고쳐지지 않으므로 참조 비교가 정확하다.
+    // Sets and maps are compared **by reference** — comparing only sizes lets a
+    // different collection of the same size through, which is the quietest kind of
+    // cache error. These values are replaced with new objects rather than mutated in
+    // place, so reference comparison is exact.
     const clusteredIds = clusteredIdsRef?.current;
     const realmTierKinds = realmTierKindsRef?.current ?? null;
     const tierReveal = tierRevealRef?.current ?? DEFAULT_TIER_REVEAL;
@@ -668,21 +696,23 @@ export function createTopologyPointerHandlers(refs: PointerHandlerRefs): Topolog
         )
         .map((n) => n.id),
     );
-    // 히트테스트 역전 방지(패널3-S3) — 끝 노드 몸통 반경(스크린 px)을
-    // `hitTestWorld` 와 **같은 식**(radiusForKind × magnitudeScale × scale + 5)
-    // 으로 계산해 넘긴다. 노드 히트 영역과 정확히 맞물려 노드 몸통/근접 클릭이
-    // 방사형 엣지로 새지 않게 한다(노드 바디 > 엣지).
+    // Hit-test inversion guard (panel3-S3) — the end nodes' body radius in screen px
+    // is computed with **the same formula** as `hitTestWorld`
+    // (radiusForKind × magnitudeScale × scale + 5) and passed through. It meshes
+    // exactly with the node hit area so a click on or near a node body cannot leak to
+    // a radial edge (node body > edge).
     const scale = cameraRef.current.scale.value;
     const bodyRadius = (id: string): number | undefined => {
       const node = world.nodeById.get(id);
       if (!node) return undefined;
-      // 3D — 노드 히트 디스크와 같은 원근 배율(드로우와 동일식).
+    // 3D — the same perspective factor as the node hit disc (identical formula to the draw).
       const domeS = domeFrame?.get(id)?.s ?? 1;
       return radiusForKind(node.kind, tokens) * node.magnitudeScale * domeS * scale + 5;
     };
     const candidates: EdgeHitCandidate[] = [];
-    // 3D 오프셋 — 드로우(`topology-frame-draw.ts#projectEdgePoints`)와 같은
-    // 식: 끝점은 자기 끝 노드의 프레임 오프셋, 제어점은 두 끝의 평균.
+    // 3D offsets — the same formula as the draw
+    // (`topology-frame-draw.ts#projectEdgePoints`): each endpoint takes its own end
+    // node's frame offset and the control point takes the average of the two.
     const cam = cameraRef.current;
     const ZERO = { dx: 0, dy: 0, s: 1 };
     for (const edge of world.edges) {
@@ -710,11 +740,12 @@ export function createTopologyPointerHandlers(refs: PointerHandlerRefs): Topolog
     // so the spring takes over from wherever the ease currently sits. A click
     // that ends up selecting a node begins a fresh tween in the focus effect.
     if (cameraTweenRef) cameraTweenRef.current = null;
-    // R4 관성 활강 중단(interruptibility) — 새 포인터다운은 진행 중이던 flick
-    // 감속을 즉시 잡는다(iOS 스크롤 catch). 카메라 속도를 0 으로, 스프링 타깃을
-    // 현재 위치로 고정해 지금 자리에 정지시킨다 — 이어질 팬/선택은 각자 새
-    // 타깃을 세운다(팬: pointermove, 선택: 포커스 이펙트 트윈). 속도가 이미
-    // 0 이면 정지 상태라 타깃을 건드리지 않는다(불필요한 상태 변경 회피).
+    // R4 momentum-glide interruption — a new pointerdown catches an in-flight flick
+    // deceleration immediately (the iOS scroll catch). It zeroes the camera velocity
+    // and pins the spring target to the current position so it stops right here; the
+    // pan or selection that follows sets its own new target (pan: pointermove;
+    // selection: the focus effect's tween). With the velocity already 0 it is at rest,
+    // so the target is left alone (avoiding a needless state change).
     {
       const cam = cameraRef.current;
       if (cam.x.velocity !== 0 || cam.y.velocity !== 0) {
@@ -727,8 +758,8 @@ export function createTopologyPointerHandlers(refs: PointerHandlerRefs): Topolog
     // the analysis rail / outside the window never delivers `pointerup` to the
     // canvas, the state machine sticks in `dragging`, and the camera then
     // follows a button-less mouse until it strands off-graph (owner's
-    // "드래그하면 캔버스가 사라져버림", QA 소실 B). Implicit release on
-    // pointerup/cancel is per-spec automatic.
+    // "드래그하면 캔버스가 사라져버림" — dragging makes the canvas disappear;
+    // QA loss B). Implicit release on pointerup/cancel is per-spec automatic.
     try {
       e.currentTarget.setPointerCapture(e.pointerId);
     } catch {
@@ -740,10 +771,11 @@ export function createTopologyPointerHandlers(refs: PointerHandlerRefs): Topolog
     canvasRectRef.current = { left: domRect.left, top: domRect.top };
     const rect = canvasRectRef.current;
     const point = { x: e.clientX - rect.left, y: e.clientY - rect.top };
-    // rank4 터치 핀치줌 — 터치 포인터 등록. 두 번째 손가락이 닿는 순간 진행
-    // 중이던 단일 손가락 제스처(프레스/팬)를 클릭 커밋 없이 취소하고 핀치로
-    // 전환한다(두 손가락을 얹는 행위가 노드 선택이 되면 안 됨). 세 번째 이상
-    // 손가락은 무시 — 핀치는 처음 두 포인터의 좌표만 본다(Map 삽입 순서 보존).
+    // rank4 touch pinch zoom — register the touch pointer. The instant a second finger
+    // lands, any single-finger gesture in flight (press or pan) is cancelled without
+    // committing a click and switches to pinch (putting two fingers down must not
+    // select a node). A third or further finger is ignored — pinch reads only the first
+    // two pointers' coordinates (Map insertion order is preserved).
     if (activeTouchesRef && e.pointerType === "touch") {
       activeTouchesRef.current.set(e.pointerId, { x: point.x, y: point.y });
       if (activeTouchesRef.current.size === 2 && pinchRef) {
@@ -754,36 +786,38 @@ export function createTopologyPointerHandlers(refs: PointerHandlerRefs): Topolog
           midX: (pts[0].x + pts[1].x) / 2,
           midY: (pts[0].y + pts[1].y) / 2,
         };
-        return; // 기계 전이 없음 — 이 제스처는 카메라 전용
+        return; // No machine transition — this gesture is camera-only.
       }
       if (activeTouchesRef.current.size > 2) return;
     }
-    // 3D — 진행 중이던 궤도 관성을 즉시 잡는다(카메라 flick catch 와 같은
-    // iOS 계약). 잡는 행위 자체가 «지금 자리에 정지»다.
+    // 3D — catch any orbit momentum in flight immediately (the same iOS contract as
+    // the camera flick catch). The act of catching *is* «stop right here».
     {
       const dome = domeInteractive();
       if (dome) {
         dome.yawVel = 0;
-        // 착지 겨냥도 함께 버린다 — 새 입력·명시적 리셋이 언제나 이긴다.
+        // Drop the landing aim too — new input and an explicit reset always win.
         dome.yawSnap = null;
         dome.pitchVel = 0;
-        // 진행 중 프로그램 자세 이동(「제자리로」·선택 리프레임)도 여기서
-        // 버린다 — 포인터다운이 카메라 트윈을 버리는 것과 같은 계약: 제스처가
-        // 현재 자세에서 즉시 이어받는다(④의 중단 가능 요건).
+        // A programmatic pose move in flight (「제자리로」 or a selection reframe) is
+        // dropped here too — the same contract as pointerdown dropping the camera
+        // tween: the gesture takes over immediately from the current pose (④'s
+        // interruptibility requirement).
         dome.poseTween = null;
-        // 스무딩 목표를 현재 자세로 동기화 — 잡는 순간의 «지금 자리 정지»가
-        // 남은 목표-갭에 의해 미끄러지지 않게.
+        // Sync the smoothing target to the current pose, so the «stop right here» of
+        // the catch does not slide on the remaining target gap.
         dome.yawTarget = dome.yaw;
         dome.pitchTarget = dome.pitch;
       }
     }
     /*
-     * 3D — **이 드래그가 회전인가 이동인가를 여기서 한 번만 정한다.**
+     * 3D — **whether this drag is a rotation or a move is decided once, here.**
      *
-     * 판정을 move 마다 하면 손이 돔 경계를 스치는 순간 제스처의 정체가 바뀐다
-     * (돌리다가 갑자기 지도가 딸려 온다). 제스처의 정체는 시작할 때 정해지고
-     * 끝날 때까지 안 바뀐다 — 포인터 상태기계가 이미 쓰는 규약이다.
-     * 규칙과 근거: `model/dome-view.ts` 의 `DOME_GRIP_MARGIN` 독블록.
+     * Deciding per move flips the gesture's identity the moment the hand grazes the
+     * dome's boundary (you are rotating and suddenly the map comes along). A
+     * gesture's identity is fixed at the start and unchanged until the end — the
+     * convention the pointer state machine already uses. The rule and its rationale:
+     * the `DOME_GRIP_MARGIN` doc-block in `model/dome-view.ts`.
      */
     {
       const dome = domeInteractive();
@@ -809,11 +843,12 @@ export function createTopologyPointerHandlers(refs: PointerHandlerRefs): Topolog
     const rect = currentRect(e.currentTarget);
     const point = { x: e.clientX - rect.left, y: e.clientY - rect.top };
 
-    // rank4 터치 핀치줌 — 두 손가락 이동을 카메라 줌+팬으로. 수학은
-    // `handleWheel` 과 동일 계약: 카메라 TARGET 기준 합성(스프링 지연 무관),
-    // effective min/max 클램프, 인터랙티브 스프링. 직전 중점 아래 월드 좌표가
-    // 새 중점 아래로 오도록 tx/ty 를 풀면 줌 앵커와 두-손가락 팬이 한 식으로
-    // 떨어진다: tx' = worldAtPrevMid − (mid' − c)/scale'.
+    // rank4 touch pinch zoom — two-finger movement into camera zoom plus pan. The
+    // maths is the same contract as `handleWheel`: composed against the camera TARGET
+    // (independent of spring lag), clamped to the effective min/max, on the interactive
+    // spring. Solving tx/ty so the world point under the previous midpoint lands under
+    // the new one makes the zoom anchor and the two-finger pan fall out of one
+    // equation: tx' = worldAtPrevMid − (mid' − c)/scale'.
     if (activeTouchesRef && e.pointerType === "touch" && activeTouchesRef.current.has(e.pointerId)) {
       activeTouchesRef.current.set(e.pointerId, { x: point.x, y: point.y });
       const pinch = pinchRef?.current;
@@ -823,12 +858,12 @@ export function createTopologyPointerHandlers(refs: PointerHandlerRefs): Topolog
         const midX = (pts[0].x + pts[1].x) / 2;
         const midY = (pts[0].y + pts[1].y) / 2;
         if (pinch.dist > 0 && dist > 0) {
-          // 카메라 모션 시작 — 호버 카드류는 즉시 강등(휠과 같은 규칙).
+          // Camera motion starting — hover cards demote immediately (the same rule as the wheel).
           clearEdgeHover();
           clearClusterHover();
           if (cameraTweenRef) cameraTweenRef.current = null;
-          // 3D — 핀치 줌도 개입이다(휠과 같은 계약: ① 회전 해제 + ④ 자세
-          // 이동 중단).
+          // 3D — a pinch zoom is intervention too (the same contract as the wheel:
+          // ① release the attention spin, ④ stop the pose move).
           {
             const dome = domeInteractive();
             if (dome) {
@@ -851,23 +886,24 @@ export function createTopologyPointerHandlers(refs: PointerHandlerRefs): Topolog
           if (userDrivenCameraRef) userDrivenCameraRef.current = true;
           dampingRef.current = tokens.cameraDampingDefault;
           cameraAngularFreqRef.current = tokens.cameraSpringAngFreqInteractive;
-          // 잔여 플릭 속도 차단(휠과 동일) — 핀치는 타깃 구동.
+          // Block residual flick velocity (as the wheel does) — a pinch is target driven.
           const cam = cameraRef.current;
           if (cam.x.velocity !== 0 || cam.y.velocity !== 0) {
             cameraRef.current = { ...cam, x: { value: cam.x.value, velocity: 0 }, y: { value: cam.y.value, velocity: 0 } };
           }
-          // WCAG 2.3.3 — 핀치는 **사용자가 개시한** 확대다. 예전엔 여기서
-          // 카메라를 목적지로 스냅했는데, 그러면 감속 사용자에게 뷰포트 전체가
-          // 한 프레임에 순간이동한다(2026-07-28 실측: diff 1프레임 뒤 0.00 영구)
-          // — 대체하려던 이동보다 전정계에 더 나쁘고, "내가 어디로 갔나" 를
-          // 읽을 단서까지 사라진다. 직접 조작은 손의 연장이라 시간을 지킨다.
+          // WCAG 2.3.3 — a pinch is **user-initiated** magnification. The camera used
+          // to snap to its destination here, which teleports the whole viewport in one
+          // frame for a reduced-motion user (measured 2026-07-28: diff 0.00 forever
+          // after one frame) — worse for the vestibular system than the movement it was
+          // replacing, and it also removes any cue for reading "where did I go".
+          // Direct manipulation is an extension of the hand, so it keeps its time.
         }
         pinchRef.current = { dist, midX, midY };
-        return; // 핀치 중엔 단일 포인터 이동 로직(팬/호버/드래그)을 타지 않는다
+        return; // Mid-pinch, the single-pointer paths (pan/hover/drag) are not taken.
       }
     }
 
-    // Stuck-drag guard (QA 소실 B fallback): a button-less move during an
+    // Stuck-drag guard (QA loss B fallback): a button-less move during an
     // active gesture means we missed the real `pointerup` (capture unsupported
     // or interrupted). Treat it as that pointerup — the stationary-release path
     // holds the camera exactly where it is — and let the NEXT move resume as a
@@ -889,11 +925,12 @@ export function createTopologyPointerHandlers(refs: PointerHandlerRefs): Topolog
       const { width, height } = viewportRef.current;
       const dome = domeInteractive();
 
-      // 3D 평면 내 노드 드래그 — 노드 vs 빈 곳 판정(pressedNodeId)은 2D 와
-      // 같은 히트가 이미 내렸다. 화면 한 점에는 깊이가 무한히 대응하므로
-      // 노드는 **자기 kind 평면 안에서만** 움직인다(`solveDomePlanePoint`) —
-      // z 의 타입 사실(kind 티어) 보존. 힘 시뮬은 2D 레이아웃의 것이라 여기선
-      // 건드리지 않는다(돔 좌표만 옮긴다 — 세션 한정, 2D 배치 불변).
+      // 3D in-plane node drag — the node vs empty-space decision (pressedNodeId) was
+      // already made by the same hit test as 2D. One screen point corresponds to
+      // infinitely many depths, so a node moves **only within its own kind plane**
+      // (`solveDomePlanePoint`) — preserving z's typed fact (the kind tier). The force
+      // simulation belongs to the 2D layout and is untouched here (only the dome
+      // coordinates move — session only, the 2D arrangement is unchanged).
       if (dome && nodeDragRef.current === null && pressedNodeId !== null && sim?.hasNode(pressedNodeId)) {
         const grabNode = world.nodeById.get(pressedNodeId);
         const coord = dome.model.coords.get(pressedNodeId);
@@ -903,7 +940,7 @@ export function createTopologyPointerHandlers(refs: PointerHandlerRefs): Topolog
           const renderedY = grabNode.y + (grabFrame?.dy ?? 0);
           const pw = screenToWorld(cameraRef.current, width, height, point.x, point.y);
           const offset = computeGrabOffsetWorld(renderedX, renderedY, pw.x, pw.y);
-          // 노드를 잡는 것은 개입이다 — 시선 끌기 회전 해제 (①).
+          // Grabbing a node is intervention — release the attention spin (①).
           dome.spinArmed = false;
           commitDomeEntrySweep(dome);
           nodeDragRef.current = { nodeId: pressedNodeId, offset };
@@ -953,7 +990,7 @@ export function createTopologyPointerHandlers(refs: PointerHandlerRefs): Topolog
       // Active node pin-drag: move the pin 1:1 in world space, keep the sim
       // warm so neighbors reflow. The camera does NOT pan (headline fix — a
       // node drag moves the NODE, not the whole viewport).
-      clearEdgeHover(); // 드래그 중 카드 잔존 방지
+      clearEdgeHover(); // Stop a card lingering mid-drag.
       clearClusterHover();
       const drag = nodeDragRef.current;
       if (drag && sim) {
@@ -961,35 +998,37 @@ export function createTopologyPointerHandlers(refs: PointerHandlerRefs): Topolog
         const pin = computePinWorld(pw.x, pw.y, drag.offset);
         sim.movePin(pin.x, pin.y);
         heatRef.current = NODE_DRAG_HEAT_MS;
-        // rank4 — 노드를 쥐고 옮기는 동안 "grabbing" 커서(순수 CSS). 놓으면
-        // pointerup/cancel 이 복원한다.
+        // rank4 — the "grabbing" cursor while a node is held and moved (pure CSS).
+        // Releasing restores it on pointerup/cancel.
         e.currentTarget.style.cursor = "grabbing";
         return;
       }
 
-      // 미는 동안은 `grabbing` — 노드 드래그(위 분기)와 같은 응답이라 "지금
-      // 내 손에 뭔가 잡혀 있다" 가 두 경우에 같은 글자로 읽힌다.
+      // `grabbing` while pushing — the same response as a node drag (the branch
+      // above), so "something is in my hand right now" reads as the same word in both cases.
       e.currentTarget.style.cursor = "grabbing";
 
-      // 3D 궤도(orbit) — 빈 곳 드래그는 카메라 팬이 아니라 돔 회전이다.
-      // 수평 = yaw(감도 히어로 0.006/px), 수직 = pitch(러버밴드 한계). 깊은
-      // 티어는 비틀림(lag)으로 살짝 뒤처졌다 스프링 백 — follow-through.
-      // 돔 바깥에서 시작한 드래그는 2D 와 똑같이 **카메라 팬**이다(아래 기본
-      // 경로로 떨어진다). 안에서 시작했을 때만 궤도 회전.
+      // 3D orbit — an empty-space drag rotates the dome rather than panning the
+      // camera. Horizontal = yaw (hero sensitivity 0.006/px), vertical = pitch (with a
+      // rubber-band limit). Deeper tiers lag slightly with a twist and spring back —
+      // follow-through. A drag begun outside the dome is **a camera pan**, exactly as
+      // in 2D (it falls through to the default path below). Only a drag begun inside
+      // orbits.
       if (dome && domeGripRef.current) {
         const history = dragHistoryRef.current;
         const last = history[history.length - 1];
         const dx = last ? point.x - last.x : 0;
         const dy = last ? point.y - last.y : 0;
-        // 이벤트는 **목표**만 민다 — 실제 yaw/pitch 는 루프가 매 프레임
-        // `ORBIT_SMOOTH_TAU_MS` 로 목표를 따라간다(이벤트 주기 > 프레임
-        // 주기일 때의 계단 제거; 티어 비틀림 충전도 실제 프레임 이동에서
-        // 루프가 한다). 총량은 여전히 포인터와 1:1 이다.
+        // The event pushes **the target only** — the actual yaw/pitch follow that
+        // target each frame at `ORBIT_SMOOTH_TAU_MS` (removing the stepping when the
+        // event rate exceeds the frame rate; the loop also charges the tier twist from
+        // the real per-frame movement). The total is still 1:1 with the pointer.
         dome.yawTarget += dx * ORBIT_YAW_PER_PX;
         dome.pitchTarget = resistDomePitch(dome.pitchTarget + dy * ORBIT_PITCH_PER_PX);
         dome.orbiting = true;
-        // 궤도는 개입이다 — 시선 끌기 회전은 여기서 내려가 되살아나지 않는다
-        // (①, 복귀는 「자동 정렬」·3D 재진입 — `DomeRuntime.spinArmed` JSDoc).
+        // Orbiting is intervention — the attention spin goes down here and does not
+        // come back (①; it returns via 「자동 정렬」 or re-entering 3D — see the
+        // `DomeRuntime.spinArmed` JSDoc).
         dome.spinArmed = false;
           commitDomeEntrySweep(dome);
         dragHistoryRef.current.push({ x: point.x, y: point.y, t: performance.now() });
@@ -1016,21 +1055,22 @@ export function createTopologyPointerHandlers(refs: PointerHandlerRefs): Topolog
       return;
     }
 
-    // 드래그(팬/노드 이동)는 위 블록에서 이미 return — 여기 도달은
-    // idle|pressed 뿐이다. 엣지 호버는 포커스(ego) 중에도 동작한다 —
-    // 엣지 클릭(P3b)이 포커스 중에도 되므로 호버도 같아야 한다("잡을 수
-    // 있으면 읽을 수 있다"; 사용자 실보고 "노드 클릭한 상태에선 선 호버
-    // 툴팁이 안 나온다"의 근원). 후보는 buildEdgeCandidates 가 포커스
-    // tier 히트 규칙을 이미 반영한다.
+    // A drag (pan or node move) already returned in the block above, so only
+    // idle|pressed reaches here. Edge hover works during focus (ego) too — an edge
+    // click (P3b) works during focus, so hover has to match ("if you can grab it you
+    // can read it"; the root of the user report "노드 클릭한 상태에선 선 호버 툴팁이
+    // 안 나온다" — with a node clicked, the edge hover tooltip does not appear). The
+    // candidates already reflect the focus tier's hit rules via buildEdgeCandidates.
     const hitNodeId = hitVisibleNode(world, cameraRef.current, tokens, point.x, point.y);
 
-    // P3c — 노드 미히트 지점의 엣지 근접 = 호버 마이크로카드. 식별이 바뀔
-    // 때만 발화 (같은 엣지 위 이동은 재발화 없음 — 카드 안정). 노드 위에
-    // 오르면 엣지 호버는 즉시 해제 (노드가 우선).
-    // 엣지 히트는 커서 판정에도 쓰이므로 아래 호버 블록 **밖**에서 구한다 —
-    // 커서 어포던스가 엣지-호버 배선(`hoveredEdgeRef && onHoverEdge`)의 존재
-    // 여부에 얹혀 있으면, 그 배선이 없는 소비처에서 커서가 아예 안 정해진다
-    // (2026-07-28: 실제로 그 가드 안에 있었다).
+    // P3c — proximity to an edge at a node-miss point is a hover microcard. It fires
+    // only when the identity changes (moving along the same edge does not re-fire, so
+    // the card is stable). Moving onto a node clears the edge hover immediately (the
+    // node wins).
+    // The edge hit is also used for the cursor decision, so it is computed **outside**
+    // the hover block below — if the cursor affordance rode on the edge-hover wiring
+    // (`hoveredEdgeRef && onHoverEdge`), a consumer without that wiring would get no
+    // cursor at all (2026-07-28: it really was inside that guard).
     const edgeHit =
       hitNodeId === null && hoveredEdgeRef && onHoverEdge
         ? hitTestEdges(buildEdgeCandidates(), point.x, point.y, 6)
@@ -1058,54 +1098,57 @@ export function createTopologyPointerHandlers(refs: PointerHandlerRefs): Topolog
       }
     }
 
-    // 커서 어포던스 — **각 표면은 자기 1차 행동을 보여준다** (2026-07-28
-    // 디자인 카운슬 「상호작용」 처방 + 실측 정정).
+    // Cursor affordance — **each surface shows its own primary action** (design
+    // council 「상호작용」 prescription plus a measured correction, 2026-07-28).
     //
-    // 종전: 노드 = `grab`, 엣지 = `pointer`, **배경 = 아무것도 없음**.
-    // 노드의 `grab` 은 거짓이 아니었다(진짜로 pin-drag 된다). 진짜 결함은
-    // 배경이었다 — 배경은 **팬 가능한데 어포던스를 하나도 안 줬다**(실측:
-    // 배경 호버 커서 `auto`). 그래서 "이 지도를 밀 수 있다" 를 아무도 알려
-    // 주지 않았고, 정작 못 미는 노드 위에서만 "집으라" 는 손이 떴다.
+    // Before: node = `grab`, edge = `pointer`, **background = nothing**. The node's
+    // `grab` was not a lie (it really does pin-drag). The real defect was the
+    // background — **it is pannable and offered no affordance at all** (measured: the
+    // background hover cursor was `auto`). So nobody was told "you can push this map",
+    // while the grabbing hand appeared only over nodes, which cannot be pushed.
     //
-    // 이제 1차 행동으로 가른다:
-    // - 노드·엣지·칩 → `pointer` (누르면 열린다 — 힌트 바가 말하는 그 행동)
-    // - 배경 → `grab` (밀면 지도가 따라온다), 미는 동안 `grabbing`
-    // 노드 드래그는 여전히 되고 `grabbing` 으로 응답한다 — 강화 기능이라
-    // 어포던스를 1차 자리에서 양보한다(드래그로 발견되는 것이 허용되는
-    // 부류라는 것이 카운슬 판정).
+    // Now it splits by primary action:
+    // - node, edge, chip → `pointer` (press and it opens — the action the hint bar names)
+    // - background → `grab` (push and the map follows), `grabbing` while pushing
+    // Node dragging still works and still answers with `grabbing` — as an enhancement
+    // it yields the affordance in the primary position (the council's ruling being that
+    // it belongs to the class where drag-only discovery is acceptable).
     //
-    // 이 배정이 위 호버 블록 **밖**인 것도 계약이다 — 안에 있으면 엣지-호버
-    // 배선이 없는 소비처에서 커서가 아예 안 정해진다.
+    // That this assignment sits **outside** the hover block above is also contractual —
+    // inside it, a consumer with no edge-hover wiring would get no cursor at all.
     e.currentTarget.style.cursor =
       hitNodeId !== null || edgeHit !== null ? "pointer" : "grab";
 
-    // 밀도 게이트 — 클러스터 칩 호버: 커서 pointer + 보더 강조 미러(노드
-    // 미히트 지점만; 노드가 우선). 노드 클릭=ego 포커스 계약은 불변이고 칩은
-    // 자식이 숨은 빈 공간에 서므로 여기서만 겹친다.
+    // Density gate — cluster chip hover: cursor pointer plus a border emphasis mirror
+    // (node-miss points only; the node wins). The node-click = ego-focus contract is
+    // unchanged, and a chip stands in the empty space its children left, so they only
+    // overlap here.
     if (hoveredClusterIdRef) {
       const chipHit = hitNodeId === null ? hitTestClusterChip(point.x, point.y) : null;
       if (hoveredClusterIdRef.current !== chipHit) {
         hoveredClusterIdRef.current = chipHit;
-        // S2 파트 5C — 호버 대상 변경 시에만 툴팁 발화(안정). 칩이 잡히면
-        // 엣지 호버는 즉시 해제(둘 다 빈 공간이라 겹칠 수 있음 — 칩 우선).
+        // S2 part 5C — the tooltip fires only when the hover target changes (stability).
+        // A chip hit clears the edge hover immediately (both live in empty space and can
+        // overlap — the chip wins).
         if (onHoverCluster) {
           if (chipHit === null || chipHit === EGO_NEIGHBOR_CHIP_ID) {
-            // ego `이웃 +N` 칩은 부모 제목이 없어 툴팁을 띄우지 않는다(커서/보더만).
+        // An ego `이웃 +N` chip has no parent title, so no tooltip is raised (cursor and border only).
             onHoverCluster(null);
           } else {
             clearEdgeHover();
             const chip = clusterChipsRef?.current?.find((c) => c.parentId === chipHit);
             if (chip) {
-              // 고팬아웃 배치-공개 — `+N 더보기` 칩은 합성 id 라 실제 부모로
-              // 해석해 툴팁이 부모 제목/자손 수를 찾게 한다(기존 접힘 툴팁 문구
-              // 재사용 — 새 i18n 없이 "접힘 N · 하위 전체 M"). expanded 는
-              // 이미 false(접힘 pill)라 접힘 문구가 뜬다.
+              // High-fanout batch reveal — a `+N 더보기` chip has a synthetic id, so it
+              // is resolved to the real parent for the tooltip to find the parent's
+              // title and descendant count (reusing the existing collapsed-tooltip copy —
+              // "접힘 N · 하위 전체 M", no new i18n). expanded is already false (a
+              // collapsed pill), so the collapsed wording appears.
               const realParent = parseClusterMoreChipId(chip.parentId) ?? chip.parentId;
               onHoverCluster({
                 parentId: realParent,
                 count: chip.count,
-                // 패널3-S6 — 부모의 하위 전체 자손 수(노드 뱃지와 동일 출처
-                // `WorldNode.count` = descendantCount). 라이브 월드에서 조회.
+                // Panel3-S6 — the parent's total descendant count (the same source as the
+                // node badge, `WorldNode.count` = descendantCount), looked up in the live world.
                 descendantTotal: world.nodeById.get(realParent)?.count ?? chip.count,
                 expanded: chip.expanded,
                 position: { x: e.clientX, y: e.clientY },
@@ -1116,13 +1159,13 @@ export function createTopologyPointerHandlers(refs: PointerHandlerRefs): Topolog
       }
       if (chipHit !== null) e.currentTarget.style.cursor = "pointer";
       /*
-       * 3D — 빈 곳 위에서 **커서가 두 구역을 말한다.** 규칙이 자리에 따라
-       * 갈리는데(돔 안=회전, 밖=이동) 화면에 아무 표시가 없으면 그 규칙은
-       * 존재하지 않는 것과 같다. 드래그해 봐야만 알게 되는 기능은 이 저장소가
-       * 금지하는 «drag-only discovery» 다.
+       * 3D — over empty space **the cursor names two zones.** The rule differs by
+       * position (inside the dome = rotate, outside = move), and with nothing on
+       * screen saying so, that rule may as well not exist. A feature you can only
+       * discover by dragging is the «drag-only discovery» this repository forbids.
        *
-       * `grab` = 잡아서 돌린다(돔 위) · `move` = 잡아서 옮긴다(바깥).
-       * 노드·칩 위에서는 각자의 커서가 이미 이겼으므로 건드리지 않는다.
+       * `grab` = grab and rotate (over the dome) · `move` = grab and move (outside).
+       * Over a node or chip their own cursors have already won, so those are untouched.
        */
       if (chipHit === null && hitNodeId === null) {
         const dome = domeInteractive();
@@ -1134,23 +1177,26 @@ export function createTopologyPointerHandlers(refs: PointerHandlerRefs): Topolog
       }
     }
 
-    if (next.phase !== "idle" || focusedSlugRef.current) return; // 리플은 idle+비포커스 전용 (기존 계약)
+    if (next.phase !== "idle" || focusedSlugRef.current) return; // The ripple is idle plus unfocused only (existing contract).
     if (hitNodeId === hoveredNodeIdRef.current) return;
     hoveredNodeIdRef.current = hitNodeId;
     if (hitNodeId) {
       const neighborIds = [...(world.neighborMap.get(hitNodeId) ?? [])];
       const schedule = scheduleRipple(hitNodeId, performance.now(), neighborIds, tokens.rippleStaggerMs, RIPPLE_PER_NEIGHBOR_DELAY_MS, tokens.rippleStaggerMaxMs);
       for (const entry of schedule) rippleStartRef.current.set(entry.nodeId, entry.startAtMs);
-      // 호버 펄스는 소유자 실보고("쌀알 날아가는 효과 — 없애라, 이상해")로
-      // 은퇴 (2026-07-23). 상시 혜성만 유지 — 호버 반응은 리플·커서로 충분.
+      // The hover pulse was retired on an owner report (*"쌀알 날아가는 효과 — 없애라,
+      // 이상해"* — the flying grains of rice effect: remove it, it looks wrong;
+      // 2026-07-23). Only the permanent comets remain — ripple and cursor are enough
+      // of a hover response.
     }
   };
 
   const handlePointerUp = (e?: ReactPointerEvent<HTMLCanvasElement>) => {
-    // rank4 터치 핀치줌 — 터치 해제 부기. 핀치(또는 핀치의 잔여 손가락) up 은
-    // 클릭/플릭 로직을 타지 않는다: 핀치 진입 시 기계는 이미 cancel 로 idle 이고,
-    // 일반 단일 탭은 up 시점 phase 가 pressed/dragging 이라 이 조기 반환에
-    // 걸리지 않는다. (내부 no-arg 호출 — stuck-drag guard — 은 부기 생략.)
+    // rank4 touch pinch zoom — touch release bookkeeping. A pinch up (or the leftover
+    // finger of one) does not take the click/flick paths: entering a pinch already
+    // cancelled the machine to idle, while an ordinary single tap is in phase
+    // pressed/dragging at up time and does not hit this early return. (The internal
+    // no-arg call — the stuck-drag guard — skips the bookkeeping.)
     if (e && activeTouchesRef && e.pointerType === "touch" && activeTouchesRef.current.has(e.pointerId)) {
       activeTouchesRef.current.delete(e.pointerId);
       if (pinchRef?.current && activeTouchesRef.current.size < 2) pinchRef.current = null;
@@ -1158,17 +1204,18 @@ export function createTopologyPointerHandlers(refs: PointerHandlerRefs): Topolog
     }
     const tokens = readTopologyV2TokensOrNull();
     if (!tokens) return;
-    // P3b — 클릭 지점(드래그가 아니면 downPoint 가 곧 클릭 좌표) 스냅샷.
+    // P3b — snapshot of the click point (outside a drag, downPoint *is* the click coordinate).
     const clickPoint = pointerMachineRef.current.downPoint;
     const wasDragging = pointerMachineRef.current.phase === "dragging";
     const { next, commitClick } = transitionPointerState(pointerMachineRef.current, { type: "pointerup" }, tokens.hysteresisPx);
     pointerMachineRef.current = next;
 
-    // 손을 놓았으면 쥔 모양도 놓는다 (2026-07-28). 종전엔 **노드 드래그
-    // 분기에서만** 복원해서, 배경을 밀고 놓은 뒤 마우스를 그대로 두면 커서가
-    // `grabbing` 인 채 남았다 — 놓았는데 화면은 아직 쥐고 있다고 말한다.
-    // `""` 로 지우면 캔버스의 기본값 `grab` 으로 떨어지고(팬 가능이라는 참인
-    // 신호), 다음 pointermove 가 노드 위면 `pointer` 로 덮는다.
+    // Let go of the grabbing shape once the hand lets go (2026-07-28). It used to be
+    // restored **only in the node-drag branch**, so pushing the background and then
+    // leaving the mouse still left the cursor as `grabbing` — released, while the
+    // screen still said it was held. Clearing it with `""` falls back to the canvas's
+    // default `grab` (a true signal that it is pannable), and the next pointermove over
+    // a node overrides it with `pointer`.
     if (canvasRef?.current) canvasRef.current.style.cursor = "";
 
     // Node pin-drag release: unpin and give the graph a settle burst so it
@@ -1176,9 +1223,9 @@ export function createTopologyPointerHandlers(refs: PointerHandlerRefs): Topolog
     // camera flick, no click commit (the state machine already suppressed the
     // click for a drag).
     if (nodeDragRef.current !== null) {
-      // 3D 평면 내 드래그 릴리스 — 시뮬 핀이 없다(잡을 때 안 걸었다). 스프링이
-      // 마지막 목표점으로 이어 정착하도록 released 만 표시한다(루프가 정착을
-      // 보고 지운다) — 놓는 순간 속도가 0 으로 리셋되지 않는다.
+      // 3D in-plane drag release — there is no simulation pin (none was set on grab).
+      // Only `released` is marked so the spring settles onto the last target point (the
+      // loop clears it once it sees the settle) — the velocity is not reset to 0 on release.
       {
         const dome = domeInteractive();
         if (dome && dome.drag !== null && dome.drag.nodeId === nodeDragRef.current.nodeId) {
@@ -1195,23 +1242,25 @@ export function createTopologyPointerHandlers(refs: PointerHandlerRefs): Topolog
       // through the settle burst above (B2), cleared once heat reaches 0
       // (`use-topology-loop.ts`'s rAF loop).
       dragStartPosRef.current = null;
-      // rank4 — 드래그가 끝났으니 "grabbing" 커서를 해제한다(다음 pointermove 가
-      // 호버 여부에 따라 grab/pointer/"" 로 다시 세팅).
+      // rank4 — the drag has ended, so the "grabbing" cursor is cleared (the next
+      // pointermove sets grab/pointer/"" again depending on hover).
       if (canvasRef?.current) canvasRef.current.style.cursor = "";
       return;
     }
 
     if (wasDragging) {
-      // 3D 궤도 릴리스 — 카메라 플릭 대신 yaw/pitch 관성. 릴리스 창의 실측
-      // 속도를 드래그와 같은 감도로 각속도에 넘긴다(놓는 순간 속도 연속).
-      // reduced-motion 은 관성 0 — 사용자 개시 «드래그 자체»는 1:1 로 이미
-      // 끝났고, 이어지는 활강은 앱이 만드는 모션이라 예외 대상이 아니다.
+      // 3D orbit release — yaw/pitch momentum instead of a camera flick. The measured
+      // velocity of the release window is passed into angular velocity at the same
+      // sensitivity as the drag (velocity continuous at release). reduced-motion gets
+      // zero momentum — the user-initiated **drag itself** already finished 1:1, and the
+      // glide that follows is motion the app makes, so it is not exempt.
       {
         const dome = domeInteractive();
         if (dome && dome.orbiting) {
           dome.orbiting = false;
-          // 남은 목표-갭(≤ 속도×τ)은 버리고 관성이 이어받는다 — 릴리스 후에
-          // 목표-따라가기와 관성이 동시에 자세를 밀면 이중 적분이 된다.
+          // The remaining target gap (≤ velocity × τ) is dropped and momentum takes over
+          // — target-following and momentum both pushing the pose after release would
+          // integrate twice.
           dome.yawTarget = dome.yaw;
           dome.pitchTarget = dome.pitch;
           if (!reducedMotionRef.current) {
@@ -1225,11 +1274,12 @@ export function createTopologyPointerHandlers(refs: PointerHandlerRefs): Topolog
               dome.yawVel = release.vx * ORBIT_YAW_PER_PX;
               dome.pitchVel = release.vy * ORBIT_PITCH_PER_PX;
               /*
-               * **의미 있는 착지** — 관성만 두면 돔은 아무 각에서나 멎는다.
-               * 릴리스 속도로 자연 착지점을 먼저 계산하고, 그 자리가 도메인
-               * 자오선 근처면 감속의 목표를 그리로 다시 겨눈다(UIScrollView
-               * 페이징과 같은 두 걸음 — `ORBIT_SNAP_WINDOW_RAD` 독블록).
-               * 창 밖이면 `null` 이라 종전 관성 그대로다.
+               * **A meaningful landing** — left to momentum alone, the dome stops at an
+               * arbitrary angle. The natural landing point is computed from the release
+               * velocity first, and if that spot is near a domain meridian the
+               * deceleration's target is re-aimed there (the same two steps as
+               * UIScrollView paging — see the `ORBIT_SNAP_WINDOW_RAD` doc-block).
+               * Outside the window it is `null`, leaving the previous momentum as is.
                */
               const landing = projectOrbitLanding(dome.yaw, dome.yawVel);
               dome.yawSnap = snapOrbitLanding(landing, domeFacingYaws(dome.model));
@@ -1240,10 +1290,11 @@ export function createTopologyPointerHandlers(refs: PointerHandlerRefs): Topolog
           return;
         }
       }
-      // 정지 릴리스 게이트 (owner spec: "드래그 후 멈추면 그 자리에 정지") — sample
-      // the last ~80ms of pointer motion; a stationary release yields isFlick=false
-      // and the camera holds exactly here (no momentum glide). Only a release WITH
-      // motion (a flick) projects a landing target.
+      // Stationary release gate (owner spec: *"드래그 후 멈추면 그 자리에 정지"* — after
+      // dragging, stopping should stop it right there) — sample the last ~80ms of
+      // pointer motion; a stationary release yields isFlick=false and the camera holds
+      // exactly here (no momentum glide). Only a release WITH motion (a flick) projects
+      // a landing target.
       const release = sampleReleaseVelocity({
         history: dragHistoryRef.current,
         releaseTime: performance.now(),
@@ -1284,16 +1335,17 @@ export function createTopologyPointerHandlers(refs: PointerHandlerRefs): Topolog
       // The clamp source is the VISIBLE tier's bounds: at spine-only zoom the
       // full 295-node bounds cover a huge legal-but-empty fan region (only ~8
       // spine nodes draw), so a strong flick could land the camera on nothing
-      // (owner's "캔버스가 사라져버림", QA 소실 A). Once capabilities start
-      // revealing, the full bounds become honest again.
+      // (owner's "캔버스가 사라져버림" — the canvas disappeared; QA loss A). Once
+      // capabilities start revealing, the full bounds become honest again.
       const world = worldRef.current;
       let clampedLanding = { x: px.landingTarget, y: py.landingTarget };
       if (world) {
         const overviewEntryScale = overviewScaleRef.current * tokens.overviewEntryRatio;
         const zoomRatio = computeZoomRatio(cameraRef.current.scale.value, overviewEntryScale);
         const boundsSource = isSpineOnlyZoom(zoomRatio, tierRevealRef?.current ?? DEFAULT_TIER_REVEAL) ? world.spineBounds : world.bounds;
-        // 목줄이 켜진 표면(관문)에서는 착지 지점도 같은 봉투를 쓴다 — 안 그러면
-        // 플릭이 목줄 밖에 착지한 뒤 스프링이 다시 끌어와 두 번 움직인다.
+        // On a surface with the leash on (the gateway), the landing point uses the same
+        // envelope — otherwise a flick lands outside the leash and the spring pulls it
+        // back, moving twice.
         clampedLanding = clampPointToPanBounds(
           px.landingTarget,
           py.landingTarget,
@@ -1316,18 +1368,20 @@ export function createTopologyPointerHandlers(refs: PointerHandlerRefs): Topolog
       onSelect?.(action.nodeId);
       return;
     }
-    // 3D 돔 — 선택된 노드의 재클릭은 해제가 아니라 **재선택**이다 (2026-08-18
-    // 2차): 돔에서는 패널 X 가 선택을 남긴 채 패널만 접으므로(HomePage
-    // `handleDatasheetClose`), 접힌 패널을 다시 여는 자연스러운 제스처가 그
-    // 노드 재클릭이다. 재클릭=해제 토글을 유지하면 그 길이 없다 — 해제는 빈
-    // 배경 클릭/Escape 의 몫으로 남는다. 2D 는 종전 토글 그대로.
+    // 3D dome — re-clicking a selected node is **re-selection, not deselection**
+    // (2026-08-18, second pass): in the dome the panel's X leaves the selection intact
+    // and only collapses the panel (HomePage `handleDatasheetClose`), so the natural
+    // gesture for reopening a collapsed panel is re-clicking that node. Keeping the
+    // re-click = deselect toggle would remove that route — deselection stays the job of
+    // an empty-background click or Escape. 2D keeps the previous toggle.
     if (action.type === "deselect" && commitClick !== null && commitClick.nodeId !== null && domeInteractive() !== null) {
       onSelect?.(commitClick.nodeId);
       return;
     }
-    // 밀도 게이트 — 빈 공간(노드 미히트) 클릭이 클러스터 칩 위면 확장 토글.
-    // 엣지 선택/바닥 해제보다 우선한다(칩은 명시적 대화형 크롬). 노드 클릭=ego
-    // 포커스 계약은 위 select 분기에서 이미 처리돼 여기 도달하지 않는다.
+    // Density gate — an empty-space click (node miss) over a cluster chip toggles
+    // expansion. It takes priority over edge selection and ground deselection (a chip is
+    // explicit interactive chrome). The node-click = ego-focus contract was already
+    // handled in the select branch above and does not reach here.
     if (
       commitClick &&
       commitClick.nodeId === null &&
@@ -1336,13 +1390,14 @@ export function createTopologyPointerHandlers(refs: PointerHandlerRefs): Topolog
     ) {
       const chipParent = hitTestClusterChip(clickPoint.x, clickPoint.y);
       if (chipParent === EGO_NEIGHBOR_CHIP_ID) {
-        // S2 파트 3a — `이웃 +N` 칩: URL 토글이 아니라 다음 이웃 배치를 점등.
+        // S2 part 3a — the `이웃 +N` chip lights the next neighbour batch rather than toggling the URL.
         onExpandEgoNeighbors?.();
         clearClusterHover();
         return;
       }
-      // 고팬아웃 배치-공개 — `+N 더보기` 칩(합성 id): URL 토글(접기)이 아니라
-      // 그 부모의 다음 배치를 점등. 실제 부모 id 로 해석해 전달.
+      // High-fanout batch reveal — a `+N 더보기` chip (synthetic id) lights that
+      // parent's next batch rather than toggling the URL (collapse). Resolved to the
+      // real parent id before dispatch.
       const moreParent = chipParent === null ? null : parseClusterMoreChipId(chipParent);
       if (moreParent !== null) {
         onExpandClusterBatch?.(moreParent);
@@ -1351,14 +1406,15 @@ export function createTopologyPointerHandlers(refs: PointerHandlerRefs): Topolog
       }
       if (chipParent !== null && onToggleCluster) {
         onToggleCluster(chipParent);
-        // 토글로 상태(접힘↔펼침)가 바뀌었으니 툴팁을 닫는다 — 재호버 시 새 문구.
+        // The toggle changed the state (collapsed ↔ expanded), so the tooltip closes — a re-hover gets fresh copy.
         clearClusterHover();
         return;
       }
     }
-    // P3b — 빈 공간 클릭: 엣지 근접이면 엣지 선택 (엣지 = 1급 객체).
-    // 후보는 양 끝점이 현재 tier 에서 히트 가능한 엣지로 제한 — 안 보이는
-    // 엣지가 클릭되는 계약 위반 방지. 실패 시에만 기존 deselect.
+    // P3b — an empty-space click near an edge selects that edge (edges are first-class
+    // objects). Candidates are limited to edges whose endpoints are both hittable at
+    // the current tier, preventing the contract violation of clicking an invisible edge.
+    // Only on failure does the existing deselect run.
     if (commitClick && commitClick.nodeId === null && clickPoint && onSelectEdge) {
       const hit = hitTestEdges(buildEdgeCandidates(), clickPoint.x, clickPoint.y, 7);
       if (hit) {
@@ -1371,9 +1427,10 @@ export function createTopologyPointerHandlers(refs: PointerHandlerRefs): Topolog
         return;
       }
     }
-    // 엣지만 선택된 상태(노드 포커스 없음)의 바닥 클릭도 해제다 —
-    // resolveClickAction 은 노드 포커스만 보므로 여기서 보강 (사용자
-    // 실보고: "선 클릭했다가 바닥 클릭하면 원래대로 돌아와야").
+    // A ground click with only an edge selected (no node focus) is a deselection too —
+    // `resolveClickAction` looks only at node focus, so it is reinforced here (user
+    // report: "선 클릭했다가 바닥 클릭하면 원래대로 돌아와야" — after clicking a line,
+    // clicking the ground should return things to normal).
     const emptyGroundWithEdgeSelected =
       commitClick !== null && commitClick.nodeId === null && (selectedEdgeRef?.current ?? null) !== null;
     if (action.type === "deselect" || emptyGroundWithEdgeSelected) onPaneClick?.();
@@ -1386,7 +1443,7 @@ export function createTopologyPointerHandlers(refs: PointerHandlerRefs): Topolog
     }
   };
 
-  /** S2 파트 5C — 클러스터 칩 호버 툴팁 해제(드래그/취소/토글 시). */
+  /** S2 part 5C — clear the cluster chip hover tooltip (on drag, cancel or toggle). */
   const clearClusterHover = () => {
     if (hoveredClusterIdRef && hoveredClusterIdRef.current !== null) {
       hoveredClusterIdRef.current = null;
@@ -1395,7 +1452,7 @@ export function createTopologyPointerHandlers(refs: PointerHandlerRefs): Topolog
   };
 
   const handlePointerCancel = (e?: ReactPointerEvent<HTMLCanvasElement>) => {
-    // rank4 터치 핀치줌 — 취소된 터치 포인터 부기(브라우저 제스처 가로채기 등).
+    // rank4 touch pinch zoom — bookkeeping for a cancelled touch pointer (a browser gesture hijack and the like).
     if (e && activeTouchesRef && e.pointerType === "touch") {
       activeTouchesRef.current.delete(e.pointerId);
       if (pinchRef?.current && activeTouchesRef.current.size < 2) pinchRef.current = null;
@@ -1403,9 +1460,9 @@ export function createTopologyPointerHandlers(refs: PointerHandlerRefs): Topolog
     clearEdgeHover();
     clearClusterHover();
     const tokens = readTopologyV2TokensOrNull();
-    // 3D — 진행 중이던 궤도/평면 드래그를 깨끗이 끝낸다(스프링은 정착까지).
-    // 시뮬 핀은 없으므로 아래 2D 핀 정리 블록에 넘기지 않는다(공짜 heat 로
-    // 숨은 2D 레이아웃이 흔들리지 않게).
+    // 3D — cleanly end any orbit or in-plane drag in flight (the spring runs to settle).
+    // There is no simulation pin, so it is not handed to the 2D pin cleanup block below
+    // (keeping free heat from shaking the hidden 2D layout).
     {
       const dome = domeInteractive();
       if (dome) {
@@ -1425,7 +1482,7 @@ export function createTopologyPointerHandlers(refs: PointerHandlerRefs): Topolog
       nodeDragRef.current = null;
       heatRef.current = Math.max(heatRef.current, tokens?.nodeReleaseSettleMs ?? 900);
       dragStartPosRef.current = null;
-      // rank4 — 취소도 "grabbing" 커서를 복원한다.
+      // rank4 — a cancel restores the "grabbing" cursor too.
       if (canvasRef?.current) canvasRef.current.style.cursor = "";
     }
     if (!tokens) {
@@ -1437,31 +1494,33 @@ export function createTopologyPointerHandlers(refs: PointerHandlerRefs): Topolog
   };
 
   const handleWheel = (e: WheelEvent) => {
-    // 관문 계약 — 평 휠은 페이지 것이다. 여기서 `preventDefault` 를 하지
-    // **않는** 것이 요점이라, 어떤 가드보다 먼저 빠져나간다.
+    // Gateway contract — a plain wheel belongs to the page. The point is **not** calling
+    // `preventDefault` here, so it exits before any guard.
     if (wheelIntent === "page-scroll" && !e.ctrlKey) return;
     e.preventDefault();
     const tokens = readTopologyV2TokensOrNull();
     if (!tokens) return;
-    // 트랙패드 글라이드 가드 (소유자 실보고 2026-07-23) — 손가락이 얹힌 채
-    // 흘러나오는 |delta| < 4px 미세 wheel 노이즈는 줌으로 합성하지 않는다.
-    // 이 노이즈가 "엣지에 마우스만 올려도 화면이 움직/흔들림"의 유입로였다.
-    // 핀치(ctrlKey wheel)와 의도적 노치/스크롤은 그대로 통과. preventDefault
-    // 는 유지(페이지 스크롤 유출 방지), 호버 카드도 유지(모션이 없으므로).
+    // Trackpad glide guard (owner report, 2026-07-23) — the |delta| < 4px micro-wheel
+    // noise that leaks out while fingers rest on the pad is not composed into zoom. That
+    // noise was the entry route for "just hovering an edge makes the screen move and
+    // shake". A pinch (ctrlKey wheel) and deliberate notches or scrolls pass through
+    // unchanged. `preventDefault` stays (stopping page-scroll leakage), and the hover
+    // cards stay too (there is no motion).
     const { height: vpH } = viewportRef.current;
     const glideDeltaY = normalizeWheelDeltaY(e.deltaY, e.deltaMode, vpH);
     if (shouldIgnoreWheelGlide(glideDeltaY, e.ctrlKey)) return;
-    // 엣지/클러스터 호버 카드 잔류(패널2/3) — 휠/카메라 모션이 시작되는 순간
-    // 카드는 즉시 사라져야 한다. 카드는 idle 호버에만 앵커되므로, 줌으로
-    // 좌표가 흐르는 동안 pointermove 없이 잔류해 3티어 줌을 관통해 남았다.
-    // 모션의 첫 틱에 dismiss 해 카드가 지도 위에 떠다니지 않게 한다.
+    // Edge and cluster hover cards lingering (panel2/3) — the moment a wheel or camera
+    // motion starts, the card must disappear. A card anchors to an idle hover only, so
+    // while zoom made the coordinates flow it lingered with no pointermove and survived
+    // right through a three-tier zoom. Dismissing on motion's first tick keeps the card
+    // from floating over the map.
     clearEdgeHover();
     clearClusterHover();
     // S3 — a live wheel zoom is interactive input; abandon any programmatic
     // camera tween so the crisp interactive spring owns this gesture.
     if (cameraTweenRef) cameraTweenRef.current = null;
-    // 3D — 줌도 개입이다: 시선 끌기 회전 해제(①) + 진행 중 자세 이동도
-    // 제스처에 넘긴다(카메라 트윈과 같은 중단 계약, ④).
+    // 3D — zoom is intervention too: release the attention spin (①) and hand any pose
+    // move in flight to the gesture (the same interruption contract as the camera tween, ④).
     {
       const dome = domeInteractive();
       if (dome) {
@@ -1514,8 +1573,9 @@ export function createTopologyPointerHandlers(refs: PointerHandlerRefs): Topolog
     cameraTargetRef.current = { tx: afterX, ty: afterY, tscale: newScale };
     if (userDrivenCameraRef) userDrivenCameraRef.current = true;
     dampingRef.current = tokens.cameraDampingDefault;
-    // R4 관성 활강 중단 — 휠 줌이 시작되면 진행 중이던 flick 감속의 잔여 x/y
-    // 속도를 흘리지 않도록 0 으로 잡는다(줌은 타깃 구동이므로 스케일 축은 무관).
+    // R4 momentum-glide interruption — when a wheel zoom starts, the residual x/y
+    // velocity of an in-flight flick deceleration is zeroed so it does not leak (zoom is
+    // target driven, so the scale axis is unaffected).
     if (cameraRef.current.x.velocity !== 0 || cameraRef.current.y.velocity !== 0) {
       cameraRef.current = {
         ...cameraRef.current,
@@ -1527,8 +1587,9 @@ export function createTopologyPointerHandlers(refs: PointerHandlerRefs): Topolog
     // for the scale axis (and pan, since point-to-zoom moves both together)
     // until the NEXT programmatic camera move resets it back to transition.
     cameraAngularFreqRef.current = tokens.cameraSpringAngFreqInteractive;
-    // WCAG 2.3.3 — 휠 줌도 사용자 개시라 위 핀치와 같은 이유로 스냅하지 않는다.
-    // 감속 사용자가 잃는 것은 앱이 **데려가는** 이동뿐이다(ego 다이브·fit·정렬,
+    // WCAG 2.3.3 — a wheel zoom is user-initiated too, so it does not snap, for the same
+    // reason as the pinch above. What a reduced-motion user loses is only the movement
+    // the app **takes them on** (ego dive, fit, arrange —
     // `topology-physics-step.ts#userDrivenCamera`).
   };
 
@@ -1546,7 +1607,7 @@ export function createTopologyPointerHandlers(refs: PointerHandlerRefs): Topolog
     const point = { x: e.clientX - rect.left, y: e.clientY - rect.top };
     const hitNodeId = hitVisibleNode(world, cameraRef.current, tokens, point.x, point.y);
     if (!hitNodeId) {
-      // 빈 자리 — 「여기에 개념 만들기」. 소비처가 없으면 종전대로 no-op.
+      // Empty space — 「여기에 개념 만들기」 (create a concept here). With no consumer it is a no-op, as before.
       if (!onContextMenuPane) return;
       e.preventDefault();
       onContextMenuPane({ x: e.clientX, y: e.clientY });
@@ -1558,19 +1619,21 @@ export function createTopologyPointerHandlers(refs: PointerHandlerRefs): Topolog
   };
 
   /**
-   * ★ **앱 자신의 엣지 판정을 밖에 그대로 내준다** (2026-08-03).
+   * ★ **Expose the app's own edge decision verbatim** (2026-08-03).
    *
-   * 왜: 노드는 `__atlasMap.nodes()` 로 좌표·`draggable` 을 얻어 밖에서 몰 수
-   * 있는데 **엣지는 몰 수 없었다.** 실측 — 곡선 중점 101지점 × 오프셋 3종을
-   * 클릭해도 `selection().edge` 가 계속 null 이었다. 임계가 7px 이고 노드 몸통
-   * 안은 제외되므로, 밖에서 「어디를 눌러야 맞는지」를 추측으로는 못 찾는다.
+   * Why: nodes can be driven from outside through `__atlasMap.nodes()`, which gives
+   * coordinates and `draggable`, but **edges could not be.** Measured — clicking 101
+   * points along a curve's midline across 3 offsets still left `selection().edge`
+   * null. The threshold is 7px and the inside of a node body is excluded, so from
+   * outside there is no way to guess "where do I have to press".
    *
-   * 그 결과 **엣지가 걸린 어떤 변경도 자동 검증이 불가능했다** — 엣지 패널에
-   * 등장/퇴장을 붙이려다 그 벽에 막혀 되돌렸다(2026-08-03).
+   * The result was that **no change involving edges could be verified automatically** —
+   * attaching entry and exit to the edge panel hit that wall and was reverted
+   * (2026-08-03).
    *
-   * 좌표를 새로 계산해 주지 않고 **같은 함수**(`buildEdgeCandidates` +
-   * `hitTestEdges`)를 부른다. 계기가 앱과 다른 식을 쓰면 화면이 아니라 자기
-   * 상상을 재게 되기 때문이다.
+   * It does not recompute the coordinates but calls **the same functions**
+   * (`buildEdgeCandidates` plus `hitTestEdges`). An instrument using a different
+   * formula from the app measures its own imagination rather than the screen.
    */
   const probeEdgeAt = (screenX: number, screenY: number, thresholdPx = 7) =>
     hitTestEdges(buildEdgeCandidates(), screenX, screenY, thresholdPx);

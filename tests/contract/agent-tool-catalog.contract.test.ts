@@ -1,13 +1,16 @@
-// 앱 에이전트의 도구 카탈로그 ↔ MCP 서버 도구 정의 drift 차단.
+// Blocks drift between the app agent's tool catalogue and the MCP server's tool
+// definitions.
 //
-// 원칙: **주는 도구는 이름·인자·효과가 MCP 와 완전히 같다.** 화면·CLI·MCP 세
-// 입구가 같은 답을 내는 것이 이 저장소의 반복 계약(parser 3-way, validator
-// 2-way)이고, 그 문법을 도구 정의에도 적용한다.
+// Principle: **a tool we hand out has exactly the MCP name, arguments, and
+// effects.** Screen, CLI, and MCP giving the same answer is this repository's
+// recurring contract (3-way parser, 2-way validator); the same grammar applies to
+// tool definitions.
 //
-// `mcp/src/index.js` 는 import 하는 순간 stdio 서버로 부팅해 버리므로
-// (`await server.connect(transport)`) 모듈로 불러올 수 없다. 대신 **원문을
-// 읽어** `const TOOLS = [...]` 안의 각 도구 블록에서 이름·인자 키·required 를
-// 뽑아 대조한다. MCP 쪽이 인자를 추가/이름 변경하면 여기서 즉시 깨진다.
+// `mcp/src/index.js` boots a stdio server the moment it is imported
+// (`await server.connect(transport)`), so it cannot be loaded as a module.
+// Instead the **source is read** and each tool block inside `const TOOLS = [...]`
+// yields its name, argument keys, and required list for comparison. Adding or
+// renaming an argument on the MCP side breaks this immediately.
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
@@ -19,10 +22,10 @@ const MCP_SOURCE = readFileSync(
   'utf-8',
 );
 
-/** `const TOOLS = [` 이후만 본다 — 이름이 우연히 겹치는 문자열을 피한다. */
+/** Only look after `const TOOLS = [`, to avoid strings that coincidentally share a name. */
 const TOOLS_START = MCP_SOURCE.indexOf('const TOOLS = [');
 
-/** `open` 위치의 여는 괄호와 짝이 맞는 닫는 괄호 바로 뒤 인덱스. */
+/** Index just past the bracket matching the opening bracket at `open`. */
 function matchBrace(source: string, open: number, openChar: '{' | '['): number {
   const closeChar = openChar === '{' ? '}' : ']';
   let depth = 0;
@@ -62,7 +65,7 @@ interface McpToolShape {
   required: string[];
 }
 
-/** MCP 원문에서 한 도구의 inputSchema 최상위 인자 이름과 required 를 뽑는다. */
+/** Extracts one tool's top-level inputSchema argument names and required list from the MCP source. */
 function readMcpToolShape(toolName: string): McpToolShape {
   const nameAt = MCP_SOURCE.indexOf(`name: '${toolName}',`, TOOLS_START);
   if (nameAt < 0) throw new Error(`MCP 에 없는 도구: ${toolName}`);
@@ -78,8 +81,9 @@ function readMcpToolShape(toolName: string): McpToolShape {
 
   const propertyNames = collectDepthOneKeys(propsBody);
 
-  // required 는 inputSchema 최상위에만 있다. `oneOf: [{ required: ... }]` 같은
-  // selector 분기 안의 required 를 최상위 필수 인자로 오인하지 않는다.
+  // `required` exists only at the top level of inputSchema. A `required` inside a
+  // selector branch such as `oneOf: [{ required: ... }]` must not be mistaken for a
+  // top-level requirement.
   const tail = schema.slice(propsEnd);
   const requiredMatch = findDepthZeroRequired(tail);
   const required = requiredMatch
@@ -120,7 +124,7 @@ function findDepthZeroRequired(source: string): string | null {
   return null;
 }
 
-/** 객체 본문에서 depth 0 인 키 이름만 순서대로 모은다 (문자열·주석 무시). */
+/** Collects depth-0 key names from an object body in order (ignoring strings and comments). */
 function collectDepthOneKeys(body: string): string[] {
   const keys: string[] = [];
   let depth = 0;
@@ -175,10 +179,10 @@ function collectDepthOneKeys(body: string): string[] {
 
 describe('에이전트 도구 카탈로그 ↔ MCP 서버 정의', () => {
   it('추출기 자체가 동작한다 (get_concept 은 slug/uid 중 하나와 body 를 받는다)', () => {
-    // 파서가 조용히 빈 배열을 돌려주면 아래 테스트가 전부 무의미해진다.
+    // If the parser silently returns an empty array, every test below is meaningless.
     const shape = readMcpToolShape('get_concept');
     expect(shape.propertyNames).toEqual(['slug', 'uid', 'body']);
-    // 정확히 하나를 고르는 계약은 MCP JSON Schema 의 oneOf 가 강제한다.
+    // The "exactly one" contract is enforced by the MCP JSON Schema's oneOf.
     expect(shape.required).toEqual([]);
   });
 
@@ -201,7 +205,7 @@ describe('에이전트 도구 카탈로그 ↔ MCP 서버 정의', () => {
   );
 
   it('볼트 밖을 보는 도구는 하나도 주지 않는다', () => {
-    // 코드가 필요한 일은 터미널의 몫이다 — 도구 세트가 그 경계를 구조로 만든다.
+    // Work that needs code belongs to the terminal — the tool set makes that boundary structural.
     const forbidden = [
       'analyze_repo_structure',
       'infer_imports',

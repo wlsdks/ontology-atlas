@@ -1,67 +1,68 @@
 #!/usr/bin/env node
 /**
- * 3D 돔 비용 하네스 — 2026-08-19 사고의 재현 장치.
+ * 3D dome cost harness — the reproduction rig for the 2026-08-19 incident.
  *
- * ## 무엇이 있었나
+ * **What happened.** The 3D view **never fell asleep, even 45 s after the last
+ * input.** Its autonomous rotation (48 s per revolution) sat alone outside the
+ * `model/ambient-sleep.ts` contract and burned **520 ms per second** (half a core)
+ * forever on a 2,000-node vault — 2D in the same state burned 3 ms/s. That is 170×.
+ * And a 3D node drag measured p95 **52.1 ms** (≈19 fps), of which 73% was 2D physics
+ * **that never appears on screen as a single pixel** (a fully assembled dome's draw
+ * coordinates do not depend on world coordinates — `updateDomeFrame`).
  *
- * 3D 보기는 **무입력 45초가 지나도 잠들지 않았다.** 자율 회전(48s/바퀴)이
- * `model/ambient-sleep.ts` 계약 밖에 혼자 남아 있어서, 2,000 노드 볼트에서
- * 초당 **520ms**(코어 절반)를 영구히 태웠다 — 같은 상태의 2D 는 3ms/s 였다.
- * 170배다. 그리고 3D 노드 드래그는 p95 **52.1ms**(≈19fps)였는데, 그 비용의
- * 73%가 **화면에 한 픽셀도 나타나지 않는** 2D 물리였다(완전 조립된 돔의
- * 그리는 좌표는 월드 좌표에 의존하지 않는다 — `updateDomeFrame`).
+ * **Why the eye cannot catch it.** Both defects look normal on screen: the dome
+ * rotates prettily and dragging works, only slowly. A spinning fan and a draining
+ * battery do not appear in a screenshot, and 19 fps on a node drag gets waved off as
+ * "3D is heavy". So measurement decides.
  *
- * ## 왜 눈으로는 못 잡나
+ * **Discipline** (same as `scripts/perf-node-drag.mjs`):
  *
- * 두 결함 다 화면은 «정상» 이다. 돔은 예쁘게 돌고 있고, 드래그도 (느릴 뿐)
- * 동작한다. 팬이 도는 것과 배터리가 닳는 것은 스크린샷에 안 찍히고, 노드
- * 드래그의 19fps 는 「원래 3D 는 무겁지」로 넘어간다. 그래서 계측이 판정한다.
+ * 1. **Real mouse only** — a synthetic pointer is `isTrusted:false` and the grab
+ *    path breaks.
+ * 2. **`headless: false`** — fps measured without the display pipeline does not
+ *    predict a real machine.
+ * 3. **Quote `work` only** (synchronous time inside the rAF callback) — frame
+ *    *intervals* are contaminated by refresh rate.
+ * 4. **Measure the control alongside** — without 2D at the same scale next to it,
+ *    "3D is like that" and "it is broken" are indistinguishable.
  *
- * ## 규율 (scripts/perf-node-drag.mjs 와 같다)
+ * **Windowed or headless** (measured 2026-08-19). The default opens a window. A
+ * window covers the person's screen, and **on macOS it cannot be moved off-screen**
+ * — neither `--window-position=-2400,-2400` nor CDP `Browser.setWindowBounds`
+ * survives; the window server pulls it back on screen (requested -2400,-2400 →
+ * actual 0,33; requested 3000,60 → actual 288,60). "Open it invisibly" is not an
+ * option, so unattended runs and concurrent work use `--headless`.
  *
- * 1. **진짜 마우스만** — 합성 포인터는 `isTrusted:false` 라 잡기 경로가 끊긴다.
- * 2. **`headless: false`** — 표시 파이프라인 없이 잰 fps 는 실기기를 예측 못 한다.
- * 3. **`work`(rAF 콜백 동기 시간)만 인용** — 프레임 «간격» 은 주사율에 오염된다.
- * 4. **대조군을 같이 잰다** — 2D 같은 규모가 옆에 없으면 「3D 라서 그렇다」와
- *    「망가졌다」가 구별되지 않는다.
+ * The same vault (synth=2000, 3D rotating), 3 runs each way:
  *
- * ## 실행 방식 — 창을 띄우느냐 (2026-08-19 실측)
- *
- * 기본은 창을 띄운다. 창이 뜨면 사람 화면을 가리는데, **macOS 에서는 창을 화면
- * 밖으로 뺄 수 없다** — `--window-position=-2400,-2400` 도 CDP
- * `Browser.setWindowBounds` 도 윈도우 서버가 화면 안으로 되돌린다(요청
- * -2400,-2400 → 실제 0,33 · 요청 3000,60 → 실제 288,60). 「보이지 않게 띄우기」는
- * 선택지가 아니라서, 무인 실행이나 동시 작업 중에는 `--headless` 를 쓴다.
- *
- * 같은 볼트(synth=2000, 3D 회전)를 두 방식으로 각 3회 잰 값:
- *
- * | | 프레임/5초 | `work` 중앙 | `work` p95 |
+ * | | Frames / 5 s | `work` median | `work` p95 |
  * |---|---|---|---|
- * | 창 있음 (3D 회전 중) | **600** (=120fps, 이 기계 주사율) | 4.3~4.8ms | 7.4~7.6ms |
- * | `--headless` (3D 회전 중) | **120** (=24fps) | 4.6~4.8ms | 5.0~5.4ms |
- * | `--headless` (3D 유휴) | **600** | ~0 | ~0 |
+ * | Windowed (3D rotating) | **600** (=120 fps, this machine's refresh rate) | 4.3–4.8 ms | 7.4–7.6 ms |
+ * | `--headless` (3D rotating) | **120** (=24 fps) | 4.6–4.8 ms | 5.0–5.4 ms |
+ * | `--headless` (3D idle) | **600** | ~0 | ~0 |
  *
- * - **프레임당 `work` 중앙값은 같다.** map-perf 스킬의 "전이되는 것은 JS 계산
- *   비용뿐"이 그대로 확인된다 — 프레임 하나가 얼마나 비싼지는 헤드리스로도 잰다.
- * - **프레임 «수»는 못 믿는다.** 창이 있으면 주사율에 고정되는데, 헤드리스는
- *   vsync·합성 백프레셔가 없어 부하에 따라 24fps 로도 120fps 로도 나온다
- *   (위 표의 아래 두 줄이 같은 헤드리스인데 5배 차이다). 따라서 **초당
- *   CPU(ms/s)를 두 방식 사이에서 비교하면 안 된다** — 그 값은 프레임 수에
- *   비례하기 때문이다.
- * - 그래서 **유휴 판정은 «일한 프레임 수»로 한다**(`IDLE_BUDGET_BUSY_FRAMES`).
- *   프레임이 몇 개 오든 잠들었으면 그중 0 개가 일하고, 안 잠들었으면 전량이
- *   일한다 — 이 비율만이 실행 방식에 흔들리지 않는다. 실측: 잠든 3D 0/600,
- *   안 잠든 3D 300/300.
- * - `p95` 도 두 방식 사이에서 비교하지 마라 — 표본 수가 다르면 같은 꼬리가
- *   아니다. **한 방식 안에서 전·후**를 비교하는 데 쓴다.
+ * - **Median `work` per frame is the same.** The map-perf skill's "only the JS
+ *   compute cost transfers" is confirmed — how expensive one frame is can be
+ *   measured headless too.
+ * - **Frame *counts* cannot be trusted.** Windowed, they pin to the refresh rate;
+ *   headless there is no vsync or compositor backpressure, so the same run yields
+ *   24 fps or 120 fps depending on load (the bottom two rows above are both headless
+ *   and differ 5×). So **never compare CPU per second (ms/s) across the two modes** —
+ *   that value is proportional to frame count.
+ * - Therefore **the idle verdict counts busy frames** (`IDLE_BUDGET_BUSY_FRAMES`).
+ *   However many frames arrive, asleep means 0 of them do work and awake means all of
+ *   them do — only that ratio is stable across run modes. Measured: sleeping 3D
+ *   0/600, non-sleeping 3D 300/300.
+ * - Do not compare `p95` across modes either — a different sample count is not the
+ *   same tail. Use it to compare **before and after within one mode**.
  *
- * 사용:
+ * Usage:
  *   pnpm build && node scripts/serve-static-export.mjs --port=4173 &
  *   node scripts/perf-dome.mjs [baseUrl] [--synth=2000] [--json] [--headless]
  *
- * 유휴 검사는 앰비언트 휴면 지연(30s)+램프(2s)를 기다려야 하므로 한 번에
- * 약 45초가 든다. `--skip-idle` 로 뺄 수 있지만, **이 하네스가 존재하는
- * 첫째 이유가 그 항목이다.**
+ * The idle check must wait out the ambient-sleep delay (30 s) plus ramp (2 s), so it
+ * costs about 45 s per run. `--skip-idle` removes it, but **that item is the first
+ * reason this harness exists.**
  */
 import { chromium } from "@playwright/test";
 import { rmSync } from "node:fs";
@@ -76,20 +77,21 @@ const SYNTH = Number(getArg("synth", "2000"));
 const HEADLESS = args.includes("--headless");
 const JSON_OUT = args.includes("--json");
 const SKIP_IDLE = args.includes("--skip-idle");
-/** 유휴 관측을 시작하기까지 기다리는 시간 — 지연 30s + 램프 2s + 여유. */
+/** Wait before starting the idle observation — 30 s delay + 2 s ramp + margin. */
 const SLEEP_WAIT_MS = Number(getArg("sleep-wait-ms", "38000"));
 const IDLE_WINDOW_MS = Number(getArg("idle-window-ms", "5000"));
 
 /**
- * 예산.
+ * Budgets.
  *
- * **유휴는 «일한 프레임 수»로 잰다** — 초당 CPU 는 주사율에 비례해 실행 방식이
- * 바뀌면 5배씩 움직이지만(위 「실행 방식」 표), 「잠들었나」는 0 이냐 전량이냐로
- * 갈린다. 실측: 잠든 3D 0/300, 안 잠든 3D 300/300. 상한 5 는 램프가 걸치는
- * 경계 프레임 몇 개만 허용하는 값이다.
+ * **Idle is measured in busy frames** — CPU per second is proportional to refresh
+ * rate and swings 5× when the run mode changes (see the mode table above), while
+ * "did it fall asleep" splits cleanly between 0 and all. Measured: sleeping 3D
+ * 0/300, non-sleeping 3D 300/300. The ceiling of 5 allows only the handful of
+ * boundary frames the ramp straddles.
  *
- * 드래그 p95 는 2D 대조군(2.7~3.6ms)의 여유 배수. **한 실행 방식 안에서만**
- * 전·후를 비교한다.
+ * The drag p95 is a generous multiple of the 2D control (2.7–3.6 ms). Compare before
+ * and after **within one run mode only**.
  */
 const IDLE_BUDGET_BUSY_FRAMES = Number(getArg("idle-budget-frames", "5"));
 const DRAG_BUDGET_P95_MS = Number(getArg("drag-budget", "20"));
@@ -106,7 +108,7 @@ const stat = (xs) => {
   };
 };
 
-/** rAF 콜백을 감싸 «우리 코드가 한 프레임에 붙잡고 있던 시간» 을 모은다. */
+/** Wraps the rAF callback to collect how long our code held one frame. */
 const WRAP = () => {
   window.__work = [];
   if (!window.__wrapped) {
@@ -130,7 +132,7 @@ async function openMap(page, view3d) {
       if (on) localStorage.setItem("atlas.appearance.view3d", "on");
       else localStorage.removeItem("atlas.appearance.view3d");
     } catch {
-      // 프라이빗 모드 — 3D 를 못 켜면 아래 dome() 이 null 이라 그 자리에서 드러난다.
+      // Private mode — if 3D cannot be enabled, dome() below returns null and it surfaces there.
     }
   }, view3d);
   await page.goto(`${BASE}/ko/topology?synth=${SYNTH}&guides=off&e2e=1`, { waitUntil: "load" });
@@ -138,7 +140,7 @@ async function openMap(page, view3d) {
   await page.waitForTimeout(5000);
 }
 
-/** 무입력 창의 초당 CPU(ms) — 「잠들었나」의 유일한 정직한 답. */
+/** CPU per second (ms) over a no-input window — the only honest answer to "did it fall asleep". */
 async function measureIdle(page) {
   await page.evaluate(() => {
     window.__work = [];
@@ -156,7 +158,7 @@ async function measureIdle(page) {
   }, IDLE_WINDOW_MS);
 }
 
-/** 노드를 끌고, **정말 노드를 끌었는지 확인한 뒤** 콜백 시간을 돌려준다. */
+/** Drags a node and returns the callback times **after confirming a node was really dragged**. */
 async function measureNodeDrag(page) {
   const box = await page.locator("canvas").first().boundingBox();
   const target = await page.evaluate(() => {
@@ -168,7 +170,7 @@ async function measureNodeDrag(page) {
       .nodes()
       .filter((n) => n.draggable && !n.hidden && n.x > 120 && n.y > 120 && n.x < vw - 120 && n.y < vh - 120);
     if (cands.length === 0) return { error: "끌 수 있는 노드가 화면 안에 없다" };
-    // 이웃이 많을수록 부하가 크다 — 가장 나쁜 경우를 재려면 위 티어를 고른다.
+    // More neighbours means more load — pick the higher tier to measure the worst case.
     const rank = { project: 0, domain: 1, capability: 2, element: 3 };
     cands.sort((a, b) => (rank[a.kind] ?? 9) - (rank[b.kind] ?? 9));
     return { id: cands[0].id, kind: cands[0].kind, label: cands[0].label, x: cands[0].x, y: cands[0].y };
@@ -182,8 +184,8 @@ async function measureNodeDrag(page) {
   const sy = box.y + target.y;
   await page.mouse.move(sx, sy);
   await page.mouse.down();
-  await page.mouse.move(sx + 12, sy + 8); // 히스테리시스를 넘겨 잡기를 확정
-  // ★ 사후 확인 — 배경을 밀고 있으면 그 측정은 무효다.
+  await page.mouse.move(sx + 12, sy + 8); // Cross the hysteresis threshold to commit the grab
+  // Post-hoc check — if this is panning the background, the measurement is void.
   const grabbed = await page.evaluate(() => window.__atlasMap?.interaction());
   for (let leg = 0; leg < 6; leg += 1) {
     const t = (leg + 1) / 6;
@@ -196,7 +198,7 @@ async function measureNodeDrag(page) {
 }
 
 const ctx = await chromium.launchPersistentContext(PROFILE, {
-  // 기본은 창을 띄운다 — 표시 파이프라인이 있어야 실기기와 같은 경로를 탄다.
+  // Windowed by default — the display pipeline is what makes this take the same path as a real machine.
   headless: HEADLESS,
   viewport: HEADLESS ? { width: 1440, height: 900 } : null,
   deviceScaleFactor: 2,
@@ -218,8 +220,9 @@ for (const view3d of [true, false]) {
   const drag = await measureNodeDrag(page);
   let idle = null;
   if (!SKIP_IDLE) {
-    // **커서를 캔버스 밖으로 뺀다.** 캔버스 위에 두면 자율 회전이 그 이유로
-    // 멎어서, 「앰비언트 휴면이 재웠다」와 「커서가 세웠다」가 구별되지 않는다.
+    // **Move the cursor off the canvas.** Left over the canvas, the autonomous
+    // rotation stops for that reason, and "ambient sleep put it to sleep" becomes
+    // indistinguishable from "the cursor stopped it".
     await page.mouse.move(2, 2);
     await page.waitForTimeout(SLEEP_WAIT_MS);
     idle = await measureIdle(page);

@@ -5,11 +5,11 @@ import { EXIT_WINDOW_MS, useHeldValue } from '@/shared/lib/use-presence';
 import { Surface } from './surface';
 
 /**
- * `Surface` 가 **대신 기억해 주는 것들**의 계약.
+ * The contract for what `Surface` **remembers on every caller's behalf**.
  *
- * 넷 다 이 저장소가 실측으로 배운 것이라, 「기억해서 매번 챙긴다」가 아니라
- * 「프리미티브가 진다」가 돼야 하는 것들이다. 그래서 여기서 못박는다 —
- * 계약이 코드에만 있고 테스트에 없으면 다음 리팩터가 조용히 지운다.
+ * All four came out of measurements taken in this repo, which is why the primitive carries
+ * them instead of each caller remembering to. They are pinned here because a contract that
+ * lives only in the code and not in a test is one the next refactor deletes silently.
  */
 describe('Surface', () => {
   beforeEach(() => vi.useFakeTimers());
@@ -24,8 +24,9 @@ describe('Surface', () => {
   });
 
   it('① 퇴장 창 — `open=false` 에 즉시 사라지지 않는다', () => {
-    // 즉시 언마운트하면 1프레임 소멸이다. 2026-07-28 실측: 사용자가 누른 목적물이
-    // delta 13.25 @17ms 로 사라지고 «결과일 뿐인» 지도가 217ms 이징을 받았다.
+    // Unmounting immediately means the surface vanishes in one frame. Measured 2026-07-28:
+    // the thing the user clicked disappeared at delta 13.25 @17ms while the map — merely the
+    // consequence — got a 217ms eased transition.
     const { rerender } = render(<Surface open>내용</Surface>);
     expect(screen.getByText('내용')).toBeInTheDocument();
 
@@ -37,8 +38,9 @@ describe('Surface', () => {
   });
 
   it('② 퇴장은 자기 이름의 클래스다 — 등장 클래스를 되감지 않는다', () => {
-    // CSS 애니메이션은 `animation-name` 이 그대로면 duration/direction 이 바뀌어도
-    // **재시작하지 않는다**. 그래서 `reverse` 로 되감은 퇴장은 조용히 하드컷이 된다.
+    // A CSS animation does **not** restart while `animation-name` is unchanged, even if the
+    // duration or direction changes. An exit built by playing the entrance in `reverse`
+    // therefore turns into a silent hard cut.
     const { rerender } = render(<Surface open>내용</Surface>);
     expect(screen.getByText('내용')).toHaveClass('topology-chrome-in');
 
@@ -51,7 +53,8 @@ describe('Surface', () => {
   });
 
   it('③ 나가는 프레임은 못 눌린다 — inert + pointer-events-none', () => {
-    // 없으면 사라지는 중인 표면이 클릭을 먹고, 사용자는 «눌렀는데 엉뚱한 게 됐다» 를 겪는다.
+    // Without this the exiting surface swallows the click, and the user gets a result they
+    // did not press for.
     const { rerender } = render(<Surface open>내용</Surface>);
     const entered = screen.getByText('내용');
     expect(entered).not.toHaveAttribute('inert');
@@ -64,7 +67,8 @@ describe('Surface', () => {
   });
 
   it('④ 상태를 밖에서 읽을 수 있다 — 검사 가능한 표면', () => {
-    // 밖에서 구분할 수 없는 상태는 밖에서 검사할 수 없다(지도 훅이 배운 그것).
+    // A state nothing outside can distinguish is a state nothing outside can test — the same
+    // lesson the map hooks learned.
     const { rerender } = render(<Surface open>내용</Surface>);
     expect(screen.getByText('내용')).toHaveAttribute('data-surface-state', 'entered');
     act(() => rerender(<Surface open={false}>내용</Surface>));
@@ -90,8 +94,8 @@ describe('Surface', () => {
   });
 
   it('등장이 트리거 방향에서 자란다 — transform-origin 을 받는다', () => {
-    // 중앙에서 태어나는 팝오버는 모션석의 반려 사유다: 누른 자리와 나타나는 자리가
-    // 다르면 인과가 끊긴다.
+    // A popover born in the centre of the screen is a rejection by the motion seat: when what
+    // you pressed and what appears are in different places, the causal link is broken.
     render(
       <Surface open origin="top right">
         내용
@@ -102,9 +106,10 @@ describe('Surface', () => {
 
   it('data-* 를 통과시킨다 — 밖에서 이 표면을 집을 수 있어야 한다', () => {
     /*
-     * ⚠️ 이 단언이 없으면 **타입이 조용히 통과시킨다.** TypeScript 는 하이픈이 든
-     * JSX 속성을 검사하지 않아서, `Surface` 가 안 받아도 `tsc` 는 아무 말 없고
-     * 값만 버려진다. 2026-08-03 에 엣지 패널을 전환하면서 실제로 그럴 뻔했다.
+     * ⚠️ Without this assertion **the type system waves it through.** TypeScript does not
+     * check hyphenated JSX attributes, so if `Surface` stopped forwarding them, `tsc` would
+     * say nothing and the value would simply be dropped. That nearly happened while migrating
+     * the edge panel on 2026-08-03.
      */
     render(
       <Surface open data-testid="the-surface">
@@ -116,10 +121,11 @@ describe('Surface', () => {
 
   it('⑤ 큰 표면은 밝기만 쓴다 — `motion="overlay"`', () => {
     /*
-     * `globals.css` 의 `.map-overlay-in` 주석이 이유를 적어 뒀다: **화면의 큰
-     * 부분을 차지하는 표면이 움직이면 화면 자체가 흔들린 것으로 읽힌다.** 이
-     * 문법이 프리미티브에 없어서 전면 상세는 `map-overlay-in` 을 손으로 붙이고
-     * 나가는 길은 못 붙였고, 전폭 서랍·스크림 모달은 아무것도 못 붙였다.
+     * The `.map-overlay-in` comment in `globals.css` states the reason: **when a surface
+     * covering a large part of the screen moves, it reads as the screen itself shaking.**
+     * Because that vocabulary was missing from the primitive, the full-detail view attached
+     * `map-overlay-in` by hand and had nothing for the exit, and the full-width drawer and
+     * scrim modal had nothing at all.
      */
     const { rerender } = render(
       <Surface open motion="overlay">
@@ -176,8 +182,8 @@ describe('useHeldValue — 퇴장 창 동안 내용이 비지 않는다', () => 
   }
 
   it('값이 사라져도 퇴장 창 동안 직전 값을 그린다', () => {
-    // 이게 없으면 표면은 예쁘게 사라지는데 그 안이 텅 빈다 — 등장/퇴장을 붙이려던
-    // 것이 오히려 더 나쁜 화면이 된다.
+    // Without this the surface exits gracefully while its contents are empty — the entrance
+    // and exit that were meant to improve things make the screen worse.
     const { rerender } = render(<Holder model="엣지 A→B" />);
     expect(screen.getByTestId('body')).toHaveTextContent('엣지 A→B');
 
@@ -193,13 +199,13 @@ describe('useHeldValue — 퇴장 창 동안 내용이 비지 않는다', () => 
 
   it('★ 정체성이 매 렌더 바뀌는 객체를 키로 붙든다 — 안 그러면 무한 루프다', () => {
     /*
-     * 첫 판은 `value !== held` 로 비교했고, 지도 엣지 패널에 붙이자마자
-     * **React #301(무한 재렌더)로 지도가 통째로 죽었다.** 소비처의 모델이
-     * `useMemo` 인데 정체성이 매 렌더 새로 만들어졌기 때문이다.
-     * 이 테스트가 그 형태를 그대로 재현한다 — 매 렌더 새 객체를 넘긴다.
+     * The first version compared with `value !== held`, and the moment it was attached to the
+     * map's edge panel **React #301 (infinite re-render) took the whole map down**: the
+     * consumer's model came from `useMemo` but its identity was rebuilt on every render. This
+     * test reproduces that shape exactly, passing a fresh object each render.
      */
     function Unstable({ id }: { id: string | null }) {
-      const model = id ? { id, label: `모델 ${id}` } : null; // ← 매 렌더 새 객체
+      const model = id ? { id, label: `모델 ${id}` } : null; // a new object every render
       const held = useHeldValue(model, id);
       return (
         <Surface open={id !== null}>
@@ -208,7 +214,7 @@ describe('useHeldValue — 퇴장 창 동안 내용이 비지 않는다', () => 
       );
     }
     const { rerender } = render(<Unstable id="a" />);
-    // 같은 id 로 여러 번 재렌더해도 루프가 안 난다(났으면 여기서 터진다)
+    // Re-rendering repeatedly with the same id must not loop — it would blow up right here.
     act(() => rerender(<Unstable id="a" />));
     act(() => rerender(<Unstable id="a" />));
     expect(screen.getByTestId('body')).toHaveTextContent('모델 a');
@@ -226,8 +232,8 @@ describe('useHeldValue — 퇴장 창 동안 내용이 비지 않는다', () => 
   });
 
   it('값이 바뀌는 동안 한 프레임도 비지 않는다', () => {
-    // effect 로 붙들면 한 프레임 늦어 그 사이 자식이 null 을 받는다.
-    // 렌더 중 조정이라 그 프레임이 존재하지 않는다.
+    // Holding the value in an effect would be one frame late, and the child would receive null
+    // in between. Adjusting during render means that frame never exists.
     const { rerender } = render(<Holder model="A" />);
     act(() => rerender(<Holder model={null} />));
     act(() => rerender(<Holder model="B" />));

@@ -162,7 +162,8 @@ describe('TabBar', () => {
     );
 
     expect(screen.getByRole('tab', { name: /개요/ })).toHaveAttribute('title', '개념 수');
-    // 숫자가 없으면 설명할 숫자도 없다 — 빈 슬롯에 툴팁이 붙으면 없는 배지를 약속한다.
+    // No count means nothing to explain: a tooltip on an empty slot promises a
+    // badge that is not there.
     expect(screen.getByRole('tab', { name: /신선도/ })).not.toHaveAttribute('title');
   });
 });

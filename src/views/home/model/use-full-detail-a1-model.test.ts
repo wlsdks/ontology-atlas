@@ -3,15 +3,16 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { KnowledgeGraphEdge, KnowledgeGraphNode } from "@/entities/knowledge-graph";
 
 /**
- * D4 회귀 가드 — "닫힌 전체 상세가 클릭마다 그래프를 순회하던" 결함.
+ * Regression guard for "a closed full-detail card traversed the graph on every
+ * click".
  *
- * 실측(2026-07-28, 격리 Chromium · dogfood 볼트): 노드 클릭 1회에
- * `buildConnections` 가 11회 돌았고 그중 9회가 **화면에 없는** 전체 상세
- * 카드 몫이었다(깊이 3 BFS + 이웃 행마다 도는 엣지 전수 순회 포함).
+ * Measured 2026-07-28 (isolated Chromium, dogfood vault): one node click ran
+ * `buildConnections` 11 times, 9 of them for a full-detail card **not on
+ * screen** — including a depth-3 BFS and a full edge scan per neighbour row.
  *
- * 이 테스트는 **횟수로** 잠근다 — 절대 ms 는 기계마다 달라 플레이크가 되지만
- * "닫혀 있으면 0회"는 어느 기계에서나 참이다. `open` 게이트를 지우면
- * 즉시 실패한다.
+ * This test locks the **count**, not milliseconds: absolute ms differ per
+ * machine and flake, while "closed means zero" is true on every machine.
+ * Removing the `open` gate fails it immediately.
  */
 
 const groupsSpy = vi.fn(() => ({
@@ -66,8 +67,8 @@ const nodeFocus = {
   mentionedInSlug: null,
 } as never;
 
-// 안정된 참조 — 훅의 memo 계약은 입력 identity 가 안정할 때 성립한다
-// (HomePage 쪽 실제 입력도 전부 useMemo/useCallback 파생이다).
+// Stable references: the hook's memo contract holds only when input identity is
+// stable, and HomePage's real inputs are all useMemo/useCallback derivations.
 const insight = { nodes, edges };
 const changedSlugs: ReadonlySet<string> = new Set<string>();
 const onSaveExplanation = () => undefined;

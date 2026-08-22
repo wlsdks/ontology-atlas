@@ -6,42 +6,44 @@ import { describe, expect, it } from "vitest";
 import { stripComments } from "../../scripts/lib/static-surface-census.mjs";
 
 /**
- * radiogroup **행동** 래칫 — role 이 약속한 키보드가 실재하는가 (2026-08-15).
+ * radiogroup **behaviour** ratchet — does the keyboard the role promises actually
+ * exist? (2026-08-15)
  *
- * ## 왜 이 게이트가 필요한가 — 값 축은 이미 「종료 선언」됐다
+ * **Why this gate is needed — the value axis already declared completion.**
+ * `control-adoption-ratchet` declared **"zero hand-styled places"** on 2026-08-06.
+ * Yet this inventory found **11 hand-written radiogroups outside the primitive plus
+ * 9 groups expressing exclusive selection through `aria-pressed` = 18 groups**, with
+ * **0 roving implementations and 0 onKeyDown — 100%**. Almost all 11 call
+ * `controlClass`, so **they are green under the value-axis ratchet**.
  *
- * `control-adoption-ratchet` 은 2026-08-06 에 **「손으로 스타일을 적은 자리 0」
- * 종료 선언**을 했다. 그런데 이번 전수에서 프리미티브 밖 손 radiogroup
- * **11그룹 + `aria-pressed` 로 배타 선택을 표현한 9그룹 = 18그룹**이 나왔고,
- * **roving 구현 0 · onKeyDown 0 — 100%** 였다. 그 11그룹은 거의 다
- * `controlClass` 를 부르므로 **값 축 래칫에서는 초록**이다.
+ * > **The value layer is fully adopted; the behaviour layer has never been
+ * > checked.**
  *
- * > **값 층은 완전 채택됐고, 행동 층은 한 번도 검사된 적이 없다.**
+ * **Why neither lint nor axe catches it** (both measured):
  *
- * ## 왜 lint 도 axe 도 못 잡나 (둘 다 실측했다)
+ * - **lint** — a missing roving implementation is **a missing class**.
+ *   `no-restricted-syntax` cannot find the absence of something.
+ * - **axe** — it runs static DOM rules only. A `radiogroup > radio` structure is
+ *   perfectly valid, and arrow-key movement is **behaviour**, so no rule exists.
  *
- * - **lint** — roving 의 부재는 **클래스의 부재**다. `no-restricted-syntax` 는
- *   있는 것을 찾지 못하는 것을 찾지 못한다.
- * - **axe** — 정적 DOM 룰만 돈다. `radiogroup > radio` 구조는 완벽히 유효하고,
- *   화살표 이동은 **행동**이라 룰 자체가 없다.
+ * **What is counted — behaviour reduced to an import.** The moment
+ * `useRovingRadioGroup` becomes **the single implementation of the behaviour**,
+ * "is the behaviour present" reduces to "does it call that hook". That is the
+ * second reason for this structure.
  *
- * ## 그래서 무엇을 세나 — 행동을 import 로 환원한다
+ * Places using the primitive (`SegmentedControl`) never hand-write a `role`, so
+ * they are outside this scanner's view — **what is caught here is only places that
+ * hand-wired a role**, and those pass only by calling the hook in the same file.
  *
- * `useRovingRadioGroup` 이 **행동의 단일 구현**이 되는 순간, 「행동이 있는가」가
- * 「그 훅을 부르는가」로 환원된다. 그게 이 구조를 고른 두 번째 이유다.
- *
- * 프리미티브(`SegmentedControl`)를 쓰는 자리는 애초에 `role` 을 손으로 안 쓰므로
- * 이 스캐너의 시야 밖이다 — 즉 **여기 걸리는 것은 손으로 role 을 건 자리뿐**이고,
- * 그 자리는 같은 파일에서 훅을 불러야 통과한다.
- *
- * 등재는 면제가 아니다: 등재된 파일도 **훅 호출이 실재해야** 통과한다. 이름만
- * 적어 두고 배선을 안 하면 빨개진다(Dialog 래칫의 「장부가 실측보다 후하면
- * 빨개진다」 승계).
+ * Registration is not an exemption: a registered file passes only if **the hook
+ * call really exists**. Writing the name down without wiring it turns red
+ * (inherited from the Dialog ratchet's "if the ledger is more generous than the
+ * measurement, it turns red").
  */
 
 const ROOT = process.cwd();
 
-/** 행동의 단일 구현. 이 파일과 프리미티브는 세는 대상이 아니다. */
+/** The single implementation of the behaviour. This file and the primitive are not counted. */
 const HOOK = "useRovingRadioGroup";
 const EXEMPT_FILES = new Set([
   "src/shared/lib/use-roving-radio-group.ts",
@@ -49,13 +51,15 @@ const EXEMPT_FILES = new Set([
 ]);
 
 /**
- * **등재** — 그릇이 프리미티브의 두 캐노니컬로 수렴하지 않아 훅을 직접 입는
- * 자리. 면제가 아니라 **「이 그릇은 변형으로 못 만든다」는 기록**이다.
+ * **Registered** — places that wear the hook directly because their container does
+ * not converge onto either of the primitive's two canonical forms. Not an exemption
+ * but **a record that "this container cannot be made from a variant"**.
  *
- * ⚠️ **훅을 입으면 이 스캐너의 시야에서 빠진다** — role 이 훅의 `groupProps` 에서
- * 나오므로 파일에 `role="radiogroup"` 리터럴이 남지 않는다. 설계상 맞다(폴리싱할
- * 손 role 이 없다). 그래서 이 목록은 **강제가 아니라 기록**이고, 채택이 조용히
- * 되돌아가는 것은 아래 `HOOK_ADOPTION_FLOOR` 가 막는다.
+ * ⚠️ **Wearing the hook removes a place from this scanner's view** — the role comes
+ * from the hook's `groupProps`, so no `role="radiogroup"` literal remains in the
+ * file. That is correct by design (there is no hand-written role left to polish).
+ * So this list is **a record, not enforcement**, and `HOOK_ADOPTION_FLOOR` below is
+ * what stops adoption being quietly rolled back.
  */
 const REGISTERED: ReadonlyArray<readonly [file: string, why: string]> = [
   ["src/widgets/app-settings-menu/ui/AppearancePickers.tsx", "격자 미리보기 타일 — shape:'tile' + 부모/자식으로 갈린 활성 잉크"],
@@ -64,15 +68,17 @@ const REGISTERED: ReadonlyArray<readonly [file: string, why: string]> = [
   ["src/widgets/atlas-git-panel/ui/CommitDetail.tsx", "tone:'secondary' + 「눌린 칩의 인디고를 덮지 마라」 조건부 보더"],
   ["src/views/docs-vault/ui/parts/DocsSidebarBody.tsx", "bg-canvas 우물 · Chip 아이템 · Tooltip 래퍼 · 켜진 칩만 라벨"],
   /*
-   * ⚠️ 아래 다섯은 「체계」석 판정에서 **이주 대상**이었다. 실측이 그 배정을
-   * 뒤집었다 — 다섯 다 **값 층에 없는 hover 잉크**를 지고 있어서, 이주하면
-   * 비활성 항목의 hover 피드백이 사라진다. 이 저장소의 hover 는 축이 아니라
-   * 자리마다 손으로 쓰는 것이고(전수: `controlClass` 호출 **312곳**이 hover 를
-   * 손으로 쓴다 — 칩 88 · link 74 · row 42 · card 34 · icon 28 · pill 24 ·
-   * segment 19), 같은 「비활성 세그먼트 hover」 역할에 세 자리가 **서로 다른
-   * 잉크**를 쓴다(`text-primary` · `text-secondary` · `topology-v2-panel-text-primary`).
+   * ⚠️ The five below were **migration targets** in the 체계 seat's verdict.
+   * Measurement overturned that assignment — all five carry **hover ink that does not
+   * exist in the value layer**, so migrating them would remove hover feedback on
+   * inactive items. In this repository hover is hand-written per place rather than an
+   * axis (inventory: **312 `controlClass` call sites** hand-write hover — chip 88 ·
+   * link 74 · row 42 · card 34 · icon 28 · pill 24 · segment 19), and three places use
+   * **different ink** for the same "inactive segment hover" role (`text-primary` ·
+   * `text-secondary` · `topology-v2-panel-text-primary`).
    *
-   * 그래서 그릇 수렴은 **hover 축 판정 뒤**로 미룬다. 행동은 지금 다 붙였다.
+   * So container convergence waits **until the hover axis is decided**. The behaviour
+   * is fully attached now.
    */
   ["src/views/ontology-insights/ui/tabs/MeaningGapSection.tsx", "비활성 칩 hover — 값 층에 칩 hover 가 없다"],
   ["src/features/ontology-blocks/ui/BlockImportModule.tsx", "p-1/gap-1 인셋 + 비활성 세그먼트 hover"],
@@ -80,32 +86,36 @@ const REGISTERED: ReadonlyArray<readonly [file: string, why: string]> = [
 ];
 
 /**
- * **훅 호출 «자리» 수의 바닥.** 위 등재가 강제가 아니므로 이 수가 대신 방향을
- * 잠근다 — 줄면 누군가 행동 층을 걷어낸 것이다(늘리는 것은 자유).
+ * **The floor on the number of hook call *sites*.** Since the registration above
+ * is not enforcement, this number locks the direction instead — a drop means
+ * somebody removed the behaviour layer (raising it is free).
  *
- * ⚠️ **파일 수가 아니라 자리 수를 센다.** 처음엔 파일로 셌는데 프로브가 그
- * 구멍을 잡았다: `AppearancePickers` 는 그룹이 둘이라 **한쪽 배선을 걷어내도
- * 파일은 여전히 훅을 부르므로** 초록이었다. 래칫의 단위가 결함의 단위보다
- * 굵으면 그만큼 못 본다.
+ * ⚠️ **Sites are counted, not files.** Counting files first left a hole a probe
+ * caught: `AppearancePickers` has two groups, so **removing the wiring from one
+ * still leaves the file calling the hook** and it stayed green. Wherever the
+ * ratchet's unit is coarser than the defect's unit, that much goes unseen.
  *
- * 오늘 **11자리 = 등재 10파일**(그중 `AppearancePickers` 만 그룹이 둘이라 2) 이다.
- * 프리미티브 파일 자신은 면제 목록이라 이 수에 안 들어가고, 「프리미티브가 훅을
- * 쓰는가」는 공회전 방지 시험이 따로 단언한다 — 두 자리에서 각각 잠근다.
+ * Today it is **11 sites across 10 registered files** (only `AppearancePickers` has
+ * two groups). The primitive's own file is on the exemption list and does not count
+ * here; whether the primitive uses the hook is asserted separately by the idling
+ * guard — locked in two places.
  */
 const HOOK_ADOPTION_FLOOR = 11;
 
 /**
- * **부채 장부** — 아직 이주도 훅 착용도 안 한 손 radiogroup. 늘 수 없고, 갚으면
- * 줄을 지운다. 각 줄의 처분은 「체계」석 판정(docs/DECISIONS.md 2026-08-15 (8))
- * 에 있다.
+ * **The debt ledger** — hand-written radiogroups that have neither migrated nor put
+ * the hook on. It cannot grow; repaying one deletes its row. Each row's disposition
+ * is in the 체계 seat's verdict (docs/DECISIONS.md 2026-08-15, entry 8).
  */
 const DEBT: ReadonlyArray<readonly [file: string, count: number]> = [
   /*
-   * ✅ **비어 있다 (2026-08-15).** 프리미티브 밖에서 손으로 건
-   * `role="radiogroup"` 이 **0** 이고, 배타 선택을 `aria-pressed` 로 표현하던
-   * 9그룹도 전부 재문법됐다. 행동 층 결함 18/18 → **0/18.**
+   * ✅ **Empty (2026-08-15).** Hand-wired `role="radiogroup"` outside the primitive
+   * is **0**, and the 9 groups that expressed exclusive selection through
+   * `aria-pressed` have all been re-expressed. Behaviour-layer defects went 18/18 →
+   * **0/18.**
    *
-   * 남은 것은 **그릇**의 수렴이고 그건 결함이 아니라 설계 과제다(위 등재).
+   * What remains is **container** convergence, which is a design task rather than a
+   * defect (see the registration above).
    */
 ];
 
@@ -123,20 +133,21 @@ function walk(dir: string, out: string[] = []): string[] {
 }
 
 /**
- * `role="radiogroup"` 어커런스를 파일별로 센다.
+ * Counts `role="radiogroup"` occurrences per file.
  *
- * ⚠️ 따옴표 변종을 둘 다 본다 — 2026-08-05 에 아이콘 래칫이 작은따옴표만 보다가
- * 저장소의 **73%** 를 못 본 채 초록이었다. 그 교훈이 아래 커버리지 단언이다.
+ * ⚠️ Both quote variants are matched — on 2026-08-05 the icon ratchet matched single
+ * quotes only and stayed green while blind to **73%** of the repository. That lesson
+ * is the coverage assertion below.
  */
 const ROLE_RE = /role=\{?["']radiogroup["']\}?/g;
 
 const HOOK_CALL_RE = new RegExp(`${HOOK}\\s*(?:<[^>]*>)?\\s*\\(`);
-/** 같은 패턴의 전역판 — 파일 안의 **자리 수**를 센다. */
+/** The global version of the same pattern — counts **sites** within a file. */
 const HOOK_CALL_RE_G = new RegExp(`${HOOK}\\s*(?:<[^>]*>)?\\s*\\(`, "g");
 
 function scan() {
   const found = new Map<string, number>();
-  /** 훅을 부르는 **모든** 파일 — role 리터럴 유무와 무관하게 센다. */
+  /** **Every** file that calls the hook — counted regardless of any role literal. */
   const hookFiles = new Set<string>();
   let hookCallSites = 0;
   let scanned = 0;
@@ -150,17 +161,18 @@ function scan() {
       scanned += 1;
       if (EXEMPT_FILES.has(rel)) continue;
       /*
-       * ⚠️ **주석을 먼저 지운다.** 켜는 날 이 스캐너가 `settings-primitives.tsx`
-       * 를 위반으로 잡았는데, 그 자리는 **「종전엔 이랬다」고 설명하는 주석 안의
-       * 인용문**이었다. 이주를 문서로 남긴 것이 그 이주의 위반으로 세인다면,
-       * 다음 사람은 근거를 안 적는 쪽을 고르게 된다.
+       * ⚠️ **Strip comments first.** On the day it was switched on, this scanner caught
+       * `settings-primitives.tsx` as a violation — the match was **a quotation inside a
+       * comment explaining "this is how it used to be"**. If documenting a migration
+       * counts as a violation of that migration, the next person chooses not to record the
+       * evidence.
        *
-       * 헬퍼는 정적 표면 census 와 **같은 것**을 쓴다 — 스캐너를 두 벌 만들면
-       * 둘이 어긋나는 쪽이 기본값이 된다.
+       * The helper is **the same one** the static surface inventory uses — building two
+       * scanners makes them drift by default.
        */
       const src = stripComments(readFileSync(file, "utf8"));
-      // 제네릭 인자(`useRovingRadioGroup<T>({…})`)를 건너뛴다 — 리터럴 매칭은
-      // 타입 인자 하나에 조용히 죽는다.
+      // Skip generic arguments (`useRovingRadioGroup<T>({…})`) — literal matching dies
+      // silently on a single type argument.
       const hookCalls = [...src.matchAll(HOOK_CALL_RE_G)].length;
       if (hookCalls > 0) {
         hookFiles.add(rel);
@@ -189,12 +201,13 @@ describe("radiogroup 행동 래칫 — role 이 약속한 키보드가 실재하
       expect(statSync(path.join(ROOT, file)).isFile(), `${file} 이 실재하지 않는다`).toBe(true);
     }
     /*
-     * 면제 둘의 **전제가 아직 참인지** 확인한다. 면제는 「이 파일은 세지
-     * 않는다」인데, 그 근거는 「role 을 훅이 소유하고 프리미티브가 그것을
-     * 입는다」이다. 그 구조가 깨지면 면제가 구멍이 된다.
+     * Checks that **the premise of the two exemptions is still true**. The exemption
+     * says "this file is not counted", and its evidence is "the hook owns the role and
+     * the primitive wears it". If that structure breaks, the exemption becomes a hole.
      *
-     * ⚠️ 프리미티브 본문에는 `radiogroup` 문자열이 **없다** — 있으면 오히려
-     * 행동이 두 구현이 됐다는 신호다. role 은 훅의 `groupProps` 가 낸다.
+     * ⚠️ The primitive's body contains **no** `radiogroup` string — if it did, that
+     * would signal the behaviour had grown a second implementation. The role is emitted
+     * by the hook's `groupProps`.
      */
     const hook = stripComments(
       readFileSync(path.join(ROOT, "src/shared/lib/use-roving-radio-group.ts"), "utf8"),
@@ -239,9 +252,10 @@ describe("radiogroup 행동 래칫 — role 이 약속한 키보드가 실재하
 
   it("행동 층 채택이 뒷걸음치지 않는다 — 훅 호출 자리 수의 바닥", () => {
     /*
-     * 훅을 입은 자리는 `role` 리터럴을 잃어 위 스캔의 시야 밖이다. 그러면
-     * 「채택을 조용히 걷어내는 것」을 볼 눈이 없어진다 — 이 바닥이 그 눈이다.
-     * 늘리는 것은 자유이고 줄이면 빨개진다(래칫의 방향은 언제나 한쪽이다).
+     * A place wearing the hook loses its `role` literal and leaves the scan above's
+     * view, which removes any eye on "adoption being quietly rolled back" — this floor
+     * is that eye. Raising it is free; lowering it turns red (a ratchet always runs one
+     * way).
      */
     expect(
       census.hookCallSites,
@@ -260,13 +274,14 @@ describe("radiogroup 행동 래칫 — role 이 약속한 키보드가 실재하
 
   it("표기 커버리지 — 따옴표 한 종류만 보고 있지 않다", () => {
     /*
-     * 「공집합이 아니다」와 「전집합을 본다」는 다르다(2026-08-05 아이콘 래칫
-     * 판례). 정규식이 두 표기를 실제로 매칭하는지 합성으로 증명한다 — 오늘
-     * 저장소에 한 표기만 남아 있어도 다른 표기가 들어오면 잡혀야 한다.
+     * "Not an empty set" and "seeing the whole set" are different (the 2026-08-05 icon
+     * ratchet set the precedent). This proves synthetically that the regex really
+     * matches both notations — even if only one notation exists in the repository today,
+     * the other must be caught when it arrives.
      */
     const probe = `role="radiogroup" role='radiogroup' role={"radiogroup"}`;
     expect([...probe.matchAll(ROLE_RE)]).toHaveLength(3);
-    // 주석 안의 인용은 안 센다 — 이주를 문서로 남긴 것이 위반이 되면 안 된다.
+    // Quotations inside comments are not counted — documenting a migration must not become a violation.
     const commented = stripComments(`/** 종전엔 role="radiogroup" 을 손으로 걸었다 */\nconst x = 1;`);
     expect([...commented.matchAll(ROLE_RE)]).toHaveLength(0);
     expect(census.doubleQuoted + census.singleQuoted).toBe(

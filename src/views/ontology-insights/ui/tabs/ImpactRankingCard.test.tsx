@@ -79,8 +79,8 @@ describe("ImpactRankingCard", () => {
     const links = screen.getAllByTestId("insights-impact-row-link");
     expect(links).toHaveLength(2);
     expect(links[0]).toHaveAttribute("href", "/ontology/?node=element%3Atoken");
-    // 막대는 aria-hidden 이라 링크 이름이 유일한 접근 경로다 — 여기서 수가
-    // 빠지면 스크린리더 사용자에겐 카드가 제목 목록으로만 남는다.
+    // The bar is aria-hidden, so the link name is the only accessible route — dropping the numbers
+    // here leaves a screen-reader user with the card as nothing but a list of titles.
     expect(links[0]).toHaveAttribute("aria-label", "Token — 3 direct, 9 including indirect");
     expect(screen.getByText("9")).toBeInTheDocument();
   });
@@ -168,8 +168,8 @@ describe("ImpactRankingCard", () => {
     );
 
     const links = screen.getAllByTestId("insights-impact-row-link");
-    // 1행은 항상 칸의 머리, 2행은 넓은 화면에서만 둘째 칸의 머리다 —
-    // 이 두 리셋이 빠지면 각 칸 위에 잘린 표처럼 선이 하나 뜬다.
+    // Row 1 is always a column head; row 2 is the second column's head only on a wide screen —
+    // without these two resets a line appears above each column like a truncated table.
     expect(links[0].className).toContain("border-t-0");
     expect(links[1].className).toContain("lg:border-t-0");
   });
@@ -191,8 +191,8 @@ describe("ImpactRankingCard", () => {
     it("문서 없는 개념은 기본 목록에 없고 접힌 계층에만 있다", () => {
       renderWithEvidence();
 
-      // 이 카드의 존재 이유 — 위험도를 묻는 자리의 상위가 테스트 파일 이름으로
-      // 차지 않는다. 규모는 토글 라벨이 그대로 말하므로 숨긴 게 아니다.
+      // The reason this card exists — the top of a slot asking about risk is not filled with test
+      // file names. The scale is stated verbatim by the toggle label, so nothing is hidden.
       expect(screen.queryByText("Integration Test")).toBeNull();
       expect(
         screen.getByRole("button", { name: "Show 193 names without a document" }),
@@ -209,8 +209,8 @@ describe("ImpactRankingCard", () => {
         "aria-label",
         "Integration Test — 15 concepts wrote this name down",
       );
-      // 같은 15가 개념 계층에서는 "다시 확인할 곳"이었다 — 계층별 캡션이
-      // 갈리지 않으면 이 카드는 테스트를 위험으로 부른다.
+      // The same 15 meant "places to re-check" in the concept layer — without per-layer captions
+      // this card calls a test a risk.
       expect(screen.getByText(/The number here is not risk/)).toBeInTheDocument();
     });
 
@@ -220,11 +220,11 @@ describe("ImpactRankingCard", () => {
 
       const badge = screen.getByTestId("evidence-only-badge");
       expect(badge).toHaveTextContent("No document");
-      // 앰버 확장 금지(헌장) — 이 배지는 한 화면에 수십 개가 뜬다.
+      // No amber expansion (the charter) — dozens of these badges appear on one screen.
       expect(badge.className).toContain("--color-text-quaternary");
       expect(badge.className).not.toContain("amber");
-      // 「Integration Test」는 서로 다른 두 파일이 같은 이름으로 줄어든다 —
-      // 참조 원문이 없으면 어느 쪽인지 화면이 답하지 못한다.
+      // "Integration Test" is two different files collapsing to one name — without the reference
+      // string the screen cannot answer which one it is.
       expect(screen.getByText("mcp/src/integration.test.mjs")).toBeInTheDocument();
     });
 

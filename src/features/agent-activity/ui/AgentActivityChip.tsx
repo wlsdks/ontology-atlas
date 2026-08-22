@@ -124,23 +124,23 @@ export function AgentActivityChip({
   onOpenNode,
 }: {
   suppressed?: boolean;
-  /** 오른쪽 인앱 ACP가 이미 아는 현재 상태. 파일 폴링 전에도 같은 칩을 갱신한다. */
+  /** The current state the in-app ACP on the right already knows. Updates the same chip before file polling. */
   liveWork?: AgentLiveWorkInput | null;
   /**
-   * 알림함이 열리고 닫힐 때 알린다.
+   * Reports when the notification box opens and closes.
    *
-   * ## 왜 바깥이 알아야 하나 (2026-08-17 소유자 지적: *"알림이 위로 덮어야지?"*)
+   * Why the outside needs to know (owner report 2026-08-17: *"알림이 위로 덮어야지?"* — shouldn't
+   * the notification cover what's above?): the utility lane this chip lives in is `z-20` and
+   * therefore **creates a stacking context.** So giving the notification box `z-30` makes that 30
+   * valid **only inside the lane**, and the right-hand tool tiles outside it (same `z-20`, but later
+   * in the DOM and therefore winning) drew on top of it.
    *
-   * 이 칩이 사는 유틸 레인은 `z-20` 이라 **쌓임 맥락을 만든다.** 그래서 알림함에
-   * `z-30` 을 줘도 그 30은 레인 **안에서만** 유효하고, 레인 밖의 오른쪽 도구
-   * 타일들(같은 `z-20` 인데 DOM 상 뒤에 있어서 이긴다)이 알림함 위에 그려졌다.
-   *
-   * 레인을 늘 올려 두면 안 된다 — 막(`--z-map-scrim`, 25)이 덮어야 할 때 레인이
-   * 막 위로 삐져나온다. 그래서 **열려 있는 동안만** 올린다. 알림함은 바깥을
-   * 누르거나 Escape 로 스스로 닫히므로 올라간 상태가 오래 남지 않는다.
+   * The lane must not be raised permanently — the scrim (`--z-map-scrim`, 25) must be able to cover
+   * it. So it is raised **only while open**. The notification box closes itself on an outside press
+   * or Escape, so the raised state does not last long.
    */
   onOpenChange?: (open: boolean) => void;
-  /** 이미 지도 위라면 route remount 없이 같은 HomePage의 선택 상태를 갱신한다. */
+  /** Already on the map: updates the same HomePage selection state without a route remount. */
   onOpenNode?: (slug: string) => void;
 } = {}) {
   const t = useTranslations('agentActivity');
@@ -156,8 +156,8 @@ export function AgentActivityChip({
   useEffect(() => {
     onOpenChange?.(open);
   }, [open, onOpenChange]);
-  // 언마운트될 때(데이터시트가 열려 스택이 물러날 때)도 닫힘을 알린다 —
-  // 안 알리면 레인이 올라간 채로 굳는다.
+  // Also report closed on unmount (when a datasheet opens and the stack recedes) — without it the
+  // lane freezes in its raised state.
   useEffect(() => () => onOpenChange?.(false), [onOpenChange]);
 
   const close = useCallback(
@@ -171,8 +171,8 @@ export function AgentActivityChip({
     [],
   );
 
-  // transient-surface 계약(설정 기어·걸어온 길과 동일): dim 없는 self-closing
-  // 앵커 팝오버, 자기 Escape 를 소유해 전역 Esc 사다리와 이중 발화하지 않는다.
+  // The transient-surface contract (same as the settings gear and the trail): a self-closing anchored
+  // popover with no dim, owning its own Escape so it does not double-fire with the global Esc ladder.
   useEffect(() => {
     if (!open) return;
     const handlePointerDown = (event: MouseEvent) => {
@@ -196,10 +196,10 @@ export function AgentActivityChip({
   const showBell =
     (feed.notificationsEnabled && feed.notifications.length > 0) || feed.workReceipts.length > 0;
   const showStatus = feed.showStatus;
-  // 스택이 물러난 동안(데이터시트 조사 중)은 **언마운트한다** — 스택은 opacity-0
-  // 로만 사라지므로 남겨 두면 보이지 않는 채 클릭·포커스 가능한 컨트롤이 된다.
+  // While the stack has receded (during a datasheet investigation) it **unmounts** — the stack
+  // disappears by `opacity-0` alone, so leaving it makes an invisible but clickable, focusable control.
   if (suppressed) return null;
-  // 말할 것도 없고 열 것도 없으면 자리를 차지하지 않는다.
+  // With nothing to say and nothing to open, it takes up no space.
   if (!showStatus && !showBell) return null;
 
   const relative = (at: number) => format.relativeTime(new Date(at), feed.nowMs);
@@ -244,7 +244,7 @@ export function AgentActivityChip({
         <div
           className={cn(
             CHROME_STATUS_CHIP_CLASS,
-            'absolute right-0 top-[calc(100%+8px)] min-w-0',
+            'absolute right-0 top-[calc(100%+8px)] w-max min-w-0 max-w-[min(var(--git-setup-measure),calc(100vw-var(--chrome-inset)*2))]',
           )}
           data-agent-activity-status-slot="utility-row-below"
           data-writing={feed.writing ? 'true' : 'false'}
@@ -510,7 +510,7 @@ export function AgentActivityChip({
   );
 }
 
-/** 갈래 → 문구 키. 갈래가 늘면 여기 한 곳만 는다. */
+/** Kind → copy key. A new kind grows this one place only. */
 const EVENT_LABEL_KEY: Readonly<Record<AgentNotificationKind, string>> = {
   'task-start': 'event.taskStart',
   'task-end': 'event.taskEnd',
@@ -520,15 +520,16 @@ const EVENT_LABEL_KEY: Readonly<Record<AgentNotificationKind, string>> = {
   'vault-problem': 'event.vaultProblem',
 };
 
-/** 이름을 아는 작업 알림의 문구 — 상태 칩과 같은 문법(「claude-code 작업 끝」). */
+/** Copy for a work notification whose agent is known — same grammar as the status chip. */
 const EVENT_LABEL_KEY_WITH_AGENT: Readonly<Partial<Record<AgentNotificationKind, string>>> = {
   'task-start': 'event.taskStartAgent',
   'task-end': 'event.taskEndAgent',
 };
 
 /**
- * 한 줄은 **2행 고정**이다 — 제목이 길든 짧든, 세부가 있든 없든 같은 리듬으로
- * 읽힌다(치수 규칙성: 반복 세트에서 높이가 글자 수로 정해지면 격자가 무너진다).
+ * A row is **fixed at two lines** — long title or short, with details or without, it reads with the
+ * same rhythm (dimensional regularity: in a repeated set, height decided by character count destroys
+ * the grid).
  */
 function NotificationRow({
   item,
@@ -544,7 +545,7 @@ function NotificationRow({
 
   const detail = useMemo(() => {
     if (item.counts) {
-      // 0인 갈래는 그리지 않는다 — 「삭제 0」은 정보가 아니라 소음이다.
+      // A kind at zero is not drawn — "0 deletions" is noise, not information.
       const parts: string[] = [];
       if (item.counts.added > 0) parts.push(t('summaryAdded', { count: item.counts.added }));
       if (item.counts.edited > 0) parts.push(t('summaryEdited', { count: item.counts.edited }));
@@ -619,7 +620,7 @@ function NotificationRow({
           )
         ) : null}
       </div>
-      {/* 세부가 없어도 이 줄은 자리를 지킨다 — 선택적 절이 줄 수를 바꾸지 않는다. */}
+      {/* This line holds its place even with no details — an optional clause must not change the line count. */}
       <p className="min-w-0 truncate text-caption text-[color:var(--color-text-tertiary)]">
         {detail ? `${detail} · ${age}` : age}
       </p>

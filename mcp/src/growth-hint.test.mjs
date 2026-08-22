@@ -173,12 +173,13 @@ test('buildFindEvidenceZeroHitsGrowthHint — no near matches → add_concept sc
   });
 });
 
-// ── 한글 vault 슬러그 제안 (감사 2026-07-25) ────────────────────────────────
+// ── Korean vault slug suggestions (audit 2026-07-25) ───────────────────────
 
 test('한글 제목이 untitled 로 뭉개지지 않는다', () => {
   const hint = buildFindEvidenceZeroHitsGrowthHint({ title: '인증 도메인' });
-  // 회귀 전: `[^a-z0-9]` 치환이 한글을 전부 지워 'untitled' 가 나왔고, 두 번째
-  // 한글 개념에서 슬러그가 충돌했다. `init --locale=ko` 가 기본 지원하는 경로다.
+  // Before the fix: the `[^a-z0-9]` replacement erased Korean entirely, yielding
+  // 'untitled', and the second Korean concept collided on the slug.
+  // `init --locale=ko` supports this path by default.
   assert.notEqual(hint.exampleCall.args.slug, 'untitled');
   assert.equal(hint.exampleCall.args.slug, '인증-도메인');
 });

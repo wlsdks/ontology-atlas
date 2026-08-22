@@ -9,20 +9,20 @@ import { Button, buttonVariants } from "@/shared/ui/button";
 import { cn } from "@/shared/lib/cn";
 
 /**
- * 로케일 segment 안에서 404. NextIntlClientProvider 가 layout.tsx 에 마운트되어
- * 있으므로 useTranslations 사용 가능. root not-found.tsx 는 [locale] 외부 라우트
- * 진입 시 last-resort 영어 fallback 으로 남겨둔다.
+ * A 404 inside a locale segment. `NextIntlClientProvider` is mounted in layout.tsx, so
+ * `useTranslations` works here. The root `not-found.tsx` stays as the last-resort English fallback
+ * for routes outside `[locale]`.
  *
- * router 는 `@/i18n/navigation` 의 locale-aware 버전을 사용 — `router.push('/')`
- * 가 자동으로 현재 locale prefix 를 보존해 ko 사용자가 `/` 가 아닌 `/ko/` 로
- * 라우팅. `next/navigation` 의 raw router 는 cross-locale 이동 (locale-switch)
- * 처럼 의도적으로 prefix 를 무시할 때만 사용 (`.claude/rules/architecture.md`).
+ * The router is the locale-aware one from `@/i18n/navigation` — `router.push('/')` preserves the
+ * current locale prefix, so a Korean user routes to `/ko/` rather than `/`. The raw router from
+ * `next/navigation` is used only for deliberately cross-locale moves such as the locale switch
+ * (`.claude/rules/architecture.md`).
  */
 export default function LocaleNotFound() {
   const router = useRouter();
   const t = useTranslations("notFound");
 
-  // 모바일 BottomTabBar 가 동시에 보이면 카드의 3가지 출구가 흐려진다.
+  // With the mobile BottomTabBar visible at the same time, the card's three exits lose their clarity.
   useEffect(() => {
     document.body.setAttribute("data-no-tabbar", "true");
     return () => {
@@ -67,23 +67,25 @@ export default function LocaleNotFound() {
           {t("title")}
         </h1>
         {/*
-         * `break-keep` — 루트 not-found 와 같은 문단 · 같은 처방 (2026-08-12 실측
-         * 「바뀌었|을」, 실폭 382px). 두 404 는 쌍둥이라 한쪽만 고치면 어긋난다.
+         * `break-keep` — the same paragraph and the same prescription as the root not-found
+         * (measured 2026-08-12: 「바뀌었|을」 at a real width of 382px). The two 404s are twins, so
+         * fixing one alone makes them diverge.
          */}
         <p className="mt-3 break-keep text-body leading-body text-[color:var(--color-text-secondary)]">
           {t("body")}
         </p>
         <div className="mt-5 flex flex-col gap-2">
-          {/* 세 출구 = 표준 버튼의 3변형(primary/outline/ghost). 손으로 쓴
-              rounded-full 방언은 채운 인디고 위 잉크가 `--color-text-primary`
-              (합성 4.42:1, AA 미달)였고 호버가 opacity 방언이었다 — 관문이 이미
-              쓰는 `<Button>` 문법으로 정규화 (2026-08-04 체계석). */}
+          {/* Three exits = three variants of the standard button (primary/outline/ghost). The
+              hand-written rounded-full dialect used `--color-text-primary` on filled indigo
+              (composite 4.42:1, below AA) and an opacity dialect for hover — normalized onto the
+              `<Button>` grammar the gateway already uses (2026-08-04). */}
           <Button type="button" variant="primary" onClick={openSearchOnHome}>
             <Search size={ICON_SIZE.md} />
             {t("findByProject")}
           </Button>
-          {/* raw buttonVariants 는 base 의 border-transparent 와 변형 보더가 둘 다 남아
-              CSS 소스 순서가 투명을 이긴다(실측) — Button 컴포넌트처럼 cn 으로 병합한다. */}
+          {/* Raw `buttonVariants` leaves both the base `border-transparent` and the variant's border,
+              and CSS source order lets transparent win (measured) — merge through `cn` as the Button
+              component does. */}
           <Link href="/" className={cn(buttonVariants({ variant: "outline" }))}>
             {t("home")}
           </Link>

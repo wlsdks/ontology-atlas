@@ -12,7 +12,7 @@ import { cn } from "@/shared/lib/cn";
 interface Props {
   projectSlug?: string | null;
   className?: string;
-  /** 섹션의 aria-label override. 미지정 시 i18n default. */
+  /** Overrides the section's aria-label. Unset falls back to the i18n default. */
   label?: string;
 }
 

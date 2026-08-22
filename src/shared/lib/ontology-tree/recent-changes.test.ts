@@ -42,9 +42,9 @@ describe("isWithinRecentWindow", () => {
   });
 
   it("허용 창(24h) 밖의 미래만 제외한다 — C-3 계약 갱신", () => {
-    // NOW = 2026-07-21T12:00Z. +12h 는 세션 중 생성으로 간주 → 포함.
+    // NOW = 2026-07-21T12:00Z. +12h counts as created during the session.
     expect(isWithinRecentWindow("2026-07-22T00:00:00.000Z", NOW, 7)).toBe(true);
-    // +25h 는 진짜 skew → 제외.
+    // +25h is real clock skew, so it is excluded.
     expect(isWithinRecentWindow("2026-07-22T13:00:00.000Z", NOW, 7)).toBe(false);
   });
 
@@ -154,7 +154,7 @@ describe("selectRecentVaultDocs", () => {
     expect(selectRecentVaultDocs([doc("old", "2025-01-01T00:00:00.000Z")], NOW)).toEqual([]);
   });
 });
-/** C-3 (Guardian 실증) — 세션 중 생성된 문서(스냅샷보다 미래 mtime)는 "오늘". */
+/** A document created during the session — mtime later than the snapshot — is "today". */
 describe("future-tolerance (session-created docs)", () => {
   const NOW = Date.parse("2026-07-21T12:00:00Z");
   it("스냅샷 이후 1시간 뒤 생성 문서도 최근에 포함된다", () => {
@@ -190,7 +190,7 @@ describe("computeAdaptiveRecentChanges (M-8 — 렌즈 창 적응화)", () => {
   });
 
   it("7일이 과반이면 3일 → 1일로 좁힌다", () => {
-    // 6일 전 것이 대부분 — 7d 는 100%, 3d 는 25%
+    // Mostly 6 days old: 100% pass at 7d, 25% at 3d.
     const nodes = [node("a", "a"), node("b", "b"), node("c", "c"), node("d", "d")];
     const fresh = new Map([
       ["a", iso(0.5)],

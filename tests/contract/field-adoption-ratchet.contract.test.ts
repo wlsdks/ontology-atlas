@@ -4,22 +4,25 @@ import path from "node:path";
 import { describe, expect, it } from "vitest";
 
 /**
- * 폼 채택 래칫 — **프리미티브 층 밖의 raw 폼 원소는 상한을 넘지 못한다.**
+ * Form adoption ratchet — **raw form elements outside the primitive layer cannot
+ * exceed the ceiling.**
  *
- * ## 왜 (2026-08-15 「체계」석 비준, docs/DECISIONS.md)
+ * **Why** (ratified by the 체계 seat 2026-08-15, docs/DECISIONS.md). A behaviour
+ * layer now exists (`Input`/`Textarea`/`Checkbox` in src/shared/ui). Existing direct
+ * `fieldClass` call sites are **not debt** (they comply with the value layer, and a
+ * ledger declared closed is not reopened). This ratchet enforces one thing: **raw
+ * form elements in a new file are 0 from day one** — so that when an agent assembles
+ * from this system alone, the primitive carries the name enforcement and the error
+ * wiring (aria-invalid, describedby, role=alert).
  *
- * 행동 층(`Input`/`Textarea`/`Checkbox` — src/shared/ui)이 생겼다. 기존
- * fieldClass 직접 호출 현장은 **부채가 아니다**(값 층 준수 — 종료 선언된
- * 장부를 다시 열지 않는다). 이 래칫이 강제하는 것은 하나다: **새 파일의 raw
- * 폼 원소는 첫날부터 0** — 에이전트가 이 시스템만으로 조립할 때 이름 강제와
- * 오류 배선(aria-invalid·describedby·role=alert)을 프리미티브가 지게 만든다.
+ * `type="checkbox"` is at **0 everywhere** after migration (6 places → Checkbox),
+ * radio was already 0, and range has one settings Slider registered with its
+ * evidence.
  *
- * `type="checkbox"` 는 이주가 끝나 **전면 0** 이고(6곳→Checkbox), radio 는
- * 원래 0, range 는 settings 의 Slider 하나가 근거와 함께 등재돼 있다.
- *
- * 사정거리: `src/shared/ui/` 는 제외 — 프리미티브 층은 네이티브 원소의 정당한
- * 집이고, 그 층의 규격 변경은 design.md 「규격을 바꾸려면」 목록이 지킨다.
- * dialog-adoption 과 같은 전수 워킹(손 목록 금지) · 주석 제거 후 계수.
+ * Reach: `src/shared/ui/` is excluded — the primitive layer is the legitimate home
+ * of native elements, and spec changes to that layer are guarded by design.md's
+ * "to change the spec" list. Same exhaustive walk as dialog-adoption (no hand
+ * lists), counted after comments are stripped.
  */
 
 const ROOT = process.cwd();
@@ -30,7 +33,7 @@ function stripComments(source: string): string {
     .replace(/(^|[^:])\/\/.*$/gm, "$1");
 }
 
-/** 여는 태그를 중괄호 깊이로 끊는다 — 다행(多行) 태그 대응(아이콘 래칫과 동일). */
+/** Terminates an opening tag by brace depth, handling multi-line tags (same as the icon ratchet). */
 function openingTag(source: string, from: number): string {
   let depth = 0;
   let quote: string | null = null;
@@ -47,9 +50,9 @@ function openingTag(source: string, from: number): string {
 }
 
 interface FieldScan {
-  /** 텍스트류(<input> 기본형·<textarea>) 파일별 수. */
+  /** Per-file counts of text-family elements (plain `<input>`, `<textarea>`). */
   text: Map<string, number>;
-  /** checkbox·radio·range 파일별 수. */
+  /** Per-file counts of checkbox, radio, and range. */
   special: Map<string, number>;
 }
 
@@ -87,8 +90,10 @@ function scanProduction(): FieldScan {
 }
 
 /**
- * 텍스트류 상한 — 2026-08-15 창립 전수(38곳/25파일). **부채가 아니라 상한**이다:
- * 기존 현장은 값 층 준수라 갚을 의무가 없고, 늘지만 못한다. 줄면 상한도 내린다.
+ * The text-family ceiling — the founding inventory of 2026-08-15 (38 places across
+ * 25 files). **A ceiling, not debt**: existing sites comply with the value layer and
+ * carry no obligation to repay; they simply cannot grow. If they shrink, the ceiling
+ * comes down with them.
  */
 const TEXT_CAP: ReadonlyArray<readonly [file: string, count: number]> = [
   ["src/features/docs-vault-local/ui/WebManualConnectPanel.tsx", 1],
@@ -116,9 +121,11 @@ const TEXT_CAP: ReadonlyArray<readonly [file: string, count: number]> = [
 ];
 
 /**
- * 특수형 등재 — 근거 없이는 못 는다. checkbox 는 이주 완료로 전면 0,
- * radio 0. range 하나는 Slider 승격 **반려**(소비자 1 — 재개 조건: 설정 밖
- * 두 번째 range 소비자가 생기는 PR, 그때 `w-28` 라벨 결합을 푼다)의 산물이다.
+ * Registered special types — they cannot grow without evidence. checkbox is 0
+ * everywhere after migration, radio is 0. The single range is the product of a
+ * **rejected** promotion to Slider (1 consumer; the condition for revisiting is a PR
+ * introducing a second range consumer outside settings, at which point the `w-28`
+ * label coupling is unwound).
  */
 const SPECIAL_REGISTERED: ReadonlyArray<readonly [file: string, count: number, why: string]> = [
   [
@@ -180,7 +187,7 @@ describe("폼 채택 래칫", () => {
     expect(stale).toEqual([]);
   });
 
-  /* ── 상주 프로브 (/gate-probe: 통과는 증거가 아니다) ── */
+  /* ── Resident probes (/gate-probe: passing is not evidence) ── */
   it("프로브: 분류·주석·다행 태그가 전부 옳게 계수된다", () => {
     const probe = (body: string): FieldScan => {
       const acc: FieldScan = { text: new Map(), special: new Map() };
@@ -191,9 +198,9 @@ describe("폼 채택 래칫", () => {
     expect(probe("<textarea rows={3} />").text.get("probe.tsx")).toBe(1);
     expect(probe('<input\n  type="checkbox"\n  checked={a ? b : c}\n/>').special.get("probe.tsx")).toBe(1);
     expect(probe('<input type="range" />').special.get("probe.tsx")).toBe(1);
-    // type 무지정 input 은 텍스트류다.
+    // An input with no type is text-family.
     expect(probe("<input value={v} />").text.get("probe.tsx")).toBe(1);
-    // 주석 속 언급은 세지 않는다.
+    // Mentions inside comments are not counted.
     expect(probe('// <input type="text" /> 를 설명\nconst a = 1;').text.size).toBe(0);
   });
 });

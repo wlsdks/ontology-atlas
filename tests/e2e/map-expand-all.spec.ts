@@ -2,33 +2,38 @@ import { expect, test } from "@playwright/test";
 import { seedFirstRunSeen } from "./first-run-seed";
 
 /**
- * **「모두 펼치기」가 주장한 수를 실제로 드러내는가** (2026-08-13 걷기에서 승격).
+ * **Does "expand all" actually reveal the count it claims** (promoted from the
+ * 2026-08-13 walkthrough).
  *
- * `__atlasMap.chips()` 는 「칩이 24개 있다고 주장하는데 그리는 것은 1개였다」는
- * 전례 때문에 만든 관측 창구인데, 이 스펙 전까지 **소비자가 0** 이었다 — 검증
- * 하려고 만든 계기를 아무도 읽지 않으면 그 전례는 언제든 돌아온다.
+ * `__atlasMap.chips()` is the observation window built after the precedent of
+ * "claiming 24 chips while drawing 1", and until this spec it had **0 consumers** —
+ * an instrument built for verification that nobody reads lets that precedent return
+ * at any time.
  *
- * 재는 것 셋: ① 펼치면 보이는 노드가 주장한 자식 수만큼 늘고 chips 가
- * expanded/shownChildren 로 같은 말을 한다 ② 펼쳐진 자식들이 서로 겹치지
- * 않는다(반지름 합 기준 0쌍) ③ 같은 바가 「접기」로 되돌린다.
+ * Three things measured: ① expanding increases the visible nodes by the claimed
+ * child count and chips reports the same through expanded/shownChildren ② expanded
+ * children do not overlap each other (0 pairs closer than the sum of their radii)
+ * ③ the same bar reverses it as "collapse".
  *
- * 펼침 바는 DOM 이 아니라 캔버스에 그려지므로 좌표로 누른다 — 선택 후 카메라가
- * 움직이니 **선택 뒤에 좌표를 다시 받는다**(처음 좌표로 누르면 빗나간다, 실측).
- * 바의 y 오프셋은 줌을 따라 커지므로(다이브 후 -52→-75 실측) 고정값이
- * 아니라 **화면 반지름 + 32** 로 셈한다. 바가 이사가면 이 스펙이 큰 소리로
- * 죽고, 그때 오프셋 식을 함께 고친다.
+ * The expand bar is drawn on the canvas rather than in the DOM, so it is clicked by
+ * coordinate — and since the camera moves after selection, **the coordinates are
+ * re-read after selecting** (clicking the original coordinates misses, measured).
+ * The bar's y offset grows with zoom (measured -52 → -75 after a dive), so it is
+ * computed as **screen radius + 32** rather than a fixed value. If the bar moves,
+ * this spec dies loudly and the offset formula is fixed with it.
  */
 /**
- * 배치가 멈출 때까지 — **좌표가 프레임 사이에 안 변할 때**.
+ * Waits for layout to settle — **until coordinates stop changing between frames.**
  *
- * ⚠️ 왜 필요한가 (2026-08-17, 내가 만든 회귀를 고치며 배운 것). 고정 1.6초
- * 대기를 「수가 맞을 때까지」 폴로 바꿨더니 CI 에서 접기가 실패했다(기대 36,
- * 실제 50). 수는 맞는 순간 바로 통과하는데 **카메라와 노드는 아직 움직이는
- * 중**이라, 그 틈에 잰 클릭 좌표가 클릭이 도착할 때는 이미 낡아 빈 곳을
- * 눌렀다. 고정 대기가 우연히 해 주던 일이 이것이었다.
+ * ⚠️ Why it is needed (learned 2026-08-17 while fixing a regression introduced
+ * here). Replacing a fixed 1.6s wait with polling "until the count matches" made
+ * collapse fail in CI (expected 36, got 50). The count passes the instant it
+ * matches, but **the camera and nodes are still moving**, so click coordinates
+ * measured in that window were stale by the time the click arrived and landed on
+ * empty space. That is the work the fixed wait had been doing by accident.
  *
- * 그래서 「수」와 「자리」를 따로 기다린다 — 수는 무엇이 드러났나이고, 자리는
- * 다음 클릭이 어디로 갈 것인가다.
+ * So count and position are awaited separately — the count is what was revealed, the
+ * position is where the next click will land.
  */
 async function settleLayout(page: import("@playwright/test").Page) {
   const snapshot = () =>
@@ -89,9 +94,9 @@ test("모두 펼치기는 주장한 수를 드러내고, 접기로 되돌린다"
   const selected = await nodePos();
   await page.mouse.click(selected!.px, selected!.py - (selected!.r + 32));
   /*
-   * ⚠️ 고정 1.6초 뒤 **재시도 없는** 수 비교였다 — 펼침이 아직 안 끝난
-   * 기계에서는 수가 안 맞아 그냥 터진다. 값이 도달할 때까지 기다린다
-   * (2026-08-17 검사 전수조사).
+   * ⚠️ This used to be a count comparison **with no retry** after a fixed 1.6s — on a
+   * machine where the expansion had not finished, the count simply did not match and
+   * it failed. It now waits for the value to arrive (full check audit, 2026-08-17).
    */
   await expect
     .poll(async () => (await visibleCount()) - before, {
@@ -103,7 +108,7 @@ test("모두 펼치기는 주장한 수를 드러내고, 접기로 되돌린다"
   expect(chipAfter!.expanded).toBe(true);
   expect(chipAfter!.shownChildren, "chips 가 화면과 다른 말을 한다").toBe(chipBefore!.claimedCount);
 
-  // 펼쳐진 자식끼리 겹침 0 — 반지름 합보다 가까운 쌍이 없다.
+  // Zero overlap among expanded children — no pair is closer than the sum of their radii.
   const overlapPairs = await page.evaluate(() => {
     const m = (window as unknown as { __atlasMap: { nodes: () => Array<{ hidden: boolean; x: number; y: number; radius: number }> } }).__atlasMap;
     const nodes = m.nodes().filter((n) => !n.hidden && n.radius > 0);
@@ -119,8 +124,9 @@ test("모두 펼치기는 주장한 수를 드러내고, 접기로 되돌린다"
   });
   expect(overlapPairs, "펼쳐진 노드가 서로 겹쳤다").toBe(0);
 
-  // 같은 바가 이제 「접기」다 — 눌러서 원상 복귀까지 잰다.
-  // 좌표를 재기 전에 배치가 멈춰야 한다(위 `settleLayout` 머리말).
+  // The same bar is now "collapse" — press it and measure the return to the original
+  // state. Layout must settle before coordinates are measured (see `settleLayout`
+  // above).
   await settleLayout(page);
   const expanded = await nodePos();
   await page.mouse.click(expanded!.px, expanded!.py - (expanded!.r + 32));

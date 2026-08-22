@@ -44,9 +44,10 @@ export function RouteMemory() {
     };
 
     rememberCurrentRoute();
-    // Docs/Topology의 세부 작업 상태는 history.replaceState로 URL을 갱신한
-    // 뒤 이 이벤트를 보낸다. pathname만 관찰하면 같은 surface 안의 선택
-    // (?slug=, ?node= 등)이 누락되어 앱 재실행 시 첫 문서로 돌아간다.
+    // Docs and topology update the URL with history.replaceState for fine-grained
+    // work state and then emit this event. Watching pathname alone would miss the
+    // selection within a surface (?slug=, ?node=), so relaunching the app would
+    // return to the first document.
     window.addEventListener('app:urlchange', rememberCurrentRoute);
     window.addEventListener('popstate', rememberCurrentRoute);
     window.addEventListener('hashchange', rememberCurrentRoute);

@@ -6,8 +6,8 @@ describe("지난 걸음 행의 모션 — 방금 남긴 줄만 확정 서명", (
     expect(stepRowMotionClass("abc123", "abc123")).toBe("git-commit-settle");
   });
 
-  // 이게 이 함수의 존재 이유다 — 전부에 확정을 주면 이미 있던 역사가 다시
-  // 태어나고, "무엇이 방금 일어났나" 라는 정보가 오히려 흐려진다.
+  // Why this function exists — giving every row the settle re-births history
+  // that was already there and blurs what just happened.
   it("나머지 역사는 손대지 않는다", () => {
     expect(stepRowMotionClass("older", "abc123")).toBe("git-fade-in");
   });

@@ -1,20 +1,20 @@
 /**
- * 브랜드 자산 래스터 — `build-brand-assets.mjs` 가 만든 SVG 를 정확한 픽셀
- * 크기의 PNG 로 굽는다.
+ * Brand asset rasteriser — bakes the SVGs `build-brand-assets.mjs` produces into
+ * PNGs at exact pixel sizes.
  *
- * ## 왜 브라우저인가
+ * **Why a browser.** To avoid adding an image rasterising dependency (sharp, resvg,
+ * librsvg) to the repository (`forbidden.md` — a new dependency needs a reason).
+ * Instead it borrows the canvas of the Chrome already used for development: this
+ * script briefly starts a local server, the browser draws the SVG and POSTs it as
+ * base64, and it is written to a file here.
  *
- * 저장소에 이미지 래스터 의존성(sharp·resvg·librsvg)을 새로 들이지 않기 위해서다
- * (`forbidden.md` — 새 dependency 는 이유를 대야 한다). 대신 이미 개발에 쓰는
- * Chrome 의 캔버스를 빌린다: 이 스크립트가 잠깐 로컬 서버를 띄우고, 브라우저가
- * SVG 를 그려 base64 로 POST 하면 여기서 파일로 쓴다.
+ * So it **does not run automatically** — a person runs it once when the icons
+ * change. The outputs (PNG, icns, ico) are committed, so the build does not depend
+ * on this script.
  *
- * 그래서 **자동 실행이 아니다** — 아이콘을 바꿀 때 사람이 한 번 돌린다. 결과물
- * (PNG·icns·ico)은 저장소에 커밋되므로 빌드가 이 스크립트에 의존하지 않는다.
- *
- * 사용:
- *   node scripts/build-brand-raster.mjs        # 서버 띄우고 대기
- *   → 브라우저로 http://127.0.0.1:8231/ 열면 자동으로 굽고 POST 한다
+ * Usage:
+ *   node scripts/build-brand-raster.mjs        # start the server and wait
+ *   → open http://127.0.0.1:8231/ in a browser; it bakes and POSTs automatically
  */
 import { createServer } from 'node:http';
 import { writeFileSync, mkdirSync, readFileSync } from 'node:fs';
@@ -24,13 +24,14 @@ import { appIconSvg, markSvg, lockupSvg, monoIconSvg, ogImageSvg } from './build
 const PORT = 8231;
 const OUT = '.qa-scratch/brand/png';
 
-/** 사양의 배선표 — 크기마다 어느 그림을 쓰는지가 여기 한 곳에 있다. */
+/** The spec's wiring table — which artwork each size uses lives here in one place. */
 export const RASTER_PLAN = [
   ['icon-1024', 'full', 1024], ['icon-512', 'full', 512], ['icon-256', 'full', 256],
   ['icon-128', 'full', 128], ['icon-64', 'nodash', 64], ['icon-48', 'compact', 48],
   ['icon-32', 'compact', 32], ['icon-16', 'micro', 16],
-  // @2x 짝 — 레티나는 **같은 그림을 두 배 해상도로** 그리는 것이지 다른 그림이
-  // 아니다. icon_16x16@2x 에 축약형을 넣으면 같은 논리 크기에서 그림이 바뀐다.
+  // The @2x pairs — retina draws **the same artwork at twice the resolution**, not a
+  // different artwork. Putting the abbreviated form in icon_16x16@2x changes the
+  // artwork at the same logical size.
   ['micro-32', 'micro', 32], ['compact-64', 'compact', 64],
   ['tile-310', 'nodash', 310], ['tile-284', 'nodash', 284], ['tile-150', 'nodash', 150],
   ['tile-142', 'nodash', 142], ['tile-107', 'nodash', 107], ['tile-89', 'nodash', 89],
@@ -39,15 +40,17 @@ export const RASTER_PLAN = [
 ];
 
 /**
- * 가로형 로고 — 뷰박스를 **브라우저가 재서** 잉크에 딱 맞춘다.
+ * The horizontal logo — the viewBox is **measured by the browser** to fit the ink
+ * exactly.
  *
- * 생성기는 글자 폭을 알 수 없다. 추정해서 넣었더니 자산의 25%가 오른쪽 빈
- * 공간이었고(실측 495 중 콘텐츠가 372.9 에서 끝났다), 로고 파일의 여백은
- * 그것을 쓰는 모든 곳의 정렬을 틀리게 만든다.
+ * The generator cannot know the text width. Estimating it left 25% of the asset as
+ * empty space on the right (measured: content ended at 372.9 of 495), and padding
+ * inside a logo file misaligns everywhere that logo is used.
  *
- * 게다가 **폰트가 없는 브라우저로 재면 값이 통째로 다르다** — 이 단계가
- * Pretendard 를 `FontFace` 로 먼저 심는 이유다. 시스템 산세리프로 잰 값을
- * 상수로 박았다면 조용히 틀렸을 것이다.
+ * Also, **measuring in a browser without the font gives a completely different
+ * value** — which is why this step installs Pretendard through `FontFace` first.
+ * Pinning a value measured with the system sans-serif would have been silently
+ * wrong.
  */
 const LOCKUPS = {
   'lockup': lockupSvg(),
@@ -56,12 +59,12 @@ const LOCKUPS = {
   'lockup-compact': lockupSvg({ tagline: false }),
 };
 
-/** 가로형 로고 PNG — [이름, 높이(px)]. 폭은 비율대로 따라간다. */
+/** Horizontal logo PNGs — [name, height in px]. Width follows the aspect ratio. */
 const LOCKUP_RASTERS = [['lockup', 96], ['lockup@2x', 192], ['lockup-light@2x', 192], ['lockup-dark@2x', 192]];
 
 const MONO = { 'icon-mono-light': monoIconSvg('light'), 'icon-mono-dark': monoIconSvg('dark') };
 
-/** 비정사각 래스터 — [이름, 폭, 높이]. OG 카드는 layout.tsx 선언과 같은 1200×630. */
+/** Non-square rasters — [name, width, height]. The OG card is 1200×630, matching the layout.tsx declaration. */
 const WIDE = [['og-image', ogImageSvg(), 1200, 630]];
 
 export const RASTER_OUTPUT_NAMES = Object.freeze({
@@ -81,7 +84,7 @@ const VARIANTS = {
   nodash: appIconSvg({ withDash: false }),
   compact: appIconSvg({ detail: 'compact' }),
   micro: appIconSvg({ detail: 'micro' }),
-  // iOS 는 모서리를 자기가 깎으므로 판을 정사각 풀블리드로 준다.
+  // iOS rounds the corners itself, so the plate is given as a full-bleed square.
   apple: appIconSvg().replace(/rx="186" ry="186"/, 'rx="0" ry="0"')
     .replace(/x="100" y="100" width="824" height="824"/, 'x="0" y="0" width="1024" height="1024"'),
   bare: markSvg('full'),
@@ -93,7 +96,7 @@ const pageForSaveToken = (saveToken) => `<!doctype html><meta charset="utf-8"><b
 const d = await (await fetch('/data')).json();
 const saveToken = ${JSON.stringify(saveToken)};
 
-// 진짜 폰트를 먼저 심는다 — 없는 채로 재면 글자 폭이 통째로 다르다.
+// Install the real font first — measuring without it gives a completely different text width.
 const font = new FontFace('Pretendard Variable',
   'url(data:font/woff2;base64,' + d.font + ') format("woff2")', { weight: '100 900' });
 await font.load(); document.fonts.add(font); await document.fonts.ready;
@@ -108,7 +111,7 @@ const render = async (svgText, w, h) => {
   return c.toDataURL('image/png').split(',')[1];
 };
 
-/** 잉크 바운딩박스를 재서 뷰박스를 딱 맞춘다. 광학 여백 0 — 로고 파일은 잉크가 경계다. */
+/** Measures the ink bounding box and fits the viewBox to it. Zero optical padding — in a logo file the ink is the boundary. */
 const tighten = (svgText) => {
   const holder = document.createElement('div');
   holder.style.cssText = 'position:absolute;left:-9999px;top:0';

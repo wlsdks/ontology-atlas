@@ -4,53 +4,52 @@ import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 
 /**
- * 네이티브 체크박스/라디오의 **타깃 크기** 계약 (WCAG 2.5.8 AA — 24×24).
+ * The **target size** contract for native checkboxes and radios
+ * (WCAG 2.5.8 AA — 24×24).
  *
- * ## 왜 이 게이트가 필요한가 — 두 검사가 나란히 이것을 못 봤다
+ * **Why this gate is needed — two checks missed it side by side.** Exhaustive count
+ * 2026-08-05: **all 5 native checkboxes were under 24px** (`h-4`=16 · `h-3.5`=14 ·
+ * `size-3.5`=14 ×2 · **no size class at all** ×1). Yet not one gate in this
+ * repository went red:
  *
- * 2026-08-05 전수: 네이티브 체크박스 **5곳이 전부 24px 미만**이었다
- * (`h-4`=16 · `h-3.5`=14 · `size-3.5`=14 ×2 · **크기 클래스 자체가 없음** 1).
- * 그런데 이 저장소의 게이트 어느 것도 빨개지지 않았다:
- *
- * | 게이트 | 왜 못 봤나 |
+ * | Gate | Why it could not see |
  * |---|---|
- * | `control-adoption-ratchet` | 세는 태그가 `button` · `Link` · `a` 뿐이다 |
- * | `touch-target-contract.spec.ts` | 셀렉터 네 개가 전부 `button, a[href]` 다 |
+ * | `control-adoption-ratchet` | it counts only the tags `button`, `Link`, `a` |
+ * | `touch-target-contract.spec.ts` | all four selectors are `button, a[href]` |
  *
- * **둘 다 「손으로 쓴 컨트롤」을 지키는 검사인데 폼이 시야 밖이었다.** 그래서
- * 폼은 무제한으로 늘 수 있었고, 실제로 늘었다.
+ * **Both guard hand-written controls, and forms were outside both fields of view.**
+ * So forms could grow without limit, and they did.
  *
- * ## 판정식은 WCAG 를 그대로 옮긴 것이다
+ * **The predicate is WCAG transcribed.** A target is not "how many px is the icon"
+ * but **"what receives the click"** (SC 2.5.5 Understanding). When a `<label>`
+ * wraps the checkbox, the **native behaviour** that clicking the label toggles it
+ * makes the whole label one target. So there are two ways to pass:
  *
- * 타깃은 「아이콘이 몇 px 인가」가 아니라 **「무엇이 클릭을 받나」**다
- * (SC 2.5.5 Understanding). 체크박스를 `<label>` 이 감싸면 라벨 클릭이 곧
- * 토글이라는 **네이티브 동작** 때문에 라벨 전체가 하나의 타깃이 된다. 그래서
- * 통과 조건이 둘이다:
+ * 1. the checkbox itself is at least 24px, or
+ * 2. **the wrapping `<label>` has a 24px floor**.
  *
- * 1. 체크박스 자신이 24px 이상이거나
- * 2. **감싸는 `<label>` 이 24px 바닥을 갖거나**
+ * All five places today chose (2) — growing a 14px checkbox to 24px would make it
+ * larger than the 11px label text, inverting the hierarchy in the opposite
+ * direction ("the thing you press is smaller than its label"). Instead the label
+ * carries `min-h-6` (24, AA) together with `atlas-touch-floor` (coarse 44, toward
+ * AAA).
  *
- * 오늘 다섯 곳 전부 2번을 골랐다 — 14px 체크박스를 24px 로 키우면 11px 라벨
- * 글자보다 커져서 「눌리는 것이 라벨보다 작아지는」 위계 뒤집힘의 반대가 난다.
- * 대신 라벨에 `min-h-6`(24, AA)와 `atlas-touch-floor`(coarse 44, AAA 쪽)를
- * 함께 얹었다.
- *
- * ## 이 검사가 못 하는 것 — 그래서 e2e 가 따로 있다
- *
- * 소스만 보므로 **실제로 그려진 rect** 는 모른다. 라벨이 24px 바닥을 갖고도
- * 부모가 `overflow-hidden` 으로 잘라 버리면 이 검사는 초록이고 화면은 미달이다.
- * 그 층은 `tests/e2e/touch-target-contract.spec.ts` 의 몫이다. 이 계약은
- * **원인**(바닥이 코드에 있는가)을, e2e 는 **결과**(화면에서 24인가)를 본다.
+ * **What this check cannot do — hence a separate e2e.** It reads source only, so it
+ * does not know the **rendered rect**. If a label has the 24px floor but a parent
+ * clips it with `overflow-hidden`, this check is green while the screen fails. That
+ * layer belongs to `tests/e2e/touch-target-contract.spec.ts`. This contract watches
+ * the **cause** (is the floor in the code); the e2e watches the **result** (is it 24
+ * on screen).
  */
 
 const ROOT = join(__dirname, '..', '..');
 const ROOTS = [join(ROOT, 'src'), join(ROOT, 'app')];
 
-/** Tailwind 의 `size-N`/`h-N` 은 0.25rem 단위다 — 24px 은 `6`. */
+/** Tailwind's `size-N`/`h-N` are in 0.25rem units — 24px is `6`. */
 const AA_MIN_PX = 24;
 const TAILWIND_STEP_PX = 4;
 
-/** 라벨이 바닥을 갖고 있음을 나타내는 표식. `.atlas-touch-floor` 는 coarse 전용이라 AA 를 혼자 못 낸다. */
+/** Markers indicating a label carries the floor. `.atlas-touch-floor` is coarse-only, so it cannot satisfy AA alone. */
 const AA_FLOOR_CLASS = /\bmin-h-(\d+(?:\.\d+)?)\b/;
 
 function walk(dir: string): string[] {
@@ -76,14 +75,15 @@ function walk(dir: string): string[] {
 }
 
 /**
- * 주석을 걷어낸다. **이 저장소가 2026-08 에만 네 번 밟은 결함이다** — 주석 안의
- * 예시 코드를 위반으로 세거나(과다), 주석에 가려진 진짜 위반을 놓친다(과소).
+ * Strip comments. **This repository hit this defect four times in 2026-08 alone** —
+ * either counting example code inside a comment as a violation (over-report) or
+ * missing a real violation hidden behind one (under-report).
  */
 function stripComments(source: string): string {
   return source.replace(/\/\*[\s\S]*?\*\//g, '').replace(/(^|[^:])\/\/[^\n]*/g, '$1');
 }
 
-/** `size-6` · `h-6` · `size-[24px]` 등에서 px 를 읽는다. 못 읽으면 null. */
+/** Reads px from `size-6`, `h-6`, `size-[24px]` and friends. null when unreadable. */
 function declaredPx(className: string): number | null {
   const bracket = className.match(/\b(?:size|h)-\[(\d+(?:\.\d+)?)px\]/);
   if (bracket) return Number(bracket[1]);
@@ -102,22 +102,22 @@ type Site = {
 };
 
 /**
- * 체크박스/라디오를 찾고, **그것을 감싸는 가장 가까운 `<label>` 의 여는 태그**를
- * 되짚어 그 바닥을 읽는다.
+ * Finds checkboxes/radios and reads the floor from **the opening tag of the nearest
+ * enclosing `<label>`**, scanning backwards.
  *
- * 여는 태그를 뒤로 훑는 이유: JSX 를 파싱하지 않고도 «이 input 이 label 안에
- * 있는가»를 판정하려면 앞쪽에서 가장 가까운 `<label` 과 그 사이에 `</label>` 이
- * 끼어 있지 않은지를 보면 된다.
+ * Scanning backwards works without parsing JSX: "is this input inside a label" can
+ * be decided by finding the nearest preceding `<label` and checking that no
+ * `</label>` sits in between.
  */
 /**
- * `<input` 부터 그 태그가 **정말로 끝나는 곳**까지 잘라 낸다.
+ * Slices from `<input` to where the tag **really ends**.
  *
- * ⚠️ **`[^>]*` 로 하면 안 된다 — 처음에 그렇게 썼다가 다섯 곳을 전부 오탐했다.**
- * JSX 의 핸들러가 화살표 함수(`onChange={(e) => …}`)라 그 `>` 에서 잘리고,
- * 그 뒤에 오는 `className` 에 아예 닿지 못한다. 그러면 「크기 클래스가 없다」는
- * 판정이 나오는데, 실제 코드에는 멀쩡히 있다.
+ * ⚠️ **`[^>]*` does not work — the first version did that and mis-flagged all five
+ * places.** A JSX handler is an arrow function (`onChange={(e) => …}`), so the
+ * slice stops at that `>` and never reaches the `className` after it. The verdict
+ * becomes "no size class" while the code plainly has one.
  *
- * 중괄호 깊이를 세면서 **깊이 0 에서 나오는 `>`** 만 태그의 끝으로 친다.
+ * Brace depth is counted, and only a `>` **at depth 0** ends the tag.
  */
 function inputTagAt(source: string, start: number): string {
   let depth = 0;
@@ -130,7 +130,7 @@ function inputTagAt(source: string, start: number): string {
   return source.slice(start);
 }
 
-/** 파일이 아니라 **소스 문자열**에서 뽑는다 — 합성 프로브가 실물 개수에 안 기대게. */
+/** Extracts from a **source string** rather than a file, so synthetic probes do not depend on the real count. */
 function collectFromSource(label: string, raw: string): Site[] {
   const sites: Site[] = [];
   const source = stripComments(raw);
@@ -170,11 +170,11 @@ function collect(files: string[]): Site[] {
       if (wrapped) {
         const labelTag = source.slice(labelOpen, source.indexOf('>', labelOpen) + 1);
         /*
-         * 바닥은 두 갈래로 온다 — 리터럴(`min-h-6 atlas-touch-floor`)이거나,
-         * **값 층**(`fieldLabel({ row: true })`)이거나. 후자를 모르면 규격을
-         * 값 층으로 옮긴 순간 이 게이트가 **진전을 벌한다** — 오늘 두 번 밟은
-         * 그 실패다. `fieldLabel` 의 `row` 가 무엇을 내는지는 그 자신의 계약이
-         * 지킨다(`field-class.contract.test.ts`).
+         * The floor arrives two ways — as a literal (`min-h-6 atlas-touch-floor`) or from
+         * the **value layer** (`fieldLabel({ row: true })`). Not knowing the latter makes
+         * this gate **punish progress** the moment the spec moves into the value layer —
+         * the failure hit twice today. What `fieldLabel`'s `row` emits is guarded by its
+         * own contract (`field-class.contract.test.ts`).
          */
         const viaValueLayer = /fieldLabel\s*\(\s*\{[^}]*\brow:\s*true/.test(labelTag);
         const floor = labelTag.match(AA_FLOOR_CLASS);
@@ -198,19 +198,23 @@ const sites = collect(ROOTS.flatMap(walk));
 
 describe('네이티브 체크박스·라디오의 타깃 크기 (WCAG 2.5.8 AA)', () => {
   /**
-   * 공회전 방지. 이 저장소는 「깨끗해서 0」과 「안 봐서 0」을 구별 못 하는 게이트를
-   * 반복해서 만들었다 — 스캐너가 조용해지면 이 단언이 먼저 빨개진다.
+   * Idling guard. This repository has repeatedly built gates that cannot distinguish
+   * "0 because it is clean" from "0 because nothing was looked at" — if the scanner
+   * goes quiet, this assertion turns red first.
    */
   /**
-   * ⚠️ **결함(또는 대상) 개수에 하한을 걸면 안 된다** (2026-08-06 재검수에서 잡았다).
+   * ⚠️ **Never put a lower bound on the number of defects (or targets)** (caught in
+   * the 2026-08-06 re-review).
    *
-   * 종전 이 단언은 «체크박스가 **5개 이상**» 을 요구했다. 실측이 **6개**라
-   * 여유가 **1** 이었다 — 체크박스 하나만 지워도 이유 없이 빨개진다. 이 저장소가
-   * 오늘 여섯 번 밟은 「게이트가 진전을 벌한다」와 같은 병이다.
+   * This assertion used to require **at least 5** checkboxes. The measurement was
+   * **6**, leaving a margin of **1** — deleting one checkbox turns it red for no
+   * reason. The same disease as "the gate punishes progress", hit six times in this
+   * repository today.
    *
-   * 물어야 하는 것은 «대상이 충분히 많은가» 가 아니라 **«스캐너가 살아 있는가»** 다.
-   * 그래서 ① 훑은 파일이 충분한가(스캐너의 시야)와 ② **합성 태그**에서 체크박스를
-   * 실제로 뽑아내는가(판정 함수의 생존)를 본다. 둘 다 실물 개수와 무관하다.
+   * The question is not "are there enough targets" but **"is the scanner alive"**. So
+   * it checks ① that enough files were scanned (the scanner's field of view) and
+   * ② that a checkbox is really extracted from a **synthetic tag** (the predicate's
+   * survival). Neither depends on the real count.
    */
   it('탐지기가 살아 있다 — 시야가 넓고, 합성 체크박스를 실제로 뽑는다', () => {
     expect(
@@ -241,10 +245,11 @@ describe('네이티브 체크박스·라디오의 타깃 크기 (WCAG 2.5.8 AA)'
   );
 
   /**
-   * 크기 클래스가 아예 없으면 브라우저 기본값(Chromium macOS ≈13px)이 그려진다.
-   * **코드에 아무 값도 안 남으므로 값을 보는 어떤 lint 도 볼 수 없다** — 이
-   * 저장소가 여러 번 밟은 「아예 만들어지지 않은 것은 코드에 흔적이 없다」의
-   * 폼 판이다. 실제로 `AtlasGitPanel` 의 push opt-in 이 그 상태였다.
+   * With no size class at all the browser default renders (≈13px on Chromium macOS).
+   * **No value is left in the code, so no value-reading lint can see it** — the form
+   * edition of "what was never written leaves no trace in the code", a failure this
+   * repository has hit repeatedly. `AtlasGitPanel`'s push opt-in was in exactly that
+   * state.
    */
   it.each(sites.map((s) => [s.file, s] as const))(
     '%s — 크기를 UA 기본값에 맡기지 않는다',
@@ -267,9 +272,9 @@ describe('네이티브 체크박스·라디오의 타깃 크기 (WCAG 2.5.8 AA)'
   });
 
   /**
-   * 시각 크기가 흩어지지 않게 잠근다. 고치기 전 다섯 곳은 16 · 14 · 14 · 14 ·
-   * UA기본 이었다 — 같은 부품이 자리마다 다른 값을 갖는 것이 이 저장소가
-   * 「고유 조합 50종」으로 부르는 그 결함이다.
+   * Locks visual size against scattering. Before the fix the five places were 16 ·
+   * 14 · 14 · 14 · UA default — the same part carrying a different value per place is
+   * the defect this repository calls "50 distinct combinations".
    */
   it('체크박스 시각 크기가 한 값으로 모인다', () => {
     const sizes = [...new Set(sites.map((s) => s.ownPx))].sort();

@@ -31,119 +31,119 @@ import type { StageGraph } from '../lib/stage-graph';
 import { buildEvidenceRailModel } from '../lib/evidence-rail';
 
 /**
- * **이 페이지의 그리드는 한 벌이다** (2026-07-29 카운슬 평결 ③ — 리메이크에도
- * 그대로 산다).
+ * **This page's grid is one grid** (council verdict, 2026-07-29 — it survives the remake).
  *
- * 정렬 원점 하나에서 시작해 `--gateway-page-max` 에서 멈춘다. 원소는 다섯이고 x 는
- * 하나다: GNB · 헤드라인 · 지도 절 · 캡션 · 푸터.
+ * Everything starts at one alignment origin and stops at `--gateway-page-max`. Five
+ * elements, one x: GNB, headline, map section, caption, footer.
  *
  * ```
- * 원점 = max(--gateway-gutter, (뷰포트 − --gateway-page-max) / 2)   ← --gateway-origin
+ * origin = max(--gateway-gutter, (viewport − --gateway-page-max) / 2)   ← --gateway-origin
  * ```
  *
- * 소유자 지적(*"좌우가 같아야함"*)의 전말과 `mx-auto` 기각 사유는
- * `shared/lib/gateway-frame.ts` 와 `app/globals.css` 의 원점 독블록에 있다.
- * 이 파일이 하는 일은 하나다 — 모든 절의 내용을 `PAGE_GUTTER` + `PAGE_COLUMN`
- * 안에 앉히는 것. 게이트: `tests/e2e/download-gateway-grid.spec.ts` (원점을
- * 라이브로 읽고, 좌우 여백 동일 · 리사이즈 추종을 잰다).
+ * The owner's report (*"좌우가 같아야함"* — the left and right must match) and why `mx-auto`
+ * was rejected live in the origin doc-blocks of `shared/lib/gateway-frame.ts` and
+ * `app/globals.css`. This file's only job is seating every section's content inside
+ * `PAGE_GUTTER` + `PAGE_COLUMN`. Gate: `tests/e2e/download-gateway-grid.spec.ts` reads the
+ * origin live and measures equal side margins and resize tracking.
  *
- * [은퇴 2026-08-18] 구 카메라 예약폭(`--topology-v2-safe-inset-left` 파생)은
- * 지도가 판 뒤 배경이던 시절의 산수다. 지도가 자기 절(증거)로 내려가면서 판과
- * 지도는 구조적으로 겹칠 수 없게 됐고, 파생(`computeGatewaySafeInset`)과 그
- * 소비처는 삭제됐다.
+ * [Retired 2026-08-18] The old camera reserve width (derived from
+ * `--topology-v2-safe-inset-left`) was arithmetic from when the map was the background behind
+ * the panel. Once the map moved down into its own (evidence) section the two became
+ * structurally unable to overlap, and the derivation (`computeGatewaySafeInset`) and its
+ * consumers were deleted.
  *
- * [은퇴 2026-08-19] 설치 절(3단 · 판 · 검증 레일)이 통째로 사라지면서 판을
- * 잣대로 삼던 단언들도 같이 갔다 — 소유자: *"맨 마지막 이거는 없어도 될듯?
- * 어차피 맨 위에 다 있어서"*. 네 목적지는 히어로가 전부 진다.
+ * [Retired 2026-08-19] The install section (three steps, the panel, the verification rail)
+ * disappeared entirely, taking with it the assertions that used the panel as their yardstick —
+ * owner: *"맨 마지막 이거는 없어도 될듯? 어차피 맨 위에 다 있어서"* (the last one can go; it's
+ * all at the top anyway). The hero carries all four destinations.
  */
 
-/** 절 사이 리듬 — 값의 진실원은 `--gateway-section-gap`(160px). */
+/** Rhythm between sections — the value's source of truth is `--gateway-section-gap` (160px). */
 const SECTION_GAP = 'mt-[var(--gateway-section-gap)]';
 
 /**
- * `/download` — **살아있는 화면** (2026-08-18 소유자 승인 리메이크,
- * `docs/DECISIONS.md`).
+ * `/download` — **the living screen** (owner-approved remake, 2026-08-18, `docs/DECISIONS.md`).
  *
- * ## 이 화면의 일
+ * ## This screen's job
  *
- * > 처음 온 사람이 30초 안에 「에이전트가 코드를 쓰는 동안 쌓이는 인지 부채」
- * > 라는 문제를 자기 문제로 알아보고, 제품이 **움직이는 것**을 본 다음,
- * > 헤매지 않고 자기 기기의 파일을 받는다.
+ * > A first-time visitor recognizes, within 30 seconds, the problem of «cognitive debt piling
+ * > up while agents write the code» as their own problem, watches the product **move**, and
+ * > downloads the file for their machine without getting lost.
  *
- * ## 네 절, 절마다 생각 하나 (소유자 확정 골격 — 2026-08-19 개정)
+ * ## Four sections, one idea each (owner-confirmed skeleton, revised 2026-08-19)
  *
- * ① 히어로 — 활자(기념비 헤드라인, 소유자의 문장 그대로) + 히어로 오브젝트
- *    (실그래프 심도 투영) + 채운 CTA 하나. 지도는 첫 화면에서 **뺐다**(소유자
- *    콜) — 증거 절에서 자기 자리로 돌아온다.
- * ② 시연 — 뷰포트에 들어오면 스스로 재생. 지금 붙은 클립이 잠정본이라는 것을
- *    화면이 정직하게 말한다.
- * ③ 증거 — 실제 지도 엔진이 눈앞에서 1회 조립되고, census 캡션이 조립이 끝난
- *    뒤 도착한다(숫자는 조립의 결과라서). 캡션은 지도와 같은 절에 산다.
- * ④ 에이전트 — 앱 안 대화(ACP) 실측 왕복 1사이클 재연 + 정지 카드 3장
- *    (2026-08-18 재작업 — 구 `mcp-verify` 터미널은 소유자 기각).
+ * ① Hero — type (the monument headline, the owner's sentence verbatim) plus the hero object
+ *    (a depth projection of the real graph) plus one filled CTA. The map was **pulled out** of
+ *    the first screen (owner call) and returns to its own place in the evidence section.
+ * ② Demo — plays itself once it enters the viewport, and the screen says honestly that the
+ *    attached clip is provisional.
+ * ③ Evidence — the real map engine assembles once in front of the viewer, and the census
+ *    caption arrives after assembly finishes (the numbers are the *result* of assembly). The
+ *    caption lives in the same section as the map.
+ * ④ Agents — one measured round trip of the in-app conversation (ACP), plus three still cards
+ *    (reworked 2026-08-18 — the old `mcp-verify` terminal was rejected by the owner).
  *
- * ## [삭제 2026-08-19] ⑤ 설치·다운로드
+ * ## [Deleted 2026-08-19] ⑤ Install and download
  *
- * 소유자: *"맨 마지막 이거는 없어도 될듯? 어차피 맨 위에 다 있어서"*. 히어로가
- * 네 목적지(내 플랫폼 · Intel · Windows · 브라우저)를 전부 지므로 판은 같은
- * 결정을 한 번 더 물은 셈이었다. 함께 사라진 것: 설치 3단 · 다운로드 판 ·
- * 검증 레일 — 그리고 그 레일이 유일하게 지던 **정직성 사실 넷**(SHA-256
- * 체크섬 · Developer ID 서명 · 공증 · 「서버로 아무것도 안 보낸다」)은 이제
- * 이 페이지 어디에도 없다. 소유자가 그 대가를 명시적으로 받아들였다
- * (`docs/DECISIONS.md` 2026-08-19). 릴리스 정책 두 문장만 콜로폰에 남는다.
+ * Owner: *"맨 마지막 이거는 없어도 될듯? 어차피 맨 위에 다 있어서"* (the last one can go; it's
+ * all at the top anyway). The hero carries all four destinations (my platform, Intel, Windows,
+ * browser), so the panel was asking the same decision a second time. Gone with it: the three
+ * install steps, the download panel, and the verification rail — and the **four honesty facts**
+ * that rail alone carried (SHA-256 checksum, Developer ID signature, notarization, "nothing is
+ * sent to a server") are now nowhere on this page. The owner accepted that cost explicitly
+ * (`docs/DECISIONS.md` 2026-08-19). Only two sentences of release policy remain, in the colophon.
  *
- * 모션의 규율은 「정보 모션만」이다 (소유자: *"다운로드 페이지는 모션이
- * 중요함.. 보여지는게 최선인 만큼"*). 효과층(전류장·그레인·커서 링)은
- * `--gateway-fx-*` 봉인 예외다(`GatewayFx` 독블록).
+ * The motion discipline is "informational motion only" (owner: *"다운로드 페이지는 모션이
+ * 중요함.. 보여지는게 최선인 만큼"* — motion matters on the download page, since showing is the
+ * best we can do). The effect layer (the current field, the grain, the cursor ring) is the
+ * sealed `--gateway-fx-*` exception (see the `GatewayFx` doc-block).
  *
- * ## 시계가 둘이다 — 첫 화면은 시간, 그 아래는 스크롤 (2026-08-22)
+ * ## Two clocks — the first screen runs on time, everything below runs on scroll (2026-08-22)
  *
- * ① **히어로는 시간이 진다.** 첫 3초 안무(150/220 헤드라인 → 700 리드 →
- *    800 CTA → 950 사실층)는 그대로다. 바뀐 것은 방아쇠 하나 — 시작 프레임이
- *    `@starting-style` 로 옮겨가면서 **첫 스타일 계산**이 안무를 시작한다
- *    (종전에는 하이드레이션 뒤의 rAF). 그래서 JS 가 늦거나 실패해도 히어로가
- *    백지가 되지 않는다. 종전에는 됐다 — 실측으로 첫 스크린샷에 GNB 만
- *    있었고, 그 뒤에 서 있던 것이 JS 32파일·디코드 2,572KB 다.
- *    자세한 사연은 `app/globals.css` 의 `.gateway-rise` 독블록.
+ * ① **The hero is owned by time.** The first-three-seconds choreography (150/220 headline →
+ *    700 lead → 800 CTA → 950 facts strip) is unchanged. What changed is one trigger: the start
+ *    frame moved into `@starting-style`, so **the first style computation** begins the
+ *    choreography (it used to be a rAF after hydration). So a late or failed JS load no longer
+ *    leaves the hero blank. It used to — measured, the first screenshot held only the GNB, and
+ *    what stood behind it was 32 JS files, 2,572 KB decoded. The full story is in the
+ *    `.gateway-rise` doc-block in `app/globals.css`.
  *
- * ② **아래 세 절은 스크롤이 진다.** 소유자: *"부드러운 모션같은거 우리도
- *    하고싶거든? 스크롤하면서 멋지게"*. `animation-timeline: view()` 라
- *    진행도의 유일한 입력이 「이 원소가 스크롤포트에 얼마나 들어왔는가」다 —
- *    천천히 굴리면 천천히 도착하고, 멈추면 멈춘다. rAF 도 스크롤 리스너도
- *    쓰지 않으므로 이 페이지의 단일 프레임 루프에 한 프레임도 더하지 않는다.
- *    `useInViewOnce` 는 **떼지 않았다** — `view()` 를 못 쓰는 브라우저에서
- *    같은 등장을 지는 것이 그쪽이다(한 안무의 두 경로).
+ * ② **The three sections below are owned by scroll.** Owner: *"부드러운 모션같은거 우리도
+ *    하고싶거든? 스크롤하면서 멋지게"* (we want smooth motion too, something nice as you
+ *    scroll). With `animation-timeline: view()` the sole input to progress is how far the
+ *    element has entered the scrollport — scroll slowly and it arrives slowly, stop and it
+ *    stops. It uses neither rAF nor a scroll listener, so it adds not one frame to this page's
+ *    single frame loop. `useInViewOnce` was **not removed** — it carries the same entrance in
+ *    browsers without `view()` (two paths, one choreography).
  *
- * 그러니 「등장 후 전경 영구 정지」는 여전히 참이다. 다시 흐려지거나 되감기는
- * 원소는 없고, 한 번 도착한 것은 그 자리에 선다 — 무엇이 도착을 **부르는지**만
- * 절마다 다르다. 실측(1512·834·390 세 폭 × 21 스크롤 지점): 화면 안에 완전히
- * 들어왔는데 흐린 채로 멈춘 원소 **0건**.
+ * So "the foreground is permanently still after it appears" is still true. Nothing fades back
+ * out or rewinds, and what has arrived stays put — only what *calls* the arrival differs per
+ * section. Measured across three widths (1512, 834, 390) × 21 scroll positions: **zero** elements
+ * fully inside the viewport and stuck faded.
  *
- * 감속(`prefers-reduced-motion: reduce`)에서는 스크롤 안무 선언이 **존재하지
- * 않는다** — 절이 처음부터 전부 보인다(실측: 해당 원소의 애니메이션 0개).
- * 계약: `tests/contract/reduced-motion-equivalent.contract.test.ts` 가 그
- * 선언이 `no-preference` 밖으로 새면 빨개진다.
+ * Under `prefers-reduced-motion: reduce` the scroll-choreography declarations **do not exist** —
+ * the sections are fully visible from the start (measured: zero animations on those elements).
+ * Contract: `tests/contract/reduced-motion-equivalent.contract.test.ts` turns red if those
+ * declarations leak outside `no-preference`.
  */
 /**
- * 히어로의 다운로드 CTA 는 **320px 에서 접힌다**.
+ * The hero's download CTA **wraps at 320px**.
  *
- * `buttonVariants` 는 `whitespace-nowrap` 이라 라벨이 길면 버튼이 컨테이너를
- * 뚫는다. 그 자체는 옳은 기본값이다 — 버튼 글자가 아무 데서나 접히면 컨트롤로
- * 안 읽힌다. 문제는 **가장 좁은 폭에서 여유가 0 이었다는 것**이다: 실측
- * (320px · en · macOS 폰트)에서 「Download Windows x64 beta + unsigned」가
- * 폭 296px, 넘침 **정확히 0** 이었다. 0 은 통과가 아니라 **다음 한 픽셀을
- * 기다리는 상태**다 — 리눅스 CI 의 폰트 스택에서 같은 라벨이 9px 넘쳤고
- * 게이트가 빨개졌다(2026-08-19).
+ * `buttonVariants` sets `whitespace-nowrap`, so a long label pushes the button through its
+ * container. That is the right default — button text wrapping anywhere stops reading as a
+ * control. The problem was that at the narrowest width the slack was zero: measured at 320px,
+ * `en`, macOS fonts, "Download Windows x64 beta + unsigned" was 296px wide with overflow of
+ * **exactly 0**. Zero is not passing, it is **waiting for the next pixel** — on Linux CI's font
+ * stack the same label overflowed by 9px and the gate went red (2026-08-19).
  *
- * 고칠 수 있는 길은 셋이었고 둘은 기각했다. ① 라벨 줄이기 — 「x64」나 「beta」를
- * 빼면 받는 파일이 무엇인지 흐려진다. ② 좁은 폭에서 「unsigned」 감추기 —
- * 서명이 없다는 사실은 방문자가 **누르기 전에** 알아야 하는 것이라
- * (`surfaces.md` 의 정직한 강등 계약) 폭이 좁다고 지울 수 없다. 남은 것이
- * ③ **접기**다: 320px 에서 두 줄이 되는 버튼은 흠이 아니고, `sm:` 부터는
- * 원래대로 한 줄이다.
+ * Three fixes were possible and two were rejected. ① Shorten the label — dropping "x64" or
+ * "beta" blurs what file you get. ② Hide "unsigned" at narrow widths — that a build is unsigned
+ * is something a visitor must know **before pressing** (the honest-degradation contract in
+ * `.claude/rules/surfaces.md`), so a narrow screen cannot erase it. That leaves ③ **wrapping**:
+ * a two-line button at 320px is not a flaw, and from `sm:` it is one line as before.
  *
- * `text-left` 가 같이 필요하다 — 접힌 두 줄이 가운데 정렬이면 아이콘과 글자의
- * 왼끝이 어긋나 라벨이 두 조각으로 읽힌다.
+ * `text-left` is required with it — a centred two-line wrap misaligns the left edges of icon and
+ * text, and the label reads as two fragments.
  */
 const HERO_CTA_WRAP = 'min-w-0 whitespace-normal text-left sm:whitespace-nowrap';
 
@@ -151,18 +151,18 @@ export function DownloadPage() {
   const pathname = usePathname() ?? '/';
   const tFooter = useTranslations('footer');
   const published = isMacosReleasePublished();
-  // Apple Silicon 이 기본 제안 — 2020년 말 이후 팔린 맥은 거의 전부 그쪽이다.
+  // Apple Silicon is the default suggestion — nearly every Mac sold since late 2020 is one.
   const primaryAsset = published ? macosAssetFor('aarch64') : null;
   /**
-   * 하단 탭바가 서는 화면인가 — 이 뷰는 두 주소에 살고 둘이 다르다.
-   * `/download` 는 탭바를 숨기고 `/` 는 세운다. 판정은 탭바 자신과 같은 함수로
-   * 한다(각자 라우트를 나열하면 한쪽이 드리프트한다 — 2026-08-06 실측 17px).
+   * Does the bottom tab bar stand on this screen? This view lives at two addresses and they
+   * differ: `/download` hides the tab bar, `/` raises it. The verdict uses the same function as
+   * the tab bar itself — each listing its own routes lets one side drift (measured 17px, 2026-08-06).
    */
   const bottomTabBarPresent = !shouldHideBottomTabBar(pathname, false);
   /**
-   * 한 훅이 히어로 오브젝트 · 증거 절 지도 · census 캡션을 전부 먹인다 —
-   * 화면이 주장하는 숫자와 그리는 그래프가 같은 객체라는 정직성 계약이
-   * 이 한 줄이다(`DownloadPage.test.tsx` 가 잠근다).
+   * One hook feeds the hero object, the evidence section's map, and the census caption — this
+   * single line is the honesty contract that the numbers the screen claims and the graph it
+   * draws are the same object (locked by `DownloadPage.test.tsx`).
    */
   const graph = useStageGraph();
 
@@ -178,9 +178,10 @@ export function DownloadPage() {
         <AgentSection />
 
         {/*
-         * **바닥 띠** — 콜로폰. 읽을거리 링크 · 릴리스 정책 두 문장 ·
-         * 라이선스만 산다 (검증 목록은 2026-08-19 설치 절과 함께 사라졌다).
-         * 탭바 예약고 관용구는 리메이크 전과 동일하다(`/` 에만 탭바가 선다).
+         * **The bottom band** — the colophon. Only the reading links, the two release-policy
+         * sentences, and the license live here (the verification list went with the install
+         * section on 2026-08-19). The tab-bar reserve idiom is unchanged from before the
+         * remake (only `/` raises a tab bar).
          */}
         <div
           data-testid="download-bottom-band"
@@ -214,16 +215,17 @@ export function DownloadPage() {
   );
 }
 
-// ─── 절 공통 부품 ────────────────────────────────────────────────────────────
+// ─── Shared section parts ───────────────────────────────────────────────────
 
 /**
- * 절 머리 — 아이브로우(mono caps + 악센트 점) · 제목 · 부제.
+ * Section head — eyebrow (mono caps plus an accent dot), title, subtitle.
  *
- * 제목은 `--text-display`(23px) — 카드 제목(16px)보다 작던 구 절 제목(14px)의
- * 위계 역전을 바로잡는 자리다(리메이크 결정). 아이브로우 라벨(Demo · Evidence
- * · Agents · Install)은 두 로케일이 공유하는 mono 표기라 번역하지 않는다.
+ * The title is `--text-display` (23px), correcting the hierarchy inversion where the old
+ * section title (14px) was smaller than a card title (16px). The eyebrow labels (Demo,
+ * Evidence, Agents, Install) are mono notation shared by both locales and are not translated.
  *
- * `still` 이면 등장 안무 없이 그린다 — 설치 절의 정지가 그 소비처다.
+ * With `still` it renders without the entrance choreography — the install section's stillness
+ * was its consumer.
  */
 function SectionIntro({
   eyebrow,
@@ -239,13 +241,12 @@ function SectionIntro({
   still?: boolean;
 }) {
   /**
-   * 절 머리의 등장은 **스크롤이 진다** (2026-08-22).
+   * A section head's entrance is **owned by scroll** (2026-08-22).
    *
-   * `gateway-scroll-rise` 가 붙는 브라우저에서는 `view()` 타임라인이 진행도를
-   * 소유하므로 `is-in` 은 아무 일도 하지 않는다(애니메이션이 평범한 선언을
-   * 이긴다). 안 붙는 브라우저에서는 `is-in` 이 종전 그대로 등장을 진다 —
-   * **그래서 `useInViewOnce` 를 떼지 않았다.** 둘은 같은 안무의 두 경로이지
-   * 두 벌의 안무가 아니다.
+   * Where `gateway-scroll-rise` applies, the `view()` timeline owns progress and `is-in` does
+   * nothing (an animation beats a plain declaration). Where it does not apply, `is-in` carries
+   * the entrance exactly as before — **which is why `useInViewOnce` was not removed.** They are
+   * two paths of one choreography, not two choreographies.
    */
   const rise = (step?: string) =>
     still ? undefined : cn('gateway-rise', 'gateway-scroll-rise', step, inView && 'is-in');
@@ -258,7 +259,7 @@ function SectionIntro({
           'flex items-center gap-2 font-mono text-label uppercase leading-label tracking-[var(--tracking-caps-16)] text-[color:var(--color-text-quaternary)]',
         )}
       >
-        {/* 정적 점 — 신호는 상태다. 여기 상태가 없으므로 깜빡이지 않는다. */}
+        {/* A static dot — a signal is a state, and there is no state here, so it does not blink. */}
         <span aria-hidden className="h-1.5 w-1.5 rounded-full bg-[color:var(--color-indigo-brand)]" />
         {eyebrow}
       </p>
@@ -284,31 +285,32 @@ function SectionIntro({
   );
 }
 
-// ─── ① 히어로 — 활자 + 오브젝트 + 채운 CTA 하나 ─────────────────────────────
+// ─── ① Hero — type, object, one filled CTA ──────────────────────────────────
 
 /**
- * 첫 3초 시간축 (소유자 확정): 0–150ms 배경이 정지 상태로 칠해지고 →
- * 150/220ms 헤드라인 두 줄이 자기 줄 상자에서 올라오고 → 700ms 아이브로우와
- * 리드 → 800ms CTA → 950ms 신뢰줄 + 계기 스트립. 이후 전경은 영구 정지.
- * 지연은 전부 CSS(`gateway-t***`)에 있고 JS 는 마운트 다음 프레임에 `is-in`
- * 클래스 하나만 단다.
+ * The first three seconds (owner-confirmed): 0–150ms the background paints in its still state →
+ * 150/220ms the two headline lines rise from their own line boxes → 700ms eyebrow and lead →
+ * 800ms CTA → 950ms trust line and instrument strip. After that the foreground is permanently
+ * still. Every delay lives in CSS (`gateway-t***`); JS only adds one `is-in` class on the frame
+ * after mount.
  *
- * ## 헤드라인 — 소유자의 문장 그대로 (한 글자도 다듬지 않는다)
+ * ## The headline is the owner's sentence, verbatim — not one character is polished
  *
- * 「에이전트는 코드를 작성하고 / 사람의 인지 부채는 쌓여갑니다」. 크기는
- * `--text-monument`(clamp 40px–96px) — 지도가 첫 화면에서 빠지면서 활자가
- * 그 무게를 이어받는다(램프 등재는 `app/globals.css` · `cn.ts`).
+ * 「에이전트는 코드를 작성하고 / 사람의 인지 부채는 쌓여갑니다」 ("agents write the code /
+ * a person's cognitive debt piles up"). The size is `--text-monument` (clamp 40px–96px) — with
+ * the map out of the first screen, the type inherits that weight (ramp registration in
+ * `app/globals.css` and `cn.ts`).
  *
- * ## 배치 — 기념비 단 + 분할 밴드 (승인 목업 `b-hero.html` 의 2026-08-18 2차 개정)
+ * ## Layout — a monument measure plus a split band (second revision of the approved mockup, 2026-08-18)
  *
- * 목업의 「헤드라인 왼쪽 / 오브젝트 오른쪽」 분할을 헤드라인까지 컬럼에 넣어
- * 구현했더니 실측이 기념비를 부쉈다: 1728 에서 텍스트 컬럼 800px 에 ko 줄 예산
- * 916/1009px — 두 문장이 넉 줄로 갈라졌다(`작성하고` · `쌓여갑니다` 가 홀로
- * 남는 랙 라인). 기념비는 **문장 = 줄** 일 때만 기념비다. 그래서 헤드라인은
- * 컬럼 전폭을 단(measure)으로 쓰고(`@container` 래퍼가 단을 선언, 크기는
- * `--text-monument` 4.8cqw 가 단에서 따진다), 분할은 그 아래 밴드부터다:
- * 리드·CTA·신뢰줄이 왼쪽, 히어로 오브젝트(실그래프 심도 투영)가 오른쪽 기둥.
- * `<lg` 에서는 오브젝트가 활자 아래 받침으로 내려간다.
+ * Implementing the mockup's "headline left / object right" split with the headline inside the
+ * column broke the monument when measured: at 1728 the text column was 800px against a Korean
+ * line budget of 916/1009px — the two sentences split into four lines, leaving `작성하고` and
+ * `쌓여갑니다` stranded as rag lines. A monument is a monument only when **sentence = line**. So
+ * the headline uses the full column as its measure (an `@container` wrapper declares it, and
+ * `--text-monument`'s 4.8cqw sizes against that measure), and the split starts with the band
+ * below it: lead, CTA, and trust line on the left, the hero object (a depth projection of the
+ * real graph) as the right column. Below `lg` the object drops beneath the type as a plinth.
  */
 function HeroSection({
   published,
@@ -322,26 +324,28 @@ function HeroSection({
   const t = useTranslations('download');
   const [heroIn, setHeroIn] = useState(false);
   useEffect(() => {
-    // rAF 콜백이라 effect 본문의 동기 setState 가 아니다 — 첫 페인트(배경 정지)
-    // 가 지나간 다음 프레임에 안무가 시작된다.
+    // Inside a rAF callback, so this is not a synchronous setState in the effect body — the
+    // choreography starts on the frame after the first paint (the still background).
     const id = requestAnimationFrame(() => setHeroIn(true));
     return () => cancelAnimationFrame(id);
   }, []);
 
   /**
-   * 히어로 CTA 의 네 목적지 (2026-08-18 소유자: *"윈도우 다운로드 하기 버튼이랑
-   * 웹 플레이그라운드 보기 버튼이 없음.. 데모 먼저 보기도 버튼인지도 모르겠고"*):
-   * ① 내 플랫폼용 받기(채움 — 유일한 주목 승자) ② 데모 먼저 보기(outline lg)
-   * ③ 나머지 데스크톱 파일 전부(outline md 한 단 아래) ④ 브라우저에서 열기
-   * (outline md). 감지는 클라이언트 한 곳(`useVisitorDesktopPlatform`)이고
-   * 실패 시 macOS 기본 — 어느 분기에서도 네 목적지 전부에 손이 닿는다.
+   * The hero CTA's four destinations (owner, 2026-08-18: *"윈도우 다운로드 하기 버튼이랑 웹
+   * 플레이그라운드 보기 버튼이 없음.. 데모 먼저 보기도 버튼인지도 모르겠고"* — there is no
+   * Windows download button and no web playground button, and "see the demo first" does not even
+   * read as a button):
+   * ① get it for my platform (filled — the sole attention winner) ② see the demo first
+   * (outline lg) ③ every other desktop file (outline md, one step down) ④ open in the browser
+   * (outline md). Detection happens in one client place (`useVisitorDesktopPlatform`) and falls
+   * back to macOS — every branch keeps all four destinations reachable.
    *
-   * Windows 가 승자가 될 때 미서명 사실은 **누르기 전에** 신뢰줄 자리에서
-   * 말한다(`trustLineWindows`) — macOS 방문자가 같은 자리에서 서명·공증을
-   * 읽는 것과 정확히 같은 문법이다. 강등 버전(둘째 줄의 Windows 버튼)은
-   * 라벨 옆 `미서명` 표식이 같은 일을 한다. [2026-08-19] 자세한 경고 전문과
-   * 체크섬을 지던 설치 절은 삭제됐다 — 이제 이 신뢰줄이 그 사실의 **유일한**
-   * 자리이므로, 여기서 문구를 줄이면 사실이 사라진다.
+   * When Windows is the winner, the unsigned fact is stated **before pressing**, in the trust
+   * line slot (`trustLineWindows`) — exactly the grammar by which a macOS visitor reads about
+   * signing and notarization in the same slot. In the demoted version (the Windows button on the
+   * second row) the `unsigned` marker beside the label does the same job. [2026-08-19] The
+   * install section that carried the full warning text and the checksum was deleted, so this
+   * trust line is now the **only** place that fact lives — shortening the copy here deletes the fact.
    */
   const visitorPlatform = useVisitorDesktopPlatform();
   const windowsInstaller = windowsAsset();
@@ -358,10 +362,10 @@ function HeroSection({
 
   return (
     <section data-testid="gateway-hero" className={cn(PAGE_GUTTER, 'w-full')}>
-      {/* 기념비 단 — 헤드라인은 컬럼 전폭을 단으로 쓴다. `@container` 가 이
-          단을 선언하고 `--text-monument`(4.8cqw)가 그 폭에서 크기를 따져, 두
-          문장이 분할 히어로의 모든 폭에서 각각 한 줄에 선다(예산 산식은 토큰
-          독블록). */}
+      {/* The monument measure — the headline uses the full column as its measure. `@container`
+          declares that measure and `--text-monument` (4.8cqw) sizes against it, so both sentences
+          stay on one line each at every width of the split hero (the budget arithmetic is in the
+          token doc-block). */}
       <div className={cn(PAGE_COLUMN, '@container min-w-0 pt-12 md:pt-16')}>
         <p
           className={cn(
@@ -381,8 +385,8 @@ function HeroSection({
             heroIn && 'gateway-hero-in',
           )}
         >
-          {/* 첫 줄은 한 단 낮은 잉크 — 두 번째 줄(사람의 부채)이 문장의
-              주인공이라는 위계를 밝기로 만든다. */}
+          {/* The first line is one step down in ink, making the hierarchy — the second line
+              (a person's debt) is the sentence's subject — out of brightness. */}
           <span className="gateway-hero-line">
             <span className="text-[color:var(--color-text-secondary)]">
               {t('heroTitleLine1')}
@@ -394,8 +398,9 @@ function HeroSection({
         </h1>
       </div>
 
-      {/* 분할 밴드 — 리드·CTA·신뢰줄 왼쪽, 오브젝트 오른쪽 기둥. `items-center`
-          는 오브젝트의 질량 중심과 결정 블록(리드→CTA)을 같은 축에 놓는다. */}
+      {/* The split band — lead, CTA, and trust line on the left, the object as the right column.
+          `items-center` puts the object's centre of mass on the same axis as the decision block
+          (lead → CTA). */}
       <div
         className={cn(
           PAGE_COLUMN,
@@ -403,11 +408,12 @@ function HeroSection({
           'lg:grid-cols-[minmax(0,1fr)_minmax(320px,0.85fr)]',
         )}
       >
-        {/* 구 `lg:pb-14` 광학 보정은 반납했다 (2026-08-18 소유자: *"윗공백이
-            너무 심한데"* — 실측 1512: 보정이 결정 블록을 28px 올려 블록 하단과
-            캔버스 하단 사이 108px 의 빈 좌하단을 만들고, 상대적으로 오브젝트를
-            아래로 몰아 보이게 했다). CTA 가 두 줄이 되며 블록이 캔버스 키에
-            가까워졌으므로 순수 `items-center` 가 광학으로도 맞는다. */}
+        {/* The old `lg:pb-14` optical correction was returned (owner, 2026-08-18: *"윗공백이 너무
+            심한데"* — too much space at the top; measured at 1512, the correction lifted the
+            decision block 28px, leaving 108px of empty lower-left between the block's bottom and
+            the canvas bottom, which in turn made the object look pushed down). Now that the CTA
+            wraps to two lines and the block is closer to the canvas height, plain `items-center`
+            is also optically correct. */}
         <div className="min-w-0">
           <p
             className={cn(
@@ -420,10 +426,10 @@ function HeroSection({
 
           <div className={cn(rise('gateway-t800'), 'mt-9 flex flex-wrap items-center gap-3')}>
             {published && primaryAsset ? (
-              /* 채운 CTA — 실파일 직링크. 설치 절이 삭제된 2026-08-19 부터
-                 이 페이지의 **유일한** 주 다운로드다. 파일은 방문자의 플랫폼을
-                 따른다 — Windows 방문자가 「Apple Silicon용 받기」만 보던 것이
-                 이 분기가 고친 결함이다. */
+              /* The filled CTA — a direct link to the real file. Since the install section was
+                 deleted on 2026-08-19 this is the **only** primary download on the page. The file
+                 follows the visitor's platform — the defect this branch fixes was a Windows
+                 visitor seeing only "get it for Apple Silicon". */
               <a
                 href={heroWindowsPrimary ? windowsInstaller!.downloadUrl : primaryAsset.downloadUrl}
                 data-testid="gateway-hero-cta"
@@ -437,7 +443,7 @@ function HeroSection({
                 />
               </a>
             ) : (
-              /* 받을 것이 없으면 승자는 지금 되는 것 — 브라우저의 지도다. */
+              /* With nothing to download, the winner is what does work — the map in the browser. */
               <Link
                 href="/topology"
                 data-testid="gateway-hero-cta"
@@ -446,9 +452,9 @@ function HeroSection({
                 {t('webCta')}
               </Link>
             )}
-            {/* `outline` — ghost 는 면도 테두리도 없어 산문으로 읽혔다(소유자:
-                *"버튼인지도 모르겠고"*). 누를 수 있는 것은 누를 수 있게
-                생겨야 하고, 이 램프에서 그 최소 단위가 outline 이다. */}
+            {/* `outline` — ghost has neither a face nor a border and read as prose (owner: *"버튼인지도
+                모르겠고"* — I can't even tell it's a button). Something pressable has to look
+                pressable, and in this ramp `outline` is the minimum unit of that. */}
             <a
               href="#demo"
               data-testid="gateway-hero-demo-link"
@@ -459,18 +465,18 @@ function HeroSection({
           </div>
 
           {published && primaryAsset ? (
-            /* 둘째 줄 — 승자가 아닌 목적지 전부, 한 단 아래(`md`, h-10 vs h-11).
-               크기 표기는 주 CTA 만 갖는다 — 결정 재료는 승자의 것이다.
-               Windows 의 「미서명」 표식만은 여기서도 뗄 수 없다 — 서명 상태는
-               받기 전에 알아야 하는 사실이라서다.
+            /* The second row — every destination that is not the winner, one step down (`md`, h-10
+               vs h-11). Only the primary CTA carries a size: decision material belongs to the
+               winner. The `unsigned` marker on Windows cannot be dropped even here, because
+               signing status is a fact you need before downloading.
 
-               `<sm` 의 `px-3` 은 취향이 아니라 산술이다(2026-08-19 실측). 320px
-               en 에서 「Download Windows x64 beta + unsigned」 버튼이 화면을 8px
-               뚫었고, `gateway-fx-stage` 가 `overflow-hidden` 이라 **스크롤바도
-               안 생긴 채 그냥 잘렸다**. 좌우 4px 씩 반납하면 정확히 들어간다.
-               넷을 **같이** 내리는 이유: 나란히 선 출구들의 여백이 서로 달라지는
-               것이 이 저장소가 이미 한 번 잡은 결함이다(2026-08-08 눌린 여백).
-               게이트: `download-gateway-grid.spec.ts` 의 320px 넘침 시험. */
+               The `px-3` below `sm` is arithmetic, not taste (measured 2026-08-19). At 320px in
+               `en` the "Download Windows x64 beta + unsigned" button broke 8px past the screen, and
+               because `gateway-fx-stage` is `overflow-hidden` it was **simply clipped, with no
+               scrollbar**. Returning 4px on each side fits it exactly. All four drop **together**
+               because exits standing side by side with differing padding is a defect this
+               repository already caught once (the squeezed padding of 2026-08-08).
+               Gate: the 320px overflow test in `download-gateway-grid.spec.ts`. */
             <div
               data-testid="gateway-hero-alt-row"
               className={cn(rise('gateway-t800'), 'mt-2.5 flex flex-wrap items-center gap-2.5')}
@@ -499,11 +505,12 @@ function HeroSection({
                   </span>
                 </a>
               ) : null}
-              {/* 관문의 둘째 약속 — 설치 없이 보는 길이 항상 열려 있다. 종전
-                  `webCta` 는 미게시 분기에만 살아서 게시된 지금은 절대 안
-                  나왔다(소유자: *"웹 플레이그라운드 보기 버튼이 없음"*).
-                  라벨이 `webCta` 보다 짧은 것은 줄 예산이다 — 긴 라벨이면 이
-                  줄이 ko 575px 단에서 홀로 셋째 줄로 떨어진다(실측 1512). */}
+              {/* The gateway's second promise — the path to look without installing is always open.
+                  The old `webCta` lived only in the unpublished branch, so now that a release is
+                  published it never appeared at all (owner: *"웹 플레이그라운드 보기 버튼이 없음"*
+                  — the web playground button is missing). The label is shorter than `webCta`'s
+                  because of the line budget: a longer label drops this line alone onto a third row
+                  in the 575px Korean measure (measured at 1512). */}
               <Link
                 href="/topology"
                 data-testid="gateway-hero-web-cta"
@@ -520,9 +527,9 @@ function HeroSection({
               'mt-5 break-keep text-body leading-body text-[color:var(--color-text-tertiary)]',
             )}
           >
-            {/* 신뢰줄 자리 = 「누르기 전에 알아야 하는 사실」. 승자가 Windows 면
-                Apple 서명 문장은 그 파일의 사실이 아니다 — 미서명·SmartScreen
-                경고가 그 자리의 정직한 문장이다. */}
+            {/* The trust line's slot is "the fact you need before pressing". When the winner is
+                Windows, the Apple signing sentence is not a fact about that file — unsigned and the
+                SmartScreen warning are the honest sentence for that slot. */}
             {heroWindowsPrimary ? t('trustLineWindows') : t('trustLine')}
           </p>
         </div>
@@ -544,9 +551,10 @@ function HeroSection({
 }
 
 /**
- * 히어로 둘째 줄의 Intel Mac 파일 — 감지 분기와 무관하게 항상 선다.
- * 브라우저는 맥의 칩을 판별할 수 없으므로(아키텍처 안내 주석) Apple Silicon
- * 이 기본이고 Intel 은 감지가 아니라 **상시 노출**로 손이 닿는다.
+ * The Intel Mac file on the hero's second row — always present, regardless of the detection
+ * branch. A browser cannot tell which chip a Mac has (see the architecture note), so Apple
+ * Silicon is the default and Intel stays reachable by **being permanently visible** rather than
+ * by detection.
  */
 function HeroIntelLink() {
   const t = useTranslations('download');
@@ -566,30 +574,30 @@ function HeroIntelLink() {
 }
 
 /**
- * 음각 계기 스트립 — **사실은 절대 움직이지 않는다.** 버전·날짜·최소 OS·크기·
- * SHA-256 전부 릴리스 생성 모듈에서 온 값이고, 미게시 상태에서는 정직하게
- * 줄어든다(없는 파일의 크기·체크섬 행은 존재하지 않는다).
+ * The engraved instrument strip — **facts never move.** Version, date, minimum OS, size, and
+ * SHA-256 all come from the release generation module, and in an unpublished state it honestly
+ * shrinks (rows for the size and checksum of a file that does not exist simply do not exist).
  *
- * census 는 여기 없다 — 그 숫자의 캡션은 **자기가 세는 지도와 같은 절**(③)에
- * 산다(소유자 확정). 한 페이지에 같은 정의가 두 번 적히면 둘 다 각주가 된다.
+ * The census is not here — the caption for that number lives in **the same section as the map it
+ * counts** (③, owner-confirmed). A definition written twice on one page makes both copies footnotes.
  *
- * ## 이 레일은 **주 CTA 가 가리키는 파일**을 말한다 (2026-08-22)
+ * ## This rail describes **the file the primary CTA points at** (2026-08-22)
  *
- * 그러지 않던 동안 이 페이지는 자기가 파는 것을 어겼다. Windows UA 로 열면
- * 승자 버튼은 「Windows x64 베타 받기 · 47.8 MB」인데 바로 아래 레일이
- * `Requires macOS 12 이상 · DMG 53.5 MB · SHA-256 c420d0b4…` 였다 — **내려받지도
- * 않을 파일의 체크섬**이다. 체크섬은 「받은 것이 우리가 올린 것과 같은가」를
- * 대조하라고 내미는 값이라, 다른 파일의 것을 보여 주면 값이 0 이 아니라
- * **음수**다: 대조한 사람은 반드시 불일치를 보고, 그 순간 의심하는 대상은
- * 자기가 받은 파일이 된다.
+ * While it did not, this page broke its own promise. Opened with a Windows UA, the winner button
+ * read "Get Windows x64 beta · 47.8 MB" while the rail directly beneath said
+ * `Requires macOS 12 or later · DMG 53.5 MB · SHA-256 c420d0b4…` — **the checksum of a file that
+ * would never be downloaded**. A checksum is offered so someone can verify that what they got
+ * matches what we published, so showing another file's checksum has a value that is not zero but
+ * **negative**: anyone who checks will necessarily see a mismatch, and at that moment what they
+ * doubt is the file they downloaded.
  *
- * 히어로의 CTA(`heroWindowsPrimary`)와 신뢰줄(`trustLineWindows`)은 이미 감지된
- * 플랫폼을 따르고 있었다 — 이 레일만 `macosAssetFor` 에 묶여 빠져 있었다.
- * 그래서 새 판정을 만들지 않고 **같은 불리언을 내려받는다**: 한 화면이 어느
- * 파일 얘기를 하는지는 한 곳에서만 정해져야 한다.
+ * The hero's CTA (`heroWindowsPrimary`) and trust line (`trustLineWindows`) already followed the
+ * detected platform — only this rail was left tied to `macosAssetFor`. So rather than inventing a
+ * second verdict it **takes the same boolean down**: which file a screen is talking about must be
+ * decided in exactly one place.
  *
- * mac 분기의 값과 순서는 **1바이트도 바뀌지 않았다** — 서버 스냅숏이 언제나
- * mac 이므로(`visitor-platform.ts`) 첫 그림도 종전과 같다.
+ * The mac branch's values and ordering **did not change by one byte** — the server snapshot is
+ * always mac (`visitor-platform.ts`), so the first paint is unchanged too.
  */
 function FactsStrip({
   published,
@@ -628,7 +636,7 @@ function FactsStrip({
         releaseVersion: RELEASE_VERSION,
       })} · ${t('factUnpublished')}`;
 
-  /** 승자 파일 — 히어로 CTA 가 가리키는 바로 그것. */
+  /** The winning file — precisely what the hero CTA points at. */
   const subject = windowsPrimary && windowsInstaller ? windowsInstaller : primaryAsset;
   const subjectIsWindows = subject !== null && subject === windowsInstaller;
 
@@ -641,7 +649,7 @@ function FactsStrip({
   ];
   if (published && subject) {
     facts.push({
-      // 파일 형식이 곧 라벨이다 — 「무엇을 받는가」를 크기 옆에서 한 번 더 말한다.
+      // The file format is the label — it states "what you are getting" once more, beside the size.
       label: subjectIsWindows ? 'EXE' : 'DMG',
       value: formatAssetSize(subject.sizeBytes),
     });
@@ -678,7 +686,7 @@ function FactsStrip({
   );
 }
 
-// ─── ② 시연 — 보이면 스스로 재생 ────────────────────────────────────────────
+// ─── ② Demo — plays itself once visible ─────────────────────────────────────
 
 function DemoSection() {
   const t = useTranslations('download');
@@ -707,16 +715,16 @@ function DemoSection() {
   );
 }
 
-// ─── ③ 증거 — 지도가 눈앞에서 조립되고, 끝나는 순간 숫자가 온다 ─────────────
+// ─── ③ Evidence — the map assembles in front of you, and the numbers arrive when it finishes ──
 
 /**
- * 지도는 첫 화면에서 빠졌지만(소유자 콜) 사라진 것이 아니다 — **증거**로서
- * 자기 절을 갖는다. 절이 뷰포트에 들어오면 실제 엔진(`StageMap` →
- * `TopologyMapV2`)의 도착 안무(E1 호밍 스프링)가 1회 발화하고, census 캡션은
- * 조립이 끝난 뒤(1400ms) 도착한다 — 숫자는 조립의 **결과**라서다.
+ * The map left the first screen (owner call) but did not disappear — it has its own section, as
+ * **evidence**. When the section enters the viewport the real engine (`StageMap` →
+ * `TopologyMapV2`) fires its arrival choreography (the homing spring) once, and the census
+ * caption arrives after assembly completes (1400ms) — the numbers are the **result** of assembly.
  *
- * 캡션의 정직성 계약은 리메이크 전과 같다: 캡션이 세는 숫자와 지도가 그리는
- * 그래프가 `useStageGraph()` 한 훅에서 나온다.
+ * The caption's honesty contract is unchanged from before the remake: the number the caption
+ * counts and the graph the map draws come from one hook, `useStageGraph()`.
  */
 function EvidenceSection({ graph }: { graph: StageGraph }) {
   const t = useTranslations('download');
@@ -747,12 +755,12 @@ function EvidenceSection({ graph }: { graph: StageGraph }) {
         />
 
         {/*
-         * 지도 55 / 실데이터 45 (2026-08-18 소유자 지적 — 전폭 프레임에서
-         * 그래프가 폭의 20%만 쓰고 80%가 빈 검정이었다). 절반은 그래프가
-         * 정방형에 가까운 틀을 얻어 bbox 맞춤으로 채우고(카메라·티어 공개는
-         * `StageMap`·`--topology-v2-overview-entry-ratio`), 나머지 절반은 같은
-         * 그래프에서 파생한 실데이터(종류 census · 관계 원문 · 영향 반경)가
-         * 채운다 — 이 절의 이름이 「증거」다.
+         * Map 55 / real data 45 (owner report 2026-08-18 — in the full-width frame the graph used
+         * 20% of the width and 80% was empty black). One half gives the graph a near-square frame
+         * it fills by bbox fit (camera and tier reveal are in `StageMap` and
+         * `--topology-v2-overview-entry-ratio`), and the other half is filled by real data derived
+         * from the same graph (the kind census, verbatim relations, impact radius) — this section
+         * is called evidence.
          */}
         <div
           ref={ref}
@@ -770,8 +778,8 @@ function EvidenceSection({ graph }: { graph: StageGraph }) {
           <EvidenceRail graph={graph} inView={inView} />
         </div>
 
-        {/* [download-honesty] 이 숫자는 바로 위에 그려진 그래프 자신이다 —
-            출처·범위 라벨·촉각 힌트의 계보는 리메이크 전 주석과 원장에 있다. */}
+        {/* This number is the graph drawn directly above it. The lineage of the source, the scope
+            label, and the tactile hint is in the pre-remake comments and the decision ledger. */}
         <p
           data-testid="download-portrait-caption"
           className={cn('gateway-map-after', captionIn && 'is-in', 'pointer-events-none mt-5')}
@@ -802,19 +810,20 @@ function EvidenceSection({ graph }: { graph: StageGraph }) {
 }
 
 /**
- * 증거 레일 — 지도 옆 절반을 채우는 **같은 그래프의 다른 표현**. 숫자·관계·
- * 이름은 전부 `buildEvidenceRailModel` 이 왼쪽 지도와 같은 `StageGraph` 에서
- * 파생한다(장식 0 — 이 절의 이름이 증거라서다). 표기 문법은 계기 스트립과
- * 같다: 라벨은 본문 서체, 숫자는 음각 mono. 한글 라벨에 mono 를 걸지 않는
- * 이유는 계기 스트립과 같다 — 한글은 mono 폴백으로 서체가 섞인다.
+ * The evidence rail — **a different rendering of the same graph**, filling the half beside the
+ * map. Numbers, relations, and names are all derived by `buildEvidenceRailModel` from the same
+ * `StageGraph` as the map on the left (zero decoration — this section is called evidence). The
+ * notation grammar matches the instrument strip: labels in the body face, numbers in engraved
+ * mono. Korean labels are not set in mono, for the same reason as the instrument strip — Korean
+ * falls back to a mixed typeface under mono.
  *
- * ## 치수 — 각주가 아니라 둘째 리드다 (2026-08-18 소유자: *"너무 작아서"*)
+ * ## Sizing — a second lead, not a footnote (owner, 2026-08-18: *"너무 작아서"* — it's too small)
  *
- * 첫 판은 계기 스트립의 치수(caption 9.5 · label 11 · body-lg 14)를 그대로
- * 입었는데, 계기 스트립은 히어로의 **각주**이고 이 레일은 「증거」 절의 오른쪽
- * **절반**이다 — 같은 옷이 여기서는 위계 미달이다. 램프 안에서 전 단을 한
- * 칸씩 올린다(새 스텝 0): 절 머리 caption→label, 이름 label→body,
- * 숫자 body-lg→title, 관계 원문 body→body-lg, 영향 문장 body-lg→title.
+ * The first pass wore the instrument strip's sizes (caption 9.5, label 11, body-lg 14), but the
+ * instrument strip is the hero's **footnote** while this rail is **half** of the evidence
+ * section — the same clothes are below hierarchy here. Every step moves up one rung inside the
+ * ramp (zero new steps): section head caption→label, name label→body, number body-lg→title,
+ * verbatim relation body→body-lg, impact sentence body-lg→title.
  */
 function EvidenceRail({ graph, inView }: { graph: StageGraph; inView: boolean }) {
   const t = useTranslations('download');
@@ -858,8 +867,8 @@ function EvidenceRail({ graph, inView }: { graph: StageGraph; inView: boolean })
               className="min-w-0 break-keep text-body-lg leading-body-lg text-[color:var(--color-text-secondary)]"
             >
               {line.source}
-              {/* 타입은 frontmatter 의 원문 그대로 — 번역하지 않는다. 타입 있는
-                  사실이 이 제품의 물건이고, 원문이 곧 증거다. */}
+              {/* The type is the frontmatter's own text, untranslated. Typed facts are this
+                  product's substance, and the original text is the evidence. */}
               <span
                 aria-hidden
                 className="mx-1.5 font-mono text-body leading-body text-[color:var(--color-text-quaternary)]"
@@ -886,23 +895,23 @@ function EvidenceRail({ graph, inView }: { graph: StageGraph; inView: boolean })
   );
 }
 
-// ─── ④ 에이전트 — 앱 안 대화(ACP) 실측 왕복 + 정지 카드 3장 ─────────────────
+// ─── ④ Agents — a measured in-app (ACP) round trip plus three still cards ───
 
 /**
- * 이 절의 생각 하나 (2026-08-18 재작업, `docs/DECISIONS.md`):
+ * This section's one idea (reworked 2026-08-18, `docs/DECISIONS.md`):
  *
- * > **에이전트가 앱 안에 산다 — 채팅만으로 온톨로지를 분석하고 고친다.**
+ * > **The agent lives inside the app — it analyzes and repairs the ontology through conversation alone.**
  *
- * 직전 판은 `mcp-verify` 터미널이었고 소유자가 기각했다(*"이건 뭔말인지를
- * 모르겠어"* — 개발자가 설정을 검증하는 장면이지 파는 장면이 아니다). 실물은
- * 이미 있다: `AcpChatPanel`(앱 안 대화창) · `AcpRuntimeSettings` · 볼트
- * capability 「앱 안 코딩 에이전트 실행기 (ACP)」. 장면(`AcpChatScene`)은
- * 그 실물의 실측 왕복(원장 2026-08-16 (7)) 재연이다.
+ * The previous version was an `mcp-verify` terminal and the owner rejected it (*"이건 뭔말인지를
+ * 모르겠어"* — I have no idea what this means; it showed a developer verifying configuration, not
+ * the thing being sold). The real thing already exists: `AcpChatPanel` (the in-app conversation),
+ * `AcpRuntimeSettings`, and the vault capability "in-app coding agent runner (ACP)". The scene
+ * (`AcpChatScene`) re-enacts a measured round trip of that real thing (ledger 2026-08-16 (7)).
  *
- * 문구의 경계는 원장 2026-08-16 (5): ① 우리가 재배포하는 것 없음(어댑터는
- * 사용자 기기에서 npx) ② 우리 실행기 목록을 설명하는 자리에 "Claude Code"
- * 금지 — 레지스트리의 허용 이름(Claude Agent)만 ③ **「이미 쓰는 에이전트를
- * 연결한다」** 위에만 선다 — 우리가 모델 접근을 제공한다는 인상 금지.
+ * Copy boundaries come from ledger 2026-08-16 (5): ① we redistribute nothing (the adapter runs
+ * via npx on the user's machine) ② "Claude Code" is forbidden where our runner list is described —
+ * only the registry's permitted name (Claude Agent) ③ it stands only on **"connect the agent you
+ * already use"** — never implying we provide model access.
  */
 function AgentSection() {
   const t = useTranslations('download');
@@ -924,9 +933,9 @@ function AgentSection() {
       <div className={cn(PAGE_COLUMN, 'min-w-0')}>
         <SectionIntro eyebrow="Agents" title={t('agentsTitle')} sub={t('agentsSub')} inView={inView} />
 
-        {/* 장면 폭은 시연 절과 같은 토큰(`--gateway-stage-max`) — 「이만큼이
-            무대다」를 페이지가 한 번만 말한다. ≤1920 에서는 종전 48rem 그대로,
-            넓은 폭에서만 비례로 자란다(근거는 토큰 독블록). */}
+        {/* The stage width uses the same token as the demo section (`--gateway-stage-max`), so the
+            page states "this much is the stage" only once. At ≤1920 it is the previous 48rem; only
+            at wider widths does it grow proportionally (rationale in the token doc-block). */}
         <div
           data-testid="gateway-agent-scene"
           className={cn(
@@ -947,7 +956,7 @@ function AgentSection() {
           {t('agentsCap')}
         </p>
 
-        {/* 카드 3장은 정지다 — 움직이는 것은 위 왕복 하나면 충분하다. */}
+        {/* The three cards are still — one moving thing above is enough. */}
         <div className="mt-14 grid min-w-0 gap-y-10 md:grid-cols-3">
           {columns.map((column, i) => (
             <div
@@ -976,40 +985,38 @@ function AgentSection() {
 }
 
 /**
- * 버튼에 붙는 파일 크기 — **`<sm` 에서는 안 붙는다** (2026-07-29 평결 ④).
+ * The file size attached to a button — **not attached below `sm`** (verdict ④, 2026-07-29).
  *
- * `buttonVariants` 는 `whitespace-nowrap` 이라 라벨이 길면 버튼이 컨테이너를
- * 뚫는다. 실측(320px): 주 CTA 콘텐츠 폭 261px vs 그 자리의 실질 폭 216px →
- * 가로 오버플로. 스크롤바도 안 생기고 **그냥 잘렸다**.
+ * `buttonVariants` sets `whitespace-nowrap`, so a long label pushes the button through its
+ * container. Measured at 320px: the primary CTA's content was 261px against 216px of real width →
+ * horizontal overflow. No scrollbar appeared; it was **simply clipped**.
  *
- * 잘라낸 것이 크기인 이유: 320px 폰에서는 macOS DMG 를 설치할 수 없다. 크기는
- * **설치를 결정하는 사람의 사실**이고 그 사람은 데스크톱에 있다.
+ * The size is what got cut because a 320px phone cannot install a macOS DMG. The size is **a fact
+ * for the person deciding to install**, and that person is at a desktop.
  *
- * 두 버튼이 같은 문법을 쓰게 된 것은 덤이다 — 예전엔 주 CTA 만 `· {size}` 를
- * **번역 문자열 안에** 넣고 Intel 은 별도 스팬으로 그려서, 같은 줄의 두 버튼이
- * 같은 사실을 다른 서체·다른 구두점으로 말했다.
+ * Both buttons sharing one grammar is a bonus — the primary CTA used to put `· {size}` **inside
+ * the translated string** while Intel drew it as a separate span, so two buttons on one row stated
+ * the same fact in different typefaces with different punctuation.
  *
- * ⚠️ **음각 숫자는 무채색 표면 위의 문법이다** (`--engraved-numeral-face`
- * #8c8c94 + 아래로 1px `#08080a` 하이라이트 — 어두운 패널에 눌러 새긴 효과).
- * 채운 인디고(#5e6ad2) 위에 그대로 얹으면 대비가 **1.41:1** 로 무너진다
- * (실측 2026-07-29 — 첫 시안이 정확히 이 실수를 했다). 채운 버튼 위에서는
- * 버튼 자신의 전경색을 쓴다: 같은 문장의 일부라 색이 갈릴 이유도 없다.
+ * ⚠️ **Engraved numerals are a grammar for neutral surfaces** (`--engraved-numeral-face` #8c8c94
+ * plus a 1px `#08080a` highlight below — the look of being pressed into a dark panel). Placed
+ * straight onto filled indigo (#5e6ad2) the contrast collapses to **1.41:1** (measured 2026-07-29
+ * — the first draft made exactly this mistake). On a filled button it uses the button's own
+ * foreground colour: it is part of the same sentence, so there is no reason for the colour to differ.
  */
 function AssetSize({ bytes, onFill = false }: { bytes: number; onFill?: boolean }) {
   return (
     <span
       className={cn(
         'hidden font-mono text-label leading-label sm:inline',
-        // 채운 버튼 위에서는 **약화도 하지 않는다**. `opacity-80` 을 얹어 봤더니
-        // 합성 대비가 3.45:1 로 떨어졌다(11px 텍스트, 실측 2026-07-29) — 한 단만
-        // 낮춰도 바로 밑으로 뚫린다. 크기와 라벨을 가르는 것은 이미 mono
-        // 페이스와 간격이 한다.
+        // On a filled button it is **not even weakened**. Adding `opacity-80` dropped the composite
+        // contrast to 3.45:1 (11px text, measured 2026-07-29) — one step down already breaks
+        // through. Separating the size from the label is already done by the mono face and the spacing.
         //
-        // 잉크는 라벨과 **같은 토큰**이어야 한다. 2026-08-03 까지 이 자리는
-        // `--color-text-primary` 였고 채운 인디고 위에서 4.42:1 이라 AA 미달
-        // 이었다(위 주석의 «라벨 자신이 4.42:1» 이 그 값이다). 라벨이
-        // `--color-text-on-accent`(4.70:1)로 올라갔으므로 크기 배지도 같이
-        // 간다 — 한 버튼 안에서 잉크가 둘로 갈리면 그게 다음 회귀다.
+        // The ink must be the **same token** as the label. Until 2026-08-03 this slot was
+        // `--color-text-primary`, which is 4.42:1 on filled indigo and below AA. The label moved up
+        // to `--color-text-on-accent` (4.70:1), so the size badge moves with it — two inks inside
+        // one button is the next regression.
         onFill
           ? 'text-[color:var(--color-text-on-accent)]'
           : 'text-[color:var(--engraved-numeral-face)] [text-shadow:var(--engraved-numeral-text-shadow)]',
@@ -1021,9 +1028,9 @@ function AssetSize({ bytes, onFill = false }: { bytes: number; onFill?: boolean 
 }
 
 /**
- * 릴리스 정책 산문 — 콜로폰의 것이다 (fable 판정 2026-07-29: 정책 산문은
- * 결정 재료가 아니다). 설치 절과 검증 레일이 삭제된 2026-08-19 이후, 이 두
- * 문장이 페이지에 남은 **유일한** 릴리스 정책 사실이다.
+ * Release policy prose belongs to the colophon (verdict 2026-07-29: policy prose is not decision
+ * material). Since the install section and the verification rail were deleted on 2026-08-19, these
+ * two sentences are the **only** release-policy facts left on the page.
  */
 function ReleasePolicyNotes({ published }: { published: boolean }) {
   const t = useTranslations('download');
@@ -1033,8 +1040,8 @@ function ReleasePolicyNotes({ published }: { published: boolean }) {
       <p className="mt-3 break-keep text-label leading-label text-[color:var(--color-text-quaternary)]">
         {published
           ? t('trustPolicyPublished', { tag: MACOS_RELEASE.tag })
-          : /* 아직 안 나온 빌드는 개발 중 버전으로 부른다 — `MACOS_RELEASE.tag`
-               는 미게시 상태에서 정의상 낡은 값이다. */
+          : /* An unreleased build is named by the development version — while unpublished,
+               `MACOS_RELEASE.tag` is by definition a stale value. */
             t('trustPolicyPending', {
                 tag: resolveDisplayReleaseTag({
                   published: false,

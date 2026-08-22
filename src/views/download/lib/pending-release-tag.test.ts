@@ -13,9 +13,9 @@ describe("표시할 릴리스 태그 — 게시된 것만 생성 파일이 말�
   });
 
   /**
-   * 결함의 정확한 재현 — 버전은 rc.3 인데 생성 파일은 rc.2 에 머물러 있고
-   * 아직 아무것도 게시되지 않은 구간. 이때 화면은 rc.3 이라고 말해야 한다.
-   * 종전에는 제목이 rc.3, 본문이 rc.2 로 **한 화면에서 갈렸다**.
+   * The exact reproduction of the defect — the version is rc.3 while the generated file is still at
+   * rc.2 and nothing has been published. The screen must say rc.3. It used to **diverge within one
+   * screen**: rc.3 in the title, rc.2 in the body.
    */
   it("아직 안 나갔으면 지금 저장소의 버전을 말한다", () => {
     expect(

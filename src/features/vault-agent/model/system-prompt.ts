@@ -1,54 +1,51 @@
 /**
- * 1층 시스템 프롬프트 — **제품 규율. 코드에 산다. 편집 불가.**
+ * The layer-1 system prompt — **product discipline. It lives in code. Not editable.**
  *
- * ## 왜 코드인가
+ * **Why code.** This prompt must move **atomically** with `mcp/src/schema.mjs`
+ * (mirror: `cli/src/lib/schema.mjs`): when the schema changes, this copy changes
+ * in the same PR. Living in the vault it would go stale out of step with the
+ * schema — the prompt edition of code-doc drift. It is also the product's
+ * discipline, not the user's data.
  *
- * 이 프롬프트는 `mcp/src/schema.mjs`(미러: `cli/src/lib/schema.mjs`) 와
- * **원자적으로 움직여야** 한다. 스키마가 바뀌면 같은 PR 에서 이 문구도
- * 바뀐다. 볼트에 살면 스키마와 어긋난 채 낡는다 — 코드-문서 drift 의
- * 프롬프트판이다. 또 이건 제품의 규율이지 사용자의 데이터가 아니다.
+ * **Why it is still readable.** Editing is impossible but **reading is one click**
+ * (the panel header's "instructions"). A hidden prompt is trust debt — the user
+ * must know what goes out alongside their vault's contents.
  *
- * ## 왜 열람은 되는가
+ * **Where the urge to edit goes.** To the optional layer-2 file
+ * (`.ontology-atlas/agent-instructions.md`). The user's discipline is the user's
+ * plain text — visible in git and portable.
  *
- * 편집은 불가하되 **열람은 1클릭**이다 (패널 헤더의 "지침"). 숨긴 프롬프트는
- * 신뢰 부채다 — 사용자가 자기 볼트 내용과 함께 무엇이 나가는지 알아야 한다.
+ * ## ⚠️ Language boundary — do not translate this prompt
  *
- * ## 편집 욕구는 어디로 가나
+ * There are three channels and each has its own language. Confusing them leads the
+ * next person to translate this file into Korean, which breaks byte equality with
+ * the source of truth and turns the contract test red.
  *
- * 2층 파일(`.ontology-atlas/agent-instructions.md`, 선택)로 간다. 사용자의
- * 규율은 사용자의 평문이다 — git 으로 보이고 들고 떠날 수 있다.
- *
- * ## ⚠️ 언어 경계 — 이 프롬프트를 번역하지 마라
- *
- * 세 채널이 있고 언어가 각각 다르다. 헷갈리면 다음 사람이 이 파일을 한국어로
- * 번역하고, 그 순간 정본과의 바이트 동치가 깨져 계약 테스트가 터진다.
- *
- * | 채널 | 언어 |
+ * | Channel | Language |
  * |---|---|
- * | LLM 이 읽는 시스템 프롬프트(이 파일) | **영어 단일** — 오픈소스이고 모델 채널이다 |
- * | 사용자 화면 문구 | ko / en (`messages/*.json`) |
- * | LLM 이 **답하는** 언어 | 사용자가 쓴 언어 (아래 Voice 절이 지시한다) |
+ * | The system prompt the LLM reads (this file) | **English only** — this is open source and a model channel |
+ * | User-facing copy | ko / en (`messages/*.json`) |
+ * | The language the LLM **answers** in | whatever the user wrote in (the Voice section below instructs this) |
  *
- * 아래 구축 규칙의 *"in the language the person is writing to you in"* 은 **셋째
- * 칸** 이야기다. 프롬프트 자체의 언어가 아니다.
+ * The construction rules' *"in the language the person is writing to you in"* is
+ * about **the third row**, not about the prompt's own language.
  *
- * ## ⚠️ 아래 세 블록은 손 복제다 — 고칠 때 짝을 같이 고쳐라
+ * ## ⚠️ The three blocks below are hand-copied — fix them in pairs
  *
- * 정본은 `mcp/src/construction-rules.mjs` 의 `META_MODEL_RULES_EN` ·
- * `CONSTRUCTION_RULES_EN` · `CHAT_RULES_DELTA_EN` 이다. `src/` 와 `mcp/` 는
- * 별도 패키지라 cross-import 가 물리적으로 불가능해서
- * (`schema.mjs` ↔ `cli/src/lib/schema.mjs` 와 같은 상황)
- * 리터럴 복제 + 계약 테스트가 유일한 방법이다.
- * `tests/contract/ontology-meta-model.contract.test.ts` 와
- * `tests/contract/vault-schema.contract.test.ts` 가 바이트 동치를 강제한다 —
- * 정본만 고치면 그 테스트가 즉시 터지고, 그게 이 복제가 조용히 낡지 않는
- * 유일한 이유다.
+ * The source of truth is `META_MODEL_RULES_EN`, `CONSTRUCTION_RULES_EN`, and
+ * `CHAT_RULES_DELTA_EN` in `mcp/src/construction-rules.mjs`. `src/` and `mcp/` are
+ * separate packages, so a cross-import is physically impossible (the same
+ * situation as `schema.mjs` ↔ `cli/src/lib/schema.mjs`) and a literal copy plus a
+ * contract test is the only way. `tests/contract/ontology-meta-model.contract.test.ts`
+ * and `tests/contract/vault-schema.contract.test.ts` enforce byte equality — fixing
+ * only the source turns those tests red immediately, and that is the only reason
+ * this copy does not go quietly stale.
  *
- * 이 파일 위쪽 주석이 오랫동안 *"schema.mjs 와 원자적으로 움직여야 한다"* 고
- * 적어 놓고 **그걸 강제하는 장치가 없었다**. 실제로 kind 위계가 이미 갈라져
- * 있었다(2026-07-31 실측): project 가 domains 만 소유한다고 적혀 있었으나
- * 스키마는 domains/capabilities/elements 셋 다이고, `vault-readme` 경고는
- * MCP 안내문에만 있었다. 둘 다 이 커밋에서 고쳤고 이제 테스트가 지킨다.
+ * This file's header long claimed it *"must move atomically with schema.mjs"* while
+ * **nothing enforced that**. The kind hierarchy had in fact already diverged
+ * (measured 2026-07-31): it said a project owns only domains while the schema has
+ * domains, capabilities, and elements, and the `vault-readme` warning existed only
+ * in the MCP guidance. Both were fixed in that commit and the tests now hold them.
  */
 
 export const AGENT_INSTRUCTIONS_FILE = '.ontology-atlas/agent-instructions.md';
@@ -186,9 +183,9 @@ Write plainly, in the person's language, for someone who is not a developer. Sho
 You are talking to a person, not returning structured \`warnings\` to another program. So when step 4 of the construction rules above would have you create a grouping node, say so in the conversation first, in the language the person is writing to you in, and let them answer before you propose the call. A structured warning a person never opens is not a disclosure — silently reshaping someone's ontology and logging it where only a machine looks is the failure this rule exists to prevent.`;
 
 /**
- * 1층 + (있으면) 2층을 합친 전문. 패널의 "지침" disclosure 가 **이 함수의
- * 결과 그대로**를 보여준다 — 보여주는 것과 보내는 것이 다르면 그 열람은
- * 투명성이 아니라 장식이다.
+ * The full text of layer 1 plus layer 2 (when present). The panel's "instructions"
+ * disclosure shows **exactly this function's result** — if what is shown differs
+ * from what is sent, that reading is decoration rather than transparency.
  */
 export function buildSystemPrompt(projectInstructions?: string | null): string {
   const trimmed = projectInstructions?.trim();

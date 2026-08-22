@@ -3,12 +3,11 @@ import { describe, expect, it } from 'vitest';
 import { chatSuggestions, SUGGESTION_LIMIT } from './chat-suggestions';
 
 /**
- * 추천이 **이 폴더에 대한 것**인지를 잠근다.
+ * Locks that a suggestion is **about this folder**.
  *
- * 일반적인 예시 문장("무엇이든 물어보세요")은 추천이 아니라 장식이다 — 그건
- * 어느 앱에나 붙일 수 있고, 그래서 아무 값도 없다. 여기서 잠그는 성질은
- * 하나다: **지금 볼트에서 실제로 관측된 사실이 있을 때만 그 사실에 대한
- * 추천이 나온다.**
+ * A generic example sentence ("ask me anything") is decoration, not a recommendation — it could be
+ * attached to any app, and so carries no value. The single property locked here: **a recommendation
+ * about a fact appears only when that fact is actually observed in the current vault.**
  */
 
 const empty = {
@@ -41,7 +40,7 @@ describe('추천은 이 볼트에서 관측된 사실에서만 나온다', () =>
     });
     const island = out.find((s) => s.kind === 'island');
     expect(island).toBeDefined();
-    // 이름이 없으면 「어딘가 끊겨 있어요」라는 말뿐이고, 그건 추천이 아니다.
+    // With no name it is only "something is disconnected somewhere", and that is not a recommendation.
     expect(island?.params.first).toBe('capabilities/invoice');
     expect(island?.params.count).toBe(2);
   });
@@ -118,7 +117,7 @@ describe('추천은 이 볼트에서 관측된 사실에서만 나온다', () =>
   it('빈 볼트에서는 고칠 것을 권하지 않는다 — 고칠 것이 없다', () => {
     const out = chatSuggestions({
       ...empty,
-      // 빈 볼트인데 계산기가 뭔가를 뱉었더라도(있을 수 없지만) 짓기가 먼저다.
+    // Even if the calculator emitted something for an empty vault (which it cannot), building comes first.
       islands: [['a/1']],
       sourceState: 'bound',
     });

@@ -968,8 +968,8 @@ describe('queryCompiledOntology', () => {
       filteredActions: 5,
       remainingActions: 5,
       executableActions: 2,
-      // 빈 capability 하나와 raw path 를 elements: 에 넣은 capability 하나가
-      // 모두 「코드에 닿지 않는 능력」으로 review 큐에 선다.
+      // One empty capability and one capability with a raw path in `elements:`
+      // both queue for review as "a capability that does not reach the code".
       reviewActions: 3,
       compileIssues: 0,
       dependencyCycles: 0,
@@ -2745,9 +2745,9 @@ describe('queryCompiledOntology', () => {
     assert.equal(limited.edges.outgoing.edges.length, 1);
   });
 
-  // R+ (과제 ⑧ — Ask-to-Grow) — node_profile 이 미해결 slug 를 만나면 여전히
-  // throw 하지만(기존 계약 보존), thrown Error 에 growthHint 를 실어 캐릭터
-  // 검색 없이 바로 소비 가능한 did-you-mean/scaffold 를 준다.
+  // node_profile still throws on an unresolved slug (the existing contract is
+  // preserved), but the thrown Error carries growthHint, so a did-you-mean or
+  // scaffold is consumable immediately without a second search.
   it('node_profile — unresolved slug throws with a growthHint (typo near-match)', () => {
     assert.throws(
       () => queryCompiledOntology(artifact(), { operation: 'node_profile', slug: 'capabilities/logn' }),
@@ -3391,16 +3391,19 @@ describe('queryCompiledOntology', () => {
   });
 
   /**
-   * `cycles` 는 **사이클이 없을 때 가장 오래 돈다** — 그 역설이 이 게이트의 이유다.
+   * `cycles` **runs longest when there are no cycles** — that paradox is why this
+   * gate exists.
    *
-   * 이 DFS 는 경로 열거라 지수인데, 종전의 유일한 조기 종료는 `cycleMap.size >
-   * limit` 즉 **사이클이 발견될 때만** 작동했다. 사용자가 "건강한지 확인하려고"
-   * 부르는 바로 그 경우(사이클 0)가 경로 공간을 전부 소진한다. 실측: 60노드 ·
-   * 444엣지 · 사이클 0 → **10.9초**. MCP 는 단일 스레드 stdio 라 그동안 에이전트
-   * 표면 전체가 멈춘다. 예산 이식 후 같은 그래프가 1ms.
+   * The DFS enumerates paths, so it is exponential, and the only early exit used to
+   * be `cycleMap.size > limit`, i.e. it fired **only once a cycle was found**. The
+   * very case a user calls it for ("check we are healthy", zero cycles) exhausts the
+   * whole path space. Measured: 60 nodes, 444 edges, 0 cycles → **10.9 seconds**.
+   * MCP is single-threaded stdio, so the entire agent surface stalls for that long.
+   * After the budget was added, the same graph takes 1ms.
    *
-   * 그리고 **예산에 걸린 "0개" 는 "없다" 가 아니다.** 그 구분을 응답이 말하지
-   * 않으면 에이전트가 무사이클로 오독한다 — 그래서 `totalCyclesExact` 를 함께 잰다.
+   * And **a "0" that hit the budget is not "there are none".** If the response does
+   * not state that difference, an agent misreads it as cycle-free — hence
+   * `totalCyclesExact` is measured alongside.
    */
   it('bounds the acyclic worst case and says so instead of truncating silently', () => {
     const docs = [];
@@ -3425,14 +3428,15 @@ describe('queryCompiledOntology', () => {
     const result = queryCompiledOntology(artifact, { operation: 'cycles' });
     const elapsed = Date.now() - started;
 
-    // 시간은 기계마다 다르므로 **횟수**로 잠근다 — 예산이 실제로 상한이라는 것만
-    // 본다(`architecture.md` 의 "게이트는 ms 가 아니라 횟수로 잠근다").
+    // Wall time varies by machine, so the gate is locked on **a count** — it only
+    // checks that the budget really is a ceiling (`.claude/rules/architecture.md`
+    // 「게이트는 ms 가 아니라 횟수로 잠근다」 — lock a gate on counts, not milliseconds).
     assert.ok(
       result.expandedStates <= result.searchBudget,
       `expandedStates ${result.expandedStates} exceeded budget ${result.searchBudget}`,
     );
     assert.equal(result.totalCycles, 0);
-    // 예산에 걸렸다면 0 을 "없다" 로 말하지 않는다.
+    // If the budget was hit, never report 0 as "there are none".
     if (result.truncatedByBudget) {
       assert.equal(result.totalCyclesExact, false);
       assert.equal(result.exhaustive, false);
@@ -3440,7 +3444,7 @@ describe('queryCompiledOntology', () => {
       assert.match(result.evidence.recommendation, /does NOT mean acyclic/);
       assert.ok(result.evidence.saferQuery);
     }
-    // 느슨한 상한 하나 — 예산이 사라지면 여기서 초 단위로 터진다.
+    // One loose ceiling — if the budget ever disappears, this blows up in seconds.
     assert.ok(elapsed < 5000, `cycles took ${elapsed}ms on an acyclic graph`);
   });
 
@@ -3854,8 +3858,8 @@ describe('queryCompiledOntology', () => {
           kind: 'capability',
           title: 'Foo',
           domain: 'x',
-          // 두 external element ref (둘 다 path-like — `.` 가 있어 external 로 인식).
-          // src/** 매치 1 + 매치 안 됨 1.
+          // Two external element refs (both path-like — the `.` makes them external).
+          // One matches src/**, one does not.
           elements: ['src/foo.ts', 'external/lib.ts'],
         }),
       ],
@@ -3863,7 +3867,7 @@ describe('queryCompiledOntology', () => {
     );
 
     const without = queryCompiledOntology(graph, { operation: 'growth_plan', limit: 10 });
-    // ignore 없을 때 둘 다 candidate
+    // With no ignore file, both are candidates
     assert.equal(without.summary.externalElementRefs, 2);
     assert.equal(without.summary.externalElementRefsIgnored, 0);
 
@@ -3872,7 +3876,7 @@ describe('queryCompiledOntology', () => {
       { operation: 'growth_plan', limit: 10 },
       { ontologyAtlasIgnorePatterns: ['src/**'] },
     );
-    // 'src/foo.ts' 는 매치, 'external/lib.ts' 는 안 매치
+    // 'src/foo.ts' matches, 'external/lib.ts' does not
     assert.equal(withIgnore.summary.externalElementRefs, 1);
     assert.equal(withIgnore.summary.externalElementRefsIgnored, 1);
     assert.equal(withIgnore.externalElementRefs.rows[0].ref, 'external/lib.ts');
@@ -4101,8 +4105,8 @@ describe('queryCompiledOntology', () => {
     assert.deepEqual(
       result.checks.map((check) => ({ id: check.id, status: check.status, count: check.count })),
       [
-        // 셀 것이 있는가를 먼저 묻는다 — 없으면 아래 다섯의 `pass` 는 아무것도
-        // 증명하지 않는다 (`empty-vault-health.test.mjs`).
+        // Ask first whether there is anything to count — without that, the five
+        // `pass` results below prove nothing (`empty-vault-health.test.mjs`).
         { id: 'vault_present', status: 'pass', count: 3 },
         { id: 'compile_issues', status: 'pass', count: 0 },
         { id: 'unresolved_edges', status: 'pass', count: 0 },

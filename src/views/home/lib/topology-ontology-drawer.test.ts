@@ -105,9 +105,10 @@ describe("buildTopologyOntologyDrawerModel", () => {
   });
 
   it("counts transitive blast radius (dependents) and dependencies, not just direct degree", () => {
-    // a depends_on core, b depends_on a → core 의 *전이* dependents = {a, b} (2)
-    // 인데 직접 incoming 은 a 하나(1). core depends_on util → 전이 dependencies = 1.
-    // 즉 "변경 영향 범위" 는 1-hop degree 가 *과소평가* 한다 — 전이 reach 가 진짜 값.
+    // a depends_on core and b depends_on a, so core's transitive dependents are
+    // {a, b} (2) while direct incoming is just a (1); core depends_on util gives
+    // one transitive dependency. 1-hop degree understates the blast radius —
+    // transitive reach is the real number.
     const core = node("capabilities/core");
     const nodes = [
       core,
@@ -122,8 +123,8 @@ describe("buildTopologyOntologyDrawerModel", () => {
     ];
 
     const model = buildTopologyOntologyDrawerModel(core, nodes, edges);
-    expect(model.incomingCount).toBe(1); // 직접 incoming 만
-    expect(model.outgoingCount).toBe(1); // 직접 outgoing 만
+    expect(model.incomingCount).toBe(1); // direct incoming only
+    expect(model.outgoingCount).toBe(1); // direct outgoing only
     expect(model.reach).toEqual({ dependents: 2, dependencies: 1 });
   });
 
@@ -142,7 +143,7 @@ describe("buildTopologyOntologyDrawerModel", () => {
   it("ownerDomain null for a domain node (no owning domain)", () => {
     const dom = node("domains/auth", "domain");
     const cap = node("capabilities/login", "capability");
-    // domain contains capability — domain 자신은 owning domain 없음.
+    // The domain contains the capability; a domain itself has no owning domain.
     const model = buildTopologyOntologyDrawerModel(dom, [dom, cap], [
       edge("dom->cap", "domains/auth", "capabilities/login", "contains"),
     ]);
@@ -150,9 +151,9 @@ describe("buildTopologyOntologyDrawerModel", () => {
   });
 
   it("P1-③ — domain node with an INCOMING domain edge still has no owner domain (no cross-domain misattribution)", () => {
-    // Vault — Local-First 도메인이 AI Agent Partner 도메인의 incoming
-    // relation 을 가진다(도메인 간 cross-relation). 이걸 소속으로 집으면
-    // "도메인 · AI Agent Partner" 오귀속(데이터시트 헤더 + 인계 domain: 필드).
+    // One domain holds an incoming relation from another (a cross-domain
+    // relation). Reading that as ownership misattributes the domain in both the
+    // datasheet header and the handoff packet's `domain:` field.
     const vault = node("domains/vault-local-first", "domain");
     const agent = node("domains/ai-agent-partner", "domain");
     const model = buildTopologyOntologyDrawerModel(vault, [vault, agent], [
@@ -164,7 +165,7 @@ describe("buildTopologyOntologyDrawerModel", () => {
   it("P1-③ — project node is never attributed to a domain owner", () => {
     const project = node("project", "project");
     const dom = node("domains/auth", "domain");
-    // 데이터 상 domain → project 로 잘못된 contains 가 있어도 소속 표기 금지.
+    // Even a wrong domain -> project `contains` edge in the data must not produce an owner.
     const model = buildTopologyOntologyDrawerModel(project, [project, dom], [
       edge("dom->project", "domains/auth", "project", "contains"),
     ]);
@@ -172,7 +173,7 @@ describe("buildTopologyOntologyDrawerModel", () => {
   });
 
   it("keeps transitive reach finite on cycles", () => {
-    // a → b → a 사이클. a 의 dependents 는 b 한 번만(무한 루프 X).
+    // An a -> b -> a cycle: a's dependents count b exactly once, with no infinite loop.
     const a = node("capabilities/a");
     const b = node("capabilities/b");
     const edges = [

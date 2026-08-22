@@ -5,39 +5,35 @@ import type { ReactNode } from "react";
 import { cn } from "@/shared/lib/cn";
 
 /**
- * 인사이트 보드의 **구획 제목** — 눈에 보이던 위계를 문서 구조로도 만든다.
+ * The insights board's **section title** — it turns a hierarchy that was only visible into document
+ * structure.
  *
- * ## 왜 만들었나 (2026-07-29 도그푸딩 실측)
+ * Measured while dogfooding, 2026-07-29: the whole screen had **one `<h1>`** and nothing else.
+ * Section titles like "agent readiness", "repair queue", and "referenced in many places" were all
+ * `<span>`s wearing `text-body-lg font-[var(--font-weight-signature)]`, so the screen showed a
+ * hierarchy while **the document had none**.
  *
- * 이 화면 전체의 heading 요소가 **`<h1>` 하나뿐**이었다. 「에이전트 준비도」·
- * 「수리 큐」·「여러 곳에서 참조돼요」 같은 구획 제목은 전부 `<span>` 에
- * `text-body-lg font-[var(--font-weight-signature)]` 을 입힌 것이라, 화면에는 위계가 보이는데
- * **문서에는 위계가 없었다.**
+ * What that actually prevented: a screen-reader user cannot skim this board by heading. There is no
+ * way to jump straight to "repair queue" other than passing through every item in order — and this
+ * is a maintenance board built precisely **to be skimmed while picking the next thing to do**. Take
+ * skimming away and the screen's job cannot be done.
  *
- * 그 차이가 실제로 무엇을 막았나: 스크린리더 사용자는 이 보드를 제목으로
- * 훑을 수 없다. 항목 사이를 순서대로 지나가는 것 말고는 「수리 큐」로 바로
- * 갈 방법이 없고, 이 화면은 정확히 **훑어서 다음 할 일을 고르라고** 만든
- * 정비 보드다. 그 화면에서 훑기를 못 하면 화면의 일 자체가 안 된다.
+ * Why a component: the same class string was duplicated twelve times across five files. Changing
+ * only the tags leaves those duplicates, and the next person writes a thirteenth `<span>`. Giving
+ * the role a name makes the next person walk through this door.
  *
- * ## 왜 컴포넌트인가
+ * There is no visual change — Tailwind preflight resets a heading's font-size and weight to
+ * `inherit`, and size and weight are decided by the classes stated here.
  *
- * 같은 클래스 문자열이 다섯 파일에 열두 번 복제돼 있었다. 태그만 바꾸면 그
- * 복제본이 그대로 남아 다음 사람이 열세 번째 `<span>` 을 만든다. 역할에
- * 이름을 주면 다음 사람은 이 문을 지난다.
+ * **Why `shrink-0` is the default** (narrow-width measurement, 2026-07-29): at 834px "repair queue"
+ * folded **in the middle of its name** into two lines. In the flex row holding the title, the
+ * figure-chip group beside it took 273px without `min-w-0`, squeezing the title column to 30px. The
+ * card right next to it ("agent readiness") was fine in the same situation — only that one's chip
+ * group had `min-w-0`.
  *
- * 시각 변화는 없다 — Tailwind preflight 가 heading 의 font-size/weight 를
- * `inherit` 로 리셋하고, 크기·굵기는 여기 명시된 클래스가 그대로 정한다.
- *
- * ## 왜 `shrink-0` 이 기본인가 (2026-07-29 좁은 폭 실측)
- *
- * 834px 에서 「수리 큐」가 **이름 가운데서 접혀** 「수리 / 큐」로 두 줄이 됐다.
- * 제목이 든 flex 행에서 옆의 수치 칩 묶음이 `min-w-0` 없이 273px 를 가져가는
- * 바람에 제목 칸이 30px 로 눌린 것이다. 바로 옆 카드(「에이전트 준비도」)는
- * 같은 상황에서 멀쩡했다 — 그쪽 칩 묶음에만 `min-w-0` 이 있어서다.
- *
- * **같은 역할의 두 제목이 서로 다른 규칙 아래 있었다.** 호출부마다 고치면
- * 세 번째 카드에서 다시 난다. 제목은 접히라고 있는 것이 아니므로 규칙을
- * 역할에 붙인다 — 눌려야 하는 쪽은 언제나 옆의 수치·칩이다.
+ * **Two titles in the same role were under different rules.** Fixing it per call site means it
+ * recurs on the third card. A title does not exist in order to fold, so the rule is attached to the
+ * role — the side that should be squeezed is always the figures and chips beside it.
  */
 export function InsightsSectionTitle({
   level,
@@ -45,7 +41,7 @@ export function InsightsSectionTitle({
   children,
   ...rest
 }: {
-  /** 카드 제목은 2, 카드 안의 하위 구획은 3. `<h1>` 은 페이지 제목이 이미 쓴다. */
+  /** A card title is 2; a sub-section inside a card is 3. `<h1>` is already taken by the page title. */
   level: 2 | 3;
   className?: string;
   children: ReactNode;

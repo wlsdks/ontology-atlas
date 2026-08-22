@@ -106,8 +106,8 @@ describe('deriveOntologyFromVault', () => {
     expect(result.nodes.find((n) => n.id === 'unknown:legacy-checkout')?.kind).toBe('unknown');
     const relatedEdges = result.edges.filter((e) => e.type === 'related_to');
     expect(relatedEdges).toHaveLength(1);
-    // domain edge 는 domain (parent) → docNode (child) 방향이어야 트리에서
-    // 도메인 아래에 workflow 가 매달린다 (\`contains\` from=parent, to=child).
+    // A domain edge must run domain (parent) → docNode (child) for the workflow to
+    // hang under the domain in the tree (`contains` is from=parent, to=child).
     const domainContainsEdge = result.edges.find(
       (e) =>
         e.type === 'contains' &&
@@ -166,11 +166,11 @@ describe('deriveOntologyFromVault', () => {
         }),
       ]),
     );
-    // \`unknown:capabilitiesmcp-server\` 같은 mangled stub 이 만들어지면 안 된다.
+    // No mangled stub such as `unknown:capabilitiesmcp-server` may be minted.
     expect(
       result.nodes.find((n) => n.id.startsWith('unknown:capabilities')),
     ).toBeUndefined();
-    // 대신 기존 capability 노드를 가리키는 related_to edge 가 있어야 한다.
+    // Instead there must be a related_to edge onto the existing capability node.
     const resolvedEdge = result.edges.find(
       (e) =>
         e.type === 'related_to' &&
@@ -284,9 +284,9 @@ describe('deriveOntologyFromVault', () => {
   });
 
   it('depends_on (스키마 정본 키) → dependencies 와 같은 자리에서 depends_on edge', () => {
-    // mcp/src/schema.mjs 는 capability/element 의 캐논 키를 `depends_on` 으로
-    // 두고, MCP vault.mjs 는 alias 로 둘 다 읽는다. 웹 derive 가 `dependencies`
-    // 만 읽으면 에이전트가 정본 키로 쓴 의존 관계가 지도에서 통째로 소실된다.
+    // mcp/src/schema.mjs makes `depends_on` canonical for capability/element and MCP
+    // vault.mjs reads both as aliases. If the web derivation reads only
+    // `dependencies`, a dependency written under the canonical key vanishes from the map.
     const result = deriveOntologyFromVault(
       makeManifest([
         makeDoc({
@@ -338,12 +338,12 @@ describe('deriveOntologyFromVault', () => {
   });
 
   it('양방향 frontmatter (domain.capabilities[] + capability.domain:) → contains edge dedup', () => {
-    // 같은 contains 관계가 두 진입경로에서 등장:
-    //   domains/auth.md          → capabilities: ['login']
-    //   capabilities/login.md    → domain: auth
-    // 두 doc 모두 \`domain:auth--contains-->capability:login\` edge 를 만들지만
-    // 그래프 입장에서는 같은 edge — id 충돌은 React duplicate-key 경고로 이어지고
-    // ego-graph 가 일부 edge 를 silently 누락한다. 같은 (from, to, type) 은 1 edge.
+    // The same contains relation appears from two entry points:
+    //   domains/auth.md       → capabilities: ['login']
+    //   capabilities/login.md → domain: auth
+    // Both produce `domain:auth --contains--> capability:login`, which is one edge to
+    // the graph. A duplicate id causes React duplicate-key warnings and makes the ego
+    // graph silently drop edges. One (from, to, type) is one edge.
     const result = deriveOntologyFromVault(
       makeManifest([
         makeDoc({
@@ -363,7 +363,7 @@ describe('deriveOntologyFromVault', () => {
         e.to === 'capability:login',
     );
     expect(containsEdges).toHaveLength(1);
-    // 전체 edge id 도 unique 해야 한다.
+    // Every edge id must be unique too.
     const ids = result.edges.map((e) => e.id);
     expect(new Set(ids).size).toBe(ids.length);
   });
@@ -384,11 +384,11 @@ describe('deriveOntologyFromVault', () => {
     const capNodes = result.nodes.filter((n) => n.kind === 'capability');
     expect(capNodes).toHaveLength(1);
     const containsEdges = result.edges.filter((e) => e.type === 'contains');
-    // 두 project 모두 같은 cap 을 가리킴 — edge 는 2개.
+    // Both projects point at the same capability — two edges.
     expect(containsEdges).toHaveLength(2);
   });
 });
-/** P6 — relation_notes 가 해당 엣지의 label(왜)로 승격된다. */
+/** `relation_notes` is promoted to the matching edge's label (the "why"). */
 describe("relation_notes → edge label", () => {
   it("dependencies ref 의 노트가 그 엣지에 실린다", () => {
     const manifest = makeManifest([
@@ -485,8 +485,8 @@ describe("element display 인간화 — 슬라이스 B (코드 경로 → 사람
     expect(cap?.title).toBe("src/tools/exporter.ts");
     expect(cap?.display).toBe("src/tools/exporter.ts");
   });
-  // D7 회귀 — "이 노드의 문서" 를 그리는 표면이 파생 노드의 sourceSlug(자기를
-  // 인용한 남의 문서)를 자기 문서로 오해해 다른 개념의 글을 열던 결함.
+  // Regression: a surface rendering "this node's document" mistook a derived node's
+  // sourceSlug (the other document that cited it) for its own and opened the wrong text.
   it("문서가 있는 노드는 hasOwnDocument=true, 참조만 된 노드는 false 다", () => {
     const manifest = makeManifest([
       makeDoc({
@@ -507,7 +507,7 @@ describe("element display 인간화 — 슬라이스 B (코드 경로 → 사람
     expect(authored?.hasOwnDocument).toBe(true);
     expect(authored?.sourceSlug).toBe("capabilities/frontmatter-to-ontology");
 
-    // 관계에서 이름만 불린 노드 — sourceSlug 는 *자기를 인용한* 문서다.
+    // A node named only by a relation — its sourceSlug is the document that *cited* it.
     const derived = result.nodes.find(
       (n) => n.id === "element:derive-ontology-from-vault",
     );
@@ -550,7 +550,7 @@ describe("element display 인간화 — 슬라이스 B (코드 경로 → 사람
         own: authoredIds.has(n.id),
       });
     }
-    // 8 개 관계 키가 각각 파생 노드를 하나씩 만든다(단수 domain 포함).
+    // Each of the eight relation keys derives one node (singular `domain` included).
     expect(result.nodes.filter((n) => !n.hasOwnDocument)).toHaveLength(8);
   });
 });

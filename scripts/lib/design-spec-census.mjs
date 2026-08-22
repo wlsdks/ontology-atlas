@@ -1,128 +1,139 @@
 /**
- * 디자인 «규격» 센서스 — 문자열 diff 가 아니라 **어휘와 값의 변화**를 본다.
+ * Design **spec** inventory — it watches changes in **vocabulary and values**,
+ * not a text diff.
  *
- * ## 왜 파일이 diff 에 있는지로 판정하지 않는가
+ * ## Why "the file is in the diff" is not the test
  *
- * `.claude/rules/design.md` 의 「규격을 바꾸려면 「체계」를 부른다」 절이
- * 트리거 파일을 이름으로 댄다. 그런데 그 파일들은 이 저장소에서 **가장 자주
- * 만져지는 파일**이다 — 최근 200 커밋 중 `app/globals.css` 하나만 해도 3분의
- * 1 이상이 건드린다. 「diff 에 있으면 원장 필수」로 걸면 오타 수정 · 주석 ·
- * 포맷팅 · 표면 하나짜리 색 조정까지 전부 걸려서, 게이트가 규격을 지키는 게
- * 아니라 **원장을 의미 없는 줄로 채우게** 만든다. 그건 강제가 아니라 소음이고,
- * 이 저장소는 그 실패를 이미 겪었다(`shadow-[` 통째 금지 → lint 144 → 548).
+ * `.claude/rules/design.md`'s section 「규격을 바꾸려면 「체계」를 부른다」 (changing
+ * a spec means convening the design-systems seat) names the trigger files. Those
+ * are the **most frequently touched files in this repository** — `app/globals.css`
+ * alone appears in more than a third of the last 200 commits. Requiring a ledger
+ * entry whenever one appears in a diff would catch typo fixes, comments,
+ * formatting, and single-surface colour tweaks, so the gate would not protect the
+ * spec — it would **fill the ledger with meaningless rows**. That is noise, not
+ * enforcement, and this repository has already suffered it (banning `shadow-[`
+ * wholesale took lint from 144 to 548).
  *
- * ## 그래서 무엇을 «규격 변경» 으로 보는가
+ * ## So what counts as a spec change
  *
- * 한 문장으로: **어휘(고를 수 있는 것의 목록)와 램프(그 목록이 내는 값).**
- * 구현·주석·산문은 보지 않는다.
+ * In one sentence: **the vocabulary (what there is to choose from) and the ramp
+ * (the values that vocabulary emits).** Implementation, comments, and prose are
+ * not watched.
  *
- * | 출처 | 세는 것 | 안 세는 것 |
+ * | Source | Counted | Not counted |
  * |---|---|---|
- * | `app/globals.css` | 램프 토큰(타입 · 행간 · 반경 · 그림자 · 컨트롤 높이 · 콘텐츠 아이콘 · 스케일 고정 계약)의 **이름과 값** | 표면 전용 토큰, 주석, 순서, 공백 |
- * | `src/shared/ui/control-class.ts` | cva **축 이름 · 축의 선택지 · 기본값** (모양/크기/톤/scope…) | 각 선택지가 내는 클래스 문자열 |
- * | `src/shared/ui/controls.tsx` · `surface.tsx` | **export 되는 프리미티브 이름** | 내부 구현 |
- * | `.claude/rules/design.md` | 「스케일 고정 계약」 절의 **수치와 토큰 이름** | 그 절의 문장 |
+ * | `app/globals.css` | the **names and values** of ramp tokens (type · line height · radius · shadow · control height · content icon · the fixed-scale contract) | surface-only tokens, comments, order, whitespace |
+ * | `src/shared/ui/control-class.ts` | cva **axis names, axis options, and defaults** (shape/size/tone/scope…) | the class strings each option emits |
+ * | `src/shared/ui/controls.tsx` · `surface.tsx` | **exported primitive names** | internal implementation |
+ * | `.claude/rules/design.md` | the **numbers and token names** in the 「스케일 고정 계약」 (fixed-scale contract) section | that section's sentences |
  *
- * 판정의 성격이 층마다 다르다는 점이 중요하다:
+ * The nature of the judgement differs per layer:
  *
- * - **어휘의 증감**(축·선택지·프리미티브)은 «시스템에 고를 것이 늘었다» 이므로
- *   항상 규격 변경이다. 실제로 design.md 가 지목한 사고가 정확히 이것이다 —
- *   「규칙이 벽에 부딪힐 때마다 예외 축을 더한」 결과 한 화면에 컨트롤 높이가
- *   8~9종이 됐다.
- * - **램프 값의 변경**도 규격 변경이다. `--text-body` 를 12.5 → 13 으로 옮기는
- *   것은 앱 전체를 옮기는 결정이지 「값 하나 수정」이 아니다.
- * - **선택지가 내는 클래스 문자열**은 세지 않는다. `chip` 이 `gap-1.5` 를
- *   `gap-2` 로 바꾸는 것은 그 모양 안의 조정이고, 램프 밖으로 새면 이미
- *   `control-class.contract.test.ts` 가 잡는다. 여기까지 걸면 오탐이 이긴다.
+ * - **A change in vocabulary** (axes, options, primitives) always counts, because
+ *   it means the system gained something to choose from. That is precisely the
+ *   accident design.md names: adding an exception axis every time a rule hit a
+ *   wall produced 8–9 distinct control heights on one screen.
+ * - **A change in a ramp value** also counts. Moving `--text-body` from 12.5 to 13
+ *   is a decision that moves the whole app, not "a single value edit".
+ * - **The class strings an option emits** are not counted. Changing `chip`'s
+ *   `gap-1.5` to `gap-2` is an adjustment inside that shape, and if it leaks off
+ *   the ramp `control-class.contract.test.ts` already catches it. Watching this far
+ *   lets false positives win.
  *
- * ## 왜 `--color-*` 전체는 세지 않는가
+ * ## Why not all of `--color-*`
  *
- * globals.css 의 `--color-*` 는 200개가 넘고 대부분이 **한 표면 전용 알파
- * 사다리**다. 전수를 램프로 보면 색 하나 조정할 때마다 원장을 요구하게 되고,
- * 그건 위에서 말한 소음 실패로 곧장 간다. 색 규격의 진짜 게이트는 이미 따로
- * 있다 — 헌장(무채색 + 단일 인디고)은 `.claude/rules/forbidden.md` 와
- * `accentTintPairingSelectors` lint 가, 대비는 `contrast-ratchet` 이 지킨다.
- * 여기서 세는 색은 **팔레트의 뿌리**(hue 를 정의하는 solid 값)뿐이다: 새 hue
- * 가 등장하거나 브랜드 인디고가 움직이면 그건 어휘의 변화다.
+ * globals.css has more than 200 `--color-*` entries, most of them **alpha ladders
+ * for a single surface**. Treating them all as ramp would demand a ledger entry for
+ * every colour tweak, which goes straight to the noise failure above. The real
+ * gates for colour spec already exist elsewhere: the charter (achromatic plus a
+ * single indigo) is held by `.claude/rules/forbidden.md` and the
+ * `accentTintPairingSelectors` lint, and contrast by `contrast-ratchet`. What is
+ * counted here is only the **root of the palette** — the solid values that define
+ * a hue. A new hue appearing, or the brand indigo moving, is a vocabulary change.
  */
 
 import ts from 'typescript';
 
-/** 게이트가 트리거 목록을 읽는 정본. 목록을 여기 복제하지 않는다. */
+/** The authority the gate reads the trigger list from. The list is never duplicated here. */
 export const SPEC_RULE_DOC = '.claude/rules/design.md';
 
-/** 정본 문서 안에서 목록이 사는 절. 제목이 바뀌면 파서가 소리 내어 죽는다. */
+/** The section of that document where the list lives. Renaming the heading makes the parser die loudly. */
 export const SPEC_RULE_SECTION = '규격을 바꾸려면 「체계」를 부른다';
 
-/** design.md 「스케일 고정 계약」 절 — 수치·토큰 센서스의 대상. */
+/** design.md's 「스케일 고정 계약」 (fixed-scale contract) section — the target of the number and token inventory. */
 export const SCALE_CONTRACT_SECTION = '스케일 고정 계약';
 
 /**
- * globals.css 에서 램프로 세는 토큰.
+ * Tokens in globals.css counted as ramp.
  *
- * 이름 있는 사다리(타입 · 행간 · 반경 · 그림자 · 컨트롤 높이 · 콘텐츠 아이콘)와 design.md 가
- * 「스케일 고정 계약」으로 못박은 두 치수다. 앞의 넷은 `--<ramp>-<step>` 이라는
- * 규칙적 이름을 갖고 전부 합쳐 40개 남짓이라, 여기 걸리면 거의 확실히 규격이다.
+ * The named ladders (type · line height · radius · shadow · control height ·
+ * content icon) plus the two dimensions design.md pins in 「스케일 고정 계약」 (the
+ * fixed-scale contract). The first four follow the regular `--<ramp>-<step>` naming
+ * and number about 40 in total, so anything caught here is almost certainly spec.
  */
 const RAMP_TOKEN_PATTERN =
   /^--(?:text|leading|radius|shadow|control-h|icon)-|^--(?:chrome-tile-size|app-nav-rail-icon-size)$/;
 
 /**
- * 팔레트의 뿌리 — hue 를 정의하는 solid 색.
+ * The root of the palette — the solid colours that define a hue.
  *
- * 알파 사다리(`--color-indigo-a08` …)와 표면 전용 색은 제외한다. 걸리는 것은
- * 바탕 3단 · 글자 4단 · 인디고 3단 · 신호 4종처럼 **「이 앱의 색이 무엇인가」를
- * 정의하는** 값들이고, 이게 움직이면 헌장이 움직인 것이다.
+ * Alpha ladders (`--color-indigo-a08` …) and surface-only colours are excluded.
+ * What is caught are the values that **define what this app's colours are**: 3
+ * background steps, 4 text steps, 3 indigo steps, 4 signal tones. If these move,
+ * the charter has moved.
  */
 const PALETTE_ROOT_PATTERN =
   /^--color-(?:canvas|panel|elevated|text-[a-z]+|indigo-(?:brand|accent|hover)|status-[a-z]+)$/;
 
 /**
- * **cva 로 축·선택지를 내는 값 층 파일** — 센서스가 「이름과 값」을 센다.
- * 2026-08-15 에 `badge-class.ts`(정적 배지 기하)가 합류했다.
+ * **Value-layer files that emit axes and options through cva** — the inventory
+ * counts their names and values. `badge-class.ts` (static badge geometry) joined on
+ * 2026-08-15.
  */
 const VARIANT_VOCABULARY_FILES = new Set([
   'src/shared/ui/control-class.ts',
   'src/shared/ui/badge-class.ts',
 ]);
 
-/** 이 파일 자신은 램프 어휘를 갖지 않는다 — export 목록만 센다. */
+/** These files carry no ramp vocabulary of their own — only their export list is counted. */
 const PRIMITIVE_EXPORT_FILES = new Set([
   'src/shared/ui/controls.tsx',
   'src/shared/ui/surface.tsx',
-  // 2026-08-15 「체계」석 비준으로 신설된 모달 정본 — 무엇을 내보내느냐가 계약.
+  // The modal authority created on 2026-08-15 with the 체계 seat's ratification — what it exports is the contract.
   'src/shared/ui/dialog.tsx',
-  // 2026-08-15 (2) 폼 행동 층 — Input/Textarea · Checkbox.
+  // 2026-08-15 (2) form behaviour layer — Input/Textarea · Checkbox.
   'src/shared/ui/input.tsx',
   'src/shared/ui/checkbox.tsx',
-  // 2026-08-15 (3) 배타 단일선택 — SegmentedControl.
+  // 2026-08-15 (3) exclusive single selection — SegmentedControl.
   'src/shared/ui/segmented-control.tsx',
   /*
-   * 2026-08-15 (8) radiogroup **행동 층** — 이 파일이 내보내는 것이 곧 계약이다
-   * (`groupProps`/`itemProps` 의 모양이 바뀌면 그것을 입은 모든 그릇이 바뀐다).
-   * 값은 한 줄도 안 내므로 어휘 census 가 아니라 export census 가 맞다.
+   * 2026-08-15 (8) the radiogroup **behaviour layer** — what this file exports is
+   * the contract (changing the shape of `groupProps`/`itemProps` changes every
+   * container wearing it). It emits no values at all, so an export inventory is
+   * correct here rather than a vocabulary inventory.
    */
   'src/shared/lib/use-roving-radio-group.ts',
 ]);
 
 /**
- * **값 자체가 규격인 파일** — 내보내는 이름이 아니라 그 문자열이 규격이다.
+ * **Files where the values themselves are the spec** — the strings are the spec,
+ * not the exported names.
  *
- * `PRIMITIVE_EXPORT_FILES` 의 census 는 **이름만** 센다. 부품 파일에서는 그게
- * 맞다(무엇을 내보내느냐가 계약이고 내부 구현은 자유다). 그런데 `page-frame.ts`
- * 는 내용이 전부 값이라 이름 census 로는 `md:pt-12` → `md:pt-6` 같은 규격 변경이
- * **하나도 안 잡힌다** — 실측으로 확인했고(빈 Map), 그 상태로 감시 목록에 넣으면
- * 「지켜지는 척」만 하게 된다.
+ * The `PRIMITIVE_EXPORT_FILES` inventory counts **names only**, which is right for
+ * part files (what they export is the contract, the implementation is free). But
+ * `page-frame.ts` is entirely values, so a name inventory catches **none** of a
+ * spec change like `md:pt-12` → `md:pt-6` — confirmed by measurement (an empty
+ * Map). Watching it that way would only pretend to protect it.
  */
 const VALUE_EXPORT_FILES = new Set(['src/shared/ui/page-frame.ts']);
 
 /**
- * 정본 문서에서 트리거 파일 목록을 **유도한다**.
+ * **Derives** the trigger file list from the authoritative document.
  *
- * 복제하면 두 벌이 되고, 두 벌이 있는데 게이트가 없으면 어긋나는 쪽이
- * 기본값이다(이 저장소가 스킬 사본에서 실제로 겪은 실패). 그래서 목록은
- * design.md 한 곳에만 있고 여기서는 읽기만 한다. 어긋남 자체는
- * `tests/contract/design-spec-ledger.contract.test.ts` 가 잡는다.
+ * Duplicating it makes two copies, and two copies with no gate means drift is the
+ * default (a failure this repository actually suffered with duplicated skill
+ * files). So the list lives only in design.md and is read here. Divergence itself
+ * is caught by `tests/contract/design-spec-ledger.contract.test.ts`.
  */
 export function parseTriggerFiles(designMdText) {
   const section = extractSection(designMdText, SPEC_RULE_SECTION);
@@ -132,10 +143,11 @@ export function parseTriggerFiles(designMdText) {
         `절 제목이 바뀌었으면 이 상수도 같이 고쳐라.`,
     );
   }
-  // ⚠️ 절 **전체**에서 백틱 경로를 긁으면 안 된다. 이 절의 마지막 문단이
-  // 게이트 파일(`…design-council.contract.test.ts`)을 인용하는데, 첫 구현이
-  // 그걸 트리거로 집어삼켰다 — 자기를 감시하는 파일이 감시 대상이 되는 셈이다.
-  // 그래서 **목록 줄**(`- \`path\` — 설명`)만 읽는다. 형식이 곧 계약이다.
+  // ⚠️ Do not scrape backticked paths from the **whole** section. Its last
+  // paragraph cites a gate file (`…design-council.contract.test.ts`), and the first
+  // implementation swallowed that as a trigger — making the file that watches this
+  // one a watched file. So only **list rows** (`- \`path\` — description`) are read.
+  // The format is the contract.
   const files = [];
   for (const line of section.split('\n')) {
     const match = /^-\s+`([A-Za-z0-9_./[\]-]+\.(?:ts|tsx|css|md))`/.exec(line.trim());
@@ -149,7 +161,7 @@ export function parseTriggerFiles(designMdText) {
   return files;
 }
 
-/** `## <제목>` 부터 다음 같은 레벨 제목 직전까지. */
+/** From `## <heading>` up to just before the next heading at the same level. */
 function extractSection(markdown, heading) {
   const lines = markdown.split('\n');
   const start = lines.findIndex((line) => line.startsWith('## ') && line.includes(heading));
@@ -160,8 +172,8 @@ function extractSection(markdown, heading) {
 }
 
 /**
- * 한 파일의 규격 센서스. 키는 사람이 읽을 수 있는 규격 이름, 값은 그 규격이
- * 오늘 내는 값. 규격을 안 갖는 파일이면 빈 Map.
+ * One file's spec inventory. Keys are human-readable spec names, values are what
+ * that spec emits today. A file carrying no spec returns an empty Map.
  */
 export function censusFor(path, text) {
   if (text === null || text === undefined) return new Map();
@@ -173,7 +185,7 @@ export function censusFor(path, text) {
   return new Map();
 }
 
-/** 램프 토큰 이름 → 값. 주석·공백·선언 순서는 정규화로 사라진다. */
+/** Ramp token name → value. Comments, whitespace, and declaration order are normalised away. */
 function cssRampCensus(css) {
   const census = new Map();
   const stripped = css.replace(/\/\*[\s\S]*?\*\//g, ' ');
@@ -181,8 +193,9 @@ function cssRampCensus(css) {
     if (!RAMP_TOKEN_PATTERN.test(name) && !PALETTE_ROOT_PATTERN.test(name)) continue;
     const value = rawValue.replace(/\s+/g, ' ').trim();
     const key = `token ${name}`;
-    // 같은 토큰이 여러 블록(:root · media query)에서 선언된다. 값이 다르면 둘 다
-    // 규격이므로 둘 다 남긴다 — 하나만 고치는 것도 규격 변경이다.
+    // The same token is declared in several blocks (:root, media queries). When the
+    // values differ both are spec, so both are kept — changing only one is still a
+    // spec change.
     const previous = census.get(key);
     if (previous === undefined) census.set(key, value);
     else if (!previous.split(' | ').includes(value)) census.set(key, `${previous} | ${value}`);
@@ -191,11 +204,11 @@ function cssRampCensus(css) {
 }
 
 /**
- * cva 의 `variants` / `defaultVariants` 어휘.
+ * The vocabulary of cva's `variants` / `defaultVariants`.
  *
- * 정규식이 아니라 TypeScript 파서로 읽는다 — 이 파일은 주석 안에 표와 코드
- * 예시가 잔뜩 들어 있어서, 「`shape:` 로 시작하는 줄」 같은 텍스트 규칙은
- * 주석까지 규격으로 센다.
+ * Read with the TypeScript parser rather than a regex: this file is full of tables
+ * and code examples inside comments, so a text rule like "lines beginning with
+ * `shape:`" would count comments as spec.
  */
 function variantVocabularyCensus(path, source) {
   const census = new Map();
@@ -236,8 +249,8 @@ function propertyName(node) {
   return name?.getText?.() ?? '';
 }
 
-/** export 되는 프리미티브 이름 집합 — 시스템이 제공하는 부품 목록. */
-/** 내보낸 문자열 상수의 **값**을 센다 — 이름이 같아도 값이 바뀌면 규격 변경이다. */
+/** The set of exported primitive names — the list of parts the system provides. */
+/** Counts the **values** of exported string constants — the same name with a new value is still a spec change. */
 function exportedValueCensus(path, source) {
   const sourceFile = ts.createSourceFile(path, source, ts.ScriptTarget.Latest, true);
   const census = new Map();
@@ -250,7 +263,7 @@ function exportedValueCensus(path, source) {
       for (const declaration of node.declarationList.declarations) {
         if (!ts.isIdentifier(declaration.name)) continue;
         const initializer = declaration.initializer;
-        // `as const` 를 벗긴다 — 규격은 안쪽 리터럴이다.
+        // Strip `as const` — the spec is the literal inside.
         const literal =
           initializer && ts.isAsExpression(initializer) ? initializer.expression : initializer;
         if (literal && ts.isStringLiteral(literal)) {
@@ -287,17 +300,18 @@ function exportedPrimitiveCensus(path, source) {
 }
 
 /**
- * design.md 「스케일 고정 계약」 절의 수치·토큰 센서스.
+ * Number and token inventory of design.md's 「스케일 고정 계약」 (fixed-scale
+ * contract) section.
  *
- * 이 절은 산문인데 그 안의 **숫자와 토큰 이름**은 규격이다(36px 필 · 20px 레일
- * 아이콘 · `--chrome-tile-size` …). 문장을 통째로 비교하면 오탈자 수정까지
- * 걸리므로 값만 뽑는다.
+ * The section is prose, but the **numbers and token names** inside it are spec
+ * (36px pill · 20px rail icon · `--chrome-tile-size` …). Comparing whole sentences
+ * would catch typo fixes, so only the values are extracted.
  */
 function scaleContractCensus(designMdText) {
   const section = extractSection(designMdText, SCALE_CONTRACT_SECTION);
   if (section === null) return new Map();
   const numbers = [...section.matchAll(/\b(\d+(?:\.\d+)?)(px)\b/g)].map((match) => match[0]);
-  // `--leading-*` 같은 산문 속 와일드카드가 꼬리 하이픈째 잡히지 않게 자른다.
+  // Trim so prose wildcards such as `--leading-*` are not captured with a trailing hyphen.
   const tokens = [...section.matchAll(/--[a-z0-9-]+/g)]
     .map((match) => match[0].replace(/-+$/, ''))
     .filter((token) => token.length > 2);
@@ -307,7 +321,7 @@ function scaleContractCensus(designMdText) {
   return census;
 }
 
-/** 두 센서스의 차이. 빈 배열이면 규격은 그대로다. */
+/** The difference between two inventories. An empty array means the spec is unchanged. */
 export function diffCensus(before, after) {
   const changes = [];
   for (const [key, value] of after) {

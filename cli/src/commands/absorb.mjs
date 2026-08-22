@@ -1,6 +1,6 @@
 // Slice 0 — `ontology-atlas absorb <file...> [--vault X] [--write]`
 //
-// The "absorption tool" (단일 스파인, docs/plans/PRODUCT-PLAN-2026-07.md §4/§9).
+// The "absorption tool" — the single spine (docs/plans/PRODUCT-PLAN-2026-07.md §4/§9).
 // Converts a CLAUDE.md/AGENTS.md-style markdown file into typed vault nodes
 // so a tech lead's existing agent-instruction file stops needing dual
 // maintenance: the original stays authoritative for what the tool could not

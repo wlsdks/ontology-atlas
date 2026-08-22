@@ -21,7 +21,7 @@ export function CopyProjectLinkButton({
   size = "sm",
   ...props
 }: Props) {
-  // 복사 상태(idle/copied/failed)는 공용 useCopyFeedback 으로 — toast 는 별도.
+  // Copy state (idle/copied/failed) comes from the shared `useCopyFeedback`; the toast is separate.
   const { state, copy } = useCopyFeedback(2000);
   const toast = useToast();
   const t = useTranslations("copyProjectLink");

@@ -36,8 +36,9 @@ describe('agentConfigContents', () => {
   };
 
   it('points .mcp.json at the vault, not at the config root', () => {
-    // 회귀 가드: 설치 앱 실측에서 이 파일만 "." 로 박혀 repo 루트를 vault 로
-    // 읽는 설정이 나왔다. 자가 검증은 vault 경로를 직접 스폰하므로 못 잡는다.
+    // Regression guard: measured in the installed app, this file alone had "." pinned, producing a
+    // config that read the repo root as the vault. Self-verification cannot catch it because it
+    // spawns the vault path directly.
     const parsed = JSON.parse(agentConfigContents({ ...base, fileName: '.mcp.json' }));
     expect(parsed.mcpServers['ontology-atlas'].env.OATLAS_VAULT).toBe('docs/ontology');
     expect(parsed.mcpServers['ontology-atlas'].command).toBe(LAUNCH.command);

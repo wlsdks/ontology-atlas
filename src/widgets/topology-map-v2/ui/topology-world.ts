@@ -22,8 +22,8 @@ export interface WorldNode {
   id: string;
   kind: WorldNodeKind;
   /**
-   * 저작 출처(`created_by`) 원문 — `human` · `agent:<name>` · 부재.
-   * 부재는 unknown 이지 사람이 아니다(2026-07-31 원장).
+   * The raw authorship source (`created_by`) — `human` · `agent:<name>` · absent.
+   * Absent is unknown, not a human (ledger 2026-07-31).
    */
   createdBy?: string;
   label: string;
@@ -37,9 +37,10 @@ export interface WorldNode {
    */
   homeX: number;
   homeY: number;
-  /** contains 단일(1차) 부모 id — 밀도 게이트의 접힘 귀속처. 다중 부모 공유
-   *  노드는 마지막 contains edge 의 부모 하나만 담는다 (영역 언클러스터
-   *  규칙이 "접은 부모가 영역 밖인가" 판정에 사용). */
+  /** The single (primary) contains parent id — where the density gate files a
+   *  collapse. A node shared by several parents keeps only the parent of the last
+   *  contains edge (the realm uncluster rule uses it to decide "is the collapsing
+   *  parent outside the realm"). */
   parentId: string | null;
   isHub: boolean;
   fresh: boolean;
@@ -47,17 +48,20 @@ export interface WorldNode {
   stale: boolean;
   /**
    * Transitive descendant count — engraved as a numeral on project/domain chips
-   * in circuit range (0 = skip). 패널3-S6 숫자 계약: 이 **노드 뱃지 = 하위 전체
-   * 자손 수**(`TopologyV2Node.descendantCount` = census total). 클러스터 칩 호버
-   * 툴팁의 "하위 전체 N"과 같은 출처라 두 표면의 숫자가 drift 없이 일치한다.
+   * in circuit range (0 = skip). The panel3-S6 number contract: this **node badge =
+   * total descendant count** (`TopologyV2Node.descendantCount` = the inventory
+   * total). It shares its source with the cluster chip hover tooltip's "하위 전체 N"
+   * (N descendants in total), so the two surfaces' numbers agree without drift.
    */
   count: number;
   /**
-   * 규모 배율 (빌드 시 1회). domain/capability 만 ≠1. draw·히트테스트·분리
-   * 완화가 전부 이 값을 곱해 셋이 절대 어긋나지 않는다. Shneiderman
-   * overview-first: overview 의 첫 질문 "어디가 큰가"에 마크가 답하게 한다.
-   * S2 파트 2 — **직속 자식 수**의 √스케일(항상 base 이상, +40% 상한). 뱃지
-   * 숫자(descendantCount)와는 다른 채널: 크기=사전주의, 뱃지=판독.
+   * The magnitude factor (computed once at build). Only domain and capability
+   * differ from 1. The draw, the hit test and the de-pileup relaxation all multiply
+   * by this value, so the three can never diverge. Shneiderman overview-first: the
+   * mark answers the overview's first question, "where is it big?".
+   * S2 part 2 — the √ scale of the **direct child count** (never below base, capped
+   * at +40%). A different channel from the badge number (descendantCount): size is
+   * pre-attentive, the badge is for reading.
    */
   magnitudeScale: number;
 }
@@ -77,27 +81,30 @@ export interface WorldEdge {
   /** Ambient comet-tail progress 0..1, `depends` edges only — mutated per frame by the caller (`use-topology-loop.ts`). */
   t: number;
   /**
-   * P3a — containment 깊이 (엔드포인트 kind 로 유도): 0 = project 가 낀 뼈대,
-   * 1 = domain 이 낀 중간 구조, 2 = capability/element 잔가지. 렌더는 이
-   * 값으로 잉크 강도(굵기×명도) 사다리를 탄다 — 계층은 순서(ordinal)라
-   * hue 가 아니라 명도/크기 채널이 옳다 (`edge-hierarchy-ink.md`).
-   * `depends` 엣지는 타입 채널(파선) 소속이라 이 값을 쓰지 않는다.
+   * P3a — containment depth (derived from the endpoint kinds): 0 = a skeleton edge
+   * with a project on it, 1 = intermediate structure with a domain on it, 2 = a
+   * capability/element twig. The renderer rides an ink-intensity ramp (weight ×
+   * lightness) off this value — hierarchy is ordinal, so lightness and size are the
+   * right channels rather than hue (`edge-hierarchy-ink.md`). A `depends` edge
+   * belongs to the type channel (dashed) and does not use this value.
    */
   level: 0 | 1 | 2;
-  /** P3b — 원 관계 타입 (contains/depends 2치로 뭉개기 전의 의미). */
+  /** P3b — the original relation type (its meaning before being flattened to contains/depends). */
   relationType: string;
-  /** P3b — 이 관계를 선언한 vault 문서 slug (엣지 팝오버의 출처 표시). */
+  /** P3b — the vault document slug that declared this relation (shown as the source in the edge popover). */
   declaredBySlug: string | null;
 }
 
 /**
- * S2 파트 2 — 규모 비례 노드 크기. domain/capability 반지름을 **직속 자식 수**
- * 의 √스케일로 보간한다: `1 + k×(√childCount − 1)/√maxChildCount`, 최대 +40%
- * 상한(1.4)으로 clamp. childCount ≤ 1 이면 base(1.0) — 항상 base 이상(구 로그
- * 압축은 중앙값 미만 노드를 base 아래로 줄였다). element/project 는 불변(1).
- * √라 큰 격차를 압축하되 순위 단서는 유지(막대그래프 아님, Shneiderman
- * overview-first). 뱃지 숫자(descendantCount)와는 다른 채널 — 크기는 사전주의
- * "어디가 큰가", 뱃지는 판독.
+ * S2 part 2 — magnitude-proportional node size. The domain/capability radius is
+ * interpolated by the √ scale of the **direct child count**:
+ * `1 + k×(√childCount − 1)/√maxChildCount`, clamped at +40% (1.4). With
+ * childCount ≤ 1 it is base (1.0) — never below base, unlike the old logarithmic
+ * compression, which shrank below-median nodes under base. element and project are
+ * unchanged (1). The √ compresses large gaps while keeping the rank cue (this is
+ * not a bar chart — Shneiderman overview-first). A different channel from the badge
+ * number (descendantCount): size is the pre-attentive "where is it big?", the badge
+ * is for reading.
  */
 export function computeMagnitudeScale(
   kind: WorldNodeKind,
@@ -111,7 +118,7 @@ export function computeMagnitudeScale(
   return Math.min(1.4, Math.max(1, raw));
 }
 
-/** P3a — 두 엔드포인트 kind 에서 containment 잉크 레벨을 유도한다. */
+/** P3a — derive the containment ink level from the two endpoint kinds. */
 export function containmentLevelFor(aKind: WorldNodeKind, bKind: WorldNodeKind): 0 | 1 | 2 {
   if (aKind === "project" || bKind === "project") return 0;
   if (aKind === "domain" || bKind === "domain") return 1;
@@ -126,10 +133,11 @@ export interface Bounds {
 }
 
 /**
- * 밀도 게이트 슬라이스 (fable 설계) — 부모별 클러스터 칩 배치 메타. angle 은
- * 레이아웃 부채꼴 방향(home 좌표에서 유도, 정적), ring 은 칩을 앉힐 자식 링
- * 반지름. 칩의 실제 월드 anchor 는 매 프레임 부모의 *라이브* 위치 + 이 정적
- * 방향으로 다시 계산한다 (`topology-cluster-state.ts`).
+ * Density gate slice (fable's design) — per-parent cluster chip placement metadata.
+ * `angle` is the layout fan's direction (derived from the home coordinates,
+ * static); `ring` is the child-ring radius the chip sits on. The chip's actual
+ * world anchor is recomputed every frame from the parent's *live* position plus
+ * this static direction (`topology-cluster-state.ts`).
  */
 export interface ClusterParentMeta {
   angle: number;
@@ -141,9 +149,9 @@ export interface TopologyWorld {
   nodeById: ReadonlyMap<string, WorldNode>;
   edges: WorldEdge[];
   neighborMap: ReadonlyMap<string, ReadonlySet<string>>;
-  /** contains 부모 id → 직속 자식 id 배열 (밀도 게이트 입력, 정적). */
+  /** contains parent id → array of direct child ids (the density gate's input, static). */
   childrenByParent: ReadonlyMap<string, readonly string[]>;
-  /** 밀도 게이트 칩 배치 메타 (자식 있는 부모만, 정적). */
+  /** Density gate chip placement metadata (parents with children only, static). */
   clusterMetaByParent: ReadonlyMap<string, ClusterParentMeta>;
   /**
    * node id → indices into `edges` of every edge touching that node (both
@@ -240,11 +248,13 @@ export function computeEgoBounds(
   tokens: TopologyV2Tokens,
   focusedSlug: string,
   /**
-   * S8 결함 4 — 영역 전개 중 ego bbox 를 영역 멤버로 제한한다. 영역 active 중엔
-   * 결계 밖 이웃이 fling 좌표(원점에서 수천 유닛 밖)에 앉아 있어, 제한 없이
-   * bbox 를 재면 그 밖 이웃까지 감싸느라 카메라가 극단적으로 축소돼 "화면이
-   * 사라진다"(소유자 실보고). 이 Set 이 주어지면 focus 노드 + **그 안에 있는**
-   * 이웃만 bbox 에 넣는다(포커스 다이브가 결계 안에서만 움직인다). 생략 시 전역.
+   * S8 defect 4 — restrict the ego bbox to the realm's members while a realm is
+   * expanded. With a realm active, neighbours outside the warding circle sit at
+   * fling coordinates (thousands of units from the origin), so measuring the bbox
+   * unrestricted wraps those outside neighbours too and shrinks the camera so far
+   * that "the screen disappears" (owner report). Given this set, only the focus node
+   * plus the neighbours **inside it** enter the bbox, so the focus dive moves only
+   * within the warding circle. Omitted means global.
    */
   restrictIds?: ReadonlySet<string> | null,
 ): Bounds | null {
@@ -273,19 +283,21 @@ export function computeEgoBounds(
 }
 
 /**
- * S2 파트 5B — 펼친 클러스터 "디스크"(부모 + 그 직속 자식 부챗살)의 반지름
- * 패딩 bbox. 칩을 클릭해 부모를 펼치면 카메라가 이 bbox 로 다이브해 "펼쳐졌다"가
- * 뷰포트에 보이게 한다(소유자 실보고 #2: "확장해도 아무 변화가 안 보임"). ego
- * bbox(`computeEgoBounds`)와 같은 패턴 — 여기선 이웃이 아니라 contains 직속
- * 자식을 담는다. `parentId` 미해결/자식 없음이면 `null`.
+ * S2 part 5B — the radius-padded bbox of an expanded cluster "disc" (the parent
+ * plus its direct children's fan). Clicking a chip to expand a parent dives the
+ * camera to this bbox so "it expanded" is visible in the viewport (owner report #2:
+ * *"확장해도 아무 변화가 안 보임"* — expanding shows no change at all). The same
+ * pattern as the ego bbox (`computeEgoBounds`), but holding contains children
+ * rather than neighbours. `null` when `parentId` does not resolve or has no children.
  */
 export function computeClusterDiscBounds(
   world: Pick<TopologyWorld, "nodeById" | "childrenByParent">,
   tokens: TopologyV2Tokens,
   parentId: string,
   /**
-   * 고팬아웃 배치-공개(2026-07) — 주어지면 이 집합에 속한 노드만 bbox 에
-   * 포함한다(부모 + 이번 배치 자식). null/생략 = 부모 + 직속 자식 전체(회귀 0).
+   * High-fanout batch reveal (2026-07) — given, only nodes in this set enter the
+   * bbox (the parent plus this batch's children). null or omitted means the parent
+   * plus every direct child (zero regression).
    */
   restrictIds?: ReadonlySet<string> | null,
 ): Bounds | null {
@@ -313,16 +325,17 @@ export function computeClusterDiscBounds(
 }
 
 /**
- * 완화(de-pileup) 대상 = **밀도 게이트가 접지 않는 노드**.
+ * The de-pileup relaxation's scope = **the nodes the density gate does not collapse**.
  *
- * `computeDensityGate` 의 `clusteredIds` 는 기하가 필요 없다 — 부모별 자식
- * 수와 임계만 본다. 그래서 배치 **전에** 계산할 수 있고, 그 결과로 "이 볼트에서
- * 절대 안 그려지는 노드" 를 미리 안다. 칩 앵커만 기하를 요구하는데 그건 배치
- * 뒤에 `computeTopologyClusterState` 가 따로 만든다(순환 없음).
+ * `computeDensityGate`'s `clusteredIds` needs no geometry — it looks only at the
+ * per-parent child count and the threshold. So it can be computed **before** layout,
+ * and its result tells us in advance which nodes are never drawn in this vault. Only
+ * the chip anchors require geometry, and those are built separately after layout by
+ * `computeTopologyClusterState` (no cycle).
  *
- * 여기서는 `expandedParents` 를 빈 집합으로 본다 — 월드는 그래프가 바뀔 때만
- * 지어지고 펼침 상태를 모른다. 펼침으로 드러나는 자식은 씨앗 좌표를 갖고 있어
- * 좌표 구멍이 생기지 않는다.
+ * `expandedParents` is treated as empty here — the world is only built when the
+ * graph changes and knows nothing about expansion state. Children revealed by an
+ * expansion carry seed coordinates, so no coordinate hole appears.
  */
 function computeRelaxScope(layoutInput: readonly LayoutGraphNode[]): ReadonlySet<string> {
   const childrenByParent = new Map<string, string[]>();
@@ -336,7 +349,7 @@ function computeRelaxScope(layoutInput: readonly LayoutGraphNode[]): ReadonlySet
   const { clusteredIds } = computeDensityGate({
     childrenByParent,
     expandedParents: EMPTY_EXPANDED_PARENTS,
-    // 칩 앵커는 여기서 안 쓴다 — `clusteredIds` 만 필요하고 그건 기하 무관.
+    // Chip anchors are not used here — only `clusteredIds` is needed, and that is geometry-independent.
     parentGeometry: EMPTY_PARENT_GEOMETRY,
     kindOf: (id) => kindById.get(id),
   });
@@ -353,10 +366,11 @@ export function buildTopologyWorld(
   edges: readonly TopologyV2Edge[],
   tokens: TopologyV2Tokens,
   /**
-   * 임계 초과 부모의 자식 배치(설정 「확장 → 확장 구조」). 생략 시 `"disc"` =
-   * 오늘의 나선 원반이라 좌표가 바이트 동일하다. 값이 바뀌면 월드를 다시
-   * 지어야 한다 — 씨앗 좌표 자체가 달라지기 때문(`use-topology-loop` 의
-   * 월드 빌드 effect dep 에 들어 있다).
+   * How the children of an over-threshold parent are laid out (settings
+   * 「확장 → 확장 구조」 — expand → expand structure). Omitted means `"disc"`, today's
+   * spiral disc, so the coordinates are byte-identical. Changing the value requires
+   * rebuilding the world, because the seed coordinates themselves differ (it is in
+   * the world-build effect's deps in `use-topology-loop`).
    */
   expandStructure: ExpandStructure = DEFAULT_EXPAND.structure,
 ): TopologyWorld {
@@ -375,15 +389,17 @@ export function buildTopologyWorld(
     capability: tokens.layoutRingCapability,
     element: tokens.layoutRingElement,
   };
-  // 완화 범위 = **이 볼트에서 그려질 수 있는 노드**. 밀도 게이트가 접는
-  // 서브트리(자식 12개 초과 부모 아래)는 칩 뒤에 숨어 한 번도 그려지지
-  // 않으므로, 그것들의 겹침을 푸는 데 시간을 쓰지 않는다. 씨앗 좌표는
-  // 여전히 전부 계산되므로 티어가 열리거나 칩을 펼칠 때 좌표 구멍이 없다.
+  // The relaxation scope = **the nodes that can be drawn in this vault**. A subtree
+  // the density gate collapses (under a parent with more than 12 children) hides
+  // behind a chip and is never drawn once, so no time is spent unpiling it. Seed
+  // coordinates are still computed for everything, so there is no coordinate hole
+  // when a tier opens or a chip expands.
   //
-  // `expandedParents` 는 일부러 넘기지 않는다 — 월드는 그래프가 바뀔 때만
-  // 다시 지어지고(`use-topology-loop.ts` 의 `useEffect`), 펼침마다 재구축하면
-  // 등장 램프와 스프링이 초기화돼 화면이 튄다. 펼친 자식은 씨앗 자리에
-  // 나타나고, 국소 재완화는 후속 슬라이스가 맡는다.
+  // `expandedParents` is deliberately not passed — the world is rebuilt only when
+  // the graph changes (the `useEffect` in `use-topology-loop.ts`), and rebuilding on
+  // every expansion resets the entry ramps and springs, making the screen jump.
+  // Expanded children appear at their seed positions, and local re-relaxation is a
+  // later slice's job.
   const relaxScope = computeRelaxScope(layoutInput);
   // Feed the real §2.3 node radii into the deterministic de-pileup so its
   // collision min-distance matches what actually gets drawn.
@@ -416,11 +432,11 @@ export function buildTopologyWorld(
       parentId: containsParentById.get(n.id) ?? null,
       isHub: n.isHub,
       fresh: n.recentlyUpdated,
-      // 살아있는 지도 드리프트 — 어댑터가 vault mtime 으로 판정한 dusty 를
-      // 기존 stale 시각 채널(freshness.ts: dash [3,3] + 불투명 토큰)에 배선.
+      // Living-map drift — the adapter's dusty verdict (from vault mtime) is wired
+      // into the existing stale visual channel (freshness.ts: dash [3,3] plus an opaque token).
       stale: n.stale ?? false,
       count: n.descendantCount,
-      magnitudeScale: 1, // 아래 2차 패스에서 maxCount 확정 후 채움
+      magnitudeScale: 1, // Filled by the second pass below, once maxCount is settled.
 
     };
   });
@@ -433,8 +449,9 @@ export function buildTopologyWorld(
     neighborMap.get(b)?.add(a);
   };
 
-  // 밀도 게이트 슬라이스 (fable 설계) — contains 부모→자식 맵과 칩 배치 메타를
-  // 정적으로 구축한다. 자식 순서는 `nodes` 순서(결정론)를 따른다.
+  // Density gate slice (fable's design) — build the contains parent→children map
+  // and the chip placement metadata statically. Child order follows `nodes` order
+  // (deterministic).
   const childrenByParent = new Map<string, string[]>();
   for (const node of worldNodes) {
     const parentId = containsParentById.get(node.id);
@@ -447,8 +464,9 @@ export function buildTopologyWorld(
   for (const [parentId, childIds] of childrenByParent) {
     const parent = nodeById.get(parentId);
     if (!parent) continue;
-    // outward 방향 = 부모의 부모 → 부모 (home 좌표, 정적). 도메인은
-    // 조부모=프로젝트(원점 근처)라 원점에서 도메인으로의 방향과 같다.
+    // The outward direction = the parent's parent → the parent (home coordinates,
+    // static). For a domain the grandparent is the project (near the origin), so it
+    // matches the direction from the origin to the domain.
     const grandParentId = containsParentById.get(parentId);
     const gp = grandParentId ? nodeById.get(grandParentId) : undefined;
     const gx = gp?.homeX ?? 0;
@@ -460,9 +478,10 @@ export function buildTopologyWorld(
     clusterMetaByParent.set(parentId, { angle, ring });
   }
 
-  // S2 파트 2 — 규모 배율 2차 패스: 직속 자식 수(childrenByParent) 기반 √스케일.
-  // maxChildCount 는 배율 대상(domain/capability)만 본다 — project 의 자식 수는
-  // 정규화 분모를 왜곡하므로 제외한다.
+  // S2 part 2 — the magnitude factor's second pass: a √ scale over the direct child
+  // count (childrenByParent). maxChildCount looks only at the kinds that scale
+  // (domain/capability) — a project's child count would distort the normalising
+  // denominator, so it is excluded.
   {
     const childCountOf = (id: string) => childrenByParent.get(id)?.length ?? 0;
     let maxChildCount = 0;
@@ -502,8 +521,9 @@ export function buildTopologyWorld(
       by: b.y,
       controlX: control.x,
       controlY: control.y,
-      // R6 상시 혜성 — 결정론 시드로 위상을 어긋내 lockstep(모든 코멧이 같은
-      // 위상으로 동시에 흐르는 파도)을 피한다. contains 는 코멧이 없어 무의미.
+      // R6 permanent comets — a deterministic seed staggers the phase to avoid
+      // lockstep (every comet flowing at the same phase as one wave). Meaningless
+      // for contains, which has no comets.
       t: fireflySeed(a.id, b.id),
       level: containmentLevelFor(a.kind, b.kind),
       relationType: edge.relationType,
@@ -517,8 +537,9 @@ export function buildTopologyWorld(
   const ranked = [...nodes].sort((x, y) => y.size + y.fullDegree * 18 - (x.size + x.fullDegree * 18));
   const brightStarIds = new Set(ranked.slice(0, Math.max(0, Math.round(tokens.starCount))).map((n) => n.id));
 
-  // 노드 → 자기에게 물린 엣지 인덱스. 빌드 때 한 번 만들어 두면 «움직인 노드의
-  // 엣지만» 갱신하는 프레임 경로가 성립한다 (`recomputeWorldGeometry`).
+  // Node → the index of the edges attached to it. Built once at build time, it makes
+  // the frame path that refreshes «only the moved nodes' edges» possible
+  // (`recomputeWorldGeometry`).
   const edgeIndexByNode = new Map<string, number[]>();
   const indexEdge = (nodeId: string, edgeIndex: number) => {
     const list = edgeIndexByNode.get(nodeId);
@@ -550,10 +571,11 @@ export function buildTopologyWorld(
  * `force-layout.ts#positions`) leave the node's last-good coordinate intact.
  */
 export function applyForcePositions(world: TopologyWorld, positions: ReadonlyMap<string, { x: number; y: number }>): void {
-  // **주는 쪽을 순회한다.** 종전에는 월드의 전 노드(3000)를 돌며 `positions.get`
-  // 을 했는데, 제한 틱이 실제로 움직인 것은 그중 수십 개다. 맵이 그 수십 개만
-  // 담고 오면(`force-layout.ts#positions(only)`) 이 루프도 그만큼만 돈다.
-  // 의미는 동일하다 — 맵에 없는 노드는 종전에도 좌표가 유지됐다.
+  // **Iterate over what was given.** This used to walk all 3000 of the world's nodes
+  // calling `positions.get`, while a throttled tick actually moved a few dozen of
+  // them. With the map carrying only those few dozen
+  // (`force-layout.ts#positions(only)`), this loop runs only that many times. The
+  // meaning is identical — a node absent from the map kept its coordinates before too.
   for (const [id, p] of positions) {
     const node = world.nodeById.get(id);
     if (node) {
@@ -588,7 +610,7 @@ function recomputeEdgeGeometry(world: TopologyWorld, tokens: TopologyV2Tokens, e
   edge.controlY = control.y;
 }
 
-/** 한 노드의 반지름 패딩 박스를 기존 bbox 에 합친다 (넓히기만 — 줄이지 않는다). */
+/** Merge one node's radius-padded box into an existing bbox (grow only — never shrink). */
 function growBounds(bounds: Bounds, node: WorldNode, tokens: TopologyV2Tokens): void {
   const r = radiusForKind(node.kind, tokens);
   if (node.x - r < bounds.minX) bounds.minX = node.x - r;
@@ -598,14 +620,15 @@ function growBounds(bounds: Bounds, node: WorldNode, tokens: TopologyV2Tokens): 
 }
 
 /**
- * 움직인 노드만 받았을 때의 부분 갱신.
+ * The partial refresh when only the moved nodes were given.
  *
- * - **엣지**: 움직인 노드에 물린 것만 (`edgeIndexByNode`). 양끝이 다 움직인
- *   엣지는 두 번 계산되지만 멱등이라 결과가 같다 — 중복 제거용 Set 을 매
- *   프레임 새로 만드는 값이 그 중복보다 비싸다.
- * - **bbox**: 넓히기만 한다. 팬 클램프 입력이라 «조금 넉넉함» 은 안전한
- *   방향(사용자를 잘라내지 않는다)이고, 정확한 축소는 드래그가 끝나는
- *   프레임의 전체 재계산이 되돌린다 (`use-topology-loop.ts` 정착 종료 블록).
+ * - **Edges**: only those attached to a moved node (`edgeIndexByNode`). An edge with
+ *   both ends moved is computed twice, but the operation is idempotent so the result
+ *   is the same — building a dedupe Set every frame costs more than that duplication.
+ * - **bbox**: grow only. It is the pan clamp's input, so «slightly generous» is the
+ *   safe direction (it never crops the user), and the exact shrink is restored by
+ *   the full recompute on the frame the drag ends (the settle-end block in
+ *   `use-topology-loop.ts`).
  */
 function recomputeMovedGeometry(world: TopologyWorld, tokens: TopologyV2Tokens, movedIds: ReadonlySet<string>): void {
   for (const id of movedIds) {
@@ -643,8 +666,9 @@ export function recomputeWorldGeometry(
   movedIds?: ReadonlySet<string> | null,
 ): void {
   if (movedIds) {
-    // 절반 넘게 움직였으면 인덱스 우회가 오히려 손해다 (맵 조회 + 중복 계산).
-    // 그 경계 위는 전체 경로가 싸고, 덤으로 bbox 가 정확히 «줄어들» 기회를 준다.
+    // Past half moved, routing through the index costs more than it saves (map
+    // lookups plus duplicate computation). Above that boundary the full path is
+    // cheaper, and it also gives the bbox a chance to «shrink» exactly.
     if (movedIds.size * 2 < world.nodes.length) {
       recomputeMovedGeometry(world, tokens, movedIds);
       return;

@@ -14,18 +14,19 @@ import { controlClass } from '@/shared/ui/control-class';
 import { usePanelPresence } from "@/shared/lib/use-presence";
 
 /**
- * 안내가 화면에 머무는 시간.
+ * How long the notice stays on screen.
  *
- * ⚠️ 처음 1100ms 로 뒀다가 **시험이 먼저 잡았다** — 여덟 번 누르는 동안 이미
- * 사라져서 안내를 한 번도 못 봤다. 사람도 같은 처지다: 한 줄을 읽는 데 그보다
- * 오래 걸린다. 1900ms 는 읽고 다음 방향을 누를 만큼이고, 여전히 스스로 사라진다.
+ * ⚠️ It was set to 1100ms at first and **the test caught it** — across eight
+ * presses it had already vanished, so the notice was never once seen. A person is
+ * in the same position: reading one line takes longer than that. 1900ms is enough
+ * to read and press the next direction, and it still disappears on its own.
  *
- * 쿨다운(`DEAD_END_NOTICE_COOLDOWN_MS` 1200ms)보다 길어도 된다 — 다시 막히면
- * 타이머가 새로 서고 안내가 **새 노드 옆으로** 옮겨 간다.
+ * It may exceed the cooldown (`DEAD_END_NOTICE_COOLDOWN_MS`, 1200ms) — hitting
+ * another dead end restarts the timer and moves the notice **beside the new node**.
  */
 const WALK_NOTICE_HOLD_MS = 1900;
 
-/** 노드 중심에서 안내 아래변까지 — 노드 반지름 최대(30) + 숨 8. */
+/** From the node's centre to the notice's bottom edge — the largest node radius (30) plus 8 of breathing room. */
 const WALK_NOTICE_NODE_GAP = 38;
 import { useReducedMotion } from "framer-motion";
 import { transientSurface } from "@/shared/ui/transient-surface";
@@ -53,13 +54,14 @@ export interface TopologyV2Node {
   ownerKey: string | null;
   recentlyUpdated: boolean;
   /**
-   * 저작 출처(`created_by`) 원문 — `human` · `agent:<name>` · 부재.
-   * 값이 **정확히** `human` 일 때만 검수 대기 링을 그린다. 부재는 unknown 이지
-   * 사람이 아니다(2026-07-31 원장 — 소급 추론 금지).
+   * The raw authorship source (`created_by`) — `human`, `agent:<name>`, or absent.
+   * The review-pending ring is drawn only when the value is **exactly** `human`.
+   * Absent is unknown, not human (ledger 2026-07-31 — no retroactive inference).
    */
   createdBy?: string;
-  /** 살아있는 지도 드리프트 — vault mtime 파생 dusty 판정(`views/home/lib/topology-dusty.ts`).
-   *  true 면 기존 stale 채널(dash + 불투명 stale 토큰)로 렌더. 생략 = fresh. */
+  /** Living-map drift — the dusty decision derived from vault mtime
+   *  (`views/home/lib/topology-dusty.ts`). true renders through the existing stale
+   *  channel (dash plus the opaque stale token). Omitted means fresh. */
   stale?: boolean;
   fullDegree: number;
   /** Transitive contained-descendant count — the engraved numeral shown on project/domain chips in circuit range (prototype `n.count`). */
@@ -75,15 +77,16 @@ export interface TopologyV2Edge {
   relationQuality: "strong" | "weak" | null;
   evidenceCount: number;
   kind: "contains" | "depends";
-  /** P3b — 이 관계를 선언한 vault 문서 slug (frontmatter 가 곧 그래프이므로 출처 표시 비용 0). */
+  /** P3b — the vault document slug that declared this relation (frontmatter *is* the graph, so showing provenance costs nothing). */
   declaredBySlug: string | null;
 }
 
 export interface TopologyV2Focus {
   /**
-   * v2 캔버스 loop 가 실제로 소비하는 유일한 focus 필드. 구
-   * depthLimit/searchQuery/activeCategory/hubsOnly 는 렌더러가 읽지 않는
-   * 죽은 필드였고 조절 패널 철거와 함께 제거됐다 (loop 는 ego 포커스만 계산).
+   * The only focus field the v2 canvas loop actually consumes. The old
+   * depthLimit/searchQuery/activeCategory/hubsOnly were dead fields the renderer
+   * never read, and they went with the controls panel (the loop computes ego focus
+   * only).
    */
   selectedSlug: string | null;
 }
@@ -105,44 +108,44 @@ export interface TopologyMapV2Props {
   edges: readonly TopologyV2Edge[];
   focus: TopologyV2Focus;
   /**
-   * **이 그래프가 어느 볼트에서 왔나** — 값이 바뀌면 오버뷰를 다시 맞춘다.
+   * **Which vault this graph came from** — a changed value re-fits the overview.
    *
-   * 정체성 문자열의 단일 출처는 `useVaultIdentityScope()`(`features/vault-scope`)
-   * 다. 여기서 트리거로 쓰는 것은 **노드 수가 아니라 출처**다: 사용자가 작업
-   * 중에 노드 하나를 더할 때 카메라를 낚아채는 것이 원래 결함보다 나쁘므로,
-   * 샘플↔로컬 · 샘플↔샘플 전환에서만 다시 선다. 생략하면 종전대로 최초 1회만
-   * 맞춘다.
+   * The single source of the identity string is `useVaultIdentityScope()`
+   * (`features/vault-scope`). What triggers here is **the source, not the node
+   * count**: hijacking the camera when the user adds one node mid-work is worse
+   * than the original defect, so it only re-fits on a sample↔local or sample↔sample
+   * switch. Omitted, it fits once at first as before.
    */
   dataSourceKey?: string | null;
-  /** Increment to re-run fit-to-bounds (HomePage "지도 맞추기"). */
+  /** Increment to re-run fit-to-bounds (HomePage's 「지도 맞추기」 — fit the map). */
   fitViewToken: number;
-  /** 렌즈/기간 변경 시 강조 노드로 카메라를 맞추는 토큰. */
+  /** The token that fits the camera to the emphasised nodes when the lens or period changes. */
   spotlightFitToken?: number;
   /** Increment to force a full relayout. */
   relayoutToken: number;
-  /** P3d(E1) — 첫 지도 연출 트리거 (부트스트랩 완료 시 증가). */
+  /** P3d(E1) — the first-map reveal trigger (incremented when bootstrap completes). */
   revealToken?: number;
-  /** P3b — 엣지 클릭 (노드 미히트 지점). */
+  /** P3b — an edge click (at a point that missed every node). */
   onSelectEdge?: (edge: { sourceId: string; targetId: string; relationType: string; declaredBySlug: string | null }) => void;
-  /** 엣지 선택 = 페어 포커스 — 양끝만 밝히고 나머지 dim, 선택 엣지는 pale 인디고. */
+  /** Edge selection = pair focus — only the two ends stay lit, everything else dims, and the selected edge is pale indigo. */
   selectedEdge?: { sourceId: string; targetId: string } | null;
   /** Pre-write relation overlay. It never enters the force/layout graph. */
   previewEdge?: TopologyV2PreviewEdge | null;
-  /** P3c — 엣지 호버 마이크로카드 (식별 변경 시 발화, null=해제). */
+  /** P3c — the edge hover microcard (fires on an identity change; null clears it). */
   onHoverEdge?: (
     edge: { sourceId: string; targetId: string; relationType: string; declaredBySlug: string | null } | null,
     position: { x: number; y: number } | null,
   ) => void;
   /**
    * The connected-node slug the user is hovering in the detail panel's
-   * "연결된 노드" list. Under focus, that node + its connecting edge light up on
-   * the canvas so panel and map read as one (lead spec §4). Optional — the
-   * panel-hover wiring is a follow-up; omitting it keeps the map behavior
-   * identical.
+   * 「연결된 노드」 (connected nodes) list. Under focus, that node and its connecting
+   * edge light up on the canvas so panel and map read as one (lead spec §4).
+   * Optional — the panel-hover wiring is a follow-up; omitting it keeps the map
+   * behavior identical.
    */
   emphasizedNeighborSlug?: string | null;
   onSelect?: (slug: string) => void;
-  /** 방향키를 눌렀는데 그 방향에 갈 곳이 없을 때. 문구는 페이지가 정한다. */
+  /** An arrow key was pressed with nowhere to go in that direction. The page decides the copy. */
   onWalkDeadEnd?: ((point: { x: number; y: number } | null) => void) | null;
   onOpen?: (slug: string) => void;
   onPaneClick?: () => void;
@@ -160,32 +163,34 @@ export interface TopologyMapV2Props {
    * unchanged (browser default menu everywhere, same as before this slice).
    */
   onContextMenuNode?: (slug: string, position: { x: number; y: number }) => void;
-  /** 빈 캔버스 우클릭 — 「여기에 개념 만들기」. 생략하면 종전대로 no-op. */
+  /** Right-click on empty canvas — 「여기에 개념 만들기」 (create a concept here). Omitted, it is a no-op as before. */
   onContextMenuPane?: (position: { x: number; y: number }) => void;
   /**
-   * 밀도 게이트 (fable 설계) — 사용자가 펼친 부모 slug Set(URL `?open=`).
-   * 임계(12) 초과 자식을 가진 부모는 기본 접힘(클러스터 칩)이고 여기 담긴
-   * 부모만 자식을 노출한다. 생략/빈 Set = 전부 접힘.
+   * Density gate — the set of parent slugs the user has expanded (URL `?open=`).
+   * A parent with more children than the threshold (12) is collapsed by default (a
+   * cluster chip), and only the parents in this set reveal their children.
+   * Omitted or empty means everything is collapsed.
    */
   expandedParents?: ReadonlySet<string>;
-  /** 밀도 게이트 — 클러스터 칩 클릭 시 해당 부모 확장 토글(HomePage 가 URL 왕복). */
+  /** Density gate — a cluster chip click toggles that parent's expansion (HomePage does the URL round trip). */
   onToggleCluster?: (parentId: string) => void;
-  /** S2 파트 5C — 클러스터 칩 호버 툴팁 (식별 변경 시 발화, null=해제). */
+  /** S2 part 5C — the cluster chip hover tooltip (fires on an identity change; null clears it). */
   onHoverCluster?: (
     info: {
       parentId: string;
-      /** 이 티어에서 접힌 직속 게이트 자식 수(칩 `+N`). */
+  /** Direct gated children collapsed at this tier (the chip's `+N`). */
       count: number;
-      /** 패널3-S6 — 부모의 하위 전체 자손 수(노드 뱃지 = descendantCount). */
+  /** Panel3-S6 — the parent's total descendant count (the node badge = descendantCount). */
       descendantTotal: number;
       expanded: boolean;
       position: { x: number; y: number };
     } | null,
   ) => void;
   /**
-   * 밀도 게이트 — 클러스터 칩 어포던스의 접근성 힌트(i18n, HomePage 가 주입).
-   * 칩은 canvas 글리프라 개별 aria 를 못 달아, 컨테이너 안 sr-only 설명으로
-   * "무엇이 접혔고 어떻게 펼치는가"를 스크린리더에 전달한다.
+   * Density gate — the accessibility hint for the cluster chip affordance (i18n,
+   * injected by HomePage). Chips are canvas glyphs and cannot carry individual aria,
+   * so an sr-only description inside the container tells a screen reader what is
+   * collapsed and how to expand it.
    */
   clusterHint?: string;
   /** Embed mode (project detail neighbor map) — reduced physics/chrome. */
@@ -198,10 +203,10 @@ export interface TopologyMapV2Props {
    */
   agentFocusNodeId?: string | null;
   /**
-   * 최근 변경 스포트라이트 (`?recent=`, 협의회 설계 2026-07-23) — non-null 이면
-   * 이 집합 밖 노드/엣지를 rest 알파까지 침강시키는 렌즈 ON. 집합 안 노드는
-   * HomePage 가 fresh 채널 키(changedSlugs)를 같은 창으로 교체해 켠다.
-   * null/생략 = off.
+   * The recently-changed spotlight (`?recent=`, council design 2026-07-23) —
+   * non-null turns on a lens that sinks every node and edge outside this set to the
+   * rest alpha. Nodes inside the set are lit by HomePage swapping the fresh channel
+   * key (changedSlugs) over the same window. null or omitted is off.
    */
   spotlightIds?: ReadonlySet<string> | null;
   /** 같은 렌즈 기구가 지금 나르는 의미. 생략은 기존 최근 변경. */
@@ -209,163 +214,181 @@ export interface TopologyMapV2Props {
   /** 최단 경로에 실제로 포함된 authored edge id만. */
   pathEdgeIds?: ReadonlySet<string> | null;
   /**
-   * S4 "영역 전개" — 지도가 이 노드의 세계로 전환된 상태 (`?realm=slug`), 없으면
-   * 전체 지도. HomePage 가 URL 에서 내린다.
+   * S4 realm expansion — the map has switched to this node's world (`?realm=slug`);
+   * without it, the full map. HomePage derives it from the URL.
    */
   realmRootId?: string | null;
-  /** S4 — 궤도 "전개" 버튼 클릭 → 이 slug 로 영역 진입 (HomePage 가 URL 왕복). */
+  /** S4 — clicking the orbit "expand" button enters the realm at this slug (HomePage does the URL round trip). */
   onEnterRealm?: (slug: string) => void;
-  /** S4 — 궤도 버튼 접근성 라벨 (i18n, HomePage 주입). 사용자 어휘는 "이것만 보기"(2026-07-23 소유자 결정), 내부명 realm 유지. */
+  /** S4 — the orbit button's accessible label (i18n, injected by HomePage). The user-facing wording is 「이것만 보기」 (show only this; owner decision 2026-07-23) while the internal name stays realm. */
   realmEnterLabel?: string;
-  /** S4 — 궤도 버튼 호버 마이크로 툴팁 문구 ("이 노드 안쪽만 봐요"). */
+  /** S4 — the orbit button's hover microtooltip copy ("이 노드 안쪽만 봐요" — look only inside this node). */
   realmEnterTooltip?: string;
   /**
-   * 결계 하단 센서스 각인 — "○○ · 요소 N" (i18n, HomePage 주입). 원장 패널의
-   * census 와 단일 출처가 되도록 위젯이 직접 세지 않고 문자열로 받는다.
-   * null/생략 = 각인 없음.
+   * The inventory engraving at the warding circle's base — "○○ · 요소 N" (i18n,
+   * injected by HomePage). The widget does not count for itself but receives the
+   * string, so it shares a single source with the ledger panel's inventory. null or
+   * omitted means no engraving.
    */
   realmCaption?: string | null;
   /**
-   * 「머리 위 막대」의 문구(i18n, HomePage 주입) — 「모두 펼치기」/「N개
-   * 펼치기」/「접기」. 캔버스 렌더러는 문자열을 만들지 않는다(결계 캡션과
-   * 같은 규약). 생략하면 영문 폴백이 그려지므로 배선은 계약 테스트가 잡는다.
+   * The copy for 「머리 위 막대」 (the bar above the head) — 「모두 펼치기」 /
+   * 「N개 펼치기」 / 「접기」 (expand all / expand N / collapse), i18n, injected by
+   * HomePage. The canvas renderer never composes strings (the same convention as
+   * the warding caption). Omitted draws an English fallback, so a contract test
+   * catches a broken wiring.
    */
   clusterBarLabels?: ClusterBarLabels | null;
   /**
-   * H3 P2 — 캔버스 접근성 라벨(i18n, HomePage 주입). canvas 는 회화 픽셀이라
-   * 스크린리더에 빈 그래픽으로 읽힌다 → `role="img"` + 이 라벨로 "무엇인지 +
-   * 키보드 대안(INDEX 패널)"을 한 문장으로 알린다. 생략하면 role/label 을 안
-   * 단다(회귀 0).
+   * H3 P2 — the canvas accessibility label (i18n, injected by HomePage). A canvas
+   * is painted pixels and reads to a screen reader as an empty graphic, so
+   * `role="img"` plus this label states what it is and what the keyboard
+   * alternative is (the INDEX panel) in one sentence. Omitted, neither role nor
+   * label is set (zero regression).
    */
   canvasLabel?: string;
   /**
-   * 막다른 길 안내 문구 — **문구는 페이지의 것이다**(`canvasLabel` 과 같은 이유:
-   * 이 위젯은 프로바이더 없이 렌더되는 시험을 가진다). 자리와 사라지는 시점은
-   * 위젯이 정한다 — 그 둘은 캔버스 좌표를 아는 쪽만 알 수 있다.
+   * The dead-end notice copy — **the copy belongs to the page** (the same reason as
+   * `canvasLabel`: this widget has tests that render it with no provider). The
+   * widget decides the position and the moment it disappears — only the side that
+   * knows the canvas coordinates can.
    */
   walkNoticeLabel?: string;
   /**
-   * 발자국 트레일 (fable 설계) — 세션 동안 방문(ego 포커스)한 노드 id 목록
-   * (오래된 → 최근). 각 방문 노드에 최근성 감쇠 pale 인디고 헤어라인 링을
-   * 얹는다(정적 표기). HomePage 세션 state 가 내려보낸다. 생략/빈 배열 =
-   * 발자국 없음.
+   * The footprint trail (fable design) — the node ids visited (ego focused) during
+   * the session, oldest to most recent. Each visited node gets a pale indigo
+   * hairline ring that decays with recency (a static marking). HomePage's session
+   * state passes it down. Omitted or empty means no footprints.
    */
   visitedTrail?: readonly string[];
   /**
-   * 걸어온 길 렌즈 on/off 를 담는 ref — 트레일 팝오버가 열려 있는 동안 true.
-   * 지도가 잠시 관계 읽기를 접고 궤적 읽기에 양보한다: `visitedTrail` 노드만
-   * 값과 라벨을 지키고 나머지 노드·클러스터 칩·라벨·엣지 전부가 기존 dim 값으로
-   * 물러난다. 새 모드/URL 상태가 아니라 팝오버 열림과 동치(transient surface).
-   * ref 인 이유는 아래 브러싱과 같다 — 전환마다 페이지 트리를 다시 렌더하지
-   * 않기 위해서다.
+   * A ref holding whether the trail lens is on — true while the trail popover is
+   * open. The map briefly sets aside reading relations and yields to reading the
+   * path: only the `visitedTrail` nodes keep their values and labels, and every
+   * other node, cluster chip, label and edge recedes to the existing dim values.
+   * It is not a new mode or URL state but is equivalent to the popover being open
+   * (a transient surface). It is a ref for the same reason as the brushing below —
+   * so a toggle does not re-render the page tree.
    */
   trailLensActiveRef?: RefObject<boolean>;
   /**
-   * 걸어온 길 브러싱 — 팝오버에서 hover 중인 행의 노드 id를 담는 ref(렌즈
-   * 동안만 유효). 값이 아니라 ref 인 이유: 행을 훑는 동안 연속으로 바뀌는
-   * 신호를 state 로 올리면 hover 한 번에 페이지 트리가 통째로 다시 렌더된다
-   * (실측 ~100ms). 프레임 루프가 매 프레임 읽으므로 렌더 0회로 같은 결과.
+   * Trail brushing — a ref holding the node id of the row being hovered in the
+   * popover (valid only during the lens). A ref rather than a value because lifting
+   * a signal that changes continuously while scanning rows into state re-renders the
+   * whole page tree on every hover (measured ~100ms). The frame loop reads it every
+   * frame, so the same result costs zero renders.
    */
   trailHoverNodeIdRef?: RefObject<string | null>;
-  /** 옆 패널(대화창·데이터시트)에서 노드 이름에 마우스를 올렸을 때
-   *  (`use-topology-loop` 참고). */
+  /** Set when the pointer is over a node's name in a side panel (the conversation
+   *  panel or the datasheet) — see `use-topology-loop`. */
   panelHoverNodeIdRef?: RefObject<string | null>;
   /**
-   * 슬라이스 C (개발/비개발 모드 토글) — 표시-렌즈 티어 게이트 config. 생략
-   * 시 `DEFAULT_TIER_REVEAL`(개발 모드). HomePage 가 비개발(plain) 모드에서
-   * `PLAIN_TIER_REVEAL`(element 상시 숨김)을 넘긴다.
+   * Slice C (the dev/non-dev mode toggle) — the display-lens tier gate config.
+   * Omitted defaults to `DEFAULT_TIER_REVEAL` (dev mode). In non-dev (plain) mode
+   * HomePage passes `PLAIN_TIER_REVEAL` (element always hidden).
    */
   tierReveal?: TierRevealConfig;
   /**
-   * 오버뷰 카메라가 맞출 bbox — `"spine"`(기본)은 project/domain/hub, `"full"`
-   * 은 전 노드. 진입에 전 티어를 그리는 소비처(관문 증거 절 —
-   * `GATEWAY_TIER_REVEAL`)만 `"full"` 을 넘긴다: 전 티어를 그리면서 스파인
-   * bbox 로 맞추면 그래프 질량이 스파인 중심 아래라 프레임에서 낮게 앉는다
-   * (실측 2026-08-18, 1512: 위 143px 공백 · 아래 17px). 워크벤치 기본은
-   * 그대로다 — 스파인만 그리는 진입에서 전 bbox 핏은 8노드를 점으로 줄이는
-   * 회귀였다(`use-topology-loop` trySnapInitialCamera 독블록).
+   * The bbox the overview camera fits — `"spine"` (default) is project/domain/hub,
+   * `"full"` is every node. Only a consumer that draws every tier on entry (the
+   * gateway's evidence section — `GATEWAY_TIER_REVEAL`) passes `"full"`: drawing
+   * every tier while fitting the spine bbox seats the graph low in the frame,
+   * because its mass sits below the spine's centre (measured 2026-08-18 at 1512:
+   * 143px of blank above, 17px below). The workbench default is unchanged — on an entry
+   * that draws the spine only, fitting the full bbox was a regression that shrank 8
+   * nodes to dots (the `use-topology-loop` trySnapInitialCamera doc-block).
    */
   overviewFit?: "spine" | "full";
   /**
-   * 가이드 투어 (2026-07-23, `src/features/guided-tour`) — 캔버스 노드 앵커
-   * (2·4단계) 프로젝션 계약. DOM 이 아닌 노드를 가리키므로 realm "전개" 버튼
-   * 선례(`use-topology-loop.ts` 의 매 프레임 `worldToScreen` 블록)를 그대로
-   * 복제한다. 이 노드 id 가 non-null 인 동안 loop 가 `tourAnchorRef` 의 DOM
-   * 에 매 프레임 transform + `--tour-anchor-r` 를 써넣는다. id 해석(project/
-   * domain/hub 선택)은 HomePage(`resolve-tour-anchor-node.ts`)가 담당 — 이
-   * 위젯은 순수 프로젝션만 한다.
+   * The guided tour (2026-07-23, `src/features/guided-tour`) — the projection
+   * contract for canvas node anchors (steps 2 and 4). It points at a node rather
+   * than DOM, so it copies the realm "expand" button's precedent verbatim (the
+   * per-frame `worldToScreen` block in `use-topology-loop.ts`). While this node id
+   * is non-null the loop writes a transform plus `--tour-anchor-r` into
+   * `tourAnchorRef`'s DOM every frame. Resolving the id (choosing project, domain
+   * or hub) belongs to HomePage (`resolve-tour-anchor-node.ts`) — this widget only
+   * projects.
    */
   tourAnchorNodeId?: string | null;
   /**
-   * 가이드 투어 앵커 원 DOM — HomePage/`GuidedTourOverlay` 가 만들어 이
-   * 위젯에도 같이 내려준다(오버레이가 컷아웃 배치 기준 rect 를 읽는 쪽).
-   * 실제 엘리먼트는 이 컴포넌트가 렌더하고 ref 만 외부에서 공유한다.
+   * The guided tour's anchor circle DOM — HomePage/`GuidedTourOverlay` creates it
+   * and passes it down here as well (the overlay is what reads the rect to place
+   * its cutout). This component renders the actual element and only the ref is
+   * shared outward.
    */
   tourAnchorRef?: RefObject<HTMLDivElement | null>;
   /**
-   * rank18 (설계협의회 batch B1) — DOM 오버레이(GlobalSearch 등) 가 열려
-   * 있는 동안 캔버스를 키보드/스크린리더 트리에서 제외한다. 캔버스는
-   * 회화 픽셀이라 자체 키보드 순회가 불가능하고, INDEX/데이터시트가 이미
-   * 접근 가능한 대체 목록이므로 오버레이가 열린 동안만 이 캔버스 쪽을
-   * 숨긴다(신규 대체 UI 없음 — 기존 INDEX/데이터시트 재사용).
+   * rank18 (design council batch B1) — while a DOM overlay (GlobalSearch and the
+   * like) is open, the canvas is excluded from the keyboard and screen-reader tree.
+   * A canvas is painted pixels and offers no keyboard traversal of its own, and
+   * INDEX/the datasheet are already accessible alternatives, so the canvas hides
+   * only while an overlay is open (no new alternative UI — the existing INDEX and
+   * datasheet are reused).
    */
   overlayOpen?: boolean;
   /**
-   * 아이콘 세트 (Phase 5 #21) — 노드 바디 렌더 스타일. HomePage 가
-   * `useGlyphSet()` 으로 읽어 내려보낸다. DOM 글리프(`TopologyV2KindGlyph`)는
-   * 같은 스토어를 스스로 읽으므로 캔버스·DOM 이 lockstep 으로 스왑된다.
-   * 생략 시 `"geometric"`.
+   * The icon set (Phase 5 #21) — the node body's render style. HomePage reads it
+   * with `useGlyphSet()` and passes it down. The DOM glyph
+   * (`TopologyV2KindGlyph`) reads the same store itself, so canvas and DOM swap in
+   * lockstep. Omitted defaults to `"geometric"`.
    */
   glyphSet?: GlyphSet;
   /**
-   * 캔버스 배경 세트 (Phase 5 #20) — 도트(기본)·성좌·등고선. HomePage 가
-   * `useCanvasBackground()` 로 읽어 내려보낸다. 생략 시 `"dot"`.
+   * The canvas background set (Phase 5 #20) — dots (default), constellation or
+   * contours. HomePage reads it with `useCanvasBackground()` and passes it down.
+   * Omitted defaults to `"dot"`.
    */
   canvasBackground?: CanvasBackground;
   /**
-   * 3D 보기 (2026-08-18, 옵트인) — 지도를 kind 동심 링의 돔으로 다시 배치해
-   * 그리는 뷰 모드(`model/dome-view.ts`). 상단 툴바의 「3D」 칩이 켜고,
-   * HomePage 가 `useView3d()` 로 읽어 내려보낸다. 생략 시 false(종전 2D — 기본).
+   * 3D view (2026-08-18, opt-in) — the view mode that re-lays the map as a dome of
+   * concentric kind rings (`model/dome-view.ts`). The top toolbar's 「3D」 chip turns
+   * it on and HomePage reads it with `useView3d()` and passes it down. Omitted is
+   * false (the previous 2D, the default).
    */
   view3d?: boolean;
   /**
-   * 3D 돔의 **방위**를 무엇이 정하나 — 「소유」(containment 부모, 기본) /
-   * 「결합」(모든 관계의 각도 완화). 근거와 기하:
-   * `model/dome-view.ts` 의 `DomeArrangement` 독블록. 2D 에서는 무시된다.
+   * What decides the 3D dome's **bearings** — 「소유」 (ownership: the containment
+   * parent, default) or 「결합」 (coupling: every relation's angle, relaxed). The
+   * rationale and the geometry are in the `DomeArrangement` doc-block in
+   * `model/dome-view.ts`. Ignored in 2D.
    */
   mapArrangement?: MapArrangement;
   /**
-   * 3D 리프레임 입력 (2026-08-18 2차) — 노드 상세 패널이 실제로 화면을 덮고
-   * 있는가. 패널의 열림/닫힘은 돔 카메라에게 「창 크기가 바뀐 사건」이라,
-   * 이 값이 플립될 때마다 선택된 노드를 보이는 영역 기준으로 부드럽게
-   * 재프레이밍한다. 2D 에서는 무시된다(생략 시 false).
+   * 3D reframing input (2026-08-18, second pass) — whether the node detail panel is
+   * actually covering the screen. To the dome camera, that panel opening or closing
+   * is a window-resize event, so every flip of this value smoothly reframes the
+   * selected node against the visible area. Ignored in 2D (omitted is false).
    */
   detailPanelVisible?: boolean;
-  /** 발자국 표현 설정 — `useFootprint()` 로 읽어 내려보낸다. 생략 시 발자국 없음. */
+  /** The footprint appearance setting — read with `useFootprint()` and passed down. Omitted means no footprints. */
   footprint?: FootprintPreference | null;
   /**
-   * 확장 설정 — 펼치기 표시(알약/막대/배지) · 자식 배치 · 한 번에 여는 개수 ·
-   * 이름을 시도할 개수 · 동시에 펼쳐 둘 부모 수. HomePage 가 `useExpand()` 로
-   * 읽어 내려보낸다. 생략 시 `DEFAULT_EXPAND`(설정을 안 건드린 화면과 동일).
+   * The expand settings — the expand affordance (pill/bar/badge), the child layout,
+   * how many open at once, how many to attempt naming, and how many parents stay
+   * expanded together. HomePage reads them with `useExpand()` and passes them down.
+   * Omitted defaults to `DEFAULT_EXPAND` (identical to a screen that never touched
+   * settings).
    */
   expand?: ExpandPreference;
   /**
-   * 휠과 세로 스와이프가 누구 것인가 — `topology-pointer-handlers.ts` 의
-   * `wheelIntent` 문서 참고. 워크벤치는 생략(= `"zoom"`, 현행 무변경),
-   * 스크롤하는 문서 안에 밴드로 박히는 표면만 `"page-scroll"` 을 넘긴다.
+   * Who owns the wheel and a vertical swipe — see the `wheelIntent` documentation in
+   * `topology-pointer-handlers.ts`. The workbench omits it (= `"zoom"`, unchanged);
+   * only a surface embedded as a band inside a scrolling document passes
+   * `"page-scroll"`.
    */
   wheelIntent?: "zoom" | "page-scroll";
   /**
-   * 앰비언트 모션이 잠들기까지의 무입력 시간. 생략 시 워크벤치 기본
-   * (`AMBIENT_SLEEP_DELAY_MS`, 30초 — 사람이 지도를 **오래 열어 두고** 판단하는
-   * 표면의 값).
+   * How long without input before ambient motion sleeps. Omitted uses the workbench
+   * default (`AMBIENT_SLEEP_DELAY_MS`, 30 seconds — the value for a surface where a
+   * person **keeps the map open for a long time** while judging).
    *
-   * 관문처럼 세션 자체가 그보다 짧을 수 있는 표면은 짧게 넘긴다. 실측
-   * (2026-07-28 모션석): `/download` 방문자는 **구조적으로 휴면에 도달할 수
-   * 없었다** — 캔버스가 뷰포트의 62% 라 CTA 로 마우스를 옮기는 동작만으로도
-   * `pointermove` 가 30초 시계를 리셋했다. 그런데 이 표면에는 그 연소가 사는
-   * 것이 없다(각성 상태 캔버스 변화량 초당 0.056% — 혜성이 지각되지 않는다).
-   * 포스터에 워크벤치 요금을 내던 셈이다.
+   * A surface like the gateway, where the session itself can be shorter than that,
+   * passes something shorter. Measured (motion seat, 2026-07-28): a `/download`
+   * visitor **could not structurally reach sleep** — the canvas is 62% of the
+   * viewport, so merely moving the mouse toward a CTA fired `pointermove` and reset
+   * the 30-second clock. And nothing on that surface earns the burn (measured change
+   * per second on an awake canvas: 0.056% — the comets are not perceived). It was
+   * paying workbench rates for a poster.
    */
   ambientSleepDelayMs?: number;
 }
@@ -375,10 +398,10 @@ export function TopologyMapV2(props: TopologyMapV2Props) {
 
   const realmEnterButtonRef = useRef<HTMLButtonElement | null>(null);
 
-  // 설치 앱 검증기는 canvas 내부의 픽셀 엣지를 DOM selector 로 찾을 수 없다.
-  // 검증 전용 이벤트가 오면 현재 포커스와 맞닿은 실제 그래프 엣지를 같은
-  // onSelectEdge 계약으로 선택한다. 평상시에는 이벤트가 발생하지 않으며,
-  // 별도 상태나 사용자 vault 를 쓰지 않는다.
+  // The installed app's verifier cannot find a pixel edge inside the canvas with a
+  // DOM selector. When the verification-only event arrives, the real graph edge
+  // touching the current focus is selected through the same onSelectEdge contract.
+  // The event never fires in normal use, and it uses no extra state and no user vault.
   useEffect(() => {
     if (!onSelectEdge) return;
     const handleVerifySelectEdge = (event: Event) => {
@@ -425,27 +448,30 @@ export function TopologyMapV2(props: TopologyMapV2Props) {
   // `handleWheel` is wired natively (non-passive) inside `useTopologyLoop` —
   // see its own FIX comment — not bound here as a JSX prop.
   /**
-   * 막다른 길 안내 — **노드 옆에, 스스로 사라지고, 초점을 빼앗지 않는다**
-   * (2026-08-10 소유자 실사용 지적 3건).
+   * The dead-end notice — **beside the node, self-dismissing, and it never takes
+   * focus** (three owner reports from real use, 2026-08-10).
    *
-   * ## 왜 앱 공용 토스트를 버렸나
+   * ## Why the app's shared toast was abandoned
    *
-   * 처음에는 토스트로 띄웠다. 「새 표면을 만들지 않는다」는 판단은 그때도 옳았지만,
-   * 실물에서 세 가지가 한꺼번에 틀렸다 — 셋 다 **한 원인**에서 나왔다:
+   * It started as a toast. The judgement "do not create a new surface" was right
+   * even then, but in the real thing three things were wrong at once — and all
+   * three came from **one cause**:
    *
-   * | 소유자가 본 것 | 원인 |
+   * | What the owner saw | Cause |
    * |---|---|
-   * | *"이렇게 나오면 모르겠는데?"* | 토스트 자리는 화면 우하단이다. 막힌 노드는 화면 가운데 어딘가에 있고, 500px 떨어진 곳의 문장은 「지금 누른 것」과 이어지지 않는다 |
-   * | *"사라지지도 않고 계속떠있고"* | 닫기 버튼이 초점을 받으면 sonner 는 스스로 사라지는 시계를 멈춘다 |
-   * | *"x버튼 안누르면 아예 이동도 안됨"* | 초점이 토스트로 넘어가면 방향키가 캔버스에 도착하지 않는다 |
+   * | *"이렇게 나오면 모르겠는데?"* (like this I can't tell) | A toast sits at the screen's bottom right. The blocked node is somewhere in the middle, and a sentence 500px away does not connect to "the thing I just pressed" |
+   * | *"사라지지도 않고 계속떠있고"* (it doesn't disappear, it just stays) | When the close button takes focus, sonner stops its own dismissal timer |
+   * | *"x버튼 안누르면 아예 이동도 안됨"* (without pressing x you can't even move) | Once focus moves to the toast, arrow keys never reach the canvas |
    *
-   * 그래서 이 안내는 **초점을 받을 수 없는 것**이어야 한다 — 버튼이 없고
-   * `pointer-events: none` 이다. 놓쳐도 잃는 것이 없으므로(그 방향에 노드가 없다는
-   * 사실은 다시 눌러 보면 또 알 수 있다) 토스트의 규율(*"놓치면 곤란한 일은 상주
-   * 표면이 맡는다"*)과도 맞다. 보조기술에는 `aria-live` 로 읽힌다.
+   * So this notice has to be **something that cannot take focus** — no button, and
+   * `pointer-events: none`. Nothing is lost by missing it (that there is no node in
+   * that direction can be learned again by pressing again), which also fits the
+   * toast discipline (*"anything you cannot afford to miss belongs to a permanent
+   * surface"*). Assistive technology reads it through `aria-live`.
    *
-   * 모션은 **이미 있는 기구**를 쓴다 — `usePanelPresence` + `overlay-spring-surface`
-   * (감속 사용자는 `overlay-fade-only`). 새 키프레임 0 · 새 토큰 0.
+   * The motion uses **machinery that already exists** — `usePanelPresence` plus
+   * `overlay-spring-surface` (`overlay-fade-only` for reduced motion). Zero new
+   * keyframes, zero new tokens.
    */
   const [notice, setNotice] = useState<{ x: number; y: number; key: number } | null>(null);
   const noticeTimerRef = useRef<number | null>(null);
@@ -540,8 +566,9 @@ export function TopologyMapV2(props: TopologyMapV2Props) {
           : undefined
       }
       data-preview-phase={previewEdge?.phase}
-      // rank18 — 오버레이가 열린 동안 캔버스를 aria 트리 + Tab 순회에서
-      // 제외(inert 는 포인터도 함께 막는다). INDEX/데이터시트가 대체 목록.
+      // rank18 — while an overlay is open the canvas is excluded from the aria tree
+      // and Tab traversal (inert blocks the pointer too). INDEX and the datasheet
+      // are the alternative list.
       aria-hidden={overlayOpen}
       inert={overlayOpen}
       style={{ position: "relative", width: "100%", height: "100%" }}
@@ -549,50 +576,53 @@ export function TopologyMapV2(props: TopologyMapV2Props) {
       <canvas
         ref={canvasRef}
         data-testid="topology-map-v2-canvas"
-        /* `G M` 이 이 캔버스를 찾아 초점을 주는 표식 — 자세한 이유는
-           `shared/lib/focus-map-canvas.ts`. `data-testid` 는 시험의 것이라
-           런타임 선택자로 쓰지 않는다. */
+        /* The marker `G M` uses to find this canvas and focus it — the full reason is
+           in `shared/lib/focus-map-canvas.ts`. `data-testid` belongs to the tests and
+           is never used as a runtime selector. */
         data-surface-role={MAP_CANVAS_SURFACE_ROLE}
         /**
-         * **끌 수 있는 것은 그림이 아니다** (2026-07-28 모션석 P3).
+         * **Something you can drag is not a picture** (motion seat P3, 2026-07-28).
          *
-         * 예전에는 `role="img"` 로 AT 에 "정지 이미지" 라고 선언하면서 라벨로는
-         * "끌어서 움직여 볼 수 있어요" 라고 말했다 — 접근성 트리 안에 어포던스
-         * 모순이 그대로 박혀 있었다. `tabIndex` 도 없어 키보드 사용자에게는
-         * 신호가 **0개**였다.
+         * It used to declare `role="img"` — a still image — to assistive technology
+         * while the label said "you can drag it around". The affordance contradiction
+         * was written straight into the accessibility tree. There was no `tabIndex`
+         * either, so a keyboard user got **zero** signals.
          *
-         * `role="application"` 이 아니라 `group` 인 이유: `application` 은 AT 의
-         * 기본 키 처리를 통째로 뺏는다. 예전 근거는 *"이 캔버스는 자체 키보드
-         * 순회를 제공하지 않으므로 뺏고 안 주는 것이 가장 나쁘다"* 였다.
+         * Why `group` rather than `role="application"`: `application` takes away the
+         * assistive technology's default key handling entirely. The old reasoning was
+         * *"this canvas offers no keyboard traversal of its own, so taking the keys
+         * away and giving nothing back is the worst option"*.
          *
-         * ⚠️ **그 전제는 2026-08-09 에 사실이 아니게 됐다** — 방향키로 이웃을 걷는
-         * 순회가 붙었다(`onKeyDown`). 그런데도 `group` 을 유지한다: 우리가 삼키는
-         * 키는 **네 방향키뿐**이고 나머지는 AT 에 그대로 남기는 것이, 키 처리
-         * 전부를 뺏는 것보다 잃는 게 적다. 스크린리더 읽기 모드가 방향키를 먼저
-         * 가져가는 환경이 관측되면 그때 `application` 을 다시 본다 — 실제 보조기술
-         * 로 재 보지 않고 미리 뺏지 않는다.
+         * ⚠️ **That premise stopped being true on 2026-08-09** — arrow-key traversal
+         * of neighbours was added (`onKeyDown`). `group` stays anyway: the only keys
+         * we swallow are **the four arrows**, and leaving the rest to assistive
+         * technology loses less than taking all key handling. If an environment is
+         * observed where a screen reader's browse mode claims the arrow keys first,
+         * `application` gets another look then — nothing is taken away pre-emptively
+         * without measuring against real assistive technology.
          *
-         * 포커스 링은 **정지 프레임의 어포던스이기도 하다** — 모션 예산 0이다.
+         * The focus ring is **also an affordance of the still frame** — zero motion budget.
          */
         role={canvasLabel ? "group" : undefined}
         aria-label={canvasLabel}
         tabIndex={canvasLabel ? 0 : undefined}
-        // `cursor-grab` 이 **기본 상태**인 이유 (2026-07-28 카운슬 「상호작용」):
-        // 이 캔버스의 1차 행동은 팬이다. 포인터 핸들러가 노드/엣지 위에서
-        // `pointer` 로, 미는 동안 `grabbing` 으로 인라인 덮어쓴다.
+        // Why `cursor-grab` is the **default state** (council 「상호작용」 —
+        // interaction — 2026-07-28): this canvas's primary action is panning. The
+        // pointer handlers override it inline with `pointer` over a node or edge, and
+        // `grabbing` while pushing.
         //
-        // **클래스여야 한다 — 인라인 style 이면 안 된다.** 드래그가 끝나며
-        // `style.cursor = ""` 로 되돌릴 때 인라인 기본값은 그 자체가 지워져
-        // `auto` 로 떨어진다(실측). 클래스로 두면 인라인이 걷힌 자리에서
-        // 캐스케이드가 `grab` 을 되돌려 준다 — 되돌림이 저절로 옳아진다.
+        // **It has to be a class, not an inline style.** When a drag ends and resets
+        // with `style.cursor = ""`, an inline default erases itself and falls to
+        // `auto` (measured). As a class, the cascade restores `grab` where the inline
+        // value was lifted — the reset becomes correct by itself.
         className="cursor-grab outline-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-accent)] focus-visible:ring-offset-2 focus-visible:ring-offset-[color:var(--color-canvas)]"
         style={{
           display: "block",
           width: "100%",
           height: "100%",
-          // `none` 은 세로 스와이프까지 삼킨다 — 스크롤하는 문서 안의 밴드에서는
-          // 폰에서 페이지가 아예 안 움직인다. `pan-y` 면 세로는 페이지가,
-          // 가로 드래그는 지도가 가져간다.
+          // `none` swallows a vertical swipe too — inside a scrolling document the
+          // page then will not move at all on a phone. With `pan-y` the page takes
+          // vertical and the map takes a horizontal drag.
           touchAction: wheelIntent === "page-scroll" ? "pan-y" : "none",
         }}
         onPointerDown={handlePointerDown}
@@ -601,16 +631,17 @@ export function TopologyMapV2(props: TopologyMapV2Props) {
         onPointerCancel={handlePointerCancel}
         onContextMenu={handleContextMenu}
         /**
-         * 방향키로 이웃을 걷는다 (2026-08-09, 갈래 B). 규칙은
-         * `../interaction/keyboard-walk`, 배선은 `use-topology-loop` 의
-         * `handleKeyDown`. 이것이 붙기 전까지 이 캔버스는 초점을 받을 수는 있어도
-         * **키로 할 수 있는 일이 0개**였다.
+         * Walk neighbours with the arrow keys (2026-08-09, option B). The rules are in
+         * `../interaction/keyboard-walk` and the wiring is `use-topology-loop`'s
+         * `handleKeyDown`. Until this was added, the canvas could take focus but there
+         * were **zero things a key could do**.
          */
         onKeyDown={handleKeyDown}
       />
-      {/* S4 궤도 "전개" 버튼 — 캔버스 좌표 앵커(loop 가 매 프레임 transform 갱신).
-          기본 숨김; 포커스 노드에 자식이 있고 영역 밖일 때만 노출. 방사형 메뉴
-          금지 — 버튼 하나. 호버 시 마이크로 툴팁(평문 한 줄). */}
+      {/* The S4 orbit "expand" button — anchored to canvas coordinates (the loop
+          refreshes the transform every frame). Hidden by default; shown only when the
+          focused node has children and sits outside a realm. No radial menu — one
+          button. A microtooltip on hover (one plain line). */}
       {onEnterRealm ? (
         <button
           ref={realmEnterButtonRef}
@@ -618,41 +649,44 @@ export function TopologyMapV2(props: TopologyMapV2Props) {
           data-testid="topology-realm-enter-button"
           aria-label={realmEnterLabel}
           /**
-           * **보이지 않는 동안은 탭 정지가 아니다** (2026-07-29 키보드 실측).
+           * **While invisible it is not a tab stop** (keyboard measurement, 2026-07-29).
            *
-           * 이 버튼은 매 프레임 `opacity`/`pointerEvents` 로만 나타났다 사라지는데
-           * (레이아웃 유지가 목적), `opacity: 0` 은 **포커스 가능성을 끄지 않는다.**
-           * 그래서 지도에서 Tab 26번째가 여기 멈췄다: 링은 alpha 0 으로 그려져
-           * 화면 어디에도 안 보이고, Enter 를 눌러도 아무 일이 없다(클릭 판정은
-           * 캔버스의 히트 테스트에 있다). 키보드 사용자에게는 **포커스가 사라진
-           * 한 칸**이다.
+           * This button appears and disappears every frame through `opacity` and
+           * `pointerEvents` alone (to preserve layout), and `opacity: 0` **does not
+           * turn off focusability.** So the 26th Tab on the map stopped here: the ring
+           * draws at alpha 0 and is nowhere on screen, and pressing Enter does nothing
+           * (the click decision lives in the canvas's hit test). To a keyboard user it
+           * is **a slot where focus vanishes**.
            *
-           * `pointer-events: none` 과 짝을 맞춰 탭 순서에서도 빼고, 스크린리더
-           * 에서도 감춘다. 보일 때는 둘 다 되돌아온다.
+           * Paired with `pointer-events: none`, it drops out of the tab order and hides
+           * from screen readers too. Both come back when it is visible.
            */
           tabIndex={-1}
           aria-hidden
-          // rank6 — 항상 flex 로 레이아웃하고 opacity/pointer-events(loop 이
-          // 매 프레임 갱신)로만 나타나고 사라진다. display 하드 토글의 "툭"
-          // 대신 opacity 전이로 페이드 — 카메라 추종은 유지.
-          // duration 은 램프의 "이동"(--motion-base)을 명시한다: 이 전이의
-          // 주역은 hover 색이 아니라 컨트롤의 등장/퇴장이라 기본(확인, 120ms)
-          // 에 맡기면 페이드가 툭 튀는 쪽으로 되돌아간다. 이징은 지도 표면과
-          // 같은 커브를 유지한다.
+          // rank6 — it always lays out with flex and appears and disappears through
+          // opacity and pointer-events alone (refreshed by the loop every frame). An
+          // opacity transition fades it instead of the hard jolt of toggling display,
+          // while camera following is preserved.
+          // The duration names the ramp's "movement" step (--motion-base): this
+          // transition's protagonist is the control appearing and leaving rather than
+          // its hover colour, and leaving it on the default (confirmation, 120ms) puts
+          // the jolt back into the fade. The easing keeps the same curve as the map surface.
           className={controlClass({ shape: "icon", className: "group absolute left-0 top-0 z-40 flex h-7 w-7 rounded-full border border-[color:var(--topology-v2-panel-border)] bg-[color:var(--topology-v2-panel-surface)] text-[color:var(--topology-v2-indigo-bright)] shadow-[var(--topology-v2-panel-shadow)] transition-[opacity,background-color] duration-[var(--motion-fast)] ease-[var(--topology-motion-ease-out)] hover:bg-[color:var(--topology-v2-panel-row-hover)]" })}
           style={{ opacity: 0, pointerEvents: "none" }}
         >
           <Orbit size={ICON_SIZE.md} aria-hidden />
           {/*
-           * **3D 에서는 이 툴팁을 안 그린다** (2026-08-18 소유자 지시).
+           * **This tooltip is not drawn in 3D** (owner instruction, 2026-08-18).
            *
-           * 이 버튼은 매 프레임 노드의 **투영된** 자리로 옮겨 다닌다. 2D 에서는
-           * 카메라가 멈춰 있으면 자리도 멈추니 그 밑에 뜬 글상자가 가만히 있는데,
-           * 돔에서는 노드가 회전·원근으로 계속 움직여서 같은 글상자가 장면 위를
-           * 미끄러진다 — 읽으려고 눈을 두면 이미 딴 데 가 있다.
+           * This button moves to the node's **projected** position every frame. In 2D
+           * a still camera means a still position, so the text box below it stays put;
+           * in the dome the node keeps moving with rotation and perspective, so the
+           * same text box slides across the scene — by the time your eyes settle to
+           * read it, it has gone elsewhere.
            *
-           * 기능을 끄는 것이 아니라 **설명만** 끈다: 버튼도 `aria-label`
-           * (「이것만 보기」)도 그대로라 마우스로도 보조기술로도 똑같이 닿는다.
+           * It disables **the explanation, not the feature**: the button and its
+           * `aria-label` (「이것만 보기」 — show only this) are unchanged, so mouse and
+           * assistive technology reach it exactly as before.
            */}
           {realmEnterTooltip && !view3d ? (
             <span
@@ -664,12 +698,13 @@ export function TopologyMapV2(props: TopologyMapV2Props) {
           ) : null}
         </button>
       ) : null}
-      {/* 가이드 투어 캔버스 노드 앵커(2·4단계) — realm 버튼과 같은 프로젝션
-          기법(loop 가 매 프레임 transform + `--tour-anchor-r` 갱신). 페인트
-          없는 **측정 프로브**다: 스크림/컷아웃 페인트는 GuidedTourOverlay 가
-          z-70 오버레이 레이어에서 이 rect 를 읽어 그린다 (2026-07-23 Guardian
-          정정 — 위젯 내부 z-40 에서 스크림을 그리면 상단 툴바 등 바깥 크롬이
-          스크림 위에 떠서 testid 단계와 감광 레이어링이 어긋났다). */}
+      {/* The guided tour's canvas node anchor (steps 2 and 4) — the same projection
+          technique as the realm button (the loop refreshes the transform and
+          `--tour-anchor-r` every frame). It is a **measurement probe** with no paint:
+          the scrim and cutout are painted by GuidedTourOverlay, which reads this rect
+          from the z-70 overlay layer (Guardian correction 2026-07-23 — painting the
+          scrim at z-40 inside the widget left outer chrome such as the top toolbar
+          floating above the scrim, so the testid step and the dimming layered wrongly). */}
       {tourAnchorRef ? (
         <div
           ref={tourAnchorRef}
@@ -688,7 +723,7 @@ export function TopologyMapV2(props: TopologyMapV2Props) {
           key={notice.key}
           data-walk-notice=""
           {...transientSurface("notice")}
-          /* 보조기술에는 읽히고, 포인터·초점에는 존재하지 않는다. */
+          /* Read by assistive technology, and non-existent to pointer and focus. */
           role="status"
           aria-live="polite"
           data-state={noticePresence.exiting ? "closed" : "open"}
@@ -698,7 +733,7 @@ export function TopologyMapV2(props: TopologyMapV2Props) {
           ].join(" ")}
           style={{
             left: notice.x,
-            // 노드 **위쪽**에 띄운다 — 아래는 라벨 자리다(`LABEL_OFFSET`).
+            // Raised **above** the node — below it is the label's place (`LABEL_OFFSET`).
             top: notice.y - WALK_NOTICE_NODE_GAP,
             ["--overlay-spring-origin" as string]: "center bottom",
           }}

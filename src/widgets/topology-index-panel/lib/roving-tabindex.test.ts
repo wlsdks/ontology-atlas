@@ -33,7 +33,7 @@ const roots: OntologyTreeNode[] = [
 
 describe("flattenVisibleRowIds", () => {
   it("collapsed children are skipped (only open parents recurse)", () => {
-    // 아무 것도 안 펼침 → root 만.
+    // Nothing expanded → the root only.
     expect(flattenVisibleRowIds(roots, () => false)).toEqual(["project"]);
   });
 

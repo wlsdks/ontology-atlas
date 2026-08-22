@@ -1,10 +1,12 @@
 /**
- * 「에이전트 연결」 네이티브 브리지 — `src-tauri/src/agent_setup.rs` 의 짝.
+ * The native bridge for connecting an agent — the counterpart of
+ * `src-tauri/src/agent_setup.rs`.
  *
- * 웹에서는 전부 null 또는 실패를 돌려준다. 브라우저는 열린 폴더의 절대 경로를
- * 구조적으로 알 수 없고(File System Access API 의 설계), 절대 경로 없이는
- * 실행 가능한 에이전트 설정을 만들 수 없다. 이건 결함이 아니라 경계다 —
- * UI 는 여기서 정직하게 강등해야 한다.
+ * On the web everything returns null or fails. A browser structurally cannot
+ * know the absolute path of the folder it opened (by the File System Access
+ * API's design), and without an absolute path no runnable agent config can be
+ * written. That is a boundary, not a defect — the UI has to degrade honestly
+ * here.
  */
 import { invoke as tauriInvoke, isTauri } from '@tauri-apps/api/core';
 
@@ -31,7 +33,7 @@ export interface AgentConfigTarget {
 
 export interface AgentConfigPlan {
   configRoot: string;
-  /** `repo-root` 면 vault 를 담은 git 최상위, `vault-folder` 면 vault 자체. */
+  /** `repo-root` is the git top level containing the vault; `vault-folder` is the vault itself. */
   rootKind: 'repo-root' | 'vault-folder';
   vaultPath: string;
   targets: AgentConfigTarget[];
@@ -56,7 +58,7 @@ export interface McpVerifyResult {
   failure: string | null;
 }
 
-/** 앱 번들 안의 MCP 서버 경로. 웹이면 `available: false`. */
+/** Path to the MCP server inside the app bundle. `available: false` on the web. */
 export async function readBundledMcpServer(): Promise<BundledMcpServer> {
   const invoke = getInvoke();
   if (!invoke) {
@@ -69,14 +71,14 @@ export async function readBundledMcpServer(): Promise<BundledMcpServer> {
   return invoke<BundledMcpServer>('mcp_bundled_server');
 }
 
-/** 무엇을 어디에 쓸지 계산만 한다 — 디스크는 건드리지 않는다. */
+/** Only computes what would be written where — touches no disk. */
 export async function planAgentConfig(vaultPath: string): Promise<AgentConfigPlan | null> {
   const invoke = getInvoke();
   if (!invoke) return null;
   return invoke<AgentConfigPlan>('plan_agent_config', { vaultPath });
 }
 
-/** 사용자가 승인한 계획만 실행한다. */
+/** Runs only a plan the user has approved. */
 export async function writeAgentConfig(
   vaultPath: string,
   writes: readonly AgentConfigWrite[],
@@ -88,7 +90,7 @@ export async function writeAgentConfig(
   return invoke<AgentConfigWriteResult>('write_agent_config', { vaultPath, writes });
 }
 
-/** 번들 서버를 그 자리에서 스폰해 이 vault 가 실제로 읽히는지 확인한다. */
+/** Spawns the bundled server on the spot to verify this vault is actually readable. */
 export async function verifyMcpServer(
   vaultPath: string,
   sampleSlug?: string | null,

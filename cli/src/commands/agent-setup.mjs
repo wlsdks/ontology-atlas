@@ -33,8 +33,8 @@ import {
   writeTextAtomically,
 } from '../lib/agent-config.mjs';
 
-// 「next checks」는 붙여 넣어 실행하라는 블록이다 — 실행 가능한 자기 호출로만
-// 찍는다(`../lib/self-invocation.mjs`).
+// The «next checks» block is meant to be pasted and run, so it prints only
+// runnable self-invocations (`../lib/self-invocation.mjs`).
 const CLI = cliInvocation();
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -679,9 +679,10 @@ function resolveMcpServerCommand() {
       return { command: 'node', args: [monoDev], launchScope: 'source-bound', portable: false };
     }
   }
-  // npm 발행 폐기 (docs/DECISIONS.md 2026-07-27) — 설치된 앱이 번들로 싣고
-  // 다니는 서버를 찾는다. 그것도 없으면 실패 사유를 말한다. 붙지 않는 설정을
-  // 조용히 쓰는 것보다 여기서 멈추는 편이 진단이 싸다.
+  // npm publication was abandoned (docs/DECISIONS.md 2026-07-27), so this looks for
+  // the server the installed app carries in its bundle. With neither, it states the
+  // reason it failed — stopping here diagnoses more cheaply than quietly writing a
+  // configuration that will not connect.
   const bundled = '/Applications/Ontology Atlas.app/Contents/MacOS/ontology-atlas-mcp';
   if (existsSync(bundled) && statSync(bundled).isFile()) {
     return { command: bundled, args: [], launchScope: 'app-bundled', portable: true };

@@ -135,12 +135,12 @@ async function verifyOpenAppLaunch({
 
 
 /**
- * 화면이 "확인됨" 이라고 말한 다음, **디스크가 같은 말을 하는지** 본다.
+ * After the screen says "verified", check whether **the disk says the same thing.**
  *
- * DOM 마커는 호스트를 그리지 않는다(감사 표는 벤더 이름·목적·범위만 보여준다).
- * 그래서 "요청이 정말 그 주소로 나갔나" 는 볼트 안 평문 기록으로만 증명된다 —
- * 이 검사가 없으면 화면 문구만으로 통과할 수 있고, 그건 이 규칙이 막으려는
- * 바로 그 가짜 통과다.
+ * The DOM markers do not render the host (the audit table shows only vendor name,
+ * purpose, and scope). So "did the request really go to that address" can only be
+ * proven by the plain-text record inside the vault — without this check, screen copy
+ * alone would pass, and that is exactly the fake pass this rule exists to block.
  */
 function verifyAiSettingsAuditTrail({ vaultPath, since, baseUrl, markers }) {
   if (!vaultPath) {
@@ -195,7 +195,7 @@ async function verifyExecutableLaunch({
   tryWindowScreenshotPath,
   webviewEvidencePath,
 }) {
-  // 감사 줄이 **이 실행의 것**이어야 하므로 launch 이전 시각을 바닥으로 쓴다.
+  // The audit line must belong to **this run**, so the time before launch is the floor.
   const launchedAt = Date.now();
   const child = spawn(executablePath, {
     cwd: path.dirname(executablePath),
@@ -268,10 +268,10 @@ async function verifyExecutableLaunch({
     const { payload, validationError: webviewError } = await waitForWebviewVerifyPayload(
       () => stdout,
       {
-        // AI 설정 흐름은 시트 열기 → 절 이동 → 주소 입력 → 왕복 확인 →
-        // 모델 고르기까지 클릭이 다섯 단계라, 기본 15초 창 안에 마커가 안
-        // 들어온다. 창을 넓히는 것과 판정을 무르게 하는 것은 다르다 —
-        // 판정은 그대로다.
+        // The AI settings flow is five clicks deep — open the sheet, move to the section,
+        // enter the address, confirm the round trip, choose a model — so the marker does not
+        // arrive within the default 15 s window. Widening the window is not the same as
+        // softening the verdict; the verdict is unchanged.
         ...(verifyAiSettings ? { timeoutMs: AI_SETTINGS_PAYLOAD_TIMEOUT_MS } : {}),
         validatePayload: (candidate) => validateWebviewVerifyPayload(candidate, validationOptions),
       },
@@ -480,9 +480,10 @@ async function main() {
     fail("--verify-ai-settings is only supported for direct executable launch; omit --open-app.");
   }
   if (verifyAiSettings && !webviewFixtureVaultPath) {
-    // 볼트가 없으면 [연결 확인] 버튼 자체가 비활성이다 — 기록할 곳이 없으면
-    // 보내지 않는다는 계약이라서다. 그 상태로 돌리면 "못 눌렀다" 가 아니라
-    // "안 눌렀다" 로 읽히는 흐릿한 실패가 되므로 여기서 먼저 끊는다.
+    // With no vault the verify button is itself disabled — the contract is that nothing
+    // is sent when there is nowhere to record it. Running in that state produces a blurry
+    // failure that reads as "did not click" rather than "could not click", so it is cut
+    // off here first.
     fail("--verify-ai-settings requires --webview-fixture-vault=PATH (the connection check refuses to send without a vault to log into).");
   }
   if (verifyAiSettings && !isSafeAiSettingsBaseUrl(aiSettingsBaseUrl)) {

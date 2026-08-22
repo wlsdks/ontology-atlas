@@ -4,28 +4,30 @@ import type { FirstWordsChip } from '@/features/vault-agent';
 import { controlClass } from '@/shared/ui';
 
 /**
- * 빈 대화의 **첫 마디** — 이 폴더의 실제 상태에서 뽑은 문장 최대 3개.
+ * An empty conversation's **first words** — up to 3 sentences drawn from this
+ * folder's real state.
  *
- * ## 두 얼굴, 한 문장
+ * ## Two faces, one sentence
  *
- * 키가 있으면 누를 수 있는 칩이고, 키·폴더가 없으면 **평문 목록**이다.
- * 완결할 수 없는 순간에 버튼을 그리면 누르는 사람이 생기고 그게 곧 함정이라
- * (`AgentLockedState` 가 같은 이유로 컨트롤을 하나로 줄였다), 여기서는 같은
- * 문장을 두 가지로만 그린다. 문장 자체는 `buildFirstWords` 한 곳이 만든다.
+ * With a key it is a pressable chip; without a key or a folder it is a **plain
+ * list**. Drawing a button in a moment that cannot be completed produces someone
+ * who presses it, and that is a trap (`AgentLockedState` reduced its controls to
+ * one for the same reason), so the same sentence is drawn only two ways. The
+ * sentences themselves are built in one place, `buildFirstWords`.
  *
- * ## 치수 규칙성
+ * ## Dimension regularity
  *
- * 칩 하나의 높이는 **글자 수로 정해지지 않는다** — 두 줄 자리를 잡고 넘치면
- * 자른다. 문장 길이가 행 높이를 정하게 두면 세 칩이 삐뚤빼뚤해지고, 그건
- * 이 목록이 "한 벌" 로 읽히는 것을 깬다. 대신 칩 **개수**는 폴더 상태를
- * 정직하게 따른다: 지목할 개념이 없는데 빈 상자를 예약하면 아무것도 아닌
- * 자리가 컨트롤처럼 보인다.
+ * A chip's height is **not decided by character count** — it reserves two lines and
+ * clips the overflow. Letting sentence length decide row height makes the three
+ * chips ragged, breaking the way the list reads as "one set". The chip **count**,
+ * on the other hand, follows the folder's state honestly: reserving an empty box
+ * when there is no concept to point at makes an empty slot look like a control.
  *
- * ## 모션
+ * ## Motion
  *
- * 칩은 눌러도 사라지지 않는다(상태 없는 컨트롤 — 다시 누르면 다시 프리필).
- * 그래서 여기에는 전이가 없다. 등장은 패널의 상태 교체
- * (`.agent-panel-stage-swap`)가 이미 한 프레임에 함께 데려온다.
+ * A chip does not disappear when pressed (a stateless control — pressing again
+ * prefills again), so there is no transition here. Its appearance is already
+ * carried in one frame by the panel's state swap (`.agent-panel-stage-swap`).
  */
 export function AgentFirstWords({
   chips,
@@ -35,9 +37,9 @@ export function AgentFirstWords({
 }: {
   chips: readonly FirstWordsChip[];
   title: string;
-  /** 칩을 누르면 무엇이 일어나는지 — 누를 수 있을 때만 준다. */
+  /** What happens when a chip is pressed — given only while it is pressable. */
   hint?: string;
-  /** 없으면 평문 목록. 있으면 칩 버튼. */
+  /** Absent means a plain list; present means chip buttons. */
   onPrefill?: (text: string) => void;
 }) {
   if (chips.length === 0) return null;
@@ -72,12 +74,12 @@ export function AgentFirstWords({
                   shape: 'card',
                   size: 'sm',
                   tone: 'secondary',
-                  /* `min-h-11` 은 WCAG 2.5.8 터치 타깃 — 값 층은 아직 `link` 에만
-                     그 축을 갖고 있어 여기서는 자리마다 싣는다. */
+                  /* `min-h-11` is the WCAG 2.5.8 touch target — the value layer still
+                     has that axis only on `link`, so it is carried per site here. */
                   className: 'w-full min-h-11 text-left border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] hover:border-[color:var(--color-indigo-accent)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-accent)]',
                 })}
               >
-                {/* 두 줄까지. 넘치는 문장이 칩의 키를 정하게 두지 않는다. */}
+                {/* Up to two lines. An overflowing sentence does not decide the chip's height. */}
                 <span className="line-clamp-2 [word-break:keep-all]">{chip.text}</span>
               </button>
             ) : (
@@ -85,10 +87,11 @@ export function AgentFirstWords({
                 data-testid="agent-first-words-line"
                 data-first-words-slot={chip.slot}
                 data-first-words-intent={chip.intent.kind}
-                // 아직 못 누르는 상태라고 해서 **덜 중요한 정보**는 아니다.
-                // 여기서 사람이 알아야 할 단 하나가 "무엇을 시킬 수 있나"
-                // 인데, 구 화면은 그 문장을 캡션·3차 회색으로 그려 패널에서
-                // 가장 조용하게 만들었다(Tufte 잉크 역전). 본문 무게로 올린다.
+                // A state you cannot press yet does not make the information **less
+                // important**. The one thing a person needs here is "what can I ask
+                // for", and the old screen drew that sentence as a tertiary-grey
+                // caption, making it the quietest thing in the panel (a Tufte ink
+                // inversion). It is raised to body weight.
                 className="line-clamp-2 text-body leading-body text-[color:var(--color-text-secondary)] [word-break:keep-all]"
               >
                 {chip.text}

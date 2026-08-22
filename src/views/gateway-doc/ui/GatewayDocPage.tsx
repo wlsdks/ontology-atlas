@@ -24,74 +24,73 @@ import { Link } from '@/i18n/navigation';
 import { controlClass } from '@/shared/ui/control-class';
 
 /**
- * 관문의 **읽을거리 한 장** — `/guide` 와 `/changelog` 가 같은 이 뷰를 쓴다.
+ * **One page of gateway reading material** — `/guide` and `/changelog` share this view.
  *
- * ## 이 화면의 일
+ * This is where someone reads who wants to judge before downloading. The gateway itself has to
+ * earn trust in five seconds, so its sentences are short, and until this page there was nowhere
+ * for anyone who wanted more.
  *
- * 받기 전에 판단하려는 사람이 읽는 자리다. 관문 자체는 5초 안에 신뢰를 버는
- * 것이 일이라 문장이 짧고, 그 이상을 원하는 사람이 갈 곳이 여기까지 없었다
- * (원장 2026-07-28 「이 페이지는 자기가 뭔지 말한 적이 없다」의 남은 절반).
+ * **Why "like a blog" is the right call for prose.** The map, the docs surface, and the editor are
+ * **work surfaces** — dense, with a lot of chrome. This is a **reading surface**, so three things
+ * change:
  *
- * ## 왜 「블로그처럼」이 산문에 맞는 결정인가
+ * 1. **65–75 characters per line** (`--measure-prose`). The workbench's full-width column makes the
+ *    eye lose the first character of the next line in prose.
+ * 2. **`leading-prose` for the body** — the pair for text a person wrote (`.claude/rules/design.md`
+ *    「행간도 크기의 짝이다」, line height is the pair of size). UI text's tight leading is
+ *    suffocating in a paragraph.
+ * 3. **Large gaps between sections** — this is read in order rather than scanned, so rhythm carries
+ *    the hierarchy in place of a table of contents.
  *
- * 지도·문서함·공방은 **작업 표면**이라 밀도가 높고 크롬이 많다. 이 화면은
- * 반대로 **읽는 표면**이다. 그래서 셋을 바꾼다:
- *
- * 1. **한 줄에 65~75자** — `--measure-prose`. 워크벤치의 전폭 컬럼은 산문에서
- *    눈이 다음 줄 첫 글자를 못 찾게 만든다.
- * 2. **본문 행간 `leading-prose`** — 사람이 쓴 글의 짝이다(`design.md`
- *    「행간도 크기의 짝이다」). UI 텍스트의 촘촘한 행간은 문단에서 답답하다.
- * 3. **절 사이 여백을 크게** — 스캔이 아니라 순서대로 읽는 글이라 리듬이
- *    목차 대신 위계를 진다.
- *
- * 채색은 그대로 무채색 + 단일 인디고다. 「블로그처럼 예쁘게」가 새 색이나
- * 그라디언트를 여는 뜻은 아니다 — 헌장은 이 표면에도 그대로 적용된다.
+ * The palette is unchanged: neutrals plus a single indigo. "Pretty like a blog" does not open a new
+ * colour or a gradient — the charter applies to this surface too.
  */
 export interface GatewayDocPageProps {
-  /** 볼트 슬러그 — `GUIDE` · `CHANGELOG`. */
+  /** Vault slug — `GUIDE` or `CHANGELOG`. */
   slug: string;
-  /** 화면 제목. 볼트 문서의 `# H1` 대신 이걸 쓴다(번역되어야 하므로). */
+  /** The screen title, used instead of the vault document's `# H1` because it must be translated. */
   title: string;
   /**
-   * 제목 아래 한 줄. **없으면 안 그린다.**
+   * One line under the title. **Not drawn when absent.**
    *
-   * 가이드의 부제는 가이드 **전체**를 소개하는 문장이라 매 장에 되풀이하면
-   * 각 장의 제목과 경쟁하는 잉크가 된다 — 차례의 첫 장에서만 준다.
+   * The guide's subtitle introduces the guide **as a whole**, so repeating it on every chapter makes
+   * it ink competing with each chapter's own title — it is given only on the first chapter.
    */
   lead?: string;
   /**
-   * `## ` 절을 몇 개까지 그릴지. 안 주면 전문.
+   * How many `## ` sections to draw; the whole document when omitted.
    *
-   * CHANGELOG 처럼 계속 자라는 문서에만 준다 — 가이드는 통째로 읽는 글이라
-   * 자르면 안 된다.
+   * Given only for documents that keep growing, such as CHANGELOG — the guide is read whole and must
+   * not be truncated.
    */
   recentSectionLimit?: number;
-  /** 원문 파일의 저장소 내 경로 — 잘렸을 때 "나머지는 여기" 로 쓴다. */
+  /** The source file's repo-relative path — used for "the rest is here" when truncated. */
   sourcePath: string;
   /**
-   * 본문 위에 얹는 안내 한 줄. **없으면 안 그린다.**
+   * One line of notice above the body. **Not drawn when absent.**
    *
-   * 지금의 유일한 손님은 가이드의 모르는-세그먼트 폴백이다: 정적 export 라
-   * 404 라우팅이 제한적이어서 첫 장을 대신 그리는데, **대체했다는 사실을
-   * 말하지 않으면** 그 주소의 문서인 척하는 오배송이 된다(2026-08-14 걷기
-   * 실측). 문구는 페이지가 번역해서 넘긴다 — 이 뷰는 로케일을 모른다.
+   * Its only caller today is the guide's unknown-segment fallback: static export makes 404 routing
+   * limited, so the first chapter is drawn instead, and **not saying that a substitution happened**
+   * turns it into a misdelivery pretending to be that address's document (measured in a 2026-08-14
+   * walkthrough). The page passes the translated string — this view does not know the locale.
    */
   notice?: string;
   /**
-   * 왼쪽 차례를 그릴지 — 가이드처럼 **여러 장이 한 벌**인 문서만 true.
+   * Whether to draw the table of contents on the left — true only for documents that are **several
+   * chapters as one set**, such as the guide.
    *
-   * 변경 내역은 한 장짜리라 차례가 없다. 항목이 하나뿐인 목록은 길잡이가 아니라
-   * 잉크다.
+   * The changelog is a single page, so it has no table of contents. A list with one item is ink,
+   * not a guide.
    */
   sidebar?: boolean;
-  /** 차례에서 지금 어느 장인지 — `sidebar` 가 true 일 때만 쓴다. */
+  /** Which chapter is current in the table of contents — used only when `sidebar` is true. */
   activeSegment?: string;
   /**
-   * 왼쪽에 **이 문서의 `## ` 항목 목록**을 그릴지 (변경 내역용).
+   * Whether to draw **this document's own `## ` entries** on the left (for the changelog).
    *
-   * 가이드의 `sidebar` 와 다른 물건이다: 저쪽은 **여러 문서**의 차례이고 이쪽은
-   * **한 문서 안**의 항목이라 링크가 라우트가 아니라 앵커다. 둘을 한 플래그로
-   * 묶으면 "차례" 라는 말이 두 가지를 가리키게 된다.
+   * A different thing from the guide's `sidebar`: that one lists **several documents** while this
+   * lists entries **inside one document**, so its links are anchors rather than routes. Folding both
+   * into one flag would make "table of contents" mean two things.
    */
   entryNav?: boolean;
 }
@@ -113,24 +112,25 @@ export function GatewayDocPage({
     const raw = readVaultDoc(slug);
     if (raw === null) return { body: '', omittedSections: 0 };
     /*
-     * 볼트 문서의 첫 `# H1` 은 지운다 — 화면 제목이 이미 그 자리를 쓰고,
-     * 번역된 제목과 원문 제목이 나란히 서면 같은 것이 두 번 나온다.
+     * Strip the vault document's leading `# H1` — the screen title already occupies that slot, and a
+     * translated title standing beside the original says the same thing twice.
      */
     const withoutH1 = raw.replace(/^#\s+.*(\r?\n)+/, '');
     /*
-     * 변경 내역(entryNav)의 머리 인용구도 지운다 — 저장소 기여자에게 이 파일을
-     * 어떻게 쓰라고 말하는 메타라서, 화면 lead 가 같은 말을 사용자 언어로 이미
-     * 한다(2026-08-13 실측: KO 페이지의 첫 문단이 영어 관리 문서였다). 뒤따르는
-     * `---` 구분선까지 한 덩어리다. 인용구가 없으면 아무것도 안 지운다.
+     * Strip the changelog's (entryNav) leading blockquote too — it is meta addressed to repository
+     * contributors about how to use this file, and the screen's lead already says the same thing in
+     * the user's language (measured 2026-08-13: the first paragraph of the KO page was an English
+     * maintenance note). The trailing `---` rule is part of the same chunk. With no blockquote,
+     * nothing is stripped.
      */
     const withoutPreamble = entryNav
       ? withoutH1.replace(/^(?:>.*(?:\r?\n)+)+(?:---(?:\r?\n)+)?/, '')
       : withoutH1;
     /*
-     * 접힌 절 수는 두 절단의 합이다 — 번들 시점(전문이 너무 커서
-     * gateway-changelog.json 미리보기만 실렸다)과 화면 시점(recentSectionLimit).
-     * 번들 쪽을 더하지 않으면 「12개만 보여주고 4개 접었습니다」라고 말하게
-     * 된다 — 실제로는 200개 넘게 접혔는데.
+     * The folded-section count is the sum of two truncations — at bundle time (the full text was too
+     * large, so only the gateway-changelog.json preview shipped) and at screen time
+     * (`recentSectionLimit`). Without adding the bundle side it would say "showing 12, folded 4" when
+     * more than 200 were actually folded.
      */
     const bundledOmitted = readVaultDocOmittedSections(slug);
     if (!recentSectionLimit) {
@@ -144,8 +144,8 @@ export function GatewayDocPage({
   }, [slug, recentSectionLimit, entryNav]);
 
   /**
-   * 항목 목록과 본문 제목의 id 는 **같은 함수**가 낸다 — 두 곳이 각자 만들면
-   * 규칙이 조금만 달라도 앵커가 조용히 아무 데도 안 간다.
+   * The entry list and the body headings get their ids from **the same function** — two places
+   * generating them means a slightly different rule silently sends the anchor nowhere.
    */
   const entries = useMemo(() => (entryNav ? extractEntries(body) : []), [entryNav, body]);
   const headingIds = useMemo(() => {
@@ -167,51 +167,49 @@ export function GatewayDocPage({
       <GatewayNav />
 
       {/*
-       * **읽는 페이지는 산문 기둥을 가운데 세운다** (2026-07-31, 소유자:
-       * *"왼쪽에 다 몰려있고"*).
+       * **A reading page centres its prose column** (2026-07-31, owner: *"왼쪽에 다 몰려있고"* —
+       * everything is bunched on the left).
        *
-       * ⚠️ 처음엔 관문의 「모든 원소가 같은 x」(2026-07-29 평결 ③)를 그대로
-       * 적용해 원점(200)에 왼쪽 정렬했다. **그 규칙을 사정거리 밖에 쓴 것이다.**
-       * 그 평결이 존재하는 이유는 랜딩의 **오른쪽에 지도가 있고** 판이 그 앞을
-       * 가리면 안 되기 때문인데, 이 페이지의 오른쪽에는 아무것도 없다. 규칙만
-       * 남고 이유가 사라진 자리에서 같은 규칙은 1920 기준 **1053px 을 비운
-       * 한쪽 쏠린 페이지**를 만든다.
+       * ⚠️ At first this applied the gateway's "every element on one x" verdict (2026-07-29 ③) and
+       * left-aligned to the origin (200). **That was applying the rule outside its range.** That
+       * verdict exists because the gateway has **a map on the right** and the panel must not cover
+       * it — this page has nothing on the right. With the rule kept and its reason gone, the same
+       * rule produces **a page skewed to one side with 1053px empty** at 1920.
        *
-       * ⚠️⚠️ `mx-auto` 는 한때 **기각된 패턴**이다(평결 ③ 재확인). 그때의 기각
-       * 사유는 "중앙정렬이 나빠서" 가 아니라 **원점이 둘이 되기 때문**이었다 —
-       * 래퍼는 뷰포트를 보고 중앙에 서는데 지도 카메라의 예약폭은 토큰을 보고
-       * 서서, 넓은 화면에서 둘이 어긋났다. **이 페이지에는 카메라가 없다.**
-       * 경쟁할 두 번째 소비자가 없으므로 그 사유가 성립하지 않는다. 다음
-       * 감사자가 `mx-auto` 만 보고 "부활했다" 고 읽지 않도록 여기 적어 둔다.
+       * ⚠️⚠️ `mx-auto` was once a **rejected pattern** (verdict ③). The rejection was not "centring
+       * is bad" but **that it creates a second origin** — the wrapper centres against the viewport
+       * while the map camera's reserve width stands against a token, and on wide screens the two
+       * diverged. **This page has no camera.** With no second consumer to compete, that reason does
+       * not hold. Recorded here so the next auditor does not read `mx-auto` alone as "it came back".
        *
-       * 크롬(상단 바)은 그대로 원점을 쓴다 — 그건 모든 관문 표면이 공유하는
-       * 프레임이고, 로고가 페이지마다 다른 x 에 서면 그게 더 나쁘다.
+       * The chrome (top bar) still uses the origin — that frame is shared by every gateway surface,
+       * and a logo standing at a different x per page would be worse.
        */}
       <main
         className={cn(
           PAGE_GUTTER,
           'w-full flex-1 pt-10 md:pt-16',
           /*
-           * 하단 예약고 — `<lg` 에는 탭바가 있고 이 페이지는 스크롤되는 문서다.
-           * 종전 `pb-20`(80px)로도 넘치지 않았던 것은 마지막 잉크가 본문 끝이라
-           * 우연히 들어맞았기 때문이고, 읽을거리 줄을 아래에 놓자 **여유 23px**
-           * 로 탭바에 가렸다(`scroll-end-gap` 390×844 가 잡았다).
+           * Bottom reserve — below `lg` there is a tab bar and this page is a scrolling document.
+           * The previous `pb-20` (80px) happened to fit only because the last ink was the end of the
+           * body; once the reading-material row was placed at the bottom it had **23px of slack** and
+           * was occluded by the tab bar (caught by `scroll-end-gap` at 390×844).
            *
-           * 조건 없는 기본값 + `lg:` 덮어쓰기로 쓴다 — `max-lg:` 변형은 다른
-           * 변형보다 스타일시트에 먼저 나올 수 있어 조용히 진다(`design.md`
-           * 「CSS 순서 함정」).
+           * Written as an unconditional base plus an `lg:` override — a `max-lg:` variant can appear
+           * before other variants in the stylesheet and silently lose (`.claude/rules/design.md`, the
+           * CSS-order trap).
            */
           'pb-[calc(var(--topology-mobile-bottom-tab-reserve)+var(--page-bottom-breath))] lg:pb-20',
         )}
       >
         <div className={cn(PAGE_COLUMN, 'mx-auto')}>
           {/*
-           * 차례가 있을 때만 두 열이 된다. 없으면 한 열을 가운데 세운다.
+           * Two columns only when there is a table of contents; otherwise one centred column.
            *
-           * ⚠️ 차례는 `lg` 미만에서 **접는다**. 좁은 폭에서 사이드바를 남기면
-           * 산문 기둥이 목록에게 폭을 빼앗겨, 정작 읽으러 온 것이 못 읽을 폭이
-           * 된다. 접힌 자리는 크롬의 「가이드」 칩이 대신한다 — 목록이 없어도
-           * 가이드로 돌아올 길은 남는다.
+           * ⚠️ The table of contents **folds below `lg`**. Keeping the sidebar at narrow widths lets
+           * the list take width from the prose column, so what someone came to read becomes unreadable.
+           * The chrome's "guide" chip stands in for the folded slot — the way back to the guide
+           * survives without the list.
            */}
           <div
             className={cn(
@@ -224,9 +222,9 @@ export function GatewayDocPage({
             {entryNav ? <EntrySidebar entries={entries} /> : null}
             <div className="flex min-w-0 flex-col items-center">
           {/*
-           * 안내는 제목보다 **먼저** 선다 — 이 화면이 요청받은 주소의 문서가
-           * 아니라는 사실은 제목을 읽기 전에 알아야 하는 정보다. 절단 안내
-           * (`gateway-doc-truncated`)와 같은 판 문법: 패널 면 + 3차 텍스트.
+           * The notice stands **before** the title — that this screen is not the document for the
+           * requested address is something to know before reading the title. Same panel grammar as
+           * the truncation notice (`gateway-doc-truncated`): panel surface plus tertiary text.
            */}
           {notice ? (
             <aside
@@ -240,14 +238,14 @@ export function GatewayDocPage({
             <h1
               data-testid="gateway-doc-title"
               /*
-               * 램프 최상단(`--text-hero-lg` 34px)을 쓴다 — 관문 헤드라인과 같은
-               * 단이다. 이 페이지들도 관문 표면이고 이 줄이 그 페이지의 헤드라인이라
-               * 같은 자리에 서는 것이 맞다. 새 스텝은 만들지 않았다(램프 밖 크기는
-               * `cn.ts` 의 `TYPE_RAMP_STEPS` 등록 없이는 조용히 드롭된다).
+               * The top of the ramp (`--text-hero-lg`, 34px) — the same step as the gateway headline.
+               * These pages are gateway surfaces too and this line is their headline, so it belongs
+               * at the same step. No new step was created (a size outside the ramp is silently
+               * dropped without registration in `TYPE_RAMP_STEPS` in `cn.ts`).
                *
-               * 행간은 그 크기의 **짝**(`--leading-hero-lg` 38px). 앞서 쓰던
-               * `leading-display-tight`(1.06)는 이름·수치용이라 23px 에 24.4px 를
-               * 물려 페이지 제목으로는 답답했다.
+               * The line height is that size's **pair** (`--leading-hero-lg`, 38px). The previously
+               * used `leading-display-tight` (1.06) is for names and figures, and gave 23px text a
+               * 24.4px line — suffocating for a page title.
                */
               className="text-hero-lg leading-hero-lg font-[var(--font-weight-strong)] text-[color:var(--color-text-primary)]"
             >
@@ -272,23 +270,24 @@ export function GatewayDocPage({
           </article>
 
           {/*
-           * 좁은 폭에서 크롬이 접은 읽을거리 둘 — 여기가 그 자리다. 이 두
-           * 라우트에는 푸터가 없어서, 종전에는 가이드 안에서 변경 내역으로
-           * (그 반대로도) 갈 길이 390 에서 0개였다.
+           * The two reading destinations the chrome folds at narrow widths belong here. These two
+           * routes have no footer, so getting from the guide to the changelog (or back) was zero
+           * paths at 390.
            */}
           {/*
-           * 장 끝의 이전/다음 — 순서 있는 13장인데 본문이 끝나는 자리에 다음
-           * 장으로 가는 길이 0개였다(2026-08-13 실측: 다 읽은 사람이 왼쪽
-           * 차례로 되돌아가 방금 읽은 장을 스스로 찾아야 했다). 순서의 정본은
-           * `GUIDE_PAGES` 하나다. 변경 내역(sidebar 없음)은 장이 아니라서 없다.
+           * Prev/next at the end of a chapter — thirteen ordered chapters, yet where the body ended
+           * there were zero paths to the next one (measured 2026-08-13: someone who finished reading
+           * had to go back to the table of contents on the left and find the chapter they had just
+           * read). The order's single source is `GUIDE_PAGES`. The changelog (no sidebar) is not a
+           * chapter, so it has none.
            */}
           {sidebar ? <GuidePager activeSegment={activeSegment} /> : null}
 
           <GatewayReadingLinks className="mt-12 w-full max-w-[var(--measure-prose)]" />
 
           {/*
-           * 잘렸으면 **몇 개를 감췄는지와 어디서 읽는지**를 함께 말한다.
-           * 조용한 절단은 "이게 전부" 라고 말하는 것과 같다.
+           * When truncated, say **how many were hidden and where to read the rest**. Silent
+           * truncation is the same as saying "this is all of it".
            */}
           {omittedSections > 0 ? (
             <aside
@@ -311,21 +310,20 @@ export function GatewayDocPage({
           ) : null}
             </div>
             {/*
-             * **오른쪽의 빈 열** — 사이드바와 같은 폭(15rem).
+             * **The empty column on the right** — the same width as the sidebar (15rem).
              *
-             * 이게 없으면 본문 열이 사이드바 오른쪽 전부를 차지하고, 그 안에서
-             * 가운데 정렬해도 **화면 기준으로는 오른쪽으로 밀린다**. 반대로
-             * 왼쪽 정렬하면 소유자가 두 번 짚은 그 쏠림이 된다(1894 실측:
-             * 본문 480–1150, 오른쪽 744px 이 빔).
+             * Without it the body column takes everything right of the sidebar, and centring inside
+             * that still leaves it **pushed right relative to the screen**. Left-aligning instead
+             * produces the skew the owner pointed out twice (measured at 1894: body 480–1150, 744px
+             * empty on the right).
              *
-             * 같은 폭의 자리를 오른쪽에도 예약하면 가운데 열이 페이지 컬럼의
-             * 정중앙에 서고, 페이지 컬럼 자체가 `mx-auto` 라 결과적으로 **화면
-             * 정중앙**이 된다. 사이드바는 그 글의 왼쪽 여백에 떠 있는 모양이
-             * 되는데, 차례의 일이 길잡이지 본문과 폭을 겨루는 것이 아니라
-             * 그쪽이 맞다.
+             * Reserving a slot of the same width on the right puts the centre column at the true
+             * centre of the page column, and since the page column is itself `mx-auto` the result is
+             * **the true centre of the screen**. The sidebar then floats in that text's left margin,
+             * which is right: a table of contents guides, it does not compete with the body for width.
              *
-             * `aria-hidden` 도 `role` 도 주지 않는다 — 내용이 없는 그리드 칸이라
-             * 접근성 트리에 애초에 아무것도 안 올린다.
+             * It gets neither `aria-hidden` nor a `role` — an empty grid cell puts nothing into the
+             * accessibility tree in the first place.
              */}
             {sidebar || entryNav ? <div className="hidden lg:block" /> : null}
           </div>
@@ -336,75 +334,72 @@ export function GatewayDocPage({
 }
 
 /**
- * 산문용 컴포넌트 맵.
+ * The prose component map.
  *
- * 문서함 뷰어(`widgets/docs-vault`)와 **일부러 공유하지 않는다** — 그쪽은
- * 검색 하이라이트 · 위키링크 · 볼트 내부 앵커 같은 작업 표면의 장치를 달고
- * 있고, 그 장치들이 이 표면에서는 전부 죽은 무게다. 같은 램프 토큰을 쓰므로
- * 시각적 결은 이미 한 벌이다.
+ * **Deliberately not shared** with the docs viewer (`widgets/docs-vault`) — that one carries work-surface
+ * machinery (search highlighting, wikilinks, vault-internal anchors) that is all dead weight on this
+ * surface. They use the same ramp tokens, so the visual grain is already one set.
  */
-/** 가이드 장으로 실재하는 세그먼트 — 슬러그와 라우트를 가르는 기준. */
+/** Segments that exist as guide chapters — the test separating a slug from a route. */
 const GUIDE_SEGMENTS = new Set(GUIDE_PAGES.map((page) => page.segment));
 
 /**
- * 산문 속 링크의 `href` 를 **이 로케일의 실제 주소**로 푼다.
+ * Resolves a prose link's `href` to **the real address for this locale**.
  *
- * 마크다운 원본은 로케일을 모른다 — 한 벌이 `/ko` 와 `/en` 을 함께 서빙하므로
- * 원본에 `/ko/…` 를 박으면 영어 독자가 한국어로 끌려간다. 그래서 로케일을
- * 붙이는 일은 **화면의 몫**이다.
+ * The markdown source does not know the locale — one copy serves both `/ko` and `/en`, so writing
+ * `/ko/…` into the source would drag an English reader into Korean. Attaching the locale is
+ * therefore **the screen's job**.
  *
- * ⚠️ **가이드 본문의 내부 링크는 가이드 장만 가리킨다.** 볼트 문서로 보내는
- * 링크를 여기서 `?slug=` 로 풀어 봤다가 되돌렸다: 볼트를 안 고른 웹 방문자가
- * 보는 것은 **샘플 볼트(112개)** 이고, 가이드가 가리키던 문서는 도그푸드
- * 볼트(153개)에만 있다. 그 주소는 **200 을 주면서 아무것도 안 여는** 조용한
- * 막다른 길이 된다 — 404 보다 알아채기 어렵다. 볼트 문서는 GitHub 로 보낸다.
- * 그 규율은 `tests/contract/guide-inbody-links.contract.test.ts` 가 지킨다.
+ * ⚠️ **Internal links in guide bodies point only at guide chapters.** Resolving links to vault
+ * documents as `?slug=` here was tried and reverted: a web visitor who has not chosen a vault sees
+ * the **sample vault (112 documents)**, while the documents the guide pointed at exist only in the
+ * dogfood vault (153). Those addresses become a silent dead end that **returns 200 and opens
+ * nothing** — harder to notice than a 404. Vault documents are sent to GitHub instead. That
+ * discipline is held by `tests/contract/guide-inbody-links.contract.test.ts`.
  */
 function resolveProseHref(href: string, locale: string): string {
   if (!href.startsWith('/')) return href;
   const path = href.split('?')[0];
   const segment = /^\/guide\/([^/]+)\/?$/.exec(path)?.[1];
   if (segment && GUIDE_SEGMENTS.has(segment)) return `/${locale}/guide/${segment}`;
-  // 가이드 장이 아닌 루트 절대 링크는 위 계약이 막는다. 그래도 새어 들어오면
-  // 로케일만 붙여 «그 로케일 안에서» 404 가 나게 둔다 — 로케일을 잃은 404 는
-  // 영어 화면으로 떨어져서 어느 쪽 여정이 깨졌는지조차 안 보였다.
+  // The contract above blocks root-absolute links that are not guide chapters. If one still leaks
+  // through, only the locale is attached so the 404 happens *inside that locale* — a 404 that lost
+  // its locale fell to the English screen, hiding which journey had broken.
   return `/${locale}${path}`;
 }
 
 /**
- * 본문 링크 — **루트 절대 링크는 볼트 슬러그이고, 여기서 라우트로 푼다.**
+ * Body links — **a root-absolute link is a vault slug, and it is resolved to a route here.**
  *
- * ## 왜 (2026-08-07 사용성 감사)
+ * ## Why (usability audit, 2026-08-07)
  *
- * 종전에는 `href` 를 그대로 `<a>` 에 실었다. 가이드 본문은 마크다운이고 거기
- * 적힌 내부 링크는 `[지도 읽는 법](/guide/reading-the-map)` 처럼 **로케일
- * 접두사가 없다** — 마크다운 한 벌이 `/ko` 와 `/en` 을 함께 서빙하므로 원본에
- * 로케일을 박을 수도 없다. 그래서 눌리는 주소가 `/guide/…` 가 되고, 그런
- * 라우트는 없다.
+ * The `href` used to be put straight onto the `<a>`. Guide bodies are markdown, and the internal
+ * links written there have **no locale prefix** — `[지도 읽는 법](/guide/reading-the-map)` — because
+ * one copy of the markdown serves both `/ko` and `/en` and the locale cannot be baked into the
+ * source. So the address being clicked became `/guide/…`, and no such route exists.
  *
- * 실측: 가이드 13장의 본문 내부 링크 **34개 전부가 404** 였다(대상 11종,
- * `/ko`·`/en` 양쪽, dev·정적 export 양쪽). 착지 화면은 한국어 여정인데 영어
- * 404 이고 주 버튼이 「Find by project search」라 볼트 없는 첫 방문자에게는
- * 쓸 수 없는 탈출구였다.
+ * Measured: **all 34** internal body links across the guide's 13 chapters were 404s (11 distinct
+ * targets, both `/ko` and `/en`, both dev and static export). The landing screen was an English 404
+ * in the middle of a Korean journey, and its primary button was "Find by project search" — useless
+ * to a first-time visitor with no vault.
  *
- * **왜 눈에 안 띄었나**: 같은 화면의 왼쪽 차례(`GuideSidebar`)는 처음부터
- * `Link` 를 썼다. 로케일이 붙는 링크와 안 붙는 링크가 한 화면에 공존했고,
- * 사람이 주로 누르는 쪽이 멀쩡한 쪽이었다.
+ * **Why it went unnoticed**: the table of contents on the same screen (`GuideSidebar`) used `Link`
+ * from the start. Links that got a locale and links that did not coexisted on one screen, and the
+ * one people mostly clicked was the working one.
  *
- * ## 왜 `Link` 가 아니라 `<a>` + `useLocale()` 인가
+ * ## Why `<a>` + `useLocale()` rather than `Link`
  *
- * 처음엔 여기서 `Link` 를 쓰려 했는데 게이트 셋이 한꺼번에 막았다 — 앵커 채택
- * 래칫(값 층을 안 지난 손 앵커 0 → 1) · 태그 내역(`Link 17 → 18`) ·
- * `prose-link` 사용처(6 → 5). 이 저장소의 규율은 **「글 속의 링크는 컨트롤이
- * 아니라 글이다」**(`design.md` · `prose-link.contract`)이고, 그 계약들은 산문
- * 링크가 `.prose-link` 를 단 `<a>` 이기를 요구한다. 그래서 태그는 그대로 두고
- * **주소만** 로케일로 푼다.
+ * Using `Link` here was blocked by three gates at once — the anchor adoption ratchet (hand anchors
+ * bypassing the value layer, 0 → 1), the tag inventory (`Link 17 → 18`), and `prose-link` usage
+ * (6 → 5). This repository's rule is **"a link inside prose is prose, not a control"**
+ * (`.claude/rules/design.md`, `prose-link.contract`), and those contracts require a prose link to be
+ * an `<a>` carrying `.prose-link`. So the tag stays and **only the address** is resolved.
  *
- * `docs:links` 는 이 부류를 원리적으로 못 본다 — 그 검사는 문서가 가리키는
- * **대상이 실재하는가**를 보되 그 대상을 **볼트 슬러그**로 푼다(그래서
- * `/ONTOLOGY-QUALITY` 도 통과했다). 라우트를 열어 보지는 않는다. 그 층은
- * `tests/contract/guide-inbody-links.contract.test.ts`(원본의 목적지)와
- * `tests/e2e/guide-inbody-links.spec.ts`(실제로 200 인가)가 나눠 맡는다.
+ * `docs:links` cannot see this class of defect in principle — that check asks whether the **target
+ * a document points at exists**, resolving it as a **vault slug** (which is why `/ONTOLOGY-QUALITY`
+ * passed). It never opens the route. That layer is split between
+ * `tests/contract/guide-inbody-links.contract.test.ts` (where the source points) and
+ * `tests/e2e/guide-inbody-links.spec.ts` (whether it really returns 200).
  */
 function ProseLink({ href, children, ...rest }: React.ComponentPropsWithoutRef<'a'>) {
   const locale = useLocale();
@@ -508,8 +503,8 @@ const PROSE_COMPONENTS: Components = {
       {children}
     </pre>
   ),
-  // 넓은 표는 페이지 본문이 아니라 **자기 상자 안에서** 가로 스크롤한다 —
-  // 본문이 가로로 흐르면 그 폭이 모든 문단의 줄 길이를 망친다.
+  // A wide table scrolls horizontally **inside its own box**, not in the page body — a body that
+  // flows horizontally ruins the line length of every paragraph.
   table: ({ children, ...rest }) => (
     <div className="my-6 overflow-x-auto">
       <table
@@ -533,30 +528,27 @@ const PROSE_COMPONENTS: Components = {
       {children}
     </td>
   ),
-  /** 본문 링크 — 정의와 사연은 `ProseLink`. */
+  /** Body links — definition and rationale in `ProseLink`. */
   a: ProseLink,
 };
 
 /**
- * 가이드의 왼쪽 차례.
+ * The guide's table of contents on the left.
  *
- * ## 왜 `sticky` 인가
+ * **Why `sticky`.** The guide is read while scrolling, and a table of contents that scrolls away
+ * forces anyone heading for the next chapter to scroll back up. If the list's job is to guide, it
+ * has to stay visible while the path is being walked.
  *
- * 가이드는 스크롤하며 읽는 글인데, 차례가 같이 스크롤돼 사라지면 "다음 장으로"
- * 가려는 사람이 위로 되돌아가야 한다. 목록의 일이 **길잡이**라면 길이 보이는
- * 동안 계속 보여야 한다.
- *
- * ## 현재 장은 색이 아니라 면으로
- *
- * 크롬의 읽을거리 칩과 같은 문법이다 — 채워진 면 + 강한 텍스트. 무채색 안에서
- * 「지금 여기」를 말하는 방법이라 새 색을 열지 않는다.
+ * **The current chapter is marked by surface, not colour** — the same grammar as the chrome's
+ * reading chips: a filled surface plus strong text. That is how "you are here" is said within
+ * neutrals, without opening a new colour.
  */
 /**
- * 가이드 장 목록 — **한 벌만 있고 두 폭이 나눠 쓴다.**
+ * The guide's chapter list — **one copy shared by two widths.**
  *
- * `lg` 이상은 왼쪽 차례(`GuideSidebar`)가, 그 아래는 제목 밑의 펼침
- * (`GuideChapterPicker`)이 이 함수를 부른다. 목록을 두 번 적으면 장을 더할 때
- * 한쪽만 늘어난다.
+ * At `lg` and above the left table of contents (`GuideSidebar`) calls this; below that, the
+ * disclosure under the title (`GuideChapterPicker`) does. Writing the list twice means only one side
+ * grows when a chapter is added.
  */
 function GuideChapterList({ activeSegment }: { activeSegment?: string }) {
   const t = useTranslations('gatewayNav');
@@ -592,9 +584,9 @@ function GuideChapterList({ activeSegment }: { activeSegment?: string }) {
 }
 
 /**
- * 장 끝 이전/다음. 화살표 글자는 쓰지 않는다 — 방향은 「이전 장/다음 장」
- * 아이브로우와 정렬(왼쪽/오른쪽)이 이미 말하고, 라벨 끝 화살표는 헌장이
- * 장식으로 판정한다(`label-decoration` 게이트).
+ * Prev/next at the end of a chapter. No arrow glyphs — direction is already stated by the
+ * "previous chapter / next chapter" eyebrow and by the alignment (left/right), and an arrow at the
+ * end of a label is decoration by the charter (the `label-decoration` gate).
  */
 function GuidePager({ activeSegment }: { activeSegment?: string }) {
   const t = useTranslations('gatewayNav');
@@ -675,30 +667,31 @@ function GuideSidebar({ activeSegment }: { activeSegment?: string }) {
 }
 
 /**
- * `lg` 미만의 차례 — 제목 바로 밑의 펼침.
+ * The table of contents below `lg` — a disclosure directly under the title.
  *
- * ## 왜 필요한가 (2026-08-07 실측)
+ * ## Why it is needed (measured 2026-08-07)
  *
- * 종전에는 이 폭에서 차례가 **어디에도 없었다.** 코드 주석 둘이 대체를
- * 약속했는데 **둘 다 사실이 아니었다**:
+ * At this width there used to be **no table of contents anywhere**. Two code comments promised a
+ * substitute and **neither was true**:
  *
- * | 적혀 있던 말 | 실제 |
+ * | What the comment said | Reality |
  * |---|---|
- * | *"접힌 자리는 크롬의 「가이드」 칩이 대신한다"* | 그 칩도 `<sm` 에서 접힌다 — 390 에서 0개 |
- * | *"이 둘은 스크롤하면 푸터에서 다시 만난다"* | 관문 푸터는 어느 폭에서도 링크 0개 |
+ * | *"the chrome's guide chip stands in for the folded slot"* | that chip also folds below `sm` — zero at 390 |
+ * | *"these two meet again in the footer when you scroll"* | the gateway footer has zero links at any width |
  *
- * 게다가 `/guide` 는 색인이 아니라 **1장을 그린다** — 칩을 눌러 돌아가도 거기
- * 목록이 없다. 결과: 768·390 에서 보이는 가이드 장 링크가 **1개 · 0개**였고,
- * 폰으로 링크를 받아 한 장을 연 사람에게 13장은 **서로 못 가는 13개의 막다른
- * 길**이었다. 그 안에 「에이전트 연결」과 「CLI」가 있으므로 막힌 것은 읽을거리가
- * 아니라 **에이전트를 붙이는 경로**다.
+ * On top of that `/guide` draws **chapter 1**, not an index — pressing the chip to go back finds no
+ * list there either. Result: visible guide-chapter links numbered **1 at 768 and 0 at 390**, so for
+ * someone who opened a chapter from a link on their phone the 13 chapters were **13 dead ends with
+ * no path between them**. Two of those chapters are "connect an agent" and "CLI", so what was
+ * blocked was not reading material but **the path to attaching an agent**.
  *
- * ## 왜 펼침(`<details>`)인가
+ * ## Why a disclosure (`<details>`)
  *
- * 좁은 폭에서 목록을 펼쳐 두면 산문 기둥이 목록에게 폭이 아니라 **첫 화면**을
- * 빼앗긴다 — 읽으러 온 사람이 목차부터 스크롤해야 한다. 닫힌 펼침은 한 줄이고,
- * 그 한 줄이 **지금 몇 장 중 어디인지**까지 말한다. 여는 표시(chevron)는 장식
- * 화살표 금지의 예외다(`design.md`: 펼쳐진 상태를 나타내는 것은 정보다).
+ * Leaving the list open at narrow widths takes not width but **the first screen** from the prose
+ * column — someone who came to read has to scroll past a table of contents first. A closed
+ * disclosure is one line, and that line also states **which chapter of how many** this is. The
+ * chevron is an exception to the decorative-arrow ban (`.claude/rules/design.md`: indicating an
+ * expanded state is information).
  */
 function GuideChapterPicker({ activeSegment }: { activeSegment?: string }) {
   const t = useTranslations('gatewayNav');
@@ -736,20 +729,16 @@ function GuideChapterPicker({ activeSegment }: { activeSegment?: string }) {
 }
 
 /**
- * 변경 내역의 왼쪽 항목 목록 — 날짜가 앞에 서고 제목이 따라온다.
+ * The changelog's entry list on the left — the date leads and the title follows.
  *
- * ## 왜 라우트가 아니라 앵커인가
+ * **Why anchors rather than routes.** The guide's chapters are separate pieces of writing, so
+ * separate addresses are right. The changelog is **one flow**, normally read straight down, and
+ * carving an address per entry would mean opening a new page every time to see "what came next".
+ * The list exists for **skipping**, not for splitting.
  *
- * 가이드는 여섯 장이 각자 다른 글이라 주소가 따로 있는 게 맞다. 변경 내역은
- * **한 흐름**이라 위아래로 이어 읽는 것이 정상이고, 항목마다 주소를 파면
- * "그 다음에 뭐가 있었지" 를 보려고 매번 페이지를 새로 여는 꼴이 된다.
- * 목록은 **건너뛰기**를 위한 것이지 분할을 위한 것이 아니다.
- *
- * ## 왜 링크가 `<a href="#…">` 인가
- *
- * 앵커는 브라우저가 이미 잘한다 — 뒤로가기가 되돌리고, 주소를 복사하면 그 항목을
- * 가리키고, JS 없이도 동작한다. 스크롤을 손으로 옮기면 이 셋을 전부 다시 만들어야
- * 한다.
+ * **Why the links are `<a href="#…">`.** The browser already does anchors well — back undoes them,
+ * copying the address points at that entry, and it works without JS. Moving the scroll by hand means
+ * rebuilding all three.
  */
 function EntrySidebar({ entries }: { entries: DocEntry[] }) {
   const t = useTranslations('gatewayNav');
@@ -774,9 +763,9 @@ function EntrySidebar({ entries }: { entries: DocEntry[] }) {
                   </span>
                 ) : null}
                 {/*
-                 * 제목은 두 줄에서 자른다 — 이 저장소의 변경 내역 제목은 한 문장에
-                 * 가깝게 길어서, 안 자르면 항목 하나가 목록의 절반을 먹는다.
-                 * 전체 문장은 눌러서 도착한 자리에 있다.
+                 * Titles are clamped to two lines — this repository's changelog titles run close to
+                 * a full sentence, and unclamped a single entry eats half the list. The whole
+                 * sentence is at the destination.
                  */}
                 <span className="line-clamp-2 text-body leading-body text-[color:var(--color-text-tertiary)]">
                   {entry.title}
@@ -791,13 +780,14 @@ function EntrySidebar({ entries }: { entries: DocEntry[] }) {
 }
 
 /**
- * 산문 컴포넌트 맵 + **`h2` 에 앵커 id**.
+ * The prose component map, **plus anchor ids on `h2`**.
  *
- * 목록이 가리킬 자리를 본문이 갖고 있어야 한다. id 는 목록과 같은 함수가 낸
- * 것을 그대로 받는다 — 여기서 다시 계산하면 그 순간 두 번째 진실원이 된다.
+ * The body has to own the place the list points at. The ids are taken verbatim from the same
+ * function the list used — recomputing them here would create a second source of truth the moment
+ * it happens.
  *
- * `scroll-mt` 는 sticky 크롬(상단 바) 높이만큼 — 없으면 앵커로 도착한 제목이
- * 바 뒤에 숨어 "안 움직였나" 로 읽힌다.
+ * `scroll-mt` covers the sticky chrome (top bar) height — without it a heading reached by anchor
+ * hides behind the bar and reads as "nothing moved".
  */
 function proseComponentsWithAnchors(headingIds: Map<string, string>): Components {
   return {
@@ -814,7 +804,7 @@ function proseComponentsWithAnchors(headingIds: Map<string, string>): Components
   };
 }
 
-/** ReactMarkdown 이 넘기는 children 에서 순수 텍스트만 이어 붙인다 (id 매칭용). */
+/** Concatenates only the plain text out of the children ReactMarkdown passes (for id matching). */
 function flattenText(node: React.ReactNode): string {
   if (typeof node === 'string') return node;
   if (typeof node === 'number') return String(node);

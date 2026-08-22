@@ -6,13 +6,13 @@ import { buildPageMetadata } from "@/shared/lib/page-metadata";
 import { MapEntryFallback } from "@/shared/ui/map-entry-fallback";
 
 /**
- * `/topology` — canvas-2D 토폴로지 surface (`topology-map-v2`). `/` (HomePage) 와
- * 같은 컴포넌트를 렌더하는 명시적 진입점 alias이자, README·런치 자산이 가리키는
- * 데모 URL 이다.
+ * `/topology` — the canvas-2D topology surface (`topology-map-v2`). An explicit entry alias
+ * rendering the same component as `/` (HomePage), and the demo URL the README and launch assets
+ * point at.
  *
- * fallback 이 `MapEntryFallback` 인 이유는 그 파일의 주석에 있다 — 정적 export
- * 에서 이 라우트의 HTML 본문은 fallback 이 전부라서, 그 자리에 로딩 자막만 있으면
- * 링크 미리보기와 크롤러가 보는 페이지 내용도 로딩 자막이 전부가 된다.
+ * Why the fallback is `MapEntryFallback` is explained in that file's comments — under static export
+ * this route's HTML body is entirely the fallback, so a loading caption there would be all a link
+ * preview or a crawler sees of the page.
  */
 export async function generateMetadata({
   params,

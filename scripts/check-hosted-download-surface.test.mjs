@@ -183,20 +183,21 @@ test("hosted download surface check rejects a download page without the release 
   }
 });
 
-// 배포된 페이지에는 어느 릴리스 상태에서든 **결정할 것**이 있어야 한다 —
-// 받을 파일이 있으면 파일, 없으면 오늘 당장 되는 브라우저 지도. 둘 다 없는
-// 페이지는 방문자를 빈손으로 돌려보낸다.
+// The deployed page must offer **something to decide** in any release state — a file
+// if one is downloadable, otherwise the browser map that works today. A page with
+// neither sends the visitor away empty-handed.
 //
-// [재조준 2026-08-19] 구 판본은 Windows 플랫폼 절이 떨어졌는지를 봤는데,
-// 그 절이 설치 절과 함께 사라졌다. 같은 「빈손으로 돌려보내지 않는다」를
-// 지금 지는 것은 릴리스 상태 두 갈래 CTA 다.
+// Re-aimed 2026-08-19: the old version checked whether the Windows platform section
+// had dropped, and that section disappeared along with the install section. What now
+// carries the same "never send them away empty-handed" is the pair of
+// release-state CTAs.
 test("hosted download surface check rejects a download page with no release-state CTA", async () => {
   const server = await startServer({
     "/ko/": { body: alignedLanding },
     "/ko/download/": {
-      // ⚠️ 문자열을 여기 베끼지 않는다. 리터럴로 지우면 문구를 고치는 순간
-      // **아무것도 못 지우고**, 픽스처가 멀쩡한 채로 남아 시험만 빨개진다
-      // (2026-07-29 실측 사고). 메시지에서 읽어 지운다.
+      // ⚠️ Do not copy the string here. Deleting by literal removes **nothing** the moment
+      // the copy changes, leaving the fixture intact while only the test turns red (a real
+      // incident, 2026-07-29). Read it from the messages and delete that.
       body: alignedDownload.replace(
         `<a href="https://github.com/wlsdks/ontology-atlas/releases">${koDownloadCopy.webCta}</a>`,
         `<a href="https://github.com/wlsdks/ontology-atlas/releases"></a>`,
@@ -217,23 +218,22 @@ test("hosted download surface check rejects a download page with no release-stat
 });
 
 /**
- * **탐지기가 스스로 무장 해제하지 않는지 본다** (2026-07-29 실측 사고).
+ * **Checks that the detector does not disarm itself** (a real incident, 2026-07-29).
  *
- * 검사 목록이 `messages/ko.json` 의 값으로 만들어지는데, 키가 리네임되면 그
- * 자리가 `undefined` 가 된다. 그런데 `String.includes(undefined)` 는 인자를
- * 리터럴 `"undefined"` 로 강제 변환하고, 페이지 템플릿도 같은 자리에
- * `undefined` 를 렌더한다 — **바늘과 짚더미가 같은 방식으로 틀려서 서로
- * 맞아떨어진다.** 검사는 초록으로 통과했고, Windows 안내가 사라져도 아무도
- * 몰랐을 것이다.
+ * The check list is built from values in `messages/ko.json`, so renaming a key makes
+ * that slot `undefined`. `String.includes(undefined)` coerces its argument to the
+ * literal `"undefined"`, and the page template renders `undefined` in the same slot —
+ * **needle and haystack are wrong in the same way and therefore match.** The check
+ * passed green, and the Windows guidance could have vanished with nobody knowing.
  *
- * 이 시험은 그 상태를 인위적으로 만든다. 통과하면(=거부하지 않으면) 탐지기가
- * 다시 무장 해제된 것이다.
+ * This test creates that state deliberately. If it passes (i.e. does not reject), the
+ * detector has disarmed itself again.
  */
 test("hosted download surface check rejects a renamed-away copy key instead of silently passing", async () => {
   const server = await startServer({
     "/ko/": { body: alignedLanding },
-    // 검사가 요구하는 문구가 사라지고, 그 자리에 템플릿이 남긴 `undefined` 만
-    // 있는 페이지 — 키를 지운 다음 배포하면 정확히 이 모양이 된다.
+    // A page where the copy the check requires is gone and only the template's
+    // `undefined` remains — exactly what deploying after deleting the key produces.
     "/ko/download/": {
       body: alignedDownload.replace(
         `<p>${koDownloadCopy.trustLine}</p>`,

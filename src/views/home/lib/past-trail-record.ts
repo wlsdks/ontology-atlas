@@ -1,35 +1,27 @@
 /**
- * 「지난 길」 **레코드** — 저장 매체와 무관한 부분만 모은다.
+ * Past-trail records — everything that does not depend on the
+ * storage medium. Schema, caps, duplicate detection, and serialization are pure
+ * functions here; only `past-trail-store.ts` knows where records land, so the
+ * same record can ride any medium unchanged.
  *
- * 형식(스키마)·상한·중복 판정·직렬화는 전부 여기 순수 함수로 있고, "어디에
- * 쓰는가"는 `past-trail-store.ts` 가 혼자 안다. 같은 레코드가 볼트 안 파일이든
- * 브라우저 저장소든 **한 글자도 안 바꾸고** 실릴 수 있어야 하기 때문이다 —
- * 웹과 설치 앱(Tauri)은 서로 다른 origin 이라 브라우저 저장소로는 같은 지난
- * 길이 이어지지 않는다. 그래서 실제 저장 위치는 **볼트 폴더 안 파일**이다.
- *
- * 기록하지 않는 것: 걸음당 시각 · 체류 시간 · 방문 횟수. 시각은 **길 하나당
- * 종료 시각 1개**뿐이고, 그것도 날짜 묶음 표시와 정렬에만 쓴다. 이 선이 탐색
- * 궤적과 행동 분석을 가른다.
+ * **What is deliberately not recorded:** per-step timestamps, dwell time, visit
+ * counts. There is exactly one timestamp per trail, used only for day grouping
+ * and sort order. That line is what separates a browsing trail from behavioural
+ * analytics.
  */
 
-/**
- * 보관 상한. 넘으면 가장 오래된 길부터 소멸하는 회전 버퍼다 — 축적이 아니라는
- * 사실을 UI 캡션(`최근 10개까지`)으로도 정직하게 알린다.
- */
+/** Ring buffer, oldest trail dropped first. The UI caption states the cap so nobody expects accumulation. */
 export const PAST_WALKS_MAX = 10;
 
-/** 길 하나가 담는 걸음 상한 — 세션 궤적 상한(FOOTPRINT_TRAIL_MAX)과 같다. */
+/** Steps per trail — the same cap as the live session trail (`FOOTPRINT_TRAIL_MAX`). */
 export const PAST_WALK_ENTRIES_MAX = 30;
 
-/**
- * 보관 문턱. 칩이 뜨는 조건(방문 2개 이상)과 같은 수 — 화면에 길로 보였던
- * 것만 길로 보관한다.
- */
+/** Save threshold, matching the chip's own (2+ visits): only what looked like a trail is stored as one. */
 export const PAST_WALK_MIN_ENTRIES = 2;
 
-/** 걸음 스냅샷 — 노드가 지워져도 목록이 렌더 가능해야 하므로 제목·kind 를 함께 굳힌다. */
+/** A step snapshot. Title and kind are frozen in so the list still draws after a node is deleted. */
 export interface PastWalkEntry {
-  /** 그래프 노드 id(`<kind>:<slug>`). */
+  /** Graph node id (`<kind>:<slug>`). */
   id: string;
   title: string;
   kind: string;
@@ -37,18 +29,15 @@ export interface PastWalkEntry {
 
 export interface PastWalk {
   id: string;
-  /**
-   * 길이 끝난 시각(epoch ms) — **길당 1개**. 날짜 표시·정렬 전용이다.
-   * 걸음당 시각·체류·횟수는 저장하지 않는다.
-   */
+  /** When the trail ended (epoch ms) — one per trail, for day grouping and sort only. */
   endedAt: number;
-  /** 방문 순서(오래된 → 최근). 세션 궤적과 같은 방향이라 인계 패킷이 그대로 재생된다. */
+  /** Visit order, oldest to newest — same direction as the live trail, so a handoff packet replays as-is. */
   entries: PastWalkEntry[];
 }
 
 interface PastTrailDocumentV1 {
   v: 1;
-  /** 최근이 앞. */
+  /** Most recent first. */
   walks: PastWalk[];
 }
 
@@ -59,9 +48,10 @@ function isEntry(value: unknown): value is PastWalkEntry {
 }
 
 /**
- * 저장된 텍스트를 스키마로 되받는다. 파손·구버전·손으로 고친 값은 조용히
- * 버린다 — 편의 상태라서 복구할 진실원이 없고, 사용자에게 알릴 사고도 아니다.
- * 걸음당 시각 같은 미승인 필드가 섞여 있어도 여기서 전부 떨어진다.
+ * Parses stored text back into the schema. Corrupt, old-version, or hand-edited
+ * content is dropped silently — this is convenience state with no source of
+ * truth to recover from. Unapproved fields such as per-step timestamps are
+ * stripped here too.
  */
 export function deserializePastTrails(raw: string | null): PastWalk[] {
   if (!raw) return [];
@@ -100,7 +90,7 @@ function sameRoute(a: readonly PastWalkEntry[], b: readonly PastWalkEntry[]): bo
   return a.every((entry, i) => entry.id === b[i].id);
 }
 
-/** 세션 하나가 쓰는 길 id — 그 세션의 모든 기록이 이 id 로 **덮어써진다**. */
+/** One id per session; every save in that session overwrites under it. */
 export function newPastWalkId(): string {
   const c = typeof globalThis !== "undefined" ? globalThis.crypto : undefined;
   if (c && typeof c.randomUUID === "function") return c.randomUUID();
@@ -108,26 +98,27 @@ export function newPastWalkId(): string {
 }
 
 export interface UpsertPastWalkOptions {
-  /** 마지막으로 기록된 시각. 기본은 호출 시점. */
+  /** Timestamp to record; defaults to call time. */
   now?: number;
 }
 
 /**
- * 지금 걷고 있는 길을 **같은 id 로 덮어쓴다** — 순수 함수(입력 목록 불변).
+ * Overwrites the walk in progress under the same id. Pure — the input list is
+ * not mutated.
  *
- * 왜 "끝날 때 한 번"이 아니라 "걸으면서 덮어쓰기"인가: 저장 위치가 볼트 안
- * 파일이라 쓰기가 비동기다. 페이지가 죽는 순간(pagehide)에 파일 쓰기를 시작하면
- * 끝나기 전에 문서가 사라진다 — 정확히 남겨야 할 순간에 못 남기는 설계다.
- * 걸으면서 제자리에 덮어쓰면 창을 강제 종료해도, 브라우저가 죽어도 마지막
- * 상태가 이미 디스크에 있다. 겉으로 보이는 계약은 그대로다: 한 세션 = 한 줄,
- * 시각은 그 줄에 하나.
+ * **Why it overwrites as you walk instead of saving once at the end.** Storage
+ * is a file in the vault, so writes are async: starting one at `pagehide` loses
+ * the document before it completes — failing at exactly the moment worth
+ * recording. Overwriting in place means a force-quit or a browser crash still
+ * leaves the last state on disk. The visible contract is unchanged: one session
+ * is one row, with one timestamp on it.
  *
- * 하지 않는 경우: ① 걸음이 문턱 미만 ② **다른 어떤** 길과도 경로가 같을 때.
- *
- * ②가 맨 앞 한 줄이 아니라 전체 비교인 이유: 지난 길을 다시 펴면 그 길의 걸음이
- * 그대로 이번 세션의 걸음이 된다 — 맨 앞만 보면 다시 편 길이 오늘 날짜로 한 줄
- * 더 생겨 같은 길이 목록에 둘이 된다. 전체를 보면 원본이 제 날짜 그대로 남고,
- * 이어 걸어 경로가 달라지는 순간에만 새 줄이 생긴다("변화가 있어야 새 길").
+ * Skipped when the walk is under the threshold, or when its route equals **any
+ * other** stored trail. The comparison is against all trails, not just the first
+ * row, because reopening a past trail makes its steps this session's steps: with
+ * a first-row-only check the reopened trail would be saved again under today's
+ * date and the same route would appear twice. Comparing all of them keeps the
+ * original at its own date, and a new row appears only once the route diverges.
  */
 export function upsertPastWalk(
   walks: readonly PastWalk[],
@@ -150,14 +141,14 @@ export function upsertPastWalk(
 }
 
 /**
- * 보관된 걸음을 **살아있는 지도 기준으로** 다시 맞춘다 — 사라진 노드는 빼고,
- * 남은 노드의 이름은 지금 이름으로 갈아끼운다.
+ * Rebases stored steps onto the live map: drops nodes that no longer exist and
+ * replaces surviving titles with current ones.
  *
- * 왜 필요한가: 보관 레코드는 그때의 제목·kind 를 굳혀 둔다(노드가 지워져도
- * 목록이 렌더돼야 하므로). 하지만 그 길을 **다시 펴는** 순간에는 지도가
- * 진실원이다 — 어제 이름으로 오늘 지도를 가리키면 없는 곳을 가리키게 된다.
- * 세션 궤적이 이미 같은 규칙으로 정제되고 있어(단일 진실원: 궤적은 파생
- * 표시층) 다시 편 길도 같은 규칙을 통과해야 두 길이 같은 물건이 된다.
+ * Records freeze the title and kind of the moment so the list still draws after
+ * a deletion — but the map is the source of truth the moment a trail is
+ * reopened, and yesterday's names would point at nothing. The live session trail
+ * is already refined by this rule, so a reopened trail must pass through it too
+ * for the two to be the same thing.
  */
 export function refinePastWalkEntries(
   entries: readonly PastWalkEntry[],
@@ -173,9 +164,9 @@ export function refinePastWalkEntries(
 }
 
 /**
- * 종료 시각을 **일 단위** 묶음으로 환원한다. 시·분은 표시하지 않는다 — 날짜는
- * 길을 서로 구분하는 데 필요하지만, 시각까지 보이면 목록이 행동 타임라인으로
- * 읽히기 시작한다.
+ * Reduces the end timestamp to a day bucket. Hours and minutes are never shown:
+ * the date is needed to tell trails apart, but a clock time makes the list read
+ * as a behavioural timeline.
  */
 export type PastTrailDay =
   | { kind: "today" }

@@ -40,21 +40,22 @@ import { Chip, IconButton, RowButton, Surface, TopologyV2KindGlyph } from '@/sha
 
 interface Props {
   doc: VaultDoc;
-  /** md 원본 취득 — 뷰어와 동일한 resolver. 로컬 볼트는 fileHandle 로 읽기. */
+  /** Fetch the raw md — the same resolver as the viewer. A local vault reads through fileHandle. */
   getDocContent: (slug: string) => Promise<string>;
-  /** 저장 시 호출. expectedMtime은 이 편집기가 원문을 읽은 시점의 값. 실패 시 throw. */
+  /** Called on save. expectedMtime is the value at the time this editor read the source. Throws on failure. */
   onSave: (
     slug: string,
     content: string,
     expectedMtime?: number,
   ) => Promise<void>;
-  /** 편집 종료 (저장 성공 후 또는 취소). */
+  /** End editing (after a successful save, or on cancel). */
   onClose: () => void;
-  /** vault 의 모든 문서 (wikilink 자동완성용). 없으면 autocomplete off. */
+  /** Every document in the vault (for wikilink autocomplete). Without it, autocomplete is off. */
   allDocs?: VaultDoc[];
   /**
-   * 이 초안이 **어느 볼트의 것인가** — 슬러그만으로는 폴더가 달라도 같은 키가
-   * 되어 서로의 초안을 덮는다(위 `draftStorageKey` 주석의 데이터 손실 경로).
+   * **Which vault this draft belongs to** — with the slug alone, different folders
+   * produce the same key and overwrite each other's drafts (the data-loss path in
+   * the `draftStorageKey` comment below).
    */
   vaultScope: string;
 }
@@ -67,28 +68,29 @@ interface EditorDraft {
   updatedAt: number;
 }
 
-/** 멘션 메뉴의 폭과 최대 높이 — 자리 계산과 실제 그리기가 같은 값을 쓴다. */
+/** The mention menu's width and max height — position calculation and drawing use the same values. */
 const MENTION_MENU_WIDTH = 320;
 const MENTION_MENU_MAX_HEIGHT = 280;
 
 const DRAFT_STORAGE_PREFIX = 'ontology-atlas:docs-vault-editor-draft:';
 
 /**
- * 초안 키는 **볼트까지 담는다** (2026-08-01 수리).
+ * A draft key **carries the vault too** (fix, 2026-08-01).
  *
- * 종전엔 슬러그만이었다(`…:README`). 그래서 **다른 폴더의 같은 이름 파일이
- * 서로의 초안을 덮었다** — 폴더 A 의 `README.md` 를 편집하려고 열면 폴더 B 의
- * 본문이 「임시저장됨 · 최종 저장 필요」라는 딱지를 달고 나타났다. 사용자가 쓴
- * 적 없는 글이 사용자의 미저장 변경으로 제시된 것이다.
+ * It used to be slug-only (`…:README`), so **files of the same name in different
+ * folders overwrote each other's drafts** — opening folder A's `README.md` to edit
+ * showed folder B's body carrying a 「임시저장됨 · 최종 저장 필요」 tag. Prose the user
+ * never wrote, presented as the user's unsaved changes.
  *
- * 더 나쁜 것은 그 다음이다: 두 파일이 그 시점에 **바이트가 같으면**(README ·
- * 스캐폴드된 온톨로지 문서라면 흔하다) 충돌 분기가 안 걸리고 mtime 가드도
- * 통과해서, **저장이 폴더 A 의 초안을 폴더 B 의 파일 위에 쓴다.** 데이터 손실
- * 경로다.
+ * What follows is worse: if the two files were **byte-identical** at that moment
+ * (common for a README or a scaffolded ontology document), the conflict branch did
+ * not fire and the mtime guard passed, so **a save wrote folder A's draft over
+ * folder B's file.** A data-loss path.
  *
- * ⚠️ 옛 키(`…:<slug>`)로는 **되읽지 않는다.** 되읽는 것이 바로 이 결함이고,
- * 그 초안이 어느 볼트 것인지 알 방법이 없다. 남은 옛 키는 아무도 안 읽으므로
- * 무해하고, 사용자가 같은 문서를 다시 편집하면 새 키로 덮인다.
+ * ⚠️ Old keys (`…:<slug>`) are **not read back.** Reading them back is the defect,
+ * and there is no way to know which vault such a draft belongs to. Leftover old
+ * keys are harmless because nobody reads them, and editing the same document again
+ * overwrites with the new key.
  */
 function draftStorageKey(vaultScope: string, slug: string) {
   return `${DRAFT_STORAGE_PREFIX}${vaultScope}:${slug}`;
@@ -135,9 +137,10 @@ function clearEditorDraft(vaultScope: string, slug: string) {
 }
 
 /**
- * 단순 textarea 기반 마크다운 에디터. 옵시디언의 vim 모드나 live preview
- * 까지는 안 가고, "로컬 파일을 브라우저에서 빠르게 수정" 수준. 저장 시
- * 원본 파일을 File System Access API writable 로 덮어쓴다.
+ * A simple textarea-based markdown editor. It does not go as far as Obsidian's vim
+ * mode or live preview — the level is "quickly edit a local file in the browser".
+ * On save it overwrites the original file through the File System Access API's
+ * writable.
  */
 export function DocsVaultEditor({
   doc,
@@ -149,9 +152,9 @@ export function DocsVaultEditor({
 }: Props) {
   const t = useTranslations('vaultWidgets.editor');
   const locale = useLocale();
-  // 관계 어휘는 지도 편집기와 문서 편집기가 같은 네임스페이스를 읽는다.
+  // The relation vocabulary is read from the same namespace by the map editor and the document editor.
   const tRelations = useTranslations('ontologyRelations');
-  // 종류 이름은 지도·새 문서 대화상자가 쓰는 것 하나를 그대로 쓴다.
+  // Kind names use the same source the map and the new-document dialog use.
   const kindLabel = useOntologyKindLabel();
   const [content, setContent] = useState<string | null>(null);
   const [savedContent, setSavedContent] = useState<string | null>(null);
@@ -164,13 +167,13 @@ export function DocsVaultEditor({
   const [preview, setPreview] = useState(false);
   const [debounced, setDebounced] = useState<string | null>(null);
   const taRef = useRef<HTMLTextAreaElement | null>(null);
-  // 외부 poll이 doc.mtime을 갱신해도 미저장 편집의 쓰기 기준은 최초로 읽은
-  // 디스크 버전이어야 한다. 최신 prop을 그대로 넘기면 conflict guard가
-  // 최신값끼리 비교해 외부 변경을 조용히 덮어쓴다.
+  // Even when an external poll refreshes doc.mtime, the write baseline for unsaved
+  // edits must be the disk version first read. Passing the latest prop through makes
+  // the conflict guard compare two current values and silently overwrite an external change.
   const loadedMtimeRef = useRef<number | undefined>(doc.mtime);
   const savedFlashTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // Wikilink autocomplete 상태. open 이 null 이 아닐 때 popover 표시.
+  // Wikilink autocomplete state. The popover shows while open is not null.
   const [autocomplete, setAutocomplete] = useState<{
     query: string;
     start: number;
@@ -178,22 +181,23 @@ export function DocsVaultEditor({
   } | null>(null);
 
   /*
-   * 트리거는 `@` 다 — 종전 `[[` 를 2026-08-08 에 갈아치웠다.
+   * The trigger is `@` — it replaced the old `[[` on 2026-08-08.
    *
-   * 두 가지가 바뀌었다. 표기(`[[` → `@`)는 겉이고, **고른 뒤에 무엇이 쓰이나**가
-   * 속이다. 종전엔 본문에 `[[slug]]` 를 넣었는데 **그건 그래프를 1비트도 바꾸지
-   * 않았다**(같은 볼트에서 넣었다 뺀 컴파일 결과가 엣지 9 · 해시 동일). 지금은
-   * 관계 종류를 묻고 **frontmatter 에 적는다** — 판정 로직은 `lib/mention-relation`
-   * 의 순수 함수가 갖고, 여기는 화면만 맡는다.
+   * Two things changed. The notation (`[[` → `@`) is the surface; **what gets
+   * written after choosing** is the substance. It used to put `[[slug]]` in the body,
+   * and **that changed not one bit of the graph** (adding and removing it in the same
+   * vault left the compile at 9 edges with an identical hash). Now it asks for the
+   * relation kind and **writes it to frontmatter** — the decision logic lives in the
+   * pure functions of `lib/mention-relation` and this file only handles the screen.
    *
-   * `[[` 를 남겨 두지 않는다. 두 문법이 공존하면 사용자는 「어느 쪽이 진짜
-   * 연결인가」를 매번 판단해야 하고, 그 판단은 화면에 단서가 없다.
+   * `[[` is not kept alongside. With two syntaxes coexisting, the user has to judge
+   * 「which one is the real connection」 every time, and the screen gives no clue.
    */
 
   const acMatches = useMemo<VaultDoc[]>(() => {
     if (!autocomplete || !allDocs) return [];
     const q = autocomplete.query.toLowerCase();
-    // 현재 문서는 후보가 아니다 — 자기 자신과 이을 수는 없다.
+    // The current document is not a candidate — a node cannot link to itself.
     if (!q) return allDocs.filter((d) => d.slug !== doc.slug).slice(0, 8);
     return allDocs
       .filter(
@@ -205,22 +209,25 @@ export function DocsVaultEditor({
   }, [autocomplete, allDocs, doc.slug]);
 
   /**
-   * 자동완성의 **열림**과 **내용**을 가른다 — 그래야 퇴장이 성립한다.
+   * Separate the autocomplete's **openness** from its **content** — that is what
+   * makes an exit possible.
    *
-   * ★ `useHeldValue` 에 **키**를 넘긴다. 이 모델은 매 렌더 새로 만들어지는
-   * 객체라, 키 없이 넘기면 정체성 비교가 끝없이 돌아 React #301 이 난다
-   * (엣지 패널이 실제로 그렇게 지도를 죽였다). 질의어와 커서 위치가 바뀔
-   * 때만 새 값으로 친다.
+   * ★ A **key** is passed to `useHeldValue`. This model is a fresh object every
+   * render, so without a key the identity comparison loops forever and React #301
+   * fires (the edge panel actually killed the map that way). Only a changed query or
+   * caret position counts as a new value.
    */
   /**
-   * 메뉴를 여는 조건 — **질의어를 쳤으면 결과가 0이어도 연다.**
+   * The condition for opening the menu — **once a query is typed, it opens even with
+   * zero results.**
    *
-   * 종전엔 `matches.length > 0` 이라 못 찾으면 메뉴가 조용히 사라졌다. 그러면
-   * 사용자는 「기능이 고장났나」와 「그런 개념이 없나」를 구별할 수 없다 —
-   * 이 저장소가 반복해 배운 그것(침묵은 성공처럼, 또는 고장처럼 읽힌다).
+   * It used to be `matches.length > 0`, so a miss made the menu vanish silently, and
+   * then the user could not distinguish 「the feature is broken」 from 「no such
+   * concept exists」 — the lesson this repository keeps relearning (silence reads as
+   * success, or as breakage).
    *
-   * 단 `@` 만 친 상태에서는 여전히 목록을 보여 준다(첫 8개). 빈 질의어까지
-   * 「없어요」로 답하면 그건 틀린 말이다.
+   * With only `@` typed it still shows the list (the first 8). Answering an empty
+   * query with 「없어요」 would simply be wrong.
    */
   const acHasQuery = (autocomplete?.query ?? '') !== '';
   const acEmpty = autocomplete !== null && acHasQuery && acMatches.length === 0;
@@ -244,15 +251,15 @@ export function DocsVaultEditor({
     dirtyRef.current = dirty;
   }, [dirty]);
 
-  // Live preview 디바운스 — 키 입력 시 200ms 뒤에 debounced 를 갱신해
-  // react-markdown 재렌더 비용 완충. preview 꺼져있으면 no-op.
+  // Live preview debounce — update `debounced` 200ms after a keystroke to cushion
+  // the react-markdown re-render cost. A no-op while the preview is off.
   useEffect(() => {
     if (!preview || content === null) return;
     const handle = window.setTimeout(() => setDebounced(content), 200);
     return () => window.clearTimeout(handle);
   }, [preview, content]);
 
-  // 미리보기용 본문 — frontmatter 블록 제거.
+  // The body used for the preview — frontmatter block removed.
   const previewBody = useMemo(() => {
     const src = debounced ?? content ?? '';
     return src.startsWith('---')
@@ -260,8 +267,8 @@ export function DocsVaultEditor({
       : src;
   }, [debounced, content]);
 
-  // 선택 영역을 wrapper (ex. **) 로 감싸고 caret 복구. 선택 없으면 caret
-  // 위치에 placeholder 삽입 후 자동 선택.
+  // Wrap the selection in a wrapper (e.g. **) and restore the caret. With no
+  // selection, insert a placeholder at the caret and select it.
   const wrapSelection = useCallback((wrapper: string, placeholder?: string) => {
     const ta = taRef.current;
     if (!ta || content === null) return;
@@ -278,7 +285,7 @@ export function DocsVaultEditor({
       ta.setSelectionRange(selStart, selStart + selected.length);
     });
   }, [content, t]);
-  // 현재 줄 앞에 prefix 를 붙인다 (heading, list, quote 용).
+  // Prefix the current line (for headings, lists and quotes).
   const prefixLine = useCallback((prefix: string) => {
     const ta = taRef.current;
     if (!ta || content === null) return;
@@ -292,26 +299,28 @@ export function DocsVaultEditor({
       ta.setSelectionRange(p, p);
     });
   }, [content]);
-  // Wikilink autocomplete 선택 — content 의 [[<query> 부분을 [[slug]] 로
-  // 치환. caret 대신 autocomplete.start + 2 + query.length 를 명시적으로
-  // 써서 사용자가 화살표로 caret 을 옮겼어도 트리거 범위를 정확히 덮는다.
+  // Wikilink autocomplete selection — replace the `[[<query>` part of content with
+  // `[[slug]]`. `autocomplete.start + 2 + query.length` is used explicitly instead
+  // of the caret, so the trigger range is covered exactly even after the user moved
+  // the caret with arrow keys.
   /**
-   * 고른 개념 — 아직 **관계를 안 정했다.** 이 단계가 존재하는 것이 이 기능의
-   * 전부다: 이름만 넣고 끝내면 종전 위키링크와 같아지고, 그건 그래프에 안 잡힌다.
+   * The chosen concept — **the relation is not decided yet.** This step existing is
+   * the whole of this feature: stopping at the name makes it identical to the old
+   * wikilink, which the graph never sees.
    */
   const [pendingMention, setPendingMention] = useState<{
     doc: VaultDoc;
     trigger: { query: string; start: number };
   } | null>(null);
-  /** 2단계에서 지금 고른 방위 — 키보드 이동의 커서. */
+  /** The bearing currently selected in step 2 — the keyboard cursor. */
   const [pendingRelation, setPendingRelation] = useState<MentionRelationId>(
     MENTION_RELATIONS[0].id,
   );
 
   /**
-   * 관계가 적혔다는 것을 **말한다.** 이 동작의 결과는 frontmatter 안이라
-   * 아무 말도 안 하면 본문에 이름만 들어간 것처럼 보인다 — 그러면 사용자는
-   * 종전 위키링크와 같은 일이 일어났다고 읽는다.
+   * **Say** that the relation was written. This action's result is inside the
+   * frontmatter, so saying nothing makes it look as though only a name went into the
+   * body — and then the user reads it as the same thing the old wikilink did.
    */
   const [mentionNotice, setMentionNotice] = useState<'added' | 'exists' | null>(null);
   useEffect(() => {
@@ -321,10 +330,10 @@ export function DocsVaultEditor({
   }, [mentionNotice]);
 
   /**
-   * 메뉴가 설 자리 — **적던 그 자리**. 종전엔 편집기 왼쪽 아래 구석에
-   * 고정이었다(위키링크 팝오버에서 물려받은 자리). 멘션 메뉴는 지금 치고
-   * 있는 글자의 연장이라, 눈에서 멀면 「방금 내가 한 행동의 결과」로 안
-   * 읽힌다 — 소유자 지적 2026-08-08.
+   * Where the menu stands — **exactly where the typing was**. It used to be pinned
+   * to the editor's bottom-left corner (inherited from the wikilink popover). A
+   * mention menu is an extension of the character being typed, so far from the eyes
+   * it does not read as the result of what was just done — owner report, 2026-08-08.
    */
   const [menuAt, setMenuAt] = useState<{ top: number; left: number } | null>(null);
   const placeMenuAtCaret = useCallback((caretIndex: number) => {
@@ -336,8 +345,8 @@ export function DocsVaultEditor({
       clampMenuToBox({
         caret,
         box: { width: ta.clientWidth, height: ta.clientHeight },
-        // 메뉴 실제 크기는 그린 뒤에야 알지만, 자리를 정하는 데는 상한이면
-        // 충분하다 — 실제가 더 작으면 여유가 남을 뿐 잘리지 않는다.
+        // The menu's real size is only known after drawing, but an upper bound is
+        // enough for placement — if the real size is smaller there is slack, not clipping.
         menu: { width: MENTION_MENU_WIDTH, height: MENTION_MENU_MAX_HEIGHT },
       }),
     );
@@ -361,9 +370,10 @@ export function DocsVaultEditor({
       const ta = taRef.current;
       if (!ta || content === null || !pendingMention) return;
       /*
-       * ⚠️ `doc` 으로 받지 않는다 — 이 컴포넌트의 prop 이름이 이미 `doc`
-       * (편집 중 문서)이라 섀도잉된다. 실제로 그 실수를 했고, 링크의 기준점이
-       * 목적지와 같아져 `./같은폴더.md` 가 나왔다(2026-08-08 실측).
+       * ⚠️ Do not destructure this as `doc` — the component's prop is already named
+       * `doc` (the document being edited) and would be shadowed. That mistake was
+       * actually made, and the link's base point matched its destination, producing
+       * `./같은폴더.md` (measured 2026-08-08).
        */
       const { doc: targetDoc, trigger } = pendingMention;
       const result = insertMentionRelation({
@@ -388,7 +398,7 @@ export function DocsVaultEditor({
   );
 
 
-  // 링크 형식 [text](url) 삽입. 선택이 있으면 그걸 text 로.
+  // Insert a [text](url) link. With a selection, that becomes the text.
   const insertLink = useCallback(() => {
     const ta = taRef.current;
     if (!ta || content === null) return;
@@ -400,7 +410,7 @@ export function DocsVaultEditor({
     setContent(next);
     requestAnimationFrame(() => {
       ta.focus();
-      // url 자리에 caret — text 부분 뒤 1+...(url 이 4글자) 역산
+  // Put the caret at the url — computed back from after the text part (`url` is 4 characters).
       const urlStart = start + body.indexOf('(url)') + 1;
       ta.setSelectionRange(urlStart, urlStart + 3);
     });
@@ -515,8 +525,9 @@ export function DocsVaultEditor({
     };
   }, [doc.mtime, doc.slug, getDocContent, t, vaultScope]);
 
-  // 정상 저장 뒤 parent manifest가 새 mtime으로 갱신되면 다음 편집의 기준도
-  // 전진시킨다. dirty 동안의 외부 mtime 변화는 절대 흡수하지 않는다.
+  // After a clean save, once the parent manifest refreshes with the new mtime, the
+  // baseline for the next edit advances too. External mtime changes while dirty are
+  // never absorbed.
   useEffect(() => {
     if (!dirty && loadedSlug === doc.slug) {
       loadedMtimeRef.current = doc.mtime;
@@ -565,7 +576,7 @@ export function DocsVaultEditor({
     return () => window.clearTimeout(handle);
   }, [content, dirty, doc.slug, draftSavedAt, loadedSlug, savedContent, vaultScope]);
 
-  // Cmd+S / Ctrl+S 저장, Cmd+B/I/K 포맷 단축키.
+  // Cmd+S / Ctrl+S to save; Cmd+B/I/K formatting shortcuts.
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
       if (!(e.metaKey || e.ctrlKey)) {
@@ -593,9 +604,10 @@ export function DocsVaultEditor({
 
   const loading = loadedSlug !== doc.slug;
   /*
-   * 뷰어와 같은 이유로 지연시킨다 — 문서를 바꿀 때 이 3줄 바가 한 프레임만
-   * 깜빡였다(`SKELETON_DELAY_MS` 주석의 실측). 같은 화면에서 두 표면이 같은
-   * 규율을 따라야 편집/읽기를 왕복할 때 한쪽만 깜빡이지 않는다.
+   * Deferred for the same reason as the viewer — switching documents flashed this
+   * three-bar skeleton for a single frame (the measurement in the `SKELETON_DELAY_MS`
+   * comment). Both surfaces on the same screen have to follow the same discipline so
+   * that moving between editing and reading does not make only one of them flash.
    */
   const showSkeleton = useDelayedVisible(loading || content === null);
   const saveState = saving
@@ -640,7 +652,7 @@ export function DocsVaultEditor({
   }
   return (
     <div className="flex h-full flex-col">
-      {/* 상단 액션 바 */}
+      {/* Top action bar */}
       <div className="flex flex-none items-center gap-2 border-b border-[color:var(--color-border-soft)] bg-[color:var(--color-elevated)] px-4 py-2 text-label">
         <span className="font-mono text-caption uppercase tracking-[var(--tracking-caps-14)] text-[color:var(--color-text-quaternary)]">
           {t.rich('editorEyebrow', {
@@ -648,13 +660,14 @@ export function DocsVaultEditor({
             value: (chunks) => <span className="normal-case tracking-normal">{chunks}</span>,
           })}
         </span>
-        {/* ⚠️ **이 줄의 상태 칩 셋은 한 규격이다** (2026-08-08 실측 수리).
-            저장 상태 칩만 `text-caption`(9.5px) 이었고 옆의 「자동 백업 · 최종
-            저장」·「검증 · 되돌리기」는 `text-label`(11px) 이었다 — 같은 줄에
-            나란히 선 같은 종류의 칩인데 램프가 한 단 밀려 있었다(부모 줄 자체가
-            `text-label` 이다). 2026-08-02 설정 시트에서 잡은 것과 같은 결함
-            유형이고, 원인도 같다: 아무도 "이 칩만 작게" 라고 정하지 않았다.
-            게이트: `tests/contract/editor-status-chip-dialect.contract.test.ts`. */}
+        {/* ⚠️ **The status chips on this row are one specification** (measured fix,
+            2026-08-08). Only the save-status chip was `text-caption` (9.5px) while
+            its neighbours 「자동 백업 · 최종 저장」 and 「검증 · 되돌리기」 were
+            `text-label` (11px) — chips of the same kind standing side by side on one
+            row, with the ramp off by a step (the parent row is itself `text-label`).
+            The same defect type as the one caught in the settings sheet on
+            2026-08-02, with the same cause: nobody decided "only this chip is small".
+            Gate: `tests/contract/editor-status-chip-dialect.contract.test.ts`. */}
         <span
           className={
             saveState.tone === 'dirty'
@@ -809,7 +822,7 @@ export function DocsVaultEditor({
           {error}
         </div>
       ) : null}
-      {/* 포맷 툴바 */}
+      {/* Formatting toolbar */}
       <div className="flex flex-none items-center gap-0.5 border-b border-[color:var(--color-overlay-2)] bg-[color:var(--color-elevated)] px-3 py-1 text-[color:var(--color-text-tertiary)]">
         <ToolbarButton
           icon={<Bold size={ICON_SIZE.sm} />}
@@ -894,10 +907,11 @@ export function DocsVaultEditor({
             }}
             onKeyDown={(e) => {
               /*
-               * 2단계(관계 고르기)도 **키보드로 끝까지 간다.** 1단계를 Enter 로
-               * 고른 사람은 손이 이미 키보드에 있는데, 거기서 마우스를 요구하면
-               * 그 흐름이 끊긴다 — 그리고 키보드만 쓰는 사람에게는 아예 막힌
-               * 문이 된다. 포커스는 textarea 에 남아 있으므로 여기서 받는다.
+               * Step 2 (choosing the relation) is also **completable from the
+               * keyboard**. Someone who picked step 1 with Enter already has their
+               * hands on the keyboard, and demanding a mouse there breaks the flow —
+               * for a keyboard-only user it is a closed door. Focus stays in the
+               * textarea, so it is handled here.
                */
               if (pendingMention) {
                 if (e.key === 'Escape') {
@@ -923,8 +937,8 @@ export function DocsVaultEditor({
               }
               if (!autocomplete) return;
               if (acMatches.length === 0) {
-                // 결과가 없는 상태에서도 **닫을 수는 있어야** 한다. 못 닫는
-                // 상자는 사용자가 글을 계속 쓰는 것을 막는다.
+                // It must be **closable** even with no results. A box you cannot close
+                // stops the user from continuing to write.
                 if (e.key === 'Escape') {
                   e.preventDefault();
                   setAutocomplete(null);
@@ -961,7 +975,7 @@ export function DocsVaultEditor({
               }
             }}
             onKeyUp={(e) => {
-              // 방향키만 눌려도 caret 위치 업데이트 → 재감지
+              // An arrow key alone updates the caret position → re-detect.
               if (!allDocs || !taRef.current) return;
               const caret = taRef.current.selectionStart;
               const src = (e.target as HTMLTextAreaElement).value;
@@ -980,14 +994,15 @@ export function DocsVaultEditor({
           {heldAutocomplete ? (
             <Surface
               open={acOpen}
-              // 편집기 왼쪽 아래에 매달려 위로 자란다 — 등장 원점도 그 모서리.
+              // It hangs at the editor's bottom-left and grows upward — the entry origin is that corner too.
               origin="bottom left"
               /*
-                이 저장소의 메뉴 방언을 쓴다 — 볼트 칩·정렬 메뉴와 같은
+                Uses this repository's menu dialect — the same
                 `--chrome-radius-inner` · `border-soft` · `elevated` ·
-                `--chrome-shadow`. 종전엔 인디고 테두리 + `surface-deep` +
-                `elevation-2` 라 이 화면에서 **이 메뉴만 다른 물건**처럼
-                보였다(소유자 지적 2026-08-08).
+                `--chrome-shadow` as the vault chip and the sort menu. It used to be
+                an indigo border plus `surface-deep` plus `elevation-2`, which made
+                **this menu alone look like a different object** on this screen
+                (owner report, 2026-08-08).
               */
               className="pointer-events-auto absolute z-10 overflow-hidden rounded-[var(--chrome-radius-inner)] border border-[color:var(--color-border-soft)] bg-[color:var(--color-elevated)] shadow-[var(--chrome-shadow)]"
               style={{
@@ -997,15 +1012,16 @@ export function DocsVaultEditor({
               }}
             >
               <div className="border-b border-[color:var(--color-border-soft)] px-2 py-1.5 text-label text-[color:var(--color-text-tertiary)]">
-                {/* 질의어가 비면 `· ""` 라는 빈 따옴표가 화면에 남았다(실기기 확인). */}
+                {/* With an empty query, an empty pair of quotes (`· ""`) was left on screen (confirmed on a real device). */}
                 <span className="block truncate">
                   {t('mentionLabel', {
                     query: heldAutocomplete.query ? ` · “${heldAutocomplete.query}”` : '',
                   })}
                 </span>
-                {/* 「고르면 무슨 일이 일어나나」를 미리 말한다 — 이 메뉴의
-                    결과가 frontmatter 안이라, 말하지 않으면 링크만 넣는
-                    기능으로 읽힌다(소유자: *"무슨 의미인지를 모르겠음"*). */}
+                {/* State up front 「what happens if I choose」 — this menu's result is
+                    inside the frontmatter, so unsaid it reads as a feature that only
+                    inserts a link (owner: *"무슨 의미인지를 모르겠음"* — I can't tell
+                    what this means). */}
                 <span className="block truncate text-label text-[color:var(--color-text-quaternary)]">
                   {t('mentionHint')}
                 </span>
@@ -1028,10 +1044,11 @@ export function DocsVaultEditor({
                       onClick={() => pickMentionTarget(d)}
                       className="hover:bg-[color:var(--color-overlay-1)]"
                     >
-                      {/* 종류 표식 — 소유자: *"무슨 개념을 말하는건지도
-                          모르겠고"*. 제목만 늘어놓으면 도메인인지 역량인지
-                          요소인지 알 수 없고, 그걸 모르면 어떤 관계로 이을지
-                          정할 수가 없다. 지도·공방과 같은 글리프를 쓴다. */}
+                      {/* Kind marker — owner: *"무슨 개념을 말하는건지도 모르겠고"* (I
+                          can't tell which concept this even is). A list of titles
+                          alone cannot say whether something is a domain, a capability
+                          or an element, and without that you cannot decide which
+                          relation to use. Same glyphs as the map and the studio. */}
                       <TopologyV2KindGlyph
                         kind={String(d.frontmatter?.kind ?? 'unknown')}
                         size={12}
@@ -1052,16 +1069,17 @@ export function DocsVaultEditor({
             </Surface>
           ) : null}
           {/*
-            2단계 — **관계를 고르는 자리.** 이 단계가 이 기능의 전부다.
-            여기서 이름만 넣고 끝내면 종전 위키링크와 같아지고, 그건 지도에도
-            경로 찾기에도 안 잡힌다(실측: 넣었다 뺀 컴파일 결과가 동일).
-            어휘는 공방의 나침반과 같은 것을 쓴다 — 같은 일에 다른 말을 쓰면
-            사용자가 두 기능으로 배운다.
+            Step 2 — **where the relation is chosen.** This step is the whole of the
+            feature. Stopping at the name here makes it identical to the old wikilink,
+            which neither the map nor path-finding sees (measured: adding and removing
+            one left the compile identical). The vocabulary is the studio compass's —
+            different words for the same job teach the user two features.
           */}
           {/*
-            관계는 frontmatter 안에 적히므로 **말하지 않으면 안 보인다.**
-            침묵하면 사용자는 본문에 이름만 들어간 것으로 읽고, 그건 정확히
-            우리가 없앤 종전 위키링크의 인상이다. 보조기술에도 같이 간다.
+            The relation is written inside the frontmatter, so **unsaid it is
+            invisible.** In silence the user reads it as only a name going into the
+            body, which is exactly the impression of the old wikilink we removed. It
+            goes to assistive technology too.
           */}
           {mentionNotice ? (
             <p
@@ -1088,11 +1106,12 @@ export function DocsVaultEditor({
                 ),
               })}
               /*
-                이 저장소의 메뉴 방언을 쓴다 — 볼트 칩·정렬 메뉴와 같은
+                Uses this repository's menu dialect — the same
                 `--chrome-radius-inner` · `border-soft` · `elevated` ·
-                `--chrome-shadow`. 종전엔 인디고 테두리 + `surface-deep` +
-                `elevation-2` 라 이 화면에서 **이 메뉴만 다른 물건**처럼
-                보였다(소유자 지적 2026-08-08).
+                `--chrome-shadow` as the vault chip and the sort menu. It used to be
+                an indigo border plus `surface-deep` plus `elevation-2`, which made
+                **this menu alone look like a different object** on this screen
+                (owner report, 2026-08-08).
               */
               className="pointer-events-auto absolute z-10 overflow-hidden rounded-[var(--chrome-radius-inner)] border border-[color:var(--color-border-soft)] bg-[color:var(--color-elevated)] shadow-[var(--chrome-shadow)]"
               style={{

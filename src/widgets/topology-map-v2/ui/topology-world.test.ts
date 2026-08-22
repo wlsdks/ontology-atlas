@@ -211,27 +211,28 @@ describe("computeEgoBounds", () => {
     expect(computeEgoBounds(world, tokens, "missing")).toBeNull();
   });
 
-  // S8 결함 4 — 영역 전개 중 결계 밖 fling 이웃(수천 유닛 밖)이 ego bbox 를
-  // 부풀려 카메라가 화면 밖으로 날아가던 결함. restrictIds 로 영역 멤버만 담는다.
+  // S8 defect 4 — a fling neighbour outside the warding circle (thousands of units
+  // out) inflated the ego bbox during realm expansion and flung the camera off
+  // screen. restrictIds keeps only the realm's members.
   it("restrictIds 는 영역 밖(fling) 이웃을 bbox 에서 제외한다", () => {
     const nodes: WorldNode[] = [
       node({ id: "f", kind: "domain", x: 0, y: 0 }), // r14
-      node({ id: "inside", kind: "capability", x: 100, y: 0 }), // 영역 멤버, r8 → maxX 108
-      node({ id: "outside", kind: "element", x: 5000, y: 5000 }), // 결계 밖 fling 이웃
+      node({ id: "inside", kind: "capability", x: 100, y: 0 }), // a realm member, r8 → maxX 108
+      node({ id: "outside", kind: "element", x: 5000, y: 5000 }), // a neighbour flung outside the warding circle
     ];
     const world = egoWorld(nodes, { f: ["inside", "outside"], inside: ["f"], outside: ["f"] });
     const members = new Set(["f", "inside"]);
     const bounds = computeEgoBounds(world, tokens, "f", members)!;
-    // outside(5000,5000)가 제외돼 bbox 가 결계 안(f + inside)으로 제한된다.
+    // outside(5000,5000) is excluded, so the bbox stays inside the warding circle (f + inside).
     expect(bounds.maxX).toBe(108);
     expect(bounds.maxY).toBe(14);
-    // restrictIds 없으면 outside 까지 감싸 bbox 가 폭발한다(대조).
+    // Without restrictIds it wraps outside too and the bbox explodes (the control).
     const unbounded = computeEgoBounds(world, tokens, "f")!;
     expect(unbounded.maxX).toBeGreaterThan(4000);
   });
 });
 
-/** S2 파트 5B — 펼친 클러스터 디스크(부모 + contains 직속 자식) bbox. */
+/** S2 part 5B — the bbox of an expanded cluster disc (the parent plus its direct contains children). */
 describe("computeClusterDiscBounds", () => {
   function discWorld(nodes: WorldNode[], childrenByParent: Record<string, string[]>) {
     const nodeById = new Map(nodes.map((n) => [n.id, n] as const));
@@ -244,7 +245,7 @@ describe("computeClusterDiscBounds", () => {
       node({ id: "d", kind: "domain", x: 0, y: 0 }), // r14
       node({ id: "c1", kind: "capability", x: 100, y: 0 }), // r8 → maxX 108
       node({ id: "c2", kind: "capability", x: 0, y: -60 }), // r8 → minY -68
-      // 다른 부모의 자식 — 제외.
+      // Another parent's child — excluded.
       node({ id: "other", kind: "element", x: 900, y: 900 }),
     ];
     const world = discWorld(nodes, { d: ["c1", "c2"], p2: ["other"] });
@@ -265,18 +266,18 @@ describe("computeClusterDiscBounds", () => {
     const nodes: WorldNode[] = [
       node({ id: "d", kind: "domain", x: 0, y: 0 }), // r14
       node({ id: "c1", kind: "capability", x: 100, y: 0 }), // r8 → maxX 108
-      node({ id: "far", kind: "capability", x: 900, y: 0 }), // 접힌 잔여 — 제외돼야
+      node({ id: "far", kind: "capability", x: 900, y: 0 }), // a collapsed leftover — must be excluded
     ];
     const world = discWorld(nodes, { d: ["c1", "far"] });
-    // 배치에 c1 만(+부모 d) 포함 — far 는 잔여라 프레이밍에서 빠진다.
+    // The batch holds only c1 (plus the parent d) — far is a leftover and drops out of the framing.
     const bounds = computeClusterDiscBounds(world, tokens, "d", new Set(["d", "c1"]));
-    expect(bounds!.maxX).toBe(108); // far(908) 아님 — 소수를 크게.
-    // restrict 없으면 far 까지 포함(회귀 0 확인).
+    expect(bounds!.maxX).toBe(108); // not far(908) — a few, large.
+    // Without restrict, far is included too (confirming zero regression).
     expect(computeClusterDiscBounds(world, tokens, "d")!.maxX).toBe(908);
   });
 });
 
-/** P3a — 잉크 사다리의 레벨 유도 계약. */
+/** P3a — the contract for deriving the ink ramp's level. */
 describe("containmentLevelFor", () => {
   it("project 가 낀 엣지는 L0, domain 은 L1, 그 외는 L2", () => {
     expect(containmentLevelFor("project", "domain")).toBe(0);
@@ -287,7 +288,7 @@ describe("containmentLevelFor", () => {
   });
 });
 
-/** B4 — 규모 인코딩: 로그 압축 순위 단서. */
+/** B4 — magnitude encoding: a compressed rank cue. */
 describe("computeMagnitudeScale (S2 파트 2 — √childCount)", () => {
   it("domain/capability 만 배율을 받고 project/element 는 1", () => {
     expect(computeMagnitudeScale("project", 100, 100, 0.45)).toBe(1);
@@ -297,7 +298,7 @@ describe("computeMagnitudeScale (S2 파트 2 — √childCount)", () => {
 
   it("항상 base(1) 이상 — childCount 1 은 정확히 base, 최대는 +40% 상한", () => {
     expect(computeMagnitudeScale("domain", 1, 103, 0.45)).toBe(1);
-    // 최대(=maxChildCount)여도 +40% 상한(1.4)을 넘지 않는다.
+    // Even at the maximum (= maxChildCount) it never exceeds the +40% cap (1.4).
     expect(computeMagnitudeScale("domain", 103, 103, 0.45)).toBeLessThanOrEqual(1.4);
     expect(computeMagnitudeScale("domain", 103, 103, 0.45)).toBeGreaterThan(1.2);
   });
@@ -305,7 +306,7 @@ describe("computeMagnitudeScale (S2 파트 2 — √childCount)", () => {
   it("√ 압축 — 큰 격차를 압축하되 순위 단서 유지(막대그래프 아님)", () => {
     const big = computeMagnitudeScale("domain", 103, 103, 0.45);
     const small = computeMagnitudeScale("domain", 9, 103, 0.45);
-    // 자식 11배(9→103) 차이가 크기 배율로는 ~1.3배 이내로 압축된다.
+    // An 11× difference in children (9 → 103) compresses to within ~1.3× of size factor.
     expect(big / small).toBeGreaterThan(1.1);
     expect(big / small).toBeLessThan(1.4);
   });

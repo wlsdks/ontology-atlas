@@ -1,18 +1,21 @@
 /**
- * 붙어 있는 데이터 마크의 **화면 쪽 채집기** — 판정은 `contrast.mjs` 가 한다.
+ * **Browser-side collector** for adjacent data marks — the judgement is made by
+ * `contrast.mjs`.
  *
- * ## 왜 별도 파일인가 (2026-08-06)
+ * ## Why it is a separate file (2026-08-06)
  *
- * 이 채집기는 `measure-contrast.mjs`(사람이 부르는 계기) 안에 살았고, 그래서
- * **CI 게이트는 인접 마크를 한 번도 재지 않았다** — `contrast-ratchet` 은
- * `judgeText` 만 불렀다. 계기에만 있는 검사는 사람이 기억할 때만 도는
- * 검사이고, 이 저장소가 1.14:1 을 놓친 방식이 정확히 그것이다.
+ * This collector lived inside `measure-contrast.mjs` (the instrument a person runs),
+ * so **the CI gate never once measured adjacent marks** — `contrast-ratchet` called
+ * only `judgeText`. A check that exists only in an instrument runs only when someone
+ * remembers it, which is exactly how this repository missed a 1.14:1.
  *
- * 그래서 채집기를 여기로 내려 **계기와 게이트가 같은 함수를 쓴다.** 같은
- * 판정 로직을 두 곳에 복사하면 그 순간부터 어긋나기 시작한다(Carbon).
+ * Moving the collector here makes **the instrument and the gate use the same
+ * function.** Copying the same judgement logic into two places starts them drifting
+ * immediately (Carbon).
  *
- * ⚠️ 이 함수는 **브라우저 안에서 실행된다**(`page.evaluate`). 그래서 바깥
- * 스코프의 어떤 것도 참조하지 않는다 — 참조하면 직렬화되어 넘어갈 때 죽는다.
+ * ⚠️ This function **runs inside the browser** (`page.evaluate`), so it references
+ * nothing from the outer scope — anything it referenced would die on
+ * serialisation.
  */
 export function collectAdjacentMarks() {
   const out = [];
@@ -33,18 +36,19 @@ export function collectAdjacentMarks() {
     for (let i = 1; i < segs.length; i++) {
       if (segs[i - 1].bg === segs[i].bg) continue;
       /**
-       * ⚠️ **틈이 있으면 인접이 아니다.**
+       * ⚠️ **A gap means they are not adjacent.**
        *
-       * `design.md`: *"두 계열의 경계는 색이 아니라 **1px 틈**(트랙 색이 드러나는
-       * 간격)이 가른다"* — 그 틈이 바로 WCAG 1.4.11 이 요구하는 색-무관
-       * 구분자다. 처음 이 수집기를 붙였을 때 인접 판정을 «틈 2px 이하» 로
-       * 잡았더니, 도메인 용량 막대의 `gap-px`(정확히 1px)를 삼켜서 **헌장을
-       * 지키고 있는 16쌍을 전부 미달로 신고했다**(2026-08-04 실측). 계기가
-       * 처방과 반대로 말하면 멀쩡한 화면을 고치게 된다.
+       * `design.md`: *"the boundary between two series is drawn not by colour but by a
+       * **1px gap** (the interval where the track colour shows through)"* — that gap is
+       * precisely the colour-independent separator WCAG 1.4.11 requires. The first version
+       * of this collector treated "a gap of 2px or less" as adjacent, swallowed the domain
+       * capacity bars' `gap-px` (exactly 1px), and **reported all 16 conforming pairs as
+       * failures** (measured 2026-08-04). An instrument that contradicts the prescription
+       * makes people fix healthy screens.
        *
-       * 그래서 «맞닿은 것»만 인접으로 센다. 틈이 있는 쌍은 버리지 않고
-       * `separated` 로 세어 둔다 — 조용히 빠지면 «잰 것»과 «안 잰 것»이 다시
-       * 같은 초록이 된다.
+       * So only touching marks count as adjacent. Pairs with a gap are not discarded but
+       * counted as `separated` — dropping them silently would make "measured" and "not
+       * measured" the same green again.
        */
       const gap = segs[i].r.left - segs[i - 1].r.right;
       if (gap >= 0.5) {

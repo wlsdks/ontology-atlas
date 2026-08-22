@@ -1,50 +1,49 @@
 import { resolveStaticVaultSource } from '@/entities/docs-vault';
 
 /**
- * 관문의 읽을거리 두 장은 **볼트 안 마크다운을 그대로 그린다**.
+ * The gateway's two reading pages **render markdown from inside the vault, verbatim**.
  *
- * 손으로 쓴 마케팅 페이지를 따로 두지 않는 이유가 둘이다.
+ * Two reasons there is no hand-written marketing page instead.
  *
- * 1. **두 번째 진실원을 안 만든다.** `docs/GUIDE.md` · `docs/CHANGELOG.md` 는
- *    이미 저장소에 있고 리뷰를 받는다. 화면용 사본을 따로 두면 반드시 한쪽만
- *    고쳐지고, 그때 방문자가 보는 쪽이 낡은 쪽이다.
- * 2. **제품이 자기 형식으로 자기를 설명한다.** 이 사이트의 읽을거리가
- *    Atlas 볼트의 문서이고, 같은 파일을 앱에서 열 수도 에이전트가 MCP 로 읽을
- *    수도 있다. dogfood 가 주장이 아니라 관측 가능한 사실이 된다.
+ * 1. **No second source of truth.** `docs/GUIDE.md` and `docs/CHANGELOG.md` are already in the
+ *    repository and get reviewed. A screen-only copy guarantees that one side alone gets fixed, and
+ *    the side a visitor sees is the stale one.
+ * 2. **The product explains itself in its own format.** This site's reading material *is* an Atlas
+ *    vault document, and the same file can be opened in the app or read by an agent over MCP.
+ *    Dogfooding becomes an observable fact rather than a claim.
  */
 
 /**
- * 볼트 슬러그 → 원문 마크다운. 없으면 `null`.
+ * Vault slug → the raw markdown, or `null`.
  *
- * ## 왜 `'dogfood'` 로 **못 박는가**
+ * **Why `'dogfood'` is pinned here.** `resolveStaticVaultSource` normally has to respect the sample
+ * the user chose (dogfood / storefront) — that is the rule preventing the 2026-07-26 defect of two
+ * vaults mixed on one screen. **This is the one exception.** The gateway's guide and changelog are
+ * *this product's documents*, not part of the example vault a visitor is browsing. A visitor who
+ * picked the example storefront and opened `/guide` must get Atlas's guide, and the storefront vault
+ * has no such document at all.
  *
- * `resolveStaticVaultSource` 는 보통 사용자가 고른 샘플(dogfood / storefront)을
- * 존중해야 한다 — 한 화면에 두 볼트가 섞이는 2026-07-26 결함을 막는 규율이다.
- * **여기만 예외다.** 관문의 가이드와 변경 내역은 *이 제품의 문서*이지 사용자가
- * 구경하는 예시 볼트의 일부가 아니다. 예시 쇼핑몰을 골라 둔 방문자가 `/guide`
- * 를 열었을 때 나와야 하는 것은 Atlas 의 가이드이고, storefront 볼트에는 그
- * 문서가 애초에 없다.
- *
- * 그래서 리졸버를 **우회하지 않고**(원본 JSON 직접 import 는 계약 위반이다)
- * 인자를 고정해서 쓴다. 규율은 "리졸버를 통과한다" 이지 "선택을 따른다" 가
- * 아니고, 이 자리는 선택을 따르면 틀린다.
+ * So the resolver is **not bypassed** (importing the raw JSON directly would break the contract) —
+ * the argument is fixed instead. The rule is "go through the resolver", not "follow the choice", and
+ * following the choice here would be wrong.
  */
 export function readVaultDoc(slug: string): string | null {
   const { content, contentPreviews } = resolveStaticVaultSource('dogfood');
   const doc = content[slug];
   if (typeof doc === 'string') return doc;
-  // CHANGELOG 처럼 전문이 번들에 없는 문서는 잘린 동기 미리보기로 그린다 —
-  // 몇 절이 접혔는지는 `readVaultDocOmittedSections` 가 같은 진실원에서 준다.
+  // A document whose full text is not in the bundle (CHANGELOG) is drawn from the truncated synchronous
+  // preview — how many sections were folded comes from the same source via `readVaultDocOmittedSections`.
   const preview = contentPreviews?.[slug];
   return typeof preview?.body === 'string' ? preview.body : null;
 }
 
 /**
- * `readVaultDoc(slug)` 가 돌려준 본문이 **번들 시점에 이미 접은** `## ` 절 수.
+ * How many `## ` sections were **already folded at bundle time** in the body `readVaultDoc(slug)`
+ * returned.
  *
- * 화면(`GatewayDocPage`)은 자기 표시 상한으로 한 번 더 자르고, 그 수와 이
- * 수를 **더해서** 「N개 접었습니다」를 말한다 — 어느 한쪽만 세면 조용한
- * 절단이 된다(전문이 번들에서 빠진 것을 화면이 모르는 채 0을 더한다).
+ * The screen (`GatewayDocPage`) truncates once more against its own display limit and **adds** the two
+ * numbers to say "N folded" — counting only one side makes it a silent truncation (the screen adds
+ * zero, unaware that the full text was left out of the bundle).
  */
 export function readVaultDocOmittedSections(slug: string): number {
   const { contentPreviews } = resolveStaticVaultSource('dogfood');
@@ -52,30 +51,29 @@ export function readVaultDocOmittedSections(slug: string): number {
 }
 
 export interface TrimmedDoc {
-  /** 화면에 그릴 마크다운. */
+  /** The markdown to render. */
   body: string;
-  /** 잘려나간 절의 수. 0 이면 전문이다. */
+  /** How many sections were cut. Zero means the full text. */
   omittedSections: number;
 }
 
 /**
- * `## ` 절 단위로 앞에서 `limit` 개만 남긴다.
+ * Keeps only the first `limit` `## ` sections.
  *
- * **왜 자르나**: CHANGELOG 는 오늘 기준 **318KB**다. react-markdown 이 그걸
- * 한 페이지에 풀면 DOM 노드가 수만 개가 되고, 관문의 읽을거리가 제품에서
- * 가장 무거운 화면이 된다. 변경 내역을 여는 사람이 실제로 찾는 것은 **최근에
- * 무엇이 바뀌었나**이지 2년치 전문이 아니다.
+ * **Why truncate**: CHANGELOG is **318 KB** today. Unrolling that on one page through react-markdown
+ * produces tens of thousands of DOM nodes and makes the gateway's reading material the heaviest screen
+ * in the product. What someone opening the changelog actually wants is **what changed recently**, not
+ * two years of full text.
  *
- * **자르면 그 사실을 말한다.** 몇 절을 감췄는지 세어 돌려주고, 화면이 남은
- * 것을 어디서 읽는지 함께 보여준다 — 이 저장소가 `"곧 공개" 는 강등이 아니라
- * 거짓말이다` 로 등재한 규율의 같은 얼굴이다. 조용한 절단은 "이게 전부"라고
- * 말하는 것과 같다.
+ * **When it truncates, it says so.** The number of hidden sections is counted and returned, and the
+ * screen shows where to read the rest — the same face as this repository's rule that `"coming soon" is
+ * a lie, not a degradation`. Silent truncation is the same as saying "this is all of it".
  *
- * 제목(첫 `# `)과 그 아래 머리말은 절이 아니므로 항상 남는다.
+ * The title (the first `# `) and the preamble under it are not sections and always survive.
  */
 export function trimToRecentSections(markdown: string, limit: number): TrimmedDoc {
-  // 줄 시작의 `## ` 만 절 경계다 — 코드 블록 안의 `#` 를 절로 세지 않기 위해
-  // 펜스 안쪽은 건너뛴다.
+  // Only a line-leading `## ` is a section boundary — the inside of a fence is skipped so a `#` in a
+  // code block is not counted as a section.
   const lines = markdown.split('\n');
   const boundaries: number[] = [];
   let inFence = false;
@@ -96,31 +94,27 @@ export function trimToRecentSections(markdown: string, limit: number): TrimmedDo
 
 
 export interface DocEntry {
-  /** 앵커 id — 사이드바 링크와 본문 제목이 공유한다. */
+  /** Anchor id — shared by the sidebar link and the body heading. */
   id: string;
-  /** `## ` 뒤의 원문 전체. 사이드바 라벨 매칭에 쓴다. */
+  /** The full original text after `## `. Used to match the sidebar label. */
   heading: string;
-  /** 앞머리의 `YYYY-MM-DD` — 없으면 `null`. */
+  /** A leading `YYYY-MM-DD`, or `null`. */
   date: string | null;
-  /** 날짜와 구분자를 뗀 나머지. 없으면 heading 그대로. */
+  /** The remainder with the date and separator stripped; the heading verbatim when absent. */
   title: string;
 }
 
 /**
- * `## ` 절을 **차례 항목**으로 뽑는다 (변경 내역 사이드바용).
+ * Extracts `## ` sections as **table-of-contents entries** (for the changelog sidebar).
  *
- * ## 왜 id 를 여기서 만드나
+ * **Why the id is minted here.** The sidebar link and the body heading must use **the same string**
+ * for the anchor to catch. Two places generating it means a slightly different rule (whitespace, case)
+ * silently sends the link nowhere — a failure invisible until someone clicks. So one function emits
+ * both the list and the ids.
  *
- * 사이드바 링크와 본문 제목이 **같은 문자열**을 써야 앵커가 걸린다. 두 곳이 각자
- * 만들면 규칙이 조금만 달라도(공백 처리, 대소문자) 링크가 조용히 아무 데도 안
- * 간다 — 눌러 보기 전에는 안 보이는 실패다. 그래서 한 함수가 목록과 id 를 같이
- * 낸다.
- *
- * ## 중복 제목
- *
- * 같은 날 여러 항목이 있으면 제목이 겹칠 수 있다. 뒤에 `-2`, `-3` 을 붙여 **항상
- * 유일**하게 만든다 — 겹치면 브라우저가 첫 번째로만 가고, 그건 목록이 거짓말을
- * 하는 것이다.
+ * **Duplicate titles.** Several entries on one day can share a title. `-2`, `-3` are appended to keep
+ * ids **always unique** — on a collision the browser only ever goes to the first, which makes the list
+ * lie.
  */
 export function extractEntries(markdown: string): DocEntry[] {
   const lines = markdown.split('\n');
@@ -151,14 +145,14 @@ export function extractEntries(markdown: string): DocEntry[] {
 }
 
 /**
- * 제목의 **매칭 키** — 원문(마크다운)과 렌더된 텍스트가 같은 문자열이 되게 한다.
+ * A heading's **matching key** — makes the source markdown and the rendered text the same string.
  *
- * ⚠️ 실측 결함(2026-07-31): 목록은 원문 `## 관문에 읽을거리 둘: \`/guide\`` 를
- * 키로 쓰고, 본문 `h2` 는 **렌더된** `관문에 읽을거리 둘: /guide` 로 조회했다.
- * 백틱·굵게 같은 인라인 마크다운이 든 제목 **3개의 앵커가 조용히 끊겼다** —
- * 눌러 보기 전에는 안 보이는 실패다.
+ * ⚠️ Measured defect (2026-07-31): the list keyed on the raw
+ * `` ## 관문에 읽을거리 둘: `/guide` `` while the body `h2` was looked up as the **rendered**
+ * `관문에 읽을거리 둘: /guide`. **Three headings containing inline markdown** (backticks, bold) had
+ * their anchors silently broken — a failure invisible until someone clicks.
  *
- * 그래서 양쪽 다 이 함수를 통과시킨다: 인라인 마커를 걷고 공백을 하나로 만든다.
+ * So both sides pass through this function: inline markers are stripped and whitespace collapsed.
  */
 export function normalizeHeadingKey(heading: string): string {
   return heading
@@ -168,7 +162,7 @@ export function normalizeHeadingKey(heading: string): string {
     .trim();
 }
 
-/** 마크다운 제목 → 앵커 id. 한글을 지우지 않는다 — 지우면 대부분의 제목이 빈 문자열이 된다. */
+/** Markdown heading → anchor id. Korean is not stripped — stripping it makes most headings an empty string. */
 export function slugifyHeading(heading: string): string {
   return (
     heading

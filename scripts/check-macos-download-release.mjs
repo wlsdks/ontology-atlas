@@ -7,7 +7,7 @@ const DEFAULT_REPO = "wlsdks/ontology-atlas";
 const DEFAULT_API_BASE = "https://api.github.com";
 const REQUIRED_MACOS_ARCHES = ["aarch64", "x64"];
 const WINDOWS_NAME_PATTERN = /^ontology-atlas_([^/]+)_windows_(x64)-setup\.exe$/;
-/** 설치된 앱이 `latest.json` 에서 자기 자리를 찾을 때 쓰는 키. Rust 타깃 이름이다. */
+/** The key an installed app uses to find its own slot in `latest.json`. A Rust target name. */
 const REQUIRED_UPDATER_PLATFORMS = ["darwin-aarch64", "darwin-x86_64"];
 const MAX_DOWNLOAD_HASH_BYTES = 2 * 1024 * 1024 * 1024;
 
@@ -301,18 +301,19 @@ function isChecksumFor(asset, artifactName) {
 }
 
 /**
- * 이름을 대고 찾은 draft 인가.
+ * Is this a draft found by name?
  *
- * 프리릴리스 여부로 거르지 **않는다**. `allowPrerelease` 는 태그 없이 "지금
- * 릴리스" 를 **고를 때** 프리릴리스가 뽑히지 않게 하는 장치이고, 호출자가
- * `--tag=v1.0.0-rc.1` 이라고 이름을 댄 순간 그 장치는 할 일이 없다 — 무엇을
- * 원하는지 이미 말했다.
+ * It does **not** filter on prerelease status. `allowPrerelease` exists to stop a
+ * prerelease being **picked** when no tag was given and the script chooses "the
+ * current release"; the moment a caller names `--tag=v1.0.0-rc.1` that mechanism
+ * has no job — they have already said what they want.
  *
- * 직접 조회(`releases/tags/<tag>`)에는 이 필터가 없다. 즉 같은 질문에 두 경로가
- * 다르게 답하고 있었고, 그 비대칭이 결함이었다. RC 초안은 draft 라 404 로
- * 떨어져 이 폴백을 타는데, 거기서 프리릴리스라는 이유로 다시 걸러져 "태그를 못
- * 찾았다" 는 엉뚱한 메시지로 끝났다.
- * (2026-07-27 v1.0.0-rc.1 에서 실측 — 정식 태그로는 드러나지 않는다.)
+ * The direct lookup (`releases/tags/<tag>`) has no such filter, so the two paths
+ * answered the same question differently, and that asymmetry was the defect. An RC
+ * draft is a draft, so it 404s and falls through to this list fallback, where it
+ * was filtered out again for being a prerelease and ended in the misleading message
+ * "tag not found". (Measured on v1.0.0-rc.1, 2026-07-27 — a final tag never
+ * exposes it.)
  */
 export function isRequestedDraft(release, tag) {
   return release?.tag_name === tag && release?.draft === true;
@@ -463,13 +464,14 @@ if (!release) {
 if (release.draft && !options.allowDraft) {
   fail(`release ${release.tag_name ?? "(unknown tag)"} is a draft and is not downloadable from the hosted landing page.`);
 }
-// 이름을 대지 않았을 때만 프리릴리스를 막는다.
+// Prereleases are blocked only when no tag was named.
 //
-// 태그 없이 부르면 이 스크립트는 "지금 공개된 릴리스" 를 **고르고**, 그 자리에
-// RC 가 뽑히면 안 된다 — 랜딩 페이지가 광고할 대상이 아니기 때문이다. 그러나
-// 호출자가 `--tag=v1.0.0-rc.1` 이라고 이름을 댔다면 무엇을 검증하려는지 이미
-// 말했고, 그걸 프리릴리스라는 이유로 거절하면 **RC 를 영영 검증할 수 없다.**
-// 릴리스 워크플로가 자기 태그의 초안을 확인하는 경로가 정확히 이것이다.
+// Called without a tag, this script **picks** "the currently public release", and
+// an RC must not be picked there — it is not what the gateway page advertises. But
+// a caller naming `--tag=v1.0.0-rc.1` has already said what they want to verify,
+// and rejecting that for being a prerelease makes **an RC impossible to verify.**
+// This is exactly the path the release workflow takes to check its own tag's
+// draft.
 if (!options.tag && release.prerelease && !options.allowPrerelease) {
   fail(`release ${release.tag_name ?? "(unknown tag)"} is a prerelease; pass --allow-prerelease to accept it.`);
 }
@@ -577,16 +579,18 @@ try {
 }
 
 /**
- * `latest.json` 이 가리키는 곳에 실제로 파일이 있는지 본다.
+ * Checks that a file really exists where `latest.json` points.
  *
- * 설치된 앱은 이 파일 하나로 갱신을 찾는다. URL 이 한 글자만 어긋나도 앱은
- * **오류를 내지 않는다** — 사용자에게는 "최신입니다" 로 보인다. DMG 검사만으로는
- * 이 경로가 통째로 무검증이었다: 매니페스트가 없어도, 없는 파일을 가리켜도,
- * 두 아키텍처가 같은 파일을 가리켜도 전부 초록이었다.
+ * An installed app finds updates through this one file. If the URL is off by a
+ * single character the app **raises no error** — the user simply sees "you are up
+ * to date". With only the DMG check, this whole path was unverified: a missing
+ * manifest, a manifest pointing at a non-existent file, and both architectures
+ * pointing at the same file were all green.
  *
- * 어긋나는 방식이 실제로 둘 있었다. Tauri 는 두 아치 모두 `<제품명>.app.tar.gz`
- * 로 내는데 ① 이름이 같아 한쪽이 다른 쪽을 덮고 ② 이름의 공백을 GitHub 이 점으로
- * 바꿔 매니페스트의 URL 과 실제 자산 이름이 달라진다.
+ * Two ways of going wrong were real. Tauri emits `<product name>.app.tar.gz` for
+ * both architectures, so ① the identical name makes one overwrite the other and
+ * ② GitHub replaces spaces in the name with dots, so the manifest URL and the
+ * actual asset name diverge.
  */
 async function verifyUpdaterManifest() {
   const manifestAsset = assets.find((asset) => asset?.name === "latest.json");
@@ -613,7 +617,8 @@ async function verifyUpdaterManifest() {
       fail(`latest.json is missing a url/signature pair for ${platform}.`);
     }
     if (!entry.url.includes(`/releases/download/${release.tag_name}/`)) {
-      // `latest` 로 두면 다음 릴리스가 나오는 순간 이 URL 이 가리키는 파일이 바뀐다.
+      // Leaving it at `latest` means this URL points at a different file the moment the
+      // next release ships.
       fail(`latest.json ${platform} url is not pinned to ${release.tag_name}: ${entry.url}`);
     }
     const archiveName = decodeURIComponent(entry.url.split("/").pop() ?? "");

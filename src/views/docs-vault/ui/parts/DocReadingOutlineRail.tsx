@@ -1,18 +1,18 @@
 import { useTranslations } from "next-intl";
 import { controlClass } from '@/shared/ui/control-class';
 /**
- * 문서 목차 한 항목.
+ * One entry in a document outline.
  *
- * 2026-07-28 까지 이 타입은 `DocsVaultDocOutlinePanel`(문서 정보 인스펙터)에
- * 살았다. 그 패널이 들고 있던 동작 다섯(고정·링크 복사·인쇄·편집·삭제)이
- * **전부 ⌘K 팔레트에 있었고** 목차는 이 레일이 이미 그리고 있어서, 패널을
- * 걷어냈다. 목차의 유일한 소유자가 된 이 파일이 타입도 갖는다.
+ * Until 2026-07-28 this type lived in `DocsVaultDocOutlinePanel` (the document info inspector).
+ * That panel's five actions (pin, copy link, print, edit, delete) were **all already in the ⌘K
+ * palette** and the outline was already drawn by this rail, so the panel was removed. This file,
+ * now the outline's sole owner, owns the type too.
  */
 export interface OutlineHeading {
   slug: string;
   text: string;
   depth: number;
-  /** 같은 텍스트의 몇 번째 등장인가 — 중복 제목 구분에 쓴다. */
+  /** Which occurrence of the same text this is — used to distinguish duplicate headings. */
   occurrence: number;
   duplicate: boolean;
 }
@@ -24,31 +24,28 @@ export interface DocReadingOutlineRailProps {
 }
 
 /**
- * 우측 빈 띠(본문–문서정보 인스펙터 사이)에 상시 렌더하는 읽기 전용 목차 레일.
+ * The read-only outline rail, always rendered in the empty band to the right of the body.
  *
- * GitHub·대부분 문서 리더의 "on this page" 관례를 따라 본문 오른쪽에 둔다
- * (2026-07 Apple TOC 배치 정리 — 이전엔 사이드바 바로 옆 좌측에 있어
- * 레일·문서목록·TOC·본문 4컬럼처럼 읽혔다). `맨 위로` 버튼(`BackToTopButton`)
- * 은 같은 우하단 모서리 충돌을 피해 좌측으로 이동.
+ * It sits to the right of the body, following the "on this page" convention of GitHub and most
+ * document readers. (It used to be on the left, immediately beside the sidebar, which read as four
+ * columns: rail, document list, TOC, body.) The `back to top` button (`BackToTopButton`) moved to
+ * the left to avoid colliding in the same bottom-right corner.
  *
- * `DocsVaultDocOutlinePanel` 의 목차 부분과 별개 표면 — 그 패널은 공유·출력·
- * 파일관리 조작 chrome 전용으로 남기고, 이 레일은 순수 읽기 보조
- * (pin/edit/공유 없음, 클릭 = 스크롤 점프만). 아티클 스크롤 컨테이너 밖의
- * `position:relative` 래퍼 안에 절대 위치로 얹혀 스크롤 중에도 화면상 같은
- * 위치를 유지하고, 본문 max-w-760 은 침범하지 않는다(빈 띠만 소비 —
- * `.claude/rules/design.md`).
+ * This is a pure reading aid — no pin, edit, or share; a click only jumps the scroll. It is
+ * absolutely positioned inside the `position:relative` wrapper outside the article scroll
+ * container, so it keeps the same on-screen position while scrolling and never intrudes on the
+ * body's max-w-760 (it consumes only the empty band — `.claude/rules/design.md`).
  *
- * 표시 여부(`shouldShowOutlineRail` · 인스펙터 열림 시 demote)는 caller 가,
- * 뷰포트 게이트는 CSS 가 결정 — 이 컴포넌트는 항상 렌더된 것을 전제로 한 순수 표시.
+ * Visibility (`shouldShowOutlineRail`) is decided by the caller and the viewport gate by CSS —
+ * this component is a pure display assuming it was rendered.
  *
- * 뷰포트 게이트가 `lg`(1024) 가 아니라 `min-[1440px]` 인 이유: 본문 불침범
- * 불변식의 산수. 본문은 `mx-auto max-w-760` 이라 좌우 여백이 대칭이므로
- * 좌측 기준으로 유도했던 산수가 우측에도 그대로 적용된다: 본문 글리프
- * 끝단까지의 여백 = (뷰포트 − 좌측 크롬 344 − 760)/2 − 40, 레일 좌변 =
- * 24 + 폭. 168px 레일은 뷰포트 ≈1404px 아래에서, 200px 레일은 ≈1520px
- * 아래에서 본문 텍스트와 겹친다. 그래서 1440px 부터 168px 로 표시하고
- * (1440 에서 글리프까지 16px 여유), 1536px 부터 200px 로 넓힌다 (32px 여유).
- * 그 아래 뷰포트는 레일 숨김 + 문서 정보 인스펙터의 목차가 fallback.
+ * Why the viewport gate is `min-[1440px]` rather than `lg` (1024): the arithmetic of the
+ * no-intrusion invariant. The body is `mx-auto max-w-760`, so its side margins are symmetric and
+ * the arithmetic derived for the left applies to the right. Margin up to the body's glyph edge =
+ * (viewport − 344 of left chrome − 760)/2 − 40, and the rail's left edge = 24 + width. A 168px
+ * rail overlaps the body text below a viewport of ≈1404px, a 200px rail below ≈1520px. So it is
+ * shown at 168px from 1440px (16px of clearance to the glyphs at 1440) and widened to 200px from
+ * 1536px (32px of clearance). Below that the rail is hidden.
  */
 export function DocReadingOutlineRail({
   headings,

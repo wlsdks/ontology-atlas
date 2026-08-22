@@ -1,26 +1,21 @@
 /**
- * Translates a `/ontology/?node=<id>` deep-link id (or any other raw vault
- * slug form — e.g. an agent heartbeat's `focus.ontologySlug`) into the `?p=`
- * value `/topology` already understands (B3 허브가 곧 지도 — `/ontology`
- * converges into a thin redirect to `/topology`).
+ * Translates a `/ontology/?node=<id>` deep-link id — or any other raw vault slug form,
+ * such as an agent heartbeat's `focus.ontologySlug` — into the `?p=` value `/topology`
+ * already understands (`/ontology` is now a thin redirect to `/topology`).
  *
- * Ported from the retired `resolveOntologyDeeplinkNode`'s id-form
- * normalization (`src/views/ontology-view/lib/resolve-deeplink-node.ts`,
- * deleted with the rest of the tree page) — specifically the vault
- * plural-slash prefix mapping (`capabilities/foo` → `capability:foo`).
- * `/topology`'s own resolver (`resolveTopologySelectedOntologyNode`,
- * `src/views/home/lib/resolve-topology-selected-node.ts`) already handles
- * canonical `kind:slug` ids and bare slugs via its `endsWith(':'+tail)`
- * fallback — this function's only job is closing the ONE gap that resolver
- * doesn't cover: the plural vault-folder prefix form. Kept as a pure,
- * synchronous, no-node-list-needed function so callers can act immediately
- * without waiting on ontology data to load.
+ * Ported from the retired `resolveOntologyDeeplinkNode`'s id normalization,
+ * specifically the plural vault-folder prefix mapping (`capabilities/foo` →
+ * `capability:foo`). `/topology`'s own resolver
+ * (`resolveTopologySelectedOntologyNode`) already handles canonical `kind:slug` ids
+ * and bare slugs through its `endsWith(':'+tail)` fallback, so this function's only
+ * job is closing the ONE gap that resolver does not cover. It stays pure and
+ * synchronous and needs no node list, so callers can act without waiting for
+ * ontology data to load.
  *
- * Lives at the entity layer (not under a single view) because two views now
- * share it: `views/ontology-redirect` (deep-link redirect) and
- * `views/home` (W6 agent-focus node resolution, `lib/resolve-agent-focus-
- * node.ts`) — FSD forbids view→view imports, so the shared piece moved down
- * one layer instead of duplicating the vault-folder→kind map.
+ * It lives at the entity layer because two views share it: `views/ontology-redirect`
+ * (the deep-link redirect) and `views/home` (agent-focus node resolution). FSD forbids
+ * view→view imports, so the shared piece moved down a layer rather than duplicating
+ * the vault-folder→kind map.
  */
 
 const VAULT_FOLDER_TO_KIND: Record<string, string> = {

@@ -4,19 +4,19 @@ import type { LocalVaultBuild, BuiltVaultEntry } from '@/entities/docs-vault';
 import type { LocalFsHandleRecord } from '@/entities/local-fs-handle';
 
 /**
- * 위험 경로 커버리지 — vault 폴링/동기화 계층 (`use-local-vault.ts`).
+ * Risk-path coverage for the vault polling/sync layer (`use-local-vault.ts`).
  *
- * 이 훅은 사용자 원본 마크다운을 덮어쓸 수 있는 유일한 경로다. 목표는 전체
- * 코드 경로 커버리지가 아니라 **데이터 손실 시나리오** 커버리지:
+ * This hook is the only path that can overwrite the user's own markdown. The goal is not full code
+ * coverage but coverage of **data-loss scenarios**:
  *
- *  A. mount 시 IDB 핸들 복원 — 권한 상태별 분기 (자동 로드 vs 대기)
- *  B. requestPermission 복구 흐름
- *  C. saveDoc — expectedMtime 충돌 시 VaultConflictError + "쓰지 않음" 보증
- *     (persistence.ts 주석의 phantom-clean 회귀를 이 계층에서 고정)
- *  D. updateFrontmatter — 같은 충돌 계약
- *  E. refresh() — fingerprint 비교 기반 poll 병합 (변경 없으면 재빌드 skip)
- *  F. 탭 focus 복귀 auto-refresh — poll 이 디스크 변경을 감지해 병합하는 경로
- *  G. createDoc / renameDoc — 기존 파일 존재 시 silent overwrite 방지 가드
+ *  A. IDB handle restore on mount — branching by permission state (auto-load vs waiting)
+ *  B. the requestPermission recovery flow
+ *  C. saveDoc — VaultConflictError on an expectedMtime conflict, plus the "nothing was written"
+ *     guarantee (pinning the phantom-clean regression from persistence.ts at this layer)
+ *  D. updateFrontmatter — the same conflict contract
+ *  E. refresh() — fingerprint-based poll merging (an unchanged fingerprint skips the rebuild)
+ *  F. auto-refresh on tab focus — the path where a poll detects and merges a disk change
+ *  G. createDoc / renameDoc — the guard against silently overwriting an existing file
  */
 
 const entitiesMocks = vi.hoisted(() => ({
@@ -30,12 +30,12 @@ vi.mock('@/entities/docs-vault', () => ({
   rebuildLocalManifestIncremental: entitiesMocks.rebuildLocalManifestIncremental,
   computeLocalVaultFingerprint: entitiesMocks.computeLocalVaultFingerprint,
   /*
-   * `refresh()` 는 지문과 **스탬프**를 함께 받는 쪽을 부른다(변경당 네이티브
-   * 순회를 한 번으로 줄이기 위해, 2026-08-09). 아래 시험들은 전부
-   * `computeLocalVaultFingerprint` 의 반환값으로 시나리오를 구동하므로,
-   * 새 함수는 **그것에 위임**한다 — 그러면 기존 시나리오 넷(같음 · 바뀜 ·
-   * 실패 · 폴링)이 한 곳에서 그대로 조종된다. 여기서 값을 따로 두면 두 목킹이
-   * 어긋나 「시험은 통과하는데 훅은 다른 값을 본다」가 된다.
+   * `refresh()` calls the variant that returns the fingerprint **and the stamps** (reducing native
+   * walks to one per change, 2026-08-09). Every test below drives its scenario through
+   * `computeLocalVaultFingerprint`'s return value, so the new function **delegates to it** — that
+   * keeps all four existing scenarios (unchanged, changed, failed, polling) steered from one place.
+   * Holding a separate value here would let the two mocks diverge into "the test passes while the
+   * hook sees something else".
    */
   computeLocalVaultFingerprintWithStamps: async (root: unknown) => ({
     fingerprint: await entitiesMocks.computeLocalVaultFingerprint(root),
@@ -65,8 +65,8 @@ vi.mock('@/entities/local-fs-handle', () => ({
 }));
 
 vi.mock('@/shared/lib/tauri-vault-fs', () => ({
-  // isSupported() 는 showDirectoryPicker 부재 시 Tauri 런타임 여부로 판정한다.
-  // window 전역을 건드리지 않고 "지원됨" 상태를 만들기 위해 true 고정.
+  // `isSupported()` falls back to the Tauri runtime check when showDirectoryPicker is absent.
+  // Pinned true to produce a "supported" state without touching window globals.
   isTauriVaultRuntime: vi.fn(() => true),
   pickTauriVaultDirectory: vi.fn(),
   getTauriVaultRootPath: vi.fn(() => null),
@@ -120,15 +120,15 @@ function makeBuildResult(
   return { build, entries: [] };
 }
 
-/** vault root — sidecar reader (readAgentConfigStatus 등) 가 안전하게
- * "파일 없음" 으로 취급하도록 getFileHandle/getDirectoryHandle 을 아예
- * 정의하지 않은 최소 stub. 그 경로들은 이미 try/catch 로 감싸져 있다. */
+/** The vault root — a minimal stub that deliberately defines neither getFileHandle nor
+ * getDirectoryHandle, so sidecar readers (`readAgentConfigStatus` and friends) safely treat it as
+ * "no such file". Those paths are already wrapped in try/catch. */
 function fakeRootHandle(name = 'vault'): FileSystemDirectoryHandle {
   return { kind: 'directory', name } as unknown as FileSystemDirectoryHandle;
 }
 
-/** write 스파이를 노출하는 fake file handle — "실제로 디스크에 쓰였는가" 를
- * 직접 검증하기 위한 것. */
+/** A fake file handle exposing a write spy — used to verify directly whether anything was actually
+ * written to disk. */
 function fakeFileHandle(initial: { text: string; lastModified: number }) {
   const state = { ...initial };
   const write = vi.fn(async (data: string) => {
@@ -161,8 +161,8 @@ function makeRecord(handle: FileSystemDirectoryHandle): LocalFsHandleRecord {
 
 afterEach(() => {
   vi.clearAllMocks();
-  // 매 테스트 기본값 재설정 — 명시적으로 override 하지 않는 테스트가
-  // 이전 테스트의 mock 잔여 상태에 기대지 않도록.
+  // Reset the defaults for every test, so a test that does not override explicitly never depends on
+  // mock residue from the previous one.
   fsHandleMocks.listRecentLocalFsHandles.mockResolvedValue([]);
   fsHandleMocks.verifyHandlePermission.mockResolvedValue('granted');
 });
@@ -198,8 +198,8 @@ describe('useLocalVaultInternal — mount 시 핸들 복원', () => {
     const { result } = renderHook(() => useLocalVaultInternal());
 
     await waitFor(() => expect(result.current.status).toBe('permission-needed'));
-    // 핵심 가드: 권한 미승인 상태에서 디스크 재빌드(=암묵적 쓰기 전제)가
-    // 일어나면 안 된다.
+    // The core guard: no disk rebuild (which presumes an implicit write) may happen while permission
+    // has not been granted.
     expect(entitiesMocks.buildLocalManifestWithEntries).not.toHaveBeenCalled();
   });
 });
@@ -249,8 +249,8 @@ describe('useLocalVaultInternal — saveDoc conflict 계약 (silent-overwrite �
         fileHandles: new Map([['note', fh.handle]]),
       }),
     );
-    // saveDoc 성공 후 load() 가 다시 돌 때는 직전 entries 를 재사용하는
-    // incremental 경로를 타므로 함께 mock.
+    // After saveDoc succeeds, the follow-up load() takes the incremental path that reuses the
+    // previous entries, so that is mocked too.
     entitiesMocks.rebuildLocalManifestIncremental.mockResolvedValue(
       makeBuildResult({
         fingerprint: 'fp-2',
@@ -301,10 +301,10 @@ describe('useLocalVaultInternal — saveDoc conflict 계약 (silent-overwrite �
   });
 
   it('expectedMtime 이 디스크 mtime 과 다르면 VaultConflictError 를 던지고 파일을 쓰지 않으며 재스캔도 하지 않는다', async () => {
-    // 과거 실제 버그: 이 conflict 를 swallow 하면 에디터 버퍼가
-    // phantom-clean 되고, 다음 poll re-fetch 가 사용자의 미저장 편집을
-    // silent overwrite 한다 (src/views/docs-vault/lib/persistence.ts 주석).
-    // 이 훅 레벨에서는 "쓰기 자체가 절대 일어나지 않아야 한다" 가 최소 계약.
+    // A real bug once: swallowing this conflict leaves the editor buffer phantom-clean, and the next
+    // poll's re-fetch silently overwrites the user's unsaved edits (see the comment in
+    // src/views/docs-vault/lib/persistence.ts). At this hook's level, the minimum contract is that
+    // **no write happens at all**.
     const fh = fakeFileHandle({ text: 'disk content after external edit', lastModified: 2000 });
     const result = await loadedHookWithDoc(fh);
 
@@ -318,7 +318,7 @@ describe('useLocalVaultInternal — saveDoc conflict 계약 (silent-overwrite �
     expect(fh.write).not.toHaveBeenCalled();
     expect(fh.state.text).toBe('disk content after external edit');
     expect(entitiesMocks.rebuildLocalManifestIncremental).not.toHaveBeenCalled();
-    expect(entitiesMocks.buildLocalManifestWithEntries).toHaveBeenCalledTimes(1); // 최초 mount load 만
+    expect(entitiesMocks.buildLocalManifestWithEntries).toHaveBeenCalledTimes(1); // the initial mount load only
   });
 
   it('핸들이 없는 slug 저장 시도는 에러를 던지고 아무것도 쓰지 않는다', async () => {
@@ -447,7 +447,7 @@ describe('useLocalVaultInternal — refresh() / poll 병합', () => {
       await result.current.refresh();
     });
 
-    // fingerprint 비교만 하고 끝 — 재빌드(load) 호출 없음.
+    // Only the fingerprint is compared — no rebuild (load) call.
     expect(entitiesMocks.buildLocalManifestWithEntries).toHaveBeenCalledTimes(1);
     expect(entitiesMocks.rebuildLocalManifestIncremental).not.toHaveBeenCalled();
   });
@@ -512,8 +512,8 @@ describe('useLocalVaultInternal — 탭 focus 복귀 auto-refresh (poll → 병�
 
     await act(async () => {
       window.dispatchEvent(new Event('focus'));
-      // fire() 내부의 fingerprint 비교 + 조건부 load() 가 모두 microtask/promise
-      // 체인이므로 flush.
+      // The fingerprint comparison and the conditional load() inside fire() are all microtask and
+      // promise chains, so they are flushed.
       await Promise.resolve();
       await Promise.resolve();
       await Promise.resolve();

@@ -15,7 +15,7 @@ const doc = (slug: string, title = '', fm: Record<string, unknown> = {}): Bootst
   frontmatter: fm,
 });
 
-/** discovery.md 의 재현 시나리오와 동일한 폴더 — my-saas. */
+/** The same folder as the reproduction scenario — my-saas. */
 const MY_SAAS = [
   doc('README', 'my-saas'),
   doc('docs/architecture', 'Architecture'),
@@ -104,7 +104,7 @@ describe('buildProjectMarkdown', () => {
     expect(md).toContain('title: my-saas');
     expect(md).toContain('domains:\n  - docs\n  - notes');
     expect(md).toContain('elements:\n  - CONTRIBUTING');
-    // frontmatter 블록이 올바르게 닫힌다
+    // The frontmatter block closes correctly.
     expect(md.startsWith('---\n')).toBe(true);
     expect(md.split('---').length).toBeGreaterThanOrEqual(3);
   });
@@ -120,7 +120,7 @@ describe('buildProjectMarkdown', () => {
 describe('domainDocSlug · buildDomainMarkdown (재검 마찰 D — 도메인 파일화)', () => {
   it('파일 tail 이 derive 의 slugifyName ref 와 일치한다', () => {
     expect(domainDocSlug('docs')).toBe('docs/docs');
-    // 대문자·공백 폴더 — tail 은 slugify, 폴더 경로는 원문 유지
+    // Folder names with capitals and spaces — the tail is slugified, the folder path stays verbatim.
     expect(domainDocSlug('User Guides')).toBe('User Guides/user-guides');
   });
 
@@ -144,18 +144,18 @@ describe('domainDocSlug · buildDomainMarkdown (재검 마찰 D — 도메인 �
 });
 
 /**
- * **남의 파일에는 쓰지 않는다** — 2026-08-09 PO 카운슬에서 발견된, 이미 배포된
- * 결함.
+ * **Do not write into someone else's files** — an already-shipped defect found in the PO council,
+ * 2026-08-09.
  *
- * 「내 문서로 지도 만들기」는 `manifest.docs` 의 어떤 슬러그든 후보로 삼아 승인
- * 시 `uid`·`kind`·`title` 을 그 파일에 쓴다. 사용자가 스킬 폴더를 문서함으로
- * 열면 그 목록에 `SKILL.md` 들이 그대로 들어오고, 실측에서 후보 105개가 전부
- * `SKILL.md` 였다. 그 파일은 Claude 런타임과 마켓플레이스가 소유하고, 그
- * 폴더는 git 체크아웃이라 업데이트가 우리가 쓴 것을 덮는다.
+ * "Build a map from my documents" treats any slug in `manifest.docs` as a candidate and, on approval,
+ * writes `uid`, `kind`, and `title` into that file. When a user opens a skills folder as their
+ * document store, the `SKILL.md` files come straight into that list — measured, 105 candidates were
+ * all `SKILL.md`. Those files are owned by the Claude runtime and the marketplace, and that folder is
+ * a git checkout, so an update overwrites whatever we wrote.
  *
- * 이 시험이 잠그는 성질: *규격상 런타임이 소유한 `SKILL.md` 는 후보에 들어오지
- * 않는다.* 판정 기준은 공식 규격 그대로 — 파일명이 `SKILL.md` · 필수 두 키
- * (`name`·`description`)가 있음 · `kind` 없음.
+ * The property this test locks: *a `SKILL.md` owned by the runtime per its spec never enters the
+ * candidates.* The test follows the official spec exactly — the file is named `SKILL.md`, it has both
+ * required keys (`name`, `description`), and it has no `kind`.
  */
 describe('런타임이 소유한 SKILL.md 는 후보에 넣지 않는다', () => {
   const skill = (slug: string) => ({
@@ -191,7 +191,7 @@ describe('런타임이 소유한 SKILL.md 는 후보에 넣지 않는다', () =>
       [{ slug: 'x/SKILL', title: 'x', frontmatter: { name: 'x', description: 'd', kind: 'element' } }],
       'vault',
     );
-    // 이미 kind 가 있으므로 「이미 타입 있음」으로 세지, 런타임 소유로 세지 않는다.
+    // It already has a kind, so it counts as "already typed", not as runtime-owned.
     expect(plan.runtimeOwnedSkipped).toBe(0);
     expect(plan.alreadyTypedCount).toBe(1);
   });

@@ -181,9 +181,10 @@ export interface MacosReleaseAsset {
 export interface MacosRelease {
   readonly published: boolean;
   /**
-   * 이 릴리스가 정식이 아니라 **후보**인가. 페이지는 이걸 숨기지 않고 말한다 —
-   * 서명·공증은 정식과 같은 경로를 통과했지만 아직 넓게 쓰이지 않은 빌드라는
-   * 사실은, 받는 사람이 받기 전에 알아야 하는 것이다.
+   * Whether this release is a **candidate** rather than a final one. The page says
+   * so rather than hiding it: that a build passed the same signing and
+   * notarisation path but has not been widely used yet is something the person
+   * downloading needs to know beforehand.
    */
   readonly prerelease: boolean;
   readonly tag: string;
@@ -290,15 +291,16 @@ if (release.draft && !allowDraft) {
 }
 
 /**
- * 프리릴리스는 이 페이지가 광고할 대상이 아니다.
+ * A prerelease is not what this page advertises.
  *
- * 이 스크립트는 `prerelease` 를 조회하면서도 쓰지 않고 있었다. 그 상태로 RC 를
- * 발행한 뒤 실행하면 `published: true` 가 찍히고, **다운로드 페이지가 릴리스
- * 후보를 정식 배포처럼 내건다.** GitHub 이 `releases/latest` 에서 프리릴리스를
- * 빼는 이유가 그것이다 — RC 는 찾아온 사람만 받는 것이지 처음 온 사람에게
- * 들이미는 것이 아니다.
+ * This script queried `prerelease` but never used it. In that state, running it
+ * after publishing an RC stamped `published: true` and **the download page
+ * presented a release candidate as the official build.** That is why GitHub
+ * excludes prereleases from `releases/latest` — an RC is for people who came
+ * looking for it, not something to push at a first-time visitor.
  *
- * 막되 문을 남긴다: 의도적으로 RC 를 걸어야 할 때는 플래그로 말하게 한다.
+ * Blocked, but with a door: deliberately featuring an RC has to be said with a
+ * flag.
  */
 if (release.prerelease && !allowPrerelease) {
   fail(

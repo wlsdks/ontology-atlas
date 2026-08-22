@@ -1,17 +1,17 @@
 /**
- * Canonical edge type union — vault frontmatter array key (capabilities /
- * elements / dependencies / relates / contains / describes 등) 와 ontology
- * relation 의 7 종 표준값.
+ * The canonical edge-type union: the seven standard ontology relations, matching
+ * the vault frontmatter array keys (capabilities / elements / dependencies /
+ * relates / contains / describes …).
  *
- * 카테고리 (참고용):
- *   structure: `contains`, `belongs_to` (트리 구조)
- *   behavior:  `depends_on`, `implements`, `uses` (동작)
- *   evidence:  `describes` (document → 개념)
- *   weak:      `related_to` (약 연관)
- *   taxonomy:  `is_a` (상위 개념 — SKOS skos:broader, frontmatter `broader:`)
+ * By category, for orientation:
+ *   structure: `contains`, `belongs_to`
+ *   behaviour: `depends_on`, `implements`, `uses`
+ *   evidence:  `describes` (document → concept)
+ *   weak:      `related_to`
+ *   taxonomy:  `is_a` (SKOS skos:broader, frontmatter `broader:`)
  *
- * `KnowledgeGraphEdge.type` 자체는 backwards-compat 으로 `string` 을 유지.
- * 타입드 writer / typed reader 가 필요한 경우 이 union 을 사용한다.
+ * `KnowledgeGraphEdge.type` itself stays `string` for backwards compatibility;
+ * typed writers and readers use this union.
  */
 export type KnowledgeEdgeType =
   | 'contains'
@@ -23,7 +23,7 @@ export type KnowledgeEdgeType =
   | 'related_to'
   | 'is_a';
 
-/** Runtime 검증·iteration 용 — 위 union 과 1:1 일치. */
+/** For runtime validation and iteration — must stay 1:1 with the union above. */
 export const KNOWLEDGE_EDGE_TYPES: readonly KnowledgeEdgeType[] = [
   'contains',
   'belongs_to',
@@ -36,9 +36,9 @@ export const KNOWLEDGE_EDGE_TYPES: readonly KnowledgeEdgeType[] = [
 ] as const;
 
 /**
- * 지도 contextual editor가 손으로 만들 수 있는 ontology 노드
- * kind. document kind 는 frontmatter 진실원에서 derive 되므로 사용자가 직접
- * 만드는 대상이 아니다 — 본 union 에 포함되지 않는다.
+ * Node kinds a person can create by hand in the map's contextual editor. The
+ * `document` kind is derived from the frontmatter source of truth, so it is not
+ * something a user creates and is excluded here.
  */
 export type ManualNodeKind = 'project' | 'domain' | 'capability' | 'element';
 
@@ -46,21 +46,23 @@ export interface KnowledgeGraphNode {
   id: string;
   title: string;
   /**
-   * 표시용 짧은 제목 — 과제 ⑩ (표시 이름 레이어). `deriveDisplayTitle` 로
-   * 파생 (frontmatter `display:` 필드 우선, 없으면 title 의 괄호 부연
-   * 설명 컷). 토폴로지 라벨 / INDEX 행 / 팝오버 / 상세 헤더 렌더 표면은
-   * `node.display ?? node.title` 로 읽는다. 매칭의 단일 진실원은 여전히
-   * `title` 이지만, 화면에 보이는 이름은 검색 범위에 **더해진다**
-   * (`shared/lib/node-name-match`) — 눈으로 읽은 이름을 그대로 쳤을 때 0건이
-   * 나오면 사용자는 데이터가 없다고 믿는다. optional 인 이유:
-   * `derivationToInsight` 를 거치지 않고 직접 만든 노드(테스트 픽스처, 빌더
-   * 등)와의 하위 호환.
+   * Short title for display, derived by `deriveDisplayTitle` (frontmatter
+   * `display:` wins, otherwise the parenthetical tail of `title` is cut). Render
+   * surfaces read `node.display ?? node.title`.
+   *
+   * `title` remains the single source of truth for matching, but the visible name
+   * is **added** to what search covers (`shared/lib/node-name-match`) — typing the
+   * name you just read and getting zero results reads as "there is no data".
+   *
+   * Optional for backwards compatibility with nodes built without going through
+   * `derivationToInsight` (test fixtures and the like).
    */
   display?: string;
   /**
-   * `display_<locale>` 원본 전체 (locale → 이름). `display` 는 현재 화면
-   * 로케일 하나로 좁혀진 값이라, 다른 언어 이름으로도 찾히려면 원본이
-   * 필요하다 — 검색은 여기 값 전부를 이름으로 취급한다.
+   * The full `display_<locale>` map (locale → name). `display` has already been
+   * narrowed to the current screen locale, so the original is needed for a node to
+   * be findable by its name in another language — search treats every value here
+   * as a name.
    */
   displayLocales?: Readonly<Record<string, string>>;
   kind: string;
@@ -68,48 +70,50 @@ export interface KnowledgeGraphNode {
   summary?: string;
   evidenceIds: string[];
   /**
-   * 이 노드가 자기 `.md` 문서를 가졌는지. `evidenceIds[0]` 은 문서 노드면
-   * 자기 slug, 관계에서만 이름이 불린 파생 노드면 *자기를 인용한 남의 문서*
-   * slug 라 그 값만으로는 둘을 구분할 수 없다 — "이 노드의 문서 열기" 를
-   * 그리는 표면은 반드시 이 필드로 갈라야 남의 문서를 자기 문서인 양 열지
-   * 않는다(`resolveNodeDocument` 참조).
+   * Whether this node has its own `.md` document. `evidenceIds[0]` cannot answer
+   * that: for a document node it is that node's own slug, and for a node named
+   * only by a relation it is *the slug of whichever other document cited it*. A
+   * surface rendering "open this node's document" must branch on this field or it
+   * opens someone else's document (see `resolveNodeDocument`).
    *
-   * optional 인 이유: `derivationToInsight` 를 거치지 않고 직접 만든 노드
-   * (테스트 픽스처, 수동 조립 등)와의 하위 호환 — 미지정은 `true` 로 읽는다.
+   * Optional for backwards compatibility with hand-assembled nodes; absent reads
+   * as `true`.
    */
   hasOwnDocument?: boolean;
   /**
-   * 이 노드를 **에이전트에게 가리켜 보일 때 쓰는 이름** — MCP/CLI 가 그대로
-   * 받아들이는 볼트 기준 문자열.
+   * **The name to use when pointing an agent at this node** — the vault-relative
+   * string MCP and the CLI accept verbatim.
    *
-   * 문서가 있는 노드면 볼트 뿌리 기준 문서 slug, 문서가 없는 파생 노드면
-   * 볼트가 적어 둔 참조 원문(`src/entities/…​.ts`)이다. `evidenceIds[0]` 을
-   * 그대로 쓰면 안 되는 이유가 둘 있다: ① 번들 샘플 매니페스트는 `docs/` 를
-   * 뿌리로 빌드돼 온톨로지 문서가 `ontology/` 아래에 있고 에이전트가 물린
-   * 볼트 뿌리는 `docs/ontology` 라 한 조각이 남는다(2026-07-26 실측: 화면이
-   * 복사해 준 `merge_concepts` 가 그 한 조각 때문에 즉시 실패했다) ②
-   * 파생 노드에서는 그 값이 *남의 문서* 라 엉뚱한 노드를 가리킨다.
+   * For a node with a document that is the doc slug relative to the vault root;
+   * for a derived node it is the reference string the vault wrote
+   * (`src/entities/….ts`). Two reasons `evidenceIds[0]` cannot be used directly:
+   * ① the bundled sample manifest is built with `docs/` as its root, so ontology
+   * documents sit under `ontology/` while the agent's vault root is `docs/ontology`,
+   * leaving one segment over — measured 2026-07-26, the `merge_concepts` command
+   * the screen offered to copy failed immediately because of that segment; ② for a
+   * derived node the value is *someone else's document* and would point at the
+   * wrong node.
    *
-   * optional 인 이유: `derivationToInsight` 를 거치지 않고 직접 만든 노드
-   * (테스트 픽스처 · 수동 조립)와의 하위 호환 — 미지정은 종전대로
-   * `evidenceIds[0]` 로 읽는다(`resolveNodeAgentTarget` 참조).
+   * Optional for backwards compatibility; absent falls back to `evidenceIds[0]`
+   * as before (see `resolveNodeAgentTarget`).
    */
   agentSlug?: string | null;
   /**
-   * 문서가 없는 파생 노드가 볼트에 적혀 있는 참조 원문. 문서 노드는 비어 있다.
-   * `derive-ontology-from-vault.ts` 의 같은 이름 필드가 그대로 넘어온다.
+   * For a node with no document, the reference string as written in the vault;
+   * empty for document nodes. Carried straight through from the field of the same
+   * name in `derive-ontology-from-vault.ts`.
    */
   ref?: string;
   lastApprovedAt: Date;
   lastApprovedBy: string;
   /**
-   * **누가 이 노드를 썼나** — `human` 또는 `agent:<name>` (2026-07-31 원장의
-   * 값 규약, `mcp/src/schema.mjs`).
+   * Who wrote this node — `human` or `agent:<name>` (the value convention from the
+   * 2026-07-31 ledger entry, `mcp/src/schema.mjs`).
    *
-   * 부재는 결함이 아니라 **unknown** 이다. 소급 추론(「로그 없음 = 사람」·git
-   * blame)으로는 출처가 존재하지 않으므로, 어떤 경로도 부재를 `human` 으로
-   * 기본값 처리하지 않는다 — 화면은 값이 **정확히** `human` 일 때만 검수
-   * 표시를 그린다.
+   * Absence is **unknown**, not a defect. Retroactive inference ("no log, therefore
+   * a person"; git blame) would invent a provenance that does not exist, so no path
+   * defaults absence to `human` and screens draw the reviewed marker only when the
+   * value is exactly `human`.
    */
   createdBy?: string;
 }

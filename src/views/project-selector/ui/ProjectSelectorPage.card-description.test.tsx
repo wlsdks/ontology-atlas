@@ -5,13 +5,11 @@ import { describe, expect, it, vi } from "vitest";
 import enMessages from "../../../../messages/en.json";
 import { ProjectSelectorPage } from "./ProjectSelectorPage";
 
-// Toss P2 — 카드는 사용자가 `description:` frontmatter 에 직접 쓴 한 줄만
-// 보여줘야 한다. `Project.description` (엔티티 레이어)은 frontmatter 에
-// description 이 없으면 body 발췌(excerpt)로 fallback 하는 계약이라, 이
-// mock 은 그 fallback 이 만들어낼 법한 "excerpt-shaped" 내부 포지셔닝 카피를
-// 일부러 흘려 넣어 카드가 그걸 절대 노출하지 않는지 검증한다 — 실제 사고
-// 사례가 `docs/ontology/project.md` (description 키 없이 정체성 문단이
-// excerpt 로 새 나갔다).
+// The card must show only the single line a user wrote themselves in `description:` frontmatter.
+// `Project.description` (the entity layer) contracts to fall back to a body excerpt when frontmatter has
+// no description, so this mock deliberately feeds in "excerpt-shaped" internal positioning copy that
+// fallback would produce, verifying the card never exposes it — the real incident was
+// `docs/ontology/project.md`, whose identity paragraph leaked out as an excerpt with no description key.
 vi.mock("@/i18n/navigation", () => ({
   Link: ({ href, children, ...props }: { href: string; children: ReactNode }) => (
     <a href={href} {...props}>

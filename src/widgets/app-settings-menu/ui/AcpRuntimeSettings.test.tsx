@@ -54,6 +54,19 @@ afterEach(() => {
 });
 
 describe('실행기 목록 — 지금 할 수 있는 일이 먼저다', () => {
+  it('준비된 도구의 큰 대화 버튼은 고른 runtime을 호출한다', async () => {
+    const onOpenChat = vi.fn();
+    bridge.detect.mockResolvedValue([
+      makeRuntime({ id: 'claude-acp', isolated: true, verified: true }),
+    ]);
+    render(<AcpRuntimeSettings embedded onOpenChat={onOpenChat} />);
+
+    const button = await screen.findByTestId('app-settings-runtime-chat-claude-acp');
+    expect(button).toHaveClass('min-h-8');
+    fireEvent.click(button);
+    expect(onOpenChat).toHaveBeenCalledWith('claude-acp');
+  });
+
   it('바로 쓸 수 있는 것은 펼쳐 두고, 설치가 필요한 것은 접어 둔다', async () => {
     bridge.detect.mockResolvedValue([
       makeRuntime({ id: 'claude-acp', isolated: true, verified: true }),
@@ -63,7 +76,7 @@ describe('실행기 목록 — 지금 할 수 있는 일이 먼저다', () => {
     render(<AcpRuntimeSettings />);
 
     await waitFor(() => expect(screen.getByTestId('app-settings-runtime-claude-acp')).toBeInTheDocument());
-    // 접혀 있는 것은 아직 화면에 없다 — 38줄을 한 덩어리로 쏟지 않는다.
+    // What is collapsed is not on screen yet — 38 rows are not poured out as one block.
     expect(screen.queryByTestId('app-settings-runtime-cursor')).toBeNull();
     expect(screen.getByTestId('app-settings-runtimes-others-toggle')).toHaveAttribute(
       'aria-expanded',
@@ -86,18 +99,20 @@ describe('실행기 목록 — 지금 할 수 있는 일이 먼저다', () => {
 
 describe('실행기 목록 — 앱이 못 막는 것은 그 줄에서 말한다', () => {
   /*
-   * 소유자 확정(2026-08-16): 목록에서 빼지도, 조용히 두지도 않는다. 알고
-   * 고르게 한다. 이 검사가 없으면 나중에 누가 캡션을 「잉크 낭비」로 보고
-   * 지우고, 그때 화면은 못 막는다는 사실을 말하지 않게 된다.
+   * Owner call (2026-08-16): neither drop it from the list nor leave it silent. Let
+   * people choose knowingly. Without this check, someone later reads the caption as
+   * "wasted ink" and deletes it, and the screen stops saying that it cannot block.
    */
   it('줄에는 배지를 안 단다 — 이 사실은 배지 한 칸에 안 들어간다', async () => {
     /*
-     * 2026-08-16, 소유자 지적으로 **세 번** 바뀐 끝에 없앤 것. 세 번 다 같은
-     * 것을 가르쳤다: 4~6글자짜리 배지로는 「폴더 밖 파일을 건드릴 때 앱이 대신
-     * 물어봐 줄 수 있느냐」를 말할 수 없다. 조건과 결과가 다 있어야 뜻이 선다.
+     * Removed after **three** revisions driven by owner reports (2026-08-16). All
+     * three taught the same thing: a badge of 4–6 characters cannot say "can the app
+     * ask on your behalf when a file outside the folder is touched". It needs both
+     * condition and consequence to mean anything.
      *
-     * 이 검사가 지키는 것은 「배지를 다시 만들지 마라」가 아니라 **눈에 보이는
-     * 반복이 줄마다 생기지 않는 것**이다 — 그게 세 번 다 나온 증상이었다.
+     * What this check holds is not "never build a badge again" but **that visible
+     * repetition does not appear on every row** — that was the symptom all three
+     * times.
      */
     bridge.detect.mockResolvedValue([
       makeRuntime({ id: 'claude-acp', isolated: true }),
@@ -109,7 +124,7 @@ describe('실행기 목록 — 앱이 못 막는 것은 그 줄에서 말한다'
 
     for (const id of ['claude-acp', 'gemini', 'cursor']) {
       const row = screen.getByTestId(`app-settings-runtime-${id}`);
-      // 눈에 보이는 배지는 상태 하나뿐이다.
+      // The only visible badge is the state.
       const visible = [...row.querySelectorAll('[data-runtime-state], [data-runtime-guarded]')];
       expect(visible.map((el) => el.getAttribute('data-runtime-state')), id).toEqual(['ready']);
     }
@@ -117,10 +132,11 @@ describe('실행기 목록 — 앱이 못 막는 것은 그 줄에서 말한다'
 
   it('설명은 목록 **앞에** 한 번만 — 안 보이는 층에도 복사하지 않는다', async () => {
     /*
-     * 한 번은 이 문장을 줄마다 `sr-only` 로 남겼다. 화면은 조용해졌지만 낭독기로
-     * 듣는 사람에게는 같은 문장이 19번 들린다 — 고치려던 그 결함을 안 보이는
-     * 층으로 옮긴 것이다. 설명이 목록보다 **먼저** 오면 순서대로 읽는 사람에게
-     * 먼저 도착하므로, 사본은 필요 없다.
+     * This sentence was once left on every row as `sr-only`. The screen went quiet,
+     * but someone listening with a screen reader hears the same sentence 19 times —
+     * the defect being fixed was moved into an invisible layer. With the explanation
+     * **before** the list, it reaches anyone reading in order first, so no copy is
+     * needed.
      */
     bridge.detect.mockResolvedValue([
       makeRuntime({ id: 'claude-acp', isolated: true }),
@@ -133,9 +149,9 @@ describe('실행기 목록 — 앱이 못 막는 것은 그 줄에서 말한다'
     const root = screen.getByTestId('app-settings-runtimes');
     const sentence = note.textContent ?? '';
     expect(sentence.length).toBeGreaterThan(0);
-    // 그 설명은 이 칸에 **한 번만** 나온다 — 줄마다 복사돼 있으면 여기서 걸린다.
+    // That explanation appears in this pane **exactly once** — a per-row copy trips here.
     expect(root.textContent?.split(sentence).length, '설명이 두 번 이상 나온다').toBe(2);
-    // 그리고 목록보다 앞에 온다(문서 순서).
+    // And it comes before the list (document order).
     const group = root.querySelector('section[aria-label]');
     expect(
       note.compareDocumentPosition(group!) & Node.DOCUMENT_POSITION_FOLLOWING,
@@ -145,8 +161,8 @@ describe('실행기 목록 — 앱이 못 막는 것은 그 줄에서 말한다'
 
   it('묶음 위 설명이 막아 주는 도구의 **이름**을 댄다 — 손으로 적은 문장이 아니다', async () => {
     /*
-     * 「지금은 Claude Code 뿐」을 문자열에 박아 두면 둘째가 생기는 날부터
-     * 그 문장은 거짓이 된다. 이름은 데이터에서 나와야 한다.
+     * Baking "only Claude Code for now" into a string makes that sentence false from
+     * the day a second one appears. The names have to come from the data.
      */
     bridge.detect.mockResolvedValue([
       makeRuntime({ id: 'claude-acp', isolated: true }),
@@ -155,13 +171,14 @@ describe('실행기 목록 — 앱이 못 막는 것은 그 줄에서 말한다'
     render(<AcpRuntimeSettings />);
     const note = await screen.findByTestId('app-settings-runtimes-guard-note');
     expect(note).toHaveAttribute('data-guarded-count', '1');
-    expect(note.textContent).toContain('claude-acp'); // makeRuntime 은 label 을 id 로 둔다
+    expect(note.textContent).toContain('claude-acp'); // makeRuntime uses the label as the id
   });
 
   it('같은 설명을 줄마다 반복하지 않는다 — 묶음 위에 한 번만', async () => {
     /*
-     * 실제로 띄워 보고 잡은 결함: 20줄 중 18줄이 같은 문장이라 화면의 절반이
-     * 한 문장의 사본이었고, 읽어야 할 이름과 상태가 그 사이에 묻혔다.
+     * A defect caught by actually running it: 18 of 20 rows carried the same
+     * sentence, so half the screen was one sentence copied, and the names and states
+     * that had to be read were buried between them.
      */
     bridge.detect.mockResolvedValue([
       makeRuntime({ id: 'a', isolated: false }),
@@ -173,13 +190,13 @@ describe('실행기 목록 — 앱이 못 막는 것은 그 줄에서 말한다'
       expect(screen.getByTestId('app-settings-runtimes-guard-note')).toBeInTheDocument(),
     );
     expect(screen.getAllByTestId('app-settings-runtimes-guard-note')).toHaveLength(1);
-    // 줄에는 그 사실이 **아무 형태로도** 복사돼 있지 않다 — 배지도, 안 보이는
-    // 글도. 사본을 안 보이는 층으로 옮기는 것도 같은 결함이다.
+    // The fact is not copied onto the rows **in any form** — no badge, no invisible
+    // text. Moving a copy into an invisible layer is the same defect.
     expect(document.querySelectorAll('[data-runtime-unguarded]')).toHaveLength(0);
   });
 
   it('상태는 한 번만 말한다 — 배지 하나', async () => {
-    // 같은 말을 두 번 쓰면 그 줄에서 새로 알게 되는 것이 없는 잉크가 된다.
+    // Saying the same thing twice makes that row's ink teach nothing new.
     bridge.detect.mockResolvedValue([makeRuntime({ id: 'cursor', state: 'cli-missing', isolated: true })]);
     render(<AcpRuntimeSettings />);
     await waitFor(() => expect(screen.getByTestId('app-settings-runtimes')).toBeInTheDocument());
@@ -202,7 +219,7 @@ describe('실행기 목록 — 앱이 못 막는 것은 그 줄에서 말한다'
         .getByTestId('app-settings-runtime-with-icon')
         .querySelector('[data-vendor-mark="true"]'),
     ).toBeInTheDocument();
-    // 아이콘이 없어도 같은 크기의 자리가 있다.
+    // The slot is the same size even without an icon.
     const slots = screen
       .getByTestId('app-settings-runtime-no-icon')
       .querySelectorAll('span.size-8');
@@ -210,9 +227,10 @@ describe('실행기 목록 — 앱이 못 막는 것은 그 줄에서 말한다'
   });
 
   /*
-   * 이 셋이 실제 결함을 잡는다. 처음 구현은 `<img>` 였고, 레지스트리 아이콘이
-   * 전부 `currentColor` 단색이라 **검은 판에 검은 그림**이 됐다 — 화면에는
-   * 아무것도 안 보이는데 코드에는 아무 잘못도 안 보였다(소유자가 발견).
+   * These three catch a real defect. The first implementation used `<img>`, and
+   * because every registry icon is single-colour `currentColor`, it became **a black
+   * drawing on a black plate** — nothing visible on screen and nothing wrong in the
+   * code (the owner found it).
    */
   it('마크는 색을 우리가 칠한다 — 벤더가 공표한 색이 있으면 그 색으로', async () => {
     bridge.detect.mockResolvedValue([
@@ -224,7 +242,7 @@ describe('실행기 목록 — 앱이 못 막는 것은 그 줄에서 말한다'
     const ink = mark.querySelector<HTMLElement>('[data-vendor-mark-ink]');
     expect(ink).toHaveAttribute('data-vendor-mark-ink', 'brand');
     expect(ink?.style.backgroundColor).toBe('rgb(217, 119, 87)');
-    // 그림은 마스크로 들어간다 — SVG 안의 내용이 우리 화면에 그려지지 않는다.
+    // The drawing goes in as a mask — nothing inside the SVG is rendered on our screen.
     expect(ink?.style.maskImage).toContain('/acp-icons/claude-acp.svg');
   });
 
@@ -270,7 +288,7 @@ describe('실행기 목록 — 못 하는 일은 정직하게', () => {
     render(<AcpRuntimeSettings />);
     expect(screen.getByTestId('app-settings-runtimes-web')).toHaveTextContent('webLabel');
     expect(screen.getByTestId('app-settings-runtimes-web')).toHaveTextContent('webCaption');
-    // 브라우저에서는 찾으러 나서지도 않는다.
+    // In a browser it does not even set out to look.
     expect(bridge.detect).not.toHaveBeenCalled();
   });
 
@@ -293,13 +311,13 @@ export type { Runtime };
 
 describe('실행기 목록 — 설치는 우리가 대신 하지 않는다', () => {
   /*
-   * 참고 제품(Buzz)의 같은 자리에는 `Install` 버튼이 있고, 누르면 설치
-   * 스크립트를 **실제로 실행한다**(실측: `curl … | bash` 를 재시도까지 하며
-   * 돌린다). 우리는 안 한다 — 「아무도 검사하지 않은 코드를 돌릴 이유를 댈 수
-   * 없다」(`forbidden.md`)이고, URL 뒤의 스크립트는 언제든 바뀌므로 우리가
-   * 무엇을 실행하는지 diff 로 보여 줄 수 없다.
+   * The reference product (Buzz) has an `Install` button in this same place, and
+   * pressing it **actually runs an install script** (measured: it runs `curl … |
+   * bash`, with retries). We do not — "there is no defensible reason to run code
+   * nobody has reviewed" (`forbidden.md`), and a script behind a URL can change at
+   * any time, so we cannot show what we execute as a diff.
    *
-   * 이 검사가 지키는 것은 **그 자리에 실행 버튼이 다시 생기지 않는 것**이다.
+   * What this check holds is that **an execute button never reappears in that place**.
    */
   it('준비 안 된 줄은 그 도구의 공식 안내로 보낸다 — 우리가 설치하지 않는다', async () => {
     bridge.detect.mockResolvedValue([
@@ -309,7 +327,7 @@ describe('실행기 목록 — 설치는 우리가 대신 하지 않는다', () 
     fireEvent.click(await screen.findByTestId('app-settings-runtimes-others-toggle'));
 
     const link = await screen.findByTestId('app-settings-runtime-install');
-    // 링크지 버튼이 아니다 — 누르면 그 도구의 사이트가 열린다.
+    // A link, not a button — pressing it opens that tool's site.
     expect(link.tagName).toBe('A');
     expect(link).toHaveAttribute('target', '_blank');
     expect(link).toHaveAttribute('rel', expect.stringContaining('noopener'));
@@ -324,8 +342,9 @@ describe('실행기 목록 — 설치는 우리가 대신 하지 않는다', () 
 
   it('설치 명령을 화면에 베껴 두지 않는다', async () => {
     /*
-     * 명령을 우리가 적어 두면 그 사본이 낡는다(벤더가 바꾼다). 그리고 화면에
-     * `curl … | bash` 가 보이면 사용자는 그것을 우리가 보증한 것으로 읽는다.
+     * Transcribing the command makes our copy go stale (the vendor changes it). And
+     * `curl … | bash` visible on our screen reads to the user as something we
+     * vouched for.
      */
     bridge.detect.mockResolvedValue([
       makeRuntime({ id: 'goose', state: 'cli-missing', isolated: false }),
@@ -340,16 +359,19 @@ describe('실행기 목록 — 설치는 우리가 대신 하지 않는다', () 
 
 describe('실행기 목록 — 먼저 그리고 나중에 고친다', () => {
   /*
-   * 2026-08-16 소유자 지적: *"Agents 탭 누르면 로딩 속도가 1초인가 느린데?
-   * 일단 로딩되게 하고 업데이트 시키는 방향으로 가야 하지 않을까"*.
+   * Owner report, 2026-08-16: *"Agents 탭 누르면 로딩 속도가 1초인가 느린데? 일단
+   * 로딩되게 하고 업데이트 시키는 방향으로 가야 하지 않을까"* (pressing the Agents
+   * tab takes about a second — shouldn't it load first and update after?).
    *
-   * 로그인 확인을 붙이면서 그 비용이 **화면이 뜨는 시간에 그대로 얹혔다.**
-   * 목록은 먼저 그릴 수 있는데도 확인이 끝날 때까지 아무것도 안 보여 줬다.
+   * Adding the login check added its cost **directly to the time the screen took to
+   * appear.** The list could have been drawn first, and nothing was shown until the
+   * check finished.
    */
   it('첫 그림은 로그인 확인 없이 — 확인은 그다음에 한 번 더', async () => {
     /*
-     * 확인 쪽은 **일부러 늦게** 답하게 둔다. 둘이 같은 프레임에 끝나 버리면
-     * 「먼저 그린다」가 지켜졌는지 볼 수 없다 — 그게 이 검사의 전부다.
+     * The checking side is made to answer **deliberately late**. If both finished in
+     * the same frame there would be no way to see whether "draw first" held — and
+     * that is the whole of this check.
      */
     let releaseSlow: () => void = () => {};
     const slow = new Promise<void>((resolve) => {
@@ -367,17 +389,17 @@ describe('실행기 목록 — 먼저 그리고 나중에 고친다', () => {
     });
     render(<AcpRuntimeSettings />);
 
-    // ① 확인이 끝나기 **전에** 이미 목록이 있다 — 빈 화면으로 기다리지 않는다.
+    // ① The list is already there **before** the check finishes — no waiting on an empty screen.
     await waitFor(() =>
       expect(screen.getByTestId('app-settings-runtime-claude-acp')).toBeInTheDocument(),
     );
     expect(screen.getByText(/readyHeading.*"count":1/)).toBeInTheDocument();
 
-    // ② 확인이 끝나면 고쳐진다 — 준비된 것에서 빠진다.
+    // ② It is corrected once the check finishes — it drops out of the ready set.
     releaseSlow();
     await waitFor(() => expect(screen.getByText(/readyHeading.*"count":0/)).toBeInTheDocument());
 
-    // 두 번 부른다: 확인 없이 한 번, 확인해서 한 번.
+    // Called twice: once without the check, once with it.
     const calls = bridge.detect.mock.calls.map((c) => c[0]?.probeLogin ?? false);
     expect(calls).toEqual([false, true]);
   });

@@ -1,20 +1,21 @@
 /**
- * Atlas Git — 변경 요약의 순수 로직 (I/O 0, React 0).
+ * Atlas Git — the pure change-summary logic (no I/O, no React).
  *
- * 세 표면(CLI `cli/src/lib/git-snapshot.mjs` · Rust `src-tauri/src/git.rs` ·
- * 웹 패널)이 같은 산식으로 "kind별 추가/수정/삭제 + 대표 슬러그" 를 말해야
- * 하므로, CLI 의 parsePorcelain / classifyChange / formatSnapshotSummary 를
- * TS 로 미러한다. 산식 정합은 `tests/contract/atlas-git-summary.contract.test.ts`
- * 가 같은 fixture 로 CLI 구현과 비교해 강제한다 — 한쪽이 drift 하면 즉시 fail.
+ * Three surfaces (the CLI `cli/src/lib/git-snapshot.mjs`, Rust
+ * `src-tauri/src/git.rs`, and the web panel) must report "added/modified/deleted
+ * per kind, plus representative slugs" using the same formula, so the CLI's
+ * parsePorcelain / classifyChange / formatSnapshotSummary are mirrored here in TS.
+ * `tests/contract/atlas-git-summary.contract.test.ts` runs the same fixtures
+ * through both and fails the moment either side drifts.
  *
- * 웹 패널의 주 입력은 Rust IPC 가 이미 분류해 돌려주는 `files: ChangeEntry[]`
- * (path/status/kind/slug) 이고, porcelain 파서는 산식 정합 검증 + 미래의
- * raw-porcelain 소비자를 위한 미러다.
+ * The web panel's real input is `files: ChangeEntry[]` (path/status/kind/slug),
+ * already classified by the Rust IPC; the porcelain parser exists for that
+ * contract check and for any future raw-porcelain consumer.
  */
 
 export type AtlasGitChangeStatus = "added" | "modified" | "deleted" | "renamed";
 
-/** `git status --porcelain` 한 행. CLI parsePorcelain 과 동일 shape. */
+/** One `git status --porcelain` row. Same shape as the CLI's parsePorcelain. */
 export interface AtlasGitPorcelainRow {
   index: string;
   worktree: string;
@@ -23,8 +24,8 @@ export interface AtlasGitPorcelainRow {
 }
 
 /**
- * 요약 산식이 요구하는 최소 shape — Rust IPC 의 `ChangeEntry` (camelCase),
- * CLI `buildChangeSummary` 결과 둘 다 이 형태를 만족한다.
+ * The minimal shape the summary formula needs — satisfied by both the Rust IPC's
+ * `ChangeEntry` (camelCase) and the CLI's `buildChangeSummary` result.
  */
 export interface AtlasGitChangeLike {
   status: AtlasGitChangeStatus | string;
@@ -40,23 +41,24 @@ export interface AtlasGitStatusCounts {
   total: number;
 }
 
-/** kind 하나의 변경 묶음 — 패널의 "kind별 A/M/D + 대표 슬러그" 행. */
+/** All changes for one kind — the panel's "A/M/D per kind + representative slugs" row. */
 export interface AtlasGitKindGroup<T extends AtlasGitChangeLike = AtlasGitChangeLike> {
-  /** frontmatter kind. 비-md/kind 미상 파일은 null (패널이 "기타" 로 라벨링). */
+  /** The frontmatter kind. Null for non-markdown or unknown files, which the panel labels "other". */
   kind: string | null;
   counts: AtlasGitStatusCounts;
-  /** 그룹의 대표 슬러그 (등장 순, 호출자가 잘라 쓴다). */
+  /** The group's representative slugs, in order of appearance; the caller truncates. */
   slugs: string[];
   /**
-   * 원본 변경 항목 (등장 순). `slugs` 는 요약 문장용 짧은 목록이고, 이쪽은
-   * **항목별로 그릴 때** 쓴다 — 화면 행은 슬러그 말고도 상태(추가/수정/삭제)와
-   * 경로를 알아야 하는데, 슬러그만 돌려주면 소비처가 원본 배열을 다시
-   * 순회하며 슬러그로 되찾아야 한다(같은 슬러그가 두 kind 에 있으면 틀린다).
+   * The original change entries, in order of appearance. `slugs` is the short list
+   * for the summary sentence; this is what **per-entry rendering** needs, because a
+   * row also has to show the status and the path. Returning slugs alone would force
+   * consumers to walk the source array again and look entries up by slug — which is
+   * wrong whenever the same slug exists under two kinds.
    */
   entries: T[];
 }
 
-/** CLI parsePorcelain 미러 — `git status --porcelain` 출력 → 행 배열. */
+/** Mirror of the CLI's parsePorcelain — `git status --porcelain` output → rows. */
 export function parsePorcelainStatus(out: string): AtlasGitPorcelainRow[] {
   return out
     .split("\n")
@@ -75,7 +77,7 @@ export function parsePorcelainStatus(out: string): AtlasGitPorcelainRow[] {
     });
 }
 
-/** CLI classifyChange 미러 — porcelain 행 → 상태 분류. */
+/** Mirror of the CLI's classifyChange — a porcelain row → a status. */
 export function classifyPorcelainChange(
   row: Pick<AtlasGitPorcelainRow, "index" | "worktree">,
 ): AtlasGitChangeStatus {
@@ -85,7 +87,7 @@ export function classifyPorcelainChange(
   return "modified";
 }
 
-/** 상태별 카운트 — Rust `SnapshotCounts` 와 동일 산식. */
+/** Counts per status — same formula as the Rust `SnapshotCounts`. */
 export function countChangesByStatus(
   changes: readonly AtlasGitChangeLike[],
 ): AtlasGitStatusCounts {
@@ -100,8 +102,9 @@ export function countChangesByStatus(
 }
 
 /**
- * kind별 그룹 — 등장 순 유지, kind 미상(null) 그룹은 항상 마지막.
- * 패널이 "capability +2 ~1 / element ~3 / 기타 1" 식으로 렌더한다.
+ * Group by kind, preserving order of appearance, with the unknown-kind (null)
+ * group always last. The panel renders it as "capability +2 ~1 / element ~3 /
+ * other 1".
  */
 export function groupChangesByKind<T extends AtlasGitChangeLike>(
   changes: readonly T[],
@@ -129,9 +132,10 @@ export function groupChangesByKind<T extends AtlasGitChangeLike>(
 }
 
 /**
- * CLI formatSnapshotSummary 미러 — 의미 단위 커밋 요약 한 줄.
- * 예: `ontology snapshot: +2 concepts, ~1 updated (capabilities/foo, elements/bar, +1)`
- * 스냅샷 확인 스텝이 "이 메시지로 커밋됩니다" 미리보기로 쓴다.
+ * Mirror of the CLI's formatSnapshotSummary — a one-line commit summary in meaning
+ * units, e.g. `ontology snapshot: +2 concepts, ~1 updated (capabilities/foo,
+ * elements/bar, +1)`. The snapshot confirmation step shows it as the "this is what
+ * will be committed" preview.
  */
 export function formatSnapshotSummary(changes: readonly AtlasGitChangeLike[]): string {
   const { added, modified, deleted, renamed } = countChangesByStatus(changes);

@@ -137,28 +137,30 @@ export function mergeNodeIdentityHistory(fromFrontmatter, intoFrontmatter) {
 }
 
 /**
- * 저작 출처 (2026-07-31 원장 — 「사람이 만든 노드 표기」).
+ * Authorship provenance (decision ledger 2026-07-31 — 「사람이 만든 노드 표기」,
+ * marking human-authored nodes).
  *
- * 값 규약은 `human` 또는 `agent:<name>` 둘뿐이다. **스탬프는 쓰기 시점에,
- * 호출 경로가 증명하는 행위자에게만 찍는다** — 소급 추론(「로그 없음=사람」·
- * git blame)으로는 출처가 존재하지 않기 때문이다(98노드에 활동 로그 4줄,
- * git user 는 단일 사람). 그래서:
+ * The value is either `human` or `agent:<name>`, nothing else. **The stamp is
+ * applied at write time, to the actor the call path proves** — provenance does not
+ * exist retroactively ("no log means a human", git blame): 98 nodes carried 4
+ * activity-log lines, and the git user is a single person. Therefore:
  *
- *   - 이 키는 **선택**이다. `requiredExtras` 에 넣지 않는다.
- *   - **부재는 결함이 아니라 unknown 이다.** validator 경고를 붙이지 않으며,
- *     어떤 경로도 부재를 `human` 으로 기본값 처리하지 않는다.
+ *   - This key is **optional**. It is not in `requiredExtras`.
+ *   - **Absence is unknown, not a defect.** No validator warning is attached, and
+ *     no path defaults an absent value to `human`.
  */
 export const CREATED_BY_KEY = 'created_by';
 export const CREATED_BY_HUMAN = 'human';
 export const CREATED_BY_AGENT_PREFIX = 'agent:';
 /**
- * 경로가 「에이전트가 썼다」는 증명하지만 그 **이름**은 증명하지 못할 때
- * (활동 하트비트 없음 등). 이름을 모른다고 사람 쪽으로 떨어지면 그것이 바로
- * 이 결정이 금지한 소급 추론이라, 모름은 모름으로 적는다.
+ * For when the call path proves «an agent wrote this» but not its **name** (no
+ * activity heartbeat, for instance). Falling back to the human side because the
+ * name is unknown would be exactly the retroactive inference this decision
+ * forbids, so unknown is recorded as unknown.
  */
 export const CREATED_BY_AGENT_UNKNOWN = `${CREATED_BY_AGENT_PREFIX}unknown`;
 
-/** 에이전트 이름 → `agent:<name>`. 이름이 없으면 `agent:unknown`. */
+/** Agent name → `agent:<name>`. With no name, `agent:unknown`. */
 export function agentCreatedBy(agentName) {
   const name = typeof agentName === 'string' ? agentName.trim() : '';
   return name ? `${CREATED_BY_AGENT_PREFIX}${name}` : CREATED_BY_AGENT_UNKNOWN;
@@ -251,15 +253,16 @@ export const VAULT_KIND_SCHEMA = {
   project: {
     folder: '',
     arrayDefaults: ['domains', 'capabilities', 'elements'],
-    // `display` — 과제 ⑩ (표시 이름 레이어). title 이 길 때 (괄호 부연
-    // 설명 포함) 토폴로지 라벨/INDEX/팝오버/상세 헤더가 그리는 짧은 이름.
-    // 없으면 렌더러가 title 의 " (" 앞부분으로 자동 파생 (`deriveDisplayTitle`,
-    // `src/shared/lib/derive-display-title.ts`) — 대부분의 title 은 이 키를
-    // 안 써도 된다. 검색/매칭은 항상 title 전체로 계속된다.
+    // `display` — the short name the topology label, INDEX, popover, and detail
+    // header draw when `title` is long (carrying a parenthesised gloss, say).
+    // Without it the renderer derives one from the part of `title` before " ("
+    // (`deriveDisplayTitle`, `src/shared/lib/derive-display-title.ts`), so most
+    // titles never need this key. Search and matching keep using the full title.
     optional: ['dependencies', 'relates', 'description', 'status', 'display', CREATED_BY_KEY],
     requiredExtras: [],
-    // 사용자 가독성을 위한 권장 키 순서. buildFrontmatter 가 이 순서로
-    // 정렬 후 미정의 키 (외부 import 의 custom_field 등) 는 뒤에 append.
+    // Recommended key order, for a human reading the file. buildFrontmatter sorts
+    // by this order and appends undefined keys (an external import's custom_field,
+    // for instance) at the end.
     preferredOrder: [
       'uid',
       'merged_uids',
@@ -311,11 +314,12 @@ export const VAULT_KIND_SCHEMA = {
     folder: 'capabilities/',
     arrayDefaults: ['elements'],
     optional: ['path', 'depends_on', 'relates', 'broader', 'description', 'display', CREATED_BY_KEY],
-    // `domain` 은 트리 위계의 부모 — 비어 있으면 capability 가 orphan 으로
-    // 떠다니며 사용자 인사이트에 분포 노이즈를 만든다. validator 가 경고.
+    // `domain` is the parent in the tree hierarchy — left empty, the capability
+    // floats as an orphan and adds distribution noise to the user's insights. The
+    // validator warns.
     requiredExtras: ['domain'],
-    // capability 의 핵심 정체성은 'domain 안의 한 기능' 이라 domain 이
-    // arrays 보다 위. 자식 (elements / depends_on) 은 그 다음.
+    // A capability's core identity is "one function inside a domain", so `domain`
+    // ranks above the arrays. Its children (elements / depends_on) come next.
     preferredOrder: [
       'uid',
       'merged_uids',
@@ -340,8 +344,8 @@ export const VAULT_KIND_SCHEMA = {
     folder: 'elements/',
     arrayDefaults: [],
     optional: ['path', 'depends_on', 'relates', 'broader', 'description', 'display', CREATED_BY_KEY],
-    // element 는 어느 domain 안의 어느 capability 가 쓰는 단위 — domain 누락 시
-    // 트리에서 sink 로 떠다닌다.
+    // An element is the unit some capability inside some domain uses — with
+    // `domain` missing it floats as a sink in the tree.
     requiredExtras: ['domain'],
     preferredOrder: [
       'uid',
@@ -446,13 +450,15 @@ export function buildFrontmatter(input) {
     if (mergedUids.length > 0) accumulator.merged_uids = mergedUids;
     else delete accumulator.merged_uids;
   }
-  // 사용자 가독성 — schema 의 preferredOrder 로 키 정렬. 정의 안 된 키
-  // (사용자가 import 한 외부 frontmatter 의 custom_field 등) 는 뒤에 append.
+  // Sort keys by the schema's preferredOrder for human readability. Keys with no
+  // definition (a custom_field from frontmatter the user imported, for instance)
+  // are appended at the end.
   const ordered = {};
   for (const key of schema.preferredOrder) {
     if (key in accumulator) ordered[key] = accumulator[key];
-    // 어권별 표시 이름(`display_ko` 등)은 `display` 바로 뒤에 모아 둔다 —
-    // 사람이 파일을 열었을 때 이름 계열 키가 흩어지지 않게(2026-07-24).
+    // Per-locale display names (`display_ko` and friends) are grouped right after
+    // `display`, so the name-family keys are not scattered when a human opens the
+    // file (2026-07-24).
     if (key === 'display') {
       for (const localeKey of Object.keys(accumulator)) {
         if (/^display_[a-z]{2}$/.test(localeKey)) ordered[localeKey] = accumulator[localeKey];
@@ -466,26 +472,29 @@ export function buildFrontmatter(input) {
 }
 
 /**
- * 슬러그 평면성 게이트 (2026-08-01 판정 「슬러그는 평평한 식별자다」 —
- * `docs/DECISIONS.md`). R15 의 「element slug 두 패턴(flat / path-style)」은
- * 이 판정으로 폐기됐다: 경로형 슬러그는 파일 basename 이 겹치는 순간
- * 꼬리(tail) 별칭이 충돌하고, 웹 파생 · unique-tail 해석 · 딥링크 세 표면이
- * 서로 다른 노드를 하나로 접는다. 실측(재생성 볼트, 2026-08-01):
- * `elements/src/{entities,views,widgets}/docs-vault` 3개가 화면에서 1개로
- * 합쳐져 관계 4개가 소리 없이 사라졌다 — 컴파일 68 vs 화면 66.
+ * Slug flatness gate (2026-08-01 verdict 「슬러그는 평평한 식별자다」 — "a slug is a
+ * flat identifier", `docs/DECISIONS.md`). It retired the earlier two-pattern
+ * element slug (flat / path-style): the moment two files share a basename, a
+ * path-style slug makes their tail aliases collide, and three surfaces — web
+ * derivation, unique-tail resolution, and deep links — fold different nodes into
+ * one. Measured on a regenerated vault, 2026-08-01: the three
+ * `elements/src/{entities,views,widgets}/docs-vault` nodes merged into one on
+ * screen and four relations vanished silently — 68 compiled vs 66 on screen.
  *
- * 규칙은 **스키마 폴더 안에서만** 잰다: `folderForKind(kind)` 로 시작하는
- * 슬러그는 그 뒤가 평평해야 한다(`elements/<name>`, 내부 `/` 금지). 스키마
- * 폴더 밖의 중첩(`services/auth/api` — 사용자 볼트 자체의 폴더 관습)은 이
- * 게이트의 소관이 아니다: 로컬-퍼스트 계약상 사용자 디스크 구조는 존중하고,
- * 실제 꼬리 충돌은 컴파일러의 `ambiguous-alias` 경고가 잡는다.
+ * The rule is measured **only inside a schema folder**: a slug starting with
+ * `folderForKind(kind)` must be flat after that prefix (`elements/<name>`, no
+ * inner `/`). Nesting outside a schema folder (`services/auth/api` — the user's
+ * own folder convention in their vault) is not this gate's business: the
+ * local-first contract respects the structure of the user's disk, and a real tail
+ * collision is caught by the compiler's `ambiguous-alias` warning.
  *
- * 위치 정보는 슬러그가 아니라 `path:` 가 나른다 — 「경로는 개념의 증거이지
- * 개념이 아니다」라는 2026-07-31 구축 규격의 같은 문장을 정체성(슬러그)에
- * 적용한 것이다. 이 함수는 쓰기 관문(add / rename / reclassify)에서 hard
- * error 로 쓰인다: 팬아웃 게이트와 달리 이것은 의미 판단이 아니라 형태
- * 유효성이고(중복 슬러그 · unknown kind 와 같은 급), 생성 시점 수리는 슬러그
- * 하나를 고르는 비용이지만 사후 수리는 rename 연쇄 비용이기 때문이다.
+ * Location is carried by `path:`, not by the slug — the same sentence from the
+ * 2026-07-31 construction rules ("a path is evidence for a concept, not the
+ * concept") applied to identity. This function is a hard error at the write gates
+ * (add / rename / reclassify): unlike the fan-out gate this is shape validity
+ * rather than a judgement of meaning (the same class as a duplicate slug or an
+ * unknown kind), and repairing it at creation costs one slug choice while
+ * repairing it afterwards costs a rename cascade.
  */
 export function flatSlugIssue(kind, slug) {
   if (typeof kind !== 'string' || typeof slug !== 'string') return null;
@@ -504,8 +513,9 @@ export function flatSlugIssue(kind, slug) {
 }
 
 /**
- * Body 보조 — 호출자가 명시적으로 body 안 줬을 때 schema 의 kind 별 ‘starter
- * markdown’ 채워서 사용자가 첫 .md 만으로도 어떤 게 들어가야 하는지 감을 잡게.
+ * Body helper — when the caller passes no body explicitly, fill in the schema's
+ * per-kind starter markdown so the user's first `.md` alone conveys what belongs
+ * in it.
  */
 export function defaultBody(kind, title) {
   const schema = VAULT_KIND_SCHEMA[kind];
@@ -514,9 +524,9 @@ export function defaultBody(kind, title) {
 }
 
 /**
- * 자동 folder prefix — `ontology-atlas add capability foo` 일 때 사용자가
- * `--auto-prefix` 켜면 slug 가 `capabilities/foo` 로 정규화. project /
- * document 는 root level (prefix 없음).
+ * Automatic folder prefix — with `--auto-prefix` on, `ontology-atlas add
+ * capability foo` normalises the slug to `capabilities/foo`. `project` and
+ * `document` stay at root level (no prefix).
  */
 export function folderForKind(kind) {
   const schema = VAULT_KIND_SCHEMA[kind];
@@ -525,8 +535,9 @@ export function folderForKind(kind) {
 }
 
 /**
- * Validator helper — 기존 frontmatter 가 schema 의 requiredExtras 누락 했는지.
- * 누락된 키 배열 반환 (없으면 빈 배열). hard error 가 아니라 advisory.
+ * Validator helper — whether existing frontmatter is missing the schema's
+ * `requiredExtras`. Returns the array of missing keys (empty when none). Advisory,
+ * not a hard error.
  */
 export function missingExpectedFields(kind, frontmatter) {
   const schema = VAULT_KIND_SCHEMA[kind];
@@ -546,16 +557,16 @@ export function missingExpectedFields(kind, frontmatter) {
 }
 
 /**
- * 어권별 표시 이름 정규화 (소유자 지시 2026-07-24) — `labels: { ko, en }` →
- * `{ display_ko, display_en }` frontmatter 키.
+ * Per-locale display-name normalisation (owner decision, 2026-07-24) —
+ * `labels: { ko, en }` → the `{ display_ko, display_en }` frontmatter keys.
  *
- * 왜 별도 레이어인가: `title` 은 검색/매칭/파일 정체성의 단일 진실원이라
- * 로케일별로 바꾸면 안 된다. 렌더 표면(지도 라벨·INDEX·팝오버)만 화면
- * 로케일에 맞는 `display_<locale>` 을 읽는다
- * (`src/features/vault-ontology/model/use-ontology-insight.ts`).
+ * Why this is a separate layer: `title` is the single source of truth for search,
+ * matching, and file identity, so it must not vary by locale. Only the render
+ * surfaces (map labels, INDEX, popovers) read the `display_<locale>` matching the
+ * screen locale (`src/features/vault-ontology/model/use-ontology-insight.ts`).
  *
- * 2글자 로케일 코드 + 비어있지 않은 문자열만 통과. 그 외는 조용히 무시
- * (agent 가 잘못된 키를 보내도 vault 가 오염되지 않는다).
+ * Only a two-letter locale code with a non-empty string passes; anything else is
+ * ignored silently, so a wrong key from an agent cannot pollute the vault.
  */
 export function normalizeLocaleLabels(labels) {
   if (!labels || typeof labels !== 'object' || Array.isArray(labels)) return {};
@@ -570,7 +581,7 @@ export function normalizeLocaleLabels(labels) {
   return out;
 }
 
-/** `normalizeLocaleLabels` 결과에서 로케일 코드만 뽑는다(경고 문구용). */
+/** Extracts just the locale codes from a `normalizeLocaleLabels` result, for warning text. */
 export function localeLabelCodes(normalized) {
   return Object.keys(normalized)
     .map((key) => key.slice('display_'.length))

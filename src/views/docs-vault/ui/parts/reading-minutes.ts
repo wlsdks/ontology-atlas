@@ -1,6 +1,6 @@
 /**
- * 읽는 시간 추정 — ≈200 단어/분 기준. 한글은 글자당 평균이 다르지만
- * 영·한 혼합 대략 감만 표시. 1분 미만은 "1분" 으로 floor.
+ * Estimated reading time at ≈200 words per minute. Korean averages differently per character, so
+ * for mixed English and Korean this is a rough sense only. Under a minute floors to one minute.
  */
 export function estimateReadingMinutes(wordCount: number): number {
   return Math.max(1, Math.round(wordCount / 200));

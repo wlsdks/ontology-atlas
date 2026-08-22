@@ -3,21 +3,22 @@ import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 
 /**
- * `docs:check` 의 **하위 검사 전부가 CI 에서 실제로 불리는지** 잠근다.
+ * Locks that **every sub-check of `docs:check` is actually invoked in CI**.
  *
- * ## 왜 이 계약이 생겼나 (2026-08-07 코드 리뷰)
- *
- * 2026-08-06 에 `docs:check` 를 CI 에 물렸는데, 그 안의 `docs:surface:check` 는
- * **실제 MCP 서버를 띄우므로** `mcp/node_modules` 가 있는 잡에서만 돈다. 그래서
- * 한 스텝을 두 잡으로 갈랐다 — 파일만 읽는 둘은 `gates`, 서버를 띄우는 하나는
+ * **Why this contract exists** (code review, 2026-08-07). `docs:check` was wired into
+ * CI on 2026-08-06, but its `docs:surface:check` **launches a real MCP server** and so
+ * runs only in a job that has `mcp/node_modules`. One step was therefore split across
+ * two jobs — the two that only read files go in `gates`, and the one that launches a
+ * server goes in
  * `mcp`.
  *
- * 그 분할이 **`package.json` 의 정의와 아무것으로도 묶여 있지 않았다.**
- * `docs:check` 에 네 번째 하위 검사를 더하면 **CI 어디에서도 안 돈다** — 그리고
- * 아무 신호가 없다. 이 스텝을 만든 이유였던 «검사가 있어도 부르지 않으면 없는
- * 것이다» 가 한 층 위로 옮겨 간 것뿐이다.
+ * That split was **tied to `package.json`'s definition by nothing at all.** Adding a
+ * fourth sub-check to `docs:check` means it **runs nowhere in CI**, with no signal.
+ * The very reason this step exists — "a check that is never invoked does not exist" —
+ * had simply moved up one level.
  *
- * 그래서 목록을 손으로 맞추지 않고 **정의에서 뽑아** 대조한다.
+ * So the list is **extracted from the definition** rather than kept in sync by
+ * hand.
  */
 
 const ROOT = process.cwd();
@@ -25,7 +26,7 @@ const read = (rel: string): string => readFileSync(join(ROOT, rel), 'utf8');
 
 const WORKFLOW = '.github/workflows/checks.yml';
 
-/** `docs:check` 가 실제로 부르는 하위 스크립트 이름을 정의에서 뽑는다. */
+/** Extracts the sub-script names `docs:check` actually invokes from its definition. */
 function docsCheckSubScripts(): string[] {
   const pkg = JSON.parse(read('package.json')) as { scripts: Record<string, string> };
   const def = pkg.scripts['docs:check'];
@@ -35,15 +36,15 @@ function docsCheckSubScripts(): string[] {
 
 describe('docs:check — 하위 검사가 전부 CI 에서 불린다', () => {
   it('정의에서 하위 검사를 실제로 뽑아낸다 (공회전 차단)', () => {
-    // 0개를 뽑고 «전부 덮였다» 고 통과하는 것이 이 계약의 유일한 실패 모드다.
+    // Extracting 0 and passing with "everything is covered" is this contract's only failure mode.
     expect(docsCheckSubScripts().length).toBeGreaterThan(1);
   });
 
   it.each(docsCheckSubScripts())('%s 를 부르는 CI 스텝이 있다', (script) => {
     const workflow = read(WORKFLOW);
     /**
-     * `run:` 줄에서 그 스크립트를 **단어 단위**로 찾는다. `docs:links` 가
-     * `docs:links:external` 에 걸려 거짓 통과하는 것을 막는다.
+     * Searches `run:` lines for the script **as a whole word**, so `docs:links` cannot
+     * falsely pass by matching `docs:links:external`.
      */
     const called = new RegExp(`run:\\s*pnpm\\s+${script.replace(/[:]/g, '\\:')}(?![a-z0-9:-])`, 'm');
     expect(

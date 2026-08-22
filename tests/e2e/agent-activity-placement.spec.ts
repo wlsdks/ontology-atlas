@@ -3,35 +3,42 @@ import { seedFirstRunSeen } from "./first-run-seed";
 import { stubDirectoryPicker } from "./vault-picker-stub";
 
 /**
- * **활동 줄과 알림함이 놓인 자리를 잰다** (2026-08-17 소유자 지적 3건).
+ * **Measures where the activity row and the notification tray sit** (three owner
+ * reports, 2026-08-17).
  *
- * ## 왜 이 spec 이 생겼나
+ * ## Why this spec exists
  *
- * 알림을 지도 하단에서 우상단으로 올리면서 **컨트롤만 옮기고 기하는 아래 있던
- * 그대로 뒀다.** 소유자가 셋을 한꺼번에 지적했고, 셋 다 그 한 가지에서 나왔다:
+ * Moving notifications from the bottom of the map to the top right **moved the
+ * control but left the geometry as it was at the bottom.** The owner reported three
+ * things at once, and all three came from that one cause:
  *
- * 1. *"종 아이콘 사이즈가 가로로 너무 길고"* — 종만 남은 칩이 **글줄용 칩
- *    껍데기**(`CHROME_STATUS_CHIP_CLASS`, 좌우 14px 안여백) 안에 들어 있었다.
- *    아이콘 하나를 담는 상자가 아니다.
- * 2. *"누르면 이래 제대로 안보이고"* — 알림함이 `bottom-[calc(100%+8px)]` 로
- *    **위로 자란다.** 칩이 지도 하단에 살던 시절의 기하다. 위로 올라간 뒤로는
- *    그 방향이 화면 밖과 유틸 줄 쪽이다.
- * 3. *"하단에는 그대로 이게 있고..? 헷갈리는데"* — 종은 위로 갔는데 상태 줄은
- *    아래 남아서 **같은 사실이 두 곳**에 있었다.
+ * 1. *"종 아이콘 사이즈가 가로로 너무 길고"* (the bell icon is far too wide) — the
+ *    bell-only chip sat inside a **text-row chip shell**
+ *    (`CHROME_STATUS_CHIP_CLASS`, 14px horizontal padding). That is not a box for a
+ *    single icon.
+ * 2. *"누르면 이래 제대로 안보이고"* (pressing it, you cannot see it properly) — the
+ *    tray grows **upward** via `bottom-[calc(100%+8px)]`, the geometry from when the
+ *    chip lived at the bottom of the map. After the move, upward means off-screen
+ *    and into the utility row.
+ * 3. *"하단에는 그대로 이게 있고..? 헷갈리는데"* (this is still down at the bottom?
+ *    confusing) — the bell moved up while the status row stayed below, so **the same
+ *    fact was in two places.**
  *
- * ## 이 spec 이 재는 것
+ * ## What this spec measures
  *
- * 자리를 좌표로 못박지 않는다 — 그건 디자인 판정이라 바뀔 수 있다. 대신 어디에
- * 두든 참이어야 하는 성질 셋만 잰다: **하나뿐인가 · 종이 찌그러지지 않았나 ·
- * 열었을 때 다 보이나.**
+ * It does not pin the position in coordinates — that is a design verdict and may
+ * change. It measures only the three properties that must hold wherever they are
+ * placed: **is there exactly one, is the bell not stretched, and is it fully visible
+ * when open.**
  *
- * 픽커만 스텁하고 그 뒤는 전부 실제 코드다(`vault-picker-stub` 머리말).
+ * Only the picker is stubbed; everything behind it is real code (see the
+ * `vault-picker-stub` preamble).
  */
 test("활동 줄은 한 곳에만 있고, 알림함은 열었을 때 다 보인다", async ({ page }) => {
   test.setTimeout(120_000);
   await page.setViewportSize({ width: 1512, height: 900 });
 
-  // heartbeat 없이 24시간 창 안의 완료 로그 — 「마지막 작업」 상태.
+  // A completed log inside the 24-hour window with no heartbeat — the "last activity" state.
   const at = new Date(Date.now() - 20 * 60_000).toISOString();
   const line = JSON.stringify({
     v: 1,
@@ -59,13 +66,13 @@ test("활동 줄은 한 곳에만 있고, 알림함은 열었을 때 다 보인�
     timeout: 30_000,
   });
 
-  // ① 같은 사실이 두 곳에 있으면 안 된다.
+  // ① The same fact must not appear in two places.
   await expect(
     page.getByTestId("agent-activity-chip"),
     "활동 줄이 두 곳에 그려졌다. 하나는 지워야 한다",
   ).toHaveCount(1);
 
-  // ② 종은 아이콘 하나를 담는 컨트롤이다 — 글줄용 상자에 들어가면 가로로 늘어난다.
+  // ② The bell is a control holding a single icon — a text-row box stretches it horizontally.
   const bellBox = (await bell.boundingBox())!;
   expect(
     +(bellBox.width / bellBox.height).toFixed(2),
@@ -84,6 +91,10 @@ test("활동 줄은 한 곳에만 있고, 알림함은 열었을 때 다 보인�
   expect(statusBox.y, '작업 상태 행이 독립 알림 아이콘 아래로 분리되지 않았다').toBeGreaterThan(
     bellBox.y + bellBox.height,
   );
+  const statusLabelFits = await page.getByTestId('agent-activity-status').evaluate(
+    (element) => element.scrollWidth <= element.clientWidth + 1,
+  );
+  expect(statusLabelFits, 'Codex와 마지막 작업 시각이 도구줄 폭에 묶여 잘렸다').toBe(true);
 
   // ③ 열면 다 보여야 한다 — 화면 밖으로 나가지도, 유틸 줄을 덮지도 않는다.
   await bell.click();
@@ -105,7 +116,7 @@ test("활동 줄은 한 곳에만 있고, 알림함은 열었을 때 다 보인�
     "알림함 오른변이 화면 밖이다",
   ).toBeLessThanOrEqual(view.width);
 
-  // 유틸 줄(에이전트 · 최근 변경)을 덮으면 그 버튼들이 안 읽힌다.
+  // Covering the utility row (agents, recent changes) makes those buttons unreadable.
   const lane = page.getByTestId("topology-utility-action-lane").locator("> div").first();
   const laneBox = (await lane.boundingBox())!;
   const overlaps =
@@ -116,22 +127,25 @@ test("활동 줄은 한 곳에만 있고, 알림함은 열었을 때 다 보인�
   expect(overlaps, "알림함이 위쪽 유틸 버튼 줄을 덮었다").toBe(false);
 
   /*
-   * ④ **알림함이 맨 위에 그려진다** (2026-08-17 소유자 지적: *"알림이 위로
-   * 덮어야지?"*). ③ 은 겹치는지만 봤고 **누가 위에 그려지는지**는 안 봤다 —
-   * 그래서 오른쪽 도구 타일이 알림함을 덮고 있는데도 초록이었다.
+   * ④ **The tray paints on top** (owner report 2026-08-17: *"알림이 위로 덮어야지?"*
+   * — the notification should cover what is above). ③ only checked for overlap, not
+   * **which one paints on top**, so it stayed green while the right-hand tool tiles
+   * were covering the tray.
    *
-   * 좌표 겹침이 아니라 **실제로 그 지점에서 무엇이 잡히는지**(elementFromPoint)
-   * 로 판정한다. 계산된 z-index 를 비교하면 쌓임 맥락이 다를 때 틀린 답이 나온다.
+   * The judgement uses **what is actually hit at that point** (elementFromPoint)
+   * rather than rect overlap. Comparing computed z-index gives the wrong answer when
+   * the stacking contexts differ.
    */
   const topAtInbox = await page.evaluate(() => {
     const inbox = document.querySelector('[data-testid="agent-activity-inbox"]');
     if (!inbox) return { ok: false, reason: "알림함이 없다" };
     const r = inbox.getBoundingClientRect();
     /*
-     * ⚠️ **가장자리까지 찍는다.** 처음엔 0.15~0.85 만 찍었는데, 실제로 덮고
-     * 있던 도구 타일이 알림함 오른쪽 끝 36px 안에 있어서 **6px 차이로 비껴갔다**
-     * — 결함이 그대로인데 초록이 나왔다. 겹침은 대개 가장자리에서 일어나므로
-     * 안쪽만 찍는 프로브는 이 결함을 원리적으로 못 본다.
+     * ⚠️ **Sample all the way to the edges.** The first version sampled only
+     * 0.15–0.85, and the tool tile actually covering the tray sat within 36px of its
+     * right edge, so the probe **missed by 6px** and returned green with the defect
+     * intact. Overlap usually happens at the edges, so a probe that samples only the
+     * interior cannot see this defect in principle.
      */
     const fractions = [0.02, 0.25, 0.5, 0.75, 0.98];
     const points = fractions.flatMap((fx) =>
@@ -152,8 +166,9 @@ test("활동 줄은 한 곳에만 있고, 알림함은 열었을 때 다 보인�
     "알림함 위에 다른 것이 그려졌다 — 유틸 레인의 쌓임 맥락에 갇힌 것이다",
   ).toEqual([]);
 
-  // 반투명 패널은 z-index가 이겨도 뒤 컨트롤과 rect가 겹치면 아이콘이 행 액션처럼
-  // 비쳐 보인다. 카드 밖 컨트롤과 기하 자체가 겹치지 않아야 한다.
+  // On a translucent panel, even a winning z-index shows the control behind it
+  // through the surface, so its icon reads as a row action. The geometry itself must
+  // not overlap controls outside the card.
   const outsideControlOverlaps = await page.evaluate(() => {
     const inbox = document.querySelector('[data-testid="agent-activity-inbox"]');
     if (!inbox) return [{ reason: "inbox-missing" }];

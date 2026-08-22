@@ -12,37 +12,37 @@ import { useOntologyInsight } from "@/features/vault-ontology";
 import { useGlobalSearchHotkey } from "../lib/use-global-search-hotkey";
 import { GlobalSearch } from "./GlobalSearch";
 
-// insight 가 아직 로드 안 된 경우 동일 reference 로 fallback — 매 render
-// 새 [] 할당하면 GlobalSearch 의 useMemo 가 매번 invalidate.
+// Falls back to the same reference while insight has not loaded — allocating a fresh
+// [] each render would invalidate GlobalSearch's useMemo every time.
 const EMPTY_NODES: readonly KnowledgeGraphNode[] = Object.freeze([]);
 
 export interface MountedGlobalSearchProps {
   /**
-   * ontology 노드 선택 시 — 미제공이면 default = `/ontology/` 라우트로 push.
-   * 페이지가 자체 패널 등 inline 처리하려면 이 콜백으로 흡수.
+   * On ontology node selection — unset defaults to pushing the `/ontology/` route.
+   * A page handling it inline (its own panel and so on) absorbs it through this callback.
    */
   onSelectNode?: (node: KnowledgeGraphNode) => void;
   /**
-   * project 선택 시 — 미제공이면 정적 export-safe fallback 상세로 push.
+   * On project selection — unset defaults to pushing the static-export-safe fallback detail.
    */
   onSelectProject?: (project: Project) => void;
   /**
-   * 홈 토폴로지의 SearchPalette (⌘K) 와 동거 시 기본 hotkey 를 ⇧⌘K 로 변경.
+   * Move the default hotkey to ⇧⌘K when coexisting with the home topology's SearchPalette (⌘K).
    */
   hotkeyShift?: boolean;
   /**
-   * 외부에서 open state 를 관리하고 싶을 때 (다른 hotkey / 버튼 등). 미지정
-   * 시 self-managed.
+   * For managing the open state externally (another hotkey, a button …). Unset means
+   * self-managed.
    */
   open?: boolean;
   onOpenChange?: (next: boolean) => void;
 }
 
 /**
- * 글로벌 검색 단일 mount — vault frontmatter (또는 빌드타임 dogfood) 의
- * ontology nodes + 사용자 projects 구독, ⌘K hotkey 등록, GlobalSearch 렌더
- * 모두 처리. raw markdown 검색은 vault 가 진실원이라 \`/docs\` 의 자체 검색이
- * 담당.
+ * The single mount for global search — subscribes to the ontology nodes from vault
+ * frontmatter (or the build-time dogfood) plus the user's projects, registers the ⌘K
+ * hotkey, and renders GlobalSearch. Raw markdown search belongs to `/docs`'s own
+ * search, because the vault is the source of truth there.
  */
 export function MountedGlobalSearch({
   onSelectNode,
@@ -59,14 +59,14 @@ export function MountedGlobalSearch({
     if (isControlled) onOpenChange?.(next);
     else setInternalOpen(next);
   };
-  // ontology nodes — vault frontmatter (또는 빌드타임 dogfood) 진실원에서
-  // 직접 가져옴. useOntologyInsight 가 mode-aware 우선순위 (vault > static)
-  // 로 알아서 결정.
+  // Ontology nodes — taken straight from the source of truth, vault frontmatter (or
+  // the build-time dogfood). useOntologyInsight settles the mode-aware priority
+  // (vault > static) on its own.
   const { insight } = useOntologyInsight();
   const nodes = insight?.nodes ?? EMPTY_NODES;
   const { projects } = useProjects();
 
-  // controlled mount 시 hotkey 비활성 — caller 가 다른 hotkey 로 open 관리.
+  // The hotkey is inactive on a controlled mount — the caller manages open with another hotkey.
   useGlobalSearchHotkey(open, setOpen, {
     shift: hotkeyShift,
     disabled: isControlled,
@@ -83,8 +83,8 @@ export function MountedGlobalSearch({
           onSelectNode(node);
           return;
         }
-        // default — /ontology 페이지로 점프 + deeplink ?node=<id>. 페이지가
-        // insight 로드 후 해당 노드를 selectedNode 로 자동 설정.
+        // Default — jump to the /ontology page with the deeplink ?node=<id>. The page
+        // sets that node as selectedNode once insight loads.
         router.push(buildOntologyNodeHref(node.id));
       }}
       onSelectProject={(project) => {
@@ -92,7 +92,7 @@ export function MountedGlobalSearch({
           onSelectProject(project);
           return;
         }
-        // default — 빌드 시점에 알 수 없는 로컬 slug도 여는 fallback으로 점프.
+        // Default — jump to the fallback that also opens local slugs unknown at build time.
         router.push(getProjectRuntimeDetailHref(project.slug));
       }}
     />

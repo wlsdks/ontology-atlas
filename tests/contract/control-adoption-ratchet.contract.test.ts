@@ -4,17 +4,19 @@ import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 
 /**
- * 컨트롤 채택 래칫 — **손으로 쓴 컨트롤 className 은 늘어날 수 없다.**
+ * Control adoption ratchet — **hand-written control classNames can never grow.**
  *
- * ════════════════════════════════════════════════════════════════════
- * ## 오늘의 목록 (2026-08-04) — 이 파일에서 먼저 읽을 것
- * ════════════════════════════════════════════════════════════════════
+ * Six counts: two tag families (button, anchor) × three categories (registered,
+ * debt, no-basis). A place is *registered* when it has a written claim to be
+ * outside the value layer, *debt* when it is simply not moved yet, and
+ * *no-basis* when the value layer cannot express its layout at all.
  *
- * 세는 수는 **여섯**이다 — 태그 두 갈래(버튼·앵커) × 부류 셋. 종전엔 113 이 한
- * 덩어리였고, 그래서 무엇이 진전인지 알 수 없었다. 갈라온 순서가 그대로 이 표다:
- * 등재/부채(2026-08-04 첫 라운드) → 앵커 분리(두 번째) → **근거 없음(세 번째)**.
+ * The ratchet only ever lets those numbers fall. Raising one means the value
+ * layer lost a consumer, which is the regression this file exists to stop.
  *
- * ## ✅ 종료 선언 (2026-08-06) — **손으로 스타일을 적은 자리가 0 이다**
+ * **The round history — exhaustive counts, registration verdicts, the 13 claims
+ * that were rejected and why — lives in a document, not here:**
+ * docs/CONTROL-ADOPTION-ROUNDS.md
  *
  * 소유자 지적: *"판정이 끝났다는 건 뭔 말임? 고칠 게 없다는 뜻임? 그럼 종료를
  * 선언해 줘야지 다음에 또 안 찾지 않을까?"*
@@ -533,8 +535,7 @@ import { describe, expect, it } from 'vitest';
  * 램프로 옮기니(`card/sm` = `text-label`) 계약이 재지 않던 자리가 자동으로
  * 계약값이 됐다.
  */
-
-/** 값 층 밖이라는 **주장의 종류**. 새 종류를 더하려면 위 「등재의 기준」 표에도 적는다. */
+/** The **kind of claim** that something is outside the value layer. A new kind must also be added to the registration-criteria table above. */
 type OutsideClaim =
   | 'chrome-token'
   | 'stage-geometry'
@@ -544,51 +545,59 @@ type OutsideClaim =
   | 'state-scoped'
   | 'prose'
   /**
-   * **값 층의 모양 여덟이 그 배치를 원리적으로 못 낸다** (2026-08-06 신설).
+   * **The value layer's eight shapes cannot in principle produce that layout**
+   * (added 2026-08-06).
    *
-   * `chrome-token` 과 다르다 — 그건 «토큰이 조건마다 달라져서» 못 내는 것이고,
-   * 이건 «배치 자체가 어휘에 없어서» 못 내는 것이다.
+   * Different from `chrome-token`: that one cannot be emitted because the token
+   * changes per condition; this one because the layout itself is not in the
+   * vocabulary.
    *
-   * ⚠️ **이 주장은 반드시 `conditional` 을 함께 쓴다.** 모양·축이 생기면 등재를
-   * 지우고 부채로 내려야 하기 때문이다. 조건 없이 쓰면 영구 면제가 되고, 그건
-   * 이 등록부가 「허가 목록이 아니라 부채의 다른 이름」이라는 정의를 깬다.
+   * ⚠️ **This claim must always carry a `conditional`.** Once the shape or axis
+   * exists, the registration is deleted and the place drops back into debt.
+   * Without a condition it becomes a permanent exemption, which breaks this
+   * registry's definition as a debt list rather than a permit list.
    */
   | 'shape-gap';
 
 interface OutsideEntry {
-  /** 저장소 상대 경로. 실재해야 한다. */
+  /** Repo-relative path. Must exist. */
   readonly file: string;
-  /** 이 파일에서 **값 층 밖이라고 등재하는 수**. 파일 전체가 아니다. */
+  /** **How many places in this file are registered as outside the value layer.** Not the whole file. */
   readonly count: number;
   readonly claim: OutsideClaim;
   /**
-   * 이 파일에 **남아 있어야 하는 근거 문자열**. 사라지면 주장이 죽은 것이므로
-   * 게이트가 빨개진다. `chrome-token` 은 토큰 이름을 쓰고, 그 토큰이 정말 고정
-   * 단이 아닌지까지 globals.css 에서 확인한다.
+   * The evidence string that **must remain in that file**. If it disappears the
+   * claim is dead and the gate turns red. `chrome-token` uses the token name,
+   * and the gate goes on to check in globals.css that the token really is beyond
+   * the fixed steps.
    */
   readonly proof: string;
   readonly why: string;
-  /** 「X 가 생기면 옮긴다」 — 값 층이 그 축을 얻으면 등재를 지우고 부채로 내린다. */
+  /** "Move it once X exists" — when the value layer gains that axis, delete the registration and drop the place into debt. */
   readonly conditional?: string;
 }
 
 /**
- * **검증된 「값 층 밖」 등록부.**
+ * **The verified "outside the value layer" registry.**
  *
- * 여기 없는데 값 층 밖인 자리를 발견하면 **줄을 더하기 전에 열어서 확인한다** —
- * 위 규율 1. 확인 못 하면 부채로 둔다.
+ * If you find a place that is outside the value layer but not listed here,
+ * **open it and verify before adding a row** (discipline 1 above). If you cannot
+ * verify it, leave it in debt.
  */
 const OUTSIDE_VALUE_LAYER: readonly OutsideEntry[] = [
   /*
    * ════════════════════════════════════════════════════════════════════
-   * 2026-08-06 — **완료 선언.** 남은 둘을 판정해서 목록에 넣는다
+   * 2026-08-06 — **completion declared.** The last two were judged and listed.
    * ════════════════════════════════════════════════════════════════════
    *
-   * 소유자 지적: *"판정이 끝났다는 건 뭔 말임? 고칠 게 없다는 뜻임? 그럼 종료를
-   * 선언해 줘야지 다음에 또 안 찾지 않을까?"*
+   * Owner: *"판정이 끝났다는 건 뭔 말임? 고칠 게 없다는 뜻임? 그럼 종료를 선언해
+   * 줘야지 다음에 또 안 찾지 않을까?"*
+   * (if the verdict is final and nothing is left to fix, declare it closed so the
+   * next person does not go looking again)
    *
-   * 맞다. **「고칠 게 없다」면 수가 0 이 돼야 하고, 0 이 곧 종료 선언이다.**
-   * 말로만 「판정이 끝났다」고 하고 수를 남겨 두면 다음 사람이 또 찾는다.
+   * Correct. **"Nothing left to fix" must mean the count is 0, and 0 is the
+   * declaration.** Saying the verdict is final while leaving a non-zero count
+   * just sends the next person looking.
    */
   {
     file: 'src/widgets/topology-index-panel/ui/TopologyIndexPanel.tsx',
@@ -610,24 +619,27 @@ const OUTSIDE_VALUE_LAYER: readonly OutsideEntry[] = [
       '값 층이 **균일폭 축 + 패널 스코프 잉크**를 얻으면 이 줄을 지우고 옮긴다. ' +
       '(포인터 조건부 높이는 이미 얻었다 — 그것만으로는 부족하다.)',
   },
-  /*
-   * 2026-08-06 — **마지막 셋.** 각각 열어서 근거를 확인했다.
-   */
+  /* 2026-08-06 — **the last three.** Each was opened and its evidence verified. */
   /*
    * ════════════════════════════════════════════════════════════════════
-   * 2026-08-06 — **판정이 끝난 자리는 부채에서 뺀다**
+   * 2026-08-06 — **a place with a final verdict comes out of debt**
    * ════════════════════════════════════════════════════════════════════
    *
-   * 소유자 지적: *"디자인 시스템화 안 시키기로 한 거는 왜 그런지 분석하고
-   * 문제없으면 아예 이슈에서 없애 버려 개수 안 나오게 — 계속 나한테 몇 개
-   * 남았다고 말하니까 나는 계속 고치라고 명령하게 되잖아."*
+   * Owner: *"디자인 시스템화 안 시키기로 한 거는 왜 그런지 분석하고 문제없으면
+   * 아예 이슈에서 없애 버려 개수 안 나오게 — 계속 나한테 몇 개 남았다고 말하니까
+   * 나는 계속 고치라고 명령하게 되잖아."*
+   * (if we decided not to design-system a place, analyse why, and if that is
+   * fine remove it from the issue entirely so it stops showing up in the count —
+   * being told how many are left keeps making me order it fixed)
    *
-   * 맞는 지적이다. 이 파일 머리말이 이미 그 이유를 적어 뒀다 — **부채는 0 에
-   * 닿을 수 있어야 진도 눈금이고**, 「원리적으로 못 냄」을 섞어 두면 0 에 닿을
-   * 수 없다. 판정이 끝났는데 부채에 남겨 두면 **그 수가 사람을 재촉한다.**
+   * The preamble of this file already gives the reason: **debt is only a progress
+   * gauge if it can reach 0**, and mixing in "cannot in principle" makes 0
+   * unreachable. Leaving a decided place in debt means **the number nags a
+   * person.**
    *
-   * 아래 여덟은 각각 근거를 열어서 확인했고, 전부 `conditional` 을 진다 —
-   * 값 층이 그 축을 얻으면 등재를 지우고 부채로 내린다.
+   * The eight below were each opened and verified, and all carry a
+   * `conditional` — when the value layer gains that axis the registration is
+   * deleted and the place drops back into debt.
    */
   {
     file: 'src/views/home/ui/HomePage.tsx',
@@ -733,10 +745,12 @@ const OUTSIDE_VALUE_LAYER: readonly OutsideEntry[] = [
       'segment 는 「보더 0」이 정의라 이 표기법을 못 그린다.',
   },
   /*
-   * ── 2026-08-04 통합 라운드의 등재 검증 7 — 머리말이 「다음 등재 라운드」로
-   * 미뤄 둔 크롬 토큰 후보를 자리마다 열어 확인했다. 전부 fine 32~36px 이
-   * coarse 에서 44 로 승격하거나 스케일 계수를 타는 토큰이라, 고정 단 램프는
-   * 원리적으로 표현할 수 없다(tokenIsBeyondFixedSteps 가 기계 확인).
+   * ── The 2026-08-04 combined round's 7 verified registrations. The chrome-token
+   * candidates the preamble had deferred to "the next registration round" were
+   * opened place by place. All are tokens that go from 32–36px on fine pointers
+   * to 44 on coarse, or that ride a scale factor, so a fixed-step ramp cannot
+   * express them in principle (`tokenIsBeyondFixedSteps` verifies this
+   * mechanically).
    */
   {
     file: 'src/widgets/search-palette/ui/SearchPalette.tsx',
@@ -791,37 +805,41 @@ const OUTSIDE_VALUE_LAYER: readonly OutsideEntry[] = [
 ];
 
 /**
- * **리터럴이다 — `OUTSIDE_VALUE_LAYER` 에서 파생하지 않는다.**
+ * **A literal — not derived from `OUTSIDE_VALUE_LAYER`.**
  *
- * 하드컷 래칫이 `BASELINE = REGISTRY.length` 로 두었다가 「늘지 않는다」가
- * **원리적으로 실패 불가**였던 결함을 물려받지 않는다: 줄을 더하면 기준선도 같이
- * 올라가 멈춤쇠가 양방향으로 헐거워진다. 등재를 늘리려면 이 수를 **손으로**
- * 올려야 하고, 그 diff 가 곧 「왜」를 적을 자리다.
+ * This does not inherit the hard-cut ratchet's defect, where `BASELINE =
+ * REGISTRY.length` made "it never grows" **impossible to fail in principle**:
+ * adding a row raised the baseline with it, loosening the pawl in both
+ * directions. Raising the registered count requires editing this number **by
+ * hand**, and that diff is where the "why" goes.
  */
 const BASELINE_REGISTERED = 28;
 
 /**
- * **이 수만 줄어야 한다.** 전수(108)에서 등재(30)와 근거 없음(4)을 뺀 나머지.
+ * **Only this number may fall.** The total (108) minus registered (30) minus
+ * no-basis (4).
  *
- * 등재된 파일에 손 컨트롤을 하나 더 써도 등재 수는 안 오르므로 이 수가 오른다 —
- * 등재는 면제가 아니다. 근거 없음도 마찬가지다.
+ * Writing one more hand control in a registered file does not raise the
+ * registered count, so it raises this one — registration is not an exemption.
+ * The same is true of no-basis.
  */
 const BASELINE_HAND_WRITTEN_DEBT = 0;
 
 /**
- * **세 번째 부류 — 「근거 없음」.**
+ * **The third category — "no basis".**
  *
- * 등재(`OutsideEntry`)와 **다른 것**을 주장한다:
+ * It claims something **different** from a registration (`OutsideEntry`):
  *
- * | 부류 | 주장 | 값 층이 이걸 낼 수 있나 |
+ * | Category | Claim | Can the value layer emit this? |
  * |---|---|---|
- * | 등재 | 「원리적으로 밖」 | **못 낸다** (뷰포트 함수 · JS 좌표 · 층 자신의 집 · 다른 층의 계약) |
- * | **근거 없음** | 「낼 수는 있는데 **낼 것이 없다**」 | 낼 수 있다. 그런데 이 원소에 규격이 **없다** — 컨트롤이 아니다 |
- * | 부채 | 「아직 안 옮김」 | 낼 수 있고 낼 것도 있다. 그냥 안 옮겼다 |
+ * | registered | "outside in principle" | **No** (viewport function · JS coordinates · the layer's own house · another layer's contract) |
+ * | **no-basis** | "it could, but **there is nothing to emit**" | Yes it could. But this element has **no spec** — it is not a control |
+ * | debt | "not moved yet" | It could, and there is something to emit. It simply was not moved |
  *
- * ⚠️ **`no-spec`(등재) 과 헷갈리면 안 된다.** 그쪽은 규격을 **호출자에게 위임**한
- * 자리다(`className={className}`) — 값 층이 남의 결정을 대신 낼 수 없으니 원리적으로
- * 밖이다. 이쪽은 **아무도** 규격을 안 정한다. 정할 것이 없어서다.
+ * ⚠️ **Do not confuse this with `no-spec` (a registration).** There the spec is
+ * **delegated to the caller** (`className={className}`) — the value layer cannot
+ * emit someone else's decision, so it is outside in principle. Here **nobody**
+ * decides a spec, because there is nothing to decide.
  */
 type NoBasisClaim = 'click-surface';
 
@@ -830,22 +848,25 @@ interface NoBasisEntry {
   readonly count: number;
   readonly family: 'button' | 'anchor';
   readonly claim: NoBasisClaim;
-  /** 파일에 남아 있어야 하는 근거 문자열. 등재와 같은 규율이다. */
+  /** The evidence string that must remain in the file. Same discipline as a registration. */
   readonly proof: string;
   readonly why: string;
 }
 
 /**
- * **「값 층이 낼 것이 없다」 등록부.**
+ * **The "nothing for the value layer to emit" registry.**
  *
- * 오늘 유일한 청구 유형은 `click-surface` 다: **화면을 덮는 클릭면**(스크림 ·
- * 차단 백드롭). 눌리기는 하지만 컨트롤이 아니다 — 모양·크기·타입·잉크를 **하나도**
- * 선언하지 않고, 선언하는 것은 자리잡기(`absolute inset-0 z-*`)와 바탕 한 겹뿐이다.
- * 값 층은 그 둘 다 자기 몫이 아니라고 이미 선언했다(자리잡기는 `className` 의 몫).
+ * The only claim type today is `click-surface`: a **screen-covering click
+ * surface** (scrim, blocking backdrop). It gets pressed but it is not a control
+ * — it declares **no** shape, size, type, or ink, only placement
+ * (`absolute inset-0 z-*`) plus one background layer, and the value layer has
+ * already declared both of those outside its share (placement belongs to
+ * `className`).
  *
- * ⚠️ **이 줄들은 「갚을 것」이 아니다.** 부채 74 는 0 을 향하지만 이 4 는 향하지
- * 않는다 — 그래서 수를 갈랐다. 섞어 두면 부채가 **원리적으로 0 이 될 수 없는 수**가
- * 되고, 그 순간 진도 눈금이 아니라 장식이 된다.
+ * ⚠️ **These rows are not debt to repay.** Debt 74 targets 0; these 4 do not —
+ * which is why the counts were split. Mixed together, debt becomes a number that
+ * **cannot reach 0 in principle**, and at that moment it stops being a progress
+ * gauge and becomes decoration.
  */
 const NO_BASIS: readonly NoBasisEntry[] = [
   {
@@ -889,35 +910,41 @@ const NO_BASIS: readonly NoBasisEntry[] = [
 const NO_BASIS_BUTTONS = NO_BASIS.filter((e) => e.family === 'button');
 
 /**
- * **앵커 쪽은 오늘 0 이다 — 빈 줄이 아니라 실측이다.**
+ * **The anchor side is 0 today — a measurement, not an empty row.**
  *
- * 전수 102 를 판정 함수에 돌린 결과가 0 이다. 그럴 만하다: `<a>` 는 **가는 것**이
- * 목적이라 「할 말 없는 클릭면」이 되기 어렵다(스크림에 `href` 를 달 이유가 없다).
- * 자격 있는 앵커가 생기면 그때 줄이 서고 `BASELINE_ANCHOR_NO_BASIS` 를 손으로 올린다 —
- * 지금 0 은 게이트가 공회전한다는 뜻이 아니라 **판정 함수가 실물 102 를 다 보고 낸
- * 0** 이다(프로브 ⑮가 그 사실을 단언한다).
+ * Running all 102 through the predicate returns 0. That makes sense: an `<a>`
+ * exists to **go somewhere**, so it rarely becomes a spec-less click surface
+ * (there is no reason to put an `href` on a scrim). When a qualifying anchor
+ * appears, a row is added and `BASELINE_ANCHOR_NO_BASIS` is raised by hand — this
+ * 0 does not mean the gate is idling, it is **the predicate's 0 after seeing all
+ * 102 real places** (probe ⑮ asserts exactly that).
  */
 const NO_BASIS_ANCHORS = NO_BASIS.filter((e) => e.family === 'anchor');
 
-/** 리터럴이다 — 등재 기준선들과 같은 이유(파생이면 멈춤쇠가 양방향으로 헐거워진다). */
+/** A literal — same reason as the registration baselines (a derived value loosens the pawl in both directions). */
 /*
- * 4 → 5 (2026-08-16): 앱 안 대화의 **지난 대화 목록 뒤 막**.
+ * 4 → 5 (2026-08-16): the **scrim behind the past-conversation list** in the
+ * in-app chat.
  *
- * 그 목록은 절대 위치로 떠서 대화를 덮는다(흐름에 두면 대화가 밀려나고 목록이
- * 대화의 일부처럼 보였다 — 소유자 실보고). 떠 있는 것에는 「아무 데나 누르면
- * 닫힌다」가 딸려야 하고, 그 클릭면이 이 막이다.
+ * That list floats absolutely and covers the conversation (put in flow, opening
+ * it pushed the conversation aside and the list read as part of it — reported by
+ * the owner). Anything floating needs "click anywhere to dismiss", and that
+ * click surface is this scrim.
  *
- * 자격 요건 둘을 그대로 만족한다: `absolute inset-0`(화면을 덮는다) · 램프가
- * 소유한 속성 **0개**(자리잡기와 바탕 한 겹뿐, 씌울 규격이 없다).
+ * It satisfies both qualifications exactly: `absolute inset-0` (it covers the
+ * screen) and **zero** ramp-owned properties (placement plus one background
+ * layer, nothing to apply a spec to).
  */
 const BASELINE_NO_BASIS = 5;
 const BASELINE_ANCHOR_NO_BASIS = 0;
 
 /**
- * **이 사유의 전수를 못박는다.** 오늘 저장소 전체에서 판정 함수가 자격을 주는 손
- * 컨트롤이 정확히 이만큼이다. 다섯 번째가 생기면 이 수가 어긋나 **빨개진다** — 그때
- * 사람은 ① 그 자리가 정말 클릭면이면 등록부와 이 수를 손으로 올리고(그 diff 가
- * 「왜」를 적을 자리다) ② 아니면 부채로 갚는다. 조용히 면제되는 경로는 없다.
+ * **Pins the exhaustive count for this reason.** Across the whole repository
+ * today, exactly this many hand controls are granted the qualification by the
+ * predicate. If a further one appears the number diverges and **turns red** —
+ * at which point a person either ① raises the registry and this number by hand
+ * if it really is a click surface (that diff is where the "why" goes), or ②
+ * repays it as debt. There is no path to a silent exemption.
  */
 const CLICK_SURFACE_CENSUS = 5;
 
@@ -939,12 +966,35 @@ function walk(dir: string, out: string[] = []): string[] {
 }
 
 /**
- * 여는 태그를 **중괄호 깊이**로 끊는다.
+ * Terminates an opening tag by **brace depth**.
  *
- * ★ 이걸 안 하면 `onClick={() => …}` 의 `=>` 를 태그 끝으로 읽는다. 첫 측정에서
- * 실제로 그랬고, 그 결과 419개 중 251개가 「className 없음」으로 분류돼 결론이
- * 통째로 뒤집힐 뻔했다. **잴 원소를 틀리면 수치가 나와도 틀린 수치다.**
+ * Without this, the `=>` inside `onClick={() => …}` reads as the end of the tag.
+ * That happened in the first measurement and classified 251 of 419 as "no
+ * className", nearly inverting the conclusion. **Measure the wrong element and
+ * the number is wrong even though it is a number.**
  */
+/**
+ * Blank out comments before any tag parsing, keeping byte offsets and line
+ * numbers intact (block comments become spaces, not nothing).
+ *
+ * **Why this is required, not optional** (measured 2026-08-22). `openingTag`
+ * tracks quotes so a `"` inside an attribute cannot end the tag early. A comment
+ * sitting inside a JSX opening tag defeats that: an English apostrophe — as in
+ * `This scrim's name` — opens a quote that never closes, so the parser runs past
+ * the tag and swallows the JSX after it. The click-surface count in this file
+ * silently fell 5 → 4 the moment the repo's comments were translated to English.
+ *
+ * Korean prose has no apostrophes, which is why the defect stayed latent for as
+ * long as the comments were Korean. Sibling gates (`field-adoption-ratchet`,
+ * `focus-ring-presence`, `static-surface-census`) already strip first; this is
+ * the same pattern, not a new one.
+ */
+function stripComments(source: string): string {
+  return source
+    .replace(/\/\*[\s\S]*?\*\//g, (m) => m.replace(/[^\n]/g, ' '))
+    .replace(/(^|[^:])\/\/.*$/gm, '$1');
+}
+
 function openingTag(source: string, from: number): string {
   let depth = 0;
   let quote: string | null = null;
@@ -961,39 +1011,41 @@ function openingTag(source: string, from: number): string {
 }
 
 /**
- * **컨트롤은 `<button>` 만이 아니다** (2026-08-04).
+ * **A control is not only `<button>`** (2026-08-04).
  *
- * 이 래칫은 하루 동안 `<button>` 만 셌고, 그래서 손으로 규격을 쓴 앵커
- * **109곳**(`<Link>` 85 · `<a>` 24)이 게이트의 시야 밖에 있었다. 누를 수 있고
- * 자기 높이·인셋·반경을 손으로 쓰는 원소라는 점에서 버튼과 다르지 않다 —
- * 값 층의 `link` 모양이 정확히 그 자리를 위해 있다.
+ * For one day this ratchet counted `<button>` alone, leaving **109 hand-specced
+ * anchors** (`<Link>` 85 · `<a>` 24) outside the gate's field of view. They are
+ * no different from buttons: pressable elements that hand-write their own
+ * height, inset, and radius — the value layer's `link` shape exists precisely
+ * for them.
  */
 const BUTTON_TAGS = ['button'] as const;
 const ANCHOR_TAGS = ['Link', 'a'] as const;
 
 function handWrittenTags(file: string, tags: readonly string[] = BUTTON_TAGS): string[] {
-  const source = readFileSync(file, 'utf8');
-  // `const X = controlClass({…})` / `const X = cn(controlClass({…}), …)` 의 이름들.
+  const source = stripComments(readFileSync(file, 'utf8'));
+  // Names bound by `const X = controlClass({…})` / `const X = cn(controlClass({…}), …)`.
   const systemConstants = [
     ...source.matchAll(/const\s+([A-Za-z_$][\w$]*)\s*=[^;\n]*(?:controlClass|fieldClass|fieldLabel)\s*\(/g),
   ].map((m) => m[1]);
   const found: string[] = [];
   for (const m of source.matchAll(new RegExp(`<(?:${tags.join('|')})\\b`, 'g'))) {
     const tag = openingTag(source, m.index + m[0].length);
-    if (!/className/.test(tag)) continue; // 클래스가 없으면 손으로 쓴 규격이 아니다
+    if (!/className/.test(tag)) continue; // No class means no hand-written spec
     /*
-     * 시스템을 통과했나. **여는 태그의 리터럴만 보는 것으로는 부족하다** —
-     * 완성된 클래스를 상수로 뽑아 여러 자리가 공유하면(`const INDIGO_CHIP =
-     * controlClass({…})`) 그 소비처들이 「손으로 쓴 것」으로 잡힌다.
+     * Did it go through the system? **Looking only at literals in the opening
+     * tag is not enough** — when a finished class is extracted into a constant
+     * shared by several places (`const INDIGO_CHIP = controlClass({…})`), those
+     * consumers get caught as "hand-written".
      *
-     * 2026-08-03 회수 라운드가 그 벌점을 실제로 맞았다: 인디고 강조 칩이
-     * 테두리·호버까지 있어야 완성이라 상수 4벌로 묶어야 했는데, 그러면 래칫이
-     * 나빠졌다고 말한다. **옳은 리팩터를 말리는 게이트는 게이트가 아니다.**
-     */
-    /*
-     * `fieldClass` 가 2026-08-06 에 합류했다. **이 한 줄을 빠뜨리면 옮긴 자리가
-     * 여전히 부채로 세어져 기준선이 안 내려간다** — 「체계」석이 이 PR 의
-     * 공회전 1순위 후보로 지목한 자리다.
+     * The 2026-08-03 recovery round actually took that penalty: the indigo
+     * emphasis chip needed border and hover to be complete, so it had to be
+     * bundled into 4 constants — and then the ratchet reported a regression.
+     * **A gate that discourages the correct refactor is not a gate.**
+     *
+     * `fieldClass` joined on 2026-08-06. **Leave that one name out and moved
+     * places keep counting as debt, so the baseline never falls** — the 체계
+     * (design-systems) seat named this the top idling candidate in that PR.
      */
     if (/(?:controlClass|fieldClass|fieldLabel)\s*\(/.test(tag)) continue;
     if (systemConstants.length > 0 && systemConstants.some((name) => new RegExp(`\\b${name}\\b`).test(tag))) continue;
@@ -1007,9 +1059,10 @@ function countInFile(file: string, tags: readonly string[] = BUTTON_TAGS): numbe
 }
 
 /**
- * 여는 태그 안 **문자열 리터럴의 낱말들**. 클래스가 상수·템플릿으로 조립돼 있어도
- * 리터럴 조각은 여기 잡힌다. 변형 접두(`hover:` · `focus:` …)는 떼고 본다 —
- * 「규격을 선언했나」는 상태와 무관한 질문이다.
+ * **The words inside string literals in an opening tag.** Even when the class is
+ * assembled from constants or templates, the literal fragments are caught here.
+ * Variant prefixes (`hover:`, `focus:`, …) are stripped — "did it declare a
+ * spec" is a question independent of state.
  */
 function literalClassTokens(tag: string): string[] {
   const out: string[] = [];
@@ -1021,31 +1074,33 @@ function literalClassTokens(tag: string): string[] {
   return out;
 }
 
-/** 값 층이 **소유한** 속성 종류. 이 중 하나라도 선언했으면 그것은 컨트롤 규격이다. */
+/** The property kinds the value layer **owns**. Declaring any one of them makes it a control spec. */
 const RAMP_OWNED_TOKEN =
   /^-?(min-h|h|w|size|p|px|py|pt|pb|pl|pr|gap|rounded|border|text|font|leading|tracking)(-|$)/;
 
 /**
- * **「이건 컨트롤이 아니라 화면을 덮는 클릭면이다」의 판정 함수.**
+ * **The predicate for "this is not a control but a screen-covering click
+ * surface".**
  *
- * 둘을 **동시에** 요구한다:
+ * It requires **both**:
  *
- * 1. `inset-0` — 화면(또는 부모)을 통째로 덮는다. 덮지 않으면 그냥 작은 컨트롤이고,
- *    그건 「할 말이 없다」가 아니라 「아직 안 옮겼다」다.
- * 2. 램프가 소유한 속성 **0개** — 높이·인셋·반경·보더·타입·무게를 하나도 선언하지
- *    않는다. 하나라도 선언하는 순간 값 층이 낼 것이 생기므로 자격이 사라지고 부채로
- *    돌아온다.
+ * 1. `inset-0` — it covers the screen (or its parent) entirely. If it does not,
+ *    it is just a small control, which is "not moved yet" rather than "nothing
+ *    to say".
+ * 2. **Zero** ramp-owned properties — it declares no height, inset, radius,
+ *    border, type, or weight. The moment it declares one, the value layer has
+ *    something to emit, the qualification disappears, and it returns to debt.
  *
- * 2번이 이 부류의 멈춤쇠다. 실물에서 이미 한 자리를 기각했다 — `DemoStage` 의 재생
- * 오버레이는 `absolute inset-0` 이지만 `text-body` 와 `leading-body` 를 싣는다.
- * **전면이라고 다 클릭면인 게 아니다.**
+ * (2) is this category's pawl. It has already rejected a real place —
+ * `DemoStage`'s playback overlay is `absolute inset-0` but carries `text-body`
+ * and `leading-body`. **Full-bleed does not mean click surface.**
  */
 function isClickSurface(tag: string): boolean {
   if (!/inset-0/.test(tag)) return false;
   return !literalClassTokens(tag).some((token) => RAMP_OWNED_TOKEN.test(token));
 }
 
-/** 저장소 전체에서 자격 있는 클릭면의 **전수**. 등록부와 무관하게 실측한다. */
+/** The **exhaustive count** of qualifying click surfaces across the repository. Measured independently of the registry. */
 function clickSurfaceCensus(scanned: string[], tags: readonly string[] = BUTTON_TAGS): string[] {
   const hits: string[] = [];
   for (const file of scanned) {
@@ -1057,8 +1112,9 @@ function clickSurfaceCensus(scanned: string[], tags: readonly string[] = BUTTON_
 }
 
 /**
- * 등록부를 **인자로 받는다** — 프로브가 줄을 빼거나 파일을 얹어 탐지기 자체를
- * 겨눌 수 있어야 한다(하드컷 래칫의 `stillHardCut(registry)` 와 같은 이유).
+ * Takes the registry **as an argument** so a probe can remove a row or add a
+ * file and aim at the detector itself (same reason as the hard-cut ratchet's
+ * `stillHardCut(registry)`).
  */
 function census(
   scanned: string[],
@@ -1099,11 +1155,12 @@ function census(
 }
 
 /**
- * 크롬 토큰이 **정말로 고정 단 밖인가.**
+ * Is a chrome token **really beyond the fixed steps?**
  *
- * 값 층은 고정 px 스텝을 낸다. 그러니 토큰이 조건(폭·포인터)마다 다른 값으로
- * 재정의되거나 뷰포트 함수를 쓸 때만 「표현 불가」가 참이다. 토큰이 평범한 px
- * 하나로 정리되는 날 이 검사가 빨개지고, 그 줄은 등재가 아니라 부채가 된다.
+ * The value layer emits fixed px steps, so "inexpressible" is true only when the
+ * token is redefined to a different value per condition (width, pointer) or uses
+ * a viewport function. The day a token collapses into one ordinary px value this
+ * check turns red and that row becomes debt rather than a registration.
  */
 function tokenIsBeyondFixedSteps(css: string, token: string): boolean {
   const declarations = [...css.matchAll(new RegExp(`${token}\\s*:\\s*([^;]+);`, 'g'))].map((m) => m[1].trim());
@@ -1118,60 +1175,66 @@ const globalsCss = readFileSync(GLOBALS_CSS, 'utf8');
 
 /**
  * ════════════════════════════════════════════════════════════════════
- * ## 앵커 컨트롤 — **세 번째·네 번째 수** (2026-08-04)
+ * ## Anchor controls — **the third and fourth counts** (2026-08-04)
  * ════════════════════════════════════════════════════════════════════
  *
- * ### 왜 부채 85 에 더하지 않고 수를 새로 만드나
+ * ### Why a new count instead of adding to debt 85
  *
- * 이 파일 머리말이 이미 그 판단을 적어 뒀다: *"종전엔 113 이 한 덩어리였고,
- * 그래서 무엇이 진전인지 알 수 없었다 — 옮길 수 없는 자리와 아직 안 옮긴 자리가
- * 같은 칸에 있었다."* 그 교훈을 여기 그대로 적용한다.
+ * The preamble already recorded the judgement: *"종전엔 113 이 한 덩어리였고,
+ * 그래서 무엇이 진전인지 알 수 없었다"* (113 used to be one lump, which made
+ * progress unreadable — unmovable places and not-yet-moved places sat in the same
+ * cell). The same lesson applies here.
  *
- * 앵커를 부채 85에 더하면 **194** 가 되고, 그 수가 내려갈 때 버튼이 옮겨진
- * 것인지 앵커가 옮겨진 것인지 알 수 없다. 두 부류는 **작업 단위가 다르다** —
- * 버튼은 `controlClass({ shape })` 한 줄이면 대개 끝나는데, 앵커는 `<Link>` 가
- * `cn` 병합을 강제하고(이 파일이 실측해 둔 곳: raw `buttonVariants()` 는 base 의
- * `border-transparent` 와 변형 보더가 둘 다 남아 소스 순서가 투명을 이긴다)
- * 외부 링크는 `↗` 선행 표식 규칙까지 걸린다.
+ * Adding anchors to debt 85 makes **194**, and when that number falls nobody can
+ * tell whether a button or an anchor moved. The two families are **different
+ * units of work** — a button is usually one `controlClass({ shape })` line, while
+ * an anchor forces `<Link>` through a `cn` merge (measured in this file: raw
+ * `buttonVariants()` leaves both the base's `border-transparent` and the variant
+ * border in place, and source order lets transparent win) and external links also
+ * hit the leading `↗` marker rule.
  *
- * ### `<Link>` 와 `<a>` 는 왜 한 수인가
+ * ### Why `<Link>` and `<a>` are one count
  *
- * 반대로 이 둘은 **가르지 않는다**. `<Link>` 가 렌더하는 것이 `<a>` 이고, 값 층에서
- * 둘의 목적지가 같은 `shape: 'link'` 다. 처방이 같은 것을 두 칸에 두면 그건 진도를
- * 읽는 눈금이 아니라 장부질이다. 대신 태그별 내역을 여기 적어 둔다 —
- * **`<Link>` 71 · `<a>` 21**(2026-08-04 타입-분리 반려 라운드의 배당 회수 10 후 실측).
+ * These two are **not** split. `<Link>` renders an `<a>`, and in the value layer
+ * both have the same destination, `shape: 'link'`. Putting one prescription in
+ * two cells is bookkeeping, not a progress gauge. The per-tag breakdown is
+ * recorded here instead — **`<Link>` 71 · `<a>` 21** (measured after the 10
+ * recovered by the 2026-08-04 round that rejected splitting by type).
  *
- * ⚠️ 감사 보고서의 수는 **77** 이었다. 그 차이는 드리프트이거나 다른 필터이고,
- * 게이트가 쓰는 수는 **이 파일의 파서가 실제로 센 것**이어야 한다 — 남이 센 수를
- * 기준선에 적으면 첫 실행이 빨개지고, 그때 사람은 게이트가 아니라 수를 고친다.
+ * ⚠️ The audit report's number was **77**. That difference is drift or a
+ * different filter, and the number the gate uses must be **what this file's
+ * parser actually counted** — writing someone else's count into a baseline makes
+ * the first run red, and then a person fixes the number instead of the gate.
  *
- * ### 등재는 하루 뒤 19 가 됐다 — 게이트를 켠 날의 0 은 「검증 전」이었다
+ * ### Registrations became 19 a day later — the 0 on the day the gate opened meant "not yet verified"
  *
- * 신설 당일에는 「값 층 밖」 주장이 하나도 검증되지 않아 110 이 전부 부채였다.
- * 규율 1대로 자리마다 열어 보니 **19 가 참**이었고, 그중 하나(하단 탭바의
- * `--topology-bottom-tab-min-height`)는 **게이트가 직접 기각했다** — 56px 고정
- * 선언 하나라 `tokenIsBeyondFixedSteps` 가 거절한다. 등재가 도피처가 되지
- * 않는다는 것을 이 라운드가 실측으로 증명한 자리다.
+ * On the day it was created no "outside the value layer" claim had been verified,
+ * so all 110 were debt. Opening each place per discipline 1, **19 were true**, and
+ * one of them (the bottom tab bar's `--topology-bottom-tab-min-height`) was
+ * **rejected by the gate itself** — a single fixed 56px declaration, which
+ * `tokenIsBeyondFixedSteps` refuses. This is where the round proved by
+ * measurement that registration is not an escape hatch.
  */
-// 2026-08-18 관문 리메이크: 히어로 CTA 쌍(published `<a>` · pending `<Link>`)
-// + 데모 고스트 앵커 — 셋 다 `buttonVariants`(standard-button) 등재분.
-// 2026-08-18 (2차, 소유자 지적): 히어로 둘째 줄 — Intel `<a>` · Windows `<a>` ·
-// Windows 방문자용 macOS `<a>` · 브라우저 `<Link>`. 넷 다 standard-button.
-// 2026-08-19: 설치 절 삭제로 관문에서 앵커 7개가 사라졌다(판의 주 CTA · Intel ·
-// GitHub 출구 · 웹 출구 · 릴리스 노트 · Windows 받기 · Windows 추적) —
-// `Link` 19→17 · `a` 17→12.
+// 2026-08-18 gateway remake: the hero CTA pair (published `<a>` · pending
+// `<Link>`) + the demo ghost anchor — all three registered via `buttonVariants`
+// (standard-button).
+// 2026-08-18 (second pass, owner request): the hero's second row — Intel `<a>` ·
+// Windows `<a>` · macOS `<a>` for Windows visitors · browser `<Link>`. All four
+// standard-button.
+// 2026-08-19: deleting the install section removed 7 anchors from the gateway
+// (the panel's primary CTA · Intel · GitHub exit · web exit · release notes ·
+// Windows download · Windows tracking) — `Link` 19→17 · `a` 17→12.
 const ANCHOR_TAG_SPLIT: Readonly<Record<string, number>> = { Link: 17, a: 12 };
 
 /**
- * **검증된 「값 층 밖」 앵커 등록부.**
+ * **The verified "outside the value layer" anchor registry.**
  *
- * 버튼 쪽 `OUTSIDE_VALUE_LAYER` 와 같은 규율이다 — 여기 없는데 값 층 밖인 자리를
- * 발견하면 **줄을 더하기 전에 열어서 확인한다**. 확인 못 하면 부채로 둔다.
+ * Same discipline as the button side's `OUTSIDE_VALUE_LAYER` — if you find a
+ * place outside the value layer that is not listed here, **open it and verify
+ * before adding a row**. If you cannot verify it, leave it in debt.
  */
 const OUTSIDE_VALUE_LAYER_ANCHORS: readonly OutsideEntry[] = [
-  /*
-   * 2026-08-06 — **마지막 링크 둘.** 이걸로 「손으로 스타일을 적은 링크」가 0 이 된다.
-   */
+  /* 2026-08-06 — **the last two links.** With these, hand-styled links reach 0. */
   {
     file: 'src/views/home/ui/HomePage.tsx',
     count: 1,
@@ -1303,13 +1366,15 @@ const OUTSIDE_VALUE_LAYER_ANCHORS: readonly OutsideEntry[] = [
       '층 자신이 `className` 의 몫이라고 정의한 층이다(자리잡기·폭·순서).',
   },
   /*
-   * ── 2026-08-04 link 바닥 24 라운드의 산문 재단 — 「상시 밑줄 12」 부류 중
-   * 마크다운 본문 흐름 속 6 을 컨트롤 원장에서 뺀다. ⚠️ 선행 판정은 «산문 5 +
-   * 가짜 산문 2 = 7» 이라 셌지만, 이 파일의 파서 기준 재전수는 **6** 이다
-   * (관문 마크다운 a-override 는 1개 — 판정문의 «관문 2» 는 잘린-본문 안내
-   * CTA 를 산문으로 오산한 것. 그 CTA 는 홀로 선 컨트롤이라 부채에 남는다).
-   * 가짜 산문 2(외부/repo 링크의 inline-flex)는 등재와 같은 PR 에서
-   * display:inline 으로 정정됐다 — 320px 줄바꿈 결함이 함께 닫혔다.
+   * ── Prose reclassification from the 2026-08-04 link floor-24 round: of the
+   * "always-on underline 12" category, the 6 inside markdown body flow come out of
+   * the control ledger. ⚠️ The preceding verdict counted "prose 5 + pseudo-prose 2
+   * = 7", but the recount with this file's parser is **6** (the gateway markdown
+   * a-override is 1 — the verdict's "gateway 2" mistook the truncated-body notice
+   * CTA for prose; that CTA is a standalone control and stays in debt). The 2
+   * pseudo-prose places (inline-flex on external/repo links) were corrected to
+   * display:inline in the same PR as the registration, closing the 320px wrapping
+   * defect at the same time.
    */
   {
     file: 'src/widgets/docs-vault/ui/DocsVaultViewer.tsx',
@@ -1340,64 +1405,70 @@ const OUTSIDE_VALUE_LAYER_ANCHORS: readonly OutsideEntry[] = [
 ];
 
 /**
- * **리터럴이다.** 버튼 쪽 기준선들과 같은 이유 — 파생값으로 두면 멈춤쇠가
- * 양방향으로 헐거워진다(하드컷 래칫이 실제로 그렇게 죽었다).
+ * **A literal.** Same reason as the button-side baselines — a derived value
+ * loosens the pawl in both directions (that is how the hard-cut ratchet actually
+ * died).
  */
-// 29 → 32 (2026-08-18 관문 리메이크): DownloadPage 의 히어로 CTA 쌍 + 데모
-// 고스트 앵커 — 전부 standard-button(값 층이 명시적으로 양보한 모양) 청구다.
-// 32 → 36 (2026-08-18 2차): 히어로 둘째 줄 4 — 소유자 지적(히어로에 Windows
-// 받기·웹 진입 버튼이 없었다)로 목적지 넷이 전부 버튼이 됐다. 같은
-// standard-button 청구라 등재 사유도 같다.
+// 29 → 32 (2026-08-18 gateway remake): DownloadPage's hero CTA pair + the demo
+// ghost anchor — all standard-button claims (the shape the value layer yielded).
+// 32 → 36 (2026-08-18, second pass): the hero's second row of 4 — the owner
+// pointed out the hero had no Windows-download or web-entry button, so all four
+// destinations became buttons. The same
+// The same standard-button claim, so the registration reason is the same.
 const BASELINE_ANCHOR_REGISTERED = 29;
 
-/** **이 수만 줄어야 한다.** 앵커 전수(92)에서 등재(25)를 뺀 나머지. */
+/** **Only this number may fall.** The anchor total (92) minus registered (25). */
 const BASELINE_ANCHOR_DEBT = 0;
 
 const anchorCensus = census(scannedFiles, OUTSIDE_VALUE_LAYER_ANCHORS, ANCHOR_TAGS, NO_BASIS_ANCHORS);
 
 /**
  * ════════════════════════════════════════════════════════════════════
- * ## 폼 — **다섯 번째 수** (2026-08-05)
+ * ## Forms — **the fifth count** (2026-08-05)
  * ════════════════════════════════════════════════════════════════════
  *
- * ### 이 게이트가 폼을 못 보고 있었다
+ * ### This gate could not see forms
  *
- * 위 두 부류는 `button` 과 `Link`/`a` 만 센다. 그래서 **`<input>` ·
- * `<textarea>` · `<select>` · `<label>` 은 이 래칫의 시야 밖**이었고, 「손으로
- * 쓴 컨트롤이 늘지 않는다」는 약속이 폼에 대해서는 한 번도 참인 적이 없다.
+ * The two families above count only `button` and `Link`/`a`. So **`<input>`,
+ * `<textarea>`, `<select>`, and `<label>` were outside this ratchet's field of
+ * view**, and the promise that hand-written controls never grow had never once
+ * been true for forms.
  *
- * 2026-08-05 전수가 그 대가를 쟀다:
+ * The 2026-08-05 exhaustive count measured the cost:
  *
- * | 항목 | 실측 |
+ * | Item | Measured |
  * |---|---:|
- * | `<input>` · `<textarea>` · 네이티브 `<select>` · `<label>` | **62** |
- * | `--control-h-*` 를 실제로 읽는 `<input>` | **6 / 33 (18%)** |
- * | (높이·반경·글자·테두리) 고유 조합 | **44건에서 34종 (77%)** |
- * | 네이티브 체크박스 중 WCAG 2.5.8 AA(24px) 미달 | **5 / 5** |
+ * | `<input>` · `<textarea>` · native `<select>` · `<label>` | **62** |
+ * | `<input>` that actually reads `--control-h-*` | **6 / 33 (18%)** |
+ * | Distinct (height, radius, type, border) combinations | **34 across 44 places (77%)** |
+ * | Native checkboxes below WCAG 2.5.8 AA (24px) | **5 / 5** |
  *
- * 칩이 「143개에서 50종(35%)」이었던 것보다 **흩어짐이 더 심하다**. 모수가 작아
- * 절대 수는 작지만, 자리마다 손으로 값을 새로 만든 비율은 더 높다.
+ * That is **more scattered** than chips at "50 combinations across 143 (35%)".
+ * The absolute number is smaller because the population is smaller, but the
+ * share of places inventing a value by hand is higher.
  *
- * ### 왜 세 번째 수를 만드나 — 부채 74에 더하지 않는 이유
+ * ### Why a third count instead of adding to debt 74
  *
- * 앵커를 따로 센 것과 같은 이유다(위 「세 번째·네 번째 수」 절). 폼을 버튼
- * 부채에 더하면 그 수가 내려갈 때 **버튼이 옮겨진 것인지 폼이 옮겨진 것인지 알
- * 수 없다.** 작업 단위도 다르다 — 버튼은 `controlClass({ shape })` 한 줄이면
- * 대개 끝나지만, 폼은 **값 층에 아직 없는 모양**(`field`)을 만들어야 해서
- * 「체계」 소집이 먼저다.
+ * Same reason anchors were counted separately (the "third and fourth counts"
+ * section above). Adding forms to button debt means that when the number falls
+ * **nobody can tell whether a button or a form moved.** The unit of work also
+ * differs — a button is usually one `controlClass({ shape })` line, whereas a
+ * form needs a **shape the value layer does not have yet** (`field`), so
+ * convening 체계 (the design-systems seat) comes first.
  *
- * ### 이 수는 오늘 «옮길 수 있다»고 말하지 않는다
+ * ### Today this count does not claim anything is movable
  *
- * 등재(`OUTSIDE_VALUE_LAYER_FIELDS`)가 **비어 있다.** 값 층에 필드 모양이 아직
- * 없으니 「값 층이 원리적으로 못 낸다」를 주장할 근거도 아직 없기 때문이다.
- * 그래서 오늘 이 수가 하는 일은 하나다: **더 늘지 못하게 막는 것.** 모양이
- * 생기면 그때 등재가 서고 부채가 내려간다.
+ * The registration list (`OUTSIDE_VALUE_LAYER_FIELDS`) is **empty**, because
+ * without a field shape in the value layer there is not yet any basis to claim
+ * "the value layer cannot emit this in principle". So today this count does
+ * exactly one thing: **stop it growing further.** When the shape exists,
+ * registrations appear and debt comes down.
  */
 const FIELD_TAGS = ['input', 'textarea', 'select', 'label'] as const;
 
 /**
- * **비어 있다** — 위 주석의 이유. 값 층에 `field` 모양이 생기기 전에는 「값 층이
- * 못 낸다」가 주장이 아니라 동어반복이다.
+ * **Empty** — for the reason above. Until the value layer has a `field` shape,
+ * "the value layer cannot emit this" is a tautology, not a claim.
  */
 const OUTSIDE_VALUE_LAYER_FIELDS: readonly OutsideEntry[] = [
   {
@@ -1425,12 +1496,13 @@ const OUTSIDE_VALUE_LAYER_FIELDS: readonly OutsideEntry[] = [
   },
   /*
    * ════════════════════════════════════════════════════════════════════
-   * 2026-08-06 — **폼도 종료 선언.** 남은 20 을 전수 판정했다
+   * 2026-08-06 — **forms declared closed too.** The remaining 20 were judged exhaustively.
    * ════════════════════════════════════════════════════════════════════
    *
-   * 이 배열은 하루 전까지 **비어 있었다** — 값 층에 필드 규격이 없어서 「값 층이
-   * 원리적으로 못 낸다」가 동어반복이었기 때문이다. 이제 `fieldClass`·`fieldLabel`
-   * 이 있으므로, 남은 자리마다 «왜 못 옮기나» 를 실제로 댈 수 있다.
+   * Until the day before, this array was **empty** — with no field spec in the
+   * value layer, "the value layer cannot emit this in principle" was a tautology.
+   * Now that `fieldClass` and `fieldLabel` exist, each remaining place can actually
+   * state why it cannot be moved.
    */
   {
     file: 'src/features/project-edit/ui/ProjectForm.tsx',
@@ -1509,10 +1581,11 @@ const OUTSIDE_VALUE_LAYER_FIELDS: readonly OutsideEntry[] = [
   },
 ];
 
-/** **리터럴이다.** 다른 기준선들과 같은 이유 — 파생값은 멈춤쇠를 양방향으로 헐겁게 만든다. */
+/** **A literal.** Same reason as the other baselines — a derived value loosens the pawl in both directions. */
 /*
- * 2026-08-15: -1 → -6. Checkbox 프리미티브 이주로 raw type="checkbox" 5파일
- * 6곳이 shared/ui/checkbox.tsx 한 곳으로 접혔다(「체계」석 비준 —
+ * 2026-08-15: -1 → -6. Migrating to the Checkbox primitive folded 6 raw
+ * type="checkbox" places across 5 files into shared/ui/checkbox.tsx (ratified by
+ * the 체계 seat —
  * docs/DECISIONS.md).
  */
 const BASELINE_FIELD_DEBT = -6;
@@ -1521,24 +1594,26 @@ const fieldCensus = census(scannedFiles, OUTSIDE_VALUE_LAYER_FIELDS, FIELD_TAGS,
 
 describe('컨트롤 채택 래칫 — 폼(`<input>` · `<textarea>` · `<select>` · `<label>`)', () => {
   /**
-   * ⚠️ **부채 수에 하한을 걸면 진전을 벌한다.** 종전 이 단언은 «20 초과» 였고,
-   * 부채가 29 → 20 으로 내려가자 그대로 빨개졌다 — 오늘 세 번째로 같은 실패를
-   * 밟았다. 부채가 줄어드는 것은 목적지이지 결함이 아니다.
+   * ⚠️ **A lower bound on the debt count punishes progress.** This assertion used
+   * to require "more than 20" and turned red the moment debt fell 29 → 20 — the
+   * third time the same failure was repeated in one day. Debt falling is the
+   * destination, not a defect.
    *
-   * 그래서 이 자리에서 물어야 하는 것은 «부채가 충분히 많은가» 가 아니라
-   * **«탐지기가 아직 살아 있는가»** — 아래 태그별 시야 단언이 그것을 본다.
-   * 여기서는 부채가 **0 이 아닌 동안** 세 부류의 합이 전수와 맞는지만 본다.
+   * So the question here is not "is there enough debt" but **"is the detector still
+   * alive"** — the per-tag field-of-view assertions below check that. Here we only
+   * check that, **while debt is non-zero**, the three categories sum to the total.
    */
   /**
-   * ⚠️ **0 에 닿는 순간 터졌다** — 이 파일에서 **여섯 번째**이고, 이번이 진짜
-   * 완료 지점이었다(2026-08-06).
+   * ⚠️ **It broke the moment the count reached 0** — the **sixth** time in this
+   * file, and this time it was the genuine completion point (2026-08-06).
    *
-   * 종전 이 단언은 «전수 == 기준선» 을 봤는데, 남은 자리를 전부 목록에 넣어
-   * 부채가 0 이 되자 «전수 20 vs 기준선 0» 으로 어긋났다. **전수와 부채는 다른
-   * 수다** — 전수는 그 태그가 몇 개 있느냐이고, 부채는 그중 아직 안 옮긴 것이다.
+   * This assertion used to check "total == baseline". Once every remaining place
+   * was listed and debt reached 0, it diverged as "total 20 vs baseline 0".
+   * **Total and debt are different numbers** — the total is how many of that tag
+   * exist, debt is how many of them are not moved yet.
    *
-   * 물어야 하는 것은 **세 부류(부채·등재·근거없음)의 합이 전수와 맞는가** 다.
-   * 그건 부채가 0 이든 100 이든 참이어야 한다.
+   * The question is whether **the three categories (debt, registered, no-basis)
+   * sum to the total**. That must hold whether debt is 0 or 100.
    */
   it('세 부류의 합이 전수와 같다 — 어느 칸에도 안 들어간 폼이 없다', () => {
     expect(fieldCensus.registered + fieldCensus.noBasis + fieldCensus.debt).toBe(fieldCensus.total);
@@ -1569,22 +1644,26 @@ describe('컨트롤 채택 래칫 — 폼(`<input>` · `<textarea>` · `<select>
   });
 
   /**
-   * **태그별로 0이 아닌지 각각 본다.** 「공집합이 아니라는 것과 전집합을 본다는
-   * 것은 다르다」 — 아이콘 래칫이 작은따옴표만 보면서 분모 단언은 통과했던
-   * 그 결함(2026-08-05)의 재발을 막는다. `label` 하나만 세어도 총계는 20을
-   * 넘으므로, 총계 단언만으로는 `input` 이 안 세어지는 것을 못 잡는다.
+   * **Check non-zero per tag, one tag at a time.** "Not being an empty set is
+   * different from seeing the whole set" — this prevents a repeat of the
+   * 2026-08-05 defect where the icon ratchet matched single quotes only and still
+   * passed its denominator assertion. `label` alone puts the total over 20, so a
+   * total-only assertion cannot catch `input` going uncounted.
    */
   /**
-   * ⚠️ **부채로 재면 안 된다 — 진전을 벌하게 된다** (2026-08-06 에 실제로 터졌다).
+   * ⚠️ **Do not measure this with debt — it punishes progress** (it actually broke
+   * on 2026-08-06).
    *
-   * 종전 이 단언은 태그마다 **부채가 1건 이상**인지 물었다. 그런데 그날 네이티브
-   * `<select>` 를 **전부** `fieldClass` 로 옮기자 그 수가 0이 되면서 검사가
-   * 빨개졌다 — 규격이 좋아지는 방향에서 게이트가 터진 것이고, 그러면 다음
-   * 사람은 게이트 대신 **규격 쪽을 되돌린다**(`documentation.md` 가 금지하는
-   * 바로 그 모양). 오늘만 같은 실패를 두 번째로 밟았다.
+   * This assertion used to require **at least one debt item** per tag. That day
+   * every native `<select>` moved to `fieldClass`, the count hit 0, and the check
+   * went red — a gate breaking in the direction of a better spec, which makes the
+   * next person revert **the spec** rather than the gate (exactly the shape
+   * `documentation.md` forbids). That was the second time the same failure happened
+   * in a single day.
    *
-   * 그래서 **스캐너의 시야**를 잰다 — 저장소에 그 태그가 실재하는지(부채든
-   * 아니든). 부채가 0이 되는 것은 목적지이지 결함이 아니다.
+   * So we measure the **scanner's field of view** — whether that tag exists in the
+   * repository at all, debt or not. Debt reaching 0 is the destination, not a
+   * defect.
    */
   it('네 태그를 각각 보고 있다 — 한 태그만 보면서 총계로 위장하지 못한다', () => {
     const seen = Object.fromEntries(FIELD_TAGS.map((tag) => [tag, 0])) as Record<string, number>;
@@ -1852,28 +1931,30 @@ describe('컨트롤 채택 래칫 — 근거 없음(값 층이 낼 것이 없다
 });
 
 /**
- * **탐지기 프로브** — `/gate-probe` 규율.
+ * **Detector probes** — the `/gate-probe` discipline.
  *
- * 위 테스트들은 「오늘의 수」와 「오늘의 등록부」 위에서만 돈다. 그러면 탐지기가
- * 조용히 빈 집합을 돌거나, 등재가 부채를 통째로 삼켜도 전부 초록일 수 있다.
- * 여기서 판정 함수를 **양방향으로** 겨눈다.
+ * The tests above run only on "today's numbers" and "today's registry". That
+ * leaves room for the detector to idle on an empty set, or for registrations to
+ * swallow debt whole, with everything still green. Here the predicate is aimed at
+ * **in both directions**.
  *
- * ⚠️ 어제 하드컷 래칫에서 `BASELINE = REGISTRY.length` 라 「늘지 않는다」가
- * **원리적으로 실패 불가**였던 결함이 나왔다. 그래서 두 기준선을 리터럴로 두고,
- * 아래 ④가 그 사실 자체를 단언한다.
+ * ⚠️ The hard-cut ratchet had the defect where `BASELINE = REGISTRY.length` made
+ * "it never grows" **impossible to fail in principle**. So both baselines are
+ * literals, and ④ below asserts that fact itself.
  */
 describe('탐지기 프로브 — 이 게이트가 실제로 무엇을 잡는가', () => {
   const FIXTURE = 'tests/fixtures/control-adoption/HandWrittenControl.tsx.fixture';
 
   it('① 손으로 쓴 컨트롤을 실제로 센다 — 0을 통과로 읽지 않는다', () => {
     expect(existsSync(FIXTURE), '프로브 픽스처가 사라지면 탐지기 증명도 사라진다').toBe(true);
-    // 픽스처 둘: 램프 밖 규격 하나 + **등재 안 된** 크롬 토큰 자리 하나.
+    // Two fixtures: one off-ramp spec + one **unregistered** chrome-token place.
     expect(countInFile(FIXTURE), '픽스처의 손 컨트롤 2건을 못 셌다면 파서가 깨진 것이다').toBe(2);
 
     /*
-     * 실물 위에서도 살아 있다. ⚠️ **여기서 «몇 개나 남았는가» 를 물으면 안 된다** —
-     * 부채가 줄수록 그 수도 주므로, 하한을 걸면 다 옮긴 날 빨개진다(2026-08-06
-     * 재검수). 그래서 **훑은 파일 수**(스캐너의 시야)를 본다. 그건 부채와 무관하다.
+     * Alive on the real tree too. ⚠️ **Do not ask "how many are left" here** — that
+     * number shrinks with debt, so a lower bound turns red on the day everything is
+     * moved (re-reviewed 2026-08-06). Measure the **number of files scanned** (the
+     * scanner's field of view) instead; that is independent of debt.
      */
     expect(scannedFiles.length, '훑은 파일이 너무 적다 — 스캐너의 시야가 죽었다').toBeGreaterThan(150);
     expect(byFile.size, '파일별 집계가 음수일 수 없다').toBeGreaterThanOrEqual(0);
@@ -1881,9 +1962,9 @@ describe('탐지기 프로브 — 이 게이트가 실제로 무엇을 잡는가
 
   it('② 등재 안 된 자리를 손 컨트롤로 만들면 **부채**로 잡힌다 — 등재 쪽으로 새지 않는다', () => {
     /*
-     * 픽스처를 스캔 대상에 얹으면 그 2건이 전부 부채로 간다. 크롬 토큰을 쓰는
-     * 자리라도 **등록부에 없으면** 등재가 아니다 — 「토큰을 쓰면 면제」가 아니라
-     * 「검증되어 등재된 줄만 면제」다.
+     * Adding the fixtures to the scan sends both straight to debt. A place using a
+     * chrome token is **not registered unless it is in the registry** — the rule is
+     * "only verified, registered rows are exempt", not "using a token exempts you".
      */
     const withFixture = census([...scannedFiles, FIXTURE]);
     expect(withFixture.registered).toBe(registered);
@@ -1919,30 +2000,31 @@ describe('탐지기 프로브 — 이 게이트가 실제로 무엇을 잡는가
   });
 
   /**
-   * ⚠️ **음성 예시를 토큰 이름으로 못박지 않는다** (2026-08-05 에 그것 때문에
-   * 한 번 빨개졌다).
+   * ⚠️ **Do not pin the negative example to a token name** (doing so turned this
+   * red once, on 2026-08-05).
    *
-   * 종전 이 검사는 음성 예시로 `--control-h-md` 를 이름째 적어 뒀다 — *"32px
-   * 하나뿐이라 값 층이 그대로 낼 수 있다"*. 그런데 그날 `@media (pointer:
-   * coarse)` 에서 컨트롤 높이를 44px 로 올리는 정당한 변경이 들어오자 그 토큰이
-   * **양성으로 옮겨 갔고**, 검사는 헬퍼가 멀쩡한데도 실패했다.
+   * This check used to name `--control-h-md` as its negative example — *"a single
+   * 32px, so the value layer can emit it as is"*. Then a legitimate change raised
+   * control heights to 44px under `@media (pointer: coarse)`, the token **moved to
+   * the positive side**, and the check failed even though the helper was fine.
    *
-   * 그건 `documentation.md` 가 금지하는 모양이다 — 기댓값을 사람이 손으로 적으면
-   * 규격이 좋아지는 방향의 변경에서 검사가 터지고, 그러면 다음 사람은 검사 대신
-   * **규격 쪽을 되돌린다**. 그래서 음성 예시를 CSS 에서 **뽑아낸다**: 지금
-   * 실제로 「선언 하나 + 평범한 px」인 토큰을 골라 헬퍼가 그것을 거절하는지 본다.
+   * That is the shape `documentation.md` forbids — a hand-written expectation
+   * breaks on changes that improve the spec, and the next person reverts **the
+   * spec** rather than the check. So the negative example is **derived from the
+   * CSS**: pick a token that really is "one declaration + a plain px" today and
+   * check that the helper rejects it.
    */
   it('⑤ 토큰 검사가 아무거나 통과시키지 않는다 — 고정 단 토큰은 반드시 거절한다', () => {
-    // 양성: 조건마다 재정의되거나 뷰포트 함수를 쓴다.
+    // Positive: redefined per condition, or using a viewport function.
     expect(tokenIsBeyondFixedSteps(globalsCss, '--git-row-h')).toBe(true);
     expect(tokenIsBeyondFixedSteps(globalsCss, '--overlay-close-size')).toBe(true);
-    // `--control-h-md` 는 2026-08-05 부터 coarse 에서 44 로 재선언된다 → 양성.
+    // Since 2026-08-05 `--control-h-md` is redeclared as 44 on coarse → positive.
     expect(
       tokenIsBeyondFixedSteps(globalsCss, '--control-h-md'),
       'coarse 승격이 사라졌다면 그건 손가락 바닥이 무너진 것이다',
     ).toBe(true);
 
-    // 음성: 「선언 하나 + 평범한 px」인 토큰을 CSS 에서 직접 골라 온다.
+    // Negative: pick a "one declaration + plain px" token straight from the CSS.
     const counts = new Map<string, string[]>();
     for (const m of globalsCss.matchAll(/(--[a-z0-9-]+)\s*:\s*([^;{}]+);/g)) {
       const list = counts.get(m[1]) ?? [];
@@ -1962,19 +2044,20 @@ describe('탐지기 프로브 — 이 게이트가 실제로 무엇을 잡는가
         `${token} 은 px 하나뿐인데 통과했다 — 「크롬 토큰이라 못 옮긴다」가 무제한 면제가 된다`,
       ).toBe(false);
     }
-    // 없는 토큰은 근거가 아니다.
+    // A token that does not exist is not evidence.
     expect(tokenIsBeyondFixedSteps(globalsCss, '--not-a-real-token-xyz')).toBe(false);
   });
 
   it('⑦ 앵커 탐지기가 실제로 센다 — `<button>` 만 세던 사각지대의 자(尺)', () => {
-    // 픽스처의 앵커 둘(`<Link>` 하나 · `<a>` 하나)을 세야 한다.
+    // Must count the fixture's two anchors (one `<Link>`, one `<a>`).
     expect(
       countInFile(FIXTURE, ANCHOR_TAGS),
       '픽스처의 손 앵커 2건을 못 셌다면 앵커 탐지기가 죽은 것이다',
     ).toBe(2);
     /*
-     * 실물 위에서도 살아 있다 — 이게 없으면 「앵커 부채 0」과 「안 셌다」가 같은
-     * 초록이다. **다만 부채 수가 아니라 스캐너의 시야로 잰다**(위와 같은 이유).
+     * Alive on the real tree — without this, "anchor debt 0" and "not counted at
+     * all" are the same green. **But measure the scanner's field of view, not the
+     * debt count** (same reason as above).
      */
     expect(scannedFiles.length, '훑은 파일이 너무 적다 — 스캐너의 시야가 죽었다').toBeGreaterThan(150);
     expect(anchorCensus.byFile.size, '앵커 파일별 집계가 음수일 수 없다').toBeGreaterThanOrEqual(0);
@@ -1982,14 +2065,14 @@ describe('탐지기 프로브 — 이 게이트가 실제로 무엇을 잡는가
 
   it('⑧ 앵커를 하나 더 쓰면 **앵커 부채로** 잡힌다 — 버튼 수는 안 움직인다', () => {
     const withFixture = census([...scannedFiles, FIXTURE], OUTSIDE_VALUE_LAYER_ANCHORS, ANCHOR_TAGS, NO_BASIS_ANCHORS);
-    // 픽스처는 등록부에 없으므로 2건이 전부 **부채**로 간다.
+    // The fixtures are not in the registry, so both go to **debt**.
     expect(withFixture.registered).toBe(anchorCensus.registered);
     expect(withFixture.debt).toBe(anchorCensus.debt + 2);
     expect(
       withFixture.debt,
       '앵커가 늘었는데 기준선을 안 넘었다면 이 게이트는 아무것도 안 막는다',
     ).toBeGreaterThan(BASELINE_ANCHOR_DEBT);
-    // 두 수는 서로를 오염시키지 않는다.
+    // The two counts do not contaminate each other.
     expect(census([...scannedFiles, FIXTURE]).debt, '앵커 픽스처가 버튼 부채를 움직였다').toBe(debt + 2);
   });
 
@@ -2020,15 +2103,16 @@ describe('탐지기 프로브 — 이 게이트가 실제로 무엇을 잡는가
   });
 
   /**
-   * ⚠️ **실물 결함이 남아 있길 요구하면 안 된다** (2026-08-06 에 실제로 터졌다).
+   * ⚠️ **Do not require a real defect to still exist** (it actually broke on
+   * 2026-08-06).
    *
-   * 종전 이 프로브는 *"DownloadPage 의 릴리스노트 링크가 부채로 살아 있다"* 를
-   * 단언했다. 그 링크를 값 층으로 옮기자 **빨개졌다** — 고쳤다고 벌한 것이다.
-   * 이 파일에서만 오늘 세 번째로 같은 실패를 밟았다.
+   * This probe used to assert *"DownloadPage's release-notes link is still in
+   * debt"*. Moving that link into the value layer turned it **red** — punishing the
+   * fix. That was the third time the same failure happened in this file in one day.
    *
-   * 물어야 하는 것은 «그 결함이 아직 있는가» 가 아니라 **«등재가 파일 면제로
-   * 새지 않는가»** 다. 등재된 파일에 손 앵커를 하나 **심어서** 부채가 오르는지
-   * 본다 — 결함이 0이어도 성립하는 형태다.
+   * The question is not "does the defect still exist" but **"does registration leak
+   * into a file-wide exemption"**. Plant a hand anchor in a registered file and
+   * check that debt rises — a form that holds even when defects are 0.
    */
   it('⑫ 앵커 등재는 **파일 면제가 아니다** — 등재된 파일에 손 앵커를 더하면 부채가 오른다', () => {
     const file = 'src/views/download/ui/DownloadPage.tsx';
@@ -2047,15 +2131,16 @@ describe('탐지기 프로브 — 이 게이트가 실제로 무엇을 잡는가
   });
 
   /**
-   * **`shape-gap` 은 조건 없이 쓸 수 없다** (2026-08-06 신설).
+   * **`shape-gap` cannot be used without a condition** (added 2026-08-06).
    *
-   * 이 주장은 «값 층의 모양 여덟이 그 배치를 원리적으로 못 낸다» 인데, 모양·축은
-   * 만들 수 있는 것이다 — 그러니 **언제 다시 여는지**를 함께 적지 않으면 영구
-   * 면제가 되고, 그건 이 등록부가 「허가 목록이 아니라 부채의 다른 이름」이라는
-   * 정의를 깬다.
+   * The claim is that the value layer's eight shapes cannot produce that layout in
+   * principle — but shapes and axes are things that can be built. Without recording
+   * **when it reopens** it becomes a permanent exemption, which breaks this
+   * registry's definition as a debt list rather than a permit list.
    *
-   * 소유자 지적에서 나온 규율이다: 판정이 끝난 자리는 부채 수에서 빼되,
-   * **왜 뺐고 언제 돌아오는지**가 같이 남아야 한다.
+   * The discipline comes from the owner: a place with a final verdict comes out of
+   * the debt count, but **why it was removed and when it returns** must stay on the
+   * record.
    */
   it('⑭ `shape-gap` 등재는 전부 «언제 다시 여는가» 를 진다', () => {
     const gaps = OUTSIDE_VALUE_LAYER.concat(OUTSIDE_VALUE_LAYER_ANCHORS).filter(
@@ -2076,24 +2161,28 @@ describe('탐지기 프로브 — 이 게이트가 실제로 무엇을 잡는가
 
   it('⑬ 기각된 주장이 실제로 기각된다 — 하단 탭바의 56px 은 크롬 토큰 면제가 아니다', () => {
     /*
-     * 이 라운드가 `--topology-bottom-tab-min-height` 로 `chrome-token` 을 주장했다가
-     * 스스로 기각한 자리다. 그 기각이 **의견이 아니라 게이트의 판정**이었음을 여기서
-     * 못박는다 — 값이 조건부가 되는 날 이 프로브가 빨개지고, 그때 등재를 다시 본다.
+     * The place where this round claimed `chrome-token` for
+     * `--topology-bottom-tab-min-height` and then rejected its own claim. This pins
+     * that the rejection was **the gate's verdict, not an opinion** — the day the
+     * value becomes conditional this probe turns red and the registration is
+     * reconsidered.
      */
     expect(
       tokenIsBeyondFixedSteps(globalsCss, '--topology-bottom-tab-min-height'),
       '이 토큰이 조건부가 됐다 — BottomTabBar 2건의 `chrome-token` 등재를 다시 심사하라',
     ).toBe(false);
     /*
-     * ⚠️ **기각된 것은 `chrome-token` 주장 하나이지 「모든 등재」가 아니다.**
+     * ⚠️ **What was rejected is the one `chrome-token` claim, not "any
+     * registration".**
      *
-     * 종전 이 단언은 *"BottomTabBar 는 **등재되지 않았다**"* 를 요구했다. 그래서
-     * 2026-08-06 에 **다른 주장**(`shape-gap` — 모양 여덟이 세로 스택 배치를
-     * 원리적으로 못 낸다, 전수 4곳)으로 정직하게 등재하자 빨개졌다.
+     * This assertion used to require *"BottomTabBar is **not registered**"*. So when
+     * it was honestly registered on 2026-08-06 under a **different claim**
+     * (`shape-gap` — the eight shapes cannot produce a vertical stack layout, 4
+     * places exhaustively), it turned red.
      *
-     * 프로브는 자기가 지키는 성질만 지켜야 한다. 여기서 지키는 성질은 **「56px
-     * 고정 단 토큰으로 크롬 면제를 받을 수 없다」** 이므로, 그 주장으로 등재됐는지
-     * 만 본다.
+     * A probe must guard only the property it exists to guard. Here that property is
+     * **"a fixed 56px token cannot buy a chrome exemption"**, so it checks only
+     * whether the place is registered under *that* claim.
      */
     const bottomTabClaims = OUTSIDE_VALUE_LAYER_ANCHORS.concat(OUTSIDE_VALUE_LAYER)
       .filter((e) => e.file === 'src/widgets/bottom-tab-bar/ui/BottomTabBar.tsx')
@@ -2105,7 +2194,7 @@ describe('탐지기 프로브 — 이 게이트가 실제로 무엇을 잡는가
   });
 
   it('⑩ 값 층을 지난 앵커는 안 센다 — 램프를 통과해도 세면 옮길 이유가 사라진다', () => {
-    // 소비처가 실재해야 이 프로브가 뜻이 있다: 이미 `controlClass` 를 쓰는 앵커.
+    // The probe only means something if a consumer exists: an anchor already using `controlClass`.
     const adopted = scannedFiles.filter((f) => {
       const src = readFileSync(f, 'utf8');
       return /<(Link|a)\b[^>]*controlClass\s*\(/.test(src.replace(/\n/g, ' '));
@@ -2114,9 +2203,11 @@ describe('탐지기 프로브 — 이 게이트가 실제로 무엇을 잡는가
   });
 
   /*
-   * ── 근거 없음 부류의 프로브 (2026-08-04). 이 부류는 **도피처가 되면 실패**이므로
-   * 판정 함수를 양방향으로 겨눈다: 실물에서 무엇을 잡고(⑭), 실물에서 무엇을
-   * **거절하고**(⑮), 합성으로 어떻게 죽고(⑯), 줄을 지우면 부채로 돌아오는가(⑰).
+   * ── Probes for the no-basis category (2026-08-04). This category **fails if it
+   * becomes an escape hatch**, so the predicate is aimed at in both directions:
+   * what it catches on the real tree (⑭), what it **rejects** on the real tree
+   * (⑮), how it dies on synthetic input (⑯), and whether deleting a row returns the
+   * place to debt (⑰).
    */
 
   it('⑭ 판정 함수가 실물에서 센다 — 빈 집합 위에서 놀지 않는다', () => {
@@ -2131,25 +2222,27 @@ describe('탐지기 프로브 — 이 게이트가 실제로 무엇을 잡는가
   });
 
   /**
-   * ⚠️ **실물 결함이 남아 있길 요구하면 안 된다** — 이 파일에서만 **네 번째**다.
+   * ⚠️ **Do not require a real defect to still exist** — the **fourth** time in
+   * this file alone.
    *
-   * 종전 이 프로브는 `DemoStage` 의 전면 오버레이가 **부채로 살아 있길** 요구했다.
-   * 2026-08-06 에 그 오버레이를 값 층으로 옮기자 `handWrittenTags` 가 0을 돌려
-   * 빨개졌다 — 고쳤다고 벌한 것이다.
+   * This probe used to require `DemoStage`'s full-bleed overlay to **still be in
+   * debt**. When that overlay moved into the value layer on 2026-08-06,
+   * `handWrittenTags` returned 0 and it turned red — punishing the fix.
    *
-   * 물어야 하는 것은 «그 파일이 아직 안 옮겨졌는가» 가 아니라 **«전면이라는
-   * 이유만으로 면제되지 않는가»** 다. 그건 **판정 함수**(`isClickSurface`)의
-   * 성질이므로 합성 태그로 물으면 되고, 결함이 0이어도 성립한다.
+   * The question is not "is that file still unmoved" but **"does being full-bleed
+   * alone buy an exemption"**. That is a property of the **predicate**
+   * (`isClickSurface`), so a synthetic tag answers it, and it holds even when
+   * defects are 0.
    *
-   * `DemoStage` 가 어떤 모양이었는지는 남겨 둔다 — 다음 사람이 「전면이니까
-   * 스크림」이라고 잘못 읽지 않게 하는 것이 이 대조군의 뜻이다.
+   * What `DemoStage` looked like is kept as the control case, so the next person
+   * does not misread "full-bleed therefore scrim".
    */
   it('⑮ 음성 대조군 — 전면이어도 규격을 지면 클릭면이 아니다', () => {
     /*
-     * `DemoStage` 의 재생 오버레이가 실제로 이 모양이었다 — 전면(`inset-0`)이고
-     * 스크림 배경까지 있지만 **`text-body`·`leading-body` 를 싣는다.** 값 층이
-     * 낼 것이 있으므로 클릭면이 아니라 부채다. 이게 통과하면 「전면이면 면제」가
-     * 되어 이 부류가 도피처가 된다.
+     * `DemoStage`'s playback overlay really had this shape — full-bleed (`inset-0`)
+     * with a scrim background, but it carries **`text-body` and `leading-body`**. The
+     * value layer has something to emit, so it is debt, not a click surface. If this
+     * passed, "full-bleed means exempt" would make the category an escape hatch.
      */
     const fullBleedWithSpec =
       ' type="button" className="absolute inset-0 flex items-center justify-center' +
@@ -2160,12 +2253,13 @@ describe('탐지기 프로브 — 이 게이트가 실제로 무엇을 잡는가
       '전면 + 스크림이지만 타입을 싣는 오버레이가 클릭면으로 통과했다 — 「전면이면 면제」가 열렸다',
     ).toBe(false);
     expect(NO_BASIS.some((e) => e.file === 'src/views/download/ui/DemoStage.tsx')).toBe(false);
-    // 앵커 0 은 「안 셌다」가 아니라 「102 를 다 보고 0」이다.
+    // Anchor 0 means "0 after seeing all 102", not "not counted".
     /*
-     * **하한을 실측 근처에 걸면 옮길 때마다 빨개진다.** 물어야 하는 것은
-     * 「충분히 많은가」가 아니라 **「세고 있는가」**다 — 앵커가 전부 값 층으로
-     * 가면 이 수는 0이 되는 것이 정상이고, 그때는 위의 `fullBleed` 단언들이
-     * 이미 이 프로브를 무의미하게 만들어 먼저 빨개진다.
+     * **A lower bound near the measured value turns red on every move.** The
+     * question is not "are there enough" but **"is it counting"** — when every anchor
+     * has moved into the value layer this number is correctly 0, and at that point
+     * the `fullBleed` assertions above would already have gone red first, making this
+     * probe moot.
      */
     expect(anchorCensus.total, '앵커를 한 건도 안 세고 있으면 아래 0 은 무의미하다').toBeGreaterThan(0);
     expect(clickSurfaceCensus(scannedFiles, ANCHOR_TAGS).length).toBe(BASELINE_ANCHOR_NO_BASIS);
@@ -2180,9 +2274,9 @@ describe('탐지기 프로브 — 이 게이트가 실제로 무엇을 잡는가
         `«${spec}» 를 달았는데도 통과한다 — 값 층이 낼 것이 생겼는데 「낼 것이 없다」가 남으면 도피처다.`,
       ).toBe(false);
     }
-    // 변형 접두 뒤에 숨겨도 마찬가지다.
+    // The same holds when hidden behind a variant prefix.
     expect(isClickSurface(scrim.replace('inset-0', 'inset-0 hover:rounded-chip'))).toBe(false);
-    // 전면이 아니면 그냥 컨트롤이다.
+    // Not full-bleed means it is simply a control.
     expect(isClickSurface(scrim.replace('inset-0 ', ''))).toBe(false);
   });
 
@@ -2200,7 +2294,7 @@ describe('탐지기 프로브 — 이 게이트가 실제로 무엇을 잡는가
         `${entry.file} 줄을 지웠는데 부채가 안 늘었다 — 그 줄은 아무것도 분류하고 있지 않다`,
       ).toBe(debt + entry.count);
     }
-    // 픽스처를 얹어도 근거 없음으로 새지 않는다 — 등록부에 없는 자리는 전부 부채다.
+    // Adding fixtures does not leak into no-basis — anything not in the registry is debt.
     const withFixture = census([...scannedFiles, FIXTURE]);
     expect(withFixture.noBasis).toBe(noBasis);
     expect(withFixture.debt).toBe(debt + 2);
@@ -2217,16 +2311,18 @@ describe('탐지기 프로브 — 이 게이트가 실제로 무엇을 잡는가
   });
 
   /**
-   * ⚠️ **실물 결함이 남아 있길 요구하면 안 된다** — 이 파일에서만 **다섯 번째**이고,
-   * 이번엔 **부채가 0 에 닿는 순간** 터졌다(2026-08-06).
+   * ⚠️ **Do not require a real defect to still exist** — the **fifth** time in
+   * this file alone, and this time it broke **the moment debt reached 0**
+   * (2026-08-06).
    *
-   * 종전 이 프로브는 *"`CommitDetail` 이 부채로 살아 있다"* 를 요구했다. 그 파일을
-   * 값 층으로 옮기고 버튼 부채가 **0** 이 되자 빨개졌다 — **완성되는 날 죽는
-   * 게이트**의 교과서적인 모양이다.
+   * This probe used to require *"`CommitDetail` is still in debt"*. Moving that
+   * file into the value layer took button debt to **0** and turned it red — the
+   * textbook shape of **a gate that dies on the day the work is finished**.
    *
-   * 물어야 하는 것은 «그 파일이 아직 안 옮겨졌는가» 가 아니라 **«등재가 파일
-   * 전체를 면제하지 않는가»** 다. 등재된 파일에 손 컨트롤을 **심어서** 부채가
-   * 오르는지 보면 되고, 결함이 0이어도 성립한다(앵커 쪽 ⑫ 가 이미 그 모양이다).
+   * The question is not "is that file still unmoved" but **"does registration
+   * exempt a whole file"**. Plant a hand control in a registered file and check
+   * that debt rises; that holds even when defects are 0 (the anchor side's ⑫ is
+   * already in this shape).
    */
   it('⑥ 등재는 **파일 면제가 아니다** — 등재된 파일에 손 컨트롤을 더하면 부채가 오른다', () => {
     const registeredFile = OUTSIDE_VALUE_LAYER[0]?.file;

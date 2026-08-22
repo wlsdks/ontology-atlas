@@ -11,8 +11,8 @@ import {
 } from './composer-growth';
 
 /**
- * 실측 치수(1512×806, 다크, Pretendard 12.5px/20px):
- * padding 8+8 · border 1+1 · line-height 20 → 2줄 상자 = 58px.
+ * Measured dimensions (1512×806, dark, Pretendard 12.5px/20px):
+ * padding 8+8, border 1+1, line-height 20 — a two-line box is 58px.
  */
 const BASE = { lineHeight: 20, paddingBlock: 16, borderBlock: 2 };
 const rowsToContent = (rows: number) => rows * BASE.lineHeight + BASE.paddingBlock;
@@ -54,8 +54,8 @@ describe('composerGrowth', () => {
 
 describe('snapScrollTop', () => {
   it('격자 밖 값은 가장 가까운 줄 경계로 붙는다', () => {
-    // 실측 결함: 한 프레임에 9px 이동 → 줄 높이 20 의 배수가 아니라 글리프가
-    // 반으로 잘렸다. 9 는 첫 줄에 더 가까우므로 첫 줄로 되돌아간다.
+    // Measured defect: a 9px jump in one frame is not a multiple of the 20px line height, so
+    // glyphs were sliced in half. 9 is nearer the first line, so it snaps back to it.
     expect(snapScrollTop(9, 20)).toBe(0);
     expect(snapScrollTop(13, 20)).toBe(20);
     expect(snapScrollTop(31, 20)).toBe(40);
@@ -87,25 +87,26 @@ describe('composerTopIsHidden', () => {
 });
 
 /**
- * 상한은 **그 자리의 높이**가 정한다 (2026-08-16 소유자: *"어느 정도까지는
- * 길어지면 좋겠는데"*).
+ * The cap is decided by **the height of the slot it sits in** (2026-08-16, owner:
+ * *"어느 정도까지는 길어지면 좋겠는데"* — it should be allowed to grow a fair amount).
  *
- * 6줄이라는 기본값은 좁은 하단 띠에서 나온 수라 세로로 긴 대화 칸에는
- * 인색했다. 그렇다고 큰 수를 새로 박으면 **창을 줄였을 때** 작성 칸이 대화를
- * 통째로 밀어낸다 — 그 실패를 여기서 못 박는다.
+ * The default of 6 rows came from a narrow bottom strip and was stingy in a tall
+ * conversation column. But hard-coding a larger number instead lets the composer push the
+ * conversation off the screen entirely **when the window shrinks** — that is the failure
+ * pinned here.
  */
 describe('작성 칸 상한 — 자기 높이에서 구한다', () => {
   const LINE = 20;
 
   it('세로로 긴 칸에서는 기본값보다 넉넉해진다', () => {
-    // 900px 칸: 900 * 0.4 / 20 = 18 → 천장 16
+    // 900px slot: 900 * 0.4 / 20 = 18, clamped to the ceiling of 16.
     expect(composerMaxRows(900, LINE)).toBe(COMPOSER_CEILING_ROWS);
-    // 500px 칸: 500 * 0.4 / 20 = 10
+    // 500px slot: 500 * 0.4 / 20 = 10.
     expect(composerMaxRows(500, LINE)).toBe(10);
   });
 
   it('창이 작아지면 상한도 같이 작아진다 — 대화를 밀어내지 않는다', () => {
-    // 200px 칸: 200 * 0.4 / 20 = 4
+    // 200px slot: 200 * 0.4 / 20 = 4.
     expect(composerMaxRows(200, LINE)).toBe(4);
   });
 
@@ -124,7 +125,7 @@ describe('작성 칸 상한 — 자기 높이에서 구한다', () => {
       lineHeight: LINE,
       paddingBlock: 0,
       borderBlock: 0,
-      // 12줄짜리 글
+      // Twelve lines of text.
       contentHeight: 12 * LINE,
     };
     expect(composerGrowth(metrics, 12)?.rows).toBe(12);

@@ -1,21 +1,24 @@
 import type { KnowledgeGraphNode } from "../model/types";
 
 /**
- * 노드의 첫 근거 slug 가 **자기 문서인지 남의 문서인지** 를 가르는 단일 출처.
+ * The single source deciding whether a node's first evidence slug is **its own
+ * document or someone else's**.
  *
- * 왜 필요한가 — vault derive 는 노드를 두 경로로 만든다. frontmatter 에
- * `kind:` 가 있는 문서(자기 slug 를 근거로 가짐)와, 다른 문서의 관계 키
- * (`contains` / `relates` / `elements` …)에서 이름만 불린 파생 노드(자기를
- * 인용한 *남의* 문서 slug 를 근거로 가짐)다. 둘 다 `evidenceIds[0]` 한 칸에
- * 담기므로, "이 노드의 문서 열기" 를 그리는 표면이 그 값을 그대로 쓰면
- * 사용자는 방금 연 개념의 문서를 읽는다고 믿으면서 남의 문서를 보게 된다.
+ * Vault derivation creates nodes by two paths: a document with `kind:` in its
+ * frontmatter (whose evidence is its own slug), and a node named only by another
+ * document's relation key (`contains` / `relates` / `elements` …), whose evidence is
+ * *that other document's* slug. Both land in the single `evidenceIds[0]` slot, so a
+ * surface rendering "open this node's document" from that value shows the user
+ * someone else's document while they believe they are reading the concept they
+ * just opened.
  *
- * 두 값을 나눠 돌려주므로 각 표면이 정직하게 고를 수 있다:
- * - `ownSlug` — 이 노드 자신의 `.md`. 없으면 null → "문서" 어포던스를 내지 않는다.
- * - `mentionedInSlug` — 이 노드를 적어 둔 다른 문서. 문서가 없을 때만 채워진다.
+ * Returning the two values separately lets each surface be honest:
+ * - `ownSlug` — this node's own `.md`; null means show no document affordance
+ * - `mentionedInSlug` — another document that names this node; filled only when
+ *   there is no own document
  *
- * 하위 호환: `hasOwnDocument` 미지정 노드(수동 조립 · 테스트 픽스처)는 종전대로
- * 자기 문서로 읽는다 — 새 필드를 모르는 생산 경로의 동작을 바꾸지 않는다.
+ * Backwards compatibility: a node without `hasOwnDocument` (hand assembly, test
+ * fixtures) still reads as having its own document.
  */
 export function resolveNodeDocument(
   node: Pick<KnowledgeGraphNode, "evidenceIds" | "hasOwnDocument"> | null | undefined,
@@ -28,21 +31,23 @@ export function resolveNodeDocument(
 }
 
 /**
- * 이 개념이 **근거로만 적힌 이름**인가 — 자기 `.md` 없이 다른 문서의 관계 키
- * (`elements:` / `contains:` / `relates:` …)에서 이름만 불려 파생된 노드.
+ * Is this concept **a name that appears only as evidence** — derived from another
+ * document's relation key (`elements:` / `contains:` / `relates:` …) with no `.md`
+ * of its own?
  *
- * 왜 별도 이름이 필요한가 — 결정 화면(위험도 랭킹 · 허브 · 할 일 큐)이 이 둘을
- * 같은 크기로 그리면, 공들여 쓴 개념과 어느 문서가 지나가며 적은 코드 경로가
- * 같은 무게로 읽힌다. 실측(2026-07-26 도그푸드 289개념): 「바꾸면 멀리 퍼지는
- * 개념」 상위 12행 중 11행이 테스트 파일·내부 함수 경로였고, 그중 하나도
- * 자기 문서를 갖고 있지 않았다. 좋은 볼트일수록 역량이 구현 근거를 더 많이
- * 인용하므로 사용자 볼트에서도 같은 일이 벌어진다.
+ * Why it needs its own name: decision surfaces (impact ranking, hubs, the to-do
+ * queue) that draw both kinds at the same weight make a carefully written concept
+ * read the same as a code path some document mentioned in passing. Measured
+ * 2026-07-26 against the 289-concept dogfood vault: 11 of the top 12 rows under
+ * "concepts whose change spreads furthest" were test files and internal function
+ * paths, and not one of them had a document. The better the vault, the more
+ * implementation evidence its capabilities cite, so the same happens in a user's vault.
  *
- * 판정을 여러 표면이 각자 하면 반드시 갈라지므로 **이 함수 하나**만 쓴다.
- * 숨기기가 아니라 계층화의 근거다 — 근거 계층은 지우지 않고 아래로 내린다.
+ * Several surfaces deciding this independently will diverge, so **only this function**
+ * does. It is grounds for layering, not for hiding — the evidence layer is pushed
+ * down, never deleted.
  *
- * 하위 호환: `hasOwnDocument` 미지정 노드(수동 조립 · 테스트 픽스처)는 개념
- * 계층으로 읽는다 — 새 필드를 모르는 생산 경로의 동작을 바꾸지 않는다.
+ * Backwards compatibility: a node without `hasOwnDocument` reads as a concept.
  */
 export function isEvidenceOnlyConcept(
   node: Pick<KnowledgeGraphNode, "hasOwnDocument"> | null | undefined,

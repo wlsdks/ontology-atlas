@@ -6,26 +6,27 @@ import { ICON_SIZE } from "@/shared/ui/icon-size";
 import { CHROME_STATUS_CHIP_CLASS } from "@/shared/ui/chrome-chip";
 import { controlClass } from "@/shared/ui/control-class";
 
-// 사용자 어휘는 "이것만 보기"(2026-07-23 소유자 결정) — 내부명 realm 은 유지.
+// On screen this reads "viewing only this" (owner decision, 2026-07-23); the
+// internal name stays `realm`.
 export interface TopologyRealmChipProps {
-  /** 현재 영역 루트 노드의 제목 (없으면 slug fallback 을 HomePage 가 넣는다). */
+  /** Title of the realm's root node (HomePage substitutes the slug when absent). */
   title: string;
   /**
-   * 제목 앞 문구 — en "Viewing only". 빈 문자열이면 렌더하지 않는다.
-   * (`realm.chipViewing` 템플릿을 HomePage 가 {title} 기준으로 쪼개 주입.)
+   * Copy that precedes the title — en "Viewing only". Not rendered when empty.
+   * HomePage splits the `realm.chipViewing` template around {title}.
    */
   beforeLabel: string;
-  /** 제목 뒤 문구 — ko "만 보는 중". 제목에 붙여(공백 없이) 렌더한다. */
+  /** Copy that follows the title — ko "만 보는 중". Rendered flush against it. */
   afterLabel: string;
   clearAriaLabel: string;
   onClear: () => void;
 }
 
 /**
- * "이것만 보기" 상단 중앙 상태 칩 — 지도가 어느 노드만 보는 상태인지 알리고
- * (`{title}만 보는 중` / `Viewing only {title}`) ✕ 로 전체 지도로 복귀한다.
- * `TopologyPathChip` 과 같은 "크롬 그래머" 계약: 상단 중앙 flex 열에 얹혀 새
- * 부유 패널을 늘리지 않는다. 지도 렌더 로직 없음 — 순수 크롬.
+ * Top-centre status chip announcing that the map is scoped to one node, with ✕ to
+ * return to the whole map. Same "chrome grammar" contract as `TopologyPathChip`:
+ * it rides the top-centre flex row rather than adding another floating panel, and
+ * carries no map-rendering logic.
  */
 export function TopologyRealmChip({
   title,
@@ -44,11 +45,12 @@ export function TopologyRealmChip({
       {beforeLabel.trim().length > 0 ? (
         <span className="shrink-0 text-[color:var(--color-text-tertiary)]">{beforeLabel.trim()}</span>
       ) : null}
-      {/* 제목은 7rem 캡 + 말줄임 — 상단 중앙 레인은 우측 utility 클러스터와
-          고정폭 협상이 없어 긴 제목이 14-inch 에서 검색 타일을 파고든다
-          (2026-07-23 실측: "Viewing only" + 무캡 제목 → Search 타일 잘림).
-          전체 이름은 원장 헤더·지도 중심 라벨·hover title 이 담당한다.
-          suffix("만 보는 중")는 shrink-0 로 항상 생존. */}
+      {/* The title is capped at 7rem and truncated. The top-centre lane negotiates
+          no fixed width with the utility cluster on the right, so on a 14-inch
+          screen a long title eats into the search tile (measured 2026-07-23:
+          "Viewing only" plus an uncapped title clipped the Search tile). The full
+          name is carried by the ledger header, the map's centre label, and the
+          hover title. The suffix stays alive via shrink-0. */}
       <span className="flex min-w-0 items-baseline" title={`${beforeLabel}${title}${afterLabel}`.trim()}>
         <span
           data-testid="topology-realm-chip-title"

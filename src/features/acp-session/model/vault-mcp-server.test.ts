@@ -8,9 +8,9 @@ import {
 } from './vault-mcp-server';
 
 /**
- * 2026-08-17 실측. `init` 이 만든 볼트에서 codex 세션을 열었더니 **같은 서버가
- * 두 번** 돌고 있었다 — 볼트의 `.codex/config.toml` 이 하나, 앱이 꽂은 것이
- * 하나. 두 이름 다 같은 결과를 냈다:
+ * Measured 2026-08-17. Opening a codex session in a vault created by `init` had **the same server
+ * running twice** — one from the vault's `.codex/config.toml`, one wired by the app. Both names gave
+ * the same result:
  *
  *   mcp.ontology-atlas.list_kinds → {"total": 5, …}
  *   mcp.atlas-vault.list_kinds    → {"total": 5, …}
@@ -45,7 +45,7 @@ describe('세션에 꽂는 MCP 서버', () => {
   });
 
   it('등록된 명령이 다르면 꽂는다 — 볼트 항목이 낡았을 수 있다', () => {
-    // 여기서 건너뛰면 도구가 **통째로 없는** 세션이 된다. 중복보다 훨씬 나쁘다.
+    // Skipping here produces a session with **no tools at all** — far worse than a duplicate.
     expect(
       vaultMcpServers(launch, VAULT, {
         command: '/old/path/ontology-atlas-mcp',
@@ -83,8 +83,8 @@ describe('어느 런타임이 볼트 설정을 스스로 읽나 — 실측한 �
   });
 
   /*
-   * ⚠️ 안 재 본 런타임을 넣으면 **도구가 통째로 없는 세션**이 만들어질 수 있다.
-   * 이 검사는 그걸 막는 자리다 — 새로 넣으려면 실측부터 하고 이 줄을 고친다.
+   * ⚠️ Listing an unmeasured runtime can produce **a session with no tools at all**. This test is the
+   * place that prevents it — adding one means measuring first and then editing this line.
    */
   it('안 재 본 런타임은 종전대로 꽂는다', () => {
     expect(vaultSelfReadSlot('claude-acp')).toBeNull();

@@ -22,7 +22,7 @@ describe("buildFullDetailGroups", () => {
     { from: "project:root", to: "domain:a", type: "contains" },
     // capability:user depends_on domain:a → domain:a is "used by" capability:user
     { from: "capability:user", to: "domain:a", type: "depends_on" },
-    // domain:a depends_on capability:dep → "기대는 곳"
+    // domain:a depends_on capability:dep → 「기대는 곳」 (what it depends on)
     { from: "domain:a", to: "capability:dep", type: "depends_on" },
   ];
 
@@ -90,8 +90,9 @@ describe("buildFullDetailGroups", () => {
   });
 
   it("belongs_to 로 저작된 containment 도 방향 반대로 올바르게 분류", () => {
-    // capability:child-1 --belongs_to--> domain:a : domain:a 가 부모(담는 것),
-    // capability:child-1 이 자식 — `contains`(parent→child)와 반대 방향 인코딩.
+    // capability:child-1 --belongs_to--> domain:a : domain:a is the parent (the
+    // container) and capability:child-1 the child — the opposite direction encoding
+    // from `contains` (parent→child).
     const belongsToEdges = [
       { from: "capability:child-1", to: "domain:a", type: "belongs_to" },
     ];

@@ -1,72 +1,73 @@
 /**
- * 활동 로그(줄)를 **작업(session)** 으로 묶는다.
+ * Groups activity-log lines into **work sessions**.
  *
- * ## 왜 줄이 아니라 작업인가 (실측)
+ * **Why sessions and not lines.** In the 2026-08-01 experiment an agent wrote
+ * **53 times in 11 minutes 40 seconds**. Per line that is 53 notifications —
+ * nobody reads them, and a bell badge that is always red means nothing. Grouped
+ * into sessions the same log produces two.
  *
- * 2026-08-01 실험에서 에이전트가 **11분 40초 동안 53번** 썼다. 줄 단위로
- * 알리면 알림 53개 — 아무도 안 읽고, 그 순간 벨 배지는 늘 빨간불이라 뜻을
- * 잃는다. 작업 단위로 묶으면 같은 로그가 알림 두 개가 된다.
- *
- * ## 「작업이 끝났다」를 어떻게 아는가 — 조용해짐
- *
- * Atlas 는 에이전트에 **연결하지 않는다**(폴더를 볼 뿐이다). 그래서 "끝났다"는
- * 통보를 받을 길이 없고, 유일하게 관측 가능한 신호는 **쓰기가 멈춘 시간**이다.
- * 임계값은 감이 아니라 실측 두 로그(총 98줄 · 쓰기 간격 96개)의 분포에서 골랐다:
+ * **How "the work finished" is known: it went quiet.** Atlas does not connect to
+ * the agent (it only watches a folder), so there is no "done" callback and the
+ * only observable signal is **how long writing has stopped**. The threshold came
+ * from the distribution of two measured logs (98 lines, 96 inter-write gaps):
  *
  * ```
  * p50 1.9s · p90 23.2s · p95 48.5s · p98 133.9s · p99 329.5s · max 1733.3s
- * 간격의 80.2% 가 4초 이하
+ * 80.2% of gaps are 4s or less
  * ```
  *
- * 꼬리에 두 종류가 섞여 있다. **작업 중의 침묵**(에이전트가 읽고 생각하고
- * 코드를 고치는 동안 — 로그에는 쓰기 성공만 남으므로 그 구간은 한 줄도 안
- * 남는다)과 **작업 사이의 침묵**. 관측된 최대 「작업 중 침묵」은 133.9초였고,
- * 그다음 값이 329.5초, 그다음이 1733.3초(28.9분 — 세션이 갈린 자리)다.
+ * The tail mixes two things: **silence inside a session** (the agent reading,
+ * thinking and editing code — only successful writes reach the log, so that
+ * stretch produces no lines) and **silence between sessions**. The largest
+ * observed in-session silence was 133.9s; the next values are 329.5s and 1733.3s
+ * (28.9 min — where a session actually ended).
  *
- * 임계값별로 로그가 몇 조각으로 갈리는지 실제로 재 봤다:
+ * How each threshold splits the logs, measured:
  *
- * | 임계값 | 갈라지는 간격 | 결과 |
+ * | Threshold | Gaps split on | Result |
  * |---|---|---|
- * | 60s | 5개 | 두 로그가 7작업 — 「생각하는 40초」를 끝으로 오판 |
- * | 120s | 4개 | 6작업 — 여전히 133.9초 침묵을 끝으로 읽는다 |
- * | **300s** | **2개** | **로그당 2작업** — 소유자가 말한 「1~2개」 |
- * | 600s | 1개 | 29분 침묵까지 한 작업 — 끝 알림이 10분 늦는다 |
+ * | 60s | 5 | 7 sessions across two logs — a 40s pause read as an ending |
+ * | 120s | 4 | 6 sessions — still reads the 133.9s silence as an ending |
+ * | **300s** | **2** | **2 sessions per log** — the "one or two" the owner asked for |
+ * | 600s | 1 | one session across a 29-minute silence — the "done" notice arrives 10 min late |
  *
- * **5분(300초)을 고른 이유 셋**:
- * 1. 관측된 최대 「작업 중 침묵」(133.9초)의 **2.24배**다. 실측한 어떤 것보다
- *    두 배 오래 생각하는 에이전트도 여전히 한 작업으로 남는다.
- * 2. `AGENT_ACTIVITY_STALE_AFTER_MS`(heartbeat 이 낡았다고 보는 5분)와 **같은
- *    값**이다. 「이 에이전트는 이제 없다」는 판정이 제품 안에서 두 개의 서로
- *    다른 숫자를 가지면 안 된다.
- * 3. 틀렸을 때의 비용이 비대칭이고 유계다 — 길어서 틀리면 「끝」 알림이 최대
- *    5분 늦을 뿐이고, 짧아서 틀리면 한 작업이 알림 여러 개로 쪼개진다.
- *    후자가 정확히 이 묶음이 막으려는 실패다.
+ * **Three reasons for 5 minutes (300s):**
+ * 1. It is **2.24×** the largest observed in-session silence (133.9s), so an
+ *    agent thinking twice as long as anything measured still stays one session.
+ * 2. It is the **same value** as `AGENT_ACTIVITY_STALE_AFTER_MS` (when a
+ *    heartbeat is considered stale). "This agent is gone" must not have two
+ *    different numbers inside one product.
+ * 3. The cost of being wrong is asymmetric and bounded — too long delays the
+ *    "done" notice by at most 5 minutes, too short splits one session into
+ *    several notifications, which is exactly the failure this grouping exists to
+ *    prevent.
  */
 import { toSlugTarget, type AgentActivityEntry } from "./agent-activity-log";
 
-/** 쓰기가 이만큼 멎으면 그 작업은 끝난 것으로 본다. 근거는 파일 머리말. */
+/** Writing quiet for this long counts as the session having ended; rationale in the file header. */
 export const AGENT_TASK_IDLE_MS = 5 * 60 * 1000;
 
 /**
- * 「마지막 작업 N분 전」을 화면에 남겨 두는 상한.
+ * How long "last worked N minutes ago" stays on screen.
  *
- * 이 문장은 언제 말해도 **참**이다(연결이 없으니 「연결됨」과 달리 거짓이 될
- * 수 없다). 그래도 상한이 필요한 이유는 참/거짓이 아니라 **뉴스인가**다 —
- * 사흘 전 기록은 지도 위 크롬이 아니라 알림함이 들고 있어야 할 것이다.
- * 값은 이 로그가 이미 쓰고 있는 「오늘」의 경계(`countRecentEntries` 의 24시간)
- * 를 그대로 재사용한다. 같은 로그에 대한 「최근」의 정의를 두 개 만들지 않는다.
+ * The sentence is **true** whenever it is shown — unlike "connected" it cannot
+ * go stale, because there is no connection. The cap exists for a different
+ * reason: not truth but **newsworthiness**. A three-day-old record belongs in the
+ * notification list, not in the chrome over the map. The value reuses the "today"
+ * boundary this log already uses (the 24 hours in `countRecentEntries`) so that
+ * one log does not end up with two definitions of "recent".
  */
 export const AGENT_TASK_VISIBLE_WINDOW_MS = 24 * 60 * 60 * 1000;
 
-/** 한 작업이 볼트에 한 일의 세 갈래. 소유자 합의 문구는 「추가 · 편집 · 삭제」. */
+/** The three things a session can do to the vault. Owner-agreed wording: 「추가 · 편집 · 삭제」 (added · edited · removed). */
 export type AgentWriteKind = "added" | "edited" | "removed";
 
 export type AgentWriteCounts = Record<AgentWriteKind, number>;
 
 /**
- * 도구 → 갈래. **도구 이름이 곧 의도다** — 매니페스트 diff 와 달리 rename 을
- * 「삭제 + 추가」로 오독하지 않는다(`VaultDiffToaster` 가 같은 이유로 도구
- * 이름을 쓴다).
+ * Tool → kind. **The tool name is the intent** — unlike a manifest diff, it never
+ * misreads a rename as "removed + added" (`VaultDiffToaster` uses tool names for
+ * the same reason).
  */
 const WRITE_KIND_BY_TOOL: Readonly<Record<string, AgentWriteKind>> = {
   add_concept: "added",
@@ -83,14 +84,14 @@ const WRITE_KIND_BY_TOOL: Readonly<Record<string, AgentWriteKind>> = {
   remove_relation: "removed",
 };
 
-/** 배치 도구 — 한 줄이 여러 행을 뜻한다. 행 수는 요약문에만 있다. */
+/** Batch tools — one line stands for several rows, and the row count exists only in the summary text. */
 const BATCH_TOOLS = new Set(["add_concepts", "add_relations"]);
 
 /**
- * 배치 한 줄이 실제로 몇 행이었나. 요약문(`add_concepts 46행 성공`)은 **MCP 가
- * 소유하는 문구**라 여기서 파싱한다. 문구가 바뀌면 1로 떨어질 뿐 화면이
- * 깨지지 않는다 — 세는 값이 조금 작아지는 것과 알림이 안 뜨는 것 사이에서
- * 전자를 고른다.
+ * How many rows a batch line really covered. The summary text
+ * (`add_concepts 46행 성공`) is **owned by MCP**, so it is parsed here. If that
+ * wording changes the count simply falls back to 1 rather than breaking the
+ * screen — an undercount is preferable to a notification that never appears.
  */
 export function entryWeight(entry: AgentActivityEntry): number {
   if (!BATCH_TOOLS.has(entry.tool)) return 1;
@@ -102,27 +103,29 @@ export function entryWeight(entry: AgentActivityEntry): number {
 
 export interface AgentWorkSession {
   /**
-   * 폴링마다 다시 파생되므로 **시작 시각으로 고정**한다. 배열 인덱스로 키를
-   * 만들면 앞에 줄이 하나 들어오는 순간 모든 알림이 새 알림이 된다.
+   * Keyed by **start time**, because the list is re-derived on every poll. Keying
+   * by array index would turn every notification into a new one the moment a
+   * single line arrives at the front.
    */
   id: string;
   startAt: number;
   endAt: number;
-  /** 로그 줄 수(배치는 1). 「몇 번 썼나」. */
+  /** Log lines (a batch counts as 1) — how many times it wrote. */
   entryCount: number;
-  /** 갈래별 행 수(배치는 N). 「무엇을 얼마나 했나」. */
+  /** Rows per kind (a batch counts as N) — what it did and how much. */
   counts: AgentWriteCounts;
-  /** 마지막으로 손댄 대상 슬러그 후보. 배치·문서 흡수면 null. */
+  /** Candidate slug of the last thing touched; null for batches and document absorption. */
   lastTarget: string | null;
   lastTool: string | null;
   /**
-   * 이 작업에서 마지막으로 이름을 밝힌 에이전트 (하트비트 또는 MCP 연결 인사의
-   * clientInfo.name, `mcp/src/activity-log.mjs` `resolveAgentName`). 이름 없는
-   * 줄이 직전 이름을 지우지 않는 것은 `lastTarget` 과 같은 이유다 — 배치 한
-   * 줄 때문에 화면이 말할 수 있던 것을 잃지 않는다. 한 번도 못 들었으면 null.
+   * The last agent to identify itself in this session (from the heartbeat or the
+   * MCP handshake's clientInfo.name — `resolveAgentName` in
+   * `mcp/src/activity-log.mjs`). An anonymous line does not erase the previous
+   * name, for the same reason as `lastTarget`: one batch line must not cost the
+   * screen something it could have said. Null if never heard.
    */
   agent: string | null;
-  /** 조용해진 지 `idleMs` 가 지났나 — 끝난 작업만 true. */
+  /** Has it been quiet for `idleMs` — true only for finished sessions. */
   done: boolean;
 }
 
@@ -130,16 +133,16 @@ function emptyCounts(): AgentWriteCounts {
   return { added: 0, edited: 0, removed: 0 };
 }
 
-/** 갈래 하나라도 0이 아닌가 — 「추가 0 · 편집 0 · 삭제 0」은 정보가 아니다. */
+/** Is any kind non-zero — "added 0 · edited 0 · removed 0" is not information. */
 export function hasWrites(counts: AgentWriteCounts): boolean {
   return counts.added > 0 || counts.edited > 0 || counts.removed > 0;
 }
 
 /**
- * 활동 로그 → 작업 목록(오래된 것 먼저). 순수 함수 — 파일도 시계도 안 읽는다.
+ * Activity log → sessions, oldest first. Pure: reads neither files nor the clock.
  *
- * @param entries 파싱된 로그 tail. 순서 무관 — 여기서 시간순으로 정렬한다.
- * @param nowMs   기준 시각. 마지막 작업이 끝났는지 판정하는 데만 쓴다.
+ * @param entries Parsed log tail, in any order — sorted by time here.
+ * @param nowMs   Reference time, used only to decide whether the last session ended.
  */
 export function deriveAgentWorkSessions(
   entries: readonly AgentActivityEntry[],
@@ -175,8 +178,9 @@ export function deriveAgentWorkSessions(
     const kind = WRITE_KIND_BY_TOOL[entry.tool];
     if (kind) current.counts[kind] += entryWeight(entry);
     current.lastTool = entry.tool.trim() || current.lastTool;
-    // 마지막 대상은 **슬러그일 때만** 갱신한다. 배치가 마지막 줄이라고 해서
-    // 직전에 알아낸 대상을 지우면, 화면이 말할 수 있던 것을 잃는다.
+    // Only update the last target **when it is a slug**. A trailing batch line
+    // must not erase the target already known, or the screen loses what it could
+    // have said.
     current.lastTarget = toSlugTarget(entry.target) ?? current.lastTarget;
     current.agent = entry.agent?.trim() || current.agent;
   }
@@ -187,7 +191,7 @@ export function deriveAgentWorkSessions(
   return sessions;
 }
 
-/** 지금 쓰는 중인 작업(=아직 안 끝난 마지막 작업). 없으면 null. */
+/** The session being written right now (the last one not yet finished), or null. */
 export function activeSession(sessions: readonly AgentWorkSession[]): AgentWorkSession | null {
   const last = sessions[sessions.length - 1];
   return last && !last.done ? last : null;

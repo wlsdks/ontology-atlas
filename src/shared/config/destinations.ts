@@ -1,30 +1,31 @@
 /**
- * 목적지 정본 — id · 기본 주소 · 키보드 단축키 한 곳.
+ * The destination registry — ids, default hrefs and keyboard shortcuts in one
+ * place.
  *
- * ## 왜 이 파일이 생겼나
+ * **Why this file exists.** The six destinations' hrefs lived inline **inside the
+ * `AppNavRail` component**. That was enough for drawing the screen, but a
+ * **second consumer that reads the list as data** (keyboard navigation and the
+ * shortcut sheet) could not use it: the array inside the component is
+ * interleaved with `t()` calls and icons, so it cannot be imported, and a copy
+ * would start diverging from the routes immediately (Carbon).
  *
- * 목적지 여섯의 주소가 `AppNavRail` **컴포넌트 안에** 인라인으로 있었다. 화면을
- * 그리는 데는 충분했지만, 그 목록을 **데이터로 읽어야 하는 두 번째 소비처**
- * (키보드 이동 · 단축키 시트)가 생기면서 문제가 됐다 — 컴포넌트 안의 배열은
- * `t()` 와 아이콘이 섞여 있어 import 할 수 없고, 사본을 만들면 그 순간부터
- * 라우트가 어긋나기 시작한다(Carbon).
+ * So **only ids and hrefs** move down here. Labels and icons belong to the
+ * screen and stay in the rail — this file answers only "what exists and where
+ * does it go".
  *
- * 그래서 **id 와 주소만** 여기로 내린다. 라벨과 아이콘은 화면의 것이므로 레일에
- * 남는다 — 이 파일은 "무엇이 있고 어디로 가나"만 답한다.
+ * **Why a leader key (`G`, then a letter) for navigation.** ⌘1–⌘9 are **the
+ * browser's tab switches**; hijacking them on the web means the app breaks the
+ * user's browser, and the web is this product's gateway, so that cost is not
+ * payable. Bare single letters are out too — `D` (doc drawer), `F`
+ * (presentation), `?` (shortcut sheet) and `/` (palette) already occupy them.
  *
- * ## 이동 단축키는 왜 리더 키(`G` 다음 한 글자)인가
+ * A leader key avoids both and **has published precedent**: GitHub (`g c`,
+ * `g i`) and Linear use the same grammar. Being a sequence, it does not collide
+ * with the existing single letters — `G` then `D` is a different input from `D`
+ * alone.
  *
- * ⌘1~⌘9 는 **브라우저의 탭 전환**이다. 웹에서 그것을 가로채면 앱이 사용자의
- * 브라우저를 망가뜨리는 셈이고, 이 제품은 웹이 관문이라 그 대가를 낼 수 없다.
- * 한 글자 단독(`M` · `D` …)도 못 쓴다 — `D`(문서 서랍) · `F`(발표) · `?`(단축키
- * 시트) · `/`(팔레트)가 이미 단독 글자를 쓰고 있어 부딪힌다.
- *
- * 리더 키는 그 둘을 다 피하고, **공개된 선례가 있다** — GitHub(`g c` · `g i`)와
- * Linear 가 같은 문법을 쓴다. 순서열이라 기존 단독 글자와도 충돌하지 않는다:
- * `G` 를 누른 다음 `D` 를 누르는 것과 `D` 만 누르는 것은 다른 입력이다.
- *
- * 시간 제한을 두는 이유는 **`G` 를 눌렀다가 마음이 바뀌는 경우**다. 제한이 없으면
- * 한참 뒤에 누른 글자가 이동으로 해석된다.
+ * The time limit exists for **pressing `G` and then changing your mind**;
+ * without it, a letter pressed much later would be read as navigation.
  */
 
 export const DESTINATION_IDS = [
@@ -33,12 +34,13 @@ export const DESTINATION_IDS = [
   'insights',
   'projects',
   /*
-   * 「에이전트」 — 2026-08-20 신설(원장 90). 설정 시트 안의 설치·연결 화면을
-   * 여기로 뺐다. 설정은 값을 고르는 자리이고, 이쪽은 진행 상태가 있는 운영
-   * 작업(받고 · 깔고 · 로그인하고 · 고치고 · 대화를 연다)이다.
+   * Agents — added 2026-08-20 (ledger entry 90). The install and connect screens
+   * moved out of the settings sheet: settings is where values are chosen, while
+   * this is operational work with progress (download, install, sign in, repair,
+   * open a conversation).
    *
-   * ⚠️ **여섯이 상한이다** (소유자 확정 2026-08-21). 일곱 번째를 넣으려면
-   * 무엇을 뺄지 먼저 대야 한다 — 계약이 그것을 강제한다.
+   * ⚠️ **Six is the ceiling** (owner call, 2026-08-21). A seventh requires naming
+   * what comes out first, and the contract enforces that.
    */
   'agents',
   'git',
@@ -47,9 +49,9 @@ export const DESTINATION_IDS = [
 export type DestinationId = (typeof DESTINATION_IDS)[number];
 
 /**
- * 기본 주소. 레일이 문맥에 따라 다른 주소를 줄 수 있는 자리가 하나 있고
- * (`docs` 는 프로젝트 문맥에서 그 프로젝트의 문서함으로 간다), 그때는 레일의
- * 값이 이긴다 — 여기 있는 것은 문맥이 없을 때의 기본이다.
+ * Default hrefs. In one place the rail may supply a different one from context
+ * (`docs` goes to a project's own workspace inside a project), and there the
+ * rail's value wins — these are the defaults for when there is no context.
  */
 export const DESTINATION_HREF: Record<DestinationId, string> = {
   map: '/topology/',
@@ -60,24 +62,24 @@ export const DESTINATION_HREF: Record<DestinationId, string> = {
   git: '/git/',
 };
 
-/** 리더 키 — 이것을 누른 다음 아래 글자를 누르면 이동한다. */
+/** The leader key: press this, then one of the letters below, to navigate. */
 export const NAV_LEADER_KEY = 'g';
 
-/** 리더 다음에 오는 글자. 첫 글자를 쓰되 겹치면 뜻이 남는 다른 글자로 간다. */
+/** The letter after the leader — the first letter, unless it collides, in which case another letter that still carries the meaning. */
 export const DESTINATION_KEY: Record<DestinationId, string> = {
   map: 'm',
   docs: 'd',
   insights: 'i',
   projects: 'p',
-  // `a` — 겹치는 것이 없다.
+  // `a` — nothing collides with it.
   agents: 'a',
   git: 'g',
 };
 
-/** 리더를 누른 뒤 다음 글자를 기다리는 시간(ms). */
+/** How long, in ms, to wait for the second letter after the leader. */
 export const NAV_LEADER_WINDOW_MS = 1500;
 
-/** 글자 → 목적지. 핸들러가 쓰는 방향의 표. */
+/** Letter → destination, the direction the handler needs. */
 export const DESTINATION_BY_KEY: Record<string, DestinationId> = Object.fromEntries(
   DESTINATION_IDS.map((id) => [DESTINATION_KEY[id], id]),
 ) as Record<string, DestinationId>;

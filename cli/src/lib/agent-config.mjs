@@ -74,11 +74,12 @@ export function repairCodexConfigText(text, expectedText) {
 }
 
 /**
- * 설정 파일을 끊기지 않게 쓴다.
+ * Writes a config file without a torn window.
  *
- * 구현은 `atomic-write.mjs` 하나다 — 2026-08-16 검수가 짚은 그대로, 이 저장소는
- * **설정 파일만** 안전하게 쓰고 사용자 마크다운은 아니었다. 같은 구현을 두 벌
- * 두면 다음에도 한쪽만 고쳐진다.
+ * There is one implementation, `atomic-write.mjs`. As the 2026-08-16 review found,
+ * this repository was writing **only config files** safely and not the user's
+ * markdown; keeping two copies of the same implementation guarantees that next
+ * time only one of them gets fixed.
  */
 export function writeTextAtomically(path, text) {
   writeFileAtomically(path, text);

@@ -3,28 +3,31 @@ import { readdirSync, readFileSync } from 'node:fs';
 import path from 'node:path';
 
 /**
- * 단일 진실원 가드 — static 모드(사용자 vault 미선택)에서 "지금 어떤 번들
- * 볼트인가" 라는 질문의 답은 **한 곳**에서만 나와야 한다.
+ * Single-source guard — in static mode (no user vault selected), the answer to
+ * "which bundled vault is this" must come from **one place**.
  *
- * 실측 결함(2026-07-26): 샘플 선택(`dogfood` / `storefront`)을 존중하는
- * 소비자가 2곳뿐이었고 나머지는 dogfood 매니페스트를 직접 import 해서,
- * 사용자가 예시 쇼핑몰을 골라도 검색 팔레트·프로젝트 드로어·문서 목록은
- * dogfood 를 뒤졌다. 한 화면에 두 볼트가 섞여 "고장" 으로 읽혔다.
+ * Measured defect (2026-07-26): only 2 consumers respected the sample selection
+ * (`dogfood` / `storefront`) while the rest imported the dogfood manifest directly,
+ * so choosing the example storefront still left the search palette, project drawer,
+ * and document list searching dogfood. Two vaults mixed on one screen read as
+ * "broken".
  *
- * 그래서 진입점을 `resolveStaticVaultSource` / `useStaticVaultSource` 로
- * 좁히고, 그 규율이 다시 무너지지 않도록 여기서 코드를 직접 스캔한다.
+ * So the entry point was narrowed to `resolveStaticVaultSource` /
+ * `useStaticVaultSource`, and this scans the code directly so that discipline does
+ * not collapse again.
  *
- * 구현 주의: 외부 프로세스(ripgrep 등)에 의존하지 않는다. 도구가 없으면
- * 조용히 0건을 돌려주고 "위반 없음" 으로 오판하기 때문이다. node:fs 로 직접
- * 순회하고, 스캔 파일 수를 함께 단언해 파서가 죽으면 가드가 먼저 터지게 한다.
+ * Implementation note: no external process (ripgrep and the like). A missing tool
+ * returns 0 hits quietly and is misread as "no violations". This walks with node:fs
+ * and asserts the number of files scanned, so a dead parser breaks the guard
+ * first.
  */
 
 const SRC_DIR = path.join(process.cwd(), 'src');
 
-/** 유일한 허용 구역 — 리졸버가 사는 엔티티. 여기서만 원본 JSON 을 만진다. */
+/** The one permitted area — the entity where the resolver lives. Only here is the raw JSON touched. */
 const ALLOWED_PREFIX = path.join('src', 'entities', 'docs-vault');
 
-/** 번들 볼트 원본 데이터의 export 이름. 화면 코드가 직접 쓰면 안 된다. */
+/** Export names of the bundled vault's raw data. Screen code must not use them directly. */
 const FORBIDDEN_BINDINGS = [
   'vaultManifest',
   'vaultContent',
@@ -32,10 +35,10 @@ const FORBIDDEN_BINDINGS = [
   'sampleStorefrontContent',
 ];
 
-/** `import ... from '...'` 을 여러 줄에 걸쳐도 통째로 집는다. */
+/** Captures an `import ... from '...'` whole, even spanning several lines. */
 const IMPORT_STATEMENT = /import\s+([\s\S]*?)\s+from\s+['"]([^'"]+)['"]/g;
 
-/** 엔티티를 우회해 JSON 을 직접 집는 경로 (`.../docs-vault/data/manifest.json`). */
+/** Paths that bypass the entity and reach the JSON directly (`.../docs-vault/data/manifest.json`). */
 const RAW_DATA_SPECIFIER = /docs-vault\/data\/[\w.-]+\.json$/;
 
 function collectSourceFiles(dir: string, acc: string[] = []): string[] {
@@ -73,8 +76,8 @@ describe('static 볼트 단일 진입점 계약', () => {
   it('entities/docs-vault 바깥에서는 번들 볼트 원본을 직접 import 하지 않는다', () => {
     const files = collectSourceFiles(SRC_DIR);
 
-    // 가드가 살아있음을 스스로 증명한다 — 순회가 깨져 0건을 읽으면 위반도
-    // 0건이 되어 조용히 통과한다. 그 실패를 여기서 먼저 잡는다.
+    // The guard proves itself alive — if the walk breaks and reads 0 files, violations
+    // are also 0 and it passes quietly. That failure is caught here first.
     expect(files.length).toBeGreaterThan(100);
 
     const offenders: string[] = [];

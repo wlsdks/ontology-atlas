@@ -5,43 +5,43 @@ import type { useTranslations } from "next-intl";
 import { Chip, RowButton, Surface } from "@/shared/ui";
 
 export interface DocsVaultVaultChipProps {
-  /** vault 짧은 이름 — local=폴더명, server=샘플 라벨. */
+  /** The vault's short name — the folder name for local, the sample label for server. */
   label: string;
-  /** `null` 이면 문서 수를 아예 말하지 않는다 — 폴더 미선택 로컬에서 샘플
-   *  숫자를 띄우면 "내 폴더에 N개가 있다" 로 읽힌다. */
+  /** `null` means the document count is not stated at all — showing the sample's number for a
+   *  local source with no folder chosen reads as "my folder has N documents". */
   docCount: number | null;
   folderCount: number;
-  /** local vault 의 실제 root 경로(또는 dogfood 경로) — 팝오버 안 전체 표시. */
+  /** The local vault's real root path (or the dogfood path) — shown in full inside the popover. */
   path: string;
   isLocalSourceLoaded: boolean;
   open: boolean;
   onToggle: () => void;
   onSwap: () => void;
   /**
-   * **소스는 이 칩 하나가 말한다** (2026-08-08, 2안). 종전엔 화면 오른쪽 끝의
-   * 라디오 한 벌이 같은 사실(샘플이냐 내 폴더냐)을 한 번 더 말하고 바꾸는
-   * 길도 따로 갖고 있었다 — 같은 사실을 두 곳이 말하면 어느 쪽이 진짜인지부터
-   * 헷갈린다. 표시는 칩 라벨이, 전환은 이 메뉴가 맡는다.
+   * **The source is stated by this chip alone** (2026-08-08). A radio pair at the screen's right
+   * edge used to state the same fact (sample or my folder) a second time and carry its own way to
+   * change it — one fact stated in two places leaves you unsure which is real. The chip label
+   * displays it; this menu switches it.
    */
   isSample: boolean;
   onUseSample: () => void;
-  /** FSA 미지원 브라우저 — 「내 폴더」를 고를 수 없는 이유와 함께 잠근다. */
+  /** A browser without FSA — locked, with the reason "my folder" cannot be chosen. */
   localDisabled?: boolean;
   localDisabledReason?: string;
-  /** 문서함 점검 — 오른쪽 끝 클립보드 타일에서 이 메뉴로 접었다. */
+  /** The docs check — folded into this menu from the clipboard tile at the right edge. */
   onOpenAudit: () => void;
   menuRef: RefObject<HTMLDivElement | null>;
-  /** B2 병합 — vault 도구가 설정으로 이동했음을 알리는 한 줄 브리지(이번
-   *  릴리스 한정). 팝오버 하단에 조용히 노출. */
+  /** A one-line bridge saying the vault tools moved into settings (this release only). Shown
+   *  quietly at the bottom of the popover. */
   toolsMovedHint?: string;
   t: ReturnType<typeof useTranslations<"docsVault">>;
 }
 
 /**
- * 헤더 zone-l 의 VaultChip — design-prescription.md ③-2. 기존 vault pill
- * (경로 · 문서수 · 폴더수 · swap 텍스트버튼)을 칩 + 팝오버 메뉴로 접는다.
- * census(개념·관계)는 breadcrumb 스트립이 단독 소유하므로 여기서는 제거
- * (중복 해소). local badge 도 칩에서 메뉴 안으로 강등.
+ * The VaultChip in the header's zone-l. It folds the old vault pill (path, document count,
+ * folder count, a swap text button) into a chip plus a popover menu. The census (concepts and
+ * relations) is owned solely by the breadcrumb strip and so is not repeated here, and the local
+ * badge is demoted from the chip into the menu.
  */
 export function DocsVaultVaultChip({
   label,
@@ -68,14 +68,14 @@ export function DocsVaultVaultChip({
         aria-haspopup="menu"
         aria-expanded={open}
         aria-label={t("vaultChip.menuAriaLabel")}
-        /* 메뉴 항목들은 testid 가 있는데 이 트리거만 없어서, 두 e2e 스펙이
-           로케일 라벨("문서함 정보 메뉴" / "Workspace info menu")로 찾고 있었다.
-           번역을 고치면 스펙이 조용히 죽는 이음새다 — 로케일 무관 좌표를 준다. */
+        /* The menu items have testids but this trigger did not, so two e2e specs were finding it
+           by its localized label ("문서함 정보 메뉴" / "Workspace info menu"). That is a seam where
+           editing a translation silently kills a spec — give it a locale-independent handle. */
         data-testid="vault-chip-menu-trigger"
         className="min-w-0 max-w-[200px] flex-none font-mono hover:border-[color:var(--color-indigo-line-a32)] hover:text-[color:var(--color-text-primary)]"
       >
-        {/* 칩의 아이콘이 소스를 말한다 — 오른쪽 라디오를 걷어낸 자리를
-            이 한 글리프가 대신한다(2026-08-08). */}
+        {/* The chip's icon states the source — this one glyph replaces the radio pair removed
+            from the right (2026-08-08). */}
         {isSample ? (
           <Package size={ICON_SIZE.sm} aria-hidden className="flex-none" />
         ) : (
@@ -93,7 +93,7 @@ export function DocsVaultVaultChip({
           className={`flex-none transition-transform ${open ? "rotate-180" : ""}`}
         />
       </Chip>
-      {/* 칩 왼쪽 모서리에 앵커한 메뉴 — 등장도 그 모서리에서 자란다. */}
+      {/* The menu is anchored to the chip's left edge, and grows from that edge. */}
       <Surface
         open={open}
         origin="top left"
@@ -113,8 +113,8 @@ export function DocsVaultVaultChip({
               {t("header.localBadge")}
             </p>
           ) : null}
-          {/* 소스 두 줄 — 한 축에서 하나만 고르므로 `menuitemradio` 다.
-              체크 자리는 안 고른 줄에서도 비워 둬 글자가 흔들리지 않는다. */}
+          {/* Two source rows — only one can be chosen on this axis, hence `menuitemradio`.
+              The check column stays reserved on unselected rows so the text does not shift. */}
           <div
             role="group"
             aria-label={t("header.sourceAriaLabel")}
@@ -154,18 +154,18 @@ export function DocsVaultVaultChip({
                 className={`flex-none ${!isSample ? "opacity-100" : "opacity-40"}`}
               />
               <span className="min-w-0 flex-1 truncate">
-                {/* 라디오 두 줄은 둘 다 **무엇을 보는지**를 말해야 한다.
-                    한쪽만 동작 이름(「폴더 바꾸기」)이면 같은 축의 선택지로
-                    안 읽힌다. 이미 내 폴더를 보고 있으면 바꾸는 일이 되므로
-                    그때만 「폴더 바꾸기」다. */}
+                {/* Both radio rows must state **what you are looking at**. If one of them is an
+                    action name ("switch folder") instead, it stops reading as an option on the
+                    same axis. Only when you are already looking at your own folder does choosing
+                    it become switching, so only then is it "switch folder". */}
                 {isSample
                   ? t("header.sourcePickLocal")
                   : t("header.vaultPillSwap")}
               </span>
             </RowButton>
             {localDisabled && localDisabledReason ? (
-              /* 왜 못 고르는지를 **화면에도** 적는다 — 흐린 줄만 보고는
-                 «고장» 과 «이 브라우저에서는 안 됨» 이 같은 그림이다. */
+              /* Why it cannot be chosen is written **on screen** too — from a dimmed row alone,
+                 «broken» and «not possible in this browser» look identical. */
               <p
                 id="vault-chip-local-blocked"
                 className="px-1.5 pb-1 pt-0.5 text-caption leading-label text-[color:var(--color-text-quaternary)]"

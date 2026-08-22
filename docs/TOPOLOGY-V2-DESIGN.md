@@ -358,7 +358,7 @@ emphasis 상승 예약)만, 커밋(포커스 전환)은 pointerup 에서, 드래
 | 항목 | 내용 |
 |---|---|
 | 파일(신규) | `lib/shapes.ts`(hex/square/via `roundedPolygonPath`, 모서리 반경 `farT` 보간) · `lib/edges.ts`(bow 라우팅, contains/depends dash, 신호 펄스+코멧 테일) · `lib/tokens.ts`(§2 토큰 해석-캐시) · `ui/TopologyMapV2.tsx` 도형 드로우 연결 |
-| 테스트 | `shapes.test.ts`(헥스/사각 꼭짓점 생성, 모서리 반경이 `[min,r]` 범위 내 보간) · `edges.test.ts`(bow 가 `maxBow` 를 넘지 않음, `blend` 계수 반영) · `tokens.test.ts`(§2 토큰 전부 해석 성공, 누락 시 명시적 실패 — 토큰 drift 가드) |
+| 테스트 | `shapes.test.ts`(헥스/사각 꼭짓점 생성, 모서리 반경이 `[min,r]` 범위 내 보간) · `edges.test.ts`(bow 가 `maxBow` 를 넘지 않음, `blend` 계수 반영) · `tokens.test.ts`(§2 토큰 전부 해석 성공, 누락 시 명시적 실패 — 토큰 drift 게이트) |
 | 게이트 | overview/전환/working 세 scale 스크린샷에서 형태가 원↔다각형으로 연속 수렴(이산 점프 없음), 다크 대비 확인(verdict a5 재발 방지 — 신뢰선 같은 제2채색 도입 여부 스크린샷 리뷰) |
 
 ### P4 — 포커스/팝오버 + 신선도 오버레이

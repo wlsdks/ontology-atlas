@@ -18,10 +18,11 @@ const NODE_UID_RE =
 
 
 /**
- * R12 #36 — \`ontology-atlas find <query> [vault] [--kind X] [--json]\`
+ * `ontology-atlas find <query> [vault] [--kind X] [--json]`
  *
- * vault 의 ontology 노드 (frontmatter \`kind:\` 있는 .md) 중 slug 또는 title 에
- * query 를 부분매칭 (case-insensitive). list 와 같은 색깔 표 출력.
+ * Substring-matches (case-insensitive) the query against the slug or title of the
+ * vault's ontology nodes (`.md` with a frontmatter `kind:`). Same coloured table
+ * output as list.
  */
 export function runFind(args) {
   const opts = parseArgs(args);

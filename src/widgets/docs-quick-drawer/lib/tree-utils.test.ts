@@ -7,7 +7,7 @@ import {
   flattenTreeSlugs,
 } from "./tree-utils";
 
-// 공통 fixture — 2-depth 트리:
+// Shared fixture — a 2-deep tree:
 //   root/
 //   ├─ rules/  (dir)
 //   │  ├─ fsd          (doc, tags: [architecture])

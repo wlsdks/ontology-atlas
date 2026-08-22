@@ -16,10 +16,10 @@ export interface GuidedTourCardProps {
 }
 
 /**
- * 카드 — 진행 점 N/M · 제목 · 본문 · [이전][다음]/[건너뛰기], 7단계(recent)의
- * 2-way 분기, 인터랙티브(4단계) 대기 라벨을 모두 이 한 컴포넌트가 그린다
- * (spec §3-D). 표면은 기존 5단계 패널 토큰만 — `--color-panel` ·
- * `--chrome-border` · `--chrome-shadow` · `--chrome-radius`.
+ * The card — progress dots N/M, title, body, [back][next]/[skip], step 7's
+ * (recent) two-way branch, and the interactive (step 4) waiting label are all
+ * drawn by this one component. The surface uses only the existing panel tokens:
+ * `--color-panel`, `--chrome-border`, `--chrome-shadow`, `--chrome-radius`.
  */
 export function GuidedTourCard({
   tour,
@@ -31,16 +31,17 @@ export function GuidedTourCard({
   const t = useTranslations("guidedTour");
   const { step, stepIndex, personaSteps, personaStepIndex, back, advance, skip, finishAsDone, chooseDevBranch, hasSelection, devBranchAvailable, isFinalStep } = tour;
 
-  // 포커스 이동 (2026-07-23 Guardian 정정) — role="dialog" 카드가 열리거나
-  // 단계가 바뀌면 포커스를 카드로 옮긴다(aria-label 재낭독 + 키보드 사용자의
-  // Tab 시작점). 닫힐 때의 트리거 복원은 `useGuidedTour.start()`/`finish()`
-  // 가 담당(자식 effect 가 먼저 돌아 activeElement 캡처가 오염되는 문제 회피).
+  // Focus movement (2026-07-23) — when the `role="dialog"` card opens or the step
+  // changes, focus moves to the card (re-announcing the aria-label and giving a
+  // keyboard user a Tab starting point). Restoring the trigger on close belongs to
+  // `useGuidedTour.start()`/`finish()` (avoiding the child effect running first and
+  // polluting the activeElement capture).
   //
-  // Tab 가두기는 **여기가 아니라 `GuidedTourOverlay`** 가 한다
-  // (`useDialogFocusTrap`, `initialFocus: "none"`). 오버레이가 카드를 품고
-  // 있어 범위가 더 넓고 정확하다. 여기서 또 걸면 window keydown 리스너가 둘이
-  // 되어 한 번의 Tab 이 포커스를 두 번 옮긴다 — 2026-07-28 감사에서 실제로
-  // 이중으로 걸 뻔했다.
+  // The focus trap lives in **`GuidedTourOverlay`, not here**
+  // (`useDialogFocusTrap`, `initialFocus: "none"`). The overlay contains the card,
+  // so its scope is wider and more accurate. Trapping here as well would create two
+  // window keydown listeners and one Tab would move focus twice — the 2026-07-28
+  // audit nearly introduced exactly that.
   const cardRef = useRef<HTMLDivElement | null>(null);
   const stepId = step?.id ?? null;
   useEffect(() => {
@@ -49,10 +50,10 @@ export function GuidedTourCard({
 
   if (!step) return null;
 
-  // 진행 표시는 순간 해석 가능한 `visibleSteps` 가 아니라 페르소나 고정 여정
-  // (`personaSteps`) 기준 — 분모가 같은 투어 안에서 요동치지 않는다(2026-07-23
-  // 최종 스윕 P2). 스킵된 단계는 지나친 점으로 보인다. 내비게이션([이전]
-  // 활성 여부 포함)은 계속 `visibleSteps` 인덱스를 쓴다.
+  // Progress is measured against the persona's fixed journey (`personaSteps`),
+  // not the momentarily resolvable `visibleSteps`, so the denominator does not
+  // fluctuate within one tour. A skipped step looks like a dot passed over.
+  // Navigation (including whether [back] is enabled) still uses `visibleSteps` indices.
   const total = personaSteps.length;
   const current = personaStepIndex + 1;
   const isFirst = stepIndex <= 0;
@@ -71,14 +72,15 @@ export function GuidedTourCard({
       className={cn(
         "fixed z-[var(--z-tour-card)] rounded-[var(--chrome-radius)] border border-[color:var(--chrome-border)] bg-[color:var(--color-panel)] p-4 shadow-[var(--chrome-shadow)]",
         "transition-opacity duration-[var(--topology-tour-transition-ms)] ease-out motion-reduce:transition-none",
-        // 단계 전환 등장 — 오버레이가 `key={step.id}` 로 remount 시키므로 이
-        // 키프레임(불투명도 전용 `panelCrossfadeIn`)이 매 단계 한 번 돈다.
+        // Step-transition entrance — the overlay remounts via `key={step.id}`, so
+        // this keyframe (the opacity-only `panelCrossfadeIn`) runs once per step.
         //
-        // 2026-07-28: 인라인 arbitrary `animate-[…] motion-reduce:animate-none`
-        // 에서 **이름 있는 클래스로 승격**했다. 인라인이면 globals.css 의
-        // reduced-motion 등록부가 가리킬 셀렉터가 없어서, 감속 사용자에게는
-        // 전역 kill 규칙만 걸리고 동등물은 하나도 안 왔다 — 단계 전환이 통째로
-        // 하드컷이었다. 목록이 곧 사정거리다.
+        // 2026-07-28: promoted from an inline arbitrary
+        // `animate-[…] motion-reduce:animate-none` **to a named class**. Inline,
+        // globals.css's reduced-motion registry had no selector to point at, so a
+        // reduced-motion user got only the global kill rule and no equivalent at
+        // all — step transitions were entirely hard cuts. The registry list is the
+        // reach.
         "guided-tour-card-in",
         "focus:outline-none",
       )}
@@ -95,8 +97,8 @@ export function GuidedTourCard({
           type="button"
           onClick={skip}
           data-testid="guided-tour-skip"
-          /* 진행 캡션과 한 줄을 이루는 헤더 행 — 바닥 24 는 램프가 내고,
-             coarse 의 44 는 `.touch-hit-expand` 가 낸다(이웃 타깃 원거리). */
+          /* The header row that forms one line with the progress caption — the
+             floor of 24 comes from the ramp and the coarse 44 from `.touch-hit-expand`. */
           className={controlClass({
             shape: "link",
             className:
@@ -136,11 +138,11 @@ export function GuidedTourCard({
           onClick={onActivateAnchor}
           disabled={!onActivateAnchor || hasSelection}
           data-testid="guided-tour-activate-target"
-          /* `justify-center`/`text-center` 는 폭이 있어야 뜻이 생긴다. 카드가
-             flex 컨테이너가 아니라 이 버튼은 shrink-to-fit 이었고, 그래서 두
-             중앙 정렬 선언이 **한 번도 적용된 적이 없었다** — 왼쪽에 붙은 채로
-             "가운데" 라고 적혀 있던 것이다(2026-07-29 실측). 같은 줄에 선
-             「이전」과 왼쪽 끝을 맞추려면 폭을 채우는 쪽이 맞다. */
+          /* `justify-center` / `text-center` mean nothing without a width. The card
+             is not a flex container, so this button was shrink-to-fit and those two
+             centring declarations **had never once applied** — it sat left-aligned
+             while claiming to be centred (measured 2026-07-29). Filling the width is
+             also what lines its left edge up with 「이전」 on the same row. */
           className={controlClass({ shape: "chip", size: "md", tone: "muted", className: "h-8 w-full justify-center rounded-[var(--chrome-radius-inner)] border-dashed border-[color:var(--chrome-border)] text-center text-body" })}
         >
           <span data-testid={hasSelection ? "guided-tour-success" : "guided-tour-waiting"}>
@@ -150,18 +152,18 @@ export function GuidedTourCard({
       ) : null}
 
       {/**
-       * **「이전」은 어느 단계에서도 사라지지 않는다** (2026-07-29 도그푸딩).
+       * **[back] does not disappear on any step** (dogfooding 2026-07-29).
        *
-       * 초안은 back/next 줄 전체를 `!isInteractive` 로 감쌌다. 그래서 4/7
-       * (「직접 눌러보세요」)과 마지막 분기 단계에서 **「이전」이 통째로
-       * 없어졌다** — 다섯 단계 동안 왼쪽 아래에 있던 컨트롤이 여섯 번째에
-       * 말없이 사라진다. 사용자는 그때 투어가 되돌아갈 수 있는 것인지 아닌지를
-       * 다시 배워야 한다.
+       * The draft wrapped the whole back/next row in `!isInteractive`, so on 4/7
+       * ("try clicking it yourself") and the final branch step **[back] vanished
+       * entirely** — a control that had been at the bottom left for five steps
+       * silently disappeared on the sixth. The user then has to relearn whether
+       * this tour can go back at all.
        *
-       * 앞으로 가는 방법은 단계마다 다른 게 맞다(다음 · 직접 눌러보기 · 분기
-       * 선택). **뒤로 가는 방법이 달라질 이유는 없다.** 그래서 「이전」을
-       * 세 갈래 밖으로 꺼내 항상 같은 자리에 세우고, 앞으로 가는 컨트롤만
-       * 단계가 고른다.
+       * How to go forward may differ per step (next, try it, choose a branch).
+       * **There is no reason for how to go back to differ.** So [back] is lifted
+       * out of the three branches and stands in the same place always, and only
+       * the forward control is chosen by the step.
        */}
       {isBranchStep ? (
         <div className="mt-1 flex flex-col gap-2">
@@ -169,23 +171,23 @@ export function GuidedTourCard({
             type="button"
             onClick={finishAsDone}
             data-testid="guided-tour-finish-tour"
-            /* 분기 두 버튼은 세로로 붙은 **한 벌**이라 같이 옮긴다. 둘 다
-               `chip`/`lg` 로 36 → 34px 이 되어 나란함이 유지된다. */
+            /* The branch's two buttons are **one set** stacked vertically and move
+               together. Both being `chip`/`lg` takes them 36 → 34px, keeping them level. */
             className={controlClass({
               shape: "chip",
               size: "lg",
               tone: "strong",
-              /* 무게는 값 층이 `onAccent` 에서만 낸다 — 중립 칩의 `font-[var(--font-weight-signature)]`
-                 은 원래 값 그대로 유지한다(무게를 바꾸는 것은 이 라운드의 일이
-                 아니다). */
+              /* Weight is emitted by the value layer only under `onAccent` — the
+                 neutral chip's `font-[var(--font-weight-signature)]` keeps its
+                 original value (changing weights is not this round's work). */
               className: "justify-center font-[var(--font-weight-signature)] hover:bg-[color:var(--color-overlay-2)]",
             })}
           >
             {t("finishTourAction")}
           </button>
-          {/* 8단계 앵커(첫 실행 카드)가 이미 dismiss 돼 해석 불가면 분기
-              버튼을 숨긴다 — 눌러도 갈 곳이 없는 버튼은 welcome 리셋
-              루프였다(2026-07-23 Guardian 실측 정정). */}
+          {/* When step 8's anchor (the first-run card) has already been dismissed and
+              cannot resolve, the branch button is hidden — a button with nowhere to go
+              was the welcome reset loop (measured correction 2026-07-23). */}
           {devBranchAvailable ? (
             <button
               type="button"
@@ -218,8 +220,8 @@ export function GuidedTourCard({
         >
           {t("prevLabel")}
         </button>
-        {/* 앞으로 가는 컨트롤만 단계가 고른다 — 대화형 단계는 앵커 클릭이,
-            분기 단계는 위의 두 선택지가 그 일을 이미 한다. */}
+        {/* Only the forward control is chosen by the step — on an interactive step the
+            anchor click does that job, and on the branch step the two choices above do. */}
         {!isInteractive && !isBranchStep ? (
           <button
             type="button"

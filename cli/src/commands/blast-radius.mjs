@@ -1,6 +1,6 @@
 // `ontology-atlas blast-radius <slug> [vault] [--depth N] [--direction]`
-// 이 노드를 바꾸면 무엇이 깨지나 — 선언된 depends_on만, 구조는 제외.
-// MCP `query_ontology({operation: 'blast_radius'})` thin wrapper.
+// What breaks if this node changes — declared depends_on only, structure excluded.
+// Thin wrapper over MCP `query_ontology({operation: 'blast_radius'})`.
 
 import { COLORS, KIND_COLORS } from '../lib/colors.mjs';
 import { callMcpTool } from '../lib/mcp-call.mjs';

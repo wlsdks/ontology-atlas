@@ -4,40 +4,38 @@ import { cloneElement, isValidElement, useEffect, useState } from 'react';
 import { cn } from '@/shared/lib/cn';
 
 interface StaggeredFadeInProps {
-  /** 자식들. `as` 가 list-style 이면 li 들의 배열. */
+  /** The children; an array of `li` when `as` is a list element. */
   children: React.ReactNode;
-  /** 한 자식 사이의 stagger 간격 (ms). default 60ms — 디자인 시스템 권장. */
+  /** Stagger interval between children, in ms. Default 60 — the design system's recommendation. */
   stagger?: number;
   /**
-   * stagger delay 가 적용되는 최대 자식 수. 이 인덱스를 넘는 자식은 모두 같은
-   * (capped) delay 로 함께 나타난다. 큰 리스트(예: 프로젝트 200개)에서 마지막
-   * 카드가 수 초 뒤 나타나는 절름발이 cascade 를 방지. default 8 →
-   * 최대 cascade 8 * stagger(=480ms@60).
+   * How many children receive an increasing delay. Everything past this index
+   * appears together on the capped delay, so a large list (200 projects, say)
+   * does not end with a limping cascade whose last card arrives seconds later.
+   * Default 8, i.e. a maximum cascade of 8 × stagger (480ms at 60).
    */
   maxStaggerSteps?: number;
-  /** 트랜지션 길이 (ms). default 200ms. */
+  /** Transition duration in ms. Default 200. */
   duration?: number;
-  /** 컨테이너 element 종류 — 의미 있는 wrapper 면 div 가 아닐 수도. */
+  /** The container element; not always a div when the wrapper carries meaning. */
   as?: 'div' | 'ul' | 'ol' | 'section';
-  /** 추가 className — 컨테이너에 적용. */
+  /** Extra className, applied to the container. */
   className?: string;
-  /** Y 이동량 (px). default 8 — Toss/Apple 톤 살짝. */
+  /** Vertical travel in px. Default 8. */
   translateY?: number;
-  /** 컨테이너에 그대로 전달할 aria-label (의미 있는 region wrapper 용). */
+  /** aria-label passed through to the container, for a wrapper that is a real region. */
   ariaLabel?: string;
 }
 
 /**
- * Stagger fade-in — `opacity 0 → 1` + `translateY {y}px → 0` 을 자식들에
- * 순차 적용. 디자인 시스템이 약속한 motion 패턴을 단일 컴포넌트로 통일.
+ * Staggered fade-in — applies `opacity 0 → 1` plus `translateY {y}px → 0` to the
+ * children in sequence, so the design system's motion pattern lives in one
+ * component.
  *
- * 동작:
- * - mount 후 1 tick 뒤에 `opacity` + `transform` 활성화 (initial paint
- *   에서 hidden 상태가 보이지 않게 setTimeout 0).
- * - 각 자식에 `transition-delay = i * stagger` 적용.
- * - `prefers-reduced-motion` 사용자는 즉시 표시 (transition 0).
+ * The hidden state must be committed on the first paint for the transition to
+ * mean anything, so `mounted` flips on the next frame. Users with
+ * `prefers-reduced-motion` see everything immediately.
  *
- * 사용:
  * ```tsx
  * <StaggeredFadeIn as="ol" className="grid gap-3 md:grid-cols-3">
  *   <li>...</li>
@@ -60,10 +58,8 @@ export function StaggeredFadeIn({
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
-    // first paint 에 hidden 상태가 박혀야 transition 이 의미 있게 동작.
-    // requestAnimationFrame 으로 다음 frame 에 mounted=true.
-    // prefers-reduced-motion 사용자는 child 의 motion-reduce:! 클래스가
-    // !important 로 inline style 을 override 하므로 별도 JS 분기 불필요.
+    // No JS branch is needed for prefers-reduced-motion: the child's
+    // `motion-reduce:!` classes override the inline style through !important.
     const handle = window.requestAnimationFrame(() => setMounted(true));
     return () => window.cancelAnimationFrame(handle);
   }, []);
@@ -76,7 +72,8 @@ export function StaggeredFadeIn({
         applyTransitionStyle(child, i, {
           mounted,
           duration,
-          // 큰 리스트에서 마지막 자식이 수 초 뒤 나타나지 않도록 delay 상한.
+          // Cap the delay so the last child of a long list does not arrive
+          // seconds late.
           delay: Math.min(i, maxStaggerSteps) * stagger,
           translateY,
         }),
@@ -93,15 +90,14 @@ interface ApplyOptions {
 }
 
 /**
- * 자식 element 에 inline transition style 을 직접 주입한다.
+ * Injects the inline transition style directly onto the child element.
  *
- * 이전엔 `<span style={display: contents}>` 로 감쌌으나 부모가 `<ol>` / `<ul>`
- * 일 때 `<span>` 이 `<li>` 사이에 삽입돼 HTML invalid + 스크린 리더가 list
- * semantics 를 잃었음. `React.cloneElement` 로 child 자체에 style 을 주입하면
- * DOM 트리는 `<ol><li/><li/></ol>` 그대로 유지된다.
+ * An earlier version wrapped each child in `<span style={display: contents}>`,
+ * but with an `<ol>`/`<ul>` parent that put a `<span>` between the `<li>`s —
+ * invalid HTML, and screen readers lost the list semantics. Cloning the child
+ * keeps the tree as `<ol><li/><li/></ol>`.
  *
- * 비-element child (string / number / null) 는 그대로 통과 — 호출자는
- * Tag 를 적절히 골라 사용 (ul / ol / div 등).
+ * Non-element children (string, number, null) pass through unchanged.
  */
 function applyTransitionStyle(
   child: React.ReactNode,
@@ -121,7 +117,7 @@ function applyTransitionStyle(
   return cloneElement(child, {
     key: child.key ?? index,
     style: { ...existing, ...inlineTransition },
-    // motion-reduce: 클래스 보존 (prefers-reduced-motion CSS rules 와 호환).
+    // Keep the motion-reduce: classes so the prefers-reduced-motion CSS still applies.
     className: cn(
       child.props.className,
       'motion-reduce:!transform-none motion-reduce:!opacity-100 motion-reduce:!transition-none',

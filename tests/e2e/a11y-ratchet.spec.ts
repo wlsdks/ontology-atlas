@@ -2,129 +2,129 @@ import { expect, test } from "@playwright/test";
 import { AUDITED_ROUTES } from "./audited-routes";
 
 /**
- * 접근성 래칫 — axe-core 105룰 중 **WCAG 2.x A/AA** 만.
+ * Accessibility ratchet — of axe-core's 105 rules, **WCAG 2.x A/AA** only.
  *
- * ## 왜 손으로 만든 다섯 스펙 위에 이걸 얹는가
+ * **Why this sits on top of five hand-written specs.** `a11y-structure`,
+ * `aria-audit`, `keyboard-path`, and `touch-target-contract` each pin **one defect
+ * a person noticed**. (`mobile-keyboard-audit` used to be in that list; deleted
+ * 2026-08-16 because it carried no assertions at all — anything could break and it
+ * stayed green — and the two shortcuts it claimed to cover were already covered by
+ * specs that do assert.) They are good checks but cover only what was noticed: 15
+ * cases looking at five or six of the 105 rules. The first run of this ratchet
+ * found three defects those five had never seen (`aria-required-children`,
+ * `target-size`, `color-contrast` ×12).
  *
- * `a11y-structure` · `aria-audit` · `keyboard-path` · `touch-target-contract` 는
- * 전부 **사람이 알아챈 결함을 하나씩 못박은 것**이다.
- * (여기 있던 `mobile-keyboard-audit` 는 2026-08-16 에 지웠다 — 단언이 하나도
- *  없어서 무엇이 깨져도 초록이었고, 그것이 덮는다던 단축키 둘은 이미 단언이
- *  있는 다른 스펙들이 덮고 있었다.)
- * 좋은 검사지만 알아챈 것만 덮는다 — 15 케이스가 105룰 중 대여섯을 본다.
- * 실제로 이 래칫이 처음 돌자마자 그 다섯이 한 번도 못 본 결함 셋이 나왔다
- * (`aria-required-children` · `target-size` · `color-contrast` 12건).
+ * **Why a ratchet rather than "zero violations".** `/gate-probe`: **take the
+ * inventory before switching a rule on.** Demanding 0 without clearing first makes
+ * the gate red from day one, and a red gate is soon switched off or ignored.
  *
- * ## 왜 「위반 0」이 아니라 래칫인가
+ * The 14 originally registered were **all repaid** — `target-size` 1 (control
+ * normalisation), `aria-required-children` 1 (role given back), `color-contrast` 4
+ * (ink token on filled indigo), and the final 8 disappeared when the 체계
+ * (design-systems seat) verdict raised `--color-text-quaternary` itself to
+ * `#82828a` (see the `BASELINE` doc-block below; decision ledger 2026-08-03). With
+ * all three baselines at 0, **the collection guard (the `passes` floor) holds this
+ * gate's life** — it is the only thing separating an empty screen from no
+ * violations.
  *
- * `/gate-probe`: **룰을 켜기 전에 위반을 전수 측정한다.** 안 치운 채 0 을 요구하면
- * 그 게이트는 첫날부터 빨갛고, 빨간 게이트는 곧 꺼지거나 무시된다.
+ * Three contracts:
+ *   1. **Collection is alive** — per route, the rules axe applied to content must
+ *      be above a floor. Two of the three rules are already 0, so without this an
+ *      empty screen and no violations are the same green.
+ *   2. **Zero violations from new rules** — any rule not on the list fails. New
+ *      defects cannot enter.
+ *   3. **Counts can never rise** — the baseline is a ceiling; when you fix
+ *      something you lower the number in this file.
  *
- * 처음 등재한 14건은 **전부 갚였다** — `target-size` 1(컨트롤 정규화),
- * `aria-required-children` 1(role 반납), `color-contrast` 4(채운 인디고 위
- * 잉크 토큰), 그리고 마지막 8건은 「체계」 판정으로 `--color-text-quaternary`
- * 값 자체가 `#82828a` 로 올라가며 사라졌다(아래 `BASELINE` 주석 · 원장
- * 2026-08-03). 기준선 셋이 전부 0 이므로 **채집 가드(`passes` 하한)가 이
- * 게이트의 생사를 쥔다** — 빈 화면과 위반 없음을 가르는 것이 그것뿐이다.
+ * **Raising a baseline is a human decision that shows up in the diff.** That is the
+ * point of this shape: silent growth is blocked, deliberate growth is reviewed.
  *
- * 그래서 계약은 셋이다:
- *   1. **채집이 살아 있다** — 라우트마다 axe 가 내용에 적용한 룰이 바닥 위여야
- *      한다. 세 룰 중 둘이 이미 0이라, 이게 없으면 «빈 화면»과 «위반 없음»이
- *      같은 초록이 된다.
- *   2. **새 룰 위반 0** — 목록에 없는 룰이 하나라도 뜨면 실패. 새 결함은 못 들어온다.
- *   3. **개수는 늘 수 없다** — 기준선은 상한이고, 고치면 이 파일의 숫자를 내린다.
+ * **This gate really does turn red** (four probes, 2026-08-03):
  *
- * 기준선을 **올리는 것은 diff 에 남는 사람의 결정**이다. 그게 이 형태의 요점이다 —
- * 조용히 늘어나는 것만 막고, 의도적으로 늘리는 것은 리뷰가 본다.
- *
- * ## 이 게이트는 실제로 빨개진다 (2026-08-03 프로브 4종)
- *
- * | 일부러 만든 결함 | 결과 |
+ * | Deliberate defect | Result |
  * |---|---|
- * | CTA 잉크를 `--color-text-primary` 로 되돌림 | `color-contrast` 8 → 12 실패 |
- * | 사이드바 줄에 `role="tablist"` 복원 | `aria-required-children` 0 → 1 실패 |
- * | 고친 채 `BASELINE` 만 9로 둠 | 여유 단언 실패(기준선 9 · 실측 8) |
- * | 빈 문서만 서빙하는 서버에 물림 | 채집 단언 실패(통과 룰 4 < 15) |
+ * | Revert the CTA ink to `--color-text-primary` | `color-contrast` 8 → 12, fails |
+ * | Restore `role="tablist"` on the sidebar row | `aria-required-children` 0 → 1, fails |
+ * | Fix the defect but leave `BASELINE` at 9 | Slack assertion fails (baseline 9, measured 8) |
+ * | Point at a server serving only an empty document | Collection assertion fails (4 rules passed < 15) |
  *
- * 센서스를 다시 뜨려면: `node scripts/measure-a11y.mjs`(빌드 + 정적 서버 필요).
+ * To retake the inventory: `node scripts/measure-a11y.mjs` (needs a build and a
+ * static server).
  */
 
-// Playwright 스펙은 CJS 로 로드된다 — `import.meta` 를 쓰면 파일 자체가 안 실린다
-// (증상이 «No tests found» 라 검사가 없는 것과 구별되지 않는다).
+// Playwright specs load as CJS — using `import.meta` stops the file loading at all,
+// and the symptom ("No tests found") is indistinguishable from having no checks.
 const AXE_PATH = require.resolve("axe-core/axe.min.js");
 
-/** 「best-practice」 태그는 규격이 아니라 권고다 — 섞으면 규격 위반과 취향이 한 숫자가 된다. */
+/** The `best-practice` tag is advice, not spec — mixing it in merges spec violations and taste into one number. */
 const WCAG_TAGS = ["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "wcag22aa"];
 
-// 라우트 목록은 **대비 래칫과 공유한다** — 두 게이트가 각자 손으로 쓴 부분집합을
-// 갖고 있었고, 그 어긋남이 404 두 페이지의 AA 미달을 한 번도 못 보게 했다.
-// 제외 사유와 계약 테스트 배선은 그 파일 머리 주석에 있다.
+// The route list is **shared with the contrast ratchet**. The two gates used to
+// keep hand-written subsets, and that divergence meant the AA failure on both 404
+// pages was never once seen. Exclusion reasons and the contract-test wiring are in
+// that file's doc-block.
 const ROUTES = AUDITED_ROUTES;
 
 /**
- * ## 2026-08-04 — 라우트를 8 → 17 로 넓히고 다시 전수
+ * ## 2026-08-04 — routes widened 8 → 17 and re-inventoried
  *
- * 정본 인벤토리 17 라우트 중 **15** + 404 두 벌 = **17 URL**. 뺀 둘은
- * 리다이렉트이고 사유는 `audited-routes.ts` 에 있다.
+ * **15** of the 17 routes in the canonical inventory + both 404s = **17 URLs**.
+ * The two excluded are redirects; the reason is in `audited-routes.ts`.
  *
- * 넓히면 위반이 쏟아질 것으로 봤는데 **2건**이었다(둘 다 새로 들어온
- * `/ko/git/`, 둘 다 `color-contrast`). 나머지 7개 새 라우트는 0. 404 두 벌도
- * 0 이었다 — 거기 있던 4.42:1 은 하루 전(#899)에 이미 갚였고, 이 확장은 그
- * 자리를 **처음으로 게이트 안에** 넣는다.
+ * Widening was expected to flood the count; it produced **2** (both on the newly
+ * included `/ko/git/`, both `color-contrast`). The other 7 new routes were 0. Both
+ * 404s were 0 too — their 4.42:1 had been repaid the day before (#899), and this
+ * expansion puts that place **inside the gate for the first time**.
  *
- * `/ko/git/` 2건은 셋업 미리보기 스케치(`atlas-git-setup-preview`,
- * `aria-hidden` + `opacity-45`)의 칩 두 개가 **낱말을 들고 있어서**였다
- * (합성 2.09:1). 잉크로는 못 고친다 — 이 불투명도에서는 램프의 가장 밝은
- * 잉크도 4.30 이다(순백이 정확히 4.50). 그래서 색이 아니라 **글자를** 뺐다:
- * 스케치의 나머지 스무 남짓 자리가 이미 회색 막대라, 막대로 바꾸니 도해가
- * 자기 문법과 같아지면서 위반이 사라졌다. 기준선은 0 그대로다.
+ * The 2 on `/ko/git/` came from two chips in the setup preview sketch
+ * (`atlas-git-setup-preview`, `aria-hidden` + `opacity-45`) that **carried words**
+ * (composited 2.09:1). Ink cannot fix it — at that opacity even the ramp's
+ * brightest ink reaches 4.30 (pure white is exactly 4.50). So the **text** was
+ * removed rather than the colour: the sketch's other twenty-odd places were already
+ * grey bars, and switching to a bar made the diagram consistent with its own
+ * grammar while the violation disappeared. The baseline stays 0.
  *
- * ## 2026-08-03 전수 실측 (1512×900, 당시 8개 라우트, 두 실행 동일)
+ * ## 2026-08-03 full inventory (1512×900, 8 routes at the time, identical across two runs)
  *
- * | 룰 | 원소 | 무엇인가 |
+ * | Rule | Elements | What it was |
  * |---|---|---|
- * | `color-contrast` | 12 → **8** | 아래 절 참고. 남은 8은 **토큰 한 개**다 |
- * | ~~`aria-required-children`~~ | ~~1~~ → **0** | 문서함 사이드바 상단 줄이
- *   `role="tablist"` 였는데 그 안에 컬렉션 3개 말고 검색·정렬·새 문서가 같이
- *   있었다. 고침은 **자식을 `tab` 으로 바꾸는 쪽이 아니라 role 을 반납하는
- *   쪽**이다 — `tabpanel`·`aria-controls`·roving tabindex 없이 role 만 빌리면
- *   AT 에게 지키지 못할 약속을 한다. 형제 `DocsVaultTabStrip` 이 같은 판단을
- *   먼저 적어 뒀고 이제 둘이 같은 계약을 쓴다 |
- * | ~~`target-size`~~ | ~~1~~ → **0** | WCAG 2.2 §2.5.8 — 24px 미만이고 여백도 부족.
- *   2026-08-03 문서함/서랍 컨트롤 정규화로 사라졌다: `p-1`/`p-0.5` 로 크기를
- *   내용에 맡기던 아이콘 컨트롤들이 `IconButton`(24/28/32 고정)으로 넘어가면서
- *   가장 작은 것이 24px 바닥을 갖게 됐다. **값 층이 바닥을 소유하면 자리마다
- *   빠뜨릴 수 없다** — 이 항목이 그 증거다 |
+ * | `color-contrast` | 12 → **8** | See the section below. The remaining 8 are **one token** |
+ * | ~~`aria-required-children`~~ | ~~1~~ → **0** | The docs sidebar's top row was `role="tablist"` but held search, sort, and new-document alongside the 3 collections. The fix is **giving the role back, not turning the children into `tab`s** — borrowing the role without `tabpanel`, `aria-controls`, and roving tabindex promises assistive tech something we do not deliver. The sibling `DocsVaultTabStrip` had already recorded the same judgement, and the two now share one contract |
+ * | ~~`target-size`~~ | ~~1~~ → **0** | WCAG 2.2 §2.5.8 — under 24px with insufficient spacing. Gone with the 2026-08-03 docs/drawer control normalisation: icon controls that left their size to content via `p-1`/`p-0.5` moved to `IconButton` (fixed 24/28/32), giving the smallest one a 24px floor. **When the value layer owns the floor, no place can omit it** — this entry is the evidence |
  *
- * ## `color-contrast` 12 → 8 — 무엇이 갚였고 무엇이 남았나
+ * ## `color-contrast` 12 → 8 — what was repaid and what remained
  *
- * **갚은 4건**: 관문/다운로드의 주 CTA(`/ko/` ×2 · `/ko/download/` ×2). 채운
- * 인디고(`#5e6ad2`) 위의 잉크가 `--color-text-primary`(#f7f8f8, **4.42:1**)
- * 였다. `--color-text-on-accent`(#ffffff, **4.70:1**)로 옮겼다 — 이 토큰은
- * 2026-08-03 에 「채운 인디고 위의 잉크」 라는 이름으로 이미 만들어져
- * `control-class.ts` 가 쓰고 있었고, `button.tsx` 의 `primary` 만 이관에서
- * 빠져 있었다. 새 값 0개.
+ * **The 4 repaid**: the primary CTAs on gateway/download (`/ko/` ×2 ·
+ * `/ko/download/` ×2). The ink on filled indigo (`#5e6ad2`) was
+ * `--color-text-primary` (#f7f8f8, **4.42:1**); it moved to
+ * `--color-text-on-accent` (#ffffff, **4.70:1**). That token had already been
+ * created on 2026-08-03 as "the ink on filled indigo" and `control-class.ts` was
+ * using it — only `button.tsx`'s `primary` had been left out of the migration. Zero
+ * new values.
  *
- * **마지막 8건(`/ko/ontology/insights/` 4 · `/ko/projects/` 4)은 전부
- * `--color-text-quaternary` 한 토큰이었고, 2026-08-03 「체계」 판정으로 값이
- * `#787c84` → `#82828a` 로 올라가며 갚였다** (원장: docs/DECISIONS.md).
+ * **The final 8 (`/ko/ontology/insights/` 4 · `/ko/projects/` 4) were all one
+ * token, `--color-text-quaternary`, and were repaid on 2026-08-03 when the 체계
+ * seat's verdict raised it from `#787c84` to `#82828a`** (ledger:
+ * docs/DECISIONS.md).
  *
- * | 바탕 | before | after |
+ * | Background | before | after |
  * |---|---:|---:|
  * | `--color-canvas` #08090a | 4.76 | 5.23 |
  * | `--color-panel` #0f1011 | 4.55 | 5.00 |
  * | panel + `--color-overlay-1` | **4.37** | 4.81 |
  * | `--color-elevated` #191a1b | **4.16** | 4.57 |
  *
- * (수치는 `scripts/lib/contrast.mjs` 알파 합성 기준.) 자리별 치환이 아니라
- * 값을 올린 이유: 화면의 위반은 8곳이지만 소비처는 584곳이라, 보이는 8곳만
- * 치우면 나머지가 장전된 채 남는다. `#82828a` 는 elevated 4.5 를 넘는 사실상
- * 최소 명도(#828282 하한 4.54)라 tertiary(#8a8f98, 스텝비 1.17)와의 위계를
- * 최대한 보존하고, 지도 패널의 같은 단이 2026-07 에 도착한 값과 수렴한다.
- * ⚠️ hover/선택(overlay-2, 4.36)에서는 여전히 미달 — 누를 수 있는 행 위의
- * 글자는 tertiary 부터다.
+ * (Figures use `scripts/lib/contrast.mjs` alpha compositing.) Why raise the value
+ * instead of substituting per place: the screen showed 8 violations but the token
+ * has 584 consumers, so clearing only the visible 8 leaves the rest loaded.
+ * `#82828a` is effectively the minimum lightness clearing 4.5 on elevated (#828282
+ * is the 4.54 floor), which preserves as much hierarchy as possible against
+ * tertiary (#8a8f98, step ratio 1.17) and converges with the value the map panel's
+ * equivalent step arrived at in 2026-07.
+ * ⚠️ Still below on hover/selected (overlay-2, 4.36) — text on a pressable row
+ * starts at tertiary.
  *
- * **이 숫자는 내려가기만 한다.**
+ * **This number only goes down.**
  */
 const BASELINE: Readonly<Record<string, number>> = {
   "color-contrast": 0,
@@ -133,68 +133,72 @@ const BASELINE: Readonly<Record<string, number>> = {
 };
 
 /**
- * 탐지기가 놀고 있지 않다는 증거 — **기준선이 0에 가까워질수록 필요해진다.**
+ * Evidence the detector is not idling — **needed more the closer a baseline gets to 0.**
  *
- * axe 를 못 실었거나 페이지가 빈 채로 떠도 «위반 0» 은 나온다. 그건 통과가
- * 아니라 **미측정**이고, 아래 단언 셋은 그 둘을 구별하지 못한다
- * (`target-size` 와 `aria-required-children` 이 이미 0이라 그 자리에서는 어떤
- * 신호도 안 나온다).
+ * A failure to load axe, or a page that mounted empty, also yields "zero
+ * violations". That is **not measured**, not a pass, and the three assertions below
+ * cannot tell the two apart (`target-size` and `aria-required-children` are already
+ * 0, so they emit no signal at all).
  *
- * ⚠️ **세는 대상을 틀리면 이 가드도 장식이 된다.** 처음엔 «평가된 룰 수»
- * (violations+passes+incomplete+inapplicable)를 세려 했는데, 실측해 보니 실제
- * 라우트가 **64** 이고 빈 문서도 **63** 이었다 — `inapplicable` 이 총계를
- * 지배해서 빈 화면과 진짜 화면이 구별되지 않는다. 그건 켜도 절대 안 빨개지는
- * 가드다.
+ * ⚠️ **Count the wrong thing and this guard becomes decoration too.** The first
+ * attempt counted "rules evaluated" (violations+passes+incomplete+inapplicable);
+ * measured, a real route gave **64** and an empty document **63** —
+ * `inapplicable` dominates the total, so an empty screen and a real one are
+ * indistinguishable. That is a guard that can never turn red.
  *
- * 가르는 것은 `passes` 다: **실제 내용에 적용돼 통과한 룰**의 수. 실측
- * 2026-08-03 — `/ko/` 26 · `/ko/topology/` 27 · `/ko/projects/` 26 ·
- * `/ko/docs/` 25 vs **빈 문서 2**. 바닥 15는 그 사이의 빈 구간이다.
+ * What separates them is `passes`: the number of rules **applied to real content
+ * and passed**. Measured 2026-08-03 — `/ko/` 26 · `/ko/topology/` 27 ·
+ * `/ko/projects/` 26 · `/ko/docs/` 25 vs **an empty document at 2**. The floor of
+ * 15 sits in the gap between.
  *
- * **라우트를 17개로 넓힌 뒤에도 바닥 15는 유효하다** (재측정 2026-08-04):
- * 가장 마른 자리가 404 두 벌의 **21** 이고 — 카드 하나뿐인 화면이라 원래 적다 —
- * 나머지는 24~30 이다. 여유가 6이라 좁아 보이지만, 빈 문서 2 와의 거리가 19 라
- * 이 가드가 가르려는 두 상태는 여전히 멀리 떨어져 있다. 404 가 더 마르면
- * 그때 바닥을 내리는 게 아니라 **그 화면이 비었는지 먼저 의심한다.**
+ * **The floor of 15 still holds after widening to 17 routes** (re-measured
+ * 2026-08-04): the thinnest are the two 404s at **21** — naturally low, being a
+ * single-card screen — and the rest are 24–30. Six of headroom looks tight, but the
+ * distance to an empty document's 2 is 19, so the two states this guard separates
+ * are still far apart. If a 404 gets thinner, **suspect that the screen is empty
+ * before lowering the floor.**
  *
- * ⚠️ **이 가드의 사정거리는 «화면이 떴나» 까지다** (2026-08-04 프로브로 확인).
- * `<div />` 만 그리는 임시 라우트를 목록에 넣어 봤더니 이 단언은 **안 걸렸다** —
- * 셸 크롬(레일·탭바)만으로도 axe 가 15룰을 넘겨 적용하기 때문이다. 즉 «축이
- * 통째로 안 뜬 경우» 는 잡지만 «셸은 멀쩡한데 본문만 조용히 비었을 때» 는 못
- * 잡는다. 같은 프로브에서 대비 래칫의 조합 가드는 3 을 재고 걸렸다(그쪽은
- * 텍스트 조합을 세므로 본문 유무에 더 민감하다). 두 게이트가 서로의 사각지대를
- * 덮는 관계라 어느 한쪽만 두지 않는다.
+ * ⚠️ **This guard's reach ends at "did the screen mount"** (confirmed by probe,
+ * 2026-08-04). Adding a temporary route rendering only `<div />` did **not** trip
+ * this assertion — the shell chrome (rail, tab bar) alone puts axe over 15 applied
+ * rules. So it catches "the whole axis failed to mount" but not "the shell is fine
+ * and only the body is quietly empty". In the same probe the contrast ratchet's
+ * combination guard measured 3 and did trip (it counts text combinations, so it is
+ * more sensitive to body content). The two gates cover each other's blind spots, so
+ * neither stands alone.
  */
 const MIN_RULES_PASSED_PER_ROUTE = 15;
 
 /**
- * `<main>` 안에 실제로 그려진 요소의 바닥 — **위 두 가드가 못 보는 상태**를 본다.
+ * Floor on elements actually rendered inside `<main>` — catches **the state the
+ * two guards above cannot see.**
  *
- * ## 왜 또 하나가 필요한가 (2026-08-04 실측)
+ * `MIN_RULES_PASSED_PER_ROUTE` says of itself that it cannot catch "the shell is
+ * fine and only the body is quietly empty". That sentence was not hypothetical —
+ * it had **already happened inside this list** (measured 2026-08-04):
  *
- * `MIN_RULES_PASSED_PER_ROUTE` 는 스스로 «셸은 멀쩡한데 본문만 조용히 비었을
- * 때는 못 잡는다» 고 적어 뒀다. 그 문장이 가정이 아니라 **이 목록 안에서 이미
- * 벌어진 일**이었다:
+ *   `/ko/project/ontology-atlas/edit/` → no `<main>` at all, **0** elements inside
+ *   main. Yet axe passed **25** rules (floor 15) and contrast combinations were
+ *   **6** (floor 4). Both gates green.
  *
- *   `/ko/project/ontology-atlas/edit/` → `<main>` 이 아예 없고 main 안 요소 **0**.
- *   그런데 axe 통과 룰 **25**(바닥 15), 대비 조합 **6**(바닥 4). 두 게이트 다 초록.
+ * Shell chrome alone — rail, tab bar, skip link — clears both floors comfortably.
+ * So the count is narrowed to **inside `<main>`, not the whole document**; the
+ * shell lives outside `<main>` and contributes nothing to this number.
  *
- * 레일·탭바·건너뛰기 링크 같은 셸 크롬만으로 두 바닥을 훌쩍 넘기기 때문이다.
- * 그래서 세는 자리를 **문서 전체가 아니라 `<main>` 안**으로 좁힌다 — 셸은
- * `<main>` 밖에 있어서 이 수에 한 개도 기여하지 않는다.
+ * **Where the floor of 15 came from.** Measured across 17 routes (1512×900, static
+ * export): the thinnest are the two 404s at **19**, then the studio at **24**, and
+ * the rest 40–227. An empty screen is **0**. 15 stands between "the thinnest real
+ * screen, 19" and "an empty screen, 0".
  *
- * ## 바닥 15는 어디서 왔나
- *
- * 17 라우트 실측(1512×900, 정적 export): 가장 마른 자리가 404 두 벌의 **19**,
- * 그다음이 공방 **24**, 나머지는 40~227. 빈 화면은 **0** 이다. 15는 「가장 마른
- * 진짜 화면 19」와 「빈 화면 0」 사이에 선다.
- *
- * 어떤 라우트가 이 바닥 아래로 내려가면 **그 화면이 왜 비었는지를 먼저 묻는다** —
- * 바닥을 내리는 것은 그 답이 「원래 그런 화면이다」일 때뿐이다.
+ * If a route drops below this floor, **ask why that screen is empty first** —
+ * lowering the floor is right only when the answer is "that screen really is like
+ * that".
  */
 const MIN_MAIN_ELEMENTS_PER_ROUTE = 15;
 
 test("접근성 래칫 — 새 룰 위반 0, 기존 개수는 늘지 않는다", async ({ page }) => {
-  // 라우트가 8 → 17 로 늘었다. 라우트당 2.5초 수렴 대기 + axe 실행이라 기본 60초를 넘는다.
+  // Routes went 8 → 17. At 2.5s of settle time per route plus the axe run, this
+  // exceeds the default 60s.
   test.setTimeout(240_000);
   await page.setViewportSize({ width: 1512, height: 900 });
   const counts = new Map<string, number>();
@@ -204,7 +208,8 @@ test("접근성 래칫 — 새 룰 위반 0, 기존 개수는 늘지 않는다",
 
   for (const route of ROUTES) {
     await page.goto(`${route}?guides=off`, { waitUntil: "domcontentloaded" });
-    // 지도는 물리 시뮬이 수렴해야 화면이 정해진다 — 수렴 전에 재면 중간 상태를 잰다.
+    // The map's screen is only settled once the physics simulation converges —
+    // measuring earlier measures an intermediate state.
     await page.waitForTimeout(2500);
     await page.addScriptTag({ path: AXE_PATH });
     const result = await page.evaluate(async (tags) => {
@@ -219,8 +224,8 @@ test("접근성 래칫 — 새 룰 위반 0, 기존 개수는 늘지 않는다",
         { runOnly: { type: "tag", values: tags }, resultTypes: ["violations"] },
       );
       return {
-        // `resultTypes` 는 **노드 상세**만 줄인다 — 배열의 길이는 그대로다.
-        // 그래서 «내용에 실제로 적용된 룰» 수를 추가 비용 없이 셀 수 있다.
+        // `resultTypes` trims only the **node detail**; array lengths are unchanged. So
+        // the count of rules actually applied to content is free.
         rulesPassed: run.passes.length,
         violations: run.violations.map((v) => ({
           id: v.id,
@@ -230,7 +235,7 @@ test("접근성 래칫 — 새 룰 위반 0, 기존 개수는 늘지 않는다",
       };
     }, WCAG_TAGS);
 
-    // ★ 셸 크롬은 `<main>` 밖이다 — 여기서 세면 «본문이 안 떴다» 만 남는다.
+    // Shell chrome lives outside `<main>`, so counting here leaves only "the body did not mount".
     const mainElements = await page.evaluate(
       () => document.querySelectorAll("main *").length,
     );
@@ -247,16 +252,16 @@ test("접근성 래칫 — 새 룰 위반 0, 기존 개수는 늘지 않는다",
     }
   }
 
-  // ★ 「위반 0」과 「아무것도 안 쟀다」를 가른다. 이게 없으면 아래 단언 셋은
-  //   빈 집합 위에서 전부 초록이고, 그건 게이트가 없는 것과 같다.
+  // Separates "zero violations" from "nothing was measured". Without this the three
+  // assertions below are all green over an empty set, which is the same as no gate.
   expect(
     thinRuns,
     `axe 가 라우트당 ${MIN_RULES_PASSED_PER_ROUTE}개 룰도 내용에 적용하지 못했다 — ` +
       `위반이 없는 게 아니라 화면이 안 떴거나 채집이 깨진 것이다.\n${thinRuns.join("\n")}`,
   ).toEqual([]);
 
-  // ★ 「셸은 떴는데 본문이 없다」 — 위 가드가 원리적으로 못 보는 상태다.
-  //   실제로 이 목록 안에 그런 라우트가 있었고 두 래칫이 다 초록이었다.
+  // "The shell mounted but there is no body" — a state the guard above cannot see in
+  // principle. Such a route really was in this list, and both ratchets stayed green.
   expect(
     emptyBodies,
     `\`<main>\` 안에 요소가 ${MIN_MAIN_ELEMENTS_PER_ROUTE}개도 안 그려졌다 — ` +
@@ -281,8 +286,8 @@ test("접근성 래칫 — 새 룰 위반 0, 기존 개수는 늘지 않는다",
     ).toBeLessThanOrEqual(max);
   }
 
-  // ★ 고쳤는데 기준선을 안 내리면 그만큼이 **다시 나빠질 여유**로 남는다.
-  //   여유를 무료로 두지 않는 것이 래칫의 나머지 절반이다.
+  // Fixing something without lowering the baseline leaves that much as **room to
+  // regress**. Not leaving slack free is the other half of a ratchet.
   const slack = Object.entries(BASELINE)
     .filter(([id, max]) => (counts.get(id) ?? 0) < max)
     .map(([id, max]) => `  ${id}: 기준선 ${max} · 실측 ${counts.get(id) ?? 0}`);

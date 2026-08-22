@@ -14,17 +14,18 @@ import {
 } from "./footprint-glyph";
 
 /**
- * 자국은 **자기가 표시하는 노드보다 커지지 않는다** (2026-08-02, 소유자 지적:
- * *"화면 작아졌을때 발걸음 사이즈같은거 조절도 좀 꼼꼼히"*).
+ * A print **never grows larger than the node it marks** (2026-08-02, owner:
+ * *"화면 작아졌을때 발걸음 사이즈같은거 조절도 좀 꼼꼼히"* — tighten how the footprint
+ * size adapts when the window gets small).
  *
- * 이 게이트가 잠그는 것은 **비율**이지 픽셀이 아니다. 종전 구현에는 상한이
- * 없어서, 카메라 배율의 제곱근으로 커지는 자국이 선형으로 작아지는 노드를
- * 앞질렀다 — 실측: 배율 0.3 에서 노드 반경 2.1px 옆에 자국 6.4px(**3.1배**),
- * 0.2 에서 **4.6배**. 상한이 조용히 사라지면 그 화면으로 되돌아간다.
+ * This gate locks the **ratio**, not the pixels. The previous implementation had no cap, so
+ * a print scaling with the square root of camera zoom outran a node shrinking linearly.
+ * Measured: at zoom 0.3, a 6.4px print beside a 2.1px node radius (**3.1×**); at 0.2,
+ * **4.6×**. If the cap ever disappears quietly, that screen comes back.
  */
 describe("footprintSizeFor — 자국은 노드보다 커지지 않는다", () => {
   it("큰 노드에서는 기본 크기를 그대로 쓴다 — 문제 없던 자리는 안 건드린다", () => {
-    // 도메인 반경 17px → 상한 18.9 > 기본 13. 자르지 않는다.
+    // Domain radius 17px gives a cap of 18.9, above the base 13 — nothing is clamped.
     expect(footprintSizeFor(13, 17)).toBe(13);
   });
 
@@ -53,18 +54,18 @@ describe("footprintSizeFor — 자국은 노드보다 커지지 않는다", () =
 });
 
 /**
- * 선 옆 자국의 성질은 **좌표로만** 검증된다 — 캔버스 없이 잠글 수 있고, 그림을
- * 눈으로 보고 판정하는 것보다 정확하다. 설치 앱 실측에서 자국이 선을 관통하고
- * 있었는데(띄우는 거리가 자국 반폭보다 작았다), 그건 사람 눈으로도 한 번
- * 놓쳤던 종류의 결함이다.
+ * The properties of prints beside a line are verifiable **from coordinates alone** — no
+ * canvas needed, and more accurate than judging the picture by eye. In the installed app the
+ * prints were running straight through the line (the offset was smaller than the print's
+ * half-width), a defect human review had already missed once.
  */
 describe("edgeFootprintPlacements", () => {
-  /** 자국 한 발의 반폭 — 앞꿈치 타원 x 반지름 + 테두리 절반. */
+  /** Half-width of one foot — the ball ellipse's x radius plus half the stroke. */
   const halfWidth = (size: number, stroke: number) => size * FOOTPRINT_EDGE_SCALE * 0.26 + stroke / 2;
 
   it("자국이 선을 관통하지 않는다 — 중심 거리가 아니라 가장자리로 잰다", () => {
     const pref = { ...DEFAULT_FOOTPRINT, gap: 0, size: 26 };
-    // 수평선이라 법선 거리 = |y - 선의 y|.
+    // The line is horizontal, so the normal distance is |y - the line's y|.
     for (const spot of edgeFootprintPlacements(0, 100, 900, 100, pref)) {
       const clearance = Math.abs(spot.y - 100) - halfWidth(pref.size, pref.strokeWidth);
       expect(clearance, `자국이 선 위에 얹혔다 (여유 ${clearance.toFixed(2)}px)`).toBeGreaterThanOrEqual(0);
@@ -87,7 +88,7 @@ describe("edgeFootprintPlacements", () => {
     expect(new Set(both.map((s) => Math.sign(s.y))).size).toBe(2);
   });
 
-  /** 노드에 붙은 자국은 노드 장식으로 오독된다 — 양끝은 비운다. */
+  /** A print touching a node is misread as node decoration, so both ends stay empty. */
   it("선의 양 끝을 비운다", () => {
     const pref = DEFAULT_FOOTPRINT;
     const spots = edgeFootprintPlacements(0, 0, 900, 0, pref);
@@ -110,8 +111,8 @@ describe("formatStepNumbers", () => {
   });
 
   /**
-   * 축약하면서 총 횟수를 빼면 "여기 자주 돌아왔다"가 사라진다 — 그게 이 표기가
-   * 나르려던 사실이므로, 그건 축약이 아니라 손실이다.
+   * Abbreviating without the total erases "I keep coming back here" — the very fact this
+   * notation carries, which makes it loss rather than abbreviation.
    */
   it("넷 이상은 줄이되 총 횟수를 함께 남긴다", () => {
     expect(formatStepNumbers([1, 3, 5, 9])).toBe("1·…·9 (총 4회)");
@@ -123,9 +124,9 @@ describe("formatStepNumbers", () => {
 });
 
 /**
- * 자국이 노드 원판을 파고들던 결함(설치 앱 실측, 소유자: *"겹쳐지는건 없게
- * 하고싶은데"*). 원인은 `gap` 이 자국 **중심**까지의 거리였다는 것 — 겹침은
- * 중심이 아니라 가장자리 조건이다.
+ * The defect where prints bit into the node disc (measured in the installed app — owner:
+ * *"겹쳐지는건 없게 하고싶은데"*, nothing should overlap). The cause was that `gap` measured
+ * to the print's **centre**; overlap is an edge condition, not a centre condition.
  */
 describe("footprintAnchor — 노드와 겹치지 않는다", () => {
   it.each([
@@ -148,8 +149,8 @@ describe("footprintAnchor — 노드와 겹치지 않는다", () => {
 });
 
 /**
- * 줌아웃에서 겹침이 가장 심하다 — 노드·관계선이 화면에 몰리는데 자국만 고정
- * 픽셀이면 자국이 그래프를 덮는다. 소유자가 허용한 완화책이 크기 축소다.
+ * Overlap is worst when zoomed out: nodes and relation lines crowd the screen, and prints at
+ * a fixed pixel size bury the graph. Shrinking them is the mitigation the owner allowed.
  */
 describe("footprintScaleFor", () => {
   it("배율 1 에서는 원래 크기다", () => {
@@ -175,7 +176,7 @@ describe("footprintScaleFor", () => {
   });
 });
 
-/** 배율은 선 옆 자국의 간격·크기·양끝 여백에 **함께** 걸려야 한다. */
+/** The size factor must apply to spacing, size and end padding of edge prints **together**. */
 describe("배율이 선 옆 자국에도 걸린다", () => {
   it("축소하면 자국이 선에 더 가까이 붙되 여전히 겹치지 않는다", () => {
     const pref = { ...DEFAULT_FOOTPRINT, gap: 0 };

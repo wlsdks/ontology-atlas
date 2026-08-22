@@ -27,25 +27,24 @@ describe("release-facts", () => {
   });
 
   /**
-   * **네 번째 자리** — `src-tauri/Cargo.toml` (2026-08-01 추가).
+   * **The fourth place** — `src-tauri/Cargo.toml` (added 2026-08-01).
    *
-   * 이 시험은 오래 셋만 봤고(`RELEASE_VERSION` · `package.json` ·
-   * `tauri.conf.json`), Cargo 는 `pnpm desktop:check` 에서만 검사됐다. 그
-   * 비대칭의 값은 rc.5 버전 올림에서 그대로 나왔다: 유닛 스위트 5,502건이
-   * 전부 초록인 채로 릴리스 리허설이 **첫 단계에서** 멈췄다
-   * (`cargo=1.0.0-rc.4`).
+   * This test long watched only three (`RELEASE_VERSION`, `package.json`, `tauri.conf.json`) while
+   * Cargo was checked only by `pnpm desktop:check`. The cost of that asymmetry showed up on the
+   * rc.5 version bump: with all 5,502 unit tests green, the release rehearsal stopped **at the first
+   * step** (`cargo=1.0.0-rc.4`).
    *
-   * 늦게 잡히는 것이 문제다 — 리허설은 앱 컴파일이 들어 있어 사람이 태그
-   * 직전에 돌리는 무거운 관문이고, 거기서 처음 알게 되면 왕복이 한 번 는다.
-   * 같은 사실을 0.5초에 알 수 있으면 0.5초에 안다.
+   * The problem is finding out late — the rehearsal includes compiling the app, so it is a heavy
+   * gate a person runs right before tagging, and learning it there costs one extra round trip. If
+   * the same fact can be known in half a second, know it in half a second.
    *
-   * TOML 파서를 들이지 않는다 — 이 파일이 필요한 것은 최상위 `version` 한
-   * 줄이고, 그걸 위해 의존성을 더하면 게이트가 자기 비용을 넘어선다.
+   * No TOML parser is added — this file needs one top-level `version` line, and adding a dependency
+   * for that would make the gate cost more than it saves.
    */
   it("matches the version declared in src-tauri/Cargo.toml", () => {
     const cargo = readFileSync(join(process.cwd(), "src-tauri/Cargo.toml"), "utf8");
-    // `[package]` 절의 첫 `version = "…"` — 의존성 절의 version 과 섞이지 않게
-    // 파일 앞머리에서만 찾는다.
+    // The first `version = "…"` of the `[package]` section — searched only near the top of the file
+    // so it cannot pick up a dependency's version.
     const packageSection = cargo.split(/^\[/m)[1] ?? cargo;
     const match = /^version\s*=\s*"([^"]+)"/m.exec(packageSection);
     expect(match?.[1], "src-tauri/Cargo.toml 의 [package] version 을 못 읽었다").toBeDefined();
@@ -69,11 +68,11 @@ describe("release-facts", () => {
     }
   });
 
-  // `/download` 는 "이 앱은 Apple 서명·공증을 받는다" 를 사실로 내건다. 그
-  // 주장을 지탱하는 것은 문구가 아니라 릴리스 자산을 만드는 명령 체인이다 —
-  // 체인에서 서명이나 공증 검증이 빠지면 문구가 조용히 거짓이 되므로, 여기서
-  // 막는다. (2026-07-27 이전에는 그 반대 방향으로 거짓이었다: 서명 경로가
-  // 살아났는데 페이지가 "아직 서명되지 않음" 을 계속 말하고 있었다.)
+  // `/download` states as fact that "this app is Apple-signed and notarized". What backs that claim
+  // is not the copy but the command chain that produces the release asset — if signing or
+  // notarization verification drops out of the chain, the copy quietly becomes false, so it is
+  // blocked here. (Before 2026-07-27 it was false in the other direction: the signing path was back
+  // while the page kept saying "not signed yet".)
   it("only claims signing and notarization while the release chain actually enforces them", () => {
     const pkg = readJson("package.json") as { scripts?: Record<string, string> };
     const chain = RELEASE_ARTIFACT_STEPS.flatMap((step) => step.args);
@@ -81,7 +80,7 @@ describe("release-facts", () => {
     expect(pkg.scripts?.["desktop:release-artifact"]).toContain("build-macos-release-artifact.mjs");
     expect(RELEASE_SIGNING.developerId).toBe(chain.includes("desktop:sign"));
     expect(RELEASE_SIGNING.notarized).toBe(chain.includes("desktop:notarize"));
-    // 검증 없는 서명은 주장이지 증거가 아니다.
+    // Signing without verification is a claim, not evidence.
     expect(chain).toContain("desktop:verify-release-dmg");
     expect(pkg.scripts?.["desktop:verify-release-dmg"]).toContain("--require-signed");
     expect(pkg.scripts?.["desktop:verify-release-dmg"]).toContain("--require-notarized");

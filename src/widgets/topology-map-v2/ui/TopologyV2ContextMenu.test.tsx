@@ -66,8 +66,9 @@ describe("TopologyV2ContextMenu", () => {
     expect(item).toHaveAttribute("aria-disabled", "true");
   });
 
-  // D7 회귀 — 자기 문서가 없는 노드에서 "문서" 라벨로 남의 문서를 열던 결함.
-  // 링크는 남기되(정보 보존) 라벨이 목적지를 정직하게 말해야 한다.
+  // D7 regression — a node with no document of its own opened someone else's
+  // document under a 「문서」 (document) label. The link stays (no information is
+  // lost) but the label has to name its destination honestly.
   it("relabels the item when the node has no doc of its own but is mentioned in one", () => {
     renderMenu({
       documentHref: null,

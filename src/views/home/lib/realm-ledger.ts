@@ -1,16 +1,13 @@
 /**
- * "영역 대장(Realm Ledger)" 파생 (S7, fable 설계).
+ * Realm ledger derivations — what the left panel needs while a realm is expanded
+ * (`?realm=slug`) and it shows one node's world instead of global content:
+ * the realm root's subtree, its element/capability/domain/depth counts, and the
+ * boundary edges leaving the realm together with a jump target for each outside
+ * node (its domain-level container).
  *
- * 영역 전개(`?realm=slug`) 중 좌측 패널이 전역 콘텐츠 대신 이 노드의 세계만
- * 보여줄 때 필요한 순수 파생 3종:
- *   1. `findRealmSubtree`   — 전체 트리에서 영역 루트 서브트리 하나를 집어낸다.
- *   2. `computeRealmCensus` — 그 서브트리의 요소/역량/도메인/깊이 통계.
- *   3. `computeRealmBoundary` — 영역 밖으로 나가는 관계(경계 엣지)와 각 밖
- *      노드로의 "이 영역으로 이동" 점프 대상(도메인급 상위 컨테이너).
- *
- * 모두 그래프(트리 노드 / 그래프 엣지 + 멤버 셋)만 입력받는 순수 함수라
- * 렌더 로직 없이 단독 테스트 가능하다. topology-map-v2 를 건드리지 않고
- * views/home 안에서 realm 데이터를 파생하기 위한 단일 진실원.
+ * All pure over graph input, so they test without render logic. This is the one
+ * source for realm data inside views/home, derived without touching
+ * topology-map-v2.
  */
 
 import type { KnowledgeGraphEdge, KnowledgeGraphNode } from "@/entities/knowledge-graph";
@@ -18,19 +15,19 @@ import type { OntologyTreeNode } from "@/shared/lib/ontology-tree";
 import { buildContainmentParents, nearestDomainId } from "@/shared/lib/ontology-tree";
 
 export interface RealmCensus {
-  /** 서브트리 안(루트 제외) element 노드 수. */
+  /** Element nodes in the subtree, root excluded. */
   elementCount: number;
-  /** 서브트리 안(루트 제외) capability 노드 수. */
+  /** Capability nodes in the subtree, root excluded. */
   capabilityCount: number;
-  /** 서브트리 안(루트 제외) domain 노드 수. */
+  /** Domain nodes in the subtree, root excluded. */
   domainCount: number;
-  /** 루트를 뺀 전체 하위 노드 수. */
+  /** All descendants, root excluded. */
   descendantCount: number;
-  /** 루트(0) 기준 가장 깊은 하위 노드까지의 상대 깊이. 자식만 있으면 1. */
+  /** Depth to the deepest descendant, relative to the root at 0; children only gives 1. */
   depth: number;
 }
 
-/** 결계 관계 한 줄 — 영역 안↔밖을 잇는 엣지 하나. */
+/** One boundary relation — an edge joining inside the realm to outside it. */
 export interface RealmBoundaryCrossing {
   edgeId: string;
   fromId: string;
@@ -38,9 +35,9 @@ export interface RealmBoundaryCrossing {
   toId: string;
   toTitle: string;
   relationType: string;
-  /** 이 엣지에서 영역 밖에 있는 끝점. */
+  /** The endpoint of this edge that lies outside the realm. */
   outsideId: string;
-  /** "이 영역으로 이동" 대상 — 밖 노드의 도메인급 상위 컨테이너(없으면 밖 노드 자신). */
+  /** Jump target: the outside node's domain-level container, or the node itself when it has none. */
   jumpRealmId: string;
 }
 
@@ -50,9 +47,9 @@ export interface RealmBoundary {
 }
 
 /**
- * 경계 판정에서 제외하는 구조 엣지. `contains`/`belongs_to` 는 트리 형태 자체를
- * 정의하므로(부모 컨테이너로의 링크) "바깥과 닿은 관계"의 신호가 아니다 —
- * 의존/사용/구현/근거 같은 lateral 관계만 남긴다.
+ * Structural edges excluded from the boundary. `contains`/`belongs_to` define
+ * the tree shape itself, so they are not a signal of reaching outside; only
+ * lateral relations (depends on, uses, implements, evidences) count.
  */
 export const REALM_BOUNDARY_EXCLUDED_TYPES: ReadonlySet<string> = new Set([
   "contains",
@@ -68,7 +65,7 @@ function findInNode(node: OntologyTreeNode, id: string): OntologyTreeNode | null
   return null;
 }
 
-/** 전체 트리 roots 에서 `realmSlug` 노드 서브트리를 찾는다. 없으면 null. */
+/** Finds the `realmSlug` node's subtree among the tree roots; null when absent. */
 export function findRealmSubtree(
   roots: readonly OntologyTreeNode[],
   realmSlug: string,
@@ -80,7 +77,7 @@ export function findRealmSubtree(
   return null;
 }
 
-/** 영역 서브트리의 요소/역량/도메인/깊이 census. 루트 자신은 세지 않는다. */
+/** Element/capability/domain/depth counts for a realm subtree; the root itself is not counted. */
 export function computeRealmCensus(subtree: OntologyTreeNode): RealmCensus {
   let elementCount = 0;
   let capabilityCount = 0;
@@ -103,7 +100,7 @@ export function computeRealmCensus(subtree: OntologyTreeNode): RealmCensus {
   return { elementCount, capabilityCount, domainCount, descendantCount, depth };
 }
 
-/** 서브트리 전체(루트 포함) 노드 id 집합 — 경계 엣지 판정의 멤버 셋. */
+/** Every node id in the subtree, root included — the membership set boundary detection uses. */
 export function collectRealmMemberIds(subtree: OntologyTreeNode): Set<string> {
   const ids = new Set<string>();
   const walk = (node: OntologyTreeNode): void => {
@@ -115,9 +112,9 @@ export function collectRealmMemberIds(subtree: OntologyTreeNode): Set<string> {
 }
 
 /**
- * 영역 밖으로 나가는 관계(경계 엣지)를 파생한다. 정확히 한 끝점만 멤버 셋에
- * 속한 엣지 = 경계. 구조 엣지(contains/belongs_to)와 미해결 끝점은 제외한다.
- * 결과는 결정론적으로 정렬(관계타입 → from → to → edgeId)된다.
+ * Derives the relations leaving the realm: an edge is a boundary when exactly
+ * one endpoint is in the membership set. Structural edges and unresolved
+ * endpoints are excluded, and the result is deterministically sorted.
  */
 export function computeRealmBoundary(input: {
   edges: readonly KnowledgeGraphEdge[];
@@ -133,7 +130,7 @@ export function computeRealmBoundary(input: {
     if (REALM_BOUNDARY_EXCLUDED_TYPES.has(edge.type)) continue;
     const fromInside = memberIds.has(edge.from);
     const toInside = memberIds.has(edge.to);
-    // 둘 다 안 / 둘 다 밖 → 경계가 아니다.
+    // Both inside or both outside is not a boundary.
     if (fromInside === toInside) continue;
     const from = nodeById.get(edge.from);
     const to = nodeById.get(edge.to);

@@ -128,23 +128,24 @@ describe('committed surface artifact', () => {
   });
 
   /**
-   * **계약이 스키마에서 런타임으로 옮겨갔는데 이 검사만 옛 모양을 붙들고
-   * 있었다** (2026-08-17에 발견 — 이 검사는 그 전부터 빨간 채였다).
+   * **The contract moved from the schema to runtime while only this check held on to
+   * the old shape** (found 2026-08-17 — this check had been red since before then).
    *
-   * 종전에는 `get_concept` 의 입력 스키마가 top-level `oneOf` 로 「slug 냐 uid 냐」
-   * 를 못박았고, 이 검사가 그 `oneOfRequired` 를 확인했다. 그런데 Claude Code 의
-   * 도구 스키마는 top-level `oneOf` 를 만나면 **그 도구를 통째로 버린다** —
-   * 그래서 `mcp/src/index.js` 가 일부러 뺐고, 「정확히 하나」는 런타임이 던진다
+   * `get_concept`'s input schema used to pin "slug or uid" with a top-level `oneOf`, and
+   * this check verified that `oneOfRequired`. But Claude Code's tool schema **discards
+   * the tool entirely** when it meets a top-level `oneOf`, so `mcp/src/index.js`
+   * deliberately removed it and "exactly one" is thrown at runtime
    * (`get_concept requires exactly one of slug or uid.`).
    *
-   * 즉 동작은 맞고 검사가 낡았다. 그래서 **지금 지켜야 할 것**으로 바꾼다:
-   * 두 도구가 살아 있는가 · 두 선택자가 여전히 공개되는가 · 어느 쪽도
-   * 필수가 아닌가(그게 `oneOf` 를 뺀 이유다).
+   * So the behaviour was right and the check was stale. It now guards **what must hold
+   * today**: are both tools alive, are both selectors still exposed, and is neither
+   * required (which is why `oneOf` was removed).
    *
-   * 「정확히 하나」 자체는 여기서 못 잰다 — 생성물은 스키마이지 동작이 아니다.
-   * 그 몫은 이미 서 있다: `mcp/src/integration.test.mjs` 의
-   * *"get_concept/get_concepts — selector one-of is enforced at runtime"* 이
-   * 네 경우(둘 다 준 경우 · 아무것도 안 준 경우 × 두 도구)를 전부 잰다.
+   * "Exactly one" itself cannot be measured here — the artifact is a schema, not
+   * behaviour. That is already covered:
+   * *"get_concept/get_concepts — selector one-of is enforced at runtime"* in
+   * `mcp/src/integration.test.mjs` measures all four cases (both given, neither given, ×
+   * two tools).
    */
   it('두 선택자 도구가 살아 있고, 선택자가 여전히 공개된다', () => {
     const exactReaders = surface.mcp.tools.filter((tool) =>

@@ -7,42 +7,41 @@ import {
 } from '@/entities/knowledge-graph';
 
 /**
- * **첫 마디** — 빈 입력칸 앞에 선 사람에게 이 폴더의 실제 상태에서 뽑은
- * 문장을 미리 놓아 준다.
+ * **Opening lines** — sentences drawn from this folder's real state, placed in
+ * front of someone facing an empty input box.
  *
- * ## 왜 필요한가
+ * **Why it is needed.** Someone using Cursor has the code in front of them and
+ * knows what to ask. Someone opening this app is doing concept design for the
+ * first time, so **an empty input box is blank-page fear**. Without an opening
+ * line, the flow stops right after entering a key and passing the scope sheet.
  *
- * Cursor 를 쓰는 사람은 코드가 눈앞에 있고 물을 말을 안다. 이 앱을 여는
- * 사람은 개념 설계가 처음이라 **빈 입력칸이 곧 백지 공포**다. 키를 넣고
- * 범위 시트를 지나도 첫 마디가 안 나오면 거기서 흐름이 멎는다.
+ * **Contract — no model is called here.** This file is **pure functions only**:
+ * it imports no network, no bridge, no provider. The chips are drawn at a moment
+ * the user has not yet consented, so a single call made to build a chip would be
+ * **a transmission without consent and unauthorized use of someone else's money
+ * (BYOK billing)**. That is why the design where the agent speaks first (an
+ * automatic first turn) was rejected, and this file's purity is what makes that
+ * rejection hold. Locked by
+ * `tests/contract/agent-first-words-local.contract.test.ts`.
  *
- * ## 계약 — 여기서 모델을 부르지 않는다
+ * **A chip is a prefill, not a send.** Pressing one only seats the sentence in
+ * the input box. It can be edited or deleted — the user's words are not taken
+ * away. Sending is always [send].
  *
- * 이 파일은 **순수 함수뿐**이다. 네트워크도, 브리지도, 프로바이더도 import
- * 하지 않는다. 칩은 사용자가 아직 동의하지 않은 순간에 그려지므로, 칩을
- * 만들려고 한 번이라도 호출이 나가면 그것이 곧 **무동의 전송이자 남의 돈
- * (BYOK 요금) 무단 사용**이다. 에이전트가 먼저 말을 거는 설계(자동 첫 턴)를
- * 기각한 이유가 그것이고, 그 기각을 성립시키는 것이 이 파일의 순수성이다.
- * `tests/contract/agent-first-words-local.contract.test.ts` 가 잠근다.
- *
- * ## 칩은 프리필이지 전송이 아니다
- *
- * 누르면 입력칸에 문장이 앉을 뿐이다. 고쳐서 보내도 되고 지워도 된다 —
- * 사용자의 말을 뺏지 않는다. 전송은 언제나 [보내기]다.
- *
- * ## 문장 생성기는 한 벌이다
- *
- * 같은 함수가 세 자리를 먹인다: ① 빈 대화의 칩 ② 키/폴더가 없는 상태의
- * **평문 목록**(완결 불가능한 버튼을 그리지 않는다) ③ 큐 행·노드 상세에서
- * 건너올 때의 프리필(S7). 두 벌을 만들면 두 입구가 다른 말을 하는 날이 온다.
+ * **There is one sentence generator.** The same function feeds three places:
+ * ① the chips in an empty conversation ② the **plain list** shown when there is
+ * no key or folder (never drawing a button that cannot be completed) ③ the
+ * prefill when arriving from a queue row or node detail. Two generators would
+ * eventually make the two entrances say different things.
  */
 
-/** 칩이 앉는 자리 — 고정 우선순위. 화면 → 큐 → 상비. */
+/** Where a chip sits — a fixed priority: screen → queue → standing. */
 export type FirstWordsSlot = 'screen' | 'queue' | 'standing';
 
 /**
- * 문장이 말하려는 것. 화면 언어와 분리해 둔 이유: 같은 의도가 ko·en 두
- * 문장이 되고, S7 이 URL 로 나를 때는 이 종류만 실려 가면 되기 때문이다.
+ * What the sentence means to say. Kept separate from the screen's language
+ * because one intent becomes two sentences (ko and en), and when carried through
+ * a URL only this kind needs to travel.
  */
 export type FirstWordsIntent =
   | { kind: 'missing-definition'; ref: string; title: string }
@@ -51,7 +50,7 @@ export type FirstWordsIntent =
   | { kind: 'map-review' }
   | { kind: 'empty-vault' };
 
-/** URL(S7)로 나를 수 있는 의도 이름 — 노드 하나를 가리키는 것들만. */
+/** Intent names that can travel through a URL — only those naming a single node. */
 export type FirstWordsNodeIntentKind =
   | 'missing-definition'
   | 'missing-domain'
@@ -69,15 +68,15 @@ export function parseNodeIntentKind(raw: string | null): FirstWordsNodeIntentKin
 }
 
 export interface FirstWordsChip {
-  /** React key + 테스트 식별 — 같은 상태면 같은 값. */
+  /** React key plus test identity — the same state gives the same value. */
   id: string;
   slot: FirstWordsSlot;
   intent: FirstWordsIntent;
-  /** 입력칸에 그대로 앉는 문장. */
+  /** The sentence seated verbatim in the input box. */
   text: string;
 }
 
-/** 화면 언어. 문장은 앱이 짓고 모델은 짓지 않는다. */
+  /** The screen's language. The app writes the sentences; the model does not. */
 export interface FirstWordsLabels {
   missingDefinition: (title: string) => string;
   missingDomain: (title: string) => string;
@@ -111,14 +110,17 @@ export type FirstWordsNode = Pick<
 > & { display?: string | null };
 
 /**
- * **화면 슬롯의 문장 하나** — 지금 보고 있는 개념에서 가장 큰 틈.
+ * **The screen slot's one sentence** — the biggest gap in the concept currently
+ * being viewed.
  *
- * 빈 대화의 1번 칩과 노드 상세의 「에이전트에게 말로 시키기」가 **같은 이
- * 함수**를 지난다. 두 입구가 각자 문장을 지으면 같은 개념을 두 가지로
- * 말하게 되고, 그때부터 사용자는 어느 쪽이 진짜인지 물어야 한다.
+ * The empty conversation's first chip and node detail's "ask the agent" both pass
+ * through **this same function**. If the two entrances each composed their own
+ * sentence they would describe one concept two ways, and from then on the user
+ * has to ask which is real.
  *
- * 문서가 없는 파생 개념은 null 이다 — 고칠 파일이 없는 개념에게 "뜻을 적어
- * 줘" 라고 시키면 남의 문서를 고치라는 말이 된다(#688 계열 사고).
+ * A derived concept with no document returns null — telling a concept with no
+ * file to edit to "write down its meaning" means telling it to edit someone
+ * else's document.
  */
 export function screenIntentFor(
   node: FirstWordsNode | null | undefined,
@@ -140,23 +142,24 @@ export function screenIntentFor(
 
 export interface BuildFirstWordsInput {
   nodes: readonly FirstWordsNode[];
-  /** 문서 slug → 프론트매터 사실. `useVaultConceptFacts` 가 만든 그 map. */
+  /** Doc slug → frontmatter facts. The map `useVaultConceptFacts` builds. */
   docFacts: ReadonlyMap<string, ConceptDocFacts>;
   /**
-   * 지금 보고 있는 개념의 **인계 이름** — `resolveNodeAgentTarget` 이 정한
-   * 값이어야 한다. 화면 문맥 주입이 쓰는 이름과 같아야 사람과 에이전트가
-   * 같은 개념을 가리킨다.
+   * The **handoff name** of the concept being viewed — it must be the value
+   * `resolveNodeAgentTarget` decided. Matching the name used by screen-context
+   * injection is what makes the person and the agent point at the same concept.
    */
   focusedRef: string | null;
 }
 
-/** 칩 최대 개수 — 슬롯이 셋이므로 셋. 늘리지 않는다(백지 공포의 답은 개수가 아니라 적중이다). */
+/** Maximum chips — three, because there are three slots. Not increased (the answer to blank-page fear is accuracy, not quantity). */
 export const FIRST_WORDS_MAX_CHIPS = 3;
 
 /**
- * 이 폴더의 상태에서 첫 마디 후보를 뽑는다. 슬롯 우선순위는 고정이고,
- * **채울 수 없는 슬롯은 만들지 않는다** — 빈 칩을 자리만 채워 그리면 누를 수
- * 없는 컨트롤이 되고, 그건 이 패널이 이미 한 번 고친 함정이다.
+ * Draws opening-line candidates from this folder's state. Slot priority is fixed,
+ * and **a slot that cannot be filled is not created** — drawing an empty chip
+ * just to fill the space produces a control that cannot be pressed, a trap this
+ * panel has already fixed once.
  */
 export function buildFirstWords(
   input: BuildFirstWordsInput,
@@ -164,8 +167,8 @@ export function buildFirstWords(
 ): FirstWordsChip[] {
   const concepts = collectConcepts(input.nodes, input.docFacts);
 
-  // 아직 아무것도 없는 폴더 — 셋을 억지로 채우지 않는다. 지목할 개념이
-  // 없는데 개념 이야기를 하면 첫 문장부터 거짓이 된다.
+  // A folder with nothing in it yet — three are not forced. Talking about concepts
+  // with no concept to name makes the very first sentence false.
   if (concepts.length === 0) {
     return [
       {
@@ -179,8 +182,8 @@ export function buildFirstWords(
 
   const chips: FirstWordsChip[] = [];
 
-  // ① 화면 슬롯 — 지금 보고 있는 개념의 가장 큰 틈. 포커스가 없으면 생략한다
-  //    (없는 것을 있다고 말하지 않는다).
+  // ① The screen slot — the biggest gap in the concept being viewed. Omitted when
+  //    there is no focus (do not claim something that is not there).
   const focused = input.focusedRef
     ? concepts.find((concept) => concept.ref === input.focusedRef)
     : undefined;
@@ -188,8 +191,9 @@ export function buildFirstWords(
     chips.push(chipFor('screen', intentFor(focused), labels));
   }
 
-  // ② 큐 슬롯 — 「할 일」이 지목하는 것과 **같은 판정**으로 고른 첫 개념.
-  //    화면 슬롯이 이미 집은 개념은 건너뛴다(같은 말을 두 번 하지 않는다).
+  // ② The queue slot — the first concept chosen by **the same verdict** the to-do
+  //    queue uses. A concept the screen slot already took is skipped (do not say
+  //    the same thing twice).
   const queued = concepts.find(
     (concept) => concept.gaps.length > 0 && concept.ref !== focused?.ref,
   );
@@ -197,7 +201,7 @@ export function buildFirstWords(
     chips.push(chipFor('queue', intentFor(queued), labels));
   }
 
-  // ③ 상비 슬롯 — 결함이 0인 폴더에서도 첫 마디가 있게 하는 바닥.
+  // ③ The standing slot — the floor that gives even a defect-free folder an opening line.
   chips.push({
     id: 'first-words:map-review',
     slot: 'standing',
@@ -209,8 +213,9 @@ export function buildFirstWords(
 }
 
 /**
- * 노드 하나를 가리키는 의도 하나 — S7 이 큐 행·노드 상세에서 건너올 때 쓴다.
- * 칩과 **같은 함수**를 지나므로 두 입구의 문장이 갈라질 자리가 없다.
+ * A single intent naming one node, used when arriving from a queue row or node
+ * detail. It passes through **the same function** as the chips, so there is
+ * nowhere for the two entrances' sentences to diverge.
  */
 export function nodeIntent(
   node: FirstWordsNode | null | undefined,
@@ -229,9 +234,10 @@ interface ConceptFact {
 }
 
 /**
- * 칩이 지목할 수 있는 개념만 남긴다 — **자기 `.md` 가 있고**(고칠 파일이 있고)
- * 매니페스트가 그 문서의 사실을 아는 것. 판정은 `resolveNodeDocument` 하나로
- * 한다: 새로 만들면 남의 문서를 고치라고 시키는 사고가 다시 열린다.
+ * Keeps only concepts a chip may name — those with **their own `.md`** (a file to
+ * edit) whose facts the manifest knows. The verdict comes from
+ * `resolveNodeDocument` alone: writing a new one reopens the accident of telling
+ * the agent to edit someone else's document.
  */
 function collectConcepts(
   nodes: readonly FirstWordsNode[],
@@ -250,15 +256,16 @@ function collectConcepts(
       gaps: detectMeaningGaps(node, doc),
     });
   }
-  // 이름순 — 같은 폴더를 두 번 열었을 때 칩이 자리를 바꾸면 방금 읽은 문장을
-  // 다시 찾게 된다.
+  // By name — if chips changed places when the same folder is opened twice, the
+  // user has to hunt for the sentence they just read.
   concepts.sort((a, b) => a.title.localeCompare(b.title));
   return concepts;
 }
 
 /**
- * 이 개념의 첫 마디. 빈칸이 있으면 그것을 말하고, 없으면 **질문**으로 남는다 —
- * "빠진 연결이 있는지 봐 줘" 는 주장하지 않으므로 멀쩡한 개념에도 거짓이 아니다.
+ * This concept's opening line. If a blank exists it names it; otherwise it stays a
+ * **question** — "check whether any connections are missing" asserts nothing, so
+ * it is not false even for a healthy concept.
  */
 function intentFor(concept: ConceptFact): FirstWordsIntent {
   const kind = concept.gaps[0] ?? 'missing-relations';

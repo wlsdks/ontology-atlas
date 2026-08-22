@@ -20,10 +20,10 @@ const ALLOWED_FLAGS = ['--vault', '--title', '--domain', '--path', '--body', '--
 
 
 /**
- * R12 #34 — \`ontology-atlas add <kind> <slug> --title=... [--domain X] [--path repo/path] [--body "..."] [--vault path]\`
+ * `ontology-atlas add <kind> <slug> --title=... [--domain X] [--path repo/path] [--body "..."] [--vault path]`
  *
- * 새 ontology 노드 .md 작성. 기존 slug 면 throw (덮어쓰기 절대 안 함 —
- * 사용자 작업 보호). mcp 의 add_concept 과 같은 contract.
+ * Writes a new ontology node `.md`. An existing slug throws — it never overwrites,
+ * to protect the user's work. Same contract as MCP's add_concept.
  */
 export async function runAdd(args) {
   const opts = parseArgs(args);
@@ -40,26 +40,28 @@ export async function runAdd(args) {
   const { kind, slug: rawSlug, title, domain, path, body, vault, autoPrefix } = opts;
   const vaultPath = resolve(vault);
 
-  // R15 — default folder prefix (capability → capabilities/foo).
-  // 사용자가 이미 prefix 명시 (`capabilities/foo`) 한 경우 두 번 적용 회피.
-  // R14 — folder mapping 은 schema.mjs 의 single source 사용 (mcp 와 일치).
+  // Default folder prefix (capability → capabilities/foo), skipped when the user
+  // already wrote the prefix (`capabilities/foo`) so it is not applied twice. The
+  // folder mapping comes from the single source in schema.mjs, matching MCP.
   const folder = folderForKind(kind);
   const slug =
     autoPrefix && folder && !rawSlug.startsWith(folder)
       ? `${folder}${rawSlug}`
       : rawSlug;
 
-  // 저작 출처 (2026-08-01 원장 — 「CLI 도 MCP 와 같은 문」). MCP add_concept
-  // 은 호출 경로가 에이전트임을 증명해 `agent:<heartbeat|unknown>` 을 찍는데
-  // CLI add 는 아무것도 안 찍었다 — 에이전트가 편한 문(CLI)을 고르면 출처
-  // 없는 노드가 나오는 구멍. 두 문을 같게 만든다: 기본값은 MCP 와 동일하게
-  // heartbeat 신원 기반 `agent:*`, 사람이 직접 칠 때는 `--created-by human`.
+  // Authorship (decision ledger 2026-08-01 — «the CLI is the same door as MCP»).
+  // MCP add_concept stamps `agent:<heartbeat|unknown>` because the call path proves
+  // an agent made it, while CLI add stamped nothing — a hole where an agent
+  // choosing the convenient door produced nodes with no provenance. The two doors
+  // are now the same: the default is the heartbeat-based `agent:*` exactly as in
+  // MCP, and a person typing it themselves passes `--created-by human`.
   const createdBy =
     opts.createdBy ?? agentCreatedBy(await readHeartbeatAgentName(vaultPath));
 
-  // R14 — schema 가 kind 별 양식 (project: domains/capabilities/elements 빈
-  // 배열, capability: elements 빈 배열) 자동 채움. AI agent 의 add_concept
-  // 과 동일 결과 → 두 진입점이 항상 같은 frontmatter 모양 만든다.
+  // The schema fills the per-kind shape automatically (project: empty
+  // domains/capabilities/elements arrays, capability: empty elements array), giving
+  // the same result as an agent's add_concept — so both entry points always produce
+  // the same frontmatter shape.
   const fm = buildFrontmatter({ slug, kind, title, domain, path, [CREATED_BY_KEY]: createdBy });
 
   try {
@@ -72,24 +74,22 @@ export async function runAdd(args) {
       `${COLORS.green}ok${COLORS.reset}    ${rel}\n` +
         `${COLORS.dim}      ${kind} · ${slug}${domain ? ` · domain=${domain}` : ''}${COLORS.reset}`,
     );
-    // P2-① — 성공한 쓰기만 로컬 감사 로그에 (dry-run 없음, 실패는 catch 로 빠짐).
+    // Only a successful write reaches the local audit log (no dry run here, and failures leave via catch).
     await recordCliWrite(vaultPath, {
       tool: 'cli:add',
       target: slug,
       summary: `add ${kind}:${slug}`,
     });
-    // schema 의 requiredExtras 누락 (capability/element 의 domain 등) 은
-    // advisory warning 으로 출력 — 사용자가 후속에 채울 수 있게.
+    // A missing `requiredExtras` from the schema (a capability or element's domain)
+    // prints as an advisory warning, so the user can fill it in afterwards.
     const missing = missingExpectedFields(kind, fm);
     for (const key of missing) {
       process.stderr.write(
         `${COLORS.yellow}warn${COLORS.reset}  expected field "${key}" missing for kind "${kind}": add it later with --domain or by editing the file.\n`,
       );
     }
-    // [폐기 2026-08-01] 구 R15 「element slug 두 패턴(flat / path-style)」
-    // 안내는 여기 있었다 — 경로형 슬러그는 이제 writeDoc 의 flatSlugIssue
-    // 게이트가 hard error 로 거부한다 (docs/DECISIONS.md 「슬러그는 평평한
-    // 식별자다」).
+    // A path-shaped slug is rejected as a hard error by writeDoc's flatSlugIssue
+    // gate (docs/DECISIONS.md 「슬러그는 평평한 식별자다」 — slugs are flat identifiers).
     return 0;
   } catch (err) {
     process.stderr.write(
@@ -102,8 +102,8 @@ export async function runAdd(args) {
 function parseArgs(args) {
   if (args.includes('--help') || args.includes('-h')) return { help: true };
   const positional = [];
-  // R15 — autoPrefix default on. starter 와 일관된 layout (kind→folder).
-  // 명시 opt-out: --raw-slug (or --no-auto-prefix).
+  // autoPrefix defaults on, for a layout consistent with the starter (kind→folder).
+  // Explicit opt-out: --raw-slug (or --no-auto-prefix).
   const flags = { vault: null, autoPrefix: true };
   for (let i = 0; i < args.length; i += 1) {
     const a = args[i];
@@ -175,8 +175,8 @@ function parseArgs(args) {
 }
 
 /**
- * `--created-by` 값 규약 — schema 의 `human` | `agent:<name>` 둘뿐이다.
- * `agent` 단독은 이름 모름의 정직한 표기(`agent:unknown`)로 정규화.
+ * `--created-by` value contract — the schema allows only `human` | `agent:<name>`.
+ * A bare `agent` is normalised to the honest "name unknown" form, `agent:unknown`.
  */
 function normalizeCreatedByFlag(raw) {
   const value = raw.trim();

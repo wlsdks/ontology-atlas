@@ -47,8 +47,8 @@ export type {
   ProjectRelationshipKind,
   ProjectRelationshipMeta,
 } from "./model";
-// R10b — cloud entity api 영구 제거. mission v2 (vault frontmatter = 진실원)
-// 정합. 미래 cloud collab 단계가 다시 도입될 때 새 api/ 폴더로.
+// The cloud entity api was removed permanently, consistent with the vault frontmatter
+// being the source of truth. A future cloud-collaboration stage would add a new api/ folder.
 export {
   getProjectDetailHref,
   getProjectDetailUrl,

@@ -8,7 +8,7 @@ import {
 
 describe('shouldCheckForUpdate', () => {
   it('never checks on the web — a browser tab cannot replace itself', () => {
-    // 웹에서 업데이트를 말하는 것은 할 수 없는 일을 제안하는 것이다.
+    // Speaking of updates on the web proposes something impossible.
     expect(
       shouldCheckForUpdate({ isDesktop: false, now: 0, lastCheckedAt: null, manual: true }),
     ).toBe(false);
@@ -36,8 +36,8 @@ describe('shouldCheckForUpdate', () => {
   });
 
   it('recovers when the clock moves backwards', () => {
-    // 시간대 변경이나 수동 조정으로 경과가 음수가 되면, 그냥 두면 다음 확인이
-    // 영영 오지 않는다. 조용히 멈추는 실패라 알아채기 어렵다.
+    // If a timezone change or manual adjustment makes the elapsed time negative, leaving it means the
+    // next check never comes. A failure that stops quietly and is hard to notice.
     expect(shouldCheckForUpdate({ isDesktop: true, now: 500, lastCheckedAt: 1_000_000 })).toBe(true);
   });
 });

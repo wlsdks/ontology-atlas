@@ -58,16 +58,17 @@ describe('i18n message catalog', () => {
 
     // Two states, both honest: a real download once published, an honest link
     // to the releases page before that.
-    // 2026-07-29 — 크기는 **번역 문자열을 떠났다**(카운슬 평결 ④). 라벨이
-    // `· {size}` 를 달고 있으면 `whitespace-nowrap` 버튼이 320px 에서 판을
-    // 뚫는데(실측 en: 22px 초과), 보간이 문자열 안에 있으면 그 절만 반응형으로
-    // 뺄 수가 없다. 이제 `AssetSize` 스팬이 그린다 — Intel 버튼이 원래 쓰던
-    // 문법이라 두 버튼이 같아지는 것은 덤이다.
+    // 2026-07-29 — the size **left the translation string** (council verdict ④).
+    // With `· {size}` inside the label, a `whitespace-nowrap` button overflows the
+    // panel at 320px (measured, en: 22px over), and an interpolation inside the
+    // string cannot be pulled out responsively on its own. An `AssetSize` span
+    // renders it now — the syntax the Intel button already used, so the two buttons
+    // matching is a bonus.
     //
-    // 이 게이트가 지키던 것은 "카탈로그가 릴리스 사실의 두 번째 사본을 갖지
-    // 않는다" 였고, 그 규율은 **더 강해졌다**: 라벨은 이제 아키텍처만 부른다.
-    // 크기가 실제로 그려지는지는 `DownloadPage.test.tsx` 가 생성 모듈의 값
-    // (`12.4 MB`)으로 검증한다.
+    // What this gate guarded was "the catalog holds no second copy of a release
+    // fact", and that discipline is now **stronger**: the label names only the
+    // architecture. Whether the size actually renders is verified by
+    // `DownloadPage.test.tsx` against the generated module's value (`12.4 MB`).
     assert.match(en.download.primaryCtaPublished, /Apple Silicon/);
     assert.match(ko.download.primaryCtaPublished, /Apple Silicon/);
     for (const [locale, value] of [
@@ -127,12 +128,13 @@ describe('i18n message catalog', () => {
     // Windows is named rather than omitted, so a Windows visitor learns where
     // they stand instead of guessing whether the product excludes them.
     //
-    // 2026-07-29 — 그 사실이 **자리를 옮겼다**(주장은 그대로다). 예전에는
-    // 접힘 아래 별도 행(`windowsPendingBadge`/`windowsPendingBody`)이었는데,
-    // 받는 자리에서 알아야 늦지 않으므로 판 안 한 줄(`platformStatus`)로
-    // 올라갔고, 정책 산문("같은 기준을 통과할 때")은 결정 재료가 아니라
-    // 푸터 접이식(`windowsPolicy`)으로 내려갔다. 게이트가 지키는 것은 키
-    // 이름이 아니라 **두 사실이 어딘가에는 있다**는 것이다.
+    // 2026-07-29 — that fact **moved** (the claim is unchanged). It used to be its own
+    // row under a disclosure (`windowsPendingBadge`/`windowsPendingBody`); knowing it at
+    // the point of download is what makes it timely, so it moved up into a single line
+    // inside the panel (`platformStatus`), while the policy prose ("when it passes the
+    // same bar") went down into a footer disclosure (`windowsPolicy`) since it is not
+    // decision material. What the gate guards is not the key names but that **both facts
+    // exist somewhere**.
     assert.match(en.download.platformStatus, /Windows/);
     assert.match(ko.download.platformStatus, /Windows/);
     assert.match(en.download.windowsUnsignedWarning, /not code-signed/i);
@@ -153,18 +155,19 @@ describe('i18n message catalog', () => {
     // AppNavRail rail + BottomTabBar's shared label source) is now the one
     // primary-navigation copy surface for both desktop and mobile.
     /*
-     * ⚠️ **값이 아니라 성격을 잠근다** (2026-08-12).
+     * ⚠️ **Lock the property, not the value** (2026-08-12).
      *
-     * 종전에는 다섯 라벨을 문자열로 못박았다(`'공방'` · `'인사이트'` …). 그런데 이
-     * 시험의 이름이 말하는 의도는 「**알아들을 수 있는 말인가**」이고, 못박기는 그
-     * 의도와 반대로 작동했다 — 소유자가 *"'그래프 인사이트' 이거 뭔말인지 모르겠음"*
-     * 이라고 지적했을 때, 이름을 고치려면 **먼저 이 시험을 고쳐야** 했다. 게이트가
-     * 규격을 좋게 바꾸는 것을 막는 모양이고, 이 저장소가 문서 게이트에서 이미 내린
-     * 결론(사람이 쓴 문장을 못박지 않는다)과 같은 자리다.
+     * This used to pin five labels as literal strings (`'공방'`, `'인사이트'`, …). But
+     * the intent stated in this test's own name is "is this understandable", and
+     * pinning worked against that intent: when the owner said *"'그래프 인사이트'
+     * 이거 뭔말인지 모르겠음"* (I have no idea what "graph insights" means), fixing
+     * the name required **fixing this test first**. That is a gate blocking an
+     * improvement to the spec — the same conclusion this repository already reached
+     * for doc gates: do not pin sentences a human wrote.
      *
-     * 그래서 잠그는 것을 성질로 바꾼다: ① 여섯 자리가 다 채워져 있다 ② 전문용어와
-     * **알아듣기 어려운 외래어**가 없다 ③ 라벨은 짧다(레일 폭에 들어간다).
-     * 무슨 단어를 고르는지는 사람의 판단이고, 이 시험이 대신하지 않는다.
+     * So what is locked becomes a property: ① all six slots are filled ② no jargon and
+     * no **hard-to-understand loanwords** ③ labels are short (they fit the rail width).
+     * Which word to choose is a human judgement this test does not make.
      */
     const railLabels = [
       ko.navRail.map,
@@ -177,7 +180,7 @@ describe('i18n message catalog', () => {
     for (const label of railLabels) {
       assert.equal(typeof label, 'string');
       assert.ok(label.trim().length > 0, '레일 라벨이 비었다');
-      // 레일은 좁다 — 긴 라벨은 줄바꿈되거나 잘린다(36px 타일 계약).
+      // The rail is narrow — a long label wraps or truncates (the 36px tile contract).
       assert.ok(label.length <= 5, `레일 라벨이 너무 길다: ${label}`);
     }
     assert.doesNotMatch(
@@ -186,15 +189,16 @@ describe('i18n message catalog', () => {
       '레일에 전문용어가 들어왔다',
     );
     /*
-     * 알아듣기 어려운 외래어 금지. 「인사이트」가 여기 있는 이유: 소유자가 실제로 그
-     * 화면 이름을 못 알아봤다(2026-08-12). 「빌더」는 은퇴한 이름이라 되돌아오는
-     * 것을 막는다.
+     * Ban hard-to-understand loanwords. 「인사이트」 is on this list because the owner
+     * genuinely did not recognise that screen's name (2026-08-12). 「빌더」 is a
+     * retired name and is blocked from coming back.
      *
-     * 「스튜디오」는 2026-08-12 소유자 결정으로 금지에서 뺐다 — 조립대(← 공방
-     * ← 스튜디오)를 두 번 갈아 본 끝에 *"조합대라는 이름 별로야.. 좀
-     * 보편적이어도 되는데"* → *"스튜디오로 가자"*. 라우트가 원래
-     * /ontology/studio 라 주소와 라벨이 처음으로 같은 말을 하게 됐다.
-     * 원장: docs/DECISIONS.md 2026-08-12 「쓰기 화면의 이름은 스튜디오다」.
+     * 「스튜디오」 came off the ban list by owner decision on 2026-08-12, after the
+     * name was changed twice (공방 → 조립대 → 스튜디오): *"조합대라는 이름 별로야..
+     * 좀 보편적이어도 되는데"* → *"스튜디오로 가자"* (that name is no good; something
+     * more common is fine → let's go with studio). The route was already
+     * /ontology/studio, so address and label finally say the same thing.
+     * Ledger: docs/DECISIONS.md 2026-08-12 「쓰기 화면의 이름은 스튜디오다」.
      */
     assert.doesNotMatch(
       railLabels.join('\n'),
@@ -202,12 +206,13 @@ describe('i18n message catalog', () => {
       '레일에 알아듣기 어려운 외래어가 들어왔다',
     );
     /*
-     * 한 목적지 한 이름 (2026-08-13). /git 화면은 자기를 「기록」이라 부르는데
-     * 레일만 「Git」이었다 — 레일의 다른 항목은 전부 한국어인데 여기만 개발자
-     * 용어가 샜고, 같은 목적지가 이름 둘을 갖게 됐다. 단어를 못박는 대신
-     * **두 표면이 같은 이름을 쓰는가**를 잠근다(사람이 고른 문장을 고정하지
-     * 않는다는 문서 게이트 원칙 그대로 — 이름을 바꾸려면 두 곳을 같이 바꾸면
-     * 되고, 이 시험은 안 바뀐 쪽을 가리킨다).
+     * One destination, one name (2026-08-13). The /git screen calls itself 「기록」
+     * while only the rail said 「Git」 — every other rail item is Korean, developer
+     * vocabulary leaked into just this one, and one destination ended up with two
+     * names. Instead of pinning the word, this locks **whether the two surfaces use
+     * the same name** (the same doc-gate principle of not fixing sentences a human
+     * chose — to rename, change both places, and this test points at whichever one
+     * was not changed).
      */
     const en = await readJson(path.join(MESSAGES_DIR, 'en.json'));
     assert.equal(
@@ -233,9 +238,10 @@ describe('i18n message catalog', () => {
     );
     assert.equal(ko.nav.settingsMenu.vaultCtaLocal, '열기');
     assert.equal(ko.topology.documentTitle, '지도');
-    // 구 topologyWidgets.controls 단축키/depth 카피(depthHop·shortcutDepthAll·
-    // shortcutDoubleClick·shortcutEsc)는 죽은 "지도 조절" 패널 철거(2026-07-21)로
-    // 사라졌다 — Fit 타일만 남아 fitViewTooltip/fitViewAriaLabel 만 검증한다.
+    // The old topologyWidgets.controls shortcut/depth copy (depthHop,
+    // shortcutDepthAll, shortcutDoubleClick, shortcutEsc) went with the removal of the
+    // dead map-controls panel (2026-07-21). Only the Fit tile remains, so only
+    // fitViewTooltip/fitViewAriaLabel are verified.
     assert.equal(ko.topologyWidgets.controls.fitViewAriaLabel, '지도 전체 맞추기');
     assert.equal(ko.topology.analysis.overviewAgentReadiness, 'AI가 이어서 작업할 준비');
     assert.equal(ko.topology.analysis.overviewAgentReadinessReady, '준비됨');
@@ -275,10 +281,11 @@ describe('i18n message catalog', () => {
   it('keeps Korean app settings MCP proof copy readable without internal client jargon', async () => {
     const ko = await readJson(path.join(MESSAGES_DIR, 'ko.json'));
     const settings = ko.nav.settingsMenu;
-    // 2026-08-02 — 세 이름이 전부 「AI」로 시작해 첫 글자로 안 갈렸다
-    // (「AI 에이전트」 절 · 「AI 에이전트 연결」 행 · 「AI 연결」 서브뷰). 복도가
-    // 사라지며 두 목적지가 LNB 로 올라왔고 이름이 「내」/「앱 안」으로 갈렸다.
-    // 얼린 문장 대신 **절 이름 전체**를 스캔한다.
+    // 2026-08-02 — three names all started with 「AI」 so the eye could not separate
+    // them by first character (the 「AI 에이전트」 section, the 「AI 에이전트 연결」
+    // row, and the 「AI 연결」 subview). With the corridor gone, two destinations moved
+    // up into the LNB and the names split into 「내」/「앱 안」. Instead of frozen
+    // sentences, this scans **the whole section-name set**.
     const visibleCopy = [
       JSON.stringify(settings.section),
       settings.goToAgents,
@@ -293,12 +300,14 @@ describe('i18n message catalog', () => {
     assert.equal(settings.mcpProofTitle, 'MCP 첫 호출');
     assert.match(visibleCopy, /에이전트/);
     /*
-     * ⚠️ **2026-08-21 재조준** (원장 90). 종전에는 `section.agent` 와
-     * `section.ai` 의 첫 글자를 갈랐다. 그런데 `agent` 절은 「에이전트」
-     * 목적지로 나갔다 — 시트에 남은 것은 그리로 보내는 **이정표 행**이다.
+     * ⚠️ **Re-aimed 2026-08-21** (ledger 90). This used to compare the first characters
+     * of `section.agent` and `section.ai`. The `agent` section then left for the
+     * 「에이전트」 destination — what remains in the sheet is a **signpost row** pointing
+     * there.
      *
-     * 잠그는 **성질은 그대로**다: 「연결」 묶음 안에서 눈이 두 줄을 첫 글자로
-     * 가를 수 있는가. 같은 글자로 시작하면 못 가른다는 것이 이 개명의 근거였다.
+     * The **locked property is unchanged**: within the connect group, can the eye
+     * separate the two rows by first character? That they cannot when both start with
+     * the same character was the basis for the rename.
      */
     assert.notEqual(settings.goToAgents[0], settings.section.ai[0]);
     assert.doesNotMatch(visibleCopy, /\bAgent\b|\bFallback\b|\bclient\b|\bnamespace\b|\breload\b|\brestart\b|graph DB gate/);
@@ -362,9 +371,10 @@ describe('i18n message catalog', () => {
         en.topology.controls.docsAriaLabel,
         en.topology.controls.docsLabel,
       ].join('\n'),
-      // `Quick view` 는 2026-07-26 평문화에서 되살아났다 — 옛 금지 목록의 나머지(See all·Pick one 류
-      // 모호 라벨)와 달리 이건 대상을 명시한다("Quick view of the doc library"). 「온톨로지」를
-      // 브랜드 자리 밖에서 쓰지 않는다는 최신 규율과 충돌해 이 한 항목만 해제한다.
+      // `Quick view` came back in the 2026-07-26 plain-language pass. Unlike the rest of
+      // the old ban list (vague labels of the See all / Pick one kind) it names its
+      // object ("Quick view of the doc library"). It conflicts with the current rule that
+      // 「온톨로지」 is not used outside brand positions, so this one entry is released.
       /See all|Pick one|See links|Clean up health|Source vault|source vault|^Source$/m,
     );
 
@@ -402,9 +412,10 @@ describe('i18n message catalog', () => {
         ko.topology.controls.docsAriaLabel,
         ko.topology.controls.docsLabel,
       ].join('\n'),
-      // `문서함` 은 2026-07-26 평문화가 고른 평문 한국어다 — 옛 라운드에서 모호 라벨과 함께
-      // 묶여 있었으나, 지금은 이 표면의 정식 이름이라 이 항목만 해제한다. 나머지(토폴로지·
-      // Topology·overview 류 전문어와 '전체 보기' 류 모호 라벨)는 그대로 막는다.
+      // `문서함` is the plain Korean the 2026-07-26 pass chose. An earlier round grouped
+      // it with the vague labels, but it is now this surface's official name, so only this
+      // entry is released. The rest — jargon of the 토폴로지 / Topology / overview kind and
+      // vague labels like '전체 보기' — stays blocked.
       /전체 보기|하나 선택|연결 보기|상태 정리|^문서$|토폴로지|Topology|overview brief|overview|query plan|Workspace|workspace|Health 신호/m,
     );
   });
@@ -454,16 +465,16 @@ describe('i18n message catalog', () => {
     const ko = await readJson(path.join(MESSAGES_DIR, 'ko.json'));
 
     /*
-     * ⚠️ **정확한 집합으로 못박지 않는다** (2026-08-10 에 좁혔다).
+     * ⚠️ **Do not pin an exact set** (narrowed 2026-08-10).
      *
-     * 종전에는 `deepEqual(keys, ['controls','hubRail'])` 였다. 그런데 이 시험이
-     * **말하는 목적**은 「은퇴한 sigma/contextMenu/edgeTooltip 이 되살아나지
-     * 못하게」다 — 정확한 집합을 박으면 **정당한 추가에도 터진다**(실제로
-     * `keyboardWalk` 를 더하다 걸렸다). 그런 게이트는 다음 사람이 게이트 대신
-     * 기능 쪽을 되돌리게 만든다(`documentation.md` · `/gate-probe`).
+     * This used to be `deepEqual(keys, ['controls','hubRail'])`. But the purpose this
+     * test **states** is "the retired sigma/contextMenu/edgeTooltip must not come back",
+     * and pinning an exact set **breaks on legitimate additions** too — it actually
+     * caught adding `keyboardWalk`. Such a gate makes the next person revert the feature
+     * rather than the gate (`.claude/rules/documentation.md`, `/gate-probe`).
      *
-     * 그래서 거부 목록으로 판정한다. 새 절은 자유롭게 늘고, 은퇴한 이름은
-     * 되돌아오지 못한다.
+     * So the verdict is a denylist. New sections grow freely; retired names cannot
+     * return.
      */
     const RETIRED = ['sigma', 'contextMenu', 'edgeTooltip'];
     for (const [locale, messages] of [['ko', ko], ['en', en]]) {
@@ -476,7 +487,7 @@ describe('i18n message catalog', () => {
         );
       }
     }
-    // 아직 소비처가 있는 둘은 사라지면 안 된다.
+    // The two that still have consumers must not disappear.
     for (const [locale, messages] of [['ko', ko], ['en', en]]) {
       for (const kept of ['controls', 'hubRail']) {
         assert.ok(
@@ -514,7 +525,7 @@ describe('i18n message catalog', () => {
     );
     assert.equal(commands.sourceServer, '샘플 문서함 보기');
     assert.equal(commands.sourceLocal, '내 PC 문서함 열기');
-    // P5a — folder-topology 제거: 해당 명령 키가 부활하지 않았는지 역단언.
+    // folder-topology was removed; assert those command keys have not come back.
     assert.equal(commands.viewFolderTopology, undefined);
     assert.equal(commands.scaffoldTopology, undefined);
     assert.doesNotMatch(commands.sourceServer, /소스|Source/);
@@ -547,16 +558,27 @@ describe('i18n message catalog', () => {
     ].join('\n');
 
     assert.equal(ko.docsVault.desktopWelcome.title, '로컬 문서함을 열거나 만드세요');
-    assert.equal(ko.docsVault.desktopWelcome.contractAriaLabel, '문서함 실행 계약');
+    /*
+     * ⚠️ **Wording is no longer pinned here** (2026-08-22). These two used to pin
+     * '문서함 실행 계약' and '문서 속성이 의미 그래프'. `docs/GLOSSARY.md` retired
+     * 「계약」 and 「문서 속성」 as screen words — the very jargon this test's name
+     * says it guards against — so the pins broke on a change made *in their
+     * direction*. Pinning an authored sentence is what `documentation.md` forbids;
+     * what is checked now is the property, and `ui-copy-glossary.contract.test.ts`
+     * owns the banned-word list.
+     */
+    assert.doesNotMatch(ko.docsVault.desktopWelcome.contractAriaLabel, /계약/);
+    assert.ok(ko.docsVault.desktopWelcome.contractAriaLabel.length > 0);
     assert.equal(ko.docsVault.desktopWelcome.contractFilesLabel, '문서함 파일');
-    assert.equal(ko.docsVault.desktopWelcome.contractGraphValue, '문서 속성이 의미 그래프');
+    assert.doesNotMatch(ko.docsVault.desktopWelcome.contractGraphValue, /문서 속성|프론트매터/);
     assert.equal(ko.docsVault.desktopWelcome.contractAgentLabel, 'AI 확인');
     assert.equal(ko.docsVault.desktopWelcome.actionsAriaLabel, '문서함 시작 액션');
     assert.equal(ko.docsVault.sourceContract.filesLabel, '문서함 파일');
     assert.equal(ko.docsVault.sourceContract.graphValue, '개념 {nodes}개 · 관계 {edges}개');
     assert.equal(ko.docsVault.sourceContract.agentLabel, 'AI 확인');
-    assert.match(ko.docsVault.desktopWelcome.body, /문서 상단의 속성/);
-    assert.match(ko.docsVault.desktopWelcome.contractGraphValue, /문서 속성/);
+    // The plain phrase replaced 「문서 상단의 속성」 / 「문서 속성」 — both screens now
+    // say 「파일 맨 위 정보칸」, and the glossary gate keeps the old names out.
+    assert.match(ko.docsVault.desktopWelcome.contractGraphValue, /정보칸/);
     assert.match(ko.docsVault.sourceContract.graphBody, /지도/);
     assert.doesNotMatch(
       welcomeCopy,
@@ -625,12 +647,14 @@ describe('i18n message catalog', () => {
     assert.equal(en.nav.settingsMenu.vaultCtaLocal, 'Open');
     assert.equal(en.nav.settingsMenu.vaultCtaStatic, 'Get started');
     assert.equal(en.docsVault.desktopWelcome.title, 'Open or create a local workspace');
-    assert.equal(en.docsVault.desktopWelcome.contractAriaLabel, 'Workspace contract');
+    // Property, not wording — see the Korean half of this file for why.
+    assert.doesNotMatch(en.docsVault.desktopWelcome.contractAriaLabel, /\bcontract\b/i);
+    assert.ok(en.docsVault.desktopWelcome.contractAriaLabel.length > 0);
     assert.equal(en.docsVault.desktopWelcome.contractFilesLabel, 'Workspace files');
-    assert.equal(en.docsVault.desktopWelcome.contractGraphValue, 'Document properties become a meaning graph');
+    assert.doesNotMatch(en.docsVault.desktopWelcome.contractGraphValue, /frontmatter/i);
     assert.equal(en.docsVault.desktopWelcome.contractAgentLabel, 'AI check');
     assert.equal(en.docsVault.desktopWelcome.actionsAriaLabel, 'Workspace setup actions');
-    assert.equal(en.docsVault.sourceContract.ariaLabel, 'Current workspace contract');
+    assert.doesNotMatch(en.docsVault.sourceContract.ariaLabel, /\bcontract\b/i);
     assert.equal(en.docsVault.sourceContract.filesLabel, 'Workspace files');
     assert.equal(en.docsVault.sourceContract.graphValue, '{nodes} concepts · {edges} relations');
     assert.equal(en.docsVault.sourceContract.agentLabel, 'AI check');
@@ -705,19 +729,18 @@ describe('i18n message catalog', () => {
   it('keeps active download/settings copy free of untranslated English nouns mixed into Korean sentences', async () => {
     const ko = await readJson(path.join(MESSAGES_DIR, 'ko.json'));
     const settings = ko.nav.settingsMenu;
-    // 2026-07-27 — 구 `download.includeCliBody` 한 줄만 고정하던 것을
-    // download 네임스페이스 **전체 스캔**으로 넓혔다. 문자열 하나를 얼려
-    // 두면 그 문자열이 사라지는 순간 게이트도 같이 사라진다(그 일이
-    // `/download` 리메이크에서 실제로 일어날 뻔했다). 지키려던 것은 특정
-    // 문장이 아니라 "한국어 문장 안에 번역되지 않은 영어 명사가 섞이지
-    // 않는다" 는 규칙이다.
+    // 2026-07-27 — widened from pinning the single old `download.includeCliBody` line
+    // to **scanning the whole download namespace**. Freezing one string means the gate
+    // disappears the moment that string does (which nearly happened in the `/download`
+    // remake). What was being guarded is not a particular sentence but the rule that
+    // untranslated English nouns are not mixed into Korean sentences.
     const mixedLanguageCopy = [
       JSON.stringify(ko.download),
-      // LNB 절 이름 — 2026-08-02 에 「AI 에이전트」 한 줄이 「내 에이전트 연결」·
-      // 「앱 안 에이전트」 두 목적지로 갈렸다. 문자열 하나를 얼리는 대신 절
-      // 이름 **전체**를 스캔에 넣는다(위 주석과 같은 이유다 — 얼린 문장은
-      // 사라지는 순간 게이트도 데려간다. 구 `settings.agentBody` 고정이 정확히
-      // 그 부류였고, 복도가 사라지며 함께 사라졌다).
+      // LNB section names — on 2026-08-02 the single 「AI 에이전트」 row split into two
+      // destinations, 「내 에이전트 연결」 and 「앱 안 에이전트」. Instead of freezing one
+      // string, the **whole** section-name set goes into the scan (same reason as the
+      // comment above — a frozen sentence takes the gate with it when it disappears; the
+      // old `settings.agentBody` pin was exactly that, and it went with the corridor).
       JSON.stringify(settings.section),
       settings.agentNoVaultHint,
       settings.mcpProofBody,
@@ -769,11 +792,11 @@ function isPlainObject(value) {
 }
 
 it('모든 메시지가 ICU 로 컴파일된다 — 꺾쇠 태그 오파싱이 raw 키 폴백을 만들지 않게 (리텐션 P2/P4 회귀)', async () => {
-  // next-intl 은 `<tag>` 를 rich-text 태그로 파싱한다. plain t() 로 소비되는
-  // 메시지에 문자 그대로의 `<...>` 가 들어가면 런타임 에러 → 사용자에게
-  // raw 키가 보인다 (agentConnect.manualPathHint 사고). 여기서는 전 메시지를
-  // 태그 허용 모드로 컴파일해 문법 깨짐(닫히지 않은 태그·잘못된 ICU)을 잡고,
-  // 태그 사용 키는 소비처가 t.rich 인지까지는 보지 않는다(별도 관례).
+  // next-intl parses `<tag>` as a rich-text tag. A literal `<...>` inside a message
+  // consumed through plain t() is a runtime error, and the user sees the raw key
+  // (the agentConnect.manualPathHint incident). This compiles every message in
+  // tag-enabled mode to catch broken syntax (unclosed tags, invalid ICU); it does not
+  // check whether a tag-using key is consumed through t.rich (a separate convention).
   const { createRequire } = await import('node:module');
   const require_ = createRequire(new URL(import.meta.url));
   const pnpmDir = (await import('node:fs')).readdirSync('node_modules/.pnpm').find((d) => d.startsWith('intl-messageformat@'));
@@ -789,7 +812,7 @@ it('모든 메시지가 ICU 로 컴파일된다 — 꺾쇠 태그 오파싱이 r
         const p = path ? `${path}.${key}` : key;
         if (typeof value === 'string') {
           try {
-            // ignoreTag 없이 컴파일 — next-intl 과 같은 태그 파싱 조건.
+            // Compile without ignoreTag — the same tag-parsing conditions as next-intl.
             new IntlMessageFormat(value, locale);
           } catch (err) {
             failures.push(`${locale}:${p} — ${err.message.split('\n')[0]}`);

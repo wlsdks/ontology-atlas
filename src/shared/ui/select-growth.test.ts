@@ -6,29 +6,31 @@ import {
   listboxTopIsHidden,
 } from './select-growth';
 
-/** 실측 행 높이 — 한 줄 행 30px, 「임베딩 전용」 설명이 붙는 두 줄 행 48px. */
+/** Measured row heights: 30px for one line, 48px for a row carrying a description. */
 const SINGLE = 30;
 const DOUBLE = 48;
 const CHROME = { paddingBlock: 8, borderBlock: 2 };
 
-/** 실측 러너가 실제로 내놓은 구성 — 대화 3 + 임베딩 4. */
+/** The configuration a real runner produced: 3 chat rows plus 4 embedding rows. */
 const REAL_RUNNER = [SINGLE, SINGLE, SINGLE, DOUBLE, DOUBLE, DOUBLE, DOUBLE];
 
 describe('목록의 자람 — 상한이 둘이고 작은 쪽이 이긴다', () => {
   it('실측 러너의 7개는 스크롤 없이 전부 담긴다 (흔한 경우가 스크롤되면 신호가 거짓말이 된다)', () => {
     const growth = listboxGrowth({ ...CHROME, rowHeights: REAL_RUNNER, availableHeight: 600 });
-    // 상한은 남은 자리 그대로 — 아무것도 안 묶으므로 상자는 자기 내용대로 큰다.
+    // Nothing caps it, so the cap is the available space and the box sizes to
+    // its own content.
     expect(growth).toEqual({ height: 600, rows: 7, overflowing: false, cappedBy: 'content' });
   });
 
   /**
-   * 2026-08-02 설치 앱 실측 회귀 — 상한을 **측정한 내용 높이**로 잡았더니
-   * 7개가 전부 보이는데도 `scrollHeight > clientHeight` 라 「더 있다」
-   * 어포던스가 거짓으로 켜졌다. 서브픽셀·늦게 온 웹폰트로 행이 1px 만 자라도
-   * 상자가 자기 내용을 스크롤한다. 상한은 내용을 따라가는 값이면 안 된다.
+   * Regression measured in the installed app, 2026-08-02: capping at the
+   * *measured content height* turned the "there is more" affordance on falsely —
+   * all 7 rows were visible yet `scrollHeight > clientHeight`. Subpixel rounding
+   * or a late web font growing a row by 1px is enough to make the box scroll its
+   * own content, so the cap must never track the content.
    */
   it('안 묶일 때의 상한은 내용 높이가 아니다 — 1px 자라도 스크롤이 생기면 안 된다', () => {
-    const settled = REAL_RUNNER.map((h) => h + 1); // 폰트가 늦게 와서 행이 자랐다
+    const settled = REAL_RUNNER.map((h) => h + 1);
     const growth = listboxGrowth({ ...CHROME, rowHeights: settled, availableHeight: 600 });
     expect(growth?.overflowing).toBe(false);
     expect(growth?.height).toBeGreaterThan(settled.reduce((a, b) => a + b, 0) + 10);
@@ -48,7 +50,8 @@ describe('목록의 자람 — 상한이 둘이고 작은 쪽이 이긴다', () 
     expect(growth?.height).toBe(120);
     expect(growth?.overflowing).toBe(true);
     expect(growth?.cappedBy).toBe('space');
-    // 담기는 행만 센다 — 8+30+30+30 = 98 ≤ 120, 다음 두 줄 행은 146 이라 못 담는다.
+    // Only whole rows count: 8+30+30+30 = 98 fits in 120; the next two-line row
+    // would reach 146.
     expect(growth?.rows).toBe(3);
   });
 
@@ -56,7 +59,7 @@ describe('목록의 자람 — 상한이 둘이고 작은 쪽이 이긴다', () 
     const growth = listboxGrowth({
       ...CHROME,
       rowHeights: [SINGLE, DOUBLE, DOUBLE],
-      // 8 + 30 + 48 = 86 까지가 온전하고, 세 번째 행의 절반만 들어가는 높이.
+      // 8 + 30 + 48 = 86 is whole; this height admits only half the third row.
       availableHeight: 110,
     });
     expect(growth?.rows).toBe(2);
@@ -78,7 +81,7 @@ describe('스크롤 어포던스 — 없는 넘침을 광고하지 않는다', (
 
   it('상한에 닿았어도 맨 위에 있으면 위는 가려진 것이 없다', () => {
     expect(listboxTopIsHidden(true, 0)).toBe(false);
-    // 열자마자의 상태 — 위는 멀쩡하고 «더 있다» 는 아래가 나른다.
+    // Just-opened state: nothing hidden above, and the bottom carries "more".
     expect(listboxBottomIsHidden(true, 0, 240, 400)).toBe(true);
   });
 

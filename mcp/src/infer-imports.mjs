@@ -1,29 +1,28 @@
-// R17 — infer_imports
+// infer_imports
 //
 // TS/JS and Python files' static imports become observed file-level dependency
 // edges. Go imports become typed package-directory evidence instead of invented
 // file endpoints. Python and Go are parsed as bounded text and never executed.
-// analyze_repo_structure 의 suggestedRelations 가 *project
-// contains capability* 한 줄이라면, 이건 진짜 *capability A depends_on
-// capability B* edge 의 source.
+// Where analyze_repo_structure's suggestedRelations amount to one *project
+// contains capability* line, this is the source of real *capability A depends_on
+// capability B* edges.
 //
-// 단일 source of truth 보존:
-//   - 결과는 return only — vault frontmatter 안 건드림
-//   - agent 가 검토 후 *명시 add_relation* 만 vault 진입
+// Preserving the single source of truth:
+//   - results are returned only — vault frontmatter is never touched
+//   - only an *explicit add_relation* after agent review enters the vault
 //
-// 한계 (의도적 minimal):
-//   - regex 기반 — TypeScript / JS 의 95% case (top-level static import)
-//     cover. dynamic import / re-export / type-only 도 같은 regex 로 잡힘
+// Deliberate limits:
+//   - regex-based — covers the 95% case for TypeScript and JS (top-level static
+//     imports). Dynamic import, re-export, and type-only are caught by the same regex
 //   - resolves relative imports, tsconfig paths, and fallback common @/* aliases
 //     → real files. unresolved aliases surface as alias-not-found instead of
-//     external npm.
-//     외부 npm import 는 externalImports 로 별도 분류.
-//   - Python 은 root 또는 src/source layout package 의 import /
-//     from ... import 만 보수적으로 읽으며 동적 import, namespace-package
-//     추측, 의미 관계 자동 승격은 하지 않음
-//   - Go 는 root module 내부 package import 만 directory evidence 로 읽고
-//     vendor/testdata/underscore fixture tree 와 string/comment lookalike 를 제외
-//   - 더 정교한 AST parsing 은 후속
+//     external npm, which is classified separately as externalImports
+//   - Python is read conservatively: `import` / `from ... import` in a root or
+//     src/source-layout package only, with no dynamic import, no namespace-package
+//     guessing, and no automatic promotion to a meaning relation
+//   - Go reads only package imports inside the root module as directory evidence,
+//     excluding vendor/testdata/underscore fixture trees and string/comment lookalikes
+//   - finer AST parsing is future work
 
 import { readFileSync, readdirSync, statSync, lstatSync, existsSync, realpathSync } from 'node:fs';
 import { join, dirname, resolve, relative, isAbsolute, extname, sep } from 'node:path';
@@ -2091,14 +2090,15 @@ function moduleOf(filePath, sourceFolders, rootPath, workspacePackages = []) {
   // filePath is relative to rootPath. Find first segment that's a source
   // folder, then take the next segment as the "module" id.
   //
-  // R+ — slug parity with analyze_repo_structure. The analyzer emits
-  // folder-prefixed ontology slugs (`capabilities/X`, `elements/<flat-name>`)
-  // so import evidence can be reconciled against analyzer concepts.
+  // Slug parity with analyze_repo_structure. The analyzer emits folder-prefixed
+  // ontology slugs (`capabilities/X`, `elements/<flat-name>`) so import evidence
+  // can be reconciled against analyzer concepts.
   //
-  // 슬러그는 평평한 식별자다 (2026-08-01 판정 — docs/DECISIONS.md). 종전의
-  // `elements/src/entities/foo` path-style 은 폐기 — analyze 와 같은 규칙으로
-  // 이름만 슬러그에 싣고, basename 이 레이어를 넘어 겹칠 때만 레이어 단수형
-  // 접미로 가른다 (같은 rootPath 를 보므로 두 도구의 판정이 일치한다).
+  // A slug is a flat identifier (2026-08-01 verdict — docs/DECISIONS.md). The
+  // earlier `elements/src/entities/foo` path style is retired: by the same rule as
+  // analyze, only the name rides the slug, and a layer-singular suffix separates
+  // them only when a basename collides across layers (both tools look at the same
+  // rootPath, so their verdicts agree).
   const parts = filePath.split(/[\\/]/);
   if (!SOURCE_EXT.has(extname(parts.at(-1) ?? ''))) return null;
   const workspacePackage = workspacePackageForFile(filePath, workspacePackages);
@@ -2143,20 +2143,20 @@ function moduleOf(filePath, sourceFolders, rootPath, workspacePackages = []) {
         (parts[i] === 'apps' || parts[i] === 'packages') &&
         existsSync(join(rootPath, parts[i], next, 'package.json'))
       ) {
-        // analyze 는 apps → packages 순서로 훑으며 두 번째 충돌자에만 폴더
-        // 접두를 붙인다 — 같은 규칙: apps 가 bare 이름을 갖는다.
+        // analyze walks apps → packages and prefixes the folder onto the second
+        // colliding entry only — same rule here: apps keeps the bare name.
         const collidesWithApps =
           parts[i] === 'packages' &&
           existsSync(join(rootPath, 'apps', next, 'package.json'));
         return `elements/${collidesWithApps ? `packages-${next}` : next}`;
       }
-      // capability 류 bucket — analyze 가 inner name 만 slug 으로 쓰므로
-      // capabilities/ 아래에 둔다.
+      // Capability-class bucket — analyze uses the inner name alone as the slug,
+      // so these go under capabilities/.
       const capabilityBuckets = new Set(['features']);
       if (capabilityBuckets.has(next) && parts[i + 2]) {
         return `capabilities/${ontologySourceName(parts[i + 2])}`;
       }
-      // element 류 bucket — analyze 와 같은 flat + 충돌 시 레이어 접미 규칙.
+      // Element-class bucket — same flat rule as analyze, with a layer suffix on collision.
       const elementBuckets = ['entities', 'widgets', 'views'];
       if (elementBuckets.includes(next) && parts[i + 2]) {
         const name = ontologySourceName(parts[i + 2]);
@@ -2180,8 +2180,8 @@ function moduleOf(filePath, sourceFolders, rootPath, workspacePackages = []) {
         return `capabilities/${ontologySourceName(parts[i + 2])}`;
       }
       if (isSupportElementBucket(next) && parts[i + 2]) {
-        // 파일의 basename 이 role 이름 — `src/storage/json-store.js` →
-        // `elements/json-store`. 위치는 evidence 가 나른다.
+        // The file's basename is the role name — `src/storage/json-store.js` →
+        // `elements/json-store`. Location is carried by the evidence.
         return `elements/${ontologySourceName(parts[parts.length - 1])}`;
       }
       if (SOURCE_EXT.has(extname(next))) {
@@ -2195,7 +2195,7 @@ function moduleOf(filePath, sourceFolders, rootPath, workspacePackages = []) {
         const flatName = ontologySourceName(next);
         return flatName ? `elements/${flatName}` : null;
       }
-      // Generic fallback — sourceFolder 다음 첫 segment 가 module.
+      // Generic fallback — the first segment after sourceFolder is the module.
       return `capabilities/${next}`;
     }
   }

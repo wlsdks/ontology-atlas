@@ -1,6 +1,6 @@
-// Smoke test — node-native, no test runner. `npm run test:smoke` 로 실행.
-// 본 repo 의 vitest 단위 테스트 (parse-frontmatter.test.ts) 와 동일 케이스
-// 일부 검증.
+// Smoke test — node-native, no test runner. Run with `npm run test:smoke`.
+// Covers a subset of the same cases as this repo's vitest unit test
+// (parse-frontmatter.test.ts).
 
 import assert from 'node:assert/strict';
 import {
@@ -135,7 +135,7 @@ test('serialize roundtrip', () => {
   assert.deepEqual(parsed.name, fm.name);
   assert.deepEqual(parsed.kind, fm.kind);
   assert.deepEqual(parsed.capabilities, fm.capabilities);
-  // inline object 직렬화 → 다시 파싱 시 inline object 인식.
+  // Inline object serialised, then recognised as an inline object when parsed back.
   assert.deepEqual(parsed.position, fm.position);
 });
 

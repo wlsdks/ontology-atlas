@@ -48,8 +48,9 @@ export function normalizeWheelDeltaY(deltaY: number, deltaMode: number, viewport
  * `--topology-v2-*` token (same "device-input tuning has no design token"
  * precedent as `WHEEL_LINE_HEIGHT_PX` above).
  */
-// 0.0020 → 0.0023 (소유자 실보고 2026-07-24, "약간만 빠르게") — 노치당
-// ~1.27x → ~1.32x. 정착 속도(angfreq 15)와 함께 줌 체감을 소폭 올린다.
+// 0.0020 → 0.0023 (owner report 2026-07-24, *"약간만 빠르게"* — just a little
+// faster) — ~1.27x → ~1.32x per notch. Together with the settle rate (angfreq 15)
+// it lifts the perceived zoom speed slightly.
 export const WHEEL_ZOOM_SENSITIVITY = 0.0023;
 
 /**
@@ -62,19 +63,22 @@ export function computeWheelZoomFactor(pixelDeltaY: number, sensitivity: number 
 }
 
 /**
- * 트랙패드 글라이드 가드 (소유자 실보고 2026-07-23 — "노드 연결선에 마우스
- * 올리면 화면이 움직인다/흔들린다"): macOS 트랙패드는 두 손가락이 얹힌 채
- * 미끄러지거나 관성이 남으면 |deltaY| 1~3px 의 미세 wheel 이벤트를 흘린다.
- * 이 노이즈가 전부 줌으로 합성되면 커서를 올려두기만 해도 화면이 떨린다.
- * 의도적 제스처와의 구분:
- * - 핀치 줌은 브라우저가 `ctrlKey: true` wheel 로 전달 — 항상 통과.
- * - 마우스 노치/의도적 두-손가락 스크롤은 정규화 후 |delta| 가 크다 — 통과.
- * - 그 외 미세 델타만 무시한다. 문턱은 장치 입력 사실이라 디자인 토큰 없음
- *   (`WHEEL_LINE_HEIGHT_PX` 선례).
+ * Trackpad glide guard (owner report, 2026-07-23: *"노드 연결선에 마우스 올리면
+ * 화면이 움직인다/흔들린다"* — just hovering an edge makes the screen move and
+ * shake). A macOS trackpad emits tiny wheel events of |deltaY| 1–3px whenever two
+ * fingers rest and slide, or when momentum lingers. Composing all of that noise
+ * into zoom makes the screen tremble from a hovering cursor alone.
+ *
+ * Telling it apart from a deliberate gesture:
+ * - Pinch zoom arrives from the browser as a `ctrlKey: true` wheel — always passes.
+ * - A mouse notch or a deliberate two-finger scroll has a large |delta| after
+ *   normalisation — passes.
+ * - Everything else, tiny deltas only, is ignored. The threshold is a device-input
+ *   fact, so it has no design token (the `WHEEL_LINE_HEIGHT_PX` precedent).
  */
 export const WHEEL_GLIDE_IGNORE_THRESHOLD_PX = 4;
 
-/** 미세 글라이드 노이즈면 true — 호출부는 줌을 건너뛴다 (핀치는 예외). */
+/** True for tiny glide noise — the caller then skips the zoom (pinch excepted). */
 export function shouldIgnoreWheelGlide(pixelDeltaY: number, ctrlKey: boolean): boolean {
   if (ctrlKey) return false;
   return Math.abs(pixelDeltaY) < WHEEL_GLIDE_IGNORE_THRESHOLD_PX;

@@ -2,26 +2,25 @@ import { expect, test } from "@playwright/test";
 import { seedFirstRunSeen } from "./first-run-seed";
 
 /**
- * **3D 손잡이 — 돔 안은 회전, 돔 밖은 이동** (2026-08-18, 원장 (80)).
+ * **The 3D grip — inside the dome rotates, outside it pans** (2026-08-18, ledger
+ * entry 80).
  *
- * 3D 보기에는 e2e 가 **한 개도 없었다.** 그 상태에서 이번 라운드가 조작 규칙을
- * 하나 더 얹었으니(빈 곳 드래그가 자리에 따라 갈린다) 그 규칙은 켜는 순간부터
- * 검사 없는 규칙이 된다 — 이 저장소가 `/gate-probe` 로 금지하는 상태다.
+ * The 3D view had **no e2e at all**. With this round adding one more interaction rule
+ * on top (an empty-space drag splits by where it starts), that rule would be
+ * unchecked from the moment it shipped — the state `/gate-probe` forbids.
  *
- * ## 왜 픽셀이 아니라 계기를 읽나
+ * **Why an instrument rather than pixels.** Rotation and panning are
+ * **indistinguishable on screen**: both look like "the dots moved", and a screenshot
+ * comparison cannot separate them. What separates them is *what* changed — rotation
+ * changes `dome().yaw` and leaves the camera, panning changes the camera and leaves
+ * the yaw. So `__atlasMap` (via `?e2e=1`) is read instead.
  *
- * 회전과 이동은 **화면에서 구별되지 않는다.** 둘 다 「점들이 움직였다」로 보이고,
- * 스크린샷 비교는 그 둘을 가르지 못한다. 가르는 것은 「무엇이 바뀌었나」다:
- * 회전이면 `dome().yaw` 가 바뀌고 카메라는 그대로, 이동이면 카메라가 바뀌고
- * yaw 는 그대로. 그래서 `__atlasMap`(=`?e2e=1`) 을 읽는다.
- *
- * ## 두 방향을 다 잰다
- *
- * 「바깥에서 팬이 된다」만 재면 궤도 회전을 통째로 지워도 초록이다. 두 자리를
- * 모두 재야 «갈린다»가 검증된다.
+ * **Both directions are measured.** Measuring only "outside becomes a pan" stays
+ * green even if orbit rotation is deleted entirely. Only measuring both places
+ * verifies that they actually split.
  */
 
-/** 이번 프레임의 카메라와 돔 자세 — 두 축을 한 번에 읽는다. */
+/** This frame's camera and dome attitude — both axes read at once. */
 async function readPose(page: import("@playwright/test").Page) {
   return page.evaluate(() => {
     const m = (
@@ -39,9 +38,9 @@ async function readPose(page: import("@playwright/test").Page) {
 }
 
 /**
- * 돔이 화면에서 차지하는 사각형(캔버스 좌표) — 그려진 노드에서 직접 낸다.
- * 상수로 «대략 여기가 안» 이라고 적으면 레이아웃이 바뀌는 날 시험이 조용히
- * 엉뚱한 자리를 찍는다.
+ * The rectangle the dome occupies on screen (canvas coordinates), derived from the
+ * drawn nodes. Writing "roughly here is inside" as a constant makes the test
+ * silently click the wrong place the day the layout changes.
  */
 async function domeScreenBox(page: import("@playwright/test").Page) {
   return page.evaluate(() => {
@@ -69,27 +68,28 @@ test("3D — 돔 안을 끌면 돌고, 돔 밖 검은 자리를 끌면 지도가
   await page.setViewportSize({ width: 1512, height: 900 });
   await seedFirstRunSeen(page);
   await page.addInitScript(() => {
-    // 3D 는 옵트인이고 그 스위치는 localStorage 다(`appearance-preferences`).
+    // 3D is opt-in and its switch lives in localStorage (`appearance-preferences`).
     window.localStorage.setItem("atlas.appearance.view3d", "on");
   });
   await page.goto("/ko/topology/?e2e=1&guides=off", { waitUntil: "domcontentloaded" });
   await page.evaluate(() => document.fonts.ready);
-  // 조립(≈1.1s) + 진입 스윕(1.5s)이 끝난 뒤에 잰다 — 스윕이 사는 동안에는
-  // 그리는 자세가 계속 움직여서 「내 드래그가 바꾼 것」과 구별되지 않는다.
+  // Measure after assembly (≈1.1s) and the entry sweep (1.5s) finish — while the
+  // sweep is alive the drawn attitude keeps moving and cannot be told apart from what
+  // the drag changed.
   await page.waitForTimeout(4000);
 
   const box = await domeScreenBox(page);
   expect(box, "3D 노드를 하나도 못 읽었다 — 계기가 공회전하고 있다").not.toBeNull();
   const b = box!;
 
-  // 좌상단 여백 — 그려진 노드보다 한참 바깥, 확실히 «밖».
+  // Top-left margin — well outside the drawn nodes, unambiguously outside.
   const outsideX = Math.max(b.left + 8, b.left + b.minX - 160);
   const outsideY = Math.max(b.top + 8, b.top + b.minY - 120);
   expect(outsideX, "돔이 화면을 꽉 채워 «바깥»이 없다 — 시험이 성립 안 한다").toBeLessThan(
     b.left + b.minX - 40,
   );
 
-  /* ── ① 돔 밖 드래그 = 카메라 이동 ─────────────────────────────────────── */
+  /* ── ① Drag outside the dome = camera pan ──────────────────────────────── */
   const before1 = await readPose(page);
   expect(before1).not.toBeNull();
   await page.mouse.move(outsideX, outsideY);
@@ -112,12 +112,13 @@ test("3D — 돔 안을 끌면 돌고, 돔 밖 검은 자리를 끌면 지도가
     "돔 밖을 끌었는데 돔이 돌았다 — 바깥은 이동이어야 한다",
   ).toBeLessThan(0.02);
 
-  /* ── ② 돔 안 드래그 = 궤도 회전 ───────────────────────────────────────── */
+  /* ── ② Drag inside the dome = orbit rotation ───────────────────────────── */
   await page.waitForTimeout(600);
   /*
-   * **돔 위치를 다시 잰다.** ①에서 지도를 옮겼으므로 그 전에 계산한 «안쪽»
-   * 좌표는 이제 바깥일 수 있다 — 첫 작성 때 정확히 그래서 「안 돌았다」로
-   * 빨개졌다. 시험이 자기가 만든 상태를 잊는 전형적인 자책골이다.
+   * **Re-measure the dome's position.** ① moved the map, so an "inside" coordinate
+   * computed before it may now be outside — which is exactly why the first version
+   * went red with "it did not rotate". A textbook own goal: the test forgetting the
+   * state it created itself.
    */
   const box2 = await domeScreenBox(page);
   expect(box2, "팬 뒤에 돔이 화면 밖으로 나갔다 — ①의 이동량이 과하다").not.toBeNull();
@@ -166,8 +167,8 @@ test("3D — 커서가 두 구역을 말한다 (돔 위 grab · 바깥 move)", a
     });
 
   /*
-   * 커서 없이 규칙만 있으면 그 규칙은 드래그해 봐야만 발견된다 — 이 저장소가
-   * 금지하는 «drag-only discovery» 다. 그래서 커서가 계약의 일부다.
+   * A rule with no cursor is discoverable only by dragging — the "drag-only
+   * discovery" this repository forbids. So the cursor is part of the contract.
    */
   const outsideX = Math.max(b.left + 8, b.left + b.minX - 160);
   const outsideY = Math.max(b.top + 8, b.top + b.minY - 120);
@@ -175,8 +176,9 @@ test("3D — 커서가 두 구역을 말한다 (돔 위 grab · 바깥 move)", a
   await page.waitForTimeout(200);
   expect(await cursor(), "돔 바깥에서 «옮길 수 있다»는 표시가 없다").toBe("move");
 
-  // 노드 원판을 피해 링 사이의 빈 자리를 고른다 — 노드 위에서는 노드의 커서가
-  // 이긴다(그건 별개 계약이고, 여기서 재면 무엇을 재는지 흐려진다).
+  // Pick empty space between the rings, avoiding node discs — over a node the node's
+  // cursor wins (a separate contract; measuring it here blurs what is being
+  // measured).
   const gap = await page.evaluate(() => {
     const m = (
       window as unknown as { __atlasMap?: { nodes: () => Array<{ hidden: boolean; x: number; y: number }> } }
@@ -187,8 +189,8 @@ test("3D — 커서가 두 구역을 말한다 (돔 위 grab · 바깥 move)", a
     if (!rect || nodes.length === 0) return null;
     const cx = (Math.min(...nodes.map((n) => n.x)) + Math.max(...nodes.map((n) => n.x))) / 2;
     const cy = (Math.min(...nodes.map((n) => n.y)) + Math.max(...nodes.map((n) => n.y))) / 2;
-    // 중심에서 가장 먼 노드까지의 거리 절반 안에서, 어떤 노드와도 24px 이상
-    // 떨어진 첫 점.
+    // The first point within half the distance to the farthest node that is at least
+    // 24px from every node.
     for (let r = 0; r < 160; r += 8) {
       for (let a = 0; a < 360; a += 15) {
         const x = cx + Math.cos((a * Math.PI) / 180) * r;

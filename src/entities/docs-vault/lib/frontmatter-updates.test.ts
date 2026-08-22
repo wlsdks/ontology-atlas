@@ -3,11 +3,11 @@ import { applyFrontmatterUpdates } from './frontmatter-updates';
 
 
 /**
- * BOM·CRLF 원본에서도 **키가 갱신되지, 하나 더 붙지 않는다** (2026-07-28).
+ * With a BOM or CRLF source, **the key is updated rather than duplicated** (2026-07-28).
  *
- * CRLF 를 정규화하지 않으면 키 줄 끝에 `\r` 이 남아 매칭이 빗나가고, 갱신
- * 대신 같은 키가 하나 더 append 된다 — 그 파일은 그때부터 같은 키를 두 번
- * 가진 프론트매터가 된다.
+ * Without CRLF normalization a `\r` stays at the end of the key line, matching misses,
+ * and the same key is appended instead of updated — from then on that file's
+ * frontmatter carries the key twice.
  */
 describe('BOM·CRLF 원본', () => {
   it('CRLF — 키를 갱신하고 CRLF 로 되돌린다', () => {

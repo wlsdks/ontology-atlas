@@ -7,9 +7,9 @@ export interface OntologyHealthSignalCandidate {
   slug: string;
   name: string;
   /**
-   * 들어오는 참조 수(fan-in). promotion 후보에만 채워진다 — "왜 상위 개념
-   * 후보인가"의 근거 수치라 표면(할 일 큐)이 "참조 N개"로 그대로 보여준다.
-   * stale/orphan 후보는 undefined.
+   * Incoming reference count (fan-in). Filled only for promotion candidates — it is
+   * the evidence for "why is this a candidate", which the to-do queue shows verbatim
+   * as "N references". Undefined for stale and orphan candidates.
    */
   fanIn?: number;
 }
@@ -109,9 +109,9 @@ function isStaleNode(
 function toSignalCandidate(node: KnowledgeGraphNode): OntologyHealthSignalCandidate {
   return {
     slug: node.id,
-    // 과제 ⑩ — 표시용 짧은 제목. 이 candidate 는 map health 칩 · DoNextTab ·
-    // 수리 큐 action target 등 여러 표면이 공유하는 단일 진실원이라, 한 번
-    // 고쳐두면 그 표면들이 전부 함께 짧아진다.
+    // The short display title. This candidate is the single source shared by the map's
+    // health chip, DoNextTab, and the repair queue's action target, so shortening it
+    // once shortens it on all of them.
     name: node.display ?? node.title,
   };
 }
@@ -119,24 +119,22 @@ function toSignalCandidate(node: KnowledgeGraphNode): OntologyHealthSignalCandid
 export interface OntologyHealthActionTarget {
   slug: string;
   title: string;
-  // C1 — `island` / `containment` come from the CLI-parity vault-health verdict
-  // (disconnected actionable islands · missing domain containment). They rank
-  // ABOVE the statistical stale/orphan/promotion signals because the CLI
-  // (`node $ATLAS/cli/src/index.mjs health`) flips to `needs_attention` on them, so surfacing
-  // them keeps the app's "수리할 것 없음" honest.
+  // `island` / `containment` come from the CLI-parity vault-health verdict
+  // (disconnected actionable islands · missing domain containment). They rank ABOVE
+  // the statistical stale/orphan/promotion signals because the CLI
+  // (`node $ATLAS/cli/src/index.mjs health`) flips to `needs_attention` on them, so
+  // surfacing them keeps the app's "nothing to repair" claim honest.
   kind: "island" | "containment" | "stale" | "orphan" | "promotion";
 }
 
 /**
- * Picks ONE actionable repair target from the three health-signal buckets —
- * stale first (evidence is aging), then orphan (no owner yet), then
- * promotion (statistical suggestion, lowest urgency). Moved here from
- * `views/home/lib/topology-analysis.ts` (still re-exported there under its
- * old name for the topology map's health chip) so `/ontology/insights`'
- * 할 일 탭 "수리 큐" section can reuse the SAME picking rule without a
- * cross-view import — both surfaces read this
- * one entities-level function, so the two "next repair" targets can never
- * drift.
+ * Picks ONE actionable repair target from the three health-signal buckets — stale
+ * first (evidence is aging), then orphan (no owner yet), then promotion (a
+ * statistical suggestion, lowest urgency). It lives here rather than in
+ * `views/home/lib/topology-analysis.ts` (still re-exported there under its old name
+ * for the topology map's health chip) so the insights to-do tab's repair queue can
+ * reuse the SAME rule without a cross-view import. Both surfaces read this one
+ * entities-level function, so the two "next repair" targets can never drift.
  */
 export function buildOntologyHealthActionTarget({
   stale,

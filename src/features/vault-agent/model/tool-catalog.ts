@@ -1,33 +1,36 @@
 /**
- * 에이전트에게 주는 도구 목록 — **이름·인자·효과가 MCP 서버와 완전히 같다.**
+ * The tool list given to the agent — **names, arguments, and effects are exactly
+ * the MCP server's.**
  *
- * 화면·CLI·MCP 세 입구가 같은 답을 내는 것이 이 저장소의 반복 계약이고,
- * 실행기 ↔ MCP 서버의 drift 는 `tests/contract/agent-tool-catalog.contract.test.ts`
- * 가 `mcp/src/index.js` 원문에서 이름·인자를 뽑아 대조해 차단한다. 여기서
- * 새 이름을 발명하면 그 테스트가 즉시 깨진다.
+ * The screen, the CLI, and MCP giving the same answer is this repository's
+ * recurring contract, and drift between the executor and the MCP server is blocked
+ * by `tests/contract/agent-tool-catalog.contract.test.ts`, which extracts names and
+ * arguments from `mcp/src/index.js` itself and compares. Inventing a new name here
+ * breaks that test immediately.
  *
- * ## 무엇을 주지 않는가 (§ 안 지을 것)
+ * **What is deliberately not given:**
  *
- * - `analyze_repo_structure` / `infer_imports` / `index_project` — **볼트 밖
- *   소스 스캔**이라 앱 에이전트의 시야 밖이다. local-first 의 "임의 파일 자동
- *   스캔 금지" 와 정면으로 부딪히고, 코드가 필요한 일은 터미널의 몫이다.
+ * - `analyze_repo_structure` / `infer_imports` / `index_project` — **source
+ *   scanning outside the vault**, beyond the app agent's field of view. It
+ *   collides head-on with local-first's "no automatic scanning of arbitrary
+ *   files", and work needing the code belongs to the terminal.
  * - `rename_concept` / `merge_concepts` / `delete_concept` / `remove_relation`
- *   / `replace_relation` / `reclassify_concept` — 구조 변경 6종. dry-run 수치
- *   카드가 선행해야 하므로 후속 슬라이스로 미룬다.
- * - `absorb_document` — 대량 유입. 전용 스킬 흐름이 이미 있다.
- * - `git_snapshot` — 모델의 도구가 아니라 **동의 카드의 앱 기능**이다.
- *   모델이 커밋 시점을 정하게 두지 않는다.
- * - `query_ontology` — 인자 20종짜리 만능 도구. v1 에서는 개별 읽기 도구
- *   10종으로 덮고, 필요가 실측되면 추가한다.
- * - `query_concepts` — 필터 표현식 파서(`mcp/src/query.mjs`)를 웹 번들에
- *   다시 구현해야 하는데, 재구현은 곧 drift 다. `list_concepts` 의
- *   kind/domain 필터 + `find_evidence` 가 실사용을 덮는다.
- * - `connection_info` / `compile_ontology` — 앱이 이미 아는 것.
+ *   / `replace_relation` / `reclassify_concept` — the six structural changes. A
+ *   dry-run figures card must come first, so they are deferred to a later slice.
+ * - `absorb_document` — bulk ingestion. A dedicated skill flow already exists.
+ * - `git_snapshot` — not a model's tool but **an app feature of the consent
+ *   card**. The model does not get to decide when to commit.
+ * - `query_ontology` — an omnibus tool with twenty arguments. v1 covers it with
+ *   the ten individual read tools and adds it when a need is measured.
+ * - `query_concepts` — would require reimplementing the filter expression parser
+ *   (`mcp/src/query.mjs`) in the web bundle, and a reimplementation is drift.
+ *   `list_concepts`'s kind/domain filters plus `find_evidence` cover real use.
+ * - `connection_info` / `compile_ontology` — things the app already knows.
  */
 
 import type { ProposalToolName } from './types';
 
-/** 우리가 쓰는 JSON Schema 부분집합. 벤더별 변환은 어댑터가 한다. */
+/** The JSON Schema subset we use. Per-vendor conversion belongs to the adapter. */
 export interface AgentJsonSchema {
   type: 'object' | 'array' | 'string' | 'integer' | 'number' | 'boolean';
   description?: string;
@@ -45,11 +48,11 @@ export interface AgentToolDefinition {
   name: string;
   description: string;
   parameters: AgentJsonSchema;
-  /** write 는 실행되지 않는다 — 제안 카드로 바뀐다. */
+  /** A write is never executed — it becomes a proposal card. */
   effect: 'read' | 'write';
 }
 
-/** `mcp/src/ontology-engine.mjs` 의 같은 상수. 계약 테스트가 대조한다. */
+/** The same constant as in `mcp/src/ontology-engine.mjs`. A contract test compares them. */
 export const NODE_KIND_VALUES = [
   'project',
   'domain',
@@ -143,7 +146,7 @@ const RELATION_SPEC_SCHEMA: AgentJsonSchema = {
   additionalProperties: false,
 };
 
-/** 읽기 도구 10종. */
+/** The ten read tools. */
 export const AGENT_READ_TOOLS: readonly AgentToolDefinition[] = [
   {
     name: 'get_concept',
@@ -371,10 +374,10 @@ export const AGENT_READ_TOOLS: readonly AgentToolDefinition[] = [
 ];
 
 /**
- * 쓰기 도구 5종 — 전부 additive/보수적이라 blast radius 가 작다.
+ * The five write tools — all additive and conservative, so the blast radius is small.
  *
- * **이 도구들은 실행되지 않는다.** 실행기가 제안 카드로 변환할 뿐이고,
- * 사용자가 [적용]을 누를 때만 디스크에 닿는다. 예외 없음.
+ * **These tools are not executed.** The executor only converts them into proposal
+ * cards, and they touch the disk only when the user presses [apply]. No exceptions.
  */
 export const AGENT_WRITE_TOOLS: readonly AgentToolDefinition[] = [
   {

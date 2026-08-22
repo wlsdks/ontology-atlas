@@ -101,10 +101,11 @@ describe("createTopologyPointerHandlers — handleContextMenu (W2-B)", () => {
 
 describe("createTopologyPointerHandlers — 빈 캔버스 우클릭 (2026-08-03)", () => {
   /*
-   * 상단 「+ 개념」 크롬 필을 지우면서 이 자리가 **populated 지도에서 노드를
-   * 만드는 유일한 문**이 됐다. 빈 지도의 두 진입점(시작 체크리스트 · 빈 상태)은
-   * 지도가 차는 순간 사라지기 때문이다 — 이 배선이 끊기면 노드가 있는 볼트에서
-   * 지도로는 아무것도 못 만든다.
+   * Removing the top 「+ 개념」 (add concept) chrome pill made this position **the only
+   * door for creating a node on a populated map**, because the empty map's two entry
+   * points (the start checklist and the empty state) disappear the moment the map
+   * fills. If this wiring breaks, nothing can be created from the map in a vault that
+   * already has nodes.
    */
   it("빈 자리에서는 만들기를 부르고 브라우저 기본 메뉴를 막는다", () => {
     vi.mocked(hitTestWorld).mockReturnValue(null);

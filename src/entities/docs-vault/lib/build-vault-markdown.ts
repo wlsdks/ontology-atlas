@@ -1,12 +1,11 @@
 /**
- * 온톨로지 노드를 vault `.md` 문자열로 직렬화 — `parseFrontmatter` 의 역방향.
+ * Serializes an ontology node into a vault `.md` string — the inverse of
+ * `parseFrontmatter`.
  *
- * 원래 은퇴한 ERD 빌더(구 `src/views/ontology-edit`) 안에 있던 직렬화 함수를
- * S1.0(ontology-first/topology-as-ontology 재구성)에서 entity 레이어로 추출.
- * 여러 view 가 cross-view import 없이 같은 vault `.md` 직렬화를 재사용하기
- * 위함(현재는 docs-vault·공방 쓰기 경로). 동작은 추출 전과 동일하게 유지
- * (slug·kind·title frontmatter + `# title` 본문) — 풍부한 frontmatter(domain,
- * 관계 키)·기존 본문 보존이 필요한 *기존 노드 편집*은 별도 patch 경로가 담당.
+ * Kept at the entity layer so several views reuse one serializer without
+ * cross-view imports. It writes the minimal shape (slug/kind/title frontmatter
+ * plus a `# title` body); editing an *existing* node — which must preserve rich
+ * frontmatter and the existing body — goes through the separate patch path.
  */
 
 import { slugify } from "@/shared/lib/slugify";
@@ -24,12 +23,13 @@ export function generateNodeUid(uid?: string): string {
 }
 
 /**
- * YAML 스칼라를 안전하게 적는다 — **네 곳이 같은 답을 내야 한다.**
+ * Quotes a YAML scalar safely — **four places must agree on the answer.**
  *
- * 2026-08-16 검수(재현됨): 줄바꿈이 규칙에 빠져 있었다. 그 한 글자가
- * frontmatter 블록을 통째로 부순다 — `note\nkind: element` 는 **노드의 종류를
- * 바꾸고**, `note\n---\nx: 1` 은 frontmatter 를 거기서 끝낸다. 따옴표만으로는
- * 안 된다(줄이 이미 끊겼다). 그래서 `\n` 으로 접고 읽는 쪽이 되돌린다.
+ * Reviewed and reproduced 2026-08-16: newline was missing from the rule. That one
+ * character destroys the whole frontmatter block — `note\nkind: element` **changes
+ * the node's kind**, and `note\n---\nx: 1` ends the frontmatter there. Quoting
+ * alone does not help once the line is already broken, so newlines are folded to
+ * `\n` and the reader unfolds them.
  */
 function quoteYamlScalar(v: string): string {
   if (!/[:,#[\]{}"'&|*!%@`\n\t]|^\s|\s$/.test(v)) return v;
@@ -42,44 +42,44 @@ function quoteYamlScalar(v: string): string {
 }
 
 /**
- * 저작 출처(`created_by`)의 웹 쪽 상수 — 2026-07-31 원장.
- * 정본은 `mcp/src/schema.mjs`(미러 `cli/src/lib/schema.mjs`)이고, 세 사본이
- * 같은 문자열을 쓰는지는 `tests/contract/created-by-provenance.contract.test.ts`
- * 가 잡는다. 값 규약은 `human` | `agent:<name>` 뿐이고,
- * **부재는 결함이 아니라 unknown 이다** — 어떤 경로도 부재를 사람으로 채우지
- * 않는다.
+ * The web-side constants for authorship (`created_by`) — 2026-07-31 ledger entry.
+ * The source of truth is `mcp/src/schema.mjs` (mirrored in `cli/src/lib/schema.mjs`),
+ * and `tests/contract/created-by-provenance.contract.test.ts` catches the three
+ * copies drifting apart. The only values are `human` and `agent:<name>`, and
+ * **absence is unknown, not a defect** — no path fills it in as a person.
  */
 export const VAULT_CREATED_BY_KEY = "created_by";
 export const VAULT_CREATED_BY_HUMAN = "human";
 const VAULT_CREATED_BY_AGENT_PREFIX = "agent:";
 export const VAULT_CREATED_BY_AGENT_UNKNOWN = `${VAULT_CREATED_BY_AGENT_PREFIX}unknown`;
 
-/** 에이전트 이름 → `agent:<name>`. 이름을 모르면 `agent:unknown`(사람 아님). */
+/** Agent name → `agent:<name>`. An unknown name becomes `agent:unknown` — still not a person. */
 export function vaultAgentCreatedBy(agentName: string | null | undefined): string {
   const name = typeof agentName === "string" ? agentName.trim() : "";
   return name ? `${VAULT_CREATED_BY_AGENT_PREFIX}${name}` : VAULT_CREATED_BY_AGENT_UNKNOWN;
 }
 
 export function buildVaultMarkdown(args: {
-  /** 영구 노드 식별자. 테스트·명시적 복원만 주입하고 일반 생성은 fresh UUIDv4. */
+  /** Permanent node identity. Injected only by tests and explicit restores; normal creation mints a fresh UUIDv4. */
   uid?: string;
   kind: string;
   title: string;
   slug: string;
-  /** capability/element 처럼 부모 도메인이 있는 노드의 `domain:` 키. 생략 시
-   *  emit 안 함 — 추출 전(빌더)과 byte-identical 출력 보장. */
+  /** The `domain:` key for nodes with a parent domain (capability, element).
+   *  Omitted entirely when absent, keeping output byte-identical. */
   domain?: string;
   /**
-   * 어권별 표시 이름 (소유자 지시 2026-07-24) — `{ ko: "결제", en: "Payments" }`
-   * → `display_ko:` / `display_en:` 키. 생략하면 emit 안 함(기존 출력 불변).
-   * `title` 은 검색/매칭의 단일 진실원이라 그대로 둔다.
+   * Per-locale display names (owner instruction, 2026-07-24) —
+   * `{ ko: "결제", en: "Payments" }` becomes `display_ko:` / `display_en:` keys.
+   * Omitted when absent. `title` stays untouched as the single source of truth for
+   * search and matching.
    */
   localeLabels?: Record<string, string>;
   /**
-   * 저작 출처 — 이 문서를 **쓴 경로가 증명하는** 행위자(`human` |
-   * `agent:<name>`)만 넘긴다. 모르면 넘기지 않는다: 키가 없는 것이 unknown 의
-   * 정직한 표현이고, 사람으로 추정해 채우는 것은 2026-07-31 원장이 금지한
-   * 소급 추론이다.
+   * Authorship — pass only the actor the **writing path itself proves** (`human`
+   * or `agent:<name>`). When unknown, pass nothing: an absent key is the honest
+   * expression of unknown, and guessing "a person" is the retroactive inference
+   * the 2026-07-31 ledger entry forbids.
    */
   createdBy?: string;
 }): string {
@@ -87,8 +87,8 @@ export function buildVaultMarkdown(args: {
   lines.push(`uid: ${generateNodeUid(args.uid)}`);
   lines.push(`slug: ${args.slug}`);
   lines.push(`kind: ${args.kind}`);
-  // C7 — single canonical `domain:` serialization (bare tail-slug) so map + 공방
-  // writers agree and analytics don't split one domain into two keys.
+  // One canonical `domain:` serialization (the bare tail slug) so every writer
+  // agrees and analytics do not split one domain across two keys.
   const domain = canonicalizeDomainRef(args.domain);
   if (domain) lines.push(`domain: ${quoteYamlScalar(domain)}`);
   lines.push(`title: ${quoteYamlScalar(args.title)}`);
@@ -99,8 +99,8 @@ export function buildVaultMarkdown(args: {
     lines.push(`display_${locale}: ${quoteYamlScalar(trimmed)}`);
   }
   const createdBy = args.createdBy?.trim();
-  // `agent:<name>` 은 콜론을 품는다 — MCP 쪽 writer 가 내는 바이트와 같게
-  // 인용해야 두 표면이 같은 파일을 만든다.
+  // `agent:<name>` contains a colon, and it must be quoted exactly as the MCP-side
+  // writer quotes it, or the two surfaces produce different bytes for one file.
   if (createdBy) lines.push(`${VAULT_CREATED_BY_KEY}: ${quoteYamlScalar(createdBy)}`);
   lines.push("---");
   lines.push("");
@@ -110,9 +110,9 @@ export function buildVaultMarkdown(args: {
 }
 
 /**
- * kind → vault 폴더(복수형). dogfood vault 와 빌더 저장 경로 규칙을 단일화 —
- * capability→capabilities, element→elements, domain→domains, project→projects,
- * 그 외는 `${kind}s`.
+ * kind → vault folder (plural). One rule for the dogfood vault and every write
+ * path: capability→capabilities, element→elements, domain→domains,
+ * project→projects, anything else `${kind}s`.
  */
 export function vaultFolderForKind(kind: string): string {
   switch (kind) {
@@ -130,9 +130,9 @@ export function vaultFolderForKind(kind: string): string {
 }
 
 /**
- * 새 온톨로지 노드의 vault 문서(slug + markdown)를 만든다 — S2(토폴로지에서
- * 노드 생성)의 순수 모델. slug = `${폴더}/${slugify(title)}`. title 이 비거나
- * slug 로 환원 불가하면 throw. createDoc(slug, markdown) 으로 디스크에 쓴다.
+ * Builds the vault document (slug + markdown) for a new ontology node.
+ * slug = `${folder}/${slugify(title)}`. Throws when the title is empty or cannot
+ * be reduced to a slug. The caller writes it with `createDoc(slug, markdown)`.
  */
 export function buildNewNodeDoc(args: {
   uid?: string;
@@ -141,12 +141,13 @@ export function buildNewNodeDoc(args: {
   domain?: string;
   localeLabels?: Record<string, string>;
   /**
-   * 저작 출처 — 화면에서 **사람이 손으로 만든 노드**는 `human` 이다
-   * (2026-07-31 원장의 값 규약, 2026-08-03 배선).
+   * Authorship — a node a person created by hand on screen is `human`
+   * (2026-07-31 ledger convention, wired 2026-08-03).
    *
-   * 스탬프는 **쓰기 시점에, 호출 경로가 증명하는 행위자에게만** 찍는다.
-   * 이 함수는 화면의 「개념 만들기」에서만 불리므로 그 경로가 사람을 증명한다.
-   * 생략하면 안 찍는다 — 부재는 unknown 이고, 그게 원장의 계약이다.
+   * The stamp is applied **at write time, and only for the actor the calling path
+   * proves**. This function is reached only from "create concept" on screen, which
+   * proves a person. Omitted means unstamped, and absence is unknown — that is the
+   * ledger's contract.
    */
   createdBy?: string;
 }): { slug: string; markdown: string } {

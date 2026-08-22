@@ -156,13 +156,14 @@ describe("TopologyMapV2", () => {
   });
 
   /*
-   * 궤도 「이것만 보기」 버튼의 마이크로 툴팁은 **2D 에서만** 그린다
-   * (2026-08-18 소유자 지시). 이 버튼은 매 프레임 노드의 투영 좌표로 옮겨
-   * 다니는데, 돔에서는 그 좌표가 회전·원근으로 계속 움직여 글상자가 장면 위를
-   * 미끄러진다.
+   * The microtooltip on the orbit 「이것만 보기」 (show only this) button is drawn
+   * **in 2D only** (owner instruction, 2026-08-18). That button rides the node's
+   * projected coordinates every frame, and in the dome those coordinates keep
+   * moving with rotation and perspective, so the text box slides across the scene.
    *
-   * 두 방향을 다 잰다 — `/gate-probe` 규율: 「3D 에서 없다」만 재면 툴팁을
-   * 통째로 지워 버려도 초록이라, 검사가 아무것도 안 지킨다.
+   * Both directions are measured — the `/gate-probe` discipline: checking only
+   * "absent in 3D" stays green even if the tooltip is deleted outright, so the
+   * check would enforce nothing.
    */
   const realmProps: TopologyMapV2Props = {
     ...baseProps,

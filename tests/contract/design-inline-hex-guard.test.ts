@@ -3,15 +3,18 @@ import { readdirSync, readFileSync } from 'node:fs';
 import path from 'node:path';
 
 /**
- * 디자인 시스템 가드 — 컴포넌트 inline style 의 CSS 색 속성은 hardcoded hex 가
- * 아니라 토큰(var(--color-*))을 거쳐야 한다 (.claude/rules/design.md,
- * docs/DESIGN-SYSTEM.md "hardcoded hex 금지"). raw hex 를 inline style 에 박으면
- * 라이트/다크 토큰 전환을 우회해 모드 회귀가 난다 (cf. locale-redirect 회귀 fix).
+ * Design system gate — colour CSS properties in a component's inline style must go
+ * through a token (var(--color-*)), not a hard-coded hex (.claude/rules/design.md,
+ * docs/DESIGN-SYSTEM.md "no hardcoded hex"). A raw hex in an inline style bypasses
+ * the light/dark token switch and produces a mode regression (cf. the
+ * locale-redirect regression fix).
  *
- * 탐지 범위: `style={{ ... }}` 안에서 색 관련 CSS 속성에 직접 #hex 를 대입하는
- * 패턴만. Sigma WebGL 팔레트(객체 key `amber: '#...'`)나 토큰 정의 파일은 CSS
- * 속성명 앵커에 걸리지 않아 자연히 제외된다. 주석 안의 hex(`// token #27a644`)도
- * 색 속성명이 앞에 없어 매칭되지 않는다.
+ * Detection scope: only the pattern of assigning a #hex directly to a
+ * colour-related CSS property inside `style={{ ... }}`. A Sigma WebGL palette
+ * (object key `amber: '#...'`) and token definition files are naturally excluded
+ * because they do not hit the CSS property-name anchor. A hex inside a comment
+ * (`// token #27a644`) does not match either, since no colour property name
+ * precedes it.
  */
 
 const SRC_DIR = path.join(process.cwd(), 'src');
@@ -36,8 +39,8 @@ const COLOR_PROPS = [
   'textShadow',
 ];
 
-// 예: `background: '#08090a'` / `boxShadow: '... #fff'`. 값 구분자(, ; } 줄바꿈)
-// 전까지의 구간에 #hex 가 있으면 위반.
+// e.g. `background: '#08090a'` / `boxShadow: '... #fff'`. A #hex anywhere before
+// the value separator (, ; } or newline) is a violation.
 const HEX_IN_COLOR_PROP = new RegExp(
   `\\b(?:${COLOR_PROPS.join('|')})\\s*:\\s*[^,;}\\n]*#[0-9a-fA-F]{3,8}`,
   'g',
@@ -59,7 +62,7 @@ function collectTsxFiles(dir: string, acc: string[] = []): string[] {
 describe('디자인 토큰 가드 — inline style 에 raw hex 색 금지', () => {
   it('어떤 .tsx 도 색 CSS 속성에 hardcoded hex 를 inline 대입하지 않는다', () => {
     const files = collectTsxFiles(SRC_DIR);
-    // 스캐너가 실제로 트리를 돌았는지 보장 (빈 글롭으로 거짓 통과 방지).
+    // Ensures the scanner really walked the tree (no false pass on an empty glob).
     expect(files.length).toBeGreaterThan(20);
 
     const violations: string[] = [];

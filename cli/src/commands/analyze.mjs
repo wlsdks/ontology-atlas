@@ -1,7 +1,8 @@
-// R16 (b3) — `ontology-atlas analyze [rootPath]`
-// Wraps MCP analyze_repo_structure. side effect 0 — vault 변경 안 함, 후보만.
-// 후보는 연결된 agent의 review → qualification → human acceptance → exact
-// writePlan lifecycle을 거친 뒤에만 MCP writer로 진입한다.
+// `ontology-atlas analyze [rootPath]`
+// Wraps MCP analyze_repo_structure. Zero side effects — the vault is not modified,
+// only candidates are returned. A candidate reaches the MCP writer only after the
+// connected agent's review → qualification → human acceptance → exact writePlan
+// lifecycle.
 
 import { COLORS } from '../lib/colors.mjs';
 import { resolve } from 'node:path';
@@ -38,9 +39,9 @@ export async function runAnalyze(args) {
   }
 
   const target = resolve(process.cwd(), rootPath);
-  // analyze 는 *vault 와 무관* 한 도구지만 MCP 통과 시 OATLAS_VAULT 가 필요해서
-  // 그냥 cwd 또는 사용자 지정한다. MCP analyze 자체와 이 CLI의 모든 경로는
-  // 후보만 반환하며 vault를 쓰지 않는다.
+  // analyze is *independent of the vault*, but passing through MCP requires
+  // OATLAS_VAULT, so it is cwd or whatever the user named. MCP analyze itself and
+  // every path in this CLI return candidates only and never write the vault.
   const vaultRoot = resolve(process.cwd(), vault);
   let result;
   try {

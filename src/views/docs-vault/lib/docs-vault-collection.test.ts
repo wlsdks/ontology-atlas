@@ -125,8 +125,8 @@ describe('docs vault collections', () => {
         dismissed: false,
       }),
     ).toBe(true);
-    // 명시적 딥링크(?slug=)로 들어오면 노트를 건너뛴다 — 공유 링크는
-    // 그 문서로 바로 가야 한다.
+    // Arriving with an explicit deeplink (?slug=) skips the note — a shared link must go straight
+    // to that document.
     expect(
       shouldShowSampleWelcomeNote({
         source: 'server',
@@ -134,7 +134,7 @@ describe('docs vault collections', () => {
         dismissed: false,
       }),
     ).toBe(false);
-    // 사용자가 실제 문서를 골랐으면(dismissed) 다시 밀어붙이지 않는다.
+    // Once the user has selected a real document (dismissed), it is not pushed again.
     expect(
       shouldShowSampleWelcomeNote({
         source: 'server',
@@ -142,7 +142,7 @@ describe('docs vault collections', () => {
         dismissed: true,
       }),
     ).toBe(false);
-    // 로컬(사용자 자신의) vault 에는 애초에 해당 없음.
+    // Not applicable at all to a local (the user's own) vault.
     expect(
       shouldShowSampleWelcomeNote({
         source: 'local',
@@ -154,15 +154,14 @@ describe('docs vault collections', () => {
 });
 
 /**
- * 첫 화면이 **자기가 가진 것을 보여준다** (2026-07-28 실측 결함).
+ * The first screen **shows what it actually has** (measured defect, 2026-07-28).
  *
- * 기본 컬렉션이 `'guides'` 로 못 박혀 있어서, 그 컬렉션이 0건인 볼트를 열면
- * 볼트 필은 "문서 31개" 라고 말하는데 목록은 비어 있었다. 폴백이 없었고
- * (`setDocCollection` 호출은 전부 사용자 액션 경유), 처음 온 사람이 보는
- * 화면이 31개 중 0개였다.
+ * The default collection was pinned to `'guides'`, so opening a vault where that collection is
+ * empty left the vault pill saying "31 documents" while the list was empty. There was no fallback
+ * (every `setDocCollection` call goes through a user action), and a first-time visitor saw 0 of 31.
  *
- * 복잡도 이전에 **정직성** 문제다 — 화면이 자기 상태에 대해 거짓을 말한다.
- * 그래서 판정은 "무엇이 예쁜가" 가 아니라 "센 것과 보인 것이 같은가" 다.
+ * This is a question of **honesty** before complexity — the screen was lying about its own state.
+ * So the verdict is not "what looks nicer" but "does what was counted match what was shown".
  */
 describe('resolveInitialDocsCollection — 첫 화면은 빈 목록으로 열리지 않는다', () => {
   it('선호 컬렉션에 문서가 있으면 그대로 연다', () => {
@@ -171,14 +170,14 @@ describe('resolveInitialDocsCollection — 첫 화면은 빈 목록으로 열리
   });
 
   it('선호 컬렉션이 0건이고 다른 곳에 문서가 있으면 전체로 연다', () => {
-    // 이 저장소의 dogfood 샘플이 정확히 이 모양이다 — 전부 온톨로지 노드라
-    // guides 가 0.
+    // This repository's dogfood sample has exactly this shape — everything is an ontology node, so
+    // guides is zero.
     const docs = [doc('a', { kind: 'domain' }), doc('b', { kind: 'element' })];
     expect(resolveInitialDocsCollection(docs)).toBe('all');
   });
 
-  // 빈 볼트에서 'all' 로 바꿔 봐야 여전히 0건이다. 아무 말도 안 하는 폴백은
-  // 상태만 흔들고 사용자에게 주는 것이 없으므로 선호값을 지킨다.
+  // Switching to 'all' in an empty vault still gives zero. A fallback that says nothing only churns
+  // state and gives the user nothing, so the preference is kept.
   it('볼트가 비어 있으면 선호 컬렉션을 지킨다', () => {
     expect(resolveInitialDocsCollection([])).toBe('guides');
   });

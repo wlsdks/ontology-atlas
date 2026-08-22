@@ -2,20 +2,22 @@ import { expect, test } from "@playwright/test";
 import { seedFirstRunSeen } from "./first-run-seed";
 
 /**
- * 「앱 받기」는 **웹의 모든 목적지에서 같은 자리**에 있다.
+ * "Get the app" sits in **the same place on every web destination**.
  *
- * 소유자 요청: *"웹에서는 다양한곳에 앱 다운로드를 유도하는 버튼을 놔주면
- * 좋을듯? 잘보이게"*. 표면마다 배너를 심으면 유도가 아니라 소음이고, 이
- * 저장소의 디자인 게이트가 "더하기만 하는 패스는 실패" 라 부르는 종류다.
- * 그래서 크롬에 하나를 둔다 — 레일 유틸리티 티어는 어느 목적지에서나 같은
- * 자리라, **한 원소가 이미 "다양한 곳"** 이다.
+ * Owner request: *"웹에서는 다양한곳에 앱 다운로드를 유도하는 버튼을 놔주면
+ * 좋을듯? 잘보이게"* (on the web it would be good to put buttons leading to the app
+ * download in various places, clearly visible). Planting a banner on every surface is
+ * noise rather than guidance, and is the kind of thing this repository's design gates
+ * call an additive-only pass. So there is one in the chrome — the rail's utility tier
+ * is the same place on every destination, so **one element already is "various
+ * places"**.
  *
- * 이 스펙이 지키는 것은 그 주장 자체다: 목적지가 늘었는데 레일이 안 따라오면
- * "어디서나 같은 자리" 가 거짓이 된다.
+ * What this spec keeps is that claim itself: if destinations grow and the rail does
+ * not follow, "the same place everywhere" becomes false.
  *
- * 앱에서의 **부재**는 여기서 못 잰다(브라우저에 Tauri 런타임이 없다). 그 축은
- * `show-get-app-tile.test.ts` 가 판정 규칙으로 고정한다 — 설치한 사람에게
- * "앱 받기" 를 권하는 것은 그 자체로 오정보다.
+ * Its **absence** in the app cannot be measured here (a browser has no Tauri runtime).
+ * That axis is pinned as a predicate rule by `show-get-app-tile.test.ts` — offering
+ * "get the app" to someone who has installed it is misinformation in itself.
  */
 
 const WEB_SURFACES = [
@@ -36,9 +38,9 @@ test("웹의 모든 목적지에서 앱 받기 타일이 같은 자리에 있다
     const tile = page.getByTestId("app-nav-rail-get-app");
     await expect(tile, `${surface}: 타일이 없다`).toBeVisible({ timeout: 15_000 });
 
-    // 목적지는 `/download` 하나다. 레일에서 방문자의 OS 를 추측하지 않는다 —
-    // 그 화면이 macOS 파일과 "Windows 준비 중" 을 이미 정직하게 가른다.
-    // 레일이 OS 를 판정하면 틀렸을 때 막다른 CTA 가 된다.
+    // There is one destination, `/download`. The rail does not guess the visitor's OS —
+    // that screen already separates the macOS files from "Windows not ready yet"
+    // honestly. A rail that judges the OS becomes a dead-end CTA when it guesses wrong.
     await expect(tile).toHaveAttribute("href", /\/download\/$/);
 
     const box = await tile.boundingBox();
@@ -46,7 +48,7 @@ test("웹의 모든 목적지에서 앱 받기 타일이 같은 자리에 있다
     positions.push(Math.round(box!.y));
   }
 
-  // "같은 자리" 는 느낌이 아니라 좌표다.
+  // "The same place" is a coordinate, not an impression.
   expect(new Set(positions).size, `자리가 흔들린다: ${positions.join(", ")}`).toBe(1);
 });
 
@@ -57,22 +59,24 @@ test("타일이 실제로 다운로드 화면으로 데려간다 — 죽은 CTA 
   await page.getByTestId("app-nav-rail-get-app").click();
   await page.waitForURL(/\/download\//);
 
-  // 도착 화면이 Windows 방문자를 빈손으로 돌려보내지 않는지도 같이 본다 —
-  // 소유자가 "윈도우는 준비중이라고 적어놔주고" 라고 지시한 그 자리다.
+  // Also checks the landing screen does not send a Windows visitor away empty-handed —
+  // the site the owner asked for with *"윈도우는 준비중이라고 적어놔주고"* (write that
+  // Windows is on the way).
   await expect(page.getByText("Windows").first()).toBeVisible();
 });
 
 
 /**
- * `<lg` — 레일이 숨는 폭에서는 **하단 탭바의 다섯 번째 자리**가 그 일을 한다.
+ * `<lg` — at widths where the rail is hidden, **the bottom tab bar's fifth slot**
+ * does the job.
  *
- * 실측(2026-07-28)으로 드러난 구멍: 레일이 `lg:flex` 라 390·768 에서 보이는
- * `/download` 링크가 **0개**였다. 모바일·태블릿 웹 방문자는 다운로드로 갈
- * 길이 아예 없었다. 소유자 결정으로 탭바 자리를 하나 내줬다.
+ * The hole exposed by measurement (2026-07-28): with the rail at `lg:flex`, the number
+ * of visible `/download` links at 390 and 768 was **0**. Mobile and tablet web visitors
+ * had no path to the download at all. By owner decision a tab bar slot was given up.
  *
- * 다섯 번째를 더하면 나머지 넷이 좁아진다 — 그래서 **터치 타깃과 넘침을
- * 같이 잰다**. 유틸리티라고 작게 만들면 그게 그 폭에서 가장 누르기 어려운
- * 항목이 되고, 그건 이 저장소의 터치 계약(44px) 위반이다.
+ * Adding a fifth narrows the other four — so **touch target and overflow are measured
+ * together**. Making it small because it is a utility would make it the hardest item
+ * to press at that width, violating this repository's touch contract (44px).
  */
 const NARROW_WIDTHS = [360, 390, 768];
 
@@ -100,9 +104,9 @@ for (const width of NARROW_WIDTHS) {
 
     expect(geometry, "탭바를 못 찾았다").not.toBeNull();
     expect(geometry!.count).toBe(5);
-    // 넘치면 다섯 번째가 화면 밖으로 밀린다 — 있는데 못 누르는 상태.
+    // On overflow the fifth is pushed off screen — present but unpressable.
     expect(geometry!.overflows, "탭바가 가로로 넘친다").toBe(false);
-    // 44px 터치 계약 — 자리를 하나 더 내주고도 지켜져야 한다.
+    // The 44px touch contract — it must hold even after giving up one more slot.
     expect(geometry!.minWidth).toBeGreaterThanOrEqual(44);
     expect(geometry!.minHeight).toBeGreaterThanOrEqual(44);
   });

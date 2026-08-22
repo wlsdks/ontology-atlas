@@ -1,15 +1,15 @@
-// reconcile-imports — Atlas roadmap Track A #1 (planner team 2026-05-31, 3/3 endorse).
+// reconcile-imports — the set-diff between code-derived import edges and the
+// vault's compiled `depends_on` edges.
 //
-// inferImports() already walks the source tree into folder-prefixed module edges
-// (capabilities/X, elements/src/...), and compileOntology() already produces the
-// vault's depends_on edges. They were never compared — the agent got a 454-edge
-// firehose and had to mentally diff. This is the missing set-diff: it turns "here
-// are all the imports" into "here is EXACTLY what to sync" — the first mechanical
-// step toward code↔vault drift 0.
+// `inferImports()` already walks the source tree into folder-prefixed module
+// edges (capabilities/X, elements/src/…), and `compileOntology()` already
+// produces the vault's depends_on edges. They were never compared, so the agent
+// got a 454-edge firehose and had to diff it in its head. This turns "here are
+// all the imports" into "here is EXACTLY what to sync".
 //
-// Strictly read-only: reports candidates only. The agent still lands changes via
-// the existing confirmed add_relation tool, so the vault stays the single source
-// of truth. Lives in the mcp/ package (no FSD / static-export surface).
+// Strictly read-only: it reports candidates only. The agent still lands changes
+// through the existing confirmed add_relation tool, so the vault stays the single
+// source of truth. Lives in the mcp/ package (no FSD or static-export surface).
 
 /**
  * Diff code-derived import edges against compiled vault depends_on edges.
@@ -23,11 +23,12 @@
  *   with a non-node endpoint (a folder-derived slug that isn't a vault node) goes to `inCodeMissingEndpointAbsent`
  *   (needs the nodes modelled first). Neither category is directly landable: an import is
  *   source evidence, not by itself a semantic ontology dependency.
- * @param {Record<string,string>|Map<string,string>} [args.pathBySlug]  슬러그 → 그 노드의 `path:`.
- *   주면 **스캐너가 읽을 수 없는 구현**(Rust 등 지원 밖 확장자 · 경로 미상)을 가진 엣지를
- *   `notJudgeableByImports` 로 따로 뺀다. 안 주면 예전대로 동작한다.
- * @param {Set<string>|Array<string>} [args.scannedExtensions]  스캐너가 실제로 읽은 확장자
- *   (`inferImports().coverage.supportedExtensions`). 없으면 기본 목록을 쓴다.
+ * @param {Record<string,string>|Map<string,string>} [args.pathBySlug]  slug → that node's `path:`.
+ *   When given, edges whose implementation **the scanner cannot read** (Rust and other unsupported
+ *   extensions, or an unknown path) are split out into `notJudgeableByImports`. Omit it and behaviour
+ *   is unchanged.
+ * @param {Set<string>|Array<string>} [args.scannedExtensions]  the extensions the scanner actually read
+ *   (`inferImports().coverage.supportedExtensions`). Falls back to the default list.
  * @returns {{inBoth:Array,inCodeMissingFromVault:Array,inCodeMissingEndpointAbsent:Array,inVaultNotInCode:Array,notJudgeableByImports:Array}}
  */
 // The compiler canonicalizes the `depends_on` frontmatter key to the stored
@@ -37,26 +38,28 @@
 // dependency edge. Accept both so a future alias can't break the contract.
 const DEPENDS_ON_VIA = new Set(['dependencies', 'depends_on']);
 /**
- * 스캐너가 읽는 확장자의 기본값 — `infer-imports` 의 `supportedExtensions` 와 같다.
- * 부르는 쪽이 실제 값을 주면 그것을 쓴다(둘이 어긋나는 것을 막으려고 받는다).
+ * Default set of extensions the scanner reads — the same as `infer-imports`'s
+ * `supportedExtensions`. The caller's actual value wins when supplied; it is
+ * accepted precisely to stop the two drifting apart.
  */
 const DEFAULT_SCANNED_EXTENSIONS = new Set([
   '.cjs', '.cts', '.go', '.js', '.jsx', '.mjs', '.mts', '.py', '.ts', '.tsx',
 ]);
 
 /**
- * 이 엔드포인트의 구현을 스캐너가 **읽을 수 있나**.
+ * Can the scanner **read** this endpoint's implementation?
  *
- * ## 왜 이 판정이 필요한가 (2026-08-17, 이 저장소 자신에서 실측)
+ * **Why this verdict is needed** (measured 2026-08-17 on this repository itself):
+ * all three of our vault's `depends_on` edges came back as "absent from the code →
+ * review as stale", and all three were correct relations. The scanner missed them
+ * not because the relation was absent but because it **could not see it** —
+ * `capabilities/acp-runtime` is implemented in `src-tauri/src/acp.rs` (Rust) and
+ * the scanner does not read `.rs`.
  *
- * 우리 볼트의 `depends_on` 3개가 전부 「코드에 없음 → 오래됐는지 검토」로
- * 나왔는데, 셋 다 맞는 관계였다. 스캐너가 못 본 이유는 관계가 없어서가 아니라
- * **볼 수 없어서**다 — `capabilities/acp-runtime` 의 구현은
- * `src-tauri/src/acp.rs`(Rust)이고 스캐너는 `.rs` 를 안 읽는다.
- *
- * **「못 봤다」를 「없다」로 말하면 에이전트가 맞는 관계를 지운다.** 이 저장소의
- * CodeGraph 규칙이 같은 말을 이미 한다: *"'not found' 를 부재의 증거로 쓰지
- * 마라."* 그래서 판정을 미룰 줄 알아야 한다.
+ * **Reporting "did not see" as "does not exist" makes an agent delete a correct
+ * relation.** This repository's CodeGraph rule already says the same thing:
+ * *"never use 'not found' as evidence of absence."* So the verdict must be able
+ * to defer.
  */
 function readabilityOf(slug, pathMap, extensions) {
   if (!pathMap) return { readable: true, reason: null };
@@ -66,8 +69,8 @@ function readabilityOf(slug, pathMap, extensions) {
   }
   const dot = raw.lastIndexOf('.');
   const slash = raw.lastIndexOf('/');
-  // 확장자가 없으면 디렉터리를 가리키는 것이다 — 그 안에 읽는 파일이 있을 수
-  // 있으므로 못 읽는다고 단정하지 않는다.
+  // No extension means it points at a directory, which may hold files the scanner
+  // does read — so do not conclude it is unreadable.
   if (dot <= slash) return { readable: true, reason: null };
   const ext = raw.slice(dot).toLowerCase();
   return extensions.has(ext)
@@ -102,7 +105,7 @@ export function reconcileImportEdges({
     const hit = aliasToSlug instanceof Map ? aliasToSlug.get(s) : aliasToSlug?.[s];
     return hit ?? s;
   };
-  // 합성 키에 NUL 을 쓰면 파일이 git 에게 바이너리가 된다 (2026-08-08).
+  // A NUL in the composite key would make this file binary to git (2026-08-08).
   const key = (from, to) => JSON.stringify([from, to]);
 
   // Vault side: depends_on edges only, normalized, self-edges dropped.
@@ -199,8 +202,9 @@ export function reconcileImportEdges({
   }
   for (const [k, edge] of vaultMap) {
     if (codeMap.has(k)) continue;
-    // 못 읽는 구현이 한쪽에라도 끼면 **판정을 미룬다.** 여기서 「오래됐을 수
-    // 있다」로 보내면 에이전트가 맞는 관계를 지운다(2026-08-17 실측).
+    // **Defer the verdict** when either side has an unreadable implementation.
+    // Routing it to "may be stale" here makes an agent delete a correct relation
+    // (measured 2026-08-17).
     const from = readabilityOf(edge.from, pathBySlug, extensions);
     const to = readabilityOf(edge.to, pathBySlug, extensions);
     if (!from.readable || !to.readable) {

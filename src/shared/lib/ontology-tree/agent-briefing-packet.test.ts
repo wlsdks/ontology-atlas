@@ -26,7 +26,7 @@ function edge(id: string, from: string, to: string): KnowledgeGraphEdge {
   };
 }
 
-// 작은 그래프: project → domain → 2 capability, capability → element.
+// A small graph: project → domain → two capabilities, capability → element.
 const nodes: KnowledgeGraphNode[] = [
   node("project:app", "project"),
   node("domain:auth", "domain"),
@@ -84,7 +84,7 @@ describe("buildAgentBriefingPacket", () => {
   });
 
   it("handoff 본문(run order + query_ontology payload + write guardrails)을 포함한다", () => {
-    // buildAgentHandoffPrompt 합성물 — 단일 브리핑에 통합돼야 함
+    // Composed by buildAgentHandoffPrompt — these must all land in one briefing.
     expect(packet.briefing).toContain("query_ontology");
     expect(packet.briefing.toLowerCase()).toContain("guardrail");
     expect(packet.briefing).toContain("CLI fallback");

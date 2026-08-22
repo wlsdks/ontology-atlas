@@ -1,23 +1,26 @@
 /**
- * 알림함의 자료 모델 — **작업 단위로만** 알린다.
+ * Data model for the notification inbox — it reports **whole tasks only**.
  *
- * ## 무엇이 알림이 되나 (소유자 합의 2026-08-01)
+ * What becomes a notification (owner agreement, 2026-08-01):
  *
- * | 사건 | 왜 |
- * |---|---|
- * | 작업 시작 | 내 폴더에서 지금 뭔가 벌어진다 |
- * | 작업 끝 | 요약과 함께 — 「추가 34 · 편집 2 · 삭제 4」 |
- * | 도메인이 생기거나 사라짐 | 지도의 큰 뼈대가 바뀜 |
- * | 브릿지가 끼어듦 | 계층이 하나 늘었다 — 드물고 되돌리기 어려움 |
- * | 문제 발생 | 허공 참조·순환처럼 볼트가 아파진 것 |
+ * | Event                      | Why                                                   |
+ * |----------------------------|-------------------------------------------------------|
+ * | Task started               | Something is happening in my folder right now          |
+ * | Task finished              | With a summary — "34 added · 2 edited · 4 deleted"     |
+ * | A domain appears/disappears| The map's large-scale skeleton changed                 |
+ * | A bridge is inserted       | One more layer — rare and hard to undo                 |
+ * | A problem appears          | The vault got sicker: dangling references, cycles      |
  *
- * ## 무엇이 알림이 **안** 되나
+ * What does **not** become one:
  *
- * - **노드 하나 추가 · 관계 하나** — 지도가 이미 밝게 보여준다. 알림은 화면을
- *   안 보고 있을 때를 위한 것이고, 보고 있으면 지도가 더 낫다.
- * - **도구 호출** — 2026-08-01 판정이 명시적으로 반려했다: *"도구 호출 로그를
- *   그리는 순간 Atlas 는 에이전트 터미널과 경쟁하는 MCP 호출 뷰어가 되는데,
- *   이 제품의 해자는 도구층 위의 의미층이다."*
+ * - **A single node or a single relation** — the map already shows it clearly.
+ *   Notifications are for when nobody is looking at the screen; when someone is,
+ *   the map is the better channel.
+ * - **Tool calls** — explicitly rejected by the 2026-08-01 verdict: *"도구 호출
+ *   로그를 그리는 순간 Atlas 는 에이전트 터미널과 경쟁하는 MCP 호출 뷰어가 되는데,
+ *   이 제품의 해자는 도구층 위의 의미층이다."* (drawing a tool-call log turns
+ *   Atlas into an MCP call viewer competing with the agent's terminal; this
+ *   product's moat is the meaning layer above the tool layer)
  */
 import type { AgentWriteCounts, AgentWorkSession } from "./agent-work-session";
 import { hasWrites } from "./agent-work-session";
@@ -31,7 +34,7 @@ export type AgentNotificationKind =
   | "bridge-inserted"
   | "vault-problem";
 
-/** 설정에서 갈래를 고를 때의 목록이자 순서. 화면과 저장값의 단일 출처. */
+/** The list and order shown in settings — single source for both the UI and the stored value. */
 export const AGENT_NOTIFICATION_KINDS: readonly AgentNotificationKind[] = [
   "task-start",
   "task-end",
@@ -43,35 +46,37 @@ export const AGENT_NOTIFICATION_KINDS: readonly AgentNotificationKind[] = [
 
 export interface AgentNotification {
   /**
-   * 폴링마다 다시 파생되므로 **내용에서 결정론적으로** 만든다. 그래야 읽음
-   * 표시와 React 키가 흔들리지 않는다.
+   * Re-derived on every poll, so it is built **deterministically from the
+   * content** — otherwise the read marker and React keys would jitter.
    */
   id: string;
   kind: AgentNotificationKind;
   at: number;
-  /** 지도로 날아갈 대상. 없으면 null — **대상 없이 상태만 말한다.** */
+  /** The node to fly to on the map, or null — **then it reports state without a target.** */
   node: VaultShapeNode | null;
   /**
-   * 링크는 못 걸지만 이름은 아는 경우(사라진 도메인). 없는 노드로 날아가는
-   * 링크를 만들지 않으면서도 「무엇이」를 잃지 않기 위한 자리.
+   * For the case where the name is known but no link can be made (a domain that
+   * disappeared) — keeps the "what" without offering a link to a node that is gone.
    */
   label?: string;
   /**
-   * `task-start`/`task-end` — 이 작업에서 이름을 밝힌 에이전트(하트비트 또는
-   * MCP 연결 인사, 세션이 이미 나른다). 모르면 칸 자체가 없다 — 지어내지 않는다.
+   * `task-start`/`task-end` — the agent that identified itself for this task
+   * (heartbeat or MCP connection greeting; the session already carries it). When
+   * unknown the field is absent rather than invented.
    */
   agent?: string;
-  /** `task-end` 전용 요약. */
+  /** `task-end` only — the summary. */
   counts?: AgentWriteCounts;
-  /** `bridge-inserted` 전용 — 데려간 자식 수. */
+  /** `bridge-inserted` only — how many children it took over. */
   childCount?: number;
-  /** `vault-problem` 전용 — 늘어난 허공 참조/순환 수. */
+  /** `vault-problem` only — how many dangling references / cycles were added. */
   problems?: { unresolvedEdges: number; dependencyCycles: number };
 }
 
 /**
- * 작업 목록 → 시작/끝 알림. 로그가 진실원이므로 **새로고침해도 살아남는**
- * 유일한 갈래다(뼈대·문제 알림은 폴링 중에만 관측되고 로그에 안 남는다).
+ * Sessions → start/end notifications. The log is the source of truth, so this is
+ * the only kind that **survives a reload** — skeleton and problem notifications
+ * are observed during polling only and are never written to the log.
  */
 export function deriveTaskNotifications(
   sessions: readonly AgentWorkSession[],
@@ -85,8 +90,8 @@ export function deriveTaskNotifications(
       node: null,
       ...(session.agent ? { agent: session.agent } : {}),
     });
-    // 끝나지 않은 작업엔 끝 알림이 없다. 0건 요약도 내보내지 않는다 —
-    // 「추가 0 · 편집 0 · 삭제 0」은 정보가 아니라 소음이다.
+    // An unfinished task has no end notification, and an all-zero summary is not
+    // emitted either: "0 added · 0 edited · 0 deleted" is noise, not information.
     if (session.done && hasWrites(session.counts)) {
       out.push({
         id: `${session.id}:end`,
@@ -102,11 +107,11 @@ export function deriveTaskNotifications(
 }
 
 /**
- * 목록 합치기 — 최신 먼저, id 중복 제거, 상한.
+ * Merge lists — newest first, deduplicated by id, capped.
  *
- * 상한이 있는 이유: 알림함은 감사 로그의 대체물이 아니다. 「모든 흐름」은
- * 읽을 수 있는 길이 안에서만 파악 가능하고, 그 이상은 `/git` 과 볼트 안
- * `activity.jsonl` 이 들고 있다.
+ * Why a cap: the inbox is not a replacement for an audit log. It is only readable
+ * at a length a person can scan; everything beyond that lives in `/git` and in
+ * the vault's `activity.jsonl`.
  */
 export const AGENT_NOTIFICATION_LIMIT = 60;
 
@@ -122,7 +127,7 @@ export function mergeNotifications(
     .slice(0, AGENT_NOTIFICATION_LIMIT);
 }
 
-/** 설정에서 끈 갈래를 걷어낸다. */
+/** Drop the kinds turned off in settings. */
 export function filterNotifications(
   notifications: readonly AgentNotification[],
   enabledKinds: ReadonlySet<AgentNotificationKind>,
@@ -131,8 +136,9 @@ export function filterNotifications(
 }
 
 /**
- * 안 읽은 수. `readAt` 은 「여기까지 봤다」는 시각 하나뿐이다 — 알림마다
- * 읽음 플래그를 두면 볼트 밖에 상태가 쌓이는데, 이 앱에서 진실원은 볼트다.
+ * Unread count. `readAt` is a single "seen up to here" timestamp — a per-item read
+ * flag would accumulate state outside the vault, and the vault is the source of
+ * truth here.
  */
 export function countUnread(
   notifications: readonly AgentNotification[],

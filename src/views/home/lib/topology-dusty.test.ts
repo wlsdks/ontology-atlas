@@ -16,8 +16,8 @@ describe("deriveDustySlugs", () => {
   it("중앙값 strict 미만 && 30일 초과인 노드만 dusty", () => {
     const nodes = [node("a", "doc-a"), node("b", "doc-b"), node("c", "doc-c")];
     const index = new Map([
-      ["doc-a", daysAgoIso(120)], // 중앙값(10일)보다 오래 + 30일 초과 → dusty
-      ["doc-b", daysAgoIso(10)], // 중앙값 자신(동률) → fresh
+      ["doc-a", daysAgoIso(120)], // older than the median (10d) and over 30d -> dusty
+      ["doc-b", daysAgoIso(10)], // the median itself (a tie) -> fresh
       ["doc-c", daysAgoIso(1)],
     ]);
     expect([...deriveDustySlugs(nodes, index, NOW)]).toEqual(["a"]);
@@ -43,9 +43,10 @@ describe("deriveDustySlugs", () => {
   });
 
   it("중앙값 age 의 2배 이내로 뒤처진 노드는 fresh — 진짜 꼬리만 dusty (배수 조건)", () => {
-    // median = (100d+5d)/2 = 52.5d → 문턱 = max(30d, 105d) = 105d.
-    // a(200d)만 문턱을 넘는다 — b(100d)는 중앙값보다 오래지만 2배 이내라 fresh.
-    // 순수 "중앙값 미만+30일" 조건은 dogfood 실측에서 과반을 마킹했다(Guardian 처방).
+    // median = (100d+5d)/2 = 52.5d, so the threshold is max(30d, 105d) = 105d.
+    // Only a (200d) passes it; b (100d) is older than the median but within 2x,
+    // so it stays fresh. A plain "below median plus 30 days" test marked the
+    // majority of the dogfood vault (guardian's prescription).
     const nodes = [node("a", "doc-a"), node("b", "doc-b"), node("c", "doc-c"), node("d", "doc-d")];
     const index = new Map([
       ["doc-a", daysAgoIso(200)],
@@ -74,13 +75,13 @@ describe("deriveDustySlugs", () => {
       ["doc-c", daysAgoIso(1)],
       ["doc-e", daysAgoIso(2)],
     ]);
-    // 모수는 a, c, e 셋(중앙값 2일, 문턱 30일) — a 만 dusty, b/d 는 데이터 없음 → fresh.
+    // Population is a, c, e (median 2d, threshold 30d): only a is dusty; b and d have no data and stay fresh.
     expect([...deriveDustySlugs(nodes, index, NOW)]).toEqual(["a"]);
   });
 
   it("최하위 사분위 캡 — 조건 통과 노드가 많아도 가장 오래된 25%만 dusty", () => {
-    // 8 노드 모수(중앙값 1일 → 문턱 30일) → 캡 2. a, b, c 셋이 문턱을
-    // 넘지만 가장 오래된 a, b 만 마킹.
+    // 8 nodes (median 1d, threshold 30d) gives a cap of 2. a, b and c all pass
+    // the threshold, but only the two oldest are marked.
     const ids = ["a", "b", "c", "d", "e", "f", "g", "h"];
     const ages = [400, 390, 380, 1, 1, 1, 1, 1];
     const nodes = ids.map((id) => node(id, `doc-${id}`));
@@ -95,11 +96,11 @@ describe("deriveDustySlugs", () => {
   });
 
   it("경계값: 최근 vault(중앙값 1일)에서 정확히 30일은 fresh, 31일은 dusty", () => {
-    // 중앙값 1일 → 문턱 = max(30일, 2일) = 30일 하한이 지배.
+    // Median 1d makes the threshold max(30d, 2d), so the 30-day floor dominates.
     const nodes = ["a", "b", "c", "d", "e"].map((id) => node(id, `doc-${id}`));
     const index = new Map([
-      ["doc-a", new Date(NOW - DUSTY_MIN_AGE_MS).toISOString()], // 정확 30일 — 초과 아님 → fresh
-      ["doc-b", daysAgoIso(31)], // 30일 초과 + 중앙값 미만 → dusty
+      ["doc-a", new Date(NOW - DUSTY_MIN_AGE_MS).toISOString()], // exactly 30d, not over -> fresh
+      ["doc-b", daysAgoIso(31)], // over 30d and below the median -> dusty
       ["doc-c", daysAgoIso(1)],
       ["doc-d", daysAgoIso(1)],
       ["doc-e", daysAgoIso(1)],

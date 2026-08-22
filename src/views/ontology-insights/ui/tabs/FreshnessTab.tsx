@@ -26,22 +26,22 @@ export interface FreshnessTabLabels {
   unknownDate: string;
   daysAgo: (days: number) => string;
   older: string;
-  /** 히트스트립 시간축 방향 라벨 — 좌측(과거) / 우측(현재). */
+  /** Direction labels for the heat strip's time axis — left (past) / right (present). */
   axisStart: string;
   axisEnd: string;
-  /** 셀 툴팁 — "N주 전 · 갱신 M건" (weeksAgo ≥ 1). */
+  /** Cell tooltip — "N weeks ago · M updates" (weeksAgo ≥ 1). */
   weekCell: (weeksAgo: number, count: number) => string;
-  /** 이번 주 셀 툴팁 — "이번 주 · 갱신 M건". */
+  /** This week's cell tooltip — "this week · M updates". */
   weekCellCurrent: (count: number) => string;
   recentUpdatesTitle: string;
   noRecentUpdates: string;
   staleCountLabel: string;
   trendTitle: string;
   trendCaption: string;
-  /** 근거 계층 여는/닫는 토글 — 「연결」 탭과 같은 문구를 공유한다. */
+  /** The toggle opening and closing the evidence layer — it shares its copy with the "connections" tab. */
   evidenceShow: (count: number) => string;
   evidenceHide: string;
-  /** 근거 계층 캡션 — 이 날짜가 왜 그 노드의 것이 아닌지. */
+  /** The evidence layer's caption — why this date is not that node's own. */
   evidenceCaption: string;
   evidenceTruncated: (shown: number, total: number) => string;
   evidenceBadge: string;
@@ -49,8 +49,8 @@ export interface FreshnessTabLabels {
 }
 
 export interface FreshnessTabRecentLink {
-  /** 최근 갱신 행 클릭 → 지도 노드 포커스 딥링크 (`buildOntologyNodeHref`,
-   *  관계 탭 허브 행과 같은 소스). */
+  /** Clicking a recently-updated row deeplinks to that node on the map (`buildOntologyNodeHref`,
+   *  the same source as the relations tab's hub rows). */
   href: (nodeId: string) => string;
   ariaLabel: (title: string) => string;
 }
@@ -58,12 +58,12 @@ export interface FreshnessTabRecentLink {
 export interface FreshnessTabProps {
   domainRows: DomainFreshnessRow[];
   recent: RecentUpdateRow[];
-  /** 근거 계층 — 접힌 자리. `computeFreshnessSummary` 가 이미 갈라 놓는다. */
+  /** The evidence layer — the folded area. `computeFreshnessSummary` already separates it. */
   recentEvidence: RecentUpdateRow[];
   recentEvidenceTotal: number;
   staleCount: number;
-  /** 전 도메인 합산 주간 갱신 건수, 히트스트립과 같은 12주 창 —
-   * `computeFreshnessSummary` 가 이미 계산한 실데이터 (`freshness.ts`). */
+  /** Weekly update counts summed across all domains, on the same 12-week window as the heat strip —
+   * real data already computed by `computeFreshnessSummary` (`freshness.ts`). */
   weeklyTotals: number[];
   kindLabel: (kind: string) => string;
   recentLink: FreshnessTabRecentLink;
@@ -71,9 +71,9 @@ export interface FreshnessTabProps {
 }
 
 /**
- * 탭3 신선도 — `visual-richness-sampler.html` §3 heatstrip 문법. 셀 값은
- * 하드코딩 배열이 아니라 `computeFreshnessSummary` 가 실제 vault 문서
- * `updatedAt` 에서 집계한 값. 이번 주 셀만 인디고, 나머지는 중립 램프.
+ * Tab 3, freshness — the heat-strip grammar. Cell values are not a hardcoded array but aggregations
+ * `computeFreshnessSummary` derives from real vault document `updatedAt` values. Only this week's
+ * cell is indigo; the rest use the neutral ramp.
  */
 export function FreshnessTab({
   domainRows,
@@ -104,9 +104,9 @@ export function FreshnessTab({
         ) : (
           <div className="mt-3.5 flex flex-1 flex-col justify-evenly gap-1.5">
             {domainRows.map((row) => (
-              // 행 호버 하이라이트 — 700px 가로 스캔(라벨→12셀→날짜)을 돕는
-              // 기존 hub/최근갱신 행과 같은 -mx/px 상쇄 패턴이라 셀·축 정렬은
-              // 그대로다(콘텐츠 x 위치 불변).
+              // Row hover highlight — it aids the 700px horizontal scan (label → 12 cells → date)
+              // using the same -mx/px offset pattern as the existing hub and recently-updated rows,
+              // so the cell and axis alignment is unchanged (content x positions do not move).
               <div
                 key={row.domainId}
                 data-testid="insights-freshness-domain-row"
@@ -130,15 +130,15 @@ export function FreshnessTab({
                   {row.weeks.map((week, i) => (
                     <i
                       key={i}
-                      // 셀 = 한 주의 갱신 건수. max-w 캡을 두면 스트립이 좌측에
-                      // 뭉쳐 아래 축 라벨("이번 주")이 마지막 셀과 어긋난다 —
-                      // flex-1 충만으로 축·범례·날짜 열과 같은 폭을 공유한다.
+                      // A cell is one week's update count. A `max-w` cap would bunch the strip to
+                      // the left and misalign the axis label below ("this week") with the last cell —
+                      // filling with `flex-1` shares one width with the axis, legend, and date columns.
                       title={
                         week.isCurrentWeek
                           ? labels.weekCellCurrent(week.count)
                           : labels.weekCell(row.weeks.length - 1 - i, week.count)
                       }
-                      // eslint-disable-next-line no-restricted-syntax -- 14px 높이 주간 신선도 바의 3px 헤어라인 반경은 chip(6px)로 올리면 pill 이 돼 램프 밖 예외.
+                      // eslint-disable-next-line no-restricted-syntax -- the 3px hairline radius on a 14px-tall weekly freshness bar would become a pill at chip (6px), so it is an exception outside the ramp.
                       className="h-3.5 flex-1 rounded-[3px]"
                       style={{
                         backgroundColor: week.isCurrentWeek
@@ -200,9 +200,9 @@ export function FreshnessTab({
                 kind={row.kind}
                 title={row.title}
                 subtitle={`${kindLabel(row.kind)}${row.domainTitle ? ` · ${row.domainTitle}` : ""}`}
-                // P4-③ — 로컬 타임존 기준 날짜(`formatDate`). 이전엔
-                // toISOString() 이 UTC 로 렌더해 자정 부근 갱신이 하루
-                // 전날짜로 표시됐다(예: 03:12 KST → UTC 로는 전날).
+                // The date is rendered in the local timezone (`formatDate`). `toISOString()`
+                // rendered in UTC, so an update near midnight showed the previous day
+                // (03:12 KST is the day before in UTC).
                 trailing={formatDate(row.updatedAt)}
                 href={recentLink.href(row.nodeId)}
                 ariaLabel={recentLink.ariaLabel(row.title)}
@@ -212,9 +212,9 @@ export function FreshnessTab({
           )}
         </div>
 
-        {/* 근거 계층 — 「연결」 탭 영향 랭킹과 같은 조용한 토글·같은 문구.
-            지우지 않고 아래로 내린다: 파생 이름도 볼트의 사실이고, 여기가
-            「문서 만들기」 승격 경로가 보이는 유일한 자리다. */}
+        {/* The evidence layer — the same quiet toggle and the same copy as the impact ranking on the
+            "connections" tab. Pushed down rather than deleted: a derived name is a vault fact too,
+            and this is the only place the "create a document" promotion path is visible. */}
         {recentEvidenceTotal > 0 ? (
           <div className="mt-2 border-t border-[color:var(--color-divider)] pt-1">
             <button
@@ -222,9 +222,9 @@ export function FreshnessTab({
               aria-expanded={evidenceOpen}
               data-testid="insights-freshness-evidence-toggle"
               onClick={() => setEvidenceOpen((open) => !open)}
-              // 「할 일」·「연결」 탭의 조용한 토글과 **같은 램프 호출**이다 —
-              // 같은 종류의 절단은 같게 보여야 한다. 남는 것은 램프가 일부러
-              // 안 내는 호버 잉크와 인셋(`px-2`)의 짝인 음수 마진뿐이다.
+              // **The same ramp call** as the quiet toggles on the "to do" and "connections" tabs —
+              // the same kind of truncation must look the same. What remains is the hover ink the
+              // ramp deliberately omits and the negative margin pairing with the inset (`px-2`).
               className={controlClass({
                 shape: "row",
                 size: "sm",
@@ -260,7 +260,7 @@ export function FreshnessTab({
                       </>
                     }
                     trailing={formatDate(row.updatedAt)}
-                    // 같은 제목의 파생이 둘 있을 때 두 행을 가르는 유일한 사실.
+                    // The single fact separating two rows when two derived nodes share a title.
                     trailingSecondary={row.ref}
                     href={recentLink.href(row.nodeId)}
                     ariaLabel={recentLink.ariaLabel(row.title)}
@@ -291,9 +291,9 @@ const SPARKLINE_HEIGHT = 28;
 const SPARKLINE_PAD = 2;
 
 /**
- * 주간 갱신 건수 스파크라인 — `computeFreshnessSummary` 가 실제 문서
- * 갱신일에서 집계한 `weeklyTotals` 를 그대로 그린다(장식용 난수 없음).
- * 단일 인디고 라인 + 옅은 채움, 히트스트립과 같은 12주 창.
+ * The weekly update-count sparkline — it draws `weeklyTotals`, aggregated by
+ * `computeFreshnessSummary` from real document update dates (no decorative randomness). A single
+ * indigo line with a pale fill, on the same 12-week window as the heat strip.
  */
 function FreshnessTrendSparkline({ weeklyTotals }: { weeklyTotals: number[] }) {
   if (weeklyTotals.length === 0) return null;

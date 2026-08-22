@@ -3,48 +3,45 @@ import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 
 /**
- * **위키링크 센티넬은 URL 스킴이면 안 된다** — 마크다운 렌더러가 지운다.
+ * **A wikilink sentinel must not be a URL scheme** — the markdown renderer strips it.
  *
- * ## 무엇이 났나 (2026-08-08 실측)
+ * **What happened** (measured 2026-08-08). The viewer rewrote `[[slug|name]]` into a
+ * standard markdown link `[name](WIKILINK:slug)` and then caught the `WIKILINK:`
+ * prefix in the `a` component to route internally. The design makes sense but
+ * **skipped one layer**:
  *
- * 뷰어는 `[[슬러그|이름]]` 을 표준 마크다운 링크
- * `[이름](WIKILINK:슬러그)` 로 바꿔 놓고, `a` 컴포넌트에서 `WIKILINK:` 접두사를
- * 잡아 내부 라우팅으로 보냈다. 설계는 말이 되는데 **한 층을 빼먹었다**:
- *
- * `react-markdown` 은 URL 을 살균한다(`defaultUrlTransform`). 허용 목록은
- * http · https · mailto · xmpp · irc 류이고, **모르는 스킴은 빈 문자열로
- * 만든다.** 실측:
+ * `react-markdown` sanitises URLs (`defaultUrlTransform`). Its allowlist is http,
+ * https, mailto, xmpp, irc and similar, and it **turns an unknown scheme into an
+ * empty string.** Measured:
  *
  * ```
  * defaultUrlTransform('WIKILINK:capabilities/x') === ''
  * ```
  *
- * 그래서 `href` 가 비고, `a` 컴포넌트의 첫 줄
- * (`if (!href) return <span>{children}</span>`)이 링크 대신 **아무 표시 없는
- * 평문 span** 을 돌려줬다. 화면에서는 글자만 보인다 — 링크도 아니고, 「이 슬러그
- * 못 찾음」 점선 표시도 아니다. **두 실패가 한 그림이었다.**
+ * So `href` was empty and the `a` component's first line
+ * (`if (!href) return <span>{children}</span>`) returned **a plain span with no
+ * marking** instead of a link. On screen there is only text — not a link, and not the
+ * dotted "slug not found" marker either. **Two failures rendered as one picture.**
  *
- * ## 왜 아무도 못 봤나
+ * **Why nobody saw it.** The dogfood vault had **zero** wikilinks in body text
+ * (exhaustive count, 2026-08-08). Nobody traversed that path, so it stayed broken,
+ * and the shipped samples have none either. The feature was the kind that is
+ * documented, implemented, and has never once worked.
  *
- * 도그푸드 볼트의 본문 위키링크가 **0개**였다(2026-08-08 전수). 아무도 그
- * 경로를 지나가지 않았으므로 깨진 채로 남았다. 배포 샘플에도 없다. 즉 이
- * 기능은 «있다고 적혀 있고, 코드도 있고, 한 번도 동작한 적 없는» 부류였다.
+ * It surfaced when the editor's `@` mention started putting wikilinks into body text
+ * and walked that path for the first time.
  *
- * 에디터의 `@` 멘션이 본문에 위키링크를 넣기 시작하면서 처음으로 그 경로를
- * 밟았고, 그때 드러났다.
- *
- * ## 이 게이트가 잠그는 성질
- *
- * *위키링크가 만드는 URL 은 렌더러의 살균을 통과한다.* 구현이 센티넬을
- * 어떻게 짜든 상관없다 — 스킴 모양이든, 쿼리든, 데이터 속성이든. 다만 그것이
- * **살균 뒤에도 살아 있어야** 한다. 그리고 살균 함수는 우리 것이 아니라
- * 라이브러리 것이라, 버전이 올라가며 허용 목록이 바뀌어도 여기서 먼저 터진다.
+ * **What this gate locks:** *the URL a wikilink produces survives the renderer's
+ * sanitiser.* How the implementation shapes the sentinel does not matter — scheme,
+ * query, or data attribute. It only has to **still exist after sanitisation**. And
+ * since the sanitiser is the library's, not ours, a version bump that changes its
+ * allowlist breaks here first.
  */
 
 const VIEWER = 'src/widgets/docs-vault/ui/DocsVaultViewer.tsx';
 
 describe('위키링크 URL 은 마크다운 렌더러의 살균을 통과한다', () => {
-  /** 뷰어가 실제로 쓰는 센티넬 접두사를 소스에서 읽는다 — 여기 베끼지 않는다. */
+  /** Reads the sentinel prefix the viewer actually uses from source — never copied here. */
   const sentinel = (() => {
     const source = readFileSync(VIEWER, 'utf8');
     const match = source.match(/const WIKILINK_SENTINEL = '([^']+)';/);
@@ -71,8 +68,8 @@ describe('위키링크 URL 은 마크다운 렌더러의 살균을 통과한다'
   });
 
   /**
-   * 공회전 차단의 반대 방향 — 이 검사가 «무엇이든 통과» 시키고 있지 않은지.
-   * 실제로 잘리는 값을 하나 넣어, 살균이 살아 있다는 것부터 확인한다.
+   * The idling guard in reverse — is this check passing *anything*? Feed it a value
+   * that really gets stripped, confirming the sanitiser is alive in the first place.
    */
   it('계기가 살아 있다 — 정말 잘리는 스킴은 빈 값이 된다', () => {
     expect(defaultUrlTransform('javascript:alert(1)')).toBe('');
@@ -81,16 +78,17 @@ describe('위키링크 URL 은 마크다운 렌더러의 살균을 통과한다'
 });
 
 /**
- * **두 번째 층 — 파서가 URL 을 퍼센트 인코딩한다.**
+ * **The second layer — the parser percent-encodes the URL.**
  *
- * 살균을 통과시킨 뒤에도 한글 위키링크는 전부 「폴더에 없는 링크」 점선으로
- * 떨어졌다. 실측: 뷰어의 `a` 컴포넌트에 도착한 값이
- * `capabilities/%EC%8A%A4%EC%9C%95-…`(69자)였다 — 마크다운 파서가 인코딩해서
- * 넘긴 것이다. 볼트 슬러그 집합에는 디코드된 형태(21자)만 있으므로 안 맞는다.
+ * Even after surviving sanitisation, every Korean wikilink fell through to the dotted
+ * "link not in this folder" state. Measured: the value arriving at the viewer's `a`
+ * component was `capabilities/%EC%8A%A4%EC%9C%95-…` (69 characters) — the markdown
+ * parser had encoded it. The vault's slug set holds only the decoded form (21
+ * characters), so it never matches.
  *
- * **영문 슬러그는 인코딩할 것이 없어 멀쩡했다.** 그래서 이 결함은 한글(또는
- * 공백·비ASCII) 슬러그를 쓰는 볼트에서만 보인다 — 우리 샘플이 영문이라
- * 아무도 못 봤다. 이 게이트가 그 사각을 지킨다.
+ * **ASCII slugs were fine because there was nothing to encode.** So this defect is
+ * visible only in vaults using Korean (or space-containing, or non-ASCII) slugs — our
+ * samples are ASCII, so nobody saw it. This gate guards that blind spot.
  */
 describe('위키링크 해소는 퍼센트 인코딩과 정규화를 견딘다', () => {
   const source = readFileSync(VIEWER, 'utf8');
@@ -108,7 +106,7 @@ describe('위키링크 해소는 퍼센트 인코딩과 정규화를 견딘다',
   });
 
   it('디코드 실패가 문서를 죽이지 않는다 — 잘린 퍼센트 시퀀스는 원문으로 둔다', () => {
-    // `decodeURIComponent('%')` 는 던진다. 뷰어가 그것을 잡아야 한다.
+    // `decodeURIComponent('%')` throws; the viewer has to catch that.
     expect(() => decodeURIComponent('%')).toThrow();
     expect(source, 'decodeURIComponent 를 try 없이 부르면 문서 하나가 통째로 안 그려진다').toMatch(
       /try \{[\s\S]{0,200}decodeURIComponent/,

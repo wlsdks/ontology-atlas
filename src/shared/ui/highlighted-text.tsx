@@ -2,9 +2,9 @@ import { Fragment } from 'react';
 import { splitHighlightSegments } from '@/shared/lib/highlight-match';
 
 /**
- * 검색어 매치를 인디고 `<mark>` 로 강조한 텍스트. query 가 비어 있으면 plain
- * 텍스트(fast path) 를 그대로 반환. 트리·글로벌 검색 등 여러 검색 surface 가
- * 공통 사용하는 강조 primitive.
+ * Text with query matches highlighted in an indigo `<mark>`. An empty query
+ * returns the plain text unchanged (fast path). This is the shared highlighting
+ * primitive for every search surface — the tree, global search and the rest.
  */
 export function HighlightedText({
   text,

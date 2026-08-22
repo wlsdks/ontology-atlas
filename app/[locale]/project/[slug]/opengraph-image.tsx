@@ -2,8 +2,8 @@ import { ImageResponse } from 'next/og';
 import { bundledProjectSlugs, deriveBundledProjects } from '@/entities/docs-vault';
 import { INDIGO_BRAND, INDIGO_HIGHLIGHT } from '@/shared/config/indigo-tokens';
 
-// 정적 export 환경: sitemap.ts 처럼 force-static 으로 고정해 빌드 타임 1회만
-// 실행 후 PNG 를 out/ 에 박히게 한다.
+// Static export: pinned to force-static like sitemap.ts, so it runs once at build time and the PNG
+// is baked into out/.
 export const dynamic = 'force-static';
 export const runtime = 'nodejs';
 export const contentType = 'image/png';
@@ -48,16 +48,16 @@ export default async function ProjectOgImage({
           justifyContent: 'space-between',
           padding: '72px',
           background:
-            // 중앙 약간 좌상단에 인디고 글로우 + dark canvas. glassmorphism
-            // 금지 룰 하에서도 OG 이미지 외부 노출이라 단일 그라디언트 1회
-            // 만 예외적으로 허용 (Hub accent 강조 목적).
+            // An indigo glow slightly above and left of centre on a dark canvas. Under the
+            // glassmorphism ban, a single gradient is allowed here as an exception because the OG
+            // image is external (used to emphasize the hub accent).
             `radial-gradient(circle at 22% 28%, ${accent}26 0%, transparent 48%), linear-gradient(180deg, #08090a 0%, #0b0c0e 100%)`,
           color: '#f0f1f3',
           fontFamily:
             'Inter, -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "Noto Sans KR", sans-serif',
         }}
       >
-        {/* 상단 — Demo brand + 카테고리 배지 */}
+        {/* Top — brand plus the category badge */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
           <div
             style={{
@@ -105,7 +105,7 @@ export default async function ProjectOgImage({
           </div>
         </div>
 
-        {/* 중앙 — 프로젝트 이름 + 설명 */}
+        {/* Centre — the project name and description */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
           <div
             style={{
@@ -134,7 +134,7 @@ export default async function ProjectOgImage({
           </div>
         </div>
 
-        {/* 하단 — url */}
+        {/* Bottom — the url */}
         <div
           style={{
             display: 'flex',

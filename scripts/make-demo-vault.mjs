@@ -1,30 +1,32 @@
 #!/usr/bin/env node
 /**
- * 시연 촬영용 볼트 생성기 — **저장소 밖에**, 자체 git 으로.
+ * Demo-recording vault generator — **outside the repository**, with its own git.
  *
- * ## 왜 dogfood 사본이 아닌가
+ * **Why not a dogfood copy.** The ledger's recording-setup gate (2026-07-29)
+ * asked for a "dogfood copy". The owner widened it on 2026-07-30:
+ * *"dogfood말고 내용 좋은걸로 하나 만들어줘도됨"* (a good-content vault instead of
+ * dogfood is fine). There is a reason: dogfood describes **this tool itself**, so
+ * node names are internal vocabulary like `mcp-server` and `topology-map-v2` —
+ * and this clip's primary audience includes **people who do not know what an
+ * agent is**, to whom that vocabulary reads as gibberish.
  *
- * 원장(2026-07-29) 촬영 셋업 게이트는 「dogfood 사본」을 요구했다. 소유자가
- * 2026-07-30 에 *"dogfood말고 내용 좋은걸로 하나 만들어줘도됨"* 으로 넓혔다.
- * 이유가 있다: dogfood 는 **이 도구 자신**을 서술하므로 노드 이름이
- * `mcp-server`·`topology-map-v2` 같은 내부 어휘다. 그런데 이 영상의 1차 관객은
- * **에이전트를 모르는 사람까지**이고, 그 사람에게 내부 어휘는 "무슨 소린지
- * 모르겠다" 로 읽힌다.
+ * So the subject is a **music streaming service**. Playback, catalogue,
+ * discovery, subscription, royalties, and accounts read without explanation, and
+ * above all the **dependencies this clip shows are intuitive** — one line,
+ * "royalties lean on the play log", is the whole argument for why a graph is
+ * needed.
  *
- * 그래서 **음악 스트리밍 서비스**를 골랐다. 재생·카탈로그·추천·구독·정산·계정은
- * 설명 없이 읽히고, 무엇보다 이 클립이 보여줄 **의존 관계가 직관적**이다 —
- * "정산이 재생 기록에 기대고 있다" 는 한 줄이면 왜 그래프가 필요한지가 끝난다.
+ * **Why outside the repository.** Ledger: *"원본 repo 밖 별도 폴더 + 자체 git
+ * 초기화 — repo `.git` 오염 금지 · QA 픽스처 볼트 촬영 금지"* (a separate folder
+ * outside the source repo with its own git init; do not pollute the repo's
+ * `.git`, and do not film the QA fixture vault). The recording shows committing
+ * from inside the vault, so this repository's git must not be touched, and the
+ * fixture vault exposes English-name and copy bugs on camera.
  *
- * ## 왜 저장소 밖인가
+ * Usage:
  *
- * 원장: *"원본 repo 밖 별도 폴더 + 자체 git 초기화 — repo `.git` 오염 금지 · QA
- * 픽스처 볼트 촬영 금지"*. 볼트 안에서 커밋하는 장면을 찍으므로 이 저장소의 git
- * 을 건드리면 안 되고, 픽스처 볼트는 영문 이름·문구 버그가 노출된다.
- *
- * ## 사용
- *
- *   node scripts/make-demo-vault.mjs [대상경로]
- *   기본값: ../atlas-demo-music
+ *   node scripts/make-demo-vault.mjs [target path]
+ *   default: ../atlas-demo-music
  */
 import { writeFileSync, mkdirSync, rmSync, existsSync } from 'node:fs';
 import { execFileSync } from 'node:child_process';
@@ -33,7 +35,7 @@ import { dirname, join, resolve } from 'node:path';
 
 const OUT = resolve(process.argv[2] ?? '../atlas-demo-music');
 
-/** 도메인 — 이 사업이 무엇으로 나뉘는가. */
+/** Domains — how this business divides up. */
 const DOMAINS = [
   ['playback', '재생', 'Playback', '사용자가 실제로 소리를 듣는 구간. 스트림을 열고, 끊기지 않게 유지하고, 무엇을 언제 들었는지 남긴다.'],
   ['catalog', '카탈로그', 'Catalog', '무엇을 들을 수 있는가. 트랙·앨범·아티스트의 정체와 권리 상태를 보관한다.'],
@@ -44,10 +46,12 @@ const DOMAINS = [
 ];
 
 /**
- * 역량 — [슬러그, 도메인, 한국어, 영어, 정의, 의존(같은 배열 안 역량 슬러그)].
+ * Capabilities — [slug, domain, Korean, English, definition, dependencies
+ * (capability slugs within this same array)].
  *
- * **정의를 채우는 것이 이 파일의 요점이다.** 이름만 있는 노드는 지도를 채우지만
- * 아무것도 설명하지 않고, 영상에서 노드를 클릭했을 때 보여줄 것이 없다.
+ * **Filling in the definitions is the point of this file.** Name-only nodes fill
+ * the map but explain nothing, leaving nothing to show when a node is clicked on
+ * camera.
  */
 const CAPABILITIES = [
   ['stream-open', 'playback', '스트림 열기', 'Open a stream', '재생 버튼을 누른 순간 권리를 확인하고 오디오 세그먼트를 내려보내기 시작한다. 실패하면 그 이유(권리 없음·지역 제한·기기 한도)를 사용자 말로 돌려준다.', ['entitlement-check', 'device-register']],
@@ -87,7 +91,7 @@ const CAPABILITIES = [
   ['profile-switch', 'account', '프로필 전환', 'Switch profile', '한 계정 안의 여러 사람. 취향 프로필이 섞이지 않게 재생 기록도 함께 갈린다.', ['signin', 'taste-profile']],
 ];
 
-/** 요소 — [슬러그, 도메인, 한국어, 영어, 경로, 정의]. 역량을 실제로 구현하는 것. */
+/** Elements — [slug, domain, Korean, English, path, definition]. What actually implements a capability. */
 const ELEMENTS = [
   ['audio-segmenter', 'playback', '오디오 분할기', 'Audio segmenter', 'services/playback/segmenter.ts', '원본 음원을 6초 세그먼트로 쪼개 여러 비트레이트로 굽는다.'],
   ['play-log-stream', 'playback', '재생 기록 스트림', 'Play log stream', 'services/playback/play-log-stream.ts', 'append-only 이벤트 스트림. 정산과 추천이 같은 원본을 읽는다.'],
@@ -112,10 +116,10 @@ const ELEMENTS = [
 
 const yaml = (lines) => `---\nuid: ${randomUUID()}\n${lines.filter(Boolean).join('\n')}\n---\n`;
 /**
- * graph 배열은 **canonical set** 으로 쓴다 — 정렬 + 중복 제거. 검증기가
- * `non-canonical-graph-array` 로 잡는 규격이고, 안 지키면 새 볼트가 경고 23개를
- * 달고 태어난다(첫 판이 그랬다). 촬영본 볼트가 경고를 달고 있으면 인사이트
- * 화면에 그 경고가 뜬다.
+ * Graph arrays are written as a **canonical set** — sorted and deduplicated.
+ * This is the rule the validator enforces as `non-canonical-graph-array`, and
+ * skipping it makes a new vault born with 23 warnings (the first version was).
+ * Warnings on the recording vault show up on the insights screen.
  */
 const list = (key, items) => {
   const canonical = [...new Set(items.map((item) => item.trim()))].sort();
@@ -195,7 +199,7 @@ for (const [slug, domain, ko, en, path, definition] of ELEMENTS) {
   );
 }
 
-// 자체 git — 이 저장소의 `.git` 을 오염시키지 않는다(원장 촬영 게이트).
+// Its own git — never pollute this repository's `.git` (the ledger's recording gate).
 execFileSync('git', ['init', '-q'], { cwd: OUT });
 execFileSync('git', ['add', '-A'], { cwd: OUT });
 execFileSync('git', ['-c', 'user.name=demo', '-c', 'user.email=demo@local', 'commit', '-q', '-m', 'chore: 음악 스트리밍 예시 볼트'], { cwd: OUT });

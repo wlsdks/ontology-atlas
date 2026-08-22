@@ -16,21 +16,22 @@ import { useTaxonomy } from '@/features/taxonomy';
 interface Props {
   value: string[];
   onChange: (next: string[]) => void;
-  /** 선택 대상 목록 — 보통 본인 제외한 전체 프로젝트. */
+  /** The options to pick from — normally every project except this one. */
   options: Project[];
-  /** 현재 편집 중인 프로젝트 slug. 자기 자신은 선택 불가능. */
+  /** The slug of the project being edited. It cannot select itself. */
   selfSlug?: string;
   invalidSlugs?: string[];
   /**
-   * 자동 링크 추천 후보. 설명/상세에서 다른 프로젝트 이름이 발견되면 상단에
-   * 점선 칩으로 노출, 수락하면 value 에 추가된다. (거절은 세션 내 로컬 숨김.)
+   * Auto-link suggestions. When another project's name is found in the description or
+   * detail it appears at the top as a dashed chip, and accepting adds it to `value`.
+   * (Rejecting hides it locally for the session.)
    */
   suggestions?: SuggestedDependency[];
 }
 
 /**
- * slug 칩 기반 멀티셀렉트. 검색으로 필터링하고 선택된 항목은 상단에 칩으로,
- * 미선택 항목은 하단에 outlined 칩으로 렌더. CSV 타이핑보다 훨씬 안전.
+ * A slug-chip multi-select. Search filters the list; selected items render as chips at the
+ * top and unselected ones as outlined chips below. Far safer than typing CSV.
  */
 export function DependencyPicker({
   value,
@@ -48,8 +49,8 @@ export function DependencyPicker({
   const { categoryLabel } = useTaxonomy();
   const invalidSlugSet = useMemo(() => new Set(invalidSlugs), [invalidSlugs]);
 
-  // 이미 선택됐거나 세션에서 거절한 제안은 감춘다. value/suggestions 가
-  // 바뀔 때마다 새로 계산.
+  // Hide suggestions that are already selected or were rejected this session. Recomputed
+  // whenever `value` or `suggestions` changes.
   const visibleSuggestions = useMemo(() => {
     const selectedSet = new Set(value);
     return suggestions.filter(
@@ -80,7 +81,7 @@ export function DependencyPicker({
     [availableSlugSet, value],
   );
 
-  // 미선택 + 검색어 매칭
+  // Unselected, matching the search text.
   const filtered = useMemo(() => {
     const selectedSet = new Set(value);
     const q = query.trim().toLowerCase();
@@ -112,7 +113,6 @@ export function DependencyPicker({
 
   return (
     <div className="flex flex-col gap-3 rounded-card border border-[color:var(--color-divider)] bg-[color:var(--color-panel)] p-3">
-      {/* 선택된 칩 */}
       {selected.length > 0 ? (
         <div className="flex flex-wrap gap-1.5">
           {selected.map((p, index) => (
@@ -125,10 +125,11 @@ export function DependencyPicker({
                 shape: 'pill',
                 size: 'lg',
                 /*
-                 * 두 가지 다 인디고 틴트 면(아래 a20/a12) 위라 accent 잉크는 AA
-                 * 미달이다(합성 3.5~4.4:1 — accent-ink-contrast 계약). 허브 강조는
-                 * accentOnTint 가 같은 인디고 계열로 진다. 이 줄은 객체 삼항이라
-                 * 종전 짝 규칙을 빠져나가 있었다(2026-08-13 게이트 구멍 수리).
+                 * Both of these sit on an indigo tint surface (a20/a12 below), where accent
+                 * ink falls below AA (composite 3.5–4.4:1 — the accent-ink-contrast contract).
+                 * Hub emphasis is carried by `accentOnTint`, in the same indigo family. This
+                 * line is a ternary inside an object, which slipped past the old pairing rule
+                 * (gate hole fixed 2026-08-13).
                  */
                 tone: p.isHub ? 'accentOnTint' : 'strong',
                 className: cn(
@@ -269,7 +270,6 @@ export function DependencyPicker({
         </div>
       )}
 
-      {/* 검색 입력 */}
       <div className="flex items-center gap-2 border-t border-[color:var(--color-overlay-2)] pt-3">
         <Search size={ICON_SIZE.sm} className="shrink-0 text-[color:var(--color-text-quaternary)]" />
         <input
@@ -283,7 +283,6 @@ export function DependencyPicker({
         />
       </div>
 
-      {/* 미선택 목록 */}
       <div className="flex max-h-48 flex-wrap gap-1.5 overflow-y-auto">
         {filtered.length === 0 ? (
           <p className="text-body text-[color:var(--color-text-quaternary)]">{t('noMatch')}</p>

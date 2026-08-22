@@ -9,11 +9,11 @@ describe('isPickerAbort', () => {
   });
 
   it('DOMException 이 아닌 취소도 취소로 읽는다 — 진입 검수 E-1b', () => {
-    // 폴리필 / 다른 realm — 이름은 남고 생성자만 다른 경우.
+    // Polyfill or another realm — the name survives, only the constructor differs.
     const named = new Error('nope');
     named.name = 'AbortError';
     expect(isPickerAbort(named)).toBe(true);
-    // 이름까지 소실된 경우(Tauri 는 Err(String) 을 문자열로 reject 한다).
+    // Even the name is lost (Tauri rejects Err(String) as a plain string).
     expect(isPickerAbort(new Error('The user aborted a request.'))).toBe(true);
     expect(isPickerAbort('user aborted')).toBe(true);
   });

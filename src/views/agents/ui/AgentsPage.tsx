@@ -1,53 +1,65 @@
 'use client';
 
 import { useTranslations } from 'next-intl';
+import { useCallback } from 'react';
 
 import { AcpRuntimeSettings, AgentSetupSection } from '@/widgets/app-settings-menu';
+import { useRouter } from '@/i18n/navigation';
+import { DESTINATION_HREF } from '@/shared/config/destinations';
+import { queueAgentChatIntent } from '@/shared/lib/agent-chat-intent';
 import { PAGE_FRAME, PAGE_HEADER_ROW, PAGE_TITLE_ROW } from '@/shared/ui/page-frame';
 
 /**
- * 「에이전트」 목적지 — 이 컴퓨터의 AI 코딩 도구를 **받고 · 깔고 · 붙이고 ·
- * 고치고 · 대화를 여는** 자리.
+ * The "agents" destination — where this computer's AI coding tools are **downloaded, installed,
+ * connected, repaired, and opened into a conversation**.
  *
- * ## 왜 설정에서 나왔나 (2026-08-20, 원장 90)
+ * **Why it left settings** (2026-08-20, ledger 90). Owner instruction: *"우리도 설정을 아예 LNB로
+ * 넣고 버즈나 다른 오픈소스처럼 그냥 한 창을 다 쓸까? 지금처럼 팝업말고?"* (should we put settings
+ * into the LNB entirely and use a whole window like other open source, instead of a popup?) → of three
+ * options, **"promote agents to top level"**.
  *
- * 소유자 지시: *"우리도 설정을 아예 LNB로 넣고 버즈나 다른 오픈소스처럼 그냥
- * 한 창을 다 쓸까? 지금처럼 팝업말고?"* → 세 선택지 중 **「에이전트를 최상위로」**.
+ * Five PO council seats and five design bench seats reviewed it, and the basis for the move is not
+ * width (measured in the installed app: on the normal path 46–47% of the sheet is in fact empty). The
+ * basis is **the container**:
  *
- * PO 카운슬 5인 + 디자인 벤치 5석이 심사했고, 이동의 근거는 폭이 아니다
- * (설치 앱 실측: 정상 경로에서 시트의 46~47%가 오히려 빈다). 근거는 **그릇**이다:
+ * - A modal **dims and blocks what is behind it and owns Esc.** You cannot look at the map while 52MB
+ *   downloads.
+ * - A sheet **unmounts entirely when closed** — a completion signal can be lost. (That defect is
+ *   independent of the move and was fixed separately. A destination does the same when you leave the route.)
+ * - **Settings is where you pick values**, and this is **an operational task with progress state**.
  *
- * - 모달이 **뒤를 딤으로 막고 Esc 를 소유한다.** 52MB 를 받는 동안 지도를 못 본다.
- * - 시트는 닫히면 **통째로 언마운트된다** — 완료 신호가 유실될 수 있다
- *   (그 결함 자체는 이동과 독립이라 별도로 고쳤다. 목적지도 라우트를 떠나면 같다).
- * - **설정은 값을 고르는 자리**이고, 이것은 **진행 상태가 있는 운영 작업**이다.
+ * Picking a setting and running an operation with progress answer different questions, so they get
+ * different destinations.
  *
- * 설정값 선택과 진행 상태가 있는 운영 작업은 답하는 질문이 다르므로 목적지가
- * 다르다.
- *
- * ## 이 화면이 담는 것과 담지 않는 것
- *
- * 담는다: 실행기 목록 · 연결 점검 · 앱 전용 설치 · 재연동 · 대화 열기.
- * 담지 않는다: **API Key**(2026-08-16 「경로 동결·비강조」 결정이 서 있다 —
- * 목적지 승격은 그 자체가 강조라 조용히 뒤집을 수 없다) · **작업 공간**(볼트가
- * 답하는 축이 다르다: `local-vault-management` 소유).
+ * **What this screen holds and does not.** Holds: the runner list, connection checks, app-only install,
+ * reconnection, opening a conversation. Does not hold: **API keys** (the 2026-08-16 "freeze the path,
+ * do not emphasize it" decision stands — promoting to a destination is itself emphasis and cannot
+ * quietly reverse it) and **the workspace** (a vault answers a different axis; owned by
+ * `local-vault-management`).
  */
 export function AgentsPage() {
   const t = useTranslations('agents');
+  const router = useRouter();
+  const openChatOnMap = useCallback(
+    (runtimeId: string) => {
+      queueAgentChatIntent(runtimeId);
+      router.push(DESTINATION_HREF.map);
+    },
+    [router],
+  );
 
   return (
     /*
-     * ⚠️ **`<main>` 이다 — `<div>` 가 아니다** (2026-08-20, 접근성 래칫이 잡았다).
+     * ⚠️ **This is `<main>`, not `<div>`** (2026-08-20, caught by the accessibility ratchet).
      *
-     * 이 저장소는 셸이 아니라 **각 목적지 뷰가 자기 `<main>` 을 소유한다.**
-     * 첫 판에서 그것을 몰라 `<div>` 로 그렸더니 래칫이
-     * *"`/ko/agents/`: `<main>` 안 요소 0"* 으로 터졌다 — 그 검사의 말대로
-     * 「위반 0」이 통과가 아니라 **미측정**이었다. 「본문으로 건너뛰기」도 이
-     * 화면에서만 갈 곳이 없었다.
+     * In this repository the shell does not own `<main>` — **each destination view owns its own.** The
+     * first draft did not know that and drew a `<div>`, and the ratchet failed with
+     * *"`/ko/agents/`: 0 elements inside `<main>`"* — exactly as that check says, "zero violations" was
+     * not a pass but **nothing measured**. "Skip to content" also had nowhere to go, on this screen alone.
      *
-     * `max-lg:pb-…` 는 하단 탭바 예약이다. 스크롤되는 표면이 이것을 빠뜨리면
-     * 마지막 줄이 탭바 뒤로 숨는다 — 목적지가 되면서 `scroll-end-gap` 게이트가
-     * 이 라우트를 처음으로 보게 됐고, 그게 승격의 이득 중 하나다.
+     * `max-lg:pb-…` is the bottom tab-bar reserve. A scrolling surface that omits it hides its last line
+     * behind the tab bar — becoming a destination made the `scroll-end-gap` gate see this route for the
+     * first time, which is one of the promotion's benefits.
      */
     <main
       id="main"
@@ -56,14 +68,14 @@ export function AgentsPage() {
       className={`${PAGE_FRAME} max-lg:pb-[calc(var(--topology-mobile-bottom-tab-reserve)+24px)]`}
     >
       {/*
-        ⚠️ **설명은 헤더 «밖»이다.** `PAGE_HEADER_ROW` 는
-        `justify-between` 한 줄이라, 설명을 그 안에 두면 제목의 반대쪽 끝으로
-        밀려 오른쪽 정렬처럼 보인다(첫 판에서 실제로 그랬다). 헤더의 오른쪽 자리는
-        «제목과 나란히 서는 컨트롤» 의 것이다.
+        ⚠️ **The description is «outside» the header.** `PAGE_HEADER_ROW` is a single
+        `justify-between` row, so a description placed inside it is pushed to the opposite end from the
+        title and reads as right-aligned (which is what the first draft did). The header's right slot
+        belongs to «controls standing alongside the title».
       */}
       <header className={PAGE_HEADER_ROW}>
         <div className={PAGE_TITLE_ROW}>
-          {/* 목록형 목적지의 헤드라인 규격 — 새 값을 만들지 않는다. */}
+          {/* The headline spec for a list-shaped destination — no new value is created. */}
           <h1 className="text-display font-[var(--font-weight-signature)] tracking-[var(--tracking-card)] text-[color:var(--color-text-primary)]">
             {t('title')}
           </h1>
@@ -75,14 +87,14 @@ export function AgentsPage() {
 
       <section className="mt-6 min-w-0" aria-label={t('runtimesHeading')}>
         <h2 className="sr-only">{t('runtimesHeading')}</h2>
-        <AcpRuntimeSettings embedded />
+        <AcpRuntimeSettings embedded onOpenChat={openChatOnMap} />
       </section>
 
       {/*
-        「MCP 연결」이 같은 화면에 있는 이유는 위 칸이 웹에서 하는 말 때문이다:
-        *"이 화면에서도 「MCP 연결」 칸에서 …"*. 그 칸이 여기 없으면 그 문장이
-        **가리키는 곳이 없다.** 그리고 이건 웹에서 실제로 되는 일이다 — MCP 는
-        화면이 아니라 폴더에 붙는다(2026-08-01 원장).
+        "MCP connection" is on this screen because of what the section above says on the web:
+        *"in this screen too, from the «MCP connection» section …"*. Without that section here, that
+        sentence **points at nothing**. And this really does work on the web — MCP attaches to a folder,
+        not to a screen (2026-08-01 ledger).
       */}
       <section className="mt-8 min-w-0" aria-labelledby="agents-mcp-heading">
         <h2

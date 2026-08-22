@@ -18,7 +18,7 @@ describe("buildVaultMarkdown", () => {
   it("YAML 특수문자가 든 title 은 quote + escape", () => {
     const md = buildVaultMarkdown({ kind: "domain", title: 'A: "B"', slug: "domains/a" });
     expect(md).toContain('title: "A: \\"B\\""');
-    // 본문 H1 은 원문 그대로
+    // The body H1 stays verbatim.
     expect(md).toContain('# A: "B"');
   });
 

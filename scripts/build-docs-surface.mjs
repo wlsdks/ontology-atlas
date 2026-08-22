@@ -1,17 +1,19 @@
 #!/usr/bin/env node
-// 문서 표면 생성기 — `docs/.generated/mcp-surface.json`.
+// Docs surface generator — `docs/.generated/mcp-surface.json`.
 //
-// 왜 있나: 이 저장소의 문서 검사는 오랫동안 "README 에 이 문장이 있는가" 를
-// 세는 산문 핀이었다. 그 핀은 **도구 동작이 바뀌고 문서가 안 바뀐 사고를 못
-// 잡고**(문장은 그대로니까) 문서를 더 나은 말로 고치면 빨개졌다. 그래서
-// 판별 기준을 하나로 바꿨다:
+// For a long time this repository's doc checks were prose pins counting whether a
+// sentence appeared in a README. Such pins **failed to catch the accident where a
+// tool's behaviour changed and the docs did not** (the sentence was unchanged) and
+// went red when a document was rewritten in better words. So the criterion became one
+// line:
 //
-//   기계가 만들 수 있는 것만 검사한다. 사람이 판단해서 쓴 문장은 검사하지 않는다.
+//   Check only what a machine can generate. Never check a sentence a human wrote.
 //
-// 이 스크립트는 **실제 MCP 서버에 `tools/list` 를 물어서** 공개 표면을 적고,
-// `--check` 로 재생성해 diff 한다(Kubernetes `verify-generated-docs.sh` ·
-// GitLab `graphql-verify` 와 같은 형태). 그리고 등록된 이름이 문서에 실제로
-// 나오는지까지 본다 — 새 도구를 등록하고 문서를 안 쓰면 여기서 걸린다.
+// This script writes the public surface by **asking the real MCP server for
+// `tools/list`**, and `--check` regenerates and diffs it (the same shape as
+// Kubernetes' `verify-generated-docs.sh` and GitLab's `graphql-verify`). It also
+// checks that the registered names actually appear in the docs — registering a new
+// tool without documenting it is caught here.
 
 import { spawn } from 'node:child_process';
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
@@ -66,14 +68,14 @@ export function parseArgs(argv) {
 }
 
 /**
- * 서버를 실제로 띄워 `tools/list` 를 받는다. 정적 파싱이 아니라 런타임에
- * 묻는 이유: 레지스트리는 5,000줄 파일 안에서 조립되고, 정적 파싱은 조립
- * 규칙이 바뀌는 순간 조용히 틀린 답을 준다.
+ * Actually starts the server and receives `tools/list`. Asked at runtime rather than
+ * parsed statically because the registry is assembled inside a 5,000-line file, and
+ * static parsing gives a quietly wrong answer the moment the assembly rules change.
  */
 export function listMcpTools({ entry = MCP_ENTRY, cwd = ROOT, timeoutMs = DEFAULT_TIMEOUT_MS } = {}) {
   return new Promise((resolve, reject) => {
     const env = { ...process.env, OATLAS_VAULT: './docs/ontology' };
-    delete env.OATLAS_READ_ONLY; // 읽기 전용 모드는 write 도구를 숨긴다 — 표면 전체를 적어야 한다.
+    delete env.OATLAS_READ_ONLY; // Read-only mode hides the write tools; the whole surface must be recorded.
     const child = spawn(process.execPath, [entry], { cwd, env, stdio: ['pipe', 'pipe', 'pipe'] });
 
     let stdout = '';
@@ -141,8 +143,9 @@ export async function deriveSurfaceText(options = {}) {
 }
 
 /**
- * 문서가 표면을 덮는지 — 등록된 도구/커맨드 이름이 각 README 에 나오는가.
- * 산문의 *내용* 은 보지 않는다. 이름은 코드에서 나왔으므로 코드-대조다.
+ * Does the documentation cover the surface — does each registered tool/command name
+ * appear in its README? The prose *content* is not examined. The names come from code,
+ * so this is a comparison against code.
  */
 export function docCoverageProblems({ surface, mcpReadme, cliReadme }) {
   const problems = [];

@@ -6,44 +6,48 @@ import { describe, expect, it } from "vitest";
 import { composite, contrastRatio, parseColor } from "../../scripts/lib/contrast.mjs";
 
 /**
- * quaternary 잉크의 **표면 라이선스 계약** (2026-08-04 체계석 판정).
+ * The **surface licence contract** for quaternary ink (체계 seat verdict,
+ * 2026-08-04).
  *
- * ## 무엇을 잠그나
+ * **What it locks.** The 2026-08-03 lift (#787c84 → #82828a) measured the four
+ * static surfaces (canvas · panel · panel+overlay-1 · elevated) against the licence
+ * and passed them all. But surfaces with **one more overlay** were not among those
+ * four backgrounds, and the new open-surface instrument
+ * (`tests/e2e/a11y-open-surfaces.spec.ts`) confirmed that blind spot with numbers on
+ * its first run — global search's kbd (panel+overlay-2, 4.38), the selected row's
+ * chip (overlay-1∘indigo-a14∘panel, 4.14), and the selected row's span
+ * (indigo-a14∘panel, 4.39).
  *
- * 2026-08-03 상향(#787c84 → #82828a)은 「네 정지 표면」(canvas · panel ·
- * panel+overlay-1 · elevated)을 라이선스로 재고 전부 통과시켰다. 그런데
- * 오버레이가 **한 겹 더** 쌓이는 표면은 그 네 바탕에 없었고, 신설된 열린 표면
- * 계기(`tests/e2e/a11y-open-surfaces.spec.ts`)가 그 사각지대를 첫 실행에서
- * 숫자로 확인했다 — 글로벌 검색의 kbd(panel+overlay-2, 4.38) · 선택 행 칩
- * (overlay-1∘indigo-a14∘panel, 4.14) · 선택 행 스팬(indigo-a14∘panel, 4.39).
+ * Verdict: **do not lift the ink again.** Overlay composition has no ceiling on
+ * depth in principle, so no single ink value can win at every depth, and each lift
+ * digs into the hierarchy gap against tertiary (step ratio 1.17 on panel; the lowest
+ * this repository has accepted is 1.06). Instead the **boundary is written into the
+ * licence**:
  *
- * 판정: **잉크를 또 올리지 않는다.** 오버레이 합성은 원리적으로 겹수 상한이
- * 없어서 한 잉크 값으로 전 깊이를 이길 수 없고, 올릴수록 tertiary 와의 위계
- * 간격(panel 위 스텝비 1.17, 저장소 수용 최소 1.06)을 판다. 대신 라이선스에
- * **경계를 명문화**한다:
+ * > **quaternary is licensed up to static neutral backgrounds** — the three base
+ * > steps (canvas / panel / elevated) plus a single overlay-1 on canvas or panel.
+ * > **Text on any background above that** (overlay-2 or deeper, elevated+overlay,
+ * > indigo or amber tint composition) **starts at tertiary.** (A generalisation of
+ * > AtlasGitPanel's 2026-08-02 rule "text on a pressable row starts at tertiary" —
+ * > the rule came from the background rising, not from the row being pressable.)
  *
- * > **quaternary 의 라이선스는 정지한 무채 바탕까지다** — 맨 3단(canvas /
- * > panel / elevated)과 canvas·panel 위 overlay-1 한 겹. **그보다 올라선
- * > 바탕**(overlay-2 이상, elevated+overlay, 인디고·앰버 틴트 합성) **위의
- * > 글자는 tertiary 부터다.** (AtlasGitPanel 2026-08-02 「누를 수 있는 행
- * > 위의 글자는 tertiary 부터」의 일반화 — 행이 눌려서가 아니라 바탕이
- * > 올라서서 생기는 규칙이었다.)
+ * **Why a contract plus a runtime instrument rather than lint.** A static scan
+ * **does not know which background the ink is drawn on** — the same
+ * `text-quaternary` lives on panel (5.00, passes) and on overlay-2 (4.36, fails). The
+ * same-tag pairing heuristic does not work here either: this layer's dominant idiom
+ * is a **branch** such as `active ? 'tint background + bright ink' : 'quaternary
+ * ink'`, so most of the 18 pairs where both literals share a tag were false
+ * positives that never coexist at runtime (exhaustive count, 2026-08-04). So the
+ * work is split across three layers:
  *
- * ## 왜 lint 가 아니라 계약 + 런타임 계기인가
- *
- * 정적 스캔은 그 잉크가 **어느 바탕 위에 그려지는지 모른다** — 같은
- * `text-quaternary` 가 panel 위(5.00 통과)와 overlay-2 위(4.36 미달)에 산다.
- * 같은-태그 페어링 휴리스틱도 여기서는 못 쓴다: 이 층의 지배적 관용구가
- * `active ? '틴트 배경 + 밝은 잉크' : 'quaternary 잉크'` 같은 **분기**라,
- * 두 리터럴이 한 태그에 있어도 런타임에 공존하지 않는 오탐이 18쌍 중
- * 다수였다(2026-08-04 전수). 그래서 층을 셋으로 가른다:
- *
- * 1. **값 층(여기)** — globals.css 실값으로 라이선스 경계 자체를 계산한다.
- *    토큰이 움직이면 이 시험이 그 순간의 진실을 다시 계산한다.
- * 2. **자리 층(여기)** — 이번에 실측으로 잡힌 자리(글로벌 검색)가 다시
- *    quaternary 로 돌아가지 않는다는 소스 단언.
- * 3. **화면 층(`a11y-open-surfaces.spec.ts`)** — 열린 표면을 실제로 열고
- *    axe 로 재는 래칫. 이번 라운드에 color-contrast 기준선이 5 → 0 이 됐다.
+ * 1. **Value layer (here)** — computes the licence boundary itself from the real
+ *    values in globals.css. If a token moves, this test recomputes the truth of that
+ *    moment.
+ * 2. **Site layer (here)** — a source assertion that the site caught by measurement
+ *    this round (global search) does not return to quaternary.
+ * 3. **Screen layer (`a11y-open-surfaces.spec.ts`)** — a ratchet that actually opens
+ *    the open surfaces and measures with axe. Its color-contrast baseline went 5 → 0
+ *    this round.
  */
 
 const read = (rel: string) => readFileSync(join(process.cwd(), rel), "utf8");
@@ -93,11 +97,12 @@ describe("quaternary 잉크 라이선스 — 정지한 무채 바탕까지", () 
 
   it("경계의 근거가 아직 실재한다 — 올라선 바탕에서는 실제로 AA 를 깬다", () => {
     /*
-     * `/gate-probe`: 빈 집합 위에서 공회전하는 검출기를 금지한다. 이 단언이
-     * 빨개지는 날은 quaternary 가 올라선 표면까지 통과하게 된 날이고, 그날
-     * 이 라이선스 경계는 접을 수 있다 — accent/accentOnTint 의 「분리의
-     * 근거」 단언과 같은 문법이다. (거꾸로 quaternary 를 그만큼 올리면
-     * tertiary 와의 위계가 먼저 무너진다 — 그쪽은 아래 스텝비가 잡는다.)
+     * `/gate-probe`: no detector may idle on an empty set. The day this assertion turns
+     * red is the day quaternary passes on raised surfaces too, and on that day this
+     * licence boundary can be folded — the same grammar as the accent/accentOnTint
+     * "grounds for the split" assertion. (Conversely, lifting quaternary that far
+     * collapses the hierarchy against tertiary first — the step ratio below catches
+     * that.)
      */
     expect(ratioOn(quaternary, stack(panel, o2))).toBeLessThan(4.5);
     expect(ratioOn(quaternary, stack(elevated, o1))).toBeLessThan(4.5);
@@ -106,10 +111,11 @@ describe("quaternary 잉크 라이선스 — 정지한 무채 바탕까지", () 
 
   it("처방이 성립한다 — tertiary 는 이번에 실측된 올라선 바탕 전부에서 AA", () => {
     /*
-     * 「올라선 바탕 위의 글자는 tertiary 부터」가 처방이 되려면 tertiary 가
-     * 실제로 그 바탕들을 넘어야 한다. 열린 표면 계기가 잡았던 세 합성이
-     * 기준이다. tertiary 도 안 넘는 더 깊은 합성(elevated+overlay-3 등)이
-     * 화면에 생기면 그 자리는 secondary 부터고, 그때 이 목록을 넓힌다.
+     * For "text on a raised background starts at tertiary" to be a prescription,
+     * tertiary must actually clear those backgrounds. The three compositions the
+     * open-surface instrument caught are the benchmark. If a deeper composition that
+     * tertiary also fails (elevated+overlay-3 and so on) appears on screen, that site
+     * starts at secondary and this list widens then.
      */
     const raised: Record<string, Rgba> = {
       "panel+overlay-2": stack(panel, o2),
@@ -125,10 +131,10 @@ describe("quaternary 잉크 라이선스 — 정지한 무채 바탕까지", () 
 
   it("위계 간격이 남아 있다 — panel 위 tertiary/quaternary 스텝비 ≥ 1.06", () => {
     /*
-     * 2026-08-03 상향이 이미 1.29 → 1.17 로 좁혔다. 이 저장소가 수용한 같은
-     * 단의 최소는 1.06(지도 패널 램프) — 그 아래로 내려가는 값 변경은 위계를
-     * 판 것이므로, 다음에 누가 quaternary 를 「한 번 더」 올리려 할 때 여기가
-     * 먼저 빨개진다.
+     * The 2026-08-03 lift already narrowed this from 1.29 to 1.17. The lowest this
+     * repository has accepted at the same step is 1.06 (the map panel ramp), so a value
+     * change below that has dug into the hierarchy — and the next time someone lifts
+     * quaternary "one more time", this turns red first.
      */
     const step = ratioOn(tertiary, panel) / ratioOn(quaternary, panel);
     expect(step).toBeGreaterThanOrEqual(1.06);
@@ -138,19 +144,20 @@ describe("quaternary 잉크 라이선스 — 정지한 무채 바탕까지", () 
 describe("실측으로 잡힌 자리가 되돌아가지 않는다 — 글로벌 검색", () => {
   it("kbd·선택 행 자식들은 tertiary 다", () => {
     /*
-     * 2026-08-04 열린 표면 첫 전수의 color-contrast 3건이 전부 이 파일이었다:
-     * kbd(4.38) · 선택 행 kind 칩(4.14) · 선택 행 스팬(4.39). cmdk 의 선택은
-     * 모든 행을 순회하므로 slug/status 스팬도 같은 규칙이다.
+     * All 3 color-contrast findings in the first open-surface sweep (2026-08-04) were in
+     * this file: kbd (4.38), the selected row's kind chip (4.14), and the selected row's
+     * span (4.39). cmdk's selection travels every row, so the slug and status spans fall
+     * under the same rule.
      */
     const src = read("src/widgets/global-search/ui/GlobalSearch.tsx");
     const kbd = /<kbd[^>]*className="[^"]*"/.exec(src)?.[0] ?? "";
     expect(kbd).toContain("--color-text-tertiary");
     expect(kbd).not.toContain("--color-text-quaternary");
-    // 선택 행(aria-selected:bg-indigo-a14) 안에는 quaternary 자식이 없다.
+    // A selected row (aria-selected:bg-indigo-a14) has no quaternary child.
     const items = src.split("aria-selected:bg-[color:var(--color-indigo-a14)]");
     expect(items.length, "선택 행 문법이 사라졌다 — 이 단언의 대상을 다시 찾아라").toBeGreaterThan(1);
     for (const chunk of items.slice(1)) {
-      // 행 원소가 닫히는 지점까지만 본다(다음 Group 헤딩 전).
+      // Only up to where the row element closes (before the next Group heading).
       const scope = chunk.split("</Command.Item>")[0] ?? chunk;
       expect(
         scope.includes("--color-text-quaternary"),

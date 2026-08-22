@@ -1,21 +1,21 @@
 /**
- * 관계 키 매트릭스 — MCP 가 그래프 엣지로 읽는 frontmatter 키 전집합
+ * The relation-key matrix — the full set of frontmatter keys MCP reads as graph edges
  * (`mcp/src/vault.mjs` GRAPH_ARRAY_KEYS = NEIGHBOR_KEYS + alias `depends_on`)
- * 과, 각 키가 웹 derive (`derive-ontology-from-vault`) 에서 만들어야 하는
- * 엣지 타입의 표. 이 표 하나만 진실원이다.
+ * and the edge type each key must produce in the web derive
+ * (`derive-ontology-from-vault`). This table is the only source of truth.
  *
- * 계약 (`tests/contract/derive-relation-keys.contract.test.ts`):
- *   1. MCP 가 키를 새로 들이면 이 표가 그 키를 모를 것이므로 즉시 fail —
- *      웹 derive 가 조용히 그 키를 흘리는 회귀(describes 2026-07-27,
- *      depends_on 2026-08-12)를 구조적으로 차단한다.
- *   2. 표의 각 행을 MCP `collectNeighborRefs` 와 웹 derive 양쪽에 넣어
- *      둘 다 그 키를 실제로 읽는지 대조한다.
+ * The contract (`tests/contract/derive-relation-keys.contract.test.ts`):
+ *   1. If MCP admits a new key, this table will not know it and the test fails
+ *      immediately — structurally blocking the regression where the web derive
+ *      silently drops that key (describes, 2026-07-27; depends_on, 2026-08-12).
+ *   2. Each row is fed to both MCP's `collectNeighborRefs` and the web derive to
+ *      confirm both really read that key.
  */
 export const RELATION_KEY_CASES = [
   {
     key: 'domains',
     frontmatter: { kind: 'project', domains: ['billing'] },
-    /** 웹 derive 가 이 키에서 만들어야 하는 OntologyStubEdge.type */
+    /** The OntologyStubEdge.type the web derive must produce from this key */
     expectedEdgeType: 'contains',
   },
   {
@@ -39,9 +39,9 @@ export const RELATION_KEY_CASES = [
     expectedEdgeType: 'depends_on',
   },
   {
-    // 스키마 정본 키 (capability/element 캐논, mcp/src/schema.mjs) —
-    // MCP 는 alias 로 dependencies 에 접는다. 웹 derive 도 같은 자리에서
-    // 읽어야 한다 (2026-08-12: 이 키만 웹에서 소실되던 구멍).
+    // The canonical schema key (the capability/element canon in mcp/src/schema.mjs) —
+    // MCP folds it into dependencies as an alias, and the web derive must read it at the
+    // same place (2026-08-12: the hole where only this key was lost on the web).
     key: 'depends_on',
     frontmatter: { kind: 'capability', depends_on: ['key-store'] },
     expectedEdgeType: 'depends_on',
@@ -64,9 +64,9 @@ export const RELATION_KEY_CASES = [
 ];
 
 /**
- * 합집합 계약 — 같은 대상이 `dependencies` 와 `depends_on` 두 키에 다 있으면
- * 한 번만 센다. MCP `collectNeighborRefs` 는 canonical-key+ref 로 dedupe 해
- * 3개의 ref 를, 웹 derive 는 3개의 depends_on 엣지를 내야 한다.
+ * The union contract — a target present under both `dependencies` and `depends_on`
+ * counts once. MCP's `collectNeighborRefs` deduplicates by canonical key + ref and
+ * must emit 3 refs; the web derive must emit 3 depends_on edges.
  */
 export const DEPENDS_UNION_CASE = {
   frontmatter: {

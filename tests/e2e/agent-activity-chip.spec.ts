@@ -3,23 +3,22 @@ import { seedFirstRunSeen } from "./first-run-seed";
 import { stubDirectoryPicker } from "./vault-picker-stub";
 
 /**
- * **검증된 live heartbeat와 최근 쓰기 로그를 화면이 구분하는가.**
+ * **Does the screen distinguish a verified live heartbeat from a recent write log?**
  *
- * ## 왜 이 spec 이 생겼나
+ * **Why this spec exists.** The activity chip (`AgentActivityChip`) had no e2e at
+ * all — unit tests swap the whole feed for a mock, so no gate had seen the full chain
+ * "one line of the vault's `activity.jsonl` → parser → session grouping → feed →
+ * on-screen wording". That chain just gained an `agent` name field (clientInfo.name
+ * from the MCP connection greeting, PR #1066), and only this layer can measure whether
+ * the new field really flows through to the screen.
  *
- * 활동 칩(`AgentActivityChip`)에는 e2e 가 하나도 없었다 — 단위 테스트는 피드를
- * 통째로 목으로 갈아 끼우므로, 「볼트의 `activity.jsonl` 한 줄 → 파서 → 세션
- * 묶음 → 피드 → 화면 문구」 사슬 전체를 본 게이트가 없었다. 그 사슬에 방금
- * `agent` 이름 칸이 하나 늘었다(MCP 연결 인사의 clientInfo.name, PR #1066) —
- * 늘어난 칸이 화면까지 실제로 흐르는지는 이 층만 잴 수 있다.
+ * Only the picker is stubbed; everything behind it is real code (see the
+ * `vault-picker-stub` preamble).
  *
- * 픽커만 스텁하고 그 뒤는 전부 실제 코드다(`vault-picker-stub` 머리말).
- *
- * ## 시각은 **폴더를 고르는 순간** 에 만든다
- *
- * `activity.jsonl`은 이미 일어난 쓰기 사실이라 live를 증명하지 않는다. fresh
- * `agent-activity.json` heartbeat만 현재 단계를 말하고, 그것을 지우면 같은 화면이
- * `변경 감지`로 내려가며 지도 focus ring도 함께 사라져야 한다.
+ * **Timestamps are created at the moment the folder is picked.** `activity.jsonl`
+ * records writes that already happened, so it does not prove live. Only a fresh
+ * `agent-activity.json` heartbeat states the current step, and deleting it must drop
+ * the same screen to `변경 감지` and remove the map's focus ring with it.
  */
 test("fresh heartbeat만 현재 단계와 지도 대상을 말하고, 제거되면 변경 감지로 내린다", async ({ page }) => {
   test.setTimeout(120_000);
@@ -109,16 +108,18 @@ test("fresh heartbeat만 현재 단계와 지도 대상을 말하고, 제거되�
 });
 
 /**
- * 알림함도 같은 이름을 말한다 — 끝난 작업(마지막 쓰기 후 5분 초과)의 「작업 끝」
- * 줄이 「claude-code 작업 끝」이 된다. 씨앗은 20분 전 쓰기 두 줄: 한 작업으로
- * 묶이고, 이미 조용해졌으므로 끝 알림이 있다.
+ * The notification tray states the same name — a finished job (more than 5 minutes
+ * after the last write) turns its "job finished" line into "claude-code 작업 끝". The
+ * seed is two writes from 20 minutes ago: they group into one job, and since it has
+ * gone quiet there is a completion notification.
  */
 test("알림함의 작업 알림이 에이전트 이름으로 말한다", async ({ page }) => {
   test.setTimeout(120_000);
   await page.setViewportSize({ width: 1512, height: 900 });
 
-  // 위 시험과 같은 이유로 시각은 **쓰는 순간** 에 만든다 — 여기는 여유가 크지만
-  // 한 파일 안에서 씨앗 만드는 법이 둘이면 다음 사람이 낡은 쪽을 베낀다.
+  // For the same reason as the test above, timestamps are created **at write time** —
+  // the margin is large here, but two ways of seeding in one file means the next person
+  // copies the stale one.
   const at = (minAgo: number) => `{{NOW-${minAgo * 60_000}}}`;
   const line = (iso: string) =>
     JSON.stringify({
@@ -144,9 +145,10 @@ test("알림함의 작업 알림이 에이전트 이름으로 말한다", async 
 
   const bell = page.getByTestId("agent-activity-bell");
   await expect(bell, "알림 벨이 안 떴다").toBeVisible({ timeout: 30_000 });
-  // dev 서버 전용: Next 개발 배지(<nextjs-portal>, 우하단)가 벨과 같은 구석에
-  // 떠서 클릭을 가로챈다(실측 — 콘솔 에러 0, 순수 배지). 제품에는 없는
-  // 요소라 치우는 것이 화면을 왜곡하지 않는다. 정적 빌드에서는 no-op.
+  // Dev server only: Next's dev badge (<nextjs-portal>, bottom right) floats in the
+  // same corner as the bell and intercepts the click (measured — 0 console errors, a
+  // pure badge). It does not exist in the product, so removing it does not distort the
+  // screen. A no-op in a static build.
   await page.evaluate(() => document.querySelector("nextjs-portal")?.remove());
   await bell.click();
 

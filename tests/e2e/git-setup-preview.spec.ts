@@ -3,26 +3,29 @@ import { expect, test } from "@playwright/test";
 import { seedFirstRunSeen } from "./first-run-seed";
 
 /**
- * **약속 그림이 띠가 되지 않는다.**
+ * **The promise image must not become a ribbon.**
  *
- * 기록 셋업 화면의 오른쪽 미리보기(「연결이 끝나면 이 화면이 이렇게 채워져요」)는
- * **높이가 내용으로 고정**(229px)인데 폭에는 상한이 없었다. 왼쪽 말하는 칸은
- * 520px 로 묶여 있고 오른쪽만 남는 폭을 다 먹어서, 화면이 넓을수록 비율이
- * 무너졌다 — 소유자 지적: *"비율이 좀 아쉽지? 우측에 있는게 너무 길다 가로로."*
+ * The right-hand preview on the history setup screen ("this is how the screen fills
+ * once connected") has a **content-fixed height** of 229px but had no width cap. The
+ * left explanatory column is capped at 520px while the right one consumed all
+ * remaining width, so the wider the screen the more the ratio collapsed. The owner's
+ * report: *"비율이 좀 아쉽지? 우측에 있는게 너무 길다 가로로."* (the proportions are
+ * off — the right-hand one is far too wide).
  *
- * | 창 폭 | 프리뷰 | 비율 |
+ * | Window width | Preview | Ratio |
  * |---|---|---|
  * | 1280 | 536×229 | 2.3 |
  * | 1440 | 696×229 | 3.0 |
  * | 1920 | 1176×229 | **5.1** |
  * | 2560 | 1810×229 | **7.9** |
  *
- * ⚠️ **비율로 잠근다, 폭이 아니라.** 폭을 못박으면 내용이 한 줄 늘어 높이가
- * 바뀔 때 이 시험이 엉뚱하게 터지고, 그러면 다음 사람은 상한 쪽을 지운다.
- * 무너진 것은 폭이 아니라 «화면처럼 보이는가» 였으므로 그것을 잰다.
+ * ⚠️ **Lock the ratio, not the width.** Pinning the width makes this test break
+ * spuriously when one extra line of content changes the height, and then the next
+ * person deletes the cap. What collapsed was not the width but whether it still reads
+ * as a screen, so that is what is measured.
  */
 
-/** 화면 미리보기로 읽히는 상한. 실측에서 3.0(1440폭)까지는 읽혔고 그 위부터 무너졌다. */
+/** The cap at which it still reads as a screen preview. Measured: legible up to 3.0 (at 1440 wide) and collapsing above that. */
 const MAX_RATIO = 3.2;
 
 test("기록 셋업의 약속 그림이 넓은 화면에서 띠가 되지 않는다", async ({ page }) => {

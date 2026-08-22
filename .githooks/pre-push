@@ -1,106 +1,152 @@
 #!/bin/sh
-# 푸시 전에 CI 가 볼 것을 먼저 본다 (2026-08-21)
+# Fast local mirror of CI — path-scoped lanes, run in parallel.
 #
-# ## 왜 생겼나
+# ## Why this exists at all
 #
-# `pnpm checks:changed` 는 **무엇을 돌릴지 정확히 지목해 왔다.** 문제는 그
-# 목록을 받아 **일부만 골라 돌리는 것**이었다. 2026-08-20 하루에 CI 두 라운드가
-# 그렇게 탔다 — `test:contracts` 만 돌리고 `test:run` 과 e2e 를 건너뛰었고,
-# 건너뛴 자리에서 정확히 터졌다. 그 사이 브랜치는 못 머지하고 대기했다.
+# 2026-08-20 burned two CI rounds in one day because the `checks:changed` list was
+# received and then only partly run. The lesson `pre-commit` already recorded
+# applies: a discipline that leans on memory becomes an accident queue once it
+# repeats. So the room to pick is removed here rather than trusted to whoever is
+# pushing.
 #
-# 옆의 `pre-commit` 이 같은 교훈을 이미 적어 뒀다: **기억에 의존하는 규율은
-# 세 번 이상 반복되면 규율이 아니라 사고 대기열이다.** 그래서 판정을 8분 뒤
-# CI 에서 푸시 자리로 옮긴다. 고르는 여지를 없애는 것이 요점이다.
+# ## Why it looks like this and not like the last one
 #
-# ## 무엇을 재나 — **푸시되는 범위**다, 작업본이 아니라
+# The first version ran `checks:changed --run` over the whole pushed range,
+# serially. On a 1,536-file branch that produced **657 checks** and measured
+# **40 minutes for 35 of them** — twelve hours to finish, against CI's eight.
+# It was deleted on 2026-08-22 (ledger 94) after a comparison of Ghostty, Zed and
+# Cap found none of them ships a git hook at all.
 #
-# `pre-commit` 이 작업본 대신 인덱스를 재는 것과 같은 이유다: 커밋이 남기는
-# 것은 인덱스이고, **푸시가 남기는 것은 커밋 범위**다. 작업본을 재면 이미
-# 커밋해 둔 변경을 놓치고, 아직 커밋 안 한 변경을 잘못 센다.
+# That comparison missed the project this repository actually benchmarks against.
+# **Buzz (`block/buzz`) does ship a pre-push hook** — and its shape is the answer:
+# lanes filtered by path glob, run in parallel, scoped to `origin/main...HEAD`,
+# with e2e left to CI and a written note that CI remains the authoritative gate.
+# This hook is that shape. Ledger 95 supersedes 94.
 #
-# git 이 stdin 으로 `<local ref> <local sha> <remote ref> <remote sha>` 를 준다.
-#  · remote sha 가 0 이면 원격에 없는 새 브랜치다 → 기준선에서 갈라진 지점부터
-#  · local sha 가 0 이면 브랜치 삭제다 → 잴 것이 없다
+# ## The four properties that make it survivable
 #
-# ## 우회
+#  1. **Parallel.** Lanes run at once; the wall clock is the slowest lane, not the
+#     sum. Output is buffered per lane and printed only for lanes that fail —
+#     interleaved live output from eight processes is unreadable.
+#  2. **Path-scoped.** A lane runs only when the branch touched files its glob
+#     matches. A docs-only push runs the docs lane and nothing else.
+#  3. **Three-dot diff.** `origin/main...HEAD` is the merge-base diff, so merging
+#     main into the branch does not drag main's changes into the lane filters.
+#  4. **No e2e.** Playwright is CI's job — sharded three ways there, serial here.
+#     Its absence is deliberate and the contract test asserts it.
 #
-# `--no-verify` 인데 `.claude/rules/git.md` 가 금지한다. 급하면 그 규칙을 먼저
-# 고쳐라 — 훅을 조용히 건너뛰는 것이 아니라.
+# **CI remains the authoritative gate.** This hook exists to make the common
+# failure cheap to find, not to replace the judgement.
+#
+# ## Bypass
+#
+# `--no-verify`, which `.claude/rules/git.md` forbids. If a lane is wrong, fix the
+# lane — do not step around the hook silently.
 
 set -e
 
-# 훅이 자기 자신을 검사 대상으로 삼지 않게, 기준선은 원격의 기본 브랜치다.
 BASE_REF="origin/main"
 ZERO="0000000000000000000000000000000000000000"
 
-ranges=""
-while read -r _local_ref local_sha _remote_ref remote_sha; do
+# git feeds `<local ref> <local sha> <remote ref> <remote sha>` on stdin.
+have_push=0
+while read -r _local_ref local_sha _remote_ref _remote_sha; do
   [ -n "$local_sha" ] || continue
   case "$local_sha" in "$ZERO") continue ;; esac
-  if [ "$remote_sha" = "$ZERO" ]; then
-    # 새 브랜치 — 기준선에서 갈라진 지점부터 잰다. 기준선을 모르면(클론 직후 등)
-    # 판정을 지어내지 않고 그 사실을 말하고 통과시킨다.
-    if base=$(git merge-base "$BASE_REF" "$local_sha" 2>/dev/null); then
-      ranges="$ranges $base..$local_sha"
-    else
-      echo "[pre-push] $BASE_REF 를 못 찾아 범위를 못 정했다 — 검사를 건너뛴다."
-      exit 0
-    fi
-  else
-    ranges="$ranges $remote_sha..$local_sha"
-  fi
+  have_push=1
 done
+# Nothing being pushed (branch deletion, or invoked by hand with no stdin).
+[ "$have_push" = "1" ] || exit 0
 
-# stdin 이 비어 있으면(수동 실행 등) 잴 것이 없다.
-[ -n "$ranges" ] || exit 0
-
-paths=""
-for range in $ranges; do
-  paths="$paths
-$(git diff --name-only "$range" --)"
-done
-
-# 지워진 파일은 뺀다 — `git diff --name-only` 는 삭제된 경로도 주는데, 그것을
-# 파일 읽는 도구(eslint 등)에 넘기면 그냥 고장난다(2026-08-21 실측: 연결 시트를
-# 은퇴시킨 푸시가 여기서 막혔다). 「무엇이 지워졌나」는 계약 검사가 본다.
-paths=$(printf '%s\n' "$paths" | sed '/^$/d' | sort -u | while read -r f; do
-  if [ -e "$f" ]; then
-    printf '%s\n' "$f"
-  fi
-done)
-[ -n "$paths" ] || exit 0
-
-echo "[pre-push] 푸시되는 범위의 변경으로 검사를 고른다 ($(printf '%s\n' "$paths" | wc -l | tr -d ' ') 파일)"
-
-# ⚠️ **e2e 는 CI 와 같은 방식으로 돌린다** (2026-08-21 실측으로 정정).
-#
-# 추천기는 `pnpm exec playwright test <spec>` 를 그대로 준다. 사람이 손으로 돌릴
-# 때는 그게 맞다 — 이미 `pnpm dev` 를 띄워 뒀으면 `reuseExistingServer` 로 붙어서
-# 빠르다. 그런데 **훅은 빈 셸에서 돈다.** 서버가 없으니 `next dev` 를 새로 띄우고,
-# Next dev 는 라우트를 첫 요청 때 컴파일한다 — 실측으로 웹 스모크 하나가 10분을
-# 넘겨도 안 끝났다.
-#
-# CI 는 그래서 `pnpm build && PLAYWRIGHT_STATIC=1` 로 돈다(`e2e.yml`). 훅도 같은
-# 길을 쓴다 — 같은 것을 재는데 방식이 다르면 훅이 CI 를 대신 볼 수가 없다.
-# 실측(fable, #1178): 라우트 하나 여는 데 dev 56.5초 vs 정적 6.5초.
-#
-# shellcheck disable=SC2086
-plan=$(node scripts/suggest-focused-checks.mjs $paths 2>/dev/null || true)
-if printf '%s' "$plan" | grep -q "playwright test"; then
-  echo "[pre-push] e2e 가 포함됐다 — CI 와 같이 «빌드된 것»을 상대로 돈다."
-  if ! pnpm build; then
-    echo "[pre-push] 빌드가 실패했다. e2e 이전 단계다."
-    exit 1
-  fi
-  PLAYWRIGHT_STATIC=1
-  export PLAYWRIGHT_STATIC
+if ! git rev-parse --verify --quiet "$BASE_REF" >/dev/null; then
+  echo "[pre-push] $BASE_REF 를 못 찾아 범위를 못 정했다 — 검사를 건너뛴다."
+  exit 0
 fi
 
-# shellcheck disable=SC2086
-if ! node scripts/suggest-focused-checks.mjs --run $paths; then
+# Three-dot: what THIS branch changed, ignoring what main moved underneath it.
+CHANGED=$(git diff --name-only "$BASE_REF...HEAD" -- 2>/dev/null || true)
+[ -n "$CHANGED" ] || exit 0
+
+n_changed=$(printf '%s\n' "$CHANGED" | sed '/^$/d' | wc -l | tr -d ' ')
+
+# `touched <glob>...` — true when the branch changed a file matching any glob.
+touched() {
+  for pattern in "$@"; do
+    if printf '%s\n' "$CHANGED" | grep -qE "$pattern"; then
+      return 0
+    fi
+  done
+  return 1
+}
+
+TMP=$(mktemp -d)
+# shellcheck disable=SC2064
+trap "rm -rf '$TMP'" EXIT INT TERM
+
+lane_names=""
+lane_count=0
+
+# `lane <name> <command>` — record and start one lane in the background.
+lane() {
+  name=$1
+  shift
+  lane_count=$((lane_count + 1))
+  lane_names="$lane_names $name"
+  ( eval "$@" >"$TMP/$name.log" 2>&1; echo $? >"$TMP/$name.code" ) &
+  eval "pid_$name=$!"
+}
+
+echo "[pre-push] 이 브랜치가 바꾼 $n_changed 개 파일로 레인을 고른다 (병렬)"
+
+TS='\.tsx?$|\.mjs$|tsconfig.*\.json$|next\.config\.ts$'
+APP='^src/|^app/'
+DOCS='^docs/|^[A-Z0-9_-]+\.md$|^\.claude/|^\.agents/'
+
+touched "$TS" "$APP" && lane typecheck 'pnpm exec tsc --noEmit'
+touched "$APP" '^eslint\.config\.mjs$' && lane lint 'pnpm lint'
+# `*.perf.test.*` is excluded here and **only** here — those three compare a fast
+# path against a naive one and read the clock to do it. This hook deliberately
+# saturates the machine (eight lanes, ~900% CPU measured), which is the one
+# condition under which a timing ratio cannot be trusted; it went red once on a
+# push whose diff could not affect it. CI runs them on a quiet runner, where the
+# number means something.
+touched "$APP" '^messages/' && lane unit 'pnpm exec vitest run --exclude "**/*.perf.test.*"'
+touched '^messages/|^scripts/validate-messages' && lane i18n 'pnpm test:i18n:messages'
+touched '^AGENTS\.md$|^CLAUDE\.md$|^\.claude/|^\.agents/' && lane agents 'pnpm agents:check'
+touched "$DOCS" '^src/entities/docs-vault/data/' && lane docs 'pnpm docs:links && pnpm docs-vault:check'
+touched '^mcp/|^cli/' && lane mcp 'pnpm docs:surface:check'
+
+# Repo-wide scanners: these read the whole tree, so almost any edit can move them.
+# Cheap enough (~1 min) that filtering would buy noise, not time.
+lane contract 'pnpm exec vitest run tests/contract/'
+lane comment_refs 'node scripts/check-comment-refs.mjs'
+lane decisions 'pnpm decisions:check'
+
+echo "[pre-push] 레인 $lane_count 개: $lane_names"
+wait
+
+failed=""
+for name in $lane_names; do
+  code=$(cat "$TMP/$name.code" 2>/dev/null || echo 1)
+  if [ "$code" = "0" ]; then
+    printf '  ok    %s\n' "$name"
+  else
+    printf '  FAIL  %s\n' "$name"
+    failed="$failed $name"
+  fi
+done
+
+if [ -n "$failed" ]; then
+  for name in $failed; do
+    echo ""
+    echo "──────── $name ────────"
+    tail -40 "$TMP/$name.log"
+  done
   echo ""
-  echo "[pre-push] CI 가 볼 것을 여기서 먼저 봤고, 빨갛다."
+  echo "[pre-push] CI 가 볼 것을 여기서 먼저 봤고, 빨갛다:$failed"
   echo "[pre-push] 고치고 다시 푸시해라 — CI 를 8분 태우는 것보다 싸다."
   echo ""
   exit 1
 fi
+
+echo "[pre-push] 전부 통과. e2e 는 CI 가 본다 (병렬 3갈래)."

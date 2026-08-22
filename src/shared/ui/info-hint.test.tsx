@@ -31,8 +31,8 @@ describe('InfoHint', () => {
       </InfoHint>,
     );
     const tooltip = screen.getByRole('tooltip');
-    // CSS class 기반 reveal — group-hover/group-focus-within 으로만 노출.
-    // 헌장 §11 — glow / scale 없이 opacity transition 만.
+    // Revealed purely by CSS class, through group-hover/group-focus-within.
+    // Charter rule: opacity transition only, no glow and no scale.
     expect(tooltip.className).toContain('opacity-0');
     expect(tooltip.className).toContain('pointer-events-none');
     expect(tooltip.className).toContain('group-hover:opacity-100');
@@ -59,7 +59,7 @@ describe('InfoHint', () => {
     );
     const tooltip = screen.getByRole('tooltip');
     expect(tooltip.className).toContain('data-custom-panel');
-    // 기본 panel 클래스도 유지
+    // The base panel classes are kept too.
     expect(tooltip.className).toContain('absolute');
   });
 

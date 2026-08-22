@@ -40,16 +40,18 @@ export type ProjectSourceModelError =
 export interface ProjectSourceRuntime {
   available(): boolean;
   /**
-   * `title` 은 **OS 폴더 선택창의 제목**이다. 화면 언어로 넘긴다 — 설치 앱에서
-   * 실측(2026-08-04)해 보니 한국어 화면에서 열린 창의 제목만 영어였다
-   * (`Connect project code folder`). 앱이 갑자기 다른 사람 말투로 말하는 자리다.
+   * `title` is **the OS folder picker's window title**, so pass it in the
+   * screen's language. Measured in the installed app 2026-08-04: on a Korean
+   * screen only that window's title stayed English (`Connect project code
+   * folder`) — the one place where the app suddenly speaks in someone else's
+   * voice.
    */
   pickRoot(title?: string): Promise<string | null>;
   inspect(rootPath: string): Promise<ProjectSourceInspection | null>;
   /**
-   * 볼트 폴더의 **절대 경로**. 추정의 유일한 입력이고, 이것이 없는 표면(웹)에서는
-   * 추정 자체가 성립하지 않는다 — 브라우저는 고른 폴더가 디스크 어디에 있는지
-   * 모른다.
+   * The vault folder's **absolute path**. It is the only input the inference
+   * has, so on a surface without it (the web) there is no inference at all — a
+   * browser does not know where on disk the chosen folder lives.
    */
   rootPathOf(handle: FileSystemDirectoryHandle): string | null;
   now(): string;
@@ -57,16 +59,17 @@ export interface ProjectSourceRuntime {
 }
 
 /**
- * **「이 폴더 맞나요?」의 데이터.** 화면이 그릴 자격이 있는 제안만 여기 담긴다 —
- * 확신이 낮거나(`low`) 후보가 없으면 `null` 이고, 그때 화면은 종전처럼 폴더
- * 선택창 하나만 그린다. 회색 버튼을 두지 않는다는 계약이 여기서 지켜진다.
+ * The data behind "is this the right folder?". Only a proposal the screen has
+ * earned the right to draw lands here: with `low` confidence or no candidate
+ * it is `null`, and the screen falls back to the plain folder picker. This is
+ * where the "no greyed-out buttons" contract is kept.
  */
 export interface ProjectSourceProposedRoot {
   rootPath: string;
-  /** 오늘 앱이 낼 수 있는 유일한 근거 — 볼트를 감싸는 git 저장소. */
+  /** The only evidence the app can offer today — the git repository enclosing the vault. */
   marker: "enclosing_git_repository";
   confidence: "high" | "medium";
-  /** 후보를 **실제로 재서** 나온 값. 없으면(선언된 경로 0개) 비율을 주장하지 않는다. */
+  /** Produced by **actually measuring** the candidate. With no declared paths it is null: no ratio is claimed. */
   witnessSummary: { total: number; supported: number; missing: number } | null;
 }
 
@@ -174,7 +177,7 @@ export function useProjectSourceModel(input: {
   vaultHandle: FileSystemDirectoryHandle | null;
   nodes: readonly KnowledgeGraphNode[];
   docs: readonly VaultDoc[];
-  /** OS 폴더 선택창 제목 — 호출자가 화면 언어로 넘긴다. */
+  /** OS folder picker title — the caller passes it in the screen's language. */
   pickerTitle?: string;
   runtime?: ProjectSourceRuntime;
 }) {
@@ -240,20 +243,23 @@ export function useProjectSourceModel(input: {
   }, [store, input.projectSlug, graphHash, runtime, runtimeAvailable]);
 
   /**
-   * **「이 폴더 맞나요?」 — 새 파일시스템 순회는 없다.**
+   * **「이 폴더 맞나요?」 ("Is this the right folder?", the on-screen prompt) — with no new filesystem walk.**
    *
-   * 볼트 루트로 `inspect_project_source` 를 한 번 부르면 그 명령이 이미 감싸는
-   * git 저장소까지 올라간다(`src-tauri/src/lib.rs`). 그러니 그 결과가 곧 후보다.
-   * 앱이 폴더를 따로 훑을 이유가 없고, 훑어서도 안 된다(local-first 계약).
+   * One `inspect_project_source` call on the vault root already climbs to the
+   * enclosing git repository (`src-tauri/src/lib.rs`), so its result *is* the
+   * candidate. The app has no reason to scan folders itself, and must not
+   * (local-first contract).
    *
-   * ⚠️ **조건이 화면과 같아야 한다** (`architecture.md` D4). 이 측정은 제안이
-   * 실제로 그려지는 순간 — 즉 다음 행동이 `connect_source` 일 때 — 에만 돈다.
-   * 이미 연결된 프로젝트는 스냅샷 쪽이 자기 폴더를 재고 있으므로, 여기서 한 번
-   * 더 재면 같은 클릭이 실측을 두 번 내게 된다.
+   * ⚠️ **The condition must match the screen's** (`.claude/rules/architecture.md`).
+   * This measurement runs only at the moment the proposal is actually drawn —
+   * that is, when the next action is `connect_source`. An already-connected
+   * project has the snapshot measuring its own folder, so measuring again here
+   * would make one click pay for two measurements.
    *
-   * 「선언된 경로 N개 중 M개」는 **주장이 아니라 측정**이다 — 후보의 파일 목록에
-   * 실제 증인을 대조해서 나온다. 그래서 영수증을 한 장 메모리에서 찍어 요약만
-   * 꺼내 쓴다(디스크에는 아무것도 쓰지 않는다 — 확정은 사람이 누를 때다).
+   * "M of N declared paths" is **a measurement, not a claim** — it comes from
+   * matching real witnesses against the candidate's file list. So a receipt is
+   * built in memory purely to read its summary; nothing is written to disk,
+   * because committing happens when a person presses the button.
    */
   const vaultRootPath = useMemo(
     () => runtimeAvailable && input.vaultHandle ? runtime.rootPathOf(input.vaultHandle) : null,
@@ -270,10 +276,10 @@ export function useProjectSourceModel(input: {
   const proposalKey = `${input.projectSlug ?? ""}::${proposalWanted ? "want" : "skip"}`;
   useEffect(() => {
     /*
-     * 못 재는 경우에는 **아무 상태도 안 바꾼다.** 읽은 값에 무엇을 읽고 나온
-     * 값인지(`key`)를 함께 담아 두었으므로, 「아직 못 읽음」과 「읽었더니
-     * 없음」이 아래 `proposalSettled` 하나로 갈린다 — 그 둘을 구분하려고 효과
-     * 안에서 곧바로 setState 하면 렌더가 한 번 더 돈다.
+     * When it cannot measure, **no state changes at all.** The read value
+     * carries the `key` of what it was read from, so "not read yet" and "read,
+     * found nothing" are told apart by `proposalSettled` alone — separating
+     * them with an immediate setState inside the effect costs an extra render.
      */
     if (!proposalWanted || !vaultRootPath || !input.projectSlug || !graphHash) return;
     const projectSlug = input.projectSlug;
@@ -283,7 +289,8 @@ export function useProjectSourceModel(input: {
       try {
         inspection = await runtime.inspect(vaultRootPath);
       } catch {
-        // 추정 실패는 진단이 아니다 — 제안이 없으면 화면은 폴더 선택창으로 간다.
+        // A failed inference is not a diagnosis — with no proposal the screen
+        // simply falls back to the folder picker.
         inspection = null;
       }
       if (cancelled) return;
@@ -329,10 +336,10 @@ export function useProjectSourceModel(input: {
   const proposalSettled = !proposalWanted || proposal?.key === proposalKey;
 
   /**
-   * @param options `rootPath` 를 주면 **폴더 선택창을 건너뛴다** — 추정 확정용
-   *   갈래다. 재는 코드와 저장하는 코드는 폴더를 고른 경우와 **한 벌**이다:
-   *   경로가 어디서 왔든 영수증을 찍는 절차가 갈리면 그 순간 둘 중 하나가
-   *   거짓말을 시작한다.
+   * @param options passing `rootPath` **skips the folder picker** — the branch
+   *   that confirms an inference. The measuring and storing code stays **one
+   *   copy** shared with the picked-folder case: the moment receipt-writing
+   *   forks by where the path came from, one of the two branches starts lying.
    */
   const runNextAction = useCallback(async (options?: { rootPath?: string }) => {
     if (
@@ -455,21 +462,23 @@ export function useProjectSourceModel(input: {
     canRunSourceAction,
     runNextAction,
     /**
-     * 「이 폴더 맞나요?」 — 없으면 화면은 종전 그대로(폴더 선택창 하나)다.
-     * 읽고 나온 값에 **무엇을 읽고 나온 값인지**를 함께 담아, 프로젝트를 갈아탄
-     * 직후 한 프레임 동안 남의 추정이 그려지지 않게 한다.
+     * The "is this the right folder?" proposal; without one the screen is
+     * unchanged (just the folder picker). The value carries **what it was read
+     * from**, so that for one frame after switching projects another project's
+     * inference is not drawn.
      */
     proposedRoot:
       proposal && proposal.key === proposalKey && canRunSourceAction
         ? proposal.value
         : null,
     /**
-     * **처방을 두 번 그리지 않기 위한 신호.**
+     * **The signal that keeps the prescription from being drawn twice.**
      *
-     * 추정은 비동기라, 이것 없이 그리면 사용자는 먼저 「코드 폴더 연결하기」
-     * 버튼 하나를 보고 300ms 뒤에 그 버튼이 「다른 폴더 고르기」로 바뀌면서
-     * 위로 밀려나는 것을 본다 — 마우스가 이미 가 있던 자리다. 무엇을 처방할지
-     * 아직 모르는 동안에는 **처방하지 않는다**(진단은 그대로 보인다).
+     * The inference is async, so without this the user sees one "connect code
+     * folder" button, then 300 ms later watches it turn into "pick a different
+     * folder" and shift upward — right where the pointer already was. While it
+     * is unknown what to prescribe, **nothing is prescribed**; the diagnosis
+     * stays visible.
      */
     proposalSettled,
   };

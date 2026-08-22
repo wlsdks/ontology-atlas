@@ -46,17 +46,19 @@ describe("relaxNodeSeparation", () => {
 });
 
 /**
- * 차등 검사 — 「빨라진 것이지 달라진 것이 아니다」.
+ * Differential check — it got faster, it did not get different.
  *
- * 2026-08-19 에 비활성 i 의 안쪽 루프를 «활성인 j» 위로만 돌리도록 바꿨다
- * (3D 돔은 밀도 게이트로 접지 않아 N² 방문이 그대로 프레임 비용이 됐다 —
- * 노드 드래그 p95 52.1ms). 이 함수는 좌표를 **제자리에서** 고치므로 쌍을
- * 방문하는 «순서» 가 곧 결과다. 그래서 빠르기가 아니라 **동일성**을 검사한다:
- * 아래 `referenceRelax` 는 최적화 이전의 열거 그대로이고, 무작위 그래프에서
- * 두 결과가 비트 단위로 같아야 한다.
+ * On 2026-08-19 the inner loop of an inactive `i` was narrowed to active `j`
+ * only (the 3D dome does not fold by density, so N² visits landed directly in
+ * the frame budget — node-drag p95 52.1 ms). The function edits coordinates
+ * **in place**, so the *order* in which pairs are visited is the result. This
+ * therefore checks **identity**, not speed: `referenceRelax` below is the
+ * pre-optimisation enumeration verbatim, and on random graphs the two results
+ * must match bit for bit.
  *
- * 이 검사가 놀고 있지 않다는 증거: `referenceRelax` 의 `iActive` 를 j 루프
- * «안» 으로 옮기면(= 연쇄 전파를 같은 패스에서 반영) 즉시 빨갛게 된다.
+ * Evidence this check is not idling: move `iActive` in `referenceRelax` *inside*
+ * the j loop — i.e. let chain propagation take effect within the same pass — and
+ * it turns red immediately.
  */
 function referenceRelax(nodes: SeparationNode[], options: {
   ratio: number;
@@ -107,7 +109,7 @@ function referenceRelax(nodes: SeparationNode[], options: {
   }
 }
 
-/** 결정론 난수 — 시드 고정이라 실패가 재현된다. */
+/** Deterministic RNG — a fixed seed makes any failure reproducible. */
 function makeRng(seed: number): () => number {
   let s = seed >>> 0;
   return () => {
@@ -121,7 +123,7 @@ function makeNodes(rng: () => number, count: number): SeparationNode[] {
   for (let i = 0; i < count; i += 1) {
     out.push({
       id: `n${i}`,
-      // 좁은 상자에 몰아넣어 겹침(=연쇄 전파)이 실제로 일어나게 한다.
+      // Crowd them into a small box so overlaps, and thus chain propagation, actually happen.
       x: Math.round(rng() * 300 * 1000) / 1000,
       y: Math.round(rng() * 300 * 1000) / 1000,
       r: 6 + Math.round(rng() * 20),
@@ -135,7 +137,7 @@ describe("relaxNodeSeparation — 활성 집합 열거 최적화", () => {
     for (let seed = 1; seed <= 30; seed += 1) {
       const rng = makeRng(seed * 7919);
       const base = makeNodes(rng, 60);
-      // 활성 집합 크기를 0 ~ 전체까지 훑는다 — 경계(빈 집합·전체)도 포함.
+      // Sweep the active-set size from 0 to all, boundaries included.
       const activeCount = seed % 61;
       const activeIds = new Set(base.slice(0, activeCount).map((n) => n.id));
       const pinnedId = seed % 3 === 0 ? base[0].id : null;
@@ -163,7 +165,7 @@ describe("relaxNodeSeparation — 활성 집합 열거 최적화", () => {
   });
 
   it("연쇄 전파가 살아 있다 — 활성 하나가 정지 사슬 A→B→C 를 민다", () => {
-    // 한 줄로 겹쳐 세운다: a(활성)만 움직였는데 c 까지 밀려야 한다.
+    // Overlap them in a row: only `a` is active, yet `c` must still be pushed.
     const nodes: SeparationNode[] = [
       { id: "a", x: 0, y: 0, r: 20 },
       { id: "b", x: 10, y: 0, r: 20 },

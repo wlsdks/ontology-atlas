@@ -2,80 +2,86 @@ import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 
 /**
- * 설정 시트의 타입 방언은 **하나**다 (2026-08-02, 소유자 지적 3건).
+ * The settings sheet has **one** type dialect (2026-08-02, three owner reports).
  *
- * ## 무엇이 있었나 — 절별 폰트 센서스(실측, 1512×806, 다크)
+ * **What was there — a per-section font inventory** (measured, 1512×806, dark):
  *
- * | 절 | 12.5px | 11px | **9.5px** |
+ * | Section | 12.5px | 11px | **9.5px** |
  * |---|---|---|---|
- * | 화면 | 10 | 5 | 0 |
- * | 작업 공간 | 5 | 1 | 0 |
- * | AI 에이전트 | 4 | 3 | 0 |
- * | **확장** | **0** | 4 | **10** |
- * | 발자국 | 0 | 4 | 1 |
- * | 지도 배경 | 3 | 2 | 4 |
+ * | Appearance | 10 | 5 | 0 |
+ * | Workspace | 5 | 1 | 0 |
+ * | AI agents | 4 | 3 | 0 |
+ * | **Expand** | **0** | 4 | **10** |
+ * | Footprint | 0 | 4 | 1 |
+ * | Map background | 3 | 2 | 4 |
  *
- * 같은 시트, 같은 종류의 내용(라벨 + 컨트롤 + 한 줄 설명)인데 절에 따라
- * **램프 한 단이 통째로 밀려** 있었다. 소유자가 본 것이 그것이다 —
- * *"이는 버튼도 너무 작고? 뭔가 설정 자체가좀 작아"* (「확장」 절을 가리키며).
+ * One sheet with the same kind of content (label + control + one-line
+ * description), and yet **a whole ramp step was shifted** depending on the
+ * section. That is what the owner saw: *"이는 버튼도 너무 작고? 뭔가 설정 자체가좀
+ * 작아"* (this button is too small too — the settings themselves feel small),
+ * pointing at the Expand section.
  *
- * 원인은 취향이 아니라 상속이다. `Slider`/`Choice` 는 `FootprintSettings` 의
- * **접힌 세부** 안에서 태어나 그 자리의 작은 치수를 갖고 있었고, 공용
- * 프리미티브로 승격되며 `ExpandSettings` 의 **주 결정 컨트롤**이 될 때 그
- * 치수를 그대로 데려왔다. 아무도 "확장 절은 작게" 라고 정하지 않았다.
+ * The cause is inheritance, not taste. `Slider` and `Choice` were born inside
+ * `FootprintSettings`' **collapsed details** and carried that place's small
+ * dimensions; when they were promoted to shared primitives and became
+ * `ExpandSettings`' **primary decision controls**, they brought those dimensions
+ * along. Nobody decided "the Expand section is small".
  *
- * ## 이 파일이 잠그는 규격
+ * **The spec this file locks**:
  *
- * | 무엇 | 스텝 |
+ * | What | Step |
  * |---|---|
- * | 행·컨트롤 라벨, 누르는 글자 | `text-body` (12.5px) |
- * | 한 줄 설명·보조 캡션·수치 읽기 | `text-label` (11px) |
- * | `text-caption` (9.5px) | **루트 시트에서는 쓰지 않는다** |
+ * | Row and control labels, pressable text | `text-body` (12.5px) |
+ * | One-line descriptions, secondary captions, numeric readouts | `text-label` (11px) |
+ * | `text-caption` (9.5px) | **not used in the root sheet** |
  *
- * 9.5px 을 뺀 근거는 램프의 **정의**다 — `--text-caption` 은 "마이크로 라벨·
- * 범례·타임스탬프" 의 단이다(`app/globals.css`). 라디오 버튼의 이름은 그 셋 중
- * 무엇도 아니다.
+ * The basis for excluding 9.5px is the ramp's own **definition** —
+ * `--text-caption` is the step for "micro labels, legends, timestamps"
+ * (`app/globals.css`). A radio button's name is none of those three.
  *
- * ## 사정거리 — 드릴인까지다 (2026-08-09 에 넓혔다)
+ * **Reach — it includes drill-ins** (widened 2026-08-09).
  *
- * ⚠️ **처음에는 드릴인을 뺐고, 그 판단이 틀렸다.**
+ * ⚠️ **Drill-ins were excluded at first, and that judgement was wrong.**
  *
- * 2026-08-02 에는 `VaultAgentSetupPanel` · `AiConnectionPanel` 을 사정거리 밖에
- * 뒀다. 근거는 *"그 안의 `text-caption` 대부분은 램프 정의에 맞는 쓰임(아이브로우 ·
- * 경로 코드 · 단계 배지)이라, 묶으면 82건짜리 소음이 된다"* 였다. **소음 걱정은
- * 옳았고 「대부분 정당하다」는 전제가 틀렸다.**
+ * On 2026-08-02, `VaultAgentSetupPanel` and `AiConnectionPanel` were left outside
+ * the reach, on the grounds that *"most `text-caption` in there fits the ramp
+ * definition (eyebrows, path code, step badges), so including it becomes 82 items
+ * of noise"*. **The noise concern was right and the premise "most are legitimate"
+ * was wrong.**
  *
- * 2026-08-09 에 소유자가 「내 에이전트 연결」을 가리켰다 —
- * *"왜이렇게 작아보이지? 우리 디자인 시스템에서 이런거 통일 안되어있나? 다른거 보면
- * 크잖아.. 다 너무 작아서 잘 안보임"*. 실측(1512×900, 볼트 연결 상태, 여덟 칸 전수):
+ * On 2026-08-09 the owner pointed at "connect my agent": *"왜이렇게 작아보이지?
+ * 우리 디자인 시스템에서 이런거 통일 안되어있나? 다른거 보면 크잖아.. 다 너무
+ * 작아서 잘 안보임"* (why does this look so small — isn't this unified in our
+ * design system? Other places are bigger; it is all too small to read). Measured
+ * (1512×900, vault connected, all eight panes):
  *
- * | 칸 | 12.5 | 11 | **9.5** |
+ * | Pane | 12.5 | 11 | **9.5** |
  * |---|---|---|---|
- * | 화면 · 지도 배경 · 확장 · 발자국 · 알림 · 작업 공간 | 2~9 | 1~14 | **0** (여섯 칸 전부) |
- * | **내 에이전트 연결** | 2 | 12 | **10 / 24 = 42%** |
+ * | Appearance · map background · expand · footprint · notifications · workspace | 2–9 | 1–14 | **0** (all six) |
+ * | **Connect my agent** | 2 | 12 | **10 / 24 = 42%** |
  *
- * 여섯 칸은 9.5px 이 하나도 없는데 이 칸만 **보이는 글자의 42%** 가 시트 바닥
- * 아래였다. 그리고 정당하다던 쓰임을 하나씩 열어 보니 아니었다:
+ * Six panes had no 9.5px at all, while in this one **42% of visible text** was
+ * below the sheet's floor. And opening the supposedly legitimate uses one by one,
+ * they were not:
  *
- * - `dt`(이름)이 9.5px 인데 그 `dd`(값)이 11px — **이름이 자기 값보다 작다.**
- *   2026-08-02 가 「확장」 절에서 이름 붙인 그 위계 뒤집힘과 같은 것이다
- * - API 키·URL 을 타이핑하는 `<input>` 이 `fieldClass` 를 부르면서 그 램프의
- *   기본값(`text-body-lg` 14px)을 **`text-caption` 으로 덮어썼다** — 자기 램프보다
- *   4.5px 아래
- * - 사용자가 글자 하나하나 확인해야 하는 설정 JSON `<pre>` 가 9.5px
+ * - A `dt` (name) at 9.5px whose `dd` (value) was 11px — **the name smaller than
+ *   its own value**, the same hierarchy inversion 2026-08-02 named in the Expand
+ *   section
+ * - An `<input>` for typing API keys and URLs called `fieldClass` and then
+ *   **overrode that ramp's default (`text-body-lg`, 14px) with `text-caption`** —
+ *   4.5px below its own ramp
+ * - A settings JSON `<pre>` the user must check character by character, at 9.5px
  *
- * 그래서 사정거리를 드릴인과 그 하위까지 넓힌다. 체인:
+ * So the reach widens to drill-ins and below. The chain is
  * `VaultAgentSetupPanel` → `AgentClientButtons` → `WebManualConnectPanel`.
  *
- * **소음은 면제를 좁혀서 막는다, 사정거리를 좁혀서가 아니다.** 허용되는 9.5px 은
- * **아이브로우 한 가지**뿐이다 — `uppercase` 가 같은 className 에 붙은 것. 그것이
- * 램프가 말하는 "마이크로 라벨" 이고, 판정이 한 줄 안에서 끝나므로 다음 사람이
- * 헷갈릴 여지도 없다. 넓힐 때의 실측: **위반 41건 → 치환 후 0건**(넘침 0 유지).
+ * **Noise is prevented by narrowing the exemption, not the reach.** Measured when
+ * widening: **41 violations → 0 after replacement**, with overflow still 0.
  */
 
 const UI = "src/widgets/app-settings-menu/ui";
 
-/** 루트 시트를 구성하는 파일 — LNB + 여섯 칸. */
+/** Files composing the root sheet — the LNB plus six panes. */
 const ROOT_SHEET_FILES = [
   "AppSettingsMenu.tsx",
   "settings-primitives.tsx",
@@ -86,8 +92,9 @@ const ROOT_SHEET_FILES = [
 ] as const;
 
 /**
- * 드릴인 목적지와 그 하위 — 2026-08-09 에 사정거리에 들어왔다(위 머리말).
- * 경로가 `UI` 밖으로 나가므로 저장소 루트 기준으로 적는다.
+ * Drill-in destinations and their descendants, brought into reach on 2026-08-09
+ * (see the preamble). These paths leave `UI`, so they are written from the
+ * repository root.
  */
 const DRILL_IN_FILES = [
   `${UI}/VaultAgentSetupPanel.tsx`,
@@ -98,9 +105,10 @@ const DRILL_IN_FILES = [
 ] as const;
 
 /**
- * 주석을 뺀 소스. 이 파일이 세는 것은 **화면에 나가는 클래스**지 그것을 설명하는
- * 문장이 아니다 — 주석을 안 빼면 "이 규격을 문서화한 주석" 자체가 위반으로
- * 잡혀서, 규격을 적을수록 게이트가 빨개지는 뒤집힌 유인이 생긴다.
+ * Source with comments removed. This file counts **classes that reach the
+ * screen**, not sentences describing them — without stripping, a comment
+ * documenting the spec is itself caught as a violation, creating the inverted
+ * incentive that writing down the spec turns the gate red.
  */
 function sourceWithoutComments(file: string): string {
   return sourceAtPath(`${UI}/${file}`);
@@ -113,18 +121,18 @@ function sourceAtPath(path: string): string {
 }
 
 /**
- * 9.5px 을 쓴 줄. **면제는 없다.**
+ * Lines using 9.5px. **There is no exemption.**
  *
- * ⚠️ 처음에는 «`uppercase` 가 붙은 아이브로우» 를 면제했고, 그것이 소유자 지적
- * 2차를 불렀다(2026-08-09). 근거로 든 것이 램프 정의("마이크로 라벨")와
- * `uppercase` 였는데 **한글에는 `uppercase` 가 아무 일도 하지 않는다** — 대문자
- * 마이크로 라벨이라는 타이포 장치가 성립하지 않고, 남는 것은 그냥 9.5px 흐린
- * 글자다. 실제로 그 면제를 타고 절 이름 네 자리(연결 파일 상태 · 에이전트가 이
- * 폴더를 쓰는 방식 · 확인 · 연결)가 9.5px 로 남았다.
+ * ⚠️ At first, eyebrows carrying `uppercase` were exempt, and that is what drew
+ * the owner's second report (2026-08-09). The grounds were the ramp definition
+ * ("micro label") plus `uppercase` — but **`uppercase` does nothing to Hangul**,
+ * so the typographic device of an uppercase micro label does not exist and what
+ * remains is simply dim 9.5px text. Four section names really did stay at 9.5px
+ * through that exemption.
  *
- * 결정적인 것은 **루트 시트가 같은 역할에 이미 11px 을 쓰고 있었다**는 사실이다
- * (`SETTINGS_SECTION_LABEL`). 아무도 쓰지 않는 규격을 위해 열어 둔 면제였으니,
- * 면제를 지우는 것이 규칙을 더 단순하게 만든다.
+ * Decisive was the fact that **the root sheet already used 11px for the same
+ * role** (`SETTINGS_SECTION_LABEL`). The exemption was open for a spec nobody
+ * used, so deleting it makes the rule simpler.
  */
 function captionLines(source: string): string[] {
   return source
@@ -148,10 +156,11 @@ describe("설정 루트 시트 — 타입 방언은 하나다", () => {
   });
 
   /**
-   * 공회전 차단 — 파일 목록이 오타/이동으로 비면 위 시험은 «위반 0» 을 영원히
-   * 보고한다. 실제로 무엇인가를 읽었고, 그것이 타입 램프를 쓰는 파일인지 본다.
+   * Idling guard — if the file list empties through a typo or a move, the test
+   * above reports "0 violations" forever. This confirms something really was read
+   * and that it is a file using the type ramp.
    */
-  /** 드릴인 목적지 — 루트와 **똑같은** 방언이다. 9.5px 면제는 없다(위 주석). */
+  /** Drill-in destinations use **exactly** the root's dialect. No 9.5px exemption (see above). */
   it("드릴인 목적지에도 9.5px 이 없다", () => {
     const offenders = DRILL_IN_FILES.flatMap((path) =>
       captionLines(sourceAtPath(path)).map((line) => `${path.split("/").pop()}: ${line}`),
@@ -164,8 +173,9 @@ describe("설정 루트 시트 — 타입 방언은 하나다", () => {
   });
 
   /**
-   * 절 이름은 **한 벌**이다 — 루트 시트의 그룹 헤더와 드릴인의 절 헤더가 같은 것.
-   * 사본이 생기면 그중 하나가 다시 한 단 작아진다(그게 이번에 일어난 일이다).
+   * There is **one** section-name spec — the root sheet's group header and the
+   * drill-in's section header are the same thing. Once a copy exists, one of them
+   * drops a step again (which is what happened this time).
    */
   it("절 이름 규격이 한 곳에 있고 소비처가 그것을 가리킨다", () => {
     const primitives = sourceWithoutComments("settings-primitives.tsx");
@@ -174,11 +184,11 @@ describe("설정 루트 시트 — 타입 방언은 하나다", () => {
       /SETTINGS_SECTION_LABEL\s*=\s*\n?\s*'[^']*\btext-label\b/,
     );
     /*
-     * 소비처가 값을 다시 적지 않고 가리키는가.
+     * Does the consumer point at the value rather than re-writing it?
      *
-     * ⚠️ **`toContain(이름)` 으로는 이것을 못 본다** — import 줄에 이름이 남아 있으면
-     * 본문에서 손으로 값을 적어도 통과한다(프로브에서 실제로 통과했다). 그래서
-     * **`className` 자리에서** 쓰이는지를 본다.
+     * ⚠️ **`toContain(name)` cannot see this** — with the name still on the import
+     * line, hand-writing the value in the body passes (it really did in a probe). So
+     * what is checked is that it is used **in the `className` position**.
      */
     const setup = sourceWithoutComments("VaultAgentSetupPanel.tsx");
     expect(setup, "드릴인 절 이름이 규격을 className 으로 쓰지 않는다").toMatch(
@@ -194,7 +204,7 @@ describe("설정 루트 시트 — 타입 방언은 하나다", () => {
         /text-(body|label|title|body-lg)/,
       );
     }
-    // 체인이 살아 있는가 — 이 파일들이 정말 설정 시트에서 그려지나.
+    // Is the chain alive — do these files really render inside the settings sheet.
     expect(sourceAtPath(`${UI}/VaultAgentSetupPanel.tsx`)).toContain("AgentClientButtons");
     expect(sourceAtPath("src/features/docs-vault-local/ui/AgentClientButtons.tsx")).toContain(
       "WebManualConnectPanel",
@@ -211,42 +221,47 @@ describe("설정 루트 시트 — 타입 방언은 하나다", () => {
 
 describe("한 시트 안에서 «값 하나 고르기» 는 한 규격이다", () => {
   /**
-   * `Choice` 의 라디오 칩과 `SegmentSwitch` 의 세그먼트는 둘 다 "값 하나 고르기"
-   * 다. 다를 이유가 없는데 달랐다 — 24px/9.5px 대 32px/12.5px. 칩이 자기 라벨
-   * (11px)보다 작아서 **누르는 것이 화면에서 가장 작은 글자**였다(위계 역전).
+   * `Choice`'s radio chip and `SegmentSwitch`'s segment are both "pick one value".
+   * There was no reason for them to differ, and they did — 24px/9.5px against
+   * 32px/12.5px. The chip was smaller than its own label (11px), making **the thing
+   * you press the smallest text on screen** (hierarchy inversion).
    *
-   * `AgentActivitySettings` 의 알림 칩은 이미 32px/12.5px 이었다 — 이 시트의 더
-   * 새 코드가 이미 옳은 값을 골라 뒀고, `Choice` 만 옛 자리의 치수를 들고 있었다.
+   * `AgentActivitySettings`' notification chip was already 32px/12.5px — the newer
+   * code in this sheet had already picked the right values, and only `Choice` still
+   * carried its old dimensions.
    */
   /**
-   * ⚠️ **소스의 클래스 문자열을 못박지 않는다** (2026-08-06 에 그것 때문에 깨졌다).
+   * ⚠️ **Do not pin the source's class string** (that broke this on 2026-08-06).
    *
-   * 종전 이 단언은 `flex h-8 items-center rounded-chip border px-3 text-body` 를
-   * 정규식으로 그대로 찾았다. 그 자리를 **값 층(`controlClass`)으로 옮기자**
-   * 문자열이 사라져 빨개졌다 — 규격이 좋아지는 방향에서 검사가 터진 것이고,
-   * 그러면 다음 사람은 검사 대신 **규격 쪽을 되돌린다**(`documentation.md`).
+   * This assertion used to search for `flex h-8 items-center rounded-chip border
+   * px-3 text-body` verbatim by regex. **Moving that place into the value layer
+   * (`controlClass`)** made the string disappear and the test go red — the check
+   * breaking in the direction of a better spec, which makes the next person revert
+   * **the spec** rather than the check (`documentation.md`).
    *
-   * 규격의 본체는 «어떻게 적혔나» 가 아니라 **«같은 높이·같은 단을 쓰나»** 다.
-   * 그래서 소스에서 문법을 가리지 않고 **높이(`h-8`)와 타입 단(`text-body`)이
-   * 실제로 서 있는지**만 본다 — 리터럴이든 `controlClass({ className })` 이든.
+   * The substance of the spec is not "how it was written" but **"does it use the
+   * same height and the same step"**. So the source is checked without regard to
+   * syntax, for whether the height (`h-8`) and the type step (`text-body`) are
+   * really standing — as a literal or through `controlClass({ className })`.
    */
   it("라디오 칩 · 세그먼트 · 알림 칩이 같은 높이·같은 단을 쓴다", () => {
     const primitives = sourceWithoutComments("settings-primitives.tsx");
     const activity = sourceWithoutComments("AgentActivitySettings.tsx");
 
     /*
-     * 높이 — 셋 다 32px 한 단.
+     * Height — all three on the one 32px step.
      *
-     * ⚠️ **2026-08-15 2차 라운드에서 이 단언의 자리가 바뀌었다.** 종전엔
-     * 「`settings-primitives.tsx` 안에 `h-8` 리터럴이 있는가」를 봤다. 그런데
-     * 그날 `Choice` 도 `SegmentSwitch` 처럼 `SegmentedControl` 어댑터가 되면서
-     * 그 리터럴이 사라졌고, 이 단언이 **규격이 좋아졌는데 빨개졌다** —
-     * `design-gates.md` 가 「규격이 아니라 글자 모양을 붙들고 있는 게이트」라고
-     * 부르는 그 모양이다(그런 게이트는 다음 사람이 게이트 대신 규격 쪽을
-     * 되돌리게 만든다).
+     * ⚠️ **This assertion moved in the second round of 2026-08-15.** It used to check
+     * whether an `h-8` literal existed inside `settings-primitives.tsx`. That day
+     * `Choice` also became a `SegmentedControl` adapter like `SegmentSwitch`, the
+     * literal disappeared, and the assertion **went red while the spec improved** —
+     * the shape `design-gates.md` calls "a gate holding on to letterforms rather than
+     * the spec" (such a gate makes the next person revert the spec instead of the
+     * gate).
      *
-     * 그래서 32px 보증을 **실제로 그것을 내는 자리**에서 잰다: 두 어댑터가
-     * 프리미티브에 위임하는가 + 그 프리미티브의 두 그릇이 같은 높이 단인가.
+     * So the 32px guarantee is measured **where it is actually produced**: do the two
+     * adapters delegate to the primitive, and do the primitive's two shapes sit on the
+     * same height step.
      */
     expect(
       primitives.match(/<SegmentedControl\b/g)?.length ?? 0,
@@ -263,29 +278,31 @@ describe("한 시트 안에서 «값 하나 고르기» 는 한 규격이다", (
 
     expect(activity).toMatch(/\bh-8\b/);
 
-    // 타입 단 — 칩은 `text-body`(12.5). 세그먼트는 무게만 다르고 단은 같다.
+    // Type step — the chip is `text-body` (12.5). The segment differs only in weight, same step.
     expect(primitives).toMatch(/\btext-body\b/);
     expect(activity).toMatch(/\btext-body\b/);
 
     /*
-     * 램프 밖 높이가 끼어들지 않았는지. **`min-h-` 는 제외한다** — 행 컨테이너의
-     * `min-h-11`(44px 터치 바닥)은 아래 「칩 행이 44px 미만으로 눌리지 않는다」가
-     * 요구하는 값이라, 안 빼면 이 단언이 그 단언과 서로 싸운다(실제로 밟았다).
+     * Check no off-ramp height slipped in. **`min-h-` is excluded** — the row
+     * container's `min-h-11` (the 44px touch floor) is the value required by the "chip
+     * rows are never pressed below 44px" test below, and without excluding it this
+     * assertion fights that one (which actually happened).
      */
     expect(primitives, "시트에 램프 밖 컨트롤 높이가 생겼다").not.toMatch(/(?<!min-)\bh-(7|9|10|11)\b/);
   });
 
   /**
-   * **WCAG 2.5.8 (AA, Target Size Minimum) 여유.** 종전 칩은 24px 정각이라
-   * 최소치에 여유 0으로 걸쳐 있었고, 「고리」·「기둥」은 폭 38.4px 이었다.
-   * `h-8`(32px)은 그 위로 8px 을 남긴다. `--touch-target-min`(44px) 은
-   * `pointer: coarse` 한정 계약이라 이 데스크톱 시트에 직접 걸지 않지만,
-   * 세로 인셋(`py-2` + `min-h-11`)이 행 전체를 44px 로 세워 터치에서도 행이
-   * 목표를 만족한다.
+   * **WCAG 2.5.8 (AA, Target Size Minimum) headroom.** The old chip was exactly
+   * 24px, sitting on the minimum with zero headroom, and the "ring" and "column"
+   * options were 38.4px wide. `h-8` (32px) leaves 8px above it.
+   * `--touch-target-min` (44px) is a `pointer: coarse`-only contract and does not
+   * apply directly to this desktop sheet, but the vertical inset (`py-2` +
+   * `min-h-11`) stands the whole row at 44px so the row satisfies the target on
+   * touch as well.
    */
   it("칩 행이 44px 미만으로 눌리지 않는다", () => {
     const primitives = sourceWithoutComments("settings-primitives.tsx");
-    // Choice / Slider 의 행 컨테이너
+    // Row containers for Choice and Slider
     const rows = primitives.match(/flex min-h-11 items-center gap-3 px-1 py-2/g) ?? [];
     expect(rows.length, "Choice·Slider 두 행 문법이 같은 최소 높이를 안 쓴다").toBe(2);
   });
@@ -293,43 +310,47 @@ describe("한 시트 안에서 «값 하나 고르기» 는 한 규격이다", (
 
 describe("LNB 는 크롬 치수를 빌려오지 않는다", () => {
   /**
-   * 종전 LNB 항목은 `px-2.5 py-1.5` → 32px, 아이콘 14px 이었다. 32px 은
-   * **나브레일 유틸리티 타일**(`--app-nav-rail-tile-height`)의 값이다. 즉 지도
-   * 위에 떠서 화면을 양보하는 도구 막대의 치수를, «일부러 들어와서 읽고 고르는
-   * 목적지» 가 빌려 쓰고 있었다.
+   * The old LNB item was `px-2.5 py-1.5` → 32px with a 14px icon. 32px is the value
+   * of the **nav-rail utility tile** (`--app-nav-rail-tile-height`) — a destination
+   * people deliberately enter to read and choose in was borrowing the dimensions of
+   * a toolbar that floats over the map and yields screen space.
    *
-   * 「스케일 고정 계약」은 스스로 사정거리를 **워크벤치 크롬**으로 한정한다
-   * (`design.md`) — 관문 크롬(`GatewayNav`)을 뺀 것과 같은 논리가 여기에도
-   * 적용된다. 그래서 값을 이 시트 안에서 끌어온다: 오른쪽 칸 `SettingsRow` 와
-   * **같은 패딩**(`px-3 py-2`), 그리고 오른쪽 행 라벨보다 한 단 위(`text-body-lg`).
-   * 새 토큰은 만들지 않는다 — 소비처가 하나뿐인데 변수를 만들면 참조 대상이
-   * 둘로 늘어 어디가 규격인지 흐려진다(같은 문단이 남긴 규율).
+   * The locked-scale contract limits its own reach to **workbench chrome**
+   * (`design.md`) — the same logic that excluded the gateway chrome (`GatewayNav`)
+   * applies here. So the value is drawn from inside this sheet: **the same padding**
+   * as the right pane's `SettingsRow` (`px-3 py-2`), one step above the right-hand
+   * row label (`text-body-lg`). No new token is created — with a single consumer, a
+   * variable adds a second thing to reference and blurs where the spec lives (the
+   * discipline left by that same passage).
    */
   /**
-   * ⚠️ **소스의 클래스 문자열을 통째로 못박지 않는다** (2026-08-06 에 두 번째로 깨졌다).
+   * ⚠️ **Do not pin the source's class string as one block** (this broke a second
+   * time on 2026-08-06).
    *
-   * 종전 이 단언은 `flex w-full items-center gap-2.5 rounded-card px-3 py-2
-   * text-left text-body-lg` 를 **한 덩어리 정규식**으로 찾았다. 그래서 그 자리를
-   * 값 층(`controlClass({ shape: 'row' })`)으로 옮기자 — `flex w-full
-   * items-center text-left` 는 모양이 내고 나머지만 `className` 에 남으므로 —
-   * 문자열이 쪼개지며 빨개졌다.
+   * This assertion used to find `flex w-full items-center gap-2.5 rounded-card px-3
+   * py-2 text-left text-body-lg` as **one regex block**. Moving that place into the
+   * value layer (`controlClass({ shape: 'row' })`) split the string — the shape emits
+   * `flex w-full items-center text-left` and only the rest stays in `className` — and
+   * it went red.
    *
-   * 규격의 본체는 «한 덩어리로 적혔나» 가 아니라 **«오른쪽 칸 행과 같은 인셋을
-   * 쓰고 한 단 위 글자를 쓰나»** 다. 그래서 **값 단위로** 본다.
+   * The substance of the spec is not "was it written as one block" but **"does it use
+   * the same inset as the right pane's row and text one step above"**. So it is
+   * checked **value by value**.
    */
   it("LNB 항목이 오른쪽 칸 행과 같은 인셋을 쓰고 한 단 위 글자를 쓴다", () => {
     const menu = sourceWithoutComments("AppSettingsMenu.tsx");
     /*
-     * ⚠️ **파일 전체에서 값을 찾으면 안 된다** — 처음 그렇게 썼다가 프로브가
-     * 아무것도 못 잡았다. `px-3 py-2` 는 이 파일의 **다른 자리**에도 있어서,
-     * LNB 를 크롬 치수로 되돌려도 통과해 버렸다. **LNB 항목의 여는 태그로
-     * 범위를 좁힌다.**
+     * ⚠️ **Do not search the whole file for the value** — written that way at first,
+     * the probe caught nothing. `px-3 py-2` also appears **elsewhere** in this file, so
+     * reverting the LNB to chrome dimensions still passed. **The scope is narrowed to
+     * the LNB item's opening tag.**
      */
     const from = menu.indexOf('data-testid={`app-settings-nav-${item}`}');
     /*
-     * 여는 태그의 끝을 `>` 로 자르면 **`=>` 나 템플릿 안의 `>` 에서 끊긴다** —
-     * 처음 그렇게 썼다가 정상 상태가 빨개졌다. 중괄호 깊이를 세어 **깊이 0 의
-     * `>`** 만 끝으로 친다(이 저장소의 다른 스캐너와 같은 방식).
+     * Cutting the opening tag at `>` **breaks at a `=>` or a `>` inside a template** —
+     * written that way at first, a correct state went red. Brace depth is counted and
+     * only a **`>` at depth 0** ends the tag (the same method as this repository's
+     * other scanners).
      */
     let depth = 0;
     let to = from;
@@ -342,57 +363,60 @@ describe("LNB 는 크롬 치수를 빌려오지 않는다", () => {
     const lnb = menu.slice(from, to);
     expect(lnb.length, "LNB 항목의 여는 태그를 못 찾았다 — 이 검사가 헛돈다").toBeGreaterThan(40);
 
-    // 인셋 — 오른쪽 칸 행(`SettingsRow`)이 쓰는 `px-3 py-2` 와 같아야 한다.
+    // Inset — must equal the `px-3 py-2` used by the right pane's row (`SettingsRow`).
     expect(lnb, "LNB 인셋이 크롬 치수(px-2.5 py-1.5)로 되돌아갔다").toMatch(/\bpx-3 py-2\b/);
-    // 타입 — 오른쪽 칸의 `text-body` 보다 한 단 위.
+    // Type — one step above the right pane's `text-body`.
     expect(lnb, "LNB 글자가 한 단 내려갔다").toMatch(/\btext-body-lg\b/);
-    // 반경 — 크롬의 chip 이 아니라 card 계열.
+    // Radius — the card family, not chrome's chip.
     expect(lnb, "LNB 반경이 칩으로 되돌아갔다").toMatch(/\brounded-(?:lg|card)\b/);
   });
 
   it("LNB 아이콘이 글자보다 크다 — 훑기 채널로 선다", () => {
     const menu = sourceWithoutComments("AppSettingsMenu.tsx");
-    // 14px 이면 글자(text-body-lg = 14px)와 같아져 채널이 서지 않는다.
+    // At 14px it equals the text (text-body-lg = 14px) and the scanning channel disappears.
     expect(menu).toMatch(/<Icon size=\{16\}/);
   });
 
-  /** `SettingsRow` 가 인셋의 단일 출처다 — 여기가 바뀌면 위 계약의 근거가 사라진다. */
+  /** `SettingsRow` is the single source for the inset — change it and the contract above loses its basis. */
   it("오른쪽 칸 행의 인셋이 LNB 가 맞춘 그 값이다", () => {
     const primitives = sourceWithoutComments("settings-primitives.tsx");
-    // 가로 인셋은 **조건 없이** 공유부에 있다 — LNB 가 맞춘 값이 그것이다.
+    // The horizontal inset lives **unconditionally** in the shared part — that is the value the LNB matched.
     expect(primitives).toMatch(/flex items-center justify-between gap-3 px-3/);
-    // 보통 행의 세로 치수는 그대로다.
+    // An ordinary row's vertical dimension is unchanged.
     expect(primitives).toMatch(/\bmin-h-12 py-2\b/);
   });
 
   /*
-   * 2026-08-16 — 행 높이가 둘이 됐다. **높이를 고르는 축이 생긴 게 아니라**,
-   * 남의 제품 마크가 붙는 행은 내용이 다르다: 32px 마크를 48px 행에 넣으면
-   * 위아래가 막히고, 12px 로 우겨 넣으면 알아볼 수 없어 훑기 채널이 안 된다.
+   * 2026-08-16 — there are now two row heights. **No height-choosing axis was
+   * created**; rows carrying another product's mark simply hold different content: a
+   * 32px mark in a 48px row is boxed in top and bottom, and squeezing it to 12px
+   * makes it unrecognisable so it stops working as a scanning channel.
    *
-   * 그래서 두 번째 높이는 **마크의 존재가 정한다.** 이 검사가 그 묶음을 지킨다 —
-   * 마크와 무관하게 아무 행이나 키우는 데 쓰이면 여기서 걸린다.
+   * So the second height is **decided by the presence of a mark.** This test keeps
+   * that binding — using it to enlarge arbitrary rows unrelated to a mark is caught
+   * here.
    */
   it("키가 큰 행은 마크가 있는 행뿐이다 — 높이를 고르는 축이 아니다", () => {
     const primitives = sourceWithoutComments("settings-primitives.tsx");
     expect(primitives, "큰 치수가 사라졌다면 이 계약을 지울 때다").toMatch(
       /\bmin-h-16 py-2\.5\b/,
     );
-    // 큰 치수를 고르는 조건이 **마크 자리 유무**여야 한다.
+    // The condition selecting the larger dimension must be **whether a mark slot exists**.
     expect(primitives).toMatch(/hasMarkSlot \? 'min-h-16 py-2\.5' : 'min-h-12 py-2'/);
   });
 });
 
 describe("패널은 최소 창 안에서 자기 거터를 먹지 않는다", () => {
   /**
-   * 고정 크기 계약(소유자 2026-07-29)은 그대로다. 바뀐 것은 높이 하나이고,
-   * 그 값은 취향이 아니라 **파생값**이다 — Tauri 최소 창 높이 720 에서
-   * 오버레이 여백(`p-3`, 위아래 12px)을 뺀 696 안에, 그 여백을 한 벌 더 남기고
-   * 들어가는 최대 높이(696 − 24 = 672).
+   * The fixed-size contract (owner, 2026-07-29) stands. Only the height changed,
+   * and that value is **derived**, not chosen: within 696 (Tauri's minimum window
+   * height of 720 minus the overlay gutter `p-3`, 12px top and bottom), the largest
+   * height that still leaves one more gutter (696 − 24 = 672).
    *
-   * 640 이던 동안 가장 붐비는 「화면」 절이 41px 잘려 있었고, 동시에 14인치
-   * 뷰포트(1512×806)에서 패널 바깥 118px 이 비어 있었다 — 잘린 상자와 남는
-   * 자리가 같은 화면에 있는 것이 소유자가 말한 *"답답해"* 의 기계적 형태다.
+   * While it was 640, the busiest section (Appearance) was clipped by 41px while
+   * 118px sat empty outside the panel at a 14-inch viewport (1512×806) — a clipped
+   * box and spare space on the same screen is the mechanical form of the owner's
+   * *"답답해"* (it feels cramped).
    */
   it("패널 높이가 최소 창 − 오버레이 거터 2벌 을 넘지 않는다", () => {
     const menu = sourceWithoutComments("AppSettingsMenu.tsx");
@@ -401,10 +425,10 @@ describe("패널은 최소 창 안에서 자기 거터를 먹지 않는다", () 
 
     const tauri = JSON.parse(readFileSync("src-tauri/tauri.conf.json", "utf8"));
     const minHeight: number = tauri.app.windows[0].minHeight;
-    const OVERLAY_GUTTER = 12; // 오버레이의 `p-3`
+    const OVERLAY_GUTTER = 12; // The overlay's `p-3`
     expect(minHeight, "최소 창 높이 계약이 사라졌다").toBeGreaterThan(0);
     expect(height).toBeLessThanOrEqual(minHeight - OVERLAY_GUTTER * 4);
-    // 그리고 이전 값(640)보다는 커야 한다 — 안 그러면 이 변경이 되돌려진 것이다.
+    // And it must exceed the previous value (640), or this change has been reverted.
     expect(height).toBeGreaterThan(640);
   });
 });

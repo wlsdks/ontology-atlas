@@ -1,20 +1,20 @@
 /**
- * 클라이언트별 MCP 원클릭 딥링크 빌더 (#12, Phase 4).
+ * Per-client one-click MCP deeplink builders.
  *
- * Cursor / VS Code 는 URL 스킴으로 MCP 서버를 원클릭 등록한다. 두 링크 모두
- * 같은 표준 stdio triple(command/args/env)을 실어 나르되 인코딩만 다르다:
- * - Cursor: `config` 쿼리에 base64(JSON)
- * - VS Code: 쿼리 문자열에 url-encoded JSON
+ * Cursor and VS Code register an MCP server in one click via a URL scheme. Both links carry the same
+ * standard stdio triple (command/args/env) and differ only in encoding:
+ * - Cursor: base64(JSON) in the `config` query
+ * - VS Code: url-encoded JSON in the query string
  *
- * 성립 조건이 **둘 다** 필요하다:
- * 1. `OATLAS_VAULT` 에 넣을 **절대 경로**. 브라우저 세션은 폴더 절대 경로를
- *    알 수 없으므로(구조적 제약) 웹에서는 항상 null 이다.
- * 2. 서버를 **어떻게 띄울지**(`McpServerLaunch`). 설치된 앱은 자기 번들 안의
- *    바이너리 경로를 실어 보낸다 — 딥링크는 로컬에서 만들어 로컬에서 열리므로
- *    로컬 절대 경로가 그대로 유효하다.
+ * **Both** conditions are required:
+ * 1. An **absolute path** for `OATLAS_VAULT`. A browser session cannot know a folder's absolute path
+ *    (a structural constraint), so this is always null on the web.
+ * 2. **How to launch** the server (`McpServerLaunch`). The installed app sends the path of the binary
+ *    inside its own bundle — a deeplink is built locally and opened locally, so a local absolute path
+ *    stays valid.
  *
- * 2026-07-27 이전에는 여기에 npm 발행 게이트가 걸려 있어 **항상 null** 이었다.
- * 발행 계획이 폐기되고 앱이 서버를 품게 되면서 이 경로는 처음으로 살아난다.
+ * Before 2026-07-27 an npm publishing gate here made this **always null**. With that plan dropped and
+ * the app carrying the server, this path comes alive for the first time.
  */
 
 import { MCP_SERVER_NAME, type McpServerLaunch } from "@/shared/config";
@@ -28,7 +28,8 @@ export interface McpStdioConfig {
 }
 
 /**
- * 딥링크에 실을 표준 stdio config 객체. 절대 경로나 실행 방법을 모르면 null.
+ * The standard stdio config object to carry in a deeplink. Null when the absolute path or the launch
+ * method is unknown.
  */
 export function buildMcpDeeplinkConfig(
   vaultPath: string | null | undefined,
@@ -43,8 +44,8 @@ export function buildMcpDeeplinkConfig(
 }
 
 /**
- * UTF-8 안전 base64 (한글 vault 경로 대응). 브라우저(btoa 는 latin1 전용)와
- * Node(Buffer) 양쪽에서 동작.
+ * UTF-8-safe base64 (for vault paths with non-latin1 characters). Works in both the browser (`btoa`
+ * is latin1-only) and Node (Buffer).
  */
 export function utf8ToBase64(input: string): string {
   if (typeof Buffer !== "undefined") {
@@ -57,8 +58,8 @@ export function utf8ToBase64(input: string): string {
 }
 
 /**
- * Cursor 딥링크: `cursor://anysphere.cursor-deeplink/mcp/install?name=…&config=<base64>`.
- * 절대 경로나 실행 방법을 모르면 null(웹 강등).
+ * The Cursor deeplink: `cursor://anysphere.cursor-deeplink/mcp/install?name=…&config=<base64>`.
+ * Null when the absolute path or the launch method is unknown (the web degradation).
  */
 export function buildCursorMcpDeeplink(
   vaultPath: string | null | undefined,
@@ -72,8 +73,8 @@ export function buildCursorMcpDeeplink(
 }
 
 /**
- * VS Code 딥링크: `vscode:mcp/install?<url-encoded JSON>`.
- * VS Code 는 name 을 config 객체 안의 필드로 받는다. 절대 경로를 모르면 null.
+ * The VS Code deeplink: `vscode:mcp/install?<url-encoded JSON>`.
+ * VS Code takes the name as a field inside the config object. Null when the absolute path is unknown.
  */
 export function buildVsCodeMcpDeeplink(
   vaultPath: string | null | undefined,

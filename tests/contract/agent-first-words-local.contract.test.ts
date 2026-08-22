@@ -3,17 +3,20 @@ import { readFileSync } from 'node:fs';
 import path from 'node:path';
 
 /**
- * **첫 마디는 모델을 부르지 않는다** — 이 슬라이스의 핵심 계약을 코드로 잠근다.
+ * **The first words never call a model** — this slice's core contract, locked in code.
  *
- * 왜 계약인가: 칩은 사용자가 아직 [보내기]를 누르지 않은 순간에 그려진다.
- * 칩을 만들려고 한 번이라도 호출이 나가면 그것은 ① 동의 없는 전송이고 ②
- * 남의 돈(BYOK 요금)을 쓰는 일이다. 설계가 "에이전트가 먼저 말 걸기(자동 첫
- * 턴)" 를 기각한 근거가 정확히 이것이고, 그 기각을 성립시키는 것이 이 파일의
- * 순수성이다. 규율을 문서에만 쓰면 지켜지지 않는다.
+ * Why it is a contract: the chips are rendered at a moment when the user has not yet
+ * pressed send. A single call going out to build a chip would be ① a transmission
+ * without consent and ② spending someone else's money (their BYOK bill). That is
+ * precisely the basis on which the design rejected "the agent speaks first" (an
+ * automatic first turn), and what makes that rejection hold is this file's purity. A
+ * discipline written only in a document is not followed.
  *
- * 두 방향으로 잠근다:
- *  1. **구조** — 생성기 모듈이 전송 경로를 import 하지 않는다(타입 아닌 값).
- *  2. **행동** — 어떤 폴더 상태로 칩을 만들어도 브리지/네트워크 호출이 0이다.
+ * Locked in two directions:
+ *  1. **Structure** — the generator module does not import a transmission path (as a
+ *     value, not a type).
+ *  2. **Behaviour** — building chips in any folder state makes 0 bridge or network
+ *     calls.
  */
 
 const FIRST_WORDS_SOURCE = readFileSync(
@@ -21,7 +24,7 @@ const FIRST_WORDS_SOURCE = readFileSync(
   'utf8',
 );
 
-/** 전송으로 이어질 수 있는 경로 — 하나라도 닿으면 칩이 공짜가 아니게 된다. */
+/** Paths that could lead to a transmission — touching any one makes the chips not free. */
 const FORBIDDEN_IMPORTS = [
   'tauri-llm',
   'tauri-secrets',
@@ -74,7 +77,7 @@ describe('첫 마디 생성기 — 모델 호출 0', () => {
         ['capabilities/pay', { hasDefinition: false, domainRef: null, mtime: null }],
       ]);
 
-      // 빈 폴더 · 큐 있는 폴더 · 노드 선택 — 화면이 그리는 세 경우 전부.
+      // Empty folder, folder with a queue, node selected — all three cases the screen renders.
       const states: Array<Parameters<typeof buildFirstWords>[0]> = [
         { nodes: [], docFacts: new Map(), focusedRef: null },
         { nodes: [conceptNode], docFacts, focusedRef: null },

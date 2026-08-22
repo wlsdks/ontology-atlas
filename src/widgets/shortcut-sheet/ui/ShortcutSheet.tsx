@@ -39,7 +39,7 @@ interface ShortcutRow {
 
 interface ShortcutSection {
   titleKey: string;
-  /** 이 섹션이 유효한 표면 — 문맥 탭 분류의 진실원(#67). */
+  /** The surface this section applies to — the source of truth for contextual tab classification (#67). */
   surface: ShortcutSurface;
   rows: ShortcutRow[];
 }
@@ -47,19 +47,22 @@ interface ShortcutSection {
 const k = (i18nKey: string): ShortcutKey => ({ i18nKey });
 
 /**
- * P1a-2 (persona 실측 N8 — 도메인/역량/요소 정의가 작업 UI 0곳): 지도의 "?"
- * 도움말이 이미 있는 유일한 상시 도움말 표면이라 새 표면을 만들지 않고
- * 여기 footer 에 한 줄 정의를 덧붙인다. kind 순서는 지도의 계층 순서
- * (도메인 → 역량 → 요소)와 같다.
+ * P1a-2 (persona measurement N8 — the definitions of domain/capability/element
+ * appeared in 0 working UIs): the map's "?" help is the only permanent help surface
+ * that already exists, so a one-line definition is appended to its footer rather than
+ * creating a new surface. The kind order matches the map's hierarchy
+ * (domain → capability → element).
  *
- * 맨 앞의 `ontology` 는 제품 이름에 박혀 있으면서도 정의되는 자리가 앱
- * 어디에도 없던 단어다 — 투어에서 한 번 이름을 붙이고 나면 "그게 뭐였지"
- * 를 되찾을 곳이 필요하고, 그 자리는 이미 존재하는 pull-only 도움말이지
- * 새 버튼이 아니다. 나머지 세 단어와 같은 줄 형식이라 IA 추가는 0.
+ * `ontology` comes first because it is baked into the product's name while being
+ * defined nowhere in the app — once the tour names it, there has to be somewhere to
+ * recover "what was that again", and that place is the pull-only help that already
+ * exists, not a new button. It uses the same row format as the other three, so it
+ * adds nothing to the IA.
  */
-// 이 시트와 투어 1단계가 낱말 정의의 유일한 두 집이다 — 새 표면을 만들어
-// 가르치지 않는다. `nodeNumber` 는 지도의 각인 숫자(285)가 화면 위쪽 개념
-// 총수(296)와 다른 이유를 여기서 한 번만 말한다: 세는 범위가 다르다.
+// This sheet and step 1 of the tour are the only two homes for word definitions — we
+// do not teach by building a new surface. `nodeNumber` explains once, here only, why
+// the map's engraved count (285) differs from the total concept count above it (296):
+// the two count different scopes.
 const GLOSSARY_TERMS = [
   "ontology",
   "domain",
@@ -113,15 +116,17 @@ function ShortcutRelationGuide({ title }: { title: string }) {
 }
 
 /**
- * 목적지 이동 줄 — **표에서 만든다**(손으로 적지 않는다).
+ * The destination-navigation rows — **generated from the table**, not written by hand.
  *
- * 이 시트의 나머지 줄은 손으로 적힌 목록이고, 그것을 실제 핸들러와 맞춰 주는
- * 검사가 없다. 그 방식이 이미 낸 값이 이 파일 아래 주석에 남아 있다 —
- * *"the previous rows described interactions the v2 canvas never implemented"*.
- * 즉 시트가 **없는 기능을 안내하고 있었다.**
+ * The rest of this sheet's rows are a hand-written list with no check aligning them to
+ * the real handlers. What that approach already cost is recorded in a comment further
+ * down this file — *"the previous rows described interactions the v2 canvas never
+ * implemented"*. In other words the sheet was **advertising features that did not
+ * exist.**
  *
- * 이동 단축키는 같은 실수를 하지 않게 `DESTINATION_KEY` 에서 파생시킨다. 키를
- * 하나 더하면 시트에 저절로 나타나고, 지우면 저절로 사라진다.
+ * The navigation shortcuts are derived from `DESTINATION_KEY` so the same mistake
+ * cannot happen: add a key and it appears in the sheet on its own; remove it and it
+ * disappears on its own.
  */
 const DESTINATION_ROWS: ShortcutRow[] = DESTINATION_IDS.map((id) => ({
   keys: [NAV_LEADER_KEY.toUpperCase(), DESTINATION_KEY[id].toUpperCase()],
@@ -143,21 +148,22 @@ const SECTIONS: ShortcutSection[] = [
   },
   {
     // W2-C — rewritten against ACTUAL topology-map-v2 canvas behavior
-    // (`use-topology-loop.ts` / `topology-pointer-handlers.ts`). The previous
-    // rows (더블클릭 로컬 · Shift+클릭 경로 · Tab 이웃 · / 검색 · 0 깊이)
-    // described interactions the v2 canvas never implemented — stale
-    // carryover from an earlier design that never shipped. Kept: 클릭 선택 ·
-    // 드래그(팬/노드 이동) · 휠 줌 · ⌘K 검색 · Esc 사다리 · 우클릭 메뉴(W2-B,
-    // now real).
+    // (`use-topology-loop.ts` / `topology-pointer-handlers.ts`). The previous rows
+    // (double-click local · Shift+click path · Tab neighbours · / search · 0 depth)
+    // described interactions the v2 canvas never implemented — stale carryover from an
+    // earlier design that never shipped. Kept: click to select · drag (pan/move node) ·
+    // wheel zoom · ⌘K search · the Esc dismissal order · right-click menu (W2-B, now real).
     titleKey: "topology",
     surface: "topology",
     rows: [
       /*
-       * 방향키 걷기 — **이 줄이 없어서 사용성 검수에 걸렸다** (2026-08-10).
-       * 2026-08-09~10 에 방향키로 이웃을 걷는 기능을 넣었는데, 키보드를 가르치는
-       * 유일한 자리인 이 시트는 그것을 모른 채 클릭·드래그·스크롤만 안내했다.
-       * 「발견할 수 없는 기능은 기능이 아니다」 — 게이트:
-       * `tests/e2e/map-keyboard-walk.spec.ts` 의 「시트가 방향키 걷기를 안내한다」.
+       * Arrow-key walking — **its absence is what a usability review caught**
+       * (2026-08-10). Walking to neighbours with the arrow keys shipped on
+       * 2026-08-09~10, and this sheet — the only place that teaches the keyboard —
+       * did not know about it and taught only click, drag and scroll.
+       * 「A feature nobody can discover is not a feature」. Gate:
+       * `tests/e2e/map-keyboard-walk.spec.ts`, 「시트가 방향키 걷기를 안내한다」 (the
+       * sheet teaches arrow-key walking).
        */
       { keys: ["↑", "↓", "←", "→"], labelKey: "walkNeighbors" },
       { keys: [k("click")], labelKey: "clickSelect" },
@@ -234,18 +240,19 @@ const SECTIONS: ShortcutSection[] = [
       { keys: [k("modeToggle")], labelKey: "modeToggle" },
     ],
   },
-  // 'tour' / 'portfolio' 섹션은 R10 정리에서 해당 오버레이가 제거되며
-  // 단축키도 함께 사라졌으나 ShortcutSheet 항목과 i18n 키가 stale 로
-  // 남아 있어 cycle 22 에서 정리.
+  // The 'tour' and 'portfolio' sections lost their shortcuts when those overlays were
+  // removed in the R10 cleanup, but the ShortcutSheet entries and i18n keys were left
+  // stale and were cleaned up in cycle 22.
 ];
 
 export function ShortcutSheet({ open, onClose }: Props) {
   const t = useTranslations("searchWidgets.shortcuts");
   const pathname = usePathname() ?? "/";
   const currentSurface = surfaceForPathname(pathname);
-  // #67 — 문맥 탭. 기본은 "지금 화면" — 40여 행을 한 번에 쏟는 대신 지금 실제로
-  // 누를 수 있는 것부터 보여준다. `전체` 탭이 종전 목록을 그대로 유지하므로
-  // 단축키를 숨겨서 과밀을 회피하는 것이 아니다.
+  // #67 — the contextual tabs. The default is "current screen": rather than pouring
+  // out some 40 rows at once, it starts with what can actually be pressed now. The
+  // `전체` (all) tab keeps the previous list, so this is not hiding shortcuts to avoid
+  // crowding.
   const [scope, setScope] = useState<ShortcutScope>("current");
   const dialogRef = useRef<HTMLDivElement | null>(null);
   const previousFocusRef = useRef<HTMLElement | null>(null);
@@ -261,7 +268,7 @@ export function ShortcutSheet({ open, onClose }: Props) {
       ),
     [scope, currentSurface],
   );
-  /** 지금 화면 탭인데 전역 섹션밖에 없을 때 — 그 사실을 조용히 알려준다. */
+  /** On the current-screen tab with nothing but global sections — say so quietly. */
   const currentHasOwnSections =
     scope !== "current" || visibleSections.some((s) => s.surface !== "global");
 
@@ -281,23 +288,23 @@ export function ShortcutSheet({ open, onClose }: Props) {
     return () => window.removeEventListener("keydown", handler);
   }, [open, onClose]);
 
-  // Focus trap — 모달이 열리면 다이얼로그 내부 첫 포커스 요소로 이동,
-  // Tab 이 바깥으로 빠져나가지 않게 순환. 닫힐 때 이전 활성 요소 복원.
+  // Focus trap — on open, move to the first focusable element inside the dialog and
+  // cycle so Tab cannot escape. Restore the previously active element on close.
   useEffect(() => {
     if (!open) return;
     /**
-     * **`<body>` 를 복원 대상으로 기록하지 않는다** (2026-07-29 실측).
+     * **Do not record `<body>` as the restore target** (measured 2026-07-29).
      *
-     * 이 시트를 여는 버튼은 시트가 켜지는 순간 언마운트된다 — 시트가 세우는
-     * `topologyBlockingOverlayActive` 가 그 버튼의 렌더 조건을 끄기 때문이다.
-     * 그래서 이 효과가 도는 시점에는 이미 `document.activeElement === body`
-     * 이고, 종전 코드는 그걸 "이전 포커스" 로 기록했다.
+     * The button that opens this sheet unmounts the moment the sheet appears — the
+     * `topologyBlockingOverlayActive` the sheet raises turns off that button's render
+     * condition. So by the time this effect runs, `document.activeElement === body`
+     * already, and the old code recorded that as "the previous focus".
      *
-     * `body.isConnected` 는 언제나 `true` 라 복원 분기는 성공한 것처럼 보이고,
-     * 실제로는 **포커스를 body 에 다시 꽂는다.** 프로브 로그가 그대로 말해
-     * 줬다: `[SHEET-CLEANUP] true BODY`. 겉보기 증상("닫으면 body 로 간다")과
-     * 원인("열 때 이미 body 였다")이 반대편에 있어서, 닫는 쪽만 고치는 시도는
-     * 전부 빗나갔다.
+     * `body.isConnected` is always `true`, so the restore branch looks successful while
+     * actually **planting focus back on body**. The probe log said exactly that:
+     * `[SHEET-CLEANUP] true BODY`. The visible symptom ("closing sends focus to body")
+     * and the cause ("it was already body on open") are on opposite sides, so every
+     * attempt to fix only the closing path missed.
      */
     const active = document.activeElement;
     previousFocusRef.current =
@@ -336,32 +343,34 @@ export function ShortcutSheet({ open, onClose }: Props) {
     return () => {
       window.removeEventListener("keydown", trapHandler);
       /**
-       * **여는 컨트롤이 사라졌어도 `body` 로 떨어뜨리지 않는다**
-       * (2026-07-29 키보드 실측).
+       * **Do not drop to `body` just because the opening control is gone**
+       * (keyboard measurement, 2026-07-29).
        *
-       * 이 시트를 여는 버튼은 시트가 켜지면 **언마운트된다** — 시트가 세우는
-       * `topologyBlockingOverlayActive` 가 그 버튼의 렌더 조건을 끄기
-       * 때문이다. 그래서 닫을 때 돌려줄 원소가 이미 없고 포커스가 `body` 로
-       * 갔다. 그 다음 Tab 은 문서 처음(건너뛰기 링크)부터 다시 시작한다 —
-       * 실측으로 원래 자리에서 29 정거장 뒤였다.
+       * The button that opens this sheet **unmounts** once the sheet appears, because
+       * the `topologyBlockingOverlayActive` the sheet raises turns off that button's
+       * render condition. So on close there was no element to return to and focus went
+       * to `body`. The next Tab then restarts from the top of the document (the skip
+       * link) — measured at 29 stops away from where the user had been.
        *
-       * 같은 시트를 **살아남는 원소**(자동 정렬 타일)에서 `?` 로 열면 복원이
-       * 정상이었다. 즉 트랩의 결함이 아니라 "돌아갈 곳이 사라지는 경우" 의
-       * 미처리다. `<main>` 은 건너뛰기 링크 수정으로 이미 포커스를 받으므로,
-       * 페이지 처음이 아니라 **본문 시작**으로 돌려준다.
+       * Opening the same sheet with `?` from **an element that survives** (the
+       * auto-layout tile) restored correctly. So this is not a trap defect but an
+       * unhandled case of "the place to return to disappeared". `<main>` already
+       * receives focus since the skip-link fix, so focus returns to **the start of the
+       * content** rather than the start of the page.
        */
       const previous = previousFocusRef.current;
       if (previous?.isConnected) {
         previous.focus();
       } else {
-        // 돌아갈 컨트롤이 없으면 **본문 시작**으로. `<main>` 은 건너뛰기 링크
-        // 수정으로 이미 포커스를 받는다 — 페이지 처음부터 다시 걷는 것보다 낫다.
+        // With no control to return to, go to **the start of the content**. `<main>`
+        // already receives focus since the skip-link fix — better than walking from the
+        // top of the page again.
         document.querySelector<HTMLElement>("main#main")?.focus({ preventScroll: true });
       }
       /**
-       * 한 프레임 뒤 재확인 — 복원한 원소가 곧바로 언마운트되는 경쟁이 남아
-       * 있다(실측 타임라인: 0ms BUTTON · 50ms BUTTON · **150ms BODY**).
-       * 닫는 시점만 보는 복원은 그걸 못 이긴다.
+       * Re-check one frame later — there is still a race where the restored element
+       * unmounts immediately (measured timeline: 0ms BUTTON · 50ms BUTTON · **150ms
+       * BODY**). A restore that only looks at the moment of closing cannot win it.
        */
       requestAnimationFrame(() => {
         requestAnimationFrame(() => {
@@ -373,16 +382,17 @@ export function ShortcutSheet({ open, onClose }: Props) {
   }, [open]);
 
   /*
-   * reduced-motion 동등물 (2026-07-28 프레임 실측). 여기는 **절반만** 스왑돼
-   * 있었다: 전역 kill 규칙이 CSS 애니메이션만 자르는데 이 시트는 framer 가
-   * 그리므로 불투명도 이징(200ms)은 살아남고, 같은 구간의
-   * `scale(.985) translateY(12px) → none` 만 **1프레임**으로 잘려
-   * `y 96.2 → 79` · `h 684.6 → 695` 가 순간이동했다 — 남길 축(밝기)과 없앨
-   * 축(기하)이 정확히 뒤바뀐 상태다.
+   * The reduced-motion equivalent (frame measurement, 2026-07-28). This was swapped
+   * **only halfway**: the global kill rule cuts CSS animations, but this sheet is drawn
+   * by framer, so the opacity easing (200ms) survived while only
+   * `scale(.985) translateY(12px) → none` in the same span was cut to **one frame**,
+   * teleporting `y 96.2 → 79` and `h 684.6 → 695`. The axis to keep (brightness) and
+   * the axis to remove (geometry) were exactly inverted.
    *
-   * 검색 팔레트·새 문서 대화가 쓰는 것과 **같은** 동등물(`OVERLAY_SPRING_REDUCED`,
-   * 120ms opacity 전용)로 통일하고, 흔들리는 축은 시작값 자체를 0 으로 둔다 —
-   * 시간이 0 이 아니라 **여행 거리**가 0 이라야 순간이동이 아니다. 새 값 0.
+   * Unified onto **the same** equivalent the search palette and the new-document dialog
+   * use (`OVERLAY_SPRING_REDUCED`, 120ms opacity only), with the shaking axis starting
+   * at 0 — it is not a teleport when the **travel distance** is 0, not the time. Zero
+   * new values.
    */
   const reducedMotion = useReducedMotion();
   const surfaceMotion = reducedMotion
@@ -453,8 +463,8 @@ export function ShortcutSheet({ open, onClose }: Props) {
               </button>
             </header>
 
-            {/* #67 — 문맥 탭. 헤더와 함께 고정(shrink-0)이라 스크롤해도 항상
-                보인다: 지금 어느 범위를 보고 있고 어디로 갈 수 있는지. */}
+            {/* #67 — the contextual tabs. Pinned with the header (shrink-0) so they stay
+                visible while scrolling: which scope you are in and where you can go. */}
             <div
               role="tablist"
               aria-label={t("scope.ariaLabel")}
@@ -470,13 +480,14 @@ export function ShortcutSheet({ open, onClose }: Props) {
                   data-testid={`shortcut-sheet-scope-${key}`}
                   onClick={() => setScope(key)}
                   /**
-                   * **이 자리가 2026-08-03 수렴의 유일한 미흡수 소비처였다.**
-                   * 삭제된 `fixedHeight: "sm"` 이 여기서만 28px 을 냈는데, 28은
-                   * 사다리에는 있어도(`--control-h-sm`) **세그먼트 단**에는
-                   * 없다 — 다른 세그먼트 탭 8개가 전부 24px(`md`)이다. 혼자
-                   * 28을 지키려면 축이 다시 필요하고, 그건 이 정리가 없앤 바로
-                   * 그 축이다. 그래서 다수와 같은 24로 내렸다(−4px). 24는 WCAG
-                   * 2.5.8 (AA) 최소 타깃이라 바닥 아래로 내려간 것이 아니다.
+                   * **This position was the one unabsorbed consumer of the 2026-08-03
+                   * convergence.** The deleted `fixedHeight: "sm"` produced 28px only
+                   * here, and 28 exists on the ramp (`--control-h-sm`) but **not on the
+                   * segment step** — the other 8 segment tabs are all 24px (`md`).
+                   * Keeping 28 alone would need that axis back, and that axis is exactly
+                   * what this cleanup removed. So it dropped to 24 like the majority
+                   * (−4px). 24 is the WCAG 2.5.8 (AA) minimum target, so it did not go
+                   * below the floor.
                    */
                   className={controlClass({
                     shape: "segment",
@@ -493,36 +504,39 @@ export function ShortcutSheet({ open, onClose }: Props) {
               ))}
             </div>
 
-            {/* #67 — 목록 영역. 스크롤이 남았을 때 아래쪽에 한 단계 페이드를
-                깔아 "여기서 끝" 이 아니라 "더 있다" 로 읽히게 한다. */}
-            {/* #67 후속 — 스크롤 영역 높이 계약.
-                이 다이얼로그는 sm+ 에서 **콘텐츠 기반 높이**(`sm:h-auto` +
-                `sm:max-h-[...]`)다. 그래서
-                  · `h-full`(=height:100%) → 래퍼 높이가 아니라 콘텐츠 높이로
-                    해석돼 `scrollHeight === clientHeight`, 스크롤이 죽고 마지막
-                    섹션이 뷰포트 밖으로 잘림(영문 `전체` 탭 실측 1112px).
-                  · `absolute inset-0` → 스크롤 자식이 흐름에서 빠져 래퍼가 0
-                    높이가 되고 다이얼로그가 232px 로 무너짐.
-                둘 다 실측으로 확인했다. 정답은 **흐름 안에서 flex 로 제한**하는
-                것: 래퍼도 flex 컬럼이고, 스크롤 자식이 `min-h-0 flex-1` 로
-                남는 공간만 먹는다. 페이드는 래퍼(relative) 하단에 앵커. */}
+            {/* #67 — the list area. With scroll remaining, a one-step fade at the bottom
+                makes it read as "there is more" rather than "this is the end". */}
+            {/* #67 follow-up — the scroll area's height contract.
+                This dialog is **content-height** from sm upward (`sm:h-auto` plus
+                `sm:max-h-[...]`). So:
+                  · `h-full` (=height:100%) resolves against the content height rather
+                    than the wrapper's, making `scrollHeight === clientHeight`, killing
+                    the scroll and cutting the last section outside the viewport
+                    (measured at 1112px on the English `all` tab).
+                  · `absolute inset-0` takes the scrolling child out of flow, so the
+                    wrapper becomes 0 height and the dialog collapses to 232px.
+                Both were confirmed by measurement. The answer is **constraining with
+                flex inside the flow**: the wrapper is a flex column too, and the
+                scrolling child takes only the remaining space with `min-h-0 flex-1`.
+                The fade is anchored at the wrapper's bottom (relative). */}
             <div className="relative flex min-h-0 flex-1 flex-col">
               {/*
-                ⚠️ **스크롤되는 영역은 키보드로도 스크롤할 수 있어야 한다**
-                (2026-08-20, 목적지가 여덟이 되며 드러났다).
+                ⚠️ **A scrollable region has to be scrollable from the keyboard too**
+                (2026-08-20, surfaced when the destinations reached eight).
 
-                이 영역은 내용이 짧을 때는 스크롤이 안 생겨서 아무 문제가 없었다.
-                그런데 「에이전트」 목적지가 늘며 이동 절이 한 줄 길어지자 실제로
-                스크롤이 생겼고, 그 순간 **마우스 휠이나 트랙패드 없이는 아래를
-                볼 수 없는 상태**가 됐다(axe `scrollable-region-focusable`).
+                This area caused no trouble while the content was short enough not to
+                scroll. When the 「에이전트」 (agents) destination made the navigation
+                section one row longer, a scroll actually appeared, and at that moment it
+                became **impossible to see the bottom without a mouse wheel or trackpad**
+                (axe `scrollable-region-focusable`).
 
-                즉 결함은 새로 생긴 게 아니라 **조건이 채워지면 나타나도록
-                잠복해 있었다.** 내용 길이에 기대는 접근성은 접근성이 아니다.
+                So the defect was not new but **lying dormant until its condition was
+                met.** Accessibility that depends on content length is not accessibility.
 
-                `tabIndex={0}` 이 그 영역을 탭 순서에 넣어 화살표·PageUp/Down 으로
-                스크롤하게 한다. 초점을 받는 것이 무엇인지 말해야 하므로
-                `role="group"` + 이름을 함께 준다 — 이름 없는 초점 정거장은
-                낭독기에게 「빈 그룹」으로 들린다.
+                `tabIndex={0}` puts the region into tab order so arrow keys and
+                PageUp/Down scroll it. What receives focus has to say what it is, so
+                `role="group"` plus a name come with it — an unnamed focus stop sounds
+                like 「an empty group」 to a screen reader.
               */}
               <div
                 className="min-h-0 flex-1 overflow-y-auto focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[color:var(--color-indigo-focus-ring)]"
@@ -531,8 +545,8 @@ export function ShortcutSheet({ open, onClose }: Props) {
                 role="group"
                 aria-label={t("scrollRegionLabel")}
               >
-              {/* sm+ 는 2-column grid 로 펼쳐 세로 길이 줄임. 작은 뷰포트는
-                  단일 컬럼 + 내부 스크롤로 넘침 방지. */}
+              {/* From sm upward it expands into a 2-column grid to cut vertical length.
+                  Small viewports use a single column plus internal scroll to avoid overflow. */}
               <div className="grid grid-cols-1 gap-x-6 divide-y divide-[color:var(--color-overlay-2)] sm:grid-cols-2 sm:divide-x sm:divide-y-0">
                 {visibleSections.map((section, idx) => (
                   <section
@@ -549,9 +563,9 @@ export function ShortcutSheet({ open, onClose }: Props) {
                     <dl className="mt-3 space-y-2.5">
                       {section.rows.map((row, rowIdx) => (
                         <div
-                          // 같은 label 의 alias 단축키가 같은 섹션에 여러 개 있는
-                          // 케이스 (e.g. "팔레트 열기 (별명)" ⌘P / ⌘O) 가 있어
-                          // index 도 key 에 포함해 React duplicate key 회피.
+                          // Aliased shortcuts sharing a label can appear several times in
+                          // one section (e.g. "팔레트 열기 (별명)" ⌘P / ⌘O), so the index is
+                          // part of the key to avoid a React duplicate key.
                           key={`${section.titleKey}-${rowIdx}-${row.labelKey}`}
                           className="flex items-center justify-between gap-4"
                         >

@@ -2,39 +2,42 @@ import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 
 /**
- * **영어 화면에는 한글이 안 나온다.**
+ * **No Hangul on English screens.**
  *
- * ## 왜 이 게이트가 생겼나 (2026-07-29 도그푸딩)
+ * ## Why this gate exists (dogfooding, 2026-07-29)
  *
- * 두 카탈로그의 키 수는 정확히 같았다(2,770 대 2,770). 그래서 "번역 누락 0"
- * 으로 보였는데, **값이 반쯤만 번역돼 있었다**:
+ * The two catalogues had exactly the same key count (2,770 vs 2,770), so it looked
+ * like "0 missing translations" — but **the values were only half translated**:
  *
- * | 키 | 있던 값 | 문제 |
+ * | Key | Value present | Problem |
  * |---|---|---|
- * | `en …create.secondaryName` | `한국어 이름 (선택)` | 영어 사용자가 라벨을 못 읽는다 |
- * | `en …secondaryNamePlaceholder` | `한국어 이름 (optional)` | 한 문구에 두 언어 |
- * | `ko …secondaryNamePlaceholder` | `English name (선택)` | 반대 방향으로 같은 실수 |
+ * | `en …create.secondaryName` | `한국어 이름 (선택)` | an English user cannot read the label |
+ * | `en …secondaryNamePlaceholder` | `한국어 이름 (optional)` | two languages in one string |
+ * | `ko …secondaryNamePlaceholder` | `English name (선택)` | the same mistake in the other direction |
  *
- * 셋 다 **"상대 언어 이름 칸"** 이라는 같은 자리다. 쓴 사람이 *가리키는 언어*
- * 와 *쓰는 언어* 를 헷갈린 것이다 — 영어 화면에서 한국어 이름을 물을 때 라벨은
- * **영어로** "Korean name" 이어야 한다.
+ * All three are the same slot: **the "other language's name" field**. The author
+ * confused *the language being named* with *the language being written in* — asking
+ * for a Korean name on an English screen, the label must read "Korean name" **in
+ * English**.
  *
- * 키 대조로는 절대 안 잡힌다. 키는 양쪽에 다 있었다.
+ * Key comparison can never catch this. The keys were present on both sides.
  *
- * ## 왜 한쪽 방향만 재나
+ * ## Why only one direction is measured
  *
- * 한국어 화면에는 영문이 정당하게 많다 — 브랜드명(`Ontology Atlas`), CLI 명령,
- * 파일 경로, 기술 용어. 그래서 "ko 에 라틴 문자 금지" 는 신호보다 소음이
- * 크다. 반대 방향은 깨끗하다: **영어 화면의 한글은 거의 항상 번역 누락**이고,
- * 정당한 예외는 언어 이름 하나뿐이다.
+ * Korean screens legitimately contain plenty of English — the brand name (`Ontology
+ * Atlas`), CLI commands, file paths, technical terms. So "no Latin characters in ko"
+ * would produce more noise than signal. The other direction is clean: **Hangul on an
+ * English screen is almost always a missing translation**, with exactly one
+ * legitimate exception.
  */
 
 const HANGUL = /[가-힣㄰-㆏]/;
 
 /**
- * 정당한 예외 — **언어 이름은 자기 언어로 쓴다**(브라우저 언어 선택 UI 의
- * 보편 관례). 영어 화면의 언어 목록에 "Korean" 이 아니라 "한국어" 가 있어야
- * 그 언어를 쓰는 사람이 자기 언어를 찾는다.
+ * The legitimate exception — **a language's name is written in that language** (the
+ * universal convention in browser language pickers). The language list on an English
+ * screen must show "한국어" rather than "Korean" so a speaker of that language can
+ * find their own.
  */
 const ALLOWED = new Set(["locale.korean"]);
 
@@ -81,8 +84,9 @@ describe("영어 카탈로그 — 번역이 반쯤 되다 만 자리를 잡는�
 });
 
 /**
- * **두 카탈로그의 키가 어긋나지 않는다.** 위 검사는 값을 보고, 이건 구조를
- * 본다 — 키가 한쪽에만 있으면 그 화면에는 문장 대신 **키 경로**가 그려진다.
+ * **The two catalogues' keys must not diverge.** The check above looks at values;
+ * this one looks at structure — a key present on only one side renders **the key
+ * path** on that screen instead of a sentence.
  */
 describe("두 카탈로그 — 키 집합이 같다", () => {
   const load = (locale: string) => {

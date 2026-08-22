@@ -1,5 +1,5 @@
-// R11 #8 — vault mtime conflict detection.
-// node --test 또는 `npm run test` 로 실행.
+// Vault mtime conflict detection.
+// Run with `node --test` or `npm run test`.
 
 import assert from "node:assert/strict";
 import {
@@ -69,7 +69,7 @@ test("readDoc 응답에 mtime 포함", () => {
 test("expectedMtime 미지정 시 검증 skip (기존 호출자 호환)", () => {
   const root = makeVault();
   writeMd(root, "foo", "---\nkind: capability\n---\n");
-  // expectedMtime 안 줘도 patchFrontmatter 가 정상 진행
+  // Without expectedMtime, patchFrontmatter proceeds normally
   patchFrontmatter(root, "foo", { title: "Foo" });
   const after = readFileSync(join(root, "foo.md"), "utf-8");
   assert.match(after, /title: Foo/);
@@ -87,10 +87,10 @@ test("expectedMtime 일치하면 patchFrontmatter 통과", () => {
 test("expectedMtime 불일치 시 VaultConflictError", () => {
   const root = makeVault();
   const file = writeMd(root, "foo", "---\nkind: capability\n---\n");
-  const stale = getFileMtime(file) - 5000; // 5초 전 — 외부 변경 시뮬
-  // 파일을 한번 더 touch 해서 mtime 가 stale 보다 분명히 새 시간이 되도록.
-  // mkdtemp 직후 mtime 은 현재인데 stale 은 5초 전. 그러나 fs 가 가끔
-  // mtime 을 ms 미만 truncate 하므로 명시적으로 다른 시간 설정.
+  const stale = getFileMtime(file) - 5000; // 5s ago — simulates an external change
+  // Touch the file once more so its mtime is clearly newer than `stale`. Right
+  // after mkdtemp the mtime is now while stale is 5s ago, but some filesystems
+  // truncate below the millisecond, so set an explicitly different time.
   const now = Date.now();
   utimesSync(file, now / 1000, now / 1000);
 
@@ -241,7 +241,7 @@ test("read → write 일치 흐름은 conflict 없음 (round-trip)", () => {
   const root = makeVault();
   writeMd(root, "foo", "---\nkind: capability\n---\nold body");
   const doc = readDoc(root, join(root, "foo.md"));
-  // doc.mtime 을 그대로 expectedMtime 으로 넘기면 conflict 0
+  // Passing doc.mtime straight through as expectedMtime yields no conflict
   patchFrontmatter(
     root,
     "foo",

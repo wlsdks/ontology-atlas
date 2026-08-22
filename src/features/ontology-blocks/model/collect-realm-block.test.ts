@@ -53,7 +53,7 @@ const edges = [
   makeEdge('domain:views', 'capability:render'),
   makeEdge('capability:render', 'element:canvas'),
 ];
-// realm = domain:views 서브트리 (project 루트 제외).
+// realm = the domain:views subtree (the project root excluded).
 const subtree = buildOntologyTree(nodes, edges).roots[0].children[0];
 const UIDS = {
   project: '01890f3e-7b5d-4c0a-8f14-123456789abc',
@@ -81,7 +81,7 @@ describe('selectRealmBlockDocs', () => {
     makeDoc('capabilities/render', { uid: UIDS.render, kind: 'capability' }, 'Render'),
     makeDoc('elements/canvas', { uid: UIDS.canvas, kind: 'element' }, 'Canvas'),
     makeDoc('elements/outside', { uid: UIDS.outside, kind: 'element' }, 'Outside'),
-    makeDoc('README', {}, 'Readme'), // kind 없음 — 지도 밖 문서
+    makeDoc('README', {}, 'Readme'), // no kind — a document outside the map
   ];
 
   it('maps subtree node ids back to the vault docs that own them (id = kind:lastSegment)', () => {

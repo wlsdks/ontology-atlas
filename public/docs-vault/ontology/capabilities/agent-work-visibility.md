@@ -27,6 +27,8 @@ created_by: "agent:unknown"
 - 알림은 도구 호출마다 쏟지 않고 작업 시작·종료와 구조 변화 단위로 집계한다.
   현재 작업 판독은 우상단 도구줄 아래 상태 행에서, 과거 알림은 맨 오른쪽 독립
   종과 넓은 inbox에서 연다. 두 표면은 한 feed를 공유하지만 내용을 섞지 않는다.
+  상태 행은 우상단 도구줄의 짧은 폭을 상속하지 않고 내용의 자연 폭(상한 520px)을
+  가져 에이전트 이름과 마지막 작업 시각을 보존한다.
 - 앱 안 ontology 쓰기의 allow/reject와 terminal status는 `.ontology-atlas/acp-work.jsonl`의 bounded snapshot으로 남고 알림 popover에서 작업 영수증으로 읽힌다. 전체 대화·thought·tool output·절대 경로·본문 값은 남기지 않으며, 실행 사실을 기록하는 `activity.jsonl`과 섞지 않는다.
 - `created_by: human`은 provenance일 뿐 검토 필요 상태가 아니며, 예약 reader kind인 `vault-readme`는 지도 편집 대상이나 개념 census가 아니다.
 

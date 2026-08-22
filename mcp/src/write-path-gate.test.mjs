@@ -1,6 +1,6 @@
 /**
  * Write-path wiring for the node-eligibility gate (2026-07-31 council —
- * `docs/DECISIONS.md`, 「온톨로지 구축 규격」).
+ * `docs/DECISIONS.md`, 「온톨로지 구축 규격」 — the ontology construction rules).
  *
  * This file proves ONE thing, and deliberately only one: that the gate is
  * wired into the **shared** write primitive, so `add_concept`, `patch_concept`,
@@ -168,9 +168,10 @@ describe('node-eligibility gate — the three write doors inherit one gate', () 
    * and a check that flags the vault's single healthy wide parent is a check the
    * reader learns to ignore.
    */
-  // 2026-08-01 field trial — 볼트만 넘겨받은 에이전트가 16개 능력 중 8개에
-  // 대해 "코드 진입점이 없습니다" 라고 답했다. 규격은 증거를 요구하는데 그
-  // 부재를 아무도 말하지 않았다. **막지 않는다** — 쓰기는 성공하고 신호만 뜬다.
+  // 2026-08-01 field trial — an agent handed only the vault answered "there is no
+  // code entrypoint" for 8 of 16 capabilities. The rules demand evidence and
+  // nobody reported its absence. **This does not block** — the write succeeds and
+  // only the signal fires.
   describe('capability without evidence — 막지 않고 말한다', () => {
     it('생성 시점에 `elements:` 가 비면 한 번 말한다 (쓰기는 성공한다)', () => {
       writeDoc(root, 'capabilities/no-evidence', {
@@ -333,10 +334,11 @@ describe('node-eligibility gate — the three write doors inherit one gate', () 
     assert.equal(bulk[0].count, 5);
   });
 
-  // 슬러그 평면성 (2026-08-01 판정) — 새 정체성이 태어나는 단일 문(writeDoc)
-  // 이 경로형 슬러그를 hard error 로 거부한다. 팬아웃 게이트와 달리 형태
-  // 유효성이라 막는다 — 재생성 볼트에서 43개 경로형 슬러그가 이 문으로
-  // 들어와 화면 노드 접힘(68→66)을 만든 실측이 근거다.
+  // Slug flatness (decided 2026-08-01) — the single door where a new identity is
+  // born (writeDoc) rejects a path-shaped slug as a hard error. Unlike the fan-out
+  // gate it blocks, because this is shape validity: measured, 43 path-shaped slugs
+  // came through this door in a regenerated vault and collapsed the on-screen node
+  // count from 68 to 66.
   it('writeDoc rejects a path-style slug under the kind folder', () => {
     assert.throws(
       () =>
@@ -353,7 +355,7 @@ describe('node-eligibility gate — the three write doors inherit one gate', () 
   });
 
   it('writeDoc leaves foreign vault nesting alone (schema folder 밖)', () => {
-    // 사용자 볼트 자체의 폴더 관습 — 로컬-퍼스트 계약상 게이트 소관이 아니다.
+    // The user's own folder convention inside their vault — not the gate's business under the local-first contract.
     writeDoc(root, 'services/auth-api', {
       frontmatter: { slug: 'services/auth-api', kind: 'element', title: 'Auth API' },
       body: '',

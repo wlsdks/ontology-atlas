@@ -76,12 +76,13 @@ describe("bezierPoint", () => {
 });
 
 /**
- * Comet-tail contract (R6 상시 혜성 복원 — 소유자 지시 "예전 걸 살려줘"). The
+ * Comet-tail contract (always-on comets, restored on the owner instruction
+ * "예전 걸 살려줘" — bring the old one back). The
  * prototype's ambient comet is back: EVERY non-dim `depends` edge carries the
  * three-dot tail regardless of focus (the old A1 "focus signal only" retirement
  * is reversed). ego/selected edges get a bigger, brighter tail; dimmed edges
  * never draw it; reduced-motion suppresses it entirely (so the canvas can
- * still reach a genuine idle state for those users). Design Guardian 처방 E —
+ * still reach a genuine idle state for those users). Design Guardian-approved —
  * `contains` edges normally never draw a tail EXCEPT the incident ego edges
  * the caller marks `containsCometEligible: true` (seed-ranked top-24 cap
  * upstream in `render/edge-fireflies.ts#selectEgoContainsComets`) — see the
@@ -155,9 +156,10 @@ describe("draw — comet tail is an always-on depends signal", () => {
 });
 
 /**
- * Design Guardian 승인 처방 E — 선택(ego) 시 인시던트 contains 엣지도 코멧
- * 흐름을 탄다(depends 와 같은 지속 위상, 일회성 아님). 캡(`containsCometEligible`)
- * 을 통과 못 한 엣지·ego 아닌 엣지·dim·reduced-motion 은 여전히 0.
+ * Design Guardian-approved: contains edges incident to the selection (ego) carry
+ * comet flow too — the same continuous phase as depends, not a one-shot. Edges
+ * that fail the cap (`containsCometEligible`), non-ego edges, dim, and
+ * reduced-motion all stay at 0.
  */
 describe("draw — ego contains comet (Guardian E)", () => {
   const TOKENS = {
@@ -247,7 +249,7 @@ describe("draw — ego contains comet (Guardian E)", () => {
   });
 });
 
-/** S2 파트 1 — depends 방향 테이퍼: source(굵음)→target(얇음), 단조 감소. */
+/** The depends directional taper: thick at source → thin at target, monotonically decreasing. */
 describe("dependsTaperFactor", () => {
   it("u=0(source) 최대, u=1(target) 최소, 단조 감소", () => {
     expect(dependsTaperFactor(0)).toBeCloseTo(DEPENDS_TAPER_START, 6);
@@ -269,7 +271,7 @@ describe("draw — depends 방향 테이퍼", () => {
     edgeContains: "#3a3a42", edgeDepends: "#4c4c63", edgeDim: "#1a1a1f",
     indigo: "#5e6ad2", indigoBright: "#8b97ff",
   };
-  /** 세그먼트 stroke 마다 lineWidth 를 수집해 첫 세그먼트(source) > 마지막(target) 인지 본다. */
+  /** Collects lineWidth per segment stroke to check the first (source) exceeds the last (target). */
   function collectSegmentWidths(state: TraceDrawState): number[] {
     const widths: number[] = [];
     const ctx = {
@@ -297,7 +299,7 @@ describe("draw — depends 방향 테이퍼", () => {
   });
 });
 
-/** P3a — 잉크 사다리: contains 비-ego 렌더가 레벨별 stroke/width 를 탄다. */
+/** Ink ramp: the non-ego contains render takes its stroke and width per level. */
 describe("draw — containment ink ladder", () => {
   const TOKENS = {
     edgeContains: "#3a3a42",
@@ -338,12 +340,12 @@ describe("draw — containment ink ladder", () => {
   });
 });
 
-/** B8 — depends 활: 좌측 수직 오프셋, 상호쌍 분리. */
+/** The depends bow: a left-perpendicular offset that separates a mutual pair. */
 describe("computeDependsBowControlPoint", () => {
   it("제어점이 중점에서 진행 방향 왼쪽 법선으로 오프셋된다", () => {
     const c = computeDependsBowControlPoint({ x: 0, y: 0 }, { x: 100, y: 0 }, 92);
     expect(c.x).toBeCloseTo(50, 5);
-    expect(c.y).toBeCloseTo(12, 5); // len*0.12 = 12 < maxBow, 왼쪽(+y: 화면 좌표)
+    expect(c.y).toBeCloseTo(12, 5); // len*0.12 = 12 < maxBow; left is +y in screen coordinates
   });
 
   it("A→B 와 B→A 가 서로 반대쪽으로 휘어 두 호로 분리된다", () => {
@@ -364,4 +366,4 @@ describe("computeDependsBowControlPoint", () => {
   });
 });
 
-/** B6 — 코너 자기유사성: 실루엣이 줌(스크린 r)과 무관하게 같은 성격. */
+/** Corner self-similarity: the silhouette keeps the same character regardless of zoom (screen r). */

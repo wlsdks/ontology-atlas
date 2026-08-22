@@ -36,10 +36,11 @@ describe('build-docs-vault script helpers', () => {
     assert.match(usage(), /Verify generated outputs are current without writing/);
   });
 
-  // `--check` 는 여전히 날짜 스탬프를 비교에서 뺀다. 밤을 넘겨 병합된 PR 처럼
-  // 기준선이 하루 낡는 경우가 남아 있는데(병합이 만드는 새 커밋의 날짜는 생성
-  // 시점에 알 수 없다), 그걸로 main 을 빨갛게 만들면 게이트가 아니라 소음이
-  // 된다. 결정성은 아래 "결정성 계약" 스위트가 직접 실증해 잡는다.
+  // `--check` still excludes the date stamp from the comparison. A baseline can be a
+  // day stale — a PR merged across midnight, where the date of the new commit the
+  // merge creates is unknowable at generation time — and turning main red for that is
+  // noise rather than a gate. Determinism is proven directly by the "determinism
+  // contract" suite below.
   it('ignores timestamp-only manifest churn while preserving content drift', () => {
     const baseDoc = {
       slug: 'README',
@@ -109,16 +110,18 @@ describe('resolveWikilinkTargetSlug / extractOutLinksWithContext — nested onto
 });
 
 /**
- * 결정성 계약 — "같은 소스로 두 번 생성하면 바이트 동일".
+ * Determinism contract — "generating twice from the same source yields identical
+ * bytes".
  *
- * 무엇을 잡는가: 생성물이 **생성 시점의 벽시계나 git 커밋 시각** 에 의존하면,
- * 그 값을 담은 커밋이 squash-merge / rebase / amend 로 다시 찍히는 순간 기준선이
- * 어긋난다. main 커밋 25개 실측에서 문서 1~32건이 항상 틀려 있었고, 나중에 누가
- * 재생성하면 자기가 고치지 않은 줄이 diff 로 올라와 리베이스 충돌과 유령 diff 가
- * 됐다(JSON 안에 충돌 마커가 남아 tsc 가 깨진 사고까지).
+ * What it catches: if generated output depends on **the wall clock or the git commit
+ * time at generation**, the baseline diverges the moment the commit carrying that
+ * value is restamped by squash-merge, rebase, or amend. Measured across 25 commits on
+ * main, 1–32 documents were always wrong, and a later regeneration put lines nobody
+ * had touched into the diff, producing rebase conflicts and phantom diffs (including
+ * an incident where a conflict marker left inside JSON broke tsc).
  *
- * 그래서 아래는 임시 git 저장소에서 **커밋 시각만 바꿔 다시 찍고** 산출물이
- * 바이트 단위로 같은지 확인한다 — 그 상황이 정확히 병합이 하는 일이다.
+ * So the tests below restamp **only the commit time** in a temporary git repository
+ * and check the output is byte-identical — which is exactly what a merge does.
  */
 describe('build-docs-vault 결정성 계약', () => {
   let repo = null;
@@ -174,7 +177,7 @@ describe('build-docs-vault 결정성 계약', () => {
     const before = await scan();
     assert.equal(before.manifest.docs[0].updatedAt, '2026-03-04');
 
-    // 병합이 하는 일: 같은 내용을 새 커밋으로 다시 찍는다 (시각만 달라짐).
+    // What a merge does: restamps the same content as a new commit, changing only the time.
     git(['commit', '-q', '--amend', '--no-edit'], {
       GIT_AUTHOR_DATE: '2026-03-04T23:58:59+09:00',
       GIT_COMMITTER_DATE: '2026-03-04T23:58:59+09:00',
@@ -202,12 +205,12 @@ describe('build-docs-vault 결정성 계약', () => {
     const edited = path.join(repo, 'docs', 'GUIDE.md');
     await writeFile(edited, '# Guide\n\n본문 두 줄.\n추가.\n', 'utf8');
     /*
-     * ⚠️ 기댓값은 **그 파일의 mtime** 에서 뽑는다. 예전에는 스캔이 끝난 뒤
-     * `localDayStamp(new Date())` 를 불렀는데, 그러면 «파일을 쓴 순간» 과
-     * «기댓값을 만든 순간» 이 서로 다른 날일 수 있다 — 자정 직전에 쓰고 자정
-     * 직후에 재면 하루가 어긋나 제품과 무관하게 터진다. 스캔이 읽는 값과
-     * 같은 출처(mtime)를 쓰면 그 틈 자체가 없어진다
-     * (2026-08-17 검사 전수조사).
+     * ⚠️ The expected value is derived from **that file's mtime**. It used to call
+     * `localDayStamp(new Date())` after the scan, which lets "when the file was written"
+     * and "when the expectation was built" fall on different days — writing just before
+     * midnight and measuring just after breaks by a day for reasons unrelated to the
+     * product. Using the same source the scan reads (mtime) removes the window entirely
+     * (full check audit, 2026-08-17).
      */
     const { mtime } = await stat(edited);
     const { manifest } = await scan();
@@ -233,8 +236,8 @@ describe('build-docs-vault 결정성 계약', () => {
       ]),
       '2026-07-27',
     );
-    // 날짜 형식이 아닌 값(구 ISO 시각 등)은 스탬프 후보에서 제외 — 벽시계
-    // 정밀도가 다시 새어 들어오는 경로를 만들지 않는다.
+    // Values that are not date-shaped (an old ISO timestamp, say) are excluded as stamp
+    // candidates, so wall-clock precision has no path back in.
     assert.equal(
       deterministicGeneratedAt([{ updatedAt: '2026-05-18T01:00:00.000Z' }]),
       '1970-01-01',

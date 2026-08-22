@@ -73,10 +73,10 @@ export function detectVaultPathDrift({ docs = [], repoRoot = process.cwd(), file
     }
   }
 
-  // 필드 순서대로 비교한다 — NUL 로 이어 붙여 비교하던 것과 **같은 순서**이고
-  // (NUL 은 모든 글자보다 작아 앞 필드가 먼저 갈린다), 파일이 git 에게
-  // 바이너리가 되지 않는다. NUL 이 하나라도 있으면 PR 에서 diff 가 안 보이고
-  // grep/ripgrep 이 그 파일을 통째로 건너뛴다 (2026-08-08 검수).
+  // Compared field by field, in the **same order** as the old NUL-joined
+  // comparison (NUL sorts below every character, so the earlier field decides
+  // first) — but without making the file binary to git. One NUL is enough to hide
+  // the diff in a PR and make grep/ripgrep skip the file entirely (review 2026-08-08).
   drifts.sort(
     (a, b) =>
       a.slug.localeCompare(b.slug) ||

@@ -33,8 +33,9 @@ describe("LocaleSwitch", () => {
   it("keeps locale buttons large enough for first-viewport touch", () => {
     renderSwitch();
 
-    // SegmentedControl 이주(2026-08-15) — 크기는 값 층이 낸다: min-h-8(32px)
-    // + atlas-touch-floor(coarse 44 승격, 유령 히트가 아니라 실제 높이).
+    // After the SegmentedControl migration (2026-08-15) the size comes from the value layer:
+    // `min-h-8` (32px) plus `atlas-touch-floor` (promoted to 44 on coarse pointers — a real
+    // height, not a phantom hit area).
     expect(screen.getByRole("radio", { name: "EN English" }).className).toContain(
       "min-h-8",
     );

@@ -107,11 +107,11 @@ describe("DomainCouplingCard", () => {
     renderCard();
 
     expect(screen.getByTestId("domain-coupling-grid")).toBeInTheDocument();
-    // 색만으로 말하지 않는다 — 교차 수를 aria 이름으로도, 칸 안 숫자로도.
+    // It never speaks in colour alone — the cross count is in the aria name and in the cell's digit.
     expect(screen.getByLabelText("3 links from Auth to Billing")).toHaveTextContent("3");
-    // 대각선은 교차가 아니라 같은 도메인 안쪽 연결이다.
+    // The diagonal is not a crossing but a connection inside one domain.
     expect(screen.getByLabelText("2 links inside Auth")).toBeInTheDocument();
-    // 경계 압력 — self/cross 비율 카드도 함께 렌더.
+    // Boundary pressure — the self/cross ratio card renders alongside.
     expect(screen.getByText("Boundary pressure")).toBeInTheDocument();
     expect(screen.getByText(/self 2 · cross 3/)).toBeInTheDocument();
   });
@@ -119,7 +119,7 @@ describe("DomainCouplingCard", () => {
   it("칸을 누르면 그 두 도메인을 잇는 실제 연결이 지도 딥링크로 펼쳐진다", () => {
     renderCard();
 
-    // 선택 전에도 자리는 잡혀 있고, 다음 한 걸음을 안내한다.
+    // The space is held even before a selection, and it guides the next step.
     expect(screen.getByTestId("domain-coupling-selection")).toHaveTextContent(
       "Pick a cell to see the actual connections.",
     );
@@ -133,7 +133,7 @@ describe("DomainCouplingCard", () => {
     expect(links[0]).toHaveAttribute("href", "/ontology/?node=capability%3Alogin");
     expect(links[1]).toHaveAttribute("href", "/ontology/?node=capability%3Ainvoice");
 
-    // 같은 칸을 다시 누르면 접힌다 — 선택은 토글이다.
+    // Pressing the same cell again collapses it — selection is a toggle.
     fireEvent.click(screen.getByLabelText("3 links from Auth to Billing"));
     expect(screen.queryByTestId("domain-coupling-pair")).toBeNull();
   });
@@ -155,9 +155,9 @@ describe("DomainCouplingCard", () => {
   it("경계 압력 막대는 캡션이 읽으라고 한 값(교차 비중)을 그린다 — 총량이 아니다", () => {
     renderCard({
       boundaries: [
-        // 총량 4 · 비중 100% — 총량으로 그리면 가장 짧은 막대가 된다.
+        // Total 4, share 100% — drawn by total this would be the shortest bar.
         { id: "domain:leaky", title: "Leaky", selfEdges: 0, crossEdges: 4, crossRatio: 1 },
-        // 총량 20 · 비중 25% — 총량으로 그리면 가장 긴 막대가 된다.
+        // Total 20, share 25% — drawn by total this would be the longest bar.
         { id: "domain:solid", title: "Solid", selfEdges: 15, crossEdges: 5, crossRatio: 0.25 },
       ],
       boundaryTotalCount: 2,
@@ -181,7 +181,7 @@ describe("DomainCouplingCard", () => {
     renderCard({
       grid: {
         ...grid,
-        // 대각선: Auth 8 (최대) · Billing 1. 교차: 3.
+        // Diagonal: Auth 8 (the maximum), Billing 1. Cross: 3.
         cells: [
           [8, 3],
           [0, 1],
@@ -193,10 +193,10 @@ describe("DomainCouplingCard", () => {
 
     const big = screen.getByLabelText("8 links inside Auth");
     const small = screen.getByLabelText("1 links inside Billing");
-    // 무채색 척도(교차의 인디고와 다른 채널) 안에서 큰 값이 더 진하다.
+    // Within the neutral scale (a different channel from the cross indigo), a larger value is darker.
     expect(big.style.backgroundColor).toBe("var(--color-overlay-3)");
     expect(small.style.backgroundColor).toBe("var(--color-overlay-1)");
-    // "다른 척도" 는 색이 아닌 채널로도 말한다 — 파선 테두리.
+    // "A different scale" is also stated through a non-colour channel — a dashed border.
     expect(big.className).toContain("border-dashed");
     expect(screen.getByLabelText("3 links from Auth to Billing").className).not.toContain(
       "border-dashed",
@@ -224,7 +224,7 @@ describe("DomainCouplingCard", () => {
     expect(screen.getByTestId("domain-coupling-empty")).toBeInTheDocument();
     expect(screen.getByText("Not enough coupling data yet")).toBeInTheDocument();
     expect(screen.queryByTestId("domain-coupling-grid")).toBeNull();
-    // 빈 방 금지 — 설명만 두지 않고 다음 한 걸음을 함께 준다.
+    // No empty rooms — the explanation comes with the next step, not alone.
     expect(screen.getByTestId("domain-coupling-empty-action")).toHaveAttribute(
       "href",
       "/ontology/studio/",
@@ -233,18 +233,19 @@ describe("DomainCouplingCard", () => {
 });
 
 /**
- * **격자의 칸은 전부 같은 크기다.**
+ * **Every cell in the grid is the same size.**
  *
- * 클릭 가능한 칸만 `controlClass({ shape: 'icon' })` 을 쓰는데 그 모양은 **하드
- * 치수**(`w-7` = 28px)를 낸다. 높이는 `h-[var(--coupling-cell)]` 이 덮었지만 폭은
- * 덮는 것이 없어서 28로 남았고, 클릭 가능 여부는 **데이터가 정하므로**(값>0 이고
- * 짝이 있을 때만) 같은 격자에 44×44 와 28×44 가 섞였다 — 실측 36칸 중 17 대 19
- * (2026-08-09 소유자 지적: *"어떤건 정사각형이고 어떤건 직사각형이고 그런 기준이
- * 있는건가? 아니면 그냥 디자인 오류인가..?"* — 후자였다).
+ * Only a clickable cell uses `controlClass({ shape: 'icon' })`, and that shape emits **hard
+ * dimensions** (`w-7` = 28px). The height was overridden by `h-[var(--coupling-cell)]` but nothing
+ * overrode the width, so it stayed 28 — and since clickability is **decided by the data** (only
+ * when the value > 0 and a pair exists), one grid mixed 44×44 and 28×44: measured, 17 against 19 of
+ * 36 cells (owner report 2026-08-09: *"어떤건 정사각형이고 어떤건 직사각형이고 그런 기준이
+ * 있는건가? 아니면 그냥 디자인 오류인가..?"* — are some square and some rectangular by some rule,
+ * or is it just a design error? It was the latter).
  *
- * 격자는 **칸이 같은 크기라는 약속**이고, 그게 깨지면 읽는 사람은 크기를 데이터로
- * 읽는다. 이 시험은 두 갈래가 같은 폭 규칙을 쓰는지 클래스 층에서 잠근다 —
- * 실제 픽셀은 `insights-boundary-cell.spec.ts` 가 잰다.
+ * A grid is **a promise that cells are the same size**, and once broken the reader reads size as
+ * data. This test locks both branches to the same width rule at the class layer — the real pixels
+ * are measured by `insights-boundary-cell.spec.ts`.
  */
 describe("격자 칸 치수", () => {
   it("클릭 가능한 칸과 아닌 칸이 같은 폭 규칙을 쓴다", () => {

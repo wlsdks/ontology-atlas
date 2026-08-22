@@ -15,15 +15,17 @@ import { SegmentSwitch, SettingsGroup, SettingsRow } from './settings-primitives
 import { controlClass } from '@/shared/ui/control-class';
 
 /**
- * 「작업 중 표시」·「알림」 설정.
+ * 「작업 중 표시」 (work-in-progress indicator) and 「알림」 (notifications) settings.
  *
- * **기본이 켜짐**인 이유는 프레임 계기와 다르다 — 계기는 진단 도구라 옵트인이고,
- * 이건 *"내 폴더에서 지금 일이 벌어지고 있다"* 는 **사실**이다. 사실을 옵트인
- * 뒤에 숨기면 켠 적 없는 사람은 자기 폴더가 고쳐지는 동안 아무것도 못 본다.
- * 그래서 이 칸은 **끄는** 쪽으로만 쓰인다.
+ * **On by default**, for a different reason than the frame meter — the meter is a
+ * diagnostic tool and therefore opt-in, while this is the **fact** that *"something
+ * is happening in my folder right now"*. Hiding a fact behind an opt-in means
+ * someone who never switched it on sees nothing while their folder is being edited.
+ * So this pane is only ever used to **turn things off**.
  *
- * 갈래 고르기가 「알림」 아래 들여쓰기로 있는 이유: 알림을 통째로 끈 사람에게
- * 갈래 여섯 줄은 결정이 아니라 소음이다. 켜져 있을 때만 나타난다.
+ * Why the kind picker is indented under 「알림」: to someone who turned notifications
+ * off entirely, six rows of kinds are noise, not a decision. It appears only while
+ * they are on.
  */
 export function AgentActivitySettings() {
   const t = useTranslations('nav.settingsMenu');
@@ -110,7 +112,7 @@ export function AgentActivitySettings() {
   );
 }
 
-/** 갈래 → 문구 키. 알림함과 **같은 어휘**를 쓴다 — 이름이 두 벌이면 같은 것으로 안 읽힌다. */
+/** Kind → copy key. It uses the **same vocabulary** as the notification inbox — two sets of names do not read as the same thing. */
 const EVENT_LABEL_KEY: Readonly<Record<(typeof AGENT_NOTIFICATION_KINDS)[number], string>> = {
   'task-start': 'event.taskStart',
   'task-end': 'event.taskEnd',

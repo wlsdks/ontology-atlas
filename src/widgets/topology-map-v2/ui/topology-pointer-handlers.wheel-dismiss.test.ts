@@ -1,8 +1,9 @@
 import { describe, expect, it, vi } from "vitest";
 
-// 엣지 호버 카드 잔류(패널2/3) — 휠/카메라 모션이 시작되면 카드는 즉시
-// 사라져야 한다. `handleWheel` 은 토큰을 읽어 줌 계산을 하므로, 실제 토큰
-// 픽스처 대신 필요한 수치 필드만 스텁해 테스트를 카메라 수학에서 독립시킨다.
+// Edge hover cards lingering (panel2/3) — the moment a wheel or camera motion starts,
+// the card must disappear. `handleWheel` reads tokens to compute the zoom, so only the
+// numeric fields it needs are stubbed instead of a real token fixture, keeping this
+// test independent of the camera maths.
 vi.mock("./topology-read-tokens", () => ({
   readTopologyV2TokensOrNull: vi.fn(() => ({
     overviewEntryRatio: 0.95,

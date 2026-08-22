@@ -96,8 +96,8 @@ export async function runRelate(args, runtimeOverrides = {}) {
   }
 
   if (dryRun) {
-    // 진짜 명령이 볼 규칙을 여기서도 본다 — 안 그러면 미리보기가 「쓰겠다」고
-    // 하고 진짜 명령이 거절하는 일이 생긴다 (2026-08-16 실측).
+    // Apply the rules the real command will apply here too — otherwise the preview
+    // says «will write» and the real command refuses (measured 2026-08-16).
     let refusal = null;
     try {
       const { frontmatter } = runtime.readDocFrontmatter(vaultRoot, check.from);
@@ -134,7 +134,7 @@ export async function runRelate(args, runtimeOverrides = {}) {
       { from: check.from, to: check.to, relation: check.relation, why },
       runtime,
     );
-    // P2-① — 실제로 관계가 쓰였을 때만 감사 로그에 (dry-run·already-exists 위에서 return).
+    // Only an actually written relation reaches the audit log (dry-run and already-exists return above).
     await runtime.recordCliWrite(vaultRoot, {
       tool: 'cli:relate',
       target: check.from,
@@ -156,25 +156,24 @@ export async function runRelate(args, runtimeOverrides = {}) {
 }
 
 /**
- * relation_check 이 이미 from/to/relation 을 canonical slug 로 resolve 해뒀다
- * (alias 입력도 정규 slug 로 반환) — 여기서는 그 canonical 값을 그대로 쓴다.
- * mcp/src/index.js 의 addRelation 과 같은 두 갈래:
- *  - relation === 'domain' → 단일 scalar 필드 교체. 이미 다른 값이 있으면
- *    (add_relation 과 동일하게) 거부 — patch_concept/직접 편집으로 유도.
- *  - 그 외 → 배열에 append + normalizeRelationRefs (정렬 + 중복 제거).
+ * relation_check has already resolved from/to/relation to canonical slugs (alias
+ * input comes back canonical), so the canonical values are used as-is here. Same
+ * two branches as addRelation in mcp/src/index.js:
+ *  - relation === 'domain' → replaces a single scalar field. An existing different
+ *    value is refused (as in add_relation), steering to patch_concept or a direct edit.
+ *  - otherwise → appends to the array, then normalizeRelationRefs (sort + dedupe).
  */
 /**
- * 이 관계를 쓰지 못할 이유가 있으면 그 문장을, 없으면 `null` 을 돌려준다.
+ * Returns the sentence explaining why this relation cannot be written, or `null`.
  *
- * ## 왜 순수 함수로 꺼냈나 (2026-08-16 실측)
+ * **Why it is a pure function** (measured 2026-08-16): this verdict lived **inside**
+ * `writeRelation`. A dry run never calls that function, so it could not help but
+ * skip the verdict — and for identical arguments the preview answered «will write»
+ * (exit 0) while the real command answered «refused» (exit 1). A preview's only
+ * use is knowing the outcome before doing it for real, so a wrong forecast is
+ * worse than no preview: a green light is followed by the real call.
  *
- * 이 판정이 `writeRelation` **안에** 있었다. dry-run 은 그 함수를 아예 안
- * 부르므로 판정을 지나칠 수밖에 없었고, 그래서 같은 인자에 대해 미리보기는
- * 「쓰겠다」(exit 0), 진짜 명령은 「거절」(exit 1) 이라고 답했다. 미리보기의
- * 쓸모는 진짜로 하기 전에 결과를 아는 것 하나뿐이라, 틀린 예보는 미리보기가
- * 없는 것보다 나쁘다 — 초록불을 보고 그다음에 진짜로 부르기 때문이다.
- *
- * 이제 **두 길이 이 함수 하나를 부른다.** 게이트:
+ * Now **both paths call this one function.** Gate:
  * `cli/src/commands/relate.dry-run-parity.test.mjs`.
  */
 export function relationWriteRefusal({ frontmatter, relation, to, why = null }) {
@@ -196,8 +195,8 @@ export function relationWriteRefusal({ frontmatter, relation, to, why = null }) 
 }
 
 function writeRelation(rootPath, { from, to, relation, why = null }, runtime) {
-  // preflight 는 이미 frontmatter 키('dependencies' 등)를 relation 으로
-  // 돌려주기도 한다 — 타입/키 양쪽 표기를 수용한다.
+  // preflight sometimes returns the frontmatter key ('dependencies' and friends) as
+  // the relation, so both the type and the key spelling are accepted.
   const key = RELATION_KEY[relation] ?? relation;
   const { frontmatter, revision } = runtime.readDocFrontmatter(rootPath, from);
   const refusal = relationWriteRefusal({ frontmatter, relation, to, why });
@@ -207,7 +206,7 @@ function writeRelation(rootPath, { from, to, relation, why = null }, runtime) {
   }
   const existing = Array.isArray(frontmatter[key]) ? frontmatter[key] : [];
   const next = normalizeRelationRefs([...existing, to]);
-  // P6 — --why: 관계와 근거를 같은 쓰기로 (MCP add_relation why 미러).
+  // --why: the relation and its rationale in one write (mirrors MCP add_relation's why).
   if (typeof why === 'string' && why.trim()) {
     const notes = frontmatter.relation_notes && typeof frontmatter.relation_notes === 'object'
       ? { ...frontmatter.relation_notes }

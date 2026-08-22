@@ -95,22 +95,22 @@ export async function runExport(args) {
   );
 
   /*
-   * **안 담긴 것도 말한다** (2026-08-17 실측).
+   * **Say what was left out too** (measured 2026-08-17).
    *
-   * 노드와 관계는 정말 다 나간다. 그런데 우리 볼트의 관계 이유 7개
-   * (`relation_notes`)는 하나도 안 나가고, 구현 경로도 마찬가지다. 이 저장소가
-   * 스스로 적어 둔 말이 있다 — *"근거 없는 엣지는 마인드맵 선이지 온톨로지
-   * 주장이 아니다."* Protégé 로 옮긴 사람은 「80 노드 · 174 관계」를 보고
-   * 다 가져온 줄 안다.
+   * Nodes and relations really do all go out. But none of our vault's 7 relation
+   * rationales (`relation_notes`) do, and neither do the implementation paths.
+   * This repository wrote the standard itself: *"an edge with no rationale is a
+   * mind-map line, not an ontology claim."* Someone moving to Protégé sees
+   * «80 nodes · 174 relations» and believes they took everything.
    *
-   * 담는 칸 목록을 여기 손으로 적지 않는다 — 스키마가 늘면 조용히 낡는다.
-   * **방금 내놓은 payload 에서 뽑는다.**
+   * The list of carried fields is not written by hand here — it would go stale
+   * silently as the schema grows. **It is derived from the payload just produced.**
    */
   const omissions = describeExportOmissions({
     nodes: artifact.nodes,
     edges: artifact.edges,
     carriedKeys: carriedKeysOf(parsed.format, payload),
-    // 오늘 두 형식 모두 엣지에 이유를 안 싣는다. 담게 되면 여기만 고친다.
+    // Neither format carries edge rationales today. When one does, only this changes.
     carriesEdgeRationale: false,
   });
   if (omissions.sentence) {
@@ -120,12 +120,12 @@ export async function runExport(args) {
 }
 
 /**
- * 이 형식이 실제로 담은 노드 칸들 — **내놓은 결과에서 뽑는다.**
- * 목록을 손으로 적으면 스키마가 늘 때 조용히 낡고, 그러면 「다 담았다」고
- * 말하면서 안 담게 된다.
+ * The node fields this format actually carried — **derived from the produced
+ * result.** A hand-written list goes stale silently as the schema grows, and then
+ * claims everything was carried while it is not.
  */
 function carriedKeysOf(format, payload) {
-  // `json` 은 컴파일 산출물 원본이라 잃는 것이 없다.
+  // `json` is the raw compile artifact, so nothing is lost.
   if (format === 'json') return null;
   if (format === 'jsonld') {
     try {
@@ -136,7 +136,7 @@ function carriedKeysOf(format, payload) {
       }
       return [...keys];
     } catch {
-      // 못 읽으면 아무것도 단정하지 않는다 — 틀린 손실 목록보다 침묵이 낫다.
+      // If it cannot be read, assert nothing — silence beats a wrong loss list.
       return null;
     }
   }

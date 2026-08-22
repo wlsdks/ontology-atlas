@@ -20,10 +20,10 @@ describe("resolveToastBottomOffset", () => {
   });
 
   it("포지션 계약 — 1440×900 에서 토스트 하단이 하단 쓰기 바(≈54px)를 비켜난다", () => {
-    // 실제 바 높이(버튼 h-8 + py-2.5 + border) ≈ 54px + 바 위 gap.
+    // Real bar height (button h-8 + py-2.5 + border) ≈ 54px, plus the gap above it.
     const ACTUAL_WRITE_BAR_HEIGHT = 54;
     const toastBottom = resolveToastBottomOffset(BUILDER_WRITE_BAR_RESERVE_PX);
-    // 토스트 하단 오프셋이 바 높이 + 최소 여백보다 커야 버튼을 안 가린다.
+    // The toast's bottom offset must exceed bar height + minimum gap, or it covers the button.
     expect(toastBottom).toBeGreaterThan(ACTUAL_WRITE_BAR_HEIGHT + TOAST_EDGE_GAP_PX);
   });
 
@@ -33,15 +33,15 @@ describe("resolveToastBottomOffset", () => {
 
   describe("resolveToastBottomOffsetForStack — 지도 우하단 계기 스택 (E-7)", () => {
     it("스택 상단 위로 토스트를 띄운다", () => {
-      // 1512×950, 코너 인셋 24px, 스택 높이 40px → 스택 top = 950-24-40 = 886.
+      // 1512×950, 24px corner inset, 40px stack height → stack top = 950-24-40 = 886.
       const offset = resolveToastBottomOffsetForStack(950, 886);
       expect(offset).toBe(TOAST_EDGE_GAP_PX + 64);
-      // 토스트 하단(offset)이 스택 상단(950-886=64)보다 위여야 겹치지 않는다.
+      // The toast's bottom (offset) must sit above the stack's top (950-886=64) to avoid overlap.
       expect(offset).toBeGreaterThan(950 - 886);
     });
 
     it("≥1920 의 커진 코너 인셋도 실측 rect 로 따라간다", () => {
-      // 인셋 32px 로 커지면 스택 top 이 올라가고 오프셋도 함께 커진다.
+      // At a 32px inset the stack's top rises and the offset grows with it.
       expect(resolveToastBottomOffsetForStack(1080, 1080 - 32 - 40)).toBe(
         TOAST_EDGE_GAP_PX + 72,
       );
@@ -54,11 +54,13 @@ describe("resolveToastBottomOffset", () => {
 });
 
 /**
- * **알림이 오른쪽 도크를 비켜선다** (2026-08-16 소유자 화면).
+ * **Notifications step aside for the right dock** (from the owner's screen,
+ * 2026-08-16).
  *
- * 「만들었어요」 토스트가 대화 패널의 작성 칸 위에 그대로 얹혔다. 하단에서
- * 이미 풀어 둔 문제와 **같은 모양**이다 — 화면 가장자리를 기준으로 서는 것은
- * 그 가장자리에 무엇이 서든 그 위에 앉는다.
+ * The 「만들었어요」 (created) toast landed directly on the conversation panel's
+ * composer. It is **the same shape** as the problem already solved at the bottom
+ * edge: anything positioned against a viewport edge sits on top of whatever
+ * stands at that edge.
  */
 describe("토스트 오른쪽 오프셋 — 도크를 비켜선다", () => {
   it("도크가 없으면 기본 여백뿐이다 — 회귀 0", () => {
@@ -71,8 +73,8 @@ describe("토스트 오른쪽 오프셋 — 도크를 비켜선다", () => {
   });
 
   it("사용자가 끌어 넓힌 폭도 그대로 따라간다 — 상수가 아니다", () => {
-    // 이 패널의 폭은 320~968 사이에서 사용자가 정한다. 한 수를 박으면
-    // 그 수에서만 맞고 나머지 폭 전부에서 틀린다.
+    // The user sets this panel's width anywhere from 320 to 968. Pinning one
+    // number is correct at that number and wrong at every other width.
     expect(resolveToastRightOffset(968)).toBe(TOAST_EDGE_GAP_PX + 968);
     expect(resolveToastRightOffset(320)).toBe(TOAST_EDGE_GAP_PX + 320);
   });

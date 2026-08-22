@@ -3,18 +3,16 @@ import type { Project } from "@/entities/project";
 import { resolveTopologySelectedOntologyNode } from "./resolve-topology-selected-node";
 
 /**
- * 슬러그의 **사람이 읽는 이름** — 이 볼트에서 실제로 해석될 때만.
+ * A slug's human-readable name — only when it actually resolves in this vault.
  *
- * ## null 이 정보다 (2026-08-01 수리)
+ * **null is the information (fixed 2026-08-01).** This used to end in `?? slug`,
+ * passing the slug off as a title. Nodes absent from the vault then drew with
+ * plausible names, and the path chip asserted "no path" over the pair: the truth
+ * was "neither is here", the screen said "both are here and unconnected".
  *
- * 예전엔 못 찾으면 `?? slug` 로 **슬러그를 제목인 척** 돌려줬다. 그래서 이
- * 볼트에 없는 노드가 멀쩡한 이름으로 화면에 그려졌고, 경로 칩은 그 이름 둘
- * 위에서 **「경로 없음」이라고 단언**했다 — 진실은 "둘 다 여기 없다" 인데
- * 화면은 "둘 다 있고 안 이어져 있다" 고 말한 것이다.
- *
- * 폴백은 친절해 보이지만 **"없다" 라는 정보를 지운다.** 그 정보가 지워지면
- * 그 위의 모든 판정이 조용히 거짓이 된다. 그래서 여기서는 못 찾으면 null 을
- * 낸다 — 호출부가 그 사실을 말할 수 있게.
+ * The fallback looks kind but erases the fact of absence, and once that is gone
+ * every claim built on top is quietly false. Returning null lets the caller say
+ * so.
  */
 export function resolveTopologyNodeTitle({
   slug,
@@ -35,7 +33,7 @@ export function resolveTopologyNodeTitle({
   return compactTopologyPanelTitle(node.title);
 }
 
-/** 괄호 부연을 떼어 칩·패널이 한 줄에 들어가게 한다. */
+/** Strips the parenthetical aside so chips and panels fit on one line. */
 export function compactTopologyPanelTitle(title: string | null): string | null {
   if (!title) return null;
   const stripped = title.replace(/\s*\(.*$/, "").trim();

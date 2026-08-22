@@ -3,11 +3,12 @@
  * mid-zoom bands (`docs/TOPOLOGY-V2-DESIGN.md` semantic-zoom charter; Shneiderman
  * "overview first, zoom and filter" — `.claude/rules/design.md`).
  *
- * WHY (S3 마감 폴리시, fable 설계): at the constellation/circuit overview the
+ * WHY (S3 finishing polish, designed by fable): at the constellation/circuit overview the
  * greedy label placement (`render/label-layout.ts`) already suppresses
  * overlaps, but on a dense vault it still tries to paint every in-viewport
  * label and the survivors read as noise. At overview altitude the reader's
- * question is "어디가 큰가 / 무엇이 허브인가" — so the label budget should go to
+ * question is "어디가 큰가 / 무엇이 허브인가" (where is it big, what is a hub)
+ * — so the label budget should go to
  * the highest-degree nodes (the hubs, the spine), not to whichever leaf won the
  * greedy race. This module picks the top-K labels by node degree, deterministic
  * on ties (slug ascending) so the same frame always keeps the same names.
@@ -34,19 +35,22 @@ export const LABEL_TOP_K = 20;
 
 /**
  * Per-disc label budget for an EXPANDED high-fan phyllotaxis disc (high fan-out
- * 밀도 처방). A domain/capability disc can hold dozens–hundreds of children; the
+ * density prescription). A domain/capability disc can hold dozens–hundreds of children; the
  * old code exempted *every* expanded child from the top-K budget, so a single
  * expand punched a wall of ~60 labels across the map. Instead, only each disc's
  * DOI top-K children (`rankEgoNeighborsByDOI`: domain > capability > element →
  * degree → slug) are promoted to label candidates and then still compete in the
  * normal `LABEL_TOP_K` budget; the rest render as dots and re-label only on
- * hover/ego. 6–8 is the "읽히는 라벨 한 줌" band (Shneiderman overview-first,
+ * hover/ego. 6–8 is the "읽히는 라벨 한 줌" (a readable handful of labels) band
+ * (Shneiderman overview-first,
  * `.claude/rules/design.md`); 8 keeps the disc's spine caps readable without the
  * text wall.
  *
- * **값의 단일 출처는 설정이다** — 「확장 → 이름을 시도할 개수」(기본 8). 라이브
- * 값은 프레임 드로우가 읽고, 이 상수는 그 기본값이자 설정을 모르는 호출부의
- * 폴백이다(`focus-state.ts#EGO_NEIGHBOR_LIMIT` 과 같은 규약).
+ * **The single source for the value is the preference** 「확장 → 이름을 시도할
+ * 개수」 (on expand, how many names to attempt), default 8. The frame draw reads
+ * the live value; this constant is that default and the fallback for callers that
+ * do not know the preference — the same convention as
+ * `focus-state.ts#EGO_NEIGHBOR_LIMIT`.
  */
 export const DISC_LABEL_TOP_K = DEFAULT_EXPAND.labelAttempts;
 
@@ -71,17 +75,19 @@ export function selectDiscLabelEligible(
 }
 
 /**
- * 포커스(ego) 도메인 자식 라벨 겹침 LOD (노드 감사 처방). A focused node's
+ * Label-overlap LOD for a focused (ego) domain's children, from the node audit's
+ * prescription. A focused node's
  * 1-hop neighbors were unconditionally label-EXEMPT regardless of count — fine
  * up to a handful, but a domain with more children than the readable
- * `DISC_LABEL_TOP_K` band (the same "읽히는 라벨 한 줌" precedent the expanded-
+ * `DISC_LABEL_TOP_K` band (the same readable-handful precedent the expanded-
  * disc cut above uses) painted every child's label and let them collide. This
  * mirrors that exact precedent for the ego-reveal path: below the cap every
  * neighbor stays exempt (`doiEligibleIds === null` — caller's signal that no
  * cut was needed, regression 0 for the common small-fan-out focus); at/above
  * it, only the DOI-top-K neighbors (`selectDiscLabelEligible`) keep the
  * exemption — everyone else falls back into the normal top-K/greedy
- * competition, which still shows them if nothing collides ("과하지 않게" — no
+ * competition, which still shows them if nothing collides ("과하지 않게", i.e. not
+ * overdone — no
  * blanket label wipe, only the ones that would overlap get demoted to a dot).
  * Pure — the caller computes `doiEligibleIds` (ranking needs edge/degree data
  * this module doesn't own).

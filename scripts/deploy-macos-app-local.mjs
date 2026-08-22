@@ -79,8 +79,9 @@ export function parseDeployMacosAppArgs(argv, defaultRouteOptions = {}) {
   return {
     skipBuild: argv.includes("--skip-build"),
     leaveRunning: !argv.includes("--no-leave-running"),
-    // 지도 재구성(map-canvas) 이후 드래그 클러스터 증명은 레거시 Relief 계약 —
-    // 기본 검증은 canvas 카드 계약(validator)이 담당하고 드래그는 opt-in.
+    // Since the map was rebuilt on canvas, the drag-cluster proof is a legacy Relief
+    // contract: the default verification is the canvas card contract (validator) and drag
+    // is opt-in.
     requireScreenshot: argv.includes("--require-screenshot"),
     visualEvidence: !argv.includes("--no-visual-evidence"),
     route: option("--route=") || resolveDefaultDeployRoute(defaultRouteOptions),

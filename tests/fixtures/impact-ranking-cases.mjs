@@ -1,4 +1,4 @@
-// Fixture vaults for the impact-ranking contract test (S2 — 영향 랭킹).
+// Fixture vaults for the impact-ranking contract test.
 //
 // The `/ontology/insights` 「바꾸면 멀리 퍼지는 개념」 card counts, for each
 // concept, how many concepts must be re-checked when it changes. That is the
@@ -130,8 +130,8 @@ export const IMPACT_RANKING_CASES = [
 ];
 
 /**
- * 영향의 유일한 include-list. 공개 alias와 frontmatter key를 함께 적어 엔진
- * 어휘 drift 계약에서 둘 다 빠지지 않게 한다.
+ * The single include-list for impact. It lists the public alias and the frontmatter
+ * key together so the engine-vocabulary drift contract cannot lose either.
  */
 export const IMPACT_INCLUDED_GRAPH_KEYS = [
   'dependencies',
@@ -139,22 +139,24 @@ export const IMPACT_INCLUDED_GRAPH_KEYS = [
 ];
 
 /**
- * 인라인 `domain:` 키는 **양쪽이 반대 방향으로 읽는다** — 웹 파생은
- * `도메인 → 문서`(contains, 도메인 아래 역량이 매달리는 트리), 컴파일러는
- * `문서 → 도메인`(belongs-to). 그래서 파급 include-list 에서 뺀다.
+ * The inline `domain:` key is **read in opposite directions by the two sides**: the web
+ * derivation reads `domain → document` (contains — a tree with capabilities hanging
+ * under a domain), while the compiler reads `document → domain` (belongs-to). So it is
+ * excluded from the propagation include-list.
  *
- * 도그푸드 실측(2026-07-26, 문서 노드 95개 기준):
- *   - 이 키를 빼면 화면 == 에이전트가 **91/95**
- *   - 넣으면 4/95 (담기 관계가 양방향이 되어 거의 모든 노드가 87 로 수렴 —
- *     순위가 변별력을 잃는다)
- *   - 필터 없이 엔진 기본값이면 1/95 (전부 ~95, 완전히 무의미)
+ * Dogfood measurement (2026-07-26, over 95 document nodes):
+ *   - Excluding this key, screen == agent on **91/95**
+ *   - Including it, 4/95 (containment becomes bidirectional and almost every node
+ *     converges on 87 — the ranking loses all discrimination)
+ *   - With no filter, i.e. the engine default, 1/95 (everything ~95, entirely
+ *     meaningless)
  *
- * contract 의 「알려진 비대칭」 테스트가 이 방향 차이를 못 박아 둔다. 언젠가
- * 한쪽을 맞추면 그 테스트가 깨지고, 여기 include-list 로 옮기면 된다.
+ * The contract's "known asymmetry" test pins this directional difference. Once one side
+ * is aligned that test breaks, and the key moves into this include-list.
  */
 export const IMPACT_DIRECTION_DIVERGENT_GRAPH_KEYS = ['domain'];
 
-/** 구조 탐색에는 유효하지만 인과 영향에는 들어가지 않는 관계. */
+/** Relations valid for structural navigation but not part of causal impact. */
 export const IMPACT_STRUCTURAL_GRAPH_KEYS = [
   'domains',
   'capabilities',
@@ -162,5 +164,5 @@ export const IMPACT_STRUCTURAL_GRAPH_KEYS = [
   'contains',
 ];
 
-/** 엔진 어휘에서 파급으로 세지 않는 소프트 연관 — 웹의 제외 목록과 같은 뜻. */
+/** Soft associations the engine vocabulary does not count as propagation — the same meaning as the web's exclusion list. */
 export const IMPACT_SOFT_GRAPH_KEYS = ['relates', 'describes'];

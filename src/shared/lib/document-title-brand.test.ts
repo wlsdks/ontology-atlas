@@ -3,14 +3,15 @@ import path from "node:path";
 import { describe, expect, it } from "vitest";
 
 /**
- * i18n 제목 메시지의 브랜드 일관성 가드.
+ * Guards brand consistency across the i18n title messages.
  *
- * 앱 표시명은 `metadata.siteName` 단일 출처이고, metadata 제목 템플릿은
- * `%s · {siteName}` 이다. client-side `useDocumentTitle` 이 소비하는 정적
- * `documentTitle*` 메시지도 같은 브랜드 접미사를 써야 한다. 구분자(' · ')를
- * 포함한 제목 값이 siteName 으로 끝나지 않으면 brand drift 회귀다 (#293 —
- * siteName 을 "Ontology Atlas" 로 리네임할 때 3개 메시지가 "ontology-atlas"
- * 접미사로 남아 같은 페이지의 og:title 과 <title> 이 어긋났던 사건).
+ * `metadata.siteName` is the single source for the app's display name, and the
+ * metadata title template is `%s · {siteName}`. The static `documentTitle*` messages
+ * consumed by the client-side `useDocumentTitle` must carry the same brand suffix. A
+ * title value containing the ' · ' separator but not ending in siteName is brand
+ * drift — as happened when siteName was renamed to "Ontology Atlas" and three
+ * messages kept the "ontology-atlas" suffix, so `og:title` and `<title>` on the same
+ * page disagreed.
  */
 
 const LOCALES = ["en", "ko"] as const;
@@ -54,7 +55,7 @@ describe("i18n document-title brand consistency", () => {
     });
 
     it(`[${locale}] has separator-bearing document-title messages to guard`, () => {
-      // 가드 대상이 사라지면 테스트가 무의미해지므로 최소 1개는 존재해야 한다.
+      // With nothing left to guard the test would be vacuous, so require at least one.
       expect(titleSuffixEntries.length).toBeGreaterThan(0);
     });
 

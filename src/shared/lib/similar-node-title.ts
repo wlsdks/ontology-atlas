@@ -1,18 +1,19 @@
 /**
- * GUI 노드 생성 근접 중복 감지 — design-council B2 rank4.
+ * Near-duplicate detection for nodes created through the GUI.
  *
- * `mcp/src/vault.mjs` 의 `detectDuplicateTitle`(정규화 후 *완전 일치*만)과
- * `mcp/src/growth-hint.mjs` 의 `findNearTitleMatches`(토큰 오버랩 Jaccard) 를
- * 하나로 합쳐 GUI 용으로 재구현한 버전 — `mcp/` 는 별도 npm 패키지라 `src/`
- * 에서 직접 import 하지 않는다(단일 진실원 원칙, `.claude/rules/architecture.md`).
- * 로직만 이식하고 vault I/O 는 없다 — 순수 함수.
+ * Combines `detectDuplicateTitle` from `mcp/src/vault.mjs` (normalised *exact*
+ * match only) and `findNearTitleMatches` from `mcp/src/growth-hint.mjs` (Jaccard
+ * token overlap) into one pure function. `mcp/` is a separate package and is never
+ * imported from `src/`, so the logic is ported rather than shared
+ * (`.claude/rules/architecture.md`); there is no vault I/O here.
  *
- * AGENTS.md: "성장하는 vault 의 #1 실패 모드는 중복/hallucinated 노드" — 지금은
- * MCP `add_concept` 경로에만 안전망이 있고, `/docs` 새 문서·`/ontology/studio`
- * (나침 무대 CREATE) 두 GUI 경로엔 없다. 이 모듈이 그 공백을 메운다.
+ * The #1 failure mode of a growing vault is duplicate or hallucinated nodes, and
+ * the safety net existed only on the MCP `add_concept` path — the GUI creation
+ * paths had none. This module fills that gap.
  *
- * 임계는 **제목 근접 + kind 일치**일 때만 — 다른 kind 의 동명 노드(예: "결제"
- * 라는 domain 과 "결제" 라는 capability)는 흔하고 정상이라 오경보가 된다.
+ * A match requires **a close title *and* the same kind.** Same-named nodes of
+ * different kinds (a domain "결제" and a capability "결제") are common and
+ * legitimate, so pairing them would only produce false alarms.
  */
 
 export interface SimilarNodeCandidate {
@@ -22,26 +23,27 @@ export interface SimilarNodeCandidate {
 }
 
 export interface SimilarNodeMatch extends SimilarNodeCandidate {
-  /** 1 = 정규화 후 완전 일치. 그 외는 Jaccard 토큰 오버랩(0~1 미만). */
+  /** 1 = exact match after normalisation; otherwise Jaccard token overlap (0 to <1). */
   score: number;
 }
 
 export interface FindSimilarNodeOptions {
-  /** 자기 자신(편집 중인 노드)을 후보에서 제외. */
+  /** Exclude the node currently being edited from the candidates. */
   excludeSlug?: string;
   /**
-   * Jaccard 최소 점수 — 이 아래는 "다른 개념"으로 본다. growth-hint.mjs 의
-   * read-tool 힌트(0.3)보다 높게 잡는다 — 여긴 타이핑마다 뜨는 능동적
-   * 경고라 오경보 비용이 더 크다(council guardianRisk: "임계 너무 낮으면
-   * 오경보 학습"). 기본 0.6 = 토큰 절반 이상 겹칠 때만.
+   * Minimum Jaccard score; below it the titles are treated as different concepts.
+   * Set higher than the read-tool hint in `growth-hint.mjs` (0.3) because this
+   * warning appears actively as the user types, so a false alarm costs more — a
+   * threshold set too low teaches people to ignore it. The default 0.6 fires only
+   * when more than half the tokens overlap.
    */
   minScore?: number;
 }
 
 const DEFAULT_MIN_SCORE = 0.6;
-// growth-hint.mjs 의 TOKEN_RE(`[a-z0-9]+`)는 ASCII 전용이라 한글 title 을
-// 토큰화하지 못한다(이 vault 의 다수 title 이 한글). \p{L}\p{N} 유니코드
-// 클래스로 확장 — `slugify.ts` 가 이미 쓰는 것과 같은 패턴.
+// The TOKEN_RE in growth-hint.mjs (`[a-z0-9]+`) is ASCII-only and cannot tokenise
+// Korean titles, which most titles in this vault are. Widened to the \p{L}\p{N}
+// unicode classes — the same pattern `slugify.ts` already uses.
 const TOKEN_RE = /[\p{L}\p{N}]+/gu;
 
 function tokenize(text: string): string[] {
@@ -56,10 +58,11 @@ function normalizeTitle(text: string): string {
 }
 
 /**
- * 두 제목의 근접도(0~1) — 정규화 후 완전 일치면 1, 아니면 토큰 Jaccard 오버랩.
- * `findSimilarNodeByTitle` 의 내부 점수 계산을 한 곳에 모은 순수 pairwise 헬퍼로,
- * kind 게이트 없이 임의의 두 제목을 비교한다. 나침 무대 피커의 "이름 비슷" 추천
- * 신호가 이 함수를 재사용해 근접 중복 감지와 유사도 수식을 단일 진실원으로 둔다.
+ * Closeness of two titles (0–1): 1 for an exact match after normalisation,
+ * otherwise Jaccard token overlap. This is the pairwise core of
+ * `findSimilarNodeByTitle` with no kind gate, exposed so the picker's
+ * "similar name" suggestion reuses the same formula instead of growing a second
+ * one.
  */
 export function titleSimilarity(a: string, b: string): number {
   const normA = normalizeTitle(a);
@@ -79,8 +82,8 @@ export function titleSimilarity(a: string, b: string): number {
 }
 
 /**
- * `title`(작성 중인 새 노드 제목) 이 `kind` 가 같은 기존 후보 중 근접한 것이
- * 있으면 최고 점수 매치 하나를 반환, 없으면 null.
+ * Given the title being typed for a new node, return the single highest-scoring
+ * close match among existing candidates of the same `kind`, or null.
  */
 export function findSimilarNodeByTitle(
   title: string,
@@ -98,7 +101,7 @@ export function findSimilarNodeByTitle(
     if (options.excludeSlug && candidate.slug === options.excludeSlug) continue;
     if (!normalizeTitle(candidate.title)) continue;
 
-    // 완전 일치(1)는 항상 통과, 부분 겹침은 minScore 게이트를 넘어야 매치.
+    // An exact match (1) always counts; partial overlap must clear minScore.
     const score = titleSimilarity(title, candidate.title);
     if (score === 0) continue;
     if (score < 1 && score < minScore) continue;

@@ -3,8 +3,8 @@ import { describe, expect, it } from 'vitest';
 import { GIT_DOWNLOAD_URL, gitInstallGuide , gitHostPlatformFrom} from './git-install-guide';
 
 /**
- * 설치 명령은 **사용자 터미널에서** 실행되므로 오타가 나면 우리는 그 실패를
- * 못 본다(우리 로그에 안 남는다). 여기서 문자열을 고정한다.
+ * Install commands run **in the user's terminal**, so a typo fails somewhere we
+ * never see — it reaches none of our logs. These strings are pinned here.
  */
 describe('gitInstallGuide', () => {
   it('세 플랫폼 모두 1순위 명령을 준다', () => {
@@ -16,8 +16,8 @@ describe('gitInstallGuide', () => {
   });
 
   it('1순위는 추가 도구를 요구하지 않는 경로다', () => {
-    // macOS 는 brew 설치를 먼저 요구하면 단계가 하나 더 생긴다 — Command Line
-    // Tools 가 애플 기본 경로다. Windows 는 winget 이 OS 기본 탑재.
+    // Requiring brew first would add a step on macOS; Command Line Tools is Apple's
+    // own path. On Windows, winget ships with the OS.
     expect(gitInstallGuide('macos').primary.command).toBe('xcode-select --install');
     expect(gitInstallGuide('windows').primary.command).toBe('winget install --id Git.Git -e');
   });
@@ -46,12 +46,12 @@ describe('gitInstallGuide', () => {
 });
 
 /**
- * 플랫폼 감지 — 순수 함수라 문자열만 넣어 본다.
+ * Platform detection — a pure function, so strings are all that go in.
  *
- * 이 함수가 생긴 이유: 설치 안내(`gitInstallGuide`)와 문구 13종이 **이미 다
- * 있었는데 화면이 그걸 부르지 않았다**(2026-08-02 발견 — `AtlasGitPanel` 의
- * `gitProbe` 호출 0회). 문을 다 지어놓고 안 뚫은 상태였고, 그 문을 뚫는 데
- * 마지막으로 없던 조각이 「이 컴퓨터가 무슨 OS 인가」였다.
+ * Why it exists: the install guidance (`gitInstallGuide`) and its 13 strings **were
+ * already there and no screen called them** (found 2026-08-02: `AtlasGitPanel` called
+ * `gitProbe` zero times). The door was fully built but never cut open, and the last
+ * missing piece was knowing which OS this computer is.
  */
 describe('gitHostPlatformFrom', () => {
   it.each([

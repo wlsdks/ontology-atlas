@@ -74,10 +74,10 @@ function parseSize(value, flag) {
 }
 
 /*
- * 컴파일러가 노드마다 불변 `uid` 를 요구한다(2026-08-02 정체성 규칙). 벤치
- * 픽스처는 손으로 쓴 것이 아니라 여기서 만들어지므로, 실제 볼트가 쓰는 것과
- * 같은 방식(`randomUUID`)으로 만들어 준다 — 안 그러면 벤치가 컴파일 단계에서
- * 죽고, 재는 대상(질의 성능)에 닿지도 못한다.
+ * The compiler requires an immutable `uid` per node (identity rule, 2026-08-02).
+ * The bench fixture is generated here rather than hand-written, so it mints uids
+ * the same way a real vault does (`randomUUID`) — otherwise the bench dies at the
+ * compile step and never reaches what it measures, query performance.
  */
 function doc(slug, frontmatter, mtime = 1) {
   // Benchmark fixtures are ephemeral but still exercise the v2 identity

@@ -2,13 +2,14 @@ import { readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 
 /**
- * `src-tauri/src/lib.rs` 의 WebView 프로브 문자열에서 조회 대상 `data-testid` 를
- * 뽑아낸다. 프로브는 Rust raw string 안의 JS 라 정적 파싱이 불가능하므로
- * 텍스트에서 셀렉터 리터럴만 걷는다 — 이 목적에는 그게 정확하다.
+ * Extracts the `data-testid` values queried by the WebView probes in
+ * `src-tauri/src/lib.rs`. The probes are JS inside a Rust raw string, so static
+ * parsing is impossible; only the selector literals are scraped from the text, which
+ * is exact enough for this purpose.
  */
 export function collectProbeSelectors(rustSource: string): string[] {
   const found = new Set<string>();
-  // `[data-testid="foo"]` / `[data-testid='foo']` 둘 다.
+  // Both `[data-testid="foo"]` and `[data-testid='foo']`.
   const pattern = /\[data-testid=["']([^"']+)["']\]/g;
   for (const match of rustSource.matchAll(pattern)) {
     found.add(match[1]);
@@ -17,35 +18,36 @@ export function collectProbeSelectors(rustSource: string): string[] {
 }
 
 /**
- * 주어진 testid 중 `src/`·`app/` 소스에 **정의가 없는** 것을 돌려준다.
+ * Returns the given testids that have **no definition** in `src/` or `app/`.
  *
- * 외부 바이너리(`rg` 등)를 쓰지 않는다 — 초안에서 `execFileSync("rg", …)` 를
- * 썼다가 그 호출이 조용히 실패해 **모든 셀렉터가 죽은 것으로 보고**됐다.
- * 이 테스트가 잡으려는 결함(외부 의존이 조용히 죽고 catch 가 삼킴)과 정확히
- * 같은 종류라, 파일을 직접 읽는다.
+ * No external binary is used. A draft used `execFileSync("rg", …)`, that call failed
+ * silently, and **every selector was reported dead** — exactly the class of defect
+ * this test exists to catch (an external dependency dying quietly and a catch
+ * swallowing it). So the files are read directly.
  *
- * `data/` 아래 JSON(문서 볼트 매니페스트)은 제외한다 — 거긴 과거 기획 문서 본문이라
- * 지워진 셀렉터 이름이 산문으로 남아 있고, 그걸 "살아 있다" 로 세면 이 게이트가
- * 무력해진다.
+ * JSON under `data/` (the docs vault manifest) is excluded: it holds the body text of
+ * old planning documents, where deleted selector names survive as prose, and counting
+ * those as alive would neutralise this gate.
  */
 /**
- * **런타임에 조립되는 testid** — 소스에 리터럴로 없지만 살아 있다.
+ * **testids assembled at runtime** — absent from source as literals but alive.
  *
- * 이 게이트는 소스 텍스트에 그 문자열이 있는지로 「살아 있음」을 판정한다. 그런데
- * 일부 프리미티브는 부모가 받은 testid 에 접미사를 붙여 자식에 단다 — 예:
- * `src/shared/ui/select.tsx` 가 `data-testid={`${dataTestid}-listbox`}` 로 목록을
- * 표시한다. 그러면 `ai-local-model-listbox` 는 **DOM 에는 있고 소스에는 없다.**
+ * This gate decides "alive" by whether the string appears in the source text. But
+ * some primitives append a suffix to the testid their parent received and put it on a
+ * child — for example `src/shared/ui/select.tsx` marks the list with
+ * `data-testid={`${dataTestid}-listbox`}`. So `ai-local-model-listbox` **exists in the
+ * DOM and not in the source.**
  *
- * 그 셀렉터를 `KNOWN_STALE_OPTIONAL` 에 넣는 것은 틀린 처방이다 — 그 목록은
- * 「죽은 UI 를 가리키는 **선택적** 증거」용인데, 이건 살아 있고 프로브가 없으면
- * hard-fail 한다. 목록에 넣으면 진짜 죽었을 때도 조용히 통과한다.
+ * Putting such a selector in `KNOWN_STALE_OPTIONAL` is the wrong fix: that list is for
+ * **optional** evidence pointing at dead UI, whereas this one is alive and hard-fails
+ * when its probe is missing. Listing it would also pass silently once it really dies.
  *
- * 그래서 접미사를 벗겨 **밑동이 실재하는지**로 판정한다. 밑동이 사라지면 여전히
- * 잡힌다 — 게이트가 약해지지 않는다. 새 접미사를 더할 때는 그것을 조립하는
- * 프리미티브 파일을 주석에 적어라.
+ * So the suffix is stripped and the verdict is whether **the stem exists**. If the
+ * stem disappears it is still caught — the gate is not weakened. When adding a new
+ * suffix, name the primitive file that assembles it in the comment.
  */
 const COMPOSED_SUFFIXES = [
-  // src/shared/ui/select.tsx — 열린 목록에 `-listbox` 를 붙인다.
+  // src/shared/ui/select.tsx — appends `-listbox` to the open list.
   "-listbox",
 ] as const;
 
@@ -56,7 +58,7 @@ export function findDeadSelectors(selectors: readonly string[], cwd: string): st
     for (const suffix of COMPOSED_SUFFIXES) {
       if (!id.endsWith(suffix)) continue;
       const base = id.slice(0, -suffix.length);
-      // 밑동이 실재해야만 살아 있다고 본다 — 접미사만으로 면제하지 않는다.
+      // Alive only if the stem exists — a suffix alone does not exempt it.
       if (base && haystack.includes(base)) return true;
     }
     return false;
@@ -68,7 +70,7 @@ const SOURCE_ROOTS = ["src", "app"] as const;
 const SOURCE_EXTENSIONS = [".ts", ".tsx"] as const;
 const SKIP_DIRS = new Set(["node_modules", ".next", "out", "data"]);
 
-/** `src/`·`app/` 의 모든 `.ts`/`.tsx` 를 한 문자열로 합친다(테스트 1회 비용). */
+/** Concatenates every `.ts`/`.tsx` under `src/` and `app/` into one string (paid once per test). */
 function readSourceText(cwd: string): string {
   const chunks: string[] = [];
   for (const root of SOURCE_ROOTS) {
@@ -82,7 +84,7 @@ function walk(dir: string, out: string[]): void {
   try {
     entries = readdirSync(dir, { withFileTypes: true });
   } catch {
-    return; // 루트가 없으면 조용히 넘어간다 (app/ 이 없는 패키지 등).
+    return; // A missing root is skipped quietly (e.g. a package with no app/).
   }
   for (const entry of entries) {
     if (entry.isDirectory()) {

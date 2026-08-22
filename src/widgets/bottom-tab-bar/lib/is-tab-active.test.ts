@@ -41,16 +41,16 @@ describe("isBottomTabActive", () => {
   });
 
   it("fallback exact-match — prefix 가 안 잡히면 href 정확 일치만", () => {
-    // 가상의 prefix 빈 탭
+    // A tab with no prefixes
     expect(isBottomTabActive("/projects/", "/projects/", [])).toBe(true);
-    // trailing-slash 변형 호환
+    // Trailing-slash variants match
     expect(isBottomTabActive("/projects", "/projects/", [])).toBe(true);
-    // 다른 path 는 false
+    // Any other path is false
     expect(isBottomTabActive("/docs", "/projects/", [])).toBe(false);
   });
 
   it("home 탭 ('/') — 다른 path 에서는 prefix 아니면 false", () => {
-    // matchPrefixes 빈 가상의 home 탭
+    // A home tab with no matchPrefixes
     expect(isBottomTabActive("/docs", "/", [])).toBe(false);
   });
 });

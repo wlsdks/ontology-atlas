@@ -31,20 +31,18 @@ import type {
 } from '@/shared/lib/acp-work-receipt';
 
 /**
- * ACP 세션 하나의 수명 — 띄우고, 말을 걸고, 권한을 묻고, 끝낸다.
+ * The lifetime of one ACP session — start it, talk to it, ask for permission, end it.
  *
- * ## 화면에 남기는 것은 **일어난 일**뿐이다
+ * **The screen shows only what has actually happened.** No progress bar is invented. A tool row
+ * appears only after the agent really called that tool, and status changes only as the agent
+ * reports them. This is the discipline the repository already settled in its existing chat —
+ * see `src/features/vault-agent/model/agent-loop.ts`: marking something "read" before it is sent
+ * makes the screen state something that has not happened yet.
  *
- * 진행바를 지어내지 않는다. 도구 줄은 에이전트가 실제로 그 도구를 부른 뒤에
- * 생기고, 상태도 에이전트가 알려 준 대로만 바뀐다. 이 저장소가 기존 채팅에서
- * 이미 정해 둔 규율이다(`agent-loop.ts`: *"전송 전에 「읽음」으로 찍으면 화면이
- * 아직 일어나지 않은 일을 말하는 것"*).
- *
- * ## 권한은 화면이 답할 때까지 **기다린다**
- *
- * 볼트 밖 요청이 오면 카드를 띄우고 사용자가 고를 때까지 응답을 미룬다. 그동안
- * 에이전트는 멈춰 있다 — 그게 관문의 정의다. 화면이 닫히거나 세션이 끝나면
- * **거절로 답한다**: 안 물어본 것을 허용으로 세면 관문이 없는 것과 같다.
+ * **Permission waits until the screen answers.** A request outside the vault raises a card and
+ * defers the response until the user chooses; meanwhile the agent is stopped — that is what the
+ * permission gate means. If the screen closes or the session ends, it **answers with a rejection**:
+ * counting an unasked question as allowed is the same as having no gate.
  */
 
 export type AcpEvent =
@@ -58,9 +56,9 @@ export type AcpEvent =
       toolKind: string;
       status: string;
       /**
-       * 그 도구가 받은 인자 원본. **어느 노드를 만졌는지**가 여기에만 있다
-       * (`tool-targets.ts`). 예전에는 버렸고, 그래서 도구 줄이 「개념을
-       * 읽었어요」라고만 하고 어느 개념인지는 말하지 못했다.
+       * The raw arguments the tool received. **Which node was touched exists only here**
+       * (`tool-targets.ts`). It used to be discarded, so a tool row could say "read a concept"
+       * without being able to say which one.
        */
       rawInput?: unknown;
     }
@@ -76,17 +74,17 @@ export type AcpSessionStatus =
 
 export interface PendingPermission {
   request: AcpPermissionRequest;
-  /** 사용자가 고른 것을 에이전트에게 전한다. `null` 이면 거절. */
+  /** Passes the user's choice back to the agent. `null` is a rejection. */
   resolve: (optionId: string | null) => void;
 }
 
 export interface UseAcpSessionOptions {
   runtimeId: string;
-  /** 에이전트의 작업 폴더이자 「안/밖」 판정의 기준. */
+  /** The agent's working folder, and the basis for deciding inside vs. outside. */
   vaultRoot: string | null;
-  /** 세션에 자동으로 꽂을 MCP 서버 — 사용자가 설정 파일을 안 만져도 되게. */
+  /** MCP servers wired into the session automatically, so the user never edits a config file. */
   mcpServers?: unknown[];
-  /** 승인 직후 확정 모션이 끝난 다음 도구를 진행할 시간. reduced motion이면 0. */
+  /** Time to let the confirm motion finish before proceeding with the tool. 0 under reduced motion. */
   approvalSettleMs?: number;
   /** Human ontology-write decisions, emitted as bounded local receipt snapshots. */
   onWorkReceipt?: (receipt: AcpWorkReceipt) => void;
@@ -140,46 +138,44 @@ function workReceipt({
 }
 
 /**
- * 세션 시작 지시에 **덧붙이는** 한 문단.
+ * A paragraph **appended to** the session's start instructions.
  *
- * ## 왜 필요한가 — 「왜 바꿨는지」는 저절로 안 남는다
+ * Why it is needed: the vault has a slot for the reason behind a relation (`why`) and `depends_on`
+ * requires it, yet measured 2026-08-16, all 15 activity-log lines in a live vault had an empty
+ * `why`.
  *
- * 이 저장소의 볼트는 관계에 이유를 적을 자리(`why`)를 갖고 있고 `depends_on`
- * 은 그것을 필수로 요구한다. 그런데 실측(2026-08-16)에서 살아있는 볼트의
- * 활동 기록 15줄 전부 `why` 가 비어 있었다.
+ * Moving the conversation into the app does not fill it — the same measurement showed that too
+ * (in-app chat can already write `why`, and only 6.5% of the vault had it). **What fills it is the
+ * instruction, not the slot.**
  *
- * 대화를 앱 안으로 옮기는 것만으로는 이게 안 채워진다 — 같은 실측이 그것도
- * 보여 줬다(앱 안 채팅도 이미 `why` 를 쓸 수 있는데 볼트의 6.5%만 차 있다).
- * **채우는 것은 자리가 아니라 지시다.**
- *
- * 기본 지시를 갈아치우지 않고 덧붙이기만 한다. 그 도구를 그 도구답게 만드는
- * 것이 그 지시이고, 우리가 그걸 다시 쓸 근거가 없다.
+ * It is appended rather than replacing the default instructions: those instructions are what make
+ * that tool itself, and we have no grounds to rewrite them.
  */
 const VAULT_HANDOFF_BASE = [
   'You are working inside an Ontology Atlas vault opened in the Atlas app.',
   /*
-   * **순서를 말해 준다.** 안 말하면 에이전트가 자기 순서를 만들고, 그 순서는
-   * 대개 「먼저 만들고 나중에 설명하기」다 — 실측에서 그랬다.
+   * **State the order.** Left unsaid, the agent invents its own, and that order is usually
+   * "create first, explain later" — which is what the measurement showed.
    */
   'Work in this order: (1) orient with `connection_info` and `list_kinds`, and on a large vault do not dump every node; (2) before creating anything, look for what is already there with `query_ontology` `similar_nodes` or `find_evidence`, and if something close exists, say what you found and ask whether to extend it before making a second node for the same idea; (3) write only after the shape is settled, preferring `patch_concept` on an existing node over a new one.',
   'When the person asks you to find or show one concept, resolve its exact slug and call `get_concept`. When they ask how two concepts connect, resolve both exact slugs and call `find_path`, even if you can answer from context. Atlas uses those exact read calls to move and highlight the map; never guess a slug.',
   'Whenever you add or change a relation, put the reason in the `why` field, in the person\'s own words — what they asked for, not what the tool did. Write "고객이 결제를 되돌릴 수 있어야 한다고 해서", not "added depends_on edge".',
   /*
-   * **애매하면 묻는다.** 이 한 줄이 실측에서 가장 크게 바꾼 것이다 — 없을 때는
-   * 사용자가 원하는지도 모르는 노드를 만들어 놓고 「같은 것이면 합치겠습니다」
-   * 라고 사후에 물었다. 노드는 만드는 것보다 지우는 것이 비싸다.
+   * **Ask when unsure.** This one line changed the most in the measurement — without it the agent
+   * created a node the user may not have wanted and then asked afterwards, "shall I merge these if
+   * they are the same?". A node is more expensive to remove than to create.
    */
   'If you are unsure whether two things are the same concept, that is a question for the person, not a judgement call for you. Ask first: an extra node is harder to remove than to add.',
   'Answer in the language the person wrote in.',
   'Keep your work inside this folder. If something genuinely needs a path outside it, say so before trying.',
 ];
 /**
- * ⚠️ **꽂았을 때만 꽂혔다고 말한다** (2026-08-16 검수에서 적발).
+ * ⚠️ **Only claim it is wired when it is** (caught in review, 2026-08-16).
  *
- * 이 문장은 무조건 붙고 있었다. 그런데 서버 목록이 비는 경우가 실재한다(번들에
- * 바이너리가 없거나 아직 준비 전) — 그러면 도구가 하나도 없는 세션에 **「이미
- * 연결돼 있다」고 우기는 지시**를 넣게 된다. 에이전트는 있지도 않은 도구를
- * 찾다가 이상한 답을 내놓고, 사용자는 왜 그러는지 알 길이 없다.
+ * This sentence used to be attached unconditionally. But an empty server list really does happen
+ * (no binary in the bundle, or not ready yet) — and then a session with no tools at all is given an
+ * instruction **insisting it is already connected**. The agent hunts for tools that do not exist,
+ * produces strange answers, and the user has no way to know why.
  */
 const VAULT_MCP_SENTENCE =
   'The `atlas-vault` MCP server is already connected to this exact folder. Use it for everything about this graph. Do not shell out, list directories, or open the markdown files yourself to find your way around — the tools already answer those questions, and reading the files by hand is how stale and duplicated nodes get made.';
@@ -188,7 +184,7 @@ function vaultHandoffPrompt(hasVaultMcp: boolean): string {
   return (hasVaultMcp ? [VAULT_HANDOFF_BASE[0], VAULT_MCP_SENTENCE, ...VAULT_HANDOFF_BASE.slice(1)] : VAULT_HANDOFF_BASE).join(' ');
 }
 
-/** 아직 아무것도 모를 때의 값. 「없음」과 「안 내놓음」을 같은 화면으로 둔다. */
+/** The value before anything is known. "None" and "not offered" share one screen. */
 const EMPTY_CHOICES: AcpSessionChoices = {
   models: [],
   currentModelId: null,
@@ -202,8 +198,8 @@ let eventSeq = 0;
 const nextEventId = () => `acp-evt-${(eventSeq += 1)}`;
 
 /**
- * 모아 두는 stderr 줄의 상한. 어댑터는 설치 진행률까지 뱉으므로 전부 담으면
- * 그게 다시 소음이 된다 — 첫 몇 줄이 원인을 말한다.
+ * Cap on collected stderr lines. The adapter emits install progress too, so keeping all of it
+ * becomes noise again — the first few lines state the cause.
  */
 const STDERR_KEEP_LIMIT = 8;
 const TERMINAL_TOOL_STATES = new Set(['completed', 'failed', 'cancelled']);
@@ -217,47 +213,45 @@ export function useAcpSession({
 }: UseAcpSessionOptions) {
   const [status, setStatus] = useState<AcpSessionStatus>('idle');
   /*
-   * 상태를 ref 로도 붙든다 — 어댑터가 죽는 순간(`onExit`)은 렌더 밖이라
-   * 클로저에 갇힌 옛 값을 보게 된다. 그때 필요한 것은 **그 순간의** 상태다:
-   * 차례가 도는 중이었나(=답하다 죽었나), 아니면 그냥 끝났나.
+   * Status is held in a ref as well: the moment the adapter dies (`onExit`) is outside render, so a
+   * closure sees a stale value. What is needed there is the status **at that moment** — was a turn
+   * in progress (died mid-answer) or had it simply finished?
    */
   const statusRef = useRef<AcpSessionStatus>('idle');
   /**
-   * 첫 내려받기 표시 — `null` 이면 안 받는 중이다.
+   * First-download indicator — `null` means nothing is downloading.
    *
-   * ## 왜 (2026-08-19 소유자 실기계)
+   * Why (owner's real machine, 2026-08-19): the adapter's first run has npx fetch tens of MB while
+   * the screen showed only a "starting" chip. The user thought it had hung, quit the app — and that
+   * interruption left a half-built npx cache that made it never start again (self-healing lives on
+   * the Rust side, `acp.rs`). So this indicator is not decoration; it removes that accident's trigger.
    *
-   * 어댑터의 첫 실행은 npx 가 수십 MB 를 받는데, 화면은 「켜는 중」 칩 하나만
-   * 보였다. 사용자가 멈춘 줄 알고 앱을 끄고 — 그 중단이 반쯤 만들어진 npx
-   * 캐시를 남겨 다음부터 영영 못 뜨게 만들었다(자기 치유는 Rust 쪽,
-   * `acp.rs`). 그러니 이 표시는 장식이 아니라 그 사고의 방아쇠를 없애는 것이다.
-   *
-   * `mb` 는 캐시 디렉터리가 자란 실측 크기다(`acp://notice` 의
-   * `npx-download-progress:<mb>`). 전체 크기를 모르므로 퍼센트는 **지어내지
-   * 않는다** — 받은 만큼만 말한다. 아직 첫 알림만 왔으면 `mb` 는 `null`.
+   * `mb` is the measured size the cache directory has grown to (`npx-download-progress:<mb>` on
+   * `acp://notice`). The total size is unknown, so a percentage is **not invented** — it states only
+   * what has been received. While only the first notice has arrived, `mb` is `null`.
    */
   const [download, setDownload] = useState<{ mb: number | null } | null>(null);
   const setStatusTracked = useCallback((next: AcpSessionStatus) => {
     statusRef.current = next;
     setStatus(next);
-    // 내려받기 표시는 「켜는 중」에만 산다 — 준비됐든 죽었든 그 표시는 끝이다.
+    // The download indicator lives only in "starting" — ready or dead, it is over.
     if (next !== 'starting') setDownload(null);
   }, []);
   const [events, setEvents] = useState<AcpEvent[]>([]);
   const [error, setError] = useState<string | null>(null);
-  /** 에이전트가 이 폴더에서 찾은 명령들 — 볼트에 스킬을 두면 여기 뜬다. */
+  /** Commands the agent found in this folder — putting skills in the vault makes them appear here. */
   const [slashCommands, setSlashCommands] = useState<AcpSlashCommand[]>([]);
   /**
-   * 어댑터가 남긴 단서 — **문제가 났을 때만** 화면이 꺼내 본다.
-   * 평소에 보여 주면 그건 진단이 아니라 화면을 먹는 영어 경고다(실측).
+   * Clues the adapter left, surfaced **only when something goes wrong**. Shown routinely it is not
+   * a diagnosis but an English warning eating the screen (measured).
    */
   const [diagnostics, setDiagnostics] = useState<readonly string[]>([]);
   /**
-   * 진단 한 줄을 모아 둔다 — **대화에는 안 싣는다.**
+   * Collects diagnostic lines — **never put into the conversation.**
    *
-   * 이 자리에 있던 것들이 실제로 화면에 이렇게 나왔다(2026-08-16 검수):
-   * `UNPARSABLE:{"JSONRPC":"2.0","ID":7,…` · `SEND-FAILED: …` — 대문자 고정폭으로
-   * 대화 한가운데에. 사람이 읽을 것이 아니고, 읽어도 할 일이 없다.
+   * What lived in this slot really appeared on screen like this (review 2026-08-16):
+   * `UNPARSABLE:{"JSONRPC":"2.0","ID":7,…` and `SEND-FAILED: …`, in fixed-width caps in the middle
+   * of the conversation. Not for a person to read, and nothing to do about it if they did.
    */
   const resetDiagnostics = useCallback(() => {
     stderrRef.current = [];
@@ -272,51 +266,51 @@ export function useAcpSession({
     setDiagnostics([...kept]);
   }, []);
   const [pending, setPending] = useState<PendingPermission | null>(null);
-  /** 사람이 허용했고 해당 ACP 도구의 완료 신호를 기다리는 ontology write. */
+  /** An ontology write the person allowed, awaiting that ACP tool's completion signal. */
   const [approvedOntologyWrite, setApprovedOntologyWrite] =
     useState<AcpPermissionRequest | null>(null);
-  /** 이 폴더의 지난 대화들. **이 폴더 것만** 담긴다(`keepSessionsInFolder`). */
+  /** Past conversations in this folder. **Only this folder's** (`keepSessionsInFolder`). */
   const [sessions, setSessions] = useState<AcpSessionSummary[]>([]);
   /**
-   * 이 세션이 고를 수 있는 것들. 어댑터마다 다르다 — 실측: codex 는 모델 33개,
-   * claude 는 모델을 **아예 안 내놓는다**(`session/set_model` 이 「그런 메서드
-   * 없음」). 그래서 화면은 개수를 짐작하지 않고 **온 것만** 그린다.
+   * What this session can choose from. It differs per adapter — measured: codex offers 33 models,
+   * claude offers **none at all** (`session/set_model` returns "no such method"). So the screen does
+   * not guess a count and draws **only what arrived**.
    */
   const [choices, setChoices] = useState<AcpSessionChoices>(EMPTY_CHOICES);
 
   const clientRef = useRef<AcpClient | null>(null);
   const sessionIdRef = useRef<string | null>(null);
-  /** 다음 `start()` 가 이어 받을 대화. 한 번 쓰고 비운다. */
+  /** The conversation the next `start()` resumes. Used once, then cleared. */
   const resumeIdRef = useRef<string | null>(null);
-  /** 지금 띄우는 중인가 — `clientRef` 는 다 끝난 뒤에야 채워져서 늦다. */
+  /** Are we starting right now? `clientRef` is filled only after everything finishes, so it is late. */
   const startingRef = useRef(false);
-  /** 모아 둔 stderr — 문제가 났을 때만 화면이 꺼내 본다. */
+  /** Collected stderr — surfaced only when something goes wrong. */
   const stderrRef = useRef<string[]>([]);
   /**
-   * 세대 번호 — `stop()` 이 부를 때마다 오른다.
+   * Generation counter — incremented on every `stop()`.
    *
-   * **띄우는 도중에 닫으면** `stop()` 은 아직 없는 것을 치우고 끝나고, 그 뒤에
-   * `start()` 가 이어 달려 프로세스와 클라이언트를 **새로 만들어 놓는다.**
-   * 닫은 화면 뒤에서 어댑터가 계속 도는 것이다(검사가 이걸 잡았다).
+   * **Closing mid-start** made `stop()` clean up something that did not exist yet and return, after
+   * which `start()` ran on and **created the process and client anyway** — the adapter kept running
+   * behind a closed screen (a test caught this).
    *
-   * 그래서 `start()` 는 기다릴 때마다 자기 세대가 아직 유효한지 확인하고,
-   * 아니면 **자기가 만든 것을 자기가 치우고** 빠진다.
+   * So `start()` checks after every await whether its generation is still current, and if not
+   * **cleans up what it created itself** and bails.
    */
   const generationRef = useRef(0);
   /*
-   * `switchSession` 은 `start`/`stop` 둘 다 부르는데, 그 둘은 서로를 의존성으로
-   * 갖지 않는다(순환). ref 로 한 단계 끊는다 — 최신 것을 부르되 의존성은 안 만든다.
+   * `switchSession` calls both `start` and `stop`, and those two do not take each other as
+   * dependencies (a cycle). A ref breaks one step — call the latest without creating the dependency.
    */
   const startRef = useRef<(() => Promise<void>) | null>(null);
   const stopRef = useRef<(() => Promise<void>) | null>(null);
   const acpSessionRef = useRef<string | null>(null);
   const unlistenRef = useRef<(() => void) | null>(null);
   const disposedRef = useRef(false);
-  /** 답을 기다리는 권한 요청의 해결자 — 정리할 때 거절로 닫는다. */
+  /** The resolver of a permission request awaiting an answer — closed with a rejection on cleanup. */
   const pendingResolverRef = useRef<((optionId: string | null) => void) | null>(null);
-  /** 승인 확정 모션 뒤에 ACP를 이어 주는 타이머. 창이 닫히면 반드시 취소한다. */
+  /** Timer that hands control back to ACP after the approval confirm motion. Always cancelled when the window closes. */
   const permissionDecisionTimerRef = useRef<number | null>(null);
-  /** `tool_call_update` 콜백이 최신 승인 대상을 읽도록 state와 함께 붙든다. */
+  /** Held alongside state so the `tool_call_update` callback reads the latest approval target. */
   const approvedOntologyWriteRef = useRef<AcpPermissionRequest | null>(null);
   const approvedReceiptRef = useRef<{
     toolCallId: string | null;
@@ -348,8 +342,8 @@ export function useAcpSession({
   const push = useCallback((event: AcpEvent) => {
     setEvents((prev) => {
       const last = prev[prev.length - 1];
-      // 텍스트 조각은 줄마다 새 말풍선이 아니라 **이어 붙인다** — 한 문장이
-      // 여러 조각으로 오기 때문이다.
+      // Text fragments are **appended** rather than becoming a new bubble per line — one sentence
+      // arrives in several fragments.
       if (last && (event.kind === 'agent' || event.kind === 'thought') && last.kind === event.kind) {
         return [...prev.slice(0, -1), { ...last, text: last.text + event.text }];
       }
@@ -364,8 +358,8 @@ export function useAcpSession({
       const text = typeof content?.text === 'string' ? content.text : '';
 
       if (kind === 'available_commands_update') {
-        // `/` 로 부를 수 있는 것들. **온 것만** 들고 있는다 — 아무것도 안 오면
-        // 작성 칸에서 `/` 를 쳐도 아무 일도 안 일어난다(`slash-commands.ts`).
+        // What `/` can invoke. It holds **only what arrived** — with nothing, typing `/` in the
+        // composer does nothing (`slash-commands.ts`).
         setSlashCommands(readSlashCommands(update));
         return;
       }
@@ -438,7 +432,7 @@ export function useAcpSession({
     [emitWorkReceipt, push, setApprovedOntologyWriteTracked],
   );
 
-  /** 화면이 답할 때까지 기다리는 약속을 만든다. */
+  /** Creates the promise that waits until the screen answers. */
   const askUser = useCallback((request: AcpPermissionRequest) => {
     return new Promise<string | null>((resolve) => {
       pendingResolverRef.current = resolve;
@@ -492,36 +486,35 @@ export function useAcpSession({
   const start = useCallback(async () => {
     if (!isAcpBridgeAvailable() || !vaultRoot) return;
     /*
-     * ⚠️ **잠금은 첫 `await` 앞에서 건다** (2026-08-16 실측으로 발견).
+     * ⚠️ **The lock is taken before the first `await`** (found by measurement, 2026-08-16).
      *
-     * 종전 잠금은 `clientRef.current` 하나였는데, 그 값은 프로세스를 띄우고
-     * 이벤트를 붙인 **뒤에야** 채워진다. 그 사이에 `start()` 가 한 번 더
-     * 불리면 둘 다 잠금을 통과해서 **어댑터가 두 개 뜬다.**
+     * The old lock was `clientRef.current` alone, and that value is filled only **after** the
+     * process is spawned and the events are attached. A second `start()` in that window passes the
+     * lock too, and **two adapters start**.
      *
-     * 실제로 그랬다 — 대화창 하나에 어댑터 두 개:
+     * It really happened — two adapters for one conversation:
      * ```
      * 83796  npm exec @agentclientprotocol/claude-agent-acp@0.68.0
      * 83797  npm exec @agentclientprotocol/claude-agent-acp@0.68.0
      * ```
-     * 그러면 `sessionIdRef` 는 나중 것을 가리키는데 줄은 먼저 것으로 오가서
-     * 말을 걸면 `Session not found` 로 죽는다. 게다가 먼저 뜬 프로세스는
-     * 아무도 안 끄는 유령이 된다.
+     * `sessionIdRef` then points at the later one while the lines travel over the earlier, so
+     * talking to it dies with `Session not found`. And the first process becomes a ghost nobody stops.
      *
-     * 두 번 불리는 이유는 하나가 아니다 — 개발 모드의 이중 실행도 있고,
-     * `mcpServers` 가 매 렌더 새 배열이라 `start` 의 정체가 바뀌는 것도 있다.
-     * 그래서 **부르는 쪽을 고치는 것으로는 부족하다**: 여기서 잠근다.
+     * There is more than one reason it gets called twice — development mode's double invocation, and
+     * `mcpServers` being a new array every render, which changes `start`'s identity. So **fixing the
+     * caller is not enough**: the lock lives here.
      */
     if (clientRef.current || startingRef.current) return;
     startingRef.current = true;
     const generation = generationRef.current;
-    /** 내가 시작한 뒤에 누가 닫았나. */
+    /** Did someone close this after I started? */
     const stale = () => generationRef.current !== generation;
     setStatusTracked('starting');
     setError(null);
     try {
       const acpSessionId = await startAcpSession(runtimeId, vaultRoot);
       if (!acpSessionId) throw new Error('bridge-unavailable');
-      // 기다리는 동안 닫혔으면 **내가 띄운 것을 내가 끈다.**
+      // Closed while waiting — **stop what I started.**
       if (stale()) {
         await stopAcpSession(acpSessionId);
         return;
@@ -539,26 +532,27 @@ export function useAcpSession({
         },
       };
 
-      // 새 세션이면 진단도 새로 모은다 — 지난 세션의 단서가 섞이면 오해를 만든다.
+      // A new session collects diagnostics afresh — clues from the previous session mislead.
       resetDiagnostics();
       unlistenRef.current = await listenToAcpSession(acpSessionId, {
         onMessage: (line) => onLine?.(line),
-        // stderr 는 대화가 아니라 진단이다. 조용히 버리지 않되 말풍선으로도
-        // 만들지 않는다 — 어댑터의 설치 로그가 대화에 섞이면 읽을 수 없다.
+        // stderr is diagnosis, not conversation. It is not silently discarded, but it does not
+        // become a bubble either — the adapter's install log in the conversation is unreadable.
         onNotice: (message) => {
           /*
-           * 첫 내려받기 알림 셋 (Rust `acp_start` 가 보낸다):
-           * - `npx-first-run-download[…]` — 지금 받기 시작했다. 진단에도 남긴다 —
-           *   받다가 죽으면 이 줄이 원인 단서다.
-           * - `npx-download-progress:<mb>` — 지금까지 받은 실측 MB. **진단에
-           *   안 담는다** — 매초 오는 흐름이라 8줄 상한을 이걸로 채우면 진짜
-           *   단서가 밀려난다.
-           * - `npx-download-done` — 받기 끝. 이후는 보통의 「켜는 중」이다.
+           * The three first-download notices (sent by Rust `acp_start`):
+           * - `npx-first-run-download[…]` — the download has started. Also kept as a diagnostic: if
+           *   it dies mid-download, this line is the clue.
+           * - `npx-download-progress:<mb>` — measured MB received so far. **Not kept as a
+           *   diagnostic** — it arrives every second, and filling the 8-line cap with it pushes the
+           *   real clue out.
+           * - `npx-download-done` — download finished; from here it is an ordinary "starting".
            */
           if (message.startsWith('npx-download-progress:')) {
-            // 첫 알림을 놓쳤어도 여기서 표시를 만든다 — Rust 는 구독이 붙기 전에
-            // 첫 알림이 나갈 수 있다고 보고 진행 알림을 그 안전망으로 삼는다.
-            // 켜는 중이 아니면 화면이 안 그리므로(렌더 조건) 뒤늦은 알림은 무해하다.
+            // Builds the indicator here even if the first notice was missed — Rust assumes the first
+            // notice can go out before the subscription attaches and uses the progress notice as
+            // that safety net. The screen does not draw it outside "starting" (a render condition),
+            // so a late notice is harmless.
             const mb = Number(message.slice('npx-download-progress:'.length));
             setDownload({ mb: Number.isFinite(mb) ? mb : null });
             return;
@@ -573,12 +567,12 @@ export function useAcpSession({
             return;
           }
           /*
-           * ⚠️ **약속에 관한 사실은 진단이 아니다** (2026-08-16 검수).
+           * ⚠️ **A fact about a promise is not a diagnostic** (review 2026-08-16).
            *
-           * 대부분의 알림은 진단이라 접어 둔다. 그런데 `gate-off:` 로 시작하는
-           * 것은 다르다 — 「폴더 밖은 먼저 물어본다」는 이 화면의 약속이 이
-           * 세션에서 지켜지지 않는다는 뜻이다. 접어 두면 화면이 못 지킬 약속을
-           * 계속 하게 된다. 자세한 사연은 진단으로 같이 남긴다.
+           * Most notices are diagnostics and are folded away. Anything starting with `gate-off:` is
+           * different — it means this screen's promise that "outside the folder, we ask first" is not
+           * being kept in this session. Folding it away leaves the screen making a promise it cannot
+           * keep. The detail is still recorded as a diagnostic alongside.
            */
           if (message.startsWith('gate-off')) {
             push({ kind: 'notice', id: nextEventId(), text: 'gate-off' });
@@ -586,19 +580,19 @@ export function useAcpSession({
           keepDiagnostic(message);
         },
         /*
-         * ⚠️ **모아 두되 화면에 올리지 않는다** (2026-08-16, 두 번 고친 자리).
+         * ⚠️ **Collect it, but do not put it on screen** (2026-08-16, fixed twice).
          *
-         * 처음엔 아무도 안 듣고 있어서 어댑터가 남긴 마지막 말이 전부
-         * 사라졌다 — 「켜는 중에서 안 넘어간다」를 설명할 수 없게 만든 원인.
-         * 그래서 듣게 했더니, 이번엔 **아무 일도 안 났는데** 대화창 맨 위에
-         * 영어 npm 경고 두 문단이 상주했다(소유자 화면):
+         * At first nobody was listening, so the adapter's last words vanished entirely — which is
+         * what made "it never moves past starting" impossible to explain. So it was listened to, and
+         * then two paragraphs of English npm warnings sat permanently at the top of the conversation
+         * **with nothing wrong at all** (owner's screen):
          *
          *   npm warn Unknown env config "_jsr-registry" …
          *
-         * 어댑터를 `npx` 로 띄우니 그건 **매번** 나온다. 진단은 문제가 났을 때
-         * 단서이지, 평소에 읽을 것이 아니다. 그래서 규율 둘: 뻔한 소음은 아예
-         * 안 담고(`isDiagnosticStderr`), 담은 것도 **문제가 났을 때만** 보여
-         * 준다(`diagnostics` → 오류 블록의 「자세히」).
+         * Launching the adapter through `npx` emits that **every time**. A diagnostic is a clue when
+         * something breaks, not something to read routinely. Hence two rules: obvious noise is never
+         * collected (`isDiagnosticStderr`), and what is collected is shown **only when something goes
+         * wrong** (`diagnostics` → "details" in the error block).
          */
         onStderr: (line) => {
           if (!isDiagnosticStderr(line)) return;
@@ -606,26 +600,27 @@ export function useAcpSession({
         },
         onExit: () => {
           /*
-           * 이벤트 구독을 해제해도 이미 큐에 들어간 콜백은 늦게 올 수 있다.
-           * 세션을 갈아탄 뒤 예전 콜백이 현재 ref를 치우면 새 대화가 이유 없이
-           * `exited`가 된다. 이 콜백은 자신이 태어난 세대와 프로세스만 소유한다.
+           * Unsubscribing from events does not stop callbacks already queued from arriving late.
+           * After switching sessions, an old callback clearing the current ref would make a new
+           * conversation `exited` for no reason. This callback owns only the generation and process
+           * it was born with.
            *
-           * ⚠️ **답하다 죽은 것과 다 끝난 것은 다른 말이다** (2026-08-17).
+           * ⚠️ **Dying mid-answer and finishing are different statements** (2026-08-17).
            *
-           * 종전에는 어느 쪽이든 상태만 `exited` 가 됐고, 화면은 작은 칩에
-           * 「끝남」이라고만 적었다. 반쯤 답하다 죽어도 **정상 종료와 같은
-           * 화면**이라, 사용자는 그게 답의 전부인 줄 안다.
+           * Both used to set status to `exited`, and the screen showed a small chip reading
+           * "finished". Dying halfway through an answer looked **identical to a clean exit**, so the
+           * user believed that was the whole answer.
            *
-           * 그래서 **차례가 도는 중에** 죽었으면 그렇게 말한다. 이건 진단이
-           * 아니라 「받은 것이 전부다」라는 사실이고, 접어 두면 사용자가 없는
-           * 답을 기다리거나 잘린 답을 온전한 답으로 읽는다.
+           * So when it dies **during a turn**, it says so. That is not a diagnostic but the fact
+           * "what you received is all there is", and folding it away leaves the user waiting for an
+           * answer that is not coming, or reading a truncated one as complete.
            */
           if (stale() || acpSessionRef.current !== acpSessionId) return;
           if (statusRef.current === 'thinking') {
             push({ kind: 'notice', id: nextEventId(), text: 'died-mid-turn' });
           }
           setStatusTracked('exited');
-          // 끝난 세션에 답을 기다리는 카드가 떠 있으면 거절로 닫는다.
+          // A card awaiting an answer on a finished session is closed with a rejection.
           if (permissionDecisionTimerRef.current !== null) {
             window.clearTimeout(permissionDecisionTimerRef.current);
             permissionDecisionTimerRef.current = null;
@@ -635,11 +630,11 @@ export function useAcpSession({
           setPending(null);
           setApprovedOntologyWriteTracked(null);
           /*
-           * ⚠️ **끝난 세션의 클라이언트를 치운다** (2026-08-16 검수에서 적발).
-           * 종전에는 상태만 `exited` 로 바꾸고 클라이언트를 그대로 뒀다. 그러면
-           * ① 답을 기다리던 호출이 **영원히** 안 끝나고 ② `clientRef` 가 차 있어서
-           * `start()` 가 잠금에 걸려 다시 못 뜬다. 어댑터가 죽은 것은 되돌릴 수
-           * 없는 사건이므로, 그 사실을 기다리는 쪽에도 전한다.
+           * ⚠️ **Dispose the client of a finished session** (caught in review, 2026-08-16).
+           * It used to set status to `exited` and leave the client in place. Then ① a call awaiting a
+           * response never finished, and ② `clientRef` stayed populated so `start()` hit the lock and
+           * could never restart. The adapter dying is an irreversible event, so that fact is passed
+           * on to whoever is waiting.
            */
           clientRef.current?.dispose();
           clientRef.current = null;
@@ -654,20 +649,20 @@ export function useAcpSession({
         return;
       }
 
-      /** 우리가 정말 볼트 서버를 꽂았나 — 자동 허용과 지시문이 둘 다 이 값을 본다. */
+      /** Did we really wire the vault server? Both auto-allow and the instructions read this value. */
       const hasVaultMcp = (mcpServers?.length ?? 0) > 0;
       const client = createAcpClient(transport, {
         onUpdate: applyUpdate,
         /*
-         * 우리가 꽂아 준 볼트 서버의 도구는 **경로가 없을 때** 대신 허용한다 —
-         * 이 줄이 없으면 에이전트가 지도에 **아무것도 못 쓴다**(2026-08-16 실측).
+         * Tools from the vault server we wired are allowed on the user's behalf **when there is no
+         * path** — without this line the agent **cannot write anything to the map** (measured
+         * 2026-08-16).
          *
-         * ⚠️ **정말 꽂았을 때만 이름을 넘긴다** (2026-08-16 검수에서 적발).
-         * 종전에는 무조건 넘겼는데, 서버 목록이 비는 경우가 실제로 있다(웹 ·
-         * 번들에 MCP 바이너리가 없는 경우 · 아직 준비 중). 그때 이름만 넘기면
-         * **우리가 안 꽂은 남의 `atlas-vault` 서버**가 그 자동 허용을 물려받는다.
-         * 계약 문구가 이미 그렇게 적혀 있었다: *"안 넘기면 그 자동 허용이
-         * 꺼진다 — 없는 것을 있는 척하지 않는다"*.
+         * ⚠️ **Pass the name only when it is really wired** (caught in review, 2026-08-16). It used
+         * to be passed unconditionally, but an empty server list really happens (the web, no MCP
+         * binary in the bundle, not ready yet). Passing the name then lets **someone else's
+         * `atlas-vault` server that we did not wire** inherit that auto-allow. The contract already
+         * said so: *"not passing it turns that auto-allow off — we do not pretend something exists."*
          */
         vaultMcpServerName: hasVaultMcp ? VAULT_MCP_SERVER_NAME : undefined,
         verdict: (filePath) => acpPermissionVerdict(acpSessionId, filePath),
@@ -678,9 +673,9 @@ export function useAcpSession({
 
       await client.initialize();
       /*
-       * 이어 받을 대화가 지정돼 있으면 그걸 먼저 시도한다. 실패하면 **새 대화로
-       * 떨어진다** — 지난 대화를 못 여는 것이 대화 자체를 못 여는 이유가 되면
-       * 안 된다(그 파일은 우리가 만든 것도 아니고 언제든 사라질 수 있다).
+       * With a conversation to resume, try that first. On failure it **falls through to a new
+       * conversation** — being unable to open a past conversation must not become the reason a
+       * conversation cannot be opened at all (that file is not ours and can disappear at any time).
        */
       let session: { sessionId: string; choices: AcpSessionChoices } | null = null;
       if (resumeIdRef.current) {
@@ -689,7 +684,7 @@ export function useAcpSession({
             sessionId: resumeIdRef.current,
             cwd: vaultRoot,
             mcpServers,
-            // 이어받았다고 규칙이 달라지지 않는다 — 새 대화와 같은 지시를 준다.
+            // Resuming does not change the rules — same instructions as a new conversation.
             appendSystemPrompt: vaultHandoffPrompt(hasVaultMcp),
           });
         } catch {
@@ -705,24 +700,24 @@ export function useAcpSession({
       sessionIdRef.current = session.sessionId;
 
       /*
-       * **관문을 세운다.** codex 는 설정 격리로는 안 걸리고 세션 모드로만
-       * 걸린다(실측 — `runtime-gate.ts`). 재 본 실행기에만 건다.
+       * **Raise the permission gate.** codex is not held by config isolation and only by the session
+       * mode (measured — `runtime-gate.ts`). It is applied only to runtimes that were measured.
        *
-       * 실패하면 대화를 열지 않는다. 관문이 없는 채로 준비 완료를 내보내면
-       * 화면의 「폴더 밖은 먼저 물어본다」는 약속이 거짓이 된다.
+       * On failure the conversation is not opened. Emitting ready with no gate makes the screen's
+       * promise that "outside the folder, we ask first" a lie.
        */
       const gatedMode = GATED_SESSION_MODE[runtimeId];
       let choices = session.choices;
       if (gatedMode) {
         if (await client.setMode(session.sessionId, gatedMode)) {
           /*
-           * ⚠️ **화면에도 반영한다.** 이걸 빠뜨렸더니 세션은 `read-only` 인데
-           * 드롭다운은 `Agent` 라고 적혀 있었다(2026-08-16 실물 확인) — 화면이
-           * 지금 상태를 틀리게 말하는 것이고, 하필 그 값이 「폴더 밖을 물어보나」를
-           * 정하는 값이라 가장 틀리면 안 되는 자리다.
+           * ⚠️ **Reflect it on the screen too.** Missing this left the session at `read-only` while
+           * the dropdown read `Agent` (confirmed on the real thing, 2026-08-16) — the screen stating
+           * the current state incorrectly, and on the very value that decides whether it asks about
+           * things outside the folder, which is the worst place to be wrong.
            *
-           * `session/new` 가 준 값은 **모드를 걸기 전**의 것이라 그대로 두면
-           * 낡는다. 우리가 건 값이 지금 값이다.
+           * What `session/new` returned is from **before** the mode was applied, so leaving it makes
+           * it stale. What we applied is the current value.
            */
           choices = { ...choices, currentModeId: gatedMode };
         } else {
@@ -736,25 +731,24 @@ export function useAcpSession({
         setChoices(choices);
         setStatusTracked('ready');
       }
-      // 목록은 세션이 선 뒤에 채운다 — 화면이 뜨는 프레임을 목록이 붙잡지 않게.
+      // The list is filled after the session stands, so it does not hold up the frame the screen appears in.
       void client
         .listSessions(vaultRoot)
         .then((list) => {
           if (!disposedRef.current) setSessions(list);
         })
         .catch(() => {
-          /* 지난 대화를 못 읽는 것은 지금 대화의 문제가 아니다. */
+          /* Being unable to read past conversations is not this conversation's problem. */
         });
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err));
       setStatusTracked('error');
       /*
-       * ⚠️ **띄우다 실패했으면 띄운 것을 끈다** (2026-08-16 검수에서 적발).
-       * 종전에는 상태만 `error` 로 바꾸고 끝냈는데, 실패 지점에 따라 자식
-       * 프로세스는 **이미 떠 있다**(예: 구독 걸기가 실패한 경우). 그러면
-       * 다음 `start()` 가 새 프로세스를 띄우고 앞의 것은 앱이 끝날 때까지
-       * 아무도 안 끄는 유령이 된다 — 「띄우던 도중에 닫으면 스스로 끈다」와
-       * 같은 규율이 실패 경로에는 없었다.
+       * ⚠️ **If starting failed, stop what was started** (caught in review, 2026-08-16).
+       * It used to set status to `error` and stop there, but depending on where it failed the child
+       * process is **already up** (a failed event subscription, say). The next `start()` then spawns
+       * a new process while the previous becomes a ghost nobody stops until the app quits — the same
+       * discipline as "closing mid-start stops itself" was missing on the failure path.
        */
       const orphan = acpSessionRef.current;
       if (orphan) {
@@ -764,7 +758,7 @@ export function useAcpSession({
         clientRef.current?.dispose();
         clientRef.current = null;
         await stopAcpSession(orphan).catch(() => {
-          /* 이미 죽었을 수 있다 — 치우는 길에서 다시 터지지 않는다. */
+          /* It may already be dead — do not throw again on the cleanup path. */
         });
       }
     } finally {
@@ -784,11 +778,11 @@ export function useAcpSession({
   ]);
 
   /**
-   * 대화를 갈아탄다 — 지난 것을 이어 받거나(`sessionId`), 새로 연다(`null`).
+   * Switches conversation — resuming a past one (`sessionId`) or opening a new one (`null`).
    *
-   * 프로세스를 끝내고 다시 띄운다. 한 프로세스 안에서 세션만 바꿀 수도 있지만,
-   * 그러면 「지금 무엇이 살아 있나」가 두 곳(프로세스·세션)에 흩어진다 — 여기서
-   * 아낄 시간(수 초)보다 그 복잡도가 비싸다.
+   * It ends the process and starts it again. Swapping only the session inside one process is
+   * possible, but then "what is alive right now" is scattered across two places (process and
+   * session) — that complexity costs more than the few seconds saved here.
    */
   const switchSession = useCallback(
     async (sessionId: string | null) => {
@@ -805,8 +799,8 @@ export function useAcpSession({
   );
 
   /**
-   * 고른 것을 세션에 반영한다 — **화면 상태를 먼저 바꾸지 않는다.**
-   * 어댑터가 거절하면(claude 의 모델처럼) 화면이 바뀐 척하게 되기 때문이다.
+   * Applies a choice to the session — **without changing screen state first.** If the adapter
+   * refuses (as claude does for models), the screen would be pretending it changed.
    */
   const chooseModel = useCallback(async (modelId: string) => {
     const client = clientRef.current;
@@ -857,14 +851,14 @@ export function useAcpSession({
 
   const stop = useCallback(async () => {
     /*
-     * **세대를 먼저 올린다.** 이 줄이 없으면 띄우는 도중에 닫았을 때
-     * `stop()` 은 아직 없는 것을 치우고 끝나고, 뒤이어 `start()` 가 프로세스를
-     * 새로 만들어 놓는다 — 닫은 화면 뒤에서 어댑터가 계속 돈다.
+     * **Bump the generation first.** Without this line, closing mid-start makes `stop()` clean up
+     * something that does not exist yet and return, after which `start()` creates the process
+     * anyway — the adapter keeps running behind a closed screen.
      */
     generationRef.current += 1;
 
-    // 순서가 중요하다: 기다리는 권한부터 닫고, 그다음 프로세스를 끝낸다.
-    // 반대로 하면 이미 죽은 상대에게 답을 보내려 한다.
+    // Order matters: close the pending permission first, then end the process. Reversed, it tries to
+    // send an answer to something already dead.
     if (permissionDecisionTimerRef.current !== null) {
       window.clearTimeout(permissionDecisionTimerRef.current);
       permissionDecisionTimerRef.current = null;
@@ -882,7 +876,7 @@ export function useAcpSession({
       approvedReceiptRef.current = null;
     }
     setApprovedOntologyWriteTracked(null);
-    // 띄우는 중이었더라도 잠금을 푼다 — 안 그러면 다시 못 띄운다.
+    // Release the lock even if it was starting — otherwise it can never start again.
     startingRef.current = false;
     clientRef.current?.dispose();
     clientRef.current = null;
@@ -896,11 +890,11 @@ export function useAcpSession({
   }, [emitWorkReceipt, setApprovedOntologyWriteTracked, setStatusTracked]);
 
   /*
-   * 최신 것을 ref 에 물려 둔다 — `switchSession` 이 순환 의존 없이 부르게.
+   * Hold the latest in a ref so `switchSession` can call it without a circular dependency.
    *
-   * **렌더 중에 쓰지 않고 effect 로 미룬다.** 렌더 도중 ref 를 건드리면 React 가
-   * 경고하고, 실제로도 렌더가 버려지는 경우(동시성)에 어긋난 값이 남는다.
-   * `switchSession` 은 사용자가 누른 뒤에만 도므로 이 시점이면 늦지 않다.
+   * **Deferred to an effect rather than done during render.** Touching a ref during render makes
+   * React warn, and where a render is discarded (concurrency) it really does leave a mismatched
+   * value. `switchSession` runs only after the user presses something, so this point is not too late.
    */
   useEffect(() => {
     startRef.current = start;
@@ -911,7 +905,7 @@ export function useAcpSession({
     disposedRef.current = false;
     return () => {
       disposedRef.current = true;
-      // 화면이 사라지면 프로세스도 끝낸다. 안 그러면 닫은 대화가 계속 돈다.
+      // When the screen goes away the process ends too, or a closed conversation keeps running.
       void stop();
     };
   }, [stop, setStatusTracked]);

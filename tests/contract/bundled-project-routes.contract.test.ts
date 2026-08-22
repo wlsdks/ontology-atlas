@@ -9,20 +9,23 @@ import {
 } from '@/entities/docs-vault';
 
 /**
- * 번들된 샘플의 project 노드는 **전부** 자기 정본 주소를 가진다.
+ * **Every** project node in a bundled sample has its own canonical address.
  *
- * ## 실측 결함 (2026-08-01)
+ * ## Measured defect (2026-08-01)
  *
- * `/ko/project/storefront/` 가 404 였다. `generateStaticParams` 가 dogfood
- * 매니페스트에서만 slug 를 뽑았기 때문이다 — 앱 곳곳이 홍보하는 유일한 데모가
- * 자기 주소를 못 가졌고, 공유·북마크·크롤러가 전부 막혔다. `/project/
- * ontology-atlas/` 는 멀쩡했으므로 "라우트가 없다" 가 아니라 **한 볼트만
- * 보였다** 는 결함이고, 화면을 열어 봐도 안 보인다(주소를 직접 쳐야 보인다).
+ * `/ko/project/storefront/` was a 404 because `generateStaticParams` took slugs from
+ * the dogfood manifest only — the one demo the app promotes everywhere had no address
+ * of its own, blocking sharing, bookmarks, and crawlers.
+ * `/project/ontology-atlas/` was fine, so the defect was not "the route is missing"
+ * but **only one vault was visible**, and opening the screen does not reveal it (you
+ * have to type the address).
  *
- * 그래서 게이트가 둘이다:
- *   1. 전집 함수가 **번들된 모든 샘플**의 project slug 를 담는가 (동작)
- *   2. 라우트 파일들이 그 전집 함수를 쓰는가 — 한 매니페스트로 되돌아가는
- *      회귀는 1번만으로는 안 잡힌다(1번은 함수만 보고 라우트는 안 본다)
+ * Hence two gates:
+ *   1. Does the enumeration function contain the project slugs of **every bundled
+ *      sample** (behaviour)?
+ *   2. Do the route files use that enumeration function? A regression back to a
+ *      single manifest is not caught by (1) alone, which looks at the function and
+ *      not at the routes.
  */
 
 const PROJECT_ROUTE_FILES = [
@@ -37,7 +40,7 @@ describe('번들 샘플 project 라우트 전집 계약', () => {
 
     for (const source of ['dogfood', 'storefront'] as const) {
       const fromSource = deriveProjectsFromVault(resolveStaticVaultSource(source).manifest);
-      // 샘플에 project 노드가 있다면 그 slug 는 반드시 전집에 있어야 한다.
+      // If a sample has a project node, its slug must be in the enumeration.
       expect(fromSource.length, `${source} 샘플에 kind: project 문서가 없다`).toBeGreaterThan(0);
       for (const project of fromSource) {
         expect(slugs, `${source} 의 ${project.slug} 가 정적 라우트 전집에서 빠졌다`).toContain(

@@ -5,9 +5,10 @@ import { localAdapter } from './local';
 import { openaiAdapter } from './openai';
 
 /**
- * 명명 벤더 3사 + 주소로 연결하는 한 갈래 — 키 등록이 3사로 출하돼 있는데
- * 대화가 2사면 화면이 자기를 반박한다. 앞 셋의 순서는 `secrets.rs` 의
- * 허용목록과 같고, `local` 은 그 목록에 **없다**(보관할 키가 없어서다).
+ * Three named vendors plus the one connect-by-address branch — shipping key
+ * registration for three vendors while the conversation supports two makes the screen
+ * contradict itself. The first three follow the order of the allowlist in
+ * `secrets.rs`, and `local` is **not** on that list (there is no key to store).
  */
 export const PROVIDER_ADAPTERS: Record<string, ProviderAdapter> = {
   anthropic: anthropicAdapter,

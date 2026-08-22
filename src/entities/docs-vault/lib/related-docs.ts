@@ -8,24 +8,24 @@ export interface RelatedDocMatch {
 
 interface MatchInput {
   projectSlug: string;
-  /** 프로젝트의 실제 이름 (예: "Demo Reactor"). 제목/본문 matching 에 사용. */
+  /** The project's real name (e.g. "Demo Reactor"), used for title and body matching. */
   projectName?: string;
-  /** 허브/컨테이너 식별 (예: "reactor"). 보통 projectSlug 와 같지만 hub 는 별도일 수 있음. */
+  /** Hub/container identifiers. Usually the same as projectSlug, but a hub can differ. */
   aliases?: string[];
 }
 
 /**
- * vault 전체 문서에서 주어진 프로젝트와 관련도 높은 문서 top N 을 반환.
+ * The top N documents in the vault most related to a project.
  *
- * 매칭 신호 (강 → 약):
- *  1. 프론트매터 `projects: [slug]` 에 정확히 포함 — 100 점
- *  2. 본문 wikilink `[[project:slug]]` (linksOut 에 `project:slug` 로 편입돼 있음) — 60 점
- *  3. 본문에 `/project/{slug}` 경로 언급 — 40 점
- *  4. 제목에 projectName 정확 포함 — 25 점
- *  5. excerpt 에 projectName 포함 — 10 점
- *  6. 태그에 projectSlug 동일 — 15 점
+ * Signals, strongest to weakest:
+ *  1. frontmatter `projects: [slug]` contains it exactly — 100
+ *  2. body wikilink `[[project:slug]]` (folded into linksOut as `project:slug`) — 60
+ *  3. body mentions the `/project/{slug}` path — 40
+ *  4. title contains projectName exactly — 25
+ *  5. tag equals projectSlug — 15
+ *  6. excerpt contains projectName — 10
  *
- * 최종 score 내림차순, 동점이면 slug 알파벳. 점수 0 이하는 제외.
+ * Sorted by score descending, ties by slug. Scores of zero or less are dropped.
  */
 export function findRelatedDocs(
   docs: VaultDoc[],
@@ -41,7 +41,7 @@ export function findRelatedDocs(
   for (const d of docs) {
     const reasons: string[] = [];
     let score = 0;
-    // 1. frontmatter projects 배열 — v5 이후 확장 필드. 문자열 또는 문자열[].
+    // 1. frontmatter `projects` — a string or a string array.
     const fmProjects = extractProjectList(d.frontmatter);
     for (const p of fmProjects) {
       if (aliasesLc.includes(p.toLowerCase())) {
@@ -50,7 +50,6 @@ export function findRelatedDocs(
         break;
       }
     }
-    // 2. linksOut 에 project:{alias} 포함
     for (const alias of aliases) {
       if (d.linksOut.includes(`project:${alias}`)) {
         score += 60;
@@ -58,7 +57,6 @@ export function findRelatedDocs(
         break;
       }
     }
-    // 3. 본문 excerpt 에 /project/{slug}
     for (const alias of aliases) {
       if (d.excerpt.includes(`/project/${alias}`)) {
         score += 40;
@@ -66,17 +64,14 @@ export function findRelatedDocs(
         break;
       }
     }
-    // 4. 제목 정확 포함
     if (nameLc && d.title.toLowerCase().includes(nameLc)) {
       score += 25;
       reasons.push('title');
     }
-    // 5. excerpt 에 projectName
     if (nameLc && d.excerpt.toLowerCase().includes(nameLc)) {
       score += 10;
       reasons.push('excerpt');
     }
-    // 6. 태그
     for (const tag of d.tags) {
       if (aliasesLc.includes(tag.toLowerCase())) {
         score += 15;

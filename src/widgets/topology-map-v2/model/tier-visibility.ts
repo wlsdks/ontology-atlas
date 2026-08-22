@@ -1,7 +1,9 @@
 /**
  * Semantic-zoom tier gating — the "level 0 = project + domain + hub 만"
  * charter from `.claude/rules/design.md` ("기본 뷰 = overview-first ... level 0
- * = project + domain + hub 만, 나머지는 클릭 시 expand (semantic zoom)").
+ * = project + domain + hub 만, 나머지는 클릭 시 expand (semantic zoom)") — the
+ * default view is overview-first; level 0 draws only project + domain + hub and
+ * everything else expands on click.
  *
  * P3 live diagnosis (chrome-devtools, dogfood 295 nodes / 505 edges) showed
  * the overview drawing *every* node — capabilities and elements fanned into
@@ -56,9 +58,10 @@ export const DEFAULT_TIER_REVEAL: TierRevealConfig = {
   element: { enterRatio: 2.3, fullRatio: 2.85 },
 };
 
-/** 비개발(plain) 렌즈 — element 티어를 도달 불가 밴드로 밀어 상시 숨김.
- * ego 예외(effectiveNodeAlpha)는 그대로 — "클릭하면 그 노드의 요소는
- * 보인다"(기본 숨김 + opt-in 공개). 유한 센티널이라 smoothstep NaN 없음. */
+/** Plain (non-developer) lens — pushes the element tier into an unreachable band
+ * so it is always hidden. The ego exemption (`effectiveNodeAlpha`) still applies:
+ * hidden by default, revealed opt-in when you click the node. The sentinel is
+ * finite so `smoothstep` cannot produce NaN. */
 export const PLAIN_TIER_REVEAL: TierRevealConfig = {
   capability: DEFAULT_TIER_REVEAL.capability,
   element: { enterRatio: 1e6, fullRatio: 2e6 },
@@ -140,13 +143,14 @@ export interface HittableNodeInput {
  * pointer-event plumbing (label-clarity persona eval — "child click ejects
  * to overview instead of selecting").
  *
- * S3 마감 폴리시 (fable 설계, S2 known gap) — `clusteredIds` is the frame's
- * NOT-DRAWN set: density-gate collapsed subtree nodes AND, critically, the
- * selective-ego neighbors folded behind the `이웃 +N` chip when a focused node
- * has more than the ego limit. Those hidden neighbors are still 1-hop
- * neighbors, so the ego exemption below would (wrongly) keep them clickable —
- * grabbing an invisible node. Excluding the clustered set FIRST keeps hit and
- * draw in lockstep: if it isn't painted this frame, it isn't hittable.
+ * S3 finishing polish (designed by fable, S2 known gap) — `clusteredIds` is the
+ * frame's NOT-DRAWN set: subtree nodes collapsed by the density condition AND,
+ * critically, the selective-ego neighbors folded behind the `이웃 +N` ("+N
+ * neighbours") chip when a focused node exceeds the ego limit. Those hidden
+ * neighbors are still 1-hop neighbors, so the ego exemption below would
+ * (wrongly) keep them clickable — grabbing an invisible node. Excluding the
+ * clustered set FIRST keeps hit and draw in lockstep: if it isn't painted this
+ * frame, it isn't hittable.
  */
 export function isNodeHittable(
   node: HittableNodeInput,
@@ -156,43 +160,50 @@ export function isNodeHittable(
   config: TierRevealConfig = DEFAULT_TIER_REVEAL,
   clusteredIds?: ReadonlySet<string>,
   /**
-   * S10 결함 3 (치명, fable 설계) — 영역("realm") 전개 중엔 노드의 티어가 원래
-   * `kind` 가 아니라 루트로부터의 **깊이**로 재정의된다 (루트=project, 1단계=
-   * domain, …). 드로우 패스는 `topology-frame-draw.ts` 에서
-   * `realmTierKinds?.get(node.id) ?? node.kind` 로 이 오버라이드를 이미
-   * 적용하지만, 히트 경로는 원래 kind 로 게이트를 돌려 depth1 `element` 자식이
-   * SPINE 줌에서 그려지는데도 클릭·호버 불가였다 (`?realm=domain:…` 진입 직후
-   * 비중심 자식 무반응 — 치명). 여기 같은 오버라이드를 주입해 드로우와 히트를
-   * lockstep 으로 맞춘다 — 그려지면 잡힌다.
+   * S10 defect 3 (critical, designed by fable) — while a realm is expanded a
+   * node's tier is redefined by its **depth from the root** (root = project,
+   * one level down = domain, …) rather than by its own `kind`. The draw pass
+   * already applies that override in `topology-frame-draw.ts` via
+   * `realmTierKinds?.get(node.id) ?? node.kind`, but the hit path ran the
+   * condition on the original kind, so a depth1 `element` child was drawn at
+   * SPINE zoom yet could not be clicked or hovered (entering via
+   * `?realm=domain:…` left every non-centre child inert). Injecting the same
+   * override here keeps draw and hit in lockstep: if it is drawn, it is
+   * grabbable.
    */
   tierKindById?: ReadonlyMap<string, LayoutNodeKind> | null,
   /**
-   * **드로우가 이번 프레임에 실제로 쓴 알파**(`topology-frame-draw.ts` 의
-   * `effectiveAlphaById`). 넘기면 히트가 이 값을 **단일 출처**로 쓴다.
+   * **The alpha the draw pass actually used this frame**
+   * (`effectiveAlphaById` in `topology-frame-draw.ts`). When supplied, the hit
+   * test uses it as the **single source**.
    *
-   * 왜 필요한가 (2026-07-31 전수 검사): 티어를 관통하는 면제 채널이 드로우에는
-   * 넷인데(엣지 선택 · 발자국 렌즈 · ego 포커스 · 최근변경 스포트라이트) 히트에는
-   * **ego 하나뿐**이었다. 그래서 발자국 렌즈로 떠오른 노드는 **보이는데 안
-   * 눌린다** — 그런데 드로우 쪽 주석은 *"같은 관통이 히트테스트에도 걸려 지도에서
-   * 바로 다시 클릭할 수 있다"* 고 말한다. 주석이 고치려던 바로 그 경우가 안
-   * 고쳐져 있었다(드로우만 보고 쓰인 주석이다).
+   * Why it exists (full inventory, 2026-07-31): four channels pierce the tier
+   * condition in the draw pass — edge selection, the footprint lens, ego focus,
+   * and the recently-changed spotlight — while the hit path had **only ego**. So
+   * a node raised by the footprint lens was **visible but unclickable**, even
+   * though the draw-side comment claimed *"the same piercing applies to the hit
+   * test, so you can click it again straight from the map"*. The exact case the
+   * comment described was the one still broken; it had been written by reading
+   * only the draw side.
    *
-   * 인자를 하나씩 더 넘기는 방식은 **다음에 채널이 늘 때 또 어긋난다** — 오늘
-   * 이 결함이 생긴 그 방식이다. 드로우가 이미 만들어 두는 맵을 읽으면
-   * 구조적으로 못 어긋난다.
+   * Threading one more argument per channel **drifts again the next time a
+   * channel is added** — that is how this defect was created. Reading the map
+   * the draw pass already builds cannot drift.
    *
-   * 생략 시 종전 계산으로 떨어진다(첫 프레임 방어 — 페인트 전에는 맵이 비어
-   * 있고, 그 한 프레임은 오늘 동작과 같다).
+   * Omitting it falls back to the previous computation, which guards the first
+   * frame: before the first paint the map is empty, and for that one frame the
+   * fallback matches today's behaviour.
    */
   effectiveAlphaById?: ReadonlyMap<string, number> | null,
 ): boolean {
   if (clusteredIds?.has(node.id)) return false;
   const drawn = effectiveAlphaById?.get(node.id);
   if (drawn !== undefined) {
-    // ⚠️ **바닥은 0.5 다** — 드로우의 0.02 로 갈아타지 말 것. 0.02~0.5 는
-    // "그려지지만 안 잡히는" 의도된 구간이고(거의 투명한 것을 잡게 하면
-    // 오클릭), `computeLabelAlpha` 의 "잡을 수 있으면 읽을 수 있다" 규율과
-    // 짝이다. 계약의 정확한 문구는 「절반 이상 드러났으면 잡힌다」다.
+    // ⚠️ **The floor is 0.5** — do not swap in the draw pass's 0.02. The band
+    // 0.02..0.5 is deliberately "drawn but not grabbable" (making a near-
+    // transparent mark clickable produces mis-clicks), and it pairs with
+    // `computeLabelAlpha`'s rule that if you can click it, you can read it. The
+    // contract's exact wording: grabbable once more than half revealed.
     return drawn >= HITTABLE_MIN_TIER_ALPHA;
   }
   const tierKind = tierKindById?.get(node.id) ?? node.kind;
@@ -207,7 +218,8 @@ export function isNodeHittable(
  * 295 nodes over a far larger area than the ~8 spine nodes actually drawn at
  * the overview, so clamping to the full bounds leaves a vast legal-but-EMPTY
  * region the camera can strand in — the owner's "드래그하면 캔버스가
- * 사라져버림" (QA 소실 A). One strong flick projected thousands of world units
+ * 사라져버림" (drag and the canvas disappears; QA loss A). One strong flick
+ * projected thousands of world units
  * and landed inside the invisible fan; every pixel was "in bounds", nothing was
  * drawn.
  */

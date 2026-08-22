@@ -6,10 +6,10 @@ export type ProjectIntegrityIssue =
   | { code: "missing-dependency"; dependencySlug: string }
   | { code: "duplicate-dependency"; dependencySlug: string };
 
-// deriveProjectsFromVault 의 silent fallback 값 — frontmatter 누락 시
-// 자동 채워지는 default 라 'integrity 점검 필요' 로 잡으면 사용자에게
-// 모순 (' 카테고리 없음: uncategorized' 같은) 으로 보임. 이 값들은
-// '분류 안 함' / '활성' 의미라 정상 상태로 취급.
+// Silent fallback values from `deriveProjectsFromVault`, filled in automatically when
+// frontmatter is missing. Flagging them as an integrity problem would show the user a
+// contradiction ("no category: uncategorized"), since these mean "unclassified" and
+// "active" — normal states.
 const SILENT_CATEGORY_FALLBACKS = new Set(["uncategorized"]);
 const SILENT_STATUS_FALLBACKS = new Set(["active"]);
 
@@ -26,9 +26,9 @@ export function getProjectIntegrityIssues(
   const projectSlugs = new Set(options.allProjects.map((item) => item.slug));
   const issues: ProjectIntegrityIssue[] = [];
 
-  // R15 (Concern 1) — vault frontmatter 가 category/status 명시 안 했으면
-  // undefined. 그건 *integrity issue 아님* — 사용자가 의도적으로 선택. 명시
-  // 됐는데 taxonomy 에 없으면 issue (오타 / removed taxonomy).
+  // Frontmatter that does not state category/status yields undefined, and that is
+  // *not* an integrity issue — the user chose to leave it out. It becomes an issue
+  // only when a value is stated but is not in the taxonomy (a typo, or a removed term).
   if (
     project.category &&
     !categoryIds.has(project.category) &&

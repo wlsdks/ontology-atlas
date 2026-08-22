@@ -1,11 +1,11 @@
-// 가벼운 frontmatter 파서 — `---\n...\n---\n` 블록만 지원.
-// gray-matter 의존 없이도 다음 형태 모두 인식:
+// Lightweight frontmatter parser — handles only a `---\n...\n---\n` block.
+// Recognises all of these without a gray-matter dependency:
 //   key: value                          (scalar)
 //   key: [a, b]                         (inline list)
-//   key: { x: 1, y: 2 }                 (inline object — T16)
+//   key: { x: 1, y: 2 }                 (inline object)
 //   key:\n  - item1\n  - item2          (block list)
-//   key:\n  child: 1\n  other: 2        (block object — T16)
-// scripts/build-docs-vault.mjs 와 같은 규칙이지만 TS/브라우저 호환.
+//   key:\n  child: 1\n  other: 2        (block object)
+// Same rules as scripts/build-docs-vault.mjs, but TS/browser compatible.
 
 export interface ParsedFrontmatter {
   frontmatter: Record<string, unknown>;
@@ -43,20 +43,23 @@ function assignParsedKey(
 }
 
 export function parseFrontmatter(input: string): ParsedFrontmatter {
-  // 줄바꿈·인코딩 정규화 — **읽기 경로에서만** (2026-07-28 실측).
+  // Normalise line endings and encoding — **on the read path only**
+  // (measured 2026-07-28).
   //
-  // CRLF: 줄을 `\n` 으로 쪼개면 각 줄 끝에 `\r` 이 남는데, 블록 리스트
-  // 정규식의 `.` 는 `\r` 을 안 먹고 `$` 는 문자열 끝만 본다 → 매치 실패 →
-  // 리스트가 빈 배열. 스칼라는 `.trim()` 이 구제해서 살아남으므로, 증상이
-  // **"노드는 보이는데 관계만 전부 사라진다"** 는 형태로 나타난다. 경고 0.
+  // CRLF: splitting on `\n` leaves a trailing `\r` on every line. The block-list
+  // regex's `.` does not match `\r` and `$` only sees the end of the string, so
+  // the match fails and the list comes back empty. Scalars survive because
+  // `.trim()` rescues them, so the symptom is **"the nodes are there but every
+  // relation vanished"** — with zero warnings.
   //
-  // BOM: `raw.startsWith('---')` 가 `\uFEFF---` 에서 false → frontmatter 블록
-  // 전체가 본문으로 넘어가고 `kind:` 가 사라진다. 즉 **그 문서가 그래프에서
-  // 노드 자체로 사라진다**.
+  // BOM: `raw.startsWith('---')` is false for `\uFEFF---`, so the whole
+  // frontmatter block falls through into the body and `kind:` disappears —
+  // **the document vanishes from the graph as a node**.
   //
-  // 둘 다 `surfaces.md` 가 명시 지원한다고 적은 인구(Windows Chromium)의
-  // 기본 편집기가 만드는 것이다. 4-way 계약 테스트는 네 파서의 *일치*만
-  // 보장하는데 **넷이 똑같이 틀려서** 통과하고 있었다.
+  // Both are produced by the default editor of the population
+  // `.claude/rules/surfaces.md` names as explicitly supported (Windows
+  // Chromium). The 4-way contract test only guarantees the four parsers *agree*,
+  // and it was passing because **all four were wrong the same way**.
   const raw = input.replace(/^\uFEFF/, '').replace(/\r\n/g, '\n');
   if (!raw.startsWith('---')) return { frontmatter: {}, body: raw };
   const end = raw.indexOf('\n---', 3);
@@ -90,8 +93,9 @@ export function parseFrontmatter(input: string): ParsedFrontmatter {
     const value = line.slice(idx + 1).trim();
     if (!key) continue;
 
-    // **블록 스칼라를 값 판정보다 먼저 본다.** `definition: |` 의 값은 빈
-    // 문자열이 아니라 `"|"` 라, 빈 값 분기 안에 두면 절대 도달하지 않는다.
+    // **Check for a block scalar before classifying the value.** The value of
+    // `definition: |` is `"|"`, not an empty string, so putting this inside the
+    // empty-value branch would make it unreachable.
     const scalarIndicator = /^[|>][-+]?$/.exec(value);
     if (scalarIndicator) {
       const read = readBlockScalar(lines, i + 1, scalarIndicator[0]);
@@ -101,7 +105,7 @@ export function parseFrontmatter(input: string): ParsedFrontmatter {
     }
     if (value === '') {
 
-      // block 모드 — 다음 줄이 `  -` 면 list, `  childKey:` 면 object.
+      // Block mode — a following `  -` means a list, `  childKey:` an object.
       const lookahead = peekIndentedKind(lines, i + 1);
       if (lookahead === 'list') {
         const items: string[] = [];
@@ -136,7 +140,7 @@ export function parseFrontmatter(input: string): ParsedFrontmatter {
       continue;
     }
 
-    // inline 형태들
+    // Inline forms
     if (value.startsWith('[') && value.endsWith(']')) {
       assignParsedKey(frontmatter, key, parseInlineList(value), diagnostics, i + 2);
       continue;
@@ -204,22 +208,22 @@ function parseScalar(value: string): ParsedScalar {
 
 function unquote(value: string): string {
   const trimmed = value.trim();
-  // 감싼 따옴표를 벗길 때만 **언이스케이프도 함께** 한다. serializer 가
-  // `"` 를 이스케이프해 쓰는데 여기서 되돌리지 않으면, 저장할 때마다
-  // 백슬래시가 한 겹씩 더 붙는다(실측 3회 왕복: 1개 → 2개 → 4개).
-  // 인용부호 없는 값은 이스케이프 문법이 아니라 원문이므로 건드리지 않는다.
+  // Unescape **only** when stripping surrounding quotes. The serializer escapes
+  // `"`, so failing to reverse it here adds one more backslash layer per save
+  // (measured over 3 round trips: 1 → 2 → 4). An unquoted value is literal text,
+  // not escape syntax, so it is left alone.
   const quote = trimmed.length >= 2 ? trimmed[0] : '';
   if ((quote === '"' || quote === "'") && trimmed[trimmed.length - 1] === quote) {
     const inner = trimmed.slice(1, -1).replace(new RegExp(`\\\\(${quote}|\\\\)`, 'g'), '$1');
     /*
-     * 큰따옴표 안의 `\n` 은 **줄바꿈이다** (2026-08-16).
+     * Inside double quotes, `\n` **is a newline** (2026-08-16).
      *
-     * 쓰는 쪽이 줄바꿈을 그대로 내보내면 그 한 글자가 frontmatter 블록을
-     * 통째로 부순다 — 다음 줄이 새 키로 읽히거나 `---` 를 만나 본문이 시작된다
-     * (실측: `note⏎kind: element` 가 **노드의 종류를 바꿨다**). 그래서 쓰는
-     * 쪽은 큰따옴표 안에 `\n` 으로 적고, 읽는 쪽인 여기서 되돌린다.
+     * A literal newline emitted by the writer destroys the whole frontmatter
+     * block: the next line reads as a new key, or hits `---` and starts the body
+     * (measured: `note⏎kind: element` **changed the node's kind**). So the writer
+     * emits `\n` inside double quotes and the reader reverses it here.
      *
-     * 작은따옴표는 손대지 않는다 — YAML 에서 그건 이스케이프가 없는 문자열이다.
+     * Single quotes are untouched — in YAML those are strings with no escapes.
      */
     return quote === '"' ? inner.replace(/\\n/g, '\n').replace(/\\t/g, '\t') : inner;
   }
@@ -227,12 +231,12 @@ function unquote(value: string): string {
 }
 
 /**
- * 따옴표를 아는 구분자 분리 (2026-07-28 실측 수정).
+ * Quote-aware splitting (fixed on measurement, 2026-07-28).
  *
- * 종전에는 인라인 리스트/객체를 무조건 콤마로 쪼갰고, 주석이 그 한계를
- * "지원하지 않는다" 고 적어 두고 있었다. 그런데 값 안의 콤마는 **조용히
- * 데이터를 자른다** — `labels: { ko: "지도, 검색" }` 의 뒷조각이 사라진다.
- * 따옴표 안의 구분자는 데이터이지 구분자가 아니다.
+ * Inline lists and objects used to be split on every comma, with a comment
+ * declaring that limitation "unsupported". But a comma inside a value **silently
+ * truncates data** — the tail of `labels: { ko: "지도, 검색" }` disappeared. A
+ * separator inside quotes is data, not a separator.
  */
 function splitTopLevel(input: string, separator: string): string[] {
   const parts: string[] = [];
@@ -328,8 +332,9 @@ export function buildExcerpt(body: string, max = 320): string {
     .replace(/^[\s·]+|[\s·]+$/g, '') // trim leading/trailing middots
     .trim();
   if (stripped.length <= max) return stripped;
-  // 단어 중간에서 뚝 끊기지 않게: max 이내 마지막 공백에서 자르고 말줄임표.
-  // (한국어는 공백 단위 어절이라 어절 경계, 영문은 단어 경계가 된다.)
+  // Cut at the last space within max so the text never breaks mid-word.
+  // (Korean spaces separate eojeol, English separates words — either way this
+  // lands on a boundary.)
   const cut = stripped.slice(0, max);
   const lastSpace = cut.lastIndexOf(' ');
   const safe = lastSpace > max * 0.6 ? cut.slice(0, lastSpace) : cut;
@@ -337,27 +342,28 @@ export function buildExcerpt(body: string, max = 320): string {
 }
 
 export interface LinkContext {
-  /** vault 내부 다른 문서의 slug (이 함수가 resolve) */
+  /** Slug of another document in the vault, resolved by this function. */
   target: string;
-  /** 링크 앞뒤 120자 컨텍스트. **[linkText]** 로 위치 마킹. */
+  /** 120 characters of context on each side, with the position marked as **[linkText]**. */
   context: string;
   linkText: string;
 }
 
 /**
- * 위키링크 `[[slug]]` 의 target 을 문서가 속한 vault 기준으로 정규화한다.
+ * Normalises a wikilink `[[slug]]` target against the vault the document belongs
+ * to.
  *
- * `docs/ontology/` 는 이 프로젝트가 dogfood 하는 **중첩 MCP vault** —
- * 그 안의 위키링크는 MCP 툴/사람이 쓰는 `capabilities/x`, `domains/y` 같은
- * ontology-vault-루트 기준 slug 를 그대로 쓴다(예:
- * `docs/ontology/elements/sigma-graphology.md` 의
- * `[[capabilities/topology-canvas-render]]`). 하지만 `/docs` 페이지가
- * 만드는 통합 트리에서 그 문서의 실제 slug 는 `ontology/` 접두사가 붙은
- * `ontology/capabilities/topology-canvas-render` 라, 접두사 보정 없이는
- * `backlinksDetail` 키가 서로 어긋나 실제 역참조가 있어도 조회에서
- * 누락된다 (persona QA fix/persona-findings ③). `ontology/` 바깥의
- * 최상위 문서가 쓰는 위키링크(예: `docs/CHANGELOG.md` 의 `[[FEATURES]]`)
- * 는 이미 루트 기준이라 그대로 둔다.
+ * `docs/ontology/` is the **nested MCP vault** this project dogfoods, and
+ * wikilinks inside it use slugs relative to that vault's root, as MCP tools and
+ * people write them (`capabilities/x`, `domains/y` — e.g.
+ * `[[capabilities/topology-canvas-render]]` in
+ * `docs/ontology/elements/sigma-graphology.md`). In the merged tree the `/docs`
+ * page builds, the same document's real slug carries an `ontology/` prefix
+ * (`ontology/capabilities/topology-canvas-render`), so without this correction
+ * the `backlinksDetail` keys disagree and a real backlink is missing from the
+ * lookup. Wikilinks in top-level documents outside `ontology/` (such as
+ * `[[FEATURES]]` in `docs/CHANGELOG.md`) are already root-relative and are left
+ * alone.
  */
 function resolveWikilinkTargetSlug(targetSlug: string, fromSlug: string): string {
   if (fromSlug.startsWith('ontology/') && !targetSlug.startsWith('ontology/')) {
@@ -367,9 +373,9 @@ function resolveWikilinkTargetSlug(targetSlug: string, fromSlug: string): string
 }
 
 /**
- * 마크다운 본문에서 상대 경로 md 참조를 추출해 target slug + 주변 context
- * 로 반환. http(s)/앵커/이미지는 무시. fromSlug 는 현재 문서의 vault slug
- * (디렉터리 포함, 확장자 제외).
+ * Extracts relative `.md` references from a markdown body as target slugs plus
+ * surrounding context. Ignores http(s), anchors and images. `fromSlug` is the
+ * current document's vault slug (directory included, extension excluded).
  */
 export function extractOutLinksWithContext(
   body: string,
@@ -377,7 +383,7 @@ export function extractOutLinksWithContext(
 ): { slugs: string[]; contexts: LinkContext[] } {
   const slugs = new Set<string>();
   const contexts: LinkContext[] = [];
-  // 표준 markdown 링크 [text](path.md)
+  // Standard markdown links: [text](path.md)
   const re = /\[([^\]]+)\]\(([^)]+)\)/g;
   let m: RegExpExecArray | null;
   while ((m = re.exec(body)) !== null) {
@@ -413,9 +419,9 @@ export function extractOutLinksWithContext(
     const context = raw.replace(/\r?\n/g, ' ').replace(/\s+/g, ' ').trim();
     contexts.push({ target: targetSlug, context, linkText });
   }
-  // Wikilinks [[slug]] / [[slug|text]] / [[slug#anchor]] — vault 루트 기준 slug
-  // (중첩된 ontology/ vault 안에서는 그 vault 의 루트 기준 — 위
-  // resolveWikilinkTargetSlug 참고).
+  // Wikilinks [[slug]] / [[slug|text]] / [[slug#anchor]] — slugs relative to the
+  // vault root (inside the nested ontology/ vault, relative to that vault's root
+  // — see resolveWikilinkTargetSlug above).
   const wre = /\[\[([^\]|]+?)(?:\|([^\]]+?))?\]\]/g;
   while ((m = wre.exec(body)) !== null) {
     const targetSpec = m[1].trim();
@@ -437,12 +443,13 @@ export function extractOutLinksWithContext(
 }
 
 /**
- * 파일이 원래 쓰던 **줄바꿈과 BOM** — 읽을 때 정규화하고 쓸 때 되돌리기 위한 값.
+ * The **line ending and BOM the file originally used** — normalised on read and
+ * restored on write.
  *
- * 파서는 CRLF·BOM 을 정규화해서 읽는다(그래야 관계가 안 사라진다). 그런데
- * **쓰는 쪽이 정규화된 모양 그대로 저장하면 남의 파일의 줄바꿈을 말없이
- * 바꾸는 것**이 된다 — git diff 가 파일 전체로 뜨고, 그건 이 제품이 하지
- * 않기로 한 종류의 일이다. 그래서 모양을 기억했다가 되돌린다.
+ * The parser normalises CRLF and BOM so relations do not vanish. But **saving
+ * the normalised form would silently rewrite someone else's line endings**,
+ * turning the git diff into the whole file — the kind of thing this product does
+ * not do. So the shape is remembered and put back.
  */
 export interface VaultSourceShape {
   bom: string;
@@ -452,31 +459,32 @@ export interface VaultSourceShape {
 export function readVaultSourceShape(raw: string): VaultSourceShape {
   return {
     bom: raw.startsWith("\uFEFF") ? "\uFEFF" : "",
-    // 하나라도 CRLF 면 그 파일은 CRLF 파일이다 — 섞여 있으면 다수가 아니라
-    // 존재로 판정한다(Windows 편집기가 이어서 쓰면 CRLF 로 붙기 때문).
+    // One CRLF makes it a CRLF file — for mixed endings the test is presence,
+    // not majority, because a Windows editor appends CRLF from there on.
     eol: raw.includes("\r\n") ? "\r\n" : "\n",
   };
 }
 
-/** 읽기용 정규화 — BOM 제거 + LF 통일. 파서가 진입부에서 하는 것과 같다. */
+/** Read-side normalisation — drop the BOM, unify on LF. Same as the parser's entry. */
 export function normalizeVaultSource(raw: string): string {
   return raw.replace(/^\uFEFF/, "").replace(/\r\n/g, "\n");
 }
 
-/** 쓰기용 복원 — 원래 파일이 쓰던 모양으로 되돌린다. */
+/** Write-side restoration — back to the shape the original file used. */
 export function restoreVaultSourceShape(text: string, shape: VaultSourceShape): string {
   const withEol = shape.eol === "\r\n" ? text.replace(/\n/g, "\r\n") : text;
   return `${shape.bom}${withEol}`;
 }
 
 /**
- * 블록 스칼라(`|`, `>` 와 그 chomping 변형)를 값으로 삼킨다.
+ * Consumes a block scalar (`|`, `>` and their chomping variants) as the value.
  *
- * **왜 필요한가 (2026-07-29 도그푸딩 실측).** 이걸 모르면 지시자가 값으로
- * 저장되고(`definition: "|"`), 이어지는 들여쓴 본문 줄들이 최상위 루프로
- * 흘러간다. 그 루프는 키를 `.trim()` 하므로 들여쓰기가 지워지고, 설명문 안의
- * `kind: element` 같은 한 줄이 **그 노드의 종류를 덮어썼다.** 문서가 자기
- * 설명으로 자기 타입을 바꾸는 것이다. 경고는 0이었다.
+ * **Why it is needed** (measured while dogfooding, 2026-07-29). Without it the
+ * indicator is stored as the value (`definition: "|"`) and the indented body
+ * lines fall through to the top-level loop. That loop `.trim()`s keys, so the
+ * indentation disappears and a line like `kind: element` inside the prose
+ * **overwrote the node's kind** — a document changing its own type through its
+ * own description, with zero warnings.
  */
 function readBlockScalar(
   lines: string[],
@@ -505,7 +513,7 @@ function readBlockScalar(
   while (collected.length > 0 && collected[collected.length - 1] === '') collected.pop();
   let text: string;
   if (fold) {
-    // 접힌 스칼라: 빈 줄은 줄바꿈, 이어지는 줄은 공백 하나로 합친다.
+    // Folded scalar: a blank line is a newline, consecutive lines join with one space.
     text = collected
       .reduce<string[]>((acc, cur) => {
         if (cur === '') return acc.concat('');

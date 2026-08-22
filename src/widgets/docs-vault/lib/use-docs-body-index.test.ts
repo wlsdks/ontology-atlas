@@ -33,7 +33,7 @@ describe('useDocsBodyIndex', () => {
     await waitFor(() => expect(result.current.indexing).toBe(false));
     expect(result.current.bodyIndex.size).toBe(2);
     expect(result.current.bodyIndex.get('a')?.lower).toContain('body of a');
-    // frontmatter 는 인덱스에서 제외
+    // Frontmatter is excluded from the index.
     expect(result.current.bodyIndex.get('a')?.lower).not.toContain('title:');
     expect(reads.sort()).toEqual(['a', 'b']);
   });
@@ -48,7 +48,7 @@ describe('useDocsBodyIndex', () => {
     await waitFor(() => expect(result.current.bodyIndex.size).toBe(2));
     expect(getDocContent).toHaveBeenCalledTimes(2);
 
-    // b 만 mtime 변경 — a 는 캐시 재사용, b 만 재독
+    // Only b's mtime changed — a reuses the cache and only b is re-read.
     rerender({ docs: [doc('a', 1), doc('b', 2)] });
     await waitFor(() => expect(getDocContent).toHaveBeenCalledTimes(3));
     await waitFor(() => expect(result.current.indexing).toBe(false));

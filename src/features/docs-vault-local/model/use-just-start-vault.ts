@@ -10,9 +10,8 @@ import { buildDefaultVaultDisplayPath, resolveUniqueVaultDirName } from '../lib/
 import { shouldClearCreateIntent, shouldScaffoldAfterOpen } from './vault-create-flow';
 
 /**
- * `useJustStartVault` 가 필요로 하는 `useLocalVault()` 의 최소 shape — 실제
- * 훅 또는 테스트 더블 모두 만족 가능하도록 좁게 유지 (`VaultCreateFlowVault`
- * 와 같은 패턴).
+ * The minimal shape of `useLocalVault()` that `useJustStartVault` requires — kept narrow so both the
+ * real hook and a test double satisfy it (the same pattern as `VaultCreateFlowVault`).
  */
 export interface JustStartVaultVault {
   status: string;
@@ -22,23 +21,21 @@ export interface JustStartVaultVault {
 }
 
 /**
- * "그냥 시작하기" — Tauri 데스크톱 전용. 폴더 픽커 없이
- * `~/Documents/Ontology Atlas/<name>` 아래 실제 디스크 폴더를 만들고 곧장
- * 연결한다 (OPFS 아님 — 에이전트/MCP/Claude Code 가 그대로 접근 가능한 게
- * 이 설계의 요점). 새 파이프라인 최소화 — 폴더 준비 뒤에는 기존
- * `vault.openRecent()` 와 `vault.scaffoldOntology()` 를 그대로 재사용한다
- * (`useVaultCreateFlow` 가 `open()` + `scaffoldOntology()` 를 잇는 것과 동일
- * 패턴, 픽커 대신 자동 경로 준비만 다르다).
+ * "Just start" — Tauri desktop only. With no folder picker, it creates a real disk folder under
+ * `~/Documents/Ontology Atlas/<name>` and connects to it immediately. **Not OPFS** — the whole point
+ * of the design is that an agent, MCP, or Claude Code can reach it directly. Once the folder is
+ * prepared it reuses the existing `vault.openRecent()` and `vault.scaffoldOntology()` rather than
+ * adding a pipeline (the same pattern by which `useVaultCreateFlow` chains `open()` and
+ * `scaffoldOntology()`; only the automatic path preparation replaces the picker).
  *
- * `starterLocale` 은 `useVaultCreateFlow` 와 같은 계약 — 어느 생성 경로로
- * 들어와도 화면 언어의 스타터가 나와야 한다(흐름 점검 2026-07-26 D2).
+ * `starterLocale` follows the same contract as `useVaultCreateFlow` — whichever creation path is
+ * taken, the starter must come out in the screen's language (walkthrough 2026-07-26).
  *
- * `shouldScaffoldAfterOpen`/`shouldClearCreateIntent` 를 그대로 재사용할 수
- * 있는 이유 — 이 폴더는 매번 새로 계산한 미사용 이름이라 도착 즉시 문서 수는
- * 항상 0. "새 vault 만들기" 처럼 사용자가 기존 폴더를 고를 위험이 없어도,
- * `openRecent()` 완료와 실제 `vault.manifest` 갱신 사이의 렌더 레이스는 동일하게
- * 존재하므로 같은 armed-effect 패턴을 그대로 쓴다 (`vault-create-flow.ts` 상단
- * 주석 참고).
+ * `shouldScaffoldAfterOpen`/`shouldClearCreateIntent` can be reused as-is because this folder is a
+ * freshly computed unused name every time, so the document count on arrival is always 0. Even without
+ * the risk of the user picking an existing folder (as in "create a new vault"), the render race
+ * between `openRecent()` completing and `vault.manifest` actually refreshing is identical, so the same
+ * armed-effect pattern is used (see the comment at the top of `vault-create-flow.ts`).
  */
 export function useJustStartVault(vault: JustStartVaultVault, starterLocale: string) {
   const [preparing, setPreparing] = useState(false);
@@ -69,8 +66,8 @@ export function useJustStartVault(vault: JustStartVaultVault, starterLocale: str
         lastAccessedAt: now,
       });
       setCreatedPath(buildDefaultVaultDisplayPath(dirName));
-      // open() 뒤 바로 상태를 읽는 대신 armed 로 다음 렌더의 fresh vault 를
-      // 기다린다 — `useVaultCreateFlow` 와 동일한 레이스 회피.
+      // Rather than reading state straight after open(), `armed` waits for the next render's fresh
+      // vault — the same race avoidance as `useVaultCreateFlow`.
       setArmed(true);
     } catch (err) {
       setActionError(err instanceof Error && err.message ? err.message : '');

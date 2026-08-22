@@ -19,8 +19,7 @@ function isRenderableKind(kind: string): kind is RenderableKind {
 export interface BuildTopologyV2GraphOptions {
   /** Slugs touched since the review baseline — feeds the `recentPulse` overlay. */
   changedSlugs?: ReadonlySet<string>;
-  /** 살아있는 지도 드리프트 — `deriveDustySlugs` 판정 결과. 해당 노드는
-   *  엔진의 기존 stale 채널로 가라앉는다. */
+  /** Result of `deriveDustySlugs`; those nodes sink through the engine's existing stale channel. */
   dustySlugs?: ReadonlySet<string>;
 }
 
@@ -69,8 +68,9 @@ export function buildTopologyV2Graph(
   );
 
   const { subtreeWeightBySlug } = buildOntologySkeleton(nodes, edges);
-  // Guardian I-1 — 각인 숫자(project/domain)의 단일 진실원. subtreeWeight 는
-  // element 만 세서 INDEX/projects 의 역량+요소 합계와 숫자가 갈라졌다.
+  // Single source for the engraved numeral on project/domain nodes.
+  // `subtreeWeight` counts elements only, which made its number disagree with
+  // the capability+element total INDEX and /projects show.
   const censusById = domainCensusById(computeDomainCensusRows(nodes, edges));
 
   const fullDegreeById = new Map<string, number>();
@@ -101,8 +101,8 @@ export function buildTopologyV2Graph(
 
   const v2Nodes: TopologyV2Node[] = includedNodes.map((node) => ({
     id: node.id,
-    // 과제 ⑩ — 캔버스 라벨은 표시용 짧은 제목. 긴 title(괄호 부연 설명
-    // 포함)을 그대로 그리면 지저분하고 잘린다.
+    // Canvas labels use the short display title: the full one, parenthetical
+    // aside included, draws messy and gets truncated.
     label: node.display ?? node.title,
     kind: node.kind as RenderableKind,
     size: subtreeWeightBySlug.get(node.id) ?? 0,
@@ -111,14 +111,14 @@ export function buildTopologyV2Graph(
     isHub: node.id === hubId,
     ownerKey: null,
     recentlyUpdated: options.changedSlugs?.has(node.id) ?? false,
-    // 저작 출처는 파생이 프론트매터에서 읽은 값을 **그대로** 나른다 —
-    // 여기서 기본값을 주면 그게 2026-07-31 원장이 금지한 소급 추론이 된다.
+    // Authorship carries the frontmatter value verbatim. Defaulting it here
+    // would be the retroactive inference the 2026-07-31 ledger forbids.
     createdBy: node.createdBy,
     stale: options.dustySlugs?.has(node.id) ?? false,
     fullDegree: fullDegreeById.get(node.id) ?? 0,
     // Engraved-numeral source (project/domain only, drawn in circuit range) —
-    // Guardian I-1: 역량+요소 합계 (INDEX·/projects 와 같은 BFS census).
-    // `size`(시각 규모)는 종전 element weight 를 유지한다.
+    // Capability + element total, from the same BFS census INDEX and /projects
+    // use. `size` (visual magnitude) keeps the element weight.
     descendantCount: censusById.get(node.id)?.total ?? subtreeWeightBySlug.get(node.id) ?? 0,
   }));
 
@@ -132,7 +132,7 @@ export function buildTopologyV2Graph(
       relationQuality: quality === "strong" ? "strong" : quality === "weak" ? "weak" : null,
       evidenceCount: edge.evidenceIds.length,
       kind: isContainmentRelation(edge.type) ? "contains" : "depends",
-      // P3b — 선언 출처: derive 가 evidenceIds[0] 에 선언 doc slug 를 싣는다.
+      // Declaring document: derivation puts its slug in `evidenceIds[0]`.
       declaredBySlug: edge.evidenceIds[0] ?? null,
     };
   });

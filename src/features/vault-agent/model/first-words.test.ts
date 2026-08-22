@@ -1,5 +1,5 @@
-// 첫 마디의 세 계약: 실데이터에서 나온다 · 슬롯 우선순위는 고정이다 ·
-// 억지로 셋을 채우지 않는다.
+// The three contracts of an opening line: it comes from real data, the slot priority is
+// fixed, and three are never forced.
 import { describe, expect, it } from 'vitest';
 
 import type { ConceptDocFacts } from '@/entities/knowledge-graph';

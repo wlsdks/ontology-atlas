@@ -1,14 +1,14 @@
-// `init` 이 화면에 찍는 명령은 **붙여 넣으면 실제로 돌아야 한다**.
+// A command `init` prints must **actually run when pasted**.
 //
-// 2026-07-28 도그푸딩 실측: 「Next steps」가 `ontology-atlas list` 를 안내했고,
-// 그대로 실행하면 `command not found` (exit 127) 였다. 그 이름은 레지스트리에
-// 없고 앞으로도 없다(`docs/DECISIONS.md` 2026-07-27). 더 이상한 것은 **같은
-// `init` 이 만드는 README 는 옳게 적혀 있었다**는 점이다 — 생성물과 생성 도구
-// 자신의 안내가 서로 다른 규칙을 따르고 있었다.
+// Dogfooding, measured 2026-07-28: "Next steps" told the user to run
+// `ontology-atlas list`, which gave `command not found` (exit 127). That name is
+// not in any registry and never will be (`docs/DECISIONS.md` 2026-07-27). Stranger
+// still, **the README the same `init` writes was correct** — the generated artifact
+// and the generating tool's own guidance followed different rules.
 //
-// 왜 여기서 잡나: 기존 `npm-channel-retired` 계약은 마크다운·YAML 같은 **파일**
-// 을 훑는다. 이 위반은 파일이 아니라 **런타임 stdout** 에 살아서 그 게이트의
-// 사정거리 밖이었다. 그래서 실제로 프로세스를 돌려 나온 글자를 본다.
+// Why the check lives here: the existing `npm-channel-retired` contract scans
+// **files** (markdown, YAML). This violation lives in **runtime stdout**, outside
+// that gate's reach, so this runs the process and reads the characters it emits.
 
 import { strict as assert } from 'node:assert';
 import { execFileSync } from 'node:child_process';
@@ -25,7 +25,7 @@ const CLI_ENTRY = path.resolve(
   'index.mjs',
 );
 
-/** ANSI 색을 벗겨 순수 글자만 본다 — 판정은 색이 아니라 명령이다. */
+/** Strips ANSI colour so only the characters are judged — the verdict is about the command, not the colour. */
 function stripAnsi(text) {
   return text.replace(/\[[0-9;]*m/g, '');
 }
@@ -45,13 +45,14 @@ test('argv 가 없으면 체크아웃 상대 경로로 물러선다', () => {
 });
 
 test('cliCommand 는 자기 호출 뒤에 하위 명령을 이어 붙인다', () => {
-  // 실행 주체가 무엇이든(테스트 러너면 그 파일) 접두사는 `cliInvocation` 이고
-  // 뒤에 인자가 붙는다 — 그 결합만 본다.
+  // Whatever launched the process (the test runner's own file, here), the prefix is
+  // `cliInvocation` with the arguments appended. Only that composition is asserted.
   assert.equal(cliCommand('list'), `${cliInvocation()} list`);
   assert.equal(cliCommand('add', 'capability'), `${cliInvocation()} add capability`);
 });
 
-// 이것이 결함의 정확한 재현이다 — 안내된 줄을 **그대로 실행**해서 성공하는지 본다.
+// This is the exact reproduction of the defect — run the printed line **verbatim**
+// and check that it succeeds.
 test('init 이 안내하는 명령을 그대로 실행하면 실제로 돈다', () => {
   const dir = mkdtempSync(path.join(tmpdir(), 'oatlas-init-'));
   try {
@@ -59,7 +60,7 @@ test('init 이 안내하는 명령을 그대로 실행하면 실제로 돈다', 
       execFileSync(process.execPath, [CLI_ENTRY, 'init', 'vault'], { cwd: dir, encoding: 'utf8' }),
     );
 
-    // 「Next steps」 블록의 실행용 줄에는 죽은 이름이 없어야 한다.
+    // No dead name may appear on a runnable line of the "Next steps" block.
     const nextSteps = stdout.slice(stdout.indexOf('Next steps:'));
     assert.equal(
       /(^|\s)ontology-atlas (list|validate|mcp-verify|add|find|analyze|bootstrap)/.test(nextSteps),
@@ -67,7 +68,7 @@ test('init 이 안내하는 명령을 그대로 실행하면 실제로 돈다', 
       `죽은 명령이 Next steps 에 남아 있다:\n${nextSteps}`,
     );
 
-    // 안내된 첫 명령을 문자열에서 뽑아 그대로 실행한다.
+    // Extract the first suggested command from the output and run it as-is.
     const listLine = nextSteps
       .split('\n')
       .map((line) => line.trim())
@@ -75,7 +76,7 @@ test('init 이 안내하는 명령을 그대로 실행하면 실제로 돈다', 
     assert.ok(listLine, `안내에서 list 명령 줄을 못 찾았다:\n${nextSteps}`);
 
     const command = listLine.split('#')[0].trim();
-    const args = command.split(/\s+/).slice(1); // `node` 를 뺀 나머지
+    const args = command.split(/\s+/).slice(1); // everything after `node`
     const listed = execFileSync(process.execPath, args, { cwd: dir, encoding: 'utf8' });
     assert.match(stripAnsi(listed), /example-capability/);
   } finally {

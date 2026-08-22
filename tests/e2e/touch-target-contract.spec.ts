@@ -1,47 +1,51 @@
 import { test, expect } from "@playwright/test";
 
 /**
- * 터치 타깃 계약 — `--touch-target-min`(44px) 이 **실제로 렌더에 닿는가**.
+ * Touch-target contract — does `--touch-target-min` (44px) **actually reach the
+ * render?**
  *
- * ## 왜 이 층이어야 하나
+ * **Why this layer.** The contract was already written down in
+ * `.claude/rules/design.md` and the token existed (`--touch-target-min: 44px`), yet
+ * a 2026-07-28 measurement found 19 controls under 44px on coarse pointers. The
+ * cause was reach, not value:
  *
- * 계약은 `design.md` 가 이미 명문화했고 토큰도 있었다(`--touch-target-min: 44px`).
- * 그런데 2026-07-28 실측에서 coarse 포인터의 44px 미만 컨트롤이 19개 나왔다.
- * 원인은 값이 아니라 **사정거리**였다:
+ * - The `@media (pointer: coarse)` block raised
+ *   `--topology-chrome-control-height` to 44px, but the two shared primitives
+ *   drawing the top chrome (`ChromeTile`, `ChromeChip`) did not read that token —
+ *   they read `--chrome-tile-size` (36px, 17 consumers in src). **The promotion was
+ *   landing in an empty room.**
+ * - The same block also promoted `--topology-chrome-control-height-compact`, a dead
+ *   token with zero references.
+ * - Four text-style buttons in the first-run panel had no height token at all and
+ *   measured 16–18px.
  *
- * - `@media (pointer: coarse)` 블록이 `--topology-chrome-control-height` 를
- *   44px 로 올렸는데, 상단 크롬을 그리는 공유 프리미티브 두 개(`ChromeTile`
- *   `ChromeChip`)는 그 토큰을 안 읽고 `--chrome-tile-size`(36px, src 사용처
- *   17곳)를 읽었다. **승격이 빈 방에 떨어지고 있었다.**
- * - 같은 블록이 `--topology-chrome-control-height-compact` 도 승격했는데
- *   그 토큰은 참조가 0곳인 죽은 토큰이었다.
- * - 첫 실행 패널의 텍스트형 버튼 넷은 높이 토큰이 아예 없어 16~18px 였다.
+ * Neither lint nor vitest can see this. Lint sees one file's AST, so it cannot
+ * decide "is this token promoted in that media block", and jsdom has no layout, so
+ * heights are always 0. Only **a real browser with pointer type as the independent
+ * variable** can measure it.
  *
- * lint 도 vitest 도 이걸 못 본다. lint 는 한 파일의 AST 만 보므로 "이 토큰이
- * 저 media 블록에서 승격되는가" 를 판정할 수 없고, jsdom 은 레이아웃이 없어
- * 높이가 늘 0이다. **포인터 종류가 독립 변수인 실제 브라우저**만 잴 수 있다.
+ * **A hit area is not the box.** Growing the box of an inline text control changes
+ * the whole line's layout, so `.touch-hit-expand` widens only the hit area via a
+ * pseudo-element — this check measures the **effective hit box** (own rect ∪
+ * ::after rect), not the visible rect.
  *
- * ## 히트 영역은 박스가 아니다
- *
- * 인라인 텍스트 컨트롤은 박스를 키우면 그 줄의 레이아웃이 통째로 바뀐다.
- * 그래서 `.touch-hit-expand` 가 의사요소로 히트만 넓힌다 — 이 검사는 보이는
- * rect 가 아니라 **유효 히트 박스**(자기 rect ∪ ::after rect)를 잰다.
- *
- * ## 두 층이다 — coarse 44 는 이 저장소의 터치 계약, fine 24 는 WCAG 2.5.8(AA)
- *
- * 2026-08-04 link 바닥 재설정(원장 「link 바닥 24」)이 fine 층을 추가했다.
- * 값 층이 44 를 fine 전면에 싣던 시절엔 fine 검사가 무의미했지만, 바닥이
- * 24 로 서면 **24 미만이 실제 결함**이 된다. 판정식:
+ * **There are two layers**: coarse 44 is this repository's touch contract; fine 24
+ * is WCAG 2.5.8 (AA). The 2026-08-04 link-floor reset (ledger 「link 바닥 24」) added
+ * the fine layer. While the value layer loaded 44 across all fine pointers a fine
+ * check was meaningless, but with the floor at 24, **anything under 24 is a real
+ * defect**. The predicate:
  *
  *   PASS(a) := hitBox ≥ 24×24
- *           || INLINE_EXEMPT(a)   — display:inline && 비타깃 형제 글자 존재
- *           || SPACING_CLEAR(a)   — 24 원(사각 근사)이 다른 타깃과 안 겹침
+ *           || INLINE_EXEMPT(a)   — display:inline && non-target sibling text exists
+ *           || SPACING_CLEAR(a)   — the 24 circle (square approximation) does not
+ *                                   overlap another target
  *
- * 인라인 면제가 계기에 **먼저** 들어간 이유: 없이 켜면 산문 링크(prose-link,
- * 줄 상자를 부모가 소유)가 거짓 빨강이 되고, 게이트가 틀리면 게이트를 끄는
- * 것이 기본값이 된다. 「문장 속인가」는 정적으로 판정 불가라(형제 글자 출처 ·
- * used display · reflow 전부 여는 태그 밖) 여기 런타임 계기가 정본이다 —
- * 삭제된 `inline` 축의 후임이다.
+ * The inline exemption went into the instrument **first** because without it prose
+ * links (prose-link, whose line box the parent owns) go falsely red, and once a gate
+ * is wrong, switching it off becomes the default. "Is it inside a sentence" cannot
+ * be decided statically (sibling text source, used display, and reflow are all
+ * outside the opening tag), so this runtime instrument is the authority — the
+ * successor to the deleted `inline` axis.
  */
 
 const MIN = 44;
@@ -53,7 +57,7 @@ test.describe("터치 타깃 계약 (pointer: coarse)", () => {
     await page.goto("/ko/topology/?guides=off");
     await expect(page.getByTestId("topology-index-panel")).toBeVisible();
 
-    // 카드가 접혀 있으면 되돌아오기 1행으로 다시 연다.
+    // If the card is collapsed, the reopen row expands it again.
     const reopen = page.getByTestId("first-run-starter-reopen");
     if (await reopen.isVisible().catch(() => false)) await reopen.click();
     await expect(page.getByTestId("first-run-starter")).toBeVisible();
@@ -95,14 +99,15 @@ test.describe("터치 타깃 계약 (pointer: coarse)", () => {
     await page.goto("/ko/topology/?guides=off");
     await expect(page.getByTestId("topology-command-chrome")).toBeVisible();
 
-    // 토큰 자체 — 승격이 도달했는가.
+    // The token itself — did the promotion arrive?
     const tile = await page.evaluate(() =>
       getComputedStyle(document.documentElement).getPropertyValue("--chrome-tile-size").trim(),
     );
     expect(tile).not.toBe("36px");
 
-    // 렌더된 높이 — 토큰이 실제로 컨트롤에 닿았는가. 토큰만 검사하면
-    // "승격했지만 아무도 안 읽는" 상태(이 결함의 원형)를 그대로 통과시킨다.
+    // The rendered height — did the token actually reach the control? Checking the
+    // token alone passes the "promoted but nobody reads it" state, which is the
+    // original form of this defect.
     for (const id of ["topology-auto-arrange", "topology-concept-search"]) {
       const h = await page.getByTestId(id).evaluate((el) => el.getBoundingClientRect().height);
       expect(h, `${id} 높이`).toBeGreaterThanOrEqual(MIN);
@@ -110,11 +115,12 @@ test.describe("터치 타깃 계약 (pointer: coarse)", () => {
   });
 
   /**
-   * 관문 표면도 같은 계약을 진다 (2026-07-28).
+   * The gateway surface carries the same contract (2026-07-28).
    *
-   * `/download` GNB 는 **이 감사 중에 태어난 표면**인데 터치 계약 없이 태어났다
-   * (실측: EN/KO 32×32 · 로고 116×24 · 링크 20/28/16px). 새 표면 체크리스트에
-   * coarse 승격이 빠져 있다는 신호라, 등록부를 여기까지 넓힌다.
+   * The `/download` GNB was **born during this audit** and was born without a touch
+   * contract (measured: EN/KO 32×32 · logo 116×24 · links 20/28/16px). That is a
+   * signal that coarse promotion is missing from the new-surface checklist, so the
+   * registry is widened to here.
    */
   test("관문(/download)의 모든 컨트롤이 44px 히트 영역을 갖는다", async ({ page }) => {
     await page.goto("/ko/download/?guides=off");
@@ -162,23 +168,23 @@ interface Audit258Result {
   failures: { id: string; w: number; h: number }[];
 }
 
-/** fine-pointer 2.5.8 감사 — 브라우저 안에서 실행되는 판정기. */
+/** The fine-pointer 2.5.8 audit — a predicate that runs inside the browser. */
 const AUDIT_258 = `(() => {
   const MIN = 24;
   /*
-   * 셀렉터에 **폼이 들어 있어야 한다** — 2026-08-05 까지 네 자리가 전부
-   * \`button, a[href]\` 라서 \`<input>\`·\`<select>\`·\`<textarea>\` 는
-   * 이 감사에 **원리적으로 존재하지 않았다**. 그 사각에서 네이티브 체크박스
-   * 5곳이 전부 24px 미만이었고 게이트는 내내 초록이었다.
+   * The selector **must include form controls**. Until 2026-08-05 all four places
+   * were \`button, a[href]\`, so \`<input>\`, \`<select>\`, and \`<textarea>\`
+   * **did not exist for this audit in principle**. In that blind spot all 5 native
+   * checkboxes were under 24px and the gate stayed green throughout.
    */
   const RAW = 'button:not([disabled]), a[href], input:not([type="hidden"]):not([disabled]), select:not([disabled]), textarea:not([disabled])';
   /*
-   * **체크박스는 자기 상자가 아니라 라벨이 타깃이다.** WCAG 는 타깃을
-   * 「무엇이 클릭을 받나」로 정의하고(SC 2.5.5 Understanding), \`<label>\` 이
-   * 감싸면 라벨 클릭이 곧 토글이라는 네이티브 동작 때문에 라벨 전체가 하나의
-   * 타깃이 된다. 그러니 감싸는 라벨이 있으면 **라벨로 치환**한다 —
-   * 안 그러면 16px 체크박스와 24px 라벨을 **두 개의 타깃으로 이중 계산**해서,
-   * 고쳐 놓은 자리를 위반으로 부른다.
+   * **For a checkbox the target is the label, not its own box.** WCAG defines a
+   * target by what receives the click (SC 2.5.5 Understanding), and when a
+   * \`<label>\` wraps it, native behaviour makes a click on the label a toggle, so
+   * the whole label is one target. When a wrapping label exists, **substitute the
+   * label** — otherwise a 16px checkbox and a 24px label are **double-counted as two
+   * targets** and an already-fixed place is reported as a violation.
    */
   const seen = new Set();
   const targets = [];
@@ -241,13 +247,14 @@ const AUDIT_258 = `(() => {
 })()`;
 
 /**
- * WCAG 2.5.8(AA) — fine 포인터의 24×24 바닥.
+ * WCAG 2.5.8 (AA) — the 24×24 floor for fine pointers.
  *
- * 사정거리는 아래 라우트 전수의 **모든** \`button\`/\`a[href]\` **와 폼
- * 컨트롤**(\`input\`·\`select\`·\`textarea\`)이다. 체크박스·라디오는 감싸는
- * \`<label>\` 로 치환해서 **하나의 타깃**으로 잰다. 라우트를
- * 더할 때는 먼저 위반을 전수 측정하고(게이트가 켜진 날부터 빨간 게이트는
- * 소음이다), 남는 위반은 고치거나 여기 주석에 측정치와 함께 남긴다.
+ * Reach is **every** \`button\`/\`a[href]\` **and form control**
+ * (\`input\`, \`select\`, \`textarea\`) across all the routes below.
+ * Checkboxes and radios are substituted by their wrapping \`<label>\` and measured
+ * as **one target**. When adding a route, take the violation inventory first — a
+ * gate that is red from the day it is switched on is noise — and either fix what
+ * remains or record it here with its measurement.
  */
 test.describe("최소 타깃 계약 (pointer: fine — WCAG 2.5.8 AA)", () => {
   test.use({ hasTouch: false, isMobile: false, viewport: { width: 1280, height: 860 } });
@@ -257,7 +264,7 @@ test.describe("최소 타깃 계약 (pointer: fine — WCAG 2.5.8 AA)", () => {
       await page.goto(route);
       await page.waitForLoadState("networkidle");
       const { scanned, failures } = (await page.evaluate(AUDIT_258)) as Audit258Result;
-      // 공회전 방지 — 타깃이 안 잡히면 셀렉터가 죽은 것이지 화면이 완벽한 게 아니다.
+      // Idling guard — catching no targets means the selector is dead, not that the screen is perfect.
       expect(scanned, `${route} 에서 스캔된 타깃이 너무 적다(${scanned})`).toBeGreaterThan(5);
       expect(failures, `2.5.8 미달: ${JSON.stringify(failures)}`).toEqual([]);
     });
@@ -266,8 +273,9 @@ test.describe("최소 타깃 계약 (pointer: fine — WCAG 2.5.8 AA)", () => {
   test("계기 프로브 — 24 미만 밀집 타깃을 실제로 잡고, 간격 확보 타깃은 지나보낸다", async ({ page }) => {
     await page.goto("/ko/download/?guides=off");
     await page.evaluate(() => {
-      // 위반 프로브: 16px 타깃 둘이 8px 간격 — 24 원이 서로 겹친다.
-      // 통과 프로브: 16px 타깃이지만 사방 12px 이상 비어 spacing 예외가 성립.
+      // Violation probe: two 16px targets 8px apart — their 24 circles overlap.
+      // Passing probe: also 16px, but 12px or more clear on every side, so the spacing
+      // exception legitimately applies.
       document.body.insertAdjacentHTML(
         "beforeend",
         `<div style="position:fixed;left:0;top:0;z-index:9999;background:#000;width:400px;height:200px">
@@ -286,26 +294,29 @@ test.describe("최소 타깃 계약 (pointer: fine — WCAG 2.5.8 AA)", () => {
   });
 
   /**
-   * **폼 커버리지 프로브** — 이 감사가 2026-08-05 까지 폼을 못 보던 사각을 못박는다.
+   * **Form-coverage probes** — pin the blind spot in which this audit could not see
+   * forms until 2026-08-05.
    *
-   * 셀렉터가 `button, a[href]` 로 되돌아가면 아래 셋이 전부 통과해 버리고,
-   * 그러면 「위반 0」은 깨끗해서가 아니라 **안 봐서** 0이 된다. 이 저장소가
-   * 반복해서 밟은 그 결함이다.
+   * If the selector reverts to `button, a[href]`, all three below pass, and then
+   * "zero violations" is 0 because nothing was **looked at**, not because the screen
+   * is clean — the defect this repository has repeated.
    *
-   * 세 프로브가 각기 다른 것을 증명한다:
-   * - `probe-input-small` — 폼 컨트롤이 **셀렉터에 잡히는가**
-   * - `probe-check-bare` — 라벨 없는 체크박스가 **자기 크기로 판정되는가**
-   * - `probe-check-labelled` — 라벨이 감싸면 **라벨로 치환돼 통과하는가**
-   *   (이게 없으면 고쳐 놓은 자리를 이중 계산해서 오탐한다)
+   * Each probe proves something different:
+   * - `probe-input-small` — is a form control **caught by the selector**
+   * - `probe-check-bare` — is a bare checkbox **judged at its own size**
+   * - `probe-check-labelled` — when a label wraps it, is it **substituted by the label
+   *   and passed** (without this, an already-fixed place is double-counted and falsely
+   *   reported)
    */
   test("폼 커버리지 프로브 — 인풋·체크박스를 실제로 재고, 라벨로 감싼 것은 라벨로 친다", async ({ page }) => {
     await page.goto("/ko/download/?guides=off");
     await page.evaluate(() => {
       document.body.insertAdjacentHTML(
         "beforeend",
-        // 좌표는 **간격 예외가 성립하지 않도록** 밀집시킨다. 처음엔 넉넉히
-        // 띄워 놨다가 셋 다 통과했는데, 그건 탐지기가 죽어서가 아니라 24px 원이
-        // 안 겹쳐서 2.5.8 의 간격 예외가 **정당하게** 성립한 것이었다.
+        // The coordinates pack the probes densely **so the spacing exception cannot
+        // apply**. The first version spaced them generously and all three passed — not
+        // because the detector was dead but because the 24px circles did not overlap and
+        // 2.5.8's spacing exception **legitimately** held.
         `<div style="position:fixed;left:0;top:300px;z-index:9999;background:#000;width:400px;height:260px">
            <input data-testid="probe-input-small" style="position:absolute;left:20px;top:10px;width:60px;height:16px" />
            <input type="checkbox" data-testid="probe-check-bare" style="position:absolute;left:20px;top:30px;width:16px;height:16px" />
@@ -322,9 +333,10 @@ test.describe("최소 타깃 계약 (pointer: fine — WCAG 2.5.8 AA)", () => {
     expect(ids, "16px 인풋을 못 잡았다 — 셀렉터가 폼을 안 보고 있다").toContain("probe-input-small");
     expect(ids, "라벨 없는 16px 체크박스를 못 잡았다").toContain("probe-check-bare");
     /*
-     * 이웃 버튼이 라벨 안 체크박스와 24px 원이 겹치도록 놓여 있다. 그래서
-     * **라벨 치환이 죽으면** 안쪽 16px 체크박스가 간격 예외를 못 받고 걸린다 —
-     * 이 단언이 헛돌지 않는 이유다.
+     * The neighbour button is positioned so its 24px circle overlaps the checkbox
+     * inside the label. So **if label substitution dies**, the inner 16px checkbox
+     * loses the spacing exception and is caught — which is why this assertion is not
+     * idling.
      */
     expect(ids, "이웃 프로브가 안 걸렸다 — 이 자리의 밀집 기하가 성립하지 않는다").toContain(
       "probe-label-neighbour",

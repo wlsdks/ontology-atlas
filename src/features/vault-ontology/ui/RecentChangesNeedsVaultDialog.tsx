@@ -12,43 +12,42 @@ import { Button, controlClass } from '@/shared/ui';
 export interface RecentChangesNeedsVaultDialogProps {
   open: boolean;
   /**
-   * 어느 기능이 폴더를 필요로 하는가 — 문구 묶음의 이름.
+   * Which feature needs the folder — the name of a copy bundle.
    *
-   * 사유가 기능마다 다르므로 문장도 달라야 한다. 「최근 변경」은 *날짜가 당신과
-   * 무관하다* 이고 「항목 만들기」는 *예시라 고칠 수 없다* 다. 한 문장으로 뭉치면
-   * 둘 다 어색해진다.
+   * The reason differs per feature, so the sentence must too. "Recent changes" is
+   * *these dates have nothing to do with you*, while "create an item" is *this is an
+   * example and cannot be edited*. Merging them into one sentence makes both awkward.
    */
   copyKey?: 'recentChangesNeedsVault' | 'createNeedsVault';
   onClose: () => void;
-  /** 「내 폴더 열기」 — 첫 실행 카드가 쓰는 것과 **같은** 핸들러여야 한다. */
+  /** "Open my folder" — must be the **same** handler the first-run card uses. */
   onOpenVault: () => void;
 }
 
 /**
- * 「최근 변경」을 샘플에서 눌렀을 때 — **막다른 곳 대신 길을 준다.**
+ * Pressing "recent changes" on the sample — **give a path instead of a dead end.**
  *
- * ## 왜 여기만 팝업인가
+ * **Why a popup only here.** The 2026-08-02 decision rejected opening a modal just to
+ * say "there is nothing" — that makes the presser do the work twice, and it is the class
+ * this repository forbids as `popup soup`. **That decision still stands**: for someone
+ * who opened their own folder, zero recent changes really means there is nothing to
+ * show, so it stays disabled with a tooltip.
  *
- * 2026-08-02 판단은 「아무것도 없다」를 말하려고 모달을 여는 것을 기각했다. 그건
- * 누른 사람에게 일을 두 번 시키는 것이고 이 저장소가 `popup soup` 로 금지한
- * 부류다. **그 판단은 여전히 유효하다** — 내 폴더를 연 사람에게 최근 변경이
- * 0이면 그건 진짜로 보여줄 게 없는 것이라 비활성 + 툴팁 그대로다.
+ * The sample is different. Zero here is not "you have not changed anything yet" but
+ * **the sample's dates being when this repository last touched the fixture, which has
+ * nothing to do with the user**. So before a folder is opened this feature cannot mean
+ * anything in principle — waiting will not switch it on. When the reason is "the next
+ * action" rather than "nothing", the next action has to be given: that is the
+ * degradation contract in `.claude/rules/surfaces.md` (why + where) and the **zero dead
+ * CTAs** the web smoke test requires.
  *
- * 샘플은 다르다. 여기서 0인 이유는 「아직 안 바꿨다」가 아니라 **샘플의 날짜가
- * 이 저장소가 픽스처를 마지막으로 건드린 시각이라 사용자와 무관**하다는 것이다.
- * 즉 폴더를 열기 전에는 이 기능이 원리적으로 뜻을 못 가진다 — 기다린다고
- * 켜지지 않는다. 사유가 「없음」이 아니라 「다음 행동」이면 그때는 다음 행동을
- * 줘야 하고, 그게 `surfaces.md` 의 강등 계약(왜 + 어디서)이자 웹 스모크가
- * 요구하는 **죽은 CTA 0** 이다.
+ * Owner instruction (2026-08-03): *"칩 누르면 뭔가 화면에서 팝업 띄워줘야 하지 않을까?
+ * … 화면 중앙에 예쁜 팝업 띄워서 폴더 세팅 유도하던지?"* (shouldn't pressing the chip
+ * raise a popup? — put a nice one in the centre of the screen to guide folder setup).
  *
- * 소유자 지시(2026-08-03): *"칩 누르면 뭔가 화면에서 팝업 띄워줘야 하지 않을까?
- * … 화면 중앙에 예쁜 팝업 띄워서 폴더 세팅 유도하던지?"*
- *
- * ## 골격은 새로 만들지 않았다
- *
- * scrim + 중앙 카드 + 토큰 + `MOTION.base` — `AgentConnectSheet` 와 같은 계약이다
- * (`design.md`: 모달은 dim/scrim 또는 차단된 상호작용을 **증명**해야 한다).
- * Esc 로 닫히고 포커스는 트리거로 돌아간다.
+ * **The skeleton is not new.** scrim + centred card + tokens + `MOTION.base` — the same
+ * contract as `AgentConnectSheet` (`.claude/rules/design.md`: a modal must **prove**
+ * dimming/scrim or blocked interaction). Esc closes it and focus returns to the trigger.
  */
 export function RecentChangesNeedsVaultDialog({
   open,
@@ -61,7 +60,7 @@ export function RecentChangesNeedsVaultDialog({
 
   useEffect(() => {
     if (!open) return;
-    // 열리면 **다음 행동**에 포커스가 간다 — 이 표면의 일이 그것 하나라서다.
+    // On open, focus goes to **the next action** — that is this surface's only job.
     primaryRef.current?.focus();
     const onKey = (event: KeyboardEvent) => {
       if (event.key === 'Escape') {
@@ -125,10 +124,11 @@ export function RecentChangesNeedsVaultDialog({
             <div className="px-5 py-4">
               <p className="text-body text-[color:var(--color-text-secondary)]">{t('body')}</p>
               {/*
-                여기가 `<Button>` 이 덮는 **바로 그 한 모양**이다 — 전수 419개 중
-                표준 버튼 높이(h-10/11)는 1개였고, 새로 짓는 주 행동이 그 자리다.
-                손으로 쓰지 않는 이유는 규율이 아니라 계기다: 채택 래칫이 이
-                파일의 손 className 두 개를 커밋 전에 잡았다.
+                This is **exactly the one shape** `<Button>` covers — of 419 controls
+                swept, only 1 was at the standard button height (h-10/11), and a newly
+                built primary action belongs there. It is not hand-written because of an
+                instrument rather than a rule: the adoption ratchet caught two hand-written
+                classNames in this file before the commit.
               */}
               <Button
                 ref={primaryRef}
@@ -143,8 +143,8 @@ export function RecentChangesNeedsVaultDialog({
                 {t('action')}
               </Button>
               {/*
-                두 번째 행동을 안 준다. 이 표면의 일은 하나이고, 두 번째 버튼은
-                「닫기」인데 그건 헤더의 X 와 scrim 이 이미 두 경로로 준다.
+                No second action. This surface has one job, and a second button would be
+                "close" — which the header's X and the scrim already provide by two routes.
               */}
             </div>
           </motion.section>

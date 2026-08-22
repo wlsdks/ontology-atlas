@@ -47,7 +47,7 @@ describe("buildMeaningGapRows", () => {
       node({
         id: "element:srcfoots",
         title: "src/foo.ts",
-        // 파생 노드의 evidenceIds[0] 은 *자기를 인용한 남의 문서* 다.
+        // A derived node's evidenceIds[0] is *someone else's document that cited it*.
         evidenceIds: ["capabilities/owner"],
         hasOwnDocument: false,
         kind: "element",
@@ -165,8 +165,8 @@ describe("buildDomainChoices", () => {
       }),
       node({ id: "capability:x", kind: "capability", evidenceIds: ["capabilities/x"] }),
     ]);
-    // 이름순 — 라틴이 한글보다 앞이라는 것은 ICU 의 결정이고, 여기서 필요한
-    // 성질은 "같은 폴더를 두 번 열어도 순서가 같다" 다.
+    // By name — that latin sorts before Korean is ICU's decision; the property needed here is that
+    // opening the same folder twice gives the same order.
     expect(choices).toEqual([
       { value: "zeta", label: "Zeta" },
       { value: "alpha", label: "알파" },

@@ -4,37 +4,39 @@ import { AUDITED_ROUTES } from "./audited-routes";
 import { seedFirstRunSeen } from "./first-run-seed";
 
 /**
- * **누를 수 있는 것은 전부 같은 커서를 쓴다.**
+ * **Everything pressable uses the same cursor.**
  *
- * ## 왜 이 게이트가 생겼나 (2026-08-05 감사)
+ * **Why this gate exists (audit 2026-08-05).** Measured at 1512 across 7 routes:
+ * 75 `a` links were `pointer` while 58 buttons were `default`. Nobody had decided
+ * that — it was **the browser's per-tag defaults taken as they came**. On top of
+ * that, hand-written `cursor-pointer` was scattered across 22 places in 10 files,
+ * and even among buttons it contradicted itself 5:56 — not a split from policy but
+ * whatever each author wrote at the time.
  *
- * 실측(1512, 7개 라우트): 링크 `a` 75개는 `pointer`, 버튼 58개는 `default`.
- * 아무도 정한 적이 없고 **브라우저 기본값이 태그마다 다른 것을 그대로 쓴**
- * 결과였다. 그 위에 손으로 적은 `cursor-pointer` 가 10개 파일 22곳에
- * 흩뿌려져 있었는데, 버튼끼리도 5:56 으로 서로 모순이었다 — 정책이 있어서
- * 갈린 게 아니라 작성자마다 그때그때 적은 것이다.
+ * Owner decision: **pointer everywhere.** The policy lives in one place, the base
+ * layer of `app/globals.css`.
  *
- * 소유자 확정: **전부 pointer.** 정책은 `app/globals.css` 의 base 레이어
- * 한 곳에 산다.
+ * **Why here and not lint.** A violation **leaves no value in the code at all.** A
+ * new component that simply uses `<button>` falls to the browser default with no
+ * class and no inline style — there is no string to look at. The selectors in
+ * `eslint.config.mjs` can catch only *redundantly written* values; "the central
+ * rule disappeared or does not reach here" is knowable only by **measuring the
+ * rendered result** (`design.md`: "layers lint cannot see belong to contract
+ * tests").
  *
- * ## 왜 lint 가 아니라 여기인가
+ * **What is not measured.**
  *
- * 위반이 **코드에 아무 값도 남기지 않는다.** 새 컴포넌트가 그냥 `<button>` 을
- * 쓰면 클래스도 인라인 스타일도 없이 브라우저 기본값으로 떨어진다 — 볼
- * 문자열이 없다. `eslint.config.mjs` 의 셀렉터는 «중복해서 적은 것»만 잡을 수
- * 있고, «중앙 규칙이 사라졌거나 안 닿는 것»은 **렌더된 결과를 재야** 안다.
- * (`design.md` "lint 가 못 보는 층은 계약 테스트가 맡는다".)
- *
- * ## 무엇을 재지 않는가
- *
- * - **비활성 컨트롤** — `disabled:cursor-not-allowed`(7곳)·`disabled:cursor-wait`
- *   (5곳)가 «누를 수 없다»를 말한다. 여기에 pointer 를 요구하면 그 신호를 지운다.
- * - **캔버스** — 지도는 `grab`/`grabbing` 이 맞다(끄는 것이지 누르는 것이 아니다).
- * - **스크림** — 누르면 닫히지만 컨트롤이 아니라 표면이다(`cursor-default` 정당).
+ * - **Disabled controls** — `disabled:cursor-not-allowed` (7 places) and
+ *   `disabled:cursor-wait` (5) say "you cannot press this". Requiring pointer here
+ *   would erase that signal.
+ * - **Canvas** — the map is correctly `grab`/`grabbing` (it is dragged, not
+ *   pressed).
+ * - **Scrims** — pressing closes them, but they are a surface, not a control
+ *   (`cursor-default` is right).
  */
 const VIEWPORT = { width: 1512, height: 900 };
 
-/** 화면에 실제로 그려졌고, 비활성이 아니며, 캔버스 위가 아닌 컨트롤만 잰다. */
+/** Measures only controls that are really rendered, not disabled, and not over the canvas. */
 async function measure(page: Page) {
   return page.evaluate(() =>
     [...document.querySelectorAll("button, summary, a[href]")]
@@ -67,7 +69,7 @@ for (const route of AUDITED_ROUTES) {
 
     const controls = await measure(page);
 
-    // 검출기가 빈 집합 위에서 돌지 않는다 — 컨트롤이 0개면 이 단언은 공짜 초록이다.
+    // The detector must not run on an empty set — with 0 controls this assertion is a free pass.
     expect(controls.length, "이 화면에서 잰 컨트롤이 0개다 — 게이트가 헛돈다").toBeGreaterThan(0);
 
     const offenders = controls.filter((c) => c.cursor !== "pointer");
@@ -79,12 +81,12 @@ for (const route of AUDITED_ROUTES) {
 }
 
 /**
- * 판정 방식 자체가 «pointer 아님» 을 구별하는지 확인한다(`/gate-probe`).
+ * Confirms the method itself distinguishes "not pointer" (`/gate-probe`).
  *
- * 위 검사는 목록이 비면 통과한다. 필터가 조용히 과하게 걸러지면(예: 모든
- * 컨트롤이 «비활성» 으로 분류되면) 결함이 살아 있어도 초록이 된다. 그래서
- * 같은 페이지에 **일부러 pointer 가 아닌 버튼**을 하나 심어, 그것이 실제로
- * 잡히는지 본다.
+ * The check above passes on an empty list. If the filter quietly over-excludes
+ * (say, every control is classified as disabled), it stays green while the defect
+ * lives. So **a deliberately non-pointer button** is planted on the same page and
+ * the probe confirms it is caught.
  */
 test("판정 방식이 pointer 아닌 버튼을 실제로 잡는다 — 헛도는 검사가 아님", async ({ page }) => {
   await seedFirstRunSeen(page);

@@ -1,19 +1,20 @@
-// R+ — analyze --apply / bootstrap / index --apply 가 공유하는
-// vault census 출력 helper. 사용자가 명령 한 번 후 *방금 vault 에 뭐가
-// land 됐는지* 한 줄로 인지 — \"→ vault now has N nodes (...)\".
+// Shared vault-inventory output helper for analyze --apply / bootstrap /
+// index --apply, so after one command the user sees in a single line *what just
+// landed in the vault*: "→ vault now has N nodes (...)".
 //
-// 공유 이유: 세 명령이 모두 같은 \"after-write summary\" 형식을 원함 — DRY.
-// helper 하나가 list_kinds 호출 + 텍스트 포맷 + JSON 데이터 반환 모두 cover.
+// One helper covers the list_kinds call, the text formatting, and the JSON data,
+// because all three commands want the same after-write summary.
 //
-// 호출 실패 (e.g. mcp 시동 실패) 시 silent — caller 의 exit code 영향 0.
+// A failed call (the MCP server not starting, say) is silent and never affects the
+// caller's exit code.
 
 import { COLORS } from './colors.mjs';
 import { callMcpTool } from './mcp-call.mjs';
 
 
 /**
- * mcp list_kinds 호출 → { total, byKind } | null.
- * 에러 시 silent null — caller 가 census 누락도 허용.
+ * Calls the MCP list_kinds → { total, byKind } | null.
+ * Errors return null silently — callers tolerate a missing inventory.
  */
 export async function getVaultCensus(vaultRoot, { call = callMcpTool } = {}) {
   try {
@@ -33,11 +34,12 @@ export async function getVaultCensus(vaultRoot, { call = callMcpTool } = {}) {
 }
 
 /**
- * stdout 에 \"→ vault now has N nodes (project=A · capability=B · ...)\"
- * 한 줄 출력. census 가 null 이면 no-op.
+ * Prints one line to stdout:
+ * \"→ vault now has N nodes (project=A · capability=B · ...)\".
+ * A null inventory is a no-op.
  *
- * 출력 순서 = 하향식 hierarchy: project · domain · capability · element ·
- * document · vault-readme. byKind 에 0 인 항목은 표시 생략.
+ * Order follows the hierarchy top-down: project · domain · capability · element ·
+ * document · vault-readme. Kinds at 0 are omitted.
  */
 export function writeVaultCensus(census) {
   if (!census || typeof census.total !== 'number') return;

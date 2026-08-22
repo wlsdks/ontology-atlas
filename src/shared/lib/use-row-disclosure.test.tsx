@@ -3,27 +3,25 @@ import { describe, expect, it } from "vitest";
 import { useRowDisclosure } from "./use-row-disclosure";
 
 /**
- * 행 펼침의 **마운트 대 전이** 계약 (2026-07-28 성능 트레이스로 추가).
+ * The **mount versus transition** contract for row disclosure (added from a
+ * performance trace, 2026-07-28).
  *
- * ## 왜 생겼나
+ * **Why it exists.** A single node click cost **62ms of forced reflow, 61ms of
+ * it in this hook** (Chrome's ForcedReflow insight named it the top cause). The
+ * cause was reading `content.offsetHeight` on the mount path too — a layout read
+ * straight after a style write, which is a forced reflow, and with several such
+ * rows it becomes layout thrashing.
  *
- * 노드 클릭 1회의 강제 리플로우가 **62ms 였고 그중 61ms 가 이 훅**이었다
- * (Chrome ForcedReflow 인사이트, 최상위 원인). 원인은 마운트 경로에서도
- * `content.offsetHeight` 를 읽은 것 — 그건 스타일 쓰기 직후의 레이아웃 읽기라
- * 강제 리플로우이고, 이런 행이 여럿이면 그대로 레이아웃 스래싱이 된다.
+ * The hook's own comment already held the answer: an already-open row unfolding
+ * by itself as it appears is motion the user never asked for. With no animation
+ * on mount there is **nothing to measure**.
  *
- * 그런데 이 훅의 원래 주석이 이미 답을 갖고 있었다: *"이미 열린 행이 화면에
- * 나타나며 스스로 펼쳐지는 연출은 사용자가 시킨 적 없는 움직임이다."*
- * 마운트에 애니메이션이 없으면 **잴 이유도 없다.**
+ * So: mount does not measure (`auto`); a transition measures and interpolates.
+ * Either one reversed fails immediately — leaving a transition on `auto` kills
+ * the toggle animation, and measuring on mount brings the reflow back.
  *
- * ## 이 파일이 지키는 것
- *
- * 마운트는 재지 않고(`auto`), 전이는 재고 보간한다. 둘 중 하나라도 반대로
- * 가면 즉시 실패한다 — `auto` 로 열어 두면 토글 애니메이션이 죽고, 마운트에서
- * 재면 리플로우가 돌아온다.
- *
- * jsdom 에는 레이아웃이 없어 `offsetHeight` 가 늘 0 이므로 프로토타입에 스텁을
- * 심는다. 이 테스트가 보는 것은 **어떤 값을 쓰느냐**이지 픽셀이 아니다.
+ * jsdom has no layout, so `offsetHeight` is always 0 and a stub goes on the
+ * prototype. What this test watches is **which value is written**, not pixels.
  */
 
 const CONTENT_HEIGHT = 120;
@@ -67,8 +65,8 @@ describe("useRowDisclosure — 마운트는 재지 않는다", () => {
   };
 
   /**
-   * 이것이 리플로우 수리의 본체다 — 마운트에서 `auto` 면 `offsetHeight` 를
-   * 읽을 일이 없다. px 이 찍혀 있으면 그 순간 레이아웃을 읽었다는 뜻이다.
+   * This is the reflow fix itself: with `auto` on mount there is no reason to
+   * read `offsetHeight`. A px value means layout was read at that moment.
    */
   it("이미 열린 채 마운트하면 높이를 재지 않고 auto 로 둔다", () => {
     withStubbedHeight(() => {
@@ -84,8 +82,9 @@ describe("useRowDisclosure — 마운트는 재지 않는다", () => {
     });
   });
 
-  // 마운트를 안 재는 대신 **전이는 반드시 재야** 한다 — 안 재면 `auto`↔`0`
-  // 사이에 보간할 값이 없어 토글이 툭 사라진다(이 훅이 존재하는 이유).
+  // Not measuring on mount means **a transition must measure** — without it
+  // there is nothing to interpolate between `auto` and `0`, and the toggle just
+  // snaps out of existence (which is why this hook exists).
   it("열림 → 닫힘 전이는 실측 px 에서 출발해 0 으로 간다", () => {
     withStubbedHeight(() => {
       const { container, rerender } = render(<Harness open />);
@@ -93,7 +92,7 @@ describe("useRowDisclosure — 마운트는 재지 않는다", () => {
 
       act(() => rerender(<Harness open={false} />));
 
-      // 퇴장 전이 중에는 아직 마운트돼 있고, 목표 높이는 0.
+      // Still mounted during the exit transition, with a target height of 0.
       expect(box(container).style.height).toBe("0px");
     });
   });

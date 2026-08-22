@@ -2,17 +2,18 @@ import { expect, test } from "@playwright/test";
 import { seedFirstRunSeen } from "./first-run-seed";
 
 /**
- * 목적지 이동 단축키 — **키보드만으로 여섯 목적지를 다 간다.**
+ * Destination shortcuts — **all six destinations reachable by keyboard alone.**
  *
- * 이 spec 이 곧 그 기능의 값어치다. 소유자가 요구한 것이 *"단축키만으로도 다
- * 이동하면서 테스트 가능"* 이었고, 그 문장을 증명하는 자리가 여기다. 통과하면
- * 사람도 에이전트도 좌표를 찍지 않고 이 앱을 돌아다닐 수 있다는 뜻이다.
+ * This spec is the feature's worth. The owner asked for *"단축키만으로도 다
+ * 이동하면서 테스트 가능"* (able to move everywhere and be tested with shortcuts
+ * alone), and this is where that sentence is proven. Passing means a person or an
+ * agent can move through this app without clicking a coordinate.
  *
- * ⚠️ **좌표로 클릭해 확인하지 않는다.** 그렇게 하면 이 spec 이 증명하려는 것과
- * 반대되는 방식으로 자기를 증명하는 셈이다.
+ * ⚠️ **Never verify by clicking coordinates.** Doing so would prove this spec's
+ * claim by the very means it exists to rule out.
  */
 
-/** 표와 같은 순서 — 표가 바뀌면 여기도 바뀌어야 하고, 계약 시험이 그것을 잡는다. */
+/** Same order as the table — when the table changes this must too, and a contract test catches it. */
 const DESTINATIONS = [
   { key: "m", path: "/topology" },
   { key: "d", path: "/docs" },
@@ -27,7 +28,7 @@ async function go(page: import("@playwright/test").Page, key: string) {
   await page.keyboard.press(key);
 }
 
-/** 도착 직후 나타난 막는 표면은 실제 사용자처럼 Escape로 닫고 계속 순회한다. */
+/** A blocking surface appearing on arrival is dismissed with Escape, as a real user would, and the tour continues. */
 async function dismissBlockingSurface(page: import("@playwright/test").Page) {
   const visibleModal = page.locator('[aria-modal="true"]:visible').first();
   if (await visibleModal.isVisible().catch(() => false)) {
@@ -37,9 +38,10 @@ async function dismissBlockingSurface(page: import("@playwright/test").Page) {
 }
 
 test.describe("목적지 이동 단축키", () => {
-  // 폭을 고정한다. 기본 폭(1280×720)에서는 레일과 하단 탭바가 **둘 다** 설정
-  // 트리거를 갖고 있고, 지도 INDEX 의 검색칸은 아예 그려지지 않는다(실측:
-  // `input` 0개). 폭이 흔들리면 이 spec 이 기능이 아니라 폭을 재게 된다.
+  // Width is pinned. At the default 1280×720 the rail and the bottom tab bar
+  // **both** carry a settings trigger, and the map INDEX search field is not
+  // rendered at all (measured: 0 `input`s). A floating width would make this spec
+  // measure the width rather than the feature.
   test.beforeEach(async ({ page }) => {
     await page.setViewportSize({ width: 1440, height: 900 });
     await seedFirstRunSeen(page);
@@ -52,11 +54,11 @@ test.describe("목적지 이동 단축키", () => {
     for (const { key, path } of DESTINATIONS) {
       const expected = new RegExp(`/ko${path.replace(/\//g, "\\/")}/?($|\\?)`);
       /*
-       * **한 번 더 시도한다.** 막는 표면은 도착 직후 마운트되면서 뜨는 것이 있어
-       * 닫기를 «누르기 전에» 확인해도 그 사이에 뜰 수 있다.
-       * 그러면 첫 시도가 규칙대로 거절되고 순회가 간헐적으로 깨진다 — 실제로 그
-       * 흔들림을 봤다. 재시도는 결함을 감추는 것이 아니라 **경합을 없애는 것**이고,
-       * 두 번째 시도도 안 가면 그때는 진짜로 실패한다.
+       * **Retry once.** Some blocking surfaces mount on arrival, so one can appear
+       * between the dismissal check and the key press. The first attempt is then
+       * correctly rejected and the tour breaks intermittently — that flake was actually
+       * observed. The retry does not hide a defect, it **removes a race**, and a second
+       * failed attempt is a real failure.
        */
       for (let attempt = 0; attempt < 2; attempt += 1) {
         await dismissBlockingSurface(page);
@@ -73,19 +75,21 @@ test.describe("목적지 이동 단축키", () => {
   });
 
   /**
-   * 공회전 차단 — 위 시험이 «어차피 그 주소에 있어서» 통과할 수 있다. 한 목적지에서
-   * **다른** 목적지로 실제로 옮겨 갔는지 한 번 못박는다.
+   * Idling guard — the test above could pass simply because it was already at that
+   * address. This pins, once, that it really moved from one destination to a
+   * **different** one.
    */
   test("이동 전후의 주소가 실제로 다르다", async ({ page }) => {
     await page.goto("/ko/topology/?guides=off");
     /*
-     * ⚠️ **화면이 서기 전에 키를 누르면 안 된다** (2026-08-17 검사 전수조사).
+     * ⚠️ **Do not press a key before the screen has settled** (full check audit,
+     * 2026-08-17).
      *
-     * 이 시험만 바로 위 순회 시험이 이미 갖고 있던 둘을 안 갖고 있었다 —
-     * 막는 표면 걷기와 재시도. 그래서 도착 직후 마운트되는 표면과 경합해
-     * CI 에서 간헐적으로 실패했다(2026-08-17 06:54Z 실행). 옆 시험의 주석이
-     * 이미 그 이유를 적어 두었다: *"재시도는 결함을 감추는 것이 아니라
-     * 경합을 없애는 것"*. 같은 처방을 쓴다.
+     * This test alone lacked the two things the tour test above already had —
+     * dismissing blocking surfaces and retrying. It therefore raced surfaces that mount
+     * on arrival and failed intermittently in CI (run at 2026-08-17 06:54Z). The
+     * neighbouring test's comment had already written the reason: *"the retry does not
+     * hide a defect, it removes a race"*. The same prescription applies.
      */
     await page.waitForLoadState("domcontentloaded");
     await dismissBlockingSurface(page);
@@ -125,21 +129,24 @@ test.describe("목적지 이동 단축키", () => {
   });
 
   /*
-   * 「입력 중에는 이동하지 않는다」는 **여기서 재지 않는다** — 볼트를 안 고른 이
-   * 앱에는 화면에 입력칸이 없고(네 라우트 실측 0개), ⌘K 팔레트로 얻은 입력칸은
-   * 그 팔레트가 `aria-modal` 이라 모달 판정이 먼저 걸려 **입력 판정을 지워도
-   * 초록이었다**. 조건이 서로를 가리면 게이트가 아니다.
-   * 그 조건은 `src/shared/lib/use-destination-shortcuts.test.ts` 가 잰다.
+   * "Do not navigate while typing" is **not measured here**: with no vault selected
+   * this app has no input on screen (measured 0 across four routes), and the input
+   * obtained from the ⌘K palette is inside an `aria-modal`, so the modal condition
+   * fires first and **deleting the typing condition still left it green**. Conditions
+   * that mask each other are not a gate.
+   * That condition is measured by `src/shared/lib/use-destination-shortcuts.test.ts`.
    */
 
   /**
-   * 잠그는 성질은 **「모달이 떠 있는 동안 뒤 화면이 안 바뀐다」** 하나다.
-   * 「모달이 계속 떠 있나」는 그 표면 자신의 키 동작이라 여기서 재지 않는다 —
-   * 남의 성질을 끼워 넣으면 그쪽이 바뀔 때 이 spec 이 엉뚱하게 터진다.
+   * The property locked here is exactly one: **the screen behind a modal does not
+   * change while it is open.** Whether the modal stays open is that surface's own key
+   * handling and is not measured here — folding in someone else's property makes this
+   * spec break spuriously when that surface changes.
    *
-   * 모달은 **키보드로 여는 것**을 고른다(단축키 시트). 설정 시트를 클릭으로 열면
-   * 트리거가 폭에 따라 둘이라 간헐 실패했다 — 그리고 이 spec 의 취지가 「키보드만
-   * 으로 된다」이므로 마우스로 상태를 만드는 것 자체가 어울리지 않는다.
+   * The modal chosen is one **opened by keyboard** (the shortcut sheet). Opening the
+   * settings sheet by click failed intermittently because it has two triggers
+   * depending on width — and since this spec's whole point is "keyboard alone
+   * works", producing the state with a mouse would not fit.
    */
   test("막는 표면이 열려 있으면 이동하지 않는다", async ({ page }) => {
     await page.goto("/ko/topology/?guides=off");
@@ -157,13 +164,14 @@ test.describe("목적지 이동 단축키", () => {
 
   test("리더를 누른 지 오래되면 글자만으로는 이동하지 않는다", async ({ page }) => {
     /*
-     * ⚠️ **「안 간다」를 재려면 먼저 「간다」를 증명해야 한다** (2026-08-17
-     * 검사 전수조사).
+     * ⚠️ **To measure "it does not navigate" you must first prove "it navigates"**
+     * (full check audit, 2026-08-17).
      *
-     * 이 시험이 재는 것은 「주소가 안 바뀐다」인데, 단축키가 **아예 안 붙은**
-     * 상태에서도 주소는 안 바뀐다. 즉 기능이 통째로 죽어도 초록이었다 —
-     * 부정을 재는 검사의 전형적인 구멍이다. 같은 세션에서 먼저 실제로 옮겨
-     * 가 보고, 그다음 시간 제한을 잰다.
+     * This test measures that the address does not change — but the address also does
+     * not change when the shortcuts are **not attached at all**. So it stayed green even
+     * with the feature entirely dead: the classic hole in a check that measures a
+     * negative. It now navigates for real first in the same session, then measures the
+     * time limit.
      */
     await page.goto("/ko/topology/?guides=off");
     await page.waitForLoadState("domcontentloaded");
@@ -179,7 +187,7 @@ test.describe("목적지 이동 단축키", () => {
     await dismissBlockingSurface(page);
     const before = page.url();
     await page.keyboard.press("g");
-    await page.waitForTimeout(2_000); // NAV_LEADER_WINDOW_MS 보다 길게 — 이 대기가 곧 시험 대상이다
+    await page.waitForTimeout(2_000); // Longer than NAV_LEADER_WINDOW_MS — this wait is the thing under test
     await page.keyboard.press("p");
     await page.waitForTimeout(600);
     expect(page.url(), "시간 제한이 안 걸렸다").toBe(before);
@@ -188,8 +196,8 @@ test.describe("목적지 이동 단축키", () => {
   test("단축키 시트가 여섯 목적지를 전부 안내한다", async ({ page }) => {
     await page.goto("/ko/topology/?guides=off");
     await dismissBlockingSurface(page);
-    // `?` 는 지도(HomePage)가 `useTypingShortcuts` 로 잇는다. 입력칸에 초점이
-    // 있으면 안 먹으므로 본문을 한 번 눌러 초점을 옮긴다.
+    // `?` is wired by the map (HomePage) through `useTypingShortcuts`. It does not
+    // fire while an input has focus, so click the body once to move focus.
     await page.locator("main").first().click({ position: { x: 5, y: 5 } });
     await page.keyboard.press("?");
     const sheet = page.getByTestId("shortcut-sheet-scroll");

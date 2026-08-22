@@ -28,7 +28,7 @@ describe('resolveUniqueVaultDirName', () => {
   });
 
   it('does not get confused by a gap in the numbered sequence', () => {
-    // -2 가 비어있고 -3 만 있으면 -2 를 그대로 재사용 — 최소 번호 우선.
+    // With -2 free and only -3 taken, -2 is reused — the lowest number wins.
     expect(
       resolveUniqueVaultDirName([DEFAULT_VAULT_BASE_NAME, `${DEFAULT_VAULT_BASE_NAME}-3`]),
     ).toBe(`${DEFAULT_VAULT_BASE_NAME}-2`);

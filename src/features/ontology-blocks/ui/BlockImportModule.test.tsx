@@ -34,7 +34,7 @@ vi.mock('next-intl', () => ({
   },
 }));
 
-/** block-fsa 구조 타입에 맞는 메모리 블록 폴더 fake. */
+/** An in-memory fake block folder matching the block-fsa structural type. */
 function fakeBlockDir(files: Record<string, string>) {
   const entries = Object.entries(files);
   return {
@@ -137,8 +137,8 @@ describe('BlockImportModule', () => {
   });
 
   it('P1 결함② — is disabled with a "open your folder" hint (not hidden) without a loaded vault', () => {
-    // 정적 샘플 모드에서 "블록 가져오기" 가 흔적 없이 사라져 기능 존재를
-    // 은폐했다(사용성 전수 검수). null 렌더 대신 같은 자리에 disabled + 힌트.
+    // In static sample mode "import a block" vanished without a trace, hiding that the
+    // feature exists (usability sweep). Instead of rendering null it stays in place, disabled with a hint.
     mocks.vault = makeVault({ status: 'idle', manifest: null });
     render(<BlockImportModule />);
     const button = screen.getByTestId('block-import-open');
@@ -153,14 +153,14 @@ describe('BlockImportModule', () => {
     render(<BlockImportModule />);
     await openPreview();
 
-    // 충돌 1 (capabilities/login) + 신규 1 (capabilities/session) 렌더.
+    // Renders 1 conflict (capabilities/login) and 1 new item (capabilities/session).
     expect(screen.getByTestId('block-import-conflicts')).toHaveTextContent(
       'capabilities/login',
     );
     expect(screen.getByTestId('block-import-new')).toHaveTextContent(
       'capabilities/session',
     );
-    // 승인 전 쓰기 0.
+    // Zero writes before approval.
     expect(mocks.vault.createDoc).not.toHaveBeenCalled();
   });
 

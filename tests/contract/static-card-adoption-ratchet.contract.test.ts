@@ -6,41 +6,44 @@ import { describe, expect, it } from "vitest";
 import { censusStaticSurfaces, isHandCard } from "../../scripts/lib/static-surface-census.mjs";
 
 /**
- * 섹션 카드 채택 래칫 — **손으로 쓴 상자 인셋이 늘지 못한다** (2026-08-15).
+ * Section-card adoption ratchet — **hand-written box insets cannot grow**
+ * (2026-08-15).
  *
- * ## 왜 (「체계」석 비준 · docs/DECISIONS.md 2026-08-15 (5))
+ * **Why** (ratified by the 체계 seat · docs/DECISIONS.md 2026-08-15, entry 5). A
+ * five-axis inventory (radius × padding × surface × border × header): 71 cases
+ * across 36 files with **51 distinct combinations**, the top three covering 18%, and
+ * 41 singletons. Unlike badges, **a value layer was rejected** — fixing any padding
+ * as an axis forces pixel movement on 58 or more cases, which is the shape of the
+ * `fixedHeight` accident.
  *
- * 5축 전수(반경 × 패딩 × 표면 × 보더 × 헤더): 71건 / 36파일 / **결합 51종** ·
- * 상위3 커버 18% · 싱글턴 41. 배지와 달리 **값 층은 반려**됐다 — 어떤 패딩을
- * 축으로 고정해도 58건 이상에 픽셀 이동을 강요하고, 그게 `fixedHeight` 사고의
- * 모양이다.
+ * What surfaced instead was that **an existing token was not being used**:
+ * `--card-pad` (16px) had 16 consumers, and **12 more boxes hand-wrote the same 16px**
+ * (and all 12, along with 13 of the 16 token adopters, used `rounded-panel`, so
+ * reality inverted the spec table's pairing of "card = --card-pad"). These are the
+ * "values hand-rewritten without looking them up" that `/design-build` 0-Z forbids,
+ * so the migration moved 0 pixels.
  *
- * 대신 드러난 것은 **이미 있는 토큰을 안 쓰고 있었다**는 사실이다:
- * `--card-pad`(16px)의 소비처가 16곳인데, **같은 값 16px 을 손으로 다시 적은
- * 상자가 12곳** 더 있었다(그리고 그 12곳도, 토큰 채택 16곳 중 13곳도 전부
- * `rounded-panel` 이라 「카드 = --card-pad」라던 규격 표의 짝은 현실이
- * 뒤집었다). `/design-build` 0-Z 가 금지하는 「찾아보지 않고 손으로 다시 적은
- * 값」이라 이주는 픽셀 0 이었다.
+ * This ratchet blocks their return. The remaining 62 are debt needing **per-place
+ * design decisions**, and the ledger holds them.
  *
- * 이 래칫은 그 재유입을 막는다. 나머지 62건은 **자리별 디자인 판정**이 필요한
- * 부채라 장부가 붙든다.
+ * The scanner is the single `scripts/lib/static-surface-census.mjs` — the ledger and
+ * the gate must count with the same function for "the ledger is more generous than
+ * the measurement" to mean anything.
  *
- * 스캐너는 `scripts/lib/static-surface-census.mjs` 하나다 — 장부와 게이트가
- * 같은 함수로 세어야 「장부가 실측보다 후하다」가 뜻을 갖는다.
- *
- * ⚠️ **화면 폭별 인셋(`sm:px-5`)도 손 인셋으로 센다.** 그래서 밑값만 토큰으로
- * 옮긴 자리는 장부에서 안 내려간다 — 그건 스캐너의 오차가 아니라 사실이다.
- * 그 자리에는 아직 손으로 적은 픽셀이 남아 있고, 사다리를 규격으로 올릴지는
- * 자리별 판정이다. (프로브 때 실측: 이주 전후 둘 다 1로 남아, 되돌리기
- * 프로브의 표적을 반응형 잔여가 없는 자리로 다시 잡아야 했다.)
+ * ⚠️ **Width-conditional insets (`sm:px-5`) count as hand insets too.** So a place
+ * that moved only its base value onto the token does not come down in the ledger —
+ * that is a fact rather than scanner error: hand-written pixels still remain there,
+ * and whether to raise the ladder into the spec is a per-place decision. (Measured
+ * during probing: it stayed at 1 both before and after migration, so the revert
+ * probe's target had to be re-aimed at a place with no responsive remainder.)
  */
 
 const ROOT = process.cwd();
 
 /**
- * **부채 장부** — 이주 후 스캐너가 뽑은 값 그대로다(손으로 다듬지 않는다.
- * 2026-08-15 에 손으로 적은 장부가 네 번 틀렸고, 그 규율을
- * `/design-system-audit` 에 성문화했다).
+ * **The debt ledger** — exactly what the scanner produced after migration, never
+ * hand-tuned. (On 2026-08-15 a hand-written ledger was wrong four times, and that
+ * discipline was codified into `/design-system-audit`.)
  */
 const DEBT: ReadonlyArray<readonly [file: string, count: number]> = [
   ["src/features/app-update/ui/UpdateToast.tsx", 1],
@@ -48,12 +51,12 @@ const DEBT: ReadonlyArray<readonly [file: string, count: number]> = [
   ["src/features/first-run-starter/ui/FirstRunStarterModule.tsx", 1],
   ["src/features/project-edit/ui/DependencyPicker.tsx", 3],
   ["src/features/project-edit/ui/MarkdownField.tsx", 1],
-  // 8 → 7 (2026-08-17): 「더 채우기」를 감싸던 패널 상자를 걷어 냈다. 접힌 줄
-  // 하나를 92px 상자가 감싸고 있었다 — 담은 것 없는 크롬.
+  // 8 → 7 (2026-08-17): removed the panel box wrapping "fill in more" — a 92px box
+  // wrapped a single collapsed line. Chrome containing nothing.
   ["src/features/project-edit/ui/ProjectForm.tsx", 7],
   ["src/views/docs-vault/ui/parts/EmptyState.tsx", 1],
-  // 1 → 0 (2026-08-19): 그 한 장은 다운로드 판이었고, 설치 절이 통째로
-  // 삭제되면서 함께 갔다 (`docs/DECISIONS.md` (83)).
+  // 1 → 0 (2026-08-19): that single card was the download panel, and it went with the
+  // wholesale deletion of the install section (`docs/DECISIONS.md`, entry 83).
   ["src/views/home/ui/CreateNodeForm.tsx", 1],
   ["src/views/home/ui/HomePage.tsx", 1],
   ["src/views/home/ui/TopologyNoMatchesState.tsx", 1],
@@ -66,9 +69,10 @@ const DEBT: ReadonlyArray<readonly [file: string, count: number]> = [
   ["src/views/project-editor/ui/ProjectEditorPage.tsx", 2],
   ["src/views/project-selector/ui/ProjectSelectorPage.tsx", 3],
   ["src/widgets/app-settings-menu/ui/AiConnectionPanel.tsx", 1],
-  // 2026-08-21: 실행기·MCP 연결 절이 「에이전트」 목적지로 나가며 이 파일의
-  // 손 카드 둘이 함께 나갔다(원장 90). 회수분은 장부에서 내린다 — 실측보다
-  // 후한 장부는 래칫이 아니다.
+  // 2026-08-21: the executor and MCP-connect sections moved out to the Agents
+  // destination, taking two hand cards from this file with them (ledger 90). What was
+  // recovered comes down in the ledger — a ledger more generous than the measurement
+  // is not a ratchet.
   ["src/widgets/app-settings-menu/ui/AppSettingsMenu.tsx", 0],
   ["src/widgets/app-settings-menu/ui/ExpandSettings.tsx", 3],
   ["src/widgets/app-settings-menu/ui/FootprintSettings.tsx", 1],
@@ -117,7 +121,7 @@ describe("섹션 카드 채택 래칫", () => {
     expect(stale).toEqual([]);
   });
 
-  /* ── 상주 프로브 (/gate-probe) ── */
+  /* ── Resident probes (/gate-probe) ── */
   it("프로브: 손 인셋은 잡고 토큰 채택·비대상 반경은 안 잡는다", () => {
     expect(isHandCard('<div className="rounded-panel border px-4 py-4"')).toBe(true);
     expect(isHandCard('<section className="rounded-card p-3"')).toBe(true);

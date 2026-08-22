@@ -16,16 +16,17 @@ export interface TopologyIndexTreeRowLabels {
   capabilitiesShort: string;
   elementsShort: string;
   freshTitle: string;
-  /** M-6 — 도메인 배지 hover 설명 (다중 소속 중복 계상). */
+  /** Hover explanation for the domain badge (multi-membership is counted more than once). */
   domainCountTitle: string;
   /**
-   * H1 A (숫자 스코프 계약) — 도메인 행 우측 큰 숫자의 스코프 단어("하위 전체").
-   * 있으면 큰 숫자 title 이 "하위 전체 {count} · {domainCountTitle}" 로 조립돼
-   * 이 숫자가 직속이 아니라 하위 트리 전체 합계임을 명시한다. 미지정이면 종전대로
-   * `domainCountTitle` 만.
+   * The number-scope contract — the scope word for the large number at the right of
+   * a domain row ("everything below"). When present, the large number's title reads
+   * "{subtotalTitle} {count} · {domainCountTitle}", making explicit that this number
+   * is the whole subtree's total rather than direct children. Unset keeps just
+   * `domainCountTitle`, as before.
    */
   subtotalTitle?: string;
-  /** P4b — "에이전트가 방금" 귀속 배지. */
+  /** The "an agent just now" attribution badge. */
   agentBadge?: string;
 }
 
@@ -37,19 +38,21 @@ export interface TopologyIndexTreeRowProps {
   onSelect: (nodeId: string) => void;
   selectedId: string | null;
   /**
-   * H3 P0 — 로빙 tabindex 의 단일 진입점. 이 id 와 같은 행만 `tabIndex=0`,
-   * 나머지는 `-1` 이라 트리 전체가 Tab 스톱 하나로 접힌다(WAI-ARIA tree).
-   * 형제 이동은 패널 컨테이너의 ArrowUp/Down 핸들러가 담당한다.
+   * The roving tabindex's single entry point. Only the row matching this id is
+   * `tabIndex=0` and the rest are `-1`, so the whole tree collapses into one Tab
+   * stop (WAI-ARIA tree). Sibling movement is handled by the panel container's
+   * ArrowUp/Down handler.
    */
   activeRowId: string | null;
   changedSlugs: ReadonlySet<string>;
-  /** P4b — fresh heartbeat 의 focus 와 일치하는 노드 하나(있다면). */
+  /** The one node (if any) matching a fresh heartbeat's focus. */
   agentAttributedNodeId?: string | null;
   maxDomainDescendantCount: number;
   /**
-   * Guardian I-1 — 도메인 크기 단일 진실원(그래프 BFS) 조회 맵. 있으면
-   * 트리 워크 대신 이 값을 쓴다 — 트리는 다중 부모 노드를 유실해
-   * /projects·인사이트와 숫자가 갈라졌다. null 이면 종전 트리 워크 유지.
+   * A lookup map for the single source of truth on domain size (graph BFS). When
+   * present it is used instead of the tree walk — the tree lost multi-parent nodes,
+   * so its numbers diverged from /projects and insights. null keeps the previous
+   * tree walk.
    */
   domainCensus?: ReadonlyMap<string, DomainCensusRow> | null;
   labels: TopologyIndexTreeRowLabels;
@@ -110,7 +113,7 @@ export function TopologyIndexTreeRow({
     ? computeCapacityRatio(subcounts.descendantCount, maxDomainDescendantCount)
     : 0;
   const count = isDomain && subcounts ? subcounts.descendantCount : hasChildren ? children.length : null;
-  // 자식 가지의 펼침/접힘 수명 — 앱 공통 목록 행 문법과 같은 훅.
+  // The lifetime of a child branch's expansion — the same hook as the app's shared list-row grammar.
   const {
     mounted: branchMounted,
     open: branchOpen,
@@ -141,17 +144,18 @@ export function TopologyIndexTreeRow({
         role="treeitem"
         aria-selected={selected}
         aria-expanded={hasChildren ? open : undefined}
-        // H3 P0 — 로빙 tabindex: 활성 행만 Tab 진입점, 나머지는 -1(방향키로만
-        // 도달). `focus()` 는 tabIndex=-1 이어도 프로그램적으로는 먹으므로
-        // 패널의 Arrow 핸들러가 어느 행이든 포커스를 옮길 수 있다.
+        // Roving tabindex: only the active row is a Tab entry point, the rest are -1
+        // (reachable by arrow keys alone). `focus()` still works programmatically at
+        // tabIndex=-1, so the panel's arrow handler can move focus to any row.
         tabIndex={node.id === activeRowId ? 0 : -1}
         data-index-row={node.id}
         data-testid="topology-index-row"
-        // 소유자 실사용 지적 (2026-07-24) — 셰브론 아이콘을 정확히 눌러야만
-        // 펼쳐지고 조금만 빗나가면 우측 상세만 열려 "너무 민감"했다. 자식이
-        // 있는 행은 클릭 한 번이 **선택 + 펼침**을 함께 한다(접기는 넓어진
-        // 셰브론 히트 영역이 담당) — 클릭이 어느 쪽으로 튈지 고민할 일이
-        // 없어진다.
+        // Owner report from real use (2026-07-24) — a row expanded only when the
+        // chevron icon was hit exactly, and missing it by a little opened just the
+        // detail on the right, which felt "far too sensitive". A row with children now
+        // does **select and expand** in one click (collapsing is handled by the
+        // widened chevron hit area) — there is nothing left to guess about where a
+        // click will go.
         onClick={() => {
           onSelect(node.id);
           if (hasChildren && !open) onToggleOpen(node.id);
@@ -170,15 +174,16 @@ export function TopologyIndexTreeRow({
             event.stopPropagation();
             if (hasChildren) onToggleOpen(node.id);
           }}
-          // 셰브론은 마우스 어포던스일 뿐 AT 에겐 중복이다 — 펼침 상태와
-          // 조작은 바깥 role="treeitem" 행이 aria-expanded + ArrowRight/Left
-          // 로 이미 노출한다(WAI-ARIA tree 패턴). 이름 없는 버튼으로 a11y
-          // 트리에 남으면 스크린리더가 정체불명 버튼을 21개 읽는다
-          // (aria-audit e2e 가 잡은 실결함). tabIndex=-1 이라 포커스 순서에도
-          // 없으므로 presentational 로 감추는 것이 맞다.
+          // The chevron is a mouse affordance only and is redundant to assistive
+          // technology — the expansion state and its operation are already exposed by
+          // the outer role="treeitem" row through aria-expanded plus
+          // ArrowRight/Left (the WAI-ARIA tree pattern). Left in the a11y tree as an
+          // unnamed button, a screen reader reads out 21 unidentifiable buttons (a real
+          // defect caught by the aria-audit e2e). With tabIndex=-1 it is not in the
+          // focus order either, so hiding it as presentational is right.
           aria-hidden="true"
           tabIndex={-1}
-          // 히트 영역은 행 높이 전체 × 22px 컬럼 — 아이콘(11px)은 그대로.
+          // The hit area is the full row height × a 22px column — the icon stays 11px.
           className={`-my-1 flex h-[34px] w-full items-center justify-center text-[color:var(--topology-v2-panel-text-quaternary)] transition-transform ${
             hasChildren ? "" : "invisible"
           } ${open ? "rotate-90" : ""}`}
@@ -192,7 +197,7 @@ export function TopologyIndexTreeRow({
             {agentAttributed && labels.agentBadge ? (
               <span
                 data-testid="topology-index-agent-badge"
-                // E-10 — 「에이전트가  방금」. 한국어 문장이라 아이브로를 걷는다.
+                // 「에이전트가 방금」 (an agent, just now) — a Korean sentence, so the eyebrow treatment is dropped.
                 className={`shrink-0 text-caption text-[color:var(--topology-v2-panel-text-tertiary)] ${eyebrow}`}
               >
                 {labels.agentBadge}
@@ -211,12 +216,12 @@ export function TopologyIndexTreeRow({
                 {labels.capabilitiesShort} {subcounts.capabilityCount} · {labels.elementsShort}{" "}
                 {subcounts.elementCount}
               </span>
-              {/* 인셋 capacity meter — 라벨 아래 리세스드 트랙(기존 basis-full
-                  회색 미터 폐기). 인디고 잉크: 미선택 .45 / 선택 .8. */}
-              {/* eslint-disable-next-line no-restricted-syntax -- 2px 높이 capacity 미터 트랙의 1px 헤어라인 반경은 chip(6px) 밖 예외. */}
+              {/* Inset capacity meter — a recessed track under the label (the former
+                  full-basis grey meter is retired). Indigo ink: .45 unselected, .8 selected. */}
+              {/* eslint-disable-next-line no-restricted-syntax -- the 1px hairline radius of a 2px-tall capacity meter track is an exception outside chip(6px). */}
               <span className="h-[2px] max-w-[76px] flex-1 overflow-hidden rounded-[1px] bg-[var(--color-overlay-recessed-a45)] shadow-[inset_0_1px_1px_var(--color-shadow-a50)]">
                 <span
-                  // eslint-disable-next-line no-restricted-syntax -- 위 미터 트랙과 짝인 fill 의 1px 헤어라인 반경.
+                  // eslint-disable-next-line no-restricted-syntax -- the fill paired with the meter track above, same 1px hairline radius.
                   className="block h-full rounded-[1px] bg-[var(--color-indigo-line-a45)] data-[selected=true]:bg-[var(--color-indigo-line-a90)]"
                   data-selected={selected}
                   style={{ width: `${Math.round(capacityRatio * 100)}%` }}
@@ -227,10 +232,10 @@ export function TopologyIndexTreeRow({
         </div>
         {count !== null ? (
           <span
-            // M-6 — 도메인 배지 합이 census 총계를 넘는 이유(다중 소속
-            // 중복 계상)를 셈해 보는 사용자에게 즉석에서 설명한다.
-            // H1 A — 스코프 단어("하위 전체 N")를 앞세워 이 숫자가 직속이 아니라
-            // 하위 트리 전체 합계임을 명시한다(있을 때만).
+            // Explain on the spot, to a user counting them up, why the domain badges
+            // sum past the census total (multi-membership is counted more than once).
+            // The scope word ("everything below N") leads, making explicit that this
+            // number is the whole subtree's total rather than direct children (only when present).
             title={
               isDomain
                 ? labels.subtotalTitle
@@ -244,16 +249,18 @@ export function TopologyIndexTreeRow({
           </span>
         ) : null}
       </div>
-      {/* 2026-07-27 프레임 실측 — 여기는 **33ms 하드컷**이었다(2프레임, 높이
-          전이 0). 같은 클릭의 카메라는 200ms 를 쓰는데 목록만 존재/비존재를
-          왕복해서, 자식이 "펼쳐졌다" 가 아니라 "다른 화면이 됐다" 로 읽혔다.
-          앱에 이미 있는 목록 행 펼침 문법(`.ai-row-disclosure`)을 그대로 쓴다 —
-          새 커브·새 duration 0, 접힐 때도 같은 길로 나간다. */}
+      {/* Frame measurement 2026-07-27 — this was a **33ms hard cut** (2 frames, zero
+          height transition). The camera on the same click spends 200ms while the list
+          alone flipped between existing and not, so children read as "a different
+          screen" rather than "expanded". It uses the list-row disclosure grammar the
+          app already has (`.ai-row-disclosure`) — zero new curves, zero new durations,
+          and it leaves by the same path when collapsing. */}
       {hasChildren ? (
-        // 상자는 늘 그려 둔다 — 열릴 때 마운트하면 전이의 출발 높이가 없어
-        // 그대로 하드컷이 된다(`useRowDisclosure` 는 "이미 열린 채 나타난 행"
-        // 과 "지금 열린 행" 을 이전 커밋으로 구분한다). 내용만 접힘 상태에서
-        // 빠져 스크린 리더·탭 순서에 남지 않는다.
+        // The box is always drawn — mounting it on open leaves the transition no
+        // starting height and produces a hard cut (`useRowDisclosure` distinguishes "a
+        // row that appeared already open" from "a row opening now" by the previous
+        // commit). Only the content drops out of the collapsed state, so it does not
+        // remain in the screen reader or the tab order.
         <div
           ref={branchBoxRef}
           data-state={branchOpen ? "open" : "closed"}

@@ -10,58 +10,54 @@ import { canonicalizeDomainRef } from "@/shared/lib/canonicalize-domain-ref";
 import { withDoNextVerification } from "./do-next-queue";
 
 /**
- * **한 문장으로 끝나는 할 일** — 코드를 읽지 않는 사람이 그 자리에서 완결할 수
- * 있는 두 가지 공백만 뽑는다.
+ * **Work that ends in one sentence** — it selects only the two gaps someone who does not read code
+ * can close on the spot.
  *
- * - `missing-definition` — 이 개념이 무슨 뜻인지 어디에도 안 적혀 있다.
- * - `missing-domain` — 역량/요소인데 어느 영역에 속하는지 안 적혀 있다.
+ * - `missing-definition` — nowhere states what this concept means.
+ * - `missing-domain` — a capability or element with no stated parent area.
  *
- * ## 어디에 쓰는가 (셰이핑 잔여 ①의 답)
+ * **Where the definition is written.** It goes in the **frontmatter `description` key**. Because:
+ * ① the schema source of truth (`mcp/src/schema.mjs`) gives all four kinds a `description` and
+ * places it immediately after title in `preferredOrder`; ② MCP `patch_concept`, the CLI, and the
+ * map popover already read that key; ③ being one scalar it can be fixed without touching the body —
+ * writing into the body's first paragraph would mean rewriting the whole document, breaking this
+ * row's promise that only one field changes.
  *
- * 정의는 **frontmatter `description` 키**에 앉는다. 근거: ① 스키마 진실원
- * (`mcp/src/schema.mjs`)이 네 kind 모두에 `description` 을 두고 `preferredOrder`
- * 에 title 바로 다음 자리를 잡아 뒀다, ② MCP `patch_concept` · CLI · 지도
- * 팝오버가 이미 그 키를 읽는다, ③ 스칼라 한 칸이라 본문을 건드리지 않고
- * 고칠 수 있다 — 본문 첫 단락에 쓰려면 문서 전체를 다시 써야 하고, 그건
- * "한 필드만 바뀐다" 는 이 행의 약속을 깬다.
+ * **What does not count as missing a definition.** Even with no `description`, **a body that
+ * explains the concept counts as a definition.** Measured 2026-07-26: 91 of the dogfood vault's 92
+ * concepts stated their meaning in the body with no `description`. Judging by key presence alone
+ * would raise 91 false to-dos on a well-written vault, which makes the queue unusable. Derivation
+ * (`derive-ontology-from-vault`) already builds the summary as `description ?? excerpt`, so it is a
+ * gap only when that summary is empty.
  *
- * ## 무엇을 정의 없음으로 보지 않는가
- *
- * `description` 이 없어도 **본문에 설명이 있으면 정의가 있는 것으로 본다.**
- * 실측(2026-07-26): 도그푸드 92개 개념 중 91개가 `description` 없이 본문으로
- * 뜻을 적어 뒀다. 키 유무만 보면 잘 쓰인 볼트에 91건의 거짓 할 일이 뜨고,
- * 그건 큐를 못 쓰게 만든다. 파생(`derive-ontology-from-vault`)이 이미
- * `description ?? excerpt` 로 요약을 만들므로, 그 요약이 비었을 때만 공백이다.
- *
- * ## 문서 없는 개념은 여기 오지 않는다 (#688 재발 방지)
- *
- * 쓸 자리 판정은 `resolveNodeDocument` **하나**만 쓴다. 자기 `.md` 가 없는
- * 파생 개념은 고칠 파일이 없으므로 이 목록에서 제외된다 — 그 개념의 첫 걸음은
- * 「문서부터 만들기」이고, 그건 큐의 다른 행이 이미 인계로 준다. 판정을 새로
- * 만들면 그 순간 남의 문서에 쓰는 사고가 다시 열린다.
+ * **A concept with no document never appears here.** The verdict on where to write uses
+ * `resolveNodeDocument` **alone**. A derived concept with no `.md` of its own has no file to fix
+ * and is excluded from this list — its first step is "create the document", which another queue row
+ * already hands off. Writing a second verdict reopens the accident of writing into someone else's
+ * document.
  */
 
 /**
- * 공백의 종류와 판정은 `@/entities/knowledge-graph` 가 소유한다 — 에이전트
- * 패널의 첫 마디 칩이 같은 질문을 하므로, 판정이 두 벌이 되면 큐와 패널이
- * 서로 다른 개념을 지목하는 날이 온다. 여기서는 이름만 이어 준다.
+ * The kinds of gap and the verdict are owned by `@/entities/knowledge-graph` — the agent panel's
+ * opening-line chips ask the same question, so a second verdict would eventually have the queue and
+ * the panel naming different concepts. This only re-exports the names.
  */
 export type { ConceptDocFacts, MeaningGapKind };
 
 export interface MeaningGapRow {
-  /** 행 고유 id — 검토 루프/`key` 용. */
+  /** The row's unique id — for the review loop and for `key`. */
   id: string;
   gap: MeaningGapKind;
-  /** 그래프 노드 id — 지도·공방 딥링크. */
+  /** The graph node id — for map and workshop deeplinks. */
   nodeId: string;
-  /** **쓸 파일** — `resolveNodeDocument(node).ownSlug`. 이 값 외의 경로에 쓰지 않는다. */
+  /** **The file to write** — `resolveNodeDocument(node).ownSlug`. Nothing is written to any other path. */
   ownSlug: string;
-  /** 에이전트에게 이 개념을 가리켜 보일 이름 — `resolveNodeAgentTarget`. */
+  /** The name to point an agent at for this concept — `resolveNodeAgentTarget`. */
   agentRef: string;
   title: string;
   nodeKind: string;
   mtime: number | null;
-  /** 이 행을 에이전트에게 넘길 때의 문장. */
+  /** The sentence used when handing this row to an agent. */
   handoffPayload: string;
 }
 
@@ -71,16 +67,16 @@ export interface MeaningGapResult {
   counts: { missingDefinition: number; missingDomain: number };
 }
 
-/** 소속을 정할 때 고를 수 있는 영역 하나. */
+/** One area available when assigning a parent. */
 export interface DomainChoice {
-  /** frontmatter 에 적히는 값 — 볼트 전체가 쓰는 tail-slug 형태. */
+  /** The value written into the frontmatter — the tail-slug form the whole vault uses. */
   value: string;
-  /** 화면에 보이는 이름. */
+  /** The name shown on screen. */
   label: string;
 }
 
 export interface BuildMeaningGapOptions {
-  /** 유형별 표시 상한. 기본 3 (큐 카드의 다른 섹션과 같은 리듬). */
+  /** The display limit per kind. Defaults to 3 (the same rhythm as the queue card's other sections). */
   perKindLimit?: number;
 }
 
@@ -95,9 +91,9 @@ export function buildMeaningGapRows(
 
   for (const node of nodes) {
     const { ownSlug } = resolveNodeDocument(node);
-    if (!ownSlug) continue; // 문서가 없으면 고칠 파일이 없다
+    if (!ownSlug) continue; // no document means no file to fix
     const doc = facts.get(ownSlug);
-    if (!doc) continue; // 매니페스트에 없는 문서엔 쓰지 않는다
+    if (!doc) continue; // never write to a document absent from the manifest
     const agentRef = resolveNodeAgentTarget(node).ref ?? ownSlug;
     const base = {
       nodeId: node.id,
@@ -132,7 +128,7 @@ export function buildMeaningGapRows(
     }
   }
 
-  // 이름순 — 같은 화면을 두 번 열었을 때 순서가 바뀌면 방금 본 행을 다시 찾게 된다.
+  // By name — if the order changed between two visits to the same screen, the row just seen would have to be found again.
   const byTitle = (a: MeaningGapRow, b: MeaningGapRow) => a.title.localeCompare(b.title);
   definitionRows.sort(byTitle);
   domainRows.sort(byTitle);
@@ -148,8 +144,8 @@ export function buildMeaningGapRows(
 }
 
 /**
- * 소속 후보 — 볼트에 실제로 있는 도메인 문서만. 새 영역을 이 자리에서 만들지
- * 않는다(영역 신설은 뜻을 새로 세우는 일이라 공방의 일이다).
+ * Parent candidates — only domain documents that actually exist in the vault. A new area is not
+ * created from this slot (creating an area means establishing new meaning, which is the workshop's job).
  */
 export function buildDomainChoices(
   nodes: readonly KnowledgeGraphNode[],

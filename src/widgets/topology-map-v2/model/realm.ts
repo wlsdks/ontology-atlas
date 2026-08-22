@@ -1,23 +1,24 @@
 /**
- * "영역 전개" (Realm) — subtree extraction + depth-remapped re-root layout +
- * warding-circle geometry (S4, fable 설계).
+ * Realm — subtree extraction, depth-remapped re-root layout, and warding-circle
+ * geometry.
  *
- * WHAT: 선택 노드를 임시 루트로 삼아 그 노드의 containment 서브트리만 남기고
- * 지도를 그 노드의 "세계"로 전환한다. 이 모듈은 그 전환의 **순수 기하**
- * 부분만 담는다 — 서브트리 추출(누가 영역에 속하나), 깊이 기준 재배치(루트=
- * 원점, 도메인 링에 1단계 자식), 결계(warding) 반경. 전환 모션(FLIP·중력
- * 재편·시차)은 `model/realm-transition.ts`, 카메라/드로우 배선은
- * `ui/use-topology-loop.ts` 소유.
+ * Entering a realm treats the selected node as a temporary root, keeps only its
+ * containment subtree, and turns the map into that node's own world. This module
+ * holds the **pure geometry** of that switch. Transition motion belongs to
+ * `model/realm-transition.ts`; camera and draw wiring to
+ * `ui/use-topology-loop.ts`.
  *
- * 왜 kind 무관 깊이 매핑인가: 영역 루트가 capability 든 domain 이든, 그
- * 노드의 세계 안에서는 루트가 곧 중심이고 1단계 자식이 곧 도메인 링에 앉아야
- * "그 노드의 지도"로 읽힌다. 그래서 재배치는 렌더 kind 가 아니라 **루트로부터의
- * 깊이**로 링을 매핑한다 (depth 0→project 링, 1→domain, 2→capability, 3+→
- * element). 렌더 kind(색/모양)는 원본 그대로 유지된다 — 이 모듈은 좌표만 낸다.
+ * Why the depth mapping ignores kind: whether the realm root is a capability or
+ * a domain, inside that node's world the root *is* the centre and its immediate
+ * children *are* the domain ring — otherwise it does not read as "that node's
+ * map". So rings are chosen by **depth from the root** (0 → project ring,
+ * 1 → domain, 2 → capability, 3+ → element), not by render kind. Render kind
+ * (color, shape) is untouched; this module only produces coordinates.
  *
- * 결정론: 같은 입력(같은 childrenByParent 순서)은 항상 같은 서브트리·좌표·반경을
- * 낸다 (`realm.test.ts` 계약). `computeConcentricLayout` 을 재사용하므로 그
- * 모듈의 결정론(고정 iteration·고정 순서·seed 없는 tie-break)을 그대로 물려받는다.
+ * Deterministic: the same input (same `childrenByParent` order) always yields
+ * the same subtree, coordinates, and radii (`realm.test.ts`). It reuses
+ * `computeConcentricLayout` and so inherits that module's determinism — fixed
+ * iterations, fixed order, seedless tie-breaks.
  */
 
 import {
@@ -30,20 +31,21 @@ import {
 } from "./layout";
 
 export interface RealmSubtree {
-  /** 영역 루트 id (임시 원점이 될 노드). */
+  /** Realm root id — the node that becomes the temporary origin. */
   rootId: string;
-  /** 루트 포함 서브트리 전체 id (containment 하위 전이 폐포). */
+  /** Every id in the subtree including the root — the containment transitive closure. */
   memberIds: ReadonlySet<string>;
-  /** 각 멤버의 루트로부터의 깊이 (루트=0). */
+  /** Each member's depth from the root (root = 0). */
   depthById: ReadonlyMap<string, number>;
-  /** 각 비루트 멤버의 containment 부모 id (루트는 없음). */
+  /** Each non-root member's containment parent id (the root has none). */
   parentById: ReadonlyMap<string, string>;
 }
 
 /**
- * 영역 서브트리 추출 — `childrenByParent`(contains 부모→직속 자식) 를 루트에서
- * BFS 로 훑어 하위 전이 폐포를 모은다. 방문 표시(`depthById`)로 사이클을 안전히
- * 끊는다. 자식 순서는 입력 순서를 그대로 따라 결정론적이다.
+ * BFS from the root over `childrenByParent` (contains parent → direct children)
+ * to collect the transitive closure. `depthById` doubles as the visited mark,
+ * which breaks cycles safely. Child order follows input order, so it is
+ * deterministic.
  */
 export function extractRealmSubtree(
   rootId: string,
@@ -58,7 +60,7 @@ export function extractRealmSubtree(
     head += 1;
     const depth = depthById.get(parent) ?? 0;
     for (const child of childrenByParent.get(parent) ?? []) {
-      if (depthById.has(child)) continue; // 사이클/재방문 차단
+      if (depthById.has(child)) continue; // already seen — cycle or re-visit
       depthById.set(child, depth + 1);
       parentById.set(child, parent);
       queue.push(child);
@@ -68,9 +70,10 @@ export function extractRealmSubtree(
 }
 
 /**
- * 깊이 → 레이아웃 kind. 재배치는 렌더 kind 가 아니라 루트로부터의 깊이로 링을
- * 고른다: 0=원점, 1=도메인 링, 2=capability 링, 3+=element 링. 깊이가 3 을
- * 넘으면 element 링을 공유한다(부모 기준 부채꼴이라 여전히 서로 분리된다).
+ * Depth → layout kind. Rings are chosen by depth from the root, not by render
+ * kind: 0 = origin, 1 = domain ring, 2 = capability ring, 3+ = element ring.
+ * Anything deeper than 3 shares the element ring and still stays separated,
+ * because the fan is taken around each parent.
  */
 export function realmLayoutKind(depth: number): LayoutNodeKind {
   if (depth <= 0) return "project";
@@ -79,10 +82,10 @@ export function realmLayoutKind(depth: number): LayoutNodeKind {
   return "element";
 }
 
-/** 영역 링 스케일이 전역 스파인과 일치하는 깊이 상한 — depth 3+ 는 스파인 링 그대로. */
+/** The depth at which realm rings match the global spine; depth 3+ uses the spine rings unchanged. */
 export const REALM_FILL_FULL_DEPTH = 3;
 
-/** 서브트리 최대 깊이 (루트만이면 0). 순수·결정론. */
+/** Deepest level in the subtree (0 when only the root is present). Pure. */
 export function realmMaxDepth(subtree: RealmSubtree): number {
   let max = 0;
   for (const d of subtree.depthById.values()) if (d > max) max = d;
@@ -90,10 +93,11 @@ export function realmMaxDepth(subtree: RealmSubtree): number {
 }
 
 /**
- * 깊이 파생 영역 링 — maxDepth 가 얕을수록 depth1 링을 안으로 당겨
- * "빈 annulus" 를 없앤다. 스케일 s = fill(min(maxDepth,3)) / base.domain 을
- * 세 링에 동일 적용해 비율 보존. maxDepth ≥ 3 이면 s = 1 → 기존 좌표와
- * 바이트 동일 (깊은 영역 회귀 0).
+ * Depth-derived realm rings — the shallower the subtree, the further in the
+ * depth-1 ring is pulled, which removes the empty annulus. The factor
+ * `fill(min(maxDepth, 3)) / base.domain` is applied to all three rings so their
+ * proportions are preserved. At maxDepth ≥ 3 the factor is 1, making the
+ * coordinates byte-identical to before: no regression for deep realms.
  */
 export function realmRingsForDepth(
   maxDepth: number,
@@ -107,24 +111,30 @@ export function realmRingsForDepth(
 }
 
 /**
- * 소수-자식 수평 구도 상한 — depth1 자식이 이 수 이하면 전체 레이아웃을 −90°
- * 회전해 자식을 **수평축**에 앉힌다. TAU 등분은 N=1(위 꼭짓점 하나), N=2(위/
- * 아래 덤벨)에서 "우연히 원 안에 있는 점들"로 읽히고, 세로 엣지가 자식 라벨을
- * 관통한다 (소유자 실보고 2026-07-23, 얕은 capability 영역 실증). 수평 구도는
- * 라벨(가로 텍스트)·읽기 방향과 정렬되고, 원 하단을 결계 캡션 자리로 비운다.
- * N≥3 은 TAU 등분이 이미 의도적 다각형(삼각/다이아)으로 읽히므로 미변경 —
- * 깊은 영역 좌표 회귀 0.
+ * At or below this many depth-1 children, the whole layout is rotated −90° so
+ * the children sit on the **horizontal** axis.
+ *
+ * Dividing TAU evenly reads as "points that happen to be inside a circle" at
+ * N = 1 (a single vertex on top) and N = 2 (a vertical dumbbell), and the
+ * vertical edge runs straight through the child labels — owner report
+ * 2026-07-23, reproduced on a shallow capability realm. The horizontal
+ * composition aligns with the labels (horizontal text) and the reading
+ * direction, and leaves the bottom of the circle free for the warding caption.
+ * From N ≥ 3 the even division already reads as a deliberate polygon (triangle,
+ * diamond), so it is left alone: zero coordinate regression for deep realms.
  */
 export const REALM_HORIZON_MAX_DEPTH1 = 2;
 
 /**
- * 영역 로컬 좌표 — 서브트리를 깊이 기준으로 `computeConcentricLayout` 에 태워
- * 루트를 원점에 둔 재배치 좌표를 낸다. 렌더 kind 는 무시하고 깊이만 매핑하므로,
- * 예컨대 element 를 루트로 전개해도 그 직속 자식이 도메인 링에 앉는다.
+ * Realm-local coordinates: run the subtree through `computeConcentricLayout` by
+ * depth, producing a re-rooted layout with the root at the origin. Render kind
+ * is ignored, so expanding an element as the root still puts its direct children
+ * on the domain ring.
  *
- * depth1 자식이 `REALM_HORIZON_MAX_DEPTH1` 이하인 얕은-팬 영역은 비루트 전체를
- * 원점 기준 −90° 강체 회전한다((x,y)→(y,−x)) — 첫 자식이 왼쪽, 둘째가 오른쪽.
- * 강체 회전이라 상대 기하(부채꼴·분리·결계 반경)는 바이트 동일하게 보존된다.
+ * A shallow fan — depth-1 children at or below `REALM_HORIZON_MAX_DEPTH1` —
+ * rotates every non-root point −90° about the origin ((x,y) → (y,−x)), putting
+ * the first child left and the second right. Being a rigid rotation, the
+ * relative geometry (fan, separation, warding radius) is preserved exactly.
  */
 export function computeRealmLayout(
   subtree: RealmSubtree,
@@ -152,9 +162,9 @@ export function computeRealmLayout(
 }
 
 /**
- * 결계(warding) 반경 — 영역 노드 중 중심에서 가장 먼 것까지의 거리 + 마진.
- * 순수·결정론: 같은 점 집합·같은 마진 → 같은 반경. 점이 없으면(루트만) 마진만
- * 남아 루트를 감싸는 최소 원이 된다.
+ * Warding radius — distance to the realm node furthest from the centre, plus a
+ * margin. Pure: same points and margin, same radius. With no points (root only)
+ * just the margin remains, giving the smallest circle that wraps the root.
  */
 export function computeWardingRadius(
   points: readonly { x: number; y: number }[],
@@ -169,20 +179,23 @@ export function computeWardingRadius(
   return maxDist + margin;
 }
 
-/** 가시-멤버 결계 마진 = 콘텐츠 반경(가장 먼 엣지 도달거리)의 이 비율. */
+/** Visible-member warding margin, as a fraction of the content radius (the furthest edge reach). */
 export const WARDING_VISIBLE_MARGIN_RATIO = 0.1;
-/** 가시-멤버 결계 마진 하한(월드 유닛) — 루트만 보일 때도 최소 이만큼 감싼다. */
+/** Lower bound on that margin (world units) — wraps at least this much even when only the root is visible. */
 export const WARDING_VISIBLE_MIN_MARGIN = 40;
 
 /**
- * S9 결함 2 — **현재 렌더되는 멤버**만으로 낸 결계 반경. 밀도 게이트로 접혀
- * 그려지지 않는 자식(>12 자식 부모의 phyllotaxis 디스크 좌표)까지 세던
- * `computeWardingRadius` 는 보이는 세계보다 훨씬 큰 원을 만든다(콘텐츠는 화면
- * ~40%인데 결계는 화면 밖). 이 함수는 caller 가 이미 접힘을 걸러 넘긴 **가시
- * 멤버의 중심→엣지 도달거리(reach)** 만 받아, 그중 최대에 콘텐츠 반경 비례
- * 마진(≥ 하한)을 더한다. reach 는 `hypot(node - center) + nodeRadius` 로,
- * 결계가 가장 바깥 노드의 몸통을 자르지 않게 한다. 점이 없으면(루트만) 하한
- * 마진만 남는다. 순수·결정론.
+ * Warding radius computed from **only the members actually drawn**.
+ *
+ * `computeWardingRadius` also counted children folded away by the density
+ * threshold — the phyllotaxis disc coordinates under a parent with more than 12
+ * children — producing a circle far larger than the visible world: content
+ * filling ~40% of the screen inside a warding circle that ran off it. This
+ * function takes only the reaches of visible members, which the caller has
+ * already filtered, and adds a margin proportional to the content radius (never
+ * below the lower bound). A reach is `hypot(node - center) + nodeRadius`, so the
+ * circle never clips the body of the outermost node. With no points (root only)
+ * just the lower-bound margin remains. Pure.
  */
 export function computeVisibleWardingRadius(reaches: readonly number[]): number {
   let outer = 0;
@@ -198,9 +211,11 @@ export interface RealmBounds {
 }
 
 /**
- * S9 결함 2 — 가시 멤버 점집합의 bbox(+마진). 카메라 fit 이 결계 반경과 **같은
- * 가시-멤버 기준**을 쓰게 해 "작은 콘텐츠 + 거대 원" 불일치를 없앤다. 점이
- * 없으면 `fallback` 을 그대로 돌려준다(루트만 남은 퇴화 케이스). 순수.
+ * Bounding box of the visible members (plus a margin). It exists so the camera
+ * fit is derived from the **same visible-member basis** as the warding radius,
+ * which is what removes the "small content inside a huge circle" mismatch. With
+ * no points — the degenerate root-only case — `fallback` is returned unchanged.
+ * Pure.
  */
 export function computeVisibleBounds(
   points: readonly { x: number; y: number }[],

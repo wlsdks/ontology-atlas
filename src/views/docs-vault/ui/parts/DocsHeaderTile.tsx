@@ -5,32 +5,31 @@ import { CONTROL_DISABLED_CLASS } from "@/shared/ui/control-class";
 export interface DocsHeaderTileProps
   extends Omit<ButtonHTMLAttributes<HTMLButtonElement>, "title" | "className"> {
   icon: ReactNode;
-  /** 툴팁이자 접근성 이름의 기본값. */
+  /** The tooltip, and the default accessible name. */
   title: string;
   "aria-label"?: string;
-  /** 현재 열려있는/토글된 상태 — 인디고 보더+표면으로만 표시(제2 채색 없음). */
+  /** The currently open or toggled state — shown by an indigo border and surface only (no second colour). */
   active?: boolean;
   className?: string;
 }
 
 /**
- * 문서함 헤더의 정사각 아이콘 타일 — 크기는 `--chrome-tile-size`(36px),
- * 반경은 `--chrome-radius-inner`, 보더/호버/active 는 chrome 토큰.
+ * The square icon tile in the docs header — sized by `--chrome-tile-size` (36px), with
+ * `--chrome-radius-inner` for the radius and chrome tokens for border, hover, and active.
  *
- * ## 왜 자기 크기 토큰이 없나 (2026-08-03)
+ * **Why it has no size token of its own** (2026-08-03). It had one — `--docs-header-tile-size`
+ * (34px). That 34 was **a fossil, not a design value**: an older version of this comment recorded
+ * its basis outright — *"`ChromeTile` hard-pins `--chrome-tile-size` (**44px**), which does not
+ * meet the header's density requirement (34px)."* But the chrome tile **came down to 36px** on
+ * 2026-07-23 (owner's third report, *"딱봐도 크다"* — it is obviously too big). Nobody re-derived
+ * the 34 on the day its only basis disappeared, leaving one role with two values and two
+ * coarse-promotion rules.
  *
- * 있었다 — `--docs-header-tile-size`(34px). 그리고 그 34 는 **설계값이 아니라
- * 화석**이었다. 이 주석의 옛 판이 근거를 그대로 적어 놨다: *"`ChromeTile` 은
- * `--chrome-tile-size`(**44px**)를 하드 고정해 헤더의 밀도 요구(34px)에 맞지
- * 않는다."* 그런데 크롬 타일은 2026-07-23 에 **36px 로 내려왔다**(소유자 3차
- * 보고 *"딱봐도 크다"*). 34 의 유일한 근거가 사라진 날 34 를 다시 유도한
- * 사람은 없었고, 같은 역할에 두 값 · 두 coarse 승격 규칙이 남았다.
+ * So **a square icon tile now has one dimension**. This file is still separate from `ChromeTile`
+ * because of the **radius**, not the size — a tile seated inside the header uses
+ * `--chrome-radius-inner`, a tile floating over the map uses `--chrome-radius`.
  *
- * 그래서 이제 **정사각 아이콘 타일의 치수는 하나다**. 이 파일이 `ChromeTile`
- * 과 여전히 별개인 이유는 크기가 아니라 **반경**이다 — 헤더 안에 앉는 타일은
- * `--chrome-radius-inner`, 지도 위에 떠 있는 타일은 `--chrome-radius`.
- *
- * 원장(반증 조건 포함): `docs/DECISIONS.md` 2026-08-03 「타일 치수는 하나다」.
+ * Ledger, including the falsifier: `docs/DECISIONS.md` 2026-08-03.
  */
 export const DocsHeaderTile = forwardRef<HTMLButtonElement, DocsHeaderTileProps>(
   function DocsHeaderTile(
@@ -45,7 +44,7 @@ export const DocsHeaderTile = forwardRef<HTMLButtonElement, DocsHeaderTileProps>
         aria-label={ariaLabelProp ?? title}
         className={cn(
           "inline-flex size-[var(--chrome-tile-size)] flex-none items-center justify-center rounded-[var(--chrome-radius-inner)] border text-[color:var(--color-text-tertiary)] transition-colors",
-          // 비활성 값은 손으로 적지 않는다 — 45 로 적혀 있던 자리다(값 층은 55).
+  // The disabled value is not written by hand — this slot used to say 45 (the value layer is 55).
           CONTROL_DISABLED_CLASS,
           active
             ? "border-[color:var(--chrome-active-border)] bg-[color:var(--chrome-active-surface)] text-[color:var(--color-text-primary)]"

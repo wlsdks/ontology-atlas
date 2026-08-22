@@ -1,176 +1,183 @@
 /**
- * 목록형 목적지의 **페이지 틀** — 상단 여백 · 좌우 인셋 · 최대 폭을 한 벌로.
+ * **The page frame for list-style destinations** — top padding, horizontal
+ * inset, and max width as one unit.
  *
- * ## 왜 생겼나 (2026-08-09, 소유자 지적)
+ * Owner, 2026-08-09: *"인사이트, 프로젝트, 스킬 모두 상단 공백이 동일해야하는데 …
+ * 디자인 시스템 있는거 아녔나? 왜 다 다르지?"*
+ * (three destinations should share the same top spacing — isn't there a design
+ * system?)
  *
- * > *"인사이트, 프로젝트, 스킬 모두 상단 공백이 동일해야하는데 … 디자인 시스템
- * > 있는거 아녔나? 왜 다 다르지?"*
+ * Measured at 1440×900, distance down to the title:
  *
- * 재 보니 어긋난 것이 상단만이 아니었다 (1440×900, 제목까지의 거리):
+ * |                      | top (lg)       | sides (lg)   | max width            |
+ * |----------------------|----------------|--------------|----------------------|
+ * | `/projects`          | 40px           | 40px         | 1600 (**JS const**)  |
+ * | `/ontology/insights` | 32px           | 40px         | 1600 (**CSS token**) |
+ * | `/agents`            | `PAGE_TOP_PAD` | `PAGE_X_PAD` | `--page-max`         |
  *
- * | | 상단(lg) | 좌우(lg) | 최대 폭 |
- * |---|---|---|---|
- * | `/projects` | 40px | 40px | 1600 (**JS 상수**) |
- * | `/ontology/insights` | 32px | 40px | 1600 (**CSS 토큰**) |
- * | `/agents` | `PAGE_TOP_PAD` | `PAGE_X_PAD` | `--page-max` |
+ * The same 1600 was written in two places, and the third screen picked its own
+ * numbers; moving between routes made the title jump 16–28px vertically and 8px
+ * horizontally.
  *
- * 같은 1600 이 두 곳에 적혀 있었고(값이 두 곳에 적히면 그 순간부터 어긋나기
- * 시작한다 — Carbon), 셋째 화면은 아예 딴 값을 골랐다. 라우트를 오갈 때 제목이
- * 세로로 16~28px, 가로로 8px 뛰었다.
+ * **The defect was a missing frame spec, not one wrong value.** Colour, type,
+ * radius and elevation each have a ramp that lint enforces; the page frame had
+ * no spec at all, so every screen chose for itself. That is why this file owns
+ * the whole frame — pulling only the top padding into a token would leave the
+ * next screen eyeballing the inset and the width again.
  *
- * **병은 「값 하나」가 아니라 「틀 규격의 부재」였다.** 색·글자·반경·그림자는
- * 램프가 있고 lint 가 지키는데, 페이지 틀에는 규격 자체가 없어서 화면마다 각자
- * 골랐다. 그래서 상단 여백 하나만 토큰으로 빼지 않는다 — 그러면 다음 화면이
- * 좌우와 폭을 또 눈대중으로 고른다.
+ * **Zero new tokens.** Max width is the existing `--page-max` (1600); the rest
+ * are regular Tailwind spacing steps. The 2026-07-26 conclusion that spacing is
+ * *not* ramp-enforced still stands (of 27 hand-written px values, most were
+ * optical corrections) — drift is stopped by having one definition site instead.
  *
- * ## 새 토큰 0개
+ * **Why the page wears this and not the shell:** the canvas workbench
+ * (`/topology`) and the editor (`/docs`) must have *no* top padding, and a shell
+ * that pays it breaks both. Same reasoning as the 2026-08-07 verdict against
+ * hoisting the bottom-tab reserve into the shell — the answer differs per surface.
  *
- * 값은 전부 이미 있는 것이다: 최대 폭은 `--page-max`(1600), 나머지는 Tailwind
- * 정규 간격 칸. **간격은 램프로 강제하지 않는다**는 2026-07-26 결론을 그대로
- * 두고(값을 직접 적은 px 27건 중 대부분이 눈으로 맞춘 미세 보정이었다), 대신
- * **정의 지점을 하나로** 만들어 드리프트를 막는다.
- *
- * ## 왜 셸이 아니라 페이지가 입나
- *
- * 캔버스 작업대(`/topology`)·에디터(`/docs`)는 **상단 여백이
- * 없어야 하는** 화면이다. 셸이 여백을 지면 그 둘이 깨진다. 2026-08-07 에 하단 탭바
- * 예약을 셸로 올리지 않기로 한 판정과 같은 이유다 — *표면마다 답이 다르다*.
- *
- * 멤버 기준 한 문장: **셸 스크롤 슬롯 안에 `mx-auto` 문서 컬럼으로 서고, `h1`
- * 제목이 그 컨테이너의 첫 내용인 화면.**
+ * Membership test: **a screen that stands as an `mx-auto` document column inside
+ * the shell's scroll slot, whose `h1` is that container's first content.**
  */
 
-/** 문서 컬럼 — 가로 인셋 · 최대 폭 · 상단 여백. 하단은 탭바 예약과 얽혀 페이지가 진다. */
+/** Document column — horizontal inset, max width, top padding. The bottom is entangled with the tab-bar reserve, so the page pays that. */
 export const PAGE_FRAME =
   "mx-auto w-full max-w-[var(--page-max)] px-5 pt-6 md:px-10 md:pt-12" as const;
 
 /**
- * **폼·편집 컬럼** — 같은 상단 여백, 좁은 폭 (2026-08-11 실측 확장).
+ * **Form / edit column** — same top padding, narrower width (2026-08-11).
  *
- * ## 왜 둘째 폭이 필요했나
+ * The first spec covered only list-style destinations, so the form screens
+ * (`/project/new`, `/project/[slug]/edit`) fell outside it and picked their own
+ * values: width 960, top 40. **Widening them to 1600 is not the fix** — input
+ * rows stretched to 1600px are worse to read and worse to fill. The spec was
+ * widened to *decide which width applies* rather than to force one, and this
+ * file is the single definition site so no screen restates 960.
  *
- * 처음 규격은 「목록형 목적지」만 덮었다. 그러니 폼 화면(`/project/new` ·
- * `/project/[slug]/edit`)은 규격 밖이 되고, 실제로 자기 값을 골랐다 —
- * 폭 960 · 상단 40. **1600 을 씌우는 것이 답이 아니다**: 입력 줄이 1600px 로
- * 늘어나면 읽기도 채우기도 나빠진다. 폼에 좁은 컬럼이 맞다.
+ * ⚠️ **The top padding must match the list frame.** Titles jumping vertically
+ * between routes is why this spec exists at all, and a different width is no
+ * reason for a different title height. A gate locks that property (the three
+ * constants must agree on top padding).
  *
- * 그래서 「같게 만든다」가 아니라 **「어느 폭을 쓸지 규격이 정한다」** 로 넓혔다.
- * 이 파일이 그 값의 단일 정의 지점이다 — 화면이 960 을 다시 적지 않는다.
- *
- * ⚠️ **상단 여백은 목록형과 같아야 한다.** 라우트를 오가며 제목이 세로로 뛰는 것이
- * 애초에 이 규격을 만든 이유이고, 폭이 다르다고 제목 높이까지 달라질 이유는 없다.
- * 그 성질을 게이트가 잠근다(세 상수의 상단 여백이 같은가).
- *
- * 960 을 CSS 토큰으로 올리지 않은 이유: 쓰는 곳이 아직 폼 계열 하나뿐이다 —
- * 「두 번째로 쓰는 곳이 생기는 순간」이 이름을 붙일 때다(`design.md`).
+ * 960 is not a CSS token because the form family is still its only consumer —
+ * a value earns a name when a second consumer appears
+ * (`.claude/rules/design.md`).
  */
 export const PAGE_FRAME_FORM =
   "mx-auto w-full max-w-[960px] px-5 pt-6 md:px-10 md:pt-12" as const;
 
 /**
- * **좁은 칸의 폭만** — 이미 페이지 틀 안에 있어서 여백은 필요 없는 자리용.
+ * **Width only** — for a slot already inside a page frame, where the padding is
+ * already paid.
  *
- * 2026-08-12 에 생겼다. 스킬 화면의 **빈 상태**를 재 보니 글이 16개뿐인데
- * 목록형 칸(1448px)에 벽까지 펼쳐져 있었고(가장 오른쪽 1472), 아래로 **524px,
- * 화면의 58%가 비어** 있었다. 소유자: *"스킬은 아무것도 없을때 너무 횡하고 뭔가
- * 벽에 다 딱 붙어있고 그런 느낌인데"*.
+ * Added 2026-08-12. The skills screen's **empty state** measured 1448px wide
+ * (rightmost edge 1472) for 16 pieces of text, leaving **524px — 58% of the
+ * screen — empty below.** Owner: *"스킬은 아무것도 없을때 너무 횡하고 뭔가 벽에
+ * 다 딱 붙어있고 그런 느낌인데"* (with nothing in it the screen feels barren and
+ * pinned to the walls).
  *
- * 같은 화면의 인사이트·프로젝트는 글이 48·80개라 그 폭이 정당했다 — 즉 문제는
- * 폭 값이 아니라 **내용이 적을 때도 같은 폭을 쓴 것**이다.
+ * Insights and projects carry 48 and 80 items, so the same width was justified
+ * there — the defect was using one width regardless of how much content exists.
  *
- * 값은 폼 칸과 **같은 960**이고 여기 한 번만 적힌다(`PAGE_FRAME_FORM` 과 같은 값을
- * 두 곳에 적으면 그 순간부터 어긋나기 시작한다 — Carbon).
+ * Same 960 as the form frame; do not restate it elsewhere (a value written in
+ * two places starts drifting immediately — Carbon).
  */
 export const PAGE_COLUMN_FORM = "mx-auto w-full max-w-[960px]" as const;
 
 /**
- * **무대 칸** — 열 것이 아직 없을 때 화면 가운데에 세우는 좁은 칸.
+ * **Stage column** — the narrow column stood in the middle of the screen when
+ * there is nothing to open yet.
  *
- * 2026-08-12 에 생겼다. `PAGE_COLUMN_FORM`(960)으로 좁히고 카드로 묶은 뒤에도
- * 소유자가 화면을 보고 반박했다: *"우측/하단 공백이 너무 심하고? 뭔가 다른 방안을
- * 써야지? … 이렇게 조립대같은 전략을 쓰던지"*.
+ * Added 2026-08-12. Narrowing to `PAGE_COLUMN_FORM` (960) and grouping into a
+ * card was not enough; the owner looked at the result and pushed back:
+ * *"우측/하단 공백이 너무 심하고? 뭔가 다른 방안을 써야지? … 이렇게 조립대같은
+ * 전략을 쓰던지"* (the right and bottom emptiness is severe — use a different
+ * approach, the way the assembly-bench entry does).
  *
- * 실측이 그 지적과 같았다(1512×900, 잎 요소만 잰 잉크 상자):
+ * Measured at 1512×900, ink box over leaf elements only:
  *
- * | | 잉크 | 좌/우 | 상/하 |
- * |---|---|---|---|
- * | 스킬 빈 상태 | 1368×313 | 104 / 40 | 56 / **531** |
- * | 조립대 입구 | 482×318 | 489 / 541 | 291 / 291 |
+ * |                    | ink      | left / right | top / bottom |
+ * |--------------------|----------|--------------|--------------|
+ * | skills empty state | 1368×313 | 104 / 40     | 56 / **531** |
+ * | assembly entry     | 482×318  | 489 / 541    | 291 / 291    |
  *
- * 조립대는 **가운데에 세워져** 있고 스킬은 위에 붙어 벽까지 퍼져 있었다. 「횡하다」는
- * 공백의 양이 아니라 **그 덩어리가 화면에 묶여 있는가**의 문제다.
+ * The assembly entry is **centred**; skills sat at the top and spread to the
+ * walls. "Barren" is not about how much empty space there is — it is about
+ * whether the content block is anchored to the screen.
  *
- * **값을 새로 만든 것이 아니다** — 조립대 입구가 이미 쓰던 640 이고, 그것이 두
- * 번째 소비처를 얻은 것이다(이 저장소의 규율: 두 번째로 쓸 곳이 생기는 순간이 그
- * 값에 이름을 붙일 때). 이제 두 화면이 같은 한 곳을 가리킨다.
+ * **No new value was invented** — 640 is what the assembly entry already used,
+ * and it has now gained a second consumer (the repo's rule: a value earns a name
+ * the moment something else needs it). Two screens point at one place.
  *
- * 이 칸은 **폭만** 정한다. 가운데 세우는 것은 그 칸을 담은 무대의 일이다
- * (`flex-1` + `items-center justify-center`) — 칸이 자기를 세우려 하면 스크롤되는
- * 목록 상태에서도 같은 정렬을 들고 가게 된다.
+ * This constant sets **width only**. Centring belongs to the stage that contains
+ * it (`flex-1` + `items-center justify-center`) — a column that centred itself
+ * would carry that alignment into the scrolling list state too.
  */
 export const PAGE_COLUMN_STAGE = "mx-auto w-full max-w-[640px]" as const;
 
 /**
- * **컬럼은 셋이고, 셋째는 이 파일이 소유하지 않는다** (2026-08-11 판정).
+ * **There are three columns, and this file does not own the third**
+ * (2026-08-11 verdict).
  *
- * 감사에서 문서함(`/docs`)의 컬럼이 760px · 상단 247px 로 목적지들과 다르다는 것이
- * 실측됐다. 결론은 **바꾸지 않는다**이고, 이유를 여기 적어 다음 감사가 같은 것을
- * 다시 논쟁하지 않게 한다:
+ * An audit measured the docs surface (`/docs`) at a 760px column with 247px of
+ * top padding, unlike the destinations. The decision is **change nothing**;
+ * the reason is recorded here so the next audit does not relitigate it:
  *
- * | 컬럼 | 폭 | 누가 정하나 |
- * |---|---|---|
- * | 목록형 목적지 | `--page-max`(1600) | `PAGE_FRAME` |
- * | 폼·편집 | 960 | `PAGE_FRAME_FORM` |
- * | **읽기(문서함 본문)** | **`max-w-3xl`(768)** | **문서함 자신** |
+ * | column                  | width                 | owned by          |
+ * |-------------------------|-----------------------|-------------------|
+ * | list destinations       | `--page-max` (1600)   | `PAGE_FRAME`      |
+ * | form / edit             | 960                   | `PAGE_FRAME_FORM` |
+ * | **reading (docs body)** | **`max-w-3xl` (768)** | **docs itself**   |
  *
- * 왜 셋째는 여기 안 오나 — 문서함은 **세 칸짜리 작업대**(트리 · 본문 · 패널)이고,
- * 그 본문은 페이지가 아니라 **스크롤 창 안의 읽기 단**이다. 이 파일 맨 위가 이미
- * *"캔버스·에디터·무대는 상단 여백이 없어야 하는 화면"* 이라고 제외해 뒀고 문서함이
- * 그 「에디터」다. 페이지 틀을 씌우면 상단에 48px 을 넣게 되는데, 그 자리는 트리와
- * 본문이 같은 높이에서 시작해야 하는 자리다.
+ * Docs is a three-pane workbench (tree · body · panel), and its body is not a
+ * page but a reading measure inside a scroll pane. The top of this file already
+ * excludes canvas, editor and stage surfaces from the frame, and docs is that
+ * editor: applying the page frame would insert 48px exactly where the tree and
+ * the body have to start at the same height.
  *
- * 그리고 768 은 눈대중이 아니라 **읽기 폭**이다(한 줄에 들어가는 글자 수를 읽기 좋게
- * 묶은 관례값, Tailwind `3xl`). 손으로 적은 px 가 아니므로 드리프트도 아니다 —
- * 게이트가 그 사실을 잠근다(`page-frame.contract.test.ts`).
+ * And 768 is not eyeballed — it is a reading measure (Tailwind `3xl`), not a
+ * hand-written px, so it is not drift either. Gate:
+ * `page-frame.contract.test.ts`.
  */
 
 /**
- * 상단 여백만 — **가로 인셋을 자기가 소유해야 하는 화면**용.
+ * Top padding only — for a screen that must own its own horizontal inset.
  *
- * `/project/[slug]` 상세는 좌우 패딩에 `env(safe-area-inset-*)` 를 물려야 한다
- * (설치된 앱 창의 노치·둥근 모서리). 그래서 컬럼 상수를 통째로 입힐 수 없고,
- * 대신 **상단 여백만** 같은 정의를 쓴다. 실측 드리프트: 이 화면만 `md:pt-14`(56)
- * 라 제목이 다른 목적지보다 8px 아래 있었다.
+ * `/project/[slug]` has to feed `env(safe-area-inset-*)` into its side padding
+ * (the installed app window's notch and rounded corners), so it cannot wear a
+ * whole column constant and shares just the top padding instead. Measured drift:
+ * this screen alone used `md:pt-14` (56), putting its title 8px below the other
+ * destinations.
  */
 export const PAGE_TOP_PAD = "pt-6 md:pt-12" as const;
 
 /**
- * 헤더 첫 행 — 제목과 그 옆 인라인 수·주 컨트롤이 **바닥선을 맞추는** 줄.
+ * Header first row — the title and the inline count / primary control beside it
+ * share a baseline.
  *
- * ## ⚠️ 여백을 이 줄에 기대지 않는다 (2026-08-09, 계기가 잡은 규격 결함)
+ * ⚠️ **Never let spacing depend on this row** (2026-08-09, a spec defect the
+ * instrument caught). The first spec tried to place the title at 48px via
+ * top 40px + `min-h-9` (36) + `items-end`. **Those 8px only exist while the
+ * header fits on one line** — measured at 768px the insights header wrapped to
+ * 62px, `items-end` then applied per line, the 8px disappeared, and titles split
+ * again into 40 / 48 / 48.
  *
- * 처음 낸 규격은 상단 40px + `min-h-9`(36) + `items-end` 로 제목을 48px 에
- * 세우려 했다. **그 8px 은 헤더가 한 줄에 들어갈 때만 생긴다** — 실측 768px 에서
- * 인사이트 헤더가 62px 로 줄바꿈하자 `items-end` 가 줄마다 따로 걸려 8px 이
- * 사라졌고, 제목이 40 / 48 / 48 로 다시 갈렸다.
- *
- * 그래서 **48px 을 상단 패딩이 통째로 낸다**(`md:pt-12`). 이제 헤더가 몇 줄이든,
- * 오른쪽에 버튼이 있든 없든 제목 y 가 같다. 규격이 배치의 우연에 기대면 그건
- * 규격이 아니다.
+ * So the top padding pays the full 48px (`md:pt-12`). The title's y is now the
+ * same however many lines the header takes and whether or not a button sits on
+ * the right. A spec that depends on a layout accident is not a spec.
  */
 export const PAGE_HEADER_ROW =
   "flex flex-wrap items-start justify-between gap-x-4 gap-y-2" as const;
 
 /**
- * 제목 블록 — `h1` 과 **그 옆 인라인 수**가 바닥선을 맞추는 안쪽 줄.
+ * Title block — the inner row where `h1` and its inline count share a baseline.
  *
- * 헤더가 `items-start` 인 이유가 여기 있다. 예전에는 헤더 전체가 `items-end` 라
- * **오른쪽 컨트롤 높이가 제목의 y 를 정했다** — 실측 1280px: 프로젝트 56(버튼 36) /
- * 인사이트 48(버튼 없음) / 스킬 52(버튼 32). 같은 틀을 입혔는데도 셋이 다른 이유가
- * 그것이었다.
+ * This is why the header is `items-start`. When the whole header was `items-end`
+ * the **right-hand control's height decided the title's y** — measured at 1280px:
+ * projects 56 (36px button) / insights 48 (no button) / skills 52 (32px button).
+ * Same frame, three different results.
  *
- * 그래서 바닥선 정렬은 **제목과 인라인 수 사이로 내리고**, 헤더는 위를 맞춘다.
- * 이제 제목의 y 는 틀의 상단 패딩 하나로 정해진다 — 오른쪽에 무엇이 오든, 몇 줄로
- * 접히든 같다.
+ * Baseline alignment therefore moved down between the title and its inline
+ * count, and the header aligns to the top. The title's y is now set by the
+ * frame's top padding alone.
  */
 export const PAGE_TITLE_ROW = "flex flex-wrap items-baseline gap-x-3 gap-y-1" as const;

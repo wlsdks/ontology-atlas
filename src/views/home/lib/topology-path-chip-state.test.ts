@@ -42,8 +42,9 @@ describe("resolveTopologyPathChipState", () => {
   });
 
   /**
-   * **화면이 하던 거짓말.** 이 볼트에 없는 노드 둘을 놓고도 칩은 이름 두 개를
-   * 그린 뒤 「경로 없음」이라고 단언했다 — 진실은 "둘 다 여기 없다" 다.
+   * The lie the screen used to tell: with two nodes absent from this vault the
+   * chip drew two names and then asserted "no path". The truth is that neither
+   * is here.
    */
   it("끝점이 이 볼트에 없으면 「경로 없음」이라고 말하지 않는다", () => {
     const state = resolveTopologyPathChipState({
@@ -86,8 +87,9 @@ describe("resolveTopologyPathChipState", () => {
 });
 
 /**
- * 복사 버튼은 **에이전트에게 넘기는 문**이다. 없는 슬러그 둘과 「경로 없음」
- * 이라는 결론을 넘기면, 사람이 속은 것을 기계에게 사실로 전달하게 된다.
+ * The copy button is the door to the agent. Handing it two non-existent slugs
+ * and a "no path" conclusion passes a fooled human's belief on to a machine as
+ * fact.
  */
 describe("canCopyTopologyPathPacket", () => {
   it("끝점이 없는 상태에서는 넘길 수 없다", () => {

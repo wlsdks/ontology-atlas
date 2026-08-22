@@ -25,7 +25,7 @@ test("required secret list mirrors the hosted workflow's seven names", () => {
 });
 
 test("owner-entered secrets are the credential ones", () => {
-  // 인증서 번들만 local helper가 만들고, Apple/Tauri 자격증명은 사람이 protected env에 넣는다.
+  // The local helper produces only the certificate bundle; Apple/Tauri credentials go into the protected env by hand.
   for (const name of OWNER_ENTERED_SECRETS) {
     assert.ok(REQUIRED_SECRETS.includes(name), `${name} is not in the required set`);
   }
@@ -66,8 +66,8 @@ test("helper does not mutate GitHub while generating setup instructions", () => 
 });
 
 test("private key default location is outside the working tree", () => {
-  // 개인키가 작업 트리에 들어가면 커밋될 수 있다. 홈 디렉토리 밖으로 나갈
-  // 이유가 없고, 저장소 안으로 들어올 이유는 더 없다.
+  // A private key inside the working tree can be committed. It has no reason to
+  // leave the home directory, and far less reason to enter the repository.
   assert.ok(DEFAULT_DIR.startsWith("/"), "must be absolute");
   assert.ok(!DEFAULT_DIR.includes("oh-my-ontology"), "must not sit in the repo");
   assert.match(DEFAULT_DIR, /\.ontology-atlas-signing$/);

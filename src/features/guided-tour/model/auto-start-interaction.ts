@@ -1,32 +1,34 @@
 import { canAutoStartGuidedTour } from "./auto-start-guard";
 
 /**
- * 첫 방문 자동 투어의 **상호작용 취소** 가드.
+ * The **interaction cancel** guard for the first-visit automatic tour.
  *
- * 자동 발화는 화면이 정착할 때까지 기다리므로(초기 900ms + 막힘이 풀릴 때까지
- * 재시도) 실제 발화 시점은 2~6초 뒤일 수 있다. 그 사이에 사용자가 이미 노드를
- * 클릭해 상세 패널을 열어 두면, 뒤늦게 뜬 1/7 카드가 사용자의 작업 위로
- * 끼어든다(2026-07-26 실측 스크린샷). 스스로 탐색을 시작한 사람에게 "여기가
- * 지도예요" 1단계는 안내가 아니라 방해다.
+ * Automatic firing waits for the screen to settle (an initial 900ms plus retries
+ * until the blockage clears), so the real firing moment can be two to six seconds
+ * later. If in that window the user has already clicked a node and opened the detail
+ * panel, a belated 1/7 card cuts in over their work (measured screenshot,
+ * 2026-07-26). To someone who began exploring on their own, a step 1 saying "this is
+ * the map" is interference, not guidance.
  *
- * 그래서 **가드를 하나 더 다는 대신 발화 자체를 취소**한다. 발화 조건에 예외를
- * 더하는 방향은 이미 역효과가 확인됐다 — 안내가 자기가 소개하려던 선택지를
- * 그대로 덮었다. 취소해도 길이 막히지 않는다: 투어는 설정 › 화면 안내 ›
- * 다시 보기와 지도 우상단 나침반 타일에서 언제든 다시 열 수 있다.
+ * So rather than adding one more guard, **the firing itself is cancelled**. Adding
+ * exceptions to the firing conditions has already proven counterproductive — the
+ * guidance covered the very choices it meant to introduce. Cancelling blocks no
+ * path: the tour can be reopened at any time from Settings › screen guidance ›
+ * replay and from the compass tile at the map's top right.
  *
- * 모달(폴더 안내 시트 등)이 떠 있는 동안의 입력은 상호작용으로 세지 않는다 —
- * 시트의 [다음에]를 누르는 것은 "탐색을 시작했다"가 아니라 "안내를 마쳤다"
- * 이고, 그 직후가 정확히 투어가 떠야 할 자리이기 때문이다. 판정은 발화
- * 가드(`canAutoStartGuidedTour`)를 그대로 재사용해 두 곳이 갈라지지 않게 한다.
+ * Input while a modal is up (the folder guidance sheet, say) does not count as
+ * interaction — pressing the sheet's [later] means "I finished the guidance", not "I
+ * started exploring", and right after that is exactly where the tour belongs. The
+ * verdict reuses the firing guard (`canAutoStartGuidedTour`) so the two cannot diverge.
  */
 export interface WatchGuidedTourAutoStartCancelOptions {
-  /** 이벤트를 붙일 대상. 기본 `window` (테스트 주입용). */
+  /** What to attach the events to. Defaults to `window` (injectable for tests). */
   target?: Pick<Window, "addEventListener" | "removeEventListener">;
-  /** 모달 판정에 쓸 document. 기본 전역 `document` (테스트 주입용). */
+  /** The document used for the modal verdict. Defaults to the global `document` (injectable for tests). */
   doc?: Document;
 }
 
-/** 값을 나르지 않는 순수 수정자 키 — 이것만 눌린 건 탐색 시작이 아니다. */
+/** Pure modifier keys that carry no value — pressing only these is not the start of exploration. */
 const MODIFIER_ONLY_KEYS = new Set([
   "Shift",
   "Control",
@@ -39,9 +41,9 @@ const MODIFIER_ONLY_KEYS = new Set([
 ]);
 
 /**
- * 자동 투어가 발화를 기다리는 동안 사용자의 첫 실질 상호작용을 감시한다.
- * 감지되면 `onCancel` 을 **한 번만** 호출하고 스스로 떨어진다. 반환값은 수동
- * 해제 함수(발화 성공/언마운트 시 호출).
+ * Watches for the user's first substantive interaction while the automatic tour is
+ * waiting to fire. On detection it calls `onCancel` **exactly once** and detaches
+ * itself. The return value is a manual detach (called on a successful firing or unmount).
  */
 export function watchGuidedTourAutoStartCancel(
   onCancel: () => void,
@@ -61,8 +63,8 @@ export function watchGuidedTourAutoStartCancel(
   };
 
   const fire = () => {
-    // 지금 이 순간 발화가 막혀 있다면(모달이 떠 있다 · 문서가 포커스를 잃었다)
-    // 그 입력은 지도 탐색이 아니라 그 표면과의 대화다 — 세지 않는다.
+  // If firing is blocked at this moment (a modal is up, the document lost focus), that
+  // input is a conversation with that surface rather than map exploration — do not count it.
     if (!canAutoStartGuidedTour(doc)) return;
     detach();
     onCancel();
@@ -77,7 +79,7 @@ export function watchGuidedTourAutoStartCancel(
     fire();
   }
 
-  // capture — 지도 캔버스가 이벤트를 자기 선에서 멈추더라도 감지한다.
+  // Capture — detects even when the map canvas stops the event at its own level.
   target.addEventListener("pointerdown", handlePointerDown, true);
   target.addEventListener("keydown", handleKeyDown, true);
   return detach;

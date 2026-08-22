@@ -6,20 +6,21 @@ import { VAULT_ISSUE_CODE_VALUES } from '../../mcp/src/validate.mjs';
 
 /**
  * R+ — cycle 45: KNOWN_CODES (cli/src/commands/validate.mjs) ↔
- * validateVaultDocument 출력 (cli/src/lib/validate.mjs) drift 차단.
+ * Blocks drift in `validateVaultDocument`'s output (cli/src/lib/validate.mjs).
  *
- * cycle 44 에서 `--list-codes` 와 `--fail-on` 의 unknown code 검사가
- * KNOWN_CODES 정적 list 에 의존. validate.mjs (3-way contract) 가 새 code 를
- * 추가하거나 제거할 때 KNOWN_CODES 를 같이 갱신 안 하면:
- *   - `--list-codes` 가 신규 code 누락
- *   - `--fail-on=newcode` 가 silently \"no match\" (typo 가 아닌데 typo 처리)
- *   - severity 불일치 시 `--fail-on` 결정 흐름 어긋남
+ * The unknown-code checks behind `--list-codes` and `--fail-on` depend on the static
+ * KNOWN_CODES list. If validate.mjs (the 3-way contract) adds or removes a code without
+ * updating KNOWN_CODES:
+ *   - `--list-codes` omits the new code
+ *   - `--fail-on=newcode` silently reports "no match" (treating a real code as a typo)
+ *   - a severity mismatch throws off `--fail-on`'s decision flow
  *
- * 두 contract:
- * 1. document-scope KNOWN_CODES 가 fixture 가 elicit 하는 모든 code 와 일치.
- * 2. document-scope KNOWN_CODES 엔트리의 severity 가 실제 validator 출력의 severity 와 동일.
- * 3. CLI list-codes / fail-on 과 MCP validate_vault outputSchema 의 issue
- *    code set 이 동일.
+ * Three contracts:
+ * 1. Document-scope KNOWN_CODES matches every code the fixtures elicit.
+ * 2. Each document-scope KNOWN_CODES entry's severity equals the validator's actual
+ *    output severity.
+ * 3. The issue-code set is identical between the CLI's list-codes / fail-on and the MCP
+ *    `validate_vault` outputSchema.
  */
 
 interface ValidatorReport {
@@ -40,7 +41,7 @@ describe('KNOWN_CODES drift contract — list-codes / fail-on UX 진실원', () 
     const knownCodes = new Set(
       KNOWN_CODES.filter((c) => c.scope !== 'vault').map((c) => c.code),
     );
-    // 양방향 — 추가/누락 모두 잡힘.
+    // Both directions — additions and omissions are caught.
     expect([...knownCodes].sort()).toEqual([...fixtureCodes].sort());
   });
 
@@ -57,14 +58,14 @@ describe('KNOWN_CODES drift contract — list-codes / fail-on UX 진실원', () 
   });
 
   it('각 KNOWN_CODES.severity 가 validator 실제 출력 severity 와 일치', () => {
-    // 각 code 별로 fixture 에서 그 code 를 elicit 하는 첫 case 를 찾고,
-    // 실제 validator 를 돌려 severity 비교.
+    // For each code, find the first fixture case eliciting it, run the real validator, and
+    // compare severities.
     for (const known of KNOWN_CODES.filter((c) => c.scope !== 'vault')) {
       const fixtureCase = VALIDATE_CASES.find((c) =>
         c.expectedCodes.includes(known.code),
       );
       if (!fixtureCase) {
-        // contract 1 이 이미 잡았겠지만 방어적 — 그래도 명시 fail.
+        // Contract 1 would already have caught this; fail explicitly anyway.
         throw new Error(
           `KNOWN_CODES has '${known.code}' but no fixture case elicits it`,
         );

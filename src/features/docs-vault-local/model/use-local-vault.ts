@@ -63,23 +63,25 @@ import {
   type AgentActivityStatus,
 } from './agent-activity-status';
 import { createAdaptivePoller } from './poll-cadence';
-/** 탭 포커스 복귀 시 자동 refresh 의 최소 간격 (ms). 너무 자주 돌면
- *  사용자가 IDE 로 짧게 오갈 때마다 번쩍이므로 2초 간격으로 throttle. */
+/** Minimum interval (ms) between auto-refreshes when the tab regains focus.
+ *  Without the throttle every quick trip to an IDE and back makes the UI flash. */
 const AUTO_REFRESH_DEBOUNCE_MS = 2000;
 
 /**
- * R13 #69 / Atlas A#6 — background fs polling. 탭 visible 인 동안 fingerprint 비교
- * → 변경 있으면 reload. 사용자가 IDE / AI agent 통해 vault 만지면 웹 탭 *focus 안 해도*
- * 자동 반영. **Adaptive cadence** (`poll-cadence.ts`): 변경 직후엔 burst(~1.5s) 로 빠르게
- * 폴링(에이전트가 mid-session 일 가능성 → 거의 live 하게 반영), 조용하면 idle(5s) 로 decay.
- * 변경 없으면 fingerprint 만 비교하므로 거의 무료. FS Access API 는 native dir-change 이벤트가
- * 없어 (Tauri shell 은 OS watch) 웹에선 adaptive polling 이 백엔드 없는 ceiling.
+ * Background filesystem polling. While the tab is visible, fingerprints are compared
+ * and a change triggers a reload, so edits made through an IDE or an AI agent show up
+ * **without focusing the web tab**. The cadence is adaptive (`poll-cadence.ts`): right
+ * after a change it bursts (~1.5 s) because an agent is probably mid-session, and it
+ * decays to idle (5 s) when things go quiet. With no change only the fingerprint is
+ * compared, which is nearly free. The FS Access API has no native directory-change
+ * event (the Tauri shell watches the OS), so on the web adaptive polling is the
+ * ceiling without a backend.
  */
 
 /**
- * R11 #15 — vault 의 .md 가 외부 (다른 에디터 / AI MCP) 에 의해 변경된 채
- * 사용자가 GUI 에서 save 하려 할 때 silent overwrite 차단. mcp 측의
- * VaultConflictError 와 같은 의미.
+ * Thrown when the vault's `.md` changed outside the app (another editor, an AI over
+ * MCP) and the user then saves from the GUI — the guard against a silent overwrite.
+ * Same meaning as the MCP-side `VaultConflictError`.
  */
 export class VaultConflictError extends Error {
   readonly slug: string;
@@ -157,9 +159,9 @@ function assertNodeIdentityContent(
 }
 
 /**
- * 신원 가드 오류 — `name` 으로 갈래를 싣는다. 에디터가 이 이름을 보고
- * 사용자 언어 문장으로 바꾼다(`VaultConflictError` 와 같은 문법). 영어
- * 원문은 남긴다: 콘솔·로그·미지원 표면의 폴백이다.
+ * Identity-guard errors carry their variant in `name`; the editor turns that name into
+ * a sentence in the user's language (same grammar as `VaultConflictError`). The English
+ * message stays as the fallback for the console, logs, and surfaces that do not localize.
  */
 function identityError(name: 'VaultIdentityUidError' | 'VaultIdentityHistoryError', message: string): Error {
   return Object.assign(new Error(message), { name });
@@ -218,18 +220,19 @@ type Status =
   | 'error';
 
 /**
- * error status 를 사람이 읽을 수 있게 분류하는 코드. picker 가 이 코드로
- * 지역화된 안내 문구를 고른다 (hook 은 i18n-free 로 유지).
+ * A human-readable classification of the error status. The picker chooses its localized
+ * guidance from this code, which keeps the hook itself i18n-free.
  *
- * - `path-missing` — (데스크톱) 이전에 열었던 vault 폴더 자체가 이동/삭제돼
- *   더는 절대 경로로 접근할 수 없음. "폴더 다시 선택" 이 다음 행동.
- * - `access-failed` — 그 외 읽기/빌드 실패. `errorMessage` 에 원인 문자열이
- *   담긴다 (Tauri 커맨드의 Err(String) 포함 — 더는 침묵하지 않음).
- * - `root-rejected` — 고른 자리가 볼트 루트로 받을 수 없는 곳(파일시스템 루트 ·
- *   홈 디렉터리 자체 · OS/앱 디렉터리). **실패가 아니라 거절**이라서 코드를
- *   가른다: 다시 시도해도 같은 결과이므로 "다시 시도해 주세요" 는 틀린 안내다.
- *   `errorMessage` 는 null 이고, 화면이 사유를 자기 언어로 고른다
- *   (`vaultRootRejectionReason`).
+ * - `path-missing` — (desktop) the vault folder opened previously has moved or been
+ *   deleted and is no longer reachable by absolute path. "Choose the folder again" is
+ *   the next action.
+ * - `access-failed` — any other read or build failure. `errorMessage` carries the cause
+ *   string, including a Tauri command's `Err(String)`, so it is no longer silent.
+ * - `root-rejected` — the chosen location cannot be a vault root (a filesystem root, the
+ *   home directory itself, an OS or app directory). This is a **rejection, not a
+ *   failure**, and gets its own code because retrying gives the same result — "please try
+ *   again" would be wrong guidance. `errorMessage` is null and the screen picks the
+ *   reason in its own language (`vaultRootRejectionReason`).
  */
 export type VaultErrorCode = 'path-missing' | 'access-failed' | 'root-rejected';
 
@@ -239,24 +242,24 @@ interface State {
   manifest: VaultManifest | null;
   agentConfigStatus: AgentConfigStatus | null;
   agentActivityStatus: AgentActivityStatus;
-  /** B3 — 로컬 감사 로그 tail (없으면 빈 배열). */
+  /** Tail of the local audit log; empty array when absent. */
   agentActivityLog: AgentActivityEntry[];
   /** App-local human decision receipts from `.ontology-atlas/acp-work.jsonl`. */
   acpWorkReceipts: AcpWorkReceipt[];
   fileHandles: Map<string, FileSystemFileHandle>;
   imageHandles: Map<string, FileSystemFileHandle>;
   errorMessage: string | null;
-  /** error status 일 때만 의미. picker 가 지역화 안내 문구를 고르는 분류 키. */
+  /** Meaningful only in the error status — the key the picker uses to pick localized guidance. */
   errorCode: VaultErrorCode | null;
-  /** 마지막 성공 스캔 epoch ms. picker 에서 "N초 전 스캔" 표기에 씀. */
+  /** Epoch ms of the last successful scan, shown by the picker as "scanned N seconds ago". */
   lastLoadedAt: number | null;
   /**
-   * `manifest` 가 **어느 핸들에서** 빌드됐는지. `handle` 과 따로 두는 이유:
-   * 재스캔(`load`)은 시작하는 순간 `handle` 을 새 값으로, status 를 'loading'
-   * 으로 바꾸지만 `manifest` 는 아직 이전 것이다. 두 값을 비교하면 "같은 폴더를
-   * 다시 읽는 중"(내용 유효)과 "다른 폴더로 바꾸는 중"(내용 무효)을 구분할 수
-   * 있다 — 구분 없이 이전 매니페스트를 계속 쓰면 폴더를 바꾸는 1초 동안 남의
-   * 폴더 그래프가 그려진다.
+   * **Which handle** `manifest` was built from. Kept separate from `handle` because a
+   * rescan (`load`) sets `handle` to the new value and status to 'loading' the moment it
+   * starts, while `manifest` is still the previous one. Comparing the two distinguishes
+   * "re-reading the same folder" (content still valid) from "switching folders" (content
+   * invalid) — without that distinction, the second it takes to switch draws the other
+   * folder's graph.
    */
   manifestHandle: FileSystemDirectoryHandle | null;
 }
@@ -269,10 +272,10 @@ export interface AgentConfigStatus {
   codexConfigValid?: boolean;
   mcpExampleValid?: boolean;
   /**
-   * `.codex/config.toml` 이 등록해 둔 **명령 문자열 그대로**. 앱이 세션에 같은
-   * 서버를 또 꽂지 않으려면 「등록이 있다」가 아니라 「무엇이 등록됐나」가
-   * 필요하다 — 낡은 경로가 적혀 있으면 건너뛰면 안 되기 때문이다
-   * (`vault-mcp-server.ts` 의 실측 주석).
+   * The command string `.codex/config.toml` registered, **verbatim**. To avoid wiring the
+   * same server twice in a session the app needs to know *what* was registered, not just
+   * that something was — a stale path must not be skipped over
+   * (see the measured comment in `vault-mcp-server.ts`).
    */
   codexRegisteredCommand?: string | null;
 }
@@ -296,12 +299,12 @@ function emptyState(status: Status = 'idle'): State {
 }
 
 /**
- * (데스크톱) Tauri 최근 vault 재열기 preflight — 저장된 절대 경로가 아직
- * 디렉터리로 존재하는지 확인. 이전 세션에서 고른 폴더가 그 사이 이동/삭제됐다면
- * false. FSA picker 없이 절대 경로만으로 다시 여는 데스크톱 고유 경로에서,
- * 폴더가 사라진 흔한 실패를 사람이 읽을 수 있는 'path-missing' 으로 분류하기
- * 위한 것. 비-Tauri 런타임이나 경로가 없는 record 는 preflight 대상이 아니므로
- * true(진행)로 단락 — 그쪽 handle 은 자체 권한을 들고 있다.
+ * (Desktop) Preflight for reopening a recent Tauri vault: does the stored absolute path
+ * still resolve to a directory? False when the folder chosen in an earlier session has
+ * since moved or been deleted. This desktop-only path reopens by absolute path with no
+ * FSA picker, and this classifies the common "folder vanished" failure as a readable
+ * 'path-missing'. Non-Tauri runtimes and records without a path are not preflight
+ * candidates and short-circuit to true — their handles carry their own permission.
  */
 async function tauriVaultRecordResolves(
   record: LocalFsHandleRecord,
@@ -312,41 +315,26 @@ async function tauriVaultRecordResolves(
   try {
     return await tauriVaultPathExists(rootPath, 'directory');
   } catch {
-    // 경로 조회 자체가 실패(canonicalize 오류 등)해도 접근 불가로 취급.
+    // A failed path lookup (a canonicalize error, say) also counts as inaccessible.
     return false;
   }
 }
 
-/**
- * md raw 에서 frontmatter 를 찾아 주어진 key 의 값을 교체/추가/삭제.
- * 본문은 건드리지 않는다. frontmatter 가 없으면 새로 만들어 맨 위에
- * 붙인다.
- *
- * 지원하는 value 타입:
- *  - string/number/boolean → `key: value` 로 직렬화 (문자열은 따옴표 없이,
- *    공백 포함이면 따옴표)
- *  - string[] → `key: [a, b, c]` inline 배열
- *  - { primitive: ... } → `key: { k1: v1, k2: v2 }` inline 1-depth 객체
- *  - null → 해당 key 제거
- *
- * 한계: nested 2-depth 이상 객체는 지원 안 함. value serialization 은 우리
- * 간단 frontmatter 파서와 정확히 round-trip.
- */
-// frontmatter 직렬화 규칙은 entity 로 내려갔다 — 에이전트 제안 적용 경로도
-// 같은 규칙으로 써야 git diff 에 두 가지 서식이 섞이지 않는다. 기존
-// import 경로를 지키기 위해 여기서 그대로 다시 내보낸다.
+// The frontmatter serialization rules moved down to the entity layer — the path that
+// applies an agent's proposal must write by the same rules, or the git diff carries two
+// formats. Re-exported here so existing import paths keep working.
 export {
   applyFrontmatterUpdates,
   type FrontmatterUpdateValue,
 } from '@/entities/docs-vault/lib/frontmatter-updates';
 
 /**
- * 능력 판정은 `in` 이 아니라 **호출 가능한지**로 한다 — `'showDirectoryPicker'
- * in window` 는 키가 있으면 true 라서, 값이 `undefined` 인 환경(확장/폴리필/
- * 브라우저 스텁)에서 `isSupported()` 가 true 를 주고 곧이어 픽커 호출이
- * `is not a function` 이라는 **원문 자바스크립트 오류**로 터진다. 그 오류가
- * 제품의 유일한 인디고 주 CTA 자리에 빨간 글씨로 그려졌다(진입 검수 E-1).
- * 못 부르면 미지원이다 — 그러면 사전에 정직하게 강등하는 기존 경로를 탄다.
+ * Capability is decided by **whether it can be called**, not by `in`. `'showDirectoryPicker'
+ * in window` is true whenever the key exists, so in an environment where the value is
+ * `undefined` (an extension, a polyfill, a browser stub) `isSupported()` returned true and
+ * the picker call then threw a raw JavaScript `is not a function` error — which was
+ * rendered in red in the product's single indigo primary CTA slot (entry review E-1).
+ * If it cannot be called it is unsupported, and the existing path degrades honestly instead.
  */
 function isSupported(): boolean {
   if (typeof window === 'undefined') return false;
@@ -451,7 +439,7 @@ function configTomlStringArray(section: string | null, key: string): string[] | 
   }
 }
 
-/** `.codex/config.toml` 이 등록한 명령 문자열 — 없으면 `null`. */
+/** The command string registered by `.codex/config.toml`, or `null`. */
 export function readOmotCodexCommand(raw: string | null): string | null {
   if (!raw) return null;
   return configTomlString(configTomlSection(raw, 'mcp_servers.ontology-atlas'), 'command');
@@ -513,11 +501,11 @@ async function readAgentActivityStatus(
 }
 
 /**
- * 사이드카 상태 두 개가 **실질적으로 같은가** — 폴링이 새 객체를 만들 때마다
- * 앱 전체를 다시 그리지 않게 하는 판정.
+ * Are two sidecar states **effectively the same** — the check that stops every polling
+ * tick from re-rendering the whole app just because it built a new object.
  *
- * 얕게 본다: 이 상태들은 boolean/문자열 몇 개짜리 평평한 객체다. 깊은 비교는
- * 그 자체가 5초마다 도는 비용이 된다.
+ * Deliberately shallow: these are flat objects of a few booleans and strings, and a deep
+ * comparison would itself become a cost paid every five seconds.
  */
 function shallowEqualStatus(a: unknown, b: unknown): boolean {
   if (a === b) return true;
@@ -544,7 +532,7 @@ async function readVaultSidecarStatuses(handle: FileSystemDirectoryHandle): Prom
   return { agentConfigStatus, agentActivityStatus, agentActivityLog, acpWorkReceipts };
 }
 
-/** B3 — 로컬 감사 로그 tail (읽기 전용, 없으면 빈 배열). */
+/** Tail of the local audit log (read-only; empty array when absent). */
 async function readAgentActivityLog(handle: FileSystemDirectoryHandle): Promise<AgentActivityEntry[]> {
   try {
     const dir = await handle.getDirectoryHandle('.ontology-atlas');
@@ -579,9 +567,9 @@ async function writeRootFileIfMissing(
 }
 
 /**
- * 번들 MCP 서버를 찾아 실행 계약을 만든다. 못 찾으면 null — 그러면 설정을
- * 쓰지 않는다. 붙지 않는 설정을 심는 것은 도움이 아니라 나중에 진단해야 할
- * 거짓말이다.
+ * Locates the bundled MCP server and builds its launch contract. Null when it cannot be
+ * found — and then no config is written. Planting a config that will not connect is not
+ * help, it is a lie someone has to debug later.
  */
 async function resolveBundledLaunch(): Promise<McpServerLaunch | null> {
   try {
@@ -593,12 +581,13 @@ async function resolveBundledLaunch(): Promise<McpServerLaunch | null> {
 }
 
 /**
- * 웹(FSA) 경로의 설정 쓰기 — **요청한 파일만.**
+ * Config writing on the web (FSA) path — **only the file that was asked for.**
  *
- * 종전에는 `.mcp.json` · `.mcp.json.example` · `.codex/config.toml` 셋을 무조건
- * 썼다. 「Claude Code에 연결」이 Codex 설정까지 쓰는 결함이 Tauri 경로에만 있는 게
- * 아니라 여기에도 있었다. `wanted` 가 없으면(스타터 볼트 스캐폴드처럼 라벨이
- * 「연결」이 아닌 자리) 종전대로 전부 쓴다 — 그 동작은 라벨이 다르므로 결함이 아니다.
+ * This used to write `.mcp.json`, `.mcp.json.example`, and `.codex/config.toml`
+ * unconditionally, so "connect to Claude Code" also wrote the Codex config — a defect
+ * that existed here as well as on the Tauri path. With no `wanted` (the starter-vault
+ * scaffold, where the label is not "connect") it still writes all of them; that behaviour
+ * is not a defect because the label promises it.
  */
 async function writeAgentConfigFiles(
   handle: FileSystemDirectoryHandle,
@@ -643,47 +632,44 @@ async function writeAgentConfigFiles(
 }
 
 /**
- * @internal — 직접 호출 금지. `useLocalVault()` (LocalVaultProvider 의
- * consumer) 를 통해서만 접근. 본 훅은 LocalVaultProvider 가 1 회 mount
- * 해 단일 인스턴스 (state / IDB rehydrate / fingerprint rescan / FS read)
- * 만 유지하기 위한 internal API.
+ * @internal — do not call directly. Access it through `useLocalVault()`, a consumer of
+ * `LocalVaultProvider`. This hook exists so `LocalVaultProvider` can mount it once and
+ * keep a single instance of the state, IDB rehydration, fingerprint rescan, and FS reads.
  *
- * 이전 (Round 7 발견): 8 곳에서 직접 useLocalVault() 호출 → 한 페이지
- * mount 에 2-3 인스턴스 → 같은 IDB 키 N 번 rehydrate + N 번
- * buildLocalManifest (전체 FS walk). Round 8 에서 provider 패턴으로
- * 단일 진실원 화.
+ * Before the provider pattern, eight places called `useLocalVault()` directly, giving two
+ * or three instances per page mount — the same IDB key rehydrated N times and N full
+ * `buildLocalManifest` walks of the filesystem.
  *
- * 로컬 (PC) 폴더를 볼트로 쓰는 훅. File System Access API 지원 브라우저
- * (Chrome/Edge/Safari 18.2+/Opera) 에서만 동작.
+ * Uses a local folder as the vault. Works only in browsers with the File System Access
+ * API (Chrome/Edge/Safari 18.2+/Opera).
+ * The surface:
+ * - `open()` — pick a folder with showDirectoryPicker and store the handle in IDB
+ * - `close()` — drop the handle and return to idle
+ * - `refresh()` — rescan the current handle to pick up file changes
+ * - `requestPermission()` — re-approve when a restored session is permission-needed
  *
- * - `open()` : showDirectoryPicker 로 폴더 선택 + IDB 에 핸들 저장
- * - `close()` : 핸들 지우고 state idle
- * - `refresh()` : 현재 핸들 재스캔 (파일 변경 반영)
- * - `requestPermission()` : 세션 복원 후 permission-needed 일 때 재승인
- *
- * 최초 mount 에서 IDB 에 저장된 핸들을 복원 시도. query 결과가
- * 'granted' 면 자동 manifest 빌드, 'prompt' 면 permission-needed 로 대기.
+ * On first mount it tries to restore the handle stored in IDB: a 'granted' query builds
+ * the manifest automatically, while 'prompt' waits in permission-needed.
  */
 export function useLocalVaultInternal() {
-  // SSR 일치성: lazy initializer 가 isSupported() 를 호출하면 SSR (window
-  // 없음 → 'unsupported') 와 client 첫 hydration (window 있음 → 'idle')
-  // 사이에 mismatch. 항상 'idle' 로 시작하고 mount 후 useEffect 가
-  // FSA 미지원 시 'unsupported' 로 전환 — 첫 paint 1 frame 동안 잠깐
-  // supported 로 보이지만 hydration 에러는 사라짐.
+  // SSR consistency: calling `isSupported()` from the lazy initializer mismatches between
+  // SSR (no window → 'unsupported') and the client's first hydration (window → 'idle').
+  // Always start 'idle' and let a mount effect switch to 'unsupported' when FSA is
+  // missing — one frame looks supported, but the hydration error is gone.
   const [state, setState] = useState<State>(() => emptyState('idle'));
   const [restoreAttempted, setRestoreAttempted] = useState(false);
   const [recentVaults, setRecentVaults] = useState<LocalFsHandleRecord[]>([]);
 
-  /** 마지막 성공 빌드의 fingerprint — auto-refresh 시 변경 없으면 skip 의 비교 기준. */
+  /** Fingerprint of the last successful build — the comparison that lets auto-refresh skip. */
   const lastFingerprintRef = useRef<string | null>(null);
-  /** `refresh()` 가 방금 얻은 네이티브 스탬프를 `load()` 로 넘기는 한 칸. */
+  /** One slot for `refresh()` to hand the native stamps it just fetched to `load()`. */
   const pendingStampsRef = useRef<Map<string, number> | null>(null);
 
   /**
-   * 마지막 성공 빌드의 재사용 가능한 entries + 그 때의 handle. 같은 vault 의
-   * 다음 `load` 가 증분 재빌드(변경 파일만 재독)에 쓴다. 다른 vault(handle 변경)
-   * 나 빌드 실패 시 null 로 리셋해 전체 빌드로 폴백. state 가 아닌 ref —
-   * 재렌더 유발 없음.
+   * The reusable entries of the last successful build and the handle they came from. The
+   * next `load` of the same vault uses them for an incremental rebuild (re-reading only
+   * changed files). Reset to null on a different vault or a failed build, falling back to
+   * a full build. A ref, not state, so it triggers no re-render.
    */
   const lastBuildRef = useRef<{
     handle: FileSystemDirectoryHandle;
@@ -691,11 +677,11 @@ export function useLocalVaultInternal() {
   } | null>(null);
 
   /**
-   * Round 9 cut — 쓰기 전에 readwrite permission 확보. 거부 시 state 를
-   * 'permission-needed' 로 업데이트해 LocalVaultPicker 의 reauth UI 가
-   * 즉시 노출되게 한다. 이전엔 saveDoc 가 throw 만 하고 state 는 'loaded'
-   * 로 남아 사용자가 picker 로 가도 권한 문제임을 모름. 호출 후 throw 는
-   * 그대로 — 상위 try/catch (editor 등) 가 inline error 표시 책임 유지.
+   * Secures readwrite permission before any write. On refusal the state moves to
+   * 'permission-needed' so the picker's reauth UI appears immediately; previously
+   * `saveDoc` only threw while the state stayed 'loaded', leaving a user who went to the
+   * picker unaware it was a permission problem. It still throws afterwards, so the caller's
+   * try/catch keeps showing the inline error.
    */
   const requireWritePermission = useCallback(
     async (handle: FileSystemDirectoryHandle | FileSystemFileHandle) => {
@@ -717,9 +703,10 @@ export function useLocalVaultInternal() {
       errorCode: null,
     }));
     try {
-      // 같은 vault(handle 동일)에 직전 빌드가 있으면 증분 재빌드 — 변경 파일만
-      // 재독해 큰 vault 의 라이브 갱신 렉을 줄인다. 첫 로드 / 다른 vault / 증분
-      // 실패 시엔 전체 빌드로 폴백(결과는 byte-동치 — incremental.test 가 보증).
+      // With a previous build of the same vault (identical handle), rebuild incrementally —
+      // re-reading only changed files, which is what removes the live-update lag on a large
+      // vault. First load, a different vault, or a failed incremental falls back to a full
+      // build; the results are byte-equivalent (proven by incremental.test).
       const reuse =
         lastBuildRef.current && lastBuildRef.current.handle === handle
           ? lastBuildRef.current.entries
@@ -727,8 +714,8 @@ export function useLocalVaultInternal() {
       let result: { build: LocalVaultBuild; entries: BuiltVaultEntry[] };
       if (reuse) {
         try {
-          // `refresh()` 가 방금 걸어서 얻은 스탬프가 있으면 그것을 쓴다 —
-          // 없으면 증분 쪽이 스스로 한 번 받는다(첫 로드·다른 경로).
+          // Use the stamps `refresh()` just walked for, when it has them; otherwise the
+          // incremental path fetches them itself (first load, other entry points).
           result = await rebuildLocalManifestIncremental(handle, reuse, pendingStampsRef.current);
         } catch {
           result = await buildLocalManifestWithEntries(handle);
@@ -759,12 +746,11 @@ export function useLocalVaultInternal() {
       });
     } catch (err) {
       lastBuildRef.current = null;
-      // toErrorMessage 로 원인 문자열을 살린다 — Tauri 커맨드는 Err(String) 을
-      // 반환하므로 invoke 는 Error 가 아니라 *문자열* 로 reject 한다. 이전
-      // `err instanceof Error ? err.message : null` 는 그 문자열을 통째로
-      // 버려서 데스크톱 볼트 접근 실패를 전부 generic fallback 배너로
-      // 침묵시켰다 (P5 회귀). message 가 비면 null 로 두고 picker 의
-      // errorFallback 이 locale-aware 로 채운다.
+      // `toErrorMessage` preserves the cause string. Tauri commands return `Err(String)`, so
+      // `invoke` rejects with a *string* rather than an Error; the previous
+      // `err instanceof Error ? err.message : null` discarded it wholesale and silenced every
+      // desktop vault access failure behind a generic banner. An empty message stays null so
+      // the picker's locale-aware `errorFallback` fills it.
       setState({
         status: 'error',
         handle,
@@ -792,10 +778,11 @@ export function useLocalVaultInternal() {
       setState(emptyState('unsupported'));
       return;
     }
-    // 네이티브/브라우저 선택창 취소는 상태 변화가 아니다. 선택창을 띄우기
-    // 직전의 권한 대기·오류·idle/loaded 계약을 통째로 복원해야 한다.
-    // `handle` 존재만 보고 loaded 로 추정하면, 권한 대기 중 취소가 잘못된
-    // 자동 refresh 를 깨워 stale 경로의 raw OS 오류를 노출한다.
+    // Cancelling the native or browser picker is not a state change: the exact contract from
+    // just before the picker opened — permission-needed, error, idle, loaded — must be
+    // restored whole. Inferring 'loaded' from the mere presence of a `handle` makes a cancel
+    // during permission-needed wake a spurious auto-refresh that surfaces a raw OS error
+    // from a stale path.
     const previousState = state;
     setState((s) => ({
       ...s,
@@ -826,27 +813,28 @@ export function useLocalVaultInternal() {
         lastAccessedAt: now,
       });
       /*
-       * ⚠️ **순서가 계약이다** (2026-08-16 검수에서 적발).
+       * ⚠️ **The order is the contract** (caught in review, 2026-08-16).
        *
-       * 종전에는 최근 목록을 **먼저** 갱신했다. 그 순간 「이 컴퓨터에서 한 번도
-       * 볼트를 연 적이 없다」가 거짓이 되고, 그 값 하나가 첫 실행 카드 · 「내
-       * 데이터로 전환」 타일 · 첫 실행 판독을 **동시에 화면에서 치운다.**
+       * The recent list used to be updated **first**. At that moment "this computer has
+       * never opened a vault" becomes false, and that single value **simultaneously removes**
+       * the first-run card, the "switch to my data" tile, and the first-run readout from
+       * the screen.
        *
-       * 그래서 바로 다음 줄의 읽기가 실패하면, 그 실패를 말해 줄 표면이 이미
-       * 사라진 뒤였다 — 사용자는 아무 말도 없는 샘플 지도를 본다. 성공한 뒤에
-       * 목록에 올린다.
+       * So when the read on the very next line failed, the surface that would have said so
+       * was already gone — the user saw a silent sample map. Add to the list only after
+       * success.
        */
       await load(handle);
       await refreshRecentVaults();
     } catch (err) {
-      // 취소는 실패가 아니다 — 선택창 직전 상태로 복귀(`isPickerAbort` 주석 참고).
+      // A cancel is not a failure — restore the state from just before the picker (see `isPickerAbort`).
       if (isPickerAbort(err)) {
         setState(previousState);
         return;
       }
-      // 「받을 수 없는 자리」 거절은 실패와 다르게 다룬다. 원인 문자열을 그대로
-      // 화면에 흘리면 사용자가 `vault-root-rejected:filesystem-root` 를 읽게 되고,
-      // 「다시 시도해 주세요」 는 몇 번을 해도 같은 결과라 거짓 안내가 된다.
+      // A "cannot be a vault root" rejection is handled differently from a failure. Leaking
+      // the cause string to the screen would show the user `vault-root-rejected:filesystem-root`,
+      // and "please try again" is false guidance when every retry gives the same result.
       const rejection = vaultRootRejectionReason(err);
       if (rejection) {
         setState((s) => ({
@@ -857,8 +845,8 @@ export function useLocalVaultInternal() {
         }));
         return;
       }
-      // 같은 이유로 ko 하드코딩 "폴더를 열지 못했습니다" 제거 — null 이면
-      // LocalVaultPicker 가 t('errorFallback') 으로 fallback.
+      // Same reason the hardcoded Korean "폴더를 열지 못했습니다" was removed — null lets
+      // LocalVaultPicker fall back to `t('errorFallback')`.
       setState((s) => ({
         ...s,
         status: 'error',
@@ -881,10 +869,10 @@ export function useLocalVaultInternal() {
         errorCode: null,
       }));
       try {
-        // 데스크톱 고유 경로: 저장된 절대 경로 자체가 handle 이라 FSA picker 없이
-        // 다시 연다. 다만 그 폴더가 지난 세션 이후 이동/삭제됐다면 매니페스트
-        // 빌드가 raw io 오류로 터진다 — 그 전에 preflight 해서 사람이 읽을 수
-        // 있는 'path-missing' 로 분류하고 "폴더 다시 선택" 을 유도한다.
+        // Desktop-only path: the stored absolute path *is* the handle, so it reopens with no
+        // FSA picker. But if the folder moved or was deleted since the last session, building
+        // the manifest throws a raw io error — preflight first so it classifies as a readable
+        // 'path-missing' and prompts "choose the folder again".
         if (!(await tauriVaultRecordResolves(record))) {
           setState((s) => ({
             ...s,
@@ -904,7 +892,7 @@ export function useLocalVaultInternal() {
         await refreshRecentVaults();
         await load(nextRecord.handle);
       } catch (err) {
-        // toErrorMessage — Tauri invoke 는 Err(String) 을 문자열로 reject.
+        // `toErrorMessage` — a Tauri `invoke` rejects with `Err(String)` as a plain string.
         setState((s) => ({
           ...s,
           status: 'error',
@@ -931,19 +919,18 @@ export function useLocalVaultInternal() {
   }, [refreshRecentVaults]);
 
   /**
-   * 사용자 주도 refresh. fingerprint 가 같으면 (외부 변경 없음) 전체 재빌드를
-   * skip 하되, `lastLoadedAt` 만 갱신해 picker 의 "방금 스캔" 라벨이 적절히
-   * 갱신되도록 한다. fingerprint 계산 자체가 실패하면 안전하게 전체 재빌드로
-   * 폴백.
+   * User-initiated refresh. An unchanged fingerprint (nothing changed outside) skips the full
+   * rebuild but still updates `lastLoadedAt` so the picker's "just scanned" label stays
+   * accurate. A failure to compute the fingerprint falls back safely to a full rebuild.
    */
   const refresh = useCallback(async () => {
     if (!state.handle) return;
     const handle = state.handle;
     try {
       /*
-       * 지문과 **그 근거인 스탬프**를 함께 받는다. 종전엔 지문만 받고 버려서,
-       * 곧바로 이어지는 증분 재빌드가 같은 볼트를 한 번 더 걸었다 — 변경
-       * 하나에 네이티브 순회가 둘이었다. 이제 하나다.
+       * Take the fingerprint **and the stamps behind it**. Previously only the fingerprint was
+       * taken and the stamps discarded, so the incremental rebuild that followed walked the same
+       * vault a second time — two native walks per change. Now one.
        */
       const { fingerprint: fp, nativeStamps } =
         await computeLocalVaultFingerprintWithStamps(handle);
@@ -954,21 +941,21 @@ export function useLocalVaultInternal() {
       }
       pendingStampsRef.current = nativeStamps;
     } catch {
-      /* fingerprint 실패 → 안전하게 전체 재빌드로 폴백 */
+      /* Fingerprint failed — fall back safely to a full rebuild. */
       pendingStampsRef.current = null;
     }
     try {
       await load(handle);
     } finally {
-      // 다음 호출이 남은 스탬프를 재사용하면 낡은 mtime 으로 판정한다.
+      // A leftover stamp map reused by the next call would judge against a stale mtime.
       pendingStampsRef.current = null;
     }
   }, [state.handle, load]);
 
-  // 탭 포커스 복귀 시 자동 refresh — IDE 에서 편집 후 브라우저로 돌아오면
-  // 스스로 다시 스캔해 최신 상태로. 2초 debounce 로 중복 호출 방지.
-  // fingerprint 비교를 먼저 수행해 변경 없으면 전체 재빌드를 skip — 큰 볼트
-  // 에서 focus 시 잠깐 멈추는 현상 완화.
+  // Auto-refresh when the tab regains focus, so editing in an IDE and coming back rescans
+  // by itself. Debounced by 2 s against duplicate calls. The fingerprint is compared first
+  // and an unchanged one skips the full rebuild, which removes the brief freeze on focus
+  // with a large vault.
   const autoRefreshRef = useRef<{
     lastAt: number;
     timer: ReturnType<typeof setTimeout> | null;
@@ -989,15 +976,15 @@ export function useLocalVaultInternal() {
         if (fp === lastFingerprintRef.current) {
           const sidecars = await readVaultSidecarStatuses(handle);
           /*
-           * ⚠️ **안 바뀌었으면 상태도 안 건드린다** (2026-08-16 검수).
+           * ⚠️ **Nothing changed means state is not touched** (review, 2026-08-16).
            *
-           * 종전에는 아무것도 안 바뀐 틱에도 `setState` 로 새 객체를 만들었고,
-           * 컨텍스트 프로바이더가 그 결과를 그대로 흘려서 **5초마다 앱 전체가
-           * 다시 그려졌다** — 아무 일도 안 일어난 채로, 영원히.
+           * This used to `setState` a fresh object even on a tick where nothing changed, and
+           * the context provider passed that straight through — so **the entire app re-rendered
+           * every five seconds**, forever, with nothing happening.
            *
-           * `lastLoadedAt` 은 화면 어디에도 안 쓰이는데(그 값을 위해 매 틱
-           * 새 객체를 만들었다), 사이드카 셋은 실제로 바뀔 수 있다. 그래서
-           * **바뀐 것이 있을 때만** 갱신한다.
+           * `lastLoadedAt` is not read anywhere on screen (a new object was built every tick
+           * for it), while the three sidecar states genuinely can change. So update **only when
+           * something actually did.**
            */
           setState((s) => {
             const same =
@@ -1011,7 +998,7 @@ export function useLocalVaultInternal() {
           return false;
         }
       } catch {
-        /* fingerprint 실패는 무시 — 안전하게 전체 재빌드로 폴백 */
+        /* Ignore a fingerprint failure — fall back safely to a full rebuild. */
       }
       loadRef.current(handle);
       return true;
@@ -1036,14 +1023,13 @@ export function useLocalVaultInternal() {
     window.addEventListener('focus', fire);
     document.addEventListener('visibilitychange', onVisibility);
 
-    // R13 #69 / Atlas A#6 — adaptive self-rescheduling polling while visible.
-    // focus/visibility 만으로는 사용자가 다른 탭 / IDE 보고 있을 때 안 갱신됨.
-    // 변경 감지 직후엔 burst(~1.5s) 로 빠르게, 조용하면 idle(5s) 로 decay
-    // (nextPollDelay). 변경 없으면 fingerprint 비교만이라 burst 도 거의 무료.
-    // Generation-token poll loop (poll-cadence.createAdaptivePoller) — an
-    // in-flight tryReload that resolves after a stop/restart (e.g. hide→show
-    // during a burst) can never re-arm an orphaned second loop. Unit-tested in
-    // poll-cadence.test.ts.
+    // Adaptive self-rescheduling polling while the tab is visible. Focus and visibility alone
+    // never refresh while the user is looking at another tab or their IDE. Right after a
+    // detected change it bursts (~1.5 s) and decays to idle (5 s) when quiet
+    // (`nextPollDelay`); with no change only the fingerprint is compared, so even a burst is
+    // nearly free. The generation-token loop (`poll-cadence.createAdaptivePoller`) means an
+    // in-flight `tryReload` resolving after a stop/restart — hide→show during a burst — can
+    // never re-arm an orphaned second loop. Unit-tested in poll-cadence.test.ts.
     const poller = createAdaptivePoller({ poll: tryReload });
     const startPolling = () => poller.start();
     const stopPolling = () => poller.stop();
@@ -1077,8 +1063,8 @@ export function useLocalVaultInternal() {
   }, [state.handle, load]);
 
   /**
-   * 루트 핸들 부터 슬래시 경로를 따라가 (생성 옵션 포함) 부모 디렉터리
-   * 핸들과 파일 이름을 반환. `foo/bar/baz` → dir = root/foo/bar, name = baz.md.
+   * Walks a slash path from the root handle (creating as requested) and returns the parent
+   * directory handle plus the file name: `foo/bar/baz` → dir = root/foo/bar, name = baz.md.
    */
   const getParentAndName = useCallback(
     async (
@@ -1089,7 +1075,7 @@ export function useLocalVaultInternal() {
       fileName: string;
     } | null> => {
       if (!state.handle) return null;
-      // readwrite permission — 쓰기 경로에만 호출되므로 여기서 확보.
+      // Readwrite permission, secured here because this runs only on write paths.
       await requireWritePermission(state.handle);
       const parts = slug.split('/').filter(Boolean);
       if (parts.length === 0) throw new Error('Empty slug');
@@ -1106,23 +1092,23 @@ export function useLocalVaultInternal() {
   );
 
   /**
-   * 특정 slug 의 md 파일 내용을 새로 쓴다. readwrite 권한이 없으면 먼저
-   * 승인 요청. 성공 시 manifest 를 재스캔해 최신 상태로.
+   * Rewrites one slug's markdown file, requesting readwrite permission first when needed, and
+   * rescans the manifest on success.
    *
-   * R11 #15 — options.expectedMtime 옵션 (manifest doc.mtime). 지정 시 write
-   * 직전 fs file.lastModified 와 비교해 외부 변경 감지 → VaultConflictError
-   * throw. 미지정 시 검증 skip (기존 호출자 호환).
+   * `options.expectedMtime` (the manifest's `doc.mtime`) is compared against the filesystem's
+   * `file.lastModified` immediately before the write and throws `VaultConflictError` on an
+   * outside change. Omitted, the check is skipped, keeping existing callers working.
    */
-  // 앱 자신이 방금 쓴 slug 들 — 폴링 diff 토스터가 자기 쓰기를
-  // "추가됨/편집됨" 으로 재보고하지 않도록 (부트스트랩 토스트 4연발 마찰).
-  // 소비 시점에 비워지는 1회성 장부: 외부(에이전트/IDE) 변경만 토스트로 남는다.
+  // Slugs the app itself just wrote, so the polling diff toaster does not report its own
+  // writes as "added/edited" (the four-toast burst during bootstrap). A one-shot ledger
+  // cleared on consumption: only outside changes (an agent, an IDE) become toasts.
   const selfWrittenSlugsRef = useRef<Set<string>>(new Set());
-  // rank7 (design-council B5) — "마지막 편집 · 나" 사실의 유일한 실데이터
-  // 출처. `selfWrittenSlugsRef` 와 달리 소비해도 비워지지 않는 영속 기록
-  // (slug → 마지막 자기 쓰기 시각 ms). mtime 만으로는 "누가" 바꿨는지 알 수
-  // 없다(git checkout·다른 에디터·heartbeat 없는 에이전트 세션도 mtime 을
-  // 바꾼다) — 이 세션이 실제로 로컬 vault 쓰기 API 를 거쳐 이 slug 를 쓴
-  // 사실만 기록해, 그 신뢰 가능한 부분만 "나" 로 표시한다(추측 0).
+  // The only real data source behind the "last edited · me" fact. Unlike
+  // `selfWrittenSlugsRef` this is not cleared on consumption (slug → last self-write time in
+  // ms). An mtime alone cannot say *who* changed a file — a git checkout, another editor, or
+  // an agent session without a heartbeat all change it — so this records only that this
+  // session actually wrote the slug through the local vault write API, and marks "me" for
+  // that trustworthy subset only. No guessing.
   const [selfEditTimestamps, setSelfEditTimestamps] = useState<ReadonlyMap<string, number>>(
     () => new Map(),
   );
@@ -1157,15 +1143,15 @@ export function useLocalVaultInternal() {
       await writable.write(content);
       await writable.close();
       markSelfWrite(slug);
-      // 저장 성공 뒤 전체 매니페스트 재스캔 — backlinks/headings 등 반영.
+      // Rescan the whole manifest after a successful save so backlinks and headings follow.
       if (state.handle) await load(state.handle);
     },
     [state.fileHandles, state.handle, state.manifest, load, requireWritePermission, markSelfWrite],
   );
 
   /**
-   * 새 .md 파일을 slug 경로에 생성. 같은 slug 가 이미 있으면 에러.
-   * 중간 디렉터리는 자동 생성. 템플릿 content 를 써서 초기 본문 채움.
+   * Creates a new `.md` at the slug path, erroring when one already exists. Intermediate
+   * directories are created, and the template content seeds the body.
    */
   const createDoc = useCallback(
     async (slug: string, content: string, opts: { skipRefresh?: boolean } = {}) => {
@@ -1193,16 +1179,16 @@ export function useLocalVaultInternal() {
       await writable.write(content);
       await writable.close();
       markSelfWrite(slug);
-      // opts.skipRefresh — 부트스트랩처럼 연속 생성하는 호출자가 마지막
-      // 쓰기에서만 리로드하도록 (updateFrontmatter 와 같은 계약).
+      // `opts.skipRefresh` lets a caller that creates several documents in a row (bootstrap)
+      // reload only on the last write — same contract as `updateFrontmatter`.
       if (!opts.skipRefresh && state.handle) await load(state.handle);
     },
     [state.fileHandles, state.handle, state.manifest, getParentAndName, load, markSelfWrite],
   );
 
   /**
-   * slug 에 해당하는 파일을 로컬 디스크에서 삭제. 중간 디렉터리가 비어도
-   * 제거하지 않음 (의도적 — 다른 파일 들어갈 수 있음).
+   * Deletes the file for a slug from local disk. Intermediate directories are deliberately
+   * left in place even when empty, since other files may land there.
    */
   const deleteDoc = useCallback(
     async (slug: string) => {
@@ -1215,16 +1201,16 @@ export function useLocalVaultInternal() {
   );
 
   /**
-   * 특정 slug 의 md 파일의 frontmatter 중 일부 key 만 업데이트. 본문은
-   * 보존. 간단 frontmatter 규칙 (key: value 한 줄 + tags/projects 같은
-   * 배열 [a, b]) 에서 동작. 복잡한 nested object 는 지원하지 않음.
+   * Updates only some frontmatter keys of a slug's markdown file, preserving the body. Works
+   * on our simple frontmatter rules (one `key: value` line, plus inline arrays like
+   * `tags`/`projects`); nested objects beyond one level are unsupported.
    *
-   * updates 의 key 에 이미 있으면 교체, 없으면 frontmatter 끝에 append.
-   * value 가 null 이면 해당 key 를 삭제.
+   * An existing key is replaced, a new one is appended to the end of the frontmatter, and a
+   * null value deletes the key.
    *
-   * 원자성 — saveDoc 과 같은 경로로 createWritable → write. refresh 는
-   * opts.skipRefresh 가 true 면 건너뛰어 연속 호출 시 스크롤/깜빡임
-   * 방지. opts.expectedMtime 은 saveDoc 과 같은 conflict guard.
+   * Atomicity is the same path as `saveDoc` (`createWritable` → write). `opts.skipRefresh`
+   * skips the refresh so a run of calls does not cause scroll jumps and flicker, and
+   * `opts.expectedMtime` is the same conflict guard as `saveDoc`.
    */
   const updateFrontmatter = useCallback(
     async (
@@ -1241,7 +1227,7 @@ export function useLocalVaultInternal() {
       assertIdentityPatch(raw, updates);
       const next = applyFrontmatterUpdates(raw, updates);
       assertNodeIdentityContent(slug, next, state.manifest?.docs ?? []);
-      if (next === raw) return; // 변경 없음
+      if (next === raw) return; // nothing changed
       const writable = await fh.createWritable();
       await writable.write(next);
       await writable.close();
@@ -1252,12 +1238,12 @@ export function useLocalVaultInternal() {
   );
 
   /**
-   * 로컬 볼트 내에서 slug 경로 변경 (rename 또는 이동). 기존 파일 내용을
-   * 읽어 새 위치에 create, 성공 시 원본 제거. 같은 slug 면 no-op.
+   * Changes a slug path inside the local vault (rename or move): read the existing content,
+   * create at the new location, and remove the original on success. Identical slugs are a no-op.
    *
-   * 옵션 `rewriteBacklinks=true` 면 vault 내 다른 md 파일들의 본문에서
-   * oldSlug 참조 ([[oldSlug]], [text](...oldSlug.md)) 를 newSlug 로 자동
-   * 치환. 실패해도 rename 자체는 유지되도록 best-effort.
+   * With `rewriteBacklinks=true`, references to `oldSlug` in other markdown bodies
+   * (`[[oldSlug]]`, `[text](...oldSlug.md)`) are rewritten to `newSlug`. Best effort — a
+   * failure there does not undo the rename.
    */
   const renameDoc = useCallback(
     async (
@@ -1267,15 +1253,15 @@ export function useLocalVaultInternal() {
     ) => {
       if (oldSlug === newSlug) return;
       /*
-       * ⚠️ **대소문자만 다른 이름은 같은 파일이다** (2026-08-16 검수 — MCP 쪽에서
-       * 문서가 사라지는 것을 재현했고, 이 경로도 같은 모양이다).
+       * ⚠️ **Names that differ only in case are the same file** (review 2026-08-16 — reproduced
+       * on the MCP side as documents disappearing; this path has the same shape).
        *
-       * 아래 충돌 검사는 Map 의 키 비교라 `Payments` 와 `payments` 를 다른 것으로
-       * 본다. 그런데 macOS·Windows 의 파일 시스템은 같은 파일로 보므로, 새
-       * 이름으로 쓰고 옛 이름을 지우면 **방금 쓴 그것이 지워진다.**
+       * The collision check below compares Map keys, so it sees `Payments` and `payments` as
+       * different. macOS and Windows filesystems see one file, so writing the new name and then
+       * deleting the old one **deletes what was just written**.
        *
-       * 그리고 이 앱의 `slugify` 가 이름을 소문자로 눕히므로, 「Payments」를
-       * 「payments」로 고치는 것은 사용자가 흔히 하는 정리다 — 드문 경우가 아니다.
+       * And since this app's `slugify` lowercases, renaming `Payments` to `payments` is ordinary
+       * tidying a user does — not a rare case.
        */
       if (oldSlug.toLowerCase() === newSlug.toLowerCase()) {
         throw new Error(`Case-only rename is not supported: "${oldSlug}" → "${newSlug}"`);
@@ -1301,23 +1287,23 @@ export function useLocalVaultInternal() {
         await oldResolved.parent.removeEntry(oldResolved.fileName);
       }
 
-      // --- backlinks 연쇄 치환 (옵션)
+      // --- optional cascading backlink rewrite
       if (opts.rewriteBacklinks && state.manifest) {
-        // 이 문서를 인용하는 slug 들을 manifest 의 linksOut 에서 역산
+        // Recover the slugs citing this document from the manifest's linksOut.
         const referrers = state.manifest.docs
           .filter(
             (d) => d.slug !== oldSlug && d.linksOut.includes(oldSlug),
           )
           .map((d) => d.slug);
-        // 각 referrer 의 raw 를 읽어 치환 — [[oldSlug...]] + (...oldSlug.md...)
-        // 형태 모두 대응. 다른 slug 앞뒤에 걸치지 않도록 경계 확인.
+        // Read each referrer's raw text and rewrite both `[[oldSlug...]]` and
+        // `(...oldSlug.md...)` forms, checking boundaries so a longer slug is not clipped.
         const escaped = oldSlug.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
         // [[oldSlug]] / [[oldSlug|..]] / [[oldSlug#..]]
         const wikiRe = new RegExp(
           `(\\[\\[)(${escaped})(\\||#|\\]\\])`,
           'g',
         );
-        // [text](path/oldSlug.md...) — 상대 경로 말미가 oldSlug.md 인 경우.
+        // [text](path/oldSlug.md...) — a relative path ending in oldSlug.md.
         const mdRe = new RegExp(
           `(\\]\\([^)]*?)(${escaped})(\\.md)`,
           'g',
@@ -1341,7 +1327,7 @@ export function useLocalVaultInternal() {
               await w.close();
             }
           } catch {
-            /* best-effort — 실패 파일은 스킵 */
+            /* Best effort — skip a file that fails. */
           }
         }
       }
@@ -1352,8 +1338,8 @@ export function useLocalVaultInternal() {
     [state.fileHandles, state.handle, state.manifest, getParentAndName, load, markSelfWrite],
   );
 
-  // 최초 1회 — IDB 에서 핸들 복원 시도. 동시에 FSA 미지원 브라우저면
-  // 'unsupported' state 로 전환 (initial 'idle' 에서 — SSR 일치 fix).
+  // Once on mount: try to restore the handle from IDB, and switch to 'unsupported' when the
+  // browser lacks FSA (starting from 'idle' keeps SSR consistent).
   useEffect(() => {
     if (!isSupported()) {
       setState((s) => ({ ...s, status: 'unsupported' }));
@@ -1374,10 +1360,10 @@ export function useLocalVaultInternal() {
       const permission = await verifyRead(handle, false);
       if (cancelled) return;
       if (permission === 'granted') {
-        // (데스크톱) 자동 복원의 흔한 침묵 실패: 저장된 vault 폴더가 앱을
-        // 껐던 사이 이동/삭제됨. load 안에서 raw io 오류로 터지는 대신,
-        // 먼저 preflight 해서 'path-missing' 로 분류 → picker 가 "폴더가
-        // 사라졌어요, 다시 선택하세요" 를 말한다.
+        // (Desktop) The common silent failure of auto-restore: the stored vault folder moved or
+        // was deleted while the app was closed. Preflight first so it classifies as
+        // 'path-missing' and the picker says the folder is gone and to choose again, instead of
+        // a raw io error thrown from inside `load`.
         if (!(await tauriVaultRecordResolves(record))) {
           if (!cancelled) {
             setState({
@@ -1425,23 +1411,20 @@ export function useLocalVaultInternal() {
   }, [load, refreshRecentVaults]);
 
   /**
-   * mission v2 ontology starter — 5개 markdown starter를 작성한다. 공개
-   * agent 패키지가 실제 설치 가능할 때만 .mcp.json / .codex 설정도 시드한다.
-   * registry E404 상태에서 실행 불가능한 npx 설정을 조용히 심지 않는다.
+   * Writes the ontology starter markdown files, and seeds `.mcp.json` / `.codex` config only
+   * when the bundled agent server is actually installable — an unrunnable config is never
+   * planted silently. Existing files are skipped rather than overwritten, so calling this on
+   * an existing vault is safe.
    *
-   * 이미 존재하는 파일은 덮어쓰지 않고 skip. 사용자가 기존 vault 에 호출해도
-   * 안전.
-   */
-  /**
-   * #73 — 스타터 본문 언어. 화면 언어로 만든 볼트는 그 언어로 읽히는 게 맞다.
-   * 파일 세트와 frontmatter 는 로케일과 무관하게 동일하므로 어떤 언어로
-   * 만들었든 같은 그래프가 나온다(계약 테스트가 잡는다).
+   * `starterLocale` decides the language of the starter bodies: a vault created from a screen
+   * in one language should read in that language. The file set and the frontmatter are
+   * locale-independent, so any language produces the same graph (a contract test proves it).
    *
-   * 로케일은 **필수 인자**다 — 기본값 `'en'` 을 두었더니 생성 경로 넷 중
-   * 둘이 인자를 안 넘겨, 한국어 화면에서 만든 볼트가 영어 본문으로 시드되는
-   * 결함이 살아 있었다(흐름 점검 2026-07-26 D2). 기본값을 없애면 새 호출
-   * 경로가 생겨도 타입이 로케일을 요구하므로 같은 drift 가 다시 열리지
-   * 않는다. 알 수 없는 로케일은 `starterFilesForLocale` 이 EN 으로 강등한다.
+   * The locale is a **required argument**. With a default of `'en'`, two of the four creation
+   * paths passed nothing and a vault created from a Korean screen was seeded with English
+   * bodies (walkthrough 2026-07-26). Removing the default makes the type demand a locale from
+   * any new call site, so the same drift cannot reopen. An unknown locale is downgraded to EN
+   * by `starterFilesForLocale`.
    */
   const scaffoldOntology = useCallback(async (starterLocale: string) => {
     if (!state.handle) {
@@ -1449,14 +1432,13 @@ export function useLocalVaultInternal() {
     }
     const vaultHandle = state.handle;
     await requireWritePermission(vaultHandle);
-    // #70 — 두 종류를 **따로** 센다. 예전엔 마크다운과 에이전트 설정을 한
-    // `created` 에 합쳐 토스트가 "시작 문서 8개" 라고 말했는데, 실제 온톨로지
-    // 개념은 5개였고 설정 패널은 "문서 5개" 라고 표시해 같은 볼트를 두고 두
-    // 화면이 다른 수를 말했다 (codex 감사 P2).
+    // Count the two kinds **separately**. They used to be summed into one `created`, so the
+    // toast said "8 starter documents" while the real ontology concept count was 5 and the
+    // settings panel said "5 documents" — two screens giving different numbers for one vault.
     let markdownCreated = 0;
     let skipped = 0;
     for (const { relPath, content } of materializeStarterFiles(starterLocale)) {
-      // slug 는 .md 확장자 제거한 경로로. createDoc / saveDoc 의 규칙 따름.
+      // The slug is the path with the `.md` extension removed, per createDoc / saveDoc rules.
       const slug = relPath.replace(/\.md$/, '');
       if (state.fileHandles.has(slug)) {
         skipped += 1;
@@ -1477,25 +1459,24 @@ export function useLocalVaultInternal() {
       }
     }
     /*
-     * 에이전트 안내문 — **설정만으로는 부족하다** (2026-08-17 실측).
-     * MCP 가 붙어 있어도 에이전트는 `sed`/`grep` 으로 frontmatter 를 직접
-     * 읽었다(MCP 호출 0회). 볼트에 `AGENTS.md` 를 두자 같은 질문에 곧바로
-     * `list_concepts` 를 불렀다. 근거는 `ontology-starter.ts` 의
-     * `VAULT_AGENT_GUIDE_PATH` 주석.
+     * The agent guide — **config alone is not enough** (measured 2026-08-17). Even with MCP
+     * connected, the agent read frontmatter directly with `sed` and `grep` (zero MCP calls).
+     * Putting `AGENTS.md` in the vault made it call `list_concepts` for the same question
+     * immediately. Evidence: the `VAULT_AGENT_GUIDE_PATH` comment in `ontology-starter.ts`.
      *
-     * **개념이 아니므로 `markdownCreated` 에 안 센다** — 그 숫자는 화면이
-     * 「개념 문서 N개」로 쓴다.
+     * **Not counted in `markdownCreated`**, because it is not a concept and that number is
+     * rendered as "N concept documents".
      */
     let guideCreated = 0;
     for (const guide of [
       vaultAgentGuideForLocale(starterLocale),
-      // Claude Code 는 `AGENTS.md` 를 직접 안 읽는다 — `CLAUDE.md` 의 임포트를
-      // 거친다. 하나만 두면 두 런타임 중 한쪽이 안내를 통째로 못 받는다.
+      // Claude Code does not read `AGENTS.md` directly; it goes through `CLAUDE.md`'s import.
+      // With only one of them, one of the two runtimes gets no guide at all.
       vaultClaudeBridgeForLocale(starterLocale),
       /*
-       * 절차 스킬 셋. 안내문이 「무엇을 부를지」를 준다면 이쪽은 「어떤 순서로,
-       * 어디서 멈출지」를 준다. 볼트가 곧 에이전트의 작업 폴더라 그대로 `/`
-       * 목록에 오른다 — 근거는 `ontology-starter.ts` 의 `VAULT_SKILL_NAMES` 주석.
+       * The procedural skill set. Where the guide says *what to call*, these say *in what order
+       * and where to stop*. The vault is the agent's working folder, so they appear directly in
+       * its `/` listing — evidence: the `VAULT_SKILL_NAMES` comment in `ontology-starter.ts`.
        */
       ...vaultSkillFilesForLocale(starterLocale),
     ]) {
@@ -1521,7 +1502,7 @@ export function useLocalVaultInternal() {
     }
 
     // Ready-to-use agent configs for "open the vault folder itself" flows.
-    // 번들 서버를 못 찾으면 fail closed: markdown starter만 만든다.
+    // Fail closed when the bundled server cannot be found: write the markdown starter only.
     const starterLaunch = await resolveBundledLaunch();
     const agentConfigResult = starterLaunch
       ? await writeAgentConfigFiles(vaultHandle, starterLaunch)
@@ -1529,11 +1510,11 @@ export function useLocalVaultInternal() {
     skipped += agentConfigResult.skipped;
     await load(vaultHandle);
     return {
-      /** 온톨로지 노드가 되는 마크다운 파일 수 — 지도/설정이 세는 것과 같은 단위. */
+      /** Markdown files that become ontology nodes — the same unit the map and settings count. */
       markdownCreated,
-      /** `.mcp.json` 등 에이전트 설정 파일 수 — 개념이 아니다. */
+      /** Agent config files such as `.mcp.json`. Not concepts. */
       agentConfigCreated: agentConfigResult.created + guideCreated,
-      /** 하위 호환 총합. 사용자에게 보여줄 땐 위 둘을 따로 말한다. */
+      /** Backwards-compatible total. When shown to a user, state the two above separately. */
       created: markdownCreated + agentConfigResult.created + guideCreated,
       skipped,
     };
@@ -1546,11 +1527,12 @@ export function useLocalVaultInternal() {
   ]);
 
   /**
-   * 「연결」 버튼이 부르는 쓰기 — **도구를 받아 그 파일만** 넘긴다.
+   * The write the "connect" button performs — it takes the client and writes **only that
+   * client's file**.
    *
-   * `client` 를 안 넘기면(스타터 볼트 스캐폴드) 종전대로 전부 쓴다. 그 자리의
-   * 라벨은 「연결」이 아니라 「새 폴더로 시작」이라, 설정 한 벌을 깔아 주는 것이
-   * 그 라벨이 약속한 일이다 — 같은 함수의 두 쓰임이지 같은 계약이 아니다.
+   * Omitting `client` (the starter-vault scaffold) still writes all of them. The label there is
+   * "start with a new folder", not "connect", and laying down one full set of configs is what
+   * that label promises — two uses of one function, not one contract.
    */
   const ensureAgentConfigs = useCallback(async (client?: AgentClientId) => {
     if (!state.handle) {
@@ -1588,23 +1570,22 @@ export function useLocalVaultInternal() {
     errorCode: state.errorCode,
     lastLoadedAt: state.lastLoadedAt,
     /**
-     * **같은 폴더를 다시 읽는 중**인가. 저장 직후·탭 복귀 재스캔이 여기 해당한다.
+     * Is this **a re-read of the same folder**? A save, or a rescan after the tab regains focus.
      *
-     * 왜 노출하나: 소비처가 `status !== 'loaded'` 만 보고 빈 결과를 돌려주면,
-     * 저장 한 번에 화면이 통째로 빈 상태로 깜빡였다가 돌아온다(2026-07-26 실측:
-     * 인라인 저장 직후 인사이트 탭 전체가 사라졌고, 그 프레임에 언마운트된
-     * 컴포넌트의 "저장했어요" 확인이 아예 안 보였다). 재독해 중이라는 것은
-     * 데이터가 없다는 뜻이 아니다 — 그동안은 방금까지의 내용을 계속 보여주는
-     * 것이 정직하다. 폴더를 **바꾸는** 중이면 false 라 이전 폴더가 새 폴더인 양
-     * 그려지는 일은 없다.
+     * Why it is exposed: a consumer that returns empty on `status !== 'loaded'` makes the whole
+     * screen blank and come back on every save. Measured 2026-07-26: right after an inline save
+     * the entire insights tab vanished, and the "saved" confirmation on the component unmounted
+     * in that frame was never seen at all. Re-reading does not mean there is no data — showing
+     * what was there a moment ago is the honest thing to do meanwhile. It is false while
+     * **switching** folders, so the previous folder is never drawn as if it were the new one.
      */
     isReloadingSameVault:
       state.status === 'loading' &&
       state.manifest !== null &&
       state.manifestHandle === state.handle,
     restoreAttempted,
-    // state-derived — SSR 일치 (lazy initializer 의 isSupported() 호출
-    // 회피). 'unsupported' 로 전환되는 시점은 mount 후 useEffect.
+    // Derived from state to stay SSR-consistent (avoiding an `isSupported()` call in the lazy
+    // initializer). The switch to 'unsupported' happens in a mount effect.
     isSupported: state.status !== 'unsupported',
     open,
     openRecent,

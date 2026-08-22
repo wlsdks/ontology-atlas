@@ -1,6 +1,7 @@
-// `ontology-atlas similar "<query>" [vault]` — 비슷한 노드 검색.
-// MCP `query_ontology({operation: 'similar_nodes'})` thin wrapper. 새 노드
-// 만들기 전 *duplicate 회피* 와 `/ontology-extract` skill 의 핵심 cross-check.
+// `ontology-atlas similar "<query>" [vault]` — finds similar nodes.
+// Thin wrapper over MCP `query_ontology({operation: 'similar_nodes'})`. This is
+// *duplicate avoidance* before creating a new node, and the core cross-check of
+// the `/ontology-extract` skill.
 
 import { COLORS, KIND_COLORS } from '../lib/colors.mjs';
 import { callMcpTool } from '../lib/mcp-call.mjs';
@@ -32,8 +33,8 @@ export async function runSimilar(args) {
     return 1;
   }
   const vaultRoot = resolveVaultRoot(vault);
-  // candidateSlug 우선 (slug-similarity), title 도 같이 (title-similarity).
-  // 둘 다 없으면 안 됨 (parseArgs 가 보장).
+  // candidateSlug takes precedence (slug-similarity), title rides along
+  // (title-similarity). At least one is required — parseArgs guarantees it.
   const toolArgs = { operation: 'similar_nodes', limit };
   if (slug) toolArgs.candidateSlug = slug;
   if (title) toolArgs.title = title;
@@ -79,7 +80,7 @@ function render(result, query) {
       `  ${COLORS.bold}${rank}${COLORS.reset} ${scoreColor}${score}${COLORS.reset}` +
         ` ${kc}${(n.kind || '?').padEnd(11)}${COLORS.reset} ${kc}${n.slug || '?'}${COLORS.reset}${title}\n`,
     );
-    // signals — score 가 어디서 왔는지 한 줄 (0 아닌 신호만)
+    // signals — one line on where the score came from (non-zero signals only)
     const signals = m.signals ?? {};
     const active = Object.entries(signals)
       .filter(([, v]) => typeof v === 'number' && v > 0)
@@ -94,7 +95,7 @@ function render(result, query) {
       );
     }
   }
-  // 행동 가이드 (한 줄)
+  // What to do next (one line)
   const top = matches[0];
   if (top && top.score >= 0.5) {
     process.stdout.write(
@@ -134,17 +135,18 @@ function parseArgs(args) {
   }
   const kindError = validateKindValue('--kind', flags.kind, VAULT_KINDS);
   if (kindError) return { error: kindError };
-  // **`--slug` 를 주면 첫 위치 인자는 제목이 아니라 vault 다** (2026-07-29 실측).
+  // **With `--slug`, the first positional is the vault, not a title** (measured 2026-07-29).
   //
-  // usage 는 두 형태를 나란히 문서화한다: `similar "<title>" [vault]` 와
-  // `similar --slug X`. 그런데 둘을 합치면(`similar --slug X /path/to/vault`)
-  // `vaultIndex: 1` 이 무조건 `positional[0]` 을 제목으로 먹어서, **vault 경로가
-  // 유사도 질의어가 되고 vault 는 cwd 로 떨어졌다.** 사용자는 자기가 지정한
-  // 폴더가 아니라 **다른 볼트**의 답을 받는다.
+  // The usage documents two forms side by side: `similar "<title>" [vault]` and
+  // `similar --slug X`. Combining them (`similar --slug X /path/to/vault`) made
+  // `vaultIndex: 1` unconditionally consume `positional[0]` as the title, so **the
+  // vault path became the similarity query and the vault fell back to cwd.** The
+  // user gets answers from **a different vault** than the folder they named.
   //
-  // 하필 이 명령의 일이 중복 회피(`/ontology-extract` 짝)라, 그 실패는
-  // "비슷한 게 없으니 새로 만들어도 된다" 는 **거짓 안심**으로 나타난다 —
-  // 볼트가 자라며 가장 크게 다치는 실패 모드다.
+  // This command's whole job is duplicate avoidance (the `/ontology-extract`
+  // counterpart), so the failure shows up as **false reassurance** — "nothing
+  // similar, safe to create a new one" — the failure mode that hurts most as a
+  // vault grows.
   const titleFromPositional = flags.slug ? null : positional[0] || null;
   const vaultResult = resolveTrailingVaultArg({
     vault: flags.vault,

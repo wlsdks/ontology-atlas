@@ -3,10 +3,10 @@ import { useCountUp } from "@/shared/lib/use-count-up";
 import type { CensusHealthSummary } from "../../lib/census-health";
 
 /**
- * 탭1 개요의 히어로 계기 — 개념/관계/건강 3 세그먼트, insights-final.html
- * §hero 를 그대로 옮긴다. 숫자는 각인(engraved) 스타일 — 토폴로지 캔버스가
- * 노드 카운트를 새기는 것과 같은 `--topology-v2-numeral-*` 토큰 재사용해
- * "패널과 캔버스는 같은 세계" 를 각인 숫자에서도 지킨다.
+ * The hero instruments of the overview tab — three segments (concepts, relations, health). The
+ * numbers use the engraved style, reusing the `--topology-v2-numeral-*` tokens the topology canvas
+ * uses to engrave node counts, so "the panel and the canvas are one world" holds in the engraved
+ * digits too.
  */
 export interface InsightsHeroCensusLabels {
   concepts: string;
@@ -14,12 +14,12 @@ export interface InsightsHeroCensusLabels {
   health: string;
   orphan: string;
   cycle: string;
-  /** 건강 세그먼트 주숫자(도메인 소속률) 옆 사람이 읽는 요약 — 예: "연결 잘 됨". */
+  /** The human-readable summary beside the health segment's main number (domain membership rate) — e.g. "well connected". */
   membershipLabel: string;
-  /** 밀도비를 강등한 서브라인 — 예: "개념 1개당 평균 연결 2.34개"(ratio 이미 주입). */
+  /** The subline the density ratio was demoted to — e.g. "an average of 2.34 connections per concept" (the ratio is already injected). */
   densityGloss: string;
   evidenceLinked: string;
-  /** 「할 일」 탭의 수리 큐와 같은 판정 — 따로 떨어진 무리 수. */
+  /** The same verdict as the "to do" tab's repair queue — the count of separated groups. */
   islands: string;
 }
 
@@ -36,13 +36,13 @@ export function InsightsHeroCensus({
   totalEdges: number;
   health: CensusHealthSummary;
   /**
-   * 「할 일」 탭 수리 큐가 세는 것과 **같은** 분리된 무리 수. 여기 같이
-   * 두는 이유: 큰 "100%" 만 보고 "우리 지도는 완벽히 이어졌다" 로 읽고
-   * 넘어가는 사람이 있었다. 100% 는 *도메인 소속률* 이지 연결률이 아니고,
-   * 같은 볼트에 62개의 따로 떨어진 무리가 있었다. 두 수를 한눈에 둔다.
+   * The **same** count of separated groups the "to do" tab's repair queue uses. Why it sits here
+   * too: some people read the large "100%" as "our map is perfectly connected" and moved on. That
+   * 100% is the *domain membership rate*, not a connection rate, and the same vault had 62
+   * separated groups. Both numbers are placed in one glance.
    */
   islandCount: number;
-  /** 요약 서브라인 — 예: "요소 250 · 역량 36 · 도메인 6 · 문서 3 · 프로젝트 1". */
+  /** The summary subline — e.g. "250 elements · 36 capabilities · 6 domains · 3 documents · 1 project". */
   kindsSummary: Array<{ key: string; label: string; count: number }>;
   relationsSummary: Array<{ key: string; label: string; count: number }>;
   labels: InsightsHeroCensusLabels;
@@ -57,9 +57,10 @@ export function InsightsHeroCensus({
         <BigNum value={totalEdges} />
         <SubStrip items={relationsSummary} />
       </HeroSegment>
-      {/* 건강 세그먼트 — 주숫자는 밀도비(2.34 edge/concept)가 아니라 사람이
-          바로 읽는 소속률(도메인에 담긴 개념 비율) + "연결 잘 됨" 요약. 밀도비는
-          densityGloss 서브라인으로 강등한다(전문용어를 주숫자에서 내린다). */}
+      {/* The health segment — the main number is the membership rate (the share of concepts held in
+          a domain) plus a "well connected" summary, rather than the density ratio (2.34
+          edges/concept). The density ratio is demoted to the `densityGloss` subline, keeping jargon
+          out of the main number. */}
       <HeroSegment label={labels.health}>
         <BigNum value={health.domainMembershipPct} suffix="%" unit={labels.membershipLabel} />
         <div className="mt-auto flex flex-col gap-1.5">
@@ -93,7 +94,7 @@ function BigNum({ value, unit, suffix }: { value: number | string; unit?: string
   const display = isNumeric ? counted : value;
   return (
     <div
-      // eslint-disable-next-line no-restricted-syntax -- 센서스 시그니처 대형 숫자(40px)는 type 램프 상단(hero 30px)을 넘는 의도적 display 예외.
+      // eslint-disable-next-line no-restricted-syntax -- the census signature's large numeral (40px) deliberately exceeds the top of the type ramp (hero 30px) as a display exception.
       className="font-mono text-[40px] font-[var(--font-weight-strong)] leading-display-tight tabular-nums tracking-[var(--tracking-label)] text-[color:var(--topology-v2-numeral-face)]"
       style={{ textShadow: "0 2px 0 var(--topology-v2-numeral-shadow)" }}
       data-testid="insights-bignum"

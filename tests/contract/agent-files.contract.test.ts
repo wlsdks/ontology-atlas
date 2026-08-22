@@ -6,15 +6,15 @@ import { analyzeAgentFiles as analyzeCli } from "../../cli/src/lib/agent-files.m
 /**
  * Agent-files detection contract — the read-only agent-file scanner lives in
  * 2 places that cannot share a physical module:
- *   - cli/src/lib/agent-files.mjs (별도 npm 패키지 — `ontology-atlas
- *     agent-files`, full-fs scanner: dot-dirs 포함 4종 drift 체크 전부)
- *   - src/views/docs-vault/lib/agent-files.ts (웹 문서함 — FSA 스캐너,
- *     dot-dir 불가시 → unverifiable 옵션으로 정직 강등)
+ *   - cli/src/lib/agent-files.mjs (separate package — `ontology-atlas agent-files`,
+ *     a full-fs scanner running all four drift checks, dot-dirs included)
+ *   - src/views/docs-vault/lib/agent-files.ts (web docs surface — an FSA scanner;
+ *     dot-dirs are invisible to it, so it degrades honestly to `unverifiable`)
  *
- * 같은 fixture 매트릭스(tests/fixtures/agent-files-cases.mjs)에 대해 두 구현
- * + fixture 의 expected 판정이 모두 일치해야 한다 (사실상 3-way: expected ×
- * cli × web). 메시지 phrasing 은 자유, 구조적 계약(records / check status /
- * drift check·code·path)은 strict — R11 contract 패턴.
+ * Against the same fixture matrix (tests/fixtures/agent-files-cases.mjs), the two
+ * implementations and the fixture's expected verdict must all agree (effectively
+ * 3-way: expected × cli × web). Message phrasing is free; the structural contract
+ * (records / check status / drift check, code, path) is strict.
  */
 
 type AnalyzeInput = Parameters<typeof analyzeWeb>[0];

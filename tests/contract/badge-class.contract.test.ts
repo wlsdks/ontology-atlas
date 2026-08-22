@@ -6,27 +6,29 @@ import { describe, expect, it } from "vitest";
 import { badgeClass, type BadgeShape } from "../../src/shared/ui/badge-class";
 
 /**
- * 정적 배지 값 층 계약 — **cva 가 합쳐 내는 결과 문자열**을 판정한다.
+ * The static badge value-layer contract — it judges **the string cva composes**.
  *
- * lint 가 못 보는 층이다: 코드에는 `shape: 'pill'` 같은 키만 적혀 있고 실제
- * 값은 실행할 때 합쳐지므로 `no-restricted-syntax` 가 볼 문자열이 없다
- * (`control-class.contract.test.ts` 와 같은 형식·같은 이유).
+ * This is a layer lint cannot see: the code carries only keys such as
+ * `shape: 'pill'` and the real values are composed at runtime, so
+ * `no-restricted-syntax` has no string to look at (same form and same reason as
+ * `control-class.contract.test.ts`).
  *
- * 잠그는 성질 넷:
- * 1. 모든 모양의 출력이 **램프 안**이다 — 반경 스텝 · 타입 스텝만. 램프 밖
- *    리터럴(`px-[3px]` · `#hex` · `text-sm`)이 새면 실패한다.
- * 2. 축이 조용히 늘지 않는다 — `shape` 하나 · 세 모양.
- * 3. **색과 자간은 값 층이 내지 않는다.** 실측에서 색 조합이 60종(최대
- *    클러스터 2)이라 수렴할 다수파가 없었고, 그래서 tone 축을 만드는 것은
- *    소비처 0 선택지를 만드는 일이 된다. 이 단언이 그 판단을 못박는다 —
- *    나중에 tone 을 넣으려면 이 줄을 고쳐야 하고, 그 diff 가 근거를 요구한다.
- * 4. 기본값은 가장 조용한 모양이다.
+ * Four properties locked:
+ * 1. Every shape's output is **inside the ramp** — radius steps and type steps
+ *    only. An off-ramp literal (`px-[3px]`, `#hex`, `text-sm`) fails.
+ * 2. Axes do not grow quietly — one `shape`, three shapes.
+ * 3. **Colour and tracking are not emitted by the value layer.** Measurement found
+ *    60 distinct colour combinations (largest cluster 2), so there was no majority
+ *    to converge on and adding a tone axis would create an option with 0 consumers.
+ *    This assertion pins that judgement — adding tone later requires editing this
+ *    line, and that diff demands evidence.
+ * 4. The default is the quietest shape.
  */
 
 const ROOT = process.cwd();
 const SHAPES: BadgeShape[] = ["micro", "tag", "pill"];
 
-/** 램프가 정한 반경·타입 스텝 이름. 값은 `app/globals.css` 가 소유한다. */
+/** The radius and type step names the ramp defines. `app/globals.css` owns the values. */
 const RADIUS_STEPS = ["rounded-micro", "rounded-chip", "rounded-full"];
 const TYPE_STEPS = ["text-caption", "text-label"];
 
@@ -42,18 +44,18 @@ describe("badgeClass — 정적 배지 값 층", () => {
     const offenders: string[] = [];
     for (const { shape, out } of all) {
       const label = shape;
-      // 반경은 램프 스텝 하나만.
+      // Exactly one radius ramp step.
       const radii = RADIUS_STEPS.filter((r) => new RegExp(`\\b${r}\\b`).test(out));
       if (radii.length !== 1) offenders.push(`${label}: 반경 스텝 ${radii.length}개`);
-      // 타입도 램프 스텝 하나만.
+      // Exactly one type ramp step.
       const types = TYPE_STEPS.filter((t) => new RegExp(`\\b${t}\\b`).test(out));
       if (types.length !== 1) offenders.push(`${label}: 타입 스텝 ${types.length}개`);
-      // 색은 토큰만 — 생 hex·Tailwind 팔레트 금지.
+      // Colours must be tokens — no raw hex, no Tailwind palette.
       if (/#[0-9a-fA-F]{3,8}/.test(out)) offenders.push(`${label}: hex 리터럴`);
       if (/\b(?:text|bg|border)-(?:white|black|slate|gray|zinc|red|amber|indigo)-\d/.test(out)) {
         offenders.push(`${label}: Tailwind 팔레트`);
       }
-      // 임의 길이 값 금지(px-[3px] 류).
+      // No arbitrary length values (px-[3px] and friends).
       if (/\b(?:px|py|p|text|rounded)-\[[0-9.]/.test(out)) offenders.push(`${label}: 램프 밖 리터럴`);
     }
     expect(offenders, "값 층이 램프 밖으로 샜다").toEqual([]);

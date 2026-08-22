@@ -7,12 +7,13 @@ import {
 } from './mention-relation';
 
 /**
- * `@` 멘션이 지키는 성질은 하나다: **고르면 그래프가 바뀐다.**
+ * The `@` mention holds one property: **choosing changes the graph.**
  *
- * 종전 `[[` 위키링크는 그러지 않았다 — 같은 볼트에서 위키링크를 넣었다 뺐을 때
- * 컴파일 엣지 수도 그래프 해시도 동일했다(9 · `c07785b6`, 2026-08-08 실측).
- * 그래서 이 시험들은 「메뉴가 뜨나」가 아니라 **「frontmatter 가 바뀌나」**를
- * 잰다. 뜨기만 하고 안 바뀌면 이름만 바꾼 같은 결함이다.
+ * The old `[[` wikilink did not. Adding and removing a wikilink in the same vault
+ * left the compiled edge count and the graph hash identical (9 · `c07785b6`,
+ * measured 2026-08-08). So these tests measure not 「does the menu appear」 but
+ * **「does the frontmatter change」**. A menu that appears and changes nothing is
+ * the same defect under a new name.
  */
 
 const DOC = [
@@ -42,21 +43,21 @@ describe('detectMentionTrigger — 매칭이 없으면 평범한 글자로 남�
   });
 
   /**
-   * 문서함은 로컬 볼트를 열면 `CLAUDE.md`·`AGENTS.md` 도 편집할 수 있고,
-   * 그 파일에서 `@AGENTS.md` 는 **진짜 import 문법**이다. 메뉴가 거기 끼어들면
-   * 남의 문법을 가로채는 것이다.
+   * With a local vault open, the docs vault can also edit `CLAUDE.md` and
+   * `AGENTS.md`, and in those files `@AGENTS.md` is **real import syntax**. A menu
+   * intruding there hijacks someone else's syntax.
    */
   it('경로 표기(@AGENTS.md · @docs/…)는 가로채지 않는다', () => {
     for (const src of ['@AGENTS.md', '읽어라 @docs/FOUNDATIONS.md', '@.claude/rules']) {
       const hit = detectMentionTrigger(src, src.length);
-      // `.` 또는 `/` 로 시작하는 질의어는 트리거가 아니다.
+      // A query starting with `.` or `/` is not a trigger.
       expect(hit === null || !/^[/.]/.test(hit.query)).toBe(true);
     }
-    // 「경로가 되는 순간」이 아니라 **경로 글자가 들어오는 순간** 물러난다 —
-    // 타이핑 도중 메뉴가 떴다 사라지면 그 깜빡임 사이의 Enter 가 남의 문법을
-    // 노드 이름으로 바꿔 버린다.
-    expect(detectMentionTrigger('@AGENTS', 7)).not.toBeNull(); // 아직 평범한 질의어
-    expect(detectMentionTrigger('@AGENTS.md', 10)).toBeNull(); // 점이 들어오면 끝
+    // It withdraws **the moment a path character arrives**, not the moment it
+    // becomes a path — a menu that appears and vanishes mid-typing leaves an Enter
+    // in that flicker turning someone else's syntax into a node name.
+    expect(detectMentionTrigger('@AGENTS', 7)).not.toBeNull(); // still an ordinary query
+    expect(detectMentionTrigger('@AGENTS.md', 10)).toBeNull(); // the dot ends it
     expect(detectMentionTrigger('@docs/x', 7)).toBeNull();
   });
 
@@ -88,11 +89,12 @@ describe('insertMentionRelation — 본문은 문장, frontmatter 는 사실', (
     });
 
     expect(result.relationAdded).toBe(true);
-    // ① 사실 — frontmatter
+    // ① The fact — frontmatter
     expect(result.content).toContain('dependencies: [capabilities/beta]');
-    // ② 글 — 본문에는 **눌러서 갈 수 있는 표기**. 평문이면 아무 일도 안
-    //    일어난 것처럼 보인다(소유자 지적 2026-08-08). 뷰어·옵시디언·GitHub
-    //    셋 다 링크로 읽는 표기라 우리만의 규격을 발명하지 않는다.
+    // ② The prose — the body gets **a notation you can click through**. Plain text
+    //    looks as though nothing happened (owner report, 2026-08-08). The viewer,
+    //    Obsidian and GitHub all read this notation as a link, so no format of our
+    //    own is invented.
     expect(result.content).toContain('이 기능은 [베타](./beta.md)');
     expect(result.content).not.toContain('@베');
   });
@@ -106,7 +108,7 @@ describe('insertMentionRelation — 본문은 문장, frontmatter 는 사실', (
       target: { slug: 'capabilities/beta', title: '베타' },
       relationId: 'relates',
     });
-    // 커서는 방금 넣은 표기의 **뒤**에 선다 — 이어서 글을 쓸 수 있어야 한다.
+    // The caret lands **after** the inserted notation — you have to be able to keep writing.
     expect(result.content.slice(result.caret - 1, result.caret)).toBe(')');
   });
 
@@ -125,18 +127,18 @@ describe('insertMentionRelation — 본문은 문장, frontmatter 는 사실', (
     });
     expect(result.relationAdded).toBe(false);
     expect(result.content).toContain('relates: [capabilities/beta]');
-    // frontmatter 의 관계는 **한 번만** 적힌다 — 본문 표기가 몇 개든.
+    // A relation is written to the frontmatter **once**, however many body notations there are.
     const fm = result.content.slice(0, result.content.indexOf('---', 3));
     expect(fm.match(/capabilities\/beta/g)).toHaveLength(1);
-    // 본문에는 눌러 갈 수 있는 표기가 들어간다(이미 이어져 있어도 글은 쓴다).
+    // The body gets a clickable notation (prose is written even when the link already exists).
     expect(result.content).toContain('[베타](./beta.md)');
   });
 
   /**
-   * 정렬 규칙을 여기서 새로 정하지 않는다 — `validate-vault-document.ts` 의
-   * `non-canonical-graph-array` 가 이미 «중복 제거 + localeCompare 정렬» 을
-   * 요구한다. 그것과 다르게 쓰면 우리가 방금 쓴 파일이 우리 검사에서 경고를
-   * 받는다.
+   * The sort rule is not redefined here — `non-canonical-graph-array` in
+   * `validate-vault-document.ts` already requires «deduplicated plus localeCompare
+   * sorted». Writing it differently would make the file we just wrote raise a
+   * warning in our own check.
    */
   it('기존 항목이 있으면 정렬된 집합으로 합친다', () => {
     const withRelation = DOC.replace(
@@ -165,18 +167,19 @@ describe('insertMentionRelation — 본문은 문장, frontmatter 는 사실', (
       target: { slug: 'capabilities/beta', title: '   ' },
       relationId: 'contains',
     });
-    // 제목이 없으면 슬러그를 라벨로 — 빈 대괄호를 남기지 않는다.
+    // With no title, the slug becomes the label — no empty brackets are left behind.
     expect(result.content).toContain('이 기능은 [capabilities/beta](./beta.md)');
   });
 
   /**
-   * **자기 자신과는 이을 수 없다** — 그리고 이 단언이 실제 버그를 잡았다.
+   * **A node cannot link to itself** — and this assertion caught a real bug.
    *
-   * 2026-08-08: 호출부에서 `const { doc, trigger } = pendingMention` 이
-   * 컴포넌트 prop `doc`(편집 중 문서)를 가려, 기준점으로 **고른 대상**이
-   * 넘어갔다. 그러면 기준점과 목적지가 같아져 링크가 `./같은폴더.md` 로 나온다.
-   * 화면에서 실측으로 잡았지만, 이 단언이 있었으면 **호출하는 순간** 터졌다.
-   * 잘못 쓰기 어려운 API 가 주석보다 강하다.
+   * 2026-08-08: at the call site, `const { doc, trigger } = pendingMention` shadowed
+   * the component prop `doc` (the document being edited), so **the chosen target**
+   * was passed as the base point. The base and destination then match and the link
+   * comes out as `./같은폴더.md`. It was caught by measuring the screen, but with
+   * this assertion in place it would have thrown **at the call**. An API that is
+   * hard to misuse beats a comment.
    */
   it('편집 중 문서와 고른 문서가 같으면 거절한다', () => {
     const content = `${DOC}@알`;
@@ -195,13 +198,13 @@ describe('insertMentionRelation — 본문은 문장, frontmatter 는 사실', (
     const content = `${DOC}@베`;
     const result = insertMentionRelation({
       content,
-      // 편집 중 문서는 domains/ 아래, 고른 것은 capabilities/ 아래.
+      // The document being edited is under domains/, the chosen one under capabilities/.
       editingSlug: 'domains/orders',
       trigger: trigger(content),
       target: { slug: 'capabilities/beta', title: '베타' },
       relationId: 'relates',
     });
-    // 기준점을 잘못 넘기면 `./beta.md`(같은 폴더)가 되어 해소되지 않는다.
+    // Passing the wrong base point yields `./beta.md` (same folder), which does not resolve.
     expect(result.content).toContain('[베타](../capabilities/beta.md)');
   });
 

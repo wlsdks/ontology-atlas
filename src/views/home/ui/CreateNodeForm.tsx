@@ -9,13 +9,9 @@ import { OntologyChangeReview } from "@/features/ontology-change-review";
 import type { OntologyChangeSet } from "@/entities/knowledge-graph";
 
 /**
- * S2.1a — 토폴로지에서 새 온톨로지 노드를 만드는 작은 form (presentational).
- *
- * ontology-first: 그래프 위에서 바로 노드를 만든다(빌더 조립 대신). title +
- * kind + optional domain → `onCreate` 콜백. 실제 vault write(createDoc)는
- * HomePage 글루(S2.1b)가 담당. 라벨 prop 주입 → 순수 컴포넌트, 단위 test 용이.
- *
- * 디자인 헌장 준수: 무채색 + 단일 인디고, glow/scale 없음.
+ * Presentational form for creating a node from the map itself, rather than
+ * assembling one in a separate builder. It only reports title + kind + optional
+ * domain through `onCreate`; the vault write lives in the HomePage glue.
  */
 
 export type CreateNodeKind = "project" | "domain" | "capability" | "element";
@@ -25,13 +21,13 @@ export interface CreateNodeFormLabels {
   heading: string;
   titlePlaceholder: string;
   kind: string;
-  /** 도메인 선택 aria 라벨. */
+  /** aria label for the domain picker. */
   domain: string;
-  /** #8 평문화 — 도메인 피커의 보이는 질문 라벨("어느 묶음(도메인)에 넣을까요? (선택)"). */
+  /** The picker's visible question — plain words, not the word "domain" alone. */
   domainQuestion: string;
-  /** #8 — "도메인 없음" 옵션 라벨(도메인 미배정). */
+  /** Option label for "no domain" (unassigned). */
   domainNone: string;
-  /** #8 — "도메인" 이 뭔지 비개발자용 한 줄 설명. */
+  /** One line explaining what a domain is, for a non-developer. */
   domainHelper: string;
   create: string;
   cancel: string;
@@ -40,17 +36,17 @@ export interface CreateNodeFormLabels {
   reviewConfirm: string;
   reviewConfirming: string;
   kindLabels: Record<CreateNodeKind, string>;
-  /** 어권별 이름 UI — `localeNames` 를 넘길 때만 쓰인다. */
+  /** Per-locale name UI — used only when `localeNames` is passed. */
   primaryNamePlaceholder: string;
   secondaryNamePlaceholder: string;
   localeNamesHint: string;
   primaryLocaleRequired: string;
 }
 
-// 2026-07-24 온보딩 QA — 시작 체크리스트 1단계("첫 프로젝트 만들기")가
-// 만들 수 없는 것을 시키고 있었다. 쓰기 경로(vaultFolderForKind)는 이미
-// project 를 지원하므로 선택지에 추가한다. 계층 순서(프로젝트→도메인→
-// 역량→요소)로 나열.
+// Onboarding QA 2026-07-24: the checklist's first step ("create your first
+// project") asked for something this form could not create. The write path
+// (`vaultFolderForKind`) already supported `project`, so it joins the options.
+// Ordered by containment: project → domain → capability → element.
 const KINDS: readonly CreateNodeKind[] = ["project", "domain", "capability", "element"];
 
 export function CreateNodeForm({
@@ -67,7 +63,7 @@ export function CreateNodeForm({
     title: string;
     kind: CreateNodeKind;
     domain?: string;
-    /** 어권별 표시 이름 — `{ ko, en }` → `display_ko` / `display_en`. */
+    /** Per-locale display names — `{ ko, en }` → `display_ko` / `display_en`. */
     localeLabels?: Record<string, string>;
   }) => boolean | void | Promise<boolean | void>;
   onCancel?: () => void;
@@ -80,23 +76,25 @@ export function CreateNodeForm({
   } | null;
   defaultKind?: CreateNodeKind;
   /**
-   * 미리 고른 도메인 (2026-08-03) — 지도의 도메인 노드에서 「이어서 새로
-   * 만들기」로 열면 그 도메인이 이미 골라져 있다. 사람이 방금 누른 노드를
-   * 다시 고르게 하는 것은 물어볼 필요 없는 것을 묻는 것이다.
+   * Pre-picked domain (2026-08-03) — opening this from a domain node on the map
+   * arrives with that domain already selected. Making someone re-pick the node
+   * they just clicked is asking a question that has no need to be asked.
    */
   defaultDomain?: string;
   /**
-   * #8 평문화 — 기존 도메인 목록(값 = bare tail-slug, 라벨 = 표시 이름).
-   * 자유 입력 slug 대신 이 목록 + "도메인 없음" 에서 고른다(비개발자가
-   * slug 를 알 필요 없음). 빈 목록이면 "도메인 없음" 만 노출된다(새 볼트 —
-   * 도메인을 먼저 만든 뒤 배정하면 된다).
+   * Existing domains (value = bare tail-slug, label = display name). The user
+   * picks from this list plus "no domain" instead of typing a slug freehand, so
+   * a non-developer never has to know what a slug is. An empty list leaves only
+   * "no domain" — a fresh vault, where a domain is created first and assigned
+   * afterwards.
    */
   domainOptions?: readonly { value: string; label: string }[];
   /**
-   * 어권별 이름 입력 계약 (소유자 지시 2026-07-24). 지금 화면 언어가
-   * `primaryLocale`, 나머지가 `secondaryLocale`. **자기 화면 언어 칸은
-   * 필수** — 다른 언어만 채우고 넘어가면 정작 본인 화면에서 원문 title 이
-   * 그대로 보이는 사고가 난다. 생략하면 종전 단일 이름 폼(하위호환).
+   * Per-locale name contract (owner instruction, 2026-07-24). The current screen
+   * language is `primaryLocale`, the other is `secondaryLocale`. **The user's own
+   * screen language is required**: filling only the other one leaves the raw
+   * title showing on their own screen. Omit this prop for the older single-name
+   * form.
    */
   localeNames?: {
     primaryLocale: string;
@@ -110,8 +108,8 @@ export function CreateNodeForm({
   const [creating, setCreating] = useState(false);
 
   const primaryEmpty = title.trim().length === 0;
-  // "다른 언어만 채운" 상태 — 저장을 막고 이유를 그 자리에서 말한다(모달
-  // 대신 인라인: 입력 중 흐름을 끊지 않으면서 규칙을 즉시 학습시킨다).
+  // "Only the other language is filled" — block the save and say why in place.
+  // Inline rather than a modal: the rule is learned without breaking the typing.
   const secondaryOnly = Boolean(localeNames) && primaryEmpty && secondaryName.trim().length > 0;
   const canCreate = !primaryEmpty && !creating;
 
@@ -198,9 +196,8 @@ export function CreateNodeForm({
         />
         {localeNames ? (
           <>
-            {/* 어권별 이름 (소유자 지시 2026-07-24) — 위 칸이 지금 화면
-                언어(필수), 이 칸이 다른 언어(선택). 배지로 어느 칸이 어느
-                언어인지 한눈에 구분한다. */}
+            {/* The field above is the current screen language (required); this one
+                is the other language (optional). */}
             <input
               type="text"
               value={secondaryName}
@@ -229,7 +226,6 @@ export function CreateNodeForm({
             )}
           </>
         ) : null}
-        {/* 종류 — 한 줄 라벨 + 캐노니컬 Select(#4). */}
         <label className="flex flex-col gap-1.5">
           <span className="font-mono text-label uppercase tracking-[var(--tracking-caps-10)] text-[color:var(--color-text-quaternary)]">
             {labels.kind}
@@ -244,9 +240,8 @@ export function CreateNodeForm({
             options={KINDS.map((k) => ({ value: k, label: labels.kindLabels[k] }))}
           />
         </label>
-        {/* #8 평문화 — 자유 입력 slug 대신 기존 도메인 이름 목록 + "도메인
-            없음" 을 캐노니컬 Select 로 고른다. 비개발자가 slug 를 알 필요가
-            없고, 값은 저장 시 canonicalizeDomainRef 를 지난다(HomePage 글루). */}
+        {/* The picked value passes through `canonicalizeDomainRef` on save
+            (HomePage glue), so the option values stay bare tail-slugs here. */}
         <div className="flex flex-col gap-1.5">
           <span className="font-mono text-label uppercase tracking-[var(--tracking-caps-10)] text-[color:var(--color-text-quaternary)]">
             {labels.domainQuestion}

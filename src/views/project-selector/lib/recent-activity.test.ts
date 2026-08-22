@@ -16,9 +16,9 @@ function doc(overrides: Partial<VaultDoc> & Pick<VaultDoc, "slug" | "updatedAt">
     linksOut: [],
     ...overrides,
   };
-  // 두 생산 경로(`scripts/build-docs-vault.mjs`, `build-local-manifest.ts`)는
-  // 둘 다 `doc.description` 을 **frontmatter 의 그 키에서만** 채운다. 픽스처도
-  // 같게 둔다 — 한쪽만 채운 픽스처는 실제로 불가능한 문서를 시험하는 것이다.
+  // Both production paths (`scripts/build-docs-vault.mjs`, `build-local-manifest.ts`) fill
+  // `doc.description` **only from that frontmatter key**. The fixture matches — a fixture filling only
+  // one side would be testing a document that cannot actually exist.
   if (typeof merged.description === "string" && merged.frontmatter.description === undefined) {
     merged.frontmatter = { ...merged.frontmatter, description: merged.description };
   }
@@ -63,9 +63,9 @@ describe("resolveRecentActivityAgo", () => {
 
 describe("buildRecentActivityRows", () => {
   it("sorts vault docs by real mtime desc, resolves kind + nearest domain title, skips project/readme noise", () => {
-    // doc.slug 는 vault-relative 전체 경로(deriveDocNode 의 doc.slug 규약과 동일하게
-    // "ontology/" 루트 접두를 포함) — 실제 node id 는 file tail 만 쓴다는 점이
-    // 이 테스트의 핵심 회귀 포인트다.
+    // `doc.slug` is the full vault-relative path (including the "ontology/" root prefix, matching
+    // `deriveDocNode`'s doc.slug convention) — that a real node id uses only the file tail is this test's
+    // core regression point.
     const docs: VaultDoc[] = [
       doc({
         slug: "ontology/elements/topology-map-canvas",
@@ -141,8 +141,8 @@ describe("buildRecentActivityRows", () => {
   });
 
   it("설명이 없으면 발췌로 떨어지지 않는다 — 카드 본문과 같은 규칙(A2)", () => {
-    // `node.summary` 도 폴백에서 뺀다: 그 값 자체가 `doc.excerpt` 로 떨어지므로
-    // 남겨 두면 발췌가 한 칸 우회해서 다시 들어온다.
+    // `node.summary` is excluded from the fallback too: that value itself falls back to `doc.excerpt`, so
+    // keeping it lets the excerpt back in via one detour.
     const docs: VaultDoc[] = [
       doc({
         slug: "ontology/elements/a",
@@ -173,7 +173,7 @@ describe("buildRecentActivityRows", () => {
     const rows = buildRecentActivityRows([written], new Map(), new Map(), 4);
 
     expect(rows[0].what).toBe("지도 뷰 단일 컨테이너 변환 엔진");
-    // 같은 문서, 같은 판정 — 카드 본문 소비자와 한 출처를 쓴다.
+    // Same document, same verdict — one source shared with the card-body consumer.
     expect(resolveAuthoredDescription(written)).toBe("지도 뷰 단일 컨테이너 변환 엔진");
   });
 

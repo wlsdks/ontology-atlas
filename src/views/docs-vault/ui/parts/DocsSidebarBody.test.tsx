@@ -89,13 +89,13 @@ function renderSidebar(
 
 describe("DocsSidebarBody — 최근 바뀐 문서 (목록 안 조용한 섹션, 기본 접힘)", () => {
   const now = Date.now();
-  const recentIso = new Date(now - 2 * 24 * 60 * 60 * 1000).toISOString(); // 2일 전
-  const oldIso = new Date(now - 90 * 24 * 60 * 60 * 1000).toISOString(); // 90일 전
+  const recentIso = new Date(now - 2 * 24 * 60 * 60 * 1000).toISOString(); // 2 days ago
+  const oldIso = new Date(now - 90 * 24 * 60 * 60 * 1000).toISOString(); // 90 days ago
 
   it("기본 접힘 — 토글을 열면 최근 변경 문서만 보인다", () => {
     renderSidebar([makeDoc("a", "Recent Doc", recentIso), makeDoc("b", "Old Doc", oldIso)]);
 
-    // #22 — 기본 접힘이라 목록은 처음에 숨어 있다.
+    // Collapsed by default, so the list is hidden at first.
     expect(screen.queryByTestId("docs-sidebar-recently-changed-list")).not.toBeInTheDocument();
     fireEvent.click(screen.getByTestId("docs-sidebar-recently-changed-toggle"));
     expect(screen.getByTestId("docs-sidebar-recently-changed-list")).toBeInTheDocument();
@@ -135,7 +135,7 @@ describe("DocsSidebarBody — #22 아이콘 행: 검색 토글 + 카운트", () 
       makeDoc("order", "주문 문서", new Date().toISOString()),
       makeDoc("ship", "배송 문서", new Date().toISOString()),
     ]);
-    // 기본은 검색창 없음 (밀도 축소)
+    // No search box by default (density).
     expect(
       screen.queryByPlaceholderText(
         koMessages.vaultWidgets.parts.sidebar.searchPlaceholder,
@@ -186,16 +186,17 @@ describe("DocsSidebarBody — #22 아이콘 행: 검색 토글 + 카운트", () 
   });
 
   /**
-   * **지키는 성질은 그대로, 말하는 자리만 옮겼다** (2026-08-08, 2안).
+   * **The property held is the same; only where it is stated moved** (2026-08-08).
    *
-   * 종전엔 아이콘 셋이 라벨을 툴팁에만 갖고 있어서 «지금 무엇으로 걸러진
-   * 목록인가» 를 아래 회색 캡션 한 줄이 대신 말했다. 그 줄이 상수 "전체
-   * 문서" 이던 시절의 회귀(설치 앱 재현)를 막으려고 이 시험들이 생겼다.
+   * The three icons used to keep their labels in tooltips only, so «which filter is this
+   * list under» was answered instead by the grey caption line below. These tests exist to
+   * stop the regression, reproduced in the installed app, where that line was the constant
+   * "all documents".
    *
-   * 이제 **켜진 칩이 자기 이름을 직접 말한다** — 정보가 컨트롤 안으로
-   * 들어왔으니 캡션 줄은 검색·태그처럼 컨트롤이 담을 수 없는 값에만 남는다.
-   * 그래서 시험도 이름을 **칩에서** 찾는다. 원래 막으려던 회귀(「지도 문서」를
-   * 골랐는데 화면이 "전체 문서" 라고 말함)는 그대로 잡힌다.
+   * Now **the active chip states its own name** — the information moved inside the control,
+   * so the caption line is left only for values a control cannot hold, such as search and
+   * tags. So the tests look for the name **on the chip**. The regression they were written
+   * for (choosing "map documents" while the screen says "all documents") is still caught.
    */
   it("켜진 보기가 자기 이름을 화면에 말한다", () => {
     const docs = [
@@ -209,10 +210,10 @@ describe("DocsSidebarBody — #22 아이콘 행: 검색 토글 + 카운트", () 
     });
     const active = screen.getByTestId("docs-sidebar-collection-ontology");
     expect(active).toHaveTextContent("지도 문서");
-    // 2026-08-15 (8) — 배타 단일선택이라 radiogroup + aria-checked 다.
+    // Exclusive single selection, hence radiogroup + aria-checked.
     expect(active).toHaveAttribute("aria-checked", "true");
     expect(active).toHaveAttribute("role", "radio");
-    // 안 고른 보기는 이름을 안 말한다 — 켜진 것 하나만 말해야 «지금» 이 읽힌다.
+    // An unselected view states no name — only the active one speaks, so «now» is readable.
     expect(screen.getByTestId("docs-sidebar-collection-all")).toHaveTextContent("");
     expect(screen.queryByText("전체 문서")).not.toBeInTheDocument();
   });
@@ -229,16 +230,16 @@ describe("DocsSidebarBody — #22 아이콘 행: 검색 토글 + 카운트", () 
     });
     const active = screen.getByTestId("docs-sidebar-collection-all");
     expect(active).toHaveTextContent("전체 문서");
-    // 2026-08-15 (8) — 배타 단일선택이라 radiogroup + aria-checked 다.
+    // Exclusive single selection, hence radiogroup + aria-checked.
     expect(active).toHaveAttribute("aria-checked", "true");
     expect(active).toHaveAttribute("role", "radio");
-    // 개수는 툴팁(접근성 이름)이 계속 갖는다 — 칩 라벨이 폭을 먹지 않게.
+    // The count stays in the tooltip (the accessible name), so the chip label does not eat width.
     expect(active.getAttribute("aria-label")).toContain("3");
   });
 
   /**
-   * 캡션 줄은 **컨트롤이 담을 수 없는 값**일 때만 나온다. 아무 상태도 아닐
-   * 때 빈 줄이 남아 있으면 그건 사라진 정보의 자리표시일 뿐이다.
+   * The caption line appears only for **values a control cannot hold**. An empty line left
+   * behind when there is no state at all is just a placeholder for information that is gone.
    */
   it("검색어도 태그도 없으면 캡션 줄 자체가 없다", () => {
     renderSidebar([makeDoc("a", "A", new Date().toISOString())], {
@@ -303,33 +304,34 @@ describe("DocsSidebarBody — [D-4] 새 문서 진입점", () => {
   });
 
   /**
-   * 읽기 전용 샘플에서도 **누를 수 있다** (2026-07-28 소유자 실사용 제보).
+   * It is **pressable even in the read-only sample** (owner report from real use, 2026-07-28).
    *
-   * 종전 계약은 "비활성 + 툴팁 힌트" 였고 이 테스트가 그것을 지켰다. 그런데
-   * 40% 불투명도 아이콘의 **호버 전용** 설명은 도달하지 않았다 — 소유자에게
-   * 그 화면은 "새 문서 기능이 없다" 로 읽혔고, 키보드 사용자는 `disabled`
-   * 때문에 Tab 순서에서 아예 빠져 존재조차 알 수 없었다.
+   * The old contract was "disabled plus a tooltip hint", and this test enforced it. But a
+   * **hover-only** explanation on a 40%-opacity icon never arrived — to the owner that screen
+   * read as "there is no create-document feature", and a keyboard user was dropped from the
+   * Tab order entirely by `disabled`, so could not even learn it existed.
    *
-   * 헌장의 강등 문법은 "왜 안 되는지 + **어디로 가면 되는지**" 다. 그래서
-   * 이제 누르면 그것을 가능하게 하는 곳(내 폴더 열기)으로 간다. 라벨이 그
-   * 사실을 미리 말하므로 놀라지 않는다.
+   * The charter's degradation grammar is "why it is unavailable **and where to go**". So
+   * pressing it now goes to what makes it possible: open my folder. The label says so in
+   * advance, so nothing is surprising.
    */
   it("keeps the new-doc button reachable in read-only sample mode — it routes to what unblocks it", () => {
     const { onCreateNewDoc } = renderSidebar([], { canCreateNewDoc: false });
     const button = screen.getByTestId("docs-sidebar-new-doc");
     expect(button).toBeInTheDocument();
-    // 죽은 어포던스가 아니다 — 눌리고, 키보드 Tab 순서에도 남는다.
+    // Not a dead affordance — it presses, and it stays in the keyboard Tab order.
     expect(button).toBeEnabled();
     fireEvent.click(button);
     expect(onCreateNewDoc).toHaveBeenCalledTimes(1);
-    // 라벨이 왜/어디로를 미리 말한다.
+    // The label states the why and the where in advance.
     expect(button.getAttribute("aria-label")).toMatch(/폴더/);
   });
 });
 
 describe("DocsSidebarBody — 목록 순서 메뉴", () => {
-  // dogfood 최상위 폴더의 축소판 — 폴더와 문서가 이름순 한 줄에 섞이면
-  // 폴더가 문서 사이에 파묻힌다(실측: 96개짜리 ontology 폴더가 36행 중 23번째).
+  // A miniature of the dogfood top-level folder. With folders and documents mixed into one
+  // alphabetical run, folders get buried among documents (measured: the 96-document ontology
+  // folder landed 23rd of 36 rows).
   const tree: VaultManifest["tree"] = {
     name: "root",
     path: "",
@@ -363,7 +365,7 @@ describe("DocsSidebarBody — 목록 순서 메뉴", () => {
     makeDoc("benchmark/run", "Run", iso),
   ];
 
-  /** 트리 최상위 행의 라벨만 — 접힌 폴더 안은 보지 않는다. */
+  /** Labels of top-level tree rows only — inside collapsed folders is not inspected. */
   function treeLabels() {
     const nav = screen.getByRole("navigation", {
       name: koMessages.vaultWidgets.tree.navAria,
@@ -406,9 +408,9 @@ describe("DocsSidebarBody — 목록 순서 메뉴", () => {
     fireEvent.click(screen.getByTestId("docs-sidebar-order-sort-recent"));
     expect(onSortChange).toHaveBeenCalledWith("recent");
     expect(onGroupChange).not.toHaveBeenCalled();
-    // ★ 「닫혔다」는 즉시 언마운트가 아니다 (2026-08-04) — 이 메뉴는 `Surface`
-    //   위에 살아서 퇴장 창(≈140ms) 동안 남고, 그동안 `inert` 라 아무 입력도
-    //   못 먹는다. 즉시 소멸을 요구하는 단언은 하드컷을 요구하는 것이다.
+    // "Closed" is not an immediate unmount (2026-08-04) — this menu lives on `Surface`, so it
+    // remains for the exit window (≈140ms) and is `inert` throughout, accepting no input.
+    // An assertion demanding immediate removal is demanding a hard cut.
     const menu = screen.getByTestId("docs-sidebar-order-menu");
     expect(menu).toHaveAttribute("data-surface-state", "exiting");
     expect(menu).toHaveAttribute("inert");
@@ -416,16 +418,17 @@ describe("DocsSidebarBody — 목록 순서 메뉴", () => {
 });
 
 /**
- * 레일 버튼이 **무슨 상태를 말하나** — 세 소비처가 서로 다른 셋이다 (2026-08-15).
+ * **Which state a rail button reports** — the three consumers are three different things
+ * (2026-08-15).
  *
- * 이 시험들이 없어서 결함이 살았다. 위의 20개는 «눌리나 · 무엇이 열리나»만
- * 봤고 접근성 트리에 무엇이 실리는지는 **한 번도 보지 않았다.** 그 사이
- * `RailIconButton` 은 `aria-pressed={active}` 를 무조건 붙이고 있었고,
- * `controls.tsx` 의 `Chip` 머리말이 이미 금지해 둔 그 자동 묶기였다.
+ * The defect survived because these tests did not exist. The twenty above checked only
+ * «does it press» and «what opens», and **never once** looked at what reaches the
+ * accessibility tree. Meanwhile `RailIconButton` attached `aria-pressed={active}`
+ * unconditionally — the automatic pairing `Chip`'s header in `controls.tsx` already forbids.
  *
- * lint 도 axe 도 이걸 못 본다: 없는 속성은 셀렉터로 잡을 수 없고,
- * `button[aria-pressed]` 는 axe 에게 완벽히 유효한 마크업이다. 「이 버튼이
- * 정말 토글인가」는 **핸들러가 무엇을 하는지**에 달렸고, 그건 재야 안다.
+ * Neither lint nor axe can see this: an absent attribute cannot be caught by a selector, and
+ * `button[aria-pressed]` is perfectly valid markup to axe. Whether a button really is a
+ * toggle depends on **what its handler does**, and that has to be measured.
  */
 describe("DocsSidebarBody — 레일 버튼의 상태 어휘", () => {
   const orderTree: VaultManifest["tree"] = {
@@ -441,8 +444,8 @@ describe("DocsSidebarBody — 레일 버튼의 상태 어휘", () => {
   it("새 문서는 행동이다 — 눌림 상태를 낭독하지 않는다", () => {
     renderSidebar([], { canCreateNewDoc: true });
     const button = screen.getByTestId("docs-sidebar-new-doc");
-    // 종전: aria-pressed="false" 를 계속 낭독했다. 이 버튼에는 눌림 상태가
-    // 존재하지 않는다 — 누르면 다이얼로그가 열리거나 폴더 열기로 간다.
+    // It used to keep announcing aria-pressed="false". This button has no pressed state —
+    // pressing it opens a dialog or routes to open-folder.
     expect(button).not.toHaveAttribute("aria-pressed");
     expect(button).not.toHaveAttribute("aria-expanded");
   });
@@ -466,16 +469,17 @@ describe("DocsSidebarBody — 레일 버튼의 상태 어휘", () => {
   });
 
   /**
-   * 이 시험이 이 라운드의 핵심이다 — **보이는 상태와 말해지는 상태가 실제로
-   * 갈린다.** 종전엔 `aria-pressed={orderMenuOpen || !orderIsDefault}` 로 둘을
-   * 한 값에 섞어서, 메뉴를 닫아도 정렬이 기본이 아니면 「눌림」이 남았다.
+   * This test is the core of the round — **the visible state and the spoken state really do
+   * separate.** It used to be `aria-pressed={orderMenuOpen || !orderIsDefault}`, mixing the
+   * two into one value, so closing the menu left "pressed" behind whenever the order was not
+   * the default.
    */
   it("정렬이 기본이 아니면 인디고는 켜지고, 그래도 메뉴는 닫혀 있다고 말한다", () => {
     /*
-     * 특정 클래스 이름을 못박지 않는다 — 값 층이 램프를 고치면 그 시험은
-     * 내용이 맞는데도 빨개진다(`documentation.md`: 사람이 쓴 문자열을 핀으로
-     * 박지 않는다). 여기서 잠그는 것은 **두 사실이 갈렸다**는 성질이다:
-     * 보이는 것은 정렬에 따라 바뀌고, 말해지는 것은 메뉴 상태만 따른다.
+     * No specific class name is pinned — a value-layer ramp change would turn this red while
+     * the content is still correct (`.claude/rules/documentation.md`: do not pin a string a
+     * human wrote). What is locked here is the property that **the two facts separated**: the
+     * visible one follows the order, the spoken one follows only the menu state.
      */
     const { unmount } = renderSidebar(orderDocs, { tree: orderTree });
     const atDefault = screen.getByTestId("docs-sidebar-order-toggle");
@@ -485,10 +489,10 @@ describe("DocsSidebarBody — 레일 버튼의 상태 어휘", () => {
 
     renderSidebar(orderDocs, { tree: orderTree, sort: "recent" });
     const atRecent = screen.getByTestId("docs-sidebar-order-toggle");
-    // 보이는 상태는 바뀌었다 — 정렬이 기본이 아니라고 인디고가 말한다.
+    // The visible state changed — the indigo says the order is not the default.
     expect(atRecent.className).not.toBe(defaultClass);
-    // 말해지는 상태는 그대로다 — 메뉴는 여전히 닫혀 있다. 종전엔 여기가
-    // aria-pressed="true" 로 뒤집혀 「눌린 버튼」이 됐다.
+    // The spoken state is unchanged — the menu is still closed. This used to flip to
+    // aria-pressed="true" and read as a pressed button.
     expect(atRecent).toHaveAttribute("aria-expanded", "false");
   });
 });

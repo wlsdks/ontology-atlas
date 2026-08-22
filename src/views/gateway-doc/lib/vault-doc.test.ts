@@ -10,16 +10,16 @@ import {
 } from './vault-doc';
 
 /**
- * 관문 읽을거리의 **내용은 볼트에서 온다** — 이 시험이 그 계약을 잡는다.
+ * The gateway's reading material **takes its content from the vault** — this test holds that contract.
  *
- * 손으로 쓴 사본으로 되돌아가는 것이 가장 그럴듯한 회귀다(급할 때 "그냥 여기
- * 문자열로 박자"). 그러면 방문자가 보는 문서와 저장소가 리뷰하는 문서가 갈라지고,
- * 갈라졌다는 사실은 아무도 모른다.
+ * The most plausible regression is reverting to a hand-written copy ("just inline the string when in a
+ * hurry"). That splits the document a visitor sees from the document the repository reviews, and nobody
+ * finds out that it split.
  */
 describe('관문 읽을거리는 볼트 문서를 읽는다', () => {
   it('가이드 첫 장과 변경 내역이 볼트에 실제로 있다', () => {
-    // 가이드는 2026-07-31 에 한 장(`GUIDE`)에서 여섯 장(`guide/*`)으로 갈렸다.
-    // 전체 목록의 검증은 `tests/contract/gateway-routes.contract.test.ts` 가 진다.
+    // The guide split from one page (`GUIDE`) into six (`guide/*`) on 2026-07-31. Verifying the full list
+    // is `tests/contract/gateway-routes.contract.test.ts`'s job.
     expect(readVaultDoc('guide/what-is-atlas')).toBeTruthy();
     expect(readVaultDoc('CHANGELOG')).toBeTruthy();
   });
@@ -30,8 +30,8 @@ describe('관문 읽을거리는 볼트 문서를 읽는다', () => {
 
   it('가이드가 실제 안내문이다 — 자리표시자가 아니다', () => {
     const guide = readVaultDoc('guide/what-is-atlas') ?? '';
-    // 이 저장소가 죽은 채널로 등재한 명령이 안내문에 살아 있으면 안 된다
-    // (`surfaces.md` 「배포 채널은 둘뿐이다」).
+    // A command this repository registered as a dead channel must not be alive in the guidance
+    // (`.claude/rules/surfaces.md`, "there are only two distribution channels").
     expect(guide).not.toMatch(/npx\s+ontology-atlas/);
     expect(guide.length).toBeGreaterThan(700);
   });
@@ -68,8 +68,8 @@ describe('trimToRecentSections', () => {
   });
 
   /**
-   * 코드 펜스 안의 `## ` 를 절로 세면 절단 위치가 문서 한가운데가 되고,
-   * 접힌 개수도 거짓이 된다. CHANGELOG 는 코드 블록이 많은 문서다.
+   * Counting a `## ` inside a code fence as a section puts the cut in the middle of a document and makes
+   * the folded count false. CHANGELOG is a document full of code blocks.
    */
   it('코드 펜스 안의 `##` 는 절이 아니다', () => {
     const withFence = [
@@ -88,12 +88,11 @@ describe('trimToRecentSections', () => {
   });
 
   /**
-   * 2026-08-19 부터 `readVaultDoc('CHANGELOG')` 는 전문이 아니라 **번들
-   * 미리보기**(최근 16절, `gateway-changelog.json`)를 돌려준다 — 634KB 전문이
-   * 모든 라우트의 공통 청크를 성능 예산 밖으로 밀어서다. 그래서 이 시험은
-   * 「화면 절단이 줄이는가」에 더해 **접힌 수의 회계**를 잰다: 번들 시점 접힘
-   * + 화면 시점 접힘 + 보여준 절 = 원문의 전체 절. 어느 절단이라도 조용히
-   * 어긋나면 여기서 터진다.
+   * Since 2026-08-19 `readVaultDoc('CHANGELOG')` returns the **bundled preview** (the most recent 16
+   * sections, `gateway-changelog.json`) rather than the full text — the 634KB full text pushed every
+   * route's shared chunk past the performance budget. So beyond "does the screen truncation reduce it",
+   * this test measures **the accounting of folded sections**: bundle-time folds + screen-time folds +
+   * sections shown = the original's total sections. Either truncation drifting silently fails here.
    */
   it('실제 CHANGELOG — 번들·화면 두 절단의 접힌 수 합이 원문과 맞는다', () => {
     const preview = readVaultDoc('CHANGELOG') ?? '';
@@ -107,7 +106,7 @@ describe('trimToRecentSections', () => {
       path.join(process.cwd(), 'docs', 'CHANGELOG.md'),
       'utf8',
     );
-    // limit 0 이면 모든 절이 접힌다 — 전체 절 수를 세는 가장 싼 방법이다.
+    // With limit 0 every section is folded — the cheapest way to count the total.
     const totalSections = trimToRecentSections(raw, 0).omittedSections;
     expect(bundledOmitted + omittedSections + 12).toBe(totalSections);
   });
@@ -115,11 +114,11 @@ describe('trimToRecentSections', () => {
 
 
 /**
- * 항목 목록의 링크는 **본문에 실제로 있는 자리**를 가리켜야 한다.
+ * The entry list's links must point at **a place that really exists in the body**.
  *
- * ⚠️ 실측 결함(2026-07-31): 목록은 원문 제목을, 본문 `h2` 는 **렌더된** 텍스트를
- * 키로 썼다. 백틱이 든 제목 3개의 앵커가 조용히 끊겼다 — 눌러 보기 전에는 안
- * 보이는 실패라 여기서 잡는다.
+ * ⚠️ Measured defect (2026-07-31): the list keyed on the raw heading while the body `h2` keyed on the
+ * **rendered** text. Three headings containing backticks had their anchors silently broken — a failure
+ * invisible until someone clicks, so it is caught here.
  */
 describe('extractEntries', () => {
   it('날짜와 제목을 갈라 낸다', () => {
@@ -145,7 +144,7 @@ describe('extractEntries', () => {
   });
 
   it('인라인 마크다운이 든 제목도 정규화하면 렌더 텍스트와 같아진다', () => {
-    // 이 등식이 깨지는 순간 앵커가 끊긴다.
+    // The moment this equality breaks, the anchor breaks.
     const raw = '2026-07-30 — 관문에 읽을거리 둘: `/guide` · **강조**';
     const rendered = '2026-07-30 — 관문에 읽을거리 둘: /guide · 강조';
     expect(normalizeHeadingKey(raw)).toBe(normalizeHeadingKey(rendered));

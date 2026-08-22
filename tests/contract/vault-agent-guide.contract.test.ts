@@ -14,30 +14,33 @@ import { analyzeAgentFiles } from "../../cli/src/lib/agent-files.mjs";
 import { runCliJson } from "../helpers/run-cli-json";
 
 /**
- * 볼트에 두는 **에이전트 안내문** 계약.
+ * Contract for the **agent guide** placed inside the vault.
  *
- * ## 왜 이 파일이 볼트에 생기나 (2026-08-17 실측)
+ * **Why this file appears in the vault** (measured 2026-08-17). Even with the MCP
+ * server attached, agents did not pick it up. Asked in the installed app,
+ * *"이 폴더에 있는 개념들의 slug 를 전부 알려줘"* (list every concept slug in this
+ * folder), codex did:
  *
- * MCP 서버가 붙어 있어도 에이전트는 그걸 안 집었다. 설치된 앱에서 codex 에게
- * *"이 폴더에 있는 개념들의 slug 를 전부 알려줘"* 라고 물었더니:
- *
- * | | 무엇을 했나 | MCP 호출 |
+ * | | What it did | MCP calls |
  * |---|---|---|
- * | 안내문 없음 | 다섯 파일을 `sed` 로 읽고 `grep '^slug:'` 로 한 번 더 | **0회** |
- * | 안내문 있음 | *"list_concepts 를 먼저 호출하겠습니다"* → 바로 호출 | **1회** |
+ * | Without the guide | read five files with `sed`, then again with `grep '^slug:'` | **0** |
+ * | With the guide | *"I'll call list_concepts first"* → called it immediately | **1** |
  *
- * ## 이 계약이 잠그는 두 가지
+ * **What this contract locks.**
  *
- * **① CLI 와 앱이 같은 파일을 만든다.** 스타터 문서가 이미 같은 이유로 잠겨
- * 있다(`starter-templates.contract.test.ts`) — 두 경로로 만든 볼트가 다르면
- * 같은 제품을 두 갈래로 쓰는 사람이 서로 다른 안내를 읽는다.
+ * **① The CLI and the app produce the same file.** The starter documents are already
+ * locked for the same reason (`starter-templates.contract.test.ts`) — if vaults built
+ * by the two paths differ, people using the same product two ways read different
+ * guidance.
  *
- * **② 안내문이 가리키는 도구가 실재한다.** 이게 이 파일의 진짜 일이다. 안내문은
- * 산문이라 아무도 안 고치는 사이 낡고, 낡은 안내는 없는 도구를 부르라고 시킨다 —
- * 바로 전날 「없는 설정 칸으로 사람을 보낸」 결함과 같은 갈래다. 그래서 문장을
- * 못박는 대신(`documentation.md` 금지) **관계**를 잰다: 백틱 안의 `snake_case`
- * 이름이 전부 등록된 MCP 도구인가. 판정의 출처는 생성물
- * `docs/.generated/mcp-surface.json` 이라 사람이 유지하지 않는다.
+ * **② The tools the guide names exist.** This is the file's real job. The guide is
+ * prose, so it goes stale while nobody edits it, and stale guidance tells an agent to
+ * call a tool that does not exist — the same species as the previous day's defect of
+ * sending a person to a settings section that did not exist. So instead of pinning
+ * sentences (forbidden by `.claude/rules/documentation.md`) it measures a
+ * **relation**: is every `snake_case` name inside backticks a registered MCP tool?
+ * The source of that verdict is the generated
+ * `docs/.generated/mcp-surface.json`, so no human maintains it.
  */
 
 const templatePath = (locale: "en" | "ko", relPath: string) =>
@@ -48,14 +51,16 @@ const surfaceTools = (surface as { mcp?: { tools?: SurfaceTool[] } }).mcp?.tools
 
 const registeredTools = new Set(surfaceTools.map((tool) => tool.name));
 /**
- * 도구 이름 **과 그 인자 이름**. 안내문은 `patch_concept(expected_mtime)` 처럼
- * 인자도 이름으로 부르고, 그건 낡을 수 있는 이름이라 같이 잠근다. 둘 다 생성물
- * 에서 나오므로 사람이 유지할 목록은 없다.
+ * Tool names **and their argument names**. The guide names arguments too, as in
+ * `patch_concept(expected_mtime)`, and those names can go stale, so they are locked
+ * alongside. Both come from the generated surface, so there is no list for a human
+ * to maintain.
  */
 /**
- * 스타터 볼트가 **실제로 쓰는** frontmatter 칸 이름. `display_ko` 처럼 로케일이
- * 붙는 칸은 스키마에 낱말로 안 적혀 있어서, 출하되는 데이터에서 뽑는 것이 유일
- * 하게 낡지 않는 출처다. 오타(`dispaly_ko`)는 여기에도 없으므로 그대로 걸린다.
+ * The frontmatter keys the starter vault **actually uses**. Locale-suffixed keys
+ * like `display_ko` are not written out as words in the schema, so extracting them
+ * from the shipped data is the only source that cannot go stale. A typo
+ * (`dispaly_ko`) is absent here too, so it is caught.
  */
 const starterFrontmatterKeys = new Set(
   (["en", "ko"] as const).flatMap((locale) =>
@@ -66,9 +71,10 @@ const starterFrontmatterKeys = new Set(
 );
 
 /**
- * 제품이 **실제로 내놓는** health 검사 이름. 이 목록은 코드 안에 상수로 없고
- * (검사가 인라인으로 만들어진다) 여기서 베끼면 그 사본이 언젠가 어긋난다.
- * 그래서 도그푸드 볼트에 health 를 한 번 돌려서 받아 온다 — 0.2초다.
+ * The health-check names the product **actually emits**. This list exists as no
+ * constant in the code (the checks are built inline), and copying it here would
+ * create a copy that eventually diverges. So health is run once against the dogfood
+ * vault to obtain it — 0.2 s.
  */
 const healthCheckIds = (() => {
   const payload = runCliJson<{ checks?: Array<{ id?: string }> }>([
@@ -87,7 +93,7 @@ const knownNames = new Set([
   ...healthCheckIds,
 ]);
 
-/** 백틱 안의 `snake_case` 낱말 — 이 문서에서 도구 이름의 모양이다. */
+/** `snake_case` words inside backticks — the shape a tool name takes in this document. */
 const toolMentions = (markdown: string): string[] =>
   [...markdown.matchAll(/`([a-z][a-z0-9]*(?:_[a-z0-9]+)+)\b[^`]*`/gu)].map((m) => m[1]);
 
@@ -98,8 +104,8 @@ describe("볼트 에이전트 안내문", () => {
   });
 
   it("제품이 내놓는 health 검사 이름을 실제로 읽었다", () => {
-    // 안내문은 마무리 단계에서 이 검사들을 이름으로 읽으라고 시킨다.
-    // 이름이 바뀌면 그 지시가 거짓이 되므로 여기서 잠근다.
+    // The guide's closing step tells the agent to read these checks by name. A renamed
+    // check makes that instruction false, so the names are locked here.
     expect(healthCheckIds.size).toBeGreaterThan(5);
     expect(healthCheckIds.has("components")).toBe(true);
     expect(healthCheckIds.has("relation_recommendations")).toBe(true);
@@ -108,7 +114,7 @@ describe("볼트 에이전트 안내문", () => {
   it("스타터의 frontmatter 칸도 실제로 읽었다", () => {
     expect(starterFrontmatterKeys.has("display_ko")).toBe(true);
     expect(starterFrontmatterKeys.has("title")).toBe(true);
-    // 헛돌지 않는지 — 오타는 여기 없어야 한다.
+    // Idling guard — a typo must not be present here.
     expect(starterFrontmatterKeys.has("dispaly_ko")).toBe(false);
   });
 
@@ -128,13 +134,14 @@ describe("볼트 에이전트 안내문", () => {
       });
 
       /*
-       * ⚠️ **안내문 하나로는 두 런타임 중 한쪽이 아무것도 못 받는다.** 이
-       * 저장소 자신의 도구 표: `AGENTS.md` 를 Codex 는 직접 읽고, Claude Code 는
-       * `CLAUDE.md` 의 `@AGENTS.md` 임포트를 거쳐 읽는다.
+       * ⚠️ **A single guide file leaves one of the two runtimes with nothing.** This
+       * repository's own tool table: Codex reads `AGENTS.md` directly, while Claude Code
+       * reaches it through `CLAUDE.md`'s `@AGENTS.md` import.
        *
-       * 판정은 **제품 자신의 검사기**(`analyzeAgentFiles` 의
-       * `claude-agents-bridge`)로 한다 — 여기서 규칙을 다시 구현하면 그 사본이
-       * 언젠가 본체와 어긋나고, 이 저장소는 그 실패를 여러 번 겪었다.
+       * The verdict comes from **the product's own checker** (`analyzeAgentFiles`'s
+       * `claude-agents-bridge`). Reimplementing the rule here would create a copy that
+       * eventually diverges from the original, a failure this repository has had several
+       * times.
        */
       it("Claude Code 로 가는 다리가 실제로 이어져 있다 — 제품 자신의 검사기로 판정", () => {
         const analysis = analyzeAgentFiles({
@@ -155,7 +162,7 @@ describe("볼트 에이전트 안내문", () => {
       });
 
       it("도구를 실제로 추천한다 — 안 하면 이 안내문은 있으나 마나다", () => {
-        // 실측에서 행동을 바꾼 것은 「먼저 이걸 부르라」는 표였다.
+        // In the measurement, what changed the behaviour was the "call this first" table.
         expect(toolMentions(guide.content).length).toBeGreaterThanOrEqual(6);
       });
 
@@ -167,7 +174,7 @@ describe("볼트 에이전트 안내문", () => {
       });
 
       it("서버 이름을 대 준다 — 이름을 모르면 못 부른다", () => {
-        // 실측: 이름을 대 주기 전에는 에이전트가 도구 목록에서 우리를 못 찾았다.
+        // Measured: before the name was given, the agent could not find us in its tool list.
         expect(guide.content).toContain("ontology-atlas");
       });
 
@@ -179,13 +186,13 @@ describe("볼트 에이전트 안내문", () => {
   }
 
   /*
-   * 안내문은 *"이 폴더의 노드는 전부 `title` 을 영어로 둔다"* 고 **주장**한다.
-   * 주장을 문장으로 못박는 대신 **출하되는 데이터에 물어본다** — 규약이 바뀌면
-   * 안내문의 그 문장이 거짓이 되고, 그날 이 검사가 먼저 터진다.
+   * The guide **claims** that every node in this folder keeps `title` in English.
+   * Rather than pinning that claim as a sentence, **ask the shipped data** — if the
+   * convention changes, that sentence becomes false and this check breaks first.
    *
-   * 실측(2026-08-17): 이 줄이 없던 안내문으로는 codex 가
-   * `title: 결제 환불 처리`(= `display_ko` 와 같은 값)를 썼고, 넣은 뒤에는
-   * `title: Payment refund processing` 을 썼다.
+   * Measured 2026-08-17: with a guide lacking that line, codex wrote
+   * `title: 결제 환불 처리` (the same value as `display_ko`); with it, codex wrote
+   * `title: Payment refund processing`.
    */
   it("스타터가 실제로 그 규약을 지킨다 — 안내문의 주장이 데이터와 맞는가", () => {
     const named = starterFilesForLocale("ko").filter((file) =>

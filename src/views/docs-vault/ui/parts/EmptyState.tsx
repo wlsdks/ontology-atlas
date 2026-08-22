@@ -5,9 +5,8 @@ import { useTranslations } from "next-intl";
 import { controlClass } from "@/shared/ui";
 
 /**
- * 문서 미선택 상태 — 항상 보이는 트리를 없앤 뒤의 Source Vault 시작점.
- *
- * 호출자: `DocsVaultContent` 의 viewer 영역 (selectedSlug 없을 때).
+ * The no-document-selected state — the Source Vault starting point after the always-visible tree
+ * was removed. Rendered by the viewer area of `DocsVaultContent` when there is no `selectedSlug`.
  */
 export function EmptyState({
   docCount,

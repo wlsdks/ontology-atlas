@@ -24,16 +24,16 @@
  * `tauri.conf.json` directly.
  */
 
-// [W-2] CLI 명령 수는 cli/src/lib/cli-commands.mjs 의 CLI_COMMANDS 배열
-// 길이가 단일 진실원 — 여기서 하드코딩한 숫자가 실제 명령 수와 갈라지면
-// 다운로드 페이지가 거짓말을 하게 된다. cli-commands.mjs 는 의존성이 없는
-// 순수 상수 모듈이라 정적 export 빌드에서도 그대로 트리셰이크된다.
+// The CLI command count's single source of truth is the length of the `CLI_COMMANDS` array in
+// cli/src/lib/cli-commands.mjs — a number hardcoded here that diverges from the real count makes
+// the download page lie. `cli-commands.mjs` is a dependency-free pure constant module, so it is
+// tree-shaken normally in the static export build.
 
 /**
- * MCP 도구 수. `mcp/src/index.js` 의 `TOOLS` 배열이 단일 진실원이지만, 그
- * 모듈은 서버 진입점(stdio JSON-RPC)이라 웹 번들로 끌고 올 수 없다. 그래서
- * 값은 여기 두고 **드리프트는 테스트가 잡는다** — CLI 쪽과 같은 규율이다.
- * 도구를 추가/삭제하면 `release-facts.test.ts` 가 먼저 빨개진다.
+ * The MCP tool count. The `TOOLS` array in `mcp/src/index.js` is the single source of truth, but
+ * that module is the server entry point (stdio JSON-RPC) and cannot be pulled into the web bundle.
+ * So the value lives here and **drift is caught by a test** — the same discipline as the CLI side.
+ * Adding or removing a tool turns `release-facts.test.ts` red first.
  */
 export const MCP_TOOL_COUNT = 35;
 
@@ -43,25 +43,23 @@ export const RELEASE_ARCHES = ["aarch64", "x64"] as const;
 export type ReleaseArch = (typeof RELEASE_ARCHES)[number];
 
 /**
- * 서명·공증은 **워크플로의 성질**이지 마케팅 문구가 아니다.
+ * Signing and notarization are **properties of the workflow**, not marketing copy.
  *
- * 2026-07-27 에 Developer ID 인증서가 발급되면서(`docs/DECISIONS.md`) 릴리스
- * 경로가 서명 경로로 돌아왔다. 그때까지 이 페이지가 하던
- * "아직 서명되지 않음 · 시스템 설정에서 「확인 없이 열기」" 안내는 **그날부로
- * 거짓**이 됐고, 같은 원장이 *"인증서가 생기면 … 그때 페이지 문구도 함께
- * 되돌린다"* 고 남겨 둔 미결 항목이었다.
+ * When the Developer ID certificate was issued on 2026-07-27 (`docs/DECISIONS.md`) the release path
+ * returned to signing. The guidance this page had been showing until then — "not signed yet · use
+ * Open Anyway in System Settings" — became **false that day**, and the same ledger entry left it as
+ * an open item: *"once we have a certificate … the page copy is reverted with it"*.
  *
- * 값을 손으로 적어 두면 다음에 또 조용히 거짓이 되므로, 진실원은
- * `package.json` 의 `desktop:release-artifact` 체인이다 — 그 체인이
- * `desktop:sign` → `desktop:sign:dmg` → `desktop:notarize` →
- * `desktop:verify-release-dmg`(`--require-signed --require-notarized`) 로
- * 끝나기 때문에, **검증을 통과하지 못한 빌드는 릴리스 자산이 될 수 없다.**
- * 체인에서 한 단계라도 빠지면 `release-facts.test.ts` 가 먼저 실패한다.
+ * Writing the value by hand would let it quietly go false again, so the source of truth is the
+ * `desktop:release-artifact` chain in `package.json` — it ends with `desktop:sign` →
+ * `desktop:sign:dmg` → `desktop:notarize` → `desktop:verify-release-dmg`
+ * (`--require-signed --require-notarized`), so **a build that fails verification cannot become a
+ * release asset.** Dropping any step from the chain turns `release-facts.test.ts` red first.
  */
 export const RELEASE_SIGNING = {
-  /** Developer ID Application 인증서로 서명한다. */
+  /** Signed with a Developer ID Application certificate. */
   developerId: true,
-  /** Apple 공증(notarytool)을 받고 티켓을 DMG 에 붙인다(stapler). */
+  /** Notarized by Apple (notarytool) with the ticket stapled to the DMG. */
   notarized: true,
 } as const;
 
@@ -70,19 +68,18 @@ export function buildDmgName(arch: ReleaseArch): string {
 }
 
 /**
- * Windows 설치 파일의 최소 OS.
+ * The Windows installer's minimum OS.
  *
- * `tauri.conf.json` 에는 이 값을 적는 자리가 없다 — macOS 만
- * `bundle.macOS.minimumSystemVersion` 을 갖는다. 그래서 진실원은 **런타임의
- * 바닥**이다: Tauri v2 의 Windows 백엔드는 WebView2 를 쓰고, WebView2 런타임이
- * 지원하는 가장 낮은 데스크톱 OS 가 Windows 10 이다. 릴리스 검증도 그 계열에서
- * 돈다(`.github/workflows/windows-beta-check.yml` · `release-macos.yml` 의
- * `windows-2022` 잡 — 의존성 감사 · Defender 검사 · 무인 설치 · 실행 · 번들
- * MCP 스모크).
+ * `tauri.conf.json` has no slot for this — only macOS has
+ * `bundle.macOS.minimumSystemVersion`. So the source of truth is **the runtime's floor**: Tauri
+ * v2's Windows backend uses WebView2, and the lowest desktop OS the WebView2 runtime supports is
+ * Windows 10. Release verification runs on that family too (`.github/workflows/windows-beta-check.yml`
+ * and the `windows-2022` job in `release-macos.yml` — dependency audit, Defender scan, unattended
+ * install, launch, and a bundled MCP smoke test).
  *
- * ⚠️ **이 값은 「우리가 검증한 것」이 아니라 「실행에 필요한 것」이다.** 원장
- * (2026-08-20)이 명시했듯 Windows 11 실기기의 SmartScreen 화면은 검증되지
- * 않았고, 그 사실은 히어로의 신뢰줄(`trustLineWindows`)이 따로 진다. 이 줄이
- * 그 경고를 대신하지 않는다.
+ * ⚠️ **This value is "what is required to run", not "what we verified".** As the ledger states
+ * (2026-08-20), the SmartScreen screen on a real Windows 11 machine has not been verified, and the
+ * hero's trust line (`trustLineWindows`) carries that fact separately. This line does not stand in
+ * for that warning.
  */
 export const RELEASE_MIN_WINDOWS = "Windows 10";

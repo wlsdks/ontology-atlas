@@ -51,14 +51,14 @@ describe("buildRadialEgoLayout", () => {
       ],
     );
     const layout = buildRadialEgoLayout(ego, 200, 200, { radius: 50, padding: 0 });
-    // 0번 = 12시 (위) — y 가 center 보다 작음
+    // index 0 = 12 o'clock (top) — y is smaller than center
     expect(layout.neighbors[0]?.y).toBeLessThan(layout.center.y);
     expect(Math.abs(layout.neighbors[0]!.x - layout.center.x)).toBeLessThan(0.001);
-    // 1번 = 3시 (오른쪽)
+    // index 1 = 3 o'clock (right)
     expect(layout.neighbors[1]?.x).toBeGreaterThan(layout.center.x);
-    // 2번 = 6시 (아래)
+    // index 2 = 6 o'clock (bottom)
     expect(layout.neighbors[2]?.y).toBeGreaterThan(layout.center.y);
-    // 3번 = 9시 (왼쪽)
+    // index 3 = 9 o'clock (left)
     expect(layout.neighbors[3]?.x).toBeLessThan(layout.center.x);
   });
 
@@ -154,7 +154,7 @@ describe("buildRadialEgoLayout — 2-hop 동심원", () => {
     const ego = buildOntologyEgoSubgraph(
       "c",
       [node("c"), node("a"), node("b")],
-      [edge("e1", "c", "a"), edge("e2", "b", "a")], // b → a, b 가 2-hop incoming
+      [edge("e1", "c", "a"), edge("e2", "b", "a")], // b → a, so b is the 2-hop incoming node
       { hops: 2 },
     );
     const layout = buildRadialEgoLayout(ego, 200, 200);

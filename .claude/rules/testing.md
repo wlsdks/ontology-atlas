@@ -79,7 +79,7 @@ pnpm exec playwright test --update-snapshots        # baseline 재생성
 |---|---|
 | 웹과 앱이 함께 쓰는 화면(지도·문서함·공방·인사이트·프로젝트) | 같은 번들을 쓰므로 웹에서 확인했으면 앱도 통과로 본다. 단 폰트가 그려지는 모양·스크롤·창 테두리를 건드렸으면 설치한 앱에서 한 번 더 재 본다 |
 | 데스크톱에서만 되는 것(키체인·git·업데이터·절대 경로) | 설치한 앱에서 잰 것만 인정한다 — 브라우저에서 됐다는 것은 증명이 아니다 |
-| 웹 화면 자체 | `pnpm exec playwright test tests/e2e/web-surface-smoke.spec.ts` 3종 |
+| 웹 표면 자체 | `pnpm exec playwright test tests/e2e/web-surface-smoke.spec.ts` 3종 |
 
 웹에는 아무도 붙어서 지켜보지 않으므로, 이 스모크 테스트가 웹이 살아 있는지
 확인하는 유일한 수단이다. **데스크톱 브리지(`src/shared/lib/tauri-*.ts` ·

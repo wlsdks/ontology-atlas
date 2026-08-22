@@ -20,12 +20,13 @@ const GRAPH_ID_KIND_TO_ONTOLOGY_KIND: Record<string, string> = {
 };
 
 /**
- * kind-pair → 관계 키 규칙의 **단일 진실원**. 위에서부터 첫 매치를 쓴다
- * (순서 의미 있음 — 더 구체적인 규칙이 위). 매치 없으면 `RELATES_FALLBACK`.
+ * **Single source of truth** for the kind-pair → relation-key rules. The first match from the
+ * top wins, so order matters: more specific rules come first. No match falls back to
+ * `RELATES_FALLBACK`.
  *
- * infer (키) 와 explain (그 키를 고른 이유) 이 *같은* 표를 읽으므로 매핑과
- * 설명이 구조적으로 절대 어긋날 수 없다. 이전엔 두 함수가 동일한 kind-pair
- * 분기를 각자 들고 있어, 한쪽만 바꾸면 설명이 실제 키와 silent drift 했다.
+ * Inferring the key and explaining why that key was chosen read the *same* table, so mapping
+ * and explanation cannot structurally disagree. The two functions used to carry duplicate
+ * kind-pair branches, and changing one made the explanation drift silently from the real key.
  */
 interface RelationKeyRule {
   matches: (sourceKind: string, targetKind: string) => boolean;

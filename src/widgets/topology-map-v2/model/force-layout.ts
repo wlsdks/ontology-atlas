@@ -1,6 +1,7 @@
 /**
  * Seeded force simulation — the "living graph" layer the owner asked for
- * ("노드를 클릭 드래그하면 그 노드가 force graph처럼 움직여야 한다"). The
+ * ("노드를 클릭 드래그하면 그 노드가 force graph처럼 움직여야 한다" — drag a
+ * node and it should move like a force graph). The
  * deterministic concentric layout (`model/layout.ts`) is used as the *seed*
  * positions (preserving spatial memory — the owner's stated reason for
  * choosing the B2 layout), then `graphology-layout-forceatlas2` relaxes it
@@ -162,29 +163,34 @@ export function createForceSimulation(
     tick(iterations: number, restrictToIds?: ReadonlySet<string> | null) {
       if (iterations <= 0 || graph.order === 0) return;
       if (restrictToIds) {
-        // **제한을 진짜로 건다 — 부분 그래프를 떼어 그 위에서만 돈다.**
+        // **Actually apply the restriction — split out a subgraph and run only on it.**
         //
-        // 종전에는 바깥 노드를 스냅샷 → **전체 그래프에 FA2** → 바깥 복원이었다.
-        // 즉 «제한» 이 계산을 줄이지 않고 **결과만 버렸다**. FA2 는 노드 수의
-        // 제곱에 붙으므로 3000노드에서 이 한 줄이 프레임의 상당 부분을 먹었고,
-        // 버리는 데(스냅샷 3000 + 복원 ~2000 setAttribute) 또 비용을 냈다.
-        // 2026-07-31 렉 사고에서 소유자가 세 번 물은 *"보이는 건 20개인데 왜
-        // 3000개를 계산하나"* 가 이 자리를 가리키고 있었다.
+        // The previous shape was: snapshot the outside nodes → **run FA2 on the
+        // whole graph** → restore the outside. The restriction did not reduce the
+        // computation, it only **discarded the result**. FA2 is quadratic in node
+        // count, so at 3000 nodes this one line ate a large share of the frame,
+        // and discarding cost again (a 3000-node snapshot plus ~2000
+        // `setAttribute` restores). In the 2026-07-31 lag incident the owner asked
+        // three times *"보이는 건 20개인데 왜 3000개를 계산하나"* (only 20 are
+        // visible, why compute 3000?) — this line was the answer.
         const sub = new Graph({ type: "undirected", multi: false, allowSelfLoops: false });
         for (const id of restrictToIds) {
           if (!graph.hasNode(id)) continue;
           sub.addNode(id, { x: graph.getNodeAttribute(id, "x"), y: graph.getNodeAttribute(id, "y") });
         }
-        // 부분 그래프 «안쪽» 엣지만 — 밖으로 나가는 엣지는 상대가 없으므로
-        // 힘도 없다. 즉 **경계 노드는 바깥 이웃 쪽으로의 복원력을 잃는다.**
+        // Only edges *inside* the subgraph — an edge leaving it has no partner and
+        // therefore no force. So **boundary nodes lose their restoring pull toward
+        // outside neighbours.**
         //
-        // 이게 화면에서 안 보이는 이유는 tug 가 아니다(tug 는 드래그 방향
-        // «추종력» 이라 방향이 반대다 — 감사에서 정정된 논거). 실제로 덮는 것은
-        // 셋이다: ① `slowDown: 20` + 짧은 warm 창이라 FA2 유래 변위가 프레임당
-        // 미소하고, ② 가시 증상(끌던 무리가 정지 노드에 얹힘)은 겹침 해소가
-        // 같은 프레임에 잡으며(활성 노드는 «모든» 정지 노드와 검사된다),
-        // ③ 남은 경계 엣지 미세 신장은 릴리즈 정착이 tug 오프셋을 0으로
-        // 되감으며 대부분 소멸한다.
+        // The reason that never shows on screen is not tug: tug is the *following*
+        // force along the drag direction, which points the other way (argument
+        // corrected in audit). Three things actually cover it: ① `slowDown: 20`
+        // plus a short warm window keeps FA2-derived displacement tiny per frame,
+        // ② the visible symptom — the dragged cluster riding onto a settled node —
+        // is caught by overlap separation in the same frame (an active node is
+        // tested against *every* settled node), and ③ the leftover micro-stretch on
+        // boundary edges mostly disappears as release settling rewinds the tug
+        // offset to 0.
         for (const id of restrictToIds) {
           if (!sub.hasNode(id)) continue;
           graph.forEachNeighbor(id, (other) => {

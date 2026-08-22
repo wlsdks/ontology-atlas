@@ -26,8 +26,8 @@ export function resolveActiveNavDestination(pathname: string): AppNavDestination
     return "map";
   if (path.startsWith("/ontology/insights")) return "insights";
   if (path.startsWith("/git")) return "git";
-  // 「에이전트」 — 2026-08-20 목적지 신설(원장 90). `/agents` 하나뿐이라
-  // 사다리 어디에 놓아도 같지만, 레일 순서와 같은 자리에 둔다.
+  // Agents — destination added 2026-08-20 (decision ledger 90). `/agents` is its
+  // only route so the rung's position is arbitrary; it matches the rail's order.
   if (path.startsWith("/agents")) return "agents";
   if (path.startsWith("/docs")) return "docs";
   if (path.startsWith("/projects") || path.startsWith("/project/")) return "projects";
@@ -36,68 +36,75 @@ export function resolveActiveNavDestination(pathname: string): AppNavDestination
 }
 
 /**
- * 관문 표면의 라우트 목록 — **경로만으로 관문이 확정되는 것들**.
+ * Routes that are gateway surfaces **by path alone**.
  *
- * `/` 는 여기 없다. 그 주소는 경로가 아니라 **방문자가 누구인가**로 정해지므로
- * `isGatewaySurface` 가 따로 판정한다.
+ * `/` is deliberately absent: that address is decided by **who the visitor is**,
+ * not by the path, so `isGatewaySurface` judges it separately.
  *
- * ⚠️ **관문 표면을 새로 만들면 여기 한 줄을 더한다.** 안 더하면 그 화면만
- * 워크벤치 레일을 쓴다 — 2026-07-30 에 `/guide` · `/changelog` 를 만들면서
- * 실제로 한 번 겪었다(첫 렌더에 레일 6개 목적지가 그대로 떴다). 목록이 아니라
- * `startsWith("/download")` 한 줄이던 시절의 실패 모드이고, 목록으로 올려
- * 다음 사람이 여기를 보게 만든다.
+ * ⚠️ **Adding a gateway surface means adding a line here.** Forget it and that
+ * one screen wears the workbench rail instead — which actually happened when
+ * `/guide` and `/changelog` were added on 2026-07-30 (the rail's six destinations
+ * appeared on first render). That was the failure mode back when this was a
+ * single `startsWith("/download")`; promoting it to a list is what makes the next
+ * person look here.
  */
 const GATEWAY_ROUTE_PREFIXES = ["/download", "/guide", "/changelog"] as const;
 
 /**
- * 관문 라우트인가 — **워크벤치 크롬(좌측 레일)을 쓰지 않는 표면**.
+ * Is this a gateway route — **a surface that does not wear the workbench chrome
+ * (the left rail)**?
  *
- * `surfaces.md` 가 웹의 1번 일을 **관문**(설치 없이 열어보는 자리, 링크 공유)
- * 으로 못박았는데, 좌측 레일은 "이미 볼트에서 일하는 사람" 의 크롬이다. 아직
- * 아무것도 안 연 방문자에게 지도·문서함·인사이트·프로젝트·에이전트·기록 6개
- * 목적지를 세워 두면 그건 관문이 아니라 워크벤치이고, 방문자는 자기가 아직
- * 아무 데도 못 가는 6개의 문을 본다.
+ * `.claude/rules/surfaces.md` pins the web's primary job as the **gateway**: a
+ * place to open the map with no install, and a link to share. The left rail is
+ * chrome for someone already working in a vault. Standing six destinations (map,
+ * docs, insights, projects, agents, git) in front of a visitor who has opened
+ * nothing makes it a workbench, not a gateway — they see six doors none of which
+ * they can walk through yet.
  *
- * **이 판정이 셸에 있는 이유**: 페이지가 자기 셸 구조를 기억하게 하면 다음에
- * 만드는 관문 표면이 또 빠뜨린다(`AppShell` 주석의 #65 계열 drift — 공방이
- * 레일 유틸 슬롯 등록을 빠뜨려 그 화면만 하단 아이콘이 1개였던 전례). 경로
- * 하나로 셸이 정한다.
+ * **Why the shell decides this, not the page**: making each page remember its own
+ * shell structure means the next gateway surface forgets again (the same drift
+ * described in `AppShell`'s comments, where the studio failed to register the
+ * rail's utility slot and ended up with one bottom icon). One path, one decision,
+ * in the shell.
  *
- * 2026-07-28 소유자 확정.
+ * Owner decision, 2026-07-28.
  */
 export function isGatewayRoute(pathname: string): boolean {
   const path = stripLocalePrefix(pathname || "/");
   return GATEWAY_ROUTE_PREFIXES.some((prefix) => path.startsWith(prefix));
 }
 
-/** `isGatewaySurface` 가 경로 밖에서 필요로 하는 것 — 방문자가 누구인가. */
+/** What `isGatewaySurface` needs beyond the path — who the visitor is. */
 export interface GatewayContext {
-  /** 사용자 볼트가 열려 있는가(= 이 사람은 방문자가 아니라 작업자다). */
+  /** Is a vault open — i.e. this person is working, not visiting. */
   hasVault: boolean;
-  /** 설치된 데스크톱 앱 안인가. */
+  /** Are we inside the installed desktop app? */
   desktop: boolean;
   /**
-   * 볼트 상태를 아직 모르는 첫 프레임인가(정적 export 는 서버에서 모른다).
+   * Is this the first frame, where the vault state is still unknown? (Static
+   * export cannot know it on the server.)
    *
-   * 모를 때 `/` 는 **관문 쪽으로 기운다**. 반대로 기울면 방문자의 첫 프레임에
-   * 레일이 그려졌다 사라지고, 그건 이 파일이 애초에 막으려던 깜빡임이다.
-   * 볼트를 가진 재방문자는 경로 기억이 마지막 작업 화면으로 데려가므로 `/` 를
-   * 거의 거치지 않는다 — 그래서 이 기울기의 비용을 무는 쪽이 더 적다.
+   * While unknown, `/` **leans towards the gateway**. Leaning the other way paints
+   * the rail on a visitor's first frame and then removes it — exactly the flash
+   * this file exists to prevent. A returning user with a vault is carried to their
+   * last screen by route memory and rarely passes through `/` at all, so leaning
+   * this way costs fewer people.
    */
   vaultKnown: boolean;
 }
 
 /**
- * 이 표면이 지금 **관문인가** — 경로만으로는 못 정한다.
+ * Is this surface **a gateway right now**? The path alone cannot say.
  *
- * `/` 는 2026-07-30 부터 **웹 방문자에게만** 얼굴(홍보)이고, 볼트를 연 사람과
- * 설치된 앱에게는 그대로 작업 진입점이다. 그래서 판정에 방문자 맥락이 든다.
+ * Since 2026-07-30, `/` is the marketing face **only for a web visitor**; for
+ * someone with a vault open, and inside the installed app, it stays the work
+ * entry point. Hence the visitor context in the judgement.
  *
- * **왜 `/` 를 통째로 관문으로 만들지 않았나.** 그러면 설치된 앱이 자기를 쓰는
- * 사람에게 "다운로드하세요" 를 보여준다 — 2026-07 「root-first-open」 이
- * 없애려던 바로 그 모순이고, 그 결정을 뒤집으면서도 이 부분은 유효하다.
- * 뒤집힌 것은 "지도가 곧 첫 화면" 이지 "설치한 사람에게 설치를 권한다" 가
- * 아니다.
+ * **Why `/` was not simply made a gateway wholesale.** Then the installed app
+ * would tell its own user to download the app — the very contradiction the
+ * 2026-07 「root-first-open」 decision (the map as the first screen) removed. That
+ * decision was overturned in the part that said "the map is the first screen",
+ * not in the part that said "never offer the install to someone who installed it".
  */
 export function isGatewaySurface(pathname: string, ctx: GatewayContext): boolean {
   const path = stripLocalePrefix(pathname || "/");
@@ -107,7 +114,7 @@ export function isGatewaySurface(pathname: string, ctx: GatewayContext): boolean
   return ctx.vaultKnown ? !ctx.hasVault : true;
 }
 
-/** `/ko/foo` → `/foo`. 라우트 판정이 로케일 프리픽스에 걸려 넘어지지 않게 한다. */
+/** `/ko/foo` → `/foo`, so route matching never trips over a locale prefix. */
 export function stripLocalePrefix(pathname: string): string {
   return pathname.replace(/^\/(?:en|ko)(?=\/|$)/, "") || "/";
 }

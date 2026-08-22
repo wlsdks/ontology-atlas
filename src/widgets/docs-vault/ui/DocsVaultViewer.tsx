@@ -23,37 +23,38 @@ import { resolveDocLink } from '../lib/resolve-doc-link';
 interface Props {
   doc: VaultDoc;
   vaultSlugs: Set<string>;
-  /** Vault 내부 링크 클릭 시 라우팅용. 보통 HomePage 가 setSelectedSlug 를 넣는다. */
+  /** Routing when an in-vault link is clicked. Usually HomePage passes setSelectedSlug. */
   onNavigate: (slug: string) => void;
-  /** Vault 내부 slug 로 바꾸는 현재 경로 prefix. 기본 '/docs'. */
+  /** The current route prefix that in-vault slugs replace. Defaults to '/docs'. */
   basePath?: string;
-  /** Account scoped 라우팅 등 부모가 URL 상태를 보존해야 할 때 사용. */
+  /** Used where the parent has to preserve URL state, such as account-scoped routing. */
   getDocHref?: (slug: string, hash?: string) => string;
   getProjectHref?: (slug: string) => string;
-  /** 선택. 주어지면 이 함수로 md 본문을 가져온다 (로컬 볼트 용). 미지정시
-   *  기본 /docs-vault/{slug}.md fetch. */
+  /** Optional. When given, the md body is fetched through this function (for a local
+   *  vault). Unset falls back to fetching /docs-vault/{slug}.md. */
   getDocContent?: (slug: string) => Promise<string>;
-  /** 부모가 확정한 static manifest와 같은 볼트의 번들 본문. route-scoped
-   *  sample override가 있을 때 뷰어가 전역 sample 선호를 다시 읽어 다른
-   *  본문을 고르는 일을 막는다. */
+  /** Bundled bodies from the same vault as the static manifest the parent settled on.
+   *  Stops the viewer re-reading the global sample preference and picking a different
+   *  body when a route-scoped sample override is in effect. */
   bundledContent?: Record<string, string>;
-  /** 검색 팔레트에서 넘어온 쿼리. text node 단위로 매치어를 mark 로 래핑. */
+  /** The query passed from the search palette. Matches are wrapped in mark per text node. */
   highlightQuery?: string;
-  /** 상대 이미지 경로를 실제 src 로 변환 (로컬 볼트의 asset blob URL 등).
-   *  서버 볼트에선 미지정. */
+  /** Turn a relative image path into a real src (a local vault's asset blob URL and
+   *  the like). Unset for a server vault. */
   resolveImage?: (path: string) => Promise<string | null>;
-  /** vault 외부(`../` escape) 상대 md 링크를 GitHub blob 으로 바꾸는 base.
-   *  번들 docs vault 에서만 지정. 로컬 vault 는 미지정 → 죽은 404 대신
-   *  비-라우팅 렌더. */
+  /** The base for turning a vault-external (`../` escape) relative md link into a
+   *  GitHub blob URL. Set only for the bundled docs vault; a local vault leaves it
+   *  unset → non-routing render rather than a dead 404. */
   repoBlobBase?: string;
-  /** 이 vault 가 repo 안에서 위치한 경로 (번들 docs vault = `docs`). */
+  /** Where this vault sits inside the repo (the bundled docs vault = `docs`). */
   vaultRepoRoot?: string;
 }
 
 /**
- * 개별 vault 문서 뷰어. 클라이언트에서 /docs-vault/{slug}.md 를 fetch 해서
- * react-markdown 으로 렌더. 내부 링크는 vaultSlugs 집합으로 판별해 Link 로
- * 치환, 외부는 new-tab. 이미지는 일단 native img.
+ * The individual vault document viewer. It fetches /docs-vault/{slug}.md on the
+ * client and renders it with react-markdown. Internal links are identified against
+ * the vaultSlugs set and swapped for Link; external ones open in a new tab. Images
+ * are plain native img for now.
  */
 export function DocsVaultViewer({
   doc,
@@ -73,20 +74,21 @@ export function DocsVaultViewer({
   const [raw, setRaw] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   /*
-   * 스켈레톤은 **기다릴 것이 있을 때만** 나온다. 이 컴포넌트는 문서를 바꿀
-   * 때마다 리마운트되므로 `raw` 가 매번 null 로 시작하는데, 본문이 이미
-   * 손에 있는 경우가 대부분이라 종전에는 3줄 바가 한 프레임만 깜빡였다
-   * (실측 8.2~15.9ms · `SKELETON_DELAY_MS` 주석).
+   * The skeleton appears **only when there is something to wait for**. This component
+   * remounts on every document change, so `raw` starts null each time, and since the
+   * body is usually already in hand, the three-bar skeleton used to flash for a single
+   * frame (measured 8.2–15.9ms · see the `SKELETON_DELAY_MS` comment).
    */
   const showSkeleton = useDelayedVisible(raw === null && error === null);
-  // static 볼트의 번들 본문 — 매니페스트를 고른 것과 **같은 볼트**에서 와야
-  // 한다. 예전 결함이 정확히 이 어긋남이었다(매니페스트는 예시 쇼핑몰,
-  // 본문은 도그푸드라 제목과 내용이 다른 문서를 가리켰다).
+  // A static vault's bundled bodies — they have to come from **the same vault** the
+  // manifest was chosen from. An earlier defect was exactly that mismatch (the manifest
+  // was the sample shop and the bodies were dogfood, so title and content pointed at
+  // different documents).
   const { content: preferredBundledContent } = useStaticVaultSource();
   const bundledContent = bundledContentOverride ?? preferredBundledContent;
 
-  // raw 로드되고 highlightQuery 있으면 첫 매치로 자동 스크롤 — md-highlight
-  // class 가 부여된 첫 mark 를 찾아 scrollIntoView.
+  // Once raw has loaded and highlightQuery is present, auto-scroll to the first match —
+  // find the first mark carrying the md-highlight class and scrollIntoView.
   useEffect(() => {
     if (!raw || !highlightQuery) return;
     const handle = requestAnimationFrame(() => {
@@ -98,8 +100,8 @@ export function DocsVaultViewer({
     return () => cancelAnimationFrame(handle);
   }, [raw, highlightQuery]);
 
-  // 이 컴포넌트는 부모에서 key={doc.slug} 로 remount 돼서 slug 변경 시
-  // state 가 fresh null 로 초기화된다. 따라서 effect 에서 reset 불필요.
+  // This component remounts through key={doc.slug} in the parent, so state resets to a
+  // fresh null on a slug change. No reset is needed in the effect.
   useEffect(() => {
     let cancelled = false;
     const fetcher = getDocContent
@@ -112,25 +114,25 @@ export function DocsVaultViewer({
     fetcher
       .then((text) => {
         if (cancelled) return;
-        // frontmatter 블록 제거 (렌더 중복 방지)
+        // Strip the frontmatter block (avoids rendering it twice).
         let cleaned = text.startsWith('---')
           ? text.replace(/^---[\s\S]*?\n---\n?/, '')
           : text;
         /*
-         * Wikilinks 전처리 — `[[slug]]` / `[[slug|text]]` / `[[slug#anchor]]` 를
-         * 표준 마크다운 링크 + 센티넬로 바꾼다. 아래 `a` 컴포넌트가 그 센티넬을
-         * 내부 라우팅으로 잡는다.
+         * Wikilink preprocessing — turn `[[slug]]` / `[[slug|text]]` / `[[slug#anchor]]`
+         * into a standard markdown link plus a sentinel. The `a` component below
+         * catches that sentinel for internal routing.
          *
-         * ⚠️ **센티넬이 URL 스킴이면 안 된다** (2026-08-08 실측 수리).
-         * 종전엔 `WIKILINK:slug` 였는데, `react-markdown` 은 URL 을 살균하고
-         * (`defaultUrlTransform`) **모르는 스킴을 빈 문자열로 만든다** —
-         * 실측: `defaultUrlTransform('WIKILINK:capabilities/x') === ''`.
-         * 그래서 `href` 가 비고, `a` 컴포넌트의 첫 줄이 링크도 「못 찾음」
-         * 표시도 아닌 **아무 표시 없는 평문**을 돌려줬다. 즉 이 기능은
-         * 코드가 있고 문서에도 적혀 있었지만 **한 번도 동작한 적이 없다**
-         * (도그푸드 볼트의 본문 위키링크가 0개라 아무도 안 밟았다).
+         * ⚠️ **The sentinel must not look like a URL scheme** (measured fix,
+         * 2026-08-08). It used to be `WIKILINK:slug`, but `react-markdown` sanitises
+         * URLs (`defaultUrlTransform`) and **turns an unknown scheme into an empty
+         * string** — measured: `defaultUrlTransform('WIKILINK:capabilities/x') === ''`.
+         * So `href` was empty and the `a` component's first line returned **plain text
+         * with no marking at all**, neither a link nor a "not found" indicator. In
+         * other words this feature had code and documentation but **had never once
+         * worked** (the dogfood vault has 0 body wikilinks, so nobody stepped on it).
          *
-         * 쿼리 모양은 살균을 통과한다. 게이트:
+         * A query shape survives the sanitiser. Gate:
          * `tests/contract/wikilink-url-scheme.contract.test.ts`.
          */
         cleaned = cleaned.replace(
@@ -153,8 +155,9 @@ export function DocsVaultViewer({
     };
   }, [bundledContent, doc.slug, getDocContent]);
 
-  // 문자열 노드에 highlightQuery 매치를 <mark> 로 래핑. useMemo 내부에서
-  // 의존성 추적하기 좋게 pure 함수로 분리, 클로저 대신 인자로 query 전달.
+  // Wrap highlightQuery matches in a string node with <mark>. Split out as a pure
+  // function so dependencies track well inside useMemo, passing the query as an
+  // argument rather than through a closure.
   const highlightChildren = useMemo(() => {
     const hl = (
       children: React.ReactNode,
@@ -163,9 +166,9 @@ export function DocsVaultViewer({
     ): React.ReactNode => {
       if (!q) return children;
       if (typeof children === 'string') {
-        // 부분 문자열 분절은 공용 splitHighlightSegments 재사용(복잡도↓).
-        // 첫 매치로 scrollIntoView 하는 effect 가 `.docs-match` 를 찾으므로
-        // mark className 은 그대로 보존.
+        // Substring segmentation reuses the shared splitHighlightSegments (lower
+        // complexity). The effect that scrollIntoViews the first match looks for
+        // `.docs-match`, so the mark className is preserved.
         return splitHighlightSegments(children, q).map((seg, i) =>
           seg.match ? (
             <mark
@@ -188,20 +191,20 @@ export function DocsVaultViewer({
     return (children: React.ReactNode, key = 'hl') => hl(children, q, key);
   }, [highlightQuery]);
 
-  // heading id 는 렌더 횟수와 무관하게 같아야 한다 (idempotent). 이전의
-  // occurrence 카운터 Map 은 렌더 중 클로저 변이라 StrictMode 이중 호출에서
-  // 모든 id 가 `-2` 로 밀려 매니페스트 heading slug (스크롤스파이 · 목차
-  // 레일 active · 앵커 클릭) 와 전부 어긋났다. 같은 텍스트의 heading 이 한
-  // 문서에 중복되면 id 가 충돌하지만 (브라우저는 첫 번째로 앵커), 그
-  // 트레이드오프가 전 heading 의 내비게이션이 죽는 것보다 낫다.
+  // A heading id must be the same regardless of render count (idempotent). The previous
+  // occurrence-counter Map mutated a closure during render, so under StrictMode's double
+  // invocation every id shifted to `-2` and diverged from the manifest's heading slugs
+  // (scroll-spy, table-of-contents rail active state, anchor clicks). Duplicate headings
+  // with the same text now collide on id (the browser anchors to the first), and that
+  // trade-off beats killing navigation for every heading.
   const headingSlugOf = (children: React.ReactNode) => slugFromChildren(children);
 
   /**
-   * 볼트 슬러그의 NFC 사본 — 위키링크 해소가 쓰는 조회 집합.
+   * An NFC copy of the vault slugs — the lookup set wikilink resolution uses.
    *
-   * 원본 `vaultSlugs` 를 그대로 쓰면 한글 슬러그가 안 맞는다(NFC 21자 대
-   * NFD 31자). 매 링크마다 정규화하지 않고 집합을 한 번 만든다 — 본문에
-   * 링크가 수십 개면 그만큼 반복되는 일이다.
+   * Using the original `vaultSlugs` directly fails to match Hangul slugs (NFC 21
+   * characters against NFD 31). The set is built once rather than normalising per
+   * link — with dozens of links in a body, that is repeated work.
    */
   const normalizedVaultSlugs = useMemo(
     () => new Set([...vaultSlugs].map((slug) => slug.normalize('NFC'))),
@@ -211,29 +214,32 @@ export function DocsVaultViewer({
   const components: Components = {
       a({ href, children, ...rest }) {
         if (!href) return <span {...rest}>{children}</span>;
-        // 전처리 단계 센티넬 — [[slug#anchor]] 가 WIKILINK:slug#anchor 로
-        // 변환돼 있음. vault slug 로 바로 매칭.
+        // The preprocessing sentinel — `[[slug#anchor]]` has been turned into
+        // WIKILINK:slug#anchor. Matched directly against vault slugs.
         if (href.startsWith(WIKILINK_SENTINEL)) {
           const spec = href.slice(WIKILINK_SENTINEL.length);
           const [rawWikiSlug, anchor] = spec.split('#');
           /*
-           * ⚠️ **퍼센트 디코드하고 NFC 로 맞춘다** (2026-08-08 실측 수리).
+           * ⚠️ **Percent-decode and normalise to NFC** (measured fix, 2026-08-08).
            *
-           * 마크다운 파서는 링크 URL 을 **퍼센트 인코딩해서** 넘긴다 — 실측:
-           * `capabilities/스윕-검증-절차` 가
-           * `capabilities/%EC%8A%A4%EC%9C%95-…`(69자)로 도착했다. 그 문자열은
-           * 볼트 슬러그 집합에 없으므로 한글 슬러그 위키링크가 **전부**
-           * 「폴더에 없는 링크」 점선으로 떨어졌다. 영문 슬러그는 인코딩할 것이
-           * 없어서 멀쩡했다 — 그래서 이 결함은 한글 볼트에서만 보인다.
+           * The markdown parser passes link URLs **percent-encoded** — measured:
+           * `capabilities/스윕-검증-절차` arrived as
+           * `capabilities/%EC%8A%A4%EC%9C%95-…` (69 characters). That string is not in
+           * the vault's slug set, so **every** wikilink to a Hangul slug fell through
+           * to the "link not in the folder" dotted style. ASCII slugs have nothing to
+           * encode and stayed fine — which is why this defect appears only in a Hangul
+           * vault.
            *
-           * NFC 도 같이 맞춘다. 한글 슬러그는 출처에 따라 NFC(21자)와
-           * NFD(31자)로 갈리고(macOS 파일시스템은 NFD), 글자는 같은데 문자열이
-           * 안 맞는다. CLI 검증기가 이미 같은 판단을 적어 뒀다(`validate.mjs`:
-           * *"참조도 NFC 로 맞춘다 — 한쪽만 정규화하면 글자가 같은데 안 맞는
-           * 상태가 그대로 남는다"*). 그 규칙을 다시 정하지 않고 따른다.
+           * NFC is matched too. Hangul slugs split into NFC (21 characters) and NFD
+           * (31) depending on origin (the macOS filesystem uses NFD), so the characters
+           * are identical while the strings do not match. The CLI validator already
+           * recorded the same judgement (`validate.mjs`: *"참조도 NFC 로 맞춘다 — 한쪽만
+           * 정규화하면 글자가 같은데 안 맞는 상태가 그대로 남는다"* — references are
+           * normalised to NFC too; normalising one side leaves identical characters
+           * that do not match). That rule is followed rather than re-decided.
            */
           const wikiSlug = rawWikiSlug ? decodeWikilinkSlug(rawWikiSlug) : rawWikiSlug;
-          // project: prefix → 공개 토폴로지 라우트로 이동. 예: [[project:reactor]]
+          // A `project:` prefix routes to the public topology route, e.g. [[project:reactor]].
           if (wikiSlug && wikiSlug.startsWith('project:')) {
             const projectSlug = wikiSlug.slice('project:'.length);
             return (
@@ -267,7 +273,7 @@ export function DocsVaultViewer({
               </Link>
             );
           }
-          // slug 가 vault 에 없으면 점선 표시 (unresolved wikilink)
+          // A slug absent from the vault renders dotted (an unresolved wikilink).
           return (
             <span
               className="border-b border-dashed border-[color:var(--color-amber-source-a50)] text-[color:var(--color-amber-source-text-a85)]"
@@ -291,9 +297,9 @@ export function DocsVaultViewer({
               href={href}
               target="_blank"
               rel="noreferrer noopener"
-              /* 가짜 산문 정정(2026-08-04): inline-flex 는 산문 자리에서 줄바꿈을
-                 죽인다 — 320px 에서 rect 1개(대조군 inline 은 2개). 산문 링크는
-                 display:inline 이 계약이다(prose-link.contract.test.ts). */
+              /* Fake-prose fix (2026-08-04): inline-flex kills line breaking in a prose
+                 position — 1 rect at 320px against 2 for an inline control. A prose link
+                 is contractually display:inline (prose-link.contract.test.ts). */
               className="prose-link decoration-[color:var(--color-indigo-line-a40)] hover:decoration-[color:var(--color-indigo-accent)]"
               {...rest}
             >
@@ -331,17 +337,17 @@ export function DocsVaultViewer({
             </Link>
           );
         }
-        // vault 바깥(repo) 파일 → GitHub blob 새 탭. 앱 라우팅으로 넘겨
-        // 404("어디서 길을 잃으셨나요")로 죽던 회귀 정정.
+        // A file outside the vault (in the repo) → GitHub blob in a new tab. Fixes the
+        // regression where it was handed to app routing and died in the 404.
         if (resolved.kind === 'external') {
           return (
             <a
               href={resolved.url}
               target="_blank"
               rel="noreferrer noopener"
-              /* 가짜 산문 정정(2026-08-04): inline-flex 는 산문 자리에서 줄바꿈을
-                 죽인다 — 320px 에서 rect 1개(대조군 inline 은 2개). 산문 링크는
-                 display:inline 이 계약이다(prose-link.contract.test.ts). */
+              /* Fake-prose fix (2026-08-04): inline-flex kills line breaking in a prose
+                 position — 1 rect at 320px against 2 for an inline control. A prose link
+                 is contractually display:inline (prose-link.contract.test.ts). */
               className="prose-link decoration-[color:var(--color-indigo-line-a40)] hover:decoration-[color:var(--color-indigo-accent)]"
               {...rest}
             >
@@ -350,8 +356,8 @@ export function DocsVaultViewer({
             </a>
           );
         }
-        // repo 위치 불명(로컬 vault) & vault 외부 → 라우팅 불가. 죽은 404 대신
-        // 비-라우팅 텍스트로 렌더한다(href 제거).
+        // Repo location unknown (a local vault) and outside the vault → not routable.
+        // Rendered as non-routing text (href removed) rather than a dead 404.
         if (resolved.kind === 'unresolved') {
           return (
             <span
@@ -468,10 +474,10 @@ export function DocsVaultViewer({
         );
       },
       blockquote({ children, ...rest }) {
-        // Callout 감지 — 첫 paragraph 가 [!type] text... 형태면 전용 스타일.
-        // 옵시디언 / GitHub 표기법: `> [!note] title\n> body...`
-        // ReactMarkdown 이 이미 children 의 첫 p > text 로 파싱한 상태라
-        // 안쪽 text node 를 inspect 해야 한다.
+        // Callout detection — a first paragraph shaped `[!type] text...` gets dedicated
+        // styling. Obsidian/GitHub notation: `> [!note] title\n> body...`. ReactMarkdown
+        // has already parsed it into the first p > text of children, so the inner text
+        // node has to be inspected.
         const callout = detectCallout(children);
         if (callout) {
           return (
@@ -519,7 +525,7 @@ export function DocsVaultViewer({
         return <hr className="my-6 border-[color:var(--color-border-soft)]" />;
       },
       img({ src, alt, title }) {
-        // 외부 URL (http/data/blob) 은 그대로. 상대 경로만 resolveImage 사용.
+        // External URLs (http/data/blob) pass through. Only relative paths use resolveImage.
         const rawSrc = typeof src === 'string' ? src : undefined;
         if (!rawSrc || /^(https?:|data:|blob:)/i.test(rawSrc)) {
           return (
@@ -537,7 +543,7 @@ export function DocsVaultViewer({
           );
         }
         if (!resolveImage) {
-          // 서버 볼트 — public/docs-vault 아래로 직접 참조 시도.
+        // Server vault — try referencing directly under public/docs-vault.
           return (
             <Image
               src={rawSrc}
@@ -577,9 +583,9 @@ export function DocsVaultViewer({
   }
   if (raw === null) {
     /*
-     * 창이 지나기 전에 본문이 오면 아무것도 그리지 않는다 — 빈 자리가
-     * 한 프레임 깜빡이는 로딩 바보다 조용하다. 읽어 줄 것도 없으므로
-     * `role="status"` 도 그때는 만들지 않는다.
+     * If the body arrives before the window passes, nothing is drawn — an empty space
+     * is quieter than a loading bar flashing for one frame. There is nothing to
+     * announce either, so no `role="status"` is created then.
      */
     if (!showSkeleton) return <div className="p-8" aria-hidden />;
     return (
@@ -603,25 +609,25 @@ export function DocsVaultViewer({
 }
 
 /**
- * 위키링크 센티넬 — **쿼리 모양이어야 한다.** 스킴 모양(`X:`)은
- * `react-markdown` 의 URL 살균이 통째로 지운다(2026-08-08 실측 수리).
- * 게이트가 이 값을 소스에서 읽어 살균을 통과하는지 잰다.
+ * The wikilink sentinel — **it has to look like a query.** A scheme shape (`X:`) is
+ * erased entirely by `react-markdown`'s URL sanitiser (measured fix, 2026-08-08).
+ * The gate reads this value from the source and checks that it survives sanitising.
  */
 const WIKILINK_SENTINEL = '?wikilink=';
 
 /**
- * 위키링크 URL 에서 볼트 슬러그를 꺼낸다 — **퍼센트 디코드 + NFC**.
+ * Extract the vault slug from a wikilink URL — **percent-decode plus NFC**.
  *
- * 둘 다 필요하고 순서도 그렇다: 디코드가 먼저여야 NFC 정규화가 실제 글자에
- * 걸린다. 디코드가 실패하는 입력(잘린 `%` 등)은 원문을 그대로 돌려준다 —
- * 던지면 문서 하나가 통째로 안 그려진다.
+ * Both are needed, in that order: decoding first is what makes NFC normalisation
+ * apply to real characters. Input that fails to decode (a truncated `%`) returns the
+ * raw value — a throw here means one whole document does not render.
  */
 function decodeWikilinkSlug(raw: string): string {
   let decoded = raw;
   try {
     decoded = decodeURIComponent(raw);
   } catch {
-    /* 잘린 퍼센트 시퀀스 — 원문으로 둔다 */
+    /* Truncated percent sequence — leave the raw value. */
   }
   return decoded.normalize('NFC');
 }
@@ -671,15 +677,16 @@ const CALLOUT_STYLES: Record<
 };
 
 /**
- * blockquote children 에서 `[!kind] title` 패턴 추출. 첫 문단의 맨 앞
- * text 만 검사. 매치 실패 시 null. 매치 시 children 에서 해당 prefix 를
- * 제거한 나머지를 rest 로 반환해 본문에 그대로 렌더.
+ * Extract the `[!kind] title` pattern from blockquote children. Only the very first
+ * text of the first paragraph is inspected. Returns null on no match; on a match,
+ * returns the remainder with that prefix removed as `rest`, so it renders in the body
+ * as-is.
  */
 function detectCallout(
   children: React.ReactNode,
 ): { kind: CalloutKind; title: string; rest: React.ReactNode } | null {
   const kids = Array.isArray(children) ? children : [children];
-  // 첫 번째 element-like 인 p 찾기 (공백 텍스트 등 skip).
+  // Find the first element-like p (skipping whitespace text and the like).
   const firstIdx = kids.findIndex(
     (c) =>
       c != null &&
@@ -701,7 +708,7 @@ function detectCallout(
   if (!m) return null;
   const kind = m[1].toLowerCase() as CalloutKind;
   const title = m[2].trim() || kind.toUpperCase();
-  // 나머지 첫 paragraph 안의 children: firstText 매치 이후 조각 + innerArr[1:]
+  // The remaining children of the first paragraph: the piece after the firstText match plus innerArr[1:].
   const remainderText = firstText.slice(m[0].length).trimStart();
   const restFirstP = [
     remainderText,
@@ -709,7 +716,7 @@ function detectCallout(
   ].filter((x) => x !== '' && x != null);
   const restKids = [...kids];
   if (restFirstP.length > 0) {
-    // 동일 p 로 나머지 복원 (React element clone)
+  // Restore the remainder into the same p (a React element clone).
     restKids[firstIdx] = {
       ...firstEl,
       props: { ...firstEl.props, children: restFirstP },
@@ -750,9 +757,9 @@ function CalloutBlock({
 }
 
 /**
- * 로컬 볼트 이미지 src 를 async 로 blob URL 로 변환해 렌더. 언마운트
- * 또는 src 변경 시 createObjectURL 로 만든 blob 을 revoke 해 메모리 누수
- * 방지.
+ * Render a local vault's image src by converting it asynchronously to a blob URL. The
+ * blob created with createObjectURL is revoked on unmount or on a src change to avoid
+ * a memory leak.
  */
 function VaultImage({
   src,
@@ -771,7 +778,7 @@ function VaultImage({
   useEffect(() => {
     let cancelled = false;
     let created: string | null = null;
-    // 문서 디렉터리 기준 상대 경로를 vault root 기준으로 normalize.
+  // Normalise a path relative to the document's directory to be relative to the vault root.
     const fromDir = docSlug.includes('/')
       ? docSlug.slice(0, docSlug.lastIndexOf('/'))
       : '';
@@ -842,8 +849,9 @@ function VaultImage({
 }
 
 /**
- * Heading 옆 # 아이콘 — hover 시 살짝 뜨고 클릭 시 slug#anchor URL 을
- * 클립보드로. 2초간 체크 표시로 feedback.
+ * The # icon beside a heading — it lifts slightly on hover and copies the
+ * slug#anchor URL to the clipboard on click, with a check mark as feedback for 2
+ * seconds.
  */
 function HeadingAnchor({
   anchor,

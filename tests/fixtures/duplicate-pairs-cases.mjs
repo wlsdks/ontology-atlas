@@ -1,4 +1,4 @@
-// Fixture vaults for the duplicate-pairs contract test (S3 — 중복 의심 쌍).
+// Fixture vaults for the duplicate-pairs contract test.
 //
 // The `/ontology/insights` 「비슷한 이름 — 같은 걸까요?」 card scores concept
 // pairs the same way the agent does with

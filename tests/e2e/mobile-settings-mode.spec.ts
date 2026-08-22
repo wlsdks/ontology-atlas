@@ -23,8 +23,9 @@ test("확장 INDEX에서도 기존 설정으로 일반/전문가 모드를 왕�
   await trigger.getByTestId("app-settings-trigger").click();
   const mode = page.getByTestId("app-settings-view-mode");
   await expect(mode).toBeVisible();
-  // 2026-08-15 SegmentedControl 이주 — 세그먼트는 배타 선택이라 radiogroup +
-  // aria-checked 다(aria-pressed 병렬 걸기는 접근성 트리에 배타성이 안 실린다).
+  // 2026-08-15 SegmentedControl migration — a segment is an exclusive choice, so it is
+  // radiogroup + aria-checked (attaching aria-pressed in parallel does not carry
+  // exclusivity into the accessibility tree).
   const options = mode.getByRole("radio");
 
   await options.nth(1).click();

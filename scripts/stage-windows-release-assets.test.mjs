@@ -40,8 +40,9 @@ test('stages the exact installer bytes that were hashed even if the source chang
   fs.mkdirSync(nsisDir, { recursive: true });
   fs.writeFileSync(sourcePath, originalBytes);
 
-  // 해시가 끝난 직후 소스를 바꿔 두 읽기 사이의 교체를 결정적으로 재현한다.
-  // 새 구현에서도 교체가 실제 일어났는지 아래에서 확인해 빈 통과를 막는다.
+  // Replaces the source right after hashing to reproduce deterministically a swap
+  // between the two reads. The check below confirms the swap really happened in the new
+  // implementation too, preventing a vacuous pass.
   const createHash = crypto.createHash;
   crypto.createHash = (...args) => {
     const hash = createHash(...args);

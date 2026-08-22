@@ -33,19 +33,17 @@ export async function generateMetadata({
     },
     description: t('siteTagline'),
     /**
-     * ⚠️ **hreflang 은 여기서 주지 않는다 — 페이지가 자기 것을 준다.**
+     * ⚠️ **hreflang is not given here — each page gives its own.**
      *
-     * 예전엔 이 레이아웃이 `{en: '/en/', ko: '/ko/', 'x-default': '/en/'}` 를
-     * 박아 뒀다. 레이아웃은 모든 라우트의 부모라, 그 결과 **모든 페이지가
-     * "내 영어판은 사이트 홈이다"라고 광고**했다 — `/ko/docs/` 의 짝은
-     * `/en/docs/` 인데 `/en/` 을 가리켰다(2026-07-29 실측: 색인 대상 9개 중
-     * 7개가 이 신호를 달고 배포돼 있었다).
+     * This layout used to pin `{en: '/en/', ko: '/ko/', 'x-default': '/en/'}`. A layout is the
+     * parent of every route, so **every page advertised "my English counterpart is the site home"** —
+     * `/ko/docs/`'s counterpart is `/en/docs/`, yet it pointed at `/en/` (measured 2026-07-29: 7 of
+     * 9 indexable pages shipped with that signal).
      *
-     * hreflang 은 **경로별 사실**이므로 경로를 아는 쪽만 말할 수 있다.
-     * `@/shared/lib/page-metadata` 의 `buildPageMetadata` 가 canonical ·
-     * 로케일 짝 · `x-default` 를 한 곳에서 조립한다. 여기서 아무 말도 하지
-     * 않는 편이 틀린 말을 물려주는 것보다 낫다 — 사이트맵에 없는 라우트
-     * (`/project/new` · `/git` 등)는 hreflang 이 아예 없는 게 정답이다.
+     * hreflang is a **per-path fact**, so only something that knows the path can state it.
+     * `buildPageMetadata` in `@/shared/lib/page-metadata` assembles the canonical, the locale pair,
+     * and `x-default` in one place. Saying nothing here is better than passing down something wrong —
+     * for routes absent from the sitemap (`/project/new`, `/git`) having no hreflang at all is correct.
      */
   };
 }
@@ -80,16 +78,16 @@ export default async function LocaleLayout({
       </a>
       <MotionProvider>
         <TaxonomyProvider>
-          {/* LocalVaultProvider 가 single source of truth.
-              consumer 는 useLocalVault() 로 동일 instance 공유 — Round 7
-              에서 발견한 8 곳 독립 호출 → 2-3 인스턴스 중복 fix. */}
+          {/* `LocalVaultProvider` is the single source of truth. Consumers share one instance through
+              `useLocalVault()` — this fixed the eight independent call sites producing two or three
+              duplicate instances. */}
           <LocalVaultProvider>
-            {/* 알림 영역 이름은 **앱이 넣는다** — 프리미티브가 번역을 직접
-                읽으면 그 부품은 이 앱의 것이 된다(2026-08-15 이식성 슬라이스). */}
+            {/* The notification region's name is **supplied by the app** — a primitive that reads
+                translations itself becomes this app's rather than portable (2026-08-15). */}
             <ToastProvider notificationsLabel={tNav('notificationsAriaLabel')}>
               <TooltipProvider delayDuration={300}>
-                {/* live-web — 로컬 vault 로드 시 변경 baseline 자동 1회.
-                    이후 에이전트 편집이 클릭 없이 토폴로지에 pulse. 헤드리스. */}
+                {/* Sets the change baseline once when a local vault loads, so agent edits pulse on
+                    the topology without a click. Headless. */}
                 <OntologyLiveBaselineInit />
                 <RouteMemory />
                 <AppShell>{children}</AppShell>

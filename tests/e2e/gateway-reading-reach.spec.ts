@@ -1,35 +1,34 @@
 import { expect, test } from "@playwright/test";
 
 /**
- * 관문의 **읽을거리에 좁은 화면에서도 닿는가.**
+ * **Is the gateway's reading material reachable on narrow screens?**
  *
- * ## 무엇이 있었나 (2026-08-07 실측 · 정적 export · 볼트 없음)
+ * **What happened** (measured 2026-08-07, static export, no vault):
  *
  * | | 1512 | 768 | 390 |
  * |---|---|---|---|
- * | `/ko/` 에서 보이는 가이드·변경 내역 링크 | 1·1 | 1·1 | **0·0** |
- * | `/ko/guide/*` 에서 보이는 가이드 장 | 13 | **1** | **0** |
+ * | Guide and changelog links visible on `/ko/` | 1·1 | 1·1 | **0·0** |
+ * | Guide chapters visible on `/ko/guide/*` | 13 | **1** | **0** |
  *
- * 폰으로 링크를 받아 가이드 한 장을 연 사람에게 13장은 **서로 못 가는 13개의
- * 막다른 길**이었다. 그 안에 「에이전트 연결」과 「CLI」가 있으므로 막힌 것은
- * 읽을거리가 아니라 **에이전트를 붙이는 경로**다.
+ * For someone who received a link on a phone and opened one guide chapter, the 13
+ * chapters were **13 dead ends with no way between them**. Two of those chapters are
+ * "connect your agent" and "CLI", so what was blocked is not reading material but
+ * **the path to attaching an agent**.
  *
- * ## 왜 코드로는 못 잡나
+ * **Why code cannot catch it.** The violation **leaves no value in the code.** Both
+ * `hidden … sm:flex` and `hidden lg:block` are legitimate responsive notation on
+ * their own, and the defect is **a relation between different files**: is there a
+ * replacement after the collapse? Two code comments actually promised a replacement
+ * and **both were false** — the chrome's "guide" chip (which collapses below `sm`
+ * too) and the gateway footer (zero links at any width). **A comment is not a gate.**
  *
- * 위반이 **코드에 아무 값도 안 남긴다.** `hidden … sm:flex` 도 `hidden lg:block`
- * 도 그 자체로는 정당한 반응형 표기이고, 결함은 「접은 뒤에 대체가 있는가」라는
- * **다른 파일 사이의 관계**다. 실제로 코드 주석 둘이 대체를 약속하고 있었는데
- * **둘 다 사실이 아니었다** — 크롬의 「가이드」 칩(`<sm` 에서 같이 접힌다)과
- * 관문 푸터(어느 폭에서도 링크 0개). **주석은 게이트가 아니다.**
- *
- * ## 무엇을 재나
- *
- * 「보이는가」가 아니라 **「닿는가」**. 닫힌 펼침 안의 링크는 보이지 않는 것이
- * 맞지만 막다른 길은 아니다 — 그래서 펼침이 있으면 **한 번 눌러 보고** 다시
- * 센다. 조작 한 번으로 닿으면 통과다.
+ * **What is measured**: not "is it visible" but **"is it reachable"**. A link inside
+ * a closed disclosure is correctly invisible but is not a dead end, so when a
+ * disclosure exists it is **opened once** and the count retaken. Reachable in one
+ * interaction passes.
  */
 
-/** 관문 표면 넷. 이 목록이 곧 사정거리다. */
+/** The four gateway surfaces. This list is the reach. */
 const GATEWAY_ROUTES = [
   "/ko/",
   "/ko/download/",
@@ -38,7 +37,7 @@ const GATEWAY_ROUTES = [
   "/ko/changelog/",
 ] as const;
 
-/** 좁은 폭이 문제였다 — 넓은 폭도 같이 재서 「원래 없던 것」과 구별한다. */
+/** The narrow widths were the problem — wide is measured alongside to distinguish "it was never there". */
 const WIDTHS = [
   { w: 1512, h: 900 },
   { w: 768, h: 1024 },
@@ -59,13 +58,14 @@ const PAINTED = `(el) => {
 }`;
 
 /**
- * ⚠️ **「/guide 를 담은 링크 수」를 세면 안 된다** — 프로브가 이 구멍을 잡았다.
+ * ⚠️ **Do not count "links containing /guide"** — a probe caught this hole.
  *
- * 처음엔 그렇게 셌는데, 가이드 장 펼침을 통째로 지워도 768·390 이 **초록**
- * 이었다. 페이지 아래의 읽을거리 줄이 가진 `/guide`(색인) 링크 하나가
- * 「가이드에 닿는다」로 세어졌기 때문이다. 즉 **장에 한 곳도 못 가는데** 검사는
- * 통과했다. 지키려는 사실은 「가이드라는 낱말이 어딘가 링크로 있다」가 아니라
- * **「다른 장으로 갈 수 있다」** 이므로, 세는 단위를 **서로 다른 장**으로 바꾼다.
+ * The first version counted that way, and deleting the guide-chapter disclosure
+ * entirely still left 768 and 390 **green**: the single `/guide` (index) link in the
+ * reading row at the bottom of the page counted as "the guide is reachable". So the
+ * check passed while **no chapter was reachable at all**. The fact being guarded is
+ * not "the word guide appears as a link somewhere" but **"another chapter can be
+ * reached"**, so the counted unit becomes **distinct chapters**.
  */
 const countReading = (page: import("@playwright/test").Page) =>
   page.evaluate((src: string) => {
@@ -97,7 +97,7 @@ test.describe("관문 읽을거리 — 좁은 화면에서도 닿는다", () => 
         await page.evaluate(() => document.fonts.ready);
         await page.waitForTimeout(700);
 
-        // 펼침이 있으면 한 번 눌러 본다 — 조작 한 번으로 닿으면 막다른 길이 아니다.
+        // When a disclosure exists, open it once — reachable in one interaction is not a dead end.
         const summary = page.getByTestId("guide-chapter-picker-summary");
         if ((await summary.count()) > 0 && (await summary.isVisible())) {
           await summary.click();
@@ -108,14 +108,14 @@ test.describe("관문 읽을거리 — 좁은 화면에서도 닿는다", () => 
         measured += 1;
         if (seen.guide < 1) dead.push(`${route} → 가이드 0`);
         if (seen.changelog < 1) dead.push(`${route} → 변경 내역 0`);
-        // 가이드 안에서는 **다른 장으로 갈 수 있어야** 한다. 색인 링크 하나로는
-        // 「가이드에 닿았다」가 되지 않는다 — 위 주석의 구멍이 그것이었다.
+        // Inside the guide, **another chapter must be reachable**. A single index link does
+        // not count as reaching the guide — that was the hole described above.
         if (route.startsWith("/ko/guide") && seen.chapters < 5) {
           dead.push(`${route} → 갈 수 있는 장 ${seen.chapters}개 (차례가 없다)`);
         }
       }
 
-      // 공회전 차단 — 라우트를 한 곳도 못 열었으면 아래 0 은 「깨끗해서」가 아니다.
+      // Idling guard — if no route opened at all, the 0 below does not mean "clean".
       expect(measured, "관문 라우트를 하나도 안 쟀다").toBe(GATEWAY_ROUTES.length);
 
       expect(
@@ -127,8 +127,8 @@ test.describe("관문 읽을거리 — 좁은 화면에서도 닿는다", () => 
   }
 
   /**
-   * 차례는 **한 벌**이다 — 넓은 폭의 사이드바와 좁은 폭의 펼침이 같은 목록을
-   * 그려야 한다. 두 벌이 되면 장을 더할 때 한쪽만 는다.
+   * There is **one table of contents** — the wide sidebar and the narrow disclosure
+   * must render the same list. Two copies means adding a chapter grows only one.
    */
   test("좁은 폭 차례가 넓은 폭 차례와 같은 장을 담는다", async ({ page }) => {
     const chapters = async () =>

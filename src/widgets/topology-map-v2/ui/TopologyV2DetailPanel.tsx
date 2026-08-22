@@ -53,7 +53,7 @@ import { transientSurface } from "@/shared/ui/transient-surface";
  * untouched (lead design decision). Re-presents the SAME selection facts the
  * shared popover derives.
  *
- * 시안 재설계 (2026-07-24, 소유자 승인 mockup `mockup-panel-detail.html`):
+ * Mockup redesign (2026-07-24, owner-approved `mockup-panel-detail.html`):
  * a BALANCED identity header — node name hero (left) + quiet kind badge and
  * close (right), then freshness (left) + a navigable indigo domain chip
  * (right), so neither side is barren for long names. Below, one primary action
@@ -70,7 +70,7 @@ import { transientSurface } from "@/shared/ui/transient-surface";
  * `TopologyNodeFocusModel` into these props, so the import direction stays
  * view → widget. Colors/sizes come from `--topology-v2-panel-*` tokens.
  *
- * M-2 카운트 시맨틱: connection groups are ROLE-based (contains / usedBy /
+ * M-2 count semantics: connection groups are ROLE-based (contains / usedBy /
  * dependsOn / belongsTo) — the SAME four buckets the full-detail surface
  * renders, with each count shown once in its own group header. 네 번째
  * 버킷(속한 곳)은 2026-07-26 까지 여기서 빠져 있었고,
@@ -79,65 +79,68 @@ import { transientSurface } from "@/shared/ui/transient-surface";
  * when non-empty, i.e. container nodes) instead of folding into "기대는 곳" by
  * raw direction — the exact typed-fact collapse the UX round flagged. Group
  * headers reuse `labels.metricContains`/`metricUsedBy`/`metricDependsOn` (no
- * separate group-label strings) so the words match too. (재설계 후 the relation
- * TYPE is encoded by the group itself — 담는 것 vs 기대는 곳 — so each row's
- * left mark is the neighbour's canvas kind glyph, not a TraceMark line.)
+ * separate group-label strings) so the words match too. (After the redesign the
+ * relation TYPE is encoded by the group itself — 담는 것 versus 기대는 곳 — so
+ * each row's left mark is the neighbour's canvas kind glyph, not a TraceMark line.)
  *
  * RATIO-SYSTEM §4 scale-up (`docs/prototypes/chrome-datasheet-final.html`,
- * owner: "정보는 좋은데 너무 작고 그래") promotes a THIRD group — 근거
- * (evidence) — built from the node's own `evidenceIds` (its backing vault
- * doc; see `topology-v2-datasheet.ts#buildV2EvidenceRows`). It reuses
- * `labels.metricEvidence` as its header, same construction as the usedBy/
- * dependsOn groups, so the metric line's "근거 N" and this group's count
- * never drift. Rows are read-only (no `onSelectConnection` — evidenceIds are
- * vault slugs, a different id namespace than the canvas graph, see that
- * module's doc for why).
+ * owner: *"정보는 좋은데 너무 작고 그래"* — the information is good but it's all
+ * too small) promotes a THIRD group — 근거 (evidence) — built from the node's own
+ * `evidenceIds` (its backing vault doc; see
+ * `topology-v2-datasheet.ts#buildV2EvidenceRows`). It reuses
+ * `labels.metricEvidence` as its header, the same construction as the usedBy and
+ * dependsOn groups, so the metric line's 「근거 N」 and this group's count never
+ * drift. Rows are read-only (no `onSelectConnection` — evidenceIds are vault
+ * slugs, a different id namespace than the canvas graph; see that module's doc
+ * for why).
  *
- * N6 (persona-ux-2026-07 report — PM "이 역량, 어디 소속?"에 즉답 불가):
- * the owning domain used to appear only as a `contains` row inside the
- * "쓰는 곳" (usedBy) connections group, distinguished from `depends_on` rows
- * only by line style (solid vs dashed `TraceMark`) — not a fact a first-time
- * reader would notice. It now renders as its own "도메인 · <이름>" line in
- * the header, clickable via the SAME `onSelectConnection` callback the
- * connection rows use (no new navigation primitive). 도메인이 이 노드의 직접
- * 부모일 때는 아래 "속한 곳" 그룹에도 한 줄로 남는다 — 헤더 칩은 바로 가라는
- * 지름길이고, 그룹은 관계 기록 자체다. 그룹에서 도메인만 빼면 팝오버의
- * "속한 곳 N" 이 전체 상세의 같은 수와 어긋난다(그게 더 나쁜 결함이다).
+ * N6 (persona-ux-2026-07 report — a PM could not get an immediate answer to
+ * *"이 역량, 어디 소속?"*, which capability does this belong to): the owning
+ * domain used to appear only as a `contains` row inside the 「쓰는 곳」 (usedBy)
+ * connections group, distinguished from `depends_on` rows only by line style
+ * (solid versus dashed `TraceMark`) — not a fact a first-time reader would
+ * notice. It now renders as its own 「도메인 · <이름>」 line in the header,
+ * clickable through the SAME `onSelectConnection` callback the connection rows
+ * use (no new navigation primitive). When the domain is this node's direct
+ * parent it also stays as one row in the 「속한 곳」 group below — the header chip
+ * is a shortcut to go straight there, and the group is the relation record
+ * itself. Dropping the domain from the group alone would make the popover's
+ * 「속한 곳 N」 disagree with the same number in full detail, which is the worse defect.
  *
- * Toss C2 (청중 언어 평문화, 2026-07-24): the "담는 것/쓰는 곳/기대는 곳/근거"
- * plain labels used to sit right next to jargon that undercut them — the
- * sticky footer's raw `slug` (`ontology/capabilities/mcp-server`) and each
- * evidence row's raw vault-path prefix were ALWAYS visible, unreadable to a
+ * Toss C2 (plain-language pass, 2026-07-24): the plain labels
+ * 담는 것/쓰는 곳/기대는 곳/근거 used to sit right next to jargon that undercut
+ * them — the sticky footer's raw `slug` (`ontology/capabilities/mcp-server`) and
+ * each evidence row's raw vault-path prefix were ALWAYS visible, unreadable to a
  * non-developer. Both now show only the readable leaf segment
- * (`slugDisplaySegment` / `V2EvidenceRow.title`) and fold the full path
- * behind a native `title=` hover tooltip — information is not lost (the
- * "전체 상세" link already owns navigating to the full record), just no
- * longer competing for first-read attention with the plain-language facts.
+ * (`slugDisplaySegment` / `V2EvidenceRow.title`) and fold the full path behind a
+ * native `title=` hover tooltip — information is not lost (the 「전체 상세」 link
+ * already owns navigating to the full record), it just no longer competes for
+ * first-read attention with the plain-language facts.
  */
 
 export interface TopologyV2DetailPanelLabels {
   kindLabel: string;
-  /** N6 — "소속 도메인" 1급 사실의 prefix label ("도메인 · <이름>"). */
+  /** N6 — the prefix label for the first-class "owning domain" fact (「도메인 · <이름>」). */
   domainLabel: string;
   poweredOn: string;
   poweredOff: string;
-  /** M-2 — "담는 것" (contains). Only rendered for container nodes. */
+  /** M-2 — 「담는 것」 (contains). Only rendered for container nodes. */
   metricContains: string;
-  /** S2 파트 3 — 요약 모드에서 개별 리스트로 펴는 토글 라벨("전체 보기"). */
+  /** S2 part 3 — the toggle label that unfolds summary mode into the individual list (「전체 보기」 — show all). */
   containsShowAll: string;
-  /** S2 파트 3 — 리스트 모드에서 요약으로 접는 토글 라벨("요약 보기"). */
+  /** S2 part 3 — the toggle label that folds the list back into the summary (「요약 보기」 — show summary). */
   containsShowSummary: string;
-  /** S2 파트 3 — 경로 프리픽스 요약의 나머지 버킷 라벨("기타"). */
+  /** S2 part 3 — the remainder bucket's label in the path-prefix summary (「기타」 — other). */
   containsOtherGroup: string;
-  /** 그룹 「+N」 뒤에 붙는 펼침 라벨("더 보기") — +N 이 죽은 수가 아니게 한다. */
+  /** The expand label appended after a group's 「+N」 (「더 보기」 — show more), so the +N is not a dead number. */
   groupShowMore: string;
-  /** 펼친 그룹을 캡 상태로 되돌리는 라벨("접기"). */
+  /** The label that returns an expanded group to its capped state (「접기」 — collapse). */
   groupShowFewer: string;
   metricUsedBy: string;
   metricDependsOn: string;
   /**
-   * "속한 곳" (belongsTo) — 이 노드를 담고 있는 상위 항목. 전체 상세와 같은
-   * 단어를 쓴다(둘 다 `edgeTypesPlain.belongs_to` 계열).
+   * 「속한 곳」 (belongsTo) — what contains this node. It uses the same word as
+   * full detail (both come from the `edgeTypesPlain.belongs_to` family).
    */
   metricBelongsTo: string;
   metricEvidence: string;
@@ -154,9 +157,9 @@ export interface TopologyV2DetailPanelLabels {
   noConnections: string;
   handoff: string;
   close: string;
-  /** "전체 상세" opt-in link to the A1 full-detail datasheet
-   * (`full-detail-a1` widget) — the design gate's details-on-demand step
-   * beyond this compact ego popover. */
+  /** 「전체 상세」 (full detail) — the opt-in link to the A1 full-detail datasheet
+   * (`full-detail-a1` widget), the design gate's details-on-demand step beyond
+   * this compact ego popover. */
   openFullDetail: string;
   /** 주 행동 하나와 편집/더보기 메뉴를 묶는 action row. */
   actionsGroupLabel: string;
@@ -185,8 +188,9 @@ export interface TopologyV2DetailPanelLabels {
   codeLocationsLabel: string;
   codeLocationsCopyLabel: string;
   codeLocationsCopiedLabel: string;
-  /** rank7 (design-council B5) — "마지막 편집" 주체 행 + expected_mtime
-   *  충돌 배지 카피. `editProvenance` i18n 네임스페이스 재사용(단일 출처). */
+  /** rank7 (design-council B5) — the 「마지막 편집」 (last edited) subject row plus
+   *  the expected_mtime conflict badge copy. It reuses the `editProvenance` i18n
+   *  namespace (single source). */
   editSubjectPrefix: string;
   editSubjectAgent: string;
   editSubjectHuman: string;
@@ -201,9 +205,10 @@ export interface TopologyV2DetailPanelLabels {
   sourceGapLabel?: string;
   sourceAction?: string;
   /**
-   * 진단 바로 옆에 붙는 **왜** 한 문장. 다음 행동이 무엇을 되게 하는지 평이한
-   * 말로 적는다("코드 폴더" · "코드 위치" — 「소스 바인딩」 같은 말은 안 쓴다).
-   * 호출자가 `nextAction.id` 로 고른다 — 여덟 행동 전부에 짝이 있다.
+   * The one **why** sentence that sits right beside the diagnosis, written in
+   * plain words about what the next action makes possible (「코드 폴더」 — code
+   * folder — and 「코드 위치」; nothing like "source binding"). The caller picks it
+   * by `nextAction.id`, and all eight actions have a match.
    */
   sourceWhy?: string;
   sourceRelationsShow?: string;
@@ -218,54 +223,57 @@ export interface TopologyV2DetailPanelProps {
   slug: string;
   title: string;
   /**
-   * 슬라이스 B (element 라벨 인간화) — `title` 이 표시용으로 변환된 값일 때
-   * (예: element 노드의 코드 경로 원문 → "Bar Baz" 같은 사람 이름), 원문을
-   * 보존해서 보여주는 모노 서브라인. 호출자가 display !== 원문 title 일
-   * 때만 넘긴다 — 같으면 undefined/null 로 생략해 중복 렌더를 막는다.
+   * Slice B (humanising element labels) — a mono subline that preserves the
+   * original when `title` has been transformed for display (an element node's raw
+   * code path turned into a human name like "Bar Baz"). The caller passes it only
+   * when display differs from the raw title; identical values are omitted (or
+   * null) so nothing renders twice.
    */
   sourceTitle?: string | null;
   kind: string;
   /**
-   * N6 (persona-ux-2026-07 report — PM 페르소나 "어디 소속?" 1차 질문에
-   * 즉답 불가) — owning domain, or null when the node has none (e.g. the
-   * node IS a domain, or an orphan). Rendered as a first-class "도메인 ·
-   * <이름>" fact in the header, separate from the "쓰는 곳" connections list
-   * it used to be buried in (containment vs depends_on, distinguished only
-   * by line style there). Clicking focuses the domain via the same
-   * `onSelectConnection` callback the connection rows already use.
+   * N6 (persona-ux-2026-07 report — the PM persona's first question, "which does
+   * this belong to?", had no immediate answer) — the owning domain, or null when
+   * the node has none (it IS a domain, or it is an orphan). Rendered as a
+   * first-class 「도메인 · <이름>」 fact in the header, separate from the 「쓰는 곳」
+   * connections list it used to be buried in (containment versus depends_on,
+   * distinguished there only by line style). Clicking focuses the domain through
+   * the same `onSelectConnection` callback the connection rows already use.
    */
   domain: { id: string; title: string } | null;
-  /** "전원" — powered (recently updated / fresh) vs unpowered (quiet). */
+  /** 「전원」 (power) — powered (recently updated, fresh) versus unpowered (quiet). */
   powered: boolean;
   /**
    * Connections grouped by relation type, each with a capped row preview + the
    * group's true total — so a contains-hub's depends group renders its real
    * count instead of collapsing into a generic overflow.
    *
-   * 이 패널이 그리는 **모든** 관계 수의 유일한 출처다(2026-07-26). 예전엔
-   * 별도의 `metric` prop 이 같은 수를 한 벌 더 들고 있었고, 그 벌에 없는
-   * 버킷은 상단 집계에서도 조용히 빠졌다. 세는 곳과 그리는 곳을 하나로 묶어
-   * "안 그린 걸 세거나, 센 걸 안 그리는" 상태를 타입 수준에서 없앤다.
+   * This is the single source of **every** relation count this panel draws
+   * (2026-07-26). A separate `metric` prop used to hold another copy of the same
+   * numbers, and any bucket missing from that copy also dropped silently out of
+   * the aggregate above. Binding what is counted to what is drawn removes
+   * "counting what is not drawn, or not drawing what is counted" at the type level.
    */
   groups: V2ConnectionGroupsView;
-  /** 근거(evidence) group — the node's own backing vault doc(s), RATIO-SYSTEM
-   * §4 promotion. Rows built by `buildV2EvidenceRows`; empty when the node
-   * has no `evidenceIds` (hides the group entirely, same convention as
-   * usedBy/dependsOn). */
+  /** The 「근거」 (evidence) group — the node's own backing vault doc(s),
+   * RATIO-SYSTEM §4 promotion. Rows built by `buildV2EvidenceRows`; empty when
+   * the node has no `evidenceIds` (which hides the group entirely, the same
+   * convention as usedBy/dependsOn). */
   evidence: { rows: readonly V2EvidenceRow[]; total: number };
   /**
-   * "코드 위치" (code location) — the node's REAL code evidence: raw file
-   * paths (`src/foo/bar.ts`), not the self-referential vault-doc slug in
-   * `evidence` above. Built by `deriveCodeLocations` from the node's own
-   * title (when it's a path-titled element) plus its direct `contains`
-   * children. Empty hides the section — never fabricated.
+   * 「코드 위치」 (code location) — the node's REAL code evidence: raw file paths
+   * (`src/foo/bar.ts`), not the self-referential vault-doc slug in `evidence`
+   * above. Built by `deriveCodeLocations` from the node's own title (when it is a
+   * path-titled element) plus its direct `contains` children. Empty hides the
+   * section — never fabricated.
    */
   codeLocations: readonly string[];
   /**
-   * S-C1 (owner 2026-07-20: "변경일 이런거? 그래야 구분이 될거 아냐") —
-   * pre-formatted "언제 바뀌었나" label ("오늘" / "3일 전" / null when the
-   * node has no backing doc date). Formatting lives in the caller so the
-   * label passes through the same i18n path as every other string here.
+   * S-C1 (owner 2026-07-20: *"변경일 이런거? 그래야 구분이 될거 아냐"* — a change
+   * date, something like that, otherwise you can't tell them apart) — the
+   * pre-formatted "when did it change" label (「오늘」 / 「3일 전」, or null when the
+   * node has no backing doc date). Formatting lives in the caller so the label
+   * passes through the same i18n path as every other string here.
    */
   updatedAtLabel?: string | null;
   /**
@@ -286,39 +294,43 @@ export interface TopologyV2DetailPanelProps {
   /** Pre-built agent handoff payload; the view owns clipboard + toast. */
   handoffText: string;
   /**
-   * W2-A "문서" action tile target — `buildDocsVaultHref` result for this
-   * node's backing vault doc, or `null` when the node has no `sourceSlug`
-   * (the tile renders disabled rather than linking to a guessed URL).
+   * The W2-A 「문서」 (document) action tile's target — the `buildDocsVaultHref`
+   * result for this node's backing vault doc, or `null` when the node has no
+   * `sourceSlug` (the tile renders disabled rather than linking to a guessed URL).
    */
   documentHref: string | null;
-  /** W2-A "관계 편집" action tile target — the contextual editor deep link
-   * (`/topology/?p=<id>&workbench=edit`). */
+  /** The W2-A 「관계 편집」 (edit relations) action tile's target — the contextual
+   * editor deep link (`/topology/?p=<id>&workbench=edit`). */
   meaningEditHref: string;
   labels: TopologyV2DetailPanelLabels;
   onSelectConnection: (id: string) => void;
   /**
-   * 관계 행 위에 커서가 있는 동안 그 노드를 **지도에서** 가리킨다 (2026-08-17
-   * 소유자 지시: *"이부분들 각각 마우스 올리면 옆에 지도에서 반짝이면서 표시되면
-   * 좋겠는데 가능할까? 지금은 아무 반응이 없어서.."*).
+   * While the cursor is over a relation row, point at that node **on the map**
+   * (owner instruction, 2026-08-17: *"이부분들 각각 마우스 올리면 옆에 지도에서
+   * 반짝이면서 표시되면 좋겠는데 가능할까? 지금은 아무 반응이 없어서.."* — hovering
+   * each of these should make it glint on the map beside it; right now nothing
+   * responds).
    *
-   * **이름 공간에 주의** — 여기 넘기는 값은 `onSelectConnection` 과 같은
-   * **캔버스 노드 id**(`domain:example-domain`)다. 근거 문서 행은 다른 이름
-   * 공간(볼트 slug)이라 `onHoverEvidence` 로 따로 나간다. 둘을 한 콜백으로
-   * 합치면 `chat-node-index.ts` 가 기록한 그 사고 — 두 이름 공간이 만나는
-   * 자리에 검사가 없어 기능이 배선만 남고 죽었던 것 — 를 그대로 반복한다.
+   * **Mind the namespace** — the value passed here is the **canvas node id**
+   * (`domain:example-domain`), the same as `onSelectConnection`. Evidence
+   * document rows are a different namespace (a vault slug) and go out separately
+   * through `onHoverEvidence`. Merging the two into one callback repeats exactly
+   * the accident `chat-node-index.ts` recorded — where two namespaces met with no
+   * check, and the feature survived as wiring while being dead.
    *
-   * 안 넘기면 아무 일도 안 일어난다(기존 동작 유지).
+   * Omitted, nothing happens (the previous behaviour).
    */
   onHoverConnection?: (id: string | null) => void;
   /**
-   * 근거 문서 행 호버 — **볼트 slug**(`capabilities/mcp-server`)를 넘긴다.
-   * 지도에 그 노드가 있으면 가리키고, 없으면(문서가 노드가 아닐 수 있다)
-   * 호출자가 null 로 접는다. 판정은 호출자의 몫이다 — 이 패널은 어느 노드가
-   * 지도에 실렸는지 모른다.
+   * Evidence document row hover — it passes a **vault slug**
+   * (`capabilities/mcp-server`). If that node is on the map it is pointed at; if
+   * not (a document need not be a node) the caller folds it to null. That
+   * decision belongs to the caller — this panel does not know which nodes the map
+   * carries.
    */
   onHoverEvidence?: (slug: string | null) => void;
   onCopyHandoff: (text: string) => void;
-  /** 지도 안 contextual editor가 있으면 링크 대신 같은 자리에서 연다. */
+  /** With a contextual editor inside the map, open it in place instead of following the link. */
   onEditRelations?: () => void;
   /**
    * 「이어서 새로 만들기」 — 이 개념에 붙는 새 노드를 만든다. 없으면 편집 메뉴의
@@ -340,24 +352,27 @@ export interface TopologyV2DetailPanelProps {
    * (그 외엔 omit → 버튼 미표시). 궤도 버튼과 같은 액션 하나.
    */
   onEnterRealm?: () => void;
-  /** Opens the A1 full-detail datasheet for this node — details-on-demand
-   * opt-in (`.claude/rules/design.md` "풀스크린 드로어는 opt-in"). Omitted
-   * hides the link (e.g. read-only embeds). */
+  /** Opens the A1 full-detail datasheet for this node — the details-on-demand
+   * opt-in (`.claude/rules/design.md`, 「풀스크린 드로어는 opt-in」 — a full-screen
+   * drawer is opt-in). Omitted hides the link (read-only embeds, for instance). */
   onOpenFullDetail?: () => void;
   /**
-   * 열려 있는가. 이 패널은 **자기 등장/퇴장을 스스로 진다** — `<Surface>` 가
-   * 퇴장 창(`EXIT_WINDOW_MS`) · 퇴장 클래스(`.topology-chrome-out`) · `inert` +
-   * `pointer-events-none` 을 지므로 소비처가 다시 챙길 것이 없다.
+   * Whether it is open. This panel **carries its own entry and exit** — `<Surface>`
+   * owns the exit window (`EXIT_WINDOW_MS`), the exit class
+   * (`.topology-chrome-out`), `inert` and `pointer-events-none`, so the consumer
+   * has nothing to arrange again.
    *
-   * 종전에는 `presence: "entering" | "exiting"` 을 **부모가 계산해서** 내려줬다.
-   * 그러면 퇴장 창의 타이머가 부모에 있어, 이 파일만 봐서는 이 표면에 나가는
-   * 길이 있는지 알 수 없다(하드컷 래칫의 탐지기도 못 본다). 창은 표면이 진다.
+   * `presence: "entering" | "exiting"` used to be **computed by the parent** and
+   * passed down. Then the exit window's timer lived in the parent, and reading
+   * this file alone could not tell you whether this surface had a way out (the
+   * hard-cut ratchet's detector could not see it either). The window belongs to
+   * the surface.
    */
   open: boolean;
   /**
-   * 퇴장이 **끝난 뒤** 한 번. 부모의 포지셔너를 내리는 신호로 쓴다 — 퇴장
-   * 타이머가 둘이면 어느 쪽이 진실인지 알 수 없으므로, 창은 여기 하나뿐이고
-   * 부모는 그 끝을 통보받는다.
+   * Once, **after** the exit finishes. Used as the signal to take down the
+   * parent's positioner — with two exit timers there is no telling which is true,
+   * so the window exists only here and the parent is notified of its end.
    */
   onExited?: () => void;
   className?: string;
@@ -367,8 +382,8 @@ export interface TopologyV2DetailPanelProps {
    */
   showHandoff?: boolean;
   /**
-   * 슬라이스 C — 원문 경로 서브라인(슬라이스 B, `sourceTitle`). 기본
-   * `true`. 비개발(plain) 모드에서 `false` — 코드 경로는 개발자 어휘.
+   * Slice C — the raw path subline (slice B, `sourceTitle`). Defaults to `true`;
+   * `false` in non-dev (plain) mode, because a code path is developer vocabulary.
    */
   showSourcePath?: boolean;
   /** Project-only 0/1 source binding receipt. Other kinds ignore it. */
@@ -380,13 +395,15 @@ export interface TopologyV2DetailPanelProps {
   /** Localized explicit-action failure; never used for picker cancellation. */
   projectSourceError?: string | null;
   /**
-   * **정직한 강등** — 이 표면에서 그 행동을 실행할 수 없을 때만 넘긴다(웹:
-   * 브라우저가 고른 폴더의 절대 경로를 모른다). `surfaces.md` 가 요구하는
-   * 세 가지를 전부 갖는다: 왜 안 되는지 · 어디서 되는지 · **여기서도 되는 것**.
+   * **Honest degradation** — passed only when this surface cannot perform that
+   * action (on the web, the browser does not know the absolute path of the folder
+   * it was given). It carries all three things `surfaces.md` requires: why it does
+   * not work · where it does · **and what does work here**.
    *
-   * 종전에는 이 자리가 「설치 앱에서 코드 폴더를 연결할 수 있어요」라는 회색
-   * 문장 하나였다 — 링크도 아니고, 왜인지도 없고, 이 화면에서 무엇이 되는지도
-   * 말하지 않았다. 진단만 하고 처방이 없는 화면이 그렇게 생긴다.
+   * This position used to be a single grey sentence, 「설치 앱에서 코드 폴더를
+   * 연결할 수 있어요」 (you can connect a code folder in the installed app) — not a
+   * link, with no reason, and no word about what works on this screen. That is
+   * what a screen that diagnoses without prescribing looks like.
    */
   projectSourceDegraded?: {
     why: string;
@@ -395,14 +412,16 @@ export interface TopologyV2DetailPanelProps {
     stillWorks: string;
   } | null;
   /**
-   * **「이 폴더 맞나요?」** — 연결을 두 단계(누르기 → 폴더 고르기)에서 한 단계로
-   * 줄이는 자리다. 앱은 볼트 루트를 한 번 재는 것만으로 감싸는 git 저장소를
-   * 알므로, 사람에게 폴더 트리를 뒤지게 할 이유가 없다.
+   * **「이 폴더 맞나요?」** (is this the folder?) — this is where connecting drops
+   * from two steps (press, then choose a folder) to one. Measuring the vault root
+   * once tells the app which git repository encloses it, so there is no reason to
+   * make a person dig through a folder tree.
    *
-   * `reason` 은 **왜 이 폴더인지**를 사람 말로 적은 한 줄이고, 그 근거는 지어낸
-   * 것이 아니라 잰 것이다(git 저장소 여부 + 선언된 경로가 실제로 거기 있는 수).
-   * 추정이 없거나 확신이 낮으면 호출자가 이 prop 자체를 안 넘긴다 — 그때 화면은
-   * 종전대로 폴더 선택창 하나만 그린다. **회색 버튼을 두지 않는다.**
+   * `reason` is one line in human words about **why this folder**, and its basis is
+   * measured rather than invented (whether it is a git repository, plus how many
+   * of the declared paths actually exist there). With no guess, or low confidence,
+   * the caller simply does not pass this prop — and the screen then draws the
+   * folder picker alone, as before. **No grey button.**
    */
   projectSourceProposal?: {
     question: string;
@@ -412,21 +431,24 @@ export interface TopologyV2DetailPanelProps {
     pickOtherLabel: string;
     confidence: "high" | "medium";
   } | null;
-  /** 추정된 폴더를 **선택창 없이** 그대로 확정한다(클릭 1회). */
+  /** Confirm the guessed folder directly, **with no picker** (one click). */
   onProjectSourceConfirmProposal?: () => void | Promise<void>;
 }
 
 /**
- * **진단 바로 밑의 처방.** 「왜 필요한지」한 문장 + 그 자리에서 누르는 것 하나.
+ * **The prescription, right under the diagnosis.** One sentence of "why this is
+ * needed" plus one thing to press right there.
  *
- * 이 자리에 상자를 두르는 이유는 장식이 아니라 **묶기**다 — 위의 상태 세 줄은
- * 사실이고, 이 상자 안은 「그래서 지금 무엇을 하면 되는가」다. 상자가 뜨는
- * 조건이 곧 「고칠 것이 있다」이므로(호출부 `showSourceRemedy`), 상자 자체가
- * 타입 있는 사실 하나(`topGap !== null`)를 나른다.
+ * The box around this position is not decoration but **binding** — the three
+ * status lines above are facts, and inside this box is "so what do I do now".
+ * The condition for the box appearing *is* "there is something to fix" (the call
+ * site's `showSourceRemedy`), so the box itself carries one typed fact
+ * (`topGap !== null`).
  *
- * 값은 전부 기존 토큰이다 — 바탕/테두리는 바로 아래 액션 스트립이 쓰는
- * `--topology-v2-panel-action-*`, 버튼은 종전 푸터 액션과 **글자 하나 안 바뀐**
- * 같은 스킨. 새 토큰 0개.
+ * Every value is an existing token — the background and border are the
+ * `--topology-v2-panel-action-*` the action strip directly below uses, and the
+ * button is the same skin as the previous footer action, **not one character
+ * changed**. Zero new tokens.
  */
 function ProjectSourceRemedy({
   why,
@@ -448,10 +470,11 @@ function ProjectSourceRemedy({
   onConfirmProposal?: () => void | Promise<void>;
 }) {
   /**
-   * 제안이 있으면 **주목 승자가 바뀐다** — 「연결하기」라는 일반 행동에서
-   * 「이 폴더 맞나요? <경로>」라는 구체적인 질문으로. 그래서 원래의 단일 버튼은
-   * 이 자리에서 「다른 폴더 고르기」라는 **탈출구**로 강등되고, 인디고는 확정
-   * 버튼 하나만 갖는다(한 상자에 주 행동은 하나).
+   * With a proposal, **the attention winner changes** — from the generic action
+   * 「연결하기」 (connect) to the specific question 「이 폴더 맞나요? <경로>」. So the
+   * original single button demotes here into 「다른 폴더 고르기」 (choose another
+   * folder) as **the escape hatch**, and only the confirm button carries indigo
+   * (one primary action per box).
    */
   const showProposal = Boolean(onAction && proposal && onConfirmProposal);
   return (
@@ -460,10 +483,11 @@ function ProjectSourceRemedy({
       data-remedy-mode={
         onAction ? (showProposal ? "proposed" : "actionable") : "degraded"
       }
-      // `keep-all` — 한국어는 아무 글자에서나 끊긴다. 이 상자의 문장 셋은
-      // 좁은 패널 폭에서 반드시 두 줄이 되는데, 기본 줄바꿈이면 「여기 / 서
-      // 찾았어요」처럼 단어 가운데가 갈린다(액션 스트립이 같은 이유로 이미
-      // 쓰는 문법 — 값 0개 추가).
+      // `keep-all` — Korean breaks at any character. The three sentences in this
+      // box are guaranteed to wrap at the panel's narrow width, and with default
+      // line breaking a word splits down the middle, as in 「여기 / 서 찾았어요」.
+      // (The action strip already uses the same grammar for the same reason —
+      // zero values added.)
       className="mt-0.5 flex flex-col gap-2 rounded-chip border border-[color:var(--topology-v2-panel-action-border)] bg-[color:var(--topology-v2-panel-action-surface)] px-2.5 py-2 [word-break:keep-all]"
     >
       {why ? (
@@ -483,9 +507,10 @@ function ProjectSourceRemedy({
           <p className="text-body font-[var(--font-weight-emphasis)] text-[color:var(--topology-v2-panel-text-secondary)]">
             {proposal.question}
           </p>
-          {/* 경로는 **긴 문자열이 아니라 답**이다 — 앞의 폴더 맥락과 마지막
-              폴더 이름이 둘 다 남아야 「내 저장소가 맞다」를 눈으로 확인한다.
-              그래서 꼬리만 자르지 않고 가운데를 접는다(코드 위치 행과 같은 함수). */}
+          {/* The path is **an answer, not a long string** — both the leading folder
+              context and the final folder name have to survive for the eye to
+              confirm "yes, that is my repository". So the middle is folded rather
+              than the tail truncated (the same function as the code-location row). */}
           <p
             data-testid="topology-v2-project-source-proposal-path"
             title={proposal.rootPath}
@@ -541,14 +566,14 @@ function ProjectSourceRemedy({
         </div>
       ) : degraded ? (
         <>
-          {/* ① 왜 이 화면에서는 안 되나 — 사과문이 아니라 이유. */}
+          {/* ① Why it does not work on this screen — a reason, not an apology. */}
           <p
             data-testid="topology-v2-project-source-degraded-why"
             className="text-label text-[color:var(--topology-v2-panel-text-tertiary)]"
           >
             {degraded.why}
           </p>
-          {/* ② 어디로 가면 되나 — 문장이 아니라 실제로 열리는 목적지. */}
+          {/* ② Where to go instead — a destination that actually opens, not a sentence. */}
           <Link
             href={degraded.href}
             data-testid="topology-v2-project-source-degraded-cta"
@@ -561,9 +586,9 @@ function ProjectSourceRemedy({
           >
             {degraded.ctaLabel}
           </Link>
-          {/* ③ 그래도 여기서 되는 것 — 되는 일까지 못 한다고 말하지 않는다.
-              색이 섞인 바탕 위라 quaternary 가 아니라 tertiary 부터다
-              (`quaternary-ink-surface` 계약). */}
+          {/* ③ What does still work here — never say that even what works does not.
+              It sits on a tinted background, so the ink starts at tertiary rather
+              than quaternary (the `quaternary-ink-surface` contract). */}
           <p
             data-testid="topology-v2-project-source-degraded-still-works"
             className="text-label text-[color:var(--topology-v2-panel-text-tertiary)]"
@@ -726,11 +751,12 @@ function DetailActionMenu({
 }
 
 /**
- * 관계 그룹 헤더의 방향 글리프 — 승인된 시안(mockup-panel-detail)의 SVG 를
- * 그대로 옮긴다. 담는 것=아래로 소유(계층), 쓰는 곳=밖에서 들어옴(arrow-in),
- * 기대는 곳=밖으로 나감(arrow-out), 속한 곳=담는 것의 상하 반전(같은 관계,
- * 반대 방향), 근거=문서, 코드=`</>`. currentColor 로만 그려 잉크는 부모의
- * `--topology-v2-panel-group-dir` 텍스트 색을 상속한다.
+ * The direction glyph in a relation group's header — the approved mockup's SVG
+ * (mockup-panel-detail) carried over verbatim. 담는 것 = ownership downward
+ * (hierarchy), 쓰는 곳 = arriving from outside (arrow-in), 기대는 곳 = leaving
+ * outward (arrow-out), 속한 곳 = 담는 것 flipped vertically (same relation, opposite
+ * direction), 근거 = a document, code = `</>`. Drawn in currentColor only, so the
+ * ink inherits the parent's `--topology-v2-panel-group-dir` text colour.
  */
 function GroupDirIcon({
   variant,
@@ -759,9 +785,10 @@ function GroupDirIcon({
         </svg>
       );
     case "belongsTo":
-      // 담는 것 글리프의 상하 반전 — 같은 계층 관계를 반대 방향에서 본 것이라는
-      // 뜻을 형태로만 말한다(새 색/새 기호 0). 부모가 둘 이상인 노드가 실제로
-      // 있어(dogfood 56개) 위쪽 노드는 둘로 둔다.
+      // The 담는 것 glyph flipped vertically — it says "the same hierarchical
+      // relation seen from the opposite direction" through form alone (zero new
+      // colours, zero new symbols). Nodes with more than one parent really exist
+      // (56 in the dogfood vault), so the upper node is drawn as two.
       return (
         <svg {...common}>
           <circle cx={12} cy={19} r={2.2} />
@@ -801,9 +828,10 @@ function GroupDirIcon({
 }
 
 /**
- * 관계 그룹 공통 셸 — 방향 글리프 + 평문 볼드 라벨 + 인디고 카운트 칩 +
- * 언더라인 디바이더가 있는 헤더, 그 아래 행 목록. 모든 그룹(담는 것/쓰는 곳/
- * 기대는 곳/근거/코드 위치)이 같은 골격으로 읽히게 한 곳에서 렌더한다.
+ * The shared shell for a relation group — a header with a direction glyph, a bold
+ * plain label, an indigo count chip and an underline divider, then the row list
+ * below. Rendered in one place so every group (담는 것 / 쓰는 곳 / 기대는 곳 /
+ * 근거 / 코드 위치) reads with the same skeleton.
  */
 function RelationGroupShell({
   groupKey,
@@ -891,16 +919,19 @@ export function TopologyV2DetailPanel({
   const isProject = kind === "project";
   const showProjectSource = isProject && projectSource !== null;
   /**
-   * **처방은 진단 옆에 붙는다.** 종전엔 진단(「연결된 코드 폴더가 없습니다」)이
-   * 패널 위쪽 y=234 에, 그 처방(「코드 폴더 연결하기」)이 맨 아랫줄 y=647 에
-   * 있었다 — 393px 떨어진 채, 사이에 액션 타일 넷과 근거 목록이 끼어 있었다.
-   * 웹에서는 그 자리가 아예 버튼이 아니라 회색 문장 한 줄이었다(실측
-   * 2026-08-04). 진단만 하고 처방을 못 주는 화면이 그렇게 생긴다.
+   * **The prescription attaches to the diagnosis.** The diagnosis
+   * (「연결된 코드 폴더가 없습니다」 — no code folder is connected) used to sit at
+   * y=234 near the top of the panel while its prescription
+   * (「코드 폴더 연결하기」 — connect a code folder) sat on the very last row at
+   * y=647 — 393px apart, with four action tiles and the evidence list in between.
+   * On the web that position was not even a button but one grey sentence
+   * (measured 2026-08-04). That is what a screen that diagnoses without being
+   * able to prescribe looks like.
    *
-   * **틈(gap)이 있을 때만** 이 블록이 뜬다. 아무 문제가 없는 상태
-   * (`use_current_evidence`)까지 상자로 감싸면 상자가 「여기 고칠 것이 있다」는
-   * 뜻을 잃는다 — 그 상태의 행동은 지금처럼 푸터에 남는다. 그래서 어느 순간에도
-   * 같은 컨트롤이 두 곳에 그려지지 않는다.
+   * This block appears **only when there is a gap**. Wrapping a state with nothing
+   * wrong (`use_current_evidence`) in a box too would strip the box of its meaning
+   * — "there is something to fix here". That state's action stays in the footer, as
+   * now. So at no moment is the same control drawn in two places.
    */
   const showSourceRemedy = Boolean(
     showProjectSource
@@ -909,13 +940,15 @@ export function TopologyV2DetailPanel({
     && (onProjectSourceAction || projectSourceDegraded),
   );
   /**
-   * **처방 상자는 자리를 밀며 들어온다 — 그러니 밀리는 것이 보여야 한다.**
+   * **The remedy box pushes its way in — so the pushing has to be visible.**
    *
-   * 이 상자가 뜨는 시점은 패널이 열리는 시점과 다르다: 볼트 루트 실측이 끝나야
-   * 「폴더 선택창」인지 「이 폴더 맞나요?」인지 정해진다. 조건부 렌더만 쓰면 그
-   * 순간 아래 내용이 툭 밀려나고, 확정 뒤 사라질 때는 나가는 길이 아예 없다.
-   * 그래서 흐름 안에서 형제를 밀어내는 접기의 공용 문법을 그대로 쓴다 —
-   * 값(커브·시간)은 `.ai-row-disclosure` 한 곳에서만 나온다.
+   * The moment this box appears differs from the moment the panel opens: the vault
+   * root has to be measured before it is settled whether this is a folder picker
+   * or 「이 폴더 맞나요?」. With conditional rendering alone, the content below jolts
+   * aside at that moment, and when it disappears after confirmation there is no way
+   * out at all. So it uses the shared in-flow disclosure grammar that pushes its
+   * siblings — and the values (curve, duration) come from the single place,
+   * `.ai-row-disclosure`.
    */
   const {
     mounted: remedyMounted,
@@ -986,36 +1019,41 @@ export function TopologyV2DetailPanel({
   ];
   const compactProjectRelations = useViewportBelow(1513);
   const collapseProjectRelations = showProjectSource && compactProjectRelations;
-  // 시안 재설계 (2026-07-24) — 상단 stats 는 집계 한 줄. 타입별 분해는 아래
-  // 각 관계 그룹 헤더의 카운트 칩이 담당한다(한 사실 한 번).
+  // Mockup redesign (2026-07-24) — the top stats is one aggregate line. The
+  // per-type breakdown belongs to each relation group header's count chip below
+  // (one fact, once).
   //
-  // 스코프 정정 (2026-07-26) — 합계는 **아래에 실제로 그려지는 그룹들의 total**
-  // 에서 직접 만든다. 예전엔 `metric.*` 세 값만 더해서, 네 번째 버킷(속한 곳)
-  // 이 그려지지도 세어지지도 않았고 부모만 있는 노드가 "이어진 곳 0" 이 됐다.
-  // 같은 객체에서 더하면 "상단 = 아래 그룹 집계" 가 관례가 아니라 구성상 참이다.
+  // Scope correction (2026-07-26) — the sum is built directly from the totals of
+  // **the groups actually drawn below**. It used to add only the three `metric.*`
+  // values, so the fourth bucket (속한 곳) was neither drawn nor counted and a node
+  // with only a parent read as 「이어진 곳 0」. Summing from the same object makes
+  // "the top equals the aggregate of the groups below" true by construction rather
+  // than by convention.
   const connectedTotal =
     groups.contains.total + groups.usedBy.total + groups.dependsOn.total + groups.belongsTo.total;
   const hasConnections =
     connectedTotal > 0 || evidence.total > 0 || codeLocations.length > 0;
 
-  // S2 파트 3 — 긴 "담는 것" 리스트는 경로 프리픽스 요약으로 접고, "전체 보기"
-  // 토글로 기존 리스트를 편다(세션 임시 상태). 노드가 바뀌면 기본(요약)으로 리셋
-  // 되도록 slug 를 key 로 쓴다(호출부 HomePage 가 key 를 주므로 재마운트).
+  // S2 part 3 — a long 「담는 것」 list folds into a path-prefix summary, and the
+  // 「전체 보기」 toggle unfolds the existing list (session-only state). The slug is
+  // used as the key so a node change resets it to the default (summary) — the call
+  // site HomePage supplies the key, so it remounts.
   const [showAllContains, setShowAllContains] = useState(false);
-  // 「+N」 펼침 — 그룹별로 독립(하위 항목을 펼쳤다고 기대는 곳까지 길어지면
-  // 패널이 한 번에 다 자란다). 노드가 바뀌면 부모가 패널을 새로 세우므로
-  // 여기 상태는 그 노드의 것만 산다.
+  // 「+N」 expansion — independent per group (if expanding the children also
+  // lengthened 기대는 곳, the panel would grow everywhere at once). A node change
+  // makes the parent build the panel afresh, so this state lives only for that node.
   const [expandedGroups, setExpandedGroups] = useState<ReadonlySet<string>>(new Set());
   const [showProjectRelations, setShowProjectRelations] = useState(false);
 
   /*
-   * 패널이 사라질 때 지도의 강조도 같이 걷는다.
+   * When the panel disappears, the map's emphasis goes with it.
    *
-   * 행 위에 커서를 둔 채로 그 행을 **누르면** 노드가 바뀌고, 호출부가 `key` 를
-   * 갈아 패널을 통째로 다시 세운다 — 그 행은 DOM 에서 사라지므로
-   * `pointerleave` 가 오지 않는다. 그러면 지도에는 아무도 안 가리키는 강조가
-   * 남는다. 최신 콜백을 ref 로 들고 언마운트에서 한 번만 끈다(콜백 신원이
-   * 바뀔 때마다 껐다 켜지 않기 위해서다).
+   * **Pressing** a row while the cursor rests on it changes the node, and the call
+   * site swaps the `key` to rebuild the panel entirely — that row leaves the DOM,
+   * so `pointerleave` never arrives. The map is then left with an emphasis nobody
+   * is pointing at. The latest callback is held in a ref and cleared once on
+   * unmount (so it is not turned off and on again every time the callback's
+   * identity changes).
    */
   const clearHoverRef = useRef<() => void>(() => {});
   useEffect(() => {
@@ -1052,9 +1090,10 @@ export function TopologyV2DetailPanel({
     const expanded = expandedGroups.has(group);
     const shownRows = expanded ? (view.allRows ?? view.rows) : view.rows;
     const overflow = view.total - view.rows.length;
-    // S2 파트 3 — 긴 "담는 것"은 경로 프리픽스 요약을 기본으로, "전체 보기"로 리스트.
-    // B4 (H1) — 요약이 "기타" 한 덩어리로 무너지면(`usable=false`) 요약을 건너뛰고
-    // 개별 리스트를 렌더한다(정보 0 방지).
+    // S2 part 3 — a long 「담는 것」 defaults to the path-prefix summary, with
+    // 「전체 보기」 for the list. B4 (H1) — when the summary collapses into one
+    // 「기타」 lump (`usable=false`), the summary is skipped and the individual list
+    // renders instead (avoiding zero information).
     const useSummary =
       group === "contains" &&
       view.summary !== undefined &&
@@ -1122,15 +1161,17 @@ export function TopologyV2DetailPanel({
               // (`groupV2ConnectionsByDirection`) — the same neighbor can still
               // appear once per group (mutual dependency, item 5 — no
               // cross-group dedup), which is a different `group` prefix.
-              // 시안: 행의 왼쪽 마크는 캔버스와 같은 kind 글리프(무엇인지) —
-              // 관계 타입은 그룹 자체(담는 것/기대는 곳)가 이미 인코딩한다.
+              // Per the mockup, a row's left mark is the same kind glyph as the
+              // canvas (what it is) — the relation type is already encoded by the
+              // group itself (담는 것 versus 기대는 곳).
               <li key={`${group}:${row.id}`}>
                 <RowButton
                   size="md"
                   onClick={() => onSelectConnection(row.id)}
-                  /* 채팅 패널의 노드 이름 호버(`AcpChatPanel`)와 **같은 계약**:
-                     포인터가 들어오면 그 노드를, 나가면 null. 커서가 캔버스가
-                     아니라 이 패널 위에 있으므로 캔버스 호버와 경쟁하지 않는다. */
+                  /* **The same contract** as hovering a node name in the chat panel
+                     (`AcpChatPanel`): the node on pointer enter, null on leave. The
+                     cursor is over this panel rather than the canvas, so it does not
+                     compete with canvas hover. */
                   onPointerEnter={() => onHoverConnection?.(row.id)}
                   onPointerLeave={() => onHoverConnection?.(null)}
                   data-datasheet-connection={row.id}
@@ -1146,9 +1187,10 @@ export function TopologyV2DetailPanel({
           </ul>
         )}
         {overflow > 0 && !useSummary ? (
-          // 죽은 수였던 「+N」이 문이 된다 — 프로젝트 상세의 「역량 N개 더」
-          // 반려(2026-08-12 B안 근거)와 같은 계보: 수를 보여 놓고 그 수로
-          // 가는 길이 없으면 사용자는 지도를 떠나 다시 찾아야 한다.
+          // The 「+N」 that was a dead number becomes a door — the same lineage as the
+          // rejection of 「역량 N개 더」 in the project detail (the 2026-08-12 option B
+          // rationale): showing a number with no route to it makes the user leave the
+          // map and search again.
           <button
             type="button"
             aria-expanded={expanded}
@@ -1176,20 +1218,20 @@ export function TopologyV2DetailPanel({
     );
   };
 
-  // 근거(evidence) group — CLICKABLE doc-link rows (W2-A promotion: these
+  // The 근거 (evidence) group — CLICKABLE doc-link rows (a W2-A promotion: these
   // used to be display-only). `row.id` is a vault slug (see
   // `buildV2EvidenceRows`'s own doc comment), the exact input
   // `buildDocsVaultHref` expects — no separate id-namespace mapping needed
   // (unlike `onSelectConnection`'s canvas-node ids, which are a different
-  // namespace). No TraceMark here: these aren't canvas edges. Same header/
+  // namespace). No TraceMark here: these aren't canvas edges. Same header and
   // list shape as usedBy/dependsOn.
   //
   // Toss C2 — `row.path` (the folder prefix, e.g. "capabilities/") used to
-  // render as an always-visible mono span next to the title. That's a raw
-  // vault path, opaque to a non-developer, sitting right next to the plain
-  // "근거" label. It now only surfaces via the row's native `title=` hover
-  // (full `row.id` slug) — the row's own link already takes you to the doc,
-  // so the path adds nothing a click doesn't already resolve.
+  // render as an always-visible mono span next to the title. That is a raw vault
+  // path, opaque to a non-developer, sitting right next to the plain 「근거」
+  // label. It now only surfaces through the row's native `title=` hover (the full
+  // `row.id` slug) — the row's own link already takes you to the doc, so the path
+  // adds nothing a click does not already resolve.
   const renderEvidenceGroup = () => {
     if (evidence.total === 0) return null;
     return (
@@ -1206,13 +1248,14 @@ export function TopologyV2DetailPanel({
               <Link
                 href={buildDocsVaultHref({ slug: row.id })}
                 data-datasheet-evidence={row.id}
-                /* 근거 문서는 **노드가 아닐 수 있다** — 지도에 없으면 호출자가
-                   null 로 접고 아무 일도 안 일어난다(에러도 없다). */
+                /* An evidence document **may not be a node** — if it is not on the
+                   map the caller folds it to null and nothing happens (no error either). */
                 onPointerEnter={() => onHoverEvidence?.(row.id)}
                 onPointerLeave={() => onHoverEvidence?.(null)}
                 title={row.id}
-                // 연결 행(`RowButton`)과 **같은 램프 스텝**이어야 한다 — 한 패널
-                // 안에서 행 높이가 갈리면 「치수 규칙성」이 깨진다.
+                // It must be **the same ramp step** as a connection row
+                // (`RowButton`) — row heights diverging inside one panel breaks
+                // dimension regularity.
                 className={controlClass({
                   shape: "row",
                   size: "md",
@@ -1236,12 +1279,12 @@ export function TopologyV2DetailPanel({
     );
   };
 
-  // "코드 위치" group — the node's REAL code evidence (raw file paths),
-  // distinct from the "근거" group above (source-doc slug reference). Rows
-  // are plain monospace text (not a `Link`/button) — raw code paths aren't
-  // vault nodes, so the clickable-ref visual pattern would misrepresent them
-  // as navigable. Each row gets a lightweight copy affordance since a path
-  // is exactly the string an agent/developer wants on the clipboard next.
+  // The 「코드 위치」 (code location) group — the node's REAL code evidence (raw file
+  // paths), distinct from the 「근거」 group above (a source-doc slug reference).
+  // Rows are plain monospace text, not a `Link` or button — raw code paths are not
+  // vault nodes, so the clickable-reference visual pattern would misrepresent them
+  // as navigable. Each row gets a lightweight copy affordance, since a path is
+  // exactly the string an agent or developer wants on the clipboard next.
   const renderCodeLocationsGroup = () => {
     if (codeLocations.length === 0) return null;
     return (
@@ -1266,20 +1309,21 @@ export function TopologyV2DetailPanel({
   };
 
   return (
-    /* 나가는 길을 `Surface` 가 진다 (2026-08-03). 종전엔 부모(HomePage)가
-       `usePanelPresence` 로 창을 열고 `presence` prop 으로 클래스를 지시했는데,
-       그러면 «이 표면에 퇴장이 있는가» 가 이 파일 밖의 사실이 된다.
+    /* `Surface` carries the way out (2026-08-03). The parent (HomePage) used to
+       open the window with `usePanelPresence` and dictate the class through a
+       `presence` prop, which made «does this surface have an exit» a fact living
+       outside this file.
 
-       `origin` prop 은 **주지 않는다.** 이 팝오버의 성장 원점은 정적인 문자열이
-       아니라 방금 클릭한 노드의 화면 좌표이고, HomePage 포지셔너가 그것을
-       `--topology-chrome-in-origin` (px 로컬 좌표)으로 주입한다 — CSS 변수는
-       상속되므로 여기서 `transform-origin` 을 인라인으로 덮으면 오히려 팝오버가
-       고정된 자리에서 태어난다. 클래스 쪽 `var(--topology-chrome-in-origin,
-       center top)` 이 그대로 이긴다.
+       The `origin` prop is **not given.** This popover's growth origin is not a
+       static string but the screen coordinates of the node just clicked, and
+       HomePage's positioner injects that as `--topology-chrome-in-origin` (local px
+       coordinates) — CSS variables inherit, so overriding `transform-origin` inline
+       here would instead make the popover born at a fixed position. The class side's
+       `var(--topology-chrome-in-origin, center top)` wins as it is.
 
-       바깥 상자는 **폭만** 진다 — 안쪽 상자가 스크롤 컨테이너(max-height +
-       overflow-y-auto)이고 sticky 푸터가 그 스크롤포트에 앵커되므로, 그 역할을
-       옮기지 않는다. */
+       The outer box carries **width only** — the inner box is the scroll container
+       (max-height plus overflow-y-auto) and the sticky footer anchors to that
+       scrollport, so that role is not moved. */
     <Surface
       open={open}
       onExited={onExited}
@@ -1297,17 +1341,21 @@ export function TopologyV2DetailPanel({
         data-attention-role="supporting-detail"
         data-datasheet-density="instrument"
         onKeyDown={handleKeyDown}
-        // P3-③ (2026-07-21 리텐션 라운드) — 이 패널은 `--topology-node-popover-top`
-        // 에 fixed 앵커되는데(HomePage 포지셔너), 자기 자신은 높이 제약이 없어
-        // 연결이 많은 노드에서 콘텐츠가 뷰포트를 넘기면 "전체 상세" 푸터가
-        // 화면 밖으로 밀려나 마우스로 닿지 않았다(1440×900, y=911 실측). 뷰포트
-        // 기준 max-height + 내부 스크롤로 패널이 항상 뷰포트 안에 온전히 앵커
-        // 되도록 clamp한다. 시안 재설계(2026-07-24) — root 는 패딩 없이 스크롤
-        // 컨테이너로만 두고, 각 존(정체/ops/관계)이 자기 패딩을 갖는다. 그래야
-        // 풀블리드 존 디바이더(`zdiv`)와 sticky 푸터가 음수 마진 없이 앵커된다.
+        // P3-③ (2026-07-21 retention round) — this panel is fixed-anchored to
+        // `--topology-node-popover-top` (HomePage's positioner) but had no height
+        // constraint of its own, so on a node with many connections the content
+        // overflowed the viewport and pushed the 「전체 상세」 footer off screen,
+        // out of the mouse's reach (measured at 1440×900, y=911). A viewport-based
+        // max-height plus internal scrolling clamps the panel so it is always
+        // anchored wholly inside the viewport. Mockup redesign (2026-07-24) — the
+        // root has no padding and acts only as the scroll container, and each zone
+        // (identity/ops/relations) carries its own padding. That is what lets the
+        // full-bleed zone divider (`zdiv`) and the sticky footer anchor with no
+        // negative margins.
         className={[
-          // 폭은 바깥 `Surface` 가 정한다(소비처 className 의 반응형 폭 덮어쓰기
-          // 포함) — 여기서는 그 폭을 채우고 나머지 재질만 진다.
+          // Width is decided by the outer `Surface` (including the consumer
+          // className's responsive width override) — here it only fills that width
+          // and carries the remaining material.
           "flex w-full flex-col",
           "max-h-[var(--topology-v2-panel-max-height)] overflow-y-auto",
           "rounded-[var(--topology-v2-panel-radius)] border border-[color:var(--topology-v2-panel-border)]",
@@ -1315,15 +1363,16 @@ export function TopologyV2DetailPanel({
           "shadow-[var(--topology-v2-panel-shadow)]",
         ].join(" ")}
       >
-        {/* ZONE 1 · IDENTITY — 균형 헤더: 이름 hero(좌) + kind 배지·닫기(우),
-            아래 신선도(좌) + 도메인 칩(우). 양쪽이 질량을 가져 우측 공백이
-            생기지 않고 긴 이름에서도 성립한다. */}
+        {/* ZONE 1 · IDENTITY — a balanced header: the name hero (left) plus the kind
+            badge and close (right), and below, freshness (left) plus the domain chip
+            (right). Both sides carry mass, so no gap opens on the right and it holds
+            up for long names too. */}
         <div className="px-[var(--topology-v2-panel-pad)] pt-[15px] pb-4">
           <div className="mb-[11px] flex items-center gap-2.5">
             <h2 className="min-w-0 flex-1 truncate text-title font-[var(--font-weight-strong)] leading-title tracking-title text-[color:var(--topology-v2-panel-text-primary)]">
               {title}
             </h2>
-            {/* kind = 읽히는 텍스트 배지(글리프 + 단어), 우측 counterweight */}
+            {/* kind = a badge you read (glyph plus word), the counterweight on the right */}
             <span className="flex shrink-0 items-center gap-1.5 rounded-chip border border-[color:var(--topology-v2-panel-kind-badge-border)] bg-[color:var(--topology-v2-panel-kind-badge-surface)] py-[3px] pl-[7px] pr-[9px] text-label font-[var(--font-weight-emphasis)] tracking-[var(--tracking-label)] text-[color:var(--topology-v2-panel-text-secondary)]">
               <TopologyV2KindGlyph kind={kind} size={12} />
               {labels.kindLabel}
@@ -1346,7 +1395,7 @@ export function TopologyV2DetailPanel({
               {sourceTitle}
             </div>
           ) : null}
-          {/* project source receipt 는 아래 OPS rail 이 meta 자리까지 맡는다. */}
+          {/* For a project source, the OPS rail below takes over the meta position as well. */}
           {!showProjectSource || domain || updatedAtLabel ? (
             <div className="flex items-center justify-between gap-3">
               {!showProjectSource ? (
@@ -1375,8 +1424,9 @@ export function TopologyV2DetailPanel({
                 <button
                   type="button"
                   onClick={() => onSelectConnection(domain.id)}
-                  /* 관계 행과 **같은 어포던스**(누르면 그 노드로 간다)라 호버도
-                     같아야 한다 — 여기만 반응이 없으면 "왜 이 줄만 다르지"가 된다. */
+                  /* **The same affordance** as a relation row (press it and you go to
+                     that node), so hover has to match — if only this line did not
+                     respond it becomes "why is this one line different". */
                   onPointerEnter={() => onHoverConnection?.(domain.id)}
                   onPointerLeave={() => onHoverConnection?.(null)}
                   aria-label={`${labels.domainLabel} ${domain.title}`}
@@ -1407,8 +1457,8 @@ export function TopologyV2DetailPanel({
 
         <hr className="h-px border-0 bg-[color:var(--topology-v2-panel-zone-divider)]" />
 
-        {/* ZONE 2 · OPS — last-edit/충돌(실데이터 있을 때만) + 평문 stats +
-            조용한 액션 스트립. */}
+        {/* ZONE 2 · OPS — the last-edit/conflict row (only with real data) plus the
+            plain stats plus the quiet action strip. */}
         <div className="flex flex-col gap-3 px-[var(--topology-v2-panel-pad)] pt-3 pb-2.5">
           {/* rank7 (design-council B5) — last-edit provenance + expected_mtime
               conflict, both gated on real data by the caller. */}
@@ -1422,8 +1472,8 @@ export function TopologyV2DetailPanel({
           ) : null}
           {mtimeConflict ? <MtimeConflictBadge message={labels.editConflictMessage} /> : null}
 
-          {/* Project 는 같은 자리를 receipt rail 로 치환한다. 나머지는 기존
-              평문 stats(집계 한 줄)를 그대로 유지한다. */}
+          {/* A project replaces the same position with the receipt rail. Everything
+              else keeps the existing plain stats (one aggregate line). */}
           {showProjectSource ? (
             <div
               data-testid="topology-v2-project-source-receipt"
@@ -1483,8 +1533,8 @@ export function TopologyV2DetailPanel({
                 ref={remedyBoxRef}
                 className="ai-row-disclosure"
                 data-state={showSourceRemedy ? "open" : "closed"}
-                // 접히는 동안에도 DOM 에 남으므로, 보이지 않는 버튼이 탭 순서와
-                // 스크린 리더에 남지 않게 즉시 비활성화한다.
+                // It stays in the DOM while collapsing, so it is disabled immediately
+                // to keep an invisible button out of tab order and the screen reader.
                 inert={!showSourceRemedy}
               >
                 {remedyMounted ? (
@@ -1563,9 +1613,10 @@ export function TopologyV2DetailPanel({
 
         <hr className="h-px border-0 bg-[color:var(--topology-v2-panel-zone-divider)]" />
 
-        {/* ZONE 3 · RELATIONS — 그룹 사이 리듬은 `--topology-v2-panel-zone-gap`
-            (28px)로 그룹 내부 행 간격보다 훨씬 크게 벌려 각 typed-fact 블록이
-            자체 섹션으로 읽히게 한다("space encodes grouping"). */}
+        {/* ZONE 3 · RELATIONS — the rhythm between groups is
+            `--topology-v2-panel-zone-gap` (28px), far wider than the row spacing
+            inside a group, so each typed-fact block reads as its own section
+            ("space encodes grouping"). */}
         <div className="flex flex-col gap-[var(--topology-v2-panel-zone-gap)] px-[var(--topology-v2-panel-pad)] py-[18px]">
           {collapseProjectRelations && connectedTotal > 0 ? (
             <div
@@ -1629,9 +1680,9 @@ export function TopologyV2DetailPanel({
                   {renderGroup("contains", "contains", labels.metricContains, labels.metricContainsHelp, groups.contains)}
                   {renderGroup("usedBy", "usedBy", labels.metricUsedBy, labels.metricUsedByHelp, groups.usedBy)}
                   {renderGroup("dependsOn", "dependsOn", labels.metricDependsOn, labels.metricDependsOnHelp, groups.dependsOn)}
-                  {/* 속한 곳 — 전체 상세와 같은 순서(담는 것 → 쓰는 곳 → 기대는 곳 →
-                      속한 곳)로 마지막에 둔다. 두 표면을 오가는 사람이 같은 자리에서
-                      같은 단어를 만나게. */}
+                  {/* 속한 곳 — placed last, in the same order as full detail
+                      (담는 것 → 쓰는 곳 → 기대는 곳 → 속한 곳), so someone moving
+                      between the two surfaces meets the same word in the same place. */}
                   {renderGroup("belongsTo", "belongsTo", labels.metricBelongsTo, labels.metricBelongsToHelp, groups.belongsTo)}
                 </>
               ) : null}
@@ -1645,10 +1696,11 @@ export function TopologyV2DetailPanel({
           )}
         </div>
 
-        {/* Footer (sticky) — slug(좌, 마지막 세그먼트만·전체는 title= hover) +
-            인디고 채움 primary "전체 상세"(단 하나의 강조). root 가 무패딩
-            스크롤 컨테이너라 음수 마진 없이 sticky bottom-0 로 앵커된다 —
-            내용이 넘칠 때도 항상 뷰포트 안에 남는다(P3-③). */}
+        {/* Footer (sticky) — the slug (left, last segment only; the full value on
+            `title=` hover) plus the indigo-filled primary 「전체 상세」 (the one and
+            only emphasis). The root is an unpadded scroll container, so it anchors
+            with `sticky bottom-0` and no negative margins — it stays inside the
+            viewport even when the content overflows (P3-③). */}
         <div
           data-testid="topology-v2-detail-panel-footer"
           className="sticky bottom-0 flex items-center gap-2.5 rounded-b-[var(--topology-v2-panel-radius)] border-t border-[color:var(--topology-v2-panel-border)] bg-[color:var(--topology-v2-panel-surface)] px-[var(--topology-v2-panel-pad)] py-[11px]"
@@ -1686,8 +1738,8 @@ export function TopologyV2DetailPanel({
               {labels.openFullDetail}
             </button>
           ) : null}
-          {/* 틈이 있을 때의 행동은 위 처방 블록이 가져갔다 — 여기 남는 것은
-              「할 일 없음」 상태의 조용한 행동 하나뿐이다. */}
+          {/* The action for when there is a gap was taken by the remedy block above —
+              what remains here is one quiet action for the "nothing to do" state. */}
           {showProjectSource && labels.sourceAction && !showSourceRemedy ? (
             onProjectSourceAction ? (
               <button
@@ -1718,9 +1770,9 @@ export function TopologyV2DetailPanel({
 }
 
 /**
- * One "코드 위치" row — raw code path (truncated middle, full path on hover)
- * + a per-row copy button. A dedicated component (not inline in the map
- * callback) because each row owns its OWN copy-feedback state
+ * One 「코드 위치」 (code location) row — a raw code path (middle truncated, full
+ * path on hover) plus a per-row copy button. A dedicated component rather than
+ * inline in the map callback, because each row owns its OWN copy-feedback state
  * (`useCopyFeedback`) — copying one path must not flip every row's icon.
  */
 function CodeLocationRow({

@@ -1,6 +1,7 @@
-// `ontology-atlas node <slug> [vault]` — 한 노드의 전체 deep dive.
-// MCP `query_ontology({operation: 'node_profile'})` thin wrapper.
-// header / 도메인 / containment lineage / incoming-outgoing edges (relation 별 그룹) 한 화면.
+// `ontology-atlas node <slug> [vault]` — a full deep dive on one node.
+// Thin wrapper over MCP `query_ontology({operation: 'node_profile'})`.
+// Header, domain, containment lineage, and incoming/outgoing edges grouped by
+// relation, all on one screen.
 
 import { COLORS, KIND_COLORS } from '../lib/colors.mjs';
 import { callMcpTool } from '../lib/mcp-call.mjs';
@@ -83,7 +84,7 @@ function render(result, filters = {}) {
       ` ${COLORS.dim}(in ${deg.in} · out ${deg.out})${COLORS.reset}\n`,
   );
 
-  // Aliases (slug 외 추가 alias)
+  // Aliases
   const aliases = Array.isArray(result?.aliases) ? result.aliases : [];
   const extraAliases = aliases.filter((a) => a !== n.slug);
   if (extraAliases.length > 0) {
@@ -93,12 +94,12 @@ function render(result, filters = {}) {
     process.stdout.write(`  ${COLORS.dim}filters${COLORS.reset} ${formatActiveEdgeFilters(filters)}\n`);
   }
 
-  // Lineage (ancestor chain — project ← domain ← capability 흐름)
+  // Lineage (ancestor chain — project ← domain ← capability)
   const ancestors = result?.lineage?.ancestors?.nodes ?? [];
   if (ancestors.length > 0) {
     const chain = ancestors
       .slice()
-      .sort((a, b) => b.distance - a.distance) // 멀리부터 (project → 가까이)
+      .sort((a, b) => b.distance - a.distance) // farthest first (project → nearest)
       .map((a) => {
         const ac = KIND_COLORS[a.node?.kind] || COLORS.dim;
         return `${ac}${a.node?.title || a.slug}${COLORS.reset}`;
@@ -156,14 +157,14 @@ function formatActiveEdgeFilters({ types, includeExternal, includeUnresolved } =
 }
 
 function renderEdgesByRelation(edges, peerField) {
-  // relation 별 그룹 (via 키)
+  // Grouped by relation (the via key)
   const grouped = new Map();
   for (const e of edges) {
     const key = e.relationType || e.via || '?';
     if (!grouped.has(key)) grouped.set(key, []);
     grouped.get(key).push(e);
   }
-  // relation count 큰 순으로
+  // Highest relation count first
   const sorted = [...grouped.entries()].sort(([, a], [, b]) => b.length - a.length);
   for (const [via, rows] of sorted) {
     process.stdout.write(`  ${COLORS.yellow}${via}${COLORS.reset} ${COLORS.dim}× ${rows.length}${COLORS.reset}\n`);

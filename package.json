@@ -70,6 +70,7 @@
     "test:docs-vault": "node --test scripts/build-docs-vault.test.mjs",
     "docs:surface:build": "node scripts/build-docs-surface.mjs",
     "docs:surface:check": "node scripts/build-docs-surface.mjs --check",
+    "docs:comment-refs": "node scripts/check-comment-refs.mjs",
     "docs:links": "node scripts/check-doc-links.mjs",
     "test:guide-examples": "node --test scripts/check-guide-frontmatter-examples.test.mjs",
     "docs:links:external": "node scripts/check-doc-links.mjs --external",

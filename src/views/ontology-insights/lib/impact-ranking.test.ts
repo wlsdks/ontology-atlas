@@ -31,7 +31,7 @@ function edge(from: string, to: string, type: KnowledgeGraphEdge["type"]): Knowl
 
 describe("buildImpactRanking", () => {
   it("가장 많이 되짚어야 하는 개념을 위로 올리고 직접/전이를 나눠 센다", () => {
-    // c → b → a  (화살표 = depends_on: 왼쪽이 오른쪽에 기댄다)
+    // c → b → a  (the arrow is depends_on: the left depends on the right)
     //     d → a
     const nodes = [node("a"), node("b"), node("c"), node("d")];
     const edges = [
@@ -43,11 +43,11 @@ describe("buildImpactRanking", () => {
     const { rows, rankedCount } = buildImpactRanking(nodes, edges, 6);
 
     expect(rows.map((r) => [r.id, r.direct, r.total])).toEqual([
-      // a 를 바꾸면 b·d 가 바로, c 가 건너서 다시 확인 대상
+    // Changing `a` makes b and d direct, and c an indirect, re-check target.
       ["a", 2, 3],
       ["b", 1, 1],
     ]);
-    // 파급이 0인 c·d 는 순위에 들어오지 않는다 — 신호 없는 행은 잉크 낭비다.
+    // c and d have zero blast radius and do not enter the ranking — a row with no signal wastes ink.
     expect(rankedCount).toBe(2);
   });
 
@@ -97,8 +97,8 @@ describe("buildImpactRanking", () => {
   });
 
   describe("근거 계층 분리", () => {
-    // 파급이 가장 큰 것이 문서 없는 파생 개념인 상황 — 도그푸드에서 실제로
-    // 벌어진 배치다(상위 12행 중 11행이 파생 코드 경로였다).
+    // The situation where the largest blast radius is a derived concept with no document — the
+    // arrangement that actually occurred in the dogfood vault (11 of the top 12 rows were derived code paths).
     const stub = {
       ...node("element:integration-test", "element", "cli/src/integration.test.mjs"),
       hasOwnDocument: false,
@@ -117,16 +117,16 @@ describe("buildImpactRanking", () => {
       const ranking = rank();
       expect(ranking.rows.map((row) => row.id)).not.toContain("element:integration-test");
       expect(ranking.evidenceRows.map((row) => row.id)).toEqual(["element:integration-test"]);
-      // 계층별 총계는 따로 센다 — "상위 N / 전체 M" 문구가 섞이면 사용자는
-      // 자기가 보고 있는 목록의 규모를 알 수 없다.
+    // Per-layer totals are counted separately — mixing them in the "top N / M total" copy leaves a
+    // user unable to tell the scale of the list they are looking at.
       expect(ranking.rankedCount).toBe(1);
       expect(ranking.evidenceRankedCount).toBe(1);
     });
 
     it("수는 전체 그래프에서 잰다 — 계층 분리가 파급 수를 바꾸지 않는다", () => {
       const ranking = rank();
-      // 파생 개념을 그래프에서 빼고 재면 같은 개념의 수가 화면과 에이전트에서
-      // 달라진다(MCP blast_radius 계약 위반). 3은 그 파생 개념을 인용한 3개다.
+    // Removing derived concepts from the graph before measuring would give one concept different
+    // numbers on screen and from the agent (violating the MCP blast_radius contract). 3 is the three that cited it.
       expect(ranking.evidenceRows[0].total).toBe(3);
       expect(ranking.rows[0].id).toBe("capability:login");
       expect(ranking.rows[0].total).toBe(2);

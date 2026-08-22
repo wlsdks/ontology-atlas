@@ -116,7 +116,7 @@ describe("rankAllByDegree", () => {
   it("limit 없이 전체 후보 반환 — 호출자가 slice 로 truncation 신호 계산", () => {
     const all = rankAllByDegree(nodes, edges);
     expect(all).toHaveLength(3);
-    // 상위 N 은 호출자가 all.slice(0, N) — "상위 N / 전체 M".
+    // The caller takes the top N with all.slice(0, N) and reports "top N of M".
     expect(all.slice(0, 1)).toHaveLength(1);
     expect(all.length).toBeGreaterThan(1);
   });
@@ -152,7 +152,7 @@ describe("computeDomainCouplingMatrix", () => {
     expect(matrix.crossDomainEdgeCount).toBe(2);
     expect(matrix.selfDomainEdgeCount).toBe(1);
     expect(matrix.connections).toHaveLength(2);
-    // 잘리지 않은 경우 total === shown (caption 미표시 조건).
+    // When nothing is truncated, total === shown — the condition for hiding the caption.
     expect(matrix.totalConnectionCount).toBe(2);
     expect(matrix.connections[0]?.from.id).toBe("domain:auth");
     expect(matrix.connections[0]?.to.id).toBe("domain:billing");
@@ -169,8 +169,8 @@ describe("computeDomainCouplingMatrix", () => {
       node("capability:invoice", "capability"),
       node("capability:engine", "capability"),
     ];
-    // 3 개의 서로 다른 directed cross-domain pair (auth→billing, billing→core,
-    // core→auth) 를 만들고 limit 2 로 자른다.
+    // Build 3 distinct directed cross-domain pairs (auth→billing, billing→core,
+    // core→auth) and truncate at limit 2.
     const edges: KnowledgeGraphEdge[] = [
       { ...edge("c1", "domain:auth", "capability:login"), type: "contains" },
       { ...edge("c2", "domain:billing", "capability:invoice"), type: "contains" },

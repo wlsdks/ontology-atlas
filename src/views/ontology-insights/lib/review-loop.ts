@@ -26,8 +26,8 @@ interface ResolveDoNextReviewStateInput {
 }
 
 /**
- * `cleared`는 완료 이력이 아니라 현재 vault 관측값이다. 같은 exact row id가
- * 다시 신호 집합에 나타나면 곧바로 active로 돌아간다.
+ * `cleared` is not a completion history but the current vault observation. If the same exact row id
+ * reappears in the signal set, it returns to active immediately.
  */
 export function resolveDoNextReviewState({
   reviewId,

@@ -16,9 +16,9 @@ import {
 import type { TopologyV2Tokens } from "../tokens/read-topology-v2-tokens";
 import { computeEgoBounds, type TopologyWorld } from "./topology-world";
 
-// 라벨 하단 여유는 `topology-camera-math.ts` 안에서 LABEL_OFFSET 최댓값 + 4
-// 슬랙으로 파생된다(Guardian follow-up, 2026-07-23) — 테스트도 같은 파생식으로
-// 기대값을 계산해 LABEL_OFFSET 이 바뀌어도 리터럴이 드리프트하지 않게 한다.
+// The bottom label allowance is derived inside `topology-camera-math.ts` as max
+// LABEL_OFFSET + 4 slack (Guardian follow-up, 2026-07-23) — the test computes its
+// expectation from the same derivation so no literal drifts when LABEL_OFFSET changes.
 const OVERVIEW_LABEL_BOTTOM_ALLOWANCE = Math.max(...Object.values(LABEL_OFFSET)) + 4;
 
 /**
@@ -100,9 +100,9 @@ describe("computeOverviewCameraTarget", () => {
 });
 
 /**
- * Panel-aware fit (Design Guardian 카메라 반려) — the graph center must land in
- * the VISIBLE area (viewport minus the left ReaderLens panel + right rail), not
- * behind the panel.
+ * Panel-aware fit (the Design Guardian's camera rejection) — the graph center must
+ * land in the VISIBLE area (viewport minus the left ReaderLens panel + right rail),
+ * not behind the panel.
  */
 describe("computeOverviewCameraTarget — panel-aware safe insets", () => {
   const bounds = { minX: -100, minY: -100, maxX: 100, maxY: 100 };
@@ -120,9 +120,9 @@ describe("computeOverviewCameraTarget — panel-aware safe insets", () => {
     };
     const centerScreen = worldToScreen(camera, W, H, 0, 0); // graph bounds center is (0,0)
     // Visible-area midpoint = (left + (W - right)) / 2, (top + (H - bottom)) / 2.
-    // 하단 인셋에는 라벨 여유(LABEL_OFFSET 파생분) 가산 (검수 Pass B 결함 1 —
-    // 최하단 스파인 노드 라벨이 1440×900 핏에서 라벨 safe-rect 밖으로 밀리던
-    // 회귀의 예약분).
+    // The bottom inset adds the label allowance (derived from LABEL_OFFSET) —
+    // review pass B defect 1's reservation, where the bottom-most spine node's
+    // label was pushed outside the label safe-rect in the 1440×900 fit.
     expect(centerScreen.x).toBeCloseTo((344 + (W - 120)) / 2, 4);
     expect(centerScreen.y).toBeCloseTo(
       (96 + (H - 96 - OVERVIEW_LABEL_BOTTOM_ALLOWANCE)) / 2,
@@ -337,52 +337,56 @@ describe("computeFocusCameraTarget — fit-to-ego dive (dive-framing fix)", () =
     expect(target).toBeNull();
   });
 
-  // S8 결함 4 — 영역 전개 중 결계 밖 fling 이웃(±5000)이 ego bbox 를 부풀려
-  // 카메라가 overview 로 축소(화면에 안 들어옴)되던 결함. restrictIds 로 영역
-  // 멤버만 담으면 근접 이웃 fit 으로 정상 다이브한다.
+  // S8 defect 4 — a fling neighbour outside the warding circle (±5000) inflated the
+  // ego bbox during realm expansion, shrinking the camera back to overview (nothing
+  // on screen). With restrictIds holding only realm members it dives normally on a
+  // near-neighbour fit.
   it("restrictIds(영역 멤버)면 결계 밖 fling 이웃을 무시하고 근접 fit 으로 다이브한다", () => {
     const world = egoWorld(
       {
         f: { x: 0, y: 0, kind: "domain" },
-        near: { x: 80, y: 0, kind: "capability" }, // 영역 멤버
-        fling: { x: 5000, y: 0, kind: "capability" }, // 결계 밖 fling
+        near: { x: 80, y: 0, kind: "capability" }, // a realm member
+        fling: { x: 5000, y: 0, kind: "capability" }, // flung outside the warding circle
       },
       { f: ["near", "fling"], near: ["f"], fling: ["f"] },
     );
     const overviewEntryScale = 1.5;
     const members = new Set(["f", "near"]);
     const restricted = computeFocusCameraTarget(world, baseTokens, 1200, 800, "f", overviewEntryScale, members);
-    // 근접 ego(f+near)로 다이브 — overview 로 축소되지 않고 확실히 줌 인.
+    // Dives on the near ego (f + near) — decisively zoomed in, not shrunk to overview.
     expect(restricted!.tscale).toBeGreaterThan(overviewEntryScale);
-    // 제한 없으면 fling 이웃이 bbox 를 부풀려 overview 로 clamp(대조).
+    // Unrestricted, the fling neighbour inflates the bbox and it clamps to overview (the control).
     const unbounded = computeFocusCameraTarget(world, baseTokens, 1200, 800, "f", overviewEntryScale);
     expect(unbounded!.tscale).toBeCloseTo(overviewEntryScale, 6);
   });
 });
 
 /**
- * 팬 목줄 — **「지도 맞추기」가 없는 표면**의 안전망 (2026-07-29 카운슬 평결 ②).
+ * The pan leash — a safety net for **surfaces with no 「지도 맞추기」** (fit the map)
+ * (council verdict ②, 2026-07-29).
  *
- * 관문(`/download`)에서 왼쪽으로 한 번 세게 끌면 그래프가 예약 컬럼(판 + 헤드라인)
- * 뒤로 통째로 밀려 무대가 비었고, 12초 뒤에도 감쇠가 0 이었다. 워크벤치라면
- * 크롬 버튼으로 돌아오지만 관문에는 그 버튼이 없다 — 되돌릴 길 없는 화면에서
- * 되돌릴 수 없는 조작을 허용한 것이 결함이다.
+ * One hard drag to the left on the gateway (`/download`) pushed the whole graph
+ * behind the reserved column (the plate plus the headline) and left the stage
+ * empty, with zero damping 12 seconds later. On the workbench a chrome button
+ * brings it back, but the gateway has no such button — allowing an irreversible
+ * gesture on a screen with no way back is the defect.
  */
 describe("computeUnfocusedPanBounds — 팬 목줄", () => {
   const bounds = { minX: -400, minY: -300, maxX: 400, maxY: 300 };
 
   it("목줄이 꺼져 있으면 종전 봉투 그대로 (월드 bbox ± 320)", () => {
-    // 워크벤치의 기본값은 0 이다 — 이 변경이 `/topology` 를 1픽셀도 안 건드린다는
-    // 주장이 여기서 고정된다.
+    // The workbench default is 0 — this pins the claim that this change does not
+    // touch `/topology` by a single pixel.
     const off = computeUnfocusedPanBounds(bounds, 1, { cameraPanLeash: 0, safeInsetLeft: 350 });
     expect(off).toEqual({ minX: -720, minY: -620, maxX: 720, maxY: 620 });
-    // 토큰을 아예 안 넘겨도 같다(순수 카메라-수학 테스트 계약).
+    // Passing no tokens at all gives the same (the pure camera-math test contract).
     expect(computeUnfocusedPanBounds(bounds, 1, {})).toEqual(off);
   });
 
   it("목줄이 켜지면 봉투가 **핏 기준점** ± 목줄로 좁아진다", () => {
-    // 기준점은 오버뷰 핏과 같은 식이다: 중심 − (left−right)/(2·scale).
-    // bbox 가 아니라 핏이 기준이라 봉투 크기가 볼트 크기와 무관해진다.
+    // The reference point uses the same formula as the overview fit:
+    // centre − (left − right) / (2 · scale). Anchoring on the fit rather than the
+    // bbox is what makes the envelope's size independent of vault size.
     const leashed = computeUnfocusedPanBounds(bounds, 2, {
       cameraPanLeash: 220,
       safeInsetLeft: 544,
@@ -406,8 +410,8 @@ describe("computeUnfocusedPanBounds — 팬 목줄", () => {
       tokens,
     );
     expect(huge).toEqual(small);
-    // 목줄이 없으면 이 둘은 다르다 — 그것이 종전 봉투가 "예약 컬럼 밖" 을
-    // 어떤 값으로도 보장하지 못한 이유다.
+    // Without a leash these two differ — which is why the old envelope could not
+    // guarantee "outside the reserved column" at any value.
     expect(computeUnfocusedPanBounds({ minX: -1200, minY: -900, maxX: 1200, maxY: 900 }, 1, {})).not.toEqual(
       computeUnfocusedPanBounds(bounds, 1, {}),
     );
@@ -416,11 +420,12 @@ describe("computeUnfocusedPanBounds — 팬 목줄", () => {
 
 describe("computeFocusCameraTarget — 안전 인셋", () => {
   /**
-   * ⚠️ 종전에 이 함수는 인셋을 **전혀** 쓰지 않았다(2026-08-10 에 고쳤다). 그래서
-   * 노드를 고르면 그것이 **그것을 설명하는 패널 뒤로** 들어갈 수 있었다. 개요 경로는
-   * 이미 같은 문제를 인셋으로 풀고 있었으므로, 처방은 새 보정 체계가 아니라 이 함수를
-   * 그 기구에 맞추는 것이었다 — 하루 전에는 호출부에 둘째 시프트를 얹었고 그것이
-   * 188px 어긋남과 64px 과보정을 만들었다.
+   * ⚠️ This function used to use the insets **not at all** (fixed 2026-08-10), so
+   * choosing a node could put it **behind the panel that explains it**. The overview
+   * path was already solving the same problem with insets, so the prescription was
+   * not a new correction system but bringing this function onto that mechanism — a
+   * day earlier a second shift was stacked at the call site, and that produced a
+   * 188px misalignment and a 64px over-correction.
    */
   const base = {
     cameraScaleMax: 2.6,
@@ -435,7 +440,7 @@ describe("computeFocusCameraTarget — 안전 인셋", () => {
     radiusElement: 7,
   } as unknown as TopologyV2Tokens;
 
-  /** 초점 노드 f 와 이웃 둘 — bbox 가운데가 원점이 아니게 일부러 밀어 둔다. */
+  /** The focus node f plus two neighbours — deliberately offset so the bbox centre is not the origin. */
   const XY: Record<string, { x: number; y: number; kind: "domain" | "capability" }> = {
     f: { x: 400, y: 200, kind: "domain" },
     n1: { x: 550, y: 200, kind: "capability" },
@@ -474,17 +479,18 @@ describe("computeFocusCameraTarget — 안전 인셋", () => {
   });
 
   /**
-   * 오른쪽이 가려지면 자유 영역 가운데는 화면 가운데보다 **왼쪽**이다. 화면 식
-   * `(world − tx) × scale + W/2` 에 그 자리를 넣고 풀면 **tx 는 커진다** — 카메라를
-   * 오른쪽으로 옮기면 내용이 왼쪽으로 간다. 부호를 뒤집으면 노드가 패널 **속으로**
-   * 더 들어가므로, 이 방향 단언이 이 시험의 핵심이다.
+   * With the right side covered, the free area's centre is **left** of the screen's
+   * centre. Substituting that position into the screen formula
+   * `(world − tx) × scale + W/2` and solving makes **tx larger** — moving the camera
+   * right moves the content left. Flipping the sign pushes the node **further into**
+   * the panel, so this directional assertion is the heart of the test.
    */
   it("오른쪽 팝오버가 열리면 노드가 그 왼쪽 자유 영역 가운데로 온다", () => {
     const t = focus({ ...base, safeInsetRight: 384 } as TopologyV2Tokens)!;
     expect(t.tx).toBeCloseTo(CENTER.x + 384 / (2 * t.tscale), 6);
     const screenX = (CENTER.x - t.tx) * t.tscale + 1448 / 2;
-    expect(screenX).toBeCloseTo((1448 - 384) / 2, 6); // 자유 영역 가운데
-    expect(screenX).toBeLessThan(1448 - 384); // 팝오버 왼쪽 경계보다 왼쪽
+    expect(screenX).toBeCloseTo((1448 - 384) / 2, 6); // the free area's centre
+    expect(screenX).toBeLessThan(1448 - 384); // left of the popover's left edge
   });
 
   it("왼쪽 패널이 열리면 반대로 밀린다", () => {
@@ -512,7 +518,7 @@ describe("hitTestWorld — 3D 깊이 우선 (겹친 디스크는 가까운 노�
     scale: { value: 1, velocity: 0 },
   };
   const tokens = { radiusProject: 30, radiusDomain: 17, radiusCapability: 11, radiusElement: 7 } as unknown as Parameters<typeof hitTestWorld>[4];
-  // far(dead-center) vs near(4px 비켜남) — 두 디스크 모두 커서를 덮는다.
+  // far (dead-centre) vs near (4px off) — both discs cover the cursor.
   const nodes = [
     { id: "far", kind: "domain", x: 0, y: 0, magnitudeScale: 1 },
     { id: "near", kind: "domain", x: 4, y: 0, magnitudeScale: 1 },
@@ -521,7 +527,7 @@ describe("hitTestWorld — 3D 깊이 우선 (겹친 디스크는 가까운 노�
     nodes,
     nodeById: new Map(nodes.map((n) => [n.id, n])),
   } as unknown as Parameters<typeof hitTestWorld>[0];
-  // 뷰포트 800×600 중심(400,300)이 월드 (0,0).
+  // The viewport 800×600's centre (400,300) is world (0,0).
 
   it("depthForNode 없이는 종전 그대로 — 중심까지 거리가 이긴다", () => {
     expect(hitTestWorld(world, camera as never, 800, 600, tokens, 400, 300)).toBe("far");
@@ -536,10 +542,9 @@ describe("hitTestWorld — 3D 깊이 우선 (겹친 디스크는 가까운 노�
 
   it("커서가 가까운 노드 디스크 밖이면 먼 노드가 잡힌다 — 깊이는 디스크 안에서만 겨룬다", () => {
     const depth = (n: { id: string }) => (n.id === "far" ? 0.9 : 0.1);
-    // near(4,0) 디스크 반경 17+5=22 — x=430(월드 30)은 near 중심에서 26px, 밖.
-    // far(0,0) 중심에서 30px... 둘 다 밖이네 — 대신 far 만 덮는 지점을 고른다:
-    // x=421 → far 에서 21(안), near 에서 17... 아직 안. x=427 → far 27(밖).
-    // 반경이 같아 "far 만 덮는 지점"은 far 반대편이다: x=379 → far 21(안) · near 25(밖).
+    // Both discs have radius 17+5=22, so a point covering only far has to sit on
+    // far's opposite side from near: x=379 is 21 from far (inside) and 25 from near
+    // (outside).
     expect(
       hitTestWorld(world, camera as never, 800, 600, tokens, 379, 300, undefined, undefined, undefined, depth as never),
     ).toBe("far");

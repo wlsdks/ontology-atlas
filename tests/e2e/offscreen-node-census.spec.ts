@@ -5,25 +5,25 @@ import { seedFirstRunSeen } from "./first-run-seed";
 import { stubDirectoryPicker } from "./vault-picker-stub";
 
 /**
- * 첫 화면이 노드를 **거의 다 보여 주는가**.
+ * Does the first screen **show nearly all the nodes**?
  *
- * ## 왜 (2026-08-17)
+ * ## Why (2026-08-17)
  *
- * 「대화창에서 노드 이름에 마우스를 올리면 지도가 그 노드를 밝힌다」를 만들고
- * 나서, 그 노드가 **화면 밖이면 밝혀 봐야 안 보인다**는 것을 재 보려다 나온
- * 시험이다. 세어 보니 20개 중 19개가 화면 안이었다 — 첫 화면 맞춤
- * (`computeOverviewCameraTarget`)이 제 몫을 하고 있었다.
+ * After building "hovering a node name in the chat highlights that node on the map",
+ * this test came out of measuring the fact that **highlighting an off-screen node
+ * shows nothing**. The count was 19 of 20 on screen — the first-screen fit
+ * (`computeOverviewCameraTarget`) was doing its job.
  *
- * 그래서 이 시험은 그 성질을 **잠그는 쪽**으로 남는다. 배치나 첫 화면 맞춤이
- * 어긋나면 첫 화면이 텅 비게 되는데, 그건 캔버스라 아무 검사도 못 보고
- * 사람 눈에도 「원래 이런가」로 보인다.
+ * So this test stays as a **lock** on that property. If layout or the first-screen fit
+ * drifts, the first screen goes empty, and being a canvas no check can see it while a
+ * person reads it as "is it meant to look like this?".
  *
- * ⚠️ **좌표 함정** — `__atlasMap.nodes()` 는 **이미 화면 좌표**를 준다. 여기에
- * 카메라 변환을 한 번 더 걸면 전부 화면 밖으로 나오고, 실제로 그렇게 재서
- * 「20개 중 0개」라는 거짓 결과를 한 번 얻었다.
+ * ⚠️ **Coordinate trap** — `__atlasMap.nodes()` already returns **screen
+ * coordinates**. Applying the camera transform once more puts everything off screen,
+ * and measuring that way really did produce a false "0 of 20" once.
  */
 
-/** 첫 화면에 보여야 하는 최소 비율. 실측 19/20 = 95%. */
+/** Minimum share that must be visible on the first screen. Measured 19/20 = 95%. */
 const MIN_ON_SCREEN_RATIO = 0.8;
 
 test("첫 화면이 노드를 거의 다 보여 준다", async ({ page }) => {
@@ -39,12 +39,13 @@ test("첫 화면이 노드를 거의 다 보여 준다", async ({ page }) => {
   await expect(page.getByTestId("first-run-starter")).toHaveCount(0, { timeout: 30_000 });
   await expect(page.getByTestId("topology-map-v2-canvas")).toBeVisible({ timeout: 30_000 });
   /*
-   * 배치가 정착할 때까지 — 움직이는 중에 세면 숫자가 매번 다르다.
+   * Waits for layout to settle — counting while things move gives a different number
+   * every run.
    *
-   * ⚠️ 종전에는 `waitForTimeout(8_000)` 이었다. 8초는 **어느 기계의 값**이고,
-   * 느린 기계에서는 아직 움직이는 중에 세고 빠른 기계에서는 7초를 그냥 버린다.
-   * 정착은 시간이 아니라 **값**으로 판정한다 — 노드 좌표가 프레임 사이에
-   * 거의 안 움직이면 정착이다(2026-08-17 검사 전수조사).
+   * ⚠️ This used to be `waitForTimeout(8_000)`. 8 seconds is **one machine's number**:
+   * a slow machine counts while nodes are still moving and a fast one throws away 7
+   * seconds. Settling is judged by **value**, not time — layout has settled when node
+   * coordinates barely move between frames (full check audit, 2026-08-17).
    */
   await expect
     .poll(
@@ -78,9 +79,9 @@ test("첫 화면이 노드를 거의 다 보여 준다", async ({ page }) => {
     const cam = map.camera();
     if (!cam) return null;
     const nodes = map.nodes();
-    // ⚠️ `nodes()` 는 **이미 화면 좌표**를 돌려준다(그 구현이 카메라 변환을
-    // 안에서 끝낸다). 여기서 한 번 더 변환하면 전부 화면 밖으로 나온다 —
-    // 실제로 그렇게 재서 「20개 중 0개가 화면 안」이라는 거짓 결과를 얻었다.
+    // ⚠️ `nodes()` already returns **screen coordinates** (its implementation applies
+    // the camera transform internally). Transforming again here puts everything off
+    // screen — measuring that way really did produce a false "0 of 20 on screen".
     const inside = nodes.filter(
       (n) => n.x >= 0 && n.x <= cam.width && n.y >= 0 && n.y <= cam.height,
     );

@@ -22,8 +22,9 @@ describe("audience-preference", () => {
     expect(readAudiencePlain()).toBe(false);
   });
 
-  // #65 — 셸과 지도가 각자 localStorage 를 읽으면 한쪽만 갱신되는 drift 가 난다.
-  // 같은 탭 구독자에게 알리는 이벤트가 있어야 레일과 지도가 함께 바뀐다.
+  // If the shell and the map each read localStorage independently, only one of
+  // them updates and they drift apart. An event for same-tab subscribers is what
+  // makes the rail and the map change together.
   it("쓰기가 같은 탭 구독자에게 알린다", () => {
     let fired = 0;
     const onChange = () => { fired += 1; };

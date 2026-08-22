@@ -3,14 +3,14 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { installExternalLinkOpener, isExternalHttpUrl } from './tauri-external-link';
 
 /**
- * 밖으로 나가는 링크가 **실제로 열리는가.**
+ * Do outbound links **actually open**?
  *
- * 2026-08-20 워크스루에서 잡힌 결함이다: 앱 안의 `<a target="_blank">` 는 아무
- * 일도 안 했다. 도구가 하나도 없는 사람에게 준 유일한 다음 걸음(「↗ 설치 방법」)
- * 이 **아무 소리 없이** 죽어 있었고, 아무 에러도 안 났다.
+ * A defect caught in the 2026-08-20 walkthrough: inside the app, `<a
+ * target="_blank">` did nothing. The one next step offered to someone with no tools
+ * installed (the install-instructions link) was dead **silently**, raising no error.
  *
- * 그래서 여기서 재는 것은 「함수가 있는가」가 아니라 **「클릭이 실제로 밖으로
- * 나가는가」** 다.
+ * So what this measures is not "does the function exist" but **"does a click actually
+ * leave the app"**.
  */
 
 const invoke = vi.fn();
@@ -48,7 +48,7 @@ describe('밖으로 나가는 링크', () => {
     expect(invoke).toHaveBeenCalledWith('open_external_url', {
       url: 'https://example.com/install',
     });
-    // 기본 동작을 막아야 한다 — 안 막으면 WebView 가 그 주소로 **떠나** 버린다.
+    // The default must be prevented, or the WebView **navigates away** to that URL.
     expect(event.defaultPrevented).toBe(true);
     remove();
   });

@@ -10,8 +10,8 @@ describe("ambientSleepFactor", () => {
   const D = AMBIENT_SLEEP_DELAY_MS;
   const R = AMBIENT_SLEEP_RAMP_MS;
 
-  // 각성 구간은 **종전과 1픽셀도 달라지면 안 된다** — 이 수리는 유휴 비용을
-  // 없애는 것이지 보고 있는 사람의 화면을 바꾸는 것이 아니다.
+  // The awake span must **not differ from before by one pixel** — this fix removes
+  // idle cost, it does not change the screen of someone who is looking at it.
   it("입력 직후부터 지연 끝까지는 정확히 1", () => {
     expect(ambientSleepFactor(0, 0)).toBe(1);
     expect(ambientSleepFactor(D / 2, 0)).toBe(1);
@@ -35,12 +35,12 @@ describe("ambientSleepFactor", () => {
     expect(ambientSleepFactor(D + 3_600_000, 0)).toBe(0);
   });
 
-  // 입력 하나로 다음 프레임에 완전 복귀 — idle-gate 는 wake 배선이 없는
-  // 설계이므로, 이 함수가 즉시 1 을 돌려주는 것이 곧 복귀 계약이다.
+  // One input restores everything on the next frame. `idle-gate` has no wake
+  // wiring by design, so this function returning 1 immediately *is* the contract.
   it("입력이 들어오면 즉시 1 로 복귀한다", () => {
     const deepSleep = D + R * 5;
     expect(ambientSleepFactor(deepSleep, 0)).toBe(0);
-    // 그 시점에 입력 발생 → lastInput 갱신
+    // Input arrives at that moment → lastInput updates
     expect(ambientSleepFactor(deepSleep, deepSleep)).toBe(1);
   });
 
@@ -60,8 +60,8 @@ describe("ambientSleepFactor", () => {
 });
 
 describe("isAmbientAsleep", () => {
-  // 램프 **도중**에 게이트가 닫히면 혜성이 중간 속도에서 얼어붙는다 —
-  // 없애려던 "고장난 것처럼 보임"을 오히려 만든다.
+  // Closing the condition **mid-ramp** freezes the comets at partial speed, which
+  // manufactures the "looks broken" it exists to avoid.
   it("램프 중(계수 > 0)에는 아직 잠들지 않은 것으로 친다", () => {
     expect(isAmbientAsleep(1)).toBe(false);
     expect(isAmbientAsleep(0.5)).toBe(false);
@@ -78,15 +78,15 @@ describe("휴면 계약 — 통합 시나리오", () => {
     let lastInput = 1_000;
     const at = (ms: number) => ambientSleepFactor(ms, lastInput);
 
-    expect(at(1_000)).toBe(1); // 입력 순간
-    expect(at(20_000)).toBe(1); // 19초 — 아직 보고 있다
-    expect(at(31_000)).toBe(1); // 정확히 30초 경계 — 아직 각성
-    expect(at(32_000)).toBeCloseTo(0.5, 5); // 램프 중간
-    expect(isAmbientAsleep(at(32_000))).toBe(false); // 램프 중엔 계속 그린다
-    expect(at(33_000)).toBe(0); // 램프 끝 — 잠듦
+    expect(at(1_000)).toBe(1); // moment of input
+    expect(at(20_000)).toBe(1); // 19 s — still looking
+    expect(at(31_000)).toBe(1); // exactly the 30 s boundary — still awake
+    expect(at(32_000)).toBeCloseTo(0.5, 5); // mid-ramp
+    expect(isAmbientAsleep(at(32_000))).toBe(false); // keep drawing while ramping
+    expect(at(33_000)).toBe(0); // ramp done — asleep
     expect(isAmbientAsleep(at(33_000))).toBe(true);
 
-    lastInput = 40_000; // 사용자가 다시 만짐
+    lastInput = 40_000; // the user touches it again
     expect(at(40_000)).toBe(1);
     expect(isAmbientAsleep(at(40_000))).toBe(false);
   });

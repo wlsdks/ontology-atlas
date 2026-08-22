@@ -8,15 +8,15 @@ import type {
 import { PROVIDER_DEFAULT_MODELS, readVendorErrorMessage } from '../provider-adapter';
 
 /**
- * OpenAI Chat Completions 어댑터.
+ * The OpenAI Chat Completions adapter.
  *
- * 두 가지가 다른 벤더와 다르다:
- * ① tool call 의 `arguments` 가 **문자열**이다 — 모델이 깨진 JSON 을 뱉을 수
- *    있고, 그때는 실행 전에 막고 오류를 모델에게 돌려준다(§ 실패 경로).
- * ② 출력 토큰 상한을 **싣지 않는다.** 파라미터 이름이 모델 세대별로 갈리고
- *    (`max_tokens` vs `max_completion_tokens`), 틀린 이름은 요청 전체를
- *    거절시킨다. 생략하면 모델 기본값이 쓰인다 — 턴 상한은 우리 쪽 왕복 상한이
- *    이미 지키고 있다.
+ * Two things differ from the other vendors:
+ * ① A tool call's `arguments` is **a string** — the model can emit broken JSON, and
+ *    then it is blocked before execution and the error is returned to the model.
+ * ② The output token cap is **not sent.** The parameter name differs by model
+ *    generation (`max_tokens` vs `max_completion_tokens`), and the wrong name gets
+ *    the whole request rejected. Omitting it uses the model's default — the turn
+ *    limit is already held by our own round-trip cap.
  */
 
 interface OpenAiToolCall {
@@ -56,7 +56,7 @@ export const openaiAdapter: ProviderAdapter = {
         messages.push({
           role: 'tool',
           tool_call_id: result.id,
-          // 이 벤더에는 오류 플래그가 없다 — 문장으로 말해야 모델이 안다.
+    // This vendor has no error flag — it has to be said in a sentence for the model to know.
           content: result.isError ? `ERROR: ${result.content}` : result.content,
         });
       }
@@ -121,7 +121,7 @@ export const openaiAdapter: ProviderAdapter = {
       text,
       toolCalls,
       stop: mapStop(choice.finish_reason, toolCalls.length > 0),
-      // 다음 왕복에 그대로 되돌려 보낼 assistant 턴.
+      // The assistant turn to send back verbatim in the next round trip.
       raw: message ?? { role: 'assistant', content: text },
     };
   },

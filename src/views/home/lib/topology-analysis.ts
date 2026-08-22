@@ -56,7 +56,7 @@ export interface TopologyAnalysisSummary {
 /**
  * Re-exported under this file's historical name — the picking rule itself
  * now lives at `entities/knowledge-graph/lib/ontology-health-signals.ts` so
- * `/ontology/insights`' 할 일 탭 "수리 큐" section can reuse the SAME
+ * the repair queue on `/ontology/insights` can reuse the SAME
  * function without a cross-view import
  * (`views/home` → `views/ontology-insights` would violate FSD's "avoid
  * same-layer cross-import" guidance). Both surfaces' "next repair target"
@@ -335,8 +335,8 @@ export function formatTopologyRelationProvenanceSummary(
 
 /** Re-exports the entities-level classifier under this file's historical
  *  name — `entities/knowledge-graph/lib/relation-quality.ts` is the single
- *  source of truth (shared with `views/ontology-insights`' 할 일 탭 agent
- *  readiness gauge). */
+ *  source of truth, shared with the agent-readiness gauge in
+ *  `views/ontology-insights`. */
 export function classifyTopologyRelationQuality(
   edge: Pick<KnowledgeGraphEdge, "type" | "evidenceIds" | "lastApprovedBy">,
 ): keyof TopologyRelationQualityBreakdown {
@@ -588,12 +588,11 @@ export interface TopologyPathAgentPacketLabels {
 }
 
 /**
- * 경로 칩의 "경로 패킷 복사" 1버튼 — 예전 path 패널의 CLI/MCP 2버튼 분기 +
- * relation-preflight/explain_relation/all_paths 5종 복사 버튼을 에이전트용
- * `find_path` MCP 호출 1종으로 압축했다(분석 패널 완전 소멸 2단계 §b,
- * "2버튼 분기 제거 — 에이전트용 1종만"). 필요하면 에이전트가 이 결과를 보고
- * 스스로 relation_check/explain_relation 을 이어서 호출할 수 있다 — 매
- * 클릭마다 5개 버튼을 미리 깔아둘 필요는 없다.
+ * The path chip's single copy button. The old path panel offered a CLI/MCP
+ * split plus five copy buttons (relation-preflight, explain_relation,
+ * all_paths); this compresses all of it into one agent-facing `find_path` call.
+ * An agent that needs more can chain `relation_check`/`explain_relation` from
+ * this result itself, so there is no reason to lay out five buttons per click.
  */
 export function formatTopologyPathAgentPacket({
   sourceSlug,

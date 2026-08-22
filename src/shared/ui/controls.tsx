@@ -10,47 +10,43 @@ import {
 } from './control-class';
 
 /**
- * 컨트롤 컴포넌트 — **값 위에 행동을 얹는 층.**
+ * Control components — **the behaviour layer on top of the value layer.**
  *
- * ## 왜 함수만으로 안 되는가
+ * **Why a function alone is not enough.** `controlClass()` is the single source
+ * of **values** (shape, size, colour), but some of what a control must guarantee
+ * cannot be carried by a string at all:
  *
- * `controlClass()` 는 **값**(모양·크기·색)의 단일 출처다. 그런데 컨트롤이
- * 지켜야 하는 것 중에는 **문자열이 원리적으로 나를 수 없는 것**이 있다:
+ * | Must hold                                                      | Can a className do it? |
+ * |----------------------------------------------------------------|---|
+ * | `type="button"` by default (otherwise it submits inside a form) | ✗ |
+ * | An icon control's **required accessible name**                  | ✗ |
+ * | A row control actually being a `<button>` (no div + onClick)     | ✗ |
  *
- * | 지켜야 하는 것 | className 이 할 수 있나 |
- * |---|---|
- * | `type="button"` 기본값 (없으면 폼 안에서 submit 이 된다) | ✗ |
- * | 아이콘 컨트롤의 **접근 이름 강제** | ✗ |
- * | 행 컨트롤이 `<button>` 이라는 것(div+onClick 금지) | ✗ |
+ * Hence two layers — the same structure shadcn/ui gets from `cva` plus a
+ * component, and the reason Carbon, Fluent, Material and Polaris all ship
+ * components rather than class helpers.
  *
- * 그래서 층이 둘이다. 이건 shadcn/ui 가 `cva` + 컴포넌트로 하는 것과 같은
- * 구조이고, 업계 표준(Carbon · Fluent · Material · Polaris)이 컴포넌트를 내는
- * 이유이기도 하다.
+ * **Why this file was born with a gate.** Three primitives sat here with zero
+ * consumers for three months (`Card`, `Badge`, `DetailCard`; deleted 2026-08-03),
+ * and `CardTitle` turned out to use `text-lg`, a step that is not in the type
+ * ramp — a primitive violating the system it was supposed to encode. What failed
+ * was not "components", it was **components without a gate**. So all three here
+ * take their values through `controlClass()` (`controls.test.tsx` asserts it) and
+ * have no way to emit an off-ramp value.
  *
- * ## 이 파일이 게이트를 갖고 태어난 이유
+ * **Queryable from outside — `data-control`.** All three emit
+ * `data-control="chip|icon|row"`. **What cannot be distinguished from outside
+ * cannot be checked from outside.** Without this one attribute, a question like
+ * "does every icon control on this screen have a 44px hit area" forces the test
+ * to **hand-list selectors**, and that list goes stale silently as screens
+ * change. Real consumers:
  *
- * 이 저장소에는 **3개월간 사용처 0이던 프리미티브 셋**이 있었다(`Card` ·
- * `Badge` · `DetailCard`, 2026-08-03 삭제). 열어 보니 `CardTitle` 이 타입 램프에
- * 없는 `text-lg` 를 쓰고 있었다 — 자기가 인코딩해야 할 시스템을 스스로 위반하는
- * 프리미티브였다. 실패한 것은 컴포넌트가 아니라 **게이트 없는 컴포넌트**다.
+ * - `tests/e2e/touch-target-contract.spec.ts` — hit area across all icon controls
+ * - `scripts/measure-contrast.mjs` — contrast measured over controls only
+ * - `/design-audit` — per-screen control inventory
  *
- * 그래서 여기 셋은 전부 `controlClass()` 를 통과해 값을 받고
- * (`controls.test.tsx` 가 그걸 단언한다), 램프 밖 값을 낼 방법이 없다.
- *
- * ## 밖에서 질의 가능하다 — `data-control`
- *
- * 셋 다 `data-control="chip|icon|row"` 를 낸다. **밖에서 구분할 수 없는 것은
- * 밖에서 검사할 수 없다**(지도 훅이 여섯 번 틀리고 배운 그것). 이 한 속성이
- * 없으면 「이 화면의 모든 아이콘 컨트롤이 44px 히트 영역을 갖는가」 같은 질문에
- * 테스트가 **셀렉터를 손으로 나열**해야 하고, 그 목록은 화면이 바뀌면 조용히
- * 낡는다. 실제 소비처:
- *
- * - `tests/e2e/touch-target-contract.spec.ts` — 아이콘 컨트롤 전수 히트 영역
- * - `scripts/measure-contrast.mjs` — 컨트롤만 좁혀 대비 측정
- * - `/design-audit` — 화면당 컨트롤 센서스
- *
- * `data-testid` 와 역할이 다르다: testid 는 **한 자리**를 가리키고, 이건
- * **한 부류**를 가리킨다.
+ * It is not `data-testid`: a testid points at **one site**, this points at
+ * **one class of thing**.
  */
 
 type BaseProps = Omit<ButtonHTMLAttributes<HTMLButtonElement>, 'className' | 'type'> & {
@@ -58,33 +54,35 @@ type BaseProps = Omit<ButtonHTMLAttributes<HTMLButtonElement>, 'className' | 'ty
   tone?: ControlTone;
   active?: boolean;
   /**
-   * 마우스를 올렸을 때 — **값 층의 축을 그대로 받아 넘긴다**(2026-08-16).
+   * Hover — **the value layer's axes passed straight through** (2026-08-16).
    *
-   * 전부 옵트인이고 골라진 것(`active`)에는 안 걸린다. 이 셋이 없던 동안
-   * 소비처는 `className` 에 `hover:` 를 손으로 썼고(실측: `RowButton` 29곳 중
-   * 17곳), 그건 래칫이 막으려던 바로 그 모양이다. **값 층에 있는데 부품이
-   * 못 닿으면 없는 것과 같다.**
+   * All opt-in, and none apply to the selected state (`active`). While these three
+   * were missing, consumers hand-wrote `hover:` into `className` (measured: 17 of
+   * 29 `RowButton` sites) — exactly the shape the ratchet exists to stop. **An axis
+   * the value layer has but the component cannot reach might as well not exist.**
    */
   hoverInk?: ControlHoverInk;
   hoverSurface?: ControlHoverSurface;
   hoverBorder?: ControlHoverBorder;
-  /** 이 **한 자리**에만 참인 것(자리잡기 · 폭 · 순서). 모양·크기·색은 위 prop 으로. */
+  /** Only what is true of **this one site** (placement, width, order). Shape, size and colour go through the props above. */
   className?: string;
 };
 
 /**
- * 라벨을 가진 작은 알약형 컨트롤 — 이 앱에서 가장 많다(전수 128).
+ * A small pill control with a label — the most common control in this app
+ * (inventory: 128).
  *
- * `aria-pressed` 는 소비처가 준다. `active` 는 **보이는 상태**이고 `aria-pressed`
- * 는 **말해지는 상태**라, 둘을 자동으로 묶으면 토글이 아닌 칩(필터 이동 등)이
- * 스크린리더에 토글로 읽힌다.
+ * `aria-pressed` is the consumer's to supply. `active` is the **visible** state
+ * and `aria-pressed` the **announced** one; wiring them together automatically
+ * would make non-toggle chips (filter navigation and the like) read as toggles to
+ * a screen reader.
  */
 export const Chip = forwardRef<HTMLButtonElement, BaseProps>(
   ({ size, tone, active, hoverInk, hoverSurface, hoverBorder, className, ...rest }, ref) => (
     <button
       ref={ref}
-      // ★ 폼 안에서 `<button>` 의 기본은 `submit` 이다. 칩 하나가 폼을 보내는
-      //   사고는 className 으로는 막을 수 없다 — 이 줄이 이 컴포넌트의 존재 이유다.
+      // Inside a form a `<button>` defaults to `submit`. No className can stop a
+      // chip from submitting the form — this line is why the component exists.
       type="button"
       data-control="chip"
       className={controlClass({
@@ -105,16 +103,16 @@ Chip.displayName = 'Chip';
 
 export interface IconButtonProps extends BaseProps {
   /**
-   * ★ **필수다.** 아이콘 컨트롤에는 읽을 글자가 없으므로 이름이 없으면
-   * 스크린리더에 「버튼」으로만 읽힌다. 타입으로 강제하는 것이 이 자리에서
-   * 가능한 가장 강한 게이트다 — lint 도 계약 테스트도 「빠뜨렸다」를 나중에
-   * 알려 주지만, 타입은 **쓰는 순간** 막는다.
+   * **Required.** An icon control has no text to read, so without a name a screen
+   * reader announces only "button". The type system is the strongest gate
+   * available here — lint and contract tests report the omission later, a type
+   * blocks it **as it is written**.
    */
   label: string;
   children: ReactNode;
 }
 
-/** 정사각 아이콘 컨트롤 — 전수 36. */
+/** Square icon control — inventory: 36. */
 export const IconButton = forwardRef<HTMLButtonElement, IconButtonProps>(
   ({ label, size, tone, active, hoverInk, hoverSurface, hoverBorder, className, children, ...rest }, ref) => (
     <button
@@ -142,11 +140,11 @@ export const IconButton = forwardRef<HTMLButtonElement, IconButtonProps>(
 IconButton.displayName = 'IconButton';
 
 /**
- * 목록의 한 줄 전체가 눌리는 것 — 전수 39.
+ * A whole list row that is pressable — inventory: 39.
  *
- * **`<div onClick>` 이 아니라 `<button>` 인 것이 요점이다.** 목록 행은 넓어서
- * div 로 만들고 싶어지는 자리인데, 그러면 키보드로 못 가고 스크린리더가
- * 컨트롤로 안 읽는다. 이 컴포넌트를 쓰면 그 선택지가 없다.
+ * **The point is that it is a `<button>` and not a `<div onClick>`.** List rows
+ * are wide, which tempts people into a div; a div is unreachable by keyboard and
+ * is not announced as a control. Using this component removes that option.
  */
 export const RowButton = forwardRef<HTMLButtonElement, BaseProps>(
   ({ size, tone, active, hoverInk, hoverSurface, hoverBorder, className, ...rest }, ref) => (

@@ -627,22 +627,23 @@ test("download release verifier reports rate limits without a stack trace", asyn
 });
 
 /**
- * 2026-07-27 v1.0.0-rc.1 이 CI 에서 실패한 그 상황 그대로다.
+ * Reproduces exactly how v1.0.0-rc.1 failed in CI on 2026-07-27.
  *
- * RC 초안은 draft 라 `releases/tags/<tag>` 가 404 를 준다. 그러면 목록 폴백을
- * 타는데, 거기서만 "프리릴리스면 거부" 를 한 번 더 걸고 있었다 — 직접 조회
- * 경로에는 없는 필터다. 그래서 이름을 대고 찾았는데도 걸러졌고, 에러 메시지는
- * 엉뚱하게 "태그를 못 찾았다" 였다.
+ * An RC draft is a draft, so `releases/tags/<tag>` returns 404 and the list
+ * fallback runs — and only there was a second "reject prereleases" filter, absent
+ * from the direct-lookup path. So a release found by name was filtered out anyway,
+ * and the error message misleadingly said the tag was not found.
  *
- * 정식 태그로는 드러나지 않는다. 프리릴리스를 처음 내는 날에만 나타난다.
+ * A final tag never exposes this. It appears only on the day a first prerelease
+ * ships.
  */
 test("download release verifier finds a prerelease draft that was requested by tag", async () => {
   const rcTag = "v1.0.0-rc.1";
-  // DMG 이름의 버전은 태그와 맞아야 한다 — 이 테스트는 그 대조가 `-rc.1` 을
-  // 포함한 버전에서도 성립하는지까지 함께 검사한다.
+  // The version in the DMG name must match the tag — this test also checks that the
+  // comparison holds for a version containing `-rc.1`.
   const rcNames = ["ontology-atlas_1.0.0-rc.1_aarch64.dmg", "ontology-atlas_1.0.0-rc.1_x64.dmg"];
   await withServer((req, res) => {
-    // draft 는 태그 직접 조회에서 404 다 — GitHub 의 실제 동작.
+    // A draft 404s on direct tag lookup — GitHub's actual behaviour.
     if (req.url === `/repos/wlsdks/ontology-atlas/releases/tags/${rcTag}`) {
       res.writeHead(404, { "Content-Type": "application/json" });
       res.end(JSON.stringify({ message: "Not Found" }));
@@ -668,15 +669,16 @@ test("download release verifier finds a prerelease draft that was requested by t
       },
     );
 
-    // --allow-prerelease 를 주지 않았는데도 통과해야 한다. 이름을 댔기 때문이다.
+    // Must pass without --allow-prerelease, because the tag was named.
     assert.match(stdout, /draft macOS download assets/);
   });
 });
 
 /**
- * `latest.json` 은 DMG 검사가 한 번도 열어보지 않던 파일이다. 앱은 이것 하나로
- * 갱신을 찾고, 어긋나면 오류 대신 "최신입니다" 를 보여준다 — 사용자는 영영
- * 모른다. `--require-updater` 는 그 경로를 릴리스 시점에 실제로 연다.
+ * `latest.json` is a file the DMG check never opened. The app finds updates
+ * through it alone, and when it is wrong the app shows "you are up to date" instead
+ * of an error — the user never finds out. `--require-updater` actually opens that
+ * path at release time.
  */
 const archiveNames = {
   "darwin-aarch64": "ontology-atlas_0.1.0_aarch64.app.tar.gz",
@@ -736,8 +738,8 @@ test("updater gate refuses a release with no latest.json", async () => {
 });
 
 test("updater gate refuses a URL that no asset answers", async () => {
-  // GitHub 은 자산 이름의 공백을 점으로 바꾼다. 매니페스트가 공백 이름을 적으면
-  // 404 가 나고 앱은 그것을 "갱신 없음" 으로 표시한다.
+  // GitHub replaces spaces in asset names with dots. A manifest that writes the
+  // spaced name 404s, and the app reports that as "no update".
   const manifest = updaterManifest({
     "darwin-aarch64": {
       signature: "sig",
@@ -757,7 +759,8 @@ test("updater gate refuses a URL that no asset answers", async () => {
 });
 
 test("updater gate refuses both platforms pointing at one archive", async () => {
-  // 그 상태로 나가면 한쪽 아키텍처 사용자가 다른 아키텍처의 앱을 받는다.
+  // Shipped that way, users on one architecture receive the other architecture's
+  // app.
   const shared = archiveNames["darwin-aarch64"];
   const manifest = updaterManifest({
     "darwin-aarch64": {
@@ -807,7 +810,7 @@ test("updater gate refuses a URL pinned to another tag", async () => {
 });
 
 test("the DMG-only path still passes without the updater flag", async () => {
-  // 기존 호출자(랜딩 페이지 검증 등)가 매니페스트를 요구하지 않는다.
+  // Existing callers (gateway verification and so on) do not require the manifest.
   await withServer(makeHandler(), async (baseUrl) => {
     const { stdout } = await runVerifierWithArgs(baseUrl, ["--tag=v0.1.0"]);
     assert.doesNotMatch(stdout, /Updater:/);

@@ -2,8 +2,9 @@
  * Node label paint — ported from the B2+ prototype's `drawTracked()`/
  * `drawLabel()` (`docs/prototypes/topology-b2plus.html` §12-13).
  *
- * (label-clarity, 2026-07) — REDESIGNED per the 5-persona eval ("이름 없는
- * 도형 지도"): domain/project chips at the default circuit zoom showed only
+ * (label-clarity, 2026-07) — REDESIGNED per the 5-persona eval, which called it
+ * 「이름 없는 도형 지도」 (a map of nameless shapes): domain/project chips at the
+ * default circuit zoom showed only
  * an engraved COUNT numeral, no name — the name existed only as an
  * ultra-low-contrast far-field spaced-caps watermark two personas never
  * found. Ego-revealed children (capability/element, C1 A2's tier exemption)
@@ -43,27 +44,26 @@
 import { smoothstep } from "../model/altitude";
 
 /**
- * 도메인 이름을 그리는 **두 효과가 자리를 넘겨받는 지점** (farT, 2026-08-19).
+ * The farT at which the two effects drawing a domain's name **hand over** to
+ * each other (2026-08-19).
  *
- * ## 왜 이 상수가 생겼나 — 같은 이름이 두 번 그려지고 있었다
+ * A domain draws two things at one anchor: the **compact label** meant to be
+ * read, and the **wide-tracked watermark** that appears only from far away. The
+ * old formulas were `1 - farT` and `farT` — not disjoint bands but a crossfade
+ * summing to 1, so in the middle (farT ≈ 0.5) **both are alive**. The same
+ * characters get painted over each other with different tracking, and the name
+ * turns to mush.
  *
- * 도메인은 한 앵커에 둘을 그린다: 읽으라고 있는 **컴팩트 라벨**과 멀리서만
- * 나오는 **자간 넓은 워터마크**. 종전 공식은 `1 - farT` 와 `farT` 였고, 그
- * 둘은 «구간이 갈린다»가 아니라 **합이 1 인 크로스페이드**였다 — 중간 대역
- * (farT≈0.5)에서는 **둘 다 살아 있다.** 같은 글자가 자간만 다른 채로 겹쳐
- * 그려지므로 이름이 뭉개진다.
+ * The old comment called the overlap window short, which assumed **the camera
+ * passes through that band**. The 3D dome **parks** the camera there. Measured
+ * 2026-08-19 (installed build, `docs/ontology`, dome): the footprint trail's
+ * 「AI 에이전트 연동」 sat on screen as `AΛI에이전트 연동동`.
  *
- * 종전 주석은 이것을 「겹치는 창이 짧다」고 적었는데, 그 전제는 **카메라가 그
- * 대역을 지나간다**는 것이었다. 3D 돔은 카메라를 그 대역에 **세워 둔다** —
- * 실측(2026-08-19, 설치본 · `docs/ontology` · 돔): 발자국 트레일이 짚은
- * 「AI 에이전트 연동」이 화면에 `AΛI에이전트 연동동` 으로 남아 있었다.
- *
- * ## 그래서 크로스페이드를 **핸드오프**로 바꾼다
- *
- * 컴팩트는 여기서 0 이 되고, 워터마크는 여기서부터 오른다. 두 효과의 정체성은
- * 그대로 두고 **한 프레임에 같이 있지 않게** 만드는 것이 전부다. 교차점에서
- * 둘 다 정확히 0 인 것은 결함이 아니라 넘겨받는 자리다 — 그 farT 한 점을
- * 지나는 동안만이고, 이름이 뭉개지는 것보다 훨씬 낫다.
+ * So the crossfade becomes a **handoff**: compact reaches 0 here and the
+ * watermark starts rising here. Both effects keep their identity; they just
+ * never occupy the same frame. Both being exactly 0 at the crossing point is
+ * the handoff, not a defect — it lasts only while passing that single farT, and
+ * it beats an illegible name.
  */
 export const DOMAIN_LABEL_HANDOFF = 0.5;
 
@@ -88,23 +88,24 @@ export interface LabelDrawState {
    * W6 agent visibility — true when this label belongs to the agent
    * heartbeat's current focus node (mirrors `NodeShapeDrawState.agentFocus`
    * in `render/node-shapes.ts`). Draws a small amber `drawActivityMark` dot
-   * just past the label's own text, "노드 라벨 옆 소형 Activity 마크" per the
-   * owner spec — real heartbeat data only, `false` otherwise.
+   * just past the label's own text, per the owner spec 「노드 라벨 옆 소형
+   * Activity 마크」 — real heartbeat data only, `false` otherwise.
    */
   agentFocus: boolean;
-  /** B5 — 라벨 줌 스케일 (`labelZoomScale(cameraScale)`, 기본 1). */
+  /** Label zoom factor (`labelZoomScale(cameraScale)`), default 1. */
   fontScale?: number;
   /**
-   * rank9 — LOD present 램프 0..1(기본 1). greedy 배치 집합에 방금 진입한 라벨은
-   * 0→1 로, 이탈한(아직 화면엔 있는) 라벨은 1→0 으로 이 값이 움직여 "라벨
-   * 깜빡임"을 페이드로 바꾼다. 최종 라벨 알파에 선형으로 곱한다(색/알파만).
-   * 미지정=1(하위호환).
+   * LOD presence, 0..1 (default 1). A label that just entered the greedy
+   * placement set ramps 0→1, one that just left it (but is still on screen)
+   * ramps 1→0, turning label flicker into a fade. Multiplied linearly into the
+   * final label alpha — colour and alpha only.
    */
   presenceAlpha?: number;
   /**
-   * E-4 — 배치기가 확정한 베이스라인. 라벨이 노드 위로 뒤집혔을 때
-   * (`resolveFlippedLabelBaselineY`) 그 자리를 그대로 칠하기 위한 값. 미지정
-   * 이면 `resolveLabelBaselineY` 로 스스로 계산한다(단독 호출/테스트 경로).
+   * The baseline the placer settled on, so a label flipped above its node
+   * (`resolveFlippedLabelBaselineY`) is painted exactly where it was measured.
+   * Omitted, this computes its own via `resolveLabelBaselineY` — the standalone
+   * call and test path.
    */
   baselineY?: number;
 }
@@ -122,7 +123,7 @@ export interface LabelTokens {
  * Font string per kind — single source shared by `draw` and
  * `measureLabelWidth` so measured bboxes match painted glyphs.
  *
- * Project bumped 13→15px (canvas-emphasis slice §A4, "라벨 폰트 1단계 업") —
+ * Project bumped 13→15px (canvas-emphasis slice §A4, "one step up") —
  * the project name is the Layer-0 anchor's own label and should read a full
  * step above domain/capability/element, not just barely above domain's 10px.
  */
@@ -134,7 +135,7 @@ const LABEL_FONT_SIZE: Record<LabelDrawState["kind"], number> = {
   element: 9.5,
 };
 
-/** 폰트 weight — 스케일된 폰트 문자열 조립용 (LABEL_FONT_SIZE/FAMILY 와 단일 진실원). */
+/** Font weights for assembling the scaled font string — one source of truth alongside LABEL_FONT_SIZE/FAMILY. */
 const LABEL_FONT_WEIGHT: Record<LabelDrawState["kind"], number> = {
   project: 600,
   domain: 600,
@@ -145,21 +146,22 @@ const LABEL_FONT_WEIGHT: Record<LabelDrawState["kind"], number> = {
 const LABEL_FONT_FAMILY = "-apple-system, 'SF Pro Text', sans-serif";
 
 /**
- * B5 — 라벨 줌 스케일: 카메라 스케일의 준선형(지수 0.4) 함수, [1, 1.9] 캡.
- * 200px 육각형에 10px 캡션이 붙는 "빌보드 캡션" 역전의 해소 — 지수 0.4 라
- * 라벨이 노드를 절대 압도하지 않는다.
+ * Label zoom factor: a sublinear (exponent 0.4) function of camera zoom, capped
+ * to [1, 1.9]. It fixes the "billboard caption" inversion where a 200px hexagon
+ * carried a 10px caption; the 0.4 exponent guarantees the label never
+ * overwhelms its node.
  */
 export function labelZoomScale(cameraScale: number): number {
   if (!Number.isFinite(cameraScale) || cameraScale <= 1) return 1;
   return Math.min(1.9, Math.pow(cameraScale, 0.4));
 }
 
-/** 스케일 적용 폰트 크기 — 0.5px 양자화 (widthCache 키·페인트 공용). */
+/** Scaled font size, quantised to 0.5px — shared by the widthCache key and the paint. */
 export function scaledLabelFontSize(kind: LabelDrawState["kind"], scale: number): number {
   return Math.round(LABEL_FONT_SIZE[kind] * scale * 2) / 2;
 }
 
-/** 스케일 적용 폰트 문자열. */
+/** Scaled font string. */
 export function scaledLabelFont(kind: LabelDrawState["kind"], scale: number): string {
   return `${LABEL_FONT_WEIGHT[kind]} ${scaledLabelFontSize(kind, scale)}px ${LABEL_FONT_FAMILY}`;
 }
@@ -213,8 +215,8 @@ export function measureLabelWidth(
   text: string,
   scale = 1,
 ): number {
-  // B5 함정 해소 (Guardian) — 폰트가 가변이 된 순간 캐시 키가 크기를
-  // 포함해야 한다. 크기는 0.5px 양자화라 키 공간이 폭발하지 않는다.
+  // Once the font became variable the cache key had to include the size
+  // (Guardian). Quantising to 0.5px keeps the key space from exploding.
   const key = kind + "|" + scaledLabelFontSize(kind, scale) + "|" + text;
   const cached = widthCache.get(key);
   if (cached !== undefined) return cached;
@@ -228,42 +230,47 @@ const CHILD_LABEL_REVEAL_MIN = 0.5;
 const CHILD_LABEL_REVEAL_FULL = 0.85;
 
 /**
- * 라벨 상자의 **세로 범위** — 베이스라인 위/아래로 각각 얼마를 예약하나.
+ * The label box's **vertical extent** — how much to reserve above and below the
+ * baseline.
  *
- * 종전에는 호출부가 `ascent = fontSize`, `descent = 2`(상수)로 잡았다. 둘 다
- * 틀렸는데 방향이 반대였다:
+ * Callers used to assume `ascent = fontSize` and a constant `descent = 2`. Both
+ * were wrong, in opposite directions:
  *
- * - **ascent 는 과잉**이었다. 라틴 대문자 높이는 대략 0.7em 이라 1.0em 예약은
- *   위쪽에 안 쓰는 여백을 만든다 — 라벨이 필요 이상으로 서로를 밀어낸다.
- * - **descent 는 부족**했고, 이쪽이 진짜 결함이다. `2` 는 **상수인데
- *   `fontSize` 는 줌에 따라 커진다** — 확대할수록 베이스라인 아래 미예약분이
- *   벌어진다. 한글 받침과 라틴 디센더(g·y·p·j·q)가 그 밖으로 나가는데 억제
- *   판정은 "안 겹친다"고 말한다.
+ * - **ascent was too generous.** Latin cap height is roughly 0.7em, so
+ *   reserving 1.0em creates unused space on top and labels push each other away
+ *   more than they need to.
+ * - **descent was too small**, and that is the real defect: `2` is a **constant
+ *   while `fontSize` grows with zoom**, so the unreserved band below the
+ *   baseline widens as you zoom in. Hangul jongseong and Latin descenders
+ *   (g, y, p, j, q) spill out of it while the suppression check reports no
+ *   overlap.
  *
- * `fontBoundingBox*` 는 **문자열이 아니라 폰트의** 메트릭이라 같은 (kind,
- * 크기)면 항상 같다 — 그래서 폰트당 1회 측정하고 캐시한다. 그리고 상자
- * 높이가 문자열에 따라 들쭉날쭉해지지 않는다(`design.md` 의 치수 규칙성과
- * 같은 방향 — 반복 세트의 높이는 내용물의 부산물이 아니다).
+ * `fontBoundingBox*` is a metric **of the font, not of the string**, so it is
+ * constant for a given (kind, size) — hence measured once per font and cached.
+ * It also keeps box height from varying with the string, matching `design.md`'s
+ * dimensional regularity: the height of a repeated set is not a by-product of
+ * its content.
  *
- * `actualBoundingBox*`(문자열별 ink)를 쓰지 않는 이유도 같다. 그건 "이 글자가
- * 실제로 차지한 잉크"라 문자열마다 상자가 달라지고, 엔진 간 미세 차이가
- * 보고돼 있어(web-platform-tests/interop#159) 픽셀 정밀 정렬에는 부적합하다.
- * 우리에게 필요한 건 **겹침 판정용 여유 상자**다.
+ * `actualBoundingBox*` (per-string ink) is rejected for the same reason: it
+ * varies per string, and cross-engine differences are documented
+ * (web-platform-tests/interop#159), making it unfit for pixel-precise
+ * alignment. What is needed here is a **clearance box for overlap testing**.
  *
- * ⚠️ jsdom 과 일부 스텁 컨텍스트는 이 값을 안 준다(0 또는 undefined). 그때는
- * **종전 근사로 떨어진다** — 회귀 0 이고, 측정할 수 없는 곳에서 조용히 0 높이
- * 상자를 만들어 라벨이 전부 겹치게 두지 않는다.
+ * ⚠️ jsdom and some stub contexts return nothing here (0 or undefined). Those
+ * fall back to the old approximation — no behaviour change, and no silently
+ * zero-height box that would let every label overlap where measurement is
+ * impossible.
  */
 export interface LabelVerticalMetrics {
-  /** 베이스라인 **위**로 예약할 픽셀. */
+  /** Pixels to reserve **above** the baseline. */
   ascent: number;
-  /** 베이스라인 **아래**로 예약할 픽셀. */
+  /** Pixels to reserve **below** the baseline. */
   descent: number;
 }
 
 const verticalMetricsCache = new Map<string, LabelVerticalMetrics>();
 
-/** 종전 근사 — 실측이 불가능한 컨텍스트의 폴백이자, 회귀 기준선. */
+/** The old approximation — the fallback where measurement is impossible, and the regression baseline. */
 function approximateVerticalMetrics(fontSize: number): LabelVerticalMetrics {
   return { ascent: fontSize, descent: 2 };
 }
@@ -281,9 +288,9 @@ export function measureLabelVerticalMetrics(
   let metrics = approximateVerticalMetrics(fontSize);
   try {
     ctx.font = scaledLabelFont(kind, scale);
-    // 측정 문자열은 아무거나 좋다 — `fontBoundingBox*` 는 폰트 전체의 값이라
-    // 내용에 안 의존한다. 그래도 비어 있지 않은 문자열을 준다(빈 문자열에
-    // 대해 0 을 주는 구현이 있다).
+    // The measured string is arbitrary — `fontBoundingBox*` belongs to the font,
+    // not the content. It is still non-empty because some implementations return
+    // 0 for the empty string.
     const m = ctx.measureText("가Ag");
     const ascent = m.fontBoundingBoxAscent;
     const descent = m.fontBoundingBoxDescent;
@@ -291,7 +298,7 @@ export function measureLabelVerticalMetrics(
       metrics = { ascent, descent };
     }
   } catch {
-    // 스텁 컨텍스트가 measureText 자체를 안 가진 경우 — 근사 유지.
+    // A stub context without measureText at all — keep the approximation.
   }
   verticalMetricsCache.set(key, metrics);
   return metrics;
@@ -364,7 +371,8 @@ export const ACTIVITY_MARK_GAP = 5;
 
 /**
  * The small solid amber dot marking a node's label as the agent heartbeat's
- * current focus ("노드 라벨 옆 소형 Activity 마크"). A plain filled circle —
+ * current focus (owner spec: 「노드 라벨 옆 소형 Activity 마크」 — a small
+ * activity mark beside the node label). A plain filled circle —
  * no glow/shadow (design.md) — positioned by the caller just past the
  * label's own measured text width so it never overlaps the glyphs.
  */
@@ -393,32 +401,35 @@ export const LABEL_OFFSET: Record<LabelDrawState["kind"], number> = {
 };
 
 /**
- * 노드가 원판(`screenRadius`) **밖에** 그리는 외곽선의 최대 두께.
- * `node-shapes.ts` 의 `SELECTION_RING_OUTER_OFFSET`(6) · 스포트라이트 링(+6) ·
- * 호버 링과 같은 값 — 선택된 노드의 시각적 아래끝은 원판이 아니라 이 링이다.
+ * Widest outline a node draws **outside** its disc (`screenRadius`). Matches
+ * `SELECTION_RING_OUTER_OFFSET` (6) in `node-shapes.ts`, the spotlight ring
+ * (+6), and the hover ring — for a selected node the visual bottom edge is that
+ * ring, not the disc.
  */
 export const LABEL_NODE_OUTLINE_ALLOWANCE = 6;
 
-/** 외곽선과 라벨 글리프 사이 최소 여유. 0 이면 "닿았다"로 읽힌다. */
+/** Minimum clearance between outline and label glyphs; at 0 they read as touching. */
 export const LABEL_NODE_CLEARANCE = 3;
 
 /**
- * 라벨 베이스라인의 단일 진실원 (진입 검수 E-4).
+ * The single source of truth for a label's baseline.
  *
- * 종전 식은 `y + r + LABEL_OFFSET × fontScale` 이었다. 이 식은 **글리프가
- * 베이스라인 위로 자란다**는 사실을 세지 않는다 — 역량 라벨의 글리프 top 은
- * `y + r + (13 − 10.5) × fontScale` = 원판에서 고작 2.5×fontScale 아래다.
- * 그런데 선택 노드는 원판 밖 +6px 에 링을 그린다. 그래서 **선택된 노드는
- * 언제나 자기 라벨을 자기 테두리로 자르고 있었다**(실측: 테두리 bottom 215 vs
- * 라벨 top 216 — 여유 1px). fontScale 을 키워도 폰트가 같이 커져 해소되지
- * 않는다(캡 1.9 에서도 부족).
+ * The old formula was `y + r + LABEL_OFFSET × fontScale`, which never counts the
+ * fact that **glyphs grow upward from the baseline**: a capability label's glyph
+ * top sits at `y + r + (13 − 10.5) × fontScale`, only 2.5×fontScale below the
+ * disc — while a selected node draws a ring 6px outside it. So **a selected node
+ * always clipped its own label with its own ring** (measured: ring bottom 215 vs
+ * label top 216, 1px of clearance). Raising fontScale does not help, because the
+ * font grows with it — even at the 1.9 cap it is not enough.
  *
- * 그래서 오프셋 식과 **글리프 top 하한** 중 더 아래를 택한다. 하한은 링 여유 +
- * 최소 여유이므로, 어떤 kind·어떤 줌에서도 이름이 도형선에 닿지 않는다.
+ * The baseline is therefore the lower of the offset formula and a **glyph-top
+ * floor**. That floor is the ring allowance plus the minimum clearance, so no
+ * kind at any zoom lets the name touch the shape's outline.
  *
- * `draw()` 와 `topology-frame-draw.ts` 의 bbox 빌드가 **같은 이 함수**를 쓴다 —
- * 갈라지면 측정한 상자와 실제로 칠한 글자가 다른 자리에 놓인다(종전 코드는
- * bbox 는 오프셋 미스케일, 페인트는 스케일 적용이라 이미 갈라져 있었다).
+ * `draw()` and the bbox build in `topology-frame-draw.ts` call **this same
+ * function** — if they diverge, the measured box and the painted glyphs land in
+ * different places (the old code had already diverged: bbox left the offset
+ * unscaled while the paint scaled it).
  */
 export function resolveLabelBaselineY(
   kind: LabelDrawState["kind"],
@@ -433,9 +444,9 @@ export function resolveLabelBaselineY(
 }
 
 /**
- * 노드 **위쪽** 라벨 베이스라인 — 아래가 남의 도형으로 막혔을 때의 대안 자리
- * (E-4). 베이스라인이 외곽선 위에 앉고 글리프는 거기서 더 위로 자라므로,
- * 여유는 베이스라인 한 번만 계산하면 된다.
+ * Label baseline **above** the node — the alternative slot when the space below
+ * is blocked by another shape. The baseline sits on the outline and the glyphs
+ * grow upward from there, so the clearance only has to be computed once.
  */
 export function resolveFlippedLabelBaselineY(
   screenY: number,
@@ -474,9 +485,10 @@ function drawTrackedText(
 }
 
 /**
- * 계기 캡션 — 지도 주석(결계 센서스 등)용 tracked-caps 한 줄. 도메인 워터마크와
- * 정확히 같은 문법(10px 600 + 1.6 트래킹 + 대문자)을 화면 고정 크기로 그린다 —
- * 줌과 무관하게 항상 판독계 크기로 읽히는 annotation 잉크. 신규 폰트/토큰 0.
+ * Instrument caption — one tracked-caps line for map annotations. Exactly the
+ * domain watermark's grammar (10px, weight 600, 1.6 tracking, uppercase) but at
+ * a fixed screen size, so annotation ink always reads at instrument scale
+ * regardless of zoom. No new fonts or tokens.
  */
 export function drawInstrumentCaption(
   ctx: CanvasRenderingContext2D,
@@ -501,7 +513,7 @@ export function drawInstrumentCaption(
 export function draw(ctx: CanvasRenderingContext2D, state: LabelDrawState, tokens: LabelTokens): void {
   const { kind, text, screenX: x, screenY: y, screenRadius: r, farT, egoState, isHovered, revealAlpha, agentFocus } = state;
   const fontScale = state.fontScale ?? 1;
-  // rank9 — LOD present 램프(기본 1)를 최종 라벨 알파에 선형 곱한다.
+  // LOD presence (default 1) multiplies linearly into the final label alpha.
   const presenceAlpha = Math.min(1, Math.max(0, state.presenceAlpha ?? 1));
   const ty = state.baselineY ?? resolveLabelBaselineY(kind, y, r, fontScale);
 

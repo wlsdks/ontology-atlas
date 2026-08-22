@@ -264,8 +264,8 @@ test("ontology design surface passes when visual and workbench contracts are pre
   });
 
   assert.equal(report.ok, true);
-  // B3 허브가 곧 지도: "browse-workbench-loop" / "browse-tree-row-graph-handle"
-  // 마커 2개가 retire 된 `/ontology` 트리 허브와 함께 제거되어 8 → 6.
+  // The two markers "browse-workbench-loop" and "browse-tree-row-graph-handle" were
+  // removed along with the retired `/ontology` tree hub, taking the count 8 → 6.
   assert.equal(report.requiredSurfaceMarkerCount, 6);
   assert.equal(report.violations.length, 0);
   assert.match(renderOntologyDesignSurfaceReport(report).join("\n"), /5 surfaces \+ 6 workbench structure contracts/);

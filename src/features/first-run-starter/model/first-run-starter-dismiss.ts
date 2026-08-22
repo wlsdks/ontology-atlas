@@ -1,12 +1,13 @@
 /**
- * INDEX 패널 "시작하기" 모듈의 dismiss 정책 — sessionStorage(탭/세션 단위)
- * 순수 read/write 헬퍼.
+ * The dismiss policy for the INDEX panel's "get started" module — pure
+ * sessionStorage (per tab/session) read/write helpers.
  *
- * localStorage 를 안 쓰는 이유: "그냥 둘러볼게요" 는 dismiss 이지 opt-out 이
- * 아니다. 새 세션(브라우저를 새로 열면)엔 다시 안내가 뜨는 게 맞는 계약 —
- * 소유자 결정 (`docs/prototypes/first-run-v3-flagship.html` 승인
- * docstring). 영구 vault 복원(별도 계약 — `RootEntryPage`/`useDataSourceMode`
- * 의 vault 상태)과는 다른 축.
+ * Why not localStorage: "I'll just look around" is a dismiss, not an opt-out. The
+ * guidance reappearing in a new session (a freshly opened browser) is the correct
+ * contract — an owner decision (the approved docstring in
+ * `docs/prototypes/first-run-v3-flagship.html`). It is a different axis from
+ * permanent vault restoration (its own contract — the vault state in `RootEntryPage`
+ * and `useDataSourceMode`).
  */
 export const FIRST_RUN_STARTER_DISMISSED_KEY = 'demo:first-run-starter-dismissed:v1';
 
@@ -17,8 +18,8 @@ export function readFirstRunStarterDismissed(
   try {
     return window.sessionStorage.getItem(key) === '1';
   } catch {
-    // private mode 등 — dismiss 상태를 기억 못 해도 모듈이 다시 뜨는 것 뿐,
-    // 안전한 폴백.
+    // Private mode and the like — failing to remember the dismiss only means the module
+    // appears again, which is a safe fallback.
     return false;
   }
 }
@@ -30,6 +31,6 @@ export function writeFirstRunStarterDismissed(
   try {
     window.sessionStorage.setItem(key, '1');
   } catch {
-    /* private mode — skip, 다음 클릭에도 그냥 다시 시도 */
+    /* Private mode — skip; the next click simply tries again. */
   }
 }

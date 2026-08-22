@@ -5,48 +5,47 @@ import { MOTION, STAGGER } from '@/shared/motion';
 import type { Project } from '../model/types';
 
 /**
- * 동적 카테고리 메타 — ProjectCard는 Category 엔티티 전체를 몰라도 되도록
- * 필요한 정보만 별도 타입으로 받는다. 호출자가 Category → CardCategoryMeta로
- * 매핑해서 전달.
+ * The category facts a card needs, so `ProjectCard` never has to know the whole
+ * `Category` entity. Callers map `Category` → `CardCategoryMeta`.
  */
 export interface CardCategoryMeta {
   borderStyle: 'underline' | 'dashed' | 'sideLabel' | 'solid';
-  /** sideLabel 스타일에서 좌측 세로 텍스트. */
+  /** Vertical text on the left, for the `sideLabel` style. */
   sideLabelText?: string;
 }
 
-/** 상태 dot preset 색. entities/status의 StatusDotColor와 동일. */
+/** Preset status-dot colour — same set as `StatusDotColor` in entities/status. */
 export type CardStatusDotColor = 'success' | 'warning' | 'paused' | 'neutral';
 export type ProjectCardViewMode = 'card' | 'compact';
 
 interface Props {
   project: Project;
-  /** 카테고리 메타 — 미지정 시 solid 기본. */
+  /** Category meta; defaults to `solid` when absent. */
   category?: CardCategoryMeta;
-  /** 상태 dot 색 — 미지정 시 neutral. */
+  /** Status dot colour; defaults to `neutral`. */
   statusDotColor?: CardStatusDotColor;
-  /** 토폴로지 배경에서 어두워지는 상태. 프리뷰에서는 미사용. */
+  /** Dimmed against the topology background. Unused in preview. */
   dimmed?: boolean;
-  /** 선택 표시 — 인디고 outline. */
+  /** Selection marker — an indigo outline. */
   selected?: boolean;
-  /** 두 허브 이상 의존 시 SHARED 배지. */
+  /** SHARED badge, shown when the project depends on two or more hubs. */
   shared?: boolean;
-  /** 선택한 프로젝트와 직접 연결된 항목인지. */
+  /** Whether this is directly connected to the selected project. */
   related?: boolean;
-  /** 초기 staggered fade-in delay 계산용. 프리뷰에서는 0. */
+  /** Index used for the initial staggered fade-in delay. Zero in preview. */
   index?: number;
-  /** 대형 그래프에서 정보 밀도를 낮춘다. */
+  /** Lowers information density on large graphs. */
   dense?: boolean;
-  /** 프리뷰 모드: pointer cursor 제거, motion 전환 스킵. */
+  /** Preview mode: no pointer cursor, motion transitions skipped. */
   preview?: boolean;
-  /** isHub 가 true 일 때 카드 상단 eyebrow 텍스트. caller 가 i18n 결과를
-   *  넘긴다. 미지정 시 영문 'Core hub' (primitive 영문 default 패턴). */
+  /** Eyebrow above the card when `isHub`. The caller passes the translated string;
+   *  absent falls back to English 'Core hub', the primitive default. */
   hubEyebrow?: string;
-  /** shared 가 true 일 때 eyebrow 텍스트. 미지정 시 영문 'Shared system'. */
+  /** Eyebrow when `shared`. Absent falls back to English 'Shared system'. */
   sharedEyebrow?: string;
-  /** 설명이 비었을 때의 자리 표시 문구. 미지정 시 영문 'No description'. */
+  /** Placeholder when the description is empty. Absent falls back to 'No description'. */
   descriptionEmptyLabel?: string;
-  /** 공개 지도 보기 방식. */
+  /** How the public map renders this card. */
   viewMode?: ProjectCardViewMode;
 }
 
@@ -70,15 +69,17 @@ function borderClass(borderStyle: CardCategoryMeta['borderStyle'], isHub: boolea
   }
   switch (borderStyle) {
     /*
-     * **분류 밑줄은 없앴다** (2026-08-17 소유자 지시).
+     * **The category underline is gone** (owner instruction, 2026-08-17).
      *
-     * 이 자리는 원래 «작업중» 분류를 2px 인디고 밑줄로 표시했다(헌장의
-     * "분류는 색이 아니라 테두리 모양으로"). 세기를 낮춰 보고 소유자가 다시
-     * 봤고 판정은 그대로였다 — *"하단에 파란선도 없애 그냥"*.
+     * This case used to mark the "in progress" category with a 2px indigo
+     * underline (the charter's "categories are told by border shape, not colour").
+     * It was softened and re-reviewed, and the verdict held — *"하단에 파란선도
+     * 없애 그냥"* (drop the blue line at the bottom entirely).
      *
-     * 그래서 다른 분류와 같은 평범한 테두리로 돌린다. 분류는 카드의 옆 라벨과
-     * 목록·상세의 카테고리 표시가 계속 말한다 — 사실이 사라지는 게 아니라
-     * 그것을 말하는 자리가 하나 줄어든다.
+     * So it falls back to the same plain border as every other category. The
+     * category is still stated by the card's side label and by the category marks
+     * in the list and detail views — the fact does not disappear, one of the places
+     * that state it does.
      */
     case 'underline':
       return 'border border-[color:var(--color-border-soft)]';
@@ -93,9 +94,9 @@ function borderClass(borderStyle: CardCategoryMeta['borderStyle'], isHub: boolea
 }
 
 /**
- * 프로젝트 카드의 순수 비주얼. 특정 그래프 렌더러에 의존하지 않는다.
- * admin 프리뷰와 카드형 표현이 동일한 렌더링을 공유하도록 분리됐다.
- * 카테고리·상태 메타는 외부에서 lookup해 props로 주입한다 (하드코딩 제거).
+ * The project card's pure visuals, independent of any graph renderer, so the
+ * admin preview and the card rendering share one implementation. Category and
+ * status meta are looked up by the caller and injected as props.
  */
 export function ProjectCard({
   project,
@@ -114,7 +115,7 @@ export function ProjectCard({
   descriptionEmptyLabel = 'No description',
 }: Props) {
   const { name, description, owner, tags } = project;
-  // R15 — vault frontmatter isHub 명시 안 했으면 undefined → false 로 취급.
+  // A vault whose frontmatter omits `isHub` yields undefined — read that as false.
   const isHub = Boolean(project.isHub);
   const borderStyle = category?.borderStyle ?? 'solid';
   const sideLabelText = category?.sideLabelText;
@@ -209,16 +210,17 @@ export function ProjectCard({
       className={cn(
         'group relative flex flex-col rounded-sheet border bg-[color:var(--color-panel)] shadow-[var(--shadow-elevation-1)] md:rounded-sheet',
         /*
-         * 지도 위 카드는 **고정 치수**다 — 격자가 흐트러지지 않게(치수 규칙성).
+         * On the map a card has **fixed dimensions**, so the grid stays regular.
          *
-         * 미리보기만 예외다 (2026-08-17 소유자 지적: *"카드 좌우 공백이
-         * 상당한데?"*). 실측: 카드 220px 이 260px 레일 안에 앉아 좌우로 40px 이
-         * 남았고, 바로 아래 완성도 상자는 260 을 꽉 쓴다. 그래서 카드만 안으로
-         * 움츠러든 것처럼 보였다.
+         * Preview is the one exception (owner, 2026-08-17: *"카드 좌우 공백이
+         * 상당한데?"* — the card has a lot of space on either side). Measured: a
+         * 220px card sat inside a 260px rail leaving 40px of slack, while the
+         * completeness box directly beneath used the full 260 — so the card looked
+         * shrunken.
          *
-         * 폭은 레일을 채우되 **진짜 비율(220:140 = 11:7)** 을 유지한다. 캡션이
-         * *"실제 지도에 그려지는 모습"* 이라고 말하므로 비율을 바꾸면 그 말이
-         * 거짓이 된다 — 채우는 것과 정직한 것을 둘 다 지키는 방법이 비율 고정이다.
+         * The width fills the rail but the **true ratio (220:140 = 11:7)** is kept.
+         * The caption claims this is "how it is drawn on the real map", so changing
+         * the ratio would make that caption false.
          */
         preview
           ? 'aspect-[11/7] w-full px-3.5 py-3 md:px-4 md:py-3.5'
@@ -276,10 +278,10 @@ export function ProjectCard({
             </div>
           )}
           {/*
-            시각적으로는 H3 급이지만 실제 heading landmark 로는 쓰지 않는다.
-            토폴로지 17개 노드가 페이지 H3 를 도배하면 스크린리더 사용자가
-            문서 구조를 훑기 어려워짐. 노드 전체는 이미 클릭 가능한
-            group 으로 라벨되므로 타이틀은 시각 styling 만 유지.
+            Visually an H3, but deliberately not a heading landmark: 17 topology
+            nodes stamping page-level H3s makes the document outline useless to a
+            screen-reader user. The whole node is already a labelled clickable
+            group, so the title keeps the styling only.
           */}
           <p
             className={cn(
@@ -292,9 +294,9 @@ export function ProjectCard({
             )}
           >
             {name || (
-              // name이 비면 slug를 보여준다 — "이름 없음" 같은 placeholder 대신
-              // 최소 한 번이라도 식별 정보가 있어 사용자가 어떤 프로젝트인지 알 수
-              // 있도록.
+              // Show the slug when the name is empty, rather than a placeholder like
+              // "untitled" — the user needs at least one identifying string to tell
+              // which project this is.
               <span className="font-mono text-[color:var(--color-text-quaternary)]">
                 {project.slug}
               </span>
@@ -307,9 +309,9 @@ export function ProjectCard({
         <div className="mt-2 flex-1" data-topology-card-detail="true">
           <p className="line-clamp-2 text-caption leading-label text-[color:var(--color-text-tertiary)] md:text-label">
             {description || (
-              // 카드 높이를 유지하되 placeholder 문장이 실제 설명으로 읽히지 않도록
-              // 형식·톤을 약하게 해 "설명이 비었다" 는 상태임을 명시한다.
-              // 문구는 호출자가 화면 언어로 넘긴다 (hubEyebrow 와 같은 계약).
+              // Keeps the card height while making the placeholder read as a state
+              // rather than as a real description. The caller passes the string in
+              // the screen's language (same contract as `hubEyebrow`).
               <span className="font-mono text-caption uppercase tracking-[var(--tracking-caps-10)] text-[color:var(--color-text-quaternary)]">
                 {descriptionEmptyLabel}
               </span>
@@ -347,11 +349,11 @@ export function ProjectCard({
       <div
         className={cn(
           /*
-           * duration 을 안 적는다 (2026-08-15). 종전 `--motion-base`(180ms)는
-           * **이동 램프**인데 이 링이 뜨는 계기는 둘 다 「이미 일어난 상태를
-           * 알려 주는 것」이다 — 호버(`group-hover:opacity-40`)와 선택
-           * (`selected`). 둘 다 `--motion-fast`(120ms) 예산이고, 그건
-           * Tailwind 기본 전환이 이미 낸다.
+           * No duration here (2026-08-15). The previous `--motion-base` (180ms) is
+           * the **movement** ramp, but both triggers for this ring report a state
+           * that has already happened — hover (`group-hover:opacity-40`) and
+           * `selected`. Both belong to the `--motion-fast` (120ms) budget, which is
+           * what Tailwind's default transition already provides.
            */
           'pointer-events-none absolute inset-0 rounded-sheet border border-[color:var(--color-indigo-accent)] transition-opacity md:rounded-sheet',
           selected ? 'opacity-100' : 'opacity-0 group-hover:opacity-40',

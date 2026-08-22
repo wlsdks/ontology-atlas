@@ -14,10 +14,11 @@ import {
 } from "./cluster-chips";
 
 /**
- * 히트테스트(`topology-pointer-handlers.ts`)와 드로우(`topology-frame-draw.ts`)가
- * 같은 `clusterChipRect`/`clusterChipLabel` 을 써야 클릭 좌표가 어긋나지 않는다
- * — 이 공유 지오메트리가 이 슬라이스의 load-bearing 계약이라 단위 테스트한다.
- * (실제 캔버스 픽셀 드로우는 :3107 실화면에서 메인 세션이 검증한다.)
+ * Hit-testing (`topology-pointer-handlers.ts`) and drawing
+ * (`topology-frame-draw.ts`) must use the same `clusterChipRect` /
+ * `clusterChipLabel` or click coordinates drift. That shared geometry is this
+ * slice's load-bearing contract, so it is unit-tested here; the actual canvas
+ * pixels are verified on the running screen.
  */
 describe("clusterChipLabel", () => {
   it("접힘=`+N`, 펼침=`− N`(숫자 유지)", () => {
@@ -45,7 +46,7 @@ describe("clusterChipRect scale", () => {
     const big = clusterChipRect(0, 0, "+12", 1.5);
     expect(big.w).toBeCloseTo(base.w * 1.5, 6);
     expect(big.h).toBeCloseTo(base.h * 1.5, 6);
-    // 중심은 anchor 유지.
+    // The centre stays on the anchor.
     expect(big.x + big.w / 2).toBeCloseTo(0, 6);
   });
 });
@@ -78,9 +79,10 @@ describe("clusterChipRect", () => {
 });
 
 /**
- * S10 결함 2 — 펼침 배지(부모 노드 우상단 부착). 떠다니는 알약을 폐기하고 부모
- * 노드 스크린 좌표 + base 반지름 기준으로 배지 사각형을 유도한다. 드로우와
- * 히트가 같은 `clusterBadgeRect` 를 써야 클릭 좌표가 어긋나지 않는다.
+ * The expanded badge, docked to the parent node. The floating pill was dropped;
+ * the badge rectangle is derived from the parent's screen position and base
+ * radius. Draw and hit must use the same `clusterBadgeRect` or click
+ * coordinates drift.
  */
 describe("clusterBadgeLabel", () => {
   it("펼침 배지는 컴팩트 `−N`(공백 없음, +N 과 대칭)", () => {
@@ -95,9 +97,10 @@ describe("clusterBadgeRect", () => {
   const NODE_R = 20;
 
   /**
-   * **좌**상단이다 — 우상단은 궤도 「이것만 보기」 버튼의 방위다(2026-08-02).
-   * 둘이 같은 어깨에 앉아 배지의 80% 가 버튼에 덮이고 클릭이 통째로 버튼에
-   * 먹혔다. 방위 배분의 근거와 전수 겹침 0 은
+   * The **upper-left** — the upper-right is the orbit button's bearing
+   * (2026-08-02). Sharing a shoulder put 80% of the badge under the button and
+   * every click went to the button instead. The bearing split and its
+   * exhaustive zero-overlap sweep:
    * `tests/contract/expand-settings.contract.test.ts`.
    */
   it("배지는 부모의 좌상단(스크린 x- 왼쪽, y- 위)에 앉는다", () => {
@@ -110,7 +113,7 @@ describe("clusterBadgeRect", () => {
 
   it("배지는 부모 노드 반지름 바깥에 완전히 벗어난다(오라·노드 겹침 차단)", () => {
     const rect = clusterBadgeRect(PARENT_X, PARENT_Y, NODE_R, clusterBadgeLabel(63));
-    // 배지의 부모에 가장 가까운 모서리(**우**하단)까지의 거리 > 노드 반지름.
+    // Distance to the badge corner nearest the parent (**lower-right**) > node radius.
     const nearX = rect.x + rect.w; // 오른쪽 변이 부모에 더 가깝다
     const nearY = rect.y + rect.h; // 아래 변이 부모에 더 가깝다
     const dist = Math.hypot(nearX - PARENT_X, nearY - PARENT_Y);
@@ -145,9 +148,10 @@ describe("clusterBadgeRect", () => {
 });
 
 /**
- * S11 — `clusterChipOccupancyRect` 는 `drawClusterChip` 과 **같은 분기**를 타야
- * 한다는 계약. 갈라지면 라벨이 칩 위에 다시 겹치거나(예약 누락) 아무것도 없는
- * 곳을 피한다(유령 예약). 두 함수는 항상 함께 수정한다.
+ * `clusterChipOccupancyRect` must take the **same branches** as
+ * `drawClusterChip`. Diverge and labels either overlap the chip again (a missed
+ * reservation) or dodge empty space (a ghost reservation). The two functions are
+ * always edited together.
  */
 describe("clusterChipOccupancyRect (S11 라벨 예약)", () => {
   const base = { screenX: 400, screenY: 300, count: 31, hovered: false };
@@ -173,9 +177,9 @@ describe("clusterChipOccupancyRect (S11 라벨 예약)", () => {
   });
 
   it("reveal 램프로 사라지는 형태는 점유하지 않는다 — 안 보이는 칩이 라벨을 밀어내면 유령 여백", () => {
-    // 접힘 pill 알파 = 1 − revealT → revealT=1 이면 pill 은 안 보인다.
+    // Collapsed pill alpha = 1 − revealT, so at revealT=1 the pill is invisible.
     expect(clusterChipOccupancyRect({ ...base, expanded: false, revealT: 1 })).toBeNull();
-    // 펼침 배지 알파 = revealT → revealT=0 이면 배지는 안 보인다.
+    // Expanded badge alpha = revealT, so at revealT=0 the badge is invisible.
     expect(
       clusterChipOccupancyRect({
         ...base,
@@ -197,17 +201,19 @@ describe("clusterChipOccupancyRect (S11 라벨 예약)", () => {
 });
 
 /**
- * **칩은 간극을 건너뛰지 않고 걸어간다** — B-3 ①.
+ * **The chip walks the gap rather than jumping it.**
  *
- * 접힘 알약은 anchor 에, 펼침 배지는 부모 우상단에 있고 그 둘은 실측 51~147px
- * 떨어져 있다. 종전에는 그 사이를 알파 크로스페이드로만 건넜다 — 하나의 표시가
- * 자리를 옮긴 게 아니라 **여기서 사라지고 저기서 나타났다.** 눈이 따라갈 선이
- * 없으면 사용자는 둘을 같은 것으로 안 읽는다.
+ * The collapsed pill sits at its anchor and the expanded badge on the parent's
+ * shoulder, a measured 51–147px apart. That gap used to be crossed by an alpha
+ * crossfade alone, which reads as one mark **vanishing here and another
+ * appearing there** — without a line for the eye to follow the user does not
+ * take them for the same thing.
  *
- * 재는 것은 "예쁜가"가 아니라 **도착하는가**다: 전이가 끝나는 지점에서 알약의
- * 자리와 배지의 자리가 같아야 크로스페이드가 간극 위가 아니라 한 점에서
- * 일어난다. 프레임 실측은 design-motion 의 `/motion-verify` 몫이고, 여기서는
- * 그 판정이 성립할 **기하 전제**를 잠근다.
+ * What is measured here is not whether it looks nice but whether it **arrives**:
+ * at the end of the transition the pill's position must equal the badge's, so
+ * the crossfade happens at one point instead of over the gap. Frame-level
+ * measurement is design-motion's `/motion-verify`; this locks the **geometric
+ * precondition** that verdict rests on.
  */
 describe("clusterChipTravelPoint — 칩이 배지 자리로 걸어간다", () => {
   const base = {
@@ -220,7 +226,7 @@ describe("clusterChipTravelPoint — 칩이 배지 자리로 걸어간다", () =
   };
 
   it("정착 상태에서는 anchor 에서 한 픽셀도 안 움직인다 — 회귀 0", () => {
-    // revealT 미지정(하위호환)과 0(접힘 정착) 둘 다 종전 좌표 그대로여야 한다.
+    // Both revealT omitted (backward compatible) and 0 (collapsed, at rest) must keep the earlier coordinates.
     for (const revealT of [undefined, 0]) {
       const p = clusterChipTravelPoint({ ...base, revealT });
       expect(p, `revealT=${String(revealT)}`).toEqual({ x: base.screenX, y: base.screenY });
@@ -252,8 +258,8 @@ describe("clusterChipTravelPoint — 칩이 배지 자리로 걸어간다", () =
   });
 
   it("목적지를 모르면 움직이지 않는다 — 표류 금지", () => {
-    // 부모 좌표/반지름이 없으면(디그레이드 경로) 배지도 안 그려진다. 그때
-    // 알약만 어딘가로 흘러가면 그건 이동이 아니라 표류다.
+    // Without parent coordinates or radius (the degraded path) the badge is not
+    // drawn either. A pill drifting off alone there is drift, not travel.
     for (const missing of [
       { parentScreenX: undefined },
       { parentScreenY: undefined },
@@ -265,12 +271,12 @@ describe("clusterChipTravelPoint — 칩이 배지 자리로 걸어간다", () =
   });
 
   it("점유 사각형이 이동을 따라간다 — 빈 자리를 피하지 않는다", () => {
-    // 라벨 회피가 anchor 를 계속 피하면, 걸어간 알약의 실제 잉크 위에 라벨이
-    // 얹힌다. 드로우와 점유가 같은 이동점을 써야 한다.
+    // If label avoidance keeps dodging the anchor, labels land on the ink of the
+    // pill that walked away. Draw and occupancy must use the same travel point.
     //
-    // ⚠️ 전이 **중간**에서 잰다. `revealT: 1` 은 알약이 완전히 사라진 상태라
-    // 기존 규칙("사라지는 형태는 점유하지 않는다")이 먼저 걸려 null 이 되고,
-    // 그건 옳다 — 안 보이는 칩이 라벨을 밀어내면 유령 여백이다.
+    // ⚠️ Measured **mid-transition**. At `revealT: 1` the pill has fully faded, so
+    // the earlier rule ("a form fading out occupies nothing") fires first and
+    // returns null — correctly: an invisible chip pushing labels away is a ghost gap.
     const revealT = 0.5;
     const rect = clusterChipOccupancyRect({
       ...base,
@@ -283,7 +289,7 @@ describe("clusterChipTravelPoint — 칩이 배지 자리로 걸어간다", () =
     expect(rect).not.toBeNull();
     expect(rect!.x + rect!.w / 2).toBeCloseTo(travel.x, 6);
     expect(rect!.y + rect!.h / 2).toBeCloseTo(travel.y, 6);
-    // anchor 에 머물러 있지 않다는 것이 이 테스트의 요점.
+    // The point of this test is that it has not stayed on the anchor.
     expect(rect!.x + rect!.w / 2).not.toBeCloseTo(base.screenX, 1);
   });
 });

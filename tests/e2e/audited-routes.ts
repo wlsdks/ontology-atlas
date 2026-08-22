@@ -1,40 +1,43 @@
 /**
- * 접근성·대비 래칫이 **쓸어야 하는 라우트의 단일 출처.**
+ * The single source for **which routes the accessibility and contrast ratchets must
+ * sweep.**
  *
- * ## 왜 이 파일이 생겼나 (2026-08-04)
+ * ## Why this file exists (2026-08-04)
  *
- * 두 래칫이 각자 손으로 쓴 라우트 배열을 갖고 있었다 — `a11y-ratchet` 8개,
- * `contrast-ratchet` 5개. 정본 인벤토리는 파일시스템에서 도출한다.
- * 어느 목록에도 왜 그만큼인지가 적혀 있지 않았고, 실제로 둘은 서로 다른
- * 이유 없는 부분집합이었다.
+ * The two ratchets each carried a hand-written route array — `a11y-ratchet` 8,
+ * `contrast-ratchet` 5 — while the authoritative inventory is derived from the
+ * filesystem. Neither list recorded why it had that many, and in fact they were two
+ * different subsets with no stated reason.
  *
- * 그 사각지대가 결함을 숨겼다: 2026-08-03 라운드가 **404 두 페이지**에서 채운
- * 인디고 위 잉크 **4.42:1**(AA 미달)을 찾았는데, 그 자리는 두 래칫이 **한 번도
- * 안 본 자리**였다. 기준선이 전부 0 이 된 것은 사실이지만 그 0 은 «8개 라우트의
- * 0» 이었다 — **재지 않은 화면은 통과한 화면이 아니다.**
+ * That blind spot hid a defect: the 2026-08-03 round found ink on filled indigo at
+ * **4.42:1** (below AA) on **the two 404 pages**, a place **neither ratchet had ever
+ * looked at**. It is true that every baseline reached 0, but that 0 was "0 across 8
+ * routes" — **a screen that was not measured is not a screen that passed.**
  *
- * 그래서 목록을 하나로 합치고, **빠진 자리는 「없음」이 아니라 「제외 + 이유」로**
- * 적는다. 조용히 빠진 라우트와 의도적으로 뺀 라우트가 코드에서 구별되지 않으면
- * 다음 사람이 같은 사각지대를 만든다.
+ * So the lists were merged, and a missing route is recorded **not as absence but as
+ * "excluded + reason"**. If a route that fell out silently is indistinguishable in
+ * code from one deliberately excluded, the next person recreates the same blind
+ * spot.
  *
- * ⚠️ **라우트를 추가하면 여기도 추가해야 한다.** 그걸 사람의 기억에 맡기지
- * 않는다 — `tests/contract/audited-route-coverage.contract.test.ts` 가
- * `app/[locale]/**` 를 직접 읽어 분류되지 않은 라우트가 있으면 실패한다.
+ * ⚠️ **Adding a route means adding it here.** That is not left to human memory —
+ * `tests/contract/audited-route-coverage.contract.test.ts` reads `app/[locale]/**`
+ * directly and fails when a route is unclassified.
  */
 
 /**
- * 래칫이 실제로 여는 URL.
+ * The URLs the ratchets actually open.
  *
- * `[slug]`·`[segment]` 같은 동적 라우트는 **실재하는 값**으로 연다 — 존재하지
- * 않는 슬러그로 열면 404 로 떨어져 그 라우트가 아니라 404 를 재게 된다.
+ * Dynamic routes such as `[slug]` and `[segment]` are opened with **a value that
+ * exists** — opening a non-existent slug falls through to 404 and measures the 404
+ * rather than that route.
  *
- * ⚠️ **«실재한다» 는 빌드 산출물이 아니라 실행 중인 데이터 소스 기준이다.**
- * 정적 export 에 `out/ko/project/<slug>/` 가 있어도, 앱이 그 순간 읽고 있는
- * 볼트(볼트 미선택이면 `samples/storefront/`)에 그 프로젝트가 없으면 화면은
- * 강등 카드이거나 아예 비어 있다. 아래 프로젝트 두 줄의 주석이 그 대가를
- * 실측으로 적어 뒀다. `what-is-atlas` 는
- * `src/views/gateway-doc/model/guide-pages.ts` 가 내는 값이라 데이터 소스와
- * 무관하게 항상 실재한다.
+ * ⚠️ **"Exists" means in the running data source, not in the build output.** Even
+ * with `out/ko/project/<slug>/` present in the static export, if the vault the app
+ * is reading at that moment (`samples/storefront/` when no vault is chosen) has no
+ * such project, the screen is a degraded card or empty. The comments on the two
+ * project lines below record what that cost, measured. `what-is-atlas` is emitted by
+ * `src/views/gateway-doc/model/guide-pages.ts`, so it always exists regardless of
+ * data source.
  */
 export const AUDITED_ROUTES = [
   "/ko/",
@@ -42,73 +45,79 @@ export const AUDITED_ROUTES = [
   "/ko/docs/",
   "/ko/ontology/insights/",
   "/ko/projects/",
-  // ⚠️ 슬러그는 **빌드 산출물이 아니라 실행 중인 데이터 소스**에 있어야 한다
-  // (2026-08-04 실측 정정). 종전 값은 `ontology-atlas` 였고 그 근거는 «정적
-  // export 에 `out/ko/project/ontology-atlas/` 가 있다» 였는데, 라우트가
-  // 존재하는 것과 그 주소가 내용을 그리는 것은 다른 사실이다. 앱이 볼트 없이
-  // 읽는 기본 데이터는 **`samples/storefront/`** 이고 거기에 `ontology-atlas`
-  // 프로젝트는 없다. 그래서 두 URL 이 실제로 그리던 것은:
+  // ⚠️ The slug must exist in **the running data source, not the build output**
+  // (corrected by measurement, 2026-08-04). The previous value was `ontology-atlas`
+  // on the grounds that `out/ko/project/ontology-atlas/` exists in the static
+  // export — but a route existing and that address rendering content are different
+  // facts. Without a vault the app reads **`samples/storefront/`**, which has no
+  // `ontology-atlas` project. So what the two URLs actually rendered was:
   //
-  //   /ko/project/ontology-atlas/       → 「이 프로젝트가 지금 폴더에 없어요」
-  //                                       강등 카드 (main 안 요소 40)
-  //   /ko/project/ontology-atlas/edit/  → 「프로젝트를 찾을 수 없습니다」,
-  //                                       **`<main>` 자체가 없음 (요소 0)**
+  //   /ko/project/ontology-atlas/       → the "this project is not in the current
+  //                                       folder" degraded card (40 elements in main)
+  //   /ko/project/ontology-atlas/edit/  → "project not found", with
+  //                                       **no `<main>` at all (0 elements)**
   //
-  // 즉 두 래칫이 프로젝트 상세와 편집 화면을 **한 번도 안 봤다**. 슬러그를
-  // 데이터 소스에 있는 것으로 바꾸자 상세 149 · 편집 227 요소가 처음 렌더됐고
-  // 그 자리에서 axe 위반 1건(`aria-valid-attr-value`)이 나왔다.
+  // In other words the two ratchets **never once saw** the project detail and edit
+  // screens. Switching the slug to one present in the data source rendered 149 and
+  // 227 elements respectively for the first time, and one axe violation
+  // (`aria-valid-attr-value`) surfaced immediately.
   //
-  // 이 부류가 다시 조용히 돌아오지 못하게, `a11y-ratchet` 이 라우트마다
-  // **`<main>` 안 요소 수 바닥**을 건다 — 셸 크롬만으로도 axe 룰 25개와 대비
-  // 조합 6개가 나와서, 종전 채집 가드 둘은 «본문 0» 을 통과시킨다.
+  // So this class cannot return silently, `a11y-ratchet` puts a **floor on the
+  // element count inside `<main>`** per route — shell chrome alone yields 25 axe
+  // rules and 6 contrast combinations, so the two previous collection guards would
+  // pass a body of 0.
   "/ko/project/storefront/",
   "/ko/project/storefront/edit/",
   "/ko/project/new/",
   "/ko/project/fallback/",
   "/ko/git/",
-  // 에이전트 (2026-08-20 신설, 원장 90). **목적지가 되면서 여기 등재된다** —
-  // 이게 이동의 실질 이득 하나다: 이 화면은 설정 시트 안에 있는 동안
-  // `audited-routes` 가 라우트 기반이라 **스크롤 여백 · 반응형 넘침 · 커서 ·
-  // 한국어 줄바꿈 네 게이트가 통째로 못 봤다**(작업대 자리 실측). 승격이 그
-  // 넷을 한꺼번에 켠다.
+  // Agents (added 2026-08-20, ledger 90). **Becoming a destination is what put it on
+  // this list** — one of the real gains of the move: while this screen lived inside
+  // the settings sheet, `audited-routes` being route-based meant **four gates could
+  // not see it at all** (scroll padding, responsive overflow, cursor, Korean line
+  // breaking) — measured by the workbench seat. Promotion switches all four on at
+  // once.
   //
-  // 도구가 안 깔린 상태를 잰다 — 웹에서는 프로세스를 못 띄우므로 래칫이 볼 수
-  // 있는 유일한 상태이고, 처음 오는 사람이 보는 화면이기도 하다.
+  // Measures the state with no tools installed — the web cannot spawn processes, so
+  // it is the only state the ratchet can see, and it is also what a first-time
+  // visitor sees.
   "/ko/agents/",
   "/ko/download/",
   "/ko/guide/",
   "/ko/guide/what-is-atlas/",
   "/ko/changelog/",
   // ── 404 ────────────────────────────────────────────────────────────────
-  // 2026-08-03 라운드가 AA 미달을 찾은 자리. 래칫이 **한 번도 안 보던** 화면이다.
+  // Where the 2026-08-03 round found the AA failure — a screen the ratchets had
+  // **never once** looked at.
   //
-  // ⚠️ 실측으로 정정한 사실(2026-08-04 프로브): not-found 는 파일이 둘인데
-  // (`app/not-found.tsx` · `app/[locale]/not-found.tsx`) **뜨는 것은 루트
-  // 하나뿐이다.** 로케일 파일에 저대비 문단을 심고 두 URL 을 다 재 봤는데
-  // 아무것도 안 잡혔고, 루트 파일에 같은 것을 심으니 **두 URL 이 동시에**
-  // 빨개졌다. 루트 파일 자신의 주석이 예고한 그대로다 — "output:'export' +
-  // Turbopack 에서는 `[locale]/not-found.tsx` 가 trigger 되지 않을 수 있다".
-  // 즉 `app/[locale]/not-found.tsx` 는 **오늘 도달 불가능한 코드**다(별도
-  // 라운드 감).
+  // ⚠️ Corrected by measurement (2026-08-04 probe): not-found has two files
+  // (`app/not-found.tsx` and `app/[locale]/not-found.tsx`) but **only the root one
+  // ever renders.** Planting a low-contrast paragraph in the locale file and
+  // measuring both URLs caught nothing; planting the same thing in the root file
+  // turned **both URLs** red simultaneously. Exactly as the root file's own comment
+  // predicted — with `output:'export'` plus Turbopack, `[locale]/not-found.tsx` may
+  // never trigger. So `app/[locale]/not-found.tsx` is **unreachable code today** (a
+  // separate round's problem).
   //
-  // 그런데도 **두 URL 을 다 둔다**: 오늘은 같은 파일을 두 번 재는 셈이라
-  // 중복이지만, Next 의 not-found 배선이 바뀌어 로케일 파일이 되살아나는 날
-  // 그 URL 이 **감사된 적 없는 표면**을 조용히 들여오는 것을 막는다. 3초로
-  // 사는 보험이다.
+  // Both URLs are kept anyway: today that measures the same file twice, but the day
+  // Next's not-found wiring changes and the locale file comes back, it stops that URL
+  // silently introducing **a never-audited surface**. Three seconds of insurance.
   "/ko/this-route-does-not-exist/",
   "/this-route-does-not-exist/",
 ] as const;
 
 /**
- * **의도적으로 안 재는 라우트 + 그 이유.**
+ * **Routes deliberately not measured, with the reason.**
  *
- * 키는 `app/[locale]/` 기준 라우트 패턴이다(위 계약 테스트가 이 키로 대조한다).
+ * The key is the route pattern relative to `app/[locale]/` (the contract test above
+ * matches on this key).
  */
 export const EXCLUDED_ROUTES: Readonly<Record<string, string>> = {
-  // 얇은 클라이언트 리다이렉트라 **자기 화면이 없다**. 열면 목적지가 뜨므로
-  // 재 봐야 목적지를 두 번 재는 것이다. 구 편집 주소 둘은 쿼리를 지도 contextual
-  // workbench 주소로 번역한다. 지도 기본 상태는 위 목록이, 볼트가 필요한 관계 편집
-  // 상태는 `a11y-vault-backed.spec.ts` 가 따로 연다.
+  // A thin client-side redirect with **no screen of its own** — opening it shows the
+  // destination, so measuring it measures the destination twice. The two legacy edit
+  // addresses translate their query into the map's contextual workbench address. The
+  // map's default state is covered by the list above, and the vault-backed relation
+  // editing state is opened separately by `a11y-vault-backed.spec.ts`.
   "/ontology": "리다이렉트 → /topology?index=expanded — 목적지를 이미 잰다",
   "/ontology/edit": "호환 리다이렉트 → /topology contextual workbench — 목적지와 편집 상태를 이미 잰다",
   "/ontology/studio": "호환 리다이렉트 → /topology contextual workbench — 자기 화면이 없다",

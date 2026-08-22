@@ -13,15 +13,16 @@ import {
 } from '../provider-adapter';
 
 /**
- * Gemini generateContent 어댑터.
+ * The Gemini generateContent adapter.
  *
- * 세 가지가 다르다:
- * ① tool call 에 **id 가 없다** — 실행기가 결과를 되돌려 보낼 수 있도록
- *    `g{n}` 을 합성한다. 결과는 id 가 아니라 **이름**으로 짝지어진다.
- * ② 안전 차단이 응답 안의 `promptFeedback.blockReason` / `finishReason` 으로
- *    온다 (HTTP 200). 조용히 빈 답으로 두면 화면이 거짓말을 하므로 강등한다.
- * ③ 스키마가 OpenAPI 부분집합이라 모르는 키를 남기면 400 이 된다 —
- *    `toGeminiSchema` 가 허용 키만 남긴다.
+ * Three things differ:
+ * ① A tool call **has no id** — `g{n}` is synthesized so the executor can send the
+ *    result back. Results are paired by **name**, not by id.
+ * ② Safety blocks arrive inside the response as `promptFeedback.blockReason` /
+ *    `finishReason` (with HTTP 200). Leaving that as a quiet empty answer makes the
+ *    screen lie, so it is demoted.
+ * ③ The schema is an OpenAPI subset, so leaving an unknown key gives a 400 —
+ *    `toGeminiSchema` keeps only allowed keys.
  */
 
 interface GeminiPart {
@@ -63,7 +64,7 @@ export const geminiAdapter: ProviderAdapter = {
         parts: exchange.toolResults.map((result) => ({
           functionResponse: {
             name: result.name,
-            // response 는 반드시 객체다 — 문자열을 그대로 넣으면 거절된다.
+            // `response` must be an object — passing a string directly is rejected.
             response: result.isError ? { error: result.content } : { result: result.content },
           },
         })),

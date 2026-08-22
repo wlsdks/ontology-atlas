@@ -27,13 +27,14 @@ interface QuickEditValues {
   tags: string;
 }
 
-// #9 — 캐노니컬 컨트롤: --control-h-lg(40px) 높이 · rounded-chip · 5단계 서피스.
+// The canonical control: `--control-h-lg` (40px) height, rounded-chip, five surface steps.
 const FIELD_INPUT_CLASS = fieldClass({ size: "lg", className: "mt-1.5 w-full" });
 
 /*
- * rest 규격이 link/md 와 바이트 동일(text-label · 3차 잉크)이라 값 층으로 옮겼다.
- * 밑줄은 rest 가 아니라 hover 에만 있다 — 호버는 소비처 몫(값 층 규율)이라 className.
- * min-h-6(24) 는 WCAG 2.5.8 바닥: 종전 16px 글줄 상자가 히트박스였다.
+ * The rest state is byte-identical to link/md (text-label, tertiary ink), so it moved
+ * into the value layer. The underline is on hover only, not at rest — hover belongs to
+ * the consumer (the value-layer rule), hence the className. `min-h-6` (24) is the
+ * WCAG 2.5.8 floor: the hit box used to be a 16px line box.
  */
 const TERTIARY_LINK_CLASS = controlClass({
   shape: "link",
@@ -41,7 +42,7 @@ const TERTIARY_LINK_CLASS = controlClass({
     "touch-hit-expand underline-offset-2 hover:text-[color:var(--color-indigo-accent)] hover:underline",
 });
 
-/** 캐노니컬 폼 라벨 — 평범한 텍스트 라벨 + 선택 필드의 muted "(선택)" 힌트. */
+/** The canonical form label — plain text label plus a muted "(optional)" hint on optional fields. */
 function FieldLabel({
   children,
   optional,
@@ -66,8 +67,8 @@ function FieldLabel({
 function toQuickEditValues(project: Project): QuickEditValues {
   return {
     name: project.name,
-    // #9 — 스타터 기본 설명(영어 보일러플레이트)은 실값이 아니라 placeholder
-    // 로 다뤄 빈 값으로 시작한다. 사용자가 지운 뒤 쓰게 만들지 않는다.
+    // The starter's default description (English boilerplate) is treated as a placeholder
+    // rather than a real value, so the field starts empty. Nobody should have to delete it before writing.
     description: isStarterProjectDescription(project.description)
       ? ""
       : project.description,
@@ -116,9 +117,9 @@ export function ProjectQuickEditPanel({
     });
   }, [project]);
 
-  // 다른 modal 과 동일한 a11y 패턴 — 열릴 때 trigger 캡처, 닫힐 때 복원.
-  // 키보드 사용자가 toggle button → drawer 안에서 작업 → Esc/저장으로 닫을
-  // 때 원래 trigger 로 focus 가 돌아가도록.
+  // The same a11y pattern as the other modals — capture the trigger on open and restore
+  // on close, so a keyboard user toggling the button, working inside the drawer, and
+  // closing with Esc or save returns focus to the original trigger.
   useEffect(() => {
     if (!open) return;
     previousFocusRef.current = document.activeElement as HTMLElement | null;
@@ -160,7 +161,8 @@ export function ProjectQuickEditPanel({
   const handleSubmit = async () => {
     const nextPatch = toProjectPatch(values);
 
-    // 이름만 필수 — 설명은 선택(스타터 기본을 지우게 만들지 않는 것과 짝).
+    // Only the name is required — the description is optional (the counterpart of not
+    // making anyone delete the starter default).
     if (!nextPatch.name?.trim()) {
       setError(t("errorEmpty"));
       return;
@@ -209,20 +211,21 @@ export function ProjectQuickEditPanel({
         {open ? t("closeLabel") : t("openLabel")}
       </Button>
 
-      {/* 나가는 길을 갖는다 — 종전엔 `{open ? … : null}` 이라 딤과 서랍이 함께
-          **1프레임에** 나타나고 사라졌다(등장도 퇴장도 없음). `Surface` 가 퇴장
-          창(`EXIT_WINDOW_MS`) · 퇴장 클래스(`topology-chrome-out`) · `inert` 를
-          지므로 여기서 새로 챙길 것이 없다. 새 토큰/duration/색 0개 —
-          크롬 모션 패밀리를 그대로 탄다.
+      {/* It has a way out. This used to be `{open ? … : null}`, so the dim and the drawer
+          appeared and disappeared together **in one frame** (no entrance, no exit).
+          `Surface` owns the exit window (`EXIT_WINDOW_MS`), the exit class
+          (`topology-chrome-out`), and `inert`, so nothing extra is needed here. Zero new
+          tokens, durations, or colours — it rides the chrome motion family as is.
 
-          `origin` 은 **트리거 방향**이다. 이 서랍을 여는 버튼은 히어로 우상단에
-          있고 서랍도 오른쪽에서 산다 — 중앙에서 태어나면 누른 자리와 태어난
-          자리가 어긋난다(모션석 반려 사유).
+          `origin` is **the trigger's direction**. The button that opens this drawer is at
+          the hero's top right and the drawer lives on the right — being born in the centre
+          would put the birth place somewhere other than where it was pressed (the motion
+          seat's rejection reason).
 
-          폼 값은 이 컴포넌트가 소유한다(`values`/`baseline`/`notice`). 그래서
-          퇴장 창 동안 붙들 **외부 모델이 없다** — 사라지는 표면이 빈 상자가
-          되지 않는다(HomePage 엣지 패널이 `useHeldValue` 를 쓴 이유는 모델이
-          부모 소유였기 때문이다). */}
+          The form values are owned by this component (`values`/`baseline`/`notice`), so
+          there is **no external model to hold** during the exit window — the departing
+          surface never becomes an empty box. (HomePage's edge panel uses `useHeldValue`
+          because its model is owned by the parent.) */}
       <Surface
         open={open}
         origin="top right"
@@ -328,8 +331,8 @@ export function ProjectQuickEditPanel({
             ) : null}
           </div>
 
-          {/* #9 — footer: 주 액션 하나(변경 적용) + quiet 되돌리기 우측 정렬,
-              전체 편집/문서 등록은 링크형 3차 액션으로 아래에 조용히. */}
+          {/* Footer: one primary action (apply changes) plus a quiet revert on the right;
+              full edit and document registration sit quietly below as tertiary link actions. */}
           <div className="space-y-3 border-t border-[color:var(--color-border-soft)] px-5 py-4">
             <div className="flex items-center justify-end gap-2">
               <Button

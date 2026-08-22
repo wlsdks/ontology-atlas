@@ -13,37 +13,42 @@ import { summarizeVaultValidation } from '@/shared/lib/validate-vault-document';
 import { VaultAgentSetupPanel } from './VaultAgentSetupPanel';
 
 /**
- * 「MCP 연결」 칸을 **스스로 서게** 묶은 것.
+ * The 「MCP 연결」 pane, bundled so it **stands on its own**.
  *
- * ## 왜 생겼나 (2026-08-20, 원장 90)
+ * ## Why it exists (2026-08-20, ledger 90)
  *
- * 이 칸이 설정 시트 안에만 있을 때는 시트가 훅을 불러 값을 내려 줬다. 그런데
- * 「에이전트」 목적지가 생기며 소비처가 둘이 됐고, 파생 로직(검증 요약)을 양쪽에
- * 베끼면 그 순간부터 두 화면이 다른 경고 수를 말하게 된다.
+ * While this pane lived only inside the settings sheet, the sheet called the hooks
+ * and passed values down. When the 「에이전트」 destination appeared there were two
+ * consumers, and copying the derivation logic (the validation summary) into both
+ * would make the two screens state different warning counts from that moment on.
  *
- * ## 왜 웹에서도 그린다 (이게 이 칸의 존재 이유다)
+ * ## Why it is drawn on the web too (this is the pane's reason to exist)
  *
- * MCP 는 Atlas 화면이 아니라 **폴더에 붙는다** — 에이전트가 자기 쪽에서 서버를
- * 띄우고 그 서버가 디스크의 볼트를 직접 읽고 쓴다. 그래서 웹 사용자도 연결된다
- * (2026-08-01 원장 「웹의 「연결 불가」는 거짓이었다」). 브라우저가 못 하는 것은
- * **절대 경로를 몰라 설정 파일을 대신 저장해 주는 것** 하나뿐이고, 그건 화면에서
- * 설정 내용을 만들어 사람이 붙이게 하는 길로 답한다.
+ * MCP attaches to **the folder**, not to an Atlas screen — the agent starts the
+ * server on its own side and that server reads and writes the vault on disk
+ * directly. So web users connect too (ledger 2026-08-01, 「웹의 「연결 불가」는
+ * 거짓이었다」 — the web's "cannot connect" was a lie). The one thing a browser
+ * cannot do is **save the config file for you, because it does not know the
+ * absolute path**, and that is answered by building the config on screen for the
+ * person to paste.
  *
- * 실행기 칸이 웹에서 「프로그램을 못 띄운다」고 말하면서 *"이 화면에서도 「MCP
- * 연결」 칸에서 …"* 라고 가리키는데, 그 칸이 같은 화면에 없으면 **그 문장이
- * 가리키는 곳이 없다.** 목적지가 이 칸을 같이 데려가는 이유가 그것이다.
+ * The runners pane, when it says on the web that it cannot launch a program, points
+ * at *"the 「MCP 연결」 pane on this screen…"* — and if that pane is not on the same
+ * screen, **the sentence points at nothing.** That is why the destination brings
+ * this pane along.
  */
 /**
- * AI 에이전트 첫 접촉 증명 패킷 — 사람이 읽는 카드 대신 에이전트에 그대로
- * 붙여넣는 typed handoff.
+ * The AI agent's first-contact proof packet — a typed handoff pasted straight into
+ * an agent, rather than a card for a human to read.
  *
- * ⚠️ **이 파일로 옮겨 왔다** (2026-08-21, 원장 90). 종전에는 설정 시트의
- * MCP 절 안에 살았는데, 그 절이 「에이전트」 목적지로 나가면서 **하마터면 같이
- * 사라질 뻔했다** — 지운 분기 안의 「복사」 버튼만 이 상수를 쓰고 있었고,
- * lint 의 「안 쓰는 변수」 경고가 그 사실을 알려 줬다.
+ * ⚠️ **Moved into this file** (2026-08-21, ledger 90). It used to live in the
+ * settings sheet's MCP section, and when that section left for the 「에이전트」
+ * destination it **nearly disappeared with it** — only the 「복사」 button inside the
+ * deleted branch used this constant, and lint's unused-variable warning is what
+ * revealed that.
  *
- * 표면은 옮겨도 **핸드오프는 산다** — 이 저장소가 구 5탭 시절에 같은 문장을
- * 이미 적어 뒀다.
+ * The surface may move, but **the handoff lives** — this repository already wrote
+ * that same sentence back in the five-tab era.
  */
 const MCP_FIRST_CALLS_PACKET = [
   'Ontology Atlas MCP first-contact proof packet',
@@ -81,8 +86,8 @@ export function AgentSetupSection({ onBeforeNavigate }: { onBeforeNavigate?: () 
 
   if (!isLoaded) {
     return (
-      /* 구획 상자의 인셋은 램프가 낸다 — 16px 을 손으로 다시 적지 않는다
-         (`static-card-adoption-ratchet`: 새 파일은 첫날부터 0). */
+      /* The section box's inset comes from the ramp — 16px is not written again by
+         hand (`static-card-adoption-ratchet`: a new file is at 0 from day one). */
       <div className="rounded-panel border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] p-[var(--card-pad)]">
         <p className="text-body font-[var(--font-weight-signature)] text-[color:var(--color-text-secondary)]">
           {t('agentStatusNoVault')}
@@ -91,10 +96,11 @@ export function AgentSetupSection({ onBeforeNavigate }: { onBeforeNavigate?: () 
           {t('agentNoVaultHint')}
         </p>
         {/*
-          ⚠️ **말한 자리에 여는 길이 같이 있어야 한다** (2026-08-20, e2e 가 잡았다).
-          첫 판은 「폴더를 열면 …」이라는 문장만 옮기고 **버튼을 안 데려왔다** —
-          이 저장소가 이름 붙여 금지한 「막다른 CTA」 그대로다. 요구하는 행동은
-          그 자리에서 하게 한다.
+          ⚠️ **The way to open it has to sit where it is mentioned** (2026-08-20,
+          caught by e2e). The first version moved only the sentence "open the
+          folder and …" and **did not bring the button** — exactly the "dead-end
+          CTA" this repository forbids by name. The action being asked for happens
+          right there.
         */}
         <div className="mt-3">
           <OpenVaultCta testId="agents-open-vault" />
@@ -106,12 +112,13 @@ export function AgentSetupSection({ onBeforeNavigate }: { onBeforeNavigate?: () 
   return (
     <>
     {/*
-      `agent-setup-section` 은 **설정판만** 감싼다. 아래 증명 패킷 카드는 밖에
-      둔다 — 이 이름을 재는 e2e 인구조사(`agent-connect-panel-census`)의 대상이
-      「붙이는 칸의 첫 화면」이기 때문이다. 패킷을 그 안에 넣었더니 복사 버튼이
-      4 → 5 가 되어 래칫이 터졌고, **래칫이 옳았다**: 그 검사가 세려던 것은
-      「붙이려는 사람이 첫 화면에서 만나는 복사 버튼 수」이지 이 페이지 전체가
-      아니다.
+      `agent-setup-section` wraps **the config panel only**. The proof packet card
+      below stays outside it, because the subject of the e2e inventory that measures
+      this name (`agent-connect-panel-census`) is 「the first screen of the pane you
+      attach from」. Putting the packet inside took the copy buttons from 4 to 5 and
+      blew the ratchet — and **the ratchet was right**: what that check counts is
+      "how many copy buttons someone attaching meets on the first screen", not the
+      whole page.
     */}
     <div data-testid="agent-setup-section" className="min-w-0">
     <VaultAgentSetupPanel
@@ -119,16 +126,16 @@ export function AgentSetupSection({ onBeforeNavigate }: { onBeforeNavigate?: () 
       localVault={localVault}
       serverAvailability={serverAvailability}
       validationSummary={deriveValidationSummary(localVault)}
-      // 목적지에서는 시트를 닫을 것이 없다. 그래도 prop 은 필수이므로
-      // 아무것도 안 하는 것을 명시적으로 넘긴다 — `undefined` 를 흘리면
-      // 부르는 쪽이 «없어도 되나» 를 매번 다시 판단하게 된다.
+      // On the destination there is no sheet to close. The prop is still required,
+      // so a no-op is passed explicitly — leaking `undefined` makes the caller
+      // re-decide «is it fine to omit this» every time.
       onOpenWorkflowGuide={onBeforeNavigate ?? (() => undefined)}
     />
     </div>
     {/*
-      **첫 접촉 증명 패킷** — 에이전트가 붙었는지 사람이 눈으로 확인하는 대신,
-      그대로 붙여넣어 **에이전트가 스스로 증명하게** 한다. 이 절이 시트에서
-      목적지로 옮겨 올 때 함께 왔다.
+      **The first-contact proof packet** — instead of a human confirming by eye that
+      the agent attached, it is pasted in so **the agent proves it itself**. It came
+      along when this section moved from the sheet to the destination.
     */}
     <div className="mt-4 rounded-panel border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] p-[var(--card-pad)]">
       <p className="text-body font-[var(--font-weight-signature)] text-[color:var(--color-text-secondary)]">
@@ -156,10 +163,10 @@ export function AgentSetupSection({ onBeforeNavigate }: { onBeforeNavigate?: () 
 }
 
 /**
- * 볼트 검증 요약 — **문제가 있을 때만** 값이 된다.
+ * Vault validation summary — **it only has a value when something is wrong.**
  *
- * 두 소비처가 같은 수를 말해야 하므로 여기 한 번만 적는다(사본이 둘이면 어느 날
- * 한쪽만 경고를 세기 시작한다 — Carbon).
+ * Both consumers must state the same number, so it is written once here (with two
+ * copies, one day one of them starts counting warnings differently — Carbon).
  */
 function deriveValidationSummary(
   localVault: ReturnType<typeof useLocalVault>,

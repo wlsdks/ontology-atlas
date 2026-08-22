@@ -1,9 +1,9 @@
 #!/usr/bin/env node
-// R11 #31 — 큰 vault 성능 audit. tmp dir 에 N .md 생성 후 parser + walk +
-// validator 시간 측정. 사용자 codebase scale (수백~수천 .md) 에서 acceptable
-// 한지 검증.
+// Large-vault performance audit. Generates N .md files in a temp dir and measures
+// parser + walk + validator time, verifying it stays acceptable at the scale of a real
+// user codebase (hundreds to thousands of .md).
 //
-// 실행:
+// Usage:
 //   node scripts/perf-vault.mjs           # default N = [100, 500, 1000]
 //   node scripts/perf-vault.mjs 2000      # custom N
 

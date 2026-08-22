@@ -52,7 +52,7 @@ describe("change-baseline-persist — snapshotMatchesGraph (overlap scope guard)
   });
 
   it("절반 미만 존재 → false (>50% 삭제된 vault 는 stale 로 폐기)", () => {
-    // a 만 남고 b,c 삭제 → 1/3 < 0.5
+    // Only `a` remains: 1/3 < 0.5.
     expect(snapshotMatchesGraph(snap, [node("a")])).toBe(false);
   });
 

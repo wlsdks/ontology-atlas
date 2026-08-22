@@ -69,7 +69,7 @@ describe('refMatchesOntologyAtlasIgnore', () => {
   });
 
   it('정규식 메타 문자 안전 처리', () => {
-    // path.with.dots — `.` 가 regex 에서 any-char 인데 우리 패턴은 literal 로 다뤄야 함
+    // path.with.dots — `.` is any-char in a regex, but our patterns must treat it as a literal
     assert.equal(refMatchesOntologyAtlasIgnore('path.with.dots', ['path.with.dots']), true);
     assert.equal(refMatchesOntologyAtlasIgnore('pathXwithXdots', ['path.with.dots']), false);
   });

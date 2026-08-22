@@ -1,15 +1,14 @@
 /**
- * Ontology 노드 id 형식 가드 — `<kind>:<tail>` (e.g. `capability:mcp-server`,
- * `domain:auth`, `element:src/features/auth`).
+ * Shape guard for an ontology node id — `<kind>:<tail>` (e.g.
+ * `capability:mcp-server`, `domain:auth`, `element:src/features/auth`).
  *
- * `derive-ontology-from-vault.ts` 가 vault frontmatter `kind:` 가 있는 모든
- * doc 에 이 형식의 id 를 붙인다. 토폴로지 / 트리 / ego graph 가 같은 id 공간을
- * 공유. project slug (`ontology-atlas` 같이 `:` 없는 plain slug) 와 구분 시
- * 필요.
+ * `derive-ontology-from-vault.ts` gives every document with a frontmatter `kind:`
+ * an id of this form, and the topology, tree and ego graph share that id space.
+ * The guard is needed to tell such an id apart from a project slug (a plain slug
+ * with no `:`, such as `ontology-atlas`).
  *
- * 정의: 첫 segment 가 알려진 ontology kind 이고 그 뒤에 `:` 가 와야 한다.
- * 단순 substring 검사가 아니라 정확 prefix — `oh-my:something` 같은 false
- * positive 차단.
+ * The rule: the first segment must be a known ontology kind followed by `:`. It is
+ * an exact prefix test, not a substring one, so `oh-my:something` cannot pass.
  */
 
 const KIND_PREFIXES = [

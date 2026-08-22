@@ -11,16 +11,17 @@ import {
 import { NODE_ELIGIBILITY_GATE } from "../../mcp/src/schema.mjs";
 
 /**
- * 구축 규격의 「텍스트 정본」 게이트.
+ * The "text is authoritative" gate for the construction rules.
  *
- * `mcp/src/construction-rules.mjs` 의 헤더가 스스로 이 파일을 지목하며 *"이
- * 게이트가 생기기 전까지 이 파일은 정본이 아니라 제안"* 이라고 적어 두었다.
- * 실제로 그랬다 — 네 문자열은 한동안 소비처가 0건이었고, 아무도 안 읽는
- * 문장은 규격이 아니다.
+ * The header of `mcp/src/construction-rules.mjs` names this file itself, saying
+ * *"until this gate exists, this file is a proposal, not the source of truth"*.
+ * That was accurate — the four strings had zero consumers for a while, and a
+ * sentence nobody reads is not a spec.
  *
- * 그래서 이 파일이 재는 것은 문구의 품질이 아니라 **도달과 단일성** 둘이다:
- * LLM 이 실제로 읽는 자리에 도착했는가, 그리고 도착한 경로가 import 인가
- * 손 복제인가. 후자를 재지 않으면 "single source" 는 주석에만 있는 말이 된다.
+ * So what this file measures is not wording quality but **reach and singularity**:
+ * did it arrive where the LLM actually reads, and did it arrive by import or by
+ * hand-copying. Without measuring the latter, "single source" is a phrase that
+ * lives only in a comment.
  */
 
 const INDEX_SOURCE = readFileSync(
@@ -28,13 +29,13 @@ const INDEX_SOURCE = readFileSync(
   "utf-8",
 );
 
-/** 정본에서만 나오는, 손으로 다시 칠 리 없는 구절. */
+/** Phrases that occur only in the source of truth and would not be retyped by hand. */
 const RULES_FINGERPRINT = "count alone is not evidence of";
 
 /**
- * 줄바꿈은 계약이 아니다 — 뜻이 계약이다. 정본은 하드랩된 문장이라 한 구절이
- * 줄을 걸치면 `toContain` 이 깨지는데, 그건 규격이 바뀐 게 아니라 폭이 바뀐
- * 것이다. 공백을 접어서 비교한다.
+ * Line breaks are not the contract; the meaning is. The source is hard-wrapped, so
+ * a phrase spanning a line break breaks `toContain` — that is a width change, not a
+ * spec change. Whitespace is folded before comparing.
  */
 function flat(text: string): string {
   return text.replace(/\s+/g, " ");
@@ -48,8 +49,9 @@ describe("구축 규격 텍스트 — LLM 이 읽는 자리에 도달한다", ()
   });
 
   it("add_concept · add_concepts description 이 명명 규칙을 붙인다", () => {
-    // 도구 설명은 LLM 이 **호출 직전에** 읽는 유일한 텍스트라, 그 순간 가장
-    // 어기기 쉬운 규칙(파일 이름으로 노드를 만드는 것)이 여기 실려야 한다.
+    // A tool description is the only text an LLM reads **immediately before calling**,
+    // so the rule easiest to break at that moment (creating nodes from filenames) must
+    // be carried here.
     expect(INDEX_SOURCE).toContain("ELEMENT_NAMING_RULE_EN");
     expect(INDEX_SOURCE).toContain("ELEMENT_NAMING_RULE_BATCH_EN");
   });
@@ -62,8 +64,9 @@ describe("구축 규격 텍스트 — LLM 이 읽는 자리에 도달한다", ()
 });
 
 describe("정본 단일성 — 파생이지 사본이 아니다", () => {
-  // 같은 `mcp/` 패키지라 진짜 import 가 가능하다. 가능한데도 복제했다면 그건
-  // 관습이 아니라 사고다 — 두 벌은 반드시 갈라지고, 갈라진 쪽이 기본값이 된다.
+  // It is the same `mcp/` package, so a real import is possible. Copying when import
+  // is available is an accident, not a convention — two copies always diverge, and
+  // the diverged one becomes the default.
   it.each([
     ["CONSTRUCTION_RULES_EN", RULES_FINGERPRINT],
     ["ELEMENT_NAMING_RULE_EN", NAMING_FINGERPRINT],
@@ -85,8 +88,9 @@ describe("값 정본 — 숫자는 schema.mjs 에서 온다", () => {
       NODE_ELIGIBILITY_GATE.BOOTSTRAP_FANOUT_TRIGGER;
     expect(CONSTRUCTION_RULES_EN).toContain(`about ${d2c} capabilities`);
     expect(CONSTRUCTION_RULES_EN).toContain(`about ${c2e} elements`);
-    // 상수를 바꾸면 문장이 따라 움직여야 한다. 소스에 리터럴 참조가 있는지로
-    // 확인 — 숫자만 비교하면 우연히 같은 값을 하드코딩해도 통과한다.
+    // Changing the constant must move the sentence with it. Verified by looking for a
+    // literal reference in the source — comparing only numbers passes even when the
+    // same value was hard-coded by coincidence.
     const source = readFileSync(
       resolve(__dirname, "../../mcp/src/construction-rules.mjs"),
       "utf-8",
@@ -110,9 +114,9 @@ describe("Goodhart 방지 문장이 살아 있다", () => {
     expect(rules).not.toContain("file path straight into `elements:`");
   });
 
-  // 이 규격에서 숫자는 목표가 아니라 확인 요구선이다. 아래 문장들이 사라지면
-  // 남는 것은 「N 미만으로 유지하라」이고, 그건 모델이 빈 버킷 두 개로
-  // 통과시키는 지표다 — 카운슬이 모든 형태로 기각한 바로 그것.
+  // In this spec a number is a verification threshold, not a target. Remove the
+  // sentences below and what remains is "keep it under N", a metric a model satisfies
+  // with two empty buckets — exactly what the council rejected in every form.
   it("상한이 아니라 트리거라고 명시한다", () => {
     expect(CONSTRUCTION_RULES_EN).toContain("NOT a limit");
     expect(CONSTRUCTION_RULES_EN).toContain("There is no maximum number of children");
@@ -139,8 +143,9 @@ describe("Goodhart 방지 문장이 살아 있다", () => {
   });
 
   it("접두사를 조건이 아니라 힌트로 말한다", () => {
-    // 실측상 방향이 양쪽 다 틀리는 신호다 — `topology-kind-color-*` ×4 는 정당한
-    // 형제였고, 실제로 망가진 92는 접두사가 하나도 겹치지 않았다.
+    // Measurement shows this signal is wrong in both directions —
+    // `topology-kind-color-*` ×4 were legitimate siblings, and the 92 that were
+    // actually broken shared no prefix at all.
     expect(flat(CONSTRUCTION_RULES_EN)).toContain("do NOT treat this as the condition");
     expect(CONSTRUCTION_RULES_EN).toContain("THIS IS THE TEST");
   });
@@ -158,13 +163,14 @@ describe("언어 경계 — 모델이 읽는 문자열은 영어 단일", () => 
 });
 
 /**
- * 브릿지 노드 — 2026-08-01 원장 확장.
+ * Bridge nodes — decision ledger extension, 2026-08-01.
  *
- * step 4 는 **이미** 브릿지 만들기를 정확히 지시하고 있었다. 빠진 것은 절차가
- * 아니라 **이름**이라, LLM 이 「이런 종류의 노드를 만들어도 된다」를 개념으로
- * 집지 못했다. 그래서 이 블록이 지키는 것은 ① 이름이 있는가 ② 자격 조건 넷이
- * 함께 있는가 둘이다 — 자격 없는 브릿지 권장은 빈 버킷 승인이고, 그건 이
- * 규격 전체가 막으려는 바로 그 Goodhart 함정이다.
+ * Step 4 **already** instructed creating bridges precisely. What was missing was
+ * not the procedure but the **name**, so the LLM could not grasp "this kind of node
+ * may be created" as a concept. What this block guards is therefore ① that the name
+ * exists and ② that the four qualifying conditions accompany it — recommending a
+ * bridge without qualification is approving an empty bucket, exactly the Goodhart
+ * trap this whole spec exists to block.
  */
 describe("브릿지 노드 — 이름과 자격 조건은 함께 간다", () => {
   it("이름이 있다", () => {
@@ -173,21 +179,22 @@ describe("브릿지 노드 — 이름과 자격 조건은 함께 간다", () => 
 
   it("자격 조건 넷이 전부 있다", () => {
     const rules = flat(CONSTRUCTION_RULES_EN);
-    // ① 공유하는 행동을 명명한다 — 자리만 나누는 것은 브릿지가 아니다
+    // ① Name the shared behaviour — merely sharing a location is not a bridge
     expect(rules).toContain("names a shared BEHAVIOR");
     expect(rules).toMatch(/"Group A"/);
     expect(rules).toContain("they are empty buckets");
-    // ② 한 문장으로 쓸 수 있어야 만든다
+    // ② Create it only if it can be stated in one sentence
     expect(rules).toContain("state that behavior in ONE sentence");
-    // ③ 브릿지 자신도 형제와 의미 배타적
+    // ③ The bridge itself must be semantically exclusive of its siblings
     expect(rules).toContain("bridge itself passes (a) against its own siblings");
-    // ④ 만든 뒤 실제로 재부모화 — 빈 채로 남으면 그게 빈 버킷
+    // ④ Actually reparent after creating it — left empty, it is the empty bucket
     expect(rules).toContain("reparent the children afterwards");
     expect(rules).toContain("reported for retirement");
   });
 
   it("넷을 못 채우면 아무것도 만들지 않는다는 출구가 붙어 있다", () => {
-    // 이 문장이 없으면 「브릿지를 만들어라」만 남고, 그게 빈 버킷 생산 지시다.
+    // Without this sentence only "create a bridge" remains, which is an instruction to
+    // manufacture empty buckets.
     expect(flat(CONSTRUCTION_RULES_EN)).toContain(
       "IF you cannot satisfy all four: create NOTHING",
     );
@@ -205,7 +212,8 @@ describe("브릿지 노드 — 이름과 자격 조건은 함께 간다", () => 
       }),
     );
     expect(message).toContain("BRIDGE NODE");
-    // 조건 넷은 정본에 있고 여기서는 가리키기만 한다 — 두 곳에 적으면 갈라진다.
+    // The four conditions live in the source of truth and are only pointed at here —
+    // written in two places they diverge.
     expect(message).toContain("the construction rules list the four conditions");
     expect(message).not.toContain("names a shared BEHAVIOR");
     expect(message).not.toContain("ONE sentence");
