@@ -12,7 +12,7 @@ import { PAGE_COLUMN, PAGE_GUTTER } from '@/shared/lib/gateway-frame';
 import { GatewayNav, GatewayReadingLinks } from '@/widgets/gateway-chrome';
 import { DemoStage } from './DemoStage';
 import { buttonVariants } from '@/shared/ui';
-import { RELEASE_MIN_MACOS, RELEASE_VERSION } from '../lib/release-facts';
+import { RELEASE_MIN_MACOS, RELEASE_MIN_WINDOWS, RELEASE_VERSION } from '../lib/release-facts';
 import {
   MACOS_RELEASE,
   formatAssetSize,
@@ -93,9 +93,36 @@ const SECTION_GAP = 'mt-[var(--gateway-section-gap)]';
  * (`docs/DECISIONS.md` 2026-08-19). 릴리스 정책 두 문장만 콜로폰에 남는다.
  *
  * 모션의 규율은 「정보 모션만」이다 (소유자: *"다운로드 페이지는 모션이
- * 중요함.. 보여지는게 최선인 만큼"*) — 첫 3초 안무(150/220 헤드라인 → 700
- * 리드 → 800 CTA → 950 사실층), 이후 전경 영구 정지. 효과층(전류장·그레인·
- * 커서 링)은 `--gateway-fx-*` 봉인 예외다(`GatewayFx` 독블록).
+ * 중요함.. 보여지는게 최선인 만큼"*). 효과층(전류장·그레인·커서 링)은
+ * `--gateway-fx-*` 봉인 예외다(`GatewayFx` 독블록).
+ *
+ * ## 시계가 둘이다 — 첫 화면은 시간, 그 아래는 스크롤 (2026-08-22)
+ *
+ * ① **히어로는 시간이 진다.** 첫 3초 안무(150/220 헤드라인 → 700 리드 →
+ *    800 CTA → 950 사실층)는 그대로다. 바뀐 것은 방아쇠 하나 — 시작 프레임이
+ *    `@starting-style` 로 옮겨가면서 **첫 스타일 계산**이 안무를 시작한다
+ *    (종전에는 하이드레이션 뒤의 rAF). 그래서 JS 가 늦거나 실패해도 히어로가
+ *    백지가 되지 않는다. 종전에는 됐다 — 실측으로 첫 스크린샷에 GNB 만
+ *    있었고, 그 뒤에 서 있던 것이 JS 32파일·디코드 2,572KB 다.
+ *    자세한 사연은 `app/globals.css` 의 `.gateway-rise` 독블록.
+ *
+ * ② **아래 세 절은 스크롤이 진다.** 소유자: *"부드러운 모션같은거 우리도
+ *    하고싶거든? 스크롤하면서 멋지게"*. `animation-timeline: view()` 라
+ *    진행도의 유일한 입력이 「이 원소가 스크롤포트에 얼마나 들어왔는가」다 —
+ *    천천히 굴리면 천천히 도착하고, 멈추면 멈춘다. rAF 도 스크롤 리스너도
+ *    쓰지 않으므로 이 페이지의 단일 프레임 루프에 한 프레임도 더하지 않는다.
+ *    `useInViewOnce` 는 **떼지 않았다** — `view()` 를 못 쓰는 브라우저에서
+ *    같은 등장을 지는 것이 그쪽이다(한 안무의 두 경로).
+ *
+ * 그러니 「등장 후 전경 영구 정지」는 여전히 참이다. 다시 흐려지거나 되감기는
+ * 원소는 없고, 한 번 도착한 것은 그 자리에 선다 — 무엇이 도착을 **부르는지**만
+ * 절마다 다르다. 실측(1512·834·390 세 폭 × 21 스크롤 지점): 화면 안에 완전히
+ * 들어왔는데 흐린 채로 멈춘 원소 **0건**.
+ *
+ * 감속(`prefers-reduced-motion: reduce`)에서는 스크롤 안무 선언이 **존재하지
+ * 않는다** — 절이 처음부터 전부 보인다(실측: 해당 원소의 애니메이션 0개).
+ * 계약: `tests/contract/reduced-motion-equivalent.contract.test.ts` 가 그
+ * 선언이 `no-preference` 밖으로 새면 빨개진다.
  */
 /**
  * 히어로의 다운로드 CTA 는 **320px 에서 접힌다**.
@@ -211,8 +238,17 @@ function SectionIntro({
   inView?: boolean;
   still?: boolean;
 }) {
+  /**
+   * 절 머리의 등장은 **스크롤이 진다** (2026-08-22).
+   *
+   * `gateway-scroll-rise` 가 붙는 브라우저에서는 `view()` 타임라인이 진행도를
+   * 소유하므로 `is-in` 은 아무 일도 하지 않는다(애니메이션이 평범한 선언을
+   * 이긴다). 안 붙는 브라우저에서는 `is-in` 이 종전 그대로 등장을 진다 —
+   * **그래서 `useInViewOnce` 를 떼지 않았다.** 둘은 같은 안무의 두 경로이지
+   * 두 벌의 안무가 아니다.
+   */
   const rise = (step?: string) =>
-    still ? undefined : cn('gateway-rise', step, inView && 'is-in');
+    still ? undefined : cn('gateway-rise', 'gateway-scroll-rise', step, inView && 'is-in');
 
   return (
     <>
@@ -496,7 +532,13 @@ function HeroSection({
         </div>
       </div>
 
-      <FactsStrip published={published} primaryAsset={primaryAsset} heroIn={heroIn} />
+      <FactsStrip
+        published={published}
+        primaryAsset={primaryAsset}
+        windowsAsset={windowsInstaller}
+        windowsPrimary={heroWindowsPrimary}
+        heroIn={heroIn}
+      />
     </section>
   );
 }
@@ -524,20 +566,42 @@ function HeroIntelLink() {
 }
 
 /**
- * 음각 계기 스트립 — **등장(950ms) 후 영구 정지.** 사실은 절대 움직이지 않는다:
- * 버전·날짜·최소 OS·크기·SHA-256 전부 릴리스 생성 모듈에서 온 값이고, 미게시
- * 상태에서는 정직하게 줄어든다(없는 파일의 크기·체크섬 행은 존재하지 않는다).
+ * 음각 계기 스트립 — **사실은 절대 움직이지 않는다.** 버전·날짜·최소 OS·크기·
+ * SHA-256 전부 릴리스 생성 모듈에서 온 값이고, 미게시 상태에서는 정직하게
+ * 줄어든다(없는 파일의 크기·체크섬 행은 존재하지 않는다).
  *
  * census 는 여기 없다 — 그 숫자의 캡션은 **자기가 세는 지도와 같은 절**(③)에
  * 산다(소유자 확정). 한 페이지에 같은 정의가 두 번 적히면 둘 다 각주가 된다.
+ *
+ * ## 이 레일은 **주 CTA 가 가리키는 파일**을 말한다 (2026-08-22)
+ *
+ * 그러지 않던 동안 이 페이지는 자기가 파는 것을 어겼다. Windows UA 로 열면
+ * 승자 버튼은 「Windows x64 베타 받기 · 47.8 MB」인데 바로 아래 레일이
+ * `Requires macOS 12 이상 · DMG 53.5 MB · SHA-256 c420d0b4…` 였다 — **내려받지도
+ * 않을 파일의 체크섬**이다. 체크섬은 「받은 것이 우리가 올린 것과 같은가」를
+ * 대조하라고 내미는 값이라, 다른 파일의 것을 보여 주면 값이 0 이 아니라
+ * **음수**다: 대조한 사람은 반드시 불일치를 보고, 그 순간 의심하는 대상은
+ * 자기가 받은 파일이 된다.
+ *
+ * 히어로의 CTA(`heroWindowsPrimary`)와 신뢰줄(`trustLineWindows`)은 이미 감지된
+ * 플랫폼을 따르고 있었다 — 이 레일만 `macosAssetFor` 에 묶여 빠져 있었다.
+ * 그래서 새 판정을 만들지 않고 **같은 불리언을 내려받는다**: 한 화면이 어느
+ * 파일 얘기를 하는지는 한 곳에서만 정해져야 한다.
+ *
+ * mac 분기의 값과 순서는 **1바이트도 바뀌지 않았다** — 서버 스냅숏이 언제나
+ * mac 이므로(`visitor-platform.ts`) 첫 그림도 종전과 같다.
  */
 function FactsStrip({
   published,
   primaryAsset,
+  windowsAsset: windowsInstaller,
+  windowsPrimary,
   heroIn,
 }: {
   published: boolean;
   primaryAsset: ReturnType<typeof macosAssetFor>;
+  windowsAsset: ReturnType<typeof windowsAsset>;
+  windowsPrimary: boolean;
   heroIn: boolean;
 }) {
   const t = useTranslations('download');
@@ -564,15 +628,26 @@ function FactsStrip({
         releaseVersion: RELEASE_VERSION,
       })} · ${t('factUnpublished')}`;
 
+  /** 승자 파일 — 히어로 CTA 가 가리키는 바로 그것. */
+  const subject = windowsPrimary && windowsInstaller ? windowsInstaller : primaryAsset;
+  const subjectIsWindows = subject !== null && subject === windowsInstaller;
+
   const facts: { label: string; value: string }[] = [
     { label: 'Version', value: version },
-    { label: 'Requires', value: `${RELEASE_MIN_MACOS}${t('factMinOsSuffix')}` },
+    {
+      label: 'Requires',
+      value: `${subjectIsWindows ? RELEASE_MIN_WINDOWS : RELEASE_MIN_MACOS}${t('factMinOsSuffix')}`,
+    },
   ];
-  if (published && primaryAsset) {
-    facts.push({ label: 'DMG', value: formatAssetSize(primaryAsset.sizeBytes) });
+  if (published && subject) {
+    facts.push({
+      // 파일 형식이 곧 라벨이다 — 「무엇을 받는가」를 크기 옆에서 한 번 더 말한다.
+      label: subjectIsWindows ? 'EXE' : 'DMG',
+      value: formatAssetSize(subject.sizeBytes),
+    });
     facts.push({
       label: 'SHA-256',
-      value: `${primaryAsset.sha256.slice(0, 8)}…${primaryAsset.sha256.slice(-8)}`,
+      value: `${subject.sha256.slice(0, 8)}…${subject.sha256.slice(-8)}`,
     });
   }
 
@@ -618,7 +693,13 @@ function DemoSection() {
     >
       <div className={cn(PAGE_COLUMN, 'min-w-0')}>
         <SectionIntro eyebrow="Demo" title={t('demoTitle')} sub={t('demoSub')} inView={inView} />
-        <div className={cn('gateway-rise gateway-rise-d3', inView && 'is-in', 'mt-9')}>
+        <div
+          className={cn(
+            'gateway-rise gateway-scroll-stage gateway-rise-d3',
+            inView && 'is-in',
+            'mt-9',
+          )}
+        >
           <DemoStage />
         </div>
       </div>
@@ -675,7 +756,10 @@ function EvidenceSection({ graph }: { graph: StageGraph }) {
          */}
         <div
           ref={ref}
-          className="mt-9 grid min-w-0 gap-8 lg:grid-cols-[minmax(0,11fr)_minmax(0,9fr)] lg:gap-12"
+          className={cn(
+            'gateway-scroll-stage',
+            'mt-9 grid min-w-0 gap-8 lg:grid-cols-[minmax(0,11fr)_minmax(0,9fr)] lg:gap-12',
+          )}
         >
           <div
             data-testid="download-stage-map-frame"
@@ -846,7 +930,7 @@ function AgentSection() {
         <div
           data-testid="gateway-agent-scene"
           className={cn(
-            'gateway-rise gateway-rise-d3',
+            'gateway-rise gateway-scroll-stage gateway-rise-d3',
             inView && 'is-in',
             'mt-9 max-w-[var(--gateway-stage-max)]',
           )}

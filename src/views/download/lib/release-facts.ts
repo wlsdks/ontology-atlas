@@ -68,3 +68,21 @@ export const RELEASE_SIGNING = {
 export function buildDmgName(arch: ReleaseArch): string {
   return `ontology-atlas_${RELEASE_VERSION}_${arch}.dmg`;
 }
+
+/**
+ * Windows 설치 파일의 최소 OS.
+ *
+ * `tauri.conf.json` 에는 이 값을 적는 자리가 없다 — macOS 만
+ * `bundle.macOS.minimumSystemVersion` 을 갖는다. 그래서 진실원은 **런타임의
+ * 바닥**이다: Tauri v2 의 Windows 백엔드는 WebView2 를 쓰고, WebView2 런타임이
+ * 지원하는 가장 낮은 데스크톱 OS 가 Windows 10 이다. 릴리스 검증도 그 계열에서
+ * 돈다(`.github/workflows/windows-beta-check.yml` · `release-macos.yml` 의
+ * `windows-2022` 잡 — 의존성 감사 · Defender 검사 · 무인 설치 · 실행 · 번들
+ * MCP 스모크).
+ *
+ * ⚠️ **이 값은 「우리가 검증한 것」이 아니라 「실행에 필요한 것」이다.** 원장
+ * (2026-08-20)이 명시했듯 Windows 11 실기기의 SmartScreen 화면은 검증되지
+ * 않았고, 그 사실은 히어로의 신뢰줄(`trustLineWindows`)이 따로 진다. 이 줄이
+ * 그 경고를 대신하지 않는다.
+ */
+export const RELEASE_MIN_WINDOWS = "Windows 10";

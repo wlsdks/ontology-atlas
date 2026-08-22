@@ -4155,12 +4155,47 @@ body[data-no-tabbar] [data-tabbar="primary"] {
  * 700ms 아이브로우·리드 → 800ms CTA → 950ms 신뢰줄·계기 스트립. 그 뒤 전경은
  * 영구 정지. 지연 리터럴은 이 안무의 악보 값이라 램프 토큰이 아니다.
  */
+/*
+ * ⚠️ **쉬는 상태는 「보임」이다 — 안무는 그 위에 얹힌다** (2026-08-22 정정).
+ *
+ * 여기 있던 `opacity: 0` 은 안무의 시작 프레임이었는데, 그것이 **기본값**이라
+ * 실질적으로 「JS 가 `.is-in` 을 달아 줄 때까지 이 페이지는 백지」였다. 실측:
+ * 정적 export 인 `/ko/download/` 를 열고 곧바로 찍은 첫 스크린샷에 GNB 만
+ * 있었고 히어로 전체가 비어 있었다. 그 뒤에 서 있는 것이 **JS 32파일 ·
+ * 디코드 2,572KB** 다. 다운로드 페이지의 첫 문장이 번들 파싱 뒤에 있을 이유가
+ * 없다 — 마크업에는 이미 다 들어 있었다.
+ *
+ * 그래서 시작 프레임을 `@starting-style` 로 옮겼다. 값도 시간축도 종전과
+ * 똑같고(`gateway-t***` 지연은 그대로 악보다), 바뀐 것은 **누가 방아쇠를
+ * 당기나** 하나다: 하이드레이션 뒤의 rAF 가 아니라 **첫 스타일 계산**이다.
+ * 그래서 안무는 더 일찍, 더 고르게 시작한다.
+ *
+ * 세 갈래 전부 안전하다.
+ * - `@starting-style` 지원(Chrome/Edge/Safari): 종전과 같은 안무.
+ * - 미지원(구 Firefox): at-rule 을 통째로 무시하므로 **처음부터 다 보인다** —
+ *   잃는 것은 등장 순서(장식)뿐이고 정보는 전부 남는다. 감속 사용자에게 주는
+ *   것과 정확히 같은 대체물이다(아래 base 레이어 carve-out).
+ * - JS 실패: 종전에는 영구 백지, 이제는 전문(全文).
+ *
+ * `.is-in` 은 남겨 둔다 — 쉬는 상태와 같은 값이라 아무 일도 하지 않지만,
+ * `useInViewOnce` 를 쓰는 아래 절들이 여전히 그 클래스를 달고 있고, 스크롤
+ * 타임라인을 못 쓰는 브라우저에서 그쪽의 등장을 지는 것이 이 선언이다.
+ */
 .gateway-rise {
-  opacity: 0;
-  transform: translateY(14px);
+  opacity: 1;
+  transform: none;
   transition:
     opacity var(--motion-fast) var(--motion-ease),
     transform var(--motion-settle) var(--motion-ease);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  @starting-style {
+    .gateway-rise {
+      opacity: 0;
+      transform: translateY(14px);
+    }
+  }
 }
 
 .gateway-rise.is-in {
@@ -4186,6 +4221,97 @@ body[data-no-tabbar] [data-tabbar="primary"] {
 
 .gateway-t950 {
   transition-delay: 950ms;
+}
+
+/*
+ * ── 스크롤이 데려오는 등장 — `animation-timeline: view()` (2026-08-22) ──────
+ *
+ * ## 왜 타이머가 아니라 스크롤인가
+ *
+ * 히어로 아래 세 절(시연·증거·에이전트)의 등장은 지금까지
+ * `useInViewOnce` 가 임계값 0.18 을 넘는 **순간** `.is-in` 을 달고, 거기서부터
+ * 120/240ms 짜리 transition 이 **자기 시계로** 도는 구조였다. 그래서 스크롤을
+ * 멈추든 계속하든 되감든 안무는 똑같이 흘렀다 — 손가락과 화면이 이어져 있지
+ * 않았다.
+ *
+ * 스크롤 타임라인은 그 이음매를 만든다: 진행도의 유일한 입력이 **그 원소가
+ * 스크롤포트 안으로 얼마나 들어왔는가**다. 천천히 굴리면 천천히 도착하고,
+ * 멈추면 멈추고, 되감으면 되감긴다. 그래서 이징이 `linear` 인 것이 옳다 —
+ * 가속·감속은 이미 사람의 손이 준다. 여기에 램프 duration 을 얹으면 두 시계가
+ * 겹쳐 오히려 끈적해진다.
+ *
+ * 메인 스레드도 안 쓴다. rAF 도 스크롤 리스너도 없이 컴포지터가 굴리므로,
+ * 이 페이지가 이미 지고 있는 단일 rAF 루프(`gateway-frame-loop.ts` — 전류장 +
+ * 히어로 오브젝트, 무입력 30초 뒤 휴면)에 **한 프레임도 더하지 않는다.**
+ *
+ * ## 세 갈래 전부 안전하다
+ *
+ * - 지원(Chrome/Edge 115+ · Safari 26+): 스크롤이 안무를 진다.
+ * - 미지원(오늘의 Firefox): `@supports` 가 통째로 꺼지고 `.gateway-rise` 의
+ *   쉬는 상태(= 보임)와 `.is-in` transition 이 그대로 남는다. **잃는 것은
+ *   스크롤 연동뿐이고 등장도 내용도 남는다.**
+ * - 감속: 선언 자체가 `no-preference` 안이라 **존재하지 않는다.** 절은 처음부터
+ *   전부 보인다 — 관문의 다른 안무가 감속에 주는 것과 같은 대체물이다.
+ *   그래서 이 클래스들은 `reduced-motion-equivalent` 계약의
+ *   `INTENTIONALLY_STILL` 에 등재돼 있다(사유도 거기 적혀 있다).
+ *
+ * ## 범위 — 왜 히어로에는 안 거나
+ *
+ * 히어로는 첫 화면이라 스크롤 진행도가 언제나 0 근처다. 거기에 걸면 「처음부터
+ * 다 들어와 있는 것」에 안무를 주는 셈이라 아무 일도 안 일어난다. 첫 화면의
+ * 안무는 위의 `@starting-style` 이 지고, 이 아래는 스크롤이 진다 — **한 원소가
+ * 둘 다 받지 않는다.**
+ */
+@media (prefers-reduced-motion: no-preference) {
+  @supports (animation-timeline: view()) {
+    /* 절 머리의 세 줄 — 아이브로우 → 제목 → 부제. 시차는 `-d2`/`-d3` 가
+       이미 쓰는 이름을 그대로 재사용한다(등장 순서는 한 벌이어야 한다).
+       원인(제목)이 먼저 움직이므로 design.md 의 스태거 조건을 만족한다. */
+    .gateway-scroll-rise {
+      animation: gatewayScrollRise linear both;
+      animation-timeline: view();
+      animation-range: entry 10% entry 62%;
+    }
+
+    .gateway-scroll-rise.gateway-rise-d2 {
+      animation-range: entry 16% entry 68%;
+    }
+
+    .gateway-scroll-rise.gateway-rise-d3 {
+      animation-range: entry 22% entry 74%;
+    }
+
+    /* 절의 무대(시연 영상 · 증거 지도 · ACP 장면) — 글보다 무거우므로 더 긴
+       구간에서 더 멀리 온다. 질량이 다르면 도착도 달라야 한다. `scale` 은
+       쓰지 않는다 — 이 저장소에서 확대는 지도 카메라의 뜻이다. */
+    .gateway-scroll-stage {
+      animation: gatewayScrollStage linear both;
+      animation-timeline: view();
+      animation-range: entry 4% entry 78%;
+    }
+  }
+}
+
+@keyframes gatewayScrollRise {
+  from {
+    opacity: 0;
+    transform: translateY(18px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes gatewayScrollStage {
+  from {
+    opacity: 0;
+    transform: translateY(34px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
 }
 
 /* 헤드라인 두 줄 — 자기 줄 상자 안에서 올라온다(마스크 리프트). */
