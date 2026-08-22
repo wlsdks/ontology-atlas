@@ -1978,7 +1978,7 @@ await test("tools/list — 단일 도구 description 이 batch 짝을 cross-refe
 await test("initialize — instructions 필드 (#45) AI agent 안내 노출", async () => {
   // initialize 응답에 instructions 가 있어야 연결된 agent (Claude Code 등) 가
   // authorable/reserved kind 경계 / 호출 순서 / write 도구 dry-run 패턴을 즉시 인지. 누락 시
-  // agent 는 매 세션 시행착오로 학습 — 명시 가드.
+  // agent 는 매 세션 시행착오로 학습 — 명시 게이트.
   const root = makeVault([]);
   try {
     const { responses } = await rpc(root, INIT_REQUESTS);
@@ -6234,7 +6234,7 @@ await test("get_concepts — invalid slug rows are isolated as partial results",
   }
 });
 
-// R+ — get_concepts 빈 배열 / cap (50) 가드. 정상 빈 응답 vs error.
+// R+ — get_concepts 빈 배열 / cap (50) 게이트. 정상 빈 응답 vs error.
 await test("get_concepts — 빈 slugs[] → 빈 concepts[], 51개 → error", async () => {
   const root = makeVault([
     { slug: "foo", content: "---\nkind: capability\ntitle: Foo\n---\n" },
@@ -6621,7 +6621,7 @@ await test("add_concept/add_concepts — 명시한 빈 body 는 기본 본문으
   }
 });
 
-// R+ — add_concepts 빈 배열 / cap (50) 가드. get_concepts/add_relations 와
+// R+ — add_concepts 빈 배열 / cap (50) 게이트. get_concepts/add_relations 와
 // 같은 batch 계약을 writer 쪽에도 명시 고정한다.
 await test("add_concepts — 빈 concepts[] → 빈 results, 51개 → error", async () => {
   const root = makeVault([]);
@@ -7257,7 +7257,7 @@ await test("add_relations — 배치 write, row 순서 보존 + canonical sort +
   }
 });
 
-// R+ — add_relations 빈 배열 / cap 가드.
+// R+ — add_relations 빈 배열 / cap 게이트.
 await test("add_relations — 빈 relations[] → 빈 results, 51개 → error", async () => {
   const root = makeVault([
     { slug: "a", content: "---\nkind: capability\ntitle: A\n---\n" },

@@ -49,7 +49,7 @@ describe("GitStatusTile — 웹(브리지 없음)", () => {
     expect(onActivate).toHaveBeenCalledTimes(1);
   });
 
-  // 소유자 실보고 2026-07-23 — 유틸 티어 아이콘 사다리(활동 타일과 동일 토큰).
+  // 소유자 실보고 2026-07-23 — 유틸 티어 아이콘 램프(활동 타일과 동일 토큰).
   it("keeps the History icon on the utility ladder (--app-nav-rail-utility-icon-size)", () => {
     renderTile(<GitStatusTile onActivate={() => {}} />);
     const icon = screen.getByTestId("app-nav-rail-git-tile").querySelector("svg");

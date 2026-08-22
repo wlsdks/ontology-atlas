@@ -219,7 +219,7 @@ describe("AppNavRail", () => {
     expect(screen.getByRole("button", { name: "설정 슬롯" })).toBeInTheDocument();
   });
 
-  // 소유자 실보고 2026-07-23 — 레일 아이콘 사다리(로고 26 / 목적지 24+라벨 /
+  // 소유자 실보고 2026-07-23 — 레일 아이콘 램프(로고 26 / 목적지 24+라벨 /
   // 유틸 18). 하단 유틸 타일(활동)이 목적지 크기(--app-nav-rail-icon-size)를
   // 그대로 쓰면 설정 기어보다 커 보이는 회귀가 재발한다.
   it("keeps the agent utility tile icon on the utility ladder (--app-nav-rail-utility-icon-size), below the destination tier", () => {

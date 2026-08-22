@@ -12,7 +12,7 @@
 | React | 19.2.x | **KEEP** | React Compiler는 Slice 2(topology-map-v2)에서 성능 측정 후 활성화 판단 |
 | TypeScript | 5.x | **UPGRADE → 7.0 (소유자 지시)** | **TS 7.0 정식 릴리스 확인 (2026-07-08, Go 네이티브 10x).** 공식 경로: 6.0 (`stableTypeOrdering`) 경유 → 7.0, tsconfig 기본값 변경 대응 (strict 기본 on·baseUrl 제거·rootDir 기본 `./`). **확정 (PR #309, 게이트 전부 그린)**: tsc = 네이티브 7.0.2, Next/eslint의 JS API 소비는 공식 별칭 `@typescript/typescript6`으로 병행 (예견된 next build 비호환을 공식 폴백으로 해결). Next가 TS 7 API 지원 시 별칭 제거 |
 | Tailwind | 4.2.x | **KEEP** | @theme CSS 토큰 안정, 디자인 시스템 정합 |
-| ESLint | 9 flat | **KEEP (확정)** | Biome 2.5는 eslint-plugin-boundaries(FSD 가드) 미지원 — 아키텍처 강제가 걸린 한 ESLint 유일 선택지 |
+| ESLint | 9 flat | **KEEP (확정)** | Biome 2.5는 eslint-plugin-boundaries(FSD 게이트) 미지원 — 아키텍처 강제가 걸린 한 ESLint 유일 선택지 |
 | pnpm | 10.x | **KEEP** | Bun은 Anthropic 인수 후 로드맵 미공표 + Next static export 호환 미성숙 — watch만 |
 | next-intl | 4.11 | **KEEP** | App Router i18n 표준 유지 |
 
@@ -48,7 +48,7 @@
 
 ## 하지 않기로 한 것 (반려 기록)
 
-- Biome/oxlint 전환 (FSD boundary 가드 상실) · Electron 전환 (비용 > 이득, 원인 오진) · Astro/React Router 재플랫폼 · CLI 프레임워크 도입 · TS 전환(cli/mcp) · Bun 채택 (로드맵 미공표) · D3/Cosmograph/G6 시각화 교체.
+- Biome/oxlint 전환 (FSD boundary 게이트 상실) · Electron 전환 (비용 > 이득, 원인 오진) · Astro/React Router 재플랫폼 · CLI 프레임워크 도입 · TS 전환(cli/mcp) · Bun 채택 (로드맵 미공표) · D3/Cosmograph/G6 시각화 교체.
 - **[갱신, 2026-07-18]** 위 시각화 판정 시점 이후 `refactor/retire-sigma-topology`
   (#344) 가 머지되어 `/topology` 의 주 렌더러는 Sigma 가 아니라 커스텀
   canvas-2D 엔진(`topology-map-v2`, Graphology ForceAtlas2 물리만 재사용)이다.

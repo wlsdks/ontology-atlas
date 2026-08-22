@@ -30,11 +30,11 @@ const EMPTY_ADAPTIVE: AdaptiveRecentChangesResult = {
 
 /**
  * M-8 — 창 적응형 변형. 대량 커밋 날 7일 창이 전체의 80%를 통과시키면
- * 렌즈가 필터 구실을 못 하므로 7d→3d→1d 사다리로 좁힌다
+ * 렌즈가 필터 구실을 못 하므로 7d→3d→1d 램프로 좁힌다
  * (`computeAdaptiveRecentChanges` 계약). INDEX 렌즈가 이걸 쓴다.
  *
  * 스포트라이트 (협의회 설계 2026-07-23) — `overrideWindowDays` 가 숫자면
- * 적응 사다리 대신 그 창으로 **고정**한다(`computeRecentChanges` 직행,
+ * 적응 램프 대신 그 창으로 **고정**한다(`computeRecentChanges` 직행,
  * `windowDays` 는 그 값 그대로 에코). `?recent=1|7|30` 프리셋 칩이 이 인자로
  * 들어온다; 생략/undefined = 기존 적응 동작 그대로(하위호환). 지도 침강과
  * INDEX 렌즈가 이 훅 하나를 공유해 두 표면의 창이 갈라질 수 없다.

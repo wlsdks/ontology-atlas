@@ -169,7 +169,7 @@ export interface ReservedBox {
 export const CLUSTER_CHIP_LABEL_PRIORITY = 2;
 
 /**
- * 그려진 노드 디스크가 라벨 사다리에서 갖는 등급 (진입 검수 E-4).
+ * 그려진 노드 디스크가 라벨 램프에서 갖는 등급 (진입 검수 E-4).
  *
  * 검수 실측: 상품 노드를 클릭한 ego 포커스에서 자식 라벨 「상품 등록」이 선택
  * 노드의 박스를 **15px 관통**했고, 그 옆 라벨은 펼침 배지에 삼켜져 「재」 한 자만

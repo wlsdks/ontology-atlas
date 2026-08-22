@@ -69,7 +69,7 @@ export interface FullDetailA1Node {
   fresh: boolean;
   /**
    * 진입 검수 E-5 — 같은 노드의 신선도가 한 클릭 거리에서 상반됐다.
-   * 데이터시트 패널은 「2일 전 바뀜」(문서 mtime 사다리), 이 화면은
+   * 데이터시트 패널은 「2일 전 바뀜」(문서 mtime 램프), 이 화면은
    * 「한동안 그대로」(세션 changeset baseline)였다. `use-node-datasheet-model`
    * 의 M-3 계약이 금지한 바로 그 이원화다 — 신선도의 단일 진실원은 mtime 이다.
    * 호출자가 데이터시트가 쓰는 **그 문장 그대로** 넘긴다. 있으면 이진

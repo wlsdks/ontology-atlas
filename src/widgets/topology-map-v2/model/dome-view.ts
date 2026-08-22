@@ -40,7 +40,7 @@
  * ## 배율·알파
  *
  * 원근 배율 `s` 는 기하라 항상 적용된다(노드 반지름 × s — 드로우·히트·계기
- * 동일식). 알파 안개는 새 사다리를 만들지 않고 S5 선명도 사다리
+ * 동일식). 알파 안개는 새 램프를 만들지 않고 S5 선명도 램프
  * (`realmDepthClarityAlpha`)를 kind 티어로 부른다 — 가장 어두운 잉크
  * (`--topology-v2-ink-depth-leaf`)가 WCAG 1.4.11 의 3:1 바닥을 지키는 최소
  * 알파가 0.955 라(합성 실측, `topology-ink-contrast.contract.test.ts`) 회전에

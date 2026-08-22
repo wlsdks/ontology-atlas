@@ -297,7 +297,7 @@ describe("draw — depends 방향 테이퍼", () => {
   });
 });
 
-/** P3a — 잉크 사다리: contains 비-ego 렌더가 레벨별 stroke/width 를 탄다. */
+/** P3a — 잉크 램프: contains 비-ego 렌더가 레벨별 stroke/width 를 탄다. */
 describe("draw — containment ink ladder", () => {
   const TOKENS = {
     edgeContains: "#3a3a42",

@@ -241,7 +241,7 @@ function crossCellTone(count: number, maxCross: number): string | undefined {
  * 많아요」가 대각선에서 거짓이 됐다(2026-07-26 실측). 값에 반응하게 고쳐
  * 캡션을 두 채널 모두에서 참으로 만든다.
  *
- * 사다리 상한을 `--color-overlay-3`(0.10)에서 멈추는 이유는 대비다. 한 단 더
+ * 램프 상한을 `--color-overlay-3`(0.10)에서 멈추는 이유는 대비다. 한 단 더
  * (`--color-border-strong` 0.14) 올리면 그 배경 위 `text-secondary` 가
  * 6.51:1 로는 남지만 칸 테두리(divider)가 배경에 먹혀 격자선이 사라진다.
  * 0.02/0.06/0.10 세 단은 secondary 텍스트로 9.21 / 8.36 / 7.43:1 이라

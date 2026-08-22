@@ -49,10 +49,10 @@ export interface DomainCouplingGridDomain {
 export interface DomainCouplingGrid {
   domains: DomainCouplingGridDomain[];
   cells: number[][];
-  /** 대각선을 뺀 최대 셀 값 — 교차 채도 사다리의 기준. 0이면 교차가 없다. */
+  /** 대각선을 뺀 최대 셀 값 — 교차 채도 램프의 기준. 0이면 교차가 없다. */
   maxCross: number;
   /**
-   * 대각선(같은 도메인 안 연결)의 최대값 — **대각선만의** 무채색 사다리 기준.
+   * 대각선(같은 도메인 안 연결)의 최대값 — **대각선만의** 무채색 램프 기준.
    *
    * 교차와 같은 자를 쓰지 않는 이유: 두 값은 다른 것을 센다(안쪽 응집 vs 경계
    * 통과). 실측(2026-07-26 도그푸드)에서 안쪽 최대는 14, 교차 최대는 5였다 —

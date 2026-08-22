@@ -62,10 +62,10 @@ export interface TopologyV2Tokens {
   edgeContains: string;
   edgeDepends: string;
   edgeDim: string;
-  /** 엣지 선택(페어 포커스) 스트로크 — 인디고 pale 사다리 (노드 선택 표준 인디고와 값으로 구분). */
+  /** 엣지 선택(페어 포커스) 스트로크 — 인디고 pale 램프 (노드 선택 표준 인디고와 값으로 구분). */
   edgeSelected: string;
   /**
-   * S11 전개 코호트 소속 링 잉크 — 인디고 사다리 3번째 칸(탈채도). 노드 선택
+   * S11 전개 코호트 소속 링 잉크 — 인디고 램프 3번째 칸(탈채도). 노드 선택
    * 실선 인디고 / 엣지 선택 pale 인디고와 채도·기하로 갈린다(새 hue 0).
    */
   expandedCohort: string;

@@ -752,7 +752,7 @@ function HomePageImpl() {
   // P4a — "최근 변경" 렌즈(mtime 창). `computeRecentChanges` 순수 함수 +
   // 이 훅과 같은 session-snapshot 시각 규율(`use-recent-changes.ts`).
   // 스포트라이트 (협의회 2026-07-23): `?recent=` 숫자 프리셋이면 그 창으로
-  // 고정, "auto"/off 면 기존 적응 사다리 — 지도 침강과 INDEX 렌즈가 이 훅
+  // 고정, "auto"/off 면 기존 적응 램프 — 지도 침강과 INDEX 렌즈가 이 훅
   // 하나(단일 진실원)를 공유한다.
   const spotlightOn = recentWindow !== null;
   /*
@@ -4826,9 +4826,9 @@ function HomePageImpl() {
                   aria-labelledby={CREATE_NODE_DIALOG_TITLE_ID}
                   tabIndex={-1}
                   onKeyDown={handleCreateNodePanelKeyDown}
-                  // 다이얼로그 폭 스케일 채택 (#8 준비, 2026-07-25) — 공용
+                  // 다이얼로그 폭 램프 채택 (#8 준비, 2026-07-25) — 공용
                   // composer-width 대신 캐노니컬 --dialog-w-md(560px) 를 직접
-                  // 참조해 "개념 추가" 팝업이 스케일 위에 앉게 한다. 좁은
+                  // 참조해 "개념 추가" 팝업이 램프 위에 앉게 한다. 좁은
                   // 뷰포트는 calc 로 감싼다.
                   className="absolute left-1/2 top-[var(--topology-blocking-composer-top)] z-30 max-h-[var(--topology-blocking-composer-max-height)] w-[min(var(--dialog-w-md),calc(100vw-2rem))] -translate-x-1/2 overflow-y-auto"
                   data-testid="topology-create-node-panel"

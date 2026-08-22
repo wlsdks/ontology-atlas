@@ -1333,7 +1333,7 @@ describe('verify.mjs first-contact gates', () => {
               type: 'string',
               enum: WRITE_RELATION_TYPE_VALUES,
             },
-            // P6 회귀 가드와 짝 — 실제 서버 inputSchema 의 why(relation_notes
+            // P6 회귀 게이트와 짝 — 실제 서버 inputSchema 의 why(relation_notes
             // rationale) 블록. 픽스처에서 빠지면 base fixture 자체가 drift 로
             // 판정돼 negative test 가 성립하지 않는다.
             why: { type: 'string', maxLength: 300 },

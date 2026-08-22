@@ -3,7 +3,7 @@ import { isTauriVaultRuntime } from './tauri-vault-fs';
 /**
  * 데스크톱 셸 (설치된 macOS 앱, Tauri WebView) 여부 판정.
  *
- * 제품 정체성 분기 하나를 위해 존재한다: 설치 앱의 `/` 는 마케팅 랜딩이
+ * 제품 정체성 분기 하나를 위해 존재한다: 설치 앱의 `/` 는 마케팅 관문이
  * 아니라 로컬 작업 진입(FirstRun)이어야 한다. 빌드 분리 없이 런타임에서
  * 한 번 분기 — 웹과 데스크톱은 같은 정적 export 를 쓴다.
  *

@@ -276,7 +276,7 @@ describe("computeClusterDiscBounds", () => {
   });
 });
 
-/** P3a — 잉크 사다리의 레벨 유도 계약. */
+/** P3a — 잉크 램프의 레벨 유도 계약. */
 describe("containmentLevelFor", () => {
   it("project 가 낀 엣지는 L0, domain 은 L1, 그 외는 L2", () => {
     expect(containmentLevelFor("project", "domain")).toBe(0);

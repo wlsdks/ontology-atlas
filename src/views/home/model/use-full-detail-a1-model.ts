@@ -124,7 +124,7 @@ export function useFullDetailA1Model({
           const target = resolveNodeAgentTarget(selectedOntologyNode);
           return { agentSlug: target.ref, documented: target.documented };
         })(),
-        // 진입 검수 E-5 — 신선도의 단일 진실원은 문서 mtime 사다리다
+        // 진입 검수 E-5 — 신선도의 단일 진실원은 문서 mtime 램프다
         // (`use-node-datasheet-model` M-3). 세션 changeset baseline 으로
         // 따로 판정하던 이 자리가 데이터시트와 상반된 문장을 냈다
         // (「2일 전 바뀜」 vs 「한동안 그대로」, 같은 domains/catalog).

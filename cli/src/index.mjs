@@ -52,7 +52,7 @@ const TEMPLATE_ROOT = resolve(__dirname, '..', 'templates', 'vault');
  * 로케일 간 **동일**하고 산문 본문만 다르다 — 그래서 어떤 로케일로 만들었든
  * 같은 그래프가 나오고, 검색의 단일 진실원인 canonical `title` 도 그대로다.
  *
- * 웹 워크벤치는 UI 언어를 알지만 CLI 는 모르므로 명시 플래그로 받는다.
+ * 웹 작업대는 UI 언어를 알지만 CLI 는 모르므로 명시 플래그로 받는다.
  * 기본값은 종전과 같은 영어 — 기존 사용자의 `init` 결과가 바뀌지 않는다.
  */
 const TEMPLATE_ROOTS = {

@@ -15,9 +15,9 @@ import { FirstRunPage } from "@/views/first-run";
  * - **web vault 미선택 → HomePage 그대로 (정적 dogfood 샘플).** 판정
  *   (2026-07-18, `docs/prototypes/root-first-open-final.html` 승인
  *   docstring 근거, 시작하기 표면 형태는 v3 `first-run-v3-flagship.html`
- *   승인으로 대체): 셀프호스트한 사용자에게 "macOS 다운로드" 마케팅 랜딩은
+ *   승인으로 대체): 셀프호스트한 사용자에게 "macOS 다운로드" 마케팅 관문은
  *   모순 — 지도가 곧 첫 화면이어야 한다(0-클릭 aha). `LandingPage`(구
- *   마케팅 랜딩)는 제거됐다 — 그 소개 콘텐츠는 `/download` 로 이관
+ *   마케팅 관문)는 제거됐다 — 그 소개 콘텐츠는 `/download` 로 이관
  *   (Slice 2). "시작하기" 표면(폴더 열기/새 vault/SAMPLE 배지/우하단
  *   판독)은 이 페이지가 아니라 `HomePage` 안의 `TopologyIndexPanel`
  *   (INDEX 패널 맨 위, 플로팅 표면 0개)과 브랜드 pill 이 자체적으로

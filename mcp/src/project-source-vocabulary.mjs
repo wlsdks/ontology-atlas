@@ -4,7 +4,7 @@
 // ## 왜 따로 뺐나 (2026-08-17)
 //
 // 같은 목록이 `project-source-receipt.mjs` 와 `project-meaning-inventory.mjs`
-// 에 **바이트 단위로 똑같이** 두 벌 있었고, 둘 다 검사기로 쓰였다:
+// 에 **바이트 단위로 똑같이** 두 벌 있었고, 둘 다 게이트로 쓰였다:
 //
 //   project-source-receipt.mjs:76      `!ACTION_IDS.has(value.id)`        → null
 //   project-meaning-inventory.mjs:112  `!SOURCE_ACTION_IDS.has(...)`      → 거절

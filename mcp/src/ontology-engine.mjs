@@ -3021,7 +3021,7 @@ export function createOntologyEngine(artifact, options = {}) {
         if (!edge.resolved || !typeAllowed(edge.via, typeSet)) continue;
         // **자기 자신을 가리키는 엣지도 순환이다** (2026-07-29 실측).
         //
-        // `path.length > 1` 가드는 길이 1 순환(self-loop)을 통째로 배제했다.
+        // `path.length > 1` 게이트는 길이 1 순환(self-loop)을 통째로 배제했다.
         // 그래서 `cycles` 는 `totalCycles: 0` 에 `exhaustive: true` 까지 붙여
         // *"zero means acyclic within maxDepth"* 라고 단언하는데, 같은 그래프
         // 에서 `topological_order` 는 `acyclic: false` 를 냈고 `health` 는

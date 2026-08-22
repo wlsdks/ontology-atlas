@@ -554,9 +554,9 @@
         ]
       },
       "headings": [],
-      "excerpt": "This document is maintained based on Section 3 of the design spec. For the original Linear specification, see design-references/DESIGN-linear.md. v2 (2026-07): topology-map-v2 에서 출하된 B2+ \"Circuit × Constellation\" 시각 언어가 페이지 롤아웃(랜딩 → docs/ontology 허브 → projects/insights → download)의 규범이 되었다 — 아래 v2 — \"Circuit × Constell",
-      "wordCount": 31969,
-      "updatedAt": "2026-08-21",
+      "excerpt": "This document is maintained based on Section 3 of the design spec. For the original Linear specification, see design-references/DESIGN-linear.md. v2 (2026-07): topology-map-v2 에서 출하된 B2+ \"Circuit × Constellation\" 시각 언어가 페이지 롤아웃(관문 → docs/ontology 허브 → projects/insights → download)의 규범이 되었다 — 아래 v2 — \"Circuit × Constell",
+      "wordCount": 31980,
+      "updatedAt": "2026-08-22",
       "linksOut": [
         "design-references/DESIGN-linear",
         "TOPOLOGY-V2-DESIGN",
@@ -627,7 +627,7 @@
       "frontmatter": {},
       "headings": [],
       "excerpt": "이 표가 있는 이유. 2026-08-22 에 소유자가 화면과 설명을 읽고 말했다 — \"이런거 니가 말하는거 보는 내가 알아들을수있는게 하나도없음!\". 재 보니 사람이 읽는 화면 글자 3,130개 중 23군데가 코드 말투 그대로였다 (frontmatter 13 · 엣지 · 핸들 · 파싱 · 렌더링 · 쿼리 · 계약 · 인덱스 · 메타데이터). 같은 감사에서 영어 화면이 존재하지 않는 명령 (pnpm folder:validate)을 시키고 있던 것도 같이 나왔다. 말을 쉽게 바꾸는 일은 한 사람이 한 번에 하지 않으면 반드시 어긋난다 — 고치는 사람마다 다른 단어를 고르",
-      "wordCount": 765,
+      "wordCount": 870,
       "updatedAt": "2026-08-22",
       "linksOut": []
     },
@@ -2978,7 +2978,7 @@
       "headings": [],
       "excerpt": "2026-07-17 기준 전 레이어 조사(웹 프론트·데스크톱·CLI/MCP·LLM/Layer 2 인프라 4건) 후 확정한 판정. 판정 원칙: 검증된 스택은 유지가 기본값 (전면 재작성 반려 판정과 동일 논리 — 교체는 측정된 이득이 마이그레이션 비용을 명확히 넘을 때만). 다음 전면 재검토: 2027-01 또는 갈림길 조건 발화 시. 일부 조사는 세션 검색 예산 소진으로 학습 데이터+공식 문서 fetch 기반 — ⚠ 표기 항목은 실행 전 재검증. · 레이어 · 현재 · 판정 · 근거 · Next.js · 16.2.x static export · KEEP · stati",
       "wordCount": 892,
-      "updatedAt": "2026-07-27",
+      "updatedAt": "2026-08-22",
       "linksOut": []
     },
     {
@@ -3019,7 +3019,7 @@
       "headings": [],
       "excerpt": "Historical implementation record (superseded, 2026-07-27). This document preserves the measurements and decisions that led to topology-map-v2; its descriptions of coexisting DOM/Sigma engines and future migration phases are not current runtime instructions. The shipped contract is one canvas-2D engine. Use docs/TECH-ST",
       "wordCount": 3710,
-      "updatedAt": "2026-08-02",
+      "updatedAt": "2026-08-22",
       "linksOut": [
         "owner-topology-taste"
       ]
@@ -3144,7 +3144,7 @@
     "design-references/DESIGN-linear": [
       {
         "fromSlug": "DESIGN-SYSTEM",
-        "context": "System > This document is maintained based on Section 3 of the design spec. For the original Linear specification, see **[`design-references/DESIGN-linear.md`]**. > > **v2 (2026-07)**: topology-map-v2 에서 출하된 B2+ \"Circuit × Constellation\" > 시각 언어가 페이지 롤아웃(랜딩 → docs/ontology 허브 → pr",
+        "context": "System > This document is maintained based on Section 3 of the design spec. For the original Linear specification, see **[`design-references/DESIGN-linear.md`]**. > > **v2 (2026-07)**: topology-map-v2 에서 출하된 B2+ \"Circuit × Constellation\" > 시각 언어가 페이지 롤아웃(관문 → docs/ontology 허브 → pr",
         "linkText": "`design-references/DESIGN-linear.md`"
       }
     ],

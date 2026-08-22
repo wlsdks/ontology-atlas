@@ -64,11 +64,11 @@ export function realmInsideFlipDelayFor(depth: number): number {
  * 이 배수는 노드 stroke 잉크에 **합성**된다. 가장 어두운 깊이 잉크
  * `--topology-v2-ink-depth-leaf`(#60606d, 캔버스 위 3.19:1)에 0.84 를 곱하면
  * 합성 대비가 **2.58:1** — WCAG 1.4.11 비텍스트 3:1 바닥 아래다. leaf 잉크가
- * 3:1 을 유지하는 최소 알파가 0.955 이므로, 사다리를 그 위(0.96)로 올리고
- * 잉크 사다리(leaf < mid < top 서열)는 그대로 둔다 — 잉크를 밝혀서 풀면
- * 사다리 전체가 top(3.93) 밑 0.1 폭에 뭉개져 깊이 축 자체가 사라진다.
+ * 3:1 을 유지하는 최소 알파가 0.955 이므로, 램프를 그 위(0.96)로 올리고
+ * 잉크 램프(leaf < mid < top 서열)는 그대로 둔다 — 잉크를 밝혀서 풀면
+ * 램프 전체가 top(3.93) 밑 0.1 폭에 뭉개져 깊이 축 자체가 사라진다.
  * 게이트: `tests/contract/topology-ink-contrast.contract.test.ts` 의 합성 바닥
- * 검사. 깊이 신호의 나머지는 배율 사다리(아래)와 층 위치가 나른다.
+ * 검사. 깊이 신호의 나머지는 배율 램프(아래)와 층 위치가 나른다.
  */
 export function realmDepthClarityAlpha(depth: number): number {
   if (depth <= 1) return 1;

@@ -283,11 +283,11 @@ function pushNonCanonicalGraphArrayIssues(frontmatter, issues) {
  * **포함이 세워 준 부모** — 다른 노드가 이 슬러그를 담고 있으면 트리에서 부모가 있다.
  *
  * 2026-08-11: 북극성 여정을 걸어 보다 나왔다. `init --quick-start` 가 만든 볼트가
- * 자기 검사기를 통과하지 못했는데, 경고는 하나(`missing-expected-field: domain`)였고
+ * 자기 게이트를 통과하지 못했는데, 경고는 하나(`missing-expected-field: domain`)였고
  * 그 하나가 `health` · `mcp-verify` · `agent-brief` 셋을 빨갛게 만들었다. 그런데 그
  * 경고의 문구가 *"트리에서 부모를 찾을 수 있습니다"* 이고, 정작 그 볼트의 프로젝트
  * 노드는 이미 `contains:` 로 그 역량들을 담고 있었다 — **부모가 있는데 없다고 말한
- * 것이다.** 검사기가 파일 하나만 보기 때문이고, 그래서 볼트 단위에서 좁힌다.
+ * 것이다.** 게이트가 파일 하나만 보기 때문이고, 그래서 볼트 단위에서 좁힌다.
  */
 export function parentedSlugs(docs) {
   const parented = new Set();

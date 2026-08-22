@@ -98,7 +98,7 @@ export interface HomeRouteState {
   /**
    * 최근 변경 스포트라이트 (`?recent=auto|1|7|30`, 협의회 설계 2026-07-23) —
    * non-null 이면 지도가 "지난 N일 동안 디스크가 바뀐 노드"를 fresh 채널로
-   * 켜고 나머지를 침강시키는 렌즈 모드다. `"auto"` = 기존 적응 사다리
+   * 켜고 나머지를 침강시키는 렌즈 모드다. `"auto"` = 기존 적응 램프
    * (`useAdaptiveRecentChanges` 7→3→1일)가 창을 고른다; 숫자 = 명시 창 고정.
    * URL 에 사는 이유: 공유 링크·에이전트가 "사람이 보던 것과 같은 창"을
    * 재현/가독할 수 있어야 하고, INDEX 렌즈와 지도 침강이 **단일 진실원**
@@ -108,7 +108,7 @@ export interface HomeRouteState {
   recentWindow: RecentSpotlightWindow | null;
 }
 
-/** 스포트라이트 창 — "auto"(적응 사다리) 또는 명시 일수 프리셋. */
+/** 스포트라이트 창 — "auto"(적응 램프) 또는 명시 일수 프리셋. */
 export type RecentSpotlightWindow = "auto" | 1 | 7 | 30;
 
 /**

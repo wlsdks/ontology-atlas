@@ -34,7 +34,7 @@ export interface TopologyV2EdgePanelProps {
   why?: string | null;
   /** 선언한 vault 문서 — null 이면 출처 행 생략. */
   declaredBy: { slug: string; href: string } | null;
-  /** 선언 문서의 변경 시점 라벨 (S-C1 사다리 재사용) — null 이면 생략. */
+  /** 선언 문서의 변경 시점 라벨 (S-C1 램프 재사용) — null 이면 생략. */
   updatedAtLabel: string | null;
   /**
    * 공방(Compass Stage) 편집 딥링크 — 이 관계를 authored 한 노드를 focal 로 열고

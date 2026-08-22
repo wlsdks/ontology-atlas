@@ -74,7 +74,7 @@ export interface TopologyIndexPanelLabels {
   uncatalogedDocsLabel: string;
   uncatalogedDocsAction: string;
   /** ④ 살아있는 지도 드리프트 — "먼지 앉은 노드 N"(호출자가 count 포맷) +
-   *  신선도 탭 이동 액션. 중립 톤만 — warning 사다리 금지 (Guardian 1차). */
+   *  신선도 탭 이동 액션. 중립 톤만 — warning 램프 금지 (Guardian 1차). */
   dustyNodesLabel: string;
   dustyNodesAction: string;
   /**
@@ -173,7 +173,7 @@ export interface TopologyIndexPanelProps {
    */
   lens?: IndexLens;
   onLensChange?: (lens: IndexLens) => void;
-  /** 스포트라이트 창 — "auto"(적응 사다리) 또는 1/7/30 프리셋. 칩 활성 표시용. */
+  /** 스포트라이트 창 — "auto"(적응 램프) 또는 1/7/30 프리셋. 칩 활성 표시용. */
   recentWindow?: "auto" | 1 | 7 | 30;
   /** 프리셋 칩 클릭 → 창 전환(즉시 적용 — 팝업/확인 금지 계약). */
   onWindowChange?: (window: "auto" | 1 | 7 | 30) => void;

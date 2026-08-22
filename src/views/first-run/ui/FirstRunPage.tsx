@@ -13,7 +13,7 @@ import { controlClass } from '@/shared/ui/control-class';
 /**
  * 설치 앱 (데스크톱 셸) 첫 실행 — vault 미선택 상태의 `/`.
  *
- * 정체성 결함 교정: 설치된 앱이 자기 자신을 다운로드하라는 마케팅 랜딩을
+ * 정체성 결함 교정: 설치된 앱이 자기 자신을 다운로드하라는 마케팅 관문을
  * 보여주던 것을, Obsidian 계열 도구처럼 "폴더 선택 → 바로 작업" 진입으로
  * 바꾼다. 웹 `/` 는 root-first-open(2026-07) 이후 지도(HomePage) 자체가
  * 첫 화면이라 이 페이지와 다른 문제를 푼다 — 분기는 RootEntryPage 의

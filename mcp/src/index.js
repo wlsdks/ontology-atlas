@@ -2331,7 +2331,7 @@ try {
 // MCP `instructions` field — initialize 응답에 포함되어 연결된 AI agent
 // (Claude Code, Cursor, …) 가 항상 보는 시스템-prompt 수준 안내. tool
 // description 만으로는 (1) 호출 순서, (2) kind 계층의 의미, (3) write 도구의
-// dry-run/confirm 패턴, (4) mtime 충돌 가드, (5) R16/R17 bootstrap workflow,
+// dry-run/confirm 패턴, (4) mtime 충돌 게이트, (5) R16/R17 bootstrap workflow,
 // (6) error message 가 다음 tool 을 직접 가리킨다는 사실 — agent UX 가
 // 매번 시행착오로 학습되는 문제를 단번에 해소.
 const TOOL_INVENTORY_PLACEHOLDER = '__ONTOLOGY_ATLAS_ACTIVE_TOOL_INVENTORY__';
@@ -7321,7 +7321,7 @@ function addConcept({ slug, kind, title, domain, capabilities, elements, path, b
     throw new Error('body must be a string.');
   }
   // 공백-only title 도 silent pollution 위험. UI 의 isUntitledTitle 가
-  // 같은 가드를 한다 — MCP 도 parity 유지.
+  // 같은 게이트를 한다 — MCP 도 parity 유지.
   if (!isValidVaultTitle(title)) {
     throw new Error('title must be a non-empty string.');
   }

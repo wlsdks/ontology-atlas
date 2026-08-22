@@ -61,7 +61,7 @@ export function getPorcelainStatus({ repoRoot, pathspec, run = defaultRun }) {
   return parsePorcelain(out);
 }
 
-/** pathspec 없는 전체 repo `git status --porcelain` · staged-outside-vault 가드용. */
+/** pathspec 없는 전체 repo `git status --porcelain` · staged-outside-vault 게이트용. */
 export function getFullPorcelainStatus({ repoRoot, run = defaultRun }) {
   let out;
   try {

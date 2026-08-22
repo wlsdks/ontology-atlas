@@ -21,7 +21,7 @@ describe('COLORS shared palette', () => {
 describe('KIND_COLORS shared kind palette', () => {
   it('각 kind 가 고유 색 — element 는 green(≠ capability cyan), document 는 dim', () => {
     // pattern-walk 의 element=cyan(capability 와 충돌) drift + find/orphans/list 의
-    // document=white drift 회귀 가드.
+    // document=white drift 회귀 게이트.
     assert.equal(KIND_COLORS.project, COLORS.magenta);
     assert.equal(KIND_COLORS.domain, COLORS.blue);
     assert.equal(KIND_COLORS.capability, COLORS.cyan);

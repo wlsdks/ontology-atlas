@@ -435,7 +435,7 @@ export function AppNavRail({
                       className="h-[var(--app-nav-rail-icon-size)] w-[var(--app-nav-rail-icon-size)]"
                     />
                     {badgeCount ? (
-                      // 신호톤 warning — `--color-status-warning` 계열 알파 사다리만
+                      // 신호톤 warning — `--color-status-warning` 계열 알파 램프만
                       // 쓴다. "기록되지 않은 변경이 있다" 는 error 도 done 도 아닌
                       // 미결/주의라 warning 정의 그대로다(GitStatusTile 이 이미
                       // 배포한 구분의 연장 — 새 예외 아님). 3자리는 타일 지오메트리를

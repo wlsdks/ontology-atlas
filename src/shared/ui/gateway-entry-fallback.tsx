@@ -20,7 +20,7 @@ import { controlClass } from '@/shared/ui/control-class';
  * ## 문구를 새로 쓰지 않는다
  *
  * 헤드라인·리드는 관문 페이지가 이미 쓰는 문장(`download.heroTitleLine1/2` /
- * `heroLead` — 2026-08-18 랜딩 리메이크의 기념비 헤드라인)을 그대로 가져온다.
+ * `heroLead` — 2026-08-18 관문 리메이크의 기념비 헤드라인)을 그대로 가져온다.
  * 이 자리에서 포지셔닝을 새로 만드는 것은 PO 카운슬 트리거이고, 무엇보다
  * **fallback 과 실제 화면이 다른 말을 하면** 그게 고치려던 결함 그 자체다.
  * (구 `stageTitle`/`stageLead` 는 리메이크에서 카탈로그를 떠났는데 이 공용

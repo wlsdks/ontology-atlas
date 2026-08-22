@@ -52,7 +52,7 @@ import { controlClass, type ControlSize } from "./control-class";
  * 적었지만 실제로는 **3언어**로 살아 있었다(Choice 손 조합 · TopologyIndexPanel
  * 제3언어 · 램프 active).
  *
- * ## 컨테이너 캐노니컬 — 인셋은 다수결이 아니라 사다리가 정했다
+ * ## 컨테이너 캐노니컬 — 인셋은 다수결이 아니라 램프가 정했다
  *
  * `p-px + gap-px` 만 아이템 24/32 위에서 컨테이너 자연높이(28/36)가 높이
  * 어휘에 선다(p-0.5 → 30/38, p-1 → 34/42 — 전부 어휘 밖으로 이미 사형된

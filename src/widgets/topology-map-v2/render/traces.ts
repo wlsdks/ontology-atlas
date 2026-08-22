@@ -120,7 +120,7 @@ export interface TraceDrawState {
    */
   emphasized?: boolean;
   /**
-   * 엣지 선택(페어 포커스) — 인디고 pale 사다리의 전용 스트로크로 그린다.
+   * 엣지 선택(페어 포커스) — 인디고 pale 램프의 전용 스트로크로 그린다.
    * 노드 선택(표준 인디고)과 같은 계열이되 값이 달라 한눈에 구분된다
    * (채색 시스템 증식 없음 — 헌장 준수).
    */
@@ -128,7 +128,7 @@ export interface TraceDrawState {
   /**
    * P3a — containment 잉크 레벨 (0 뼈대 · 1 중간 · 2 잔가지). contains 의
    * 비-ego 렌더에서만 소비: stroke 는 레벨별 토큰, width 는 레벨 계수.
-   * depends/ego/dim 경로는 기존 그대로 (타입·주의 채널은 사다리와 직교).
+   * depends/ego/dim 경로는 기존 그대로 (타입·주의 채널은 램프와 직교).
    */
   level?: 0 | 1 | 2;
   /** 3D 보기 — 선 굵기 배수(깊이 감쇠). 생략 시 1 (2D 동일). */
@@ -301,7 +301,7 @@ export function draw(ctx: CanvasRenderingContext2D, state: TraceDrawState, token
       stroke = tokens.edgeDepends;
       width = 1.3 + (0.6 - 1.3) * farT;
     } else {
-      // P3a — 잉크 사다리: L0 진하고 굵게(뼈대), L2 살짝 물러남(잔가지).
+      // P3a — 잉크 램프: L0 진하고 굵게(뼈대), L2 살짝 물러남(잔가지).
       const level = state.level ?? 1;
       stroke =
         level === 0

@@ -210,7 +210,7 @@ function DocsVaultContent() {
     ? searchParams?.get('review') ?? null
     : null;
   const projectsListHref = '/projects/';
-  // UX 감사 (2026-07): '/' 는 하드 내비게이션 시 vault 복원 전이라 랜딩으로
+  // UX 감사 (2026-07): '/' 는 하드 내비게이션 시 vault 복원 전이라 관문으로
   // 떨어지는 막다른 길이었다 — 크럼은 항상 지도 허브로 직행.
   const workspaceHref = insightsReturnTab
     ? buildOntologyInsightsReturnHref(insightsReturnTab, insightsReviewId)
@@ -330,7 +330,7 @@ function DocsVaultContent() {
   const localVault = useLocalVault();
   const localVaultStatus = localVault.status;
   // IDB 핸들 복원 **시도가 종결됐는가** — status 와 달리 「아직 모른다」와
-  // 「없는 게 확정이다」를 가른다. 랜딩 소스 판정(C5)의 유일한 출발 신호.
+  // 「없는 게 확정이다」를 가른다. 관문 소스 판정(C5)의 유일한 출발 신호.
   const localVaultRestoreAttempted = localVault.restoreAttempted;
   const openLocalVault = localVault.open;
   const openRecentLocalVault = localVault.openRecent;
@@ -463,15 +463,15 @@ function DocsVaultContent() {
   // mount (before any manual source switch), prefer `local`. Not persisted, so
   // we don't overwrite an intentional stored preference on disk.
   //
-  // ⚠️ **랜딩 판정은 복원 시도가 끝나는 순간 단 한 번으로 종결된다** (2026-08-08).
+  // ⚠️ **관문 판정은 복원 시도가 끝나는 순간 단 한 번으로 종결된다** (2026-08-08).
   // 종전엔 「한 번 쏘면 소진」인 원샷 ref 였는데, 그 설계에는 두 구멍이 있었다:
   //
   // ① 저장 취향이 로컬인 부팅에서는 쏠 일이 없어 ref 가 장전된 채 남았고, 그
   //    장전된 한 발이 **사용자의 첫 「샘플」 전환을 그 자리에서 로컬로
   //    되튕겼다**(실기기: 클릭 후 300ms·1800ms 모두 로컬 — 첫 전환이 조용히
-  //    무시됨). 랜딩 가드가 사용자의 선택을 잡아먹은 것이다.
+  //    무시됨). 관문 가드가 사용자의 선택을 잡아먹은 것이다.
   // ② 판정 시점이 열려 있어서, 아래 스코프 정리·「없는 문서」 판정·기본 선택이
-  //    「랜딩 전환이 아직 올 수 있는가」를 알 방법이 없었다 — 그래서 부팅의
+  //    「관문 전환이 아직 올 수 있는가」를 알 방법이 없었다 — 그래서 부팅의
   //    샘플 창이 「정착」으로 관측됐다(그 결과는 스코프 정리 effect 주석 참조).
   //
   // `restoreAttempted` 는 IDB 복원 시도가 **종결된 뒤에만** 참이 되므로
@@ -1320,10 +1320,10 @@ function DocsVaultContent() {
    *
    * **2026-08-08 2차 검수 — 그 「정착」의 정의가 틀려서 같은 사고가 남아
    * 있었다.** 첫 수리의 술어는 `source === 'server'` 를 즉시 정착으로 쳤는데,
-   * 저장 취향이 샘플인 부팅에서는 로컬 볼트 복원이 끝나는 순간 랜딩 자동
+   * 저장 취향이 샘플인 부팅에서는 로컬 볼트 복원이 끝나는 순간 관문 자동
    * 전환(C5)이 소스를 뒤집는다 — 즉 그 「서버 정착」은 몇백 ms 짜리 가짜였고,
    * 뒤집히는 순간이 다시 「볼트 전환」으로 읽혀 딥링크가 걷혔다. 지금의
-   * `vaultScopeSettled`(위에서 정의)는 **랜딩 판정 종결**(`landingSourceResolved`)
+   * `vaultScopeSettled`(위에서 정의)는 **관문 판정 종결**(`landingSourceResolved`)
    * 을 포함하므로 그 창이 정착으로 관측되지 않는다. e2e:
    * `docs-deeplink.spec.ts` 「샘플을 먼저 쓰던 프로필…」이 replaceState 전수
    * 기록으로 「딥링크를 잃은 호출 0건」까지 잰다.
@@ -1531,7 +1531,7 @@ function DocsVaultContent() {
       shouldDeferDocsVaultDefaultSelection({
         normalizedQuerySlug,
         selectedSlug,
-        // 부팅이 어느 볼트를 보여줄지 정하기 전(랜딩 판정 미종결)에는 기본
+        // 부팅이 어느 볼트를 보여줄지 정하기 전(관문 판정 미종결)에는 기본
         // 선택도 미룬다 — 샘플 창에서 고른 기본값이 곧 도착할 로컬 볼트의
         // 딥링크를 덮는다(2026-08-08). 세 소비자가 같은 술어를 쓴다.
         selectionReady: vaultScopeSettled,

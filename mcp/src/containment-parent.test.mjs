@@ -8,13 +8,13 @@ import { parentedSlugs, suppressParentedExpectedFieldIssues } from './validate.m
  *
  * ## 어디서 나왔나 — 북극성 여정을 실제로 걸어서
  *
- * `init --quick-start` 로 갓 만든 볼트가 **자기 검사기를 통과하지 못했다.** 경고는
+ * `init --quick-start` 로 갓 만든 볼트가 **자기 게이트를 통과하지 못했다.** 경고는
  * 하나뿐인데(`missing-expected-field: domain`) 그 하나가 셋을 빨갛게 만들었다:
  * `health` exit 1 · `mcp-verify` exit 1(`vaultWarnings present`) · `agent-brief`
  * exit 1(`needs_shape 45/100`). 사람에게는 *"내가 뭘 잘못했나"* 이고, **에이전트에게는
  * 연결 실패 신호**다 — 실제로는 서버도 도구 35개도 정상이었다.
  *
- * 원인은 검사기가 **파일 하나만 보기 때문**이다. 그 경고의 문구 자체가
+ * 원인은 게이트가 **파일 하나만 보기 때문**이다. 그 경고의 문구 자체가
  * *"트리에서 부모를 찾을 수 있습니다"* 인데, 그 볼트의 프로젝트 노드는 이미
  * `contains: [capabilities/catalog, capabilities/checkout]` 로 그 둘을 담고 있었다.
  * **부모가 이미 있는데 부모가 없다고 말한 것이다.**

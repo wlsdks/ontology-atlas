@@ -34,7 +34,7 @@ import {
  *   엣지에서 갈라지던 페르소나 버그의 재발 방지).
  * - M-2: containment("담는 것")는 방향-only "기대는 곳"과 분리된 타입드
  *   카운트.
- * - M-3: powered(신선도)는 updatedAt(mtime) 사다리 단일 진실원 —
+ * - M-3: powered(신선도)는 updatedAt(mtime) 램프 단일 진실원 —
  *   changedSlugs 세션 baseline 과 이원화 금지.
  * - nodeId 는 항상 캔버스 그래프 id (경로 모드 라우트 상태와 동기),
  *   slug 는 vault-slug 우선 fallback (문서/빌더 딥링크·핸드오프용).
@@ -47,7 +47,7 @@ export interface UseNodeDatasheetModelArgs {
   /** frontmatter `significance` (approach C override) — 있으면 derive 대신. */
   authoredSignificance: string | null;
   docFreshnessIndex: ReadonlyMap<string, string>;
-  /** "N일 전" 사다리의 기준 시각 스냅샷 (렌더 purity). */
+  /** "N일 전" 램프의 기준 시각 스냅샷 (렌더 purity). */
   updatedAgoNowMs: number;
   /** i18n — `nodeDatasheet.updated_<key>` 해석. */
   formatUpdatedLabel: (key: string, count: number) => string;

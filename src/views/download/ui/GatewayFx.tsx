@@ -5,11 +5,11 @@ import { useEffect, useRef } from 'react';
 import { registerGatewayFrameClient } from '../lib/gateway-frame-loop';
 
 /**
- * 관문 랜딩의 효과층 — **전류장(field) · 그레인 · 커스텀 커서 링.**
+ * 관문의 효과층 — **전류장(field) · 그레인 · 커스텀 커서 링.**
  *
  * 헌장의 「움직이는 그라디언트 배경」 금지에 대한 명문 예외 1건이다
  * (`.claude/rules/forbidden.md` 「디자인」절 — 발자국 번짐과 같은 형식).
- * 조건 넷: ① `.gateway-fx-stage`(관문 랜딩) 안에서만 산다 ② 알파 상한이
+ * 조건 넷: ① `.gateway-fx-stage`(관문) 안에서만 산다 ② 알파 상한이
  * `--gateway-fx-*` 토큰으로 잠겨 있다(광원 0.14 · 그레인 0.05 · 성진 0.28)
  * ③ 첫 1초는 정지 상태로 페인트하고 그 뒤에야 분위기 모션이 개입한다
  * (첫 3초 규칙 — 배경은 헤드라인의 등장을 방해하지 않는다) ④ reduced-motion

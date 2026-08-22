@@ -129,7 +129,7 @@ export function judgeAdjacentMarks({ a, b, over }) {
    * **못 읽은 색은 «통과» 가 아니라 «미측정» 이다** — `judgeText` 와 같은 계약
    * (2026-08-07 코드 리뷰).
    *
-   * 종전에는 이 가드가 없어서 `parseColor` 가 `null` 을 내면 바로 아래
+   * 종전에는 이 게이트가 없어서 `parseColor` 가 `null` 을 내면 바로 아래
    * `composite` 가 `fg[3]` 을 읽다 **TypeError 를 던졌다.** 형제 함수는 같은
    * 자리에서 `null` 을 돌려주는데 이쪽만 죽는다. `parseColor` 는 `#hex` 와
    * `rgb()/rgba()` 만 읽으므로, 크로미움이 `color(srgb …)` 나 `oklch(…)` 로

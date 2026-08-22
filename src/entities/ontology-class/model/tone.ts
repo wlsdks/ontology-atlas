@@ -58,7 +58,7 @@ export const ONTOLOGY_KIND_TONE: Record<OntologyVisualKind, OntologyKindTone> = 
     // 색을 쓰는 표면(인사이트 kind 막대·도메인 용량 막대)에서 지배색이
     // 되므로 저채도로 조용하게 — topology-map-v2 캔버스는 이 팔레트가
     // 아니라 중립 각인 토큰(`--topology-v2-node-fill-*`)을 쓴다 (Guardian
-    // 최종 검증 확인). 알파 사다리(0.94/0.88/0.11/0.44)는 그대로 유지.
+    // 최종 검증 확인). 알파 램프(0.94/0.88/0.11/0.44)는 그대로 유지.
     hueName: "eucalyptus",
     fill: "rgba(124, 166, 141, 0.94)",
     border: "rgba(124, 166, 141, 0.88)",

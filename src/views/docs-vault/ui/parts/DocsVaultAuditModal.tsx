@@ -373,7 +373,7 @@ export function DocsVaultAuditModal({
                         <span key={row.name}
                           data-testid={`docs-audit-skill-parity-${row.name}`}
                           data-verdict={row.verdict}
-                          // `--color-amber-source-*` 는 **경고 사다리**다 —
+                          // `--color-amber-source-*` 는 **경고 램프**다 —
                           // globals.css 가 `amber-source(244,183,49 ==
                           // --color-status-warning)` 라고 명시한다. 격리 토큰은
                           // 이름이 다른 `--color-amber-docs-*` 쪽이다.

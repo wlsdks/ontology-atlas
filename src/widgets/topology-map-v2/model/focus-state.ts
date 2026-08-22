@@ -91,7 +91,7 @@ export interface EgoNeighborRankEntry {
 }
 
 /**
- * 관계 타입 위계 가중치 — 렌더의 잉크 사다리(실선 contains > 파선 depends >
+ * 관계 타입 위계 가중치 — 렌더의 잉크 램프(실선 contains > 파선 depends >
  * 약한 relates)와 같은 위계를 DOI 랭크에도 반영한다. containment(contains/
  * belongs_to) 3 > dependency(depends_on) 2 > 그 외(relates/related_to/
  * describes/…)·미상 1. 결정론 유지 — 순수 매핑, 부수효과 없음.

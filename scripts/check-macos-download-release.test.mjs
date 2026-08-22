@@ -807,7 +807,7 @@ test("updater gate refuses a URL pinned to another tag", async () => {
 });
 
 test("the DMG-only path still passes without the updater flag", async () => {
-  // 기존 호출자(랜딩 페이지 검증 등)가 매니페스트를 요구하지 않는다.
+  // 기존 호출자(관문 검증 등)가 매니페스트를 요구하지 않는다.
   await withServer(makeHandler(), async (baseUrl) => {
     const { stdout } = await runVerifierWithArgs(baseUrl, ["--tag=v0.1.0"]);
     assert.doesNotMatch(stdout, /Updater:/);

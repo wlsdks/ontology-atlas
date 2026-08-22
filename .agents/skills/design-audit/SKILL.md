@@ -149,7 +149,7 @@ for (let i = 0; i < rects.length; i++) for (let j = i + 1; j < rects.length; j++
 - **행간**: `lineHeight` 를 `--leading-*` 램프와 대조.
 - **색**: `color` · `backgroundColor` · `borderColor` 를 토큰 계산값 집합과 대조.
   토큰 밖 값이 있으면 하드코딩이다.
-- **radius · shadow**: 램프/사다리 밖 값 지목.
+- **radius · shadow**: 램프 밖 값 지목.
 
 ```js
 const seen = new Set();

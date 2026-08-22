@@ -323,7 +323,7 @@ function ProjectFullCard({ project, facts, domainRows, description, docPath, kin
       // 드롭 그림자를 걷었다 (2026-08-06). 이 카드는 **떠 있지 않다** — 정적
       // `<article>` 이고 sticky 도 z-index 도 없다. 같은 레시피의 정적 카드
       // 셋(`:238` · `ProjectForm` 의 두 절 카드)은 전부 inset 재질만 쓰는데,
-      // 여기만 `0 14px 34px` 를 손으로 얹어 사다리 밖 단을 하나 만들고 있었다.
+      // 여기만 `0 14px 34px` 를 손으로 얹어 램프 밖 단을 하나 만들고 있었다.
       // 드롭은 떠 있는 것의 몫이다.
       className="rounded-panel border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] px-6 py-5 shadow-[inset_0_1px_0_var(--color-overlay-2)] transition-colors hover:border-[color:var(--color-border-strong)]"
     >
