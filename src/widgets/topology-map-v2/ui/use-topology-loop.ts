@@ -40,7 +40,7 @@ import { buildDustPoints, buildRealmCosmosPoints, computeStarDustCount, type Dus
 import { DEFAULT_EXPAND, DEFAULT_MAP_ARRANGEMENT } from "@/shared/lib/appearance-preferences";
 import type { CanvasBackground, ExpandPreference, FootprintPreference, GlyphSet, MapArrangement } from "@/shared/lib/appearance-preferences";
 import { centerForInsets, computeClusterFitTarget, computeDomeFocusCameraTarget, computeFocusCameraTarget, computeOverviewCameraTarget, computeOverviewFitScale, fitWorldTarget, hasAnyNodeOnScreen, worldToScreen } from "./topology-camera-math";
-import { drawTopologyFrame } from "./topology-frame-draw";
+import { drawTopologyFrame, lastDrawnLabelBoxes } from "./topology-frame-draw";
 import { MOTION } from "@/shared/motion";
 import { isPreviewEndpoint, isPreviewEndpointHidden } from "../render/preview-edge";
 import { relaxNewlyVisible } from "../model/layout";
@@ -5311,6 +5311,15 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
        * reality (`shownChildren`) is what makes that mismatch catchable from
        * outside.
        */
+      /**
+       * The label boxes the last frame drew, in CSS pixels — the only way to see
+       * label collision from outside. The canvas has no DOM, so a spec can
+       * otherwise only diff pixels, which reports "something changed" and never
+       * "these two names sit on top of each other". Node centres are not a
+       * substitute: a frame measured **zero** disc overlaps while names visibly
+       * crossed (2026-08-22). Names collide long before discs do.
+       */
+      labels: () => lastDrawnLabelBoxes(),
       chips: () => {
         const world = worldRef.current;
         const clustered = clusteredIdsRef.current;
