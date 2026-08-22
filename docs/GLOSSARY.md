@@ -1,106 +1,214 @@
-# 용어집 — 안에서 부르는 이름과 밖에서 보여 줄 말
+# Glossary
 
-> **이 표가 있는 이유.** 2026-08-22 에 소유자가 화면과 설명을 읽고 말했다 —
-> *"이런거 니가 말하는거 보는 내가 알아들을수있는게 하나도없음!"*. 재 보니
-> 사람이 읽는 화면 글자 3,130개 중 **23군데**가 코드 말투 그대로였다
-> (`frontmatter` 13 · `엣지` · `핸들` · `파싱` · `렌더링` · `쿼리` · `계약`
-> · `인덱스` · `메타데이터`). 같은 감사에서 **영어 화면이 존재하지 않는 명령**
-> (`pnpm folder:validate`)을 시키고 있던 것도 같이 나왔다.
->
-> 말을 쉽게 바꾸는 일은 **한 사람이 한 번에 하지 않으면 반드시 어긋난다** —
-> 고치는 사람마다 다른 단어를 고르기 때문이다. 그래서 값이 아니라 **표**를
-> 진실원으로 둔다.
+**This file is the single source of truth for the words this repository uses.**
+English is canonical: comments, doc-blocks, and developer docs are written in
+English so contributors outside Korea can read them. Korean equivalents are
+listed for the maintainer and for the two Korean docs that stay Korean —
+`docs/DECISIONS.md` and `docs/CHANGELOG.md`, both append-only historical records.
 
-## 어디에 적용되나
+Stable path: `docs/GLOSSARY.md`. Do not move it. Code comments and docs point
+here by path, and `pnpm docs:links` plus `pnpm docs:comment-refs` verify those
+pointers still resolve.
 
-| 자리 | 규칙 |
+---
+
+## 1. Why this file exists
+
+Two measurements, both taken 2026-08-22.
+
+**One.** The owner read a screen and an explanation of it and said: *"이런거 니가
+말하는거 보는 내가 알아들을수있는게 하나도없음!"* — "I can't understand a single
+thing you're saying." A sweep of the 3,130 user-facing strings found **34**
+written in code vocabulary (`frontmatter`, `엣지`, `핸들`, `파싱`, `렌더링`,
+`쿼리`, `계약`, `인덱스`, `메타데이터`), plus an English screen instructing users
+to run `pnpm folder:validate` — **a script that does not exist**.
+
+**Two.** The same sweep found one thing carrying several names. Frontmatter
+appeared on screen as 프론트매터 / 문서 상단 속성 / 문서 속성. CI checks were
+게이트 / 가드 / 검사기 / 체커. Value lists were 램프 / 사다리 / 스케일.
+
+Renaming **drifts unless one table decides it**, because each person picks a
+different word. So the table is the source of truth, not the individual fixes.
+
+---
+
+## 2. Two audiences, two registers
+
+| Where | Register |
 |---|---|
-| **화면에 나오는 글자** (`messages/*.json`) | 아래 「밖에서 보여 줄 말」만 쓴다. 예외는 아래 §괄호 규칙 |
-| **소유자가 읽는 문서** (`README` · `FEATURES` · `PRODUCT-*` · 결정 기록의 «현상/결정» 문단) | 같다. 내부 용어를 쓰면 그 자리에서 한 번 푼다 |
-| **코드 주석 · 개발 문서 · `.claude/**`** | 내부 용어를 **쓴다**. 다만 처음 나올 때 한 번 풀어 준다 — §「안쪽 글의 규칙」 |
-| **생성된 파일** (`src/entities/docs-vault/data/*` · `public/docs-vault/**`) | 손대지 않는다. 원본을 고치고 다시 생성한다 |
+| **User-facing strings** (`messages/*.json`) | Plain words a non-developer knows — §5 |
+| **Code comments, doc-blocks, developer docs** | Precise technical English — §3–4. Do **not** simplify these. `gate` is exactly the right word; spelling it out every time only adds length |
 
-## 표 — 내부 용어 → 밖에서 보여 줄 말
+A word can be correct in one register and wrong in the other. These are separate
+problems and they get separate rules.
 
-값이 두 곳에 적히면 어긋나므로 **여기가 유일한 표**다.
+---
 
-| 안에서 부르는 이름 | 한국어 화면 | 영어 화면 | 메모 |
+## 3. Domain vocabulary
+
+What this product is made of. Most terms are already industry-standard; where we
+chose among several possible words, the reason is given.
+
+| Term | Meaning | Korean | Why this word |
 |---|---|---|---|
-| frontmatter | **파일 맨 위 정보칸** | the info block at the top of the file | §괄호 규칙 참고 |
-| (같은 것의 옛 이름들) | — | — | 화면에서 **프론트매터** · **문서 상단 속성** · **문서 속성** 셋으로 갈라져 있었다(2026-08-22 실측). 전부 위 한 줄로 통일 |
-| node | **동그라미** (지도 위) · **문서** (파일 얘기일 때) | dot / document | 「노드」는 지도 범례처럼 이름표가 필요한 자리에만 |
-| edge | **연결** | connection | 「엣지」는 화면에서 쓰지 않는다 |
-| graph | **지도** | map | 「그래프」는 그 단어를 정의하는 문장에서만 |
-| render | **화면에 그리다** | draw · show | |
-| parse | **읽어 들이다** | read | |
-| query | **검색어** | search text | |
-| index (본문) | **검색 준비** | search prep | 「인덱스」는 화면에서 쓰지 않는다 |
-| metadata | **기본 정보** | basic info | |
-| handle (파일시스템) | (쓰지 않는다 — 「브라우저가 연 폴더」로 바꿔 말한다) | (drop) | |
-| contract | **어떻게 돌고 있나** · **원본 정보** | where this reads from | 「계약」은 화면에서 쓰지 않는다 |
-| schema | **형식** | format | |
-| runtime | **실행 환경** | runtime | 개발자 화면(설정·진단)에서만 |
-| vault | **폴더** · **문서함** | folder · workspace | 이미 지켜지고 있다 |
-| ontology | **온톨로지** (그대로) | ontology | **`design.md` 의 기존 규칙 유지** — 브랜드 자리와 그 단어를 정의하는 문장에서만 |
+| **vault** | The markdown folder the user picked. Its files *are* the graph | 볼트 | Obsidian established this word for "a local folder of markdown you own", and our users come from that world |
+| **frontmatter** | The YAML block at the top of a markdown file | frontmatter | Standard across Jekyll, Hugo, Astro, Obsidian. Never transliterate it |
+| **node** | One document in the vault, drawn as one mark on the map | 노드 | Graph-theory standard |
+| **edge** | A typed relation between two nodes | 엣지 | Graph-theory standard. On screen say **connection** |
+| **kind** | A node's type: `project`, `domain`, `capability`, `element`, `decision` | kind | It is the literal frontmatter key. Never say "type" in prose — `type` belongs to TypeScript |
+| **slug** | A node's readable, mutable address | slug | Web standard |
+| **uid** | A node's permanent UUIDv4 identity, minted once at creation | uid | Survives rename; `slug` does not |
+| **ego graph** | A node plus its direct neighbours | ego | Standard in social-network analysis ("ego network") |
+| **spine / circuit / element** | The map's three zoom tiers, outermost to innermost | 스파인 / 서킷 / 엘리먼트 | Repo-specific. Defined in `docs/TOPOLOGY-V2-DESIGN.md` |
+| **dome** | The map's 3D projection mode | 돔 | Repo-specific |
+| **ACP** | Agent Client Protocol — how a coding agent talks to the app | ACP | Upstream protocol name |
 
-## 괄호 규칙 — 영어 낱말을 언제 남기나
+---
 
-`frontmatter` 처럼 **사용자가 실제로 찾거나 입력해야 하는 낱말**은 지우면
-검색을 못 한다. 그래서 자리에 따라 가른다.
+## 4. Engineering vocabulary
 
-- **설명하는 문장** → 쉬운 말만. `파일 맨 위 정보칸이 그대로 지도가 됩니다`
-- **사용자가 그 낱말을 찾아야 하는 자리**(오류 안내 · 예시 · 명령 캡션)
-  → 쉬운 말 + 괄호 한 번. `파일 맨 위 정보칸(frontmatter)이 닫히지 않았어요`
-- **사용자가 그대로 입력하는 값** → 손대지 않는다. `kind: project` 는 코드다
+These are the words that were drifting. The **Use** column is binding.
 
-한 화면에서 괄호는 **한 번만** 나온다. 두 번째부터는 쉬운 말만 쓴다.
+| Use | Do NOT use for this | Meaning | Why this word |
+|---|---|---|---|
+| **gate** | check, guard, checker, validator | An automated check that **fails the build** on a violation | "Quality gate" is established (SonarQube, GitLab). "Check" is too weak — a gate blocks |
+| **guard clause** | gate | An early return in code (`if (!x) return`) | Standard refactoring vocabulary (Fowler). English already separates these two; keep it that way |
+| **ramp** | scale, ladder, step list | A fixed list of allowed design values — type sizes, radii, elevations | "Color ramp" and "elevation ramp" are established design-system usage. We avoid "scale" because that word is taken — next row |
+| **zoom**, **zoom factor** | scale (in prose) | Camera magnification on the map | The identifier `camera.scale` cannot change, but prose must say "zoom" so it never reads as a value ramp |
+| **ratchet** | — | A check that lets a count fall but never rise | Established for debt paydown in large codebases |
+| **probe** | — | A defect inserted on purpose to prove a gate turns red | `.claude/skills/gate-probe/SKILL.md` |
+| **inventory** | census | The full count of existing violations, taken **before** switching a rule on | "Census" reads as demography to English speakers; engineers say "inventory" |
+| **doc-block** | — | The block comment above a file or export | Standard |
+| **surface** | — | A delivery target: the web, or the macOS app | Established by `AGENTS.md` — "two surfaces, one folder" |
+| **`Surface` primitive** | bare "surface" | The UI component in `src/shared/ui/surface.tsx` | Same English word, two meanings. Always backtick the component so they never blur |
+| **gateway** | landing page | The first-visit screen behind `/` and `/download` | It is not only marketing — installed-app users hit the same route, so "landing page" would misdescribe it |
+| **facade** | gateway | A single entry point hiding several render paths | The map's canvas/DOM render paths were called "gateways", colliding with the product screen. English already has "facade" |
+| **workbench** | — | The macOS app window where the work happens | VS Code and Eclipse both use "workbench" for exactly this |
+| **decision ledger** | — | `docs/DECISIONS.md` — append-only decisions, each with the dissent that lost | — |
+| **seat** | — | One standing reviewer on the PO or design council | Standard for panels and boards |
 
-## 안쪽 글의 규칙 — 코드 주석과 개발 문서
+### Words that legitimately mean different things
 
-여기서는 내부 용어가 **더 정확하다.** 「게이트」를 「자동으로 막아 주는 검사」로
-매번 풀어 쓰면 길어지기만 하고 뜻은 그대로다. 그러니 바꾸지 않는다. 대신 둘을
-지킨다.
+Do **not** unify these. A sweep that collapses them destroys meaning. Measured
+2026-08-22:
 
-1. **산문 문서에서만, 한 문서에서 처음 나올 때 한 번 푼다.**
-   `게이트(위반을 자동으로 막는 검사)`. 두 번째부터는 그냥 「게이트」다.
-   이미 `design.md` 가 이 방식으로 쓰여 있다.
+| Word | One sense | A different sense |
+|---|---|---|
+| `gate` in `topology-map-v2/*-gate.ts` | a **runtime conditional** — skip an idle frame, cluster past a density threshold | not a CI gate |
+| `gate` in ACP code | a **permission checkpoint** — the user approves a write | not a CI gate |
+| `repository` | the **git repo** (~780 occurrences, every one legitimate) | never the vault |
+| `ramp` as a verb | motion **ramping down** (deceleration) | not a value list |
+| `ladder` | `Esc` dismissal order; `ConnectLadder`'s three steps | not a value ramp |
 
-   ⚠️ **코드 주석에는 넣지 않는다** (2026-08-22 실측으로 뒤집음). 처음엔
-   주석에도 같은 규칙을 걸었는데, `mcp`/`cli`/`scripts` 에 42군데를 넣고 보니
-   **읽기가 더 나빠졌다**:
+---
 
-   ```
-   // 틀린 것은 게이트(위반을 자동으로 막는 검사)의 계약이었다.
-   // 우리 볼트(온톨로지 마크다운 폴더)의 **관계 이유
-   ```
+## 5. User-facing register
 
-   원인은 **자리**다. 산문 문서는 첫 등장이 도입 문장이라 괄호가 자연스럽게
-   앉지만, 이 저장소의 독블록은 첫 등장이 **빽빽한 논증 문장 한가운데**여서
-   괄호가 문장을 끊는다. 게다가 그 주석을 읽는 사람과 에이전트는 이미 그
-   낱말을 안다 — 푸는 값이 0 인데 읽는 비용만 든다.
+On screen, use the plain column.
+`tests/contract/ui-copy-glossary.contract.test.ts` enforces this against
+`messages/*.json`.
 
-   42군데는 전부 되돌렸다. 주석에 남는 규율은 **2번(같은 것을 두 이름으로
-   부르지 않기)** 하나다.
-2. **같은 것을 두 이름으로 부르지 않는다.** 아래가 이 저장소에서 실제로
-   갈라져 있던 짝이고, 왼쪽으로 통일한다.
+| Internal | Korean screen | English screen |
+|---|---|---|
+| frontmatter | 파일 맨 위 정보칸 | the info block at the top of the file |
+| node | 동그라미 (on the map) · 문서 (as a file) | dot · document |
+| edge | 연결 | connection |
+| graph | 지도 | map |
+| render | 화면에 그리다 | draw · show |
+| parse | 읽어 들이다 | read |
+| query | 검색어 | search text |
+| index (body) | 검색 준비 | search prep |
+| metadata | 기본 정보 | basic info |
+| handle (filesystem) | "브라우저가 연 폴더" | "the folder your browser opened" |
+| contract | 어떻게 돌고 있나 · 원본 정보 | where this reads from |
+| schema | 형식 | format |
+| vault | 폴더 · 문서함 | folder · workspace |
+| ontology | 온톨로지 | ontology |
 
-| 쓸 것 | 쓰지 말 것 |
+`ontology` keeps its name. `.claude/rules/design.md` already restricts it to
+brand positions and to sentences that define the word.
+
+### The parenthesis rule
+
+Some technical words cannot simply be deleted — a user who hits an error needs
+the searchable term.
+
+- **Explaining** → plain words only: `파일 맨 위 정보칸이 그대로 지도가 됩니다`
+- **The user must find or search the word** (error text, examples) → plain words
+  plus one parenthesis: `파일 맨 위 정보칸(frontmatter)이 닫히지 않았어요`
+- **The user types it verbatim** → leave it. `kind: project` is code
+
+One parenthesis per screen; after that, plain words only.
+
+---
+
+## 6. Comment policy
+
+Approved by the owner, 2026-08-22.
+
+> **The code says what. A comment says why.**
+
+### Delete
+
+- Anything restating the code — `// increment the counter`
+- Work-order markers that meant something for one afternoon — `audit A2`, `iter 18`
+- History that no longer constrains anything: a fact about a deleted file, the
+  rationale for a rule that was since removed
+- Multi-paragraph preambles above a five-line function
+
+### Keep, and write in English
+
+- **Dated measurements.** *Measured 2026-08-19: the gateway burned 55–68 ms/s
+  after 40 s of no input.* No code can carry this
+- **Owner decisions**, with the quote that settled them
+- **Rejected alternatives** — why *not* the obvious approach
+- **Constraints whose removal reintroduces a bug** — why a gate is shaped this
+  way, why an order of operations matters
+- **Anything that reads as wrong but is right**, with the evidence
+
+### The test
+
+> Delete the comment. If the next person could now repeat the mistake it
+> prevented, keep it.
+
+### Long rationale moves into a document
+
+When a doc-block outgrows the code it sits on, move the prose into a markdown
+file and leave a one-line pointer:
+
+```ts
+// Why the camera fits the full node bbox and not the spine bbox:
+// docs/TOPOLOGY-V2-DESIGN.md "Camera fit"
+```
+
+Two rules keep this safe:
+
+1. **Point at a path plus a section heading — never a line number.** Line numbers
+   are wrong by the next commit.
+2. **The path must resolve.** `pnpm docs:comment-refs` scans code comments for
+   repo-relative `.md` paths and fails when one is missing — the same guarantee
+   `pnpm docs:links` already gives markdown-to-markdown links. Without it, one
+   folder rename silently breaks every pointer at once.
+
+### Quotes stay in Korean
+
+Owner quotes are evidence, and translating them loses what makes them evidence.
+Keep the Korean and add a short English gloss:
+
+```ts
+// Owner, 2026-08-18: "처음 로딩될때 … 너무 아래임.. 딱 중앙이었음해"
+// (the map sat too low on first load; it should be centred)
+```
+
+---
+
+## 7. Gates
+
+| Gate | Scope |
 |---|---|
-| 게이트 | 가드 · 검사기 · 체커 |
-| 램프 | 스케일 · 사다리(값 목록을 가리킬 때) |
-| 볼트 | 저장소(vault 를 가리킬 때 — `repository` 와 헷갈린다) |
-| 표면 | 화면(surface 를 가리킬 때 — `screen` 과 헷갈린다) |
-| 관문 | 랜딩 · 게이트웨이 |
-| 작업대 | 워크벤치 |
-| frontmatter | 프론트매터 (안쪽 글에서는 코드·스키마와 같은 영문 표기로) |
+| `tests/contract/ui-copy-glossary.contract.test.ts` | §5 — user-facing strings, and every `pnpm <script>` a screen names must exist |
+| `pnpm docs:links` | Markdown-to-markdown links and cited repo paths |
+| `pnpm docs:comment-refs` | `.md` paths cited from code comments resolve |
 
-⚠️ **「저장소」와 「화면」은 그 자체로는 옳은 말이다.** 위 표가 막는 것은
-**vault 를 「저장소」라 부르고 surface 를 「화면」이라 부르는 것**이다 — 이
-저장소에는 git repository 와 브라우저 screen 도 같이 나오므로, 한 낱말이 두
-가지를 가리키면 읽는 쪽(사람이든 에이전트든)이 어느 쪽인지 판정할 수 없다.
-
-## 게이트
-
-`tests/contract/ui-copy-glossary.contract.test.ts` 가 **화면 글자**(`messages/*.json`)
-에서 위 표의 「쓰지 말 것」이 다시 나타나면 실패한다. 코드 주석은 검사하지
-않는다 — 거기서는 그 낱말들이 옳기 때문이다.
+Code comments are **not** scanned for §4 vocabulary. There the technical words
+are the correct ones.

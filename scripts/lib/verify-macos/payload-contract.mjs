@@ -94,7 +94,7 @@ export function validateWebviewVerifyPayload(payload, {
   }
   const webviewUrl = new URL(payload.href);
   const webviewPath = webviewUrl.pathname;
-  // 지도 재구성 엔진 (docs/TOPOLOGY-MAP-REBUILD.md) — Sigma/skeleton 계약
+  // 지도 재구성 엔진 (docs/archive/TOPOLOGY-MAP-REBUILD.md) — Sigma/skeleton 계약
   // 대신 map-canvas 계약을 검증한다. 함수 전역에서 게이트로 쓰인다.
   const topologyMapEngine = payload?.markers?.topologyMapEngine ?? "";
   // "canvas" = 구 map-canvas 엔진, "v2" = topology-map-v2 (현행 기본 지도).

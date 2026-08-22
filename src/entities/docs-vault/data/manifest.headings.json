@@ -11267,33 +11267,78 @@
   "GLOSSARY": [
     {
       "depth": 1,
-      "text": "용어집 — 안에서 부르는 이름과 밖에서 보여 줄 말",
-      "slug": "용어집-안에서-부르는-이름과-밖에서-보여-줄-말"
+      "text": "Glossary",
+      "slug": "glossary"
     },
     {
       "depth": 2,
-      "text": "어디에 적용되나",
-      "slug": "어디에-적용되나"
+      "text": "1. Why this file exists",
+      "slug": "1-why-this-file-exists"
     },
     {
       "depth": 2,
-      "text": "표 — 내부 용어 → 밖에서 보여 줄 말",
-      "slug": "표-내부-용어-밖에서-보여-줄-말"
+      "text": "2. Two audiences, two registers",
+      "slug": "2-two-audiences-two-registers"
     },
     {
       "depth": 2,
-      "text": "괄호 규칙 — 영어 낱말을 언제 남기나",
-      "slug": "괄호-규칙-영어-낱말을-언제-남기나"
+      "text": "3. Domain vocabulary",
+      "slug": "3-domain-vocabulary"
     },
     {
       "depth": 2,
-      "text": "안쪽 글의 규칙 — 코드 주석과 개발 문서",
-      "slug": "안쪽-글의-규칙-코드-주석과-개발-문서"
+      "text": "4. Engineering vocabulary",
+      "slug": "4-engineering-vocabulary"
+    },
+    {
+      "depth": 3,
+      "text": "Words that legitimately mean different things",
+      "slug": "words-that-legitimately-mean-different-things"
     },
     {
       "depth": 2,
-      "text": "게이트",
-      "slug": "게이트"
+      "text": "5. User-facing register",
+      "slug": "5-user-facing-register"
+    },
+    {
+      "depth": 3,
+      "text": "The parenthesis rule",
+      "slug": "the-parenthesis-rule"
+    },
+    {
+      "depth": 2,
+      "text": "6. Comment policy",
+      "slug": "6-comment-policy"
+    },
+    {
+      "depth": 3,
+      "text": "Delete",
+      "slug": "delete"
+    },
+    {
+      "depth": 3,
+      "text": "Keep, and write in English",
+      "slug": "keep-and-write-in-english"
+    },
+    {
+      "depth": 3,
+      "text": "The test",
+      "slug": "the-test"
+    },
+    {
+      "depth": 3,
+      "text": "Long rationale moves into a document",
+      "slug": "long-rationale-moves-into-a-document"
+    },
+    {
+      "depth": 3,
+      "text": "Quotes stay in Korean",
+      "slug": "quotes-stay-in-korean"
+    },
+    {
+      "depth": 2,
+      "text": "7. Gates",
+      "slug": "7-gates"
     }
   ],
   "guide/cli": [

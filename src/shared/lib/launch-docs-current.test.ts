@@ -5,7 +5,7 @@ import { CLI_COMMAND_COUNT } from '../../../cli/src/lib/cli-commands.mjs';
 
 const ROOT = path.resolve(__dirname, '../../..');
 
-// `docs/PUBLISH-NPM.md` 는 npm 발행 계획 폐기 (docs/DECISIONS.md 2026-07-27) 로
+// `docs/archive/PUBLISH-NPM.md` 는 npm 발행 계획 폐기 (docs/DECISIONS.md 2026-07-27) 로
 // `docs/archive/` 로 옮겨졌다. 아카이브는 당시 사실을 그대로 보존하는 기록이라
 // 현행 surface 드리프트 게이트의 대상이 아니다.
 const CURRENT_SURFACE_DOCS = [
