@@ -3904,12 +3904,17 @@
      * 실측). 게이트: `tests/contract/gateway-fx-exception.contract.test.ts`.
      */
     .gateway-rise,
-    .gateway-hero-line > span,
     .gateway-map-after,
     .gateway-hero-stage {
       opacity: 1 !important;
       transform: none !important;
       transition: none !important;
+    }
+
+    /* The headline hides its characters with `visibility`, so this is the axis that has to be
+     * forced back — `opacity: 1` would leave every character hidden. */
+    .gateway-type-ch {
+      visibility: visible !important;
     }
 
     .gateway-term-line {
@@ -4357,28 +4362,58 @@ body[data-no-tabbar] [data-tabbar="primary"] {
   }
 }
 
-/* 헤드라인 두 줄 — 자기 줄 상자 안에서 올라온다(마스크 리프트). */
-.gateway-hero-line {
+/* 헤드라인 — 한 글자씩 쳐진다. 리듬은 JS 타이머가 만들고(`HeroTypewriter`)
+ * 여기서는 「켜짐/꺼짐」과 커서만 그린다.
+ *
+ * ⚠️ **글자는 처음부터 제자리에 있고 잉크만 켜진다.** 글자를 덧붙이는 방식이면
+ * 한 글자마다 줄바꿈이 다시 계산돼 덩어리 전체가 들썩인다 — 그래서 `opacity` 가
+ * 아니라 `color: transparent` 도 아니라, 자리를 차지한 채 보이지만 않는 상태다.
+ * 줄 상자·줄바꿈 위치·블록 높이가 첫 글자 전에 이미 확정된다.
+ *
+ * 끊기는 단위는 **낱말**이지 글자가 아니다(`.gateway-type-word` 가 nowrap).
+ * 글자마다 상자를 주면 브라우저가 음절 사이에서 줄을 끊어 `break-keep` 계약이
+ * 조용히 무너진다. */
+.gateway-type-line {
   display: block;
-  overflow: hidden;
 }
 
-.gateway-hero-line > span {
-  display: block;
-  transform: translateY(103%);
-  opacity: 0;
-  transition:
-    transform var(--motion-settle) var(--motion-ease) 150ms,
-    opacity var(--motion-fast) var(--motion-ease) 150ms;
+.gateway-type-word {
+  white-space: nowrap;
 }
 
-.gateway-hero-in .gateway-hero-line > span {
-  transform: none;
-  opacity: 1;
+/* ⚠️ `visibility`, **not** `opacity`. The caret is a pseudo-element of the character that has
+ * not been typed yet, and `opacity` applies to an element together with its pseudo-elements —
+ * so hiding the glyph that way hid the caret with it and the caret never appeared once
+ * (measured 2026-08-23). `visibility` inherits but a descendant can override it back, which is
+ * exactly the seam needed here. Both keep the character's box, which is what stops the reflow. */
+.gateway-type-ch {
+  visibility: hidden;
 }
 
-.gateway-hero-in .gateway-hero-line:nth-child(2) > span {
-  transition-delay: 220ms, 220ms;
+.gateway-type-ch.is-on {
+  visibility: visible;
+}
+
+/* 커서는 아직 안 쳐진 첫 글자의 왼쪽 = 마지막으로 쳐진 글자의 오른쪽이다.
+ * 의사 요소라 자리를 안 먹으므로 커서가 움직여도 줄이 밀리지 않는다. */
+.gateway-type-ch.is-cursor {
+  position: relative;
+}
+
+.gateway-type-ch.is-cursor::before {
+  content: '';
+  /* Overrides the hidden glyph above — the caret shows on a character that does not yet. */
+  visibility: visible;
+  position: absolute;
+  left: -0.06em;
+  top: 0.16em;
+  width: 0.055em;
+  height: 0.74em;
+  /* `currentColor` so the caret is the ink of the line it is writing — the two lines sit one
+   * step apart. A fixed token would be wrong on one of them, and indigo would put a second,
+   * blinking protagonist above the fold beside the CTA that already owns that colour. */
+  background: currentColor;
+  animation: gatewayCaretBlink 1.06s steps(1) infinite;
 }
 
 /* 히어로 오브젝트 무대 — 활자(150ms)가 먼저 오고 오브젝트는 450ms 부터. */

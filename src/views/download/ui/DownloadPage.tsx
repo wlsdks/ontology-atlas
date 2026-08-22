@@ -11,6 +11,7 @@ import { cn } from '@/shared/lib/cn';
 import { PAGE_COLUMN, PAGE_GUTTER } from '@/shared/lib/gateway-frame';
 import { GatewayNav, GatewayReadingLinks } from '@/widgets/gateway-chrome';
 import { DemoStage } from './DemoStage';
+import { HeroTypewriter, heroSentence } from './HeroTypewriter';
 import { buttonVariants } from '@/shared/ui';
 import { RELEASE_MIN_MACOS, RELEASE_MIN_WINDOWS, RELEASE_VERSION } from '../lib/release-facts';
 import {
@@ -360,6 +361,11 @@ function HeroSection({
       });
   const rise = (extra: string) => cn('gateway-rise', extra, heroIn && 'is-in');
 
+  const heroLines = [
+    { text: t('heroTitleLine1'), className: 'text-[color:var(--color-text-secondary)]' },
+    { text: t('heroTitleLine2') },
+  ];
+
   return (
     <section data-testid="gateway-hero" className={cn(PAGE_GUTTER, 'w-full')}>
       {/* The monument measure — the headline uses the full column as its measure. `@container`
@@ -380,21 +386,16 @@ function HeroSection({
         </p>
 
         <h1
+          // The visible characters are `aria-hidden`, so the heading is named here — once.
+          aria-label={heroSentence(heroLines)}
           className={cn(
             'mt-6 break-keep text-monument font-[var(--font-weight-signature)] tracking-[var(--tracking-monument)] text-[color:var(--color-text-primary)]',
-            heroIn && 'gateway-hero-in',
           )}
         >
-          {/* The first line is one step down in ink, making the hierarchy — the second line
+          {/* Typed one character at a time (`HeroTypewriter` owns the cadence and the caret).
+              The first line is one step down in ink, making the hierarchy — the second line
               (a person's debt) is the sentence's subject — out of brightness. */}
-          <span className="gateway-hero-line">
-            <span className="text-[color:var(--color-text-secondary)]">
-              {t('heroTitleLine1')}
-            </span>
-          </span>
-          <span className="gateway-hero-line">
-            <span>{t('heroTitleLine2')}</span>
-          </span>
+          <HeroTypewriter start={heroIn} lines={heroLines} />
         </h1>
       </div>
 
