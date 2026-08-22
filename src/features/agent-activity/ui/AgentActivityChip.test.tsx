@@ -101,6 +101,11 @@ describe("AgentActivityChip", () => {
     fireEvent.click(screen.getByTestId('agent-activity-bell'));
     expect(screen.getByTestId('agent-work-receipts')).toHaveTextContent('관계를 정리해줘');
     expect(screen.getByTestId('agent-work-receipts')).toHaveTextContent('완료');
+    const receipt = screen.getByTestId('agent-work-receipt-row');
+    expect(receipt).toHaveAttribute('aria-expanded', 'false');
+    fireEvent.click(receipt);
+    expect(receipt).toHaveAttribute('aria-expanded', 'true');
+    expect(screen.getByTestId('agent-work-receipts')).toHaveTextContent('add_relations');
   });
 
   it("fresh heartbeat만 현재 단계와 대상으로 말한다", () => {
