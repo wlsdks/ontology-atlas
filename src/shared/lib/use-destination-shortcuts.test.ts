@@ -281,4 +281,38 @@ describe("useDestinationShortcuts", () => {
     press("d");
     expect(navigate).toHaveBeenCalledWith("/project/atlas/docs/", "docs");
   });
+
+  it("화면이 다시 그려져도 전역 keydown 리스너를 갈아 끼우지 않고 최신 목적지를 쓴다", () => {
+    const removeListener = vi.spyOn(window, "removeEventListener");
+    const firstNavigate = vi.fn();
+    const secondNavigate = vi.fn();
+    const { rerender } = renderHook(
+      ({ currentNavigate, docsHref }) =>
+        useDestinationShortcuts({
+          navigate: currentNavigate,
+          hrefOverrides: { docs: docsHref },
+        }),
+      {
+        initialProps: {
+          currentNavigate: firstNavigate,
+          docsHref: "/project/first/docs/",
+        },
+      },
+    );
+
+    removeListener.mockClear();
+    rerender({
+      currentNavigate: secondNavigate,
+      docsHref: "/project/second/docs/",
+    });
+
+    expect(
+      removeListener.mock.calls.filter(([type]) => type === "keydown"),
+      "AppShell 재렌더 사이에 단축키 리스너가 사라졌다",
+    ).toHaveLength(0);
+    press("g");
+    press("d");
+    expect(firstNavigate).not.toHaveBeenCalled();
+    expect(secondNavigate).toHaveBeenCalledWith("/project/second/docs/", "docs");
+  });
 });
