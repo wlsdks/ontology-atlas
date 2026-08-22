@@ -620,6 +620,18 @@
       ]
     },
     {
+      "slug": "GLOSSARY",
+      "path": "docs/GLOSSARY.md",
+      "title": "용어집 — 안에서 부르는 이름과 밖에서 보여 줄 말",
+      "tags": [],
+      "frontmatter": {},
+      "headings": [],
+      "excerpt": "이 표가 있는 이유. 2026-08-22 에 소유자가 화면과 설명을 읽고 말했다 — \"이런거 니가 말하는거 보는 내가 알아들을수있는게 하나도없음!\". 재 보니 사람이 읽는 화면 글자 3,130개 중 23군데가 코드 말투 그대로였다 (frontmatter 13 · 엣지 · 핸들 · 파싱 · 렌더링 · 쿼리 · 계약 · 인덱스 · 메타데이터). 같은 감사에서 영어 화면이 존재하지 않는 명령 (pnpm folder:validate)을 시키고 있던 것도 같이 나왔다. 말을 쉽게 바꾸는 일은 한 사람이 한 번에 하지 않으면 반드시 어긋난다 — 고치는 사람마다 다른 단어를 고르",
+      "wordCount": 765,
+      "updatedAt": "2026-08-22",
+      "linksOut": []
+    },
+    {
       "slug": "guide/cli",
       "path": "docs/guide/cli.md",
       "title": "CLI",
@@ -5694,6 +5706,13 @@
         "type": "doc",
         "slug": "FOUNDATIONS",
         "title": "FOUNDATIONS — what grounds ontology-atlas"
+      },
+      {
+        "name": "GLOSSARY",
+        "path": "GLOSSARY",
+        "type": "doc",
+        "slug": "GLOSSARY",
+        "title": "용어집 — 안에서 부르는 이름과 밖에서 보여 줄 말"
       },
       {
         "name": "INTERACTION-DESIGN",

@@ -88,9 +88,19 @@ describe("DocFrontmatterBlock", () => {
 
     const details = screen.getByTestId("doc-frontmatter-block").querySelector("details");
     expect(details).toHaveAttribute("open");
-    expect(
-      screen.getByText(/frontmatter 가 곧 그래프/),
-    ).toBeVisible();
+    /*
+     * **자리로 잡는다 — 문장으로 잡지 않는다** (2026-08-22).
+     *
+     * 종전에는 `/frontmatter 가 곧 그래프/` 라는 그 시절 문구를 정규식으로
+     * 찾고 있었다. 이 시험이 증명하려는 것은 「펼치면 안내줄이 보인다」이지
+     * 「안내줄이 이 문장이다」가 아닌데, 문구를 못박아 두면 말을 더 쉽게
+     * 고치는 순간 내용이 맞는데도 빨개진다 — `documentation.md` 가
+     * *"사람이 판단해서 쓴 문장은 검사하지 않는다"* 로 이미 금지한 모양이고,
+     * 실제로 용어집 정리(`docs/GLOSSARY.md`)에서 이 시험이 걸렸다.
+     */
+    const note = screen.getByTestId("doc-frontmatter-note");
+    expect(note).toBeVisible();
+    expect((note.textContent ?? "").trim().length).toBeGreaterThan(0);
   });
 
   it("never deletes the graph-source fields — only collapses them", () => {

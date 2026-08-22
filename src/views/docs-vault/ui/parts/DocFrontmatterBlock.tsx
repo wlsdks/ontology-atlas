@@ -689,7 +689,8 @@ export function DocFrontmatterBlock({
           </div>
         ) : null}
         {quickPatchSection}
-        <p className="mt-2 flex items-center gap-1.5 text-label text-[color:var(--color-text-quaternary)]">
+        <p
+          data-testid="doc-frontmatter-note" className="mt-2 flex items-center gap-1.5 text-label text-[color:var(--color-text-quaternary)]">
           <svg width="16" height="6" viewBox="0 0 16 6" aria-hidden="true" className="shrink-0">
             <line
               x1="1"
