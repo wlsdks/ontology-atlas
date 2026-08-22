@@ -253,6 +253,34 @@ const ZERO_DOME_FRAME: DomeNodeFrame = { dx: 0, dy: 0, s: 1, a: 0, u: 0 };
 export function lastDrawnNodeAlphas(): ReadonlyMap<string, number> {
   return effectiveAlphaByIdReused;
 }
+
+/**
+ * The label boxes this frame actually **drew**, in CSS pixels.
+ *
+ * Why this has to exist: label collision is the one map-readability property that
+ * cannot be observed from outside. The canvas has no DOM, so an e2e spec can only
+ * compare pixels — which says "something changed", never "these two names are on
+ * top of each other". `__atlasMap.nodes()` exposes node centres and radii, and
+ * those measured **zero** overlaps on a frame whose labels were visibly crossing
+ * (2026-08-22): names collide long before the discs do.
+ *
+ * Recorded at the draw call rather than from the placement result, for the same
+ * reason `lastDrawnNodeAlphas` is: the placer decides, but a later stage (the LOD
+ * presence ramp) can still put a candidate on screen. What matters for readability
+ * is what was painted.
+ */
+let drawnLabelBoxes: { nodeId: string; text: string; minX: number; minY: number; maxX: number; maxY: number }[] = [];
+
+export function lastDrawnLabelBoxes(): readonly {
+  nodeId: string;
+  text: string;
+  minX: number;
+  minY: number;
+  maxX: number;
+  maxY: number;
+}[] {
+  return drawnLabelBoxes;
+}
 // Cluster-chip hover colour easing anchor: which chip has been hovered since
 // when (only one can be hovered at a time). The rest→hover colour transition
 // (~150ms) is driven from this start time. Under reduced-motion the colour snaps,
@@ -2392,6 +2420,8 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
       : null;
   const labelRankEntries: LabelRankEntry[] = [];
   const labelCandidates: LabelCandidate<LabelPayload>[] = [];
+  /** Per-frame bbox by node id — the instrument reads this after the draw. */
+  const labelBboxById = new Map<string, { minX: number; minY: number; maxX: number; maxY: number }>();
   // perf 2026-08-19 — when the early exit for on-demand 3D labels is valid: on a
   // frame where a keep (hover, ego, trail) is impossible because there is no focus,
   // pair, or lens, an assembly ramp a ≥ 0.98 gives 1 - a ≤ 0.02, and both the
@@ -2567,11 +2597,13 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
         labelBaselineY = flipped;
       }
     }
+    const candidateBbox = boxAt(labelBaselineY);
+    labelBboxById.set(node.id, candidateBbox);
     labelCandidates.push({
       priority,
       order: index,
       ownerId: node.id,
-      bbox: boxAt(labelBaselineY),
+      bbox: candidateBbox,
       payload: {
         nodeId: node.id,
         kind: node.kind,
@@ -2645,7 +2677,14 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
   }
   prevPlacedLabelIds = placedIds;
 
+  drawnLabelBoxes = [];
   for (const { payload, presenceAlpha } of drawList) {
+    // Only a label the eye can actually read counts as drawn — below this the
+    // glyphs are a smudge and cannot collide with anything in a way a reader sees.
+    if (presenceAlpha > 0.5) {
+      const box = labelBboxById.get(payload.nodeId);
+      if (box) drawnLabelBoxes.push({ nodeId: payload.nodeId, text: payload.text, ...box });
+    }
     labelsDraw(
       ctx,
       {
