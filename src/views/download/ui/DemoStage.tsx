@@ -155,9 +155,10 @@ function DemoPlayer({ clip }: { clip: DemoClip }) {
         {/*
          * `preload="none"` — the gateway's first bytes belong to the map and the download button.
          * `muted` + `playsInline` are the conditions for silent autoplay, and the sound is **zero,
-         * including any BGM**. `controls` is enabled only after playback starts: the clip runs long
-         * enough that people want to scrub back, but a control bar over the poster before it starts
-         * takes ink from the first impression.
+         * including any BGM**. `controls` is enabled only after playback starts, so that a control
+         * bar over the poster does not take ink from the first impression. (It used to be
+         * justified by "the clip is long enough to want to scrub"; at nine seconds that is no
+         * longer the reason — what it still buys is replay without a reload.)
          */}
         {/*
          * Without `key={locale}`, **a Korean page plays the English video.**
