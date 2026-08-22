@@ -89,7 +89,7 @@ export function DemoStage({ available }: { available?: readonly DemoClip['id'][]
     <section
       data-testid="demo-stage"
       aria-label={t('demoHeading')}
-      className="min-w-0 max-w-[var(--gateway-stage-max)]"
+      className="mx-auto min-w-0 max-w-[var(--gateway-stage-max)]"
     >
       <DemoPlayer clip={clip} />
       {/*
@@ -108,7 +108,7 @@ export function DemoStage({ available }: { available?: readonly DemoClip['id'][]
        */}
       <p
         data-testid="demo-provisional-note"
-        className="mt-3.5 break-keep font-mono text-caption leading-caption text-[color:var(--color-text-quaternary)]"
+        className="mt-3.5 break-keep text-center font-mono text-caption leading-caption text-[color:var(--color-text-quaternary)]"
       >
         {t('demoProvisionalNote', { seconds: clip.seconds })}
       </p>
