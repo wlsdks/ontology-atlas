@@ -640,22 +640,27 @@ describe('DownloadPage', () => {
   });
 
   /**
-   * The demo section states honestly what asset is attached — while both locales share the same
-   * Korean-UI capture, that fact must be on screen so an English visitor is not misled.
+   * The demo section states the length of the asset that is actually attached.
    *
    * ⚠️ **Do not pin a sentence a human wrote** (`.claude/rules/documentation.md`). The 2026-08-03
    * version matched `/provisional 24s capture/` whole, and when new footage changed both the length
    * and the wording it went red for "is the sentence unchanged" rather than "is it honest" — which
-   * is not the property this test protects. Check only what a machine can produce: ① the seconds on
-   * screen equal the registry's measured `seconds` ② the fact that both locales share one recording
-   * is stated. The wording is free to change.
+   * is not the property this test protects. What is checked is the one thing a machine can produce:
+   * the seconds on screen equal the registry's measured `seconds`. The wording is free to change.
+   *
+   * **A second assertion used to live here and was removed on 2026-08-22, not weakened.** It
+   * required the note to say both locales shared one Korean-UI recording, which was the honest
+   * thing to state while that was true. English footage was filmed, so the sentence it demanded
+   * became the false one — the assertion would have forced the screen to keep claiming a defect it
+   * no longer had. What that assertion was really guarding (an English visitor being shown a Korean
+   * screen) is now held by something stronger than copy: `demo-clip-assets.contract` compares the
+   * two locales' bytes, so the two files cannot silently become one again.
    */
-  it('states honestly that the demo clip is a shared capture, at the registry length', () => {
+  it('states the attached clip at the registry length', () => {
     renderDownloadPage();
 
     const note = screen.getByTestId('demo-provisional-note');
     expect(note).toHaveTextContent(new RegExp(`${DEMO_CLIPS[0].seconds}s`, 'i'));
-    expect(note).toHaveTextContent(/Korean-UI recording/i);
   });
 
   // ─── One screen, one version (regression 2026-07-28) ──────────────────────

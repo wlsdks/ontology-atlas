@@ -77,6 +77,38 @@ describe('시연 클립 — 선언과 자산', () => {
           expect(Math.abs(measured - clip.seconds)).toBeLessThan(1);
         });
       }
+
+      /**
+       * **The two locales must be two recordings, not one file under two names.**
+       *
+       * For its first two days this asset was a single Korean master copied to both paths, and
+       * every check above stayed green throughout: both files existed, both were over 10KB, both
+       * measured the declared length. Nothing in the suite could tell the difference, so the only
+       * thing keeping the page honest was a clause in `demoProvisionalNote` — and that clause is
+       * now gone, because per-locale footage was filmed on 2026-08-22.
+       *
+       * Which is exactly when this needs a gate. Re-copying one locale over the other is a
+       * one-line accident during any future swap, and it would put an English speaker back in
+       * front of a Korean screen with no signal anywhere.
+       *
+       * Bytes, not pixels: two takes of the same beats are never byte-identical, and anything
+       * subtler than "these are the same file" is not what this is defending against.
+       */
+      it('두 로케일이 같은 파일이 아니다 — 한쪽을 덮어써도 위 검사는 전부 초록이다', () => {
+        for (const ext of ['webm', 'mp4', '-poster.png'] as const) {
+          const name = (locale: string) =>
+            ext.startsWith('-')
+              ? `${clip.basename}.${locale}${ext}`
+              : `${clip.basename}.${locale}.${ext}`;
+          const ko = readFileSync(join(DEMO_DIR, name('ko')));
+          const en = readFileSync(join(DEMO_DIR, name('en')));
+          expect(ko.length, `${name('ko')} 가 비었다 — 이 시험이 헛돈다`).toBeGreaterThan(10_000);
+          expect(
+            ko.equals(en),
+            `${name('ko')} 와 ${name('en')} 이 같은 파일이다 — 한 언어 사용자가 다른 언어 화면을 본다`,
+          ).toBe(false);
+        }
+      });
     });
   }
 });
