@@ -1,6 +1,7 @@
 import { expect, test, type Page } from "@playwright/test";
 import { seedFirstRunSeen } from "./first-run-seed";
 import { stubDirectoryPicker } from "./vault-picker-stub";
+import ko from "../../messages/ko.json";
 
 /**
  * Web surface smoke — the only eye on an unattended surface.
@@ -439,9 +440,18 @@ test.describe("웹 스모크 ③ 정직한 강등", () => {
     // A config still holding placeholders will not attach, so copy stays locked.
     await expect(page.getByTestId("web-manual-connect-copy-config")).toBeDisabled();
 
-    // Never claim to have verified something that was never verified.
+    /*
+     * Never claim to have verified something that was never verified.
+     *
+     * **Read the sentence from the catalogue, do not retype it.** A hand-typed
+     * excerpt (`증명할 수 없어요`) broke on 2026-08-22 when the copy was made plainer
+     * — `증명하지 못해요` — which changed nothing about the claim, and a regex written
+     * to cover both missed it again on the verb ending. What this proves is that the
+     * screen renders *that* note; whether the note is well worded is the glossary
+     * gate's job (`ui-copy-glossary.contract.test.ts`), not this spec's.
+     */
     await expect(page.getByTestId("web-manual-connect-shape-only")).toContainText(
-      "증명할 수 없어요",
+      ko.agentConnect.manualShapeOnlyNote,
     );
 
     // A `~` does not expand inside a config file — catch it and say why.

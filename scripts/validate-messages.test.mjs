@@ -558,16 +558,27 @@ describe('i18n message catalog', () => {
     ].join('\n');
 
     assert.equal(ko.docsVault.desktopWelcome.title, '로컬 문서함을 열거나 만드세요');
-    assert.equal(ko.docsVault.desktopWelcome.contractAriaLabel, '문서함 실행 계약');
+    /*
+     * ⚠️ **Wording is no longer pinned here** (2026-08-22). These two used to pin
+     * '문서함 실행 계약' and '문서 속성이 의미 그래프'. `docs/GLOSSARY.md` retired
+     * 「계약」 and 「문서 속성」 as screen words — the very jargon this test's name
+     * says it guards against — so the pins broke on a change made *in their
+     * direction*. Pinning an authored sentence is what `documentation.md` forbids;
+     * what is checked now is the property, and `ui-copy-glossary.contract.test.ts`
+     * owns the banned-word list.
+     */
+    assert.doesNotMatch(ko.docsVault.desktopWelcome.contractAriaLabel, /계약/);
+    assert.ok(ko.docsVault.desktopWelcome.contractAriaLabel.length > 0);
     assert.equal(ko.docsVault.desktopWelcome.contractFilesLabel, '문서함 파일');
-    assert.equal(ko.docsVault.desktopWelcome.contractGraphValue, '문서 속성이 의미 그래프');
+    assert.doesNotMatch(ko.docsVault.desktopWelcome.contractGraphValue, /문서 속성|프론트매터/);
     assert.equal(ko.docsVault.desktopWelcome.contractAgentLabel, 'AI 확인');
     assert.equal(ko.docsVault.desktopWelcome.actionsAriaLabel, '문서함 시작 액션');
     assert.equal(ko.docsVault.sourceContract.filesLabel, '문서함 파일');
     assert.equal(ko.docsVault.sourceContract.graphValue, '개념 {nodes}개 · 관계 {edges}개');
     assert.equal(ko.docsVault.sourceContract.agentLabel, 'AI 확인');
-    assert.match(ko.docsVault.desktopWelcome.body, /문서 상단의 속성/);
-    assert.match(ko.docsVault.desktopWelcome.contractGraphValue, /문서 속성/);
+    // The plain phrase replaced 「문서 상단의 속성」 / 「문서 속성」 — both screens now
+    // say 「파일 맨 위 정보칸」, and the glossary gate keeps the old names out.
+    assert.match(ko.docsVault.desktopWelcome.contractGraphValue, /정보칸/);
     assert.match(ko.docsVault.sourceContract.graphBody, /지도/);
     assert.doesNotMatch(
       welcomeCopy,
@@ -636,12 +647,14 @@ describe('i18n message catalog', () => {
     assert.equal(en.nav.settingsMenu.vaultCtaLocal, 'Open');
     assert.equal(en.nav.settingsMenu.vaultCtaStatic, 'Get started');
     assert.equal(en.docsVault.desktopWelcome.title, 'Open or create a local workspace');
-    assert.equal(en.docsVault.desktopWelcome.contractAriaLabel, 'Workspace contract');
+    // Property, not wording — see the Korean half of this file for why.
+    assert.doesNotMatch(en.docsVault.desktopWelcome.contractAriaLabel, /\bcontract\b/i);
+    assert.ok(en.docsVault.desktopWelcome.contractAriaLabel.length > 0);
     assert.equal(en.docsVault.desktopWelcome.contractFilesLabel, 'Workspace files');
-    assert.equal(en.docsVault.desktopWelcome.contractGraphValue, 'Document properties become a meaning graph');
+    assert.doesNotMatch(en.docsVault.desktopWelcome.contractGraphValue, /frontmatter/i);
     assert.equal(en.docsVault.desktopWelcome.contractAgentLabel, 'AI check');
     assert.equal(en.docsVault.desktopWelcome.actionsAriaLabel, 'Workspace setup actions');
-    assert.equal(en.docsVault.sourceContract.ariaLabel, 'Current workspace contract');
+    assert.doesNotMatch(en.docsVault.sourceContract.ariaLabel, /\bcontract\b/i);
     assert.equal(en.docsVault.sourceContract.filesLabel, 'Workspace files');
     assert.equal(en.docsVault.sourceContract.graphValue, '{nodes} concepts · {edges} relations');
     assert.equal(en.docsVault.sourceContract.agentLabel, 'AI check');
