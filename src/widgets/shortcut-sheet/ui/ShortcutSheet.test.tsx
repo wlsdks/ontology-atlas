@@ -87,6 +87,16 @@ describe("ShortcutSheet — kind glossary (P1a-2)", () => {
   });
 });
 
+describe("ShortcutSheet — relation guide", () => {
+  it("keeps the three real line encodings in pull-only help instead of the map corner", () => {
+    renderSheet();
+    const guide = screen.getByTestId("shortcut-sheet-relation-guide");
+    expect(guide).toHaveTextContent("Contains");
+    expect(guide).toHaveTextContent("Depends on");
+    expect(guide).toHaveTextContent("Related to");
+  });
+});
+
 
 // #67 — 40여 행을 2열로 한 번에 쏟아 1512×900 에서 다이얼로그가 뷰포트의 95%
 // (852px)를 먹고 하단이 잘렸다. 해법은 **숨기기가 아니라 분류** — `전체` 탭이

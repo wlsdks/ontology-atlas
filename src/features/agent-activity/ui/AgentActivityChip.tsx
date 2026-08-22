@@ -7,9 +7,9 @@ import { ICON_SIZE } from '@/shared/ui/icon-size';
 
 import { Link } from '@/i18n/navigation';
 import { getTopologyFocusHref } from '@/entities/project';
-import { CHROME_STATUS_CHIP_CLASS } from '@/shared/ui/chrome-chip';
+import { ChromeChip, CHROME_STATUS_CHIP_CLASS } from '@/shared/ui/chrome-chip';
 import { controlClass } from '@/shared/ui/control-class';
-import { IconButton, RowButton } from '@/shared/ui/controls';
+import { RowButton } from '@/shared/ui/controls';
 import { Surface } from '@/shared/ui/surface';
 import { cn } from '@/shared/lib/cn';
 import { useRowDisclosure } from '@/shared/lib/use-row-disclosure';
@@ -105,49 +105,17 @@ function WorkReceiptRow({ receipt, nowMs }: { receipt: AcpWorkReceipt; nowMs: nu
 }
 
 /**
- * 「작업 중 / 마지막 작업」 칩 + 벨 + 알림함.
+ * 검증된 「현재/마지막 작업」 판독과 과거 알림을 한 feed에서, 두 문으로 낸다.
  *
- * ## 자리는 실측이 정했다 — 지도 우하단 판독 스택
+ * - 상태 행은 우상단 지도 도구줄 **아래**에서 현재 에이전트·단계·대상만 연다.
+ * - 종은 도구줄 **맨 오른쪽** 정사각 타일이고 알림·작업 영수증만 연다.
+ * - 안 읽은 수는 타일 안의 absolute badge라 버튼 폭을 늘리지 않는다.
  *
- * 상단 중앙 상태 열(영역·경로·걸어온 길)이 갈래로는 맞았지만 **1024 에서
- * 안 들어간다**: 그 열은 INDEX 패널 오른끝(388px)에서 69px 떨어져 있는데 이
- * 칩은 194px 이라 32px 겹쳤다. 우상단 유틸 레인도 28px 만 남았다. 저 열의
- * 칩 넷은 사용자가 **자기 손으로 만든 일시 상태**라 그 여유를 알고 쓰는 것이고,
- * 이건 **상시**다.
- *
- * 우하단 판독 스택은 좌우로 다툴 상대가 없고, 토스트가 이미 그 스택의 실제
- * rect 를 읽어 위로 비켜선다(`resolveToastBottomOffsetForStack`) — 줄이 하나
- * 늘면 토스트가 저절로 올라간다. 갈래도 맞다: 범례·첫 실행 판독·프레임 계기가
- * 사는 **앰비언트 판독**의 집이다. 팝오버는 화면 아래에 있으므로 **위로** 연다.
- *
- * ## 「연결됨」이라고 쓰지 않는다
- *
- * Atlas 는 에이전트에 연결하지 않는다 — **폴더를 볼 뿐이다.** 연결이 없으니
- * 「연결됨」은 거짓말이고, 「마지막 작업 N분 전」은 언제 말해도 참이다.
- *
- * ## 헌장
- *
- * 무채색 + 인디고 하나. 「작업 중」 점은 **인디고**다 — success(emerald)는
- * "연결됨/완료" 신호에만 쓰라는 확장 금지가 걸려 있고, 작업 중은 성공이
- * 아니다. 문제 알림만 신호 톤 warning 을 쓴다. pulse·glow·scale-hover 없음:
- * 벨 배지가 늘 때 장식 모션을 넣지 않는다(「한 입력 = 한 사건」).
- */
-/**
- * **한 줄이 한 곳에 산다** (2026-08-17 소유자 지적으로 되돌렸다).
- *
- * 처음 지시(*"사용자가 위는 봐도 아래는 잘 안볼듯한데"*)를 받고 **종만** 위로
- * 올리고 상태 줄은 아래 남겼다. 그 결과를 소유자가 셋으로 지적했고, 셋 다 같은
- * 뿌리였다 — **컨트롤만 옮기고 기하는 아래 있던 그대로 뒀다.**
- *
- * | 지적 | 실측 | 원인 |
- * |---|---|---|
- * | *"가로로 너무 길고"* | 종 40×24 (비 1.67) | 아이콘 하나가 **글줄용 칩 껍데기**에 들어 있었다 |
- * | *"누르면 제대로 안보이고"* | 알림함 윗변이 화면 위로 **122px** 잘림 | `bottom-full` 로 **위로** 자란다. 하단에 살던 시절의 기하다 |
- * | *"하단에는 그대로 이게 있고..? 헷갈리는데"* | 활동 줄 **2곳** | 같은 사실이 두 곳 |
- *
- * 그래서 지시의 「줄 전체를 하단으로」를 그대로 따른다: 상태 줄과 종이 **한
- * 칩**으로 「에이전트 / 최근 변경」 **아래 줄**에 함께 산다. 지도 하단에는
- * 아무것도 남기지 않는다. 게이트: `tests/e2e/agent-activity-placement.spec.ts`.
+ * 둘을 별도 훅으로 만들지 않는 이유는 디스크 폴링과 읽음 기준을 복제하지 않기
+ * 위해서다. 이 root 하나가 feed, 바깥 클릭, Escape, 포커스 복귀를 함께 소유한다.
+ * Atlas는 에이전트와 「연결됨」을 주장하지 않는다. fresh heartbeat만 현재형으로,
+ * 그 밖에는 「마지막 작업 N분 전」으로 말한다. 게이트는
+ * `tests/e2e/agent-activity-placement.spec.ts`가 위치·정사각·폭·겹침을 실측한다.
  */
 export function AgentActivityChip({
   suppressed = false,
@@ -178,7 +146,8 @@ export function AgentActivityChip({
   const t = useTranslations('agentActivity');
   const format = useFormatter();
   const feed = useAgentActivityFeed(liveWork);
-  const [open, setOpen] = useState(false);
+  const [openSurface, setOpenSurface] = useState<'status' | 'notifications' | null>(null);
+  const open = openSurface !== null;
   const rootRef = useRef<HTMLDivElement | null>(null);
   const statusRef = useRef<HTMLButtonElement | null>(null);
   const bellRef = useRef<HTMLButtonElement | null>(null);
@@ -193,7 +162,7 @@ export function AgentActivityChip({
 
   const close = useCallback(
     (returnFocus: boolean) => {
-      setOpen(false);
+      setOpenSurface(null);
       if (returnFocus) {
         const trigger = openTriggerRef.current === 'bell' ? bellRef.current : statusRef.current;
         trigger?.focus();
@@ -253,291 +222,264 @@ export function AgentActivityChip({
             ? t('lastWorkedAtAgent', { agent: feed.agentName, age: age ?? '' })
             : t('lastWorkedAt', { age: age ?? '' });
   const targetPrefix = feed.work.mode === 'live' ? t('currentTarget') : t('lastTarget');
-  const openInbox = (trigger: 'status' | 'bell') => {
-    if (open) {
+  const openPanel = (trigger: 'status' | 'bell') => {
+    const surface = trigger === 'status' ? 'status' : 'notifications';
+    if (openSurface === surface) {
       close(false);
       return;
     }
     openTriggerRef.current = trigger;
-    setOpen(true);
-    feed.markAllRead();
+    setOpenSurface(surface);
+    if (trigger === 'bell') feed.markAllRead();
   };
 
   return (
     <div
       ref={rootRef}
-      className="pointer-events-auto relative min-w-0"
+      className="contents"
       data-testid="agent-activity-chip"
       data-work-mode={feed.work.mode}
     >
-      {/* **상자는 내용이 정한다.** 칩 껍데기는 «글줄» 을 담는 것이라 좌우
-          14px 안여백을 갖는다. 말할 상태가 없어 종 하나만 남는 경우
-          (상태 표시를 끈 설정)에 그 껍데기를 씌우면 아이콘 하나가 56px 짜리
-          가로로 긴 상자에 앉는다 — 소유자가 지적한 바로 그 모양이다. */}
-      <div
-        className={showStatus ? CHROME_STATUS_CHIP_CLASS : 'pointer-events-auto flex items-center'}
-        data-writing={feed.writing ? 'true' : 'false'}>
-        {showStatus ? (
-          <>
-            <button
-              ref={statusRef}
-              type="button"
-              aria-haspopup="true"
-              aria-expanded={open}
-              aria-label={t('statusAria', { status: statusLabel })}
-              data-testid="agent-activity-status-trigger"
-              onClick={() => openInbox('status')}
-              className={controlClass({
-                shape: 'link',
-                hoverInk: 'strong',
-                className: 'min-w-0 gap-1.5 text-left text-inherit',
-              })}
+      {showStatus ? (
+        <div
+          className={cn(
+            CHROME_STATUS_CHIP_CLASS,
+            'absolute right-0 top-[calc(100%+8px)] min-w-0',
+          )}
+          data-agent-activity-status-slot="utility-row-below"
+          data-writing={feed.writing ? 'true' : 'false'}
+        >
+          <button
+            ref={statusRef}
+            type="button"
+            aria-haspopup="true"
+            aria-expanded={openSurface === 'status'}
+            aria-label={t('statusAria', { status: statusLabel })}
+            data-testid="agent-activity-status-trigger"
+            onClick={() => openPanel('status')}
+            className={controlClass({
+              shape: 'link',
+              hoverInk: 'strong',
+              className: 'min-w-0 gap-1.5 text-left text-inherit',
+            })}
+          >
+            <span
+              aria-hidden
+              data-testid="agent-activity-dot"
+              className={cn(
+                'inline-block size-1.5 shrink-0 rounded-full',
+                feed.writing
+                  ? 'bg-[color:var(--color-indigo-accent)]'
+                  : 'bg-[color:var(--color-text-quaternary)]',
+              )}
+            />
+            <span
+              data-testid="agent-activity-status"
+              className="min-w-0 truncate text-[color:var(--color-text-primary)]"
             >
-              {/* 상태는 색이 아니라 **글**이 말한다 — 점은 거들 뿐이라 색을
-                  못 보는 사람도 문구만으로 판정이 선다(WCAG 1.4.1). */}
-              <span
-                aria-hidden
-                data-testid="agent-activity-dot"
-                className={cn(
-                  'inline-block size-1.5 shrink-0 rounded-full',
-                  feed.writing
-                    ? 'bg-[color:var(--color-indigo-accent)]'
-                    : 'bg-[color:var(--color-text-quaternary)]',
-                )}
-              />
-              <span
-                data-testid="agent-activity-status"
-                className="min-w-0 truncate text-[color:var(--color-text-primary)]"
-              >
-                {statusLabel}
+              {statusLabel}
+            </span>
+          </button>
+          {feed.lastNode ? (
+            <span className="flex min-w-0 items-center gap-1.5 max-md:hidden">
+              <span aria-hidden className="shrink-0 text-[color:var(--color-text-quaternary)]">
+                ·
               </span>
-            </button>
-            {/* 대상이 없으면(배치 쓰기·문서 흡수, 또는 볼트에서 사라진 슬러그)
-                **대상 없이 상태만** 말한다. 죽은 링크를 만들지 않는다. */}
-            {feed.lastNode ? (
-              // 축약 사다리 — 폭이 귀한 폰(<md)에서만 대상 이름을 접는다.
-              // 접힌 구간에서도 대상은 알림함의 「작업 끝」 줄이 그대로 들고 있다.
-              <span className="flex min-w-0 items-center gap-1.5 max-md:hidden">
-                <span aria-hidden className="shrink-0 text-[color:var(--color-text-quaternary)]">
-                  ·
-                </span>
-                {onOpenNode ? (
-                  <button
-                    type="button"
-                    onClick={() => onOpenNode(feed.lastNode!.slug)}
-                    data-testid="agent-activity-target"
-                    aria-label={t('openOnMap', { name: feed.lastNode.name })}
-                    className={controlClass({
-                      shape: 'link',
-                      tone: 'accent',
-                      hoverInk: 'strong',
-                      className:
-                        'min-w-0 max-w-40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-accent)]',
-                    })}
-                  >
-                    <span className="shrink-0 text-[color:var(--color-text-quaternary)]">
-                      {targetPrefix}:
-                    </span>
-                    <span className="min-w-0 truncate">{feed.lastNode.name}</span>
-                  </button>
-                ) : (
-                  <Link
-                    href={getTopologyFocusHref(feed.lastNode.slug)}
-                    data-testid="agent-activity-target"
-                    aria-label={t('openOnMap', { name: feed.lastNode.name })}
-                  /*
-                   * ⚠️ `truncate` 축을 쓰지 않는다 (2026-08-17 소유자 지적 →
-                   * 실측). 그 축은 `block truncate` 를 내는데, `block` 이
-                   * 이 모양의 `inline-flex` 를 밀어낸다(tailwind-merge). 그러면
-                   * `items-center` 가 가운데 맞출 대상이 없어져서, 24px 짜리
-                   * `min-h-6` 상자 안에서 **글자가 위에 붙는다**.
-                   *
-                   * 실측: 같은 줄의 이웃 글자가 윗선 17~18px 인데 이 링크만
-                   * 14px 이었다 — 3px 위로 떠 있었다(글자 크기는 같다, 둘 다
-                   * 잉크 높이 9px). 그래서 자르기는 안쪽 글자에 맡기고
-                   * 모양은 그대로 둔다.
-                   */
-                    className={controlClass({
-                      shape: 'link',
-                      tone: 'accent',
-                      hoverInk: 'strong',
-                      className:
-                        'min-w-0 max-w-40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-accent)]',
-                    })}
-                  >
-                    <span className="shrink-0 text-[color:var(--color-text-quaternary)]">
-                      {targetPrefix}:
-                    </span>
-                    <span className="min-w-0 truncate">{feed.lastNode.name}</span>
-                  </Link>
-                )}
-              </span>
-            ) : null}
-          </>
-        ) : null}
-        {showBell ? (
-          <>
-            {showStatus ? (
-              <span
-                aria-hidden
-                className="h-4 w-px shrink-0 bg-[color:var(--color-divider)]"
-              />
-            ) : null}
-            {/*
-              * 정사각 아이콘 컨트롤의 정본은 `IconButton`(shape: 'icon')이다.
-              * 종전에는 `shape: 'segment'` 였는데 그건 **가로로 늘어나는** 모양
-              * 이라 아이콘 하나를 담자 40×24(비 1.67)가 됐다.
-              *
-              * 안 읽은 개수는 **버튼 밖**에 둔다. 안에 두면 그 폭만큼 버튼이
-              * 다시 늘어나 정사각이 깨진다 — 모양을 고쳐 놓고 내용으로 되돌리는
-              * 셈이다. 칩의 `gap-1.5` 리듬을 그대로 타는 형제가 맞다.
-              */}
-            <IconButton
-              ref={bellRef}
-              size="sm"
-              onClick={() => {
-                openInbox('bell');
-              }}
-              aria-haspopup="true"
-              aria-expanded={open}
-              label={
-                feed.unreadCount > 0
-                  ? t('bellUnreadAria', { count: feed.unreadCount })
-                  : t('bellAria')
-              }
-              data-testid="agent-activity-bell"
-              className="-mr-1 shrink-0 hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-accent)]"
-            >
-              <Bell size={ICON_SIZE.sm} aria-hidden />
-            </IconButton>
-            {feed.unreadCount > 0 ? (
+              {onOpenNode ? (
+                <button
+                  type="button"
+                  onClick={() => onOpenNode(feed.lastNode!.slug)}
+                  data-testid="agent-activity-target"
+                  aria-label={t('openOnMap', { name: feed.lastNode.name })}
+                  className={controlClass({
+                    shape: 'link',
+                    tone: 'accent',
+                    hoverInk: 'strong',
+                    className:
+                      'min-w-0 max-w-40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-accent)]',
+                  })}
+                >
+                  <span className="shrink-0 text-[color:var(--color-text-quaternary)]">
+                    {targetPrefix}:
+                  </span>
+                  <span className="min-w-0 truncate">{feed.lastNode.name}</span>
+                </button>
+              ) : (
+                <Link
+                  href={getTopologyFocusHref(feed.lastNode.slug)}
+                  data-testid="agent-activity-target"
+                  aria-label={t('openOnMap', { name: feed.lastNode.name })}
+                  className={controlClass({
+                    shape: 'link',
+                    tone: 'accent',
+                    hoverInk: 'strong',
+                    className:
+                      'min-w-0 max-w-40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-accent)]',
+                  })}
+                >
+                  <span className="shrink-0 text-[color:var(--color-text-quaternary)]">
+                    {targetPrefix}:
+                  </span>
+                  <span className="min-w-0 truncate">{feed.lastNode.name}</span>
+                </Link>
+              )}
+            </span>
+          ) : null}
+        </div>
+      ) : null}
+
+      {showBell ? (
+        <ChromeChip
+          ref={bellRef}
+          compact
+          active={openSurface === 'notifications'}
+          onClick={() => openPanel('bell')}
+          aria-haspopup="true"
+          aria-expanded={openSurface === 'notifications'}
+          aria-label={
+            feed.unreadCount > 0
+              ? t('bellUnreadAria', { count: feed.unreadCount })
+              : t('bellAria')
+          }
+          data-testid="agent-activity-bell"
+          data-agent-activity-bell-slot="utility-row-end"
+          className="relative shrink-0 overflow-visible"
+          icon={<Bell aria-hidden />}
+          badge={
+            feed.unreadCount > 0 ? (
               <span
                 data-testid="agent-activity-unread"
-                className="inline-flex h-4 min-w-4 shrink-0 items-center justify-center rounded-full bg-[color:var(--color-indigo-a32)] px-1 font-mono text-caption tabular-nums text-[color:var(--color-indigo-text-soft)]"
+                className="absolute -right-1 -top-1 inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-[color:var(--color-indigo-a32)] px-1 font-mono text-caption tabular-nums text-[color:var(--color-indigo-text-soft)]"
               >
-                {feed.unreadCount}
+                {feed.unreadCount > 99 ? '99+' : feed.unreadCount}
               </span>
-            ) : null}
-          </>
-        ) : null}
-      </div>
-      {/* 알림함은 종 버튼 **아래**로 자란다. 등장 원점을 트리거 쪽(오른쪽 위)에
-          맞춘다 — 중앙에서 태어나면 누른 자리와 나타나는 자리가 끊긴다.
-          ⚠️ 방향은 **칩이 어디 사는지**가 정한다. 이 칩이 지도 하단에 살던 시절
-          에는 위로 자랐고(`bottom-full`), 우상단으로 올라온 뒤 그 방향이 곧
-          화면 밖이 됐다 — 실측 −122px. 자리를 옮기면 이 줄도 같이 본다. */}
+            ) : null
+          }
+        />
+      ) : null}
+
       <Surface
         open={open}
         origin="top right"
         role="group"
-        aria-label={t('inboxTitle')}
+        aria-label={t(openSurface === 'notifications' ? 'notificationTitle' : 'inboxTitle')}
         data-testid="agent-activity-inbox"
-        // 오른쪽 지도 도구 열과 정확히 한 타일+간격만큼 가른다. 표면이 위에
-        // 그려져도 rect가 겹치면 반투명 배경 아래 아이콘이 행 액션처럼 비친다.
+        data-agent-activity-panel={openSurface ?? undefined}
         style={{ right: 'calc(var(--chrome-tile-size) + 8px)' }}
-        // `whitespace-normal` 은 필수다 — 이 패널이 사는 판독 스택은 컨테이너에
-        // `whitespace-nowrap` 을 걸어 두므로(범례·판독은 한 줄짜리 문구다),
-        // 상속을 끊지 않으면 푸터 문장이 패널 밖으로 흘러나간다(1512 실측).
-        className="absolute top-[calc(100%+8px)] z-30 w-[280px] overflow-hidden whitespace-normal rounded-chip border border-[color:var(--topology-floating-panel-border)] bg-[color:var(--topology-floating-panel-surface)] shadow-[var(--topology-floating-panel-shadow)]"
+        className={cn(
+          'absolute z-30 w-[var(--topology-v2-panel-width)] overflow-hidden whitespace-normal rounded-[var(--topology-v2-panel-radius)] border border-[color:var(--topology-floating-panel-border)] bg-[color:var(--topology-floating-panel-surface)] shadow-[var(--topology-floating-panel-shadow)]',
+          openSurface === 'status' || showStatus
+            ? 'top-[calc(100%+52px)]'
+            : 'top-[calc(100%+8px)]',
+        )}
       >
-          <div className="flex items-center justify-between gap-2 border-b border-[color:var(--topology-floating-panel-divider)] px-3 py-2 font-mono text-caption uppercase tracking-[var(--tracking-caps-14)] text-[color:var(--color-text-quaternary)]">
-            <span className="min-w-0 flex-1 truncate">{t('inboxTitle')}</span>
-          </div>
-          {feed.work.mode !== 'idle' ? (
-            <section
-              data-testid="agent-activity-current-work"
-              className="border-b border-[color:var(--topology-floating-panel-divider)] px-3 py-3"
-            >
-              <div className="flex min-w-0 items-center justify-between gap-2">
-                <span className="min-w-0 truncate text-label text-[color:var(--color-text-primary)]">
-                  {feed.agentName ?? t('unknownAgent')}
-                </span>
-                <span className="shrink-0 font-mono text-caption text-[color:var(--color-text-tertiary)]">
-                  {feed.work.mode === 'live'
-                    ? phase ?? t('writing')
-                    : feed.work.mode === 'recent-write'
-                      ? t('recentWriteShort')
-                      : t('complete')}
-                </span>
-              </div>
-              {feed.work.summary ? (
-                <p className="mt-1.5 text-label leading-label text-[color:var(--color-text-secondary)]">
-                  {feed.work.summary}
-                </p>
-              ) : null}
-              <dl className="mt-2 grid grid-cols-[auto_minmax(0,1fr)] gap-x-2 gap-y-1 text-caption leading-label">
-                {feed.lastNode ? (
-                  <>
-                    <dt className="text-[color:var(--color-text-quaternary)]">{t('targetLabel')}</dt>
-                    <dd className="min-w-0">
-                      {onOpenNode ? (
-                        <button
-                          type="button"
-                          onClick={() => onOpenNode(feed.lastNode!.slug)}
-                          className={controlClass({
-                            shape: 'link',
-                            tone: 'accent',
-                            hoverInk: 'strong',
-                            className: 'min-w-0',
-                          })}
-                        >
-                          <span className="min-w-0 truncate">{feed.lastNode.name}</span>
-                        </button>
-                      ) : (
-                        <Link
-                          href={getTopologyFocusHref(feed.lastNode.slug)}
-                          className={controlClass({
-                            shape: 'link',
-                            tone: 'accent',
-                            hoverInk: 'strong',
-                            className: 'min-w-0',
-                          })}
-                        >
-                          <span className="min-w-0 truncate">{feed.lastNode.name}</span>
-                        </Link>
-                      )}
-                    </dd>
-                  </>
-                ) : null}
-                {feed.work.nextStep ? (
-                  <>
-                    <dt className="text-[color:var(--color-text-quaternary)]">{t('nextStepLabel')}</dt>
-                    <dd className="min-w-0 truncate text-[color:var(--color-text-tertiary)]">{feed.work.nextStep}</dd>
-                  </>
-                ) : null}
-                {feed.work.lastTool ? (
-                  <>
-                    <dt className="text-[color:var(--color-text-quaternary)]">{t('toolLabel')}</dt>
-                    <dd className="min-w-0 truncate font-mono text-[color:var(--color-text-tertiary)]">{feed.work.lastTool}</dd>
-                  </>
-                ) : null}
-              </dl>
-            </section>
-          ) : null}
-          {feed.workReceipts.length > 0 ? (
-            <section
-              data-testid="agent-work-receipts"
-              className="border-b border-[color:var(--topology-floating-panel-divider)]"
-            >
-              <p className="px-3 pt-2 font-mono text-caption uppercase tracking-[var(--tracking-caps-14)] text-[color:var(--color-text-quaternary)]">
-                {t('receiptTitle')}
+        <div className="flex items-center justify-between gap-2 border-b border-[color:var(--topology-floating-panel-divider)] px-3 py-2 font-mono text-caption uppercase tracking-[var(--tracking-caps-14)] text-[color:var(--color-text-quaternary)]">
+          <span className="min-w-0 flex-1 truncate">
+            {t(openSurface === 'notifications' ? 'notificationTitle' : 'inboxTitle')}
+          </span>
+        </div>
+
+        {openSurface === 'status' && feed.work.mode !== 'idle' ? (
+          <section
+            data-testid="agent-activity-current-work"
+            className="px-3 py-3"
+          >
+            <div className="flex min-w-0 items-center justify-between gap-2">
+              <span className="min-w-0 truncate text-label text-[color:var(--color-text-primary)]">
+                {feed.agentName ?? t('unknownAgent')}
+              </span>
+              <span className="shrink-0 font-mono text-caption text-[color:var(--color-text-tertiary)]">
+                {feed.work.mode === 'live'
+                  ? phase ?? t('writing')
+                  : feed.work.mode === 'recent-write'
+                    ? t('recentWriteShort')
+                    : t('complete')}
+              </span>
+            </div>
+            {feed.work.summary ? (
+              <p className="mt-1.5 text-label leading-label text-[color:var(--color-text-secondary)]">
+                {feed.work.summary}
               </p>
-              <div className="max-h-[240px] overflow-y-auto px-2 py-1.5">
-                {[...feed.workReceipts].slice(-5).reverse().map((receipt) => (
-                  <WorkReceiptRow key={receipt.id} receipt={receipt} nowMs={feed.nowMs} />
-                ))}
-              </div>
-            </section>
-          ) : null}
-          {feed.notifications.length === 0 && feed.work.mode === 'idle' && feed.workReceipts.length === 0 ? (
-            <p
-              data-testid="agent-activity-inbox-empty"
-              className="px-3 py-4 text-caption leading-label text-[color:var(--color-text-tertiary)]"
-            >
-              {t('inboxEmpty')}
-            </p>
-          ) : (
-            feed.notifications.length > 0 ? (
+            ) : null}
+            <dl className="mt-2 grid grid-cols-[auto_minmax(0,1fr)] gap-x-2 gap-y-1 text-caption leading-label">
+              {feed.lastNode ? (
+                <>
+                  <dt className="text-[color:var(--color-text-quaternary)]">{t('targetLabel')}</dt>
+                  <dd className="min-w-0">
+                    {onOpenNode ? (
+                      <button
+                        type="button"
+                        onClick={() => onOpenNode(feed.lastNode!.slug)}
+                        className={controlClass({
+                          shape: 'link',
+                          tone: 'accent',
+                          hoverInk: 'strong',
+                          className: 'min-w-0',
+                        })}
+                      >
+                        <span className="min-w-0 truncate">{feed.lastNode.name}</span>
+                      </button>
+                    ) : (
+                      <Link
+                        href={getTopologyFocusHref(feed.lastNode.slug)}
+                        className={controlClass({
+                          shape: 'link',
+                          tone: 'accent',
+                          hoverInk: 'strong',
+                          className: 'min-w-0',
+                        })}
+                      >
+                        <span className="min-w-0 truncate">{feed.lastNode.name}</span>
+                      </Link>
+                    )}
+                  </dd>
+                </>
+              ) : null}
+              {feed.work.nextStep ? (
+                <>
+                  <dt className="text-[color:var(--color-text-quaternary)]">{t('nextStepLabel')}</dt>
+                  <dd className="min-w-0 truncate text-[color:var(--color-text-tertiary)]">
+                    {feed.work.nextStep}
+                  </dd>
+                </>
+              ) : null}
+              {feed.work.lastTool ? (
+                <>
+                  <dt className="text-[color:var(--color-text-quaternary)]">{t('toolLabel')}</dt>
+                  <dd className="min-w-0 truncate font-mono text-[color:var(--color-text-tertiary)]">
+                    {feed.work.lastTool}
+                  </dd>
+                </>
+              ) : null}
+            </dl>
+          </section>
+        ) : null}
+
+        {openSurface === 'notifications' ? (
+          <>
+            {feed.workReceipts.length > 0 ? (
+              <section
+                data-testid="agent-work-receipts"
+                className="border-b border-[color:var(--topology-floating-panel-divider)]"
+              >
+                <p className="px-3 pt-2 font-mono text-caption uppercase tracking-[var(--tracking-caps-14)] text-[color:var(--color-text-quaternary)]">
+                  {t('receiptTitle')}
+                </p>
+                <div className="max-h-[240px] overflow-y-auto px-2 py-1.5">
+                  {[...feed.workReceipts].slice(-5).reverse().map((receipt) => (
+                    <WorkReceiptRow key={receipt.id} receipt={receipt} nowMs={feed.nowMs} />
+                  ))}
+                </div>
+              </section>
+            ) : null}
+            {feed.notifications.length === 0 && feed.workReceipts.length === 0 ? (
+              <p
+                data-testid="agent-activity-inbox-empty"
+                className="px-3 py-4 text-caption leading-label text-[color:var(--color-text-tertiary)]"
+              >
+                {t('inboxEmpty')}
+              </p>
+            ) : feed.notifications.length > 0 ? (
               <>
                 <p className="px-3 pt-2 font-mono text-caption uppercase tracking-[var(--tracking-caps-14)] text-[color:var(--color-text-quaternary)]">
                   {t('historyTitle')}
@@ -556,13 +498,13 @@ export function AgentActivityChip({
                   ))}
                 </ul>
               </>
-            ) : null
-          )}
-          {/* 알림함은 감사 로그의 대체물이 아니다 — 전체 흐름은 볼트 안
-              `activity.jsonl` 과 `/git` 이 들고 있다. 그 사실을 숨기지 않는다. */}
-          <p className="border-t border-[color:var(--topology-floating-panel-divider)] px-3 py-2 text-caption leading-label text-[color:var(--color-text-quaternary)]">
-            {t('inboxFooter')}
-          </p>
+            ) : null}
+          </>
+        ) : null}
+
+        <p className="border-t border-[color:var(--topology-floating-panel-divider)] px-3 py-2 text-caption leading-label text-[color:var(--color-text-quaternary)]">
+          {t('inboxFooter')}
+        </p>
       </Surface>
     </div>
   );

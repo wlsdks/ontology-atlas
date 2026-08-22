@@ -16,7 +16,6 @@ import type {
 import { Link, usePathname } from "@/i18n/navigation";
 import { useTranslations } from "next-intl";
 import {
-  Activity,
   BarChart3,
   Bot,
   Download,
@@ -29,9 +28,6 @@ import {
   Map as MapIcon,
 } from "lucide-react";
 import { DESTINATION_HREF } from "@/shared/config/destinations";
-import { ICON_SIZE } from "@/shared/ui/icon-size";
-import { useLocalVault } from "@/features/docs-vault-local";
-import { formatActivityAge } from "@/features/vault-ontology";
 import { cn } from "@/shared/lib/cn";
 import { signalNavigationIntent } from "@/shared/lib/navigation-intent";
 import { BrandMark } from "@/shared/ui";
@@ -42,7 +38,6 @@ import {
 import { resolveActiveNavRailItem, type AppNavRailItemId } from "../lib/resolve-active-item";
 import { shouldShowGetAppTile } from "@/shared/lib/show-get-app-tile";
 import { isTauriVaultRuntime } from "@/shared/lib/tauri-vault-fs";
-import { agentDisplayName } from "@/shared/lib/agent-display-name";
 
 /** 런타임은 로드 뒤 바뀌지 않는다 — 구독은 형식상 필요할 뿐이라 no-op 이다. */
 const subscribeToRuntime = () => () => {};
@@ -77,11 +72,6 @@ export interface AppNavRailProps {
    * (진행률은 여기 안 그린다 — 곁눈으로 보는 자리다).
    */
   agentsNoticeCount?: number;
-  /** 하단 에이전트 타일 클릭 핸들러 — `connected` 는 레일이 자신의 heartbeat
-   *  상태로 판정해 넘긴다(P4-② 분기). `AppShell` 이 연결됨→인사이트 이동,
-   *  미연결→연결 시트 열기(전역 launcher)로 라우팅한다. 미지정 시 타일은
-   *  표시 전용으로 남는다(레일이 다른 컨텍스트에서 마운트되는 경우 대비). */
-  onAgentTileActivate?: ((connected: boolean) => void) | null;
   /** 연결 시트가 현재 열려 있는지 — 타일의 `aria-expanded` 진실원(전역
    *  launcher `wantOpen`). */
   className?: string;
@@ -143,11 +133,9 @@ export function AppNavRail({
   contextHrefs,
   gitDirtyCount = 0,
   agentsNoticeCount = 0,
-  onAgentTileActivate = null,
   className,
 }: AppNavRailProps) {
   const t = useTranslations("navRail");
-  const tLive = useTranslations("liveActivity");
   const pathname = usePathname() ?? "/";
   /**
    * 「앱 받기」 — **웹에서만** 그리는 유일한 다운로드 유도. 판정 근거와 왜
@@ -224,45 +212,6 @@ export function AppNavRail({
     const raf = requestAnimationFrame(() => setIndicatorReady(true));
     return () => cancelAnimationFrame(raf);
   }, [indicator, indicatorReady]);
-  const vault = useLocalVault();
-  const agentStatus = vault.agentActivityStatus;
-  const heartbeat = agentStatus?.heartbeat ?? null;
-  const heartbeatAgentName = heartbeat
-    ? (agentDisplayName(heartbeat.agent) ?? heartbeat.agent)
-    : null;
-  const hasFreshHeartbeat = Boolean(heartbeat && agentStatus?.valid && !agentStatus.stale);
-  const stateLabel = heartbeat
-    ? ({
-        planning: tLive("statePlanning"),
-        editing: tLive("stateEditing"),
-        verifying: tLive("stateVerifying"),
-        blocked: tLive("stateBlocked"),
-        complete: tLive("stateComplete"),
-      }[heartbeat.state] ?? null)
-    : null;
-  const baseAgentTitle = !agentStatus?.exists
-    ? tLive("agentMissing")
-    : !agentStatus.valid
-      ? tLive("agentInvalid")
-      : agentStatus.stale
-        ? tLive("agentStale")
-        : heartbeat
-          ? `${tLive("agentTitle")} — ${heartbeatAgentName} · ${stateLabel}`
-          : tLive("agentMissing");
-  // W6 agent visibility — rail tile title enhancement: append "last activity"
-  // (which ontology node the agent last touched, and how long ago) whenever
-  // the heartbeat actually carries a focus slug + a reported age. Shown
-  // regardless of `stale`/`valid` state (it describes the heartbeat's OWN
-  // last-known data, not "is this connection healthy right now") — real
-  // heartbeat data only, never fabricated (no slug/age → no suffix).
-  const lastActivitySuffix =
-    heartbeat?.focus?.ontologySlug && agentStatus?.ageMs != null
-      ? tLive("railLastActivity", {
-          slug: heartbeat.focus.ontologySlug,
-          age: formatActivityAge(agentStatus.ageMs),
-        })
-      : null;
-  const agentTitle = [baseAgentTitle, lastActivitySuffix].filter(Boolean).join(" · ");
 
   // 주소는 `shared/config/destinations` 가 정본이다 — 키보드 이동과 단축키 시트가
   // 같은 표를 읽어야 해서 컴포넌트 밖으로 내렸다(사본이 둘이면 라우트가 어긋난다).
@@ -469,56 +418,12 @@ export function AppNavRail({
         </ul>
       </nav>
 
-      {/* #65 — 하단 유틸 티어. 이 안의 구성(활동 · 발자취 · 설정)은 모든 화면에서
-          같아야 한다 — 셸(AppShell)이 소유하며 페이지가 등록하지 않는다. */}
+      {/* 하단 유틸 티어 — 설정과 웹 전용 앱 받기만. 에이전트는 위 목적지 하나가
+          연결·대화·상태 확인을 모두 소유한다. */}
       <div
         data-testid="app-nav-rail-utility-tier"
         className="mt-auto flex w-full shrink-0 flex-col items-center gap-1 pt-2"
       >
-        {/* 에이전트 타일 — 클릭 가능. 연결됨: 활동 다이제스트(인사이트)로,
-            미연결/stale: 「에이전트」 목적지로 간다(AppShell 이 라우팅). */}
-        <button
-          type="button"
-          title={agentTitle}
-          aria-label={agentTitle}
-          /*
-           * ⚠️ **`aria-haspopup="dialog"` 를 뗐다** (2026-08-21, 원장 90).
-           *
-           * 이 타일은 미연결일 때 지도 위의 연결 시트를 열었다 — 그래서 대화상자를
-           * 연다고 광고하는 것이 맞았다. 이제는 **「에이전트」 목적지로 이동한다.**
-           * 이동하는 버튼이 대화상자를 연다고 말하면 낭독기 사용자는 열리지 않을
-           * 창을 기다린다. 되는 것을 안 된다고 말하는 것만 거짓이 아니라,
-           * 하는 일을 다르게 말하는 것도 거짓이다.
-           */
-          onClick={onAgentTileActivate ? () => onAgentTileActivate(hasFreshHeartbeat) : undefined}
-          disabled={!onAgentTileActivate}
-          data-testid="app-nav-rail-agent-status"
-          className={cn(
-            // 상태 안무 = 클러스터 칩(ChromeChip) 계약과 동급: rest → hover(색-웨이크)
-            // → active(1px 눌림 + overlay-3 서피스, 촉각감) → focus-visible 링.
-            // transform 을 transition 대상에 포함해 눌림 해제가 급작스럽지 않게 이완.
-            "relative flex h-[var(--app-nav-rail-tile-height)] w-[var(--app-nav-rail-tile-width)] items-center justify-center rounded-card text-[color:var(--color-text-tertiary)] transition-[color,background-color,transform] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-focus-ring)] focus-visible:ring-inset",
-            onAgentTileActivate &&
-              "enabled:hover:bg-[color:var(--color-overlay-2)] enabled:hover:text-[color:var(--color-text-primary)] enabled:active:translate-y-px enabled:active:bg-[color:var(--color-overlay-3)]",
-          )}
-        >
-          {/* 유틸리티 티어 아이콘 사다리(로고 26 / 목적지 24+라벨 / 유틸 18) —
-              소유자 실보고 2026-07-23: 하단 유틸 아이콘이 목적지 크기(24)를
-              그대로 써 설정 기어보다 커 보였다. 유틸 3타일(활동·발자취·설정)은
-              `--app-nav-rail-utility-icon-size` 하나로 앉는다. */}
-          <Activity
-            size={ICON_SIZE.lg}
-            aria-hidden
-            className="h-[var(--app-nav-rail-utility-icon-size)] w-[var(--app-nav-rail-utility-icon-size)]"
-          />
-          {hasFreshHeartbeat ? (
-            <span
-              aria-hidden="true"
-              data-testid="app-nav-rail-agent-dot"
-              className="rail-status-dot-in absolute right-1.5 top-1 h-1.5 w-1.5 rounded-full bg-[color:var(--topology-v2-amber-hub)]"
-            />
-          ) : null}
-        </button>
         {/*
           웹에만 있는 한 자리. 표면마다 배너를 심는 대신 크롬에 하나를 두는
           이유는 `../lib/show-get-app-tile` 에 적었다 — 레일 유틸리티 티어는

@@ -28,10 +28,6 @@ import {
 } from "../lib/roving-tabindex";
 import { TopologyIndexTreeRow } from "./TopologyIndexTreeRow";
 import { fieldClass } from '@/shared/ui/control-class';
-import {
-  TopologyIndexAgentHandoff,
-  type TopologyIndexAgentHandoffLabels,
-} from "./TopologyIndexAgentHandoff";
 
 /** INDEX 의 렌즈 — 「전체」 · 「최근 변경」. */
 export type IndexLens = "all" | "recent";
@@ -44,9 +40,6 @@ export interface TopologyIndexPanelLabels {
   censusConcepts: string;
   censusRelations: string;
   censusDomains: string;
-  agentSync: string;
-  /** C11 — 에이전트 heartbeat 이 없을 때(미연결)의 중립 문구. 진행형 금지. */
-  agentSyncIdle: string;
   capabilitiesShort: string;
   elementsShort: string;
   freshTitle: string;
@@ -101,19 +94,6 @@ export interface TopologyIndexPanelProps {
   selectedId: string | null;
   onSelect: (nodeId: string) => void;
   onCollapse: () => void;
-  /** P2a — 푸터의 에이전트 상태를 눌러 "AI 에이전트 연결" 시트를 연다.
-   *  `agentActivityHref` 가 주어지면 그쪽이 우선한다(아래). */
-  onOpenAgentConnect?: (() => void) | null;
-  /**
-   * P4-② (2026-07-21 리텐션 라운드) — 이미 연결된 에이전트가 있을 때
-   * 푸터의 "Updated with AI" 를 누르면 등록 모달(`onOpenAgentConnect`)
-   * 대신 이 href(활동 다이제스트, `/ontology/insights/` 할 일 탭)로
-   * 이동한다. "이미 어제 셋업을 끝낸 2일차 사용자에게 등록 안내는 막다른
-   * 길"이라는 관찰 — 연결된 상태에서 이 배지가 실제로 답해야 할 질문은
-   * "가입할까?"가 아니라 "에이전트가 뭘 했지?"다. null/undefined 면 기존
-   * 모달 버튼 동작 그대로 유지(미연결/stale 상태).
-   */
-  agentActivityHref?: string | null;
   /**
    * 2026-07-24 온보딩 라운드 — 첫 실행 카드의 "2분 구경하기" CTA. 투어
    * 상태기계는 HomePage(view)가 소유하므로(FSD) 콜백만 내려보낸다. 생략
@@ -125,21 +105,6 @@ export interface TopologyIndexPanelProps {
   onEnablePlainMode?: () => void;
   labels: TopologyIndexPanelLabels;
   className?: string;
-  /** 푸터 "에이전트 동기화" 뒤에 붙는 성장 신호 조각(예: " · 이번 주 +1") —
-   *  이미 해석된 문자열을 그대로 받는다(HomePage 의 growthLabel 과 같은
-   *  출처, feat/chrome-system §9 헤더→푸터 이관). */
-  footerGrowthText?: string;
-  /** 푸터 "인계" 메뉴 — brief/재분석 지시/동기화 게이트 3종 복사 (W3 분석
-   *  보기 은퇴, `TopologyAnalysisBar` overview 모드에서 이관). 텍스트는
-   *  HomePage 가 `views/home/lib/topology-analysis.ts` 포맷터로 미리
-   *  조립해 전달 — 이 위젯은 복사 UI만 소유한다. 생략하면 메뉴 자체를
-   *  렌더하지 않는다. */
-  agentHandoff?: {
-    briefText: string;
-    reanalyzeText: string;
-    syncText: string;
-    labels: TopologyIndexAgentHandoffLabels;
-  };
   /**
    * P4a — "최근 변경" 렌즈(mtime 7일 창, `useRecentChanges`). 생략하면 세그먼트
    * 컨트롤 자체를 렌더하지 않는다(기존 검색-only 동작 그대로). 활성화하면
@@ -185,11 +150,11 @@ export interface TopologyIndexPanelProps {
   plainMode?: boolean;
   /**
    * 오버뷰 좌측 레일 attention winner 단일화 (2026-07-24) — vault 미연결
-   * (정적 샘플) 상태에서 "먼지 앉은 노드 N" 행과 "인계" 메뉴는 노출하지
-   * 않는다. 두 표면 모두 *현재 로드된 그래프*를 서술한다 — 샘플 모드에선
+   * (정적 샘플) 상태에서 "먼지 앉은 노드 N" 행은 노출하지 않는다.
+   * 이 표면은 *현재 로드된 그래프*를 서술한다 — 샘플 모드에선
    * 그 그래프가 사용자의 프로젝트가 아니라 이 제품 자신의 dogfood
-   * vault라서, 방치 카운트도 에이전트 인계 명령도 첫 방문자에게는 남의
-   * 저장소 얘기라 잡음이다(`BlockImportModule`의 "vault 없인 기능 자체가
+   * vault라서 방치 카운트는 첫 방문자에게 남의 저장소 얘기라 잡음이다
+   * (`BlockImportModule`의 "vault 없인 기능 자체가
    * 작동 안 함" 케이스와는 다른 문제 — 그쪽은 P1 결함②에 따라 여전히
    * disabled+힌트로 존치, 완전 은폐 금지). 생략 시 기존 하위호환 동작
    * (항상 노출)을 유지 — 실 vault 연결(`vaultLoaded=true`)이면 두 행이
@@ -205,10 +170,8 @@ export interface TopologyIndexPanelProps {
  * `docs/prototypes/index-panel-v2-full.html` (v2.1) for the approved visual
  * spec and `TopologyIndexTab` for the collapsed counterpart.
  *
- * v2.1 (feat/chrome-system §9) — header 는 "INDEX · N"(N=노드 총수) + 접기
- * 정사각 버튼만 남기고, 구 헤더의 "● 에이전트 동기화" 문구는 푸터로
- * 옮겼다(footerGrowthText 와 함께). 트리 행 자체의 grid/캐럿/미터 스타일은
- * `TopologyIndexTreeRow` 가 소유.
+ * header 는 "INDEX · N"(N=노드 총수) + 접기 정사각 버튼만 둔다.
+ * 트리 행 자체의 grid/캐럿/미터 스타일은 `TopologyIndexTreeRow` 가 소유한다.
  *
  * Search reuses `filterTreeByQuery` (`@/shared/lib/ontology-tree`) — the
  * SAME pure filter the old `/ontology` tree used — instead of a bespoke
@@ -226,15 +189,11 @@ export function TopologyIndexPanel({
   onCollapse,
   labels,
   className,
-  footerGrowthText,
-  agentHandoff,
   recentChanges = null,
   uncatalogedDocCount,
   dustyNodeCount,
   unboundProjectNodeId = null,
   onPromoteUncatalogedDocs = null,
-  onOpenAgentConnect = null,
-  agentActivityHref = null,
   onStartTour,
   onEnablePlainMode,
   domainCensus = null,
@@ -268,9 +227,28 @@ export function TopologyIndexPanel({
   });
 
   const [query, setQuery] = useState("");
-  const [openIds, setOpenIds] = useState<Set<string>>(
-    () => new Set(treeResult.roots.map((root) => root.node.id)),
+  const rootIds = useMemo(
+    () => treeResult.roots.map((root) => root.node.id),
+    [treeResult.roots],
   );
+  const rootIdsKey = rootIds.join("\u0000");
+  const [treeOpenState, setTreeOpenState] = useState(() => ({
+    rootIdsKey,
+    knownRootIds: new Set(rootIds),
+    openIds: new Set(rootIds),
+  }));
+  if (treeOpenState.rootIdsKey !== rootIdsKey) {
+    const nextOpenIds = new Set(treeOpenState.openIds);
+    for (const id of rootIds) {
+      if (!treeOpenState.knownRootIds.has(id)) nextOpenIds.add(id);
+    }
+    setTreeOpenState({
+      rootIdsKey,
+      knownRootIds: new Set(rootIds),
+      openIds: nextOpenIds,
+    });
+  }
+  const openIds = treeOpenState.openIds;
   // P4a — "최근 변경" 렌즈. 검색이 활성이면 검색이 우선한다(둘을 동시에 좁히면
   // "왜 안 보이지"가 두 원인으로 갈라져 헷갈린다) — 렌즈는 검색이 비어 있을
   // 때만 트리를 좁힌다.
@@ -306,11 +284,11 @@ export function TopologyIndexPanel({
   }, [treeResult.roots, domainCensus]);
 
   const toggleOpen = (nodeId: string) => {
-    setOpenIds((current) => {
-      const next = new Set(current);
+    setTreeOpenState((current) => {
+      const next = new Set(current.openIds);
       if (next.has(nodeId)) next.delete(nodeId);
       else next.add(nodeId);
-      return next;
+      return { ...current, openIds: next };
     });
   };
   // 검색과 마찬가지로 렌즈 활성 시에도 자동 펼침 — 좁혀진 조상 경로를 사용자가
@@ -390,9 +368,7 @@ export function TopologyIndexPanel({
         onEnablePlainMode={onEnablePlainMode}
         audiencePlain={plainMode}
       >
-      {/* v2.1 헤더 — 라벨 + 실측 총수 + 접기만. 에이전트 동기화 상태는
-          푸터로 이관(아래) — 헤더는 "이 패널이 무엇인지", 푸터는 "언제
-          마지막으로 살아있었는지"를 말한다.
+      {/* 헤더 — 라벨 + 실측 총수 + 접기만.
 
           헤더 행 전체가 접기 토글이다 (소유자 피드백 — 셰브론만 히트 영역이라
           불편했다). INDEX 트리 행과 같은 hover 문법
@@ -718,101 +694,6 @@ export function TopologyIndexPanel({
           서 있었다. 「블록」이라는 말도 이 앱 어디에도 정의가 없어서, 처음 보는
           사람에게는 무엇을 여는 버튼인지 알 길이 없었다. */}
 
-      {/* v2.1 푸터 — 구 헤더의 "● 에이전트 동기화" 문구 + 성장 신호가
-          여기로 이관. 단축키 캡은 장식(⇧⌘K 는 전역 팔레트가 이미 쓰는
-          hotkey — 여기선 재확인용 표기, 별도 바인딩 아님).
-
-          **두 줄인 이유** (2026-07-28): 이 넷을 한 줄(패널 폭 고정 274px,
-          안쪽 266px)에 넣으면 예산이 안 맞는다 — 실측 EN 자연폭 합 381px.
-          성장 신호를 빼도 271px 로 여전히 넘쳐서, 문구를 줄이는 것으로는
-          닿지 않는 거리다. 그래서 잘린 것은 "긴 제목"이 아니라 **상태
-          라벨**이었다: EN "Agent not connected" 104→89px 로 잘려
-          "Agent not conn…", KO 는 성장 신호가 92→29px.
-          `design.md` 「치수 규칙성」의 클램프 지침은 **길이를 모르는 사용자
-          데이터**를 두고 한 말이다(대신 hover/상세에서 전체 값을 준다).
-          여기 둘은 우리가 쓴, 값이 유한한 문자열이고 전체 값을 주는 자리도
-          없다 — 그러니 이건 우아한 축약이 아니라 예산 결함이다. 컨테이너의
-          치수는 내용물의 부산물이 아니라 설계 결정이므로, 자리를 늘린다.
-
-          줄 나누기는 의미로 한다 — 위는 **지금 참인 것**(연결 상태 · 성장
-          신호, `·` 로 이어 한 문장으로 읽힌다), 아래는 **할 수 있는
-          것**(인계 메뉴 · 팔레트 힌트). */}
-      <div
-        data-testid="topology-index-footer"
-        className="mt-2.5 flex shrink-0 flex-col gap-1.5 border-t border-[color:var(--topology-v2-panel-divider)] px-1 pt-2.5 text-label text-[color:var(--topology-v2-panel-text-quaternary)]"
-      >
-        <div className="flex items-center gap-1.5">
-          {/* P4-② — 연결된 상태(agentActivityHref 제공)면 활동 다이제스트로
-              딥링크, 아니면 기존처럼 등록 시트를 여는 버튼. */}
-          {agentActivityHref ? (
-            <Link
-              href={agentActivityHref}
-              data-testid="topology-index-agent-connect"
-              className={controlClass({ shape: "link", className: "shrink-0 gap-1.5 rounded-[var(--chrome-radius-inner)] px-0.5 hover:bg-[color:var(--topology-v2-panel-row-hover)] hover:text-[color:var(--topology-v2-panel-text-primary)]" })}
-            >
-              <span
-                aria-hidden="true"
-                className="h-[5px] w-[5px] shrink-0 rounded-full bg-[color:var(--topology-v2-panel-power-on)]"
-              />
-              {/* 상태 라벨은 줄이지 않는다 — 잘리면 상태를 못 읽는다.
-                  줄이 빠듯해지면 아래 성장 신호가 먼저 양보한다. */}
-              <span className="shrink-0 whitespace-nowrap text-[color:var(--topology-v2-panel-text-tertiary)]">
-                {labels.agentSync}
-              </span>
-            </Link>
-          ) : (
-            <button
-              type="button"
-              onClick={onOpenAgentConnect ?? undefined}
-              disabled={!onOpenAgentConnect}
-              data-testid="topology-index-agent-connect"
-              className={controlClass({
-                shape: "link",
-                size: "md",
-                className:
-                  "shrink-0 enabled: enabled:hover:bg-[color:var(--topology-v2-panel-row-hover)] enabled:hover:text-[color:var(--topology-v2-panel-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-focus-ring)] focus-visible:ring-inset",
-              })}
-            >
-              {/* C11 — 미연결 상태: power-on(인디고) 점 + "AI가 함께 갱신 중"
-                  진행형이 heartbeat 없이도 활동을 암시했다. 중립 muted 점 +
-                  "에이전트 연결 대기" 로 정정 — 진행형 문구 금지. */}
-              <span
-                aria-hidden="true"
-                className="h-[5px] w-[5px] shrink-0 rounded-full bg-[color:var(--topology-v2-panel-text-quaternary)]"
-              />
-              {/* 상태 라벨은 줄이지 않는다 — 잘리면 상태를 못 읽는다.
-                  줄이 빠듯해지면 아래 성장 신호가 먼저 양보한다. */}
-              <span className="shrink-0 whitespace-nowrap text-[color:var(--topology-v2-panel-text-tertiary)]">
-                {labels.agentSyncIdle}
-              </span>
-            </button>
-          )}
-          {footerGrowthText ? (
-            <span
-              data-testid="topology-index-footer-growth"
-              className="min-w-0 flex-1 truncate whitespace-nowrap"
-            >
-              {footerGrowthText}
-            </span>
-          ) : null}
-        </div>
-        <div className="flex items-center justify-end gap-1.5">
-          {agentHandoff && vaultLoaded ? (
-            <TopologyIndexAgentHandoff
-              briefText={agentHandoff.briefText}
-              reanalyzeText={agentHandoff.reanalyzeText}
-              syncText={agentHandoff.syncText}
-              labels={agentHandoff.labels}
-            />
-          ) : null}
-          <span
-            aria-hidden="true"
-            className="shrink-0 rounded-micro border border-[color:var(--topology-v2-panel-border)] px-1 py-0.5 font-mono text-caption uppercase tracking-[var(--tracking-caps-08)] text-[color:var(--topology-v2-panel-text-quaternary)]"
-          >
-            ⇧⌘K
-          </span>
-        </div>
-      </div>
       </FirstRunStarterModule>
     </aside>
   );

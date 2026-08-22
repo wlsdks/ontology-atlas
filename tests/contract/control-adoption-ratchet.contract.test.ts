@@ -168,7 +168,7 @@ import { describe, expect, it } from 'vitest';
  *
  * 위 문단이 「다음 등재 라운드」로 미뤘던 크롬 토큰 후보를 자리마다 열었다:
  * `SearchPalette` · `GlobalSearch` · `ShortcutSheet` · `DocsHeaderTile` ·
- * `BackToTopButton` · `GitStatusTile` · `AppNavRail`(버튼 갈래) = **7 등재**.
+ * `BackToTopButton` · `GitStatusTile` 등 = **6 등재**.
  * 검증이 결함 하나를 잡았다 — GlobalSearch 의 전용 토큰은 32px **단독 고정
  * 선언**이라 `tokenIsBeyondFixedSteps` 가 기각했고(그동안 coarse 승격 블록
  * 주석은 «이미 커버됨»이라 주장), `--overlay-close-size` 로 수렴시킨 뒤에야
@@ -237,7 +237,7 @@ import { describe, expect, it } from 'vitest';
  * | 부류 | 수 | 무엇이 없나 / 왜 밖인가 |
  * |---|---:|---|
  * | **[등재] `standard-button`** | 10 | 값 층이 양보한 모양. DownloadPage 7 · AgentClientButtons 1 · 404 두 파일 2 |
- * | **[등재] `chrome-token`** | 4 | AtlasGitPanel 2(`--git-setup-action-height`) · AppNavRail 1(`--app-nav-rail-tile-height`) · TopologyReviewLink 1(`--chrome-tile-size`). 셋 다 선언이 둘 이상이라 토큰 검사를 통과한다 |
+ * | **[등재] `chrome-token`** | 3 | AtlasGitPanel 2(`--git-setup-action-height`) · TopologyReviewLink 1(`--chrome-tile-size`). 둘 다 선언이 둘 이상이라 토큰 검사를 통과한다 |
  * | **[등재] `no-spec`** | 3 | MacosDownloadLink(패스스루) · PublicQuickActions 2(`inline-flex` 래퍼) |
  * | **[등재] `value-layer-peer`** | 1 | `ChromeTile` 의 `<Link>` 갈래 |
  * | **[등재] `state-scoped`** | 1 | 건너뛰기 링크 |
@@ -788,16 +788,6 @@ const OUTSIDE_VALUE_LAYER: readonly OutsideEntry[] = [
       '램프는 스케일 계수도 포인터 승격도 못 낸다.',
     conditional: '값 층이 포인터 승격 축을 얻으면 다시 연다. 누름 방언(active:translate-y-px)은 별개 부채다.',
   },
-  {
-    file: 'src/widgets/app-nav-rail/ui/AppNavRail.tsx',
-    count: 1,
-    claim: 'chrome-token',
-    proof: '--app-nav-rail-tile-height',
-    why:
-      '레일 에이전트 타일(버튼 갈래) — 같은 파일의 <Link> 갈래가 이미 앵커 등록부에 ' +
-      '있다. 한 파일이 두 태그를 내므로 두 등록부에 한 줄씩 선다.',
-    conditional: '값 층이 포인터 승격 축을 얻으면 다시 연다. 누름 방언은 별개 부채다.',
-  },
 ];
 
 /**
@@ -808,7 +798,7 @@ const OUTSIDE_VALUE_LAYER: readonly OutsideEntry[] = [
  * 올라가 멈춤쇠가 양방향으로 헐거워진다. 등재를 늘리려면 이 수를 **손으로**
  * 올려야 하고, 그 diff 가 곧 「왜」를 적을 자리다.
  */
-const BASELINE_REGISTERED = 29;
+const BASELINE_REGISTERED = 28;
 
 /**
  * **이 수만 줄어야 한다.** 전수(108)에서 등재(30)와 근거 없음(4)을 뺀 나머지.

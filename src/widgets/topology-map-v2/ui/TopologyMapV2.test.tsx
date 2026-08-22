@@ -43,6 +43,22 @@ describe("TopologyMapV2", () => {
     expect(screen.getByTestId("topology-map-v2")).toHaveAttribute("data-minimal", "false");
   });
 
+  it("exposes an exact path lens without treating every edge between route nodes as selected", () => {
+    render(
+      <TopologyMapV2
+        {...baseProps}
+        spotlightIds={new Set(["a", "b", "c"])}
+        mapLensKind="path"
+        pathEdgeIds={new Set(["edge-a-b", "edge-b-c"])}
+      />,
+    );
+
+    const map = screen.getByTestId("topology-map-v2");
+    expect(map).toHaveAttribute("data-map-lens", "path");
+    expect(map).toHaveAttribute("data-path-node-count", "3");
+    expect(map).toHaveAttribute("data-path-edge-count", "2");
+  });
+
   it("selects an incident canvas edge through the installed-app verifier event", () => {
     const onSelectEdge = vi.fn();
     const onVerified = vi.fn();

@@ -162,6 +162,7 @@ const VAULT_HANDOFF_BASE = [
    * 대개 「먼저 만들고 나중에 설명하기」다 — 실측에서 그랬다.
    */
   'Work in this order: (1) orient with `connection_info` and `list_kinds`, and on a large vault do not dump every node; (2) before creating anything, look for what is already there with `query_ontology` `similar_nodes` or `find_evidence`, and if something close exists, say what you found and ask whether to extend it before making a second node for the same idea; (3) write only after the shape is settled, preferring `patch_concept` on an existing node over a new one.',
+  'When the person asks you to find or show one concept, resolve its exact slug and call `get_concept`. When they ask how two concepts connect, resolve both exact slugs and call `find_path`, even if you can answer from context. Atlas uses those exact read calls to move and highlight the map; never guess a slug.',
   'Whenever you add or change a relation, put the reason in the `why` field, in the person\'s own words — what they asked for, not what the tool did. Write "고객이 결제를 되돌릴 수 있어야 한다고 해서", not "added depends_on edge".',
   /*
    * **애매하면 묻는다.** 이 한 줄이 실측에서 가장 크게 바꾼 것이다 — 없을 때는
@@ -390,10 +391,27 @@ export function useAcpSession({
       if (kind === 'tool_call_update') {
         const id = typeof update.toolCallId === 'string' ? update.toolCallId : null;
         const nextStatus = typeof update.status === 'string' ? update.status : null;
-        if (!id || !nextStatus) return;
+        if (!id) return;
+        const nextTitle = typeof update.title === 'string' ? update.title : null;
+        const nextToolKind = typeof update.kind === 'string' ? update.kind : null;
+        const hasRawInput = update.rawInput !== undefined;
+        // claude-agent-acp는 streamed tool_use를 먼저 pending 행으로 보내고,
+        // 입력이 완성되면 **status 없는** tool_call_update로 rawInput을 보낸다.
+        // 상태만 합치면 화면에는 도구 이름만 남고 exact target과 지도 intent가
+        // 영원히 비게 된다. update가 실제로 싣는 필드만 기존 행에 덧씌운다.
         setEvents((prev) =>
-          prev.map((e) => (e.kind === 'tool' && e.id === id ? { ...e, status: nextStatus } : e)),
+          prev.map((event) => {
+            if (event.kind !== 'tool' || event.id !== id) return event;
+            return {
+              ...event,
+              ...(nextStatus ? { status: nextStatus } : {}),
+              ...(nextTitle ? { title: nextTitle } : {}),
+              ...(nextToolKind ? { toolKind: nextToolKind } : {}),
+              ...(hasRawInput ? { rawInput: update.rawInput } : {}),
+            };
+          }),
         );
+        if (!nextStatus) return;
         const approvedReceipt = approvedReceiptRef.current;
         if (
           TERMINAL_TOOL_STATES.has(nextStatus) &&

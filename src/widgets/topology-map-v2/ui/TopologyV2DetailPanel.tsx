@@ -2,7 +2,6 @@
 
 import {
   type KeyboardEvent as ReactKeyboardEvent,
-  type ReactElement,
   type ReactNode,
   useCallback,
   useEffect,
@@ -13,6 +12,7 @@ import {
   AlertCircle,
   Check,
   CheckCircle2,
+  ChevronDown,
   ChevronRight,
   CircleHelp,
   Clipboard,
@@ -20,9 +20,9 @@ import {
   FileText,
   GitBranch,
   MessageCircle,
+  MoreHorizontal,
   Orbit,
   Plus,
-  Route,
   X,
 } from "lucide-react";
 import { ICON_SIZE } from "@/shared/ui/icon-size";
@@ -41,9 +41,8 @@ import {
   type V2DatasheetConnection,
   type V2EvidenceRow,
 } from "./topology-v2-datasheet";
-import { controlClass, IconButton, LastEditSubjectRow, MtimeConflictBadge, RowButton, Surface } from "@/shared/ui";
+import { Button, controlClass, IconButton, LastEditSubjectRow, MtimeConflictBadge, RowButton, Surface } from "@/shared/ui";
 import { TopologyV2KindGlyph } from "@/shared/ui/topology-v2-kind-glyph";
-import { Tooltip } from "@/shared/ui/tooltip";
 import { transientSurface } from "@/shared/ui/transient-surface";
 
 /**
@@ -57,11 +56,9 @@ import { transientSurface } from "@/shared/ui/transient-surface";
  * 시안 재설계 (2026-07-24, 소유자 승인 mockup `mockup-panel-detail.html`):
  * a BALANCED identity header — node name hero (left) + quiet kind badge and
  * close (right), then freshness (left) + a navigable indigo domain chip
- * (right), so neither side is barren for long names. Below, a divided
- * "ops" zone = a PLAIN aggregate stats line ("이어진 곳 N · 근거 문서 M",
- * no heavy metric pill — the per-type counts live once each in their own
- * group headers) + a QUIET ghost action strip (문서/관계 편집/인계 복사/경로/
- * 영역 전개, hidden when a handler/href is absent). Then a relations zone with
+ * (right), so neither side is barren for long names. Below, one primary action
+ * plus Edit/More disclosure menus replaces the old seven-tile action strip;
+ * typed counts live only in their relation-group headers. Then a relations zone with
  * a wide 28px between-group rhythm (`--topology-v2-panel-zone-gap`), each group
  * self-evident: a directional glyph + bold plain label + indigo count chip +
  * underline, rows carrying the canvas kind glyph (no competing kind word).
@@ -75,9 +72,8 @@ import { transientSurface } from "@/shared/ui/transient-surface";
  *
  * M-2 카운트 시맨틱: connection groups are ROLE-based (contains / usedBy /
  * dependsOn / belongsTo) — the SAME four buckets the full-detail surface
- * renders — so the group header's number and the "이어진 곳" aggregate are the
- * same number by construction, and the popover never disagrees with
- * full-detail. 네 번째 버킷(속한 곳)은 2026-07-26 까지 여기서 빠져 있었고,
+ * renders, with each count shown once in its own group header. 네 번째
+ * 버킷(속한 곳)은 2026-07-26 까지 여기서 빠져 있었고,
  * 그동안 부모만 있는 노드(dogfood 75%)의 팝오버가 "이어진 곳 0" 이라고 말했다.
  * Containment is its OWN "담는 것" group/segment (rendered only
  * when non-empty, i.e. container nodes) instead of folding into "기대는 곳" by
@@ -146,17 +142,6 @@ export interface TopologyV2DetailPanelLabels {
   metricBelongsTo: string;
   metricEvidence: string;
   /**
-   * 시안 재설계 (2026-07-24) — 평문 stats 한 줄 "이어진 곳 <N> · 근거 문서
-   * <M>". 각인 메트릭 스트립(타입별 분해)을 대체한다 — 타입별 카운트는 아래
-   * 각 관계 그룹 헤더의 카운트 칩으로 이미 한 번씩 나타나므로, 상단은 집계만
-   * 말한다(한 사실은 한 번). `statsConnected` = 아래에 그려지는 네 관계 그룹
-   * (contains+usedBy+dependsOn+belongsTo)의 합, `statsEvidenceDocs` = 근거
-   * 문서(evidence) 수. 그리지 않는 버킷을 세지도 않고, 세는 버킷을 감추지도
-   * 않는다 — 한쪽만 어기면 "이어진 곳" 이 말과 다른 수가 된다.
-   */
-  statsConnected: string;
-  statsEvidenceDocs: string;
-  /**
    * H1 B2/A — typed-fact 그룹 라벨의 hover 한 줄 풀이(비개발자 언어) + 스코프
    * 명시("직접" 연결 기준). `title` 속성으로만 노출 — 아이콘/추가 표면 없음.
    * 미지정(undefined)이면 title 없이 렌더(하위 호환).
@@ -166,8 +151,6 @@ export interface TopologyV2DetailPanelLabels {
   metricDependsOnHelp?: string;
   metricBelongsToHelp?: string;
   metricEvidenceHelp?: string;
-  /** 각인 메트릭 한 줄 전체의 스코프 풀이(모두 직접 연결 기준). */
-  metricHelp?: string;
   noConnections: string;
   handoff: string;
   close: string;
@@ -175,35 +158,28 @@ export interface TopologyV2DetailPanelLabels {
    * (`full-detail-a1` widget) — the design gate's details-on-demand step
    * beyond this compact ego popover. */
   openFullDetail: string;
-  /** W2-A action row (4-up tile grid below the metric line). */
+  /** 주 행동 하나와 편집/더보기 메뉴를 묶는 action row. */
   actionsGroupLabel: string;
   actionDocument: string;
   actionEditRelations: string;
+  actionEditMenu: string;
+  actionMore: string;
   /** 이 개념에 **이어서 새 개념**을 만든다 — 지도를 떠나지 않는다. */
   actionCreateLinked?: string;
   actionCopyHandoff: string;
   /**
    * S7 이음새 — 이 개념을 그대로 에이전트에게 말로 시키는 자리. optional 인
    * 이유: 에이전트 패널이 없는 환경(웹 빌드·구 소비처)에서는 라벨도 핸들러도
-   * 오지 않고, 그때는 타일 자체가 나타나지 않아야 한다.
+   * 오지 않고, 그때는 handoff 복사가 주 행동을 맡는다.
    */
   actionAskAgent?: string;
-  actionPath: string;
   /** S4 "영역 전개" 2차 발견 경로 액션 라벨 ("영역 전개"). */
   actionRealm: string;
   /**
-   * 결과-설명 툴팁 (소유자 승인 2026-07-23) — 4-up 타일 라벨은 압축 전문어
-   * ("인계 복사" 등)라 라벨 *반복*이 아닌 "누르면 무엇이 되는가"를 평문으로
-   * 설명한다. 전부 optional — 생략하면 툴팁 없음(하위호환). 터치엔 hover 가
-   * 없으므로 툴팁은 보조일 뿐, 라벨+aria 가 자립 본체다(원칙).
+   * 주 행동의 결과-설명 툴팁. 터치엔 hover가 없으므로 툴팁은 보조일 뿐,
+   * 라벨과 aria가 자립하는 본체다.
    */
-  actionDocumentTip?: string;
-  actionEditRelationsTip?: string;
-  actionCreateLinkedTip?: string;
-  actionCopyHandoffTip?: string;
   actionAskAgentTip?: string;
-  actionPathTip?: string;
-  actionRealmTip?: string;
   /** "코드 위치" — the real code-location group (`codeLocations` prop),
    * distinct from the "근거" group above (source-doc reference). */
   codeLocationsLabel: string;
@@ -345,26 +321,19 @@ export interface TopologyV2DetailPanelProps {
   /** 지도 안 contextual editor가 있으면 링크 대신 같은 자리에서 연다. */
   onEditRelations?: () => void;
   /**
-   * 「이어서 새로 만들기」 — 이 개념에 붙는 새 노드를 만든다. 없으면 타일 자체가
-   * 안 그려진다(못 하는 자리에 문을 그리지 않는다).
+   * 「이어서 새로 만들기」 — 이 개념에 붙는 새 노드를 만든다. 없으면 편집 메뉴의
+   * 해당 행이 안 그려진다(못 하는 자리에 문을 그리지 않는다).
    */
   onCreateLinked?: () => void;
   /**
    * S7 이음새 — 「에이전트에게 말로 시키기」. 문장은 여기서 짓지 않는다:
    * 첫 마디 생성기(`buildFirstWords` 와 같은 함수)가 이 개념의 빈칸을 보고
    * 짓고, 이 패널은 **누가 눌렀는지만** 알린다. 두 입구가 다른 문장을 쓰면
-   * 그 순간 갈라진다. 브리지가 없는 환경(웹)에서는 주입되지 않으므로 타일도
-   * 나타나지 않는다 — 열리지 않을 문을 그리지 않는다.
+   * 그 순간 갈라진다. 브리지가 없는 환경(웹)에서는 주입되지 않고 handoff 복사가
+   * 주 행동을 맡는다. 열리지 않을 문을 그리지 않는다.
    */
   onAskAgent?: () => void;
   onClose: () => void;
-  /**
-   * W2-A "경로" action tile — sets this node as the path-analysis source and
-   * enters path mode. Reuses the existing (previously unwired)
-   * `selectTopologyPathRouteState` route-state transition — no new path-mode
-   * entry logic.
-   */
-  onSetPathSource: () => void;
   /**
    * S4 "영역 전개" 2차 발견 경로 — 궤도 버튼 외에 데이터시트에서도 영역을 펼
    * 수 있게 한다. 컨테이너 노드(자식 있음)이며 영역 밖일 때만 HomePage 가 주입
@@ -393,9 +362,8 @@ export interface TopologyV2DetailPanelProps {
   onExited?: () => void;
   className?: string;
   /**
-   * 슬라이스 C (개발/비개발 모드 토글) — 인계 복사(handoff) 액션 타일. 기본
-   * `true`(기존 렌더 유지). 비개발(plain) 모드에서 HomePage 가 `false` 를
-   * 넘겨 개발자 크롬으로 숨긴다.
+   * 슬라이스 C (개발/비개발 모드 토글) — handoff 복사 행동. 기본 `true`.
+   * 비개발(plain) 모드에서는 HomePage가 `false`를 넘겨 개발자 크롬으로 숨긴다.
    */
   showHandoff?: boolean;
   /**
@@ -631,93 +599,131 @@ function ProjectSourceStatusIcon({ status }: { status: ProjectSourceStatus }) {
   );
 }
 
-// 데이터시트 내부 정제 (2026-07-23) — `justify-start` + 고정 상단 패딩: 라벨이
-// 로케일에 따라 1줄/2줄로 갈려도 네 타일의 아이콘이 같은 y 에 정렬된다
-// (grid 가 높이는 이미 균등화하므로, 남는 공백은 아래로만 빠진다). 2줄 라벨의
-// 행간은 아래 ACTION_TILE_INK 가 램프 예외로 조인다.
-// rank3 — press(active) 촉각: hover 위에 한 단 진한 `panel-row-active` 표면을
-// pointer-down 동안만 얹어 "누르는 순간"을 색만으로 알린다(Toss press-state).
-// transition-colors(150ms)로 하드 토글 방지 — transform/scale 없음.
-/**
- * 결과-설명 툴팁 래퍼 — tip 이 있으면 shared Tooltip 으로 감싸고, 없으면
- * 트리거를 그대로 반환(하위호환·DOM 무증가). side="top": 타일 바로 아래에
- * "영역 전개" 같은 다음 행동 버튼이 있어 side="bottom" 이면 hover 중 그
- * 버튼을 덮어 클릭을 방해한다(사용성 검수 판정). 위로 띄우면 메트릭 라인을
- * 잠깐 가리지만 그건 hover 중에만이고, 다음 행동을 막지는 않는다.
- */
-function withActionTip(tip: string | undefined, trigger: ReactElement): ReactElement {
-  if (!tip) return trigger;
-  return (
-    <Tooltip content={tip} side="top">
-      {trigger}
-    </Tooltip>
-  );
+interface DetailActionItem {
+  label: string;
+  icon: ReactNode;
+  testId: string;
+  href?: string;
+  onSelect?: () => void;
 }
 
+function DetailActionMenu({
+  label,
+  triggerTestId,
+  menuTestId,
+  iconOnly = false,
+  open,
+  onOpenChange,
+  items,
+}: {
+  label: string;
+  triggerTestId: string;
+  menuTestId: string;
+  iconOnly?: boolean;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  items: readonly DetailActionItem[];
+}) {
+  const containerRef = useRef<HTMLDivElement | null>(null);
+  const triggerRef = useRef<HTMLButtonElement | null>(null);
 
-// 시안 재설계 (2026-07-24) — 액션은 무거운 보더 박스가 아니라 조용한 ghost
-// 아이콘+라벨(아이콘 위, 10px 라벨 아래). 표면/보더 없음 — hover/active 에만
-// row-hover/active 표면이 얹힌다. flex-1 로 스트립을 균등 분할한다.
-//
-// 행간 램프의 유일한 명시 예외. 이 라벨은 10px 2행이 고정 높이 타일 안에
-// 들어가야 하는데, 짝인 --leading-caption(14px)을 넣으면 두 행이 6px 자라
-// 액션 스트립이 아래 메트릭 라인을 밀어낸다 — 크롬 스케일 계약을 깨는
-// 쪽이라 여기서는 비율 응집을 택한다. 램프를 넓히지 않는 이유: 이 값이
-// 필요한 자리는 앱 전체에 이 하나뿐이고, 쓰임이 하나인 토큰은 규격이 아니라
-// 오정보다.
-//
-// 별도 상수로 뽑은 이유: disable 주석은 **줄 단위**라 클래스 문자열에 그냥
-// 붙이면 같은 줄의 text-[Npx] 부채까지 함께 침묵시킨다. 그건 이 저장소가
-// 래칫으로 막으려던 바로 그 실패 모드(침묵하는 통과)다.
-// eslint-disable-next-line no-restricted-syntax -- 고정 높이 타일 안 10px 2행 라벨: 램프 짝은 타일을 6px 키운다
-const ACTION_TILE_LEADING = "leading-[1.1]";
+  useEffect(() => {
+    if (!open) return;
+    const onPointerDown = (event: PointerEvent) => {
+      if (!containerRef.current?.contains(event.target as Node)) onOpenChange(false);
+    };
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key !== "Escape") return;
+      event.stopPropagation();
+      onOpenChange(false);
+      triggerRef.current?.focus();
+    };
+    document.addEventListener("pointerdown", onPointerDown, true);
+    document.addEventListener("keydown", onKeyDown, true);
+    return () => {
+      document.removeEventListener("pointerdown", onPointerDown, true);
+      document.removeEventListener("keydown", onKeyDown, true);
+    };
+  }, [open, onOpenChange]);
 
-/**
- * **한국어는 아무 글자에서나 끊긴다 — 끊길 자리를 정해 준다** (2026-07-29
- * 설치 앱 실측).
- *
- * 이 스트립은 웹에서 다섯 칸이라 라벨이 한 줄에 들어갔다. 앱에서는 LLM 다리가
- * 있어 「말로 시키기」가 붙어 **여섯 칸**이 되고, 칸이 좁아지자 라벨 셋이
- * 단어 가운데서 잘렸다: 「AI 요약 복 / 사」 · 「말로 시키 / 기」 ·
- * 「이것만 보 / 기」. 브라우저의 기본 줄바꿈은 CJK 를 음절 단위로 끊기 때문에,
- * 폭만 좁아지면 어느 라벨이든 이렇게 된다.
- *
- * `keep-all` 은 공백에서만 끊게 한다 — 「AI 요약 / 복사」 처럼 두 줄이 되더라도
- * 단어는 살아 있다. 타일 높이는 `items-stretch` 가 이미 균일화하므로 줄 수가
- * 늘어도 치수는 안 흔들린다.
- *
- * **웹 검증만으로는 못 잡는 종류다** — 다섯 칸에서는 재현되지 않는다.
- * 데스크톱 능력이 칸을 하나 더 만들 때 이 스트립이 좁아진다는 사실이
- * `surfaces.md` 가 말하는 "설치 앱 실측만 인정" 의 실제 사례다.
- */
-/**
- * 액션 타일 — **누를 수 있게 생겨야 한다** (2026-08-03 소유자 실보고:
- * *"이런거는 버튼이 테두리가 예쁘게 있어야 구분이 되는거 아닐까?"*).
- *
- * 종전에는 테두리도 안정 배경도 없이 아이콘 + 글자만 떠 있었다. 그래서 바로
- * 위의 「연결된 항목 19 · 근거 문서 1」 같은 **읽는 텍스트와 구분되지 않았다** —
- * 호버해야만 배경이 생기니, 누를 수 있다는 사실을 마우스를 얹어 봐야 알았다.
- *
- * 앞선 정비에서 7칸을 3층으로 접었는데 **밀도만 보고 어포던스를 안 봤다.**
- *
- * 값은 새로 만들지 않았다 — 같은 패널의 엣지 버전(`TopologyV2EdgePanel`)이
- * 이미 `--topology-v2-panel-action-{border,surface}` 로 테두리를 그린다. 그
- * 토큰들은 정의돼 있었고 이 타일만 안 쓰고 있었다.
- *
- * **2026-08-03 — 값 층 위로 올렸다.** 이 다섯(+링크 둘)은 앞선 정규화가
- * 「모양 여섯이 전부 가로라 자리가 없다」며 남긴 것이고, `shape: "tile"` 이
- * 생기면서 자리가 났다. 치수는 이미 램프와 같았다 —
- * `gap-2 px-2 py-2.5 text-label` 은 `tile/md` 와 바이트 동일이다. 바뀐 것은
- * **반경 하나**(6 → 9px): 램프의 세로 타일은 `rounded-card` 를 쓴다.
- *
- * 여기 남는 것은 **잉크뿐**이다 — 스코프 토큰
- * (`--topology-v2-panel-action-{border,surface}`)과 호버·누름은 값 층이
- * 일부러 안 내는 층이라서다. 램프 호출은 **자리마다 인라인**이다: 완성
- * 문자열을 상수로 뽑으면 채택 래칫이 그것을 손으로 쓴 컨트롤로 센다(래칫은
- * 여는 태그 안의 **리터럴** `controlClass(` 만 본다).
- */
-const ACTION_TILE_INK =
-  `flex-1 border-[color:var(--topology-v2-panel-action-border)] bg-[color:var(--topology-v2-panel-action-surface)] font-[var(--font-weight-signature)] ${ACTION_TILE_LEADING} [word-break:keep-all] text-[color:var(--topology-v2-panel-text-tertiary)] hover:border-[color:var(--topology-v2-panel-domain-border-hover)] hover:bg-[color:var(--topology-v2-panel-row-hover)] hover:text-[color:var(--topology-v2-panel-text-secondary)] active:bg-[color:var(--topology-v2-panel-row-active)]`;
+  if (items.length === 0) return null;
+  const itemClass = controlClass({
+    shape: "row",
+    size: "sm",
+    tone: "secondary",
+    className:
+      "gap-2 rounded-micro px-2 hover:bg-[color:var(--topology-v2-panel-row-hover)] hover:text-[color:var(--topology-v2-panel-text-primary)]",
+  });
+  return (
+    <div ref={containerRef} className="relative">
+      <button
+        ref={triggerRef}
+        type="button"
+        aria-haspopup="menu"
+        aria-expanded={open}
+        aria-label={label}
+        data-testid={triggerTestId}
+        onClick={() => onOpenChange(!open)}
+        className={controlClass({
+          shape: iconOnly ? "icon" : "chip",
+          size: "md",
+          tone: "muted",
+          className:
+            "border-[color:var(--topology-v2-panel-action-border)] bg-[color:var(--topology-v2-panel-action-surface)] hover:border-[color:var(--topology-v2-panel-domain-border-hover)] hover:bg-[color:var(--topology-v2-panel-row-hover)]",
+        })}
+      >
+        {iconOnly ? <MoreHorizontal size={ICON_SIZE.md} aria-hidden /> : label}
+        {!iconOnly ? (
+          <ChevronDown
+            size={ICON_SIZE.sm}
+            aria-hidden
+            className="transition-transform duration-[var(--motion-fast)]"
+            style={{ transform: open ? "rotate(180deg)" : "rotate(0deg)" }}
+          />
+        ) : null}
+      </button>
+      <Surface
+        open={open}
+        origin="top right"
+        role="menu"
+        data-testid={menuTestId}
+        {...transientSurface("menu")}
+        className="absolute right-0 top-full z-30 mt-1 flex min-w-44 flex-col gap-0.5 rounded-chip border border-[color:var(--topology-v2-panel-border)] bg-[color:var(--topology-v2-panel-surface)] p-1 shadow-[var(--topology-v2-panel-shadow)]"
+      >
+        {items.map((item) =>
+          item.href ? (
+            <Link
+              key={item.testId}
+              href={item.href}
+              role="menuitem"
+              data-testid={item.testId}
+              onClick={() => onOpenChange(false)}
+              className={itemClass}
+            >
+              {item.icon}
+              {item.label}
+            </Link>
+          ) : (
+            <button
+              key={item.testId}
+              type="button"
+              role="menuitem"
+              data-testid={item.testId}
+              onClick={() => {
+                onOpenChange(false);
+                item.onSelect?.();
+              }}
+              className={itemClass}
+            >
+              {item.icon}
+              {item.label}
+            </button>
+          ),
+        )}
+      </Surface>
+    </div>
+  );
+}
 
 /**
  * 관계 그룹 헤더의 방향 글리프 — 승인된 시안(mockup-panel-detail)의 SVG 를
@@ -867,7 +873,6 @@ export function TopologyV2DetailPanel({
   onCreateLinked,
   onAskAgent,
   onClose,
-  onSetPathSource,
   onEnterRealm,
   onOpenFullDetail,
   open,
@@ -920,17 +925,65 @@ export function TopologyV2DetailPanel({
   const showInlineHandoff = showHandoff && !(
     showProjectSource && projectSource.nextAction.id === "use_current_evidence"
   );
-  // A project root's path finder remains available from the context menu.
-  // Removing it only from this compact rail keeps the first ontology-reading
-  // moment to four actions when the footer already owns agent handoff.
-  const showInlinePath = !showProjectSource;
-  const inlineActionCount =
-    (documentHref ? 1 : 0)
-    + 1
-    + (showInlineHandoff ? 1 : 0)
-    + (onAskAgent && labels.actionAskAgent ? 1 : 0)
-    + (showInlinePath ? 1 : 0)
-    + (onEnterRealm ? 1 : 0);
+  const [actionMenu, setActionMenu] = useState<"edit" | "more" | null>(null);
+  const canAskAgent = Boolean(onAskAgent && labels.actionAskAgent);
+  const editActions: DetailActionItem[] = [
+    onEditRelations
+      ? {
+          label: labels.actionEditRelations,
+          icon: <GitBranch size={ICON_SIZE.sm} aria-hidden />,
+          testId: "topology-v2-detail-panel-action-edit",
+          onSelect: onEditRelations,
+        }
+      : {
+          label: labels.actionEditRelations,
+          icon: <GitBranch size={ICON_SIZE.sm} aria-hidden />,
+          testId: "topology-v2-detail-panel-action-edit",
+          href: meaningEditHref,
+        },
+    ...(onCreateLinked && labels.actionCreateLinked
+      ? [
+          {
+            label: labels.actionCreateLinked,
+            icon: <Plus size={ICON_SIZE.sm} aria-hidden />,
+            testId: "topology-v2-detail-panel-action-create-linked",
+            onSelect: onCreateLinked,
+          },
+        ]
+      : []),
+  ];
+  const moreActions: DetailActionItem[] = [
+    ...(documentHref
+      ? [
+          {
+            label: labels.actionDocument,
+            icon: <FileText size={ICON_SIZE.sm} aria-hidden />,
+            testId: "topology-v2-detail-panel-action-document",
+            href: documentHref,
+          },
+        ]
+      : []),
+    ...(canAskAgent && showInlineHandoff
+      ? [
+          {
+            label: labels.actionCopyHandoff,
+            icon: <Copy size={ICON_SIZE.sm} aria-hidden />,
+            testId: "topology-v2-detail-panel-action-handoff",
+            onSelect: () => onCopyHandoff(handoffText),
+          },
+        ]
+      : []),
+    ...(onEnterRealm
+      ? [
+          {
+            label: labels.actionRealm,
+            icon: <Orbit size={ICON_SIZE.sm} aria-hidden />,
+            testId: "topology-v2-detail-panel-action-realm",
+            onSelect: onEnterRealm,
+          },
+        ]
+      : []),
+  ];
   const compactProjectRelations = useViewportBelow(1513);
   const collapseProjectRelations = showProjectSource && compactProjectRelations;
   // 시안 재설계 (2026-07-24) — 상단 stats 는 집계 한 줄. 타입별 분해는 아래
@@ -1450,188 +1503,61 @@ export function TopologyV2DetailPanel({
                 ) : null}
               </div>
             </div>
-          ) : (
-            <div
-              data-testid="topology-v2-detail-panel-stats"
-              title={labels.metricHelp}
-              className="flex items-center gap-1.5 text-body text-[color:var(--topology-v2-panel-text-tertiary)]"
-            >
-              <span>{labels.statsConnected}</span>
-              <b className="font-[var(--font-weight-strong)] tabular-nums text-[color:var(--topology-v2-panel-text-secondary)]">
-                {connectedTotal}
-              </b>
-              <span className="text-[color:var(--topology-v2-panel-text-quaternary)]">·</span>
-              <span>{labels.statsEvidenceDocs}</span>
-              <b className="font-[var(--font-weight-strong)] tabular-nums text-[color:var(--topology-v2-panel-text-secondary)]">
-                {evidence.total}
-              </b>
-            </div>
-          )}
+          ) : null}
 
-          {/* 액션 스트립 — 조용한 ghost 아이콘+라벨(무거운 박스 아님). 핸들러/
-              href 가 없는 항목은 렌더하지 않는다(죽은 어포던스 금지).
-
-              **3층이다** (2026-08-03, PO 카운슬 평결 ④). 종전엔 7칸이 한 행에서
-              `flex-1` 로 나뉘어 **칸당 42.6px** 였고(패널 352px · 액션 영역 322px),
-              그 폭에서 「AI에게 줄 항목 정보 복사」가 **4줄**로 감겼다. `items-stretch`
-              가 행 높이를 최댓값에 맞추므로 **주목 승자를 중요도가 아니라 글자 수가
-              정하고 있었다** — 2줄짜리 네 칸이 4줄 높이의 빈 공간을 떠안았다.
-
-              그리고 이건 1회 관측이 아니다: 아래 440행 주석이 **6칸 시점에 이
-              붕괴를 이미 예견**했고, 그 예견을 읽을 수 있는 상태에서 7번째가
-              추가됐다(#862).
-
-              **자르는 기준은 빈도가 아니라 자격이다.** 개수를 줄이려면 「누가 안
-              쓰는지」를 알아야 하는데 그 관측은 0이다. 대신 **하는 일의 종류**로
-              묶는다 — 이 노드에 하는 일 / 지도를 이 노드 기준으로 바꾸는 일 /
-              에이전트에게 넘기는 일. 실측: 3칸 104px(2줄) · 2칸 159px(1줄).
-
-              **삭제 0 · 병합 0.** 두 AI 타일은 겉보기엔 중복이나 **대상 런타임이
-              다르다** — 복사는 볼트 밖 에이전트(Claude Code·Codex)로 나가는 문이고
-              물어보기는 앱 안 LLM 브릿지다. 웹은 `llmBridgeAvailable` 이 false 라
-              병합하면 그 표면의 에이전트 핸드오프가 **0이 된다**. */}
+          {/* 한 줄만 밖에 둔다. 나머지는 의미별 메뉴로 접어 노드를 읽는 순간의
+              선택지를 세 개로 제한한다. 경로는 지도+ACP의 전역 탐색으로 이동. */}
           <div
             role="group"
             aria-label={labels.actionsGroupLabel}
             data-testid="topology-v2-detail-panel-actions"
-            data-inline-action-count={inlineActionCount}
             className={showProjectSource
-              ? "flex flex-col gap-1.5 border-t border-[color:var(--topology-v2-panel-zone-divider)] pt-3"
-              : "flex flex-col gap-1.5"}
+              ? "flex items-center gap-1.5 border-t border-[color:var(--topology-v2-panel-zone-divider)] pt-3"
+              : "flex items-center gap-1.5"}
           >
-          {/* 1층 — 이 노드에 하는 일. 「관계 편집」이 무조건 있어 항상 렌더된다. */}
-          <div className="flex items-start gap-1.5" data-action-row="node">
-            {documentHref
-              ? withActionTip(
-                  labels.actionDocumentTip,
-                  <Link
-                    href={documentHref}
-                    data-testid="topology-v2-detail-panel-action-document"
-                    className={controlClass({ shape: "tile", size: "md", className: ACTION_TILE_INK })}
-                  >
-                    <FileText size={ICON_SIZE.lg} aria-hidden="true" />
-                    <span>{labels.actionDocument}</span>
-                  </Link>,
-                )
-              : null}
-            {/*
-              **이어서 새로 만들기** — 「관계 편집」이 공방으로 나가는 것과 달리
-              이 자리는 지도에 남는다. 소유자 지시 2026-08-03: *"노드 클릭하면…
-              여기서 내가 하고싶은게 바로 신규노드 연결하기(생성하기)"*.
-
-              버튼 자리를 패널로 잡은 이유: 이미 「관계 편집」이 여기 있어 형제로
-              읽히고, 노드 주변 아이콘은 지도가 붐비는 데다 작은 표적이 된다.
-
-              핸들러가 없으면 타일 자체가 없다 — 못 하는 자리에 문을 그리지 않는다.
-            */}
-            {onCreateLinked && labels.actionCreateLinked
-              ? withActionTip(
-                  labels.actionCreateLinkedTip,
-                  <button
-                    type="button"
-                    onClick={onCreateLinked}
-                    data-testid="topology-v2-detail-panel-action-create-linked"
-                    className={controlClass({ shape: "tile", size: "md", className: ACTION_TILE_INK })}
-                  >
-                    <Plus size={ICON_SIZE.lg} aria-hidden="true" />
-                    <span>{labels.actionCreateLinked}</span>
-                  </button>,
-                )
-              : null}
-            {withActionTip(
-              labels.actionEditRelationsTip,
-              onEditRelations ? (
-                <button
-                  type="button"
-                  onClick={onEditRelations}
-                  data-testid="topology-v2-detail-panel-action-edit"
-                  className={controlClass({ shape: "tile", size: "md", className: ACTION_TILE_INK })}
-                >
-                  <GitBranch size={ICON_SIZE.lg} aria-hidden="true" />
-                  <span>{labels.actionEditRelations}</span>
-                </button>
-              ) : (
-                <Link
-                  href={meaningEditHref}
-                  data-testid="topology-v2-detail-panel-action-edit"
-                  className={controlClass({ shape: "tile", size: "md", className: ACTION_TILE_INK })}
-                >
-                  <GitBranch size={ICON_SIZE.lg} aria-hidden="true" />
-                  <span>{labels.actionEditRelations}</span>
-                </Link>
-              ),
-            )}
-          </div>
-          {/* 2층 — 지도를 이 노드 기준으로 바꾸는 일. 둘 다 없으면 층 자체가 없다. */}
-          {showInlinePath || onEnterRealm ? (
-          <div className="flex items-start gap-1.5" data-action-row="map">
-            {showInlinePath
-              ? withActionTip(
-                  labels.actionPathTip,
-                  <button
-                    type="button"
-                    onClick={onSetPathSource}
-                    data-testid="topology-v2-detail-panel-action-path"
-                    className={controlClass({ shape: "tile", size: "md", className: ACTION_TILE_INK })}
-                  >
-                    <Route size={ICON_SIZE.lg} aria-hidden="true" />
-                    <span>{labels.actionPath}</span>
-                  </button>,
-                )
-              : null}
-            {/* S4 "영역 전개" 2차 발견 경로 — 컨테이너 노드에서만(HomePage 주입). */}
-            {onEnterRealm
-              ? withActionTip(
-                  labels.actionRealmTip,
-                  <button
-                    type="button"
-                    onClick={onEnterRealm}
-                    data-testid="topology-v2-detail-panel-action-realm"
-                    className={controlClass({ shape: "tile", size: "md", className: ACTION_TILE_INK })}
-                  >
-                    <Orbit size={ICON_SIZE.lg} aria-hidden="true" />
-                    <span>{labels.actionRealm}</span>
-                  </button>,
-                )
-              : null}
-          </div>
-          ) : null}
-          {/* 3층 — 에이전트에게 넘기는 일. 복사가 상수(두 표면 모두)이고
-              물어보기는 브릿지가 있을 때만이라, 복사가 먼저 선다. */}
-          {showInlineHandoff || (onAskAgent && labels.actionAskAgent) ? (
-          <div className="flex items-start gap-1.5" data-action-row="agent">
-            {showInlineHandoff
-              ? withActionTip(
-                  labels.actionCopyHandoffTip,
-                  <button
-                    type="button"
-                    onClick={() => onCopyHandoff(handoffText)}
-                    aria-label={labels.handoff}
-                    data-testid="topology-v2-detail-panel-action-handoff"
-                    className={controlClass({ shape: "tile", size: "md", className: ACTION_TILE_INK })}
-                  >
-                    <Copy size={ICON_SIZE.lg} aria-hidden="true" />
-                    <span>{labels.actionCopyHandoff}</span>
-                  </button>,
-                )
-              : null}
-            {onAskAgent && labels.actionAskAgent
-              ? withActionTip(
-                  labels.actionAskAgentTip,
-                  <button
-                    type="button"
-                    onClick={onAskAgent}
-                    aria-label={labels.actionAskAgent}
-                    data-testid="topology-v2-detail-panel-action-ask-agent"
-                    className={controlClass({ shape: "tile", size: "md", className: ACTION_TILE_INK })}
-                  >
-                    <MessageCircle size={ICON_SIZE.lg} aria-hidden="true" />
-                    <span>{labels.actionAskAgent}</span>
-                  </button>,
-                )
-              : null}
-          </div>
-          ) : null}
+            {canAskAgent ? (
+              <Button
+                size="sm"
+                onClick={onAskAgent}
+                aria-label={labels.actionAskAgent}
+                title={labels.actionAskAgentTip}
+                data-testid="topology-v2-detail-panel-action-ask-agent"
+                data-action-role="primary"
+                className="min-w-0 flex-1 rounded-card"
+              >
+                <MessageCircle size={ICON_SIZE.sm} aria-hidden />
+                <span className="truncate">{labels.actionAskAgent}</span>
+              </Button>
+            ) : showInlineHandoff ? (
+              <Button
+                size="sm"
+                onClick={() => onCopyHandoff(handoffText)}
+                aria-label={labels.handoff}
+                data-testid="topology-v2-detail-panel-action-handoff"
+                data-action-role="primary"
+                className="min-w-0 flex-1 rounded-card"
+              >
+                <Copy size={ICON_SIZE.sm} aria-hidden />
+                <span className="truncate">{labels.actionCopyHandoff}</span>
+              </Button>
+            ) : null}
+            <DetailActionMenu
+              label={labels.actionEditMenu}
+              triggerTestId="topology-v2-detail-panel-edit-menu-trigger"
+              menuTestId="topology-v2-detail-panel-edit-menu"
+              open={actionMenu === "edit"}
+              onOpenChange={(next) => setActionMenu(next ? "edit" : null)}
+              items={editActions}
+            />
+            <DetailActionMenu
+              label={labels.actionMore}
+              triggerTestId="topology-v2-detail-panel-more-menu-trigger"
+              menuTestId="topology-v2-detail-panel-more-menu"
+              iconOnly
+              open={actionMenu === "more"}
+              onOpenChange={(next) => setActionMenu(next ? "more" : null)}
+              items={moreActions}
+            />
           </div>
         </div>
 

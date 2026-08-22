@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState, type ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { useRouter, usePathname } from "@/i18n/navigation";
 import { useDestinationShortcuts } from "@/shared/lib/use-destination-shortcuts";
 import { focusMapCanvasWhenReady } from "@/shared/lib/focus-map-canvas";
@@ -24,7 +24,6 @@ import { AppUpdateProvider, UpdateToast, useAppUpdateContext } from "@/features/
 import { useLocalVault } from "@/features/docs-vault-local";
 import { isDesktopShell } from "@/shared/lib/desktop-shell";
 import { isGatewaySurface, resolveActiveNavDestination } from "@/shared/lib/nav-destination";
-import { DESTINATION_HREF } from "@/shared/config/destinations";
 import { useInstallNotice } from "@/features/acp-doctor/model/use-install-notice";
 import { RouteFocusManager } from "@/shared/ui/route-focus-manager";
 import { useHydrated } from "@/shared/lib/use-hydrated";
@@ -234,28 +233,6 @@ function AppNavRailSlot() {
     vaultKnown: vault.restoreAttempted,
   });
 
-  // P4-② 분기(TopologyIndexPanel 푸터와 동일 계약) — 연결됨: 활동
-  // 다이제스트(인사이트)로. 미연결/stale: 연결 시트를 여는 전역 의도를 세운다.
-  // 시트 본체는 HomePage 소유이므로 지형도 밖이면 지형도로 이동 —
-  // launcher.wantOpen 이 레이아웃 상주라 도착한 HomePage 가 곧바로 소비한다.
-  const onAgentTileActivate = useCallback(
-    (connected: boolean) => {
-      if (connected) {
-        router.push("/ontology/insights/");
-        return;
-      }
-      /*
-       * ⚠️ **미연결이면 목적지로 간다** (2026-08-21, 원장 90).
-       *
-       * 종전에는 지도 위의 연결 시트를 열었다 — 지형도 밖이면 지형도로 먼저
-       * 옮기고 나서. 그래서 같은 일을 하는 자리가 **셋**이었다: 시트 · 설정 칸 ·
-       * (지금은) 목적지. 붙이는 일의 주소는 하나여야 한다.
-       */
-      router.push(DESTINATION_HREF.agents);
-    },
-    [router],
-  );
-
   /*
    * 설치가 끝났는데 다른 화면에 있었다면 레일이 알려 준다. **종단 상태만**
    * 세고(진행률 금지), 그 화면에 가면 사라진다 — 기록 배지와 같은 문법이다.
@@ -324,7 +301,6 @@ function AppNavRailSlot() {
       contextHrefs={contextHrefs}
       gitDirtyCount={gitDirtyCount}
       agentsNoticeCount={installNotice.count}
-      onAgentTileActivate={onAgentTileActivate}
     />
   );
 }

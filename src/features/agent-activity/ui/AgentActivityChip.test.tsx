@@ -219,6 +219,35 @@ describe("AgentActivityChip", () => {
       ],
     });
     expect(screen.getByTestId("agent-activity-unread")).toHaveTextContent("2");
+    expect(screen.getByTestId("agent-activity-bell")).toContainElement(
+      screen.getByTestId("agent-activity-unread"),
+    );
+  });
+
+  it('작업 상태와 알림을 서로 다른 트리거와 표면으로 연다', () => {
+    renderBell({
+      writing: true,
+      agentName: 'Codex',
+      work: {
+        ...feed().work,
+        mode: 'live',
+        agentName: 'Codex',
+        phase: 'verifying',
+        summary: '관계 편집 흐름 확인',
+      },
+    });
+    const status = screen.getByTestId('agent-activity-status-trigger');
+    const bell = screen.getByTestId('agent-activity-bell');
+    expect(status.parentElement).not.toContainElement(bell);
+
+    fireEvent.click(status);
+    expect(screen.getByTestId('agent-activity-current-work')).toBeInTheDocument();
+    expect(screen.queryByTestId('agent-activity-inbox-list')).toBeNull();
+
+    fireEvent.click(status);
+    fireEvent.click(bell);
+    expect(screen.getByTestId('agent-activity-inbox-list')).toBeInTheDocument();
+    expect(screen.queryByTestId('agent-activity-current-work')).toBeNull();
   });
 
   it("벨을 누르면 알림함이 열리고 요약이 보인다", () => {

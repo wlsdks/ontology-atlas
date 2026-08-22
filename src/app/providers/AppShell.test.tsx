@@ -4,7 +4,7 @@ import { describe, expect, it, vi } from "vitest";
 import { AppShell } from "./AppShell";
 
 /**
- * #65 — 레일 하단 유틸 티어(활동 · 기록 · 설정)는 **모든 화면에서 같다.**
+ * #65 — 레일 하단 유틸 티어(설정)는 **모든 화면에서 같다.**
  *
  * 예전엔 페이지가 `useNavRailSettingsSlot` 으로 손수 등록해야 했고, 공방이
  * 그걸 빠뜨려 그 화면만 아이콘 1개였다 (지도 3 · 문서함/인사이트/프로젝트 2 ·
@@ -43,7 +43,7 @@ vi.mock("@/i18n/navigation", () => ({
 }));
 
 describe("AppShell — 레일 하단 유틸 티어 (#65)", () => {
-  it("페이지가 슬롯을 주입하지 않아도 활동·설정이 선다", () => {
+  it("페이지가 슬롯을 주입하지 않아도 설정이 선다", () => {
     render(
       <AppShell>
         <div>page</div>
@@ -55,8 +55,7 @@ describe("AppShell — 레일 하단 유틸 티어 (#65)", () => {
     // 종전에는 `children.length === 2` 로 셌는데, 그건 티어에 웹 전용 원소가
     // 하나 붙는 것만으로 깨지는 대리 지표였다(2026-07-28 「앱 받기」 추가).
     // 개수 대신 **구성원**을 본다.
-    expect(screen.getByTestId("app-nav-rail-agent-status")).toBeInTheDocument();
-    expect(tier).toContainElement(screen.getByTestId("app-nav-rail-agent-status"));
+    expect(screen.queryByTestId("app-nav-rail-agent-status")).not.toBeInTheDocument();
     expect(tier.querySelector("details"), "설정 트리거가 없다").not.toBeNull();
   });
 

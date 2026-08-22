@@ -4,6 +4,7 @@ import {
   buildTopologyHealthActionTarget,
   buildTopologyHealthRepairHref,
   computeTopologyPathHopCount,
+  computeTopologyShortestPath,
   formatTopologyHealthBrief,
   formatTopologyHealthMcpCheck,
   formatTopologyHealthOwnerRelationMcpCheck,
@@ -401,6 +402,83 @@ describe("computeTopologyPathHopCount", () => {
 
   it("returns null when no path connects the two nodes", () => {
     expect(computeTopologyPathHopCount("a", "isolated", nodes, edges)).toBeNull();
+  });
+});
+
+describe("computeTopologyShortestPath", () => {
+  const nodes = [
+    { id: "a" },
+    { id: "b" },
+    { id: "c" },
+    { id: "d" },
+  ] as unknown as Parameters<typeof computeTopologyShortestPath>[2];
+  const edges = [
+    { id: "edge-a-b", from: "a", to: "b", type: "contains" },
+    { id: "edge-b-c", from: "b", to: "c", type: "depends_on" },
+    { id: "edge-a-d", from: "a", to: "d", type: "related_to" },
+    { id: "edge-d-c", from: "d", to: "c", type: "related_to" },
+  ] as unknown as Parameters<typeof computeTopologyShortestPath>[3];
+
+  it("returns the exact ordered nodes and authored edges, not only a hop count", () => {
+    expect(computeTopologyShortestPath("a", "c", nodes, edges)).toEqual({
+      hops: 2,
+      nodeIds: ["a", "b", "c"],
+      edgeIds: ["edge-a-b", "edge-b-c"],
+      steps: [
+        {
+          edgeId: "edge-a-b",
+          relationType: "contains",
+          authoredFrom: "a",
+          authoredTo: "b",
+          from: "a",
+          to: "b",
+          reversed: false,
+        },
+        {
+          edgeId: "edge-b-c",
+          relationType: "depends_on",
+          authoredFrom: "b",
+          authoredTo: "c",
+          from: "b",
+          to: "c",
+          reversed: false,
+        },
+      ],
+    });
+  });
+
+  it("records reverse traversal without reversing the authored relation", () => {
+    const result = computeTopologyShortestPath("c", "a", nodes, edges);
+    expect(result?.nodeIds).toEqual(["c", "b", "a"]);
+    expect(result?.edgeIds).toEqual(["edge-b-c", "edge-a-b"]);
+    expect(result?.steps.map((step) => step.reversed)).toEqual([true, true]);
+    expect(result?.steps[0]).toMatchObject({
+      authoredFrom: "b",
+      authoredTo: "c",
+      from: "c",
+      to: "b",
+    });
+  });
+
+  it("uses a deterministic lexical tie-break for equally short paths", () => {
+    expect(computeTopologyShortestPath("a", "c", nodes, [...edges].reverse())?.nodeIds).toEqual([
+      "a",
+      "b",
+      "c",
+    ]);
+  });
+
+  it("fails closed for missing endpoints and disconnected nodes", () => {
+    expect(computeTopologyShortestPath("missing", "c", nodes, edges)).toBeNull();
+    expect(computeTopologyShortestPath("a", "missing", nodes, edges)).toBeNull();
+    expect(
+      computeTopologyShortestPath(
+        "a",
+        "c",
+        nodes,
+        edges.filter((edge) => edge.id === "edge-a-b"),
+      ),
+    ).toBeNull();
   });
 });
 

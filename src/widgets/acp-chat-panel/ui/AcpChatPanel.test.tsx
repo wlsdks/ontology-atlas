@@ -1327,6 +1327,26 @@ describe('빈 대화의 추천 — 이 폴더에 대한 것만 그린다', () =>
    * 여기서 잠그는 것은 **화면이 그것을 실제로 그리고, 눌렀을 때 입력칸에
    * 앉는가** 다. 모델만 초록이고 화면이 안 그리면 아무 일도 안 일어난다.
    */
+  it('도크 첫 프레임부터 완성된 빈 대화를 그리고, 연결만 뒤에서 기다린다', () => {
+    render(
+      <AcpChatPanel
+        runtimeId="claude-acp"
+        runtimeLabel="Claude Agent"
+        vaultRoot="/vault"
+        mcpServers={[{ name: 'atlas-vault' }]}
+        sessionEnabled={false}
+        suggestions={[{ kind: 'explain', params: { count: 80 } }]}
+      />,
+    );
+
+    expect(screen.getByTestId('acp-chat-panel')).toHaveAttribute('data-acp-status', 'starting');
+    expect(screen.getByTestId('acp-connection-spinner')).toBeTruthy();
+    expect(screen.getByTestId('acp-chat-empty')).toBeTruthy();
+    expect(screen.getByTestId('acp-chat-suggestion-explain')).toBeTruthy();
+    expect(screen.getByTestId('acp-chat-composer')).toBeTruthy();
+    expect(bridge.sent.some((message) => message.method === 'initialize')).toBe(false);
+  });
+
   it('추천을 받으면 그려지고, 누르면 입력칸에 문장이 앉는다', async () => {
     render(
       <AcpChatPanel
@@ -1340,8 +1360,8 @@ describe('빈 대화의 추천 — 이 폴더에 대한 것만 그린다', () =>
         ]}
       />,
     );
-    // 세션이 서기 전(`starting`)에는 빈 대화 안내 자체가 안 그려진다 —
-    // 추천도 그 안에 산다. 실제 사용자가 보는 상태까지 데려간다.
+    // 세션이 서기 전부터 같은 내용이 보인다. 여기서는 이후 클릭/입력 계약까지
+    // 재기 위해 실제 준비 상태로 이어 간다.
     await waitFor(() => expect(bridge.sent.some((m) => m.method === 'initialize')).toBe(true));
     replyTo('initialize', { protocolVersion: 1 });
     await waitFor(() => expect(bridge.sent.some((m) => m.method === 'session/new')).toBe(true));
@@ -1534,6 +1554,100 @@ describe('도구 줄 — 어느 노드를 만졌는지 말한다', () => {
       expect(document.querySelectorAll('[data-acp-entry="tool"]').length).toBe(1),
     );
     expect(screen.queryAllByTestId('acp-chat-slug')).toHaveLength(0);
+  });
+});
+
+describe('도구 호출 — 지도를 정확한 대상으로 움직인다', () => {
+  it('get_concept 입력을 실재 노드 포커스로 한 번만 전달한다', async () => {
+    const onMapIntent = vi.fn();
+    await bootSession({
+      knownSlugs: new Set(['capabilities/order']),
+      onMapIntent,
+    });
+    fireEvent.change(screen.getByRole('textbox'), { target: { value: '주문 찾아줘' } });
+    fireEvent.click(screen.getByTestId('acp-chat-send'));
+
+    emit({
+      jsonrpc: '2.0',
+      method: 'session/update',
+      params: {
+        update: {
+          sessionUpdate: 'tool_call',
+          toolCallId: 'focus-1',
+          title: 'mcp__atlas-vault__get_concept',
+          kind: 'read',
+          status: 'pending',
+          rawInput: { slug: 'capabilities/order' },
+        },
+      },
+    });
+
+    await waitFor(() =>
+      expect(onMapIntent).toHaveBeenCalledWith({
+        kind: 'focus',
+        slug: 'capabilities/order',
+        toolCallId: 'focus-1',
+      }),
+    );
+    emit({
+      jsonrpc: '2.0',
+      method: 'session/update',
+      params: {
+        update: {
+          sessionUpdate: 'tool_call_update',
+          toolCallId: 'focus-1',
+          status: 'completed',
+        },
+      },
+    });
+    await waitFor(() => expect(onMapIntent).toHaveBeenCalledTimes(1));
+  });
+
+  it('find_path의 두 끝점을 경로 의도로 전달하고 답변 문장은 해석하지 않는다', async () => {
+    const onMapIntent = vi.fn();
+    await bootSession({
+      knownSlugs: new Set(['capabilities/cart', 'capabilities/order']),
+      onMapIntent,
+    });
+    fireEvent.change(screen.getByRole('textbox'), {
+      target: { value: '장바구니와 주문 연결 보여줘' },
+    });
+    fireEvent.click(screen.getByTestId('acp-chat-send'));
+    emit({
+      jsonrpc: '2.0',
+      method: 'session/update',
+      params: {
+        update: {
+          sessionUpdate: 'agent_message_chunk',
+          content: { text: 'capabilities/cart → capabilities/order 경로입니다.' },
+        },
+      },
+    });
+    expect(onMapIntent).not.toHaveBeenCalled();
+
+    emit({
+      jsonrpc: '2.0',
+      method: 'session/update',
+      params: {
+        update: {
+          sessionUpdate: 'tool_call',
+          toolCallId: 'path-1',
+          title: 'mcp__atlas-vault__find_path',
+          kind: 'read',
+          status: 'pending',
+          rawInput: { from: 'capabilities/cart', to: 'capabilities/order' },
+        },
+      },
+    });
+
+    await waitFor(() =>
+      expect(onMapIntent).toHaveBeenCalledWith({
+        kind: 'path',
+        from: 'capabilities/cart',
+        to: 'capabilities/order',
+        toolCallId: 'path-1',
+      }),
+    );
   });
 });
 

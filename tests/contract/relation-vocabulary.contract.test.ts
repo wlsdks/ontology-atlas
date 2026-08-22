@@ -27,7 +27,7 @@ import { KNOWLEDGE_EDGE_TYPES } from '../../src/entities/knowledge-graph/model/t
 const ROOT = process.cwd();
 
 const SURFACE_FILES: ReadonlyArray<{ label: string; file: string }> = [
-  { label: '지도 범례 (TopologyRelationLegend)', file: 'src/views/home/ui/TopologyRelationLegend.tsx' },
+  { label: '지도 도움말 관계 가이드 (ShortcutSheet)', file: 'src/widgets/shortcut-sheet/ui/ShortcutSheet.tsx' },
   { label: '인사이트 (OntologyInsightsPage)', file: 'src/views/ontology-insights/ui/OntologyInsightsPage.tsx' },
   { label: '데이터시트 (HomePage — nodeDatasheet labels)', file: 'src/views/home/ui/HomePage.tsx' },
 ];

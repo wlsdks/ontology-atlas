@@ -1,6 +1,7 @@
 import { expect, test } from "@playwright/test";
 
 import { seedFirstRunSeen } from "./first-run-seed";
+import { stubDirectoryPicker } from "./vault-picker-stub";
 
 /**
  * Dialog(center) 반응형 계약 — 「체계」석 비준(2026-08-15)의 머지 조건 ⓐ.
@@ -25,32 +26,20 @@ test("center Dialog 는 세 폭에서 스크림·폭 공식·수납을 지킨다
   await seedFirstRunSeen(page);
   await page.setViewportSize({ width: 1280, height: 900 });
 
-  // OPFS 를 폴더 피커로 세워 실제 여정 그대로 쓰기 가능한 vault 를 만든다
-  // (chrome-text-fit 스펙과 같은 기법 — 컨텍스트마다 새 OPFS 라 안 섞인다).
-  await page.addInitScript(() => {
-    (window as unknown as { showDirectoryPicker: () => Promise<unknown> }).showDirectoryPicker =
-      async () => navigator.storage.getDirectory();
+  // 실제 FileSystemDirectoryHandle인 OPFS를 고르되, 이 검사의 주제가 아닌
+  // starter scaffold를 거치지 않도록 문서 하나를 미리 둔다.
+  await stubDirectoryPicker(page, {
+    "README.md": "# Dialog fixture\n\n새 문서 대화상자를 여는 최소 로컬 폴더.\n",
   });
   await page.goto("/ko/topology/", { waitUntil: "domcontentloaded" });
-  await page.getByTestId("first-run-starter-create").click();
-  await page.getByTestId("vault-guide-create-new").click();
-  await expect(page.getByTestId("topology-index-footer")).toBeVisible({ timeout: 30_000 });
+  await page.getByTestId("first-run-starter-open").click();
+  await expect(page.getByTestId("vault-guide-sheet")).toBeVisible();
+  await page.getByTestId("vault-guide-pick-existing").click();
+  await expect(page.getByTestId("first-run-starter")).toHaveCount(0, { timeout: 30_000 });
 
-  // 토폴로지 시드→/docs 는 쓰기 완료 레이스가 있다(실측: growth 신호 뒤에도
-  // /docs 가 빈 폴더를 봤다). /docs 자신의 시드 CTA 로 문서를 만들고, 트리에
-  // 실제 문서가 잡힐 때까지 기다린 뒤 연다.
+  // 같은 로컬 handle을 문서함이 읽은 뒤 새 문서 대화상자를 연다.
   await page.goto("/ko/docs/", { waitUntil: "domcontentloaded" });
-  const seedCta = page.getByRole("button", { name: "시작 시드 만들기" });
   const treeButton = page.getByRole("navigation", { name: "문서 목록" }).getByRole("button").first();
-  // ⚠️ `isVisible()` 은 **기다리지 않는다**. 예전에는 goto 직후 그것으로 CTA 를
-  // 물었는데, 아직 안 그려진 그 순간이면 false 가 나와 **클릭을 건너뛰고** 빈
-  // 폴더인 채로 트리를 30초 기다리다 죽었다(2026-08-21 CI 3회 재시도 전부 실패,
-  // 로컬 정적 빌드에서도 재현). 둘 중 무엇이든 먼저 나타날 때까지 기다린 뒤
-  // 판단한다 — 빈 폴더면 CTA, 이미 문서가 있으면 트리다.
-  await expect(seedCta.or(treeButton).first()).toBeVisible({ timeout: 30_000 });
-  if (await seedCta.isVisible()) {
-    await seedCta.click();
-  }
   await expect(treeButton).toBeVisible({ timeout: 30_000 });
   await page.getByTestId("docs-sidebar-new-doc").click();
   const dialog = page.getByRole("dialog");

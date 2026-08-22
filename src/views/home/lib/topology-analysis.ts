@@ -9,7 +9,6 @@ import {
   type KnowledgeGraphNode,
   type OntologyHealthActionTarget,
 } from "@/entities/knowledge-graph";
-import { buildOntologyReachability } from "@/shared/lib/ontology-tree";
 import { ATLAS_CLI } from "@/shared/config/cli-invocation";
 
 export interface TopologyAnalysisSummaryInput {
@@ -450,33 +449,129 @@ export function formatTopologyPathMcpCheck(from: string, to: string): string {
   });
 }
 
+export interface TopologyPathStep {
+  edgeId: string;
+  relationType: string;
+  /** frontmatter가 선언한 실제 방향. */
+  authoredFrom: string;
+  authoredTo: string;
+  /** 이 경로를 따라 걷는 순서. */
+  from: string;
+  to: string;
+  reversed: boolean;
+}
+
+export interface TopologyShortestPath {
+  hops: number;
+  nodeIds: string[];
+  edgeIds: string[];
+  steps: TopologyPathStep[];
+}
+
+interface PathCandidate {
+  next: string;
+  edge: KnowledgeGraphEdge;
+  reversed: boolean;
+}
+
 /**
- * 경로 칩(`TopologyPathChip`)의 "N홉" 숫자 — 두 노드 사이 최단 hop 수(undirected
- * BFS, `direction: "both"`). 관계엔 방향이 있어도 "경로가 있다/몇 단계냐"는
- * 사용자 질문 자체가 방향 무관이라 `explain_relation` MCP 오퍼레이션과 같은
- * `direction: "undirected"` 관례를 따른다. depth/limit 을 노드 수만큼 열어
- * 그래프 전체에서 실제 최단 거리를 찾는다(부분 BFS 로 놓치지 않음).
- * 같은 노드를 고르면 0, 도달 불가면 null.
+ * 지도에 실제로 그릴 최단 연결 경로. 관계 자체의 방향은 보존하되 탐색 질문은
+ * 방향 무관으로 푼다. 같은 길이가 여럿이면 다음 노드·관계 타입·edge id 순으로
+ * 골라 입력 배열 순서가 바뀌어도 같은 경로를 돌려준다.
+ *
+ * `nodes`는 의도적으로 `{id}`만 요구한다. Home은 캔버스에 실린 노드 목록을
+ * 넘겨 문서/reader 노드를 경유하는 보이지 않는 경로를 구조적으로 제외한다.
  */
+export function computeTopologyShortestPath(
+  sourceId: string,
+  targetId: string,
+  nodes: readonly Pick<KnowledgeGraphNode, "id">[],
+  edges: readonly KnowledgeGraphEdge[],
+): TopologyShortestPath | null {
+  const nodeIds = new Set(nodes.map((node) => node.id));
+  if (!nodeIds.has(sourceId) || !nodeIds.has(targetId)) return null;
+  if (sourceId === targetId) {
+    return { hops: 0, nodeIds: [sourceId], edgeIds: [], steps: [] };
+  }
+
+  const adjacent = new Map<string, PathCandidate[]>();
+  const add = (id: string, candidate: PathCandidate) => {
+    const list = adjacent.get(id) ?? [];
+    list.push(candidate);
+    adjacent.set(id, list);
+  };
+  for (const edge of edges) {
+    if (
+      edge.from === edge.to ||
+      !nodeIds.has(edge.from) ||
+      !nodeIds.has(edge.to)
+    ) {
+      continue;
+    }
+    add(edge.from, { next: edge.to, edge, reversed: false });
+    add(edge.to, { next: edge.from, edge, reversed: true });
+  }
+  for (const candidates of adjacent.values()) {
+    candidates.sort(
+      (left, right) =>
+        left.next.localeCompare(right.next) ||
+        left.edge.type.localeCompare(right.edge.type) ||
+        left.edge.id.localeCompare(right.edge.id),
+    );
+  }
+
+  const queue = [sourceId];
+  const visited = new Set([sourceId]);
+  const previous = new Map<string, { nodeId: string; candidate: PathCandidate }>();
+  let head = 0;
+  while (head < queue.length && !visited.has(targetId)) {
+    const current = queue[head++] as string;
+    for (const candidate of adjacent.get(current) ?? []) {
+      if (visited.has(candidate.next)) continue;
+      visited.add(candidate.next);
+      previous.set(candidate.next, { nodeId: current, candidate });
+      queue.push(candidate.next);
+      if (candidate.next === targetId) break;
+    }
+  }
+  if (!visited.has(targetId)) return null;
+
+  const reversedNodes = [targetId];
+  const reversedSteps: TopologyPathStep[] = [];
+  let cursor = targetId;
+  while (cursor !== sourceId) {
+    const row = previous.get(cursor);
+    if (!row) return null;
+    reversedSteps.push({
+      edgeId: row.candidate.edge.id,
+      relationType: row.candidate.edge.type,
+      authoredFrom: row.candidate.edge.from,
+      authoredTo: row.candidate.edge.to,
+      from: row.nodeId,
+      to: cursor,
+      reversed: row.candidate.reversed,
+    });
+    cursor = row.nodeId;
+    reversedNodes.push(cursor);
+  }
+  const orderedNodes = reversedNodes.reverse();
+  const steps = reversedSteps.reverse();
+  return {
+    hops: steps.length,
+    nodeIds: orderedNodes,
+    edgeIds: steps.map((step) => step.edgeId),
+    steps,
+  };
+}
+
+/** Backward-compatible hop-only view of `computeTopologyShortestPath`. */
 export function computeTopologyPathHopCount(
   sourceId: string,
   targetId: string,
   nodes: readonly KnowledgeGraphNode[],
   edges: readonly KnowledgeGraphEdge[],
 ): number | null {
-  if (sourceId === targetId) return 0;
-  const bound = Math.max(nodes.length, 1);
-  const reachability = buildOntologyReachability(sourceId, nodes, edges, {
-    direction: "both",
-    depth: bound,
-    limit: bound,
-  });
-  for (const layer of reachability.layers) {
-    if (layer.nodes.some((node) => node.id === targetId)) {
-      return layer.distance;
-    }
-  }
-  return null;
+  return computeTopologyShortestPath(sourceId, targetId, nodes, edges)?.hops ?? null;
 }
 
 export interface TopologyPathAgentPacketLabels {
@@ -546,33 +641,6 @@ export function getTopologyHealthNextAction(
     return labels.actionOrphan;
   }
   return labels.actionPromotion;
-}
-
-/**
- * INDEX 패널 하단 "인계" 메뉴의 "재분석 지시" 항목이 복사하는 agent 프롬프트
- * (W3 분석 보기 은퇴 — 이전엔 `TopologyAnalysisBar` overview 모드 안의 접힌
- * 보조 액션이었다). 입력 없는 고정 텍스트라 view 상태에 의존하지 않는다.
- */
-export function formatOntologyReanalysisAgentCommand(): string {
-  return [
-    "Ontology Atlas agent task: reanalyze and strengthen this codebase ontology.",
-    "",
-    "If Atlas MCP is connected, run these read-first calls:",
-    '1. list_kinds({})',
-    '2. analyze_repo_structure({ "rootPath": "[repo-root]", "maxDepth": 3 })',
-    '3. query_ontology({ "operation": "growth_plan", "limit": 20 })',
-    '4. query_ontology({ "operation": "maintenance_plan", "limit": 20 })',
-    '5. validate_vault({ "repoRoot": "[repo-root]" })',
-    "",
-    "Then propose only confirmed domain/capability/element/relation updates.",
-    "Before writing, compare against existing nodes with find_evidence/similar_nodes and avoid duplicates.",
-    "",
-    "CLI fallback:",
-    "pnpm cli:mcp-verify docs/ontology --timeout-ms 15000",
-    "node cli/src/index.mjs growth docs/ontology --limit 20",
-    "node cli/src/index.mjs maintenance docs/ontology --limit 20",
-    "node cli/src/index.mjs validate docs/ontology",
-  ].join("\n");
 }
 
 function getTopologyHealthActionKindLabel(

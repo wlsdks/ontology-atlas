@@ -6,6 +6,7 @@ import { MAP_CANVAS_SURFACE_ROLE } from "@/shared/lib/focus-map-canvas";
 import { ICON_SIZE } from "@/shared/ui/icon-size";
 import { useTopologyLoop } from "./use-topology-loop";
 import type { TierRevealConfig } from "../model/tier-visibility";
+import type { TopologyMapLensKind } from "../model/path-lens";
 import type { ClusterBarLabels } from "../render/cluster-chips";
 import { DEFAULT_EXPAND, DEFAULT_MAP_ARRANGEMENT } from "@/shared/lib/appearance-preferences";
 import type { CanvasBackground, ExpandPreference, FootprintPreference, GlyphSet, MapArrangement } from "@/shared/lib/appearance-preferences";
@@ -66,6 +67,8 @@ export interface TopologyV2Node {
 }
 
 export interface TopologyV2Edge {
+  /** 원본 KnowledgeGraphEdge identity. 외부 embed는 생략할 수 있다. */
+  id?: string;
   source: string;
   target: string;
   relationType: string;
@@ -201,6 +204,10 @@ export interface TopologyMapV2Props {
    * null/생략 = off.
    */
   spotlightIds?: ReadonlySet<string> | null;
+  /** 같은 렌즈 기구가 지금 나르는 의미. 생략은 기존 최근 변경. */
+  mapLensKind?: TopologyMapLensKind;
+  /** 최단 경로에 실제로 포함된 authored edge id만. */
+  pathEdgeIds?: ReadonlySet<string> | null;
   /**
    * S4 "영역 전개" — 지도가 이 노드의 세계로 전환된 상태 (`?realm=slug`), 없으면
    * 전체 지도. HomePage 가 URL 에서 내린다.
@@ -364,7 +371,7 @@ export interface TopologyMapV2Props {
 }
 
 export function TopologyMapV2(props: TopologyMapV2Props) {
-  const { nodes, edges, focus, minimal, emphasizedNeighborSlug, dataSourceKey = null, overviewFit = "spine", fitViewToken, spotlightFitToken = 0, relayoutToken, revealToken, onSelectEdge, onSelect, onPaneClick, onVisibleCountChange, onGraphStatsChange, onZoomTierChange, onContextMenuNode, onContextMenuPane, agentFocusNodeId, spotlightIds = null, onHoverEdge, selectedEdge = null, previewEdge = null, expandedParents, onToggleCluster, onHoverCluster, clusterHint, realmRootId = null, onEnterRealm, realmEnterLabel, realmEnterTooltip, realmCaption = null, clusterBarLabels = null, canvasLabel, walkNoticeLabel, visitedTrail, trailLensActiveRef, trailHoverNodeIdRef, panelHoverNodeIdRef, tierReveal, tourAnchorNodeId = null, tourAnchorRef, overlayOpen = false, glyphSet = "geometric", canvasBackground = "dot", view3d = false, mapArrangement = DEFAULT_MAP_ARRANGEMENT, detailPanelVisible = false, footprint = null, expand = DEFAULT_EXPAND, wheelIntent = "zoom", ambientSleepDelayMs, onWalkDeadEnd = null } = props;
+  const { nodes, edges, focus, minimal, emphasizedNeighborSlug, dataSourceKey = null, overviewFit = "spine", fitViewToken, spotlightFitToken = 0, relayoutToken, revealToken, onSelectEdge, onSelect, onPaneClick, onVisibleCountChange, onGraphStatsChange, onZoomTierChange, onContextMenuNode, onContextMenuPane, agentFocusNodeId, spotlightIds = null, mapLensKind = "recent", pathEdgeIds = null, onHoverEdge, selectedEdge = null, previewEdge = null, expandedParents, onToggleCluster, onHoverCluster, clusterHint, realmRootId = null, onEnterRealm, realmEnterLabel, realmEnterTooltip, realmCaption = null, clusterBarLabels = null, canvasLabel, walkNoticeLabel, visitedTrail, trailLensActiveRef, trailHoverNodeIdRef, panelHoverNodeIdRef, tierReveal, tourAnchorNodeId = null, tourAnchorRef, overlayOpen = false, glyphSet = "geometric", canvasBackground = "dot", view3d = false, mapArrangement = DEFAULT_MAP_ARRANGEMENT, detailPanelVisible = false, footprint = null, expand = DEFAULT_EXPAND, wheelIntent = "zoom", ambientSleepDelayMs, onWalkDeadEnd = null } = props;
 
   const realmEnterButtonRef = useRef<HTMLButtonElement | null>(null);
 
@@ -491,6 +498,8 @@ export function TopologyMapV2(props: TopologyMapV2Props) {
       onContextMenuPane,
       agentFocusNodeId,
       spotlightIds,
+      mapLensKind,
+      pathEdgeIds,
       expandedParents,
       onToggleCluster,
       onHoverCluster,
@@ -522,6 +531,9 @@ export function TopologyMapV2(props: TopologyMapV2Props) {
       data-testid="topology-map-v2"
       data-map-engine="v2"
       data-minimal={minimal ? "true" : "false"}
+      data-map-lens={spotlightIds ? mapLensKind : undefined}
+      data-path-node-count={mapLensKind === "path" ? spotlightIds?.size : undefined}
+      data-path-edge-count={mapLensKind === "path" ? pathEdgeIds?.size ?? 0 : undefined}
       data-preview-edge={
         previewEdge
           ? `${previewEdge.sourceId}>${previewEdge.targetId}:${previewEdge.relationType}`

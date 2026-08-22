@@ -4,6 +4,7 @@ export { Button, buttonVariants, type ButtonProps } from './button';
  * 전수: 그런 표면 20개 중 10개가 하드컷이었고, 그 10개가 전부 인라인 패널이었다.
  */
 export { Surface, type SurfaceMotion, type SurfaceProps } from './surface';
+export { AGENT_DOCK_INSET_SURFACE_CLASS } from './agent-dock-surface';
 export { Dialog, type DialogProps } from './dialog';
 export { Input, Textarea, type InputProps, type TextareaProps } from './input';
 export { Checkbox, type CheckboxProps } from './checkbox';

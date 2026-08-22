@@ -412,6 +412,10 @@ describe('세션 지시문 — 실측으로 얻은 네 줄이 실제로 실린�
     expect(prompt, '작업 순서가 없다').toMatch(/Work in this order/);
     // ③ 만들기 전에 찾아보기
     expect(prompt, '중복을 먼저 찾으라는 지시가 없다').toMatch(/similar_nodes|find_evidence/);
+    // 지도 이동은 답변 문장 추측이 아니라 exact read tool 호출로 이어져야 한다.
+    expect(prompt, '지도 검색과 경로 요청이 exact read tool로 이어지지 않는다').toMatch(
+      /get_concept.*find_path.*move and highlight the map/i,
+    );
     // ④ 애매하면 묻기 — 실측에서 가장 크게 바꾼 줄
     expect(prompt, '애매할 때 묻지 않고 만들게 된다').toMatch(/Ask first/);
     // ⑤ 사람이 쓴 언어로 답하기
@@ -475,6 +479,68 @@ describe('관문을 못 세웠으면 화면이 말한다', () => {
     // 나머지 진단은 여전히 접혀 있다 — 대화에 섞이면 그게 소음이다.
     expect(result.current.events.filter((e) => e.kind === 'notice')).toHaveLength(1);
     expect(result.current.diagnostics.join(' ')).toContain('settings-write-failed');
+
+    await act(async () => {
+      await result.current.stop();
+    });
+  });
+});
+
+describe('도구 입력 refinement — 실제 Claude ACP 순서', () => {
+  it('status 없는 tool_call_update가 뒤늦게 보낸 rawInput을 기존 도구 행에 합친다', async () => {
+    const { result } = renderHook(() =>
+      useAcpSession({ runtimeId: 'claude-acp', vaultRoot: '/vault' }),
+    );
+    const starting = result.current.start();
+    await waitFor(() => expect(bridge.starts).toBe(1));
+    await act(async () => {
+      bridge.release?.();
+      await starting;
+    });
+
+    act(() => {
+      bridge.listener?.(
+        JSON.stringify({
+          jsonrpc: '2.0',
+          method: 'session/update',
+          params: {
+            sessionId: 's-1',
+            update: {
+              sessionUpdate: 'tool_call',
+              toolCallId: 'tool-read-1',
+              title: 'mcp__atlas-vault__get_concept',
+              kind: 'read',
+              status: 'pending',
+            },
+          },
+        }),
+      );
+      // claude-agent-acp는 streamed input이 완성되면 status 없이 이 refinement를 보낸다.
+      bridge.listener?.(
+        JSON.stringify({
+          jsonrpc: '2.0',
+          method: 'session/update',
+          params: {
+            sessionId: 's-1',
+            update: {
+              sessionUpdate: 'tool_call_update',
+              toolCallId: 'tool-read-1',
+              rawInput: { slug: 'capabilities/mcp-server', body: 'full' },
+              title: 'mcp__atlas-vault__get_concept',
+              kind: 'read',
+            },
+          },
+        }),
+      );
+    });
+
+    await waitFor(() =>
+      expect(result.current.events.find((event) => event.id === 'tool-read-1')).toMatchObject({
+        kind: 'tool',
+        status: 'pending',
+        rawInput: { slug: 'capabilities/mcp-server', body: 'full' },
+      }),
+    );
 
     await act(async () => {
       await result.current.stop();
